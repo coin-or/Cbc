@@ -107,6 +107,10 @@ CbcRounding::solution(double & solutionValue,
 			 double * betterSolution)
 {
 
+  // See if to do
+  if (!when()||(when()==1&&model_->phase()!=1))
+    return 0; // switched off
+
   OsiSolverInterface * solver = model_->solver();
   const double * lower = solver->getColLower();
   const double * upper = solver->getColUpper();
@@ -406,6 +410,13 @@ void CbcRounding::setModel(CbcModel * model)
   assert(model_->solver());
   matrix_ = *model_->solver()->getMatrixByCol();
   matrixByRow_ = *model_->solver()->getMatrixByRow();
+  // make sure model okay for heuristic
+  validate();
+}
+// Validate model i.e. sets when_ to 0 if necessary (may be NULL)
+void 
+CbcRounding::validate() 
+{
 }
 
   

@@ -14,8 +14,101 @@
 #include "CbcBranchLotsize.hpp"
 #include "CoinSort.hpp"
 #include "CoinError.hpp"
-
-
+/*
+  CBC_PRINT 1 just does sanity checks - no printing
+            2
+*/
+//#define CBC_PRINT 1
+// First/last variable to print info on
+#if CBC_PRINT
+// preset does all - change to x,x to just do x
+static int firstPrint=0;
+static int lastPrint=1000000;
+static CbcModel * saveModel=NULL;
+#endif
+// Just for debug (CBC_PRINT defined in CbcBranchLotsize.cpp)
+void 
+CbcLotsize::printLotsize(double value,bool condition,int type) const
+{
+#if CBC_PRINT
+  if (columnNumber_>=firstPrint&&columnNumber_<=lastPrint) {
+    int printIt = CBC_PRINT-1;
+    // Get details
+    OsiSolverInterface * solver = saveModel->solver();
+    double currentLower = solver->getColLower()[columnNumber_];
+    double currentUpper = solver->getColUpper()[columnNumber_];
+    int i;
+    // See if in a valid range (with two tolerances)
+    bool inRange=false;
+    bool inRange2=false;
+    double integerTolerance = 
+      model_->getDblParam(CbcModel::CbcIntegerTolerance);
+    // increase if type 2
+    if (type==2) {
+      integerTolerance *= 100.0;
+      type=0;
+      printIt=2; // always print
+    }
+    // bounds should match some bound
+    int rangeL=-1;
+    int rangeU=-1;
+    if (rangeType_==1) {
+      for (i=0;i<numberRanges_;i++) {
+        if (fabs(currentLower-bound_[i])<1.0e-12)
+          rangeL=i;
+        if (fabs(currentUpper-bound_[i])<1.0e-12)
+          rangeU=i;
+        if (fabs(value-bound_[i])<integerTolerance)
+          inRange=true;
+        if (fabs(value-bound_[i])<1.0e8)
+          inRange2=true;
+      }
+    } else {
+      for (i=0;i<numberRanges_;i++) {
+        if (fabs(currentLower-bound_[2*i])<1.0e-12)
+          rangeL=i;
+        if (fabs(currentUpper-bound_[2*i+1])<1.0e-12)
+          rangeU=i;
+        if (value>bound_[2*i]-integerTolerance&&
+            value<bound_[2*i+1]+integerTolerance)
+          inRange=true;
+        if (value>bound_[2*i]-integerTolerance&&
+            value<bound_[2*i+1]+integerTolerance)
+          inRange=true;
+      }
+    }
+    assert (rangeL>=0&&rangeU>=0);
+    bool abortIt=false;
+    switch (type) {
+      // returning from findRange (fall through to just check)
+    case 0:
+      if (printIt) {
+        printf("findRange returns %s for column %d and value %g",
+               condition ? "true" : "false",columnNumber_,value);
+        if (printIt>1)
+          printf(" LP bounds %g, %g",currentLower,currentUpper);
+        printf("\n");
+      }
+      // Should match
+    case 1:
+      if (inRange!=condition) {
+        printIt=2;
+        abortIt=true;
+      }
+      break;
+      // 
+    case 2:
+      break;
+      // 
+    case 3:
+      break;
+      // 
+    case 4:
+      break;
+    }
+  }
+#endif
+}
 /** Default Constructor
 
 */
@@ -39,6 +132,10 @@ CbcLotsize::CbcLotsize (CbcModel * model,
 			const double * points, bool range)
   : CbcObject(model)
 {
+#if CBC_PRINT
+  if (!saveModel)
+    saveModel=model;
+#endif
   assert (numberPoints>0);
   columnNumber_ = iColumn ;
   // and set id so can be used for branching
@@ -177,8 +274,14 @@ CbcLotsize::findRange(double value) const
       iLo=0;
       iHi=range_-1;
     } else if (value<bound_[range_]+integerTolerance) {
+#if CBC_PRINT
+      printLotsize(value,true,0);
+#endif
       return true;
     } else if (value<bound_[range_+1]-integerTolerance) {
+#ifdef CBC_PRINT
+      printLotsize(value,false,0);
+#endif
       return false;
     } else {
       iLo=range_+1;
@@ -222,6 +325,9 @@ CbcLotsize::findRange(double value) const
       if (infeasibility<integerTolerance)
 	range_++;
     }
+#ifdef CBC_PRINT
+    printLotsize(value,(infeasibility<integerTolerance),0);
+#endif
     return (infeasibility<integerTolerance);
   } else {
     // ranges
@@ -229,8 +335,14 @@ CbcLotsize::findRange(double value) const
       iLo=0;
       iHi=range_-1;
     } else if (value<bound_[2*range_+1]+integerTolerance) {
+#ifdef CBC_PRINT
+      printLotsize(value,true,0);
+#endif
       return true;
     } else if (value<bound_[2*range_+2]-integerTolerance) {
+#ifdef CBC_PRINT
+      printLotsize(value,false,0);
+#endif
       return false;
     } else {
       iLo=range_+1;
@@ -274,6 +386,9 @@ CbcLotsize::findRange(double value) const
     } else {
       infeasibility = bound_[2*range_+2]-value;
     }
+#ifdef CBC_PRINT
+    printLotsize(value,(infeasibility<integerTolerance),0);
+#endif
     return (infeasibility<integerTolerance);
   }
 }
@@ -345,6 +460,9 @@ CbcLotsize::infeasibility(int & preferredWay) const
     infeasibility=0.0;
   else
     infeasibility /= largestGap_;
+#ifdef CBC_PRINT
+    printLotsize(value,infeasibility,1);
+#endif
   return infeasibility;
 }
 // This looks at solution and sets bounds to contain solution
@@ -380,6 +498,10 @@ CbcLotsize::feasibleRegion()
   }
   double integerTolerance = 
     model_->getDblParam(CbcModel::CbcIntegerTolerance);
+#ifdef CBC_PRINT
+  // print details
+  printLotsize(value,true,2);
+#endif
   // Scaling may have moved it a bit
   assert (fabs(value-nearest)<=100.0*integerTolerance);
 }

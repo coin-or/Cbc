@@ -53,6 +53,9 @@ public:
 		       double * newSolution,
 		       OsiCuts & cs) {return 0;};
 
+  /// Validate model i.e. sets when_ to 0 if necessary (may be NULL)
+  virtual void validate() {};
+
   /// Sets "when" flag - 0 off, 1 at root, 2 other than root, 3 always
   inline void setWhen(int value)
   { when_=value;};
@@ -107,6 +110,8 @@ public:
   */
   virtual int solution(double & objectiveValue,
 		       double * newSolution);
+  /// Validate model i.e. sets when_ to 0 if necessary (may be NULL)
+  virtual void validate();
 
 
   /// Set seed

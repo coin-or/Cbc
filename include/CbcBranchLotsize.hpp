@@ -108,6 +108,9 @@ public:
   inline double * bound() const
   { return bound_;};
 
+private:
+  /// Just for debug (CBC_PRINT defined in CbcBranchLotsize.cpp)
+  void printLotsize(double value,bool condition,int type) const;
 
 private:
   /// data

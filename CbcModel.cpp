@@ -690,6 +690,9 @@ void CbcModel::branchAndBound()
     if (getNumCols() > 2000)
       printFrequency_ = 100 ;
   }
+  /* Tell solver we are in Branch and Cut
+     Could use last parameter for subtle differences */
+  solver_->setHintParam(OsiDoInBranchAndCut,true,OsiHintDo,NULL) ;
 /*
   At last, the actual branch-and-cut search loop, which will iterate until
   the live set is empty or we hit some limit (integrality gap, time, node
@@ -1081,6 +1084,8 @@ void CbcModel::branchAndBound()
 
   We may have got an intelligent tree so give it one more chance
 */
+  // Tell solver we are not in Branch and Cut
+  solver_->setHintParam(OsiDoInBranchAndCut,false,OsiHintDo,NULL) ;
   tree_->endSearch();
   //  If we did any sub trees - did we give up on any?
   if ( numberStoppedSubTrees_)
@@ -1245,7 +1250,7 @@ CbcModel::CbcModel()
   maximumCutPasses_(10),
   resolveAfterTakeOffCuts_(true)
 {
-  intParam_[CbcMaxNumNode] = 9999999;
+  intParam_[CbcMaxNumNode] = 99999999;
   intParam_[CbcMaxNumSol] = 9999999;
   intParam_[CbcFathomDiscipline] = 0;
 
@@ -1316,7 +1321,7 @@ CbcModel::CbcModel(const OsiSolverInterface &rhs)
   maximumCutPasses_(10),
   resolveAfterTakeOffCuts_(true)
 {
-  intParam_[CbcMaxNumNode] = 9999999;
+  intParam_[CbcMaxNumNode] = 99999999;
   intParam_[CbcMaxNumSol] = 9999999;
   intParam_[CbcFathomDiscipline] = 0;
 
@@ -1518,6 +1523,7 @@ CbcModel::CbcModel(const CbcModel & rhs)
   } else {
     priority_=NULL;
   }
+  solver_ = rhs.solver_->clone();
   if (rhs.originalColumns_) {
     int numberColumns = solver_->getNumCols();
     originalColumns_= new int [numberColumns];
@@ -1530,7 +1536,6 @@ CbcModel::CbcModel(const CbcModel & rhs)
   branchingMethod_=rhs.branchingMethod_;
   appData_=rhs.appData_;
   messages_ = rhs.messages_;
-  solver_ = rhs.solver_->clone();
   ourSolver_ = true ;
   messageHandler()->setLogLevel(rhs.messageHandler()->logLevel());
   numberIntegers_=rhs.numberIntegers_;
@@ -4434,6 +4439,8 @@ CbcModel::integerPresolveThisModel(OsiSolverInterface * originalSolver,
 	  original[originalColumns[iColumn]]=iColumn;
 	// copy parameters
 	temp->copyParameters(*solver_);
+	// and specialized ones
+	temp->setSpecialOptions(clpSolver->specialOptions());
 	delete solver_;
 	solver_ = temp;
 	setCutoff(cutoff);

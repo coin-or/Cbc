@@ -533,15 +533,13 @@ void CbcModel::branchAndBound()
   { int iObject ;
     int preferredWay ;
     int numberUnsatisfied = 0 ;
-    double integerTolerance = getIntegerTolerance() ;
-
     memcpy(currentSolution_,solver_->getColSolution(),
 	   numberColumns*sizeof(double)) ;
 
     for (iObject = 0 ; iObject < numberObjects_ ; iObject++)
     { double infeasibility =
 	  object_[iObject]->infeasibility(preferredWay) ;
-      if (infeasibility > integerTolerance) numberUnsatisfied++ ; }
+      if (infeasibility ) numberUnsatisfied++ ; }
     if (numberUnsatisfied)
     { feasible = solveWithCuts(cuts,maximumCutPassesAtRoot_,
 			       NULL,numberOldActiveCuts,numberNewCuts,
@@ -3934,7 +3932,6 @@ CbcModel::feasibleSolution(int & numberIntegerInfeasibilities,
   int numberUnsatisfied=0;
   double sumUnsatisfied=0.0;
   int preferredWay;
-  double integerTolerance = getIntegerTolerance();
   int j;
   // Put current solution in safe place
   memcpy(currentSolution_,solver_->getColSolution(),
@@ -3942,7 +3939,8 @@ CbcModel::feasibleSolution(int & numberIntegerInfeasibilities,
   for (j=0;j<numberIntegers_;j++) {
     const CbcObject * object = object_[j];
     double infeasibility = object->infeasibility(preferredWay);
-    if (infeasibility>integerTolerance) {
+    if (infeasibility) {
+      assert (infeasibility>0);
       numberUnsatisfied++;
       sumUnsatisfied += infeasibility;
     }
@@ -3951,7 +3949,8 @@ CbcModel::feasibleSolution(int & numberIntegerInfeasibilities,
   for (;j<numberObjects_;j++) {
     const CbcObject * object = object_[j];
     double infeasibility = object->infeasibility(preferredWay);
-    if (infeasibility>integerTolerance) {
+    if (infeasibility) {
+      assert (infeasibility>0);
       numberUnsatisfied++;
       sumUnsatisfied += infeasibility;
     }
@@ -5175,15 +5174,13 @@ CbcModel::strengthenedModel()
   { int iObject ;
     int preferredWay ;
     int numberUnsatisfied = 0 ;
-    double integerTolerance = getIntegerTolerance() ;
-
     memcpy(currentSolution_,solver_->getColSolution(),
 	   numberColumns*sizeof(double)) ;
 
     for (iObject = 0 ; iObject < numberObjects_ ; iObject++)
     { double infeasibility =
 	  object_[iObject]->infeasibility(preferredWay) ;
-      if (infeasibility > integerTolerance) numberUnsatisfied++ ; }
+      if (infeasibility) numberUnsatisfied++ ; }
     if (numberUnsatisfied)
     { feasible = solveWithCuts(cuts,maximumCutPassesAtRoot_,
 			       NULL,numberOldActiveCuts,numberNewCuts,

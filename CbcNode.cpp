@@ -937,7 +937,7 @@ int CbcNode::chooseBranch (CbcModel *model, CbcNode *lastNode,int numberPassesLe
       iSmallest).
     */
     int iSmallest = 0;
-    double mostAway = integerTolerance;
+    double mostAway = 1.0e-100;
     for (i = 0 ; i < maximumStrong ; i++) choice[i].possibleBranch = NULL ;
     numberStrong=0;
     for (i=0;i<numberObjects;i++) {
@@ -991,7 +991,9 @@ int CbcNode::chooseBranch (CbcModel *model, CbcNode *lastNode,int numberPassesLe
           }
         }
       }
-      if (infeasibility>integerTolerance) {
+      if (infeasibility) {
+        //if (infeasibility<=integerTolerance) 
+          //printf("XXXXX small %g\n",infeasibility);
         // Increase estimated degradation to solution
         estimatedDegradation += CoinMin(object->upEstimate(),object->downEstimate());
         numberUnsatisfied_++;
@@ -1005,7 +1007,7 @@ int CbcNode::chooseBranch (CbcModel *model, CbcNode *lastNode,int numberPassesLe
             choice[j].possibleBranch=NULL;
           }
           bestPriority = priorityLevel;
-          mostAway=integerTolerance;
+          mostAway=1.0e-100;
           numberStrong=0;
         } else if (priorityLevel>bestPriority) {
           continue;

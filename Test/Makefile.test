@@ -35,12 +35,14 @@ LibDir += ${OsiClpLibDir} ${ClpLibDir}
 #LibDir += ${OsiDylpLibDir} ${DylpLibDir}
 LibDir += ${OsiLibDir} ${CoinLibDir}
 LibDir += ${bzlibLibDir} ${zlibLibDir} $(lapackLibDir)
+LibDir += $(GlpkLibDir)
 
 LibName := ${CbcLibName} ${CglLibName}
 LibName += ${OsiClpLibName} ${ClpLibName}
 #LibName += ${OsiDylpLibName} ${DylpLibName}
 LibName += ${OsiLibName} ${CoinLibName} 
 LibName += ${bzlibLibName} ${zlibLibName} $(lapackLibName) $(readlineLibName)
+LibName += $(GlpkLibName)
 
 Define := ${CbcDefine} ${CglDefine}
 Define += ${OsiClpDefine} ${ClpDefine}

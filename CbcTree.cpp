@@ -74,7 +74,7 @@ CbcTree::empty()
 */
 
 void 
-CbcTree::cleanTree(CbcModel * model, double cutoff)
+CbcTree::cleanTree(CbcModel * model, double cutoff, double & bestPossibleObjective)
 {
   int j;
   int nNodes = size();
@@ -82,6 +82,7 @@ CbcTree::cleanTree(CbcModel * model, double cutoff)
   int * depth = new int [nNodes];
   int k=0;
   int kDelete=nNodes;
+  bestPossibleObjective = 1.0e100 ;
 /*
     Destructively scan the heap. Nodes to be retained go into the front of
     nodeArray, nodes to be deleted into the back. Store the depth in a
@@ -90,7 +91,9 @@ CbcTree::cleanTree(CbcModel * model, double cutoff)
   for (j=0;j<nNodes;j++) {
     CbcNode * node = top();
     pop();
-    if (node->objectiveValue() >= cutoff) {
+    double value = node->objectiveValue();
+    bestPossibleObjective = CoinMin(bestPossibleObjective,value);
+    if (value >= cutoff) {
       nodeArray[--kDelete] = node;
       depth[kDelete] = node->depth();
     } else {

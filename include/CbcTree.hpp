@@ -73,9 +73,11 @@ public:
 
   This routine removes all nodes with objective worst than the
   specified cutoff value.
+  It also sets bestPossibleObjective to best
+  of all on tree before deleting.
 */
 
-  void cleanTree(CbcModel * model, double cutoff);
+  void cleanTree(CbcModel * model, double cutoff, double & bestPossibleObjective);
 
   /// We may have got an intelligent tree so give it one more chance
   virtual void endSearch() {};

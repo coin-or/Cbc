@@ -401,7 +401,8 @@ CbcTreeLocal::empty()
     state--;
   } 
   // get rid of all nodes (safe even if already done)
-  cleanTree(model_,-COIN_DBL_MAX);
+  double bestPossibleObjective;
+  cleanTree(model_,-COIN_DBL_MAX,bestPossibleObjective);
 
   double increment = model_->getDblParam(CbcModel::CbcCutoffIncrement) ;
   printf("local state %d after %d nodes and %d seconds, new solution %g, best solution %g, k was %g\n",

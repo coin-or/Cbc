@@ -20,7 +20,7 @@ static Cbc_message us_english[]=
   {CBC_MAXTIME,20,1,"Exiting on maximum time"},
   {CBC_MAXSOLS,19,1,"Exiting on maximum solutions"},
   {CBC_SOLUTION,4,1,"Integer solution of %g found after %d iterations and %d nodes"},
-  {CBC_END,5,1,"Partial search - best objective %g, took %d iterations and %d nodes"},
+  {CBC_END,5,1,"Partial search - best objective %g (best possible %g), took %d iterations and %d nodes"},
   {CBC_INFEAS,6,1,"The LP relaxation is infeasible or too expensive"},
   {CBC_STRONG,7,3,"Strong branching on %d (%d), down %g (%d) up %g (%d) value %g"},
   {CBC_SOLINDIVIDUAL,8,2,"%d has value %g"},

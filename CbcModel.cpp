@@ -417,6 +417,7 @@ void CbcModel::branchAndBound()
     return ; }
   // Save objective (just so user can access it)
   originalContinuousObjective_ = solver_->getObjValue();
+  bestPossibleObjective_=originalContinuousObjective_;
 
 # ifdef CBC_DEBUG
 /*
@@ -717,7 +718,7 @@ void CbcModel::branchAndBound()
   while (!tree_->empty())
   { if (cutoff > getCutoff()) {
       // Do from deepest
-      tree_->cleanTree(this, getCutoff()) ;
+      tree_->cleanTree(this, getCutoff(),bestPossibleObjective_) ;
       if (!nodeCompare_) {
 	if (!compareDefault.getWeight()) {
 	  // set to get close to this
@@ -755,21 +756,21 @@ void CbcModel::branchAndBound()
     if ((numberNodes_%printFrequency_) == 0) {
       int j ;
       int nNodes = tree_->size() ;
-      bestValue = 1.0e100 ;
+      bestPossibleObjective_ = 1.0e100 ;
       for (j = 0;j < nNodes;j++) {
 	CbcNode * node = tree_->nodePointer(j) ;
-	if (node->objectiveValue() < bestValue)
-	  bestValue = node->objectiveValue() ;
+	if (node->objectiveValue() < bestPossibleObjective_)
+	  bestPossibleObjective_ = node->objectiveValue() ;
       }
       messageHandler()->message(CBC_STATUS,messages())
-	<< numberNodes_<< nNodes<< bestObjective_<< bestValue
+	<< numberNodes_<< nNodes<< bestObjective_<< bestPossibleObjective_
 	<< CoinMessageEol ;
     }
     // See if can stop on gap
     double testGap = CoinMax(dblParam_[CbcAllowableGap],
-			     CoinMax(fabs(bestObjective_),fabs(bestValue))
+			     CoinMax(fabs(bestObjective_),fabs(bestPossibleObjective_))
 			     *dblParam_[CbcAllowableFractionGap]);
-    if (bestObjective_-bestValue < testGap) {
+    if (bestObjective_-bestPossibleObjective_ < testGap) {
       stoppedOnGap = true ;
     }
 
@@ -1056,14 +1057,14 @@ void CbcModel::branchAndBound()
 */
       else
       { 
-	tree_->cleanTree(this,-COIN_DBL_MAX) ;
+	tree_->cleanTree(this,-COIN_DBL_MAX,bestPossibleObjective_) ;
 	delete nextRowCut_;
 	// We need to get rid of node if is has already been popped from tree
 	if (!nodeOnTree&&!stoppedOnGap&&node!=rootNode)
 	  delete node;
 	if (stoppedOnGap)
 	{ messageHandler()->message(CBC_GAP,messages())
-	    << bestObjective_-bestValue
+	    << bestObjective_-bestPossibleObjective_
 	    << dblParam_[CbcAllowableGap]
 	    << dblParam_[CbcAllowableFractionGap]*100.0
 	    << CoinMessageEol ;
@@ -1111,14 +1112,17 @@ void CbcModel::branchAndBound()
   //  If we did any sub trees - did we give up on any?
   if ( numberStoppedSubTrees_)
     status_=1;
-  if (!status_)
+  if (!status_) {
+    bestPossibleObjective_=bestObjective_;
     handler_->message(CBC_END_GOOD,messages_)
       << bestObjective_ << numberIterations_ << numberNodes_
       << CoinMessageEol ;
-  else
+  } else {
     handler_->message(CBC_END,messages_)
-      << bestObjective_ << numberIterations_ << numberNodes_
+      << bestObjective_ <<bestPossibleObjective_
+      << numberIterations_ << numberNodes_
       << CoinMessageEol ;
+  }
 /*
   If we think we have a solution, restore and confirm it with a call to
   setBestSolution().  We need to reset the cutoff value so as not to fathom
@@ -1227,6 +1231,7 @@ CbcModel::CbcModel()
   emptyWarmStart_(NULL),
   basis_(NULL),
   bestObjective_(COIN_DBL_MAX),
+  bestPossibleObjective_(COIN_DBL_MAX),
   bestSolution_(NULL),
   currentSolution_(NULL),
   minimumDrop_(1.0e-4),
@@ -1303,6 +1308,7 @@ CbcModel::CbcModel(const OsiSolverInterface &rhs)
   emptyWarmStart_(NULL),
   basis_(NULL) ,
   bestObjective_(COIN_DBL_MAX),
+  bestPossibleObjective_(COIN_DBL_MAX),
   minimumDrop_(1.0e-4),
   numberSolutions_(0),
   hotstartStrategy_(0),
@@ -1466,6 +1472,7 @@ CbcModel::CbcModel(const CbcModel & rhs, bool noTree)
   emptyWarmStart_(NULL),
   basis_(NULL),
   bestObjective_(rhs.bestObjective_),
+  bestPossibleObjective_(rhs.bestPossibleObjective_),
   minimumDrop_(rhs.minimumDrop_),
   numberSolutions_(rhs.numberSolutions_),
   hotstartStrategy_(rhs.hotstartStrategy_),
@@ -1605,7 +1612,8 @@ CbcModel::CbcModel(const CbcModel & rhs, bool noTree)
     originalContinuousObjective_=COIN_DBL_MAX;
     continuousInfeasibilities_=INT_MAX;
     maximumNumberCuts_=0;
-    tree_->cleanTree(this,-COIN_DBL_MAX);
+    tree_->cleanTree(this,-COIN_DBL_MAX,bestPossibleObjective_);
+    bestPossibleObjective_ = COIN_DBL_MAX;
   }
   // These are only used as temporary arrays so need not be filled
   if (maximumNumberCuts_) {
@@ -1664,6 +1672,7 @@ CbcModel::operator=(const CbcModel& rhs)
     { basis_ = 0 ; }
 
     bestObjective_ = rhs.bestObjective_;
+    bestPossibleObjective_=rhs.bestPossibleObjective_;
     delete [] bestSolution_;
     if (rhs.bestSolution_) {
       int numberColumns = rhs.getNumCols();
@@ -5191,4 +5200,9 @@ CbcModel::strengthenedModel()
 void CbcModel::setBestObjectiveValue( double objectiveValue)
 {
   bestObjective_=objectiveValue;
+}
+double 
+CbcModel::getBestPossibleObjValue() const
+{ 
+  return CoinMin(bestPossibleObjective_,bestObjective_) * solver_->getObjSense() ;
 }

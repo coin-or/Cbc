@@ -760,6 +760,12 @@ public:
   /// Get best objective function value
   inline double getObjValue() const
   { return bestObjective_ * solver_->getObjSense() ; } ;
+  /** Get best possible objective function value.
+      This is better of best possible left on tree
+      and best solution found.
+      If called from within branch and cut may be optimistic.
+  */
+  double getBestPossibleObjValue() const;
   /// Set best objective function value
   inline void setObjValue(double value) 
   { bestObjective_=value * solver_->getObjSense() ;};
@@ -1158,6 +1164,8 @@ private:
 
   /// Best objective
   double bestObjective_;
+  /// Best possible objective
+  double bestPossibleObjective_;
 
   /// Array holding the incumbent (best) solution.
   double * bestSolution_;

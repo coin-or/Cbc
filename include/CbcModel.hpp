@@ -23,6 +23,7 @@ class CglCutGenerator;
 class CbcHeuristic;
 class CbcObject;
 class CbcTree;
+class CbcStrategy;
 
 //#############################################################################
 
@@ -220,6 +221,8 @@ public:
       Invoke the solver's %resolve() method.
     */
     bool resolve();
+  /// Make given rows (L or G) into global cuts and remove from lp
+  void makeGlobalCuts(int numberRows,const int * which); 
   //@}
 
   /** \name Presolve methods */
@@ -849,10 +852,8 @@ public:
   // Comparison functions (which may be overridden by inheritance)
   inline CbcCompareBase * nodeComparison() const
   { return nodeCompare_;};
-  inline void setNodeComparison(CbcCompareBase * compare)
-  { nodeCompare_ = compare;};
-  inline void setNodeComparison(CbcCompareBase & compare)
-  { nodeCompare_ = &compare;};
+  void setNodeComparison(CbcCompareBase * compare);
+  void setNodeComparison(CbcCompareBase & compare);
   //@}
 
   /** \name Tree methods and subtree methods */
@@ -1008,6 +1009,25 @@ public:
 		       bool infeasible=false,int howOftenInSub=-100,
 		       int whatDepth=-1, int whatDepthInSub=-1);
 //@}
+  /** \name Strategy and sub models
+  
+    See the CbcStrategy class for additional information.
+  */
+  //@{
+
+  /// Get the current strategy
+  inline CbcStrategy * strategy() const
+  { return strategy_;};
+  /// Set the strategy. Clones
+  void setStrategy(CbcStrategy & strategy);
+  /// Get the current parent model
+  inline CbcModel * parentModel() const
+  { return parentModel_;};
+  /// Set the parent model
+  inline void setParentModel(CbcModel & parentModel)
+  { parentModel_ = &parentModel;};
+  //@}
+
 
   /** \name Heuristics and priorities */
   //@{
@@ -1276,6 +1296,10 @@ private:
   int numberStoppedSubTrees_;
   /// Variable selection function
   CbcBranchDecision * branchingMethod_;
+  /// Strategy
+  CbcStrategy * strategy_;
+  /// Parent model
+  CbcModel * parentModel_;
   /** Whether to automatically do presolve before branch and bound.
       0 - no
       1 - ordinary presolve

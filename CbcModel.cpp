@@ -18,6 +18,7 @@
 #include "CbcBranchActual.hpp"
 #include "CbcHeuristic.hpp"
 #include "CbcModel.hpp"
+#include "CbcStrategy.hpp"
 #include "CbcMessage.hpp"
 #include "OsiRowCut.hpp"
 #include "OsiColCut.hpp"
@@ -371,6 +372,13 @@ CbcModel::analyzeObjective ()
 void CbcModel::branchAndBound() 
 
 {
+  // Set up strategies
+  if (strategy_) {
+    strategy_->setupCutGenerators(*this);
+    strategy_->setupHeuristics(*this);
+    strategy_->setupPrinting(*this);
+    strategy_->setupOther(*this);
+  }
 # ifdef CBC_DEBUG
   std::string problemName ;
   solver_->getStrParam(OsiProbName,problemName) ;
@@ -484,13 +492,7 @@ void CbcModel::branchAndBound()
   Set up an empty heap and associated data structures to hold the live set
   (problems which require further exploration).
 */
-  CbcCompareObjective compareObjective ;
-  CbcCompareDepth compareDepth ;
-  CbcCompareDefault compareDefault ;
-  if (!nodeCompare_)
-    tree_->setComparison(compareDefault) ;
-  else
-    tree_->setComparison(*nodeCompare_) ;
+  tree_->setComparison(*nodeCompare_) ;
 /*
   Used to record the path from a node to the root of the search tree, so that
   we can then traverse from the root to the node when restoring a subproblem.
@@ -723,24 +725,10 @@ void CbcModel::branchAndBound()
   { if (cutoff > getCutoff()) {
       // Do from deepest
       tree_->cleanTree(this, getCutoff(),bestPossibleObjective_) ;
-      if (!nodeCompare_) {
-	if (!compareDefault.getWeight()) {
-	  // set to get close to this
-	  double costPerInteger = 
-	    (bestObjective_-continuousObjective_)/
-	    ((double) continuousInfeasibilities_) ;
-	  compareDefault.setWeight(0.98*costPerInteger) ;
-	  /*printf("Setting weight per infeasibility to %g\n",
-	    0.98*costPerInteger);*/
-	}
-	tree_->setComparison(compareDefault) ;
-	//tree_->setComparison(compareObjective) ;
-      } else {
-	nodeCompare_->newSolution(this) ;
-	nodeCompare_->newSolution(this,continuousObjective_,
-				  continuousInfeasibilities_) ;
-	tree_->setComparison(*nodeCompare_) ;
-      }
+      nodeCompare_->newSolution(this) ;
+      nodeCompare_->newSolution(this,continuousObjective_,
+                                continuousInfeasibilities_) ;
+      tree_->setComparison(*nodeCompare_) ;
       if (tree_->empty())
 	break; // finished
     }
@@ -751,7 +739,7 @@ void CbcModel::branchAndBound()
     + check if we've closed the integrality gap enough to quit, 
     + print a summary line to let the user know we're working
 */
-    if ((numberNodes_%1000) == 0&&nodeCompare_) {
+    if ((numberNodes_%1000) == 0) {
       bool redoTree=nodeCompare_->every1000Nodes(this, numberNodes_) ;
       // redo tree if wanted
       if (redoTree)
@@ -1291,9 +1279,11 @@ CbcModel::CbcModel()
   dblParam_[CbcAllowableFractionGap] = 0.0;
   dblParam_[CbcMaximumSeconds] = 1.0e100;
   dblParam_[CbcStartSeconds] = 0.0;
-  nodeCompare_=NULL;
+  nodeCompare_=new CbcCompareDefault();;
   tree_= new CbcTree();
   branchingMethod_=NULL;
+  strategy_=NULL;
+  parentModel_=NULL;
   appData_=NULL;
   handler_ = new CoinMessageHandler();
   handler_->setLogLevel(2);
@@ -1365,9 +1355,11 @@ CbcModel::CbcModel(const OsiSolverInterface &rhs)
   dblParam_[CbcMaximumSeconds] = 1.0e100;
   dblParam_[CbcStartSeconds] = 0.0;
 
-  nodeCompare_=NULL;
+  nodeCompare_=new CbcCompareDefault();;
   tree_= new CbcTree();
   branchingMethod_=NULL;
+  strategy_=NULL;
+  parentModel_=NULL;
   appData_=NULL;
   handler_ = new CoinMessageHandler();
   handler_->setLogLevel(2);
@@ -1570,9 +1562,14 @@ CbcModel::CbcModel(const CbcModel & rhs, bool noTree)
   } else {
     originalColumns_=NULL;
   }
-  nodeCompare_=rhs.nodeCompare_;
+  nodeCompare_=rhs.nodeCompare_->clone();
   tree_= rhs.tree_->clone();
   branchingMethod_=rhs.branchingMethod_;
+  if (rhs.strategy_)
+    strategy_=rhs.strategy_->clone();
+  else
+    strategy_=NULL;
+  parentModel_=rhs.parentModel_;
   appData_=rhs.appData_;
   messages_ = rhs.messages_;
   ourSolver_ = true ;
@@ -1780,10 +1777,16 @@ CbcModel::operator=(const CbcModel& rhs)
     } else {
       originalColumns_=NULL;
     }
-    nodeCompare_=rhs.nodeCompare_;
+    nodeCompare_=rhs.nodeCompare_->clone();
     delete tree_;
     tree_= rhs.tree_->clone();
     branchingMethod_=rhs.branchingMethod_;
+    delete strategy_;
+    if (rhs.strategy_)
+      strategy_=rhs.strategy_->clone();
+    else
+      strategy_=NULL;
+    parentModel_=rhs.parentModel_;
     appData_=rhs.appData_;
 
     delete [] integerVariable_;
@@ -1859,6 +1862,8 @@ CbcModel::gutsOfDestructor()
     delete heuristic_[i];
   delete [] heuristic_;
   heuristic_=NULL;
+  delete nodeCompare_;
+  nodeCompare_=NULL;
   delete [] addedCuts_;
   addedCuts_=NULL;
   nextRowCut_ = NULL;
@@ -1873,6 +1878,7 @@ CbcModel::gutsOfDestructor()
   priority_=NULL;
   delete [] originalColumns_;
   originalColumns_=NULL;
+  delete strategy_;
 }
 // Are there a numerical difficulties?
 bool 
@@ -5316,4 +5322,59 @@ double
 CbcModel::getBestPossibleObjValue() const
 { 
   return CoinMin(bestPossibleObjective_,bestObjective_) * solver_->getObjSense() ;
+}
+// Make given rows (L or G) into global cuts and remove from lp
+void 
+CbcModel::makeGlobalCuts(int number,const int * which)
+{
+  const double * rowLower = solver_->getRowLower();
+  const double * rowUpper = solver_->getRowUpper();
+
+  int numberRows = solver_->getNumRows();
+
+  // Row copy
+  const double * elementByRow = solver_->getMatrixByRow()->getElements();
+  const int * column = solver_->getMatrixByRow()->getIndices();
+  const CoinBigIndex * rowStart = solver_->getMatrixByRow()->getVectorStarts();
+  const int * rowLength = solver_->getMatrixByRow()->getVectorLengths();
+
+  // Not all rows may be good so we need new array
+  int * whichDelete = new int[numberRows];
+  int nDelete=0;
+  for (int i=0;i<number;i++) {
+    int iRow = which[i];
+    if (iRow>=0&&iRow<numberRows) {
+      if (rowLower[iRow]<-1.0e20||rowUpper[iRow]>1.0e20) {
+        whichDelete[nDelete++]=iRow;
+        OsiRowCut  thisCut;
+        thisCut.setLb(rowLower[iRow]);
+        thisCut.setUb(rowUpper[iRow]);
+        int start = rowStart[iRow];
+        thisCut.setRow(rowLength[iRow],column+start,elementByRow+start);
+        globalCuts_.insert(thisCut) ;
+      }
+    }
+  }
+  if (nDelete)
+    solver_->deleteRows(nDelete,whichDelete);
+  delete [] whichDelete;
+}
+void 
+CbcModel::setNodeComparison(CbcCompareBase * compare)
+{ 
+  delete nodeCompare_;
+  nodeCompare_ = compare->clone();
+}
+void 
+CbcModel::setNodeComparison(CbcCompareBase & compare)
+{ 
+  delete nodeCompare_;
+  nodeCompare_ = compare.clone();
+}
+// Set the strategy. Clones
+void 
+CbcModel::setStrategy(CbcStrategy & strategy)
+{
+  delete strategy_;
+  strategy_ = strategy.clone();
 }

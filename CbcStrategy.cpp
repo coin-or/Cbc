@@ -1,0 +1,188 @@
+// Copyright (C) 2005, International Business Machines
+// Corporation and others.  All Rights Reserved.
+#if defined(_MSC_VER)
+// Turn off compiler warning about long names
+#  pragma warning(disable:4786)
+#endif
+#include <cassert>
+#include <cmath>
+#include <cfloat>
+
+#include "OsiSolverInterface.hpp"
+#include "CbcModel.hpp"
+#include "CbcMessage.hpp"
+#include "CbcStrategy.hpp"
+#include "CbcCutGenerator.hpp"
+// Cuts
+
+#include "CglGomory.hpp"
+#include "CglProbing.hpp"
+#include "CglKnapsackCover.hpp"
+#include "CglOddHole.hpp"
+#include "CglClique.hpp"
+#include "CglFlowCover.hpp"
+#include "CglMixedIntegerRounding.hpp"
+
+// Heuristics
+
+#include "CbcHeuristic.hpp"
+
+// Default Constructor
+CbcStrategy::CbcStrategy() 
+  :depth_(0)
+{
+}
+
+// Destructor 
+CbcStrategy::~CbcStrategy ()
+{
+}
+
+// Setup cut generators
+void 
+CbcStrategy::setupCutGenerators(CbcModel & model)
+{
+}
+// Setup heuristics
+void 
+CbcStrategy::setupHeuristics(CbcModel & model)
+{
+}
+// Do printing stuff
+void 
+CbcStrategy::setupPrinting(CbcModel & model)
+{
+}
+// Other stuff e.g. strong branching
+void 
+CbcStrategy::setupOther(CbcModel & model)
+{
+}
+
+// Default Constructor
+CbcStrategyDefault::CbcStrategyDefault(bool cutsOnlyAtRoot,
+                                       int numberStrong,
+                                       int printLevel)
+  :CbcStrategy(),
+   cutsOnlyAtRoot_(cutsOnlyAtRoot),
+   numberStrong_(numberStrong),
+   printLevel_(printLevel)
+{
+}
+
+
+// Destructor 
+CbcStrategyDefault::~CbcStrategyDefault ()
+{
+}
+
+// Clone
+CbcStrategy *
+CbcStrategyDefault::clone() const
+{
+  return new CbcStrategyDefault(*this);
+}
+
+// Copy constructor 
+CbcStrategyDefault::CbcStrategyDefault(const CbcStrategyDefault & rhs)
+:
+  CbcStrategy(rhs),
+  cutsOnlyAtRoot_(rhs.cutsOnlyAtRoot_),
+  numberStrong_(rhs.numberStrong_),
+  printLevel_(rhs.printLevel_)
+{
+  setNested(rhs.getNested());
+}
+
+// Setup cut generators
+void 
+CbcStrategyDefault::setupCutGenerators(CbcModel & model)
+{
+  // Set up some cut generators and defaults
+  // Probing first as gets tight bounds on continuous
+
+  CglProbing generator1;
+  generator1.setUsingObjective(true);
+  generator1.setMaxPass(3);
+  // Number of unsatisfied variables to look at
+  generator1.setMaxProbe(10);
+  // How far to follow the consequences
+  generator1.setMaxLook(50);
+  // Only look at rows with fewer than this number of elements
+  generator1.setMaxElements(200);
+  generator1.setRowCuts(3);
+
+  CglGomory generator2;
+  // try larger limit
+  generator2.setLimit(300);
+
+  CglKnapsackCover generator3;
+
+  CglOddHole generator4;
+  generator4.setMinimumViolation(0.005);
+  generator4.setMinimumViolationPer(0.00002);
+  // try larger limit
+  generator4.setMaximumEntries(200);
+
+  CglClique generator5;
+  generator5.setStarCliqueReport(false);
+  generator5.setRowCliqueReport(false);
+
+  CglMixedIntegerRounding mixedGen;
+  CglFlowCover flowGen;
+  
+  // Add in generators
+  int setting = cutsOnlyAtRoot_ ? -99 : -1;
+
+  model.addCutGenerator(&generator1,setting,"Probing");
+  model.addCutGenerator(&generator2,setting,"Gomory");
+  model.addCutGenerator(&generator3,setting,"Knapsack");
+  model.addCutGenerator(&generator4,setting,"OddHole");
+  model.addCutGenerator(&generator5,setting,"Clique");
+  model.addCutGenerator(&flowGen,setting,"FlowCover");
+  model.addCutGenerator(&mixedGen,setting,"MixedIntegerRounding");
+  // Say we want timings
+  int numberGenerators = model.numberCutGenerators();
+  int iGenerator;
+  for (iGenerator=0;iGenerator<numberGenerators;iGenerator++) {
+    CbcCutGenerator * generator = model.cutGenerator(iGenerator);
+    generator->setTiming(true);
+  }
+  if (model.getNumCols()<500)
+    model.setMaximumCutPassesAtRoot(-100); // always do 100 if possible
+  else if (model.getNumCols()<5000)
+    model.setMaximumCutPassesAtRoot(100); // use minimum drop
+  else
+    model.setMaximumCutPassesAtRoot(20);
+}
+// Setup heuristics
+void 
+CbcStrategyDefault::setupHeuristics(CbcModel & model)
+{
+  // Allow rounding heuristic
+
+  CbcRounding heuristic1(model);
+  model.addHeuristic(&heuristic1);
+}
+// Do printing stuff
+void 
+CbcStrategyDefault::setupPrinting(CbcModel & model)
+{
+  if (!printLevel_) {
+    model.solver()->setHintParam(OsiDoReducePrint,true,OsiHintTry);
+    model.messageHandler()->setLogLevel(1);
+    model.solver()->messageHandler()->setLogLevel(0);
+  } else {
+    model.messageHandler()->setLogLevel(2);
+    model.solver()->messageHandler()->setLogLevel(1);
+    model.setPrintFrequency(50);
+  }
+}
+// Other stuff e.g. strong branching
+void 
+CbcStrategyDefault::setupOther(CbcModel & model)
+{
+  model.setNumberStrong(numberStrong_);
+}
+
+  

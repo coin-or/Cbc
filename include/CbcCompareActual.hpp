@@ -87,6 +87,9 @@ public:
   // Return true if want tree re-sorted
   virtual bool every1000Nodes(CbcModel * model,int numberNodes);
 
+  /* if weight == -1.0 then depth first (before solution)
+     if -2.0 then do breadth first just for first 1000 nodes
+  */
   inline double getWeight() const
   { return weight_;};
   inline void setWeight(double weight)
@@ -94,6 +97,8 @@ public:
 protected:
   // Weight for each infeasibility
   double weight_;
+  // Weight for each infeasibility - computed from solution
+  double saveWeight_;
   // Number of solutions
   int numberSolutions_;
   // Tree size (at last check)

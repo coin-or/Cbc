@@ -2188,6 +2188,7 @@ CbcFollowOn::createBranch(int way) const
   }
   //printf("way %d\n",way);
   // create object
+  //printf("would fix %d down and %d up\n",nDown,nUp);
   CbcBranchingObject * branch
      = new CbcFixingBranchingObject(model_,way,
 					 nDown,downList,nUp,upList);
@@ -2269,6 +2270,7 @@ CbcFixingBranchingObject::branch(bool normalBranch)
 #ifdef FULL_PRINT
     printf("Down Fix ");
 #endif
+    //printf("Down Fix %d\n",numberDown_);
     for (i=0;i<numberDown_;i++) {
       int iColumn = downList_[i];
       model_->solver()->setColUpper(iColumn,columnLower[iColumn]);
@@ -2281,6 +2283,7 @@ CbcFixingBranchingObject::branch(bool normalBranch)
 #ifdef FULL_PRINT
     printf("Up Fix ");
 #endif
+    //printf("Up Fix %d\n",numberUp_);
     for (i=0;i<numberUp_;i++) {
       int iColumn = upList_[i];
       model_->solver()->setColUpper(iColumn,columnLower[iColumn]);

@@ -112,6 +112,7 @@ CbcCompareObjective::test (CbcNode * x, CbcNode * y)
 CbcCompareDefault::CbcCompareDefault ()
   : CbcCompareBase(),
     weight_(-1.0),
+    saveWeight_(0.0),
     numberSolutions_(0),
     treeSize_(0)
 {
@@ -122,6 +123,7 @@ CbcCompareDefault::CbcCompareDefault ()
 CbcCompareDefault::CbcCompareDefault (double weight) 
   : CbcCompareBase(),
     weight_(weight) ,
+    saveWeight_(0.0),
     numberSolutions_(0),
     treeSize_(0)
 {
@@ -135,6 +137,7 @@ CbcCompareDefault::CbcCompareDefault ( const CbcCompareDefault & rhs)
 
 {
   weight_=rhs.weight_;
+  saveWeight_ = rhs.saveWeight_;
   numberSolutions_=rhs.numberSolutions_;
   treeSize_ = rhs.treeSize_;
 }
@@ -153,6 +156,7 @@ CbcCompareDefault::operator=( const CbcCompareDefault& rhs)
   if (this!=&rhs) {
     CbcCompareBase::operator=(rhs);
     weight_=rhs.weight_;
+    saveWeight_ = rhs.saveWeight_;
     numberSolutions_=rhs.numberSolutions_;
     treeSize_ = rhs.treeSize_;
   }
@@ -168,6 +172,8 @@ CbcCompareDefault::~CbcCompareDefault ()
 bool 
 CbcCompareDefault::test (CbcNode * x, CbcNode * y)
 {
+#if 0
+  // was
   if (weight_<0.0||treeSize_>100000) {
     // before solution
     /* printf("x %d %d %g, y %d %d %g\n",
@@ -184,6 +190,25 @@ CbcCompareDefault::test (CbcNode * x, CbcNode * y)
     return x->objectiveValue()+ weight_*x->numberUnsatisfied() > 
       y->objectiveValue() + weight_*y->numberUnsatisfied();
   }
+#else
+  if (weight_==-1.0) {
+    // before solution
+    /* printf("x %d %d %g, y %d %d %g\n",
+       x->numberUnsatisfied(),x->depth(),x->objectiveValue(),
+       y->numberUnsatisfied(),y->depth(),y->objectiveValue()); */
+    if (x->numberUnsatisfied() > y->numberUnsatisfied())
+      return true;
+    else if (x->numberUnsatisfied() < y->numberUnsatisfied())
+      return false;
+    else
+      return x->depth() < y->depth();
+  } else {
+    // after solution
+    double weight = CoinMax(weight_,0.0);
+    return x->objectiveValue()+ weight*x->numberUnsatisfied() > 
+      y->objectiveValue() + weight*y->numberUnsatisfied();
+  }
+#endif
 }
 // This allows method to change behavior as it is called
 // after each solution
@@ -207,10 +232,29 @@ CbcCompareDefault::newSolution(CbcModel * model,
 bool 
 CbcCompareDefault::every1000Nodes(CbcModel * model, int numberNodes)
 {
+#if 0
+  // was
   if (numberNodes>10000)
     weight_ =0.0; // this searches on objective
   // get size of tree
   treeSize_ = model->tree()->size();
+#else
+  if (numberNodes>10000)
+    weight_ =0.0; // this searches on objective
+  else if (numberNodes==1000&&weight_==-2.0)
+    weight_=-1.0; // Go to depth first
+  // get size of tree
+  treeSize_ = model->tree()->size();
+  if (treeSize_>10000) {
+    // set weight to reduce size most of time
+    if (treeSize_>20000)
+      weight_=-1.0;
+    else if ((numberNodes%4000)!=0)
+      weight_=-1.0;
+    else
+      weight_=saveWeight_;
+  }
+#endif
   return numberNodes==11000; // resort if first time
 }
 

@@ -167,6 +167,15 @@ public:
   */
   inline void setWhenInfeasible(bool value) 
   { whenInfeasible_=value;};
+  /// Get whether the cut generator is being timed
+  inline bool timing() const
+  { return timing_;};
+  /// Set whether the cut generator is being timed
+  inline void setTiming(bool value) 
+  { timing_=value; timeInCutGenerator_=0.0;};
+  /// Return time taken in cut generator
+  inline double timeInCutGenerator() const
+  { return timeInCutGenerator_;};
   /// Get the \c CglCutGenerator corresponding to this \c CbcCutGenerator.
   inline CglCutGenerator * generator() const
   { return generator_;};
@@ -231,6 +240,10 @@ private:
 
   /// Whether to call generator when a subproblem is found to be infeasible
   bool whenInfeasible_;
+  /// Whether call generator being timed
+  bool timing_;
+  /// Time in cut generator
+  double timeInCutGenerator_;
   
   /// Number times cut generator entered
   int numberTimes_;

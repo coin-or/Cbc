@@ -405,6 +405,21 @@ public:
   }
 
   /** Set the
+      \link CbcModel::CbcMaximumSeconds maximum number of seconds \endlink
+      desired.
+  */
+  inline bool setMaximumSeconds( double value) {
+    return setDblParam(CbcMaximumSeconds,value);
+  }
+  /** Get the
+      \link CbcModel::CbcMaximumSeconds maximum number of seconds \endlink
+      desired.
+  */
+  inline double getMaximumSeconds() const {
+    return getDblParam(CbcMaximumSeconds);
+  }
+
+  /** Set the
     \link CbcModel::CbcIntegerTolerance integrality tolerance \endlink
   */
   inline bool setIntegerTolerance( double value) {
@@ -1056,17 +1071,23 @@ public:
   void passInMessageHandler(CoinMessageHandler * handler);
   /// Set language
   void newLanguage(CoinMessages::Language language);
-  void setLanguage(CoinMessages::Language language)
+  inline void setLanguage(CoinMessages::Language language)
   {newLanguage(language);};
   /// Return handler
-  CoinMessageHandler * messageHandler() const
+  inline CoinMessageHandler * messageHandler() const
   {return handler_;};
   /// Return messages
-  CoinMessages messages() 
+  inline CoinMessages messages() 
   {return messages_;};
   /// Return pointer to messages
-  CoinMessages * messagesPointer() 
+  inline CoinMessages * messagesPointer() 
   {return &messages_;};
+  /// Set log level
+  inline void setLogLevel(int value)
+  { handler_->setLogLevel(value);};
+  /// Get log level
+  inline int logLevel() const
+  { return handler_->logLevel();};
   //@}
   //---------------------------------------------------------------------------
 

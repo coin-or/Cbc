@@ -13,6 +13,7 @@
 #include "CbcMessage.hpp"
 #include "CbcCutGenerator.hpp"
 #include "CglProbing.hpp"
+#include "CoinTime.hpp"
 
 // Default Constructor 
 CbcCutGenerator::CbcCutGenerator ()
@@ -26,6 +27,8 @@ CbcCutGenerator::CbcCutGenerator ()
     normal_(true),
     atSolution_(false),
     whenInfeasible_(false),
+    timing_(false),
+    timeInCutGenerator_(0.0),
     numberTimes_(0),
     numberCuts_(0),
     numberCutsActive_(0)
@@ -40,6 +43,8 @@ CbcCutGenerator::CbcCutGenerator(CbcModel * model,CglCutGenerator * generator,
   : 
     depthCutGenerator_(whatDepth),
     depthCutGeneratorInSub_(whatDepthInSub),
+    timing_(false),
+    timeInCutGenerator_(0.0),
     numberTimes_(0),
     numberCuts_(0),
     numberCutsActive_(0)
@@ -72,6 +77,8 @@ CbcCutGenerator::CbcCutGenerator ( const CbcCutGenerator & rhs)
   normal_=rhs.normal_;
   atSolution_=rhs.atSolution_;
   whenInfeasible_=rhs.whenInfeasible_;
+  timing_ = rhs.timing_;
+  timeInCutGenerator_ = rhs.timeInCutGenerator_;
   numberTimes_ = rhs.numberTimes_;
   numberCuts_ = rhs.numberCuts_;
   numberCutsActive_ = rhs.numberCutsActive_;
@@ -95,6 +102,8 @@ CbcCutGenerator::operator=( const CbcCutGenerator& rhs)
     normal_=rhs.normal_;
     atSolution_=rhs.atSolution_;
     whenInfeasible_=rhs.whenInfeasible_;
+    timing_ = rhs.timing_;
+    timeInCutGenerator_ = rhs.timeInCutGenerator_;
     numberTimes_ = rhs.numberTimes_;
     numberCuts_ = rhs.numberCuts_;
     numberCutsActive_ = rhs.numberCutsActive_;
@@ -150,6 +159,9 @@ CbcCutGenerator::generateCuts( OsiCuts & cs , bool fullScan, CbcNode * node)
   if (howOften==100)
     doThis=false;
   if (fullScan||doThis) {
+    double time1=0.0;
+    if (timing_)
+      time1 = CoinCpuTime();
     CglTreeInfo info;
     info.level = depth;
     info.pass = pass;
@@ -188,6 +200,8 @@ CbcCutGenerator::generateCuts( OsiCuts & cs , bool fullScan, CbcNode * node)
 	}
       }
     }
+    if (timing_)
+      timeInCutGenerator_ += CoinCpuTime()-time1;
   }
   return returnCode;
 }

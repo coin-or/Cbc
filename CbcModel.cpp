@@ -488,7 +488,7 @@ void CbcModel::branchAndBound()
   CbcCompareDepth compareDepth ;
   CbcCompareDefault compareDefault(dblParam_[CbcInfeasibilityWeight]) ;
   if (!nodeCompare_)
-    tree_->setComparison(compareDepth) ;
+    tree_->setComparison(compareDefault) ;
   else
     tree_->setComparison(*nodeCompare_) ;
 /*

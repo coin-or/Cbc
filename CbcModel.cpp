@@ -4367,8 +4367,8 @@ CbcModel::integerPresolveThisModel(OsiSolverInterface * originalSolver,
     if (clpSolver) {
       ClpSimplex * clp = clpSolver->getModelPtr();
       ClpPresolve pinfo;
-      printf("integerPresolve - temp switch off doubletons\n");
-      pinfo.setPresolveActions(4);
+      //printf("integerPresolve - temp switch off doubletons\n");
+      //pinfo.setPresolveActions(4);
       ClpSimplex * model2 = pinfo.presolvedModel(*clp,1.0e-8);
       if (!model2) {
 	// presolve found to be infeasible

@@ -164,7 +164,7 @@ void verifyTreeNodes (const CbcTree * branchingTree, const CbcModel &model)
   
   return ; }
 
-#endif 	/* CHECK_NODE_FULL */
+#endif	/* CHECK_NODE_FULL */
 
 
 
@@ -580,11 +580,11 @@ void CbcModel::branchAndBound()
       if (anyAction == -1)
       { feasible = resolve() ;
 	resolved = true ;
-#       ifdef CBC_DEBUG
+#	ifdef CBC_DEBUG
 	printf("Resolve (root) as something fixed, Obj value %g %d rows\n",
 		  solver_->getObjValue(),
 		  solver_->getNumRows()) ;
-#       endif
+#	endif
 	if (!feasible) anyAction = -2 ; }
       if (anyAction == -2||newNode->objectiveValue() >= cutoff)
       { delete newNode ;
@@ -801,7 +801,7 @@ void CbcModel::branchAndBound()
 #   endif
 
 /*
-  Rebuild the subproblem for this node:  Call addCuts() to adjust the model
+  Rebuild the subproblem for this node:	 Call addCuts() to adjust the model
   to recreate the subproblem for this node (set proper variable bounds, add
   cuts, create a basis).  This may result in the problem being fathomed by
   bound or infeasibility. Returns 1 if node is fathomed.
@@ -823,13 +823,13 @@ void CbcModel::branchAndBound()
       bool deleteNode ;
       if (node->branch())
       { tree_->push(node) ;
-        nodeOnTree=true; // back on tree
+	nodeOnTree=true; // back on tree
 	deleteNode = false ;
-#       ifdef CHECK_NODE
+#	ifdef CHECK_NODE
 	printf("Node %x pushed back on tree - %d left, %d count\n",node,
 	       nodeInfo->numberBranchesLeft(),
 	       nodeInfo->numberPointingToThis()) ;
-#       endif
+#	endif
       }
       else
       { deleteNode = true ; }
@@ -913,7 +913,7 @@ void CbcModel::branchAndBound()
 #	      ifdef CHECK_CUT_COUNTS
 	      { printf("Number of rows after chooseBranch fix (node)"
 		       "(active only) %d\n",
-		        numberRowsAtContinuous_+numberNewCuts+
+			numberRowsAtContinuous_+numberNewCuts+
 			numberOldActiveCuts) ;
 		const CoinWarmStartBasis* debugws =
 		  dynamic_cast<const CoinWarmStartBasis*>
@@ -980,7 +980,7 @@ void CbcModel::branchAndBound()
 	      {
 #		ifdef CHECK_CUT_COUNTS
 		printf("Count on cut %x increased by %d\n",addedCuts_[i],
-		        numberLeft-1) ;
+			numberLeft-1) ;
 #		endif
 		addedCuts_[i]->increment(numberLeft-1) ; } }
 
@@ -2075,16 +2075,16 @@ int CbcModel::addCuts (CbcNode *node, CoinWarmStartBasis *&lastws)
       CoinWarmStartBasis::Status status = 
 	lastws->getArtifStatus(i+numberRowsAtContinuous_);
       if (status != CoinWarmStartBasis::basic&&addedCuts_[i]) {
-#       ifdef CHECK_CUT_COUNTS
+#	ifdef CHECK_CUT_COUNTS
 	printf("Using cut %d %x as row %d\n",i,addedCuts_[i],
 	       numberRowsAtContinuous_+numberToAdd);
-#       endif
+#	endif
 	lastws->setArtifStatus(numberToAdd+numberRowsAtContinuous_,status);
 	addCuts[numberToAdd++] = new OsiRowCut(*addedCuts_[i]);
       } else {
-#       ifdef CHECK_CUT_COUNTS
+#	ifdef CHECK_CUT_COUNTS
 	printf("Dropping cut %d %x\n",i,addedCuts_[i]);
-#       endif
+#	endif
 	addedCuts_[i]=NULL;
       }
     }
@@ -2208,7 +2208,7 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node,
     numberNewCuts: (o) the number of cuts produced in this round of cut
 		       generation
     maximumWhich: (i/o) capacity of whichGenerator; may be updated if
-		        whichGenerator grows.
+			whichGenerator grows.
 
     node: (currently unused)
 */
@@ -2676,7 +2676,7 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node,
     if (numberRowCuts > 0 || numberColumnCuts > 0)
     { if (numberToAdd > 0)
       { int i ;
-        // Faster to add all at once
+	// Faster to add all at once
 	const OsiRowCut ** addCuts = new const OsiRowCut * [numberToAdd] ;
 	for (i = 0 ; i < numberToAdd ; i++)
 	{ addCuts[i] = &theseCuts.rowCut(i) ; }
@@ -2726,7 +2726,7 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node,
   best, and we're evaluating an alternative optimum.
 
   TODO: After successive rounds of code motion, there seems no need to
-        distinguish between the two checks for aborting the cut generation
+	distinguish between the two checks for aborting the cut generation
 	loop. Confirm and clean up.
 */
     if (feasible)
@@ -2911,7 +2911,7 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node,
 /*
   Remove slack cuts. We obtain a basis and scan it. Cuts with basic slacks
   are purged. If any cuts are purged, resolve() is called to restore the
-  solution held in the solver.  If resolve() pivots, there's the possibility
+  solution held in the solver.	If resolve() pivots, there's the possibility
   that a slack may be pivoted in (trust me :-), so the process iterates.
   Setting allowResolve to false will suppress reoptimisation (but see note
   below).
@@ -4557,9 +4557,9 @@ CbcModel::integerPresolveThisModel(OsiSolverInterface * originalSolver,
 	    int jColumn = original[iColumn];
 	    if (jColumn >= 0) {
 	      if (upper[jColumn]<originalUpper[iColumn]) 
-		originalUpper[iColumn]  = upper[jColumn];
+		originalUpper[iColumn]	= upper[jColumn];
 	      if (lower[jColumn]>originalLower[iColumn]) 
-		originalLower[iColumn]  = lower[jColumn];
+		originalLower[iColumn]	= lower[jColumn];
 	    }
 	  }
 	}

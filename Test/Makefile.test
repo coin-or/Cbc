@@ -77,7 +77,8 @@ ifeq ($(OptLevel),-g)
 endif
 
 TESTSRC := CbcMain.cpp
-TESTSRC += CbcOrClpParam.cpp
+#TESTSRC += CbcOrClpParam.cpp
+TESTSRC += CbcParam.cpp
 TESTSRC += unitTest.cpp
 
 ###############################################################################

@@ -600,6 +600,8 @@ void CbcModel::branchAndBound()
   current objective cutoff.
 */
   assert (!newNode || newNode->objectiveValue() <= cutoff) ;
+  // Save address of root node as we don't want to delete it
+  CbcNode * rootNode = newNode;
 /*
   The common case is that the lp relaxation is feasible but doesn't satisfy
   integrality (i.e., newNode->variable() >= 0, indicating we've been able to
@@ -1057,7 +1059,7 @@ void CbcModel::branchAndBound()
 	tree_->cleanTree(this,-COIN_DBL_MAX) ;
 	delete nextRowCut_;
 	// We need to get rid of node if is has already been popped from tree
-	if (!nodeOnTree&&!stoppedOnGap)
+	if (!nodeOnTree&&!stoppedOnGap&&node!=rootNode)
 	  delete node;
 	if (stoppedOnGap)
 	{ messageHandler()->message(CBC_GAP,messages())

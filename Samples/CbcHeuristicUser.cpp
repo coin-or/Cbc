@@ -76,7 +76,7 @@ CbcLocalSearch::CbcLocalSearch(const CbcLocalSearch & rhs)
 void 
 CbcLocalSearch::resetModel(CbcModel * model)
 {
-  CbcHeuristic::resetModel(model);
+  //CbcHeuristic::resetModel(model);
   delete [] used_;
   if (model_&&used_) {
     int numberColumns = model_->solver()->getNumCols();

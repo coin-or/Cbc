@@ -125,11 +125,13 @@ CbcLocalSearch::solutionFix(double & objectiveValue,
       nFix++;
     }
   }
+  //model_->messageHandler()->setLogLevel(2);
   int returnCode=model_->subBranchAndBound(colLower,colUpper,500);
+  //model_->messageHandler()->setLogLevel(1);
+  int numberColumns = solver->getNumCols();
   delete solver;
   if (returnCode<2) {
     // already updated in model but synchronize
-    int numberColumns = solver->getNumCols();
     memcpy(newSolution,model_->bestSolution(),numberColumns*sizeof(double));
     objectiveValue=model_->getObjValue();
     return 1;
@@ -565,14 +567,17 @@ CbcLocalSearch::solution(double & solutionValue,
 // update model
 void CbcLocalSearch::setModel(CbcModel * model)
 {
+  CbcModel * oldModel = model_;
   model_ = model;
   // Get a copy of original matrix
   assert(model_->solver());
   matrix_ = *model_->solver()->getMatrixByCol();
-  delete [] used_;
-  int numberColumns = model->solver()->getNumCols();
-  used_ = new char[numberColumns];
-  memset(used_,0,numberColumns);
+  int numberColumns = model_->solver()->getNumCols();
+  if (!oldModel||numberColumns!=model_->solver()->getNumCols()) {
+    delete [] used_;
+    used_ = new char[numberColumns];
+    memset(used_,0,numberColumns);
+  }
 }
 
   

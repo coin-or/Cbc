@@ -94,7 +94,7 @@ CbcCompareUser::test (CbcNode * x, CbcNode * y)
     else
       return x->depth() < y->depth();
   } else {
-    // after solution or very beginning
+    // after solution
     double weight = CoinMax(weight_,0.0);
     return x->objectiveValue()+ weight*x->numberUnsatisfied() > 
       y->objectiveValue() + weight*y->numberUnsatisfied();

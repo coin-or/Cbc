@@ -1,3 +1,4 @@
+OptLevel := -O1
 OptLevel := -g
 
 DRIVER ?= driver
@@ -71,7 +72,7 @@ LDFLAGS += $(patsubst lib%,-l%,$(basename $(LIBS)))
 
 ifeq ($(findstring Linux,${UNAME}),Linux)
 	CXXFLAGS +=	-DREADLINE
-	LDFLAGS += -lhistory -lreadline -ltermcap
+#	LDFLAGS += -lhistory -lreadline -ltermcap
 endif
 CXXFLAGS  += -I. 
 #CXXFLAGS += -DCHECK_CUT_COUNTS
@@ -80,9 +81,10 @@ CXXFLAGS  += -I.
 
 TESTSRC := $(DRIVER).cpp
 TESTSRC += CbcCompareUser.cpp
+TESTSRC += CbcSolver2.cpp
 TESTSRC += CbcBranchUser.cpp
 TESTSRC += CbcHeuristicUser.cpp
-TESTSRC += CbcTreeLocal.cpp
+TESTSRC += CbcHeuristicGreedy.cpp
 TESTOBJ := $(addprefix $(TARGETDIR)/, $(TESTSRC:.cpp=.o))
 TESTDEP := $(addprefix $(DEPDIR)/, $(TESTSRC:.cpp=.d))
 

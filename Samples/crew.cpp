@@ -13,7 +13,6 @@
 #include "OsiClpSolverInterface.hpp"
 #include "CbcModel.hpp"
 #include "CbcBranchActual.hpp"
-#include "CbcBranchUser.hpp"
 #include "CbcCompareUser.hpp"
 
 #include  "CoinTime.hpp"
@@ -51,10 +50,6 @@ int main (int argc, const char *argv[])
   OsiSolverInterface * solver3 = model.solver();
   OsiClpSolverInterface * osiclp = dynamic_cast< OsiClpSolverInterface*> (solver3);
   assert (osiclp);
-
-  // Redundant definition of default branching (as Default == User)
-  CbcBranchUserDecision branch;
-  model.setBranchingMethod(&branch);
 
   // Definition of node choice
   CbcCompareUser compare;

@@ -111,10 +111,17 @@ int main (int argc, const char *argv[])
   int numberIntegers=0;
   for (iColumn=0;iColumn<numberColumns;iColumn++) {
     if (solver3->isInteger(iColumn)) {
-      double costPer = objective[iColumn]/ ((double) columnLength[iColumn]);
+      /*  Branching up gets us much closer to an integer solution so we want
+          to encourage up - so we will branch up if variable value > 0.333333.
+          The expected cost of going up obviously depends on the cost of the
+          variable so we just choose pseudo costs to reflect that.  We could also
+          decide to try and use the pseudo costs to make it more likely to branch
+          on a variable with many coefficients.  This leads to the computation below.
+      */
+      double cost = objective[iColumn]*(1.0 + 0.2*((double) columnLength[iColumn]));
       CbcSimpleIntegerPseudoCost * newObject =
         new CbcSimpleIntegerPseudoCost(&model,numberIntegers,iColumn,
-                                       costPer,costPer);
+                                       2.0*cost,cost);
       newObject->setMethod(3);
       objects[numberIntegers++]= newObject;
     }

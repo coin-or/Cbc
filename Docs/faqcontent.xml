@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<qandaentry>
+  <question>
+  <para>
+  What is <ulink url="http://www.coin-or.org/faqs.html#CBC">CBC</ulink>?
+  </para>
+  </question>
+  <answer>
+  <para>
+  (JF 04/01/05) The <ulink url="http://www.coin-or.org/">COIN-OR</ulink> Branch and Cut code
+  is designed to be a high quality mixed integer code provided under the terms of the
+  <ulink url="http://opensource.org/licenses/cpl.php">Common Public License</ulink>.
+  CBC is written in C++, and is primarily intended to be used as a callable
+  library (though a rudimentary stand-alone executable exists).
+  The first documented release was .90.0  The current release is version .90.0.
+  </para>
+  </answer>
+</qandaentry>
+<qandaentry>
+  <question>
+  <para>
+  What are some of the features of CBC?
+  </para>
+  </question>
+  <answer>
+  <para>
+  (JF 04/01/05) CBC allows the use of any Cgl cuts and the use of heuristics and
+   specialized branching methods.
+  </para>
+  </answer>
+</qandaentry>
+<qandaentry>
+  <question>
+  <para>
+  How do I obtain and install CBC?
+  </para>
+  </question>
+  <answer>
+  <para>
+  (JF 04/01/05) Please see the
+  <ulink url="http://www.coin-or.org/faqs.html">COIN-OR FAQ</ulink>
+  for details on how to
+  <ulink url="http://www.coin-or.org/faqs.html#ObtainSrcCode">obtain</ulink>
+  and
+  <ulink url="http://www.coin-or.org/faqs.html#BuildCode">install</ulink>
+  COIN-OR modules.
+  </para>
+  </answer>
+</qandaentry>
+<qandaentry>
+  <question>
+  <para>
+  Is CBC reliable?
+  </para>
+  </question>
+  <answer>
+  <para>
+  (JF 04/01/05) CBC has been tested on many problems,
+  but more testing and improvement is needed before it can get to version 1.0.
+  </para>
+  </answer>
+</qandaentry>
+<qandaentry>
+  <question>
+  <para>
+  Is there any documentation for CBC?  
+  </para>
+  </question>
+  <answer>
+  <para>
+  (JF 04/01/05) If you can see this you have the best there is:-)
+  Also available is a list of
+  <ulink url="http://www.coin-or.org/Doxygen/Cbc/">CBC class descriptions</ulink> generated
+  by <ulink url="http://www.doxygen.org">Doxygen</ulink>.
+  </para>
+  </answer>
+</qandaentry>
+<qandaentry>
+  <question>
+  <para>
+  Is CBC as fast as Cplex or Xpress?
+  </para>
+  </question>
+  <answer>
+  <para>
+   (JF 04/01/05) No.  However its design is much more flexible so advanced users
+   will be able to tailor CBC to their needs.
+  </para>
+  </answer>
+</qandaentry>
+<qandaentry>
+  <question>
+  <para>
+  When will version 1.0 of CBC be available?  
+  </para>
+  </question>
+  <answer>
+  <para>
+  (JF 04/01/05) It is expected that version 1.0 will be released in time for the 2005
+  <ulink url="http://www.informs.org">INFORMS</ulink>
+  </para>
+  </answer>
+</qandaentry>
+<qandaentry>
+  <question>
+  <para>
+  What can the community do to help?
+  </para>
+  </question>
+  <answer>
+  <para>
+  (JF 04/01/05) People from all around the world  are already helping.  There are
+  probably ten people who are do not always post to discussions but are constantly
+  "improving" the code by demanding performance or bug fixes or enhancements.  And there
+  are others posting questions to discussion groups.
+  </para>
+  </answer>
+</qandaentry>

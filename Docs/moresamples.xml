@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<chapter id="moreexamples">
+<title>
+More Samples
+</title>
+<section >
+<title>CBC's Samples Directory</title>
+<para>
+The CBC distribution includes a number of <filename>.cpp</filename> sample files.
+Users are encouraged to use them as starting points for their own CBC projects.
+The files can be found in the <filename>&cbcsamplesdir;</filename> directory.
+For the latest information on compiling and running these samples, please see
+the file <filename>&cbcsamplesdir;INSTALL</filename>.  Most of them can be built
+by <programlisting>make DRIVER=name</programlisting> which produces an executable testit.  Below is a list of
+some of the most useful sample files with a short description for each file.
+</para>
+<table frame="none">
+  <title>Basic Samples</title>
+  <tgroup cols="2">
+    <thead>
+      <row>
+        <entry align="left" valign="bottom">
+	Source file&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+	</entry>
+        <entry align="left" valign="bottom">
+	Description
+	</entry>
+      </row>
+    </thead>
+    <tbody>
+      <row>
+        <entry align="left" valign="top">
+	&minimumcpp;
+	</entry>
+        <entry align="left" valign="top">
+	This is a CBC &quot;Hello, world&quot; program.  It reads a problem
+	from an MPS file, and solves the problem.
+	</entry>
+      </row>
+      <row>
+        <entry align="left" valign="top">
+	&sample2cpp;
+	</entry>
+        <entry align="left" valign="top">
+	This is designed to be a file that a user could modify to get a useful
+	driver program for his or her project.  In particular, it demonstrates
+	the use of Cgl's  preprocess functionality.
+        It uses <function>CbcBranchUser.cpp</function>,
+        <function>CbcCompareUser.cpp</function> and
+        <function>CbcHeuristicUser.cpp</function> 
+        with corresponding <function>*.hpp</function> files.
+	</entry>
+      </row>
+    </tbody>
+  </tgroup>
+</table>
+<table frame="none">
+  <title>Advanced Samples</title>
+  <tgroup cols="2">
+    <thead>
+      <row>
+        <entry align="left" valign="bottom">
+	Source file&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+	</entry>
+        <entry align="left" valign="bottom">
+	Description
+	</entry>
+      </row>
+    </thead>
+    <tbody>
+      <row>
+        <entry align="left" valign="top">
+	&crewcpp;
+	</entry>
+        <entry align="left" valign="top">
+	This sample, shows the use of advanced branching and a use of priorities.
+        It uses <function>CbcCompareUser.cpp</function>
+        with corresponding <function>*.hpp</function> files.
+	</entry>
+      </row>
+      <row>
+        <entry align="left" valign="top">
+	&longthincpp;
+	</entry>
+        <entry align="left" valign="top">
+	This sample shows the advanced use of a solver.  It also has coding for
+	a greedy heuristic.
+        The solver is given in <function>CbcSolver2.hpp</function> and
+        <function>CbcSolver2.cpp</function>.
+        The heuristic is given in <function>CbcHeuristicGreedy.hpp</function> and
+        <function>CbcHeuristicGreedy.cpp</function>.
+        It uses <function>CbcBranchUser.cpp</function> and
+        <function>CbcCompareUser.cpp</function>
+        with corresponding <function>*.hpp</function> files.
+	</entry>
+      </row>
+      <row>
+        <entry align="left" valign="top">
+	&qmipcpp;
+	</entry>
+        <entry align="left" valign="top">
+	This solves a quadratic mip.  It is to show advanced use of a solver.
+        The solver is given in <function>ClpQuadInterface.hpp</function> and
+        <function>ClpQuadInterface.cpp</function>.
+        It uses <function>CbcBranchUser.cpp</function> and
+        <function>CbcCompareUser.cpp</function>
+        with corresponding <function>*.hpp</function> files.
+	</entry>
+      </row>
+      <row>
+        <entry align="left" valign="top">
+	&soscpp;
+	</entry>
+        <entry align="left" valign="top">
+	This artificially creates a Special Ordered set problem.
+	</entry>
+      </row>
+      <row>
+        <entry align="left" valign="top">
+	&lotsizecpp;
+	</entry>
+        <entry align="left" valign="top">
+	This artificially creates a lot sizing problem.
+	</entry>
+      </row>
+    </tbody>
+  </tgroup>
+</table>
+
+</section>
+</chapter>

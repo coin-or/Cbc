@@ -1,0 +1,703 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+  <chapter id="cbcmodelclass">
+  <title>
+  Basic Model Classes
+  </title>
+  <section id="hierarchy">
+  <title>
+  Hierarchy and list of classes
+  </title>
+  <para>
+  The class that controls Coin Branch and Cut is CbcModel.  This is where most
+  of the parameter setting is done.  CbcModel uses other classes some of 
+  which are virtual and may have multiple instances.  More details on the more
+  useful classes will be given later.
+  The absolute minimum number of actions for CbcModel is:
+  <function>CbcModel(OsiSolverInterface &amp; linearSolver)</function> as constructor,
+  and <function>branchAndBound()</function> for solving the problem.
+  </para>
+    <table frame="none">
+  <title>Classes used by CbcModel - Most useful</title>
+    <tgroup cols="3">
+    <thead>
+    <row>
+    <entry>
+    Class name 
+    </entry>
+    <entry>
+    Description
+    </entry>
+    <entry>
+    Notes
+    </entry>
+    </row>
+    </thead>
+    <tbody>
+    <row>
+      <entry align="left" valign="top">
+      CbcCompareBase
+      </entry>
+      <entry align="left" valign="top">
+      Controls choice of next node on tree
+      </entry>
+      <entry align="left" valign="top">
+      Default is CbcCompareDefault, others in CbcCompareActual.hpp include
+      CbcCompareDepth and CbcCompareObjective.  Very easy for user to
+      experiment.
+      </entry>
+    </row>
+    <row>
+      <entry align="left" valign="top">
+      CbcCutGenerator
+      </entry>
+      <entry align="left" valign="top">
+      Is a CglCutGenerator with data to decide when to use.
+      </entry>
+      <entry align="left" valign="top">
+      Need to know how to add generator to CbcModel.
+      Not much need to know about details of class.
+      </entry>
+    </row>
+    <row>
+      <entry align="left" valign="top">
+      CbcHeuristic
+      </entry>
+      <entry align="left" valign="top">
+      Heuristic to try and get valid solutions
+      </entry>
+      <entry align="left" valign="top">
+      User can get a lot of value out of coding this.  There can be
+      as many as you like.
+      </entry>
+    </row>
+    <row>
+      <entry align="left" valign="top">
+      CbcObject
+      </entry>
+      <entry align="left" valign="top">
+      Definition of what it means for a variable to be satisfied.
+      </entry>
+      <entry align="left" valign="top">
+      Virtual - instances include simple integer, simple integer with pseudocosts,
+      SOS (type 1 and 2) and lotsizing. (found in CbcBranch..hpp).  An object has to
+      have a method of generating a branching object which defines an up and down
+      branch.
+      </entry>
+    </row>
+    <row>
+      <entry align="left" valign="top">
+      OsiSolverInterface
+      </entry>
+      <entry align="left" valign="top">
+      Defines the solver being used and the LP model.  Is normally
+      passed across to CbcModel before branch and cut.
+      </entry>
+      <entry align="left" valign="top">
+      Virtual class - the user would instantiate a particular solver e.g.
+      OsiClpSolverInterface or OsiXprSolverInterface.
+      </entry>
+    </row>
+    </tbody>
+  </tgroup>
+  </table>
+    <table frame="none">
+  <title>Classes used by CbcModel - Least useful</title>
+    <tgroup cols="3">
+    <thead>
+    <row>
+    <entry>
+    Class name 
+    </entry>
+    <entry>
+    Description
+    </entry>
+    <entry>
+    Notes
+    </entry>
+    </row>
+    </thead>
+    <tbody>
+    <row>
+      <entry align="left" valign="top">
+      CbcBranchDecision
+      </entry>
+      <entry align="left" valign="top">
+      Part of code for choosing which variable to branch on.  Most of 
+      work is done by definitions in CbcObject
+      </entry>
+      <entry align="left" valign="top">
+      Defaults to CbcBranchDefaultDecision
+      Not much need to know about.
+      </entry>
+    </row>
+    <row>
+      <entry align="left" valign="top">
+      CbcCountRowCut
+      </entry>
+      <entry align="left" valign="top">
+      Interface to OsiRowCut but counts use so can gracefully vanish.
+      </entry>
+      <entry align="left" valign="top">
+      See OsiRowCut for extra information.
+      Not much need to know about.
+      </entry>
+    </row>
+    <row>
+      <entry align="left" valign="top">
+      CbcNode
+      </entry>
+      <entry align="left" valign="top">
+      Controls choice of variable/entity to branch on
+      </entry>
+      <entry align="left" valign="top">
+      Controlled via CbcModel parameters.
+      Not much need to know about.
+      </entry>
+    </row>
+    <row>
+      <entry align="left" valign="top">
+      CbcNodeInfo
+      </entry>
+      <entry align="left" valign="top">
+      Contains data for bounds, basis etc for one node of tree
+      </entry>
+      <entry align="left" valign="top">
+      Not much need to know about (header in CbcNode.hpp).
+      </entry>
+    </row>
+    <row>
+      <entry align="left" valign="top">
+      CbcTree
+      </entry>
+      <entry align="left" valign="top">
+      How tree is stored
+      </entry>
+      <entry align="left" valign="top">
+      Can be changed but unlikely.
+      Not much need to know about.
+      </entry>
+    </row>
+    <row>
+      <entry align="left" valign="top">
+      CoinMessageHandler
+      </entry>
+      <entry align="left" valign="top">
+      Deals with message handling
+      </entry>
+      <entry align="left" valign="top">
+      User can inherit from to specialize message handling.  
+      Not much need to know about.
+      </entry>
+    </row>
+    <row>
+      <entry align="left" valign="top">
+      CoinWarmStartBasis
+      </entry>
+      <entry align="left" valign="top">
+      Representation of a basis to be used by solver
+      </entry>
+      <entry align="left" valign="top">
+      Not much need to know about.
+      </entry>
+    </row>
+    </tbody>
+  </tgroup>
+  </table>
+  </section>
+  <section id="firstexample">
+  <title>
+  First Example
+  </title>
+  <para>
+  Below is our first CBC sample program.  It is short enough to present in full
+  (this code can be found in the CBC Samples directory, see
+  <xref linkend="moreexamples"/>).  Most of the remaining examples in this Guide
+  will take the form of small code fragments.
+  </para>
+  <example>
+  <title>minimum.cpp</title>
+  <programlisting>
+  <![CDATA[  
+// Copyright (C) 2005, International Business Machines
+// Corporation and others.  All Rights Reserved.
+
+#include "CbcModel.hpp"
+
+// Using as solver
+#include "OsiClpSolverInterface.hpp"
+
+int main (int argc, const char *argv[])
+{
+  OsiClpSolverInterface solver1;
+  // Read in example model
+  // and assert that it is a clean model
+  int numMpsReadErrors = solver1.readMps("../../Mps/Sample/p0033.mps","");
+  assert(numMpsReadErrors==0);
+
+  // Pass data and solver to CbcModel 
+  CbcModel model(solver1);
+
+  // Do complete search
+  model.branchAndBound();
+  /* Print solution.  CbcModel clones solver so we
+     need to get current copy */
+  int numberColumns = model.solver()->getNumCols();
+    
+  const double * solution = model.solver()->getColSolution();
+    
+  for (int iColumn=0;iColumn<numberColumns;iColumn++) {
+    double value=solution[iColumn];
+    if (fabs(value)>1.0e-7&&model.solver()->isInteger(iColumn)) 
+      printf("%d has value %g\n",iColumn,value);
+  }
+  return 0;
+}    
+  ]]>   
+  </programlisting>
+  </example>
+  <para>
+  This sample program creates a  <classname>OsiClpSolverInterface</classname> solver,
+  reads an MPS file, and if there are no errors, passes it to <classname>CbcModel</classname>
+  which solves it 
+  using the Branch and Bound algorithm.  The part of the program which solves the program 
+  is very small but before that the linear solver had to be created with data and
+  after that the results were printed out.  So the user can see that often knowledge
+  of the <classname>OsiSolverInterface</classname> methods will be necessary.
+  In this case CbcModel has the identical methods so we could have used those but not
+  always.  For instance the program produces a lot of output so one might add
+  <![CDATA[  
+  model.solver()->setHintParam(OsiDoReducePrint,true,OsiHintTry);
+  ]]>   
+  to reduce the amount. That improves things a lot but we still get one message per node
+  so we could add
+  <![CDATA[  
+    model.setLogLevel(1);
+  ]]>   
+  The following section gives many of the ways of getting information from the
+  model or underlying solver.
+  </para>
+  </section>
+  <section id="gettingsolution">
+  <title>
+  Getting at the Solution (CbcModel methods)
+  </title>
+  <para>
+  The OSI way to check for optimality is to call model.isProvenOptimal().  Also
+  available are <function>isProvenInfeasible()</function>,
+  <function>isSolutionLimitReached()</function>,
+  <function>isNodeLimitReached()</function> or the feared
+  <function>isAbandoned()</function>. You can also pick up
+  <function>int&nbsp;status()</function> which returns 0 if finished,
+   1 if stopped by user and 2 if difficulties. (status of 0 even if proved
+   infeasible)
+  </para>
+  <para>
+  Similarly, we can pick up the solution values.  The OSI methods pick up
+  the current solution.  This will match the best solution found so far if
+  called after branchAndBound and if a solution was found.
+  </para>
+  <table frame="none">
+  <title>
+  Methods for getting solution information from OSI solver
+  </title>
+  <tgroup cols="2">
+  <thead>
+    <row>
+      <entry>
+      Purpose
+      </entry>
+      <entry>
+      Name
+      </entry>
+      <entry>
+      Notes
+      </entry>
+    </row>
+  </thead>
+  <tbody>
+    <row>
+      <entry align="left" valign="top">
+      Primal column solution
+      </entry>
+      <entry align="left" valign="top">
+      <function>const double * getColSolution()</function>
+      </entry>
+      <entry align="left" valign="top">
+      Outside CBC will be best solution unless none found.  Safer to use
+      CbcModel::bestSolution()
+      </entry>
+    </row>
+    <row>
+      <entry align="left" valign="top">
+      Dual row solution
+      </entry>
+      <entry align="left" valign="top">
+      <function>const double * getRowPrice()</function>
+      </entry>
+      <entry align="left" valign="top">
+      CbcModel:: version available and identical
+      </entry>
+    </row>
+    <row>
+      <entry align="left" valign="top">
+      Primal row solution
+      </entry>
+      <entry align="left" valign="top">
+      <function>const double * getRowActivity()</function>
+      </entry>
+      <entry align="left" valign="top">
+      CbcModel:: version available and identical
+      </entry>
+    </row>
+    <row>
+      <entry align="left" valign="top">
+      Dual column solution
+      </entry>
+      <entry align="left" valign="top">
+      <function>const double * getReducedCost()</function>
+      </entry>
+      CbcModel:: version available and identical
+      <entry align="left" valign="top">
+      </entry>
+    </row>
+    <row>
+      <entry align="left" valign="top">
+      Number of rows in model
+      </entry>
+      <entry align="left" valign="top">
+      <function>int getNumRows()</function>
+      </entry>
+      <entry align="left" valign="top">
+      CbcModel:: version available and identical
+      (but note that number of rows may change due to cuts)
+      </entry>
+    </row>
+    <row>
+      <entry align="left" valign="top">
+      Number of columns in model
+      </entry>
+      <entry align="left" valign="top">
+      <function>int getNumCols()</function>
+      </entry>
+      <entry align="left" valign="top">
+      CbcModel:: version available and identical
+      </entry>
+    </row>
+  </tbody>
+  </tgroup>
+  </table>
+  <para>
+  The remainder of this chapter will show  more of the basic CBC tasks a user
+  might wish to perform. 
+  </para>
+  </section>
+  <function>double&nbsp;getIntegerTolerance()</function> and
+  <function>setIntegerTolerance(double)</function>.  An integer variable
+  is deemed to be at an integral value if it is no further than this tolerance 
+  away. 
+  <section id="setsandgets">
+  <title>Some Useful Set and Get Methods</title>
+  <table frame="none">
+  <title>Some Useful Set and Get Methods</title>
+    <tgroup cols="2">
+    <thead>
+    <row>
+    <entry>
+    Method(s)
+    </entry>
+    <entry>
+    Description
+    </entry>
+    </row>
+    </thead>
+    <tbody>
+    <row>
+      <entry align="left" valign="top">
+      <function>setMaximumNodes(int value)</function><sbr/>
+      <function>int&nbsp;maximumNodes()</function><sbr/>
+      <function>setMaximumSeconds(double value)</function><sbr/>
+      <function>double&nbsp;maximumSeconds()</function>
+      <function>setMaximumSolutions(double value)</function><sbr/>
+      <function>double&nbsp;maximumSolutions()</function>
+      </entry>
+      <entry align="left" valign="top">
+      These methods tell CBC to stop after a given number of nodes or
+      seconds or solutions (and returns these values).
+      </entry>
+    </row>
+    <row>
+      <entry align="left" valign="top">
+      <function>setIntegerTolerance(double)</function><sbr/>
+      <function>double&nbsp;getIntegerTolerance()</function>
+      </entry>
+      <entry align="left" valign="top">
+      An integer variable
+      is deemed to be at an integral value if it is no further than this tolerance 
+      away. 
+      </entry>
+    </row>
+    <row>
+      <entry align="left" valign="top">
+      <function>setAllowableGap(double)</function><sbr/>
+      <function>double&nbsp;getAllowableGap()</function><sbr/>
+      <function>setAllowablePercentageGap(double)</function><sbr/>
+      <function>double&nbsp;getAllowablePercentageGap()</function><sbr/>
+      <function>setAllowableFractionGap(double)</function><sbr/>
+      <function>double&nbsp;getAllowableFractionGap()</function><sbr/>
+      </entry>
+      <entry align="left" valign="top">
+      CbcModel returns if the gap between the best known solution and the best
+      possible solution is less than this (or as a percentage or fraction).
+      </entry>
+    </row>
+    <row>
+      <entry align="left" valign="top">
+      <function>setNumberStrong(double) </function><sbr/>
+      <function>int&nbsp;numberStrong() </function>
+      </entry>
+      <entry align="left" valign="top">
+      Get or set the maximum number of candidates at a node to
+      be evaluated for strong branching.
+      </entry>
+    </row>
+    <row>
+      <entry align="left" valign="top">
+      <function>setPrintFrequency(int) </function><sbr/>
+      <function>int&nbsp;printFrequency()</function>
+      </entry>
+      <entry align="left" valign="top">
+      Controls the number of nodes evaluated between status prints.
+      Print frequency has very slight overhead if small.
+      </entry>
+    </row>
+    <row>
+      <entry align="left" valign="top">
+      <function>int&nbsp;getNodeCount() </function>
+      </entry>
+      <entry align="left" valign="top">
+      Returns number of nodes search took
+      </entry>
+    </row>
+    <row>
+      <entry align="left" valign="top">
+      <function>int&nbsp;numberRowsAtContinuous()</function>
+      </entry>
+      <entry align="left" valign="top">
+      Returns number of rows at continuous
+      </entry>
+    </row>
+    <row>
+      <entry align="left" valign="top">
+      <function>int &nbsp;numberIntegers()</function><sbr/>
+      <function>const int&nbsp;*&nbsp;integerVariable()</function>
+      </entry>
+      <entry align="left" valign="top">
+      Returns number of integers and an array giving which ones
+      </entry>
+    </row>
+    <row>
+      <entry align="left" valign="top">
+      <function>bool &nbsp;isBinary(int)</function><sbr/>
+      <function>bool &nbsp;isContinuous(int)</function><sbr/>
+      <function>const bool&nbsp;isInteger(int)</function>
+      </entry>
+      <entry align="left" valign="top">
+      Returns information on a variable.  You can use Osi methods
+      to set these attributes (before handing to CbcModel)
+      </entry>
+    </row>
+    <row>
+      <entry align="left" valign="top">
+      <function>double&nbsp;getObjValue()</function>
+      </entry>
+      <entry align="left" valign="top">
+      This method returns the best objective value.so far
+      </entry>
+    </row>
+    <row>
+      <entry align="left" valign="top">
+      <function>double&nbsp;getCurrentObjValue()</function>
+      </entry>
+      <entry align="left" valign="top">
+      This method returns the current objective value.
+      </entry>
+    </row>
+    <row>
+      <entry align="left" valign="top">
+      <function>const&nbsp;double&nbsp;*&nbsp;getObjCoefficients()</function><sbr/>
+      <function>double&nbsp;*&nbsp;objective()</function>
+      </entry>
+      <entry align="left" valign="top">
+      These methods return the objective coefficients.
+      </entry>
+    </row>
+    <row>
+      <entry align="left" valign="top">
+      <function>const&nbsp;double&nbsp;*&nbsp;getRowLower()</function><sbr/>
+      <function>double&nbsp;*&nbsp;rowLower()</function><sbr/>
+      <function>const&nbsp;double&nbsp;*&nbsp;getRowUpper()</function><sbr/>
+      <function>double&nbsp;*&nbsp;rowUpper()</function><sbr/>
+      <function>const&nbsp;double&nbsp;*&nbsp;getColLower()</function><sbr/>
+      <function>double&nbsp;*&nbsp;columnLower()</function><sbr/>
+      <function>const&nbsp;double&nbsp;*&nbsp;getColUpper()</function><sbr/>
+      <function>double&nbsp;*&nbsp;columnUpper()</function>
+      </entry>
+      <entry align="left" valign="top">
+      These methods give lower and upper bounds on row and column activities.
+      </entry>
+    </row>
+    <row>
+      <entry align="left" valign="top">
+      <function>const CoinPackMatrix * getMatrixByRow()</function>
+      </entry>
+      <entry align="left" valign="top">
+      This method returns a pointer to a row copy of matrix 
+      <classname>CoinPackedMatrix</classname> which can be further examined.
+      </entry>
+    </row>
+    <row>
+      <entry align="left" valign="top">
+      <function>const CoinPackMatrix * getMatrixByCol()</function>
+      </entry>
+      <entry align="left" valign="top">
+      This method returns a pointer to a column copy of matrix 
+      <classname>CoinPackedMatrix</classname> which can be further examined.
+      </entry>
+    </row>
+    <row>
+      <entry align="left" valign="top">
+      <function>CoinBigIndex&nbsp;getNumElements()</function>
+      <footnote>
+        <para>
+	<type>CoinBigIndex</type> is a <function>typedef</function> which in
+	most cases is the same as <type>int</type>.
+	</para>
+      </footnote>
+      </entry>
+      <entry align="left" valign="top">
+      Returns the number of elements in the problem matrix.
+      </entry>
+    </row>
+    <row>
+      <entry align="left" valign="top">
+      <function>void setObjSense(double&nbsp;value)</function><sbr/>
+      <function>double objSense()</function>
+      </entry>
+      <entry align="left" valign="top">
+      These methods set and get the objective sense.  The parameter
+      <parameter>value</parameter> should be +1 to minimize and -1 to maximize.
+      </entry>
+    </row>
+    </tbody>
+  </tgroup>
+  </table>
+  </section>
+  <section id="majormethods">
+  <title>
+  Methods which have a major impact on solution process
+  </title>
+  <para>
+  These are important methods which will impact search e.g. adding a cut
+  generator.  The description here may not give all parameters if they are exotic.
+  You will also find more on some of them under the description
+  of that class:
+  </para>
+  <table frame="none">
+  <title>Major methods</title>
+    <tgroup cols="2">
+    <thead>
+    <row>
+    <entry>
+    Method(s)
+    </entry>
+    <entry>
+    Description
+    </entry>
+    </row>
+    </thead>
+    <tbody>
+    <row>
+      <entry align="left" valign="top">
+      <function>passInPriorities(const int * priorities, bool ifNotSimpleIntegers,
+			int defaultValue=1000)</function>
+      </entry>
+      <entry align="left" valign="top">
+      Normally this is a list of priorities (1 being highest) and the other
+      ifNotSimpleIntegers being false which set priorities for all integer
+      variables.  If two variables are unsatisfied and one has a higher priority
+      then it is always preferred whatever its value.  This can be very powerful
+      but also see PseudoCosts in CbcObject discussion.
+      </entry>
+    </row>
+    <row>
+      <entry align="left" valign="top">
+      <function>addCutGenerator(CglCutGenerator *,int howOften, const char * name)</function>
+      </entry>
+      <entry align="left" valign="top">
+      This is used to add a cut generator to CbcModel.  Any cut generator in Cgl
+      can be used.  If howOften >0 then the cut generator will be called at root
+      node and every howOften nodes (There is an option to override and do at 
+      depth 0,k,2k..).  If -1 then the code sees how effective it was at root
+      node and sets howOften dynamically.  If -99 then just does at root node.
+      There is also a redundant -100 setting which switches off which can be useful
+      for testing.  For usage see sample2.cpp in the CBC Samples 
+      directory<xref linkend="moreexamples"/> which uses the most common
+      cut generators.
+      </entry>
+    </row>
+    <row>
+      <entry align="left" valign="top">
+      <function>addHeuristic(CbcHeuristic *)</function>
+      </entry>
+      <entry align="left" valign="top">
+      This adds one heuristic to CbcModel.See the section on CbcHeuristic to obtain
+      a list of available heuristics and a guide as to building new ones.
+      </entry>
+    </row>
+    <row>
+      <entry align="left" valign="top">
+      <function>addObjects(int&nbsp;number,CbcObject&nbsp;**&nbsp;objects) </function>
+      </entry>
+      <entry align="left" valign="top">
+      This adds members of the base class CbcObject to CbcModel.  See the section
+      on CbcObject for detailed nformation.  The objects are cloned by code so
+      user should delete after <function>addObjects</function>.  There are two 
+      main cases.  The first is when the originally created objects are left and
+      new ones added (maybe with a higher priority);  this might be used when
+      simple integer objects exist and Special Ordered Sets of type 1 are going
+      to be added, which while not necessary will give extra power in branching.
+      The second case is when the old ones are being deleted.  
+      For usage see sos.cpp in the CBC Samples 
+      directory<xref linkend="moreexamples"/>.
+      </entry>
+    </row>
+    <row>
+      <entry align="left" valign="top">
+      <function>CglPreProcess::preProcess(OsiSolverInterface &amp;)</function>
+      </entry>
+      <entry align="left" valign="top">
+      This is not really part of Cbc and can be used by other mixed integer
+      solvers but it can be a useful tool.  It tries to fix variables and 
+      strengthen coefficients and also do a normal presolve.  Owing to the 
+      odd nature of integer programming it may not always reduce the time
+      taken but is definitely worth trying.  For an example of using
+      preProcess and postProcess see sample2.cpp in the CBC Samples 
+      directory<xref linkend="moreexamples"/>.
+      </entry>
+    </row>
+    <row>
+      <entry align="left" valign="top">
+      <function>setNodeComparison(CbcCompareBase&nbsp;*)</function>
+      </entry>
+      <entry align="left" valign="top">
+       This is used to use a non-default node comparison function
+       to see which is the next node on tree to explore.  This
+       can make a large difference and specialized ones are easy to program.
+       See the section on CbcCompare.
+      </entry>
+    </row>
+    </tbody>
+  </tgroup>
+  </table>
+  </section>
+  </chapter>

@@ -1,0 +1,162 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+  <chapter id="intro">
+  <title>
+    Introduction
+  </title>
+  <section>
+  <title>
+  Welcome to CBC
+  </title>
+  <para>
+  COIN Branch and Cut or CBC is an open-source mixed integer solver written
+  in C++.  It is primarily meant to be used as a callable library, but a
+  basic, stand-alone do link **** link linkend="cbcexe"executable version is also
+  available.  This Branch and Cut solver relies on many other parts of the COIN
+  repository.  So it relies on Cgl for cut generators and any cut generator written to
+  CGL standards may be used in CBC.  Again some of these cut generators e.g. Gomory cuts
+  rely on the factorization functionality of CoinFactorization.  CBC needs a linear solver
+  and uses the Osi (Open Solver Interface) interface to access the linaer solver so
+  many solvers may be used.  However the most common use is expected to be when
+  using COIN's native linear Solver - CLP.
+  </para>
+  <para>
+  Before examining CBC in more detail it may be helpful to give a very brief description
+  of Branch and Cut (which should really be called Branch and Cut and Bound).  If some
+  variables in the model must take on integer values e.g. 0,1 or 2 then the integrality 
+  requirement is relaxed and a lower bound of 0.0 and an upper bound of 2.0 put on the 
+  variable(s). This linear model can be solved using a solver.  If all "integer"
+  variables take integer values then we are finished;  if not we choose one non-integral 
+  variable e.g. with value 1.3 (A) (B) and create two linear models - one with the variable
+  having an upper bound of 1.0 and the other with a lower bound of 2.0.  We then put
+  these two models on our tree of models and solve one of them.  We repeat the process
+  taking one model off our tree (C) (D) and repeating the process.  As every time we
+  branch we tighten the problem so the objective value can not improve.  So if we 
+  obtain a valid solution we can use that as a bound to prune the tree.  If we
+  try and make the linear models more integral by using Cuts then it is termed
+  Branch and Cut (E) (F).
+  </para>
+    <table frame="none">
+  <title>Associated classes</title>
+    <tgroup cols="3">
+    <thead>
+    <row>
+    <entry>
+    Note
+    </entry>
+    <entry>
+    Class name
+    </entry>
+    <entry>
+    Description
+    </entry>
+    </row>
+    </thead>
+    <tbody>
+    <row>
+      <entry align="left" valign="top">
+      (A)
+      </entry>
+      <entry align="left" valign="top">
+      CbcBranch...
+      </entry>
+      <entry align="left" valign="top">
+      These classes define what is the nature of discontinuity.  The simplest
+      are variables which must take an integral value but there others
+      which will be described later e.g. lotsizing variables.  
+      </entry>
+    </row>
+    <row>
+      <entry align="left" valign="top">
+      (B)
+      </entry>
+      <entry align="left" valign="top">
+      CbcNode
+      </entry>
+      <entry align="left" valign="top">
+      This is the class that decides which variable/entity  to branch on next.
+      Even advanced users will probably only interact with this by setting
+      CbcModel parameters e.g. priorities.
+      </entry>
+    </row>
+    <row>
+      <entry align="left" valign="top">
+      (C)
+      </entry>
+      <entry align="left" valign="top">
+      CbcTree
+      </entry>
+      <entry align="left" valign="top">
+      All unsolved models can be thought of as being on a tree where each
+      model can branch two or more times.  The user should not need to be
+      concerned with this class.
+      </entry>
+    </row>
+    <row>
+      <entry align="left" valign="top">
+      (D)
+      </entry>
+      <entry align="left" valign="top">
+      CbcCompare...
+      </entry>
+      <entry align="left" valign="top">
+      All unsolved models are in a tree but which leaf do we choose.  These
+      classes are very small simple ones which can be tailored to suit the problem.
+      </entry>
+    </row>
+    <row>
+      <entry align="left" valign="top">
+      (E)
+      </entry>
+      <entry align="left" valign="top">
+      CglCutGenerators
+      </entry>
+      <entry align="left" valign="top">
+      Any cut generator from Cgl can be given to the model to be used with parameters
+      which modify when each generator will be tried.  Few people will write their
+      own cut generators but all should see which are effective.
+      </entry>
+    </row>
+    <row>
+      <entry align="left" valign="top">
+      (F)
+      </entry>
+      <entry align="left" valign="top">
+      CbcHeuristics
+      </entry>
+      <entry align="left" valign="top">
+      Heuristics are very important for obtaining valid solutions quickly.  Some
+      are available but this is an area where it is useful and interesting to
+      write specialized ones.
+      </entry>
+    </row>
+    </tbody>
+  </tgroup>
+  </table>
+<para>
+  There are a number of resources available to help new CBC users get started.
+  This document is designed to be used in conjunction with the files in the
+  Samples subdirectory of the main CBC directory (<filename>COIN/Cbc/Samples</filename>).
+  The Samples illustrate how to use CBC and may also serve as useful starting points
+  for user projects.  In the event that either this document or the available
+  <link linkend="doxygen">Doxygen content</link> conflicts with the observed
+  behavior of the source code, the comments in the header files, found in
+  <filename>COIN/Cbc/include</filename>, are the ultimate reference.
+  </para>
+  </section>
+  <section>
+  <title>
+  Prerequisites
+  </title>
+  <para>
+  CBC is written in C++, so it is expected that users of CBC will be writing 
+  C++ programs which use CBC as a library.  Thus a working knowledge of 
+  <ulink url="http://www.cplusplus.com/doc/tutorial/">C++</ulink>, including basic
+  object-oriented programming terminology is assumed in this document.  In
+  addition, the user should be familiar with the fundamental concepts of
+  <ulink url="http://carbon.cudenver.edu/~hgreenbe/courseware/LPshort/intro.html">
+  Linear Programming</ulink> and
+  <ulink url="http://carbon.cudenver.edu/~hgreenbe/courseware/MIP/intro.html">
+  Mixed Integer Programming (may need better linke)</ulink> .
+  </para>
+  </section>
+  </chapter>

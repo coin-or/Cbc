@@ -1,0 +1,822 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+  <chapter id="otherclasses">
+  <title>
+  Other Classes and examples
+  </title>
+  <section id="comparison">
+  <title>CbcCompare - Comparison methods</title>
+  <para>
+  Although the unexplored nodes of the search are organized in a tree, the
+  order of solution is not predetermined and can be influenced by the user.
+  Cbc provides a abstract base class CbcCompareBase
+  and then instances of each.  It is relatively simple for an advanced user to
+  create new instances and an explanation of an example will be given later.
+  </para>
+    <table frame="none">
+  <title>Compare Classes provided</title>
+    <tgroup cols="2">
+    <thead>
+    <row>
+    <entry>
+    Class name 
+    </entry>
+    <entry>
+    Description
+    </entry>
+    </row>
+    </thead>
+    <tbody>
+    <row>
+      <entry align="left" valign="top">
+      CbcCompareDepth
+      </entry>
+      <entry align="left" valign="top">
+      This will always choose the node deepest in tree.  It gives minimum
+      tree size but may take a long time to find best solution.
+      </entry>
+    </row>
+    <row>
+      <entry align="left" valign="top">
+      CbcCompareObjective
+      </entry>
+      <entry align="left" valign="top">
+      This will always choose the node with the best objective value.  This may
+      give a very large tree.  It is likely that the first solution found
+      will be the best and the search should finish soon after the first solution
+      is found.
+      </entry>
+    </row>
+    <row>
+      <entry align="left" valign="top">
+      CbcCompareDefault
+      </entry>
+      <entry align="left" valign="top">
+      This is designed to do a mostly depth first search until a solution has
+      been found and then use estimates designed to give a slightly better solution.
+      If a reasonable number of nodes have been done or a reasonable number of
+      solutions found then it will go breadth first (i.e. on objective) unless
+      the tree is very large when it will revert to depth first.  Probably
+      CbcCompareUser described below is better.
+      </entry>
+    </row>
+    <row>
+      <entry align="left" valign="top">
+      CbcCompareEstimate
+      </entry>
+      <entry align="left" valign="top">
+      If pseudocosts are being used then they can be used to guess a solution.
+      This just uses guessed solution.
+      </entry>
+    </row>
+    </tbody>
+  </tgroup>
+  </table>
+  <para>
+  This describes how to build a new comparison class and the reasoning
+  behind it. This is <filename>CbcCompareUser.hpp</filename> and
+   <filename>CbcCompareUser.cpp</filename>
+  (this code can be found in the CBC Samples directory, see
+  <xref linkend="moreexamples"/>).
+  The key CbcCompare method is test which returns true if node y is better 
+  than node x.  In this method the user can easily use
+  <table frame="none">
+  <title>Information available from CbcModel</title>
+    <tgroup cols="2">
+    <tbody>
+    <row>
+      <entry align="left" valign="top">
+      objectiveValue()
+      </entry>
+      <entry align="left" valign="top">
+      Value of objective at that node.
+      </entry>
+    </row>
+    <row>
+      <entry align="left" valign="top">
+      numberUnsatisfied()
+      </entry>
+      <entry align="left" valign="top">
+      Number of unsatisfied integers (assuming branching 
+      object is an integer - otherwise might be number of unsatsified sets)
+      </entry>
+    </row>
+    <row>
+      <entry align="left" valign="top">
+      depth() 
+      </entry>
+      <entry align="left" valign="top">
+       depth in tree of node
+      </entry>
+    </row>
+    <row>
+      <entry align="left" valign="top">
+      guessedObjectiveValue()
+      </entry>
+      if user was setting this (e.g. if using pseudo costs)
+      <entry align="left" valign="top">
+      </entry>
+    </row>
+    <row>
+      <entry align="left" valign="top">
+      way()   
+      </entry>
+      <entry align="left" valign="top">
+       which way would be next from this node
+       (for more advanced use)
+      </entry>
+    </row>
+    <row>
+      <entry align="left" valign="top">
+      variable()
+      </entry>
+      <entry align="left" valign="top">
+       which "variable" would be branched on.
+       (for more advanced use)
+      </entry>
+    </row>
+    </tbody>
+  </tgroup>
+  </table>
+  </para>
+<para>
+  There is no information on the state of the tree.  If you wanted you could 
+  keep a pointer to the CbcModel but the way it is meant to work is that 
+  newSolution is called whenever a solution is found and every1000Nodes is 
+  called every 1000 nodes.  When these are called the user can modify the 
+  behavior of test.  Because the model is passed in the user can also do other things
+  such as changing the maximum time of Branch and Cut once a solution has been found.
+
+So in CbcCompareUser in Samples
+the four items of data are:
+1) The number of solutions found so far
+2) The size of the tree (number of active nodes)
+3) A weight which is initialized to -1.0
+4) A saved value of weight (for when we set weight back to -1.0 for special reason)
+
+The full code for test is:
+</para>
+  <example>
+  <title>test</title>
+  <programlisting>
+  <![CDATA[  
+// Returns true if y better than x
+bool 
+CbcCompareUser::test (CbcNode * x, CbcNode * y)
+{
+  if (weight_==-1.0) {
+    // before solution
+    if (x->numberUnsatisfied() > y->numberUnsatisfied())
+      return true;
+    else if (x->numberUnsatisfied() < y->numberUnsatisfied())
+      return false;
+    else
+      return x->depth() < y->depth();
+  } else {
+    // after solution
+    double weight = CoinMax(weight_,0.0);
+    return x->objectiveValue()+ weight*x->numberUnsatisfied() > 
+      y->objectiveValue() + weight*y->numberUnsatisfied();
+  }
+}
+  ]]>   
+  </programlisting>
+  </example>
+<para>
+So initially as weight is &lt; 0.0 we are biased towards depth first.  In 
+fact it prefers y is y has fewer unsatisfied variables - if there is a tie 
+then it prefers the one with greater depth in tree.
+
+Once we get a solution newSolution is called.  If it was a solution 
+achieved by branching we work out how much it cost per unsatisfied integer 
+variable to go from continuous solution to integer solution.  We then set 
+the weight to aim at a slightly better solution.  From then on test 
+returns true if it looks as if y will lead to a better solution than x.
+This is done by newSolution
+</para>
+  <example>
+  <title>newSolution</title>
+  <programlisting>
+  <![CDATA[  
+// This allows method to change behavior as it is called
+// after each solution
+void 
+CbcCompareUser::newSolution(CbcModel * model,
+			       double objectiveAtContinuous,
+			       int numberInfeasibilitiesAtContinuous) 
+{
+  if (model->getSolutionCount()==model->getNumberHeuristicSolutions())
+    return; // solution was got by rounding so we ignore
+  // set to get close to this solution
+  double costPerInteger = 
+    (model->getObjValue()-objectiveAtContinuous)/
+    ((double) numberInfeasibilitiesAtContinuous);
+  weight_ = 0.98*costPerInteger;
+  saveWeight_=weight_;
+  numberSolutions_++;
+  if (numberSolutions_>5)
+    weight_ =0.0; // this searches on objective
+}
+  ]]>   
+  </programlisting>
+  </example>
+<para>
+
+But as the search goes on this may be modified.
+
+If we have done a lot of nodes or got a lot of solutions then weight is 
+set to 0.0 so we are doing breadth first search.  This can lead to an 
+enormous tree so if the tree size is >10000 then we go may go back to one biased 
+towards depth first.  This is done by every1000Nodes.
+  </para>
+  <example>
+  <title>newSolution</title>
+  <programlisting>
+  <![CDATA[  
+// This allows method to change behavior 
+bool 
+CbcCompareUser::every1000Nodes(CbcModel * model, int numberNodes)
+{
+  if (numberNodes>10000)
+    weight_ =0.0; // this searches on objective
+  else if (numberNodes==1000&&weight_==-2.0)
+    weight_=-1.0; // Go to depth first
+  // get size of tree
+  treeSize_ = model->tree()->size();
+  if (treeSize_>10000) {
+    // set weight to reduce size most of time
+    if (treeSize_>20000)
+      weight_=-1.0;
+    else if ((numberNodes%4000)!=0)
+      weight_=-1.0;
+    else
+      weight_=saveWeight_;
+  }
+  return numberNodes==11000; // resort if first time
+}
+  ]]>   
+  </programlisting>
+  </example>
+  </section>
+  <section id="heuristics">
+  <title>CbcHeuristic - heuristic methods</title>
+  <para>
+  For practical use it is very useful to be able to get a good solution reasonably fast.
+  A good bound will greatly reduce the run time and good solutions can satisfy the user
+  on very large problems where a complete search is impossible.  Heuristics are obviously
+  problem dependant although some have more general use.  I hope to increase the number.
+  At present there is only one in Cbc itself although there are others in the Samples
+  directory.  The heuristic is trying to obtain a solution to the original
+  problem so it need only consider original rows and does not have to use the
+  current bounds.
+  One to use a greedy heuristic designed for use in the miplib problem
+  fast0507 will be developed later in this section.
+  Cbc provides a abstract base class CbcHeuristic and a rounding heuristic in Cbc.
+  </para>
+  <para>
+  This describes how to build a greedy heuristic for a set covering problem. 
+   A more general version is in <filename>CbcHeuristicGreedy.hpp</filename> and
+   <filename>CbcHeuristicGreedy.cpp</filename>
+  (this code can be found in the CBC Samples directory, see
+  <xref linkend="moreexamples"/>).
+
+  The heuristic we will code will leave all variables which are at one at this node of the
+  tree to that value and will
+  initially set all others to zero.  We then sort all variables in order of their cost
+  divided by the number of entries in rows which are not yet covered.  We may randomize that
+  value a bit so that ties will be broken in different ways on different runs of the heuristic.
+  We then choose the best one and set it to one and repeat the exercise. Because this is
+  a set covering problem &ge; we are guaranteed to find a solution (not necessarily a
+  better one though).  We could
+  improve the speed by just redoing those affected but in this text we will keep it simple.
+  Also if all elements are 1.0 then we could do faster.
+  The key CbcHeuristic method is <function>int&nbsp;solution(double &amp; solutionValue,
+                                              double&nbsp;*&nbsp;betterSolution)</function>
+  which returns 0 if no solution found and 1 if found when it fills in the objective value
+  and primal solution.  The actual code in <filename>CbcHeuristicGreedy.cpp</filename> is
+  a little more complicated but this will work and gives the basic idea.  For instance
+  the code here assumes all variables are integer.
+  The important bit of data is a copy of the matrix (stored by column)
+  before any cuts have been made.  The data used are bounds, objective and the matrix
+  plus two work arrays. 
+  </para>
+  <example>
+  <title>Data</title>
+  <programlisting>
+  <![CDATA[  
+  OsiSolverInterface * solver = model_->solver(); // Get solver from CbcModel
+  const double * columnLower = solver->getColLower(); // Column Bounds
+  const double * columnUpper = solver->getColUpper();
+  const double * rowLower = solver->getRowLower(); // We know we only need lower bounds
+  const double * solution = solver->getColSolution();
+  const double * objective = solver->getObjCoefficients(); // In code we also use min/max
+  double integerTolerance = model_->getDblParam(CbcModel::CbcIntegerTolerance);
+  double primalTolerance;
+  solver->getDblParam(OsiPrimalTolerance,primalTolerance);
+  int numberRows = originalNumberRows_; // This is number of rows when matrix was passed in
+  // Column copy of matrix (before cuts)
+  const double * element = matrix_.getElements();
+  const int * row = matrix_.getIndices();
+  const CoinBigIndex * columnStart = matrix_.getVectorStarts();
+  const int * columnLength = matrix_.getVectorLengths();
+
+  // Get solution array for heuristic solution
+  int numberColumns = solver->getNumCols();
+  double * newSolution = new double [numberColumns];
+  // And to sum row activities
+  double * rowActivity = new double[numberRows];
+  ]]>   
+  </programlisting>
+  </example>
+<para>
+Then we initialize newSolution as rounded down solution.
+</para>
+  <example>
+  <title>initialize newSolution</title>
+  <programlisting>
+  <![CDATA[  
+  for (iColumn=0;iColumn<numberColumns;iColumn++) {
+    CoinBigIndex j;
+    double value = solution[iColumn];
+    // Round down integer
+    if (fabs(floor(value+0.5)-value)<integerTolerance) 
+      value=floor(CoinMax(value+1.0e-3,columnLower[iColumn]));
+    // make sure clean
+    value = CoinMin(value,columnUpper[iColumn]);
+    value = CoinMax(value,columnLower[iColumn]);
+    newSolution[iColumn]=value;
+    if (value) {
+      double cost = direction * objective[iColumn];
+      newSolutionValue += value*cost;
+      for (j=columnStart[iColumn];
+           j<columnStart[iColumn]+columnLength[iColumn];j++) {
+        int iRow=row[j];
+        rowActivity[iRow] += value*element[j];
+      }
+    }
+  }
+  ]]>   
+  </programlisting>
+  </example>
+<para>
+Now some row activities will be below their lower bound so
+we then find the variable which is cheapest in reducing the sum of
+infeasibilities.  We then repeat.  This is a finite process and could be coded
+to be faster but this is simplest.
+  </para>
+  <example>
+  <title>Create feasible new solution</title>
+  <programlisting>
+  <![CDATA[  
+  while (true) {
+    // Get column with best ratio
+    int bestColumn=-1;
+    double bestRatio=COIN_DBL_MAX;
+    for (int iColumn=0;iColumn<numberColumns;iColumn++) {
+      CoinBigIndex j;
+      double value = newSolution[iColumn];
+      double cost = direction * objective[iColumn];
+      // we could use original upper rather than current
+      if (value+0.99<columnUpper[iColumn]) {
+        double sum=0.0; // Compute how much we will reduce infeasibility by
+        for (j=columnStart[iColumn];
+             j<columnStart[iColumn]+columnLength[iColumn];j++) {
+          int iRow=row[j];
+          double gap = rowLower[iRow]-rowActivity[iRow];
+          if (gap>1.0e-7) {
+            sum += CoinMin(element[j],gap);
+          if (element[j]+rowActivity[iRow]<rowLower[iRow]+1.0e-7) {
+            sum += element[j];
+	  }
+	}
+        if (sum>0.0) {
+	  double ratio = (cost/sum)*(1.0+0.1*CoinDrand48());
+	  if (ratio<bestRatio) {
+            bestRatio=ratio;
+            bestColumn=iColumn;
+          }
+	}
+      }
+    }
+    if (bestColumn<0)
+      break; // we have finished
+    // Increase chosen column
+    newSolution[bestColumn] += 1.0;
+    double cost = direction * objective[bestColumn];
+    newSolutionValue += cost;
+    for (CoinBigIndex j=columnStart[bestColumn];
+         j<columnStart[bestColumn]+columnLength[bestColumn];j++) {
+      int iRow = row[j];
+      rowActivity[iRow] += element[j];
+    }
+  }
+  ]]>   
+  </programlisting>
+  </example>
+<para>
+We have finished so now we need to see if solution is better and doublecheck
+we are feasible.
+  </para>
+  <example>
+  <title>Check good solution</title>
+  <programlisting>
+  <![CDATA[  
+  returnCode=0; // 0 means no good solution
+  if (newSolutionValue<solutionValue) {
+    // check feasible
+    memset(rowActivity,0,numberRows*sizeof(double));
+    for (iColumn=0;iColumn<numberColumns;iColumn++) {
+      CoinBigIndex j;
+      double value = newSolution[iColumn];
+      if (value) {
+	for (j=columnStart[iColumn];
+	     j<columnStart[iColumn]+columnLength[iColumn];j++) {
+	  int iRow=row[j];
+	  rowActivity[iRow] += value*element[j];
+	}
+      }
+    }
+    // check was approximately feasible
+    bool feasible=true;
+    for (iRow=0;iRow<numberRows;iRow++) {
+      if(rowActivity[iRow]<rowLower[iRow]) {
+	if (rowActivity[iRow]<rowLower[iRow]-10.0*primalTolerance)
+	  feasible = false;
+      }
+    }
+    if (feasible) {
+      // new solution
+      memcpy(betterSolution,newSolution,numberColumns*sizeof(double));
+      solutionValue = newSolutionValue;
+      // We have good solution
+      returnCode=1;
+    }
+  }
+  ]]>   
+  </programlisting>
+  </example>
+  </section>
+  <section id="branching">
+  <title>Branching</title>
+  <para>
+If the user declares variables as integer but does no more, then Cbc will treat them
+as simple integer variables.  In many cases the user would like to do some more fine tuning.  This shows how to create integer variables with pseudo costs.  When pseudo costs are given then 
+it is assumed that if a variable is at 1.3 then the cost of branching that variable down will be 0.3 times the down pseudo cost and the cost of branching up would be 0.7 times the up pseudo cost.  This can be used both for branching and for choosing a node.
+   The full code is in <filename>longthin.cpp</filename>
+  (this code can be found in the CBC Samples directory, see
+  <xref linkend="moreexamples"/>).  
+  The idea is simple for set covering problems.
+  Branching up gets us much closer to an integer solution so we want
+  to encourage up - so we will branch up if variable value > 0.333333.
+  The expected cost of going up obviously depends on the cost of the
+  variable so we just choose pseudo costs to reflect that.
+  </para>
+  <example>
+  <title>Pseudo costs</title>
+  <programlisting>
+  <![CDATA[  
+  int iColumn;
+  int numberColumns = solver3->getNumCols();
+  // do pseudo costs
+  CbcObject ** objects = new CbcObject * [numberColumns];
+  // Point to objective
+  const double * objective = model.getObjCoefficients();
+  int numberIntegers=0;
+  for (iColumn=0;iColumn<numberColumns;iColumn++) {
+    if (solver3->isInteger(iColumn)) {
+      double cost = objective[iColumn];
+      CbcSimpleIntegerPseudoCost * newObject =
+        new CbcSimpleIntegerPseudoCost(&model,numberIntegers,iColumn,
+                                       2.0*cost,cost);
+      newObject->setMethod(3);
+      objects[numberIntegers++]= newObject;
+    }
+  }
+  // Now add in objects (they will replace simple integers)
+  model.addObjects(numberIntegers,objects);
+  for (iColumn=0;iColumn<numberIntegers;iColumn++)
+    delete objects[iColumn];
+  delete [] objects;
+  ]]>   
+  </programlisting>
+  </example>
+<para>
+The actual coding in the example also tries to give more importance to variables with more 
+coefficients.  Whether this sort of thing is worthwhile should be the subject of experimentation.
+Here is another example which is for crew scheduling problems.  In this case the problem has
+few rows but many thousands of variables.  Branching a variable to 1 is very powerful as it
+fixes many other variables to zero, but branching to zero is very weak as thousands of variables
+can increase from zero.  But in crew scheduling each constraint is a flight leg e.g. JFK to DFW.
+From DFW (Dallas) there may be several flights the crew could take next - suppose one flight is 
+the 9:30 flight from DFW to LAX (Los Angeles).  Then a binary branch is that the crew arriving 
+at DFW either take the 9:30 flight to LAX or they don't.  This follow-on branching does not
+fix individual variables but instead divides all the variables with entries in the JFK-DFW 
+constraint into two groups - those with entries in the DFW-LAX constraint and those without
+entries.
+   The full code is in <filename>crew.cpp</filename>
+  (this code can be found in the CBC Samples directory, see
+  <xref linkend="moreexamples"/>).  In this case we may as well leave the simple integer
+variables and we may have to if there are other sorts of constraints.  But we want to 
+branch on the follow-on rules first so we use priorities to say that those are the
+important ones.
+</para>
+  <example>
+  <title>Follow-on branching</title>
+  <programlisting>
+  <![CDATA[  
+  int iColumn;
+  int numberColumns = solver3->getNumCols();
+  /* We are going to add a single follow on object but we
+     want to give low priority to existing integers 
+     As the default priority is 1000 we don't actually need to give
+     integer priorities but it is here to show how.
+  */
+  // Normal integer priorities
+  int * priority = new int [numberColumns];
+  int numberIntegers=0;
+  for (iColumn=0;iColumn<numberColumns;iColumn++) {
+    if (solver3->isInteger(iColumn)) {
+      priority[numberIntegers++]= 100; // low priority
+    }
+  }
+  /* Second parameter is true if we are adding objects,
+     false if integers.  So this does integers */
+  model.passInPriorities(priority,false);
+  delete [] priority;
+  /* Add in objects before we can give priority.
+     In this case just one - but this shows general method
+  */
+  CbcObject ** objects = new CbcObject * [1];
+  objects[0]=new CbcFollowOn(&model);
+  model.addObjects(1,objects);
+  delete objects[0];
+  delete [] objects;
+  // High priority
+  int followPriority=1;
+  model.passInPriorities(&followPriority,true);
+  ]]>   
+  </programlisting>
+  </example>
+  </section>
+  <section id="solver">
+  <title>Advanced use of solver</title>
+  <para>
+  Coin Branch and Cut uses a generic OsiSolverInterface and its <function>resolve</function> capability.
+  This does not give much flexibility so advanced users can inherit from the interface
+  of choice.  This describes such a solver for a long thin problem e.g. fast0507 again.
+  As with all these examples it is not guaranteed that this is the fastest way to solve
+  any of these problems - they are to illustrate techniques.
+   The full code is in <filename>CbcSolver2.hpp</filename> and
+   <filename>CbcSolver2.cpp</filename>
+  (this code can be found in the CBC Samples directory, see
+  <xref linkend="moreexamples"/>).
+  <function>initialSolve</function> is called a few times so although we will not gain much
+  this is a simpler place to start.  The example derives from OsiClpSolverInterface and the code
+  is:
+  </para>
+  <example>
+  <title>initialSolve</title>
+  <programlisting>
+  <![CDATA[  
+  // modelPtr_ is of type ClpSimplex *
+  modelPtr_->setLogLevel(1); // switch on a bit of printout
+  modelPtr_->scaling(0); // We don't want scaling for fast0507
+  setBasis(basis_,modelPtr_); // Put basis into ClpSimplex
+  // Do long thin by sprint
+  ClpSolve options;
+  options.setSolveType(ClpSolve::usePrimalorSprint);
+  options.setPresolveType(ClpSolve::presolveOff);
+  options.setSpecialOption(1,3,15); // Do 15 sprint iterations
+  modelPtr_->initialSolve(options); // solve problem
+  basis_ = getBasis(modelPtr_); // save basis
+  modelPtr_->setLogLevel(0); // switch off printout
+  ]]>   
+  </programlisting>
+  </example>
+<para>
+The <function>resolve</function> method is more complicated.  The main pieces of data are
+a counter count_ which is incremented each solve and an int array node_ which stores the last time
+a variable was active in a solution.  For the first few times normal dual is called and
+node_ array is updated.
+</para>
+  <example>
+  <title>First few solves</title>
+  <programlisting>
+  <![CDATA[  
+  if (count_<10) {
+    OsiClpSolverInterface::resolve(); // Normal resolve
+    if (modelPtr_->status()==0) {
+      count_++; // feasible - save any nonzero or basic
+      const double * solution = modelPtr_->primalColumnSolution();
+      for (int i=0;i<numberColumns;i++) {
+	if (solution[i]>1.0e-6||modelPtr_->getStatus(i)==ClpSimplex::basic) {
+	  node_[i]=CoinMax(count_,node_[i]);
+	  howMany_[i]++;
+	}
+      }
+    } else {
+      printf("infeasible early on\n");
+    }
+  }
+  ]]>   
+  </programlisting>
+  </example>
+<para>
+After the first few solves we only use those which took part in a solution in the last so many
+solves.  As fast0507 is a set covering problem we can also take out any rows which are
+already covered.
+  </para>
+  <example>
+  <title>Create small problem</title>
+  <programlisting>
+  <![CDATA[  
+    int * whichRow = new int[numberRows]; // Array to say which rows used
+    int * whichColumn = new int [numberColumns]; // Array to say which columns used
+    int i;
+    const double * lower = modelPtr_->columnLower();
+    const double * upper = modelPtr_->columnUpper();
+    setBasis(basis_,modelPtr_); // Set basis
+    int nNewCol=0; // Number of columns in small model
+    // Column copy of matrix
+    const double * element = modelPtr_->matrix()->getElements();
+    const int * row = modelPtr_->matrix()->getIndices();
+    const CoinBigIndex * columnStart = modelPtr_->matrix()->getVectorStarts();
+    const int * columnLength = modelPtr_->matrix()->getVectorLengths();
+    
+    int * rowActivity = new int[numberRows]; // Number of columns with entries in each row
+    memset(rowActivity,0,numberRows*sizeof(int));
+    int * rowActivity2 = new int[numberRows]; // Lower bound on row activity for each row
+    memset(rowActivity2,0,numberRows*sizeof(int));
+    char * mark = (char *) modelPtr_->dualColumnSolution(); // Get some space to mark columns
+    memset(mark,0,numberColumns);
+    for (i=0;i<numberColumns;i++) {
+      bool choose = (node_[i]>count_-memory_&&node_[i]>0); // Choose if used recently
+      // Take if used recently or active in some sense
+      if ((choose&&upper[i])
+	  ||(modelPtr_->getStatus(i)!=ClpSimplex::atLowerBound&&
+             modelPtr_->getStatus(i)!=ClpSimplex::isFixed)
+	  ||lower[i]>0.0) {
+        mark[i]=1; // mark as used
+	whichColumn[nNewCol++]=i; // add to list
+        CoinBigIndex j;
+        double value = upper[i];
+        if (value) {
+          for (j=columnStart[i];
+               j<columnStart[i]+columnLength[i];j++) {
+            int iRow=row[j];
+            assert (element[j]==1.0);
+            rowActivity[iRow] ++; // This variable can cover this row
+          }
+          if (lower[i]>0.0) {
+            for (j=columnStart[i];
+                 j<columnStart[i]+columnLength[i];j++) {
+              int iRow=row[j];
+              rowActivity2[iRow] ++; // This row redundant
+            }
+          }
+        }
+      }
+    }
+    int nOK=0; // Use to count rows which can be covered
+    int nNewRow=0; // Use to make list of rows needed
+    for (i=0;i<numberRows;i++) {
+      if (rowActivity[i])
+        nOK++;
+      if (!rowActivity2[i])
+        whichRow[nNewRow++]=i; // not satisfied
+      else
+        modelPtr_->setRowStatus(i,ClpSimplex::basic); // make slack basic
+    }
+    if (nOK<numberRows) {
+      // The variables we have do not cover rows - see if we can find any that do
+      for (i=0;i<numberColumns;i++) {
+        if (!mark[i]&&upper[i]) {
+          CoinBigIndex j;
+          int good=0;
+          for (j=columnStart[i];
+               j<columnStart[i]+columnLength[i];j++) {
+            int iRow=row[j];
+            if (!rowActivity[iRow]) {
+              rowActivity[iRow] ++;
+              good++;
+            }
+          }
+          if (good) {
+            nOK+=good; // This covers - put in list
+            whichColumn[nNewCol++]=i;
+          }
+        }
+      }
+    }
+    delete [] rowActivity;
+    delete [] rowActivity2;
+    if (nOK<numberRows) {
+      // By inspection the problem is infeasible - no need to solve
+      modelPtr_->setProblemStatus(1);
+      delete [] whichRow;
+      delete [] whichColumn;
+      printf("infeasible by inspection\n");
+      return;
+    }
+    // Now make up a small model with the right rows and columns
+    ClpSimplex *  temp = new ClpSimplex(modelPtr_,nNewRow,whichRow,nNewCol,whichColumn);
+  ]]>   
+  </programlisting>
+  </example>
+<para>
+If the variables cover the rows then we know that the problem is feasible (We are not using
+cuts).  If the rows
+were E rows then this might not be the case and we would have to do more work.  When we have solved
+then we see if there are any negative reduced costs and if there are then we have to go to the
+full problem and use primal to clean up.
+  </para>
+  <example>
+  <title>Check optimal solution</title>
+  <programlisting>
+  <![CDATA[  
+    temp->setDualObjectiveLimit(1.0e50); // Switch off dual cutoff as problem is restricted
+    temp->dual(); // solve
+    double * solution = modelPtr_->primalColumnSolution(); // put back solution
+    const double * solution2 = temp->primalColumnSolution();
+    memset(solution,0,numberColumns*sizeof(double));
+    for (i=0;i<nNewCol;i++) {
+      int iColumn = whichColumn[i];
+      solution[iColumn]=solution2[i];
+      modelPtr_->setStatus(iColumn,temp->getStatus(i));
+    }
+    double * rowSolution = modelPtr_->primalRowSolution();
+    const double * rowSolution2 = temp->primalRowSolution();
+    double * dual = modelPtr_->dualRowSolution();
+    const double * dual2 = temp->dualRowSolution();
+    memset(dual,0,numberRows*sizeof(double));
+    for (i=0;i<nNewRow;i++) {
+      int iRow=whichRow[i];
+      modelPtr_->setRowStatus(iRow,temp->getRowStatus(i));
+      rowSolution[iRow]=rowSolution2[i];
+      dual[iRow]=dual2[i];
+    }
+    // See if optimal
+    double * dj = modelPtr_->dualColumnSolution();
+    // get reduced cost for large problem
+    // this assumes minimization
+    memcpy(dj,modelPtr_->objective(),numberColumns*sizeof(double));
+    modelPtr_->transposeTimes(-1.0,dual,dj);
+    modelPtr_->setObjectiveValue(temp->objectiveValue());
+    modelPtr_->setProblemStatus(0);
+    int nBad=0;
+      
+    for (i=0;i<numberColumns;i++) {
+      if (modelPtr_->getStatus(i)==ClpSimplex::atLowerBound
+          &&upper[i]>lower[i]&&dj[i]<-1.0e-5)
+        nBad++;
+    }
+    // If necessary claen up with primal (and save some statistics)
+    if (nBad) {
+      timesBad_++;
+      modelPtr_->primal(1);
+      iterationsBad_ += modelPtr_->numberIterations();
+    }
+  ]]>   
+  </programlisting>
+  </example>
+<para>
+We then update node_ array as for the first few solves.  To give some idea of the effect of this
+tactic fast0507 has 63,009 variables and the small problem never has more than 4,000 variables.
+In just over ten percent of solves did we have to resolve and then the average number of iterations
+on full problem was less than 20.
+To give another example - again only for illustrative purposes it is possible to do quadratic
+mip.  In this case we make <function>resolve</function> the same as 
+<function>initialSolve</function>.
+   The full code is in <filename>ClpQuadInterface.hpp</filename> and
+   <filename>ClpQuadInterface.cpp</filename>
+  (this code can be found in the CBC Samples directory, see
+  <xref linkend="moreexamples"/>).
+  </para>
+  <example>
+  <title>Solve a quadratic mip</title>
+  <programlisting>
+  <![CDATA[  
+  // save cutoff
+  double cutoff = modelPtr_->dualObjectiveLimit();
+  modelPtr_->setDualObjectiveLimit(1.0e50);
+  modelPtr_->scaling(0);
+  modelPtr_->setLogLevel(0);
+  // solve with no objective to get feasible solution
+  setBasis(basis_,modelPtr_);
+  modelPtr_->dual();
+  basis_ = getBasis(modelPtr_);
+  modelPtr_->setDualObjectiveLimit(cutoff);
+  if (modelPtr_->problemStatus()) 
+    return; // problem was infeasible 
+  // Now pass in quadratic objective
+  ClpObjective * saveObjective  = modelPtr_->objectiveAsObject();
+  modelPtr_->setObjectivePointer(quadraticObjective_);
+  modelPtr_->primal();
+  modelPtr_->setDualObjectiveLimit(cutoff);
+  if (modelPtr_->objectiveValue()>cutoff)
+    modelPtr_->setProblemStatus(1);
+  modelPtr_->setObjectivePointer(saveObjective);
+  ]]>   
+  </programlisting>
+  </example>
+  </section>
+  </chapter>

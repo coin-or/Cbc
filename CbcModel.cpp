@@ -4496,6 +4496,7 @@ CbcModel::integerPresolveThisModel(OsiSolverInterface * originalSolver,
       = dynamic_cast<OsiClpSolverInterface *> (cleanModel);
     if (clpSolver) {
       ClpSimplex * clp = clpSolver->getModelPtr();
+      clp->messageHandler()->setLogLevel(cleanModel->messageHandler()->logLevel());
       ClpPresolve pinfo;
       //printf("integerPresolve - temp switch off doubletons\n");
       //pinfo.setPresolveActions(4);
@@ -5183,5 +5184,3 @@ CbcModel::strengthenedModel()
   
   return newSolver; 
 }
-
-

@@ -131,10 +131,11 @@ public:
       weight_ =0.0; // this searches on objective
   }
   // This allows method to change behavior 
-  virtual void every1000Nodes(CbcModel * model, int numberNodes)
+  virtual bool every1000Nodes(CbcModel * model, int numberNodes)
   {
     if (numberNodes>10000)
       weight_ =0.0; // this searches on objective
+    return false;
   }
 };
 

@@ -87,6 +87,8 @@ CbcTreeLocal::CbcTreeLocal(CbcModel * model,const double * solution ,
   // save current gap
   savedGap_ = model_->getDblParam(CbcModel::CbcAllowableGap);
 
+  // make sure integers found
+  model_->findIntegers(false);
   int numberIntegers = model_->numberIntegers();
   const int * integerVariable = model_->integerVariable();
   int i;

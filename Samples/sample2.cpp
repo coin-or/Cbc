@@ -114,7 +114,7 @@ int main (int argc, const char *argv[])
     if (minutes>=0.0) 
       nGoodParam=1;
   }
-  if (nGoodParam!=argc-2) {
+  if (nGoodParam!=argc-2&&argc>=2) {
     printf("Usage <file> [preprocess] [time <minutes>] or <file> <minutes>\n");
     exit(1);
   }

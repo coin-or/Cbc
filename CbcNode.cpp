@@ -72,13 +72,17 @@ CbcNodeInfo::CbcNodeInfo (const CbcNodeInfo & rhs)
 #endif
   if (numberCuts_) {
     cuts_ = new CbcCountRowCut * [numberCuts_];
+    int n=0;
     for (int i=0;i<numberCuts_;i++) {
       CbcCountRowCut * thisCut = rhs.cuts_[i];
-      // I think this is correct - new one should take priority
-      thisCut->setInfo(this,i);
-      thisCut->increment(numberBranchesLeft_); 
-      cuts_[i] = thisCut;
+      if (thisCut) {
+	// I think this is correct - new one should take priority
+	thisCut->setInfo(this,n);
+	thisCut->increment(numberBranchesLeft_); 
+	cuts_[n++] = thisCut;
+      }
     }
+    numberCuts_=n;
   }
 }
 // Constructor given parent and owner

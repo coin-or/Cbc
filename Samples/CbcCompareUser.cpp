@@ -1,67 +1,88 @@
 // Copyright (C) 2004, International Business Machines
 // Corporation and others.  All Rights Reserved.
+#if defined(_MSC_VER)
+// Turn off compiler warning about long names
+#  pragma warning(disable:4786)
+#endif
+#include <cassert>
+#include <cmath>
+#include <cfloat>
+//#define CBC_DEBUG
 
+#include "CbcMessage.hpp"
+#include "CbcModel.hpp"
+#include "CbcTree.hpp"
+#include "CbcCompareUser.hpp"
+#include "CoinError.hpp"
+#include "CoinHelperFunctions.hpp"
 
-//#############################################################################
-/*  These are alternative strategies for node traversal.  
-    They can take data etc for fine tuning 
-
-    At present the node list is stored as a heap and the "test"
-    comparison function returns true if node y is better than node x.
+/** Default Constructor
 
 */
-#include "CbcModel.hpp"
-#include "CbcNode.hpp"
-#include "CbcCompareUser.hpp"
-
-// Default Constructor 
 CbcCompareUser::CbcCompareUser ()
-  : weight_(-1.0), numberSolutions_(0), model_(NULL)
+  : CbcCompareBase(),
+    weight_(-1.0),
+    saveWeight_(0.0),
+    numberSolutions_(0),
+    treeSize_(0)
 {
   test_=this;
 }
 
-CbcCompareUser::~CbcCompareUser()
+// Constructor with weight
+CbcCompareUser::CbcCompareUser (double weight) 
+  : CbcCompareBase(),
+    weight_(weight) ,
+    saveWeight_(0.0),
+    numberSolutions_(0),
+    treeSize_(0)
 {
+  test_=this;
 }
+
+
 // Copy constructor 
-CbcCompareUser::CbcCompareUser ( const CbcCompareUser &rhs)
-: CbcCompareBase(rhs)
+CbcCompareUser::CbcCompareUser ( const CbcCompareUser & rhs)
+  :CbcCompareBase(rhs)
+
 {
   weight_=rhs.weight_;
+  saveWeight_ = rhs.saveWeight_;
   numberSolutions_=rhs.numberSolutions_;
-  model_=rhs.model_;
+  treeSize_ = rhs.treeSize_;
 }
-   
+
+// Clone
+CbcCompareBase *
+CbcCompareUser::clone() const
+{
+  return new CbcCompareUser(*this);
+}
+
 // Assignment operator 
 CbcCompareUser & 
 CbcCompareUser::operator=( const CbcCompareUser& rhs)
-{  
-  if (this!=&rhs) { 
+{
+  if (this!=&rhs) {
     CbcCompareBase::operator=(rhs);
     weight_=rhs.weight_;
+    saveWeight_ = rhs.saveWeight_;
     numberSolutions_=rhs.numberSolutions_;
-    model_=rhs.model_;
+    treeSize_ = rhs.treeSize_;
   }
   return *this;
 }
 
-// Clone
-CbcCompareBase * 
-CbcCompareUser::clone() const
-{ 
-  return new CbcCompareUser (*this);
+// Destructor 
+CbcCompareUser::~CbcCompareUser ()
+{
 }
 
-/* 
-   Return true if y better than x
-   Node y is better than node x if y has fewer unsatisfied (greater depth on tie) or
-   after solution weighted value of y is less than weighted value of x
-*/
+// Returns true if y better than x
 bool 
-CbcCompareUser::test (CbcNode * x, CbcNode * y) 
+CbcCompareUser::test (CbcNode * x, CbcNode * y)
 {
-  if (weight_<0.0) {
+  if (weight_==-1.0) {
     // before solution
     /* printf("x %d %d %g, y %d %d %g\n",
        x->numberUnsatisfied(),x->depth(),x->objectiveValue(),
@@ -73,20 +94,19 @@ CbcCompareUser::test (CbcNode * x, CbcNode * y)
     else
       return x->depth() < y->depth();
   } else {
-    // after solution
-    return x->objectiveValue()+ weight_*x->numberUnsatisfied() > 
-      y->objectiveValue() + weight_*y->numberUnsatisfied();
+    // after solution or very beginning
+    double weight = CoinMax(weight_,0.0);
+    return x->objectiveValue()+ weight*x->numberUnsatisfied() > 
+      y->objectiveValue() + weight*y->numberUnsatisfied();
   }
 }
 // This allows method to change behavior as it is called
 // after each solution
 void 
 CbcCompareUser::newSolution(CbcModel * model,
-			    double objectiveAtContinuous,
-			    int numberInfeasibilitiesAtContinuous) 
+			       double objectiveAtContinuous,
+			       int numberInfeasibilitiesAtContinuous) 
 {
-  if (!model_)
-    model_=model;
   if (model->getSolutionCount()==model->getNumberHeuristicSolutions())
     return; // solution was got by rounding
   // set to get close to this solution
@@ -94,11 +114,10 @@ CbcCompareUser::newSolution(CbcModel * model,
     (model->getObjValue()-objectiveAtContinuous)/
     ((double) numberInfeasibilitiesAtContinuous);
   weight_ = 0.98*costPerInteger;
+  saveWeight_=weight_;
   numberSolutions_++;
-  if (numberSolutions_>50)
+  if (numberSolutions_>5)
     weight_ =0.0; // this searches on objective
-  if (model->messageHandler()->logLevel()>1)
-    printf("new weight %g\n",weight_);
 }
 // This allows method to change behavior 
 bool 
@@ -106,5 +125,18 @@ CbcCompareUser::every1000Nodes(CbcModel * model, int numberNodes)
 {
   if (numberNodes>10000)
     weight_ =0.0; // this searches on objective
+  else if (numberNodes==1000&&weight_==-2.0)
+    weight_=-1.0; // Go to depth first
+  // get size of tree
+  treeSize_ = model->tree()->size();
+  if (treeSize_>10000) {
+    // set weight to reduce size most of time
+    if (treeSize_>20000)
+      weight_=-1.0;
+    else if ((numberNodes%4000)!=0)
+      weight_=-1.0;
+    else
+      weight_=saveWeight_;
+  }
   return numberNodes==11000; // resort if first time
 }

@@ -3,28 +3,20 @@
 #ifndef CbcCompareUser_H
 #define CbcCompareUser_H
 
-
-//#############################################################################
-/*  These are alternative strategies for node traversal.  
-    They can take data etc for fine tuning 
-
-    At present the node list is stored as a heap and the "test"
-    comparison function returns true if node y is better than node x.
-
-    This has been broken out into .hpp and .cpp because of some odd bug
-
-*/
-class CbcNode;
-class CbcModel;
+#include "CbcNode.hpp"
 #include "CbcCompareBase.hpp"
-
-/* Before first solution do depth first,
-   then it is computed to hit first solution less 2%
+class CbcModel;
+/* This is an example of a more complex rule with data
+   It is default after first solution
+   If weight is 0.0 then it is computed to hit first solution
+   less 2%
 */
 class CbcCompareUser  : public CbcCompareBase {
 public:
   // Default Constructor 
-  CbcCompareUser ();
+  CbcCompareUser () ;
+  // Constructor with weight
+  CbcCompareUser (double weight);
 
   // Copy constructor 
   CbcCompareUser ( const CbcCompareUser &rhs);
@@ -35,14 +27,10 @@ public:
   /// Clone
   virtual CbcCompareBase * clone() const;
 
-  virtual ~CbcCompareUser();
-
-  /* 
-     Return true if y better than x
-     Node y is better than node x if y has fewer unsatisfied (greater depth on tie) or
-     after solution weighted value of y is less than weighted value of x
-  */
-  virtual bool test (CbcNode * x, CbcNode * y);
+  ~CbcCompareUser() ;
+  /* This returns true if weighted value of node y is less than
+     weighted value of node x */
+  virtual bool test (CbcNode * x, CbcNode * y) ;
   // This allows method to change behavior as it is called
   // after each solution
   virtual void newSolution(CbcModel * model,
@@ -51,17 +39,22 @@ public:
   // This allows method to change behavior 
   // Return true if want tree re-sorted
   virtual bool every1000Nodes(CbcModel * model,int numberNodes);
-  inline void setWeight(double value)
-  { weight_=value;};
-  inline void setModel(CbcModel * model)
-  { model_=model;};
-private:
+
+  /* if weight == -1.0 then depth first (before solution)
+     if -2.0 then do breadth first just for first 1000 nodes
+  */
+  inline double getWeight() const
+  { return weight_;};
+  inline void setWeight(double weight)
+  { weight_ = weight;};
+protected:
   // Weight for each infeasibility
   double weight_;
+  // Weight for each infeasibility - computed from solution
+  double saveWeight_;
   // Number of solutions
   int numberSolutions_;
-  // Pointer to model
-  CbcModel * model_;
+  // Tree size (at last check)
+  int treeSize_;
 };
-
 #endif

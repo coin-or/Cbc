@@ -39,6 +39,7 @@
 
 #include  "CoinTime.hpp"
 
+//#############################################################################
 
 
 /************************************************************************
@@ -73,7 +74,6 @@ int main (int argc, const char *argv[])
   OsiClpSolverInterface solver1;
   //solver1.messageHandler()->setLogLevel(0);
   CbcModel model(solver1);
-  solver1.getModelPtr()->setDualBound(1.0e10);
 #elif COIN_USE_OSL
   OsiOslSolverInterface solver1;
   //solver1.messageHandler()->setLogLevel(0);
@@ -97,6 +97,9 @@ int main (int argc, const char *argv[])
   generator1.setMaxProbe(100);
   generator1.setMaxLook(50);
   generator1.setRowCuts(3);
+  //  generator1.snapshot(*model.solver());
+  //generator1.createCliques(*model.solver(),2,1000,true);
+  //generator1.setMode(0);
 
   CglGomory generator2;
   // try larger limit
@@ -125,6 +128,16 @@ int main (int argc, const char *argv[])
   model.addCutGenerator(&generator5,-1,"Clique");
   model.addCutGenerator(&flowGen,-1,"FlowCover");
   model.addCutGenerator(&mixedGen,-1,"MixedIntegerRounding");
+
+#ifdef COIN_USE_CLP
+  OsiClpSolverInterface * osiclp = dynamic_cast< OsiClpSolverInterface*> (model.solver());
+  // go faster stripes
+  if (osiclp->getNumRows()<300&&osiclp->getNumCols()<500) {
+    osiclp->setupForRepeatedUse(2,0);
+    printf("trying slightly less reliable but faster version (? Gomory cuts okay?)\n");
+    printf("may not be safe if doing cuts in tree which need accuracy (level 2 anyway)\n");
+  }
+#endif
 
   // Allow rounding heuristic
 
@@ -185,9 +198,6 @@ int main (int argc, const char *argv[])
   //model.messageHandler()->setLogLevel(2);
   //model.solver()->messageHandler()->setLogLevel(2);
   //model.setPrintFrequency(50);
-  
-  double time1 = CoinCpuTime();
-  // For debugging we can check if we cut off known solution
   //#define DEBUG_CUTS 2
 #if DEBUG_CUTS==1
   // Set up debugger by value
@@ -204,14 +214,14 @@ int main (int argc, const char *argv[])
     delete [] solution;
   }
 #elif DEBUG_CUTS==2
-  // Set up debugger by name if already in OsiRowCutDebugger list
+  // Set up debugger by name
   {
     std::string problemName ;
-    // Get name from NAME card - we could also use a known name
     model.solver()->getStrParam(OsiProbName,problemName) ;
     model.solver()->activateRowCutDebugger(problemName.c_str()) ;
   }
 #endif
+  double time1 = CoinCpuTime();
 
   if (0) {
     // integer presolve
@@ -238,6 +248,7 @@ int main (int argc, const char *argv[])
 	   <<(!model.status() ? " Finished" : " Not finished")
 	   <<std::endl;
 
+  printf("Exact obj %18.18g\n",model.getObjValue());
   // Print more statistics
   std::cout<<"Cuts at root node changed objective from "<<model.getContinuousObjective()
 	   <<" to "<<model.rootObjectiveAfterCuts()<<std::endl;
@@ -251,7 +262,7 @@ int main (int argc, const char *argv[])
 	     <<generator->numberCutsActive()<<" were active after adding rounds of cuts"
 	     <<std::endl;
   }
-  // Print solution if there is one - we can't get names from Osi!
+  // Print solution if finished - we can't get names from Osi!
 
   if (model.getMinimizationObjValue()<1.0e50) {
     int numberColumns = model.solver()->getNumCols();

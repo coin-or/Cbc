@@ -575,8 +575,12 @@ void CbcModel::branchAndBound()
       currentNode_=&fakeNode;
     }
     phase_=3;
+    // only allow twenty passes
+    int numberPassesLeft=20;
     while (anyAction == -1)
-    { anyAction = newNode->chooseBranch(this,NULL) ;
+    {
+      anyAction = newNode->chooseBranch(this,NULL,numberPassesLeft) ;
+      numberPassesLeft--;
       if (anyAction == -1)
       { feasible = resolve() ;
 	resolved = true ;
@@ -693,6 +697,11 @@ void CbcModel::branchAndBound()
   /* Tell solver we are in Branch and Cut
      Could use last parameter for subtle differences */
   solver_->setHintParam(OsiDoInBranchAndCut,true,OsiHintDo,NULL) ;
+  /*
+    It is possible that strong branching fixes one variable and then the code goes round
+    again and again.  This can take too long.  So we need to warn user - just once.
+  */
+  int numberLongStrong=0;
 /*
   At last, the actual branch-and-cut search loop, which will iterate until
   the live set is empty or we hit some limit (integrality gap, time, node
@@ -892,8 +901,18 @@ void CbcModel::branchAndBound()
 	  resolved = false ;
 	  if (newNode->objectiveValue() >= getCutoff()) 
 	    anyAction=-2;
+          // only allow twenty passes
+          int numberPassesLeft=20;
 	  while (anyAction == -1)
-	  { anyAction = newNode->chooseBranch(this,node) ;
+	  { 
+            anyAction = newNode->chooseBranch(this,node,numberPassesLeft) ;
+            numberPassesLeft--;
+            if (numberPassesLeft<=-1) {
+              if (!numberLongStrong)
+                messageHandler()->message(CBC_WARNING_STRONG,
+                                          messages()) << CoinMessageEol ;
+              numberLongStrong++;
+            }
 	    if (anyAction == -1)
 	    { feasible = resolve() ;
 	      resolved = true ;
@@ -2434,7 +2453,7 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node,
             for (k = numberRowCutsBefore;k<numberRowCutsAfter;k++) {
               OsiRowCut thisCut = theseCuts.rowCut(k) ;
               /* check size of elements.
-                 We can allow smaller but this helsp debug generators as it
+                 We can allow smaller but this helps debug generators as it
                  is unsafe to have small elements */
               int n=thisCut.row().getNumElements();
               const int * column = thisCut.row().getIndices();
@@ -3096,7 +3115,8 @@ CbcModel::resolve()
   a solution where the objective is right on the cutoff.
 */
   if (feasible)
-  { solver_->resolve() ;
+  {
+    solver_->resolve() ;
     numberIterations_ += getIterationCount() ;
     feasible = (solver_->isProvenOptimal() &&
 		!solver_->isDualObjectiveLimitReached()) ; }

@@ -841,7 +841,7 @@ CbcNode::createInfo (CbcModel *model,
     For now just fix on objective from strong branching.
 */
 
-int CbcNode::chooseBranch (CbcModel *model, CbcNode *lastNode)
+int CbcNode::chooseBranch (CbcModel *model, CbcNode *lastNode,int numberPassesLeft)
 
 { if (lastNode)
     depth_ = lastNode->depth_+1;
@@ -854,7 +854,6 @@ int CbcNode::chooseBranch (CbcModel *model, CbcNode *lastNode)
   double objectiveValue = solver->getObjSense()*saveObjectiveValue;
   const double * lower = solver->getColLower();
   const double * upper = solver->getColUpper();
-
   int anyAction=0;
   double integerTolerance = 
     model->getDblParam(CbcModel::CbcIntegerTolerance);
@@ -1092,6 +1091,12 @@ int CbcNode::chooseBranch (CbcModel *model, CbcNode *lastNode)
       bestChoice=i;
     }
   }
+  // If we have hit max time don't do strong branching
+  bool hitMaxTime = ( CoinCpuTime()-model->getDblParam(CbcModel::CbcStartSeconds) > 
+                        model->getDblParam(CbcModel::CbcMaximumSeconds));
+  // also give up if we are looping round too much
+  if (hitMaxTime||numberPassesLeft<=0)
+    numberStrong=0;
 /*
   Is strong branching enabled? If so, set up and do it. Otherwise, we'll
   fall through to simple branching.
@@ -1102,6 +1107,7 @@ int CbcNode::chooseBranch (CbcModel *model, CbcNode *lastNode)
   if (numberStrong&&model->numberStrong()) {
     
     bool solveAll=false; // set true to say look at all even if some fixed (experiment)
+    // worth trying if too many times
     // Save basis
     CoinWarmStart * ws = solver->getWarmStart();
     // save limit
@@ -1212,9 +1218,6 @@ int CbcNode::chooseBranch (CbcModel *model, CbcNode *lastNode)
 	need to do all the work associated with finding a new solution before
 	restoring the bounds.
 */
-    // If we have hit max time ignore fixing on one way
-    bool hitMaxTime = ( CoinCpuTime()-model->getDblParam(CbcModel::CbcStartSeconds) > 
-                        model->getDblParam(CbcModel::CbcMaximumSeconds));
     for (i = 0 ; i < numberStrong ; i++)
     { double objectiveChange ;
       double newObjectiveValue=1.0e100;
@@ -1363,7 +1366,7 @@ int CbcNode::chooseBranch (CbcModel *model, CbcNode *lastNode)
       if (choice[i].upMovement<1.0e100) {
 	if(choice[i].downMovement<1.0e100) {
 	  // feasible - no action
-	} else if (!hitMaxTime) {
+	} else {
 	  // up feasible, down infeasible
 	  anyAction=-1;
 	  if (!solveAll) {
@@ -1374,14 +1377,12 @@ int CbcNode::chooseBranch (CbcModel *model, CbcNode *lastNode)
 	}
       } else {
 	if(choice[i].downMovement<1.0e100) {
-          if (!hitMaxTime) {
-            // down feasible, up infeasible
-            anyAction=-1;
-            if (!solveAll) {
-              choice[i].possibleBranch->way(-1);
-              choice[i].possibleBranch->branch();
-              break;
-            }
+          // down feasible, up infeasible
+          anyAction=-1;
+          if (!solveAll) {
+            choice[i].possibleBranch->way(-1);
+            choice[i].possibleBranch->branch();
+            break;
           }
 	} else {
 	  // neither side feasible

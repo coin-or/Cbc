@@ -416,6 +416,9 @@ public:
     unsatisfied objects as candidates for branching. The candidates are
     evaluated, and an appropriate branch object is installed.
 
+    The numberPassesLeft is decremented to stop fixing one variable each time
+    and going on and on (e.g. for stock cutting, air crew scheduling)
+
     If evaluation determines that an object is monotone or infeasible,
     the routine returns immediately. In the case of a monotone object,
     the branch object has already been called to modify the model.
@@ -428,7 +431,8 @@ public:
     </ul>
   */
   int chooseBranch (CbcModel * model,
-		    CbcNode * lastNode);
+		    CbcNode * lastNode,
+                    int numberPassesLeft);
   
   /// Decrement active cut counts
   void decrementCuts(int change=1);

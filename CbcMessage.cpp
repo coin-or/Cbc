@@ -40,7 +40,8 @@ static Cbc_message us_english[]=
   {CBC_NOTFEAS2,22,2,"On closer inspection objective value of %g above cutoff of %g"},
   {CBC_NOTFEAS3,23,2,"Allowing solution, even though largest row infeasibility is %g"},
   {CBC_CUTOFF_WARNING1,23,1,"Cutoff set to %g - equivalent to best solution of %g"},
-  {CBC_ITERATE_STRONG,24,3,"%d cleanup iterations before strong branching"},
+  {CBC_ITERATE_STRONG,25,3,"%d cleanup iterations before strong branching"},
+  {CBC_WARNING_STRONG,3008,1,"Strong branching is fixing too many variables, too expensively!"},
   {CBC_DUMMY_END,999999,0,""}
 };
 /* Constructor */

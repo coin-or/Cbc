@@ -29,7 +29,7 @@ static Cbc_message us_english[]=
   {CBC_GAP,11,1,"Exiting as integer gap of %g less than %g or %g%%"},
   {CBC_ROUNDING,12,1,"Integer solution of %g found by heuristic after %d iterations and %d nodes"},
   {CBC_ROOT,13,1,"At root node, %d cuts changed objective from %g to %g in %d passes"},
-  {CBC_GENERATOR,14,1,"Cut generator %d (%s) - %d row cuts (%d active), %d column cuts - new frequency is %d"},
+  {CBC_GENERATOR,14,1,"Cut generator %d (%s) - %d row cuts (%d active), %d column cuts %? in %g seconds - new frequency is %d"},
   {CBC_BRANCH,15,2,"Node %d Obj %g Unsat %d depth %d"},
   {CBC_STRONGSOL,16,1,"Integer solution of %g found by strong branching after %d iterations and %d nodes"},
   {CBC_TREE_SOL,24,1,"Integer solution of %g found by subtree after %d iterations and %d nodes"},

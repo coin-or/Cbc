@@ -2906,14 +2906,18 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node,
       // increment cut counts
       generator_[i]->incrementNumberCutsInTotal(countRowCuts[i]);
       generator_[i]->incrementNumberCutsActive(count[i]);
-      if (handler_->logLevel()>1||!numberNodes_)
+      if (handler_->logLevel()>1||!numberNodes_) {
 	handler_->message(CBC_GENERATOR,messages_)
 	  <<i
 	  <<generator_[i]->cutGeneratorName()
 	  <<countRowCuts[i]<<count[i]
-	  <<countColumnCuts[i]
+	  <<countColumnCuts[i];
+        handler_->printing(!numberNodes_&&generator_[i]->timing())
+          <<generator_[i]->timeInCutGenerator();
+        handler_->message()
 	  <<newFrequency
 	  <<CoinMessageEol ;
+      }
     } 
     delete [] count ;
     if( !numberNodes_) {

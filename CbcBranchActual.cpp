@@ -1844,3 +1844,404 @@ CbcBranchDefaultDecision::betterBranch(CbcBranchingObject * thisOne,
   }
   return betterWay;
 }
+// Default Constructor 
+CbcFollowOn::CbcFollowOn ()
+  : CbcObject(),
+    rhs_(NULL)
+{
+}
+
+// Useful constructor
+CbcFollowOn::CbcFollowOn (CbcModel * model)
+  : CbcObject(model)
+{
+  assert (model);
+  OsiSolverInterface * solver = model_->solver();
+  matrix_ = *solver->getMatrixByCol();
+  matrix_.removeGaps();
+  matrixByRow_ = *solver->getMatrixByRow();
+  int numberRows = matrix_.getNumRows();
+  
+  rhs_ = new int[numberRows];
+  int i;
+  const double * rowLower = solver->getRowLower();
+  const double * rowUpper = solver->getRowUpper();
+  // Row copy
+  const double * elementByRow = matrixByRow_.getElements();
+  const int * column = matrixByRow_.getIndices();
+  const CoinBigIndex * rowStart = matrixByRow_.getVectorStarts();
+  const int * rowLength = matrixByRow_.getVectorLengths();
+  for (i=0;i<numberRows;i++) {
+    rhs_[i]=0;
+    double value = rowLower[i];
+    if (value==rowUpper[i]) {
+      if (floor(value)==value&&value>=1.0&&value<10.0) {
+	// check elements
+	bool good=true;
+	for (int j=rowStart[i];j<rowStart[i]+rowLength[i];j++) {
+	  int iColumn = column[j];
+	  if (!solver->isBinary(iColumn))
+	    good=false;
+	  double elValue = elementByRow[j];
+	  if (floor(elValue)!=elValue||value<1.0)
+	    good=false;
+	}
+	if (good)
+	  rhs_[i]=(int) value;
+      }
+    }
+  }
+}
+
+// Copy constructor 
+CbcFollowOn::CbcFollowOn ( const CbcFollowOn & rhs)
+  :CbcObject(rhs),
+   matrix_(rhs.matrix_),
+   matrixByRow_(rhs.matrixByRow_)
+{
+  int numberRows = matrix_.getNumRows();
+  rhs_= CoinCopyOfArray(rhs.rhs_,numberRows);
+}
+
+// Clone
+CbcObject *
+CbcFollowOn::clone() const
+{
+  return new CbcFollowOn(*this);
+}
+
+// Assignment operator 
+CbcFollowOn & 
+CbcFollowOn::operator=( const CbcFollowOn& rhs)
+{
+  if (this!=&rhs) {
+    CbcObject::operator=(rhs);
+    delete [] rhs_;
+    matrix_ = rhs.matrix_;
+    matrixByRow_ = rhs.matrixByRow_;
+    int numberRows = matrix_.getNumRows();
+    rhs_= CoinCopyOfArray(rhs.rhs_,numberRows);
+  }
+  return *this;
+}
+
+// Destructor 
+CbcFollowOn::~CbcFollowOn ()
+{
+  delete [] rhs_;
+}
+// As some computation is needed in more than one place - returns row
+int 
+CbcFollowOn::gutsOfFollowOn(int & otherRow) const
+{
+  int whichRow=-1;
+  otherRow=-1;
+  int numberRows = matrix_.getNumRows();
+  
+  int i;
+  // For sorting
+  int * sort = new int [numberRows];
+  int * isort = new int [numberRows];
+  // Column copy
+  //const double * element = matrix_.getElements();
+  const int * row = matrix_.getIndices();
+  const CoinBigIndex * columnStart = matrix_.getVectorStarts();
+  const int * columnLength = matrix_.getVectorLengths();
+  // Row copy
+  const double * elementByRow = matrixByRow_.getElements();
+  const int * column = matrixByRow_.getIndices();
+  const CoinBigIndex * rowStart = matrixByRow_.getVectorStarts();
+  const int * rowLength = matrixByRow_.getVectorLengths();
+  OsiSolverInterface * solver = model_->solver();
+  const double * columnLower = solver->getColLower();
+  const double * columnUpper = solver->getColUpper();
+  const double * solution = solver->getColSolution();
+  double integerTolerance = model_->getDblParam(CbcModel::CbcIntegerTolerance);
+  int nSort=0;
+  for (i=0;i<numberRows;i++) {
+    if (rhs_[i]) {
+      // check elements
+      double smallest=1.0e10;
+      double largest=0.0;
+      int rhsValue=rhs_[i];
+      int number1=0;
+      int numberUnsatisfied=0;
+      for (int j=rowStart[i];j<rowStart[i]+rowLength[i];j++) {
+	int iColumn = column[j];
+	double value = elementByRow[j];
+	double solValue = solution[iColumn];
+	if (columnLower[iColumn]!=columnUpper[iColumn]) {
+	  smallest = CoinMin(smallest,value);
+	  largest = CoinMax(largest,value);
+	  if (value==1.0)
+	    number1++;
+	  if (solValue<1.0-integerTolerance&&solValue>integerTolerance)
+	    numberUnsatisfied++;
+	} else {
+	  rhsValue -= (int)(value*floor(solValue+0.5));
+	}
+      }
+      if (numberUnsatisfied>1) {
+	if (smallest<largest) {
+	  // probably no good but check a few things
+	  assert (largest<=rhsValue);
+	  if (number1==1&&largest==rhsValue)
+	    printf("could fix\n");
+	} else if (largest==rhsValue) {
+	  sort[nSort]=i;
+	  isort[nSort++]=-numberUnsatisfied;
+	}
+      }
+    }
+  }
+  if (nSort>1) {
+    CoinSort_2(isort,isort+nSort,sort);
+    CoinZeroN(isort,numberRows);
+    int * which = new int[numberRows];
+    for (int k=0;k<nSort-1;k++) {
+      i=sort[k];
+      int numberUnsatisfied = 0;
+      int n=0;
+      int j;
+      for (j=rowStart[i];j<rowStart[i]+rowLength[i];j++) {
+	int iColumn = column[j];
+	if (columnLower[iColumn]!=columnUpper[iColumn]) {
+	  double solValue = solution[iColumn];
+	  if (solValue<1.0-integerTolerance&&solValue>integerTolerance) {
+	    numberUnsatisfied++;
+	    for (int jj=columnStart[iColumn];jj<columnStart[iColumn]+columnLength[iColumn];jj++) {
+	      int iRow = row[jj];
+	      if (rhs_[iRow]) {
+		if (isort[iRow]) {
+		  isort[iRow]++;
+		} else {
+		  isort[iRow]=1;
+		  which[n++]=iRow;
+		}
+	      }
+	    }
+	  }
+	}
+      }
+      assert (numberUnsatisfied==isort[i]);
+      // find one nearest half
+      int iBest=-1;
+      int target = (numberUnsatisfied+1)>>1;
+      int best=numberUnsatisfied;
+      for (j=0;j<n;j++) {
+	int iRow = which[j];
+	int value = isort[iRow];
+	isort[iRow]=0;
+	if (abs(value-target)<best&&value!=numberUnsatisfied) {
+	  best=abs(value-target);
+	  iBest=iRow;
+	}
+      }
+      if (iBest>=0) {
+	whichRow=i;
+	otherRow=iBest;
+	break;
+      }
+    }
+    delete [] which;
+  }
+  delete [] sort;
+  delete [] isort;
+  return whichRow;
+}
+
+// Infeasibility - large is 0.5
+double 
+CbcFollowOn::infeasibility(int & preferredWay) const
+{
+  int otherRow=0;
+  int whichRow = gutsOfFollowOn(otherRow);
+  preferredWay=-1;
+  if (whichRow<0)
+    return 0.0;
+  else
+  return 2.0* model_->getDblParam(CbcModel::CbcIntegerTolerance);
+}
+
+// This looks at solution and sets bounds to contain solution
+void 
+CbcFollowOn::feasibleRegion()
+{
+}
+
+
+// Creates a branching object
+CbcBranchingObject * 
+CbcFollowOn::createBranch(int way) const
+{
+  int otherRow=0;
+  int whichRow = gutsOfFollowOn(otherRow);
+  assert(way==-1);
+  assert (whichRow>=0);
+  int numberColumns = matrix_.getNumCols();
+  
+  // Column copy
+  //const double * element = matrix_.getElements();
+  const int * row = matrix_.getIndices();
+  const CoinBigIndex * columnStart = matrix_.getVectorStarts();
+  const int * columnLength = matrix_.getVectorLengths();
+  // Row copy
+  //const double * elementByRow = matrixByRow_.getElements();
+  const int * column = matrixByRow_.getIndices();
+  const CoinBigIndex * rowStart = matrixByRow_.getVectorStarts();
+  const int * rowLength = matrixByRow_.getVectorLengths();
+  OsiSolverInterface * solver = model_->solver();
+  const double * columnLower = solver->getColLower();
+  const double * columnUpper = solver->getColUpper();
+  //const double * solution = solver->getColSolution();
+  int nUp=0;
+  int nDown=0;
+  int * upList = new int[numberColumns];
+  int * downList = new int[numberColumns];
+  int j;
+  for (j=rowStart[whichRow];j<rowStart[whichRow]+rowLength[whichRow];j++) {
+    int iColumn = column[j];
+    if (columnLower[iColumn]!=columnUpper[iColumn]) {
+      bool up=true;
+      for (int jj=columnStart[iColumn];jj<columnStart[iColumn]+columnLength[iColumn];jj++) {
+	int iRow = row[jj];
+	if (iRow==otherRow) {
+	  up=false;
+	  break;
+	}
+      }
+      if (up)
+	upList[nUp++]=iColumn;
+      else
+	downList[nDown++]=iColumn;
+    }
+  }
+  //printf("way %d\n",way);
+  // create object
+  CbcBranchingObject * branch
+     = new CbcFixingBranchingObject(model_,way,
+					 nDown,downList,nUp,upList);
+  delete [] upList;
+  delete [] downList;
+  return branch;
+}
+// Default Constructor 
+CbcFixingBranchingObject::CbcFixingBranchingObject()
+  :CbcBranchingObject()
+{
+  numberDown_=0;
+  numberUp_=0;
+  downList_=NULL;
+  upList_=NULL;
+}
+
+// Useful constructor
+CbcFixingBranchingObject::CbcFixingBranchingObject (CbcModel * model,
+						    int way ,
+						    int numberOnDownSide, const int * down,
+						    int numberOnUpSide, const int * up)
+  :CbcBranchingObject(model,0,way,0.5)
+{
+  numberDown_=numberOnDownSide;
+  numberUp_=numberOnUpSide;
+  downList_ = CoinCopyOfArray(down,numberDown_);
+  upList_ = CoinCopyOfArray(up,numberUp_);
+}
+
+// Copy constructor 
+CbcFixingBranchingObject::CbcFixingBranchingObject ( const CbcFixingBranchingObject & rhs) :CbcBranchingObject(rhs)
+{
+  numberDown_=rhs.numberDown_;
+  numberUp_=rhs.numberUp_;
+  downList_ = CoinCopyOfArray(rhs.downList_,numberDown_);
+  upList_ = CoinCopyOfArray(rhs.upList_,numberUp_);
+}
+
+// Assignment operator 
+CbcFixingBranchingObject & 
+CbcFixingBranchingObject::operator=( const CbcFixingBranchingObject& rhs)
+{
+  if (this != &rhs) {
+    CbcBranchingObject::operator=(rhs);
+    delete [] downList_;
+    delete [] upList_;
+    numberDown_=rhs.numberDown_;
+    numberUp_=rhs.numberUp_;
+    downList_ = CoinCopyOfArray(rhs.downList_,numberDown_);
+    upList_ = CoinCopyOfArray(rhs.upList_,numberUp_);
+  }
+  return *this;
+}
+CbcBranchingObject * 
+CbcFixingBranchingObject::clone() const
+{ 
+  return (new CbcFixingBranchingObject(*this));
+}
+
+
+// Destructor 
+CbcFixingBranchingObject::~CbcFixingBranchingObject ()
+{
+  delete [] downList_;
+  delete [] upList_;
+}
+double
+CbcFixingBranchingObject::branch(bool normalBranch)
+{
+  if (model_->messageHandler()->logLevel()>2&&normalBranch)
+    print(normalBranch);
+  numberBranchesLeft_--;
+  OsiSolverInterface * solver = model_->solver();
+  const double * columnLower = solver->getColLower();
+  int i;
+  // *** for way - up means fix all those in up section
+  if (way_<0) {
+#ifdef FULL_PRINT
+    printf("Down Fix ");
+#endif
+    for (i=0;i<numberDown_;i++) {
+      int iColumn = downList_[i];
+      model_->solver()->setColUpper(iColumn,columnLower[iColumn]);
+#ifdef FULL_PRINT
+      printf("Setting bound on %d to lower bound\n",iColumn);
+#endif
+    }
+    way_=1;	  // Swap direction
+  } else {
+#ifdef FULL_PRINT
+    printf("Up Fix ");
+#endif
+    for (i=0;i<numberUp_;i++) {
+      int iColumn = upList_[i];
+      model_->solver()->setColUpper(iColumn,columnLower[iColumn]);
+#ifdef FULL_PRINT
+      printf("Setting bound on %d to lower bound\n",iColumn);
+#endif
+    }
+    way_=-1;	  // Swap direction
+  }
+#ifdef FULL_PRINT
+  printf("\n");
+#endif
+  return 0.0;
+}
+void
+CbcFixingBranchingObject::print(bool normalBranch)
+{
+  int i;
+  // *** for way - up means fix all those in up section
+  if (way_<0) {
+    printf("Down Fix ");
+    for (i=0;i<numberDown_;i++) {
+      int iColumn = downList_[i];
+      printf("%d ",iColumn);
+    }
+  } else {
+    printf("Up Fix ");
+    for (i=0;i<numberUp_;i++) {
+      int iColumn = upList_[i];
+      printf("%d ",iColumn);
+    }
+  }
+  printf("\n");
+}

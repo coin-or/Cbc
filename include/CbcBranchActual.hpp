@@ -4,7 +4,7 @@
 #define CbcBranchActual_H
 
 #include "CbcBranchBase.hpp"
-
+#include "CoinPackedMatrix.hpp"
 
 /// Define a clique class
 
@@ -685,4 +685,102 @@ private:
 
 };
 
+/** Define a follow on class.
+    The idea of this is that in air-crew scheduling problems crew may fly in on flight A
+    and out on flight B or on some other flight.  A useful branch is one which on one side
+    fixes all which go out on flight B to 0, while the other branch fixes all those that do NOT
+    go out on flight B to 0.
+
+    This branching rule should be in addition to normal rules and have a high priority.
+*/
+
+
+
+class CbcFollowOn : public CbcObject {
+
+public:
+
+  // Default Constructor 
+  CbcFollowOn ();
+
+  /** Useful constructor
+  */
+  CbcFollowOn (CbcModel * model);
+  
+  // Copy constructor 
+  CbcFollowOn ( const CbcFollowOn &);
+   
+  /// Clone
+  virtual CbcObject * clone() const;
+
+  // Assignment operator 
+  CbcFollowOn & operator=( const CbcFollowOn& rhs);
+
+  // Destructor 
+  ~CbcFollowOn ();
+  
+  /// Infeasibility - large is 0.5
+  virtual double infeasibility(int & preferredWay) const;
+
+  /// This looks at solution and sets bounds to contain solution
+  virtual void feasibleRegion();
+  /// Creates a branching object
+  virtual CbcBranchingObject * createBranch(int way) const;
+  /// As some computation is needed in more than one place - returns row
+  int gutsOfFollowOn(int & otherRow) const;
+
+protected:
+  /// data
+  /// Matrix
+  CoinPackedMatrix matrix_;
+  /// Matrix by row
+  CoinPackedMatrix matrixByRow_; 
+  /// Possible rhs (if 0 then not possible)
+  int * rhs_;
+};
+/** General Branching Object class.
+    Each way fixes some variables to lower bound
+ */
+class CbcFixingBranchingObject : public CbcBranchingObject {
+
+public:
+
+  // Default Constructor 
+  CbcFixingBranchingObject ();
+
+  // Useful constructor
+  CbcFixingBranchingObject (CbcModel * model, 
+			    int way,
+			    int numberOnDownSide, const int * down,
+			    int numberOnUpSide, const int * up);
+  
+  // Copy constructor 
+  CbcFixingBranchingObject ( const CbcFixingBranchingObject &);
+   
+  // Assignment operator 
+  CbcFixingBranchingObject & operator=( const CbcFixingBranchingObject& rhs);
+
+  /// Clone
+  virtual CbcBranchingObject * clone() const;
+
+  // Destructor 
+  virtual ~CbcFixingBranchingObject ();
+  
+  /// Does next branch and updates state
+  virtual double branch(bool normalBranch=false);
+
+  /** \brief Print something about branch - only if log level high
+  */
+  virtual void print(bool normalBranch);
+private:
+  /// data
+  /// Number on down list
+  int numberDown_;
+  /// Number on up list
+  int numberUp_;
+  /// downList - variables to fix to lb on down branch
+  int * downList_;
+  /// upList - variables to fix to lb on up branch
+  int * upList_;
+};
 #endif

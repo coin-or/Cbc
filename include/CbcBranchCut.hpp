@@ -5,6 +5,7 @@
 
 #include "CbcBranchBase.hpp"
 #include "OsiRowCut.hpp"
+#include "CoinPackedMatrix.hpp"
 
 /** Define a cut branching class.
     At present empty - all stuff in descendants
@@ -148,38 +149,47 @@ protected:
 
 
 /** Define a branch class that branches so that one way variables are fixed
-    while the other way cuts off that solution
+    while the other way cuts off that solution.
+    a) On reduced cost
+    b) When enough ==1 or <=1 rows have been satisfied (not fixed - satisfied)
 */
 
 
-class CbcBranchOnReducedCost : public CbcBranchCut {
+class CbcBranchToFixLots : public CbcBranchCut {
 
 public:
 
   // Default Constructor 
-  CbcBranchOnReducedCost ();
+  CbcBranchToFixLots ();
 
   /** Useful constructor - passed reduced cost tolerance and fraction we would like fixed.
       Also depth level to do at.
+      Also passed number of 1 rows which when clean triggers fix
+      Always does if all 1 rows cleaned up and number>0 or if fraction columns reached
       Also whether to create branch if can't reach fraction.
   */ 
-  CbcBranchOnReducedCost (CbcModel * model, double djTolerance,
-			  double fractionFixed, int depth,
-			  const char * mark=NULL,
-			  bool alwaysCreate=false);
+  CbcBranchToFixLots (CbcModel * model, double djTolerance,
+		      double fractionFixed, int depth,
+		      int numberClean=0,
+		      const char * mark=NULL,
+		      bool alwaysCreate=false);
   
   // Copy constructor 
-  CbcBranchOnReducedCost ( const CbcBranchOnReducedCost &);
+  CbcBranchToFixLots ( const CbcBranchToFixLots &);
    
   /// Clone
   virtual CbcObject * clone() const;
 
   // Assignment operator 
-  CbcBranchOnReducedCost & operator=( const CbcBranchOnReducedCost& rhs);
+  CbcBranchToFixLots & operator=( const CbcBranchToFixLots& rhs);
 
   // Destructor 
-  ~CbcBranchOnReducedCost ();
-  
+  ~CbcBranchToFixLots ();
+
+  /** Does a lot of the work,
+      Returns 0 if no good, 1 if dj, 2 if clean, 3 if both
+  */
+  int shallWe() const;
   /// Infeasibility - large is 0.5
   virtual double infeasibility(int & preferredWay) const;
 
@@ -196,8 +206,12 @@ protected:
   double fractionFixed_;
   /// Never fix ones marked here
   char * mark_;
-  // Do if depth multiple of this
+  /// Matrix by row
+  CoinPackedMatrix matrixByRow_; 
+  /// Do if depth multiple of this
   int depth_;
+  /// number of ==1 rows which need to be clean
+  int numberClean_;
   /// If true then always create branch
   bool alwaysCreate_;
 };

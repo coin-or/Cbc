@@ -1049,7 +1049,7 @@ int CbcNode::chooseBranch (CbcModel *model, CbcNode *lastNode)
   Setup for strong branching involves saving the current basis (for restoration
   afterwards) and setting up for hot starts.
 */
-  if (numberStrong) {
+  if (numberStrong&&model->numberStrong()) {
     
     bool solveAll=false; // set true to say look at all even if some fixed (experiment)
     // Save basis

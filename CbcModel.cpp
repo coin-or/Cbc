@@ -2210,24 +2210,6 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node,
   if (debugger) 
     onOptimalPath = (debugger->onOptimalPath(*solver_)) ;
 # endif
-  if (nextRowCut_) {
-    // branch was a cut - add it
-    /*
-      Get a basis by asking the solver for warm start information. Resize it
-      (retaining the basis) so it can accommodate the cuts.
-    */
-    delete basis_ ;
-    basis_ = dynamic_cast<CoinWarmStartBasis*>(solver_->getWarmStart()) ;
-    assert(basis_ != NULL); // make sure not volume
-    basis_->resize(numberRowsAtStart+1,numberColumns) ;
-    solver_->applyRowCuts(1,&nextRowCut_) ;
-    basis_->setArtifStatus(numberRowsAtStart,
-			   CoinWarmStartBasis::basic) ;
-    cuts.insert(*nextRowCut_);
-    nextRowCut_=NULL;
-    lastNumberCuts++;
-    printf("applying branch cut\n");
-  }
 /*
   Resolve the problem. If we've lost feasibility, might as well bail out right
   after the debug stuff.
@@ -2321,11 +2303,11 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node,
   I can't see why this code
   needs its own copy of the primal solution. Removed the dec'l.
 */
+    int numberViolated=0;
     if (currentPassNumber_ == 1 && howOftenGlobalScan_ > 0 &&
 	(numberNodes_%howOftenGlobalScan_) == 0)
     { int numberCuts = globalCuts_.sizeColCuts() ;
       int i;
-      int numberViolated=0;
       for ( i = 0 ; i < numberCuts ; i++)
       { const OsiColCut *thisCut = globalCuts_.colCutPtr(i) ;
 	if (thisCut->violated(solution)>primalTolerance) {
@@ -2357,6 +2339,31 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node,
   CglProbing indicates that it can fix a variable. Reoptimisation is required
   to take full advantage.
 */
+    if (nextRowCut_) {
+      // branch was a cut - add it
+      theseCuts.insert(*nextRowCut_);
+      //nextRowCut_->print();
+      const OsiRowCut * cut=nextRowCut_;
+      const double * solution = solver_->getColSolution();
+      double lb = cut->lb();
+      double ub = cut->ub();
+      int n=cut->row().getNumElements();
+      const int * column = cut->row().getIndices();
+      const double * element = cut->row().getElements();
+      double sum=0.0;
+      for (int i=0;i<n;i++) {
+	int iColumn = column[i];
+	double value = element[i];
+	//if (solution[iColumn]>1.0e-7)
+	//printf("value of %d is %g\n",iColumn,solution[iColumn]);
+	sum += value * solution[iColumn];
+      }
+      delete nextRowCut_;
+      nextRowCut_=NULL;
+      printf("applying branch cut, sum is %g, bounds %g %g\n",sum,lb,ub);
+      // set whichgenerator (also serves as marker to say don't delete0
+      whichGenerator[numberViolated++]=-2;
+    }
     double * newSolution = new double [numberColumns] ;
     double heuristicValue = getCutoff() ;
     int found = -1; // no solution found
@@ -2919,7 +2926,7 @@ CbcModel::takeOffCuts (OsiCuts &newCuts, int *whichGenerator,
     int k = 0 ;
     for (i = 0 ; i < numberNewCuts ; i++)
     { status = ws->getArtifStatus(i+firstNewCut) ;
-      if (status == CoinWarmStartBasis::basic)
+      if (status == CoinWarmStartBasis::basic&&whichGenerator[i]!=-2)
       { solverCutIndices[numberNewToDelete+numberOldToDelete] = i+firstNewCut ;
 	newCutIndices[numberNewToDelete++] = i ; }
       else
@@ -4181,6 +4188,7 @@ CbcModel::integerPresolve(bool weak)
 {
   status_ = 0;
   // solve LP
+  //solver_->writeMps("bad");
   bool feasible = resolve();
 
   CbcModel * newModel = NULL;

@@ -290,12 +290,17 @@ int main (int argc, const char *argv[])
 
   if (model.getMinimizationObjValue()<1.0e50) {
     // post process
-    if (preProcess)
+    OsiSolverInterface * solver;
+    if (preProcess) {
       process.postProcess(*model.solver());
-    // Solution now back in solver1
-    int numberColumns = solver1.getNumCols();
+      // Solution now back in solver1
+      solver = & solver1;
+    } else {
+      solver = model.solver();
+    }
+    int numberColumns = solver->getNumCols();
     
-    const double * solution = solver1.getColSolution();
+    const double * solution = solver->getColSolution();
     
     int iColumn;
     std::cout<<std::setiosflags(std::ios::fixed|std::ios::showpoint)<<std::setw(14);
@@ -303,7 +308,7 @@ int main (int argc, const char *argv[])
     std::cout<<"--------------------------------------"<<std::endl;
     for (iColumn=0;iColumn<numberColumns;iColumn++) {
       double value=solution[iColumn];
-      if (fabs(value)>1.0e-7&&solver1.isInteger(iColumn)) 
+      if (fabs(value)>1.0e-7&&solver->isInteger(iColumn)) 
 	std::cout<<std::setw(6)<<iColumn<<" "<<value<<std::endl;
     }
     std::cout<<"--------------------------------------"<<std::endl;

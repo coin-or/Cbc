@@ -45,7 +45,7 @@ void CbcSolverLongThin::initialSolve()
 //-----------------------------------------------------------------------------
 void CbcSolverLongThin::resolve()
 {
-  if (nestedSearch_<1.0&&model_) {
+  if (nestedSearch_<1.0&&model_&&model_->phase()==2) {
     // problem may be small enough to do nested search
     const double * colLower = modelPtr_->columnLower();
     const double * colUpper = modelPtr_->columnUpper();
@@ -77,14 +77,17 @@ void CbcSolverLongThin::resolve()
 	//assert (numberObjects == model_->numberIntegers()+1);
 	model_->setNumberObjects(model_->numberIntegers());
       }
+      double saveMaxTime = model_->getDblParam(CbcModel::CbcMaximumSeconds);
+      model_->setDblParam(CbcModel::CbcMaximumSeconds,1.0e5);
       int returnCode= model_->subBranchAndBound(colLower,colUpper,500);
+      model_->setDblParam(CbcModel::CbcMaximumSeconds,saveMaxTime);
       model_->setNumberObjects(numberObjects);
       osiclp->setNested(saveNested);
       osiclp->setJustCount(saveJust);
-      //if (returnCode!=0&&returnCode!=2) {
-      //printf("pretending entire search done\n");
-      //returnCode=0;
-      //}
+      if (returnCode!=0&&returnCode!=2) {
+	printf("pretending entire search done\n");
+	returnCode=0;
+      }
       if (returnCode==0||returnCode==2) {
 	modelPtr_->setProblemStatus(1);
 	return;

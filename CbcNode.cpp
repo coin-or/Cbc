@@ -992,8 +992,6 @@ int CbcNode::chooseBranch (CbcModel *model, CbcNode *lastNode,int numberPassesLe
         }
       }
       if (infeasibility) {
-        //if (infeasibility<=integerTolerance) 
-          //printf("XXXXX small %g\n",infeasibility);
         // Increase estimated degradation to solution
         estimatedDegradation += CoinMin(object->upEstimate(),object->downEstimate());
         numberUnsatisfied_++;
@@ -1138,8 +1136,9 @@ int CbcNode::chooseBranch (CbcModel *model, CbcNode *lastNode,int numberPassesLe
     double ** outputSolution=NULL;
     int * outputStuff=NULL;
     int saveLogLevel=0;
-    // For moment - until full testing - go back to normal way
-    //allNormal=false;
+    // Go back to normal way if user wants it
+    if (osiclp&&(osiclp->specialOptions()&16)!=0)
+      allNormal=false;
     if (osiclp&& allNormal) {
       clp = osiclp->getModelPtr();
       saveLogLevel = clp->logLevel();

@@ -3473,11 +3473,19 @@ CbcModel::passInPriorities (const int * priorities,
       priority_[i]=defaultValue;
   }
   if (priorities) {
-    if (ifObject)
+    int i0=0;
+    int i1=numberObjects_-1;
+    if (ifObject) {
       memcpy(priority_+numberIntegers_,priorities,
 	     (numberObjects_-numberIntegers_)*sizeof(int));
-    else
+      i0=numberIntegers_;
+    } else {
       memcpy(priority_,priorities,numberIntegers_*sizeof(int));
+      i1=numberIntegers_-1;
+    }
+    messageHandler()->message(CBC_PRIORITY,
+                              messages())
+                                << i0<<i1<<numberObjects_ << CoinMessageEol ;
   }
 }
 

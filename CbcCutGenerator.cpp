@@ -150,6 +150,11 @@ CbcCutGenerator::generateCuts( OsiCuts & cs , bool fullScan, CbcNode * node)
   if (howOften==100)
     doThis=false;
   if (fullScan||doThis) {
+    CglTreeInfo info;
+    info.level = depth;
+    info.pass = pass;
+    info.formulation_rows = model_->numberRowsAtContinuous();
+    info.inTree = node!=NULL;
     incrementNumberTimesEntered();
     CglProbing* generator =
       dynamic_cast<CglProbing*>(generator_);
@@ -158,15 +163,11 @@ CbcCutGenerator::generateCuts( OsiCuts & cs , bool fullScan, CbcNode * node)
       //OsiSolverInterface * solver = model_->solver();
       //void * saveData = solver->getApplicationData();
       //solver->setApplicationData(model_);
-      CglTreeInfo info;
-      info.level = depth;
-      info.pass = pass;
-      info.formulation_rows = model_->numberRowsAtContinuous();
       generator_->generateCuts(*solver,cs,info);
       //solver->setApplicationData(saveData);
     } else {
       // Probing - return tight column bounds
-      generator->generateCutsAndModify(*solver,cs);
+      generator->generateCutsAndModify(*solver,cs,info);
       const double * tightLower = generator->tightLower();
       const double * lower = solver->getColLower();
       const double * tightUpper = generator->tightUpper();

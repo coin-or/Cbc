@@ -2761,6 +2761,9 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node,
   class.
 */
   if (fullScan&&numberCutGenerators_) {
+    /* If cuts just at root node then it will probably be faster to
+       update matrix and leave all in */
+    bool willBeCutsInTree=false;
     // Root node or every so often - see what to turn off
     int i ;
     double thisObjective = solver_->getObjValue()*direction ;
@@ -2790,7 +2793,7 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node,
 	// If small number switch mostly off
 	double thisCuts = countRowCuts[i] + 5.0*countColumnCuts[i] ;
 	if (!thisCuts||howOften == -99) {
-	  if (howOften == -99)
+	  if (howOften == -99) 
 	    howOften = -100 ;
 	  else
 	    howOften = 1000000+SCANCUTS; // wait until next time
@@ -2801,6 +2804,9 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node,
 	  howOften = 1+1000000 ;
 	}
       }
+      if (howOften>=0&&generator_[i]->generator()->mayGenerateRowCutsInTree())
+	willBeCutsInTree=true;
+	
       generator_[i]->setHowOften(howOften) ;
       int newFrequency = generator_[i]->howOften()%1000000 ;
       // increment cut counts
@@ -2816,6 +2822,13 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node,
 	  <<CoinMessageEol ;
     } 
     delete [] count ;
+    if( !willBeCutsInTree&&!numberNodes_) {
+      // Take off cuts
+      cuts = OsiCuts();
+      numberNewCuts=0;
+      // update size of problem
+      numberRowsAtContinuous_ = solver_->getNumRows() ;
+    }
   } else if (numberCutGenerators_) {
     int i;
     // add to counts anyway

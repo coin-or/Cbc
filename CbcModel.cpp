@@ -3478,6 +3478,12 @@ CbcModel::passInPriorities (const int * priorities,
     int i0=0;
     int i1=numberObjects_-1;
     if (ifObject) {
+      /* priority_ may be wrong size.  This fix may not cope with
+         all possibilities but should for normal use. */
+      int * temp = new int[numberObjects_];
+      memcpy(temp,priority_,numberIntegers_*sizeof(int));
+      delete [] priority_;
+      priority_=temp;
       memcpy(priority_+numberIntegers_,priorities,
 	     (numberObjects_-numberIntegers_)*sizeof(int));
       i0=numberIntegers_;

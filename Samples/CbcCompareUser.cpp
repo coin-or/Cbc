@@ -24,6 +24,34 @@ CbcCompareUser::CbcCompareUser ()
 CbcCompareUser::~CbcCompareUser()
 {
 }
+// Copy constructor 
+CbcCompareUser::CbcCompareUser ( const CbcCompareUser &rhs)
+: CbcCompareBase(rhs)
+{
+  weight_=rhs.weight_;
+  numberSolutions_=rhs.numberSolutions_;
+  model_=rhs.model_;
+}
+   
+// Assignment operator 
+CbcCompareUser & 
+CbcCompareUser::operator=( const CbcCompareUser& rhs)
+{  
+  if (this!=&rhs) { 
+    CbcCompareBase::operator=(rhs);
+    weight_=rhs.weight_;
+    numberSolutions_=rhs.numberSolutions_;
+    model_=rhs.model_;
+  }
+  return *this;
+}
+
+// Clone
+CbcCompareBase * 
+CbcCompareUser::clone() const
+{ 
+  return new CbcCompareUser (*this);
+}
 
 /* 
    Return true if y better than x

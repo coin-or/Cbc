@@ -62,10 +62,32 @@ void CbcSolverLongThin::resolve()
     }
     if (nFix>nestedSearch_*numberIntegers) {
       // Do nested search
-     int returnCode= model_->subBranchAndBound(colLower,colUpper,50000);
-     if (returnCode==0||returnCode==2) {
-       modelPtr_->setProblemStatus(1);
-       return;
+      // We clone from continuous solver so set some stuff
+      OsiSolverInterface * solver = model_->continuousSolver();
+      CbcSolverLongThin * osiclp = dynamic_cast< CbcSolverLongThin*> (solver);
+      assert (osiclp);
+      
+      double saveNested = osiclp->getNested();
+      bool saveJust = osiclp->getJustCount();
+      osiclp->setNested(1.0);
+      osiclp->setJustCount(true);
+      int numberObjects = model_->numberObjects();
+      if (numberObjects>model_->numberIntegers()) {
+	// for now assume just one cut object
+	assert (numberObjects == model_->numberIntegers()+1);
+	model_->setNumberObjects(numberObjects-1);
+      }
+      int returnCode= model_->subBranchAndBound(colLower,colUpper,500);
+      model_->setNumberObjects(numberObjects);
+      osiclp->setNested(saveNested);
+      osiclp->setJustCount(saveJust);
+      if (returnCode!=0&&returnCode!=2) {
+	printf("pretending entire search done\n");
+	returnCode=0;
+      }
+      if (returnCode==0||returnCode==2) {
+	modelPtr_->setProblemStatus(1);
+	return;
      }
     }
   }

@@ -26,6 +26,15 @@ public:
   // Default Constructor 
   CbcCompareUser ();
 
+  // Copy constructor 
+  CbcCompareUser ( const CbcCompareUser &rhs);
+   
+  // Assignment operator 
+  CbcCompareUser & operator=( const CbcCompareUser& rhs);
+
+  /// Clone
+  virtual CbcCompareBase * clone() const;
+
   virtual ~CbcCompareUser();
 
   /* 

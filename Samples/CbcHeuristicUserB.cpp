@@ -12,7 +12,7 @@
 #include "CbcSolverLongThin.hpp"
 #include "CbcModel.hpp"
 #include "CbcMessage.hpp"
-#include "CbcHeuristicUser.hpp"
+#include "CbcHeuristicUserB.hpp"
 #include "CbcBranchActual.hpp"
 #include "CbcCutGenerator.hpp"
 #include "CbcCompareUser.hpp"
@@ -54,7 +54,7 @@ CbcLocalSearch::CbcLocalSearch(CbcModel & model)
 // Destructor 
 CbcLocalSearch::~CbcLocalSearch ()
 {
-  delete used_;
+  delete [] used_;
 }
 
 // Clone
@@ -77,6 +77,21 @@ CbcLocalSearch::CbcLocalSearch(const CbcLocalSearch & rhs)
     int numberColumns = model_->solver()->getNumCols();
     used_ = new char[numberColumns];
     memcpy(used_,rhs.used_,numberColumns);
+  } else {
+    used_=NULL;
+  }
+}
+// Resets stuff if model changes
+void 
+CbcLocalSearch::resetModel(CbcModel * model)
+{
+  CbcHeuristic::resetModel(model);
+  delete [] used_;
+  numberSolutions_=0;
+  if (model_&&used_) {
+    int numberColumns = model_->solver()->getNumCols();
+    used_ = new char[numberColumns];
+    memset(used_,0,numberColumns);
   } else {
     used_=NULL;
   }

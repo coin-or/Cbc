@@ -27,6 +27,9 @@ public:
   /// Clone
   virtual CbcHeuristic * clone() const;
 
+  /// Resets stuff if model changes
+  virtual void resetModel(CbcModel * model);
+
   /// update model (This is needed if cliques update matrix etc)
   virtual void setModel(CbcModel * model);
   

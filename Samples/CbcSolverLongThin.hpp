@@ -73,6 +73,12 @@ public:
   /// Do nested search if this fraction fixed
   inline void setNested(double value)
   { nestedSearch_=value;};
+  /// Say whether to just count usage
+  inline bool getJustCount() const
+  { return justCount_;};
+  /// Do nested search if this fraction fixed
+  inline double getNested() const
+  { return nestedSearch_;};
   //@}
 
   //---------------------------------------------------------------------------

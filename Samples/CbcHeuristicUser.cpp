@@ -45,7 +45,7 @@ CbcLocalSearch::CbcLocalSearch(CbcModel & model)
 // Destructor 
 CbcLocalSearch::~CbcLocalSearch ()
 {
-  delete used_;
+  delete [] used_;
 }
 
 // Clone
@@ -68,6 +68,20 @@ CbcLocalSearch::CbcLocalSearch(const CbcLocalSearch & rhs)
     int numberColumns = model_->solver()->getNumCols();
     used_ = new char[numberColumns];
     memcpy(used_,rhs.used_,numberColumns);
+  } else {
+    used_=NULL;
+  }
+}
+// Resets stuff if model changes
+void 
+CbcLocalSearch::resetModel(CbcModel * model)
+{
+  CbcHeuristic::resetModel(model);
+  delete [] used_;
+  if (model_&&used_) {
+    int numberColumns = model_->solver()->getNumCols();
+    used_ = new char[numberColumns];
+    memset(used_,0,numberColumns);
   } else {
     used_=NULL;
   }

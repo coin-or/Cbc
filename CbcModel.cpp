@@ -2404,6 +2404,26 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node,
 	if (generator_[i]->normal()) {
 	  bool mustResolve = 
 	    generator_[i]->generateCuts(theseCuts,fullScan,node) ;
+#ifdef CBC_DEBUG
+          {
+            int numberRowCutsAfter = theseCuts.sizeRowCuts() ;
+            int k ;
+            for (k = numberRowCutsBefore;k<numberRowCutsAfter;k++) {
+              OsiRowCut thisCut = theseCuts.rowCut(k) ;
+              /* check size of elements.
+                 We can allow smaller but this helsp debug generators as it
+                 is unsafe to have small elements */
+              int n=thisCut.row().getNumElements();
+              const int * column = thisCut.row().getIndices();
+              const double * element = thisCut.row().getElements();
+              for (int i=0;i<n;i++) {
+                int iColumn = column[i];
+                double value = element[i];
+                assert(fabs(value)>1.0e-12);
+              }
+            }
+          }
+#endif
 	  if (mustResolve) {
 	    feasible = resolve() ;
 #	  ifdef CBC_DEBUG
@@ -2831,12 +2851,23 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node,
 	  <<CoinMessageEol ;
     } 
     delete [] count ;
-    if( !willBeCutsInTree&&!numberNodes_) {
-      // Take off cuts
-      cuts = OsiCuts();
-      numberNewCuts=0;
-      // update size of problem
-      numberRowsAtContinuous_ = solver_->getNumRows() ;
+    if( !numberNodes_) {
+      if( !willBeCutsInTree) {
+        // Take off cuts
+        cuts = OsiCuts();
+        numberNewCuts=0;
+        // update size of problem
+        numberRowsAtContinuous_ = solver_->getNumRows() ;
+      } else {
+#ifdef COIN_USE_CLP
+        OsiClpSolverInterface * clpSolver 
+          = dynamic_cast<OsiClpSolverInterface *> (solver_);
+        if (clpSolver) {
+        // make sure factorization can't carry over
+          clpSolver->setSpecialOptions(clpSolver->specialOptions()&(~8));
+        }
+#endif
+      }
     }
   } else if (numberCutGenerators_) {
     int i;

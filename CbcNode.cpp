@@ -747,8 +747,9 @@ CbcNode::createInfo (CbcModel *model,
       if (cut[iFull-numberRowsAtContinuous]) {
 	CoinWarmStartBasis::Status status = ws->getArtifStatus(--iCompact);
 	// If no cut generator being used then we may have basic variables
-	//if (model->getMaximumCutPasses())
-	//assert (status != CoinWarmStartBasis::basic);
+	//if (model->getMaximumCutPasses()&&
+	//  status == CoinWarmStartBasis::basic)
+	//printf("cut basic\n");
 	expanded->setArtifStatus(iFull,status);
       } else {
 	expanded->setArtifStatus(iFull,CoinWarmStartBasis::basic);

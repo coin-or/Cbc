@@ -1257,7 +1257,7 @@ private:
   /** A pointer to a row cut which will be added instead of normal branching.
       After use it should be set to NULL.
   */
-  const OsiRowCut * nextRowCut_;
+  OsiRowCut * nextRowCut_;
 
   /// Current node so can be used elsewhere
   CbcNode * currentNode_;

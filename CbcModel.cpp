@@ -3051,7 +3051,9 @@ CbcModel::takeOffCuts (OsiCuts &newCuts, int *whichGenerator,
     { status = ws->getArtifStatus(i+firstOldCut) ;
       while (!addedCuts_[oldCutIndex]) oldCutIndex++ ;
       assert(oldCutIndex < currentNumberCuts_) ;
-      if (status == CoinWarmStartBasis::basic)
+      // always leave if from nextRowCut_
+      if (status == CoinWarmStartBasis::basic&&
+          addedCuts_[oldCutIndex]->effectiveness()!=COIN_DBL_MAX)
       { solverCutIndices[numberOldToDelete++] = i+firstOldCut ;
 	if (addedCuts_[oldCutIndex]->decrement() == 0)
 	  delete addedCuts_[oldCutIndex] ;
@@ -5146,6 +5148,7 @@ void
 CbcModel::setNextRowCut(const OsiRowCut & cut)
 { 
   nextRowCut_=new OsiRowCut(cut);
+  nextRowCut_->setEffectiveness(COIN_DBL_MAX); // mark so will always stay
 }
 /* Process root node and return a strengthened model
    

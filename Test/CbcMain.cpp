@@ -63,6 +63,31 @@ public:
   // Default Constructor 
   CbcCompareUser () : weight_(-1.0), numberSolutions_(0) {test_=this;};
 
+  // Copy constructor 
+  CbcCompareUser ( const CbcCompareUser &rhs)
+    : CbcCompareBase(rhs)
+  {
+    weight_=rhs.weight_;
+    numberSolutions_=rhs.numberSolutions_;
+  };
+   
+  // Assignment operator 
+  CbcCompareUser & operator=( const CbcCompareUser& rhs)
+  {
+    if (this!=&rhs) { 
+      CbcCompareBase::operator=(rhs);
+      weight_=rhs.weight_;
+      numberSolutions_=rhs.numberSolutions_;
+    }
+    return *this;
+  };
+
+  /// Clone
+  virtual CbcCompareBase * clone() const
+  { 
+    return new CbcCompareUser (*this);
+  };
+
   ~CbcCompareUser() {};
 
   /* 

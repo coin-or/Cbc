@@ -24,6 +24,7 @@ LibDir += ${CoinLibDir}
 LibDir += ${ClpLibDir}
 LibDir += ${zlibLibDir}
 LibDir += ${bzlibLibDir}
+LibDir += $(GlpkLibDir)
 
 LibName :=
 LibName += ${CbcLibName}
@@ -34,6 +35,7 @@ LibName += ${ClpLibName}
 LibName += ${CoinLibName}
 LibName += ${zlibLibName}
 LibName += ${bzlibLibName}
+LibName += $(GlpkLibName)
 
 Define :=
 Define += ${ClpDefine}

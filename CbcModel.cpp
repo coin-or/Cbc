@@ -4449,7 +4449,7 @@ CbcModel::integerPresolveThisModel(OsiSolverInterface * originalSolver,
       // if first pass - always try
       if (currentPassNumber_==1)
 	numberChanged += 1;
-      if (possibleMultiple) {
+      if (possibleMultiple&&maximumCost) {
 	int increment=0; 
 	double multiplier = 2520.0;
 	while (10.0*multiplier*maximumCost<1.0e8)

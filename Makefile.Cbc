@@ -1,0 +1,56 @@
+# Static or shared libraries should be built (STATIC or SHARED)?
+LibType := SHARED
+
+# Select optimization (-O or -g). -O will be automatically bumped up to the 
+# highest level of optimization the compiler supports. If want something in
+# between then specify the exact level you want, e.g., -O1 or -O2
+OptLevel := -O2
+OptLevel := -g
+
+
+LIBNAME := Cbc
+LIBSRC :=
+LIBSRC += CbcModel.cpp
+LIBSRC += CbcNode.cpp
+LIBSRC += CbcTree.cpp
+LIBSRC += CbcCountRowCut.cpp
+LIBSRC += CbcMessage.cpp
+LIBSRC += CbcHeuristic.cpp
+LIBSRC += CbcBranchBase.cpp
+LIBSRC += CbcBranchActual.cpp
+LIBSRC += CbcBranchLotsize.cpp
+LIBSRC += CbcCutGenerator.cpp
+LIBSRC += Cbc_C_Interface.cpp
+
+##############################################################################
+# You should not need to edit below this line.
+##############################################################################
+# The location of the customized Makefiles
+include ${MakefileDir}/Makefile.coin
+include ${MakefileDir}/Makefile.location
+
+ifeq ($(OptLevel),-g)
+#   CXXFLAGS += -DCBC_DEBUG
+#   CXXFLAGS += -DCHECK_NODE
+#   CXXFLAGS += -DCHECK_CUT_COUNTS
+#   CXXFLAGS += -DCHECK_NODE_FULL
+#   CXXFLAGS += -lefence
+endif
+
+export ExtraIncDir  := ${CoinIncDir} ${zlibIncDir} ${bzlibIncDir}
+export ExtraLibDir  := ${CoinLibDir} ${zlibLibDir} ${bzlibLibDir}
+export ExtraLibName := ${CoinLibName} ${zlibLibName} ${bzlibLibName}
+export ExtraDefine  := ${CoinDefine} ${zlibDefine} ${bzlibDefine}
+
+export LibType OptLevel LIBNAME LIBSRC
+
+###############################################################################
+
+.DELETE_ON_ERROR:
+
+.PHONY: default install library
+
+default: install
+
+install library:
+	$(MAKE) -f ${MakefileDir}/Makefile.lib $@

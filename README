@@ -1,0 +1,48 @@
+To build Cbc see INSTALL file
+
+To use Cbc you need the Cbc, Cgl, Coin and Osi libraries.  You
+will probably need Clp as well.
+
+To make the unitTest and standalone executable do
+
+make unitTest in this directory.  This creates an executable cbc.
+
+Running cbc gives you some hints.  Just do 
+
+cbc -
+ 
+and then try ? or setting various stuff.
+
+On Linux cbc can do file completion and line editing.  
+
+While the competition is on no work is being done on the cbc driver.  You
+should look at the samples.
+
+There are samples in ./Samples.  Use the corresponding Makefile to 
+create an executable - testit.
+
+At present there are only two useful samples.
+
+sample.cpp  This is a simple program to read an mps file.and solve the
+		integer problem.
+
+sample2.cpp.  This is the benchmark driver for the competition.  It overrides
+		the default branching methods and adds a (mildly useless)
+		heuristic.  It is intended to show you how to add your
+		own methods.  See CbcCompareUser.hpp for how to modify
+		choice of node from tree.  See CbcBranchUser.?pp for
+		how to modify which variable is chosen at a node.  For
+		more complex stuff such as new types of branches see
+		CbcBranchBase and CbcBranchActual in directory Cbc.
+		To see how to add heuristics see CbcHeuristicUser.?pp.
+
+		To add cut generators - define them as in Cgl and then just
+		add them as in sample2.cpp
+
+		The script "runtimes" in Samples directory will
+		run some or all of test set.  The version checked in
+		does some - just take off # to run.  An optional time
+		in minutes can be passed.
+
+
+

@@ -194,8 +194,12 @@ CbcRounding::solution(double & solutionValue,
 	move = below-value;
       } else {
 	// won't be able to move unless we can grab another variable
-	// just for now go down
-	move = below-value;
+        double randomNumber = CoinDrand48();
+	// which way?
+        if (randomNumber<0.5) 
+          move = below-value;
+        else
+          move = 1.0 -(value-below);
       }
       newValue += move;
       newSolution[iColumn] = newValue;

@@ -109,12 +109,9 @@ int main (int argc, const char *argv[])
 
   // Read in model using argv[1]
   // and assert that it is a clean model
-  int numMpsReadErrors;
-  if (argc<2) 
-    numMpsReadErrors = 
-      model.solver()->readMps("../../Mps/Sample/p0033.mps","");
-  else
-    numMpsReadErrors = model.solver()->readMps(argv[1],"");
+  std::string mpsFileName = "../../Mps/Sample/p0033.mps";
+  if (argc>=2) mpsFileName = argv[1];
+  int numMpsReadErrors = model.solver()->readMps(mpsFileName.c_str(),"");
   assert(numMpsReadErrors==0);
 
   // Set up some cut generators and defaults
@@ -236,7 +233,7 @@ int main (int argc, const char *argv[])
     model.branchAndBound();
   }
 
-  std::cout<<argv[1]<<" took "<<cpuTime()-time1<<" seconds, "
+  std::cout<<mpsFileName<<" took "<<cpuTime()-time1<<" seconds, "
 	   <<model.getNodeCount()<<" nodes with objective "
 	   <<model.getObjValue()
 	   <<(!model.status() ? " Finished" : " Not finished")

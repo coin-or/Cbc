@@ -539,6 +539,9 @@ public:
   /// Get how often to scan global cuts
   inline int howOftenGlobalScan() const
   { return howOftenGlobalScan_;};
+  /// Original columns as created by integerPresolve
+  inline int * originalColumns() const
+  { return originalColumns_;};
 
   /** Set the print frequency.
   

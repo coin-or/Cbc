@@ -426,11 +426,12 @@ CbcLotsize::infeasibility(int & preferredWay) const
   double value = solution[columnNumber_];
   value = CoinMax(value, lower[columnNumber_]);
   value = CoinMin(value, upper[columnNumber_]);
-  /*printf("%d %g %g %g %g\n",columnNumber_,value,lower[columnNumber_],
-    solution[columnNumber_],upper[columnNumber_]);*/
-  assert (value>=bound_[0]&&value<=bound_[rangeType_*numberRanges_-1]);
   double integerTolerance = 
     model_->getDblParam(CbcModel::CbcIntegerTolerance);
+  /*printf("%d %g %g %g %g\n",columnNumber_,value,lower[columnNumber_],
+    solution[columnNumber_],upper[columnNumber_]);*/
+  assert (value>=bound_[0]-integerTolerance
+          &&value<=bound_[rangeType_*numberRanges_-1]+integerTolerance);
   double infeasibility=0.0;
   bool feasible = findRange(value);
   if (!feasible) {
@@ -512,7 +513,8 @@ CbcLotsize::feasibleRegion()
   printLotsize(value,true,2);
 #endif
   // Scaling may have moved it a bit
-  assert (fabs(value-nearest)<=100.0*integerTolerance);
+  // Lotsizing variables could be a lot larger
+  assert (fabs(value-nearest)<=(100.0+10.0*fabs(nearest))*integerTolerance);
 }
 
 // Creates a branching object
@@ -595,7 +597,9 @@ CbcLotsize::notPreferredNewFeasible() const
   double nearest = floor(value+0.5);
   double integerTolerance = 
     model_->getDblParam(CbcModel::CbcIntegerTolerance);
-  assert (fabs(value-nearest)<=integerTolerance);
+  // Scaling may have moved it a bit
+  // Lotsizing variables could be a lot larger
+  assert (fabs(value-nearest)<=(10.0+10.0*fabs(nearest))*integerTolerance);
   double dj = solver->getObjSense()*solver->getReducedCost()[columnNumber_];
   CbcLotsizeBranchingObject * object = NULL;
   double lo,up;

@@ -565,7 +565,7 @@ CbcFathomDynamicProgramming::fathom(double * & betterSolution)
                   break;
                 }
               }
-              if (good && objective[i]<bestCost) {
+              if (good && objective[i]<bestCost&&betterSolution[i]<upper[i]) {
                 bestCost=objective[i];
                 iColumn=i;
               }

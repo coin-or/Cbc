@@ -280,6 +280,9 @@ CbcLocalSearch::solution(double & solutionValue,
       rowActivity[i]=rowUpper[i];
     }
   }
+  // switch off if long and thin (slow) - fix later
+  if (numberColumns>2000&&numberColumns>20*numberRows)
+    tryHeuristic=false;
   if (tryHeuristic) {
     
     // best change in objective

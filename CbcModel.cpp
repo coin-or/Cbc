@@ -4454,9 +4454,10 @@ CbcModel::integerPresolveThisModel(OsiSolverInterface * originalSolver,
 	double multiplier = 2520.0;
 	while (10.0*multiplier*maximumCost<1.0e8)
 	  multiplier *= 10.0;
-	for (iColumn=0;iColumn<originalNumberColumns;iColumn++) {
+	for (int j =0;j<originalNumberIntegers;j++) {
+          iColumn = originalIntegers[j];
 	  if (originalUpper[iColumn]>originalLower[iColumn]) {
-	    if( originalIntegers[iColumn]&&objective[iColumn]) {
+	    if(objective[iColumn]) {
 	      double value = fabs(objective[iColumn])*multiplier;
 	      int nearest = (int) floor(value+0.5);
 	      if (fabs(value-floor(value+0.5))>1.0e-8) {

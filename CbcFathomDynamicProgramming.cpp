@@ -14,6 +14,7 @@
 #include "CbcFathomDynamicProgramming.hpp"
 #include "CoinHelperFunctions.hpp"
 #include "CoinPackedMatrix.hpp"
+#include "CoinSort.hpp"
 // Default Constructor
 CbcFathomDynamicProgramming::CbcFathomDynamicProgramming() 
   :CbcFathom(),
@@ -24,9 +25,11 @@ CbcFathomDynamicProgramming::CbcFathomDynamicProgramming()
    id_(NULL),
    lookup_(NULL),
    numberActive_(0),
+   maximumSizeAllowed_(1000000),
    startBit_(NULL),
    numberBits_(NULL),
-   rhs_(NULL)
+   rhs_(NULL),
+   numberNonOne_(0)
 {
 
 }
@@ -39,9 +42,11 @@ CbcFathomDynamicProgramming::CbcFathomDynamicProgramming(CbcModel & model)
    id_(NULL),
    lookup_(NULL),
    numberActive_(0),
+   maximumSizeAllowed_(1000000),
    startBit_(NULL),
    numberBits_(NULL),
-   rhs_(NULL)
+   rhs_(NULL),
+   numberNonOne_(0)
 {
   type_=gutsOfCheckPossible();
 }
@@ -66,7 +71,6 @@ CbcFathomDynamicProgramming::gutsOfDelete()
   back_ = NULL;
   id_ = NULL;
   lookup_ = NULL;
-  numberActive_ = 0;
   startBit_ = NULL;
   numberBits_ = NULL;
   rhs_ = NULL;
@@ -89,9 +93,11 @@ CbcFathomDynamicProgramming::CbcFathomDynamicProgramming(const CbcFathomDynamicP
   id_(NULL),
   lookup_(NULL),
   numberActive_(rhs.numberActive_),
+  maximumSizeAllowed_(rhs.maximumSizeAllowed_),
   startBit_(NULL),
   numberBits_(NULL),
-  rhs_(NULL)
+  rhs_(NULL),
+  numberNonOne_(rhs.numberNonOne_)
 {
   if (size_) {
     cost_=CoinCopyOfArray(rhs.cost_,size_);
@@ -272,6 +278,10 @@ CbcFathomDynamicProgramming::gutsOfCheckPossible(int allowableSize)
     }
   }
   delete [] rhs;
+  if (allowableSize&&size_>allowableSize) {
+    printf("Too large - need %d entries x 16 bytes\n",size_);
+    return -1; // too big
+  }
   if (n01==numberColumns&&!nbadcoeff)
     return 0; // easiest
   else
@@ -289,7 +299,7 @@ int
 CbcFathomDynamicProgramming::fathom(double * & betterSolution)
 {
   int returnCode=0;
-  int type=gutsOfCheckPossible(1000000);
+  int type=gutsOfCheckPossible(maximumSizeAllowed_);
   if (type>=0) {
     bool gotSolution=false;
     OsiSolverInterface * solver = model_->solver();
@@ -308,15 +318,14 @@ CbcFathomDynamicProgramming::fathom(double * & betterSolution)
     int numberRows = model_->getNumRows();
     
     int numberColumns = solver->getNumCols();
+    int * indices = new int [numberActive_];
+    double offset;
+    solver->getDblParam(OsiObjOffset,offset);
+    double fixedObj=-offset;
+    int i;
     // may be possible
-    // for test - just if all 1
     if (type==0) {
-      int i;
-
-      int * indices = new int [numberActive_];
-      double offset;
-      solver->getDblParam(OsiObjOffset,offset);
-      double fixedObj=-offset;
+      // rhs 1 and coefficients 1
       for (i=0;i<numberColumns;i++) {
         int j;
         double lowerValue = lower[i];
@@ -342,19 +351,126 @@ CbcFathomDynamicProgramming::fathom(double * & betterSolution)
           addOneColumn0(i,n,indices,cost);
         }
       }
-      int needed=0;
+      returnCode=1;
+    } else {
+      // more complex
+      int * coefficients = new int[numberActive_];
+      // If not too many general rhs then we can be more efficient
+      numberNonOne_=0;
+      for (i=0;i<numberActive_;i++) {
+        if (rhs_[i]!=1)
+          numberNonOne_++;
+      }
+      if (numberNonOne_*2<numberActive_) {
+        // put rhs >1 every second
+        int * permute = new int[numberActive_];
+        int * temp = new int[numberActive_];
+        // try different ways
+        int k=0;
+        for (i=0;i<numberRows;i++) {
+          int newRow = lookup_[i];
+          if (newRow>=0&&rhs_[newRow]>1) {
+            permute[newRow]=k;
+            k +=2;
+          }
+        }
+        // adjust so k points to last
+        k -= 2;
+        // and now rest
+        int k1=1;
+        for (i=0;i<numberRows;i++) {
+          int newRow = lookup_[i];
+          if (newRow>=0&&rhs_[newRow]==1) {
+            permute[newRow]=k1;
+            k1++;
+            if (k1<=k)
+              k1++;
+          }
+        }
+        for (i=0;i<numberActive_;i++) {
+          int put = permute[i];
+          temp[put]=rhs_[i];
+        }
+        memcpy(rhs_,temp,numberActive_*sizeof(int));
+        for (i=0;i<numberActive_;i++) {
+          int put = permute[i];
+          temp[put]=numberBits_[i];
+        }
+        memcpy(numberBits_,temp,numberActive_*sizeof(int));
+        k=0;
+        for (i=0;i<numberActive_;i++) {
+          startBit_[i]=k;
+          k+= numberBits_[i];
+        }
+        for (i=0;i<numberRows;i++) {
+          int newRow = lookup_[i];
+          if (newRow>=0)
+            lookup_[i]=permute[newRow];
+        }
+        delete [] permute;
+        delete [] temp;
+        // mark new method
+        type=2;
+      }
+      for (i=0;i<numberColumns;i++) {
+        int j;
+        double lowerValue = lower[i];
+        assert (lowerValue==floor(lowerValue));
+        double cost = direction * objective[i];
+        fixedObj += lowerValue*cost;
+        if (lowerValue==upper[i])
+          continue;
+        int n=0;
+        double gap=upper[i]-lowerValue;
+        for (j=columnStart[i];
+             j<columnStart[i]+columnLength[i];j++) {
+          int iRow=row[j];
+          double value = element[j];
+          int iValue = (int) value;
+          int newRow = lookup_[iRow];
+          if (newRow<0||iValue>rhs_[newRow]) {
+            n=0;
+            break; //can't use
+          } else {
+            coefficients[n]=iValue;
+            indices[n++]=newRow;
+            if (gap*iValue>rhs_[newRow]) {
+              gap = rhs_[newRow]/iValue;
+            }
+          }
+        }
+        int nTotal = (int) gap;
+        if (n) {
+          if (type==1) {
+            for (int k=1;k<=nTotal;k++) {
+              addOneColumn1(i,n,indices,coefficients,cost);
+            }
+          } else {
+            // may be able to take sort out with new method
+            CoinSort_2(indices,indices+n,coefficients);
+            for (int k=1;k<=nTotal;k++) {
+              addOneColumn1A(i,n,indices,coefficients,cost);
+            }
+          }
+        }
+      }
+      delete [] coefficients;
+      returnCode=1;
+    }
+    int needed=0;
+    double bestValue=COIN_DBL_MAX;
+    int iBest=-1;
+    if (type==0) {
       int numberActive=0;
       for (i=0;i<numberRows;i++) {
         int newRow = lookup_[i];
         if (newRow>=0) {
           if (rowLower[i]==rowUpper[i]) {
             needed += 1<<numberActive;
+            numberActive++;
           }
-          numberActive++;
         }
       }
-      double bestValue=COIN_DBL_MAX;
-      int iBest=-1;
       for (i=0;i<size_;i++) {
         if ((i&needed)==needed) {
           // this one will do
@@ -364,26 +480,61 @@ CbcFathomDynamicProgramming::fathom(double * & betterSolution)
           }
         }
       }
-      returnCode=1;
-      if (bestValue<COIN_DBL_MAX) {
-        bestValue += fixedObj;
-        printf("Can get solution of %g\n",bestValue);
-        if (bestValue<model_->getMinimizationObjValue()) {
-          // set up solution
-          betterSolution = new double[numberColumns];
-          memcpy(betterSolution,lower,numberColumns*sizeof(double));
-          while (iBest>0) {
-            int iColumn = id_[iBest];
-            assert (iColumn>=0);
-            betterSolution[iColumn]++;
-            assert (betterSolution[iColumn]<=upper[iColumn]);
-            iBest = back_[iBest];
+    } else {
+      int * lower = new int[numberActive_];
+      for (i=0;i<numberRows;i++) {
+        int newRow = lookup_[i];
+        if (newRow>=0) {
+          int gap=(int) (rowUpper[i]-CoinMax(0.0,rowLower[i]));
+          lower[newRow]=rhs_[newRow]-gap;
+          int numberBits = numberBits_[newRow];
+          int startBit = startBit_[newRow];
+          if (numberBits==1&&!gap) {
+            needed |= 1<<startBit;
           }
-        } else {
         }
       }
-      delete [] indices;
+      for (i=0;i<size_;i++) {
+        if ((i&needed)==needed) {
+        // this one may do
+          bool good = true;
+          for (int kk=0;kk<numberActive_;kk++) {
+            int numberBits = numberBits_[kk];
+            int startBit = startBit_[kk];
+            int size = 1<<numberBits;
+            int start = 1<<startBit;
+            int mask = start*(size-1);
+            int level=(i&mask)>>startBit;
+            if (level<lower[kk]) {
+              good=false;
+              break;
+            }
+          }
+          if (good&&cost_[i]<bestValue) {
+            bestValue=cost_[i];
+            iBest=i;
+          }
+        }
+      }
+      delete [] lower;
     }
+    if (bestValue<COIN_DBL_MAX) {
+      bestValue += fixedObj;
+      printf("Can get solution of %g\n",bestValue);
+      if (bestValue<model_->getMinimizationObjValue()) {
+        // set up solution
+        betterSolution = new double[numberColumns];
+        memcpy(betterSolution,lower,numberColumns*sizeof(double));
+        while (iBest>0) {
+          int iColumn = id_[iBest];
+          assert (iColumn>=0);
+          betterSolution[iColumn]++;
+          assert (betterSolution[iColumn]<=upper[iColumn]);
+          iBest = back_[iBest];
+        }
+      }
+    }
+    delete [] indices;
     gutsOfDelete();
     if (gotSolution) {
       int i;
@@ -435,9 +586,9 @@ CbcFathomDynamicProgramming::addOneColumn0(int id,int numberElements, const int 
     int iRow=rows[i];
     mask |= 1<<iRow;
   }
-  i=0;
+  i=size_-1-mask;
   bool touched = false;
-  while (i<size_) {
+  while (i>=0) {
     int kMask = i&mask;
     if (kMask==0) {
       double thisCost = cost_[i];
@@ -452,20 +603,226 @@ CbcFathomDynamicProgramming::addOneColumn0(int id,int numberElements, const int 
           touched=true;
         }
       }
-      i++;
+      i--;
     } else {
       // we can skip some
-      int k=i;
-      int iBit=0;
-      k &= ~1;
-      while ((k&kMask)!=0) {
-        iBit++;
-        k &= ~(1<<iBit);
-      }
-      // onto next
-      k += 1<<(iBit+1);
+      int k=(i&~mask)-1;
 #ifdef CBC_DEBUG
-      for (int j=i+1;j<k;j++) {
+      for (int j=i-1;j>k;j--) {
+        int jMask = j&mask;
+        assert (jMask!=0);
+      }
+#endif
+      i=k;
+    }
+  }
+  return touched;
+}
+/* Adds one attempt of one column of type 1,
+   returns true if was used in making any changes.
+   At present the user has to call it once for each possible value
+*/
+bool 
+CbcFathomDynamicProgramming::addOneColumn1(int id,int numberElements, const int * rows,
+                                           const int * coefficients, double cost)
+{
+  /* build up masks.
+     a) mask for 1 rhs
+     b) mask for addition
+     c) mask so adding will overflow
+     d) individual masks
+  */
+  int mask1=0;
+  int maskAdd=0;
+  int mask2=0;
+  int i;
+  int n2=0;
+  int mask[40];
+  int nextbit[40];
+  int adjust[40];
+  assert (numberElements<=40);
+  for (i=0;i<numberElements;i++) {
+    int iRow=rows[i];
+    int numberBits = numberBits_[iRow];
+    int startBit = startBit_[iRow];
+    if (numberBits==1) {
+      mask1 |= 1<<startBit;
+      maskAdd |= 1<<startBit;
+      mask2 |= 1<<startBit;
+    } else {
+      int value=coefficients[i];
+      int size = 1<<numberBits;
+      int start = 1<<startBit;
+      assert (value<size);
+      maskAdd |= start*value;
+      int gap = size-rhs_[iRow]-1;
+      assert (gap>=0);
+      int hi2=rhs_[iRow]-value;
+      if (hi2<size-1)
+        hi2++;
+      adjust[n2] = start*hi2;
+      mask2 += start*gap;
+      nextbit[n2]=startBit+numberBits;
+      mask[n2++] = start*(size-1);
+    }
+  }
+  i=size_-1-maskAdd;
+  bool touched = false;
+  while (i>=0) {
+    int kMask = i&mask1;
+    if (kMask==0) {
+      bool good=true;
+      for (int kk=n2-1;kk>=0;kk--) {
+        int iMask = mask[kk];
+        int jMask = iMask&mask2;
+        int kkMask = iMask&i;
+        kkMask += jMask;
+        if (kkMask>iMask) {
+          // we can skip some
+          int k=(i&~iMask);
+          k |= adjust[kk];  
+#ifdef CBC_DEBUG
+          for (int j=i-1;j>k;j--) {
+            int jMask = j&mask1;
+            if (jMask==0) {
+              bool good=true;
+              for (int kk=n2-1;kk>=0;kk--) {
+                int iMask = mask[kk];
+                int jMask = iMask&mask2;
+                int kkMask = iMask&i;
+                kkMask += jMask;
+                if (kkMask>iMask) {
+                  good=false;
+                  break;
+                }
+              }
+              assert (!good);
+            }
+          }
+#endif
+          i=k;
+          good=false;
+          break;
+        }
+      }
+      if (good) {
+        double thisCost = cost_[i];
+        if (thisCost!=COIN_DBL_MAX) {
+          // possible
+          double newCost=thisCost+cost;
+          int next = i + maskAdd;
+          if (cost_[next]>newCost) {
+            cost_[next]=newCost;
+            back_[next]=i;
+            id_[next]=id;
+            touched=true;
+          }
+        }
+      }
+      i--;
+    } else {
+      // we can skip some
+      // we can skip some
+      int k=(i&~mask1)-1;
+#ifdef CBC_DEBUG
+      for (int j=i-1;j>k;j--) {
+        int jMask = j&mask;
+        assert (jMask!=0);
+      }
+#endif
+      i=k;
+    }
+  }
+  return touched;
+}
+/* Adds one attempt of one column of type 1,
+   returns true if was used in making any changes.
+   At present the user has to call it once for each possible value
+   This version is when there are enough 1 rhs to do faster
+*/
+bool 
+CbcFathomDynamicProgramming::addOneColumn1A(int id,int numberElements, const int * rows,
+                                           const int * coefficients, double cost)
+{
+  /* build up masks.
+     a) mask for 1 rhs
+     b) mask for addition
+     c) mask so adding will overflow
+     d) mask for non 1 rhs
+  */
+  int maskA=0;
+  int maskAdd=0;
+  int maskC=0;
+  int maskD=0;
+  int i;
+  for (i=0;i<numberElements;i++) {
+    int iRow=rows[i];
+    int numberBits = numberBits_[iRow];
+    int startBit = startBit_[iRow];
+    if (numberBits==1) {
+      maskA |= 1<<startBit;
+      maskAdd |= 1<<startBit;
+    } else {
+      int value=coefficients[i];
+      int size = 1<<numberBits;
+      int start = 1<<startBit;
+      assert (value<size);
+      maskAdd |= start*value;
+      int gap = size-rhs_[iRow]-1;
+      assert (gap>=0);
+      maskC |= start*gap;
+      maskD |= start*(size-1);
+    }
+  }
+  int maskDiff = maskD-maskC;
+  i=size_-1-maskAdd;
+  bool touched = false;
+  while (i>=0) {
+    int kMask = i&maskA;
+    if (kMask==0) {
+      int added = i & maskD; // just bits belonging to non 1 rhs
+      added += maskC; // will overflow mask if bad
+      added &= (~maskD);
+      if (added == 0) {
+        double thisCost = cost_[i];
+        if (thisCost!=COIN_DBL_MAX) {
+          // possible
+          double newCost=thisCost+cost;
+          int next = i + maskAdd;
+          if (cost_[next]>newCost) {
+            cost_[next]=newCost;
+            back_[next]=i;
+            id_[next]=id;
+            touched=true;
+          }
+        }
+        i--;
+      } else {
+        // we can skip some 
+        int k = i & ~ maskD; // clear all
+        // Put back enough - but only below where we are
+        int kk=(numberNonOne_<<1)-2;
+        assert (rhs_[kk]>1);
+        int iMask=0;
+        for(;kk>=0;kk-=2) {
+          iMask = 1<<startBit_[kk+1];
+          if ((added&iMask)!=0) {
+            iMask--;
+            break;
+          }
+        }
+        assert (kk>=0);
+        iMask &= maskDiff;
+        k |= iMask;
+        assert (k<i);
+        i=k;
+      }
+    } else {
+      // we can skip some
+      // we can skip some
+      int k=(i&~maskA)-1;
+#ifdef CBC_DEBUG
+      for (int j=i-1;j>k;j--) {
         int jMask = j&mask;
         assert (jMask!=0);
       }

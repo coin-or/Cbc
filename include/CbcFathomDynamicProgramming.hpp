@@ -47,24 +47,43 @@ public:
       If returns 3 then of course there is no guarantee of global optimum
   */
   virtual int fathom(double *& newSolution);
+
+  /// Maximum size allowed
+  inline int maximumSize() const
+  { return maximumSizeAllowed_;};
+  inline void setMaximumSize(int value)
+  { maximumSizeAllowed_=value;};
 private:
   /// Returns type
   int gutsOfCheckPossible(int allowableSize=0);
   /// Does deleteions
   void gutsOfDelete();
 
-  /** Adds one column if type 0,
+  /** Adds one attempt of one column of type 0,
       returns true if was used in making any changes
   */
   bool addOneColumn0(int id,int numberElements, const int * rows,
                      double cost);
+  /** Adds one attempt of one column of type 1,
+      returns true if was used in making any changes.
+      At present the user has to call it once for each possible value
+  */
+  bool addOneColumn1(int id,int numberElements, const int * rows,
+                     const int * coefficients, double cost);
+  /** Adds one attempt of one column of type 1,
+      returns true if was used in making any changes.
+      At present the user has to call it once for each possible value.
+      This version is when there are enough 1 rhs to do faster
+  */
+  bool addOneColumn1A(int id,int numberElements, const int * rows,
+                     const int * coefficients, double cost);
 
 protected:
 
   /// Size of states (power of 2 unless just one constraint)
   int size_;
   /** Type - 0 coefficients and rhs all 1,
-      1 - other
+      1 - coefficients > 1 or rhs > 1
   */
   int type_;
   /// Space for states (? could be float)
@@ -77,12 +96,16 @@ protected:
   int * lookup_;
   /// Number of active rows
   int numberActive_;
+  /// Maximum size allowed
+  int maximumSizeAllowed_;
   /// Start bit for each active row
   int * startBit_;
   /// Number bits for each active row
   int * numberBits_;
   /// Effective rhs
   int * rhs_;
+  /// Number of Non 1 rhs
+  int numberNonOne_;
 private:
   
   /// Illegal Assignment operator 

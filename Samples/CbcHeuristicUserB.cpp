@@ -236,12 +236,12 @@ CbcLocalSearch::solution(double & solutionValue,
     double originalUpper = integerObject->originalUpperBound();
 
     double value=newSolution[iColumn];
-    if (value<originalLower[i]) {
-      value=originalLower[i];
-      newSolution[i]=value;
-    } else if (value>originalUpper[i]) {
-      value=originalUpper[i];
-      newSolution[i]=value;
+    if (value<originalLower) {
+      value=originalLower;
+      newSolution[iColumn]=value;
+    } else if (value>originalUpper) {
+      value=originalUpper;
+      newSolution[iColumn]=value;
     }
     double nearest=floor(value+0.5);
     assert(fabs(value-nearest)<10.0*primalTolerance);

@@ -155,6 +155,30 @@ public:
     */
      void branchAndBound();
 
+    /** \brief create a clean model from partially fixed problem
+
+      The method creates a new model with given bounds and with no tree.
+    */
+     CbcModel *  cleanModel(const double * lower, const double * upper);
+    /** \brief Invoke the branch \& cut algorithm on partially fixed problem
+
+      The method presolves the given model and does branch and cut. The search 
+      ends when the tree is exhausted or maximum nodes is reached.
+
+      If better solution found then it is saved.
+
+      Returns 0 if search completed and solution, 1 if not completed and solution,
+      2 if completed and no solution, 3 if not completed and no solution.
+
+      Normally okay to do cleanModel immediately followed by subBranchandBound
+      (== other form of subBranchAndBound)
+      but may need to get at model for advanced features.
+
+      Deletes model2
+    */
+     int subBranchAndBound(CbcModel * model2,
+                           CbcModel * presolvedModel,
+                           int maximumNodes);
     /** \brief Invoke the branch \& cut algorithm on partially fixed problem
 
       The method creates a new model with given bounds, presolves it
@@ -165,6 +189,10 @@ public:
 
       Returns 0 if search completed and solution, 1 if not completed and solution,
       2 if completed and no solution, 3 if not completed and no solution.
+
+      This is just subModel immediately followed by other version of
+      subBranchandBound.
+
     */
      int subBranchAndBound(const double * lower, const double * upper,
 			    int maximumNodes);
@@ -1052,8 +1080,10 @@ public:
     */
     void assignSolver(OsiSolverInterface *&solver);
   
-    /// Copy constructor 
-    CbcModel(const CbcModel &);
+    /** Copy constructor .
+      If noTree is true then tree and cuts are not copied
+    */  
+    CbcModel(const CbcModel & rhs, bool noTree=false);
   
     /// Assignment operator 
     CbcModel & operator=(const CbcModel& rhs);

@@ -899,131 +899,175 @@ int CbcNode::chooseBranch (CbcModel *model, CbcNode *lastNode)
     saveLower[i] = lower[i];
     saveUpper[i] = upper[i];
   }
-
-  // compute current state
-  int numberIntegerInfeasibilities; // without odd ones
-  int numberObjectInfeasibilities; // just odd ones
-  model->feasibleSolution(
-			   numberIntegerInfeasibilities,
-			   numberObjectInfeasibilities);
-  // If forcePriority > 0 then we want best solution
-  const double * bestSolution = NULL;
-  int hotstartStrategy=model->getHotstartStrategy();
-  if (hotstartStrategy>0) {
-    bestSolution = model->bestSolution();
-  }
-
   // Some objects may compute an estimate of best solution from here
   double estimatedDegradation=0.0; 
-  numberUnsatisfied_ = 0;
-  int bestPriority=INT_MAX;
-/*
-  Scan for branching objects that indicate infeasibility. Choose the best
-  maximumStrong candidates, using priority as the first criteria, then
-  integer infeasibility.
+  int numberIntegerInfeasibilities=0; // without odd ones
 
-  The algorithm is to fill the choice array with a set of good candidates (by
-  infeasibility) with priority bestPriority.  Finding a candidate with
-  priority better (less) than bestPriority flushes the choice array. (This
-  serves as initialization when the first candidate is found.)
+  // We may go round this loop twice (only if we think we have solution)
+  for (int iPass=0;iPass<2;iPass++) {
 
-  A new candidate is added to choices only if its infeasibility exceeds the
-  current max infeasibility (mostAway). When a candidate is added, it
-  replaces the candidate with the smallest infeasibility (tracked by
-  iSmallest).
-*/
-  int iSmallest = 0;
-  double mostAway = integerTolerance;
-  for (i = 0 ; i < maximumStrong ; i++) choice[i].possibleBranch = NULL ;
-  numberStrong=0;
-  for (i=0;i<numberObjects;i++) {
-    const CbcObject * object = model->object(i);
-    int preferredWay;
-    double infeasibility = object->infeasibility(preferredWay);
-    int priorityLevel = model->priority(i);
-    if (bestSolution) {
-      // we are doing hot start
-      const CbcSimpleInteger * thisOne = dynamic_cast <const CbcSimpleInteger *> (object);
-      if (thisOne) {
-	int iColumn = thisOne->modelSequence();
-	if (saveUpper[iColumn]>saveLower[iColumn]) {
-	  double value = saveSolution[iColumn];
-	  double targetValue = bestSolution[iColumn];
-	  //double originalLower = thisOne->originalLower();
-	  //double originalUpper = thisOne->originalUpper();
-	  // switch off if not possible
-	  if (targetValue>=saveLower[iColumn]&&targetValue<=saveUpper[iColumn]) {
-	    /* priority outranks rest always if hotstartStrategy >1
-	       otherwise can be downgraded if at correct level.
-	       Infeasibility may be increased by targetValue to choose 1.0 values first.
-	    */
-	    if (fabs(value-targetValue)>integerTolerance) {
-	      if (value>targetValue) {
-		infeasibility += value;
-		preferredWay=-1;
-	      } else {
-		infeasibility += targetValue;
-		preferredWay=1;
-	      }
-	    } else if (hotstartStrategy>1) {
-	      if (targetValue==saveLower[iColumn]) {
-		infeasibility += integerTolerance+1.0e-12;
-		preferredWay=-1;
-	      } else if (targetValue==saveUpper[iColumn]) {
-		infeasibility += integerTolerance+1.0e-12;
-		preferredWay=1;
-	      } else {
-		infeasibility += integerTolerance+1.0e-12;
-		preferredWay=1;
-	      }
-	    } else {
-	      priorityLevel += 10000000;
-	    }
-	  } else {
-	    // switch off if not possible
-	    bestSolution=NULL;
-	    model->setHotstartStrategy(0);
-	  }
-	}
+    // compute current state
+    int numberObjectInfeasibilities; // just odd ones
+    model->feasibleSolution(
+                            numberIntegerInfeasibilities,
+                            numberObjectInfeasibilities);
+    // If forcePriority > 0 then we want best solution
+    const double * bestSolution = NULL;
+    int hotstartStrategy=model->getHotstartStrategy();
+    if (hotstartStrategy>0) {
+      bestSolution = model->bestSolution();
+    }
+    
+    // Some objects may compute an estimate of best solution from here
+    estimatedDegradation=0.0; 
+    numberUnsatisfied_ = 0;
+    int bestPriority=INT_MAX;
+    /*
+      Scan for branching objects that indicate infeasibility. Choose the best
+      maximumStrong candidates, using priority as the first criteria, then
+      integer infeasibility.
+      
+      The algorithm is to fill the choice array with a set of good candidates (by
+      infeasibility) with priority bestPriority.  Finding a candidate with
+      priority better (less) than bestPriority flushes the choice array. (This
+      serves as initialization when the first candidate is found.)
+      
+      A new candidate is added to choices only if its infeasibility exceeds the
+      current max infeasibility (mostAway). When a candidate is added, it
+      replaces the candidate with the smallest infeasibility (tracked by
+      iSmallest).
+    */
+    int iSmallest = 0;
+    double mostAway = integerTolerance;
+    for (i = 0 ; i < maximumStrong ; i++) choice[i].possibleBranch = NULL ;
+    numberStrong=0;
+    for (i=0;i<numberObjects;i++) {
+      const CbcObject * object = model->object(i);
+      int preferredWay;
+      double infeasibility = object->infeasibility(preferredWay);
+      int priorityLevel = model->priority(i);
+      if (bestSolution) {
+        // we are doing hot start
+        const CbcSimpleInteger * thisOne = dynamic_cast <const CbcSimpleInteger *> (object);
+        if (thisOne) {
+          int iColumn = thisOne->modelSequence();
+          if (saveUpper[iColumn]>saveLower[iColumn]) {
+            double value = saveSolution[iColumn];
+            double targetValue = bestSolution[iColumn];
+            //double originalLower = thisOne->originalLower();
+            //double originalUpper = thisOne->originalUpper();
+            // switch off if not possible
+            if (targetValue>=saveLower[iColumn]&&targetValue<=saveUpper[iColumn]) {
+              /* priority outranks rest always if hotstartStrategy >1
+                 otherwise can be downgraded if at correct level.
+                 Infeasibility may be increased by targetValue to choose 1.0 values first.
+              */
+              if (fabs(value-targetValue)>integerTolerance) {
+                if (value>targetValue) {
+                  infeasibility += value;
+                  preferredWay=-1;
+                } else {
+                  infeasibility += targetValue;
+                  preferredWay=1;
+                }
+              } else if (hotstartStrategy>1) {
+                if (targetValue==saveLower[iColumn]) {
+                  infeasibility += integerTolerance+1.0e-12;
+                  preferredWay=-1;
+                } else if (targetValue==saveUpper[iColumn]) {
+                  infeasibility += integerTolerance+1.0e-12;
+                  preferredWay=1;
+                } else {
+                  infeasibility += integerTolerance+1.0e-12;
+                  preferredWay=1;
+                }
+              } else {
+                priorityLevel += 10000000;
+              }
+            } else {
+              // switch off if not possible
+              bestSolution=NULL;
+              model->setHotstartStrategy(0);
+            }
+          }
+        }
+      }
+      if (infeasibility>integerTolerance) {
+        // Increase estimated degradation to solution
+        estimatedDegradation += CoinMin(object->upEstimate(),object->downEstimate());
+        numberUnsatisfied_++;
+        // Better priority? Flush choices.
+        if (priorityLevel<bestPriority) {
+          int j;
+          iSmallest=0;
+          for (j=0;j<maximumStrong;j++) {
+            choice[j].upMovement=0.0;
+            delete choice[j].possibleBranch;
+            choice[j].possibleBranch=NULL;
+          }
+          bestPriority = priorityLevel;
+          mostAway=integerTolerance;
+          numberStrong=0;
+        } else if (priorityLevel>bestPriority) {
+          continue;
+        }
+        // Check for suitability based on infeasibility.
+        if (infeasibility>mostAway) {
+          //add to list
+          choice[iSmallest].upMovement=infeasibility;
+          delete choice[iSmallest].possibleBranch;
+          choice[iSmallest].possibleBranch=object->createBranch(preferredWay);
+          numberStrong = CoinMax(numberStrong,iSmallest+1);
+          // Save which object it was
+          choice[iSmallest].objectNumber=i;
+          int j;
+          iSmallest=-1;
+          mostAway = 1.0e50;
+          for (j=0;j<maximumStrong;j++) {
+            if (choice[j].upMovement<mostAway) {
+              mostAway=choice[j].upMovement;
+              iSmallest=j;
+            }
+          }
+        }
       }
     }
-    if (infeasibility>integerTolerance) {
-      // Increase estimated degradation to solution
-      estimatedDegradation += CoinMin(object->upEstimate(),object->downEstimate());
-      numberUnsatisfied_++;
-      // Better priority? Flush choices.
-      if (priorityLevel<bestPriority) {
-	int j;
-	iSmallest=0;
-	for (j=0;j<maximumStrong;j++) {
-	  choice[j].upMovement=0.0;
-	  delete choice[j].possibleBranch;
-	  choice[j].possibleBranch=NULL;
-	}
-	bestPriority = priorityLevel;
-	mostAway=integerTolerance;
-	numberStrong=0;
-      } else if (priorityLevel>bestPriority) {
-	continue;
+    if (numberUnsatisfied_) {
+      // some infeasibilities - go to next steps
+      break;
+    } else if (!iPass) {
+      // looks like a solution - get paranoid
+      bool roundAgain=false;
+      // get basis
+      CoinWarmStartBasis * ws = dynamic_cast<CoinWarmStartBasis*>(solver->getWarmStart());
+      if (!ws)
+        break;
+      for (i=0;i<numberColumns;i++) {
+        double value = saveSolution[i];
+        if (value<lower[i]) {
+          saveSolution[i]=lower[i];
+          roundAgain=true;
+          ws->setStructStatus(i,CoinWarmStartBasis::atLowerBound);
+        } else if (value>upper[i]) {
+          saveSolution[i]=upper[i];
+          roundAgain=true;
+          ws->setStructStatus(i,CoinWarmStartBasis::atUpperBound);
+        } 
       }
-      // Check for suitability based on infeasibility.
-      if (infeasibility>mostAway) {
-	//add to list
-	choice[iSmallest].upMovement=infeasibility;
-	delete choice[iSmallest].possibleBranch;
-	choice[iSmallest].possibleBranch=object->createBranch(preferredWay);
-	numberStrong = CoinMax(numberStrong,iSmallest+1);
-	// Save which object it was
-	choice[iSmallest].objectNumber=i;
-	int j;
-	iSmallest=-1;
-	mostAway = 1.0e50;
-	for (j=0;j<maximumStrong;j++) {
-	  if (choice[j].upMovement<mostAway) {
-	    mostAway=choice[j].upMovement;
-	    iSmallest=j;
-	  }
-	}
+      if (roundAgain) {
+        // restore basis
+        solver->setWarmStart(ws);
+        delete ws;
+        solver->resolve();
+        memcpy(saveSolution,solver->getColSolution(),numberColumns*sizeof(double));
+        if (!solver->isProvenOptimal()) {
+          // infeasible 
+          anyAction=-2;
+          break;
+        }
+      } else {
+        delete ws;
+        break;
       }
     }
   }

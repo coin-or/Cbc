@@ -175,15 +175,22 @@ CbcFathomDynamicProgramming::checkPossible(int allowableSize)
   }
   // check possible (at present do not allow covering)
   int numberActive=0;
+  bool infeasible=false;
+  bool saveBad=bad;
   for (i=0;i<numberRows;i++) {
-    if (rhs[i]>1.0e5||fabs(rhs[i]-floor(rhs[i]+0.5))>1.0e-7)
+    if (rhs[i]<0)
+      infeasible=true;
+    else if (rhs[i]>1.0e5||fabs(rhs[i]-floor(rhs[i]+0.5))>1.0e-7)
       bad=true;
     else if (rhs[i]>0.0)
       numberActive++;
   }
-  if (bad) {
+  if (bad||infeasible) {
     delete [] rhs;
-    return -1;
+    if (!saveBad&&infeasible)
+      return -2;
+    else
+      return -1;
   }
   // check size of array needed
   double size=1.0;
@@ -439,7 +446,12 @@ int
 CbcFathomDynamicProgramming::fathom(double * & betterSolution)
 {
   int returnCode=0;
-  checkPossible(maximumSizeAllowed_);
+  int type=checkPossible(maximumSizeAllowed_);
+  assert (type!=-1);
+  if (type==-2) {
+    // infeasible (so complete search done)
+    return 1;
+  }
   if (algorithm_>=0) {
     OsiSolverInterface * solver = model_->solver();
     const double * lower = solver->getColLower();
@@ -474,7 +486,8 @@ CbcFathomDynamicProgramming::fathom(double * & betterSolution)
       CoinBigIndex start = columnStart[i];
       tryColumn(columnLength[i],row+start,element+start,cost,gap);
       if (cost_[target_]<bestAtTarget) {
-        printf("At column %d new best objective of %g\n",i,cost_[target_]);
+        if (model_->messageHandler()->logLevel()>1)
+          printf("At column %d new best objective of %g\n",i,cost_[target_]);
         bestAtTarget = cost_[target_];
       }
     }
@@ -542,7 +555,8 @@ CbcFathomDynamicProgramming::fathom(double * & betterSolution)
     }
     if (bestValue<FLT_MAX) {
       bestValue += fixedObj;
-      printf("Can get solution of %g\n",bestValue);
+      if (model_->messageHandler()->logLevel()>1)
+        printf("Can get solution of %g\n",bestValue);
       if (bestValue<model_->getMinimizationObjValue()) {
         // set up solution
         betterSolution = new double[numberColumns];
@@ -603,8 +617,8 @@ CbcFathomDynamicProgramming::fathom(double * & betterSolution)
         }
       }
       if (feasible) {
-        if (model_->messageHandler()->logLevel()>1)
-          printf("** good solution by dynamic programming\n");
+        if (model_->messageHandler()->logLevel()>0)
+          printf("** good solution of %g by dynamic programming\n",bestValue);
       }
       delete [] rowActivity;
     }
@@ -869,8 +883,8 @@ CbcFathomDynamicProgramming::addOneColumn1A(int numberElements, const int * rows
       int start = 1<<startBit;
       assert (value<size);
       maskAdd |= start*value;
-      int gap = size-rhs_[iRow]-1;
-      assert (gap>=0);
+      int gap = size-rhs_[iRow]+value-1;
+      assert (gap>0&&gap<=size-1);
       maskC |= start*gap;
       maskD |= start*(size-1);
     }

@@ -1035,7 +1035,7 @@ void CbcModel::branchAndBound()
 */
       else
       { 
-	tree_->cleanTree(this,-DBL_MAX) ;
+	tree_->cleanTree(this,-COIN_DBL_MAX) ;
 	delete nextRowCut_;
 	// We need to get rid of node if is has already been popped from tree
 	if (!nodeOnTree&&!stoppedOnGap)
@@ -1243,8 +1243,8 @@ CbcModel::CbcModel()
   priority_(NULL),
   howOftenGlobalScan_(1),
   numberGlobalViolations_(0),
-  continuousObjective_(DBL_MAX),
-  originalContinuousObjective_(DBL_MAX),
+  continuousObjective_(COIN_DBL_MAX),
+  originalContinuousObjective_(COIN_DBL_MAX),
   continuousInfeasibilities_(INT_MAX),
   maximumCutPassesAtRoot_(20),
   maximumCutPasses_(10),
@@ -1315,8 +1315,8 @@ CbcModel::CbcModel(const OsiSolverInterface &rhs)
   priority_(NULL),
   howOftenGlobalScan_(1),
   numberGlobalViolations_(0),
-  continuousObjective_(DBL_MAX),
-  originalContinuousObjective_(DBL_MAX),
+  continuousObjective_(COIN_DBL_MAX),
+  originalContinuousObjective_(COIN_DBL_MAX),
   continuousInfeasibilities_(INT_MAX),
   maximumCutPassesAtRoot_(20),
   maximumCutPasses_(10),
@@ -1438,7 +1438,7 @@ CbcModel::assignSolver(OsiSolverInterface *&solver)
 
 // Copy constructor.
 
-CbcModel::CbcModel(const CbcModel & rhs)
+CbcModel::CbcModel(const CbcModel & rhs, bool noTree)
 :
   continuousSolver_(NULL),
   defaultHandler_(rhs.defaultHandler_),
@@ -1500,7 +1500,8 @@ CbcModel::CbcModel(const CbcModel & rhs)
     generator_=NULL;
     virginGenerator_=NULL;
   }
-  globalCuts_ = rhs.globalCuts_;
+  if (!noTree)
+    globalCuts_ = rhs.globalCuts_;
   numberHeuristics_ = rhs.numberHeuristics_;
   if (numberHeuristics_) {
     heuristic_ = new CbcHeuristic * [numberHeuristics_];
@@ -1526,7 +1527,10 @@ CbcModel::CbcModel(const CbcModel & rhs)
   } else {
     priority_=NULL;
   }
-  solver_ = rhs.solver_->clone();
+  if (!noTree||!rhs.continuousSolver_)
+    solver_ = rhs.solver_->clone();
+  else
+    solver_ = rhs.continuousSolver_->clone();
   if (rhs.originalColumns_) {
     int numberColumns = solver_->getNumCols();
     originalColumns_= new int [numberColumns];
@@ -1548,14 +1552,14 @@ CbcModel::CbcModel(const CbcModel & rhs)
   } else {
     integerVariable_ = NULL;
   }
-  if (rhs.bestSolution_) {
+  if (rhs.bestSolution_&&!noTree) {
     int numberColumns = solver_->getNumCols();
     bestSolution_ = new double[numberColumns];
     memcpy(bestSolution_,rhs.bestSolution_,numberColumns*sizeof(double));
   } else {
     bestSolution_=NULL;
   }
-  if (rhs.currentSolution_) {
+  if (rhs.currentSolution_&&!noTree) {
     int numberColumns = solver_->getNumCols();
     currentSolution_ = new double[numberColumns];
     memcpy(currentSolution_,rhs.currentSolution_,numberColumns*sizeof(double));
@@ -1567,6 +1571,21 @@ CbcModel::CbcModel(const CbcModel & rhs)
   phase_ = rhs.phase_;
   currentNumberCuts_=rhs.currentNumberCuts_;
   maximumDepth_= rhs.maximumDepth_;
+  if (noTree) {
+    bestObjective_ = COIN_DBL_MAX;
+    numberSolutions_ =0;
+    numberHeuristicSolutions_=0;
+    numberNodes_=0;
+    numberIterations_=0;
+    status_=0;
+    subTreeModel_=NULL;
+    numberStoppedSubTrees_=0;
+    continuousObjective_=COIN_DBL_MAX;
+    originalContinuousObjective_=COIN_DBL_MAX;
+    continuousInfeasibilities_=INT_MAX;
+    maximumNumberCuts_=0;
+    tree_->cleanTree(this,-COIN_DBL_MAX);
+  }
   // These are only used as temporary arrays so need not be filled
   if (maximumNumberCuts_) {
     addedCuts_ = new CbcCountRowCut * [maximumNumberCuts_];
@@ -4005,12 +4024,12 @@ CbcModel::tightenVubs(int numberSolves, const int * which,
 	newRow.insert(iColumn,direction * objective[iColumn]);
       
     }
-    solver->addRow(newRow,-DBL_MAX,useCutoff);
+    solver->addRow(newRow,-COIN_DBL_MAX,useCutoff);
     // signal no objective
     delete [] objective;
     objective=NULL;
   }
-  setCutoff(DBL_MAX);
+  setCutoff(COIN_DBL_MAX);
 
 
   bool * vub = new bool [numberColumns];
@@ -4752,6 +4771,132 @@ void CbcModel::setApplicationData(void * appData)
 void * CbcModel::getApplicationData() const
 {
   return appData_;
+}
+/*  create a submodel from partially fixed problem
+
+The method creates a new clean model with given bounds.
+*/
+CbcModel *  
+CbcModel::cleanModel(const double * lower, const double * upper)
+{
+  OsiSolverInterface * solver = continuousSolver_->clone();
+
+  int numberIntegers = numberIntegers_;
+  const int * integerVariable = integerVariable_;
+  
+  int i;
+  for (i=0;i<numberIntegers;i++) {
+    int iColumn=integerVariable[i];
+    const CbcObject * object = object_[i];
+    const CbcSimpleInteger * integerObject = 
+      dynamic_cast<const  CbcSimpleInteger *> (object);
+    assert(integerObject);
+    // get original bounds
+    double originalLower = integerObject->originalLowerBound();
+    double originalUpper = integerObject->originalUpperBound();
+    solver->setColLower(iColumn,CoinMax(lower[iColumn],originalLower));
+    solver->setColUpper(iColumn,CoinMin(upper[iColumn],originalUpper));
+  }
+  CbcModel * model = new CbcModel(*solver);
+  // off some messages
+  if (handler_->logLevel()<=1) {
+    model->messagesPointer()->setDetailMessage(3,9);
+    model->messagesPointer()->setDetailMessage(3,6);
+    model->messagesPointer()->setDetailMessage(3,4);
+    model->messagesPointer()->setDetailMessage(3,1);
+    model->messagesPointer()->setDetailMessage(3,13);
+    model->messagesPointer()->setDetailMessage(3,14);
+    model->messagesPointer()->setDetailMessage(3,3007);
+  }
+  // Cuts
+  for ( i = 0;i<numberCutGenerators_;i++) {
+    int howOften = generator_[i]->howOftenInSub();
+    if (howOften>-100) {
+      CbcCutGenerator * generator = virginGenerator_[i];
+      CglCutGenerator * cglGenerator = generator->generator();
+      model->addCutGenerator(cglGenerator,howOften,
+			      generator->cutGeneratorName(),
+			      generator->normal(),
+			      generator->atSolution(),
+			      generator->whenInfeasible(),
+			      -100, generator->whatDepthInSub(),-1);
+    }
+  }
+  double cutoff = getCutoff();
+  model->setCutoff(cutoff);
+  return model;
+}
+/* Invoke the branch & cut algorithm on partially fixed problem
+   
+   The method uses a subModel created by cleanModel. The search 
+   ends when the tree is exhausted or maximum nodes is reached.
+
+   If better solution found then it is saved.
+   
+   Returns 0 if search completed and solution, 1 if not completed and solution,
+   2 if completed and no solution, 3 if not completed and no solution.
+   
+   Normally okay to do subModel immediately followed by subBranchandBound
+   (== other form of subBranchAndBound)
+   but may need to get at model for advanced features.
+   
+   Deletes model
+   
+*/
+  
+int 
+CbcModel::subBranchAndBound(CbcModel * model,
+                            CbcModel * presolvedModel,
+			    int maximumNodes)
+{
+  int i;
+  double cutoff=model->getCutoff();
+  CbcModel * model2;
+  if (presolvedModel) 
+    model2=presolvedModel;
+  else
+    model2=model;
+  // Do complete search
+  
+  for (i=0;i<numberHeuristics_;i++) {
+    model2->addHeuristic(heuristic_[i]);
+    model2->heuristic(i)->resetModel(model2);
+  }
+  // Definition of node choice
+  model2->setNodeComparison(nodeCompare_->clone());
+  //model2->solver()->setHintParam(OsiDoReducePrint,true,OsiHintTry);
+  model2->messageHandler()->setLogLevel(CoinMax(0,handler_->logLevel()-1));
+  //model2->solver()->messageHandler()->setLogLevel(2);
+  model2->setMaximumCutPassesAtRoot(maximumCutPassesAtRoot_);
+  model2->setPrintFrequency(50);
+  model2->setIntParam(CbcModel::CbcMaxNumNode,maximumNodes);
+  model2->branchAndBound();
+  delete model2->nodeComparison();
+  if (model2->getMinimizationObjValue()>cutoff) {
+    // no good
+    if (model!=model2)
+      delete model2;
+    delete model;
+    return 2;
+  }
+  if (model!=model2) {
+    // get back solution
+    model->originalModel(model2,false);
+    delete model2;
+  }
+  int status;
+  if (model->getMinimizationObjValue()<cutoff&&model->bestSolution()) {
+    double objValue = model->getObjValue();
+    const double * solution = model->bestSolution();
+    setBestSolution(CBC_TREE_SOL,objValue,solution);
+    status = 0;
+  } else {
+    status=2;
+  }
+  if (model->status())
+    status ++ ; // not finished search
+  delete model;
+  return status;
 }
 /* Invoke the branch & cut algorithm on partially fixed problem
    

@@ -239,8 +239,12 @@ public:
   /// Original bounds
   inline double originalLowerBound() const
   { return originalLower_;};
+  inline void setOriginalLowerBound(double value)
+  { originalLower_=value;};
   inline double originalUpperBound() const
   { return originalUpper_;};
+  inline void setOriginalUpperBound(double value)
+  { originalUpper_=value;};
   /// Breakeven e.g 0.7 -> >= 0.7 go up first
   inline double breakEven() const
   { return breakEven_;};
@@ -727,7 +731,7 @@ public:
   /// Creates a branching object
   virtual CbcBranchingObject * createBranch(int way) const;
   /// As some computation is needed in more than one place - returns row
-  int gutsOfFollowOn(int & otherRow, int & preferredWay) const;
+  virtual int gutsOfFollowOn(int & otherRow, int & preferredWay) const;
 
 protected:
   /// data

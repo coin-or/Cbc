@@ -37,34 +37,8 @@
 
 #include "CbcHeuristic.hpp"
 
+#include  "CoinTime.hpp"
 
-// Time
-
-#include  <time.h>
-#if !defined(_MSC_VER)
-#include <sys/times.h>
-#include <sys/resource.h>
-#include <unistd.h>
-#endif
-static double cpuTime()
-{
-  double cpu_temp;
-#if defined(_MSC_VER)
-  unsigned int ticksnow;        /* clock_t is same as int */
-  
-  ticksnow = (unsigned int)clock();
-  
-  cpu_temp = (double)((double)ticksnow/CLOCKS_PER_SEC);
-#else
-  struct rusage usage;
-  getrusage(RUSAGE_SELF,&usage);
-  cpu_temp = usage.ru_utime.tv_sec;
-  cpu_temp += 1.0e-6*((double) usage.ru_utime.tv_usec);
-#endif
-  return cpu_temp;
-}
-
-//#############################################################################
 
 
 /************************************************************************
@@ -212,7 +186,32 @@ int main (int argc, const char *argv[])
   //model.solver()->messageHandler()->setLogLevel(2);
   //model.setPrintFrequency(50);
   
-  double time1 = cpuTime();
+  double time1 = CoinCpuTime();
+  // For debugging we can check if we cut off known solution
+  //#define DEBUG_CUTS 2
+#if DEBUG_CUTS==1
+  // Set up debugger by value
+  {
+    int numberColumns=model.getNumCols();
+    double * solution = new double[numberColumns];
+    memset(solution, 0,numberColumns*sizeof(double));
+    // Set nonzero integers
+    solution[1]=1.0;
+    solution[18]=1.0;
+    solution[33]=1.0;
+    solution[59]=1.0;
+    model.solver()->activateRowCutDebugger(solution);
+    delete [] solution;
+  }
+#elif DEBUG_CUTS==2
+  // Set up debugger by name if already in OsiRowCutDebugger list
+  {
+    std::string problemName ;
+    // Get name from NAME card - we could also use a known name
+    model.solver()->getStrParam(OsiProbName,problemName) ;
+    model.solver()->activateRowCutDebugger(problemName.c_str()) ;
+  }
+#endif
 
   if (0) {
     // integer presolve
@@ -233,7 +232,7 @@ int main (int argc, const char *argv[])
     model.branchAndBound();
   }
 
-  std::cout<<mpsFileName<<" took "<<cpuTime()-time1<<" seconds, "
+  std::cout<<mpsFileName<<" took "<<CoinCpuTime()-time1<<" seconds, "
 	   <<model.getNodeCount()<<" nodes with objective "
 	   <<model.getObjValue()
 	   <<(!model.status() ? " Finished" : " Not finished")
@@ -252,9 +251,9 @@ int main (int argc, const char *argv[])
 	     <<generator->numberCutsActive()<<" were active after adding rounds of cuts"
 	     <<std::endl;
   }
-  // Print solution if finished - we can't get names from Osi!
+  // Print solution if there is one - we can't get names from Osi!
 
-  if (!model.status()&&model.getMinimizationObjValue()<1.0e50) {
+  if (model.getMinimizationObjValue()<1.0e50) {
     int numberColumns = model.solver()->getNumCols();
     
     const double * solution = model.solver()->getColSolution();

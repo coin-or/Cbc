@@ -567,14 +567,24 @@ CbcRounding::solution(double & solutionValue,
               // infeasible above
               assert (value<0.0);
               double gap = rowActivity[iRow]-rowUpper[iRow];
-              if (gap+value*distance<0.0) 
-                distance = -gap/value;
+              if (gap+value*distance<0.0) {
+                // If integer then has to move by 1
+                if (!isInteger)
+                  distance = -gap/value;
+                else
+                  distance = CoinMax(-gap/value,1.0);
+              }
             } else if (rowActivity[iRow]<rowLower[iRow]-primalTolerance) {
               // infeasible below
               assert (value>0.0);
               double gap = rowActivity[iRow]-rowLower[iRow];
-              if (gap+value*distance>0.0) 
-                distance = -gap/value;
+              if (gap+value*distance>0.0) {
+                // If integer then has to move by 1
+                if (!isInteger)
+                  distance = -gap/value;
+                else
+                  distance = CoinMax(-gap/value,1.0);
+              }
             } else {
               // feasible
               if (value>0) {

@@ -292,9 +292,10 @@ int main (int argc, const char *argv[])
     // post process
     if (preProcess)
       process.postProcess(*model.solver());
-    int numberColumns = model.solver()->getNumCols();
+    // Solution now back in solver1
+    int numberColumns = solver1.getNumCols();
     
-    const double * solution = model.solver()->getColSolution();
+    const double * solution = solver1.getColSolution();
     
     int iColumn;
     std::cout<<std::setiosflags(std::ios::fixed|std::ios::showpoint)<<std::setw(14);
@@ -302,7 +303,7 @@ int main (int argc, const char *argv[])
     std::cout<<"--------------------------------------"<<std::endl;
     for (iColumn=0;iColumn<numberColumns;iColumn++) {
       double value=solution[iColumn];
-      if (fabs(value)>1.0e-7&&model.solver()->isInteger(iColumn)) 
+      if (fabs(value)>1.0e-7&&solver1.isInteger(iColumn)) 
 	std::cout<<std::setw(6)<<iColumn<<" "<<value<<std::endl;
     }
     std::cout<<"--------------------------------------"<<std::endl;

@@ -3604,17 +3604,95 @@ CbcModel::addObjects(int numberObjects, CbcObject ** objects)
   // If integers but not enough objects fudge
   if (numberIntegers_>numberObjects_)
     findIntegers(true);
-  int newNumberObjects= numberObjects+numberObjects_;
-  CbcObject ** temp  = new CbcObject * [newNumberObjects];
+  /* But if incoming objects inherit from simple integer we just want
+     to replace */
+  int numberColumns = solver_->getNumCols();
+  /** mark is -1 if not integer, >=0 if using existing simple integer and
+      >=numberColumns if using new integer */
+  int * mark = new int[numberColumns];
   int i;
-  for (i=0;i<numberObjects_;i++) 
-    temp[i]=object_[i];
-  for (;i<newNumberObjects;i++) { 
-    temp[i]=objects[i-numberObjects_]->clone();
-    temp[i]->setModel(this);
+  for (i=0;i<numberColumns;i++)
+    mark[i]=-1;
+  int newNumberObjects = numberObjects;
+  int newIntegers=0;
+  for (i=0;i<numberObjects;i++) { 
+    CbcSimpleInteger * obj =
+      dynamic_cast <CbcSimpleInteger *>(objects[i]) ;
+    if (obj) {
+      int iColumn = obj->columnNumber();
+      mark[iColumn]=i+numberColumns;
+      newIntegers++;
+    }
   }
+  // and existing
+  for (i=0;i<numberObjects_;i++) { 
+    CbcSimpleInteger * obj =
+      dynamic_cast <CbcSimpleInteger *>(object_[i]) ;
+    if (obj) {
+      int iColumn = obj->columnNumber();
+      if (mark[iColumn]<0) {
+        newIntegers++;
+        newNumberObjects++;
+        mark[iColumn]=i;
+      }
+    }
+  } 
+  delete [] integerVariable_;
+  integerVariable_=NULL;
+  if (newIntegers!=numberIntegers_) 
+    printf("changing number of integers from %d to %d\n",
+           numberIntegers_,newIntegers);
+  numberIntegers_ = newIntegers;
+  integerVariable_ = new int [numberIntegers_];
+  CbcObject ** temp  = new CbcObject * [newNumberObjects];
+  // Put integers first
+  newIntegers=0;
+  numberIntegers_=0;
+  for (i=0;i<numberColumns;i++) {
+    int which = mark[i];
+    if (which>=0) {
+      if (!isInteger(i)) {
+        newIntegers++;
+        solver_->setInteger(i);
+      }
+      if (which<numberColumns) {
+        temp[numberIntegers_]=object_[which];
+        object_[which]=NULL;
+      } else {
+        temp[numberIntegers_]=objects[which-numberColumns]->clone();
+        temp[numberIntegers_]->setModel(this);
+      }
+      integerVariable_[numberIntegers_++]=i;
+    }
+  }
+  if (newIntegers)
+    printf("%d variables were declared integer\n",newIntegers);
+  int n=numberIntegers_;
+  // Now rest of old
+  for (i=0;i<numberObjects_;i++) { 
+    if (object_[i]) {
+      CbcSimpleInteger * obj =
+        dynamic_cast <CbcSimpleInteger *>(object_[i]) ;
+      if (obj) {
+        delete object_[i];
+      } else {
+        temp[n++]=object_[i];
+      }
+    }
+  }
+  // and rest of new
+  for (i=0;i<numberObjects;i++) { 
+    CbcSimpleInteger * obj =
+      dynamic_cast <CbcSimpleInteger *>(objects[i]) ;
+    if (!obj) {
+      temp[n]=objects[i]->clone();
+      temp[n++]->setModel(this);
+    }
+  }
+  delete [] mark;
   delete [] object_;
   object_ = temp;
+  assert (n==newNumberObjects);
   numberObjects_ = newNumberObjects;
 }
 

@@ -109,7 +109,12 @@ int main (int argc, const char *argv[])
 
   // Read in model using argv[1]
   // and assert that it is a clean model
-  int numMpsReadErrors = model.solver()->readMps(argv[1],"");
+  int numMpsReadErrors;
+  if (argc<2) 
+    numMpsReadErrors = 
+      model.solver()->readMps("../../Mps/Sample/p0033.mps","");
+  else
+    numMpsReadErrors = model.solver()->readMps(argv[1],"");
   assert(numMpsReadErrors==0);
 
   // Set up some cut generators and defaults

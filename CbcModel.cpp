@@ -566,6 +566,12 @@ void CbcModel::branchAndBound()
     newNode->setObjectiveValue(direction*solver_->getObjValue()) ;
     newNode->setNodeNumber(numberNodes_);
     anyAction = -1 ;
+    // To make depth available we may need a fake node
+    CbcNode fakeNode;
+    if (!currentNode_) {
+      assert (!numberNodes_);
+      currentNode_=&fakeNode;
+    }
     while (anyAction == -1)
     { anyAction = newNode->chooseBranch(this,NULL) ;
       if (anyAction == -1)
@@ -760,6 +766,7 @@ void CbcModel::branchAndBound()
   active subproblem.
 */
     CbcNode *node = tree_->top() ;
+    currentNode_=node; // so can be accessed elsewhere
 #ifdef CBC_DEBUG
     printf("%d unsat, way %d, obj %g est %g\n",
 	   node->numberUnsatisfied(),node->way(),node->objectiveValue(),
@@ -1200,6 +1207,8 @@ CbcModel::CbcModel()
   maximumDepth_(0),
   walkback_(NULL),
   addedCuts_(NULL),
+  nextRowCut_(NULL),
+  currentNode_(NULL),
   integerVariable_(NULL),
   strategy_(0),
   subTreeModel_(NULL),
@@ -1268,6 +1277,8 @@ CbcModel::CbcModel(const OsiSolverInterface &rhs)
   maximumDepth_(0),
   walkback_(NULL),
   addedCuts_(NULL),
+  nextRowCut_(NULL),
+  currentNode_(NULL),
   strategy_(0),
   subTreeModel_(NULL),
   numberStoppedSubTrees_(0),
@@ -1536,6 +1547,8 @@ CbcModel::CbcModel(const CbcModel & rhs)
   } else {
     addedCuts_ = NULL;
   }
+  nextRowCut_ = NULL;
+  currentNode_ = NULL;
   if (maximumDepth_)
     walkback_ = new CbcNodeInfo * [maximumDepth_];
   else
@@ -1708,6 +1721,8 @@ CbcModel::operator=(const CbcModel& rhs)
     } else {
       addedCuts_ = NULL;
     }
+    nextRowCut_ = NULL;
+    currentNode_ = NULL;
     if (maximumDepth_)
       walkback_ = new CbcNodeInfo * [maximumDepth_];
     else
@@ -1755,6 +1770,8 @@ CbcModel::gutsOfDestructor()
   heuristic_=NULL;
   delete [] addedCuts_;
   addedCuts_=NULL;
+  nextRowCut_ = NULL;
+  currentNode_ = NULL;
   delete [] walkback_;
   walkback_=NULL;
   for (i=0;i<numberObjects_;i++)
@@ -1830,7 +1847,7 @@ void
 CbcModel::addCutGenerator(CglCutGenerator * generator,
 			  int howOften, const char * name,
 			  bool normal, bool atSolution,
-			  bool whenInfeasible)
+			  bool whenInfeasible,int howOftenInSub)
 {
   CbcCutGenerator ** temp = generator_;
   generator_ = new CbcCutGenerator * [numberCutGenerators_+1];
@@ -1838,7 +1855,7 @@ CbcModel::addCutGenerator(CglCutGenerator * generator,
   delete[] temp ;
   generator_[numberCutGenerators_++]= 
     new CbcCutGenerator(this,generator, howOften, name,
-			normal,atSolution,whenInfeasible);
+			normal,atSolution,whenInfeasible,howOftenInSub);
 							  
 }
 // Add one heuristic
@@ -4592,4 +4609,93 @@ void * CbcModel::getApplicationData() const
 {
   return appData_;
 }
+/* Invoke the branch & cut algorithm on partially fixed problem
+   
+The method creates a new model with given bounds, presolves it
+then proceeds to explore the branch & cut search tree. The search 
+ends when the tree is exhausted or maximum nodes is reached.
+Returns 0 if search completed and solution, 1 if not completed and solution,
+2 if completed and no solution, 3 if not completed and no solution.
+*/
+int 
+CbcModel::subBranchAndBound(const double * lower, const double * upper,
+			    int maximumNodes)
+{
+  OsiSolverInterface * solver = continuousSolver_->clone();
+
+  int numberIntegers = numberIntegers_;
+  const int * integerVariable = integerVariable_;
+  
+  int i;
+  for (i=0;i<numberIntegers;i++) {
+    int iColumn=integerVariable[i];
+    const CbcObject * object = object_[i];
+    const CbcSimpleInteger * integerObject = 
+      dynamic_cast<const  CbcSimpleInteger *> (object);
+    assert(integerObject);
+    // get original bounds
+    double originalLower = integerObject->originalLowerBound();
+    double originalUpper = integerObject->originalUpperBound();
+    solver->setColLower(iColumn,CoinMax(lower[iColumn],originalLower));
+    solver->setColUpper(iColumn,CoinMin(upper[iColumn],originalUpper));
+  }
+  CbcModel model(*solver);
+  double cutoff = getCutoff();
+  model.setCutoff(cutoff);
+  // integer presolve
+  CbcModel * model2 = model.integerPresolve(false);
+  if (!model2) {
+    delete solver;
+    return 2;
+  }
+  printf("Reduced model has %d rows and %d columns\n",
+	 model2->getNumRows(),model2->getNumCols());
+  // Do complete search
+  
+  // Cuts
+  for (int iCutGenerator = 0;iCutGenerator<numberCutGenerators_;iCutGenerator++) {
+    int howOften = generator_[iCutGenerator]->howOftenInSub();
+    if (howOften>-100) {
+      CbcCutGenerator * generator = generator_[iCutGenerator];
+      CglCutGenerator * cglGenerator = generator->generator()->clone();
+      model2->addCutGenerator(cglGenerator,howOften,
+			      generator->cutGeneratorName(),
+			      generator->normal(),
+			      generator->atSolution(),
+			      generator->whenInfeasible(),
+			      -100);
+    }
+  }
+  // Allow rounding heuristic - could allow more
+
+  CbcRounding heuristic1(*model2);
+  model2->addHeuristic(&heuristic1);
+  // Definition of node choice
+  CbcCompareDefault compare;
+  model2->setNodeComparison(compare);
+  //model2->solver()->setHintParam(OsiDoReducePrint,true,OsiHintTry);
+  //model2->messageHandler()->setLogLevel(1);
+  //model2->solver()->messageHandler()->setLogLevel(2);
+  model2->setMaximumCutPassesAtRoot(maximumCutPassesAtRoot_);
+  model2->setPrintFrequency(50);
+  model2->setIntParam(CbcModel::CbcMaxNumNode,maximumNodes);
+  model2->branchAndBound();
+  // get back solution
+  model.originalModel(model2,false);
+  delete model2;
+  int status;
+  if (model.getMinimizationObjValue()<cutoff) {
+    double objValue = model.getObjValue();
+    const double * solution = model.bestSolution();
+    setBestSolution(CBC_TREE_SOL,objValue,solution);
+    status = 0;
+  } else {
+    status=2;
+  }
+  if (model.status())
+    status ++ ; // not finished search
+  delete solver;
+  return status;
+}
+
 

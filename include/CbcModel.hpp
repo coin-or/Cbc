@@ -152,6 +152,20 @@ public:
     */
      void branchAndBound();
 
+    /** \brief Invoke the branch \& cut algorithm on partially fixed problem
+
+      The method creates a new model with given bounds, presolves it
+      then proceeds to explore the branch & cut search tree. The search 
+      ends when the tree is exhausted or maximum nodes is reached.
+
+      If better solution found then it is saved.
+
+      Returns 0 if search completed and solution, 1 if not completed and solution,
+      2 if completed and no solution, 3 if not completed and no solution.
+    */
+     int subBranchAndBound(const double * lower, const double * upper,
+			    int maximumNodes);
+
     /** \brief Evaluate a subproblem using cutting planes and heuristics
 
       The method invokes a main loop which generates cuts, applies heuristics,
@@ -888,6 +902,12 @@ public:
   /// Global cuts
   inline OsiCuts * globalCuts() 
   { return &globalCuts_;};
+  /// Set a pointer to a row cut which will be added instead of normal branching.
+  inline void setNextRowCut(OsiRowCut * pointer)
+  { nextRowCut_=pointer;};
+  /// Get a pointer to current node (be careful)
+  inline CbcNode * currentNode() const
+  { return currentNode_;};
 
   /// Get the number of cut generators
   inline int numberCutGenerators() const
@@ -908,7 +928,7 @@ public:
   void addCutGenerator(CglCutGenerator * generator,
 		  int howOften=1, const char * name=NULL,
 		  bool normal=true, bool atSolution=false, 
-		  bool infeasible=false);
+		  bool infeasible=false,int howOftenInSub=-100);
   //@}
 
   /** \name Heuristics and priorities */
@@ -1133,6 +1153,14 @@ private:
     entry is set to NULL.
   */
   CbcCountRowCut ** addedCuts_;
+
+  /** A pointer to a row cut which will be added instead of normal branching.
+      After use it should be set to NULL.
+  */
+  OsiRowCut * nextRowCut_;
+
+  /// Current node so can be used elsewhere
+  CbcNode * currentNode_;
 
   /// Indices of integer variables
   int * integerVariable_;

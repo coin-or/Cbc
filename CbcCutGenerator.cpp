@@ -19,6 +19,7 @@ CbcCutGenerator::CbcCutGenerator ()
   : model_(NULL),
     generator_(NULL),
     whenCutGenerator_(-1),
+    whenCutGeneratorInSub_(-100),
     generatorName_(NULL),
     normal_(true),
     atSolution_(false),
@@ -32,7 +33,7 @@ CbcCutGenerator::CbcCutGenerator ()
 CbcCutGenerator::CbcCutGenerator(CbcModel * model,CglCutGenerator * generator,
 		  int howOften, const char * name,
 		  bool normal, bool atSolution, 
-		  bool infeasible)
+		  bool infeasible, int howOftenInSub)
   :  numberTimes_(0),
      numberCuts_(0),
      numberCutsActive_(0)
@@ -41,6 +42,7 @@ CbcCutGenerator::CbcCutGenerator(CbcModel * model,CglCutGenerator * generator,
   generator_=generator;
   generator_->refreshSolver(model_->solver());
   whenCutGenerator_=howOften;
+  whenCutGeneratorInSub_ = howOftenInSub;
   if (name)
     generatorName_=strdup(name);
   else
@@ -57,6 +59,7 @@ CbcCutGenerator::CbcCutGenerator ( const CbcCutGenerator & rhs)
   generator_=rhs.generator_;
   generator_->refreshSolver(model_->solver());
   whenCutGenerator_=rhs.whenCutGenerator_;
+  whenCutGeneratorInSub_ = rhs.whenCutGeneratorInSub_;
   generatorName_=strdup(rhs.generatorName_);
   normal_=rhs.normal_;
   atSolution_=rhs.atSolution_;
@@ -77,6 +80,7 @@ CbcCutGenerator::operator=( const CbcCutGenerator& rhs)
     generator_=rhs.generator_;
     generator_->refreshSolver(model_->solver());
     whenCutGenerator_=rhs.whenCutGenerator_;
+    whenCutGeneratorInSub_ = rhs.whenCutGeneratorInSub_;
     generatorName_=strdup(rhs.generatorName_);
     normal_=rhs.normal_;
     atSolution_=rhs.atSolution_;

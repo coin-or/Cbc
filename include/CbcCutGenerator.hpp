@@ -76,7 +76,7 @@ public:
   CbcCutGenerator(CbcModel * model,CglCutGenerator * generator,
 		  int howOften=1, const char * name=NULL,
 		  bool normal=true, bool atSolution=false, 
-		  bool infeasible=false);
+		  bool infeasible=false,int howOftenInsub=-100);
  
   /// Copy constructor 
   CbcCutGenerator (const CbcCutGenerator &);
@@ -120,6 +120,9 @@ public:
   /// Get the cut generation interval.
   inline int howOften() const
   { return whenCutGenerator_;};
+  /// Get the cut generation interval.in sub tree
+  inline int howOftenInSub() const
+  { return whenCutGeneratorInSub_;};
 
   /// Get whether the cut generator should be called in the normal place
   inline bool normal() const
@@ -180,6 +183,10 @@ private:
      routine.
   */
   int whenCutGenerator_;
+  /** Number of nodes between calls to the CglCutGenerator::generateCuts
+     routine in sub tree.
+  */
+  int whenCutGeneratorInSub_;
 
   /// Name of generator
   char * generatorName_;

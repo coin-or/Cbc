@@ -767,6 +767,7 @@ CbcNode::createInfo (CbcModel *model,
   not changing. Assuming that branching objects all involve integer variables,
   we should see at least one bound change as a consequence of processing this
   subproblem. Different types of branching objects could break this assertion.
+  Yes - cuts will break
 */
     double *boundChanges = new double [2*numberColumns] ;
     int *variables = new int [2*numberColumns] ;
@@ -792,7 +793,8 @@ CbcNode::createInfo (CbcModel *model,
 #ifdef CBC_DEBUG
     printf("%d changed bounds\n",numberChangedBounds) ;
 #endif
-    assert (numberChangedBounds);
+    if (lastNode->branchingObject()->boundBranch())
+      assert (numberChangedBounds);
 /*
   Hand the lot over to the CbcPartialNodeInfo constructor, then clean up and
   return.

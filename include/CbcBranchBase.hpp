@@ -214,6 +214,11 @@ public:
   */
   virtual void print(bool normalBranch) {};
 
+  /** \brief Return true if branch should fix variables
+  */
+  virtual bool boundBranch() const 
+  {return true;};
+
   /** \brief Index identifying the associated CbcObject within its class.
   
     The name is misleading, and typically the index will <i>not</i> refer

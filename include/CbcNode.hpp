@@ -500,6 +500,9 @@ public:
   {return guessedObjectiveValue_;};
   inline void setGuessedObjectiveValue(double value)
   {guessedObjectiveValue_=value;};
+  /// Branching object for this node
+  const CbcBranchingObject * branchingObject() const
+  { return branch_;};
 
 private:
   // Data

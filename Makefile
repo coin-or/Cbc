@@ -13,7 +13,7 @@ include ${MakefileDir}/Makefile.location
 
 .DELETE_ON_ERROR:
 
-.PHONY: default install clean library unitTest libdepend libCbc doc
+.PHONY: default install clean library unitTest solver libdepend libCbc doc
 
 default: install
 libCbc: library
@@ -34,6 +34,9 @@ libdepend:
 
 unitTest: 
 	(cd Test && ${MAKE} unitTest)
+
+solver: 
+	(cd Test && ${MAKE} solver)
 
 clean: 
 	@rm -rf Junk

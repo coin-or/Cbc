@@ -129,6 +129,7 @@ CbcFathomDynamicProgramming::CbcFathomDynamicProgramming(const CbcFathomDynamicP
 int 
 CbcFathomDynamicProgramming::checkPossible(int allowableSize)
 {
+  algorithm_=-1;
   assert(model_->solver());
   OsiSolverInterface * solver = model_->solver();
   const CoinPackedMatrix * matrix = solver->getMatrixByCol();
@@ -241,10 +242,12 @@ CbcFathomDynamicProgramming::checkPossible(int allowableSize)
     if (gap<=1.0)
       n01++;
   }
-  if (n01==numberColumns&&!nbadcoeff)
-    algorithm_ = 0; // easiest
-  else
-    algorithm_ = 1;
+  if (allowableSize&&size_<=allowableSize) {
+    if (n01==numberColumns&&!nbadcoeff)
+      algorithm_ = 0; // easiest
+    else
+      algorithm_ = 1;
+  }
   if (allowableSize&&size_<=allowableSize) {
     numberActive_=numberActive;
     indices_ = new int [numberActive_];

@@ -48,11 +48,15 @@ public:
 		       double * newSolution);
   /// This version fixes stuff and does IP
   int solutionFix(double & objectiveValue,
-		  double * newSolution);
+		  double * newSolution,
+		  const int * keep);
 
   /// Sets type of search
   inline void setSearchType(int value)
   { swap_=value;};
+  /// Used array so we can set
+  inline char * used() const
+  { return used_;};
 
 protected:
   // Data

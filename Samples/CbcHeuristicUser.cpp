@@ -89,7 +89,8 @@ CbcLocalSearch::resetModel(CbcModel * model)
 // This version fixes stuff and does IP
 int 
 CbcLocalSearch::solutionFix(double & objectiveValue,
-			       double * newSolution)
+			    double * newSolution,
+			    const int * keep)
 {
   OsiSolverInterface * solver = model_->continuousSolver()->clone();
   const double * colLower = solver->getColLower();
@@ -555,7 +556,7 @@ CbcLocalSearch::solution(double & solutionValue,
   delete [] mark;
   if (numberSolutions_>1&&swap_==1) {
     // try merge
-    int returnCode2=solutionFix( solutionValue, betterSolution);
+    int returnCode2=solutionFix( solutionValue, betterSolution,NULL);
     if (returnCode2)
       returnCode=1;
   }

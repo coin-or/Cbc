@@ -70,9 +70,9 @@ protected:
 
   /// Model
   CbcModel * model_;
-private:
   /// When flag - 0 off, 1 at root, 2 other than root, 3 always
   int when_;
+private:
   
   /// Illegal Assignment operator 
   CbcHeuristic & operator=(const CbcHeuristic& rhs);

@@ -701,6 +701,8 @@ public:
   void setBestSolution(CBC_Message how,
 		       double & objectiveValue, const double *solution,
 		       bool fixVariables=false);
+  /// Just update objectiveValue
+  void setBestObjectiveValue( double objectiveValue);
 
   /** Call this to really test if a valid solution can be feasible
       Solution is number columns in size.

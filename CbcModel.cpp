@@ -5187,3 +5187,8 @@ CbcModel::strengthenedModel()
   
   return newSolver; 
 }
+// Just update objectiveValue
+void CbcModel::setBestObjectiveValue( double objectiveValue)
+{
+  bestObjective_=objectiveValue;
+}

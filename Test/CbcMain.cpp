@@ -1214,6 +1214,7 @@ int main (int argc, const char *argv[])
 						   "");
 	      assert(!status);
 	      model->setCutoff(1.0e20);
+	      model->setBestObjectiveValue(1.0e20);
 	      model->setMaximumSolutions(1);
 	      model->setSolutionCount(0);
 	      // Switch off strong branching to give better chance of NOT finding best

@@ -1,6 +1,7 @@
 # Look at and if necessary edit the following files:
 # - ../Makefiles/Makefile.location
 # - Makefile.test
+# - Makefile.solve
 
 ###############################################################################
 
@@ -20,6 +21,9 @@ libdepend :
 
 unitTest: libdepend
 	${MAKE} -f Makefile.test $*
+
+solver: libdepend
+	${MAKE} -f Makefile.solve $*
 
 clean:
 	@rm -rf Junk

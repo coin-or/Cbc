@@ -2887,7 +2887,9 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node,
           = dynamic_cast<OsiClpSolverInterface *> (solver_);
         if (clpSolver) {
         // make sure factorization can't carry over
-          clpSolver->setSpecialOptions(clpSolver->specialOptions()&(~8));
+          int options = clpSolver->specialOptions();
+          if (options>=0)
+            clpSolver->setSpecialOptions(clpSolver->specialOptions()&(~8));
         }
 #endif
       }

@@ -516,9 +516,9 @@ CbcBranchToFixLots::shallWe() const
 {
   int returnCode=0;
   OsiSolverInterface * solver = model_->solver();
-  int numberRows = solver->getNumRows();
-  if (numberRows!=matrixByRow_.getNumRows())
-    return 0;
+  int numberRows = matrixByRow_.getNumRows();
+  //if (numberRows!=solver->getNumRows())
+  //return 0;
   const double * solution = model_->currentSolution();
   const double * lower = solver->getColLower();
   const double * upper = solver->getColUpper();

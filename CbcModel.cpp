@@ -571,7 +571,7 @@ void CbcModel::branchAndBound()
     // To make depth available we may need a fake node
     CbcNode fakeNode;
     if (!currentNode_) {
-      assert (!numberNodes_);
+      // Not true if sub trees assert (!numberNodes_);
       currentNode_=&fakeNode;
     }
     phase_=3;

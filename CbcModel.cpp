@@ -732,8 +732,12 @@ void CbcModel::branchAndBound()
     + check if we've closed the integrality gap enough to quit, 
     + print a summary line to let the user know we're working
 */
-    if ((numberNodes_%1000) == 0&&nodeCompare_) 
-      nodeCompare_->every1000Nodes(this, numberNodes_) ;
+    if ((numberNodes_%1000) == 0&&nodeCompare_) {
+      bool redoTree=nodeCompare_->every1000Nodes(this, numberNodes_) ;
+      // redo tree if wanted
+      if (redoTree)
+	tree_->setComparison(*nodeCompare_) ;
+    }
     if ((numberNodes_%printFrequency_) == 0) {
       int j ;
       int nNodes = tree_->size() ;

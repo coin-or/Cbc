@@ -199,11 +199,12 @@ CbcCompareDefault::newSolution(CbcModel * model,
     weight_ =0.0; // this searches on objective
 }
 // This allows method to change behavior 
-void 
+bool 
 CbcCompareDefault::every1000Nodes(CbcModel * model, int numberNodes)
 {
   if (numberNodes>10000)
     weight_ =0.0; // this searches on objective
+  return numberNodes==11000; // resort if first time
 }
 
 /** Default Constructor

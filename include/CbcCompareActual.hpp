@@ -84,7 +84,8 @@ public:
 			   double objectiveAtContinuous,
 			   int numberInfeasibilitiesAtContinuous) ;
   // This allows method to change behavior 
-  virtual void every1000Nodes(CbcModel * model, int numberNodes);
+  // Return true if want tree re-sorted
+  virtual bool every1000Nodes(CbcModel * model,int numberNodes);
 
   inline double getWeight() const
   { return weight_;};

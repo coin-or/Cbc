@@ -1243,8 +1243,8 @@ private:
 
   /// Indices of integer variables
   int * integerVariable_;
-  /// 0 bit gomory, 1 probing, 2 knapsack, 3 oddhole
-  int strategy_;
+  /// 0 bit - check if cuts valid (if on list)
+  int specialOptions_;
   /// User node comparison function
   CbcCompareBase * nodeCompare_;
   /// Tree

@@ -418,14 +418,20 @@ void CbcModel::branchAndBound()
   // Save objective (just so user can access it)
   originalContinuousObjective_ = solver_->getObjValue();
   bestPossibleObjective_=originalContinuousObjective_;
-
-# ifdef CBC_DEBUG
 /*
   OsiRowCutDebugger knows an optimal answer for a subset of MIP problems.
   Assuming it recognises the problem, when called upon it will check a cut to
   see if it cuts off the optimal answer.
 */
-  solver_->activateRowCutDebugger(problemName.c_str()) ;
+  // If debugger exists set specialOptions_ bit
+  if (solver_->getRowCutDebuggerAlways())
+    specialOptions_ |= 1;
+
+# ifdef CBC_DEBUG
+  if ((specialOptions_&1)==0)
+    solver_->activateRowCutDebugger(problemName.c_str()) ;
+  if (solver_->getRowCutDebuggerAlways())
+    specialOptions_ |= 1;
 # endif
 
 /*
@@ -846,20 +852,20 @@ void CbcModel::branchAndBound()
       else
       { deleteNode = true ; }
 
-#     ifdef CBC_DEBUG
-/*
-  This doesn't work as intended --- getRowCutDebugger will return null
-  unless the current feasible solution region includes the optimal solution
-  that RowCutDebugger knows. There's no way to tell inactive from off the
-  optimal path.
-*/
-      const OsiRowCutDebugger *debugger = solver_->getRowCutDebugger() ;
-      if (debugger)
-      { if(debugger->onOptimalPath(*solver_))
-	  printf("On optimal path\n") ;
-	else
-	  printf("Not on optimal path\n") ; }
-#     endif
+      if ((specialOptions_&1)!=0) {
+        /*
+          This doesn't work as intended --- getRowCutDebugger will return null
+          unless the current feasible solution region includes the optimal solution
+          that RowCutDebugger knows. There's no way to tell inactive from off the
+          optimal path.
+        */
+        const OsiRowCutDebugger *debugger = solver_->getRowCutDebugger() ;
+        if (debugger)
+          { if(debugger->onOptimalPath(*solver_))
+            printf("On optimal path\n") ;
+          else
+            printf("Not on optimal path\n") ; }
+      }
 /*
   Reoptimize, possibly generating cuts and/or using heuristics to find
   solutions.  Cut reference counts are unaffected unless we lose feasibility,
@@ -1252,7 +1258,7 @@ CbcModel::CbcModel()
   nextRowCut_(NULL),
   currentNode_(NULL),
   integerVariable_(NULL),
-  strategy_(0),
+  specialOptions_(0),
   subTreeModel_(NULL),
   numberStoppedSubTrees_(0),
   presolve_(0),
@@ -1325,7 +1331,7 @@ CbcModel::CbcModel(const OsiSolverInterface &rhs)
   addedCuts_(NULL),
   nextRowCut_(NULL),
   currentNode_(NULL),
-  strategy_(0),
+  specialOptions_(0),
   subTreeModel_(NULL),
   numberStoppedSubTrees_(0),
   presolve_(0),
@@ -1480,7 +1486,7 @@ CbcModel::CbcModel(const CbcModel & rhs, bool noTree)
   numberNodes_(rhs.numberNodes_),
   numberIterations_(rhs.numberIterations_),
   status_(rhs.status_),
-  strategy_(rhs.strategy_),
+  specialOptions_(rhs.specialOptions_),
   subTreeModel_(rhs.subTreeModel_),
   numberStoppedSubTrees_(rhs.numberStoppedSubTrees_),
   presolve_(rhs.presolve_),
@@ -1695,7 +1701,7 @@ CbcModel::operator=(const CbcModel& rhs)
     numberNodes_ = rhs.numberNodes_;
     numberIterations_ = rhs.numberIterations_;
     status_ = rhs.status_;
-    strategy_ = rhs.strategy_;
+    specialOptions_ = rhs.specialOptions_;
     subTreeModel_ = rhs.subTreeModel_;
     numberStoppedSubTrees_ = rhs.numberStoppedSubTrees_;
     presolve_ = rhs.presolve_;
@@ -2273,17 +2279,18 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node,
   numberOldActiveCuts = numberRowsAtStart-numberRowsAtContinuous_ ;
   numberNewCuts = 0 ;
 
-# ifdef CBC_DEBUG
-/*
-  See OsiRowCutDebugger for details. In a nutshell, make sure that current
-  variable values do not conflict with a known optimal solution. (Obviously
-  this can be fooled when there are multiple solutions.)
-*/
   bool onOptimalPath = false ;
-  const OsiRowCutDebugger *debugger = solver_->getRowCutDebugger() ;
-  if (debugger) 
-    onOptimalPath = (debugger->onOptimalPath(*solver_)) ;
-# endif
+  const OsiRowCutDebugger *debugger = NULL;
+  if ((specialOptions_&1)!=0) {
+    /*
+      See OsiRowCutDebugger for details. In a nutshell, make sure that current
+      variable values do not conflict with a known optimal solution. (Obviously
+      this can be fooled when there are multiple solutions.)
+    */
+    debugger = solver_->getRowCutDebugger() ;
+    if (debugger) 
+      onOptimalPath = (debugger->onOptimalPath(*solver_)) ;
+  }
 /*
   Resolve the problem. If we've lost feasibility, might as well bail out right
   after the debug stuff.
@@ -2297,24 +2304,26 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node,
 	   solver_->getNumRows()) ; }
   else
   { printf("Infeasible %d rows\n",solver_->getNumRows()) ; }
+#endif
+  if ((specialOptions_&1)!=0) {
 /*
   If the RowCutDebugger said we were compatible with the optimal solution,
   and now we're suddenly infeasible, we might be confused. Then again, we
   may have fathomed by bound, heading for a rediscovery of an optimal solution.
 */
-  if (onOptimalPath && !solver_->isDualObjectiveLimitReached()) {
-    if (!feasible) {
-      solver_->writeMps("infeas");
-      CoinWarmStartBasis *slack =
-	dynamic_cast<CoinWarmStartBasis *>(solver_->getEmptyWarmStart()) ;
-      solver_->setWarmStart(slack);
-      delete slack ;
-      solver_->setHintParam(OsiDoReducePrint,false,OsiHintDo,0) ;
-      solver_->initialSolve();
+    if (onOptimalPath && !solver_->isDualObjectiveLimitReached()) {
+      if (!feasible) {
+        solver_->writeMps("infeas");
+        CoinWarmStartBasis *slack =
+          dynamic_cast<CoinWarmStartBasis *>(solver_->getEmptyWarmStart()) ;
+        solver_->setWarmStart(slack);
+        delete slack ;
+        solver_->setHintParam(OsiDoReducePrint,false,OsiHintDo,0) ;
+        solver_->initialSolve();
+      }
+      assert(feasible) ;
     }
-    assert(feasible) ;
   }
-# endif
 
   if (!feasible) return (false) ;
   // Return at once if numberTries zero
@@ -2479,15 +2488,15 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node,
 #endif
 	  if (mustResolve) {
 	    feasible = resolve() ;
-#	  ifdef CBC_DEBUG
-	    debugger = solver_->getRowCutDebugger() ;
-	    if (debugger) 
-	      onOptimalPath = (debugger->onOptimalPath(*solver_)) ;
-	    else
-	      onOptimalPath=false;
-	    if (onOptimalPath && !solver_->isDualObjectiveLimitReached())
-	      assert(feasible) ;
-#	  endif
+            if ((specialOptions_&1)!=0) {
+              debugger = solver_->getRowCutDebugger() ;
+              if (debugger) 
+                onOptimalPath = (debugger->onOptimalPath(*solver_)) ;
+              else
+                onOptimalPath=false;
+              if (onOptimalPath && !solver_->isDualObjectiveLimitReached())
+                assert(feasible) ;
+            }
 	    if (!feasible)
 	      break ;
 	  }
@@ -2509,15 +2518,18 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node,
       int numberRowCutsAfter = theseCuts.sizeRowCuts() ;
       int numberColumnCutsAfter = theseCuts.sizeColCuts() ;
 
-#ifdef CBC_DEBUG
-      if (onOptimalPath) {
-	int k ;
-	for (k = numberRowCutsBefore;k<numberRowCutsAfter;k++) {
-	  OsiRowCut thisCut = theseCuts.rowCut(k) ;
-	  assert(!debugger->invalidCut(thisCut)) ;
-	}
+      if ((specialOptions_&1)!=0) {
+        if (onOptimalPath) {
+          int k ;
+          for (k = numberRowCutsBefore;k<numberRowCutsAfter;k++) {
+            OsiRowCut thisCut = theseCuts.rowCut(k) ;
+            if(debugger->invalidCut(thisCut)) {
+              solver_->writeMps("badCut");
+            }
+            assert(!debugger->invalidCut(thisCut)) ;
+          }
+        }
       }
-#endif
 
 /*
   The cut generator/heuristic has done its thing, and maybe it generated some
@@ -3869,17 +3881,17 @@ CbcModel::setBestSolution (CBC_Message how,
 	for (int j=lastNumberCuts;j<numberCuts;j++) {
 	  const OsiRowCut * thisCut = theseCuts.rowCutPtr(j);
 	  if (thisCut->globallyValid()) {
-#	  ifdef CBC_DEBUG
-	    /* As these are global cuts -
-	       a) Always get debugger object
-	       b) Not fatal error to cutoff optimal (if we have just got optimal)
-	    */
-	    const OsiRowCutDebugger *debugger = solver_->getRowCutDebuggerAlways() ;
-	    if (debugger) {
-	      if(debugger->invalidCut(*thisCut))
-		printf("ZZZZ Global cut - cuts off optimal solution!\n");
-	    }
-#	  endif
+            if ((specialOptions_&1)!=0) {
+              /* As these are global cuts -
+                 a) Always get debugger object
+                 b) Not fatal error to cutoff optimal (if we have just got optimal)
+              */
+              const OsiRowCutDebugger *debugger = solver_->getRowCutDebuggerAlways() ;
+              if (debugger) {
+                if(debugger->invalidCut(*thisCut))
+                  printf("ZZZZ Global cut - cuts off optimal solution!\n");
+              }
+            }
 	    // add to global list
 	    globalCuts_.insert(*thisCut);
 	    generator_[i]->incrementNumberCutsInTotal();

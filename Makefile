@@ -29,6 +29,7 @@ libdepend:
 	(cd $(CoinDir)/Coin && $(MAKE) install)
 	(cd $(CoinDir)/Clp && $(MAKE) install)
 	(cd $(CoinDir)/Osi/OsiClp && $(MAKE) install)
+	(cd $(CoinDir)/Osi/OsiCbc && $(MAKE) -f Makefile.lightweight install)
 #	(cd $(CoinDir)/Osi/OsiDylp && $(MAKE) install)
 	(cd $(CoinDir)/Cgl && $(MAKE) install)
 

@@ -92,6 +92,9 @@ CbcLocalSearch::solutionFix(double & objectiveValue,
 			    double * newSolution,
 			    const int * keep)
 {
+  // See if to do
+  if (!when()||(when()==1&&model_->phase()!=1))
+    return 0; // switched off
   OsiSolverInterface * solver = model_->continuousSolver()->clone();
   const double * colLower = solver->getColLower();
   //const double * colUpper = solver->getColUpper();

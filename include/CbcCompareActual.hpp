@@ -96,6 +96,8 @@ protected:
   double weight_;
   // Number of solutions
   int numberSolutions_;
+  // Tree size (at last check)
+  int treeSize_;
 };
 
 /* This is when rounding is being done

@@ -420,7 +420,7 @@ CbcSOS::infeasibility(int & preferredWay) const
       throw CoinError("Weights too close together in SOS","constructor","CbcSOS");
     double value = CoinMax(0.0,solution[iColumn]);
     sum += value;
-    if (value>integerTolerance) {
+    if (value>integerTolerance&&upper[iColumn]) {
       // Possibly due to scaling a fixed variable might slip through
       if (value>upper[iColumn]) {
 	// Could change to #ifdef CBC_DEBUG
@@ -429,12 +429,11 @@ CbcSOS::infeasibility(int & preferredWay) const
 	  printf("** Variable %d (%d) has value %g and upper bound of %g\n",
 		 iColumn,j,value,upper[iColumn]);
 #endif
-      } else {
-	weight += weights_[j]*value;
-	if (firstNonZero<0)
-	  firstNonZero=j;
-	lastNonZero=j;
-      }
+      } 
+      weight += weights_[j]*value;
+      if (firstNonZero<0)
+        firstNonZero=j;
+      lastNonZero=j;
     }
   }
   preferredWay=1;
@@ -442,10 +441,10 @@ CbcSOS::infeasibility(int & preferredWay) const
     // find where to branch
     assert (sum>0.0);
     weight /= sum;
-    int iWhere;
-    for (iWhere=firstNonZero;iWhere<lastNonZero;iWhere++) 
-      if (weight<weights_[iWhere+1])
-	break;
+    //int iWhere;
+    //for (iWhere=firstNonZero;iWhere<lastNonZero;iWhere++) 
+    //if (weight<weights_[iWhere+1])
+    //break;
     // probably best to use pseudo duals
     double value = lastNonZero-firstNonZero+1;
     value *= 0.5/((double) numberMembers_);

@@ -861,6 +861,7 @@ int CbcNode::chooseBranch (CbcModel *model, CbcNode *lastNode,int numberPassesLe
   bool beforeSolution = model->getSolutionCount()==0;
   int numberStrong=model->numberStrong();
   int numberObjects = model->numberObjects();
+  bool checkFeasibility = numberObjects>model->numberIntegers();
   int maximumStrong = CoinMax(CoinMin(model->numberStrong(),numberObjects),1);
   int numberColumns = model->getNumCols();
   double * saveUpper = new double[numberColumns];
@@ -1233,7 +1234,20 @@ int CbcNode::chooseBranch (CbcModel *model, CbcNode *lastNode,int numberPassesLe
       if (!clp) {
 	choice[i].possibleBranch->way(-1) ;
 	choice[i].possibleBranch->branch() ;
-	solver->solveFromHotStart() ;
+        bool feasible=true;
+        if (checkFeasibility) {
+          // check branching did not make infeasible
+          int iColumn;
+          int numberColumns = solver->getNumCols();
+          const double * columnLower = solver->getColLower();
+          const double * columnUpper = solver->getColUpper();
+          for (iColumn= 0;iColumn<numberColumns;iColumn++) {
+            if (columnLower[iColumn]>columnUpper[iColumn]+1.0e-5)
+              feasible=false;
+          }
+        }
+        if (feasible) {
+          solver->solveFromHotStart() ;
 /*
   We now have an estimate of objective degradation that we can use for strong
   branching. If we're over the cutoff, the variable is monotone up.
@@ -1241,15 +1255,20 @@ int CbcNode::chooseBranch (CbcModel *model, CbcNode *lastNode,int numberPassesLe
   a good one, call setBestSolution to process it. Note that this may reduce the
   cutoff, so we check again to see if we can declare this variable monotone.
 */
-	if (solver->isProvenOptimal())
-	  iStatus=0; // optimal
-	else if (solver->isIterationLimitReached()
-		 &&!solver->isDualObjectiveLimitReached())
-	  iStatus=2; // unknown 
-	else
-	  iStatus=1; // infeasible
-	newObjectiveValue = solver->getObjSense()*solver->getObjValue();
-	choice[i].numItersDown = solver->getIterationCount();
+          if (solver->isProvenOptimal())
+            iStatus=0; // optimal
+          else if (solver->isIterationLimitReached()
+                   &&!solver->isDualObjectiveLimitReached())
+            iStatus=2; // unknown 
+          else
+            iStatus=1; // infeasible
+          newObjectiveValue = solver->getObjSense()*solver->getObjValue();
+          choice[i].numItersDown = solver->getIterationCount();
+        } else {
+          iStatus=1; // infeasible
+          newObjectiveValue = 1.0e100;
+          choice[i].numItersDown = 0;
+        }
 	objectiveChange = newObjectiveValue-objectiveValue ;
       } else {
 	iStatus = outputStuff[2*i];
@@ -1298,16 +1317,41 @@ int CbcNode::chooseBranch (CbcModel *model, CbcNode *lastNode,int numberPassesLe
       // repeat the whole exercise, forcing the variable up
       if (!clp) {
 	choice[i].possibleBranch->branch();
-	solver->solveFromHotStart();
-	if (solver->isProvenOptimal())
-	  iStatus=0; // optimal
-	else if (solver->isIterationLimitReached()
-		 &&!solver->isDualObjectiveLimitReached())
-	  iStatus=2; // unknown 
-	else
-	  iStatus=1; // infeasible
-	newObjectiveValue = solver->getObjSense()*solver->getObjValue();
-	choice[i].numItersUp = solver->getIterationCount();
+        bool feasible=true;
+        if (checkFeasibility) {
+          // check branching did not make infeasible
+          int iColumn;
+          int numberColumns = solver->getNumCols();
+          const double * columnLower = solver->getColLower();
+          const double * columnUpper = solver->getColUpper();
+          for (iColumn= 0;iColumn<numberColumns;iColumn++) {
+            if (columnLower[iColumn]>columnUpper[iColumn]+1.0e-5)
+              feasible=false;
+          }
+        }
+        if (feasible) {
+          solver->solveFromHotStart() ;
+/*
+  We now have an estimate of objective degradation that we can use for strong
+  branching. If we're over the cutoff, the variable is monotone up.
+  If we actually made it to optimality, check for a solution, and if we have
+  a good one, call setBestSolution to process it. Note that this may reduce the
+  cutoff, so we check again to see if we can declare this variable monotone.
+*/
+          if (solver->isProvenOptimal())
+            iStatus=0; // optimal
+          else if (solver->isIterationLimitReached()
+                   &&!solver->isDualObjectiveLimitReached())
+            iStatus=2; // unknown 
+          else
+            iStatus=1; // infeasible
+          newObjectiveValue = solver->getObjSense()*solver->getObjValue();
+          choice[i].numItersUp = solver->getIterationCount();
+        } else {
+          iStatus=1; // infeasible
+          newObjectiveValue = 1.0e100;
+          choice[i].numItersDown = 0;
+        }
 	objectiveChange = newObjectiveValue-objectiveValue ;
       } else {
 	iStatus = outputStuff[2*i+1];

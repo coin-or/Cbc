@@ -3142,6 +3142,17 @@ CbcModel::resolve()
     if (rowLower[iRow]>rowUpper[iRow]+1.0e-8)
       feasible=false;
   }
+  // Can't happen if strong branching as would have been found before
+  if (!numberStrong_&&numberObjects_>numberIntegers_) {
+    int iColumn;
+    int numberColumns = solver_->getNumCols();
+    const double * columnLower = solver_->getColLower();
+    const double * columnUpper = solver_->getColUpper();
+    for (iColumn= 0;iColumn<numberColumns;iColumn++) {
+      if (columnLower[iColumn]>columnUpper[iColumn]+1.0e-5)
+        feasible=false;
+    }
+  }
 /*
   Reoptimize. Consider the possibility that we should fathom on bounds. But be
   careful --- where the objective takes on integral values, we may want to keep

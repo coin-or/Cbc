@@ -486,7 +486,7 @@ void CbcModel::branchAndBound()
 */
   CbcCompareObjective compareObjective ;
   CbcCompareDepth compareDepth ;
-  CbcCompareDefault compareDefault(dblParam_[CbcInfeasibilityWeight]) ;
+  CbcCompareDefault compareDefault ;
   if (!nodeCompare_)
     tree_->setComparison(compareDefault) ;
   else
@@ -3603,6 +3603,9 @@ CbcModel::findIntegers(bool startAgain)
 void 
 CbcModel::addObjects(int numberObjects, CbcObject ** objects)
 {
+  // If integers but not enough objects fudge
+  if (numberIntegers_>numberObjects_)
+    findIntegers(true);
   int newNumberObjects= numberObjects+numberObjects_;
   CbcObject ** temp  = new CbcObject * [newNumberObjects];
   int i;

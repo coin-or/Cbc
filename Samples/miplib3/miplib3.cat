@@ -1,0 +1,332 @@
+This catalogue contains a three-part index of the models contained in
+miplib, along with information on how to access the files.  The first part
+of the index reports statistics for each problem, the second gives
+information regarding the origins of each problem, and the third 
+distinguishes the types of constraints in each problem.  Instructions for
+accessing the problems, as well as, how to make submissions are given 
+following the index.
+
+Please note that at the beginning of each problem file there is a header
+section that gives a little more information about that problem than is
+contained here.  Following the header in each file is the problem data,
+stored in MPS format. The file mps_format, which contains more information
+on the MPS format, should be consulted before obtaining these problems.  A
+list of references that make reference to various problems in MIPLIB can
+be found in the file references.  
+
+INDEX - PART A : STATISTICS
+===========================
+      NAME    ROWS    COLS     INT     0/1    CONT         INT SOLN          LP SOLN 
+      ====    ====    ====     ===     ===    ====         ========          =======
+   10teams     230    2025    1800     ALL     225              924              917
+     air03     124   10757   10757     ALL       0           340160        338864.25
+     air04     823    8904    8904     ALL       0            56137        55535.436
+     air05     426    7195    7195     ALL       0            26374        25877.609
+   arki001    1048    1388     538     415     850     7580813.0459    7579599.80787
+                                                          (not opt)
+    bell3a     123     133      71      39      62        878430.32        862578.64
+     bell5      91     104      58      30      46       8966406.49       8608417.95
+    blend2     274     353     264     231      89         7.598985     6.9156751140
+   cap6000    2176    6000    6000     ALL       0         -2451377     -2451537.325
+  dano3mip    3202   13873     552     ALL   13321         728.1111     576.23162474
+                                                          (not opt)
+   danoint     664     521      56     ALL     465            65.67     62.637280418
+   dcmulti     290     548      75     ALL     473           188182      183975.5397
+    dsbmip    1182    1886     192     160    1694    -305.19817501    -305.19817501
+     egout      98     141      55     ALL      86          568.101          149.589
+    enigma      21     100     100     ALL       0              0.0              0.0
+  fast0507     507   63009   63009     ALL       0              174     172.14556668
+     fiber     363    1298    1254     ALL      44     405935.18000     156082.51759
+   fixnet6     478     878     378     ALL     500             3983          1200.88
+    flugpl      18      18      11       0       7          1201500       1167185.73
+       gen     780     870     150     144     720           112313         112130.0
+     gesa2    1392    1224     408     240     816     25779856.372     25476489.678
+   gesa2_o    1248    1224     720     384     504     25779856.372     25476489.678
+     gesa3    1368    1152     384     216     768     27991042.648     27833632.451
+   gesa3_o    1224    1152     672     336     480     27991042.648     27833632.451
+       gt2      29     188     188      24       0        21166.000     13460.233074
+     harp2     112    2993    2993     ALL       0     -73899798.00    -74353341.502
+  khb05250     101    1350      24     ALL    1326        106940226       95919464.0
+   l152lav      97    1989    1989     ALL       0             4722          4656.36
+      lseu      28      89      89     ALL       0             1120           834.68
+markshare1       6      62      50     ALL      12                1                0
+markshare2       7      74      60     ALL      14                1                0
+     mas74      13     151     150     ALL       1       11801.1857     10482.795280
+     mas76      12     151     150     ALL       1           4005.1     38893.903641
+    misc03      96     160     159     ALL       1             3360           1910.0
+    misc06     820    1808     112     ALL    1696       12850.8607         12841.69
+    misc07     212     260     259     ALL       1             2810           1415.0
+     mitre    2054   10724   10724     ALL       0           115155     114740.51848
+       mkc    3411    5325    5323     ALL       2          -553.75    -611.85000000
+                                                          (not opt)
+    mod008       6     319     319     ALL       0              307           290.93
+    mod010     146    2655    2655     ALL       0             6548          6532.08
+    mod011    4480   10958      96     ALL   10862        -54558535    -62121982.552
+   modglob     291     422      98     ALL     324         20740508       20430947.0
+    noswot     182     128     100      75      28              -43            -43.0
+      nw04      36   87482   87482     ALL       0            16862      16310.66667
+     p0033      16      33      33     ALL       0             3089          2520.57
+     p0201     133     201     201     ALL       0             7615           6875.0
+     p0282     241     282     282     ALL       0           258411        176867.50
+     p0548     176     548     548     ALL       0             8691           315.29
+     p2756     755    2756    2756     ALL       0             3124          2688.75
+       pk1      45      86      55     ALL      31             11.0              0.0
+     pp08a     136     240      64     ALL     176           7350.0     2748.3452381
+ pp08aCUTS     246     240      64     ALL     176           7350.0     5480.6061563
+       qiu    1192     840      48     ALL     792      -132.873137      -931.638857
+     qnet1     503    1541    1417    1288     124     16029.692681     14274.102667
+   qnet1_o     456    1541    1417    1288     124     16029.692681     12095.571667
+  rentacar    6803    9557      55     ALL    9502         30356761     28806137.644
+       rgn      24     180     100     ALL      80          82.1999          48.7999
+      rout     291     556     315     300     241          1077.56     981.86428571
+    set1ch     492     712     240     ALL     472         54537.75         32007.73
+   seymour    4944    1372    1372     ALL       0              423     403.84647413
+                                                          (not opt)
+   stein27     118      27      27     ALL       0               18             13.0
+   stein45     331      45      45     ALL       0               30             22.0
+     swath     884    6805    6724     ALL      81          497.603      334.4968581
+                                                          (not opt)
+      vpm1     234     378     168     ALL     210               20          15.4167
+      vpm2     234     378     168     ALL     210            13.75     9.8892645972
+
+
+Explanation of columns:
+NAME          - name of the problem
+ROWS          - number of constraints in the problem, not including free rows
+COLS          - total number of variables in the problem
+INT           - number of variables that are integer
+0/1           - number of integer variables that are binary                     
+INT SOLUTION  - best known integer solution to the problem, along with a 
+                parenthetic qualifier:
+                (not opt) indicates that the given solution is not integer 
+                          optimal
+
+LP SOLUTION   - optimal solution to the linear relaxation of the problem         
+
+INDEX - PART B : ORIGINS
+========================
+NAME         ORIGINATOR               FORMULATOR           DONATOR        
+====         ==========               ==========           =======    
+10teams      Dash Associates                               Bob Daniel            
+air03                                                      Greg Astfalk 
+air04                                                      Greg Astfalk 
+air05                                                      Greg Astfalk 
+arki001      Avesta-Sheffield,        Nils Holmberg        Arne Stolbjerg Drud  
+             Sweden
+bell3a       William Cook             William Cook         William Cook 
+bell5        William Cook             William Cook         William Cook 
+blend2       Dash Associates                               Bob Daniel           
+cap6000      Karla Hoffman,           Telecommunications   Karla Hoffman 
+             Manfred Padberg          Corporation             
+dano3mip     Bell Communications                           Daniel Bienstock 
+             Research    
+danoint      Columbia's Center for                         Daniel Bienstock     
+             Telecommunications 
+             Research                                              
+dcmulti      Jeremy Shapiro           Jeremy Shapiro       Jonathan Eckstein 
+dsbmip                                                     John J. Forrest 
+egout        Etienne Loute            Laurence A. Wolsey   Martin Savelsbergh  
+enigma       Harlan Crowder           Harlan Crowder       E. Andrew Boyd  
+fast0507     Italian Railway          Pier Luigi Guida     Sebastian Ceria
+             Company                                           
+fiber        US West                  Youngho Lee          Martin Savelsbergh    
+fixnet6                               T. J. Van Roy        Martin Savelsbergh 
+flugpl       Harvey M. Wagner         John W. Gregory      E. Andrew Boyd  
+gesa2        Spanish Electricity      Laurence A. Wolsey   Sebastian Ceria       
+gesa2_o      Spanish Electricity      GESA (Consulting     Sebastian Ceria
+                                      Company)       
+gesa3        Spanish Electricity      Laurence A. Wolsey   Sebastian Ceria       
+gesa3_o      Spanish Electricity      GESA (Consulting     Sebastian Ceria
+                                      Company)       
+gen                                   Laurence A. Wolsey   Martin Savelsbergh  
+gt2                                                        Sebastian Ceria       
+harp2                                                      Martin Savelsbergh    
+khb05250     Kuhn-Hamburger           Laurence A. Wolsey   Martin Savelsbergh  
+l152lav      Harlan Crowder           Harlan Crowder       John W. Gregory 
+lseu         C. E. Lemke,             Ellis L. Johnson,    John J. Forrest 
+             K. Spielberg             Uwe H. Suhl                 
+markshare1   Gerard Cornuejols        Gerard Cornuejols    Milind Dawande
+             Milind Dawande           Milind Dawande      
+markshare2   Gerard Cornuejols        Gerard Cornuejols    Milind Dawande
+             Milind Dawande           Milind Dawande
+mas74        Undisclosed              Undisclosed          Jonathan Eckstein 
+mas76        Undisclosed              Undisclosed          Jonathan Eckstein
+misc03                                                     Greg Astfalk 
+misc06                                                     Greg Astfalk 
+misc07                                                     Greg Astfalk 
+mitre                                                      Martin Savelsbergh    
+mkc          Jayant Kalagnanam        Jayant Kalagnanam    Jayant Kalagnanam
+             Milind Dawande           Milind Dawande       Milind Dawande
+mod008       IBM France               IBM France           John J. Forrest 
+mod010       IBM Yorktown Hts         IBM Yorktown Hts     John J. Forrest 
+mod011       Uwe H. Suhl              Uwe H. Suhl          John J. Forrest
+modglob      Y. Smeers                Laurence A. Wolsey   Martin Savelsbergh
+noswot                                Linus E. Schrage     John W. Gregory 
+nw04         Northwest Airlines                            Karla Hoffman
+p0033        CJP set                                       E. Andrew Boyd 
+p0201        CJP set                                       E. Andrew Boyd 
+p0282        CJP set                                       E. Andrew Boyd  
+p0548        CJP set                  Ellis L. Johnson     E. Andrew Boyd 
+p2756        CJP set                  Ellis L. Johnson     E. Andrew Boyd  
+pk1                                   Pinar Keskinocak     Sebastian Ceria       
+pp08a                                                      Martin Savelsbergh    
+pp08aCUTS                                                  Martin Savelsbergh    
+qiu          Yu-Ping Chiu             Yu-Ping Chiu         Jonathan Eckstein 
+qnet1        BASF                     Laurence A. Wolsey   Sebastian Ceria       
+qnet1_o      BASF                     BASF                 Sebastian Ceria       
+rentacar                                                   John J. Forrest 
+rgn          Linus E. Schrage         Laurence A. Wolsey   Martin Savelsbergh 
+rout         S. Graves                Hernan Abeledo       Sebastian Ceria        
+set1ch                                Laurence A. Wolsey   Martin Savelsbergh 
+seymour                                                    Paul Seymour          
+stein27      George L. Nemhauser      John W. Gregory      E. Andrew Boyd  
+stein45      George L. Nemhauser      John W. Gregory      E. Andrew Boyd 
+swath        Undisclosed              David Panton         David Panton 
+vpm1                                  Laurence A. Wolsey   Martin Savelsbergh  
+vpm2                                  Laurence A. Wolsey   Martin Savelsbergh   
+
+ 
+Explanation of columns:
+NAME       - name of the problem
+ORIGINATOR - name of the person or institution with whom the problem originated
+FORMULATOR - name of the person or institution who formulated the MIP
+DONATOR    - name of the person who contributed the problem
+
+NOTE : "CJP set" indicates Crowder-Johnson-Padberg test set
+
+
+
+
+INDEX - PART  C: CCONSTRAINT CLASSIFICATION
+===========================================
+NAME          |  G   |  K |  E |  F |  I |  P |  C |  S |  U | L  | 
+===================================================================
+10teams       | 110  |    |    |    |    | 40 |    |  80|    |    |
+air03         |      |    |    |    |    |    |    | 124|    |    |
+air04         |      |    |    |    |    |    |    | 823|    |    | 
+air05         |      |    |    |    |    |    |    | 426|    |    | 
+arki001       | 1027 | 13 |    |    |  6 | 2  |    |    |    |    | 
+bell3a        | 101  |    |    |    |    | 22 |    |    |    |    | 
+bell5         | 76   |    |    |    |    | 15 |    |    |    |    | 
+blend2        | 93   |    |    |    | 79 |    | 9  |    | 88 |    | 
+cap6000       |      | 7  |    |    |    |2046|    | 123|    |    |
+------------------------------------------------------------------|
+dano3mip      | 2518 |    |    |    |    |    |    |    | 606| 30 | 
+danoint       | 256  |    |    |    |    |    |    |    | 392|    | 
+dcmulti       | 165  |    |    |    |    | 22 | 10 |    | 45 | 45 | 
+dsbmip        | 1142 |    |    |    |    |    |    | 40 |    |    | 
+egout         | 43   |    |    |    |    |    |    |    | 55 |    |
+enigma        |      |    | 1  |    |    |    |    | 20 |    |    | 
+fast0507      |      |    |    |    |    | 3  | 504|    |    |    | 
+fiber         | 44   |    |    |    |    |    |    | 90 |    |    | 
+fixnet6       | 100  |    |    |    |    |    |    |    | 378|    | 
+flugpl        | 18   |    |    |    |    |    |    |    |    |    | 
+------------------------------------------------------------------|
+gen           | 318  | 24 |    |    |    |    |    |    | 432|  6 | 
+gesa2         | 912  |    |    |    |    | 14 |    |    | 288| 144| 
+gesa2_o       | 624  |    |    |    |    | 48 | 144|    | 288| 144| 
+gesa3         | 936  |    |    |    |    | 48 |    |    | 264| 120|
+gesa3_o       | 672  |    |    |    |    | 48 | 120|    | 264| 120|
+gt2           | 27   |    |    |    |    | 2  |    |    |    |    | 
+harp2         |      | 30 |    | 9  |    |    |    | 73 |    |    | 
+khb05250      |  77  |    |    |    |    |    |    |    | 24 |    | 
+l152lav       |      | 1  |    |    |    |    |    | 95 |    |    |
+------------------------------------------------------------------|
+lseu          |      | 11 |    |    |    | 17 |    |    |    |    | 
+markshare1    | 6    |    |    |    |    |    |    |    |    |    | 
+markshare2    | 7    |    |    |    |    |    |    |    |    |    |                    
+mas74         | 12   |    |    |    |  1 |    |    |    |    |    |                    
+mas76         | 11   |    |    |    |  1 |    |    |    |    |    |                    
+misc03        |  1   | 3  |    | 2  | 30 | 3  | 31 | 5  |    |    | 
+misc06        | 820  |    |    |    |    |    |    |    |    |    | 
+misc07        |  1   | 3  |    | 2  | 42 | 3  | 127| 7  |    |    | 
+mitre         |      | 383|    |    |1148|    | 140| 383|    |    |
+mkc           | 2    |    |    | 24 | 24 |3361|    |    |    |    |
+mod008        |      | 6  |    |    |    |    |    |    |    |    | 
+mod010        |      | 1  |    |    |    |    |    | 144|    |    | 
+mod011        | 4400 |    |    |    |    |    |    | 16 | 64 |    | 
+modglob       | 95   |    |    |    |    |    |    |    | 196|    | 
+noswot        | 137  |    |    |    |    |    |    |    | 20 | 25 |
+------------------------------------------------------------------|
+nw04          |      |    |    |    |    |    |    | 36 |    |    | 
+p0033         |      | 11 |    |    |    | 4  |    |    |    |    | 
+p0201         |      | 33 |    |    | 54 | 26 | 20 |    |    |    | 
+p0282         |      | 64 |    |    |    | 177|    |    |    |    | 
+p0548         |      | 112|    |    |    | 64 |    |    |    |    | 
+p2756         |      | 403|    |    |    | 352|    |    |    |    | 
+pk1           | 45   |    |    |    |    |    |    |    |    |    | 
+pp08a         | 72   |    |    |    |    |    |    |    | 64 |    | 
+pp08aCUTS     | 182  |    |    |    |    |    |    |    | 64 |    | 
+qiu           | 664  |    |    |    |    |    |    |    | 528|    | 
+------------------------------------------------------------------|
+qnet1         | 178  |    |    | 32 |    | 4  | 4  | 48 |    | 45 | 
+qnet1_o       | 152  |    |    | 32 |    |    |    | 48 |    | 32 | 
+rentacar      | 6674 |    |    |    |    |    |    |    | 55 | 55 | 
+rgn           | 20   |    |    |    |    | 4  |    |    |    |    |
+rout          | 47   |    |    |    |    | 14 |    |    | 230|    |  
+set1ch        | 252  |    |    |    |    |    |    |    | 240|    | 
+seymour       |      |    |    |    |    | 285|4659|    |    |    | 
+stein27       |      |    |    |    | 1  |    | 117|    |    |    | 
+stein45       |      |    |    |    | 1  | 1  | 329|    |    |    |
+swath         | 381  |    |    |    | 80 |    |    |423 |    |    |  
+vpm1          | 66   |    |    |    |    |    |    |    | 168|    | 
+vpm2          | 66   |    |    |    |    |    |    |    | 168|    |  
+-------------------------------------------------------------------
+
+Explanation of columns:
+	G-- General
+	K-- Knapsack
+	E-- Equality Knapsack
+	F-- Facility Location
+	I-- Invariant Knapsack
+	P-- Packing
+	C-- Covering
+	S-- Special Ordered Set
+	U-- Variable Upper Bound
+	L-- Variable Lower Bound
+
+HOW TO ACCESS FILES
+===================
+The files are available by anonymous ftp to ftp.caam.rice.edu.  Login 
+as "anonymous" using your e-mail address for the password.  Once you are
+logged in, switch to the directory "pub/people/bixby/miplib", and 
+retrieve the files with the "get" command.  For example to retrieve a
+specific problem from MIPLIB 3.0:
+
+                 % ftp ftp.caam.rice.edu
+                 Connected to ftp.caam.rice.edu.
+                 220 www.caam.rice.edu FTP server 
+                 (Version wu-2.4(11) Tue Sep 26 17:27:38 CDT 1995) ready.
+                 Name (ftp.caam:cmoore): anonymous
+                 331 Guest login ok, send ident as password.
+                 Password: <your email address>
+                 230 Guest login ok, access restrictions apply.
+                 ftp> cd pub/people/bixby/miplib/miplib3
+                 ftp> ls
+                 ftp> get <filename>
+Again, <filename> here denotes the name of the problem whose file you want to
+get.
+
+HOW TO SUBMIT PROBLEMS
+======================
+Files can be submitted via anonymous ftp to ftp.caam.rice.edu.Login as 
+"anonymous" using your e-mail address for the password.  Once you are
+logged in, switch to the directory "/pub/people/bixby/incoming/bixplex", 
+and place the files with the "put" command.  For example:
+
+                 % ftp ftp.caam.rice.edu
+                 Connected to ftp.caam.rice.edu.
+                 220 www.caam.rice.edu FTP server 
+                 (Version wu-2.4(11) Tue Sep 26 17:27:38 CDT 1995) ready.
+                 Name (ftp.caam:cmoore): anonymous
+                 331 Guest login ok, send ident as password.
+                 Password: <your email address>
+                 230 Guest login ok, access restrictions apply.
+                 ftp> cd /pub/people/bixby/incoming/bixplex
+                 ftp> put <filename>
+Again, <filename> here denotes the name of the problem whose file you want to
+put.
+
+The submission should be accompanied by an e-mail message to miplib@rice.edu
+containing information about the origin of the instance, the optimal
+solution (if known), and the way the optimal solution was obtained.

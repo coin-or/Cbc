@@ -242,7 +242,7 @@ int main (int argc, const char *argv[])
     model.setDblParam(CbcModel::CbcMaximumSeconds,60.0*minutes);
   }
   // Switch off most output
-  if (model.getNumCols()<-3000) {
+  if (model.getNumCols()<3000) {
     model.messageHandler()->setLogLevel(1);
     //model.solver()->messageHandler()->setLogLevel(0);
   } else {

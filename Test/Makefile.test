@@ -37,7 +37,7 @@ LibDir += ${OsiLibDir} ${CoinLibDir}
 LibDir += ${bzlibLibDir} ${zlibLibDir} $(lapackLibDir)
 LibDir += $(GlpkLibDir)
 
-LibName := ${CbcLibName} ${CglLibName}
+LibName := $(OsiCbcLibName) ${CbcLibName} ${CglLibName}
 LibName += ${OsiClpLibName} ${ClpLibName}
 #LibName += ${OsiDylpLibName} ${DylpLibName}
 LibName += ${OsiLibName} ${CoinLibName} 

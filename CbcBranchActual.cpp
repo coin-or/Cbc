@@ -308,7 +308,7 @@ CbcSOS::CbcSOS ()
 {
 }
 
-// Useful constructor (which are integer indices)
+// Useful constructor (which are indices)
 CbcSOS::CbcSOS (CbcModel * model,  int numberMembers,
 	   const int * which, const double * weights, int identifier,int type)
   : CbcObject(model),
@@ -320,7 +320,12 @@ CbcSOS::CbcSOS (CbcModel * model,  int numberMembers,
     members_ = new int[numberMembers_];
     weights_ = new double[numberMembers_];
     memcpy(members_,which,numberMembers_*sizeof(int));
-    memcpy(weights_,weights,numberMembers_*sizeof(double));
+    if (weights) {
+      memcpy(weights_,weights,numberMembers_*sizeof(double));
+    } else {
+      for (int i=0;i<numberMembers_;i++)
+        weights_[i]=i;
+    }
     // sort so weights increasing
     CoinSort_2(weights_,weights_+numberMembers_,members_);
   } else {
@@ -409,7 +414,7 @@ CbcSOS::infeasibility(int & preferredWay) const
   double lastWeight=-1.0e100;
   for (j=0;j<numberMembers_;j++) {
     int iColumn = members_[j];
-    if (lower[iColumn])
+    if (lower[iColumn]&&(lower[iColumn]!=1.0||sosType_!=1))
       throw CoinError("Non zero lower bound in SOS","constructor","CbcSOS");
     if (lastWeight>=weights_[j]-1.0e-7)
       throw CoinError("Weights too close together in SOS","constructor","CbcSOS");

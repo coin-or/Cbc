@@ -99,7 +99,7 @@ public:
   // Default Constructor 
   CbcSOS ();
 
-  /** Useful constructor - which are integer indices
+  /** Useful constructor - which are indices
       and  weights are also given.  If null then 0,1,2..
       type is SOS type
   */

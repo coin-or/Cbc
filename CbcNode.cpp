@@ -12,6 +12,7 @@
 #define CUTS
 #include "OsiSolverInterface.hpp"
 #include "CoinWarmStartBasis.hpp"
+#include "CoinTime.hpp"
 #include "CbcModel.hpp"
 #include "CbcNode.hpp"
 #include "CbcBranchActual.hpp"
@@ -1167,6 +1168,9 @@ int CbcNode::chooseBranch (CbcModel *model, CbcNode *lastNode)
 	need to do all the work associated with finding a new solution before
 	restoring the bounds.
 */
+    // If we have hit max time ignore fixing on one way
+    bool hitMaxTime = ( CoinCpuTime()-model->getDblParam(CbcModel::CbcStartSeconds) > 
+                        model->getDblParam(CbcModel::CbcMaximumSeconds));
     for (i = 0 ; i < numberStrong ; i++)
     { double objectiveChange ;
       double newObjectiveValue=1.0e100;
@@ -1238,7 +1242,6 @@ int CbcNode::chooseBranch (CbcModel *model, CbcNode *lastNode)
 	  solver->setColUpper(j,saveUpper[j]);
 	}
       }
-      
       //printf("Down on %d, status is %d, obj %g its %d cost %g finished %d inf %d infobj %d\n",
       //     choice[i].objectNumber,iStatus,newObjectiveValue,choice[i].numItersDown,
       //     choice[i].downMovement,choice[i].finishedDown,choice[i].numIntInfeasDown,
@@ -1316,7 +1319,7 @@ int CbcNode::chooseBranch (CbcModel *model, CbcNode *lastNode)
       if (choice[i].upMovement<1.0e100) {
 	if(choice[i].downMovement<1.0e100) {
 	  // feasible - no action
-	} else {
+	} else if (!hitMaxTime) {
 	  // up feasible, down infeasible
 	  anyAction=-1;
 	  if (!solveAll) {
@@ -1327,13 +1330,15 @@ int CbcNode::chooseBranch (CbcModel *model, CbcNode *lastNode)
 	}
       } else {
 	if(choice[i].downMovement<1.0e100) {
-	  // down feasible, up infeasible
-	  anyAction=-1;
-	  if (!solveAll) {
-	    choice[i].possibleBranch->way(-1);
-	    choice[i].possibleBranch->branch();
-	    break;
-	  }
+          if (!hitMaxTime) {
+            // down feasible, up infeasible
+            anyAction=-1;
+            if (!solveAll) {
+              choice[i].possibleBranch->way(-1);
+              choice[i].possibleBranch->branch();
+              break;
+            }
+          }
 	} else {
 	  // neither side feasible
 	  anyAction=-2;

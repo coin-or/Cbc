@@ -128,6 +128,9 @@ enum CbcDblParam {
   /** \brief The maximum number of seconds before terminating.
 	     A double should be adequate! */
   CbcMaximumSeconds,
+  /** \brief The time at start of model.
+	     So that other pieces of code can access */
+  CbcStartSeconds,
   /** Just a marker, so that a static sized array can store parameters. */
   CbcLastDblParam
 };

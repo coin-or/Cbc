@@ -395,7 +395,7 @@ void CbcModel::branchAndBound()
 /*
   Capture a time stamp before we start.
 */
-  double time1 = CoinCpuTime() ;
+  dblParam_[CbcStartSeconds] = CoinCpuTime();
   // Set so we can tell we are in initial phase in resolve
   continuousObjective_ = -COIN_DBL_MAX ;
 /*
@@ -862,7 +862,7 @@ void CbcModel::branchAndBound()
 /*
   Check for abort on limits: node count, solution count, time, integrality gap.
 */
-      double totalTime = CoinCpuTime()-time1 ;
+      double totalTime = CoinCpuTime()-dblParam_[CbcStartSeconds] ;
       if (numberNodes_ < intParam_[CbcMaxNumNode] &&
 	  numberSolutions_ < intParam_[CbcMaxNumSol] &&
 	  totalTime < dblParam_[CbcMaximumSeconds] &&
@@ -1260,6 +1260,7 @@ CbcModel::CbcModel()
   dblParam_[CbcAllowableGap] = 1.0e-10;
   dblParam_[CbcAllowableFractionGap] = 0.0;
   dblParam_[CbcMaximumSeconds] = 1.0e100;
+  dblParam_[CbcStartSeconds] = 0.0;
   nodeCompare_=NULL;
   tree_= new CbcTree();
   branchingMethod_=NULL;
@@ -1331,6 +1332,7 @@ CbcModel::CbcModel(const OsiSolverInterface &rhs)
   dblParam_[CbcAllowableGap] = 1.0e-10;
   dblParam_[CbcAllowableFractionGap] = 0.0;
   dblParam_[CbcMaximumSeconds] = 1.0e100;
+  dblParam_[CbcStartSeconds] = 0.0;
 
   nodeCompare_=NULL;
   tree_= new CbcTree();
@@ -1474,6 +1476,7 @@ CbcModel::CbcModel(const CbcModel & rhs)
   dblParam_[CbcAllowableGap] = rhs.dblParam_[CbcAllowableGap]; 
   dblParam_[CbcAllowableFractionGap] = rhs.dblParam_[CbcAllowableFractionGap]; 
   dblParam_[CbcMaximumSeconds] = rhs.dblParam_[CbcMaximumSeconds];
+  dblParam_[CbcStartSeconds] = dblParam_[CbcStartSeconds]; // will be overwritten hopefully
   if (rhs.emptyWarmStart_) emptyWarmStart_ = rhs.emptyWarmStart_->clone() ;
   if (rhs.basis_) basis_ =
     dynamic_cast<CoinWarmStartBasis *>(rhs.basis_->clone()) ;
@@ -1666,6 +1669,7 @@ CbcModel::operator=(const CbcModel& rhs)
     dblParam_[CbcAllowableGap] = rhs.dblParam_[CbcAllowableGap]; 
     dblParam_[CbcAllowableFractionGap] = rhs.dblParam_[CbcAllowableFractionGap]; 
     dblParam_[CbcMaximumSeconds] = rhs.dblParam_[CbcMaximumSeconds];
+    dblParam_[CbcStartSeconds] = dblParam_[CbcStartSeconds]; // will be overwritten hopefully
     globalCuts_ = rhs.globalCuts_;
     int i;
     for (i=0;i<numberCutGenerators_;i++) {

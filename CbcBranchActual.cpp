@@ -2032,6 +2032,9 @@ CbcFollowOn::gutsOfFollowOn(int & otherRow, int & preferredWay) const
 	}
       }
       double total=0.0;
+      // Take out row
+      double sumThis=other[i];
+      other[i]=0.0;
       assert (numberUnsatisfied==isort[i]);
       // find one nearest half if solution, one if before solution
       int iBest=-1;
@@ -2054,6 +2057,8 @@ CbcFollowOn::gutsOfFollowOn(int & otherRow, int & preferredWay) const
 	int value = isort[iRow];
 #endif
 	isort[iRow]=0;
+        if (fabs(dvalue)<1.0e-8||fabs(sumThis-dvalue)<1.0e-8)
+          continue;
 	if (dvalue<integerTolerance||dvalue>1.0-integerTolerance)
 	  continue;
 #ifdef COUNT

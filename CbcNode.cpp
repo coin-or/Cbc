@@ -736,7 +736,7 @@ CbcNode::createInfo (CbcModel *model,
     iFull--;
     for (;iFull>=nPartial;iFull--) {
       CoinWarmStartBasis::Status status = ws->getArtifStatus(--iCompact);
-      assert (status != CoinWarmStartBasis::basic);
+      //assert (status != CoinWarmStartBasis::basic); // may be permanent cut
       expanded->setArtifStatus(iFull,status);
     }
     for (;iFull>=numberRowsAtContinuous;iFull--) {

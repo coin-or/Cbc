@@ -14,64 +14,44 @@
 */
 #include "CbcNode.hpp"
 #include "CbcCompareBase.hpp"
-
+class CbcModel;
 // This is default before first solution
 class CbcCompareDepth : public CbcCompareBase{
 public:
   // Default Constructor 
-  CbcCompareDepth () {test_=this;};
+  CbcCompareDepth () ;
 
-  ~CbcCompareDepth() {};
+  ~CbcCompareDepth();
   // Copy constructor 
-  CbcCompareDepth ( const CbcCompareDepth &rhs)
-    : CbcCompareBase(rhs)
-  {};
+  CbcCompareDepth ( const CbcCompareDepth &rhs);
    
   // Assignment operator 
-  CbcCompareDepth & operator=( const CbcCompareDepth& rhs)
-  {  if (this!=&rhs) { CbcCompareBase::operator=(rhs);}
-  return *this;
-  };
+  CbcCompareDepth & operator=( const CbcCompareDepth& rhs);
 
   /// Clone
-  virtual CbcCompareBase * clone() const
-  { return new CbcCompareDepth (*this);
-  }
+  virtual CbcCompareBase * clone() const;
 
   // This returns true if the depth of node y is greater than depth of node x
-  virtual bool test (CbcNode * x, CbcNode * y) {
-    return x->depth() < y->depth();
-  }
+  virtual bool test (CbcNode * x, CbcNode * y);
 };
 class CbcCompareObjective  : public CbcCompareBase {
 public:
   // Default Constructor 
-  CbcCompareObjective () {test_=this;};
+  CbcCompareObjective ();
 
-  virtual ~CbcCompareObjective() {};
+  virtual ~CbcCompareObjective();
   // Copy constructor 
-  CbcCompareObjective ( const CbcCompareObjective &rhs)
-    : CbcCompareBase(rhs)
-  {};
+  CbcCompareObjective ( const CbcCompareObjective &rhs);
    
   // Assignment operator 
-  CbcCompareObjective & operator=( const CbcCompareObjective& rhs)
-  {  if (this!=&rhs) { CbcCompareBase::operator=(rhs);
-  }
-  return *this;
-  };
+  CbcCompareObjective & operator=( const CbcCompareObjective& rhs);
 
   /// Clone
-  virtual CbcCompareBase * clone() const
-  { return new CbcCompareObjective (*this);
-  }
-
+  virtual CbcCompareBase * clone() const;
 
   /* This returns true if objective value of node y is less than
      objective value of node x */
-  virtual bool test (CbcNode * x, CbcNode * y) {
-    return x->objectiveValue() > y->objectiveValue();
-  }
+  virtual bool test (CbcNode * x, CbcNode * y);
 };
 /* This is an example of a more complex rule with data
    It is default after first solution
@@ -80,41 +60,41 @@ public:
 */
 class CbcCompareDefault  : public CbcCompareBase {
 public:
-  // Weight for each infeasibility
-  double weight_;
   // Default Constructor 
-  CbcCompareDefault () : weight_(0.0) {test_=this;};
+  CbcCompareDefault () ;
   // Constructor with weight
-  CbcCompareDefault (double weight) : weight_(weight) {test_=this;};
+  CbcCompareDefault (double weight);
 
   // Copy constructor 
-  CbcCompareDefault ( const CbcCompareDefault &rhs)
-    : CbcCompareBase(rhs)
-  {};
+  CbcCompareDefault ( const CbcCompareDefault &rhs);
    
   // Assignment operator 
-  CbcCompareDefault & operator=( const CbcCompareDefault& rhs)
-  {  if (this!=&rhs) { CbcCompareBase::operator=(rhs);
-}
-  return *this;
-  };
+  CbcCompareDefault & operator=( const CbcCompareDefault& rhs);
 
   /// Clone
-  virtual CbcCompareBase * clone() const
-  { return new CbcCompareDefault (*this);
-  }
+  virtual CbcCompareBase * clone() const;
 
-  ~CbcCompareDefault() {};
+  ~CbcCompareDefault() ;
   /* This returns true if weighted value of node y is less than
      weighted value of node x */
-  virtual bool test (CbcNode * x, CbcNode * y) {
-    return x->objectiveValue()+ weight_*x->numberUnsatisfied() > 
-      y->objectiveValue() + weight_*y->numberUnsatisfied();
-  }
-  double getWeight() const
+  virtual bool test (CbcNode * x, CbcNode * y) ;
+  // This allows method to change behavior as it is called
+  // after each solution
+  virtual void newSolution(CbcModel * model,
+			   double objectiveAtContinuous,
+			   int numberInfeasibilitiesAtContinuous) ;
+  // This allows method to change behavior 
+  virtual void every1000Nodes(CbcModel * model, int numberNodes);
+
+  inline double getWeight() const
   { return weight_;};
-  void setWeight(double weight)
+  inline void setWeight(double weight)
   { weight_ = weight;};
+protected:
+  // Weight for each infeasibility
+  double weight_;
+  // Number of solutions
+  int numberSolutions_;
 };
 
 /* This is when rounding is being done
@@ -122,28 +102,18 @@ public:
 class CbcCompareEstimate  : public CbcCompareBase {
 public:
   // Default Constructor 
-  CbcCompareEstimate () {test_=this;};
-  ~CbcCompareEstimate() {};
+  CbcCompareEstimate () ;
+  ~CbcCompareEstimate() ;
   // Copy constructor 
-  CbcCompareEstimate ( const CbcCompareEstimate &rhs)
-    : CbcCompareBase(rhs)
-  {};
+  CbcCompareEstimate ( const CbcCompareEstimate &rhs);
    
   // Assignment operator 
-  CbcCompareEstimate & operator=( const CbcCompareEstimate& rhs)
-  {  if (this!=&rhs) { CbcCompareBase::operator=(rhs);
-}
-  return *this;
-  };
+  CbcCompareEstimate & operator=( const CbcCompareEstimate& rhs);
 
   /// Clone
-  virtual CbcCompareBase * clone() const
-  { return new CbcCompareEstimate (*this);
-  }
+  virtual CbcCompareBase * clone() const;
 
-  virtual bool test (CbcNode * x, CbcNode * y) {
-    return x->guessedObjectiveValue() >  y->guessedObjectiveValue() ;
-  }
+  virtual bool test (CbcNode * x, CbcNode * y) ;
 };
 
 #endif

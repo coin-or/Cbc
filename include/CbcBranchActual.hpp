@@ -727,7 +727,7 @@ public:
   /// Creates a branching object
   virtual CbcBranchingObject * createBranch(int way) const;
   /// As some computation is needed in more than one place - returns row
-  int gutsOfFollowOn(int & otherRow) const;
+  int gutsOfFollowOn(int & otherRow, int & preferredWay) const;
 
 protected:
   /// data

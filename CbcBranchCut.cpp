@@ -504,7 +504,8 @@ CbcBranchToFixLots::createBranch(int way) const
   up.setUb(COIN_DBL_MAX);
   CbcCutBranchingObject * newObject = 
     new CbcCutBranchingObject(model_,down,up);
-  printf("creating cut in CbcBranchCut\n");
+  if (model_->messageHandler()->logLevel()>1)
+    printf("creating cut in CbcBranchCut\n");
   return newObject;
 }
 /* Does a lot of the work,
@@ -515,6 +516,9 @@ CbcBranchToFixLots::shallWe() const
 {
   int returnCode=0;
   OsiSolverInterface * solver = model_->solver();
+  int numberRows = solver->getNumRows();
+  if (numberRows!=matrixByRow_.getNumRows())
+    return 0;
   const double * solution = model_->currentSolution();
   const double * lower = solver->getColLower();
   const double * upper = solver->getColUpper();
@@ -573,7 +577,6 @@ CbcBranchToFixLots::shallWe() const
     int numberClean=0;
     bool someToDoYet=false;
     int numberColumns = solver->getNumCols();
-    int numberRows = solver->getNumRows();
     char * mark = new char[numberColumns];
     int numberFixed=0;
     for (i=0;i<numberColumns;i++) {

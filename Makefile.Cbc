@@ -19,6 +19,8 @@ LIBSRC += CbcHeuristic.cpp
 LIBSRC += CbcBranchBase.cpp
 LIBSRC += CbcBranchActual.cpp
 LIBSRC += CbcBranchLotsize.cpp
+LIBSRC += CbcBranchCut.cpp
+LIBSRC += CbcCompareActual.cpp
 LIBSRC += CbcCutGenerator.cpp
 LIBSRC += Cbc_C_Interface.cpp
 

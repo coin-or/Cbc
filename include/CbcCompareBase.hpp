@@ -18,7 +18,6 @@ class CbcModel;
 class CbcTree;
 class CbcCompareBase {
 public:
-  CbcCompareBase * test_;
   // Default Constructor 
   CbcCompareBase () {test_=NULL;};
 
@@ -57,6 +56,8 @@ public:
   bool operator() (CbcNode * x, CbcNode * y) {
     return test(x,y);
   }
+protected:
+  CbcCompareBase * test_;
 };
 class CbcCompare {
 public:

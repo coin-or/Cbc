@@ -747,6 +747,16 @@ public:
   /// Set number of solutions (so heuristics will be different)
   void setSolutionCount(int value) 
   { numberSolutions_=value;};
+  /** Current phase (so heuristics etc etc can find out).
+      0 - initial solve
+      1 - solve with cuts at root
+      2 - solve with cuts
+      3 - other e.g. strong branching
+      4 - trying to validate a solution
+      5 - at end of search
+  */
+  inline int phase() const
+  { return phase_;};
   
   /// Get number of heuristic solutions
   int getNumberHeuristicSolutions() const { return numberHeuristicSolutions_;};
@@ -935,13 +945,15 @@ public:
       >1 means every that number of nodes.  Negative values have same
       meaning as positive but they may be switched off (-> -100) by code if
       not many cuts generated at continuous.  -99 is just done at root.
-      Name is just for printout
+      Name is just for printout.
+      If depth >0 overrides how often generator is called (if howOften==-1 or >0).
   */
   void addCutGenerator(CglCutGenerator * generator,
-		  int howOften=1, const char * name=NULL,
-		  bool normal=true, bool atSolution=false, 
-		  bool infeasible=false,int howOftenInSub=-100);
-  //@}
+		       int howOften=1, const char * name=NULL,
+		       bool normal=true, bool atSolution=false, 
+		       bool infeasible=false,int howOftenInSub=-100,
+		       int whatDepth=-1, int whatDepthInSub=-1);
+//@}
 
   /** \name Heuristics and priorities */
   //@{
@@ -1144,6 +1156,15 @@ private:
   int numberRowsAtContinuous_;
   /// Maximum number of cuts
   int maximumNumberCuts_;
+  /** Current phase (so heuristics etc etc can find out).
+      0 - initial solve
+      1 - solve with cuts at root
+      2 - solve with cuts
+      3 - other e.g. strong branching
+      4 - trying to validate a solution
+      5 - at end of search
+  */
+  int phase_;
 
   /// Number of entries in #addedCuts_
   int currentNumberCuts_;

@@ -20,6 +20,8 @@ CbcCutGenerator::CbcCutGenerator ()
     generator_(NULL),
     whenCutGenerator_(-1),
     whenCutGeneratorInSub_(-100),
+    depthCutGenerator_(-1),
+    depthCutGeneratorInSub_(-1),
     generatorName_(NULL),
     normal_(true),
     atSolution_(false),
@@ -31,12 +33,16 @@ CbcCutGenerator::CbcCutGenerator ()
 }
 // Normal constructor
 CbcCutGenerator::CbcCutGenerator(CbcModel * model,CglCutGenerator * generator,
-		  int howOften, const char * name,
-		  bool normal, bool atSolution, 
-		  bool infeasible, int howOftenInSub)
-  :  numberTimes_(0),
-     numberCuts_(0),
-     numberCutsActive_(0)
+				 int howOften, const char * name,
+				 bool normal, bool atSolution, 
+				 bool infeasible, int howOftenInSub,
+				 int whatDepth, int whatDepthInSub)
+  : 
+    depthCutGenerator_(whatDepth),
+    depthCutGeneratorInSub_(whatDepthInSub),
+    numberTimes_(0),
+    numberCuts_(0),
+    numberCutsActive_(0)
 {
   model_ = model;
   generator_=generator->clone();
@@ -60,6 +66,8 @@ CbcCutGenerator::CbcCutGenerator ( const CbcCutGenerator & rhs)
   generator_->refreshSolver(model_->solver());
   whenCutGenerator_=rhs.whenCutGenerator_;
   whenCutGeneratorInSub_ = rhs.whenCutGeneratorInSub_;
+  depthCutGenerator_=rhs.depthCutGenerator_;
+  depthCutGeneratorInSub_ = rhs.depthCutGeneratorInSub_;
   generatorName_=strdup(rhs.generatorName_);
   normal_=rhs.normal_;
   atSolution_=rhs.atSolution_;
@@ -81,6 +89,8 @@ CbcCutGenerator::operator=( const CbcCutGenerator& rhs)
     generator_->refreshSolver(model_->solver());
     whenCutGenerator_=rhs.whenCutGenerator_;
     whenCutGeneratorInSub_ = rhs.whenCutGeneratorInSub_;
+    depthCutGenerator_=rhs.depthCutGenerator_;
+    depthCutGeneratorInSub_ = rhs.depthCutGeneratorInSub_;
     generatorName_=strdup(rhs.generatorName_);
     normal_=rhs.normal_;
     atSolution_=rhs.atSolution_;
@@ -133,7 +143,13 @@ CbcCutGenerator::generateCuts( OsiCuts & cs , bool fullScan, CbcNode * node)
   else
     depth=0;
   int pass=model_->getCurrentPassNumber()-1;
-  if (fullScan||(model_->getNodeCount()%howOften)==0) {
+  bool doThis=(model_->getNodeCount()%howOften)==0;
+  if (depthCutGenerator_>0) 
+    doThis = (depth % depthCutGenerator_) ==0;
+  // But turn off if 100
+  if (howOften==100)
+    doThis=false;
+  if (fullScan||doThis) {
     incrementNumberTimesEntered();
     CglProbing* generator =
       dynamic_cast<CglProbing*>(generator_);
@@ -190,4 +206,14 @@ CbcCutGenerator::setHowOften(int howOften)
       howOften += 1000000;
   }
   whenCutGenerator_ = howOften;
+}
+void 
+CbcCutGenerator::setWhatDepth(int value) 
+{
+  depthCutGenerator_ = value;
+}
+void 
+CbcCutGenerator::setWhatDepthInSub(int value) 
+{
+  depthCutGeneratorInSub_ = value;
 }

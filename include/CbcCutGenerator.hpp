@@ -76,7 +76,8 @@ public:
   CbcCutGenerator(CbcModel * model,CglCutGenerator * generator,
 		  int howOften=1, const char * name=NULL,
 		  bool normal=true, bool atSolution=false, 
-		  bool infeasible=false,int howOftenInsub=-100);
+		  bool infeasible=false,int howOftenInsub=-100,
+		  int whatDepth=-1, int whatDepthInSub=-1);
  
   /// Copy constructor 
   CbcCutGenerator (const CbcCutGenerator &);
@@ -123,6 +124,26 @@ public:
   /// Get the cut generation interval.in sub tree
   inline int howOftenInSub() const
   { return whenCutGeneratorInSub_;};
+
+  /** Set the cut generation depth
+
+    Set the depth criterion for calls to the Cgl object's
+    \p generateCuts routine.  Only active if > 0.
+
+    If whenCutGenerator is positive and this is positive then this overrides.  
+    If whenCutGenerator is -1 then this is used as criterion if any cuts
+    were generated at root node.
+    If whenCutGenerator is anything else this is ignored.
+  */
+  void setWhatDepth(int value) ;
+  /// Set the cut generation depth in sub tree
+  void setWhatDepthInSub(int value) ;
+  /// Get the cut generation depth criterion.
+  inline int whatDepth() const
+  { return depthCutGenerator_;};
+  /// Get the cut generation depth criterion.in sub tree
+  inline int whatDepthInSub() const
+  { return depthCutGeneratorInSub_;};
 
   /// Get whether the cut generator should be called in the normal place
   inline bool normal() const
@@ -187,6 +208,17 @@ private:
      routine in sub tree.
   */
   int whenCutGeneratorInSub_;
+
+  /** Depth at which to call the CglCutGenerator::generateCuts
+     routine (If >0 then overrides when and is called if depth%depthCutGenerator==0).
+  */
+  int depthCutGenerator_;
+
+  /** Depth at which to call the CglCutGenerator::generateCuts
+     routine (If >0 then overrides when and is called if depth%depthCutGenerator==0).
+     In sub tree.
+  */
+  int depthCutGeneratorInSub_;
 
   /// Name of generator
   char * generatorName_;

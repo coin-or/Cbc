@@ -665,10 +665,11 @@ CbcSimpleInteger::feasibleRegion()
   value = CoinMin(value, upper[columnNumber_]);
 
   double nearest = floor(value+0.5);
-  double integerTolerance = 
-    model_->getDblParam(CbcModel::CbcIntegerTolerance);
+  //double integerTolerance = 
+  //model_->getDblParam(CbcModel::CbcIntegerTolerance);
   // Scaling may have moved it a bit
-  assert (fabs(value-nearest)<=100.0*integerTolerance);
+  //assert (fabs(value-nearest)<=100.0*integerTolerance);
+  assert (fabs(value-nearest)<=0.01);
   solver->setColLower(columnNumber_,nearest);
   solver->setColUpper(columnNumber_,nearest);
 }
@@ -1932,7 +1933,7 @@ CbcFollowOn::~CbcFollowOn ()
 }
 // As some computation is needed in more than one place - returns row
 int 
-CbcFollowOn::gutsOfFollowOn(int & otherRow) const
+CbcFollowOn::gutsOfFollowOn(int & otherRow, int & preferredWay) const
 {
   int whichRow=-1;
   otherRow=-1;
@@ -1997,7 +1998,13 @@ CbcFollowOn::gutsOfFollowOn(int & otherRow) const
   if (nSort>1) {
     CoinSort_2(isort,isort+nSort,sort);
     CoinZeroN(isort,numberRows);
+    double * other = new double[numberRows];
+    CoinZeroN(other,numberRows);
     int * which = new int[numberRows];
+    //#define COUNT
+#ifndef COUNT
+    bool beforeSolution = model_->getSolutionCount()==0;
+#endif
     for (int k=0;k<nSort-1;k++) {
       i=sort[k];
       int numberUnsatisfied = 0;
@@ -2006,12 +2013,13 @@ CbcFollowOn::gutsOfFollowOn(int & otherRow) const
       for (j=rowStart[i];j<rowStart[i]+rowLength[i];j++) {
 	int iColumn = column[j];
 	if (columnLower[iColumn]!=columnUpper[iColumn]) {
-	  double solValue = solution[iColumn];
+	  double solValue = solution[iColumn]-columnLower[iColumn];
 	  if (solValue<1.0-integerTolerance&&solValue>integerTolerance) {
 	    numberUnsatisfied++;
 	    for (int jj=columnStart[iColumn];jj<columnStart[iColumn]+columnLength[iColumn];jj++) {
 	      int iRow = row[jj];
 	      if (rhs_[iRow]) {
+		other[iRow]+=solValue;
 		if (isort[iRow]) {
 		  isort[iRow]++;
 		} else {
@@ -2023,19 +2031,61 @@ CbcFollowOn::gutsOfFollowOn(int & otherRow) const
 	  }
 	}
       }
+      double total=0.0;
       assert (numberUnsatisfied==isort[i]);
-      // find one nearest half
+      // find one nearest half if solution, one if before solution
       int iBest=-1;
+      double dtarget=0.5*total;
+#ifdef COUNT
       int target = (numberUnsatisfied+1)>>1;
       int best=numberUnsatisfied;
+#else
+      double best;
+      if (beforeSolution)
+	best=dtarget;
+      else
+	best=1.0e30;
+#endif
       for (j=0;j<n;j++) {
 	int iRow = which[j];
+	double dvalue=other[iRow];
+	other[iRow]=0.0;
+#ifdef COUNT
 	int value = isort[iRow];
+#endif
 	isort[iRow]=0;
+	if (dvalue<integerTolerance||dvalue>1.0-integerTolerance)
+	  continue;
+#ifdef COUNT
 	if (abs(value-target)<best&&value!=numberUnsatisfied) {
 	  best=abs(value-target);
 	  iBest=iRow;
+	  if (dvalue<dtarget)
+	    preferredWay=1;
+	  else
+	    preferredWay=-1;
 	}
+#else
+	if (beforeSolution) {
+	  if (fabs(dvalue-dtarget)>best) {
+	    best = fabs(dvalue-dtarget);
+	    iBest=iRow;
+	    if (dvalue<dtarget)
+	      preferredWay=1;
+	    else
+	      preferredWay=-1;
+	  }
+	} else {
+	  if (fabs(dvalue-dtarget)<best) {
+	    best = fabs(dvalue-dtarget);
+	    iBest=iRow;
+	    if (dvalue<dtarget)
+	      preferredWay=1;
+	    else
+	      preferredWay=-1;
+	  }
+	}
+#endif
       }
       if (iBest>=0) {
 	whichRow=i;
@@ -2044,6 +2094,7 @@ CbcFollowOn::gutsOfFollowOn(int & otherRow) const
       }
     }
     delete [] which;
+    delete [] other;
   }
   delete [] sort;
   delete [] isort;
@@ -2055,8 +2106,7 @@ double
 CbcFollowOn::infeasibility(int & preferredWay) const
 {
   int otherRow=0;
-  int whichRow = gutsOfFollowOn(otherRow);
-  preferredWay=-1;
+  int whichRow = gutsOfFollowOn(otherRow,preferredWay);
   if (whichRow<0)
     return 0.0;
   else
@@ -2075,8 +2125,9 @@ CbcBranchingObject *
 CbcFollowOn::createBranch(int way) const
 {
   int otherRow=0;
-  int whichRow = gutsOfFollowOn(otherRow);
-  assert(way==-1);
+  int preferredWay;
+  int whichRow = gutsOfFollowOn(otherRow,preferredWay);
+  assert(way==preferredWay);
   assert (whichRow>=0);
   int numberColumns = matrix_.getNumCols();
   

@@ -20,13 +20,13 @@ public:
   virtual CbcStrategy * clone() const=0;
 
   /// Setup cut generators
-  virtual void setupCutGenerators(CbcModel & model);
+  virtual void setupCutGenerators(CbcModel & model)=0;
   /// Setup heuristics
-  virtual void setupHeuristics(CbcModel & model);
+  virtual void setupHeuristics(CbcModel & model)=0;
   /// Do printing stuff
-  virtual void setupPrinting(CbcModel & model);
+  virtual void setupPrinting(CbcModel & model)=0;
   /// Other stuff e.g. strong branching
-  virtual void setupOther(CbcModel & model);
+  virtual void setupOther(CbcModel & model)=0;
   /// Set model depth (i.e. how nested)
   inline void setNested(int depth)
   { depth_=depth;};
@@ -41,6 +41,40 @@ protected:
   // Data
   /// Model depth
   int depth_;
+};
+
+/** Null class
+ */
+
+class CbcStrategyNull : public CbcStrategy {
+public:
+
+  // Default Constructor 
+  CbcStrategyNull () {}
+
+  // Copy constructor 
+  CbcStrategyNull ( const CbcStrategyNull & rhs) : CbcStrategy(rhs) {};
+   
+  // Destructor 
+  ~CbcStrategyNull () {};
+  
+  /// Clone
+  virtual CbcStrategy * clone() const { return new CbcStrategyNull(*this);};
+
+  /// Setup cut generators
+  virtual void setupCutGenerators(CbcModel & model) {};
+  /// Setup heuristics
+  virtual void setupHeuristics(CbcModel & model) {};
+  /// Do printing stuff
+  virtual void setupPrinting(CbcModel & model) {};
+  /// Other stuff e.g. strong branching
+  virtual void setupOther(CbcModel & model) {};
+
+protected:
+  // Data
+private:
+  /// Illegal Assignment operator 
+  CbcStrategyNull & operator=(const CbcStrategyNull& rhs);
 };
 
 /** Default class

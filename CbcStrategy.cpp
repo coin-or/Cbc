@@ -38,27 +38,6 @@ CbcStrategy::~CbcStrategy ()
 {
 }
 
-// Setup cut generators
-void 
-CbcStrategy::setupCutGenerators(CbcModel & model)
-{
-}
-// Setup heuristics
-void 
-CbcStrategy::setupHeuristics(CbcModel & model)
-{
-}
-// Do printing stuff
-void 
-CbcStrategy::setupPrinting(CbcModel & model)
-{
-}
-// Other stuff e.g. strong branching
-void 
-CbcStrategy::setupOther(CbcModel & model)
-{
-}
-
 // Default Constructor
 CbcStrategyDefault::CbcStrategyDefault(bool cutsOnlyAtRoot,
                                        int numberStrong,

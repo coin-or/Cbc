@@ -1,0 +1,80 @@
+// Copyright (C) 2002, International Business Machines
+// Corporation and others.  All Rights Reserved.
+#ifndef CbcHeuristicGreedy_H
+#define CbcHeuristicGreedy_H
+
+#include "CbcHeuristic.hpp"
+/** Greedy heuristic class
+ */
+
+class CbcGreedyCover : public CbcHeuristic {
+public:
+
+  // Default Constructor 
+  CbcGreedyCover ();
+
+  /* Constructor with model - assumed before cuts
+     Initial version does not do Lps
+  */
+  CbcGreedyCover (CbcModel & model);
+  
+  // Copy constructor 
+  CbcGreedyCover ( const CbcGreedyCover &);
+   
+  // Destructor 
+  ~CbcGreedyCover ();
+  
+  /// Clone
+  virtual CbcHeuristic * clone() const;
+
+  /// update model (This is needed if cliques update matrix etc)
+  virtual void setModel(CbcModel * model);
+  
+  /** returns 0 if no solution, 1 if valid solution.
+      Sets solution values if good, sets objective value (only if good)
+      We leave all variables which are at one at this node of the
+      tree to that value and will
+      initially set all others to zero.  We then sort all variables in order of their cost
+      divided by the number of entries in rows which are not yet covered.  We randomize that
+      value a bit so that ties will be broken in different ways on different runs of the heuristic.
+      We then choose the best one and set it to one and repeat the exercise.  
+
+  */
+  virtual int solution(double & objectiveValue,
+		       double * newSolution);
+  /// Validate model i.e. sets when_ to 0 if necessary (may be NULL)
+  virtual void validate() ;
+  /// Resets stuff if model changes
+  virtual void resetModel(CbcModel * model);
+  /* Algorithm
+     0 - use current upper bounds
+     1 - use original upper bounds
+     If 10 added perturb ratios more
+     if 100 added round up all >=0.5
+  */
+  inline int algorithm() const
+  { return algorithm_; };
+  inline void setAlgorithm(int value)
+  { algorithm_=value; };
+
+protected:
+  // Data
+
+  // Original matrix by column
+  CoinPackedMatrix matrix_;
+  // original number of rows
+  int originalNumberRows_;
+  /* Algorithm
+     0 - use current upper bounds
+     1 - use original upper bounds
+     If 10 added perturb ratios more
+  */
+  int algorithm_;
+
+private:
+  /// Illegal Assignment operator 
+  CbcGreedyCover & operator=(const CbcGreedyCover& rhs);
+};
+
+
+#endif

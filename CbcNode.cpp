@@ -1090,6 +1090,20 @@ int CbcNode::chooseBranch (CbcModel *model, CbcNode *lastNode)
       clp = osiclp->getModelPtr();
       saveLogLevel = clp->logLevel();
       clp->setLogLevel(0);
+      int saveOptions = clp->specialOptions();
+      int startFinishOptions;
+      int specialOptions = osiclp->specialOptions();
+      if((specialOptions&1)==0) {
+	startFinishOptions=0;
+	clp->setSpecialOptions(saveOptions|(64|1024));
+      } else {
+	startFinishOptions=1+2+4;
+	startFinishOptions=1+4; // for moment re-factorize
+	if((specialOptions&4)==0) 
+	  clp->setSpecialOptions(saveOptions|(64|128|512|1024|4096));
+	else
+	  clp->setSpecialOptions(saveOptions|(64|128|512|1024|2048|4096));
+      }
       // User may want to clean up before strong branching
       if ((clp->specialOptions()&32)!=0) {
 	clp->primal(1);
@@ -1118,8 +1132,10 @@ int CbcNode::chooseBranch (CbcModel *model, CbcNode *lastNode)
 	outputSolution[2*i+1]= new double [numberColumns];
       }
       int returnCode=clp->strongBranching(numberStrong,which,
-			   newLower, newUpper,outputSolution,
-			   outputStuff,outputStuff+2*numberStrong,!solveAll,false);
+					  newLower, newUpper,outputSolution,
+					  outputStuff,outputStuff+2*numberStrong,!solveAll,false,
+					  startFinishOptions);
+      clp->setSpecialOptions(saveOptions); // restore
       clp->setMaximumIterations(saveMaxIts);
       if (returnCode==-2) {
 	// bad factorization!!!

@@ -949,7 +949,13 @@ int main (int argc, const char *argv[])
 		std::cout << "Result " << model.solver()->getObjValue()
 			  << " took " << time2-time1 << " seconds - total "
 			  << totalTime << std::endl ;
-		time1 = time2 ; }
+		time1 = time2 ; 
+                // Get solver again
+#ifdef COIN_USE_CLP
+                OsiClpSolverInterface * clpSolver = dynamic_cast< OsiClpSolverInterface*> (model.solver());
+                lpSolver = clpSolver->getModelPtr();
+#endif
+            }
 	  else
 	    { std::cout << "** Current model not valid" << std::endl ; }
 	  break ; }

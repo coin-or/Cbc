@@ -215,7 +215,7 @@ CbcRounding::solution(double & solutionValue,
 
   double penalty=0.0;
   
-  // see if feasible
+  // see if feasible - just using singletons
   for (i=0;i<numberRows;i++) {
     double value = rowActivity[i];
     double thisInfeasibility=0.0;
@@ -235,6 +235,7 @@ CbcRounding::solution(double & solutionValue,
       double absInfeasibility = fabs(thisInfeasibility);
       for (k=rowStart[i];k<rowStart[i]+rowLength[i];k++) {
 	int iColumn = column[k];
+        // See if all elements help
 	if (columnLength[iColumn]==1) {
 	  double currentValue = newSolution[iColumn];
 	  double elementValue = elementByRow[k];
@@ -301,6 +302,324 @@ CbcRounding::solution(double & solutionValue,
 	rowActivity[i] += changeRowActivity;
       }
       penalty += fabs(thisInfeasibility);
+    }
+  }
+  if (penalty) {
+    // see if feasible using any
+    // first continuous
+    double penaltyChange=0.0;
+    int iColumn;
+    for (iColumn=0;iColumn<numberColumns;iColumn++) {
+      if (solver->isInteger(iColumn))
+        continue;
+      double currentValue = newSolution[iColumn];
+      double lowerValue = lower[iColumn];
+      double upperValue = upper[iColumn];
+      int j;
+      int anyBadDown=0;
+      int anyBadUp=0;
+      double upImprovement=0.0;
+      double downImprovement=0.0;
+      for (j=columnStart[iColumn];
+	   j<columnStart[iColumn]+columnLength[iColumn];j++) {
+	int iRow = row[j];
+        if (rowUpper[iRow]>rowLower[iRow]) {
+          double value = element[j];
+          if (rowActivity[iRow]>rowUpper[iRow]+primalTolerance) {
+            // infeasible above
+            downImprovement += value;
+            upImprovement -= value;
+            if (value>0.0) 
+              anyBadUp++;
+            else 
+              anyBadDown++;
+          } else if (rowActivity[iRow]>rowUpper[iRow]-primalTolerance) {
+            // feasible at ub
+            if (value>0.0) {
+              upImprovement -= value;
+              anyBadUp++;
+            } else {
+              downImprovement += value;
+              anyBadDown++;
+            }
+          } else if (rowActivity[iRow]>rowLower[iRow]+primalTolerance) {
+            // feasible in interior
+          } else if (rowActivity[iRow]>rowLower[iRow]-primalTolerance) {
+            // feasible at lb
+            if (value<0.0) {
+              upImprovement += value;
+              anyBadUp++;
+            } else {
+              downImprovement -= value;
+              anyBadDown++;
+            }
+          } else {
+            // infeasible below
+            downImprovement -= value;
+            upImprovement += value;
+            if (value<0.0) 
+              anyBadUp++;
+            else 
+              anyBadDown++;
+          }
+        } else {
+          // equality row 
+          double value = element[j];
+          if (rowActivity[iRow]>rowUpper[iRow]+primalTolerance) {
+            // infeasible above
+            downImprovement += value;
+            upImprovement -= value;
+            if (value>0.0) 
+              anyBadUp++;
+            else 
+              anyBadDown++;
+          } else if (rowActivity[iRow]<rowLower[iRow]-primalTolerance) {
+            // infeasible below
+            downImprovement -= value;
+            upImprovement += value;
+            if (value<0.0) 
+              anyBadUp++;
+            else 
+              anyBadDown++;
+          } else {
+            // feasible - no good
+            anyBadUp=-1;
+            break;
+          }
+        }
+      }
+      // could change tests for anyBad
+      if (anyBadUp)
+        upImprovement=0.0;
+      if (anyBadDown)
+        downImprovement=0.0;
+      double way=0.0;
+      double improvement=0.0;
+      if (downImprovement>0.0&&currentValue>lowerValue) {
+        way=-1.0;
+        improvement = downImprovement;
+      } else if (upImprovement>0.0&&currentValue<upperValue) {
+        way=1.0;
+        improvement = upImprovement;
+      }
+      if (way) {
+        // can improve
+        double distance=COIN_DBL_MAX;
+        for (j=columnStart[iColumn];
+             j<columnStart[iColumn]+columnLength[iColumn];j++) {
+          int iRow = row[j];
+          double value = element[j]*way;
+          if (rowActivity[iRow]>rowUpper[iRow]+primalTolerance) {
+            // infeasible above
+            assert (value<0.0);
+            double gap = rowActivity[iRow]-rowUpper[iRow];
+            if (gap+value*distance<0.0) 
+              distance = -gap/value;
+          } else if (rowActivity[iRow]<rowLower[iRow]-primalTolerance) {
+            // infeasible below
+            assert (value>0.0);
+            double gap = rowActivity[iRow]-rowLower[iRow];
+            if (gap+value*distance>0.0) 
+              distance = -gap/value;
+          } else {
+            // feasible
+            if (value>0) {
+              double gap = rowActivity[iRow]-rowUpper[iRow];
+              if (gap+value*distance>0.0) 
+              distance = -gap/value;
+            } else {
+              double gap = rowActivity[iRow]-rowLower[iRow];
+              if (gap+value*distance<0.0) 
+                distance = -gap/value;
+            }
+          }
+        }
+        //move
+        penaltyChange += improvement*distance;
+        distance *= way;
+	newSolution[iColumn] += distance;
+	newSolutionValue += direction*objective[iColumn]*distance;
+        for (j=columnStart[iColumn];
+             j<columnStart[iColumn]+columnLength[iColumn];j++) {
+          int iRow = row[j];
+          double value = element[j];
+          rowActivity[iRow] += distance*value;
+        }
+      }
+    }
+    // and now all if improving
+    double lastChange= penaltyChange ? 1.0 : 0.0;
+    while (lastChange>1.0e-2) {
+      lastChange=0;
+      for (iColumn=0;iColumn<numberColumns;iColumn++) {
+        bool isInteger = solver->isInteger(iColumn);
+        double currentValue = newSolution[iColumn];
+        double lowerValue = lower[iColumn];
+        double upperValue = upper[iColumn];
+        int j;
+        int anyBadDown=0;
+        int anyBadUp=0;
+        double upImprovement=0.0;
+        double downImprovement=0.0;
+        for (j=columnStart[iColumn];
+             j<columnStart[iColumn]+columnLength[iColumn];j++) {
+          int iRow = row[j];
+          double value = element[j];
+          if (isInteger) {
+            if (value>0.0) {
+              if (rowActivity[iRow]+value>rowUpper[iRow]+primalTolerance)
+                anyBadUp++;
+              if (rowActivity[iRow]-value<rowLower[iRow]-primalTolerance)
+                anyBadDown++;
+            } else {
+              if (rowActivity[iRow]-value>rowUpper[iRow]+primalTolerance)
+                anyBadDown++;
+              if (rowActivity[iRow]+value<rowLower[iRow]-primalTolerance)
+                anyBadUp++;
+            }
+          }
+          if (rowUpper[iRow]>rowLower[iRow]) {
+            if (rowActivity[iRow]>rowUpper[iRow]+primalTolerance) {
+              // infeasible above
+              downImprovement += value;
+              upImprovement -= value;
+              if (value>0.0) 
+                anyBadUp++;
+              else 
+                anyBadDown++;
+            } else if (rowActivity[iRow]>rowUpper[iRow]-primalTolerance) {
+              // feasible at ub
+              if (value>0.0) {
+                upImprovement -= value;
+                anyBadUp++;
+              } else {
+                downImprovement += value;
+                anyBadDown++;
+              }
+            } else if (rowActivity[iRow]>rowLower[iRow]+primalTolerance) {
+              // feasible in interior
+            } else if (rowActivity[iRow]>rowLower[iRow]-primalTolerance) {
+              // feasible at lb
+              if (value<0.0) {
+                upImprovement += value;
+                anyBadUp++;
+              } else {
+                downImprovement -= value;
+                anyBadDown++;
+              }
+            } else {
+              // infeasible below
+              downImprovement -= value;
+              upImprovement += value;
+              if (value<0.0) 
+                anyBadUp++;
+              else 
+                anyBadDown++;
+            }
+          } else {
+            // equality row 
+            if (rowActivity[iRow]>rowUpper[iRow]+primalTolerance) {
+              // infeasible above
+              downImprovement += value;
+              upImprovement -= value;
+              if (value>0.0) 
+                anyBadUp++;
+              else 
+                anyBadDown++;
+            } else if (rowActivity[iRow]<rowLower[iRow]-primalTolerance) {
+              // infeasible below
+              downImprovement -= value;
+              upImprovement += value;
+              if (value<0.0) 
+                anyBadUp++;
+              else 
+                anyBadDown++;
+            } else {
+              // feasible - no good
+              anyBadUp=-1;
+              anyBadDown=-1;
+              break;
+            }
+          }
+        }
+        // could change tests for anyBad
+        if (anyBadUp)
+          upImprovement=0.0;
+        if (anyBadDown)
+          downImprovement=0.0;
+        double way=0.0;
+        double improvement=0.0;
+        if (downImprovement>0.0&&currentValue>lowerValue) {
+          way=-1.0;
+          improvement = downImprovement;
+        } else if (upImprovement>0.0&&currentValue<upperValue) {
+          way=1.0;
+          improvement = upImprovement;
+        }
+        if (way) {
+          // can improve
+          double distance=COIN_DBL_MAX;
+          for (j=columnStart[iColumn];
+               j<columnStart[iColumn]+columnLength[iColumn];j++) {
+            int iRow = row[j];
+            double value = element[j]*way;
+            if (rowActivity[iRow]>rowUpper[iRow]+primalTolerance) {
+              // infeasible above
+              assert (value<0.0);
+              double gap = rowActivity[iRow]-rowUpper[iRow];
+              if (gap+value*distance<0.0) 
+                distance = -gap/value;
+            } else if (rowActivity[iRow]<rowLower[iRow]-primalTolerance) {
+              // infeasible below
+              assert (value>0.0);
+              double gap = rowActivity[iRow]-rowLower[iRow];
+              if (gap+value*distance>0.0) 
+                distance = -gap/value;
+            } else {
+              // feasible
+              if (value>0) {
+                double gap = rowActivity[iRow]-rowUpper[iRow];
+                if (gap+value*distance>0.0) 
+                  distance = -gap/value;
+              } else {
+                double gap = rowActivity[iRow]-rowLower[iRow];
+                if (gap+value*distance<0.0) 
+                  distance = -gap/value;
+              }
+            }
+          }
+          if (isInteger)
+            distance = floor(distance+1.0e-8);
+          if (!distance) {
+            // should never happen
+            printf("zero distance in CbcRounding - debug\n");
+          }
+          //move
+          lastChange += improvement*distance;
+          distance *= way;
+          newSolution[iColumn] += distance;
+          newSolutionValue += direction*objective[iColumn]*distance;
+          for (j=columnStart[iColumn];
+               j<columnStart[iColumn]+columnLength[iColumn];j++) {
+            int iRow = row[j];
+            double value = element[j];
+            rowActivity[iRow] += distance*value;
+          }
+        }
+      }
+      penaltyChange += lastChange;
+    }
+    penalty -= penaltyChange;
+    if (penalty<1.0e-5*fabs(penaltyChange)) {
+      // recompute
+      penalty=0.0;
+      for (i=0;i<numberRows;i++) {
+        double value = rowActivity[i];
+        if (value<rowLower[i]-primalTolerance)
+          penalty += rowLower[i]-value;
+        else if (value>rowUpper[i]+primalTolerance)
+          penalty += value-rowUpper[i];
+      }
     }
   }
 

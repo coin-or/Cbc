@@ -132,6 +132,9 @@ public:
   inline int id() const
   { return id_;};
   
+  /// Column number if single column object -1 otherwise
+  virtual int columnNumber() const;
+  
    /// update model
   inline void setModel(CbcModel * model)
   { model_ = model;};

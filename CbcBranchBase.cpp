@@ -78,6 +78,13 @@ CbcObject::downEstimate() const
 {
   return 1.0e-5;
 }
+// Column number if single column object -1 otherwise
+int 
+CbcObject::columnNumber() const
+{
+  // Say not as at present only used by heuristics
+  return -1;
+}
 // Default Constructor 
 CbcBranchingObject::CbcBranchingObject()
 {

@@ -465,6 +465,15 @@ CbcLotsize::infeasibility(int & preferredWay) const
 #endif
   return infeasibility;
 }
+/* Column number if single column object -1 otherwise,
+   so returns >= 0
+   Used by heuristics
+*/
+int 
+CbcLotsize::columnNumber() const
+{
+  return columnNumber_;
+}
 // This looks at solution and sets bounds to contain solution
 /** More precisely: it first forces the variable within the existing
     bounds, and then tightens the bounds to make sure the variable is feasible

@@ -678,6 +678,15 @@ CbcSimpleInteger::feasibleRegion()
   solver->setColLower(columnNumber_,nearest);
   solver->setColUpper(columnNumber_,nearest);
 }
+/* Column number if single column object -1 otherwise,
+   so returns >= 0
+   Used by heuristics
+*/
+int 
+CbcSimpleInteger::columnNumber() const
+{
+  return columnNumber_;
+}
 
 // Creates a branching object
 CbcBranchingObject * 

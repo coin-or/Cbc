@@ -93,6 +93,11 @@ public:
   inline int modelSequence() const
   {return columnNumber_;};
 
+  /** Column number if single column object -1 otherwise,
+      so returns >= 0
+      Used by heuristics
+  */
+  virtual int columnNumber() const;
   /// Original bounds
   inline double originalLowerBound() const
   { return bound_[0];};

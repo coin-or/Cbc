@@ -166,6 +166,13 @@ public:
      int subBranchAndBound(const double * lower, const double * upper,
 			    int maximumNodes);
 
+    /** \brief Process root node and return a strengthened model
+
+      The method assumes that initialSolve() has been called to solve the
+      LP relaxation. It processes the root node and then returns a pointer
+      to the strengthened model (or NULL if infeasible)
+    */
+     OsiSolverInterface *  strengthenedModel();
     /** \brief Evaluate a subproblem using cutting planes and heuristics
 
       The method invokes a main loop which generates cuts, applies heuristics,
@@ -267,6 +274,9 @@ public:
 
   /// Get the number of objects
   inline int numberObjects() const { return numberObjects_;};
+  /// Set the number of objects
+  inline void setNumberObjects(int number) 
+  {  numberObjects_=number;};
 
   /// Get the array of objects
   inline CbcObject ** objects() const { return object_;};
@@ -902,9 +912,8 @@ public:
   /// Global cuts
   inline OsiCuts * globalCuts() 
   { return &globalCuts_;};
-  /// Set a pointer to a row cut which will be added instead of normal branching.
-  inline void setNextRowCut(OsiRowCut * pointer)
-  { nextRowCut_=pointer;};
+  /// Copy and set a pointer to a row cut which will be added instead of normal branching.
+  void setNextRowCut(const OsiRowCut & cut);
   /// Get a pointer to current node (be careful)
   inline CbcNode * currentNode() const
   { return currentNode_;};
@@ -918,6 +927,9 @@ public:
   ///Get the specified cut generator
   inline CbcCutGenerator * cutGenerator(int i) const
   { return generator_[i];};
+  ///Get the specified cut generator before any changes
+  inline CbcCutGenerator * virginCutGenerator(int i) const
+  { return virginGenerator_[i];};
   /** Add one generator - up to user to delete generators.
       howoften affects how generator is used. 0 or 1 means always,
       >1 means every that number of nodes.  Negative values have same
@@ -935,6 +947,9 @@ public:
   //@{
   /// Add one heuristic - up to user to delete
   void addHeuristic(CbcHeuristic * generator);
+  ///Get the specified heuristic
+  inline CbcHeuristic * heuristic(int i) const
+  { return heuristic_[i];};
 
   /** Pass in branching priorities.
   
@@ -1157,7 +1172,7 @@ private:
   /** A pointer to a row cut which will be added instead of normal branching.
       After use it should be set to NULL.
   */
-  OsiRowCut * nextRowCut_;
+  const OsiRowCut * nextRowCut_;
 
   /// Current node so can be used elsewhere
   CbcNode * currentNode_;
@@ -1196,6 +1211,8 @@ private:
   int numberCutGenerators_;
   // Cut generators
   CbcCutGenerator ** generator_;
+  // Cut generators before any changes
+  CbcCutGenerator ** virginGenerator_;
   /// Number of heuristics
   int numberHeuristics_;
   // Heuristic solvers

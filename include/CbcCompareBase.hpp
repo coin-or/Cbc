@@ -38,6 +38,19 @@ public:
 
   virtual ~CbcCompareBase() {};
 
+  // Copy constructor 
+  CbcCompareBase ( const CbcCompareBase & rhs)
+  {test_=rhs.test_;};
+   
+  // Assignment operator 
+  CbcCompareBase & operator=( const CbcCompareBase& rhs)
+  {  if (this!=&rhs) {test_=rhs.test_;}
+  return *this;
+  };
+
+  /// Clone
+  virtual CbcCompareBase * clone() const=0;
+
   /// This is test function
   virtual bool test (CbcNode * x, CbcNode * y) {return true;};
 

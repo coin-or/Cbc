@@ -31,6 +31,9 @@ public:
   /// Clone
   virtual CbcHeuristic * clone() const=0;
 
+  /// Resets stuff if model changes
+  virtual void resetModel(CbcModel * model)=0;
+
   /** returns 0 if no solution, 1 if valid solution
       with better objective value than one passed in
       Sets solution values if good, sets objective value 
@@ -90,6 +93,9 @@ public:
   
   /// Clone
   virtual CbcHeuristic * clone() const;
+
+  /// Resets stuff if model changes
+  virtual void resetModel(CbcModel * model);
 
   /// update model (This is needed if cliques update matrix etc)
   virtual void setModel(CbcModel * model);

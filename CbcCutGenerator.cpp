@@ -39,7 +39,7 @@ CbcCutGenerator::CbcCutGenerator(CbcModel * model,CglCutGenerator * generator,
      numberCutsActive_(0)
 {
   model_ = model;
-  generator_=generator;
+  generator_=generator->clone();
   generator_->refreshSolver(model_->solver());
   whenCutGenerator_=howOften;
   whenCutGeneratorInSub_ = howOftenInSub;
@@ -56,7 +56,7 @@ CbcCutGenerator::CbcCutGenerator(CbcModel * model,CglCutGenerator * generator,
 CbcCutGenerator::CbcCutGenerator ( const CbcCutGenerator & rhs)
 {
   model_ = rhs.model_;
-  generator_=rhs.generator_;
+  generator_=rhs.generator_->clone();
   generator_->refreshSolver(model_->solver());
   whenCutGenerator_=rhs.whenCutGenerator_;
   whenCutGeneratorInSub_ = rhs.whenCutGeneratorInSub_;
@@ -77,7 +77,7 @@ CbcCutGenerator::operator=( const CbcCutGenerator& rhs)
     delete generator_;
     free(generatorName_);
     model_ = rhs.model_;
-    generator_=rhs.generator_;
+    generator_=rhs.generator_->clone();
     generator_->refreshSolver(model_->solver());
     whenCutGenerator_=rhs.whenCutGenerator_;
     whenCutGeneratorInSub_ = rhs.whenCutGeneratorInSub_;
@@ -96,6 +96,7 @@ CbcCutGenerator::operator=( const CbcCutGenerator& rhs)
 CbcCutGenerator::~CbcCutGenerator ()
 {
   free(generatorName_);
+  delete generator_;
 }
 
 /* This is used to refresh any inforamtion.

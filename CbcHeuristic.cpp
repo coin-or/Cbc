@@ -27,6 +27,12 @@ CbcHeuristic::CbcHeuristic(CbcModel & model)
   when_(2)
 {
 }
+// Resets stuff if model changes
+void 
+CbcHeuristic::resetModel(CbcModel * model)
+{
+  model_=model;
+}
 
 // Destructor 
 CbcHeuristic::~CbcHeuristic ()
@@ -78,6 +84,17 @@ CbcRounding::CbcRounding(const CbcRounding & rhs)
   seed_(rhs.seed_)
 {
   setWhen(rhs.when());
+}
+
+// Resets stuff if model changes
+void 
+CbcRounding::resetModel(CbcModel * model)
+{
+  model_=model;
+  // Get a copy of original matrix (and by row for rounding);
+  assert(model_->solver());
+  matrix_ = *model_->solver()->getMatrixByCol();
+  matrixByRow_ = *model_->solver()->getMatrixByRow();
 }
 // See if rounding will give solution
 // Sets value of solution

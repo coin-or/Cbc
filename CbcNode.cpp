@@ -1026,11 +1026,21 @@ int CbcNode::chooseBranch (CbcModel *model, CbcNode *lastNode)
      integers but I think this coding would be easy to modify 
   */
   bool allNormal=true; // to say if we can do fast strong branching
+  // Say which one will be best
+  int bestChoice=0;
+  double worstInfeasibility=0.0;
   for (i=0;i<numberStrong;i++) {
     choice[i].numIntInfeasUp = numberUnsatisfied_;
     choice[i].numIntInfeasDown = numberUnsatisfied_;
     if (!dynamic_cast <const CbcSimpleInteger *> (model->object(choice[i].objectNumber)))
       allNormal=false; // Something odd so lets skip clever fast branching
+    if ( !model->object(choice[i].objectNumber)->boundBranch())
+      numberStrong=0; // switch off
+    // Do best choice in case switched off
+    if (choice[i].upMovement>worstInfeasibility) {
+      worstInfeasibility=choice[i].upMovement;
+      bestChoice=i;
+    }
   }
 /*
   Is strong branching enabled? If so, set up and do it. Otherwise, we'll
@@ -1039,7 +1049,7 @@ int CbcNode::chooseBranch (CbcModel *model, CbcNode *lastNode)
   Setup for strong branching involves saving the current basis (for restoration
   afterwards) and setting up for hot starts.
 */
-  if (model->numberStrong()) {
+  if (numberStrong) {
     
     bool solveAll=false; // set true to say look at all even if some fixed (experiment)
     // Save basis
@@ -1426,16 +1436,14 @@ int CbcNode::chooseBranch (CbcModel *model, CbcNode *lastNode)
     }
   }
 /*
-  Simple branching. Why are we choosing choice[0]? Seems arbitrary. Why not
-  the final candidate? (It will have the greatest infeasibility.)
-
-  (jjf) you can choose the first or last as if we get here choice has length 1!
+  Simple branching. Probably just one, but we may have got here
+  because of an odd branch e.g. a cut
 */
   else {
     // not strong
     // C) create branching object
-    branch_ = choice[0].possibleBranch;
-    choice[0].possibleBranch=NULL;
+    branch_ = choice[bestChoice].possibleBranch;
+    choice[bestChoice].possibleBranch=NULL;
   }
   // Set guessed solution value
   guessedObjectiveValue_ = objectiveValue_+estimatedDegradation;

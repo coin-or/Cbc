@@ -46,6 +46,9 @@ public:
   */
   virtual void feasibleRegion();
 
+  /** \brief Return true if branch created by object should fix variables
+  */
+  virtual bool boundBranch() const ;
   /// Creates a branching object
   virtual CbcBranchingObject * createBranch(int way) const;
 
@@ -162,6 +165,7 @@ public:
   */ 
   CbcBranchOnReducedCost (CbcModel * model, double djTolerance,
 			  double fractionFixed, int depth,
+			  const char * mark=NULL,
 			  bool alwaysCreate=false);
   
   // Copy constructor 
@@ -190,6 +194,8 @@ protected:
   double djTolerance_;
   /// We only need to make sure this fraction fixed
   double fractionFixed_;
+  /// Never fix ones marked here
+  char * mark_;
   // Do if depth multiple of this
   int depth_;
   /// If true then always create branch

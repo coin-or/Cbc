@@ -119,6 +119,10 @@ public:
    */
   virtual void resetBounds() {};
   
+  /** \brief Return true if branch created by object should fix variables
+  */
+  virtual bool boundBranch() const 
+  {return true;};
   /** Returns floor and ceiling i.e. closest valid points
   */
   virtual void floorCeiling(double & floorValue, double & ceilingValue, double value,

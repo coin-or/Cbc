@@ -75,6 +75,11 @@ void
 CbcBranchCut::feasibleRegion()
 {
 }
+/* Return true if branch created by object should fix variables
+ */
+bool 
+CbcBranchCut::boundBranch() const 
+{return false;}
 
 // Creates a branching object
 CbcBranchingObject * 
@@ -235,7 +240,7 @@ CbcCutBranchingObject::branch(bool normalBranch)
     }
   } else {
     // leave as cut
-    model_->setNextRowCut(cut);
+    model_->setNextRowCut(*cut);
   }
   return 0.0;
 }
@@ -286,6 +291,7 @@ CbcBranchOnReducedCost::CbcBranchOnReducedCost ()
   : CbcBranchCut(),
     djTolerance_(COIN_DBL_MAX),
     fractionFixed_(1.0),
+    mark_(NULL),
     depth_(-1),
     alwaysCreate_(false)
 {
@@ -297,11 +303,16 @@ CbcBranchOnReducedCost::CbcBranchOnReducedCost ()
 */ 
 CbcBranchOnReducedCost::CbcBranchOnReducedCost (CbcModel * model, double djTolerance,
 						double fractionFixed, int depth,
-						bool alwaysCreate)
+						const char * mark, bool alwaysCreate)
   : CbcBranchCut(model)
 {
   djTolerance_ = djTolerance;
   fractionFixed_ = fractionFixed;
+  if (mark) {
+    int numberColumns = model->getNumCols();
+    mark_ = new char[numberColumns];
+    memcpy(mark_,mark,numberColumns);
+  }
   depth_ = depth;
   alwaysCreate_ = alwaysCreate;
 }
@@ -311,6 +322,8 @@ CbcBranchOnReducedCost::CbcBranchOnReducedCost ( const CbcBranchOnReducedCost & 
 {
   djTolerance_ = rhs.djTolerance_;
   fractionFixed_ = rhs.fractionFixed_;
+  int numberColumns = model_->getNumCols();
+  mark_ = CoinCopyOfArray(rhs.mark_,numberColumns);
   depth_ = rhs.depth_;
   alwaysCreate_ = rhs.alwaysCreate_;
 }
@@ -330,6 +343,8 @@ CbcBranchOnReducedCost::operator=( const CbcBranchOnReducedCost& rhs)
     CbcBranchCut::operator=(rhs);
     djTolerance_ = rhs.djTolerance_;
     fractionFixed_ = rhs.fractionFixed_;
+    int numberColumns = model_->getNumCols();
+    mark_ = CoinCopyOfArray(rhs.mark_,numberColumns);
     depth_ = rhs.depth_;
     alwaysCreate_ = rhs.alwaysCreate_;
   }
@@ -339,6 +354,7 @@ CbcBranchOnReducedCost::operator=( const CbcBranchOnReducedCost& rhs)
 // Destructor 
 CbcBranchOnReducedCost::~CbcBranchOnReducedCost ()
 {
+  delete [] mark_;
 }
 // Creates a branching object
 CbcBranchingObject * 
@@ -365,15 +381,17 @@ CbcBranchOnReducedCost::createBranch(int way) const
   for (i=0;i<numberIntegers;i++) {
     int iColumn = integerVariable[i];
     if (upper[iColumn]>lower[iColumn]) {
-      if(solution[iColumn]<lower[iColumn]+tolerance) {
-	if (dj[iColumn]>djTolerance_) {
-	  dsort[nSort]=-dj[iColumn];
-	  sort[nSort++]=iColumn;
-	}
-      } else if (solution[iColumn]>upper[iColumn]-tolerance) {
-	if (dj[iColumn]<-djTolerance_) {
-	  dsort[nSort]=dj[iColumn];
-	  sort[nSort++]=iColumn;
+      if (!mark_||!mark_[iColumn]) {
+	if(solution[iColumn]<lower[iColumn]+tolerance) {
+	  if (dj[iColumn]>djTolerance_) {
+	    dsort[nSort]=-dj[iColumn];
+	    sort[nSort++]=iColumn;
+	  }
+	} else if (solution[iColumn]>upper[iColumn]-tolerance) {
+	  if (dj[iColumn]<-djTolerance_) {
+	    dsort[nSort]=dj[iColumn];
+	    sort[nSort++]=iColumn;
+	  }
 	}
       }
     } else {
@@ -408,6 +426,7 @@ CbcBranchOnReducedCost::createBranch(int way) const
   up.setUb(COIN_DBL_MAX);
   CbcCutBranchingObject * newObject = 
     new CbcCutBranchingObject(model_,down,up);
+  printf("creating cut in CbcBranchCut\n");
   return newObject;
 }
 // Infeasibility - large is 0.5
@@ -444,13 +463,15 @@ CbcBranchOnReducedCost::infeasibility(int & preferredWay) const
   for (i=0;i<numberIntegers;i++) {
     int iColumn = integerVariable[i];
     if (upper[iColumn]>lower[iColumn]) {
-      if(solution[iColumn]<lower[iColumn]+tolerance) {
-	if (dj[iColumn]>djTolerance_) {
-	  nSort++;
-	}
-      } else if (solution[iColumn]>upper[iColumn]-tolerance) {
-	if (dj[iColumn]<-djTolerance_) {
-	  nSort++;
+      if (!mark_||!mark_[iColumn]) {
+	if(solution[iColumn]<lower[iColumn]+tolerance) {
+	  if (dj[iColumn]>djTolerance_) {
+	    nSort++;
+	  }
+	} else if (solution[iColumn]>upper[iColumn]-tolerance) {
+	  if (dj[iColumn]<-djTolerance_) {
+	    nSort++;
+	  }
 	}
       }
     } else {

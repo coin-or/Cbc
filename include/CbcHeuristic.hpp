@@ -56,7 +56,10 @@ public:
   /// Validate model i.e. sets when_ to 0 if necessary (may be NULL)
   virtual void validate() {};
 
-  /// Sets "when" flag - 0 off, 1 at root, 2 other than root, 3 always
+  /** Sets "when" flag - 0 off, 1 at root, 2 other than root, 3 always.
+      If 10 added then don't worry if validate says there are funny objects
+      as user knows it will be fine
+  */
   inline void setWhen(int value)
   { when_=value;};
   /// Gets "when" flag - 0 off, 1 at root, 2 other than root, 3 always

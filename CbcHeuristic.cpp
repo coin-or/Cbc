@@ -108,7 +108,8 @@ CbcRounding::solution(double & solutionValue,
 {
 
   // See if to do
-  if (!when()||(when()==1&&model_->phase()!=1))
+  if (!when()||(when()%10==1&&model_->phase()!=1)||
+      (when()%10==2&&model_->phase()!=2))
     return 0; // switched off
 
   OsiSolverInterface * solver = model_->solver();
@@ -417,6 +418,11 @@ void CbcRounding::setModel(CbcModel * model)
 void 
 CbcRounding::validate() 
 {
+  if (model_&&when()<10) {
+    if (model_->numberIntegers()!=
+        model_->numberObjects())
+      setWhen(0);
+  }
 }
 
   

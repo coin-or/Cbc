@@ -1098,7 +1098,7 @@ int CbcNode::chooseBranch (CbcModel *model, CbcNode *lastNode)
 	clp->setSpecialOptions(saveOptions|(64|1024));
       } else {
 	startFinishOptions=1+2+4;
-	startFinishOptions=1+4; // for moment re-factorize
+	//startFinishOptions=1+4; // for moment re-factorize
 	if((specialOptions&4)==0) 
 	  clp->setSpecialOptions(saveOptions|(64|128|512|1024|4096));
 	else

@@ -13,7 +13,7 @@
 #include <string>
 #include <iostream>
 
-#define CBCVERSION "0.70"
+#define CBCVERSION "0.80"
 
 #include "CoinMpsIO.hpp"
 #include "CoinPackedMatrix.hpp"

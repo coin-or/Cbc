@@ -148,6 +148,13 @@ CbcRounding::solution(double & solutionValue,
   for (i=0;i<numberColumns;i++) {
     int j;
     double value = newSolution[i];
+    if (value<lower[i]) {
+      value=lower[i];
+      newSolution[i]=value;
+    } else if (value>upper[i]) {
+      value=upper[i];
+      newSolution[i]=value;
+    }
     if (value) {
       for (j=columnStart[i];
 	   j<columnStart[i]+columnLength[i];j++) {

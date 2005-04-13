@@ -13,7 +13,11 @@
 #include <iostream>
 #include <cstdio>
 
+#ifdef COIN_USE_CBC
 #include "OsiCbcSolverInterface.hpp"
+#else
+//#define OsiCbcSolverInterface OsiClpSolverInterface
+#endif
 #ifdef COIN_USE_OSL
 #include "OsiOslSolverInterface.hpp"
 #endif
@@ -37,6 +41,7 @@
 // Function Prototypes. Function definitions is in this file.
 void testingMessage( const char * const msg );
 
+#ifdef COIN_USE_CBC
 void CbcUnitTest (const std::vector<OsiCbcSolverInterface*> & vecEmptySiP,
                   const std::string & mpsDir)
 {
@@ -287,7 +292,7 @@ void CbcUnitTest (const std::vector<OsiCbcSolverInterface*> & vecEmptySiP,
       <<std::endl;
   } 
 }
-
+#endif
 //----------------------------------------------------------------
 // unitTest  [-miplibDir=V2]
 // 
@@ -347,6 +352,7 @@ int mainTest (int argc, const char *argv[])
     miplibDir=parms["-miplibDir"] + dirsep;
   else 
     miplibDir = dirsep == '/' ? "./Samples/miplib3/" : ".\\Samples\\miplib3\\";
+#ifdef COIN_USE_CBC
 
   {
     // Create vector of solver interfaces
@@ -380,6 +386,7 @@ int mainTest (int argc, const char *argv[])
     for (i=0; i<vecSi.size(); i++)
       delete vecSi[i];
   }
+#endif
   testingMessage( "All tests completed successfully\n" );
   return 0;
 }

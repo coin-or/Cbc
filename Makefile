@@ -28,8 +28,15 @@ install library: libdepend
 libdepend:
 	(cd $(CoinDir)/Coin && $(MAKE) install)
 	(cd $(CoinDir)/Clp && $(MAKE) install)
+ifeq ($(VolDefine),COIN_HAS_VOL)
+	(cd $(CoinDir)/Vol && $(MAKE) install)
+endif 
+ifneq ($(filter COIN_libOsiClp,$(CoinLibsDefined)),)
 	(cd $(CoinDir)/Osi/OsiClp && $(MAKE) install)
+endif
+ifneq ($(filter COIN_libOsiCbc,$(CoinLibsDefined)),)
 	(cd $(CoinDir)/Osi/OsiCbc && $(MAKE) -f Makefile.lightweight install)
+endif
 #	(cd $(CoinDir)/Osi/OsiDylp && $(MAKE) install)
 	(cd $(CoinDir)/Cgl && $(MAKE) install)
 

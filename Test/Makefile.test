@@ -31,7 +31,7 @@ IncDir += ${bzlibIncDir} ${zlibIncDir} $(lapackIncDir)
 IncDir += ./include
 
 LibDir := ${CbcLibDir} ${CglLibDir}
-LibDir += ${OsiClpLibDir} ${ClpLibDir}
+LibDir += ${OsiClpLibDir} ${ClpLibDir} 
 #LibDir += ${OsiDylpLibDir} ${DylpLibDir}
 LibDir += ${OsiLibDir} ${CoinLibDir}
 LibDir += ${bzlibLibDir} ${zlibLibDir} $(lapackLibDir)
@@ -39,6 +39,9 @@ LibDir += $(GlpkLibDir)
 
 LibName := $(OsiCbcLibName) ${CbcLibName} ${CglLibName}
 LibName += ${OsiClpLibName} ${ClpLibName}
+ifeq ($(VolDefine),COIN_HAS_VOL)
+LibName += $(VolLibName)
+endif
 #LibName += ${OsiDylpLibName} ${DylpLibName}
 LibName += ${OsiLibName} ${CoinLibName} 
 LibName += ${bzlibLibName} ${zlibLibName} $(lapackLibName) $(readlineLibName)
@@ -68,7 +71,9 @@ CXXFLAGS += $(addprefix -D,COIN_USE_CLP)
 #CXXFLAGS += $(addprefix -D,CBC_DEFAULT_SOLVER=\"dylp\")
 
 #tell parameter handling to allow for CbcModel and OsiSolverInterface
+ifneq ($(filter COIN_libOsiCbc,$(CoinLibsDefined)),)
 CXXFLAGS += -DCOIN_USE_CBC
+endif
 ##############################################################################
 # You should not need to edit below this line.
 ##############################################################################

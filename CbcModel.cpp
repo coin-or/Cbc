@@ -379,6 +379,8 @@ void CbcModel::branchAndBound()
     strategy_->setupPrinting(*this);
     strategy_->setupOther(*this);
   }
+  if (!nodeCompare_)
+    nodeCompare_=new CbcCompareDefault();;
 # ifdef CBC_DEBUG
   std::string problemName ;
   solver_->getStrParam(OsiProbName,problemName) ;

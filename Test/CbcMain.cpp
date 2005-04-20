@@ -37,6 +37,7 @@
 #include "CglTwomir.hpp"
 
 #include "CbcModel.hpp"
+#include "CbcCutGenerator.hpp"
 #include "CbcHeuristic.hpp"
 #include "CbcCompareActual.hpp"
 #include  "CbcParam.hpp"
@@ -612,7 +613,7 @@ int main (int argc, const char *argv[])
     // try larger limit
     gomoryGen.setLimit(3000);
     // set default action (0=off,1=on,2=root)
-    int gomoryAction=2;
+    int gomoryAction=1;
 
     CglProbing probingGen;
     probingGen.setUsingObjective(true);
@@ -621,32 +622,32 @@ int main (int argc, const char *argv[])
     probingGen.setMaxLook(50);
     probingGen.setRowCuts(3);
     // set default action (0=off,1=on,2=root)
-    int probingAction=2;
+    int probingAction=1;
 
     CglKnapsackCover knapsackGen;
     // set default action (0=off,1=on,2=root)
-    int knapsackAction=2;
+    int knapsackAction=1;
 
     CglOddHole oddholeGen;
     oddholeGen.setMinimumViolation(0.005);
     oddholeGen.setMinimumViolationPer(0.0002);
     oddholeGen.setMaximumEntries(100);
     // set default action (0=off,1=on,2=root)
-    int oddholeAction=2;
+    int oddholeAction=1;
 
     CglClique cliqueGen;
     cliqueGen.setStarCliqueReport(false);
     cliqueGen.setRowCliqueReport(false);
     // set default action (0=off,1=on,2=root)
-    int cliqueAction=2;
+    int cliqueAction=1;
 
     CglMixedIntegerRounding mixedGen;
     // set default action (0=off,1=on,2=root)
-    int mixedAction=2;
+    int mixedAction=1;
 
     CglFlowCover flowGen;
     // set default action (0=off,1=on,2=root)
-    int flowAction=2;
+    int flowAction=1;
 
     CglTwomir twomirGen;
     // set default action (0=off,1=on,2=root)
@@ -716,6 +717,13 @@ int main (int argc, const char *argv[])
 	    model->addCutGenerator(&twomirGen,-1,"TwoMirCuts");
 	  else if (twomirAction==2)
 	    model->addCutGenerator(&twomirGen,-99,"TwoMirCuts");
+          // Say we want timings
+          int numberGenerators = model->numberCutGenerators();
+          int iGenerator;
+          for (iGenerator=0;iGenerator<numberGenerators;iGenerator++) {
+            CbcCutGenerator * generator = model->cutGenerator(iGenerator);
+            generator->setTiming(true);
+          }
 	  model->branchAndBound();
 	  time2 = CoinCpuTime();
 	  totalTime += time2-time1;

@@ -653,7 +653,7 @@ int main (int argc, const char *argv[])
     // set default action (0=off,1=on,2=root)
     int twomirAction=0;
 
-    bool useRounding=false;
+    bool useRounding=true;
    
     int allowImportErrors=0;
     int keepImportNames=1;	// not implemented

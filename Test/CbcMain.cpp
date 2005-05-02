@@ -633,7 +633,7 @@ int main (int argc, const char *argv[])
     oddholeGen.setMinimumViolationPer(0.0002);
     oddholeGen.setMaximumEntries(100);
     // set default action (0=off,1=on,2=root)
-    int oddholeAction=1;
+    int oddholeAction=0;
 
     CglClique cliqueGen;
     cliqueGen.setStarCliqueReport(false);

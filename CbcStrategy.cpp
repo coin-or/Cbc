@@ -97,11 +97,11 @@ CbcStrategyDefault::setupCutGenerators(CbcModel & model)
 
   CglKnapsackCover generator3;
 
-  CglOddHole generator4;
-  generator4.setMinimumViolation(0.005);
-  generator4.setMinimumViolationPer(0.00002);
+  //CglOddHole generator4;
+  //generator4.setMinimumViolation(0.005);
+  //generator4.setMinimumViolationPer(0.00002);
   // try larger limit
-  generator4.setMaximumEntries(200);
+  //generator4.setMaximumEntries(200);
 
   CglClique generator5;
   generator5.setStarCliqueReport(false);
@@ -116,7 +116,7 @@ CbcStrategyDefault::setupCutGenerators(CbcModel & model)
   model.addCutGenerator(&generator1,setting,"Probing");
   model.addCutGenerator(&generator2,setting,"Gomory");
   model.addCutGenerator(&generator3,setting,"Knapsack");
-  model.addCutGenerator(&generator4,setting,"OddHole");
+  //model.addCutGenerator(&generator4,setting,"OddHole");
   model.addCutGenerator(&generator5,setting,"Clique");
   model.addCutGenerator(&flowGen,setting,"FlowCover");
   model.addCutGenerator(&mixedGen,setting,"MixedIntegerRounding");

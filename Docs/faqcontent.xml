@@ -7,12 +7,12 @@
   </question>
   <answer>
   <para>
-  (JF 04/01/05) The <ulink url="http://www.coin-or.org/">COIN-OR</ulink> Branch and Cut code
+  The <ulink url="http://www.coin-or.org/">COIN-OR</ulink> Branch and Cut code
   is designed to be a high quality mixed integer code provided under the terms of the
   <ulink url="http://opensource.org/licenses/cpl.php">Common Public License</ulink>.
   CBC is written in C++, and is primarily intended to be used as a callable
   library (though a rudimentary stand-alone executable exists).
-  The first documented release was .90.0  The current release is version .90.0.
+  The first documented release was .90.0  The current release is version .90.0. (JF 04/01/05) 
   </para>
   </answer>
 </qandaentry>
@@ -24,8 +24,8 @@
   </question>
   <answer>
   <para>
-  (JF 04/01/05) CBC allows the use of any Cgl cuts and the use of heuristics and
-   specialized branching methods.
+  CBC allows the use of any CGL cuts and the use of heuristics and
+   specialized branching methods. (JF 04/01/05) 
   </para>
   </answer>
 </qandaentry>
@@ -37,13 +37,13 @@
   </question>
   <answer>
   <para>
-  (JF 04/01/05) Please see the
+  Please see the
   <ulink url="http://www.coin-or.org/faqs.html">COIN-OR FAQ</ulink>
   for details on how to
   <ulink url="http://www.coin-or.org/faqs.html#ObtainSrcCode">obtain</ulink>
   and
   <ulink url="http://www.coin-or.org/faqs.html#BuildCode">install</ulink>
-  COIN-OR modules.
+  COIN-OR modules. (JF 04/01/05) 
   </para>
   </answer>
 </qandaentry>
@@ -55,8 +55,8 @@
   </question>
   <answer>
   <para>
-  (JF 04/01/05) CBC has been tested on many problems,
-  but more testing and improvement is needed before it can get to version 1.0.
+  CBC has been tested on many problems,
+  but more testing and improvement is needed before it can get to version 1.0. (JF 04/01/05) 
   </para>
   </answer>
 </qandaentry>
@@ -68,10 +68,10 @@
   </question>
   <answer>
   <para>
-  (JF 04/01/05) If you can see this you have the best there is:-)
+  If you can see this you have the best there is:-)
   Also available is a list of
   <ulink url="http://www.coin-or.org/Doxygen/Cbc/">CBC class descriptions</ulink> generated
-  by <ulink url="http://www.doxygen.org">Doxygen</ulink>.
+  by <ulink url="http://www.doxygen.org">Doxygen</ulink>. (JF 04/01/05)
   </para>
   </answer>
 </qandaentry>
@@ -83,8 +83,8 @@
   </question>
   <answer>
   <para>
-   (JF 04/01/05) No.  However its design is much more flexible so advanced users
-   will be able to tailor CBC to their needs.
+   No. However its design is much more flexible so advanced users
+   will be able to tailor CBC to their needs. (JF 04/01/05) 
   </para>
   </answer>
 </qandaentry>
@@ -96,8 +96,8 @@
   </question>
   <answer>
   <para>
-  (JF 04/01/05) It is expected that version 1.0 will be released in time for the 2005
-  <ulink url="http://www.informs.org">INFORMS</ulink>
+  It is expected that version 1.0 will be released in time for the 2005
+  <ulink url="http://www.informs.org">INFORMS</ulink> annual meeting. (JF 04/01/05) 
   </para>
   </answer>
 </qandaentry>
@@ -109,10 +109,37 @@
   </question>
   <answer>
   <para>
-  (JF 04/01/05) People from all around the world  are already helping.  There are
-  probably ten people who are do not always post to discussions but are constantly
+  People from all around the world are already helping.  There are
+  probably ten people who do not always post to the discussion mail list but are constantly
   "improving" the code by demanding performance or bug fixes or enhancements.  And there
-  are others posting questions to discussion groups.
+  are others posting questions to discussion groups. (JF 04/01/05) 
   </para>
+  <para>
+  A good start is to join the CLP 
+  <ulink url="http://www.coin-or.org/mail.html">mailing lists</ulink> where CBC is discussed.  Some
+  other possibilities include:
+  </para>
+  <itemizedlist>
+  <listitem>
+  <para>
+  Comment on the design
+  </para>
+  </listitem>
+  <listitem>
+  <para>
+  Give feedback on the documentation and FAQs.
+  </para>
+  </listitem>
+  <listitem>
+  <para>
+  Break the code, or better yet -- mend it.
+  </para>
+  </listitem>
+ <listitem>
+  <para>
+  Tackle any of the "to-dos" listed in the Doxyen documentation and contribute back to COIN-OR.
+  </para>
+  </listitem>
+    </itemizedlist>
   </answer>
 </qandaentry>

@@ -1,19 +1,17 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
   <chapter id="otherclasses">
   <title>
-  Other Classes and examples
+  Other Classes and Examples
   </title>
   <section id="comparison">
-  <title>CbcCompare - Comparison methods</title>
+  <title>CbcCompare - Comparison Methods</title>
   <para>
-  Although the unexplored nodes of the search are organized in a tree, the
-  order of solution is not predetermined and can be influenced by the user.
-  Cbc provides a abstract base class CbcCompareBase
-  and then instances of each.  It is relatively simple for an advanced user to
-  create new instances and an explanation of an example will be given later.
+  The order in which the nodes of the tree are explored is not predetermined and can be influenced by the user.
+  CBC provides a abstract base class <classname>CbcCompareBase</classname>
+  and several instances which are described in Table Compare Classes Provided.
   </para>
     <table frame="none">
-  <title>Compare Classes provided</title>
+  <title>Compare Classes Provided</title>
     <tgroup cols="2">
     <thead>
     <row>
@@ -28,7 +26,7 @@
     <tbody>
     <row>
       <entry align="left" valign="top">
-      CbcCompareDepth
+      <classname>CbcCompareDepth</classname>
       </entry>
       <entry align="left" valign="top">
       This will always choose the node deepest in tree.  It gives minimum
@@ -37,7 +35,7 @@
     </row>
     <row>
       <entry align="left" valign="top">
-      CbcCompareObjective
+      <classname>CbcCompareObjective</classname>
       </entry>
       <entry align="left" valign="top">
       This will always choose the node with the best objective value.  This may
@@ -48,7 +46,7 @@
     </row>
     <row>
       <entry align="left" valign="top">
-      CbcCompareDefault
+      <classname>CbcCompareDefault</classname>
       </entry>
       <entry align="left" valign="top">
       This is designed to do a mostly depth first search until a solution has
@@ -56,12 +54,12 @@
       If a reasonable number of nodes have been done or a reasonable number of
       solutions found then it will go breadth first (i.e. on objective) unless
       the tree is very large when it will revert to depth first.  Probably
-      CbcCompareUser described below is better.
+      <classname>CbcCompareUser</classname> described below is better.
       </entry>
     </row>
     <row>
       <entry align="left" valign="top">
-      CbcCompareEstimate
+      <classname>CbcCompareEstimate</classname>
       </entry>
       <entry align="left" valign="top">
       If pseudocosts are being used then they can be used to guess a solution.
@@ -72,20 +70,15 @@
   </tgroup>
   </table>
   <para>
-  This describes how to build a new comparison class and the reasoning
-  behind it. This is <filename>CbcCompareUser.hpp</filename> and
-   <filename>CbcCompareUser.cpp</filename>
-  (this code can be found in the CBC Samples directory, see
-  <xref linkend="moreexamples"/>).
-  The key CbcCompare method is test which returns true if node y is better 
-  than node x.  In this method the user can easily use
+  It is relatively simple for an advanced user to create new compare class instances.  This describes how to build a new comparison class and the reasoning behind it. This is <filename>CbcCompareUser.hpp</filename> and <filename>CbcCompareUser.cpp</filename> (this code can be found in the CBC Samples directory, see
+  <xref linkend="moreexamples"/>).  The key <classname>CbcCompare</classname> method is <function>bool test(CbcNode* x, CbcNode* y))</function> which returns true if node <parameter>y</parameter> is better than node <parameter>x</parameter>. In this method the user can easily use the following information available from <classname>CbcModel</classname>.
   <table frame="none">
-  <title>Information available from CbcModel</title>
+  <title>Information Available from <classname>CbcNode</classname></title>
     <tgroup cols="2">
     <tbody>
     <row>
       <entry align="left" valign="top">
-      objectiveValue()
+      <function>double objectiveValue() const</function>
       </entry>
       <entry align="left" valign="top">
       Value of objective at that node.
@@ -93,67 +86,81 @@
     </row>
     <row>
       <entry align="left" valign="top">
-      numberUnsatisfied()
+      <function>int numberUnsatisfied() const</function>
       </entry>
       <entry align="left" valign="top">
       Number of unsatisfied integers (assuming branching 
-      object is an integer - otherwise might be number of unsatsified sets)
+      object is an integer - otherwise might be number of unsatsified sets).
       </entry>
     </row>
     <row>
       <entry align="left" valign="top">
-      depth() 
+      <function>int depth() const</function>
       </entry>
       <entry align="left" valign="top">
-       depth in tree of node
-      </entry>
-    </row>
-    <row>
-      <entry align="left" valign="top">
-      guessedObjectiveValue()
-      </entry>
-      if user was setting this (e.g. if using pseudo costs)
-      <entry align="left" valign="top">
+       Depth of the node in the search tree.
       </entry>
     </row>
     <row>
       <entry align="left" valign="top">
-      way()   
+      <function>double guessedObjectiveValue() const</function>
       </entry>
-      <entry align="left" valign="top">
-       which way would be next from this node
-       (for more advanced use)
+     <entry align="left" valign="top"> 
+     If user was setting this (e.g., if using pseudo costs).
       </entry>
     </row>
     <row>
       <entry align="left" valign="top">
-      variable()
+      <function>int way() const</function>
       </entry>
       <entry align="left" valign="top">
-       which "variable" would be branched on.
-       (for more advanced use)
+       The way which branching would next occur from this node
+       (for more advanced use).
+      </entry>
+    </row>
+    <row>
+      <entry align="left" valign="top">
+      <function>int variable() const</function>
+      </entry>
+      <entry align="left" valign="top">
+       The branching "variable" (associated with the <classname>CbcBranchingObject</classname> -- for more advanced use).
       </entry>
     </row>
     </tbody>
   </tgroup>
   </table>
-  </para>
+</para>
+
 <para>
-  There is no information on the state of the tree.  If you wanted you could 
-  keep a pointer to the CbcModel but the way it is meant to work is that 
-  newSolution is called whenever a solution is found and every1000Nodes is 
-  called every 1000 nodes.  When these are called the user can modify the 
-  behavior of test.  Because the model is passed in the user can also do other things
-  such as changing the maximum time of Branch and Cut once a solution has been found.
-
-So in CbcCompareUser in Samples
-the four items of data are:
-1) The number of solutions found so far
-2) The size of the tree (number of active nodes)
+  There is no information on the state of the tree. If you wanted you could 
+  keep a pointer to the <classname>CbcModel</classname> but the way it is meant to work is that 
+  <function>newSolution()</function> is called whenever a solution is found and <function>every1000Nodes()</function> is called every 1000 nodes.  When these are called the user can modify the 
+  behavior of <function>test()</function>.  Because <classname>CbcNode</classname> has a pointer to the model, the user can also do other things such as changing the maximum time of CBC once a solution has been found (e.g., <function>CbcModel::setMaximumSeconds(double value)</function>). In <filename>CbcCompareUser.cpp</filename> in <filename>COIN/Cbc/Samples</filename> four items of data are used.
+</para>
+<itemizedlist>
+  <listitem>
+  <para>
+1) The number of solutions found so far 
+  </para>
+  </listitem>
+  <listitem>
+  <para>
+2) The size of the tree (defined to be the number of active nodes)
+  </para>
+  </listitem>
+  <listitem>
+  <para>
 3) A weight which is initialized to -1.0
+  </para>
+  </listitem>
+  <listitem>
+  <para>
 4) A saved value of weight (for when we set weight back to -1.0 for special reason)
-
-The full code for test is:
+  </para>
+  </listitem>
+</itemizedlist>
+<para>
+The full code for <function>CbcCompareUser::test()</function> is given below.
 </para>
   <example>
   <title>test</title>
@@ -182,16 +189,12 @@ CbcCompareUser::test (CbcNode * x, CbcNode * y)
   </programlisting>
   </example>
 <para>
-So initially as weight is &lt; 0.0 we are biased towards depth first.  In 
-fact it prefers y is y has fewer unsatisfied variables - if there is a tie 
-then it prefers the one with greater depth in tree.
+Initially, <varname>weight</varname>_ is &lt; 0.0 and we are biased towards depth first.  In 
+fact, the method prefers <parameter>y</parameter> if <parameter>y</parameter> has fewer unsatisfied variables. In the case of a tie, the method prefers the node with the greater depth in tree.
 
-Once we get a solution newSolution is called.  If it was a solution 
-achieved by branching we work out how much it cost per unsatisfied integer 
-variable to go from continuous solution to integer solution.  We then set 
-the weight to aim at a slightly better solution.  From then on test 
-returns true if it looks as if y will lead to a better solution than x.
-This is done by newSolution
+Once we get a solution <function>newSolution()</function> is called.  If it was a solution 
+achieved by branching, <!-- how do can you determine that? --> we work out how much it cost per unsatisfied integer 
+variable to go from continuous solution to integer solution.  We then set the weight to aim at a slightly better solution.  From then on the method <function>test()</function> returns true if it looks as if <parameter>y</parameter> will lead to a better solution than <parameter>x</parameter>. This is done by <function>newSolution()</function>.
 </para>
   <example>
   <title>newSolution</title>
@@ -221,12 +224,7 @@ CbcCompareUser::newSolution(CbcModel * model,
   </example>
 <para>
 
-But as the search goes on this may be modified.
-
-If we have done a lot of nodes or got a lot of solutions then weight is 
-set to 0.0 so we are doing breadth first search.  This can lead to an 
-enormous tree so if the tree size is >10000 then we go may go back to one biased 
-towards depth first.  This is done by every1000Nodes.
+But as the search goes on this <!-- what? is "this"? --> may be modified. If a lot of nodes or got a lot of solutions have been genereated, then <varname>weight_</varname> is set to 0.0 so we are doing breadth-first search.  Breadth-first search can lead to an enormous tree. If the tree size is exceeds 10000, then we may desire to go back to a search biased towards depth first. Changing the behaviour done by the method <function>every1000Nodes</function>.
   </para>
   <example>
   <title>newSolution</title>
@@ -258,26 +256,25 @@ CbcCompareUser::every1000Nodes(CbcModel * model, int numberNodes)
   </example>
   </section>
   <section id="heuristics">
-  <title>CbcHeuristic - heuristic methods</title>
+  <title>CbcHeuristic - Heuristic Methods</title>
   <para>
-  For practical use it is very useful to be able to get a good solution reasonably fast.
+  In practice, it is very useful to get a good solution reasonably fast.
   A good bound will greatly reduce the run time and good solutions can satisfy the user
-  on very large problems where a complete search is impossible.  Heuristics are obviously
-  problem dependant although some have more general use.  I hope to increase the number.
-  At present there is only one in Cbc itself although there are others in the Samples
-  directory.  The heuristic is trying to obtain a solution to the original
-  problem so it need only consider original rows and does not have to use the
+  on very large problems where a complete search is impossible.  Obviously, heuristics are
+  problem dependent although some have more general use.
+  At present there is only one in CBC itself. Hopefully, the number of heuristics will grow.
+  Other hueristics are in the <filename>COIN/Cbc/Samples</filename>
+  directory.  A heuristic tries to obtain a solution to the original
+  problem so it only needs to consider the original rows and does not have to use the
   current bounds.
   One to use a greedy heuristic designed for use in the miplib problem
-  fast0507 will be developed later in this section.
-  Cbc provides a abstract base class CbcHeuristic and a rounding heuristic in Cbc.
+  fast0507 will be developed later in this section. <!-- huh? -->
+  CBC provides an abstract base class <classname>CbcHeuristic</classname> and a rounding heuristic in CBC.
   </para>
   <para>
   This describes how to build a greedy heuristic for a set covering problem. 
    A more general version is in <filename>CbcHeuristicGreedy.hpp</filename> and
-   <filename>CbcHeuristicGreedy.cpp</filename>
-  (this code can be found in the CBC Samples directory, see
-  <xref linkend="moreexamples"/>).
+   <filename>CbcHeuristicGreedy.cpp</filename> which can be found in the <filename>COIN/Cbc/Samples</filename> directory, see <xref linkend="moreexamples"/>.
 
   The heuristic we will code will leave all variables which are at one at this node of the
   tree to that value and will

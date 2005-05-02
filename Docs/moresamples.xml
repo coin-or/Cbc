@@ -11,7 +11,7 @@ Users are encouraged to use them as starting points for their own CBC projects.
 The files can be found in the <filename>&cbcsamplesdir;</filename> directory.
 For the latest information on compiling and running these samples, please see
 the file <filename>&cbcsamplesdir;INSTALL</filename>.  Most of them can be built
-by <programlisting>make DRIVER=name</programlisting> which produces an executable testit.  Below is a list of
+by <programlisting>make DRIVER=name</programlisting> which produces an executable <filename>testit</filename>.  Below is a list of
 some of the most useful sample files with a short description for each file.
 </para>
 <table frame="none">
@@ -34,7 +34,7 @@ some of the most useful sample files with a short description for each file.
 	</entry>
         <entry align="left" valign="top">
 	This is a CBC &quot;Hello, world&quot; program.  It reads a problem
-	from an MPS file, and solves the problem.
+	in MPS file format, and solves the problem.
 	</entry>
       </row>
       <row>
@@ -73,7 +73,7 @@ some of the most useful sample files with a short description for each file.
 	&crewcpp;
 	</entry>
         <entry align="left" valign="top">
-	This sample, shows the use of advanced branching and a use of priorities.
+	This sample shows the use of advanced branching and a use of priorities.
         It uses <function>CbcCompareUser.cpp</function>
         with corresponding <function>*.hpp</function> files.
 	</entry>

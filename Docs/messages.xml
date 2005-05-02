@@ -541,7 +541,7 @@
 
   <table frame="none" align="left">
   <title>
-  CLP Messages Passed At or Above Logging Level 2
+  CBC Messages Passed At or Above Logging Level 2
   </title>
   <tgroup cols="4" colsep="1" rowsep="1">
   <colspec colname="c1"/>

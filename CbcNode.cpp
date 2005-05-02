@@ -1196,6 +1196,7 @@ int CbcNode::chooseBranch (CbcModel *model, CbcNode *lastNode,int numberPassesLe
 	// Doing normal way
 	// Mark hot start
 	solver->markHotStart();
+        clp->setLogLevel(saveLogLevel);
 	clp = NULL;
       }
       delete [] which;

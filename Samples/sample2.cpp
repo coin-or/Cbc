@@ -156,11 +156,12 @@ int main (int argc, const char *argv[])
 
   CglKnapsackCover generator3;
 
-  CglOddHole generator4;
-  generator4.setMinimumViolation(0.005);
-  generator4.setMinimumViolationPer(0.00002);
+  // Decided too slow
+  //CglOddHole generator4;
+  //generator4.setMinimumViolation(0.005);
+  //generator4.setMinimumViolationPer(0.00002);
   // try larger limit
-  generator4.setMaximumEntries(200);
+  //generator4.setMaximumEntries(200);
 
   CglClique generator5;
   generator5.setStarCliqueReport(false);
@@ -174,7 +175,7 @@ int main (int argc, const char *argv[])
   model.addCutGenerator(&generator1,-1,"Probing");
   model.addCutGenerator(&generator2,-1,"Gomory");
   model.addCutGenerator(&generator3,-1,"Knapsack");
-  model.addCutGenerator(&generator4,-1,"OddHole");
+  //model.addCutGenerator(&generator4,-1,"OddHole");
   model.addCutGenerator(&generator5,-1,"Clique");
   model.addCutGenerator(&flowGen,-1,"FlowCover");
   model.addCutGenerator(&mixedGen,-1,"MixedIntegerRounding");

@@ -11,10 +11,10 @@
   The COIN 
     <footnote>
         <para>
-	The complete name is "COIN-OR", but for simplicity (and in keeping with the directory and function names) we will simply use "COIN". 
+	The complete acronym is "COIN-OR", but for simplicity (and in keeping with the directory and function names) we will simply use "COIN". 
 	</para>
       </footnote>
-Branch and Cut solver (CBC) is an open-source mixed-integer program (MIP) solver written  in C++.<!-- some intro here to MIP or to open-soure --> CBC is intendend to be used primarily as a callable library to create customized branch-and-cut solvers. A basic, stand-alone <!-- do link **** link linkend="cbcexe"--> executable version is also available. 
+Branch and Cut solver (CBC) is an open-source mixed-integer program (MIP) solver written  in C++.<!-- some intro here to MIP or to open-soure --> CBC is intendend to be used primarily as a callable library to create customized branch-and-cut solvers. A basic, stand-alone <!-- do link **** link linkend="cbcexe"--> executable version is also available. CBC is an active open-source project led by John Forrest at www.coin-or.org.
  </para>
  </section>
 
@@ -34,7 +34,7 @@ Branch and Cut solver (CBC) is an open-source mixed-integer program (MIP) solver
 
   <para>
 <!-- dependencies -->
-CBC relies on many other parts of the COIN repository. CBC relies the COIN Open Solver Inteface (OSI) to communicate with the LP solver. CBC needs an LP solver and any LP solver with an OSI interface can be used with CBC. The LP solver expected to be used most commonly is COIN's native linear program solver, CLP. For cut generators, CBC relies on the COIN Cut Generation Library (CGL). Any cut generator written to CGL standards can be used with CBC. Some of the cut generators in CGL rely on other parts of COIN, e.g., CGL's Gomory cut generator rely on the factorization functionality of CoinFactorization. This document assumes basic familiarity with OSI and CGL.
+CBC relies other parts of the COIN repository. CBC relies the COIN Open Solver Inteface (OSI) to communicate with the LP solver. CBC needs an LP solver and any LP solver with an OSI interface can be used with CBC. The LP solver expected to be used most commonly is COIN's native linear program solver, CLP. For cut generators, CBC relies on the COIN Cut Generation Library (CGL). Any cut generator written to CGL standards can be used with CBC. Some of the cut generators in CGL rely on other parts of COIN, e.g., CGL's Gomory cut generator rely on the factorization functionality of CoinFactorization. This document assumes basic familiarity with OSI and CGL.
 </para>
 <para>
 Technically speaking, CBC acesses the solver (and sometime the model and data it contains) through an OSISolverInterface. For the sake of simplicity, we will refer to the <classname>OsiSolverInterface</classname> as "the solver" in this document, rather than "the standard appplication programming interface to the solver". We hope any confusion caused by bluring this distinction will be mitigated by the shorter sentences.  
@@ -44,10 +44,10 @@ Technically speaking, CBC acesses the solver (and sometime the model and data it
 
 <section>
 <title>
-Overview
+Branch-and-Cut Overview
 </title>
   <para>
-  Before examining CBC in more detail, we tersely describe the basic branch-and-cut algorithm (which should really be called branch-and-cut-and-bound) and show the major C++ class(es) in CBC related to each step. The CBC classes, labeled (A) through (F), are described in Table 1.1.
+  Before examining CBC in more detail, we tersely describe the basic branch-and-cut algorithm (which should really be called branch-and-cut-and-bound) and show the major C++ class(es) in CBC related to each step. The CBC classes, labeled (A) through (F), are described in <xref linkend="assClasses"/>.
  </para>
 
   <para>
@@ -81,12 +81,12 @@ While (search tree is not empty) {
 }
  </para>
  <para>      
-This is the outline of a branch-and-bound algorithm. If in optimizing the linear programs, we use cuts to tighten the LP relaxations (E)(F), then we have a branch-and-cut algorithm. (Note: if cuts are just used in step 1, the method is called a cut-and-branch algorithm.)
+This is the outline of a branch-and-bound algorithm. If in optimizing the linear programs, we use cuts to tighten the LP relaxations (E)(F), then we have a branch-and-cut algorithm. (Note: if cuts are just used in Step 1, the method is called a cut-and-branch algorithm.)
  
   <!-- rlh: this explaination is for people who already know b&c -->
   </para>
-    <table frame="none">
-  <title>Associated classes</title>
+  <table frame="none" id="assClasses">
+  <title>Associated Classes</title>
     <tgroup cols="3">
     <thead>
     <row>
@@ -195,7 +195,5 @@ This is the outline of a branch-and-bound algorithm. If in optimizing the linear
   <filename>COIN/Cbc/include</filename>, are the ultimate reference.
   </para>
   </section>
-
-
 
   </chapter>

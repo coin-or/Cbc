@@ -1,16 +1,16 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
   <chapter id="otherclasses">
   <title>
-  Other Classes and Examples
+  Selecting a Node in the Search Tree
   </title>
   <section id="comparison">
   <title>CbcCompare - Comparison Methods</title>
   <para>
   The order in which the nodes of the tree are explored is not predetermined and can be influenced by the user.
   CBC provides a abstract base class <classname>CbcCompareBase</classname>
-  and several instances which are described in Table Compare Classes Provided.
+  and several instances which are described in <xref linkend="compareTable"/>.
   </para>
-    <table frame="none">
+    <table frame="none" id="compareTable">
   <title>Compare Classes Provided</title>
     <tgroup cols="2">
     <thead>
@@ -255,6 +255,11 @@ CbcCompareUser::every1000Nodes(CbcModel * model, int numberNodes)
   </programlisting>
   </example>
   </section>
+</chapter>
+<chapter id="hueristicChap">
+  <title>
+  Using Hueristics in CBC
+  </title>
   <section id="heuristics">
   <title>CbcHeuristic - Heuristic Methods</title>
   <para>
@@ -452,6 +457,12 @@ we are feasible.
   </programlisting>
   </example>
   </section>
+</chapter>
+
+<chapter id="branchChapter">
+  <title>
+  Branching
+ </title>
   <section id="branching">
   <title>Branching</title>
   <para>
@@ -554,10 +565,15 @@ important ones.
   </programlisting>
   </example>
   </section>
+</chapter>
+<chapter id="SolverChap">
+<title>
+Advance Use of Solver
+</title>
   <section id="solver">
-  <title>Advanced use of solver</title>
+  <title>Advanced Use of Solver</title>
   <para>
-  Coin Branch and Cut uses a generic OsiSolverInterface and its <function>resolve</function> capability.
+  Coin Branch and Cut uses a generic <classname>OsiSolverInterface</classname> and its <function>resolve</function> capability.
   This does not give much flexibility so advanced users can inherit from the interface
   of choice.  This describes such a solver for a long thin problem e.g. fast0507 again.
   As with all these examples it is not guaranteed that this is the fastest way to solve
@@ -567,7 +583,7 @@ important ones.
   (this code can be found in the CBC Samples directory, see
   <xref linkend="moreexamples"/>).
   <function>initialSolve</function> is called a few times so although we will not gain much
-  this is a simpler place to start.  The example derives from OsiClpSolverInterface and the code
+  this is a simpler place to start.  The example derives from <classname>OsiClpSolverInterface</classname> and the code
   is:
   </para>
   <example>
@@ -591,9 +607,9 @@ important ones.
   </example>
 <para>
 The <function>resolve</function> method is more complicated.  The main pieces of data are
-a counter count_ which is incremented each solve and an int array node_ which stores the last time
+a counter <varname>count_</varname>which is incremented each solve and an int array <varname>node_</varname> which stores the last time
 a variable was active in a solution.  For the first few times normal dual is called and
-node_ array is updated.
+<varname>node_</varname> array is updated.
 </para>
   <example>
   <title>First few solves</title>
@@ -720,7 +736,7 @@ already covered.
   </programlisting>
   </example>
 <para>
-If the variables cover the rows then we know that the problem is feasible (We are not using
+If the variables cover the rows then we know that the problem is feasible (we are not using
 cuts).  If the rows
 were E rows then this might not be the case and we would have to do more work.  When we have solved
 then we see if there are any negative reduced costs and if there are then we have to go to the
@@ -776,7 +792,7 @@ full problem and use primal to clean up.
   </programlisting>
   </example>
 <para>
-We then update node_ array as for the first few solves.  To give some idea of the effect of this
+We then update <varname>node_</varname> array as for the first few solves.  To give some idea of the effect of this
 tactic fast0507 has 63,009 variables and the small problem never has more than 4,000 variables.
 In just over ten percent of solves did we have to resolve and then the average number of iterations
 on full problem was less than 20.

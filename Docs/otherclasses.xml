@@ -1,14 +1,12 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
   <chapter id="otherclasses">
   <title>
-  Selecting a Node in the Search Tree
+  Selecting the Next Node in the Search Tree
   </title>
   <section id="comparison">
   <title>CbcCompare - Comparison Methods</title>
   <para>
-  The order in which the nodes of the tree are explored is not predetermined and can be influenced by the user.
-  CBC provides a abstract base class <classname>CbcCompareBase</classname>
-  and several instances which are described in <xref linkend="compareTable"/>.
+  The order in which the nodes of the search tree are explored can strongly influence the performance of branch-and-cut algorithms. CBC give users complete control over the search order. The search order is controlled via the <classname>CbcCompare...</classname> class. CBC provides an abstract base class, <classname>CbcCompareBase</classname>,  and several commonly used instances which are described in <xref linkend="compareTable"/>.
   </para>
     <table frame="none" id="compareTable">
   <title>Compare Classes Provided</title>
@@ -30,7 +28,7 @@
       </entry>
       <entry align="left" valign="top">
       This will always choose the node deepest in tree.  It gives minimum
-      tree size but may take a long time to find best solution.
+      tree size but may take a long time to find the best solution.
       </entry>
     </row>
     <row>
@@ -49,12 +47,10 @@
       <classname>CbcCompareDefault</classname>
       </entry>
       <entry align="left" valign="top">
-      This is designed to do a mostly depth first search until a solution has
-      been found and then use estimates designed to give a slightly better solution.
-      If a reasonable number of nodes have been done or a reasonable number of
-      solutions found then it will go breadth first (i.e. on objective) unless
-      the tree is very large when it will revert to depth first.  Probably
-      <classname>CbcCompareUser</classname> described below is better.
+      This is designed to do a mostly depth-first search until a solution has
+      been found. It then use estimates that are designed to give a slightly better solution.
+      If a reasonable number of nodes have been explored (or a reasonable number of
+      solutions found), then this class will adopt a breadth-first search (i.e., making a comparison based strictly on objective function values) unless the tree is very large when it will revert to depth-first search. A better description of <classname>CbcCompareUser</classname> is given below.
       </entry>
     </row>
     <row>
@@ -62,17 +58,15 @@
       <classname>CbcCompareEstimate</classname>
       </entry>
       <entry align="left" valign="top">
-      If pseudocosts are being used then they can be used to guess a solution.
-      This just uses guessed solution.
+      When pseudo costs are invoked, they can be used to guess a solution.  This class uses the guessed solution.
       </entry>
     </row>
     </tbody>
   </tgroup>
   </table>
   <para>
-  It is relatively simple for an advanced user to create new compare class instances.  This describes how to build a new comparison class and the reasoning behind it. This is <filename>CbcCompareUser.hpp</filename> and <filename>CbcCompareUser.cpp</filename> (this code can be found in the CBC Samples directory, see
-  <xref linkend="moreexamples"/>).  The key <classname>CbcCompare</classname> method is <function>bool test(CbcNode* x, CbcNode* y))</function> which returns true if node <parameter>y</parameter> is better than node <parameter>x</parameter>. In this method the user can easily use the following information available from <classname>CbcModel</classname>.
-  <table frame="none">
+  It is relatively simple for an experienced user to create new compare class instances. The code in <xref linkend="test"/> describes how to build a new comparison class and the reasoning behind it. The complete source can be found in <filename>CbcCompareUser.hpp</filename> and <filename>CbcCompareUser.cpp</filename>, located in the CBC Samples directory. See <xref linkend="moreexamples"/>. The key method in <classname>CbcCompare</classname> is <function>bool test(CbcNode* x, CbcNode* y))</function> which returns <parameter>true</parameter> if node <parameter>y</parameter> is preferred over node <parameter>x</parameter>. In the <function>test()</function> method, information from <classname>CbcNode</classname> can easily be used. <xref linkend="nodeTable"/> list some commonly used methods to access information at a node. 
+  <table frame="none" id="nodeTable">
   <title>Information Available from <classname>CbcNode</classname></title>
     <tgroup cols="2">
     <tbody>
@@ -81,7 +75,7 @@
       <function>double objectiveValue() const</function>
       </entry>
       <entry align="left" valign="top">
-      Value of objective at that node.
+      Value of objective at the node.
       </entry>
     </row>
     <row>
@@ -90,7 +84,7 @@
       </entry>
       <entry align="left" valign="top">
       Number of unsatisfied integers (assuming branching 
-      object is an integer - otherwise might be number of unsatsified sets).
+      object is an integer - otherwise it might be number of unsatisfied sets).
       </entry>
     </row>
     <row>
@@ -132,10 +126,9 @@
 </para>
 
 <para>
-  There is no information on the state of the tree. If you wanted you could 
-  keep a pointer to the <classname>CbcModel</classname> but the way it is meant to work is that 
-  <function>newSolution()</function> is called whenever a solution is found and <function>every1000Nodes()</function> is called every 1000 nodes.  When these are called the user can modify the 
-  behavior of <function>test()</function>.  Because <classname>CbcNode</classname> has a pointer to the model, the user can also do other things such as changing the maximum time of CBC once a solution has been found (e.g., <function>CbcModel::setMaximumSeconds(double value)</function>). In <filename>CbcCompareUser.cpp</filename> in <filename>COIN/Cbc/Samples</filename> four items of data are used.
+The node desired in the tree is often a function of the how the search is progressing. In the design of CBC, there is no information on the state of the tree. The CBC is designed so that the method 
+  <function>newSolution()</function> is called whenever a solution is found and the method <function>every1000Nodes()</function> is called every 1000 nodes.  When these methods are called, the user has the opportunity to modify the 
+  behavior of <function>test()</function> by adjusting their common variables (e.g., <varname>weight_</varname>). Because <classname>CbcNode</classname> has a pointer to the model, the user can also influence the search through actions such as changing the maximum time CBC is allowed, once a solution has been found (e.g., <function>CbcModel::setMaximumSeconds(double value)</function>). In <filename>CbcCompareUser.cpp</filename> of the <filename>COIN/Cbc/Samples</filename> directory,  four items of data are used.
 </para>
 <itemizedlist>
   <listitem>
@@ -150,20 +143,20 @@
   </listitem>
   <listitem>
   <para>
-3) A weight which is initialized to -1.0
+3) A weight, <varname>weight_</varname>, which is initialized to -1.0
   </para>
   </listitem>
   <listitem>
   <para>
-4) A saved value of weight (for when we set weight back to -1.0 for special reason)
+4) A saved value of weight, <varname>saveWeight_</varname> (for when weight is set back to -1.0 for special reason)
   </para>
   </listitem>
 </itemizedlist>
 <para>
-The full code for <function>CbcCompareUser::test()</function> is given below.
+The full code for the <function>CbcCompareUser::test()</function> method is given in <xref linkend="test"/>.
 </para>
-  <example>
-  <title>test</title>
+  <example id="test">
+  <title><function>CbcCompareUser::test()</function></title>
   <programlisting>
   <![CDATA[  
 // Returns true if y better than x
@@ -179,7 +172,9 @@ CbcCompareUser::test (CbcNode * x, CbcNode * y)
     else
       return x->depth() < y->depth();
   } else {
-    // after solution
+    // after solution. 
+    // note: if weight_=0, comparison is based 
+    //       solely on objective value
     double weight = CoinMax(weight_,0.0);
     return x->objectiveValue()+ weight*x->numberUnsatisfied() > 
       y->objectiveValue() + weight*y->numberUnsatisfied();
@@ -189,27 +184,24 @@ CbcCompareUser::test (CbcNode * x, CbcNode * y)
   </programlisting>
   </example>
 <para>
-Initially, <varname>weight</varname>_ is &lt; 0.0 and we are biased towards depth first.  In 
-fact, the method prefers <parameter>y</parameter> if <parameter>y</parameter> has fewer unsatisfied variables. In the case of a tie, the method prefers the node with the greater depth in tree.
-
-Once we get a solution <function>newSolution()</function> is called.  If it was a solution 
-achieved by branching, <!-- how do can you determine that? --> we work out how much it cost per unsatisfied integer 
-variable to go from continuous solution to integer solution.  We then set the weight to aim at a slightly better solution.  From then on the method <function>test()</function> returns true if it looks as if <parameter>y</parameter> will lead to a better solution than <parameter>x</parameter>. This is done by <function>newSolution()</function>.
+Initially, <varname>weight</varname>_ is -1.0 and the search is biased towards depth first.  In 
+fact, <function>test()</function> prefers <parameter>y</parameter> if <parameter>y</parameter> has fewer unsatisfied variables. In the case of a tie, <function>test()</function> prefers the node with the greater depth in tree. Once a solution is found, <function>newSolution()</function> is called. The method <function>newSolution()</function> interacts with <function>test()</function> by means of the variable <varname>weight_</varname>. If the solution was achieved by branching, <!-- how do can you determine that? --> a calculation is made to determine the cost per unsatisfied integer variable to go from the continuous solution to an integer solution.  The variable <varname>weight_</varname> is then set to aim at a slightly better solution.  From then on, <function>test()</function> returns <parameter>true</parameter> if it seems that <parameter>y</parameter> will lead to a better solution than <parameter>x</parameter>. This source for <function>newSolution()</function> in given in <xref linkend="newSolution"/>.
 </para>
-  <example>
-  <title>newSolution</title>
+  <example id="newSolution">
+  <title><function>CbcCompareUser::newSolution()</function></title>
   <programlisting>
   <![CDATA[  
-// This allows method to change behavior as it is called
-// after each solution
+// This allows the test() method to change behavior by resetting weight_.
+// It is called after each new solution is found.
 void 
 CbcCompareUser::newSolution(CbcModel * model,
 			       double objectiveAtContinuous,
 			       int numberInfeasibilitiesAtContinuous) 
 {
   if (model->getSolutionCount()==model->getNumberHeuristicSolutions())
-    return; // solution was got by rounding so we ignore
-  // set to get close to this solution
+    return; // solution was found by rounding so ignore it.
+
+  // set weight_ to get close to this solution
   double costPerInteger = 
     (model->getObjValue()-objectiveAtContinuous)/
     ((double) numberInfeasibilitiesAtContinuous);
@@ -217,25 +209,26 @@ CbcCompareUser::newSolution(CbcModel * model,
   saveWeight_=weight_;
   numberSolutions_++;
   if (numberSolutions_>5)
-    weight_ =0.0; // this searches on objective
+    weight_ =0.0; // comparison in test() will be 
+                  // based strictly on objective value.
 }
   ]]>   
   </programlisting>
   </example>
 <para>
 
-But as the search goes on this <!-- what? is "this"? --> may be modified. If a lot of nodes or got a lot of solutions have been genereated, then <varname>weight_</varname> is set to 0.0 so we are doing breadth-first search.  Breadth-first search can lead to an enormous tree. If the tree size is exceeds 10000, then we may desire to go back to a search biased towards depth first. Changing the behaviour done by the method <function>every1000Nodes</function>.
+As the search progresses, the comparison can be <!-- what? is "this"? -->modified. If many nodes (or many solutions) have been genereated, then <varname>weight_</varname> is set to 0.0 leading to a breadth-first search.  Breadth-first search can lead to an enormous tree. If the tree size is exceeds 10000, it may be desirable to return to a search biased towards depth first. Changing the behavior in this manner is done by the method <function>every1000Nodes</function> shown in <xref linkend="everyK"/>.
   </para>
-  <example>
-  <title>newSolution</title>
+  <example id="everyK">
+  <title><function>CbcCompareUser::every1000Nodes()</function></title>
   <programlisting>
   <![CDATA[  
-// This allows method to change behavior 
+// This allows the test() method to change behavior every so often
 bool 
 CbcCompareUser::every1000Nodes(CbcModel * model, int numberNodes)
 {
   if (numberNodes>10000)
-    weight_ =0.0; // this searches on objective
+    weight_ =0.0; // compare nodes based on objective value
   else if (numberNodes==1000&&weight_==-2.0)
     weight_=-1.0; // Go to depth first
   // get size of tree
@@ -258,48 +251,35 @@ CbcCompareUser::every1000Nodes(CbcModel * model, int numberNodes)
 </chapter>
 <chapter id="hueristicChap">
   <title>
-  Using Hueristics in CBC
+  Getting Good Bounds in CBC
   </title>
   <section id="heuristics">
   <title>CbcHeuristic - Heuristic Methods</title>
   <para>
-  In practice, it is very useful to get a good solution reasonably fast.
-  A good bound will greatly reduce the run time and good solutions can satisfy the user
+  In practice, it is very useful to get a good solution reasonably fast. Any MIP-feasible solution produces an upper bound, and a good bound will greatly reduce the run time. Good solutions can satisfy the user
   on very large problems where a complete search is impossible.  Obviously, heuristics are
-  problem dependent although some have more general use.
-  At present there is only one in CBC itself. Hopefully, the number of heuristics will grow.
-  Other hueristics are in the <filename>COIN/Cbc/Samples</filename>
+  problem dependent, although some do have more general use.
+  At present there is only one heuristic in CBC itself, <classname>CbcRounding</classname>. Hopefully, the number will grow. Other heuristics are in the <filename>COIN/Cbc/Samples</filename>
   directory.  A heuristic tries to obtain a solution to the original
   problem so it only needs to consider the original rows and does not have to use the
-  current bounds.
-  One to use a greedy heuristic designed for use in the miplib problem
-  fast0507 will be developed later in this section. <!-- huh? -->
-  CBC provides an abstract base class <classname>CbcHeuristic</classname> and a rounding heuristic in CBC.
+  current bounds. CBC provides an abstract base class <classname>CbcHeuristic</classname> and a rounding heuristic in CBC. <!-- rlh: we need an example of using an existing heuristic -->
   </para>
   <para>
-  This describes how to build a greedy heuristic for a set covering problem. 
-   A more general version is in <filename>CbcHeuristicGreedy.hpp</filename> and
-   <filename>CbcHeuristicGreedy.cpp</filename> which can be found in the <filename>COIN/Cbc/Samples</filename> directory, see <xref linkend="moreexamples"/>.
-
-  The heuristic we will code will leave all variables which are at one at this node of the
-  tree to that value and will
-  initially set all others to zero.  We then sort all variables in order of their cost
-  divided by the number of entries in rows which are not yet covered.  We may randomize that
-  value a bit so that ties will be broken in different ways on different runs of the heuristic.
-  We then choose the best one and set it to one and repeat the exercise. Because this is
-  a set covering problem &ge; we are guaranteed to find a solution (not necessarily a
-  better one though).  We could
-  improve the speed by just redoing those affected but in this text we will keep it simple.
-  Also if all elements are 1.0 then we could do faster.
-  The key CbcHeuristic method is <function>int&nbsp;solution(double &amp; solutionValue,
-                                              double&nbsp;*&nbsp;betterSolution)</function>
-  which returns 0 if no solution found and 1 if found when it fills in the objective value
-  and primal solution.  The actual code in <filename>CbcHeuristicGreedy.cpp</filename> is
-  a little more complicated but this will work and gives the basic idea.  For instance
-  the code here assumes all variables are integer.
-  The important bit of data is a copy of the matrix (stored by column)
-  before any cuts have been made.  The data used are bounds, objective and the matrix
-  plus two work arrays. 
+  This chapter describes how to build a greedy heuristic for a set covering problem, e.g., the miplib problem fast0507. A more general (and efficient) version of the heuristic is in <filename>CbcHeuristicGreedy.hpp</filename> and <filename>CbcHeuristicGreedy.cpp</filename> located in the <filename>COIN/Cbc/Samples</filename> directory, see <xref linkend="moreexamples"/>.
+</para>
+<para>
+  The greedy heuristic will leave all variables taking value one at this node of the
+  tree at value one, and will initially set all other variable to value zero.  
+  All variables are then sorted in order of their cost
+  divided by the number of entries in rows which are not yet covered. (We may randomize that
+  value a bit so that ties will be broken in different ways on different runs of the heuristic.)
+  The best one is choosen, and set to one. The process is repeated. Because this is
+  a set covering problem (i.e., all constraints are &ge;), the heuristic is guaranteed to find a solution (but not necessarily an improved solution). The speed of the heuristic could be improved by just redoing those affected, but for illustrative purposes we will keep it simple.(The speed could also be improved if all elements are 1.0). 
+</para>
+<para>
+  The key <classname>CbcHeuristic</classname> method is <function>int&nbsp;solution(double &amp; solutionValue,
+                                              double&nbsp;*&nbsp;betterSolution)</function>.
+  The <function>solution()</function> method returns 0 if no solution found, and returns 1 if a solution is found, in which case it fills in the objective value and primal solution.  The code in <filename>CbcHeuristicGreedy.cpp</filename> is a little more complicated than this following example. For instance, the code here assumes all variables are integer.  The important bit of data is a copy of the matrix (stored by column) before any cuts have been made.  The data used are bounds, objective and the matrix plus two work arrays. 
   </para>
   <example>
   <title>Data</title>
@@ -330,10 +310,10 @@ CbcCompareUser::every1000Nodes(CbcModel * model, int numberNodes)
   </programlisting>
   </example>
 <para>
-Then we initialize newSolution as rounded down solution.
+The <varname>newSolution</varname> is then initialized to the rounded down solution.
 </para>
   <example>
-  <title>initialize newSolution</title>
+  <title>Initialize <varname>newSolution</varname></title>
   <programlisting>
   <![CDATA[  
   for (iColumn=0;iColumn<numberColumns;iColumn++) {
@@ -360,13 +340,12 @@ Then we initialize newSolution as rounded down solution.
   </programlisting>
   </example>
 <para>
-Now some row activities will be below their lower bound so
-we then find the variable which is cheapest in reducing the sum of
-infeasibilities.  We then repeat.  This is a finite process and could be coded
-to be faster but this is simplest.
+<!-- rlh: where is "direction" from? -->
+
+At this point some row activities may be below their lower bound. To correct this infeasibility, the variable which is cheapest in reducing the sum of infeasibilities is found and updated, and the process repeats.  This is a finite process. (Theimplementation could be faster, but is kept simple for illustrative purposes.)
   </para>
   <example>
-  <title>Create feasible new solution</title>
+  <title>Create Feasible <varname>newSolution</varname> from Initial <varname>newSolution</varname></title>
   <programlisting>
   <![CDATA[  
   while (true) {
@@ -415,15 +394,14 @@ to be faster but this is simplest.
   </programlisting>
   </example>
 <para>
-We have finished so now we need to see if solution is better and doublecheck
-we are feasible.
+A solution value of <varname>newSolution</varname> is compared to the best solution value. If <varname>newSolution</varname> is an improvement, its feasibility is validated.
   </para>
   <example>
-  <title>Check good solution</title>
+  <title>Check Solution Quality of <varname>newSolution</varname></title>
   <programlisting>
   <![CDATA[  
   returnCode=0; // 0 means no good solution
-  if (newSolutionValue<solutionValue) {
+  if (newSolutionValue<solutionValue) { // minimization
     // check feasible
     memset(rowActivity,0,numberRows*sizeof(double));
     for (iColumn=0;iColumn<numberColumns;iColumn++) {
@@ -464,22 +442,24 @@ we are feasible.
   Branching
  </title>
   <section id="branching">
-  <title>Branching</title>
+  <title>Pseudo Cost Branching</title>
   <para>
-If the user declares variables as integer but does no more, then Cbc will treat them
-as simple integer variables.  In many cases the user would like to do some more fine tuning.  This shows how to create integer variables with pseudo costs.  When pseudo costs are given then 
-it is assumed that if a variable is at 1.3 then the cost of branching that variable down will be 0.3 times the down pseudo cost and the cost of branching up would be 0.7 times the up pseudo cost.  This can be used both for branching and for choosing a node.
-   The full code is in <filename>longthin.cpp</filename>
-  (this code can be found in the CBC Samples directory, see
-  <xref linkend="moreexamples"/>).  
+<!-- rlh: need a description of "objects" -->
+If the user declares variables as integer but does no more, then CBC will treat them
+as simple integer variables.  In many cases the user would like to do some more fine tuning. This section shows how to create integer variables with pseudo costs.  When pseudo costs are given then 
+it is assumed that if a variable is at 1.3 then the cost of branching that variable down will be 0.3 times the down pseudo cost and the cost of branching up would be 0.7 times the up pseudo cost.  Pseudo costs can be used both for branching and for choosing a node.
+   The full code is in <filename>longthin.cpp</filename> located in the CBC Samples directory, see
+  <xref linkend="moreexamples"/>.
+</para>
+<para>  
   The idea is simple for set covering problems.
-  Branching up gets us much closer to an integer solution so we want
-  to encourage up - so we will branch up if variable value > 0.333333.
+  Branching up gets us much closer to an integer solution so we will encourage that direction by branch up if variable value > 0.333333.
   The expected cost of going up obviously depends on the cost of the
-  variable so we just choose pseudo costs to reflect that.
+  variable. The pseudo costs are choosen to reflect that fact.
+<!-- rlh: what's the difference between simple var objects and pseudo cost objects? explain. -->
   </para>
-  <example>
-  <title>Pseudo costs</title>
+  <example id="pseudo">
+  <title><classname>CbcSimpleIntegerPseudoCosts</classname></title>
   <programlisting>
   <![CDATA[  
   int iColumn;
@@ -508,32 +488,37 @@ it is assumed that if a variable is at 1.3 then the cost of branching that varia
   </programlisting>
   </example>
 <para>
-The actual coding in the example also tries to give more importance to variables with more 
+The code in <xref linkend="pseudo"/> also tries to give more importance to variables with more 
 coefficients.  Whether this sort of thing is worthwhile should be the subject of experimentation.
-Here is another example which is for crew scheduling problems.  In this case the problem has
-few rows but many thousands of variables.  Branching a variable to 1 is very powerful as it
-fixes many other variables to zero, but branching to zero is very weak as thousands of variables
-can increase from zero.  But in crew scheduling each constraint is a flight leg e.g. JFK to DFW.
-From DFW (Dallas) there may be several flights the crew could take next - suppose one flight is 
-the 9:30 flight from DFW to LAX (Los Angeles).  Then a binary branch is that the crew arriving 
-at DFW either take the 9:30 flight to LAX or they don't.  This follow-on branching does not
-fix individual variables but instead divides all the variables with entries in the JFK-DFW 
+<!-- needs more explaination, e.g., why do you have to delete objects? -->
+<!-- what does a pseudo cost object do for you? and how does it do it? -->
+</para>
+</section>
+  <section id="followOn">
+  <title>Follow-On Branching</title>
+  <para>
+In crew scheduling, the problems are long and thin. A problem may have a few rows but many thousands of variables.  Branching a variable to 1 is very powerful as it fixes many other variables to zero, but branching to zero is very weak as thousands of variables can increase from zero.  In crew scheduling problems, each constraint is a flight leg, e.g., JFK airport to DFW airport.
+From DFW there may be several flights the crew could take next - suppose one flight is 
+the 9:30 flight from DFW to LAX airport.  A binary branch is that the crew arriving 
+at DFW either take the 9:30 flight to LAX or they don't.  This "follow-on" branching does not
+fix individual variables. Instead this branching divides all the variables with entries in the JFK-DFW 
 constraint into two groups - those with entries in the DFW-LAX constraint and those without
 entries.
-   The full code is in <filename>crew.cpp</filename>
-  (this code can be found in the CBC Samples directory, see
-  <xref linkend="moreexamples"/>).  In this case we may as well leave the simple integer
-variables and we may have to if there are other sorts of constraints.  But we want to 
-branch on the follow-on rules first so we use priorities to say that those are the
-important ones.
+</para>
+<para>
+   The full sample code for follow-on brancing is in <filename>crew.cpp</filename>
+  located in the CBC Samples directory, see
+  <xref linkend="moreexamples"/>).  In this case, the simple integer
+variables are left which may be necessary if other sorts of constraints exist. Follow-on branching rules are to be considered first, so the priorities are set to indicated the follow-on rules take precedence. Priority 1 is the highest priority.
+<!-- rlh:need to explain how *priorities* work, and where they are used -->
 </para>
   <example>
-  <title>Follow-on branching</title>
+  <title><classname>CbcFollowOn</classname></title>
   <programlisting>
   <![CDATA[  
   int iColumn;
   int numberColumns = solver3->getNumCols();
-  /* We are going to add a single follow on object but we
+  /* We are going to add a single follow-on object but we
      want to give low priority to existing integers 
      As the default priority is 1000 we don't actually need to give
      integer priorities but it is here to show how.
@@ -546,12 +531,13 @@ important ones.
       priority[numberIntegers++]= 100; // low priority
     }
   }
-  /* Second parameter is true if we are adding objects,
-     false if integers.  So this does integers */
+  /* Second parameter is set to true for objects,
+     and false for integers. This indicates integers */
   model.passInPriorities(priority,false);
   delete [] priority;
-  /* Add in objects before we can give priority.
-     In this case just one - but this shows general method
+  /* Add in objects before we can give them a priority.
+     In this case just one object
+     - but it shows the general method
   */
   CbcObject ** objects = new CbcObject * [1];
   objects[0]=new CbcFollowOn(&model);
@@ -564,30 +550,26 @@ important ones.
   ]]>   
   </programlisting>
   </example>
+<!-- rlh: need to explain the CbcFollowOn object -->
   </section>
 </chapter>
 <chapter id="SolverChap">
 <title>
-Advance Use of Solver
+  Advance Solver Uses
 </title>
   <section id="solver">
-  <title>Advanced Use of Solver</title>
+  <title>Creating a Solver via Inheritance</title>
   <para>
-  Coin Branch and Cut uses a generic <classname>OsiSolverInterface</classname> and its <function>resolve</function> capability.
-  This does not give much flexibility so advanced users can inherit from the interface
-  of choice.  This describes such a solver for a long thin problem e.g. fast0507 again.
-  As with all these examples it is not guaranteed that this is the fastest way to solve
-  any of these problems - they are to illustrate techniques.
-   The full code is in <filename>CbcSolver2.hpp</filename> and
-   <filename>CbcSolver2.cpp</filename>
-  (this code can be found in the CBC Samples directory, see
-  <xref linkend="moreexamples"/>).
-  <function>initialSolve</function> is called a few times so although we will not gain much
-  this is a simpler place to start.  The example derives from <classname>OsiClpSolverInterface</classname> and the code
-  is:
+  CBC uses a generic <classname>OsiSolverInterface</classname> and its <function>resolve</function> capability.
+  This does not give much flexibility so advanced users can inherit from their interface
+  of choice.  This section illustrates how to implement such a solver for a long thin problem, e.g., fast0507 again.  As with the other examples in the Guide, the sample code is not guaranteed to be the fastest way to solve the problem. The main purpose of the example is to illustrate techniques. The full source is in <filename>CbcSolver2.hpp</filename> and <filename>CbcSolver2.cpp</filename> located in the CBC Samples directory, see
+  <xref linkend="moreexamples"/>. 
+</para>
+<para>
+The method <function>initialSolve</function> is called a few times in CBC, and provides a convenient starting point. The <varname>modelPtr_</varname> derives from <classname>OsiClpSolverInterface</classname>.
   </para>
-  <example>
-  <title>initialSolve</title>
+  <example id="initialSolve">
+  <title><function>initialSolve()</function></title>
   <programlisting>
   <![CDATA[  
   // modelPtr_ is of type ClpSimplex *
@@ -605,14 +587,14 @@ Advance Use of Solver
   ]]>   
   </programlisting>
   </example>
+<!-- rlh: need a verbal description to go with the intialSolve() code -->
 <para>
-The <function>resolve</function> method is more complicated.  The main pieces of data are
-a counter <varname>count_</varname>which is incremented each solve and an int array <varname>node_</varname> which stores the last time
-a variable was active in a solution.  For the first few times normal dual is called and
+The <function>resolve()</function> method is more complicated than <function>initialSolve()</function>.  The main pieces of data are a counter <varname>count_</varname> which is incremented each solve and an integer array <varname>node_</varname> which stores the last time
+a variable was active in a solution.  For the first few times, the normal Dual Simplex is called and
 <varname>node_</varname> array is updated.
 </para>
   <example>
-  <title>First few solves</title>
+  <title>First Few Solves</title>
   <programlisting>
   <![CDATA[  
   if (count_<10) {
@@ -633,13 +615,13 @@ a variable was active in a solution.  For the first few times normal dual is cal
   ]]>   
   </programlisting>
   </example>
+<!-- rlh: need more explanation of what's being illustrated in the code -->
 <para>
-After the first few solves we only use those which took part in a solution in the last so many
-solves.  As fast0507 is a set covering problem we can also take out any rows which are
-already covered.
+After the first few solves, only those variables which took part in a solution in the last so many
+solves are used.  As fast0507 is a set covering problem, any rows which are already covered can be taken out.
   </para>
   <example>
-  <title>Create small problem</title>
+  <title>Create Small Problem</title>
   <programlisting>
   <![CDATA[  
     int * whichRow = new int[numberRows]; // Array to say which rows used
@@ -736,14 +718,11 @@ already covered.
   </programlisting>
   </example>
 <para>
-If the variables cover the rows then we know that the problem is feasible (we are not using
-cuts).  If the rows
-were E rows then this might not be the case and we would have to do more work.  When we have solved
-then we see if there are any negative reduced costs and if there are then we have to go to the
-full problem and use primal to clean up.
+If the variables cover the rows, then the problem is feasible (no cuts are being used). If the rows
+were equality constraints, then this might not be the case. More work would be needed.  After the solution, the reduct costs are checked. If any reduced costs are negative, the code goes back to the full problem and cleans up with Primal Simplex.
   </para>
   <example>
-  <title>Check optimal solution</title>
+  <title>Check Optimal Solution</title>
   <programlisting>
   <![CDATA[  
     temp->setDualObjectiveLimit(1.0e50); // Switch off dual cutoff as problem is restricted
@@ -782,7 +761,7 @@ full problem and use primal to clean up.
           &&upper[i]>lower[i]&&dj[i]<-1.0e-5)
         nBad++;
     }
-    // If necessary claen up with primal (and save some statistics)
+    // If necessary clean up with primal (and save some statistics)
     if (nBad) {
       timesBad_++;
       modelPtr_->primal(1);
@@ -792,20 +771,22 @@ full problem and use primal to clean up.
   </programlisting>
   </example>
 <para>
-We then update <varname>node_</varname> array as for the first few solves.  To give some idea of the effect of this
-tactic fast0507 has 63,009 variables and the small problem never has more than 4,000 variables.
-In just over ten percent of solves did we have to resolve and then the average number of iterations
+The array <varname>node_</varname> is updated, as for the first few solves.  To give some idea of the effect of this tactic, the problem fast0507 has 63,009 variables but the small problem never has more than 4,000 variables. In only about ten percent of solves was it necessary to resolve, and then the average number of iterations
 on full problem was less than 20.
-To give another example - again only for illustrative purposes it is possible to do quadratic
-mip.  In this case we make <function>resolve</function> the same as 
+</para>
+</section>
+ <section id="quadratic">
+  <title>Quadratic MIP</title>
+<para>
+To give another example - again only for illustrative purposes -- it is possible to do quadratic
+MIP with CBC.  In this case, we make <function>resolve</function> the same as 
 <function>initialSolve</function>.
    The full code is in <filename>ClpQuadInterface.hpp</filename> and
-   <filename>ClpQuadInterface.cpp</filename>
-  (this code can be found in the CBC Samples directory, see
+   <filename>ClpQuadInterface.cpp</filename> located in the CBC Samples directory, see
   <xref linkend="moreexamples"/>).
   </para>
   <example>
-  <title>Solve a quadratic mip</title>
+  <title>Solving a Quadratic MIP</title>
   <programlisting>
   <![CDATA[  
   // save cutoff

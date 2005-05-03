@@ -8,9 +8,8 @@
   Overview
   </title>
   <para>
-  The class that controls CBC is <classname>CbcModel</classname>.  This class is where most
-  of the parameter setting is done. The absolute minimum number of actions for <classname>CbcModel</classname> is two:
-
+  The main class in CBC is <classname>CbcModel</classname>.  The <classname>CbcModel</classname> class is where most
+  of the parameter setting is done. The absolute minimum number of actions taken with <classname>CbcModel</classname> is two,
     <itemizedlist>
     <listitem>
     <simpara>
@@ -28,12 +27,12 @@
 
   <section id="firstexample">
   <title>
-  First Example
+  Simple Branch-and-Bound Example
   </title>
   <para>
-  Below is our first CBC sample program.  This program is short enough to present in full.
-  This code can be found in the CBC Samples directory, <filename>COIN/Cbc/Samples</filename>.
-  Most of the remaining examples in this Guide will take the form of small code fragments.
+  The first sample program shows how to perform simple branch-and-bound with CBC.  This program is short enough to present in full.  Most of the remaining examples will take the form of small code fragments.
+  The complete code for all the examples in this Guide can be found in the CBC Samples directory, <filename>COIN/Cbc/Samples</filename>.
+
   </para>
   <example id="minimum.cpp">
   <title>minimum.cpp</title>
@@ -56,13 +55,13 @@ int main (int argc, const char *argv[])
   int numMpsReadErrors = solver1.readMps("../../Mps/Sample/p0033.mps","");
   assert(numMpsReadErrors==0);
 
-  // Pass the solver (with the problem data) to CbcModel 
+  // Pass the solver with the problem to be solved to CbcModel 
   CbcModel model(solver1);
 
   // Do complete search
   model.branchAndBound();
 
-  /* Print the solution.  CbcModel clones solver so we
+  /* Print the solution.  CbcModel clones the solver so we
      need to get current copy from the CbcModel */
   int numberColumns = model.solver()->getNumCols();
     
@@ -78,14 +77,11 @@ int main (int argc, const char *argv[])
   ]]>   
   </programlisting>
   </example>
-  <!-- Clone comment  needs more explaination. What info is safe? When do you need to do a refresh?? -->
+  <!-- Clone comment  needs more explanation. What info is safe? When do you need to do a refresh?? -->
   <!-- printf vs cout  -->
 
   <para>
-  The sample program <xref linkend="minimum.cpp"/> creates a <classname>OsiClpSolverInterface</classname> solver interface, and reads an MPS file. If there are no errors, the program passes the solver to <classname>CbcModel</classname>
-  which solves it using the branch-and-bound algorithm.  The part of the program which solves the problem
-  is very small (one line!) but before that one line, the LP solver had to be created and populated with data and
-  after that one line the results were printed out. 
+  The program in <xref linkend="minimum.cpp"/> creates a <classname>OsiClpSolverInterface</classname> solver interface (i.e., <varname>solver1</varname>), and reads an MPS file. If there are no errors, the program passes the problem to <classname>CbcModel</classname> which solves the problem using the branch-and-bound algorithm. The part of the program which solves the problem is very small (one line!) but before that one line, the LP solver (i.e., <varname>solver1</varname>) had to be created and populated with the problem. After that one line, the results were printed out. 
  </para>
 </section>
 
@@ -94,43 +90,43 @@ int main (int argc, const char *argv[])
 The Relationship Between OSI and CBC
 </title>
 <para> 
- Example <xref linkend="minimum.cpp"/> illustrates the dependency of CBC on  
-  the <classname>OsiSolverInterface</classname> class. The constructor of <classname>CbcModel</classname> takes a pointer to an <classname>OsiSolverInterface</classname> (i.e., a solver). The <classname>CbcModel</classname> clones the solver, and uses its own instance of the solver. The <classname>CbcModel</classname>'s solver and the original solver (e.g., <varname>sovler1</varname>) are not in sync unless the user synchronizes them. The user can always access the <classname>CbcModel</classname>'s solver through the <function>model()</function> method.  To synchronize the orignal solver, explicitly refreshing it, e.g.,  
+The program in <xref linkend="minimum.cpp"/> illustrates the dependency of CBC on  
+  the <classname>OsiSolverInterface</classname> class. The constructor of <classname>CbcModel</classname> takes a pointer to an <classname>OsiSolverInterface</classname> (i.e., a solver). The <classname>CbcModel</classname> clones the solver, and uses its own instance of the solver. The <classname>CbcModel</classname>'s solver and the original solver (e.g., <varname>solver1</varname>) are not in sync unless the user synchronizes them. The user can always access the <classname>CbcModel</classname>'s solver through the <function>model()</function> method.  To synchronize the two solvers, explicitly refreshing the original, e.g.,  
  <programlisting>
   solver1 = model.solver();
 </programlisting>
+<classname>CbcModel</classname>'s method <function>solve()</function> returns a pointer to CBC's cloned solver.
+</para>
 
-For convenience, many of the OSI method's to access problem data have identical method names in  <classname>CbcModel</classname>. (It's just more convenient to type <function>model.getNumCols()</function> rather than <function>model.solver()->getNumCols()</function>). While the method names may be identical, sometimes the values they return are not, e.g., <function>getColSolution()</function>. <classname>CbcModel</classname> refreshes its solver at certain logical points. For instance, the OSI method<function>getColSolution()</function> will contain the best solution so far, while the <classname>CbcModel</classname> method may not. In this case, it is safer to use <function>CbcModel::bestSolution()</function>. 
+<para>
+For convenience, many of the OSI methods to access problem data have identical method names in  <classname>CbcModel</classname>. (It's just more convenient to type <function>model.getNumCols()</function> rather than <function>model.solver()->getNumCols()</function>). The <classname>CbcModel</classname> refreshes its solver at certain logical points during the algorithm. At these points, the information from the <classname>CbcModel</classname> <varname>model</varname> will match the information from the <function>model.solver()</function>. Elsewhere, the information may vary. For instance, the OSI method <function>getColSolution()</function> will contain the best solution so far, while the <classname>CbcModel</classname> method may not. In this case, it is safer to use <function>CbcModel::bestSolution()</function>. 
 </para>
 <para>
-All the OSI methods used in <filename>minimum.cpp</filename> have equivalent methods in <classname>CbcModel</classname>. But there are some OSI methods which are not present in CBC. For example, if  the program produced a lot of undesired output, one might add the line 
+While all the OSI methods used in <filename>minimum.cpp</filename> have equivalent methods in <classname>CbcModel</classname>, there are some OSI methods which do not. For example, if  the program produced a lot of undesired output, one might add the line 
 </para>
 <programlisting>
   model.solver()->setHintParam(OsiDoReducePrint,true,OsiHintTry); 
 </programlisting>
 <para> 
   <!-- model.solver() returns an OSISolverInterface? -->
-  to reduce the output. There is no <function>model.setHintParam(OsiDoReducePrint,true,OsiHintTry)</function>.
+  to reduce the output. There is no <function>setHintParam()</function> method in <classname>CbcModel</classname>.
   </para>
   </section>
 
   <section id="gettingsolution">
   <title>
-  Getting Solution Information Using <classname>CbcModel</classname> Methods
+  Getting Solution Information
   </title>
   <para>
-  The OSI way to check for optimality is to call <function>model.isProvenOptimal()</function>.  Also
+  Optimality can be checked through a call to <function>model.isProvenOptimal()</function>.  Also
   available are <function>isProvenInfeasible()</function>,
   <function>isSolutionLimitReached()</function>,
   <function>isNodeLimitReached()</function> or the feared
-  <function>isAbandoned()</function>. You can also pick up
-  <function>int&nbsp;status()</function> which returns 0 if finished,
-   1 if stopped by user and 2 if difficulties. (Note: a status of 0 is returned, even if the model is proved
-   infeasible.)
+  <function>isAbandoned()</function>. There is also
+  <function>int&nbsp;status()</function> which returns 0 if finished (which includes the case when the algorithm is finished because it has been proved infeasible), 1 if stopped by user, and 2 if difficulties arose.
   </para>
   <para>
-  Similarly, solution values can be accessed via OSI methods.  The OSI methods pick up
-  the current solution in the <classname>CBCModel</classname>.  The current solution will match the best solution found so far if called after <function>branchAndBound()</function> and if a solution was found. 
+  In addition to these <classname>CbcModel</classname> methods, solution values can be accessed via OSI methods.  The OSI methods pick up the current solution in the <classname>CBCModel</classname>.  The current solution will match the best solution found so far if called after <function>branchAndBound()</function> and a solution was found. 
   </para>
   <table frame="none">
   <title>
@@ -159,7 +155,7 @@ All the OSI methods used in <filename>minimum.cpp</filename> have equivalent met
       <function>const double * getColSolution()</function>
       </entry>
       <entry align="left" valign="top">
-      The OSI version will return  best solution unless none has been found. It is safer to use <classname>CbcModel</classname> version, <function>CbcModel::bestSolution()</function>
+      The OSI method will return the best solution found thus far, unless none has been found. It is safer to use <classname>CbcModel</classname> version, <function>CbcModel::bestSolution()</function>
       </entry>
     </row>
     <row>
@@ -203,7 +199,7 @@ All the OSI methods used in <filename>minimum.cpp</filename> have equivalent met
       <function>int getNumRows()</function>
       </entry>
       <entry align="left" valign="top">
-      Identical <classname>CbcModel</classname> version available, <function>CbcModel::getNumRows()</function>, but note that the number of rows may change due to cuts. 
+      Identical <classname>CbcModel</classname> version available, <function>CbcModel::getNumRows()</function>. Note: the number of rows can change due to cuts. 
       </entry>
     </row>
     <row>
@@ -223,8 +219,13 @@ All the OSI methods used in <filename>minimum.cpp</filename> have equivalent met
   </section>
 
   <section id="setsandgets">
-  <title>Useful Set and Get Methods in <classname>CbcModel</classname></title>
-  <table frame="none">
+  <title>
+   Useful Set and Get Methods in <classname>CbcModel</classname>
+  </title>
+<para>
+Most of the parameter setting in CBC is done through <classname>CbcModel</classname> methods. The most commonly used set and get methods are listed in <xref linkend="setGet"/>.
+</para>
+  <table frame="none" id="setGet">
   <title>Useful Set and Get Methods in <classname>CbcModel</classname></title>
     <tgroup cols="2">
     <thead>
@@ -249,8 +250,8 @@ All the OSI methods used in <filename>minimum.cpp</filename> have equivalent met
       <function>double&nbsp;getMaximumSolutions() const</function>
       </entry>
       <entry align="left" valign="top">
-      These methods tell CBC to stop after a given number of nodes or
-      seconds or solutions (and returns these values).
+      These set methods tell CBC to stop after a given number of nodes,
+      seconds, or solutions is reached. The get methods return the corresponding values.
       </entry>
     </row>
     <row>
@@ -259,9 +260,7 @@ All the OSI methods used in <filename>minimum.cpp</filename> have equivalent met
       <function>double&nbsp;getIntegerTolerance() const</function>
       </entry>
       <entry align="left" valign="top">
-      An integer variable
-      is deemed to be at an integral value if it is no further than this tolerance 
-      away. 
+      An integer variable is deemed to be at an integral value if it is no further than this <parameter>value</parameter> (tolerance) away. 
       </entry>
     </row>
     <row>
@@ -275,16 +274,16 @@ All the OSI methods used in <filename>minimum.cpp</filename> have equivalent met
       </entry>
       <entry align="left" valign="top">
       <classname>CbcModel</classname> returns if the gap between the best known solution and the best
-      possible solution is less than this (or as a percentage or fraction).
+      possible solution is less than this <parameter>value</parameter>, or as a percentage, or a fraction.
       </entry>
     </row>
     <row>
       <entry align="left" valign="top">
       <function>void&nbsp;setNumberStrong(double value) </function><sbr/>
-      <function>int&nbsp;numberStrong() const </function>
+      <function>int&nbsp;numberStrong() const </function> <!-- should be a "get" -->
       </entry>
       <entry align="left" valign="top">
-      Get or set the maximum number of candidates at a node to
+      These methods set or get the maximum number of candidates at a node to
       be evaluated for strong branching.
       </entry>
     </row>
@@ -295,7 +294,7 @@ All the OSI methods used in <filename>minimum.cpp</filename> have equivalent met
       </entry>
       <entry align="left" valign="top">
       Controls the number of nodes evaluated between status prints.
-      Print frequency has very slight overhead if small.
+      Print frequency has a very slight overhead, if <parameter>value</parameter> is small.
       </entry>
     </row>
     <row>
@@ -303,7 +302,7 @@ All the OSI methods used in <filename>minimum.cpp</filename> have equivalent met
       <function>int&nbsp;getNodeCount() const</function>
       </entry>
       <entry align="left" valign="top">
-      Returns number of nodes search took
+      Returns number of nodes evaluated in the search.
       </entry>
     </row>
     <row>
@@ -311,7 +310,7 @@ All the OSI methods used in <filename>minimum.cpp</filename> have equivalent met
       <function>int&nbsp;numberRowsAtContinuous() const</function>
       </entry>
       <entry align="left" valign="top">
-      Returns number of rows at continuous
+      Returns number of rows at continuous <!-- rlh: huh? -->
       </entry>
     </row>
     <row>
@@ -320,7 +319,7 @@ All the OSI methods used in <filename>minimum.cpp</filename> have equivalent met
       <function>const int&nbsp;*&nbsp;integerVariable() const</function>
       </entry>
       <entry align="left" valign="top">
-      Returns number of integers and an array giving which ones
+      Returns number of integer variables and an array specifying them. 
       </entry>
     </row>
     <row>
@@ -330,8 +329,8 @@ All the OSI methods used in <filename>minimum.cpp</filename> have equivalent met
       <function>bool&nbsp;isInteger(int colIndex) const</function>
       </entry>
       <entry align="left" valign="top">
-      Returns information on a variable.  You can use OSI methods
-      to set these attributes (before handing to <classname>CbcModel</classname>)
+      Returns information on variable <parameter>colIndex</parameter>. OSI methods
+      can be used to set these attributes (before handing the model to <classname>CbcModel</classname>).
       </entry>
     </row>
     <row>
@@ -366,7 +365,7 @@ All the OSI methods used in <filename>minimum.cpp</filename> have equivalent met
        <function>const&nbsp;double&nbsp;*&nbsp;getColUpper() const</function><sbr/>
        </entry>
       <entry align="left" valign="top">
-      These methods give lower and upper bounds on row and column activities.
+      These methods return the lower and upper bounds on row and column activities.
       </entry>
     </row>
     <row>
@@ -374,7 +373,7 @@ All the OSI methods used in <filename>minimum.cpp</filename> have equivalent met
       <function>const&nbsp;CoinPackMatrix&nbsp;*&nbsp;getMatrixByRow() const</function>
       </entry>
       <entry align="left" valign="top">
-      This method returns a pointer to a row copy of matrix 
+      This method returns a pointer to a row copy of matrix stored as a 
       <classname>CoinPackedMatrix</classname> which can be further examined.
       </entry>
     </row>
@@ -383,7 +382,7 @@ All the OSI methods used in <filename>minimum.cpp</filename> have equivalent met
       <function>const CoinPackMatrix * getMatrixByCol() const</function>
       </entry>
       <entry align="left" valign="top">
-      This method returns a pointer to a column copy of matrix 
+      This method returns a pointer to a column copy of matrix stored as a
       <classname>CoinPackedMatrix</classname> which can be further examined.
       </entry>
     </row>
@@ -398,7 +397,7 @@ All the OSI methods used in <filename>minimum.cpp</filename> have equivalent met
     </footnote> 
       </entry>
       <entry align="left" valign="top">
-      Returns the number of elements in the problem matrix.
+      Returns the number of nonzero elements in the problem matrix.
       </entry>
     </row>
     <row>
@@ -419,106 +418,38 @@ All the OSI methods used in <filename>minimum.cpp</filename> have equivalent met
   <title>
   Impacting the Solution Process
   </title>
-  <para>
-  The methods in <xref linkend="majorMethods"/> can have a major impact on CBC's search.. A brief description is given in the table, along with main parameters. ( The description here may not give all parameters if they are exotic.) The remainder of this documents describes some of the common usages of these methods.
-  </para>
-  <table frame="none" id="majorMethods">
-  <title>Major Methods</title>
-    <tgroup cols="2">
-    <thead>
-    <row>
-    <entry>
-    Method(s)
-    </entry>
-    <entry>
-    Description
-    </entry>
-    </row>
-    </thead>
-    <tbody>
-    <row>
-      <entry align="left" valign="top">
-      <function>passInPriorities(const int * priorities, bool ifNotSimpleIntegers,
-			int defaultValue=1000)</function>
-      </entry>
-      <entry align="left" valign="top">
-      Normally this is a list of priorities (1 being highest) and the other
-      <parameter>ifNotSimpleIntegers</parameter> being false which set priorities for all integer
-      variables.  If two variables are unsatisfied and one has a higher priority
-      then it is always preferred whatever its value.  This can be very powerful
-      but also see PseudoCosts in <classname>CbcObject</classname> discussion.
-      </entry>
-    </row>
-    <row>
-      <entry align="left" valign="top">
-      <function>addCutGenerator(CglCutGenerator *,int howOften, const char * name)</function>
-      </entry>
-      <entry align="left" valign="top">
-      This is used to add a cut generator to <classname>CbcModel</classname>.  Any cut generator in CGL can be used. If <parameter>howOften</parameter> &gt; 0 then <parameter>name</parameter> will be called at root node and again every <parameter>howOften</parameter> nodes. There is an option to override and to call <parameter>name</parameter> depth 0,k,2k, etc.  If <parameter>howOften</parameter> = -1 then the code determines how effective <parameter>name</parameter>is at root node and dynamically sets <parameter>howOften</parameter>. If <parameter>howOften</parameter> = -99 then <parameter>name></parameter> is just used at root node.
-      There is also a redundant <parameter>howOften</parameter> = -100 setting which switches <parameter>name</parameter> off. This parameter setting is useful for testing.  For usage see <filename>sample2.cpp</filename> in the <filename>COIN/Cbc/Samples</filename> directory <xref linkend="moreexamples"/> which uses the most common cut generators.
-      </entry>
-    </row>
-    <row>
-      <entry align="left" valign="top">
-      <function>addHeuristic(CbcHeuristic *)</function>
-      </entry>
-      <entry align="left" valign="top">
-      This adds one heuristic to <classname>CbcModel</classname>.See the section on <classname>CbcHeuristic</classname>  to obtain
-      a list of available heuristics and a guide as to building new ones.
-      </entry>
-    </row>
-    <row>
-      <entry align="left" valign="top">
-      <function>addObjects(int&nbsp;number,CbcObject&nbsp;**&nbsp;objects) </function>
-      </entry>
-      <entry align="left" valign="top">
-      This adds members of the base class <classname>CbcObject</classname> to <classname>CbcModel</classname>.  See the section
-      on <classname>CbcObject</classname> for detailed nformation.  The <parameter>objects</parameter> are cloned by the code so the
-      user should delete them after the call to <function>addObjects</function>.  There are two 
-      main cases.  The first is when the originally created objects are left and
-      new ones added (maybe with a higher priority);  this might be used when
-      simple integer objects exist and Special Ordered Sets of type 1 are going
-      to be added, which while not necessary will give extra power in branching.
-      The second case is when the old ones are being deleted.  
-      For usage see <filename>sos.cpp</filename> in the <filename>COIN/Cbc/Samples</filename> directory <xref linkend="moreexamples"/>.
-      </entry>
-    </row>
-    <row>
-      <entry align="left" valign="top">
-      <function>CglPreProcess::preProcess(OsiSolverInterface &amp;)</function>
-      </entry>
-      <entry align="left" valign="top">
-      This is not really part of CBC and can be used by other mixed integer
-      solvers but it can be a useful tool.  It tries to fix variables and 
-      strengthen coefficients and also do a normal presolve.  Owing to the 
-      odd nature of integer programming it may not always reduce the time
-      taken but is definitely worth trying.  For an example of using
-      <function>CglPreProcess()</function> (and <function>CglPostProcess()</function>) see <filename>sample2.cpp</filename> in the CBC Samples 
-      directory <xref linkend="moreexamples"/>.
-      </entry>
-    </row>
-    <row>
-      <entry align="left" valign="top">
-      <function>setNodeComparison(CbcCompareBase&nbsp;*)</function>
-      </entry>
-      <entry align="left" valign="top">
-       This is used to invoke a non-default node comparisons
-       in determining the next node on tree to explore. The order a tree is explored 
-       can make a large difference in runtime. Specialized comparisons are easy to implement.
-       See the section on <classname>CbcCompare</classname>.
-      </entry>
-    </row>
-    </tbody>
-  </tgroup>
-  </table>
-  </section>
-
-<section id="mostAndLeastUsefulClasses">
- <title>
-  Most (and Least) Useful Classes Used by CBC
-</title>
 <para>
-<classname>CbcModel</classname> uses other classes in CBC, some of which are virtual and may have multiple instances. Not all classes are created equal. The two tables below list the classes within <classname>CbcModel</classname> that are of most interest and of least interest. 
+<classname>CbcModel</classname> is extremely flexible and customizable. The class structure of CBC is designed to make the most commonly desired customizations of branch-and-cut possible. These include: 
+    <itemizedlist>
+    <listitem>
+    <simpara>
+     selecting the next node to consider in the search tree,
+    </simpara>
+    </listitem>
+    <listitem>
+    <simpara>
+    determining which variable to branch on,
+    </simpara>
+    </listitem>
+   <listitem>
+    <simpara>
+    using heuristics to generate MIP-feasible solutions quickly,
+    </simpara>
+    </listitem>
+   <listitem>
+    <simpara>
+    including cut generation when solving the LP-relaxations, and 
+    </simpara>
+    </listitem>
+  <listitem>
+    <simpara>
+    invoking customized subproblem solvers.
+    </simpara>
+    </listitem>
+    </itemizedlist>
+
+
+To enable this flexibility,  <classname>CbcModel</classname> uses other classes in CBC (some of which are virtual and may have multiple instances). Not all classes are created equal. The two tables below list in alphabetical order the classes used by <classname>CbcModel</classname> that are of most interest and of least interest. 
 </para>
     <table frame="none">
   <title>Classes Used by CbcModel - Most Useful</title>
@@ -542,12 +473,10 @@ All the OSI methods used in <filename>minimum.cpp</filename> have equivalent met
       <classname>CbcCompareBase</classname>
       </entry>
       <entry align="left" valign="top">
-      Controls which node on tree is selected
+      Controls which node on the tree is selected.
       </entry>
       <entry align="left" valign="top">
-      The default is <classname>CbcCompareDefault</classname>. Other comparison classes in <filename>CbcCompareActual.hpp</filename> include
-      <classname>CbcCompareDepth</classname> and <classname>CbcCompareObjective</classname>. It is very easy for user to
-      experiment with different comparisons.
+      The default is <classname>CbcCompareDefault</classname>. Other comparison classes in <filename>CbcCompareActual.hpp</filename> include <classname>CbcCompareDepth</classname> and <classname>CbcCompareObjective</classname>. Experimenting with these classes and creating new compare classes is easy.
       </entry>
     </row>
     <row>
@@ -555,10 +484,10 @@ All the OSI methods used in <filename>minimum.cpp</filename> have equivalent met
       <classname>CbcCutGenerator</classname>
       </entry>
       <entry align="left" valign="top">
-      A wrapper for <classname>CglCutGenerator</classname> with additional data to control when the cut generator is used.
+      A wrapper for <classname>CglCutGenerator</classname> with additional data to control when the cut generator is invoked during the tree search.
       </entry>
       <entry align="left" valign="top">
-      Other than knowing how to add a cut generator to <classname>CbcModel</classname>, there is not much the average user needs to know about this class. <!-- what's the default? -->
+      Other than knowing how to add a cut generator to <classname>CbcModel</classname>, there is not much the average user needs to know about this class. However, sophisticated users can implement their own cut generators. <!-- what's the default? -->
       </entry>
     </row>
     <row>
@@ -566,11 +495,10 @@ All the OSI methods used in <filename>minimum.cpp</filename> have equivalent met
       <classname>CbcHeuristic</classname>
       </entry>
       <entry align="left" valign="top">
-      Heuristic that attempts to generate valid solutions
+      Heuristic that attempts to generate valid MIP-solutions leading to good upper bounds.
       </entry>
       <entry align="left" valign="top">
-      Users can get a lot of value out of coding specialized heuristics.  There can be
-      as many different heuristics as you like. <!-- What's the default? -->
+      Specialized heuristics can dramatically improve branch-and-cut performance. As many different heuristics as desired can be used in CBC. Advanced users should consider implementing custom heuristics when tackling difficult problems. <!-- What's the default? -->
       </entry>
     </row>
     <row>
@@ -578,10 +506,10 @@ All the OSI methods used in <filename>minimum.cpp</filename> have equivalent met
       <classname>CbcObject</classname>
       </entry>
       <entry align="left" valign="top">
-      Defines what it means for a variable to be satisfied.
+      Defines what it means for a variable to be satisfied. Used in branching.
       </entry>
       <entry align="left" valign="top">
-      Virtual class. The branching model used in CBC is based on the idea of an "object". An object has (i) feasible region, (ii) can be evaluated for infeaibility, (iii) can be branched on, e.g., a method of generating a branching object, which defines an up branch and a down branch and (iv) allows comparsion of the effect of branching. Instances include simple integer, simple integer with pseudocosts, SOS (type 1 and 2), and lotsizing (see CbcBranch....hpp). 
+      Virtual class. CBC's concept of branching is based on the idea of an "object". An object has (i) a feasible region, (ii) can be evaluated for infeasibility, (iii) can be branched on, e.g., a method of generating a branching object, which defines an up branch and a down branch, and (iv) allows comparsion of the effect of branching. Instances of objects include <classname>CbcSimpleInteger</classname>, <classname>CbcSimpleIntegerPseudoCosts</classname>, <classname>CbcClique</classname>, <classname>CbcSOS</classname> (type 1 and 2), <classname>CbcFollowOn</classname>, and <classname>CbcLotsize</classname>.
       </entry>
     </row>
     <row>
@@ -600,8 +528,9 @@ All the OSI methods used in <filename>minimum.cpp</filename> have equivalent met
     </tbody>
   </tgroup>
   </table>
-
+<para>
 There is not much about the classes listed in <xref linkend="least"/> that the average user needs to know about. 
+</para>
     <table frame="none" id="least">
   <title>Classes Used by CbcModel - Least Useful</title>
     <tgroup cols="3">
@@ -650,7 +579,7 @@ There is not much about the classes listed in <xref linkend="least"/> that the a
       Controls which variable/entity is selected to be branch on.
       </entry>
       <entry align="left" valign="top">
-      Controlled via <classname>CbcModel</classname> parameters.  <!-- Default? -->
+      Controlled via <classname>CbcModel</classname> parameters. Information from <classname>CbcNode</classname> can be useful in creating customized node selection rules.  <!-- Default? -->
       </entry>
     </row>
     <row>

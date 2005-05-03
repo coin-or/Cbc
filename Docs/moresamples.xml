@@ -34,7 +34,7 @@ some of the most useful sample files with a short description for each file.
 	</entry>
         <entry align="left" valign="top">
 	This is a CBC &quot;Hello, world&quot; program.  It reads a problem
-	in MPS file format, and solves the problem.
+	in MPS file format, and solves the problem using simple branch-and-bound.
 	</entry>
       </row>
       <row>
@@ -44,7 +44,7 @@ some of the most useful sample files with a short description for each file.
         <entry align="left" valign="top">
 	This is designed to be a file that a user could modify to get a useful
 	driver program for his or her project.  In particular, it demonstrates
-	the use of Cgl's  preprocess functionality.
+	the use of CGL's  preprocess functionality.
         It uses <function>CbcBranchUser.cpp</function>,
         <function>CbcCompareUser.cpp</function> and
         <function>CbcHeuristicUser.cpp</function> 
@@ -99,7 +99,7 @@ some of the most useful sample files with a short description for each file.
 	&qmipcpp;
 	</entry>
         <entry align="left" valign="top">
-	This solves a quadratic mip.  It is to show advanced use of a solver.
+	This solves a quadratic MIP.  It is to show advanced use of a solver.
         The solver is given in <function>ClpQuadInterface.hpp</function> and
         <function>ClpQuadInterface.cpp</function>.
         It uses <function>CbcBranchUser.cpp</function> and
@@ -112,7 +112,7 @@ some of the most useful sample files with a short description for each file.
 	&soscpp;
 	</entry>
         <entry align="left" valign="top">
-	This artificially creates a Special Ordered set problem.
+	This artificially creates a Special Ordered Set problem.
 	</entry>
       </row>
       <row>
@@ -120,7 +120,7 @@ some of the most useful sample files with a short description for each file.
 	&lotsizecpp;
 	</entry>
         <entry align="left" valign="top">
-	This artificially creates a lot sizing problem.
+	This artificially creates a Lot Sizing problem.
 	</entry>
       </row>
     </tbody>

@@ -90,6 +90,7 @@ TESTSRC += CbcCompareUser.cpp
 TESTSRC += CbcSolver2.cpp
 #TESTSRC += CbcSolver3.cpp
 TESTSRC += CbcBranchUser.cpp
+TESTSRC += CbcBranchLink.cpp
 TESTSRC += CbcHeuristicUser.cpp
 TESTSRC += CbcHeuristicGreedy.cpp
 TESTOBJ := $(addprefix $(TARGETDIR)/, $(TESTSRC:.cpp=.o))

@@ -189,7 +189,9 @@ CbcLocalSearch::solution(double & solutionValue,
 
   if (numberSolutions_==model_->getSolutionCount())
     return 0;
-
+  if (model_->getNumCols()>1000&&model_->getNumCols()>
+      10*model_->getNumRows())
+    return 0; // probably not worth it
   // worth trying
   numberSolutions_=model_->getSolutionCount();
 

@@ -148,6 +148,9 @@ int
 CbcLocalSearch::solution(double & solutionValue,
 			 double * betterSolution)
 {
+  // See if to do
+  if (!when()||(when()==1&&model_->phase()!=1))
+    return 0; // switched off
 
   if (numberSolutions_==model_->getSolutionCount()) {
     //#define LONGTHIN

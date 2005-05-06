@@ -68,14 +68,14 @@ public:
   inline void setBelieveInfeasible(bool yesNo)
   { believeInfeasible_=yesNo;};
   /// Say whether to just count usage
-  inline void setJustCount(bool yesNo)
-  { justCount_=yesNo;};
+  inline void setAlgorithm(int value)
+  { algorithm_=value;};
   /// Do nested search if this fraction fixed
   inline void setNested(double value)
   { nestedSearch_=value;};
   /// Say whether to just count usage
-  inline bool getJustCount() const
-  { return justCount_;};
+  inline int getAlgorithm() const
+  { return algorithm_;};
   /// Do nested search if this fraction fixed
   inline double getNested() const
   { return nestedSearch_;};
@@ -101,8 +101,8 @@ private:
   int memory_;
   /// If infeasible on subset means infeasible
   bool believeInfeasible_;
-  /// If justCount true then just count (no subset solve)
-  bool justCount_;
+  /// If 0 nothing, 1 compress and fix, 2 long thin
+  bool algorithm_;
   //@}
 };
 

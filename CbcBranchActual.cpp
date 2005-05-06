@@ -346,8 +346,6 @@ CbcSOS::CbcSOS ( const CbcSOS & rhs)
     weights_ = new double[numberMembers_];
     memcpy(members_,rhs.members_,numberMembers_*sizeof(int));
     memcpy(weights_,rhs.weights_,numberMembers_*sizeof(double));
-    weights_ = new double[numberMembers_];
-    memcpy(weights_,rhs.weights_,numberMembers_*sizeof(double));
   } else {
     members_ = NULL;
     weights_ = NULL;
@@ -375,8 +373,6 @@ CbcSOS::operator=( const CbcSOS& rhs)
       members_ = new int[numberMembers_];
       weights_ = new double[numberMembers_];
       memcpy(members_,rhs.members_,numberMembers_*sizeof(int));
-      memcpy(weights_,rhs.weights_,numberMembers_*sizeof(double));
-      weights_ = new double[numberMembers_];
       memcpy(weights_,rhs.weights_,numberMembers_*sizeof(double));
     } else {
       members_ = NULL;
@@ -415,9 +411,9 @@ CbcSOS::infeasibility(int & preferredWay) const
   for (j=0;j<numberMembers_;j++) {
     int iColumn = members_[j];
     if (lower[iColumn]&&(lower[iColumn]!=1.0||sosType_!=1))
-      throw CoinError("Non zero lower bound in SOS","constructor","CbcSOS");
+      throw CoinError("Non zero lower bound in SOS","infeasibility","CbcSOS");
     if (lastWeight>=weights_[j]-1.0e-7)
-      throw CoinError("Weights too close together in SOS","constructor","CbcSOS");
+      throw CoinError("Weights too close together in SOS","infeasibility","CbcSOS");
     double value = CoinMax(0.0,solution[iColumn]);
     sum += value;
     if (value>integerTolerance&&upper[iColumn]) {
@@ -1735,12 +1731,6 @@ CbcSOSBranchingObject::print(bool normalBranch)
 CbcBranchDefaultDecision::CbcBranchDefaultDecision()
   :CbcBranchDecision()
 {
-  bestCriterion_ = 0.0;
-  bestChangeUp_ = 0.0;
-  bestNumberUp_ = 0;
-  bestChangeDown_ = 0.0;
-  bestNumberDown_ = 0;
-  bestObject_ = NULL;
 }
 
 // Copy constructor 
@@ -1748,12 +1738,6 @@ CbcBranchDefaultDecision::CbcBranchDefaultDecision (
 				    const CbcBranchDefaultDecision & rhs)
   :CbcBranchDecision()
 {
-  bestCriterion_ = rhs.bestCriterion_;
-  bestChangeUp_ = rhs.bestChangeUp_;
-  bestNumberUp_ = rhs.bestNumberUp_;
-  bestChangeDown_ = rhs.bestChangeDown_;
-  bestNumberDown_ = rhs.bestNumberDown_;
-  bestObject_ = rhs.bestObject_;
 }
 
 CbcBranchDefaultDecision::~CbcBranchDefaultDecision()
@@ -1771,12 +1755,6 @@ CbcBranchDefaultDecision::clone() const
 void 
 CbcBranchDefaultDecision::initialize(CbcModel * model)
 {
-  bestCriterion_ = 0.0;
-  bestChangeUp_ = 0.0;
-  bestNumberUp_ = 0;
-  bestChangeDown_ = 0.0;
-  bestNumberDown_ = 0;
-  bestObject_ = NULL;
 }
 
 
@@ -1793,71 +1771,272 @@ CbcBranchDefaultDecision::betterBranch(CbcBranchingObject * thisOne,
 			    double changeUp, int numInfUp,
 			    double changeDn, int numInfDn)
 {
-  bool beforeSolution = thisOne->model()->getSolutionCount()==
-    thisOne->model()->getNumberHeuristicSolutions();;
-  int betterWay=0;
-  if (beforeSolution) {
-    if (!bestObject_) {
-      bestNumberUp_=INT_MAX;
-      bestNumberDown_=INT_MAX;
-    }
-    // before solution - choose smallest number 
-    // could add in depth as well
-    int bestNumber = CoinMin(bestNumberUp_,bestNumberDown_);
-    if (numInfUp<numInfDn) {
-      if (numInfUp<bestNumber) {
-	betterWay = 1;
-      } else if (numInfUp==bestNumber) {
-	if (changeUp<bestCriterion_)
-	  betterWay=1;
-      }
-    } else if (numInfUp>numInfDn) {
-      if (numInfDn<bestNumber) {
-	betterWay = -1;
-      } else if (numInfDn==bestNumber) {
-	if (changeDn<bestCriterion_)
-	  betterWay=-1;
-      }
-    } else {
-      // up and down have same number
-      bool better=false;
-      if (numInfUp<bestNumber) {
-	better=true;
-      } else if (numInfUp==bestNumber) {
-	if (min(changeUp,changeDn)<bestCriterion_)
-	  better=true;;
-      }
-      if (better) {
-	// see which way
-	if (changeUp<=changeDn)
-	  betterWay=1;
-	else
-	  betterWay=-1;
-      }
-    }
-  } else {
-    if (!bestObject_) {
-      bestCriterion_=-1.0;
-    }
-    // got a solution
-    if (changeUp<=changeDn) {
-      if (changeUp>bestCriterion_)
-	betterWay=1;
-    } else {
-      if (changeDn>bestCriterion_)
-	betterWay=-1;
-    }
-  }
-  if (betterWay) {
-    bestCriterion_ = CoinMin(changeUp,changeDn);
-    bestChangeUp_ = changeUp;
-    bestNumberUp_ = numInfUp;
-    bestChangeDown_ = changeDn;
-    bestNumberDown_ = numInfDn;
-    bestObject_=thisOne;
-  }
-  return betterWay;
+  printf("Now obsolete CbcBranchDefaultDecision::betterBranch\n");
+  abort();
+  return 0;
 }
+
+/* Compare N branching objects. Return index of best
+   and sets way of branching in chosen object.
+   
+   This routine is used only after strong branching.
+   This is reccommended version as it can be more sophisticated
+*/
+
+int
+CbcBranchDefaultDecision::bestBranch (CbcBranchingObject ** objects, int numberObjects,
+				   int numberUnsatisfied,
+				   double * changeUp, int * numberInfeasibilitiesUp,
+				   double * changeDown, int * numberInfeasibilitiesDown,
+				   double objectiveValue) 
+{
+
+  int bestWay=0;
+  int whichObject = -1;
+  if (numberObjects) {
+    CbcModel * model = objects[0]->model();
+    // at continuous
+    //double continuousObjective = model->getContinuousObjective();
+    //int continuousInfeasibilities = model->getContinuousInfeasibilities();
+    
+    // average cost to get rid of infeasibility
+    //double averageCostPerInfeasibility = 
+    //(objectiveValue-continuousObjective)/
+    //(double) (abs(continuousInfeasibilities-numberUnsatisfied)+1);
+    /* beforeSolution is :
+       0 - before any solution
+       n - n heuristic solutions but no branched one
+       -1 - branched solution found
+    */
+    int numberSolutions = model->getSolutionCount();
+    double cutoff = model->getCutoff();
+    int method=0;
+    int i;
+    if (numberSolutions) {
+      int numberHeuristic = model->getNumberHeuristicSolutions();
+      if (numberHeuristic<numberSolutions) {
+	method = 1;
+      } else {
+	method = 2;
+	// look further
+	for ( i = 0 ; i < numberObjects ; i++) {
+	  int numberNext = numberInfeasibilitiesUp[i];
+	  
+	  if (numberNext<numberUnsatisfied) {
+	    int numberUp = numberUnsatisfied - numberInfeasibilitiesUp[i];
+	    double perUnsatisfied = changeUp[i]/(double) numberUp;
+	    double estimatedObjective = objectiveValue + numberUnsatisfied * perUnsatisfied;
+	    if (estimatedObjective<cutoff) 
+	      method=3;
+	  }
+	  numberNext = numberInfeasibilitiesDown[i];
+	  if (numberNext<numberUnsatisfied) {
+	    int numberDown = numberUnsatisfied - numberInfeasibilitiesDown[i];
+	    double perUnsatisfied = changeDown[i]/(double) numberDown;
+	    double estimatedObjective = objectiveValue + numberUnsatisfied * perUnsatisfied;
+	    if (estimatedObjective<cutoff) 
+	      method=3;
+	  }
+	}
+      }
+      method=2;
+    } else {
+      method = 0;
+    }
+    // Uncomment next to force method 4
+    //method=4;
+    /* Methods :
+       0 - fewest infeasibilities
+       1 - largest min change in objective
+       2 - as 1 but use sum of changes if min close
+       3 - predicted best solution
+       4 - take cheapest up branch if infeasibilities same
+    */
+    int bestNumber=INT_MAX;
+    double bestCriterion=-1.0e50;
+    double alternativeCriterion = -1.0;
+    double bestEstimate = 1.0e100;
+    switch (method) {
+    case 0:
+      // could add in depth as well
+      for ( i = 0 ; i < numberObjects ; i++) {
+	int thisNumber = min(numberInfeasibilitiesUp[i],numberInfeasibilitiesDown[i]);
+	if (thisNumber<=bestNumber) {
+	  int betterWay=0;
+	  if (numberInfeasibilitiesUp[i]<numberInfeasibilitiesDown[i]) {
+	    if (numberInfeasibilitiesUp[i]<bestNumber) {
+	      betterWay = 1;
+	    } else {
+	      if (changeUp[i]<bestCriterion)
+		betterWay=1;
+	    }
+	  } else if (numberInfeasibilitiesUp[i]>numberInfeasibilitiesDown[i]) {
+	    if (numberInfeasibilitiesDown[i]<bestNumber) {
+	      betterWay = -1;
+	    } else {
+	      if (changeDown[i]<bestCriterion)
+		betterWay=-1;
+	    }
+	  } else {
+	    // up and down have same number
+	    bool better=false;
+	    if (numberInfeasibilitiesUp[i]<bestNumber) {
+	      better=true;
+	    } else if (numberInfeasibilitiesUp[i]==bestNumber) {
+	      if (min(changeUp[i],changeDown[i])<bestCriterion)
+		better=true;;
+	    }
+	    if (better) {
+	      // see which way
+	      if (changeUp[i]<=changeDown[i])
+		betterWay=1;
+	      else
+		betterWay=-1;
+	    }
+	  }
+	  if (betterWay) {
+	    bestCriterion = min(changeUp[i],changeDown[i]);
+	    bestNumber = thisNumber;
+	    whichObject = i;
+	    bestWay = betterWay;
+	  }
+	}
+      }
+      break;
+    case 1:
+      for ( i = 0 ; i < numberObjects ; i++) {
+	int betterWay=0;
+	if (changeUp[i]<=changeDown[i]) {
+	  if (changeUp[i]>bestCriterion)
+	    betterWay=1;
+	} else {
+	  if (changeDown[i]>bestCriterion)
+	    betterWay=-1;
+	}
+	if (betterWay) {
+	  bestCriterion = min(changeUp[i],changeDown[i]);
+	  whichObject = i;
+	  bestWay = betterWay;
+	}
+      }
+      break;
+    case 2:
+      for ( i = 0 ; i < numberObjects ; i++) {
+	double change = min(changeUp[i],changeDown[i]);
+	double sum = changeUp[i] + changeDown[i];
+	bool take=false;
+	if (change>1.1*bestCriterion) 
+	  take=true;
+	else if (change>0.9*bestCriterion&&sum+change>bestCriterion+alternativeCriterion) 
+	  take=true;
+	if (take) {
+	  if (changeUp[i]<=changeDown[i]) {
+	    if (changeUp[i]>bestCriterion)
+	      bestWay=1;
+	  } else {
+	    if (changeDown[i]>bestCriterion)
+	      bestWay=-1;
+	  }
+	  bestCriterion = change;
+	  alternativeCriterion = sum;
+	  whichObject = i;
+	}
+      }
+      break;
+    case 3:
+      for ( i = 0 ; i < numberObjects ; i++) {
+	int numberNext = numberInfeasibilitiesUp[i];
+	
+	if (numberNext<numberUnsatisfied) {
+	  int numberUp = numberUnsatisfied - numberInfeasibilitiesUp[i];
+	  double perUnsatisfied = changeUp[i]/(double) numberUp;
+	  double estimatedObjective = objectiveValue + numberUnsatisfied * perUnsatisfied;
+	  if (estimatedObjective<bestEstimate) {
+	    bestEstimate = estimatedObjective;
+	    bestWay=1;
+	    whichObject=i;
+	  }
+	}
+	numberNext = numberInfeasibilitiesDown[i];
+	if (numberNext<numberUnsatisfied) {
+	  int numberDown = numberUnsatisfied - numberInfeasibilitiesDown[i];
+	  double perUnsatisfied = changeDown[i]/(double) numberDown;
+	  double estimatedObjective = objectiveValue + numberUnsatisfied * perUnsatisfied;
+	  if (estimatedObjective<bestEstimate) {
+	    bestEstimate = estimatedObjective;
+	    bestWay=-1;
+	    whichObject=i;
+	  }
+	}
+      }
+      break;
+    case 4:
+      // if number infeas same then cheapest up
+      // first get best number or when going down
+      // now choose smallest change up amongst equal number infeas
+      for ( i = 0 ; i < numberObjects ; i++) {
+	int thisNumber = min(numberInfeasibilitiesUp[i],numberInfeasibilitiesDown[i]);
+	if (thisNumber<=bestNumber) {
+	  int betterWay=0;
+	  if (numberInfeasibilitiesUp[i]<numberInfeasibilitiesDown[i]) {
+	    if (numberInfeasibilitiesUp[i]<bestNumber) {
+	      betterWay = 1;
+	    } else {
+	      if (changeUp[i]<bestCriterion)
+		betterWay=1;
+	    }
+	  } else if (numberInfeasibilitiesUp[i]>numberInfeasibilitiesDown[i]) {
+	    if (numberInfeasibilitiesDown[i]<bestNumber) {
+	      betterWay = -1;
+	    } else {
+	      if (changeDown[i]<bestCriterion)
+		betterWay=-1;
+	    }
+	  } else {
+	    // up and down have same number
+	    bool better=false;
+	    if (numberInfeasibilitiesUp[i]<bestNumber) {
+	      better=true;
+	    } else if (numberInfeasibilitiesUp[i]==bestNumber) {
+	      if (min(changeUp[i],changeDown[i])<bestCriterion)
+		better=true;;
+	    }
+	    if (better) {
+	      // see which way
+	      if (changeUp[i]<=changeDown[i])
+		betterWay=1;
+	      else
+		betterWay=-1;
+	    }
+	  }
+	  if (betterWay) {
+	    bestCriterion = min(changeUp[i],changeDown[i]);
+	    bestNumber = thisNumber;
+	    whichObject = i;
+	    bestWay = betterWay;
+	  }
+	}
+      }
+      bestCriterion=1.0e50;
+      for ( i = 0 ; i < numberObjects ; i++) {
+	int thisNumber = numberInfeasibilitiesUp[i];
+	if (thisNumber==bestNumber&&changeUp) {
+	  if (changeUp[i]<bestCriterion) {
+	    bestCriterion = changeUp[i];
+	    whichObject = i;
+	    bestWay = 1;
+	  }
+	}
+      }
+      break;
+    }
+    // set way in best
+    if (whichObject>=0)
+      objects[whichObject]->way(bestWay);
+  }
+  return whichObject;
+}
+
 // Default Constructor 
 CbcFollowOn::CbcFollowOn ()
   : CbcObject(),
@@ -1873,6 +2052,7 @@ CbcFollowOn::CbcFollowOn (CbcModel * model)
   OsiSolverInterface * solver = model_->solver();
   matrix_ = *solver->getMatrixByCol();
   matrix_.removeGaps();
+  matrix_.setExtraGap(0.0);
   matrixByRow_ = *solver->getMatrixByRow();
   int numberRows = matrix_.getNumRows();
   

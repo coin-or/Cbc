@@ -36,7 +36,8 @@ CbcParam::CbcParam ()
 }
 // Other constructors
 CbcParam::CbcParam (std::string name, std::string help,
-	   double lower, double upper, CbcParameterType type)
+	   double lower, double upper, CbcParameterType type,
+		    bool display)
   : type_(type),
     lowerIntValue_(0),
     upperIntValue_(0),
@@ -52,7 +53,8 @@ CbcParam::CbcParam (std::string name, std::string help,
   gutsOfConstructor();
 }
 CbcParam::CbcParam (std::string name, std::string help,
-	   int lower, int upper, CbcParameterType type)
+	   int lower, int upper, CbcParameterType type,
+		    bool display)
   : type_(type),
     lowerDoubleValue_(0.0),
     upperDoubleValue_(0.0),
@@ -69,8 +71,9 @@ CbcParam::CbcParam (std::string name, std::string help,
 }
 // Other strings will be added by append
 CbcParam::CbcParam (std::string name, std::string help, 
-		  std::string defaultValue,
-		  CbcParameterType type)
+		    std::string firstValue,
+		    CbcParameterType type,int defaultIndex,
+		    bool display)
   : type_(type),
     lowerDoubleValue_(0.0),
     upperDoubleValue_(0.0),
@@ -84,11 +87,12 @@ CbcParam::CbcParam (std::string name, std::string help,
     currentKeyWord_(0)
 {
   gutsOfConstructor();
-  definedKeyWords_.push_back(defaultValue);
+  definedKeyWords_.push_back(firstValue);
 }
 // Action
 CbcParam::CbcParam (std::string name, std::string help,
-	   CbcParameterType type)
+		    CbcParameterType type,int indexNumber,
+		    bool display)
   : type_(type),
     lowerDoubleValue_(0.0),
     upperDoubleValue_(0.0),

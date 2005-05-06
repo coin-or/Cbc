@@ -790,7 +790,8 @@ void CbcModel::branchAndBound()
 #endif
     tree_->pop() ;
     bool nodeOnTree=false; // Node has been popped
-
+    // Say not on optimal path
+    bool onOptimalPath=false;
 #   ifdef CHECK_NODE
 /*
   WARNING: The use of integerVariable_[*] here will break as soon as the
@@ -849,10 +850,12 @@ void CbcModel::branchAndBound()
         */
         const OsiRowCutDebugger *debugger = solver_->getRowCutDebugger() ;
         if (debugger)
-          { if(debugger->onOptimalPath(*solver_))
+          { if(debugger->onOptimalPath(*solver_)) {
+            onOptimalPath=true;
             printf("On optimal path\n") ;
-          else
+          } else {
             printf("Not on optimal path\n") ; }
+          }
       }
 /*
   Reoptimize, possibly generating cuts and/or using heuristics to find
@@ -888,6 +891,8 @@ void CbcModel::branchAndBound()
 	whether to stash the cuts and bump reference counts. Other places we
 	use variable() (i.e., presence of a branching variable). Equivalent?
 */
+        if (onOptimalPath)
+        assert (feasible);
 	if (feasible)
 	{ newNode = new CbcNode ;
 	  newNode->setObjectiveValue(direction*solver_->getObjValue()) ;
@@ -903,6 +908,8 @@ void CbcModel::branchAndBound()
 	  while (anyAction == -1)
 	  { 
             anyAction = newNode->chooseBranch(this,node,numberPassesLeft) ;
+            if (onOptimalPath)
+              assert (anyAction!=-2);
             numberPassesLeft--;
             if (numberPassesLeft<=-1) {
               if (!numberLongStrong)
@@ -911,7 +918,12 @@ void CbcModel::branchAndBound()
               numberLongStrong++;
             }
 	    if (anyAction == -1)
-	    { feasible = resolve() ;
+	    {
+              // can do quick optimality check
+              int easy=2;
+              solver_->setHintParam(OsiDoInBranchAndCut,true,OsiHintDo,&easy) ;
+              feasible = resolve() ;
+              solver_->setHintParam(OsiDoInBranchAndCut,true,OsiHintDo,NULL) ;
 	      resolved = true ;
 	      if (feasible)
 	      { newNode->setObjectiveValue(direction*
@@ -1260,7 +1272,6 @@ CbcModel::CbcModel()
   numberObjects_(0),
   object_(NULL),
   originalColumns_(NULL),
-  priority_(NULL),
   howOftenGlobalScan_(1),
   numberGlobalViolations_(0),
   continuousObjective_(COIN_DBL_MAX),
@@ -1335,7 +1346,6 @@ CbcModel::CbcModel(const OsiSolverInterface &rhs)
   numberObjects_(0),
   object_(NULL),
   originalColumns_(NULL),
-  priority_(NULL),
   howOftenGlobalScan_(1),
   numberGlobalViolations_(0),
   continuousObjective_(COIN_DBL_MAX),
@@ -1546,12 +1556,6 @@ CbcModel::CbcModel(const CbcModel & rhs, bool noTree)
       object_[i]=(rhs.object_[i])->clone();
   } else {
     object_=NULL;
-  }
-  if (rhs.priority_) {
-    priority_= new int [numberObjects_];
-    memcpy(priority_,rhs.priority_,numberObjects_*sizeof(int));
-  } else {
-    priority_=NULL;
   }
   if (!noTree||!rhs.continuousSolver_)
     solver_ = rhs.solver_->clone();
@@ -1764,13 +1768,6 @@ CbcModel::operator=(const CbcModel& rhs)
     } else {
       object_=NULL;
     }
-    delete [] priority_;
-    if (rhs.priority_) {
-      priority_= new int [numberObjects_];
-      memcpy(priority_,rhs.priority_,numberObjects_*sizeof(int));
-    } else {
-      priority_=NULL;
-    }
     delete [] originalColumns_;
     if (rhs.originalColumns_) {
       int numberColumns = rhs.getNumCols();
@@ -1876,8 +1873,6 @@ CbcModel::gutsOfDestructor()
     delete object_[i];
   delete [] object_;
   object_=NULL;
-  delete [] priority_;
-  priority_=NULL;
   delete [] originalColumns_;
   originalColumns_=NULL;
   delete strategy_;
@@ -2484,10 +2479,11 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node,
               int n=thisCut.row().getNumElements();
               const int * column = thisCut.row().getIndices();
               const double * element = thisCut.row().getElements();
+              //assert (n);
               for (int i=0;i<n;i++) {
                 int iColumn = column[i];
                 double value = element[i];
-                assert(fabs(value)>1.0e-12);
+                assert(fabs(value)>1.0e-12&&fabs(value)<1.0e20);
               }
             }
           }
@@ -3108,7 +3104,11 @@ CbcModel::takeOffCuts (OsiCuts &newCuts, int *whichGenerator,
       if (allowResolve)
       { 
 	phase_=3;
+        // can do quick optimality check
+        int easy=2;
+        solver_->setHintParam(OsiDoInBranchAndCut,true,OsiHintDo,&easy) ;
 	solver_->resolve() ;
+        solver_->setHintParam(OsiDoInBranchAndCut,true,OsiHintDo,NULL) ;
 	if (solver_->getIterationCount() == 0)
 	{ needPurge = false ; }
 #	ifdef CBC_DEBUG
@@ -3425,13 +3425,8 @@ CbcModel::findCliques(bool makeEquality,
     delete [] newModel->object_;
     newModel->object_=NULL;
     newModel->findIntegers(true); //Set up all integer objects
-    if (priority_) {
-      // old model had priorities
-      delete [] newModel->priority_;
-      newModel->priority_ = new int[newModel->numberIntegers_+numberCliques];
-      memcpy(newModel->priority_,priority_,numberIntegers_*sizeof(int));
-      for (i=numberIntegers_;i<newModel->numberIntegers_+numberCliques;i++)
-	newModel->priority_[i]=defaultValue;
+    for (i=0;i<numberIntegers_;i++) {
+      newModel->modifiableObject(i)->setPriority(object_[i]->priority());
     }
     if (originalColumns_) {
       // old model had originalColumns
@@ -3458,15 +3453,6 @@ CbcModel::findCliques(bool makeEquality,
       synchronizeModel();
     }
     delete [] object;
-    if (priority_) {
-      // model had priorities
-      int * temp = new int[numberIntegers_+numberCliques];
-      memcpy(temp,priority_,numberIntegers_*sizeof(int));
-      delete [] priority_;
-      priority_=temp;
-      for (i=numberIntegers_;i<numberIntegers_+numberCliques;i++)
-	priority_[i]=defaultValue;
-    }
     delete [] rows;
     delete [] element;
     return this;
@@ -3484,30 +3470,22 @@ CbcModel::findCliques(bool makeEquality,
 
 void 
 CbcModel::passInPriorities (const int * priorities,
-			    bool ifObject, int defaultValue)
+			    bool ifObject)
 {
   findIntegers(false);
   int i;
-  if (!priority_) {
-    priority_ = new int[numberObjects_];
-    for (i=0;i<numberObjects_;i++)
-      priority_[i]=defaultValue;
-  }
   if (priorities) {
     int i0=0;
     int i1=numberObjects_-1;
     if (ifObject) {
-      /* priority_ may be wrong size.  This fix may not cope with
-         all possibilities but should for normal use. */
-      int * temp = new int[numberObjects_];
-      memcpy(temp,priority_,numberIntegers_*sizeof(int));
-      delete [] priority_;
-      priority_=temp;
-      memcpy(priority_+numberIntegers_,priorities,
-	     (numberObjects_-numberIntegers_)*sizeof(int));
+      for (i=numberIntegers_;i<numberObjects_;i++) {
+        object_[i]->setPriority(priorities[i-numberIntegers_]);
+      }
       i0=numberIntegers_;
     } else {
-      memcpy(priority_,priorities,numberIntegers_*sizeof(int));
+      for (i=0;i<numberIntegers_;i++) {
+        object_[i]->setPriority(priorities[i]);
+      }
       i1=numberIntegers_-1;
     }
     messageHandler()->message(CBC_PRIORITY,
@@ -3520,8 +3498,6 @@ CbcModel::passInPriorities (const int * priorities,
 void 
 CbcModel::deleteObjects()
 {
-  delete [] priority_;
-  priority_=NULL;
   int i;
   for (i=0;i<numberObjects_;i++)
     delete object_[i];
@@ -4533,17 +4509,10 @@ CbcModel::integerPresolveThisModel(OsiSolverInterface * originalSolver,
   }
   findIntegers(true);
   // save original integers
-  int * originalPriority = NULL;
   int * originalIntegers = new int[numberIntegers_];
   int originalNumberIntegers = numberIntegers_;
   memcpy(originalIntegers,integerVariable_,numberIntegers_*sizeof(int));
 
-  if (priority_) {
-    originalPriority = new int[numberIntegers_];
-    memcpy(originalPriority,priority_,numberIntegers_*sizeof(int));
-    delete [] priority_;
-    priority_=NULL;
-  }
   int todo=20;
   if (weak)
     todo=1;
@@ -4757,21 +4726,6 @@ CbcModel::integerPresolveThisModel(OsiSolverInterface * originalSolver,
   }
   //solver_->writeMps("xx");
   delete cleanModel;
-  // create new priorities and save list of original columns
-  if (originalPriority) {
-    priority_ = new int[numberIntegers_];
-    int i;
-    int number=0;
-    // integer variables are in same order if they exist at all
-    for (i=0;i<originalNumberIntegers;i++) {
-      iColumn = originalIntegers[i];
-      int newColumn=original[iColumn];
-      if (newColumn >= 0) 
-	priority_[number++]=originalPriority[i];
-    }
-    assert (number==numberIntegers_);
-    delete [] originalPriority;
-  }
   delete [] originalIntegers;
   numberColumns = getNumCols();
   delete [] originalColumns_;
@@ -4895,11 +4849,13 @@ CbcModel::passInTreeHandler(CbcTree & tree)
 }
 // Make sure region there
 void 
-CbcModel::reserveCurrentSolution()
+CbcModel::reserveCurrentSolution(const double * solution)
 {
   int numberColumns = getNumCols() ;
   if (!currentSolution_)
     currentSolution_ = new double[numberColumns] ;
+  if (solution)
+    memcpy(currentSolution_,solution,numberColumns*sizeof(double));
 }
 /* For passing in an CbcModel to do a sub Tree (with derived tree handlers).
    Passed in model must exist for duration of branch and bound

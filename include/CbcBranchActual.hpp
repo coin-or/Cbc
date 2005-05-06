@@ -668,30 +668,22 @@ public:
 			    double changeUp, int numInfUp,
 			    double changeDn, int numInfDn);
 
+  /** \brief Compare N branching objects. Return index of best
+      and sets way of branching in chosen object.
+    
+    This routine is used only after strong branching.
+    This is reccommended version as it can be more sophisticated
+  */
+
+  virtual int
+  bestBranch (CbcBranchingObject ** objects, int numberObjects, int numberUnsatisfied,
+	      double * changeUp, int * numberInfeasibilitiesUp,
+	      double * changeDown, int * numberInfeasibilitiesDown,
+	      double objectiveValue) ;
 private:
   
   /// Illegal Assignment operator 
   CbcBranchDefaultDecision & operator=(const CbcBranchDefaultDecision& rhs);
-
-  /// data
-
-  /// "best" so far
-  double bestCriterion_;
-
-  /// Change up for best
-  double bestChangeUp_;
-
-  /// Number of infeasibilities for up
-  int bestNumberUp_;
-
-  /// Change down for best
-  double bestChangeDown_;
-
-  /// Number of infeasibilities for down
-  int bestNumberDown_;
-
-  /// Pointer to best branching object
-  CbcBranchingObject * bestObject_;
 
 };
 

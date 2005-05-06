@@ -317,6 +317,8 @@ public:
 
   /// Get the specified object
   const inline CbcObject * object(int which) const { return object_[which];};
+  /// Get the specified object
+  inline CbcObject * modifiableObject(int which) const { return object_[which];};
 
   /// Delete all object information
   void deleteObjects();
@@ -611,7 +613,7 @@ public:
   { return solver_->getNumRows();};
   
   /// Get number of nonzero elements
-  int getNumElements() const
+  CoinBigIndex getNumElements() const
   { return solver_->getNumElements();};
 
   /// Number of integers in problem
@@ -748,8 +750,8 @@ public:
     
   inline double * currentSolution() const
   { return currentSolution_;};
-  /// Make sure region there
-  void reserveCurrentSolution();
+  /// Make sure region there and optionally copy solution
+  void reserveCurrentSolution(const double * solution=NULL);
 
   /// Get pointer to array[getNumCols()] of primal solution vector
   inline const double * getColSolution() const
@@ -1053,22 +1055,16 @@ public:
 
       If ifNotSimpleIntegers true then appended to normal integers
 
+      This is now deprecated except for simple usage.  If user
+      creates Cbcobjects then set priority in them
+
       \internal Added for Kurt Spielberg.
   */
-  void passInPriorities(const int * priorities, bool ifNotSimpleIntegers,
-			int defaultValue=1000);
-
-  /// Priorities
-  inline const int * priority() const { return priority_;};
+  void passInPriorities(const int * priorities, bool ifNotSimpleIntegers);
 
   /// Returns priority level for an object (or 1000 if no priorities exist)
   inline int priority(int sequence) const
-  { 
-    if (priority_)
-      return priority_[sequence];
-    else
-      return 1000;
-  };
+  { return object_[sequence]->priority();}; 
   //@}
     
   /**@name Setting/Accessing application data */
@@ -1348,8 +1344,6 @@ private:
   
   /// Original columns as created by integerPresolve
   int * originalColumns_;
-  /// Priorities
-  int * priority_;
   /// How often to scan global cuts
   int howOftenGlobalScan_;
   /** Number of times global cuts violated.  When global cut pool then this

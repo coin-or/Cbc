@@ -13,14 +13,13 @@
 #include <string>
 #include <iostream>
 
-#define CBCVERSION "0.91"
+#define CBCVERSION "0.93"
 
 #include "CoinMpsIO.hpp"
 #include "CoinPackedMatrix.hpp"
 #include "CoinPackedVector.hpp"
 #include "CoinWarmStartBasis.hpp"
 #include "CoinTime.hpp"
-
 #include "OsiSolverInterface.hpp"
 #include "OsiCuts.hpp"
 #include "OsiRowCut.hpp"
@@ -35,8 +34,10 @@
 #include "CglFlowCover.hpp"
 #include "CglMixedIntegerRounding.hpp"
 #include "CglTwomir.hpp"
+#include "CglPreProcess.hpp"
 
 #include "CbcModel.hpp"
+#include "CbcTree.hpp"
 #include "CbcCutGenerator.hpp"
 #include "CbcHeuristic.hpp"
 #include "CbcCompareActual.hpp"
@@ -59,17 +60,26 @@ class CbcCompareUser  : public CbcCompareBase {
 public:
   // Weight for each infeasibility
   double weight_;
+  // Weight for each infeasibility - computed from solution
+  double saveWeight_;
   // Number of solutions
   int numberSolutions_;
+  // Tree size (at last check)
+  int treeSize_;
   // Default Constructor 
-  CbcCompareUser () : weight_(-1.0), numberSolutions_(0) {test_=this;};
+  CbcCompareUser () : CbcCompareBase(),
+                      weight_(-1.0),saveWeight_(0.0),numberSolutions_(0),
+                      treeSize_(0)
+  { test_=this;};
 
   // Copy constructor 
   CbcCompareUser ( const CbcCompareUser &rhs)
     : CbcCompareBase(rhs)
   {
     weight_=rhs.weight_;
+    saveWeight_ = rhs.saveWeight_;
     numberSolutions_=rhs.numberSolutions_;
+    treeSize_ = rhs.treeSize_;
   };
    
   // Assignment operator 
@@ -78,7 +88,9 @@ public:
     if (this!=&rhs) { 
       CbcCompareBase::operator=(rhs);
       weight_=rhs.weight_;
+      saveWeight_ = rhs.saveWeight_;
       numberSolutions_=rhs.numberSolutions_;
+      treeSize_ = rhs.treeSize_;
     }
     return *this;
   };
@@ -97,21 +109,19 @@ public:
      after solution weighted value of y is less than weighted value of x
   */
   virtual bool test (CbcNode * x, CbcNode * y) {
-    if (weight_<0.0) {
+    if (weight_==-1.0) {
       // before solution
-      /* printf("x %d %d %g, y %d %d %g\n",
-	     x->numberUnsatisfied(),x->depth(),x->objectiveValue(),
-	     y->numberUnsatisfied(),y->depth(),y->objectiveValue()); */
       if (x->numberUnsatisfied() > y->numberUnsatisfied())
-	return true;
+        return true;
       else if (x->numberUnsatisfied() < y->numberUnsatisfied())
-	return false;
+        return false;
       else
-	return x->depth() < y->depth();
+        return x->depth() < y->depth();
     } else {
       // after solution
-      return x->objectiveValue()+ weight_*x->numberUnsatisfied() > 
-	y->objectiveValue() + weight_*y->numberUnsatisfied();
+      double weight = CoinMax(weight_,0.0);
+      return x->objectiveValue()+ weight*x->numberUnsatisfied() > 
+        y->objectiveValue() + weight*y->numberUnsatisfied();
     }
   }
   // This allows method to change behavior as it is called
@@ -127,6 +137,7 @@ public:
       (model->getObjValue()-objectiveAtContinuous)/
       ((double) numberInfeasibilitiesAtContinuous);
     weight_ = 0.98*costPerInteger;
+    saveWeight_=weight_;
     numberSolutions_++;
     if (numberSolutions_>5)
       weight_ =0.0; // this searches on objective
@@ -136,7 +147,20 @@ public:
   {
     if (numberNodes>10000)
       weight_ =0.0; // this searches on objective
-    return false;
+    else if (numberNodes==1000&&weight_==-2.0)
+      weight_=-1.0; // Go to depth first
+    // get size of tree
+    treeSize_ = model->tree()->size();
+    if (treeSize_>10000) {
+      // set weight to reduce size most of time
+      if (treeSize_>20000)
+        weight_=-1.0;
+      else if ((numberNodes%4000)!=0)
+        weight_=-1.0;
+      else
+        weight_=saveWeight_;
+    }
+    return numberNodes==11000; // resort if first time
   }
 };
 
@@ -292,6 +316,10 @@ activity at continuous solution",
 	      "off",PRESOLVE);
     parameters[numberParameters-1].append("on");
     parameters[numberParameters++]=
+      CbcParam("preprocess","Whether to use integer preprocessing",
+	      "off",PREPROCESS);
+    parameters[numberParameters-1].append("on");
+    parameters[numberParameters++]=
       CbcParam("initialS!olve","Solve to continuous",
 	      SOLVECONTINUOUS);
     parameters[numberParameters++]=
@@ -333,6 +361,10 @@ activity at continuous solution",
     parameters[numberParameters++]=
       CbcParam("ver!sion","Print out version",
 	      VERSION);
+    parameters[numberParameters++]=
+      CbcParam("alg!orithm","Whether to use dual or primal",
+	      "dual",ALGORITHM);
+    parameters[numberParameters-1].append("primal");
 
     assert(numberParameters<MAXPARAMETERS);
 
@@ -611,15 +643,22 @@ int main (int argc, const char *argv[])
 
     CglGomory gomoryGen;
     // try larger limit
-    gomoryGen.setLimit(3000);
+    gomoryGen.setLimit(300);
     // set default action (0=off,1=on,2=root)
     int gomoryAction=1;
 
     CglProbing probingGen;
     probingGen.setUsingObjective(true);
     probingGen.setMaxPass(3);
-    probingGen.setMaxProbe(100);
-    probingGen.setMaxLook(50);
+    probingGen.setMaxPassRoot(3);
+    // Number of unsatisfied variables to look at
+    probingGen.setMaxProbe(10);
+    probingGen.setMaxProbeRoot(50);
+    // How far to follow the consequences
+    probingGen.setMaxLook(10);
+    probingGen.setMaxLookRoot(50);
+    // Only look at rows with fewer than this number of elements
+    probingGen.setMaxElements(200);
     probingGen.setRowCuts(3);
     // set default action (0=off,1=on,2=root)
     int probingAction=1;
@@ -656,12 +695,17 @@ int main (int argc, const char *argv[])
     bool useRounding=true;
    
     int allowImportErrors=0;
+    int algorithm=0; // dual
     int keepImportNames=1;	// not implemented
     int doScaling=1;
     int preSolve=0;
+    int preProcess=1;
     double djFix=1.0e100;
     double gapRatio=1.0e100;
     double tightenFactor=0.0;
+
+    // Set false if user does anything advanced
+    bool defaultSettings=true;
 
     std::string directory ="./";
     std::string field;
@@ -679,58 +723,7 @@ int main (int argc, const char *argv[])
       if (!field.length()) {
 	if (numberGoodCommands==1&&goodModel) {
 	  // we just had file name
-	  model->initialSolve();
-	  model->solver()->messageHandler()->setLogLevel(0);
-	  CbcRounding heuristic1(*model);
-	  if (useRounding)
-	    model->addHeuristic(&heuristic1) ;
-	  // add cut generators if wanted
-	  if (probingAction==1)
-	    model->addCutGenerator(&probingGen,-1,"Probing");
-	  else if (probingAction==2)
-	    model->addCutGenerator(&probingGen,-99,"Probing");
-	  if (gomoryAction==1)
-	    model->addCutGenerator(&gomoryGen,-1,"Gomory");
-	  else if (gomoryAction==2)
-	    model->addCutGenerator(&gomoryGen,-99,"Gomory");
-	  if (knapsackAction==1)
-	    model->addCutGenerator(&knapsackGen,-1,"Knapsack");
-	  else if (knapsackAction==2)
-	    model->addCutGenerator(&knapsackGen,-99,"Knapsack");
-	  if (oddholeAction==1)
-	    model->addCutGenerator(&oddholeGen,-1,"OddHole");
-	  else if (oddholeAction==2)
-	    model->addCutGenerator(&oddholeGen,-99,"OddHole");
-	  if (cliqueAction==1)
-	    model->addCutGenerator(&cliqueGen,-1,"Clique");
-	  else if (cliqueAction==2)
-	    model->addCutGenerator(&cliqueGen,-99,"Clique");
-	  if (mixedAction==1)
-	    model->addCutGenerator(&mixedGen,-1,"MixedintegerRounding");
-	  else if (mixedAction==2)
-	    model->addCutGenerator(&mixedGen,-99,"MixedintegerRounding");
-	  if (flowAction==1)
-	    model->addCutGenerator(&flowGen,-1,"FlowCover");
-	  else if (flowAction==2)
-	    model->addCutGenerator(&flowGen,-99,"FlowCover");
-	  if (twomirAction==1)
-	    model->addCutGenerator(&twomirGen,-1,"TwoMirCuts");
-	  else if (twomirAction==2)
-	    model->addCutGenerator(&twomirGen,-99,"TwoMirCuts");
-          // Say we want timings
-          int numberGenerators = model->numberCutGenerators();
-          int iGenerator;
-          for (iGenerator=0;iGenerator<numberGenerators;iGenerator++) {
-            CbcCutGenerator * generator = model->cutGenerator(iGenerator);
-            generator->setTiming(true);
-          }
-	  model->branchAndBound();
-	  time2 = CoinCpuTime();
-	  totalTime += time2-time1;
-	  std::cout<<"Result "<<model->getObjValue()<<
-	    " iterations "<<model->getIterationCount()<<
-	    " nodes "<<model->getNodeCount()<<
-	    " took "<<time2-time1<<" seconds - total "<<totalTime<<std::endl;
+          field="branchAndBound";
 	} else if (!numberGoodCommands) {
 	  // let's give the sucker a hint
 	  std::cout
@@ -738,8 +731,10 @@ int main (int argc, const char *argv[])
 	    <<std::endl
 	    <<"Enter ? for list of commands or (-)unitTest or -miplib"
 	    <<" for tests"<<std::endl;
-	}
-	break;
+          break;
+	} else {
+          break;
+        }
       }
       
       // see if ? at end
@@ -808,12 +803,14 @@ int main (int argc, const char *argv[])
 	      case DJFIX:
 		djFix=value;
 		preSolve=5;
+                defaultSettings=false; // user knows what she is doing
 		break;
 	      case GAPRATIO:
 		gapRatio=value;
 		break;
 	      case TIGHTENFACTOR:
 		tightenFactor=value;
+                defaultSettings=false; // user knows what she is doing
 		break;
 	      default:
 		abort();
@@ -875,6 +872,10 @@ int main (int argc, const char *argv[])
 	    case ERRORSALLOWED:
 	      allowImportErrors = action;
 	      break;
+	    case ALGORITHM:
+	      algorithm  = action;
+              defaultSettings=false; // user knows what she is doing
+	      break;
 	    case KEEPNAMES:
 	      keepImportNames = 1-action;
 	      break;
@@ -882,30 +883,39 @@ int main (int argc, const char *argv[])
 	      doScaling = 1-action;
 	      break;
 	    case GOMORYCUTS:
+              defaultSettings=false; // user knows what she is doing
 	      gomoryAction = action;
 	      break;
 	    case PROBINGCUTS:
+              defaultSettings=false; // user knows what she is doing
 	      probingAction = action;
 	      break;
 	    case KNAPSACKCUTS:
+              defaultSettings=false; // user knows what she is doing
 	      knapsackAction = action;
 	      break;
 	    case ODDHOLECUTS:
+              defaultSettings=false; // user knows what she is doing
 	      oddholeAction = action;
 	      break;
 	    case CLIQUECUTS:
+              defaultSettings=false; // user knows what she is doing
 	      cliqueAction = action;
 	      break;
 	    case FLOWCUTS:
+              defaultSettings=false; // user knows what she is doing
 	      flowAction = action;
 	      break;
 	    case MIXEDCUTS:
+              defaultSettings=false; // user knows what she is doing
 	      mixedAction = action;
 	      break;
 	    case TWOMIRCUTS:
+              defaultSettings=false; // user knows what she is doing
 	      twomirAction = action;
 	      break;
 	    case ROUNDING:
+              defaultSettings=false; // user knows what she is doing
 	      useRounding = action;
 	      break;
 	    case COSTSTRATEGY:
@@ -943,7 +953,11 @@ int main (int argc, const char *argv[])
 	      }
 	      break;
 	    case PRESOLVE:
+                defaultSettings=false; // user knows what she is doing
 	      preSolve = action*5;
+	      break;
+	    case PREPROCESS:
+	      preProcess = action;
 	      break;
 	    case SOLVER:
 	    { for (int i = 0 ; i < (int) value.length() ; i++)
@@ -984,6 +998,8 @@ int main (int argc, const char *argv[])
 	  case BAB: // branchAndBound
 	  { if (goodModel)
 	    { CbcCompareUser compare; // Definition of node choice
+            // If user made settings then use them
+            if (!defaultSettings) {
 	      model->setNodeComparison(compare);
 	      OsiSolverInterface * solver = model->solver();
 	      if (!doScaling)
@@ -1025,18 +1041,22 @@ int main (int argc, const char *argv[])
 		  double * upper = modelC->columnUpper();
 		  double * solution = modelC->primalColumnSolution();
 		  double * dj = modelC->dualColumnSolution();
+                  int numberFixed=0;
 		  for (i=0;i<numberColumns;i++) {
 		    if (type[i]) {
 		      double value = solution[i];
 		      if (value<lower[i]+1.0e-5&&dj[i]>djFix) {
 			solution[i]=lower[i];
 			upper[i]=lower[i];
+                        numberFixed++;
 		      } else if (value>upper[i]-1.0e-5&&dj[i]<-djFix) {
 			solution[i]=upper[i];
 			lower[i]=upper[i];
+                        numberFixed++;
 		      }
 		    }
 		  }
+                  printf("%d columns fixed\n",numberFixed);
 		}
 		{
 		  // integer presolve
@@ -1047,6 +1067,11 @@ int main (int argc, const char *argv[])
 		    CbcRounding heuristic1(*model2);
 		    if (useRounding)
 		      model2->addHeuristic(&heuristic1);
+                    if (algorithm) {
+                      // user wants primal
+                      model2->solver()->setHintParam(OsiDoDualInInitial,false,OsiHintTry);
+                      model2->solver()->setHintParam(OsiDoDualInResolve,false,OsiHintTry);
+                    }
 		    model2->branchAndBound();
 		    // get back solution
 		    model->originalModel(model2,false);
@@ -1115,8 +1140,132 @@ int main (int argc, const char *argv[])
 	      std::cout << "Result " << model->solver()->getObjValue()
 			<< " took " << time2-time1 << " seconds - total "
 			<< totalTime << std::endl ;
-	      time1 = time2 ; }
-	    else
+	      time1 = time2 ;
+            } else {
+              // User is going to get what I think best
+	      if (!doScaling)
+		model->solver()->setHintParam(OsiDoScale,false,OsiHintTry);
+              model->initialSolve();
+              // See if we want preprocessing
+              OsiSolverInterface * saveSolver=NULL;
+              CglPreProcess process;
+              if (preProcess) {
+                saveSolver=model->solver()->clone();
+                /* Do not try and produce equality cliques and
+                   do up to 10 passes */
+                OsiSolverInterface * solver2 = process.preProcess(*saveSolver,false,10);
+                if (!solver2) {
+                  printf("Pre-processing says infeasible\n");
+                  break;
+                } else {
+                  printf("processed model has %d rows and %d columns\n",
+                         solver2->getNumRows(),solver2->getNumCols());
+                }
+                //solver2->resolve();
+                // we have to keep solver2 so pass clone
+                solver2 = solver2->clone();
+                model->assignSolver(solver2);
+                model->initialSolve();
+              }
+	      model->setNodeComparison(compare);
+              CbcRounding heuristic1(*model);
+              if (useRounding)
+                model->addHeuristic(&heuristic1) ;
+              // add cut generators if wanted
+              if (probingAction==1)
+                model->addCutGenerator(&probingGen,-1,"Probing");
+              else if (probingAction==2)
+                model->addCutGenerator(&probingGen,-99,"Probing");
+              if (gomoryAction==1)
+                model->addCutGenerator(&gomoryGen,-1,"Gomory");
+              else if (gomoryAction==2)
+                model->addCutGenerator(&gomoryGen,-99,"Gomory");
+              if (knapsackAction==1)
+                model->addCutGenerator(&knapsackGen,-1,"Knapsack");
+              else if (knapsackAction==2)
+                model->addCutGenerator(&knapsackGen,-99,"Knapsack");
+              if (oddholeAction==1)
+                model->addCutGenerator(&oddholeGen,-1,"OddHole");
+              else if (oddholeAction==2)
+                model->addCutGenerator(&oddholeGen,-99,"OddHole");
+              if (cliqueAction==1)
+                model->addCutGenerator(&cliqueGen,-1,"Clique");
+              else if (cliqueAction==2)
+                model->addCutGenerator(&cliqueGen,-99,"Clique");
+              if (mixedAction==1)
+                model->addCutGenerator(&mixedGen,-1,"MixedintegerRounding");
+              else if (mixedAction==2)
+                model->addCutGenerator(&mixedGen,-99,"MixedintegerRounding");
+              if (flowAction==1)
+                model->addCutGenerator(&flowGen,-1,"FlowCover");
+              else if (flowAction==2)
+                model->addCutGenerator(&flowGen,-99,"FlowCover");
+              if (twomirAction==1)
+                model->addCutGenerator(&twomirGen,-1,"TwoMirCuts");
+              else if (twomirAction==2)
+                model->addCutGenerator(&twomirGen,-99,"TwoMirCuts");
+              // Say we want timings
+              int numberGenerators = model->numberCutGenerators();
+              int iGenerator;
+              for (iGenerator=0;iGenerator<numberGenerators;iGenerator++) {
+                CbcCutGenerator * generator = model->cutGenerator(iGenerator);
+                generator->setTiming(true);
+              }
+              // Could tune more
+              model->setMinimumDrop(min(1.0,
+                                        fabs(model->getMinimizationObjValue())*1.0e-3+1.0e-4));
+              
+              if (model->getNumCols()<500)
+                model->setMaximumCutPassesAtRoot(-100); // always do 100 if possible
+              else if (model->getNumCols()<5000)
+                model->setMaximumCutPassesAtRoot(100); // use minimum drop
+              else
+                model->setMaximumCutPassesAtRoot(20);
+              model->setMaximumCutPasses(2);
+              
+              // Do more strong branching if small
+              if (model->getNumCols()<5000)
+                model->setNumberStrong(20);
+              // Switch off strong branching if wanted
+              //if (model->getNumCols()>10*model->getNumRows())
+              //model->setNumberStrong(0);
+              if (model->getNumCols()>2000||model->getNumRows()>1500||
+                  model->messageHandler()->logLevel()>1)
+                model->setPrintFrequency(100);
+              
+              model->solver()->setIntParam(OsiMaxNumIterationHotStart,100);
+#ifdef COIN_USE_CLP
+              OsiClpSolverInterface * osiclp = dynamic_cast< OsiClpSolverInterface*> (model->solver());
+              // go faster stripes
+              if (osiclp->getNumRows()<300&&osiclp->getNumCols()<500) {
+                osiclp->setupForRepeatedUse(2,0);
+              }
+#endif
+              if (gapRatio < 1.0e100)
+		{ double value = model->solver()->getObjValue() ;
+                double value2 = gapRatio*(1.0e-5+fabs(value)) ;
+                model->setAllowableGap(value2) ;
+                std::cout << "Continuous " << value
+                          << ", so allowable gap set to "
+                          << value2 << std::endl ; }
+              model->branchAndBound();
+              time2 = CoinCpuTime();
+              totalTime += time2-time1;
+              if (model->getMinimizationObjValue()<1.0e50) {
+                // post process
+                if (preProcess) {
+                  process.postProcess(*model->solver());
+                  // Solution now back in saveSolver
+                  model->assignSolver(saveSolver);
+                }
+              }
+              std::cout<<"Result "<<model->getObjValue()<<
+                " iterations "<<model->getIterationCount()<<
+                " nodes "<<model->getNodeCount()<<
+                " took "<<time2-time1<<" seconds - total "<<totalTime<<std::endl;
+              time1 = time2;
+            }
+            } else
 	    { std::cout << "** Current model not valid" << std::endl ; }
 	    break ; }
 	  case IMPORT:

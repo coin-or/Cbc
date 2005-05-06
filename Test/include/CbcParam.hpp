@@ -6,14 +6,15 @@
 
 #include "OsiSolverInterface.hpp"
 #include "CbcModel.hpp"
-
+class ClpSimplex;
 /*! \brief Parameter codes
 
   Parameter type ranges are allocated as follows
   <ul>
     <li>   1 -- 100	double parameters
     <li> 101 -- 200	integer parameters
-    <li> 201 -- 300	string parameters
+    <li> 201 -- 250	string parameters
+    <li> 251 -- 300	cuts etc(string but broken out for clarity)
     <li> 301 -- 400	`actions'
   </ul>
 
@@ -27,26 +28,32 @@
 
 enum CbcParameterType
 
-{ GENERALQUERY = -100,
+  { GENERALQUERY = -100,FULLGENERALQUERY,
   
-  PRIMALTOLERANCE = 1, DUALTOLERANCE,CUTOFF,TIMELIMIT,
+    PRIMALTOLERANCE = 1, DUALTOLERANCE,CUTOFF,TIMELIMIT,
+    DUALBOUND, PRIMALWEIGHT,  OBJSCALE, RHSSCALE,
 
   INFEASIBILITYWEIGHT = 51, INTEGERTOLERANCE,INCREMENT,ALLOWABLEGAP,
 
   DJFIX = 81, GAPRATIO,TIGHTENFACTOR,
 
-  LOGLEVEL = 151, SOLVERLOGLEVEL, MAXNODES,STRONGBRANCHING,
+  LOGLEVEL = 101, SOLVERLOGLEVEL, MAXNODES,STRONGBRANCHING,
+    MAXFACTOR,PERTVALUE,MAXITERATION,PRESOLVEPASS,IDIOT,SPRINT,
+    OUTPUTFORMAT,SLPVALUE,PRESOLVEOPTIONS,PRINTOPTIONS,SPECIALOPTIONS,
   
-  DIRECTION = 201,ERRORSALLOWED,KEEPNAMES,SCALING,
+  DIRECTION=201,DUALPIVOT,SCALING,ERRORSALLOWED,KEEPNAMES,SPARSEFACTOR,
+  PRIMALPIVOT,PRESOLVE,CRASH,BIASLU,PERTURBATION,MESSAGES,AUTOSCALE,
+  CHOLESKY,KKT,BARRIERSCALE,GAMMA,CROSSOVER,PFI,ALGORITHM,
 
   NODESTRATEGY = 251,BRANCHSTRATEGY,ADDCUTSSTRATEGY,
-  GOMORYCUTS,PROBINGCUTS,KNAPSACKCUTS,ODDHOLECUTS,PRESOLVE,
+  GOMORYCUTS,PROBINGCUTS,KNAPSACKCUTS,ODDHOLECUTS,
   ROUNDING,SOLVER,CLIQUECUTS,COSTSTRATEGY,FLOWCUTS,MIXEDCUTS,
-  TWOMIRCUTS,
+    TWOMIRCUTS,PREPROCESS,
   
-  DIRECTORY = 301,IMPORT,EXPORT,RESTORE,SAVE,SOLVECONTINUOUS,BAB,
-    MAXIMIZE,MINIMIZE,EXIT,STDIN,UNITTEST,MIPLIB,SOLUTION,CLEARCUTS,
-    VERSION,
+  DIRECTORY=301,IMPORT,EXPORT,RESTORE,SAVE,DUALSIMPLEX,PRIMALSIMPLEX,
+  MAXIMIZE,MINIMIZE,EXIT,STDIN,UNITTEST,NETLIB_DUAL,NETLIB_PRIMAL,SOLUTION,
+  TIGHTEN,FAKEBOUND,HELP,PLUSMINUS,NETWORK,ALLSLACK,REVERSE,BARRIER,NETLIB_BARRIER,
+    REALLY_SCALE,BASISIN,BASISOUT,SOLVECONTINUOUS,BAB,MIPLIB,CLEARCUTS,VERSION,
 
   OSLSTUFF = 401,CBCSTUFF,
 
@@ -56,27 +63,27 @@ enum CbcParameterType
 /// Very simple class for setting parameters
 
 class CbcParam
-
-{ public:
+{
+public:
 
   /**@name Constructor and destructor */
   //@{
   /// Constructors
   CbcParam (  );
   CbcParam (std::string name, std::string help,
-	   double lower, double upper, CbcParameterType type);
+	   double lower, double upper, CbcParameterType type,bool display=true);
   CbcParam (std::string name, std::string help,
-	   int lower, int upper, CbcParameterType type);
+	   int lower, int upper, CbcParameterType type,bool display=true);
   // Other strings will be added by insert
-  CbcParam (std::string name, std::string help, std::string defaultValue,
-	   CbcParameterType type);
+  CbcParam (std::string name, std::string help, std::string firstValue,
+	   CbcParameterType type,int defaultIndex=0,bool display=true);
   // Action
   CbcParam (std::string name, std::string help,
-	   CbcParameterType type);
+	   CbcParameterType type,int indexNumber=-1,bool display=true);
   /// Copy constructor. 
   CbcParam(const CbcParam &);
   /// Assignment operator. This copies the data
-    CbcParam & operator = (const CbcParam & rhs);
+    CbcParam & operator=(const CbcParam & rhs);
   /// Destructor
   ~CbcParam (  );
   //@}
@@ -96,6 +103,22 @@ class CbcParam
     return shortHelp_;
   };
   /// Sets a double parameter (nonzero code if error)
+  int setDoubleParameter(CbcModel & model, double value) const;
+  /// Gets a double parameter
+  double doubleParameter(CbcModel & model) const;
+  /// Sets a int parameter (nonzero code if error)
+  int setIntParameter(CbcModel & model, int value) const;
+  /// Gets a int parameter
+  int intParameter(CbcModel & model) const;
+  /// Sets a double parameter (nonzero code if error)
+  int setDoubleParameter(ClpSimplex * model, double value) const;
+  /// Gets a double parameter
+  double doubleParameter(ClpSimplex * model) const;
+  /// Sets a int parameter (nonzero code if error)
+  int setIntParameter(ClpSimplex * model, int value) const;
+  /// Gets a int parameter
+  int intParameter(ClpSimplex * model) const;
+  /// Sets a double parameter (nonzero code if error)
   int setDoubleParameter(OsiSolverInterface * model, double value) const;
   /// Gets a double parameter
   double doubleParameter(OsiSolverInterface * model) const;
@@ -103,16 +126,8 @@ class CbcParam
   int setIntParameter(OsiSolverInterface * model, int value) const;
   /// Gets a int parameter
   int intParameter(OsiSolverInterface * model) const;
-  /// Sets a double parameter (nonzero code if error)
-  int setDoubleParameter(CbcModel &model, double value) const;
-  /// Gets a double parameter
-  double doubleParameter(CbcModel &model) const;
   /// Checks a double parameter (nonzero code if error)
   int checkDoubleParameter(double value) const;
-  /// Sets a int parameter (nonzero code if error)
-  int setIntParameter(CbcModel &model, int value) const;
-  /// Gets a int parameter
-  int intParameter(CbcModel &model) const;
   /// Returns name which could match
   std::string matchName (  ) const;
   /// Returns parameter option which matches (-1 if none)
@@ -124,12 +139,40 @@ class CbcParam
   { return definedKeyWords_[currentKeyWord_]; };
   /// Sets current parameter option
   inline void setCurrentOption ( int value )
-  { currentKeyWord_ = value; };
+  { currentKeyWord_=value; };
+  /// Sets int value
+  inline void setIntValue ( int value )
+  { intValue_=value; };
+  inline int intValue () const
+  { return intValue_; };
+  /// Sets double value
+  inline void setDoubleValue ( double value )
+  { doubleValue_=value; };
+  inline double doubleValue () const
+  { return doubleValue_; };
+  /// Sets string value
+  inline void setStringValue ( std::string value )
+  { stringValue_=value; };
+  inline std::string stringValue () const
+  { return stringValue_; };
   /// Returns 1 if matches minimum, 2 if matches less, 0 if not matched
   int matches (std::string input) const;
   /// type
   inline CbcParameterType type() const
   { return type_;};
+  /// whether to display
+  inline bool displayThis() const
+  { return display_;};
+  /// Set Long help
+  inline void setLonghelp(const std::string help) 
+  {longHelp_=help;};
+  /// Print Long help
+  void printLongHelp() const;
+  /// Print action and string
+  void printString() const;
+  /// type for classification
+  inline int indexNumber() const
+  { return indexNumber_;};
 private:
   /// gutsOfConstructor
   void gutsOfConstructor();
@@ -160,12 +203,21 @@ private:
   /// Short help
   std::string shortHelp_;
   /// Long help
-  std::vector<std::string> longHelp_;
+  std::string longHelp_;
   /// Action
   CbcParameterType action_;
   /// Current keyWord (if a keyword parameter)
   int currentKeyWord_;
+  /// Display on ?
+  bool display_;
+  /// Integer parameter - current value
+  int intValue_;
+  /// Double parameter - current value
+  double doubleValue_;
+  /// String parameter - current value
+  std::string stringValue_;
+  /// index number to use for display purposes
+  int indexNumber_;
   //@}
 };
-
 #endif	/* CbcParam_H */

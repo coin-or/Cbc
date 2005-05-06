@@ -131,6 +131,12 @@ public:
   /// Identifier (normally column number in matrix)
   inline int id() const
   { return id_;};
+  /// Return Priority
+  inline int priority() const
+  { return priority_;};
+  /// Set priority
+  inline void setPriority(int priority)
+  { priority_ = priority;};
   
   /// Column number if single column object -1 otherwise
   virtual int columnNumber() const;
@@ -155,6 +161,8 @@ protected:
   CbcModel * model_;
   /// Identifier (normally column number in matrix)
   int id_;
+  /// Priority
+  int priority_;
 
 };
 

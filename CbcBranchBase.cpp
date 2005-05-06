@@ -17,7 +17,8 @@
 // Default Constructor
 CbcObject::CbcObject() 
   :model_(NULL),
-   id_(-1)
+   id_(-1),
+   priority_(1000)
 {
 }
 
@@ -25,7 +26,8 @@ CbcObject::CbcObject()
 CbcObject::CbcObject(CbcModel * model)
 :
   model_(model),
-  id_(-1)
+  id_(-1),
+  priority_(1000)
 {
 }
 
@@ -40,6 +42,7 @@ CbcObject::CbcObject ( const CbcObject & rhs)
 {
   model_ = rhs.model_;
   id_ = rhs.id_;
+  priority_ = rhs.priority_;
 }
 
 // Assignment operator 
@@ -49,6 +52,7 @@ CbcObject::operator=( const CbcObject& rhs)
   if (this!=&rhs) {
     model_ = rhs.model_;
     id_ = rhs.id_;
+    priority_ = rhs.priority_;
   }
   return *this;
 }

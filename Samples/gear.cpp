@@ -113,9 +113,11 @@ int main (int argc, const char *argv[])
   double value[] ={1.0,1.0};
   int row[2];
   /* z - obviously we can't choose bounds too tight but we need bounds
-     so choose 20% off as obviously feasible */
-  double loZ = 0.5
-*(1.0/6.931), hiZ = 1.2*(1.0/6.931);
+     so choose 20% off as obviously feasible.
+     fastest way to solve would be too run for a few seconds to get
+     tighter bounds then re-formulate and solve.  */
+  double loose=0.2;
+  double loZ = (1-loose)*(1.0/6.931), hiZ = (1+loose)*(1.0/6.931);
   row[0]=0; // for reporting
   row[1]=zbase+1; // for real use
   build.addColumn(2,row,value,loZ, hiZ, 0.0);
@@ -210,6 +212,13 @@ int main (int argc, const char *argv[])
     // u
     build.setElement(zbase+2,base+2*i+1,-(i+loInt*loInt)*hiZ);
   }
+  // And finally two more rows to break symmetry
+  build.setRowBounds(zbase+3,-COIN_DBL_MAX,0.0);
+  build.setElement(zbase+3,1,1.0);
+  build.setElement(zbase+3,4,-1.0);
+  build.setRowBounds(zbase+4,-COIN_DBL_MAX,0.0);
+  build.setElement(zbase+4,2,1.0);
+  build.setElement(zbase+4,3,-1.0);
   solver1.loadFromCoinModel(build);
   // To make CbcBranchLink simpler assume that all variables with same i are consecutive
   

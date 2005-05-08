@@ -227,6 +227,7 @@ int main (int argc, const char *argv[])
   solver1.writeMps("bad");
   CbcModel model(solver1);
   model.solver()->setHintParam(OsiDoReducePrint,true,OsiHintTry);
+  model.solver()->setHintParam(OsiDoScale,false,OsiHintTry);
 
   CbcObject ** objects = new CbcObject * [3];
   /* Format is number in sets, number in each link, first variable in matrix)

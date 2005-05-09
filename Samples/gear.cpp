@@ -30,6 +30,8 @@ We are going to solve the problem
 minimize  abs  ( 1.0/6.931 - x1*x4/x2*x3)
 
 where the variables are integral between 12 and 60.
+See E.Sangren, "Nonlinear Integer and Discrete Programming in 
+Mechanical Design Optimization". Trans. ASME, J. Mech Design 112, 223-229, 1990
 
 One could try to use logarithms to make the problem separable but that leads to a 
 weak formulation.  Instaed we are going to use linked

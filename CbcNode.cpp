@@ -950,7 +950,7 @@ int CbcNode::chooseBranch (CbcModel *model, CbcNode *lastNode,int numberPassesLe
       for (i = 0 ; i < maximumStrong ; i++) choice[i].possibleBranch = NULL ;
       numberStrong=0;
       for (i=0;i<numberObjects;i++) {
-        const CbcObject * object = model->object(i);
+        CbcObject * object = model->modifiableObject(i);
         int preferredWay;
         double infeasibility = object->infeasibility(preferredWay);
         int priorityLevel = object->priority();

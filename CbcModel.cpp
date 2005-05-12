@@ -3827,7 +3827,7 @@ CbcModel::checkSolution (double cutoff, const double *solution,
     solver_->setHintParam(OsiDoScale,saveTakeHint,saveStrength);
     solver_->setHintParam(OsiDoReducePrint,savePrintHint,OsiHintTry) ;
     }
-  assert(solver_->isProvenOptimal());
+  //assert(solver_->isProvenOptimal());
   double objectiveValue = solver_->getObjValue()*solver_->getObjSense();
 
   /*

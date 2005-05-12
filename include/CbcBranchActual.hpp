@@ -42,7 +42,7 @@ public:
   /// This looks at solution and sets bounds to contain solution
   virtual void feasibleRegion();
   /// Creates a branching object
-  virtual CbcBranchingObject * createBranch(int way) const;
+  virtual CbcBranchingObject * createBranch(int way) ;
   /// Number of members
   inline int numberMembers() const
   {return numberMembers_;};
@@ -125,7 +125,7 @@ public:
   /// This looks at solution and sets bounds to contain solution
   virtual void feasibleRegion();
   /// Creates a branching object
-  virtual CbcBranchingObject * createBranch(int way) const;
+  virtual CbcBranchingObject * createBranch(int way) ;
 
   /// Number of members
   inline int numberMembers() const
@@ -195,7 +195,7 @@ public:
   virtual void feasibleRegion();
 
   /// Creates a branching object
-  virtual CbcBranchingObject * createBranch(int way) const;
+  virtual CbcBranchingObject * createBranch(int way) ;
 
   /** \brief Given a valid solution (with reduced costs, etc.),
       return a branching object which would give a new feasible
@@ -375,7 +375,7 @@ public:
   virtual double infeasibility(int & preferredWay) const;
 
   /// Creates a branching object
-  virtual CbcBranchingObject * createBranch(int way) const;
+  virtual CbcBranchingObject * createBranch(int way) ;
 
   /// Down pseudo cost
   inline double downPseudoCost() const
@@ -672,7 +672,6 @@ public:
       and sets way of branching in chosen object.
     
     This routine is used only after strong branching.
-    This is reccommended version as it can be more sophisticated
   */
 
   virtual int
@@ -684,6 +683,26 @@ private:
   
   /// Illegal Assignment operator 
   CbcBranchDefaultDecision & operator=(const CbcBranchDefaultDecision& rhs);
+
+  /// data
+
+  /// "best" so far
+  double bestCriterion_;
+
+  /// Change up for best
+  double bestChangeUp_;
+
+  /// Number of infeasibilities for up
+  int bestNumberUp_;
+
+  /// Change down for best
+  double bestChangeDown_;
+
+  /// Number of infeasibilities for down
+  int bestNumberDown_;
+
+  /// Pointer to best branching object
+  CbcBranchingObject * bestObject_;
 
 };
 
@@ -727,7 +746,7 @@ public:
   /// This looks at solution and sets bounds to contain solution
   virtual void feasibleRegion();
   /// Creates a branching object
-  virtual CbcBranchingObject * createBranch(int way) const;
+  virtual CbcBranchingObject * createBranch(int way) ;
   /// As some computation is needed in more than one place - returns row
   virtual int gutsOfFollowOn(int & otherRow, int & preferredWay) const;
 

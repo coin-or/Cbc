@@ -49,7 +49,7 @@ public:
   /// This looks at solution and sets bounds to contain solution
   virtual void feasibleRegion();
   /// Creates a branching object
-  virtual CbcBranchingObject * createBranch(int way) const;
+  virtual CbcBranchingObject * createBranch(int way) ;
   /** As some computation is needed in more than one place - returns row.
       Also returns other row and effective rhs (so we can know if cut)
   */

@@ -51,7 +51,7 @@ public:
   */
   virtual bool boundBranch() const ;
   /// Creates a branching object
-  virtual CbcBranchingObject * createBranch(int way) const;
+  virtual CbcBranchingObject * createBranch(int way) ;
 
   /** \brief Given a valid solution (with reduced costs, etc.),
       return a branching object which would give a new feasible

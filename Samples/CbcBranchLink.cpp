@@ -214,7 +214,7 @@ CbcLink::feasibleRegion()
 
 // Creates a branching object
 CbcBranchingObject * 
-CbcLink::createBranch(int way) const
+CbcLink::createBranch(int way) 
 {
   int j;
   const double * solution = model_->currentSolution();

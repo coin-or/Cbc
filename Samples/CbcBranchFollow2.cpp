@@ -321,7 +321,7 @@ CbcFollowOn2::feasibleRegion()
 
 // Creates a branching object
 CbcBranchingObject * 
-CbcFollowOn2::createBranch(int way) const
+CbcFollowOn2::createBranch(int way) 
 {
   int otherRow=0;
   int preferredWay;

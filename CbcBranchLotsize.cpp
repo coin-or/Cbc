@@ -519,7 +519,7 @@ CbcLotsize::feasibleRegion()
 
 // Creates a branching object
 CbcBranchingObject * 
-CbcLotsize::createBranch(int way) const
+CbcLotsize::createBranch(int way) 
 {
   OsiSolverInterface * solver = model_->solver();
   const double * solution = model_->currentSolution();

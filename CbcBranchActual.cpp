@@ -213,7 +213,7 @@ CbcClique::feasibleRegion()
 
 // Creates a branching object
 CbcBranchingObject * 
-CbcClique::createBranch(int way) const
+CbcClique::createBranch(int way) 
 {
   int numberUnsatis=0;
   int j;
@@ -491,7 +491,7 @@ CbcSOS::feasibleRegion()
 
 // Creates a branching object
 CbcBranchingObject * 
-CbcSOS::createBranch(int way) const
+CbcSOS::createBranch(int way) 
 {
   int j;
   const double * solution = model_->currentSolution();
@@ -685,7 +685,7 @@ CbcSimpleInteger::columnNumber() const
 
 // Creates a branching object
 CbcBranchingObject * 
-CbcSimpleInteger::createBranch(int way) const
+CbcSimpleInteger::createBranch(int way) 
 {
   OsiSolverInterface * solver = model_->solver();
   const double * solution = model_->currentSolution();
@@ -917,14 +917,14 @@ CbcIntegerBranchingObject::print(bool normalBranch)
   { double olb,oub ;
     olb = model_->solver()->getColLower()[iColumn] ;
     oub = model_->solver()->getColUpper()[iColumn] ;
-    printf("CbcInteger would branch down on var %d: [%g,%g] => [%g,%g]\n",
-	   iColumn,olb,oub,down_[0],down_[1]) ; }
+    printf("CbcInteger would branch down on var %d (int var %d): [%g,%g] => [%g,%g]\n",
+	   iColumn,variable_,olb,oub,down_[0],down_[1]) ; }
   } else {
   { double olb,oub ;
     olb = model_->solver()->getColLower()[iColumn] ;
     oub = model_->solver()->getColUpper()[iColumn] ;
-    printf("CbcInteger would branch up on var %d: [%g,%g] => [%g,%g]\n",
-	   iColumn,olb,oub,up_[0],up_[1]) ; }
+    printf("CbcInteger would branch up on var %d (int var %d): [%g,%g] => [%g,%g]\n",
+	   iColumn,variable_,olb,oub,up_[0],up_[1]) ; }
   }
 }
 
@@ -1009,7 +1009,7 @@ CbcSimpleIntegerPseudoCost::~CbcSimpleIntegerPseudoCost ()
 }
 // Creates a branching object
 CbcBranchingObject * 
-CbcSimpleIntegerPseudoCost::createBranch(int way) const
+CbcSimpleIntegerPseudoCost::createBranch(int way) 
 {
   OsiSolverInterface * solver = model_->solver();
   const double * solution = model_->currentSolution();
@@ -1731,6 +1731,12 @@ CbcSOSBranchingObject::print(bool normalBranch)
 CbcBranchDefaultDecision::CbcBranchDefaultDecision()
   :CbcBranchDecision()
 {
+  bestCriterion_ = 0.0;
+  bestChangeUp_ = 0.0;
+  bestNumberUp_ = 0;
+  bestChangeDown_ = 0.0;
+  bestNumberDown_ = 0;
+  bestObject_ = NULL;
 }
 
 // Copy constructor 
@@ -1738,6 +1744,12 @@ CbcBranchDefaultDecision::CbcBranchDefaultDecision (
 				    const CbcBranchDefaultDecision & rhs)
   :CbcBranchDecision()
 {
+  bestCriterion_ = rhs.bestCriterion_;
+  bestChangeUp_ = rhs.bestChangeUp_;
+  bestNumberUp_ = rhs.bestNumberUp_;
+  bestChangeDown_ = rhs.bestChangeDown_;
+  bestNumberDown_ = rhs.bestNumberDown_;
+  bestObject_ = rhs.bestObject_;
 }
 
 CbcBranchDefaultDecision::~CbcBranchDefaultDecision()
@@ -1755,6 +1767,12 @@ CbcBranchDefaultDecision::clone() const
 void 
 CbcBranchDefaultDecision::initialize(CbcModel * model)
 {
+  bestCriterion_ = 0.0;
+  bestChangeUp_ = 0.0;
+  bestNumberUp_ = 0;
+  bestChangeDown_ = 0.0;
+  bestNumberDown_ = 0;
+  bestObject_ = NULL;
 }
 
 
@@ -1771,16 +1789,76 @@ CbcBranchDefaultDecision::betterBranch(CbcBranchingObject * thisOne,
 			    double changeUp, int numInfUp,
 			    double changeDn, int numInfDn)
 {
-  printf("Now obsolete CbcBranchDefaultDecision::betterBranch\n");
-  abort();
-  return 0;
+  bool beforeSolution = thisOne->model()->getSolutionCount()==
+    thisOne->model()->getNumberHeuristicSolutions();;
+  int betterWay=0;
+  if (beforeSolution) {
+    if (!bestObject_) {
+      bestNumberUp_=INT_MAX;
+      bestNumberDown_=INT_MAX;
+    }
+    // before solution - choose smallest number 
+    // could add in depth as well
+    int bestNumber = CoinMin(bestNumberUp_,bestNumberDown_);
+    if (numInfUp<numInfDn) {
+      if (numInfUp<bestNumber) {
+	betterWay = 1;
+      } else if (numInfUp==bestNumber) {
+	if (changeUp<bestCriterion_)
+	  betterWay=1;
+      }
+    } else if (numInfUp>numInfDn) {
+      if (numInfDn<bestNumber) {
+	betterWay = -1;
+      } else if (numInfDn==bestNumber) {
+	if (changeDn<bestCriterion_)
+	  betterWay=-1;
+      }
+    } else {
+      // up and down have same number
+      bool better=false;
+      if (numInfUp<bestNumber) {
+	better=true;
+      } else if (numInfUp==bestNumber) {
+	if (min(changeUp,changeDn)<bestCriterion_)
+	  better=true;;
+      }
+      if (better) {
+	// see which way
+	if (changeUp<=changeDn)
+	  betterWay=1;
+	else
+	  betterWay=-1;
+      }
+    }
+  } else {
+    if (!bestObject_) {
+      bestCriterion_=-1.0;
+    }
+    // got a solution
+    if (changeUp<=changeDn) {
+      if (changeUp>bestCriterion_)
+	betterWay=1;
+    } else {
+      if (changeDn>bestCriterion_)
+	betterWay=-1;
+    }
+  }
+  if (betterWay) {
+    bestCriterion_ = CoinMin(changeUp,changeDn);
+    bestChangeUp_ = changeUp;
+    bestNumberUp_ = numInfUp;
+    bestChangeDown_ = changeDn;
+    bestNumberDown_ = numInfDn;
+    bestObject_=thisOne;
+  }
+  return betterWay;
 }
 
 /* Compare N branching objects. Return index of best
    and sets way of branching in chosen object.
    
    This routine is used only after strong branching.
-   This is reccommended version as it can be more sophisticated
 */
 
 int
@@ -2320,7 +2398,7 @@ CbcFollowOn::feasibleRegion()
 
 // Creates a branching object
 CbcBranchingObject * 
-CbcFollowOn::createBranch(int way) const
+CbcFollowOn::createBranch(int way) 
 {
   int otherRow=0;
   int preferredWay;

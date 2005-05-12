@@ -39,6 +39,22 @@ class CbcBranchingObject;
 	CbcBranchDecision. Changing this will require a moderate amount of
 	recoding.
  */
+// This can be used if object wants to skip strong branching
+  typedef struct {
+    CbcBranchingObject * possibleBranch; // what a branch would do
+    double upMovement; // cost going up (and initial away from feasible)
+    double downMovement; // cost going down
+    int numIntInfeasUp ; // without odd ones
+    int numObjInfeasUp ; // just odd ones
+    bool finishedUp; // true if solver finished
+    int numItersUp ; // number of iterations in solver
+    int numIntInfeasDown ; // without odd ones
+    int numObjInfeasDown ; // just odd ones
+    bool finishedDown; // true if solver finished
+    int numItersDown; // number of iterations in solver
+    int objectNumber; // Which object it is
+    int fix; // 0 if no fix, 1 if we can fix up, -1 if we can fix down
+  } CbcStrongInfo;
 
 class CbcObject {
 
@@ -88,7 +104,7 @@ public:
       The branching object has to know how to create branches (fix
       variables, etc.)
   */
-  virtual CbcBranchingObject * createBranch(int way) const = 0;
+  virtual CbcBranchingObject * createBranch(int way) = 0;
   
   /** \brief Given a valid solution (with reduced costs, etc.),
       return a branching object which would give a new feasible
@@ -204,7 +220,12 @@ public:
 
   /// Destructor 
   virtual ~CbcBranchingObject ();
-  
+
+  /** Some branchingObjects may claim to be able to skip
+      strong branching.  If so they ahve to fill in CbcStrongInfo.
+      The object mention in incoming CbcStrongInfo must match.
+      Returns nonzero if skip is wanted */
+  virtual int fillStrongInfo( CbcStrongInfo & info) {return 0;};
   /** The number of branch arms created for this branching object
 
     \todo The hardwired `2' has to be changed before cbc can do branches with
@@ -335,9 +356,7 @@ public:
     
     If \p bestSoFar is NULL, the routine should return a nonzero value.
     This routine is used only after strong branching.
-
-    It is now reccommended that bestBranch is used - see below.
-    This has been left for compatibility.
+    Either this or bestBranch is used depending which user wants.
  */
 
   virtual int
@@ -349,8 +368,7 @@ public:
   /** \brief Compare N branching objects. Return index of best
       and sets way of branching in chosen object.
     
-    This routine is used only after strong branching.
-    This is reccommended version as it can be more sophisticated
+    Either this or betterBranch is used depending which user wants.
   */
 
   virtual int
@@ -359,10 +377,22 @@ public:
 	      double * changeDown, int * numberInfeasibilitiesDown,
 	      double objectiveValue) ;
 
+  /** Says whether this method can handle both methods -
+      1 better, 2 best, 3 both */
+  virtual int whichMethod() {return 2;};
 
+  /** Saves a clone of current branching object.  Can be used to update
+      information on object causing branch - after branch */
+  virtual void saveBranchingObject(CbcBranchingObject * object) {};
+  /** Pass in information on branch just done.
+      assumes object can get information from solver */
+  virtual void updateInformation(OsiSolverInterface * solver) {};
 
-private:
+protected:
   
+  // Clone of branching object
+  CbcBranchingObject * object_;
+private:
   /// Assignment is illegal
   CbcBranchDecision & operator=(const CbcBranchDecision& rhs);
   

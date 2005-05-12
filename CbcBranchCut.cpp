@@ -83,7 +83,7 @@ CbcBranchCut::boundBranch() const
 
 // Creates a branching object
 CbcBranchingObject * 
-CbcBranchCut::createBranch(int way) const
+CbcBranchCut::createBranch(int way) 
 {
   throw CoinError("Use of base class","createBranch","CbcBranchCut");
   return new CbcCutBranchingObject();

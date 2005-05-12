@@ -139,11 +139,13 @@ CbcBranchingObject::~CbcBranchingObject ()
 }
 // Default Constructor 
 CbcBranchDecision::CbcBranchDecision ()
+  : object_(NULL)
 {
 }
 
 CbcBranchDecision::~CbcBranchDecision()
 {
+  delete object_;
 }
 /* Compare N branching objects. Return index of best
    and sets way of branching in chosen object.

@@ -3163,7 +3163,7 @@ CbcModel::resolve()
   if (feasible)
   {
     solver_->resolve() ;
-    numberIterations_ += getIterationCount() ;
+    numberIterations_ += solver_->getIterationCount() ;
     feasible = (solver_->isProvenOptimal() &&
 		!solver_->isDualObjectiveLimitReached()) ; }
   if (!feasible&& continuousObjective_ <-1.0e30) {
@@ -3175,7 +3175,7 @@ CbcModel::resolve()
       solver_->setHintParam(OsiDoDualInResolve,false,OsiHintDo) ;
       solver_->resolve();
       solver_->setHintParam(OsiDoDualInResolve,saveTakeHint,saveStrength);
-      numberIterations_ += getIterationCount() ;
+      numberIterations_ += solver_->getIterationCount() ;
       feasible = solver_->isProvenOptimal();
     }
   }

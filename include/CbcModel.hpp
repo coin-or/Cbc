@@ -574,7 +574,7 @@ public:
     bool isSolutionLimitReached() const;
     /// Get how many iterations it took to solve the problem.
     int getIterationCount() const
-    { return solver_->getIterationCount();};
+    { return numberIterations_;};
     /// Get how many Nodes it took to solve the problem.
     int getNodeCount() const
     { return numberNodes_;};

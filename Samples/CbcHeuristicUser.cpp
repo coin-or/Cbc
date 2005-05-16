@@ -254,7 +254,7 @@ CbcLocalSearch::solution(double & solutionValue,
       newSolution[iColumn]=value;
     }
     double nearest=floor(value+0.5);
-    assert(fabs(value-nearest)<10.0*primalTolerance);
+    //assert(fabs(value-nearest)<10.0*primalTolerance);
     value=nearest;
     newSolution[iColumn]=nearest;
     // if away from lower bound mark that fact

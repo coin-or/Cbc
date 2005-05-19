@@ -110,7 +110,7 @@ CbcLink::infeasibility(int & preferredWay) const
   int firstNonZero=-1;
   int lastNonZero = -1;
   OsiSolverInterface * solver = model_->solver();
-  const double * solution = model_->currentSolution();
+  const double * solution = model_->testSolution();
   const double * lower = solver->getColLower();
   const double * upper = solver->getColUpper();
   double integerTolerance = 
@@ -169,7 +169,7 @@ CbcLink::feasibleRegion()
   int firstNonZero=-1;
   int lastNonZero = -1;
   OsiSolverInterface * solver = model_->solver();
-  const double * solution = model_->currentSolution();
+  const double * solution = model_->testSolution();
   const double * upper = solver->getColUpper();
   double integerTolerance = 
     model_->getDblParam(CbcModel::CbcIntegerTolerance);
@@ -217,7 +217,7 @@ CbcBranchingObject *
 CbcLink::createBranch(int way) 
 {
   int j;
-  const double * solution = model_->currentSolution();
+  const double * solution = model_->testSolution();
   double integerTolerance = 
       model_->getDblParam(CbcModel::CbcIntegerTolerance);
   OsiSolverInterface * solver = model_->solver();

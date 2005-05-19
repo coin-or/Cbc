@@ -3028,7 +3028,7 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node,
         // If cuts useless switch off
         if (numberNodes_>=10&&sumChangeObjective1_>1.0e2*(sumChangeObjective2_+1.0e-12)) {
           howOften = 1000000+SCANCUTS; // wait until next time
-          printf("switch off cut %d due to lack of use\n",i);
+          //printf("switch off cut %d due to lack of use\n",i);
         }
       }
       if (howOften>=0&&generator_[i]->generator()->mayGenerateRowCutsInTree())

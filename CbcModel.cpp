@@ -543,6 +543,9 @@ void CbcModel::branchAndBound()
   int anyAction = -1 ;
   int numberOldActiveCuts = 0 ;
   int numberNewCuts = 0 ;
+  // Array to mark solution
+  usedInSolution_ = new int[numberColumns];
+  CoinZeroN(usedInSolution_,numberColumns);
   { int iObject ;
     int preferredWay ;
     int numberUnsatisfied = 0 ;
@@ -675,6 +678,8 @@ void CbcModel::branchAndBound()
   continuousInfeasibilities_ = 0 ;
   if (newNode)
   { continuousObjective_ = newNode->objectiveValue() ;
+    continuousSolution_ = CoinCopyOfArray(solver_->getColSolution(),
+                                             numberColumns);
     continuousInfeasibilities_ = newNode->numberUnsatisfied() ; }
 /*
   Bound may have changed so reset in objects
@@ -1051,8 +1056,11 @@ void CbcModel::branchAndBound()
 	    for (iHeur = 0 ; iHeur < numberHeuristics_ ; iHeur++)
 	    { double saveValue = heurValue ;
 	      int ifSol = heuristic_[iHeur]->solution(heurValue,newSolution) ;
-	      if (ifSol > 0)	// new solution found
-	      { found = iHeur ; }
+	      if (ifSol > 0) {
+                // new solution found
+                found = iHeur ;
+                incrementUsed(newSolution);
+              }
 	      else
 	      if (ifSol < 0)	// just returning an estimate
 	      { estValue = CoinMin(heurValue,estValue) ;
@@ -1074,6 +1082,7 @@ void CbcModel::branchAndBound()
 	  double objectiveValue = newNode->objectiveValue();
 	    setBestSolution(CBC_SOLUTION,objectiveValue,
 			    solver_->getColSolution()) ;
+            incrementUsed(solver_->getColSolution());
 	    assert(nodeInfo->numberPointingToThis() <= 2) ;
 	    // avoid accidental pruning, if newNode was final branch arm
 	    nodeInfo->increment();
@@ -1291,12 +1300,15 @@ CbcModel::CbcModel()
   nextRowCut_(NULL),
   currentNode_(NULL),
   integerVariable_(NULL),
+  continuousSolution_(NULL),
+  usedInSolution_(NULL),
   specialOptions_(0),
   subTreeModel_(NULL),
   numberStoppedSubTrees_(0),
   presolve_(0),
   numberStrong_(5),
   numberBeforeTrust_(0),
+  numberInfeasibleNodes_(0),
   problemType_(0),
   printFrequency_(0),
   numberCutGenerators_(0),
@@ -1376,6 +1388,7 @@ CbcModel::CbcModel(const OsiSolverInterface &rhs)
   presolve_(0),
   numberStrong_(5),
   numberBeforeTrust_(0),
+  numberInfeasibleNodes_(0),
   problemType_(0),
   printFrequency_(0),
   numberCutGenerators_(0),
@@ -1427,6 +1440,8 @@ CbcModel::CbcModel(const OsiSolverInterface &rhs)
   if (numberColumns) {
     // Space for current solution
     currentSolution_ = new double[numberColumns];
+    continuousSolution_ = new double[numberColumns];
+    usedInSolution_ = new int[numberColumns];
     for (iColumn=0;iColumn<numberColumns;iColumn++) {
       if( solver_->isInteger(iColumn)) 
 	numberIntegers_++;
@@ -1434,6 +1449,8 @@ CbcModel::CbcModel(const OsiSolverInterface &rhs)
   } else {
     // empty model
     currentSolution_=NULL;
+    continuousSolution_=NULL;
+    usedInSolution_=NULL;
   }
   testSolution_=currentSolution_;
   if (numberIntegers_) {
@@ -1538,6 +1555,7 @@ CbcModel::CbcModel(const CbcModel & rhs, bool noTree)
   presolve_(rhs.presolve_),
   numberStrong_(rhs.numberStrong_),
   numberBeforeTrust_(rhs.numberBeforeTrust_),
+  numberInfeasibleNodes_(rhs.numberInfeasibleNodes_),
   problemType_(rhs.problemType_),
   printFrequency_(rhs.printFrequency_),
   howOftenGlobalScan_(rhs.howOftenGlobalScan_),
@@ -1640,12 +1658,15 @@ CbcModel::CbcModel(const CbcModel & rhs, bool noTree)
   } else {
     bestSolution_=NULL;
   }
-  if (rhs.currentSolution_&&!noTree) {
+  if (!noTree) {
     int numberColumns = solver_->getNumCols();
-    currentSolution_ = new double[numberColumns];
-    memcpy(currentSolution_,rhs.currentSolution_,numberColumns*sizeof(double));
+    currentSolution_ = CoinCopyOfArray(rhs.currentSolution_,numberColumns);
+    continuousSolution_ = CoinCopyOfArray(rhs.continuousSolution_,numberColumns);
+    usedInSolution_ = CoinCopyOfArray(rhs.usedInSolution_,numberColumns);
   } else {
     currentSolution_=NULL;
+    continuousSolution_=NULL;
+    usedInSolution_=NULL;
   }
   testSolution_=currentSolution_;
   numberRowsAtContinuous_ = rhs.numberRowsAtContinuous_;
@@ -1738,13 +1759,10 @@ CbcModel::operator=(const CbcModel& rhs)
     } else {
       bestSolution_=NULL;
     }
-    if (rhs.currentSolution_) {
-      int numberColumns = rhs.getNumCols();
-      currentSolution_ = new double[numberColumns];
-      memcpy(currentSolution_,rhs.currentSolution_,numberColumns*sizeof(double));
-    } else {
-      currentSolution_=NULL;
-    }
+    int numberColumns = solver_->getNumCols();
+    currentSolution_ = CoinCopyOfArray(rhs.currentSolution_,numberColumns);
+    continuousSolution_ = CoinCopyOfArray(rhs.continuousSolution_,numberColumns);
+    usedInSolution_ = CoinCopyOfArray(rhs.usedInSolution_,numberColumns);
     testSolution_=currentSolution_;
     minimumDrop_ = rhs.minimumDrop_;
     numberSolutions_=rhs.numberSolutions_;
@@ -1760,6 +1778,7 @@ CbcModel::operator=(const CbcModel& rhs)
     presolve_ = rhs.presolve_;
     numberStrong_ = rhs.numberStrong_;
     numberBeforeTrust_ = rhs.numberBeforeTrust_;
+    numberInfeasibleNodes_ = rhs.numberInfeasibleNodes_;
     problemType_ = rhs.problemType_;
     printFrequency_ = rhs.printFrequency_;
     howOftenGlobalScan_=rhs.howOftenGlobalScan_;
@@ -2399,7 +2418,10 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node,
     }
   }
 
-  if (!feasible) return (false) ;
+  if (!feasible) {
+    numberInfeasibleNodes_++;
+    return (false) ;
+  }
   sumChangeObjective1_ += solver_->getObjValue()*solver_->getObjSense()
     - objectiveValue ;
   //if ((numberNodes_%100)==0)
@@ -2591,6 +2613,7 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node,
 	if (ifSol>0) {
 	  // better solution found
 	  found = i ;
+          incrementUsed(newSolution);
 	} else if (ifSol<0) {
 	  heuristicValue = saveValue ;
 	}
@@ -2669,6 +2692,7 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node,
         if (ifSol>0) {
           // better solution found
           found = i ;
+          incrementUsed(newSolution);
         } else {
           heuristicValue = saveValue ;
         }
@@ -2683,6 +2707,7 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node,
     if (found >= 0)
     { 
       phase_=4;
+      incrementUsed(newSolution);
       setBestSolution(CBC_ROUNDING,heuristicValue,newSolution) ; }
     delete [] newSolution ;
 
@@ -2947,6 +2972,7 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node,
       if (ifSol>0) {
         // better solution found
         found = i ;
+        incrementUsed(newSolution);
       } else {
         heuristicValue = saveValue ;
       }
@@ -2954,6 +2980,7 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node,
     currentPassNumber_=savePass;
     if (found >= 0) { 
       phase_=4;
+      incrementUsed(newSolution);
       setBestSolution(CBC_ROUNDING,heuristicValue,newSolution) ;
     }
     delete [] newSolution ;
@@ -4842,6 +4869,7 @@ CbcModel::integerPresolveThisModel(OsiSolverInterface * originalSolver,
 	  if (ifSol>0) {
 	    // better solution found
 	    found=iHeuristic;
+            incrementUsed(newSolution);
 	  } else if (ifSol<0) {
 	    heuristicValue = saveValue;
 	  }
@@ -5535,4 +5563,15 @@ CbcModel::setStrategy(CbcStrategy & strategy)
 {
   delete strategy_;
   strategy_ = strategy.clone();
+}
+// Increases usedInSolution for nonzeros
+void 
+CbcModel::incrementUsed(const double * solution)
+{
+  // might as well mark all including continuous
+  int numberColumns = solver_->getNumCols();
+  for (int i=0;i<numberColumns;i++) {
+    if (solution[i])
+      usedInSolution_[i]++;
+  }
 }

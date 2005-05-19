@@ -1357,6 +1357,7 @@ int CbcNode::chooseBranch (CbcModel *model, CbcNode *lastNode,int numberPassesLe
               { model->setBestSolution(CBC_STRONGSOL,
                                        newObjectiveValue,
                                        solver->getColSolution()) ;
+              model->incrementUsed(solver->getColSolution());
               if (newObjectiveValue >= model->getCutoff())	//  *new* cutoff
                 objectiveChange = 1.0e100 ;
               }
@@ -1440,6 +1441,7 @@ int CbcNode::chooseBranch (CbcModel *model, CbcNode *lastNode,int numberPassesLe
               { model->setBestSolution(CBC_STRONGSOL,
                                        newObjectiveValue,
                                        solver->getColSolution()) ;
+              model->incrementUsed(solver->getColSolution());
               if (newObjectiveValue >= model->getCutoff())	//  *new* cutoff
                 objectiveChange = 1.0e100 ;
               }
@@ -1957,7 +1959,7 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,int numberP
         // see if can skip strong branching
         int canSkip = choice.possibleBranch->fillStrongInfo(choice);
         // For now always do
-        canSkip=false;
+        //canSkip=false;
         if (model->messageHandler()->logLevel()>3) 
           dynamicObject->print(1,choice.possibleBranch->value());
         if (!canSkip) {
@@ -2005,6 +2007,7 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,int numberP
                 model->setBestSolution(CBC_STRONGSOL,
                                        newObjectiveValue,
                                        solver->getColSolution()) ;
+                model->incrementUsed(solver->getColSolution());
                 if (newObjectiveValue >= model->getCutoff())	//  *new* cutoff
                   objectiveChange = 1.0e100 ;
               }
@@ -2062,6 +2065,7 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,int numberP
                 model->setBestSolution(CBC_STRONGSOL,
                                        newObjectiveValue,
                                        solver->getColSolution()) ;
+                model->incrementUsed(solver->getColSolution());
                 if (newObjectiveValue >= model->getCutoff())	//  *new* cutoff
                   objectiveChange = 1.0e100 ;
               }

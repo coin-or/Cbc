@@ -746,6 +746,17 @@ public:
   
   /**@name Methods related to querying the solution */
   //@{
+  /// Holds solution at continuous (after cuts)
+  inline double * continuousSolution() const
+  { return continuousSolution_;};
+  /** Array marked whenever a solution is found if non-zero.
+      Code marks if heuristic returns better so heuristic
+      need only mark if it wants to on solutions which
+      are worse than current */
+  inline int * usedInSolution() const
+  { return usedInSolution_;};
+  /// Increases usedInSolution for nonzeros
+  void incrementUsed(const double * solution);
   /// Record a new incumbent solution and update objectiveValue
   void setBestSolution(CBC_Message how,
 		       double & objectiveValue, const double *solution,
@@ -1341,6 +1352,10 @@ private:
 
   /// Indices of integer variables
   int * integerVariable_;
+  /// Holds solution at continuous (after cuts)
+  double * continuousSolution_;
+  /// Array marked whenever a solution is found if non-zero
+  int * usedInSolution_;
   /// 0 bit - check if cuts valid (if on list)
   int specialOptions_;
   /// User node comparison function
@@ -1373,6 +1388,8 @@ private:
   /** The number of branches before pseudo costs believed
       in dynamic strong branching. (0 off) */
   int numberBeforeTrust_;
+  /// Number of nodes infeasible by normal branching (before cuts)
+  int numberInfeasibleNodes_;
   /** Problem type as set by user or found by analysis.  This will be extended
       0 - not known
       1 - Set partitioning <=

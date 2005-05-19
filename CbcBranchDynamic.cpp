@@ -236,18 +236,24 @@ CbcSimpleIntegerDynamicPseudoCost::infeasibility(int & preferredWay) const
     above=below;
     below = above -1;
   }
+#define INFEAS
+#ifdef INFEAS
+  double distanceToCutoff=0.0;
   double objectiveValue = solver->getObjSense()*solver->getObjValue();
-  double distanceToCutoff =  model_->getCutoff()<1.0e20 - objectiveValue;
+  distanceToCutoff =  model_->getCutoff()  - objectiveValue;
   if (distanceToCutoff<1.0e20) 
     distanceToCutoff *= 10.0;
   else 
     distanceToCutoff = 1.0e2 + fabs(objectiveValue);
+#endif
   double sum;
   int number;
   double downCost = CoinMax(value-below,0.0);
   sum = sumDownCost();
   number = numberTimesDown();
+#ifdef INFEAS
   sum += numberTimesDownInfeasible()*(distanceToCutoff/(downCost+1.0e-12));
+#endif
   if (number>0)
     downCost *= sum / (double) number;
   else
@@ -255,7 +261,9 @@ CbcSimpleIntegerDynamicPseudoCost::infeasibility(int & preferredWay) const
   double upCost = CoinMax((above-value),0.0);
   sum = sumUpCost();
   number = numberTimesUp();
+#ifdef INFEAS
   sum += numberTimesUpInfeasible()*(distanceToCutoff/(upCost+1.0e-12));
+#endif
   if (number>0)
     upCost *= sum / (double) number;
   else
@@ -390,7 +398,7 @@ CbcSimpleIntegerDynamicPseudoCost::print(int type,double value) const
       below = above -1;
     }
     double objectiveValue = solver->getObjSense()*solver->getObjValue();
-    double distanceToCutoff =  model_->getCutoff()<1.0e20 - objectiveValue;
+    double distanceToCutoff =  model_->getCutoff() - objectiveValue;
     if (distanceToCutoff<1.0e20) 
       distanceToCutoff *= 10.0;
     else 

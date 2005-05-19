@@ -433,6 +433,33 @@ public:
   int chooseBranch (CbcModel * model,
 		    CbcNode * lastNode,
                     int numberPassesLeft);
+  /** Create a branching object for the node - when dynamic pseudo costs
+
+    The routine scans the object list of the model and selects a set of
+    unsatisfied objects as candidates for branching. The candidates are
+    evaluated, and an appropriate branch object is installed.
+    This version gives preference in evaluation to variables which
+    have not been evaluated many times.  It also uses numberStrong
+    to say give up if last few tries have not changed incumbent.
+    See Achterberg, Koch and Martin.
+
+    The numberPassesLeft is decremented to stop fixing one variable each time
+    and going on and on (e.g. for stock cutting, air crew scheduling)
+
+    If evaluation determines that an object is monotone or infeasible,
+    the routine returns immediately. In the case of a monotone object,
+    the branch object has already been called to modify the model.
+
+    Return value:
+    <ul>
+      <li>  0: A branching object has been installed
+      <li> -1: A monotone object was discovered
+      <li> -2: An infeasible object was discovered
+    </ul>
+  */
+  int chooseDynamicBranch (CbcModel * model,
+		    CbcNode * lastNode,
+                    int numberPassesLeft);
   
   /// Decrement active cut counts
   void decrementCuts(int change=1);
@@ -506,6 +533,9 @@ public:
   {guessedObjectiveValue_=value;};
   /// Branching object for this node
   const CbcBranchingObject * branchingObject() const
+  { return branch_;};
+  /// Modifiable branching object for this node
+  CbcBranchingObject * modifiableBranchingObject() const
   { return branch_;};
 
 private:

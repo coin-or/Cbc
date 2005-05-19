@@ -7,6 +7,7 @@
 #include <string>
 //#define CBC_DEBUG 1
 //#define CHECK_CUT_COUNTS
+//#define CHECK_NODE
 #include <cassert>
 #include <cfloat>
 #define CUTS
@@ -16,6 +17,7 @@
 #include "CbcModel.hpp"
 #include "CbcNode.hpp"
 #include "CbcBranchActual.hpp"
+#include "CbcBranchDynamic.hpp"
 #include "OsiRowCut.hpp"
 #include "OsiRowCutDebugger.hpp"
 #include "OsiCuts.hpp"
@@ -873,7 +875,7 @@ int CbcNode::chooseBranch (CbcModel *model, CbcNode *lastNode,int numberPassesLe
   
   double * saveSolution = new double[numberColumns];
   memcpy(saveSolution,solver->getColSolution(),numberColumns*sizeof(double));
-  
+  model->reserveCurrentSolution(saveSolution);
   /*
     Get a branching decision object. Use the default decision criteria unless
     the user has loaded a decision method into the model.
@@ -882,22 +884,7 @@ int CbcNode::chooseBranch (CbcModel *model, CbcNode *lastNode,int numberPassesLe
   if (!decision)
     decision = new CbcBranchDefaultDecision();
 
-  typedef struct {
-    CbcBranchingObject * possibleBranch; // what a branch would do
-    double upMovement; // cost going up (and initial away from feasible)
-    double downMovement; // cost going down
-    int numIntInfeasUp ; // without odd ones
-    int numObjInfeasUp ; // just odd ones
-    bool finishedUp; // true if solver finished
-    int numItersUp ; // number of iterations in solver
-    int numIntInfeasDown ; // without odd ones
-    int numObjInfeasDown ; // just odd ones
-    bool finishedDown; // true if solver finished
-    int numItersDown; // number of iterations in solver
-    int objectNumber; // Which object it is
-    int fix; // 0 if no fix, 1 if we can fix up, -1 if we can fix down
-  } Strong;
-  Strong * choice = new Strong[maximumStrong];
+  CbcStrongInfo * choice = new CbcStrongInfo[maximumStrong];
   for (i=0;i<numberColumns;i++) {
     saveLower[i] = lower[i];
     saveUpper[i] = upper[i];
@@ -947,7 +934,8 @@ int CbcNode::chooseBranch (CbcModel *model, CbcNode *lastNode,int numberPassesLe
       */
       int iSmallest = 0;
       double mostAway = 1.0e-100;
-      for (i = 0 ; i < maximumStrong ; i++) choice[i].possibleBranch = NULL ;
+      for (i = 0 ; i < maximumStrong ; i++)
+        choice[i].possibleBranch = NULL ;
       numberStrong=0;
       for (i=0;i<numberObjects;i++) {
         CbcObject * object = model->modifiableObject(i);
@@ -1068,6 +1056,7 @@ int CbcNode::chooseBranch (CbcModel *model, CbcNode *lastNode,int numberPassesLe
           delete ws;
           solver->resolve();
           memcpy(saveSolution,solver->getColSolution(),numberColumns*sizeof(double));
+          model->reserveCurrentSolution(saveSolution);
           if (!solver->isProvenOptimal()) {
             // infeasible 
             anyAction=-2;
@@ -1149,6 +1138,11 @@ int CbcNode::chooseBranch (CbcModel *model, CbcNode *lastNode,int numberPassesLe
       // Go back to normal way if user wants it
       if (osiclp&&(osiclp->specialOptions()&16)!=0&&osiclp->specialOptions()>0)
         allNormal=false;
+      if (osiclp&&!allNormal) {
+        // say do fast
+        int easy=1;
+        osiclp->setHintParam(OsiDoInBranchAndCut,true,OsiHintDo,&easy) ;
+      }
       if (osiclp&& allNormal) {
         clp = osiclp->getModelPtr();
         // Clp - do a different way
@@ -1264,80 +1258,7 @@ int CbcNode::chooseBranch (CbcModel *model, CbcNode *lastNode,int numberPassesLe
                 sol[iColumn]=saveSolution[iColumn];
                 sol2[iColumn]=saveSolution[iColumn];
               }
-              //printf("strong %d col %d sol %g sol2 %g\n",i,iColumn,sol[iColumn],
-              //     sol2[iColumn]);
-              //if (fabs(sol[iColumn]-0.5)<0.499)
-              //x=false;
-              //if (fabs(sol2[iColumn]-0.5)<0.499)
-              //x2=false;
             }
-#if 0
-            if( outputStuff[2*i]!=0&&outputStuff[2*i+1]!=0)
-              checkSol=false;
-            if (x&&checkSol) {
-              int iStatus = outputStuff[2*i];
-              double newObjectiveValue = objectiveValue+newUpper[i];
-              //printf("solution found - status %d obj %g\n",iStatus,newObjectiveValue);
-              if (!iStatus) {
-                const double * lower = solver->getRowLower();
-                const double * upper = solver->getRowUpper();
-                int numberRows = solver->getNumRows();
-                double * rhs = new double [numberRows];
-                CoinZeroN(rhs,numberRows);
-                {
-                  int numberColumns = solver->getNumCols();
-                  const double * columnLower = solver->getColLower();
-                  const double * columnUpper = solver->getColUpper();
-                  int numberRows = solver->getNumRows();
-                  
-                  const double * element = matrix->getElements();
-                  const int * row = matrix->getIndices();
-                  const CoinBigIndex * columnStart = matrix->getVectorStarts();
-                  const int * columnLength = matrix->getVectorLengths();
-                  CoinZeroN(rhs,numberRows);
-                  int iColumn;
-                  for (iColumn=0;iColumn<numberColumns;iColumn++) {
-                    double lower = columnLower[iColumn];
-                    double upper = columnUpper[iColumn];
-                    double solValue = sol[iColumn];
-                    assert (solValue>=lower-1.0e-4&&solValue<upper+1.0e-4);
-                    for (CoinBigIndex j = columnStart[iColumn];
-                         j<columnStart[iColumn]+columnLength[iColumn];j++) {
-                      int iRow = row[j];
-                      double value = element[j];
-                      rhs[iRow] += solValue*value;
-                      if (iRow==-19)
-                        printf("col %d has sol %g and el %g , rhs now %g\n",
-                               iColumn,solValue,element[j],rhs[19]);
-                    }
-                  }
-                }
-                for (int i=0;i<numberRows;i++) {
-                  assert (rhs[i]>lower[i]-1.0e-3);
-                  assert (rhs[i]<upper[i]+1.0e-3);
-                }
-                delete [] rhs;
-              }
-            }
-            if (x2&&checkSol) {
-              int iStatus = outputStuff[2*i+1];
-              double newObjectiveValue = objectiveValue+newLower[i];
-              //printf("solution found - status %d obj %g\n",iStatus,newObjectiveValue);
-              if (!iStatus) {
-                const double * lower = solver->getRowLower();
-                const double * upper = solver->getRowUpper();
-                int numberRows = solver->getNumRows();
-                double * rhs = new double [numberRows];
-                CoinZeroN(rhs,numberRows);
-                solver->getMatrixByCol()->times(sol2,rhs) ;
-                for (int i=0;i<numberRows;i++) {
-                  assert (rhs[i]>lower[i]-1.0e-4);
-                  assert (rhs[i]<upper[i]+1.0e-4);
-                }
-                delete [] rhs;
-              }
-            }
-#endif
           }
 #endif
         }
@@ -1562,6 +1483,8 @@ int CbcNode::chooseBranch (CbcModel *model, CbcNode *lastNode,int numberPassesLe
           } else {
             // up feasible, down infeasible
             anyAction=-1;
+            //printf("Down infeasible for choice %d sequence %d\n",i,
+            // model->object(choice[i].objectNumber)->columnNumber());
             if (!solveAll) {
               choice[i].possibleBranch->way(1);
               choice[i].possibleBranch->branch();
@@ -1574,6 +1497,8 @@ int CbcNode::chooseBranch (CbcModel *model, CbcNode *lastNode,int numberPassesLe
           if(choice[i].downMovement<1.0e100) {
             // down feasible, up infeasible
             anyAction=-1;
+            //printf("Up infeasible for choice %d sequence %d\n",i,
+            // model->object(choice[i].objectNumber)->columnNumber());
             if (!solveAll) {
               choice[i].possibleBranch->way(-1);
               choice[i].possibleBranch->branch();
@@ -1584,6 +1509,8 @@ int CbcNode::chooseBranch (CbcModel *model, CbcNode *lastNode,int numberPassesLe
           } else {
             // neither side feasible
             anyAction=-2;
+            //printf("Both infeasible for choice %d sequence %d\n",i,
+            // model->object(choice[i].objectNumber)->columnNumber());
             break;
           }
         }
@@ -1647,7 +1574,7 @@ int CbcNode::chooseBranch (CbcModel *model, CbcNode *lastNode,int numberPassesLe
           // Clean up all candidates whih are fixed
           int numberLeft=0;
           for (i = 0 ; i < numberStrong ; i++) {
-            Strong thisChoice = choice[i];
+            CbcStrongInfo thisChoice = choice[i];
             choice[i].possibleBranch=NULL;
             const CbcObject * object = model->object(thisChoice.objectNumber);
             int preferredWay;
@@ -1715,31 +1642,6 @@ int CbcNode::chooseBranch (CbcModel *model, CbcNode *lastNode,int numberPassesLe
         averageCostPerIteration /= totalNumberIterations;
         // all feasible - choose best bet
         
-#if 0
-        for (i = 0 ; i < numberStrong ; i++)
-          { int iColumn =
-              model->integerVariable()[choice[i].possibleBranch->variable()] ;
-          model->messageHandler()->message(CBC_STRONG,model->messages())
-            << i << iColumn
-            <<choice[i].downMovement<<choice[i].numIntInfeasDown 
-            <<choice[i].upMovement<<choice[i].numIntInfeasUp 
-            <<choice[i].possibleBranch->value()
-            <<CoinMessageEol;
-          int betterWay = decision->betterBranch(choice[i].possibleBranch,
-                                                 branch_,
-                                                 choice[i].upMovement,
-                                                 choice[i].numIntInfeasUp ,
-                                                 choice[i].downMovement,
-                                                 choice[i].numIntInfeasDown );
-          if (betterWay) {
-            delete branch_;
-            // C) create branching object
-            branch_ = choice[i].possibleBranch;
-            choice[i].possibleBranch=NULL;
-            branch_->way(betterWay);
-          }
-          }
-#else
         // New method does all at once so it can be more sophisticated
         // in deciding how to balance actions.
         // But it does need arrays
@@ -1776,7 +1678,10 @@ int CbcNode::chooseBranch (CbcModel *model, CbcNode *lastNode,int numberPassesLe
         delete [] changeDown;
         delete [] numberInfeasibilitiesDown;
         delete [] objects;
-#endif 
+      }
+      if (osiclp&&!allNormal) {
+        // back to normal
+        osiclp->setHintParam(OsiDoInBranchAndCut,true,OsiHintDo,NULL) ;
       }
     }
     /*
@@ -1791,6 +1696,7 @@ int CbcNode::chooseBranch (CbcModel *model, CbcNode *lastNode,int numberPassesLe
     }
   }
   // Set guessed solution value
+  objectiveValue_ = solver->getObjSense()*saveObjectiveValue;
   guessedObjectiveValue_ = objectiveValue_+estimatedDegradation;
 /*
   Cleanup, then we're outta here.
@@ -1806,6 +1712,573 @@ int CbcNode::chooseBranch (CbcModel *model, CbcNode *lastNode,int numberPassesLe
   
   // restore solution
   solver->setColSolution(saveSolution);
+  delete [] saveSolution;
+  return anyAction;
+}
+
+/*
+  Version for dynamic pseudo costs.
+
+  **** For now just return if anything odd
+  later allow even if odd
+
+  The routine scans through the object list of the model looking for objects
+  that indicate infeasibility. It tests each object using strong branching
+  and selects the one with the least objective degradation.  A corresponding
+  branching object is left attached to lastNode.
+  This version gives preference in evaluation to variables which
+  have not been evaluated many times.  It also uses numberStrong
+  to say give up if last few tries have not changed incumbent.
+  See Achterberg, Koch and Martin.
+
+  If strong branching is disabled, a candidate object is chosen essentially
+  at random (whatever object ends up in pos'n 0 of the candidate array).
+
+  If a branching candidate is found to be monotone, bounds are set to fix the
+  variable and the routine immediately returns (the caller is expected to
+  reoptimize).
+
+  If a branching candidate is found to result in infeasibility in both
+  directions, the routine immediately returns an indication of infeasibility.
+
+  Returns:  0	both branch directions are feasible
+	   -1	branching variable is monotone
+	   -2	infeasible
+           -3   Use another method
+
+           For now just fix on objective from strong branching.
+*/
+
+int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,int numberPassesLeft)
+
+{ if (lastNode)
+    depth_ = lastNode->depth_+1;
+  else
+    depth_ = 0;
+  delete branch_;
+  branch_=NULL;
+  OsiSolverInterface * solver = model->solver();
+  objectiveValue_ = solver->getObjSense()*solver->getObjValue();
+  const double * lower = solver->getColLower();
+  const double * upper = solver->getColUpper();
+  int anyAction=0;
+  int i;
+  int stateOfSearch = model->stateOfSearch();
+  int numberStrong=model->numberStrong();
+  // But make more likely to get out after some times
+  int changeStrategy=numberStrong;
+  double changeFactor=1.0;
+  // Use minimum of this and one stored in objects
+  //int numberBeforeTrust = model->numberBeforeTrust();
+  int numberObjects = model->numberObjects();
+  bool checkFeasibility = numberObjects>model->numberIntegers();
+  // For now return if not simple
+  if (checkFeasibility)
+    return -3;
+  // Return if doing hot start (in BAB sense)
+  int hotstartStrategy=model->getHotstartStrategy();
+  if (hotstartStrategy>0) 
+    return -3;
+  int numberColumns = model->getNumCols();
+  double * saveUpper = new double[numberColumns];
+  double * saveLower = new double[numberColumns];
+
+  // Save solution in case heuristics need good solution later
+  
+  double * saveSolution = new double[numberColumns];
+  memcpy(saveSolution,solver->getColSolution(),numberColumns*sizeof(double));
+  model->reserveCurrentSolution(saveSolution);
+  /*
+    Get a branching decision object. Use the default dynamic decision criteria unless
+    the user has loaded a decision method into the model.
+  */
+  CbcBranchDecision *decision = model->branchingMethod();
+  if (!decision)
+    decision = new CbcBranchDynamicDecision();
+
+  for (i=0;i<numberColumns;i++) {
+    saveLower[i] = lower[i];
+    saveUpper[i] = upper[i];
+  }
+  // Get arrays to sort 
+  double * sort = new double[numberObjects];
+  int * whichObject = new int[numberObjects];
+  CbcStrongInfo * fixObject = new CbcStrongInfo[numberObjects];
+  double estimatedDegradation=0.0; 
+  // May go round twice if strong branching fixes all local candidates
+  bool finished=false;
+  while(!finished) {
+    finished=true;
+    decision->initialize(model);
+    // Some objects may compute an estimate of best solution from here
+    estimatedDegradation=0.0; 
+    int numberToFix=0;
+    int numberIntegerInfeasibilities=0; // without odd ones
+    int numberToDo=0;
+    
+    // We may go round this loop twice (only if we think we have solution)
+    for (int iPass=0;iPass<2;iPass++) {
+      
+      // compute current state
+      int numberObjectInfeasibilities; // just odd ones
+      model->feasibleSolution(
+                              numberIntegerInfeasibilities,
+                              numberObjectInfeasibilities);
+      
+      // Some objects may compute an estimate of best solution from here
+      estimatedDegradation=0.0; 
+      numberUnsatisfied_ = 0;
+      int bestPriority=INT_MAX;
+      /*
+        Scan for branching objects that indicate infeasibility. Choose candidates
+        using priority as the first criteria, then integer infeasibility.
+        
+        The algorithm is to fill the array with a set of good candidates (by
+        infeasibility) with priority bestPriority.  Finding a candidate with
+        priority better (less) than bestPriority flushes the choice array. (This
+        serves as initialization when the first candidate is found.)
+        
+      */
+      numberToDo=0;
+      for (i=0;i<numberObjects;i++) {
+        const CbcObject * object = model->object(i);
+        int preferredWay;
+        double infeasibility = object->infeasibility(preferredWay);
+        int priorityLevel = object->priority();
+        if (infeasibility) {
+          // Increase estimated degradation to solution
+          estimatedDegradation += CoinMin(object->upEstimate(),object->downEstimate());
+          numberUnsatisfied_++;
+          // Better priority? Flush choices.
+          if (priorityLevel<bestPriority) {
+            numberToDo=0;
+            bestPriority = priorityLevel;
+          } else if (priorityLevel>bestPriority) {
+            continue;
+          }
+          // Check for suitability based on infeasibility.
+          sort[numberToDo]=-infeasibility;
+          whichObject[numberToDo++]=i;
+        }
+      }
+      if (numberUnsatisfied_) {
+        // some infeasibilities - go to next steps
+        break;
+      } else if (!iPass) {
+        // looks like a solution - get paranoid
+        bool roundAgain=false;
+        // get basis
+        CoinWarmStartBasis * ws = dynamic_cast<CoinWarmStartBasis*>(solver->getWarmStart());
+        if (!ws)
+          break;
+        for (i=0;i<numberColumns;i++) {
+          double value = saveSolution[i];
+          if (value<lower[i]) {
+            saveSolution[i]=lower[i];
+            roundAgain=true;
+            ws->setStructStatus(i,CoinWarmStartBasis::atLowerBound);
+          } else if (value>upper[i]) {
+            saveSolution[i]=upper[i];
+            roundAgain=true;
+            ws->setStructStatus(i,CoinWarmStartBasis::atUpperBound);
+          } 
+        }
+        if (roundAgain) {
+          // restore basis
+          solver->setWarmStart(ws);
+          solver->setColSolution(saveSolution);
+          delete ws;
+          solver->resolve();
+          memcpy(saveSolution,solver->getColSolution(),numberColumns*sizeof(double));
+          model->reserveCurrentSolution(saveSolution);
+          if (!solver->isProvenOptimal()) {
+            // infeasible 
+            anyAction=-2;
+            break;
+          }
+        } else {
+          delete ws;
+          break;
+        }
+      }
+    }
+    if (anyAction==-2) {
+      break;
+    }
+    bool solveAll=false; // set true to say look at all even if some fixed (experiment)
+    solveAll=true;
+    // worth trying if too many times
+    // Save basis
+    CoinWarmStart * ws = solver->getWarmStart();
+    // save limit
+    int saveLimit;
+    solver->getIntParam(OsiMaxNumIterationHotStart,saveLimit);
+    if (!stateOfSearch&&saveLimit<100)
+      solver->setIntParam(OsiMaxNumIterationHotStart,100); 
+    
+    // Sort
+    CoinSort_2(sort,sort+numberToDo,whichObject);
+    // Say which one will be best
+    int whichChoice=0;
+    int bestChoice=-1;
+    // If we have hit max time don't do strong branching
+    bool hitMaxTime = ( CoinCpuTime()-model->getDblParam(CbcModel::CbcStartSeconds) > 
+                        model->getDblParam(CbcModel::CbcMaximumSeconds));
+    // also give up if we are looping round too much
+    if (hitMaxTime||numberPassesLeft<=0) {
+      int iObject = whichObject[0];
+      CbcObject * object = model->modifiableObject(iObject);
+      int preferredWay;
+      object->infeasibility(preferredWay);
+      branch_=object->createBranch(preferredWay);
+      branch_->way(preferredWay);
+      break;
+    } else {
+      // say do fast
+      int easy=1;
+      solver->setHintParam(OsiDoInBranchAndCut,true,OsiHintDo,&easy) ;
+      // Mark hot start
+      solver->markHotStart();
+      int iDo=0;
+      for ( iDo=0;iDo<numberToDo;iDo++) {
+        CbcStrongInfo choice;
+        int iObject = whichObject[iDo];
+        CbcObject * object = model->modifiableObject(iObject);
+        CbcSimpleIntegerDynamicPseudoCost * dynamicObject =
+          dynamic_cast <CbcSimpleIntegerDynamicPseudoCost *>(object) ;
+        int preferredWay;
+        object->infeasibility(preferredWay);
+        choice.possibleBranch=object->createBranch(preferredWay);
+        // Save which object it was
+        choice.objectNumber=iObject;
+        choice.numIntInfeasUp = numberUnsatisfied_;
+        choice.numIntInfeasDown = numberUnsatisfied_;
+        choice.fix=0; // say not fixed
+        // see if can skip strong branching
+        int canSkip = choice.possibleBranch->fillStrongInfo(choice);
+        // For now always do
+        canSkip=false;
+        if (model->messageHandler()->logLevel()>3) 
+          dynamicObject->print(1,choice.possibleBranch->value());
+        if (!canSkip) {
+          double objectiveChange ;
+          double newObjectiveValue=1.0e100;
+          int j;
+          // status is 0 finished, 1 infeasible and other
+          int iStatus;
+          /*
+            Try the down direction first. (Specify the initial branching alternative as
+            down with a call to way(-1). Each subsequent call to branch() performs the
+            specified branch and advances the branch object state to the next branch
+            alternative.)
+          */
+          choice.possibleBranch->way(-1) ;
+          decision->saveBranchingObject( choice.possibleBranch);
+          choice.possibleBranch->branch() ;
+          solver->solveFromHotStart() ;
+          /*
+            We now have an estimate of objective degradation that we can use for strong
+            branching. If we're over the cutoff, the variable is monotone up.
+            If we actually made it to optimality, check for a solution, and if we have
+            a good one, call setBestSolution to process it. Note that this may reduce the
+            cutoff, so we check again to see if we can declare this variable monotone.
+          */
+          if (solver->isProvenOptimal())
+            iStatus=0; // optimal
+          else if (solver->isIterationLimitReached()
+                   &&!solver->isDualObjectiveLimitReached())
+            iStatus=2; // unknown 
+          else
+            iStatus=1; // infeasible
+          newObjectiveValue = solver->getObjSense()*solver->getObjValue();
+          choice.numItersDown = solver->getIterationCount();
+          objectiveChange = newObjectiveValue  - objectiveValue_;
+          decision->updateInformation( solver,this);
+          if (!iStatus) {
+            choice.finishedDown = true ;
+            if (newObjectiveValue>=model->getCutoff()) {
+              objectiveChange = 1.0e100; // say infeasible
+            } else {
+              // See if integer solution
+              if (model->feasibleSolution(choice.numIntInfeasDown,
+                                          choice.numObjInfeasDown)) {
+                model->setBestSolution(CBC_STRONGSOL,
+                                       newObjectiveValue,
+                                       solver->getColSolution()) ;
+                if (newObjectiveValue >= model->getCutoff())	//  *new* cutoff
+                  objectiveChange = 1.0e100 ;
+              }
+            }
+          } else if (iStatus==1) {
+            objectiveChange = 1.0e100 ;
+          } else {
+            // Can't say much as we did not finish
+            choice.finishedDown = false ;
+          }
+          choice.downMovement = objectiveChange ;
+          
+          // restore bounds
+          for ( j=0;j<numberColumns;j++) {
+            if (saveLower[j] != lower[j])
+              solver->setColLower(j,saveLower[j]);
+            if (saveUpper[j] != upper[j])
+              solver->setColUpper(j,saveUpper[j]);
+          }
+          //printf("Down on %d, status is %d, obj %g its %d cost %g finished %d inf %d infobj %d\n",
+          //     choice.objectNumber,iStatus,newObjectiveValue,choice.numItersDown,
+          //     choice.downMovement,choice.finishedDown,choice.numIntInfeasDown,
+          //     choice.numObjInfeasDown);
+          
+          // repeat the whole exercise, forcing the variable up
+          decision->saveBranchingObject( choice.possibleBranch);
+          choice.possibleBranch->branch();
+          solver->solveFromHotStart() ;
+          /*
+            We now have an estimate of objective degradation that we can use for strong
+            branching. If we're over the cutoff, the variable is monotone up.
+            If we actually made it to optimality, check for a solution, and if we have
+            a good one, call setBestSolution to process it. Note that this may reduce the
+            cutoff, so we check again to see if we can declare this variable monotone.
+          */
+          if (solver->isProvenOptimal())
+            iStatus=0; // optimal
+          else if (solver->isIterationLimitReached()
+                   &&!solver->isDualObjectiveLimitReached())
+            iStatus=2; // unknown 
+          else
+            iStatus=1; // infeasible
+          newObjectiveValue = solver->getObjSense()*solver->getObjValue();
+          choice.numItersUp = solver->getIterationCount();
+          objectiveChange = newObjectiveValue  - objectiveValue_;
+          decision->updateInformation( solver,this);
+          if (!iStatus) {
+            choice.finishedUp = true ;
+            if (newObjectiveValue>=model->getCutoff()) {
+              objectiveChange = 1.0e100; // say infeasible
+            } else {
+              // See if integer solution
+              if (model->feasibleSolution(choice.numIntInfeasUp,
+                                          choice.numObjInfeasUp)) { 
+                model->setBestSolution(CBC_STRONGSOL,
+                                       newObjectiveValue,
+                                       solver->getColSolution()) ;
+                if (newObjectiveValue >= model->getCutoff())	//  *new* cutoff
+                  objectiveChange = 1.0e100 ;
+              }
+            }
+          } else if (iStatus==1) {
+            objectiveChange = 1.0e100 ;
+          } else {
+            // Can't say much as we did not finish
+            choice.finishedUp = false ;
+          }
+          choice.upMovement = objectiveChange ;
+          
+          // restore bounds
+          for ( j=0;j<numberColumns;j++) {
+            if (saveLower[j] != lower[j])
+              solver->setColLower(j,saveLower[j]);
+            if (saveUpper[j] != upper[j])
+              solver->setColUpper(j,saveUpper[j]);
+          }
+          
+          //printf("Up on %d, status is %d, obj %g its %d cost %g finished %d inf %d infobj %d\n",
+          //     choice.objectNumber,iStatus,newObjectiveValue,choice.numItersUp,
+          //     choice.upMovement,choice.finishedUp,choice.numIntInfeasUp,
+          //     choice.numObjInfeasUp);
+          hitMaxTime = ( CoinCpuTime()-model->getDblParam(CbcModel::CbcStartSeconds) > 
+                         model->getDblParam(CbcModel::CbcMaximumSeconds));
+          if (hitMaxTime) {
+            break;
+          }
+        }
+        /*
+          End of evaluation for this candidate variable. Possibilities are:
+          * Both sides below cutoff; this variable is a candidate for branching.
+          * Both sides infeasible or above the objective cutoff: no further action
+          here. Break from the evaluation loop and assume the node will be purged
+          by the caller.
+          * One side below cutoff: Install the branch (i.e., fix the variable). Break
+          from the evaluation loop and assume the node will be reoptimised by the
+          caller.
+        */
+        if (choice.upMovement<1.0e100) {
+          if(choice.downMovement<1.0e100) {
+            // feasible - see which best
+            int iColumn =
+              model->integerVariable()[choice.possibleBranch->variable()] ;
+            model->messageHandler()->message(CBC_STRONG,model->messages())
+              << iObject << iColumn
+              <<choice.downMovement<<choice.numIntInfeasDown 
+              <<choice.upMovement<<choice.numIntInfeasUp 
+              <<choice.possibleBranch->value()
+              <<CoinMessageEol;
+            //if (!stateOfSearch)
+            //choice.numIntInfeasDown=99999; // temp fudge
+            int betterWay = decision->betterBranch(choice.possibleBranch,
+                                                   branch_,
+                                                   choice.upMovement*changeFactor,
+                                                   choice.numIntInfeasUp ,
+                                                   choice.downMovement*changeFactor,
+                                                   choice.numIntInfeasDown );
+            if (iDo>=changeStrategy) {
+              // make less likely
+              changeStrategy+=numberStrong;
+              changeFactor *= 0.9;
+            }
+            if (betterWay) {
+              delete branch_;
+              // C) create branching object
+              branch_ = choice.possibleBranch;
+              choice.possibleBranch=NULL;
+              branch_->way(betterWay);
+              bestChoice = choice.objectNumber;
+              whichChoice = iDo;
+            } else {
+              delete choice.possibleBranch;
+              if (iDo>=2*numberStrong)
+                break;
+              if (!dynamicObject||dynamicObject->numberTimesUp()>1) {
+                if (iDo-whichChoice>=numberStrong)
+                  break; // give up
+              } else {
+                if (iDo-whichChoice>=2*numberStrong)
+                  break; // give up
+              }
+            }
+          } else {
+            // up feasible, down infeasible
+            anyAction=-1;
+            //printf("Down infeasible for choice %d sequence %d\n",i,
+            // model->object(choice.objectNumber)->columnNumber());
+            if (!solveAll) {
+              choice.possibleBranch->way(1);
+              choice.possibleBranch->branch();
+              delete choice.possibleBranch;
+              break;
+            } else {
+              choice.fix=1;
+              fixObject[numberToFix++]=choice;
+            }
+          }
+        } else {
+          if(choice.downMovement<1.0e100) {
+            // down feasible, up infeasible
+            anyAction=-1;
+            //printf("Up infeasible for choice %d sequence %d\n",i,
+            // model->object(choice.objectNumber)->columnNumber());
+            if (!solveAll) {
+              choice.possibleBranch->way(-1);
+              choice.possibleBranch->branch();
+              delete choice.possibleBranch;
+              break;
+            } else {
+              choice.fix=-1;
+              fixObject[numberToFix++]=choice;
+            }
+          } else {
+            // neither side feasible
+            anyAction=-2;
+            delete choice.possibleBranch;
+            //printf("Both infeasible for choice %d sequence %d\n",i,
+            // model->object(choice.objectNumber)->columnNumber());
+            break;
+          }
+        }
+      }
+      if (model->messageHandler()->logLevel()>3) { 
+        if (anyAction==-2)
+          printf("infeasible\n");
+        else if(anyAction==-1)
+          printf("%d fixed\n",numberToFix);
+        else
+          printf("choosing %d\n",bestChoice);
+      }
+      // Delete the snapshot
+      solver->unmarkHotStart();
+      // back to normal
+      solver->setHintParam(OsiDoInBranchAndCut,true,OsiHintDo,NULL) ;
+      solver->setIntParam(OsiMaxNumIterationHotStart,saveLimit);
+      // restore basis
+      solver->setWarmStart(ws);
+      // Unless infeasible we will carry on
+      // But we could fix anyway
+      if (numberToFix) {
+        if (anyAction==-2) {
+          // take off
+          for (i = 0 ; i < numberToFix ; i++) {
+            delete fixObject[i].possibleBranch;
+          }
+        } else {
+          // apply and take off
+          for (i = 0 ; i < numberToFix ; i++) {
+            fixObject[i].possibleBranch->way(fixObject[i].fix) ;
+            fixObject[i].possibleBranch->branch() ;
+            delete fixObject[i].possibleBranch;
+          }
+          bool feasible=true;
+          // can do quick optimality check
+          int easy=2;
+          solver->setHintParam(OsiDoInBranchAndCut,true,OsiHintDo,&easy) ;
+          solver->resolve() ;
+          solver->setHintParam(OsiDoInBranchAndCut,true,OsiHintDo,NULL) ;
+          feasible = solver->isProvenOptimal();
+          if (feasible) {
+            anyAction=0;
+            memcpy(saveSolution,solver->getColSolution(),numberColumns*sizeof(double));
+            model->reserveCurrentSolution(saveSolution);
+            memcpy(saveLower,solver->getColLower(),numberColumns*sizeof(double));
+            memcpy(saveUpper,solver->getColUpper(),numberColumns*sizeof(double));
+            // See if candidate still possible
+            if (branch_) {
+              const CbcObject * object = model->object(bestChoice);
+              int preferredWay;
+              double infeasibility = object->infeasibility(preferredWay);
+              if (!infeasibility) {
+                // take out
+                delete branch_;
+                branch_=NULL;
+              } else {
+                branch_->way(preferredWay);
+              }
+            }
+          } else {
+            anyAction=-2;
+            finished=true;
+          }
+          // If  fixed then round again
+          if (!branch_) {
+            finished=false;
+          }
+          // If these in then different action
+#if 0
+          //if (!anyAction)
+          //anyAction=-1;
+          //finished=true;
+#endif
+        }
+      }
+      delete ws;
+    }
+  }
+  
+  // Set guessed solution value
+  guessedObjectiveValue_ = objectiveValue_+estimatedDegradation;
+/*
+  Cleanup, then we're outta here.
+*/
+  if (!model->branchingMethod())
+    delete decision;
+    
+  delete [] fixObject;
+  delete [] sort;
+  delete [] whichObject;
+  delete [] saveLower;
+  delete [] saveUpper;
+  
+  // restore solution
+  solver->setColSolution(saveSolution);
+  model->reserveCurrentSolution(saveSolution);
   delete [] saveSolution;
   return anyAction;
 }

@@ -19,6 +19,7 @@ LIBSRC += CbcHeuristic.cpp
 #LIBSRC += CbcHeuristicRounding2.cpp
 LIBSRC += CbcBranchBase.cpp
 LIBSRC += CbcBranchActual.cpp
+LIBSRC += CbcBranchDynamic.cpp
 LIBSRC += CbcBranchLotsize.cpp
 LIBSRC += CbcBranchCut.cpp
 LIBSRC += CbcFathom.cpp

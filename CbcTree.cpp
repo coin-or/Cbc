@@ -66,6 +66,51 @@ CbcTree::empty()
 { 
   return nodes_.empty();
 }
+// Gets best node and takes off heap
+CbcNode * 
+CbcTree::bestNode(double cutoff)
+{
+  CbcNode * best = NULL;
+  while (!best&&nodes_.size()) {
+    best = nodes_.front();
+    if (best)
+      assert (best->nodeInfo()->numberBranchesLeft());
+    if (!best||best->objectiveValue()>=cutoff) {
+      // take off
+      pop_heap(nodes_.begin(), nodes_.end(), comparison_);
+      nodes_.pop_back();
+      best=NULL;
+    }
+  }
+  if (best&&comparison_.test_->fullScan()) {
+    CbcNode * saveBest=best;
+    int n=nodes_.size();
+    int iBest=-1;
+    for (int i=0;i<n;i++) {
+      if (nodes_[i])
+        assert (nodes_[i]->nodeInfo()->numberBranchesLeft());
+      if (nodes_[i]&&nodes_[i]->objectiveValue()<cutoff
+          &&comparison_.alternateTest(best,nodes_[i])) {
+        best=nodes_[i];
+        iBest=i;
+      }
+    }
+    if (best==saveBest) {
+      // can pop
+      // take off
+      pop_heap(nodes_.begin(), nodes_.end(), comparison_);
+      nodes_.pop_back();
+    } else {
+      // make impossible
+      nodes_[iBest]=NULL;
+    }
+  } else if (best) {
+    // take off
+    pop_heap(nodes_.begin(), nodes_.end(), comparison_);
+    nodes_.pop_back();
+  }
+  return best;
+}
 
 /*! \brief Prune the tree using an objective function cutoff
 
@@ -91,11 +136,13 @@ CbcTree::cleanTree(CbcModel * model, double cutoff, double & bestPossibleObjecti
   for (j=0;j<nNodes;j++) {
     CbcNode * node = top();
     pop();
-    double value = node->objectiveValue();
+    double value = node ? node->objectiveValue() : COIN_DBL_MAX;
     bestPossibleObjective = CoinMin(bestPossibleObjective,value);
     if (value >= cutoff) {
-      nodeArray[--kDelete] = node;
-      depth[kDelete] = node->depth();
+      if (node) {
+        nodeArray[--kDelete] = node;
+        depth[kDelete] = node->depth();
+      }
     } else {
       nodeArray[k++]=node;
     }
@@ -158,4 +205,19 @@ CbcTree::cleanTree(CbcModel * model, double cutoff, double & bestPossibleObjecti
   delete [] depth;
 };
 
+// Return the best node of the heap using alternate criterion
+CbcNode * 
+CbcTree::bestAlternate() {
+  int n=nodes_.size();
+  CbcNode * best=NULL;
+  if (n) {
+    best = nodes_[0];
+    for (int i=1;i<n;i++) {
+      if (comparison_.alternateTest(best,nodes_[i])) {
+        best=nodes_[i];
+      }
+    }
+  }
+  return best;
+}
 

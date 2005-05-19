@@ -86,6 +86,7 @@ public:
   // Default Constructor 
   CbcStrategyDefault (bool cutsOnlyAtRoot=true,
                       int numberStrong=5,
+                      int numberBeforeTrust=0,
                       int printLevel=0);
 
   // Copy constructor 
@@ -114,6 +115,9 @@ protected:
 
   // How much strong branching to do 
   int numberStrong_;
+
+  // Number branches needed to trust with dynamic pseudo costs
+  int numberBeforeTrust_;
 
   // Print level 0 little, 1 medium
   int printLevel_;

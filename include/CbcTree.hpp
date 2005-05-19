@@ -44,6 +44,8 @@ public:
 
   /// Remove the top node from the heap
   virtual void pop() ;
+  /// Gets best node and takes off heap
+  virtual CbcNode * bestNode(double cutoff);
 
 //@}
 /*! \name vector methods */
@@ -78,6 +80,9 @@ public:
 */
 
   void cleanTree(CbcModel * model, double cutoff, double & bestPossibleObjective);
+
+  /// Get best on list using alternate method
+  CbcNode * bestAlternate();
 
   /// We may have got an intelligent tree so give it one more chance
   virtual void endSearch() {};

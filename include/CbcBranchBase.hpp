@@ -386,7 +386,8 @@ public:
   virtual void saveBranchingObject(CbcBranchingObject * object) {};
   /** Pass in information on branch just done.
       assumes object can get information from solver */
-  virtual void updateInformation(OsiSolverInterface * solver) {};
+  virtual void updateInformation(OsiSolverInterface * solver, 
+                                 const CbcNode * node) {};
 
 protected:
   

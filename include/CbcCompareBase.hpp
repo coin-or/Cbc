@@ -11,6 +11,10 @@
     At present the node list is stored as a heap and the "test"
     comparison function returns true if node y is better than node x.
 
+    This is rather inflexible so if the comparison functions wants
+    it can signal to use alternative criterion on a complete pass
+    throgh tree.
+
 */
 #include "CbcNode.hpp"
 
@@ -36,6 +40,9 @@ public:
   // Return true if want tree re-sorted
   virtual bool every1000Nodes(CbcModel * model,int numberNodes) {return false;};
 
+  /// Returns true if wants code to do scan with alternate criterion
+  virtual bool fullScan() const { return false;};
+
   virtual ~CbcCompareBase() {};
 
   // Copy constructor 
@@ -54,6 +61,9 @@ public:
   /// This is test function
   virtual bool test (CbcNode * x, CbcNode * y) {return true;};
 
+  /// This is alternate test function
+  virtual bool alternateTest (CbcNode * x, CbcNode * y) {return test(x,y);};
+
   bool operator() (CbcNode * x, CbcNode * y) {
     return test(x,y);
   }
@@ -71,6 +81,12 @@ public:
   bool operator() (CbcNode * x, CbcNode * y) {
     return test_->test(x,y);
   }
+  /// This is alternate test function
+  inline bool alternateTest (CbcNode * x, CbcNode * y) {return test_->alternateTest(x,y);};
+
+  /// return comparison object
+  inline CbcCompareBase * comparisonObject() const
+  { return test_;};
 };
 //#############################################################################
 /*  These can be alternative strategies for choosing variables

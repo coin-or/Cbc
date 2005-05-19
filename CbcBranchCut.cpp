@@ -375,7 +375,7 @@ CbcBranchToFixLots::createBranch(int way) const
   // by default way must be -1
   assert (way==-1);
   OsiSolverInterface * solver = model_->solver();
-  const double * solution = model_->currentSolution();
+  const double * solution = model_->testSolution();
   const double * lower = solver->getColLower();
   const double * upper = solver->getColUpper();
   const double * dj = solver->getReducedCost();
@@ -519,7 +519,7 @@ CbcBranchToFixLots::shallWe() const
   int numberRows = matrixByRow_.getNumRows();
   //if (numberRows!=solver->getNumRows())
   //return 0;
-  const double * solution = model_->currentSolution();
+  const double * solution = model_->testSolution();
   const double * lower = solver->getColLower();
   const double * upper = solver->getColUpper();
   const double * dj = solver->getReducedCost();

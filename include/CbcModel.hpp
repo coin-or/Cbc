@@ -341,6 +341,11 @@ public:
   */
 
   void findIntegers(bool startAgain);
+
+  /** If numberBeforeTrust >0 then we are going to use CbcBranchDynamic.
+      Scan and convert CbcSimpleInteger objects
+  */
+  void convertToDynamic();
   
   //@}
 
@@ -535,6 +540,27 @@ public:
   */
   inline int numberStrong() const
   { return numberStrong_;};
+
+  /** Set the number of branches before pseudo costs believed
+      in dynamic strong branching.
+
+    A value of 0 disables dynamic strong branching.
+  */
+  void setNumberBeforeTrust(int number);
+  /** get the number of branches before pseudo costs believed
+      in dynamic strong branching. */
+  inline int numberBeforeTrust() const
+  { return numberBeforeTrust_;};
+  /** Problem type as set by user or found by analysis.  This will be extended
+      0 - not known
+      1 - Set partitioning <=
+      2 - Set partitioning ==
+      3 - Set covering
+  */
+  void inline setProblemType(int number)
+  { problemType_=number;};
+  inline int problemType() const
+  { return problemType_;};
 
   /// Set how often to scan global cuts 
   void setHowOftenGlobalScan(int number);
@@ -750,6 +776,13 @@ public:
     
   inline double * currentSolution() const
   { return currentSolution_;};
+  /** For testing infeasibilities - will point to
+      currentSolution_ or solver-->getColSolution()
+  */
+  inline const double * testSolution() const
+  { return testSolution_;};
+  inline void setTestSolution(const double * solution)
+  { testSolution_ = solution;};
   /// Make sure region there and optionally copy solution
   void reserveCurrentSolution(const double * solution=NULL);
 
@@ -987,6 +1020,14 @@ public:
   /// Get a pointer to current node (be careful)
   inline CbcNode * currentNode() const
   { return currentNode_;};
+  /** State of search
+      0 - no solution
+      1 - only heuristic solutions
+      2 - branched to a solution 
+      3 - no solution but many nodes
+  */
+  inline int stateOfSearch() const
+  { return stateOfSearch_;};
 
   /// Get the number of cut generators
   inline int numberCutGenerators() const
@@ -1041,6 +1082,9 @@ public:
   ///Get the specified heuristic
   inline CbcHeuristic * heuristic(int i) const
   { return heuristic_[i];};
+  /// Get the number of heuristics
+  inline int numberHeuristics() const
+  { return numberHeuristics_;};
 
   /** Pass in branching priorities.
   
@@ -1206,6 +1250,10 @@ private:
   double bestObjective_;
   /// Best possible objective
   double bestPossibleObjective_;
+  /// Sum of Changes to objective by first solve
+  double sumChangeObjective1_;
+  /// Sum of Changes to objective by subsequent solves
+  double sumChangeObjective2_;
 
   /// Array holding the incumbent (best) solution.
   double * bestSolution_;
@@ -1215,7 +1263,10 @@ private:
     This array is used more as a temporary.
   */
   double * currentSolution_;
-
+  /** For testing infeasibilities - will point to
+      currentSolution_ or solver-->getColSolution()
+  */
+  mutable const double * testSolution_;
   /// Global cuts
   OsiCuts globalCuts_;
 
@@ -1223,6 +1274,13 @@ private:
   double minimumDrop_;
   /// Number of solutions
   int numberSolutions_;
+  /** State of search
+      0 - no solution
+      1 - only heuristic solutions
+      2 - branched to a solution
+      3 - no solution but many nodes
+  */
+  int stateOfSearch_;
   /// Hotstart strategy 0 =off, 1=branch if incorrect,2=branch even if correct, ....
   int hotstartStrategy_;
   /// Number of heuristic solutions
@@ -1312,7 +1370,16 @@ private:
     To disable strong branching, set this to 0.
   */
   int numberStrong_;
-
+  /** The number of branches before pseudo costs believed
+      in dynamic strong branching. (0 off) */
+  int numberBeforeTrust_;
+  /** Problem type as set by user or found by analysis.  This will be extended
+      0 - not known
+      1 - Set partitioning <=
+      2 - Set partitioning ==
+      3 - Set covering
+  */
+  int problemType_;
   /// Print frequency
   int printFrequency_;
   /// Number of cut generators

@@ -420,7 +420,7 @@ double
 CbcLotsize::infeasibility(int & preferredWay) const
 {
   OsiSolverInterface * solver = model_->solver();
-  const double * solution = model_->currentSolution();
+  const double * solution = model_->testSolution();
   const double * lower = solver->getColLower();
   const double * upper = solver->getColUpper();
   double value = solution[columnNumber_];
@@ -485,7 +485,7 @@ CbcLotsize::feasibleRegion()
   OsiSolverInterface * solver = model_->solver();
   const double * lower = solver->getColLower();
   const double * upper = solver->getColUpper();
-  const double * solution = model_->currentSolution();
+  const double * solution = model_->testSolution();
   double value = solution[columnNumber_];
   value = CoinMax(value, lower[columnNumber_]);
   value = CoinMin(value, upper[columnNumber_]);
@@ -522,7 +522,7 @@ CbcBranchingObject *
 CbcLotsize::createBranch(int way) 
 {
   OsiSolverInterface * solver = model_->solver();
-  const double * solution = model_->currentSolution();
+  const double * solution = model_->testSolution();
   const double * lower = solver->getColLower();
   const double * upper = solver->getColUpper();
   double value = solution[columnNumber_];
@@ -544,7 +544,7 @@ CbcBranchingObject *
 CbcLotsize::preferredNewFeasible() const
 {
   OsiSolverInterface * solver = model_->solver();
-  double value = model_->currentSolution()[columnNumber_];
+  double value = model_->testSolution()[columnNumber_];
 
   bool feasible = findRange(value);
   assert (feasible);
@@ -592,7 +592,7 @@ CbcBranchingObject *
 CbcLotsize::notPreferredNewFeasible() const 
 {
   OsiSolverInterface * solver = model_->solver();
-  double value = model_->currentSolution()[columnNumber_];
+  double value = model_->testSolution()[columnNumber_];
 
   double nearest = floor(value+0.5);
   double integerTolerance = 

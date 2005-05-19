@@ -125,7 +125,7 @@ CbcClique::infeasibility(int & preferredWay) const
   int j;
   const int * integer = model_->integerVariable();
   OsiSolverInterface * solver = model_->solver();
-  const double * solution = model_->currentSolution();
+  const double * solution = model_->testSolution();
   const double * lower = solver->getColLower();
   const double * upper = solver->getColUpper();
   double largestValue=0.0;
@@ -190,7 +190,7 @@ CbcClique::feasibleRegion()
   int j;
   const int * integer = model_->integerVariable();
   OsiSolverInterface * solver = model_->solver();
-  const double * solution = model_->currentSolution();
+  const double * solution = model_->testSolution();
   const double * lower = solver->getColLower();
   const double * upper = solver->getColUpper();
   double integerTolerance = 
@@ -222,7 +222,7 @@ CbcClique::createBranch(int way)
   int numberFree=numberMembers_;
   const int * integer = model_->integerVariable();
   OsiSolverInterface * solver = model_->solver();
-  const double * solution = model_->currentSolution();
+  const double * solution = model_->testSolution();
   const double * lower = solver->getColLower();
   const double * upper = solver->getColUpper();
   int * upList = new int[numberMembers_];
@@ -397,7 +397,7 @@ CbcSOS::infeasibility(int & preferredWay) const
   int firstNonZero=-1;
   int lastNonZero = -1;
   OsiSolverInterface * solver = model_->solver();
-  const double * solution = model_->currentSolution();
+  const double * solution = model_->testSolution();
   const double * lower = solver->getColLower();
   const double * upper = solver->getColUpper();
   //double largestValue=0.0;
@@ -458,7 +458,7 @@ CbcSOS::feasibleRegion()
   int firstNonZero=-1;
   int lastNonZero = -1;
   OsiSolverInterface * solver = model_->solver();
-  const double * solution = model_->currentSolution();
+  const double * solution = model_->testSolution();
   //const double * lower = solver->getColLower();
   const double * upper = solver->getColUpper();
   double integerTolerance = 
@@ -494,7 +494,7 @@ CbcBranchingObject *
 CbcSOS::createBranch(int way) 
 {
   int j;
-  const double * solution = model_->currentSolution();
+  const double * solution = model_->testSolution();
   double integerTolerance = 
       model_->getDblParam(CbcModel::CbcIntegerTolerance);
   OsiSolverInterface * solver = model_->solver();
@@ -621,7 +621,7 @@ double
 CbcSimpleInteger::infeasibility(int & preferredWay) const
 {
   OsiSolverInterface * solver = model_->solver();
-  const double * solution = model_->currentSolution();
+  const double * solution = model_->testSolution();
   const double * lower = solver->getColLower();
   const double * upper = solver->getColUpper();
   double value = solution[columnNumber_];
@@ -659,7 +659,7 @@ CbcSimpleInteger::feasibleRegion()
   OsiSolverInterface * solver = model_->solver();
   const double * lower = solver->getColLower();
   const double * upper = solver->getColUpper();
-  const double * solution = model_->currentSolution();
+  const double * solution = model_->testSolution();
   double value = solution[columnNumber_];
   value = CoinMax(value, lower[columnNumber_]);
   value = CoinMin(value, upper[columnNumber_]);
@@ -688,7 +688,7 @@ CbcBranchingObject *
 CbcSimpleInteger::createBranch(int way) 
 {
   OsiSolverInterface * solver = model_->solver();
-  const double * solution = model_->currentSolution();
+  const double * solution = model_->testSolution();
   const double * lower = solver->getColLower();
   const double * upper = solver->getColUpper();
   double value = solution[columnNumber_];
@@ -723,7 +723,7 @@ CbcBranchingObject *
 CbcSimpleInteger::preferredNewFeasible() const
 {
   OsiSolverInterface * solver = model_->solver();
-  double value = model_->currentSolution()[columnNumber_];
+  double value = model_->testSolution()[columnNumber_];
 
   double nearest = floor(value+0.5);
   double integerTolerance = 
@@ -758,7 +758,7 @@ CbcBranchingObject *
 CbcSimpleInteger::notPreferredNewFeasible() const 
 {
   OsiSolverInterface * solver = model_->solver();
-  double value = model_->currentSolution()[columnNumber_];
+  double value = model_->testSolution()[columnNumber_];
 
   double nearest = floor(value+0.5);
   double integerTolerance = 
@@ -1012,7 +1012,7 @@ CbcBranchingObject *
 CbcSimpleIntegerPseudoCost::createBranch(int way) 
 {
   OsiSolverInterface * solver = model_->solver();
-  const double * solution = model_->currentSolution();
+  const double * solution = model_->testSolution();
   const double * lower = solver->getColLower();
   const double * upper = solver->getColUpper();
   double value = solution[columnNumber_];
@@ -1052,7 +1052,7 @@ double
 CbcSimpleIntegerPseudoCost::infeasibility(int & preferredWay) const
 {
   OsiSolverInterface * solver = model_->solver();
-  const double * solution = model_->currentSolution();
+  const double * solution = model_->testSolution();
   const double * lower = solver->getColLower();
   const double * upper = solver->getColUpper();
   if (upper[columnNumber_]==lower[columnNumber_]) {
@@ -1097,7 +1097,7 @@ double
 CbcSimpleIntegerPseudoCost::upEstimate() const
 {
   OsiSolverInterface * solver = model_->solver();
-  const double * solution = model_->currentSolution();
+  const double * solution = model_->testSolution();
   const double * lower = solver->getColLower();
   const double * upper = solver->getColUpper();
   double value = solution[columnNumber_];
@@ -1123,7 +1123,7 @@ double
 CbcSimpleIntegerPseudoCost::downEstimate() const
 {
   OsiSolverInterface * solver = model_->solver();
-  const double * solution = model_->currentSolution();
+  const double * solution = model_->testSolution();
   const double * lower = solver->getColLower();
   const double * upper = solver->getColUpper();
   double value = solution[columnNumber_];

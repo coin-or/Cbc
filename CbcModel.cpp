@@ -15,6 +15,7 @@
 #include "OsiSolverInterface.hpp"
 #include "CoinWarmStartBasis.hpp"
 #include "CoinPackedMatrix.hpp"
+#include "CoinHelperFunctions.hpp"
 #include "CbcBranchActual.hpp"
 #include "CbcBranchDynamic.hpp"
 #include "CbcHeuristic.hpp"
@@ -544,6 +545,7 @@ void CbcModel::branchAndBound()
   int numberOldActiveCuts = 0 ;
   int numberNewCuts = 0 ;
   // Array to mark solution
+  delete [] usedInSolution_;
   usedInSolution_ = new int[numberColumns];
   CoinZeroN(usedInSolution_,numberColumns);
   { int iObject ;
@@ -678,6 +680,7 @@ void CbcModel::branchAndBound()
   continuousInfeasibilities_ = 0 ;
   if (newNode)
   { continuousObjective_ = newNode->objectiveValue() ;
+    delete [] continuousSolution_;
     continuousSolution_ = CoinCopyOfArray(solver_->getColSolution(),
                                              numberColumns);
     continuousInfeasibilities_ = newNode->numberUnsatisfied() ; }
@@ -1919,7 +1922,11 @@ CbcModel::gutsOfDestructor()
   bestSolution_=NULL;
   delete [] currentSolution_;
   currentSolution_=NULL;
-  testSolution_=currentSolution_;
+  delete [] continuousSolution_;
+  continuousSolution_=NULL;
+  delete [] usedInSolution_;
+  usedInSolution_ = NULL;
+  testSolution_=NULL;
   delete [] integerVariable_;
   integerVariable_=NULL;
   int i;
@@ -4145,7 +4152,7 @@ CbcModel::setBestSolution (CBC_Message how,
     int numberColumns = solver_->getNumCols();
     if (!bestSolution_)
       bestSolution_ = new double[numberColumns];
-    memcpy(bestSolution_,solution,numberColumns*sizeof(double));
+    CoinCopyN(solution,numberColumns,bestSolution_);
 
     cutoff = bestObjective_-dblParam_[CbcCutoffIncrement];
     // This is not correct - that way cutoff can go up if maximization

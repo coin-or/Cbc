@@ -514,13 +514,6 @@ CbcLocalSearch::solution(double & solutionValue,
       }
     }
     if (bestChange+newSolutionValue<solutionValue) {
-      // new solution
-      memcpy(betterSolution,newSolution,numberColumns*sizeof(double));
-      returnCode=1;
-      solutionValue = newSolutionValue + bestChange;
-      if (bestChange>1.0e-12)
-	printf("Local search heuristic improved solution by %g\n",
-	     -bestChange);
       // paranoid check
       memset(rowActivity,0,numberRows*sizeof(double));
       
@@ -535,28 +528,47 @@ CbcLocalSearch::solution(double & solutionValue,
 	  }
 	}
       }
+      int numberBad=0;
+      double sumBad=0.0;
       // check was approximately feasible
       for (i=0;i<numberRows;i++) {
 	if(rowActivity[i]<rowLower[i]) {
-	  assert (rowActivity[i]>rowLower[i]-10.0*primalTolerance);
+          sumBad += rowLower[i]-rowActivity[i];
+	  if (rowActivity[i]<rowLower[i]-10.0*primalTolerance)
+            numberBad++;
 	} else if(rowActivity[i]>rowUpper[i]) {
-	  assert (rowActivity[i]<rowUpper[i]+10.0*primalTolerance);
+          sumBad += rowUpper[i]-rowActivity[i];
+	  if (rowActivity[i]>rowUpper[i]+10.0*primalTolerance)
+            numberBad++;
 	}
       }
-      for (i=0;i<numberIntegers;i++) {
-	int iColumn = integerVariable[i];
-	const CbcObject * object = model_->object(i);
-	const CbcSimpleInteger * integerObject = 
-	  dynamic_cast<const  CbcSimpleInteger *> (object);
-	// get original bounds
-	double originalLower = integerObject->originalLowerBound();
-	//double originalUpper = integerObject->originalUpperBound();
-
-	double value=newSolution[iColumn];
-	// if away from lower bound mark that fact
-	if (value>originalLower) {
-	  used_[iColumn]=1;
-	}
+      if (!numberBad) {
+        for (i=0;i<numberIntegers;i++) {
+          int iColumn = integerVariable[i];
+          const CbcObject * object = model_->object(i);
+          const CbcSimpleInteger * integerObject = 
+            dynamic_cast<const  CbcSimpleInteger *> (object);
+          // get original bounds
+          double originalLower = integerObject->originalLowerBound();
+          //double originalUpper = integerObject->originalUpperBound();
+          
+          double value=newSolution[iColumn];
+          // if away from lower bound mark that fact
+          if (value>originalLower) {
+            used_[iColumn]=1;
+          }
+        }
+        // new solution
+        memcpy(betterSolution,newSolution,numberColumns*sizeof(double));
+        returnCode=1;
+        solutionValue = newSolutionValue + bestChange;
+        if (bestChange>1.0e-12)
+          printf("Local search heuristic improved solution by %g\n",
+                 -bestChange);
+      } else {
+        // bad solution - should not happen so debug if see message
+        printf("Local search got bad solution with %d infeasibilities summing to %g\n",
+               numberBad,sumBad);
       }
     }
   }

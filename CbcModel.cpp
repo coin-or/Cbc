@@ -3273,8 +3273,8 @@ CbcModel::takeOffCuts (OsiCuts &newCuts, int *whichGenerator,
       numberNewCuts -= numberNewToDelete ;
       numberOldActiveCuts -= numberOldToDelete ;
 #     ifdef CBC_DEBUG
-      std::cout << "takeOffCuts: purged " << numberOldToDelete << "+"
-		<< numberNewToDelete << " cuts." << std::endl ;
+      printf("takeOffCuts: purged %d+%d cuts\n", numberOldToDelete,
+	     numberNewToDelete );
 #     endif
       if (allowResolve)
       { 
@@ -3288,9 +3288,8 @@ CbcModel::takeOffCuts (OsiCuts &newCuts, int *whichGenerator,
 	{ needPurge = false ; }
 #	ifdef CBC_DEBUG
 	else
-	{ std::cout << "Repeating purging loop. "
-		    << solver_->getIterationCount() << " iters."
-		    << std::endl ; }
+	  { printf( "Repeating purging loop. %d iters.\n",
+		    solver_->getIterationCount());
 #	endif
       }
       else
@@ -4019,8 +4018,7 @@ CbcModel::checkSolution (double cutoff, const double *solution,
   solver_->initialSolve();
   //solver_->setHintParam(OsiDoScale,saveTakeHint,saveStrength);
   if (!solver_->isProvenOptimal())
-    { std::cout << "checkSolution infeas! Retrying wihout scaling."
-	      << std::endl ;
+    { printf("checkSolution infeas! Retrying wihout scaling.\n");
     bool saveTakeHint;
     OsiHintStrength saveStrength;
     bool savePrintHint;

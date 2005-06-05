@@ -19,6 +19,7 @@ static Cbc_message us_english[]=
   {CBC_MAXNODES,3,1,"Exiting on maximum nodes"},
   {CBC_MAXTIME,20,1,"Exiting on maximum time"},
   {CBC_MAXSOLS,19,1,"Exiting on maximum solutions"},
+  {CBC_EVENT,27,1,"Exiting on user event"},
   {CBC_SOLUTION,4,1,"Integer solution of %g found after %d iterations and %d nodes"},
   {CBC_END,5,1,"Partial search - best objective %g (best possible %g), took %d iterations and %d nodes"},
   {CBC_INFEAS,6,1,"The LP relaxation is infeasible or too expensive"},

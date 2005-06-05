@@ -551,11 +551,29 @@ public:
       in dynamic strong branching. */
   inline int numberBeforeTrust() const
   { return numberBeforeTrust_;};
+  /** Set the number of variables for which to compute penalties
+      in dynamic strong branching.
+
+    A value of 0 disables penalties.
+  */
+  void setNumberPenalties(int number);
+  /** get the number of variables for which to compute penalties
+      in dynamic strong branching. */
+  inline int numberPenalties() const
+  { return numberPenalties_;};
+  /** Get scale factor to make penalties match strong.
+      Should/will be computed */
+  inline double penaltyScaleFactor() const
+  { return penaltyScaleFactor_;};
+  /** Set scale factor to make penalties match strong.
+      Should/will be computed */
+  void setPenaltyScaleFactor(double value);
   /** Problem type as set by user or found by analysis.  This will be extended
       0 - not known
       1 - Set partitioning <=
       2 - Set partitioning ==
       3 - Set covering
+      4 - all +- 1 or all +1 and odd
   */
   void inline setProblemType(int number)
   { problemType_=number;};
@@ -1388,6 +1406,12 @@ private:
   /** The number of branches before pseudo costs believed
       in dynamic strong branching. (0 off) */
   int numberBeforeTrust_;
+  /** The number of variable sfor which to compute penalties
+      in dynamic strong branching. (0 off) */
+  int numberPenalties_;
+  /** Scale factor to make penalties match strong.
+      Should/will be computed */
+  double penaltyScaleFactor_;
   /// Number of nodes infeasible by normal branching (before cuts)
   int numberInfeasibleNodes_;
   /** Problem type as set by user or found by analysis.  This will be extended

@@ -89,9 +89,11 @@ CbcHeuristicFPump::solution(double & solutionValue,
   // just do once
   if (!atRoot||passNumber!=1)
     return 0;
+  // probably a good idea
   if (model_->getSolutionCount()) return 0;
   // Clone solver - otherwise annoys root node computations
   OsiSolverInterface * solver = model_->solver()->clone();
+  solver->resolve();
   const double * lower = solver->getColLower();
   const double * upper = solver->getColUpper();
   const double * solution = solver->getColSolution();
@@ -168,7 +170,8 @@ CbcHeuristicFPump::solution(double & solutionValue,
       for (i=0;i<numberColumns;i++)
         solver->setObjCoeff(i,saveObjective[i]);
       // solution - but may not be better
-      double newSolutionValue = direction*solver->getObjValue();
+      // Compute using dot product
+      double newSolutionValue = direction*solver->OsiSolverInterface::getObjValue();
       if (newSolutionValue<solutionValue) {
 	memcpy(betterSolution,newSolution,numberColumns*sizeof(double));
       } else {

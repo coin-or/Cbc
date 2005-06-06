@@ -384,6 +384,7 @@ CbcRounding::solution(double & solutionValue,
           } else {
             // feasible - no good
             anyBadUp=-1;
+            anyBadDown=-1;
             break;
           }
         }

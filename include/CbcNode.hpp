@@ -180,6 +180,13 @@ public:
   /// Set owner null
   inline void nullOwner()
   { owner_=NULL;};
+  const inline CbcNode * owner() const
+  { return owner_;};
+  /// The node number
+  inline int nodeNumber() const
+  { return nodeNumber_;};
+  inline void setNodeNumber(int node)
+  { nodeNumber_=node;};
 protected:
 
   /** Number of other nodes pointing to this node.
@@ -199,6 +206,9 @@ protected:
 
   /// Number of row cuts (this node)
   int numberCuts_;
+
+  /// The node number
+  int nodeNumber_;
 
   /// Array of pointers to cuts
   CbcCountRowCut ** cuts_;
@@ -520,11 +530,6 @@ public:
   /// Get the number of objects unsatisfied at this node.
   inline int numberUnsatisfied() const
   {return numberUnsatisfied_;};
-  /// The node number
-  inline int nodeNumber() const
-  { return nodeNumber_;};
-  inline void setNodeNumber(int node)
-  { nodeNumber_=node;};
 
   // Guessed objective value (for solution)
   inline double guessedObjectiveValue() const
@@ -552,8 +557,6 @@ private:
   int depth_;
   /// The number of objects unsatisfied at this node.
   int numberUnsatisfied_;
-  /// The node number
-  int nodeNumber_;
 };
 
 

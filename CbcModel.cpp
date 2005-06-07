@@ -597,11 +597,15 @@ void CbcModel::branchAndBound()
 
   bool resolved = false ;
   CbcNode *newNode = NULL ;
+/*
+  For printing totals and for CbcNode (numberNodes_)
+*/
+  numberIterations_ = 0 ;
+  numberNodes_ = 0 ;
 
   if (feasible)
   { newNode = new CbcNode ;
     newNode->setObjectiveValue(direction*solver_->getObjValue()) ;
-    newNode->setNodeNumber(numberNodes_);
     anyAction = -1 ;
     // To make depth available we may need a fake node
     CbcNode fakeNode;
@@ -702,11 +706,6 @@ void CbcModel::branchAndBound()
   { int i ;
     for (i = 0;i < numberObjects_;i++)
       object_[i]->resetBounds() ; }
-/*
-  For printing totals and for CbcNode (numberNodes_)
-*/
-  numberIterations_ = 0 ;
-  numberNodes_ = 0 ;
   bool stoppedOnGap = false ;
 /*
   Feasible? Then we should have either a live node prepped for future
@@ -951,7 +950,6 @@ void CbcModel::branchAndBound()
 	  newNode->setObjectiveValue(direction*solver_->getObjValue()) ;
 	  if (newNode->objectiveValue() >= getCutoff()) 
 	    anyAction=-2;
-	  newNode->setNodeNumber(numberNodes_);
 	  anyAction =-1 ;
 	  resolved = false ;
 	  if (newNode->objectiveValue() >= getCutoff()) 
@@ -963,7 +961,7 @@ void CbcModel::branchAndBound()
             if (numberBeforeTrust_<=0 ) {
               anyAction = newNode->chooseBranch(this,node,numberPassesLeft) ;
             } else {
-              anyAction = newNode->chooseDynamicBranch(this,NULL,numberPassesLeft) ;
+              anyAction = newNode->chooseDynamicBranch(this,node,numberPassesLeft) ;
               if (anyAction==-3) 
                 anyAction = newNode->chooseBranch(this,node,numberPassesLeft) ; // dynamic did nothing
             }
@@ -2750,6 +2748,9 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node,
     }
     // If at root node and first pass do heuristics without cuts
     if (!numberNodes_&&currentPassNumber_==1) {
+      // Save number solutions
+      int saveNumberSolutions = numberSolutions_;
+      int saveNumberHeuristicSolutions = numberHeuristicSolutions_;
       for (int i = 0;i<numberHeuristics_;i++) {
         // see if heuristic will do anything
         double saveValue = heuristicValue ;
@@ -2759,10 +2760,16 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node,
           // better solution found
           found = i ;
           incrementUsed(newSolution);
+          // increment number of solutions so other heuristics can test
+          numberSolutions_++;
+          numberHeuristicSolutions_++;
         } else {
           heuristicValue = saveValue ;
         }
       }
+      // Restore number solutions
+      numberSolutions_ = saveNumberSolutions;
+      numberHeuristicSolutions_ = saveNumberHeuristicSolutions;
     }
 /*
   End of the loop to exercise each generator/heuristic.
@@ -3170,7 +3177,6 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node,
         numberNewCuts=0;
         // update size of problem
         numberRowsAtContinuous_ = solver_->getNumRows() ;
-	//#ifdef COIN_USE_CLP
 #if 0
         OsiClpSolverInterface * clpSolver 
           = dynamic_cast<OsiClpSolverInterface *> (solver_);

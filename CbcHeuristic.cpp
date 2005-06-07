@@ -405,7 +405,11 @@ CbcRounding::solution(double & solutionValue,
       }
       if (way) {
         // can improve
-        double distance=COIN_DBL_MAX;
+        double distance;
+        if (way>0.0)
+          distance = upperValue-currentValue;
+        else
+          distance = currentValue-lowerValue;
         for (j=columnStart[iColumn];
              j<columnStart[iColumn]+columnLength[iColumn];j++) {
           int iRow = row[j];

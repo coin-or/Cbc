@@ -16,12 +16,7 @@
 #include "CbcCompareUser.hpp"
 #include "CbcCutGenerator.hpp"
 #include "CbcHeuristicUser.hpp"
-#ifdef COIN_USE_CLP
 #include "OsiClpSolverInterface.hpp"
-#endif
-#ifdef COIN_USE_OSL
-#include "OsiOslSolverInterface.hpp"
-#endif
 
 // Cuts
 
@@ -31,7 +26,7 @@
 #include "CglOddHole.hpp"
 #include "CglClique.hpp"
 #include "CglFlowCover.hpp"
-#include "CglMixedIntegerRounding.hpp"
+#include "CglMixedIntegerRounding2.hpp"
 // Preprocessing
 #include "CglPreProcess.hpp"
 
@@ -72,11 +67,7 @@ int main (int argc, const char *argv[])
 
   // Define your favorite OsiSolver
   
-#ifdef COIN_USE_CLP
   OsiClpSolverInterface solver1;
-#elif COIN_USE_OSL
-  OsiOslSolverInterface solver1;
-#endif
 
   // Read in model using argv[1]
   // and assert that it is a clean model
@@ -141,11 +132,14 @@ int main (int argc, const char *argv[])
 
   CglProbing generator1;
   generator1.setUsingObjective(true);
-  generator1.setMaxPass(3);
+  generator1.setMaxPass(1);
+  generator1.setMaxPassRoot(5);
   // Number of unsatisfied variables to look at
   generator1.setMaxProbe(10);
+  generator1.setMaxProbeRoot(1000);
   // How far to follow the consequences
   generator1.setMaxLook(50);
+  generator1.setMaxLookRoot(500);
   // Only look at rows with fewer than this number of elements
   generator1.setMaxElements(200);
   generator1.setRowCuts(3);
@@ -167,7 +161,7 @@ int main (int argc, const char *argv[])
   generator5.setStarCliqueReport(false);
   generator5.setRowCliqueReport(false);
 
-  CglMixedIntegerRounding mixedGen;
+  CglMixedIntegerRounding2 mixedGen;
   CglFlowCover flowGen;
   
   // Add in generators
@@ -186,16 +180,12 @@ int main (int argc, const char *argv[])
     CbcCutGenerator * generator = model.cutGenerator(iGenerator);
     generator->setTiming(true);
   }
-#ifdef COIN_USE_CLP
   OsiClpSolverInterface * osiclp = dynamic_cast< OsiClpSolverInterface*> (model.solver());
   // go faster stripes
   if (osiclp->getNumRows()<300&&osiclp->getNumCols()<500) {
     osiclp->setupForRepeatedUse(2,0);
-    printf("trying slightly less reliable but faster version (? Gomory cuts okay?)\n");
-    printf("may not be safe if doing cuts in tree which need accuracy (level 2 anyway)\n");
   }
-#endif
-
+  model.messagesPointer()->setDetailMessage(0,61);
   // Allow rounding heuristic
 
   CbcRounding heuristic1(model);
@@ -218,8 +208,11 @@ int main (int argc, const char *argv[])
   model.initialSolve();
 
   // Could tune more
-  model.setMinimumDrop(min(1.0,
-			     fabs(model.getMinimizationObjValue())*1.0e-3+1.0e-4));
+  double objValue = model.solver()->getObjSense()*model.solver()->getObjValue();
+  double minimumDropA=CoinMin(1.0,fabs(objValue)*1.0e-3+1.0e-4);
+  double minimumDrop= fabs(objValue)*1.0e-4+1.0e-4;
+  printf("min drop %g (A %g)\n",minimumDrop,minimumDropA);
+  model.setMinimumDrop(minimumDrop);
 
   if (model.getNumCols()<500)
     model.setMaximumCutPassesAtRoot(-100); // always do 100 if possible
@@ -227,13 +220,15 @@ int main (int argc, const char *argv[])
     model.setMaximumCutPassesAtRoot(100); // use minimum drop
   else
     model.setMaximumCutPassesAtRoot(20);
-  //model.setMaximumCutPasses(5);
+  model.setMaximumCutPasses(10);
+  //model.setMaximumCutPasses(2);
 
   // Switch off strong branching if wanted
   // model.setNumberStrong(0);
   // Do more strong branching if small
   if (model.getNumCols()<5000)
     model.setNumberStrong(10);
+  model.setNumberStrong(20);
 
   model.solver()->setIntParam(OsiMaxNumIterationHotStart,100);
 
@@ -253,6 +248,7 @@ int main (int argc, const char *argv[])
   //model.messageHandler()->setLogLevel(2);
   //model.solver()->messageHandler()->setLogLevel(2);
   //model.setPrintFrequency(50);
+  //#define DEBUG_CUTS
 #ifdef DEBUG_CUTS
   // Set up debugger by name (only if no preprocesing)
   if (!preProcess) {
@@ -287,7 +283,7 @@ int main (int argc, const char *argv[])
     else
       std::cout<<std::endl;
   }
-  // Print solution if finished - we can't get names from Osi!
+  // Print solution if finished - we can't get names from Osi! - so get from OsiClp
 
   if (model.getMinimizationObjValue()<1.0e50) {
     // post process
@@ -302,6 +298,9 @@ int main (int argc, const char *argv[])
     int numberColumns = solver->getNumCols();
     
     const double * solution = solver->getColSolution();
+
+    // Get names from solver1 (as OsiSolverInterface may lose)
+    std::vector<std::string> columnNames = *solver1.getModelPtr()->columnNames();
     
     int iColumn;
     std::cout<<std::setiosflags(std::ios::fixed|std::ios::showpoint)<<std::setw(14);
@@ -310,7 +309,9 @@ int main (int argc, const char *argv[])
     for (iColumn=0;iColumn<numberColumns;iColumn++) {
       double value=solution[iColumn];
       if (fabs(value)>1.0e-7&&solver->isInteger(iColumn)) 
-	std::cout<<std::setw(6)<<iColumn<<" "<<value<<std::endl;
+	std::cout<<std::setw(6)<<iColumn<<" "
+                 <<columnNames[iColumn]<<" "
+                 <<value<<std::endl;
     }
     std::cout<<"--------------------------------------"<<std::endl;
   

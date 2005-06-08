@@ -272,7 +272,9 @@ CbcSimpleIntegerDynamicPseudoCost::infeasibility(int & preferredWay) const
     preferredWay=1;
   else
     preferredWay=-1;
+  // weight at 1.0 is max min
 #define WEIGHT_AFTER 0.8
+#define WEIGHT_BEFORE 0.3
   if (fabs(value-nearest)<=integerTolerance) {
     return 0.0;
   } else {
@@ -280,9 +282,9 @@ CbcSimpleIntegerDynamicPseudoCost::infeasibility(int & preferredWay) const
     double returnValue=0.0;
     double minValue = CoinMin(downCost,upCost);
     double maxValue = CoinMax(downCost,upCost);
-    if (stateOfSearch==0) {
+    if (stateOfSearch<=1||model_->currentNode()->depth()<=10) {
       // no solution
-      returnValue = 0.5*minValue + 0.5*maxValue;
+      returnValue = WEIGHT_BEFORE*minValue + (1.0-WEIGHT_BEFORE)*maxValue;
     } else {
       // some solution
       returnValue = WEIGHT_AFTER*minValue + (1.0-WEIGHT_AFTER)*maxValue;
@@ -680,7 +682,8 @@ CbcBranchDynamicDecision::betterBranch(CbcBranchingObject * thisOne,
   int stateOfSearch = thisOne->model()->stateOfSearch();
   int betterWay=0;
   double value=0.0;
-  if (!stateOfSearch) {
+  if (stateOfSearch<=1||thisOne->model()->currentNode()->depth()<=10) {
+#if 0
     if (!bestObject_) {
       bestNumberUp_=INT_MAX;
       bestNumberDown_=INT_MAX;
@@ -722,6 +725,22 @@ CbcBranchDynamicDecision::betterBranch(CbcBranchingObject * thisOne,
     if (betterWay) {
       value = CoinMin(numInfUp,numInfDown);
     }
+#else
+    if (!bestObject_) {
+      bestCriterion_=-1.0;
+    }
+    // got a solution
+    double minValue = CoinMin(changeDown,changeUp);
+    double maxValue = CoinMax(changeDown,changeUp);
+    value = WEIGHT_BEFORE*minValue + (1.0-WEIGHT_BEFORE)*maxValue;
+    if (value>bestCriterion_+1.0e-8) {
+      if (changeUp<=changeDown) {
+        betterWay=1;
+      } else {
+        betterWay=-1;
+      }
+    }
+#endif
   } else {
     if (!bestObject_) {
       bestCriterion_=-1.0;

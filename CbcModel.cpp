@@ -3180,7 +3180,7 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node,
 #ifdef COIN_USE_CLP
         OsiClpSolverInterface * clpSolver 
           = dynamic_cast<OsiClpSolverInterface *> (solver_);
-        if (clpSolver) {
+        if (clpSolver&&0) {
           // Maybe solver might like to know only column bounds will change
           int options = clpSolver->specialOptions();
           clpSolver->setSpecialOptions(options|128);

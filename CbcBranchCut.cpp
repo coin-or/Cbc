@@ -370,7 +370,7 @@ CbcBranchToFixLots::~CbcBranchToFixLots ()
 }
 // Creates a branching object
 CbcBranchingObject * 
-CbcBranchToFixLots::createBranch(int way) const
+CbcBranchToFixLots::createBranch(int way) 
 {
   // by default way must be -1
   assert (way==-1);

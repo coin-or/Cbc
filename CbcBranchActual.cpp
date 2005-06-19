@@ -967,8 +967,8 @@ CbcSimpleIntegerPseudoCost::CbcSimpleIntegerPseudoCost (CbcModel * model, int se
 							double upPseudoCost)
   : CbcSimpleInteger(model,sequence,iColumn)
 {
-  downPseudoCost_ = downPseudoCost;
-  upPseudoCost_ = upPseudoCost;
+  downPseudoCost_ = CoinMax(1.0e-10,downPseudoCost);
+  upPseudoCost_ = CoinMax(1.0e-10,upPseudoCost);
   breakEven_ = upPseudoCost_/(upPseudoCost_+downPseudoCost_);
   method_=0;
 }

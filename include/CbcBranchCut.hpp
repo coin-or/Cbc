@@ -194,7 +194,7 @@ public:
   virtual double infeasibility(int & preferredWay) const;
 
   /// Creates a branching object
-  virtual CbcBranchingObject * createBranch(int way) const;
+  virtual CbcBranchingObject * createBranch(int way);
 
 
 protected:

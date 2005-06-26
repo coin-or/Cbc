@@ -153,8 +153,11 @@ public:
       LP relaxation. It processes the root node, then proceeds to explore the
       branch & cut search tree. The search ends when the tree is exhausted or
       one of several execution limits is reached.
+      If doStatistics is 1 summary statistics are printed
+      if 2 then also the path to best solution (if found by branching)
+      if 3 then also one line per node
     */
-     void branchAndBound();
+     void branchAndBound(int doStatistics=0);
 
     /** \brief create a clean model from partially fixed problem
 

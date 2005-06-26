@@ -20,6 +20,7 @@
 #include "CbcBranchDynamic.hpp"
 #include "CbcHeuristic.hpp"
 #include "CbcModel.hpp"
+#include "CbcStatistics.hpp"
 #include "CbcStrategy.hpp"
 #include "CbcMessage.hpp"
 #include "OsiRowCut.hpp"
@@ -371,7 +372,7 @@ CbcModel::analyzeObjective ()
   system held by the solver.
 */
 
-void CbcModel::branchAndBound() 
+void CbcModel::branchAndBound(int doStatistics) 
 
 {
   // Set up strategies
@@ -560,6 +561,23 @@ void CbcModel::branchAndBound()
   delete [] usedInSolution_;
   usedInSolution_ = new int[numberColumns];
   CoinZeroN(usedInSolution_,numberColumns);
+/*
+  For printing totals and for CbcNode (numberNodes_)
+*/
+  numberIterations_ = 0 ;
+  numberNodes_ = 0 ;
+  // For printing in case node at n000 cutoff
+  int lastPrinted=0;
+  int lastRedoTree=0;
+  int maximumStatistics=0;
+  CbcStatistics ** statistics = NULL;
+  // Do on switch
+  if (doStatistics) {
+    maximumStatistics=10000;
+    statistics = new CbcStatistics * [maximumStatistics];
+    memset(statistics,0,maximumStatistics*sizeof(CbcStatistics *));
+  }
+
   { int iObject ;
     int preferredWay ;
     int numberUnsatisfied = 0 ;
@@ -570,10 +588,12 @@ void CbcModel::branchAndBound()
     { double infeasibility =
 	  object_[iObject]->infeasibility(preferredWay) ;
       if (infeasibility ) numberUnsatisfied++ ; }
-    if (numberUnsatisfied)
-    { feasible = solveWithCuts(cuts,maximumCutPassesAtRoot_,
+    if (numberUnsatisfied) { 
+      feasible = solveWithCuts(cuts,maximumCutPassesAtRoot_,
 			       NULL,numberOldActiveCuts,numberNewCuts,
-			       maximumWhich, whichGenerator) ; } }
+			       maximumWhich, whichGenerator) ;
+    }
+  }
   // make cut generators less aggressive
   for (iCutGenerator = 0;iCutGenerator<numberCutGenerators_;iCutGenerator++) {
     CglCutGenerator * generator = generator_[iCutGenerator]->generator();
@@ -597,12 +617,6 @@ void CbcModel::branchAndBound()
 
   bool resolved = false ;
   CbcNode *newNode = NULL ;
-/*
-  For printing totals and for CbcNode (numberNodes_)
-*/
-  numberIterations_ = 0 ;
-  numberNodes_ = 0 ;
-
   if (feasible)
   { newNode = new CbcNode ;
     newNode->setObjectiveValue(direction*solver_->getObjValue()) ;
@@ -721,6 +735,19 @@ void CbcModel::branchAndBound()
     if (newNode->variable() >= 0) {
       newNode->initializeInfo() ;
       tree_->push(newNode) ;
+      if (statistics) {
+        if (numberNodes_==maximumStatistics) {
+          maximumStatistics = 2*maximumStatistics;
+          CbcStatistics ** temp = new CbcStatistics * [maximumStatistics];
+          memset(temp,0,maximumStatistics*sizeof(CbcStatistics *));
+          memcpy(temp,statistics,numberNodes_*sizeof(CbcStatistics *));
+          delete [] statistics;
+          statistics=temp;
+        }
+        assert (!statistics[numberNodes_]);
+        statistics[numberNodes_]=new CbcStatistics(newNode);
+      }
+      numberNodes_++;
 #     ifdef CHECK_NODE
       printf("Node %x on tree\n",newNode) ;
 #     endif
@@ -780,13 +807,16 @@ void CbcModel::branchAndBound()
     + check if we've closed the integrality gap enough to quit, 
     + print a summary line to let the user know we're working
 */
-    if ((numberNodes_%1000) == 0) {
-      bool redoTree=nodeCompare_->every1000Nodes(this, numberNodes_) ;
+    if (numberNodes_==lastRedoTree+1000||numberNodes_==lastRedoTree+1001) {
+      lastRedoTree=numberNodes_&(~1);
+      bool redoTree=nodeCompare_->every1000Nodes(this, lastRedoTree) ;
       // redo tree if wanted
       if (redoTree)
 	tree_->setComparison(*nodeCompare_) ;
     }
-    if ((numberNodes_%printFrequency_) == 0) {
+    if (numberNodes_==lastPrinted+printFrequency_||
+         numberNodes_==lastPrinted+printFrequency_+1) {
+      lastPrinted=numberNodes_&(~1);
       int j ;
       int nNodes = tree_->size() ;
       bestPossibleObjective_ = 1.0e100 ;
@@ -796,7 +826,7 @@ void CbcModel::branchAndBound()
 	  bestPossibleObjective_ = node->objectiveValue() ;
       }
       messageHandler()->message(CBC_STATUS,messages())
-	<< numberNodes_<< nNodes<< bestObjective_<< bestPossibleObjective_
+	<< lastPrinted<< nNodes<< bestObjective_<< bestPossibleObjective_
 	<< CoinMessageEol ;
       if (eventHandler) {
         if (!eventHandler->event(ClpEventHandler::treeStatus)) {
@@ -881,7 +911,23 @@ void CbcModel::branchAndBound()
 	upperBefore[i]= upper[i] ; }
       bool deleteNode ;
       if (node->branch())
-      { tree_->push(node) ;
+      { 
+        // set nodenumber correctly
+        node->nodeInfo()->setNodeNumber(numberNodes_);
+        tree_->push(node) ;
+        if (statistics) {
+          if (numberNodes_==maximumStatistics) {
+            maximumStatistics = 2*maximumStatistics;
+            CbcStatistics ** temp = new CbcStatistics * [maximumStatistics];
+            memset(temp,0,maximumStatistics*sizeof(CbcStatistics *));
+            memcpy(temp,statistics,numberNodes_*sizeof(CbcStatistics *));
+            delete [] statistics;
+            statistics=temp;
+          }
+          assert (!statistics[numberNodes_]);
+          statistics[numberNodes_]=new CbcStatistics(node);
+        }
+        numberNodes_++;
 	nodeOnTree=true; // back on tree
 	deleteNode = false ;
 #	ifdef CHECK_NODE
@@ -917,9 +963,18 @@ void CbcModel::branchAndBound()
       phase_=2;
       cuts = OsiCuts() ;
       currentNumberCuts = solver_->getNumRows()-numberRowsAtContinuous_ ;
+      int saveNumber = numberIterations_;
       feasible = solveWithCuts(cuts,maximumCutPasses_,node,
 			       numberOldActiveCuts,numberNewCuts,
 			       maximumWhich,whichGenerator) ;
+      if (statistics) {
+        assert (numberNodes_);
+        assert (statistics[numberNodes_-1]);
+        assert (statistics[numberNodes_-1]->node()==numberNodes_-1);
+        statistics[numberNodes_-1]->endOfBranch(numberIterations_-saveNumber,
+                                               feasible ? solver_->getObjValue()
+                                               : COIN_DBL_MAX);
+    }
 /*
   Check for abort on limits: node count, solution count, time, integrality gap.
 */
@@ -1057,6 +1112,15 @@ void CbcModel::branchAndBound()
           }
         }
 	assert (!newNode || newNode->objectiveValue() <= getCutoff()) ;
+        if (statistics) {
+          assert (numberNodes_);
+          assert (statistics[numberNodes_-1]);
+          assert (statistics[numberNodes_-1]->node()==numberNodes_-1);
+          if (newNode)
+            statistics[numberNodes_-1]->updateInfeasibility(newNode->numberUnsatisfied());
+          else
+            statistics[numberNodes_-1]->sayInfeasible();
+        }
 	if (newNode)
 	{ if (newNode->variable() >= 0)
 	  { handler_->message(CBC_BRANCH,messages_)
@@ -1098,6 +1162,19 @@ void CbcModel::branchAndBound()
 	    delete [] newSolution ;
 	    newNode->setGuessedObjectiveValue(estValue) ;
 	    tree_->push(newNode) ;
+            if (statistics) {
+              if (numberNodes_==maximumStatistics) {
+                maximumStatistics = 2*maximumStatistics;
+                CbcStatistics ** temp = new CbcStatistics * [maximumStatistics];
+                memset(temp,0,maximumStatistics*sizeof(CbcStatistics *));
+                memcpy(temp,statistics,numberNodes_*sizeof(CbcStatistics *));
+                delete [] statistics;
+                statistics=temp;
+              }
+              assert (!statistics[numberNodes_]);
+              statistics[numberNodes_]=new CbcStatistics(newNode);
+            }
+            numberNodes_++;
 #	    ifdef CHECK_NODE
 	    printf("Node %x pushed on tree c\n",newNode) ;
 #	    endif
@@ -1199,6 +1276,170 @@ void CbcModel::branchAndBound()
       << numberIterations_ << numberNodes_
       << CoinMessageEol ;
   }
+  if (statistics) {
+    // report in some way
+    int * lookup = new int[numberObjects_];
+    int i;
+    for (i=0;i<numberObjects_;i++) 
+      lookup[i]=-1;
+    bool goodIds=true;
+    for (i=0;i<numberObjects_;i++) {
+      int id = object_[i]->id();
+      int iColumn = object_[i]->columnNumber();
+      if (iColumn<0)
+        iColumn = id+numberColumns;
+      if(id>=0&&id<numberObjects_) {
+        if (lookup[id]==-1) {
+          lookup[id]=iColumn;
+        } else {
+          goodIds=false;
+          break;
+        }
+      } else {
+        goodIds=false;
+        break;
+      }
+    }
+    if (!goodIds) {
+      delete [] lookup;
+      lookup=NULL;
+    }
+    if (doStatistics==3) {
+      printf("  node parent depth column   value                    obj      inf\n");
+      for ( i=0;i<numberNodes_;i++) {
+        statistics[i]->print(lookup);
+      }
+    }
+    if (doStatistics>1) {
+      // Find last solution
+      int k;
+      for (k=numberNodes_-1;k>=0;k--) {
+        if (statistics[k]->endingObjective()!=COIN_DBL_MAX&&
+            !statistics[k]->endingInfeasibility())
+          break;
+      }
+      if (k>=0) {
+        int depth=statistics[k]->depth();
+        int * which = new int[depth+1];
+        for (i=depth;i>=0;i--) {
+          which[i]=k;
+          k=statistics[k]->parentNode();
+        }
+        printf("  node parent depth column   value                    obj      inf\n");
+        for (i=0;i<=depth;i++) {
+          statistics[which[i]]->print(lookup);
+        }
+        delete [] which;
+      }
+    }
+    // now summary
+    int maxDepth=0;
+    double averageSolutionDepth=0.0;
+    int numberSolutions=0;
+    double averageCutoffDepth=0.0;
+    double averageSolvedDepth=0.0;
+    int numberCutoff=0;
+    int numberDown=0;
+    int numberFirstDown=0;
+    double averageInfDown=0.0;
+    double averageObjDown=0.0;
+    int numberCutoffDown=0;
+    int numberUp=0;
+    int numberFirstUp=0;
+    double averageInfUp=0.0;
+    double averageObjUp=0.0;
+    int numberCutoffUp=0;
+    double averageNumberIterations1=0.0;
+    double averageValue=0.0;
+    for ( i=0;i<numberNodes_;i++) {
+      int depth =  statistics[i]->depth(); 
+      int way =  statistics[i]->way(); 
+      double value = statistics[i]->value(); 
+      double startingObjective =  statistics[i]->startingObjective(); 
+      int startingInfeasibility = statistics[i]->startingInfeasibility(); 
+      double endingObjective = statistics[i]->endingObjective(); 
+      int endingInfeasibility = statistics[i]->endingInfeasibility(); 
+      maxDepth = CoinMax(depth,maxDepth);
+      // Only for completed
+      averageNumberIterations1 += statistics[i]->numberIterations();
+      averageValue += value;
+      if (endingObjective!=COIN_DBL_MAX&&!endingInfeasibility) {
+        numberSolutions++;
+        averageSolutionDepth += depth;
+      }
+      if (endingObjective==COIN_DBL_MAX) {
+        numberCutoff++;
+        averageCutoffDepth += depth;
+        if (way<0) {
+          numberDown++;
+          numberCutoffDown++;
+          if (way==-1)
+            numberFirstDown++;
+        } else {
+          numberUp++;
+          numberCutoffUp++;
+          if (way==1)
+            numberFirstUp++;
+        }
+      } else {
+        averageSolvedDepth += depth;
+        if (way<0) {
+          numberDown++;
+          averageInfDown += startingInfeasibility-endingInfeasibility;
+          averageObjDown += endingObjective-startingObjective;
+          if (way==-1)
+            numberFirstDown++;
+        } else {
+          numberUp++;
+          averageInfUp += startingInfeasibility-endingInfeasibility;
+          averageObjUp += endingObjective-startingObjective;
+          if (way==1)
+            numberFirstUp++;
+        }
+      }
+    }
+    // Now print
+    if (numberSolutions)
+      averageSolutionDepth /= (double) numberSolutions;
+    int numberSolved = numberNodes_-numberCutoff;
+    double averageNumberIterations2=numberIterations_-averageNumberIterations1;
+    if(numberCutoff) {
+      averageCutoffDepth /= (double) numberCutoff;
+      averageNumberIterations2 /= (double) numberCutoff;
+    }
+    if (numberNodes_) 
+      averageValue /= (double) numberNodes_;
+    if (numberSolved) {
+      averageNumberIterations1 /= (double) numberSolved;
+      averageSolvedDepth /= (double) numberSolved;
+    }
+    printf("%d solution(s) were found (by branching) at an average depth of %g\n",
+           numberSolutions,averageSolutionDepth);
+    printf("average value of variable being branched on was %g\n",
+           averageValue);
+    printf("%d nodes were cutoff at an average depth of %g with iteration count of %g\n",
+           numberCutoff,averageCutoffDepth,averageNumberIterations2);
+    printf("%d nodes were solved at an average depth of %g with iteration count of %g\n",
+           numberSolved,averageSolvedDepth,averageNumberIterations1);
+    if (numberDown) {
+      averageInfDown /= (double) numberDown;
+      averageObjDown /= (double) numberDown;
+    }
+    printf("Down %d nodes (%d first, %d second) - %d cutoff, rest decrease numinf %g increase obj %g\n",
+           numberDown,numberFirstDown,numberDown-numberFirstDown,numberCutoffDown,
+           averageInfDown,averageObjDown);
+    if (numberUp) {
+      averageInfUp /= (double) numberUp;
+      averageObjUp /= (double) numberUp;
+    }
+    printf("Up %d nodes (%d first, %d second) - %d cutoff, rest decrease numinf %g increase obj %g\n",
+           numberUp,numberFirstUp,numberUp-numberFirstUp,numberCutoffUp,
+           averageInfUp,averageObjUp);
+    for ( i=0;i<numberNodes_;i++) 
+      delete statistics[i];
+    delete [] statistics;
+    delete [] lookup;
+  }
 /*
   If we think we have a solution, restore and confirm it with a call to
   setBestSolution().  We need to reset the cutoff value so as not to fathom
@@ -1243,7 +1484,6 @@ void CbcModel::branchAndBound()
   Destroy global cuts by replacing with an empty OsiCuts object.
 */
   globalCuts_= OsiCuts() ;
-  
   return ; }
 
 
@@ -2322,7 +2562,7 @@ int CbcModel::addCuts (CbcNode *node, CoinWarmStartBasis *&lastws)
     for (i=0;i<numberToAdd;i++)
       delete addCuts[i];
     delete [] addCuts;
-    numberNodes_++;
+    //numberNodes_++;
     return 0;
   } 
 /*
@@ -3180,7 +3420,7 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node,
 #ifdef COIN_USE_CLP
         OsiClpSolverInterface * clpSolver 
           = dynamic_cast<OsiClpSolverInterface *> (solver_);
-        if (clpSolver&&0) {
+        if (clpSolver) {
           // Maybe solver might like to know only column bounds will change
           int options = clpSolver->specialOptions();
           clpSolver->setSpecialOptions(options|128);

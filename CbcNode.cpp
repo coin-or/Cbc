@@ -778,7 +778,7 @@ CbcNode::createInfo (CbcModel *model,
   not changing. Assuming that branching objects all involve integer variables,
   we should see at least one bound change as a consequence of processing this
   subproblem. Different types of branching objects could break this assertion.
-  Yes - cuts will break
+  Not true at all - we have not applied current branch - JJF.
 */
     double *boundChanges = new double [2*numberColumns] ;
     int *variables = new int [2*numberColumns] ;
@@ -804,8 +804,8 @@ CbcNode::createInfo (CbcModel *model,
 #ifdef CBC_DEBUG
     printf("%d changed bounds\n",numberChangedBounds) ;
 #endif
-    if (lastNode->branchingObject()->boundBranch())
-      assert (numberChangedBounds);
+    //if (lastNode->branchingObject()->boundBranch())
+    //assert (numberChangedBounds);
 /*
   Hand the lot over to the CbcPartialNodeInfo constructor, then clean up and
   return.
@@ -1927,10 +1927,11 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,int numberP
               objectMark[i]=numberBeforeTrust; // keep as possible cutoff
           } else {
             int iColumn = dynamicObject->columnNumber();
-            sort[numberToDo]=saveSolution[iColumn]-floor(saveSolution[iColumn]);
-            if (fabs(sort[numberToDo])>bestNot) {
+            double part =saveSolution[iColumn]-floor(saveSolution[iColumn]);
+            sort[numberToDo]=part;
+            if (1.0-fabs(part-0.5)>bestNot) {
               iBestNot=numberToDo;
-              bestNot = fabs(sort[numberToDo]);
+              bestNot = 1.0-fabs(part-0.5);
             }
             objectMark[i]=numberThisDown+numberThisUp;
           }
@@ -2014,6 +2015,8 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,int numberP
       object->infeasibility(preferredWay);
       branch_=object->createBranch(preferredWay);
       branch_->way(preferredWay);
+      delete ws;
+      ws=NULL;
       break;
     } else {
       // say do fast
@@ -2037,7 +2040,7 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,int numberP
         if (sort[iObj]<0.0)
           sort[iObj] += add*average;
         else
-          sort[iObj] = -CoinMax(sort[iObj]*averageDown,(1.0-sort[iObj])*averageUp);
+          sort[iObj] = -(sort[iObj]*averageDown+(1.0-sort[iObj])*averageUp);
       }
       // Sort
       CoinSort_2(sort,sort+numberToDo,whichObject);
@@ -2077,7 +2080,9 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,int numberP
         needed2=0;
         int put=0;
         const double * downCost=osiclp->upRange();
-        const double * upCost=osiclp->downRange();;
+        const double * upCost=osiclp->downRange();
+        // Bug - so switch off for now
+        double distanceToCutoff=COIN_DBL_MAX;
         for ( i=0;i<numberToDo;i++) {
           int iObject = whichObject[i];
           CbcObject * object = model->modifiableObject(iObject);
@@ -2108,6 +2113,8 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,int numberP
               if (iAction==3) {
                 //printf("%d infeas both penalty %g %g\n",iObject,upPenalty,downPenalty);
                 anyAction=-2;
+                delete ws;
+                ws=NULL;
                 break;
               } else if (iAction==2) {
                 //printf("%d infeas up penalty %g %g\n",iObject,upPenalty,downPenalty);
@@ -2140,7 +2147,6 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,int numberP
           } else {
             // just estimate
             double add = objectMark[iObject];
-            sort[iObj] += add*average;
             double trueEstimate = sort[i] - add*average; 
             sort[put]=trueEstimate;
             whichObject[put++]=iObject;
@@ -2376,18 +2382,27 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,int numberP
               branch_->way(betterWay);
               bestChoice = choice.objectNumber;
               whichChoice = iDo;
-              if (numberStrong<=1)
+              if (numberStrong<=1) {
+                delete ws;
+                ws=NULL;
                 break;
+              }
             } else {
               delete choice.possibleBranch;
-              if (iDo>=2*numberStrong)
+              if (iDo>=2*numberStrong) {
+                delete ws;
+                ws=NULL;
                 break;
+              }
               if (!dynamicObject||dynamicObject->numberTimesUp()>1) {
                 if (iDo-whichChoice>=numberStrong)
                   break; // give up
               } else {
-                if (iDo-whichChoice>=2*numberStrong)
+                if (iDo-whichChoice>=2*numberStrong) {
+                  delete ws;
+                  ws=NULL;
                   break; // give up
+                }
               }
             }
           } else {
@@ -2399,6 +2414,8 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,int numberP
               choice.possibleBranch->way(1);
               choice.possibleBranch->branch();
               delete choice.possibleBranch;
+              delete ws;
+              ws=NULL;
               break;
             } else {
               choice.fix=1;
@@ -2415,6 +2432,8 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,int numberP
               choice.possibleBranch->way(-1);
               choice.possibleBranch->branch();
               delete choice.possibleBranch;
+              delete ws;
+              ws=NULL;
               break;
             } else {
               choice.fix=-1;
@@ -2426,6 +2445,8 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,int numberP
             delete choice.possibleBranch;
             //printf("Both infeasible for choice %d sequence %d\n",i,
             // model->object(choice.objectNumber)->columnNumber());
+            delete ws;
+            ws=NULL;
             break;
           }
         }
@@ -2445,6 +2466,8 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,int numberP
             delete fixObject[i].possibleBranch;
           }
           anyAction=0;
+          delete ws;
+          ws=NULL;
           break;
         }
       }
@@ -2659,6 +2682,16 @@ CbcNode::branch()
   int numberLeft = nodeInfo_->numberBranchesLeft();
   CbcNodeInfo * parent = nodeInfo_->parent();
   int parentNodeNumber = -1;
+  //CbcBranchingObject * object1 = branch_->object_;
+  //CbcObject * object = object1->
+  //int sequence = object->columnNumber);
+  int id=-1;
+  double value=0.0;
+  if (branch_) {
+    id = branch_->variable();
+    value = branch_->value();
+  }
+  printf("id %d value %g objvalue %g\n",id,value,objectiveValue_);
   if (parent)
     parentNodeNumber = parent->nodeNumber();
   printf("Node number %d, %s, way %d, depth %d, parent node number %d\n",

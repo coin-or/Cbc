@@ -24,6 +24,7 @@ LIBSRC += CbcBranchLotsize.cpp
 LIBSRC += CbcBranchCut.cpp
 LIBSRC += CbcFathom.cpp
 LIBSRC += CbcStrategy.cpp
+LIBSRC += CbcStatistics.cpp
 LIBSRC += CbcFathomDynamicProgramming.cpp
 LIBSRC += CbcCompareActual.cpp
 LIBSRC += CbcCutGenerator.cpp

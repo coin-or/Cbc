@@ -52,6 +52,7 @@ CbcMessage::CbcMessage(Language language) :
 {
   language_=language;
   strcpy(source_,"Cbc");
+  class_ = 0; // branch and bound
   Cbc_message * message = us_english;
 
   while (message->internalNumber!=CBC_DUMMY_END) {

@@ -379,7 +379,8 @@ void CbcModel::branchAndBound(int doStatistics)
   if (strategy_) {
     strategy_->setupCutGenerators(*this);
     strategy_->setupHeuristics(*this);
-    strategy_->setupPrinting(*this);
+    // Set strategy print level to models
+    strategy_->setupPrinting(*this,handler_->logLevel());
     strategy_->setupOther(*this);
   }
   bool eventHappened=false;
@@ -494,6 +495,18 @@ void CbcModel::branchAndBound(int doStatistics)
   constraint system (aka the continuous system).
 */
   continuousSolver_ = solver_->clone() ;
+#ifdef COIN_USE_CLP
+  {
+    OsiClpSolverInterface * clpSolver 
+      = dynamic_cast<OsiClpSolverInterface *> (solver_);
+    if (clpSolver) {
+      ClpSimplex * clpSimplex = clpSolver->getModelPtr();
+      // take off names
+      clpSimplex->dropNames();
+    }
+  }
+#endif
+
   numberRowsAtContinuous_ = getNumRows() ;
 /*
   Check the objective to see if we can deduce a nontrivial increment. If

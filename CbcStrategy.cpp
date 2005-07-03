@@ -222,9 +222,13 @@ CbcStrategyDefault::setupHeuristics(CbcModel & model)
 }
 // Do printing stuff
 void 
-CbcStrategyDefault::setupPrinting(CbcModel & model)
+CbcStrategyDefault::setupPrinting(CbcModel & model,int modelLogLevel)
 {
-  if (!printLevel_) {
+  if (!modelLogLevel) {
+    model.solver()->setHintParam(OsiDoReducePrint,true,OsiHintTry);
+    model.messageHandler()->setLogLevel(0);
+    model.solver()->messageHandler()->setLogLevel(0);
+  } else if (modelLogLevel==1) {
     model.solver()->setHintParam(OsiDoReducePrint,true,OsiHintTry);
     model.messageHandler()->setLogLevel(1);
     model.solver()->messageHandler()->setLogLevel(0);

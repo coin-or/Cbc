@@ -24,7 +24,7 @@ public:
   /// Setup heuristics
   virtual void setupHeuristics(CbcModel & model)=0;
   /// Do printing stuff
-  virtual void setupPrinting(CbcModel & model)=0;
+  virtual void setupPrinting(CbcModel & model,int modelLogLevel)=0;
   /// Other stuff e.g. strong branching
   virtual void setupOther(CbcModel & model)=0;
   /// Set model depth (i.e. how nested)
@@ -66,7 +66,7 @@ public:
   /// Setup heuristics
   virtual void setupHeuristics(CbcModel & model) {};
   /// Do printing stuff
-  virtual void setupPrinting(CbcModel & model) {};
+  virtual void setupPrinting(CbcModel & model,int modelLogLevel) {};
   /// Other stuff e.g. strong branching
   virtual void setupOther(CbcModel & model) {};
 
@@ -103,7 +103,7 @@ public:
   /// Setup heuristics
   virtual void setupHeuristics(CbcModel & model);
   /// Do printing stuff
-  virtual void setupPrinting(CbcModel & model);
+  virtual void setupPrinting(CbcModel & model,int modelLogLevel) ;
   /// Other stuff e.g. strong branching
   virtual void setupOther(CbcModel & model);
 

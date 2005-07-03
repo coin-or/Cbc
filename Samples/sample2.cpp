@@ -183,8 +183,9 @@ int main (int argc, const char *argv[])
   OsiClpSolverInterface * osiclp = dynamic_cast< OsiClpSolverInterface*> (model.solver());
   // go faster stripes
   if (osiclp->getNumRows()<300&&osiclp->getNumCols()<500) {
-    osiclp->setupForRepeatedUse(2,0);
-  }
+    //osiclp->setupForRepeatedUse(2,0);
+    osiclp->setupForRepeatedUse(0,0);
+  } 
   model.messagesPointer()->setDetailMessage(0,61);
   // Allow rounding heuristic
 
@@ -260,7 +261,7 @@ int main (int argc, const char *argv[])
 
   // Do complete search
   
-  model.branchAndBound();
+  model.branchAndBound(3);
 
   std::cout<<mpsFileName<<" took "<<CoinCpuTime()-time1<<" seconds, "
 	   <<model.getNodeCount()<<" nodes with objective "

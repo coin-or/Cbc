@@ -199,6 +199,8 @@ CbcLocalSearch::solution(double & solutionValue,
   const double * rowLower = solver->getRowLower();
   const double * rowUpper = solver->getRowUpper();
   const double * solution = model_->bestSolution();
+  if (!solution)
+    return 0; // No solution found yet
   const double * objective = solver->getObjCoefficients();
   double primalTolerance;
   solver->getDblParam(OsiPrimalTolerance,primalTolerance);

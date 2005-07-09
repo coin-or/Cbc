@@ -73,8 +73,8 @@ CbcStatistics::CbcStatistics(CbcNode * node)
     way_ *= 10;
     assert (branch);
     CbcModel * model = branch->model();
-    id_=model->getNodeCount();
-  }
+    id_=model->getNodeCount2();
+  } 
 }
 
 CbcStatistics::CbcStatistics(const CbcStatistics & rhs) :

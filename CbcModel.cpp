@@ -579,9 +579,7 @@ void CbcModel::branchAndBound(int doStatistics)
 */
   numberIterations_ = 0 ;
   numberNodes_ = 0 ;
-  // For printing in case node at n000 cutoff
-  int lastPrinted=0;
-  int lastRedoTree=0;
+  numberNodes2_ = 0 ;
   int maximumStatistics=0;
   CbcStatistics ** statistics = NULL;
   // Do on switch
@@ -749,18 +747,18 @@ void CbcModel::branchAndBound(int doStatistics)
       newNode->initializeInfo() ;
       tree_->push(newNode) ;
       if (statistics) {
-        if (numberNodes_==maximumStatistics) {
+        if (numberNodes2_==maximumStatistics) {
           maximumStatistics = 2*maximumStatistics;
           CbcStatistics ** temp = new CbcStatistics * [maximumStatistics];
           memset(temp,0,maximumStatistics*sizeof(CbcStatistics *));
-          memcpy(temp,statistics,numberNodes_*sizeof(CbcStatistics *));
+          memcpy(temp,statistics,numberNodes2_*sizeof(CbcStatistics *));
           delete [] statistics;
           statistics=temp;
         }
-        assert (!statistics[numberNodes_]);
-        statistics[numberNodes_]=new CbcStatistics(newNode);
+        assert (!statistics[numberNodes2_]);
+        statistics[numberNodes2_]=new CbcStatistics(newNode);
       }
-      numberNodes_++;
+      numberNodes2_++;
 #     ifdef CHECK_NODE
       printf("Node %x on tree\n",newNode) ;
 #     endif
@@ -820,16 +818,13 @@ void CbcModel::branchAndBound(int doStatistics)
     + check if we've closed the integrality gap enough to quit, 
     + print a summary line to let the user know we're working
 */
-    if (numberNodes_==lastRedoTree+1000||numberNodes_==lastRedoTree+1001) {
-      lastRedoTree=numberNodes_&(~1);
-      bool redoTree=nodeCompare_->every1000Nodes(this, lastRedoTree) ;
+    if ((numberNodes_%1000) == 0) {
+      bool redoTree=nodeCompare_->every1000Nodes(this, numberNodes_) ;
       // redo tree if wanted
       if (redoTree)
 	tree_->setComparison(*nodeCompare_) ;
     }
-    if (numberNodes_==lastPrinted+printFrequency_||
-         numberNodes_==lastPrinted+printFrequency_+1) {
-      lastPrinted=numberNodes_&(~1);
+    if ((numberNodes_%printFrequency_) == 0) {
       int j ;
       int nNodes = tree_->size() ;
       bestPossibleObjective_ = 1.0e100 ;
@@ -839,7 +834,7 @@ void CbcModel::branchAndBound(int doStatistics)
 	  bestPossibleObjective_ = node->objectiveValue() ;
       }
       messageHandler()->message(CBC_STATUS,messages())
-	<< lastPrinted<< nNodes<< bestObjective_<< bestPossibleObjective_
+	<< numberNodes_<< nNodes<< bestObjective_<< bestPossibleObjective_
 	<< CoinMessageEol ;
       if (eventHandler) {
         if (!eventHandler->event(ClpEventHandler::treeStatus)) {
@@ -926,21 +921,21 @@ void CbcModel::branchAndBound(int doStatistics)
       if (node->branch())
       { 
         // set nodenumber correctly
-        node->nodeInfo()->setNodeNumber(numberNodes_);
+        node->nodeInfo()->setNodeNumber(numberNodes2_);
         tree_->push(node) ;
         if (statistics) {
-          if (numberNodes_==maximumStatistics) {
+          if (numberNodes2_==maximumStatistics) {
             maximumStatistics = 2*maximumStatistics;
             CbcStatistics ** temp = new CbcStatistics * [maximumStatistics];
             memset(temp,0,maximumStatistics*sizeof(CbcStatistics *));
-            memcpy(temp,statistics,numberNodes_*sizeof(CbcStatistics *));
+            memcpy(temp,statistics,numberNodes2_*sizeof(CbcStatistics *));
             delete [] statistics;
             statistics=temp;
           }
-          assert (!statistics[numberNodes_]);
-          statistics[numberNodes_]=new CbcStatistics(node);
+          assert (!statistics[numberNodes2_]);
+          statistics[numberNodes2_]=new CbcStatistics(node);
         }
-        numberNodes_++;
+        numberNodes2_++;
 	nodeOnTree=true; // back on tree
 	deleteNode = false ;
 #	ifdef CHECK_NODE
@@ -981,10 +976,10 @@ void CbcModel::branchAndBound(int doStatistics)
 			       numberOldActiveCuts,numberNewCuts,
 			       maximumWhich,whichGenerator) ;
       if (statistics) {
-        assert (numberNodes_);
-        assert (statistics[numberNodes_-1]);
-        assert (statistics[numberNodes_-1]->node()==numberNodes_-1);
-        statistics[numberNodes_-1]->endOfBranch(numberIterations_-saveNumber,
+        assert (numberNodes2_);
+        assert (statistics[numberNodes2_-1]);
+        assert (statistics[numberNodes2_-1]->node()==numberNodes2_-1);
+        statistics[numberNodes2_-1]->endOfBranch(numberIterations_-saveNumber,
                                                feasible ? solver_->getObjValue()
                                                : COIN_DBL_MAX);
     }
@@ -1126,13 +1121,13 @@ void CbcModel::branchAndBound(int doStatistics)
         }
 	assert (!newNode || newNode->objectiveValue() <= getCutoff()) ;
         if (statistics) {
-          assert (numberNodes_);
-          assert (statistics[numberNodes_-1]);
-          assert (statistics[numberNodes_-1]->node()==numberNodes_-1);
+          assert (numberNodes2_);
+          assert (statistics[numberNodes2_-1]);
+          assert (statistics[numberNodes2_-1]->node()==numberNodes2_-1);
           if (newNode)
-            statistics[numberNodes_-1]->updateInfeasibility(newNode->numberUnsatisfied());
+            statistics[numberNodes2_-1]->updateInfeasibility(newNode->numberUnsatisfied());
           else
-            statistics[numberNodes_-1]->sayInfeasible();
+            statistics[numberNodes2_-1]->sayInfeasible();
         }
 	if (newNode)
 	{ if (newNode->variable() >= 0)
@@ -1176,18 +1171,18 @@ void CbcModel::branchAndBound(int doStatistics)
 	    newNode->setGuessedObjectiveValue(estValue) ;
 	    tree_->push(newNode) ;
             if (statistics) {
-              if (numberNodes_==maximumStatistics) {
+              if (numberNodes2_==maximumStatistics) {
                 maximumStatistics = 2*maximumStatistics;
                 CbcStatistics ** temp = new CbcStatistics * [maximumStatistics];
                 memset(temp,0,maximumStatistics*sizeof(CbcStatistics *));
-                memcpy(temp,statistics,numberNodes_*sizeof(CbcStatistics *));
+                memcpy(temp,statistics,numberNodes2_*sizeof(CbcStatistics *));
                 delete [] statistics;
                 statistics=temp;
               }
-              assert (!statistics[numberNodes_]);
-              statistics[numberNodes_]=new CbcStatistics(newNode);
+              assert (!statistics[numberNodes2_]);
+              statistics[numberNodes2_]=new CbcStatistics(newNode);
             }
-            numberNodes_++;
+            numberNodes2_++;
 #	    ifdef CHECK_NODE
 	    printf("Node %x pushed on tree c\n",newNode) ;
 #	    endif
@@ -1319,14 +1314,14 @@ void CbcModel::branchAndBound(int doStatistics)
     }
     if (doStatistics==3) {
       printf("  node parent depth column   value                    obj      inf\n");
-      for ( i=0;i<numberNodes_;i++) {
+      for ( i=0;i<numberNodes2_;i++) {
         statistics[i]->print(lookup);
       }
     }
     if (doStatistics>1) {
       // Find last solution
       int k;
-      for (k=numberNodes_-1;k>=0;k--) {
+      for (k=numberNodes2_-1;k>=0;k--) {
         if (statistics[k]->endingObjective()!=COIN_DBL_MAX&&
             !statistics[k]->endingInfeasibility())
           break;
@@ -1364,7 +1359,7 @@ void CbcModel::branchAndBound(int doStatistics)
     int numberCutoffUp=0;
     double averageNumberIterations1=0.0;
     double averageValue=0.0;
-    for ( i=0;i<numberNodes_;i++) {
+    for ( i=0;i<numberNodes2_;i++) {
       int depth =  statistics[i]->depth(); 
       int way =  statistics[i]->way(); 
       double value = statistics[i]->value(); 
@@ -1414,14 +1409,14 @@ void CbcModel::branchAndBound(int doStatistics)
     // Now print
     if (numberSolutions)
       averageSolutionDepth /= (double) numberSolutions;
-    int numberSolved = numberNodes_-numberCutoff;
+    int numberSolved = numberNodes2_-numberCutoff;
     double averageNumberIterations2=numberIterations_-averageNumberIterations1;
     if(numberCutoff) {
       averageCutoffDepth /= (double) numberCutoff;
       averageNumberIterations2 /= (double) numberCutoff;
     }
-    if (numberNodes_) 
-      averageValue /= (double) numberNodes_;
+    if (numberNodes2_) 
+      averageValue /= (double) numberNodes2_;
     if (numberSolved) {
       averageNumberIterations1 /= (double) numberSolved;
       averageSolvedDepth /= (double) numberSolved;
@@ -1448,7 +1443,7 @@ void CbcModel::branchAndBound(int doStatistics)
     printf("Up %d nodes (%d first, %d second) - %d cutoff, rest decrease numinf %g increase obj %g\n",
            numberUp,numberFirstUp,numberUp-numberFirstUp,numberCutoffUp,
            averageInfUp,averageObjUp);
-    for ( i=0;i<numberNodes_;i++) 
+    for ( i=0;i<numberNodes2_;i++) 
       delete statistics[i];
     delete [] statistics;
     delete [] lookup;
@@ -1572,6 +1567,7 @@ CbcModel::CbcModel()
   hotstartStrategy_(0),
   numberHeuristicSolutions_(0),
   numberNodes_(0),
+  numberNodes2_(0),
   numberIterations_(0),
   status_(0),
   numberIntegers_(0),
@@ -1658,6 +1654,7 @@ CbcModel::CbcModel(const OsiSolverInterface &rhs)
   hotstartStrategy_(0),
   numberHeuristicSolutions_(0),
   numberNodes_(0),
+  numberNodes2_(0),
   numberIterations_(0),
   status_(0),
   numberRowsAtContinuous_(0),
@@ -1836,6 +1833,7 @@ CbcModel::CbcModel(const CbcModel & rhs, bool noTree)
   hotstartStrategy_(rhs.hotstartStrategy_),
   numberHeuristicSolutions_(rhs.numberHeuristicSolutions_),
   numberNodes_(rhs.numberNodes_),
+  numberNodes2_(rhs.numberNodes2_),
   numberIterations_(rhs.numberIterations_),
   status_(rhs.status_),
   specialOptions_(rhs.specialOptions_),
@@ -1971,6 +1969,7 @@ CbcModel::CbcModel(const CbcModel & rhs, bool noTree)
     stateOfSearch_= 0;
     numberHeuristicSolutions_=0;
     numberNodes_=0;
+    numberNodes2_=0;
     numberIterations_=0;
     status_=0;
     subTreeModel_=NULL;
@@ -2061,6 +2060,7 @@ CbcModel::operator=(const CbcModel& rhs)
     hotstartStrategy_=rhs.hotstartStrategy_;
     numberHeuristicSolutions_=rhs.numberHeuristicSolutions_;
     numberNodes_ = rhs.numberNodes_;
+    numberNodes2_ = rhs.numberNodes2_;
     numberIterations_ = rhs.numberIterations_;
     status_ = rhs.status_;
     specialOptions_ = rhs.specialOptions_;
@@ -2575,7 +2575,7 @@ int CbcModel::addCuts (CbcNode *node, CoinWarmStartBasis *&lastws)
     for (i=0;i<numberToAdd;i++)
       delete addCuts[i];
     delete [] addCuts;
-    //numberNodes_++;
+    numberNodes_++;
     return 0;
   } 
 /*

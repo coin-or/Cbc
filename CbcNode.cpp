@@ -820,7 +820,7 @@ CbcNode::createInfo (CbcModel *model,
     delete ws;
   }
   // Set node number
-  nodeInfo_->setNodeNumber(model->getNodeCount());
+  nodeInfo_->setNodeNumber(model->getNodeCount2());
 }
 
 /*

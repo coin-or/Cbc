@@ -1226,6 +1226,13 @@ public:
   void gutsOfDestructor();
   //@}
 
+  ///@semi-private i.e. users should not use
+  //@{
+    /// Get how many Nodes it took to solve the problem.
+    int getNodeCount2() const
+    { return numberNodes2_;};
+  //@}
+
 //---------------------------------------------------------------------------
 
 private:
@@ -1319,6 +1326,10 @@ private:
   int numberHeuristicSolutions_;
   /// Cumulative number of nodes
   int numberNodes_;
+  /** Cumulative number of nodes for statistics.
+      Must fix to match up
+  */
+  int numberNodes2_;
   /// Cumulative number of iterations
   int numberIterations_;
   /// Status of problem - 0 finished, 1 stopped, 2 difficulties

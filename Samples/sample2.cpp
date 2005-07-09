@@ -261,7 +261,7 @@ int main (int argc, const char *argv[])
 
   // Do complete search
   
-  model.branchAndBound(3);
+  model.branchAndBound();
 
   std::cout<<mpsFileName<<" took "<<CoinCpuTime()-time1<<" seconds, "
 	   <<model.getNodeCount()<<" nodes with objective "

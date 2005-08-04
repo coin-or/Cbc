@@ -2200,7 +2200,7 @@ COINLIBAPI Cbc_Model * COINLINKAGE Cbc_clone(Cbc_Model * model)
   
   Cbc_Model * result = new Cbc_Model;
   result->model_     = new CbcModel(*(model->model_));
-  result->solver_    = (OsiClpSolverInterface *) result->model_->solver();
+  result->solver_    =  dynamic_cast< OsiClpSolverInterface*> (result->model_->solver());
   result->handler_   = NULL;
 
   if (VERBOSE>0) printf("%s return\n",prefix);

@@ -3873,9 +3873,10 @@ CbcModel::findCliques(bool makeEquality,
 	      }
 	    }
 	  }
-	  object[numberCliques++] = new CbcClique(this,objectType,numberP1,
+	  object[numberCliques] = new CbcClique(this,objectType,numberP1,
 					      which,type,
 					       1000000+numberCliques,slack);
+          numberCliques++;
 	} else if (numberP1+numberM1 >= lessThanThis) {
 	  // too big
 	  numberBig++;

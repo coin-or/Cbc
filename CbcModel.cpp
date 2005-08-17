@@ -3435,8 +3435,8 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node,
           = dynamic_cast<OsiClpSolverInterface *> (solver_);
         if (clpSolver) {
           // Maybe solver might like to know only column bounds will change
-          int options = clpSolver->specialOptions();
-          clpSolver->setSpecialOptions(options|128);
+          //int options = clpSolver->specialOptions();
+          //clpSolver->setSpecialOptions(options|128);
           clpSolver->synchronizeModel();
         }
 #endif
@@ -4337,37 +4337,42 @@ CbcModel::checkSolution (double cutoff, const double *solution,
   int i;
   for (i=0;i<numberObjects_;i++)
     object_[i]->feasibleRegion();
-  /*
-    Remove any existing warm start information to be sure there is no
-    residual influence on initialSolve().
-  */
-  CoinWarmStartBasis *slack =
-      dynamic_cast<CoinWarmStartBasis *>(solver_->getEmptyWarmStart()) ;
-  solver_->setWarmStart(slack);
-  delete slack ;
-  // Give a hint not to do scaling
-  //bool saveTakeHint;
-  //OsiHintStrength saveStrength;
-  //bool gotHint = (solver_->getHintParam(OsiDoScale,saveTakeHint,saveStrength));
-  //assert (gotHint);
-  //solver_->setHintParam(OsiDoScale,false,OsiHintTry);
-  solver_->initialSolve();
-  //solver_->setHintParam(OsiDoScale,saveTakeHint,saveStrength);
-  if (!solver_->isProvenOptimal())
-    { printf("checkSolution infeas! Retrying wihout scaling.\n");
-    bool saveTakeHint;
-    OsiHintStrength saveStrength;
-    bool savePrintHint;
-    solver_->writeMps("infeas");
-    bool gotHint = (solver_->getHintParam(OsiDoReducePrint,savePrintHint,saveStrength));
-    gotHint = (solver_->getHintParam(OsiDoScale,saveTakeHint,saveStrength));
-    solver_->setHintParam(OsiDoScale,false,OsiHintTry);
-    solver_->setHintParam(OsiDoReducePrint,false,OsiHintTry) ;
-    solver_->initialSolve();
-    solver_->setHintParam(OsiDoScale,saveTakeHint,saveStrength);
-    solver_->setHintParam(OsiDoReducePrint,savePrintHint,OsiHintTry) ;
+  // We can switch off check
+  if ((specialOptions_&4)==0) {
+    if ((specialOptions_&2)==0) {
+      /*
+        Remove any existing warm start information to be sure there is no
+        residual influence on initialSolve().
+      */
+      CoinWarmStartBasis *slack =
+        dynamic_cast<CoinWarmStartBasis *>(solver_->getEmptyWarmStart()) ;
+      solver_->setWarmStart(slack);
+      delete slack ;
     }
-  //assert(solver_->isProvenOptimal());
+    // Give a hint not to do scaling
+    //bool saveTakeHint;
+    //OsiHintStrength saveStrength;
+    //bool gotHint = (solver_->getHintParam(OsiDoScale,saveTakeHint,saveStrength));
+    //assert (gotHint);
+    //solver_->setHintParam(OsiDoScale,false,OsiHintTry);
+    solver_->initialSolve();
+    //solver_->setHintParam(OsiDoScale,saveTakeHint,saveStrength);
+    if (!solver_->isProvenOptimal())
+      { printf("checkSolution infeas! Retrying wihout scaling.\n");
+      bool saveTakeHint;
+      OsiHintStrength saveStrength;
+      bool savePrintHint;
+      solver_->writeMps("infeas");
+      bool gotHint = (solver_->getHintParam(OsiDoReducePrint,savePrintHint,saveStrength));
+      gotHint = (solver_->getHintParam(OsiDoScale,saveTakeHint,saveStrength));
+      solver_->setHintParam(OsiDoScale,false,OsiHintTry);
+      solver_->setHintParam(OsiDoReducePrint,false,OsiHintTry) ;
+      solver_->initialSolve();
+      solver_->setHintParam(OsiDoScale,saveTakeHint,saveStrength);
+      solver_->setHintParam(OsiDoReducePrint,savePrintHint,OsiHintTry) ;
+      }
+    //assert(solver_->isProvenOptimal());
+  }
   double objectiveValue = solver_->getObjValue()*solver_->getObjSense();
 
   /*
@@ -4381,7 +4386,7 @@ CbcModel::checkSolution (double cutoff, const double *solution,
     There really should be no need for the check against original bounds.
     Perhaps an opportunity for a sanity check?
   */
-  if (solver_->isProvenOptimal() && objectiveValue <= cutoff)
+  if ((solver_->isProvenOptimal()||(specialOptions_&4)!=0) && objectiveValue <= cutoff)
   { 
     double * solution = new double[numberColumns];
     memcpy(solution ,solver_->getColSolution(),numberColumns*sizeof(double)) ;

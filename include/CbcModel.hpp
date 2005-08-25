@@ -626,8 +626,13 @@ public:
     int getNodeCount() const
     { return numberNodes_;};
     /** Final status of problem
-    
-      0 finished, 1 stopped, 2 difficulties
+        Some of these can be found out by is...... functions
+        -1 before branchAndBound
+        0 finished - check isProvenOptimal or isProvenInfeasible to see if solution found
+        (or check value of best solution)
+        1 stopped - on maxnodes, maxsols, maxtime
+        2 difficulties so run was abandoned
+        (5 event user programmed event occurred)
     */
     inline int status() const
     { return status_;};
@@ -1185,7 +1190,23 @@ public:
   { return handler_->logLevel();};
   //@}
   //---------------------------------------------------------------------------
+  ///@name Specialized
+  //@{
 
+  /** 
+      Set special options
+      0 bit (1) - check if cuts valid (if on debugger list)
+      1 bit (2) - use current basis to check integer solution (rather than all slack)
+      2 bit (4) - don't check integer solution
+  */
+  /// Set special options
+  inline void setSpecialOptions(int value)
+  { specialOptions_=value;};
+  /// Get special options
+  inline int specialOptions() const
+  { return specialOptions_;};
+  //@}
+  //---------------------------------------------------------------------------
 
   ///@name Constructors and destructors etc
   //@{
@@ -1388,7 +1409,11 @@ private:
   double * continuousSolution_;
   /// Array marked whenever a solution is found if non-zero
   int * usedInSolution_;
-  /// 0 bit - check if cuts valid (if on list)
+  /**
+      0 bit (1) - check if cuts valid (if on debugger list)
+      1 bit (2) - use current basis to check integer solution (rather than all slack)
+      2 bit (4) - don't check integer solution
+  */
   int specialOptions_;
   /// User node comparison function
   CbcCompareBase * nodeCompare_;

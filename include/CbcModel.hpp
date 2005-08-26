@@ -636,7 +636,15 @@ public:
     */
     inline int status() const
     { return status_;};
-  
+    /// Are there numerical difficulties (for initialSolve) ?
+    bool isInitialSolveAbandoned() const ;
+    /// Is optimality proven (for initialSolve) ?
+    bool isInitialSolveProvenOptimal() const ;
+    /// Is primal infeasiblity proven (for initialSolve) ?
+    bool isInitialSolveProvenPrimalInfeasible() const ;
+    /// Is dual infeasiblity proven (for initialSolve) ?
+    bool isInitialSolveProvenDualInfeasible() const ;
+
   //@}
 
   //---------------------------------------------------------------------------
@@ -772,7 +780,7 @@ public:
   
   /**@name Methods related to querying the solution */
   //@{
-  /// Holds solution at continuous (after cuts)
+  /// Holds solution at continuous (after cuts if branchAndBound called)
   inline double * continuousSolution() const
   { return continuousSolution_;};
   /** Array marked whenever a solution is found if non-zero.
@@ -896,7 +904,7 @@ public:
   /// Set objective function sense (1 for min (default), -1 for max,)
   void setObjSense(double s) { solver_->setObjSense(s);};
 
-  /// Value of objective at continuous
+  /// Value of objective at continuous 
   inline double getContinuousObjective() const
   { return originalContinuousObjective_;};
   inline void setContinuousObjective(double value)

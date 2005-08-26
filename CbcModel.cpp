@@ -1502,6 +1502,12 @@ CbcModel::initialSolve()
 {
   assert (solver_);
   solver_->initialSolve();
+  // But set up so Jon Lee will be happy
+  status_=-1;
+  originalContinuousObjective_ = solver_->getObjValue()*solver_->getObjSense();
+  delete [] continuousSolution_;
+  continuousSolution_ = CoinCopyOfArray(solver_->getColSolution(),
+                                             solver_->getNumCols());
 }
 
 /*! \brief Get an empty basis object
@@ -5919,5 +5925,45 @@ CbcModel::incrementUsed(const double * solution)
   for (int i=0;i<numberColumns;i++) {
     if (solution[i])
       usedInSolution_[i]++;
+  }
+}
+// Are there numerical difficulties (for initialSolve) ?
+bool 
+CbcModel::isInitialSolveAbandoned() const 
+{
+  if (status_!=-1) {
+    return false;
+  } else {
+    return solver_->isAbandoned();
+  }
+}
+// Is optimality proven (for initialSolve) ?
+bool 
+CbcModel::isInitialSolveProvenOptimal() const 
+{
+  if (status_!=-1) {
+    return originalContinuousObjective_<1.0e50;
+  } else {
+    return solver_->isProvenOptimal();
+  }
+}
+// Is primal infeasiblity proven (for initialSolve) ?
+bool 
+CbcModel::isInitialSolveProvenPrimalInfeasible() const 
+{
+  if (status_!=-1) {
+    return originalContinuousObjective_>=1.0e50;
+  } else {
+    return solver_->isProvenPrimalInfeasible();
+  }
+}
+// Is dual infeasiblity proven (for initialSolve) ?
+bool 
+CbcModel::isInitialSolveProvenDualInfeasible() const 
+{
+  if (status_!=-1) {
+    return originalContinuousObjective_>=1.0e50;
+  } else {
+    return solver_->isProvenDualInfeasible();
   }
 }

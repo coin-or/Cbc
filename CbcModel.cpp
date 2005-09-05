@@ -717,7 +717,7 @@ void CbcModel::branchAndBound(int doStatistics)
 /*
   Continuous data to be used later
 */
-  continuousObjective_ = 0.0 ;
+  continuousObjective_ = solver_->getObjValue()*solver_->getObjSense();
   continuousInfeasibilities_ = 0 ;
   if (newNode)
   { continuousObjective_ = newNode->objectiveValue() ;

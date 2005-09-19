@@ -407,6 +407,7 @@ void CbcModel::branchAndBound(int doStatistics)
   Assume we're done, and see if we're proven wrong.
 */
   status_ = 0 ;
+  secondaryStatus_ = 0;
   phase_=0;
 /*
   Scan the variables, noting the integer variables. Create an
@@ -443,6 +444,7 @@ void CbcModel::branchAndBound(int doStatistics)
   if (!feasible)
   { handler_->message(CBC_INFEAS,messages_)<< CoinMessageEol ;
     status_ = 0 ;
+    secondaryStatus_ = 1;
     originalContinuousObjective_ = COIN_DBL_MAX;
     return ; }
   // Save objective (just so user can access it)
@@ -1225,21 +1227,26 @@ void CbcModel::branchAndBound(int doStatistics)
 	    << dblParam_[CbcAllowableGap]
 	    << dblParam_[CbcAllowableFractionGap]*100.0
 	    << CoinMessageEol ;
+        secondaryStatus_ = 2;
 	  status_ = 0 ; }
 	else
 	if (isNodeLimitReached())
 	{ handler_->message(CBC_MAXNODES,messages_) << CoinMessageEol ;
+        secondaryStatus_ = 3;
 	  status_ = 1 ; }
 	else
 	if (totalTime >= dblParam_[CbcMaximumSeconds])
 	{ handler_->message(CBC_MAXTIME,messages_) << CoinMessageEol ; 
+        secondaryStatus_ = 4;
 	  status_ = 1 ; }
 	else
 	if (eventHappened)
 	{ handler_->message(CBC_EVENT,messages_) << CoinMessageEol ; 
+        secondaryStatus_ = 5;
 	  status_ = 5 ; }
 	else
 	{ handler_->message(CBC_MAXSOLS,messages_) << CoinMessageEol ;
+        secondaryStatus_ = 6;
 	  status_ = 1 ; }
 	break ; }
 /*
@@ -1504,6 +1511,7 @@ CbcModel::initialSolve()
   solver_->initialSolve();
   // But set up so Jon Lee will be happy
   status_=-1;
+  secondaryStatus_ = -1;
   originalContinuousObjective_ = solver_->getObjValue()*solver_->getObjSense();
   delete [] continuousSolution_;
   continuousSolution_ = CoinCopyOfArray(solver_->getColSolution(),
@@ -1576,6 +1584,7 @@ CbcModel::CbcModel()
   numberNodes2_(0),
   numberIterations_(0),
   status_(-1),
+  secondaryStatus_(-1),
   numberIntegers_(0),
   numberRowsAtContinuous_(0),
   maximumNumberCuts_(0),
@@ -1663,6 +1672,7 @@ CbcModel::CbcModel(const OsiSolverInterface &rhs)
   numberNodes2_(0),
   numberIterations_(0),
   status_(-1),
+  secondaryStatus_(-1),
   numberRowsAtContinuous_(0),
   maximumNumberCuts_(0),
   phase_(0),
@@ -1842,6 +1852,7 @@ CbcModel::CbcModel(const CbcModel & rhs, bool noTree)
   numberNodes2_(rhs.numberNodes2_),
   numberIterations_(rhs.numberIterations_),
   status_(rhs.status_),
+  secondaryStatus_(rhs.secondaryStatus_),
   specialOptions_(rhs.specialOptions_),
   subTreeModel_(rhs.subTreeModel_),
   numberStoppedSubTrees_(rhs.numberStoppedSubTrees_),
@@ -2069,6 +2080,7 @@ CbcModel::operator=(const CbcModel& rhs)
     numberNodes2_ = rhs.numberNodes2_;
     numberIterations_ = rhs.numberIterations_;
     status_ = rhs.status_;
+    secondaryStatus_ = rhs.secondaryStatus_;
     specialOptions_ = rhs.specialOptions_;
     subTreeModel_ = rhs.subTreeModel_;
     numberStoppedSubTrees_ = rhs.numberStoppedSubTrees_;
@@ -2283,6 +2295,15 @@ bool
 CbcModel::isNodeLimitReached() const
 {
   return numberNodes_ >= intParam_[CbcMaxNumNode];
+}
+// Time limit reached?
+bool 
+CbcModel::isSecondsLimitReached() const
+{
+  if (status_==1&&secondaryStatus_==4)
+    return true;
+  else
+    return false;
 }
 // Solution limit reached?
 bool 
@@ -5008,6 +5029,7 @@ CbcModel::integerPresolve(bool weak)
     handler_->message(CBC_INFEAS,messages_)
     <<CoinMessageEol;
     status_ = 0;
+    secondaryStatus_ = 1;
     delete newModel;
     return NULL;
   } else {
@@ -5395,6 +5417,7 @@ CbcModel::originalModel(CbcModel * presolvedModel,bool weak)
   numberNodes_ = presolvedModel->numberNodes_;
   numberIterations_ = presolvedModel->numberIterations_;
   status_ = presolvedModel->status_;
+  secondaryStatus_ = presolvedModel->secondaryStatus_;
   synchronizeModel();
 } 
 // Pass in Message handler (not deleted at end)

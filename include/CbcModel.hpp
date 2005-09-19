@@ -617,6 +617,8 @@ public:
     bool isProvenInfeasible() const;
     /// Node limit reached?
     bool isNodeLimitReached() const;
+    /// Time limit reached?
+    bool isSecondsLimitReached() const;
     /// Solution limit reached?
     bool isSolutionLimitReached() const;
     /// Get how many iterations it took to solve the problem.
@@ -1363,6 +1365,17 @@ private:
   int numberIterations_;
   /// Status of problem - 0 finished, 1 stopped, 2 difficulties
   int status_;
+  /** Secondary status of problem
+      -1 unset (status_ will also be -1)
+      0 search completed with solution
+      1 linear relaxation not feasible (or worse than cutoff)
+      2 stopped on gap
+      3 stopped on nodes
+      4 stopped on time
+      5 stopped on user event
+      6 stopped on solutions
+   */
+  int secondaryStatus_;
   /// Number of integers in problem
   int numberIntegers_;
   /// Number of rows at continuous

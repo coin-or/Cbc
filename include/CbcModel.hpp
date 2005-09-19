@@ -638,6 +638,18 @@ public:
     */
     inline int status() const
     { return status_;};
+    /** Secondary status of problem
+        -1 unset (status_ will also be -1)
+        0 search completed with solution
+        1 linear relaxation not feasible (or worse than cutoff)
+        2 stopped on gap
+        3 stopped on nodes
+        4 stopped on time
+        5 stopped on user event
+        6 stopped on solutions
+    */
+    inline int secondaryStatus() const
+    { return secondaryStatus_;};
     /// Are there numerical difficulties (for initialSolve) ?
     bool isInitialSolveAbandoned() const ;
     /// Is optimality proven (for initialSolve) ?

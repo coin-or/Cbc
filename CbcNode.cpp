@@ -22,6 +22,7 @@
 #include "OsiRowCutDebugger.hpp"
 #include "OsiCuts.hpp"
 #include "CbcCountRowCut.hpp"
+#include "CbcFeasibilityBase.hpp"
 #include "CbcMessage.hpp"
 #include "OsiClpSolverInterface.hpp"
 #include "ClpSimplexOther.hpp"
@@ -861,7 +862,12 @@ int CbcNode::chooseBranch (CbcModel *model, CbcNode *lastNode,int numberPassesLe
   double objectiveValue = solver->getObjSense()*saveObjectiveValue;
   const double * lower = solver->getColLower();
   const double * upper = solver->getColUpper();
-  int anyAction=0;
+  // See what user thinks
+  int anyAction=model->problemFeasibility()->feasible(model,0);
+  if (anyAction) {
+    // will return -2 if infeasible , 0 if treat as integer
+    return anyAction-1;
+  }
   double integerTolerance = 
     model->getDblParam(CbcModel::CbcIntegerTolerance);
   int i;
@@ -1357,14 +1363,15 @@ int CbcNode::chooseBranch (CbcModel *model, CbcNode *lastNode,int numberPassesLe
           } else {
             // See if integer solution
             if (model->feasibleSolution(choice[i].numIntInfeasDown,
-                                        choice[i].numObjInfeasDown))
-              { model->setBestSolution(CBC_STRONGSOL,
-                                       newObjectiveValue,
-                                       solver->getColSolution()) ;
+                                        choice[i].numObjInfeasDown)
+                &&model->problemFeasibility()->feasible(model,-1)>=0) {
+              model->setBestSolution(CBC_STRONGSOL,
+                                     newObjectiveValue,
+                                     solver->getColSolution()) ;
               model->incrementUsed(solver->getColSolution());
               if (newObjectiveValue >= model->getCutoff())	//  *new* cutoff
                 objectiveChange = 1.0e100 ;
-              }
+            }
           }
         } else if (iStatus==1) {
           objectiveChange = 1.0e100 ;
@@ -1441,14 +1448,15 @@ int CbcNode::chooseBranch (CbcModel *model, CbcNode *lastNode,int numberPassesLe
           } else {
             // See if integer solution
             if (model->feasibleSolution(choice[i].numIntInfeasUp,
-                                        choice[i].numObjInfeasUp))
-              { model->setBestSolution(CBC_STRONGSOL,
-                                       newObjectiveValue,
-                                       solver->getColSolution()) ;
+                                        choice[i].numObjInfeasUp)
+                &&model->problemFeasibility()->feasible(model,-1)>=0) {
+              model->setBestSolution(CBC_STRONGSOL,
+                                     newObjectiveValue,
+                                     solver->getColSolution()) ;
               model->incrementUsed(solver->getColSolution());
               if (newObjectiveValue >= model->getCutoff())	//  *new* cutoff
                 objectiveChange = 1.0e100 ;
-              }
+            }
           }
         } else if (iStatus==1) {
           objectiveChange = 1.0e100 ;
@@ -1769,7 +1777,12 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,int numberP
   double distanceToCutoff = cutoff-objectiveValue_;
   const double * lower = solver->getColLower();
   const double * upper = solver->getColUpper();
-  int anyAction=0;
+  // See what user thinks
+  int anyAction=model->problemFeasibility()->feasible(model,0);
+  if (anyAction) {
+    // will return -2 if infeasible , 0 if treat as integer
+    return anyAction-1;
+  }
   int i;
   int stateOfSearch = model->stateOfSearch();
   int numberStrong=model->numberStrong();
@@ -2248,7 +2261,8 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,int numberP
             } else {
               // See if integer solution
               if (model->feasibleSolution(choice.numIntInfeasDown,
-                                          choice.numObjInfeasDown)) {
+                                          choice.numObjInfeasDown)
+                  &&model->problemFeasibility()->feasible(model,-1)>=0) {
                 model->setBestSolution(CBC_STRONGSOL,
                                        newObjectiveValue,
                                        solver->getColSolution()) ;
@@ -2307,7 +2321,8 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,int numberP
             } else {
               // See if integer solution
               if (model->feasibleSolution(choice.numIntInfeasUp,
-                                          choice.numObjInfeasUp)) { 
+                                          choice.numObjInfeasUp)
+                  &&model->problemFeasibility()->feasible(model,-1)>=0) {
                 model->setBestSolution(CBC_STRONGSOL,
                                        newObjectiveValue,
                                        solver->getColSolution()) ;

@@ -29,6 +29,7 @@
 #include "OsiCuts.hpp"
 #include "CbcCountRowCut.hpp"
 #include "CbcCutGenerator.hpp"
+#include "CbcFeasibilityBase.hpp"
 // include Probing
 #include "CglProbing.hpp"
 
@@ -397,6 +398,8 @@ void CbcModel::branchAndBound(int doStatistics)
 #endif
   if (!nodeCompare_)
     nodeCompare_=new CbcCompareDefault();;
+  if (!problemFeasibility_)
+    problemFeasibility_=new CbcFeasibilityBase();
 # ifdef CBC_DEBUG
   std::string problemName ;
   solver_->getStrParam(OsiProbName,problemName) ;
@@ -437,6 +440,9 @@ void CbcModel::branchAndBound(int doStatistics)
   continuous relaxation.
 */
   bool feasible = resolve() ;
+  if (problemFeasibility_->feasible(this,0)<0) {
+    feasible=false; // pretend infeasible
+  }
 /*
   If the linear relaxation of the root is infeasible, bail out now. Otherwise,
   continue with processing the root node.
@@ -655,6 +661,9 @@ void CbcModel::branchAndBound(int doStatistics)
       numberPassesLeft--;
       if (anyAction == -1)
       { feasible = resolve() ;
+      if (problemFeasibility_->feasible(this,0)<0) {
+        feasible=false; // pretend infeasible
+      }
 	resolved = true ;
 #	ifdef CBC_DEBUG
 	printf("Resolve (root) as something fixed, Obj value %g %d rows\n",
@@ -1047,6 +1056,9 @@ void CbcModel::branchAndBound(int doStatistics)
               feasible = resolve() ;
               solver_->setHintParam(OsiDoInBranchAndCut,true,OsiHintDo,NULL) ;
 	      resolved = true ;
+              if (problemFeasibility_->feasible(this,0)<0) {
+                feasible=false; // pretend infeasible
+              }
 	      if (feasible)
 	      { newNode->setObjectiveValue(direction*
 					   solver_->getObjValue()) ;
@@ -1638,6 +1650,7 @@ CbcModel::CbcModel()
   dblParam_[CbcMaximumSeconds] = 1.0e100;
   dblParam_[CbcStartSeconds] = 0.0;
   nodeCompare_=new CbcCompareDefault();;
+  problemFeasibility_=new CbcFeasibilityBase();
   tree_= new CbcTree();
   branchingMethod_=NULL;
   strategy_=NULL;
@@ -1723,6 +1736,7 @@ CbcModel::CbcModel(const OsiSolverInterface &rhs)
   dblParam_[CbcStartSeconds] = 0.0;
 
   nodeCompare_=new CbcCompareDefault();;
+  problemFeasibility_=new CbcFeasibilityBase();
   tree_= new CbcTree();
   branchingMethod_=NULL;
   strategy_=NULL;
@@ -1939,6 +1953,7 @@ CbcModel::CbcModel(const CbcModel & rhs, bool noTree)
     originalColumns_=NULL;
   }
   nodeCompare_=rhs.nodeCompare_->clone();
+  problemFeasibility_=rhs.problemFeasibility_->clone();
   tree_= rhs.tree_->clone();
   branchingMethod_=rhs.branchingMethod_;
   if (rhs.strategy_)
@@ -2161,6 +2176,7 @@ CbcModel::operator=(const CbcModel& rhs)
       originalColumns_=NULL;
     }
     nodeCompare_=rhs.nodeCompare_->clone();
+    problemFeasibility_=rhs.problemFeasibility_->clone();
     delete tree_;
     tree_= rhs.tree_->clone();
     branchingMethod_=rhs.branchingMethod_;
@@ -2252,6 +2268,8 @@ CbcModel::gutsOfDestructor()
   heuristic_=NULL;
   delete nodeCompare_;
   nodeCompare_=NULL;
+  delete problemFeasibility_;
+  problemFeasibility_=NULL;
   delete [] addedCuts_;
   addedCuts_=NULL;
   nextRowCut_ = NULL;
@@ -2726,6 +2744,9 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node,
   if (node)
     objectiveValue= node->objectiveValue();
   feasible = resolve() ;
+  if (problemFeasibility_->feasible(this,0)<0) {
+    feasible=false; // pretend infeasible
+  }
   
   // Update branching information if wanted
   if(node &&branchingMethod_)
@@ -5931,6 +5952,18 @@ CbcModel::setNodeComparison(CbcCompareBase & compare)
 { 
   delete nodeCompare_;
   nodeCompare_ = compare.clone();
+}
+void 
+CbcModel::setProblemFeasibility(CbcFeasibilityBase * feasibility)
+{
+  delete problemFeasibility_;
+  problemFeasibility_ = feasibility->clone();
+}
+void 
+CbcModel::setProblemFeasibility(CbcFeasibilityBase & feasibility)
+{
+  delete problemFeasibility_;
+  problemFeasibility_ = feasibility.clone();
 }
 // Set the strategy. Clones
 void 

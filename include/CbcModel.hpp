@@ -24,6 +24,7 @@ class CbcHeuristic;
 class CbcObject;
 class CbcTree;
 class CbcStrategy;
+class CbcFeasibilityBase;
 
 //#############################################################################
 
@@ -953,6 +954,15 @@ public:
   void setNodeComparison(CbcCompareBase & compare);
   //@}
 
+  /** \name Problem feasibility checking */
+  //@{
+  // Feasibility functions (which may be overridden by inheritance)
+  inline CbcFeasibilityBase * problemFeasibility() const
+  { return problemFeasibility_;};
+  void setProblemFeasibility(CbcFeasibilityBase * feasibility);
+  void setProblemFeasibility(CbcFeasibilityBase & feasibility);
+  //@}
+
   /** \name Tree methods and subtree methods */
   //@{
   /// Tree method e.g. heap (which may be overridden by inheritance)
@@ -1450,6 +1460,8 @@ private:
   int specialOptions_;
   /// User node comparison function
   CbcCompareBase * nodeCompare_;
+  /// User feasibility function (see CbcFeasibleBase.hpp)
+  CbcFeasibilityBase * problemFeasibility_;
   /// Tree
   CbcTree * tree_;
   /// A pointer to model to be used for subtrees

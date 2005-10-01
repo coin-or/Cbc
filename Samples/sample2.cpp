@@ -23,7 +23,7 @@
 #include "CglGomory.hpp"
 #include "CglProbing.hpp"
 #include "CglKnapsackCover.hpp"
-#include "CglOddHole.hpp"
+#include "CglRedSplit.hpp"
 #include "CglClique.hpp"
 #include "CglFlowCover.hpp"
 #include "CglMixedIntegerRounding2.hpp"
@@ -150,12 +150,9 @@ int main (int argc, const char *argv[])
 
   CglKnapsackCover generator3;
 
-  // Decided too slow
-  //CglOddHole generator4;
-  //generator4.setMinimumViolation(0.005);
-  //generator4.setMinimumViolationPer(0.00002);
+  CglRedSplit generator4;
   // try larger limit
-  //generator4.setMaximumEntries(200);
+  generator4.setLimit(200);
 
   CglClique generator5;
   generator5.setStarCliqueReport(false);
@@ -169,7 +166,7 @@ int main (int argc, const char *argv[])
   model.addCutGenerator(&generator1,-1,"Probing");
   model.addCutGenerator(&generator2,-1,"Gomory");
   model.addCutGenerator(&generator3,-1,"Knapsack");
-  //model.addCutGenerator(&generator4,-1,"OddHole");
+  //model.addCutGenerator(&generator4,-1,"RedSplit");
   model.addCutGenerator(&generator5,-1,"Clique");
   model.addCutGenerator(&flowGen,-1,"FlowCover");
   model.addCutGenerator(&mixedGen,-1,"MixedIntegerRounding");
@@ -182,9 +179,14 @@ int main (int argc, const char *argv[])
   }
   OsiClpSolverInterface * osiclp = dynamic_cast< OsiClpSolverInterface*> (model.solver());
   // go faster stripes
-  if (osiclp->getNumRows()<300&&osiclp->getNumCols()<500) {
-    //osiclp->setupForRepeatedUse(2,0);
-    osiclp->setupForRepeatedUse(0,0);
+  if (osiclp) {
+    // Turn this off if you get problems
+    // Used to be automatically set
+    osiclp->setSpecialOptions(128);
+    if(osiclp->getNumRows()<300&&osiclp->getNumCols()<500) {
+      //osiclp->setupForRepeatedUse(2,0);
+      osiclp->setupForRepeatedUse(0,0);
+    }
   } 
   model.messagesPointer()->setDetailMessage(0,61);
   // Allow rounding heuristic
@@ -230,6 +232,8 @@ int main (int argc, const char *argv[])
   if (model.getNumCols()<5000)
     model.setNumberStrong(10);
   model.setNumberStrong(20);
+  //model.setNumberStrong(5);
+  model.setNumberBeforeTrust(5);
 
   model.solver()->setIntParam(OsiMaxNumIterationHotStart,100);
 

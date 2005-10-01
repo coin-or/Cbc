@@ -2504,7 +2504,7 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,int numberP
       solver->setWarmStart(ws);
       // Unless infeasible we will carry on
       // But we could fix anyway
-      if (numberToFix) {
+      if (numberToFix&&!hitMaxTime) {
         if (anyAction==-2) {
           // take off
           for (i = 0 ; i < numberToFix ; i++) {

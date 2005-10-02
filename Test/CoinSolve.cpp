@@ -14,7 +14,7 @@
 #include "CoinPragma.hpp"
 #include "CoinHelperFunctions.hpp"
 // Same version as CBC
-#define CBCVERSION "0.70"
+#define CBCVERSION "0.98"
 
 #include "CoinMpsIO.hpp"
 
@@ -51,11 +51,12 @@
 #include "OsiRowCut.hpp"
 #include "OsiColCut.hpp"
 
+#include "CglPreProcess.hpp"
 #include "CglCutGenerator.hpp"
 #include "CglGomory.hpp"
 #include "CglProbing.hpp"
 #include "CglKnapsackCover.hpp"
-#include "CglOddHole.hpp"
+#include "CglRedSplit.hpp"
 #include "CglClique.hpp"
 #include "CglFlowCover.hpp"
 #include "CglMixedIntegerRounding.hpp"
@@ -65,13 +66,9 @@
 #include "CbcHeuristic.hpp"
 #include "CbcCompareActual.hpp"
 #include  "CbcOrClpParam.hpp"
+#include  "CbcCutGenerator.hpp"
 
-#ifdef COIN_USE_CLP
 #include "OsiClpSolverInterface.hpp"
-#endif
-#ifdef COIN_USE_DYLP
-#include "OsiDylpSolverInterface.hpp"
-#endif
 
 static double totalTime=0.0;
 
@@ -102,21 +99,23 @@ int CbcOrClpRead_mode=1;
 FILE * CbcOrClpReadCommand=stdin;
 int main (int argc, const char *argv[])
 {
-  // next {} is just to make sure all memory should be freed - for debug
   /* Note
      This is meant as a stand-alone executable to do as much of coin as possible. 
      It should only have one solver known to it.
   */
   {
     double time1 = CoinCpuTime(),time2;
+    CoinSighandler_t saveSignal=SIG_DFL;
+    // register signal handler
+    saveSignal = signal(SIGINT,signal_handler);
     // Set up all non-standard stuff
-#ifdef COIN_USE_CLP
     OsiClpSolverInterface solver1;
     CbcModel model(solver1);
     OsiSolverInterface * solver = model.solver();
     OsiClpSolverInterface * clpSolver = dynamic_cast< OsiClpSolverInterface*> (solver);
     ClpSimplex * lpSolver = clpSolver->getModelPtr();
-#endif
+    clpSolver->messageHandler()->setLogLevel(0) ;
+    model.messageHandler()->setLogLevel(1);
     
     
     // default action on import
@@ -129,22 +128,31 @@ int main (int argc, const char *argv[])
     int presolveOptions=0;
     int doCrash=0;
     int doSprint=-1;
+    int doScaling=1;
     // set reasonable defaults
     int preSolve=5;
+    int preProcess=1;
     bool preSolveFile=false;
 // Set up likely cut generators and defaults
 
     CglGomory gomoryGen;
     // try larger limit
-    gomoryGen.setLimit(3000);
+    gomoryGen.setLimit(300);
     // set default action (0=off,1=on,2=root)
     int gomoryAction=1;
 
     CglProbing probingGen;
     probingGen.setUsingObjective(true);
     probingGen.setMaxPass(3);
-    probingGen.setMaxProbe(100);
-    probingGen.setMaxLook(50);
+    probingGen.setMaxPassRoot(3);
+    // Number of unsatisfied variables to look at
+    probingGen.setMaxProbe(10);
+    probingGen.setMaxProbeRoot(50);
+    // How far to follow the consequences
+    probingGen.setMaxLook(10);
+    probingGen.setMaxLookRoot(50);
+    // Only look at rows with fewer than this number of elements
+    probingGen.setMaxElements(200);
     probingGen.setRowCuts(3);
     // set default action (0=off,1=on,2=root)
     int probingAction=1;
@@ -153,12 +161,10 @@ int main (int argc, const char *argv[])
     // set default action (0=off,1=on,2=root)
     int knapsackAction=1;
 
-    CglOddHole oddholeGen;
-    oddholeGen.setMinimumViolation(0.005);
-    oddholeGen.setMinimumViolationPer(0.0002);
-    oddholeGen.setMaximumEntries(100);
+    CglRedSplit redsplitGen;
+    redsplitGen.setLimit(100);
     // set default action (0=off,1=on,2=root)
-    int oddholeAction=1;
+    int redsplitAction=1;
 
     CglClique cliqueGen;
     cliqueGen.setStarCliqueReport(false);
@@ -208,7 +214,8 @@ int main (int argc, const char *argv[])
     parameters[whichParam(IMPORT,numberParameters,parameters)].setStringValue(importFile);
     int slog = whichParam(SOLVERLOGLEVEL,numberParameters,parameters);
     int log = whichParam(LOGLEVEL,numberParameters,parameters);
-    parameters[slog].setIntValue(lpSolver->logLevel());
+    parameters[slog].setIntValue(0);
+    parameters[log].setIntValue(1);
     parameters[whichParam(MAXFACTOR,numberParameters,parameters)].setIntValue(lpSolver->factorizationFrequency());
     parameters[whichParam(MAXITERATION,numberParameters,parameters)].setIntValue(lpSolver->maximumIterations());
     parameters[whichParam(OUTPUTFORMAT,numberParameters,parameters)].setIntValue(outputFormat);
@@ -225,6 +232,8 @@ int main (int argc, const char *argv[])
     // total number of commands read
     int numberGoodCommands=0;
     bool goodModel=false;
+    // Set false if user does anything advanced
+    bool defaultSettings=true;
 
     // Hidden stuff for barrier
     int choleskyType = 0;
@@ -232,6 +241,10 @@ int main (int argc, const char *argv[])
     int scaleBarrier=0;
     int doKKT=0;
     int crossover=2; // do crossover unless quadratic
+    // For names
+    int lengthName = 0;
+    std::vector<std::string> rowNames;
+    std::vector<std::string> columnNames;
     
     std::string field;
     std::cout<<"Coin Solver version "<<CBCVERSION
@@ -293,13 +306,11 @@ int main (int argc, const char *argv[])
 	CbcOrClpParameterType type = found.type();
 	int valid;
 	numberGoodCommands++;
-#ifdef COIN_USE_CLP
 	if (type==BAB&&goodModel) {
 	  // check if any integers
 	  if (!lpSolver->integerInformation())
 	    type=DUALSIMPLEX;
 	}
-#endif
 	if (type==GENERALQUERY) {
 	  std::cout<<"In argument list keywords have leading - "
 	    ", -stdin or just - switches to stdin"<<std::endl;
@@ -389,12 +400,14 @@ int main (int argc, const char *argv[])
 	      case DJFIX:
 		djFix=value;
 		preSolve=5;
+                defaultSettings=false; // user knows what she is doing
 		break;
 	      case GAPRATIO:
 		gapRatio=value;
 		break;
 	      case TIGHTENFACTOR:
 		tightenFactor=value;
+                defaultSettings=false; // user knows what she is doing
 		break;
 	      default:
 		abort();
@@ -506,6 +519,7 @@ int main (int argc, const char *argv[])
 	    case SCALING:
 	      lpSolver->scaling(action);
 	      solver->setHintParam(OsiDoScale,action!=0,OsiHintTry);
+	      doScaling = 1-action;
 	      break;
 	    case AUTOSCALE:
 	      lpSolver->setAutomaticScaling(action!=0);
@@ -525,6 +539,11 @@ int main (int argc, const char *argv[])
 	    case ERRORSALLOWED:
 	      allowImportErrors = action;
 	      break;
+              //case ALGORITHM:
+	      //algorithm  = action;
+              //defaultSettings=false; // user knows what she is doing
+              //abort();
+	      //break;
 	    case KEEPNAMES:
 	      keepImportNames = 1-action;
 	      break;
@@ -563,30 +582,39 @@ int main (int argc, const char *argv[])
 	      crossover=action;
 	      break;
 	    case GOMORYCUTS:
+              defaultSettings=false; // user knows what she is doing
 	      gomoryAction = action;
 	      break;
 	    case PROBINGCUTS:
+              defaultSettings=false; // user knows what she is doing
 	      probingAction = action;
 	      break;
 	    case KNAPSACKCUTS:
+              defaultSettings=false; // user knows what she is doing
 	      knapsackAction = action;
 	      break;
-	    case ODDHOLECUTS:
-	      oddholeAction = action;
+	    case REDSPLITCUTS:
+              defaultSettings=false; // user knows what she is doing
+	      redsplitAction = action;
 	      break;
 	    case CLIQUECUTS:
+              defaultSettings=false; // user knows what she is doing
 	      cliqueAction = action;
 	      break;
 	    case FLOWCUTS:
+              defaultSettings=false; // user knows what she is doing
 	      flowAction = action;
 	      break;
 	    case MIXEDCUTS:
+              defaultSettings=false; // user knows what she is doing
 	      mixedAction = action;
 	      break;
 	    case TWOMIRCUTS:
+              defaultSettings=false; // user knows what she is doing
 	      twomirAction = action;
 	      break;
 	    case ROUNDING:
+              defaultSettings=false; // user knows what she is doing
 	      useRounding = action;
 	      break;
 	    case COSTSTRATEGY:
@@ -622,6 +650,9 @@ int main (int argc, const char *argv[])
 		delete [] sort;
 		delete [] dsort;
 	      }
+	      break;
+	    case PREPROCESS:
+	      preProcess = action;
 	      break;
 	    default:
 	      abort();
@@ -782,183 +813,186 @@ int main (int argc, const char *argv[])
   solver is not Clp, simply run branch-and-cut. Print elapsed time at the end.
 */
 	  case BAB: // branchAndBound
-	  { if (goodModel)
-	    { CbcCompareDefault compare; // Definition of node choice
-	      model.setNodeComparison(compare);
-	      model.messageHandler()->setLogLevel(parameters[log].intValue());
-		int depthCriterion= parameters[whichParam(CUTDEPTH,
-							  numberParameters,
-							  parameters)].intValue();
-		// add cut generators if wanted
-		if (probingAction==1)
-		  model.addCutGenerator(&probingGen,-1,"Probing",
-					true,false,false,-100,depthCriterion);
-		else if (probingAction==2)
-		  model.addCutGenerator(&probingGen,-99,"Probing");
-		if (gomoryAction==1)
-		  model.addCutGenerator(&gomoryGen,-1,"Gomory",
-					true,false,false,-100,depthCriterion);
-		else if (gomoryAction==2)
-		  model.addCutGenerator(&gomoryGen,-99,"Gomory");
-		if (knapsackAction==1)
-		  model.addCutGenerator(&knapsackGen,-1,"Knapsack",
-					true,false,false,-100,depthCriterion);
-		else if (knapsackAction==2)
-		  model.addCutGenerator(&knapsackGen,-99,"Knapsack");
-		if (oddholeAction==1)
-		  model.addCutGenerator(&oddholeGen,-1,"OddHole",
-					true,false,false,-100,depthCriterion);
-		else if (oddholeAction==2)
-		  model.addCutGenerator(&oddholeGen,-99,"OddHole");
-		if (cliqueAction==1)
-		  model.addCutGenerator(&cliqueGen,-1,"Clique",
-					true,false,false,-100,depthCriterion);
-		else if (cliqueAction==2)
-		  model.addCutGenerator(&cliqueGen,-99,"Clique");
-		if (mixedAction==1)
-		  model.addCutGenerator(&mixedGen,-1,"MixedintegerRounding",
-					true,false,false,-100,depthCriterion);
-		else if (mixedAction==2)
-		  model.addCutGenerator(&mixedGen,-99,"MixedintegerRounding");
-		if (flowAction==1)
-		  model.addCutGenerator(&flowGen,-1,"FlowCover",
-					true,false,false,-100,depthCriterion);
-		else if (flowAction==2)
-		  model.addCutGenerator(&flowGen,-99,"FlowCover");
-		if (twomirAction==1)
-		  model.addCutGenerator(&twomirGen,-1,"TwoMirCuts",
-					true,false,false,-100,depthCriterion);
-		else if (twomirAction==2)
-		  model.addCutGenerator(&twomirGen,-99,"TwoMirCuts");
-	      OsiSolverInterface * solver = model.solver();
-#ifdef COIN_USE_CLP
-	      OsiClpSolverInterface * si =
-		dynamic_cast<OsiClpSolverInterface *>(solver) ;
-	      if (preSolve&&si != NULL) {
-		// get clp itself
-		ClpSimplex * modelC = si->getModelPtr();
-		if (si->messageHandler()->logLevel())
-		  si->messageHandler()->setLogLevel(1);
-		if (modelC->tightenPrimalBounds()!=0) {
-		  std::cout<<"Problem is infeasible!"<<std::endl;
-		  break;
-		}
-		model.initialSolve();
-		// bounds based on continuous
-		if (tightenFactor) {
-		  if (modelC->tightenPrimalBounds(tightenFactor)!=0) {
-		    std::cout<<"Problem is infeasible!"<<std::endl;
-		    break;
-		  }
-		}
-		if (gapRatio<1.0e100) {
-		  double value = si->getObjValue();
-		  double value2 = gapRatio*(1.0e-5+fabs(value));
-		  model.setAllowableGap(value2);
-		  model.setAllowableFractionGap(gapRatio);
-		  std::cout<<"Continuous "<<value
-			   <<", so allowable gap set to "<<value2<<std::endl;
-		}
-		if (djFix<1.0e20) {
-		  // do some fixing
-		  int numberColumns = modelC->numberColumns();
-		  int i;
-		  const char * type = modelC->integerInformation();
-		  double * lower = modelC->columnLower();
-		  double * upper = modelC->columnUpper();
-		  double * solution = modelC->primalColumnSolution();
-		  double * dj = modelC->dualColumnSolution();
-		  for (i=0;i<numberColumns;i++) {
-		    if (type[i]) {
-		      double value = solution[i];
-		      if (value<lower[i]+1.0e-5&&dj[i]>djFix) {
-			solution[i]=lower[i];
-			upper[i]=lower[i];
-		      } else if (value>upper[i]-1.0e-5&&dj[i]<-djFix) {
-			solution[i]=upper[i];
-			lower[i]=upper[i];
-		      }
-		    }
-		  }
-		}
-		{
-		  // integer presolve
-		  if (si->messageHandler()->logLevel())
-		    si->messageHandler()->setLogLevel(si->messageHandler()->logLevel()-1);
-		  CbcModel * model2 = model.integerPresolve();
-		  if (model2) {
-		    // Do complete search
-		    
-		    CbcRounding heuristic1(*model2);
-		    if (useRounding)
-		      model2->addHeuristic(&heuristic1);
-		    OsiClpSolverInterface * si =
-		      dynamic_cast<OsiClpSolverInterface *>(model2->solver()) ;
-		    if (si->messageHandler()->logLevel())
-		      si->messageHandler()->setLogLevel(si->messageHandler()->logLevel()-1);
-		    CoinSighandler_t saveSignal=SIG_DFL;
-		    currentBranchModel = model2;
-		    // register signal handler
-		    saveSignal = signal(SIGINT,signal_handler);
-		    model2->branchAndBound() ;
-		    signal(SIGINT,saveSignal);
-		    currentBranchModel = NULL;
-		    // get back solution
-		    model.originalModel(model2,false);
-		    delete model2;
-		  } else {
-		    // infeasible
-		    exit(1);
-		  }
-		}
-	      } else
-#endif
-	      { if (model.solver()->messageHandler()->logLevel())
-		  model.solver()->messageHandler()->setLogLevel(1) ;
-		model.initialSolve() ;
-		if (gapRatio < 1.0e100)
-		{ double value = model.solver()->getObjValue() ;
-		  double value2 = gapRatio*(1.0e-5+fabs(value)) ;
-		  model.setAllowableGap(value2) ;
-		  std::cout << "Continuous " << value
-			    << ", so allowable gap set to "
-			    << value2 << std::endl ; }
-		CbcRounding heuristic1(model) ;
-		if (useRounding)
-		  model.addHeuristic(&heuristic1) ;
-		if (model.solver()->messageHandler()->logLevel())
-		  model.solver()->messageHandler()->setLogLevel(model.solver()->messageHandler()->logLevel()-1);
-		parameters[slog].setIntValue(parameters[slog].intValue()-1);
-		CoinSighandler_t saveSignal=SIG_DFL;
-		currentBranchModel = &model;
-		// register signal handler
-		saveSignal = signal(SIGINT,signal_handler);
-		model.branchAndBound() ;
-		signal(SIGINT,saveSignal);
-		currentBranchModel = NULL;
-		model.solver()->messageHandler()->setLogLevel(parameters[slog].intValue());
-	      }
-		if (model.bestSolution())
-		  { std::cout << "Optimal solution "
-			      << model.solver()->getObjValue() << std::endl ; }
-		else
-		  { std::cout << "No integer solution found." << std::endl ; }
-		
-		time2 = CoinCpuTime() ;
-		totalTime += time2-time1 ;
-		std::cout << "Result " << model.solver()->getObjValue()
-			  << " took " << time2-time1 << " seconds - total "
-			  << totalTime << std::endl ;
-		time1 = time2 ; 
-                // Get solver again
-#ifdef COIN_USE_CLP
-                OsiClpSolverInterface * clpSolver = dynamic_cast< OsiClpSolverInterface*> (model.solver());
-                lpSolver = clpSolver->getModelPtr();
-#endif
+            if (goodModel) {
+              // If user made settings then use them
+              if (!defaultSettings) {
+                OsiSolverInterface * solver = model.solver();
+                if (!doScaling)
+                  solver->setHintParam(OsiDoScale,false,OsiHintTry);
+                OsiClpSolverInterface * si =
+                  dynamic_cast<OsiClpSolverInterface *>(solver) ;
+                assert (si != NULL);
+                // get clp itself
+                ClpSimplex * modelC = si->getModelPtr();
+                if (si->messageHandler()->logLevel())
+                  si->messageHandler()->setLogLevel(1);
+                if (modelC->tightenPrimalBounds()!=0) {
+                  std::cout<<"Problem is infeasible!"<<std::endl;
+                  break;
+                }
+                model.initialSolve();
+                // bounds based on continuous
+                if (tightenFactor) {
+                  if (modelC->tightenPrimalBounds(tightenFactor)!=0) {
+                    std::cout<<"Problem is infeasible!"<<std::endl;
+                    break;
+                  }
+                }
+                if (djFix<1.0e20) {
+                  // do some fixing
+                  int numberColumns = modelC->numberColumns();
+                  int i;
+                  const char * type = modelC->integerInformation();
+                  double * lower = modelC->columnLower();
+                  double * upper = modelC->columnUpper();
+                  double * solution = modelC->primalColumnSolution();
+                  double * dj = modelC->dualColumnSolution();
+                  int numberFixed=0;
+                  for (i=0;i<numberColumns;i++) {
+                    if (type[i]) {
+                      double value = solution[i];
+                      if (value<lower[i]+1.0e-5&&dj[i]>djFix) {
+                        solution[i]=lower[i];
+                        upper[i]=lower[i];
+                        numberFixed++;
+                      } else if (value>upper[i]-1.0e-5&&dj[i]<-djFix) {
+                        solution[i]=upper[i];
+                        lower[i]=upper[i];
+                        numberFixed++;
+                      }
+                    }
+                  }
+                  printf("%d columns fixed\n",numberFixed);
+                }
+              }
+              // See if we want preprocessing
+              OsiSolverInterface * saveSolver=NULL;
+              CglPreProcess process;
+              if (preProcess) {
+                saveSolver=model.solver()->clone();
+                /* Do not try and produce equality cliques and
+                   do up to 10 passes */
+                OsiSolverInterface * solver2 = process.preProcess(*saveSolver,false,10);
+                if (!solver2) {
+                  printf("Pre-processing says infeasible\n");
+                  break;
+                } else {
+                  printf("processed model has %d rows and %d columns\n",
+                         solver2->getNumRows(),solver2->getNumCols());
+                }
+                //solver2->resolve();
+                // we have to keep solver2 so pass clone
+                solver2 = solver2->clone();
+                model.assignSolver(solver2);
+                model.initialSolve();
+              }
+              CbcRounding heuristic1(model);
+              if (useRounding)
+                model.addHeuristic(&heuristic1) ;
+              // add cut generators if wanted
+              if (probingAction==1)
+                model.addCutGenerator(&probingGen,-1,"Probing");
+              else if (probingAction==2)
+                model.addCutGenerator(&probingGen,-99,"Probing");
+              if (gomoryAction==1)
+                model.addCutGenerator(&gomoryGen,-1,"Gomory");
+              else if (gomoryAction==2)
+                model.addCutGenerator(&gomoryGen,-99,"Gomory");
+              if (knapsackAction==1)
+                model.addCutGenerator(&knapsackGen,-1,"Knapsack");
+              else if (knapsackAction==2)
+                model.addCutGenerator(&knapsackGen,-99,"Knapsack");
+              if (redsplitAction==1)
+                model.addCutGenerator(&redsplitGen,-1,"Reduce-and-split");
+              else if (redsplitAction==2)
+                model.addCutGenerator(&redsplitGen,-99,"Reduce-and-split");
+              if (cliqueAction==1)
+                model.addCutGenerator(&cliqueGen,-1,"Clique");
+              else if (cliqueAction==2)
+                model.addCutGenerator(&cliqueGen,-99,"Clique");
+              if (mixedAction==1)
+                model.addCutGenerator(&mixedGen,-1,"MixedintegerRounding");
+              else if (mixedAction==2)
+                model.addCutGenerator(&mixedGen,-99,"MixedintegerRounding");
+              if (flowAction==1)
+                model.addCutGenerator(&flowGen,-1,"FlowCover");
+              else if (flowAction==2)
+                model.addCutGenerator(&flowGen,-99,"FlowCover");
+              if (twomirAction==1)
+                model.addCutGenerator(&twomirGen,-1,"TwoMirCuts");
+              else if (twomirAction==2)
+                model.addCutGenerator(&twomirGen,-99,"TwoMirCuts");
+              // Say we want timings
+              int numberGenerators = model.numberCutGenerators();
+              int iGenerator;
+              for (iGenerator=0;iGenerator<numberGenerators;iGenerator++) {
+                CbcCutGenerator * generator = model.cutGenerator(iGenerator);
+                generator->setTiming(true);
+              }
+              // Could tune more
+              model.setMinimumDrop(min(1.0,
+                                        fabs(model.getMinimizationObjValue())*1.0e-3+1.0e-4));
+              
+              if (model.getNumCols()<500)
+                model.setMaximumCutPassesAtRoot(-100); // always do 100 if possible
+              else if (model.getNumCols()<5000)
+                model.setMaximumCutPassesAtRoot(100); // use minimum drop
+              else
+                model.setMaximumCutPassesAtRoot(20);
+              model.setMaximumCutPasses(2);
+              
+              // Do more strong branching if small
+              if (model.getNumCols()<5000)
+                model.setNumberStrong(20);
+              // Switch off strong branching if wanted
+              //if (model.getNumCols()>10*model.getNumRows())
+              //model.setNumberStrong(0);
+              model.messageHandler()->setLogLevel(parameters[log].intValue());
+              if (model.getNumCols()>2000||model.getNumRows()>1500||
+                  model.messageHandler()->logLevel()>1)
+                model.setPrintFrequency(100);
+              
+              model.solver()->setIntParam(OsiMaxNumIterationHotStart,100);
+              OsiClpSolverInterface * osiclp = dynamic_cast< OsiClpSolverInterface*> (model.solver());
+              // Turn this off if you get problems
+              // Used to be automatically set
+              osiclp->setSpecialOptions(128);
+              // go faster stripes
+              if (osiclp->getNumRows()<300&&osiclp->getNumCols()<500) {
+                osiclp->setupForRepeatedUse(2,0);
+              }
+              if (gapRatio < 1.0e100) {
+                double value = model.solver()->getObjValue() ;
+                double value2 = gapRatio*(1.0e-5+fabs(value)) ;
+                model.setAllowableGap(value2) ;
+                std::cout << "Continuous " << value
+                          << ", so allowable gap set to "
+                          << value2 << std::endl ;
+              }
+              currentBranchModel = &model;
+              model.branchAndBound();
+              currentBranchModel = NULL;
+              time2 = CoinCpuTime();
+              totalTime += time2-time1;
+              if (model.getMinimizationObjValue()<1.0e50) {
+                // post process
+                if (preProcess) {
+                  process.postProcess(*model.solver());
+                  // Solution now back in saveSolver
+                  model.assignSolver(saveSolver);
+                  clpSolver = dynamic_cast< OsiClpSolverInterface*> (model.solver());
+                  lpSolver = clpSolver->getModelPtr();
+                }
+              }
+              std::cout<<"Result "<<model.getObjValue()<<
+                " iterations "<<model.getIterationCount()<<
+                " nodes "<<model.getNodeCount()<<
+                " took "<<time2-time1<<" seconds - total "<<totalTime<<std::endl;
+              time1 = time2;
+            } else {
+              std::cout << "** Current model not valid" << std::endl ; 
             }
-	  else
-	    { std::cout << "** Current model not valid" << std::endl ; }
-	  break ; }
+            break ;
 	  case IMPORT:
 	    {
 	      // get next field
@@ -1006,6 +1040,13 @@ int main (int argc, const char *argv[])
 						   keepImportNames!=0,
 						   allowImportErrors!=0);
 		if (!status||(status>0&&allowImportErrors)) {
+                  if (keepImportNames) {
+                    lengthName = lpSolver->lengthNames();
+                    rowNames = *(lpSolver->rowNames());
+                    columnNames = *(lpSolver->columnNames());
+                  } else {
+                    lengthName=0;
+                  }
 		  goodModel=true;
 		  //Set integers in clpsolver
 		  const char * info = lpSolver->integerInformation();
@@ -1609,14 +1650,6 @@ clp watson.mps -\nscaling off\nprimalsimplex"
 		// make fancy later on
 		int iRow;
 		int numberRows=lpSolver->numberRows();
-		int lengthName = lpSolver->lengthNames(); // 0 if no names
-		// in general I don't want to pass around massive
-		// amounts of data but seems simpler here
-		std::vector<std::string> rowNames =
-		  *(lpSolver->rowNames());
-		std::vector<std::string> columnNames =
-		  *(lpSolver->columnNames());
-
 		double * dualRowSolution = lpSolver->dualRowSolution();
 		double * primalRowSolution = 
 		  lpSolver->primalRowSolution();

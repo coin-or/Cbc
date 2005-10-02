@@ -709,6 +709,10 @@ CbcOrClpParam::setIntParameter (CbcModel &model,int value)
       oldValue=model.numberStrong();
       model.setNumberStrong(value);
       break;
+    case NUMBERBEFORE:
+      oldValue=model.numberBeforeTrust();
+      model.setNumberBeforeTrust(value);
+      break;
     default:
       oldValue=0; // to avoid compiler message
       break;
@@ -734,6 +738,9 @@ CbcOrClpParam::intParameter (CbcModel &model) const
     break;
   case STRONGBRANCHING:
     value=model.numberStrong();
+    break;
+  case NUMBERBEFORE:
+    value=model.numberBeforeTrust();
     break;
   default:
     abort();
@@ -1040,25 +1047,28 @@ the main thing is to think about which cuts to apply.  .. expand ..."
     CbcOrClpParam("chol!esky","Which cholesky algorithm",
 		  "native",CHOLESKY,false);
   parameters[numberParameters-1].append("dense");
-#ifdef FOREIGN_BARRIER
+  //#ifdef FOREIGN_BARRIER
 #ifdef WSSMP_BARRIER
   parameters[numberParameters-1].append("fudge!Long");
   parameters[numberParameters-1].append("wssmp");
+#define REAL_BARRIER
 #else
   parameters[numberParameters-1].append("fudge!Long_dummy");
   parameters[numberParameters-1].append("wssmp_dummy");
 #endif
 #ifdef UFL_BARRIER
   parameters[numberParameters-1].append("Uni!versityOfFlorida");
+#define REAL_BARRIER
 #else
   parameters[numberParameters-1].append("Uni!versityOfFlorida_dummy");
 #endif
 #ifdef TAUCS_BARRIER
   parameters[numberParameters-1].append("Taucs");
+#define REAL_BARRIER
 #else
   parameters[numberParameters-1].append("Taucs_dummy");
 #endif
-#endif
+  //#endif
 #ifdef COIN_USE_CBC
   parameters[numberParameters++]=
     CbcOrClpParam("clique!Cuts","Whether to use Clique cuts",
@@ -1086,6 +1096,8 @@ the main thing is to think about which cuts to apply.  .. expand ..."
   parameters[numberParameters-1].append("on");
   parameters[numberParameters-1].append("so!low_halim");
   parameters[numberParameters-1].append("ha!lim_solow(JJF mods)");
+  parameters[numberParameters-1].append("4");
+  parameters[numberParameters-1].append("5");
   parameters[numberParameters-1].setLonghelp
     (
      "If crash is set on and there is an all slack basis then Clp will flip or put structural\
@@ -1156,6 +1168,13 @@ gap between bounds exceeds this value",
  adjust bounds, maybe we need that here."
      );
   parameters[numberParameters++]=
+    CbcOrClpParam("dualize","Solves dual reformulation",
+		  0,1,DUALIZE,false);
+  parameters[numberParameters-1].setLonghelp
+    (
+     "Don't even think about it."
+     ); 
+  parameters[numberParameters++]=
     CbcOrClpParam("dualP!ivot","Dual pivot choice algorithm",
 		  "auto!matic",DUALPIVOT);
   parameters[numberParameters-1].append("dant!zig");
@@ -1189,6 +1208,16 @@ no dual infeasibility may exceed this value",
      "Normally the default tolerance is fine, but you may want to increase it a\
  bit if a dual run seems to be having a hard time"
      ); 
+#ifdef COIN_USE_CLP
+  parameters[numberParameters++]=
+    CbcOrClpParam("either!Simplex","Do dual or primal simplex algorithm",
+		  EITHERSIMPLEX);
+  parameters[numberParameters-1].setLonghelp
+    (
+     "This command solves the current model using the dual or primal algorithm,\
+ based on a dubious analysis of model."
+     );
+#endif 
   parameters[numberParameters++]=
     CbcOrClpParam("end","Stops clp execution",
 		  EXIT);
@@ -1277,7 +1306,7 @@ give cuts (although in this executable they are limited as to number of variable
 #ifdef COIN_USE_CLP
   parameters[numberParameters++]=
     CbcOrClpParam("idiot!Crash","Whether to try idiot crash",
-		  -1,200,IDIOT);
+		  -1,999999,IDIOT);
   parameters[numberParameters-1].setLonghelp
     (
      "This is a type of 'crash' which works well on some homogeneous problems.\
@@ -1447,10 +1476,10 @@ but this program turns this off to make it look more friendly.  It can be useful
 #ifdef COIN_USE_CLP
   parameters[numberParameters++]=
     CbcOrClpParam("netlib","Solve entire netlib test set",
-		  NETLIB_DUAL);
+		  NETLIB_EITHER);
   parameters[numberParameters-1].setLonghelp
     (
-     "This exercises the unit test for clp and then solves the netlib test set using dual.\
+     "This exercises the unit test for clp and then solves the netlib test set using dual or primal.\
 The user can set options before e.g. clp -presolve off -netlib"
      ); 
 #ifdef REAL_BARRIER
@@ -1460,9 +1489,17 @@ The user can set options before e.g. clp -presolve off -netlib"
   parameters[numberParameters-1].setLonghelp
     (
      "This exercises the unit test for clp and then solves the netlib test set using barrier.\
-The user can set options before e.g. clp -presolve off -netlib"
+The user can set options before e.g. clp -kkt on -netlib"
      ); 
 #endif
+  parameters[numberParameters++]=
+    CbcOrClpParam("netlibD!ual","Solve entire netlib test set (dual)",
+		  NETLIB_DUAL);
+  parameters[numberParameters-1].setLonghelp
+    (
+     "This exercises the unit test for clp and then solves the netlib test set using dual.\
+The user can set options before e.g. clp -presolve off -netlib"
+     ); 
   parameters[numberParameters++]=
     CbcOrClpParam("netlibP!rimal","Solve entire netlib test set (primal)",
 		  NETLIB_PRIMAL);
@@ -1470,6 +1507,16 @@ The user can set options before e.g. clp -presolve off -netlib"
     (
      "This exercises the unit test for clp and then solves the netlib test set using primal.\
 The user can set options before e.g. clp -presolve off -netlibp"
+     ); 
+  parameters[numberParameters++]=
+    CbcOrClpParam("netlibT!une","Solve entire netlib test set with 'best' algorithm",
+		  NETLIB_TUNE);
+  parameters[numberParameters-1].setLonghelp
+    (
+     "This exercises the unit test for clp and then solves the netlib test set using whatever \
+works best.  I know this is cheating but it also stresses the code better by doing a \
+mixture of stuff.  The best algorithm was chosen on a Linux ThinkPad using native cholesky \
+with University of Florida ordering."
      ); 
   parameters[numberParameters++]=
     CbcOrClpParam("network","Tries to make network matrix",
@@ -1491,17 +1538,6 @@ specialized network code."
      ); 
   parameters[numberParameters-1].setDoubleValue(1.0);
 #endif
-#ifdef COIN_USE_CBC
-    parameters[numberParameters++]=
-      CbcOrClpParam("oddhole!Cuts","Whether to use Oddhole cuts",
-	      "off",ODDHOLECUTS);
-    parameters[numberParameters-1].append("on");
-    parameters[numberParameters-1].append("root");
-  parameters[numberParameters-1].setLonghelp
-    (
-     "TODO"
-     ); 
-#endif
   parameters[numberParameters++]=
     CbcOrClpParam("output!Format","Which output format to use",
 		  1,6,OUTPUTFORMAT);
@@ -1517,7 +1553,7 @@ values, 2 saves values, 3 with greater accuracy and 4 in IEEE."
 #ifdef COIN_USE_CLP
   parameters[numberParameters++]=
     CbcOrClpParam("passP!resolve","How many passes in presolve",
-		  0,100,PRESOLVEPASS,false);
+		  -200,100,PRESOLVEPASS,false);
   parameters[numberParameters-1].setLonghelp
     (
      "Normally Presolve does 5 passes but you may want to do less to make it\
@@ -1571,6 +1607,16 @@ values, 2 saves values, 3 with greater accuracy and 4 in IEEE."
  which fix some variables, equations which can be transformed into bounds etc etc.  For the\
  initial solve of any problem this is worth doing unless you know that it will have no effect."
      ); 
+#ifdef COIN_USE_CBC
+  parameters[numberParameters++]=
+    CbcOrClpParam("preprocess","Whether to use integer preprocessing",
+                  "on",PREPROCESS);
+  parameters[numberParameters-1].append("off");
+  parameters[numberParameters-1].setLonghelp
+    (
+     "TODO"
+     ); 
+#endif
 #ifdef COIN_USE_CLP
   parameters[numberParameters++]=
     CbcOrClpParam("primalP!ivot","Primal pivot choice algorithm",
@@ -1651,6 +1697,19 @@ costs this much to be infeasible",
   parameters[numberParameters++]=
     CbcOrClpParam("reallyS!cale","Scales model in place",
 		  REALLY_SCALE,false);
+#endif
+#ifdef COIN_USE_CBC
+    parameters[numberParameters++]=
+      CbcOrClpParam("reduce!AndSplitCuts","Whether to use Reduce-and-Split cuts",
+	      "off",REDSPLITCUTS);
+    parameters[numberParameters-1].append("on");
+    parameters[numberParameters-1].append("root");
+  parameters[numberParameters-1].setLonghelp
+    (
+     "TODO"
+     ); 
+#endif
+#ifdef COIN_USE_CLP
   parameters[numberParameters++]=
     CbcOrClpParam("restore!Model","Restore model from binary file",
 		  RESTORE);
@@ -1763,7 +1822,7 @@ the main thing is to think about which cuts to apply.  .. expand ..."
 		  "on",SPARSEFACTOR,0,false);
   parameters[numberParameters-1].append("off");
   parameters[numberParameters++]=
-    CbcOrClpParam("special!Options","Dubious options for Simplex - see Clpsimplex.hpp",
+    CbcOrClpParam("special!Options","Dubious options for Simplex - see ClpSimplex.hpp",
 		  0,INT_MAX,SPECIALOPTIONS,false);
   parameters[numberParameters++]=
     CbcOrClpParam("sprint!Crash","Whether to try sprint crash",
@@ -1775,6 +1834,15 @@ the main thing is to think about which cuts to apply.  .. expand ..."
  an LP code of that name of the 60's which tried the same tactic (not totally successfully).\
   Cplex calls it 'sifting'.  -1 is automatic choice, 0 is off, n is number of passes"
      ); 
+  parameters[numberParameters++]=
+    CbcOrClpParam("stat!istics","Print some statistics",
+		  STATISTICS);
+  parameters[numberParameters-1].setLonghelp
+    (
+     "This command prints crude statistics for the current model.\
+ If log level >1 then more is printed.\
+ These are for presolved model if presolve on (and unscaled)."
+     );
 #endif
   CbcOrClpParam("stdin","From stdin",
 		STDIN,-1,false);
@@ -1793,6 +1861,19 @@ the main thing is to think about which cuts to apply.  .. expand ..."
     (
      "TODO"
      ); 
+#endif
+#ifdef COIN_USE_CLP
+  parameters[numberParameters++]=
+    CbcOrClpParam("subs!titution","How long a column to substitute for in presolve",
+		  0,10000,SUBSTITUTION,false);
+  parameters[numberParameters-1].setLonghelp
+    (
+     "Normally Presolve gets rid of 'free' variables when there are no more than 3 \
+ variables in column.  If you increase this the number of rows may decrease but number of \
+ elements may increase."
+     ); 
+#endif
+#ifdef COIN_USE_CBC
   parameters[numberParameters++]=
     CbcOrClpParam("tighten!Factor","Tighten bounds using this times largest \
 activity at continuous solution",
@@ -1809,6 +1890,15 @@ activity at continuous solution",
   parameters[numberParameters++]=
     CbcOrClpParam("tightLP","Poor person's preSolve for now",
 		  TIGHTEN,-1,false);
+#endif
+#ifdef COIN_USE_CBC
+  parameters[numberParameters++]=
+    CbcOrClpParam("trust!PseudoCosts","Number of branches before we trust pseudocosts",
+		  0,999999,NUMBERBEFORE);
+  parameters[numberParameters-1].setLonghelp
+    (
+     "TODO"
+     ); 
 #endif
 #ifdef COIN_USE_CBC
   parameters[numberParameters++]=

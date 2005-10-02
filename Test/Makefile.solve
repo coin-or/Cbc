@@ -36,8 +36,11 @@ LibDir += ${OsiClpLibDir} ${ClpLibDir}
 LibDir += ${OsiLibDir} ${CoinLibDir}
 LibDir += ${bzlibLibDir} ${zlibLibDir} $(lapackLibDir)
 
-LibName := ${CbcLibName} ${CglLibName}
+LibName := $(OsiCbcLibName) ${CbcLibName} ${CglLibName}
 LibName += ${OsiClpLibName} ${ClpLibName}
+ifeq ($(VolDefine),COIN_HAS_VOL)
+LibName += $(VolLibName)
+endif
 #LibName += ${OsiDylpLibName} ${DylpLibName}
 LibName += ${OsiLibName} ${CoinLibName} 
 LibName += ${bzlibLibName} ${zlibLibName} $(lapackLibName) $(readlineLibName)

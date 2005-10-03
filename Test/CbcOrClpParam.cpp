@@ -22,7 +22,12 @@
 #include <readline/readline.h>
 #include <readline/history.h>
 #endif
-
+#ifdef COIN_OSI_HAS_CLP
+// from CoinSolve
+static char coin_prompt[]="Coin:";
+#else
+static char coin_prompt[]="Clp:";
+#endif
 //#############################################################################
 // Constructors / Destructor / Assignment
 //#############################################################################
@@ -428,9 +433,11 @@ CbcOrClpParam::setDoubleParameter (ClpSimplex * model,double value)
     case PRIMALWEIGHT:
       model->setInfeasibilityCost(value);
       break;
+#ifndef COIN_USE_CBC
     case TIMELIMIT:
       model->setMaximumSeconds(value);
       break;
+#endif
     case OBJSCALE:
       model->setObjectiveScale(value);
       break;
@@ -462,9 +469,11 @@ CbcOrClpParam::doubleParameter (ClpSimplex * model) const
   case PRIMALWEIGHT:
     value=model->infeasibilityCost();
     break;
+#ifndef COIN_USE_CBC
   case TIMELIMIT:
     value=model->maximumSeconds();
     break;
+#endif
   case OBJSCALE:
     value=model->objectiveScale();
     break;
@@ -636,10 +645,14 @@ CbcOrClpParam::setDoubleParameter (CbcModel &model,double value)
       oldValue=model.getDblParam(CbcModel::CbcAllowableGap);
       model.setDblParam(CbcModel::CbcAllowableGap,value);
       break;
-    case TIMELIMIT:
-    { oldValue = model.getDblParam(CbcModel::CbcMaximumSeconds) ;
+    case CUTOFF:
+      oldValue=model.getCutoff();
+      model.setCutoff(value);
+      break;
+    case TIMELIMIT_BAB:
+      oldValue = model.getDblParam(CbcModel::CbcMaximumSeconds) ;
       model.setDblParam(CbcModel::CbcMaximumSeconds,value) ;
-      break ; }
+      break ;
     case DUALTOLERANCE:
     case PRIMALTOLERANCE:
       setDoubleParameter(model.solver(),value);
@@ -669,9 +682,12 @@ CbcOrClpParam::doubleParameter (CbcModel &model) const
   case ALLOWABLEGAP:
     value=model.getDblParam(CbcModel::CbcAllowableGap);
     break;
-  case TIMELIMIT:
-  { value = model.getDblParam(CbcModel::CbcMaximumSeconds) ;
-    break ; }
+  case CUTOFF:
+    value=model.getCutoff();
+    break;
+  case TIMELIMIT_BAB:
+    value = model.getDblParam(CbcModel::CbcMaximumSeconds) ;
+    break ;
   case DUALTOLERANCE:
   case PRIMALTOLERANCE:
     value=doubleParameter(model.solver());
@@ -748,6 +764,14 @@ CbcOrClpParam::intParameter (CbcModel &model) const
   return value;
 }
 #endif
+// Sets current parameter option using string
+void 
+CbcOrClpParam::setCurrentOption ( const std::string value )
+{
+  int action = parameterOption(value);
+  if (action>=0)
+    currentKeyWord_=action;
+}
 void 
 CbcOrClpParam::setIntValue ( int value )
 { 
@@ -789,7 +813,7 @@ CoinReadNextField()
 #ifdef COIN_USE_READLINE     
     if (CbcOrClpReadCommand==stdin) {
       // Get a line from the user. 
-      where = readline ("Clp:");
+      where = readline (coin_prompt);
       
       // If the line has any text in it, save it on the history.
       if (where) {
@@ -803,7 +827,7 @@ CoinReadNextField()
     }
 #else
     if (CbcOrClpReadCommand==stdin) {
-      fprintf(stdout,"Clp:");
+      fprintf(stdout,coin_prompt);
       fflush(stdout);
     }
     where = fgets(line,1000,CbcOrClpReadCommand);
@@ -971,9 +995,11 @@ establishParams (int &numberParameters, CbcOrClpParam *const parameters)
       CbcOrClpParam("allow!ableGap","Stop when gap between best possible and \
 best less than this",
 	      0.0,1.0e20,ALLOWABLEGAP);
+  parameters[numberParameters-1].setDoubleValue(0.0);
   parameters[numberParameters-1].setLonghelp
     (
-     "TODO"
+     "If the gap between best solution and best possible solution is less than this \
+then the search will be terminated"
      ); 
 #endif
 #ifdef COIN_USE_CLP
@@ -1077,7 +1103,7 @@ the main thing is to think about which cuts to apply.  .. expand ..."
   parameters[numberParameters-1].append("root");
   parameters[numberParameters-1].setLonghelp
     (
-     "TODO"
+     "This switches on clique cuts (either at roor or in entire tree)"
      ); 
   parameters[numberParameters++]=
     CbcOrClpParam("cost!Strategy","How to use costs",
@@ -1086,7 +1112,7 @@ the main thing is to think about which cuts to apply.  .. expand ..."
   parameters[numberParameters-1].append("pseudo!costs(not implemented yet)");
   parameters[numberParameters-1].setLonghelp
     (
-     "TODO"
+     "This orders the variables in order of their absolute costs - with largest cost ones being branched on first"
      ); 
 #endif
 #ifdef COIN_USE_CLP
@@ -1128,9 +1154,17 @@ presolve as well) - the option maybe does this."
 and on.  If they are done every node then that is that, but it may be worth doing them \
 every so often.  The original method was every so many node but it may be more logical \
 to do it whenever depth in tree is a multiple of K.  This option does that and defaults \
-to 5."
+to -1 (off)."
      );
-  parameters[numberParameters-1].setIntValue(5);
+  parameters[numberParameters-1].setIntValue(-1);
+  parameters[numberParameters++]=
+    CbcOrClpParam("cuto!ff","All solutions must be better than this",
+		  -1.0e60,1.0e60,CUTOFF);
+  parameters[numberParameters-1].setDoubleValue(1.0e50);
+  parameters[numberParameters-1].setLonghelp
+    (
+     "All solutions must be better than this value (in a minimization sense)."
+     );
 #endif 
   parameters[numberParameters++]=
     CbcOrClpParam("direction","Minimize or Maximize",
@@ -1262,7 +1296,8 @@ reduced costs greater than this",
 		  -1.0e20,1.0e20,DJFIX,false);
   parameters[numberParameters-1].setLonghelp
     (
-     "TODO"
+     "If this is set integer variables with reduced costs greater than this will be fixed \
+before branch and bound - use with extreme caution!" 
      ); 
     parameters[numberParameters++]=
       CbcOrClpParam("flow!CoverCuts","Whether to use Flow Cover cuts",
@@ -1271,7 +1306,7 @@ reduced costs greater than this",
     parameters[numberParameters-1].append("root");
   parameters[numberParameters-1].setLonghelp
     (
-     "TODO"
+     "This switches on flow cover cuts (either at roor or in entire tree)"
      ); 
 #endif
   parameters[numberParameters++]=
@@ -1284,9 +1319,11 @@ reduced costs greater than this",
     CbcOrClpParam("gap!Ratio","Stop when gap between best possible and \
 best less than this fraction of larger of two",
 		  0.0,1.0e20,GAPRATIO);
+  parameters[numberParameters-1].setDoubleValue(0.0);
   parameters[numberParameters-1].setLonghelp
     (
-     "TODO"
+     "If the gap between best solution and best possible solution is less than this fraction \
+of the objective value at the root node then the search will terminate"
      ); 
   parameters[numberParameters++]=
     CbcOrClpParam("gomory!Cuts","Whether to use Gomory cuts",
@@ -1332,7 +1369,8 @@ much better than last integer solution",
 		  -1.0e20,1.0e20,INCREMENT);
   parameters[numberParameters-1].setLonghelp
     (
-     "TODO"
+     "Whenever a solution is found the bound on solutions is set to solution (in a minimization\
+sense) plus this.  Becareful if you set this negative"
      ); 
   parameters[numberParameters++]=
     CbcOrClpParam("inf!easibilityWeight","Each integer infeasibility is expected \
@@ -1340,14 +1378,15 @@ to cost this much",
 		  0.0,1.0e20,INFEASIBILITYWEIGHT);
   parameters[numberParameters-1].setLonghelp
     (
-     "TODO"
+     "A crude way of deciding which node to explore next.  Satisfying each integer infeasibility is \
+expected to cost this much."
      ); 
   parameters[numberParameters++]=
     CbcOrClpParam("initialS!olve","Solve to continuous",
 		  SOLVECONTINUOUS);
   parameters[numberParameters-1].setLonghelp
     (
-     "TODO"
+     "This just solves the problem to continuous - without adding any cuts"
      ); 
   parameters[numberParameters++]=
     CbcOrClpParam("integerT!olerance","For an optimal solution \
@@ -1355,7 +1394,7 @@ no integer variable may be this away from an integer value",
 	      1.0e-20,0.5,INTEGERTOLERANCE);
   parameters[numberParameters-1].setLonghelp
     (
-     "TODO"
+     "The short help says it all"
      ); 
 #endif 
 #ifdef COIN_USE_CLP
@@ -1380,7 +1419,7 @@ no integer variable may be this away from an integer value",
   parameters[numberParameters-1].append("root");
   parameters[numberParameters-1].setLonghelp
     (
-     "TODO"
+     "This switches on knapsack cuts (either at roor or in entire tree)"
      ); 
 #endif
 #ifndef COIN_USE_CBC
@@ -1431,10 +1470,11 @@ stopping",
 #ifdef COIN_USE_CBC
   parameters[numberParameters++]=
     CbcOrClpParam("maxN!odes","Maximum number of nodes to do",
-		  1,999999,MAXNODES);
+		  1,99999999,MAXNODES);
   parameters[numberParameters-1].setLonghelp
     (
-     "TODO"
+     "This is a repeatable way to limit search.  Normally using time is easier \
+but then the results may not be repeatable."
      ); 
 #endif
   parameters[numberParameters++]=
@@ -1454,7 +1494,7 @@ You can also use the parameters 'direction minimize'."
   parameters[numberParameters-1].append("root");
   parameters[numberParameters-1].setLonghelp
     (
-     "TODO"
+     "This switches on mixed integer rounding cuts (either at roor or in entire tree)"
      ); 
 #endif 
   parameters[numberParameters++]=
@@ -1610,11 +1650,12 @@ values, 2 saves values, 3 with greater accuracy and 4 in IEEE."
 #ifdef COIN_USE_CBC
   parameters[numberParameters++]=
     CbcOrClpParam("preprocess","Whether to use integer preprocessing",
-                  "on",PREPROCESS);
-  parameters[numberParameters-1].append("off");
+                  "off",PREPROCESS);
+  parameters[numberParameters-1].append("on");
   parameters[numberParameters-1].setLonghelp
     (
-     "TODO"
+     "This tries to reduce size of model in a similar way to presolve and \
+it also tries to strengthen the model - needs more work but can be useful."
      ); 
 #endif
 #ifdef COIN_USE_CLP
@@ -1683,7 +1724,7 @@ costs this much to be infeasible",
   parameters[numberParameters-1].append("root");
   parameters[numberParameters-1].setLonghelp
     (
-     "TODO"
+     "This switches on probing cuts (either at roor or in entire tree)"
      ); 
 #endif
   parameters[numberParameters++]=
@@ -1706,7 +1747,7 @@ costs this much to be infeasible",
     parameters[numberParameters-1].append("root");
   parameters[numberParameters-1].setLonghelp
     (
-     "TODO"
+     "This switches on reduce and split  cuts (either at roor or in entire tree)"
      ); 
 #endif
 #ifdef COIN_USE_CLP
@@ -1743,7 +1784,7 @@ costs this much to be infeasible",
   parameters[numberParameters-1].append("on");
   parameters[numberParameters-1].setLonghelp
     (
-     "TODO"
+     "This switches on a simple (but effective) rounding heuristic at each node of tree."
      ); 
 #endif
   parameters[numberParameters++]=
@@ -1770,7 +1811,6 @@ costs this much to be infeasible",
  infeasibilities."
      ); 
   parameters[numberParameters-1].setCurrentOption(3); // say auto
-#ifndef COIN_USE_CBC
   parameters[numberParameters++]=
     CbcOrClpParam("sec!onds","maximum seconds",
 		  -1.0,1.0e12,TIMELIMIT);
@@ -1779,7 +1819,15 @@ costs this much to be infeasible",
      "After this many seconds clp will act as if maximum iterations had been reached.\
   In this program it is really only useful for testing but the library function\n\
       \tsetMaximumSeconds(value)\n can be useful."
-     ); 
+     );
+#ifdef COIN_USE_CBC
+  parameters[numberParameters++]=
+    CbcOrClpParam("sec!onds","maximum seconds",
+		  -1.0,1.0e12,TIMELIMIT_BAB);
+  parameters[numberParameters-1].setLonghelp
+    (
+     "After this many seconds coin solver will act as if maximum nodes had been reached."
+     );
 #endif
 #ifdef COIN_USE_CLP
   parameters[numberParameters++]=
@@ -1859,7 +1907,10 @@ the main thing is to think about which cuts to apply.  .. expand ..."
 		  0,999999,STRONGBRANCHING);
   parameters[numberParameters-1].setLonghelp
     (
-     "TODO"
+     "In order to decide which variable to branch on, the code will choose up to this number \
+of unsatisfied variables to do mini up and down branches on.  Then the most effective one is chosen. \
+If a variable is branched on many times then the previous average up and down costs may be used - \
+see number before trust."
      ); 
 #endif
 #ifdef COIN_USE_CLP
@@ -1878,12 +1929,9 @@ the main thing is to think about which cuts to apply.  .. expand ..."
     CbcOrClpParam("tighten!Factor","Tighten bounds using this times largest \
 activity at continuous solution",
 		  1.0,1.0e20,TIGHTENFACTOR,false);
-  parameters[numberParameters++] =
-    CbcOrClpParam("time!Limit","Set a time limit for solving this problem",
-		  -1.0,(double)(60*60*24*365*10),TIMELIMIT) ;
   parameters[numberParameters-1].setLonghelp
     (
-     "TODO"
+     "This sleazy trick can help on some problems."
      ); 
 #endif
 #ifdef COIN_USE_CLP
@@ -1897,7 +1945,8 @@ activity at continuous solution",
 		  0,999999,NUMBERBEFORE);
   parameters[numberParameters-1].setLonghelp
     (
-     "TODO"
+     "Using strong branching computes pseudo-costs.  After this many time sfor a variable we just \
+trust the pseudo costs and do not do any more strong branching."
      ); 
 #endif
 #ifdef COIN_USE_CBC
@@ -1908,7 +1957,7 @@ activity at continuous solution",
   parameters[numberParameters-1].append("root");
   parameters[numberParameters-1].setLonghelp
     (
-     "TODO"
+     "This switches on two phase mixed integer rounding  cuts (either at roor or in entire tree)"
      ); 
 #endif
   parameters[numberParameters++]=

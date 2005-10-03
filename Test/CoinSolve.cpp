@@ -111,6 +111,7 @@ int main (int argc, const char *argv[])
     // Set up all non-standard stuff
     OsiClpSolverInterface solver1;
     CbcModel model(solver1);
+    model.setNumberBeforeTrust(5);
     OsiSolverInterface * solver = model.solver();
     OsiClpSolverInterface * clpSolver = dynamic_cast< OsiClpSolverInterface*> (solver);
     ClpSimplex * lpSolver = clpSolver->getModelPtr();
@@ -133,65 +134,15 @@ int main (int argc, const char *argv[])
     int preSolve=5;
     int preProcess=1;
     bool preSolveFile=false;
-// Set up likely cut generators and defaults
-
-    CglGomory gomoryGen;
-    // try larger limit
-    gomoryGen.setLimit(300);
-    // set default action (0=off,1=on,2=root)
-    int gomoryAction=1;
-
-    CglProbing probingGen;
-    probingGen.setUsingObjective(true);
-    probingGen.setMaxPass(3);
-    probingGen.setMaxPassRoot(3);
-    // Number of unsatisfied variables to look at
-    probingGen.setMaxProbe(10);
-    probingGen.setMaxProbeRoot(50);
-    // How far to follow the consequences
-    probingGen.setMaxLook(10);
-    probingGen.setMaxLookRoot(50);
-    // Only look at rows with fewer than this number of elements
-    probingGen.setMaxElements(200);
-    probingGen.setRowCuts(3);
-    // set default action (0=off,1=on,2=root)
-    int probingAction=1;
-
-    CglKnapsackCover knapsackGen;
-    // set default action (0=off,1=on,2=root)
-    int knapsackAction=1;
-
-    CglRedSplit redsplitGen;
-    redsplitGen.setLimit(100);
-    // set default action (0=off,1=on,2=root)
-    int redsplitAction=1;
-
-    CglClique cliqueGen;
-    cliqueGen.setStarCliqueReport(false);
-    cliqueGen.setRowCliqueReport(false);
-    // set default action (0=off,1=on,2=root)
-    int cliqueAction=1;
-
-    CglMixedIntegerRounding mixedGen;
-    // set default action (0=off,1=on,2=root)
-    int mixedAction=1;
-
-    CglFlowCover flowGen;
-    // set default action (0=off,1=on,2=root)
-    int flowAction=1;
-
-    CglTwomir twomirGen;
-    // set default action (0=off,1=on,2=root)
-    int twomirAction=0;
-
-    bool useRounding=true;
    
     double djFix=1.0e100;
     double gapRatio=1.0e100;
     double tightenFactor=0.0;
     lpSolver->setPerturbation(50);
     lpSolver->messageHandler()->setPrefix(false);
-    std::string directory ="./";
+    const char dirsep =  CoinFindDirSeparator();
+    std::string directory = (dirsep == '/' ? "./" : ".\\");
+    std::string defaultDirectory = directory;
     std::string importFile ="";
     std::string exportFile ="default.mps";
     std::string importBasisFile ="";
@@ -225,9 +176,79 @@ int main (int argc, const char *argv[])
     parameters[whichParam(PRIMALWEIGHT,numberParameters,parameters)].setDoubleValue(lpSolver->infeasibilityCost());
     parameters[whichParam(RESTORE,numberParameters,parameters)].setStringValue(restoreFile);
     parameters[whichParam(SAVE,numberParameters,parameters)].setStringValue(saveFile);
-    parameters[whichParam(TIMELIMIT,numberParameters,parameters)].setDoubleValue(lpSolver->maximumSeconds());
+    parameters[whichParam(TIMELIMIT,numberParameters,parameters)].setDoubleValue(1.0e8);
+    parameters[whichParam(TIMELIMIT_BAB,numberParameters,parameters)].setDoubleValue(1.0e8);
     parameters[whichParam(SOLUTION,numberParameters,parameters)].setStringValue(solutionFile);
     parameters[whichParam(SPRINT,numberParameters,parameters)].setIntValue(doSprint);
+    model.setNumberBeforeTrust(5);
+    parameters[whichParam(NUMBERBEFORE,numberParameters,parameters)].setIntValue(5);
+    parameters[whichParam(MAXNODES,numberParameters,parameters)].setIntValue(model.getMaximumNodes());
+    parameters[whichParam(STRONGBRANCHING,numberParameters,parameters)].setIntValue(model.numberStrong());
+    parameters[whichParam(INFEASIBILITYWEIGHT,numberParameters,parameters)].setDoubleValue(model.getDblParam(CbcModel::CbcInfeasibilityWeight));
+    parameters[whichParam(INTEGERTOLERANCE,numberParameters,parameters)].setDoubleValue(model.getDblParam(CbcModel::CbcIntegerTolerance));
+    parameters[whichParam(INCREMENT,numberParameters,parameters)].setDoubleValue(model.getDblParam(CbcModel::CbcCutoffIncrement));
+    // Set up likely cut generators and defaults
+    parameters[whichParam(PREPROCESS,numberParameters,parameters)].setCurrentOption("on");
+
+    CglGomory gomoryGen;
+    // try larger limit
+    gomoryGen.setLimit(300);
+    // set default action (0=off,1=on,2=root)
+    int gomoryAction=1;
+    parameters[whichParam(GOMORYCUTS,numberParameters,parameters)].setCurrentOption("on");
+
+    CglProbing probingGen;
+    probingGen.setUsingObjective(true);
+    probingGen.setMaxPass(3);
+    probingGen.setMaxPassRoot(3);
+    // Number of unsatisfied variables to look at
+    probingGen.setMaxProbe(10);
+    probingGen.setMaxProbeRoot(50);
+    // How far to follow the consequences
+    probingGen.setMaxLook(10);
+    probingGen.setMaxLookRoot(50);
+    // Only look at rows with fewer than this number of elements
+    probingGen.setMaxElements(200);
+    probingGen.setRowCuts(3);
+    // set default action (0=off,1=on,2=root)
+    int probingAction=1;
+    parameters[whichParam(PROBINGCUTS,numberParameters,parameters)].setCurrentOption("on");
+
+    CglKnapsackCover knapsackGen;
+    // set default action (0=off,1=on,2=root)
+    int knapsackAction=1;
+    parameters[whichParam(KNAPSACKCUTS,numberParameters,parameters)].setCurrentOption("on");
+
+    CglRedSplit redsplitGen;
+    redsplitGen.setLimit(100);
+    // set default action (0=off,1=on,2=root)
+    // Off as seems to give some bad cuts
+    int redsplitAction=0;
+    parameters[whichParam(REDSPLITCUTS,numberParameters,parameters)].setCurrentOption("off");
+
+    CglClique cliqueGen;
+    cliqueGen.setStarCliqueReport(false);
+    cliqueGen.setRowCliqueReport(false);
+    // set default action (0=off,1=on,2=root)
+    int cliqueAction=1;
+    parameters[whichParam(CLIQUECUTS,numberParameters,parameters)].setCurrentOption("on");
+
+    CglMixedIntegerRounding mixedGen;
+    // set default action (0=off,1=on,2=root)
+    int mixedAction=1;
+    parameters[whichParam(MIXEDCUTS,numberParameters,parameters)].setCurrentOption("on");
+
+    CglFlowCover flowGen;
+    // set default action (0=off,1=on,2=root)
+    int flowAction=1;
+    parameters[whichParam(FLOWCUTS,numberParameters,parameters)].setCurrentOption("on");
+
+    CglTwomir twomirGen;
+    // set default action (0=off,1=on,2=root)
+    int twomirAction=0;
+
+    bool useRounding=true;
+    parameters[whichParam(ROUNDING,numberParameters,parameters)].setCurrentOption("on");
     
     // total number of commands read
     int numberGoodCommands=0;
@@ -262,7 +283,7 @@ int main (int argc, const char *argv[])
 	} else if (!numberGoodCommands) {
 	  // let's give the sucker a hint
 	  std::cout
-	    <<"Clp takes input from arguments ( - switches to stdin)"
+	    <<"CoinSolver takes input from arguments ( - switches to stdin)"
 	    <<std::endl
 	    <<"Enter ? for list of commands or help"<<std::endl;
 	  field="-";
@@ -886,6 +907,9 @@ int main (int argc, const char *argv[])
                 model.assignSolver(solver2);
                 model.initialSolve();
               }
+              //std::string problemName ;
+              //model.solver()->getStrParam(OsiProbName,problemName) ;
+              //model.solver()->activateRowCutDebugger(problemName.c_str()) ;
               CbcRounding heuristic1(model);
               if (useRounding)
                 model.addHeuristic(&heuristic1) ;
@@ -925,9 +949,13 @@ int main (int argc, const char *argv[])
               // Say we want timings
               int numberGenerators = model.numberCutGenerators();
               int iGenerator;
+              int cutDepth=
+                parameters[whichParam(CUTDEPTH,numberParameters,parameters)].intValue();
               for (iGenerator=0;iGenerator<numberGenerators;iGenerator++) {
                 CbcCutGenerator * generator = model.cutGenerator(iGenerator);
                 generator->setTiming(true);
+                if (cutDepth>=0)
+                  generator->setWhatDepth(cutDepth) ;
               }
               // Could tune more
               model.setMinimumDrop(min(1.0,
@@ -942,8 +970,8 @@ int main (int argc, const char *argv[])
               model.setMaximumCutPasses(2);
               
               // Do more strong branching if small
-              if (model.getNumCols()<5000)
-                model.setNumberStrong(20);
+              //if (model.getNumCols()<5000)
+              //model.setNumberStrong(20);
               // Switch off strong branching if wanted
               //if (model.getNumCols()>10*model.getNumRows())
               //model.setNumberStrong(0);
@@ -1012,7 +1040,18 @@ int main (int argc, const char *argv[])
 		canOpen=true;
 		fileName = "-";
 	      } else {
-		if (field[0]=='/'||field[0]=='\\') {
+                bool absolutePath;
+                if (dirsep=='/') {
+                  // non Windows (or cygwin)
+                  absolutePath=(field[0]=='/');
+                } else {
+                  //Windows (non cycgwin)
+                  absolutePath=(field[0]=='\\');
+                  // but allow for :
+                  if (strchr(field.c_str(),':'))
+                    absolutePath=true;
+                }
+		if (absolutePath) {
 		  fileName = field;
 		} else if (field[0]=='~') {
 		  char * environ = getenv("HOME");
@@ -1503,32 +1542,44 @@ int main (int argc, const char *argv[])
 	    CbcOrClpRead_mode=-1;
 	    break;
 	  case NETLIB_DUAL:
+	  case NETLIB_EITHER:
 	  case NETLIB_BARRIER:
 	  case NETLIB_PRIMAL:
+	  case NETLIB_TUNE:
 	    {
 	      // create fields for unitTest
 	      const char * fields[4];
 	      int nFields=2;
 	      fields[0]="fake main from unitTest";
 	      fields[1]="-netlib";
-	      if (directory!="./") {
+	      if (directory!=defaultDirectory) {
 		fields[2]="-netlibDir";
 		fields[3]=directory.c_str();
 		nFields=4;
 	      }
 	      int algorithm;
 	      if (type==NETLIB_DUAL) {
-		std::cerr<<"Doing netlib with dual agorithm"<<std::endl;
+		std::cerr<<"Doing netlib with dual algorithm"<<std::endl;
 		algorithm =0;
 	      } else if (type==NETLIB_BARRIER) {
-		std::cerr<<"Doing netlib with barrier agorithm"<<std::endl;
+		std::cerr<<"Doing netlib with barrier algorithm"<<std::endl;
 		algorithm =2;
+	      } else if (type==NETLIB_EITHER) {
+		std::cerr<<"Doing netlib with dual or primal algorithm"<<std::endl;
+		algorithm =3;
+	      } else if (type==NETLIB_TUNE) {
+		std::cerr<<"Doing netlib with best algorithm!"<<std::endl;
+		algorithm =5;
+                // uncomment next to get active tuning
+                // algorithm=6;
 	      } else {
 		std::cerr<<"Doing netlib with primal agorithm"<<std::endl;
 		algorithm=1;
 	      }
+              int specialOptions = lpSolver->specialOptions();
+              lpSolver->setSpecialOptions(0);
 	      mainTest(nFields,fields,algorithm,*lpSolver,
-		       (preSolve!=0),doIdiot);
+		       (preSolve!=0),specialOptions);
 	    }
 	    break;
 	  case UNITTEST:
@@ -1537,7 +1588,7 @@ int main (int argc, const char *argv[])
 	      const char * fields[3];
 	      int nFields=1;
 	      fields[0]="fake main from unitTest";
-	      if (directory!="./") {
+	      if (directory!=defaultDirectory) {
 		fields[1]="-mpsDir";
 		fields[2]=directory.c_str();
 		nFields=3;

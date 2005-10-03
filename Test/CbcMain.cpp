@@ -707,7 +707,8 @@ int main (int argc, const char *argv[])
     // Set false if user does anything advanced
     bool defaultSettings=true;
 
-    std::string directory ="./";
+    const char dirsep =  CoinFindDirSeparator();
+    std::string directory = (dirsep == '/' ? "./" : ".\\");
     std::string field;
 /*
   The main command parsing loop.
@@ -1279,10 +1280,31 @@ int main (int argc, const char *argv[])
 		canOpen=true;
 		fileName = "-";
 	      } else {
-		if (field[0]=='/'||field[0]=='~')
+                bool absolutePath;
+                if (dirsep=='/') {
+                  // non Windows (or cygwin)
+                  absolutePath=(field[0]=='/');
+                } else {
+                  //Windows (non cycgwin)
+                  absolutePath=(field[0]=='\\');
+                  // but allow for :
+                  if (strchr(field.c_str(),':'))
+                    absolutePath=true;
+                }
+		if (absolutePath) {
 		  fileName = field;
-		else
+		} else if (field[0]=='~') {
+		  char * environ = getenv("HOME");
+		  if (environ) {
+		    std::string home(environ);
+		    field=field.erase(0,1);
+		    fileName = home+field;
+		  } else {
+		    fileName=field;
+		  }
+		} else {
 		  fileName = directory+field;
+		}
 		FILE *fp=fopen(fileName.c_str(),"r");
 		if (fp) {
 		  // can open - lets go for it

@@ -25,48 +25,33 @@ include ${MakefileDir}/Makefile.location
 
 IncDir := ${CbcIncDir} ${CglIncDir}
 IncDir += ${OsiClpIncDir} ${ClpIncDir}
-#IncDir += ${OsiDylpIncDir} ${DylpIncDir}
 IncDir += ${OsiIncDir} ${CoinIncDir}
 IncDir += ${bzlibIncDir} ${zlibIncDir} $(lapackIncDir)
-IncDir += ./include
+IncDir := ${ClpIncDir} ${CoinIncDir} ${bzlibIncDir} ${zlibIncDir} $(lapackIncDir)
+LibDir := ${ClpLibDir} ${CoinLibDir} ${bzlibLibDir} ${zlibLibDir} $(lapackLibDir) $(GlpkLibDir)
+ifeq ($(VolDefine),COIN_HAS_VOL)
+LibName := ${ClpLibName} ${CoinLibName} ${bzlibLibName} ${zlibLibName} $(lapackLibName) $(readlineLibName) $(GlpkLibName) $(VolLibName)
+else
+LibName := ${ClpLibName} ${CoinLibName} ${bzlibLibName} ${zlibLibName} $(lapackLibName) $(readlineLibName)
+endif
+Define := ${ClpDefine} ${CoinDefine} ${bzlibDefine} ${zlibDefine} $(lapackLibDefine) $(readlineDefine) $(VolDefine)
 
-LibDir := ${CbcLibDir} ${CglLibDir}
-LibDir += ${OsiClpLibDir} ${ClpLibDir}
-#LibDir += ${OsiDylpLibDir} ${DylpLibDir}
-LibDir += ${OsiLibDir} ${CoinLibDir}
-LibDir += ${bzlibLibDir} ${zlibLibDir} $(lapackLibDir)
+LibDir += ${CbcLibDir} ${CglLibDir}
+LibDir += ${OsiLibDir}
 
-LibName := $(OsiCbcLibName) ${CbcLibName} ${CglLibName}
-LibName += ${OsiClpLibName} ${ClpLibName}
+LibName += $(OsiCbcLibName) ${CbcLibName} ${CglLibName} $(OsiClpLibName)
 ifeq ($(VolDefine),COIN_HAS_VOL)
 LibName += $(VolLibName)
 endif
-#LibName += ${OsiDylpLibName} ${DylpLibName}
-LibName += ${OsiLibName} ${CoinLibName} 
-LibName += ${bzlibLibName} ${zlibLibName} $(lapackLibName) $(readlineLibName)
+LibName += ${OsiLibName}
 
-Define := ${CbcDefine} ${CglDefine}
-Define += ${OsiClpDefine} ${ClpDefine}
-#Define += ${OsiDylpDefine} ${DylpDefine}
-Define += ${OsiDefine} ${CoinDefine}
-Define += ${bzlibDefine} ${zlibDefine} $(lapackDefine)
-
-# Unless overridden, cbc will select clp as the default solver.
-# CBC_DEFAULT_SOLVER is the hook to change the default when you're building the
-# code with multiple solvers. For example, to add dylp but leave clp as the
-# default, uncomment only the line to define COIN_USE_DYLP. To use both clp and
-# dylp, with dylp the default, also uncomment the line which defines
-# CBC_DEFAULT_SOLVER.  cbc chooses clp as the default because it's listed first
-# in the conditional compilation block at the head of CbcMain.cpp::main().  If
-# you build the code without clp, the first defined solver becomes the
-# default.
+Define += ${CbcDefine} ${CglDefine}
+Define += ${OsiClpDefine}
+Define += ${OsiDefine}
+IncDir += ./include
 
 #use clp
 CXXFLAGS += $(addprefix -D,COIN_USE_CLP)
-
-#use dylp
-#CXXFLAGS += $(addprefix -D,COIN_USE_DYLP)
-#CXXFLAGS += $(addprefix -D,CBC_DEFAULT_SOLVER=\"dylp\")
 
 #tell parameter handling to allow for CbcModel and OsiSolverInterface
 CXXFLAGS += -DCOIN_USE_CBC

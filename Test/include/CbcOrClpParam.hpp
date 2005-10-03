@@ -41,10 +41,11 @@ enum CbcOrClpParameterType
 
   { GENERALQUERY = -100,FULLGENERALQUERY,
     
-    PRIMALTOLERANCE = 1, DUALTOLERANCE,CUTOFF,TIMELIMIT,
+    PRIMALTOLERANCE = 1, DUALTOLERANCE, TIMELIMIT,
     DUALBOUND, PRIMALWEIGHT,  OBJSCALE, RHSSCALE,
     
-    INFEASIBILITYWEIGHT = 51, INTEGERTOLERANCE,INCREMENT,ALLOWABLEGAP,
+    INFEASIBILITYWEIGHT = 51, CUTOFF, INTEGERTOLERANCE,INCREMENT,ALLOWABLEGAP,
+    TIMELIMIT_BAB, 
     
     DJFIX = 81, GAPRATIO,TIGHTENFACTOR,
 
@@ -162,6 +163,8 @@ public:
   /// Sets current parameter option
   inline void setCurrentOption ( int value )
   { currentKeyWord_=value; };
+  /// Sets current parameter option using string
+  void setCurrentOption (const std::string value );
   /// Sets int value
   void setIntValue ( int value );
     inline int intValue () const

@@ -2675,8 +2675,19 @@ void CbcModel::reducedCostFix ()
   
   return ; }
 
-
-
+// Collect coding to replace whichGenerator
+static int * newWhichGenerator(int numberNow, int numberAfter,
+                               int & maximumWhich, int * whichGenerator)
+{
+  if (numberAfter > maximumWhich) {
+    maximumWhich = CoinMax(maximumWhich*2+100,numberAfter) ;
+    int * temp = new int[2*maximumWhich] ;
+    memcpy(temp,whichGenerator,numberNow*sizeof(int)) ;
+    delete [] whichGenerator ;
+    whichGenerator = temp ;
+  }
+  return whichGenerator;
+}
 
 /** Solve the model using cuts
 
@@ -2864,6 +2875,9 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node,
 	(numberNodes_%howOftenGlobalScan_) == 0)
     { int numberCuts = globalCuts_.sizeColCuts() ;
       int i;
+      // possibly extend whichGenerator
+      whichGenerator = newWhichGenerator(numberViolated, numberViolated+numberCuts,
+                                         maximumWhich,  whichGenerator);
       for ( i = 0 ; i < numberCuts ; i++)
       { const OsiColCut *thisCut = globalCuts_.colCutPtr(i) ;
 	if (thisCut->violated(solution)>primalTolerance) {
@@ -2874,6 +2888,9 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node,
 	}
       }
       numberCuts = globalCuts_.sizeRowCuts() ;
+      // possibly extend whichGenerator
+      whichGenerator = newWhichGenerator(numberViolated, numberViolated+numberCuts,
+                                         maximumWhich,  whichGenerator);
       for ( i = 0;i<numberCuts;i++) {
 	const OsiRowCut * thisCut = globalCuts_.rowCutPtr(i) ;
 	if (thisCut->violated(solution)>primalTolerance) {
@@ -2918,6 +2935,9 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node,
       nextRowCut_=NULL;
       if (handler_->logLevel()>1)
 	printf("applying branch cut, sum is %g, bounds %g %g\n",sum,lb,ub);
+      // possibly extend whichGenerator
+      whichGenerator = newWhichGenerator(numberViolated, numberViolated+1,
+                                         maximumWhich,  whichGenerator);
       // set whichgenerator (also serves as marker to say don't delete0
       whichGenerator[numberViolated++]=-2;
     }
@@ -3007,20 +3027,14 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node,
 
   lastNumberCuts is the sum of cuts added in previous iterations; it's the
   offset to the proper starting position in whichGenerator.
-
-  TODO: Why is whichGenerator increased to 2*maximumWhich when it grows? 
 */
       int numberBefore =
 	    numberRowCutsBefore+numberColumnCutsBefore+lastNumberCuts ;
       int numberAfter =
 	    numberRowCutsAfter+numberColumnCutsAfter+lastNumberCuts ;
-      if (numberAfter > maximumWhich) {
-	maximumWhich = CoinMax(maximumWhich*2+100,numberAfter) ;
-	int * temp = new int[2*maximumWhich] ;
-	memcpy(temp,whichGenerator,numberBefore*sizeof(int)) ;
-	delete [] whichGenerator ;
-	whichGenerator = temp ;
-      }
+      // possibly extend whichGenerator
+      whichGenerator = newWhichGenerator(numberBefore, numberAfter,
+                                         maximumWhich,  whichGenerator);
       int j ;
       if (fullScan) {
 	// counts

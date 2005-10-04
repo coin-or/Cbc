@@ -48,7 +48,7 @@ LibName += ${OsiLibName}
 Define += ${CbcDefine} ${CglDefine}
 Define += ${OsiClpDefine}
 Define += ${OsiDefine}
-IncDir += ./include
+IncDir += ./include ../../Clp/Test
 
 #use clp
 CXXFLAGS += $(addprefix -D,COIN_USE_CLP)
@@ -66,7 +66,6 @@ endif
 
 TESTSRC := CoinSolve.cpp
 TESTSRC += CbcOrClpParam.cpp
-TESTSRC += unitTest.cpp
 TESTSRC += unitTestClp.cpp
 
 ###############################################################################
@@ -77,7 +76,7 @@ OptVersion := $(subst $(space),_,$(OptLevel))
 TARGETDIR := $(UNAME)$(OptVersion)
 DEPDIR := dep
 
-VPATH := . : include : Junk : ${TARGETDIR} : ${DEPDIR}
+VPATH := . : include : Junk : ${TARGETDIR} : ${DEPDIR} : $(CoinDir)/Clp/Test
 
 #########################################################################
 

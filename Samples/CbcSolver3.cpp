@@ -195,7 +195,7 @@ void CbcSolver3::resolve()
       CbcCompareObjective compare;
       modelSmall.setNodeComparison(compare);
       // And Greedy heuristic
-      CbcGreedyCover heuristic2(modelSmall);
+      CbcHeuristicGreedyCover heuristic2(modelSmall);
       // Use original upper and perturb more
       heuristic2.setAlgorithm(11);
       modelSmall.addHeuristic(&heuristic2);

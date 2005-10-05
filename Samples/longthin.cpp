@@ -87,7 +87,7 @@ int main (int argc, const char *argv[])
 
   // And Greedy heuristic 
 
-  CbcGreedyCover heuristic2(model);
+  CbcHeuristicGreedyCover heuristic2(model);
   // Use original upper and perturb more
   heuristic2.setAlgorithm(11);
   model.addHeuristic(&heuristic2);

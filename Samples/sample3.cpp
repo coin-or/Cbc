@@ -16,7 +16,7 @@
 #include "CbcCompareUser.hpp"
 #include "CbcTreeLocal.hpp"
 #include "CbcCutGenerator.hpp"
-#include "CbcHeuristicUser.hpp"
+#include "CbcHeuristicLocal.hpp"
 #ifdef COIN_USE_CLP
 #include "OsiClpSolverInterface.hpp"
 #endif

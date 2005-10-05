@@ -15,7 +15,7 @@
 #include "CbcBranchUser.hpp"
 #include "CbcCompareUser.hpp"
 #include "CbcCutGenerator.hpp"
-#include "CbcHeuristicUser.hpp"
+#include "CbcHeuristicLocal.hpp"
 #include "ClpQuadInterface.hpp"
 
 // Cuts - some may work but be very very careful

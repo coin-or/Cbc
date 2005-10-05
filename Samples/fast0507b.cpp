@@ -221,7 +221,7 @@ int main (int argc, const char *argv[])
 
   // And Greedy heuristic
 
-  CbcGreedyCover heuristic2(model);
+  CbcHeuristicGreedyCover heuristic2(model);
   // Use original upper and perturb more
   heuristic2.setAlgorithm(0);
   heuristic2.setWhen(13); // say do even though looks odd (nObjects>nInts)

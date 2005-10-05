@@ -15,7 +15,7 @@
 #include "CbcBranchUser.hpp"
 #include "CbcCompareUser.hpp"
 #include "CbcCutGenerator.hpp"
-#include "CbcHeuristicUser.hpp"
+#include "CbcHeuristicLocal.hpp"
 #ifdef COIN_USE_CLP
 #include "OsiClpSolverInterface.hpp"
 #endif
@@ -226,7 +226,7 @@ int main (int argc, const char *argv[])
 
   // And local search when new solution found
 
-  CbcLocalSearch heuristic2(model);
+  CbcHeuristicLocal heuristic2(model);
   model.addHeuristic(&heuristic2);
 
   // Redundant definition of default branching (as Default == User)

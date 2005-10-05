@@ -109,7 +109,7 @@ CbcRounding::solution(double & solutionValue,
 
   // See if to do
   if (!when()||(when()%10==1&&model_->phase()!=1)||
-      (when()%10==2&&model_->phase()!=2))
+      (when()%10==2&&(model_->phase()!=2&&model_->phase()!=3)))
     return 0; // switched off
 
   OsiSolverInterface * solver = model_->solver();

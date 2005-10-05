@@ -89,11 +89,11 @@ TESTSRC := $(DRIVER).cpp
 TESTSRC += CbcCompareUser.cpp
 TESTSRC += CbcSolver2.cpp
 TESTSRC += CbcSolver3.cpp
+TESTSRC += CbcTreeLocal.cpp
+TESTSRC += ClpQuadInterface.cpp
 TESTSRC += CbcBranchFollow2.cpp
 TESTSRC += CbcBranchUser.cpp
 TESTSRC += CbcBranchLink.cpp
-TESTSRC += CbcHeuristicUser.cpp
-TESTSRC += CbcHeuristicGreedy.cpp
 TESTOBJ := $(addprefix $(TARGETDIR)/, $(TESTSRC:.cpp=.o))
 TESTDEP := $(addprefix $(DEPDIR)/, $(TESTSRC:.cpp=.d))
 

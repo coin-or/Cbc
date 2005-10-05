@@ -31,11 +31,15 @@ public:
   /* This returns true if weighted value of node y is less than
      weighted value of node x */
   virtual bool test (CbcNode * x, CbcNode * y) ;
+  /// This is alternate test function
+  virtual bool alternateTest (CbcNode * x, CbcNode * y);
   // This allows method to change behavior as it is called
   // after each solution
   virtual void newSolution(CbcModel * model,
 			   double objectiveAtContinuous,
 			   int numberInfeasibilitiesAtContinuous) ;
+  /// Returns true if wants code to do scan with alternate criterion
+  virtual bool fullScan() const;
   // This allows method to change behavior 
   // Return true if want tree re-sorted
   virtual bool every1000Nodes(CbcModel * model,int numberNodes);
@@ -54,6 +58,8 @@ protected:
   double saveWeight_;
   // Number of solutions
   int numberSolutions_;
+  // count
+  mutable int count_;
   // Tree size (at last check)
   int treeSize_;
 };

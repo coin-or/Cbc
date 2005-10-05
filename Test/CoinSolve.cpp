@@ -64,6 +64,9 @@
 
 #include "CbcModel.hpp"
 #include "CbcHeuristic.hpp"
+#include "CbcHeuristicLocal.hpp"
+#include "CbcHeuristicGreedy.hpp"
+#include "CbcHeuristicFPump.hpp"
 #include "CbcCompareActual.hpp"
 #include  "CbcOrClpParam.hpp"
 #include  "CbcCutGenerator.hpp"
@@ -176,7 +179,7 @@ int main (int argc, const char *argv[])
     parameters[whichParam(PRIMALWEIGHT,numberParameters,parameters)].setDoubleValue(lpSolver->infeasibilityCost());
     parameters[whichParam(RESTORE,numberParameters,parameters)].setStringValue(restoreFile);
     parameters[whichParam(SAVE,numberParameters,parameters)].setStringValue(saveFile);
-    parameters[whichParam(TIMELIMIT,numberParameters,parameters)].setDoubleValue(1.0e8);
+    //parameters[whichParam(TIMELIMIT,numberParameters,parameters)].setDoubleValue(1.0e8);
     parameters[whichParam(TIMELIMIT_BAB,numberParameters,parameters)].setDoubleValue(1.0e8);
     parameters[whichParam(SOLUTION,numberParameters,parameters)].setStringValue(solutionFile);
     parameters[whichParam(SPRINT,numberParameters,parameters)].setIntValue(doSprint);
@@ -249,6 +252,9 @@ int main (int argc, const char *argv[])
 
     bool useRounding=true;
     parameters[whichParam(ROUNDING,numberParameters,parameters)].setCurrentOption("on");
+    int useFpump=0;
+    bool useGreedy=false;
+    bool useLocal=false;
     
     // total number of commands read
     int numberGoodCommands=0;
@@ -460,6 +466,8 @@ int main (int argc, const char *argv[])
 		presolveOptions = value;
 	      else if (parameters[iParam].type()==PRINTOPTIONS)
 		printOptions = value;
+	      else if (parameters[iParam].type()==FPUMPITS)
+		{ useFpump = value;parameters[iParam].setIntValue(value);}
 	      else
 		parameters[iParam].setIntParameter(lpSolver,value);
 	    } else {
@@ -637,6 +645,21 @@ int main (int argc, const char *argv[])
 	    case ROUNDING:
               defaultSettings=false; // user knows what she is doing
 	      useRounding = action;
+	      break;
+	    case FPUMP:
+              defaultSettings=false; // user knows what she is doing
+              if (action&&useFpump==0)
+                useFpump=parameters[whichParam(FPUMPITS,numberParameters,parameters)].intValue();
+              else if (!action)
+                useFpump=0;
+	      break;
+	    case GREEDY:
+              defaultSettings=false; // user knows what she is doing
+	      useGreedy = action;
+	      break;
+	    case LOCAL:
+              defaultSettings=false; // user knows what she is doing
+	      useLocal = action;
 	      break;
 	    case COSTSTRATEGY:
 	      if (action!=1) {
@@ -913,6 +936,21 @@ int main (int argc, const char *argv[])
               CbcRounding heuristic1(model);
               if (useRounding)
                 model.addHeuristic(&heuristic1) ;
+              CbcHeuristicLocal heuristic2(model);
+              heuristic2.setSearchType(1);
+              if (useLocal)
+                model.addHeuristic(&heuristic2);
+              CbcHeuristicGreedyCover heuristic3(model);
+              CbcHeuristicGreedyEquality heuristic3a(model);
+              if (useGreedy) {
+                model.addHeuristic(&heuristic3);
+                model.addHeuristic(&heuristic3a);
+              }
+              CbcHeuristicFPump heuristic4(model);
+              if (useFpump) {
+                heuristic4.setMaximumPasses(useFpump);
+                model.addHeuristic(&heuristic4);
+              }
               // add cut generators if wanted
               if (probingAction==1)
                 model.addCutGenerator(&probingGen,-1,"Probing");

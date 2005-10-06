@@ -705,6 +705,7 @@ CbcHeuristicGreedyEquality::solution(double & solutionValue,
       } else {
         solver2->resolve();
         CbcModel model(*solver2);
+        model.setLogLevel(1);
         model.setCutoff(solutionValue);
         model.setMaximumNodes(200);
         model.solver()->setHintParam(OsiDoReducePrint,true,OsiHintTry);
@@ -714,8 +715,15 @@ CbcHeuristicGreedyEquality::solution(double & solutionValue,
         model.setNumberStrong(5);
         model.setNumberBeforeTrust(1);
         model.solver()->setIntParam(OsiMaxNumIterationHotStart,10);
-        // Do complete search
+        // Do search
+        model_->messageHandler()->message(CBC_START_SUB,model_->messages())
+              << "CbcHeuristicGreedy"
+              << model.getMaximumNodes()
+              <<CoinMessageEol;
         model.branchAndBound();
+        model_->messageHandler()->message(CBC_END_SUB,model_->messages())
+              << "CbcHeuristicGreedy"
+              <<CoinMessageEol;
         if (model.getMinimizationObjValue()<solutionValue) {
           // solution
           rhsNeeded=0.0;
@@ -761,7 +769,10 @@ CbcHeuristicGreedyEquality::solution(double & solutionValue,
       // new solution
       memcpy(betterSolution,newSolution,numberColumns*sizeof(double));
       solutionValue = newSolutionValue;
-      printf("** Solution of %g found by greedy\n",newSolutionValue);
+      model_->messageHandler()->message(CBC_HEURISTIC_SOLUTION,model_->messages())
+        << newSolutionValue
+        << "CbcHeuristicGreedy"
+        <<CoinMessageEol;
       returnCode=1;
     }
   }

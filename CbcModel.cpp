@@ -1179,8 +1179,10 @@ void CbcModel::branchAndBound(int doStatistics)
 	      if (ifSol < 0)	// just returning an estimate
 	      { estValue = CoinMin(heurValue,estValue) ;
 		heurValue = saveValue ; } }
-	    if (found >= 0)
-	    { setBestSolution(CBC_ROUNDING,heurValue,newSolution) ; }
+	    if (found >= 0) {
+              setBestSolution(CBC_ROUNDING,heurValue,newSolution) ;
+              lastHeuristic_ = heuristic_[found];
+            }
 	    delete [] newSolution ;
 	    newNode->setGuessedObjectiveValue(estValue) ;
 	    tree_->push(newNode) ;
@@ -1209,6 +1211,7 @@ void CbcModel::branchAndBound(int doStatistics)
 	  double objectiveValue = newNode->objectiveValue();
 	    setBestSolution(CBC_SOLUTION,objectiveValue,
 			    solver_->getColSolution()) ;
+            lastHeuristic_ = NULL;
             incrementUsed(solver_->getColSolution());
 	    assert(nodeInfo->numberPointingToThis() <= 2) ;
 	    // avoid accidental pruning, if newNode was final branch arm
@@ -1626,6 +1629,7 @@ CbcModel::CbcModel()
   virginGenerator_(NULL),
   numberHeuristics_(0),
   heuristic_(NULL),
+  lastHeuristic_(NULL),
   numberObjects_(0),
   object_(NULL),
   originalColumns_(NULL),
@@ -1711,6 +1715,7 @@ CbcModel::CbcModel(const OsiSolverInterface &rhs)
   virginGenerator_(NULL),
   numberHeuristics_(0),
   heuristic_(NULL),
+  lastHeuristic_(NULL),
   numberObjects_(0),
   object_(NULL),
   originalColumns_(NULL),
@@ -1932,6 +1937,7 @@ CbcModel::CbcModel(const CbcModel & rhs, bool noTree)
   } else {
     heuristic_=NULL;
   }
+  lastHeuristic_ = NULL;
   numberObjects_=rhs.numberObjects_;
   if (numberObjects_) {
     object_ = new CbcObject * [numberObjects_];
@@ -2134,6 +2140,7 @@ CbcModel::operator=(const CbcModel& rhs)
     delete [] generator_;
     delete [] virginGenerator_;
     delete [] heuristic_;
+    lastHeuristic_ = NULL;
     numberCutGenerators_ = rhs.numberCutGenerators_;
     if (numberCutGenerators_) {
       generator_ = new CbcCutGenerator * [numberCutGenerators_];
@@ -2155,6 +2162,7 @@ CbcModel::operator=(const CbcModel& rhs)
     } else {
       heuristic_=NULL;
     }
+    lastHeuristic_ = NULL;
     for (i=0;i<numberObjects_;i++)
       delete object_[i];
     delete [] object_;
@@ -2266,6 +2274,7 @@ CbcModel::gutsOfDestructor()
     delete heuristic_[i];
   delete [] heuristic_;
   heuristic_=NULL;
+  lastHeuristic_ = NULL;
   delete nodeCompare_;
   nodeCompare_=NULL;
   delete problemFeasibility_;
@@ -3092,11 +3101,12 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node,
   Did any of the heuristics turn up a new solution? Record it before we free
   the vector.
 */
-    if (found >= 0)
-    { 
+    if (found >= 0) { 
       phase_=4;
       incrementUsed(newSolution);
-      setBestSolution(CBC_ROUNDING,heuristicValue,newSolution) ; }
+      setBestSolution(CBC_ROUNDING,heuristicValue,newSolution) ;
+      lastHeuristic_ = heuristic_[found];
+    }
     delete [] newSolution ;
 
 #if 0
@@ -3377,6 +3387,7 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node,
       phase_=4;
       incrementUsed(newSolution);
       setBestSolution(CBC_ROUNDING,heuristicValue,newSolution) ;
+      lastHeuristic_ = heuristic_[found];
     }
     delete [] newSolution ;
   }
@@ -5292,6 +5303,7 @@ CbcModel::integerPresolveThisModel(OsiSolverInterface * originalSolver,
 	  // better solution save
 	  setBestSolution(CBC_ROUNDING,heuristicValue,
 			  newSolution);
+          lastHeuristic_ = heuristic_[found];
 	  // update cutoff
 	  cutoff = getCutoff();
 	}

@@ -1154,6 +1154,12 @@ public:
   /// Get the number of heuristics
   inline int numberHeuristics() const
   { return numberHeuristics_;};
+  /// Pointer to heuristic solver which found last solution (or NULL)
+  inline CbcHeuristic * lastHeuristic() const
+  { return lastHeuristic_;};
+  /// set last heuristic which found a solution
+  inline void setLastHeuristic(CbcHeuristic * last)
+  { lastHeuristic_=last;};
 
   /** Pass in branching priorities.
   
@@ -1515,8 +1521,10 @@ private:
   CbcCutGenerator ** virginGenerator_;
   /// Number of heuristics
   int numberHeuristics_;
-  // Heuristic solvers
+  /// Heuristic solvers
   CbcHeuristic ** heuristic_;
+  /// Pointer to heuristic solver which found last solution (or NULL)
+  CbcHeuristic * lastHeuristic_;
 
   /// Total number of objects
   int numberObjects_;

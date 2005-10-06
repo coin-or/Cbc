@@ -44,6 +44,9 @@ static Cbc_message us_english[]=
   {CBC_ITERATE_STRONG,25,3,"%d cleanup iterations before strong branching"},
   {CBC_PRIORITY,26,1,"Setting priorities for objects %d to %d inclusive (out of %d)"},
   {CBC_WARNING_STRONG,3008,1,"Strong branching is fixing too many variables, too expensively!"},
+  {CBC_START_SUB,28,1,"Starting sub-tree for %s - maximum nodes %d"},
+  {CBC_END_SUB,29,1,"Ending sub-tree for %s"},
+  {CBC_HEURISTIC_SOLUTION,30,1,"solution of %g found by %s"},
   {CBC_DUMMY_END,999999,0,""}
 };
 /* Constructor */

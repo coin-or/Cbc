@@ -1368,6 +1368,7 @@ int CbcNode::chooseBranch (CbcModel *model, CbcNode *lastNode,int numberPassesLe
               model->setBestSolution(CBC_STRONGSOL,
                                      newObjectiveValue,
                                      solver->getColSolution()) ;
+              model->setLastHeuristic(NULL);
               model->incrementUsed(solver->getColSolution());
               if (newObjectiveValue >= model->getCutoff())	//  *new* cutoff
                 objectiveChange = 1.0e100 ;
@@ -1453,6 +1454,7 @@ int CbcNode::chooseBranch (CbcModel *model, CbcNode *lastNode,int numberPassesLe
               model->setBestSolution(CBC_STRONGSOL,
                                      newObjectiveValue,
                                      solver->getColSolution()) ;
+              model->setLastHeuristic(NULL);
               model->incrementUsed(solver->getColSolution());
               if (newObjectiveValue >= model->getCutoff())	//  *new* cutoff
                 objectiveChange = 1.0e100 ;
@@ -2266,6 +2268,7 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,int numberP
                 model->setBestSolution(CBC_STRONGSOL,
                                        newObjectiveValue,
                                        solver->getColSolution()) ;
+                model->setLastHeuristic(NULL);
                 model->incrementUsed(solver->getColSolution());
                 cutoff =model->getCutoff();
                 if (newObjectiveValue >= cutoff)	//  *new* cutoff
@@ -2326,6 +2329,7 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,int numberP
                 model->setBestSolution(CBC_STRONGSOL,
                                        newObjectiveValue,
                                        solver->getColSolution()) ;
+                model->setLastHeuristic(NULL);
                 model->incrementUsed(solver->getColSolution());
                 cutoff =model->getCutoff();
                 if (newObjectiveValue >= cutoff)	//  *new* cutoff

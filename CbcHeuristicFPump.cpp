@@ -155,7 +155,9 @@ CbcHeuristicFPump::solution(double & solutionValue,
 
 // 5. MAIN WHILE LOOP
   int numberPasses=0;
+  bool newLineNeeded=false;
   while (!finished) {
+    returnCode=0;
     if (numberPasses>=maximumPasses_) {
       break;
     }
@@ -168,6 +170,7 @@ CbcHeuristicFPump::solution(double & solutionValue,
       // SOLUTION IS INTEGER
       // Put back correct objective
       printf("\n");
+      newLineNeeded=false;
       for (i=0;i<numberColumns;i++)
         solver->setObjCoeff(i,saveObjective[i]);
       // solution - but may not be better
@@ -198,6 +201,7 @@ CbcHeuristicFPump::solution(double & solutionValue,
       if (matched || numberPasses%100 == 0) {
 	 // perturbation
 	 printf("Perturbation applied");
+         newLineNeeded=true;
 	 for (i=0;i<numberIntegers;i++) {
 	     int iColumn = integerVariable[i];
 	     double value = max(0.0,CoinDrand48()-0.3);
@@ -240,11 +244,12 @@ CbcHeuristicFPump::solution(double & solutionValue,
       solver->setDblParam(OsiObjOffset,-offset);
       solver->resolve();
       printf("\npass %3d: obj. %10.5lf --> ", numberPasses,solver->getObjValue());
-
+      newLineNeeded=true;
 
     }
   } // END WHILE
-
+  if (newLineNeeded)
+    printf(" - no solution found\n");
   delete solver;
   delete [] newSolution;
   for ( j=0;j<NUMBER_OLD;j++) 

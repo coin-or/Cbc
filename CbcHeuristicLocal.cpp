@@ -93,6 +93,9 @@ CbcHeuristicLocal::solutionFix(double & objectiveValue,
   // See if to do
   if (!when()||(when()==1&&model_->phase()!=1))
     return 0; // switched off
+  // Don't do if it was this heuristic which found solution!
+  if (this==model_->lastHeuristic())
+    return 0;
   OsiSolverInterface * newSolver = model_->continuousSolver()->clone();
   const double * colLower = newSolver->getColLower();
   //const double * colUpper = newSolver->getColUpper();
@@ -133,6 +136,7 @@ CbcHeuristicLocal::solutionFix(double & objectiveValue,
     } else {
       solver2->resolve();
       CbcModel model(*solver2);
+      model.setLogLevel(1);
       model.setCutoff(objectiveValue);
       model.setMaximumNodes(200);
       model.solver()->setHintParam(OsiDoReducePrint,true,OsiHintTry);
@@ -142,9 +146,20 @@ CbcHeuristicLocal::solutionFix(double & objectiveValue,
       model.setNumberStrong(5);
       model.setNumberBeforeTrust(1);
       model.solver()->setIntParam(OsiMaxNumIterationHotStart,10);
-      // Do complete search
+      // Do search
+      model_->messageHandler()->message(CBC_START_SUB,model_->messages())
+        << "CbcHeuristicLocal"
+        << model.getMaximumNodes()
+        <<CoinMessageEol;
       model.branchAndBound();
+      model_->messageHandler()->message(CBC_END_SUB,model_->messages())
+        << "CbcHeuristicLocal"
+        <<CoinMessageEol;
       if (model.getMinimizationObjValue()<objectiveValue) {
+        model_->messageHandler()->message(CBC_HEURISTIC_SOLUTION,model_->messages())
+          << model.getMinimizationObjValue()
+          << "CbcHeuristicLocal"
+          <<CoinMessageEol;
         // solution
         // post process
         process.postProcess(*model.solver());
@@ -558,9 +573,11 @@ CbcHeuristicLocal::solution(double & solutionValue,
         memcpy(betterSolution,newSolution,numberColumns*sizeof(double));
         returnCode=1;
         solutionValue = newSolutionValue + bestChange;
-        if (bestChange>1.0e-12)
-          printf("Local search heuristic improved solution by %g\n",
-                 -bestChange);
+        if (bestChange<-1.0e-1)
+          model_->messageHandler()->message(CBC_HEURISTIC_SOLUTION,model_->messages())
+            << solutionValue
+            << "CbcHeuristicLocal"
+            <<CoinMessageEol;
       } else {
         // bad solution - should not happen so debug if see message
         printf("Local search got bad solution with %d infeasibilities summing to %g\n",

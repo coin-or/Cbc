@@ -217,7 +217,8 @@ CbcCompareDefault::newSolution(CbcModel * model,
 			       double objectiveAtContinuous,
 			       int numberInfeasibilitiesAtContinuous) 
 {
-  if (model->getSolutionCount()==model->getNumberHeuristicSolutions())
+  if (model->getSolutionCount()==model->getNumberHeuristicSolutions()&&
+      model->getSolutionCount()<5&&model->getNodeCount()<500)
     return; // solution was got by rounding
   // set to get close to this solution
   double costPerInteger = 

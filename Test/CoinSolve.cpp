@@ -274,7 +274,7 @@ int main (int argc, const char *argv[])
     std::vector<std::string> columnNames;
     
     std::string field;
-    std::cout<<"Coin Solver version "<<CBCVERSION
+    std::cout<<"Coin Cbc and Clp Solver version "<<CBCVERSION
 	     <<", build "<<__DATE__<<std::endl;
     
     while (1) {

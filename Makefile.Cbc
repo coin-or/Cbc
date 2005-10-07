@@ -13,6 +13,7 @@ LIBSRC :=
 LIBSRC += CbcModel.cpp
 LIBSRC += CbcNode.cpp
 LIBSRC += CbcTree.cpp
+LIBSRC += CbcTreeLocal.cpp
 LIBSRC += CbcCountRowCut.cpp
 LIBSRC += CbcMessage.cpp
 LIBSRC += CbcHeuristic.cpp

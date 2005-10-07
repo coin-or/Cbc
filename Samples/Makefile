@@ -89,7 +89,6 @@ TESTSRC := $(DRIVER).cpp
 TESTSRC += CbcCompareUser.cpp
 TESTSRC += CbcSolver2.cpp
 TESTSRC += CbcSolver3.cpp
-TESTSRC += CbcTreeLocal.cpp
 TESTSRC += ClpQuadInterface.cpp
 TESTSRC += CbcBranchFollow2.cpp
 TESTSRC += CbcBranchUser.cpp

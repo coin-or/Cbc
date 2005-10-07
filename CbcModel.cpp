@@ -1524,7 +1524,9 @@ void
 CbcModel::initialSolve() 
 {
   assert (solver_);
+  solver_->setHintParam(OsiDoInBranchAndCut,true,OsiHintDo,NULL) ;
   solver_->initialSolve();
+  solver_->setHintParam(OsiDoInBranchAndCut,false,OsiHintDo,NULL) ;
   // But set up so Jon Lee will be happy
   status_=-1;
   secondaryStatus_ = -1;

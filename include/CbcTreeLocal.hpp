@@ -96,6 +96,8 @@ public:
   void reverseCut(int state, double bias=0.0);
   /// Delete last cut branch
   void deleteCut(OsiRowCut & cut);
+  /// Pass in solution (so can be used after heuristic)
+  void passInSolution(const double * solution, double solutionValue);
 
 //@}
 private:

@@ -67,6 +67,7 @@
 #include "CbcHeuristicLocal.hpp"
 #include "CbcHeuristicGreedy.hpp"
 #include "CbcHeuristicFPump.hpp"
+#include "CbcTreeLocal.hpp"
 #include "CbcCompareActual.hpp"
 #include  "CbcOrClpParam.hpp"
 #include  "CbcCutGenerator.hpp"
@@ -254,7 +255,8 @@ int main (int argc, const char *argv[])
     parameters[whichParam(ROUNDING,numberParameters,parameters)].setCurrentOption("on");
     int useFpump=0;
     bool useGreedy=false;
-    bool useLocal=false;
+    bool useCombine=false;
+    bool useLocalTree=false;
     
     // total number of commands read
     int numberGoodCommands=0;
@@ -674,20 +676,29 @@ int main (int argc, const char *argv[])
             case HEURISTICSTRATEGY:
               useRounding = action;
               useGreedy = action;
-              useLocal = action;
-              useFpump = action;
+              useCombine = action;
+              //useLocalTree = action;
+              if (action&&useFpump==0)
+                useFpump=parameters[whichParam(FPUMPITS,numberParameters,parameters)].intValue();
+              else if (!action)
+                useFpump=0;
               parameters[whichParam(ROUNDING,numberParameters,parameters)].setCurrentOption(action);
               parameters[whichParam(GREEDY,numberParameters,parameters)].setCurrentOption(action);
-              parameters[whichParam(LOCAL,numberParameters,parameters)].setCurrentOption(action);
+              parameters[whichParam(COMBINE,numberParameters,parameters)].setCurrentOption(action);
+              //parameters[whichParam(LOCALTREE,numberParameters,parameters)].setCurrentOption(action);
               parameters[whichParam(FPUMP,numberParameters,parameters)].setCurrentOption(action);
               break;
 	    case GREEDY:
               defaultSettings=false; // user knows what she is doing
 	      useGreedy = action;
 	      break;
-	    case LOCAL:
+	    case COMBINE:
               defaultSettings=false; // user knows what she is doing
-	      useLocal = action;
+	      useCombine = action;
+	      break;
+	    case LOCALTREE:
+              defaultSettings=false; // user knows what she is doing
+	      useLocalTree = action;
 	      break;
 	    case COSTSTRATEGY:
 	      if (action!=1) {
@@ -961,12 +972,18 @@ int main (int argc, const char *argv[])
               //std::string problemName ;
               //model.solver()->getStrParam(OsiProbName,problemName) ;
               //model.solver()->activateRowCutDebugger(problemName.c_str()) ;
+              // FPump done first as it only works if no solution
+              CbcHeuristicFPump heuristic4(model);
+              if (useFpump) {
+                heuristic4.setMaximumPasses(useFpump);
+                model.addHeuristic(&heuristic4);
+              }
               CbcRounding heuristic1(model);
               if (useRounding)
                 model.addHeuristic(&heuristic1) ;
               CbcHeuristicLocal heuristic2(model);
               heuristic2.setSearchType(1);
-              if (useLocal)
+              if (useCombine)
                 model.addHeuristic(&heuristic2);
               CbcHeuristicGreedyCover heuristic3(model);
               CbcHeuristicGreedyEquality heuristic3a(model);
@@ -974,11 +991,9 @@ int main (int argc, const char *argv[])
                 model.addHeuristic(&heuristic3);
                 model.addHeuristic(&heuristic3a);
               }
-              CbcHeuristicFPump heuristic4(model);
-              if (useFpump) {
-                heuristic4.setMaximumPasses(useFpump);
-                model.addHeuristic(&heuristic4);
-              }
+              CbcTreeLocal localTree(&model,NULL,10,0,0,10000,2000);
+              if (useLocalTree)
+                model.passInTreeHandler(localTree);
               // add cut generators if wanted
               if (probingAction==1)
                 model.addCutGenerator(&probingGen,-1,"Probing");

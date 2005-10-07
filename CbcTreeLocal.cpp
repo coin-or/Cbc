@@ -301,6 +301,23 @@ CbcTreeLocal::clone() const
 {
   return new CbcTreeLocal(*this);
 }
+// Pass in solution (so can be used after heuristic)
+void 
+CbcTreeLocal::passInSolution(const double * solution, double solutionValue)
+{
+  int numberColumns = model_->getNumCols();
+  delete [] savedSolution_;
+  savedSolution_ = new double [numberColumns];
+  memcpy(savedSolution_,solution,numberColumns*sizeof(double));
+  rhs_=range_;
+  // Check feasible
+  int goodSolution=createCut(solution,cut_);
+  if (goodSolution>=0) {
+    bestCutoff_=solutionValue;
+  } else {
+    model_=NULL;
+  }
+}
 // Return the top node of the heap 
 CbcNode * 
 CbcTreeLocal::top() {

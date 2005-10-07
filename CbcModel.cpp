@@ -20,6 +20,7 @@
 #include "CbcBranchDynamic.hpp"
 #include "CbcHeuristic.hpp"
 #include "CbcModel.hpp"
+#include "CbcTreeLocal.hpp"
 #include "CbcStatistics.hpp"
 #include "CbcStrategy.hpp"
 #include "CbcMessage.hpp"
@@ -498,6 +499,9 @@ void CbcModel::branchAndBound(int doStatistics)
   if (!currentSolution_)
     currentSolution_ = new double[numberColumns] ;
   testSolution_ = currentSolution_;
+  /* Tell solver we are in Branch and Cut
+     Could use last parameter for subtle differences */
+  solver_->setHintParam(OsiDoInBranchAndCut,true,OsiHintDo,NULL) ;
 /*
   Create a copy of the solver, thus capturing the original (root node)
   constraint system (aka the continuous system).
@@ -788,9 +792,6 @@ void CbcModel::branchAndBound(int doStatistics)
     if (getNumCols() > 2000)
       printFrequency_ = 100 ;
   }
-  /* Tell solver we are in Branch and Cut
-     Could use last parameter for subtle differences */
-  solver_->setHintParam(OsiDoInBranchAndCut,true,OsiHintDo,NULL) ;
   /*
     It is possible that strong branching fixes one variable and then the code goes round
     again and again.  This can take too long.  So we need to warn user - just once.
@@ -3106,6 +3107,10 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node,
       incrementUsed(newSolution);
       setBestSolution(CBC_ROUNDING,heuristicValue,newSolution) ;
       lastHeuristic_ = heuristic_[found];
+      CbcTreeLocal * tree 
+          = dynamic_cast<CbcTreeLocal *> (tree_);
+      if (tree)
+        tree->passInSolution(bestSolution_,heuristicValue);
     }
     delete [] newSolution ;
 

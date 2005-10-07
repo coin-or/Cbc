@@ -93,7 +93,7 @@ CbcHeuristicFPump::solution(double & solutionValue,
   if (model_->getSolutionCount()) return 0;
   // Clone solver - otherwise annoys root node computations
   OsiSolverInterface * solver = model_->solver()->clone();
-  
+  solver->setDblParam(OsiDualObjectiveLimit,1.0e50);
   solver->resolve();
   const double * lower = solver->getColLower();
   const double * upper = solver->getColUpper();
@@ -169,13 +169,13 @@ CbcHeuristicFPump::solution(double & solutionValue,
     if (returnCode) {
       // SOLUTION IS INTEGER
       // Put back correct objective
-      printf("\n");
-      newLineNeeded=false;
       for (i=0;i<numberColumns;i++)
         solver->setObjCoeff(i,saveObjective[i]);
       // solution - but may not be better
       // Compute using dot product
       double newSolutionValue = direction*solver->OsiSolverInterface::getObjValue();
+      printf(" - solution value of %g\n",newSolutionValue);
+      newLineNeeded=false;
       if (newSolutionValue<solutionValue) {
 	memcpy(betterSolution,newSolution,numberColumns*sizeof(double));
       } else {

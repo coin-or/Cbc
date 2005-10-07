@@ -166,7 +166,7 @@ int main (int argc, const char *argv[])
   model.addCutGenerator(&generator1,-1,"Probing");
   model.addCutGenerator(&generator2,-1,"Gomory");
   model.addCutGenerator(&generator3,-1,"Knapsack");
-  //model.addCutGenerator(&generator4,-1,"RedSplit");
+  // model.addCutGenerator(&generator4,-1,"RedSplit");
   model.addCutGenerator(&generator5,-1,"Clique");
   model.addCutGenerator(&flowGen,-1,"FlowCover");
   model.addCutGenerator(&mixedGen,-1,"MixedIntegerRounding");
@@ -188,7 +188,8 @@ int main (int argc, const char *argv[])
       osiclp->setupForRepeatedUse(0,0);
     }
   } 
-  model.messagesPointer()->setDetailMessage(0,61);
+  // Uncommenting this should switch off all CBC messages
+  // model.messagesPointer()->setDetailMessages(10,10000,NULL);
   // Allow rounding heuristic
 
   CbcRounding heuristic1(model);

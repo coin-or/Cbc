@@ -1642,7 +1642,7 @@ CbcModel::CbcModel()
   maximumCutPasses_(10),
   resolveAfterTakeOffCuts_(true)
 {
-  intParam_[CbcMaxNumNode] = 99999999;
+  intParam_[CbcMaxNumNode] = 2147483647;
   intParam_[CbcMaxNumSol] = 9999999;
   intParam_[CbcFathomDiscipline] = 0;
 
@@ -1728,7 +1728,7 @@ CbcModel::CbcModel(const OsiSolverInterface &rhs)
   maximumCutPasses_(10),
   resolveAfterTakeOffCuts_(true)
 {
-  intParam_[CbcMaxNumNode] = 99999999;
+  intParam_[CbcMaxNumNode] = 2147483647;
   intParam_[CbcMaxNumSol] = 9999999;
   intParam_[CbcFathomDiscipline] = 0;
 

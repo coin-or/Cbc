@@ -653,6 +653,34 @@ int main (int argc, const char *argv[])
               else if (!action)
                 useFpump=0;
 	      break;
+            case CUTSSTRATEGY:
+	      gomoryAction = action;
+	      probingAction = action;
+	      knapsackAction = action;
+	      redsplitAction = action;
+	      cliqueAction = action;
+	      flowAction = action;
+	      mixedAction = action;
+	      twomirAction = action;
+              parameters[whichParam(GOMORYCUTS,numberParameters,parameters)].setCurrentOption(action);
+              parameters[whichParam(PROBINGCUTS,numberParameters,parameters)].setCurrentOption(action);
+              parameters[whichParam(KNAPSACKCUTS,numberParameters,parameters)].setCurrentOption(action);
+              parameters[whichParam(REDSPLITCUTS,numberParameters,parameters)].setCurrentOption(action);
+              parameters[whichParam(CLIQUECUTS,numberParameters,parameters)].setCurrentOption(action);
+              parameters[whichParam(FLOWCUTS,numberParameters,parameters)].setCurrentOption(action);
+              parameters[whichParam(MIXEDCUTS,numberParameters,parameters)].setCurrentOption(action);
+              parameters[whichParam(TWOMIRCUTS,numberParameters,parameters)].setCurrentOption(action);
+              break;
+            case HEURISTICSTRATEGY:
+              useRounding = action;
+              useGreedy = action;
+              useLocal = action;
+              useFpump = action;
+              parameters[whichParam(ROUNDING,numberParameters,parameters)].setCurrentOption(action);
+              parameters[whichParam(GREEDY,numberParameters,parameters)].setCurrentOption(action);
+              parameters[whichParam(LOCAL,numberParameters,parameters)].setCurrentOption(action);
+              parameters[whichParam(FPUMP,numberParameters,parameters)].setCurrentOption(action);
+              break;
 	    case GREEDY:
               defaultSettings=false; // user knows what she is doing
 	      useGreedy = action;

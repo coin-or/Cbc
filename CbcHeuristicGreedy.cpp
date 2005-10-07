@@ -709,7 +709,7 @@ CbcHeuristicGreedyEquality::solution(double & solutionValue,
         model.setCutoff(solutionValue);
         model.setMaximumNodes(200);
         model.solver()->setHintParam(OsiDoReducePrint,true,OsiHintTry);
-        CbcStrategyDefault strategy(true,5,5,0);
+        CbcStrategyDefaultSubTree strategy(model_,true,5,5,0);
         model.setStrategy(strategy);
         // Lightweight
         model.setNumberStrong(5);

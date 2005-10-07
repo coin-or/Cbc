@@ -128,4 +128,55 @@ private:
 };
 
 
+/** Default class for sub trees
+ */
+
+class CbcStrategyDefaultSubTree : public CbcStrategy {
+public:
+
+  // Default Constructor 
+  CbcStrategyDefaultSubTree (CbcModel * parent=NULL,bool cutsOnlyAtRoot=true,
+                      int numberStrong=5,
+                      int numberBeforeTrust=0,
+                      int printLevel=0);
+
+  // Copy constructor 
+  CbcStrategyDefaultSubTree ( const CbcStrategyDefaultSubTree &);
+   
+  // Destructor 
+  ~CbcStrategyDefaultSubTree ();
+  
+  /// Clone
+  virtual CbcStrategy * clone() const;
+
+  /// Setup cut generators
+  virtual void setupCutGenerators(CbcModel & model);
+  /// Setup heuristics
+  virtual void setupHeuristics(CbcModel & model);
+  /// Do printing stuff
+  virtual void setupPrinting(CbcModel & model,int modelLogLevel) ;
+  /// Other stuff e.g. strong branching
+  virtual void setupOther(CbcModel & model);
+protected:
+  // Data
+  // Parent model
+  CbcModel * parentModel_;
+  // Whether to do cuts only at root
+  bool cutsOnlyAtRoot_;
+
+  // How much strong branching to do 
+  int numberStrong_;
+
+  // Number branches needed to trust with dynamic pseudo costs
+  int numberBeforeTrust_;
+
+  // Print level 0 little, 1 medium
+  int printLevel_;
+
+private:
+  /// Illegal Assignment operator 
+  CbcStrategyDefaultSubTree & operator=(const CbcStrategyDefaultSubTree& rhs);
+};
+
+
 #endif

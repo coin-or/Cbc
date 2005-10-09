@@ -3754,7 +3754,21 @@ CbcModel::resolve()
     solver_->resolve() ;
     numberIterations_ += solver_->getIterationCount() ;
     feasible = (solver_->isProvenOptimal() &&
-		!solver_->isDualObjectiveLimitReached()) ; }
+		!solver_->isDualObjectiveLimitReached()) ;
+  }
+  if (0&&feasible) {
+    const double * lb = solver_->getColLower();
+    const double * ub = solver_->getColUpper();
+    const double * x = solver_->getColSolution();
+    const double * dj = solver_->getReducedCost();
+    int numberColumns = solver_->getNumCols();
+    for (int i=0;i<numberColumns;i++) {
+      if (dj[i]>1.0e-4&&ub[i]-lb[i]>1.0e-4&&x[i]>lb[i]+1.0e-4)
+        printf("error %d %g %g %g %g\n",i,dj[i],lb[i],x[i],ub[i]);
+      if (dj[i]<-1.0e-4&&ub[i]-lb[i]>1.0e-4&&x[i]<ub[i]-1.0e-4)
+        printf("error %d %g %g %g %g\n",i,dj[i],lb[i],x[i],ub[i]);
+    }
+  } 
   if (!feasible&& continuousObjective_ <-1.0e30) {
     // at root node - double double check
     bool saveTakeHint;

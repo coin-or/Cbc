@@ -500,7 +500,8 @@ CbcTreeLocal::empty()
 	  }
 	  subSolver->initialSolve();
 	  // We can copy cutoff
-	  subModel->setCutoff(model_->getCutoff());
+          // But adjust
+	  subModel->setCutoff(model_->getCutoff()+model_->getDblParam(CbcModel::CbcCutoffIncrement)+1.0e-6);
 	  subModel->setSolutionCount(0);
 	  assert (subModel->isProvenOptimal());
 	  if (!subModel->typePresolve()) {
@@ -508,8 +509,8 @@ CbcTreeLocal::empty()
 	    if (subModel->status()) {
 	      model_->incrementSubTreeStopped(); 
 	    }
-	    printf("%g %g %g %g\n",subModel->getCutoff(),model_->getCutoff(),
-		   subModel->getMinimizationObjValue(),model_->getMinimizationObjValue());
+	    //printf("%g %g %g %g\n",subModel->getCutoff(),model_->getCutoff(),
+            //   subModel->getMinimizationObjValue(),model_->getMinimizationObjValue());
 	    double newCutoff = subModel->getMinimizationObjValue()-
 	      subModel->getDblParam(CbcModel::CbcCutoffIncrement) ;
 	    if (subModel->getSolutionCount()) {
@@ -591,32 +592,33 @@ CbcTreeLocal::empty()
   }
   if (rhs_<1.0e30||lastTry) {
     int goodSolution=createCut(savedSolution_,cut_);
-    assert(goodSolution>=0);
-    // Add to global cuts 
-    model_->globalCuts()->insert(cut_);
-    {
+    if (goodSolution>=0) {
+      // Add to global cuts 
+      model_->globalCuts()->insert(cut_);
       OsiCuts * global = model_->globalCuts();
       int n = global->sizeRowCuts();
       OsiRowCut * rowCut = global->rowCutPtr(n-1);
       printf("inserting cut - now %d cuts, rhs %g %g, cutspace %g, diversification %d\n",
-	     n,rowCut->lb(),rowCut->ub(),rhs_,diversification_);
+             n,rowCut->lb(),rowCut->ub(),rhs_,diversification_);
       for (int i=0;i<n;i++) {
-	rowCut = global->rowCutPtr(i);
-	printf("%d - rhs %g %g\n",
-	       i,rowCut->lb(),rowCut->ub());
+        rowCut = global->rowCutPtr(i);
+        printf("%d - rhs %g %g\n",
+               i,rowCut->lb(),rowCut->ub());
       }
     }
     // put back node
     startTime_ = (int) CoinCpuTime();
     startNode_=model_->getNodeCount();
-    // save copy of node
-    CbcNode * localNode2 = new CbcNode(*localNode_);
-    // But localNode2 now owns cuts so swap
-    //printf("pushing local node2 onto heap %d %x %x\n",localNode_->nodeNumber(),
-    //   localNode_,localNode_->nodeInfo());
-    nodes_.push_back(localNode_);
-    localNode_=localNode2;
-    make_heap(nodes_.begin(), nodes_.end(), comparison_);
+    if (localNode_) {
+      // save copy of node
+      CbcNode * localNode2 = new CbcNode(*localNode_);
+      // But localNode2 now owns cuts so swap
+      //printf("pushing local node2 onto heap %d %x %x\n",localNode_->nodeNumber(),
+      //   localNode_,localNode_->nodeInfo());
+      nodes_.push_back(localNode_);
+      localNode_=localNode2;
+      make_heap(nodes_.begin(), nodes_.end(), comparison_);
+    }
   }
   return finished;
 }
@@ -657,6 +659,8 @@ CbcTreeLocal::createCut(const double * solution,OsiRowCut & rowCut)
   double integerTolerance = model_->getDblParam(CbcModel::CbcIntegerTolerance);
   double primalTolerance;
   solver->getDblParam(OsiPrimalTolerance,primalTolerance);
+  // relax
+  primalTolerance *= 1000.0;
 
   int numberRows = model_->getNumRows();
 
@@ -750,7 +754,10 @@ CbcTreeLocal::reverseCut(int state, double bias)
       break;
     }
   }
-  assert (i<n);
+  if (!rowCut) {
+    // must have got here in odd way e.g. strong branching
+    return;
+  }
   // get smallest element
   double smallest=COIN_DBL_MAX;
   CoinPackedVector row = cut_.row();

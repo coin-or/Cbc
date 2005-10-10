@@ -39,11 +39,12 @@ Define := ${ClpDefine} ${CoinDefine} ${bzlibDefine} ${zlibDefine} $(lapackLibDef
 LibDir += ${CbcLibDir} ${CglLibDir}
 LibDir += ${OsiLibDir}
 
-LibName += $(OsiCbcLibName) ${CbcLibName} ${CglLibName} $(OsiClpLibName)
+LibName += $(OsiLibName) $(OsiCbcLibName) ${CbcLibName} ${CglLibName} $(OsiClpLibName)
 ifeq ($(VolDefine),COIN_HAS_VOL)
 LibName += $(VolLibName)
 endif
-LibName += ${OsiLibName}
+#add for static links
+LibName += ${OsiLibName} $(CoinLibName)
 
 Define += ${CbcDefine} ${CglDefine}
 Define += ${OsiClpDefine}

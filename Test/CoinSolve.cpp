@@ -991,9 +991,10 @@ int main (int argc, const char *argv[])
                 model.addHeuristic(&heuristic3);
                 model.addHeuristic(&heuristic3a);
               }
-              CbcTreeLocal localTree(&model,NULL,10,0,0,10000,2000);
-              if (useLocalTree)
+              if (useLocalTree) {
+                CbcTreeLocal localTree(&model,NULL,10,0,0,10000,2000);
                 model.passInTreeHandler(localTree);
+              }
               // add cut generators if wanted
               if (probingAction==1)
                 model.addCutGenerator(&probingGen,-1,"Probing");
@@ -1063,13 +1064,15 @@ int main (int argc, const char *argv[])
               
               model.solver()->setIntParam(OsiMaxNumIterationHotStart,100);
               OsiClpSolverInterface * osiclp = dynamic_cast< OsiClpSolverInterface*> (model.solver());
-              // Turn this off if you get problems
-              // Used to be automatically set
-              osiclp->setSpecialOptions(128);
               // go faster stripes
               if (osiclp->getNumRows()<300&&osiclp->getNumCols()<500) {
                 osiclp->setupForRepeatedUse(2,0);
+              } else {
+                osiclp->setupForRepeatedUse(0,0);
               }
+              // Turn this off if you get problems
+              // Used to be automatically set
+              osiclp->setSpecialOptions(osiclp->specialOptions()|(128+64));
               if (gapRatio < 1.0e100) {
                 double value = model.solver()->getObjValue() ;
                 double value2 = gapRatio*(1.0e-5+fabs(value)) ;

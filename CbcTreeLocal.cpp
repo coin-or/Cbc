@@ -463,8 +463,10 @@ CbcTreeLocal::empty()
 	nextStrong_=true;
 	rhs_ += range_/2;
       } else {
-	// This will be last try (may hit max time0
+	// This will be last try (may hit max time)
 	lastTry=true;
+        if (!maxDiversification_)
+          typeCuts_=-1; // make sure can't start again
 	model_->setCutoff(bestCutoff_);
 	printf("Exiting local search with current set of cuts\n");
 	rhs_=1.0e100;
@@ -575,19 +577,31 @@ CbcTreeLocal::empty()
     break;
   case 4:
     // solution not found and subtree not exhausted
-    if (nextStrong_) {
-      // Reverse cut weakly
-      reverseCut(4,rhs_);
-      model_->setCutoff(1.0e50);
-      diversification_++;
-      searchType_=0;
+    if (maxDiversification_) {
+      if (nextStrong_) {
+        // Reverse cut weakly
+        reverseCut(4,rhs_);
+        model_->setCutoff(1.0e50);
+        diversification_++;
+        searchType_=0;
+      } else {
+        // delete last cut
+        deleteCut(cut_);
+        searchType_=1;
+      }
+      nextStrong_=true;
+      rhs_ += range_/2;
     } else {
-      // delete last cut
-      deleteCut(cut_);
-      searchType_=1;
+      // special case when using as heuristic
+      // This will be last try (may hit max time0
+      lastTry=true;
+      model_->setCutoff(bestCutoff_);
+      printf("Exiting local search with current set of cuts\n");
+      rhs_=1.0e100;
+      // Can now stop on gap
+      model_->setDblParam(CbcModel::CbcAllowableGap,savedGap_);
+      typeCuts_ =-1;
     }
-    nextStrong_=true;
-    rhs_ += range_/2;
     break;
   }
   if (rhs_<1.0e30||lastTry) {
@@ -651,6 +665,8 @@ CbcTreeLocal::endSearch()
 int
 CbcTreeLocal::createCut(const double * solution,OsiRowCut & rowCut)
 {
+  if (rhs_>1.0e20)
+    return -1;
   OsiSolverInterface * solver = model_->solver();
   const double * rowLower = solver->getRowLower();
   const double * rowUpper = solver->getRowUpper();

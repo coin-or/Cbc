@@ -2371,6 +2371,9 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,int numberP
         */
         if (choice.upMovement<1.0e100) {
           if(choice.downMovement<1.0e100) {
+            // In case solution coming in was odd
+            choice.upMovement = CoinMax(0.0,choice.upMovement);
+            choice.downMovement = CoinMax(0.0,choice.downMovement);
             // feasible - see which best
             int iColumn =
               model->integerVariable()[choice.possibleBranch->variable()] ;

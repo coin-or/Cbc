@@ -75,7 +75,6 @@ CXXFLAGS  += -I.
 TESTSRC := sample2.cpp
 TESTSRC += CbcBranchUser.cpp
 TESTSRC += CbcCompareUser.cpp
-TESTSRC += CbcHeuristicUserB.cpp
 TESTOBJ := $(addprefix $(TARGETDIR)/, $(TESTSRC:.cpp=.o))
 TESTDEP := $(addprefix $(DEPDIR)/, $(TESTSRC:.cpp=.d))
 

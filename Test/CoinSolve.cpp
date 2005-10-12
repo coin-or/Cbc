@@ -32,6 +32,7 @@
 #include "ClpPrimalColumnDantzig.hpp"
 #include "ClpPresolve.hpp"
 #include "CbcOrClpParam.hpp"
+#include "OsiRowCutDebugger.hpp"
 #ifdef DMALLOC
 #include "dmalloc.h"
 #endif
@@ -211,6 +212,7 @@ int main (int argc, const char *argv[])
     // How far to follow the consequences
     probingGen.setMaxLook(10);
     probingGen.setMaxLookRoot(50);
+    probingGen.setMaxLookRoot(10);
     // Only look at rows with fewer than this number of elements
     probingGen.setMaxElements(200);
     probingGen.setRowCuts(3);
@@ -969,9 +971,16 @@ int main (int argc, const char *argv[])
                 model.assignSolver(solver2);
                 model.initialSolve();
               }
-              //std::string problemName ;
-              //model.solver()->getStrParam(OsiProbName,problemName) ;
-              //model.solver()->activateRowCutDebugger(problemName.c_str()) ;
+              if (0) {
+                // for debug
+                std::string problemName ;
+                model.solver()->getStrParam(OsiProbName,problemName) ;
+                model.solver()->activateRowCutDebugger(problemName.c_str()) ;
+                twomirGen.probname_=strdup(problemName.c_str());
+                // checking seems odd
+                //redsplitGen.set_given_optsol(model.solver()->getRowCutDebuggerAlways()->optimalSolution(),
+                //                         model.getNumCols());
+              }
               // FPump done first as it only works if no solution
               CbcHeuristicFPump heuristic4(model);
               if (useFpump) {

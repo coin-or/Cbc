@@ -6,6 +6,7 @@
 #include "CbcTreeLocal.hpp"
 #include "CoinPackedMatrix.hpp"
 #include "CoinTime.hpp"
+#include "OsiRowCutDebugger.hpp"
 #include <cassert>
 #if 0
 // gdb doesn't always put breakpoints in this virtual function
@@ -593,6 +594,8 @@ CbcTreeLocal::empty()
       rhs_ += range_/2;
     } else {
       // special case when using as heuristic
+      // Reverse cut weakly if lb -infinity
+      reverseCut(4,rhs_);
       // This will be last try (may hit max time0
       lastTry=true;
       model_->setCutoff(bestCutoff_);
@@ -614,6 +617,11 @@ CbcTreeLocal::empty()
       OsiRowCut * rowCut = global->rowCutPtr(n-1);
       printf("inserting cut - now %d cuts, rhs %g %g, cutspace %g, diversification %d\n",
              n,rowCut->lb(),rowCut->ub(),rhs_,diversification_);
+      const OsiRowCutDebugger *debugger = model_->solver()->getRowCutDebuggerAlways() ;
+      if (debugger) {
+        if(debugger->invalidCut(*rowCut))
+          printf("ZZZZTree Global cut - cuts off optimal solution!\n");
+      }
       for (int i=0;i<n;i++) {
         rowCut = global->rowCutPtr(i);
         printf("%d - rhs %g %g\n",
@@ -774,6 +782,8 @@ CbcTreeLocal::reverseCut(int state, double bias)
     // must have got here in odd way e.g. strong branching
     return;
   }
+  if (rowCut->lb()>-1.0e10)
+    return;
   // get smallest element
   double smallest=COIN_DBL_MAX;
   CoinPackedVector row = cut_.row();
@@ -791,6 +801,11 @@ CbcTreeLocal::reverseCut(int state, double bias)
   rowCut->setUb(COIN_DBL_MAX);
   printf("new rhs %g %g, bias %g smallest %g ",
 	 rowCut->lb(),rowCut->ub(),bias,smallest);
+  const OsiRowCutDebugger *debugger = model_->solver()->getRowCutDebuggerAlways() ;
+  if (debugger) {
+    if(debugger->invalidCut(*rowCut))
+      printf("ZZZZTree Global cut - cuts off optimal solution!\n");
+  }
 }
 // Delete last cut branch
 void 

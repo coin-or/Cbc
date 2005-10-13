@@ -967,13 +967,10 @@ void CbcModel::branchAndBound(int doStatistics)
           optimal path.
         */
         const OsiRowCutDebugger *debugger = solver_->getRowCutDebugger() ;
-        if (debugger)
-          { if(debugger->onOptimalPath(*solver_)) {
-            onOptimalPath=true;
-            printf("On optimal path\n") ;
-          } else {
-            printf("Not on optimal path\n") ; }
-          }
+        if (debugger) {
+          onOptimalPath=true;
+          printf("On optimal path\n") ;
+        }
       }
 /*
   Reoptimize, possibly generating cuts and/or using heuristics to find

@@ -21,7 +21,7 @@
 #include "CglOddHole.hpp"
 #include "CglClique.hpp"
 #include "CglFlowCover.hpp"
-#include "CglMixedIntegerRounding.hpp"
+#include "CglMixedIntegerRounding2.hpp"
 
 // Heuristics
 
@@ -110,7 +110,7 @@ CbcStrategyDefault::setupCutGenerators(CbcModel & model)
   generator5.setStarCliqueReport(false);
   generator5.setRowCliqueReport(false);
 
-  CglMixedIntegerRounding mixedGen;
+  CglMixedIntegerRounding2 mixedGen;
   CglFlowCover flowGen;
   
   // Add in generators
@@ -177,14 +177,14 @@ CbcStrategyDefault::setupCutGenerators(CbcModel & model)
   found=false;
   for (iGenerator=0;iGenerator<numberGenerators;iGenerator++) {
     CglCutGenerator * generator = model.cutGenerator(iGenerator)->generator();
-    CglMixedIntegerRounding * cgl = dynamic_cast<CglMixedIntegerRounding *>(generator);
+    CglMixedIntegerRounding2 * cgl = dynamic_cast<CglMixedIntegerRounding2 *>(generator);
     if (cgl) {
       found=true;
       break;
     }
   }
   if (!found)
-    model.addCutGenerator(&mixedGen,setting,"MixedIntegerRounding");
+    model.addCutGenerator(&mixedGen,setting,"MixedIntegerRounding2");
   // Say we want timings
   int newNumberGenerators = model.numberCutGenerators();
   for (iGenerator=numberGenerators;iGenerator<newNumberGenerators;iGenerator++) {
@@ -320,7 +320,7 @@ CbcStrategyDefaultSubTree::setupCutGenerators(CbcModel & model)
   generator5.setStarCliqueReport(false);
   generator5.setRowCliqueReport(false);
 
-  CglMixedIntegerRounding mixedGen;
+  CglMixedIntegerRounding2 mixedGen;
   CglFlowCover flowGen;
   
   // Add in generators
@@ -330,15 +330,17 @@ CbcStrategyDefaultSubTree::setupCutGenerators(CbcModel & model)
   int iGenerator;
   bool found;
   found=false;
+  int howOften=0;
   for (iGenerator=0;iGenerator<numberParentGenerators;iGenerator++) {
     CglCutGenerator * generator = parentModel_->cutGenerator(iGenerator)->generator();
     CglProbing * cgl = dynamic_cast<CglProbing *>(generator);
     if (cgl) {
       found=true;
+      howOften = parentModel_->cutGenerator(iGenerator)->howOften();
       break;
     }
   }
-  if (found) {
+  if (found&&howOften>=0) {
     found=false;
     for (iGenerator=0;iGenerator<numberGenerators;iGenerator++) {
       CglCutGenerator * generator = model.cutGenerator(iGenerator)->generator();
@@ -357,10 +359,11 @@ CbcStrategyDefaultSubTree::setupCutGenerators(CbcModel & model)
     CglGomory * cgl = dynamic_cast<CglGomory *>(generator);
     if (cgl) {
       found=true;
+      howOften = parentModel_->cutGenerator(iGenerator)->howOften();
       break;
     }
   }
-  if (found) {
+  if (found&&howOften>=0) {
     found=false;
     for (iGenerator=0;iGenerator<numberGenerators;iGenerator++) {
       CglCutGenerator * generator = model.cutGenerator(iGenerator)->generator();
@@ -379,10 +382,11 @@ CbcStrategyDefaultSubTree::setupCutGenerators(CbcModel & model)
     CglKnapsackCover * cgl = dynamic_cast<CglKnapsackCover *>(generator);
     if (cgl) {
       found=true;
+      howOften = parentModel_->cutGenerator(iGenerator)->howOften();
       break;
     }
   }
-  if (found) {
+  if (found&&howOften>=0) {
     found=false;
     for (iGenerator=0;iGenerator<numberGenerators;iGenerator++) {
       CglCutGenerator * generator = model.cutGenerator(iGenerator)->generator();
@@ -401,10 +405,11 @@ CbcStrategyDefaultSubTree::setupCutGenerators(CbcModel & model)
     CglClique * cgl = dynamic_cast<CglClique *>(generator);
     if (cgl) {
       found=true;
+      howOften = parentModel_->cutGenerator(iGenerator)->howOften();
       break;
     }
   }
-  if (found) {
+  if (found&&howOften>=0) {
     found=false;
     for (iGenerator=0;iGenerator<numberGenerators;iGenerator++) {
       CglCutGenerator * generator = model.cutGenerator(iGenerator)->generator();
@@ -423,10 +428,11 @@ CbcStrategyDefaultSubTree::setupCutGenerators(CbcModel & model)
     CglFlowCover * cgl = dynamic_cast<CglFlowCover *>(generator);
     if (cgl) {
       found=true;
+      howOften = parentModel_->cutGenerator(iGenerator)->howOften();
       break;
     }
   }
-  if (found) {
+  if (found&&howOften>=0) {
     found=false;
     for (iGenerator=0;iGenerator<numberGenerators;iGenerator++) {
       CglCutGenerator * generator = model.cutGenerator(iGenerator)->generator();
@@ -442,24 +448,25 @@ CbcStrategyDefaultSubTree::setupCutGenerators(CbcModel & model)
   }
   for (iGenerator=0;iGenerator<numberParentGenerators;iGenerator++) {
     CglCutGenerator * generator = parentModel_->cutGenerator(iGenerator)->generator();
-    CglMixedIntegerRounding * cgl = dynamic_cast<CglMixedIntegerRounding *>(generator);
+    CglMixedIntegerRounding2 * cgl = dynamic_cast<CglMixedIntegerRounding2 *>(generator);
     if (cgl) {
       found=true;
+      howOften = parentModel_->cutGenerator(iGenerator)->howOften();
       break;
     }
   }
-  if (found) {
+  if (found&&howOften>=0) {
     found=false;
     for (iGenerator=0;iGenerator<numberGenerators;iGenerator++) {
       CglCutGenerator * generator = model.cutGenerator(iGenerator)->generator();
-      CglMixedIntegerRounding * cgl = dynamic_cast<CglMixedIntegerRounding *>(generator);
+      CglMixedIntegerRounding2 * cgl = dynamic_cast<CglMixedIntegerRounding2 *>(generator);
       if (cgl) {
         found=true;
         break;
       }
     }
     if (!found)
-      model.addCutGenerator(&mixedGen,setting,"MixedIntegerRounding");
+      model.addCutGenerator(&mixedGen,setting,"MixedIntegerRounding2");
   }
   // Say we want timings
   int newNumberGenerators = model.numberCutGenerators();

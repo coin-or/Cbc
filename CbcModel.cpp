@@ -1879,7 +1879,7 @@ CbcModel::CbcModel(const CbcModel & rhs, bool noTree)
   numberStrong_(rhs.numberStrong_),
   numberBeforeTrust_(rhs.numberBeforeTrust_),
   numberPenalties_(rhs.numberPenalties_),
-  penaltyScaleFactor_(penaltyScaleFactor_),
+  penaltyScaleFactor_(rhs.penaltyScaleFactor_),
   numberInfeasibleNodes_(rhs.numberInfeasibleNodes_),
   problemType_(rhs.problemType_),
   printFrequency_(rhs.printFrequency_),

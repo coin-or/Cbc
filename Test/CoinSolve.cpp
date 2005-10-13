@@ -60,7 +60,7 @@
 #include "CglRedSplit.hpp"
 #include "CglClique.hpp"
 #include "CglFlowCover.hpp"
-#include "CglMixedIntegerRounding.hpp"
+#include "CglMixedIntegerRounding2.hpp"
 #include "CglTwomir.hpp"
 
 #include "CbcModel.hpp"
@@ -116,6 +116,7 @@ int main (int argc, const char *argv[])
     // Set up all non-standard stuff
     OsiClpSolverInterface solver1;
     CbcModel model(solver1);
+    CbcModel * babModel = NULL;
     model.setNumberBeforeTrust(5);
     OsiSolverInterface * solver = model.solver();
     OsiClpSolverInterface * clpSolver = dynamic_cast< OsiClpSolverInterface*> (solver);
@@ -131,6 +132,7 @@ int main (int argc, const char *argv[])
     int outputFormat=2;
     int slpValue=-1;
     int printOptions=0;
+    int printMode=0;
     int presolveOptions=0;
     int doCrash=0;
     int doSprint=-1;
@@ -151,6 +153,8 @@ int main (int argc, const char *argv[])
     std::string importFile ="";
     std::string exportFile ="default.mps";
     std::string importBasisFile ="";
+    std::string debugFile="";
+    double * debugValues = NULL;
     int basisHasValues=0;
     std::string exportBasisFile ="default.bas";
     std::string saveFile ="default.prob";
@@ -162,6 +166,7 @@ int main (int argc, const char *argv[])
     establishParams(numberParameters,parameters) ;
     parameters[whichParam(BASISIN,numberParameters,parameters)].setStringValue(importBasisFile);
     parameters[whichParam(BASISOUT,numberParameters,parameters)].setStringValue(exportBasisFile);
+    parameters[whichParam(DEBUG,numberParameters,parameters)].setStringValue(debugFile);
     parameters[whichParam(DIRECTORY,numberParameters,parameters)].setStringValue(directory);
     parameters[whichParam(DUALBOUND,numberParameters,parameters)].setDoubleValue(lpSolver->dualBound());
     parameters[whichParam(DUALTOLERANCE,numberParameters,parameters)].setDoubleValue(lpSolver->dualTolerance());
@@ -239,7 +244,7 @@ int main (int argc, const char *argv[])
     int cliqueAction=1;
     parameters[whichParam(CLIQUECUTS,numberParameters,parameters)].setCurrentOption("on");
 
-    CglMixedIntegerRounding mixedGen;
+    CglMixedIntegerRounding2 mixedGen;
     // set default action (0=off,1=on,2=root)
     int mixedAction=1;
     parameters[whichParam(MIXEDCUTS,numberParameters,parameters)].setCurrentOption("on");
@@ -572,6 +577,9 @@ int main (int argc, const char *argv[])
 	    case ERRORSALLOWED:
 	      allowImportErrors = action;
 	      break;
+            case INTPRINT:
+              printMode=action;
+              break;
               //case ALGORITHM:
 	      //algorithm  = action;
               //defaultSettings=false; // user knows what she is doing
@@ -953,8 +961,14 @@ int main (int argc, const char *argv[])
               // See if we want preprocessing
               OsiSolverInterface * saveSolver=NULL;
               CglPreProcess process;
+              delete babModel;
+              babModel = new CbcModel(model);
+              OsiSolverInterface * solver3 = clpSolver->clone();
+              babModel->assignSolver(solver3);
+              clpSolver = dynamic_cast< OsiClpSolverInterface*> (babModel->solver());
+              lpSolver = clpSolver->getModelPtr();
               if (preProcess) {
-                saveSolver=model.solver()->clone();
+                saveSolver=babModel->solver()->clone();
                 /* Do not try and produce equality cliques and
                    do up to 10 passes */
                 OsiSolverInterface * solver2 = process.preProcess(*saveSolver,false,10);
@@ -966,113 +980,123 @@ int main (int argc, const char *argv[])
                          solver2->getNumRows(),solver2->getNumCols());
                 }
                 //solver2->resolve();
+                if (preProcess==2) {
+                  OsiClpSolverInterface * clpSolver = dynamic_cast< OsiClpSolverInterface*> (solver2);
+                  ClpSimplex * lpSolver = clpSolver->getModelPtr();
+                  lpSolver->writeMps("presolved.mps",0,1,lpSolver->optimizationDirection());
+                  printf("Preprocessed model (minimization) on presolved.mps\n");
+                }
                 // we have to keep solver2 so pass clone
                 solver2 = solver2->clone();
-                model.assignSolver(solver2);
-                model.initialSolve();
+                babModel->assignSolver(solver2);
+                babModel->initialSolve();
               }
               if (0) {
                 // for debug
                 std::string problemName ;
-                model.solver()->getStrParam(OsiProbName,problemName) ;
-                model.solver()->activateRowCutDebugger(problemName.c_str()) ;
+                babModel->solver()->getStrParam(OsiProbName,problemName) ;
+                babModel->solver()->activateRowCutDebugger(problemName.c_str()) ;
                 twomirGen.probname_=strdup(problemName.c_str());
                 // checking seems odd
-                //redsplitGen.set_given_optsol(model.solver()->getRowCutDebuggerAlways()->optimalSolution(),
-                //                         model.getNumCols());
+                //redsplitGen.set_given_optsol(babModel->solver()->getRowCutDebuggerAlways()->optimalSolution(),
+                //                         babModel->getNumCols());
+              }
+              if (debugValues) {
+                // for debug
+                babModel->solver()->activateRowCutDebugger(debugValues) ;
               }
               // FPump done first as it only works if no solution
-              CbcHeuristicFPump heuristic4(model);
+              CbcHeuristicFPump heuristic4(*babModel);
               if (useFpump) {
                 heuristic4.setMaximumPasses(useFpump);
-                model.addHeuristic(&heuristic4);
+                babModel->addHeuristic(&heuristic4);
               }
-              CbcRounding heuristic1(model);
+              CbcRounding heuristic1(*babModel);
               if (useRounding)
-                model.addHeuristic(&heuristic1) ;
-              CbcHeuristicLocal heuristic2(model);
+                babModel->addHeuristic(&heuristic1) ;
+              CbcHeuristicLocal heuristic2(*babModel);
               heuristic2.setSearchType(1);
               if (useCombine)
-                model.addHeuristic(&heuristic2);
-              CbcHeuristicGreedyCover heuristic3(model);
-              CbcHeuristicGreedyEquality heuristic3a(model);
+                babModel->addHeuristic(&heuristic2);
+              CbcHeuristicGreedyCover heuristic3(*babModel);
+              CbcHeuristicGreedyEquality heuristic3a(*babModel);
               if (useGreedy) {
-                model.addHeuristic(&heuristic3);
-                model.addHeuristic(&heuristic3a);
+                babModel->addHeuristic(&heuristic3);
+                babModel->addHeuristic(&heuristic3a);
               }
               if (useLocalTree) {
-                CbcTreeLocal localTree(&model,NULL,10,0,0,10000,2000);
-                model.passInTreeHandler(localTree);
+                CbcTreeLocal localTree(babModel,NULL,10,0,0,10000,2000);
+                babModel->passInTreeHandler(localTree);
               }
               // add cut generators if wanted
               if (probingAction==1)
-                model.addCutGenerator(&probingGen,-1,"Probing");
+                babModel->addCutGenerator(&probingGen,-1,"Probing");
               else if (probingAction==2)
-                model.addCutGenerator(&probingGen,-99,"Probing");
+                babModel->addCutGenerator(&probingGen,-99,"Probing");
               if (gomoryAction==1)
-                model.addCutGenerator(&gomoryGen,-1,"Gomory");
+                babModel->addCutGenerator(&gomoryGen,-1,"Gomory");
               else if (gomoryAction==2)
-                model.addCutGenerator(&gomoryGen,-99,"Gomory");
+                babModel->addCutGenerator(&gomoryGen,-99,"Gomory");
               if (knapsackAction==1)
-                model.addCutGenerator(&knapsackGen,-1,"Knapsack");
+                babModel->addCutGenerator(&knapsackGen,-1,"Knapsack");
               else if (knapsackAction==2)
-                model.addCutGenerator(&knapsackGen,-99,"Knapsack");
+                babModel->addCutGenerator(&knapsackGen,-99,"Knapsack");
               if (redsplitAction==1)
-                model.addCutGenerator(&redsplitGen,-1,"Reduce-and-split");
+                babModel->addCutGenerator(&redsplitGen,-1,"Reduce-and-split");
               else if (redsplitAction==2)
-                model.addCutGenerator(&redsplitGen,-99,"Reduce-and-split");
+                babModel->addCutGenerator(&redsplitGen,-99,"Reduce-and-split");
               if (cliqueAction==1)
-                model.addCutGenerator(&cliqueGen,-1,"Clique");
+                babModel->addCutGenerator(&cliqueGen,-1,"Clique");
               else if (cliqueAction==2)
-                model.addCutGenerator(&cliqueGen,-99,"Clique");
+                babModel->addCutGenerator(&cliqueGen,-99,"Clique");
               if (mixedAction==1)
-                model.addCutGenerator(&mixedGen,-1,"MixedintegerRounding");
+                babModel->addCutGenerator(&mixedGen,-1,"MixedIntegerRounding2");
               else if (mixedAction==2)
-                model.addCutGenerator(&mixedGen,-99,"MixedintegerRounding");
+                babModel->addCutGenerator(&mixedGen,-99,"MixedIntegerRounding2");
               if (flowAction==1)
-                model.addCutGenerator(&flowGen,-1,"FlowCover");
+                babModel->addCutGenerator(&flowGen,-1,"FlowCover");
               else if (flowAction==2)
-                model.addCutGenerator(&flowGen,-99,"FlowCover");
+                babModel->addCutGenerator(&flowGen,-99,"FlowCover");
               if (twomirAction==1)
-                model.addCutGenerator(&twomirGen,-1,"TwoMirCuts");
+                babModel->addCutGenerator(&twomirGen,-1,"TwoMirCuts");
               else if (twomirAction==2)
-                model.addCutGenerator(&twomirGen,-99,"TwoMirCuts");
+                babModel->addCutGenerator(&twomirGen,-99,"TwoMirCuts");
               // Say we want timings
-              int numberGenerators = model.numberCutGenerators();
+              int numberGenerators = babModel->numberCutGenerators();
               int iGenerator;
               int cutDepth=
                 parameters[whichParam(CUTDEPTH,numberParameters,parameters)].intValue();
               for (iGenerator=0;iGenerator<numberGenerators;iGenerator++) {
-                CbcCutGenerator * generator = model.cutGenerator(iGenerator);
+                CbcCutGenerator * generator = babModel->cutGenerator(iGenerator);
                 generator->setTiming(true);
                 if (cutDepth>=0)
                   generator->setWhatDepth(cutDepth) ;
               }
               // Could tune more
-              model.setMinimumDrop(min(1.0,
-                                        fabs(model.getMinimizationObjValue())*1.0e-3+1.0e-4));
+              babModel->setMinimumDrop(min(1.0,
+                                        fabs(babModel->getMinimizationObjValue())*1.0e-3+1.0e-4));
               
-              if (model.getNumCols()<500)
-                model.setMaximumCutPassesAtRoot(-100); // always do 100 if possible
-              else if (model.getNumCols()<5000)
-                model.setMaximumCutPassesAtRoot(100); // use minimum drop
+              if (babModel->getNumCols()<500)
+                babModel->setMaximumCutPassesAtRoot(-100); // always do 100 if possible
+              else if (babModel->getNumCols()<5000)
+                babModel->setMaximumCutPassesAtRoot(100); // use minimum drop
               else
-                model.setMaximumCutPassesAtRoot(20);
-              model.setMaximumCutPasses(2);
+                babModel->setMaximumCutPassesAtRoot(20);
+              babModel->setMaximumCutPasses(2);
               
               // Do more strong branching if small
-              //if (model.getNumCols()<5000)
-              //model.setNumberStrong(20);
+              //if (babModel->getNumCols()<5000)
+              //babModel->setNumberStrong(20);
               // Switch off strong branching if wanted
-              //if (model.getNumCols()>10*model.getNumRows())
-              //model.setNumberStrong(0);
-              model.messageHandler()->setLogLevel(parameters[log].intValue());
-              if (model.getNumCols()>2000||model.getNumRows()>1500||
-                  model.messageHandler()->logLevel()>1)
-                model.setPrintFrequency(100);
+              //if (babModel->getNumCols()>10*babModel->getNumRows())
+              //babModel->setNumberStrong(0);
+              babModel->messageHandler()->setLogLevel(parameters[log].intValue());
+              if (babModel->getNumCols()>2000||babModel->getNumRows()>1500||
+                  babModel->messageHandler()->logLevel()>1)
+                babModel->setPrintFrequency(100);
               
-              model.solver()->setIntParam(OsiMaxNumIterationHotStart,100);
-              OsiClpSolverInterface * osiclp = dynamic_cast< OsiClpSolverInterface*> (model.solver());
+              babModel->solver()->setIntParam(OsiMaxNumIterationHotStart,100);
+              OsiClpSolverInterface * osiclp = dynamic_cast< OsiClpSolverInterface*> (babModel->solver());
               // go faster stripes
               if (osiclp->getNumRows()<300&&osiclp->getNumCols()<500) {
                 osiclp->setupForRepeatedUse(2,0);
@@ -1083,31 +1107,60 @@ int main (int argc, const char *argv[])
               // Used to be automatically set
               osiclp->setSpecialOptions(osiclp->specialOptions()|(128+64));
               if (gapRatio < 1.0e100) {
-                double value = model.solver()->getObjValue() ;
+                double value = babModel->solver()->getObjValue() ;
                 double value2 = gapRatio*(1.0e-5+fabs(value)) ;
-                model.setAllowableGap(value2) ;
+                babModel->setAllowableGap(value2) ;
                 std::cout << "Continuous " << value
                           << ", so allowable gap set to "
                           << value2 << std::endl ;
               }
-              currentBranchModel = &model;
-              model.branchAndBound();
+              currentBranchModel = babModel;
+              babModel->branchAndBound();
               currentBranchModel = NULL;
+              if (debugFile=="createAfterPre"&&babModel->bestSolution()) {
+                FILE * fp = fopen("debug.file","wb");
+                assert (fp);
+                int n = babModel->getNumCols();
+                fwrite(babModel->bestSolution(),sizeof(double),n,fp);
+                fclose(fp);
+              }
+              // Print more statistics
+              std::cout<<"Cuts at root node changed objective from "<<babModel->getContinuousObjective()
+                       <<" to "<<babModel->rootObjectiveAfterCuts()<<std::endl;
+              
+              for (iGenerator=0;iGenerator<numberGenerators;iGenerator++) {
+                CbcCutGenerator * generator = babModel->cutGenerator(iGenerator);
+                std::cout<<generator->cutGeneratorName()<<" was tried "
+                         <<generator->numberTimesEntered()<<" times and created "
+                         <<generator->numberCutsInTotal()<<" cuts of which "
+                         <<generator->numberCutsActive()<<" were active after adding rounds of cuts";
+                if (generator->timing())
+                  std::cout<<" ( "<<generator->timeInCutGenerator()<<" seconds)"<<std::endl;
+                else
+                  std::cout<<std::endl;
+              }
               time2 = CoinCpuTime();
               totalTime += time2-time1;
-              if (model.getMinimizationObjValue()<1.0e50) {
+              if (babModel->getMinimizationObjValue()<1.0e50) {
                 // post process
                 if (preProcess) {
-                  process.postProcess(*model.solver());
+                  process.postProcess(*babModel->solver());
                   // Solution now back in saveSolver
-                  model.assignSolver(saveSolver);
-                  clpSolver = dynamic_cast< OsiClpSolverInterface*> (model.solver());
-                  lpSolver = clpSolver->getModelPtr();
+                  babModel->assignSolver(saveSolver);
                 }
               }
-              std::cout<<"Result "<<model.getObjValue()<<
-                " iterations "<<model.getIterationCount()<<
-                " nodes "<<model.getNodeCount()<<
+              if (debugFile=="create"&&babModel->bestSolution()) {
+                FILE * fp = fopen("debug.file","wb");
+                assert (fp);
+                int n = babModel->getNumCols();
+                fwrite(babModel->bestSolution(),sizeof(double),n,fp);
+                fclose(fp);
+              }
+              clpSolver = dynamic_cast< OsiClpSolverInterface*> (babModel->solver());
+              lpSolver = clpSolver->getModelPtr();
+              std::cout<<"Result "<<babModel->getObjValue()<<
+                " iterations "<<babModel->getIterationCount()<<
+                " nodes "<<babModel->getNodeCount()<<
                 " took "<<time2-time1<<" seconds - total "<<totalTime<<std::endl;
               time1 = time2;
             } else {
@@ -1116,6 +1169,8 @@ int main (int argc, const char *argv[])
             break ;
 	  case IMPORT:
 	    {
+              delete babModel;
+              babModel=NULL;
 	      // get next field
 	      field = CoinReadGetString(argc,argv);
 	      if (field=="$") {
@@ -1408,6 +1463,56 @@ int main (int argc, const char *argv[])
 		else
 		  basisHasValues=1;
 	      }
+	    } else {
+	      std::cout<<"** Current model not valid"<<std::endl;
+	    }
+	    break;
+	  case DEBUG:
+	    if (goodModel) {
+              delete [] debugValues;
+              debugValues=NULL;
+	      // get next field
+	      field = CoinReadGetString(argc,argv);
+	      if (field=="$") {
+		field = parameters[iParam].stringValue();
+	      } else if (field=="EOL") {
+		parameters[iParam].printString();
+		break;
+	      } else {
+		parameters[iParam].setStringValue(field);
+                debugFile=field;
+                if (debugFile=="create"||
+                    debugFile=="createAfterPre") {
+                  printf("Will create a debug file so this run should be a good one\n");
+                  break;
+                }
+	      }
+	      std::string fileName;
+              if (field[0]=='/'||field[0]=='\\') {
+                fileName = field;
+              } else if (field[0]=='~') {
+                char * environ = getenv("HOME");
+                if (environ) {
+                  std::string home(environ);
+                  field=field.erase(0,1);
+                  fileName = home+field;
+                } else {
+                  fileName=field;
+                }
+              } else {
+                fileName = directory+field;
+              }
+              FILE *fp=fopen(fileName.c_str(),"rb");
+              if (fp) {
+                // can open - lets go for it
+                int numColumns = lpSolver->getNumCols();
+                debugValues = new double[numColumns];
+                int n=fread(debugValues,sizeof(double),numColumns,fp);
+                printf("%d doubles read into debugValues\n",n);
+                fclose(fp);
+              } else {
+                std::cout<<"Unable to open file "<<fileName<<std::endl;
+              }
 	    } else {
 	      std::cout<<"** Current model not valid"<<std::endl;
 	    }
@@ -1802,25 +1907,27 @@ clp watson.mps -\nscaling off\nprimalsimplex"
 		double primalTolerance = lpSolver->primalTolerance();
 		char format[6];
 		sprintf(format,"%%-%ds",CoinMax(lengthName,8));
-		for (iRow=0;iRow<numberRows;iRow++) {
-		  int type=0;
-		  if (primalRowSolution[iRow]>rowUpper[iRow]+primalTolerance||
-		      primalRowSolution[iRow]<rowLower[iRow]-primalTolerance) {
-		    fprintf(fp,"** ");
-		    type=2;
-		  } else if (fabs(primalRowSolution[iRow])>1.0e-8) {
-		    type=1;
-		  } else if (numberRows<50) {
-		    type=3;
-		  }
-		  if (type) {
-		    fprintf(fp,"%7d ",iRow);
-		    if (lengthName)
-		      fprintf(fp,format,rowNames[iRow].c_str());
-		    fprintf(fp,"%15.8g        %15.8g\n",primalRowSolution[iRow],
-			    dualRowSolution[iRow]);
-		  }
-		}
+                if (printMode>2) {
+                  for (iRow=0;iRow<numberRows;iRow++) {
+                    int type=printMode-3;
+                    if (primalRowSolution[iRow]>rowUpper[iRow]+primalTolerance||
+                        primalRowSolution[iRow]<rowLower[iRow]-primalTolerance) {
+                      fprintf(fp,"** ");
+                      type=2;
+                    } else if (fabs(primalRowSolution[iRow])>1.0e-8) {
+                      type=1;
+                    } else if (numberRows<50) {
+                      type=3;
+                    }
+                    if (type) {
+                      fprintf(fp,"%7d ",iRow);
+                      if (lengthName)
+                        fprintf(fp,format,rowNames[iRow].c_str());
+                      fprintf(fp,"%15.8g        %15.8g\n",primalRowSolution[iRow],
+                              dualRowSolution[iRow]);
+                    }
+                  }
+                }
 		int iColumn;
 		int numberColumns=lpSolver->numberColumns();
 		double * dualColumnSolution = 
@@ -1829,26 +1936,76 @@ clp watson.mps -\nscaling off\nprimalsimplex"
 		  lpSolver->primalColumnSolution();
 		double * columnLower = lpSolver->columnLower();
 		double * columnUpper = lpSolver->columnUpper();
-		for (iColumn=0;iColumn<numberColumns;iColumn++) {
-		  int type=0;
-		  if (primalColumnSolution[iColumn]>columnUpper[iColumn]+primalTolerance||
-		      primalColumnSolution[iColumn]<columnLower[iColumn]-primalTolerance) {
-		    fprintf(fp,"** ");
-		    type=2;
-		  } else if (fabs(primalColumnSolution[iColumn])>1.0e-8) {
-		    type=1;
-		  } else if (numberColumns<50) {
-		    type=3;
-		  }
-		  if (type) {
-		    fprintf(fp,"%7d ",iColumn);
-		    if (lengthName)
-		      fprintf(fp,format,columnNames[iColumn].c_str());
-		    fprintf(fp,"%15.8g        %15.8g\n",
-			    primalColumnSolution[iColumn],
-			    dualColumnSolution[iColumn]);
-		  }
-		}
+                if (printMode!=2) {
+                  for (iColumn=0;iColumn<numberColumns;iColumn++) {
+                    int type=0;
+                    if (primalColumnSolution[iColumn]>columnUpper[iColumn]+primalTolerance||
+                        primalColumnSolution[iColumn]<columnLower[iColumn]-primalTolerance) {
+                      fprintf(fp,"** ");
+                      type=2;
+                    } else if (fabs(primalColumnSolution[iColumn])>1.0e-8) {
+                      type=1;
+                    } else if (numberColumns<50) {
+                      type=3;
+                    }
+                    // see if integer
+                    if (!lpSolver->isInteger(iColumn)&&printMode==1)
+                      type=0;
+                    if (type) {
+                      fprintf(fp,"%7d ",iColumn);
+                      if (lengthName)
+                        fprintf(fp,format,columnNames[iColumn].c_str());
+                      fprintf(fp,"%15.8g        %15.8g\n",
+                              primalColumnSolution[iColumn],
+                              dualColumnSolution[iColumn]);
+                    }
+                  }
+                } else {
+                  // special format suitable for OsiRowCutDebugger
+                  int n=0;
+                  bool comma=false;
+                  bool newLine=false;
+                  fprintf(fp,"\tint intIndicesV[]={\n");
+                  for (iColumn=0;iColumn<numberColumns;iColumn++) {
+                    if(primalColumnSolution[iColumn]>0.5&&model.solver()->isInteger(iColumn)) {
+                      if (comma)
+                        fprintf(fp,",");
+                      if (newLine)
+                        fprintf(fp,"\n");
+                      fprintf(fp,"%d ",iColumn);
+                      comma=true;
+                      newLine=false;
+                      n++;
+                      if (n==10) {
+                        n=0;
+                        newLine=true;
+                      }
+                    }
+                  }
+                  fprintf(fp,"};\n");
+                  n=0;
+                  comma=false;
+                  newLine=false;
+                  fprintf(fp,"\tdouble intSolnV[]={\n");
+                  for ( iColumn=0;iColumn<numberColumns;iColumn++) {
+                    if(primalColumnSolution[iColumn]>0.5&&model.solver()->isInteger(iColumn)) {
+                      if (comma)
+                        fprintf(fp,",");
+                      if (newLine)
+                        fprintf(fp,"\n");
+                      int value = (int) (primalColumnSolution[iColumn]+0.5);
+                      fprintf(fp,"%d. ",value);
+                      comma=true;
+                      newLine=false;
+                      n++;
+                      if (n==10) {
+                        n=0;
+                        newLine=true;
+                      }
+                    }
+                  }
+                  fprintf(fp,"};\n");
+                }
 		if (fp!=stdout)
 		  fclose(fp);
 	      } else {

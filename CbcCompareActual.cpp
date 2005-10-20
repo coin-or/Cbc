@@ -224,7 +224,8 @@ CbcCompareDefault::newSolution(CbcModel * model,
   double costPerInteger = 
     (model->getObjValue()-objectiveAtContinuous)/
     ((double) numberInfeasibilitiesAtContinuous);
-  weight_ = 0.98*costPerInteger;
+  weight_ = 0.95*costPerInteger;
+  saveWeight_ = 0.95*weight_;
   numberSolutions_++;
   if (numberSolutions_>5)
     weight_ =0.0; // this searches on objective
@@ -240,6 +241,7 @@ CbcCompareDefault::every1000Nodes(CbcModel * model, int numberNodes)
   // get size of tree
   treeSize_ = model->tree()->size();
 #else
+  double saveWeight=weight_;
   if (numberNodes>10000)
     weight_ =0.0; // this searches on objective
   else if (numberNodes==1000&&weight_==-2.0)
@@ -248,15 +250,18 @@ CbcCompareDefault::every1000Nodes(CbcModel * model, int numberNodes)
   treeSize_ = model->tree()->size();
   if (treeSize_>10000) {
     // set weight to reduce size most of time
-    if (treeSize_>20000)
+    if (treeSize_>25000)
       weight_=-1.0;
-    else if ((numberNodes%4000)!=0)
+    else if ((numberNodes%4000)==0)
       weight_=-1.0;
+    else if ((numberNodes%4000)==1000)
+      weight_=0.0;
     else
       weight_=saveWeight_;
   }
 #endif
-  return numberNodes==11000; // resort if first time
+  //return numberNodes==11000; // resort if first time
+  return (weight_!=saveWeight);
 }
 
 /** Default Constructor

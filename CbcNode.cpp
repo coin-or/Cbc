@@ -484,10 +484,9 @@ void CbcFullNodeInfo::applyToModel (CbcModel *model,
 
   // branch - do bounds
   int i;
+  solver->setColLower(lower_);
+  solver->setColUpper(upper_);
   int numberColumns = model->getNumCols();
-  for (i=0;i<numberColumns;i++) {
-    solver->setColBounds(i,lower_[i],upper_[i]);
-  }
   // move basis - but make sure size stays
   int numberRows = basis->getNumArtificial();
   delete basis ;
@@ -906,16 +905,16 @@ int CbcNode::chooseBranch (CbcModel *model, CbcNode *lastNode,int numberPassesLe
     finished=true;
     // Some objects may compute an estimate of best solution from here
     estimatedDegradation=0.0; 
-    int numberIntegerInfeasibilities=0; // without odd ones
+    //int numberIntegerInfeasibilities=0; // without odd ones
     
     // We may go round this loop twice (only if we think we have solution)
     for (int iPass=0;iPass<2;iPass++) {
       
       // compute current state
-      int numberObjectInfeasibilities; // just odd ones
-      model->feasibleSolution(
-                              numberIntegerInfeasibilities,
-                              numberObjectInfeasibilities);
+      //int numberObjectInfeasibilities; // just odd ones
+      //model->feasibleSolution(
+      //                      numberIntegerInfeasibilities,
+      //                      numberObjectInfeasibilities);
       // If forcePriority > 0 then we want best solution
       const double * bestSolution = NULL;
       int hotstartStrategy=model->getHotstartStrategy();
@@ -1652,8 +1651,8 @@ int CbcNode::chooseBranch (CbcModel *model, CbcNode *lastNode,int numberPassesLe
                             choice[i].numIntInfeasUp ),
                     smallestNumberInfeasibilities);
         }
-        if (smallestNumberInfeasibilities>=numberIntegerInfeasibilities)
-          numberNodes=1000000; // switch off search for better solution
+        //if (smallestNumberInfeasibilities>=numberIntegerInfeasibilities)
+        //numberNodes=1000000; // switch off search for better solution
         numberNodes=1000000; // switch off anyway
         averageCostPerIteration /= totalNumberIterations;
         // all feasible - choose best bet
@@ -1963,13 +1962,15 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,int numberP
         CoinWarmStartBasis * ws = dynamic_cast<CoinWarmStartBasis*>(solver->getWarmStart());
         if (!ws)
           break;
+        double tolerance;
+        solver->getDblParam(OsiPrimalTolerance,tolerance);
         for (i=0;i<numberColumns;i++) {
           double value = saveSolution[i];
-          if (value<lower[i]) {
+          if (value<lower[i]-tolerance) {
             saveSolution[i]=lower[i];
             roundAgain=true;
             ws->setStructStatus(i,CoinWarmStartBasis::atLowerBound);
-          } else if (value>upper[i]) {
+          } else if (value>upper[i]+tolerance) {
             saveSolution[i]=upper[i];
             roundAgain=true;
             ws->setStructStatus(i,CoinWarmStartBasis::atUpperBound);
@@ -1980,7 +1981,12 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,int numberP
           solver->setWarmStart(ws);
           solver->setColSolution(saveSolution);
           delete ws;
+          bool takeHint;
+          OsiHintStrength strength;
+          solver->getHintParam(OsiDoDualInResolve,takeHint,strength);
+          solver->setHintParam(OsiDoDualInResolve,false,OsiHintDo) ;
           solver->resolve();
+          solver->setHintParam(OsiDoDualInResolve,takeHint,strength) ;
           memcpy(saveSolution,solver->getColSolution(),numberColumns*sizeof(double));
           model->reserveCurrentSolution(saveSolution);
           if (!solver->isProvenOptimal()) {
@@ -2215,7 +2221,7 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,int numberP
         // see if can skip strong branching
         int canSkip = choice.possibleBranch->fillStrongInfo(choice);
         // For now always do
-        canSkip=false;
+        canSkip=0;
         if (model->messageHandler()->logLevel()>3) 
           dynamicObject->print(1,choice.possibleBranch->value());
         // was if (!canSkip)

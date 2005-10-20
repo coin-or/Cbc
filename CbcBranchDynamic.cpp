@@ -173,10 +173,9 @@ CbcSimpleIntegerDynamicPseudoCost::~CbcSimpleIntegerDynamicPseudoCost ()
 CbcBranchingObject * 
 CbcSimpleIntegerDynamicPseudoCost::createBranch(int way) 
 {
-  OsiSolverInterface * solver = model_->solver();
   const double * solution = model_->testSolution();
-  const double * lower = solver->getColLower();
-  const double * upper = solver->getColUpper();
+  const double * lower = model_->getCbcColLower();
+  const double * upper = model_->getCbcColUpper();
   double value = solution[columnNumber_];
   value = CoinMax(value, lower[columnNumber_]);
   value = CoinMin(value, upper[columnNumber_]);
@@ -213,10 +212,9 @@ CbcSimpleIntegerDynamicPseudoCost::createBranch(int way)
 double 
 CbcSimpleIntegerDynamicPseudoCost::infeasibility(int & preferredWay) const
 {
-  OsiSolverInterface * solver = model_->solver();
   const double * solution = model_->testSolution();
-  const double * lower = solver->getColLower();
-  const double * upper = solver->getColUpper();
+  const double * lower = model_->getCbcColLower();
+  const double * upper = model_->getCbcColUpper();
   if (upper[columnNumber_]==lower[columnNumber_]) {
     // fixed
     preferredWay=1;
@@ -239,7 +237,7 @@ CbcSimpleIntegerDynamicPseudoCost::infeasibility(int & preferredWay) const
 #define INFEAS
 #ifdef INFEAS
   double distanceToCutoff=0.0;
-  double objectiveValue = solver->getObjSense()*solver->getObjValue();
+  double objectiveValue = model_->getCurrentMinimizationObjValue();
   distanceToCutoff =  model_->getCutoff()  - objectiveValue;
   if (distanceToCutoff<1.0e20) 
     distanceToCutoff *= 10.0;
@@ -249,20 +247,20 @@ CbcSimpleIntegerDynamicPseudoCost::infeasibility(int & preferredWay) const
   double sum;
   int number;
   double downCost = CoinMax(value-below,0.0);
-  sum = sumDownCost();
-  number = numberTimesDown();
+  sum = sumDownCost_;
+  number = numberTimesDown_;
 #ifdef INFEAS
-  sum += numberTimesDownInfeasible()*(distanceToCutoff/(downCost+1.0e-12));
+  sum += numberTimesDownInfeasible_*(distanceToCutoff/(downCost+1.0e-12));
 #endif
   if (number>0)
     downCost *= sum / (double) number;
   else
     downCost  *=  downDynamicPseudoCost_;
   double upCost = CoinMax((above-value),0.0);
-  sum = sumUpCost();
-  number = numberTimesUp();
+  sum = sumUpCost_;
+  number = numberTimesUp_;
 #ifdef INFEAS
-  sum += numberTimesUpInfeasible()*(distanceToCutoff/(upCost+1.0e-12));
+  sum += numberTimesUpInfeasible_*(distanceToCutoff/(upCost+1.0e-12));
 #endif
   if (number>0)
     upCost *= sum / (double) number;
@@ -306,10 +304,9 @@ CbcSimpleIntegerDynamicPseudoCost::infeasibility(int & preferredWay) const
 double 
 CbcSimpleIntegerDynamicPseudoCost::upEstimate() const
 {
-  OsiSolverInterface * solver = model_->solver();
   const double * solution = model_->testSolution();
-  const double * lower = solver->getColLower();
-  const double * upper = solver->getColUpper();
+  const double * lower = model_->getCbcColLower();
+  const double * upper = model_->getCbcColUpper();
   double value = solution[columnNumber_];
   value = CoinMax(value, lower[columnNumber_]);
   value = CoinMin(value, upper[columnNumber_]);
@@ -332,10 +329,9 @@ CbcSimpleIntegerDynamicPseudoCost::upEstimate() const
 double 
 CbcSimpleIntegerDynamicPseudoCost::downEstimate() const
 {
-  OsiSolverInterface * solver = model_->solver();
   const double * solution = model_->testSolution();
-  const double * lower = solver->getColLower();
-  const double * upper = solver->getColUpper();
+  const double * lower = model_->getCbcColLower();
+  const double * upper = model_->getCbcColUpper();
   double value = solution[columnNumber_];
   value = CoinMax(value, lower[columnNumber_]);
   value = CoinMin(value, upper[columnNumber_]);
@@ -390,7 +386,7 @@ CbcSimpleIntegerDynamicPseudoCost::print(int type,double value) const
 #endif
   } else {
     OsiSolverInterface * solver = model_->solver();
-    const double * upper = solver->getColUpper();
+    const double * upper = model_->getCbcColUpper();
     double integerTolerance = 
       model_->getDblParam(CbcModel::CbcIntegerTolerance);
     double below = floor(value+integerTolerance);
@@ -601,16 +597,17 @@ void
 CbcBranchDynamicDecision::updateInformation(OsiSolverInterface * solver,
                                             const CbcNode * node)
 {
+  assert (object_);
+  const CbcModel * model = object_->model();
   double originalValue=node->objectiveValue();
   int originalUnsatisfied = node->numberUnsatisfied();
-  double objectiveValue = solver->getObjSense()*solver->getObjValue();
+  double objectiveValue = model->getCurrentMinimizationObjValue();
   int unsatisfied=0;
   int i;
-  int numberColumns = solver->getNumCols();
+  int numberIntegers = model->numberIntegers();;
   const double * solution = solver->getColSolution();
   //const double * lower = solver->getColLower();
   //const double * upper = solver->getColUpper();
-  assert (object_);
   CbcDynamicPseudoCostBranchingObject * branchingObject =
     dynamic_cast<CbcDynamicPseudoCostBranchingObject *>(object_);
   assert (branchingObject);
@@ -629,14 +626,14 @@ CbcBranchDynamicDecision::updateInformation(OsiSolverInterface * solver,
   bool feasible = iStatus!=1;
   if (feasible) {
     double integerTolerance = 
-      object->model()->getDblParam(CbcModel::CbcIntegerTolerance);
-    for (i=0;i<numberColumns;i++) {
-      if (solver->isInteger(i)) {
-        double value = solution[i];
-        double nearest = floor(value+0.5);
-        if (fabs(value-nearest)>integerTolerance) 
-          unsatisfied++;
-      }
+      model->getDblParam(CbcModel::CbcIntegerTolerance);
+    const int * integerVariable = model->integerVariable();
+    for (i=0;i<numberIntegers;i++) {
+      int j=integerVariable[i];
+      double value = solution[j];
+      double nearest = floor(value+0.5);
+      if (fabs(value-nearest)>integerTolerance) 
+        unsatisfied++;
     }
   }
   int way = object_->way();

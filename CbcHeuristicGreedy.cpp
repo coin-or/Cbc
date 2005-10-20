@@ -261,17 +261,18 @@ CbcHeuristicGreedyCover::solution(double & solutionValue,
             for (j=columnStart[iColumn];
                  j<columnStart[iColumn]+columnLength[iColumn];j++) {
               int iRow=row[j];
+              double newActivity = element[j]*step+rowActivity[iRow];
               if (rowActivity[iRow]<rowLower[iRow]-1.0e-10&&
-                element[j]*step+rowActivity[iRow]>=rowLower[iRow]) {
+                newActivity>=rowLower[iRow]-1.0e-12) {
                 sum += element[j];
               }
-              assert (sum>0.0);
-              double ratio = (cost/sum)*(1.0+perturb*CoinDrand48());
-              if (ratio<bestRatio) {
-                bestRatio=ratio;
-                bestColumn=iColumn;
-                bestStepSize=step;
-              }
+            }
+            assert (sum>0.0);
+            double ratio = (cost/sum)*(1.0+perturb*CoinDrand48());
+            if (ratio<bestRatio) {
+              bestRatio=ratio;
+              bestColumn=iColumn;
+              bestStepSize=step;
             }
           }
         }
@@ -689,58 +690,9 @@ CbcHeuristicGreedyEquality::solution(double & solutionValue,
       if (newSolver->isInteger(iColumn))
         newSolver->setColLower(iColumn,newSolution[iColumn]);
     }
-    // Reduce printout
-    newSolver->setHintParam(OsiDoReducePrint,true,OsiHintTry);
-    newSolver->setHintParam(OsiDoPresolveInInitial,true,OsiHintTry);
-    newSolver->setDblParam(OsiDualObjectiveLimit,solutionValue);
-    newSolver->initialSolve();
-    if (newSolver->isProvenOptimal()) {
-      CglPreProcess process;
-      /* Do not try and produce equality cliques and
-         do up to 5 passes */
-      OsiSolverInterface * solver2= process.preProcess(*newSolver);
-      if (!solver2) {
-        printf("Pre-processing says infeasible\n");
-        rhsNeeded=1.0; // so will be infeasible
-      } else {
-        solver2->resolve();
-        CbcModel model(*solver2);
-        model.setLogLevel(1);
-        model.setCutoff(solutionValue);
-        model.setMaximumNodes(200);
-        model.solver()->setHintParam(OsiDoReducePrint,true,OsiHintTry);
-        CbcStrategyDefaultSubTree strategy(model_,true,5,5,0);
-        model.setStrategy(strategy);
-        // Lightweight
-        model.setNumberStrong(5);
-        model.setNumberBeforeTrust(1);
-        model.solver()->setIntParam(OsiMaxNumIterationHotStart,10);
-        // Do search
-        model_->messageHandler()->message(CBC_START_SUB,model_->messages())
-              << "CbcHeuristicGreedy"
-              << model.getMaximumNodes()
-              <<CoinMessageEol;
-        model.branchAndBound();
-        model_->messageHandler()->message(CBC_END_SUB,model_->messages())
-              << "CbcHeuristicGreedy"
-              <<CoinMessageEol;
-        if (model.getMinimizationObjValue()<solutionValue) {
-          // solution
-          rhsNeeded=0.0;
-          // post process
-          process.postProcess(*model.solver());
-          // Solution now back in newSolver
-          memcpy(newSolution,newSolver->getColSolution(),
-                 numberColumns*sizeof(double));
-          newSolutionValue = model.getMinimizationObjValue();
-        } else {
-          // no good
-          rhsNeeded=1.0; // so will be infeasible
-        }
-      }
-    } else {
-      rhsNeeded=1.0;
-    }
+    int returnCode = smallBranchAndBound(newSolver,200,newSolution,newSolutionValue,
+                                         solutionValue,"CbcHeuristicGreedy");
+    rhsNeeded = 1.0-returnCode;
     delete newSolver;
   }
   if (newSolutionValue<solutionValue&&rhsNeeded<1.0e-8) {

@@ -468,12 +468,14 @@ CbcStrategyDefaultSubTree::setupCutGenerators(CbcModel & model)
     if (!found)
       model.addCutGenerator(&mixedGen,setting,"MixedIntegerRounding2");
   }
+#if 0
   // Say we want timings
   int newNumberGenerators = model.numberCutGenerators();
   for (iGenerator=numberGenerators;iGenerator<newNumberGenerators;iGenerator++) {
     CbcCutGenerator * generator = model.cutGenerator(iGenerator);
     generator->setTiming(true);
   }
+#endif
   if (model.getNumCols()<500)
     model.setMaximumCutPassesAtRoot(-100); // always do 100 if possible
   else if (model.getNumCols()<5000)

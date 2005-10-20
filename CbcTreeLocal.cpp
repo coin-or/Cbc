@@ -84,6 +84,12 @@ CbcTreeLocal::CbcTreeLocal(CbcModel * model,const double * solution ,
   // Get increment
   model_->analyzeObjective();
 
+  { 
+    // needed to sync cutoffs
+    double value ;
+    solver->getDblParam(OsiDualObjectiveLimit,value) ;
+    model_->setCutoff(value * solver->getObjSense());
+  }
   bestCutoff_ = model_->getCutoff();
   // save current gap
   savedGap_ = model_->getDblParam(CbcModel::CbcAllowableGap);

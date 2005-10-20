@@ -34,7 +34,7 @@ static Cbc_message us_english[]=
   {CBC_BRANCH,15,2,"Node %d Obj %g Unsat %d depth %d"},
   {CBC_STRONGSOL,16,1,"Integer solution of %g found by strong branching after %d iterations and %d nodes"},
   {CBC_TREE_SOL,24,1,"Integer solution of %g found by subtree after %d iterations and %d nodes"},
-  {CBC_NOINT,3007,0,"No integer variables - nothing to do"},
+  {CBC_NOINT,3007,1,"No integer variables - nothing to do"},
   {CBC_VUB_PASS,17,1,"%d solved, %d variables fixed, %d tightened"},
   {CBC_VUB_END,18,1,"After tightenVubs, %d variables fixed, %d tightened"},
   {CBC_NOTFEAS1,21,2,"On closer inspection node is infeasible"},

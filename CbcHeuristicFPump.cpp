@@ -107,7 +107,7 @@ CbcHeuristicFPump::solution(double & solutionValue,
 
 // 1. initially check 0-1
   int i,j;
-  bool zeroOne=true;
+  int general=0;
   for (i=0;i<numberIntegers;i++) {
     int iColumn = integerVariable[i];
     const CbcObject * object = model_->object(i);
@@ -115,11 +115,11 @@ CbcHeuristicFPump::solution(double & solutionValue,
       dynamic_cast<const  CbcSimpleInteger *> (object);
     assert(integerObject);
     if (upper[iColumn]-lower[iColumn]>1.000001) {
-      zeroOne=false;
+      general++;
       break;
     }
   }
-  if (!zeroOne) {
+  if (general*3>numberIntegers) {
     delete solver;
     return 0;
   }
@@ -173,11 +173,33 @@ CbcHeuristicFPump::solution(double & solutionValue,
         solver->setObjCoeff(i,saveObjective[i]);
       // solution - but may not be better
       // Compute using dot product
+      solver->setDblParam(OsiObjOffset,saveOffset);
       double newSolutionValue = direction*solver->OsiSolverInterface::getObjValue();
-      printf(" - solution value of %g\n",newSolutionValue);
+      printf(" - solution found\n");
       newLineNeeded=false;
       if (newSolutionValue<solutionValue) {
-	memcpy(betterSolution,newSolution,numberColumns*sizeof(double));
+        if (general) {
+          int numberLeft=0;
+          for (i=0;i<numberIntegers;i++) {
+            int iColumn = integerVariable[i];
+            double value = floor(newSolution[iColumn]+0.5);
+            if(solver->isBinary(iColumn)) {
+              solver->setColLower(iColumn,value);
+              solver->setColUpper(iColumn,value);
+            } else {
+              if (fabs(value-newSolution[iColumn])>1.0e-7) 
+                numberLeft++;
+            }
+          }
+          if (numberLeft) {
+            returnCode = smallBranchAndBound(solver,200,newSolution,newSolutionValue,
+                                         solutionValue,"CbcHeuristicFpump");
+          }
+        }
+        if (returnCode) {
+          memcpy(betterSolution,newSolution,numberColumns*sizeof(double));
+          solutionValue=newSolutionValue;
+        }
       } else {
 	returnCode=0;
       }      
@@ -191,6 +213,8 @@ CbcHeuristicFPump::solution(double & solutionValue,
           matched = true;
           for (i = 0; i <numberIntegers; i++) {
 	      int iColumn = integerVariable[i];
+              if(!solver->isBinary(iColumn))
+                continue;
 	      if (newSolution[iColumn]!=b[iColumn]) {
 		matched=false;
 		break;
@@ -204,6 +228,8 @@ CbcHeuristicFPump::solution(double & solutionValue,
          newLineNeeded=true;
 	 for (i=0;i<numberIntegers;i++) {
 	     int iColumn = integerVariable[i];
+             if(!solver->isBinary(iColumn))
+               continue;
 	     double value = max(0.0,CoinDrand48()-0.3);
 	     double difference = fabs(solution[iColumn]-newSolution[iColumn]);
 	     if (difference+value>0.5) {
@@ -223,6 +249,8 @@ CbcHeuristicFPump::solution(double & solutionValue,
       double offset=0.0;
       for (i=0;i<numberIntegers;i++) {
 	int iColumn = integerVariable[i];
+        if(!solver->isBinary(iColumn))
+          continue;
 	double costValue = 1.0;
 	// deal with fixed variables (i.e., upper=lower)
 	if (fabs(lower[iColumn]-upper[iColumn]) < primalTolerance) {
@@ -301,6 +329,8 @@ CbcHeuristicFPump::rounds(double * solution,
   // return rounded solution
   for (i=0;i<numberIntegers;i++) {
     int iColumn = integerVariable[i];
+    if(!solver->isBinary(iColumn))
+      continue;
     const CbcObject * object = model_->object(i);
     const CbcSimpleInteger * integerObject = 
       dynamic_cast<const  CbcSimpleInteger *> (object);

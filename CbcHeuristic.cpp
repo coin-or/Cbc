@@ -8,10 +8,12 @@
 #include <cmath>
 #include <cfloat>
 
-#include "OsiSolverInterface.hpp"
+#include "OsiClpSolverInterface.hpp"
 #include "CbcModel.hpp"
 #include "CbcMessage.hpp"
 #include "CbcHeuristic.hpp"
+#include "CbcStrategy.hpp"
+#include "CglPreProcess.hpp"
 
 // Default Constructor
 CbcHeuristic::CbcHeuristic() 
@@ -43,6 +45,94 @@ CbcHeuristic::~CbcHeuristic ()
 void CbcHeuristic::setModel(CbcModel * model)
 {
   model_ = model;
+}
+// Do mini branch and bound (return 1 if solution)
+int 
+CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver,int numberNodes,
+                                  double * newSolution, double & newSolutionValue,
+                                  double cutoff, std::string name) const
+{
+  OsiClpSolverInterface * osiclp = dynamic_cast< OsiClpSolverInterface*> (solver);
+  if (osiclp) {
+    // go faster stripes
+    if (osiclp->getNumRows()<300&&osiclp->getNumCols()<500) {
+      osiclp->setupForRepeatedUse(2,0);
+    } else {
+      osiclp->setupForRepeatedUse(0,0);
+    }
+    // Turn this off if you get problems
+    // Used to be automatically set
+    osiclp->setSpecialOptions(osiclp->specialOptions()|(128+64));
+  }
+  // Reduce printout
+  solver->setHintParam(OsiDoReducePrint,true,OsiHintTry);
+  solver->setHintParam(OsiDoPresolveInInitial,false,OsiHintTry);
+  solver->setDblParam(OsiDualObjectiveLimit,cutoff);
+  solver->initialSolve();
+  int returnCode=1;
+  int logLevel = model_->logLevel();
+  if (solver->isProvenOptimal()) {
+    CglPreProcess process;
+    /* Do not try and produce equality cliques and
+       do up to 5 passes */
+    if (logLevel<=1)
+      process.messageHandler()->setLogLevel(0);
+    OsiSolverInterface * solver2= process.preProcess(*solver);
+    if (!solver2) {
+      if (logLevel>1)
+        printf("Pre-processing says infeasible\n");
+      returnCode=0; // so will be infeasible
+    } else {
+      solver2->resolve();
+      CbcModel model(*solver2);
+      if (logLevel==1)
+        model.setLogLevel(0);
+      else
+        model.setLogLevel(logLevel);
+      model.setCutoff(cutoff);
+      model.setMaximumNodes(numberNodes);
+      model.solver()->setHintParam(OsiDoReducePrint,true,OsiHintTry);
+      CbcStrategyDefaultSubTree strategy(model_,true,5,5,0);
+      model.setStrategy(strategy);
+      // Lightweight
+      model.setNumberStrong(5);
+      model.setNumberBeforeTrust(1);
+      model.solver()->setIntParam(OsiMaxNumIterationHotStart,10);
+      // Do search
+      if (logLevel>1)
+        model_->messageHandler()->message(CBC_START_SUB,model_->messages())
+          << name
+          << model.getMaximumNodes()
+          <<CoinMessageEol;
+      model.branchAndBound();
+      if (logLevel>1)
+        model_->messageHandler()->message(CBC_END_SUB,model_->messages())
+          << name
+          <<CoinMessageEol;
+      if (model.getMinimizationObjValue()<cutoff) {
+        // solution
+        returnCode=1;
+        // post process
+        process.postProcess(*model.solver());
+        if (solver->isProvenOptimal()) {
+          // Solution now back in solver
+          int numberColumns = solver->getNumCols();
+          memcpy(newSolution,solver->getColSolution(),
+                 numberColumns*sizeof(double));
+          newSolutionValue = model.getMinimizationObjValue();
+        } else {
+          // odd - but no good
+          returnCode=0; // so will be infeasible
+        }
+      } else {
+        // no good
+        returnCode=0; // so will be infeasible
+      }
+    }
+  } else {
+    returnCode=0;
+  }
+  return returnCode;
 }
 
 // Default Constructor
@@ -214,7 +304,7 @@ CbcRounding::solution(double & solutionValue,
   }
 
   double penalty=0.0;
-  
+  const char * integerType = model_->integerType();
   // see if feasible - just using singletons
   for (i=0;i<numberRows;i++) {
     double value = rowActivity[i];
@@ -249,7 +339,7 @@ CbcRounding::solution(double & solutionValue,
 	      // possible - check if integer
 	      double distance = absInfeasibility/absElement;
 	      double thisCost = -direction*objective[iColumn]*distance;
-	      if (solver->isInteger(iColumn)) {
+	      if (integerType[iColumn]) {
 		distance = ceil(distance-primalTolerance);
 		if (currentValue-distance>=lowerValue-primalTolerance) {
 		  if (absInfeasibility-distance*absElement< -gap-primalTolerance)
@@ -274,7 +364,7 @@ CbcRounding::solution(double & solutionValue,
 	      // possible - check if integer
 	      double distance = absInfeasibility/absElement;
 	      double thisCost = direction*objective[iColumn]*distance;
-	      if (solver->isInteger(iColumn)) {
+	      if (integerType[iColumn]) {
 		distance = ceil(distance-1.0e-7);
 		assert (currentValue-distance<=upperValue+primalTolerance);
 		if (absInfeasibility-distance*absElement< -gap-primalTolerance)
@@ -310,7 +400,7 @@ CbcRounding::solution(double & solutionValue,
     double penaltyChange=0.0;
     int iColumn;
     for (iColumn=0;iColumn<numberColumns;iColumn++) {
-      if (solver->isInteger(iColumn))
+      if (integerType[iColumn])
         continue;
       double currentValue = newSolution[iColumn];
       double lowerValue = lower[iColumn];
@@ -457,7 +547,7 @@ CbcRounding::solution(double & solutionValue,
     while (lastChange>1.0e-2) {
       lastChange=0;
       for (iColumn=0;iColumn<numberColumns;iColumn++) {
-        bool isInteger = solver->isInteger(iColumn);
+        bool isInteger = integerType[iColumn];
         double currentValue = newSolution[iColumn];
         double lowerValue = lower[iColumn];
         double upperValue = upper[iColumn];

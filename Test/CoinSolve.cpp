@@ -14,7 +14,7 @@
 #include "CoinPragma.hpp"
 #include "CoinHelperFunctions.hpp"
 // Same version as CBC
-#define CBCVERSION "0.98"
+#define CBCVERSION "0.99"
 
 #include "CoinMpsIO.hpp"
 
@@ -102,6 +102,153 @@ int mainTest (int argc, const char *argv[],int algorithm,
 // Returns next valid field
 int CbcOrClpRead_mode=1;
 FILE * CbcOrClpReadCommand=stdin;
+static int * analyze(OsiClpSolverInterface * solver, int & numberChanged)
+{
+  //const double *objective = solver->getObjCoefficients() ;
+  const double *lower = solver->getColLower() ;
+  const double *upper = solver->getColUpper() ;
+  int numberColumns = solver->getNumCols() ;
+  int numberRows = solver->getNumRows();
+  //double direction = solver->getObjSense();
+  int iRow,iColumn;
+
+  // Row copy
+  CoinPackedMatrix matrixByRow(*solver->getMatrixByRow());
+  const double * elementByRow = matrixByRow.getElements();
+  const int * column = matrixByRow.getIndices();
+  const CoinBigIndex * rowStart = matrixByRow.getVectorStarts();
+  const int * rowLength = matrixByRow.getVectorLengths();
+
+  // Column copy
+  CoinPackedMatrix  matrixByCol(*solver->getMatrixByCol());
+  //const double * element = matrixByCol.getElements();
+  const int * row = matrixByCol.getIndices();
+  const CoinBigIndex * columnStart = matrixByCol.getVectorStarts();
+  const int * columnLength = matrixByCol.getVectorLengths();
+
+  const double * rowLower = solver->getRowLower();
+  const double * rowUpper = solver->getRowUpper();
+
+  char * ignore = new char [numberRows];
+  int * changed = new int[numberColumns];
+  memset(ignore,0,numberRows);
+  numberChanged=0;
+  int numberInteger=0;
+  for (iColumn=0;iColumn<numberColumns;iColumn++) {
+    if (upper[iColumn] > lower[iColumn]+1.0e-8&&solver->isInteger(iColumn)) 
+      numberInteger++;
+  }
+  for (iRow=0;iRow<numberRows;iRow++) {
+    int numberContinuous=0;
+    double value1=0.0,value2=0.0;
+    bool allIntegerCoeff=true;
+    double sumFixed=0.0;
+    int jColumn1=-1,jColumn2=-1;
+    for (CoinBigIndex j=rowStart[iRow];j<rowStart[iRow]+rowLength[iRow];j++) {
+      int jColumn = column[j];
+      double value = elementByRow[j];
+      if (upper[jColumn] > lower[jColumn]+1.0e-8) {
+        if (!solver->isInteger(jColumn)) {
+          if (numberContinuous==0) {
+            jColumn1=jColumn;
+            value1=value;
+          } else {
+            jColumn2=jColumn;
+            value2=value;
+          }
+          numberContinuous++;
+        } else {
+          if (fabs(value-floor(value+0.5))>1.0e-12)
+            allIntegerCoeff=false;
+        }
+      } else {
+        sumFixed += lower[jColumn]*value;
+      }
+    }
+    double low = rowLower[iRow];
+    if (low>-1.0e20) {
+      low -= sumFixed;
+      if (fabs(low-floor(low+0.5))>1.0e-12)
+        allIntegerCoeff=false;
+    }
+    double up = rowUpper[iRow];
+    if (up<1.0e20) {
+      up -= sumFixed;
+      if (fabs(up-floor(up+0.5))>1.0e-12)
+        allIntegerCoeff=false;
+    }
+    if (numberContinuous==1) {
+      // see if really integer
+      // This does not allow for complicated cases
+      if (low==up) {
+        if (fabs(value1)>1.0e-3) {
+          value1 = 1.0/value1;
+          if (fabs(value1-floor(value1+0.5))<1.0e-12) {
+            // integer
+            changed[numberChanged++]=jColumn1;
+            solver->setInteger(jColumn1);
+            if (upper[jColumn1]>1.0e20)
+              solver->setColUpper(jColumn1,1.0e20);
+            if (lower[jColumn1]<-1.0e20)
+              solver->setColLower(jColumn1,-1.0e20);
+          }
+        }
+      } else {
+        if (fabs(value1)>1.0e-3) {
+          value1 = 1.0/value1;
+          if (fabs(value1-floor(value1+0.5))<1.0e-12) {
+            // This constraint will not stop it being integer
+            ignore[iRow]=1;
+          }
+        }
+      }
+    } else if (numberContinuous==2) {
+      if (low==up) {
+      }
+    }
+  }
+  for (iColumn=0;iColumn<numberColumns;iColumn++) {
+    if (upper[iColumn] > lower[iColumn]+1.0e-8&&!solver->isInteger(iColumn)) {
+      double value;
+      value = upper[iColumn];
+      if (value<1.0e20&&fabs(value-floor(value+0.5))>1.0e-12) 
+        continue;
+      value = lower[iColumn];
+      if (value>-1.0e20&&fabs(value-floor(value+0.5))>1.0e-12) 
+        continue;
+      bool integer=true;
+      for (CoinBigIndex j=columnStart[iColumn];j<columnStart[iColumn]+columnLength[iColumn];j++) {
+        int iRow = row[j];
+        if (!ignore[iRow]) {
+          integer=false;
+          break;
+        }
+      }
+      if (integer) {
+        // integer
+        changed[numberChanged++]=iColumn;
+        solver->setInteger(iColumn);
+        if (upper[iColumn]>1.0e20)
+          solver->setColUpper(iColumn,1.0e20);
+        if (lower[iColumn]<-1.0e20)
+          solver->setColLower(iColumn,-1.0e20);
+      }
+    }
+  }
+  if (numberInteger)
+    printf("%d integer variables",numberInteger);
+  if (numberChanged)
+    printf(" and %d variables made integer\n",numberChanged);
+  else
+    printf("\n");
+  delete [] ignore;
+  if (!numberChanged) {
+    delete [] changed;
+    return NULL;
+  } else {
+    return changed;
+  }
+}
 int main (int argc, const char *argv[])
 {
   /* Note
@@ -118,6 +265,7 @@ int main (int argc, const char *argv[])
     CbcModel model(solver1);
     CbcModel * babModel = NULL;
     model.setNumberBeforeTrust(5);
+    int cutPass=-1234567;
     OsiSolverInterface * solver = model.solver();
     OsiClpSolverInterface * clpSolver = dynamic_cast< OsiClpSolverInterface*> (solver);
     ClpSimplex * lpSolver = clpSolver->getModelPtr();
@@ -202,10 +350,11 @@ int main (int argc, const char *argv[])
 
     CglGomory gomoryGen;
     // try larger limit
-    gomoryGen.setLimit(300);
+    gomoryGen.setLimitAtRoot(500);
+    gomoryGen.setLimit(100);
     // set default action (0=off,1=on,2=root)
-    int gomoryAction=1;
-    parameters[whichParam(GOMORYCUTS,numberParameters,parameters)].setCurrentOption("on");
+    int gomoryAction=3;
+    parameters[whichParam(GOMORYCUTS,numberParameters,parameters)].setCurrentOption("ifmove");
 
     CglProbing probingGen;
     probingGen.setUsingObjective(true);
@@ -222,47 +371,51 @@ int main (int argc, const char *argv[])
     probingGen.setMaxElements(200);
     probingGen.setRowCuts(3);
     // set default action (0=off,1=on,2=root)
-    int probingAction=1;
-    parameters[whichParam(PROBINGCUTS,numberParameters,parameters)].setCurrentOption("on");
+    int probingAction=3;
+    parameters[whichParam(PROBINGCUTS,numberParameters,parameters)].setCurrentOption("ifmove");
 
     CglKnapsackCover knapsackGen;
     // set default action (0=off,1=on,2=root)
-    int knapsackAction=1;
-    parameters[whichParam(KNAPSACKCUTS,numberParameters,parameters)].setCurrentOption("on");
+    int knapsackAction=3;
+    parameters[whichParam(KNAPSACKCUTS,numberParameters,parameters)].setCurrentOption("ifmove");
 
     CglRedSplit redsplitGen;
     redsplitGen.setLimit(100);
     // set default action (0=off,1=on,2=root)
     // Off as seems to give some bad cuts
-    int redsplitAction=0;
-    parameters[whichParam(REDSPLITCUTS,numberParameters,parameters)].setCurrentOption("off");
+    int redsplitAction=2;
+    parameters[whichParam(REDSPLITCUTS,numberParameters,parameters)].setCurrentOption("root");
 
-    CglClique cliqueGen;
+    CglClique cliqueGen(false,true);
     cliqueGen.setStarCliqueReport(false);
     cliqueGen.setRowCliqueReport(false);
+    cliqueGen.setMinViolation(0.1);
     // set default action (0=off,1=on,2=root)
-    int cliqueAction=1;
-    parameters[whichParam(CLIQUECUTS,numberParameters,parameters)].setCurrentOption("on");
+    int cliqueAction=3;
+    parameters[whichParam(CLIQUECUTS,numberParameters,parameters)].setCurrentOption("ifmove");
 
     CglMixedIntegerRounding2 mixedGen;
     // set default action (0=off,1=on,2=root)
-    int mixedAction=1;
-    parameters[whichParam(MIXEDCUTS,numberParameters,parameters)].setCurrentOption("on");
+    int mixedAction=3;
+    parameters[whichParam(MIXEDCUTS,numberParameters,parameters)].setCurrentOption("ifmove");
 
     CglFlowCover flowGen;
     // set default action (0=off,1=on,2=root)
-    int flowAction=1;
-    parameters[whichParam(FLOWCUTS,numberParameters,parameters)].setCurrentOption("on");
+    int flowAction=3;
+    parameters[whichParam(FLOWCUTS,numberParameters,parameters)].setCurrentOption("ifmove");
 
     CglTwomir twomirGen;
     // set default action (0=off,1=on,2=root)
-    int twomirAction=0;
+    int twomirAction=2;
+    parameters[whichParam(TWOMIRCUTS,numberParameters,parameters)].setCurrentOption("root");
 
     bool useRounding=true;
     parameters[whichParam(ROUNDING,numberParameters,parameters)].setCurrentOption("on");
-    int useFpump=0;
-    bool useGreedy=false;
-    bool useCombine=false;
+    bool useFpump=true;
+    bool useGreedy=true;
+    parameters[whichParam(GREEDY,numberParameters,parameters)].setCurrentOption("on");
+    bool useCombine=true;
+    parameters[whichParam(COMBINE,numberParameters,parameters)].setCurrentOption("on");
     bool useLocalTree=false;
     
     // total number of commands read
@@ -475,8 +628,10 @@ int main (int argc, const char *argv[])
 		presolveOptions = value;
 	      else if (parameters[iParam].type()==PRINTOPTIONS)
 		printOptions = value;
+	      else if (parameters[iParam].type()==CUTPASS)
+		cutPass = value;
 	      else if (parameters[iParam].type()==FPUMPITS)
-		{ useFpump = value;parameters[iParam].setIntValue(value);}
+		{ useFpump = true;parameters[iParam].setIntValue(value);}
 	      else
 		parameters[iParam].setIntParameter(lpSolver,value);
 	    } else {
@@ -660,16 +815,13 @@ int main (int argc, const char *argv[])
 	      break;
 	    case FPUMP:
               defaultSettings=false; // user knows what she is doing
-              if (action&&useFpump==0)
-                useFpump=parameters[whichParam(FPUMPITS,numberParameters,parameters)].intValue();
-              else if (!action)
-                useFpump=0;
+              useFpump=action;
 	      break;
             case CUTSSTRATEGY:
 	      gomoryAction = action;
 	      probingAction = action;
 	      knapsackAction = action;
-	      redsplitAction = action;
+	      //redsplitAction = action;
 	      cliqueAction = action;
 	      flowAction = action;
 	      mixedAction = action;
@@ -677,7 +829,7 @@ int main (int argc, const char *argv[])
               parameters[whichParam(GOMORYCUTS,numberParameters,parameters)].setCurrentOption(action);
               parameters[whichParam(PROBINGCUTS,numberParameters,parameters)].setCurrentOption(action);
               parameters[whichParam(KNAPSACKCUTS,numberParameters,parameters)].setCurrentOption(action);
-              parameters[whichParam(REDSPLITCUTS,numberParameters,parameters)].setCurrentOption(action);
+              //parameters[whichParam(REDSPLITCUTS,numberParameters,parameters)].setCurrentOption(action);
               parameters[whichParam(CLIQUECUTS,numberParameters,parameters)].setCurrentOption(action);
               parameters[whichParam(FLOWCUTS,numberParameters,parameters)].setCurrentOption(action);
               parameters[whichParam(MIXEDCUTS,numberParameters,parameters)].setCurrentOption(action);
@@ -688,10 +840,7 @@ int main (int argc, const char *argv[])
               useGreedy = action;
               useCombine = action;
               //useLocalTree = action;
-              if (action&&useFpump==0)
-                useFpump=parameters[whichParam(FPUMPITS,numberParameters,parameters)].intValue();
-              else if (!action)
-                useFpump=0;
+              useFpump=action;
               parameters[whichParam(ROUNDING,numberParameters,parameters)].setCurrentOption(action);
               parameters[whichParam(GREEDY,numberParameters,parameters)].setCurrentOption(action);
               parameters[whichParam(COMBINE,numberParameters,parameters)].setCurrentOption(action);
@@ -917,8 +1066,6 @@ int main (int argc, const char *argv[])
                 assert (si != NULL);
                 // get clp itself
                 ClpSimplex * modelC = si->getModelPtr();
-                if (si->messageHandler()->logLevel())
-                  si->messageHandler()->setLogLevel(1);
                 if (modelC->tightenPrimalBounds()!=0) {
                   std::cout<<"Problem is infeasible!"<<std::endl;
                   break;
@@ -966,12 +1113,42 @@ int main (int argc, const char *argv[])
               OsiSolverInterface * solver3 = clpSolver->clone();
               babModel->assignSolver(solver3);
               clpSolver = dynamic_cast< OsiClpSolverInterface*> (babModel->solver());
+              int numberChanged=0;
+              int * changed = analyze( clpSolver,numberChanged);
+              if (clpSolver->messageHandler()->logLevel())
+                clpSolver->messageHandler()->setLogLevel(1);
+              int logLevel = parameters[slog].intValue();
+              if (logLevel)
+                clpSolver->messageHandler()->setLogLevel(logLevel);
               lpSolver = clpSolver->getModelPtr();
+              if (lpSolver->factorizationFrequency()==200) {
+                // User did not touch preset
+                int numberRows = lpSolver->numberRows();
+                const int cutoff1=10000;
+                const int cutoff2=100000;
+                const int base=75;
+                const int freq0 = 50;
+                const int freq1=200;
+                const int freq2=400;
+                const int maximum=1000;
+                int frequency;
+                if (numberRows<cutoff1)
+                  frequency=base+numberRows/freq0;
+                else if (numberRows<cutoff2)
+                  frequency=base+cutoff1/freq0 + (numberRows-cutoff1)/freq1;
+                else
+                  frequency=base+cutoff1/freq0 + (cutoff2-cutoff1)/freq1 + (numberRows-cutoff2)/freq2;
+                lpSolver->setFactorizationFrequency(CoinMin(maximum,frequency));
+              }
+              time2 = CoinCpuTime();
+              totalTime += time2-time1;
+              time1 = time2;
+              double timeLeft = babModel->getMaximumSeconds();
               if (preProcess) {
                 saveSolver=babModel->solver()->clone();
                 /* Do not try and produce equality cliques and
                    do up to 10 passes */
-                OsiSolverInterface * solver2 = process.preProcess(*saveSolver,false,10);
+                OsiSolverInterface * solver2 = process.preProcess(*saveSolver,true,10);
                 if (!solver2) {
                   printf("Pre-processing says infeasible\n");
                   break;
@@ -990,6 +1167,7 @@ int main (int argc, const char *argv[])
                 solver2 = solver2->clone();
                 babModel->assignSolver(solver2);
                 babModel->initialSolve();
+                babModel->setMaximumSeconds(timeLeft-(CoinCpuTime()-time1));
               }
               if (0) {
                 // for debug
@@ -1008,7 +1186,7 @@ int main (int argc, const char *argv[])
               // FPump done first as it only works if no solution
               CbcHeuristicFPump heuristic4(*babModel);
               if (useFpump) {
-                heuristic4.setMaximumPasses(useFpump);
+                heuristic4.setMaximumPasses(parameters[whichParam(FPUMPITS,numberParameters,parameters)].intValue());
                 babModel->addHeuristic(&heuristic4);
               }
               CbcRounding heuristic1(*babModel);
@@ -1031,36 +1209,36 @@ int main (int argc, const char *argv[])
               // add cut generators if wanted
               if (probingAction==1)
                 babModel->addCutGenerator(&probingGen,-1,"Probing");
-              else if (probingAction==2)
-                babModel->addCutGenerator(&probingGen,-99,"Probing");
+              else if (probingAction>=2)
+                babModel->addCutGenerator(&probingGen,-101+probingAction,"Probing");
               if (gomoryAction==1)
                 babModel->addCutGenerator(&gomoryGen,-1,"Gomory");
-              else if (gomoryAction==2)
-                babModel->addCutGenerator(&gomoryGen,-99,"Gomory");
+              else if (gomoryAction>=2)
+                babModel->addCutGenerator(&gomoryGen,-101+gomoryAction,"Gomory");
               if (knapsackAction==1)
                 babModel->addCutGenerator(&knapsackGen,-1,"Knapsack");
-              else if (knapsackAction==2)
-                babModel->addCutGenerator(&knapsackGen,-99,"Knapsack");
+              else if (knapsackAction>=2)
+                babModel->addCutGenerator(&knapsackGen,-101+knapsackAction,"Knapsack");
               if (redsplitAction==1)
                 babModel->addCutGenerator(&redsplitGen,-1,"Reduce-and-split");
-              else if (redsplitAction==2)
-                babModel->addCutGenerator(&redsplitGen,-99,"Reduce-and-split");
+              else if (redsplitAction>=2)
+                babModel->addCutGenerator(&redsplitGen,-101+redsplitAction,"Reduce-and-split");
               if (cliqueAction==1)
                 babModel->addCutGenerator(&cliqueGen,-1,"Clique");
-              else if (cliqueAction==2)
-                babModel->addCutGenerator(&cliqueGen,-99,"Clique");
+              else if (cliqueAction>=2)
+                babModel->addCutGenerator(&cliqueGen,-101+cliqueAction,"Clique");
               if (mixedAction==1)
                 babModel->addCutGenerator(&mixedGen,-1,"MixedIntegerRounding2");
-              else if (mixedAction==2)
-                babModel->addCutGenerator(&mixedGen,-99,"MixedIntegerRounding2");
+              else if (mixedAction>=2)
+                babModel->addCutGenerator(&mixedGen,-101+mixedAction,"MixedIntegerRounding2");
               if (flowAction==1)
                 babModel->addCutGenerator(&flowGen,-1,"FlowCover");
-              else if (flowAction==2)
-                babModel->addCutGenerator(&flowGen,-99,"FlowCover");
+              else if (flowAction>=2)
+                babModel->addCutGenerator(&flowGen,-101+flowAction,"FlowCover");
               if (twomirAction==1)
                 babModel->addCutGenerator(&twomirGen,-1,"TwoMirCuts");
-              else if (twomirAction==2)
-                babModel->addCutGenerator(&twomirGen,-99,"TwoMirCuts");
+              else if (twomirAction>=2)
+                babModel->addCutGenerator(&twomirGen,-101+twomirAction,"TwoMirCuts");
               // Say we want timings
               int numberGenerators = babModel->numberCutGenerators();
               int iGenerator;
@@ -1073,16 +1251,19 @@ int main (int argc, const char *argv[])
                   generator->setWhatDepth(cutDepth) ;
               }
               // Could tune more
-              babModel->setMinimumDrop(min(1.0,
+              babModel->setMinimumDrop(min(5.0e-2,
                                         fabs(babModel->getMinimizationObjValue())*1.0e-3+1.0e-4));
-              
-              if (babModel->getNumCols()<500)
-                babModel->setMaximumCutPassesAtRoot(-100); // always do 100 if possible
-              else if (babModel->getNumCols()<5000)
-                babModel->setMaximumCutPassesAtRoot(100); // use minimum drop
-              else
-                babModel->setMaximumCutPassesAtRoot(20);
-              babModel->setMaximumCutPasses(2);
+              if (cutPass==-1234567) {
+                if (babModel->getNumCols()<500)
+                  babModel->setMaximumCutPassesAtRoot(-100); // always do 100 if possible
+                else if (babModel->getNumCols()<5000)
+                  babModel->setMaximumCutPassesAtRoot(100); // use minimum drop
+                else
+                  babModel->setMaximumCutPassesAtRoot(20);
+              } else {
+                babModel->setMaximumCutPassesAtRoot(cutPass);
+              }
+              babModel->setMaximumCutPasses(1);
               
               // Do more strong branching if small
               //if (babModel->getNumCols()<5000)
@@ -1157,11 +1338,24 @@ int main (int argc, const char *argv[])
                 fclose(fp);
               }
               clpSolver = dynamic_cast< OsiClpSolverInterface*> (babModel->solver());
+              if (numberChanged) {
+                for (int i=0;i<numberChanged;i++) {
+                  int iColumn=changed[i];
+                  clpSolver->setContinuous(iColumn);
+                }
+                delete [] changed;
+              }
               lpSolver = clpSolver->getModelPtr();
-              std::cout<<"Result "<<babModel->getObjValue()<<
-                " iterations "<<babModel->getIterationCount()<<
-                " nodes "<<babModel->getNodeCount()<<
-                " took "<<time2-time1<<" seconds - total "<<totalTime<<std::endl;
+              std::string statusName[]={"Finished","Stopped on ","Difficulties",
+                                        "","","User ctrl-c"};
+              std::string minor[]={"","","gap","nodes","time","","solutions"};
+              int iStat = babModel->status();
+              int iStat2 = babModel->secondaryStatus();
+              std::cout<<"Result - "<<statusName[iStat]<<minor[iStat2]
+                       <<" objective "<<babModel->getObjValue()<<
+                " after "<<babModel->getNodeCount()<<" nodes and "
+                <<babModel->getIterationCount()<<
+                " iterations - took "<<time2-time1<<" seconds"<<std::endl;
               time1 = time2;
             } else {
               std::cout << "** Current model not valid" << std::endl ; 

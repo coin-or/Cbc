@@ -119,69 +119,11 @@ CbcHeuristicLocal::solutionFix(double & objectiveValue,
       nFix++;
     }
   }
-  // Reduce printout
-  newSolver->setHintParam(OsiDoReducePrint,true,OsiHintTry);
-  newSolver->setHintParam(OsiDoPresolveInInitial,true,OsiHintTry);
-  newSolver->setDblParam(OsiDualObjectiveLimit,objectiveValue);
-  newSolver->initialSolve();
-  bool betterSolution=true;
-  if (newSolver->isProvenOptimal()) {
-    CglPreProcess process;
-    /* Do not try and produce equality cliques and
-       do up to 5 passes */
-    OsiSolverInterface * solver2= process.preProcess(*newSolver);
-    if (!solver2) {
-      printf("Pre-processing says infeasible\n");
-      betterSolution=false;
-    } else {
-      solver2->resolve();
-      CbcModel model(*solver2);
-      model.setLogLevel(1);
-      model.setCutoff(objectiveValue);
-      model.setMaximumNodes(200);
-      model.solver()->setHintParam(OsiDoReducePrint,true,OsiHintTry);
-      CbcStrategyDefaultSubTree strategy(model_,true,5,5,0);
-      model.setStrategy(strategy);
-      // Lightweight
-      model.setNumberStrong(5);
-      model.setNumberBeforeTrust(1);
-      model.solver()->setIntParam(OsiMaxNumIterationHotStart,10);
-      // Do search
-      model_->messageHandler()->message(CBC_START_SUB,model_->messages())
-        << "CbcHeuristicLocal"
-        << model.getMaximumNodes()
-        <<CoinMessageEol;
-      model.branchAndBound();
-      model_->messageHandler()->message(CBC_END_SUB,model_->messages())
-        << "CbcHeuristicLocal"
-        <<CoinMessageEol;
-      if (model.getMinimizationObjValue()<objectiveValue) {
-        model_->messageHandler()->message(CBC_HEURISTIC_SOLUTION,model_->messages())
-          << model.getMinimizationObjValue()
-          << "CbcHeuristicLocal"
-          <<CoinMessageEol;
-        // solution
-        // post process
-        process.postProcess(*model.solver());
-        // Solution now back in newSolver
-        memcpy(newSolution,newSolver->getColSolution(),
-               newSolver->getNumCols()*sizeof(double));
-        objectiveValue = model.getMinimizationObjValue();
-      } else {
-        // no good
-        betterSolution=false;
-      }
-    }
-  } else {
-    // no good
-    betterSolution=false;
-  }
+  int returnCode = smallBranchAndBound(newSolver,200,newSolution,objectiveValue,
+                                         objectiveValue,"CbcHeuristicLocal");
+
   delete newSolver;
-  if (betterSolution) {
-    return 1;
-  } else {
-    return 0;
-  }
+  return returnCode;
 }
 /*
   First tries setting a variable to better value.  If feasible then

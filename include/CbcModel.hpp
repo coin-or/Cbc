@@ -130,6 +130,14 @@ enum CbcDblParam {
   /** \brief The maximum number of seconds before terminating.
 	     A double should be adequate! */
   CbcMaximumSeconds,
+  /// Cutoff - stored for speed
+  CbcCurrentCutoff,
+  /// Optimization direction - stored for speed
+  CbcOptimizationDirection,
+  /// Current objective value
+  CbcCurrentObjectiveValue,
+  /// Current minimization objective value
+  CbcCurrentMinimizationObjectiveValue,
   /** \brief The time at start of model.
 	     So that other pieces of code can access */
   CbcStartSeconds,
@@ -391,9 +399,11 @@ public:
 
   /// Get the cutoff bound on the objective function - always as minimize
   inline double getCutoff() const
-  { double value ;
-    solver_->getDblParam(OsiDualObjectiveLimit,value) ;
-    return value * solver_->getObjSense() ; } ;
+  { //double value ;
+    //solver_->getDblParam(OsiDualObjectiveLimit,value) ;
+    //assert( dblParam_[CbcCurrentCutoff]== value * solver_->getObjSense());
+    return dblParam_[CbcCurrentCutoff];
+  }
 
   /// Set the \link CbcModel::CbcMaxNumNode maximum node limit \endlink
   inline bool setMaximumNodes( int value)
@@ -498,12 +508,26 @@ public:
   inline double getAllowablePercentageGap() const {
     return 100.0*getDblParam(CbcAllowableFractionGap);
   }
+  /** Set the
+      \link CbcModel::CbcCutoffIncrement  \endlink
+      desired.
+  */
+  inline bool setCutoffIncrement( double value) {
+    return setDblParam(CbcCutoffIncrement,value);
+  }
+  /** Get the
+      \link CbcModel::CbcCutoffIncrement  \endlink
+      desired.
+  */
+  inline double getCutoffIncrement() const {
+    return getDblParam(CbcCutoffIncrement);
+  }
 
   /// Set the hotstart strategy
-  void setHotstartStrategy(int value) 
+  inline void setHotstartStrategy(int value) 
   { hotstartStrategy_=value;};
   /// Get the hotstart strategy 
-  int getHotstartStrategy() const
+  inline int getHotstartStrategy() const
   { return hotstartStrategy_;};
   
   /// Set the minimum drop to continue cuts
@@ -600,7 +624,7 @@ public:
     problems, 1000 for small problems.
     Print frequency has very slight overhead if small.
   */
-  void setPrintFrequency(int number)
+  inline void setPrintFrequency(int number)
   { printFrequency_=number;};
   /// Get the print frequency
   inline int printFrequency() const
@@ -623,10 +647,10 @@ public:
     /// Solution limit reached?
     bool isSolutionLimitReached() const;
     /// Get how many iterations it took to solve the problem.
-    int getIterationCount() const
+    inline int getIterationCount() const
     { return numberIterations_;};
     /// Get how many Nodes it took to solve the problem.
-    int getNodeCount() const
+    inline int getNodeCount() const
     { return numberNodes_;};
     /** Final status of problem
         Some of these can be found out by is...... functions
@@ -676,19 +700,19 @@ public:
   */
   //@{
   /// Number of rows in continuous (root) problem.
-  int numberRowsAtContinuous() const
+  inline int numberRowsAtContinuous() const
   { return numberRowsAtContinuous_;};
 
   /// Get number of columns
-  int getNumCols() const
+  inline int getNumCols() const
   { return solver_->getNumCols();};
   
   /// Get number of rows
-  int getNumRows() const
+  inline int getNumRows() const
   { return solver_->getNumRows();};
   
   /// Get number of nonzero elements
-  CoinBigIndex getNumElements() const
+  inline CoinBigIndex getNumElements() const
   { return solver_->getNumElements();};
 
   /// Number of integers in problem
@@ -697,13 +721,19 @@ public:
   // Integer variables
   inline const int * integerVariable() const 
   { return integerVariable_;};
-  
+  /// Whether or not integer
+  inline const char integerType(int i) const
+  { return integerInfo_[i];};
+  /// Whether or not integer
+  inline const char * integerType() const
+  { return integerInfo_;};
+
   /// Get pointer to array[getNumCols()] of column lower bounds
-  const double * getColLower() const
+  inline const double * getColLower() const
   { return solver_->getColLower();};
   
   /// Get pointer to array[getNumCols()] of column upper bounds
-  const double * getColUpper() const
+  inline const double * getColUpper() const
   { return solver_->getColUpper();};
   
   /** Get pointer to array[getNumRows()] of row constraint senses.
@@ -715,7 +745,7 @@ public:
       <li>'N': free constraint
       </ul>
   */
-  const char * getRowSense() const
+  inline const char * getRowSense() const
   { return solver_->getRowSense();};
   
   /** Get pointer to array[getNumRows()] of rows right-hand sides
@@ -726,7 +756,7 @@ public:
       <li> if rowsense()[i] == 'N' then rhs()[i] == 0.0
       </ul>
   */
-  const double * getRightHandSide() const
+  inline const double * getRightHandSide() const
   { return solver_->getRightHandSide();};
   
   /** Get pointer to array[getNumRows()] of row ranges.
@@ -737,59 +767,85 @@ public:
       rowrange()[i] is 0.0
       </ul>
   */
-  const double * getRowRange() const
+  inline const double * getRowRange() const
   { return solver_->getRowRange();};
   
   /// Get pointer to array[getNumRows()] of row lower bounds
-  const double * getRowLower() const
+  inline const double * getRowLower() const
   { return solver_->getRowLower();};
   
   /// Get pointer to array[getNumRows()] of row upper bounds
-  const double * getRowUpper() const
+  inline const double * getRowUpper() const
   { return solver_->getRowUpper();};
   
   /// Get pointer to array[getNumCols()] of objective function coefficients
-  const double * getObjCoefficients() const
+  inline const double * getObjCoefficients() const
   { return solver_->getObjCoefficients();};
   
   /// Get objective function sense (1 for min (default), -1 for max)
-  double getObjSense() const
-  { return solver_->getObjSense();};
+  inline double getObjSense() const
+  {
+    //assert (dblParam_[CbcOptimizationDirection]== solver_->getObjSense());
+    return dblParam_[CbcOptimizationDirection];};
   
   /// Return true if variable is continuous
-  bool isContinuous(int colIndex) const
+  inline bool isContinuous(int colIndex) const
   { return solver_->isContinuous(colIndex);};
   
   /// Return true if variable is binary
-  bool isBinary(int colIndex) const
+  inline bool isBinary(int colIndex) const
   { return solver_->isBinary(colIndex);};
   
   /** Return true if column is integer.
       Note: This function returns true if the the column
       is binary or a general integer.
   */
-  bool isInteger(int colIndex) const
+  inline bool isInteger(int colIndex) const
   { return solver_->isInteger(colIndex);};
   
   /// Return true if variable is general integer
-  bool isIntegerNonBinary(int colIndex) const
+  inline bool isIntegerNonBinary(int colIndex) const
   { return solver_->isIntegerNonBinary(colIndex);};
   
   /// Return true if variable is binary and not fixed at either bound
-  bool isFreeBinary(int colIndex) const
+  inline bool isFreeBinary(int colIndex) const
   { return solver_->isFreeBinary(colIndex) ;};
   
   /// Get pointer to row-wise copy of matrix
-  const CoinPackedMatrix * getMatrixByRow() const
+  inline const CoinPackedMatrix * getMatrixByRow() const
   { return solver_->getMatrixByRow();};
   
   /// Get pointer to column-wise copy of matrix
-  const CoinPackedMatrix * getMatrixByCol() const
+  inline const CoinPackedMatrix * getMatrixByCol() const
   { return solver_->getMatrixByCol();};
   
   /// Get solver's value for infinity
-  double getInfinity() const
+  inline double getInfinity() const
   { return solver_->getInfinity();};
+  /// Get pointer to array[getNumCols()] (for speed) of column lower bounds
+  inline const double * getCbcColLower() const
+  { return cbcColLower_;};
+  /// Get pointer to array[getNumCols()] (for speed) of column upper bounds
+  inline const double * getCbcColUpper() const
+  { return cbcColUpper_;};
+  /// Get pointer to array[getNumRows()] (for speed) of row lower bounds
+  inline const double * getCbcRowLower() const
+  { return cbcRowLower_;};
+  /// Get pointer to array[getNumRows()] (for speed) of row upper bounds
+  inline const double * getCbcRowUpper() const
+  { return cbcRowUpper_;};
+  /// Get pointer to array[getNumCols()] (for speed) of primal solution vector
+  inline const double * getCbcColSolution() const
+  { return cbcColSolution_;};
+  /// Get pointer to array[getNumRows()] (for speed) of dual prices
+  inline const double * getCbcRowPrice() const
+  { return cbcRowPrice_;};
+  /// Get a pointer to array[getNumCols()] (for speed) of reduced costs
+  inline const double * getCbcReducedCost() const
+  { return cbcReducedCost_;};
+  /// Get pointer to array[getNumRows()] (for speed) of row activity levels.
+  inline const double * getCbcRowActivity() const
+  { return cbcRowActivity_;};
   //@}
   
   
@@ -864,7 +920,10 @@ public:
   
   /// Get current objective function value
   inline double getCurrentObjValue() const
-  { return solver_->getObjValue();};
+  { return dblParam_[CbcCurrentObjectiveValue]; }
+  /// Get current minimization objective function value
+  inline double getCurrentMinimizationObjValue() const
+  { return dblParam_[CbcCurrentMinimizationObjectiveValue];}
   
   /// Get best objective function value as minimization
   inline double getMinimizationObjValue() const
@@ -892,15 +951,15 @@ public:
     the search. If no solution is found, the method returns null.
   */
 
-  double * bestSolution() const
+  inline double * bestSolution() const
   { return bestSolution_;};
   
   /// Get number of solutions
-  int getSolutionCount() const
+  inline int getSolutionCount() const
   { return numberSolutions_;};
   
   /// Set number of solutions (so heuristics will be different)
-  void setSolutionCount(int value) 
+  inline void setSolutionCount(int value) 
   { numberSolutions_=value;};
   /** Current phase (so heuristics etc etc can find out).
       0 - initial solve
@@ -914,10 +973,11 @@ public:
   { return phase_;};
   
   /// Get number of heuristic solutions
-  int getNumberHeuristicSolutions() const { return numberHeuristicSolutions_;};
+  inline int getNumberHeuristicSolutions() const { return numberHeuristicSolutions_;};
 
   /// Set objective function sense (1 for min (default), -1 for max,)
-  void setObjSense(double s) { solver_->setObjSense(s);};
+  inline void setObjSense(double s) { dblParam_[CbcOptimizationDirection]=s;
+  solver_->setObjSense(s);};
 
   /// Value of objective at continuous 
   inline double getContinuousObjective() const
@@ -1076,10 +1136,10 @@ public:
   void addCuts1(CbcNode * node, CoinWarmStartBasis *&lastws);
 
   /// Return the list of cuts initially collected for this subproblem
-  CbcCountRowCut ** addedCuts() const
+  inline CbcCountRowCut ** addedCuts() const
   { return addedCuts_;};
   /// Number of entries in the list returned by #addedCuts()
-  int currentNumberCuts() const
+  inline int currentNumberCuts() const
   { return currentNumberCuts_;};
   /// Global cuts
   inline OsiCuts * globalCuts() 
@@ -1290,6 +1350,8 @@ public:
     /// Get how many Nodes it took to solve the problem.
     int getNodeCount2() const
     { return numberNodes2_;};
+  /// Set pointers for speed
+  void setPointers(const OsiSolverInterface * solver);
   //@}
 
 //---------------------------------------------------------------------------
@@ -1454,6 +1516,8 @@ private:
 
   /// Indices of integer variables
   int * integerVariable_;
+  /// Whether of not integer
+  char * integerInfo_;
   /// Holds solution at continuous (after cuts)
   double * continuousSolution_;
   /// Array marked whenever a solution is found if non-zero
@@ -1485,11 +1549,27 @@ private:
       1 - ordinary presolve
       2 - integer presolve (dodgy)
   */
+  /// Pointer to array[getNumCols()] (for speed) of column lower bounds
+  const double * cbcColLower_;
+  /// Pointer to array[getNumCols()] (for speed) of column upper bounds
+  const double * cbcColUpper_;
+  /// Pointer to array[getNumRows()] (for speed) of row lower bounds
+  const double * cbcRowLower_;
+  /// Pointer to array[getNumRows()] (for speed) of row upper bounds
+  const double * cbcRowUpper_;
+  /// Pointer to array[getNumCols()] (for speed) of primal solution vector
+  const double * cbcColSolution_;
+  /// Pointer to array[getNumRows()] (for speed) of dual prices
+  const double * cbcRowPrice_;
+  /// Get a pointer to array[getNumCols()] (for speed) of reduced costs
+  const double * cbcReducedCost_;
+  /// Pointer to array[getNumRows()] (for speed) of row activity levels.
+  const double * cbcRowActivity_;
   /// Pointer to user-defined data structure
   void * appData_;
+  /// Pointer to 
   int presolve_;
   /** Maximum number of candidates to consider for strong branching.
-
     To disable strong branching, set this to 0.
   */
   int numberStrong_;

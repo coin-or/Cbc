@@ -66,6 +66,11 @@ public:
   inline int when() const
   { return when_;};
 
+  /// Do mini branch and bound (return 1 if solution)
+  int smallBranchAndBound(OsiSolverInterface * solver,int numberNodes,
+                          double * newSolution, double & newSolutionValue,
+                          double cutoff , std::string name) const;
+
 protected:
 
   /// Model

@@ -2204,6 +2204,7 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,int numberP
       iDo=0;
       int saveLimit2;
       solver->getIntParam(OsiMaxNumIterationHotStart,saveLimit2);
+      bool doQuickly = numberToDo>2*numberStrong;
       for ( iDo=0;iDo<numberToDo;iDo++) {
         CbcStrongInfo choice;
         int iObject = whichObject[iDo];
@@ -2220,8 +2221,8 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,int numberP
         choice.fix=0; // say not fixed
         // see if can skip strong branching
         int canSkip = choice.possibleBranch->fillStrongInfo(choice);
-        // For now always do
-        canSkip=0;
+        if (!doQuickly)
+          canSkip=0;
         if (model->messageHandler()->logLevel()>3) 
           dynamicObject->print(1,choice.possibleBranch->value());
         // was if (!canSkip)
@@ -2482,21 +2483,15 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,int numberP
         hitMaxTime = ( CoinCpuTime()-model->getDblParam(CbcModel::CbcStartSeconds) > 
                        model->getDblParam(CbcModel::CbcMaximumSeconds));
         if (hitMaxTime) {
-          if (!branch_) {
-            // make sure something there
-            branch_ = choice.possibleBranch;
-            choice.possibleBranch=NULL;
-            branch_->way(-1);
-            bestChoice = choice.objectNumber;
-            whichChoice = iDo;
+          // make sure rest are fast
+          doQuickly=true;
+          for ( int jDo=iDo+1;jDo<numberToDo;jDo++) {
+            int iObject = whichObject[iDo];
+            CbcObject * object = model->modifiableObject(iObject);
+            CbcSimpleIntegerDynamicPseudoCost * dynamicObject =
+              dynamic_cast <CbcSimpleIntegerDynamicPseudoCost *>(object) ;
+            dynamicObject->setNumberBeforeTrust(0);
           }
-          for (i = 0 ; i < numberToFix ; i++) {
-            delete fixObject[i].possibleBranch;
-          }
-          anyAction=0;
-          delete ws;
-          ws=NULL;
-          break;
         }
       }
       if (model->messageHandler()->logLevel()>3||false) { 

@@ -303,11 +303,13 @@ int main (int argc, const char *argv[])
     std::string importBasisFile ="";
     std::string debugFile="";
     double * debugValues = NULL;
+    int numberDebugValues = -1;
     int basisHasValues=0;
     std::string exportBasisFile ="default.bas";
     std::string saveFile ="default.prob";
     std::string restoreFile ="default.prob";
     std::string solutionFile ="stdout";
+    std::string solutionSaveFile ="solution.file";
 #define CBCMAXPARAMETERS 200
     CbcOrClpParam parameters[CBCMAXPARAMETERS];
     int numberParameters ;
@@ -337,10 +339,12 @@ int main (int argc, const char *argv[])
     //parameters[whichParam(TIMELIMIT,numberParameters,parameters)].setDoubleValue(1.0e8);
     parameters[whichParam(TIMELIMIT_BAB,numberParameters,parameters)].setDoubleValue(1.0e8);
     parameters[whichParam(SOLUTION,numberParameters,parameters)].setStringValue(solutionFile);
+    parameters[whichParam(SAVESOL,numberParameters,parameters)].setStringValue(solutionSaveFile);
     parameters[whichParam(SPRINT,numberParameters,parameters)].setIntValue(doSprint);
     model.setNumberBeforeTrust(5);
     parameters[whichParam(NUMBERBEFORE,numberParameters,parameters)].setIntValue(5);
     parameters[whichParam(MAXNODES,numberParameters,parameters)].setIntValue(model.getMaximumNodes());
+    model.setNumberStrong(10);
     parameters[whichParam(STRONGBRANCHING,numberParameters,parameters)].setIntValue(model.numberStrong());
     parameters[whichParam(INFEASIBILITYWEIGHT,numberParameters,parameters)].setDoubleValue(model.getDblParam(CbcModel::CbcInfeasibilityWeight));
     parameters[whichParam(INTEGERTOLERANCE,numberParameters,parameters)].setDoubleValue(model.getDblParam(CbcModel::CbcIntegerTolerance));
@@ -1112,15 +1116,15 @@ int main (int argc, const char *argv[])
               babModel = new CbcModel(model);
               OsiSolverInterface * solver3 = clpSolver->clone();
               babModel->assignSolver(solver3);
-              clpSolver = dynamic_cast< OsiClpSolverInterface*> (babModel->solver());
+              OsiClpSolverInterface * clpSolver2 = dynamic_cast< OsiClpSolverInterface*> (babModel->solver());
               int numberChanged=0;
-              int * changed = analyze( clpSolver,numberChanged);
-              if (clpSolver->messageHandler()->logLevel())
-                clpSolver->messageHandler()->setLogLevel(1);
+              int * changed = analyze( clpSolver2,numberChanged);
+              if (clpSolver2->messageHandler()->logLevel())
+                clpSolver2->messageHandler()->setLogLevel(1);
               int logLevel = parameters[slog].intValue();
               if (logLevel)
-                clpSolver->messageHandler()->setLogLevel(logLevel);
-              lpSolver = clpSolver->getModelPtr();
+                clpSolver2->messageHandler()->setLogLevel(logLevel);
+              lpSolver = clpSolver2->getModelPtr();
               if (lpSolver->factorizationFrequency()==200) {
                 // User did not touch preset
                 int numberRows = lpSolver->numberRows();
@@ -1148,7 +1152,7 @@ int main (int argc, const char *argv[])
                 saveSolver=babModel->solver()->clone();
                 /* Do not try and produce equality cliques and
                    do up to 10 passes */
-                OsiSolverInterface * solver2 = process.preProcess(*saveSolver,true,10);
+                OsiSolverInterface * solver2 = process.preProcess(*saveSolver,false,10);
                 if (!solver2) {
                   printf("Pre-processing says infeasible\n");
                   break;
@@ -1158,8 +1162,8 @@ int main (int argc, const char *argv[])
                 }
                 //solver2->resolve();
                 if (preProcess==2) {
-                  OsiClpSolverInterface * clpSolver = dynamic_cast< OsiClpSolverInterface*> (solver2);
-                  ClpSimplex * lpSolver = clpSolver->getModelPtr();
+                  OsiClpSolverInterface * clpSolver2 = dynamic_cast< OsiClpSolverInterface*> (solver2);
+                  ClpSimplex * lpSolver = clpSolver2->getModelPtr();
                   lpSolver->writeMps("presolved.mps",0,1,lpSolver->optimizationDirection());
                   printf("Preprocessed model (minimization) on presolved.mps\n");
                 }
@@ -1180,8 +1184,12 @@ int main (int argc, const char *argv[])
                 //                         babModel->getNumCols());
               }
               if (debugValues) {
-                // for debug
-                babModel->solver()->activateRowCutDebugger(debugValues) ;
+                if (numberDebugValues==babModel->getNumCols()) {
+                  // for debug
+                  babModel->solver()->activateRowCutDebugger(debugValues) ;
+                } else {
+                  printf("debug file has incorrect number of columns\n");
+                }
               }
               // FPump done first as it only works if no solution
               CbcHeuristicFPump heuristic4(*babModel);
@@ -1298,12 +1306,13 @@ int main (int argc, const char *argv[])
               currentBranchModel = babModel;
               babModel->branchAndBound();
               currentBranchModel = NULL;
+              osiclp = dynamic_cast< OsiClpSolverInterface*> (babModel->solver());
               if (debugFile=="createAfterPre"&&babModel->bestSolution()) {
-                FILE * fp = fopen("debug.file","wb");
-                assert (fp);
-                int n = babModel->getNumCols();
-                fwrite(babModel->bestSolution(),sizeof(double),n,fp);
-                fclose(fp);
+                lpSolver = osiclp->getModelPtr();
+                //move best solution (should be there -- but ..)
+                int n = lpSolver->getNumCols();
+                memcpy(lpSolver->primalColumnSolution(),babModel->bestSolution(),n*sizeof(double));
+                saveSolution(osiclp->getModelPtr(),"debug.file");
               }
               // Print more statistics
               std::cout<<"Cuts at root node changed objective from "<<babModel->getContinuousObjective()
@@ -1330,14 +1339,16 @@ int main (int argc, const char *argv[])
                   babModel->assignSolver(saveSolver);
                 }
               }
-              if (debugFile=="create"&&babModel->bestSolution()) {
-                FILE * fp = fopen("debug.file","wb");
-                assert (fp);
-                int n = babModel->getNumCols();
-                fwrite(babModel->bestSolution(),sizeof(double),n,fp);
-                fclose(fp);
+              // clpSolver still OK clpSolver = dynamic_cast< OsiClpSolverInterface*> (babModel->solver());
+              lpSolver = clpSolver->getModelPtr();
+              if (babModel->bestSolution()){
+                //move best solution (should be there -- but ..)
+                int n = lpSolver->getNumCols();
+                memcpy(lpSolver->primalColumnSolution(),babModel->bestSolution(),n*sizeof(double));
               }
-              clpSolver = dynamic_cast< OsiClpSolverInterface*> (babModel->solver());
+              if (debugFile=="create"&&babModel->bestSolution()) {
+                saveSolution(lpSolver,"debug.file");
+              }
               if (numberChanged) {
                 for (int i=0;i<numberChanged;i++) {
                   int iColumn=changed[i];
@@ -1345,7 +1356,6 @@ int main (int argc, const char *argv[])
                 }
                 delete [] changed;
               }
-              lpSolver = clpSolver->getModelPtr();
               std::string statusName[]={"Finished","Stopped on ","Difficulties",
                                         "","","User ctrl-c"};
               std::string minor[]={"","","gap","nodes","time","","solutions"};
@@ -1357,6 +1367,8 @@ int main (int argc, const char *argv[])
                 <<babModel->getIterationCount()<<
                 " iterations - took "<<time2-time1<<" seconds"<<std::endl;
               time1 = time2;
+              delete babModel;
+              babModel=NULL;
             } else {
               std::cout << "** Current model not valid" << std::endl ; 
             }
@@ -1699,10 +1711,16 @@ int main (int argc, const char *argv[])
               FILE *fp=fopen(fileName.c_str(),"rb");
               if (fp) {
                 // can open - lets go for it
-                int numColumns = lpSolver->getNumCols();
-                debugValues = new double[numColumns];
-                int n=fread(debugValues,sizeof(double),numColumns,fp);
-                printf("%d doubles read into debugValues\n",n);
+                int numRows;
+                double obj;
+                fread(&numRows,sizeof(int),1,fp);
+                fread(&numberDebugValues,sizeof(int),1,fp);
+                fread(&obj,sizeof(double),1,fp);
+                debugValues = new double[numberDebugValues+numRows];
+                fread(debugValues,sizeof(double),numRows,fp);
+                fread(debugValues,sizeof(double),numRows,fp);
+                fread(debugValues,sizeof(double),numberDebugValues,fp);
+                printf("%d doubles read into debugValues\n",numberDebugValues);
                 fclose(fp);
               } else {
                 std::cout<<"Unable to open file "<<fileName<<std::endl;
@@ -2205,6 +2223,39 @@ clp watson.mps -\nscaling off\nprimalsimplex"
 	      } else {
 		std::cout<<"Unable to open file "<<fileName<<std::endl;
 	      }
+	    } else {
+	      std::cout<<"** Current model not valid"<<std::endl;
+	      
+	    }
+	    break;
+	  case SAVESOL:
+	    if (goodModel) {
+	      // get next field
+	      field = CoinReadGetString(argc,argv);
+	      if (field=="$") {
+		field = parameters[iParam].stringValue();
+	      } else if (field=="EOL") {
+		parameters[iParam].printString();
+		break;
+	      } else {
+		parameters[iParam].setStringValue(field);
+	      }
+	      std::string fileName;
+              if (field[0]=='/'||field[0]=='\\') {
+                fileName = field;
+              } else if (field[0]=='~') {
+                char * environ = getenv("HOME");
+                if (environ) {
+                  std::string home(environ);
+                  field=field.erase(0,1);
+                  fileName = home+field;
+                } else {
+                  fileName=field;
+                }
+              } else {
+                fileName = directory+field;
+              }
+              saveSolution(lpSolver,fileName);
 	    } else {
 	      std::cout<<"** Current model not valid"<<std::endl;
 	      

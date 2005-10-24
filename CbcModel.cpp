@@ -4590,8 +4590,9 @@ CbcModel::checkSolution (double cutoff, const double *solution,
     double *rowActivity = new double[numberRows] ;
     memset(rowActivity,0,numberRows*sizeof(double)) ;
 
+#ifndef NDEBUG
     double integerTolerance = getIntegerTolerance() ;
-
+#endif
     int iColumn;
     for (iColumn = 0 ; iColumn < numberColumns ; iColumn++)
     { double value = solution[iColumn] ;
@@ -5569,13 +5570,15 @@ CbcModel::originalModel(CbcModel * presolvedModel,bool weak)
       // solve problem
       resolve();
       // should be feasible
-      int numberIntegerInfeasibilities;
-      int numberObjectInfeasibilities;
       if (!currentSolution_)
 	currentSolution_ = new double[numberColumns] ;
       testSolution_ = currentSolution_;
+#ifndef NDEBUG
+      int numberIntegerInfeasibilities;
+      int numberObjectInfeasibilities;
       assert(feasibleSolution(numberIntegerInfeasibilities,
 			      numberObjectInfeasibilities));
+#endif
     }
   } else {
     bestSolution_=NULL;

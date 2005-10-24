@@ -111,9 +111,11 @@ CbcHeuristicFPump::solution(double & solutionValue,
   for (i=0;i<numberIntegers;i++) {
     int iColumn = integerVariable[i];
     const CbcObject * object = model_->object(i);
+#ifndef NDEBUG
     const CbcSimpleInteger * integerObject = 
       dynamic_cast<const  CbcSimpleInteger *> (object);
     assert(integerObject);
+#endif
     if (upper[iColumn]-lower[iColumn]>1.000001) {
       general++;
       break;
@@ -332,9 +334,11 @@ CbcHeuristicFPump::rounds(double * solution,
     if(!solver->isBinary(iColumn))
       continue;
     const CbcObject * object = model_->object(i);
+#ifndef NDEBUG
     const CbcSimpleInteger * integerObject = 
       dynamic_cast<const  CbcSimpleInteger *> (object);
     assert(integerObject);
+#endif
     double value=solution[iColumn];
     double round = floor(value+primalTolerance);
     if (value-round > .5) round += 1.;

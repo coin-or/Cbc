@@ -193,9 +193,10 @@ CbcClique::feasibleRegion()
   const double * solution = model_->testSolution();
   const double * lower = solver->getColLower();
   const double * upper = solver->getColUpper();
+#ifndef NDEBUG
   double integerTolerance = 
     model_->getDblParam(CbcModel::CbcIntegerTolerance);
-  
+#endif  
   for (j=0;j<numberMembers_;j++) {
     int sequence = members_[j];
     int iColumn = integer[sequence];
@@ -203,8 +204,10 @@ CbcClique::feasibleRegion()
     value = CoinMax(value, lower[iColumn]);
     value = CoinMin(value, upper[iColumn]);
     double nearest = floor(value+0.5);
+#ifndef NDEBUG
     double distance = fabs(value-nearest);
     assert(distance<=integerTolerance);
+#endif
     solver->setColLower(iColumn,nearest);
     solver->setColUpper(iColumn,nearest);
   }
@@ -694,13 +697,15 @@ CbcSimpleInteger::createBranch(int way)
   double value = solution[columnNumber_];
   value = CoinMax(value, lower[columnNumber_]);
   value = CoinMin(value, upper[columnNumber_]);
-  double nearest = floor(value+0.5);
-  double integerTolerance = 
-    model_->getDblParam(CbcModel::CbcIntegerTolerance);
   assert (upper[columnNumber_]>lower[columnNumber_]);
   int hotstartStrategy=model_->getHotstartStrategy();
   if (hotstartStrategy<=0) {
+#ifndef NDEBUG
+    double nearest = floor(value+0.5);
+    double integerTolerance = 
+    model_->getDblParam(CbcModel::CbcIntegerTolerance);
     assert (fabs(value-nearest)>integerTolerance);
+#endif
   } else {
     const double * bestSolution = model_->bestSolution();
     double targetValue = bestSolution[columnNumber_];
@@ -726,9 +731,11 @@ CbcSimpleInteger::preferredNewFeasible() const
   double value = model_->testSolution()[columnNumber_];
 
   double nearest = floor(value+0.5);
+#ifndef NDEBUG
   double integerTolerance = 
     model_->getDblParam(CbcModel::CbcIntegerTolerance);
   assert (fabs(value-nearest)<=integerTolerance);
+#endif
   double dj = solver->getObjSense()*solver->getReducedCost()[columnNumber_];
   CbcIntegerBranchingObject * object = NULL;
   if (dj>=0.0) {
@@ -761,9 +768,11 @@ CbcSimpleInteger::notPreferredNewFeasible() const
   double value = model_->testSolution()[columnNumber_];
 
   double nearest = floor(value+0.5);
+#ifndef NDEBUG
   double integerTolerance = 
     model_->getDblParam(CbcModel::CbcIntegerTolerance);
   assert (fabs(value-nearest)<=integerTolerance);
+#endif
   double dj = solver->getObjSense()*solver->getReducedCost()[columnNumber_];
   CbcIntegerBranchingObject * object = NULL;
   if (dj<=0.0) {
@@ -1018,10 +1027,12 @@ CbcSimpleIntegerPseudoCost::createBranch(int way)
   double value = solution[columnNumber_];
   value = CoinMax(value, lower[columnNumber_]);
   value = CoinMin(value, upper[columnNumber_]);
+#ifndef NDEBUG
   double nearest = floor(value+0.5);
   double integerTolerance = 
     model_->getDblParam(CbcModel::CbcIntegerTolerance);
   assert (upper[columnNumber_]>lower[columnNumber_]);
+#endif
   int hotstartStrategy=model_->getHotstartStrategy();
   if (hotstartStrategy<=0) {
     assert (fabs(value-nearest)>integerTolerance);

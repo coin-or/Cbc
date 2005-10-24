@@ -179,10 +179,12 @@ CbcSimpleIntegerDynamicPseudoCost::createBranch(int way)
   double value = solution[columnNumber_];
   value = CoinMax(value, lower[columnNumber_]);
   value = CoinMin(value, upper[columnNumber_]);
+#ifndef NDEBUG
   double nearest = floor(value+0.5);
   double integerTolerance = 
     model_->getDblParam(CbcModel::CbcIntegerTolerance);
   assert (upper[columnNumber_]>lower[columnNumber_]);
+#endif
   int hotstartStrategy=model_->getHotstartStrategy();
   if (hotstartStrategy<=0) {
     assert (fabs(value-nearest)>integerTolerance);
@@ -745,6 +747,8 @@ CbcBranchDynamicDecision::betterBranch(CbcBranchingObject * thisOne,
     // got a solution
     double minValue = CoinMin(changeDown,changeUp);
     double maxValue = CoinMax(changeDown,changeUp);
+    // Reduce
+    maxValue = CoinMin(maxValue,minValue*2.0);
     value = WEIGHT_AFTER*minValue + (1.0-WEIGHT_AFTER)*maxValue;
     if (value>bestCriterion_+1.0e-8) {
       if (changeUp<=changeDown) {

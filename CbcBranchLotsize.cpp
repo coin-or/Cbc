@@ -506,15 +506,17 @@ CbcLotsize::feasibleRegion()
     else
       nearest = value;
   }
-  double integerTolerance = 
-    model_->getDblParam(CbcModel::CbcIntegerTolerance);
 #ifdef CBC_PRINT
   // print details
   printLotsize(value,true,2);
 #endif
   // Scaling may have moved it a bit
   // Lotsizing variables could be a lot larger
+#ifndef NDEBUG
+  double integerTolerance = 
+    model_->getDblParam(CbcModel::CbcIntegerTolerance);
   assert (fabs(value-nearest)<=(100.0+10.0*fabs(nearest))*integerTolerance);
+#endif
 }
 
 // Creates a branching object
@@ -528,8 +530,7 @@ CbcLotsize::createBranch(int way)
   double value = solution[columnNumber_];
   value = CoinMax(value, lower[columnNumber_]);
   value = CoinMin(value, upper[columnNumber_]);
-  bool feasible = findRange(value);
-  assert (!feasible);
+  assert (!findRange(value));
   return new CbcLotsizeBranchingObject(model_,columnNumber_,way,
 					     value,this);
 }
@@ -546,8 +547,7 @@ CbcLotsize::preferredNewFeasible() const
   OsiSolverInterface * solver = model_->solver();
   double value = model_->testSolution()[columnNumber_];
 
-  bool feasible = findRange(value);
-  assert (feasible);
+  assert (findRange(value));
   double dj = solver->getObjSense()*solver->getReducedCost()[columnNumber_];
   CbcLotsizeBranchingObject * object = NULL;
   double lo,up;
@@ -594,12 +594,14 @@ CbcLotsize::notPreferredNewFeasible() const
   OsiSolverInterface * solver = model_->solver();
   double value = model_->testSolution()[columnNumber_];
 
+#ifndef NDEBUG
   double nearest = floor(value+0.5);
   double integerTolerance = 
     model_->getDblParam(CbcModel::CbcIntegerTolerance);
   // Scaling may have moved it a bit
   // Lotsizing variables could be a lot larger
   assert (fabs(value-nearest)<=(10.0+10.0*fabs(nearest))*integerTolerance);
+#endif
   double dj = solver->getObjSense()*solver->getReducedCost()[columnNumber_];
   CbcLotsizeBranchingObject * object = NULL;
   double lo,up;

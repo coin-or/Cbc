@@ -747,8 +747,10 @@ CbcRounding::solution(double & solutionValue,
       int i;
       for (i=start[iPass];i<end[iPass];i++) {
 	int iColumn = integerVariable[i];
+#ifndef NDEBUG
 	double value=newSolution[iColumn];
 	assert (fabs(floor(value+0.5)-value)<integerTolerance);
+#endif
 	double cost = direction * objective[iColumn];
 	double move=0.0;
 	if (cost>0.0)

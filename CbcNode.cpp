@@ -2029,7 +2029,7 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,int numberP
     bool hitMaxTime = ( CoinCpuTime()-model->getDblParam(CbcModel::CbcStartSeconds) > 
                         model->getDblParam(CbcModel::CbcMaximumSeconds));
     // also give up if we are looping round too much
-    if (hitMaxTime||numberPassesLeft<=0||!numberNotTrusted) {
+    if (hitMaxTime||numberPassesLeft<=0||(!numberNotTrusted&&false)) {
       int iObject = whichObject[bestChoice];
       CbcObject * object = model->modifiableObject(iObject);
       int preferredWay;
@@ -2205,6 +2205,8 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,int numberP
       int saveLimit2;
       solver->getIntParam(OsiMaxNumIterationHotStart,saveLimit2);
       bool doQuickly = numberToDo>2*numberStrong;
+      //printf("todo %d, strong %d\n",numberToDo,numberStrong);
+      int numberTest=numberNotTrusted>0 ? numberStrong : (numberStrong+1)/2;
       for ( iDo=0;iDo<numberToDo;iDo++) {
         CbcStrongInfo choice;
         int iObject = whichObject[iDo];
@@ -2221,12 +2223,13 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,int numberP
         choice.fix=0; // say not fixed
         // see if can skip strong branching
         int canSkip = choice.possibleBranch->fillStrongInfo(choice);
-        if (!doQuickly)
+        if (!doQuickly||numberTest)
           canSkip=0;
         if (model->messageHandler()->logLevel()>3) 
           dynamicObject->print(1,choice.possibleBranch->value());
         // was if (!canSkip)
         if (!canSkip) {
+          numberTest--;
           // just do a few
           if (canSkip)
             solver->setIntParam(OsiMaxNumIterationHotStart,10); 
@@ -2492,6 +2495,7 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,int numberP
               dynamic_cast <CbcSimpleIntegerDynamicPseudoCost *>(object) ;
             dynamicObject->setNumberBeforeTrust(0);
           }
+          numberTest=0;
         }
       }
       if (model->messageHandler()->logLevel()>3||false) { 

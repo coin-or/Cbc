@@ -98,7 +98,7 @@ extern "C" {
 }
 
 int mainTest (int argc, const char *argv[],int algorithm,
-	      ClpSimplex empty, bool doPresolve,int doIdiot);
+	      ClpSimplex empty, bool doPresolve,int switchOff);
 int CbcOrClpRead_mode=1;
 FILE * CbcOrClpReadCommand=stdin;
 static int * analyze(OsiClpSolverInterface * solverMod, int & numberChanged, double & increment,

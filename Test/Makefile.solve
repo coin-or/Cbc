@@ -55,7 +55,7 @@ IncDir += ./include ../../Clp/Test
 CXXFLAGS += $(addprefix -D,COIN_USE_CLP)
 
 #tell parameter handling to allow for CbcModel and OsiSolverInterface
-CXXFLAGS += -DCOIN_USE_CBC
+CXXFLAGS += -DCOIN_USE_CBC -DCOIN_NO_CLP_MESSAGE
 ##############################################################################
 # You should not need to edit below this line.
 ##############################################################################

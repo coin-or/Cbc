@@ -553,6 +553,8 @@ int main (int argc, const char *argv[])
     bool useCombine=true;
     parameters[whichParam(COMBINE,numberParameters,parameters)].setCurrentOption("on");
     bool useLocalTree=false;
+    parameters[whichParam(COSTSTRATEGY,numberParameters,parameters)].setCurrentOption("off");
+    bool useCosts=false;
     
     // total number of commands read
     int numberGoodCommands=0;
@@ -996,37 +998,10 @@ int main (int argc, const char *argv[])
 	      useLocalTree = action;
 	      break;
 	    case COSTSTRATEGY:
-	      if (action!=1) {
+	      if (action!=1&&action!=0) {
 		printf("Pseudo costs not implemented yet\n");
 	      } else {
-		int numberColumns = model.getNumCols();
-		int * sort = new int[numberColumns];
-		double * dsort = new double[numberColumns];
-		int * priority = new int [numberColumns];
-		const double * objective = model.getObjCoefficients();
-		int iColumn;
-		int n=0;
-		for (iColumn=0;iColumn<numberColumns;iColumn++) {
-		  if (model.isInteger(iColumn)) {
-		    sort[n]=n;
-		    dsort[n++]=-objective[iColumn];
-		  }
-		}
-		CoinSort_2(dsort,dsort+n,sort);
-		int level=0;
-		double last = -1.0e100;
-		for (int i=0;i<n;i++) {
-		  int iPut=sort[i];
-		  if (dsort[i]!=last) {
-		    level++;
-		    last=dsort[i];
-		  }
-		  priority[iPut]=level;
-		}
-		model.passInPriorities( priority,false);
-		delete [] priority;
-		delete [] sort;
-		delete [] dsort;
+                useCosts=action;
 	      }
 	      break;
 	    case PREPROCESS:
@@ -1334,6 +1309,36 @@ int main (int argc, const char *argv[])
                   printf("debug file has incorrect number of columns\n");
                 }
               }
+	      if (useCosts) {
+		int numberColumns = babModel->getNumCols();
+		int * sort = new int[numberColumns];
+		double * dsort = new double[numberColumns];
+		int * priority = new int [numberColumns];
+		const double * objective = babModel->getObjCoefficients();
+		int iColumn;
+		int n=0;
+		for (iColumn=0;iColumn<numberColumns;iColumn++) {
+		  if (babModel->isInteger(iColumn)) {
+		    sort[n]=n;
+		    dsort[n++]=-objective[iColumn];
+		  }
+		}
+		CoinSort_2(dsort,dsort+n,sort);
+		int level=0;
+		double last = -1.0e100;
+		for (int i=0;i<n;i++) {
+		  int iPut=sort[i];
+		  if (dsort[i]!=last) {
+		    level++;
+		    last=dsort[i];
+		  }
+		  priority[iPut]=level;
+		}
+		babModel->passInPriorities( priority,false);
+		delete [] priority;
+		delete [] sort;
+		delete [] dsort;
+	      }
               // FPump done first as it only works if no solution
               CbcHeuristicFPump heuristic4(*babModel);
               if (useFpump) {

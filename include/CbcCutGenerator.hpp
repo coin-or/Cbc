@@ -77,7 +77,7 @@ public:
 		  int howOften=1, const char * name=NULL,
 		  bool normal=true, bool atSolution=false, 
 		  bool infeasible=false,int howOftenInsub=-100,
-		  int whatDepth=-1, int whatDepthInSub=-1);
+		  int whatDepth=-1, int whatDepthInSub=-1,int switchOffIfLessThan=0);
  
   /// Copy constructor 
   CbcCutGenerator (const CbcCutGenerator &);
@@ -200,6 +200,10 @@ public:
   { numberCutsActive_ = value;};
   void incrementNumberCutsActive(int value=1)
   { numberCutsActive_ += value;};
+  inline void setSwitchOffIfLessThan(int value) 
+  { switchOffIfLessThan_ = value;};
+  inline int switchOffIfLessThan() const
+  { return switchOffIfLessThan_;};
   //@}
   
 private:
@@ -217,6 +221,9 @@ private:
      routine in sub tree.
   */
   int whenCutGeneratorInSub_;
+  /** If first pass at root produces fewer than this cuts then switch off
+   */
+  int switchOffIfLessThan_;
 
   /** Depth at which to call the CglCutGenerator::generateCuts
      routine (If >0 then overrides when and is called if depth%depthCutGenerator==0).

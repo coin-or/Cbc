@@ -21,6 +21,7 @@ CbcCutGenerator::CbcCutGenerator ()
     generator_(NULL),
     whenCutGenerator_(-1),
     whenCutGeneratorInSub_(-100),
+    switchOffIfLessThan_(0),
     depthCutGenerator_(-1),
     depthCutGeneratorInSub_(-1),
     generatorName_(NULL),
@@ -39,7 +40,8 @@ CbcCutGenerator::CbcCutGenerator(CbcModel * model,CglCutGenerator * generator,
 				 int howOften, const char * name,
 				 bool normal, bool atSolution, 
 				 bool infeasible, int howOftenInSub,
-				 int whatDepth, int whatDepthInSub)
+				 int whatDepth, int whatDepthInSub,
+                                 int switchOffIfLessThan)
   : 
     depthCutGenerator_(whatDepth),
     depthCutGeneratorInSub_(whatDepthInSub),
@@ -54,6 +56,7 @@ CbcCutGenerator::CbcCutGenerator(CbcModel * model,CglCutGenerator * generator,
   generator_->refreshSolver(model_->solver());
   whenCutGenerator_=howOften;
   whenCutGeneratorInSub_ = howOftenInSub;
+  switchOffIfLessThan_=switchOffIfLessThan;
   if (name)
     generatorName_=strdup(name);
   else
@@ -71,6 +74,7 @@ CbcCutGenerator::CbcCutGenerator ( const CbcCutGenerator & rhs)
   generator_->refreshSolver(model_->solver());
   whenCutGenerator_=rhs.whenCutGenerator_;
   whenCutGeneratorInSub_ = rhs.whenCutGeneratorInSub_;
+  switchOffIfLessThan_ = rhs.switchOffIfLessThan_;
   depthCutGenerator_=rhs.depthCutGenerator_;
   depthCutGeneratorInSub_ = rhs.depthCutGeneratorInSub_;
   generatorName_=strdup(rhs.generatorName_);
@@ -96,6 +100,7 @@ CbcCutGenerator::operator=( const CbcCutGenerator& rhs)
     generator_->refreshSolver(model_->solver());
     whenCutGenerator_=rhs.whenCutGenerator_;
     whenCutGeneratorInSub_ = rhs.whenCutGeneratorInSub_;
+    switchOffIfLessThan_ = rhs.switchOffIfLessThan_;
     depthCutGenerator_=rhs.depthCutGenerator_;
     depthCutGeneratorInSub_ = rhs.depthCutGeneratorInSub_;
     generatorName_=strdup(rhs.generatorName_);
@@ -158,10 +163,16 @@ CbcCutGenerator::generateCuts( OsiCuts & cs , bool fullScan, CbcNode * node)
   // But turn off if 100
   if (howOften==100)
     doThis=false;
+  // Switch off if special setting
+  if (whenCutGeneratorInSub_==-200) {
+    fullScan=false;
+    doThis=false;
+  }
   if (fullScan||doThis) {
     double time1=0.0;
     if (timing_)
       time1 = CoinCpuTime();
+    int cutsBefore = cs.sizeCuts();
     CglTreeInfo info;
     info.level = depth;
     info.pass = pass;
@@ -202,6 +213,13 @@ CbcCutGenerator::generateCuts( OsiCuts & cs , bool fullScan, CbcNode * node)
     }
     if (timing_)
       timeInCutGenerator_ += CoinCpuTime()-time1;
+    // switch off if first time and no good
+    if (node==NULL&&!pass) {
+      if (cs.sizeCuts()-cutsBefore<switchOffIfLessThan_) {
+        whenCutGenerator_=-99;
+        whenCutGeneratorInSub_ = -200;
+      }
+    }
   }
   return returnCode;
 }

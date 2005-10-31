@@ -732,7 +732,7 @@ CbcHeuristicGreedyEquality::solution(double & solutionValue,
   delete [] rowActivity;
   if (atRoot&&fraction_==1.0) {
     // try quick search
-    fraction_=0.3;
+    fraction_=0.4;
     int newCode=this->solution(solutionValue,betterSolution);
     if (newCode)
       returnCode=1;

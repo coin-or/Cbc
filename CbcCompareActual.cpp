@@ -254,10 +254,13 @@ CbcCompareDefault::every1000Nodes(CbcModel * model, int numberNodes)
   // get size of tree
   treeSize_ = model->tree()->size();
   if (treeSize_>10000) {
+    int n1 = model->solver()->getNumRows()+model->solver()->getNumCols();
+    int n2 = model->numberObjects();
+    double size = n1*0.1 + n2*2.0;
     // set weight to reduce size most of time
-    if (treeSize_>25000)
+    if (treeSize_*size>5.0e7)
       weight_=-1.0;
-    else if ((numberNodes1000%4)==0)
+    else if ((numberNodes1000%4)==0&&treeSize_*size>1.0e6)
       weight_=-1.0;
     else if ((numberNodes1000%4)==1)
       weight_=0.0;

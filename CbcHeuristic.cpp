@@ -92,11 +92,9 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver,int numberNodes,
       model.setCutoff(cutoff);
       model.setMaximumNodes(numberNodes);
       model.solver()->setHintParam(OsiDoReducePrint,true,OsiHintTry);
-      CbcStrategyDefaultSubTree strategy(model_,true,5,5,0);
-      model.setStrategy(strategy);
       // Lightweight
-      model.setNumberStrong(5);
-      model.setNumberBeforeTrust(1);
+      CbcStrategyDefaultSubTree strategy(model_,true,5,1,0);
+      model.setStrategy(strategy);
       model.solver()->setIntParam(OsiMaxNumIterationHotStart,10);
       // Do search
       if (logLevel>1)

@@ -1101,10 +1101,11 @@ public:
     requires calling the solver to reoptimise. If it's certain the solution
     will not be required, set allowResolve to false to suppress
     reoptimisation.
+    If saveCuts then slack cuts will be saved
   */
   void takeOffCuts(OsiCuts &cuts, int *whichGenerator,
 		     int &numberOldActiveCuts, int &numberNewCuts,
-		     bool allowResolve) ;
+		     bool allowResolve,OsiCuts * saveCuts) ;
 
   /** Determine and install the active cuts that need to be added for
     the current subproblem

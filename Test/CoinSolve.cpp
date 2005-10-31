@@ -99,17 +99,25 @@ extern "C" {
 
 int mainTest (int argc, const char *argv[],int algorithm,
 	      ClpSimplex empty, bool doPresolve,int doIdiot);
-// Returns next valid field
 int CbcOrClpRead_mode=1;
 FILE * CbcOrClpReadCommand=stdin;
-static int * analyze(OsiClpSolverInterface * solver, int & numberChanged)
+static int * analyze(OsiClpSolverInterface * solverMod, int & numberChanged, double & increment,
+                     bool changeInt)
 {
-  //const double *objective = solver->getObjCoefficients() ;
+  OsiSolverInterface * solver = solverMod->clone();
+  {
+    // just get increment
+    CbcModel model(*solver);
+    model.analyzeObjective();
+    double increment2=model.getCutoffIncrement();
+    printf("initial cutoff increment %g\n",increment2);
+  }
+  const double *objective = solver->getObjCoefficients() ;
   const double *lower = solver->getColLower() ;
   const double *upper = solver->getColUpper() ;
   int numberColumns = solver->getNumCols() ;
   int numberRows = solver->getNumRows();
-  //double direction = solver->getObjSense();
+  double direction = solver->getObjSense();
   int iRow,iColumn;
 
   // Row copy
@@ -121,7 +129,7 @@ static int * analyze(OsiClpSolverInterface * solver, int & numberChanged)
 
   // Column copy
   CoinPackedMatrix  matrixByCol(*solver->getMatrixByCol());
-  //const double * element = matrixByCol.getElements();
+  const double * element = matrixByCol.getElements();
   const int * row = matrixByCol.getIndices();
   const CoinBigIndex * columnStart = matrixByCol.getVectorStarts();
   const int * columnLength = matrixByCol.getVectorLengths();
@@ -131,6 +139,9 @@ static int * analyze(OsiClpSolverInterface * solver, int & numberChanged)
 
   char * ignore = new char [numberRows];
   int * changed = new int[numberColumns];
+  int * which = new int[numberRows];
+  double * changeRhs = new double[numberRows];
+  memset(changeRhs,0,numberRows*sizeof(double));
   memset(ignore,0,numberRows);
   numberChanged=0;
   int numberInteger=0;
@@ -138,115 +149,236 @@ static int * analyze(OsiClpSolverInterface * solver, int & numberChanged)
     if (upper[iColumn] > lower[iColumn]+1.0e-8&&solver->isInteger(iColumn)) 
       numberInteger++;
   }
-  for (iRow=0;iRow<numberRows;iRow++) {
-    int numberContinuous=0;
-    double value1=0.0,value2=0.0;
-    bool allIntegerCoeff=true;
-    double sumFixed=0.0;
-    int jColumn1=-1,jColumn2=-1;
-    for (CoinBigIndex j=rowStart[iRow];j<rowStart[iRow]+rowLength[iRow];j++) {
-      int jColumn = column[j];
-      double value = elementByRow[j];
-      if (upper[jColumn] > lower[jColumn]+1.0e-8) {
-        if (!solver->isInteger(jColumn)) {
-          if (numberContinuous==0) {
-            jColumn1=jColumn;
-            value1=value;
+  bool finished=false;
+  while (!finished) {
+    int saveNumberChanged = numberChanged;
+    for (iRow=0;iRow<numberRows;iRow++) {
+      int numberContinuous=0;
+      double value1=0.0,value2=0.0;
+      bool allIntegerCoeff=true;
+      double sumFixed=0.0;
+      int jColumn1=-1,jColumn2=-1;
+      for (CoinBigIndex j=rowStart[iRow];j<rowStart[iRow]+rowLength[iRow];j++) {
+        int jColumn = column[j];
+        double value = elementByRow[j];
+        if (upper[jColumn] > lower[jColumn]+1.0e-8) {
+          if (!solver->isInteger(jColumn)) {
+            if (numberContinuous==0) {
+              jColumn1=jColumn;
+              value1=value;
+            } else {
+              jColumn2=jColumn;
+              value2=value;
+            }
+            numberContinuous++;
           } else {
-            jColumn2=jColumn;
-            value2=value;
+            if (fabs(value-floor(value+0.5))>1.0e-12)
+              allIntegerCoeff=false;
           }
-          numberContinuous++;
         } else {
-          if (fabs(value-floor(value+0.5))>1.0e-12)
-            allIntegerCoeff=false;
+          sumFixed += lower[jColumn]*value;
         }
-      } else {
-        sumFixed += lower[jColumn]*value;
       }
-    }
-    double low = rowLower[iRow];
-    if (low>-1.0e20) {
-      low -= sumFixed;
-      if (fabs(low-floor(low+0.5))>1.0e-12)
-        allIntegerCoeff=false;
-    }
-    double up = rowUpper[iRow];
-    if (up<1.0e20) {
-      up -= sumFixed;
-      if (fabs(up-floor(up+0.5))>1.0e-12)
-        allIntegerCoeff=false;
-    }
-    if (numberContinuous==1) {
-      // see if really integer
-      // This does not allow for complicated cases
-      if (low==up) {
-        if (fabs(value1)>1.0e-3) {
-          value1 = 1.0/value1;
-          if (fabs(value1-floor(value1+0.5))<1.0e-12) {
-            // integer
-            changed[numberChanged++]=jColumn1;
-            solver->setInteger(jColumn1);
-            if (upper[jColumn1]>1.0e20)
-              solver->setColUpper(jColumn1,1.0e20);
-            if (lower[jColumn1]<-1.0e20)
-              solver->setColLower(jColumn1,-1.0e20);
+      double low = rowLower[iRow];
+      if (low>-1.0e20) {
+        low -= sumFixed;
+        if (fabs(low-floor(low+0.5))>1.0e-12)
+          allIntegerCoeff=false;
+      }
+      double up = rowUpper[iRow];
+      if (up<1.0e20) {
+        up -= sumFixed;
+        if (fabs(up-floor(up+0.5))>1.0e-12)
+          allIntegerCoeff=false;
+      }
+      if (numberContinuous==1) {
+        // see if really integer
+        // This does not allow for complicated cases
+        if (low==up) {
+          if (fabs(value1)>1.0e-3) {
+            value1 = 1.0/value1;
+            if (fabs(value1-floor(value1+0.5))<1.0e-12) {
+              // integer
+              changed[numberChanged++]=jColumn1;
+              solver->setInteger(jColumn1);
+              if (upper[jColumn1]>1.0e20)
+                solver->setColUpper(jColumn1,1.0e20);
+              if (lower[jColumn1]<-1.0e20)
+                solver->setColLower(jColumn1,-1.0e20);
+            }
+          }
+        } else {
+          if (fabs(value1)>1.0e-3) {
+            value1 = 1.0/value1;
+            if (fabs(value1-floor(value1+0.5))<1.0e-12) {
+              // This constraint will not stop it being integer
+              ignore[iRow]=1;
+            }
           }
         }
-      } else {
-        if (fabs(value1)>1.0e-3) {
-          value1 = 1.0/value1;
-          if (fabs(value1-floor(value1+0.5))<1.0e-12) {
-            // This constraint will not stop it being integer
-            ignore[iRow]=1;
+      } else if (numberContinuous==2) {
+        if (low==up) {
+          /* need general theory - for now just look at 2 cases -
+             1 - +- 1 one in column and just costs i.e. matching objective
+             2 - +- 1 two in column but feeds into G/L row which will try and minimize
+          */
+          if (fabs(value1)==1.0&&value1*value2==-1.0&&!lower[jColumn1]
+              &&!lower[jColumn2]) {
+            int n=0;
+            int i;
+            double objChange=direction*(objective[jColumn1]+objective[jColumn2]);
+            double bound = CoinMin(upper[jColumn1],upper[jColumn2]);
+            bound = CoinMin(bound,1.0e20);
+            for ( i=columnStart[jColumn1];i<columnStart[jColumn1]+columnLength[jColumn1];i++) {
+              int jRow = row[i];
+              double value = element[i];
+              if (jRow!=iRow) {
+                which[n++]=jRow;
+                changeRhs[jRow]=value;
+              }
+            }
+            for ( i=columnStart[jColumn1];i<columnStart[jColumn1]+columnLength[jColumn1];i++) {
+              int jRow = row[i];
+              double value = element[i];
+              if (jRow!=iRow) {
+                if (!changeRhs[jRow]) {
+                  which[n++]=jRow;
+                  changeRhs[jRow]=value;
+                } else {
+                  changeRhs[jRow]+=value;
+                }
+              }
+            }
+            if (objChange>=0.0) {
+              // see if all rows OK
+              bool good=true;
+              for (i=0;i<n;i++) {
+                int jRow = which[i];
+                double value = changeRhs[jRow];
+                if (value) {
+                  value *= bound;
+                  if (rowLength[jRow]==1) {
+                    if (value>0.0) {
+                      double rhs = rowLower[jRow];
+                      if (rhs>0.0) {
+                        double ratio =rhs/value;
+                        if (fabs(ratio-floor(ratio+0.5))>1.0e-12)
+                          good=false;
+                      }
+                    } else {
+                      double rhs = rowUpper[jRow];
+                      if (rhs<0.0) {
+                        double ratio =rhs/value;
+                        if (fabs(ratio-floor(ratio+0.5))>1.0e-12)
+                          good=false;
+                      }
+                    }
+                  } else if (rowLength[jRow]==2) {
+                    if (value>0.0) {
+                      if (rowLower[jRow]>-1.0e20)
+                        good=false;
+                    } else {
+                      if (rowUpper[jRow]<1.0e20)
+                        good=false;
+                    }
+                  } else {
+                    good=false;
+                  }
+                }
+              }
+              if (good) {
+                // both can be integer
+                changed[numberChanged++]=jColumn1;
+                solver->setInteger(jColumn1);
+                if (upper[jColumn1]>1.0e20)
+                  solver->setColUpper(jColumn1,1.0e20);
+                if (lower[jColumn1]<-1.0e20)
+                  solver->setColLower(jColumn1,-1.0e20);
+                changed[numberChanged++]=jColumn2;
+                solver->setInteger(jColumn2);
+                if (upper[jColumn2]>1.0e20)
+                  solver->setColUpper(jColumn2,1.0e20);
+                if (lower[jColumn2]<-1.0e20)
+                  solver->setColLower(jColumn2,-1.0e20);
+              }
+            }
+            // clear
+            for (i=0;i<n;i++) {
+              changeRhs[which[i]]=0.0;
+            }
           }
         }
       }
-    } else if (numberContinuous==2) {
-      if (low==up) {
-      }
     }
-  }
-  for (iColumn=0;iColumn<numberColumns;iColumn++) {
-    if (upper[iColumn] > lower[iColumn]+1.0e-8&&!solver->isInteger(iColumn)) {
-      double value;
-      value = upper[iColumn];
-      if (value<1.0e20&&fabs(value-floor(value+0.5))>1.0e-12) 
-        continue;
-      value = lower[iColumn];
-      if (value>-1.0e20&&fabs(value-floor(value+0.5))>1.0e-12) 
-        continue;
-      bool integer=true;
-      for (CoinBigIndex j=columnStart[iColumn];j<columnStart[iColumn]+columnLength[iColumn];j++) {
-        int iRow = row[j];
-        if (!ignore[iRow]) {
-          integer=false;
-          break;
+    for (iColumn=0;iColumn<numberColumns;iColumn++) {
+      if (upper[iColumn] > lower[iColumn]+1.0e-8&&!solver->isInteger(iColumn)) {
+        double value;
+        value = upper[iColumn];
+        if (value<1.0e20&&fabs(value-floor(value+0.5))>1.0e-12) 
+          continue;
+        value = lower[iColumn];
+        if (value>-1.0e20&&fabs(value-floor(value+0.5))>1.0e-12) 
+          continue;
+        bool integer=true;
+        for (CoinBigIndex j=columnStart[iColumn];j<columnStart[iColumn]+columnLength[iColumn];j++) {
+          int iRow = row[j];
+          if (!ignore[iRow]) {
+            integer=false;
+            break;
+          }
+        }
+        if (integer) {
+          // integer
+          changed[numberChanged++]=iColumn;
+          solver->setInteger(iColumn);
+          if (upper[iColumn]>1.0e20)
+            solver->setColUpper(iColumn,1.0e20);
+          if (lower[iColumn]<-1.0e20)
+            solver->setColLower(iColumn,-1.0e20);
         }
       }
-      if (integer) {
-        // integer
-        changed[numberChanged++]=iColumn;
-        solver->setInteger(iColumn);
-        if (upper[iColumn]>1.0e20)
-          solver->setColUpper(iColumn,1.0e20);
-        if (lower[iColumn]<-1.0e20)
-          solver->setColLower(iColumn,-1.0e20);
-      }
     }
+    finished = numberChanged==saveNumberChanged;
   }
+  delete [] which;
+  delete [] changeRhs;
   if (numberInteger)
     printf("%d integer variables",numberInteger);
-  if (numberChanged)
-    printf(" and %d variables made integer\n",numberChanged);
-  else
-    printf("\n");
-  delete [] ignore;
-  if (!numberChanged) {
-    delete [] changed;
-    return NULL;
+  if (changeInt) {
+    if (numberChanged)
+      printf(" and %d variables made integer\n",numberChanged);
+    else
+      printf("\n");
+    delete [] ignore;
+    //increment=0.0;
+    if (!numberChanged) {
+      delete [] changed;
+      delete solver;
+      return NULL;
+    } else {
+      for (iColumn=0;iColumn<numberColumns;iColumn++) {
+        if (solver->isInteger(iColumn))
+          solverMod->setInteger(iColumn);
+      }
+      delete solver;
+      return changed;
+    }
   } else {
-    return changed;
+    if (numberChanged)
+      printf(" and %d variables could be made integer\n",numberChanged);
+    else
+      printf("\n");
+    // just get increment
+    CbcModel model(*solver);
+    model.analyzeObjective();
+    double increment2=model.getCutoffIncrement();
+    if (increment2>increment) {
+      printf("cutoff increment increased from %g to %g\n",increment,increment2);
+      increment=increment2;
+    }
+    delete solver;
+    numberChanged=0;
+    return NULL;
   }
 }
 int main (int argc, const char *argv[])
@@ -264,7 +396,7 @@ int main (int argc, const char *argv[])
     OsiClpSolverInterface solver1;
     CbcModel model(solver1);
     CbcModel * babModel = NULL;
-    model.setNumberBeforeTrust(5);
+    model.setNumberBeforeTrust(21);
     int cutPass=-1234567;
     OsiSolverInterface * solver = model.solver();
     OsiClpSolverInterface * clpSolver = dynamic_cast< OsiClpSolverInterface*> (solver);
@@ -344,7 +476,7 @@ int main (int argc, const char *argv[])
     model.setNumberBeforeTrust(5);
     parameters[whichParam(NUMBERBEFORE,numberParameters,parameters)].setIntValue(5);
     parameters[whichParam(MAXNODES,numberParameters,parameters)].setIntValue(model.getMaximumNodes());
-    model.setNumberStrong(10);
+    model.setNumberStrong(5);
     parameters[whichParam(STRONGBRANCHING,numberParameters,parameters)].setIntValue(model.numberStrong());
     parameters[whichParam(INFEASIBILITYWEIGHT,numberParameters,parameters)].setDoubleValue(model.getDblParam(CbcModel::CbcInfeasibilityWeight));
     parameters[whichParam(INTEGERTOLERANCE,numberParameters,parameters)].setDoubleValue(model.getDblParam(CbcModel::CbcIntegerTolerance));
@@ -410,8 +542,8 @@ int main (int argc, const char *argv[])
 
     CglTwomir twomirGen;
     // set default action (0=off,1=on,2=root)
-    int twomirAction=2;
-    parameters[whichParam(TWOMIRCUTS,numberParameters,parameters)].setCurrentOption("root");
+    int twomirAction=3;
+    parameters[whichParam(TWOMIRCUTS,numberParameters,parameters)].setCurrentOption("ifmove");
 
     bool useRounding=true;
     parameters[whichParam(ROUNDING,numberParameters,parameters)].setCurrentOption("on");
@@ -1059,6 +1191,7 @@ int main (int argc, const char *argv[])
   solver is not Clp, simply run branch-and-cut. Print elapsed time at the end.
 */
 	  case BAB: // branchAndBound
+          case STRENGTHEN:
             if (goodModel) {
               // If user made settings then use them
               if (!defaultSettings) {
@@ -1115,10 +1248,20 @@ int main (int argc, const char *argv[])
               delete babModel;
               babModel = new CbcModel(model);
               OsiSolverInterface * solver3 = clpSolver->clone();
+              if (defaultSettings) {
+                OsiClpSolverInterface * si =
+                  dynamic_cast<OsiClpSolverInterface *>(solver3) ;
+                assert (si != NULL);
+                // get clp itself
+                ClpSimplex * modelC = si->getModelPtr();
+                if (modelC->tightenPrimalBounds()!=0) {
+                  std::cout<<"Problem is infeasible!"<<std::endl;
+                  break;
+                }
+              }
               babModel->assignSolver(solver3);
               OsiClpSolverInterface * clpSolver2 = dynamic_cast< OsiClpSolverInterface*> (babModel->solver());
               int numberChanged=0;
-              int * changed = analyze( clpSolver2,numberChanged);
               if (clpSolver2->messageHandler()->logLevel())
                 clpSolver2->messageHandler()->setLogLevel(1);
               int logLevel = parameters[slog].intValue();
@@ -1148,7 +1291,7 @@ int main (int argc, const char *argv[])
               totalTime += time2-time1;
               time1 = time2;
               double timeLeft = babModel->getMaximumSeconds();
-              if (preProcess) {
+              if (preProcess&&type==BAB) {
                 saveSolver=babModel->solver()->clone();
                 /* Do not try and produce equality cliques and
                    do up to 10 passes */
@@ -1254,6 +1397,8 @@ int main (int argc, const char *argv[])
                 parameters[whichParam(CUTDEPTH,numberParameters,parameters)].intValue();
               for (iGenerator=0;iGenerator<numberGenerators;iGenerator++) {
                 CbcCutGenerator * generator = babModel->cutGenerator(iGenerator);
+                if (generator->howOften()<=-98)
+                  generator->setSwitchOffIfLessThan(1);
                 generator->setTiming(true);
                 if (cutDepth>=0)
                   generator->setWhatDepth(cutDepth) ;
@@ -1292,6 +1437,9 @@ int main (int argc, const char *argv[])
               } else {
                 osiclp->setupForRepeatedUse(0,0);
               }
+              double increment=babModel->getCutoffIncrement();;
+              int * changed = analyze( osiclp,numberChanged,increment,false);
+              babModel->setCutoffIncrement(CoinMax(babModel->getCutoffIncrement(),increment));
               // Turn this off if you get problems
               // Used to be automatically set
               osiclp->setSpecialOptions(osiclp->specialOptions()|(128+64));
@@ -1303,8 +1451,15 @@ int main (int argc, const char *argv[])
                           << ", so allowable gap set to "
                           << value2 << std::endl ;
               }
+              // probably faster to use a basis to get integer solutions
+              babModel->setSpecialOptions(2);
               currentBranchModel = babModel;
-              babModel->branchAndBound();
+              OsiSolverInterface * strengthenedModel=NULL;
+              if (type==BAB) {
+                babModel->branchAndBound();
+              } else {
+                strengthenedModel = babModel->strengthenedModel();
+              }
               currentBranchModel = NULL;
               osiclp = dynamic_cast< OsiClpSolverInterface*> (babModel->solver());
               if (debugFile=="createAfterPre"&&babModel->bestSolution()) {
@@ -1331,7 +1486,7 @@ int main (int argc, const char *argv[])
               }
               time2 = CoinCpuTime();
               totalTime += time2-time1;
-              if (babModel->getMinimizationObjValue()<1.0e50) {
+              if (babModel->getMinimizationObjValue()<1.0e50&&type==BAB) {
                 // post process
                 if (preProcess) {
                   process.postProcess(*babModel->solver());
@@ -1339,13 +1494,9 @@ int main (int argc, const char *argv[])
                   babModel->assignSolver(saveSolver);
                 }
               }
-              // clpSolver still OK clpSolver = dynamic_cast< OsiClpSolverInterface*> (babModel->solver());
+              if (type==STRENGTHEN&&strengthenedModel)
+                clpSolver = dynamic_cast< OsiClpSolverInterface*> (strengthenedModel);
               lpSolver = clpSolver->getModelPtr();
-              if (babModel->bestSolution()){
-                //move best solution (should be there -- but ..)
-                int n = lpSolver->getNumCols();
-                memcpy(lpSolver->primalColumnSolution(),babModel->bestSolution(),n*sizeof(double));
-              }
               if (debugFile=="create"&&babModel->bestSolution()) {
                 saveSolution(lpSolver,"debug.file");
               }
@@ -1356,16 +1507,21 @@ int main (int argc, const char *argv[])
                 }
                 delete [] changed;
               }
-              std::string statusName[]={"Finished","Stopped on ","Difficulties",
-                                        "","","User ctrl-c"};
-              std::string minor[]={"","","gap","nodes","time","","solutions"};
-              int iStat = babModel->status();
-              int iStat2 = babModel->secondaryStatus();
-              std::cout<<"Result - "<<statusName[iStat]<<minor[iStat2]
-                       <<" objective "<<babModel->getObjValue()<<
-                " after "<<babModel->getNodeCount()<<" nodes and "
-                <<babModel->getIterationCount()<<
-                " iterations - took "<<time2-time1<<" seconds"<<std::endl;
+              if (type==BAB) {
+                std::string statusName[]={"Finished","Stopped on ","Difficulties",
+                                          "","","User ctrl-c"};
+                std::string minor[]={"","","gap","nodes","time","","solutions"};
+                int iStat = babModel->status();
+                int iStat2 = babModel->secondaryStatus();
+                std::cout<<"Result - "<<statusName[iStat]<<minor[iStat2]
+                         <<" objective "<<babModel->getObjValue()<<
+                  " after "<<babModel->getNodeCount()<<" nodes and "
+                         <<babModel->getIterationCount()<<
+                  " iterations - took "<<time2-time1<<" seconds"<<std::endl;
+              } else {
+                std::cout<<"Model strengthend - now has "<<clpSolver->getNumRows()
+                         <<" rows"<<std::endl;
+              }
               time1 = time2;
               delete babModel;
               babModel=NULL;

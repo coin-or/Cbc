@@ -419,7 +419,7 @@ void CbcModel::branchAndBound(int doStatistics)
 */
   findIntegers(false) ;
   // If dynamic pseudo costs then do
-  if (numberBeforeTrust_>0)
+  if (numberBeforeTrust_)
     convertToDynamic();
   // Set up char array to say if integer
   delete [] integerInfo_;
@@ -674,7 +674,7 @@ void CbcModel::branchAndBound(int doStatistics)
     int numberPassesLeft=20;
     while (anyAction == -1)
     {
-      if (numberBeforeTrust_<=0 ) {
+      if (numberBeforeTrust_==0 ) {
         anyAction = newNode->chooseBranch(this,NULL,numberPassesLeft) ;
       } else {
         anyAction = newNode->chooseDynamicBranch(this,NULL,numberPassesLeft) ;
@@ -721,7 +721,7 @@ void CbcModel::branchAndBound(int doStatistics)
   { if (resolved)
     { bool needValidSolution = (newNode->variable() < 0) ;
       takeOffCuts(cuts,whichGenerator,numberOldActiveCuts,numberNewCuts,
-		  needValidSolution) ;
+		  needValidSolution,NULL) ;
 #     ifdef CHECK_CUT_COUNTS
       { printf("Number of rows after chooseBranch fix (root)"
 	       "(active only) %d\n",
@@ -1049,7 +1049,7 @@ void CbcModel::branchAndBound(int doStatistics)
           int numberPassesLeft=20;
 	  while (anyAction == -1)
 	  { 
-            if (numberBeforeTrust_<=0 ) {
+            if (numberBeforeTrust_==0 ) {
               anyAction = newNode->chooseBranch(this,node,numberPassesLeft) ;
             } else {
               anyAction = newNode->chooseDynamicBranch(this,node,numberPassesLeft) ;
@@ -1088,7 +1088,7 @@ void CbcModel::branchAndBound(int doStatistics)
 	  { if (resolved)
 	    { bool needValidSolution = (newNode->variable() < 0) ;
 	      takeOffCuts(cuts,whichGenerator,numberOldActiveCuts,
-			  numberNewCuts,needValidSolution) ; 
+			  numberNewCuts,needValidSolution,NULL) ; 
 #	      ifdef CHECK_CUT_COUNTS
 	      { printf("Number of rows after chooseBranch fix (node)"
 		       "(active only) %d\n",
@@ -2432,7 +2432,7 @@ CbcModel::setNumberStrong(int number)
 void 
 CbcModel::setNumberBeforeTrust(int number)
 {
-  if (number<=0) {
+  if (number<-1) {
     numberBeforeTrust_=0;
   } else {
     numberBeforeTrust_=number;
@@ -2833,6 +2833,7 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node,
     if (debugger) 
       onOptimalPath = (debugger->onOptimalPath(*solver_)) ;
   }
+  OsiCuts slackCuts;
 /*
   Resolve the problem. If we've lost feasibility, might as well bail out right
   after the debug stuff.
@@ -3088,6 +3089,24 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node,
 	} else if (ifSol<0) {
 	  heuristicValue = saveValue ;
 	}
+      }
+      // Add in any violated saved cuts
+      if (!theseCuts.sizeRowCuts()&&!theseCuts.sizeColCuts()) {
+        int numberCuts = slackCuts.sizeRowCuts() ;
+        int i;
+        // possibly extend whichGenerator
+        whichGenerator = newWhichGenerator(numberViolated, numberViolated+numberCuts,
+                                           maximumWhich,  whichGenerator);
+        for ( i = 0;i<numberCuts;i++) {
+          const OsiRowCut * thisCut = slackCuts.rowCutPtr(i) ;
+          if (thisCut->violated(solution)>100.0*primalTolerance) {
+            if (messageHandler()->logLevel()>2)
+              printf("Old cut added - violation %g\n",
+                     thisCut->violated(solution)) ;
+            whichGenerator[numberViolated++]=-1;
+            theseCuts.insert(*thisCut) ;
+          }
+        }
       }
       int numberRowCutsAfter = theseCuts.sizeRowCuts() ;
       int numberColumnCutsAfter = theseCuts.sizeColCuts() ;
@@ -3394,8 +3413,9 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node,
     if (feasible)
     { int cutIterations = solver_->getIterationCount() ;
       if (numberOldActiveCuts+numberNewCuts) {
+        OsiCuts * saveCuts = node ? NULL : &slackCuts;
         takeOffCuts(cuts,whichGenerator,numberOldActiveCuts,
-                    numberNewCuts,resolveAfterTakeOffCuts_) ;
+                    numberNewCuts,resolveAfterTakeOffCuts_,saveCuts) ;
         if (solver_->isDualObjectiveLimitReached()&&resolveAfterTakeOffCuts_)
           { feasible = false ;
 #	ifdef CBC_DEBUG
@@ -3525,8 +3545,12 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node,
       ((double) numberCutGenerators_) ;
     for (i = 0;i<numberCutGenerators_;i++) {
       int howOften = generator_[i]->howOften() ;
-      if (thisObjective-startObjective<0.1*fabs(startObjective)+1.0e-5&&howOften==-98)
-        howOften=-99; // switch off
+      if (howOften==-98) {
+        if (thisObjective-startObjective<0.005*fabs(startObjective)+1.0e-5)
+          howOften=-99; // switch off
+        if (thisObjective-startObjective<0.1*fabs(startObjective)+1.0e-5&&solver_->getNumRows()<500)
+          howOften=-99; // switch off
+      }
       if (howOften<-99)
 	continue ;
       if (howOften<0||howOften >= 1000000) {
@@ -3546,6 +3570,8 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node,
               howOften=-100;
           } else {
             howOften = 1+1000000 ;
+            if (thisObjective-startObjective<0.1*fabs(startObjective)+1.0e-5)
+              generator_[i]->setWhatDepth(5);
           }
         }
         // If cuts useless switch off
@@ -3709,7 +3735,7 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node,
 void
 CbcModel::takeOffCuts (OsiCuts &newCuts, int *whichGenerator,
 		       int &numberOldActiveCuts, int &numberNewCuts,
-		       bool allowResolve)
+		       bool allowResolve, OsiCuts * saveCuts)
 
 { // int resolveIterations = 0 ;
   int firstOldCut = numberRowsAtContinuous_ ;
@@ -3745,6 +3771,14 @@ CbcModel::takeOffCuts (OsiCuts &newCuts, int *whichGenerator,
       if (status == CoinWarmStartBasis::basic&&
           addedCuts_[oldCutIndex]->effectiveness()!=COIN_DBL_MAX)
       { solverCutIndices[numberOldToDelete++] = i+firstOldCut ;
+        if (saveCuts) {
+          // send to cut pool
+          OsiRowCut * slackCut = addedCuts_[oldCutIndex];
+          if (slackCut->effectiveness()!=-1.234) {
+            slackCut->setEffectiveness(-1.234);
+            saveCuts->insert(*slackCut);
+          }
+        }
 	if (addedCuts_[oldCutIndex]->decrement() == 0)
 	  delete addedCuts_[oldCutIndex] ;
 	addedCuts_[oldCutIndex] = NULL ;
@@ -3771,6 +3805,14 @@ CbcModel::takeOffCuts (OsiCuts &newCuts, int *whichGenerator,
     delete ws ;
     for (i = numberNewToDelete-1 ; i >= 0 ; i--)
     { int iCut = newCutIndices[i] ;
+      if (saveCuts) {
+        // send to cut pool
+        OsiRowCut * slackCut = newCuts.rowCutPtr(iCut);
+        if (slackCut->effectiveness()!=-1.234) {
+          slackCut->setEffectiveness(-1.234);
+          saveCuts->insert(*slackCut);
+        }
+      }
       newCuts.eraseRowCut(iCut) ; }
 /*
   Did we delete anything? If so, delete the cuts from the constraint system
@@ -4551,7 +4593,7 @@ CbcModel::checkSolution (double cutoff, const double *solution,
     solver_->initialSolve();
     //solver_->setHintParam(OsiDoScale,saveTakeHint,saveStrength);
     if (!solver_->isProvenOptimal())
-      { printf("checkSolution infeas! Retrying wihout scaling.\n");
+      { //printf("checkSolution infeas! Retrying wihout scaling.\n");
       bool saveTakeHint;
       OsiHintStrength saveStrength;
       bool savePrintHint;

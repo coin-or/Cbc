@@ -282,7 +282,7 @@ CbcSimpleIntegerDynamicPseudoCost::infeasibility(int & preferredWay) const
     double returnValue=0.0;
     double minValue = CoinMin(downCost,upCost);
     double maxValue = CoinMax(downCost,upCost);
-    if (stateOfSearch<=1||model_->currentNode()->depth()<=10) {
+    if (stateOfSearch<=1||model_->currentNode()->depth()<=10/* was ||maxValue>0.2*distanceToCutoff*/) {
       // no solution
       returnValue = WEIGHT_BEFORE*minValue + (1.0-WEIGHT_BEFORE)*maxValue;
     } else {
@@ -603,7 +603,7 @@ CbcBranchDynamicDecision::updateInformation(OsiSolverInterface * solver,
   const CbcModel * model = object_->model();
   double originalValue=node->objectiveValue();
   int originalUnsatisfied = node->numberUnsatisfied();
-  double objectiveValue = model->getCurrentMinimizationObjValue();
+  double objectiveValue = solver->getObjValue()*model->getObjSense();
   int unsatisfied=0;
   int i;
   int numberIntegers = model->numberIntegers();;

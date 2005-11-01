@@ -692,10 +692,10 @@ CbcRounding::solution(double & solutionValue,
             }
           }
           if (isInteger)
-            distance = floor(distance+1.01e-8);
+            distance = floor(distance+1.05e-8);
           if (!distance) {
             // should never happen
-            printf("zero distance in CbcRounding - debug\n");
+            //printf("zero distance in CbcRounding - debug\n");
           }
           //move
           lastChange += improvement*distance;

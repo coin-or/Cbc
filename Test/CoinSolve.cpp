@@ -105,7 +105,7 @@ static int * analyze(OsiClpSolverInterface * solverMod, int & numberChanged, dou
                      bool changeInt)
 {
   OsiSolverInterface * solver = solverMod->clone();
-  {
+  if (0) {
     // just get increment
     CbcModel model(*solver);
     model.analyzeObjective();
@@ -342,6 +342,7 @@ static int * analyze(OsiClpSolverInterface * solverMod, int & numberChanged, dou
   }
   delete [] which;
   delete [] changeRhs;
+  delete [] ignore;
   if (numberInteger)
     printf("%d integer variables",numberInteger);
   if (changeInt) {
@@ -487,7 +488,7 @@ int main (int argc, const char *argv[])
     CglGomory gomoryGen;
     // try larger limit
     gomoryGen.setLimitAtRoot(500);
-    gomoryGen.setLimit(100);
+    gomoryGen.setLimit(50);
     // set default action (0=off,1=on,2=root)
     int gomoryAction=3;
     parameters[whichParam(GOMORYCUTS,numberParameters,parameters)].setCurrentOption("ifmove");
@@ -516,7 +517,7 @@ int main (int argc, const char *argv[])
     parameters[whichParam(KNAPSACKCUTS,numberParameters,parameters)].setCurrentOption("ifmove");
 
     CglRedSplit redsplitGen;
-    redsplitGen.setLimit(100);
+    //redsplitGen.setLimit(100);
     // set default action (0=off,1=on,2=root)
     // Off as seems to give some bad cuts
     int redsplitAction=2;
@@ -542,8 +543,8 @@ int main (int argc, const char *argv[])
 
     CglTwomir twomirGen;
     // set default action (0=off,1=on,2=root)
-    int twomirAction=3;
-    parameters[whichParam(TWOMIRCUTS,numberParameters,parameters)].setCurrentOption("ifmove");
+    int twomirAction=2;
+    parameters[whichParam(TWOMIRCUTS,numberParameters,parameters)].setCurrentOption("root");
 
     bool useRounding=true;
     parameters[whichParam(ROUNDING,numberParameters,parameters)].setCurrentOption("on");
@@ -1270,7 +1271,7 @@ int main (int argc, const char *argv[])
                 saveSolver=babModel->solver()->clone();
                 /* Do not try and produce equality cliques and
                    do up to 10 passes */
-                OsiSolverInterface * solver2 = process.preProcess(*saveSolver,false,10);
+                OsiSolverInterface * solver2 = process.preProcess(*saveSolver,preProcess==3,10);
                 if (!solver2) {
                   printf("Pre-processing says infeasible\n");
                   break;
@@ -1491,18 +1492,27 @@ int main (int argc, const char *argv[])
               }
               time2 = CoinCpuTime();
               totalTime += time2-time1;
+              // For best solution
+              double * bestSolution = NULL;
               if (babModel->getMinimizationObjValue()<1.0e50&&type==BAB) {
                 // post process
                 if (preProcess) {
+                  int n = saveSolver->getNumCols();
+                  bestSolution = new double [n];
                   process.postProcess(*babModel->solver());
                   // Solution now back in saveSolver
                   babModel->assignSolver(saveSolver);
+                  memcpy(bestSolution,babModel->solver()->getColSolution(),n*sizeof(double));
+                } else {
+                  int n = babModel->solver()->getNumCols();
+                  bestSolution = new double [n];
+                  memcpy(bestSolution,babModel->solver()->getColSolution(),n*sizeof(double));
                 }
               }
               if (type==STRENGTHEN&&strengthenedModel)
                 clpSolver = dynamic_cast< OsiClpSolverInterface*> (strengthenedModel);
               lpSolver = clpSolver->getModelPtr();
-              if (debugFile=="create"&&babModel->bestSolution()) {
+              if (debugFile=="create"&&bestSolution) {
                 saveSolution(lpSolver,"debug.file");
               }
               if (numberChanged) {
@@ -1513,6 +1523,11 @@ int main (int argc, const char *argv[])
                 delete [] changed;
               }
               if (type==BAB) {
+                //move best solution (should be there -- but ..)
+                int n = lpSolver->getNumCols();
+                if (bestSolution)
+                  memcpy(lpSolver->primalColumnSolution(),bestSolution,n*sizeof(double));
+                delete [] bestSolution;
                 std::string statusName[]={"Finished","Stopped on ","Difficulties",
                                           "","","User ctrl-c"};
                 std::string minor[]={"","","gap","nodes","time","","solutions"};
@@ -2322,7 +2337,8 @@ clp watson.mps -\nscaling off\nprimalsimplex"
                       type=3;
                     }
                     // see if integer
-                    if (!lpSolver->isInteger(iColumn)&&printMode==1)
+                    if ((!lpSolver->isInteger(iColumn)||fabs(primalColumnSolution[iColumn])<1.0e-8)
+                         &&printMode==1)
                       type=0;
                     if (type) {
                       fprintf(fp,"%7d ",iColumn);

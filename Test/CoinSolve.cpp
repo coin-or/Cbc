@@ -487,7 +487,7 @@ int main (int argc, const char *argv[])
 
     CglGomory gomoryGen;
     // try larger limit
-    gomoryGen.setLimitAtRoot(500);
+    gomoryGen.setLimitAtRoot(512);
     gomoryGen.setLimit(50);
     // set default action (0=off,1=on,2=root)
     int gomoryAction=3;
@@ -542,6 +542,7 @@ int main (int argc, const char *argv[])
     parameters[whichParam(FLOWCUTS,numberParameters,parameters)].setCurrentOption("ifmove");
 
     CglTwomir twomirGen;
+    twomirGen.setMaxElements(250);
     // set default action (0=off,1=on,2=root)
     int twomirAction=2;
     parameters[whichParam(TWOMIRCUTS,numberParameters,parameters)].setCurrentOption("root");
@@ -1276,8 +1277,8 @@ int main (int argc, const char *argv[])
                   printf("Pre-processing says infeasible\n");
                   break;
                 } else {
-                  printf("processed model has %d rows and %d columns\n",
-                         solver2->getNumRows(),solver2->getNumCols());
+                  printf("processed model has %d rows, %d columns and %d elements\n",
+                         solver2->getNumRows(),solver2->getNumCols(),solver2->getNumElements());
                 }
                 //solver2->resolve();
                 if (preProcess==2) {
@@ -1292,11 +1293,11 @@ int main (int argc, const char *argv[])
                 babModel->initialSolve();
                 babModel->setMaximumSeconds(timeLeft-(CoinCpuTime()-time1));
               }
-              if (0) {
+              if (debugValues) {
                 // for debug
                 std::string problemName ;
                 babModel->solver()->getStrParam(OsiProbName,problemName) ;
-                babModel->solver()->activateRowCutDebugger(problemName.c_str()) ;
+                //babModel->solver()->activateRowCutDebugger(problemName.c_str()) ;
                 twomirGen.probname_=strdup(problemName.c_str());
                 // checking seems odd
                 //redsplitGen.set_given_optsol(babModel->solver()->getRowCutDebuggerAlways()->optimalSolution(),
@@ -1364,47 +1365,80 @@ int main (int argc, const char *argv[])
                 babModel->passInTreeHandler(localTree);
               }
               // add cut generators if wanted
-              if (probingAction==1)
+              int switches[20];
+              int numberGenerators=0;
+              if (probingAction==1) {
                 babModel->addCutGenerator(&probingGen,-1,"Probing");
-              else if (probingAction>=2)
+                switches[numberGenerators++]=0;
+              } else if (probingAction>=2) {
                 babModel->addCutGenerator(&probingGen,-101+probingAction,"Probing");
-              if (gomoryAction==1)
+                switches[numberGenerators++]=1;
+              }
+              if (gomoryAction==1) {
                 babModel->addCutGenerator(&gomoryGen,-1,"Gomory");
-              else if (gomoryAction>=2)
+                switches[numberGenerators++]=0;
+              } else if (gomoryAction>=2) {
                 babModel->addCutGenerator(&gomoryGen,-101+gomoryAction,"Gomory");
-              if (knapsackAction==1)
+                switches[numberGenerators++]=0;
+              }
+              if (knapsackAction==1) {
                 babModel->addCutGenerator(&knapsackGen,-1,"Knapsack");
-              else if (knapsackAction>=2)
+                switches[numberGenerators++]=0;
+              } else if (knapsackAction>=2) {
                 babModel->addCutGenerator(&knapsackGen,-101+knapsackAction,"Knapsack");
-              if (redsplitAction==1)
+                switches[numberGenerators++]=1;
+              }
+              if (redsplitAction==1) {
                 babModel->addCutGenerator(&redsplitGen,-1,"Reduce-and-split");
-              else if (redsplitAction>=2)
+                switches[numberGenerators++]=0;
+              } else if (redsplitAction>=2) {
                 babModel->addCutGenerator(&redsplitGen,-101+redsplitAction,"Reduce-and-split");
-              if (cliqueAction==1)
+                switches[numberGenerators++]=0;
+              }
+              if (cliqueAction==1) {
                 babModel->addCutGenerator(&cliqueGen,-1,"Clique");
-              else if (cliqueAction>=2)
+                switches[numberGenerators++]=0;
+              } else if (cliqueAction>=2) {
                 babModel->addCutGenerator(&cliqueGen,-101+cliqueAction,"Clique");
-              if (mixedAction==1)
+                switches[numberGenerators++]=1;
+              }
+              if (mixedAction==1) {
                 babModel->addCutGenerator(&mixedGen,-1,"MixedIntegerRounding2");
-              else if (mixedAction>=2)
+                switches[numberGenerators++]=0;
+              } else if (mixedAction>=2) {
                 babModel->addCutGenerator(&mixedGen,-101+mixedAction,"MixedIntegerRounding2");
-              if (flowAction==1)
+                switches[numberGenerators++]=1;
+              }
+              if (flowAction==1) {
                 babModel->addCutGenerator(&flowGen,-1,"FlowCover");
-              else if (flowAction>=2)
+                switches[numberGenerators++]=0;
+              } else if (flowAction>=2) {
                 babModel->addCutGenerator(&flowGen,-101+flowAction,"FlowCover");
-              if (twomirAction==1)
+                switches[numberGenerators++]=0;
+              }
+              if (twomirAction==1) {
                 babModel->addCutGenerator(&twomirGen,-1,"TwoMirCuts");
-              else if (twomirAction>=2)
+                switches[numberGenerators++]=0;
+              } else if (twomirAction>=2) {
                 babModel->addCutGenerator(&twomirGen,-101+twomirAction,"TwoMirCuts");
+                switches[numberGenerators++]=0;
+              }
               // Say we want timings
-              int numberGenerators = babModel->numberCutGenerators();
+              numberGenerators = babModel->numberCutGenerators();
               int iGenerator;
               int cutDepth=
                 parameters[whichParam(CUTDEPTH,numberParameters,parameters)].intValue();
               for (iGenerator=0;iGenerator<numberGenerators;iGenerator++) {
                 CbcCutGenerator * generator = babModel->cutGenerator(iGenerator);
-                if (generator->howOften()<=-98)
+                int howOften = generator->howOften();
+                if (howOften==-98) {
+                  if (switches[iGenerator]==0)
+                    generator->setSwitchOffIfLessThan(1);
+                  else
+                    generator->setSwitchOffIfLessThan(-1);
+                } else if (howOften==-99) {
                   generator->setSwitchOffIfLessThan(1);
+                }
                 generator->setTiming(true);
                 if (cutDepth>=0)
                   generator->setWhatDepth(cutDepth) ;
@@ -1448,7 +1482,7 @@ int main (int argc, const char *argv[])
               babModel->setCutoffIncrement(CoinMax(babModel->getCutoffIncrement(),increment));
               // Turn this off if you get problems
               // Used to be automatically set
-              osiclp->setSpecialOptions(osiclp->specialOptions()|(128+64));
+              osiclp->setSpecialOptions(osiclp->specialOptions()|(128+64)|1);
               if (gapRatio < 1.0e100) {
                 double value = babModel->solver()->getObjValue() ;
                 double value2 = gapRatio*(1.0e-5+fabs(value)) ;

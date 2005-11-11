@@ -470,7 +470,7 @@ public:
   int chooseDynamicBranch (CbcModel * model,
 		    CbcNode * lastNode,
                     int numberPassesLeft);
-  
+  int analyze(CbcModel * model,double * results);
   /// Decrement active cut counts
   void decrementCuts(int change=1);
 

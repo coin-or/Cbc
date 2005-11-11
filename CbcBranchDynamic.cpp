@@ -273,7 +273,7 @@ CbcSimpleIntegerDynamicPseudoCost::infeasibility(int & preferredWay) const
   else
     preferredWay=-1;
   // weight at 1.0 is max min
-#define WEIGHT_AFTER 0.8
+#define WEIGHT_AFTER 0.9
 #define WEIGHT_BEFORE 0.3
   if (fabs(value-nearest)<=integerTolerance) {
     return 0.0;
@@ -387,7 +387,6 @@ CbcSimpleIntegerDynamicPseudoCost::print(int type,double value) const
            numberTimesUp_,numberTimesUpInfeasible_,meanUp);
 #endif
   } else {
-    OsiSolverInterface * solver = model_->solver();
     const double * upper = model_->getCbcColUpper();
     double integerTolerance = 
       model_->getDblParam(CbcModel::CbcIntegerTolerance);
@@ -397,7 +396,7 @@ CbcSimpleIntegerDynamicPseudoCost::print(int type,double value) const
       above=below;
       below = above -1;
     }
-    double objectiveValue = solver->getObjSense()*solver->getObjValue();
+    double objectiveValue = model_->getCurrentMinimizationObjValue();
     double distanceToCutoff =  model_->getCutoff() - objectiveValue;
     if (distanceToCutoff<1.0e20) 
       distanceToCutoff *= 10.0;
@@ -681,7 +680,7 @@ CbcBranchDynamicDecision::betterBranch(CbcBranchingObject * thisOne,
   int stateOfSearch = thisOne->model()->stateOfSearch();
   int betterWay=0;
   double value=0.0;
-  if (stateOfSearch<=1||thisOne->model()->currentNode()->depth()<=10) {
+  if (stateOfSearch<=1&&thisOne->model()->currentNode()->depth()>10) {
 #if 0
     if (!bestObject_) {
       bestNumberUp_=INT_MAX;

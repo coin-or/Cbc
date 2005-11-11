@@ -102,6 +102,8 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver,int numberNodes,
           << name
           << model.getMaximumNodes()
           <<CoinMessageEol;
+      // probably faster to use a basis to get integer solutions
+      model.setSpecialOptions(2);
       model.branchAndBound();
       if (logLevel>1)
         model_->messageHandler()->message(CBC_END_SUB,model_->messages())

@@ -2,10 +2,12 @@
 // Corporation and others.  All Rights Reserved.
 #ifndef CbcModel_H
 #define CbcModel_H
+#ifndef COIN_USE_CLP
+#define COIN_USE_CLP
+#endif
 
 #include <string>
 #include <vector>
-
 #include "CoinFinite.hpp"
 #include "CoinMessageHandler.hpp"
 #include "OsiSolverInterface.hpp"
@@ -13,6 +15,7 @@
 #include "CoinWarmStartBasis.hpp"
 #include "CbcCompareBase.hpp"
 #include "CbcMessage.hpp"
+#include "ClpEventHandler.hpp"
 
 //class OsiSolverInterface;
 
@@ -589,6 +592,11 @@ public:
       in dynamic strong branching. */
   inline int numberPenalties() const
   { return numberPenalties_;};
+  /// Number of analyze iterations to do
+  inline void setNumberAnalyzeIterations(int number)
+  { numberAnalyzeIterations_=number;};
+  inline int numberAnalyzeIterations() const
+  { return numberAnalyzeIterations_;};
   /** Get scale factor to make penalties match strong.
       Should/will be computed */
   inline double penaltyScaleFactor() const
@@ -992,6 +1000,9 @@ public:
   /// Value of objective after root node cuts added
   inline double rootObjectiveAfterCuts() const
   { return continuousObjective_;};
+  /// Sum of Changes to objective by first solve
+  inline double sumChangeObjective() const
+  { return sumChangeObjective1_;};
   /** Number of times global cuts violated.  When global cut pool then this
       should be kept for each cut and type of cut */
   inline int numberGlobalViolations() const
@@ -1082,9 +1093,9 @@ public:
   /** Perform reduced cost fixing
 
     Fixes integer variables at their current value based on reduced cost
-    penalties.
+    penalties.  Returns number fixed
   */
-  void reducedCostFix() ;
+  int reducedCostFix() ;
 
   /** Return an empty basis object of the specified size
 
@@ -1117,8 +1128,10 @@ public:
     
     If it turns out that the node should really be fathomed by bound,
     addCuts() simply treats all the cuts as loose as it does the bookkeeping.
+
+    canFix true if extra information being passed
   */
-  int addCuts(CbcNode * node, CoinWarmStartBasis *&lastws);
+  int addCuts(CbcNode * node, CoinWarmStartBasis *&lastws,bool canFix);
 
   /** Traverse the tree from node to root and prep the model
 
@@ -1158,6 +1171,8 @@ public:
   */
   inline int stateOfSearch() const
   { return stateOfSearch_;};
+  inline void setStateOfSearch(int state)
+  { stateOfSearch_=state;};
 
   /// Get the number of cut generators
   inline int numberCutGenerators() const
@@ -1287,6 +1302,10 @@ public:
   /// Get log level
   inline int logLevel() const
   { return handler_->logLevel();};
+   /// Pass in Event handler (cloned and deleted at end)
+   void passInEventHandler(const ClpEventHandler * eventHandler);
+   /// Event handler
+  ClpEventHandler * eventHandler() const;
   //@}
   //---------------------------------------------------------------------------
   ///@name Specialized
@@ -1583,6 +1602,10 @@ private:
   /** Scale factor to make penalties match strong.
       Should/will be computed */
   double penaltyScaleFactor_;
+  /// Number of analyze iterations to do
+  int numberAnalyzeIterations_;
+  /// Arrays with analysis results
+  double * analyzeResults_;
   /// Number of nodes infeasible by normal branching (before cuts)
   int numberInfeasibleNodes_;
   /** Problem type as set by user or found by analysis.  This will be extended

@@ -158,8 +158,11 @@ CbcCutGenerator::generateCuts( OsiCuts & cs , bool fullScan, CbcNode * node)
     depth=0;
   int pass=model_->getCurrentPassNumber()-1;
   bool doThis=(model_->getNodeCount()%howOften)==0;
-  if (depthCutGenerator_>0) 
+  if (depthCutGenerator_>0) {
     doThis = (depth % depthCutGenerator_) ==0;
+    if (depth<depthCutGenerator_)
+      doThis=true; // and also at top of tree
+  }
   // But turn off if 100
   if (howOften==100)
     doThis=false;
@@ -215,7 +218,7 @@ CbcCutGenerator::generateCuts( OsiCuts & cs , bool fullScan, CbcNode * node)
       timeInCutGenerator_ += CoinCpuTime()-time1;
     // switch off if first time and no good
     if (node==NULL&&!pass) {
-      if (cs.sizeCuts()-cutsBefore<switchOffIfLessThan_) {
+      if (cs.sizeCuts()-cutsBefore<CoinAbs(switchOffIfLessThan_)) {
         whenCutGenerator_=-99;
         whenCutGeneratorInSub_ = -200;
       }

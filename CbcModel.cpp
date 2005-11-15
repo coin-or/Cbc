@@ -1083,6 +1083,7 @@ void CbcModel::branchAndBound(int doStatistics)
 */
         if (onOptimalPath)
           assert (feasible);
+        bool checkingNode=false;
 	if (feasible)
 	{ newNode = new CbcNode ;
 	  newNode->setObjectiveValue(direction*solver_->getObjValue()) ;
@@ -1092,6 +1093,7 @@ void CbcModel::branchAndBound(int doStatistics)
 	    anyAction=-2;
           // only allow twenty passes
           int numberPassesLeft=20;
+          checkingNode=true;
 	  while (anyAction == -1)
 	  { 
             if (numberBeforeTrust_==0 ) {
@@ -1172,6 +1174,9 @@ void CbcModel::branchAndBound(int doStatistics)
 	if (anyAction == -2)
 	{ delete newNode ;
 	  newNode = NULL ;
+          // say strong doing well
+          if (checkingNode)
+            setSpecialOptions(specialOptions_|8);
 	  // switch off any hot start
 	  hotstartStrategy_=0;
 	  for (i = 0 ; i < currentNumberCuts_ ; i++)
@@ -1179,7 +1184,12 @@ void CbcModel::branchAndBound(int doStatistics)
 	    { if (!addedCuts_[i]->decrement(1))
 		delete addedCuts_[i] ; } } }
 	else
-	{ nodeInfo->increment() ; }
+	{ nodeInfo->increment() ;
+        if ((numberNodes_%20)==0) {
+          // say strong not doing as well
+          setSpecialOptions(specialOptions_&~8);
+        }
+        }
 /*
   At this point, there are three possibilities:
     * We have a live node (variable() >= 0) which will require further
@@ -3682,10 +3692,11 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node,
     double densityNew = numberRowsAdded ? ((double) (numberElementsAdded))/((double) numberRowsAdded)
       : 0.0;
     if (!numberNodes_) {
-      handler_->message(CBC_CUTS_STATS,messages_)
-	<<numberRowsAdded
-        <<densityNew
-	<<CoinMessageEol ;
+      if (numberRowsAdded)
+        handler_->message(CBC_CUTS_STATS,messages_)
+          <<numberRowsAdded
+          <<densityNew
+          <<CoinMessageEol ;
       if (thisObjective-startObjective<1.0e-5&&numberElementsAdded>0.2*numberElementsAtStart)
         willBeCutsInTree=-1;
     }
@@ -3711,9 +3722,6 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node,
       if (howOften>-90) 
         willBeCutsInTree=0;
     }
-    double totalCuts = 0.0 ;
-    for (i = 0;i<numberCutGenerators_;i++) 
-      totalCuts += countRowCuts[i] + 5.0*countColumnCuts[i] ;
     if (!numberNodes_)
       handler_->message(CBC_ROOT,messages_)
 	<<numberNewCuts
@@ -3722,18 +3730,29 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node,
 	<<CoinMessageEol ;
     int * count = new int[numberCutGenerators_] ;
     memset(count,0,numberCutGenerators_*sizeof(int)) ;
+    int numberActiveGenerators=0;
     for (i = 0;i<numberNewCuts;i++) {
       int iGenerator = whichGenerator[i];
       if (iGenerator>=0&&iGenerator<numberCutGenerators_)
 	count[iGenerator]++ ;
     }
+    double totalCuts = 0.0 ;
+    //#define JUST_ACTIVE
+    for (i = 0;i<numberCutGenerators_;i++) 
+      if (countRowCuts[i]||countColumnCuts[i])
+        numberActiveGenerators++;
+#ifdef JUST_ACTIVE
+      totalCuts += count[i] + 5.0*countColumnCuts[i] ;
+#else
+      totalCuts += countRowCuts[i] + 5.0*countColumnCuts[i] ;
+#endif
     double small = (0.5* totalCuts) /
-      ((double) numberCutGenerators_) ;
+      ((double) numberActiveGenerators) ;
     for (i = 0;i<numberCutGenerators_;i++) {
       int howOften = generator_[i]->howOften() ;
       if (willBeCutsInTree<0&&howOften==-98)
         howOften =-99;
-      if (howOften==-98&&generator_[i]->switchOffIfLessThan()>=0) {
+      if (howOften==-98&&generator_[i]->switchOffIfLessThan()<0) {
         if (thisObjective-startObjective<0.005*fabs(startObjective)+1.0e-5)
           howOften=-99; // switch off
         if (thisObjective-startObjective<0.1*fabs(startObjective)+1.0e-5
@@ -3745,7 +3764,11 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node,
       if (howOften<0||howOften >= 1000000) {
         if( !numberNodes_) {
           // If small number switch mostly off
+#ifdef JUST_ACTIVE
+          double thisCuts = count[i] + 5.0*countColumnCuts[i] ;
+#else
           double thisCuts = countRowCuts[i] + 5.0*countColumnCuts[i] ;
+#endif
           if (!thisCuts||howOften == -99) {
             if (howOften == -99||howOften == -98) 
               howOften = -100 ;

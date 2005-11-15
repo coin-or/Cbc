@@ -1170,6 +1170,7 @@ int main (int argc, const char *argv[])
 	  case BAB: // branchAndBound
           case STRENGTHEN:
             if (goodModel) {
+              model.initialSolve();
               // If user made settings then use them
               if (!defaultSettings) {
                 OsiSolverInterface * solver = model.solver();
@@ -1180,11 +1181,10 @@ int main (int argc, const char *argv[])
                 assert (si != NULL);
                 // get clp itself
                 ClpSimplex * modelC = si->getModelPtr();
-                if (modelC->tightenPrimalBounds()!=0) {
-                  std::cout<<"Problem is infeasible!"<<std::endl;
-                  break;
-                }
-                model.initialSolve();
+                //if (modelC->tightenPrimalBounds()!=0) {
+                //std::cout<<"Problem is infeasible!"<<std::endl;
+                //break;
+                //}
                 // bounds based on continuous
                 if (tightenFactor) {
                   if (modelC->tightenPrimalBounds(tightenFactor)!=0) {
@@ -1225,17 +1225,6 @@ int main (int argc, const char *argv[])
               delete babModel;
               babModel = new CbcModel(model);
               OsiSolverInterface * solver3 = clpSolver->clone();
-              if (defaultSettings) {
-                OsiClpSolverInterface * si =
-                  dynamic_cast<OsiClpSolverInterface *>(solver3) ;
-                assert (si != NULL);
-                // get clp itself
-                ClpSimplex * modelC = si->getModelPtr();
-                if (modelC->tightenPrimalBounds()!=0) {
-                  std::cout<<"Problem is infeasible!"<<std::endl;
-                  break;
-                }
-              }
               babModel->assignSolver(solver3);
               OsiClpSolverInterface * clpSolver2 = dynamic_cast< OsiClpSolverInterface*> (babModel->solver());
               int numberChanged=0;
@@ -1292,6 +1281,19 @@ int main (int argc, const char *argv[])
                 babModel->assignSolver(solver2);
                 babModel->initialSolve();
                 babModel->setMaximumSeconds(timeLeft-(CoinCpuTime()-time1));
+              }
+              // now tighten bounds
+              {
+                OsiClpSolverInterface * si =
+                  dynamic_cast<OsiClpSolverInterface *>(babModel->solver()) ;
+                assert (si != NULL);
+                // get clp itself
+                ClpSimplex * modelC = si->getModelPtr();
+                if (modelC->tightenPrimalBounds()!=0) {
+                  std::cout<<"Problem is infeasible!"<<std::endl;
+                  break;
+                }
+                modelC->dual();
               }
               if (debugValues) {
                 // for debug
@@ -1372,56 +1374,56 @@ int main (int argc, const char *argv[])
                 switches[numberGenerators++]=0;
               } else if (probingAction>=2) {
                 babModel->addCutGenerator(&probingGen,-101+probingAction,"Probing");
-                switches[numberGenerators++]=1;
+                switches[numberGenerators++]=0;
               }
               if (gomoryAction==1) {
                 babModel->addCutGenerator(&gomoryGen,-1,"Gomory");
-                switches[numberGenerators++]=0;
+                switches[numberGenerators++]=1;
               } else if (gomoryAction>=2) {
                 babModel->addCutGenerator(&gomoryGen,-101+gomoryAction,"Gomory");
-                switches[numberGenerators++]=0;
+                switches[numberGenerators++]=-1;
               }
               if (knapsackAction==1) {
                 babModel->addCutGenerator(&knapsackGen,-1,"Knapsack");
                 switches[numberGenerators++]=0;
               } else if (knapsackAction>=2) {
                 babModel->addCutGenerator(&knapsackGen,-101+knapsackAction,"Knapsack");
-                switches[numberGenerators++]=1;
+                switches[numberGenerators++]=0;
               }
               if (redsplitAction==1) {
                 babModel->addCutGenerator(&redsplitGen,-1,"Reduce-and-split");
-                switches[numberGenerators++]=0;
+                switches[numberGenerators++]=1;
               } else if (redsplitAction>=2) {
                 babModel->addCutGenerator(&redsplitGen,-101+redsplitAction,"Reduce-and-split");
-                switches[numberGenerators++]=0;
+                switches[numberGenerators++]=1;
               }
               if (cliqueAction==1) {
                 babModel->addCutGenerator(&cliqueGen,-1,"Clique");
-                switches[numberGenerators++]=0;
+                switches[numberGenerators++]=1;
               } else if (cliqueAction>=2) {
                 babModel->addCutGenerator(&cliqueGen,-101+cliqueAction,"Clique");
-                switches[numberGenerators++]=1;
+                switches[numberGenerators++]=-1;
               }
               if (mixedAction==1) {
                 babModel->addCutGenerator(&mixedGen,-1,"MixedIntegerRounding2");
-                switches[numberGenerators++]=0;
+                switches[numberGenerators++]=1;
               } else if (mixedAction>=2) {
                 babModel->addCutGenerator(&mixedGen,-101+mixedAction,"MixedIntegerRounding2");
-                switches[numberGenerators++]=1;
+                switches[numberGenerators++]=-1;
               }
               if (flowAction==1) {
                 babModel->addCutGenerator(&flowGen,-1,"FlowCover");
-                switches[numberGenerators++]=0;
+                switches[numberGenerators++]=1;
               } else if (flowAction>=2) {
                 babModel->addCutGenerator(&flowGen,-101+flowAction,"FlowCover");
-                switches[numberGenerators++]=0;
+                switches[numberGenerators++]=1;
               }
               if (twomirAction==1) {
                 babModel->addCutGenerator(&twomirGen,-1,"TwoMirCuts");
-                switches[numberGenerators++]=0;
+                switches[numberGenerators++]=1;
               } else if (twomirAction>=2) {
                 babModel->addCutGenerator(&twomirGen,-101+twomirAction,"TwoMirCuts");
-                switches[numberGenerators++]=0;
+                switches[numberGenerators++]=1;
               }
               // Say we want timings
               numberGenerators = babModel->numberCutGenerators();
@@ -1431,14 +1433,8 @@ int main (int argc, const char *argv[])
               for (iGenerator=0;iGenerator<numberGenerators;iGenerator++) {
                 CbcCutGenerator * generator = babModel->cutGenerator(iGenerator);
                 int howOften = generator->howOften();
-                if (howOften==-98) {
-                  if (switches[iGenerator]==0)
-                    generator->setSwitchOffIfLessThan(1);
-                  else
-                    generator->setSwitchOffIfLessThan(-1);
-                } else if (howOften==-99) {
-                  generator->setSwitchOffIfLessThan(1);
-                }
+                if (howOften==-98||howOften==-99) 
+                  generator->setSwitchOffIfLessThan(switches[iGenerator]);
                 generator->setTiming(true);
                 if (cutDepth>=0)
                   generator->setWhatDepth(cutDepth) ;

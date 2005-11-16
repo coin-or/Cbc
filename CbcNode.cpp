@@ -2791,8 +2791,9 @@ int CbcNode::analyze (CbcModel *model, double * results)
   CoinWarmStart * ws = solver->getWarmStart();
   int saveLimit;
   solver->getIntParam(OsiMaxNumIterationHotStart,saveLimit);
-  if (saveLimit<200)
-    solver->setIntParam(OsiMaxNumIterationHotStart,200); 
+  int targetIterations = CoinMax(500,numberIterationsAllowed/numberObjects);
+  if (saveLimit<targetIterations)
+    solver->setIntParam(OsiMaxNumIterationHotStart,targetIterations); 
   // Mark hot start
   solver->markHotStart();
   // Sort 

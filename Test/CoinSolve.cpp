@@ -14,7 +14,7 @@
 #include "CoinPragma.hpp"
 #include "CoinHelperFunctions.hpp"
 // Same version as CBC
-#define CBCVERSION "0.99"
+#define CBCVERSION "1.00.00"
 
 #include "CoinMpsIO.hpp"
 
@@ -961,7 +961,6 @@ int main (int argc, const char *argv[])
 	      gomoryAction = action;
 	      probingAction = action;
 	      knapsackAction = action;
-	      //redsplitAction = action;
 	      cliqueAction = action;
 	      flowAction = action;
 	      mixedAction = action;
@@ -969,7 +968,10 @@ int main (int argc, const char *argv[])
               parameters[whichParam(GOMORYCUTS,numberParameters,parameters)].setCurrentOption(action);
               parameters[whichParam(PROBINGCUTS,numberParameters,parameters)].setCurrentOption(action);
               parameters[whichParam(KNAPSACKCUTS,numberParameters,parameters)].setCurrentOption(action);
-              //parameters[whichParam(REDSPLITCUTS,numberParameters,parameters)].setCurrentOption(action);
+              if (!action) {
+                redsplitAction = action;
+                parameters[whichParam(REDSPLITCUTS,numberParameters,parameters)].setCurrentOption(action);
+              }
               parameters[whichParam(CLIQUECUTS,numberParameters,parameters)].setCurrentOption(action);
               parameters[whichParam(FLOWCUTS,numberParameters,parameters)].setCurrentOption(action);
               parameters[whichParam(MIXEDCUTS,numberParameters,parameters)].setCurrentOption(action);
@@ -1305,14 +1307,6 @@ int main (int argc, const char *argv[])
                 //redsplitGen.set_given_optsol(babModel->solver()->getRowCutDebuggerAlways()->optimalSolution(),
                 //                         babModel->getNumCols());
               }
-              if (debugValues) {
-                if (numberDebugValues==babModel->getNumCols()) {
-                  // for debug
-                  babModel->solver()->activateRowCutDebugger(debugValues) ;
-                } else {
-                  printf("debug file has incorrect number of columns\n");
-                }
-              }
 	      if (useCosts) {
 		int numberColumns = babModel->getNumCols();
 		int * sort = new int[numberColumns];
@@ -1475,6 +1469,14 @@ int main (int argc, const char *argv[])
               }
               double increment=babModel->getCutoffIncrement();;
               int * changed = analyze( osiclp,numberChanged,increment,false);
+              if (debugValues) {
+                if (numberDebugValues==babModel->getNumCols()) {
+                  // for debug
+                  babModel->solver()->activateRowCutDebugger(debugValues) ;
+                } else {
+                  printf("debug file has incorrect number of columns\n");
+                }
+              }
               babModel->setCutoffIncrement(CoinMax(babModel->getCutoffIncrement(),increment));
               // Turn this off if you get problems
               // Used to be automatically set
@@ -2510,3 +2512,10 @@ clp watson.mps -\nscaling off\nprimalsimplex"
 #endif
   return 0;
 }    
+/*
+  Version 1.00.00 November 16 2005.
+  This is to stop me (JJF) messing about too much.
+  Tuning changes should be noted here.
+  The testing next version may be activated by CBC_NEXT_VERSION
+  This applies to OsiClp, Clp etc
+*/

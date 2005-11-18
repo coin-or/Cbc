@@ -192,7 +192,7 @@ public:
   */
   virtual void print(bool normalBranch);
 
-private:
+protected:
   /// Lower [0] and upper [1] bounds for the down arm (way_ = -1)
   double down_[2];
   /// Lower [0] and upper [1] bounds for the up arm (way_ = 1)

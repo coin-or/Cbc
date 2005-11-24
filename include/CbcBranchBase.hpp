@@ -156,6 +156,7 @@ public:
   
   /// Column number if single column object -1 otherwise
   virtual int columnNumber() const;
+
   
    /// update model
   inline void setModel(CbcModel * model)
@@ -237,6 +238,9 @@ public:
   /// The number of branch arms left to be evaluated
   virtual int numberBranchesLeft() const
   {return numberBranchesLeft_;};
+  /// Reset number of branches left to original
+  inline void resetNumberBranchesLeft()
+  { numberBranchesLeft_ = numberBranches();};
 
   /** \brief Execute the actions required to branch, as specified by the
 	     current state of the branching object, and advance the object's
@@ -397,6 +401,40 @@ private:
   /// Assignment is illegal
   CbcBranchDecision & operator=(const CbcBranchDecision& rhs);
   
+};
+/** Abstract base class for consequent bounds.
+    When a variable is branched on it normally interacts with other variables by
+    means of equations.  There are cases where we want to step outside LP and do something
+    more directly e.g. fix bounds.  This class is for that.
+
+    At present it need not be virtual as only instance is CbcFixVariable, but ...
+
+ */
+
+class CbcConsequence {
+
+public:
+
+  // Default Constructor 
+  CbcConsequence ();
+
+  // Copy constructor 
+  CbcConsequence ( const CbcConsequence & rhs);
+   
+  // Assignment operator 
+  CbcConsequence & operator=( const CbcConsequence & rhs);
+
+  /// Clone
+  virtual CbcConsequence * clone() const=0;
+
+  /// Destructor 
+  virtual ~CbcConsequence ();
+
+  /** Apply to an LP solver.  Action depends on state
+   */
+  virtual void applyToSolver(OsiSolverInterface * solver, int state) const=0;
+  
+protected:
 };
 
 #endif

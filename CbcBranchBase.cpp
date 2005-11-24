@@ -96,7 +96,7 @@ CbcBranchingObject::CbcBranchingObject()
   variable_=-1;
   way_=0;
   value_=0.0;
-  numberBranchesLeft_=0;
+  numberBranchesLeft_=2;
 }
 
 // Useful constructor
@@ -186,6 +186,31 @@ CbcBranchDecision::bestBranch (CbcBranchingObject ** objects, int numberObjects,
       printf("debug\n");
   }
   return whichObject;
+}
+
+// Default constructor
+CbcConsequence::CbcConsequence()
+{
+}
+
+
+// Destructor 
+CbcConsequence::~CbcConsequence ()
+{
+}
+
+// Copy constructor 
+CbcConsequence::CbcConsequence ( const CbcConsequence & rhs)
+{
+}
+
+// Assignment operator 
+CbcConsequence & 
+CbcConsequence::operator=( const CbcConsequence& rhs)
+{
+  if (this!=&rhs) {
+  }
+  return *this;
 }
 
   

@@ -1316,6 +1316,7 @@ public:
       0 bit (1) - check if cuts valid (if on debugger list)
       1 bit (2) - use current basis to check integer solution (rather than all slack)
       2 bit (4) - don't check integer solution
+      3 bit (8) - fast analyze
   */
   /// Set special options
   inline void setSpecialOptions(int value)
@@ -1546,6 +1547,7 @@ private:
       0 bit (1) - check if cuts valid (if on debugger list)
       1 bit (2) - use current basis to check integer solution (rather than all slack)
       2 bit (4) - don't check integer solution
+      3 bit (8) - Strong is doing well - keep on
   */
   int specialOptions_;
   /// User node comparison function

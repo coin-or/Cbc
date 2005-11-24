@@ -274,6 +274,67 @@ protected:
   double breakEven_;
 };
 
+/** Define an n-way class for variables.
+    Only valid value is one at UB others at LB
+    Normally 0-1
+*/
+
+
+class CbcNWay : public CbcObject {
+
+public:
+
+  // Default Constructor 
+  CbcNWay ();
+
+  /** Useful constructor (which are matrix indices)
+  */
+  CbcNWay (CbcModel * model, int numberMembers,
+	     const int * which, int identifier);
+  
+  // Copy constructor 
+  CbcNWay ( const CbcNWay &);
+   
+  /// Clone
+  virtual CbcObject * clone() const;
+
+  /// Assignment operator 
+  CbcNWay & operator=( const CbcNWay& rhs);
+
+  /// Destructor 
+  ~CbcNWay ();
+
+  /// Set up a consequence for a single member
+  void setConsequence(int iColumn, const CbcConsequence & consequence);
+  
+  /// Applies a consequence for a single member
+  void applyConsequence(int iSequence, int state) const;
+  
+  /// Infeasibility - large is 0.5 (and 0.5 will give this)
+  virtual double infeasibility(int & preferredWay) const;
+
+  /// This looks at solution and sets bounds to contain solution
+  virtual void feasibleRegion();
+  /// Creates a branching object
+  virtual CbcBranchingObject * createBranch(int way) ;
+  /// Number of members
+  inline int numberMembers() const
+  {return numberMembers_;};
+
+  /// Members (indices in range 0 ... numberColumns-1)
+  inline const int * members() const
+  {return members_;};
+
+protected:
+  /// data
+  /// Number of members
+  int numberMembers_;
+
+  /// Members (indices in range 0 ... numberColumns-1)
+  int * members_;
+  /// Consequences (normally NULL)
+  CbcConsequence ** consequence_;
+};
 
 /** Simple branching object for an integer variable
 
@@ -622,6 +683,57 @@ private:
   double separator_;
 };
 
+/** N way branching Object class.
+    Variable is number of set.
+ */
+class CbcNWayBranchingObject : public CbcBranchingObject {
+
+public:
+
+  // Default Constructor 
+  CbcNWayBranchingObject ();
+
+  /** Useful constructor - order had matrix indices
+      way_ -1 corresponds to setting first, +1 to second, +3 etc.
+      this is so -1 and +1 have similarity to normal
+  */
+  CbcNWayBranchingObject (CbcModel * model,  const CbcNWay * nway,
+                          int numberBranches, const int * order);
+  
+  // Copy constructor 
+  CbcNWayBranchingObject ( const CbcNWayBranchingObject &);
+   
+  // Assignment operator 
+  CbcNWayBranchingObject & operator=( const CbcNWayBranchingObject& rhs);
+
+  /// Clone
+  virtual CbcBranchingObject * clone() const;
+
+  // Destructor 
+  virtual ~CbcNWayBranchingObject ();
+  
+  /// Does next branch and updates state
+  virtual double branch(bool normalBranch=false);
+
+  /** \brief Print something about branch - only if log level high
+  */
+  virtual void print(bool normalBranch);
+  /** The number of branch arms created for this branching object
+  */
+  virtual int numberBranches() const
+  {return numberInSet_;};
+  /// Is this a two way object (-1 down, +1 up)
+  virtual bool twoWay() const
+  { return false;};
+private:
+  /// order of branching - points back to CbcNWay
+  int * order_;
+  /// Points back to object
+  const CbcNWay * object_;
+  /// Number in set
+  int numberInSet_;
+};
+
 /** Branching decision default class
 
   This class implements a simple default algorithm
@@ -804,4 +916,58 @@ private:
   /// upList - variables to fix to lb on up branch
   int * upList_;
 };
+/** Class for consequent bounds.
+    When a variable is branched on it normally interacts with other variables by
+    means of equations.  There are cases where we want to step outside LP and do something
+    more directly e.g. fix bounds.  This class is for that.
+
+    A state of -9999 means at LB, +9999 means at UB,
+    others mean if fixed to that value.
+
+ */
+
+class CbcFixVariable : public CbcConsequence {
+
+public:
+
+  // Default Constructor 
+  CbcFixVariable ();
+
+  // One useful Constructor 
+  CbcFixVariable (int numberStates,const int * states, const int * numberNewLower, const int ** newLowerValue,
+                  const int ** lowerColumn,
+                  const int * numberNewUpper, const int ** newUpperValue,
+                  const int ** upperColumn);
+
+  // Copy constructor 
+  CbcFixVariable ( const CbcFixVariable & rhs);
+   
+  // Assignment operator 
+  CbcFixVariable & operator=( const CbcFixVariable & rhs);
+
+  /// Clone
+  virtual CbcConsequence * clone() const;
+
+  /// Destructor 
+  virtual ~CbcFixVariable ();
+
+  /** Apply to an LP solver.  Action depends on state
+   */
+  virtual void applyToSolver(OsiSolverInterface * solver, int state) const;
+  
+protected:
+  /// Number of states
+  int numberStates_;
+  /// Values of integers for various states
+  int * states_;
+  /// Start of information for each state (setting new lower)
+  int * startLower_;
+  /// Start of information for each state (setting new upper)
+  int * startUpper_;
+  /// For each variable new bounds
+  double * newBound_;
+  /// Variable
+  int * variable_;
+};
+
 #endif

@@ -927,7 +927,7 @@ void CbcModel::branchAndBound(int doStatistics)
     double testGap = CoinMax(dblParam_[CbcAllowableGap],
 			     CoinMax(fabs(bestObjective_),fabs(bestPossibleObjective_))
 			     *dblParam_[CbcAllowableFractionGap]);
-    if (bestObjective_-bestPossibleObjective_ < testGap) {
+    if (bestObjective_-bestPossibleObjective_ < testGap && getCutoffIncrement()>=0.0) {
       stoppedOnGap = true ;
     }
 
@@ -1154,9 +1154,10 @@ void CbcModel::branchAndBound(int doStatistics)
 	    }
 	    newNode->createInfo(this,node,lastws,lowerBefore,upperBefore,
 				numberOldActiveCuts,numberNewCuts) ;
-	    if (newNode->numberUnsatisfied())
+	    if (newNode->numberUnsatisfied()) {
+              newNode->initializeInfo() ;
 	      newNode->nodeInfo()->addCuts(cuts,newNode->numberBranches(),
-					   whichGenerator) ; } }
+					   whichGenerator) ; } } }
 	else
 	{ anyAction = -2 ; }
 	// May have slipped through i.e. anyAction == 0 and objective above cutoff
@@ -1289,7 +1290,7 @@ void CbcModel::branchAndBound(int doStatistics)
 			    solver_->getColSolution()) ;
             lastHeuristic_ = NULL;
             incrementUsed(solver_->getColSolution());
-	    assert(nodeInfo->numberPointingToThis() <= 2) ;
+	    //assert(nodeInfo->numberPointingToThis() <= 2) ;
 	    // avoid accidental pruning, if newNode was final branch arm
 	    nodeInfo->increment();
 	    delete newNode ;
@@ -2779,7 +2780,7 @@ int CbcModel::addCuts (CbcNode *node, CoinWarmStartBasis *&lastws,bool canFix)
     for (i=0;i<currentNumberCuts;i++) {
       CoinWarmStartBasis::Status status = 
 	lastws->getArtifStatus(i+numberRowsAtContinuous_);
-      if (status != CoinWarmStartBasis::basic&&addedCuts_[i]) {
+      if (addedCuts_[i]&&(status != CoinWarmStartBasis::basic||addedCuts_[i]->effectiveness()==COIN_DBL_MAX)) {
 #	ifdef CHECK_CUT_COUNTS
 	printf("Using cut %d %x as row %d\n",i,addedCuts_[i],
 	       numberRowsAtContinuous_+numberToAdd);
@@ -2955,6 +2956,7 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node,
   double lastObjective = -1.0e100 ;
   int violated = 0 ;
   int numberRowsAtStart = solver_->getNumRows() ;
+  //printf("solver had %d rows\n",numberRowsAtStart);
   int numberColumns = solver_->getNumCols() ;
   CoinBigIndex numberElementsAtStart = solver_->getNumElements();
 
@@ -3142,7 +3144,8 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node,
     if (nextRowCut_) {
       // branch was a cut - add it
       theseCuts.insert(*nextRowCut_);
-      //nextRowCut_->print();
+      if (handler_->logLevel()>1)
+        nextRowCut_->print();
       const OsiRowCut * cut=nextRowCut_;
       const double * solution = solver_->getColSolution();
       double lb = cut->lb();
@@ -4579,10 +4582,12 @@ CbcModel::convertToDynamic()
     if (obj1&&!obj2) {
       // replace
       int iColumn = obj1->columnNumber();
+      int priority = obj1->priority();
       delete object_[iObject];
       CbcSimpleIntegerDynamicPseudoCost * newObject =
         new CbcSimpleIntegerDynamicPseudoCost(this,iObject,iColumn,0.3);
       newObject->setNumberBeforeTrust(numberBeforeTrust_);
+      newObject->setPriority(priority);
       object_[iObject] = newObject;
     }
   }

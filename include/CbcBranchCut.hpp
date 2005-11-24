@@ -112,7 +112,7 @@ public:
       Cut down will applied on way=-1, up on way==1
       Assumed down will be first so way_ set to -1
   */
-  CbcCutBranchingObject (CbcModel * model, OsiRowCut & down, OsiRowCut &up);
+  CbcCutBranchingObject (CbcModel * model, OsiRowCut & down, OsiRowCut &up, bool canFix);
   
   /// Copy constructor 
   CbcCutBranchingObject ( const CbcCutBranchingObject &);
@@ -145,6 +145,8 @@ protected:
   OsiRowCut down_;
   /// Cut for the up arm (way_ = 1)
   OsiRowCut up_;
+  /// True if one way can fix variables
+  bool canFix_;
 };
 
 
@@ -214,5 +216,50 @@ protected:
   int numberClean_;
   /// If true then always create branch
   bool alwaysCreate_;
+};
+
+/** Define a branch class that branches so that it is only satsified if all
+    members have different values
+    So cut is x <= y-1 or x >= y+1
+*/
+
+
+class CbcBranchAllDifferent : public CbcBranchCut {
+
+public:
+
+  // Default Constructor 
+  CbcBranchAllDifferent ();
+
+  /** Useful constructor - passed set of integer variables which must all be different
+  */ 
+  CbcBranchAllDifferent (CbcModel * model, int number,const int * which);
+  
+  // Copy constructor 
+  CbcBranchAllDifferent ( const CbcBranchAllDifferent &);
+   
+  /// Clone
+  virtual CbcObject * clone() const;
+
+  // Assignment operator 
+  CbcBranchAllDifferent & operator=( const CbcBranchAllDifferent& rhs);
+
+  // Destructor 
+  ~CbcBranchAllDifferent ();
+
+  /// Infeasibility - large is 0.5
+  virtual double infeasibility(int & preferredWay) const;
+
+  /// Creates a branching object
+  virtual CbcBranchingObject * createBranch(int way);
+
+
+protected:
+  /// data
+
+  /// Number of entries
+  int numberInSet_;
+  /// Which variables
+  int * which_;
 };
 #endif

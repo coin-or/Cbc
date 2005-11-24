@@ -610,8 +610,14 @@ void CbcPartialNodeInfo::applyToModel (CbcModel *model,
       solver->setColUpper(variable&0x7fffffff,newBounds_[i]);
     }
   }
-  for (i=0;i<numberCuts_;i++) 
+  for (i=0;i<numberCuts_;i++) {
     addCuts[currentNumberCuts+i]= cuts_[i];
+    if (model->messageHandler()->logLevel()>1) {
+      printf("from papply "); 
+      cuts_[i]->print();
+    }
+  }
+    
   currentNumberCuts += numberCuts_;
   return ;
 }
@@ -1093,6 +1099,8 @@ int CbcNode::chooseBranch (CbcModel *model, CbcNode *lastNode,int numberPassesLe
         allNormal=false; // Something odd so lets skip clever fast branching
       if ( !model->object(choice[i].objectNumber)->boundBranch())
         numberStrong=0; // switch off
+      if ( choice[i].possibleBranch->numberBranches()>2)
+        numberStrong=0; // switch off
       // Do best choice in case switched off
       if (choice[i].upMovement>worstInfeasibility) {
         worstInfeasibility=choice[i].upMovement;
@@ -1397,18 +1405,24 @@ int CbcNode::chooseBranch (CbcModel *model, CbcNode *lastNode,int numberPassesLe
         
         // repeat the whole exercise, forcing the variable up
         if (!clp) {
-          choice[i].possibleBranch->branch();
           bool feasible=true;
-          if (checkFeasibility) {
-            // check branching did not make infeasible
-            int iColumn;
-            int numberColumns = solver->getNumCols();
-            const double * columnLower = solver->getColLower();
-            const double * columnUpper = solver->getColUpper();
-            for (iColumn= 0;iColumn<numberColumns;iColumn++) {
-              if (columnLower[iColumn]>columnUpper[iColumn]+1.0e-5)
-                feasible=false;
+          // If odd branching then maybe just one possibility
+          if(choice[i].possibleBranch->numberBranchesLeft()>0) {
+            choice[i].possibleBranch->branch();
+            if (checkFeasibility) {
+              // check branching did not make infeasible
+              int iColumn;
+              int numberColumns = solver->getNumCols();
+              const double * columnLower = solver->getColLower();
+              const double * columnUpper = solver->getColUpper();
+              for (iColumn= 0;iColumn<numberColumns;iColumn++) {
+                if (columnLower[iColumn]>columnUpper[iColumn]+1.0e-5)
+                  feasible=false;
+              }
             }
+          } else {
+            // second branch infeasible
+            feasible=false;
           }
           if (feasible) {
             solver->solveFromHotStart() ;
@@ -1492,6 +1506,8 @@ int CbcNode::chooseBranch (CbcModel *model, CbcNode *lastNode,int numberPassesLe
           from the evaluation loop and assume the node will be reoptimised by the
           caller.
         */
+        // reset
+        choice[i].possibleBranch->resetNumberBranchesLeft();
         if (choice[i].upMovement<1.0e100) {
           if(choice[i].downMovement<1.0e100) {
             // feasible - no action
@@ -2436,6 +2452,8 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,int numberP
           from the evaluation loop and assume the node will be reoptimised by the
           caller.
         */
+        // reset
+        choice.possibleBranch->resetNumberBranchesLeft();
         if (choice.upMovement<1.0e100) {
           if(choice.downMovement<1.0e100) {
             // In case solution coming in was odd

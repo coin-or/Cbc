@@ -14,7 +14,7 @@
 #include "CoinPragma.hpp"
 #include "CoinHelperFunctions.hpp"
 // Same version as CBC
-#define CBCVERSION "1.00.00"
+#define CBCVERSION "1.00.01"
 
 #include "CoinMpsIO.hpp"
 
@@ -70,6 +70,7 @@
 #include "CbcHeuristicFPump.hpp"
 #include "CbcTreeLocal.hpp"
 #include "CbcCompareActual.hpp"
+#include "CbcBranchActual.hpp"
 #include  "CbcOrClpParam.hpp"
 #include  "CbcCutGenerator.hpp"
 
@@ -420,7 +421,7 @@ int main (int argc, const char *argv[])
     int doScaling=1;
     // set reasonable defaults
     int preSolve=5;
-    int preProcess=1;
+    int preProcess=4;
     bool preSolveFile=false;
    
     double djFix=1.0e100;
@@ -483,7 +484,7 @@ int main (int argc, const char *argv[])
     parameters[whichParam(INTEGERTOLERANCE,numberParameters,parameters)].setDoubleValue(model.getDblParam(CbcModel::CbcIntegerTolerance));
     parameters[whichParam(INCREMENT,numberParameters,parameters)].setDoubleValue(model.getDblParam(CbcModel::CbcCutoffIncrement));
     // Set up likely cut generators and defaults
-    parameters[whichParam(PREPROCESS,numberParameters,parameters)].setCurrentOption("on");
+    parameters[whichParam(PREPROCESS,numberParameters,parameters)].setCurrentOption("sos");
 
     CglGomory gomoryGen;
     // try larger limit
@@ -1263,7 +1264,27 @@ int main (int argc, const char *argv[])
                 saveSolver=babModel->solver()->clone();
                 /* Do not try and produce equality cliques and
                    do up to 10 passes */
-                OsiSolverInterface * solver2 = process.preProcess(*saveSolver,preProcess==3,10);
+                OsiSolverInterface * solver2;
+                {
+                  // Tell solver we are in Branch and Cut
+                  saveSolver->setHintParam(OsiDoInBranchAndCut,true,OsiHintDo) ;
+                  // Default set of cut generators
+                  CglProbing generator1;
+                  generator1.setUsingObjective(true);
+                  generator1.setMaxPass(3);
+                  generator1.setMaxProbeRoot(saveSolver->getNumCols());
+                  generator1.setMaxElements(100);
+                  generator1.setMaxLookRoot(50);
+                  generator1.setRowCuts(3);
+                  // Add in generators
+                  process.addCutGenerator(&generator1);
+                  int translate[]={9999,0,0,-1,2};
+                  solver2 = process.preProcessNonDefault(*saveSolver,translate[preProcess],10);
+                  // Tell solver we are not in Branch and Cut
+                  saveSolver->setHintParam(OsiDoInBranchAndCut,false,OsiHintDo) ;
+                  if (solver2)
+                    solver2->setHintParam(OsiDoInBranchAndCut,false,OsiHintDo) ;
+                }
                 if (!solver2) {
                   printf("Pre-processing says infeasible\n");
                   break;
@@ -1494,6 +1515,42 @@ int main (int argc, const char *argv[])
               currentBranchModel = babModel;
               OsiSolverInterface * strengthenedModel=NULL;
               if (type==BAB) {
+                if (preProcess&&process.numberSOS()) {
+                  int numberSOS = process.numberSOS();
+                  int numberIntegers = babModel->numberIntegers();
+                  /* model may not have created objects
+                     If none then create
+                  */
+                  if (!numberIntegers||!babModel->numberObjects()) {
+                    babModel->findIntegers(true);
+                    numberIntegers = babModel->numberIntegers();
+                  }
+                  CbcObject ** oldObjects = babModel->objects();
+                  // Do sets and priorities
+                  CbcObject ** objects = new CbcObject * [numberSOS];
+                  // set old objects to have low priority
+                  int numberOldObjects = babModel->numberObjects();
+                  int numberColumns = babModel->getNumCols();
+                  for (int iObj = 0;iObj<numberOldObjects;iObj++)
+                    oldObjects[iObj]->setPriority(numberColumns+1);
+                  const int * starts = process.startSOS();
+                  const int * which = process.whichSOS();
+                  const int * type = process.typeSOS();
+                  const double * weight = process.weightSOS();
+                  int iSOS;
+                  for (iSOS =0;iSOS<numberSOS;iSOS++) {
+                    int iStart = starts[iSOS];
+                    int n=starts[iSOS+1]-iStart;
+                    objects[iSOS] = new CbcSOS(babModel,n,which+iStart,weight+iStart,
+                                               iSOS,type[iSOS]);
+                    // branch on long sets first
+                    objects[iSOS]->setPriority(numberColumns-n);
+                  }
+                  babModel->addObjects(numberSOS,objects);
+                  for (iSOS=0;iSOS<numberSOS;iSOS++)
+                    delete objects[iSOS];
+                  delete [] objects;
+                }
                 babModel->branchAndBound();
               } else {
                 strengthenedModel = babModel->strengthenedModel();
@@ -2518,4 +2575,13 @@ clp watson.mps -\nscaling off\nprimalsimplex"
   Tuning changes should be noted here.
   The testing next version may be activated by CBC_NEXT_VERSION
   This applies to OsiClp, Clp etc
+  Version 1.00.01 November 24 2005
+  Added several classes for advanced users.  This can't affect code (if you don't use it)
+  Made some tiny changes (for N way branching) which should not change anything.
+  CbcNWay object class - for N way branching this also allows use of CbcConsequence class.
+  CbcBranchAllDifferent object class - for branching on general integer variables
+  to stop them having same value so branches are x >= y+1 and x <= y-1.
+  Added two new Cgl classes - CglAllDifferent which does column fixing (too slowly)
+  and CglStored which just has a list of cuts which can be activated.
+  Modified preprocess option to SOS
 */

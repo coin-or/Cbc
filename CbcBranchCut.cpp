@@ -130,16 +130,19 @@ CbcCutBranchingObject::CbcCutBranchingObject()
 {
   down_=OsiRowCut();
   up_=OsiRowCut();
+  canFix_=false;
 }
 
 // Useful constructor
 CbcCutBranchingObject::CbcCutBranchingObject (CbcModel * model, 
 					      OsiRowCut & down,
-					      OsiRowCut &up)
+					      OsiRowCut &up,
+                                              bool canFix)
   :CbcBranchingObject(model,0,-1,0.0)
 {
   down_ = down;
   up_ = up;
+  canFix_ = canFix;
 }
 
 // Copy constructor 
@@ -147,6 +150,7 @@ CbcCutBranchingObject::CbcCutBranchingObject ( const CbcCutBranchingObject & rhs
 {
   down_ = rhs.down_;
   up_ = rhs.up_;
+  canFix_ = rhs.canFix_;
 }
 
 // Assignment operator 
@@ -157,6 +161,7 @@ CbcCutBranchingObject::operator=( const CbcCutBranchingObject& rhs)
     CbcBranchingObject::operator=(rhs);
     down_ = rhs.down_;
     up_ = rhs.up_;
+    canFix_ = rhs.canFix_;
   }
   return *this;
 }
@@ -216,7 +221,7 @@ CbcCutBranchingObject::branch(bool normalBranch)
     }
   }
   // assume cut was cunningly constructed so we need not worry too much about tolerances
-  if (low+1.0e-8>=ub) {
+  if (low+1.0e-8>=ub&&canFix_) {
     // fix
     for (int i=0;i<n;i++) {
       int iColumn = column[i];
@@ -227,7 +232,7 @@ CbcCutBranchingObject::branch(bool normalBranch)
 	solver->setColLower(iColumn,upper[iColumn]);
       }
     }
-  } else if (high-1.0e-8<=lb) {
+  } else if (high-1.0e-8<=lb&&canFix_) {
     // fix
     for (int i=0;i<n;i++) {
       int iColumn = column[i];
@@ -252,11 +257,9 @@ CbcCutBranchingObject::print(bool normalBranch)
   if (way_<0) {
     cut = &down_;
     printf("CbcCut would branch down");
-    way_=1;
   } else {
     cut = &up_;
     printf("CbcCut would branch up");
-    way_=-1;	  // Swap direction
   }
   double lb = cut->lb();
   double ub = cut->ub();
@@ -354,6 +357,7 @@ CbcBranchToFixLots::operator=( const CbcBranchToFixLots& rhs)
     djTolerance_ = rhs.djTolerance_;
     fractionFixed_ = rhs.fractionFixed_;
     int numberColumns = model_->getNumCols();
+    delete [] mark_;
     mark_ = CoinCopyOfArray(rhs.mark_,numberColumns);
     matrixByRow_=rhs.matrixByRow_;
     depth_ = rhs.depth_;
@@ -502,8 +506,9 @@ CbcBranchToFixLots::createBranch(int way)
   OsiRowCut up = down;
   up.setLb(rhs +1.0);
   up.setUb(COIN_DBL_MAX);
+  // Say can fix one way
   CbcCutBranchingObject * newObject = 
-    new CbcCutBranchingObject(model_,down,up);
+    new CbcCutBranchingObject(model_,down,up,true);
   if (model_->messageHandler()->logLevel()>1)
     printf("creating cut in CbcBranchCut\n");
   return newObject;
@@ -656,4 +661,134 @@ CbcBranchToFixLots::infeasibility(int & preferredWay) const
     return 0.0;
   else
     return 1.0e20;
+}
+
+/** Default Constructor
+*/
+CbcBranchAllDifferent::CbcBranchAllDifferent ()
+  : CbcBranchCut(),
+    numberInSet_(0),
+    which_(NULL)
+{
+}
+
+/* Useful constructor - passed set of variables
+*/ 
+CbcBranchAllDifferent::CbcBranchAllDifferent (CbcModel * model, int numberInSet,
+                                              const int * members)
+  : CbcBranchCut(model)
+{
+  numberInSet_=numberInSet;
+  which_ = CoinCopyOfArray(members,numberInSet_);
+}
+// Copy constructor 
+CbcBranchAllDifferent::CbcBranchAllDifferent ( const CbcBranchAllDifferent & rhs)
+  :CbcBranchCut(rhs)
+{
+  numberInSet_=rhs.numberInSet_;
+  which_ = CoinCopyOfArray(rhs.which_,numberInSet_);
+}
+
+// Clone
+CbcObject *
+CbcBranchAllDifferent::clone() const
+{
+  return new CbcBranchAllDifferent(*this);
+}
+
+// Assignment operator 
+CbcBranchAllDifferent & 
+CbcBranchAllDifferent::operator=( const CbcBranchAllDifferent& rhs)
+{
+  if (this!=&rhs) {
+    CbcBranchCut::operator=(rhs);
+    delete [] which_;
+    numberInSet_=rhs.numberInSet_;
+    which_ = CoinCopyOfArray(rhs.which_,numberInSet_);
+  }
+  return *this;
+}
+
+// Destructor 
+CbcBranchAllDifferent::~CbcBranchAllDifferent ()
+{
+  delete [] which_;
+}
+// Creates a branching object
+CbcBranchingObject * 
+CbcBranchAllDifferent::createBranch(int way) 
+{
+  // by default way must be -1
+  assert (way==-1);
+  const double * solution = model_->testSolution();
+  double * values = new double[numberInSet_];
+  int * which = new int[numberInSet_];
+  int i;
+  for (i=0;i<numberInSet_;i++) {
+    int iColumn = which_[i];
+    values[i]=solution[iColumn];
+    which[i]=iColumn;
+  }
+  CoinSort_2(values,values+numberInSet_,which);
+  double last = -1.0;
+  double closest=1.0;
+  int worst=-1;
+  for (i=0;i<numberInSet_;i++) {
+    if (values[i]-last<closest) {
+      closest=values[i]-last;
+      worst=i-1;
+    }
+    last=values[i];
+  }
+  assert (closest<=0.99999);
+  OsiRowCut down;
+  down.setLb(-COIN_DBL_MAX);
+  down.setUb(-1.0);
+  int pair[2];
+  double elements[]={1.0,-1.0};
+  pair[0]=which[worst];
+  pair[1]=which[worst+1];
+  delete [] values;
+  delete [] which;
+  down.setRow(2,pair,elements);
+  // up is same - just with rhs changed
+  OsiRowCut up = down;
+  up.setLb(1.0);
+  up.setUb(COIN_DBL_MAX);
+  // Say is not a fix type branch
+  CbcCutBranchingObject * newObject = 
+    new CbcCutBranchingObject(model_,down,up,false);
+  if (model_->messageHandler()->logLevel()>1)
+    printf("creating cut in CbcBranchCut\n");
+  return newObject;
+}
+// Infeasibility - large is 0.5
+double 
+CbcBranchAllDifferent::infeasibility(int & preferredWay) const
+{
+  preferredWay=-1;
+  //OsiSolverInterface * solver = model_->solver();
+  const double * solution = model_->testSolution();
+  //const double * lower = solver->getColLower();
+  //const double * upper = solver->getColUpper();
+  double * values = new double[numberInSet_];
+  int i;
+  for (i=0;i<numberInSet_;i++) {
+    int iColumn = which_[i];
+    values[i]=solution[iColumn];
+  }
+  std::sort(values,values+numberInSet_);
+  double last = -1.0;
+  double closest=1.0;
+  for (i=0;i<numberInSet_;i++) {
+    if (values[i]-last<closest) {
+      closest=values[i]-last;
+    }
+    last=values[i];
+  }
+  delete [] values;
+  if (closest>0.99999)
+    return 0.0;
+  else
+    return 0.5*(1.0-closest);
 }

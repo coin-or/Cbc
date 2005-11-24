@@ -412,11 +412,12 @@ int main (int argc, const char *argv[])
       for (column=0;column<size;column++) 
         which[put++]=row*size+column;
       assert (put==size);
-      for (int i=0;i<put;i++) 
+      int i;
+      for (i=0;i<put;i++) 
         which[i]=(int) lo[which[i]];
       std::sort(which,which+put);
       int last = valueOffset-1;
-      for (int i=0;i<put;i++) {
+      for (i=0;i<put;i++) {
         int value=which[i];
         if (value!=last+1)
           valid=false;
@@ -429,11 +430,12 @@ int main (int argc, const char *argv[])
       for (row=0;row<size;row++) 
         which[put++]=row*size+column;
       assert (put==size);
-      for (int i=0;i<put;i++) 
+      int i;
+      for (i=0;i<put;i++) 
         which[i]=(int) lo[which[i]];
       std::sort(which,which+put);
       int last = valueOffset-1;
-      for (int i=0;i<put;i++) {
+      for (i=0;i<put;i++) {
         int value=which[i];
         if (value!=last+1)
           valid=false;
@@ -449,11 +451,12 @@ int main (int argc, const char *argv[])
             which[put++]=row2*size+column2;
         }
         assert (put==size);
-        for (int i=0;i<put;i++) 
+        int i;
+        for (i=0;i<put;i++) 
           which[i]=(int) lo[which[i]];
         std::sort(which,which+put);
         int last = valueOffset-1;
-        for (int i=0;i<put;i++) {
+        for (i=0;i<put;i++) {
           int value=which[i];
           if (value!=last+1)
           valid=false;

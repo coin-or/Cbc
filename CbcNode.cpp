@@ -2837,7 +2837,7 @@ int CbcNode::analyze (CbcModel *model, double * results)
     double nearest = floor(value+0.5);
     double lowerValue = floor(value);
     bool satisfied=false;
-    if (fabs(value-nearest)<=integerTolerance) {
+    if (fabs(value-nearest)<=integerTolerance||value<saveLower[iColumn]||value>saveUpper[iColumn]) {
       satisfied=true;
       double newValue;
       if (nearest<saveUpper[iColumn]) {

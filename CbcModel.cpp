@@ -6489,3 +6489,25 @@ CbcModel::eventHandler() const
   }
 }
 #endif
+// Set log level
+void 
+CbcModel::setLogLevel(int value)
+{ 
+  handler_->setLogLevel(value);
+  // Reduce print out in Osi
+  if (solver_) {
+    int oldLevel = solver_->messageHandler()->logLevel();
+    if (value<oldLevel)
+      solver_->messageHandler()->setLogLevel(value);
+#ifdef COIN_USE_CLP
+    OsiClpSolverInterface * clpSolver 
+      = dynamic_cast<OsiClpSolverInterface *> (solver_);
+    if (clpSolver) {
+      ClpSimplex * clpSimplex = clpSolver->getModelPtr();
+      int oldLevel = clpSimplex->logLevel();
+      if (value<oldLevel)
+        clpSimplex->setLogLevel(value);
+    }
+#endif
+  }
+}

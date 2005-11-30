@@ -1297,8 +1297,7 @@ public:
   inline CoinMessages * messagesPointer() 
   {return &messages_;};
   /// Set log level
-  inline void setLogLevel(int value)
-  { handler_->setLogLevel(value);};
+  void setLogLevel(int value);
   /// Get log level
   inline int logLevel() const
   { return handler_->logLevel();};

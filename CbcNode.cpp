@@ -613,7 +613,6 @@ void CbcPartialNodeInfo::applyToModel (CbcModel *model,
   for (i=0;i<numberCuts_;i++) {
     addCuts[currentNumberCuts+i]= cuts_[i];
     if (model->messageHandler()->logLevel()>1) {
-      printf("from papply "); 
       cuts_[i]->print();
     }
   }

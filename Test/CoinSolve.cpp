@@ -1173,6 +1173,10 @@ int main (int argc, const char *argv[])
 	  case BAB: // branchAndBound
           case STRENGTHEN:
             if (goodModel) {
+              int logLevel = parameters[slog].intValue();
+              // Reduce printout
+              if (logLevel<=1)
+                model.solver()->setHintParam(OsiDoReducePrint,true,OsiHintTry);
               model.initialSolve();
               // If user made settings then use them
               if (!defaultSettings) {
@@ -1233,8 +1237,7 @@ int main (int argc, const char *argv[])
               int numberChanged=0;
               if (clpSolver2->messageHandler()->logLevel())
                 clpSolver2->messageHandler()->setLogLevel(1);
-              int logLevel = parameters[slog].intValue();
-              if (logLevel)
+              if (logLevel>-1)
                 clpSolver2->messageHandler()->setLogLevel(logLevel);
               lpSolver = clpSolver2->getModelPtr();
               if (lpSolver->factorizationFrequency()==200) {

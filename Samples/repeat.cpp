@@ -240,7 +240,7 @@ int main (int argc, const char *argv[])
 
   // Go round adding cuts to cutoff last solution
   // Stop after finding 20 best solutions
-  for (int iPass=0;iPass<4;iPass++) {
+  for (int iPass=0;iPass<20;iPass++) {
     time1 = CoinCpuTime();
     // Do complete search
     model.branchAndBound();

@@ -10,6 +10,7 @@
 #include "CbcBranchBase.hpp"
 
 class OsiSolverInterface;
+class OsiSolverBranch;
 
 class OsiCuts;
 class OsiRowCut;
@@ -465,11 +466,13 @@ public:
       <li>  0: A branching object has been installed
       <li> -1: A monotone object was discovered
       <li> -2: An infeasible object was discovered
+      <li> >0: Number of quich branching objects (and branches will be non NULL)
     </ul>
   */
   int chooseDynamicBranch (CbcModel * model,
-		    CbcNode * lastNode,
-                    int numberPassesLeft);
+                           CbcNode * lastNode,
+                           OsiSolverBranch * & branches,
+                           int numberPassesLeft);
   int analyze(CbcModel * model,double * results);
   /// Decrement active cut counts
   void decrementCuts(int change=1);

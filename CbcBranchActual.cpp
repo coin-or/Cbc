@@ -10,6 +10,7 @@
 //#define CBC_DEBUG
 
 #include "OsiSolverInterface.hpp"
+#include "OsiSolverBranch.hpp"
 #include "CbcModel.hpp"
 #include "CbcMessage.hpp"
 #include "CbcBranchActual.hpp"
@@ -422,9 +423,10 @@ CbcSOS::infeasibility(int & preferredWay) const
     if (value>integerTolerance&&upper[iColumn]) {
       // Possibly due to scaling a fixed variable might slip through
       if (value>upper[iColumn]) {
+        value=upper[iColumn];
 	// Could change to #ifdef CBC_DEBUG
 #ifndef NDEBUG
-	if (model_->messageHandler()->logLevel()>1)
+	if (model_->messageHandler()->logLevel()>2)
 	  printf("** Variable %d (%d) has value %g and upper bound of %g\n",
 		 iColumn,j,value,upper[iColumn]);
 #endif
@@ -718,6 +720,32 @@ CbcSimpleInteger::createBranch(int way)
 					     value);
 }
 
+/* Create an OsiSolverBranch object
+   
+This returns NULL if branch not represented by bound changes
+*/
+OsiSolverBranch * 
+CbcSimpleInteger::solverBranch() const
+{
+  OsiSolverInterface * solver = model_->solver();
+  const double * solution = model_->testSolution();
+  const double * lower = solver->getColLower();
+  const double * upper = solver->getColUpper();
+  double value = solution[columnNumber_];
+  value = CoinMax(value, lower[columnNumber_]);
+  value = CoinMin(value, upper[columnNumber_]);
+  assert (upper[columnNumber_]>lower[columnNumber_]);
+#ifndef NDEBUG
+  double nearest = floor(value+0.5);
+  double integerTolerance = 
+    model_->getDblParam(CbcModel::CbcIntegerTolerance);
+  assert (fabs(value-nearest)>integerTolerance);
+#endif
+  OsiSolverBranch * branch = new OsiSolverBranch();
+  branch->addBranch(columnNumber_,value);
+  return branch;
+}
+  
 
 /* Given valid solution (i.e. satisfied) and reduced costs etc
    returns a branching object which would give a new feasible
@@ -1864,6 +1892,17 @@ CbcBranchDefaultDecision::betterBranch(CbcBranchingObject * thisOne,
     bestObject_=thisOne;
   }
   return betterWay;
+}
+/* Sets or gets best criterion so far */
+void 
+CbcBranchDefaultDecision::setBestCriterion(double value)
+{ 
+  bestCriterion_ = value;
+}
+double 
+CbcBranchDefaultDecision::getBestCriterion() const
+{ 
+  return bestCriterion_;
 }
 
 /* Compare N branching objects. Return index of best

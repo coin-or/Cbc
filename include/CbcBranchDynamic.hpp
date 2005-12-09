@@ -48,6 +48,12 @@ public:
   /// Creates a branching object
   virtual CbcBranchingObject * createBranch(int way) ;
 
+  /** Create an OsiSolverBranch object
+
+      This returns NULL if branch not represented by bound changes
+  */
+  virtual OsiSolverBranch * solverBranch() const;
+  
   /// Down pseudo cost
   inline double downDynamicPseudoCost() const
   { return downDynamicPseudoCost_;};
@@ -334,6 +340,9 @@ public:
 			    CbcBranchingObject * bestSoFar,
 			    double changeUp, int numInfUp,
 			    double changeDn, int numInfDn);
+  /** Sets or gets best criterion so far */
+  virtual void setBestCriterion(double value);
+  virtual double getBestCriterion() const;
   /** Says whether this method can handle both methods -
       1 better, 2 best, 3 both */
   virtual int whichMethod() {return 3;};

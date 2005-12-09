@@ -7,6 +7,7 @@
 #include <vector>
 
 class OsiSolverInterface;
+class OsiSolverBranch;
 
 class CbcModel;
 class CbcNode;
@@ -105,6 +106,12 @@ public:
       variables, etc.)
   */
   virtual CbcBranchingObject * createBranch(int way) = 0;
+  
+  /** Create an OsiSolverBranch object
+
+      This returns NULL if branch not represented by bound changes
+  */
+  virtual OsiSolverBranch * solverBranch() const;
   
   /** \brief Given a valid solution (with reduced costs, etc.),
       return a branching object which would give a new feasible
@@ -361,6 +368,7 @@ public:
     If \p bestSoFar is NULL, the routine should return a nonzero value.
     This routine is used only after strong branching.
     Either this or bestBranch is used depending which user wants.
+
  */
 
   virtual int
@@ -392,6 +400,9 @@ public:
       assumes object can get information from solver */
   virtual void updateInformation(OsiSolverInterface * solver, 
                                  const CbcNode * node) {};
+  /** Sets or gets best criterion so far */
+  virtual void setBestCriterion(double value) {};
+  virtual double getBestCriterion() const {return 0.0;};
 
 protected:
   

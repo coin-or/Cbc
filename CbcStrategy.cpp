@@ -9,10 +9,16 @@
 #include <cfloat>
 
 #include "OsiSolverInterface.hpp"
+#define COIN_USE_CLP
+#ifdef COIN_USE_CLP
+#include "OsiClpSolverInterface.hpp"
+#endif
 #include "CbcModel.hpp"
 #include "CbcMessage.hpp"
 #include "CbcStrategy.hpp"
 #include "CbcCutGenerator.hpp"
+#include "CbcBranchActual.hpp"
+#include "CglPreProcess.hpp"
 // Cuts
 
 #include "CglGomory.hpp"
@@ -29,13 +35,23 @@
 
 // Default Constructor
 CbcStrategy::CbcStrategy() 
-  :depth_(0)
+  :depth_(0),
+   preProcessState_(0),
+   process_(NULL)
 {
 }
 
 // Destructor 
 CbcStrategy::~CbcStrategy ()
 {
+  delete process_;
+}
+// Delete pre-processing object to save memory
+void 
+CbcStrategy::deletePreProcess()
+{ 
+  delete process_;
+  process_=NULL;
 }
 
 // Default Constructor
@@ -47,7 +63,9 @@ CbcStrategyDefault::CbcStrategyDefault(bool cutsOnlyAtRoot,
    cutsOnlyAtRoot_(cutsOnlyAtRoot),
    numberStrong_(numberStrong),
    numberBeforeTrust_(numberBeforeTrust),
-   printLevel_(printLevel)
+   printLevel_(printLevel),
+   desiredPreProcess_(0),
+   preProcessPasses_(0)
 {
 }
 
@@ -71,7 +89,9 @@ CbcStrategyDefault::CbcStrategyDefault(const CbcStrategyDefault & rhs)
   cutsOnlyAtRoot_(rhs.cutsOnlyAtRoot_),
   numberStrong_(rhs.numberStrong_),
   numberBeforeTrust_(rhs.numberBeforeTrust_),
-  printLevel_(rhs.printLevel_)
+  printLevel_(rhs.printLevel_),
+  desiredPreProcess_(rhs.desiredPreProcess_),
+  preProcessPasses_(rhs.preProcessPasses_)
 {
   setNested(rhs.getNested());
 }
@@ -242,6 +262,121 @@ CbcStrategyDefault::setupPrinting(CbcModel & model,int modelLogLevel)
 void 
 CbcStrategyDefault::setupOther(CbcModel & model)
 {
+  // See if preprocessing wanted
+  if (desiredPreProcess_) {
+    delete process_;
+    // solver_ should have been cloned outside
+    CglPreProcess * process = new CglPreProcess();
+    OsiSolverInterface * solver = model.solver();
+    int logLevel = model.messageHandler()->logLevel();
+#ifdef COIN_USE_CLP
+    OsiClpSolverInterface * clpSolver = dynamic_cast< OsiClpSolverInterface*> (solver);
+    ClpSimplex * lpSolver=NULL;
+    if (clpSolver) {
+      if (clpSolver->messageHandler()->logLevel())
+        clpSolver->messageHandler()->setLogLevel(1);
+      if (logLevel>-1)
+        clpSolver->messageHandler()->setLogLevel(CoinMin(logLevel,clpSolver->messageHandler()->logLevel()));
+      lpSolver = clpSolver->getModelPtr();
+      /// If user left factorization frequency then compute
+      lpSolver->defaultFactorizationFrequency();
+    }
+#endif
+    // Tell solver we are in Branch and Cut
+    solver->setHintParam(OsiDoInBranchAndCut,true,OsiHintDo) ;
+    // Default set of cut generators
+    CglProbing generator1;
+    generator1.setUsingObjective(true);
+    generator1.setMaxPass(3);
+    generator1.setMaxProbeRoot(solver->getNumCols());
+    generator1.setMaxElements(100);
+    generator1.setMaxLookRoot(50);
+    generator1.setRowCuts(3);
+    //generator1.messageHandler()->setLogLevel(logLevel);
+    process->messageHandler()->setLogLevel(logLevel);
+    // Add in generators
+    process->addCutGenerator(&generator1);
+    int translate[]={9999,0,2};
+    OsiSolverInterface * solver2 = 
+      process->preProcessNonDefault(*solver,
+                                    translate[desiredPreProcess_],preProcessPasses_);
+    // Tell solver we are not in Branch and Cut
+    solver->setHintParam(OsiDoInBranchAndCut,false,OsiHintDo) ;
+    if (solver2)
+      solver2->setHintParam(OsiDoInBranchAndCut,false,OsiHintDo) ;
+    bool feasible=true;
+    if (!solver2) {
+      feasible = false;
+    } else {
+      // now tighten bounds
+#ifdef COIN_USE_CLP
+      if (clpSolver) {
+        // model has changed
+        solver = model.solver();
+        OsiClpSolverInterface * clpSolver = dynamic_cast< OsiClpSolverInterface*> (solver);
+        ClpSimplex * lpSolver = clpSolver->getModelPtr();
+        if (lpSolver->tightenPrimalBounds()==0) {
+          lpSolver->dual();
+        } else {
+          feasible = false;
+        }
+      }
+#endif
+      if (feasible) {
+        preProcessState_=1;
+        process_=process;
+        /* Note that original solver will be kept (with false)
+           and that final solver will also be kept.
+           This is for post-processing
+        */
+        OsiSolverInterface * solver3 = solver2->clone();
+        model.assignSolver(solver3,false);
+        if (process_->numberSOS()) {
+          int numberSOS = process_->numberSOS();
+          int numberIntegers = model.numberIntegers();
+          /* model may not have created objects
+             If none then create
+          */
+          if (!numberIntegers||!model.numberObjects()) {
+            model.findIntegers(true);
+            numberIntegers = model.numberIntegers();
+          }
+          CbcObject ** oldObjects = model.objects();
+          // Do sets and priorities
+          CbcObject ** objects = new CbcObject * [numberSOS];
+          // set old objects to have low priority
+          int numberOldObjects = model.numberObjects();
+          int numberColumns = model.getNumCols();
+          for (int iObj = 0;iObj<numberOldObjects;iObj++) {
+            int oldPriority = oldObjects[iObj]->priority();
+            oldObjects[iObj]->setPriority(numberColumns+oldPriority);
+          }
+          const int * starts = process_->startSOS();
+          const int * which = process_->whichSOS();
+          const int * type = process_->typeSOS();
+          const double * weight = process_->weightSOS();
+          int iSOS;
+          for (iSOS =0;iSOS<numberSOS;iSOS++) {
+            int iStart = starts[iSOS];
+            int n=starts[iSOS+1]-iStart;
+            objects[iSOS] = new CbcSOS(&model,n,which+iStart,weight+iStart,
+                                       iSOS,type[iSOS]);
+            // branch on long sets first
+            objects[iSOS]->setPriority(numberColumns-n);
+          }
+          model.addObjects(numberSOS,objects);
+          for (iSOS=0;iSOS<numberSOS;iSOS++)
+            delete objects[iSOS];
+          delete [] objects;
+        }
+      } else {
+        //printf("Pre-processing says infeasible\n");
+        delete process;
+        preProcessState_=-1;
+        process_=NULL;
+      }
+    }
+  }
   model.setNumberStrong(numberStrong_);
   model.setNumberBeforeTrust(numberBeforeTrust_);
 }

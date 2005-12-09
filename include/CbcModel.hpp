@@ -28,6 +28,7 @@ class CbcObject;
 class CbcTree;
 class CbcStrategy;
 class CbcFeasibilityBase;
+class CbcStatistics;
 
 //#############################################################################
 
@@ -220,6 +221,7 @@ public:
       to the strengthened model (or NULL if infeasible)
     */
      OsiSolverInterface *  strengthenedModel();
+private:
     /** \brief Evaluate a subproblem using cutting planes and heuristics
 
       The method invokes a main loop which generates cuts, applies heuristics,
@@ -227,17 +229,25 @@ public:
       It returns true if the subproblem remains feasible at the end of the
       evaluation.
     */
-    bool solveWithCuts(OsiCuts & cuts, int numberTries,CbcNode * node,
-		       int & numberOldActiveCuts, int & numberNewCuts,
-		       int & maximumWhich, int * & whichGenerator);
-
+  bool solveWithCuts(OsiCuts & cuts, int numberTries,CbcNode * node);
+  /** Input one node output N nodes to put on tree and optional solution update
+      This should be able to operate in parallel so is given a solver and is const(ish)
+      However we will need to keep an array of solver_ and bases and more
+      status is 0 for normal, 1 if solution
+      Calling code should always push nodes back on tree
+  */
+  CbcNode ** solveOneNode(int whichSolver,CbcNode * node, 
+                          int & numberNodesOutput, int & status) ;
+  /// Update size of whichGenerator
+  void resizeWhichGenerator(int numberNow, int numberAfter);
+public:
     /** \brief Reoptimise an LP relaxation
     
       Invoke the solver's %resolve() method.
     */
     bool resolve();
-  /// Make given rows (L or G) into global cuts and remove from lp
-  void makeGlobalCuts(int numberRows,const int * which); 
+    /// Make given rows (L or G) into global cuts and remove from lp
+    void makeGlobalCuts(int numberRows,const int * which); 
   //@}
 
   /** \name Presolve methods */
@@ -571,6 +581,13 @@ public:
   */
   inline int numberStrong() const
   { return numberStrong_;};
+  /** Set size of mini - tree.  If > 1 then does total enumeration of
+      tree given by this best variables to branch on
+  */
+  inline void setSizeMiniTree(int value)
+  { sizeMiniTree_=value;};
+  inline int sizeMiniTree() const
+  { return sizeMiniTree_;};
 
   /** Set the number of branches before pseudo costs believed
       in dynamic strong branching.
@@ -1114,8 +1131,7 @@ public:
     reoptimisation.
     If saveCuts then slack cuts will be saved
   */
-  void takeOffCuts(OsiCuts &cuts, int *whichGenerator,
-		     int &numberOldActiveCuts, int &numberNewCuts,
+  void takeOffCuts(OsiCuts &cuts, 
 		     bool allowResolve,OsiCuts * saveCuts) ;
 
   /** Determine and install the active cuts that need to be added for
@@ -1337,11 +1353,12 @@ public:
     /** Assign a solver to the model (model assumes ownership)
 
       On return, \p solver will be NULL.
+      If deleteSolver then current solver deleted (if model owned)
 
       \note Parameter settings in the outgoing solver are not inherited by
 	    the incoming solver.
     */
-    void assignSolver(OsiSolverInterface *&solver);
+    void assignSolver(OsiSolverInterface *&solver,bool deleteSolver=true);
   
     /** Copy constructor .
       If noTree is true then tree and cuts are not copied
@@ -1355,14 +1372,32 @@ public:
      ~CbcModel ();
 
     /// Returns solver - has current state
-    OsiSolverInterface * solver() const
+    inline OsiSolverInterface * solver() const
     { return solver_;};
 
     /// Returns solver with continuous state
-    OsiSolverInterface * continuousSolver() const
+    inline OsiSolverInterface * continuousSolver() const
     { return continuousSolver_;};
+
+  /// A copy of the solver, taken at constructor or by saveReferenceSolver
+  inline OsiSolverInterface * referenceSolver() const
+  { return referenceSolver_;};
+
+  /// Save a copy of the current solver so can be reset to
+  void saveReferenceSolver();
+
+  /** Uses a copy of reference solver to be current solver.
+      Because of possible mismatches all exotic integer information is loat
+      (apart from normal information in OsiSolverInterface)
+      so SOS etc and priorities will have to be redone
+  */
+  void resetToReferenceSolver();
+
   /// Clears out as much as possible (except solver)
   void gutsOfDestructor();
+  /** Clears out enough to reset CbcModel as if no branch and bound done
+   */
+  void gutsOfDestructor2();
   //@}
 
   ///@semi-private i.e. users should not use
@@ -1394,6 +1429,9 @@ private:
   /// A copy of the solver, taken at the continuous (root) node.
   OsiSolverInterface * continuousSolver_;
 
+  /// A copy of the solver, taken at constructor or by saveReferenceSolver
+  OsiSolverInterface * referenceSolver_;
+
    /// Message handler
   CoinMessageHandler * handler_;
 
@@ -1422,9 +1460,6 @@ private:
     start. See getEmptyBasis for an example of how this field can be used.
   */
   mutable CoinWarmStart *emptyWarmStart_ ;
-
-  /** Pointer to a warm start basis.  */
-  CoinWarmStartBasis *basis_;
 
   /// Best objective
   double bestObjective_;
@@ -1669,6 +1704,30 @@ private:
   int maximumCutPasses_;
   /// Current cut pass number
   int currentPassNumber_;
+  /// Maximum number of cuts (for whichGenerator_)
+  int maximumWhich_;
+  /// Which cut generator generated this cut
+  int * whichGenerator_;
+  /// Maximum number of statistics
+  int maximumStatistics_;
+  /// statistics
+  CbcStatistics ** statistics_;
+  /// Number of fixed by analyze at root
+  int numberFixedAtRoot_;
+  /// Number fixed by analyze so far
+  int numberFixedNow_;
+  /// Whether stopping on gap
+  bool stoppedOnGap_;
+  /// Whether event happened
+  bool eventHappened_;
+  /// Number of long strong goes
+  int numberLongStrong_;
+  /// Number of old active cuts
+  int numberOldActiveCuts_;
+  /// Number of new cuts
+  int numberNewCuts_;
+  /// Size of mini - tree
+  int sizeMiniTree_;
   /// Whether to force a resolve after takeOffCuts
   bool resolveAfterTakeOffCuts_;
  //@}

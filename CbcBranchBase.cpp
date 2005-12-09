@@ -9,6 +9,7 @@
 #include <cfloat>
 
 #include "OsiSolverInterface.hpp"
+#include "OsiSolverBranch.hpp"
 #include "CbcModel.hpp"
 #include "CbcMessage.hpp"
 #include "CbcBranchBase.hpp"
@@ -89,6 +90,16 @@ CbcObject::columnNumber() const
   // Say not as at present only used by heuristics
   return -1;
 }
+/* Create an OsiSolverBranch object
+   
+This returns NULL if branch not represented by bound changes
+*/
+OsiSolverBranch * 
+CbcObject::solverBranch() const
+{
+  return NULL;
+}
+  
 // Default Constructor 
 CbcBranchingObject::CbcBranchingObject()
 {

@@ -4,7 +4,7 @@
 #define CbcStrategy_H
 
 #include "CbcModel.hpp"
-
+class CglPreProcess;
 
 //#############################################################################
 /** Strategy base class */
@@ -25,7 +25,7 @@ public:
   virtual void setupHeuristics(CbcModel & model)=0;
   /// Do printing stuff
   virtual void setupPrinting(CbcModel & model,int modelLogLevel)=0;
-  /// Other stuff e.g. strong branching
+  /// Other stuff e.g. strong branching and preprocessing
   virtual void setupOther(CbcModel & model)=0;
   /// Set model depth (i.e. how nested)
   inline void setNested(int depth)
@@ -33,6 +33,17 @@ public:
   /// Get model depth (i.e. how nested)
   inline int getNested() const
   { return depth_;};
+  /// Say preProcessing done
+  inline void setPreProcessState(int state)
+  { preProcessState_=state;};
+  /// See what sort of preprocessing was done
+  inline int preProcessState() const
+  { return preProcessState_;};
+  /// Pre-processing object
+  inline CglPreProcess * process() const
+  { return process_;};
+  /// Delete pre-processing object to save memory
+  void deletePreProcess();
 private:
   
   /// Illegal Assignment operator 
@@ -41,6 +52,14 @@ protected:
   // Data
   /// Model depth
   int depth_;
+  /** PreProcessing state -
+      -1 infeasible
+      0 off
+      1 was done (so need post-processing)
+  */
+  int preProcessState_;
+  /// If preprocessing then this is object
+  CglPreProcess * process_;
 };
 
 /** Null class
@@ -106,6 +125,15 @@ public:
   virtual void setupPrinting(CbcModel & model,int modelLogLevel) ;
   /// Other stuff e.g. strong branching
   virtual void setupOther(CbcModel & model);
+  /// Set up preProcessing - see below
+  inline void setupPreProcessing(int desired=1, int passes=10)
+  { desiredPreProcess_=1;preProcessPasses_=passes;};
+  /// See what sort of preprocessing wanted
+  inline int desiredPreProcess() const
+  { return desiredPreProcess_;};
+  /// See how many passes wanted
+  inline int preProcessPasses() const
+  { return preProcessPasses_;};
 
 protected:
   // Data
@@ -121,6 +149,15 @@ protected:
 
   // Print level 0 little, 1 medium
   int printLevel_;
+
+  /** Desired pre-processing
+      0 - none
+      1 - ordinary
+      2 - find sos
+  */
+  int desiredPreProcess_;
+  /// Number of pre-processing passes
+  int preProcessPasses_;
 
 private:
   /// Illegal Assignment operator 

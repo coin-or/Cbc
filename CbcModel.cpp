@@ -20,6 +20,7 @@
 #endif
 
 #include "OsiSolverInterface.hpp"
+#include "OsiSolverBranch.hpp"
 #include "CoinWarmStartBasis.hpp"
 #include "CoinPackedMatrix.hpp"
 #include "CoinHelperFunctions.hpp"
@@ -40,7 +41,8 @@
 #include "CbcFeasibilityBase.hpp"
 // include Probing
 #include "CglProbing.hpp"
-
+// include preprocessing
+#include "CglPreProcess.hpp"
 
 #include "CoinTime.hpp"
 
@@ -119,6 +121,8 @@ void verifyTreeNodes (const CbcTree * branchingTree, const CbcModel &model)
 */
   for (j = 0 ; j < nNodes ; j++)
   { CbcNode *node = branchingTree->nodePointer(j) ;
+  if (!node)
+    continue;
     CbcNodeInfo *nodeInfo = node->nodeInfo() ; 
     int change = node->nodeInfo()->numberBranchesLeft() ;
     assert(change) ;
@@ -345,7 +349,7 @@ CbcModel::analyzeObjective ()
 
   return ; 
 }
-
+#ifndef CBC_NEXT_VERSION
 
 
 /**
@@ -377,15 +381,37 @@ CbcModel::analyzeObjective ()
 void CbcModel::branchAndBound(int doStatistics) 
 
 {
+/*
+  Capture a time stamp before we start.
+*/
+  dblParam_[CbcStartSeconds] = CoinCpuTime();
+  // original solver (only set if pre-processing)
+  OsiSolverInterface * originalSolver=NULL;
   // Set up strategies
   if (strategy_) {
+    // May do preprocessing
+    originalSolver = solver_;
+    strategy_->setupOther(*this);
+    if (strategy_->preProcessState()) {
+      // pre-processing done
+      if (strategy_->preProcessState()<0) {
+        // infeasible
+        handler_->message(CBC_INFEAS,messages_)<< CoinMessageEol ;
+        status_ = 0 ;
+        secondaryStatus_ = 1;
+        originalContinuousObjective_ = COIN_DBL_MAX;
+        return ; 
+      }
+    } else {
+      //no preprocessing
+      originalSolver=NULL;
+    }
     strategy_->setupCutGenerators(*this);
     strategy_->setupHeuristics(*this);
     // Set strategy print level to models
     strategy_->setupPrinting(*this,handler_->logLevel());
-    strategy_->setupOther(*this);
   }
-  bool eventHappened=false;
+  eventHappened_=false;
   ClpEventHandler * eventHandler=NULL;
 #ifdef COIN_USE_CLP
  {
@@ -439,10 +465,6 @@ void CbcModel::branchAndBound(int doStatistics)
   generators attached to this model all refer to this model.
 */
   synchronizeModel() ;
-/*
-  Capture a time stamp before we start.
-*/
-  dblParam_[CbcStartSeconds] = CoinCpuTime();
   // Set so we can tell we are in initial phase in resolve
   continuousObjective_ = -COIN_DBL_MAX ;
 /*
@@ -548,8 +570,10 @@ void CbcModel::branchAndBound(int doStatistics)
   the active subproblem. whichGenerator will be used to record the generator
   that produced a given cut.
 */
-  int maximumWhich = 1000 ;
-  int * whichGenerator = new int[maximumWhich] ;
+  maximumWhich_ = 1000 ;
+  delete [] whichGenerator_;
+  whichGenerator_ = new int[maximumWhich_] ;
+  memset(whichGenerator_,0,maximumWhich_*sizeof(int));
   int currentNumberCuts = 0 ;
   maximumNumberCuts_ = 0 ;
   currentNumberCuts_ = 0 ;
@@ -581,7 +605,7 @@ void CbcModel::branchAndBound(int doStatistics)
 
   At the end of all this, any cuts will be recorded in cuts and also
   installed in the solver's constraint system. We'll have reoptimised, and
-  removed any slack cuts (numberOldActiveCuts and numberNewCuts have been
+  removed any slack cuts (numberOldActiveCuts_ and numberNewCuts_ have been
   adjusted accordingly).
 
   Tell cut generators they can be a bit more aggressive at root node
@@ -597,8 +621,8 @@ void CbcModel::branchAndBound(int doStatistics)
   }
   OsiCuts cuts ;
   int anyAction = -1 ;
-  int numberOldActiveCuts = 0 ;
-  int numberNewCuts = 0 ;
+  numberOldActiveCuts_ = 0 ;
+  numberNewCuts_ = 0 ;
   // Array to mark solution
   delete [] usedInSolution_;
   usedInSolution_ = new int[numberColumns];
@@ -609,13 +633,13 @@ void CbcModel::branchAndBound(int doStatistics)
   numberIterations_ = 0 ;
   numberNodes_ = 0 ;
   numberNodes2_ = 0 ;
-  int maximumStatistics=0;
-  CbcStatistics ** statistics = NULL;
+  maximumStatistics_=0;
+  statistics_ = NULL;
   // Do on switch
   if (doStatistics) {
-    maximumStatistics=10000;
-    statistics = new CbcStatistics * [maximumStatistics];
-    memset(statistics,0,maximumStatistics*sizeof(CbcStatistics *));
+    maximumStatistics_=10000;
+    statistics_ = new CbcStatistics * [maximumStatistics_];
+    memset(statistics_,0,maximumStatistics_*sizeof(CbcStatistics *));
   }
 
   { int iObject ;
@@ -629,9 +653,7 @@ void CbcModel::branchAndBound(int doStatistics)
 	  object_[iObject]->infeasibility(preferredWay) ;
       if (infeasibility ) numberUnsatisfied++ ; }
     if (numberUnsatisfied) { 
-      feasible = solveWithCuts(cuts,maximumCutPassesAtRoot_,
-			       NULL,numberOldActiveCuts,numberNewCuts,
-			       maximumWhich, whichGenerator) ;
+      feasible = solveWithCuts(cuts,maximumCutPassesAtRoot_,NULL);
     }
   }
   // make cut generators less aggressive
@@ -639,7 +661,7 @@ void CbcModel::branchAndBound(int doStatistics)
     CglCutGenerator * generator = generator_[iCutGenerator]->generator();
     generator->setAggressiveness(generator->getAggressiveness()-100);
   }
-  currentNumberCuts_ = numberNewCuts ;
+  currentNumberCuts_ = numberNewCuts_ ;
 /*
   We've taken the continuous relaxation as far as we can. Time to branch.
   The first order of business is to actually create a node. chooseBranch
@@ -657,8 +679,8 @@ void CbcModel::branchAndBound(int doStatistics)
 
   bool resolved = false ;
   CbcNode *newNode = NULL ;
-  int numberFixedAtRoot=0;
-  int numberFixedNow=0;
+  numberFixedAtRoot_=0;
+  numberFixedNow_=0;
   if (feasible)
   { newNode = new CbcNode ;
     newNode->setObjectiveValue(direction*solver_->getObjValue()) ;
@@ -676,12 +698,12 @@ void CbcModel::branchAndBound(int doStatistics)
     if (numberAnalyzeIterations_) {
       delete [] analyzeResults_;
       analyzeResults_ = new double [4*numberIntegers_];
-      numberFixedAtRoot=newNode->analyze(this,analyzeResults_);
-      if (numberFixedAtRoot>0) {
-        printf("%d fixed by analysis\n",numberFixedAtRoot);
+      numberFixedAtRoot_=newNode->analyze(this,analyzeResults_);
+      if (numberFixedAtRoot_>0) {
+        printf("%d fixed by analysis\n",numberFixedAtRoot_);
         setPointers(solver_);
-        numberFixedNow = numberFixedAtRoot;
-      } else if (numberFixedAtRoot<0) {
+        numberFixedNow_ = numberFixedAtRoot_;
+      } else if (numberFixedAtRoot_<0) {
         printf("analysis found to be infeasible\n");
         anyAction=-2;
         delete newNode ;
@@ -691,10 +713,12 @@ void CbcModel::branchAndBound(int doStatistics)
     }
     while (anyAction == -1)
     {
+      newNode->setObjectiveValue(direction*solver_->getObjValue()) ;
       if (numberBeforeTrust_==0 ) {
         anyAction = newNode->chooseBranch(this,NULL,numberPassesLeft) ;
       } else {
-        anyAction = newNode->chooseDynamicBranch(this,NULL,numberPassesLeft) ;
+        OsiSolverBranch * branches=NULL;
+        anyAction = newNode->chooseDynamicBranch(this,NULL,branches,numberPassesLeft) ;
         if (anyAction==-3) 
           anyAction = newNode->chooseBranch(this,NULL,numberPassesLeft) ; // dynamic did nothing
       }
@@ -741,12 +765,11 @@ void CbcModel::branchAndBound(int doStatistics)
   if (feasible && newNode->variable() >= 0)
   { if (resolved)
     { bool needValidSolution = (newNode->variable() < 0) ;
-      takeOffCuts(cuts,whichGenerator,numberOldActiveCuts,numberNewCuts,
-		  needValidSolution,NULL) ;
+      takeOffCuts(cuts,needValidSolution,NULL) ;
 #     ifdef CHECK_CUT_COUNTS
       { printf("Number of rows after chooseBranch fix (root)"
 	       "(active only) %d\n",
-		numberRowsAtContinuous_+numberNewCuts+numberOldActiveCuts) ;
+		numberRowsAtContinuous_+numberNewCuts_+numberOldActiveCuts_) ;
 	const CoinWarmStartBasis* debugws =
 	  dynamic_cast <const CoinWarmStartBasis*>(solver_->getWarmStart()) ;
 	debugws->print() ;
@@ -755,20 +778,10 @@ void CbcModel::branchAndBound(int doStatistics)
     }
     newNode->createInfo(this,NULL,NULL,NULL,NULL,0,0) ;
     newNode->nodeInfo()->addCuts(cuts,
-				 newNode->numberBranches(),whichGenerator) ;
-/*
-  Courtesy of createInfo, there's now a full basis stashed in
-  newNode->nodeInfo_->basis_. We're about to make two more copies, lastws and
-  model.basis_.
-
-  (jf) With some thought I should be able to get rid of lastws and use
-  basis_.
-  (lh) I agree, but haven't pursued it to the end.
-*/
-    if (basis_) delete basis_ ;
-    basis_ = dynamic_cast<CoinWarmStartBasis*>(solver_->getWarmStart()) ;
+				 newNode->numberBranches(),whichGenerator_) ;
     if (lastws) delete lastws ;
-    lastws = dynamic_cast<CoinWarmStartBasis*>(basis_->clone()) ; }
+    lastws = dynamic_cast<CoinWarmStartBasis*>(solver_->getWarmStart()) ;
+  }
 /*
   Continuous data to be used later
 */
@@ -786,7 +799,7 @@ void CbcModel::branchAndBound(int doStatistics)
   { int i ;
     for (i = 0;i < numberObjects_;i++)
       object_[i]->resetBounds() ; }
-  bool stoppedOnGap = false ;
+  stoppedOnGap_ = false ;
 /*
   Feasible? Then we should have either a live node prepped for future
   expansion (indicated by variable() >= 0), or (miracle of miracles) an
@@ -801,17 +814,17 @@ void CbcModel::branchAndBound(int doStatistics)
     if (newNode->variable() >= 0) {
       newNode->initializeInfo() ;
       tree_->push(newNode) ;
-      if (statistics) {
-        if (numberNodes2_==maximumStatistics) {
-          maximumStatistics = 2*maximumStatistics;
-          CbcStatistics ** temp = new CbcStatistics * [maximumStatistics];
-          memset(temp,0,maximumStatistics*sizeof(CbcStatistics *));
-          memcpy(temp,statistics,numberNodes2_*sizeof(CbcStatistics *));
-          delete [] statistics;
-          statistics=temp;
+      if (statistics_) {
+        if (numberNodes2_==maximumStatistics_) {
+          maximumStatistics_ = 2*maximumStatistics_;
+          CbcStatistics ** temp = new CbcStatistics * [maximumStatistics_];
+          memset(temp,0,maximumStatistics_*sizeof(CbcStatistics *));
+          memcpy(temp,statistics_,numberNodes2_*sizeof(CbcStatistics *));
+          delete [] statistics_;
+          statistics_=temp;
         }
-        assert (!statistics[numberNodes2_]);
-        statistics[numberNodes2_]=new CbcStatistics(newNode);
+        assert (!statistics_[numberNodes2_]);
+        statistics_[numberNodes2_]=new CbcStatistics(newNode);
       }
       numberNodes2_++;
 #     ifdef CHECK_NODE
@@ -836,7 +849,7 @@ void CbcModel::branchAndBound(int doStatistics)
     It is possible that strong branching fixes one variable and then the code goes round
     again and again.  This can take too long.  So we need to warn user - just once.
   */
-  int numberLongStrong=0;
+  numberLongStrong_=0;
 /*
   At last, the actual branch-and-cut search loop, which will iterate until
   the live set is empty or we hit some limit (integrality gap, time, node
@@ -870,14 +883,14 @@ void CbcModel::branchAndBound(int doStatistics)
         }
         if (newCutoff==-COIN_DBL_MAX) {
           printf("Root analysis says finished\n");
-        } else if (n>numberFixedNow) {
-          printf("%d more fixed by analysis - now %d\n",n-numberFixedNow,n);
-          numberFixedNow=n;
+        } else if (n>numberFixedNow_) {
+          printf("%d more fixed by analysis - now %d\n",n-numberFixedNow_,n);
+          numberFixedNow_=n;
         }
       }
       if (eventHandler) {
         if (!eventHandler->event(ClpEventHandler::solution)) {
-          eventHappened=true; // exit
+          eventHappened_=true; // exit
         }
       }
       // Do from deepest
@@ -916,7 +929,7 @@ void CbcModel::branchAndBound(int doStatistics)
 	<< CoinMessageEol ;
       if (eventHandler) {
         if (!eventHandler->event(ClpEventHandler::treeStatus)) {
-          eventHappened=true; // exit
+          eventHappened_=true; // exit
         }
       }
     }
@@ -928,7 +941,7 @@ void CbcModel::branchAndBound(int doStatistics)
 			     CoinMax(fabs(bestObjective_),fabs(bestPossibleObjective_))
 			     *dblParam_[CbcAllowableFractionGap]);
     if (bestObjective_-bestPossibleObjective_ < testGap && getCutoffIncrement()>=0.0) {
-      stoppedOnGap = true ;
+      stoppedOnGap_ = true ;
     }
 
 #   ifdef CHECK_NODE_FULL
@@ -988,7 +1001,7 @@ void CbcModel::branchAndBound(int doStatistics)
 */
     CbcNodeInfo * nodeInfo = node->nodeInfo() ;
     newNode = NULL ;
-    if (!addCuts(node,lastws,numberFixedNow>numberFixedAtRoot))
+    if (!addCuts(node,lastws,numberFixedNow_>numberFixedAtRoot_))
     { int i ;
       const double * lower = getColLower() ;
       const double * upper = getColUpper() ;
@@ -1001,17 +1014,17 @@ void CbcModel::branchAndBound(int doStatistics)
         // set nodenumber correctly
         node->nodeInfo()->setNodeNumber(numberNodes2_);
         tree_->push(node) ;
-        if (statistics) {
-          if (numberNodes2_==maximumStatistics) {
-            maximumStatistics = 2*maximumStatistics;
-            CbcStatistics ** temp = new CbcStatistics * [maximumStatistics];
-            memset(temp,0,maximumStatistics*sizeof(CbcStatistics *));
-            memcpy(temp,statistics,numberNodes2_*sizeof(CbcStatistics *));
-            delete [] statistics;
-            statistics=temp;
+        if (statistics_) {
+          if (numberNodes2_==maximumStatistics_) {
+            maximumStatistics_ = 2*maximumStatistics_;
+            CbcStatistics ** temp = new CbcStatistics * [maximumStatistics_];
+            memset(temp,0,maximumStatistics_*sizeof(CbcStatistics *));
+            memcpy(temp,statistics_,numberNodes2_*sizeof(CbcStatistics *));
+            delete [] statistics_;
+            statistics_=temp;
           }
-          assert (!statistics[numberNodes2_]);
-          statistics[numberNodes2_]=new CbcStatistics(node);
+          assert (!statistics_[numberNodes2_]);
+          statistics_[numberNodes2_]=new CbcStatistics(node);
         }
         numberNodes2_++;
 	nodeOnTree=true; // back on tree
@@ -1047,14 +1060,12 @@ void CbcModel::branchAndBound(int doStatistics)
       cuts = OsiCuts() ;
       currentNumberCuts = solver_->getNumRows()-numberRowsAtContinuous_ ;
       int saveNumber = numberIterations_;
-      feasible = solveWithCuts(cuts,maximumCutPasses_,node,
-			       numberOldActiveCuts,numberNewCuts,
-			       maximumWhich,whichGenerator) ;
-      if (statistics) {
+      feasible = solveWithCuts(cuts,maximumCutPasses_,node);
+      if (statistics_) {
         assert (numberNodes2_);
-        assert (statistics[numberNodes2_-1]);
-        assert (statistics[numberNodes2_-1]->node()==numberNodes2_-1);
-        statistics[numberNodes2_-1]->endOfBranch(numberIterations_-saveNumber,
+        assert (statistics_[numberNodes2_-1]);
+        assert (statistics_[numberNodes2_-1]->node()==numberNodes2_-1);
+        statistics_[numberNodes2_-1]->endOfBranch(numberIterations_-saveNumber,
                                                feasible ? solver_->getObjValue()
                                                : COIN_DBL_MAX);
     }
@@ -1065,7 +1076,7 @@ void CbcModel::branchAndBound(int doStatistics)
       if (numberNodes_ < intParam_[CbcMaxNumNode] &&
 	  numberSolutions_ < intParam_[CbcMaxNumSol] &&
 	  totalTime < dblParam_[CbcMaximumSeconds] &&
-	  !stoppedOnGap&&!eventHappened) 
+	  !stoppedOnGap_&&!eventHappened_) 
       {
 /*
   Are we still feasible? If so, create a node and do the work to attach a
@@ -1096,10 +1107,12 @@ void CbcModel::branchAndBound(int doStatistics)
           checkingNode=true;
 	  while (anyAction == -1)
 	  { 
+            newNode->setObjectiveValue(direction*solver_->getObjValue()) ;
             if (numberBeforeTrust_==0 ) {
               anyAction = newNode->chooseBranch(this,node,numberPassesLeft) ;
             } else {
-              anyAction = newNode->chooseDynamicBranch(this,node,numberPassesLeft) ;
+              OsiSolverBranch * branches=NULL;
+              anyAction = newNode->chooseDynamicBranch(this,node,branches,numberPassesLeft) ;
               if (anyAction==-3) 
                 anyAction = newNode->chooseBranch(this,node,numberPassesLeft) ; // dynamic did nothing
             }
@@ -1107,10 +1120,10 @@ void CbcModel::branchAndBound(int doStatistics)
               assert (anyAction!=-2); // can be useful but gives false positives on strong
             numberPassesLeft--;
             if (numberPassesLeft<=-1) {
-              if (!numberLongStrong)
+              if (!numberLongStrong_)
                 messageHandler()->message(CBC_WARNING_STRONG,
                                           messages()) << CoinMessageEol ;
-              numberLongStrong++;
+              numberLongStrong_++;
             }
 	    if (anyAction == -1)
 	    {
@@ -1138,13 +1151,12 @@ void CbcModel::branchAndBound(int doStatistics)
 	  if (anyAction >= 0)
 	  { if (resolved)
 	    { bool needValidSolution = (newNode->variable() < 0) ;
-	      takeOffCuts(cuts,whichGenerator,numberOldActiveCuts,
-			  numberNewCuts,needValidSolution,NULL) ; 
+	      takeOffCuts(cuts,needValidSolution,NULL) ; 
 #	      ifdef CHECK_CUT_COUNTS
 	      { printf("Number of rows after chooseBranch fix (node)"
 		       "(active only) %d\n",
-			numberRowsAtContinuous_+numberNewCuts+
-			numberOldActiveCuts) ;
+			numberRowsAtContinuous_+numberNewCuts_+
+			numberOldActiveCuts_) ;
 		const CoinWarmStartBasis* debugws =
 		  dynamic_cast<const CoinWarmStartBasis*>
 		    (solver_->getWarmStart()) ;
@@ -1153,11 +1165,11 @@ void CbcModel::branchAndBound(int doStatistics)
 #	      endif
 	    }
 	    newNode->createInfo(this,node,lastws,lowerBefore,upperBefore,
-				numberOldActiveCuts,numberNewCuts) ;
+				numberOldActiveCuts_,numberNewCuts_) ;
 	    if (newNode->numberUnsatisfied()) {
               newNode->initializeInfo() ;
 	      newNode->nodeInfo()->addCuts(cuts,newNode->numberBranches(),
-					   whichGenerator) ; } } }
+					   whichGenerator_) ; } } }
 	else
 	{ anyAction = -2 ; }
 	// May have slipped through i.e. anyAction == 0 and objective above cutoff
@@ -1207,18 +1219,18 @@ void CbcModel::branchAndBound(int doStatistics)
 */
         if (eventHandler) {
           if (!eventHandler->event(ClpEventHandler::node)) {
-            eventHappened=true; // exit
+            eventHappened_=true; // exit
           }
         }
 	assert (!newNode || newNode->objectiveValue() <= getCutoff()) ;
-        if (statistics) {
+        if (statistics_) {
           assert (numberNodes2_);
-          assert (statistics[numberNodes2_-1]);
-          assert (statistics[numberNodes2_-1]->node()==numberNodes2_-1);
+          assert (statistics_[numberNodes2_-1]);
+          assert (statistics_[numberNodes2_-1]->node()==numberNodes2_-1);
           if (newNode)
-            statistics[numberNodes2_-1]->updateInfeasibility(newNode->numberUnsatisfied());
+            statistics_[numberNodes2_-1]->updateInfeasibility(newNode->numberUnsatisfied());
           else
-            statistics[numberNodes2_-1]->sayInfeasible();
+            statistics_[numberNodes2_-1]->sayInfeasible();
         }
 	if (newNode)
 	{ if (newNode->variable() >= 0)
@@ -1263,17 +1275,17 @@ void CbcModel::branchAndBound(int doStatistics)
 	    delete [] newSolution ;
 	    newNode->setGuessedObjectiveValue(estValue) ;
 	    tree_->push(newNode) ;
-            if (statistics) {
-              if (numberNodes2_==maximumStatistics) {
-                maximumStatistics = 2*maximumStatistics;
-                CbcStatistics ** temp = new CbcStatistics * [maximumStatistics];
-                memset(temp,0,maximumStatistics*sizeof(CbcStatistics *));
-                memcpy(temp,statistics,numberNodes2_*sizeof(CbcStatistics *));
-                delete [] statistics;
-                statistics=temp;
+            if (statistics_) {
+              if (numberNodes2_==maximumStatistics_) {
+                maximumStatistics_ = 2*maximumStatistics_;
+                CbcStatistics ** temp = new CbcStatistics * [maximumStatistics_];
+                memset(temp,0,maximumStatistics_*sizeof(CbcStatistics *));
+                memcpy(temp,statistics_,numberNodes2_*sizeof(CbcStatistics *));
+                delete [] statistics_;
+                statistics_=temp;
               }
-              assert (!statistics[numberNodes2_]);
-              statistics[numberNodes2_]=new CbcStatistics(newNode);
+              assert (!statistics_[numberNodes2_]);
+              statistics_[numberNodes2_]=new CbcStatistics(newNode);
             }
             numberNodes2_++;
 #	    ifdef CHECK_NODE
@@ -1311,9 +1323,9 @@ void CbcModel::branchAndBound(int doStatistics)
 	tree_->cleanTree(this,-COIN_DBL_MAX,bestPossibleObjective_) ;
 	delete nextRowCut_;
 	// We need to get rid of node if is has already been popped from tree
-	if (!nodeOnTree&&!stoppedOnGap&&node!=rootNode)
+	if (!nodeOnTree&&!stoppedOnGap_&&node!=rootNode)
 	  delete node;
-	if (stoppedOnGap)
+	if (stoppedOnGap_)
 	{ messageHandler()->message(CBC_GAP,messages())
 	    << bestObjective_-bestPossibleObjective_
 	    << dblParam_[CbcAllowableGap]
@@ -1332,7 +1344,7 @@ void CbcModel::branchAndBound(int doStatistics)
         secondaryStatus_ = 4;
 	  status_ = 1 ; }
 	else
-	if (eventHappened)
+	if (eventHappened_)
 	{ handler_->message(CBC_EVENT,messages_) << CoinMessageEol ; 
         secondaryStatus_ = 5;
 	  status_ = 5 ; }
@@ -1383,7 +1395,7 @@ void CbcModel::branchAndBound(int doStatistics)
       << numberIterations_ << numberNodes_
       << CoinMessageEol ;
   }
-  if (statistics) {
+  if (statistics_) {
     // report in some way
     int * lookup = new int[numberObjects_];
     int i;
@@ -1414,27 +1426,27 @@ void CbcModel::branchAndBound(int doStatistics)
     if (doStatistics==3) {
       printf("  node parent depth column   value                    obj      inf\n");
       for ( i=0;i<numberNodes2_;i++) {
-        statistics[i]->print(lookup);
+        statistics_[i]->print(lookup);
       }
     }
     if (doStatistics>1) {
       // Find last solution
       int k;
       for (k=numberNodes2_-1;k>=0;k--) {
-        if (statistics[k]->endingObjective()!=COIN_DBL_MAX&&
-            !statistics[k]->endingInfeasibility())
+        if (statistics_[k]->endingObjective()!=COIN_DBL_MAX&&
+            !statistics_[k]->endingInfeasibility())
           break;
       }
       if (k>=0) {
-        int depth=statistics[k]->depth();
+        int depth=statistics_[k]->depth();
         int * which = new int[depth+1];
         for (i=depth;i>=0;i--) {
           which[i]=k;
-          k=statistics[k]->parentNode();
+          k=statistics_[k]->parentNode();
         }
         printf("  node parent depth column   value                    obj      inf\n");
         for (i=0;i<=depth;i++) {
-          statistics[which[i]]->print(lookup);
+          statistics_[which[i]]->print(lookup);
         }
         delete [] which;
       }
@@ -1459,16 +1471,16 @@ void CbcModel::branchAndBound(int doStatistics)
     double averageNumberIterations1=0.0;
     double averageValue=0.0;
     for ( i=0;i<numberNodes2_;i++) {
-      int depth =  statistics[i]->depth(); 
-      int way =  statistics[i]->way(); 
-      double value = statistics[i]->value(); 
-      double startingObjective =  statistics[i]->startingObjective(); 
-      int startingInfeasibility = statistics[i]->startingInfeasibility(); 
-      double endingObjective = statistics[i]->endingObjective(); 
-      int endingInfeasibility = statistics[i]->endingInfeasibility(); 
+      int depth =  statistics_[i]->depth(); 
+      int way =  statistics_[i]->way(); 
+      double value = statistics_[i]->value(); 
+      double startingObjective =  statistics_[i]->startingObjective(); 
+      int startingInfeasibility = statistics_[i]->startingInfeasibility(); 
+      double endingObjective = statistics_[i]->endingObjective(); 
+      int endingInfeasibility = statistics_[i]->endingInfeasibility(); 
       maxDepth = CoinMax(depth,maxDepth);
       // Only for completed
-      averageNumberIterations1 += statistics[i]->numberIterations();
+      averageNumberIterations1 += statistics_[i]->numberIterations();
       averageValue += value;
       if (endingObjective!=COIN_DBL_MAX&&!endingInfeasibility) {
         numberSolutions++;
@@ -1543,8 +1555,9 @@ void CbcModel::branchAndBound(int doStatistics)
            numberUp,numberFirstUp,numberUp-numberFirstUp,numberCutoffUp,
            averageInfUp,averageObjUp);
     for ( i=0;i<numberNodes2_;i++) 
-      delete statistics[i];
-    delete [] statistics;
+      delete statistics_[i];
+    delete [] statistics_;
+    statistics_=NULL;
     delete [] lookup;
   }
 /*
@@ -1578,7 +1591,8 @@ void CbcModel::branchAndBound(int doStatistics)
   Clean up dangling objects. continuousSolver_ may already be toast.
 */
   delete lastws ;
-  delete [] whichGenerator ;
+  delete [] whichGenerator_ ;
+  whichGenerator_=NULL;
   delete [] lowerBefore ;
   delete [] upperBefore ;
   delete [] walkback_ ;
@@ -1592,8 +1606,1587 @@ void CbcModel::branchAndBound(int doStatistics)
   Destroy global cuts by replacing with an empty OsiCuts object.
 */
   globalCuts_= OsiCuts() ;
+  if (strategy_&&strategy_->preProcessState()>0) {
+    // undo preprocessing
+    CglPreProcess * process = strategy_->process();
+    assert (process);
+    int n = originalSolver->getNumCols();
+    if (bestSolution_) {
+      delete [] bestSolution_;
+      bestSolution_ = new double [n];
+      process->postProcess(*solver_);
+    }
+    strategy_->deletePreProcess();
+    // Solution now back in originalSolver
+    delete solver_;
+    solver_=originalSolver;
+    if (bestSolution_)
+      memcpy(bestSolution_,solver_->getColSolution(),n*sizeof(double));
+  }
   return ; }
+#else
+void CbcModel::branchAndBound(int doStatistics) 
 
+{
+/*
+  Capture a time stamp before we start.
+*/
+  dblParam_[CbcStartSeconds] = CoinCpuTime();
+  // original solver (only set if pre-processing)
+  OsiSolverInterface * originalSolver=NULL;
+  // Set up strategies
+  if (strategy_) {
+    // May do preprocessing
+    originalSolver = solver_;
+    strategy_->setupOther(*this);
+    if (strategy_->preProcessState()) {
+      // pre-processing done
+      if (strategy_->preProcessState()<0) {
+        // infeasible
+        handler_->message(CBC_INFEAS,messages_)<< CoinMessageEol ;
+        status_ = 0 ;
+        secondaryStatus_ = 1;
+        originalContinuousObjective_ = COIN_DBL_MAX;
+        return ; 
+      }
+    } else {
+      //no preprocessing
+      originalSolver=NULL;
+    }
+    strategy_->setupCutGenerators(*this);
+    strategy_->setupHeuristics(*this);
+    // Set strategy print level to models
+    strategy_->setupPrinting(*this,handler_->logLevel());
+  }
+  eventHappened_=false;
+  ClpEventHandler * eventHandler=NULL;
+#ifdef COIN_USE_CLP
+ {
+   OsiClpSolverInterface * clpSolver 
+     = dynamic_cast<OsiClpSolverInterface *> (solver_);
+   if (clpSolver) {
+     ClpSimplex * clpSimplex = clpSolver->getModelPtr();
+     eventHandler = clpSimplex->eventHandler();
+   }
+ }
+#endif
+  if (!nodeCompare_)
+    nodeCompare_=new CbcCompareDefault();;
+  if (!problemFeasibility_)
+    problemFeasibility_=new CbcFeasibilityBase();
+# ifdef CBC_DEBUG
+  std::string problemName ;
+  solver_->getStrParam(OsiProbName,problemName) ;
+  printf("Problem name - %s\n",problemName.c_str()) ;
+  solver_->setHintParam(OsiDoReducePrint,false,OsiHintDo,0) ;
+# endif
+/*
+  Assume we're done, and see if we're proven wrong.
+*/
+  status_ = 0 ;
+  secondaryStatus_ = 0;
+  phase_=0;
+/*
+  Scan the variables, noting the integer variables. Create an
+  CbcSimpleInteger object for each integer variable.
+*/
+  findIntegers(false) ;
+  // If dynamic pseudo costs then do
+  if (numberBeforeTrust_)
+    convertToDynamic();
+  // Set up char array to say if integer
+  delete [] integerInfo_;
+  {
+    int n = solver_->getNumCols();
+    integerInfo_ = new char [n];
+    for (int i=0;i<n;i++) {
+      if (solver_->isInteger(i))
+        integerInfo_[i]=1;
+      else
+        integerInfo_[i]=0;
+    }
+  }
+    
+/*
+  Ensure that objects on the lists of CbcObjects, heuristics, and cut
+  generators attached to this model all refer to this model.
+*/
+  synchronizeModel() ;
+  // Set so we can tell we are in initial phase in resolve
+  continuousObjective_ = -COIN_DBL_MAX ;
+/*
+  Solve the relaxation.
+
+  Apparently there are circumstances where this will be non-trivial --- i.e.,
+  we've done something since initialSolve that's trashed the solution to the
+  continuous relaxation.
+*/
+  bool feasible = resolve() ;
+  if (problemFeasibility_->feasible(this,0)<0) {
+    feasible=false; // pretend infeasible
+  }
+/*
+  If the linear relaxation of the root is infeasible, bail out now. Otherwise,
+  continue with processing the root node.
+*/
+  if (!feasible)
+  { handler_->message(CBC_INFEAS,messages_)<< CoinMessageEol ;
+    status_ = 0 ;
+    secondaryStatus_ = 1;
+    originalContinuousObjective_ = COIN_DBL_MAX;
+    return ; }
+  // Save objective (just so user can access it)
+  originalContinuousObjective_ = solver_->getObjValue();
+  bestPossibleObjective_=originalContinuousObjective_;
+  sumChangeObjective1_=0.0;
+  sumChangeObjective2_=0.0;
+/*
+  OsiRowCutDebugger knows an optimal answer for a subset of MIP problems.
+  Assuming it recognises the problem, when called upon it will check a cut to
+  see if it cuts off the optimal answer.
+*/
+  // If debugger exists set specialOptions_ bit
+  if (solver_->getRowCutDebuggerAlways())
+    specialOptions_ |= 1;
+
+# ifdef CBC_DEBUG
+  if ((specialOptions_&1)==0)
+    solver_->activateRowCutDebugger(problemName.c_str()) ;
+  if (solver_->getRowCutDebuggerAlways())
+    specialOptions_ |= 1;
+# endif
+
+/*
+  Begin setup to process a feasible root node.
+*/
+  bestObjective_ = CoinMin(bestObjective_,1.0e50) ;
+  numberSolutions_ = 0 ;
+  stateOfSearch_=0;
+  numberHeuristicSolutions_ = 0 ;
+  // Everything is minimization
+  { 
+    // needed to sync cutoffs
+    double value ;
+    solver_->getDblParam(OsiDualObjectiveLimit,value) ;
+    dblParam_[CbcCurrentCutoff]= value * solver_->getObjSense();
+  }
+  double cutoff=getCutoff() ;
+  double direction = solver_->getObjSense() ;
+  dblParam_[CbcOptimizationDirection]=direction;
+  if (cutoff < 1.0e20&&direction<0.0)
+    messageHandler()->message(CBC_CUTOFF_WARNING1,
+				    messages())
+				      << cutoff << -cutoff << CoinMessageEol ;
+  if (cutoff > bestObjective_)
+    cutoff = bestObjective_ ;
+  setCutoff(cutoff) ;
+/*
+  We probably already have a current solution, but just in case ...
+*/
+  int numberColumns = getNumCols() ;
+  if (!currentSolution_)
+    currentSolution_ = new double[numberColumns] ;
+  testSolution_ = currentSolution_;
+  /* Tell solver we are in Branch and Cut
+     Could use last parameter for subtle differences */
+  solver_->setHintParam(OsiDoInBranchAndCut,true,OsiHintDo,NULL) ;
+/*
+  Create a copy of the solver, thus capturing the original (root node)
+  constraint system (aka the continuous system).
+*/
+  continuousSolver_ = solver_->clone() ;
+#ifdef COIN_USE_CLP
+  OsiClpSolverInterface * clpSolver 
+    = dynamic_cast<OsiClpSolverInterface *> (solver_);
+  if (clpSolver) {
+    ClpSimplex * clpSimplex = clpSolver->getModelPtr();
+    // take off names
+    clpSimplex->dropNames();
+  }
+#endif
+
+  numberRowsAtContinuous_ = getNumRows() ;
+/*
+  Check the objective to see if we can deduce a nontrivial increment. If
+  it's better than the current value for CbcCutoffIncrement, it'll be
+  installed.
+*/
+  analyzeObjective() ;
+/*
+  Set up for cut generation. addedCuts_ holds the cuts which are relevant for
+  the active subproblem. whichGenerator will be used to record the generator
+  that produced a given cut.
+*/
+  maximumWhich_ = 1000 ;
+  delete [] whichGenerator_;
+  whichGenerator_ = new int[maximumWhich_] ;
+  memset(whichGenerator_,0,maximumWhich_*sizeof(int));
+  maximumNumberCuts_ = 0 ;
+  currentNumberCuts_ = 0 ;
+  delete [] addedCuts_ ;
+  addedCuts_ = NULL ;
+/*
+  Set up an empty heap and associated data structures to hold the live set
+  (problems which require further exploration).
+*/
+  tree_->setComparison(*nodeCompare_) ;
+/*
+  Used to record the path from a node to the root of the search tree, so that
+  we can then traverse from the root to the node when restoring a subproblem.
+*/
+  maximumDepth_ = 10 ;
+  delete [] walkback_ ;
+  walkback_ = new CbcNodeInfo * [maximumDepth_] ;
+/*
+  Used to generate bound edits for CbcPartialNodeInfo.
+*/
+  double * lowerBefore = new double [numberColumns] ;
+  double * upperBefore = new double [numberColumns] ;
+/*
+  
+  Generate cuts at the root node and reoptimise. solveWithCuts does the heavy
+  lifting. It will iterate a generate/reoptimise loop (including reduced cost
+  fixing) until no cuts are generated, the change in objective falls off,  or
+  the limit on the number of rounds of cut generation is exceeded.
+
+  At the end of all this, any cuts will be recorded in cuts and also
+  installed in the solver's constraint system. We'll have reoptimised, and
+  removed any slack cuts (numberOldActiveCuts_ and numberNewCuts_ have been
+  adjusted accordingly).
+
+  Tell cut generators they can be a bit more aggressive at root node
+
+  TODO: Why don't we make a copy of the solution after solveWithCuts?
+  TODO: If numberUnsatisfied == 0, don't we have a solution?
+*/
+  phase_=1;
+  int iCutGenerator;
+  for (iCutGenerator = 0;iCutGenerator<numberCutGenerators_;iCutGenerator++) {
+    CglCutGenerator * generator = generator_[iCutGenerator]->generator();
+    generator->setAggressiveness(generator->getAggressiveness()+100);
+  }
+  OsiCuts cuts ;
+  int anyAction = -1 ;
+  numberOldActiveCuts_ = 0 ;
+  numberNewCuts_ = 0 ;
+  // Array to mark solution
+  delete [] usedInSolution_;
+  usedInSolution_ = new int[numberColumns];
+  CoinZeroN(usedInSolution_,numberColumns);
+/*
+  For printing totals and for CbcNode (numberNodes_)
+*/
+  numberIterations_ = 0 ;
+  numberNodes_ = 0 ;
+  numberNodes2_ = 0 ;
+  maximumStatistics_=0;
+  statistics_ = NULL;
+  // Do on switch
+  if (doStatistics) {
+    maximumStatistics_=10000;
+    statistics_ = new CbcStatistics * [maximumStatistics_];
+    memset(statistics_,0,maximumStatistics_*sizeof(CbcStatistics *));
+  }
+
+  { int iObject ;
+    int preferredWay ;
+    int numberUnsatisfied = 0 ;
+    memcpy(currentSolution_,solver_->getColSolution(),
+	   numberColumns*sizeof(double)) ;
+
+    for (iObject = 0 ; iObject < numberObjects_ ; iObject++)
+    { double infeasibility =
+	  object_[iObject]->infeasibility(preferredWay) ;
+      if (infeasibility ) numberUnsatisfied++ ; }
+    if (numberUnsatisfied) { 
+      feasible = solveWithCuts(cuts,maximumCutPassesAtRoot_,NULL);
+    }
+  }
+  // make cut generators less aggressive
+  for (iCutGenerator = 0;iCutGenerator<numberCutGenerators_;iCutGenerator++) {
+    CglCutGenerator * generator = generator_[iCutGenerator]->generator();
+    generator->setAggressiveness(generator->getAggressiveness()-100);
+  }
+  currentNumberCuts_ = numberNewCuts_ ;
+/*
+  We've taken the continuous relaxation as far as we can. Time to branch.
+  The first order of business is to actually create a node. chooseBranch
+  currently uses strong branching to evaluate branch object candidates,
+  unless forced back to simple branching. If chooseBranch concludes that a
+  branching candidate is monotone (anyAction == -1) or infeasible (anyAction
+  == -2) when forced to integer values, it returns here immediately.
+
+  Monotone variables trigger a call to resolve(). If the problem remains
+  feasible, try again to choose a branching variable. At the end of the loop,
+  resolved == true indicates that some variables were fixed.
+
+  Loss of feasibility will result in the deletion of newNode.
+*/
+
+  bool resolved = false ;
+  CbcNode *newNode = NULL ;
+  numberFixedAtRoot_=0;
+  numberFixedNow_=0;
+  if (feasible)
+  { newNode = new CbcNode ;
+    newNode->setObjectiveValue(direction*solver_->getObjValue()) ;
+    anyAction = -1 ;
+    // To make depth available we may need a fake node
+    CbcNode fakeNode;
+    if (!currentNode_) {
+      // Not true if sub trees assert (!numberNodes_);
+      currentNode_=&fakeNode;
+    }
+    phase_=3;
+    // only allow 1000 passes
+    int numberPassesLeft=1000;
+    // This is first crude step
+    if (numberAnalyzeIterations_) {
+      delete [] analyzeResults_;
+      analyzeResults_ = new double [4*numberIntegers_];
+      numberFixedAtRoot_=newNode->analyze(this,analyzeResults_);
+      if (numberFixedAtRoot_>0) {
+        printf("%d fixed by analysis\n",numberFixedAtRoot_);
+        setPointers(solver_);
+        numberFixedNow_ = numberFixedAtRoot_;
+      } else if (numberFixedAtRoot_<0) {
+        printf("analysis found to be infeasible\n");
+        anyAction=-2;
+        delete newNode ;
+	newNode = NULL ;
+	feasible = false ;
+      }
+    }
+    while (anyAction == -1)
+    {
+      newNode->setObjectiveValue(direction*solver_->getObjValue()) ;
+      if (numberBeforeTrust_==0 ) {
+        anyAction = newNode->chooseBranch(this,NULL,numberPassesLeft) ;
+      } else {
+        OsiSolverBranch * branches=NULL;
+        anyAction = newNode->chooseDynamicBranch(this,NULL,branches,numberPassesLeft) ;
+        if (anyAction==-3) 
+          anyAction = newNode->chooseBranch(this,NULL,numberPassesLeft) ; // dynamic did nothing
+      }
+      numberPassesLeft--;
+      if (anyAction == -1)
+      { feasible = resolve() ;
+      if (problemFeasibility_->feasible(this,0)<0) {
+        feasible=false; // pretend infeasible
+      }
+      //int nfix=
+      reducedCostFix() ;
+      //if (nfix)
+      //printf("%d fixed after resolve root\n",nfix);
+	resolved = true ;
+#	ifdef CBC_DEBUG
+	printf("Resolve (root) as something fixed, Obj value %g %d rows\n",
+		  solver_->getObjValue(),
+		  solver_->getNumRows()) ;
+#	endif
+	if (!feasible) anyAction = -2 ; }
+      if (anyAction == -2||newNode->objectiveValue() >= cutoff)
+      { delete newNode ;
+	newNode = NULL ;
+	feasible = false ; } } }
+/*
+  At this point, the root subproblem is infeasible or fathomed by bound
+  (newNode == NULL), or we're live with an objective value that satisfies the
+  current objective cutoff.
+*/
+  assert (!newNode || newNode->objectiveValue() <= cutoff) ;
+  // Save address of root node as we don't want to delete it
+  //CbcNode * rootNode = newNode;
+/*
+  The common case is that the lp relaxation is feasible but doesn't satisfy
+  integrality (i.e., newNode->variable() >= 0, indicating we've been able to
+  select a branching variable). Remove any cuts that have gone slack due to
+  forcing monotone variables. Then tack on an CbcFullNodeInfo object and full
+  basis (via createInfo()) and stash the new cuts in the nodeInfo (via
+  addCuts()). If, by some miracle, we have an integral solution at the root
+  (newNode->variable() < 0), takeOffCuts() will ensure that the solver holds
+  a valid solution for use by setBestSolution().
+*/
+  if (feasible && newNode->variable() >= 0)
+  { if (resolved)
+    { bool needValidSolution = (newNode->variable() < 0) ;
+      takeOffCuts(cuts,needValidSolution,NULL) ;
+#     ifdef CHECK_CUT_COUNTS
+      { printf("Number of rows after chooseBranch fix (root)"
+	       "(active only) %d\n",
+		numberRowsAtContinuous_+numberNewCuts_+numberOldActiveCuts_) ;
+	const CoinWarmStartBasis* debugws =
+	  dynamic_cast <const CoinWarmStartBasis*>(solver_->getWarmStart()) ;
+	debugws->print() ;
+	delete debugws ; }
+#     endif
+    }
+    newNode->createInfo(this,NULL,NULL,NULL,NULL,0,0) ;
+    newNode->nodeInfo()->addCuts(cuts,
+				 newNode->numberBranches(),whichGenerator_) ;
+  }
+/*
+  Continuous data to be used later
+*/
+  continuousObjective_ = solver_->getObjValue()*solver_->getObjSense();
+  continuousInfeasibilities_ = 0 ;
+  if (newNode)
+  { continuousObjective_ = newNode->objectiveValue() ;
+    delete [] continuousSolution_;
+    continuousSolution_ = CoinCopyOfArray(solver_->getColSolution(),
+                                             numberColumns);
+    continuousInfeasibilities_ = newNode->numberUnsatisfied() ; }
+/*
+  Bound may have changed so reset in objects
+*/
+  { int i ;
+    for (i = 0;i < numberObjects_;i++)
+      object_[i]->resetBounds() ; }
+  stoppedOnGap_ = false ;
+/*
+  Feasible? Then we should have either a live node prepped for future
+  expansion (indicated by variable() >= 0), or (miracle of miracles) an
+  integral solution at the root node.
+
+  initializeInfo sets the reference counts in the nodeInfo object.  Since
+  this node is still live, push it onto the heap that holds the live set.
+*/
+  double bestValue = 0.0 ;
+  if (newNode) {
+    bestValue = newNode->objectiveValue();
+    if (newNode->variable() >= 0) {
+      newNode->initializeInfo() ;
+      tree_->push(newNode) ;
+      if (statistics_) {
+        if (numberNodes2_==maximumStatistics_) {
+          maximumStatistics_ = 2*maximumStatistics_;
+          CbcStatistics ** temp = new CbcStatistics * [maximumStatistics_];
+          memset(temp,0,maximumStatistics_*sizeof(CbcStatistics *));
+          memcpy(temp,statistics_,numberNodes2_*sizeof(CbcStatistics *));
+          delete [] statistics_;
+          statistics_=temp;
+        }
+        assert (!statistics_[numberNodes2_]);
+        statistics_[numberNodes2_]=new CbcStatistics(newNode);
+      }
+      numberNodes2_++;
+#     ifdef CHECK_NODE
+      printf("Node %x on tree\n",newNode) ;
+#     endif
+    } else {
+      // continuous is integer
+      double objectiveValue = newNode->objectiveValue();
+      setBestSolution(CBC_SOLUTION,objectiveValue,
+		      solver_->getColSolution()) ;
+      delete newNode ;
+      newNode = NULL ;
+    }
+  }
+
+  if (printFrequency_ <= 0) {
+    printFrequency_ = 1000 ;
+    if (getNumCols() > 2000)
+      printFrequency_ = 100 ;
+  }
+  /*
+    It is possible that strong branching fixes one variable and then the code goes round
+    again and again.  This can take too long.  So we need to warn user - just once.
+  */
+  numberLongStrong_=0;
+/*
+  At last, the actual branch-and-cut search loop, which will iterate until
+  the live set is empty or we hit some limit (integrality gap, time, node
+  count, etc.). The overall flow is to rebuild a subproblem, reoptimise using
+  solveWithCuts(), choose a branching pattern with chooseBranch(), and finally
+  add the node to the live set.
+
+  The first action is to winnow the live set to remove nodes which are worse
+  than the current objective cutoff.
+*/
+  while (!tree_->empty()) {
+    if (cutoff > getCutoff()) {
+      double newCutoff = getCutoff();
+      if (analyzeResults_) {
+        // see if we could fix any (more)
+        int n=0;
+        double * newLower = analyzeResults_;
+        double * objLower = newLower+numberIntegers_;
+        double * newUpper = objLower+numberIntegers_;
+        double * objUpper = newUpper+numberIntegers_;
+        for (int i=0;i<numberIntegers_;i++) {
+          if (objLower[i]>newCutoff) {
+            n++;
+            if (objUpper[i]>newCutoff) {
+              newCutoff = -COIN_DBL_MAX;
+              break;
+            }
+          } else if (objUpper[i]>newCutoff) {
+            n++;
+          }
+        }
+        if (newCutoff==-COIN_DBL_MAX) {
+          printf("Root analysis says finished\n");
+        } else if (n>numberFixedNow_) {
+          printf("%d more fixed by analysis - now %d\n",n-numberFixedNow_,n);
+          numberFixedNow_=n;
+        }
+      }
+      if (eventHandler) {
+        if (!eventHandler->event(ClpEventHandler::solution)) {
+          eventHappened_=true; // exit
+        }
+      }
+      // Do from deepest
+      tree_->cleanTree(this, newCutoff,bestPossibleObjective_) ;
+      nodeCompare_->newSolution(this) ;
+      nodeCompare_->newSolution(this,continuousObjective_,
+                                continuousInfeasibilities_) ;
+      tree_->setComparison(*nodeCompare_) ;
+      if (tree_->empty())
+	break; // finished
+    }
+    cutoff = getCutoff() ;
+    /*
+      Periodic activities: Opportunities to
+      + tweak the nodeCompare criteria,
+      + check if we've closed the integrality gap enough to quit, 
+      + print a summary line to let the user know we're working
+    */
+    if ((numberNodes_%1000) == 0) {
+      bool redoTree=nodeCompare_->every1000Nodes(this, numberNodes_) ;
+      // redo tree if wanted
+      if (redoTree)
+	tree_->setComparison(*nodeCompare_) ;
+    }
+    if ((numberNodes_%printFrequency_) == 0) {
+      int j ;
+      int nNodes = tree_->size() ;
+      bestPossibleObjective_ = 1.0e100 ;
+      for (j = 0;j < nNodes;j++) {
+	CbcNode * node = tree_->nodePointer(j) ;
+	if (node&&node->objectiveValue() < bestPossibleObjective_)
+	  bestPossibleObjective_ = node->objectiveValue() ;
+      }
+      messageHandler()->message(CBC_STATUS,messages())
+	<< numberNodes_<< nNodes<< bestObjective_<< bestPossibleObjective_
+	<< CoinMessageEol ;
+      if (eventHandler) {
+        if (!eventHandler->event(ClpEventHandler::treeStatus)) {
+          eventHappened_=true; // exit
+        }
+      }
+    }
+    // If no solution but many nodes - signal change in strategy
+    if (numberNodes_>2*numberObjects_+1000&&stateOfSearch_!=2)
+      stateOfSearch_=3;
+    // See if can stop on gap
+    double testGap = CoinMax(dblParam_[CbcAllowableGap],
+			     CoinMax(fabs(bestObjective_),fabs(bestPossibleObjective_))
+			     *dblParam_[CbcAllowableFractionGap]);
+    if (bestObjective_-bestPossibleObjective_ < testGap && getCutoffIncrement()>=0.0) {
+      stoppedOnGap_ = true ;
+    }
+
+#   ifdef CHECK_NODE_FULL
+    verifyTreeNodes(tree_,*this) ;
+#   endif
+#   ifdef CHECK_CUT_COUNTS
+    verifyCutCounts(tree_,*this) ;
+#   endif
+    
+    /*
+      Now we come to the meat of the loop. To create the active subproblem, we'll
+      pop the most promising node in the live set, rebuild the subproblem it
+      represents, and then execute the current arm of the branch to create the
+      active subproblem.
+    */
+    CbcNode *node = tree_->bestNode(cutoff) ;
+    // Possible one on tree worse than cutoff
+    if (!node)
+      continue;
+    // Solve node
+    int status;
+    int numberNewNodes;
+    CbcNode ** newNodes = solveOneNode(-1,node,numberNewNodes,status);
+    // put nodes back on tree
+    for (int iPush = 0; iPush<numberNewNodes;iPush++) {
+      tree_->push(newNodes[iPush]) ;
+    }      
+    delete [] newNodes;
+    if (status==2) {
+      /*
+        The next block of code is executed if we've
+        aborted because we hit one of the limits. Clean up by deleting the live set
+        and break out of the node processing loop.
+      */
+      tree_->cleanTree(this,-COIN_DBL_MAX,bestPossibleObjective_) ;
+      delete nextRowCut_;
+      // We need to get rid of node if is has already been popped from tree
+      //if (!nodeOnTree&&!stoppedOnGap_&&node!=rootNode)
+      //delete node;
+      double totalTime = CoinCpuTime()-dblParam_[CbcStartSeconds] ;
+      if (stoppedOnGap_) {
+        messageHandler()->message(CBC_GAP,messages())
+          << bestObjective_-bestPossibleObjective_
+          << dblParam_[CbcAllowableGap]
+          << dblParam_[CbcAllowableFractionGap]*100.0
+          << CoinMessageEol ;
+        secondaryStatus_ = 2;
+        status_ = 0 ;
+      } else if (isNodeLimitReached()) {
+        handler_->message(CBC_MAXNODES,messages_) << CoinMessageEol ;
+        secondaryStatus_ = 3;
+        status_ = 1 ;
+      } else if (totalTime >= dblParam_[CbcMaximumSeconds]) {
+        handler_->message(CBC_MAXTIME,messages_) << CoinMessageEol ; 
+        secondaryStatus_ = 4;
+        status_ = 1 ;
+      } else if (eventHappened_) {
+        handler_->message(CBC_EVENT,messages_) << CoinMessageEol ; 
+        secondaryStatus_ = 5;
+        status_ = 5 ;
+      } else { 
+        handler_->message(CBC_MAXSOLS,messages_) << CoinMessageEol ;
+        secondaryStatus_ = 6;
+        status_ = 1 ;
+      }
+      break ;
+    } else {
+      /*
+        Delete cuts to get back to the original system.
+        
+        I'm thinking this is redundant --- the call to addCuts that conditions entry
+        to this code block also performs this action.
+      */
+      int numberToDelete = getNumRows()-numberRowsAtContinuous_ ;
+      if (numberToDelete) {
+        int * delRows = new int[numberToDelete] ;
+	int i ;
+	for (i = 0 ; i < numberToDelete ; i++) 
+          delRows[i] = i+numberRowsAtContinuous_ ; 
+	solver_->deleteRows(numberToDelete,delRows) ;
+	delete [] delRows ;
+      }
+    }
+  }
+  /*
+    That's it, we've exhausted the search tree, or broken out of the loop because
+    we hit some limit on evaluation.
+    
+    We may have got an intelligent tree so give it one more chance
+  */
+  // Tell solver we are not in Branch and Cut
+  solver_->setHintParam(OsiDoInBranchAndCut,false,OsiHintDo,NULL) ;
+  tree_->endSearch();
+  //  If we did any sub trees - did we give up on any?
+  if ( numberStoppedSubTrees_)
+    status_=1;
+  if (!status_) {
+    bestPossibleObjective_=bestObjective_;
+    handler_->message(CBC_END_GOOD,messages_)
+      << bestObjective_ << numberIterations_ << numberNodes_
+      << CoinMessageEol ;
+  } else {
+    handler_->message(CBC_END,messages_)
+      << bestObjective_ <<bestPossibleObjective_
+      << numberIterations_ << numberNodes_
+      << CoinMessageEol ;
+  }
+  if (statistics_) {
+    // report in some way
+    int * lookup = new int[numberObjects_];
+    int i;
+    for (i=0;i<numberObjects_;i++) 
+      lookup[i]=-1;
+    bool goodIds=true;
+    for (i=0;i<numberObjects_;i++) {
+      int id = object_[i]->id();
+      int iColumn = object_[i]->columnNumber();
+      if (iColumn<0)
+        iColumn = id+numberColumns;
+      if(id>=0&&id<numberObjects_) {
+        if (lookup[id]==-1) {
+          lookup[id]=iColumn;
+        } else {
+          goodIds=false;
+          break;
+        }
+      } else {
+        goodIds=false;
+        break;
+      }
+    }
+    if (!goodIds) {
+      delete [] lookup;
+      lookup=NULL;
+    }
+    if (doStatistics==3) {
+      printf("  node parent depth column   value                    obj      inf\n");
+      for ( i=0;i<numberNodes2_;i++) {
+        statistics_[i]->print(lookup);
+      }
+    }
+    if (doStatistics>1) {
+      // Find last solution
+      int k;
+      for (k=numberNodes2_-1;k>=0;k--) {
+        if (statistics_[k]->endingObjective()!=COIN_DBL_MAX&&
+            !statistics_[k]->endingInfeasibility())
+          break;
+      }
+      if (k>=0) {
+        int depth=statistics_[k]->depth();
+        int * which = new int[depth+1];
+        for (i=depth;i>=0;i--) {
+          which[i]=k;
+          k=statistics_[k]->parentNode();
+        }
+        printf("  node parent depth column   value                    obj      inf\n");
+        for (i=0;i<=depth;i++) {
+          statistics_[which[i]]->print(lookup);
+        }
+        delete [] which;
+      }
+    }
+    // now summary
+    int maxDepth=0;
+    double averageSolutionDepth=0.0;
+    int numberSolutions=0;
+    double averageCutoffDepth=0.0;
+    double averageSolvedDepth=0.0;
+    int numberCutoff=0;
+    int numberDown=0;
+    int numberFirstDown=0;
+    double averageInfDown=0.0;
+    double averageObjDown=0.0;
+    int numberCutoffDown=0;
+    int numberUp=0;
+    int numberFirstUp=0;
+    double averageInfUp=0.0;
+    double averageObjUp=0.0;
+    int numberCutoffUp=0;
+    double averageNumberIterations1=0.0;
+    double averageValue=0.0;
+    for ( i=0;i<numberNodes2_;i++) {
+      int depth =  statistics_[i]->depth(); 
+      int way =  statistics_[i]->way(); 
+      double value = statistics_[i]->value(); 
+      double startingObjective =  statistics_[i]->startingObjective(); 
+      int startingInfeasibility = statistics_[i]->startingInfeasibility(); 
+      double endingObjective = statistics_[i]->endingObjective(); 
+      int endingInfeasibility = statistics_[i]->endingInfeasibility(); 
+      maxDepth = CoinMax(depth,maxDepth);
+      // Only for completed
+      averageNumberIterations1 += statistics_[i]->numberIterations();
+      averageValue += value;
+      if (endingObjective!=COIN_DBL_MAX&&!endingInfeasibility) {
+        numberSolutions++;
+        averageSolutionDepth += depth;
+      }
+      if (endingObjective==COIN_DBL_MAX) {
+        numberCutoff++;
+        averageCutoffDepth += depth;
+        if (way<0) {
+          numberDown++;
+          numberCutoffDown++;
+          if (way==-1)
+            numberFirstDown++;
+        } else {
+          numberUp++;
+          numberCutoffUp++;
+          if (way==1)
+            numberFirstUp++;
+        }
+      } else {
+        averageSolvedDepth += depth;
+        if (way<0) {
+          numberDown++;
+          averageInfDown += startingInfeasibility-endingInfeasibility;
+          averageObjDown += endingObjective-startingObjective;
+          if (way==-1)
+            numberFirstDown++;
+        } else {
+          numberUp++;
+          averageInfUp += startingInfeasibility-endingInfeasibility;
+          averageObjUp += endingObjective-startingObjective;
+          if (way==1)
+            numberFirstUp++;
+        }
+      }
+    }
+    // Now print
+    if (numberSolutions)
+      averageSolutionDepth /= (double) numberSolutions;
+    int numberSolved = numberNodes2_-numberCutoff;
+    double averageNumberIterations2=numberIterations_-averageNumberIterations1;
+    if(numberCutoff) {
+      averageCutoffDepth /= (double) numberCutoff;
+      averageNumberIterations2 /= (double) numberCutoff;
+    }
+    if (numberNodes2_) 
+      averageValue /= (double) numberNodes2_;
+    if (numberSolved) {
+      averageNumberIterations1 /= (double) numberSolved;
+      averageSolvedDepth /= (double) numberSolved;
+    }
+    printf("%d solution(s) were found (by branching) at an average depth of %g\n",
+           numberSolutions,averageSolutionDepth);
+    printf("average value of variable being branched on was %g\n",
+           averageValue);
+    printf("%d nodes were cutoff at an average depth of %g with iteration count of %g\n",
+           numberCutoff,averageCutoffDepth,averageNumberIterations2);
+    printf("%d nodes were solved at an average depth of %g with iteration count of %g\n",
+           numberSolved,averageSolvedDepth,averageNumberIterations1);
+    if (numberDown) {
+      averageInfDown /= (double) numberDown;
+      averageObjDown /= (double) numberDown;
+    }
+    printf("Down %d nodes (%d first, %d second) - %d cutoff, rest decrease numinf %g increase obj %g\n",
+           numberDown,numberFirstDown,numberDown-numberFirstDown,numberCutoffDown,
+           averageInfDown,averageObjDown);
+    if (numberUp) {
+      averageInfUp /= (double) numberUp;
+      averageObjUp /= (double) numberUp;
+    }
+    printf("Up %d nodes (%d first, %d second) - %d cutoff, rest decrease numinf %g increase obj %g\n",
+           numberUp,numberFirstUp,numberUp-numberFirstUp,numberCutoffUp,
+           averageInfUp,averageObjUp);
+    for ( i=0;i<numberNodes2_;i++) 
+      delete statistics_[i];
+    delete [] statistics_;
+    statistics_=NULL;
+    delete [] lookup;
+  }
+/*
+  If we think we have a solution, restore and confirm it with a call to
+  setBestSolution().  We need to reset the cutoff value so as not to fathom
+  the solution on bounds.  Note that calling setBestSolution( ..., true)
+  leaves the continuousSolver_ bounds vectors fixed at the solution value.
+
+  Running resolve() here is a failsafe --- setBestSolution has already
+  reoptimised using the continuousSolver_. If for some reason we fail to
+  prove optimality, run the problem again after instructing the solver to
+  tell us more.
+
+  If all looks good, replace solver_ with continuousSolver_, so that the
+  outside world will be able to obtain information about the solution using
+  public methods.
+*/
+  if (bestSolution_) {
+    setCutoff(1.0e50) ; // As best solution should be worse than cutoff
+    phase_=5;
+    setBestSolution(CBC_SOLUTION,bestObjective_,bestSolution_,true) ;
+    continuousSolver_->resolve() ;
+    if (!continuousSolver_->isProvenOptimal()) {
+      continuousSolver_->messageHandler()->setLogLevel(2) ;
+      continuousSolver_->initialSolve() ;
+    }
+    delete solver_ ;
+    solver_ = continuousSolver_ ;
+    setPointers(solver_);
+    continuousSolver_ = NULL ;
+  }
+  /*
+    Clean up dangling objects. continuousSolver_ may already be toast.
+  */
+  delete [] whichGenerator_ ;
+  whichGenerator_=NULL;
+  delete [] lowerBefore ;
+  delete [] upperBefore ;
+  delete [] walkback_ ;
+  walkback_ = NULL ;
+  delete [] addedCuts_ ;
+  addedCuts_ = NULL ;
+  if (continuousSolver_) {
+    delete continuousSolver_ ;
+    continuousSolver_ = NULL ;
+  }
+  /*
+    Destroy global cuts by replacing with an empty OsiCuts object.
+  */
+  globalCuts_= OsiCuts() ;
+  if (strategy_&&strategy_->preProcessState()>0) {
+    // undo preprocessing
+    CglPreProcess * process = strategy_->process();
+    assert (process);
+    int n = originalSolver->getNumCols();
+    if (bestSolution_) {
+      delete [] bestSolution_;
+      bestSolution_ = new double [n];
+      process->postProcess(*solver_);
+    }
+    strategy_->deletePreProcess();
+    // Solution now back in originalSolver
+    delete solver_;
+    solver_=originalSolver;
+    if (bestSolution_)
+      memcpy(bestSolution_,solver_->getColSolution(),n*sizeof(double));
+  }
+  return ;
+}
+/* Input one node output N nodes to put on tree and optional solution update
+   This should be able to operate in parallel so is given a solver and is const(ish)
+   However we will need to keep an array of solver_ and bases and more
+   status is 0 for normal, 1 if solution, 2 if should stop
+   Calling code should always push nodes back on tree
+ */
+CbcNode ** 
+CbcModel::solveOneNode(int whichSolver,CbcNode * node, 
+                    int & numberNodesOutput, int & status) 
+{
+  numberNodesOutput=0;
+  status=0;
+  // Maximum number of new nodes will be known
+  // For normal case can be 2 (old + new)
+  int maximumNewNodes=2+(1<<sizeMiniTree_);
+  CbcNode ** newNodes = new CbcNode * [maximumNewNodes];
+  
+  currentNode_=node; // so can be accessed elsewhere
+#ifdef CBC_DEBUG
+  printf("%d unsat, way %d, obj %g est %g\n",
+         node->numberUnsatisfied(),node->way(),node->objectiveValue(),
+         node->guessedObjectiveValue());
+#endif
+  // Save clone in branching decision
+  if(branchingMethod_)
+    branchingMethod_->saveBranchingObject(node->modifiableBranchingObject());
+  // Say not on optimal path
+  bool onOptimalPath=false;
+#   ifdef CHECK_NODE
+  /*
+    WARNING: The use of integerVariable_[*] here will break as soon as the
+    branching object is something other than an integer variable.
+    This needs some thought.
+  */
+  printf("Node %x popped from tree - %d left, %d count\n",node,
+         node->nodeInfo()->numberBranchesLeft(),
+         node->nodeInfo()->numberPointingToThis()) ;
+  printf("\tdepth = %d, z =  %g, unsat = %d, var = %d.\n",
+         node->depth(),node->objectiveValue(),
+         node->numberUnsatisfied(),
+         integerVariable_[node->variable()]) ;
+#   endif
+  
+  /*
+    Rebuild the subproblem for this node:	 Call addCuts() to adjust the model
+    to recreate the subproblem for this node (set proper variable bounds, add
+    cuts, create a basis).  This may result in the problem being fathomed by
+    bound or infeasibility. Returns 1 if node is fathomed.
+    Execute the current arm of the branch: If the problem survives, save the
+    resulting variable bounds and call branch() to modify variable bounds
+    according to the current arm of the branching object. If we're processing
+    the final arm of the branching object, flag the node for removal from the
+    live set.
+  */
+  CbcNodeInfo * nodeInfo = node->nodeInfo() ;
+  // empty basis
+  CoinWarmStartBasis * lastws = new CoinWarmStartBasis();
+  int numberColumns = getNumCols() ;
+  double * lowerBefore = new double[numberColumns];
+  double * upperBefore = new double[numberColumns];
+  if (!addCuts(node,lastws,numberFixedNow_>numberFixedAtRoot_)) {
+    int i ;
+    const double * lower = getColLower() ;
+    const double * upper = getColUpper() ;
+    for (i = 0 ; i < numberColumns ; i++) {
+      lowerBefore[i]= lower[i] ;
+      upperBefore[i]= upper[i] ;
+    }
+    bool deleteNode ;
+    if (node->branch()) { 
+      // set nodenumber correctly
+      node->nodeInfo()->setNodeNumber(numberNodes2_);
+      if (statistics_) {
+        if (numberNodes2_==maximumStatistics_) {
+          maximumStatistics_ = 2*maximumStatistics_;
+          CbcStatistics ** temp = new CbcStatistics * [maximumStatistics_];
+          memset(temp,0,maximumStatistics_*sizeof(CbcStatistics *));
+          memcpy(temp,statistics_,numberNodes2_*sizeof(CbcStatistics *));
+          delete [] statistics_;
+          statistics_=temp;
+        }
+        assert (!statistics_[numberNodes2_]);
+        statistics_[numberNodes2_]=new CbcStatistics(node);
+      }
+      numberNodes2_++;
+      newNodes[numberNodesOutput++]=node;
+      deleteNode = false ;
+#	ifdef CHECK_NODE
+      printf("Node %x pushed back on tree - %d left, %d count\n",node,
+             nodeInfo->numberBranchesLeft(),
+             nodeInfo->numberPointingToThis()) ;
+#	endif
+    } else { 
+      deleteNode = true ;
+    }
+    
+    if ((specialOptions_&1)!=0) {
+      /*
+        This doesn't work as intended --- getRowCutDebugger will return null
+        unless the current feasible solution region includes the optimal solution
+        that RowCutDebugger knows. There's no way to tell inactive from off the
+        optimal path.
+      */
+      const OsiRowCutDebugger *debugger = solver_->getRowCutDebugger() ;
+      if (debugger) {
+        onOptimalPath=true;
+        printf("On optimal path\n") ;
+      }
+    }
+    /*
+      Reoptimize, possibly generating cuts and/or using heuristics to find
+      solutions.  Cut reference counts are unaffected unless we lose feasibility,
+      in which case solveWithCuts() will make the adjustment.
+    */
+    phase_=2;
+    OsiCuts cuts = OsiCuts() ;
+    int saveNumber = numberIterations_;
+    bool feasible = solveWithCuts(cuts,maximumCutPasses_,node);
+    if (statistics_) {
+      assert (numberNodes2_);
+      assert (statistics_[numberNodes2_-1]);
+      assert (statistics_[numberNodes2_-1]->node()==numberNodes2_-1);
+      statistics_[numberNodes2_-1]->endOfBranch(numberIterations_-saveNumber,
+                                               feasible ? solver_->getObjValue()
+                                               : COIN_DBL_MAX);
+    }
+    /*
+      Check for abort on limits: node count, solution count, time, integrality gap.
+    */
+    double totalTime = CoinCpuTime()-dblParam_[CbcStartSeconds] ;
+    if (numberNodes_ < intParam_[CbcMaxNumNode] &&
+        numberSolutions_ < intParam_[CbcMaxNumSol] &&
+        totalTime < dblParam_[CbcMaximumSeconds] &&
+        !stoppedOnGap_&&!eventHappened_) {
+      /*
+        Are we still feasible? If so, create a node and do the work to attach a
+        branching object, reoptimising as needed if chooseBranch() identifies
+        monotone objects.
+        
+        Finally, attach a partial nodeInfo object and store away any cuts that we
+        created back in solveWithCuts. addCuts() will also deal with the cut
+        reference counts.
+      */
+      if (onOptimalPath)
+        assert (feasible);
+      bool checkingNode=false;
+      int anyAction;
+      double direction =  dblParam_[CbcOptimizationDirection];
+      bool resolved = false;
+      CbcNode * newNode=NULL;
+      if (feasible) {
+        newNode = new CbcNode ;
+        newNode->setObjectiveValue(direction*solver_->getObjValue()) ;
+        anyAction =-1 ;
+        resolved = false ;
+        if (newNode->objectiveValue() >= getCutoff()) 
+          anyAction=-2;
+        // only allow twenty passes
+        int numberPassesLeft=20;
+        checkingNode=true;
+        OsiSolverBranch * branches=NULL;
+        while (anyAction == -1) { 
+          newNode->setObjectiveValue(direction*solver_->getObjValue()) ;
+          if (numberBeforeTrust_==0 ) {
+            anyAction = newNode->chooseBranch(this,node,numberPassesLeft) ;
+          } else {
+            anyAction = newNode->chooseDynamicBranch(this,node,branches,numberPassesLeft) ;
+            if (anyAction==-3) 
+              anyAction = newNode->chooseBranch(this,node,numberPassesLeft) ; // dynamic did nothing
+          }
+          if (onOptimalPath)
+            assert (anyAction!=-2); // can be useful but gives false positives on strong
+          numberPassesLeft--;
+          if (numberPassesLeft<=-1) {
+            if (!numberLongStrong_)
+              messageHandler()->message(CBC_WARNING_STRONG,
+                                        messages()) << CoinMessageEol ;
+            numberLongStrong_++;
+          }
+          if (anyAction == -1) {
+            // can do quick optimality check
+            int easy=2;
+            solver_->setHintParam(OsiDoInBranchAndCut,true,OsiHintDo,&easy) ;
+            feasible = resolve() ;
+            solver_->setHintParam(OsiDoInBranchAndCut,true,OsiHintDo,NULL) ;
+            resolved = true ;
+            if (problemFeasibility_->feasible(this,0)<0) {
+              feasible=false; // pretend infeasible
+            }
+            if (feasible) {
+              newNode->setObjectiveValue(direction*solver_->getObjValue()) ;
+              //int nfix=
+              reducedCostFix() ;
+              //if (nfix)
+              //printf("%d fixed after resolve\n",nfix);
+	      if (newNode->objectiveValue() >= getCutoff()) 
+		anyAction=-2;
+            } else {
+              anyAction = -2 ;
+            }
+          }
+        }
+        if (anyAction >= 0) {
+          if (resolved) {
+            bool needValidSolution = (newNode->variable() < 0) ;
+            takeOffCuts(cuts,needValidSolution,NULL) ; 
+#	      ifdef CHECK_CUT_COUNTS
+            { printf("Number of rows after chooseBranch fix (node)"
+                     "(active only) %d\n",
+                     numberRowsAtContinuous_+numberNewCuts_+
+                     numberOldActiveCuts_) ;
+            const CoinWarmStartBasis* debugws =
+              dynamic_cast<const CoinWarmStartBasis*>
+              (solver_->getWarmStart()) ;
+            debugws->print() ;
+            delete debugws ; }
+#	      endif
+          }
+          if (anyAction==0||!newNode->numberUnsatisfied()) {
+            delete [] branches;
+            newNode->createInfo(this,node,lastws,lowerBefore,upperBefore,
+                                numberOldActiveCuts_,numberNewCuts_) ;
+            if (newNode->numberUnsatisfied()) {
+              newNode->initializeInfo() ;
+              newNode->nodeInfo()->addCuts(cuts,newNode->numberBranches(),
+					   whichGenerator_) ;
+            }
+          } else {
+            // mini tree
+            int numberBranches=anyAction;
+            int numberResults=1<<numberBranches;
+            OsiSolverResult * result = new OsiSolverResult[numberResults];
+            double * lowerBefore2 = new double[numberColumns];
+            double * upperBefore2 = new double[numberColumns];
+            int i ;
+            const double * lower = solver_->getColLower() ;
+            const double * upper = solver_->getColUpper() ;
+            for (i = 0 ; i < numberColumns ; i++) {
+              lowerBefore2[i]= lower[i] ;
+              upperBefore2[i]= upper[i] ;
+            }
+            int numberIterations;
+            int numberSolves;
+            int numberGood = solver_->solveBranches(numberBranches,branches,result,
+                                                    numberSolves,numberIterations);
+            numberIterations_ += numberIterations;
+            // Add in solves needed to get to leaves
+            numberNodes_ += (numberSolves-numberGood);
+            int numberCutsAdd=-1; // We will be taking off one anyway
+            int saveMini = sizeMiniTree_;
+            sizeMiniTree_=0;
+            int saveNumber = numberNodesOutput;
+            for (int iResult=0;iResult<numberGood;iResult++) {
+              if (result[iResult].objectiveValue()<1.0e50) {
+                // put in correct bounds etc
+                solver_->setColLower(lowerBefore2);
+                solver_->setColUpper(upperBefore2);
+                result[iResult].restoreResult(*solver_);
+                numberNodes_++;
+#if 0
+                // need to tell solver that current factorization is no good
+                // should be better way
+#ifdef COIN_USE_CLP
+                OsiClpSolverInterface * clpSolver 
+                  = dynamic_cast<OsiClpSolverInterface *> (solver_);
+                if (clpSolver) 
+                  clpSolver->getModelPtr()->setWhatsChanged(clpSolver->getModelPtr()->whatsChanged()&(~512));
+#endif
+                solver_->resolve();
+                assert (!solver_->getIterationCount());
+                printf("res obj %g was %g\n",solver_->getObjValue(),
+                       result[iResult].objectiveValue());
+#endif
+                bool checkingNode=false;
+                bool feasible = true;
+                int anyAction;
+                CbcNode * newNode2= new CbcNode ;
+                newNode2->setObjectiveValue(result[iResult].objectiveValue()) ;
+                anyAction =-1 ;
+                // only allow twenty passes
+                int numberPassesLeft=20;
+                checkingNode=true;
+                OsiSolverBranch * branches=NULL;
+                while (anyAction == -1) { 
+                  if (numberBeforeTrust_==0 ) {
+                    anyAction = newNode2->chooseBranch(this,node,numberPassesLeft) ;
+                  } else {
+                    anyAction = newNode2->chooseDynamicBranch(this,node,branches,numberPassesLeft) ;
+                    if (anyAction==-3) 
+                      anyAction = newNode2->chooseBranch(this,node,numberPassesLeft) ; // dynamic did nothing
+                  }
+                  numberPassesLeft--;
+                  if (anyAction == -1) {
+                    // can do quick optimality check
+                    int easy=2;
+                    solver_->setHintParam(OsiDoInBranchAndCut,true,OsiHintDo,&easy) ;
+                    feasible = resolve() ;
+                    solver_->setHintParam(OsiDoInBranchAndCut,true,OsiHintDo,NULL) ;
+                    if (problemFeasibility_->feasible(this,0)<0) {
+                      feasible=false; // pretend infeasible
+                    }
+                    if (feasible) {
+                      newNode2->setObjectiveValue(direction*solver_->getObjValue()) ;
+                      reducedCostFix() ;
+                      if (newNode2->objectiveValue() >= getCutoff()) 
+                        anyAction=-2;
+                    } else {
+                      anyAction = -2 ;
+                    }
+                  }
+                }
+                // May have slipped through i.e. anyAction == 0 and objective above cutoff
+                if ( anyAction ==0 ) {
+                  assert (newNode2);
+                  if (newNode2->objectiveValue() >= getCutoff()) 
+                    anyAction = -2; // say bad after all
+                }
+                if (anyAction >= 0) {
+                  if (anyAction==0||!newNode2->numberUnsatisfied()) {
+                    newNode2->createInfo(this,node,lastws,lowerBefore,upperBefore,
+                                        numberOldActiveCuts_,numberNewCuts_) ;
+                    if (newNode2->numberUnsatisfied()) {
+                      newNode2->initializeInfo() ;
+                      newNode2->nodeInfo()->addCuts(cuts,newNode2->numberBranches(),
+                                                   whichGenerator_) ;
+                    }
+                  }
+                }
+                /*
+                  If we end up infeasible, we can delete the new node immediately. Since this
+                  node won't be needing the cuts we collected, decrement the reference counts.
+                  If we are feasible, then we'll be placing this node into the live set, so
+                  increment the reference count in the current (parent) nodeInfo.
+                */
+                if (anyAction == -2) { 
+                  delete newNode2 ;
+                  newNode2 = NULL ;
+#if 0
+                  // say strong doing well
+                  if (checkingNode)
+                    setSpecialOptions(specialOptions_|8);
+#endif
+#if 0
+                  for (i = 0 ; i < currentNumberCuts_ ; i++) {
+                    if (addedCuts_[i]) {
+                      if (!addedCuts_[i]->decrement(1)) {
+                        delete addedCuts_[i] ;
+                        addedCuts_[i]=NULL;
+                      }
+                    }
+                  }
+#endif
+                } else {
+                  nodeInfo->increment() ;
+#if 0
+                  if ((numberNodes_%20)==0) {
+                    // say strong not doing as well
+                    setSpecialOptions(specialOptions_&~8);
+                  }
+#endif
+                }
+                /*
+                  At this point, there are three possibilities:
+                  * We have a live node (variable() >= 0) which will require further
+                  branching to resolve. Before we push it onto the search tree, try for
+                  a heuristic solution.
+                  * We have a solution, in which case newNode is non-null but we have no
+                  branching variable. Decrement the cut counts and save the solution.
+                  * The node was found to be infeasible, in which case it's already been
+                  deleted, and newNode is null.
+                  
+                */
+                if (eventHandler()) {
+                  if (!eventHandler()->event(ClpEventHandler::node)) {
+                    eventHappened_=true; // exit
+                  }
+                }
+                assert (!newNode2 || newNode2->objectiveValue() <= getCutoff()) ;
+                if (statistics_) {
+                  assert (numberNodes2_);
+                  assert (statistics_[numberNodes2_-1]);
+                  assert (statistics_[numberNodes2_-1]->node()==numberNodes2_-1);
+                  if (newNode2)
+                    statistics_[numberNodes2_-1]->updateInfeasibility(newNode2->numberUnsatisfied());
+                  else
+                    statistics_[numberNodes2_-1]->sayInfeasible();
+                }
+                if (newNode2) {
+                  if (newNode2->variable() >= 0) {
+                    handler_->message(CBC_BRANCH,messages_)
+                      << numberNodes_<< newNode2->objectiveValue()
+                      << newNode2->numberUnsatisfied()<< newNode2->depth()
+                      << CoinMessageEol ;
+                    // Increment cut counts
+                    numberCutsAdd += newNode2->numberBranches();
+                    double estValue = newNode2->guessedObjectiveValue() ;
+                    int found = -1 ;
+                    double * newSolution = new double [numberColumns] ;
+                    double heurValue = getCutoff() ;
+                    int iHeur ;
+                    for (iHeur = 0 ; iHeur < numberHeuristics_ ; iHeur++) {
+                      double saveValue = heurValue ;
+                      int ifSol = heuristic_[iHeur]->solution(heurValue,newSolution) ;
+                      if (ifSol > 0) {
+                        // new solution found
+                        found = iHeur ;
+                        incrementUsed(newSolution);
+                      } else if (ifSol < 0) {	// just returning an estimate
+                        estValue = CoinMin(heurValue,estValue) ;
+                        heurValue = saveValue ;
+                      } 
+                    }
+                    if (found >= 0) {
+                      setBestSolution(CBC_ROUNDING,heurValue,newSolution) ;
+                      lastHeuristic_ = heuristic_[found];
+                      status=1;
+                    }
+                    delete [] newSolution ;
+                    newNode2->setGuessedObjectiveValue(estValue) ;
+                    newNodes[numberNodesOutput++] = newNode2 ;
+                    nodeInfo->increment();
+                    if (statistics_) {
+                      if (numberNodes2_==maximumStatistics_) {
+                        maximumStatistics_ = 2*maximumStatistics_;
+                        CbcStatistics ** temp = new CbcStatistics * [maximumStatistics_];
+                        memset(temp,0,maximumStatistics_*sizeof(CbcStatistics *));
+                        memcpy(temp,statistics_,numberNodes2_*sizeof(CbcStatistics *));
+                        delete [] statistics_;
+                        statistics_=temp;
+                      }
+                      assert (!statistics_[numberNodes2_]);
+                      statistics_[numberNodes2_]=new CbcStatistics(newNode2);
+                    }
+                    numberNodes2_++;
+#	    ifdef CHECK_NODE
+                    printf("Node %x pushed on tree c\n",newNode2) ;
+#	    endif
+                  } else {
+#if 0
+                    for (i = 0 ; i < currentNumberCuts_ ; i++) {
+                      if (addedCuts_[i]) {
+                        if (!addedCuts_[i]->decrement(1)) {
+                          delete addedCuts_[i] ;
+                          addedCuts_[i]=NULL;
+                        }
+                      }
+                    }
+#endif 
+                    double objectiveValue = newNode2->objectiveValue();
+                    setBestSolution(CBC_SOLUTION,objectiveValue,
+                                    solver_->getColSolution()) ;
+                    lastHeuristic_ = NULL;
+                    incrementUsed(solver_->getColSolution());
+                    //assert(nodeInfo->numberPointingToThis() <= 2) ;
+                    // avoid accidental pruning, if newNode was final branch arm
+                    nodeInfo->increment();
+                    delete newNode2 ;
+                    nodeInfo->decrement() ;
+                    status=1;
+                  }
+                }
+              }
+            }
+            if (numberCutsAdd>0) {
+              for (i = 0;i < currentNumberCuts_;i++) {
+                if (addedCuts_[i]) {
+#		ifdef CHECK_CUT_COUNTS
+                  printf("Count on cut %x increased by %d\n",addedCuts_[i],
+                         numberCutsAdd) ;
+#		endif
+                  addedCuts_[i]->increment(numberCutsAdd) ;
+                }
+              }
+            }      
+            sizeMiniTree_=saveMini;
+            delete [] result;
+            delete [] branches;
+            delete newNode ;
+            newNode = NULL ;
+            delete [] lowerBefore2;
+            delete [] upperBefore2;
+            if (saveNumber < numberNodesOutput)
+              anyAction = -4;
+            else
+              anyAction=-2;
+          }
+        }
+      } else {
+        anyAction = -2 ;
+      }
+#if 0
+      if (numberNodesOutput) {
+        if (!sizeMiniTree_)
+          assert(newNode== newNodes[numberNodesOutput-1]);
+        newNode= newNodes[numberNodesOutput-1];
+      } else {
+        assert (!newNode);
+      }
+#endif
+      // May have slipped through i.e. anyAction == 0 and objective above cutoff
+      if ( anyAction >=0 ) {
+        assert (newNode);
+        if (newNode->objectiveValue() >= getCutoff()) 
+          anyAction = -2; // say bad after all
+      }
+      /*
+        If we end up infeasible, we can delete the new node immediately. Since this
+        node won't be needing the cuts we collected, decrement the reference counts.
+        If we are feasible, then we'll be placing this node into the live set, so
+        increment the reference count in the current (parent) nodeInfo.
+      */
+      if (anyAction == -2) { 
+        delete newNode ;
+        newNode = NULL ;
+        // say strong doing well
+        if (checkingNode)
+          setSpecialOptions(specialOptions_|8);
+        // switch off any hot start
+        hotstartStrategy_=0;
+        for (i = 0 ; i < currentNumberCuts_ ; i++) {
+          if (addedCuts_[i]) {
+            if (!addedCuts_[i]->decrement(1)) {
+              delete addedCuts_[i] ;
+              addedCuts_[i]=NULL;
+            }
+          }
+        }
+      }	else if (anyAction>=0) {
+        nodeInfo->increment() ;
+        if ((numberNodes_%20)==0) {
+          // say strong not doing as well
+          setSpecialOptions(specialOptions_&~8);
+        }
+      }
+      /*
+        At this point, there are three possibilities:
+        * We have a live node (variable() >= 0) which will require further
+        branching to resolve. Before we push it onto the search tree, try for
+        a heuristic solution.
+        * We have a solution, in which case newNode is non-null but we have no
+        branching variable. Decrement the cut counts and save the solution.
+        * The node was found to be infeasible, in which case it's already been
+        deleted, and newNode is null.
+        
+      */
+      if (eventHandler()) {
+        if (!eventHandler()->event(ClpEventHandler::node)) {
+          eventHappened_=true; // exit
+        }
+      }
+      assert (!newNode || newNode->objectiveValue() <= getCutoff()) ;
+      if (statistics_) {
+        assert (numberNodes2_);
+        assert (statistics_[numberNodes2_-1]);
+        assert (statistics_[numberNodes2_-1]->node()==numberNodes2_-1);
+        if (newNode)
+          statistics_[numberNodes2_-1]->updateInfeasibility(newNode->numberUnsatisfied());
+        else
+          statistics_[numberNodes2_-1]->sayInfeasible();
+      }
+      if (newNode) {
+        if (newNode->variable() >= 0) {
+          handler_->message(CBC_BRANCH,messages_)
+            << numberNodes_<< newNode->objectiveValue()
+            << newNode->numberUnsatisfied()<< newNode->depth()
+            << CoinMessageEol ;
+          // Increment cut counts (taking off current)
+          int numberLeft = newNode->numberBranches() ;
+          for (i = 0;i < currentNumberCuts_;i++) {
+            if (addedCuts_[i]) {
+#		ifdef CHECK_CUT_COUNTS
+              printf("Count on cut %x increased by %d\n",addedCuts_[i],
+                     numberLeft-1) ;
+#		endif
+              addedCuts_[i]->increment(numberLeft-1) ;
+            }
+          }
+          
+          double estValue = newNode->guessedObjectiveValue() ;
+          int found = -1 ;
+          double * newSolution = new double [numberColumns] ;
+          double heurValue = getCutoff() ;
+          int iHeur ;
+          for (iHeur = 0 ; iHeur < numberHeuristics_ ; iHeur++) {
+            double saveValue = heurValue ;
+            int ifSol = heuristic_[iHeur]->solution(heurValue,newSolution) ;
+            if (ifSol > 0) {
+              // new solution found
+              found = iHeur ;
+              incrementUsed(newSolution);
+            } else if (ifSol < 0) {	// just returning an estimate
+	      estValue = CoinMin(heurValue,estValue) ;
+              heurValue = saveValue ;
+            } 
+          }
+          if (found >= 0) {
+            setBestSolution(CBC_ROUNDING,heurValue,newSolution) ;
+            lastHeuristic_ = heuristic_[found];
+            status=1;
+          }
+          delete [] newSolution ;
+          newNode->setGuessedObjectiveValue(estValue) ;
+          newNodes[numberNodesOutput++] = newNode ;
+          if (statistics_) {
+            if (numberNodes2_==maximumStatistics_) {
+              maximumStatistics_ = 2*maximumStatistics_;
+              CbcStatistics ** temp = new CbcStatistics * [maximumStatistics_];
+              memset(temp,0,maximumStatistics_*sizeof(CbcStatistics *));
+              memcpy(temp,statistics_,numberNodes2_*sizeof(CbcStatistics *));
+              delete [] statistics_;
+              statistics_=temp;
+            }
+            assert (!statistics_[numberNodes2_]);
+            statistics_[numberNodes2_]=new CbcStatistics(newNode);
+          }
+          numberNodes2_++;
+#	    ifdef CHECK_NODE
+          printf("Node %x pushed on tree c\n",newNode) ;
+#	    endif
+        } else {
+          for (i = 0 ; i < currentNumberCuts_ ; i++) {
+            if (addedCuts_[i]) {
+              if (!addedCuts_[i]->decrement(1)) {
+                delete addedCuts_[i] ;
+                addedCuts_[i]=NULL;
+              }
+            }
+          }
+	  double objectiveValue = newNode->objectiveValue();
+          setBestSolution(CBC_SOLUTION,objectiveValue,
+                          solver_->getColSolution()) ;
+          lastHeuristic_ = NULL;
+          incrementUsed(solver_->getColSolution());
+          //assert(nodeInfo->numberPointingToThis() <= 2) ;
+          // avoid accidental pruning, if newNode was final branch arm
+          nodeInfo->increment();
+          delete newNode ;
+          nodeInfo->decrement() ;
+          status=1;
+        }
+      }
+      /*
+        This node has been completely expanded and can be removed from the live
+        set.
+      */
+      if (deleteNode)  
+        delete node ;
+    } else {
+      // max time etc
+      status=2;
+      if (deleteNode)  
+        delete node ;
+    }
+  } else {
+    // node before branching is infeasible (so no nodes output)
+    delete node;
+  }
+  delete lastws;
+  delete [] lowerBefore;
+  delete [] upperBefore;
+  return newNodes;
+}
+#endif
 
 
 // Solve the initial LP relaxation 
@@ -1661,9 +3254,9 @@ CbcModel::CbcModel()
   solver_(NULL),
   ourSolver_(true),
   continuousSolver_(NULL),
+  referenceSolver_(NULL),
   defaultHandler_(true),
   emptyWarmStart_(NULL),
-  basis_(NULL),
   bestObjective_(COIN_DBL_MAX),
   bestPossibleObjective_(COIN_DBL_MAX),
   sumChangeObjective1_(0.0),
@@ -1724,6 +3317,18 @@ CbcModel::CbcModel()
   continuousInfeasibilities_(INT_MAX),
   maximumCutPassesAtRoot_(20),
   maximumCutPasses_(10),
+  maximumWhich_(1000),
+  whichGenerator_(NULL),
+  maximumStatistics_(0),
+  statistics_(NULL),
+  numberFixedAtRoot_(0),
+  numberFixedNow_(0),
+  stoppedOnGap_(false),
+  eventHappened_(false),
+  numberLongStrong_(0),
+  numberOldActiveCuts_(0),
+  numberNewCuts_(0),
+  sizeMiniTree_(0),
   resolveAfterTakeOffCuts_(true)
 {
   intParam_[CbcMaxNumNode] = 2147483647;
@@ -1769,9 +3374,9 @@ CbcModel::CbcModel()
 CbcModel::CbcModel(const OsiSolverInterface &rhs)
 :
   continuousSolver_(NULL),
+  referenceSolver_(NULL),
   defaultHandler_(true),
   emptyWarmStart_(NULL),
-  basis_(NULL) ,
   bestObjective_(COIN_DBL_MAX),
   bestPossibleObjective_(COIN_DBL_MAX),
   sumChangeObjective1_(0.0),
@@ -1825,6 +3430,18 @@ CbcModel::CbcModel(const OsiSolverInterface &rhs)
   continuousInfeasibilities_(INT_MAX),
   maximumCutPassesAtRoot_(20),
   maximumCutPasses_(10),
+  maximumWhich_(1000),
+  whichGenerator_(NULL),
+  maximumStatistics_(0),
+  statistics_(NULL),
+  numberFixedAtRoot_(0),
+  numberFixedNow_(0),
+  stoppedOnGap_(false),
+  eventHappened_(false),
+  numberLongStrong_(0),
+  numberOldActiveCuts_(0),
+  numberNewCuts_(0),
+  sizeMiniTree_(0),
   resolveAfterTakeOffCuts_(true)
 {
   intParam_[CbcMaxNumNode] = 2147483647;
@@ -1854,6 +3471,7 @@ CbcModel::CbcModel(const OsiSolverInterface &rhs)
   handler_->setLogLevel(2);
   messages_ = CbcMessage();
   solver_ = rhs.clone();
+  referenceSolver_ = rhs.clone();
   ourSolver_ = true ;
   cbcColLower_ = NULL;
   cbcColUpper_ = NULL;
@@ -1901,6 +3519,7 @@ CbcModel::CbcModel(const OsiSolverInterface &rhs)
   Assign a solver to the model (model assumes ownership)
 
   The integer variable vector is initialized if it's not already present.
+  If deleteSolver then current solver deleted (if model owned)
 
   Assuming ownership matches usage in OsiSolverInterface
   (cf. assignProblem, loadProblem).
@@ -1916,23 +3535,20 @@ CbcModel::CbcModel(const OsiSolverInterface &rhs)
 	What's done here mimics the CbcModel(OsiSolverInterface) constructor.
 */
 void
-CbcModel::assignSolver(OsiSolverInterface *&solver)
+CbcModel::assignSolver(OsiSolverInterface *&solver, bool deleteSolver)
 
 {
   // Keep the current message level for solver (if solver exists)
   if (solver_)
     solver->messageHandler()->setLogLevel(solver_->messageHandler()->logLevel()) ;
 
-  if (ourSolver_) delete solver_ ;
+  if (ourSolver_&&deleteSolver) delete solver_ ;
   solver_ = solver;
   solver = NULL ;
   ourSolver_ = true ;
 /*
   Basis information is solver-specific.
 */
-  if (basis_)
-  { delete basis_ ;
-    basis_ = 0 ; }
   if (emptyWarmStart_)
   { delete emptyWarmStart_  ;
     emptyWarmStart_ = 0 ; }
@@ -1966,9 +3582,9 @@ CbcModel::assignSolver(OsiSolverInterface *&solver)
 CbcModel::CbcModel(const CbcModel & rhs, bool noTree)
 :
   continuousSolver_(NULL),
+  referenceSolver_(NULL),
   defaultHandler_(rhs.defaultHandler_),
   emptyWarmStart_(NULL),
-  basis_(NULL),
   bestObjective_(rhs.bestObjective_),
   bestPossibleObjective_(rhs.bestPossibleObjective_),
   sumChangeObjective1_(rhs.sumChangeObjective1_),
@@ -2003,6 +3619,18 @@ CbcModel::CbcModel(const CbcModel & rhs, bool noTree)
   continuousInfeasibilities_(rhs.continuousInfeasibilities_),
   maximumCutPassesAtRoot_(rhs.maximumCutPassesAtRoot_),
   maximumCutPasses_( rhs.maximumCutPasses_),
+  maximumWhich_(rhs.maximumWhich_),
+  whichGenerator_(NULL),
+  maximumStatistics_(0),
+  statistics_(NULL),
+  numberFixedAtRoot_(rhs.numberFixedAtRoot_),
+  numberFixedNow_(rhs.numberFixedNow_),
+  stoppedOnGap_(rhs.stoppedOnGap_),
+  eventHappened_(rhs.eventHappened_),
+  numberLongStrong_(rhs.numberLongStrong_),
+  numberOldActiveCuts_(rhs.numberOldActiveCuts_),
+  numberNewCuts_(rhs.numberNewCuts_),
+  sizeMiniTree_(rhs.sizeMiniTree_),
   resolveAfterTakeOffCuts_(rhs.resolveAfterTakeOffCuts_)
 {
   intParam_[CbcMaxNumNode] = rhs.intParam_[CbcMaxNumNode];
@@ -2020,8 +3648,6 @@ CbcModel::CbcModel(const CbcModel & rhs, bool noTree)
   dblParam_[CbcCurrentMinimizationObjectiveValue] = rhs.dblParam_[CbcCurrentMinimizationObjectiveValue];
   dblParam_[CbcStartSeconds] = dblParam_[CbcStartSeconds]; // will be overwritten hopefully
   if (rhs.emptyWarmStart_) emptyWarmStart_ = rhs.emptyWarmStart_->clone() ;
-  if (rhs.basis_) basis_ =
-    dynamic_cast<CoinWarmStartBasis *>(rhs.basis_->clone()) ;
   if (defaultHandler_) {
     handler_ = new CoinMessageHandler();
     handler_->setLogLevel(2);
@@ -2064,6 +3690,10 @@ CbcModel::CbcModel(const CbcModel & rhs, bool noTree)
   } else {
     object_=NULL;
   }
+  if (rhs.referenceSolver_)
+    referenceSolver_ = rhs.referenceSolver_->clone();
+  else
+    referenceSolver_=NULL;
   if (!noTree||!rhs.continuousSolver_)
     solver_ = rhs.solver_->clone();
   else
@@ -2075,6 +3705,8 @@ CbcModel::CbcModel(const CbcModel & rhs, bool noTree)
   } else {
     originalColumns_=NULL;
   }
+  if (maximumWhich_&&rhs.whichGenerator_)
+    whichGenerator_ = CoinCopyOfArray(rhs.whichGenerator_,maximumWhich_);
   nodeCompare_=rhs.nodeCompare_->clone();
   problemFeasibility_=rhs.problemFeasibility_->clone();
   tree_= rhs.tree_->clone();
@@ -2166,7 +3798,7 @@ CbcModel &
 CbcModel::operator=(const CbcModel& rhs)
 {
   if (this!=&rhs) {
-
+    gutsOfDestructor();
     if (defaultHandler_)
     { delete handler_;
       handler_ = NULL; }
@@ -2191,16 +3823,16 @@ CbcModel::operator=(const CbcModel& rhs)
     else
     { continuousSolver_ = 0 ; }
 
+    if (rhs.referenceSolver_)
+    { solver_ = rhs.referenceSolver_->clone() ; }
+    else
+    { referenceSolver_ = NULL ; }
+
     delete emptyWarmStart_ ;
     if (rhs.emptyWarmStart_)
     { emptyWarmStart_ = rhs.emptyWarmStart_->clone() ; }
     else
     { emptyWarmStart_ = 0 ; }
-    delete basis_ ;
-    if (rhs.basis_)
-    { basis_ = dynamic_cast<CoinWarmStartBasis *>(rhs.basis_->clone()) ; }
-    else
-    { basis_ = 0 ; }
 
     bestObjective_ = rhs.bestObjective_;
     bestPossibleObjective_=rhs.bestPossibleObjective_;
@@ -2250,7 +3882,6 @@ CbcModel::operator=(const CbcModel& rhs)
     continuousInfeasibilities_ = rhs.continuousInfeasibilities_;
     maximumCutPassesAtRoot_ = rhs.maximumCutPassesAtRoot_;
     maximumCutPasses_ = rhs.maximumCutPasses_;
-    resolveAfterTakeOffCuts_=rhs.resolveAfterTakeOffCuts_;
     intParam_[CbcMaxNumNode] = rhs.intParam_[CbcMaxNumNode];
     intParam_[CbcMaxNumSol] = rhs.intParam_[CbcMaxNumSol];
     intParam_[CbcFathomDiscipline] = rhs.intParam_[CbcFathomDiscipline];
@@ -2274,6 +3905,25 @@ CbcModel::operator=(const CbcModel& rhs)
     delete [] generator_;
     delete [] virginGenerator_;
     delete [] heuristic_;
+    maximumWhich_ = rhs.maximumWhich_;
+    delete [] whichGenerator_;
+    whichGenerator_ = NULL;
+    if (maximumWhich_&&rhs.whichGenerator_)
+      whichGenerator_ = CoinCopyOfArray(rhs.whichGenerator_,maximumWhich_);
+    for (i=0;i<maximumStatistics_;i++)
+      delete statistics_[i];
+    delete [] statistics_;
+    maximumStatistics_ = 0;
+    statistics_ = NULL;
+    numberFixedAtRoot_ = rhs.numberFixedAtRoot_;
+    numberFixedNow_ = rhs.numberFixedNow_;
+    stoppedOnGap_ = rhs.stoppedOnGap_;
+    eventHappened_ = rhs.eventHappened_;
+    numberLongStrong_ = rhs.numberLongStrong_;
+    numberOldActiveCuts_ = rhs.numberOldActiveCuts_;
+    numberNewCuts_ = rhs.numberNewCuts_;
+    resolveAfterTakeOffCuts_=rhs.resolveAfterTakeOffCuts_;
+    sizeMiniTree_ = rhs.sizeMiniTree_;
     lastHeuristic_ = NULL;
     numberCutGenerators_ = rhs.numberCutGenerators_;
     if (numberCutGenerators_) {
@@ -2381,6 +4031,7 @@ CbcModel::~CbcModel ()
     handler_ = NULL;
   }
   delete tree_;
+  tree_=NULL;
   if (ourSolver_) delete solver_;
   gutsOfDestructor();
 }
@@ -2388,25 +4039,8 @@ CbcModel::~CbcModel ()
 void 
 CbcModel::gutsOfDestructor()
 {
-  delete emptyWarmStart_ ;
-  emptyWarmStart_ =NULL;
-  delete basis_ ;
-  basis_ =NULL;
-  delete continuousSolver_;
-  continuousSolver_=NULL;
-  delete [] bestSolution_;
-  bestSolution_=NULL;
-  delete [] currentSolution_;
-  currentSolution_=NULL;
-  delete [] integerInfo_;
-  integerInfo_=NULL;
-  delete [] continuousSolution_;
-  continuousSolution_=NULL;
-  delete [] usedInSolution_;
-  usedInSolution_ = NULL;
-  testSolution_=NULL;
-  delete [] integerVariable_;
-  integerVariable_=NULL;
+  delete referenceSolver_;
+  referenceSolver_=NULL;
   int i;
   for (i=0;i<numberCutGenerators_;i++) {
     delete generator_[i];
@@ -2420,25 +4054,126 @@ CbcModel::gutsOfDestructor()
     delete heuristic_[i];
   delete [] heuristic_;
   heuristic_=NULL;
-  lastHeuristic_ = NULL;
   delete nodeCompare_;
   nodeCompare_=NULL;
   delete problemFeasibility_;
   problemFeasibility_=NULL;
+  delete [] originalColumns_;
+  originalColumns_=NULL;
+  delete strategy_;
+  gutsOfDestructor2();
+}
+// Clears out enough to reset CbcModel
+void 
+CbcModel::gutsOfDestructor2()
+{
+  delete [] integerInfo_;
+  integerInfo_=NULL;
+  delete [] integerVariable_;
+  integerVariable_=NULL;
+  int i;
+  for (i=0;i<numberObjects_;i++)
+    delete object_[i];
+  delete [] object_;
+  object_=NULL;
+  numberIntegers_=0;
+  numberObjects_=0;
+  delete emptyWarmStart_ ;
+  emptyWarmStart_ =NULL;
+  delete continuousSolver_;
+  continuousSolver_=NULL;
+  delete [] bestSolution_;
+  bestSolution_=NULL;
+  delete [] currentSolution_;
+  currentSolution_=NULL;
+  delete [] continuousSolution_;
+  continuousSolution_=NULL;
+  delete [] usedInSolution_;
+  usedInSolution_ = NULL;
+  testSolution_=NULL;
+  lastHeuristic_ = NULL;
   delete [] addedCuts_;
   addedCuts_=NULL;
   nextRowCut_ = NULL;
   currentNode_ = NULL;
   delete [] walkback_;
   walkback_=NULL;
-  for (i=0;i<numberObjects_;i++)
-    delete object_[i];
-  delete [] object_;
-  object_=NULL;
-  delete [] originalColumns_;
-  originalColumns_=NULL;
-  delete strategy_;
+  delete [] whichGenerator_;
+  whichGenerator_ = NULL;
+  for (i=0;i<maximumStatistics_;i++)
+    delete statistics_[i];
+  delete [] statistics_;
+  statistics_=NULL;
+  delete [] analyzeResults_;
+  analyzeResults_=NULL;
+  // Below here is whatever consensus is
+  ourSolver_=true;
+  bestObjective_=COIN_DBL_MAX;
+  bestPossibleObjective_=COIN_DBL_MAX;
+  sumChangeObjective1_=0.0;
+  sumChangeObjective2_=0.0;
+  numberSolutions_=0;
+  stateOfSearch_=0;
+  hotstartStrategy_=0;
+  numberHeuristicSolutions_=0;
+  numberNodes_=0;
+  numberNodes2_=0;
+  numberIterations_=0;
+  status_=-1;
+  secondaryStatus_=-1;
+  maximumNumberCuts_=0;
+  phase_=0;
+  currentNumberCuts_=0;
+  maximumDepth_=0;
+  nextRowCut_=NULL;
+  currentNode_=NULL;
+  // clear out tree
+  if (tree_&&tree_->size())
+    tree_->cleanTree(this, -1.0e100,bestPossibleObjective_) ;
+  subTreeModel_=NULL;
+  numberStoppedSubTrees_=0;
+  numberInfeasibleNodes_=0;
+  numberGlobalViolations_=0;
+  continuousObjective_=0.0;
+  originalContinuousObjective_=0.0;
+  continuousInfeasibilities_=0;
+  numberFixedAtRoot_=0;
+  numberFixedNow_=0;
+  stoppedOnGap_=false;
+  eventHappened_=false;
+  numberLongStrong_=0;
+  numberOldActiveCuts_=0;
+  numberNewCuts_=0;
+  // Parameters which need to be reset
+  dblParam_[CbcCutoffIncrement] = 1e-5;
+  dblParam_[CbcCurrentCutoff] = 1.0e100;
+  dblParam_[CbcCurrentObjectiveValue] = 1.0e100;
+  dblParam_[CbcCurrentMinimizationObjectiveValue] = 1.0e100;
 }
+// Save a copy of the current solver so can be reset to
+void 
+CbcModel::saveReferenceSolver()
+{
+  delete referenceSolver_;
+  referenceSolver_= solver_->clone();
+}
+
+// Uses a copy of reference solver to be current solver
+void 
+CbcModel::resetToReferenceSolver()
+{
+  delete solver_;
+  solver_ = referenceSolver_->clone();
+  // clear many things
+  gutsOfDestructor2();
+  // Reset cutoff
+  // Solvers know about direction
+  double direction = solver_->getObjSense();
+  double value;
+  solver_->getDblParam(OsiDualObjectiveLimit,value); 
+  setCutoff(value*direction);
+}
+
 // Are there a numerical difficulties?
 bool 
 CbcModel::isAbandoned() const
@@ -2769,14 +4504,8 @@ int CbcModel::addCuts (CbcNode *node, CoinWarmStartBasis *&lastws,bool canFix)
        install with a call to setWarmStart().
     3) Install the tight cuts into the constraint system (applyRowCuts).
 
-  TODO: After working through the code in createInfo, I'm more comfortable if
-	inactive cuts are retained in lastws. So, instead of cloning
-	lastws into basis_ after the compression loop, do it ahead of time
-	and then recover lastws from basis_ after the setWarmStart().
-	(Minimal code change :-). See CbcNode::createInfo for more.
+    Update lastws
 */
-    if (basis_) delete basis_ ;
-    basis_= dynamic_cast<CoinWarmStartBasis *>(lastws->clone()) ;
     for (i=0;i<currentNumberCuts;i++) {
       CoinWarmStartBasis::Status status = 
 	lastws->getArtifStatus(i+numberRowsAtContinuous_);
@@ -2806,12 +4535,6 @@ int CbcModel::addCuts (CbcNode *node, CoinWarmStartBasis *&lastws,bool canFix)
 */
     solver_->applyRowCuts(numberToAdd,addCuts);
     solver_->setWarmStart(lastws);
-/*
-  TODO: Undo the debugging change. Delete lastws and assign basis_.
-*/
-  delete lastws ;
-  lastws = basis_ ;
-  basis_ = 0 ;
 
 #if 0
     if ((numberNodes_%printFrequency_)==0) {
@@ -2902,17 +4625,17 @@ int CbcModel::reducedCostFix ()
   return numberFixed; }
 
 // Collect coding to replace whichGenerator
-static int * newWhichGenerator(int numberNow, int numberAfter,
-                               int & maximumWhich, int * whichGenerator)
+void
+CbcModel::resizeWhichGenerator(int numberNow, int numberAfter)
 {
-  if (numberAfter > maximumWhich) {
-    maximumWhich = CoinMax(maximumWhich*2+100,numberAfter) ;
-    int * temp = new int[2*maximumWhich] ;
-    memcpy(temp,whichGenerator,numberNow*sizeof(int)) ;
-    delete [] whichGenerator ;
-    whichGenerator = temp ;
+  if (numberAfter > maximumWhich_) {
+    maximumWhich_ = CoinMax(maximumWhich_*2+100,numberAfter) ;
+    int * temp = new int[2*maximumWhich_] ;
+    memcpy(temp,whichGenerator_,numberNow*sizeof(int)) ;
+    delete [] whichGenerator_ ;
+    whichGenerator_ = temp ;
+    memset(whichGenerator_+numberNow,0,(maximumWhich_-numberNow)*sizeof(int));
   }
-  return whichGenerator;
 }
 
 /** Solve the model using cuts
@@ -2928,24 +4651,13 @@ static int * newWhichGenerator(int numberNow, int numberAfter,
 */
 
 bool 
-CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node,
-			 int &numberOldActiveCuts, int &numberNewCuts,
-			 int &maximumWhich, int *&whichGenerator)
+CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
 /*
   Parameters:
     numberTries: (i) the maximum number of iterations for this round of cut
 		     generation; if negative then we don't mind if drop is tiny.
     
     cuts:	(o) all cuts generated in this round of cut generation
-    whichGenerator: (i/o) whichGenerator[i] is loaded with the index of the
-			generator that produced cuts[i]; reallocated as
-			required
-    numberOldActiveCuts: (o) the number of active cuts at this node from
-			previous rounds of cut generation
-    numberNewCuts: (o) the number of cuts produced in this round of cut
-		       generation
-    maximumWhich: (i/o) capacity of whichGenerator; may be updated if
-			whichGenerator grows.
 
     node: (i)     So we can update dynamic pseudo costs
 */
@@ -2960,8 +4672,8 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node,
   int numberColumns = solver_->getNumCols() ;
   CoinBigIndex numberElementsAtStart = solver_->getNumElements();
 
-  numberOldActiveCuts = numberRowsAtStart-numberRowsAtContinuous_ ;
-  numberNewCuts = 0 ;
+  numberOldActiveCuts_ = numberRowsAtStart-numberRowsAtContinuous_ ;
+  numberNewCuts_ = 0 ;
 
   bool onOptimalPath = false ;
   const OsiRowCutDebugger *debugger = NULL;
@@ -3035,7 +4747,7 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node,
   // Return at once if numberTries zero
   if (!numberTries) {
     cuts=OsiCuts();
-    numberNewCuts=0;
+    numberNewCuts_=0;
     return true;
   }
 /*
@@ -3105,27 +4817,25 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node,
     { int numberCuts = globalCuts_.sizeColCuts() ;
       int i;
       // possibly extend whichGenerator
-      whichGenerator = newWhichGenerator(numberViolated, numberViolated+numberCuts,
-                                         maximumWhich,  whichGenerator);
+      resizeWhichGenerator(numberViolated, numberViolated+numberCuts);
       for ( i = 0 ; i < numberCuts ; i++)
       { const OsiColCut *thisCut = globalCuts_.colCutPtr(i) ;
 	if (thisCut->violated(solution)>primalTolerance) {
 	  printf("Global cut added - violation %g\n",
 		 thisCut->violated(solution)) ;
-	  whichGenerator[numberViolated++]=-1;
+	  whichGenerator_[numberViolated++]=-1;
 	  theseCuts.insert(*thisCut) ;
 	}
       }
       numberCuts = globalCuts_.sizeRowCuts() ;
       // possibly extend whichGenerator
-      whichGenerator = newWhichGenerator(numberViolated, numberViolated+numberCuts,
-                                         maximumWhich,  whichGenerator);
+      resizeWhichGenerator(numberViolated, numberViolated+numberCuts);
       for ( i = 0;i<numberCuts;i++) {
 	const OsiRowCut * thisCut = globalCuts_.rowCutPtr(i) ;
 	if (thisCut->violated(solution)>primalTolerance) {
 	  //printf("Global cut added - violation %g\n",
 	  // thisCut->violated(solution)) ;
-	  whichGenerator[numberViolated++]=-1;
+	  whichGenerator_[numberViolated++]=-1;
 	  theseCuts.insert(*thisCut) ;
 	}
       }
@@ -3166,10 +4876,9 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node,
       if (handler_->logLevel()>1)
 	printf("applying branch cut, sum is %g, bounds %g %g\n",sum,lb,ub);
       // possibly extend whichGenerator
-      whichGenerator = newWhichGenerator(numberViolated, numberViolated+1,
-                                         maximumWhich,  whichGenerator);
+      resizeWhichGenerator(numberViolated, numberViolated+1);
       // set whichgenerator (also serves as marker to say don't delete0
-      whichGenerator[numberViolated++]=-2;
+      whichGenerator_[numberViolated++]=-2;
     }
     double * newSolution = new double [numberColumns] ;
     double heuristicValue = getCutoff() ;
@@ -3196,7 +4905,6 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node,
               const double * element = thisCut.row().getElements();
               //assert (n);
               for (int i=0;i<n;i++) {
-                int iColumn = column[i];
                 double value = element[i];
                 assert(fabs(value)>1.0e-12&&fabs(value)<1.0e20);
               }
@@ -3263,8 +4971,7 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node,
       int numberAfter =
 	    numberRowCutsAfter+numberColumnCutsAfter+lastNumberCuts ;
       // possibly extend whichGenerator
-      whichGenerator = newWhichGenerator(numberBefore, numberAfter,
-                                         maximumWhich,  whichGenerator);
+      resizeWhichGenerator(numberBefore, numberAfter);
       int j ;
       if (fullScan) {
 	// counts
@@ -3273,7 +4980,7 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node,
       countRowCuts[i] += numberRowCutsAfter-numberRowCutsBefore ;
       
       for (j = numberRowCutsBefore;j<numberRowCutsAfter;j++) {
-	whichGenerator[numberBefore++] = i ;
+	whichGenerator_[numberBefore++] = i ;
 	const OsiRowCut * thisCut = theseCuts.rowCutPtr(j) ;
 	if (thisCut->lb()>thisCut->ub())
 	  violated=-2; // sub-problem is infeasible
@@ -3283,7 +4990,7 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node,
 	}
       }
       for (j = numberColumnCutsBefore;j<numberColumnCutsAfter;j++) {
-	whichGenerator[numberBefore++] = i ;
+	whichGenerator_[numberBefore++] = i ;
 	const OsiColCut * thisCut = theseCuts.colCutPtr(j) ;
 	if (thisCut->globallyValid()) {
 	  // add to global list
@@ -3322,15 +5029,14 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node,
       int numberCuts = slackCuts.sizeRowCuts() ;
       int i;
       // possibly extend whichGenerator
-      whichGenerator = newWhichGenerator(numberOld, numberOld+numberCuts,
-                                         maximumWhich,  whichGenerator);
+      resizeWhichGenerator(numberOld, numberOld+numberCuts);
       for ( i = 0;i<numberCuts;i++) {
         const OsiRowCut * thisCut = slackCuts.rowCutPtr(i) ;
         if (thisCut->violated(solution)>100.0*primalTolerance) {
           if (messageHandler()->logLevel()>2)
             printf("Old cut added - violation %g\n",
                    thisCut->violated(solution)) ;
-          whichGenerator[numberOld++]=-1;
+          whichGenerator_[numberOld++]=-1;
           theseCuts.insert(*thisCut) ;
         }
       }
@@ -3462,15 +5168,7 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node,
     int numberRowsNow = solver_->getNumRows() ;
     assert(numberRowsNow == numberRowsAtStart+lastNumberCuts) ;
     int numberToAdd = theseCuts.sizeRowCuts() ;
-    numberNewCuts = lastNumberCuts+numberToAdd ;
-/*
-  Get a basis by asking the solver for warm start information. Resize it
-  (retaining the basis) so it can accommodate the cuts.
-*/
-    delete basis_ ;
-    basis_ = dynamic_cast<CoinWarmStartBasis*>(solver_->getWarmStart()) ;
-    assert(basis_ != NULL); // make sure not volume
-    basis_->resize(numberRowsAtStart+numberNewCuts,numberColumns) ;
+    numberNewCuts_ = lastNumberCuts+numberToAdd ;
 /*
   Now actually add the row cuts and reoptimise.
 
@@ -3509,12 +5207,17 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node,
 	delete [] addCuts ;
 	for (i = 0 ; i < numberToAdd ; i++)
 	{ cuts.insert(theseCuts.rowCut(i)) ; }
-	for (i = 0 ; i < numberToAdd ; i++)
-	{ basis_->setArtifStatus(numberRowsNow+i,
+        CoinWarmStartBasis * basis = dynamic_cast<CoinWarmStartBasis*>(solver_->getWarmStart()) ;
+        assert(basis != NULL); // make sure not volume
+        //basis->resize(numberRowsAtStart+numberNewCuts_,numberColumns) ;
+	for (i = 0 ; i < numberToAdd ; i++) 
+	{ basis->setArtifStatus(numberRowsNow+i,
 				 CoinWarmStartBasis::basic) ; }
-	if (solver_->setWarmStart(basis_) == false)
+	if (solver_->setWarmStart(basis) == false)
 	{ throw CoinError("Fail setWarmStart() after cut installation.",
-			  "solveWithCuts","CbcModel") ; } }
+			  "solveWithCuts","CbcModel") ; }
+        delete basis;
+      }
       feasible = resolve() ;
       if ( CoinCpuTime()-dblParam_[CbcStartSeconds] > dblParam_[CbcMaximumSeconds] )
         numberTries=0; // exit
@@ -3556,10 +5259,9 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node,
 */
     if (feasible)
     { int cutIterations = solver_->getIterationCount() ;
-      if (numberOldActiveCuts+numberNewCuts) {
+      if (numberOldActiveCuts_+numberNewCuts_) {
         OsiCuts * saveCuts = node ? NULL : &slackCuts;
-        takeOffCuts(cuts,whichGenerator,numberOldActiveCuts,
-                    numberNewCuts,resolveAfterTakeOffCuts_,saveCuts) ;
+        takeOffCuts(cuts,resolveAfterTakeOffCuts_,saveCuts) ;
         if (solver_->isDualObjectiveLimitReached()&&resolveAfterTakeOffCuts_)
           { feasible = false ;
 #	ifdef CBC_DEBUG
@@ -3571,8 +5273,8 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node,
           }
       }
       if (feasible)
-        { numberRowsAtStart = numberOldActiveCuts+numberRowsAtContinuous_ ;
-        lastNumberCuts = numberNewCuts ;
+        { numberRowsAtStart = numberOldActiveCuts_+numberRowsAtContinuous_ ;
+        lastNumberCuts = numberNewCuts_ ;
         if (direction*solver_->getObjValue() < lastObjective+minimumDrop &&
             currentPassNumber_ >= 3)
           { numberTries = 0 ; }
@@ -3625,8 +5327,6 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node,
       }
       if (nDelete) {
         solver_->deleteRows(nDelete,added);
-        delete basis_ ;
-        basis_ = dynamic_cast<CoinWarmStartBasis*>(solver_->getWarmStart()) ;
       }
       delete [] added;
       delete basis ;
@@ -3727,15 +5427,15 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node,
     }
     if (!numberNodes_)
       handler_->message(CBC_ROOT,messages_)
-	<<numberNewCuts
+	<<numberNewCuts_
 	<<startObjective<<thisObjective
 	<<currentPassNumber_
 	<<CoinMessageEol ;
     int * count = new int[numberCutGenerators_] ;
     memset(count,0,numberCutGenerators_*sizeof(int)) ;
     int numberActiveGenerators=0;
-    for (i = 0;i<numberNewCuts;i++) {
-      int iGenerator = whichGenerator[i];
+    for (i = 0;i<numberNewCuts_;i++) {
+      int iGenerator = whichGenerator_[i];
       if (iGenerator>=0&&iGenerator<numberCutGenerators_)
 	count[iGenerator]++ ;
     }
@@ -3833,7 +5533,7 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node,
       if( willBeCutsInTree<=0) {
         // Take off cuts
         cuts = OsiCuts();
-        numberNewCuts=0;
+        numberNewCuts_=0;
         if (!willBeCutsInTree) {
           // update size of problem
           numberRowsAtContinuous_ = solver_->getNumRows() ;
@@ -3878,8 +5578,8 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node,
       generator_[i]->incrementNumberCutsInTotal(countRowCuts[i]);
     // What if not feasible as cuts may have helped
     if (feasible) {
-      for (i = 0;i<numberNewCuts;i++) {
-	int iGenerator = whichGenerator[i];
+      for (i = 0;i<numberNewCuts_;i++) {
+	int iGenerator = whichGenerator_[i];
 	if (iGenerator>=0)
 	  generator_[iGenerator]->incrementNumberCutsActive();
       }
@@ -3892,11 +5592,11 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node,
 
 #ifdef CHECK_CUT_COUNTS
   if (feasible)
-  { delete basis_ ;
-    basis_ = dynamic_cast<CoinWarmStartBasis*>(solver_->getWarmStart()) ;
+  { 
+    CoinWarmStartBasis * basis = dynamic_cast<CoinWarmStartBasis*>(solver_->getWarmStart()) ;
     printf("solveWithCuts: Number of rows at end (only active cuts) %d\n",
-	   numberRowsAtContinuous_+numberNewCuts+numberOldActiveCuts) ;
-    basis_->print() ; }
+	   numberRowsAtContinuous_+numberNewCuts_+numberOldActiveCuts_) ;
+    basis->print() ; delete basis;}
 #endif
 #ifdef CBC_DEBUG
   if (onOptimalPath && !solver_->isDualObjectiveLimitReached())
@@ -3950,15 +5650,14 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node,
 */
 
 void
-CbcModel::takeOffCuts (OsiCuts &newCuts, int *whichGenerator,
-		       int &numberOldActiveCuts, int &numberNewCuts,
+CbcModel::takeOffCuts (OsiCuts &newCuts,
 		       bool allowResolve, OsiCuts * saveCuts)
 
 { // int resolveIterations = 0 ;
   int firstOldCut = numberRowsAtContinuous_ ;
-  int totalNumberCuts = numberNewCuts+numberOldActiveCuts ;
+  int totalNumberCuts = numberNewCuts_+numberOldActiveCuts_ ;
   int *solverCutIndices = new int[totalNumberCuts] ;
-  int *newCutIndices = new int[numberNewCuts] ;
+  int *newCutIndices = new int[numberNewCuts_] ;
   const CoinWarmStartBasis* ws ;
   CoinWarmStartBasis::Status status ;
   bool needPurge = true ;
@@ -3980,7 +5679,7 @@ CbcModel::takeOffCuts (OsiCuts &newCuts, int *whichGenerator,
   principles of cut handling.)
 */
     int oldCutIndex = 0 ;
-    for (i = 0 ; i < numberOldActiveCuts ; i++)
+    for (i = 0 ; i < numberOldActiveCuts_ ; i++)
     { status = ws->getArtifStatus(i+firstOldCut) ;
       while (!addedCuts_[oldCutIndex]) oldCutIndex++ ;
       assert(oldCutIndex < currentNumberCuts_) ;
@@ -4009,16 +5708,16 @@ CbcModel::takeOffCuts (OsiCuts &newCuts, int *whichGenerator,
   vector, so it's most efficient to compress it (eraseRowCut) from back to
   front.
 */
-    int firstNewCut = firstOldCut+numberOldActiveCuts ;
+    int firstNewCut = firstOldCut+numberOldActiveCuts_ ;
     int k = 0 ;
-    for (i = 0 ; i < numberNewCuts ; i++)
+    for (i = 0 ; i < numberNewCuts_ ; i++)
     { status = ws->getArtifStatus(i+firstNewCut) ;
-      if (status == CoinWarmStartBasis::basic&&whichGenerator[i]!=-2)
+      if (status == CoinWarmStartBasis::basic&&whichGenerator_[i]!=-2)
       { solverCutIndices[numberNewToDelete+numberOldToDelete] = i+firstNewCut ;
 	newCutIndices[numberNewToDelete++] = i ; }
       else
       { // save which generator did it
-	whichGenerator[k++] = whichGenerator[i] ; } }
+	whichGenerator_[k++] = whichGenerator_[i] ; } }
     delete ws ;
     for (i = numberNewToDelete-1 ; i >= 0 ; i--)
     { int iCut = newCutIndices[i] ;
@@ -4040,8 +5739,8 @@ CbcModel::takeOffCuts (OsiCuts &newCuts, int *whichGenerator,
     if (numberNewToDelete+numberOldToDelete > 0)
     { solver_->deleteRows(numberNewToDelete+numberOldToDelete,
 			  solverCutIndices) ;
-      numberNewCuts -= numberNewToDelete ;
-      numberOldActiveCuts -= numberOldToDelete ;
+      numberNewCuts_ -= numberNewToDelete ;
+      numberOldActiveCuts_ -= numberOldToDelete ;
 #     ifdef CBC_DEBUG
       printf("takeOffCuts: purged %d+%d cuts\n", numberOldToDelete,
 	     numberNewToDelete );
@@ -4060,7 +5759,7 @@ CbcModel::takeOffCuts (OsiCuts &newCuts, int *whichGenerator,
 #	ifdef CBC_DEBUG
 	else
 	  { printf( "Repeating purging loop. %d iters.\n",
-		    solver_->getIterationCount());
+		    solver_->getIterationCount()); }
 #	endif
       }
       else
@@ -5693,8 +7392,9 @@ CbcModel::integerPresolveThisModel(OsiSolverInterface * originalSolver,
 	}
 	delete [] newSolution;
 	// Space for type of cuts
-	int maximumWhich=1000;
-	int * whichGenerator = new int[maximumWhich];
+	maximumWhich_=1000;
+        delete [] whichGenerator_ ;
+	whichGenerator_ = new int[maximumWhich_];
 	// save number of rows
 	numberRowsAtContinuous_ = getNumRows();
 	maximumNumberCuts_=0;
@@ -5708,13 +7408,12 @@ CbcModel::integerPresolveThisModel(OsiSolverInterface * originalSolver,
 	walkback_ = new CbcNodeInfo * [maximumDepth_];
 	
 	OsiCuts cuts;
-	int numberOldActiveCuts=0;
-	int numberNewCuts = 0;
-	feasible = solveWithCuts(cuts,maximumCutPassesAtRoot_,
-				 NULL,numberOldActiveCuts,numberNewCuts,
-				 maximumWhich, whichGenerator);
-	currentNumberCuts_=numberNewCuts;
-	delete [] whichGenerator;
+	numberOldActiveCuts_=0;
+	numberNewCuts_ = 0;
+	feasible = solveWithCuts(cuts,maximumCutPassesAtRoot_,NULL);
+	currentNumberCuts_=numberNewCuts_;
+	delete [] whichGenerator_;
+        whichGenerator_=NULL;
 	delete [] walkback_;
 	walkback_ = NULL;
 	delete [] addedCuts_;
@@ -6240,8 +7939,9 @@ CbcModel::strengthenedModel()
   the active subproblem. whichGenerator will be used to record the generator
   that produced a given cut.
 */
-  int maximumWhich = 1000 ;
-  int * whichGenerator = new int[maximumWhich] ;
+  maximumWhich_ = 1000 ;
+  delete [] whichGenerator_ ;
+  whichGenerator_ = new int[maximumWhich_] ;
   maximumNumberCuts_ = 0 ;
   currentNumberCuts_ = 0 ;
   delete [] addedCuts_ ;
@@ -6254,7 +7954,7 @@ CbcModel::strengthenedModel()
 
   At the end of all this, any cuts will be recorded in cuts and also
   installed in the solver's constraint system. We'll have reoptimised, and
-  removed any slack cuts (numberOldActiveCuts and numberNewCuts have been
+  removed any slack cuts (numberOldActiveCuts_ and numberNewCuts_ have been
   adjusted accordingly).
 
   Tell cut generators they can be a bit more aggressive at root node
@@ -6266,8 +7966,8 @@ CbcModel::strengthenedModel()
     generator->setAggressiveness(generator->getAggressiveness()+100);
   }
   OsiCuts cuts ;
-  int numberOldActiveCuts = 0 ;
-  int numberNewCuts = 0 ;
+  numberOldActiveCuts_ = 0 ;
+  numberNewCuts_ = 0 ;
   { int iObject ;
     int preferredWay ;
     int numberUnsatisfied = 0 ;
@@ -6280,8 +7980,7 @@ CbcModel::strengthenedModel()
       if (infeasibility) numberUnsatisfied++ ; }
     if (numberUnsatisfied)
     { feasible = solveWithCuts(cuts,maximumCutPassesAtRoot_,
-			       NULL,numberOldActiveCuts,numberNewCuts,
-			       maximumWhich, whichGenerator) ; } }
+			       NULL) ; } }
 /*
   We've taken the continuous relaxation as far as we can. 
 */
@@ -6294,7 +7993,8 @@ CbcModel::strengthenedModel()
 /*
   Clean up dangling objects. continuousSolver_ may already be toast.
 */
-  delete [] whichGenerator ;
+  delete [] whichGenerator_ ;
+  whichGenerator_ = NULL;
   delete [] walkback_ ;
   walkback_ = NULL ;
   delete [] addedCuts_ ;

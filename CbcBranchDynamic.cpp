@@ -10,6 +10,7 @@
 //#define CBC_DEBUG
 
 #include "OsiSolverInterface.hpp"
+#include "OsiSolverBranch.hpp"
 #include "CbcModel.hpp"
 #include "CbcMessage.hpp"
 #include "CbcBranchDynamic.hpp"
@@ -210,6 +211,32 @@ CbcSimpleIntegerDynamicPseudoCost::createBranch(int way)
   newObject->setChangeInGuessed(changeInGuessed);
   return newObject;
 }
+/* Create an OsiSolverBranch object
+   
+This returns NULL if branch not represented by bound changes
+*/
+OsiSolverBranch * 
+CbcSimpleIntegerDynamicPseudoCost::solverBranch() const
+{
+  OsiSolverInterface * solver = model_->solver();
+  const double * solution = model_->testSolution();
+  const double * lower = solver->getColLower();
+  const double * upper = solver->getColUpper();
+  double value = solution[columnNumber_];
+  value = CoinMax(value, lower[columnNumber_]);
+  value = CoinMin(value, upper[columnNumber_]);
+  assert (upper[columnNumber_]>lower[columnNumber_]);
+#ifndef NDEBUG
+  double nearest = floor(value+0.5);
+  double integerTolerance = 
+    model_->getDblParam(CbcModel::CbcIntegerTolerance);
+  assert (fabs(value-nearest)>integerTolerance);
+#endif
+  OsiSolverBranch * branch = new OsiSolverBranch();
+  branch->addBranch(columnNumber_,value);
+  return branch;
+}
+  
 // Infeasibility - large is 0.5
 double 
 CbcSimpleIntegerDynamicPseudoCost::infeasibility(int & preferredWay) const
@@ -766,4 +793,15 @@ CbcBranchDynamicDecision::betterBranch(CbcBranchingObject * thisOne,
     bestObject_=thisOne;
   }
   return betterWay;
+}
+/* Sets or gets best criterion so far */
+void 
+CbcBranchDynamicDecision::setBestCriterion(double value)
+{ 
+  bestCriterion_ = value;
+}
+double 
+CbcBranchDynamicDecision::getBestCriterion() const
+{ 
+  return bestCriterion_;
 }

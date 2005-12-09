@@ -197,6 +197,12 @@ public:
   /// Creates a branching object
   virtual CbcBranchingObject * createBranch(int way) ;
 
+  /** Create an OsiSolverBranch object
+
+      This returns NULL if branch not represented by bound changes
+  */
+  virtual OsiSolverBranch * solverBranch() const;
+  
   /** \brief Given a valid solution (with reduced costs, etc.),
       return a branching object which would give a new feasible
       point in the good direction.
@@ -779,6 +785,9 @@ public:
 			    CbcBranchingObject * bestSoFar,
 			    double changeUp, int numInfUp,
 			    double changeDn, int numInfDn);
+  /** Sets or gets best criterion so far */
+  virtual void setBestCriterion(double value);
+  virtual double getBestCriterion() const;
 
   /** \brief Compare N branching objects. Return index of best
       and sets way of branching in chosen object.

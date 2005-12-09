@@ -14,7 +14,7 @@
 #include "CoinPragma.hpp"
 #include "CoinHelperFunctions.hpp"
 // Same version as CBC
-#define CBCVERSION "1.00.01"
+#define CBCVERSION "1.00.02"
 
 #include "CoinMpsIO.hpp"
 
@@ -380,6 +380,7 @@ static int * analyze(OsiClpSolverInterface * solverMod, int & numberChanged, dou
     }
     delete solver;
     numberChanged=0;
+    delete [] changed;
     return NULL;
   }
 }
@@ -2587,4 +2588,7 @@ clp watson.mps -\nscaling off\nprimalsimplex"
   Added two new Cgl classes - CglAllDifferent which does column fixing (too slowly)
   and CglStored which just has a list of cuts which can be activated.
   Modified preprocess option to SOS
+  Version 1.00.02 December 9 2005
+  Added use of CbcStrategy to do clean preprocessing
+  Added use of referenceSolver for cleaner repetition of Cbc
 */

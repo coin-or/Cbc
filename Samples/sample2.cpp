@@ -15,6 +15,7 @@
 #include "CbcBranchUser.hpp"
 #include "CbcCompareUser.hpp"
 #include "CbcCutGenerator.hpp"
+#include "CbcStrategy.hpp"
 #include "CbcHeuristicLocal.hpp"
 #include "OsiClpSolverInterface.hpp"
 
@@ -57,10 +58,10 @@ after strong branching on 5 variables closest to 0.5.
 
 A simple rounding heuristic is used.
 
+Preprocessing may be selected in two ways - the second is preferred now
 
 ************************************************************************/
-
-// ****** define comparison to choose best next node
+#define PREPROCESS 2
 
 int main (int argc, const char *argv[])
 {
@@ -114,6 +115,7 @@ int main (int argc, const char *argv[])
   solver1.setHintParam(OsiDoReducePrint,true,OsiHintTry);
   // See if we want preprocessing
   OsiSolverInterface * solver2=&solver1;
+#if PREPROCESS==1
   CglPreProcess process;
   if (preProcess) {
     /* Do not try and produce equality cliques and
@@ -125,6 +127,7 @@ int main (int argc, const char *argv[])
     }
     solver2->resolve();
   }
+#endif
   CbcModel model(*solver2);
   model.solver()->setHintParam(OsiDoReducePrint,true,OsiHintTry);
   // Set up some cut generators and defaults
@@ -263,7 +266,18 @@ int main (int argc, const char *argv[])
     model.solver()->activateRowCutDebugger(problemName.c_str()) ;
   }
 #endif
-
+#if PREPROCESS==2
+  // Default strategy will leave cut generators as they exist already
+  // so cutsOnlyAtRoot (1) ignored
+  // numberStrong (2) is 5 (default)
+  // numberBeforeTrust (3) is 5 (default is 0)
+  // printLevel (4) defaults (0)
+  CbcStrategyDefault strategy(true,5,5);
+  // Set up pre-processing to find sos if wanted
+  if (preProcess)
+    strategy.setupPreProcessing(2);
+  model.setStrategy(strategy);
+#endif
   // Do complete search
   
   model.branchAndBound();
@@ -292,6 +306,7 @@ int main (int argc, const char *argv[])
   // Print solution if finished - we can't get names from Osi! - so get from OsiClp
 
   if (model.getMinimizationObjValue()<1.0e50) {
+#if PREPROCESS==1
     // post process
     OsiSolverInterface * solver;
     if (preProcess) {
@@ -301,6 +316,9 @@ int main (int argc, const char *argv[])
     } else {
       solver = model.solver();
     }
+#else
+    OsiSolverInterface * solver = model.solver();
+#endif
     int numberColumns = solver->getNumCols();
     
     const double * solution = solver->getColSolution();

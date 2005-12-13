@@ -1558,6 +1558,7 @@ void CbcModel::branchAndBound(int doStatistics)
       delete statistics_[i];
     delete [] statistics_;
     statistics_=NULL;
+    maximumStatistics_=0;
     delete [] lookup;
   }
 /*
@@ -2455,6 +2456,7 @@ void CbcModel::branchAndBound(int doStatistics)
       delete statistics_[i];
     delete [] statistics_;
     statistics_=NULL;
+    maximumStatistics_=0;
     delete [] lookup;
   }
 /*
@@ -4104,6 +4106,7 @@ CbcModel::gutsOfDestructor2()
     delete statistics_[i];
   delete [] statistics_;
   statistics_=NULL;
+  maximumStatistics_=0;
   delete [] analyzeResults_;
   analyzeResults_=NULL;
   // Below here is whatever consensus is

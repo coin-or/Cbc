@@ -4854,6 +4854,11 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
   CglProbing indicates that it can fix a variable. Reoptimisation is required
   to take full advantage.
 */
+    // This should only happen after heuristic solution
+    if (!solver_->optimalBasisIsAvailable()) {
+      //printf("XXXXYY no opt basis\n");
+      resolve();
+    }
     if (nextRowCut_) {
       // branch was a cut - add it
       theseCuts.insert(*nextRowCut_);

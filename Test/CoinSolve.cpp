@@ -486,6 +486,7 @@ int main (int argc, const char *argv[])
     parameters[whichParam(INCREMENT,numberParameters,parameters)].setDoubleValue(model.getDblParam(CbcModel::CbcCutoffIncrement));
     // Set up likely cut generators and defaults
     parameters[whichParam(PREPROCESS,numberParameters,parameters)].setCurrentOption("sos");
+    parameters[whichParam(MIPOPTIONS,numberParameters,parameters)].setIntValue(128|64|1);
 
     CglGomory gomoryGen;
     // try larger limit
@@ -514,6 +515,7 @@ int main (int argc, const char *argv[])
     parameters[whichParam(PROBINGCUTS,numberParameters,parameters)].setCurrentOption("ifmove");
 
     CglKnapsackCover knapsackGen;
+    //knapsackGen.switchOnExpensive();
     // set default action (0=off,1=on,2=root)
     int knapsackAction=3;
     parameters[whichParam(KNAPSACKCUTS,numberParameters,parameters)].setCurrentOption("ifmove");
@@ -580,7 +582,13 @@ int main (int argc, const char *argv[])
     std::string field;
     std::cout<<"Coin Cbc and Clp Solver version "<<CBCVERSION
 	     <<", build "<<__DATE__<<std::endl;
-    
+    // Print command line
+    if (argc>1) {
+      printf("command line - ");
+      for (int i=0;i<argc;i++)
+        printf("%s ",argv[i]);
+      printf("\n");
+    }
     while (1) {
       // next command
       field=CoinReadGetCommand(argc,argv);
@@ -1178,6 +1186,14 @@ int main (int argc, const char *argv[])
               // Reduce printout
               if (logLevel<=1)
                 model.solver()->setHintParam(OsiDoReducePrint,true,OsiHintTry);
+              // Don't switch off all output
+              {
+                OsiSolverInterface * solver = model.solver();
+                OsiClpSolverInterface * si =
+                  dynamic_cast<OsiClpSolverInterface *>(solver) ;
+                assert (si != NULL);
+                si->setSpecialOptions(0x40000000);
+              }
               model.initialSolve();
               // If user made settings then use them
               if (!defaultSettings) {
@@ -1488,9 +1504,9 @@ int main (int argc, const char *argv[])
               OsiClpSolverInterface * osiclp = dynamic_cast< OsiClpSolverInterface*> (babModel->solver());
               // go faster stripes
               if (osiclp->getNumRows()<300&&osiclp->getNumCols()<500) {
-                osiclp->setupForRepeatedUse(2,0);
+                osiclp->setupForRepeatedUse(2,parameters[slog].intValue());
               } else {
-                osiclp->setupForRepeatedUse(0,0);
+                osiclp->setupForRepeatedUse(0,parameters[slog].intValue());
               }
               double increment=babModel->getCutoffIncrement();;
               int * changed = analyze( osiclp,numberChanged,increment,false);
@@ -1505,7 +1521,10 @@ int main (int argc, const char *argv[])
               babModel->setCutoffIncrement(CoinMax(babModel->getCutoffIncrement(),increment));
               // Turn this off if you get problems
               // Used to be automatically set
-              osiclp->setSpecialOptions(osiclp->specialOptions()|(128+64)|1);
+              int mipOptions = parameters[whichParam(MIPOPTIONS,numberParameters,parameters)].intValue();
+              if (mipOptions!=(128|64|1))
+                printf("mip options %d\n",mipOptions);
+              osiclp->setSpecialOptions(mipOptions);
               if (gapRatio < 1.0e100) {
                 double value = babModel->solver()->getObjValue() ;
                 double value2 = gapRatio*(1.0e-5+fabs(value)) ;
@@ -1519,6 +1538,8 @@ int main (int argc, const char *argv[])
               currentBranchModel = babModel;
               OsiSolverInterface * strengthenedModel=NULL;
               if (type==BAB) {
+                if (babModel->numberBeforeTrust()>5)
+                  babModel->setSearchStrategy(1);
                 if (preProcess&&process.numberSOS()) {
                   int numberSOS = process.numberSOS();
                   int numberIntegers = babModel->numberIntegers();
@@ -1555,7 +1576,8 @@ int main (int argc, const char *argv[])
                     delete objects[iSOS];
                   delete [] objects;
                 }
-                babModel->branchAndBound();
+                int statistics = (printOptions>0) ? printOptions: 0;
+                babModel->branchAndBound(statistics);
               } else {
                 strengthenedModel = babModel->strengthenedModel();
               }
@@ -1677,9 +1699,9 @@ int main (int argc, const char *argv[])
 		if (absolutePath) {
 		  fileName = field;
 		} else if (field[0]=='~') {
-		  char * environ = getenv("HOME");
-		  if (environ) {
-		    std::string home(environ);
+		  char * environVar = getenv("HOME");
+		  if (environVar) {
+		    std::string home(environVar);
 		    field=field.erase(0,1);
 		    fileName = home+field;
 		  } else {
@@ -1763,9 +1785,9 @@ int main (int argc, const char *argv[])
 	      if (field[0]=='/'||field[0]=='\\') {
 		fileName = field;
 	      } else if (field[0]=='~') {
-		char * environ = getenv("HOME");
-		if (environ) {
-		  std::string home(environ);
+		char * environVar = getenv("HOME");
+		if (environVar) {
+		  std::string home(environVar);
 		  field=field.erase(0,1);
 		  fileName = home+field;
 		} else {
@@ -1911,9 +1933,9 @@ int main (int argc, const char *argv[])
 		if (field[0]=='/'||field[0]=='\\') {
 		  fileName = field;
 		} else if (field[0]=='~') {
-		  char * environ = getenv("HOME");
-		  if (environ) {
-		    std::string home(environ);
+		  char * environVar = getenv("HOME");
+		  if (environVar) {
+		    std::string home(environVar);
 		    field=field.erase(0,1);
 		    fileName = home+field;
 		  } else {
@@ -1966,9 +1988,9 @@ int main (int argc, const char *argv[])
               if (field[0]=='/'||field[0]=='\\') {
                 fileName = field;
               } else if (field[0]=='~') {
-                char * environ = getenv("HOME");
-                if (environ) {
-                  std::string home(environ);
+                char * environVar = getenv("HOME");
+                if (environVar) {
+                  std::string home(environVar);
                   field=field.erase(0,1);
                   fileName = home+field;
                 } else {
@@ -2015,9 +2037,9 @@ int main (int argc, const char *argv[])
 	      if (field[0]=='/'||field[0]=='\\') {
 		fileName = field;
 	      } else if (field[0]=='~') {
-		char * environ = getenv("HOME");
-		if (environ) {
-		  std::string home(environ);
+		char * environVar = getenv("HOME");
+		if (environVar) {
+		  std::string home(environVar);
 		  field=field.erase(0,1);
 		  fileName = home+field;
 		} else {
@@ -2062,9 +2084,9 @@ int main (int argc, const char *argv[])
 	      if (field[0]=='/'||field[0]=='\\') {
 		fileName = field;
 	      } else if (field[0]=='~') {
-		char * environ = getenv("HOME");
-		if (environ) {
-		  std::string home(environ);
+		char * environVar = getenv("HOME");
+		if (environVar) {
+		  std::string home(environVar);
 		  field=field.erase(0,1);
 		  fileName = home+field;
 		} else {
@@ -2138,9 +2160,9 @@ int main (int argc, const char *argv[])
 	      if (field[0]=='/'||field[0]=='\\') {
 		fileName = field;
 	      } else if (field[0]=='~') {
-		char * environ = getenv("HOME");
-		if (environ) {
-		  std::string home(environ);
+		char * environVar = getenv("HOME");
+		if (environVar) {
+		  std::string home(environVar);
 		  field=field.erase(0,1);
 		  fileName = home+field;
 		} else {
@@ -2363,9 +2385,9 @@ clp watson.mps -\nscaling off\nprimalsimplex"
 		if (field[0]=='/'||field[0]=='\\') {
 		  fileName = field;
 		} else if (field[0]=='~') {
-		  char * environ = getenv("HOME");
-		  if (environ) {
-		    std::string home(environ);
+		  char * environVar = getenv("HOME");
+		  if (environVar) {
+		    std::string home(environVar);
 		    field=field.erase(0,1);
 		    fileName = home+field;
 		  } else {
@@ -2514,9 +2536,9 @@ clp watson.mps -\nscaling off\nprimalsimplex"
               if (field[0]=='/'||field[0]=='\\') {
                 fileName = field;
               } else if (field[0]=='~') {
-                char * environ = getenv("HOME");
-                if (environ) {
-                  std::string home(environ);
+                char * environVar = getenv("HOME");
+                if (environVar) {
+                  std::string home(environVar);
                   field=field.erase(0,1);
                   fileName = home+field;
                 } else {

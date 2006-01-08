@@ -1294,9 +1294,9 @@ int main (int argc, const char *argv[])
 		if (absolutePath) {
 		  fileName = field;
 		} else if (field[0]=='~') {
-		  char * environ = getenv("HOME");
-		  if (environ) {
-		    std::string home(environ);
+		  char * environVar = getenv("HOME");
+		  if (environVar) {
+		    std::string home(environVar);
 		    field=field.erase(0,1);
 		    fileName = home+field;
 		  } else {

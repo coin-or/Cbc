@@ -1189,6 +1189,9 @@ public:
   { return stateOfSearch_;};
   inline void setStateOfSearch(int state)
   { stateOfSearch_=state;};
+  /// Set strategy worked out - mainly at root node for use by CbcNode
+  inline void setSearchStrategy(int value)
+  { /*searchStrategy_ = value; for compatibility*/};
 
   /// Get the number of cut generators
   inline int numberCutGenerators() const

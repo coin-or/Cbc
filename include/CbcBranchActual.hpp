@@ -127,6 +127,12 @@ public:
   /// Creates a branching object
   virtual CbcBranchingObject * createBranch(int way) ;
 
+  /** Create an OsiSolverBranch object
+
+      This returns NULL if branch not represented by bound changes
+  */
+  virtual OsiSolverBranch * solverBranch() const;
+  
   /// Number of members
   inline int numberMembers() const
   {return numberMembers_;};
@@ -458,6 +464,13 @@ public:
   inline void setUpPseudoCost(double value)
   { upPseudoCost_=value;};
 
+  /// Up down separator
+  inline double upDownSeparator() const
+  { return upDownSeparator_;};
+  /// Set up down separator
+  inline void setUpDownSeparator(double value)
+  { upDownSeparator_=value;};
+
   /// Return "up" estimate
   virtual double upEstimate() const;
   /// Return "down" estimate (default 1.0e-5)
@@ -477,6 +490,11 @@ protected:
   double downPseudoCost_;
   /// Up pseudo cost
   double upPseudoCost_;
+  /** Up/down separator
+      If >0.0 then do first branch up if value-floor(value)
+      >= this value
+  */
+  double upDownSeparator_;
   /** Method - 
       0 - normal - return min (up,down)
       1 - if before any solution return max(up,down)

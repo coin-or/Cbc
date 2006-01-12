@@ -879,6 +879,9 @@ int CbcNode::chooseBranch (CbcModel *model, CbcNode *lastNode,int numberPassesLe
   int i;
   bool beforeSolution = model->getSolutionCount()==0;
   int numberStrong=model->numberStrong();
+  // switch off strong if hotstart
+  if (model->hotstartSolution())
+    numberStrong=0;
   int saveNumberStrong=numberStrong;
   int numberObjects = model->numberObjects();
   bool checkFeasibility = numberObjects>model->numberIntegers();
@@ -923,11 +926,8 @@ int CbcNode::chooseBranch (CbcModel *model, CbcNode *lastNode,int numberPassesLe
       //                      numberIntegerInfeasibilities,
       //                      numberObjectInfeasibilities);
       // If forcePriority > 0 then we want best solution
-      const double * bestSolution = NULL;
-      int hotstartStrategy=model->getHotstartStrategy();
-      if (hotstartStrategy>0) {
-        bestSolution = model->bestSolution();
-      }
+      const double * hotstartSolution = model->hotstartSolution();
+      const int * hotstartPriorities = model->hotstartPriorities();
       
       // Some objects may compute an estimate of best solution from here
       estimatedDegradation=0.0; 
@@ -958,50 +958,62 @@ int CbcNode::chooseBranch (CbcModel *model, CbcNode *lastNode,int numberPassesLe
         int preferredWay;
         double infeasibility = object->infeasibility(preferredWay);
         int priorityLevel = object->priority();
-        if (bestSolution) {
+        if (hotstartSolution) {
           // we are doing hot start
           const CbcSimpleInteger * thisOne = dynamic_cast <const CbcSimpleInteger *> (object);
           if (thisOne) {
             int iColumn = thisOne->modelSequence();
+            double targetValue = hotstartSolution[iColumn];
             if (saveUpper[iColumn]>saveLower[iColumn]) {
               double value = saveSolution[iColumn];
-              double targetValue = bestSolution[iColumn];
+              if (hotstartPriorities)
+                priorityLevel=hotstartPriorities[iColumn]; 
               //double originalLower = thisOne->originalLower();
               //double originalUpper = thisOne->originalUpper();
               // switch off if not possible
               if (targetValue>=saveLower[iColumn]&&targetValue<=saveUpper[iColumn]) {
-                /* priority outranks rest always if hotstartStrategy >1
+                /* priority outranks rest always if negative
                    otherwise can be downgraded if at correct level.
-                   Infeasibility may be increased by targetValue to choose 1.0 values first.
+                   Infeasibility may be increased to choose 1.0 values first.
+                   choose one near wanted value
                 */
                 if (fabs(value-targetValue)>integerTolerance) {
+                  infeasibility = 1.0-fabs(value-targetValue);
+                  if (targetValue==1.0)
+                    infeasibility += 1.0;
                   if (value>targetValue) {
-                    infeasibility += value;
                     preferredWay=-1;
                   } else {
-                    infeasibility += targetValue;
                     preferredWay=1;
                   }
-                } else if (hotstartStrategy>1) {
+                  priorityLevel = CoinAbs(priorityLevel);
+                } else if (priorityLevel<0) {
+                  priorityLevel = CoinAbs(priorityLevel);
                   if (targetValue==saveLower[iColumn]) {
-                    infeasibility += integerTolerance+1.0e-12;
+                    infeasibility = integerTolerance+1.0e-12;
                     preferredWay=-1;
                   } else if (targetValue==saveUpper[iColumn]) {
-                    infeasibility += integerTolerance+1.0e-12;
+                    infeasibility = integerTolerance+1.0e-12;
                     preferredWay=1;
                   } else {
-                    infeasibility += integerTolerance+1.0e-12;
-                    preferredWay=1;
+                    // can't
+                    priorityLevel += 10000000;
                   }
                 } else {
                   priorityLevel += 10000000;
                 }
               } else {
                 // switch off if not possible
-                bestSolution=NULL;
-                model->setHotstartStrategy(0);
+                hotstartSolution=NULL;
+                model->setHotstartSolution(NULL,NULL);
               }
+            } else if (targetValue<saveLower[iColumn]||targetValue>saveUpper[iColumn]) {
+              // switch off as not possible
+              hotstartSolution=NULL;
+              model->setHotstartSolution(NULL,NULL);
             }
+          } else {
+            priorityLevel += 10000000;
           }
         }
         if (infeasibility) {
@@ -1816,8 +1828,7 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
   if (checkFeasibility)
     return -3;
   // Return if doing hot start (in BAB sense)
-  int hotstartStrategy=model->getHotstartStrategy();
-  if (hotstartStrategy>0) 
+  if (model->hotstartSolution()) 
     return -3;
   // Pass number
   int kPass=0;

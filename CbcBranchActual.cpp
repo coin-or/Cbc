@@ -552,6 +552,78 @@ CbcSOS::createBranch(int way)
   return branch;
 }
 
+/* Create an OsiSolverBranch object
+   
+This returns NULL if branch not represented by bound changes
+*/
+OsiSolverBranch * 
+CbcSOS::solverBranch() const
+{
+  int j;
+  const double * solution = model_->testSolution();
+  double integerTolerance = 
+      model_->getDblParam(CbcModel::CbcIntegerTolerance);
+  OsiSolverInterface * solver = model_->solver();
+  const double * upper = solver->getColUpper();
+  int firstNonFixed=-1;
+  int lastNonFixed=-1;
+  int firstNonZero=-1;
+  int lastNonZero = -1;
+  double weight = 0.0;
+  double sum =0.0;
+  double * fix = new double[numberMembers_];
+  int * which = new int[numberMembers_];
+  for (j=0;j<numberMembers_;j++) {
+    int iColumn = members_[j];
+    // fix all on one side or other (even if fixed)
+    fix[j]=0.0;
+    which[j]=iColumn;
+    if (upper[iColumn]) {
+      double value = CoinMax(0.0,solution[iColumn]);
+      sum += value;
+      if (firstNonFixed<0)
+	firstNonFixed=j;
+      lastNonFixed=j;
+      if (value>integerTolerance) {
+	weight += weights_[j]*value;
+	if (firstNonZero<0)
+	  firstNonZero=j;
+	lastNonZero=j;
+      }
+    }
+  }
+  assert (lastNonZero-firstNonZero>=sosType_) ;
+  // find where to branch
+  assert (sum>0.0);
+  weight /= sum;
+  // down branch fixes ones above weight to 0
+  int iWhere;
+  int iDownStart=0;
+  int iUpEnd=0;
+  for (iWhere=firstNonZero;iWhere<lastNonZero;iWhere++) 
+    if (weight<weights_[iWhere+1])
+      break;
+  if (sosType_==1) {
+    // SOS 1
+    iUpEnd=iWhere+1;
+    iDownStart=iUpEnd;
+  } else {
+    // SOS 2
+    if (iWhere==firstNonFixed)
+      iWhere++;;
+    if (iWhere==lastNonFixed-1)
+      iWhere = lastNonFixed-2;
+    iUpEnd=iWhere+1;
+    iDownStart=iUpEnd+1;
+  }
+  // 
+  OsiSolverBranch * branch = new OsiSolverBranch();
+  branch->addBranch(-1,0,NULL,NULL,numberMembers_-iDownStart,which+iDownStart,fix);
+  branch->addBranch(1,0,NULL,NULL,iUpEnd,which,fix);
+  delete [] fix;
+  delete [] which;
+  return branch;
+}
 
 
 /** Default Constructor
@@ -700,8 +772,7 @@ CbcSimpleInteger::createBranch(int way)
   value = CoinMax(value, lower[columnNumber_]);
   value = CoinMin(value, upper[columnNumber_]);
   assert (upper[columnNumber_]>lower[columnNumber_]);
-  int hotstartStrategy=model_->getHotstartStrategy();
-  if (hotstartStrategy<=0) {
+  if (!model_->hotstartSolution()) {
 #ifndef NDEBUG
     double nearest = floor(value+0.5);
     double integerTolerance = 
@@ -709,8 +780,8 @@ CbcSimpleInteger::createBranch(int way)
     assert (fabs(value-nearest)>integerTolerance);
 #endif
   } else {
-    const double * bestSolution = model_->bestSolution();
-    double targetValue = bestSolution[columnNumber_];
+    const double * hotstartSolution = model_->hotstartSolution();
+    double targetValue = hotstartSolution[columnNumber_];
     if (way>0)
       value = targetValue-0.1;
     else
@@ -974,6 +1045,7 @@ CbcSimpleIntegerPseudoCost::CbcSimpleIntegerPseudoCost ()
   : CbcSimpleInteger(),
     downPseudoCost_(1.0e-5),
     upPseudoCost_(1.0e-5),
+    upDownSeparator_(-1.0),
     method_(0)
 {
 }
@@ -992,6 +1064,7 @@ CbcSimpleIntegerPseudoCost::CbcSimpleIntegerPseudoCost (CbcModel * model, int se
   upPseudoCost_=costValue;
   // and balance at breakeven
   downPseudoCost_=((1.0-breakEven_)*upPseudoCost_)/breakEven_;
+  upDownSeparator_ = -1.0;
   method_=0;
 }
 
@@ -1007,6 +1080,7 @@ CbcSimpleIntegerPseudoCost::CbcSimpleIntegerPseudoCost (CbcModel * model, int se
   downPseudoCost_ = CoinMax(1.0e-10,downPseudoCost);
   upPseudoCost_ = CoinMax(1.0e-10,upPseudoCost);
   breakEven_ = upPseudoCost_/(upPseudoCost_+downPseudoCost_);
+  upDownSeparator_ = -1.0;
   method_=0;
 }
 
@@ -1015,6 +1089,7 @@ CbcSimpleIntegerPseudoCost::CbcSimpleIntegerPseudoCost ( const CbcSimpleIntegerP
   :CbcSimpleInteger(rhs),
    downPseudoCost_(rhs.downPseudoCost_),
    upPseudoCost_(rhs.upPseudoCost_),
+   upDownSeparator_(rhs.upDownSeparator_),
    method_(rhs.method_)
 
 {
@@ -1035,6 +1110,7 @@ CbcSimpleIntegerPseudoCost::operator=( const CbcSimpleIntegerPseudoCost& rhs)
     CbcSimpleInteger::operator=(rhs);
     downPseudoCost_=rhs.downPseudoCost_;
     upPseudoCost_=rhs.upPseudoCost_;
+    upDownSeparator_=rhs.upDownSeparator_;
     method_=rhs.method_;
   }
   return *this;
@@ -1061,12 +1137,11 @@ CbcSimpleIntegerPseudoCost::createBranch(int way)
     model_->getDblParam(CbcModel::CbcIntegerTolerance);
   assert (upper[columnNumber_]>lower[columnNumber_]);
 #endif
-  int hotstartStrategy=model_->getHotstartStrategy();
-  if (hotstartStrategy<=0) {
+  if (!model_->hotstartSolution()) {
     assert (fabs(value-nearest)>integerTolerance);
   } else {
-    const double * bestSolution = model_->bestSolution();
-    double targetValue = bestSolution[columnNumber_];
+    const double * hotstartSolution = model_->hotstartSolution();
+    double targetValue = hotstartSolution[columnNumber_];
     if (way>0)
       value = targetValue-0.1;
     else
@@ -1119,6 +1194,10 @@ CbcSimpleIntegerPseudoCost::infeasibility(int & preferredWay) const
     preferredWay=1;
   else
     preferredWay=-1;
+  // See if up down choice set
+  if (upDownSeparator_>0.0) {
+    preferredWay = (value-below>=upDownSeparator_) ? 1 : -1;
+  }
   if (fabs(value-nearest)<=integerTolerance) {
     return 0.0;
   } else {

@@ -536,12 +536,11 @@ public:
     return getDblParam(CbcCutoffIncrement);
   }
 
-  /// Set the hotstart strategy
-  inline void setHotstartStrategy(int value) 
-  { hotstartStrategy_=value;};
-  /// Get the hotstart strategy 
-  inline int getHotstartStrategy() const
-  { return hotstartStrategy_;};
+  /** Pass in target solution and optional priorities.
+      If priorities then >0 means only branch if incorrect
+      while <0 means branch even if correct. +1 or -1 are
+      highest priority */
+  void setHotstartSolution(const double * solution, const int * priorities=NULL) ;
   
   /// Set the minimum drop to continue cuts
   inline void setMinimumDrop(double value)
@@ -1107,78 +1106,6 @@ public:
   /** \name Row (constraint) and Column (variable) cut generation */
   //@{
 
-  /** Perform reduced cost fixing
-
-    Fixes integer variables at their current value based on reduced cost
-    penalties.  Returns number fixed
-  */
-  int reducedCostFix() ;
-
-  /** Return an empty basis object of the specified size
-
-    A useful utility when constructing a basis for a subproblem from scratch.
-    The object returned will be of the requested capacity and appropriate for
-    the solver attached to the model.
-  */
-  CoinWarmStartBasis *getEmptyBasis(int ns = 0, int na = 0) const ;
-
-  /** Remove inactive cuts from the model
-
-    An OsiSolverInterface is expected to maintain a valid basis, but not a
-    valid solution, when loose cuts are deleted. Restoring a valid solution
-    requires calling the solver to reoptimise. If it's certain the solution
-    will not be required, set allowResolve to false to suppress
-    reoptimisation.
-    If saveCuts then slack cuts will be saved
-  */
-  void takeOffCuts(OsiCuts &cuts, 
-		     bool allowResolve,OsiCuts * saveCuts) ;
-
-  /** Determine and install the active cuts that need to be added for
-    the current subproblem
-
-    The whole truth is a bit more complicated. The first action is a call to
-    addCuts1(). addCuts() then sorts through the list, installs the tight
-    cuts in the model, and does bookkeeping (adjusts reference counts).
-    The basis returned from addCuts1() is adjusted accordingly.
-    
-    If it turns out that the node should really be fathomed by bound,
-    addCuts() simply treats all the cuts as loose as it does the bookkeeping.
-
-    canFix true if extra information being passed
-  */
-  int addCuts(CbcNode * node, CoinWarmStartBasis *&lastws,bool canFix);
-
-  /** Traverse the tree from node to root and prep the model
-
-    addCuts1() begins the job of prepping the model to match the current
-    subproblem. The model is stripped of all cuts, and the search tree is
-    traversed from node to root to determine the changes required. Appropriate
-    bounds changes are installed, a list of cuts is collected but not
-    installed, and an appropriate basis (minus the cuts, but big enough to
-    accommodate them) is constructed.
-
-    \todo addCuts1() is called in contexts where it's known in advance that
-	  all that's desired is to determine a list of cuts and do the
-	  bookkeeping (adjust the reference counts). The work of installing
-	  bounds and building a basis goes to waste.
-  */
-  void addCuts1(CbcNode * node, CoinWarmStartBasis *&lastws);
-
-  /// Return the list of cuts initially collected for this subproblem
-  inline CbcCountRowCut ** addedCuts() const
-  { return addedCuts_;};
-  /// Number of entries in the list returned by #addedCuts()
-  inline int currentNumberCuts() const
-  { return currentNumberCuts_;};
-  /// Global cuts
-  inline OsiCuts * globalCuts() 
-  { return &globalCuts_;};
-  /// Copy and set a pointer to a row cut which will be added instead of normal branching.
-  void setNextRowCut(const OsiRowCut & cut);
-  /// Get a pointer to current node (be careful)
-  inline CbcNode * currentNode() const
-  { return currentNode_;};
   /** State of search
       0 - no solution
       1 - only heuristic solutions
@@ -1410,6 +1337,85 @@ public:
     { return numberNodes2_;};
   /// Set pointers for speed
   void setPointers(const OsiSolverInterface * solver);
+  /** Perform reduced cost fixing
+
+    Fixes integer variables at their current value based on reduced cost
+    penalties.  Returns number fixed
+  */
+  int reducedCostFix() ;
+
+  /** Return an empty basis object of the specified size
+
+    A useful utility when constructing a basis for a subproblem from scratch.
+    The object returned will be of the requested capacity and appropriate for
+    the solver attached to the model.
+  */
+  CoinWarmStartBasis *getEmptyBasis(int ns = 0, int na = 0) const ;
+
+  /** Remove inactive cuts from the model
+
+    An OsiSolverInterface is expected to maintain a valid basis, but not a
+    valid solution, when loose cuts are deleted. Restoring a valid solution
+    requires calling the solver to reoptimise. If it's certain the solution
+    will not be required, set allowResolve to false to suppress
+    reoptimisation.
+    If saveCuts then slack cuts will be saved
+  */
+  void takeOffCuts(OsiCuts &cuts, 
+		     bool allowResolve,OsiCuts * saveCuts) ;
+
+  /** Determine and install the active cuts that need to be added for
+    the current subproblem
+
+    The whole truth is a bit more complicated. The first action is a call to
+    addCuts1(). addCuts() then sorts through the list, installs the tight
+    cuts in the model, and does bookkeeping (adjusts reference counts).
+    The basis returned from addCuts1() is adjusted accordingly.
+    
+    If it turns out that the node should really be fathomed by bound,
+    addCuts() simply treats all the cuts as loose as it does the bookkeeping.
+
+    canFix true if extra information being passed
+  */
+  int addCuts(CbcNode * node, CoinWarmStartBasis *&lastws,bool canFix);
+
+  /** Traverse the tree from node to root and prep the model
+
+    addCuts1() begins the job of prepping the model to match the current
+    subproblem. The model is stripped of all cuts, and the search tree is
+    traversed from node to root to determine the changes required. Appropriate
+    bounds changes are installed, a list of cuts is collected but not
+    installed, and an appropriate basis (minus the cuts, but big enough to
+    accommodate them) is constructed.
+
+    \todo addCuts1() is called in contexts where it's known in advance that
+	  all that's desired is to determine a list of cuts and do the
+	  bookkeeping (adjust the reference counts). The work of installing
+	  bounds and building a basis goes to waste.
+  */
+  void addCuts1(CbcNode * node, CoinWarmStartBasis *&lastws);
+
+  /// Get the hotstart solution 
+  inline const double * hotstartSolution() const
+  { return hotstartSolution_;};
+  /// Get the hotstart priorities 
+  inline const int * hotstartPriorities() const
+  { return hotstartPriorities_;};
+
+  /// Return the list of cuts initially collected for this subproblem
+  inline CbcCountRowCut ** addedCuts() const
+  { return addedCuts_;};
+  /// Number of entries in the list returned by #addedCuts()
+  inline int currentNumberCuts() const
+  { return currentNumberCuts_;};
+  /// Global cuts
+  inline OsiCuts * globalCuts() 
+  { return &globalCuts_;};
+  /// Copy and set a pointer to a row cut which will be added instead of normal branching.
+  void setNextRowCut(const OsiRowCut & cut);
+  /// Get a pointer to current node (be careful)
+  inline CbcNode * currentNode() const
+  { return currentNode_;};
   //@}
 
 //---------------------------------------------------------------------------
@@ -1499,8 +1505,10 @@ private:
       3 - no solution but many nodes
   */
   int stateOfSearch_;
-  /// Hotstart strategy 0 =off, 1=branch if incorrect,2=branch even if correct, ....
-  int hotstartStrategy_;
+  /// Hotstart solution
+  double * hotstartSolution_;
+  /// Hotstart priorities 
+  int * hotstartPriorities_;
   /// Number of heuristic solutions
   int numberHeuristicSolutions_;
   /// Cumulative number of nodes

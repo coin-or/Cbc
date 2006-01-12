@@ -68,6 +68,13 @@ public:
   inline void setUpDynamicPseudoCost(double value)
   { upDynamicPseudoCost_=value;};
 
+  /// Up down separator
+  inline double upDownSeparator() const
+  { return upDownSeparator_;};
+  /// Set up down separator
+  inline void setUpDownSeparator(double value)
+  { upDownSeparator_=value;};
+
   /// Down sum cost
   inline double sumDownCost() const
   { return sumDownCost_;};
@@ -87,6 +94,26 @@ public:
   /// Add to up sum cost and set last and square
   inline void addToSumUpCost(double value)
   { sumUpCost_+=value;lastUpCost_=value;sumUpCostSquared_ += value*value;};
+
+  /// Down sum change
+  inline double sumDownChange() const
+  { return sumDownChange_;};
+  /// Set down sum change
+  inline void setSumDownChange(double value)
+  { sumDownChange_=value;};
+  /// Add to down sum change
+  inline void addToSumDownChange(double value)
+  { sumDownChange_+=value;};
+
+  /// Up sum change
+  inline double sumUpChange() const
+  { return sumUpChange_;};
+  /// Set up sum change
+  inline void setSumUpChange(double value)
+  { sumUpChange_=value;};
+  /// Add to up sum change and set last and square
+  inline void addToSumUpChange(double value)
+  { sumUpChange_+=value;};
 
   /// Sum down decrease number infeasibilities from strong or actual
   inline double sumDownDecrease() const
@@ -181,10 +208,19 @@ protected:
   double downDynamicPseudoCost_;
   /// Up pseudo cost
   double upDynamicPseudoCost_;
+  /** Up/down separator
+      If >0.0 then do first branch up if value-floor(value)
+      >= this value
+  */
+  double upDownSeparator_;
   /// Sum down cost from strong or actual
   double sumDownCost_;
   /// Sum up cost from strong or actual
   double sumUpCost_;
+  /// Sum of all changes to x when going down
+  double sumDownChange_;
+  /// Sum of all changes to x when going up
+  double sumUpChange_;
   /// Sum down cost from strong or actual squared
   double sumDownCostSquared_;
   /// Sum up cost from strong or actual squared

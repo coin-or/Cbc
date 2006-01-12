@@ -425,6 +425,36 @@ void CbcModel::branchAndBound(int doStatistics)
 #endif
   if (!nodeCompare_)
     nodeCompare_=new CbcCompareDefault();;
+  // See if hot start wanted
+  CbcCompareBase * saveCompare = NULL;
+  if (hotstartSolution_) {
+    if (strategy_&&strategy_->preProcessState()>0) {
+      CglPreProcess * process = strategy_->process();
+      assert (process);
+      int n = solver_->getNumCols();
+      const int * originalColumns = process->originalColumns();
+      // columns should be in order ... but
+      double * tempS = new double[n];
+      for (int i=0;i<n;i++) {
+        int iColumn = originalColumns[i];
+        tempS[i]=hotstartSolution_[iColumn];
+      }
+      delete [] hotstartSolution_;
+      hotstartSolution_=tempS;
+      if (hotstartPriorities_) {
+        int * tempP = new int [n];
+        for (int i=0;i<n;i++) {
+          int iColumn = originalColumns[i];
+          tempP[i]=hotstartPriorities_[iColumn];
+        }
+        delete [] hotstartPriorities_;
+        hotstartPriorities_=tempP;
+      }
+    }
+    saveCompare = nodeCompare_;
+    // depth first
+    nodeCompare_ = new CbcCompareDepth();
+  }
   if (!problemFeasibility_)
     problemFeasibility_=new CbcFeasibilityBase();
 # ifdef CBC_DEBUG
@@ -915,6 +945,14 @@ void CbcModel::branchAndBound(int doStatistics)
       if (redoTree)
 	tree_->setComparison(*nodeCompare_) ;
     }
+    if (saveCompare&&!hotstartSolution_) {
+      // hotstart switched off
+      delete nodeCompare_; // off depth first
+      nodeCompare_=saveCompare;
+      saveCompare=NULL;
+      // redo tree
+      tree_->setComparison(*nodeCompare_) ;
+    }
     if ((numberNodes_%printFrequency_) == 0) {
       int j ;
       int nNodes = tree_->size() ;
@@ -1190,8 +1228,6 @@ void CbcModel::branchAndBound(int doStatistics)
           // say strong doing well
           if (checkingNode)
             setSpecialOptions(specialOptions_|8);
-	  // switch off any hot start
-	  hotstartStrategy_=0;
 	  for (i = 0 ; i < currentNumberCuts_ ; i++)
 	  { if (addedCuts_[i])
 	    { if (!addedCuts_[i]->decrement(1))
@@ -3043,8 +3079,6 @@ CbcModel::solveOneNode(int whichSolver,CbcNode * node,
         // say strong doing well
         if (checkingNode)
           setSpecialOptions(specialOptions_|8);
-        // switch off any hot start
-        hotstartStrategy_=0;
         for (i = 0 ; i < currentNumberCuts_ ; i++) {
           if (addedCuts_[i]) {
             if (!addedCuts_[i]->decrement(1)) {
@@ -3269,7 +3303,8 @@ CbcModel::CbcModel()
   minimumDrop_(1.0e-4),
   numberSolutions_(0),
   stateOfSearch_(0),
-  hotstartStrategy_(0),
+  hotstartSolution_(NULL),
+  hotstartPriorities_(NULL),
   numberHeuristicSolutions_(0),
   numberNodes_(0),
   numberNodes2_(0),
@@ -3386,7 +3421,8 @@ CbcModel::CbcModel(const OsiSolverInterface &rhs)
   minimumDrop_(1.0e-4),
   numberSolutions_(0),
   stateOfSearch_(0),
-  hotstartStrategy_(0),
+  hotstartSolution_(NULL),
+  hotstartPriorities_(NULL),
   numberHeuristicSolutions_(0),
   numberNodes_(0),
   numberNodes2_(0),
@@ -3594,7 +3630,6 @@ CbcModel::CbcModel(const CbcModel & rhs, bool noTree)
   minimumDrop_(rhs.minimumDrop_),
   numberSolutions_(rhs.numberSolutions_),
   stateOfSearch_(rhs.stateOfSearch_),
-  hotstartStrategy_(rhs.hotstartStrategy_),
   numberHeuristicSolutions_(rhs.numberHeuristicSolutions_),
   numberNodes_(rhs.numberNodes_),
   numberNodes2_(rhs.numberNodes2_),
@@ -3739,6 +3774,14 @@ CbcModel::CbcModel(const CbcModel & rhs, bool noTree)
     integerVariable_ = NULL;
     integerInfo_=NULL;
   }
+  if (rhs.hotstartSolution_) {
+    int numberColumns = solver_->getNumCols();
+    hotstartSolution_ = CoinCopyOfArray(rhs.hotstartSolution_,numberColumns);
+    hotstartPriorities_ = CoinCopyOfArray(rhs.hotstartPriorities_,numberColumns);
+  } else {
+    hotstartSolution_ = NULL;
+    hotstartPriorities_ =NULL;
+  }
   if (rhs.bestSolution_&&!noTree) {
     int numberColumns = solver_->getNumCols();
     bestSolution_ = new double[numberColumns];
@@ -3856,7 +3899,6 @@ CbcModel::operator=(const CbcModel& rhs)
     minimumDrop_ = rhs.minimumDrop_;
     numberSolutions_=rhs.numberSolutions_;
     stateOfSearch_= rhs.stateOfSearch_;
-    hotstartStrategy_=rhs.hotstartStrategy_;
     numberHeuristicSolutions_=rhs.numberHeuristicSolutions_;
     numberNodes_ = rhs.numberNodes_;
     numberNodes2_ = rhs.numberNodes2_;
@@ -3993,6 +4035,14 @@ CbcModel::operator=(const CbcModel& rhs)
       integerVariable_ = NULL;
       integerInfo_=NULL;
     }
+    if (rhs.hotstartSolution_) {
+      int numberColumns = solver_->getNumCols();
+      hotstartSolution_ = CoinCopyOfArray(rhs.hotstartSolution_,numberColumns);
+      hotstartPriorities_ = CoinCopyOfArray(rhs.hotstartPriorities_,numberColumns);
+    } else {
+      hotstartSolution_ = NULL;
+      hotstartPriorities_ =NULL;
+    }
     numberRowsAtContinuous_ = rhs.numberRowsAtContinuous_;
     maximumNumberCuts_=rhs.maximumNumberCuts_;
     phase_ = rhs.phase_;
@@ -4117,7 +4167,10 @@ CbcModel::gutsOfDestructor2()
   sumChangeObjective2_=0.0;
   numberSolutions_=0;
   stateOfSearch_=0;
-  hotstartStrategy_=0;
+  delete [] hotstartSolution_;
+  hotstartSolution_=NULL;
+  delete [] hotstartPriorities_;
+  hotstartPriorities_=NULL;
   numberHeuristicSolutions_=0;
   numberNodes_=0;
   numberNodes2_=0;
@@ -8217,5 +8270,28 @@ CbcModel::setLogLevel(int value)
         clpSimplex->setLogLevel(value);
     }
 #endif
+  }
+}
+
+/* Pass in target solution and optional priorities.
+   If priorities then >0 means only branch if incorrect
+   while <0 means branch even if correct. +1 or -1 are
+   highest priority */
+void 
+CbcModel::setHotstartSolution(const double * solution, const int * priorities)
+{ 
+  if (solution==NULL) {
+    delete [] hotstartSolution_;
+    hotstartSolution_=NULL;
+    delete [] hotstartPriorities_;
+    hotstartPriorities_=NULL;
+  } else {
+    int numberColumns = solver_->getNumCols();
+    hotstartSolution_ = CoinCopyOfArray(solution,numberColumns);
+    for (int i=0;i<numberColumns;i++) {
+      if (solver_->isInteger(i)) 
+        hotstartSolution_[i]=floor(hotstartSolution_[i]+0.5);
+    }
+    hotstartPriorities_ = CoinCopyOfArray(priorities,numberColumns);
   }
 }

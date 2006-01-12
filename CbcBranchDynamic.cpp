@@ -25,8 +25,11 @@ CbcSimpleIntegerDynamicPseudoCost::CbcSimpleIntegerDynamicPseudoCost ()
   : CbcSimpleInteger(),
     downDynamicPseudoCost_(1.0e-5),
     upDynamicPseudoCost_(1.0e-5),
+    upDownSeparator_(-1.0),
     sumDownCost_(0.0),
     sumUpCost_(0.0),
+    sumDownChange_(0.0),
+    sumUpChange_(0.0),
     sumDownCostSquared_(0.0),
     sumUpCostSquared_(0.0),
     sumDownDecrease_(0.0),
@@ -51,8 +54,11 @@ CbcSimpleIntegerDynamicPseudoCost::CbcSimpleIntegerDynamicPseudoCost ()
 CbcSimpleIntegerDynamicPseudoCost::CbcSimpleIntegerDynamicPseudoCost (CbcModel * model, int sequence,
 				    int iColumn, double breakEven)
   : CbcSimpleInteger(model,sequence,iColumn,breakEven),
+    upDownSeparator_(-1.0),
     sumDownCost_(0.0),
     sumUpCost_(0.0),
+    sumDownChange_(0.0),
+    sumUpChange_(0.0),
     sumDownCostSquared_(0.0),
     sumUpCostSquared_(0.0),
     sumDownDecrease_(0.0),
@@ -74,6 +80,29 @@ CbcSimpleIntegerDynamicPseudoCost::CbcSimpleIntegerDynamicPseudoCost (CbcModel *
   upDynamicPseudoCost_=costValue;
   // and balance at breakeven
   downDynamicPseudoCost_=((1.0-breakEven_)*upDynamicPseudoCost_)/breakEven_;
+  // so initial will have some effect
+  sumUpCost_ = 2.0*upDynamicPseudoCost_;
+  sumUpChange_ = 2.0;
+  numberTimesUp_ = 2;
+  sumDownCost_ = 2.0*downDynamicPseudoCost_;
+  sumDownChange_ = 2.0;
+  numberTimesDown_ = 2;
+#if 0
+  // No
+  sumUpCost_ = 0.0;
+  sumUpChange_ = 0.0;
+  numberTimesUp_ = 0;
+  sumDownCost_ = 0.0;
+  sumDownChange_ = 0.0;
+  numberTimesDown_ = 0;
+#else
+  sumUpCost_ = 1.0*upDynamicPseudoCost_;
+  sumUpChange_ = 1.0;
+  numberTimesUp_ = 1;
+  sumDownCost_ = 1.0*downDynamicPseudoCost_;
+  sumDownChange_ = 1.0;
+  numberTimesDown_ = 1;
+#endif
 }
 
 /** Useful constructor
@@ -84,8 +113,11 @@ CbcSimpleIntegerDynamicPseudoCost::CbcSimpleIntegerDynamicPseudoCost (CbcModel *
 				    int iColumn, double downDynamicPseudoCost,
 							double upDynamicPseudoCost)
   : CbcSimpleInteger(model,sequence,iColumn),
+    upDownSeparator_(-1.0),
     sumDownCost_(0.0),
     sumUpCost_(0.0),
+    sumDownChange_(0.0),
+    sumUpChange_(0.0),
     sumDownCostSquared_(0.0),
     sumUpCostSquared_(0.0),
     sumDownDecrease_(0.0),
@@ -104,6 +136,29 @@ CbcSimpleIntegerDynamicPseudoCost::CbcSimpleIntegerDynamicPseudoCost (CbcModel *
   downDynamicPseudoCost_ = downDynamicPseudoCost;
   upDynamicPseudoCost_ = upDynamicPseudoCost;
   breakEven_ = upDynamicPseudoCost_/(upDynamicPseudoCost_+downDynamicPseudoCost_);
+  // so initial will have some effect
+  sumUpCost_ = 2.0*upDynamicPseudoCost_;
+  sumUpChange_ = 2.0;
+  numberTimesUp_ = 2;
+  sumDownCost_ = 2.0*downDynamicPseudoCost_;
+  sumDownChange_ = 2.0;
+  numberTimesDown_ = 2;
+#if 0
+  // No
+  sumUpCost_ = 0.0;
+  sumUpChange_ = 0.0;
+  numberTimesUp_ = 0;
+  sumDownCost_ = 0.0;
+  sumDownChange_ = 0.0;
+  numberTimesDown_ = 0;
+#else
+  sumUpCost_ = 1.0*upDynamicPseudoCost_;
+  sumUpChange_ = 1.0;
+  numberTimesUp_ = 1;
+  sumDownCost_ = 1.0*downDynamicPseudoCost_;
+  sumDownChange_ = 1.0;
+  numberTimesDown_ = 1;
+#endif
 }
 
 // Copy constructor 
@@ -111,8 +166,11 @@ CbcSimpleIntegerDynamicPseudoCost::CbcSimpleIntegerDynamicPseudoCost ( const Cbc
   :CbcSimpleInteger(rhs),
    downDynamicPseudoCost_(rhs.downDynamicPseudoCost_),
    upDynamicPseudoCost_(rhs.upDynamicPseudoCost_),
+   upDownSeparator_(rhs.upDownSeparator_),
    sumDownCost_(rhs.sumDownCost_),
    sumUpCost_(rhs.sumUpCost_),
+   sumDownChange_(rhs.sumDownChange_),
+   sumUpChange_(rhs.sumUpChange_),
    sumDownCostSquared_(rhs.sumDownCostSquared_),
    sumUpCostSquared_(rhs.sumUpCostSquared_),
    sumDownDecrease_(rhs.sumDownDecrease_),
@@ -146,8 +204,11 @@ CbcSimpleIntegerDynamicPseudoCost::operator=( const CbcSimpleIntegerDynamicPseud
     CbcSimpleInteger::operator=(rhs);
     downDynamicPseudoCost_=rhs.downDynamicPseudoCost_;
     upDynamicPseudoCost_=rhs.upDynamicPseudoCost_;
+    upDownSeparator_=rhs.upDownSeparator_;
     sumDownCost_ = rhs.sumDownCost_;
     sumUpCost_ = rhs.sumUpCost_;
+    sumDownChange_ = rhs.sumDownChange_;
+    sumUpChange_ = rhs.sumUpChange_;
     sumDownCostSquared_ = rhs.sumDownCostSquared_;
     sumUpCostSquared_ = rhs.sumUpCostSquared_;
     sumDownDecrease_ = rhs.sumDownDecrease_;
@@ -186,12 +247,11 @@ CbcSimpleIntegerDynamicPseudoCost::createBranch(int way)
     model_->getDblParam(CbcModel::CbcIntegerTolerance);
   assert (upper[columnNumber_]>lower[columnNumber_]);
 #endif
-  int hotstartStrategy=model_->getHotstartStrategy();
-  if (hotstartStrategy<=0) {
+  if (!model_->hotstartSolution()) {
     assert (fabs(value-nearest)>integerTolerance);
   } else {
-    const double * bestSolution = model_->bestSolution();
-    double targetValue = bestSolution[columnNumber_];
+    const double * hotstartSolution = model_->hotstartSolution();
+    double targetValue = hotstartSolution[columnNumber_];
     if (way>0)
       value = targetValue-0.1;
     else
@@ -299,6 +359,10 @@ CbcSimpleIntegerDynamicPseudoCost::infeasibility(int & preferredWay) const
     preferredWay=1;
   else
     preferredWay=-1;
+  // See if up down choice set
+  if (upDownSeparator_>0.0) {
+    preferredWay = (value-below>=upDownSeparator_) ? 1 : -1;
+  }
   // weight at 1.0 is max min
 #define WEIGHT_AFTER 0.9
 #define WEIGHT_BEFORE 0.3
@@ -325,6 +389,11 @@ CbcSimpleIntegerDynamicPseudoCost::infeasibility(int & preferredWay) const
       if (!numberTimesUp_&&!numberTimesDown_)
         returnValue=1.0e50;
     }
+    //if (fabs(value-0.5)<1.0e-5) {
+    //returnValue = 3.0*returnValue + 0.2;
+    //} else if (value>0.9) {
+    //returnValue = 2.0*returnValue + 0.1;
+    //}
     return CoinMax(returnValue,1.0e-15);
   }
 }
@@ -666,13 +735,20 @@ CbcBranchDynamicDecision::updateInformation(OsiSolverInterface * solver,
   }
   int way = object_->way();
   double value = object_->value();
+#define TYPE2
   if (way<0) {
     // down
-    object->incrementNumberTimesDown();
     if (feasible) {
-      object->addToSumDownCost(change/(1.0e-30+(value-floor(value))));
+      object->incrementNumberTimesDown();
+      object->addToSumDownChange(1.0e-30+value-floor(value));
       object->addToSumDownDecrease(originalUnsatisfied-unsatisfied);
+#ifndef TYPE2
+      object->addToSumDownCost(change/(1.0e-30+(value-floor(value))));
       object->setDownDynamicPseudoCost(object->sumDownCost()/(double) object->numberTimesDown());
+#else
+      object->addToSumDownCost(change);
+      object->setDownDynamicPseudoCost(object->sumDownCost()/object->sumDownChange());
+#endif
     } else {
       object->incrementNumberTimesDownInfeasible();
     }
@@ -680,9 +756,15 @@ CbcBranchDynamicDecision::updateInformation(OsiSolverInterface * solver,
     // up
     if (feasible) {
       object->incrementNumberTimesUp();
-      object->addToSumUpCost(change/(1.0e-30+(ceil(value)-value)));
+      object->addToSumUpChange(1.0e-30+ceil(value)-value);
       object->addToSumUpDecrease(unsatisfied-originalUnsatisfied);
+#ifndef TYPE2
+      object->addToSumUpCost(change/(1.0e-30+(ceil(value)-value)));
       object->setUpDynamicPseudoCost(object->sumUpCost()/(double) object->numberTimesUp());
+#else
+      object->addToSumUpCost(change);
+      object->setUpDynamicPseudoCost(object->sumUpCost()/object->sumUpChange());
+#endif
     } else {
       object->incrementNumberTimesUpInfeasible();
     }
@@ -785,6 +867,17 @@ CbcBranchDynamicDecision::betterBranch(CbcBranchingObject * thisOne,
     }
   }
   if (betterWay) {
+    // maybe change better way
+    CbcDynamicPseudoCostBranchingObject * branchingObject =
+      dynamic_cast<CbcDynamicPseudoCostBranchingObject *>(thisOne);
+    assert (branchingObject);
+    CbcSimpleIntegerDynamicPseudoCost *  object = branchingObject->object();
+    double separator = object->upDownSeparator();
+    if (separator>0.0) {
+      const double * solution = thisOne->model()->testSolution();
+      double valueVariable = solution[object->columnNumber()];
+      betterWay = (valueVariable-floor(valueVariable)>=separator) ? 1 : -1;
+    }
     bestCriterion_ = value;
     bestChangeUp_ = changeUp;
     bestNumberUp_ = numInfUp;

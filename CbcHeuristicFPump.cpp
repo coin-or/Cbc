@@ -177,7 +177,8 @@ CbcHeuristicFPump::solution(double & solutionValue,
       // Compute using dot product
       solver->setDblParam(OsiObjOffset,saveOffset);
       double newSolutionValue = direction*solver->OsiSolverInterface::getObjValue();
-      printf(" - solution found\n");
+      if (solver->messageHandler()->logLevel())
+        printf(" - solution found\n");
       newLineNeeded=false;
       if (newSolutionValue<solutionValue) {
         if (general) {
@@ -226,7 +227,8 @@ CbcHeuristicFPump::solution(double & solutionValue,
       }
       if (matched || numberPasses%100 == 0) {
 	 // perturbation
-	 printf("Perturbation applied");
+        if (solver->messageHandler()->logLevel())
+          printf("Perturbation applied");
          newLineNeeded=true;
 	 for (i=0;i<numberIntegers;i++) {
 	     int iColumn = integerVariable[i];
@@ -273,12 +275,13 @@ CbcHeuristicFPump::solution(double & solutionValue,
       }
       solver->setDblParam(OsiObjOffset,-offset);
       solver->resolve();
-      printf("\npass %3d: obj. %10.5lf --> ", numberPasses,solver->getObjValue());
+      if (solver->messageHandler()->logLevel())
+        printf("\npass %3d: obj. %10.5lf --> ", numberPasses,solver->getObjValue());
       newLineNeeded=true;
 
     }
   } // END WHILE
-  if (newLineNeeded)
+  if (newLineNeeded&&solver->messageHandler()->logLevel())
     printf(" - no solution found\n");
   delete solver;
   delete [] newSolution;
@@ -362,15 +365,19 @@ CbcHeuristicFPump::rounds(double * solution,
   }
 
   if (nnv > nn) nnv = nn;
-  if (iter != 0) printf("up = %5d , down = %5d", flip_up, flip_down); fflush(stdout);
+  if (iter != 0&&solver->messageHandler()->logLevel())
+    printf("up = %5d , down = %5d", flip_up, flip_down); fflush(stdout);
   *flip = flip_up + flip_down;
   delete [] tmp;
 
   if (*flip == 0 && iter != 0) {
-     printf(" -- rand = %4d (%4d) ", nnv, nn);
+    if(solver->messageHandler()->logLevel())
+      printf(" -- rand = %4d (%4d) ", nnv, nn);
      for (i = 0; i < nnv; i++) solution[list[i]] = 1. - solution[list[i]];
      *flip = nnv;
-  } else printf(" ");
+  } else if (solver->messageHandler()->logLevel()) {
+    printf(" ");
+  }
   delete [] list; delete [] val;
   iter++;
     

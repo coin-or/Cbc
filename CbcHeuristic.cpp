@@ -85,7 +85,7 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver,int numberNodes,
     } else {
       solver2->resolve();
       CbcModel model(*solver2);
-      if (logLevel==1)
+      if (logLevel<=1)
         model.setLogLevel(0);
       else
         model.setLogLevel(logLevel);

@@ -177,7 +177,7 @@ CbcHeuristicFPump::solution(double & solutionValue,
       // Compute using dot product
       solver->setDblParam(OsiObjOffset,saveOffset);
       double newSolutionValue = direction*solver->OsiSolverInterface::getObjValue();
-      if (solver->messageHandler()->logLevel())
+      if (model_->logLevel())
         printf(" - solution found\n");
       newLineNeeded=false;
       if (newSolutionValue<solutionValue) {
@@ -227,7 +227,7 @@ CbcHeuristicFPump::solution(double & solutionValue,
       }
       if (matched || numberPasses%100 == 0) {
 	 // perturbation
-        if (solver->messageHandler()->logLevel())
+        if (model_->logLevel())
           printf("Perturbation applied");
          newLineNeeded=true;
 	 for (i=0;i<numberIntegers;i++) {
@@ -275,13 +275,13 @@ CbcHeuristicFPump::solution(double & solutionValue,
       }
       solver->setDblParam(OsiObjOffset,-offset);
       solver->resolve();
-      if (solver->messageHandler()->logLevel())
+      if (model_->logLevel())
         printf("\npass %3d: obj. %10.5lf --> ", numberPasses,solver->getObjValue());
       newLineNeeded=true;
 
     }
   } // END WHILE
-  if (newLineNeeded&&solver->messageHandler()->logLevel())
+  if (newLineNeeded&&model_->logLevel())
     printf(" - no solution found\n");
   delete solver;
   delete [] newSolution;
@@ -365,17 +365,17 @@ CbcHeuristicFPump::rounds(double * solution,
   }
 
   if (nnv > nn) nnv = nn;
-  if (iter != 0&&solver->messageHandler()->logLevel())
+  if (iter != 0&&model_->logLevel())
     printf("up = %5d , down = %5d", flip_up, flip_down); fflush(stdout);
   *flip = flip_up + flip_down;
   delete [] tmp;
 
   if (*flip == 0 && iter != 0) {
-    if(solver->messageHandler()->logLevel())
+    if(model_->logLevel())
       printf(" -- rand = %4d (%4d) ", nnv, nn);
      for (i = 0; i < nnv; i++) solution[list[i]] = 1. - solution[list[i]];
      *flip = nnv;
-  } else if (solver->messageHandler()->logLevel()) {
+  } else if (model_->logLevel()) {
     printf(" ");
   }
   delete [] list; delete [] val;

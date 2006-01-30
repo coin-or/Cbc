@@ -259,7 +259,7 @@ int main (int argc, const char *argv[])
     OsiSolverInterface * solver = model.solver();
     int numberColumns = solver->getNumCols();
     
-    const double * solution = solver->getColSolution();
+    const double * solution = model.bestSolution();
     //const double * lower = solver->getColLower();
     //const double * upper = solver->getColUpper();
 

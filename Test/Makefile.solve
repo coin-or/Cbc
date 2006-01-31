@@ -68,7 +68,7 @@ endif
 TESTSRC := CoinSolve.cpp
 TESTSRC += CbcOrClpParam.cpp
 TESTSRC += unitTestClp.cpp
-#TESTSRC2 := Cbc_ampl.c
+TESTSRC += Cbc_ampl.cpp
 
 ###############################################################################
 
@@ -104,9 +104,7 @@ endif
 ###############################################################################
 
 TESTOBJ := $(addprefix $(TARGETDIR)/, $(TESTSRC:.cpp=.o))
-TESTOBJ += $(addprefix $(TARGETDIR)/, $(TESTSRC2:.c=.o))
 TESTDEP := $(addprefix $(DEPDIR)/, $(TESTSRC:.cpp=.d))
-TESTDEP += $(addprefix $(DEPDIR)/, $(TESTSRC2:.c=.d))
 
 ###############################################################################
 # This one must be right before the rules

@@ -68,7 +68,7 @@ endif
 TESTSRC := CoinSolve.cpp
 TESTSRC += CbcOrClpParam.cpp
 TESTSRC += unitTestClp.cpp
-TESTSRC2 := Cbc_ampl.c
+#TESTSRC2 := Cbc_ampl.c
 
 ###############################################################################
 

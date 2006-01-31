@@ -76,7 +76,7 @@
 
 #include "OsiClpSolverInterface.hpp"
 #ifdef CBC_AMPL
-#include "ampl.h"
+#include "Cbc_ampl.h"
 static bool usingAmpl=false;
 #endif
 static double totalTime=0.0;
@@ -1245,6 +1245,10 @@ int main (int argc, const char *argv[])
                 info.dualSolution = (double *) malloc(numberRows*sizeof(double));
                 CoinCopyN(model2->dualRowSolution(),numberRows,info.dualSolution);
                 CoinWarmStartBasis * basis = model2->getBasis();
+                free(info.rowStatus);
+                info.rowStatus = (int *) malloc(numberRows*sizeof(int));
+                free(info.columnStatus);
+                info.columnStatus = (int *) malloc(numberColumns*sizeof(int));
                 // Put basis in 
                 int i;
                 // free,basic,ub,lb are 0,1,2,3

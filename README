@@ -3,7 +3,32 @@ To build Cbc see INSTALL file
 To use Cbc you need the Cbc, Cgl, Coin and Osi libraries.  You
 will probably need Clp as well.
 
-To make the unitTest and standalone executable do
+If you are using Clp as your solver then you can make the unitTest and standalone executable by doing
+
+make solve in this directory.  This creates an executable solve.
+
+solve takes various options - try solve and then ? to get some idea of what you can do.
+solve file will do branch and bound if file is integer mps file and will do dual if non-integer mps file
+options start with - (although the code will also try without -) e.g.
+
+solve file -cuts root -solve will import file and do branch and bound with cuts only at root
+
+- by itself goes to interactive mode.
+
+If you wish to use the Cbc solver from AMPL there is a bit of work involved.  You
+will need to uncomment COIN_ampl in Makefiles/makefile.location - and also
+download the ampl glue code - see Makefiles/Makefile.location for http.  Then solve
+will assume it is being called from AMPL if the first two arguments are xxx.nl -AMPL.
+Of course "solve" is not a good name (cbc is much better but already used) so copy
+"solve" to "cbc" in ampl accessible path.
+Options may be set by e.g. option cbc_options "cuts=off log=0"
+No keywords are recognized by ampl parsing so above format should be used. 
+All options are as found by "cbc(solve) " and then ?
+Current ugliness is that ampl glue code assumes "=" (on undefined keywords) so to maximize you
+would have to say "maximize=".  I will add to AMPL keywords if this interface gets much use.
+
+If you are not using Clp then fewer options are available - 
+make the unitTest and standalone executable by doing
 
 make unitTest in this directory.  This creates an executable cbc.
 
@@ -15,13 +40,10 @@ and then try ? or setting various stuff.
 
 On Linux cbc can do file completion and line editing.  
 
-While the competition is on no work is being done on the cbc driver.  You
-should look at the samples.
-
-There are samples in ./Samples.  Use the corresponding Makefile to 
+There are samples in ./Samples.  Use make DRIVER=xxxxxx where xxxxxx.cpp is driver file to
 create an executable - testit.
 
-At present there are only two useful samples.
+The two simplest samples are:
 
 sample.cpp  This is a simple program to read an mps file.and solve the
 		integer problem.

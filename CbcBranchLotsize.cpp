@@ -545,9 +545,8 @@ CbcBranchingObject *
 CbcLotsize::preferredNewFeasible() const
 {
   OsiSolverInterface * solver = model_->solver();
-  double value = model_->testSolution()[columnNumber_];
 
-  assert (findRange(value));
+  assert (findRange(model_->testSolution()[columnNumber_]));
   double dj = solver->getObjSense()*solver->getReducedCost()[columnNumber_];
   CbcLotsizeBranchingObject * object = NULL;
   double lo,up;

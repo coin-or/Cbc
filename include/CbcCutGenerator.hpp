@@ -5,11 +5,11 @@
 
 #include "OsiSolverInterface.hpp"
 #include "OsiCuts.hpp"
+#include "CglCutGenerator.hpp"
 
 class CbcModel;
 class OsiRowCut;
 class OsiRowCutDebugger;
-class CglCutGenerator;
 
 //#############################################################################
 
@@ -204,6 +204,9 @@ public:
   { switchOffIfLessThan_ = value;};
   inline int switchOffIfLessThan() const
   { return switchOffIfLessThan_;};
+  /// Say if optimal basis needed
+  inline bool needsOptimalBasis() const
+  { return generator_->needsOptimalBasis();};
   //@}
   
 private:

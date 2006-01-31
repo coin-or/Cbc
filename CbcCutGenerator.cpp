@@ -213,6 +213,7 @@ CbcCutGenerator::generateCuts( OsiCuts & cs , bool fullScan, CbcNode * node)
 	    returnCode=true;
 	}
       }
+      returnCode = !solver->basisIsAvailable();
     }
     if (timing_)
       timeInCutGenerator_ += CoinCpuTime()-time1;

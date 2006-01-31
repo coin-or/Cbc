@@ -1099,6 +1099,10 @@ void CbcModel::branchAndBound(int doStatistics)
       currentNumberCuts = solver_->getNumRows()-numberRowsAtContinuous_ ;
       int saveNumber = numberIterations_;
       feasible = solveWithCuts(cuts,maximumCutPasses_,node);
+      if ((specialOptions_&1)!=0&&onOptimalPath) {
+        const OsiRowCutDebugger *debugger = solver_->getRowCutDebugger() ;
+        assert (debugger) ;
+      }
       if (statistics_) {
         assert (numberNodes2_);
         assert (statistics_[numberNodes2_-1]);
@@ -1130,8 +1134,20 @@ void CbcModel::branchAndBound(int doStatistics)
 	whether to stash the cuts and bump reference counts. Other places we
 	use variable() (i.e., presence of a branching variable). Equivalent?
 */
-        if (onOptimalPath)
+        if (onOptimalPath) {
+          if (!feasible) {
+            printf("infeas2\n");
+            solver_->writeMps("infeas");
+            CoinWarmStartBasis *slack =
+              dynamic_cast<CoinWarmStartBasis *>(solver_->getEmptyWarmStart()) ;
+            solver_->setWarmStart(slack);
+            delete slack ;
+            solver_->setHintParam(OsiDoReducePrint,false,OsiHintDo,0) ;
+            solver_->initialSolve();
+            assert (!solver_->isProvenOptimal());
+          }
           assert (feasible);
+        }
         bool checkingNode=false;
 	if (feasible)
 	{ newNode = new CbcNode ;
@@ -4949,7 +4965,11 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
       int numberRowCutsBefore = theseCuts.sizeRowCuts() ;
       int numberColumnCutsBefore = theseCuts.sizeColCuts() ;
       if (i<numberCutGenerators_) {
-	if (generator_[i]->normal()) {
+        bool generate = generator_[i]->normal();
+        // skip if not optimal and should be (maybe a cut generator has fixed variables)
+        if (generator_[i]->needsOptimalBasis()&&!solver_->basisIsAvailable())
+          generate=false;
+	if (generate) {
 	  bool mustResolve = 
 	    generator_[i]->generateCuts(theseCuts,fullScan,node) ;
 #ifdef CBC_DEBUG
@@ -5502,7 +5522,7 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
     }
     double totalCuts = 0.0 ;
     //#define JUST_ACTIVE
-    for (i = 0;i<numberCutGenerators_;i++) 
+    for (i = 0;i<numberCutGenerators_;i++) {
       if (countRowCuts[i]||countColumnCuts[i])
         numberActiveGenerators++;
 #ifdef JUST_ACTIVE
@@ -5510,6 +5530,7 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
 #else
       totalCuts += countRowCuts[i] + 5.0*countColumnCuts[i] ;
 #endif
+    }
     double small = (0.5* totalCuts) /
       ((double) numberActiveGenerators) ;
     for (i = 0;i<numberCutGenerators_;i++) {
@@ -6737,7 +6758,11 @@ CbcModel::setBestSolution (CBC_Message how,
     int i;
     int lastNumberCuts=0;
     for (i=0;i<numberCutGenerators_;i++) {
-      if (generator_[i]->atSolution()) {
+      bool generate = generator_[i]->atSolution();
+      // skip if not optimal and should be (maybe a cut generator has fixed variables)
+      if (generator_[i]->needsOptimalBasis()&&!solver_->basisIsAvailable())
+        generate=false;
+      if (generate) {
 	generator_[i]->generateCuts(theseCuts,true,NULL);
 	int numberCuts = theseCuts.sizeRowCuts();
 	for (int j=lastNumberCuts;j<numberCuts;j++) {

@@ -242,7 +242,8 @@ readAmpl(ampl_info * info, int argc, char **argv)
   {
     int found=0;
     int foundLog=0;
-    const char * something[]={"sleep","solve","branch","duals","primals"};
+    int foundSleep=0;
+    const char * something[]={"solve","branch","duals","primals"};
     for (i=0;i<info->numberArguments;i++) {
       unsigned int j;
       const char * argument = info->arguments[i];
@@ -250,13 +251,12 @@ readAmpl(ampl_info * info, int argc, char **argv)
         const char * check = something[j];
         if (!strncmp(argument,check,sizeof(check))) {
           found=(int)(j+1);
-          break;
         } else if (!strncmp(argument,"log",3)) {
           foundLog=1;
+        } else if (!strncmp(argument,"sleep",5)) {
+          foundSleep=1;
         }
       }
-      if (found)
-        break;
     }
     if (foundLog) {
       /* print options etc */
@@ -270,13 +270,14 @@ readAmpl(ampl_info * info, int argc, char **argv)
     if (!found) {
       info->arguments=(char **) realloc(info->arguments,(info->numberArguments+1)*sizeof(char *));
       info->arguments[info->numberArguments++]=strdup("-solve");
-    } else if (found==1) {
-      /* loop to let user copy .nl file */
-      int j;
-      for (j=0;j<10;j++) {
-        fprintf(stderr,"You can copy .nl file %s for debug purposes or attach debugger\n",saveArgv[1]);
-        sleep(60);
-      }
+    }
+    if (foundSleep) {
+      /* let user copy .nl file */
+      fprintf(stderr,"You can copy .nl file %s for debug purposes or attach debugger\n",saveArgv[1]);
+      fprintf(stderr,"Type q to quit, anything else to continue\n");
+      char getChar = getc(stdin);
+      if (getChar=='q'||getChar=='Q')
+        exit(1);
     }
   }
   /* add -quit */

@@ -26,6 +26,7 @@ THIS SOFTWARE.
 #include "getstub.h"
 #include "Cbc_ampl.h"
 #include "unistd.h"
+#include <string>
 static char*
 clpCheck(Option_Info *oi, keyword *kw, char *v)
 {
@@ -61,8 +62,10 @@ static char xxxxxx[20];
 	};
 static Option_Info Oinfo = {"cbc", "Cbc 1.01", "cbc_options", keywds, nkeywds, 0, "",
 				0,decodePhrase,0,0,0, 20060130 };
+// strdup used to avoid g++ compiler warning
  static SufDecl
 suftab[] = {
+#if 0
 	{ "current", 0, ASL_Sufkind_con | ASL_Sufkind_outonly },
 	{ "current", 0, ASL_Sufkind_var | ASL_Sufkind_outonly },
 	{ "direction", 0, ASL_Sufkind_var },
@@ -74,11 +77,14 @@ suftab[] = {
 	{ "sos", 0, ASL_Sufkind_con },
 	{ "sosno", 0, ASL_Sufkind_var | ASL_Sufkind_real },
 	{ "sosref", 0, ASL_Sufkind_var | ASL_Sufkind_real },
-	{ "sstatus", 0, ASL_Sufkind_var, 0 },
-	{ "sstatus", 0, ASL_Sufkind_con, 0 },
+#endif
+	{ strdup("sstatus"), 0, ASL_Sufkind_var, 0 },
+	{ strdup("sstatus"), 0, ASL_Sufkind_con, 0 }
+#if 0
 	{ "unbdd", 0, ASL_Sufkind_var | ASL_Sufkind_outonly},
 	{ "up", 0, ASL_Sufkind_con | ASL_Sufkind_outonly },
 	{ "up", 0, ASL_Sufkind_var | ASL_Sufkind_outonly }
+#endif
 	};
 #include "float.h"
 #include "limits.h"
@@ -341,7 +347,7 @@ void writeAmpl(ampl_info * info)
     { "infeasible",     			200, 1 },
     { "unbounded",	        		300, 0 },
     { "iteration limit etc",			400, 1 },
-    { "solution limit",				101, 1 },
+    { "solution limit",				401, 1 },
     { "ran out of space",			500, 0 },
     { "status unknown",				501, 1 },
     { "bug!",					502, 0 },

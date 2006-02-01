@@ -1453,6 +1453,16 @@ int main (int argc, const char *argv[])
                   if (solver2)
                     solver2->setHintParam(OsiDoInBranchAndCut,false,OsiHintDo) ;
                 }
+#ifdef CBC_AMPL
+                if (!solver2&&usingAmpl) {
+                  // infeasible
+                  info.problemStatus=1;
+                  info.objValue = 1.0e100;
+                  sprintf(info.buffer,"infeasible by pre-processing");
+                  info.primalSolution=NULL;
+                  info.dualSolution=NULL;
+                }
+#endif
                 if (!noPrinting) {
                   if (!solver2) {
                     printf("Pre-processing says infeasible\n");

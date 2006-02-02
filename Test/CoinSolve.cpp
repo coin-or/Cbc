@@ -2781,6 +2781,8 @@ clp watson.mps -\nscaling off\nprimalsimplex"
 	      
 	    }
 	    break;
+          case DUMMY:
+            break;
 	  default:
 	    abort();
 	  }

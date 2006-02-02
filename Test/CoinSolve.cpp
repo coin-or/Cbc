@@ -14,13 +14,14 @@
 #include "CoinPragma.hpp"
 #include "CoinHelperFunctions.hpp"
 // Same version as CBC
-#define CBCVERSION "1.00.02"
+#define CBCVERSION "1.01.00"
 
 #include "CoinMpsIO.hpp"
 
 #include "ClpFactorization.hpp"
 #include "CoinTime.hpp"
 #include "ClpSimplex.hpp"
+#include "ClpSimplexOther.hpp"
 #include "ClpSolve.hpp"
 #include "ClpPackedMatrix.hpp"
 #include "ClpPlusMinusOneMatrix.hpp"
@@ -80,6 +81,7 @@
 static bool usingAmpl=false;
 #endif
 static double totalTime=0.0;
+static void statistics(ClpSimplex * originalModel, ClpSimplex * model);
 
 //#############################################################################
 
@@ -486,6 +488,8 @@ int main (int argc, const char *argv[])
     int printOptions=0;
     int printMode=0;
     int presolveOptions=0;
+    int substitution=3;
+    int dualize=0;
     int doCrash=0;
     int doSprint=-1;
     int doScaling=1;
@@ -546,6 +550,8 @@ int main (int argc, const char *argv[])
     parameters[whichParam(SOLUTION,numberParameters,parameters)].setStringValue(solutionFile);
     parameters[whichParam(SAVESOL,numberParameters,parameters)].setStringValue(solutionSaveFile);
     parameters[whichParam(SPRINT,numberParameters,parameters)].setIntValue(doSprint);
+    parameters[whichParam(SUBSTITUTION,numberParameters,parameters)].setIntValue(substitution);
+    parameters[whichParam(DUALIZE,numberParameters,parameters)].setIntValue(dualize);
     model.setNumberBeforeTrust(5);
     parameters[whichParam(NUMBERBEFORE,numberParameters,parameters)].setIntValue(5);
     parameters[whichParam(MAXNODES,numberParameters,parameters)].setIntValue(model.getMaximumNodes());
@@ -850,6 +856,10 @@ int main (int argc, const char *argv[])
 		presolveOptions = value;
 	      else if (parameters[iParam].type()==PRINTOPTIONS)
 		printOptions = value;
+              else if (parameters[iParam].type()==SUBSTITUTION)
+                substitution = value;
+              else if (parameters[iParam].type()==DUALIZE)
+                dualize = value;
 	      else if (parameters[iParam].type()==CUTPASS)
 		cutPass = value;
 	      else if (parameters[iParam].type()==FPUMPITS)
@@ -1122,17 +1132,40 @@ int main (int argc, const char *argv[])
 	      ClpSolve::SolveType method;
 	      ClpSolve::PresolveType presolveType;
 	      ClpSimplex * model2 = lpSolver;
+              if (dualize) {
+                model2 = ((ClpSimplexOther *) model2)->dualOfModel();
+                printf("Dual of model has %d rows and %d columns\n",
+                       model2->numberRows(),model2->numberColumns());
+                model2->setOptimizationDirection(1.0);
+              }
               if (noPrinting)
                 lpSolver->setLogLevel(0);
 	      ClpSolve solveOptions;
-	      if (preSolve!=5&&preSolve)
+              solveOptions.setPresolveActions(presolveOptions);
+              solveOptions.setSubstitution(substitution);
+	      if (preSolve!=5&&preSolve) {
 		presolveType=ClpSolve::presolveNumber;
-	      else if (preSolve)
+                if (preSolve<0) {
+                  preSolve = - preSolve;
+                  if (preSolve<=100) {
+                    presolveType=ClpSolve::presolveNumber;
+                    printf("Doing %d presolve passes - picking up non-costed slacks\n",
+                           preSolve);
+                    solveOptions.setDoSingletonColumn(true);
+                  } else {
+                    preSolve -=100;
+                    presolveType=ClpSolve::presolveNumberCost;
+                    printf("Doing %d presolve passes - picking up costed slacks\n",
+                           preSolve);
+                  }
+                } 
+	      } else if (preSolve) {
 		presolveType=ClpSolve::presolveOn;
-	      else
+	      } else {
 		presolveType=ClpSolve::presolveOff;
+              }
 	      solveOptions.setPresolveType(presolveType,preSolve);
-	      if (type==DUALSIMPLEX||SOLVECONTINUOUS) {
+	      if (type==DUALSIMPLEX||type==SOLVECONTINUOUS) {
 		method=ClpSolve::useDual;
 	      } else if (type==PRIMALSIMPLEX) {
 		method=ClpSolve::usePrimalorSprint;
@@ -1204,6 +1237,11 @@ int main (int argc, const char *argv[])
 	      }
 	      model2->initialSolve(solveOptions);
 	      basisHasValues=1;
+              if (dualize) {
+                ((ClpSimplexOther *) lpSolver)->restoreFromDual(model2);
+                delete model2;
+                model2=lpSolver;
+              }
 #ifdef CBC_AMPL
               if (usingAmpl) {
                 double value = model2->getObjValue()*model2->getObjSense();
@@ -1265,6 +1303,42 @@ int main (int argc, const char *argv[])
                 delete basis;
               }
 #endif
+	    } else {
+	      std::cout<<"** Current model not valid"<<std::endl;
+	    }
+	    break;
+          case STATISTICS:
+	    if (goodModel) {
+              // If presolve on look at presolved
+              bool deleteModel2=false;
+              ClpSimplex * model2 = lpSolver;
+              if (preSolve) {
+                ClpPresolve pinfo;
+                int presolveOptions2 = presolveOptions&~0x40000000;
+                if ((presolveOptions2&0xffff)!=0)
+                  pinfo.setPresolveActions(presolveOptions2);
+                pinfo.setSubstitution(substitution);
+                if ((printOptions&1)!=0)
+                  pinfo.statistics();
+                double presolveTolerance = 
+                  parameters[whichParam(PRESOLVETOLERANCE,numberParameters,parameters)].doubleValue();
+                model2 = 
+                  pinfo.presolvedModel(*lpSolver,presolveTolerance,
+                                       true,preSolve);
+                if (model2) {
+                  printf("Statistics for presolved model\n");
+                  deleteModel2=true;
+                } else {
+                  printf("Presolved model looks infeasible - will use unpresolved\n");
+                  model2 = lpSolver;
+                }
+              } else {
+                printf("Statistics for unpresolved model\n");
+                model2 =  lpSolver;
+              }
+              statistics(lpSolver,model2);
+              if (deleteModel2)
+                delete model2;
 	    } else {
 	      std::cout<<"** Current model not valid"<<std::endl;
 	    }
@@ -2825,6 +2899,307 @@ clp watson.mps -\nscaling off\nprimalsimplex"
 #endif
   return 0;
 }    
+static void breakdown(const char * name, int numberLook, const double * region)
+{
+  double range[] = {
+    -COIN_DBL_MAX,
+    -1.0e15,-1.0e11,-1.0e8,-1.0e5,-1.0e4,-1.0e3,-1.0e2,-1.0e1,
+    -1.0,
+    -1.0e-1,-1.0e-2,-1.0e-3,-1.0e-4,-1.0e-5,-1.0e-8,-1.0e-11,-1.0e-15,
+    0.0,
+    1.0e-15,1.0e-11,1.0e-8,1.0e-5,1.0e-4,1.0e-3,1.0e-2,1.0e-1,
+    1.0,
+    1.0e1,1.0e2,1.0e3,1.0e4,1.0e5,1.0e8,1.0e11,1.0e15,
+    COIN_DBL_MAX};
+  int nRanges = (int) (sizeof(range)/sizeof(double));
+  int * number = new int[nRanges];
+  memset(number,0,nRanges*sizeof(int));
+  int * numberExact = new int[nRanges];
+  memset(numberExact,0,nRanges*sizeof(int));
+  int i;
+  for ( i=0;i<numberLook;i++) {
+    double value = region[i];
+    for (int j=0;j<nRanges;j++) {
+      if (value==range[j]) {
+        numberExact[j]++;
+        break;
+      } else if (value<range[j]) {
+        number[j]++;
+        break;
+      }
+    }
+  }
+  printf("\n%s has %d entries\n",name,numberLook);
+  for (i=0;i<nRanges;i++) {
+    if (number[i]) 
+      printf("%d between %g and %g",number[i],range[i-1],range[i]);
+    if (numberExact[i]) {
+      if (number[i])
+        printf(", ");
+      printf("%d exactly at %g",numberExact[i],range[i]);
+    }
+    if (number[i]+numberExact[i])
+      printf("\n");
+  }
+  delete [] number;
+  delete [] numberExact;
+}
+static void statistics(ClpSimplex * originalModel, ClpSimplex * model)
+{
+  int numberColumns = originalModel->numberColumns();
+  const char * integerInformation  = originalModel->integerInformation(); 
+  const double * columnLower = originalModel->columnLower();
+  const double * columnUpper = originalModel->columnUpper();
+  int numberIntegers=0;
+  int numberBinary=0;
+  int iRow,iColumn;
+  if (integerInformation) {
+    for (iColumn=0;iColumn<numberColumns;iColumn++) {
+      if (integerInformation[iColumn]) {
+        if (columnUpper[iColumn]>columnLower[iColumn]) {
+          numberIntegers++;
+          if (columnUpper[iColumn]==0.0&&columnLower[iColumn]==1) 
+            numberBinary++;
+        }
+      }
+    }
+  }
+  numberColumns = model->numberColumns();
+  int numberRows = model->numberRows();
+  columnLower = model->columnLower();
+  columnUpper = model->columnUpper();
+  const double * rowLower = model->rowLower();
+  const double * rowUpper = model->rowUpper();
+  const double * objective = model->objective();
+  CoinPackedMatrix * matrix = model->matrix();
+  CoinBigIndex numberElements = matrix->getNumElements();
+  const int * columnLength = matrix->getVectorLengths();
+  //const CoinBigIndex * columnStart = matrix->getVectorStarts();
+  const double * elementByColumn = matrix->getElements();
+  int * number = new int[numberRows+1];
+  memset(number,0,(numberRows+1)*sizeof(int));
+  int numberObjSingletons=0;
+  /* cType
+     0 0/inf, 1 0/up, 2 lo/inf, 3 lo/up, 4 free, 5 fix, 6 -inf/0, 7 -inf/up,
+     8 0/1
+  */ 
+  int cType[9];
+  std::string cName[]={"0.0->inf,","0.0->up,","lo->inf,","lo->up,","free,","fixed,","-inf->0.0,",
+                       "-inf->up,","0.0->1.0"};
+  int nObjective=0;
+  memset(cType,0,sizeof(cType));
+  for (iColumn=0;iColumn<numberColumns;iColumn++) {
+    int length=columnLength[iColumn];
+    if (length==1&&objective[iColumn])
+      numberObjSingletons++;
+    number[length]++;
+    if (objective[iColumn])
+      nObjective++;
+    if (columnLower[iColumn]>-1.0e20) {
+      if (columnLower[iColumn]==0.0) {
+        if (columnUpper[iColumn]>1.0e20)
+          cType[0]++;
+        else if (columnUpper[iColumn]==1.0)
+          cType[8]++;
+        else if (columnUpper[iColumn]==0.0)
+          cType[5]++;
+        else
+          cType[1]++;
+      } else {
+        if (columnUpper[iColumn]>1.0e20) 
+          cType[2]++;
+        else if (columnUpper[iColumn]==columnLower[iColumn])
+          cType[5]++;
+        else
+          cType[3]++;
+      }
+    } else {
+      if (columnUpper[iColumn]>1.0e20) 
+        cType[4]++;
+      else if (columnUpper[iColumn]==0.0) 
+        cType[6]++;
+      else
+        cType[7]++;
+    }
+  }
+  /* rType
+     0 E 0, 1 E 1, 2 E -1, 3 E other, 4 G 0, 5 G 1, 6 G other, 
+     7 L 0,  8 L 1, 9 L other, 10 Range 0/1, 11 Range other, 12 free 
+  */ 
+  int rType[13];
+  std::string rName[]={"E 0.0,","E 1.0,","E -1.0,","E other,","G 0.0,","G 1.0,","G other,",
+                       "L 0.0,","L 1.0,","L other,","Range 0.0->1.0,","Range other,","Free"};
+  memset(rType,0,sizeof(rType));
+  for (iRow=0;iRow<numberRows;iRow++) {
+    if (rowLower[iRow]>-1.0e20) {
+      if (rowLower[iRow]==0.0) {
+        if (rowUpper[iRow]>1.0e20)
+          rType[4]++;
+        else if (rowUpper[iRow]==1.0)
+          rType[10]++;
+        else if (rowUpper[iRow]==0.0)
+          rType[0]++;
+        else
+          rType[11]++;
+      } else if (rowLower[iRow]==1.0) {
+        if (rowUpper[iRow]>1.0e20) 
+          rType[5]++;
+        else if (rowUpper[iRow]==rowLower[iRow])
+          rType[1]++;
+        else
+          rType[11]++;
+      } else if (rowLower[iRow]==-1.0) {
+        if (rowUpper[iRow]>1.0e20) 
+          rType[6]++;
+        else if (rowUpper[iRow]==rowLower[iRow])
+          rType[2]++;
+        else
+          rType[11]++;
+      } else {
+        if (rowUpper[iRow]>1.0e20) 
+          rType[6]++;
+        else if (rowUpper[iRow]==rowLower[iRow])
+          rType[3]++;
+        else
+          rType[11]++;
+      }
+    } else {
+      if (rowUpper[iRow]>1.0e20) 
+        rType[12]++;
+      else if (rowUpper[iRow]==0.0) 
+        rType[7]++;
+      else if (rowUpper[iRow]==1.0) 
+        rType[8]++;
+      else
+        rType[9]++;
+    }
+  }
+  // Basic statistics
+  printf("\n\nProblem has %d rows, %d columns (%d with objective) and %d elements\n",
+         numberRows,numberColumns,nObjective,numberElements);
+  if (number[0]+number[1]) {
+    printf("There are ");
+    if (numberObjSingletons)
+      printf("%d singletons with objective ",numberObjSingletons);
+    int numberNoObj = number[1]-numberObjSingletons;
+    if (numberNoObj)
+      printf("%d singletons with no objective ",numberNoObj);
+    if (number[0])
+      printf("** %d columns have no entries",number[0]);
+    printf("\n");
+  }
+  printf("Column breakdown:\n");
+  int k;
+  for (k=0;k<(int) (sizeof(cType)/sizeof(int));k++) {
+    printf("%d of type %s ",cType[k],cName[k].c_str());
+    if (((k+1)%3)==0)
+      printf("\n");
+  }
+  if ((k%3)!=0)
+    printf("\n");
+  printf("Row breakdown:\n");
+  for (k=0;k<(int) (sizeof(rType)/sizeof(int));k++) {
+    printf("%d of type %s ",rType[k],rName[k].c_str());
+    if (((k+1)%3)==0)
+      printf("\n");
+  }
+  if ((k%3)!=0)
+    printf("\n");
+  if (model->logLevel()<2)
+    return ;
+  int kMax = model->logLevel()>3 ? 1000000 : 10;
+  k=0;
+  for (iRow=1;iRow<=numberRows;iRow++) {
+    if (number[iRow]) {
+      k++;
+      printf("%d columns have %d entries\n",number[iRow],iRow);
+      if (k==kMax)
+        break;
+    }
+  }
+  if (k<numberRows) {
+    int kk=k;
+    k=0;
+    for (iRow=numberRows;iRow>=1;iRow--) {
+      if (number[iRow]) {
+        k++;
+        if (k==kMax)
+          break;
+      }
+    }
+    if (k>kk) {
+      printf("\n    .........\n\n");
+      iRow=k;
+      k=0;
+      for (;iRow<numberRows;iRow++) {
+        if (number[iRow]) {
+          k++;
+          printf("%d columns have %d entries\n",number[iRow],iRow);
+          if (k==kMax)
+            break;
+        }
+      }
+    }
+  }
+  delete [] number;
+  printf("\n\n");
+  // get row copy
+  CoinPackedMatrix rowCopy = *matrix;
+  rowCopy.reverseOrdering();
+  //const int * column = rowCopy.getIndices();
+  const int * rowLength = rowCopy.getVectorLengths();
+  //const CoinBigIndex * rowStart = rowCopy.getVectorStarts();
+  //const double * element = rowCopy.getElements();
+  number = new int[numberColumns+1];
+  memset(number,0,(numberColumns+1)*sizeof(int));
+  for (iRow=0;iRow<numberRows;iRow++) {
+    int length=rowLength[iRow];
+    number[length]++;
+  }
+  if (number[0])
+    printf("** %d rows have no entries\n",number[0]);
+  k=0;
+  for (iColumn=1;iColumn<=numberColumns;iColumn++) {
+    if (number[iColumn]) {
+      k++;
+      printf("%d rows have %d entries\n",number[iColumn],iColumn);
+      if (k==kMax)
+        break;
+    }
+  }
+  if (k<numberColumns) {
+    int kk=k;
+    k=0;
+    for (iColumn=numberColumns;iColumn>=1;iColumn--) {
+      if (number[iColumn]) {
+        k++;
+        if (k==kMax)
+          break;
+      }
+    }
+    if (k>kk) {
+      printf("\n    .........\n\n");
+      iColumn=k;
+      k=0;
+      for (;iColumn<numberColumns;iColumn++) {
+        if (number[iColumn]) {
+          k++;
+          printf("%d rows have %d entries\n",number[iColumn],iColumn);
+          if (k==kMax)
+            break;
+        }
+      }
+    }
+  }
+  delete [] number;
+  // Now do breakdown of ranges
+  breakdown("Elements",numberElements,elementByColumn);
+  breakdown("RowLower",numberRows,rowLower);
+  breakdown("RowUpper",numberRows,rowUpper);
+  breakdown("ColumnLower",numberColumns,columnLower);
+  breakdown("ColumnUpper",numberColumns,columnUpper);
+  breakdown("Objective",numberColumns,objective);
+}
 /*
   Version 1.00.00 November 16 2005.
   This is to stop me (JJF) messing about too much.
@@ -2843,4 +3218,6 @@ clp watson.mps -\nscaling off\nprimalsimplex"
   Version 1.00.02 December 9 2005
   Added use of CbcStrategy to do clean preprocessing
   Added use of referenceSolver for cleaner repetition of Cbc
+  Version 1.01.00 February 2 2006
+  Added first try at Ampl interface
 */

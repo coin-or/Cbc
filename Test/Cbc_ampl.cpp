@@ -27,15 +27,29 @@ THIS SOFTWARE.
 #include "Cbc_ampl.h"
 #include "unistd.h"
 #include <string>
-static char*
-clpCheck(Option_Info *oi, keyword *kw, char *v)
-{
-  char *rv=NULL;
-  printf("string %s\n",v);
-  return rv;
-}
-/* so decodePhrase can access */
+/* so decodePhrase and clpCheck can access */
 static ampl_info * saveInfo=NULL;
+// Set to 1 if algorithm found
+static char algFound[20]="";
+static char*
+checkPhrase(Option_Info *oi, keyword *kw, char *v)
+{
+  if (strlen(v))
+    printf("string %s\n",v);
+  // Say algorithm found
+  strcpy(algFound,kw->desc);;
+  return v;
+}
+static char*
+checkPhrase2(Option_Info *oi, keyword *kw, char *v)
+{
+  if (strlen(v))
+    printf("string %s\n",v);
+  // put out keyword
+  saveInfo->arguments=(char **) realloc(saveInfo->arguments,(saveInfo->numberArguments+1)*sizeof(char *));
+  saveInfo->arguments[saveInfo->numberArguments++]=strdup(kw->desc);
+  return v;
+}
 static fint
 decodePhrase(char * phrase,ftnlen length)
 {
@@ -57,7 +71,12 @@ decodePhrase(char * phrase,ftnlen length)
 static char xxxxxx[20];
 #define VP (char*)
  static keyword keywds[] = { /* must be sorted */
-	{ "aaaa",	clpCheck,		(char *) xxxxxx },
+	{ "barrier",	checkPhrase,		(char *) xxxxxx ,"-barrier" },
+	{ "dual",	checkPhrase,		(char *) xxxxxx , "-dualsimplex"},
+	{ "initial",	checkPhrase,		(char *) xxxxxx , "-initialsolve"},
+	{ "max",	checkPhrase2,		(char *) xxxxxx , "-maximize"},
+	{ "maximize",	checkPhrase2,		(char *) xxxxxx , "-maximize"},
+	{ "primal",	checkPhrase,		(char *) xxxxxx , "-primalsimplex"},
 	{ "wantsol",	WS_val,		NULL, "write .sol file (without -AMPL)" }
 	};
 static Option_Info Oinfo = {"cbc", "Cbc 1.01", "cbc_options", keywds, nkeywds, 0, "",
@@ -274,8 +293,14 @@ readAmpl(ampl_info * info, int argc, char **argv)
       /*printf("%d rows %d columns %d elements\n",n_con,n_var,nzc);*/
     }
     if (!found) {
-      info->arguments=(char **) realloc(info->arguments,(info->numberArguments+1)*sizeof(char *));
-      info->arguments[info->numberArguments++]=strdup("-solve");
+      if (!strlen(algFound)) {
+        info->arguments=(char **) realloc(info->arguments,(info->numberArguments+1)*sizeof(char *));
+        info->arguments[info->numberArguments++]=strdup("-solve");
+      } else {
+        // use algorithm from keyword
+        info->arguments=(char **) realloc(info->arguments,(info->numberArguments+1)*sizeof(char *));
+        info->arguments[info->numberArguments++]=strdup(algFound);
+      }
     }
     if (foundSleep) {
       /* let user copy .nl file */

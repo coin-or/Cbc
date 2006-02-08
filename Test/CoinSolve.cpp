@@ -1129,6 +1129,29 @@ int main (int argc, const char *argv[])
 	  case SOLVECONTINUOUS:
 	  case BARRIER:
 	    if (goodModel) {
+              double objScale = 
+                parameters[whichParam(OBJSCALE2,numberParameters,parameters)].doubleValue();
+              if (objScale!=1.0) {
+                int iColumn;
+                int numberColumns=lpSolver->numberColumns();
+                double * dualColumnSolution = 
+                  lpSolver->dualColumnSolution();
+                ClpObjective * obj = lpSolver->objectiveAsObject();
+                assert(dynamic_cast<ClpLinearObjective *> (obj));
+                double offset;
+                double * objective = obj->gradient(NULL,NULL,offset,true);
+                for (iColumn=0;iColumn<numberColumns;iColumn++) {
+                  dualColumnSolution[iColumn] *= objScale;
+                  objective[iColumn] *= objScale;;
+                }
+                int iRow;
+                int numberRows=lpSolver->numberRows();
+                double * dualRowSolution = 
+                  lpSolver->dualRowSolution();
+                for (iRow=0;iRow<numberRows;iRow++) 
+                  dualRowSolution[iRow] *= objScale;
+                lpSolver->setObjectiveOffset(objScale*lpSolver->objectiveOffset());
+              }
 	      ClpSolve::SolveType method;
 	      ClpSolve::PresolveType presolveType;
 	      ClpSimplex * model2 = lpSolver;
@@ -1229,10 +1252,12 @@ int main (int argc, const char *argv[])
 		int barrierOptions = choleskyType;
 		if (scaleBarrier)
 		  barrierOptions |= 8;
-		if (gamma)
-		  barrierOptions |= 16;
 		if (doKKT)
-		  barrierOptions |= 32;
+		  barrierOptions |= 16;
+		if (gamma)
+		  barrierOptions |= 32*gamma;
+		if (crossover==3) 
+		  barrierOptions |= 256; // try presolve in crossover
 		solveOptions.setSpecialOption(4,barrierOptions);
 	      }
 	      model2->initialSolve(solveOptions);

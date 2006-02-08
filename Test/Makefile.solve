@@ -52,7 +52,12 @@ Define += ${OsiDefine}
 IncDir += ./include ../../Clp/Test
 
 #use clp
+ifneq (,$(filter COIN_HAS_OSICLP, $(Define)))
+#  add in USE
 CXXFLAGS += $(addprefix -D,COIN_USE_CLP)
+else
+  $(error COIN_HAS_CLP is not defined in Makefiles/Makefile.location. Probably the line 'CoinLibsDefined += COIN_libClp' is commented out.)
+endif
 
 #tell parameter handling to allow for CbcModel and OsiSolverInterface
 CXXFLAGS += -DCOIN_USE_CBC -DCOIN_NO_CLP_MESSAGE

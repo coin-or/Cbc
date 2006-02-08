@@ -8,7 +8,9 @@
 #include <cmath>
 #include <cfloat>
 
+#ifdef COIN_USE_CLP
 #include "OsiClpSolverInterface.hpp"
+#endif
 #include "CbcModel.hpp"
 #include "CbcMessage.hpp"
 #include "CbcHeuristic.hpp"
@@ -52,6 +54,7 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver,int numberNodes,
                                   double * newSolution, double & newSolutionValue,
                                   double cutoff, std::string name) const
 {
+#ifdef COIN_USE_CLP
   OsiClpSolverInterface * osiclp = dynamic_cast< OsiClpSolverInterface*> (solver);
   if (osiclp) {
     // go faster stripes
@@ -64,6 +67,7 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver,int numberNodes,
     // Used to be automatically set
     osiclp->setSpecialOptions(osiclp->specialOptions()|(128+64));
   }
+#endif
   // Reduce printout
   solver->setHintParam(OsiDoReducePrint,true,OsiHintTry);
   solver->setHintParam(OsiDoPresolveInInitial,false,OsiHintTry);

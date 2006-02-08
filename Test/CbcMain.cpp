@@ -49,6 +49,9 @@
 #ifdef COIN_USE_DYLP
 #include "OsiDylpSolverInterface.hpp"
 #endif
+#ifdef COIN_USE_OSL
+#include "OsiOslSolverInterface.hpp"
+#endif
 
 
 
@@ -595,6 +598,14 @@ int main (int argc, const char *argv[])
       solvers["dylp"] = new OsiDylpSolverInterface  ;
 #   else
       solvers["dylp"] = 0 ;
+#   endif
+#   ifdef COIN_USE_OSL
+#     ifndef CBC_DEFAULT_SOLVER
+#       define CBC_DEFAULT_SOLVER "osl"
+#     endif
+      solvers["osl"] = new OsiOslSolverInterface  ;
+#   else
+      solvers["osl"] = 0 ;
 #   endif
 /*
   If we don't have a default solver, we're deeply confused.

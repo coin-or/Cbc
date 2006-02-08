@@ -9,7 +9,6 @@
 #include <cfloat>
 
 #include "OsiSolverInterface.hpp"
-#define COIN_USE_CLP
 #ifdef COIN_USE_CLP
 #include "OsiClpSolverInterface.hpp"
 #endif

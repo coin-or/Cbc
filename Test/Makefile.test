@@ -26,6 +26,7 @@ include ${MakefileDir}/Makefile.location
 IncDir := ${CbcIncDir} ${CglIncDir}
 IncDir += ${OsiClpIncDir} ${ClpIncDir}
 #IncDir += ${OsiDylpIncDir} ${DylpIncDir}
+IncDir += ${OsiOslIncDir} ${OslIncDir}
 IncDir += ${OsiIncDir} ${CoinIncDir}
 IncDir += ${bzlibIncDir} ${zlibIncDir} $(lapackIncDir)
 IncDir += ./include
@@ -33,6 +34,7 @@ IncDir += ./include
 LibDir := ${CbcLibDir} ${CglLibDir}
 LibDir += ${OsiClpLibDir} ${ClpLibDir} 
 #LibDir += ${OsiDylpLibDir} ${DylpLibDir}
+LibDir += ${OsiOslLibDir} ${OslLibDir}
 LibDir += ${OsiLibDir} ${CoinLibDir}
 LibDir += ${bzlibLibDir} ${zlibLibDir} $(lapackLibDir)
 LibDir += $(GlpkLibDir)
@@ -43,6 +45,7 @@ ifeq ($(VolDefine),COIN_HAS_VOL)
 LibName += $(VolLibName)
 endif
 #LibName += ${OsiDylpLibName} ${DylpLibName}
+LibName += ${OsiOslLibName} ${OslLibName}
 LibName += ${OsiLibName} ${CoinLibName} 
 LibName += ${bzlibLibName} ${zlibLibName} $(lapackLibName) $(readlineLibName)
 LibName += $(GlpkLibName)
@@ -50,6 +53,7 @@ LibName += $(GlpkLibName)
 Define := ${CbcDefine} ${CglDefine}
 Define += ${OsiClpDefine} ${ClpDefine}
 #Define += ${OsiDylpDefine} ${DylpDefine}
+Define += ${OsiOslDefine} ${OslDefine}
 Define += ${OsiDefine} ${CoinDefine}
 Define += ${bzlibDefine} ${zlibDefine} $(lapackDefine)
 
@@ -64,11 +68,20 @@ Define += ${bzlibDefine} ${zlibDefine} $(lapackDefine)
 # default.
 
 #use clp
+ifneq (,$(filter COIN_HAS_OSICLP, $(Define)))
+#  add in USE
 CXXFLAGS += $(addprefix -D,COIN_USE_CLP)
+endif
 
 #use dylp
 #CXXFLAGS += $(addprefix -D,COIN_USE_DYLP)
 #CXXFLAGS += $(addprefix -D,CBC_DEFAULT_SOLVER=\"dylp\")
+
+#use osl
+ifneq (,$(filter COIN_HAS_OSIOSL, $(CXXFLAGS)))
+CXXFLAGS += $(addprefix -D,COIN_USE_OSL)
+endif
+#CXXFLAGS += $(addprefix -D,CBC_DEFAULT_SOLVER=\"osl\")
 
 #tell parameter handling to allow for CbcModel and OsiSolverInterface
 ifneq ($(filter COIN_libOsiCbc,$(CoinLibsDefined)),)

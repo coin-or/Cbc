@@ -11,7 +11,6 @@
 #include <cassert>
 #include <cmath>
 #include <cfloat>
-#define COIN_USE_CLP
 #ifdef COIN_USE_CLP
 // include Presolve from Clp
 #include "ClpPresolve.hpp"
@@ -412,8 +411,8 @@ void CbcModel::branchAndBound(int doStatistics)
     strategy_->setupPrinting(*this,handler_->logLevel());
   }
   eventHappened_=false;
-  ClpEventHandler * eventHandler=NULL;
 #ifdef COIN_USE_CLP
+  ClpEventHandler * eventHandler=NULL;
  {
    OsiClpSolverInterface * clpSolver 
      = dynamic_cast<OsiClpSolverInterface *> (solver_);
@@ -918,11 +917,13 @@ void CbcModel::branchAndBound(int doStatistics)
           numberFixedNow_=n;
         }
       }
+#ifdef COIN_USE_CLP
       if (eventHandler) {
         if (!eventHandler->event(ClpEventHandler::solution)) {
           eventHappened_=true; // exit
         }
       }
+#endif
       // Do from deepest
       tree_->cleanTree(this, newCutoff,bestPossibleObjective_) ;
       nodeCompare_->newSolution(this) ;
@@ -965,11 +966,13 @@ void CbcModel::branchAndBound(int doStatistics)
       messageHandler()->message(CBC_STATUS,messages())
 	<< numberNodes_<< nNodes<< bestObjective_<< bestPossibleObjective_
 	<< CoinMessageEol ;
+#ifdef COIN_USE_CLP
       if (eventHandler) {
         if (!eventHandler->event(ClpEventHandler::treeStatus)) {
           eventHappened_=true; // exit
         }
       }
+#endif
     }
     // If no solution but many nodes - signal change in strategy
     if (numberNodes_>2*numberObjects_+1000&&stateOfSearch_!=2)
@@ -1269,11 +1272,13 @@ void CbcModel::branchAndBound(int doStatistics)
 	took care of incrementing the reference counts for cuts at newNode.
 	Clearly I need to look more carefully.
 */
+#ifdef COIN_USE_CLP
         if (eventHandler) {
           if (!eventHandler->event(ClpEventHandler::node)) {
             eventHappened_=true; // exit
           }
         }
+#endif
 	assert (!newNode || newNode->objectiveValue() <= getCutoff()) ;
         if (statistics_) {
           assert (numberNodes2_);
@@ -1712,8 +1717,8 @@ void CbcModel::branchAndBound(int doStatistics)
     strategy_->setupPrinting(*this,handler_->logLevel());
   }
   eventHappened_=false;
-  ClpEventHandler * eventHandler=NULL;
 #ifdef COIN_USE_CLP
+  ClpEventHandler * eventHandler=NULL;
  {
    OsiClpSolverInterface * clpSolver 
      = dynamic_cast<OsiClpSolverInterface *> (solver_);
@@ -2184,11 +2189,13 @@ void CbcModel::branchAndBound(int doStatistics)
           numberFixedNow_=n;
         }
       }
+#ifdef COIN_USE_CLP
       if (eventHandler) {
         if (!eventHandler->event(ClpEventHandler::solution)) {
           eventHappened_=true; // exit
         }
       }
+#endif
       // Do from deepest
       tree_->cleanTree(this, newCutoff,bestPossibleObjective_) ;
       nodeCompare_->newSolution(this) ;
@@ -2223,11 +2230,13 @@ void CbcModel::branchAndBound(int doStatistics)
       messageHandler()->message(CBC_STATUS,messages())
 	<< numberNodes_<< nNodes<< bestObjective_<< bestPossibleObjective_
 	<< CoinMessageEol ;
+#ifdef COIN_USE_CLP
       if (eventHandler) {
         if (!eventHandler->event(ClpEventHandler::treeStatus)) {
           eventHappened_=true; // exit
         }
       }
+#endif
     }
     // If no solution but many nodes - signal change in strategy
     if (numberNodes_>2*numberObjects_+1000&&stateOfSearch_!=2)
@@ -2950,11 +2959,13 @@ CbcModel::solveOneNode(int whichSolver,CbcNode * node,
                   deleted, and newNode is null.
                   
                 */
+#ifdef COIN_USE_CLP
                 if (eventHandler()) {
                   if (!eventHandler()->event(ClpEventHandler::node)) {
                     eventHappened_=true; // exit
                   }
                 }
+#endif
                 assert (!newNode2 || newNode2->objectiveValue() <= getCutoff()) ;
                 if (statistics_) {
                   assert (numberNodes2_);
@@ -3121,11 +3132,13 @@ CbcModel::solveOneNode(int whichSolver,CbcNode * node,
         deleted, and newNode is null.
         
       */
+#ifdef COIN_USE_CLP
       if (eventHandler()) {
         if (!eventHandler()->event(ClpEventHandler::node)) {
           eventHappened_=true; // exit
         }
       }
+#endif
       assert (!newNode || newNode->objectiveValue() <= getCutoff()) ;
       if (statistics_) {
         assert (numberNodes2_);

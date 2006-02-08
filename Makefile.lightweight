@@ -8,6 +8,10 @@ export CoinDir := $(shell cd ..; pwd)
 export MakefileDir := $(CoinDir)/Makefiles
 include ${MakefileDir}/Makefile.coin
 include ${MakefileDir}/Makefile.location
+ifneq (,$(filter COIN_HAS_OSICLP, $(Define)))
+#  add in USE
+CXXFLAGS += $(addprefix -D,COIN_USE_CLP)
+endif
 
 ###############################################################################
 

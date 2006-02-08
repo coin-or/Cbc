@@ -2,10 +2,6 @@
 // Corporation and others.  All Rights Reserved.
 #ifndef CbcModel_H
 #define CbcModel_H
-#ifndef COIN_USE_CLP
-#define COIN_USE_CLP
-#endif
-
 #include <string>
 #include <vector>
 #include "CoinFinite.hpp"
@@ -15,7 +11,9 @@
 #include "CoinWarmStartBasis.hpp"
 #include "CbcCompareBase.hpp"
 #include "CbcMessage.hpp"
+#ifdef COIN_USE_CLP
 #include "ClpEventHandler.hpp"
+#endif
 
 //class OsiSolverInterface;
 
@@ -1247,10 +1245,12 @@ public:
   /// Get log level
   inline int logLevel() const
   { return handler_->logLevel();};
+#ifdef COIN_USE_CLP
    /// Pass in Event handler (cloned and deleted at end)
    void passInEventHandler(const ClpEventHandler * eventHandler);
    /// Event handler
   ClpEventHandler * eventHandler() const;
+#endif
   //@}
   //---------------------------------------------------------------------------
   ///@name Specialized

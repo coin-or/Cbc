@@ -47,7 +47,7 @@ ifeq ($(OptLevel),-g)
 #   CXXFLAGS += -DCHECK_NODE_FULL
 #   CXXFLAGS += -lefence
 endif
-ifneq (,$(filter COIN_HAS_OSICLP, $(Define)))
+ifneq (,$(filter COIN_HAS_OSICLP, $(OsiClpDefine)))
 #  add in USE
 CXXFLAGS += $(addprefix -D,COIN_USE_CLP)
 endif

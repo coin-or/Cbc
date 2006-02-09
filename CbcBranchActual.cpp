@@ -402,7 +402,7 @@ CbcSOS::infeasibility(int & preferredWay) const
   int lastNonZero = -1;
   OsiSolverInterface * solver = model_->solver();
   const double * solution = model_->testSolution();
-  const double * lower = solver->getColLower();
+  //const double * lower = solver->getColLower();
   const double * upper = solver->getColUpper();
   //double largestValue=0.0;
   double integerTolerance = 
@@ -414,8 +414,6 @@ CbcSOS::infeasibility(int & preferredWay) const
   double lastWeight=-1.0e100;
   for (j=0;j<numberMembers_;j++) {
     int iColumn = members_[j];
-    if (lower[iColumn]&&(lower[iColumn]!=1.0||sosType_!=1))
-      throw CoinError("Non zero lower bound in SOS","infeasibility","CbcSOS");
     if (lastWeight>=weights_[j]-1.0e-7)
       throw CoinError("Weights too close together in SOS","infeasibility","CbcSOS");
     double value = CoinMax(0.0,solution[iColumn]);

@@ -3383,6 +3383,7 @@ CbcModel::CbcModel()
   continuousInfeasibilities_(INT_MAX),
   maximumCutPassesAtRoot_(20),
   maximumCutPasses_(10),
+  currentPassNumber_(0),
   maximumWhich_(1000),
   whichGenerator_(NULL),
   maximumStatistics_(0),
@@ -3497,6 +3498,7 @@ CbcModel::CbcModel(const OsiSolverInterface &rhs)
   continuousInfeasibilities_(INT_MAX),
   maximumCutPassesAtRoot_(20),
   maximumCutPasses_(10),
+  currentPassNumber_(0),
   maximumWhich_(1000),
   whichGenerator_(NULL),
   maximumStatistics_(0),
@@ -3685,6 +3687,7 @@ CbcModel::CbcModel(const CbcModel & rhs, bool noTree)
   continuousInfeasibilities_(rhs.continuousInfeasibilities_),
   maximumCutPassesAtRoot_(rhs.maximumCutPassesAtRoot_),
   maximumCutPasses_( rhs.maximumCutPasses_),
+  currentPassNumber_(rhs.currentPassNumber_),
   maximumWhich_(rhs.maximumWhich_),
   whichGenerator_(NULL),
   maximumStatistics_(0),
@@ -3955,6 +3958,7 @@ CbcModel::operator=(const CbcModel& rhs)
     continuousInfeasibilities_ = rhs.continuousInfeasibilities_;
     maximumCutPassesAtRoot_ = rhs.maximumCutPassesAtRoot_;
     maximumCutPasses_ = rhs.maximumCutPasses_;
+    currentPassNumber_ = rhs.currentPassNumber_;
     intParam_[CbcMaxNumNode] = rhs.intParam_[CbcMaxNumNode];
     intParam_[CbcMaxNumSol] = rhs.intParam_[CbcMaxNumSol];
     intParam_[CbcFathomDiscipline] = rhs.intParam_[CbcFathomDiscipline];
@@ -4669,9 +4673,9 @@ int CbcModel::reducedCostFix ()
   double gap = cutoff - solver_->getObjValue()*direction ;
   double tolerance;
   solver_->getDblParam(OsiDualTolerance,tolerance) ;
-  gap += tolerance;
   if (gap<=0.0)
     return 0;
+  gap += 100.0*tolerance;
   double integerTolerance = getDblParam(CbcIntegerTolerance) ;
 
   const double *lower = solver_->getColLower() ;

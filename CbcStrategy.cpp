@@ -306,6 +306,10 @@ CbcStrategyDefault::setupOther(CbcModel & model)
     bool feasible=true;
     if (!solver2) {
       feasible = false;
+      //printf("Pre-processing says infeasible\n");
+      delete process;
+      preProcessState_=-1;
+      process_=NULL;
     } else {
       // now tighten bounds
 #ifdef COIN_USE_CLP

@@ -295,7 +295,7 @@ CbcStrategyDefault::setupOther(CbcModel & model)
     process->messageHandler()->setLogLevel(logLevel);
     // Add in generators
     process->addCutGenerator(&generator1);
-    int translate[]={9999,0,2};
+    int translate[]={9999,0,2,3};
     OsiSolverInterface * solver2 = 
       process->preProcessNonDefault(*solver,
                                     translate[desiredPreProcess_],preProcessPasses_);

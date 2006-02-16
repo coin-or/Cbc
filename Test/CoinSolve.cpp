@@ -1544,7 +1544,7 @@ int main (int argc, const char *argv[])
                   generator1.setRowCuts(3);
                   // Add in generators
                   process.addCutGenerator(&generator1);
-                  int translate[]={9999,0,0,-1,2};
+                  int translate[]={9999,0,0,-1,2,3};
                   process.messageHandler()->setLogLevel(babModel->logLevel());
                   solver2 = process.preProcessNonDefault(*saveSolver,translate[preProcess],10);
                   // Tell solver we are not in Branch and Cut

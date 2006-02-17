@@ -565,7 +565,7 @@ int main (int argc, const char *argv[])
     parameters[whichParam(MIPOPTIONS,numberParameters,parameters)].setIntValue(128|64|1);
     parameters[whichParam(MOREMIPOPTIONS,numberParameters,parameters)].setIntValue(-1);
     parameters[whichParam(MAXHOTITS,numberParameters,parameters)].setIntValue(100);
-
+    int verbose=0;
     CglGomory gomoryGen;
     // try larger limit
     gomoryGen.setLimitAtRoot(512);
@@ -739,6 +739,8 @@ int main (int argc, const char *argv[])
 	  std::cout<<"abcd value sets value"<<std::endl;
 	  std::cout<<"Commands are:"<<std::endl;
 	  int maxAcross=5;
+          if (verbose)
+            maxAcross=1;
 	  int limits[]={1,51,101,151,201,251,301,351,401};
 	  std::vector<std::string> types;
 	  types.push_back("Double parameters:");
@@ -752,18 +754,36 @@ int main (int argc, const char *argv[])
 	  int iType;
 	  for (iType=0;iType<8;iType++) {
 	    int across=0;
-	    std::cout<<types[iType]<<"   ";
+	    std::cout<<types[iType]<<std::endl;
+            if ((verbose&2)!=0)
+              std::cout<<std::endl;
 	    for ( iParam=0; iParam<numberParameters; iParam++ ) {
 	      int type = parameters[iParam].type();
 	      if (parameters[iParam].displayThis()&&type>=limits[iType]
 		  &&type<limits[iType+1]) {
-		if (!across)
-		  std::cout<<"  ";
-		std::cout<<parameters[iParam].matchName()<<"  ";
+		if (!across) {
+                  if ((verbose&2)==0) 
+                    std::cout<<"  ";
+                  else
+                    std::cout<<"Command ";
+                }
+                std::cout<<parameters[iParam].matchName()<<"  ";
 		across++;
 		if (across==maxAcross) {
-		  std::cout<<std::endl;
 		  across=0;
+                  if (verbose) {
+                    // put out description as well
+                    if ((verbose&1)!=0) 
+                      std::cout<<parameters[iParam].shortHelp();
+                    std::cout<<std::endl;
+                    if ((verbose&2)!=0) {
+                      std::cout<<"---- description"<<std::endl;
+                      parameters[iParam].printLongHelp();
+                      std::cout<<"----"<<std::endl;
+                    }
+                  } else {
+                    std::cout<<std::endl;
+                  }
 		}
 	      }
 	    }
@@ -862,6 +882,8 @@ int main (int argc, const char *argv[])
                 dualize = value;
 	      else if (parameters[iParam].type()==CUTPASS)
 		cutPass = value;
+	      else if (parameters[iParam].type()==VERBOSE)
+		verbose = value;
 	      else if (parameters[iParam].type()==FPUMPITS)
 		{ useFpump = true;parameters[iParam].setIntValue(value);}
               parameters[iParam].setIntParameter(lpSolver,value);

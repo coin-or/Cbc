@@ -710,6 +710,7 @@ void CbcModel::branchAndBound(int doStatistics)
   CbcNode *newNode = NULL ;
   numberFixedAtRoot_=0;
   numberFixedNow_=0;
+  int numberIterationsAtContinuous = numberIterations_;
   if (feasible)
   { newNode = new CbcNode ;
     newNode->setObjectiveValue(direction*solver_->getObjValue()) ;
@@ -1578,7 +1579,8 @@ void CbcModel::branchAndBound(int doStatistics)
     if (numberSolutions)
       averageSolutionDepth /= (double) numberSolutions;
     int numberSolved = numberNodes2_-numberCutoff;
-    double averageNumberIterations2=numberIterations_-averageNumberIterations1;
+    double averageNumberIterations2=numberIterations_-averageNumberIterations1
+      -numberIterationsAtContinuous;
     if(numberCutoff) {
       averageCutoffDepth /= (double) numberCutoff;
       averageNumberIterations2 /= (double) numberCutoff;
@@ -1985,6 +1987,7 @@ void CbcModel::branchAndBound(int doStatistics)
   CbcNode *newNode = NULL ;
   numberFixedAtRoot_=0;
   numberFixedNow_=0;
+  int numberIterationsAtContinuous = numberIterations_;
   if (feasible)
   { newNode = new CbcNode ;
     newNode->setObjectiveValue(direction*solver_->getObjValue()) ;
@@ -2480,7 +2483,8 @@ void CbcModel::branchAndBound(int doStatistics)
     if (numberSolutions)
       averageSolutionDepth /= (double) numberSolutions;
     int numberSolved = numberNodes2_-numberCutoff;
-    double averageNumberIterations2=numberIterations_-averageNumberIterations1;
+    double averageNumberIterations2=numberIterations_-averageNumberIterations1
+      -numberIterationsAtContinuous;
     if(numberCutoff) {
       averageCutoffDepth /= (double) numberCutoff;
       averageNumberIterations2 /= (double) numberCutoff;

@@ -730,14 +730,22 @@ int main (int argc, const char *argv[])
 	    type=DUALSIMPLEX;
 	}
 	if (type==GENERALQUERY) {
-	  std::cout<<"In argument list keywords have leading - "
-	    ", -stdin or just - switches to stdin"<<std::endl;
-	  std::cout<<"One command per line (and no -)"<<std::endl;
-	  std::cout<<"abcd? gives list of possibilities, if only one + explanation"<<std::endl;
-	  std::cout<<"abcd?? adds explanation, if only one fuller help"<<std::endl;
-	  std::cout<<"abcd without value (where expected) gives current value"<<std::endl;
-	  std::cout<<"abcd value sets value"<<std::endl;
-	  std::cout<<"Commands are:"<<std::endl;
+          if (verbose<4&&usingAmpl)
+            verbose +=4;
+          if (verbose<4) {
+            std::cout<<"In argument list keywords have leading - "
+              ", -stdin or just - switches to stdin"<<std::endl;
+            std::cout<<"One command per line (and no -)"<<std::endl;
+            std::cout<<"abcd? gives list of possibilities, if only one + explanation"<<std::endl;
+            std::cout<<"abcd?? adds explanation, if only one fuller help"<<std::endl;
+            std::cout<<"abcd without value (where expected) gives current value"<<std::endl;
+            std::cout<<"abcd value sets value"<<std::endl;
+            std::cout<<"Commands are:"<<std::endl;
+          } else {
+            std::cout<<"Cbc options are set within AMPL with commands like:"<<std::endl<<std::endl;
+            std::cout<<"         option cbc_options \"cuts=root log=2 feas=on slog=1\""<<std::endl<<std::endl;
+            std::cout<<"only maximize, dual, primal, help and quit are recognized without ="<<std::endl;
+          }
 	  int maxAcross=5;
           if ((verbose%4)!=0)
             maxAcross=1;
@@ -752,10 +760,10 @@ int main (int argc, const char *argv[])
 	  types.push_back("Actions:");
 	  types.push_back("Branch and Cut actions:");
 	  int iType;
-          if (verbose<4&&usingAmpl)
-            verbose +=4;
 	  for (iType=0;iType<8;iType++) {
 	    int across=0;
+            if ((verbose%4)!=0)
+              std::cout<<std::endl;
 	    std::cout<<types[iType]<<std::endl;
             if ((verbose&2)!=0)
               std::cout<<std::endl;
@@ -784,7 +792,7 @@ int main (int argc, const char *argv[])
                     if ((verbose&2)!=0) {
                       std::cout<<"---- description"<<std::endl;
                       parameters[iParam].printLongHelp();
-                      std::cout<<"----"<<std::endl;
+                      std::cout<<"----"<<std::endl<<std::endl;
                     }
                   } else {
                     std::cout<<std::endl;

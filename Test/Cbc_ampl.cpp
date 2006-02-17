@@ -73,10 +73,12 @@ static char xxxxxx[20];
  static keyword keywds[] = { /* must be sorted */
 	{ "barrier",	checkPhrase,		(char *) xxxxxx ,"-barrier" },
 	{ "dual",	checkPhrase,		(char *) xxxxxx , "-dualsimplex"},
+	{ "help",	checkPhrase,		(char *) xxxxxx , "-?"},
 	{ "initial",	checkPhrase,		(char *) xxxxxx , "-initialsolve"},
 	{ "max",	checkPhrase2,		(char *) xxxxxx , "-maximize"},
 	{ "maximize",	checkPhrase2,		(char *) xxxxxx , "-maximize"},
 	{ "primal",	checkPhrase,		(char *) xxxxxx , "-primalsimplex"},
+	{ "quit",	checkPhrase,		(char *) xxxxxx , "-quit"},
 	{ "wantsol",	WS_val,		NULL, "write .sol file (without -AMPL)" }
 	};
 static Option_Info Oinfo = {"cbc", "Cbc 1.01", "cbc_options", keywds, nkeywds, 0, "",

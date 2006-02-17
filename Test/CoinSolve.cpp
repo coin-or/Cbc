@@ -739,7 +739,7 @@ int main (int argc, const char *argv[])
 	  std::cout<<"abcd value sets value"<<std::endl;
 	  std::cout<<"Commands are:"<<std::endl;
 	  int maxAcross=5;
-          if (verbose)
+          if ((verbose%4)!=0)
             maxAcross=1;
 	  int limits[]={1,51,101,151,201,251,301,351,401};
 	  std::vector<std::string> types;
@@ -752,6 +752,8 @@ int main (int argc, const char *argv[])
 	  types.push_back("Actions:");
 	  types.push_back("Branch and Cut actions:");
 	  int iType;
+          if (verbose<4&&usingAmpl)
+            verbose +=4;
 	  for (iType=0;iType<8;iType++) {
 	    int across=0;
 	    std::cout<<types[iType]<<std::endl;
@@ -761,6 +763,9 @@ int main (int argc, const char *argv[])
 	      int type = parameters[iParam].type();
 	      if (parameters[iParam].displayThis()&&type>=limits[iType]
 		  &&type<limits[iType+1]) {
+                // but skip if not useful for ampl (and in ampl mode)
+                if (verbose>=4&&(parameters[iParam].whereUsed()&4)==0)
+                  continue;
 		if (!across) {
                   if ((verbose&2)==0) 
                     std::cout<<"  ";
@@ -771,7 +776,7 @@ int main (int argc, const char *argv[])
 		across++;
 		if (across==maxAcross) {
 		  across=0;
-                  if (verbose) {
+                  if ((verbose%4)!=0) {
                     // put out description as well
                     if ((verbose&1)!=0) 
                       std::cout<<parameters[iParam].shortHelp();

@@ -730,8 +730,10 @@ int main (int argc, const char *argv[])
 	    type=DUALSIMPLEX;
 	}
 	if (type==GENERALQUERY) {
+#ifdef CBC_AMPL
           if (verbose<4&&usingAmpl)
             verbose +=4;
+#endif
           if (verbose<4) {
             std::cout<<"In argument list keywords have leading - "
               ", -stdin or just - switches to stdin"<<std::endl;

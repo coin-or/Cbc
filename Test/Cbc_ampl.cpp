@@ -73,7 +73,7 @@ static char xxxxxx[20];
  static keyword keywds[] = { /* must be sorted */
 	{ "barrier",	checkPhrase,		(char *) xxxxxx ,"-barrier" },
 	{ "dual",	checkPhrase,		(char *) xxxxxx , "-dualsimplex"},
-	{ "help",	checkPhrase,		(char *) xxxxxx , "-?"},
+	{ "help",	checkPhrase2,		(char *) xxxxxx , "-?"},
 	{ "initial",	checkPhrase,		(char *) xxxxxx , "-initialsolve"},
 	{ "max",	checkPhrase2,		(char *) xxxxxx , "-maximize"},
 	{ "maximize",	checkPhrase2,		(char *) xxxxxx , "-maximize"},

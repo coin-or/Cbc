@@ -565,6 +565,8 @@ int main (int argc, const char *argv[])
     parameters[whichParam(MIPOPTIONS,numberParameters,parameters)].setIntValue(128|64|1);
     parameters[whichParam(MOREMIPOPTIONS,numberParameters,parameters)].setIntValue(-1);
     parameters[whichParam(MAXHOTITS,numberParameters,parameters)].setIntValue(100);
+    parameters[whichParam(CUTSSTRATEGY,numberParameters,parameters)].setCurrentOption("on");
+    parameters[whichParam(HEURISTICSTRATEGY,numberParameters,parameters)].setCurrentOption("on");
     int verbose=0;
     CglGomory gomoryGen;
     // try larger limit

@@ -32,6 +32,7 @@ CbcCutGenerator::CbcCutGenerator ()
     timeInCutGenerator_(0.0),
     numberTimes_(0),
     numberCuts_(0),
+    numberColumnCuts_(0),
     numberCutsActive_(0)
 {
 }
@@ -49,6 +50,7 @@ CbcCutGenerator::CbcCutGenerator(CbcModel * model,CglCutGenerator * generator,
     timeInCutGenerator_(0.0),
     numberTimes_(0),
     numberCuts_(0),
+    numberColumnCuts_(0),
     numberCutsActive_(0)
 {
   model_ = model;
@@ -85,6 +87,7 @@ CbcCutGenerator::CbcCutGenerator ( const CbcCutGenerator & rhs)
   timeInCutGenerator_ = rhs.timeInCutGenerator_;
   numberTimes_ = rhs.numberTimes_;
   numberCuts_ = rhs.numberCuts_;
+  numberColumnCuts_ = rhs.numberColumnCuts_;
   numberCutsActive_ = rhs.numberCutsActive_;
 }
 
@@ -111,6 +114,7 @@ CbcCutGenerator::operator=( const CbcCutGenerator& rhs)
     timeInCutGenerator_ = rhs.timeInCutGenerator_;
     numberTimes_ = rhs.numberTimes_;
     numberCuts_ = rhs.numberCuts_;
+    numberColumnCuts_ = rhs.numberColumnCuts_;
     numberCutsActive_ = rhs.numberCutsActive_;
   }
   return *this;
@@ -202,18 +206,87 @@ CbcCutGenerator::generateCuts( OsiCuts & cs , bool fullScan, CbcNode * node)
       int j;
       int numberColumns = solver->getNumCols();
       double primalTolerance = 1.0e-8;
+#if 0
+      int numberChanged=0,ifCut=0;
+      CoinPackedVector lbs;
+      CoinPackedVector ubs;
       for (j=0;j<numberColumns;j++) {
-	if (tightUpper[j]==tightLower[j]&&
-	    upper[j]>lower[j]) {
-	  // fix
-	  solver->setColLower(j,tightLower[j]);
-	  solver->setColUpper(j,tightUpper[j]);
-	  if (tightLower[j]>solution[j]+primalTolerance||
-	      tightUpper[j]<solution[j]-primalTolerance)
-	    returnCode=true;
+        if (solver->isInteger(j)) {
+          if (tightUpper[j]<upper[j]) {
+            numberChanged++;
+            assert (tightUpper[j]==floor(tightUpper[j]+0.5));
+            ubs.insert(j,tightUpper[j]);
+            if (tightUpper[j]<solution[j]-primalTolerance)
+              ifCut=1;
+          }
+          if (tightLower[j]>lower[j]) {
+            numberChanged++;
+            assert (tightLower[j]==floor(tightLower[j]+0.5));
+            lbs.insert(j,tightLower[j]);
+            if (tightLower[j]>solution[j]+primalTolerance)
+              ifCut=1;
+          }
+        } else {
+          if (tightUpper[j]==tightLower[j]&&
+              upper[j]>lower[j]) {
+            // fix
+            //solver->setColLower(j,tightLower[j]);
+            //solver->setColUpper(j,tightUpper[j]);
+            double value = tightUpper[j];
+            numberChanged++;
+            if (value<upper[j])
+              ubs.insert(j,value);
+            if (value>lower[j])
+              lbs.insert(j,value);
+          }
 	}
       }
-      //returnCode = !solver->basisIsAvailable();
+      if (numberChanged) {
+        OsiColCut cc;
+        cc.setUbs(ubs);
+        cc.setLbs(lbs);
+        if (ifCut) {
+          cc.setEffectiveness(100.0);
+        } else {
+          cc.setEffectiveness(1.0e-5);
+        }
+        cs.insert(cc);
+      }
+      // need to resolve if some bounds changed
+      returnCode = !solver->basisIsAvailable();
+      assert (!returnCode);
+#else
+      for (j=0;j<numberColumns;j++) {
+        if (solver->isInteger(j)) {
+          if (tightUpper[j]<upper[j]) {
+            double nearest = floor(tightUpper[j]+0.5);
+            assert (fabs(tightUpper[j]-nearest)<1.0e-7);
+            solver->setColUpper(j,nearest);
+            if (nearest<solution[j]-primalTolerance)
+              returnCode=true;
+          }
+          if (tightLower[j]>lower[j]) {
+            double nearest = floor(tightLower[j]+0.5);
+            assert (fabs(tightLower[j]-nearest)<1.0e-7);
+            solver->setColLower(j,nearest);
+            if (nearest>solution[j]+primalTolerance)
+              returnCode=true;
+          }
+        } else {
+          if (tightUpper[j]==tightLower[j]&&
+              upper[j]>lower[j]) {
+            // fix
+            solver->setColLower(j,tightLower[j]);
+            solver->setColUpper(j,tightUpper[j]);
+            if (tightLower[j]>solution[j]+primalTolerance||
+                tightUpper[j]<solution[j]-primalTolerance)
+              returnCode=true;
+          }
+        }
+      }
+      //if (!solver->basisIsAvailable()) 
+      //returnCode=true;
+#endif
     }
     if (timing_)
       timeInCutGenerator_ += CoinCpuTime()-time1;

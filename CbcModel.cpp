@@ -3400,6 +3400,8 @@ CbcModel::CbcModel()
   numberOldActiveCuts_(0),
   numberNewCuts_(0),
   sizeMiniTree_(0),
+  searchStrategy_(-1),
+  numberStrongIterations_(0),
   resolveAfterTakeOffCuts_(true)
 {
   intParam_[CbcMaxNumNode] = 2147483647;
@@ -3515,6 +3517,8 @@ CbcModel::CbcModel(const OsiSolverInterface &rhs)
   numberOldActiveCuts_(0),
   numberNewCuts_(0),
   sizeMiniTree_(0),
+  searchStrategy_(-1),
+  numberStrongIterations_(0),
   resolveAfterTakeOffCuts_(true)
 {
   intParam_[CbcMaxNumNode] = 2147483647;
@@ -3704,6 +3708,8 @@ CbcModel::CbcModel(const CbcModel & rhs, bool noTree)
   numberOldActiveCuts_(rhs.numberOldActiveCuts_),
   numberNewCuts_(rhs.numberNewCuts_),
   sizeMiniTree_(rhs.sizeMiniTree_),
+  searchStrategy_(rhs.searchStrategy_),
+  numberStrongIterations_(rhs.numberStrongIterations_),
   resolveAfterTakeOffCuts_(rhs.resolveAfterTakeOffCuts_)
 {
   intParam_[CbcMaxNumNode] = rhs.intParam_[CbcMaxNumNode];
@@ -4005,6 +4011,8 @@ CbcModel::operator=(const CbcModel& rhs)
     numberNewCuts_ = rhs.numberNewCuts_;
     resolveAfterTakeOffCuts_=rhs.resolveAfterTakeOffCuts_;
     sizeMiniTree_ = rhs.sizeMiniTree_;
+    searchStrategy_ = rhs.searchStrategy_;
+    numberStrongIterations_ = rhs.numberStrongIterations_;
     lastHeuristic_ = NULL;
     numberCutGenerators_ = rhs.numberCutGenerators_;
     if (numberCutGenerators_) {
@@ -4237,6 +4245,8 @@ CbcModel::gutsOfDestructor2()
   numberLongStrong_=0;
   numberOldActiveCuts_=0;
   numberNewCuts_=0;
+  searchStrategy_=-1;
+  numberStrongIterations_=0;
   // Parameters which need to be reset
   dblParam_[CbcCutoffIncrement] = 1e-5;
   dblParam_[CbcCurrentCutoff] = 1.0e100;
@@ -6220,6 +6230,95 @@ CbcModel::findCliques(bool makeEquality,
     delete [] element;
     return this;
   }
+}
+// Fill in useful estimates
+void 
+CbcModel::pseudoShadow(double * down, double * up)
+{
+  // Column copy of matrix
+  const double * element = solver_->getMatrixByCol()->getElements();
+  const int * row = solver_->getMatrixByCol()->getIndices();
+  const CoinBigIndex * columnStart = solver_->getMatrixByCol()->getVectorStarts();
+  const int * columnLength = solver_->getMatrixByCol()->getVectorLengths();
+  const double *objective = solver_->getObjCoefficients() ;
+  int numberColumns = solver_->getNumCols() ;
+  double direction = solver_->getObjSense();
+  int iColumn;
+  const double * dual = cbcRowPrice_;
+  down = new double[numberColumns];
+  up = new double[numberColumns];
+  double upSum=1.0e-20;
+  double downSum = 1.0e-20;
+  int numberIntegers=0;
+  for (iColumn=0;iColumn<numberColumns;iColumn++) {
+    CoinBigIndex start = columnStart[iColumn];
+    CoinBigIndex end = start + columnLength[iColumn];
+    double upValue = 0.0;
+    double downValue = 0.0;
+    double value = direction*objective[iColumn];
+    if (value) {
+      if (value>0.0)
+        upValue += value;
+      else
+        downValue -= value;
+    }
+    for (CoinBigIndex j=start;j<end;j++) {
+      int iRow = row[j];
+      value = -dual[iRow];
+      if (value) {
+        value *= element[j];
+        if (value>0.0)
+          upValue += value;
+        else
+          downValue -= value;
+      }
+    }
+    // use dj if bigger
+    double dj = cbcReducedCost_[iColumn];
+    upValue = CoinMax(upValue,dj);
+    downValue = CoinMax(downValue,-dj);
+    up[iColumn]=upValue;
+    down[iColumn]=downValue;
+    if (solver_->isInteger(iColumn)) {
+      if (!numberNodes_)
+        printf("%d - dj %g up %g down %g cost %g\n",
+               iColumn,dj,upValue,downValue,objective[iColumn]);
+      upSum += upValue;
+      downSum += downValue;
+      numberIntegers++;
+    }
+  }
+  if (numberIntegers) {
+    double smallDown = 0.01*(downSum/((double) numberIntegers));
+    double smallUp = 0.01*(upSum/((double) numberIntegers));
+    for (int i=0;i<numberObjects_;i++) {
+      CbcSimpleIntegerDynamicPseudoCost * obj1 =
+        dynamic_cast <CbcSimpleIntegerDynamicPseudoCost *>(object_[i]) ;
+      if (obj1) {
+        iColumn = obj1->columnNumber();
+        double upPseudoCost = obj1->upDynamicPseudoCost();
+        double saveUp = upPseudoCost;
+        upPseudoCost = CoinMax(upPseudoCost,smallUp);
+        upPseudoCost = CoinMax(upPseudoCost,up[iColumn]);
+        upPseudoCost = CoinMax(upPseudoCost,0.1*down[iColumn]);
+        obj1->setUpDynamicPseudoCost(upPseudoCost);
+        if (upPseudoCost>saveUp&&!numberNodes_)
+          printf("For %d up went from %g to %g\n",
+                 iColumn,saveUp,upPseudoCost);
+        double downPseudoCost = obj1->downDynamicPseudoCost();
+        double saveDown = downPseudoCost;
+        downPseudoCost = CoinMax(downPseudoCost,smallDown);
+        downPseudoCost = CoinMax(downPseudoCost,down[iColumn]);
+        downPseudoCost = CoinMax(downPseudoCost,0.1*down[iColumn]);
+        obj1->setDownDynamicPseudoCost(downPseudoCost);
+        if (downPseudoCost>saveDown&&!numberNodes_)
+          printf("For %d down went from %g to %g\n",
+                 iColumn,saveDown,downPseudoCost);
+      }
+    }
+  }
+  delete [] down;
+  delete [] up;
 }
 
 /*

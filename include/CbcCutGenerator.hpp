@@ -182,23 +182,30 @@ public:
   /// Number times cut generator entered
   inline int numberTimesEntered() const
   { return numberTimes_;};
-  void setNumberTimesEntered(int value)
+  inline void setNumberTimesEntered(int value)
   { numberTimes_ = value;};
-  void incrementNumberTimesEntered(int value=1)
+  inline void incrementNumberTimesEntered(int value=1)
   { numberTimes_ += value;};
   /// Total number of cuts added
   inline int numberCutsInTotal() const
   { return numberCuts_;};
-  void setNumberCutsInTotal(int value)
+  inline void setNumberCutsInTotal(int value)
   { numberCuts_ = value;};
-  void incrementNumberCutsInTotal(int value=1)
+  inline void incrementNumberCutsInTotal(int value=1)
   { numberCuts_ += value;};
+  /// Total number of column cuts
+  inline int numberColumnCuts() const
+  { return numberColumnCuts_;};
+  inline void setNumberColumnCuts(int value)
+  { numberColumnCuts_ = value;};
+  inline void incrementNumberColumnCuts(int value=1)
+  { numberColumnCuts_ += value;};
   /// Total number of cuts active after (at end of n cut passes at each node)
   inline int numberCutsActive() const
   { return numberCutsActive_;};
-  void setNumberCutsActive(int value)
+  inline void setNumberCutsActive(int value)
   { numberCutsActive_ = value;};
-  void incrementNumberCutsActive(int value=1)
+  inline void incrementNumberCutsActive(int value=1)
   { numberCutsActive_ += value;};
   inline void setSwitchOffIfLessThan(int value) 
   { switchOffIfLessThan_ = value;};
@@ -259,6 +266,8 @@ private:
   int numberTimes_;
   /// Total number of cuts added
   int numberCuts_;
+  /// Total number of column cuts added
+  int numberColumnCuts_;
   /// Total number of cuts active after (at end of n cut passes at each node)
   int numberCutsActive_;
 };

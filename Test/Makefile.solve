@@ -54,7 +54,7 @@ IncDir += ./include ../../Clp/Test
 #use clp
 ifneq (,$(filter COIN_HAS_OSICLP, $(Define)))
 #  add in USE
-CXXFLAGS += $(addprefix -D,COIN_USE_CLP)
+#CXXFLAGS += $(addprefix -D,COIN_USE_CLP)
 else
   $(error COIN_HAS_CLP is not defined in Makefiles/Makefile.location. Probably the line 'CoinLibsDefined += COIN_libClp' is commented out.)
 endif

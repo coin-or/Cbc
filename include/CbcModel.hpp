@@ -365,11 +365,6 @@ public:
 
   void findIntegers(bool startAgain);
 
-  /** If numberBeforeTrust >0 then we are going to use CbcBranchDynamic.
-      Scan and convert CbcSimpleInteger objects
-  */
-  void convertToDynamic();
-  
   //@}
 
   //---------------------------------------------------------------------------
@@ -1114,9 +1109,12 @@ public:
   { return stateOfSearch_;};
   inline void setStateOfSearch(int state)
   { stateOfSearch_=state;};
+  /// Strategy worked out - mainly at root node for use by CbcNode
+  inline int searchStrategy() const
+  { return searchStrategy_;};
   /// Set strategy worked out - mainly at root node for use by CbcNode
   inline void setSearchStrategy(int value)
-  { /*searchStrategy_ = value; for compatibility*/};
+  { searchStrategy_ = value; };
 
   /// Get the number of cut generators
   inline int numberCutGenerators() const
@@ -1395,6 +1393,15 @@ public:
   */
   void addCuts1(CbcNode * node, CoinWarmStartBasis *&lastws);
 
+  /** If numberBeforeTrust >0 then we are going to use CbcBranchDynamic.
+      Scan and convert CbcSimpleInteger objects
+  */
+  void convertToDynamic();
+  /// Use cliques for pseudocost information - return nonzero if infeasible
+  int cliquePseudoCosts(int doStatistics);
+  /// Fill in useful estimates
+  void pseudoShadow(double * down, double * up);
+
   /// Get the hotstart solution 
   inline const double * hotstartSolution() const
   { return hotstartSolution_;};
@@ -1416,6 +1423,12 @@ public:
   /// Get a pointer to current node (be careful)
   inline CbcNode * currentNode() const
   { return currentNode_;};
+  /// Set the number of iterations done in strong branching.
+  inline void setNumberStrongIterations(int number)
+  { numberStrongIterations_ = number;};
+  /// Get the number of iterations done in strong branching.
+  inline int numberStrongIterations() const
+  { return numberStrongIterations_;};
   //@}
 
 //---------------------------------------------------------------------------
@@ -1739,6 +1752,10 @@ private:
   int numberNewCuts_;
   /// Size of mini - tree
   int sizeMiniTree_;
+  /// Strategy worked out - mainly at root node
+  int searchStrategy_;
+  /// Number of iterations in strong branching
+  int numberStrongIterations_;
   /// Whether to force a resolve after takeOffCuts
   bool resolveAfterTakeOffCuts_;
  //@}

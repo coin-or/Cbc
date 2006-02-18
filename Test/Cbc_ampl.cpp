@@ -78,7 +78,7 @@ static char xxxxxx[20];
 	{ "max",	checkPhrase2,		(char *) xxxxxx , "-maximize"},
 	{ "maximize",	checkPhrase2,		(char *) xxxxxx , "-maximize"},
 	{ "primal",	checkPhrase,		(char *) xxxxxx , "-primalsimplex"},
-	{ "quit",	checkPhrase,		(char *) xxxxxx , "-quit"},
+	{ "quit",	checkPhrase2,		(char *) xxxxxx , "-quit"},
 	{ "wantsol",	WS_val,		NULL, "write .sol file (without -AMPL)" }
 	};
 static Option_Info Oinfo = {"cbc", "Cbc 1.01", "cbc_options", keywds, nkeywds, 0, "",

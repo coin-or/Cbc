@@ -82,7 +82,7 @@ static bool usingAmpl=false;
 #endif
 static double totalTime=0.0;
 static void statistics(ClpSimplex * originalModel, ClpSimplex * model);
-
+static bool maskMatches(std::string & mask, std::string & check);
 //#############################################################################
 
 #ifdef NDEBUG
@@ -510,6 +510,7 @@ int main (int argc, const char *argv[])
     std::string exportFile ="default.mps";
     std::string importBasisFile ="";
     std::string debugFile="";
+    std::string printMask="";
     double * debugValues = NULL;
     int numberDebugValues = -1;
     int basisHasValues=0;
@@ -525,6 +526,7 @@ int main (int argc, const char *argv[])
     parameters[whichParam(BASISIN,numberParameters,parameters)].setStringValue(importBasisFile);
     parameters[whichParam(BASISOUT,numberParameters,parameters)].setStringValue(exportBasisFile);
     parameters[whichParam(DEBUG,numberParameters,parameters)].setStringValue(debugFile);
+    parameters[whichParam(PRINTMASK,numberParameters,parameters)].setStringValue(printMask);
     parameters[whichParam(DIRECTORY,numberParameters,parameters)].setStringValue(directory);
     parameters[whichParam(DUALBOUND,numberParameters,parameters)].setDoubleValue(lpSolver->dualBound());
     parameters[whichParam(DUALTOLERANCE,numberParameters,parameters)].setDoubleValue(lpSolver->dualTolerance());
@@ -759,9 +761,9 @@ int main (int argc, const char *argv[])
 	  types.push_back("Branch and Cut double parameters:");
 	  types.push_back("Integer parameters:");
 	  types.push_back("Branch and Cut integer parameters:");
-	  types.push_back("Keyword parameters and others:");
-	  types.push_back("Branch and Cut keyword parameters and others:");
-	  types.push_back("Actions:");
+	  types.push_back("Keyword parameters:");
+	  types.push_back("Branch and Cut keyword parameters:");
+	  types.push_back("Actions or string parameters:");
 	  types.push_back("Branch and Cut actions:");
 	  int iType;
 	  for (iType=0;iType<8;iType++) {
@@ -816,9 +818,9 @@ int main (int argc, const char *argv[])
 	  types.push_back("Branch and Cut double parameters:");
 	  types.push_back("Integer parameters:");
 	  types.push_back("Branch and Cut integer parameters:");
-	  types.push_back("Keyword parameters and others:");
-	  types.push_back("Branch and Cut keyword parameters and others:");
-	  types.push_back("Actions:");
+	  types.push_back("Keyword parameters:");
+	  types.push_back("Branch and Cut keyword parameters:");
+	  types.push_back("Actions or string parameters:");
 	  types.push_back("Branch and Cut actions:");
 	  int iType;
 	  for (iType=0;iType<8;iType++) {
@@ -2384,6 +2386,18 @@ int main (int argc, const char *argv[])
 	      std::cout<<"** Current model not valid"<<std::endl;
 	    }
 	    break;
+	  case PRINTMASK:
+            // get next field
+	    {
+	      std::string name = CoinReadGetString(argc,argv);
+	      if (name!="EOL") {
+		parameters[iParam].setStringValue(name);
+                printMask = name;
+	      } else {
+		parameters[iParam].printString();
+	      }
+	    }
+	    break;
 	  case BASISOUT:
 	    if (goodModel) {
 	      // get next field
@@ -2776,6 +2790,7 @@ clp watson.mps -\nscaling off\nprimalsimplex"
 		double primalTolerance = lpSolver->primalTolerance();
 		char format[6];
 		sprintf(format,"%%-%ds",CoinMax(lengthName,8));
+                bool doMask = (printMask!=""&&lengthName);
                 if (printMode>2) {
                   for (iRow=0;iRow<numberRows;iRow++) {
                     int type=printMode-3;
@@ -2788,6 +2803,8 @@ clp watson.mps -\nscaling off\nprimalsimplex"
                     } else if (numberRows<50) {
                       type=3;
                     }
+                    if (doMask&&!maskMatches(printMask,rowNames[iRow]))
+                      type =0;
                     if (type) {
                       fprintf(fp,"%7d ",iRow);
                       if (lengthName)
@@ -2807,7 +2824,7 @@ clp watson.mps -\nscaling off\nprimalsimplex"
 		double * columnUpper = lpSolver->columnUpper();
                 if (printMode!=2) {
                   for (iColumn=0;iColumn<numberColumns;iColumn++) {
-                    int type=0;
+                    int type=(printMode>3) ? 1 :0;
                     if (primalColumnSolution[iColumn]>columnUpper[iColumn]+primalTolerance||
                         primalColumnSolution[iColumn]<columnLower[iColumn]-primalTolerance) {
                       fprintf(fp,"** ");
@@ -2821,6 +2838,8 @@ clp watson.mps -\nscaling off\nprimalsimplex"
                     if ((!lpSolver->isInteger(iColumn)||fabs(primalColumnSolution[iColumn])<1.0e-8)
                          &&printMode==1)
                       type=0;
+                    if (doMask&&!maskMatches(printMask,columnNames[iColumn]))
+                      type =0;
                     if (type) {
                       fprintf(fp,"%7d ",iColumn);
                       if (lengthName)
@@ -3263,6 +3282,36 @@ static void statistics(ClpSimplex * originalModel, ClpSimplex * model)
   breakdown("ColumnLower",numberColumns,columnLower);
   breakdown("ColumnUpper",numberColumns,columnUpper);
   breakdown("Objective",numberColumns,objective);
+}
+static bool maskMatches(std::string & mask, std::string & check)
+{
+  // back to char as I am old fashioned
+  const char * maskC = mask.c_str();
+  const char * checkC = check.c_str();
+  int length = strlen(maskC);
+  int lengthCheck;
+  for (lengthCheck=length-1;lengthCheck>=0;lengthCheck--) {
+    if (maskC[lengthCheck]!='*')
+      break;
+  }
+  lengthCheck++;
+  int lengthC = strlen(checkC);
+  if (lengthC>length)
+    return false; // can't be true
+  if (lengthC<lengthCheck) {
+    // last lot must be blank for match
+    for (int i=lengthC;i<lengthCheck;i++) {
+      if (maskC[i]!=' ')
+        return false;
+    }
+  }
+  // need only check this much
+  lengthC = CoinMin(lengthC,lengthCheck);
+  for (int i=0;i<lengthC;i++) {
+    if (maskC[i]!='*'&&maskC[i]!=checkC[i])
+      return false;
+  }
+  return true; // matches
 }
 /*
   Version 1.00.00 November 16 2005.

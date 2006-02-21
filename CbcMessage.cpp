@@ -48,6 +48,7 @@ static Cbc_message us_english[]=
   {CBC_END_SUB,29,1,"Ending sub-tree for %s"},
   {CBC_HEURISTIC_SOLUTION,30,1,"solution of %g found by %s"},
   {CBC_CUTS_STATS,31,1,"%d added rows had average density of %g"},
+  {CBC_STRONG_STATS,32,1,"Strong branching done %d times (%d iterations), fathomed %d nodes and fixed %d variables"},
   {CBC_DUMMY_END,999999,0,""}
 };
 /* Constructor */

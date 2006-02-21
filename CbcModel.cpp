@@ -384,6 +384,10 @@ void CbcModel::branchAndBound(int doStatistics)
   Capture a time stamp before we start.
 */
   dblParam_[CbcStartSeconds] = CoinCpuTime();
+  strongInfo_[0]=0;
+  strongInfo_[1]=0;
+  strongInfo_[2]=0;
+  numberStrongIterations_ = 0;
   // original solver (only set if pre-processing)
   OsiSolverInterface * originalSolver=NULL;
   // Set up strategies
@@ -1453,6 +1457,10 @@ void CbcModel::branchAndBound(int doStatistics)
       << numberIterations_ << numberNodes_
       << CoinMessageEol ;
   }
+  if (numberStrongIterations_)
+    handler_->message(CBC_STRONG_STATS,messages_)
+      << strongInfo_[0] << numberStrongIterations_ << strongInfo_[2]
+      << strongInfo_[1] << CoinMessageEol ;
   if (statistics_) {
     // report in some way
     int * lookup = new int[numberObjects_];
@@ -1692,6 +1700,10 @@ void CbcModel::branchAndBound(int doStatistics)
   Capture a time stamp before we start.
 */
   dblParam_[CbcStartSeconds] = CoinCpuTime();
+  strongInfo_[0]=0;
+  strongInfo_[1]=0;
+  strongInfo_[2]=0;
+  numberStrongIterations_ = 0;
   // original solver (only set if pre-processing)
   OsiSolverInterface * originalSolver=NULL;
   // Set up strategies
@@ -2357,6 +2369,10 @@ void CbcModel::branchAndBound(int doStatistics)
       << numberIterations_ << numberNodes_
       << CoinMessageEol ;
   }
+  if (numberStrongIterations_)
+    handler_->message(CBC_STRONG_STATS,messages_)
+      << strongInfo_[0] << numberStrongIterations_ << strongInfo_[2]
+      << strongInfo_[1] << CoinMessageEol ;
   if (statistics_) {
     // report in some way
     int * lookup = new int[numberObjects_];
@@ -3419,6 +3435,9 @@ CbcModel::CbcModel()
   dblParam_[CbcCurrentObjectiveValue] = 1.0e100;
   dblParam_[CbcCurrentMinimizationObjectiveValue] = 1.0e100;
   dblParam_[CbcStartSeconds] = 0.0;
+  strongInfo_[0]=0;
+  strongInfo_[1]=0;
+  strongInfo_[2]=0;
   nodeCompare_=new CbcCompareDefault();;
   problemFeasibility_=new CbcFeasibilityBase();
   tree_= new CbcTree();
@@ -3536,6 +3555,9 @@ CbcModel::CbcModel(const OsiSolverInterface &rhs)
   dblParam_[CbcCurrentObjectiveValue] = 1.0e100;
   dblParam_[CbcCurrentMinimizationObjectiveValue] = 1.0e100;
   dblParam_[CbcStartSeconds] = 0.0;
+  strongInfo_[0]=0;
+  strongInfo_[1]=0;
+  strongInfo_[2]=0;
 
   nodeCompare_=new CbcCompareDefault();;
   problemFeasibility_=new CbcFeasibilityBase();
@@ -3726,6 +3748,9 @@ CbcModel::CbcModel(const CbcModel & rhs, bool noTree)
   dblParam_[CbcCurrentObjectiveValue] = rhs.dblParam_[CbcCurrentObjectiveValue];
   dblParam_[CbcCurrentMinimizationObjectiveValue] = rhs.dblParam_[CbcCurrentMinimizationObjectiveValue];
   dblParam_[CbcStartSeconds] = dblParam_[CbcStartSeconds]; // will be overwritten hopefully
+  strongInfo_[0]=rhs.strongInfo_[0];
+  strongInfo_[1]=rhs.strongInfo_[1];
+  strongInfo_[2]=rhs.strongInfo_[2];
   if (rhs.emptyWarmStart_) emptyWarmStart_ = rhs.emptyWarmStart_->clone() ;
   if (defaultHandler_) {
     handler_ = new CoinMessageHandler();
@@ -4013,6 +4038,9 @@ CbcModel::operator=(const CbcModel& rhs)
     sizeMiniTree_ = rhs.sizeMiniTree_;
     searchStrategy_ = rhs.searchStrategy_;
     numberStrongIterations_ = rhs.numberStrongIterations_;
+    strongInfo_[0]=rhs.strongInfo_[0];
+    strongInfo_[1]=rhs.strongInfo_[1];
+    strongInfo_[2]=rhs.strongInfo_[2];
     lastHeuristic_ = NULL;
     numberCutGenerators_ = rhs.numberCutGenerators_;
     if (numberCutGenerators_) {
@@ -8439,4 +8467,15 @@ CbcModel::setHotstartSolution(const double * solution, const int * priorities)
     }
     hotstartPriorities_ = CoinCopyOfArray(priorities,numberColumns);
   }
+}
+// Increment strong info
+void 
+CbcModel::incrementStrongInfo(int numberTimes, int numberIterations,
+                           int numberFixed, bool ifInfeasible)
+{
+  strongInfo_[0] += numberTimes;
+  numberStrongIterations_ += numberIterations;
+  strongInfo_[1] += numberFixed;
+  if (ifInfeasible) 
+    strongInfo_[2] ++;
 }

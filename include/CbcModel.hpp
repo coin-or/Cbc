@@ -1429,6 +1429,9 @@ public:
   /// Get the number of iterations done in strong branching.
   inline int numberStrongIterations() const
   { return numberStrongIterations_;};
+  /// Increment strong info
+  void incrementStrongInfo(int numberTimes, int numberIterations,
+                           int numberFixed, bool ifInfeasible);
   //@}
 
 //---------------------------------------------------------------------------
@@ -1756,6 +1759,8 @@ private:
   int searchStrategy_;
   /// Number of iterations in strong branching
   int numberStrongIterations_;
+  /** 0 - number times strong branching done, 1 - number fixed, 2 - number infeasible */
+  int strongInfo_[3];
   /// Whether to force a resolve after takeOffCuts
   bool resolveAfterTakeOffCuts_;
  //@}

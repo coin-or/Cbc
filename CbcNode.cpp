@@ -1680,8 +1680,9 @@ int CbcNode::chooseBranch (CbcModel *model, CbcNode *lastNode,int numberPassesLe
       }
       delete ws;
       int numberNodes = model->getNodeCount();
-      // update number of strong iterations
-      model->setNumberStrongIterations(model->numberStrongIterations()+numberStrongIterations);
+      // update number of strong iterations etc
+      model->incrementStrongInfo(numberStrongDone,numberStrongIterations,
+                                 anyAction==-2 ? 0:numberStrongInfeasible,anyAction==-2);
       
       /*
         anyAction >= 0 indicates that strong branching didn't produce any monotone
@@ -3005,8 +3006,9 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
     printf("%d strong, %d iters, %d pen, %d mark, %d fixed, action %d nnott %d nt %d, %d dq %s ns %d\n",
          numberStrongDone,numberStrongIterations,xPen,xMark,
            numberToFix,anyAction,numberNotTrusted,px[0],px[1],px[2]>0 ? "y" : "n",px[3]);
-  // update number of strong iterations
-  model->setNumberStrongIterations(model->numberStrongIterations()+numberStrongIterations);
+  // update number of strong iterations etc
+  model->incrementStrongInfo(numberStrongDone,numberStrongIterations,
+                             anyAction==-2 ? 0:numberToFix,anyAction==-2);
   if (!newWay) {
   if (((model->searchStrategy()+1)%1000)==0) {
     if (solver->messageHandler()->logLevel()>1)

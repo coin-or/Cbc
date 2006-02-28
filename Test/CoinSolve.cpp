@@ -1601,6 +1601,7 @@ int main (int argc, const char *argv[])
                   sprintf(info.buffer,"infeasible by pre-processing");
                   info.primalSolution=NULL;
                   info.dualSolution=NULL;
+                  break;
                 }
 #endif
                 if (!noPrinting) {

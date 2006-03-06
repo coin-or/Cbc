@@ -16,6 +16,7 @@
 #include "CbcHeuristic.hpp"
 #include "CbcStrategy.hpp"
 #include "CglPreProcess.hpp"
+#include "OsiAuxInfo.hpp"
 
 // Default Constructor
 CbcHeuristic::CbcHeuristic() 
@@ -859,4 +860,61 @@ CbcRounding::validate()
   }
 }
 
+// Default Constructor
+CbcSerendipity::CbcSerendipity() 
+  :CbcHeuristic()
+{
+}
+
+// Constructor from model
+CbcSerendipity::CbcSerendipity(CbcModel & model)
+  :CbcHeuristic(model)
+{
+}
+
+// Destructor 
+CbcSerendipity::~CbcSerendipity ()
+{
+}
+
+// Clone
+CbcHeuristic *
+CbcSerendipity::clone() const
+{
+  return new CbcSerendipity(*this);
+}
+
+// Copy constructor 
+CbcSerendipity::CbcSerendipity(const CbcSerendipity & rhs)
+:
+  CbcHeuristic(rhs)
+{
+}
+
+// Returns 1 if solution, 0 if not
+int
+CbcSerendipity::solution(double & solutionValue,
+			 double * betterSolution)
+{
+  if (!model_)
+    return 0;
+  // get information on solver type
+  OsiAuxInfo * auxInfo = model_->solver()->getAuxiliaryInfo();
+  OsiBabSolver * auxiliaryInfo = dynamic_cast< OsiBabSolver *> (auxInfo);
+  if (auxiliaryInfo)
+    return auxiliaryInfo->solution(solutionValue,betterSolution,model_->solver()->getNumCols());
+  else
+    return 0;
+}
+// update model
+void CbcSerendipity::setModel(CbcModel * model)
+{
+  model_ = model;
+}
+// Resets stuff if model changes
+void 
+CbcSerendipity::resetModel(CbcModel * model)
+{
+  model_ = model;
+}
   

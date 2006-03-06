@@ -19,6 +19,7 @@
 
 class CbcCutGenerator;
 class OsiRowCut;
+class OsiBabSolver;
 class OsiRowCutDebugger;
 class CglCutGenerator;
 class CbcHeuristic;
@@ -1217,6 +1218,15 @@ public:
 
     /// Get application data
     void * getApplicationData() const;
+  /** 
+      For advanced applications you may wish to modify the behavior of Cbc
+      e.g. if the solver is a NLP solver then you may not have an exact
+      optimum solution at each step.  Information could be built into
+      OsiSolverInterface but this is an alternative so that that interface 
+      does not have to be changed.  If something similar is useful to
+      enough solvers then it could be migrated
+  */
+  void passInSolverCharacteristics(OsiBabSolver * solverCharacteristics);
   //@}
   
   //---------------------------------------------------------------------------
@@ -1761,6 +1771,13 @@ private:
   int numberStrongIterations_;
   /** 0 - number times strong branching done, 1 - number fixed, 2 - number infeasible */
   int strongInfo_[3];
+  /** 
+      For advanced applications you may wish to modify the behavior of Cbc
+      e.g. if the solver is a NLP solver then you may not have an exact
+      optimum solution at each step.  This gives characteristics - just for one BAB.
+      For actually saving/restoring a solution you need the actual solver one.
+  */
+  OsiBabSolver * solverCharacteristics_;
   /// Whether to force a resolve after takeOffCuts
   bool resolveAfterTakeOffCuts_;
  //@}

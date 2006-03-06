@@ -143,5 +143,51 @@ private:
   CbcRounding & operator=(const CbcRounding& rhs);
 };
 
+/** heuristic - just picks up any good solution
+    found by solver - see OsiBabSolver
+ */
+
+class CbcSerendipity : public CbcHeuristic {
+public:
+
+  // Default Constructor 
+  CbcSerendipity ();
+
+  /* Constructor with model
+  */
+  CbcSerendipity (CbcModel & model);
+  
+  // Copy constructor 
+  CbcSerendipity ( const CbcSerendipity &);
+   
+  // Destructor 
+  ~CbcSerendipity ();
+  
+  /// Clone
+  virtual CbcHeuristic * clone() const;
+
+  /// update model
+  virtual void setModel(CbcModel * model);
+  
+  /** returns 0 if no solution, 1 if valid solution.
+      Sets solution values if good, sets objective value (only if good)
+      We leave all variables which are at one at this node of the
+      tree to that value and will
+      initially set all others to zero.  We then sort all variables in order of their cost
+      divided by the number of entries in rows which are not yet covered.  We randomize that
+      value a bit so that ties will be broken in different ways on different runs of the heuristic.
+      We then choose the best one and set it to one and repeat the exercise.  
+
+  */
+  virtual int solution(double & objectiveValue,
+		       double * newSolution);
+  /// Resets stuff if model changes
+  virtual void resetModel(CbcModel * model);
+
+protected:
+private:
+  /// Illegal Assignment operator 
+  CbcSerendipity & operator=(const CbcSerendipity& rhs);
+};
 
 #endif

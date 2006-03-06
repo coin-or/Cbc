@@ -12,6 +12,7 @@
 #include <cfloat>
 #define CUTS
 #include "OsiSolverInterface.hpp"
+#include "OsiAuxInfo.hpp"
 #include "OsiSolverBranch.hpp"
 #include "CoinWarmStartBasis.hpp"
 #include "CoinTime.hpp"
@@ -490,10 +491,16 @@ void CbcFullNodeInfo::applyToModel (CbcModel *model,
   solver->setColUpper(upper_);
   int numberColumns = model->getNumCols();
   // move basis - but make sure size stays
-  int numberRows = basis->getNumArtificial();
+  // for bon-min - should not be needed int numberRows = model->getNumRows();
+  int numberRows=basis->getNumArtificial();
   delete basis ;
-  basis = dynamic_cast<CoinWarmStartBasis *>(basis_->clone()) ;
-  basis->resize(numberRows,numberColumns);
+  if (basis_) {
+    basis = dynamic_cast<CoinWarmStartBasis *>(basis_->clone()) ;
+    basis->resize(numberRows,numberColumns);
+  } else {
+    // We have a solver without a basis
+    basis=NULL;
+  }
   for (i=0;i<numberCuts_;i++) 
     addCuts[currentNumberCuts+i]= cuts_[i];
   currentNumberCuts += numberCuts_;
@@ -733,7 +740,8 @@ CbcNode::createInfo (CbcModel *model,
     //int numberArtificialsNow = iFull;
     //int maxBasisLength = ((iFull+15)>>4)+((numberColumns+15)>>4);
     //printf("l %d full %d\n",maxBasisLength,iFull);
-    expanded->resize(iFull,numberColumns);
+    if (expanded) 
+      expanded->resize(iFull,numberColumns);
 #ifdef FULL_DEBUG
     printf("Before expansion: orig %d, old %d, new %d, current %d\n",
 	   numberRowsAtContinuous,numberOldActiveCuts,numberNewCuts,
@@ -1401,6 +1409,9 @@ int CbcNode::chooseBranch (CbcModel *model, CbcNode *lastNode,int numberPassesLe
               model->setBestSolution(CBC_STRONGSOL,
                                      newObjectiveValue,
                                      solver->getColSolution()) ;
+              // only needed for odd solvers
+              newObjectiveValue = solver->getObjSense()*solver->getObjValue();
+              objectiveChange = newObjectiveValue-objectiveValue_ ;
               model->setLastHeuristic(NULL);
               model->incrementUsed(solver->getColSolution());
               if (newObjectiveValue >= model->getCutoff()) {	//  *new* cutoff
@@ -1502,6 +1513,9 @@ int CbcNode::chooseBranch (CbcModel *model, CbcNode *lastNode,int numberPassesLe
               model->setBestSolution(CBC_STRONGSOL,
                                      newObjectiveValue,
                                      solver->getColSolution()) ;
+              // only needed for odd solvers
+              newObjectiveValue = solver->getObjSense()*solver->getObjValue();
+              objectiveChange = newObjectiveValue-objectiveValue_ ;
               model->setLastHeuristic(NULL);
               model->incrementUsed(solver->getColSolution());
               if (newObjectiveValue >= model->getCutoff()) {	//  *new* cutoff
@@ -1833,6 +1847,9 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
   delete branch_;
   branch_=NULL;
   OsiSolverInterface * solver = model->solver();
+  // get information on solver type
+  const OsiAuxInfo * auxInfo = solver->getAuxiliaryInfo();
+  const OsiBabSolver * auxiliaryInfo = dynamic_cast<const OsiBabSolver *> (auxInfo);
   //assert(objectiveValue_ == solver->getObjSense()*solver->getObjValue());
   double cutoff =model->getCutoff();
   double distanceToCutoff=cutoff-objectiveValue_;
@@ -1847,6 +1864,8 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
   int i;
   int saveStateOfSearch = model->stateOfSearch();
   int numberStrong=model->numberStrong();
+  if (!auxiliaryInfo->warmStart())
+    numberStrong=0;
   // But make more likely to get out after some times
   int changeStrategy=numberStrong;
   double changeFactor=1.0;
@@ -2316,6 +2335,7 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
         } else {
           solver->markHotStart();
         }
+        assert (auxiliaryInfo->warmStart());
         doneHotStart=true;
         xMark++;
         kPass++;
@@ -2365,6 +2385,7 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
           // Mark hot start
           solver->markHotStart();
           doneHotStart=true;
+          assert (auxiliaryInfo->warmStart());
           xMark++;
           //if (solver->isProvenPrimalInfeasible())
           //printf("**** Hot start says node infeasible\n");
@@ -2377,6 +2398,7 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
       if (!skipAll) {
         // Mark hot start
         doneHotStart=true;
+        assert (auxiliaryInfo->warmStart());
         solver->markHotStart();
         xMark++;
       }
@@ -2589,6 +2611,7 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
           decision->saveBranchingObject( choice.possibleBranch);
           choice.possibleBranch->branch() ;
           solver->solveFromHotStart() ;
+          bool needHotStartUpdate=false;
           numberStrongDone++;
           numberStrongIterations += solver->getIterationCount();
           /*
@@ -2619,9 +2642,20 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
               if (model->feasibleSolution(choice.numIntInfeasDown,
                                           choice.numObjInfeasDown)
                   &&model->problemFeasibility()->feasible(model,-1)>=0) {
+                if (auxiliaryInfo->solutionAddsCuts()) {
+                  needHotStartUpdate=true;
+                  solver->unmarkHotStart();
+                }
                 model->setBestSolution(CBC_STRONGSOL,
                                        newObjectiveValue,
                                        solver->getColSolution()) ;
+                if (needHotStartUpdate) {
+                  solver->resolve();
+                  newObjectiveValue = solver->getObjSense()*solver->getObjValue();
+                  objectiveChange = newObjectiveValue  - objectiveValue_;
+                  model->feasibleSolution(choice.numIntInfeasDown,
+                                          choice.numObjInfeasDown);
+                }
                 model->setLastHeuristic(NULL);
                 model->incrementUsed(solver->getColSolution());
                 cutoff =model->getCutoff();
@@ -2648,6 +2682,25 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
             if (saveUpper[j] != upper[j])
               solver->setColUpper(j,saveUpper[j]);
           }
+ 	  if(needHotStartUpdate) {
+            needHotStartUpdate = false;
+            solver->resolve();
+            //we may again have an integer feasible solution
+            int numberIntegerInfeasibilities;
+            int numberObjectInfeasibilities;
+            if (model->feasibleSolution(
+                                        numberIntegerInfeasibilities,
+                                        numberObjectInfeasibilities)) {
+              double objValue = solver->getObjValue();
+              model->setBestSolution(CBC_STRONGSOL,
+                                     objValue,
+                                     solver->getColSolution()) ;
+              solver->resolve();
+              cutoff =model->getCutoff();
+            }
+            solver->markHotStart();
+          }
+          //printf("Down on %d, status is %d, obj %g its %d cost %g finished %d inf %d infobj %d\n",
           //printf("Down on %d, status is %d, obj %g its %d cost %g finished %d inf %d infobj %d\n",
           //     choice.objectNumber,iStatus,newObjectiveValue,choice.numItersDown,
           //     choice.downMovement,choice.finishedDown,choice.numIntInfeasDown,
@@ -2687,9 +2740,20 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
               if (model->feasibleSolution(choice.numIntInfeasUp,
                                           choice.numObjInfeasUp)
                   &&model->problemFeasibility()->feasible(model,-1)>=0) {
+                if (auxiliaryInfo->solutionAddsCuts()) {
+                  needHotStartUpdate=true;
+                  solver->unmarkHotStart();
+                }
                 model->setBestSolution(CBC_STRONGSOL,
                                        newObjectiveValue,
                                        solver->getColSolution()) ;
+                if (needHotStartUpdate) {
+                  solver->resolve();
+                  newObjectiveValue = solver->getObjSense()*solver->getObjValue();
+                  objectiveChange = newObjectiveValue  - objectiveValue_;
+                  model->feasibleSolution(choice.numIntInfeasDown,
+                                          choice.numObjInfeasDown);
+                }
                 model->setLastHeuristic(NULL);
                 model->incrementUsed(solver->getColSolution());
                 cutoff =model->getCutoff();
@@ -2715,6 +2779,24 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
               solver->setColLower(j,saveLower[j]);
             if (saveUpper[j] != upper[j])
               solver->setColUpper(j,saveUpper[j]);
+          }
+ 	  if(needHotStartUpdate) {
+            needHotStartUpdate = false;
+            solver->resolve();
+            //we may again have an integer feasible solution
+            int numberIntegerInfeasibilities;
+            int numberObjectInfeasibilities;
+            if (model->feasibleSolution(
+                                        numberIntegerInfeasibilities,
+                                        numberObjectInfeasibilities)) {
+              double objValue = solver->getObjValue();
+              model->setBestSolution(CBC_STRONGSOL,
+                                     objValue,
+                                     solver->getColSolution()) ;
+              solver->resolve();
+              cutoff =model->getCutoff();
+            }
+            solver->markHotStart();
           }
           
           //printf("Up on %d, status is %d, obj %g its %d cost %g finished %d inf %d infobj %d\n",

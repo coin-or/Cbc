@@ -21,6 +21,7 @@ static Cbc_message us_english[]=
   {CBC_MAXSOLS,19,1,"Exiting on maximum solutions"},
   {CBC_EVENT,27,1,"Exiting on user event"},
   {CBC_SOLUTION,4,1,"Integer solution of %g found after %d iterations and %d nodes"},
+  {CBC_SOLUTION2,33,1,"Integer solution of %g found (by alternate solver) after %d iterations and %d nodes"},
   {CBC_END,5,1,"Partial search - best objective %g (best possible %g), took %d iterations and %d nodes"},
   {CBC_INFEAS,6,1,"The LP relaxation is infeasible or too expensive"},
   {CBC_STRONG,7,3,"Strong branching on %d (%d), down %g (%d) up %g (%d) value %g"},

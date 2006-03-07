@@ -542,6 +542,7 @@ void CbcModel::branchAndBound(int doStatistics)
     status_ = 0 ;
     secondaryStatus_ = 1;
     originalContinuousObjective_ = COIN_DBL_MAX;
+    solverCharacteristics_ = NULL;
     return ; }
   // Save objective (just so user can access it)
   originalContinuousObjective_ = solver_->getObjValue();
@@ -763,7 +764,7 @@ void CbcModel::branchAndBound(int doStatistics)
     newNode = new CbcNode ;
     double newObjValue = direction*solver_->getObjValue();
     if (newObjValue!=solverCharacteristics_->mipBound()) {
-      newObjValue = CoinMin(newObjValue,solverCharacteristics_->mipBound());
+      newObjValue = CoinMax(newObjValue,solverCharacteristics_->mipBound());
       solverCharacteristics_->setMipBound(-COIN_DBL_MAX);
     }
     newNode->setObjectiveValue(newObjValue);
@@ -1167,13 +1168,12 @@ void CbcModel::branchAndBound(int doStatistics)
             if (infeasibility ) numberUnsatisfied++ ;
           }
           if (numberUnsatisfied)   {
-            feasible = solveWithCuts(cuts,maximumCutPassesAtRoot_,
-                                     NULL);
+            feasible = solveWithCuts(cuts,maximumCutPasses_,node);
           } else {
             // may generate cuts and turn the solution
             //to an infeasible one
             feasible = solveWithCuts(cuts, 1,
-                                     NULL);
+                                     node);
 #if 0
             currentNumberCuts_ = cuts.sizeRowCuts();
             if (currentNumberCuts_ >= maximumNumberCuts_) {
@@ -1245,7 +1245,7 @@ void CbcModel::branchAndBound(int doStatistics)
           newNode = new CbcNode ;
           double newObjValue = direction*solver_->getObjValue();
           if (newObjValue!=solverCharacteristics_->mipBound()) {
-            newObjValue = CoinMin(newObjValue,solverCharacteristics_->mipBound());
+            newObjValue = CoinMax(newObjValue,solverCharacteristics_->mipBound());
             solverCharacteristics_->setMipBound(-COIN_DBL_MAX);
           }
           newNode->setObjectiveValue(newObjValue);
@@ -1738,6 +1738,8 @@ void CbcModel::branchAndBound(int doStatistics)
     { continuousSolver_->messageHandler()->setLogLevel(2) ;
       continuousSolver_->initialSolve() ; }
     delete solver_ ;
+    // above deletes solverCharacteristics_
+    solverCharacteristics_ = NULL;
     solver_ = continuousSolver_ ;
     setPointers(solver_);
     continuousSolver_ = NULL ; }
@@ -2104,7 +2106,7 @@ void CbcModel::branchAndBound(int doStatistics)
     newNode = new CbcNode ;
     double newObjValue = direction*solver_->getObjValue();
     if (newObjValue!=solverCharacteristics_->mipBound()) {
-      newObjValue = CoinMin(newObjValue,solverCharacteristics_->mipBound());
+      newObjValue = CoinMax(newObjValue,solverCharacteristics_->mipBound());
       solverCharacteristics_->setMipBound(-COIN_DBL_MAX);
     }
     newNode->setObjectiveValue(newObjValue);
@@ -5241,7 +5243,7 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
 						       theseCuts) ;
 	if (ifSol>0) {
 	  // better solution found
-	  found = i ;
+	  found = i-numberCutGenerators_ ;
           incrementUsed(newSolution);
 	} else if (ifSol<0) {
 	  heuristicValue = saveValue ;
@@ -8880,7 +8882,7 @@ CbcModel::setPointers(const OsiSolverInterface * solver)
   /// Pointer to array[getNumRows()] (for speed) of dual prices
   cbcRowPrice_ = solver_->getRowPrice();
   /// Get a pointer to array[getNumCols()] (for speed) of reduced costs
-  if(solverCharacteristics_->reducedCostsAccurate())
+  if(solverCharacteristics_&&solverCharacteristics_->reducedCostsAccurate())
     cbcReducedCost_ = solver_->getReducedCost();
   else
     cbcReducedCost_ = NULL;

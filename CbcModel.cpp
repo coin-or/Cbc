@@ -7041,31 +7041,29 @@ CbcModel::checkSolution (double cutoff, const double *solution,
       There really should be no need for the check against original bounds.
       Perhaps an opportunity for a sanity check?
     */
-    if ((solver_->isProvenOptimal()||(specialOptions_&4)!=0) && objectiveValue <= cutoff)
-      { 
-        double * solution = new double[numberColumns];
-        memcpy(solution ,solver_->getColSolution(),numberColumns*sizeof(double)) ;
-        
+    if ((solver_->isProvenOptimal()||(specialOptions_&4)!=0) && objectiveValue <= cutoff) { 
+      double * solution = new double[numberColumns];
+      memcpy(solution ,solver_->getColSolution(),numberColumns*sizeof(double)) ;
+      
+      int iColumn;
+#ifndef NDEBUG
+      double integerTolerance = getIntegerTolerance() ;
+#endif
+      for (iColumn = 0 ; iColumn < numberColumns ; iColumn++) {
+        double value = solution[iColumn] ;
+        value = CoinMax(value, saveLower[iColumn]) ;
+        value = CoinMin(value, saveUpper[iColumn]) ;
+        if (solver_->isInteger(iColumn)) 
+          assert(fabs(value-solution[iColumn]) <= integerTolerance) ;
+        solution[iColumn] = value ; 
+      }
+      if ((specialOptions_&16)==0) {
         const double * rowLower = solver_->getRowLower() ;
         const double * rowUpper = solver_->getRowUpper() ;
         int numberRows = solver_->getNumRows() ;
         double *rowActivity = new double[numberRows] ;
         memset(rowActivity,0,numberRows*sizeof(double)) ;
-        
-#ifndef NDEBUG
-        double integerTolerance = getIntegerTolerance() ;
-#endif
-        int iColumn;
-        for (iColumn = 0 ; iColumn < numberColumns ; iColumn++)
-          { double value = solution[iColumn] ;
-          value = CoinMax(value, saveLower[iColumn]) ;
-          value = CoinMin(value, saveUpper[iColumn]) ;
-          if (solver_->isInteger(iColumn)) 
-            assert(fabs(value-solution[iColumn]) <= integerTolerance) ;
-          solution[iColumn] = value ; }
-        
         solver_->getMatrixByCol()->times(solution,rowActivity) ;
-        delete [] solution;
         double primalTolerance ;
         solver_->getDblParam(OsiPrimalTolerance,primalTolerance) ;
         double largestInfeasibility =0.0;
@@ -7075,13 +7073,17 @@ CbcModel::checkSolution (double cutoff, const double *solution,
           largestInfeasibility = CoinMax(largestInfeasibility,
                                          rowActivity[i]-rowUpper[i]);
         }
-        if (largestInfeasibility>100.0*primalTolerance)
+        if (largestInfeasibility>100.0*primalTolerance) {
           handler_->message(CBC_NOTFEAS3, messages_)
             << largestInfeasibility << CoinMessageEol ;
-        
-        delete [] rowActivity ; }
-    else
-      { objectiveValue=1.0e50 ; }
+          objectiveValue=1.0e50 ; 
+        }
+        delete [] rowActivity ;
+      }
+      delete [] solution;
+    } else {
+      objectiveValue=1.0e50 ; 
+    }
     /*
       Regardless of what we think of the solution, we may need to restore the
       original bounds of the continuous solver. Unfortunately, const'ness

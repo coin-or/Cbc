@@ -1268,8 +1268,9 @@ public:
       Set special options
       0 bit (1) - check if cuts valid (if on debugger list)
       1 bit (2) - use current basis to check integer solution (rather than all slack)
-      2 bit (4) - don't check integer solution
+      2 bit (4) - don't check integer solution (by solving LP)
       3 bit (8) - fast analyze
+      4 bit (16) - non-linear model and someone too lazy to code "times" correctly - so skip row check
   */
   /// Set special options
   inline void setSpecialOptions(int value)

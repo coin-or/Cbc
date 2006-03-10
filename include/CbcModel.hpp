@@ -1407,7 +1407,7 @@ public:
      odd solvers can use.  It may look at extra information in
      solverCharacteriscs_ and will also use bound from parent node
   */
-  void setObjectiveValue(CbcNode * thisNode, const CbcNode * parentNode);
+  void setObjectiveValue(CbcNode * thisNode, const CbcNode * parentNode) const;
 
   /** If numberBeforeTrust >0 then we are going to use CbcBranchDynamic.
       Scan and convert CbcSimpleInteger objects

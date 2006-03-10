@@ -8971,13 +8971,15 @@ CbcModel::incrementStrongInfo(int numberTimes, int numberIterations,
    solverCharacteriscs_ and will also use bound from parent node
 */
 void 
-CbcModel::setObjectiveValue(CbcNode * thisNode, const CbcNode * parentNode)
+CbcModel::setObjectiveValue(CbcNode * thisNode, const CbcNode * parentNode) const
 {
   double newObjValue = solver_->getObjSense()*solver_->getObjValue();
   // If odd solver take its bound
-  newObjValue = CoinMax(newObjValue,solverCharacteristics_->mipBound());
-  // Reset bound anyway (no harm if not odd)
-  solverCharacteristics_->setMipBound(-COIN_DBL_MAX);
+  if (solverCharacteristics_) {
+    newObjValue = CoinMax(newObjValue,solverCharacteristics_->mipBound());
+    // Reset bound anyway (no harm if not odd)
+    solverCharacteristics_->setMipBound(-COIN_DBL_MAX);
+  }
   // If not root then use max of this and parent
   if (parentNode)
     newObjValue = CoinMax(newObjValue,parentNode->objectiveValue());

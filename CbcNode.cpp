@@ -669,8 +669,7 @@ CbcNode::CbcNode(CbcModel * model,
 #ifdef CHECK_NODE
   printf("CbcNode %x Constructor from model\n",this);
 #endif
-  OsiSolverInterface * solver = model->solver();
-  objectiveValue_ = solver->getObjSense()*solver->getObjValue();
+  model->setObjectiveValue(this,lastNode);
 
   if (lastNode)
     lastNode->nodeInfo_->increment();
@@ -874,8 +873,7 @@ int CbcNode::chooseBranch (CbcModel *model, CbcNode *lastNode,int numberPassesLe
   branch_=NULL;
   OsiSolverInterface * solver = model->solver();
   double saveObjectiveValue = solver->getObjValue();
-  double objectiveValue = solver->getObjSense()*saveObjectiveValue;
-  assert (objectiveValue_==objectiveValue);
+  double objectiveValue = CoinMax(solver->getObjSense()*saveObjectiveValue,objectiveValue_);
   const double * lower = solver->getColLower();
   const double * upper = solver->getColUpper();
   // See what user thinks
@@ -1387,7 +1385,6 @@ int CbcNode::chooseBranch (CbcModel *model, CbcNode *lastNode,int numberPassesLe
             newObjectiveValue = 1.0e100;
             choice[i].numItersDown = 0;
           }
-          objectiveChange = newObjectiveValue-objectiveValue_ ;
         } else {
           iStatus = outputStuff[2*i];
           choice[i].numItersDown = outputStuff[2*numberStrong+2*i];
@@ -1396,7 +1393,7 @@ int CbcNode::chooseBranch (CbcModel *model, CbcNode *lastNode,int numberPassesLe
           newObjectiveValue = objectiveValue+newUpper[i];
           solver->setColSolution(outputSolution[2*i]);
         }
-        objectiveChange = newObjectiveValue  - objectiveValue_;
+        objectiveChange = CoinMax(newObjectiveValue  - objectiveValue_,0.0);
         if (!iStatus) {
           choice[i].finishedDown = true ;
           if (newObjectiveValue>=model->getCutoff()) {
@@ -1412,7 +1409,7 @@ int CbcNode::chooseBranch (CbcModel *model, CbcNode *lastNode,int numberPassesLe
                                      solver->getColSolution()) ;
               // only needed for odd solvers
               newObjectiveValue = solver->getObjSense()*solver->getObjValue();
-              objectiveChange = newObjectiveValue-objectiveValue_ ;
+              objectiveChange = CoinMax(newObjectiveValue-objectiveValue_,0.0) ;
               model->setLastHeuristic(NULL);
               model->incrementUsed(solver->getColSolution());
               if (newObjectiveValue >= model->getCutoff()) {	//  *new* cutoff
@@ -1491,7 +1488,6 @@ int CbcNode::chooseBranch (CbcModel *model, CbcNode *lastNode,int numberPassesLe
             newObjectiveValue = 1.0e100;
             choice[i].numItersDown = 0;
           }
-          objectiveChange = newObjectiveValue-objectiveValue_ ;
         } else {
           iStatus = outputStuff[2*i+1];
           choice[i].numItersUp = outputStuff[2*numberStrong+2*i+1];
@@ -1500,7 +1496,7 @@ int CbcNode::chooseBranch (CbcModel *model, CbcNode *lastNode,int numberPassesLe
           newObjectiveValue = objectiveValue+newLower[i];
           solver->setColSolution(outputSolution[2*i+1]);
         }
-        objectiveChange = newObjectiveValue  - objectiveValue_;
+        objectiveChange = CoinMax(newObjectiveValue  - objectiveValue_,0.0);
         if (!iStatus) {
           choice[i].finishedUp = true ;
           if (newObjectiveValue>=model->getCutoff()) {
@@ -1516,7 +1512,7 @@ int CbcNode::chooseBranch (CbcModel *model, CbcNode *lastNode,int numberPassesLe
                                      solver->getColSolution()) ;
               // only needed for odd solvers
               newObjectiveValue = solver->getObjSense()*solver->getObjValue();
-              objectiveChange = newObjectiveValue-objectiveValue_ ;
+              objectiveChange = CoinMax(newObjectiveValue-objectiveValue_,0.0) ;
               model->setLastHeuristic(NULL);
               model->incrementUsed(solver->getColSolution());
               if (newObjectiveValue >= model->getCutoff()) {	//  *new* cutoff
@@ -2631,7 +2627,7 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
             iStatus=1; // infeasible
           newObjectiveValue = solver->getObjSense()*solver->getObjValue();
           choice.numItersDown = solver->getIterationCount();
-          objectiveChange = newObjectiveValue  - objectiveValue_;
+          objectiveChange = CoinMax(newObjectiveValue  - objectiveValue_,0.0);
           decision->updateInformation( solver,this);
           if (!iStatus) {
             choice.finishedDown = true ;
@@ -2653,7 +2649,7 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
                 if (needHotStartUpdate) {
                   solver->resolve();
                   newObjectiveValue = solver->getObjSense()*solver->getObjValue();
-                  objectiveChange = newObjectiveValue  - objectiveValue_;
+                  objectiveChange = CoinMax(newObjectiveValue  - objectiveValue_,0.0);
                   model->feasibleSolution(choice.numIntInfeasDown,
                                           choice.numObjInfeasDown);
                 }
@@ -2729,7 +2725,7 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
             iStatus=1; // infeasible
           newObjectiveValue = solver->getObjSense()*solver->getObjValue();
           choice.numItersUp = solver->getIterationCount();
-          objectiveChange = newObjectiveValue  - objectiveValue_;
+          objectiveChange = CoinMax(newObjectiveValue  - objectiveValue_,0.0);
           decision->updateInformation( solver,this);
           if (!iStatus) {
             choice.finishedUp = true ;
@@ -2751,7 +2747,7 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
                 if (needHotStartUpdate) {
                   solver->resolve();
                   newObjectiveValue = solver->getObjSense()*solver->getObjValue();
-                  objectiveChange = newObjectiveValue  - objectiveValue_;
+                  objectiveChange = CoinMax(newObjectiveValue  - objectiveValue_,0.0);
                   model->feasibleSolution(choice.numIntInfeasDown,
                                           choice.numObjInfeasDown);
                 }

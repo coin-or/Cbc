@@ -1403,6 +1403,11 @@ public:
 	  bounds and building a basis goes to waste.
   */
   void addCuts1(CbcNode * node, CoinWarmStartBasis *&lastws);
+  /** Set objective value in a node.  This is separated out so that
+     odd solvers can use.  It may look at extra information in
+     solverCharacteriscs_ and will also use bound from parent node
+  */
+  void setObjectiveValue(CbcNode * thisNode, const CbcNode * parentNode);
 
   /** If numberBeforeTrust >0 then we are going to use CbcBranchDynamic.
       Scan and convert CbcSimpleInteger objects

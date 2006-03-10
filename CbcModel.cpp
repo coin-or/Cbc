@@ -762,12 +762,8 @@ void CbcModel::branchAndBound(int doStatistics)
   //solverCharacteristics_->setSolver(solver_);
   if (feasible) {
     newNode = new CbcNode ;
-    double newObjValue = direction*solver_->getObjValue();
-    if (newObjValue!=solverCharacteristics_->mipBound()) {
-      newObjValue = CoinMax(newObjValue,solverCharacteristics_->mipBound());
-      solverCharacteristics_->setMipBound(-COIN_DBL_MAX);
-    }
-    newNode->setObjectiveValue(newObjValue);
+    // Set objective value (not so obvious if NLP etc)
+    setObjectiveValue(newNode,NULL);
     anyAction = -1 ;
     // To make depth available we may need a fake node
     CbcNode fakeNode;
@@ -797,7 +793,8 @@ void CbcModel::branchAndBound(int doStatistics)
     }
     while (anyAction == -1)
     {
-      newNode->setObjectiveValue(direction*solver_->getObjValue()) ;
+      // Set objective value (not so obvious if NLP etc)
+      setObjectiveValue(newNode,NULL);
       if (numberBeforeTrust_==0 ) {
         anyAction = newNode->chooseBranch(this,NULL,numberPassesLeft) ;
       } else {
@@ -1243,12 +1240,8 @@ void CbcModel::branchAndBound(int doStatistics)
         bool checkingNode=false;
 	if (feasible) {
           newNode = new CbcNode ;
-          double newObjValue = direction*solver_->getObjValue();
-          if (newObjValue!=solverCharacteristics_->mipBound()) {
-            newObjValue = CoinMax(newObjValue,solverCharacteristics_->mipBound());
-            solverCharacteristics_->setMipBound(-COIN_DBL_MAX);
-          }
-          newNode->setObjectiveValue(newObjValue);
+          // Set objective value (not so obvious if NLP etc)
+          setObjectiveValue(newNode,node);
 	  anyAction =-1 ;
 	  resolved = false ;
 	  if (newNode->objectiveValue() >= getCutoff()) 
@@ -1258,7 +1251,8 @@ void CbcModel::branchAndBound(int doStatistics)
           checkingNode=true;
 	  while (anyAction == -1)
 	  { 
-            newNode->setObjectiveValue(direction*solver_->getObjValue()) ;
+            // Set objective value (not so obvious if NLP etc)
+            setObjectiveValue(newNode,node);
             if (numberBeforeTrust_==0 ) {
               anyAction = newNode->chooseBranch(this,node,numberPassesLeft) ;
             } else {
@@ -1288,11 +1282,12 @@ void CbcModel::branchAndBound(int doStatistics)
                 feasible=false; // pretend infeasible
               }
 	      if (feasible)
-	      { newNode->setObjectiveValue(direction*
-					   solver_->getObjValue()) ;
+	      { 
+                // Set objective value (not so obvious if NLP etc)
+                setObjectiveValue(newNode,node);
                 reducedCostFix() ;
-	      if (newNode->objectiveValue() >= getCutoff()) 
-		anyAction=-2;
+                if (newNode->objectiveValue() >= getCutoff()) 
+                  anyAction=-2;
 	      }
 	      else
 	      { anyAction = -2 ; } } }
@@ -2104,12 +2099,8 @@ void CbcModel::branchAndBound(int doStatistics)
   int numberIterationsAtContinuous = numberIterations_;
   if (feasible) {
     newNode = new CbcNode ;
-    double newObjValue = direction*solver_->getObjValue();
-    if (newObjValue!=solverCharacteristics_->mipBound()) {
-      newObjValue = CoinMax(newObjValue,solverCharacteristics_->mipBound());
-      solverCharacteristics_->setMipBound(-COIN_DBL_MAX);
-    }
-    newNode->setObjectiveValue(newObjValue);
+    // Set objective value (not so obvious if NLP etc)
+    setObjectiveValue(newNode,NULL);
     anyAction = -1 ;
     // To make depth available we may need a fake node
     CbcNode fakeNode;
@@ -2139,7 +2130,8 @@ void CbcModel::branchAndBound(int doStatistics)
     }
     while (anyAction == -1)
     {
-      newNode->setObjectiveValue(direction*solver_->getObjValue()) ;
+      // Set objective value (not so obvious if NLP etc)
+      setObjectiveValue(newNode,NULL);
       if (numberBeforeTrust_==0 ) {
         anyAction = newNode->chooseBranch(this,NULL,numberPassesLeft) ;
       } else {
@@ -2901,12 +2893,8 @@ CbcModel::solveOneNode(int whichSolver,CbcNode * node,
       CbcNode * newNode=NULL;
       if (feasible) {
         newNode = new CbcNode ;
-        double newObjValue = direction*solver_->getObjValue();
-        if (newObjValue!=solverCharacteristics_->mipBound()) {
-          newObjValue = CoinMin(newObjValue,solverCharacteristics_->mipBound());
-          solverCharacteristics_->setMipBound(-COIN_DBL_MAX);
-        }
-        newNode->setObjectiveValue(newObjValue);
+        // Set objective value (not so obvious if NLP etc)
+        setObjectiveValue(newNode,node);
         anyAction =-1 ;
         resolved = false ;
         if (newNode->objectiveValue() >= getCutoff()) 
@@ -2916,7 +2904,8 @@ CbcModel::solveOneNode(int whichSolver,CbcNode * node,
         checkingNode=true;
         OsiSolverBranch * branches=NULL;
         while (anyAction == -1) { 
-          newNode->setObjectiveValue(direction*solver_->getObjValue()) ;
+          // Set objective value (not so obvious if NLP etc)
+          setObjectiveValue(newNode,node);
           if (numberBeforeTrust_==0 ) {
             anyAction = newNode->chooseBranch(this,node,numberPassesLeft) ;
           } else {
@@ -2944,7 +2933,8 @@ CbcModel::solveOneNode(int whichSolver,CbcNode * node,
               feasible=false; // pretend infeasible
             }
             if (feasible) {
-              newNode->setObjectiveValue(direction*solver_->getObjValue()) ;
+              // Set objective value (not so obvious if NLP etc)
+              setObjectiveValue(newNode,node);
               reducedCostFix() ;
 	      if (newNode->objectiveValue() >= getCutoff()) 
 		anyAction=-2;
@@ -3053,7 +3043,8 @@ CbcModel::solveOneNode(int whichSolver,CbcNode * node,
                       feasible=false; // pretend infeasible
                     }
                     if (feasible) {
-                      newNode2->setObjectiveValue(direction*solver_->getObjValue()) ;
+                      // Set objective value (not so obvious if NLP etc)
+                      setObjectiveValue(newNode2,node);
                       reducedCostFix() ;
                       if (newNode2->objectiveValue() >= getCutoff()) 
                         anyAction=-2;
@@ -8974,4 +8965,21 @@ CbcModel::incrementStrongInfo(int numberTimes, int numberIterations,
   strongInfo_[1] += numberFixed;
   if (ifInfeasible) 
     strongInfo_[2] ++;
+}
+/* Set objective value in a node.  This is separated out so that
+   odd solvers can use.  It may look at extra information in
+   solverCharacteriscs_ and will also use bound from parent node
+*/
+void 
+CbcModel::setObjectiveValue(CbcNode * thisNode, const CbcNode * parentNode)
+{
+  double newObjValue = solver_->getObjSense()*solver_->getObjValue();
+  // If odd solver take its bound
+  newObjValue = CoinMax(newObjValue,solverCharacteristics_->mipBound());
+  // Reset bound anyway (no harm if not odd)
+  solverCharacteristics_->setMipBound(-COIN_DBL_MAX);
+  // If not root then use max of this and parent
+  if (parentNode)
+    newObjValue = CoinMax(newObjValue,parentNode->objectiveValue());
+  thisNode->setObjectiveValue(newObjValue);
 }

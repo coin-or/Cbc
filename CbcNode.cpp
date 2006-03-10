@@ -8,6 +8,7 @@
 //#define CBC_DEBUG 1
 //#define CHECK_CUT_COUNTS
 //#define CHECK_NODE
+#define CBC_WEAK_STRONG
 #include <cassert>
 #include <cfloat>
 #define CUTS

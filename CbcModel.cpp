@@ -6986,7 +6986,7 @@ CbcModel::checkSolution (double cutoff, const double *solution,
       object_[i]->feasibleRegion();
     // We can switch off check
     if ((specialOptions_&4)==0) {
-      if ((specialOptions_&2)==0) {
+      if ((specialOptions_&2)==0&&solverCharacteristics_->warmStart()) {
         /*
           Remove any existing warm start information to be sure there is no
           residual influence on initialSolve().

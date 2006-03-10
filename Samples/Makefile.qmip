@@ -74,7 +74,7 @@ CXXFLAGS  += -I.
 
 TESTSRC := qmip.cpp
 TESTSRC += CbcBranchUser.cpp
-TESTSRC += CbcHeuristicUser.cpp
+#TESTSRC += CbcHeuristicUser.cpp
 TESTSRC += CbcCompareUser.cpp
 TESTSRC += ClpQuadInterface.cpp
 TESTOBJ := $(addprefix $(TARGETDIR)/, $(TESTSRC:.cpp=.o))

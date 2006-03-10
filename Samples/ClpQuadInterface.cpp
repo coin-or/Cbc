@@ -31,6 +31,7 @@ void ClpQuadInterface::initialSolve()
   }
   ClpObjective * saveObjective  = modelPtr_->objectiveAsObject();
   modelPtr_->setObjectivePointer(quadraticObjective_);
+  //modelPtr_->setLogLevel(1);
   // Could load up any data into a solver
   modelPtr_->primal();
   modelPtr_->setDualObjectiveLimit(cutoff);

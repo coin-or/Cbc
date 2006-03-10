@@ -128,12 +128,8 @@ int main (int argc, const char *argv[])
   model.setMinimumDrop(min(1.0,
 			     fabs(model.getMinimizationObjValue())*1.0e-3+1.0e-4));
 
-  if (model.getNumCols()<500)
-    model.setMaximumCutPassesAtRoot(-100); // always do 100 if possible
-  else if (model.getNumCols()<5000)
-    model.setMaximumCutPassesAtRoot(100); // use minimum drop
-  else
-    model.setMaximumCutPassesAtRoot(20);
+  model.setMaximumCutPassesAtRoot(0);
+  model.setMaximumCutPasses(0);
 
   // Switch off strong branching if wanted
   //model.setNumberStrong(5);

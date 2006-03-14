@@ -1729,6 +1729,8 @@ void CbcModel::branchAndBound(int doStatistics)
   if (bestSolution_&&solverCharacteristics_->solverType()<2)
   { setCutoff(1.0e50) ; // As best solution should be worse than cutoff
     phase_=5;
+    double increment = getDblParam(CbcModel::CbcCutoffIncrement) ;
+    bestObjective_ += 100.0*increment+1.0e-3;
     setBestSolution(CBC_SOLUTION,bestObjective_,bestSolution_,true) ;
     continuousSolver_->resolve() ;
     if (!continuousSolver_->isProvenOptimal())

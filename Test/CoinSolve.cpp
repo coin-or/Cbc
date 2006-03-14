@@ -74,6 +74,7 @@
 #include "CbcBranchActual.hpp"
 #include  "CbcOrClpParam.hpp"
 #include  "CbcCutGenerator.hpp"
+#include  "CbcStrategy.hpp"
 
 #include "OsiClpSolverInterface.hpp"
 #ifdef CBC_AMPL
@@ -105,6 +106,7 @@ extern "C" {
 
 int mainTest (int argc, const char *argv[],int algorithm,
 	      ClpSimplex empty, bool doPresolve,int switchOff);
+void CbcClpUnitTest (const CbcModel & saveModel);
 int CbcOrClpRead_mode=1;
 FILE * CbcOrClpReadCommand=stdin;
 static bool noPrinting=false;
@@ -1460,6 +1462,9 @@ int main (int argc, const char *argv[])
 	      std::cout<<"** Current model not valid"<<std::endl;
 	    }
 	    break;
+          case MIPLIB:
+            // User can set options - main differenec is lack of model and CglPreProcess
+            goodModel=true;
 /*
   Run branch-and-cut. First set a few options -- node comparison, scaling. If
   the solver is Clp, consider running some presolve code (not yet converted
@@ -1469,6 +1474,7 @@ int main (int argc, const char *argv[])
 	  case BAB: // branchAndBound
           case STRENGTHEN:
             if (goodModel) {
+              bool miplib = type==MIPLIB;
               int logLevel = parameters[slog].intValue();
               // Reduce printout
               if (logLevel<=1)
@@ -1481,7 +1487,8 @@ int main (int argc, const char *argv[])
                 assert (si != NULL);
                 si->setSpecialOptions(0x40000000);
               }
-              model.initialSolve();
+              if (!miplib)
+                model.initialSolve();
               // If user made settings then use them
               if (!defaultSettings) {
                 OsiSolverInterface * solver = model.solver();
@@ -1544,7 +1551,7 @@ int main (int argc, const char *argv[])
               if (logLevel>-1)
                 clpSolver2->messageHandler()->setLogLevel(logLevel);
               lpSolver = clpSolver2->getModelPtr();
-              if (lpSolver->factorizationFrequency()==200) {
+              if (lpSolver->factorizationFrequency()==200&&!miplib) {
                 // User did not touch preset
                 int numberRows = lpSolver->numberRows();
                 const int cutoff1=10000;
@@ -1627,7 +1634,7 @@ int main (int argc, const char *argv[])
                 babModel->setMaximumSeconds(timeLeft-(CoinCpuTime()-time1));
               }
               // now tighten bounds
-              {
+              if (!miplib) {
                 OsiClpSolverInterface * si =
                   dynamic_cast<OsiClpSolverInterface *>(babModel->solver()) ;
                 assert (si != NULL);
@@ -1687,22 +1694,24 @@ int main (int argc, const char *argv[])
                 heuristic4.setMaximumPasses(parameters[whichParam(FPUMPITS,numberParameters,parameters)].intValue());
                 babModel->addHeuristic(&heuristic4);
               }
-              CbcRounding heuristic1(*babModel);
-              if (useRounding)
-                babModel->addHeuristic(&heuristic1) ;
-              CbcHeuristicLocal heuristic2(*babModel);
-              heuristic2.setSearchType(1);
-              if (useCombine)
-                babModel->addHeuristic(&heuristic2);
-              CbcHeuristicGreedyCover heuristic3(*babModel);
-              CbcHeuristicGreedyEquality heuristic3a(*babModel);
-              if (useGreedy) {
-                babModel->addHeuristic(&heuristic3);
-                babModel->addHeuristic(&heuristic3a);
-              }
-              if (useLocalTree) {
-                CbcTreeLocal localTree(babModel,NULL,10,0,0,10000,2000);
-                babModel->passInTreeHandler(localTree);
+              if (!miplib) {
+                CbcRounding heuristic1(*babModel);
+                if (useRounding)
+                  babModel->addHeuristic(&heuristic1) ;
+                CbcHeuristicLocal heuristic2(*babModel);
+                heuristic2.setSearchType(1);
+                if (useCombine)
+                  babModel->addHeuristic(&heuristic2);
+                CbcHeuristicGreedyCover heuristic3(*babModel);
+                CbcHeuristicGreedyEquality heuristic3a(*babModel);
+                if (useGreedy) {
+                  babModel->addHeuristic(&heuristic3);
+                  babModel->addHeuristic(&heuristic3a);
+                }
+                if (useLocalTree) {
+                  CbcTreeLocal localTree(babModel,NULL,10,0,0,10000,2000);
+                  babModel->passInTreeHandler(localTree);
+                }
               }
               // add cut generators if wanted
               int switches[20];
@@ -1778,20 +1787,21 @@ int main (int argc, const char *argv[])
                   generator->setWhatDepth(cutDepth) ;
               }
               // Could tune more
-              babModel->setMinimumDrop(min(5.0e-2,
-                                        fabs(babModel->getMinimizationObjValue())*1.0e-3+1.0e-4));
-              if (cutPass==-1234567) {
-                if (babModel->getNumCols()<500)
-                  babModel->setMaximumCutPassesAtRoot(-100); // always do 100 if possible
-                else if (babModel->getNumCols()<5000)
-                  babModel->setMaximumCutPassesAtRoot(100); // use minimum drop
-                else
-                  babModel->setMaximumCutPassesAtRoot(20);
-              } else {
-                babModel->setMaximumCutPassesAtRoot(cutPass);
+              if (!miplib) {
+                babModel->setMinimumDrop(min(5.0e-2,
+                                             fabs(babModel->getMinimizationObjValue())*1.0e-3+1.0e-4));
+                if (cutPass==-1234567) {
+                  if (babModel->getNumCols()<500)
+                    babModel->setMaximumCutPassesAtRoot(-100); // always do 100 if possible
+                  else if (babModel->getNumCols()<5000)
+                    babModel->setMaximumCutPassesAtRoot(100); // use minimum drop
+                  else
+                    babModel->setMaximumCutPassesAtRoot(20);
+                } else {
+                  babModel->setMaximumCutPassesAtRoot(cutPass);
+                }
+                babModel->setMaximumCutPasses(1);
               }
-              babModel->setMaximumCutPasses(1);
-              
               // Do more strong branching if small
               //if (babModel->getNumCols()<5000)
               //babModel->setNumberStrong(20);
@@ -1815,7 +1825,9 @@ int main (int argc, const char *argv[])
                 osiclp->setupForRepeatedUse(0,parameters[slog].intValue());
               }
               double increment=babModel->getCutoffIncrement();;
-              int * changed = analyze( osiclp,numberChanged,increment,false);
+              int * changed = NULL;
+              if (!miplib)
+                changed=analyze( osiclp,numberChanged,increment,false);
               if (debugValues) {
                 if (numberDebugValues==babModel->getNumCols()) {
                   // for debug
@@ -1843,12 +1855,14 @@ int main (int argc, const char *argv[])
               babModel->setSpecialOptions(2);
               currentBranchModel = babModel;
               OsiSolverInterface * strengthenedModel=NULL;
-              if (type==BAB) {
+              if (type==BAB||type==MIPLIB) {
                 int moreMipOptions = parameters[whichParam(MOREMIPOPTIONS,numberParameters,parameters)].intValue();
                 if (moreMipOptions>=0) {
                   printf("more mip options %d\n",moreMipOptions);
                   babModel->setSearchStrategy(moreMipOptions);
                 }
+              }
+              if (type==BAB) {
                 if (preProcess&&process.numberSOS()) {
                   int numberSOS = process.numberSOS();
                   int numberIntegers = babModel->numberIntegers();
@@ -1887,6 +1901,15 @@ int main (int argc, const char *argv[])
                 }
                 int statistics = (printOptions>0) ? printOptions: 0;
                 babModel->branchAndBound(statistics);
+              } else if (type==MIPLIB) {
+                CbcStrategyDefault strategy(true,5,5);
+                // Set up pre-processing to find sos if wanted
+                if (preProcess)
+                  strategy.setupPreProcessing(2);
+                babModel->setStrategy(strategy);
+                CbcClpUnitTest(*babModel);
+                goodModel=false;
+                break;
               } else {
                 strengthenedModel = babModel->strengthenedModel();
               }

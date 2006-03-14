@@ -4303,6 +4303,8 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
               added[i]=i+numberRowsAtContinuous_;
             solver_->deleteRows(numberAdded,added);
             delete [] added;
+            // resolve so optimal
+            solver_->resolve();
           }
         }
 #ifdef COIN_USE_CLP

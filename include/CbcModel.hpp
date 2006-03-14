@@ -243,8 +243,17 @@ public:
     /** \brief Reoptimise an LP relaxation
     
       Invoke the solver's %resolve() method.
+      whereFrom -
+      0 - initial continuous
+      1 - resolve on branch (before new cuts)
+      2 - after new cuts
+      3  - obsolete code or something modified problem in unexpected way
+      10 - after strong branching has fixed variables at root
+      11 - after strong branching has fixed variables in tree
+
+      returns 1 feasible, 0 infeasible, -1 feasible but skip cuts
     */
-    bool resolve();
+    int resolve(CbcNodeInfo * parent, int whereFrom);
     /// Make given rows (L or G) into global cuts and remove from lp
     void makeGlobalCuts(int numberRows,const int * which); 
   //@}

@@ -5,6 +5,9 @@
 
 #include "CbcModel.hpp"
 class CglPreProcess;
+class CbcNodeInfo;
+class CbcNode;
+class CoinWarmStartDiff;
 
 //#############################################################################
 /** Strategy base class */
@@ -44,6 +47,20 @@ public:
   { return process_;};
   /// Delete pre-processing object to save memory
   void deletePreProcess();
+  /// Return a new Full node information pointer (descendant of CbcFullNodeInfo)
+  virtual CbcNodeInfo * fullNodeInfo(CbcModel * model,int numberRowsAtContinuous) const;
+  /// Return a new Partial node information pointer (descendant of CbcPartialNodeInfo)
+  virtual CbcNodeInfo * partialNodeInfo(CbcModel * model, CbcNodeInfo * parent, CbcNode * owner,
+                                        int numberChangedBounds,const int * variables,
+                                        const double * boundChanges,
+                                        const CoinWarmStartDiff *basisDiff) const;
+  /** After a CbcModel::resolve this can return a status
+      -1 no effect
+      0 treat as optimal
+      1 as 0 but do not do any more resolves (i.e. no more cuts)
+      2 treat as infeasible
+  */
+  virtual int status(CbcModel * model, CbcNodeInfo * parent, int whereFrom);
 private:
   
   /// Illegal Assignment operator 

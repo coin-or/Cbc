@@ -20,6 +20,7 @@
 #include "CbcModel.hpp"
 #include "CbcNode.hpp"
 #include "CbcStatistics.hpp"
+#include "CbcStrategy.hpp"
 #include "CbcBranchActual.hpp"
 #include "CbcBranchDynamic.hpp"
 #include "OsiRowCut.hpp"
@@ -683,11 +684,17 @@ CbcNode::createInfo (CbcModel *model,
 		     const double *lastLower, const double *lastUpper,
 		     int numberOldActiveCuts,int numberNewCuts)
 { OsiSolverInterface * solver = model->solver();
+ CbcStrategy * strategy = model->strategy();
 /*
   The root --- no parent. Create full basis and bounds information.
 */
   if (!lastNode)
-  { nodeInfo_=new CbcFullNodeInfo(model,solver->getNumRows()); }
+  { 
+    if (!strategy)
+      nodeInfo_=new CbcFullNodeInfo(model,solver->getNumRows());
+    else
+      nodeInfo_ = strategy->fullNodeInfo(model,solver->getNumRows());
+  }
 /*
   Not the root. Create an edit from the parent's basis & bound information.
   This is not quite as straightforward as it seems. We need to reintroduce
@@ -825,9 +832,13 @@ CbcNode::createInfo (CbcModel *model,
   Hand the lot over to the CbcPartialNodeInfo constructor, then clean up and
   return.
 */
-    nodeInfo_ =
-      new CbcPartialNodeInfo(lastNode->nodeInfo_,this,numberChangedBounds,
-			     variables,boundChanges,basisDiff) ;
+    if (!strategy)
+      nodeInfo_ =
+        new CbcPartialNodeInfo(lastNode->nodeInfo_,this,numberChangedBounds,
+                               variables,boundChanges,basisDiff) ;
+    else
+      nodeInfo_ = strategy->partialNodeInfo(model, lastNode->nodeInfo_,this,numberChangedBounds,
+                               variables,boundChanges,basisDiff) ;
     delete basisDiff ;
     delete [] boundChanges;
     delete [] variables;

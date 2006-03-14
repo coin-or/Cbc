@@ -17,6 +17,8 @@
 #include "CbcStrategy.hpp"
 #include "CbcCutGenerator.hpp"
 #include "CbcBranchActual.hpp"
+#include "CbcNode.hpp"
+#include "CoinWarmStart.hpp"
 #include "CglPreProcess.hpp"
 // Cuts
 
@@ -51,6 +53,33 @@ CbcStrategy::deletePreProcess()
 { 
   delete process_;
   process_=NULL;
+}
+// Return a new Full node information pointer (descendant of CbcFullNodeInfo)
+CbcNodeInfo * 
+CbcStrategy::fullNodeInfo(CbcModel * model,int numberRowsAtContinuous) const
+{
+  return new CbcFullNodeInfo(model,numberRowsAtContinuous);
+}
+// Return a new Partial node information pointer (descendant of CbcPartialNodeInfo)
+CbcNodeInfo * 
+CbcStrategy::partialNodeInfo(CbcModel * model, CbcNodeInfo * parent, CbcNode * owner,
+                             int numberChangedBounds,const int * variables,
+                             const double * boundChanges,
+                             const CoinWarmStartDiff *basisDiff) const
+{
+  return new CbcPartialNodeInfo(parent, owner, numberChangedBounds, variables,
+                            boundChanges,basisDiff);
+}
+/* After a CbcModel::resolve this can return a status
+   -1 no effect
+   0 treat as optimal
+   1 as 0 but do not do any more resolves (i.e. no more cuts)
+   2 treat as infeasible
+*/
+int
+CbcStrategy::status(CbcModel * model, CbcNodeInfo * parent,int whereFrom)
+{
+  return -1;
 }
 
 // Default Constructor

@@ -4,7 +4,7 @@ LibType := SHARED
 # Select optimization (-O or -g). -O will be automatically bumped up to the 
 # highest level of optimization the compiler supports. If want something in
 # between then specify the exact level you want, e.g., -O1 or -O2
-OptLevel := -O1
+#OptLevel := -O1
 OptLevel := -g
 
 
@@ -16,6 +16,7 @@ LIBSRC += CbcTree.cpp
 LIBSRC += CbcTreeLocal.cpp
 LIBSRC += CbcCountRowCut.cpp
 LIBSRC += CbcMessage.cpp
+LIBSRC += CbcEventHandler.cpp
 LIBSRC += CbcHeuristic.cpp
 LIBSRC += CbcHeuristicLocal.cpp
 LIBSRC += CbcHeuristicFPump.cpp
@@ -31,26 +32,38 @@ LIBSRC += CbcStatistics.cpp
 LIBSRC += CbcFathomDynamicProgramming.cpp
 LIBSRC += CbcCompareActual.cpp
 LIBSRC += CbcCutGenerator.cpp
-LIBSRC += Cbc_C_Interface.cpp
+
+# Clp is deeply wired into the C interface. Just say Clp is required to use
+# it.
+
+ifneq ($(filter CBC_USE_CLP, $(CBC_DEFINES)),)
+  LIBSRC += Cbc_C_Interface.cpp
+endif
 
 ##############################################################################
 # You should not need to edit below this line.
 ##############################################################################
-# The location of the customized Makefiles
+# The location of the customized Makefiles. Unclear we need this again, but
+# it can't hurt. As noted in Makefile, Makefile.coin will pull in
+# Makefile.<O/S> and Makefile.location.
+
 include ${MakefileDir}/Makefile.coin
-include ${MakefileDir}/Makefile.location
+
+CXXFLAGS += $(addprefix -D,$(CBC_DEFINES))
+
+# Defines to enable debugging code.
 
 ifeq ($(OptLevel),-g)
 #   CXXFLAGS += -DCBC_DEBUG
+#   CXXFLAGS += -DCBC_DEBUG=2
+#   CXXFLAGS += -DFULL_DEBUG
 #   CXXFLAGS += -DCHECK_NODE
 #   CXXFLAGS += -DCHECK_CUT_COUNTS
 #   CXXFLAGS += -DCHECK_NODE_FULL
 #   CXXFLAGS += -lefence
 endif
-ifneq (,$(filter COIN_HAS_OSICLP, $(OsiClpDefine)))
-#  add in USE
-CXXFLAGS += $(addprefix -D,COIN_USE_CLP)
-endif
+
+# $(warning CXXFLAGS is $(CXXFLAGS))
 
 export ExtraIncDir  := ${CoinIncDir} ${zlibIncDir} ${bzlibIncDir}
 export ExtraLibDir  := ${CoinLibDir} ${zlibLibDir} ${bzlibLibDir}

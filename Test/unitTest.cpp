@@ -13,24 +13,24 @@
 #include <iostream>
 #include <cstdio>
 
-#ifdef COIN_USE_CBC
+#include "CoinHelperFunctions.hpp"
+
+#ifdef CBC_USE_CBC
 #include "OsiCbcSolverInterface.hpp"
-#else
-//#define OsiCbcSolverInterface OsiClpSolverInterface
 #endif
-#ifdef COIN_USE_OSL
+#ifdef CBC_USE_OSL
 #include "OsiOslSolverInterface.hpp"
 #endif
-#ifdef COIN_USE_SPX
+#ifdef CBC_USE_SPX
 #include "OsiSpxSolverInterface.hpp"
 #endif
-#ifdef COIN_USE_DYLP
+#ifdef CBC_USE_DYLP
 #include "OsiDylpSolverInterface.hpp"
 #endif
-#ifdef COIN_USE_GLPK
+#ifdef CBC_USE_GLPK
 #include "OsiGlpkSolverInterface.hpp"
 #endif
-#ifdef COIN_USE_CLP
+#ifdef CBC_USE_CLP
 #include "OsiClpSolverInterface.hpp"
 #endif
 #ifdef NDEBUG
@@ -41,7 +41,7 @@
 // Function Prototypes. Function definitions is in this file.
 void testingMessage( const char * const msg );
 
-#ifdef COIN_USE_CBC
+#ifdef CBC_USE_CBC
 void CbcUnitTest (const std::vector<OsiCbcSolverInterface*> & vecEmptySiP,
                   const std::string & mpsDir)
 {
@@ -93,13 +93,13 @@ void CbcUnitTest (const std::vector<OsiCbcSolverInterface*> & vecEmptySiP,
   /*
     Load up the problem vector. Note that the row counts here include the
     objective function.
-    
+ 
+    Set HOWMANY to 0 for no test, 1 for some, 2 for many, 3 for all.
   */
-  // 0 for no test, 1 for some, 2 for many, 3 for all
 #define HOWMANY 1
 #if HOWMANY
 #if HOWMANY>1
-  PUSH_MPS("10teams",230,2025,924,917,7)
+    PUSH_MPS("10teams",230,2025,924,917,7)
 #endif
     PUSH_MPS("air03",124,10757,340160,338864.25,7)
 #if HOWMANY==3
@@ -116,7 +116,7 @@ void CbcUnitTest (const std::vector<OsiCbcSolverInterface*> & vecEmptySiP,
     PUSH_MPS("cap6000",2176,6000,-2451377,-2451537.325,7)
 #endif
     //    PUSH_MPS("dano3mip",3202,13873,728.1111,576.23162474,7)
-    //PUSH_MPS("danoint",664,521,65.67,62.637280418,7)
+    //    PUSH_MPS("danoint",664,521,65.67,62.637280418,7)
     PUSH_MPS("dcmulti",290,548,188182,183975.5397,7)
     PUSH_MPS("dsbmip",1182,1886,-305.19817501,-305.19817501,7)
     PUSH_MPS("egout",98,141,568.101,149.589,7)
@@ -190,23 +190,23 @@ void CbcUnitTest (const std::vector<OsiCbcSolverInterface*> & vecEmptySiP,
     PUSH_MPS("stein45",331,45,30,22.0,7)
 #endif
     PUSH_MPS("vpm1",234,378,20,15.4167,7)
-      PUSH_MPS("vpm2",234,378,13.75,9.8892645972,7)
+    PUSH_MPS("vpm2",234,378,13.75,9.8892645972,7)
 #endif
 #undef PUSH_MPS
     
-    /*
-      Create a vector of solver interfaces that we can use to run the test
-      problems. The strategy is to create a fresh clone of the `empty' solvers
-      from vecEmptySiP for each problem, then proceed in stages: read the MPS
-      file, solve the problem, check the solution. If there are multiple
-      solvers in vecSiP, the results of each solver are compared with its
-      neighbors in the vector.
-    */
-    int numberSolvers=vecEmptySiP.size();
+  /*
+    Create a vector of solver interfaces that we can use to run the test
+    problems. The strategy is to create a fresh clone of the `empty' solvers
+    from vecEmptySiP for each problem, then proceed in stages: read the MPS
+    file, solve the problem, check the solution. If there are multiple
+    solvers in vecSiP, the results of each solver are compared with its
+    neighbors in the vector.
+  */
+  int numberSolvers=vecEmptySiP.size();
   std::vector<OsiSolverInterface*> vecSiP(numberSolvers) ;
 
   // Create vector to store a name for each solver interface
-  // and a count on the number of problems the solver intface solved.
+  // and a count on the number of problems the solver interface solved.
   std::vector<std::string> siName;
   std::vector<int> numProbSolved;
   std::vector<double> timeTaken;
@@ -219,19 +219,20 @@ void CbcUnitTest (const std::vector<OsiCbcSolverInterface*> & vecEmptySiP,
   }
   
   /*
-    Open the main loop to step through the MPS problems.
+    Open the main loops. Outer loop steps through MPS problems, inner loop
+    steps through solvers.
   */
   for (m = 0 ; m < mpsName.size() ; m++)
-    { std::cerr << "  processing mps file: " << mpsName[m] 
-                << " (" << m+1 << " out of " << mpsName.size() << ")" << std::endl ;
+  { std::cerr << "  processing mps file: " << mpsName[m] 
+	      << " (" << m+1 << " out of " << mpsName.size() << ")"
+	      << std::endl ;
+    for (i = vecSiP.size()-1 ; i >= 0 ; --i) {
+      vecSiP[i] = vecEmptySiP[i]->clone() ;
     /*
-      Stage 1: Read the MPS file into each solver interface.
+      Stage 1: Read the MPS file into the solver interface.
 
-      Fill vecSiP with fresh clones of the solvers and read in the MPS file. As
-      a basic check, make sure the size of the constraint matrix is correct.
+      As a basic check, make sure the size of the constraint matrix is correct.
     */
-    for (i = vecSiP.size()-1 ; i >= 0 ; --i)
-      { vecSiP[i] = vecEmptySiP[i]->clone() ;
       
       std::string fn = mpsDir+mpsName[m] ;
       vecSiP[i]->readMps(fn.c_str(),"") ;
@@ -243,17 +244,23 @@ void CbcUnitTest (const std::vector<OsiCbcSolverInterface*> & vecEmptySiP,
       assert(nr == nRows[m]) ;
       assert(nc == nCols[m]) ;
     /*
-      Stage 2: Call each solver to solve the problem.
-      
-      We call each solver, then check the return code and objective.
-      
+      Stage 2: Call the solver to get a solution for the LP relaxation.
     */
-
       double startTime = CoinCpuTime();
       OsiCbcSolverInterface * integerSolver =
         dynamic_cast<OsiCbcSolverInterface *>(vecSiP[i]) ;
-      assert (integerSolver);
+      assert(integerSolver);
+      integerSolver->initialSolve();
+    /*
+      Stage 3: Call the solver to perform branch and cut.
+      
+      We call each solver, then check the return code and objective.
+      Limits are 50000 nodes and one hour of time.
+    */
+
       integerSolver->setMaximumNodes(50000);
+      integerSolver->setMaximumSeconds(60*60);
+      integerSolver->getModelPtr()->messageHandler()->setLogLevel(1) ;
       integerSolver->branchAndBound();
       
       double timeOfSolution = CoinCpuTime()-startTime;
@@ -352,29 +359,31 @@ int mainTest (int argc, const char *argv[])
     miplibDir=parms["-miplibDir"] + dirsep;
   else 
     miplibDir = dirsep == '/' ? "./Samples/miplib3/" : ".\\Samples\\miplib3\\";
-#ifdef COIN_USE_CBC
+#ifdef CBC_USE_CBC
 
   {
     // Create vector of solver interfaces
     std::vector<OsiCbcSolverInterface*> vecSi;
     CbcStrategyDefault strategy(false);
-#   if COIN_USE_OSL
+#   if CBC_USE_OSL
     OsiSolverInterface * oslSi = new OsiOslSolverInterface;
     vecSi.push_back(new OsiCbcSolverInterface(oslSi,&strategy));
 #endif
-#   if COIN_USE_SPX
+#   if CBC_USE_SPX
     OsiSolverInterface * spxSi = new OsiSpxSolverInterface;
     vecSi.push_back(new OsiCbcSolverInterface(spxSi,&strategy));
 #endif
-#   if COIN_USE_CLP
-    OsiSolverInterface * clpSi = new OsiClpSolverInterface;
+#   if CBC_USE_CLP
+    OsiSolverInterface *clpSi = new OsiClpSolverInterface ;
+    /* Quiet, already! */
+    clpSi->setHintParam(OsiDoReducePrint,true,OsiHintDo) ;
     vecSi.push_back(new OsiCbcSolverInterface(clpSi,&strategy));
 #endif
-#   if COIN_USE_DYLP
+#   if CBC_USE_DYLP
     OsiSolverInterface * dylpSi = new OsiDylpSolverInterface;
     vecSi.push_back(new OsiCbcSolverInterface(dylpSi,&strategy));
 #endif
-#   if COIN_USE_GLPK
+#   if CBC_USE_GLPK
     OsiSolverInterface * glpkSi = new OsiGlpkSolverInterface;
     vecSi.push_back(new OsiCbcSolverInterface(glpkSi,&strategy));
 #endif
@@ -395,8 +404,7 @@ int mainTest (int argc, const char *argv[])
 // Display message on stdout and stderr
 void testingMessage( const char * const msg )
 {
-  std::cerr <<msg;
-  //cout <<endl <<"*****************************************"
-  //     <<endl <<msg <<endl;
+  std::cerr << msg << std::endl ;
+  // std::cout << msg << std::endl ;
 }
 

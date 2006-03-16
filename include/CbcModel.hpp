@@ -11,9 +11,6 @@
 #include "CoinWarmStartBasis.hpp"
 #include "CbcCompareBase.hpp"
 #include "CbcMessage.hpp"
-#ifdef COIN_USE_CLP
-#include "ClpEventHandler.hpp"
-#endif
 
 //class OsiSolverInterface;
 
@@ -28,6 +25,11 @@ class CbcTree;
 class CbcStrategy;
 class CbcFeasibilityBase;
 class CbcStatistics;
+#ifdef CBC_ONLY_CLP
+class ClpEventHandler ;
+#else
+class CbcEventHandler ;
+#endif
 
 //#############################################################################
 
@@ -1212,6 +1214,25 @@ public:
   /// Returns priority level for an object (or 1000 if no priorities exist)
   inline int priority(int sequence) const
   { return object_[sequence]->priority();}; 
+
+
+#ifdef CBC_ONLY_CLP
+   /// Pass in Event handler (cloned and deleted at end)
+   void passInEventHandler(const ClpEventHandler * eventHandler);
+   /// Event handler
+  ClpEventHandler * eventHandler() const;
+#else
+  /*! \brief Set an event handler
+  
+    A clone of the handler passed as a parameter is stored in CbcModel.
+  */
+  void passInEventHandler(const CbcEventHandler *eventHandler) ;
+
+  /*! \brief Retrieve a pointer to the event handler */
+  CbcEventHandler* CbcModel::eventHandler() const
+  { return (eventHandler_) ; } ;
+#endif
+
   //@}
     
   /**@name Setting/Accessing application data */
@@ -1262,12 +1283,6 @@ public:
   /// Get log level
   inline int logLevel() const
   { return handler_->logLevel();};
-#ifdef COIN_USE_CLP
-   /// Pass in Event handler (cloned and deleted at end)
-   void passInEventHandler(const ClpEventHandler * eventHandler);
-   /// Event handler
-  ClpEventHandler * eventHandler() const;
-#endif
   //@}
   //---------------------------------------------------------------------------
   ///@name Specialized
@@ -1717,6 +1732,12 @@ private:
   CbcHeuristic ** heuristic_;
   /// Pointer to heuristic solver which found last solution (or NULL)
   CbcHeuristic * lastHeuristic_;
+  /*! Pointer to the event handler */
+# ifdef CBC_ONLY_CLP
+  ClpEventHandler *eventHandler_ ;
+# else
+  CbcEventHandler *eventHandler_ ;
+# endif
 
   /// Total number of objects
   int numberObjects_;

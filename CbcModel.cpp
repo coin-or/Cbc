@@ -12,11 +12,17 @@
 #include <cassert>
 #include <cmath>
 #include <cfloat>
-#ifdef COIN_USE_CLP
+
+#ifdef CBC_USE_CLP
 // include Presolve from Clp
 #include "ClpPresolve.hpp"
 #include "OsiClpSolverInterface.hpp"
+#endif
+
+#ifdef CBC_ONLY_CLP
 #include "ClpEventHandler.hpp"
+#else
+#include "CbcEventHandler.hpp"
 #endif
 
 #include "OsiSolverInterface.hpp"
@@ -415,17 +421,19 @@ void CbcModel::branchAndBound(int doStatistics)
     // Set strategy print level to models
     strategy_->setupPrinting(*this,handler_->logLevel());
   }
+/*
+  Set up the event handler.
+*/
   eventHappened_=false;
-#ifdef COIN_USE_CLP
+#ifdef CBC_ONLY_CLP
   ClpEventHandler * eventHandler=NULL;
   {
-    OsiClpSolverInterface * clpSolver 
+    OsiClpSolverInterface * clpSolver
       = dynamic_cast<OsiClpSolverInterface *> (solver_);
-    if (clpSolver) {
-      ClpSimplex * clpSimplex = clpSolver->getModelPtr();
-      eventHandler = clpSimplex->eventHandler();
-    }
+    eventHandler = clpSolver->getModelPtr()->eventHandler() ;
   }
+#else
+  CbcEventHandler *eventHandler = new CbcEventHandler(this) ;
 #endif
   
   if (!nodeCompare_)
@@ -603,14 +611,18 @@ void CbcModel::branchAndBound(int doStatistics)
   constraint system (aka the continuous system).
 */
   continuousSolver_ = solver_->clone() ;
-#ifdef COIN_USE_CLP
+#ifdef CBC_USE_CLP
   OsiClpSolverInterface * clpSolver 
     = dynamic_cast<OsiClpSolverInterface *> (solver_);
+# ifndef CBC_ONLY_CLP
   if (clpSolver) {
+# endif
     ClpSimplex * clpSimplex = clpSolver->getModelPtr();
     // take off names
     clpSimplex->dropNames();
+# ifndef CBC_ONLY_CLP
   }
+# endif
 #endif
 
   numberRowsAtContinuous_ = getNumRows() ;
@@ -965,13 +977,17 @@ void CbcModel::branchAndBound(int doStatistics)
           numberFixedNow_=n;
         }
       }
-#ifdef COIN_USE_CLP
       if (eventHandler) {
+# ifdef CBC_ONLY_CLP
         if (!eventHandler->event(ClpEventHandler::solution)) {
           eventHappened_=true; // exit
         }
+# else
+        if (!eventHandler->event(CbcEventHandler::solution)) {
+          eventHappened_=true; // exit
+        }
+# endif
       }
-#endif
       // Do from deepest
       tree_->cleanTree(this, newCutoff,bestPossibleObjective_) ;
       nodeCompare_->newSolution(this) ;
@@ -1014,13 +1030,15 @@ void CbcModel::branchAndBound(int doStatistics)
       messageHandler()->message(CBC_STATUS,messages())
 	<< numberNodes_<< nNodes<< bestObjective_<< bestPossibleObjective_
 	<< CoinMessageEol ;
-#ifdef COIN_USE_CLP
-      if (eventHandler) {
-        if (!eventHandler->event(ClpEventHandler::treeStatus)) {
-          eventHappened_=true; // exit
-        }
+# ifdef CBC_ONLY_CLP
+      if (!eventHandler->event(ClpEventHandler::treeStatus)) {
+	eventHappened_=true; // exit
       }
-#endif
+# else
+      if (!eventHandler->event(CbcEventHandler::treeStatus)) {
+	eventHappened_=true; // exit
+      }
+# endif
     }
     // If no solution but many nodes - signal change in strategy
     if (numberNodes_>2*numberObjects_+1000&&stateOfSearch_!=2)
@@ -1201,7 +1219,7 @@ void CbcModel::branchAndBound(int doStatistics)
         statistics_[numberNodes2_-1]->endOfBranch(numberIterations_-saveNumber,
                                                feasible ? solver_->getObjValue()
                                                : COIN_DBL_MAX);
-    }
+      }
 /*
   Check for abort on limits: node count, solution count, time, integrality gap.
 */
@@ -1217,8 +1235,8 @@ void CbcModel::branchAndBound(int doStatistics)
   monotone objects.
 
   Finally, attach a partial nodeInfo object and store away any cuts that we
-  created back in solveWithCuts. addCuts() will also deal with the cut
-  reference counts.
+  created back in solveWithCuts. addCuts() will initialise the reference
+  counts for these new cuts.
 
   TODO: (lh) I'm confused. We create a nodeInfo without checking whether we
 	have a solution or not. Then we use numberUnsatisfied() to decide
@@ -1263,8 +1281,13 @@ void CbcModel::branchAndBound(int doStatistics)
               if (anyAction==-3) 
                 anyAction = newNode->chooseBranch(this,node,numberPassesLeft) ; // dynamic did nothing
             }
+/*
+  Yep, false positives for sure. And no easy way to distinguish honest
+  infeasibility from `found a solution and tightened objective target.'
+
             if (onOptimalPath)
               assert (anyAction!=-2); // can be useful but gives false positives on strong
+*/
             numberPassesLeft--;
             if (numberPassesLeft<=-1) {
               if (!numberLongStrong_)
@@ -1318,6 +1341,8 @@ void CbcModel::branchAndBound(int doStatistics)
 	else
 	{ anyAction = -2 ; }
 	// May have slipped through i.e. anyAction == 0 and objective above cutoff
+	// I think this will screw up cut reference counts if executed.
+	// We executed addCuts just above. (lh)
 	if ( anyAction >=0 ) {
 	  assert (newNode);
 	  if (newNode->objectiveValue() >= getCutoff()) 
@@ -1348,25 +1373,26 @@ void CbcModel::branchAndBound(int doStatistics)
         }
 /*
   At this point, there are three possibilities:
-    * We have a live node (variable() >= 0) which will require further
-      branching to resolve. Before we push it onto the search tree, try for
-      a heuristic solution.
+    * newNode is live and will require further branching to resolve
+      (variable() >= 0). Increment the cut reference counts by
+      numberBranches() to allow for use by children of this node, and
+      decrement by 1 because we've executed one arm of the branch of our
+      parent (consuming one reference). Before we push newNode onto the
+      search tree, try for a heuristic solution.
     * We have a solution, in which case newNode is non-null but we have no
       branching variable. Decrement the cut counts and save the solution.
     * The node was found to be infeasible, in which case it's already been
       deleted, and newNode is null.
-
-  TODO: (lh) Now I'm more confused. I thought that the call to addCuts() above
-	took care of incrementing the reference counts for cuts at newNode.
-	Clearly I need to look more carefully.
 */
-#ifdef COIN_USE_CLP
-        if (eventHandler) {
-          if (!eventHandler->event(ClpEventHandler::node)) {
-            eventHappened_=true; // exit
-          }
+# ifdef CBC_ONLY_CLP
+        if (!eventHandler->event(ClpEventHandler::node)) {
+          eventHappened_=true; // exit
         }
-#endif
+# else
+        if (!eventHandler->event(CbcEventHandler::node)) {
+          eventHappened_=true; // exit
+        }
+# endif
 	assert (!newNode || newNode->objectiveValue() <= getCutoff()) ;
         if (statistics_) {
           assert (numberNodes2_);
@@ -1461,7 +1487,9 @@ void CbcModel::branchAndBound(int doStatistics)
 /*
   End of the non-abort actions. The next block of code is executed if we've
   aborted because we hit one of the limits. Clean up by deleting the live set
-  and break out of the node processing loop.
+  and break out of the node processing loop. Note that on an abort, node may
+  have been pushed back onto the tree for further processing, in which case
+  it'll be deleted in cleanTree. We need to check.
 */
       else
       { 
@@ -1914,6 +1942,7 @@ CbcModel::CbcModel()
   numberHeuristics_(0),
   heuristic_(NULL),
   lastHeuristic_(NULL),
+  eventHandler_(NULL),
   numberObjects_(0),
   object_(NULL),
   originalColumns_(NULL),
@@ -2035,6 +2064,7 @@ CbcModel::CbcModel(const OsiSolverInterface &rhs)
   numberHeuristics_(0),
   heuristic_(NULL),
   lastHeuristic_(NULL),
+  eventHandler_(NULL),
   numberObjects_(0),
   object_(NULL),
   originalColumns_(NULL),
@@ -2309,6 +2339,17 @@ CbcModel::CbcModel(const CbcModel & rhs, bool noTree)
     heuristic_=NULL;
   }
   lastHeuristic_ = NULL;
+/*
+  When using CLP only, work with clp's event handler.
+*/
+# ifdef CBC_ONLY_CLP
+  eventHandler_ = NULL ;
+# else
+  if (rhs.eventHandler_)
+  { eventHandler_ = new CbcEventHandler(*rhs.eventHandler_) ; }
+  else
+  { eventHandler_ = NULL ; }
+# endif
   numberObjects_=rhs.numberObjects_;
   if (numberObjects_) {
     object_ = new CbcObject * [numberObjects_];
@@ -2589,6 +2630,17 @@ CbcModel::operator=(const CbcModel& rhs)
       heuristic_=NULL;
     }
     lastHeuristic_ = NULL;
+/*
+  Event handler is clp's responsibility when it's the only solver.
+*/
+#   ifndef CBC_ONLY_CLP
+    if (eventHandler_)
+      delete eventHandler_ ;
+    if (rhs.eventHandler_)
+    { eventHandler_ = new CbcEventHandler(*rhs.eventHandler_) ; }
+    else
+    { eventHandler_ = NULL ; }
+#   endif
     for (i=0;i<numberObjects_;i++)
       delete object_[i];
     delete [] object_;
@@ -2704,6 +2756,10 @@ CbcModel::gutsOfDestructor()
     delete heuristic_[i];
   delete [] heuristic_;
   heuristic_=NULL;
+# ifndef CBC_ONLY_CLP
+  delete eventHandler_ ;
+  eventHandler_ = NULL ;
+# endif
   delete nodeCompare_;
   nodeCompare_=NULL;
   delete problemFeasibility_;
@@ -3257,20 +3313,46 @@ int CbcModel::reducedCostFix ()
   const double *reducedCost = solver_->getReducedCost() ;
 
   int numberFixed = 0 ;
-#ifdef COIN_USE_CLP
+
+/*
+  At issue here are the clp-specific asserts. The two code blocks do exactly
+  the same thing, except that the first code block knows it's using clp and
+  does not do runtime checks. Merging the two results in unreadable nested
+  ifdef's.
+*/
+#ifdef CBC_ONLY_CLP
   OsiClpSolverInterface * clpSolver 
     = dynamic_cast<OsiClpSolverInterface *> (solver_);
-  ClpSimplex * clpSimplex=NULL;
-  if (clpSolver) 
-    clpSimplex = clpSolver->getModelPtr();
-#endif
+  ClpSimplex * clpSimplex = clpSolver->getModelPtr();
   for (int i = 0 ; i < numberIntegers_ ; i++)
   { int iColumn = integerVariable_[i] ;
     double djValue = direction*reducedCost[iColumn] ;
     if (upper[iColumn]-lower[iColumn] > integerTolerance)
     { if (solution[iColumn] < lower[iColumn]+integerTolerance && djValue > gap)
       { solver_->setColUpper(iColumn,lower[iColumn]) ;
-#ifdef COIN_USE_CLP
+        assert (clpSimplex->getColumnStatus(iColumn)==ClpSimplex::atLowerBound);
+	numberFixed++ ; }
+      else
+      if (solution[iColumn] > upper[iColumn]-integerTolerance && -djValue > gap)
+      { solver_->setColLower(iColumn,upper[iColumn]) ;
+      if (clpSimplex)
+        assert (clpSimplex->getColumnStatus(iColumn)==ClpSimplex::atUpperBound);
+	numberFixed++ ; } } }
+#else				// CBC_ONLY_CLP
+# ifdef CBC_USE_CLP
+  OsiClpSolverInterface * clpSolver 
+    = dynamic_cast<OsiClpSolverInterface *> (solver_);
+  ClpSimplex * clpSimplex=NULL;
+  if (clpSolver) 
+    clpSimplex = clpSolver->getModelPtr();
+# endif
+  for (int i = 0 ; i < numberIntegers_ ; i++)
+  { int iColumn = integerVariable_[i] ;
+    double djValue = direction*reducedCost[iColumn] ;
+    if (upper[iColumn]-lower[iColumn] > integerTolerance)
+    { if (solution[iColumn] < lower[iColumn]+integerTolerance && djValue > gap)
+      { solver_->setColUpper(iColumn,lower[iColumn]) ;
+#ifdef CBC_USE_CLP
       if (clpSimplex)
         assert (clpSimplex->getColumnStatus(iColumn)==ClpSimplex::atLowerBound);
 #endif
@@ -3278,11 +3360,12 @@ int CbcModel::reducedCostFix ()
       else
       if (solution[iColumn] > upper[iColumn]-integerTolerance && -djValue > gap)
       { solver_->setColLower(iColumn,upper[iColumn]) ;
-#ifdef COIN_USE_CLP
+#ifdef CBC_USE_CLP
       if (clpSimplex)
         assert (clpSimplex->getColumnStatus(iColumn)==ClpSimplex::atUpperBound);
 #endif
 	numberFixed++ ; } } }
+#endif				// CBC_ONLY_CLP
   
   return numberFixed; }
 
@@ -3353,7 +3436,8 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
   OsiCuts slackCuts;
 /*
   Resolve the problem. If we've lost feasibility, might as well bail out right
-  after the debug stuff.
+  after the debug stuff. The resolve will also refresh cached copies of the
+  solver solution (cbcColLower_, ...)
 */
   double objectiveValue = solver_->getObjValue()*solver_->getObjSense();
   if (node)
@@ -3417,12 +3501,9 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
     return true;
   }
 /*
-  Do reduced cost fixing, and then grab the primal solution and bounds vectors.
+  Do reduced cost fixing.
 */
   reducedCostFix() ;
-  const double *lower = solver_->getColLower() ;
-  const double *upper = solver_->getColUpper() ;
-  const double *solution = solver_->getColSolution() ;
 /*
   Set up for at most numberTries rounds of cut generation. If numberTries is
   negative, we'll ignore the minimumDrop_ cutoff and keep generating cuts for
@@ -3472,10 +3553,15 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
     numberTries-- ;
     OsiCuts theseCuts ;
 /*
+  Depending on actions in the loop (bound changes, addition of cuts,
+  reoptimisation) these pointers can change.
+*/
+    const double *lower = solver_->getColLower() ;
+    const double *upper = solver_->getColUpper() ;
+    const double *solution = solver_->getColSolution() ;
+/*
   Scan previously generated global column and row cuts to see if any are
   useful.
-  I can't see why this code
-  needs its own copy of the primal solution. Removed the dec'l.
 */
     int numberViolated=0;
     if (currentPassNumber_ == 1 && howOftenGlobalScan_ > 0 &&
@@ -3516,12 +3602,27 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
   true. generateCuts actually modifies variable bounds in the solver when
   CglProbing indicates that it can fix a variable. Reoptimisation is required
   to take full advantage.
+
+  The need to resolve here should only happen after a heuristic solution.
+  However, when it's triggered, the solution may change, which implies a reload
+  of lower, upper, and solution. (Note default OSI implementation of
+  optimalBasisIsAvailable always returns false.)
 */
     // This should only happen after heuristic solution
     if (solverCharacteristics_->warmStart()&&
         !solver_->optimalBasisIsAvailable()) {
       //printf("XXXXYY no opt basis\n");
       resolve(node ? node->nodeInfo() : NULL,3);
+/* dylp bug
+
+  Need to reload cached solution pointers after resolve. Solver not required
+  to use same vector for revised solution. cbcColLower_, etc., set by
+  CbcModel::setPointers() in CbcModel::resolve(). Any reason not to convert
+  this routine to use cbcColLower_, etc.?
+*/
+      lower = cbcColLower_ ;
+      upper = cbcColUpper_ ;
+      solution = cbcColSolution_ ;
     }
     if (nextRowCut_) {
       // branch was a cut - add it
@@ -3529,7 +3630,7 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
       if (handler_->logLevel()>1)
         nextRowCut_->print();
       const OsiRowCut * cut=nextRowCut_;
-      const double * solution = solver_->getColSolution();
+      // const double * solution = solver_->getColSolution();
       double lb = cut->lb();
       double ub = cut->ub();
       int n=cut->row().getNumElements();
@@ -3589,6 +3690,14 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
 #endif
 	  if (mustResolve) {
             int returncode = resolve(node ? node->nodeInfo() : NULL,2);
+/* dylp bug
+
+  Need to reload cached solution pointers after resolve. Solver not required
+  to use same vector for revised solution.
+*/
+	    lower = cbcColLower_ ;
+	    upper = cbcColUpper_ ;
+	    solution = cbcColSolution_ ;
             feasible = returnCode  != 0 ;
             if (returncode<0)
               numberTries=0;
@@ -3635,6 +3744,9 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
           }
         }
       }
+      assert(lower == solver_->getColLower()) ;
+      assert(upper == solver_->getColUpper()) ;
+      assert(solution == solver_->getColSolution()) ;
 
 /*
   The cut generator/heuristic has done its thing, and maybe it generated some
@@ -3821,6 +3933,9 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
 #ifdef CBC_DEBUG
       delete [] oldLower ;
       delete [] oldUpper ;
+      assert(lower == solver_->getColLower()) ;
+      assert(upper == solver_->getColUpper()) ;
+      assert(solution == solver_->getColSolution()) ;
 #endif
     }
 /*
@@ -3856,11 +3971,6 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
   the set of row cuts (cuts.insert()) supplied as a parameter. The new basis
   must be set with setWarmStart().
 
-  TODO: It's not clear to me why we can't separate this into two sections.
-	The first would add the row cuts, and be executed only if row cuts
-	need to be installed. The second would call resolve() and would be
-	executed if either row or column cuts have been installed.
-
   TODO: Seems to me the original code could allocate addCuts with size 0, if
 	numberRowCuts was 0 and numberColumnCuts was nonzero. That might
 	explain the memory fault noted in the comment by AJK.  Unfortunately,
@@ -3888,7 +3998,12 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
 	{ cuts.insert(theseCuts.rowCut(i)) ; }
         CoinWarmStartBasis * basis = dynamic_cast<CoinWarmStartBasis*>(solver_->getWarmStart()) ;
         assert(basis != NULL); // make sure not volume
-        //basis->resize(numberRowsAtStart+numberNewCuts_,numberColumns) ;
+/* dylp bug
+
+  Consistent size used by OsiDylp as sanity check. Implicit resize seen
+  as an error. Hence this call to resize is necessary.
+*/
+        basis->resize(numberRowsAtStart+numberNewCuts_,numberColumns) ;
 	for (i = 0 ; i < numberToAdd ; i++) 
 	{ basis->setArtifStatus(numberRowsNow+i,
 				 CoinWarmStartBasis::basic) ; }
@@ -3968,9 +4083,6 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
 /*
   We've lost feasibility --- this node won't be referencing the cuts we've
   been collecting, so decrement the reference counts.
-
-  TODO: Presumably this is in preparation for backtracking. Seems like it
-	should be the `else' off the previous `if'.
 */
     if (!feasible)
     { int i ;
@@ -4130,6 +4242,9 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
 
   TODO: All this should probably be hidden in a method of the CbcCutGenerator
   class.
+
+  TODO: Can the loop that scans over whichGenerator to accumulate per generator
+	counts be replaced by values in countRowCuts and countColumnCuts?
 */
 #ifdef NODE_LOG
   int fatherNum = (node == NULL) ? -1 : node->nodeNumber();
@@ -4307,25 +4422,33 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
             solver_->resolve();
           }
         }
-#ifdef COIN_USE_CLP
+#ifdef CBC_USE_CLP
         OsiClpSolverInterface * clpSolver 
           = dynamic_cast<OsiClpSolverInterface *> (solver_);
-        if (clpSolver) {
+# ifndef CBC_ONLY_CLP
+	if (clpSolver) {
+# endif
           // Maybe solver might like to know only column bounds will change
           //int options = clpSolver->specialOptions();
           //clpSolver->setSpecialOptions(options|128);
           clpSolver->synchronizeModel();
-        }
+# ifndef CBC_ONLY_CLP
+	}
+# endif
 #endif
       } else {
-#ifdef COIN_USE_CLP
+#ifdef CBC_USE_CLP
         OsiClpSolverInterface * clpSolver 
           = dynamic_cast<OsiClpSolverInterface *> (solver_);
-        if (clpSolver) {
+# ifndef CBC_ONLY_CLP
+	if (clpSolver) {
+# endif
         // make sure factorization can't carry over
           int options = clpSolver->specialOptions();
           clpSolver->setSpecialOptions(options&(~8));
-        }
+# ifndef CBC_ONLY_CLP
+	}
+# endif
 #endif
       }
     }
@@ -6431,11 +6554,13 @@ CbcModel::integerPresolveThisModel(OsiSolverInterface * originalSolver,
     if (debugger) 
       assert(debugger->onOptimalPath(*cleanModel));
 #endif
-#ifdef COIN_USE_CLP
+#ifdef CBC_USE_CLP
     // do presolve - for now just clp but easy to get osi interface
     OsiClpSolverInterface * clpSolver 
       = dynamic_cast<OsiClpSolverInterface *> (cleanModel);
+# ifndef CBC_ONLY_CLP
     if (clpSolver) {
+# endif
       ClpSimplex * clp = clpSolver->getModelPtr();
       clp->messageHandler()->setLogLevel(cleanModel->messageHandler()->logLevel());
       ClpPresolve pinfo;
@@ -6550,7 +6675,9 @@ CbcModel::integerPresolveThisModel(OsiSolverInterface * originalSolver,
 	  }
 	}
       }
+# ifndef CBC_ONLY_CLP
     }
+# endif
 #endif
     if (!feasible||!doIntegerPresolve) {
       break;
@@ -7280,17 +7407,31 @@ CbcModel::setPointers(const OsiSolverInterface * solver)
     dblParam_[CbcCurrentObjectiveValue]* 
     dblParam_[CbcOptimizationDirection];
 }
-#ifdef COIN_USE_CLP
+
+/*
+  There is no overlap of events used in cbc and events used in clp. And code
+  must explicitly register an event. So there's no chance that using the clp
+  event handler can ever affect clp directly. That said, I've elected to
+  do the following: If cbc is built using only clp, the existing code remains
+  in place: cbc will use ClpEventHandler. If cbc is built for generic OSI
+  solvers, only CbcEventHandler is available, and it will be used by all
+  solvers, clp included. If, over time, it remains true that there's no good
+  reason to retain ClpEventHandler, removal amounts to deleting the event
+  handling code protected by CBC_ONLY_CLP.    -- lh, 060210 --
+*/
+
+#ifdef CBC_ONLY_CLP
+
+/* Clp-specific routines to set/get an event handler. */
+
 // Pass in Event handler (cloned and deleted at end)
 void 
 CbcModel::passInEventHandler(const ClpEventHandler * eventHandler)
 {
   OsiClpSolverInterface * clpSolver 
     = dynamic_cast<OsiClpSolverInterface *> (solver_);
-  if (clpSolver) {
-    ClpSimplex * clpSimplex = clpSolver->getModelPtr();
-    clpSimplex->passInEventHandler(eventHandler);
-  }
+  ClpSimplex * clpSimplex = clpSolver->getModelPtr();
+  clpSimplex->passInEventHandler(eventHandler);
 }
 // Event handler
 ClpEventHandler * 
@@ -7298,14 +7439,29 @@ CbcModel::eventHandler() const
 { 
   OsiClpSolverInterface * clpSolver 
     = dynamic_cast<OsiClpSolverInterface *> (solver_);
-  if (clpSolver) {
-    ClpSimplex * clpSimplex = clpSolver->getModelPtr();
-    return clpSimplex->eventHandler();
-  } else {
-    return NULL;
-  }
+  ClpSimplex * clpSimplex = clpSolver->getModelPtr();
+  return clpSimplex->eventHandler();
 }
+
+#else		// not CBC_ONLY_CLP
+
+/* Equivalent functionality for generic OSI solvers using CbcEventHandler. */
+
+/*
+  Delete any existing handler and create a clone of the one supplied.
+*/
+void CbcModel::passInEventHandler (const CbcEventHandler *eventHandler)
+{
+  delete eventHandler_;
+  eventHandler_ = eventHandler->clone();
+}
+
+/*
+  CbcEventHandler* CbcModel::eventHandler is inlined in CbcModel.hpp.
+*/
+
 #endif
+
 // Set log level
 void 
 CbcModel::setLogLevel(int value)
@@ -7316,16 +7472,25 @@ CbcModel::setLogLevel(int value)
     int oldLevel = solver_->messageHandler()->logLevel();
     if (value<oldLevel)
       solver_->messageHandler()->setLogLevel(value);
-#ifdef COIN_USE_CLP
+#ifdef CBC_USE_CLP
     OsiClpSolverInterface * clpSolver 
       = dynamic_cast<OsiClpSolverInterface *> (solver_);
+# ifndef CBC_ONLY_CLP
     if (clpSolver) {
+# endif
       ClpSimplex * clpSimplex = clpSolver->getModelPtr();
-      int oldLevel = clpSimplex->logLevel();
+      oldLevel = clpSimplex->logLevel();
       if (value<oldLevel)
         clpSimplex->setLogLevel(value);
+# ifndef CBC_ONLY_CLP
     }
-#endif
+# endif
+#else		// CBC_USE_CLP
+/*
+  For generic OSI solvers, try the DoReducePrint hint.
+*/
+    solver_->setHintParam(OsiDoReducePrint,true,OsiHintDo) ;
+#endif		// CBC_USE_CLP
   }
 }
 

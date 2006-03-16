@@ -9,7 +9,7 @@
 #include <cfloat>
 
 #include "OsiSolverInterface.hpp"
-#ifdef COIN_USE_CLP
+#ifdef CBC_USE_CLP
 #include "OsiClpSolverInterface.hpp"
 #endif
 #include "CbcModel.hpp"
@@ -297,7 +297,7 @@ CbcStrategyDefault::setupOther(CbcModel & model)
     CglPreProcess * process = new CglPreProcess();
     OsiSolverInterface * solver = model.solver();
     int logLevel = model.messageHandler()->logLevel();
-#ifdef COIN_USE_CLP
+#ifdef CBC_USE_CLP
     OsiClpSolverInterface * clpSolver = dynamic_cast< OsiClpSolverInterface*> (solver);
     ClpSimplex * lpSolver=NULL;
     if (clpSolver) {
@@ -341,7 +341,7 @@ CbcStrategyDefault::setupOther(CbcModel & model)
       process_=NULL;
     } else {
       // now tighten bounds
-#ifdef COIN_USE_CLP
+#ifdef CBC_USE_CLP
       if (clpSolver) {
         // model has changed
         solver = model.solver();

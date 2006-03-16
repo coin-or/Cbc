@@ -43,13 +43,13 @@
 #include "CbcCompareActual.hpp"
 #include  "CbcParam.hpp"
 
-#ifdef COIN_USE_CLP
+#ifdef CBC_USE_CLP
 #include "OsiClpSolverInterface.hpp"
 #endif
-#ifdef COIN_USE_DYLP
+#ifdef CBC_USE_DYLP
 #include "OsiDylpSolverInterface.hpp"
 #endif
-#ifdef COIN_USE_OSL
+#ifdef CBC_USE_OSL
 #include "OsiOslSolverInterface.hpp"
 #endif
 
@@ -559,6 +559,8 @@ double totalTime=0.0;
 
 }	/* end unnamed namespace */
 
+int CbcOrClpRead_mode=1;
+FILE * CbcOrClpReadCommand=stdin;
 
 int main (int argc, const char *argv[])
 {
@@ -583,7 +585,7 @@ int main (int argc, const char *argv[])
 
     solverMap_t solvers ;
 
-#   ifdef COIN_USE_CLP
+#   ifdef CBC_USE_CLP
 #     ifndef CBC_DEFAULT_SOLVER
 #       define CBC_DEFAULT_SOLVER "clp"
 #     endif
@@ -591,7 +593,7 @@ int main (int argc, const char *argv[])
 #   else
       solvers["clp"] = 0 ;
 #   endif
-#   ifdef COIN_USE_DYLP
+#   ifdef CBC_USE_DYLP
 #     ifndef CBC_DEFAULT_SOLVER
 #       define CBC_DEFAULT_SOLVER "dylp"
 #     endif
@@ -599,7 +601,7 @@ int main (int argc, const char *argv[])
 #   else
       solvers["dylp"] = 0 ;
 #   endif
-#   ifdef COIN_USE_OSL
+#   ifdef CBC_USE_OSL
 #     ifndef CBC_DEFAULT_SOLVER
 #       define CBC_DEFAULT_SOLVER "osl"
 #     endif
@@ -1016,7 +1018,7 @@ int main (int argc, const char *argv[])
 	      OsiSolverInterface * solver = model->solver();
 	      if (!doScaling)
 		solver->setHintParam(OsiDoScale,false,OsiHintTry);
-#ifdef COIN_USE_CLP
+#ifdef CBC_USE_CLP
 	      OsiClpSolverInterface * si =
 		dynamic_cast<OsiClpSolverInterface *>(solver) ;
 	      if (preSolve&&si != NULL) {
@@ -1084,7 +1086,14 @@ int main (int argc, const char *argv[])
                       model2->solver()->setHintParam(OsiDoDualInInitial,false,OsiHintTry);
                       model2->solver()->setHintParam(OsiDoDualInResolve,false,OsiHintTry);
                     }
-		    model2->branchAndBound();
+		    try
+		    { model2->branchAndBound(); }
+		    catch (CoinError err)
+		    { std::cerr << "Exception: "
+				<< err.className() << "::" << err.methodName()
+				<< std::endl ;
+		      std::cerr << err.message() << std::endl ;
+		      exit (1) ; }
 		    // get back solution
 		    model->originalModel(model2,false);
 		  } else {
@@ -1140,7 +1149,15 @@ int main (int argc, const char *argv[])
 		  model->addCutGenerator(&twomirGen,-1,"TwoMirCuts");
 		else if (twomirAction==2)
 		  model->addCutGenerator(&twomirGen,-99,"TwoMirCuts");
-		model->branchAndBound() ; }
+		try
+		{ model->branchAndBound(); }
+		catch (CoinError err)
+		{ std::cerr << "Exception: "
+			    << err.className() << "::" << err.methodName()
+			    << std::endl ;
+		  std::cerr << err.message() << std::endl ;
+		  exit (1) ; }
+	      }
 	      if (model->bestSolution())
 	      { std::cout << "Optimal solution "
 			  << model->solver()->getObjValue() << std::endl ; }
@@ -1154,11 +1171,16 @@ int main (int argc, const char *argv[])
 			<< totalTime << std::endl ;
 	      time1 = time2 ;
             } else {
-              // User is going to get what I think best
+/*
+  User is willing to accept cbc defaults. Do an initial solve.
+*/
 	      if (!doScaling)
 		model->solver()->setHintParam(OsiDoScale,false,OsiHintTry);
               model->initialSolve();
-              // See if we want preprocessing
+/*
+  Integer preprocessing. For reasons that escape me just yet, the first thing
+  we'll do is clone the solver for the model.
+*/
               OsiSolverInterface * saveSolver=NULL;
               CglPreProcess process;
               if (preProcess) {
@@ -1246,12 +1268,18 @@ int main (int argc, const char *argv[])
                 model->setPrintFrequency(100);
               
               model->solver()->setIntParam(OsiMaxNumIterationHotStart,100);
-#ifdef COIN_USE_CLP
+#ifdef CBC_USE_CLP
               OsiClpSolverInterface * osiclp = dynamic_cast< OsiClpSolverInterface*> (model->solver());
-              // go faster stripes
-              if (osiclp->getNumRows()<300&&osiclp->getNumCols()<500) {
-                osiclp->setupForRepeatedUse(2,0);
+# ifndef CBC_ONLY_CLP
+	      if (osiclp) {
+# endif
+		// go faster stripes
+		if (osiclp->getNumRows()<300&&osiclp->getNumCols()<500) {
+		  osiclp->setupForRepeatedUse(2,0);
+		}
+# ifndef CBC_ONLY_CLP
               }
+# endif
 #endif
               if (gapRatio < 1.0e100)
 		{ double value = model->solver()->getObjValue() ;
@@ -1260,7 +1288,14 @@ int main (int argc, const char *argv[])
                 std::cout << "Continuous " << value
                           << ", so allowable gap set to "
                           << value2 << std::endl ; }
-              model->branchAndBound();
+	      try
+	      { model->branchAndBound(); }
+	      catch (CoinError err)
+	      { std::cerr << "Exception: "
+			  << err.className() << "::" << err.methodName()
+			  << std::endl ;
+		std::cerr << err.message() << std::endl ;
+		exit (1) ; }
               time2 = CoinCpuTime();
               totalTime += time2-time1;
               if (model->getMinimizationObjValue()<1.0e50) {
@@ -1395,7 +1430,14 @@ int main (int argc, const char *argv[])
 	      int status =model->solver()->readMps("../Mps/Sample/p0033.mps",
 						   "");
 	      assert(!status);
-	      model->branchAndBound();
+	      try
+	      { model->branchAndBound(); }
+	      catch (CoinError err)
+	      { std::cerr << "Exception: "
+			  << err.className() << "::" << err.methodName()
+			  << std::endl ;
+		std::cerr << err.message() << std::endl ;
+		exit (1) ; }
 	      model->solver()->resolve();
 	      std::cout<<"Optimal solution "<<model->solver()->getObjValue()<<std::endl;
 	      assert(fabs(model->solver()->getObjValue()-3089.0)<1.0e-5);
@@ -1413,7 +1455,14 @@ int main (int argc, const char *argv[])
 	      CbcCompareDefault compare(100.0);
 	      model->setNodeComparison(compare);
 	      model->solver()->resolve();
-	      model->branchAndBound();
+	      try
+	      { model->branchAndBound(); }
+	      catch (CoinError err)
+	      { std::cerr << "Exception: "
+			  << err.className() << "::" << err.methodName()
+			  << std::endl ;
+		std::cerr << err.message() << std::endl ;
+		exit (1) ; }
 	      model->solver()->resolve();
 	      std::cout<<"partial solution "<<model->solver()->getObjValue()<<std::endl;
 	      if (model->solver()->getObjValue()<3090.0) {

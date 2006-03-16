@@ -2,91 +2,85 @@
 # highest level of optimization the compiler supports. If want something in
 # between then specify the exact level you want, e.g., -O1 or -O2
 OptLevel := -g
+LibType := SHARED
 
 ##############################################################################
 # You should not need to edit below this line unless you are configuring cbc
 # for multiple solvers, or for a single solver other than clp.
 ##############################################################################
 
-# The location of the customized Makefiles
-# also inherited from the parent Makefile
+# Bring on the boilerplate, yet again.
 
+MakefileDir := ../../Makefiles
 include ${MakefileDir}/Makefile.coin
-include ${MakefileDir}/Makefile.location
 
 # Include files, library directory and name, compile-time defines.
 
-# The pattern is (hopefully) obvious. Add or uncomment the appropriate lines
-# for your favourite solver. The appropriate lines of code must be installed in
-# the conditional compilation blocks in CbcMain.cpp in order for any of this to
-# work. One conditional compilation block is at the head of the file and
-# selects #include headers. The second is at the start of main() and creates a
-# vector of available solvers.
+# Start out with empty vars. If for no other reason, we need this to establish
+# these variables as simply expanded.
 
-IncDir := ${CbcIncDir} ${CglIncDir}
-IncDir += ${OsiClpIncDir} ${ClpIncDir}
-#IncDir += ${OsiDylpIncDir} ${DylpIncDir}
-IncDir += ${OsiOslIncDir} ${OslIncDir}
-IncDir += ${OsiIncDir} ${CoinIncDir}
-IncDir += ${bzlibIncDir} ${zlibIncDir} $(lapackIncDir)
-IncDir += ./include
+IncDir :=
+LibDir :=
+LibName :=
+Define := $(CBC_DEFINES)
 
-LibDir := ${CbcLibDir} ${CglLibDir}
-LibDir += ${OsiClpLibDir} ${ClpLibDir} 
-#LibDir += ${OsiDylpLibDir} ${DylpLibDir}
-LibDir += ${OsiOslLibDir} ${OslLibDir}
-LibDir += ${OsiLibDir} ${CoinLibDir}
-LibDir += ${bzlibLibDir} ${zlibLibDir} $(lapackLibDir)
-LibDir += $(GlpkLibDir)
+# Tell parameter handling to allow for CbcModel and OsiSolverInterface. You
+# can't run the miplib test suite without OsiCbc.
 
-LibName := $(OsiCbcLibName) ${CbcLibName} ${CglLibName}
-LibName += ${OsiClpLibName} ${ClpLibName}
-ifeq ($(VolDefine),COIN_HAS_VOL)
-LibName += $(VolLibName)
-endif
-#LibName += ${OsiDylpLibName} ${DylpLibName}
-LibName += ${OsiOslLibName} ${OslLibName}
-LibName += ${OsiLibName} ${CoinLibName} 
-LibName += ${bzlibLibName} ${zlibLibName} $(lapackLibName) $(readlineLibName)
-LibName += $(GlpkLibName)
+CBC_SOLVERS += Cbc
 
-Define := ${CbcDefine} ${CglDefine}
-Define += ${OsiClpDefine} ${ClpDefine}
-#Define += ${OsiDylpDefine} ${DylpDefine}
-Define += ${OsiOslDefine} ${OslDefine}
-Define += ${OsiDefine} ${CoinDefine}
-Define += ${bzlibDefine} ${zlibDefine} $(lapackDefine)
+$(warning CBC_SOLVERS is $(CBC_SOLVERS))
 
-# Unless overridden, cbc will select clp as the default solver.
-# CBC_DEFAULT_SOLVER is the hook to change the default when you're building the
-# code with multiple solvers. For example, to add dylp but leave clp as the
-# default, uncomment only the line to define COIN_USE_DYLP. To use both clp and
-# dylp, with dylp the default, also uncomment the line which defines
-# CBC_DEFAULT_SOLVER.  cbc chooses clp as the default because it's listed first
-# in the conditional compilation block at the head of CbcMain.cpp::main().  If
-# you build the code without clp, the first defined solver becomes the
-# default.
-
-#use clp
-ifneq (,$(filter COIN_HAS_OSICLP, $(Define)))
-#  add in USE
-CXXFLAGS += $(addprefix -D,COIN_USE_CLP)
-endif
-
-#use dylp
-#CXXFLAGS += $(addprefix -D,COIN_USE_DYLP)
-#CXXFLAGS += $(addprefix -D,CBC_DEFAULT_SOLVER=\"dylp\")
-
-#use osl
-ifneq (,$(filter COIN_HAS_OSIOSL, $(CXXFLAGS)))
-CXXFLAGS += $(addprefix -D,COIN_USE_OSL)
-endif
-#CXXFLAGS += $(addprefix -D,CBC_DEFAULT_SOLVER=\"osl\")
-
-#tell parameter handling to allow for CbcModel and OsiSolverInterface
 ifneq ($(filter COIN_libOsiCbc,$(CoinLibsDefined)),)
-CXXFLAGS += -DCOIN_USE_CBC
+  CXXFLAGS += -DCBC_USE_CBC
+else
+  $(warning OsiCbc not enabled in CoinLibsDefined. You will not be able to)
+  $(warning run the `cbc -miplib' command. Edit Makefile.location if you)
+  $(warning to enable OsiCbc.)
 endif
+
+
+# Add the required libraries: Coin, Osi, Cgl
+
+IncDir += $(foreach lib,Coin Osi Cgl,$($(lib)IncDir))
+LibDir += $(foreach lib,Coin Osi Cgl,$($(lib)LibDir))
+LibName += $(foreach lib,Coin Osi Cgl,$($(lib)LibName))
+Define += $(foreach lib,Coin Osi Cgl,$($(lib)Define))
+
+# Add the requested solver libraries: libXXX and libOsiXXX
+
+IncDir += $(foreach lib,$(CBC_SOLVERS),$($(lib)IncDir))
+LibDir += $(foreach lib,$(CBC_SOLVERS),$($(lib)LibDir))
+LibName += $(foreach lib,$(CBC_SOLVERS),$($(lib)LibName))
+Define += $(foreach lib,$(CBC_SOLVERS),$($(lib)Define))
+IncDir += $(foreach lib,$(CBC_SOLVERS),$(Osi$(lib)IncDir))
+LibDir += $(foreach lib,$(CBC_SOLVERS),$(Osi$(lib)LibDir))
+LibName += $(foreach lib,$(CBC_SOLVERS),$(Osi$(lib)LibName))
+Define += $(foreach lib,$(CBC_SOLVERS),$(Osi$(lib)Define))
+
+# And a few other potentially useful libraries: z, bz, readline. Unfortunately
+# the naming conventions are irregular.
+
+utilLibs := $(filter \
+    $(patsubst COIN_%,%,$(CoinLibsDefined)),libz libbz readline)
+utilLibs := $(patsubst lib%z,%zlib,$(utilLibs))
+
+IncDir += $(foreach lib,$(utilLibs),$($(lib)IncDir))
+LibDir += $(foreach lib,$(utilLibs),$($(lib)LibDir))
+LibName += $(foreach lib,$(utilLibs),$($(lib)LibName))
+Define += $(foreach lib,$(utilLibs),$($(lib)Define))
+
+# Strip redundancy from IncDir, LibDir. Reordering should not be harmful for
+# these, under normal circumstances.
+
+IncDir := ./include $(sort $(IncDir))
+LibDir := $(sort $(LibDir))
+
+$(warning IncDir is $(IncDir))
+$(warning LibDir is $(LibDir))
+$(warning LibName is $(LibName))
+$(warning Define is $(Define))
+
 ##############################################################################
 # You should not need to edit below this line.
 ##############################################################################

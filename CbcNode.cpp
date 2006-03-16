@@ -29,8 +29,10 @@
 #include "CbcCountRowCut.hpp"
 #include "CbcFeasibilityBase.hpp"
 #include "CbcMessage.hpp"
+#ifdef CBC_USE_CLP
 #include "OsiClpSolverInterface.hpp"
 #include "ClpSimplexOther.hpp"
+#endif
 using namespace std;
 #include "CglCutGenerator.hpp"
 // Default Constructor 
@@ -1171,7 +1173,7 @@ int CbcNode::chooseBranch (CbcModel *model, CbcNode *lastNode,int numberPassesLe
       solver->getIntParam(OsiMaxNumIterationHotStart,saveLimit);
       if (beforeSolution&&saveLimit<100)
         solver->setIntParam(OsiMaxNumIterationHotStart,100); // go to end
-      
+#     ifdef CBC_USE_CLP      
       /* If we are doing all strong branching in one go then we create new arrays
          to store information.  If clp NULL then doing old way.
          Going down -
@@ -1329,6 +1331,17 @@ int CbcNode::chooseBranch (CbcModel *model, CbcNode *lastNode,int numberPassesLe
         // Mark hot start
         solver->markHotStart();
       }
+#     else	/* CBC_USE_CLP */
+
+      OsiSolverInterface *clp = NULL ;
+      double **outputSolution = NULL ;
+      int *outputStuff = NULL ;
+      double * newLower = NULL ;
+      double * newUpper = NULL ;
+
+      solver->markHotStart();
+
+#     endif	/* CBC_USE_CLP */
       /*
         Open a loop to do the strong branching LPs. For each candidate variable,
         solve an LP with the variable forced down, then up. If a direction turns
@@ -1776,10 +1789,12 @@ int CbcNode::chooseBranch (CbcModel *model, CbcNode *lastNode,int numberPassesLe
         delete [] numberInfeasibilitiesDown;
         delete [] objects;
       }
+#     ifdef CBC_USE_CLP
       if (osiclp&&!allNormal) {
         // back to normal
         osiclp->setHintParam(OsiDoInBranchAndCut,true,OsiHintDo,NULL) ;
       }
+#     endif
     }
     /*
       Simple branching. Probably just one, but we may have got here
@@ -1938,6 +1953,7 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
   // May go round twice if strong branching fixes all local candidates
   bool finished=false;
   int numberToFix=0;
+# ifdef CBC_USE_CLP
   OsiClpSolverInterface * osiclp = dynamic_cast< OsiClpSolverInterface*> (solver);
   int saveClpOptions=0;
   if (osiclp) {
@@ -1945,6 +1961,9 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
     saveClpOptions = osiclp->specialOptions();
     osiclp->setSpecialOptions(saveClpOptions|1024);
   }
+# else
+  OsiSolverInterface *osiclp = 0 ;
+# endif
   int saveSearchStrategy2 = model->searchStrategy();
   if (saveSearchStrategy2<999) {
     // Get average up and down costs
@@ -2328,6 +2347,7 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
           neededPenalties=0;
         }
       }
+#     ifdef CBC_USE_CLP
       if (osiclp&&numberPenalties&&neededPenalties) {
         xPen += neededPenalties;
         which--;
@@ -2388,7 +2408,9 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
             printf("%d pen down ps %g -> %g up ps %g -> %g\n",
                    iObject,downCost[i],downPenalty,upCost[i],upPenalty);
         }
-      } else {
+      } else
+#     endif	/* CBC_USE_CLP */
+      {
         if (!skipAll) {
           // Mark hot start
           solver->markHotStart();
@@ -2402,7 +2424,7 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
         if (iBestGot>=0)
           sort[iBestGot]=-1.0e120;
       }
-#else
+#else		/* RANGING */
       if (!skipAll) {
         // Mark hot start
         doneHotStart=true;
@@ -2413,7 +2435,7 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
       // make sure best will be first
       if (iBestGot>=0)
         sort[iBestGot]=-COIN_DBL_MAX;
-#endif
+#endif		/* RANGING */
       // Actions 0 - exit for repeat, 1 resolve and try old choice,2 exit for continue
 #define ACTION 0 
 #if ACTION<2
@@ -3153,9 +3175,10 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
   delete [] saveUpper;
   delete [] upEstimate;
   delete [] downEstimate;
+# ifdef CBC_USE_CLP
   if (osiclp) 
     osiclp->setSpecialOptions(saveClpOptions);
-  
+# endif
   // restore solution
   solver->setColSolution(saveSolution);
   model->reserveCurrentSolution(saveSolution);
@@ -3218,7 +3241,7 @@ int CbcNode::analyze (CbcModel *model, double * results)
   model->feasibleSolution(
                           numberIntegerInfeasibilities,
                           numberObjectInfeasibilities);
-      
+# ifdef CBC_USE_CLP
   OsiClpSolverInterface * osiclp = dynamic_cast< OsiClpSolverInterface*> (solver);
   int saveClpOptions=0;
   bool fastIterations = (model->specialOptions()&8)!=0;
@@ -3227,6 +3250,9 @@ int CbcNode::analyze (CbcModel *model, double * results)
     saveClpOptions = osiclp->specialOptions();
     osiclp->setSpecialOptions(saveClpOptions|1024);
   }
+# else
+  bool fastIterations = false ;
+# endif
   /*
     Scan for branching objects that indicate infeasibility. Choose candidates
     using priority as the first criteria, then integer infeasibility.
@@ -3528,8 +3554,10 @@ int CbcNode::analyze (CbcModel *model, double * results)
   delete [] back;
   // restore solution
   solver->setColSolution(saveSolution);
+# ifdef CBC_USE_CLP
   if (osiclp) 
     osiclp->setSpecialOptions(saveClpOptions);
+# endif
   model->reserveCurrentSolution(saveSolution);
   delete [] saveSolution;
   if (needResolve)

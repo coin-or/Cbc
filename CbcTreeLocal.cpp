@@ -335,14 +335,15 @@ CbcTreeLocal::top() {
   double largestD=-1.0e30;
   int n=nodes_.size();
   for (int i=0;i<n;i++) {
-    int nn=nodes_[i]->nodeNumber();
+    int nn=nodes_[i]->nodeInfo()->nodeNumber();
     double dd = nodes_[i]->objectiveValue();
     largest=max(largest,nn);
     smallest=min(smallest,nn);
     largestD=max(largestD,dd);
     smallestD=min(smallestD,dd);
   }
-  printf("smallest %d, largest %d, top %d\n",smallest,largest,nodes_.front()->nodeNumber());
+  printf("smallest %d, largest %d, top %d\n",smallest,largest,
+	 nodes_.front()->nodeInfo()->nodeNumber());
   printf("smallestD %g, largestD %g, top %g\n",smallestD,largestD,nodes_.front()->objectiveValue());
 #endif
   return nodes_.front();
@@ -372,7 +373,8 @@ CbcTreeLocal::push(CbcNode * x) {
   }
   nodes_.push_back(x);
 #ifdef CBC_DEBUG
-  printf("pushing node onto heap %d %x %x\n",x->nodeNumber(),x,x->nodeInfo());
+  printf("pushing node onto heap %d %x %x\n",
+	 x->nodeInfo()->nodeNumber(),x,x->nodeInfo());
 #endif
   push_heap(nodes_.begin(), nodes_.end(), comparison_);
 }

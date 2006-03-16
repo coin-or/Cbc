@@ -191,16 +191,18 @@ public:
   /// Infeasibility - large is 0.5
   virtual double infeasibility(int & preferredWay) const;
 
-  /** Set bounds to contain the current solution.
+  /** Set bounds to fix the variable at the current (integer) value.
 
-    More precisely, for the variable associated with this object, take the
-    value given in the current solution, force it within the current bounds
-    if required, then set the bounds to fix the variable at the integer
-    nearest the solution value.
+    Given an integer value, set the lower and upper bounds to fix the
+    variable. The algorithm takes a bit of care in order to compensate for
+    minor numerical inaccuracy.
   */
   virtual void feasibleRegion();
 
-  /// Creates a branching object
+  /** Creates a branching object
+
+    The preferred direction is set by \p way, -1 for down, +1 for up.
+  */
   virtual CbcBranchingObject * createBranch(int way) ;
 
   /** Create an OsiSolverBranch object
@@ -213,11 +215,12 @@ public:
       return a branching object which would give a new feasible
       point in the good direction.
 
-    The preferred branching object will force the variable to be +/-1 from
-    its current value, depending on the reduced cost and objective sense.  If
-    movement in the direction which improves the objective is impossible due
-    to bounds on the variable, the branching object will move in the other
-    direction.  If no movement is possible, the method returns NULL.
+    The preferred branching object will force the variable to be either the
+    floor or ceiling of its current value, depending on the reduced cost and
+    objective sense. If movement in the direction which improves the
+    objective is impossible due to bounds on the variable, the branching
+    object will move in the other direction.  If no movement is possible, the
+    method returns NULL.
 
     Only the bounds on this variable are considered when determining if the new
     point is feasible.
@@ -368,7 +371,7 @@ public:
   /** Create a standard floor/ceiling branch object
 
     Specifies a simple two-way branch. Let \p value = x*. One arm of the
-    branch will be is lb <= x <= floor(x*), the other ceil(x*) <= x <= ub.
+    branch will be lb <= x <= floor(x*), the other ceil(x*) <= x <= ub.
     Specify way = -1 to set the object state to perform the down arm first,
     way = 1 for the up arm.
   */

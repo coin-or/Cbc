@@ -1029,6 +1029,7 @@ void CbcModel::branchAndBound(int doStatistics)
       }
       messageHandler()->message(CBC_STATUS,messages())
 	<< numberNodes_<< nNodes<< bestObjective_<< bestPossibleObjective_
+        <<getCurrentSeconds()
 	<< CoinMessageEol ;
 # ifdef CBC_ONLY_CLP
       if (!eventHandler->event(ClpEventHandler::treeStatus)) {
@@ -1560,12 +1561,12 @@ void CbcModel::branchAndBound(int doStatistics)
   if (!status_) {
     bestPossibleObjective_=bestObjective_;
     handler_->message(CBC_END_GOOD,messages_)
-      << bestObjective_ << numberIterations_ << numberNodes_
+      << bestObjective_ << numberIterations_ << numberNodes_<<getCurrentSeconds()
       << CoinMessageEol ;
   } else {
     handler_->message(CBC_END,messages_)
       << bestObjective_ <<bestPossibleObjective_
-      << numberIterations_ << numberNodes_
+      << numberIterations_ << numberNodes_<<getCurrentSeconds()
       << CoinMessageEol ;
   }
   if (numberStrongIterations_)
@@ -1759,7 +1760,7 @@ void CbcModel::branchAndBound(int doStatistics)
     phase_=5;
     double increment = getDblParam(CbcModel::CbcCutoffIncrement) ;
     bestObjective_ += 100.0*increment+1.0e-3;
-    setBestSolution(CBC_SOLUTION,bestObjective_,bestSolution_,true) ;
+    setBestSolution(CBC_END_SOLUTION,bestObjective_,bestSolution_,true) ;
     continuousSolver_->resolve() ;
     if (!continuousSolver_->isProvenOptimal())
     { continuousSolver_->messageHandler()->setLogLevel(2) ;
@@ -5789,7 +5790,7 @@ CbcModel::setBestSolution (CBC_Message how,
       
       handler_->message(how,messages_)
         <<bestObjective_<<numberIterations_
-        <<numberNodes_
+        <<numberNodes_<<getCurrentSeconds()
         <<CoinMessageEol;
       /*
         Now step through the cut generators and see if any of them are flagged to
@@ -7545,4 +7546,9 @@ CbcModel::setObjectiveValue(CbcNode * thisNode, const CbcNode * parentNode) cons
   if (parentNode)
     newObjValue = CoinMax(newObjValue,parentNode->objectiveValue());
   thisNode->setObjectiveValue(newObjValue);
+}
+// Current time since start of branchAndbound
+double 
+CbcModel::getCurrentSeconds() const {
+  return CoinCpuTime()-getDblParam(CbcStartSeconds);
 }

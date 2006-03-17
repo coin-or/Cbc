@@ -518,7 +518,7 @@ CbcHeuristicLocal::solution(double & solutionValue,
         if (bestChange<-1.0e-1)
           model_->messageHandler()->message(CBC_HEURISTIC_SOLUTION,model_->messages())
             << solutionValue
-            << "CbcHeuristicLocal"
+            << "CbcHeuristicLocal"<<model_->getCurrentSeconds()
             <<CoinMessageEol;
       } else {
         // bad solution - should not happen so debug if see message

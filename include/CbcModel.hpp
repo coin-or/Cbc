@@ -460,6 +460,8 @@ public:
   inline double getMaximumSeconds() const {
     return getDblParam(CbcMaximumSeconds);
   }
+  /// Current time since start of branchAndbound
+  double getCurrentSeconds() const ;
 
   /** Set the
     \link CbcModel::CbcIntegerTolerance integrality tolerance \endlink

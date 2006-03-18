@@ -24,8 +24,8 @@ LibDir :=
 LibName :=
 Define := $(CBC_DEFINES)
 
-# Tell parameter handling to allow for CbcModel and OsiSolverInterface. You
-# can't run the miplib test suite without OsiCbc.
+# Cbc should build without OsiCbc, but you can't run the miplib test suite
+# without it.
 
 CBC_SOLVERS += Cbc
 
@@ -35,17 +35,9 @@ ifneq ($(filter COIN_libOsiCbc,$(CoinLibsDefined)),)
   CXXFLAGS += -DCBC_USE_CBC
 else
   $(warning OsiCbc not enabled in CoinLibsDefined. You will not be able to)
-  $(warning run the `cbc -miplib' command. Edit Makefile.location if you)
-  $(warning to enable OsiCbc.)
+  $(warning run the `cbc -miplib' command. Edit Makefile.location to enable)
+  $(warning OsiCbc.)
 endif
-
-
-# Add the required libraries: Coin, Osi, Cgl
-
-IncDir += $(foreach lib,Coin Osi Cgl,$($(lib)IncDir))
-LibDir += $(foreach lib,Coin Osi Cgl,$($(lib)LibDir))
-LibName += $(foreach lib,Coin Osi Cgl,$($(lib)LibName))
-Define += $(foreach lib,Coin Osi Cgl,$($(lib)Define))
 
 # Add the requested solver libraries: libXXX and libOsiXXX
 
@@ -57,6 +49,13 @@ IncDir += $(foreach lib,$(CBC_SOLVERS),$(Osi$(lib)IncDir))
 LibDir += $(foreach lib,$(CBC_SOLVERS),$(Osi$(lib)LibDir))
 LibName += $(foreach lib,$(CBC_SOLVERS),$(Osi$(lib)LibName))
 Define += $(foreach lib,$(CBC_SOLVERS),$(Osi$(lib)Define))
+
+# Add the required libraries: Coin, Osi, Cgl
+
+IncDir += $(foreach lib,Cgl Osi Coin,$($(lib)IncDir))
+LibDir += $(foreach lib,Cgl Osi Coin,$($(lib)LibDir))
+LibName += $(foreach lib,Cgl Osi Coin,$($(lib)LibName))
+Define += $(foreach lib,Cgl Osi Coin,$($(lib)Define))
 
 # And a few other potentially useful libraries: z, bz, readline. Unfortunately
 # the naming conventions are irregular.
@@ -76,10 +75,12 @@ Define += $(foreach lib,$(utilLibs),$($(lib)Define))
 IncDir := ./include $(sort $(IncDir))
 LibDir := $(sort $(LibDir))
 
-$(warning IncDir is $(IncDir))
-$(warning LibDir is $(LibDir))
-$(warning LibName is $(LibName))
-$(warning Define is $(Define))
+# Uncomment these to see just what's been ordered for the build.
+
+# $(warning IncDir is $(IncDir))
+# $(warning LibDir is $(LibDir))
+# $(warning LibName is $(LibName))
+# $(warning Define is $(Define))
 
 ##############################################################################
 # You should not need to edit below this line.
@@ -91,7 +92,6 @@ ifeq ($(OptLevel),-g)
 endif
 
 TESTSRC := CbcMain.cpp
-#TESTSRC += CbcOrClpParam.cpp
 TESTSRC += CbcParam.cpp
 TESTSRC += unitTest.cpp
 

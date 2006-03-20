@@ -346,7 +346,7 @@ public:
   
   /// Clone
   virtual CbcNodeInfo * clone() const;
-private:
+protected:
   /* Data values */
 
   /// Basis diff information

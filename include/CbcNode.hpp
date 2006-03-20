@@ -111,6 +111,8 @@ public:
   virtual CbcNodeInfo * buildRowBasis(CoinWarmStartBasis & basis) const = 0;
   /// Clone
   virtual CbcNodeInfo * clone() const = 0;
+  /// Called when number branches left down to zero
+  virtual void allBranchesGone() {};
 
   /// Increment number of references
   inline void increment(int amount=1)

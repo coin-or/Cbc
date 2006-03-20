@@ -1144,7 +1144,10 @@ void CbcModel::branchAndBound(int doStatistics)
 #	endif
       }
       else
-      { deleteNode = true ; }
+      { deleteNode = true ;
+      if (!nodeInfo->numberBranchesLeft())
+        nodeInfo->allBranchesGone(); // can clean up
+      }
 
       if ((specialOptions_&1)!=0) {
         /*
@@ -3444,6 +3447,8 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
   if (node)
     objectiveValue= node->objectiveValue();
   int returnCode = resolve(node ? node->nodeInfo() : NULL,1);
+  if (node&&!node->nodeInfo()->numberBranchesLeft())
+    node->nodeInfo()->allBranchesGone(); // can clean up
   feasible = returnCode  != 0 ;
   if (returnCode<0)
     numberTries=0;

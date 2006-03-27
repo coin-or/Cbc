@@ -12,18 +12,17 @@ export MakefileDir := $(CoinDir)/Makefiles
 
 .DELETE_ON_ERROR:
 
-.PHONY: default clean unitTest libdepend
+.PHONY: default clean cbc solver
 
-default: unitTest
+default: solver
 
-libdepend :
-	(cd .. && ${MAKE} install)
 
-unitTest: libdepend
-	${MAKE} -f Makefile.test $*
+cbc:
+	(cd $(CoinDir)/Osi/OsiCbc && $(MAKE) -f Makefile.lightweight install)
+	${MAKE} -f Makefile.test $@
 
-solver: libdepend
-	${MAKE} -f Makefile.solve $*
+solver:
+	${MAKE} -f Makefile.solve $@
 
 clean:
 	@rm -rf Junk

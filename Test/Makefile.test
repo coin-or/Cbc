@@ -24,26 +24,32 @@ LibDir :=
 LibName :=
 Define := $(CBC_DEFINES)
 
+
 # Cbc should build without OsiCbc, but you can't run the miplib test suite
 # without it.
 
-CBC_SOLVERS += Cbc
-
-$(warning CBC_SOLVERS is $(CBC_SOLVERS))
-
 ifneq ($(filter COIN_libOsiCbc,$(CoinLibsDefined)),)
   CXXFLAGS += -DCBC_USE_CBC
+  CBC_SOLVERS += Cbc
 else
   $(warning OsiCbc not enabled in CoinLibsDefined. You will not be able to)
   $(warning run the `cbc -miplib' command. Edit Makefile.location to enable)
   $(warning OsiCbc.)
 endif
 
-# Add the requested solver libraries: libXXX and libOsiXXX
+$(warning CBC_SOLVERS is $(CBC_SOLVERS))
+
+# Add the requested solver libraries: libXXX and libOsiXXX. If Clp is in the
+# mix, and COIN_HAS_VOL is defined, we need to bring libVol into the mix (but
+# not OsiVol).
 
 IncDir += $(foreach lib,$(CBC_SOLVERS),$($(lib)IncDir))
 LibDir += $(foreach lib,$(CBC_SOLVERS),$($(lib)LibDir))
 LibName += $(foreach lib,$(CBC_SOLVERS),$($(lib)LibName))
+ifneq ($(filter COIN_libVol,$(CoinLibsDefined)),)
+  LibDir += $(VolLibDir)
+  LibName += $(VolLibName)
+endif
 Define += $(foreach lib,$(CBC_SOLVERS),$($(lib)Define))
 IncDir += $(foreach lib,$(CBC_SOLVERS),$(Osi$(lib)IncDir))
 LibDir += $(foreach lib,$(CBC_SOLVERS),$(Osi$(lib)LibDir))
@@ -75,7 +81,7 @@ Define += $(foreach lib,$(utilLibs),$($(lib)Define))
 IncDir := ./include $(sort $(IncDir))
 LibDir := $(sort $(LibDir))
 
-# Uncomment these to see just what's been ordered for the build.
+# Uncomment these to see what's been ordered for the build.
 
 # $(warning IncDir is $(IncDir))
 # $(warning LibDir is $(LibDir))
@@ -136,9 +142,9 @@ include ${MakefileDir}/Makefile.rules
 
 .DELETE_ON_ERROR:
 
-.PHONY: unitTest
+.PHONY: cbc unitTest
 
-unitTest: $(TARGETDIR)/cbc
+cbc unitTest: $(TARGETDIR)/cbc
 
 $(TARGETDIR)/cbc : $(TESTOBJ)
 	@rm -rf Junk

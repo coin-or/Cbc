@@ -23,7 +23,7 @@
 # etc. The default build uses Clp only. To use Clp and Dylp, you would say
 # CBC_SOLVERS := Clp Dylp
 
-CBC_SOLVERS := Clp Dylp
+CBC_SOLVERS := Clp 
 
 # Regardless of the number of solvers specified, it's a good idea to set the
 # default solver. (All right, the real reason is it'll take too long to explain
@@ -31,7 +31,7 @@ CBC_SOLVERS := Clp Dylp
 # This must match one of the solver names given above, but all in lower case
 # letters (don't ask).
 
-cbcDefaultSolver := dylp
+cbcDefaultSolver := clp
 
 ###############################################################################
 

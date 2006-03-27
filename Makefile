@@ -2,37 +2,48 @@
 # - ../Makefiles/Makefile.location
 # - Makefile.Cbc
 
-# Define variables here to select the solvers that you want to incorporate into
-# the cbc build. Be sure that the solvers are available and that the
-# information in Makefile.location is correct for all selected solvers.
-# Check Makefile.Cbc to specify the optimisation level of the build.
+# Makefile.location specifies the components of COIN that are locally
+# available. Makefile.Cbc is where you specify compiler optimisation level and
+# library type.
 
-# Compile-time configuration for Cbc. There are basically two options:
-# (1)
-# Build cbc to use only clp as the underlying lp solver. This is the most
-# efficient configuration if you wish to take full advantage of capabilities
-# supported by clp but not available through the standard OSI interface, and
-# you have no interest in experimenting with other solvers.
-# (2)
-# Build cbc so that it can use some mix of one or more OSI solvers, not
-# necessarily including clp. Use this option if you want to experiment with
-# other solvers.
+# From this makefile you can build three primary targets:
+# * libCbc, the cbc branch-and-cut library
+# * solve, a main program which is tailored to work with the clp solver
+# * cbc, a main program which is capable of using solvers other than clp
+
+# libCbc generally uses the OSI interface to consult the underlying solver. It
+# contains some code that is specific to OsiClp, but it will work with any OSI
+# solver that supports the required functionality. Using solvers other than clp
+# should be considered a work in progress. If all you want to do is solve a few
+# MIP problems, you probably want to leave CBC_SOLVERS = Clp (the default) and
+# build the `solve' main program.
+
+# If you want to experiment with other solvers, adjust CBC_SOLVERS below and
+# build the `cbc' main program.  Be sure that the solvers are available and
+# that the information in Makefile.location is correct for all specified
+# solvers. As far as libCbc is concerned, the only thing that matters is
+# presence or absence of clp. The `cbc' main program will create a set of OSI
+# solver prototypes to match the list in CBC_SOLVERS. You can change solvers at
+# run time.  The command `cbc -miplib' will exercise all specified solvers on
+# the miplib examples. The -miplib option uses OsiCbc. If you want to
+# completely exclude clp from the build, you should also examine and edit
+# Osi/OsiCbc/Makefile.
 
 # To specify a solver, add the name to the list here. Use the name given in
 # Makefile.location, without the COIN_lib prefix, e.g., Clp, Cpx, Dylp, Glpk,
 # etc. The default build uses Clp only. To use Clp and Dylp, you would say
 # CBC_SOLVERS := Clp Dylp
 
-CBC_SOLVERS := Clp 
+CBC_SOLVERS := Clp
 
 # Regardless of the number of solvers specified, it's a good idea to set the
-# default solver. (All right, the real reason is it'll take too long to explain
-# what happens if you don't. Check the code in CbcMain if you must know.)
-# This must match one of the solver names given above, but all in lower case
-# letters (don't ask).
+# default solver. (Check the code in CbcMain if you must know what will happen
+# if you don't.) This must match one of the solver names given above, but all
+# in lower case letters (don't ask).
 
 cbcDefaultSolver := clp
 
+# You should not need to make changes below this line.
 ###############################################################################
 
 # Bring on the boilerplate. Makefile.coin will bring in Makefile.<O/S> and
@@ -56,47 +67,36 @@ ifneq ($(cbcMissingSolvers),)
   $(error Please correct Makefile.location and try again.)
 endif
 
-# Figure out the configuration based on the value of CBC_SOLVERS. We need to
-# generate appropriate defines for the compilation command.
+$(warning Building $(MAKECMDGOALS) with solvers $(CBC_SOLVERS))
 
-CBC_DEFINES :=
+# Generate appropriate defines for the compilation command from the value of
+# CBC_SOLVERS and cbcDefaultSolver.
 
-ifeq ($(CBC_SOLVERS),Clp)
-  CBC_ONLY_CLP := 1
-  CBC_DEFINES := CBC_ONLY_CLP CBC_USE_CLP
-else
-  CBC_ONLY_CLP := 0
-  CBC_DEFINES := $(foreach solver,$(CBC_SOLVERS), \
-      $(patsubst COIN_HAS_%,CBC_USE_%,\
-	$(filter COIN_HAS_%,$($(solver)Define))))
-endif
+CBC_DEFINES := $(foreach solver,$(CBC_SOLVERS), \
+		 $(patsubst COIN_HAS_%,CBC_USE_%,\
+		   $(filter COIN_HAS_%,$($(solver)Define))))
 CBC_DEFINES += CBC_DEFAULT_SOLVER="\"$(cbcDefaultSolver)\""
-export CBC_ONLY_CLP
+
 export CBC_DEFINES
 export CBC_SOLVERS
 
 # $(warning CBC_DEFINES is $(CBC_DEFINES))
 
-$(warning Building cbc with solvers $(CBC_SOLVERS))
+# Pull together the full dependency list for libCbc. You can't build libCbc
+# without the Coin, Osi, and Cgl libraries. If Clp is included in CBC_SOLVERS,
+# we'll need to build it too. Note that the current (06.03.22) Osi makefile
+# will use Makefile.location to determine which solvers and OSI interfaces
+# to build. This means that building Osi (which we need for libCbc) will
+# trigger the builds of all the specified solvers. Oh well, we want them
+# anyway.
 
-# Pull together the full dependency list for cbc. You can't build cbc without
-# the Coin, Osi, and Cgl libraries. Add Coin and Osi later, for technical
-# reasons.
+libTgts := Coin Osi
 
-libTgts := Cgl
+ifneq ($(filter Clp,$(CBC_SOLVERS)),)
+  libTgts += Clp Osi/OsiClp
+endif
 
-# This makefile fronts for two main programs down in the Test directory, cbc
-# and solve. solve will always want OsiClp and Vol (note: not OsiVol). Add them
-# here, if they're not already in CBC_SOLVERS, and add the list from
-# CBC_SOLVERS.
-
-libTgts += $(filter-out $(CBC_SOLVERS),Vol)
-libTgts += $(patsubst %,Osi%,$(CBC_SOLVERS))
-libTgts += $(filter-out $(libTgts),OsiClp)
-
-# Relocate the OsiXXX targets to the Osi directory, then prepend Coin and Osi.
-
-libTgts := Coin Osi $(patsubst Osi%,Osi/Osi%,$(libTgts))
+libTgts += Cgl
 
 $(warning Complete dependency list is $(libTgts))
 
@@ -107,34 +107,25 @@ $(warning Complete dependency list is $(libTgts))
 .PHONY: default install clean library unitTest cbc solver solve \
 	libdepend libCbc doc
 
+# These targets are for libCbc.
+
 default: install
-libCbc: library
 
 libCbc: library
-
-ifneq ($(filter COIN_libOsiCbc,$(CoinLibsDefined)),)
-	(cd $(CoinDir)/Osi/OsiCbc && $(MAKE) -f Makefile.lightweight install)
-endif
 
 install library: libdepend
 	${MAKE} -f Makefile.Cbc $@
 
-# Build the dependencies. OsiCbc is its own strange animal, pick it off
-# separately.
-
 libdepend:
 	$(foreach tgt,$(libTgts),(cd $(CoinDir)/$(tgt) && $(MAKE) install) ; )
-ifneq ($(filter COIN_libOsiCbc,$(CoinLibsDefined)),)
-	(cd $(CoinDir)/Osi/OsiCbc && $(MAKE) -f Makefile.lightweight install)
-endif
 
-unitTest cbc: 
-	(cd Test && ${MAKE} unitTest)
+# These targets are for the two main programs, cbc and solve. In each case,
+# we'll do libCbc first, then go for the main program.
 
-solver: 
-	(cd Test && ${MAKE} solver)
+unitTest cbc: install
+	(cd Test && ${MAKE} cbc)
 
-solve: 
+solver solve: install
 	(cd Test && ${MAKE} solver)
 
 clean: 

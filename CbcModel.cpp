@@ -19,11 +19,7 @@
 #include "OsiClpSolverInterface.hpp"
 #endif
 
-#ifdef CBC_ONLY_CLP
-#include "ClpEventHandler.hpp"
-#else
 #include "CbcEventHandler.hpp"
-#endif
 
 #include "OsiSolverInterface.hpp"
 #include "OsiAuxInfo.hpp"
@@ -421,20 +417,8 @@ void CbcModel::branchAndBound(int doStatistics)
     // Set strategy print level to models
     strategy_->setupPrinting(*this,handler_->logLevel());
   }
-/*
-  Set up the event handler.
-*/
   eventHappened_=false;
-#ifdef CBC_ONLY_CLP
-  ClpEventHandler * eventHandler=NULL;
-  {
-    OsiClpSolverInterface * clpSolver
-      = dynamic_cast<OsiClpSolverInterface *> (solver_);
-    eventHandler = clpSolver->getModelPtr()->eventHandler() ;
-  }
-#else
-  CbcEventHandler *eventHandler = new CbcEventHandler(this) ;
-#endif
+  CbcEventHandler *eventHandler = getEventHandler() ;
   
   if (!nodeCompare_)
     nodeCompare_=new CbcCompareDefault();;
@@ -614,15 +598,11 @@ void CbcModel::branchAndBound(int doStatistics)
 #ifdef CBC_USE_CLP
   OsiClpSolverInterface * clpSolver 
     = dynamic_cast<OsiClpSolverInterface *> (solver_);
-# ifndef CBC_ONLY_CLP
   if (clpSolver) {
-# endif
     ClpSimplex * clpSimplex = clpSolver->getModelPtr();
     // take off names
     clpSimplex->dropNames();
-# ifndef CBC_ONLY_CLP
   }
-# endif
 #endif
 
   numberRowsAtContinuous_ = getNumRows() ;
@@ -978,15 +958,9 @@ void CbcModel::branchAndBound(int doStatistics)
         }
       }
       if (eventHandler) {
-# ifdef CBC_ONLY_CLP
-        if (!eventHandler->event(ClpEventHandler::solution)) {
-          eventHappened_=true; // exit
-        }
-# else
         if (!eventHandler->event(CbcEventHandler::solution)) {
           eventHappened_=true; // exit
         }
-# endif
       }
       // Do from deepest
       tree_->cleanTree(this, newCutoff,bestPossibleObjective_) ;
@@ -1031,15 +1005,9 @@ void CbcModel::branchAndBound(int doStatistics)
 	<< numberNodes_<< nNodes<< bestObjective_<< bestPossibleObjective_
         <<getCurrentSeconds()
 	<< CoinMessageEol ;
-# ifdef CBC_ONLY_CLP
-      if (!eventHandler->event(ClpEventHandler::treeStatus)) {
-	eventHappened_=true; // exit
-      }
-# else
       if (!eventHandler->event(CbcEventHandler::treeStatus)) {
 	eventHappened_=true; // exit
       }
-# endif
     }
     // If no solution but many nodes - signal change in strategy
     if (numberNodes_>2*numberObjects_+1000&&stateOfSearch_!=2)
@@ -1388,15 +1356,9 @@ void CbcModel::branchAndBound(int doStatistics)
     * The node was found to be infeasible, in which case it's already been
       deleted, and newNode is null.
 */
-# ifdef CBC_ONLY_CLP
-        if (!eventHandler->event(ClpEventHandler::node)) {
-          eventHappened_=true; // exit
-        }
-# else
         if (!eventHandler->event(CbcEventHandler::node)) {
           eventHappened_=true; // exit
         }
-# endif
 	assert (!newNode || newNode->objectiveValue() <= getCutoff()) ;
         if (statistics_) {
           assert (numberNodes2_);
@@ -1946,7 +1908,7 @@ CbcModel::CbcModel()
   numberHeuristics_(0),
   heuristic_(NULL),
   lastHeuristic_(NULL),
-  eventHandler_(NULL),
+  eventHandler_(0),
   numberObjects_(0),
   object_(NULL),
   originalColumns_(NULL),
@@ -2011,6 +1973,7 @@ CbcModel::CbcModel()
   handler_ = new CoinMessageHandler();
   handler_->setLogLevel(2);
   messages_ = CbcMessage();
+  eventHandler_ = new CbcEventHandler() ;
 }
 
 /** Constructor from solver.
@@ -2068,7 +2031,7 @@ CbcModel::CbcModel(const OsiSolverInterface &rhs)
   numberHeuristics_(0),
   heuristic_(NULL),
   lastHeuristic_(NULL),
-  eventHandler_(NULL),
+  eventHandler_(0),
   numberObjects_(0),
   object_(NULL),
   originalColumns_(NULL),
@@ -2126,6 +2089,7 @@ CbcModel::CbcModel(const OsiSolverInterface &rhs)
   handler_ = new CoinMessageHandler();
   handler_->setLogLevel(2);
   messages_ = CbcMessage();
+  eventHandler_ = new CbcEventHandler() ;
   solver_ = rhs.clone();
   referenceSolver_ = solver_->clone();
   ourSolver_ = true ;
@@ -2343,17 +2307,10 @@ CbcModel::CbcModel(const CbcModel & rhs, bool noTree)
     heuristic_=NULL;
   }
   lastHeuristic_ = NULL;
-/*
-  When using CLP only, work with clp's event handler.
-*/
-# ifdef CBC_ONLY_CLP
-  eventHandler_ = NULL ;
-# else
   if (rhs.eventHandler_)
   { eventHandler_ = new CbcEventHandler(*rhs.eventHandler_) ; }
   else
   { eventHandler_ = NULL ; }
-# endif
   numberObjects_=rhs.numberObjects_;
   if (numberObjects_) {
     object_ = new CbcObject * [numberObjects_];
@@ -2634,17 +2591,12 @@ CbcModel::operator=(const CbcModel& rhs)
       heuristic_=NULL;
     }
     lastHeuristic_ = NULL;
-/*
-  Event handler is clp's responsibility when it's the only solver.
-*/
-#   ifndef CBC_ONLY_CLP
     if (eventHandler_)
       delete eventHandler_ ;
     if (rhs.eventHandler_)
     { eventHandler_ = new CbcEventHandler(*rhs.eventHandler_) ; }
     else
     { eventHandler_ = NULL ; }
-#   endif
     for (i=0;i<numberObjects_;i++)
       delete object_[i];
     delete [] object_;
@@ -2740,6 +2692,8 @@ CbcModel::~CbcModel ()
   tree_=NULL;
   if (ourSolver_) delete solver_;
   gutsOfDestructor();
+  delete eventHandler_ ;
+  eventHandler_ = NULL ;
 }
 // Clears out as much as possible (except solver)
 void 
@@ -2760,10 +2714,6 @@ CbcModel::gutsOfDestructor()
     delete heuristic_[i];
   delete [] heuristic_;
   heuristic_=NULL;
-# ifndef CBC_ONLY_CLP
-  delete eventHandler_ ;
-  eventHandler_ = NULL ;
-# endif
   delete nodeCompare_;
   nodeCompare_=NULL;
   delete problemFeasibility_;
@@ -3318,31 +3268,6 @@ int CbcModel::reducedCostFix ()
 
   int numberFixed = 0 ;
 
-/*
-  At issue here are the clp-specific asserts. The two code blocks do exactly
-  the same thing, except that the first code block knows it's using clp and
-  does not do runtime checks. Merging the two results in unreadable nested
-  ifdef's.
-*/
-#ifdef CBC_ONLY_CLP
-  OsiClpSolverInterface * clpSolver 
-    = dynamic_cast<OsiClpSolverInterface *> (solver_);
-  ClpSimplex * clpSimplex = clpSolver->getModelPtr();
-  for (int i = 0 ; i < numberIntegers_ ; i++)
-  { int iColumn = integerVariable_[i] ;
-    double djValue = direction*reducedCost[iColumn] ;
-    if (upper[iColumn]-lower[iColumn] > integerTolerance)
-    { if (solution[iColumn] < lower[iColumn]+integerTolerance && djValue > gap)
-      { solver_->setColUpper(iColumn,lower[iColumn]) ;
-        assert (clpSimplex->getColumnStatus(iColumn)==ClpSimplex::atLowerBound);
-	numberFixed++ ; }
-      else
-      if (solution[iColumn] > upper[iColumn]-integerTolerance && -djValue > gap)
-      { solver_->setColLower(iColumn,upper[iColumn]) ;
-      if (clpSimplex)
-        assert (clpSimplex->getColumnStatus(iColumn)==ClpSimplex::atUpperBound);
-	numberFixed++ ; } } }
-#else				// CBC_ONLY_CLP
 # ifdef CBC_USE_CLP
   OsiClpSolverInterface * clpSolver 
     = dynamic_cast<OsiClpSolverInterface *> (solver_);
@@ -3369,7 +3294,6 @@ int CbcModel::reducedCostFix ()
         assert (clpSimplex->getColumnStatus(iColumn)==ClpSimplex::atUpperBound);
 #endif
 	numberFixed++ ; } } }
-#endif				// CBC_ONLY_CLP
   
   return numberFixed; }
 
@@ -4431,30 +4355,22 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
 #ifdef CBC_USE_CLP
         OsiClpSolverInterface * clpSolver 
           = dynamic_cast<OsiClpSolverInterface *> (solver_);
-# ifndef CBC_ONLY_CLP
 	if (clpSolver) {
-# endif
           // Maybe solver might like to know only column bounds will change
           //int options = clpSolver->specialOptions();
           //clpSolver->setSpecialOptions(options|128);
           clpSolver->synchronizeModel();
-# ifndef CBC_ONLY_CLP
 	}
-# endif
 #endif
       } else {
 #ifdef CBC_USE_CLP
         OsiClpSolverInterface * clpSolver 
           = dynamic_cast<OsiClpSolverInterface *> (solver_);
-# ifndef CBC_ONLY_CLP
 	if (clpSolver) {
-# endif
         // make sure factorization can't carry over
           int options = clpSolver->specialOptions();
           clpSolver->setSpecialOptions(options&(~8));
-# ifndef CBC_ONLY_CLP
 	}
-# endif
 #endif
       }
     }
@@ -6564,9 +6480,7 @@ CbcModel::integerPresolveThisModel(OsiSolverInterface * originalSolver,
     // do presolve - for now just clp but easy to get osi interface
     OsiClpSolverInterface * clpSolver 
       = dynamic_cast<OsiClpSolverInterface *> (cleanModel);
-# ifndef CBC_ONLY_CLP
     if (clpSolver) {
-# endif
       ClpSimplex * clp = clpSolver->getModelPtr();
       clp->messageHandler()->setLogLevel(cleanModel->messageHandler()->logLevel());
       ClpPresolve pinfo;
@@ -6681,9 +6595,7 @@ CbcModel::integerPresolveThisModel(OsiSolverInterface * originalSolver,
 	  }
 	}
       }
-# ifndef CBC_ONLY_CLP
     }
-# endif
 #endif
     if (!feasible||!doIntegerPresolve) {
       break;
@@ -7415,58 +7327,20 @@ CbcModel::setPointers(const OsiSolverInterface * solver)
 }
 
 /*
-  There is no overlap of events used in cbc and events used in clp. And code
-  must explicitly register an event. So there's no chance that using the clp
-  event handler can ever affect clp directly. That said, I've elected to
-  do the following: If cbc is built using only clp, the existing code remains
-  in place: cbc will use ClpEventHandler. If cbc is built for generic OSI
-  solvers, only CbcEventHandler is available, and it will be used by all
-  solvers, clp included. If, over time, it remains true that there's no good
-  reason to retain ClpEventHandler, removal amounts to deleting the event
-  handling code protected by CBC_ONLY_CLP.    -- lh, 060210 --
-*/
-
-#ifdef CBC_ONLY_CLP
-
-/* Clp-specific routines to set/get an event handler. */
-
-// Pass in Event handler (cloned and deleted at end)
-void 
-CbcModel::passInEventHandler(const ClpEventHandler * eventHandler)
-{
-  OsiClpSolverInterface * clpSolver 
-    = dynamic_cast<OsiClpSolverInterface *> (solver_);
-  ClpSimplex * clpSimplex = clpSolver->getModelPtr();
-  clpSimplex->passInEventHandler(eventHandler);
-}
-// Event handler
-ClpEventHandler * 
-CbcModel::eventHandler() const
-{ 
-  OsiClpSolverInterface * clpSolver 
-    = dynamic_cast<OsiClpSolverInterface *> (solver_);
-  ClpSimplex * clpSimplex = clpSolver->getModelPtr();
-  return clpSimplex->eventHandler();
-}
-
-#else		// not CBC_ONLY_CLP
-
-/* Equivalent functionality for generic OSI solvers using CbcEventHandler. */
-
-/*
   Delete any existing handler and create a clone of the one supplied.
 */
 void CbcModel::passInEventHandler (const CbcEventHandler *eventHandler)
 {
   delete eventHandler_;
-  eventHandler_ = eventHandler->clone();
+  eventHandler = NULL ;
+  if (eventHandler)
+    eventHandler_ = eventHandler->clone();
 }
 
 /*
   CbcEventHandler* CbcModel::eventHandler is inlined in CbcModel.hpp.
 */
 
-#endif
 
 // Set log level
 void 
@@ -7481,21 +7355,20 @@ CbcModel::setLogLevel(int value)
 #ifdef CBC_USE_CLP
     OsiClpSolverInterface * clpSolver 
       = dynamic_cast<OsiClpSolverInterface *> (solver_);
-# ifndef CBC_ONLY_CLP
     if (clpSolver) {
-# endif
       ClpSimplex * clpSimplex = clpSolver->getModelPtr();
       oldLevel = clpSimplex->logLevel();
       if (value<oldLevel)
         clpSimplex->setLogLevel(value);
-# ifndef CBC_ONLY_CLP
     }
-# endif
 #else		// CBC_USE_CLP
 /*
-  For generic OSI solvers, try the DoReducePrint hint.
+  For generic OSI solvers, if the new log level is 0, try the
+  DoReducePrint hint for emphasis.
 */
-    solver_->setHintParam(OsiDoReducePrint,true,OsiHintDo) ;
+    if (value == 0) {
+      solver_->setHintParam(OsiDoReducePrint,true,OsiHintDo) ;
+    }
 #endif		// CBC_USE_CLP
   }
 }

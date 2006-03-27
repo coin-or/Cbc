@@ -25,11 +25,7 @@ class CbcTree;
 class CbcStrategy;
 class CbcFeasibilityBase;
 class CbcStatistics;
-#ifdef CBC_ONLY_CLP
-class ClpEventHandler ;
-#else
 class CbcEventHandler ;
-#endif
 
 //#############################################################################
 
@@ -1217,13 +1213,6 @@ public:
   inline int priority(int sequence) const
   { return object_[sequence]->priority();}; 
 
-
-#ifdef CBC_ONLY_CLP
-   /// Pass in Event handler (cloned and deleted at end)
-   void passInEventHandler(const ClpEventHandler * eventHandler);
-   /// Event handler
-  ClpEventHandler * eventHandler() const;
-#else
   /*! \brief Set an event handler
   
     A clone of the handler passed as a parameter is stored in CbcModel.
@@ -1231,9 +1220,8 @@ public:
   void passInEventHandler(const CbcEventHandler *eventHandler) ;
 
   /*! \brief Retrieve a pointer to the event handler */
-  CbcEventHandler* CbcModel::eventHandler() const
+  inline CbcEventHandler* getEventHandler() const
   { return (eventHandler_) ; } ;
-#endif
 
   //@}
     

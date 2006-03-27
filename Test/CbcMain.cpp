@@ -37,6 +37,7 @@
 #include "CglPreProcess.hpp"
 
 #include "CbcModel.hpp"
+#include "CbcEventHandler.hpp"
 #include "CbcTree.hpp"
 #include "CbcCutGenerator.hpp"
 #include "CbcHeuristic.hpp"
@@ -1270,16 +1271,12 @@ int main (int argc, const char *argv[])
               model->solver()->setIntParam(OsiMaxNumIterationHotStart,100);
 #ifdef CBC_USE_CLP
               OsiClpSolverInterface * osiclp = dynamic_cast< OsiClpSolverInterface*> (model->solver());
-# ifndef CBC_ONLY_CLP
 	      if (osiclp) {
-# endif
 		// go faster stripes
 		if (osiclp->getNumRows()<300&&osiclp->getNumCols()<500) {
 		  osiclp->setupForRepeatedUse(2,0);
 		}
-# ifndef CBC_ONLY_CLP
               }
-# endif
 #endif
               if (gapRatio < 1.0e100)
 		{ double value = model->solver()->getObjValue() ;

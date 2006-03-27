@@ -57,9 +57,7 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver,int numberNodes,
 {
 #ifdef CBC_USE_CLP
   OsiClpSolverInterface * osiclp = dynamic_cast< OsiClpSolverInterface*> (solver);
-# ifndef CBC_ONLY_CLP
   if (osiclp) {
-# endif
     // go faster stripes
     if (osiclp->getNumRows()<300&&osiclp->getNumCols()<500) {
       osiclp->setupForRepeatedUse(2,0);
@@ -69,9 +67,7 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver,int numberNodes,
     // Turn this off if you get problems
     // Used to be automatically set
     osiclp->setSpecialOptions(osiclp->specialOptions()|(128+64));
-# ifndef CBC_ONLY_CLP
   }
-# endif
 #endif
   // Reduce printout
   solver->setHintParam(OsiDoReducePrint,true,OsiHintTry);

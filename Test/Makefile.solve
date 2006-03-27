@@ -120,9 +120,9 @@ include ${MakefileDir}/Makefile.rules
 
 .DELETE_ON_ERROR:
 
-.PHONY: unitTest
+.PHONY: solve solver
 
-unitTest: $(TARGETDIR)/solve
+solve solver: $(TARGETDIR)/solve
 
 $(TARGETDIR)/solve : $(TESTOBJ)
 	@rm -rf Junk

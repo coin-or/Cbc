@@ -7,7 +7,7 @@
 #include <cstdio>
 #include <cmath>
 #include <cfloat>
-#include <string>
+#include <cstring>
 #include <iostream>
 
 
@@ -2138,9 +2138,10 @@ int main (int argc, const char *argv[])
 		  // Go to canned file if just input file
 		  if (CbcOrClpRead_mode==2&&argc==2) {
 		    // only if ends .mps
-		    char * find = strstr(fileName.c_str(),".mps");
-		    if (find&&find[4]=='\0') {
-		      find[1]='p'; find[2]='a';find[3]='r';
+		    std::string::size_type loc = fileName.find(".mps") ;
+		    if (loc != std::string::npos &&
+			fileName.length() == loc+3)
+		    { fileName.replace(loc+1,3,"par") ;
 		      FILE *fp=fopen(fileName.c_str(),"r");
 		      if (fp) {
 			CbcOrClpReadCommand=fp; // Read from that file

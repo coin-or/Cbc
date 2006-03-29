@@ -841,7 +841,7 @@ CbcFathomDynamicProgramming::addOneColumn1(int numberElements, const int * rows,
       int k=(i&~mask1);
 #ifdef CBC_DEBUG
       for (int j=i-1;j>k;j--) {
-        int jMask = j&mask;
+        int jMask = j&mask1;
         assert (jMask!=0);
       }
 #endif

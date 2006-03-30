@@ -2611,8 +2611,11 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
           canSkip=0;
         if (((numberTest2<=0&&numberTest<=0)||skipAll)&&sort[iDo]>distanceToCutoff) {
           canSkip=1; // always skip
-          if (iDo>20)
+          if (iDo>20) {
+            delete choice.possibleBranch;
+            choice.possibleBranch=NULL;
             break; // give up anyway
+          }
         }
         if (model->messageHandler()->logLevel()>3&&numberBeforeTrust) 
           dynamicObject->print(1,choice.possibleBranch->value());
@@ -2924,18 +2927,24 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
               }
             } else {
               delete choice.possibleBranch;
+              choice.possibleBranch=NULL;
               if (iDo>=2*numberStrong) {
                 delete ws;
                 ws=NULL;
                 break;
               }
               if (!dynamicObject||dynamicObject->numberTimesUp()>1) {
-                if (iDo-whichChoice>=numberStrong)
+                if (iDo-whichChoice>=numberStrong) {
+                  delete choice.possibleBranch;
+                  choice.possibleBranch=NULL;
                   break; // give up
+                }
               } else {
                 if (iDo-whichChoice>=2*numberStrong) {
                   delete ws;
                   ws=NULL;
+                  delete choice.possibleBranch;
+                  choice.possibleBranch=NULL;
                   break; // give up
                 }
               }
@@ -2950,12 +2959,14 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
               choice.possibleBranch->way(1);
               choice.possibleBranch->branch();
               delete choice.possibleBranch;
+              choice.possibleBranch=NULL;
               delete ws;
               ws=NULL;
               break;
             } else {
               choice.fix=1;
               fixObject[numberToFix++]=choice;
+              choice.possibleBranch=NULL;
 #define FIXNOW
 #ifdef FIXNOW
               double value = ceil(saveSolution[iColumn]);
@@ -2978,12 +2989,14 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
               choice.possibleBranch->way(-1);
               choice.possibleBranch->branch();
               delete choice.possibleBranch;
+              choice.possibleBranch=NULL;
               delete ws;
               ws=NULL;
               break;
             } else {
               choice.fix=-1;
               fixObject[numberToFix++]=choice;
+              choice.possibleBranch=NULL;
 #ifdef FIXNOW
               double value = floor(saveSolution[iColumn]);
               saveUpper[iColumn]=value;
@@ -2997,6 +3010,7 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
             // neither side feasible
             anyAction=-2;
             delete choice.possibleBranch;
+            choice.possibleBranch=NULL;
             //printf("Both infeasible for choice %d sequence %d\n",i,
             // model->object(choice.objectNumber)->columnNumber());
             delete ws;
@@ -3020,6 +3034,7 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
           numberTest=0;
           distanceToCutoff=-COIN_DBL_MAX;
         }
+        delete choice.possibleBranch;
       }
       double averageChange = model->sumChangeObjective()/((double) model->getNodeCount());
       if (depth_<10||worstFeasible>0.2*averageChange) 
@@ -3526,6 +3541,8 @@ int CbcNode::analyze (CbcModel *model, double * results)
         ws=NULL;
         solver->writeMps("bad");
         numberToFix=-1;
+        delete choice.possibleBranch;
+        choice.possibleBranch=NULL;
         break;
       }
     }

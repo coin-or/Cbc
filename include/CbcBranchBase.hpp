@@ -177,6 +177,12 @@ public:
   virtual double upEstimate() const;
   /// Return "down" estimate (default 1.0e-5)
   virtual double downEstimate() const;
+  /// If -1 down always chosen first, +1 up always, 0 normal
+  inline int preferredWay() const
+  { return preferredWay_;};
+  /// Set -1 down always chosen first, +1 up always, 0 normal
+  inline void setPreferredWay(int value)
+  { preferredWay_=value;};
   
 protected:
   /// data
@@ -187,6 +193,8 @@ protected:
   int id_;
   /// Priority
   int priority_;
+  /// If -1 down always chosen first, +1 up always, 0 normal
+  int preferredWay_;
 
 };
 
@@ -305,10 +313,19 @@ public:
   inline CbcModel * model() const
   {return  model_;};
 
+  /// Return pointer back to object which created
+  inline CbcObject * object() const
+  {return  originalObject_;};
+  /// Set pointer back to object which created
+  inline void setOriginalObject(CbcObject * object)
+  {originalObject_=object;};
+
 protected:
 
   /// The model that owns this branching object
   CbcModel * model_;
+  /// Pointer back to object which created
+  CbcObject * originalObject_;
 
   /// Branching variable (0 is first integer)
   int variable_;

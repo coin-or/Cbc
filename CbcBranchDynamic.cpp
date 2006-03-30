@@ -269,6 +269,7 @@ CbcSimpleIntegerDynamicPseudoCost::createBranch(int way)
   //if (way>0)
   //changeInGuessed += 1.0e8; // bias to stay up
   newObject->setChangeInGuessed(changeInGuessed);
+  newObject->setOriginalObject(this);
   return newObject;
 }
 /* Create an OsiSolverBranch object
@@ -363,6 +364,8 @@ CbcSimpleIntegerDynamicPseudoCost::infeasibility(int & preferredWay) const
   if (upDownSeparator_>0.0) {
     preferredWay = (value-below>=upDownSeparator_) ? 1 : -1;
   }
+  if (preferredWay_)
+    preferredWay=preferredWay_;
   // weight at 1.0 is max min
 #define WEIGHT_AFTER 0.9
 #define WEIGHT_BEFORE 0.3
@@ -884,6 +887,9 @@ CbcBranchDynamicDecision::betterBranch(CbcBranchingObject * thisOne,
     bestChangeDown_ = changeDown;
     bestNumberDown_ = numInfDown;
     bestObject_=thisOne;
+    // See if user is overriding way
+    if (thisOne->object()&&thisOne->object()->preferredWay())
+      betterWay = thisOne->object()->preferredWay();
   }
   return betterWay;
 }

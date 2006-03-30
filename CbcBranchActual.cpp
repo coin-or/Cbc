@@ -711,6 +711,8 @@ CbcSimpleInteger::infeasibility(int & preferredWay) const
     preferredWay=1;
   else
     preferredWay=-1;
+  if (preferredWay_)
+    preferredWay=preferredWay_;
   double weight = fabs(value-nearest);
   // normalize so weight is 0.5 at break even
   if (nearest<value)
@@ -785,8 +787,10 @@ CbcSimpleInteger::createBranch(int way)
     else
       value = targetValue+0.1;
   }
-  return new CbcIntegerBranchingObject(model_,sequence_,way,
+  CbcBranchingObject * branch = new CbcIntegerBranchingObject(model_,sequence_,way,
 					     value);
+  branch->setOriginalObject(this);
+  return branch;
 }
 
 /* Create an OsiSolverBranch object
@@ -1157,6 +1161,7 @@ CbcSimpleIntegerPseudoCost::createBranch(int way)
   //if (way>0)
   //changeInGuessed += 1.0e8; // bias to stay up
   newObject->setChangeInGuessed(changeInGuessed);
+  newObject->setOriginalObject(this);
   return newObject;
 }
 // Infeasibility - large is 0.5
@@ -1196,6 +1201,8 @@ CbcSimpleIntegerPseudoCost::infeasibility(int & preferredWay) const
   if (upDownSeparator_>0.0) {
     preferredWay = (value-below>=upDownSeparator_) ? 1 : -1;
   }
+  if (preferredWay_)
+    preferredWay=preferredWay_;
   if (fabs(value-nearest)<=integerTolerance) {
     return 0.0;
   } else {
@@ -1967,6 +1974,9 @@ CbcBranchDefaultDecision::betterBranch(CbcBranchingObject * thisOne,
     bestChangeDown_ = changeDn;
     bestNumberDown_ = numInfDn;
     bestObject_=thisOne;
+    // See if user is overriding way
+    if (thisOne->object()&&thisOne->object()->preferredWay())
+      betterWay = thisOne->object()->preferredWay();
   }
   return betterWay;
 }
@@ -2236,8 +2246,14 @@ CbcBranchDefaultDecision::bestBranch (CbcBranchingObject ** objects, int numberO
       break;
     }
     // set way in best
-    if (whichObject>=0)
-      objects[whichObject]->way(bestWay);
+    if (whichObject>=0) {
+      CbcBranchingObject * bestObject = objects[whichObject];
+      if (bestObject->object()&&bestObject->object()->preferredWay()) 
+        bestWay = bestObject->object()->preferredWay();
+      bestObject->way(bestWay);
+    } else {
+      printf("debug\n");
+    }
   }
   return whichObject;
 }
@@ -2920,6 +2936,7 @@ CbcNWay::createBranch(int way)
   // create object
   CbcBranchingObject * branch;
   branch = new CbcNWayBranchingObject(model_,this,numberFree,list);
+  branch->setOriginalObject(this);
   delete [] list;
   delete [] sort;
   return branch;

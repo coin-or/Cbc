@@ -19,7 +19,8 @@
 CbcObject::CbcObject() 
   :model_(NULL),
    id_(-1),
-   priority_(1000)
+   priority_(1000),
+   preferredWay_(0)
 {
 }
 
@@ -28,7 +29,8 @@ CbcObject::CbcObject(CbcModel * model)
 :
   model_(model),
   id_(-1),
-  priority_(1000)
+  priority_(1000),
+  preferredWay_(0)
 {
 }
 
@@ -44,6 +46,7 @@ CbcObject::CbcObject ( const CbcObject & rhs)
   model_ = rhs.model_;
   id_ = rhs.id_;
   priority_ = rhs.priority_;
+  preferredWay_ = rhs.preferredWay_;
 }
 
 // Assignment operator 
@@ -54,6 +57,7 @@ CbcObject::operator=( const CbcObject& rhs)
     model_ = rhs.model_;
     id_ = rhs.id_;
     priority_ = rhs.priority_;
+    preferredWay_ = rhs.preferredWay_;
   }
   return *this;
 }
@@ -104,6 +108,7 @@ CbcObject::solverBranch() const
 CbcBranchingObject::CbcBranchingObject()
 {
   model_=NULL;
+  originalObject_=NULL;
   variable_=-1;
   way_=0;
   value_=0.0;
@@ -114,6 +119,7 @@ CbcBranchingObject::CbcBranchingObject()
 CbcBranchingObject::CbcBranchingObject (CbcModel * model, int variable, int way , double value)
 {
   model_= model;
+  originalObject_=NULL;
   variable_=variable;
   way_=way;
   value_=value;
@@ -124,6 +130,7 @@ CbcBranchingObject::CbcBranchingObject (CbcModel * model, int variable, int way 
 CbcBranchingObject::CbcBranchingObject ( const CbcBranchingObject & rhs)
 {
   model_=rhs.model_;
+  originalObject_=rhs.originalObject_;
   variable_=rhs.variable_;
   way_=rhs.way_;
   value_=rhs.value_;
@@ -136,6 +143,7 @@ CbcBranchingObject::operator=( const CbcBranchingObject& rhs)
 {
   if (this != &rhs) {
     model_=rhs.model_;
+    originalObject_=rhs.originalObject_;
     variable_=rhs.variable_;
     way_=rhs.way_;
     value_=rhs.value_;
@@ -191,10 +199,8 @@ CbcBranchDecision::bestBranch (CbcBranchingObject ** objects, int numberObjects,
       }
     }
     // set way in best
-    if (whichObject>=0)
+    if (whichObject>=0) 
       objects[whichObject]->way(bestWay);
-    else
-      printf("debug\n");
   }
   return whichObject;
 }

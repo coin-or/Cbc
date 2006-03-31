@@ -82,23 +82,20 @@ export CBC_SOLVERS
 
 # $(warning CBC_DEFINES is $(CBC_DEFINES))
 
-# Pull together the full dependency list for libCbc. You can't build libCbc
-# without the Coin, Osi, and Cgl libraries. If Clp is included in CBC_SOLVERS,
-# we'll need to build it too. Note that the current (06.03.22) Osi makefile
-# will use Makefile.location to determine which solvers and OSI interfaces
-# to build. This means that building Osi (which we need for libCbc) will
-# trigger the builds of all the specified solvers. Oh well, we want them
-# anyway.
+# Pull together a dependency list for libCbc. You can't build libCbc without
+# the Coin, Osi, and Cgl libraries.  The current (06.03.22) Osi makefile will
+# use the set of solvers enabled in Makefile.location to determine which OSI
+# interfaces to build. To make a long story short, since you can't add a solver
+# to CBC_SOLVERS unless it's enabled in Makefile.location, we don't need to
+# explicitly trigger a build for solver XXX, or for interface OsiXXX. Nor can
+# we suppress the build of OsiCbc. (But note that disabling OsiCbc in
+# Makefile.location will exclude it from the link of the cbc main program.) If
+# this behaviour ever changes, the target list here will need to be upgraded to
+# include XXX and OsiXXX for solvers XXX in CBC_SOLVERS.
 
-libTgts := Coin Osi
+libTgts := Coin Osi Cgl
 
-ifneq ($(filter Clp,$(CBC_SOLVERS)),)
-  libTgts += Clp Osi/OsiClp
-endif
-
-libTgts += Cgl
-
-$(warning Complete dependency list is $(libTgts))
+# $(warning Dependency list is $(libTgts))
 
 ###############################################################################
 

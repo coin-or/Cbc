@@ -14,19 +14,10 @@ LibType := SHARED
 MakefileDir := ../../Makefiles
 include ${MakefileDir}/Makefile.coin
 
-# Include files, library directory and name, compile-time defines.
-
-# Start out with empty vars. If for no other reason, we need this to establish
-# these variables as simply expanded.
-
-IncDir :=
-LibDir :=
-LibName :=
-Define := $(CBC_DEFINES)
-
-
-# Cbc should build without OsiCbc, but you can't run the miplib test suite
-# without it.
+# cbc will build without OsiCbc, but you can't run the miplib test suite
+# without it. Disabling OsiCbc in Makefile.location simply excludes OsiCbc from
+# the link. In the current COIN makefile architecture, building Cbc and Osi
+# leads inevitably to building OsiCbc.
 
 ifneq ($(filter COIN_libOsiCbc,$(CoinLibsDefined)),)
   CXXFLAGS += -DCBC_USE_CBC
@@ -37,26 +28,40 @@ else
   $(warning OsiCbc.)
 endif
 
-$(warning CBC_SOLVERS is $(CBC_SOLVERS))
+# Include files, library directory and name, compile-time defines.  Start out
+# by adding libCbc.
 
-# Add the requested solver libraries: libXXX and libOsiXXX. If Clp is in the
-# mix, and COIN_HAS_VOL is defined, we need to bring libVol into the mix (but
-# not OsiVol).
+IncDir := $(CbcIncDir)
+LibDir := $(CbcLibDir)
+LibName := $(CbcLibName)
+Define := $(CBC_DEFINES) $(CbcDefine)
 
-IncDir += $(foreach lib,$(CBC_SOLVERS),$($(lib)IncDir))
-LibDir += $(foreach lib,$(CBC_SOLVERS),$($(lib)LibDir))
-LibName += $(foreach lib,$(CBC_SOLVERS),$($(lib)LibName))
-ifneq ($(filter COIN_libVol,$(CoinLibsDefined)),)
-  LibDir += $(VolLibDir)
-  LibName += $(VolLibName)
-endif
+# Add the requested libOsiXXX libraries.
+
+IncDir += $(foreach solver,$(CBC_SOLVERS),$(Osi$(solver)IncDir))
+LibDir += $(foreach solver,$(CBC_SOLVERS),$(Osi$(solver)LibDir))
+LibName += $(foreach solver,$(CBC_SOLVERS),$(Osi$(solver)LibName))
+Define += $(foreach solver,$(CBC_SOLVERS),$(Osi$(solver)Define))
+
+# Add the requested libXXX libraries (excepting libCbc, which is already in).
+
+CBC_SOLVERS := $(filter-out Cbc,$(CBC_SOLVERS))
+IncDir += $(foreach solver,$(CBC_SOLVERS),$($(solver)IncDir))
+LibDir += $(foreach solver,$(CBC_SOLVERS),$($(solver)LibDir))
+LibName += $(foreach solver,$(CBC_SOLVERS),$($(solver)LibName))
 Define += $(foreach lib,$(CBC_SOLVERS),$($(lib)Define))
-IncDir += $(foreach lib,$(CBC_SOLVERS),$(Osi$(lib)IncDir))
-LibDir += $(foreach lib,$(CBC_SOLVERS),$(Osi$(lib)LibDir))
-LibName += $(foreach lib,$(CBC_SOLVERS),$(Osi$(lib)LibName))
-Define += $(foreach lib,$(CBC_SOLVERS),$(Osi$(lib)Define))
 
-# Add the required libraries: Coin, Osi, Cgl
+# If Clp is in the mix, and Vol is available, we need to bring libVol
+# into the mix. (Only the library is required.)
+
+ifneq ($(filter Clp,$(CBC_SOLVERS)),)
+  ifneq ($(filter COIN_libVol,$(CoinLibsDefined)),)
+    LibDir += $(VolLibDir)
+    LibName += $(VolLibName)
+  endif
+endif
+
+# Add the required base libraries: Cgl, Osi, and Coin.
 
 IncDir += $(foreach lib,Cgl Osi Coin,$($(lib)IncDir))
 LibDir += $(foreach lib,Cgl Osi Coin,$($(lib)LibDir))

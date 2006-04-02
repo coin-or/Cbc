@@ -213,6 +213,35 @@ CbcClique::feasibleRegion()
     solver->setColUpper(iColumn,nearest);
   }
 }
+// Redoes data when sequence numbers change
+void 
+CbcClique::redoSequenceEtc(CbcModel * model, int numberColumns, const int * originalColumns)
+{
+  model_=model;
+  int n2=0;
+  for (int j=0;j<numberMembers_;j++) {
+    int iColumn = members_[j];
+    int i;
+    for (i=0;i<numberColumns;i++) {
+      if (originalColumns[i]==iColumn)
+        break;
+    }
+    if (i<numberColumns) {
+      members_[n2]=i;
+      type_[n2++]=type_[j];
+    }
+  }
+  if (n2<numberMembers_) {
+    printf("** SOS number of members reduced from %d to %d!\n",numberMembers_,n2);
+    numberMembers_=n2;
+  }
+  // Find out how many non sos
+  int i;
+  numberNonSOSMembers_=0;
+  for (i=0;i<numberMembers_;i++)
+    if (!type_[i])
+      numberNonSOSMembers_++;
+}
 
 
 // Creates a branching object
@@ -490,6 +519,29 @@ CbcSOS::feasibleRegion()
     solver->setColUpper(iColumn,0.0);
   }
 }
+// Redoes data when sequence numbers change
+void 
+CbcSOS::redoSequenceEtc(CbcModel * model, int numberColumns, const int * originalColumns)
+{
+  model_=model;
+  int n2=0;
+  for (int j=0;j<numberMembers_;j++) {
+    int iColumn = members_[j];
+    int i;
+    for (i=0;i<numberColumns;i++) {
+      if (originalColumns[i]==iColumn)
+        break;
+    }
+    if (i<numberColumns) {
+      members_[n2]=i;
+      weights_[n2++]=weights_[j];
+    }
+  }
+  if (n2<numberMembers_) {
+    printf("** SOS number of members reduced from %d to %d!\n",numberMembers_,n2);
+    numberMembers_=n2;
+  }
+}
 
 
 // Creates a branching object
@@ -749,6 +801,21 @@ CbcSimpleInteger::feasibleRegion()
   assert (fabs(value-nearest)<=0.01);
   solver->setColLower(columnNumber_,nearest);
   solver->setColUpper(columnNumber_,nearest);
+}
+// Redoes data when sequence numbers change
+void 
+CbcSimpleInteger::redoSequenceEtc(CbcModel * model, int numberColumns, const int * originalColumns)
+{
+  model_=model;
+  int i;
+  for (i=0;i<numberColumns;i++) {
+    if (originalColumns[i]==columnNumber_)
+      break;
+  }
+  if (i<numberColumns)
+    columnNumber_=i;
+  else
+    abort(); // should never happen
 }
 /* Column number if single column object -1 otherwise,
    so returns >= 0
@@ -2901,6 +2968,31 @@ CbcNWay::feasibleRegion()
       assert (value<=lower[iColumn]+integerTolerance);
       solver->setColUpper(iColumn,lower[iColumn]);
     }
+  }
+}
+// Redoes data when sequence numbers change
+void 
+CbcNWay::redoSequenceEtc(CbcModel * model, int numberColumns, const int * originalColumns)
+{
+  model_=model;
+  int n2=0;
+  for (int j=0;j<numberMembers_;j++) {
+    int iColumn = members_[j];
+    int i;
+    for (i=0;i<numberColumns;i++) {
+      if (originalColumns[i]==iColumn)
+        break;
+    }
+    if (i<numberColumns) {
+      members_[n2]=i;
+      consequence_[n2++]=consequence_[j];
+    } else {
+      delete consequence_[j];
+    }
+  }
+  if (n2<numberMembers_) {
+    printf("** NWay number of members reduced from %d to %d!\n",numberMembers_,n2);
+    numberMembers_=n2;
   }
 }
 

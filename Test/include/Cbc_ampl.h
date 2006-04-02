@@ -26,6 +26,10 @@ typedef struct
   double * dualSolution;
   int * columnStatus;
   int * rowStatus;
+  int * priorities;
+  int * branchDirection;
+  double * pseudoDown;
+  double * pseudoUp;
   char ** arguments;
   char buffer[300];
 } ampl_info;

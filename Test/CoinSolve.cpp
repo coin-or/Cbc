@@ -422,6 +422,11 @@ int main (int argc, const char *argv[])
     ClpSimplex * lpSolver = clpSolver->getModelPtr();
     clpSolver->messageHandler()->setLogLevel(0) ;
     model.messageHandler()->setLogLevel(1);
+    // For priorities etc
+    int * priorities=NULL;
+    int * branchDirection=NULL;
+    double * pseudoDown=NULL;
+    double * pseudoUp=NULL;
 #ifdef CBC_AMPL
     ampl_info info;
     if (argc>2&&!strcmp(argv[2],"-AMPL")) {
@@ -511,6 +516,7 @@ int main (int argc, const char *argv[])
     std::string importFile ="";
     std::string exportFile ="default.mps";
     std::string importBasisFile ="";
+    std::string importPriorityFile ="";
     std::string debugFile="";
     std::string printMask="";
     double * debugValues = NULL;
@@ -526,6 +532,7 @@ int main (int argc, const char *argv[])
     int numberParameters ;
     establishParams(numberParameters,parameters) ;
     parameters[whichParam(BASISIN,numberParameters,parameters)].setStringValue(importBasisFile);
+    parameters[whichParam(PRIORITYIN,numberParameters,parameters)].setStringValue(importPriorityFile);
     parameters[whichParam(BASISOUT,numberParameters,parameters)].setStringValue(exportBasisFile);
     parameters[whichParam(DEBUG,numberParameters,parameters)].setStringValue(debugFile);
     parameters[whichParam(PRINTMASK,numberParameters,parameters)].setStringValue(printMask);
@@ -1863,6 +1870,17 @@ int main (int argc, const char *argv[])
                 }
               }
               if (type==BAB) {
+#ifdef CBC_AMPL
+                if (usingAmpl) {
+                  priorities=info.priorities;
+                  branchDirection=info.branchDirection;
+                  pseudoDown=info.pseudoDown;
+                  pseudoUp=info.pseudoUp;
+                }
+#endif                
+                const int * originalColumns = NULL;
+                if (preProcess)
+                  originalColumns = process.originalColumns();
                 if (preProcess&&process.numberSOS()) {
                   int numberSOS = process.numberSOS();
                   int numberIntegers = babModel->numberIntegers();
@@ -1870,7 +1888,8 @@ int main (int argc, const char *argv[])
                      If none then create
                   */
                   if (!numberIntegers||!babModel->numberObjects()) {
-                    babModel->findIntegers(true);
+                    int type = (pseudoUp) ? 1 : 0;
+                    babModel->findIntegers(true,type);
                     numberIntegers = babModel->numberIntegers();
                   }
                   CbcObject ** oldObjects = babModel->objects();
@@ -1879,8 +1898,22 @@ int main (int argc, const char *argv[])
                   // set old objects to have low priority
                   int numberOldObjects = babModel->numberObjects();
                   int numberColumns = babModel->getNumCols();
-                  for (int iObj = 0;iObj<numberOldObjects;iObj++)
+                  for (int iObj = 0;iObj<numberOldObjects;iObj++) {
                     oldObjects[iObj]->setPriority(numberColumns+1);
+                    int iColumn = oldObjects[iObj]->columnNumber();
+                    assert (iColumn>=0);
+                    if (originalColumns)
+                      iColumn = originalColumns[iColumn];
+                    if (branchDirection)
+                      oldObjects[iObj]->setPreferredWay(branchDirection[iColumn]);
+                    if (pseudoUp) {
+                      CbcSimpleIntegerPseudoCost * obj1a =
+                        dynamic_cast <CbcSimpleIntegerPseudoCost *>(oldObjects[iObj]) ;
+                      assert (obj1a);
+                      obj1a->setDownPseudoCost(pseudoDown[iColumn]);
+                      obj1a->setUpPseudoCost(pseudoUp[iColumn]);
+                    }
+                  }
                   const int * starts = process.startSOS();
                   const int * which = process.whichSOS();
                   const int * type = process.typeSOS();
@@ -1898,7 +1931,53 @@ int main (int argc, const char *argv[])
                   for (iSOS=0;iSOS<numberSOS;iSOS++)
                     delete objects[iSOS];
                   delete [] objects;
+                } else if (priorities||branchDirection||pseudoDown||pseudoUp) {
+                  // do anyway for priorities etc
+                  int numberIntegers = babModel->numberIntegers();
+                  /* model may not have created objects
+                     If none then create
+                  */
+                  if (!numberIntegers||!babModel->numberObjects()) {
+                    int type = (pseudoUp) ? 1 : 0;
+                    babModel->findIntegers(true,type);
+                  }
+                  CbcObject ** objects = babModel->objects();
+                  int numberObjects = babModel->numberObjects();
+                  for (int iObj = 0;iObj<numberObjects;iObj++) {
+                    int iColumn = objects[iObj]->columnNumber();
+                    assert (iColumn>=0);
+                    if (originalColumns)
+                      iColumn = originalColumns[iColumn];
+                    if (branchDirection)
+                      objects[iObj]->setPreferredWay(branchDirection[iColumn]);
+                    if (priorities) {
+                      int iPriority = priorities[iColumn];
+                      if (iPriority>0)
+                        objects[iObj]->setPriority(iPriority);
+                    }
+                    if (pseudoUp&&pseudoUp[iColumn]) {
+                      CbcSimpleIntegerPseudoCost * obj1a =
+                        dynamic_cast <CbcSimpleIntegerPseudoCost *>(objects[iObj]) ;
+                      assert (obj1a);
+                      obj1a->setDownPseudoCost(pseudoDown[iColumn]);
+                      obj1a->setUpPseudoCost(pseudoUp[iColumn]);
+                    }
+                  }
                 }
+#ifdef CBC_AMPL
+                if (!usingAmpl) {
+#endif
+                  free(priorities);
+                  priorities=NULL;
+                  free(branchDirection);
+                  branchDirection=NULL;
+                  free(pseudoDown);
+                  pseudoDown=NULL;
+                  free(pseudoUp);
+                  pseudoUp=NULL;
+#ifdef CBC_AMPL
+                }
+#endif                
                 int statistics = (printOptions>0) ? printOptions: 0;
                 babModel->branchAndBound(statistics);
               } else if (type==MIPLIB) {
@@ -1961,9 +2040,6 @@ int main (int argc, const char *argv[])
               if (type==STRENGTHEN&&strengthenedModel)
                 clpSolver = dynamic_cast< OsiClpSolverInterface*> (strengthenedModel);
               lpSolver = clpSolver->getModelPtr();
-              if (debugFile=="create"&&bestSolution) {
-                saveSolution(lpSolver,"debug.file");
-              }
               if (numberChanged) {
                 for (int i=0;i<numberChanged;i++) {
                   int iColumn=changed[i];
@@ -1976,6 +2052,9 @@ int main (int argc, const char *argv[])
                 int n = lpSolver->getNumCols();
                 if (bestSolution)
                   memcpy(lpSolver->primalColumnSolution(),bestSolution,n*sizeof(double));
+                if (debugFile=="create"&&bestSolution) {
+                  saveSolution(lpSolver,"debug.file");
+                }
                 delete [] bestSolution;
                 std::string statusName[]={"Finished","Stopped on ","Difficulties",
                                           "","","User ctrl-c"};
@@ -2054,6 +2133,20 @@ int main (int argc, const char *argv[])
             break ;
 	  case IMPORT:
 	    {
+#ifdef CBC_AMPL
+              if (!usingAmpl) {
+#endif
+                free(priorities);
+                priorities=NULL;
+                free(branchDirection);
+                branchDirection=NULL;
+                free(pseudoDown);
+                pseudoDown=NULL;
+                free(pseudoUp);
+                pseudoUp=NULL;
+#ifdef CBC_AMPL
+              }
+#endif                
               delete babModel;
               babModel=NULL;
 	      // get next field
@@ -2350,6 +2443,240 @@ int main (int argc, const char *argv[])
 		  basisHasValues=-1;
 		else
 		  basisHasValues=1;
+	      }
+	    } else {
+	      std::cout<<"** Current model not valid"<<std::endl;
+	    }
+	    break;
+	  case PRIORITYIN:
+	    if (goodModel) {
+	      // get next field
+	      field = CoinReadGetString(argc,argv);
+	      if (field=="$") {
+		field = parameters[iParam].stringValue();
+	      } else if (field=="EOL") {
+		parameters[iParam].printString();
+		break;
+	      } else {
+		parameters[iParam].setStringValue(field);
+	      }
+	      std::string fileName;
+              if (field[0]=='/'||field[0]=='\\') {
+                fileName = field;
+              } else if (field[0]=='~') {
+                char * environVar = getenv("HOME");
+                if (environVar) {
+                  std::string home(environVar);
+                  field=field.erase(0,1);
+                  fileName = home+field;
+                } else {
+                  fileName=field;
+                }
+              } else {
+                fileName = directory+field;
+              }
+              FILE *fp=fopen(fileName.c_str(),"r");
+              if (fp) {
+                // can open - lets go for it
+                std::string headings[]={"name","number","direction","priority","up","down"};
+                int order[]={-1,-1,-1,-1,-1,-1};
+                int nAcross=0;
+                char line[1000];
+                int numberColumns = lpSolver->numberColumns();
+                if (!fgets(line,1000,fp)) {
+                  std::cout<<"Odd file "<<fileName<<std::endl;
+                } else {
+                  char * pos = line;
+                  char * put = line;
+                  while (*pos>=' '&&*pos!='\n') {
+                    if (*pos!=' '&&*pos!='\t') {
+                      *put=tolower(*pos);
+                      put++;
+                    }
+                  }
+                  *put='\0';
+                  pos=line;
+                  int i;
+                  bool good=true;
+                  while (pos) {
+                    char * comma = strchr(pos,',');
+                    if (comma)
+                      *comma='\0';
+                    for (i=0;i<(int) (sizeof(order)/sizeof(int));i++) {
+                      if (headings[i]==pos) {
+                        if (order[i]<0) {
+                          order[i]=nAcross++;
+                        } else {
+                          // duplicate
+                          good=false;
+                        }
+                        break;
+                      }
+                    }
+                    if (i==(int) (sizeof(order)/sizeof(int)))
+                      good=false;
+                    if (comma) {
+                      *comma=',';
+                      pos=comma+1;
+                    } else {
+                      break;
+                    }
+                  }
+                  if (order[0]<0&&order[1]<0)
+                    good=false;
+                  if (order[0]>=0&&order[1]>=0)
+                    good=false;
+                  if (order[0]>=0&&!lpSolver->lengthNames())
+                    good=false;
+                  if (good) {
+                    char ** columnNames = columnNames = new char * [numberColumns];
+                    pseudoDown= (double *) malloc(numberColumns*sizeof(double));
+                    pseudoUp = (double *) malloc(numberColumns*sizeof(double));
+                    branchDirection = (int *) malloc(numberColumns*sizeof(int));
+                    priorities= (int *) malloc(numberColumns*sizeof(int));
+                    int iColumn;
+                    for (iColumn=0;iColumn<numberColumns;iColumn++) {
+                      columnNames[iColumn] = 
+                        strdup(lpSolver->columnName(iColumn).c_str());
+                      pseudoDown[iColumn]=0.0;
+                      pseudoUp[iColumn]=0.0;
+                      branchDirection[iColumn]=0;
+                      priorities[iColumn]=0;
+                    }
+                    int nBadPseudo=0;
+                    int nBadDir=0;
+                    int nBadPri=0;
+                    int nBadName=0;
+                    int nBadLine=0;
+                    int nLine=0;
+                    while (fgets(line,1000,fp)) {
+                      nLine++;
+                      iColumn = -1;
+                      double up =0.0;
+                      double down=0.0;
+                      int pri=0;
+                      int dir=0;
+                      char * pos = line;
+                      char * put = line;
+                      while (*pos>=' '&&*pos!='\n') {
+                        if (*pos!=' '&&*pos!='\t') {
+                          *put=tolower(*pos);
+                          put++;
+                        }
+                      }
+                      *put='\0';
+                      pos=line;
+                      for (int i=0;i<nAcross;i++) {
+                        char * comma = strchr(pos,',');
+                        if (comma) {
+                          *comma='\0';
+                        } else if (i<nAcross-1) {
+                          nBadLine++;
+                          break;
+                        }
+                        switch (order[i]) {
+                          // name
+                        case 0:
+                          for (iColumn=0;iColumn<numberColumns;iColumn++) {
+                            if (!strcmp(columnNames[iColumn],pos))
+                              break;
+                          }
+                          if (iColumn==numberColumns)
+                            iColumn=-1;
+                          break;
+                          // number
+                        case 1:
+                          iColumn = atoi(pos);
+                          if (iColumn<0||iColumn>=numberColumns)
+                            iColumn=-1;
+                          break;
+                          // direction
+                        case 2:
+                          if (*pos=='D')
+                            dir=-1;
+                          else if (*pos=='U')
+                            dir=1;
+                          else if (*pos=='N')
+                            dir=0;
+                          else if (*pos=='1'&&*(pos+1)=='\0')
+                            dir=1;
+                          else if (*pos=='0'&&*(pos+1)=='\0')
+                            dir=0;
+                          else if (*pos=='1'&&*(pos+1)=='1'&&*(pos+2)=='\0')
+                            dir=-1;
+                          else
+                            dir=-2; // bad
+                          break;
+                          // priority
+                        case 3:
+                          pri=atoi(pos);
+                          break;
+                          // up
+                        case 4:
+                          up = atof(pos);
+                          break;
+                          // down
+                        case 5:
+                          down = atof(pos);
+                          break;
+                        }
+                        if (comma) {
+                          *comma=',';
+                          pos=comma+1;
+                        }
+                      }
+                      if (iColumn>=0) {
+                        if (down<0.0) {
+                          nBadPseudo++;
+                          down=0.0;
+                        }
+                        if (up<0.0) {
+                          nBadPseudo++;
+                          up=0.0;
+                        }
+                        if (!up)
+                          up=down;
+                        if (!down)
+                          down=up;
+                        if (dir<-1||dir>1) {
+                          nBadDir++;
+                          dir=0;
+                        }
+                        if (pri<0) {
+                          nBadPri++;
+                          pri=0;
+                        }
+                        pseudoDown[iColumn]=down;
+                        pseudoUp[iColumn]=up;
+                        branchDirection[iColumn]=dir;
+                        priorities[iColumn]=pri;
+                      } else {
+                        nBadName++;
+                      }
+                    }
+                    if (!noPrinting) {
+                      printf("%d fields and %d records",nAcross,nLine);
+                      if (nBadPseudo)
+                        printf(" %d bad pseudo costs",nBadPseudo);
+                      if (nBadDir)
+                        printf(" %d bad directions",nBadDir);
+                      if (nBadPri)
+                        printf(" %d bad priorities",nBadPri);
+                      if (nBadName)
+                        printf(" ** %d records did not match on name/sequence",nBadName);
+                      printf("\n");
+                    }
+                    for (iColumn=0;iColumn<numberColumns;iColumn++) {
+                      free(columnNames[iColumn]);
+                    }
+                    delete [] columnNames;
+                  } else {
+                    std::cout<<"Duplicate or unknown keyword - or name/number fields wrong"<<line<<std::endl;
+                  }
+                }
+                fclose(fp);
+              } else {
+                std::cout<<"Unable to open file "<<fileName<<std::endl;
 	      }
 	    } else {
 	      std::cout<<"** Current model not valid"<<std::endl;

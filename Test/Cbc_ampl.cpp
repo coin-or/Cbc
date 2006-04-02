@@ -99,8 +99,12 @@ suftab[] = {
 	{ "sosno", 0, ASL_Sufkind_var | ASL_Sufkind_real },
 	{ "sosref", 0, ASL_Sufkind_var | ASL_Sufkind_real },
 #endif
+	{ "direction", 0, ASL_Sufkind_var },
+	{ "downPseudocost", 0, ASL_Sufkind_var | ASL_Sufkind_real },
+	{ "priority", 0, ASL_Sufkind_var },
 	{ strdup("sstatus"), 0, ASL_Sufkind_var, 0 },
-	{ strdup("sstatus"), 0, ASL_Sufkind_con, 0 }
+	{ strdup("sstatus"), 0, ASL_Sufkind_con, 0 },
+	{ "upPseudocost", 0, ASL_Sufkind_var | ASL_Sufkind_real }
 #if 0
 	{ "unbdd", 0, ASL_Sufkind_var | ASL_Sufkind_outonly},
 	{ "up", 0, ASL_Sufkind_con | ASL_Sufkind_outonly },
@@ -112,6 +116,91 @@ suftab[] = {
 static ASL *asl=NULL;
 static FILE *nl=NULL;
 
+static void
+mip_stuff(void)
+{
+  int i;
+  double *pseudoUp, *pseudoDown;
+  int *priority, *direction;
+  SufDesc *dpup, *dpdown, *dpri, *ddir;
+  
+  ddir = suf_get("direction", ASL_Sufkind_var);
+  direction = ddir->u.i;
+  dpri = suf_get("priority", ASL_Sufkind_var);
+  priority = dpri->u.i;
+  dpdown = suf_get("downPseudocost", ASL_Sufkind_var);
+  pseudoDown = dpdown->u.r;
+  dpup = suf_get("upPseudocost", ASL_Sufkind_var);
+  pseudoUp = dpup->u.r;
+  assert(saveInfo);
+  int numberColumns = saveInfo->numberColumns;
+  if (direction) {
+    int baddir=0;
+    saveInfo->branchDirection = (int *) malloc(numberColumns*sizeof(int));
+    for (i=0;i<numberColumns;i++) {
+      int value = direction[i];
+      if (value<-1||value>1) {
+        baddir++;
+        value=0;
+      }
+      saveInfo->branchDirection[i]=value;
+    }
+    if (baddir)
+      fprintf(Stderr,
+              "Treating %d .direction values outside [-1, 1] as 0.\n",
+              baddir);
+  }
+  if (priority) {
+    int badpri=0;
+    saveInfo->priorities= (int *) malloc(numberColumns*sizeof(int));
+    for (i=0;i<numberColumns;i++) {
+      int value = priority[i];
+      if (value<0) {
+        badpri++;
+        value=0;
+      }
+      saveInfo->priorities[i]=value;
+    }
+    if (badpri)
+      fprintf(Stderr,
+              "Treating %d negative .priority values as 0\n",
+              badpri);
+  }
+  if (pseudoDown||pseudoUp) {
+    int badpseudo=0;
+    if (!pseudoDown||!pseudoUp)
+      fprintf(Stderr,
+              "Only one set of pseudocosts - assumed same\n");
+    saveInfo->pseudoDown= (double *) malloc(numberColumns*sizeof(double));
+    saveInfo->pseudoUp = (double *) malloc(numberColumns*sizeof(double));
+    for (i=0;i<numberColumns;i++) {
+      double valueD=0.0, valueU=0.0;
+      if (pseudoDown) {
+        valueD = pseudoDown[i];
+        if (valueD<0) {
+          badpseudo++;
+          valueD=0.0;
+        }
+      }
+      if (pseudoUp) {
+        valueU = pseudoUp[i];
+        if (valueU<0) {
+          badpseudo++;
+          valueU=0.0;
+        }
+      }
+      if (!valueD)
+        valueD=valueU;
+      if (!valueU)
+        valueU=valueD;
+      saveInfo->pseudoDown[i]=valueD;
+      saveInfo->pseudoUp[i]=valueU;
+    }
+    if (badpseudo)
+      fprintf(Stderr,
+              "Treating %d negative pseudoCosts as 0.0\n",badpseudo);
+  }
+}
 static void
 stat_map(int *stat, int n, int *map, int mx, const char *what)
 {
@@ -251,6 +340,8 @@ readAmpl(ampl_info * info, int argc, char **argv)
     memcpy(info->primalSolution,X0,n_var*sizeof(double));
   }
   info->dualSolution=NULL;
+  if (niv+nbv>0)
+    mip_stuff(); // get any extra info
   if ((!(niv+nbv)&&(csd->kind & ASL_Sufkind_input))
       ||(rsd->kind & ASL_Sufkind_input)) {
     /* convert status - need info on map */
@@ -352,6 +443,14 @@ void freeArrays2(ampl_info * info)
   info->rowStatus=NULL;
   free(info->columnStatus);
   info->columnStatus=NULL;
+  free(info->priorities);
+  info->priorities=NULL;
+  free(info->branchDirection);
+  info->branchDirection=NULL;
+  free(info->pseudoDown);
+  info->pseudoDown=NULL;
+  free(info->pseudoUp);
+  info->pseudoUp=NULL;
   ASL_free(&asl);
 }
 void freeArgs(ampl_info * info)

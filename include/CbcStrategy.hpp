@@ -144,7 +144,7 @@ public:
   virtual void setupOther(CbcModel & model);
   /// Set up preProcessing - see below
   inline void setupPreProcessing(int desired=1, int passes=10)
-  { desiredPreProcess_=1;preProcessPasses_=passes;};
+  { desiredPreProcess_=desired;preProcessPasses_=passes;};
   /// See what sort of preprocessing wanted
   inline int desiredPreProcess() const
   { return desiredPreProcess_;};

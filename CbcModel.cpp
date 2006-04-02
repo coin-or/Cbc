@@ -393,6 +393,8 @@ void CbcModel::branchAndBound(int doStatistics)
   numberStrongIterations_ = 0;
   // original solver (only set if pre-processing)
   OsiSolverInterface * originalSolver=NULL;
+  int numberOriginalObjects=numberObjects_;
+  CbcObject ** originalObject = NULL;
   // Set up strategies
   if (strategy_) {
     // May do preprocessing
@@ -407,6 +409,110 @@ void CbcModel::branchAndBound(int doStatistics)
         secondaryStatus_ = 1;
         originalContinuousObjective_ = COIN_DBL_MAX;
         return ; 
+      } else if (numberObjects_&&object_) {
+        numberOriginalObjects=numberObjects_;
+        // redo sequence
+        numberIntegers_=0;
+        int numberColumns = getNumCols();
+        int nOrig = originalSolver->getNumCols();
+        CglPreProcess * process = strategy_->process();
+        assert (process);
+        const int * originalColumns = process->originalColumns();
+        // allow for cliques etc
+        nOrig = CoinMax(nOrig,originalColumns[numberColumns-1]+1);
+        originalObject = object_;
+        // object number or -1
+        int * temp = new int[nOrig];
+        int iColumn;
+        for (iColumn=0;iColumn<nOrig;iColumn++) 
+          temp[iColumn]=-1;
+        int iObject;
+        int nNonInt=0;
+        for (iObject=0;iObject<numberOriginalObjects;iObject++) {
+          iColumn = originalObject[iObject]->columnNumber();
+          if (iColumn<0) {
+            nNonInt++;
+          } else {
+            temp[iColumn]=iObject;
+          }
+        }
+        int numberNewIntegers=0;
+        int numberOldIntegers=0;
+        int numberOldOther=0;
+        for (iColumn=0;iColumn<numberColumns;iColumn++) {
+          int jColumn = originalColumns[iColumn];
+          if (temp[jColumn]>=0) {
+            int iObject= temp[jColumn];
+            CbcSimpleInteger * obj =
+              dynamic_cast <CbcSimpleInteger *>(originalObject[iObject]) ;
+            if (obj) 
+              numberOldIntegers++;
+            else
+              numberOldOther++;
+          } else if (isInteger(iColumn)) {
+            numberNewIntegers++;
+          }
+        }
+        /*
+          Allocate an array to hold the indices of the integer variables.
+          Make a large enough array for all objects
+        */
+        numberObjects_= numberNewIntegers+numberOldIntegers+numberOldOther+nNonInt;
+        object_ = new CbcObject * [numberObjects_];
+        integerVariable_ = new int [numberNewIntegers+numberOldIntegers];
+        /*
+          Walk the variables again, filling in the indices and creating objects for
+          the integer variables. Initially, the objects hold the index and upper &
+          lower bounds.
+        */
+        numberIntegers_=0;
+        for (iColumn=0;iColumn<numberColumns;iColumn++) {
+          int jColumn = originalColumns[iColumn];
+          if (temp[jColumn]>=0) {
+            int iObject= temp[jColumn];
+            CbcSimpleInteger * obj =
+              dynamic_cast <CbcSimpleInteger *>(originalObject[iObject]) ;
+            if (obj) {
+              object_[numberIntegers_] = originalObject[iObject]->clone();
+              // redo ids etc
+              object_[numberIntegers_]->redoSequenceEtc(this,numberColumns,originalColumns);
+              integerVariable_[numberIntegers_++]=iColumn;
+            }
+          } else if (isInteger(iColumn)) {
+            object_[numberIntegers_] =
+              new CbcSimpleInteger(this,numberIntegers_,iColumn);
+            integerVariable_[numberIntegers_++]=iColumn;
+          }
+        }
+        numberObjects_=numberIntegers_;
+        // Now append other column stuff
+        for (iColumn=0;iColumn<numberColumns;iColumn++) {
+          int jColumn = originalColumns[iColumn];
+          if (temp[jColumn]>=0) {
+            int iObject= temp[jColumn];
+            CbcSimpleInteger * obj =
+              dynamic_cast <CbcSimpleInteger *>(originalObject[iObject]) ;
+            if (!obj) {
+              object_[numberObjects_] = originalObject[iObject]->clone();
+              // redo ids etc
+              object_[numberObjects_]->redoSequenceEtc(this,numberColumns,originalColumns);
+              numberObjects_++;
+            }
+          }
+        }
+        // now append non column stuff
+        for (iObject=0;iObject<numberOriginalObjects;iObject++) {
+          iColumn = originalObject[iObject]->columnNumber();
+          if (iColumn<0) {
+            object_[numberObjects_] = originalObject[iObject]->clone();
+            // redo ids etc
+            object_[numberObjects_]->redoSequenceEtc(this,numberColumns,originalColumns);
+            numberObjects_++;
+          }
+        }
+        delete [] temp;
+        if (!numberObjects_)
+          handler_->message(CBC_NOINT,messages_) << CoinMessageEol ;
       }
     } else {
       //no preprocessing
@@ -1773,6 +1879,27 @@ void CbcModel::branchAndBound(int doStatistics)
     solver_=originalSolver;
     if (bestSolution_)
       memcpy(bestSolution_,solver_->getColSolution(),n*sizeof(double));
+    // put back original objects if there were any
+    if (originalObject) {
+      int iColumn;
+      for (iColumn=0;iColumn<numberObjects_;iColumn++) 
+        delete object_[iColumn];
+      delete [] object_;
+      numberObjects_ = numberOriginalObjects;
+      object_=originalObject;
+      delete [] integerVariable_;
+      numberIntegers_=0;
+      for (iColumn=0;iColumn<n;iColumn++) {
+        if (solver_->isInteger(iColumn))
+          numberIntegers_++;
+      }
+      integerVariable_ = new int[numberIntegers_];
+      numberIntegers_=0;
+      for (iColumn=0;iColumn<n;iColumn++) {
+        if (solver_->isInteger(iColumn))
+            integerVariable_[numberIntegers_++]=iColumn;
+      }
+    }
   }
   return ; }
 
@@ -4664,6 +4791,7 @@ CbcModel::resolve(CbcNodeInfo * parent, int whereFrom)
       solver_->setHintParam(OsiDoDualInResolve,saveTakeHint,saveStrength);
       numberIterations_ += solver_->getIterationCount() ;
       feasible = solver_->isProvenOptimal();
+      //      solver_->writeMps("infeas");
     }
   }
   setPointers(solver_);
@@ -5136,7 +5264,7 @@ void CbcModel::synchronizeModel()
 */
 
 void 
-CbcModel::findIntegers(bool startAgain)
+CbcModel::findIntegers(bool startAgain,int type)
 {
   assert(solver_);
 /*
@@ -5185,8 +5313,12 @@ CbcModel::findIntegers(bool startAgain)
   numberIntegers_=0;
   for (iColumn=0;iColumn<numberColumns;iColumn++) {
     if(isInteger(iColumn)) {
-      object_[numberIntegers_] =
-	new CbcSimpleInteger(this,numberIntegers_,iColumn);
+      if (!type)
+        object_[numberIntegers_] =
+          new CbcSimpleInteger(this,numberIntegers_,iColumn);
+      else if (type==1)
+        object_[numberIntegers_] =
+          new CbcSimpleIntegerPseudoCost(this,numberIntegers_,iColumn,0.3);
       integerVariable_[numberIntegers_++]=iColumn;
     }
   }
@@ -5205,20 +5337,34 @@ void
 CbcModel::convertToDynamic()
 {
   int iObject;
+  const double * cost = solver_->getObjCoefficients();
   for (iObject = 0;iObject<numberObjects_;iObject++) {
     CbcSimpleInteger * obj1 =
       dynamic_cast <CbcSimpleInteger *>(object_[iObject]) ;
+    CbcSimpleIntegerPseudoCost * obj1a =
+      dynamic_cast <CbcSimpleIntegerPseudoCost *>(object_[iObject]) ;
     CbcSimpleIntegerDynamicPseudoCost * obj2 =
       dynamic_cast <CbcSimpleIntegerDynamicPseudoCost *>(object_[iObject]) ;
     if (obj1&&!obj2) {
       // replace
       int iColumn = obj1->columnNumber();
       int priority = obj1->priority();
+      int preferredWay = obj1->preferredWay();
       delete object_[iObject];
+      double costValue = CoinMax(1.0e-5,fabs(cost[iColumn]));
+      // treat as if will cost what it says up
+      double upCost=costValue;
+      // and balance at breakeven of 0.3
+      double downCost=(0.7*upCost)/0.3;
+      if (obj1a) {
+        upCost=obj1a->upPseudoCost();
+        downCost=obj1a->downPseudoCost();
+      }
       CbcSimpleIntegerDynamicPseudoCost * newObject =
-        new CbcSimpleIntegerDynamicPseudoCost(this,iObject,iColumn,0.3);
+        new CbcSimpleIntegerDynamicPseudoCost(this,iObject,iColumn,downCost,upCost);
       newObject->setNumberBeforeTrust(numberBeforeTrust_);
       newObject->setPriority(priority);
+      newObject->setPreferredWay(preferredWay);
       object_[iObject] = newObject;
     }
   }

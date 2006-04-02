@@ -183,6 +183,8 @@ public:
   /// Set -1 down always chosen first, +1 up always, 0 normal
   inline void setPreferredWay(int value)
   { preferredWay_=value;};
+  /// Redoes data when sequence numbers change
+  virtual void redoSequenceEtc(CbcModel * model, int numberColumns, const int * originalColumns) {};
   
 protected:
   /// data

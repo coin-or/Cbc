@@ -368,7 +368,10 @@ CbcStrategyDefault::setupOther(CbcModel & model)
           int numberIntegers = model.numberIntegers();
           /* model may not have created objects
              If none then create
+             NOTE - put back to original column numbers as 
+             CbcModel will pack down ALL as it doesn't know where from
           */
+          bool someObjects = model.numberObjects()>0;
           if (!numberIntegers||!model.numberObjects()) {
             model.findIntegers(true);
             numberIntegers = model.numberIntegers();
@@ -400,6 +403,23 @@ CbcStrategyDefault::setupOther(CbcModel & model)
           for (iSOS=0;iSOS<numberSOS;iSOS++)
             delete objects[iSOS];
           delete [] objects;
+          if (!someObjects) {
+            // put back old column numbers
+            const int * originalColumns = process_->originalColumns();
+            // use reverse lookup to fake it
+            int n=originalColumns[numberColumns-1]+1;
+            int * fake = new int[n];
+            int i;
+            for ( i=0;i<n;i++)
+              fake[i]=-1;
+            for (i=0;i<numberColumns;i++)
+              fake[originalColumns[i]]=i;
+            for (int iObject=0;iObject<model.numberObjects();iObject++) {
+              // redo ids etc
+              model.modifiableObject(iObject)->redoSequenceEtc(&model,n,fake);
+            }
+            delete [] fake;
+          }
         }
       } else {
         //printf("Pre-processing says infeasible\n");

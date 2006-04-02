@@ -63,6 +63,8 @@ public:
   /// Clique type - 0 <=, 1 == 
   inline int cliqueType() const
   {return cliqueType_;};
+  /// Redoes data when sequence numbers change
+  virtual void redoSequenceEtc(CbcModel * model, int numberColumns, const int * originalColumns);
 
 protected:
   /// data
@@ -132,6 +134,8 @@ public:
       This returns NULL if branch not represented by bound changes
   */
   virtual OsiSolverBranch * solverBranch() const;
+  /// Redoes data when sequence numbers change
+  virtual void redoSequenceEtc(CbcModel * model, int numberColumns, const int * originalColumns);
   
   /// Number of members
   inline int numberMembers() const
@@ -210,6 +214,8 @@ public:
       This returns NULL if branch not represented by bound changes
   */
   virtual OsiSolverBranch * solverBranch() const;
+  /// Redoes data when sequence numbers change
+  virtual void redoSequenceEtc(CbcModel * model, int numberColumns, const int * originalColumns);
   
   /** \brief Given a valid solution (with reduced costs, etc.),
       return a branching object which would give a new feasible
@@ -250,6 +256,9 @@ public:
   /// Model column number
   inline int modelSequence() const
   {return columnNumber_;};
+  /// Set model column number
+  inline void setColumnNumber(int value)
+  {columnNumber_=value;};
   
   /** Column number if single column object -1 otherwise,
       so returns >= 0
@@ -339,6 +348,8 @@ public:
   /// Members (indices in range 0 ... numberColumns-1)
   inline const int * members() const
   {return members_;};
+  /// Redoes data when sequence numbers change
+  virtual void redoSequenceEtc(CbcModel * model, int numberColumns, const int * originalColumns);
 
 protected:
   /// data

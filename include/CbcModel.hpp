@@ -369,9 +369,10 @@ public:
     one.
     If \p startAgain is true, a new scan is forced, overwriting any existing
     integer variable information.
+    If type > 0 then 1==PseudoCost
   */
 
-  void findIntegers(bool startAgain);
+  void findIntegers(bool startAgain,int type=0);
 
   //@}
 

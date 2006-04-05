@@ -33,7 +33,7 @@ public:
   /// update model (This is needed if cliques update matrix etc)
   virtual void setModel(CbcModel * model);
   
-  /** returns 1 if no solution, 0 if valid solution
+  /** returns 0 if no solution, 1 if valid solution
       with better objective value than one passed in
       Sets solution values if good, sets objective value (only if good)
       This is called after cuts have been added - so can not add cuts.

@@ -67,7 +67,7 @@ ifneq ($(cbcMissingSolvers),)
   $(error Please correct Makefile.location and try again.)
 endif
 
-$(warning Building $(MAKECMDGOALS) with solvers $(CBC_SOLVERS))
+$(info Building $(MAKECMDGOALS) with solvers $(CBC_SOLVERS))
 
 # Generate appropriate defines for the compilation command from the value of
 # CBC_SOLVERS and cbcDefaultSolver.

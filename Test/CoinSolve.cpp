@@ -200,6 +200,8 @@ static int * analyze(OsiClpSolverInterface * solverMod, int & numberChanged, dou
         if (fabs(up-floor(up+0.5))>1.0e-12)
           allIntegerCoeff=false;
       }
+      if (!allIntegerCoeff)
+        continue; // can't do
       if (numberContinuous==1) {
         // see if really integer
         // This does not allow for complicated cases

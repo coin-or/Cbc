@@ -4,8 +4,8 @@ LibType := SHARED
 # Select optimization (-O or -g). -O will be automatically bumped up to the 
 # highest level of optimization the compiler supports. If want something in
 # between then specify the exact level you want, e.g., -O1 or -O2
-#OptLevel := -O1
-OptLevel := -g
+OptLevel := -O1
+#OptLevel := -g
 
 
 LIBNAME := Cbc
@@ -52,18 +52,24 @@ include ${MakefileDir}/Makefile.coin
 CXXFLAGS += $(addprefix -D,$(CBC_DEFINES))
 
 # Defines to enable debugging code.
+# CBC_DEBUG: general debugging assertions and printing
+# CBC_DEBUG>1: cuts are printed in their entirety
+# CBC_CHECK_BASIS: print basis information
+# CHECK_NODE: node construction, pop/push in search tree, destruction
+# CHECK_NODE_FULL: search tree integrity check
+# CHECK_CUT_COUNTS: verify cut reference counts
 
 ifeq ($(OptLevel),-g)
-#   CXXFLAGS += -DCBC_DEBUG
+#   CXXFLAGS += -DCBC_DEBUG=1
 #   CXXFLAGS += -DCBC_DEBUG=2
-#   CXXFLAGS += -DFULL_DEBUG
+#   CXXFLAGS += -DCBC_CHECK_BASIS
 #   CXXFLAGS += -DCHECK_NODE
 #   CXXFLAGS += -DCHECK_CUT_COUNTS
 #   CXXFLAGS += -DCHECK_NODE_FULL
 #   CXXFLAGS += -lefence
 endif
 
-# $(warning CXXFLAGS is $(CXXFLAGS))
+# $(info CXXFLAGS is $(CXXFLAGS))
 
 export ExtraIncDir  := ${CoinIncDir} ${zlibIncDir} ${bzlibIncDir}
 export ExtraLibDir  := ${CoinLibDir} ${zlibLibDir} ${bzlibLibDir}

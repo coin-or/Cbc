@@ -88,10 +88,10 @@ LibDir := $(sort $(LibDir))
 
 # Uncomment these to see what's been ordered for the build.
 
-# $(warning IncDir is $(IncDir))
-# $(warning LibDir is $(LibDir))
-# $(warning LibName is $(LibName))
-# $(warning Define is $(Define))
+# $(info IncDir is $(IncDir))
+# $(info LibDir is $(LibDir))
+# $(info LibName is $(LibName))
+# $(info Define is $(Define))
 
 ##############################################################################
 # You should not need to edit below this line.

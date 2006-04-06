@@ -23,7 +23,7 @@ class CbcNode;
 //#############################################################################
 /** Information required to recreate the subproblem at this node
 
-  When a subproblem is initially created, it is represented by an CbcNode
+  When a subproblem is initially created, it is represented by a CbcNode
   object and an attached CbcNodeInfo object.
 
   The CbcNode contains information needed while the subproblem remains live.
@@ -31,7 +31,7 @@ class CbcNode;
 
   The CbcNodeInfo contains information required to maintain the branch-and-cut
   search tree structure (links and reference counts) and to recreate the
-  subproblem for this node (basis, variable bounds, cutting planes). An
+  subproblem for this node (basis, variable bounds, cutting planes). A
   CbcNodeInfo object remains in existence until all nodes have been pruned from
   the subtree rooted at this node.
 
@@ -51,9 +51,9 @@ class CbcNode;
   Notice that the active subproblem lives in a sort of limbo, neither a
   potential or an actual node in the branch-and-cut tree.
 
-  CbcNodeInfo objects come in two flavours. An CbcFullNodeInfo object contains
+  CbcNodeInfo objects come in two flavours. A CbcFullNodeInfo object contains
   a full record of the information required to recreate a subproblem.
-  An CbcPartialNodeInfo object expresses this information in terms of
+  A CbcPartialNodeInfo object expresses this information in terms of
   differences from the parent.
 */
 

@@ -80,7 +80,7 @@ CBC_DEFINES += CBC_DEFAULT_SOLVER="\"$(cbcDefaultSolver)\""
 export CBC_DEFINES
 export CBC_SOLVERS
 
-# $(warning CBC_DEFINES is $(CBC_DEFINES))
+# $(info CBC_DEFINES is $(CBC_DEFINES))
 
 # Pull together a dependency list for libCbc. You can't build libCbc without
 # the Coin, Osi, and Cgl libraries.  The current (06.03.22) Osi makefile will
@@ -95,7 +95,7 @@ export CBC_SOLVERS
 
 libTgts := Coin Osi Cgl
 
-# $(warning Dependency list is $(libTgts))
+# $(info Dependency list is $(libTgts))
 
 ###############################################################################
 

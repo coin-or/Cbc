@@ -277,23 +277,26 @@ CbcNodeInfo::addCuts (OsiCuts & cuts, int numberToBranchOn,
       thisCut->increment(numberToBranchOn); 
       cuts_[numberCuts_++] = thisCut;
 #ifdef CBC_DEBUG
-      int n=thisCut->row().getNumElements();
 #if CBC_DEBUG>1
+      int n=thisCut->row().getNumElements();
       printf("Cut %d has %d entries, rhs %g %g =>",i,n,thisCut->lb(),
 	     thisCut->ub());
-#endif
       int j;
-#if CBC_DEBUG>1
       const int * index = thisCut->row().getIndices();
-#endif
       const double * element = thisCut->row().getElements();
       for (j=0;j<n;j++) {
-#if CBC_DEBUG>1
 	printf(" (%d,%g)",index[j],element[j]);
-#endif
 	assert(fabs(element[j])>1.00e-12);
       }
       printf("\n");
+#else
+      int n=thisCut->row().getNumElements();
+      int j;
+      const double * element = thisCut->row().getElements();
+      for (j=0;j<n;j++) {
+	assert(fabs(element[j])>1.00e-12);
+      }
+#endif
 #endif
     }
   }
@@ -751,7 +754,7 @@ CbcNode::createInfo (CbcModel *model,
     //printf("l %d full %d\n",maxBasisLength,iFull);
     if (expanded) 
       expanded->resize(iFull,numberColumns);
-#ifdef FULL_DEBUG
+#ifdef CBC_CHECK_BASIS
     printf("Before expansion: orig %d, old %d, new %d, current %d\n",
 	   numberRowsAtContinuous,numberOldActiveCuts,numberNewCuts,
 	   model->currentNumberCuts()) ;
@@ -785,7 +788,7 @@ CbcNode::createInfo (CbcModel *model,
 	expanded->setArtifStatus(iFull,CoinWarmStartBasis::basic);
       }
     }
-#ifdef FULL_DEBUG
+#ifdef CBC_CHECK_BASIS
     printf("Expanded basis\n");
     expanded->print() ;
     printf("Diffing against\n") ;

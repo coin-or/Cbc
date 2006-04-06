@@ -39,7 +39,7 @@ Define := ${ClpDefine} ${CoinDefine} ${bzlibDefine} ${zlibDefine} $(lapackLibDef
 LibDir += ${CbcLibDir} ${CglLibDir}
 LibDir += ${OsiLibDir}
 
-LibName += $(OsiLibName) $(OsiCbcLibName) ${CbcLibName} ${CglLibName} $(OsiClpLibName)
+LibName += $(OsiLibName) ${CbcLibName} ${CglLibName} $(OsiClpLibName)
 ifeq ($(VolDefine),COIN_HAS_VOL)
 LibName += $(VolLibName)
 endif

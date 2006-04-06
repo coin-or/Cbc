@@ -3198,16 +3198,10 @@ void CbcModel::addCuts1 (CbcNode * node, CoinWarmStartBasis *&lastws)
 
 /*
   adjustCuts might be a better name: If the node is feasible, we sift through
-  the cuts we've collected, add the ones that are tight and omit the ones that
-  are loose. If the node is infeasible, we just adjust the reference counts to
-  reflect that we're about to prune this node and its descendants.
-
-  The reason we need to pass in lastws is that OsiClp automagically corrects
-  the basis when it deletes constraints. So when all cuts are stripped within
-  addCuts1, we lose their basis entries, hence the ability to determine if
-  they are loose or tight. The question is whether we really need to pass in
-  a basis or if we can capture it here. I'm thinking we can capture it here
-  and pass it back out if required.
+  the cuts collected by addCuts1, add the ones that are tight and omit the
+  ones that are loose. If the node is infeasible, we just adjust the
+  reference counts to reflect that we're about to prune this node and its
+  descendants.
 */
 int CbcModel::addCuts (CbcNode *node, CoinWarmStartBasis *&lastws,bool canFix)
 {
@@ -3274,16 +3268,12 @@ int CbcModel::addCuts (CbcNode *node, CoinWarmStartBasis *&lastws,bool canFix)
   }
 /*
   If the node can't be fathomed by bound, reinstall tight cuts in the
-  constraint system.
+  constraint system. Even if there are no cuts, we'll want to set the
+  reconstructed basis in the solver.
 */
   if (node->objectiveValue() < cutoff)
-  { int numberToAdd = 0;
-    const OsiRowCut * * addCuts;
-    if (currentNumberCuts == 0)
-      addCuts = NULL;
-    else
-      addCuts = new const OsiRowCut  * [currentNumberCuts];
-#   ifdef CHECK_CUT_COUNTS
+  { 
+#   ifdef CBC_CHECK_BASIS
     printf("addCuts: expanded basis; rows %d+%d\n",
 	   numberRowsAtContinuous_,currentNumberCuts);
     lastws->print();
@@ -3291,47 +3281,60 @@ int CbcModel::addCuts (CbcNode *node, CoinWarmStartBasis *&lastws,bool canFix)
 /*
   Adjust the basis and constraint system so that we retain only active cuts.
   There are three steps:
-    1) Scan the basis. If the logical associated with the cut is basic, it's
-       loose and we drop it. The status of the logical for tight cuts is
-       written back into the status array, compressing as we go.
-    2) Resize the basis to fit the number of active cuts, stash a clone, and
-       install with a call to setWarmStart().
-    3) Install the tight cuts into the constraint system (applyRowCuts).
-
-    Update lastws
+    1) Scan the basis. Sort the cuts into effective cuts to be kept and
+       loose cuts to be dropped.
+    2) Drop the loose cuts and resize the basis to fit.
+    3) Install the tight cuts in the constraint system (applyRowCuts) and
+       and install the basis (setWarmStart).
+  Use of compressRows conveys we're compressing the basis and not just
+  tweaking the artificialStatus_ array.
 */
-    int nxrow = lastws->getNumArtificial();
-    for (i=0;i<currentNumberCuts;i++) {
-      assert (i+numberRowsAtContinuous_<nxrow);
-      CoinWarmStartBasis::Status status = 
-	lastws->getArtifStatus(i+numberRowsAtContinuous_);
-      if (addedCuts_[i]&&(status != CoinWarmStartBasis::basic||addedCuts_[i]->effectiveness()==COIN_DBL_MAX)) {
-#	ifdef CHECK_CUT_COUNTS
-	printf("Using cut %d %x as row %d\n",i,addedCuts_[i],
-	       numberRowsAtContinuous_+numberToAdd);
-#	endif
-	lastws->setArtifStatus(numberToAdd+numberRowsAtContinuous_,status);
-	addCuts[numberToAdd++] = new OsiRowCut(*addedCuts_[i]);
-      } else {
-#	ifdef CHECK_CUT_COUNTS
-	printf("Dropping cut %d %x\n",i,addedCuts_[i]);
-#	endif
-	addedCuts_[i]=NULL;
+    if (currentNumberCuts > 0) {
+      int numberToAdd = 0;
+      const OsiRowCut **addCuts;
+      int numberToDrop = 0 ;
+      int *cutsToDrop ;
+      addCuts = new const OsiRowCut* [currentNumberCuts];
+      cutsToDrop = new int[currentNumberCuts] ;
+      int nxrow = lastws->getNumArtificial();
+      for (i=0;i<currentNumberCuts;i++) {
+	assert (i+numberRowsAtContinuous_<nxrow);
+	CoinWarmStartBasis::Status status = 
+	  lastws->getArtifStatus(i+numberRowsAtContinuous_);
+	if (addedCuts_[i] &&
+	    (status != CoinWarmStartBasis::basic ||
+	     addedCuts_[i]->effectiveness()==COIN_DBL_MAX)) {
+#	  ifdef CHECK_CUT_COUNTS
+	  printf("Using cut %d %x as row %d\n",i,addedCuts_[i],
+		 numberRowsAtContinuous_+numberToAdd);
+#	  endif
+	  addCuts[numberToAdd++] = new OsiRowCut(*addedCuts_[i]);
+	} else {
+#	  ifdef CHECK_CUT_COUNTS
+	  printf("Dropping cut %d %x\n",i,addedCuts_[i]);
+#	  endif
+	  addedCuts_[i]=NULL;
+	  cutsToDrop[numberToDrop++] = numberRowsAtContinuous_+i ;
+	}
       }
+      int numberRowsNow=numberRowsAtContinuous_+numberToAdd;
+      lastws->compressRows(numberToDrop,cutsToDrop) ;
+      lastws->resize(numberRowsNow,numberColumns);
+      solver_->applyRowCuts(numberToAdd,addCuts);
+#     ifdef CBC_CHECK_BASIS
+      printf("addCuts: stripped basis; rows %d + %d\n",
+	     numberRowsAtContinuous_,numberToAdd);
+      lastws->print();
+#     endif
+      for (i=0;i<numberToAdd;i++)
+	delete addCuts[i];
+      delete [] addCuts;
+      delete [] cutsToDrop ;
     }
-    int numberRowsNow=numberRowsAtContinuous_+numberToAdd;
-    lastws->resize(numberRowsNow,numberColumns);
-#ifdef FULL_DEBUG
-    printf("addCuts: stripped basis; rows %d + %d\n",
-	   numberRowsAtContinuous_,numberToAdd);
-    lastws->print();
-#endif
 /*
-  Apply the cuts and set the basis in the solver.
+  Set the basis in the solver.
 */
-    solver_->applyRowCuts(numberToAdd,addCuts);
     solver_->setWarmStart(lastws);
-
 #if 0
     if ((numberNodes_%printFrequency_)==0) {
       printf("Objective %g, depth %d, unsatisfied %d\n",
@@ -3342,9 +3345,6 @@ int CbcModel::addCuts (CbcNode *node, CoinWarmStartBasis *&lastws,bool canFix)
 /*
   Clean up and we're out of here.
 */
-    for (i=0;i<numberToAdd;i++)
-      delete addCuts[i];
-    delete [] addCuts;
     numberNodes_++;
     return 0;
   } 
@@ -3492,7 +3492,7 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
 /*
   Resolve the problem. If we've lost feasibility, might as well bail out right
   after the debug stuff. The resolve will also refresh cached copies of the
-  solver solution (cbcColLower_, ...)
+  solver solution (cbcColLower_, ...) held by CbcModel.
 */
   double objectiveValue = solver_->getObjValue()*solver_->getObjSense();
   if (node)
@@ -3610,13 +3610,6 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
     numberTries-- ;
     OsiCuts theseCuts ;
 /*
-  Depending on actions in the loop (bound changes, addition of cuts,
-  reoptimisation) these pointers can change.
-*/
-    const double *lower = solver_->getColLower() ;
-    const double *upper = solver_->getColUpper() ;
-    const double *solution = solver_->getColSolution() ;
-/*
   Scan previously generated global column and row cuts to see if any are
   useful.
 */
@@ -3629,9 +3622,9 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
       resizeWhichGenerator(numberViolated, numberViolated+numberCuts);
       for ( i = 0 ; i < numberCuts ; i++)
       { const OsiColCut *thisCut = globalCuts_.colCutPtr(i) ;
-	if (thisCut->violated(solution)>primalTolerance) {
+	if (thisCut->violated(cbcColSolution_)>primalTolerance) {
 	  printf("Global cut added - violation %g\n",
-		 thisCut->violated(solution)) ;
+		 thisCut->violated(cbcColSolution_)) ;
 	  whichGenerator_[numberViolated++]=-1;
 	  theseCuts.insert(*thisCut) ;
 	}
@@ -3641,9 +3634,9 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
       resizeWhichGenerator(numberViolated, numberViolated+numberCuts);
       for ( i = 0;i<numberCuts;i++) {
 	const OsiRowCut * thisCut = globalCuts_.rowCutPtr(i) ;
-	if (thisCut->violated(solution)>primalTolerance) {
+	if (thisCut->violated(cbcColSolution_)>primalTolerance) {
 	  //printf("Global cut added - violation %g\n",
-	  // thisCut->violated(solution)) ;
+	  // thisCut->violated(cbcColSolution_)) ;
 	  whichGenerator_[numberViolated++]=-1;
 	  theseCuts.insert(*thisCut) ;
 	}
@@ -3661,25 +3654,13 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
   to take full advantage.
 
   The need to resolve here should only happen after a heuristic solution.
-  However, when it's triggered, the solution may change, which implies a reload
-  of lower, upper, and solution. (Note default OSI implementation of
-  optimalBasisIsAvailable always returns false.)
+  (Note default OSI implementation of optimalBasisIsAvailable always returns
+  false.)
 */
-    // This should only happen after heuristic solution
     if (solverCharacteristics_->warmStart()&&
         !solver_->optimalBasisIsAvailable()) {
       //printf("XXXXYY no opt basis\n");
       resolve(node ? node->nodeInfo() : NULL,3);
-/* dylp bug
-
-  Need to reload cached solution pointers after resolve. Solver not required
-  to use same vector for revised solution. cbcColLower_, etc., set by
-  CbcModel::setPointers() in CbcModel::resolve(). Any reason not to convert
-  this routine to use cbcColLower_, etc.?
-*/
-      lower = cbcColLower_ ;
-      upper = cbcColUpper_ ;
-      solution = cbcColSolution_ ;
     }
     if (nextRowCut_) {
       // branch was a cut - add it
@@ -3687,7 +3668,6 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
       if (handler_->logLevel()>1)
         nextRowCut_->print();
       const OsiRowCut * cut=nextRowCut_;
-      // const double * solution = solver_->getColSolution();
       double lb = cut->lb();
       double ub = cut->ub();
       int n=cut->row().getNumElements();
@@ -3697,9 +3677,9 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
       for (int i=0;i<n;i++) {
 	int iColumn = column[i];
 	double value = element[i];
-	//if (solution[iColumn]>1.0e-7)
-	//printf("value of %d is %g\n",iColumn,solution[iColumn]);
-	sum += value * solution[iColumn];
+	//if (cbcColSolution_[iColumn]>1.0e-7)
+	//printf("value of %d is %g\n",iColumn,cbcColSolution_[iColumn]);
+	sum += value * cbcColSolution_[iColumn];
       }
       delete nextRowCut_;
       nextRowCut_=NULL;
@@ -3747,14 +3727,6 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
 #endif
 	  if (mustResolve) {
             int returncode = resolve(node ? node->nodeInfo() : NULL,2);
-/* dylp bug
-
-  Need to reload cached solution pointers after resolve. Solver not required
-  to use same vector for revised solution.
-*/
-	    lower = cbcColLower_ ;
-	    upper = cbcColUpper_ ;
-	    solution = cbcColSolution_ ;
             feasible = returnCode  != 0 ;
             if (returncode<0)
               numberTries=0;
@@ -3801,10 +3773,6 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
           }
         }
       }
-      assert(lower == solver_->getColLower()) ;
-      assert(upper == solver_->getColUpper()) ;
-      assert(solution == solver_->getColSolution()) ;
-
 /*
   The cut generator/heuristic has done its thing, and maybe it generated some
   cuts and/or a new solution.  Do a bit of bookkeeping: load
@@ -3880,10 +3848,10 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
       resizeWhichGenerator(numberOld, numberOld+numberCuts);
       for ( i = 0;i<numberCuts;i++) {
         const OsiRowCut * thisCut = slackCuts.rowCutPtr(i) ;
-        if (thisCut->violated(solution)>100.0*primalTolerance) {
+        if (thisCut->violated(cbcColSolution_)>100.0*primalTolerance) {
           if (messageHandler()->logLevel()>2)
             printf("Old cut added - violation %g\n",
-                   thisCut->violated(solution)) ;
+                   thisCut->violated(cbcColSolution_)) ;
           whichGenerator_[numberOld++]=-1;
           theseCuts.insert(*thisCut) ;
         }
@@ -3935,8 +3903,8 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
 #ifdef CBC_DEBUG
       double * oldLower = new double [numberColumns] ;
       double * oldUpper = new double [numberColumns] ;
-      memcpy(oldLower,lower,numberColumns*sizeof(double)) ;
-      memcpy(oldUpper,upper,numberColumns*sizeof(double)) ;
+      memcpy(oldLower,cbcColLower_,numberColumns*sizeof(double)) ;
+      memcpy(oldUpper,cbcColUpper_,numberColumns*sizeof(double)) ;
 #endif
 
       double integerTolerance = getDblParam(CbcIntegerTolerance) ;
@@ -3953,15 +3921,15 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
 	values = lbs.getElements() ;
 	for (j = 0;j<n;j++) {
 	  int iColumn = which[j] ;
-	  double value = solution[iColumn] ;
+	  double value = cbcColSolution_[iColumn] ;
 #if CBC_DEBUG>1
 	  printf("%d %g %g %g %g\n",iColumn,oldLower[iColumn],
-		 solution[iColumn],oldUpper[iColumn],values[j]) ;
+		 cbcColSolution_[iColumn],oldUpper[iColumn],values[j]) ;
 #endif
 	  solver_->setColLower(iColumn,values[j]) ;
 	  if (value<values[j]-integerTolerance)
 	    violated = -1 ;
-	  if (values[j]>upper[iColumn]+integerTolerance) {
+	  if (values[j]>cbcColUpper_[iColumn]+integerTolerance) {
 	    // infeasible
 	    violated = -2 ;
 	    break ;
@@ -3972,15 +3940,15 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
 	values = ubs.getElements() ;
 	for (j = 0;j<n;j++) {
 	  int iColumn = which[j] ;
-	  double value = solution[iColumn] ;
+	  double value = cbcColSolution_[iColumn] ;
 #if CBC_DEBUG>1
 	  printf("%d %g %g %g %g\n",iColumn,oldLower[iColumn],
-		 solution[iColumn],oldUpper[iColumn],values[j]) ;
+		 cbcColSolution_[iColumn],oldUpper[iColumn],values[j]) ;
 #endif
 	  solver_->setColUpper(iColumn,values[j]) ;
 	  if (value>values[j]+integerTolerance)
 	    violated = -1 ;
-	  if (values[j]<lower[iColumn]-integerTolerance) {
+	  if (values[j]<cbcColLower_[iColumn]-integerTolerance) {
 	    // infeasible
 	    violated = -2 ;
 	    break ;
@@ -3990,9 +3958,6 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
 #ifdef CBC_DEBUG
       delete [] oldLower ;
       delete [] oldUpper ;
-      assert(lower == solver_->getColLower()) ;
-      assert(upper == solver_->getColUpper()) ;
-      assert(solution == solver_->getColSolution()) ;
 #endif
     }
 /*
@@ -4123,20 +4088,20 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
 #	endif
           }
       }
-      if (feasible)
-        { numberRowsAtStart = numberOldActiveCuts_+numberRowsAtContinuous_ ;
+      if (feasible) {
+	numberRowsAtStart = numberOldActiveCuts_+numberRowsAtContinuous_ ;
         lastNumberCuts = numberNewCuts_ ;
         if (direction*solver_->getObjValue() < lastObjective+minimumDrop &&
             currentPassNumber_ >= 3)
           { numberTries = 0 ; }
         if (numberRowCuts+numberColumnCuts == 0 || cutIterations == 0)
           { break ; }
-        if (numberTries > 0)
-          { reducedCostFix() ;
+        if (numberTries > 0) {
+	  reducedCostFix() ;
 	  lastObjective = direction*solver_->getObjValue() ;
-	  lower = solver_->getColLower() ;
-	  upper = solver_->getColUpper() ;
-	  solution = solver_->getColSolution() ; } } }
+	}
+      }
+    }
 /*
   We've lost feasibility --- this node won't be referencing the cuts we've
   been collecting, so decrement the reference counts.

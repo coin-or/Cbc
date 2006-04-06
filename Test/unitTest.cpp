@@ -42,8 +42,8 @@
 void testingMessage( const char * const msg );
 
 #ifdef CBC_USE_CBC
-void CbcUnitTest (const std::vector<OsiCbcSolverInterface*> & vecEmptySiP,
-                  const std::string & mpsDir)
+void CbcMiplibTest (const std::vector<OsiCbcSolverInterface*> & vecEmptySiP,
+                    const std::string & mpsDir)
 {
   int i ;
   unsigned int m ;
@@ -299,7 +299,8 @@ void CbcUnitTest (const std::vector<OsiCbcSolverInterface*> & vecEmptySiP,
       <<std::endl;
   } 
 }
-#endif
+#endif	// CBC_USE_CBC
+
 //----------------------------------------------------------------
 // unitTest  [-miplibDir=V2]
 // 
@@ -389,13 +390,19 @@ int mainTest (int argc, const char *argv[])
 #endif
 
     testingMessage( "Testing some miplib stuff\n" );
-    CbcUnitTest(vecSi,miplibDir);
+    CbcMiplibTest(vecSi,miplibDir);
 
     unsigned int i;
     for (i=0; i<vecSi.size(); i++)
       delete vecSi[i];
   }
-#endif
+#else	// CBC_USE_CBC
+  std::cerr
+    << "cbc has been built without OsiCbc support. To enable the -miplib\n"
+    << "option, you must enable libOsiCbc in Makefile.location, then\n"
+    << "execute the command `make clean cbc' to rebuild the cbc program."
+    << std::endl ;
+#endif	// CBC_USE_CBC
   testingMessage( "All tests completed successfully\n" );
   return 0;
 }

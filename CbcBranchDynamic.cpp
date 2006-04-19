@@ -310,6 +310,7 @@ CbcSimpleIntegerDynamicPseudoCost::infeasibility(int & preferredWay) const
     preferredWay=1;
     return 0.0;
   }
+  assert (breakEven_>0.0&&breakEven_<1.0);
   double value = solution[columnNumber_];
   value = CoinMax(value, lower[columnNumber_]);
   value = CoinMin(value, upper[columnNumber_]);

@@ -984,6 +984,7 @@ int CbcNode::chooseBranch (CbcModel *model, CbcNode *lastNode,int numberPassesLe
       for (i = 0 ; i < maximumStrong ; i++)
         choice[i].possibleBranch = NULL ;
       numberStrong=0;
+      bool canDoOneHot=false;
       for (i=0;i<numberObjects;i++) {
         CbcObject * object = model->modifiableObject(i);
         int preferredWay;
@@ -994,6 +995,7 @@ int CbcNode::chooseBranch (CbcModel *model, CbcNode *lastNode,int numberPassesLe
           const CbcSimpleInteger * thisOne = dynamic_cast <const CbcSimpleInteger *> (object);
           if (thisOne) {
             int iColumn = thisOne->modelSequence();
+            bool canDoThisHot=true;
             double targetValue = hotstartSolution[iColumn];
             if (saveUpper[iColumn]>saveLower[iColumn]) {
               double value = saveSolution[iColumn];
@@ -1029,19 +1031,19 @@ int CbcNode::chooseBranch (CbcModel *model, CbcNode *lastNode,int numberPassesLe
                   } else {
                     // can't
                     priorityLevel += 10000000;
+                    canDoThisHot=false;
                   }
                 } else {
                   priorityLevel += 10000000;
+                  canDoThisHot=false;
                 }
               } else {
                 // switch off if not possible
-                hotstartSolution=NULL;
-                model->setHotstartSolution(NULL,NULL);
+                canDoThisHot=false;
               }
+              if (canDoThisHot)
+                canDoOneHot=true;
             } else if (targetValue<saveLower[iColumn]||targetValue>saveUpper[iColumn]) {
-              // switch off as not possible
-              hotstartSolution=NULL;
-              model->setHotstartSolution(NULL,NULL);
             }
           } else {
             priorityLevel += 10000000;
@@ -1086,6 +1088,11 @@ int CbcNode::chooseBranch (CbcModel *model, CbcNode *lastNode,int numberPassesLe
             }
           }
         }
+      }
+      if (!canDoOneHot&&hotstartSolution) {
+        // switch off as not possible
+        hotstartSolution=NULL;
+        model->setHotstartSolution(NULL,NULL);
       }
       if (numberUnsatisfied_) {
         // some infeasibilities - go to next steps
@@ -2727,6 +2734,12 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
             if (model->feasibleSolution(
                                         numberIntegerInfeasibilities,
                                         numberObjectInfeasibilities)) {
+#ifdef BONMIN
+              //In this case node has become integer feasible, let us exit the loop
+              std::cout<<"Node has become integer feasible"<<std::endl;
+              numberUnsatisfied_ = 0;
+              break;
+#endif
               double objValue = solver->getObjValue();
               model->setBestSolution(CBC_STRONGSOL,
                                      objValue,
@@ -2776,6 +2789,11 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
               if (model->feasibleSolution(choice.numIntInfeasUp,
                                           choice.numObjInfeasUp)
                   &&model->problemFeasibility()->feasible(model,-1)>=0) {
+#ifdef BONMIN
+                std::cout<<"Node has become integer feasible"<<std::endl;
+                numberUnsatisfied_ = 0;
+                break;
+#endif
                 if (auxiliaryInfo->solutionAddsCuts()) {
                   needHotStartUpdate=true;
                   solver->unmarkHotStart();

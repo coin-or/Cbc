@@ -1036,6 +1036,9 @@ void CbcModel::branchAndBound(int doStatistics)
   than the current objective cutoff.
 */
   while (!tree_->empty()) {
+#ifdef BONMIN
+    assert(!solverCharacteristics_->solutionAddsCuts() || solverCharacteristics_->mipFeasible());
+#endif
     if (cutoff > getCutoff()) {
       double newCutoff = getCutoff();
       if (analyzeResults_) {
@@ -1359,6 +1362,39 @@ void CbcModel::branchAndBound(int doStatistics)
               if (anyAction==-3) 
                 anyAction = newNode->chooseBranch(this,node,numberPassesLeft) ; // dynamic did nothing
             }
+            if (solverCharacteristics_ && 
+                solverCharacteristics_->solutionAddsCuts() && // we are in some OA based bab
+                feasible && (newNode->numberUnsatisfied()==0) //solution has become integer feasible during strong branching
+                )
+              { 
+                //in the present case we need to check here integer infeasibility if the node is not fathomed we will have to do the loop
+                // again
+                std::cout<<solver_<<std::endl;
+                solver_->resolve();
+                double objval = solver_->getObjValue();
+                setBestSolution(CBC_SOLUTION, objval,
+                                solver_->getColSolution()) ;
+                lastHeuristic_ = NULL;
+                int easy=2;
+                if (!solverCharacteristics_->mipFeasible())//did we prove that the node could be pruned?
+                  feasible = false;
+                // Reset the bound now
+                solverCharacteristics_->setMipBound(-COIN_DBL_MAX);
+                
+                
+                //numberPassesLeft++;
+                solver_->setHintParam(OsiDoInBranchAndCut,true,OsiHintDo,&easy) ;
+                feasible &= resolve(node ? node->nodeInfo() : NULL,11) != 0 ;
+                solver_->setHintParam(OsiDoInBranchAndCut,true,OsiHintDo,NULL) ;
+                resolved = true ;
+                if (problemFeasibility_->feasible(this,0)<0) {
+                  feasible=false; // pretend infeasible
+                }
+                if(feasible)
+                  anyAction = -1;
+                else
+                  anyAction = -2;
+              }
 /*
   Yep, false positives for sure. And no easy way to distinguish honest
   infeasibility from `found a solution and tightened objective target.'
@@ -1416,8 +1452,11 @@ void CbcModel::branchAndBound(int doStatistics)
               newNode->initializeInfo() ;
 	      newNode->nodeInfo()->addCuts(cuts,newNode->numberBranches(),
 					   whichGenerator_) ; } } }
-	else
-	{ anyAction = -2 ; }
+	else {
+          anyAction = -2 ; 
+          // Reset bound anyway (no harm if not odd)
+          solverCharacteristics_->setMipBound(-COIN_DBL_MAX);
+        }
 	// May have slipped through i.e. anyAction == 0 and objective above cutoff
 	// I think this will screw up cut reference counts if executed.
 	// We executed addCuts just above. (lh)
@@ -1536,7 +1575,16 @@ void CbcModel::branchAndBound(int doStatistics)
 #	    endif
 	  }
 	  else
-	  { for (i = 0 ; i < currentNumberCuts_ ; i++)
+	  { 
+            if(solverCharacteristics_ && //we may be in a non standard bab
+               solverCharacteristics_->solutionAddsCuts()// we are in some kind of OA based bab.
+               )
+              {
+                std::cerr<<"You should never get here"<<std::endl;
+                throw CoinError("Nodes should not be fathomed on integer infeasibility in this setting",
+                                "branchAndBound","CbcModel") ;
+              }
+            for (i = 0 ; i < currentNumberCuts_ ; i++)
 	    { if (addedCuts_[i])
 	      { if (!addedCuts_[i]->decrement(1))
 		  delete addedCuts_[i] ; } }
@@ -5752,6 +5800,10 @@ CbcModel::checkSolution (double cutoff, const double *solution,
         delete [] saveLower;
         delete [] saveUpper;
       }
+    //If the variables were fixed the cutting plane procedure may have believed that the node could be fathomed
+    //re-establish truth.- should do no harm for non nlp
+    if(!solutionComesFromNlp && fixVariables)
+      solverCharacteristics_->setMipBound(-COIN_DBL_MAX);
     return objectiveValue;
   }
 }

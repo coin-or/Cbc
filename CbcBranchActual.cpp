@@ -757,6 +757,7 @@ CbcSimpleInteger::infeasibility(int & preferredWay) const
   /*printf("%d %g %g %g %g\n",columnNumber_,value,lower[columnNumber_],
     solution[columnNumber_],upper[columnNumber_]);*/
   double nearest = floor(value+(1.0-breakEven_));
+  assert (breakEven_>0.0&&breakEven_<1.0);
   double integerTolerance = 
     model_->getDblParam(CbcModel::CbcIntegerTolerance);
   if (nearest>value) 

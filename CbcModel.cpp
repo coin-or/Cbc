@@ -4189,11 +4189,10 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
     if(integerFeasible)//update
     {
       double objValue = solver_->getObjValue();
-      //int numberGlobalBefore = globalCuts_.sizeRowCuts();
+      int numberGlobalBefore = globalCuts_.sizeRowCuts();
       // SOLUTION2 so won't up cutoff or print message
       setBestSolution(CBC_SOLUTION2, objValue, 
                       solver_->getColSolution(),0);
-#if 0
       int numberGlobalAfter = globalCuts_.sizeRowCuts();
       int numberToAdd = numberGlobalAfter - numberGlobalBefore;
       if(numberToAdd > 0)
@@ -4233,7 +4232,6 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
 	    }
 	}
       }
-#endif
     }
   }
   // Reduced cost fix at end
@@ -5937,7 +5935,7 @@ CbcModel::setBestSolution (CBC_Message how,
     
     CoinWarmStart * saveWs;
     // if(how!=CBC_SOLUTION) return;
-    if(how==CBC_ROUNDING||true)//We don't want to make any change to solver_
+    if(how==CBC_ROUNDING)//We don't want to make any change to solver_
       //take a snapshot of current state
       {     
         //save solution
@@ -5956,7 +5954,7 @@ CbcModel::setBestSolution (CBC_Message how,
     objectiveValue = checkSolution(cutoff,candidate,fixVariables);
     
     //If it was an heuristic solution we have to clean up the solver
-    if (how==CBC_ROUNDING||true)
+    if (how==CBC_ROUNDING)
       {
         //delete the cuts
         int currentNumberRowCuts = solver_->getNumRows() - numberRowBefore;

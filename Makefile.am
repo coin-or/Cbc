@@ -23,7 +23,7 @@ SUBDIRS = $(subdirs)
 ########################################################################
 
 test:
-	cd Osi; make test
+	cd Cbc; make test
 
 unitTest: test
 

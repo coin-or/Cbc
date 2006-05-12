@@ -283,13 +283,14 @@ PACKAGE_BUGREPORT='coin-cbc@lists.coin-or.org'
 ac_unique_file="configure.ac"
 ac_default_prefix=`pwd`
 ac_subdirs_all="$ac_subdirs_all CoinBase"
-ac_subdirs_all="$ac_subdirs_all Cbc"
-ac_subdirs_all="$ac_subdirs_all Cgl"
-ac_subdirs_all="$ac_subdirs_all Clp"
 ac_subdirs_all="$ac_subdirs_all Data/Netlib"
 ac_subdirs_all="$ac_subdirs_all Data/Sample"
-ac_subdirs_all="$ac_subdirs_all Osi"
+ac_subdirs_all="$ac_subdirs_all Data/miplib3"
+ac_subdirs_all="$ac_subdirs_all Clp"
 ac_subdirs_all="$ac_subdirs_all Vol"
+ac_subdirs_all="$ac_subdirs_all Osi"
+ac_subdirs_all="$ac_subdirs_all Cgl"
+ac_subdirs_all="$ac_subdirs_all Cbc"
 ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS EGREP INSTALL_PROGRAM INSTALL_SCRIPT INSTALL_DATA CYGPATH_W PACKAGE VERSION ACLOCAL AUTOCONF AUTOMAKE AUTOHEADER MAKEINFO install_sh STRIP ac_ct_STRIP INSTALL_STRIP_PROGRAM mkdir_p AWK SET_MAKE am__leading_dot AMTAR am__tar am__untar MAINTAINER_MODE_TRUE MAINTAINER_MODE_FALSE MAINT LIBTOOLM4 have_autoconf have_automake BUILDTOOLSDIR AUX_DIR HAVE_EXTERNALS_TRUE HAVE_EXTERNALS_FALSE MAINTAINER_SMALL_TRUE MAINTAINER_SMALL_FALSE subdirs LIBOBJS LTLIBOBJS'
 ac_subst_files=''
 
@@ -2094,84 +2095,6 @@ echo "${ECHO_T}no" >&6
 
 
 coin_subdirs=
-echo "$as_me:$LINENO: checking whether directory Cbc is available" >&5
-echo $ECHO_N "checking whether directory Cbc is available... $ECHO_C" >&6
-                if test -r $srcdir/Cbc/configure; then
-                  coin_subdirs="$coin_subdirs Cbc"
-                  echo "$as_me:$LINENO: result: yes" >&5
-echo "${ECHO_T}yes" >&6
-
-
-subdirs="$subdirs Cbc"
-
-                else
-                  echo "$as_me:$LINENO: result: no" >&5
-echo "${ECHO_T}no" >&6
-                fi
-
-
-
-
-
-
-
-
-
-
-
-coin_subdirs=
-echo "$as_me:$LINENO: checking whether directory Cgl is available" >&5
-echo $ECHO_N "checking whether directory Cgl is available... $ECHO_C" >&6
-                if test -r $srcdir/Cgl/configure; then
-                  coin_subdirs="$coin_subdirs Cgl"
-                  echo "$as_me:$LINENO: result: yes" >&5
-echo "${ECHO_T}yes" >&6
-
-
-subdirs="$subdirs Cgl"
-
-                else
-                  echo "$as_me:$LINENO: result: no" >&5
-echo "${ECHO_T}no" >&6
-                fi
-
-
-
-
-
-
-
-
-
-
-
-coin_subdirs=
-echo "$as_me:$LINENO: checking whether directory Clp is available" >&5
-echo $ECHO_N "checking whether directory Clp is available... $ECHO_C" >&6
-                if test -r $srcdir/Clp/configure; then
-                  coin_subdirs="$coin_subdirs Clp"
-                  echo "$as_me:$LINENO: result: yes" >&5
-echo "${ECHO_T}yes" >&6
-
-
-subdirs="$subdirs Clp"
-
-                else
-                  echo "$as_me:$LINENO: result: no" >&5
-echo "${ECHO_T}no" >&6
-                fi
-
-
-
-
-
-
-
-
-
-
-
-coin_subdirs=
 echo "$as_me:$LINENO: checking whether directory Data/Netlib is available" >&5
 echo $ECHO_N "checking whether directory Data/Netlib is available... $ECHO_C" >&6
                 if test -r $srcdir/Data/Netlib/configure; then
@@ -2224,15 +2147,41 @@ echo "${ECHO_T}no" >&6
 
 
 coin_subdirs=
-echo "$as_me:$LINENO: checking whether directory Osi is available" >&5
-echo $ECHO_N "checking whether directory Osi is available... $ECHO_C" >&6
-                if test -r $srcdir/Osi/configure; then
-                  coin_subdirs="$coin_subdirs Osi"
+echo "$as_me:$LINENO: checking whether directory Data/miplib3 is available" >&5
+echo $ECHO_N "checking whether directory Data/miplib3 is available... $ECHO_C" >&6
+                if test -r $srcdir/Data/miplib3/configure; then
+                  coin_subdirs="$coin_subdirs Data/miplib3"
                   echo "$as_me:$LINENO: result: yes" >&5
 echo "${ECHO_T}yes" >&6
 
 
-subdirs="$subdirs Osi"
+subdirs="$subdirs Data/miplib3"
+
+                else
+                  echo "$as_me:$LINENO: result: no" >&5
+echo "${ECHO_T}no" >&6
+                fi
+
+
+
+
+
+
+
+
+
+
+
+coin_subdirs=
+echo "$as_me:$LINENO: checking whether directory Clp is available" >&5
+echo $ECHO_N "checking whether directory Clp is available... $ECHO_C" >&6
+                if test -r $srcdir/Clp/configure; then
+                  coin_subdirs="$coin_subdirs Clp"
+                  echo "$as_me:$LINENO: result: yes" >&5
+echo "${ECHO_T}yes" >&6
+
+
+subdirs="$subdirs Clp"
 
                 else
                   echo "$as_me:$LINENO: result: no" >&5
@@ -2259,6 +2208,84 @@ echo "${ECHO_T}yes" >&6
 
 
 subdirs="$subdirs Vol"
+
+                else
+                  echo "$as_me:$LINENO: result: no" >&5
+echo "${ECHO_T}no" >&6
+                fi
+
+
+
+
+
+
+
+
+
+
+
+coin_subdirs=
+echo "$as_me:$LINENO: checking whether directory Osi is available" >&5
+echo $ECHO_N "checking whether directory Osi is available... $ECHO_C" >&6
+                if test -r $srcdir/Osi/configure; then
+                  coin_subdirs="$coin_subdirs Osi"
+                  echo "$as_me:$LINENO: result: yes" >&5
+echo "${ECHO_T}yes" >&6
+
+
+subdirs="$subdirs Osi"
+
+                else
+                  echo "$as_me:$LINENO: result: no" >&5
+echo "${ECHO_T}no" >&6
+                fi
+
+
+
+
+
+
+
+
+
+
+
+coin_subdirs=
+echo "$as_me:$LINENO: checking whether directory Cgl is available" >&5
+echo $ECHO_N "checking whether directory Cgl is available... $ECHO_C" >&6
+                if test -r $srcdir/Cgl/configure; then
+                  coin_subdirs="$coin_subdirs Cgl"
+                  echo "$as_me:$LINENO: result: yes" >&5
+echo "${ECHO_T}yes" >&6
+
+
+subdirs="$subdirs Cgl"
+
+                else
+                  echo "$as_me:$LINENO: result: no" >&5
+echo "${ECHO_T}no" >&6
+                fi
+
+
+
+
+
+
+
+
+
+
+
+coin_subdirs=
+echo "$as_me:$LINENO: checking whether directory Cbc is available" >&5
+echo $ECHO_N "checking whether directory Cbc is available... $ECHO_C" >&6
+                if test -r $srcdir/Cbc/configure; then
+                  coin_subdirs="$coin_subdirs Cbc"
+                  echo "$as_me:$LINENO: result: yes" >&5
+echo "${ECHO_T}yes" >&6
+
+
+subdirs="$subdirs Cbc"
 
                 else
                   echo "$as_me:$LINENO: result: no" >&5

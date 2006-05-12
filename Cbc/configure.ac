@@ -1,0 +1,143 @@
+# Copyright (C) 2006 International Business Machines.
+# All Rights Reserved.
+# This file is distributed under the Common Public License.
+
+## $Id: configure.ac,v 1.1.2.1 2006/04/19 23:25:12 andreasw Exp $
+
+# Author:  Andreas Waechter            IBM    2006-04-13
+
+#############################################################################
+#                       Names and other basic things                        #
+#############################################################################
+
+AC_PREREQ(2.59)
+
+AC_INIT([Cbc],[0.1],[coin-cbc@list.coin-or.org])
+
+AC_COPYRIGHT([
+Copyright 2006 International Business Machines and others.
+All Rights Reserved.
+This file is part of the open source package Coin which is distributed
+under the Common Public License.])
+
+AC_REVISION(0.9)
+
+# List one file in the package so that the configure script can test
+# whether the package is actually there
+AC_CONFIG_SRCDIR(src/CbcTree.hpp)
+
+#############################################################################
+#                         Standard build tool stuff                         #
+#############################################################################
+
+# Get the system type
+AC_CANONICAL_BUILD
+
+# Where should everything be installed by default?  Here, we want it
+# to be installed directly in 'bin', 'lib', 'include' subdirectories
+# of the directory where configure is run.  The default would be
+# /usr/local.
+AC_PREFIX_DEFAULT([`pwd`])
+
+# If this project depends on external projects, the Externals file in
+# the source root directory contains definition of where to find those
+# externals.  The following macro ensures that those externals are
+# retrieved by svn if they are not there yet.
+AC_COIN_SRCDIR_INIT
+
+# Check if user wants to produce debugging code
+AC_COIN_DEBUG_COMPILE
+
+# Get the name of the C++ compiler and appropriate compiler options
+AC_COIN_PROG_CXX
+
+# Initialize automake and libtool
+AC_COIN_INIT_AUTO_TOOLS
+
+#############################################################################
+#                              COIN components                              #
+#############################################################################
+
+AC_COIN_HAS_PROJECT(Cbc)
+AC_COIN_HAS_PROJECT(Cgl)
+AC_COIN_HAS_PROJECT(Clp)
+AC_COIN_HAS_PROJECT(CoinBase)
+AC_COIN_HAS_PROJECT(Dylp)
+AC_COIN_HAS_PROJECT(Osi)
+AC_COIN_HAS_PROJECT(Sym)
+AC_COIN_HAS_PROJECT(Vol)
+
+# ToDo: find out when CBC_HAS_CLP should be defined!  For now, I
+# replaced all CBC_USE by COIN_HAS #ifdef's
+
+# Decide which one is the default solver
+AC_MSG_CHECKING(for CBC default solver)
+AC_ARG_WITH([cbc-default-solver],
+            AC_HELP_STRING([--with-cbc-default-solver],
+                           [specify default solver for Cbc in lower case letters (if not given, clp is assumed)]),
+            [cbc_default_solver=$with_val],
+            [cbc_default_solver=clp])
+AC_MSG_RESULT($cbc_default_solver)
+
+case $cbc_default_solver in
+  clp)
+    AC_DEFINE([CBC_DEFAULT_SOLVER],"clp",
+              [Define to the name of the default solver to be used in CBC in small letters])
+    ;;
+  dylp)
+    AC_DEFINE([CBC_DEFAULT_SOLVER],"dylp")
+    ;;
+  *)
+    AC_MSG_ERROR([Unknown solver $cbc_default_solver chosen as CBC's default solver])
+    ;;
+esac
+
+# Steal some files from Clp - they are going to be deleted by a
+# distclean in src (see the Makefile.am there)
+if test x"$coin_has_clp" != xunavailable; then
+  AC_MSG_NOTICE([Stealing CbcOrClpParam's files from Clp])
+  rm -f src/CbcOrClpParam.cpp src/CbcOrClpParam.hpp
+  $LN_S $CLPSRCDIR/src/CbcOrClpParam.cpp src/CbcOrClpParam.cpp
+  $LN_S $CLPSRCDIR/src/CbcOrClpParam.hpp src/CbcOrClpParam.hpp
+fi
+
+#############################################################################
+#                            Third party solvers                            #
+#############################################################################
+
+# Some solvers require additional library, which we check for first.
+# ADDLIBS is our variable that accumulates the libraries necessary for
+# linking.
+AC_CHECK_LIB([pthread],[pthread_create],
+             [ADDLIBS="-lpthread $ADDLIBS"])
+AC_CHECK_LIB([dl],[dlopen],
+             [ADDLIBS="-ldl $ADDLIBS"])
+
+# Check which third party solvers are available ToDo!
+AC_COIN_HAS_USER_LIBRARY([Cplex],[CPX],[cplex],[cplex.h],[CPXgetstat])
+AC_COIN_HAS_USER_LIBRARY([Glpk],[GLPK],[glpk],[glpk.h],[glp_lpx_simplex])
+AC_COIN_HAS_USER_LIBRARY([FortMP],[FMP],[fmp])  #ToDo! is Fortran?
+AC_COIN_HAS_USER_LIBRARY([Mosek],[MSK],[mosekdl],[mosekdl.h],[MSK_openmosek])
+AC_COIN_HAS_USER_LIBRARY([Osl],[OSL],[osl],[ekk_c_api.h],[ekk_simplex])
+AC_COIN_HAS_USER_LIBRARY([Soplex],[SPX],[spx],[spxsolver.h]) # ToDo
+AC_COIN_HAS_USER_LIBRARY([Xpress],[XPR],[xpr],[xprs.h],[XPRSsetintcontrol])
+
+##############################################################################
+#                   Finishing up by writing all the output                   #
+##############################################################################
+
+# Here list all the files that configure should create (except for the
+# configuration header file)
+AC_CONFIG_FILES([Makefile
+                 src/Makefile
+                 test/Makefile
+		 cbc_addlibs.txt])
+
+# Here put the location and name of the configuration header file
+AC_CONFIG_HEADER([inc/config_cbc.h])
+
+# Finally, we let configure write all the output...
+AC_OUTPUT
+
+# ...and tell the user, that the configuration finished
+AC_MSG_NOTICE([Cbc configuration successful])

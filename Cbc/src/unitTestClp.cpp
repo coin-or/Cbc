@@ -190,9 +190,9 @@ ClpSolve setupForSolve(int algorithm, std::string & nameAlgorithm,
 // 
 // where:
 //   -mpsDir: directory containing mps test files
-//       Default value V1="../Mps/Sample"    
+//       Default value V1="../../Data/Sample"    
 //   -netlibDir: directory containing netlib files
-//       Default value V2="../Mps/Netlib"
+//       Default value V2="../../Data/Netlib"
 //   -test
 //       If specified, then netlib test set run
 //
@@ -246,9 +246,9 @@ int mainTest (int argc, const char *argv[],int algorithm,
       std::cerr <<"  unitTest [-mpsDir=V1] [-netlibDir=V2] [-test[=V3]]\n";
       std::cerr <<"  where:\n";
       std::cerr <<"    -mpsDir: directory containing mps test files\n";
-      std::cerr <<"        Default value V1=\"../Mps/Sample\"\n";
+      std::cerr <<"        Default value V1=\"../../Data/Sample\"\n";
       std::cerr <<"    -netlibDir: directory containing netlib files\n";
-      std::cerr <<"        Default value V2=\"../Mps/Netlib\"\n";
+      std::cerr <<"        Default value V2=\"../../Data/Netlib\"\n";
       std::cerr <<"    -test\n";
       std::cerr <<"        If specified, then netlib testset run.\n";
       std::cerr <<"        If V3 then taken as single file\n";
@@ -263,14 +263,14 @@ int mainTest (int argc, const char *argv[],int algorithm,
   if (parms.find("-mpsDir") != parms.end())
     mpsDir=parms["-mpsDir"] + dirsep;
   else 
-    mpsDir = dirsep == '/' ? "../Mps/Sample/" : "..\\Mps\\Sample\\";
+    mpsDir = dirsep == '/' ? "../../Data/Sample/" : "..\\..\\Data\\Sample\\";
  
   // Set directory containing netlib data files.
   std::string netlibDir;
   if (parms.find("-netlibDir") != parms.end())
     netlibDir=parms["-netlibDir"] + dirsep;
   else 
-    netlibDir = dirsep == '/' ? "../Mps/Netlib/" : "..\\Mps\\Netlib\\";
+    netlibDir = dirsep == '/' ? "../../Data/Netlib/" : "..\\..\\Data\\Netlib\\";
   if (!empty.numberRows()) {
     testingMessage( "Testing ClpSimplex\n" );
     ClpSimplexUnitTest(mpsDir,netlibDir);
@@ -940,7 +940,7 @@ ClpSimplexUnitTest(const std::string & mpsDir,
     int returnCode = m.readMps(fn.c_str(),"mps");
     if (returnCode) {
       // probable cause is that gz not there
-      fprintf(stderr,"Unable to open finnis.mps in COIN/Mps/Netlib!\n");
+      fprintf(stderr,"Unable to open finnis.mps in Data/Netlib!\n");
       fprintf(stderr,"Most probable cause is finnis.mps is gzipped i.e. finnis.mps.gz and libz has not been activated\n");
       fprintf(stderr,"Either gunzip files or edit Makefiles/Makefile.location to get libz\n");
       exit(999);
@@ -1757,7 +1757,7 @@ void CbcClpUnitTest (const CbcModel & saveModel)
  
   // Set directory containing miplib data files.
   std::string miplibDir;
-  miplibDir = dirsep == '/' ? "./Samples/miplib3/" : ".\\Samples\\miplib3\\";
+  miplibDir = dirsep == '/' ? "../../Data/miplib3/" : "..\\..\\Data\\miplib3\\";
   std::string test1 = miplibDir +"p0033";
   fp=fopen(test1.c_str(),"r");
   if (fp) {

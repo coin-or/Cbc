@@ -1,5 +1,9 @@
 /* inc/config_cbc.h.in.  Generated from configure.ac by autoheader.  */
 
+/* Define to the name of the default solver to be used in CBC in small letters
+   */
+#undef CBC_DEFAULT_SOLVER
+
 /* If defined, debug sanity checks are performed during runtime */
 #undef COIN_DEBUG
 
@@ -15,17 +19,38 @@
 /* Define to 1 if the CoinBase package is used */
 #undef COIN_HAS_COINBASE
 
+/* Define to 1 if the Cplex package is used */
+#undef COIN_HAS_CPX
+
 /* Define to 1 if the Dylp package is used */
 #undef COIN_HAS_DYLP
 
+/* Define to 1 if the FortMP package is used */
+#undef COIN_HAS_FMP
+
+/* Define to 1 if the Glpk package is used */
+#undef COIN_HAS_GLPK
+
+/* Define to 1 if the Mosek package is used */
+#undef COIN_HAS_MSK
+
 /* Define to 1 if the Osi package is used */
 #undef COIN_HAS_OSI
+
+/* Define to 1 if the Osl package is used */
+#undef COIN_HAS_OSL
+
+/* Define to 1 if the Soplex package is used */
+#undef COIN_HAS_SPX
 
 /* Define to 1 if the Sym package is used */
 #undef COIN_HAS_SYM
 
 /* Define to 1 if the Vol package is used */
 #undef COIN_HAS_VOL
+
+/* Define to 1 if the Xpress package is used */
+#undef COIN_HAS_XPR
 
 /* Define to 1 if you have the <dlfcn.h> header file. */
 #undef HAVE_DLFCN_H

@@ -2,6 +2,8 @@
 // Corporation and others.  All Rights Reserved.
 // Test individual classes or groups of classes
 
+#include "CbcConfig.hpp"
+
 #if defined(_MSC_VER)
 // Turn off compiler warning about long names
 #  pragma warning(disable:4786)
@@ -15,22 +17,22 @@
 
 #include "CoinHelperFunctions.hpp"
 
-#ifdef CBC_USE_CBC
+#ifdef COIN_HAS_CBC
 #include "OsiCbcSolverInterface.hpp"
 #endif
-#ifdef CBC_USE_OSL
+#ifdef COIN_HAS_OSL
 #include "OsiOslSolverInterface.hpp"
 #endif
-#ifdef CBC_USE_SPX
+#ifdef COIN_HAS_SPX
 #include "OsiSpxSolverInterface.hpp"
 #endif
-#ifdef CBC_USE_DYLP
+#ifdef COIN_HAS_DYLP
 #include "OsiDylpSolverInterface.hpp"
 #endif
-#ifdef CBC_USE_GLPK
+#ifdef COIN_HAS_GLPK
 #include "OsiGlpkSolverInterface.hpp"
 #endif
-#ifdef CBC_USE_CLP
+#ifdef COIN_HAS_CLP
 #include "OsiClpSolverInterface.hpp"
 #endif
 #ifdef NDEBUG
@@ -41,7 +43,7 @@
 // Function Prototypes. Function definitions is in this file.
 void testingMessage( const char * const msg );
 
-#ifdef CBC_USE_CBC
+#ifdef COIN_HAS_CBC
 void CbcMiplibTest (const std::vector<OsiCbcSolverInterface*> & vecEmptySiP,
                     const std::string & mpsDir)
 {
@@ -299,7 +301,7 @@ void CbcMiplibTest (const std::vector<OsiCbcSolverInterface*> & vecEmptySiP,
       <<std::endl;
   } 
 }
-#endif	// CBC_USE_CBC
+#endif	// COIN_HAS_CBC
 
 //----------------------------------------------------------------
 // unitTest  [-miplibDir=V2]
@@ -360,31 +362,31 @@ int mainTest (int argc, const char *argv[])
     miplibDir=parms["-miplibDir"] + dirsep;
   else 
     miplibDir = dirsep == '/' ? "./Samples/miplib3/" : ".\\Samples\\miplib3\\";
-#ifdef CBC_USE_CBC
+#ifdef COIN_HAS_CBC
 
   {
     // Create vector of solver interfaces
     std::vector<OsiCbcSolverInterface*> vecSi;
     CbcStrategyDefault strategy(false);
-#   if CBC_USE_OSL
+#   if COIN_HAS_OSL
     OsiSolverInterface * oslSi = new OsiOslSolverInterface;
     vecSi.push_back(new OsiCbcSolverInterface(oslSi,&strategy));
 #endif
-#   if CBC_USE_SPX
+#   if COIN_HAS_SPX
     OsiSolverInterface * spxSi = new OsiSpxSolverInterface;
     vecSi.push_back(new OsiCbcSolverInterface(spxSi,&strategy));
 #endif
-#   if CBC_USE_CLP
+#   if COIN_HAS_CLP
     OsiSolverInterface *clpSi = new OsiClpSolverInterface ;
     /* Quiet, already! */
     clpSi->setHintParam(OsiDoReducePrint,true,OsiHintDo) ;
     vecSi.push_back(new OsiCbcSolverInterface(clpSi,&strategy));
 #endif
-#   if CBC_USE_DYLP
+#   if COIN_HAS_DYLP
     OsiSolverInterface * dylpSi = new OsiDylpSolverInterface;
     vecSi.push_back(new OsiCbcSolverInterface(dylpSi,&strategy));
 #endif
-#   if CBC_USE_GLPK
+#   if COIN_HAS_GLPK
     OsiSolverInterface * glpkSi = new OsiGlpkSolverInterface;
     vecSi.push_back(new OsiCbcSolverInterface(glpkSi,&strategy));
 #endif
@@ -396,13 +398,13 @@ int mainTest (int argc, const char *argv[])
     for (i=0; i<vecSi.size(); i++)
       delete vecSi[i];
   }
-#else	// CBC_USE_CBC
+#else	// COIN_HAS_CBC
   std::cerr
     << "cbc has been built without OsiCbc support. To enable the -miplib\n"
     << "option, you must enable libOsiCbc in Makefile.location, then\n"
     << "execute the command `make clean cbc' to rebuild the cbc program."
     << std::endl ;
-#endif	// CBC_USE_CBC
+#endif	// COIN_HAS_CBC
   testingMessage( "All tests completed successfully\n" );
   return 0;
 }

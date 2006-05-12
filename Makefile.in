@@ -580,7 +580,7 @@ uninstall-info: uninstall-info-recursive
 ########################################################################
 
 test:
-	cd Osi; make test
+	cd Cbc; make test
 
 unitTest: test
 
@@ -624,6 +624,9 @@ unitTests: tests
 @HAVE_EXTERNALS_TRUE@@MAINTAINER_MODE_TRUE@.Externals-stamp: $(srcdir)/Externals
 @HAVE_EXTERNALS_TRUE@@MAINTAINER_MODE_TRUE@	cd $(srcdir); svn propset svn:externals -F Externals .
 @HAVE_EXTERNALS_TRUE@@MAINTAINER_MODE_TRUE@	touch .Externals-stamp
+
+@HAVE_EXTERNALS_TRUE@@MAINTAINER_MODE_TRUE@update-externals: .Externals-stamp
+@HAVE_EXTERNALS_TRUE@@MAINTAINER_MODE_TRUE@	cd $(srcdir); svn update
 
 @HAVE_EXTERNALS_TRUE@@MAINTAINER_MODE_TRUE@distclean-local: clean-externals-stamp
 

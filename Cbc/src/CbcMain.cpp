@@ -1,5 +1,8 @@
 // copyright (C) 2002, International Business Machines
 // Corporation and others.  All Rights Reserved.
+
+#include "CbcConfig.hpp"
+
 #if defined(_MSC_VER)
 // Turn off compiler warning about long names
 #  pragma warning(disable:4786)
@@ -44,13 +47,13 @@
 #include "CbcCompareActual.hpp"
 #include  "CbcParam.hpp"
 
-#ifdef CBC_USE_CLP
+#ifdef COIN_HAS_CLP
 #include "OsiClpSolverInterface.hpp"
 #endif
-#ifdef CBC_USE_DYLP
+#ifdef COIN_HAS_DYLP
 #include "OsiDylpSolverInterface.hpp"
 #endif
-#ifdef CBC_USE_OSL
+#ifdef COIN_HAS_OSL
 #include "OsiOslSolverInterface.hpp"
 #endif
 
@@ -586,7 +589,7 @@ int main (int argc, const char *argv[])
 
     solverMap_t solvers ;
 
-#   ifdef CBC_USE_CLP
+#   ifdef COIN_HAS_CLP
 #     ifndef CBC_DEFAULT_SOLVER
 #       define CBC_DEFAULT_SOLVER "clp"
 #     endif
@@ -594,7 +597,7 @@ int main (int argc, const char *argv[])
 #   else
       solvers["clp"] = 0 ;
 #   endif
-#   ifdef CBC_USE_DYLP
+#   ifdef COIN_HAS_DYLP
 #     ifndef CBC_DEFAULT_SOLVER
 #       define CBC_DEFAULT_SOLVER "dylp"
 #     endif
@@ -602,7 +605,7 @@ int main (int argc, const char *argv[])
 #   else
       solvers["dylp"] = 0 ;
 #   endif
-#   ifdef CBC_USE_OSL
+#   ifdef COIN_HAS_OSL
 #     ifndef CBC_DEFAULT_SOLVER
 #       define CBC_DEFAULT_SOLVER "osl"
 #     endif
@@ -1019,7 +1022,7 @@ int main (int argc, const char *argv[])
 	      OsiSolverInterface * solver = model->solver();
 	      if (!doScaling)
 		solver->setHintParam(OsiDoScale,false,OsiHintTry);
-#ifdef CBC_USE_CLP
+#ifdef COIN_HAS_CLP
 	      OsiClpSolverInterface * si =
 		dynamic_cast<OsiClpSolverInterface *>(solver) ;
 	      if (preSolve&&si != NULL) {
@@ -1269,7 +1272,7 @@ int main (int argc, const char *argv[])
                 model->setPrintFrequency(100);
               
               model->solver()->setIntParam(OsiMaxNumIterationHotStart,100);
-#ifdef CBC_USE_CLP
+#ifdef COIN_HAS_CLP
               OsiClpSolverInterface * osiclp = dynamic_cast< OsiClpSolverInterface*> (model->solver());
 	      if (osiclp) {
 		// go faster stripes
@@ -1424,7 +1427,7 @@ int main (int argc, const char *argv[])
 	    {
 	      // okay so there is not a real unit test
 
-	      int status =model->solver()->readMps("../Mps/Sample/p0033.mps",
+	      int status =model->solver()->readMps("../../Data/Sample/p0033.mps",
 						   "");
 	      assert(!status);
 	      try
@@ -1439,7 +1442,7 @@ int main (int argc, const char *argv[])
 	      std::cout<<"Optimal solution "<<model->solver()->getObjValue()<<std::endl;
 	      assert(fabs(model->solver()->getObjValue()-3089.0)<1.0e-5);
 	      fprintf(stderr,"Test was okay\n");
-	      status =model->solver()->readMps("../Mps/Sample/p0033.mps",
+	      status =model->solver()->readMps("../../Data/Sample/p0033.mps",
 						   "");
 	      assert(!status);
 	      model->setCutoff(1.0e20);

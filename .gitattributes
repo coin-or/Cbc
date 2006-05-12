@@ -1,6 +1,7 @@
 * text=auto !eol
 Cbc/cbc_addlibs.txt.in -text
 Cbc/configure -text
+Cbc/configure.ac -text
 Cbc/examples/miplib3/10teams.gz -text
 Cbc/examples/miplib3/air03.gz -text
 Cbc/examples/miplib3/air04.gz -text

@@ -473,7 +473,7 @@ ac_includes_default="\
 # include <unistd.h>
 #endif"
 
-ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS build build_cpu build_vendor build_os ADDLIBS ALWAYS_FALSE_TRUE ALWAYS_FALSE_FALSE COIN_DEBUG_TRUE COIN_DEBUG_FALSE CXXDEFS CXX CXXFLAGS LDFLAGS CPPFLAGS ac_ct_CXX EXEEXT OBJEXT EGREP INSTALL_PROGRAM INSTALL_SCRIPT INSTALL_DATA CYGPATH_W PACKAGE VERSION ACLOCAL AUTOCONF AUTOMAKE AUTOHEADER MAKEINFO install_sh STRIP ac_ct_STRIP INSTALL_STRIP_PROGRAM mkdir_p AWK SET_MAKE am__leading_dot AMTAR am__tar am__untar DEPDIR am__include am__quote AMDEP_TRUE AMDEP_FALSE AMDEPBACKSLASH CXXDEPMODE am__fastdepCXX_TRUE am__fastdepCXX_FALSE MAINTAINER_MODE_TRUE MAINTAINER_MODE_FALSE MAINT LIBTOOLM4 have_autoconf have_automake BUILDTOOLSDIR AUX_DIR HAVE_EXTERNALS_TRUE HAVE_EXTERNALS_FALSE MAINTAINER_SMALL_TRUE MAINTAINER_SMALL_FALSE CC CFLAGS ac_ct_CC CCDEPMODE am__fastdepCC_TRUE am__fastdepCC_FALSE host host_cpu host_vendor host_os LN_S ECHO AR ac_ct_AR RANLIB ac_ct_RANLIB CPP CXXCPP F77 FFLAGS ac_ct_F77 LIBTOOL pkg_lib_dir pkg_include_dir pkg_bin_dir CBCSRCDIR CBCOBJDIR COIN_HAS_CBC_TRUE COIN_HAS_CBC_FALSE CGLSRCDIR CGLOBJDIR COIN_HAS_CGL_TRUE COIN_HAS_CGL_FALSE CLPSRCDIR CLPOBJDIR COIN_HAS_CLP_TRUE COIN_HAS_CLP_FALSE COINBASESRCDIR COINBASEOBJDIR COIN_HAS_COINBASE_TRUE COIN_HAS_COINBASE_FALSE DYLPSRCDIR DYLPOBJDIR COIN_HAS_DYLP_TRUE COIN_HAS_DYLP_FALSE OSISRCDIR OSIOBJDIR COIN_HAS_OSI_TRUE COIN_HAS_OSI_FALSE SYMSRCDIR SYMOBJDIR COIN_HAS_SYM_TRUE COIN_HAS_SYM_FALSE VOLSRCDIR VOLOBJDIR COIN_HAS_VOL_TRUE COIN_HAS_VOL_FALSE LIBOBJS LTLIBOBJS'
+ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS build build_cpu build_vendor build_os ADDLIBS ALWAYS_FALSE_TRUE ALWAYS_FALSE_FALSE COIN_DEBUG_TRUE COIN_DEBUG_FALSE CXXDEFS CXX CXXFLAGS LDFLAGS CPPFLAGS ac_ct_CXX EXEEXT OBJEXT EGREP INSTALL_PROGRAM INSTALL_SCRIPT INSTALL_DATA CYGPATH_W PACKAGE VERSION ACLOCAL AUTOCONF AUTOMAKE AUTOHEADER MAKEINFO install_sh STRIP ac_ct_STRIP INSTALL_STRIP_PROGRAM mkdir_p AWK SET_MAKE am__leading_dot AMTAR am__tar am__untar DEPDIR am__include am__quote AMDEP_TRUE AMDEP_FALSE AMDEPBACKSLASH CXXDEPMODE am__fastdepCXX_TRUE am__fastdepCXX_FALSE MAINTAINER_MODE_TRUE MAINTAINER_MODE_FALSE MAINT LIBTOOLM4 have_autoconf have_automake BUILDTOOLSDIR AUX_DIR HAVE_EXTERNALS_TRUE HAVE_EXTERNALS_FALSE MAINTAINER_SMALL_TRUE MAINTAINER_SMALL_FALSE CC CFLAGS ac_ct_CC CCDEPMODE am__fastdepCC_TRUE am__fastdepCC_FALSE host host_cpu host_vendor host_os LN_S ECHO AR ac_ct_AR RANLIB ac_ct_RANLIB CPP CXXCPP F77 FFLAGS ac_ct_F77 LIBTOOL pkg_lib_dir pkg_include_dir pkg_bin_dir CBCSRCDIR CBCOBJDIR COIN_HAS_CBC_TRUE COIN_HAS_CBC_FALSE CGLSRCDIR CGLOBJDIR COIN_HAS_CGL_TRUE COIN_HAS_CGL_FALSE CLPSRCDIR CLPOBJDIR COIN_HAS_CLP_TRUE COIN_HAS_CLP_FALSE COINBASESRCDIR COINBASEOBJDIR COIN_HAS_COINBASE_TRUE COIN_HAS_COINBASE_FALSE DYLPSRCDIR DYLPOBJDIR COIN_HAS_DYLP_TRUE COIN_HAS_DYLP_FALSE OSISRCDIR OSIOBJDIR COIN_HAS_OSI_TRUE COIN_HAS_OSI_FALSE SYMSRCDIR SYMOBJDIR COIN_HAS_SYM_TRUE COIN_HAS_SYM_FALSE VOLSRCDIR VOLOBJDIR COIN_HAS_VOL_TRUE COIN_HAS_VOL_FALSE CPXINCDIR CPXLIBDIR COIN_HAS_CPX_TRUE COIN_HAS_CPX_FALSE GLPKINCDIR GLPKLIBDIR COIN_HAS_GLPK_TRUE COIN_HAS_GLPK_FALSE FMPINCDIR FMPLIBDIR COIN_HAS_FMP_TRUE COIN_HAS_FMP_FALSE MSKINCDIR MSKLIBDIR COIN_HAS_MSK_TRUE COIN_HAS_MSK_FALSE OSLINCDIR OSLLIBDIR COIN_HAS_OSL_TRUE COIN_HAS_OSL_FALSE SPXINCDIR SPXLIBDIR COIN_HAS_SPX_TRUE COIN_HAS_SPX_FALSE XPRINCDIR XPRLIBDIR COIN_HAS_XPR_TRUE COIN_HAS_XPR_FALSE LIBOBJS LTLIBOBJS'
 ac_subst_files=''
 
 # Initialize some variables set by options.
@@ -1060,6 +1060,30 @@ Optional Packages:
                           both]
   --with-tags[=TAGS]
                           include additional configurations [automatic]
+  --with-cbc-default-solver
+                          specify default solver for Cbc in lower case letters
+                          (if not given, clp is assumed)
+  --with-cplex-incdir specify the directory with the header files for library
+                          Cplex
+  --with-cplex-libdir specify the directory with the library Cplex
+  --with-glpk-incdir specify the directory with the header files for library
+                          Glpk
+  --with-glpk-libdir specify the directory with the library Glpk
+  --with-fortmp-incdir specify the directory with the header files for library
+                          FortMP
+  --with-fortmp-libdir specify the directory with the library FortMP
+  --with-mosek-incdir specify the directory with the header files for library
+                          Mosek
+  --with-mosek-libdir specify the directory with the library Mosek
+  --with-osl-incdir specify the directory with the header files for library
+                          Osl
+  --with-osl-libdir specify the directory with the library Osl
+  --with-soplex-incdir specify the directory with the header files for library
+                          Soplex
+  --with-soplex-libdir specify the directory with the library Soplex
+  --with-xpress-incdir specify the directory with the header files for library
+                          Xpress
+  --with-xpress-libdir specify the directory with the library Xpress
 
 Some influential environment variables:
   CXXDEFS     Additional -D flags to be used when compiling C++ code.
@@ -4458,7 +4482,7 @@ ia64-*-hpux*)
   ;;
 *-*-irix6*)
   # Find out which ABI we are using.
-  echo '#line 4461 "configure"' > conftest.$ac_ext
+  echo '#line 4485 "configure"' > conftest.$ac_ext
   if { (eval echo "$as_me:$LINENO: \"$ac_compile\"") >&5
   (eval $ac_compile) 2>&5
   ac_status=$?
@@ -5592,7 +5616,7 @@ fi
 
 
 # Provide some information about the compiler.
-echo "$as_me:5595:" \
+echo "$as_me:5619:" \
      "checking for Fortran 77 compiler version" >&5
 ac_compiler=`set X $ac_compile; echo $2`
 { (eval echo "$as_me:$LINENO: \"$ac_compiler --version </dev/null >&5\"") >&5
@@ -6659,11 +6683,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:6662: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:6686: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:6666: \$? = $ac_status" >&5
+   echo "$as_me:6690: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -6927,11 +6951,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:6930: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:6954: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:6934: \$? = $ac_status" >&5
+   echo "$as_me:6958: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -7031,11 +7055,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:7034: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:7058: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:7038: \$? = $ac_status" >&5
+   echo "$as_me:7062: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -9376,7 +9400,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<EOF
-#line 9379 "configure"
+#line 9403 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -9476,7 +9500,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<EOF
-#line 9479 "configure"
+#line 9503 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -11820,11 +11844,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:11823: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:11847: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:11827: \$? = $ac_status" >&5
+   echo "$as_me:11851: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -11924,11 +11948,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:11927: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:11951: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:11931: \$? = $ac_status" >&5
+   echo "$as_me:11955: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -13494,11 +13518,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:13497: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:13521: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:13501: \$? = $ac_status" >&5
+   echo "$as_me:13525: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -13598,11 +13622,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:13601: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:13625: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:13605: \$? = $ac_status" >&5
+   echo "$as_me:13629: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -15805,11 +15829,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:15808: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:15832: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:15812: \$? = $ac_status" >&5
+   echo "$as_me:15836: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -16073,11 +16097,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:16076: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:16100: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:16080: \$? = $ac_status" >&5
+   echo "$as_me:16104: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -16177,11 +16201,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:16180: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:16204: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:16184: \$? = $ac_status" >&5
+   echo "$as_me:16208: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -19860,6 +19884,1165 @@ echo "$as_me:$LINENO: result: $coin_has_vol" >&5
 echo "${ECHO_T}$coin_has_vol" >&6
 
 
+# ToDo: find out when CBC_HAS_CLP should be defined!  For now, I
+# replaced all CBC_USE by COIN_HAS #ifdef's
+
+# Decide which one is the default solver
+echo "$as_me:$LINENO: checking for CBC default solver" >&5
+echo $ECHO_N "checking for CBC default solver... $ECHO_C" >&6
+
+# Check whether --with-cbc-default-solver or --without-cbc-default-solver was given.
+if test "${with_cbc_default_solver+set}" = set; then
+  withval="$with_cbc_default_solver"
+  cbc_default_solver=$with_val
+else
+  cbc_default_solver=clp
+fi;
+echo "$as_me:$LINENO: result: $cbc_default_solver" >&5
+echo "${ECHO_T}$cbc_default_solver" >&6
+
+case $cbc_default_solver in
+  clp)
+
+cat >>confdefs.h <<\_ACEOF
+#define CBC_DEFAULT_SOLVER "clp"
+_ACEOF
+
+    ;;
+  dylp)
+    cat >>confdefs.h <<\_ACEOF
+#define CBC_DEFAULT_SOLVER "dylp"
+_ACEOF
+
+    ;;
+  *)
+    { { echo "$as_me:$LINENO: error: Unknown solver $cbc_default_solver chosen as CBC's default solver" >&5
+echo "$as_me: error: Unknown solver $cbc_default_solver chosen as CBC's default solver" >&2;}
+   { (exit 1); exit 1; }; }
+    ;;
+esac
+
+# Steal some files from Clp - they are going to be deleted by a
+# distclean in src (see the Makefile.am there)
+if test x"$coin_has_clp" != xunavailable; then
+  { echo "$as_me:$LINENO: Stealing CbcOrClpParam's files from Clp" >&5
+echo "$as_me: Stealing CbcOrClpParam's files from Clp" >&6;}
+  rm -f src/CbcOrClpParam.cpp src/CbcOrClpParam.hpp
+  $LN_S $CLPSRCDIR/src/CbcOrClpParam.cpp src/CbcOrClpParam.cpp
+  $LN_S $CLPSRCDIR/src/CbcOrClpParam.hpp src/CbcOrClpParam.hpp
+fi
+
+#############################################################################
+#                            Third party solvers                            #
+#############################################################################
+
+# Some solvers require additional library, which we check for first.
+# ADDLIBS is our variable that accumulates the libraries necessary for
+# linking.
+echo "$as_me:$LINENO: checking for pthread_create in -lpthread" >&5
+echo $ECHO_N "checking for pthread_create in -lpthread... $ECHO_C" >&6
+if test "${ac_cv_lib_pthread_pthread_create+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-lpthread  $LIBS"
+cat >conftest.$ac_ext <<_ACEOF
+/* confdefs.h.  */
+_ACEOF
+cat confdefs.h >>conftest.$ac_ext
+cat >>conftest.$ac_ext <<_ACEOF
+/* end confdefs.h.  */
+
+/* Override any gcc2 internal prototype to avoid an error.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+/* We use char because int might match the return type of a gcc2
+   builtin and then its argument prototype would still apply.  */
+char pthread_create ();
+int
+main ()
+{
+pthread_create ();
+  ;
+  return 0;
+}
+_ACEOF
+rm -f conftest.$ac_objext conftest$ac_exeext
+if { (eval echo "$as_me:$LINENO: \"$ac_link\"") >&5
+  (eval $ac_link) 2>conftest.er1
+  ac_status=$?
+  grep -v '^ *+' conftest.er1 >conftest.err
+  rm -f conftest.er1
+  cat conftest.err >&5
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); } &&
+	 { ac_try='test -z "$ac_c_werror_flag"
+			 || test ! -s conftest.err'
+  { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
+  (eval $ac_try) 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); }; } &&
+	 { ac_try='test -s conftest$ac_exeext'
+  { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
+  (eval $ac_try) 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); }; }; then
+  ac_cv_lib_pthread_pthread_create=yes
+else
+  echo "$as_me: failed program was:" >&5
+sed 's/^/| /' conftest.$ac_ext >&5
+
+ac_cv_lib_pthread_pthread_create=no
+fi
+rm -f conftest.err conftest.$ac_objext \
+      conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+echo "$as_me:$LINENO: result: $ac_cv_lib_pthread_pthread_create" >&5
+echo "${ECHO_T}$ac_cv_lib_pthread_pthread_create" >&6
+if test $ac_cv_lib_pthread_pthread_create = yes; then
+  ADDLIBS="-lpthread $ADDLIBS"
+fi
+
+echo "$as_me:$LINENO: checking for dlopen in -ldl" >&5
+echo $ECHO_N "checking for dlopen in -ldl... $ECHO_C" >&6
+if test "${ac_cv_lib_dl_dlopen+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-ldl  $LIBS"
+cat >conftest.$ac_ext <<_ACEOF
+/* confdefs.h.  */
+_ACEOF
+cat confdefs.h >>conftest.$ac_ext
+cat >>conftest.$ac_ext <<_ACEOF
+/* end confdefs.h.  */
+
+/* Override any gcc2 internal prototype to avoid an error.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+/* We use char because int might match the return type of a gcc2
+   builtin and then its argument prototype would still apply.  */
+char dlopen ();
+int
+main ()
+{
+dlopen ();
+  ;
+  return 0;
+}
+_ACEOF
+rm -f conftest.$ac_objext conftest$ac_exeext
+if { (eval echo "$as_me:$LINENO: \"$ac_link\"") >&5
+  (eval $ac_link) 2>conftest.er1
+  ac_status=$?
+  grep -v '^ *+' conftest.er1 >conftest.err
+  rm -f conftest.er1
+  cat conftest.err >&5
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); } &&
+	 { ac_try='test -z "$ac_c_werror_flag"
+			 || test ! -s conftest.err'
+  { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
+  (eval $ac_try) 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); }; } &&
+	 { ac_try='test -s conftest$ac_exeext'
+  { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
+  (eval $ac_try) 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); }; }; then
+  ac_cv_lib_dl_dlopen=yes
+else
+  echo "$as_me: failed program was:" >&5
+sed 's/^/| /' conftest.$ac_ext >&5
+
+ac_cv_lib_dl_dlopen=no
+fi
+rm -f conftest.err conftest.$ac_objext \
+      conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+echo "$as_me:$LINENO: result: $ac_cv_lib_dl_dlopen" >&5
+echo "${ECHO_T}$ac_cv_lib_dl_dlopen" >&6
+if test $ac_cv_lib_dl_dlopen = yes; then
+  ADDLIBS="-ldl $ADDLIBS"
+fi
+
+
+# Check which third party solvers are available ToDo!
+
+echo "$as_me:$LINENO: checking if user provides library for Cplex" >&5
+echo $ECHO_N "checking if user provides library for Cplex... $ECHO_C" >&6
+
+# Check for header file directory
+
+# Check whether --with-cplex-incdir or --without-cplex-incdir was given.
+if test "${with_cplex_incdir+set}" = set; then
+  withval="$with_cplex_incdir"
+  CPXINCDIR=`cd $withval; pwd`
+fi;
+# Check for library directory
+
+# Check whether --with-cplex-libdir or --without-cplex-libdir was given.
+if test "${with_cplex_libdir+set}" = set; then
+  withval="$with_cplex_libdir"
+  CPXLIBDIR=`cd $withval; pwd`
+fi;
+
+if test x"$CPXINCDIR" != x || test x"$CPXLIBDIR" != x; then
+  coin_has_cpx=true
+else
+  coin_has_cpx=false
+fi
+
+if test $coin_has_cpx = true; then
+# Check either both arguments or none are given
+  if test x"$CPXINCDIR" = x || test x"$CPXLIBDIR" = x; then
+    { { echo "$as_me:$LINENO: error: You need to specify both --with-cplex-incdir and --with-cplex-libdir if you want to use library Cplex" >&5
+echo "$as_me: error: You need to specify both --with-cplex-incdir and --with-cplex-libdir if you want to use library Cplex" >&2;}
+   { (exit 1); exit 1; }; }
+  fi
+  echo "$as_me:$LINENO: result: yes" >&5
+echo "${ECHO_T}yes" >&6
+  # Check if the given header file is there
+  as_ac_File=`echo "ac_cv_file_$CPXINCDIR/cplex.h" | $as_tr_sh`
+echo "$as_me:$LINENO: checking for $CPXINCDIR/cplex.h" >&5
+echo $ECHO_N "checking for $CPXINCDIR/cplex.h... $ECHO_C" >&6
+if eval "test \"\${$as_ac_File+set}\" = set"; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  test "$cross_compiling" = yes &&
+  { { echo "$as_me:$LINENO: error: cannot check for file existence when cross compiling" >&5
+echo "$as_me: error: cannot check for file existence when cross compiling" >&2;}
+   { (exit 1); exit 1; }; }
+if test -r "$CPXINCDIR/cplex.h"; then
+  eval "$as_ac_File=yes"
+else
+  eval "$as_ac_File=no"
+fi
+fi
+echo "$as_me:$LINENO: result: `eval echo '${'$as_ac_File'}'`" >&5
+echo "${ECHO_T}`eval echo '${'$as_ac_File'}'`" >&6
+if test `eval echo '${'$as_ac_File'}'` = yes; then
+  :
+else
+  { { echo "$as_me:$LINENO: error: Cannot find file cplex.h in $CPXINCDIR" >&5
+echo "$as_me: error: Cannot find file cplex.h in $CPXINCDIR" >&2;}
+   { (exit 1); exit 1; }; }
+fi
+
+
+  # Check if the symbol is provided in the library
+  coin_save_LIBS="$LIBS"
+                  LIBS="-L$CPXLIBDIR -lcplex $ADDLIBS"
+                  echo "$as_me:$LINENO: checking for CPXgetstat in -lcplex" >&5
+echo $ECHO_N "checking for CPXgetstat in -lcplex... $ECHO_C" >&6
+if test "${ac_cv_lib_cplex_CPXgetstat+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-lcplex  $LIBS"
+cat >conftest.$ac_ext <<_ACEOF
+/* confdefs.h.  */
+_ACEOF
+cat confdefs.h >>conftest.$ac_ext
+cat >>conftest.$ac_ext <<_ACEOF
+/* end confdefs.h.  */
+
+/* Override any gcc2 internal prototype to avoid an error.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+/* We use char because int might match the return type of a gcc2
+   builtin and then its argument prototype would still apply.  */
+char CPXgetstat ();
+int
+main ()
+{
+CPXgetstat ();
+  ;
+  return 0;
+}
+_ACEOF
+rm -f conftest.$ac_objext conftest$ac_exeext
+if { (eval echo "$as_me:$LINENO: \"$ac_link\"") >&5
+  (eval $ac_link) 2>conftest.er1
+  ac_status=$?
+  grep -v '^ *+' conftest.er1 >conftest.err
+  rm -f conftest.er1
+  cat conftest.err >&5
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); } &&
+	 { ac_try='test -z "$ac_c_werror_flag"
+			 || test ! -s conftest.err'
+  { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
+  (eval $ac_try) 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); }; } &&
+	 { ac_try='test -s conftest$ac_exeext'
+  { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
+  (eval $ac_try) 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); }; }; then
+  ac_cv_lib_cplex_CPXgetstat=yes
+else
+  echo "$as_me: failed program was:" >&5
+sed 's/^/| /' conftest.$ac_ext >&5
+
+ac_cv_lib_cplex_CPXgetstat=no
+fi
+rm -f conftest.err conftest.$ac_objext \
+      conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+echo "$as_me:$LINENO: result: $ac_cv_lib_cplex_CPXgetstat" >&5
+echo "${ECHO_T}$ac_cv_lib_cplex_CPXgetstat" >&6
+if test $ac_cv_lib_cplex_CPXgetstat = yes; then
+  :
+else
+  { { echo "$as_me:$LINENO: error: Cannot find symbol CPXgetstat in library -lcplex" >&5
+echo "$as_me: error: Cannot find symbol CPXgetstat in library -lcplex" >&2;}
+   { (exit 1); exit 1; }; }
+fi
+
+                  LIBS="$coin_save_LIBS"
+
+  ADDLIBS="-L$CPXLIBDIR -lcplex $ADDLIBS"
+
+cat >>confdefs.h <<\_ACEOF
+#define COIN_HAS_CPX 1
+_ACEOF
+
+else
+  echo "$as_me:$LINENO: result: no" >&5
+echo "${ECHO_T}no" >&6
+fi
+
+
+
+
+
+if test $coin_has_cpx = true; then
+  COIN_HAS_CPX_TRUE=
+  COIN_HAS_CPX_FALSE='#'
+else
+  COIN_HAS_CPX_TRUE='#'
+  COIN_HAS_CPX_FALSE=
+fi
+
+
+
+echo "$as_me:$LINENO: checking if user provides library for Glpk" >&5
+echo $ECHO_N "checking if user provides library for Glpk... $ECHO_C" >&6
+
+# Check for header file directory
+
+# Check whether --with-glpk-incdir or --without-glpk-incdir was given.
+if test "${with_glpk_incdir+set}" = set; then
+  withval="$with_glpk_incdir"
+  GLPKINCDIR=`cd $withval; pwd`
+fi;
+# Check for library directory
+
+# Check whether --with-glpk-libdir or --without-glpk-libdir was given.
+if test "${with_glpk_libdir+set}" = set; then
+  withval="$with_glpk_libdir"
+  GLPKLIBDIR=`cd $withval; pwd`
+fi;
+
+if test x"$GLPKINCDIR" != x || test x"$GLPKLIBDIR" != x; then
+  coin_has_glpk=true
+else
+  coin_has_glpk=false
+fi
+
+if test $coin_has_glpk = true; then
+# Check either both arguments or none are given
+  if test x"$GLPKINCDIR" = x || test x"$GLPKLIBDIR" = x; then
+    { { echo "$as_me:$LINENO: error: You need to specify both --with-glpk-incdir and --with-glpk-libdir if you want to use library Glpk" >&5
+echo "$as_me: error: You need to specify both --with-glpk-incdir and --with-glpk-libdir if you want to use library Glpk" >&2;}
+   { (exit 1); exit 1; }; }
+  fi
+  echo "$as_me:$LINENO: result: yes" >&5
+echo "${ECHO_T}yes" >&6
+  # Check if the given header file is there
+  as_ac_File=`echo "ac_cv_file_$GLPKINCDIR/glpk.h" | $as_tr_sh`
+echo "$as_me:$LINENO: checking for $GLPKINCDIR/glpk.h" >&5
+echo $ECHO_N "checking for $GLPKINCDIR/glpk.h... $ECHO_C" >&6
+if eval "test \"\${$as_ac_File+set}\" = set"; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  test "$cross_compiling" = yes &&
+  { { echo "$as_me:$LINENO: error: cannot check for file existence when cross compiling" >&5
+echo "$as_me: error: cannot check for file existence when cross compiling" >&2;}
+   { (exit 1); exit 1; }; }
+if test -r "$GLPKINCDIR/glpk.h"; then
+  eval "$as_ac_File=yes"
+else
+  eval "$as_ac_File=no"
+fi
+fi
+echo "$as_me:$LINENO: result: `eval echo '${'$as_ac_File'}'`" >&5
+echo "${ECHO_T}`eval echo '${'$as_ac_File'}'`" >&6
+if test `eval echo '${'$as_ac_File'}'` = yes; then
+  :
+else
+  { { echo "$as_me:$LINENO: error: Cannot find file glpk.h in $GLPKINCDIR" >&5
+echo "$as_me: error: Cannot find file glpk.h in $GLPKINCDIR" >&2;}
+   { (exit 1); exit 1; }; }
+fi
+
+
+  # Check if the symbol is provided in the library
+  coin_save_LIBS="$LIBS"
+                  LIBS="-L$GLPKLIBDIR -lglpk $ADDLIBS"
+                  echo "$as_me:$LINENO: checking for glp_lpx_simplex in -lglpk" >&5
+echo $ECHO_N "checking for glp_lpx_simplex in -lglpk... $ECHO_C" >&6
+if test "${ac_cv_lib_glpk_glp_lpx_simplex+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-lglpk  $LIBS"
+cat >conftest.$ac_ext <<_ACEOF
+/* confdefs.h.  */
+_ACEOF
+cat confdefs.h >>conftest.$ac_ext
+cat >>conftest.$ac_ext <<_ACEOF
+/* end confdefs.h.  */
+
+/* Override any gcc2 internal prototype to avoid an error.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+/* We use char because int might match the return type of a gcc2
+   builtin and then its argument prototype would still apply.  */
+char glp_lpx_simplex ();
+int
+main ()
+{
+glp_lpx_simplex ();
+  ;
+  return 0;
+}
+_ACEOF
+rm -f conftest.$ac_objext conftest$ac_exeext
+if { (eval echo "$as_me:$LINENO: \"$ac_link\"") >&5
+  (eval $ac_link) 2>conftest.er1
+  ac_status=$?
+  grep -v '^ *+' conftest.er1 >conftest.err
+  rm -f conftest.er1
+  cat conftest.err >&5
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); } &&
+	 { ac_try='test -z "$ac_c_werror_flag"
+			 || test ! -s conftest.err'
+  { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
+  (eval $ac_try) 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); }; } &&
+	 { ac_try='test -s conftest$ac_exeext'
+  { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
+  (eval $ac_try) 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); }; }; then
+  ac_cv_lib_glpk_glp_lpx_simplex=yes
+else
+  echo "$as_me: failed program was:" >&5
+sed 's/^/| /' conftest.$ac_ext >&5
+
+ac_cv_lib_glpk_glp_lpx_simplex=no
+fi
+rm -f conftest.err conftest.$ac_objext \
+      conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+echo "$as_me:$LINENO: result: $ac_cv_lib_glpk_glp_lpx_simplex" >&5
+echo "${ECHO_T}$ac_cv_lib_glpk_glp_lpx_simplex" >&6
+if test $ac_cv_lib_glpk_glp_lpx_simplex = yes; then
+  :
+else
+  { { echo "$as_me:$LINENO: error: Cannot find symbol glp_lpx_simplex in library -lglpk" >&5
+echo "$as_me: error: Cannot find symbol glp_lpx_simplex in library -lglpk" >&2;}
+   { (exit 1); exit 1; }; }
+fi
+
+                  LIBS="$coin_save_LIBS"
+
+  ADDLIBS="-L$GLPKLIBDIR -lglpk $ADDLIBS"
+
+cat >>confdefs.h <<\_ACEOF
+#define COIN_HAS_GLPK 1
+_ACEOF
+
+else
+  echo "$as_me:$LINENO: result: no" >&5
+echo "${ECHO_T}no" >&6
+fi
+
+
+
+
+
+if test $coin_has_glpk = true; then
+  COIN_HAS_GLPK_TRUE=
+  COIN_HAS_GLPK_FALSE='#'
+else
+  COIN_HAS_GLPK_TRUE='#'
+  COIN_HAS_GLPK_FALSE=
+fi
+
+
+
+echo "$as_me:$LINENO: checking if user provides library for FortMP" >&5
+echo $ECHO_N "checking if user provides library for FortMP... $ECHO_C" >&6
+
+# Check for header file directory
+
+# Check whether --with-fortmp-incdir or --without-fortmp-incdir was given.
+if test "${with_fortmp_incdir+set}" = set; then
+  withval="$with_fortmp_incdir"
+  FMPINCDIR=`cd $withval; pwd`
+fi;
+# Check for library directory
+
+# Check whether --with-fortmp-libdir or --without-fortmp-libdir was given.
+if test "${with_fortmp_libdir+set}" = set; then
+  withval="$with_fortmp_libdir"
+  FMPLIBDIR=`cd $withval; pwd`
+fi;
+
+if test x"$FMPINCDIR" != x || test x"$FMPLIBDIR" != x; then
+  coin_has_fmp=true
+else
+  coin_has_fmp=false
+fi
+
+if test $coin_has_fmp = true; then
+# Check either both arguments or none are given
+  if test x"$FMPINCDIR" = x || test x"$FMPLIBDIR" = x; then
+    { { echo "$as_me:$LINENO: error: You need to specify both --with-fortmp-incdir and --with-fortmp-libdir if you want to use library FortMP" >&5
+echo "$as_me: error: You need to specify both --with-fortmp-incdir and --with-fortmp-libdir if you want to use library FortMP" >&2;}
+   { (exit 1); exit 1; }; }
+  fi
+  echo "$as_me:$LINENO: result: yes" >&5
+echo "${ECHO_T}yes" >&6
+  # Check if the given header file is there
+
+  # Check if the symbol is provided in the library
+
+  ADDLIBS="-L$FMPLIBDIR -lfmp $ADDLIBS"
+
+cat >>confdefs.h <<\_ACEOF
+#define COIN_HAS_FMP 1
+_ACEOF
+
+else
+  echo "$as_me:$LINENO: result: no" >&5
+echo "${ECHO_T}no" >&6
+fi
+
+
+
+
+
+if test $coin_has_fmp = true; then
+  COIN_HAS_FMP_TRUE=
+  COIN_HAS_FMP_FALSE='#'
+else
+  COIN_HAS_FMP_TRUE='#'
+  COIN_HAS_FMP_FALSE=
+fi
+
+  #ToDo! is Fortran?
+
+echo "$as_me:$LINENO: checking if user provides library for Mosek" >&5
+echo $ECHO_N "checking if user provides library for Mosek... $ECHO_C" >&6
+
+# Check for header file directory
+
+# Check whether --with-mosek-incdir or --without-mosek-incdir was given.
+if test "${with_mosek_incdir+set}" = set; then
+  withval="$with_mosek_incdir"
+  MSKINCDIR=`cd $withval; pwd`
+fi;
+# Check for library directory
+
+# Check whether --with-mosek-libdir or --without-mosek-libdir was given.
+if test "${with_mosek_libdir+set}" = set; then
+  withval="$with_mosek_libdir"
+  MSKLIBDIR=`cd $withval; pwd`
+fi;
+
+if test x"$MSKINCDIR" != x || test x"$MSKLIBDIR" != x; then
+  coin_has_msk=true
+else
+  coin_has_msk=false
+fi
+
+if test $coin_has_msk = true; then
+# Check either both arguments or none are given
+  if test x"$MSKINCDIR" = x || test x"$MSKLIBDIR" = x; then
+    { { echo "$as_me:$LINENO: error: You need to specify both --with-mosek-incdir and --with-mosek-libdir if you want to use library Mosek" >&5
+echo "$as_me: error: You need to specify both --with-mosek-incdir and --with-mosek-libdir if you want to use library Mosek" >&2;}
+   { (exit 1); exit 1; }; }
+  fi
+  echo "$as_me:$LINENO: result: yes" >&5
+echo "${ECHO_T}yes" >&6
+  # Check if the given header file is there
+  as_ac_File=`echo "ac_cv_file_$MSKINCDIR/mosekdl.h" | $as_tr_sh`
+echo "$as_me:$LINENO: checking for $MSKINCDIR/mosekdl.h" >&5
+echo $ECHO_N "checking for $MSKINCDIR/mosekdl.h... $ECHO_C" >&6
+if eval "test \"\${$as_ac_File+set}\" = set"; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  test "$cross_compiling" = yes &&
+  { { echo "$as_me:$LINENO: error: cannot check for file existence when cross compiling" >&5
+echo "$as_me: error: cannot check for file existence when cross compiling" >&2;}
+   { (exit 1); exit 1; }; }
+if test -r "$MSKINCDIR/mosekdl.h"; then
+  eval "$as_ac_File=yes"
+else
+  eval "$as_ac_File=no"
+fi
+fi
+echo "$as_me:$LINENO: result: `eval echo '${'$as_ac_File'}'`" >&5
+echo "${ECHO_T}`eval echo '${'$as_ac_File'}'`" >&6
+if test `eval echo '${'$as_ac_File'}'` = yes; then
+  :
+else
+  { { echo "$as_me:$LINENO: error: Cannot find file mosekdl.h in $MSKINCDIR" >&5
+echo "$as_me: error: Cannot find file mosekdl.h in $MSKINCDIR" >&2;}
+   { (exit 1); exit 1; }; }
+fi
+
+
+  # Check if the symbol is provided in the library
+  coin_save_LIBS="$LIBS"
+                  LIBS="-L$MSKLIBDIR -lmosekdl $ADDLIBS"
+                  echo "$as_me:$LINENO: checking for MSK_openmosek in -lmosekdl" >&5
+echo $ECHO_N "checking for MSK_openmosek in -lmosekdl... $ECHO_C" >&6
+if test "${ac_cv_lib_mosekdl_MSK_openmosek+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-lmosekdl  $LIBS"
+cat >conftest.$ac_ext <<_ACEOF
+/* confdefs.h.  */
+_ACEOF
+cat confdefs.h >>conftest.$ac_ext
+cat >>conftest.$ac_ext <<_ACEOF
+/* end confdefs.h.  */
+
+/* Override any gcc2 internal prototype to avoid an error.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+/* We use char because int might match the return type of a gcc2
+   builtin and then its argument prototype would still apply.  */
+char MSK_openmosek ();
+int
+main ()
+{
+MSK_openmosek ();
+  ;
+  return 0;
+}
+_ACEOF
+rm -f conftest.$ac_objext conftest$ac_exeext
+if { (eval echo "$as_me:$LINENO: \"$ac_link\"") >&5
+  (eval $ac_link) 2>conftest.er1
+  ac_status=$?
+  grep -v '^ *+' conftest.er1 >conftest.err
+  rm -f conftest.er1
+  cat conftest.err >&5
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); } &&
+	 { ac_try='test -z "$ac_c_werror_flag"
+			 || test ! -s conftest.err'
+  { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
+  (eval $ac_try) 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); }; } &&
+	 { ac_try='test -s conftest$ac_exeext'
+  { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
+  (eval $ac_try) 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); }; }; then
+  ac_cv_lib_mosekdl_MSK_openmosek=yes
+else
+  echo "$as_me: failed program was:" >&5
+sed 's/^/| /' conftest.$ac_ext >&5
+
+ac_cv_lib_mosekdl_MSK_openmosek=no
+fi
+rm -f conftest.err conftest.$ac_objext \
+      conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+echo "$as_me:$LINENO: result: $ac_cv_lib_mosekdl_MSK_openmosek" >&5
+echo "${ECHO_T}$ac_cv_lib_mosekdl_MSK_openmosek" >&6
+if test $ac_cv_lib_mosekdl_MSK_openmosek = yes; then
+  :
+else
+  { { echo "$as_me:$LINENO: error: Cannot find symbol MSK_openmosek in library -lmosekdl" >&5
+echo "$as_me: error: Cannot find symbol MSK_openmosek in library -lmosekdl" >&2;}
+   { (exit 1); exit 1; }; }
+fi
+
+                  LIBS="$coin_save_LIBS"
+
+  ADDLIBS="-L$MSKLIBDIR -lmosekdl $ADDLIBS"
+
+cat >>confdefs.h <<\_ACEOF
+#define COIN_HAS_MSK 1
+_ACEOF
+
+else
+  echo "$as_me:$LINENO: result: no" >&5
+echo "${ECHO_T}no" >&6
+fi
+
+
+
+
+
+if test $coin_has_msk = true; then
+  COIN_HAS_MSK_TRUE=
+  COIN_HAS_MSK_FALSE='#'
+else
+  COIN_HAS_MSK_TRUE='#'
+  COIN_HAS_MSK_FALSE=
+fi
+
+
+
+echo "$as_me:$LINENO: checking if user provides library for Osl" >&5
+echo $ECHO_N "checking if user provides library for Osl... $ECHO_C" >&6
+
+# Check for header file directory
+
+# Check whether --with-osl-incdir or --without-osl-incdir was given.
+if test "${with_osl_incdir+set}" = set; then
+  withval="$with_osl_incdir"
+  OSLINCDIR=`cd $withval; pwd`
+fi;
+# Check for library directory
+
+# Check whether --with-osl-libdir or --without-osl-libdir was given.
+if test "${with_osl_libdir+set}" = set; then
+  withval="$with_osl_libdir"
+  OSLLIBDIR=`cd $withval; pwd`
+fi;
+
+if test x"$OSLINCDIR" != x || test x"$OSLLIBDIR" != x; then
+  coin_has_osl=true
+else
+  coin_has_osl=false
+fi
+
+if test $coin_has_osl = true; then
+# Check either both arguments or none are given
+  if test x"$OSLINCDIR" = x || test x"$OSLLIBDIR" = x; then
+    { { echo "$as_me:$LINENO: error: You need to specify both --with-osl-incdir and --with-osl-libdir if you want to use library Osl" >&5
+echo "$as_me: error: You need to specify both --with-osl-incdir and --with-osl-libdir if you want to use library Osl" >&2;}
+   { (exit 1); exit 1; }; }
+  fi
+  echo "$as_me:$LINENO: result: yes" >&5
+echo "${ECHO_T}yes" >&6
+  # Check if the given header file is there
+  as_ac_File=`echo "ac_cv_file_$OSLINCDIR/ekk_c_api.h" | $as_tr_sh`
+echo "$as_me:$LINENO: checking for $OSLINCDIR/ekk_c_api.h" >&5
+echo $ECHO_N "checking for $OSLINCDIR/ekk_c_api.h... $ECHO_C" >&6
+if eval "test \"\${$as_ac_File+set}\" = set"; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  test "$cross_compiling" = yes &&
+  { { echo "$as_me:$LINENO: error: cannot check for file existence when cross compiling" >&5
+echo "$as_me: error: cannot check for file existence when cross compiling" >&2;}
+   { (exit 1); exit 1; }; }
+if test -r "$OSLINCDIR/ekk_c_api.h"; then
+  eval "$as_ac_File=yes"
+else
+  eval "$as_ac_File=no"
+fi
+fi
+echo "$as_me:$LINENO: result: `eval echo '${'$as_ac_File'}'`" >&5
+echo "${ECHO_T}`eval echo '${'$as_ac_File'}'`" >&6
+if test `eval echo '${'$as_ac_File'}'` = yes; then
+  :
+else
+  { { echo "$as_me:$LINENO: error: Cannot find file ekk_c_api.h in $OSLINCDIR" >&5
+echo "$as_me: error: Cannot find file ekk_c_api.h in $OSLINCDIR" >&2;}
+   { (exit 1); exit 1; }; }
+fi
+
+
+  # Check if the symbol is provided in the library
+  coin_save_LIBS="$LIBS"
+                  LIBS="-L$OSLLIBDIR -losl $ADDLIBS"
+                  echo "$as_me:$LINENO: checking for ekk_simplex in -losl" >&5
+echo $ECHO_N "checking for ekk_simplex in -losl... $ECHO_C" >&6
+if test "${ac_cv_lib_osl_ekk_simplex+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-losl  $LIBS"
+cat >conftest.$ac_ext <<_ACEOF
+/* confdefs.h.  */
+_ACEOF
+cat confdefs.h >>conftest.$ac_ext
+cat >>conftest.$ac_ext <<_ACEOF
+/* end confdefs.h.  */
+
+/* Override any gcc2 internal prototype to avoid an error.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+/* We use char because int might match the return type of a gcc2
+   builtin and then its argument prototype would still apply.  */
+char ekk_simplex ();
+int
+main ()
+{
+ekk_simplex ();
+  ;
+  return 0;
+}
+_ACEOF
+rm -f conftest.$ac_objext conftest$ac_exeext
+if { (eval echo "$as_me:$LINENO: \"$ac_link\"") >&5
+  (eval $ac_link) 2>conftest.er1
+  ac_status=$?
+  grep -v '^ *+' conftest.er1 >conftest.err
+  rm -f conftest.er1
+  cat conftest.err >&5
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); } &&
+	 { ac_try='test -z "$ac_c_werror_flag"
+			 || test ! -s conftest.err'
+  { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
+  (eval $ac_try) 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); }; } &&
+	 { ac_try='test -s conftest$ac_exeext'
+  { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
+  (eval $ac_try) 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); }; }; then
+  ac_cv_lib_osl_ekk_simplex=yes
+else
+  echo "$as_me: failed program was:" >&5
+sed 's/^/| /' conftest.$ac_ext >&5
+
+ac_cv_lib_osl_ekk_simplex=no
+fi
+rm -f conftest.err conftest.$ac_objext \
+      conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+echo "$as_me:$LINENO: result: $ac_cv_lib_osl_ekk_simplex" >&5
+echo "${ECHO_T}$ac_cv_lib_osl_ekk_simplex" >&6
+if test $ac_cv_lib_osl_ekk_simplex = yes; then
+  :
+else
+  { { echo "$as_me:$LINENO: error: Cannot find symbol ekk_simplex in library -losl" >&5
+echo "$as_me: error: Cannot find symbol ekk_simplex in library -losl" >&2;}
+   { (exit 1); exit 1; }; }
+fi
+
+                  LIBS="$coin_save_LIBS"
+
+  ADDLIBS="-L$OSLLIBDIR -losl $ADDLIBS"
+
+cat >>confdefs.h <<\_ACEOF
+#define COIN_HAS_OSL 1
+_ACEOF
+
+else
+  echo "$as_me:$LINENO: result: no" >&5
+echo "${ECHO_T}no" >&6
+fi
+
+
+
+
+
+if test $coin_has_osl = true; then
+  COIN_HAS_OSL_TRUE=
+  COIN_HAS_OSL_FALSE='#'
+else
+  COIN_HAS_OSL_TRUE='#'
+  COIN_HAS_OSL_FALSE=
+fi
+
+
+
+echo "$as_me:$LINENO: checking if user provides library for Soplex" >&5
+echo $ECHO_N "checking if user provides library for Soplex... $ECHO_C" >&6
+
+# Check for header file directory
+
+# Check whether --with-soplex-incdir or --without-soplex-incdir was given.
+if test "${with_soplex_incdir+set}" = set; then
+  withval="$with_soplex_incdir"
+  SPXINCDIR=`cd $withval; pwd`
+fi;
+# Check for library directory
+
+# Check whether --with-soplex-libdir or --without-soplex-libdir was given.
+if test "${with_soplex_libdir+set}" = set; then
+  withval="$with_soplex_libdir"
+  SPXLIBDIR=`cd $withval; pwd`
+fi;
+
+if test x"$SPXINCDIR" != x || test x"$SPXLIBDIR" != x; then
+  coin_has_spx=true
+else
+  coin_has_spx=false
+fi
+
+if test $coin_has_spx = true; then
+# Check either both arguments or none are given
+  if test x"$SPXINCDIR" = x || test x"$SPXLIBDIR" = x; then
+    { { echo "$as_me:$LINENO: error: You need to specify both --with-soplex-incdir and --with-soplex-libdir if you want to use library Soplex" >&5
+echo "$as_me: error: You need to specify both --with-soplex-incdir and --with-soplex-libdir if you want to use library Soplex" >&2;}
+   { (exit 1); exit 1; }; }
+  fi
+  echo "$as_me:$LINENO: result: yes" >&5
+echo "${ECHO_T}yes" >&6
+  # Check if the given header file is there
+  as_ac_File=`echo "ac_cv_file_$SPXINCDIR/spxsolver.h" | $as_tr_sh`
+echo "$as_me:$LINENO: checking for $SPXINCDIR/spxsolver.h" >&5
+echo $ECHO_N "checking for $SPXINCDIR/spxsolver.h... $ECHO_C" >&6
+if eval "test \"\${$as_ac_File+set}\" = set"; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  test "$cross_compiling" = yes &&
+  { { echo "$as_me:$LINENO: error: cannot check for file existence when cross compiling" >&5
+echo "$as_me: error: cannot check for file existence when cross compiling" >&2;}
+   { (exit 1); exit 1; }; }
+if test -r "$SPXINCDIR/spxsolver.h"; then
+  eval "$as_ac_File=yes"
+else
+  eval "$as_ac_File=no"
+fi
+fi
+echo "$as_me:$LINENO: result: `eval echo '${'$as_ac_File'}'`" >&5
+echo "${ECHO_T}`eval echo '${'$as_ac_File'}'`" >&6
+if test `eval echo '${'$as_ac_File'}'` = yes; then
+  :
+else
+  { { echo "$as_me:$LINENO: error: Cannot find file spxsolver.h in $SPXINCDIR" >&5
+echo "$as_me: error: Cannot find file spxsolver.h in $SPXINCDIR" >&2;}
+   { (exit 1); exit 1; }; }
+fi
+
+
+  # Check if the symbol is provided in the library
+
+  ADDLIBS="-L$SPXLIBDIR -lspx $ADDLIBS"
+
+cat >>confdefs.h <<\_ACEOF
+#define COIN_HAS_SPX 1
+_ACEOF
+
+else
+  echo "$as_me:$LINENO: result: no" >&5
+echo "${ECHO_T}no" >&6
+fi
+
+
+
+
+
+if test $coin_has_spx = true; then
+  COIN_HAS_SPX_TRUE=
+  COIN_HAS_SPX_FALSE='#'
+else
+  COIN_HAS_SPX_TRUE='#'
+  COIN_HAS_SPX_FALSE=
+fi
+
+ # ToDo
+
+echo "$as_me:$LINENO: checking if user provides library for Xpress" >&5
+echo $ECHO_N "checking if user provides library for Xpress... $ECHO_C" >&6
+
+# Check for header file directory
+
+# Check whether --with-xpress-incdir or --without-xpress-incdir was given.
+if test "${with_xpress_incdir+set}" = set; then
+  withval="$with_xpress_incdir"
+  XPRINCDIR=`cd $withval; pwd`
+fi;
+# Check for library directory
+
+# Check whether --with-xpress-libdir or --without-xpress-libdir was given.
+if test "${with_xpress_libdir+set}" = set; then
+  withval="$with_xpress_libdir"
+  XPRLIBDIR=`cd $withval; pwd`
+fi;
+
+if test x"$XPRINCDIR" != x || test x"$XPRLIBDIR" != x; then
+  coin_has_xpr=true
+else
+  coin_has_xpr=false
+fi
+
+if test $coin_has_xpr = true; then
+# Check either both arguments or none are given
+  if test x"$XPRINCDIR" = x || test x"$XPRLIBDIR" = x; then
+    { { echo "$as_me:$LINENO: error: You need to specify both --with-xpress-incdir and --with-xpress-libdir if you want to use library Xpress" >&5
+echo "$as_me: error: You need to specify both --with-xpress-incdir and --with-xpress-libdir if you want to use library Xpress" >&2;}
+   { (exit 1); exit 1; }; }
+  fi
+  echo "$as_me:$LINENO: result: yes" >&5
+echo "${ECHO_T}yes" >&6
+  # Check if the given header file is there
+  as_ac_File=`echo "ac_cv_file_$XPRINCDIR/xprs.h" | $as_tr_sh`
+echo "$as_me:$LINENO: checking for $XPRINCDIR/xprs.h" >&5
+echo $ECHO_N "checking for $XPRINCDIR/xprs.h... $ECHO_C" >&6
+if eval "test \"\${$as_ac_File+set}\" = set"; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  test "$cross_compiling" = yes &&
+  { { echo "$as_me:$LINENO: error: cannot check for file existence when cross compiling" >&5
+echo "$as_me: error: cannot check for file existence when cross compiling" >&2;}
+   { (exit 1); exit 1; }; }
+if test -r "$XPRINCDIR/xprs.h"; then
+  eval "$as_ac_File=yes"
+else
+  eval "$as_ac_File=no"
+fi
+fi
+echo "$as_me:$LINENO: result: `eval echo '${'$as_ac_File'}'`" >&5
+echo "${ECHO_T}`eval echo '${'$as_ac_File'}'`" >&6
+if test `eval echo '${'$as_ac_File'}'` = yes; then
+  :
+else
+  { { echo "$as_me:$LINENO: error: Cannot find file xprs.h in $XPRINCDIR" >&5
+echo "$as_me: error: Cannot find file xprs.h in $XPRINCDIR" >&2;}
+   { (exit 1); exit 1; }; }
+fi
+
+
+  # Check if the symbol is provided in the library
+  coin_save_LIBS="$LIBS"
+                  LIBS="-L$XPRLIBDIR -lxpr $ADDLIBS"
+                  echo "$as_me:$LINENO: checking for XPRSsetintcontrol in -lxpr" >&5
+echo $ECHO_N "checking for XPRSsetintcontrol in -lxpr... $ECHO_C" >&6
+if test "${ac_cv_lib_xpr_XPRSsetintcontrol+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-lxpr  $LIBS"
+cat >conftest.$ac_ext <<_ACEOF
+/* confdefs.h.  */
+_ACEOF
+cat confdefs.h >>conftest.$ac_ext
+cat >>conftest.$ac_ext <<_ACEOF
+/* end confdefs.h.  */
+
+/* Override any gcc2 internal prototype to avoid an error.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+/* We use char because int might match the return type of a gcc2
+   builtin and then its argument prototype would still apply.  */
+char XPRSsetintcontrol ();
+int
+main ()
+{
+XPRSsetintcontrol ();
+  ;
+  return 0;
+}
+_ACEOF
+rm -f conftest.$ac_objext conftest$ac_exeext
+if { (eval echo "$as_me:$LINENO: \"$ac_link\"") >&5
+  (eval $ac_link) 2>conftest.er1
+  ac_status=$?
+  grep -v '^ *+' conftest.er1 >conftest.err
+  rm -f conftest.er1
+  cat conftest.err >&5
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); } &&
+	 { ac_try='test -z "$ac_c_werror_flag"
+			 || test ! -s conftest.err'
+  { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
+  (eval $ac_try) 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); }; } &&
+	 { ac_try='test -s conftest$ac_exeext'
+  { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
+  (eval $ac_try) 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); }; }; then
+  ac_cv_lib_xpr_XPRSsetintcontrol=yes
+else
+  echo "$as_me: failed program was:" >&5
+sed 's/^/| /' conftest.$ac_ext >&5
+
+ac_cv_lib_xpr_XPRSsetintcontrol=no
+fi
+rm -f conftest.err conftest.$ac_objext \
+      conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+echo "$as_me:$LINENO: result: $ac_cv_lib_xpr_XPRSsetintcontrol" >&5
+echo "${ECHO_T}$ac_cv_lib_xpr_XPRSsetintcontrol" >&6
+if test $ac_cv_lib_xpr_XPRSsetintcontrol = yes; then
+  :
+else
+  { { echo "$as_me:$LINENO: error: Cannot find symbol XPRSsetintcontrol in library -lxpr" >&5
+echo "$as_me: error: Cannot find symbol XPRSsetintcontrol in library -lxpr" >&2;}
+   { (exit 1); exit 1; }; }
+fi
+
+                  LIBS="$coin_save_LIBS"
+
+  ADDLIBS="-L$XPRLIBDIR -lxpr $ADDLIBS"
+
+cat >>confdefs.h <<\_ACEOF
+#define COIN_HAS_XPR 1
+_ACEOF
+
+else
+  echo "$as_me:$LINENO: result: no" >&5
+echo "${ECHO_T}no" >&6
+fi
+
+
+
+
+
+if test $coin_has_xpr = true; then
+  COIN_HAS_XPR_TRUE=
+  COIN_HAS_XPR_FALSE='#'
+else
+  COIN_HAS_XPR_TRUE='#'
+  COIN_HAS_XPR_FALSE=
+fi
+
+
+
 ##############################################################################
 #                   Finishing up by writing all the output                   #
 ##############################################################################
@@ -20074,6 +21257,55 @@ if test -z "${COIN_HAS_VOL_TRUE}" && test -z "${COIN_HAS_VOL_FALSE}"; then
   { { echo "$as_me:$LINENO: error: conditional \"COIN_HAS_VOL\" was never defined.
 Usually this means the macro was only invoked conditionally." >&5
 echo "$as_me: error: conditional \"COIN_HAS_VOL\" was never defined.
+Usually this means the macro was only invoked conditionally." >&2;}
+   { (exit 1); exit 1; }; }
+fi
+if test -z "${COIN_HAS_CPX_TRUE}" && test -z "${COIN_HAS_CPX_FALSE}"; then
+  { { echo "$as_me:$LINENO: error: conditional \"COIN_HAS_CPX\" was never defined.
+Usually this means the macro was only invoked conditionally." >&5
+echo "$as_me: error: conditional \"COIN_HAS_CPX\" was never defined.
+Usually this means the macro was only invoked conditionally." >&2;}
+   { (exit 1); exit 1; }; }
+fi
+if test -z "${COIN_HAS_GLPK_TRUE}" && test -z "${COIN_HAS_GLPK_FALSE}"; then
+  { { echo "$as_me:$LINENO: error: conditional \"COIN_HAS_GLPK\" was never defined.
+Usually this means the macro was only invoked conditionally." >&5
+echo "$as_me: error: conditional \"COIN_HAS_GLPK\" was never defined.
+Usually this means the macro was only invoked conditionally." >&2;}
+   { (exit 1); exit 1; }; }
+fi
+if test -z "${COIN_HAS_FMP_TRUE}" && test -z "${COIN_HAS_FMP_FALSE}"; then
+  { { echo "$as_me:$LINENO: error: conditional \"COIN_HAS_FMP\" was never defined.
+Usually this means the macro was only invoked conditionally." >&5
+echo "$as_me: error: conditional \"COIN_HAS_FMP\" was never defined.
+Usually this means the macro was only invoked conditionally." >&2;}
+   { (exit 1); exit 1; }; }
+fi
+if test -z "${COIN_HAS_MSK_TRUE}" && test -z "${COIN_HAS_MSK_FALSE}"; then
+  { { echo "$as_me:$LINENO: error: conditional \"COIN_HAS_MSK\" was never defined.
+Usually this means the macro was only invoked conditionally." >&5
+echo "$as_me: error: conditional \"COIN_HAS_MSK\" was never defined.
+Usually this means the macro was only invoked conditionally." >&2;}
+   { (exit 1); exit 1; }; }
+fi
+if test -z "${COIN_HAS_OSL_TRUE}" && test -z "${COIN_HAS_OSL_FALSE}"; then
+  { { echo "$as_me:$LINENO: error: conditional \"COIN_HAS_OSL\" was never defined.
+Usually this means the macro was only invoked conditionally." >&5
+echo "$as_me: error: conditional \"COIN_HAS_OSL\" was never defined.
+Usually this means the macro was only invoked conditionally." >&2;}
+   { (exit 1); exit 1; }; }
+fi
+if test -z "${COIN_HAS_SPX_TRUE}" && test -z "${COIN_HAS_SPX_FALSE}"; then
+  { { echo "$as_me:$LINENO: error: conditional \"COIN_HAS_SPX\" was never defined.
+Usually this means the macro was only invoked conditionally." >&5
+echo "$as_me: error: conditional \"COIN_HAS_SPX\" was never defined.
+Usually this means the macro was only invoked conditionally." >&2;}
+   { (exit 1); exit 1; }; }
+fi
+if test -z "${COIN_HAS_XPR_TRUE}" && test -z "${COIN_HAS_XPR_FALSE}"; then
+  { { echo "$as_me:$LINENO: error: conditional \"COIN_HAS_XPR\" was never defined.
+Usually this means the macro was only invoked conditionally." >&5
+echo "$as_me: error: conditional \"COIN_HAS_XPR\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi
@@ -20730,6 +21962,34 @@ s,@VOLSRCDIR@,$VOLSRCDIR,;t t
 s,@VOLOBJDIR@,$VOLOBJDIR,;t t
 s,@COIN_HAS_VOL_TRUE@,$COIN_HAS_VOL_TRUE,;t t
 s,@COIN_HAS_VOL_FALSE@,$COIN_HAS_VOL_FALSE,;t t
+s,@CPXINCDIR@,$CPXINCDIR,;t t
+s,@CPXLIBDIR@,$CPXLIBDIR,;t t
+s,@COIN_HAS_CPX_TRUE@,$COIN_HAS_CPX_TRUE,;t t
+s,@COIN_HAS_CPX_FALSE@,$COIN_HAS_CPX_FALSE,;t t
+s,@GLPKINCDIR@,$GLPKINCDIR,;t t
+s,@GLPKLIBDIR@,$GLPKLIBDIR,;t t
+s,@COIN_HAS_GLPK_TRUE@,$COIN_HAS_GLPK_TRUE,;t t
+s,@COIN_HAS_GLPK_FALSE@,$COIN_HAS_GLPK_FALSE,;t t
+s,@FMPINCDIR@,$FMPINCDIR,;t t
+s,@FMPLIBDIR@,$FMPLIBDIR,;t t
+s,@COIN_HAS_FMP_TRUE@,$COIN_HAS_FMP_TRUE,;t t
+s,@COIN_HAS_FMP_FALSE@,$COIN_HAS_FMP_FALSE,;t t
+s,@MSKINCDIR@,$MSKINCDIR,;t t
+s,@MSKLIBDIR@,$MSKLIBDIR,;t t
+s,@COIN_HAS_MSK_TRUE@,$COIN_HAS_MSK_TRUE,;t t
+s,@COIN_HAS_MSK_FALSE@,$COIN_HAS_MSK_FALSE,;t t
+s,@OSLINCDIR@,$OSLINCDIR,;t t
+s,@OSLLIBDIR@,$OSLLIBDIR,;t t
+s,@COIN_HAS_OSL_TRUE@,$COIN_HAS_OSL_TRUE,;t t
+s,@COIN_HAS_OSL_FALSE@,$COIN_HAS_OSL_FALSE,;t t
+s,@SPXINCDIR@,$SPXINCDIR,;t t
+s,@SPXLIBDIR@,$SPXLIBDIR,;t t
+s,@COIN_HAS_SPX_TRUE@,$COIN_HAS_SPX_TRUE,;t t
+s,@COIN_HAS_SPX_FALSE@,$COIN_HAS_SPX_FALSE,;t t
+s,@XPRINCDIR@,$XPRINCDIR,;t t
+s,@XPRLIBDIR@,$XPRLIBDIR,;t t
+s,@COIN_HAS_XPR_TRUE@,$COIN_HAS_XPR_TRUE,;t t
+s,@COIN_HAS_XPR_FALSE@,$COIN_HAS_XPR_FALSE,;t t
 s,@LIBOBJS@,$LIBOBJS,;t t
 s,@LTLIBOBJS@,$LTLIBOBJS,;t t
 CEOF

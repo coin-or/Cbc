@@ -4,6 +4,9 @@
 // Turn off compiler warning about long names
 #  pragma warning(disable:4786)
 #endif
+
+#include "CbcConfig.hpp"
+
 #include <string>
 //#define CBC_DEBUG 1
 //#define CHECK_CUT_COUNTS
@@ -13,7 +16,7 @@
 #include <cmath>
 #include <cfloat>
 
-#ifdef CBC_USE_CLP
+#ifdef COIN_HAS_CLP
 // include Presolve from Clp
 #include "ClpPresolve.hpp"
 #include "OsiClpSolverInterface.hpp"
@@ -701,7 +704,7 @@ void CbcModel::branchAndBound(int doStatistics)
   constraint system (aka the continuous system).
 */
   continuousSolver_ = solver_->clone() ;
-#ifdef CBC_USE_CLP
+#ifdef COIN_HAS_CLP
   OsiClpSolverInterface * clpSolver 
     = dynamic_cast<OsiClpSolverInterface *> (solver_);
   if (clpSolver) {
@@ -3443,7 +3446,7 @@ int CbcModel::reducedCostFix ()
 
   int numberFixed = 0 ;
 
-# ifdef CBC_USE_CLP
+# ifdef COIN_HAS_CLP
   OsiClpSolverInterface * clpSolver 
     = dynamic_cast<OsiClpSolverInterface *> (solver_);
   ClpSimplex * clpSimplex=NULL;
@@ -3456,7 +3459,7 @@ int CbcModel::reducedCostFix ()
     if (upper[iColumn]-lower[iColumn] > integerTolerance)
     { if (solution[iColumn] < lower[iColumn]+integerTolerance && djValue > gap)
       { solver_->setColUpper(iColumn,lower[iColumn]) ;
-#ifdef CBC_USE_CLP
+#ifdef COIN_HAS_CLP
       if (clpSimplex)
         assert (clpSimplex->getColumnStatus(iColumn)==ClpSimplex::atLowerBound);
 #endif
@@ -3464,7 +3467,7 @@ int CbcModel::reducedCostFix ()
       else
       if (solution[iColumn] > upper[iColumn]-integerTolerance && -djValue > gap)
       { solver_->setColLower(iColumn,upper[iColumn]) ;
-#ifdef CBC_USE_CLP
+#ifdef COIN_HAS_CLP
       if (clpSimplex)
         assert (clpSimplex->getColumnStatus(iColumn)==ClpSimplex::atUpperBound);
 #endif
@@ -4490,7 +4493,7 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
             solver_->resolve();
           }
         }
-#ifdef CBC_USE_CLP
+#ifdef COIN_HAS_CLP
         OsiClpSolverInterface * clpSolver 
           = dynamic_cast<OsiClpSolverInterface *> (solver_);
 	if (clpSolver) {
@@ -4501,7 +4504,7 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
 	}
 #endif
       } else {
-#ifdef CBC_USE_CLP
+#ifdef COIN_HAS_CLP
         OsiClpSolverInterface * clpSolver 
           = dynamic_cast<OsiClpSolverInterface *> (solver_);
 	if (clpSolver) {
@@ -6637,7 +6640,7 @@ CbcModel::integerPresolveThisModel(OsiSolverInterface * originalSolver,
     if (debugger) 
       assert(debugger->onOptimalPath(*cleanModel));
 #endif
-#ifdef CBC_USE_CLP
+#ifdef COIN_HAS_CLP
     // do presolve - for now just clp but easy to get osi interface
     OsiClpSolverInterface * clpSolver 
       = dynamic_cast<OsiClpSolverInterface *> (cleanModel);
@@ -7513,7 +7516,7 @@ CbcModel::setLogLevel(int value)
     int oldLevel = solver_->messageHandler()->logLevel();
     if (value<oldLevel)
       solver_->messageHandler()->setLogLevel(value);
-#ifdef CBC_USE_CLP
+#ifdef COIN_HAS_CLP
     OsiClpSolverInterface * clpSolver 
       = dynamic_cast<OsiClpSolverInterface *> (solver_);
     if (clpSolver) {
@@ -7522,7 +7525,7 @@ CbcModel::setLogLevel(int value)
       if (value<oldLevel)
         clpSimplex->setLogLevel(value);
     }
-#else		// CBC_USE_CLP
+#else		// COIN_HAS_CLP
 /*
   For generic OSI solvers, if the new log level is 0, try the
   DoReducePrint hint for emphasis.
@@ -7530,7 +7533,7 @@ CbcModel::setLogLevel(int value)
     if (value == 0) {
       solver_->setHintParam(OsiDoReducePrint,true,OsiHintDo) ;
     }
-#endif		// CBC_USE_CLP
+#endif		// COIN_HAS_CLP
   }
 }
 

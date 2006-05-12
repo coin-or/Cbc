@@ -1,4 +1,6 @@
 * text=auto !eol
+Cbc/cbc_addlibs.txt.in -text
+Cbc/configure -text
 Cbc/examples/miplib3/10teams.gz -text
 Cbc/examples/miplib3/air03.gz -text
 Cbc/examples/miplib3/air04.gz -text
@@ -64,9 +66,11 @@ Cbc/examples/miplib3/stein45.gz -text
 Cbc/examples/miplib3/swath.gz -text
 Cbc/examples/miplib3/vpm1.gz -text
 Cbc/examples/miplib3/vpm2.gz -text
+Cbc/inc/config_cbc.h.in -text
 /Externals -text
 /config.guess -text
 /config.sub -text
+/configure -text
 /configure.ac -text
 /depcomp -text
 /install-sh -text

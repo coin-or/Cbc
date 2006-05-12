@@ -4,11 +4,14 @@
 // Turn off compiler warning about long names
 #  pragma warning(disable:4786)
 #endif
+
+#include "CbcConfig.hpp"
+
 #include <cassert>
 #include <cmath>
 #include <cfloat>
 
-#ifdef CBC_USE_CLP
+#ifdef COIN_HAS_CLP
 #include "OsiClpSolverInterface.hpp"
 #endif
 #include "CbcModel.hpp"
@@ -55,7 +58,7 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver,int numberNodes,
                                   double * newSolution, double & newSolutionValue,
                                   double cutoff, std::string name) const
 {
-#ifdef CBC_USE_CLP
+#ifdef COIN_HAS_CLP
   OsiClpSolverInterface * osiclp = dynamic_cast< OsiClpSolverInterface*> (solver);
   if (osiclp) {
     // go faster stripes

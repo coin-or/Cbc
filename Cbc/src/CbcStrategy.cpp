@@ -4,12 +4,15 @@
 // Turn off compiler warning about long names
 #  pragma warning(disable:4786)
 #endif
+
+#include "CbcConfig.hpp"
+
 #include <cassert>
 #include <cmath>
 #include <cfloat>
 
 #include "OsiSolverInterface.hpp"
-#ifdef CBC_USE_CLP
+#ifdef COIN_HAS_CLP
 #include "OsiClpSolverInterface.hpp"
 #endif
 #include "CbcModel.hpp"
@@ -297,7 +300,7 @@ CbcStrategyDefault::setupOther(CbcModel & model)
     CglPreProcess * process = new CglPreProcess();
     OsiSolverInterface * solver = model.solver();
     int logLevel = model.messageHandler()->logLevel();
-#ifdef CBC_USE_CLP
+#ifdef COIN_HAS_CLP
     OsiClpSolverInterface * clpSolver = dynamic_cast< OsiClpSolverInterface*> (solver);
     ClpSimplex * lpSolver=NULL;
     if (clpSolver) {
@@ -341,7 +344,7 @@ CbcStrategyDefault::setupOther(CbcModel & model)
       process_=NULL;
     } else {
       // now tighten bounds
-#ifdef CBC_USE_CLP
+#ifdef COIN_HAS_CLP
       if (clpSolver) {
         // model has changed
         solver = model.solver();

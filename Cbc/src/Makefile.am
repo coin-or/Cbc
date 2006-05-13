@@ -248,7 +248,7 @@ include_HEADERS = \
 
 CONFIG_DIST = CbcConfig.hpp
 CONFIG_H = config_cbc.h
-$(libCbc_la_OBJECTS): ../inc/$(CONFIG_DIST)
+$(libCbc_la_OBJECTS) $(cbc_OBJECTS) $(solve_OBJECTS): ../inc/$(CONFIG_DIST)
 
 nodist_include_HEADERS = ../inc/$(CONFIG_DIST)
 

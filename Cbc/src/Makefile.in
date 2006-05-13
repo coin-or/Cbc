@@ -923,7 +923,7 @@ uninstall-am: uninstall-binPROGRAMS uninstall-includeHEADERS \
 	uninstall-includeHEADERS uninstall-info-am \
 	uninstall-libLTLIBRARIES uninstall-nodist_includeHEADERS
 
-$(libCbc_la_OBJECTS): ../inc/$(CONFIG_DIST)
+$(libCbc_la_OBJECTS) $(cbc_OBJECTS) $(solve_OBJECTS): ../inc/$(CONFIG_DIST)
 
 ../inc/$(CONFIG_DIST): ../inc/$(CONFIG_H)
 	echo "/** Required defines from $(CONFIG_H) */" >bla.tmp

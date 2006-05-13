@@ -64,7 +64,9 @@ cbc_SOURCES = \
 nodist_cbc_SOURCES = CbcOrClpParam.cpp
 
 cbc_LDADD = libCbc.la \
-	$(CGLOBJDIR)/src/libCgl.la
+	$(CGLOBJDIR)/src/libCgl.la \
+	$(OSIOBJDIR)/src/OsiCbc/libOsiCbc.la
+CXXFLAGS += -I`$(CYGPATH_W) $(OSISRCDIR)/src/OsiCbc`
 
 # List all additionally required solver and Osi libraries
 if COIN_HAS_CLP
@@ -74,14 +76,6 @@ if COIN_HAS_CLP
   cbc_LDADD += $(OSIOBJDIR)/src/OsiClp/libOsiClp.la \
 	$(CLPOBJDIR)/src/libClp.la
   LIBS  += `cat $(CLPOBJDIR)/clp_addlibs.txt`
-endif
-
-if COIN_HAS_CBC
-  CXXFLAGS += -I`$(CYGPATH_W) $(CBCSRCDIR)/src` \
-	-I`$(CYGPATH_W) $(OSISRCDIR)/src/OsiCbc`
-  cbc_LDADD += $(OSIOBJDIR)/src/OsiCbc/libOsiCbc.la \
-	$(CBCOBJDIR)/src/libCbc.la
-  LIBS += `cat $(CBCOBJDIR)/cbc_addlibs.txt`
 endif
 
 if COIN_HAS_CPX

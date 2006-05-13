@@ -579,7 +579,7 @@ uninstall-info: uninstall-info-recursive
 #                           Extra Targets                              #
 ########################################################################
 
-test:
+test: all
 	cd Cbc; make test
 
 unitTest: test

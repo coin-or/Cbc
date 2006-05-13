@@ -47,23 +47,23 @@ libCbc_la_SOURCES = \
 libCbc_la_LDFLAGS = -no-undefined
 
 ########################################################################
-#                        cbc_solver program                            #
+#                            cbc program                               #
 ########################################################################
 
 # Name of the executable compiled in this directory.  We want it to be
 # installed in the 'bin' directory
-bin_PROGRAMS = cbc_solver
+bin_PROGRAMS = cbc
 
 # List all source files for this executable, including headers
-cbc_solver_SOURCES = \
+cbc_SOURCES = \
 	CbcMain.cpp \
 	CbcParam.cpp CbcParam.hpp \
 	unitTest.cpp
 
 # The following file is not to be distributed, since it is "borrowed" from Clp
-nodist_cbc_solver_SOURCES = CbcOrClpParam.cpp
+nodist_cbc_SOURCES = CbcOrClpParam.cpp
 
-cbc_solver_LDADD = libCbc.la \
+cbc_LDADD = libCbc.la \
 	$(CGLOBJDIR)/src/libCgl.la
 
 # List all additionally required solver and Osi libraries
@@ -71,7 +71,7 @@ if COIN_HAS_CLP
   CXXFLAGS += -I`$(CYGPATH_W) $(CLPSRCDIR)/src` \
 	-I`$(CYGPATH_W) $(OSISRCDIR)/src/OsiClp` \
 	-I`$(CYGPATH_W) $(CLPOBJDIR)/inc`
-  cbc_solver_LDADD += $(OSIOBJDIR)/src/OsiClp/libOsiClp.la \
+  cbc_LDADD += $(OSIOBJDIR)/src/OsiClp/libOsiClp.la \
 	$(CLPOBJDIR)/src/libClp.la
   LIBS  += `cat $(CLPOBJDIR)/clp_addlibs.txt`
 endif
@@ -79,7 +79,7 @@ endif
 if COIN_HAS_CBC
   CXXFLAGS += -I`$(CYGPATH_W) $(CBCSRCDIR)/src` \
 	-I`$(CYGPATH_W) $(OSISRCDIR)/src/OsiCbc`
-  cbc_solver_LDADD += $(OSIOBJDIR)/src/OsiCbc/libOsiCbc.la \
+  cbc_LDADD += $(OSIOBJDIR)/src/OsiCbc/libOsiCbc.la \
 	$(CBCOBJDIR)/src/libCbc.la
   LIBS += `cat $(CBCOBJDIR)/cbc_addlibs.txt`
 endif
@@ -87,50 +87,50 @@ endif
 if COIN_HAS_CPX
   CXXFLAGS += -I`$(CYGPATH_W) $(CPXINCDIR)` \
 	-I`$(CYGPATH_W) $(OSISRCDIR)/src/OsiCpx`
-  cbc_solver_LDADD += $(OSIOBJDIR)/src/OsiCpx/libOsiCpx.la
+  cbc_LDADD += $(OSIOBJDIR)/src/OsiCpx/libOsiCpx.la
 endif
 
 if COIN_HAS_DYLP
   CXXFLAGS += -I`$(CYGPATH_W) $(DYLPSRCDIR)/src` \
 	-I`$(CYGPATH_W) $(OSISRCDIR)/src/OsiDylp`
-  cbc_solver_LDADD += $(OSIOBJDIR)/src/OsiDylp/libOsiDylp.la \
+  cbc_LDADD += $(OSIOBJDIR)/src/OsiDylp/libOsiDylp.la \
 	$(DYLPOBJDIR)/src/libDylp.la
   LIBS += `cat $(DYLPOBJDIR)/dylp_addlibs.txt`
 endif
 
 if COIN_HAS_FMP
   CXXFLAGS += -I`$(CYGPATH_W) $(OSISRCDIR)/src/OsiFmp`
-  cbc_solver_LDADD += $(OSIOBJDIR)/src/OsiFmp/libOsiFmp.la
+  cbc_LDADD += $(OSIOBJDIR)/src/OsiFmp/libOsiFmp.la
 endif
 
 if COIN_HAS_GLPK
   CXXFLAGS += -I`$(CYGPATH_W) $(GLPKINCDIR)` \
 	-I`$(CYGPATH_W) $(OSISRCDIR)/src/OsiGlpk`
-  cbc_solver_LDADD += $(OSIOBJDIR)/src/OsiGlpk/libOsiGlpk.la
+  cbc_LDADD += $(OSIOBJDIR)/src/OsiGlpk/libOsiGlpk.la
 endif
 
 if COIN_HAS_MSK
   CXXFLAGS += -I`$(CYGPATH_W) $(MSKINCDIR)` \
 	-I`$(CYGPATH_W) $(OSISRCDIR)/src/OsiMsk`
-  cbc_solver_LDADD += $(OSIOBJDIR)/src/OsiMsk/libOsiMsk.la
+  cbc_LDADD += $(OSIOBJDIR)/src/OsiMsk/libOsiMsk.la
 endif
 
 if COIN_HAS_OSL
   CXXFLAGS += -I`$(CYGPATH_W) $(OSLINCDIR)` \
 	-I`$(CYGPATH_W) $(OSISRCDIR)/src/OsiOsl`
-  cbc_solver_LDADD += $(OSIOBJDIR)/src/OsiOsl/libOsiOsl.la
+  cbc_LDADD += $(OSIOBJDIR)/src/OsiOsl/libOsiOsl.la
 endif
 
 if COIN_HAS_SPX
   CXXFLAGS += -I`$(CYGPATH_W) $(SPXINCDIR)` \
 	-I`$(CYGPATH_W) $(OSISRCDIR)/src/OsiSpx`
-  cbc_solver_LDADD += $(OSIOBJDIR)/src/OsiSpx/libOsiSpx.la
+  cbc_LDADD += $(OSIOBJDIR)/src/OsiSpx/libOsiSpx.la
 endif
 
 if COIN_HAS_SYM
   CXXFLAGS += -I`$(CYGPATH_W) $(SYMSRCDIR)/src` \
 	-I`$(CYGPATH_W) $(OSISRCDIR)/src/OsiSym`
-  cbc_solver_LDADD += $(OSIOBJDIR)/src/OsiSym/libOsiSym.la \
+  cbc_LDADD += $(OSIOBJDIR)/src/OsiSym/libOsiSym.la \
 	$(SYMOBJDIR)/src/libSym.la
   LIBS += `cat $(SYMOBJDIR)/sym_addlibs.txt`
 endif
@@ -138,7 +138,7 @@ endif
 if COIN_HAS_VOL
   CXXFLAGS += -I`$(CYGPATH_W) $(VOLSRCDIR)/src` \
 	-I`$(CYGPATH_W) $(OSISRCDIR)/src/OsiVol`
-  cbc_solver_LDADD += $(OSIOBJDIR)/src/OsiVol/libOsiVol.la \
+  cbc_LDADD += $(OSIOBJDIR)/src/OsiVol/libOsiVol.la \
 	$(VOLOBJDIR)/src/libVol.la
   LIBS += `cat $(VOLOBJDIR)/vol_addlibs.txt`
 endif
@@ -146,18 +146,18 @@ endif
 if COIN_HAS_XPR
   CXXFLAGS += -I`$(CYGPATH_W) $(XPRINCDIR)` \
 	-I`$(CYGPATH_W) $(OSISRCDIR)/src/OsiXpr`
-  cbc_solver_LDADD += $(OSIOBJDIR)/src/OsiXpr/libOsiXpr.la
+  cbc_LDADD += $(OSIOBJDIR)/src/OsiXpr/libOsiXpr.la
 endif
 
 # Finally the Osi Coin library (many of the above need it)
-cbc_solver_LDADD += $(OSIOBJDIR)/src/libOsi.la \
-	$(COINBASEOBJDIR)/src/libCoinBase.la
-LIBS += `cat $(COINBASEOBJDIR)/coinbase_addlibs.txt` $(ADDLIBS)
+cbc_LDADD += $(OSIOBJDIR)/src/libOsi.la \
+	$(COINUTILSOBJDIR)/src/libCoinUtils.la
+LIBS += `cat $(COINUTILSOBJDIR)/coinutils_addlibs.txt` $(ADDLIBS)
 
 # Finally, the -rpath flag is used by libtool to make sure that the shared
 # library is found (in the lib install directory) when we are using dynamic
 # libraries.
-cbc_solver_LDFLAGS = -rpath $(libdir)
+cbc_LDFLAGS = -rpath $(libdir)
 
 ########################################################################
 #                           solve program                              #
@@ -184,7 +184,7 @@ solve_LDADD = libCbc.la \
 	$(OSIOBJDIR)/src/OsiClp/libOsiClp.la \
 	$(OSIOBJDIR)/src/libOsi.la \
 	$(CLPOBJDIR)/src/libClp.la \
-	$(COINBASEOBJDIR)/src/libCoinBase.la
+	$(COINUTILSOBJDIR)/src/libCoinUtils.la
 
 # Finally, the -rpath flag is used by libtool to make sure that the shared
 # library is found (in the lib install directory) when we are using dynamic
@@ -212,7 +212,7 @@ CXXFLAGS += \
 	-I`$(CYGPATH_W) $(CGLSRCDIR)/src/CglProbing` \
 	-I`$(CYGPATH_W) $(CGLSRCDIR)/src/CglRedSplit` \
 	-I`$(CYGPATH_W) $(CGLSRCDIR)/src/CglTwomir` \
-	-I`$(CYGPATH_W) $(COINBASESRCDIR)/src` \
+	-I`$(CYGPATH_W) $(COINUTILSSRCDIR)/src` \
 	-I`$(CYGPATH_W) $(OSISRCDIR)/src`
 
 # List additional defines
@@ -271,6 +271,4 @@ nodist_include_HEADERS = ../inc/$(CONFIG_DIST)
 
 CLEANFILES = bla.tmp
 
-DISTCLEANFILES = ../inc/$(CONFIG_DIST) \
-	CbcOrClpParam.cpp \
-	CbcOrClpParam.hpp
+DISTCLEANFILES = ../inc/$(CONFIG_DIST)

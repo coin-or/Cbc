@@ -282,7 +282,7 @@ PACKAGE_BUGREPORT='coin-cbc@lists.coin-or.org'
 
 ac_unique_file="configure.ac"
 ac_default_prefix=`pwd`
-ac_subdirs_all="$ac_subdirs_all CoinBase"
+ac_subdirs_all="$ac_subdirs_all CoinUtils"
 ac_subdirs_all="$ac_subdirs_all Data/Netlib"
 ac_subdirs_all="$ac_subdirs_all Data/Sample"
 ac_subdirs_all="$ac_subdirs_all Data/miplib3"
@@ -2069,15 +2069,15 @@ fi
 #############################################################################
 
 coin_subdirs=
-echo "$as_me:$LINENO: checking whether directory CoinBase is available" >&5
-echo $ECHO_N "checking whether directory CoinBase is available... $ECHO_C" >&6
-                if test -r $srcdir/CoinBase/configure; then
-                  coin_subdirs="$coin_subdirs CoinBase"
+echo "$as_me:$LINENO: checking whether directory CoinUtils is available" >&5
+echo $ECHO_N "checking whether directory CoinUtils is available... $ECHO_C" >&6
+                if test -r $srcdir/CoinUtils/configure; then
+                  coin_subdirs="$coin_subdirs CoinUtils"
                   echo "$as_me:$LINENO: result: yes" >&5
 echo "${ECHO_T}yes" >&6
 
 
-subdirs="$subdirs CoinBase"
+subdirs="$subdirs CoinUtils"
 
                 else
                   echo "$as_me:$LINENO: result: no" >&5

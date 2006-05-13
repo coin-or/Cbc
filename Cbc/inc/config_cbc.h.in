@@ -16,8 +16,8 @@
 /* Define to 1 if the Clp package is used */
 #undef COIN_HAS_CLP
 
-/* Define to 1 if the CoinBase package is used */
-#undef COIN_HAS_COINBASE
+/* Define to 1 if the CoinUtils package is used */
+#undef COIN_HAS_COINUTILS
 
 /* Define to 1 if the Cplex package is used */
 #undef COIN_HAS_CPX

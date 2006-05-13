@@ -61,7 +61,7 @@ AC_COIN_INIT_AUTO_TOOLS
 AC_COIN_HAS_PROJECT(Cbc)
 AC_COIN_HAS_PROJECT(Cgl)
 AC_COIN_HAS_PROJECT(Clp)
-AC_COIN_HAS_PROJECT(CoinBase)
+AC_COIN_HAS_PROJECT(CoinUtils)
 AC_COIN_HAS_PROJECT(Dylp)
 AC_COIN_HAS_PROJECT(Osi)
 AC_COIN_HAS_PROJECT(Sym)
@@ -96,9 +96,8 @@ esac
 # distclean in src (see the Makefile.am there)
 if test x"$coin_has_clp" != xunavailable; then
   AC_MSG_NOTICE([Stealing CbcOrClpParam's files from Clp])
-  rm -f src/CbcOrClpParam.cpp src/CbcOrClpParam.hpp
-  $LN_S $CLPSRCDIR/src/CbcOrClpParam.cpp src/CbcOrClpParam.cpp
-  $LN_S $CLPSRCDIR/src/CbcOrClpParam.hpp src/CbcOrClpParam.hpp
+  AC_CONFIG_LINKS([src/CbcOrClpParam.cpp:../Clp/src/CbcOrClpParam.cpp
+                   src/CbcOrClpParam.hpp:../Clp/src/CbcOrClpParam.hpp])
 fi
 
 #############################################################################

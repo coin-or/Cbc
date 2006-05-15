@@ -44,7 +44,7 @@ libCbc_la_SOURCES = \
 	CbcTreeLocal.cpp CbcTreeLocal.hpp
 
 # This is for libtool (on Windows)
-libCbc_la_LDFLAGS = -no-undefined
+libCbc_la_LDFLAGS = #-no-undefined
 
 ########################################################################
 #                            cbc program                               #

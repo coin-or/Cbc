@@ -19,6 +19,16 @@
 # This file is distributed under the Common Public License.
 
 # Author:  Andreas Waechter           IBM    2006-04-13
+
+# Copyright (C) 2006 International Business Machines and others.
+# All Rights Reserved.
+# This file is distributed under the Common Public License.
+
+# Author:  Andreas Waechter           IBM    2006-04-13
+
+########################################################################
+#                         Maintainer Stuff                             #
+########################################################################
 srcdir = @srcdir@
 top_srcdir = @top_srcdir@
 VPATH = @srcdir@
@@ -46,7 +56,8 @@ host_triplet = @host@
 # specified.  But we need to list it as subdirectory to make sure that it is
 # included in the tarball
 @ALWAYS_FALSE@am__append_1 = test
-DIST_COMMON = README $(am__configure_deps) $(srcdir)/../config.guess \
+DIST_COMMON = README $(am__configure_deps) \
+	$(srcdir)/../BuildTools/Makemain.inc $(srcdir)/../config.guess \
 	$(srcdir)/../config.sub $(srcdir)/../install-sh \
 	$(srcdir)/../ltmain.sh $(srcdir)/../missing \
 	$(srcdir)/Makefile.am $(srcdir)/Makefile.in \
@@ -55,6 +66,8 @@ DIST_COMMON = README $(am__configure_deps) $(srcdir)/../config.guess \
 	$(top_srcdir)/../Clp/src/CbcOrClpParam.hpp \
 	$(top_srcdir)/configure $(top_srcdir)/inc/config_cbc.h.in \
 	AUTHORS INSTALL
+@HAVE_EXTERNALS_TRUE@@MAINTAINER_MODE_TRUE@am__append_2 = .Externals-stamp
+@HAVE_EXTERNALS_TRUE@@MAINTAINER_MODE_TRUE@am__append_3 = Externals
 subdir = .
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/acinclude.m4 \
@@ -148,7 +161,7 @@ COIN_HAS_XPR_TRUE = @COIN_HAS_XPR_TRUE@
 CPP = @CPP@
 CPPFLAGS = @CPPFLAGS@
 CPXINCDIR = @CPXINCDIR@
-CPXLIBDIR = @CPXLIBDIR@
+CPXLIB = @CPXLIB@
 CXX = @CXX@
 CXXCPP = @CXXCPP@
 CXXDEFS = @CXXDEFS@
@@ -168,9 +181,9 @@ EXEEXT = @EXEEXT@
 F77 = @F77@
 FFLAGS = @FFLAGS@
 FMPINCDIR = @FMPINCDIR@
-FMPLIBDIR = @FMPLIBDIR@
+FMPLIB = @FMPLIB@
 GLPKINCDIR = @GLPKINCDIR@
-GLPKLIBDIR = @GLPKLIBDIR@
+GLPKLIB = @GLPKLIB@
 HAVE_EXTERNALS_FALSE = @HAVE_EXTERNALS_FALSE@
 HAVE_EXTERNALS_TRUE = @HAVE_EXTERNALS_TRUE@
 INSTALL_DATA = @INSTALL_DATA@
@@ -191,12 +204,12 @@ MAINTAINER_SMALL_FALSE = @MAINTAINER_SMALL_FALSE@
 MAINTAINER_SMALL_TRUE = @MAINTAINER_SMALL_TRUE@
 MAKEINFO = @MAKEINFO@
 MSKINCDIR = @MSKINCDIR@
-MSKLIBDIR = @MSKLIBDIR@
+MSKLIB = @MSKLIB@
 OBJEXT = @OBJEXT@
 OSIOBJDIR = @OSIOBJDIR@
 OSISRCDIR = @OSISRCDIR@
 OSLINCDIR = @OSLINCDIR@
-OSLLIBDIR = @OSLLIBDIR@
+OSLLIB = @OSLLIB@
 PACKAGE = @PACKAGE@
 PACKAGE_BUGREPORT = @PACKAGE_BUGREPORT@
 PACKAGE_NAME = @PACKAGE_NAME@
@@ -208,7 +221,7 @@ RANLIB = @RANLIB@
 SET_MAKE = @SET_MAKE@
 SHELL = @SHELL@
 SPXINCDIR = @SPXINCDIR@
-SPXLIBDIR = @SPXLIBDIR@
+SPXLIB = @SPXLIB@
 STRIP = @STRIP@
 SYMOBJDIR = @SYMOBJDIR@
 SYMSRCDIR = @SYMSRCDIR@
@@ -216,7 +229,7 @@ VERSION = @VERSION@
 VOLOBJDIR = @VOLOBJDIR@
 VOLSRCDIR = @VOLSRCDIR@
 XPRINCDIR = @XPRINCDIR@
-XPRLIBDIR = @XPRLIBDIR@
+XPRLIB = @XPRLIB@
 ac_ct_AR = @ac_ct_AR@
 ac_ct_CC = @ac_ct_CC@
 ac_ct_CXX = @ac_ct_CXX@
@@ -277,18 +290,25 @@ SUBDIRS = src $(am__append_1)
 ########################################################################
 
 # Here we need include all files that are not mentioned in other Makefiles
-EXTRA_DIST = 
+EXTRA_DIST = $(am__append_3)
 
 ########################################################################
 #                  Installation of the addlibs file                    #
 ########################################################################
 addlibsfile = cbc_addlibs.txt
+
+########################################################################
+#                         Maintainer Stuff                             #
+########################################################################
+
+# Files that are generated and should be cleaned with make distclean
+DISTCLEANFILES = $(am__append_2)
 all: all-recursive
 
 .SUFFIXES:
 am--refresh:
 	@:
-$(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am  $(am__configure_deps)
+$(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am $(srcdir)/../BuildTools/Makemain.inc $(am__configure_deps)
 	@for dep in $?; do \
 	  case '$(am__configure_deps)' in \
 	    *$$dep*) \
@@ -484,7 +504,7 @@ distclean-tags:
 distdir: $(DISTFILES)
 	$(am__remove_distdir)
 	mkdir $(distdir)
-	$(mkdir_p) $(distdir)/. $(distdir)/.. $(distdir)/../Clp/src $(distdir)/inc
+	$(mkdir_p) $(distdir)/. $(distdir)/.. $(distdir)/../BuildTools $(distdir)/../Clp/src $(distdir)/inc
 	@srcdirstrip=`echo "$(srcdir)" | sed 's|.|.|g'`; \
 	topsrcdirstrip=`echo "$(top_srcdir)" | sed 's|.|.|g'`; \
 	list='$(DISTFILES)'; for file in $$list; do \
@@ -648,6 +668,7 @@ clean-generic:
 
 distclean-generic:
 	-test -z "$(CONFIG_CLEAN_FILES)" || rm -f $(CONFIG_CLEAN_FILES)
+	-test -z "$(DISTCLEANFILES)" || rm -f $(DISTCLEANFILES)
 
 maintainer-clean-generic:
 	@echo "This command is intended for maintainers to use"
@@ -744,6 +765,39 @@ install-exec-local:
 
 uninstall-local:
 	rm -f $(DESTDIR)$(libdir)/$(addlibsfile)
+
+# Make sure acinclude is using most recent coin.m4
+@MAINTAINER_MODE_TRUE@$(srcdir)/acinclude.m4: $(BUILDTOOLSDIR)/coin.m4
+@MAINTAINER_MODE_TRUE@	cat $(LIBTOOLM4) $< > $@
+
+# Make sure the autotools scripts are up to date
+@MAINTAINER_MODE_TRUE@$(AUX_DIR)/install-sh: $(BUILDTOOLSDIR)/install-sh
+@MAINTAINER_MODE_TRUE@	cp $< $@
+
+@MAINTAINER_MODE_TRUE@$(AUX_DIR)/missing: $(BUILDTOOLSDIR)/missing
+@MAINTAINER_MODE_TRUE@	cp $< $@
+
+@MAINTAINER_MODE_TRUE@@MAINTAINER_SMALL_FALSE@$(AUX_DIR)/config.guess: $(BUILDTOOLSDIR)/config.guess
+@MAINTAINER_MODE_TRUE@@MAINTAINER_SMALL_FALSE@	cp $< $@
+
+@MAINTAINER_MODE_TRUE@@MAINTAINER_SMALL_FALSE@$(AUX_DIR)/config.sub: $(BUILDTOOLSDIR)/config.sub
+@MAINTAINER_MODE_TRUE@@MAINTAINER_SMALL_FALSE@	cp $< $@
+
+@MAINTAINER_MODE_TRUE@@MAINTAINER_SMALL_FALSE@$(AUX_DIR)/depcomp: $(BUILDTOOLSDIR)/depcomp
+@MAINTAINER_MODE_TRUE@@MAINTAINER_SMALL_FALSE@	cp $< $@
+
+@MAINTAINER_MODE_TRUE@@MAINTAINER_SMALL_FALSE@$(AUX_DIR)/ltmain.sh: $(BUILDTOOLSDIR)/ltmain.sh
+@MAINTAINER_MODE_TRUE@@MAINTAINER_SMALL_FALSE@	cp $< $@
+
+# Take care of updating externals (if Externals file exists)
+@HAVE_EXTERNALS_TRUE@@MAINTAINER_MODE_TRUE@$(top_builddir)/Makefile: .Externals-stamp
+
+@HAVE_EXTERNALS_TRUE@@MAINTAINER_MODE_TRUE@.Externals-stamp: $(srcdir)/Externals
+@HAVE_EXTERNALS_TRUE@@MAINTAINER_MODE_TRUE@	cd $(srcdir); svn propset svn:externals -F Externals .
+@HAVE_EXTERNALS_TRUE@@MAINTAINER_MODE_TRUE@	touch .Externals-stamp
+
+@HAVE_EXTERNALS_TRUE@@MAINTAINER_MODE_TRUE@update-externals: .Externals-stamp
+@HAVE_EXTERNALS_TRUE@@MAINTAINER_MODE_TRUE@	cd $(srcdir); svn update
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
 .NOEXPORT:

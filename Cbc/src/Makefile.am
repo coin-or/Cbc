@@ -146,7 +146,8 @@ endif
 # Finally the Osi Coin library (many of the above need it)
 cbc_LDADD += $(OSIOBJDIR)/src/libOsi.la \
 	$(COINUTILSOBJDIR)/src/libCoinUtils.la
-LIBS += `cat $(COINUTILSOBJDIR)/coinutils_addlibs.txt` $(ADDLIBS)
+LIBS += `cat $(OSIOBJDIR)/osi_addlibs.txt` \
+	`cat $(COINUTILSOBJDIR)/coinutils_addlibs.txt` $(ADDLIBS)
 
 # Finally, the -rpath flag is used by libtool to make sure that the shared
 # library is found (in the lib install directory) when we are using dynamic

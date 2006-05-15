@@ -473,7 +473,7 @@ ac_includes_default="\
 # include <unistd.h>
 #endif"
 
-ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS build build_cpu build_vendor build_os ADDLIBS ALWAYS_FALSE_TRUE ALWAYS_FALSE_FALSE COIN_DEBUG_TRUE COIN_DEBUG_FALSE CXXDEFS CXX CXXFLAGS LDFLAGS CPPFLAGS ac_ct_CXX EXEEXT OBJEXT EGREP INSTALL_PROGRAM INSTALL_SCRIPT INSTALL_DATA CYGPATH_W PACKAGE VERSION ACLOCAL AUTOCONF AUTOMAKE AUTOHEADER MAKEINFO install_sh STRIP ac_ct_STRIP INSTALL_STRIP_PROGRAM mkdir_p AWK SET_MAKE am__leading_dot AMTAR am__tar am__untar DEPDIR am__include am__quote AMDEP_TRUE AMDEP_FALSE AMDEPBACKSLASH CXXDEPMODE am__fastdepCXX_TRUE am__fastdepCXX_FALSE MAINTAINER_MODE_TRUE MAINTAINER_MODE_FALSE MAINT LIBTOOLM4 have_autoconf have_automake BUILDTOOLSDIR AUX_DIR HAVE_EXTERNALS_TRUE HAVE_EXTERNALS_FALSE MAINTAINER_SMALL_TRUE MAINTAINER_SMALL_FALSE CC CFLAGS ac_ct_CC CCDEPMODE am__fastdepCC_TRUE am__fastdepCC_FALSE host host_cpu host_vendor host_os LN_S ECHO AR ac_ct_AR RANLIB ac_ct_RANLIB CPP CXXCPP F77 FFLAGS ac_ct_F77 LIBTOOL pkg_lib_dir pkg_include_dir pkg_bin_dir CBCSRCDIR CBCOBJDIR COIN_HAS_CBC_TRUE COIN_HAS_CBC_FALSE CGLSRCDIR CGLOBJDIR COIN_HAS_CGL_TRUE COIN_HAS_CGL_FALSE CLPSRCDIR CLPOBJDIR COIN_HAS_CLP_TRUE COIN_HAS_CLP_FALSE COINUTILSSRCDIR COINUTILSOBJDIR COIN_HAS_COINUTILS_TRUE COIN_HAS_COINUTILS_FALSE DYLPSRCDIR DYLPOBJDIR COIN_HAS_DYLP_TRUE COIN_HAS_DYLP_FALSE OSISRCDIR OSIOBJDIR COIN_HAS_OSI_TRUE COIN_HAS_OSI_FALSE SYMSRCDIR SYMOBJDIR COIN_HAS_SYM_TRUE COIN_HAS_SYM_FALSE VOLSRCDIR VOLOBJDIR COIN_HAS_VOL_TRUE COIN_HAS_VOL_FALSE CPXINCDIR CPXLIBDIR COIN_HAS_CPX_TRUE COIN_HAS_CPX_FALSE GLPKINCDIR GLPKLIBDIR COIN_HAS_GLPK_TRUE COIN_HAS_GLPK_FALSE FMPINCDIR FMPLIBDIR COIN_HAS_FMP_TRUE COIN_HAS_FMP_FALSE MSKINCDIR MSKLIBDIR COIN_HAS_MSK_TRUE COIN_HAS_MSK_FALSE OSLINCDIR OSLLIBDIR COIN_HAS_OSL_TRUE COIN_HAS_OSL_FALSE SPXINCDIR SPXLIBDIR COIN_HAS_SPX_TRUE COIN_HAS_SPX_FALSE XPRINCDIR XPRLIBDIR COIN_HAS_XPR_TRUE COIN_HAS_XPR_FALSE LIBOBJS LTLIBOBJS'
+ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS build build_cpu build_vendor build_os ADDLIBS ALWAYS_FALSE_TRUE ALWAYS_FALSE_FALSE COIN_DEBUG_TRUE COIN_DEBUG_FALSE CXXDEFS CXX CXXFLAGS LDFLAGS CPPFLAGS ac_ct_CXX EXEEXT OBJEXT EGREP INSTALL_PROGRAM INSTALL_SCRIPT INSTALL_DATA CYGPATH_W PACKAGE VERSION ACLOCAL AUTOCONF AUTOMAKE AUTOHEADER MAKEINFO install_sh STRIP ac_ct_STRIP INSTALL_STRIP_PROGRAM mkdir_p AWK SET_MAKE am__leading_dot AMTAR am__tar am__untar DEPDIR am__include am__quote AMDEP_TRUE AMDEP_FALSE AMDEPBACKSLASH CXXDEPMODE am__fastdepCXX_TRUE am__fastdepCXX_FALSE MAINTAINER_MODE_TRUE MAINTAINER_MODE_FALSE MAINT LIBTOOLM4 have_autoconf have_automake BUILDTOOLSDIR AUX_DIR HAVE_EXTERNALS_TRUE HAVE_EXTERNALS_FALSE MAINTAINER_SMALL_TRUE MAINTAINER_SMALL_FALSE CC CFLAGS ac_ct_CC CCDEPMODE am__fastdepCC_TRUE am__fastdepCC_FALSE host host_cpu host_vendor host_os LN_S ECHO AR ac_ct_AR RANLIB ac_ct_RANLIB CPP CXXCPP F77 FFLAGS ac_ct_F77 LIBTOOL pkg_lib_dir pkg_include_dir pkg_bin_dir CBCSRCDIR CBCOBJDIR COIN_HAS_CBC_TRUE COIN_HAS_CBC_FALSE CGLSRCDIR CGLOBJDIR COIN_HAS_CGL_TRUE COIN_HAS_CGL_FALSE CLPSRCDIR CLPOBJDIR COIN_HAS_CLP_TRUE COIN_HAS_CLP_FALSE COINUTILSSRCDIR COINUTILSOBJDIR COIN_HAS_COINUTILS_TRUE COIN_HAS_COINUTILS_FALSE DYLPSRCDIR DYLPOBJDIR COIN_HAS_DYLP_TRUE COIN_HAS_DYLP_FALSE OSISRCDIR OSIOBJDIR COIN_HAS_OSI_TRUE COIN_HAS_OSI_FALSE SYMSRCDIR SYMOBJDIR COIN_HAS_SYM_TRUE COIN_HAS_SYM_FALSE VOLSRCDIR VOLOBJDIR COIN_HAS_VOL_TRUE COIN_HAS_VOL_FALSE CPXINCDIR CPXLIB COIN_HAS_CPX_TRUE COIN_HAS_CPX_FALSE GLPKINCDIR GLPKLIB COIN_HAS_GLPK_TRUE COIN_HAS_GLPK_FALSE FMPINCDIR FMPLIB COIN_HAS_FMP_TRUE COIN_HAS_FMP_FALSE MSKINCDIR MSKLIB COIN_HAS_MSK_TRUE COIN_HAS_MSK_FALSE OSLINCDIR OSLLIB COIN_HAS_OSL_TRUE COIN_HAS_OSL_FALSE SPXINCDIR SPXLIB COIN_HAS_SPX_TRUE COIN_HAS_SPX_FALSE XPRINCDIR XPRLIB COIN_HAS_XPR_TRUE COIN_HAS_XPR_FALSE LIBOBJS LTLIBOBJS'
 ac_subst_files=''
 
 # Initialize some variables set by options.
@@ -1065,25 +1065,25 @@ Optional Packages:
                           (if not given, clp is assumed)
   --with-cplex-incdir specify the directory with the header files for library
                           Cplex
-  --with-cplex-libdir specify the directory with the library Cplex
+  --with-cplex-lib specify the flags to link with the library Cplex
   --with-glpk-incdir specify the directory with the header files for library
                           Glpk
-  --with-glpk-libdir specify the directory with the library Glpk
+  --with-glpk-lib specify the flags to link with the library Glpk
   --with-fortmp-incdir specify the directory with the header files for library
                           FortMP
-  --with-fortmp-libdir specify the directory with the library FortMP
+  --with-fortmp-lib specify the flags to link with the library FortMP
   --with-mosek-incdir specify the directory with the header files for library
                           Mosek
-  --with-mosek-libdir specify the directory with the library Mosek
+  --with-mosek-lib specify the flags to link with the library Mosek
   --with-osl-incdir specify the directory with the header files for library
                           Osl
-  --with-osl-libdir specify the directory with the library Osl
+  --with-osl-lib specify the flags to link with the library Osl
   --with-soplex-incdir specify the directory with the header files for library
                           Soplex
-  --with-soplex-libdir specify the directory with the library Soplex
+  --with-soplex-lib specify the flags to link with the library Soplex
   --with-xpress-incdir specify the directory with the header files for library
                           Xpress
-  --with-xpress-libdir specify the directory with the library Xpress
+  --with-xpress-lib specify the flags to link with the library Xpress
 
 Some influential environment variables:
   CXXDEFS     Additional -D flags to be used when compiling C++ code.
@@ -1638,7 +1638,7 @@ build_os=`echo $ac_cv_build | sed 's/^\([^-]*\)-\([^-]*\)-\(.*\)$/\3/'`
 # externals.  The following macro ensures that those externals are
 # retrieved by svn if they are not there yet.
 # Initialize the ADDLIBS variable (a number of library require -lm)
-ADDLIBS="-lm"
+ADDLIBS="" #"-lm"
 
 
 # A useful makefile conditional that is always false
@@ -19954,146 +19954,6 @@ fi
 #                            Third party solvers                            #
 #############################################################################
 
-# Some solvers require additional library, which we check for first.
-# ADDLIBS is our variable that accumulates the libraries necessary for
-# linking.
-echo "$as_me:$LINENO: checking for pthread_create in -lpthread" >&5
-echo $ECHO_N "checking for pthread_create in -lpthread... $ECHO_C" >&6
-if test "${ac_cv_lib_pthread_pthread_create+set}" = set; then
-  echo $ECHO_N "(cached) $ECHO_C" >&6
-else
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-lpthread  $LIBS"
-cat >conftest.$ac_ext <<_ACEOF
-/* confdefs.h.  */
-_ACEOF
-cat confdefs.h >>conftest.$ac_ext
-cat >>conftest.$ac_ext <<_ACEOF
-/* end confdefs.h.  */
-
-/* Override any gcc2 internal prototype to avoid an error.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-/* We use char because int might match the return type of a gcc2
-   builtin and then its argument prototype would still apply.  */
-char pthread_create ();
-int
-main ()
-{
-pthread_create ();
-  ;
-  return 0;
-}
-_ACEOF
-rm -f conftest.$ac_objext conftest$ac_exeext
-if { (eval echo "$as_me:$LINENO: \"$ac_link\"") >&5
-  (eval $ac_link) 2>conftest.er1
-  ac_status=$?
-  grep -v '^ *+' conftest.er1 >conftest.err
-  rm -f conftest.er1
-  cat conftest.err >&5
-  echo "$as_me:$LINENO: \$? = $ac_status" >&5
-  (exit $ac_status); } &&
-	 { ac_try='test -z "$ac_cxx_werror_flag"
-			 || test ! -s conftest.err'
-  { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
-  (eval $ac_try) 2>&5
-  ac_status=$?
-  echo "$as_me:$LINENO: \$? = $ac_status" >&5
-  (exit $ac_status); }; } &&
-	 { ac_try='test -s conftest$ac_exeext'
-  { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
-  (eval $ac_try) 2>&5
-  ac_status=$?
-  echo "$as_me:$LINENO: \$? = $ac_status" >&5
-  (exit $ac_status); }; }; then
-  ac_cv_lib_pthread_pthread_create=yes
-else
-  echo "$as_me: failed program was:" >&5
-sed 's/^/| /' conftest.$ac_ext >&5
-
-ac_cv_lib_pthread_pthread_create=no
-fi
-rm -f conftest.err conftest.$ac_objext \
-      conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-echo "$as_me:$LINENO: result: $ac_cv_lib_pthread_pthread_create" >&5
-echo "${ECHO_T}$ac_cv_lib_pthread_pthread_create" >&6
-if test $ac_cv_lib_pthread_pthread_create = yes; then
-  ADDLIBS="-lpthread $ADDLIBS"
-fi
-
-echo "$as_me:$LINENO: checking for dlopen in -ldl" >&5
-echo $ECHO_N "checking for dlopen in -ldl... $ECHO_C" >&6
-if test "${ac_cv_lib_dl_dlopen+set}" = set; then
-  echo $ECHO_N "(cached) $ECHO_C" >&6
-else
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-ldl  $LIBS"
-cat >conftest.$ac_ext <<_ACEOF
-/* confdefs.h.  */
-_ACEOF
-cat confdefs.h >>conftest.$ac_ext
-cat >>conftest.$ac_ext <<_ACEOF
-/* end confdefs.h.  */
-
-/* Override any gcc2 internal prototype to avoid an error.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-/* We use char because int might match the return type of a gcc2
-   builtin and then its argument prototype would still apply.  */
-char dlopen ();
-int
-main ()
-{
-dlopen ();
-  ;
-  return 0;
-}
-_ACEOF
-rm -f conftest.$ac_objext conftest$ac_exeext
-if { (eval echo "$as_me:$LINENO: \"$ac_link\"") >&5
-  (eval $ac_link) 2>conftest.er1
-  ac_status=$?
-  grep -v '^ *+' conftest.er1 >conftest.err
-  rm -f conftest.er1
-  cat conftest.err >&5
-  echo "$as_me:$LINENO: \$? = $ac_status" >&5
-  (exit $ac_status); } &&
-	 { ac_try='test -z "$ac_cxx_werror_flag"
-			 || test ! -s conftest.err'
-  { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
-  (eval $ac_try) 2>&5
-  ac_status=$?
-  echo "$as_me:$LINENO: \$? = $ac_status" >&5
-  (exit $ac_status); }; } &&
-	 { ac_try='test -s conftest$ac_exeext'
-  { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
-  (eval $ac_try) 2>&5
-  ac_status=$?
-  echo "$as_me:$LINENO: \$? = $ac_status" >&5
-  (exit $ac_status); }; }; then
-  ac_cv_lib_dl_dlopen=yes
-else
-  echo "$as_me: failed program was:" >&5
-sed 's/^/| /' conftest.$ac_ext >&5
-
-ac_cv_lib_dl_dlopen=no
-fi
-rm -f conftest.err conftest.$ac_objext \
-      conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-echo "$as_me:$LINENO: result: $ac_cv_lib_dl_dlopen" >&5
-echo "${ECHO_T}$ac_cv_lib_dl_dlopen" >&6
-if test $ac_cv_lib_dl_dlopen = yes; then
-  ADDLIBS="-ldl $ADDLIBS"
-fi
-
-
 # Check which third party solvers are available ToDo!
 
 echo "$as_me:$LINENO: checking if user provides library for Cplex" >&5
@@ -20108,13 +19968,13 @@ if test "${with_cplex_incdir+set}" = set; then
 fi;
 # Check for library directory
 
-# Check whether --with-cplex-libdir or --without-cplex-libdir was given.
-if test "${with_cplex_libdir+set}" = set; then
-  withval="$with_cplex_libdir"
-  CPXLIBDIR=`cd $withval; pwd`
+# Check whether --with-cplex-lib or --without-cplex-lib was given.
+if test "${with_cplex_lib+set}" = set; then
+  withval="$with_cplex_lib"
+  CPXLIB=$withval
 fi;
 
-if test x"$CPXINCDIR" != x || test x"$CPXLIBDIR" != x; then
+if test x"$CPXINCDIR" != x || test x"$CPXLIB" != x; then
   coin_has_cpx=true
 else
   coin_has_cpx=false
@@ -20122,9 +19982,9 @@ fi
 
 if test $coin_has_cpx = true; then
 # Check either both arguments or none are given
-  if test x"$CPXINCDIR" = x || test x"$CPXLIBDIR" = x; then
-    { { echo "$as_me:$LINENO: error: You need to specify both --with-cplex-incdir and --with-cplex-libdir if you want to use library Cplex" >&5
-echo "$as_me: error: You need to specify both --with-cplex-incdir and --with-cplex-libdir if you want to use library Cplex" >&2;}
+  if test x"$CPXINCDIR" = x || test x"$CPXLIB" = x; then
+    { { echo "$as_me:$LINENO: error: You need to specify both --with-cplex-incdir and --with-cplex-lib if you want to use library Cplex" >&5
+echo "$as_me: error: You need to specify both --with-cplex-incdir and --with-cplex-lib if you want to use library Cplex" >&2;}
    { (exit 1); exit 1; }; }
   fi
   echo "$as_me:$LINENO: result: yes" >&5
@@ -20158,33 +20018,22 @@ fi
 
 
   # Check if the symbol is provided in the library
+  # ToDo: FOR NOW WE ASSUME THAT WE ARE USING THE C++ COMPILER
   coin_save_LIBS="$LIBS"
-                  LIBS="-L$CPXLIBDIR -lcplex $ADDLIBS"
-                  echo "$as_me:$LINENO: checking for CPXgetstat in -lcplex" >&5
-echo $ECHO_N "checking for CPXgetstat in -lcplex... $ECHO_C" >&6
-if test "${ac_cv_lib_cplex_CPXgetstat+set}" = set; then
-  echo $ECHO_N "(cached) $ECHO_C" >&6
-else
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-lcplex  $LIBS"
-cat >conftest.$ac_ext <<_ACEOF
+                  LIBS="$CPXLIB $ADDLIBS"
+		  echo "$as_me:$LINENO: checking whether symbol CPXgetstat is available with CPX" >&5
+echo $ECHO_N "checking whether symbol CPXgetstat is available with CPX... $ECHO_C" >&6
+                  cat >conftest.$ac_ext <<_ACEOF
 /* confdefs.h.  */
 _ACEOF
 cat confdefs.h >>conftest.$ac_ext
 cat >>conftest.$ac_ext <<_ACEOF
 /* end confdefs.h.  */
-
-/* Override any gcc2 internal prototype to avoid an error.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-/* We use char because int might match the return type of a gcc2
-   builtin and then its argument prototype would still apply.  */
-char CPXgetstat ();
+extern "C" {void CPXgetstat();}
 int
 main ()
 {
-CPXgetstat ();
+CPXgetstat()
   ;
   return 0;
 }
@@ -20211,30 +20060,23 @@ if { (eval echo "$as_me:$LINENO: \"$ac_link\"") >&5
   ac_status=$?
   echo "$as_me:$LINENO: \$? = $ac_status" >&5
   (exit $ac_status); }; }; then
-  ac_cv_lib_cplex_CPXgetstat=yes
+  echo "$as_me:$LINENO: result: yes" >&5
+echo "${ECHO_T}yes" >&6
 else
   echo "$as_me: failed program was:" >&5
 sed 's/^/| /' conftest.$ac_ext >&5
 
-ac_cv_lib_cplex_CPXgetstat=no
+echo "$as_me:$LINENO: result: no" >&5
+echo "${ECHO_T}no" >&6
+                               { { echo "$as_me:$LINENO: error: Cannot find symbol CPXgetstat with CPX" >&5
+echo "$as_me: error: Cannot find symbol CPXgetstat with CPX" >&2;}
+   { (exit 1); exit 1; }; }
 fi
 rm -f conftest.err conftest.$ac_objext \
       conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-echo "$as_me:$LINENO: result: $ac_cv_lib_cplex_CPXgetstat" >&5
-echo "${ECHO_T}$ac_cv_lib_cplex_CPXgetstat" >&6
-if test $ac_cv_lib_cplex_CPXgetstat = yes; then
-  :
-else
-  { { echo "$as_me:$LINENO: error: Cannot find symbol CPXgetstat in library -lcplex" >&5
-echo "$as_me: error: Cannot find symbol CPXgetstat in library -lcplex" >&2;}
-   { (exit 1); exit 1; }; }
-fi
-
                   LIBS="$coin_save_LIBS"
 
-  ADDLIBS="-L$CPXLIBDIR -lcplex $ADDLIBS"
+  ADDLIBS="$CPXLIB $ADDLIBS"
 
 cat >>confdefs.h <<\_ACEOF
 #define COIN_HAS_CPX 1
@@ -20271,13 +20113,13 @@ if test "${with_glpk_incdir+set}" = set; then
 fi;
 # Check for library directory
 
-# Check whether --with-glpk-libdir or --without-glpk-libdir was given.
-if test "${with_glpk_libdir+set}" = set; then
-  withval="$with_glpk_libdir"
-  GLPKLIBDIR=`cd $withval; pwd`
+# Check whether --with-glpk-lib or --without-glpk-lib was given.
+if test "${with_glpk_lib+set}" = set; then
+  withval="$with_glpk_lib"
+  GLPKLIB=$withval
 fi;
 
-if test x"$GLPKINCDIR" != x || test x"$GLPKLIBDIR" != x; then
+if test x"$GLPKINCDIR" != x || test x"$GLPKLIB" != x; then
   coin_has_glpk=true
 else
   coin_has_glpk=false
@@ -20285,9 +20127,9 @@ fi
 
 if test $coin_has_glpk = true; then
 # Check either both arguments or none are given
-  if test x"$GLPKINCDIR" = x || test x"$GLPKLIBDIR" = x; then
-    { { echo "$as_me:$LINENO: error: You need to specify both --with-glpk-incdir and --with-glpk-libdir if you want to use library Glpk" >&5
-echo "$as_me: error: You need to specify both --with-glpk-incdir and --with-glpk-libdir if you want to use library Glpk" >&2;}
+  if test x"$GLPKINCDIR" = x || test x"$GLPKLIB" = x; then
+    { { echo "$as_me:$LINENO: error: You need to specify both --with-glpk-incdir and --with-glpk-lib if you want to use library Glpk" >&5
+echo "$as_me: error: You need to specify both --with-glpk-incdir and --with-glpk-lib if you want to use library Glpk" >&2;}
    { (exit 1); exit 1; }; }
   fi
   echo "$as_me:$LINENO: result: yes" >&5
@@ -20321,33 +20163,22 @@ fi
 
 
   # Check if the symbol is provided in the library
+  # ToDo: FOR NOW WE ASSUME THAT WE ARE USING THE C++ COMPILER
   coin_save_LIBS="$LIBS"
-                  LIBS="-L$GLPKLIBDIR -lglpk $ADDLIBS"
-                  echo "$as_me:$LINENO: checking for glp_lpx_simplex in -lglpk" >&5
-echo $ECHO_N "checking for glp_lpx_simplex in -lglpk... $ECHO_C" >&6
-if test "${ac_cv_lib_glpk_glp_lpx_simplex+set}" = set; then
-  echo $ECHO_N "(cached) $ECHO_C" >&6
-else
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-lglpk  $LIBS"
-cat >conftest.$ac_ext <<_ACEOF
+                  LIBS="$GLPKLIB $ADDLIBS"
+		  echo "$as_me:$LINENO: checking whether symbol glp_lpx_simplex is available with GLPK" >&5
+echo $ECHO_N "checking whether symbol glp_lpx_simplex is available with GLPK... $ECHO_C" >&6
+                  cat >conftest.$ac_ext <<_ACEOF
 /* confdefs.h.  */
 _ACEOF
 cat confdefs.h >>conftest.$ac_ext
 cat >>conftest.$ac_ext <<_ACEOF
 /* end confdefs.h.  */
-
-/* Override any gcc2 internal prototype to avoid an error.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-/* We use char because int might match the return type of a gcc2
-   builtin and then its argument prototype would still apply.  */
-char glp_lpx_simplex ();
+extern "C" {void glp_lpx_simplex();}
 int
 main ()
 {
-glp_lpx_simplex ();
+glp_lpx_simplex()
   ;
   return 0;
 }
@@ -20374,30 +20205,23 @@ if { (eval echo "$as_me:$LINENO: \"$ac_link\"") >&5
   ac_status=$?
   echo "$as_me:$LINENO: \$? = $ac_status" >&5
   (exit $ac_status); }; }; then
-  ac_cv_lib_glpk_glp_lpx_simplex=yes
+  echo "$as_me:$LINENO: result: yes" >&5
+echo "${ECHO_T}yes" >&6
 else
   echo "$as_me: failed program was:" >&5
 sed 's/^/| /' conftest.$ac_ext >&5
 
-ac_cv_lib_glpk_glp_lpx_simplex=no
+echo "$as_me:$LINENO: result: no" >&5
+echo "${ECHO_T}no" >&6
+                               { { echo "$as_me:$LINENO: error: Cannot find symbol glp_lpx_simplex with GLPK" >&5
+echo "$as_me: error: Cannot find symbol glp_lpx_simplex with GLPK" >&2;}
+   { (exit 1); exit 1; }; }
 fi
 rm -f conftest.err conftest.$ac_objext \
       conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-echo "$as_me:$LINENO: result: $ac_cv_lib_glpk_glp_lpx_simplex" >&5
-echo "${ECHO_T}$ac_cv_lib_glpk_glp_lpx_simplex" >&6
-if test $ac_cv_lib_glpk_glp_lpx_simplex = yes; then
-  :
-else
-  { { echo "$as_me:$LINENO: error: Cannot find symbol glp_lpx_simplex in library -lglpk" >&5
-echo "$as_me: error: Cannot find symbol glp_lpx_simplex in library -lglpk" >&2;}
-   { (exit 1); exit 1; }; }
-fi
-
                   LIBS="$coin_save_LIBS"
 
-  ADDLIBS="-L$GLPKLIBDIR -lglpk $ADDLIBS"
+  ADDLIBS="$GLPKLIB $ADDLIBS"
 
 cat >>confdefs.h <<\_ACEOF
 #define COIN_HAS_GLPK 1
@@ -20434,13 +20258,13 @@ if test "${with_fortmp_incdir+set}" = set; then
 fi;
 # Check for library directory
 
-# Check whether --with-fortmp-libdir or --without-fortmp-libdir was given.
-if test "${with_fortmp_libdir+set}" = set; then
-  withval="$with_fortmp_libdir"
-  FMPLIBDIR=`cd $withval; pwd`
+# Check whether --with-fortmp-lib or --without-fortmp-lib was given.
+if test "${with_fortmp_lib+set}" = set; then
+  withval="$with_fortmp_lib"
+  FMPLIB=$withval
 fi;
 
-if test x"$FMPINCDIR" != x || test x"$FMPLIBDIR" != x; then
+if test x"$FMPINCDIR" != x || test x"$FMPLIB" != x; then
   coin_has_fmp=true
 else
   coin_has_fmp=false
@@ -20448,9 +20272,9 @@ fi
 
 if test $coin_has_fmp = true; then
 # Check either both arguments or none are given
-  if test x"$FMPINCDIR" = x || test x"$FMPLIBDIR" = x; then
-    { { echo "$as_me:$LINENO: error: You need to specify both --with-fortmp-incdir and --with-fortmp-libdir if you want to use library FortMP" >&5
-echo "$as_me: error: You need to specify both --with-fortmp-incdir and --with-fortmp-libdir if you want to use library FortMP" >&2;}
+  if test x"$FMPINCDIR" = x || test x"$FMPLIB" = x; then
+    { { echo "$as_me:$LINENO: error: You need to specify both --with-fortmp-incdir and --with-fortmp-lib if you want to use library FortMP" >&5
+echo "$as_me: error: You need to specify both --with-fortmp-incdir and --with-fortmp-lib if you want to use library FortMP" >&2;}
    { (exit 1); exit 1; }; }
   fi
   echo "$as_me:$LINENO: result: yes" >&5
@@ -20458,8 +20282,9 @@ echo "${ECHO_T}yes" >&6
   # Check if the given header file is there
 
   # Check if the symbol is provided in the library
+  # ToDo: FOR NOW WE ASSUME THAT WE ARE USING THE C++ COMPILER
 
-  ADDLIBS="-L$FMPLIBDIR -lfmp $ADDLIBS"
+  ADDLIBS="$FMPLIB $ADDLIBS"
 
 cat >>confdefs.h <<\_ACEOF
 #define COIN_HAS_FMP 1
@@ -20496,13 +20321,13 @@ if test "${with_mosek_incdir+set}" = set; then
 fi;
 # Check for library directory
 
-# Check whether --with-mosek-libdir or --without-mosek-libdir was given.
-if test "${with_mosek_libdir+set}" = set; then
-  withval="$with_mosek_libdir"
-  MSKLIBDIR=`cd $withval; pwd`
+# Check whether --with-mosek-lib or --without-mosek-lib was given.
+if test "${with_mosek_lib+set}" = set; then
+  withval="$with_mosek_lib"
+  MSKLIB=$withval
 fi;
 
-if test x"$MSKINCDIR" != x || test x"$MSKLIBDIR" != x; then
+if test x"$MSKINCDIR" != x || test x"$MSKLIB" != x; then
   coin_has_msk=true
 else
   coin_has_msk=false
@@ -20510,9 +20335,9 @@ fi
 
 if test $coin_has_msk = true; then
 # Check either both arguments or none are given
-  if test x"$MSKINCDIR" = x || test x"$MSKLIBDIR" = x; then
-    { { echo "$as_me:$LINENO: error: You need to specify both --with-mosek-incdir and --with-mosek-libdir if you want to use library Mosek" >&5
-echo "$as_me: error: You need to specify both --with-mosek-incdir and --with-mosek-libdir if you want to use library Mosek" >&2;}
+  if test x"$MSKINCDIR" = x || test x"$MSKLIB" = x; then
+    { { echo "$as_me:$LINENO: error: You need to specify both --with-mosek-incdir and --with-mosek-lib if you want to use library Mosek" >&5
+echo "$as_me: error: You need to specify both --with-mosek-incdir and --with-mosek-lib if you want to use library Mosek" >&2;}
    { (exit 1); exit 1; }; }
   fi
   echo "$as_me:$LINENO: result: yes" >&5
@@ -20546,33 +20371,22 @@ fi
 
 
   # Check if the symbol is provided in the library
+  # ToDo: FOR NOW WE ASSUME THAT WE ARE USING THE C++ COMPILER
   coin_save_LIBS="$LIBS"
-                  LIBS="-L$MSKLIBDIR -lmosekdl $ADDLIBS"
-                  echo "$as_me:$LINENO: checking for MSK_openmosek in -lmosekdl" >&5
-echo $ECHO_N "checking for MSK_openmosek in -lmosekdl... $ECHO_C" >&6
-if test "${ac_cv_lib_mosekdl_MSK_openmosek+set}" = set; then
-  echo $ECHO_N "(cached) $ECHO_C" >&6
-else
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-lmosekdl  $LIBS"
-cat >conftest.$ac_ext <<_ACEOF
+                  LIBS="$MSKLIB $ADDLIBS"
+		  echo "$as_me:$LINENO: checking whether symbol MSK_openmosek is available with MSK" >&5
+echo $ECHO_N "checking whether symbol MSK_openmosek is available with MSK... $ECHO_C" >&6
+                  cat >conftest.$ac_ext <<_ACEOF
 /* confdefs.h.  */
 _ACEOF
 cat confdefs.h >>conftest.$ac_ext
 cat >>conftest.$ac_ext <<_ACEOF
 /* end confdefs.h.  */
-
-/* Override any gcc2 internal prototype to avoid an error.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-/* We use char because int might match the return type of a gcc2
-   builtin and then its argument prototype would still apply.  */
-char MSK_openmosek ();
+extern "C" {void MSK_openmosek();}
 int
 main ()
 {
-MSK_openmosek ();
+MSK_openmosek()
   ;
   return 0;
 }
@@ -20599,30 +20413,23 @@ if { (eval echo "$as_me:$LINENO: \"$ac_link\"") >&5
   ac_status=$?
   echo "$as_me:$LINENO: \$? = $ac_status" >&5
   (exit $ac_status); }; }; then
-  ac_cv_lib_mosekdl_MSK_openmosek=yes
+  echo "$as_me:$LINENO: result: yes" >&5
+echo "${ECHO_T}yes" >&6
 else
   echo "$as_me: failed program was:" >&5
 sed 's/^/| /' conftest.$ac_ext >&5
 
-ac_cv_lib_mosekdl_MSK_openmosek=no
+echo "$as_me:$LINENO: result: no" >&5
+echo "${ECHO_T}no" >&6
+                               { { echo "$as_me:$LINENO: error: Cannot find symbol MSK_openmosek with MSK" >&5
+echo "$as_me: error: Cannot find symbol MSK_openmosek with MSK" >&2;}
+   { (exit 1); exit 1; }; }
 fi
 rm -f conftest.err conftest.$ac_objext \
       conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-echo "$as_me:$LINENO: result: $ac_cv_lib_mosekdl_MSK_openmosek" >&5
-echo "${ECHO_T}$ac_cv_lib_mosekdl_MSK_openmosek" >&6
-if test $ac_cv_lib_mosekdl_MSK_openmosek = yes; then
-  :
-else
-  { { echo "$as_me:$LINENO: error: Cannot find symbol MSK_openmosek in library -lmosekdl" >&5
-echo "$as_me: error: Cannot find symbol MSK_openmosek in library -lmosekdl" >&2;}
-   { (exit 1); exit 1; }; }
-fi
-
                   LIBS="$coin_save_LIBS"
 
-  ADDLIBS="-L$MSKLIBDIR -lmosekdl $ADDLIBS"
+  ADDLIBS="$MSKLIB $ADDLIBS"
 
 cat >>confdefs.h <<\_ACEOF
 #define COIN_HAS_MSK 1
@@ -20659,13 +20466,13 @@ if test "${with_osl_incdir+set}" = set; then
 fi;
 # Check for library directory
 
-# Check whether --with-osl-libdir or --without-osl-libdir was given.
-if test "${with_osl_libdir+set}" = set; then
-  withval="$with_osl_libdir"
-  OSLLIBDIR=`cd $withval; pwd`
+# Check whether --with-osl-lib or --without-osl-lib was given.
+if test "${with_osl_lib+set}" = set; then
+  withval="$with_osl_lib"
+  OSLLIB=$withval
 fi;
 
-if test x"$OSLINCDIR" != x || test x"$OSLLIBDIR" != x; then
+if test x"$OSLINCDIR" != x || test x"$OSLLIB" != x; then
   coin_has_osl=true
 else
   coin_has_osl=false
@@ -20673,9 +20480,9 @@ fi
 
 if test $coin_has_osl = true; then
 # Check either both arguments or none are given
-  if test x"$OSLINCDIR" = x || test x"$OSLLIBDIR" = x; then
-    { { echo "$as_me:$LINENO: error: You need to specify both --with-osl-incdir and --with-osl-libdir if you want to use library Osl" >&5
-echo "$as_me: error: You need to specify both --with-osl-incdir and --with-osl-libdir if you want to use library Osl" >&2;}
+  if test x"$OSLINCDIR" = x || test x"$OSLLIB" = x; then
+    { { echo "$as_me:$LINENO: error: You need to specify both --with-osl-incdir and --with-osl-lib if you want to use library Osl" >&5
+echo "$as_me: error: You need to specify both --with-osl-incdir and --with-osl-lib if you want to use library Osl" >&2;}
    { (exit 1); exit 1; }; }
   fi
   echo "$as_me:$LINENO: result: yes" >&5
@@ -20709,33 +20516,22 @@ fi
 
 
   # Check if the symbol is provided in the library
+  # ToDo: FOR NOW WE ASSUME THAT WE ARE USING THE C++ COMPILER
   coin_save_LIBS="$LIBS"
-                  LIBS="-L$OSLLIBDIR -losl $ADDLIBS"
-                  echo "$as_me:$LINENO: checking for ekk_simplex in -losl" >&5
-echo $ECHO_N "checking for ekk_simplex in -losl... $ECHO_C" >&6
-if test "${ac_cv_lib_osl_ekk_simplex+set}" = set; then
-  echo $ECHO_N "(cached) $ECHO_C" >&6
-else
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-losl  $LIBS"
-cat >conftest.$ac_ext <<_ACEOF
+                  LIBS="$OSLLIB $ADDLIBS"
+		  echo "$as_me:$LINENO: checking whether symbol ekk_simplex is available with OSL" >&5
+echo $ECHO_N "checking whether symbol ekk_simplex is available with OSL... $ECHO_C" >&6
+                  cat >conftest.$ac_ext <<_ACEOF
 /* confdefs.h.  */
 _ACEOF
 cat confdefs.h >>conftest.$ac_ext
 cat >>conftest.$ac_ext <<_ACEOF
 /* end confdefs.h.  */
-
-/* Override any gcc2 internal prototype to avoid an error.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-/* We use char because int might match the return type of a gcc2
-   builtin and then its argument prototype would still apply.  */
-char ekk_simplex ();
+extern "C" {void ekk_simplex();}
 int
 main ()
 {
-ekk_simplex ();
+ekk_simplex()
   ;
   return 0;
 }
@@ -20762,30 +20558,23 @@ if { (eval echo "$as_me:$LINENO: \"$ac_link\"") >&5
   ac_status=$?
   echo "$as_me:$LINENO: \$? = $ac_status" >&5
   (exit $ac_status); }; }; then
-  ac_cv_lib_osl_ekk_simplex=yes
+  echo "$as_me:$LINENO: result: yes" >&5
+echo "${ECHO_T}yes" >&6
 else
   echo "$as_me: failed program was:" >&5
 sed 's/^/| /' conftest.$ac_ext >&5
 
-ac_cv_lib_osl_ekk_simplex=no
+echo "$as_me:$LINENO: result: no" >&5
+echo "${ECHO_T}no" >&6
+                               { { echo "$as_me:$LINENO: error: Cannot find symbol ekk_simplex with OSL" >&5
+echo "$as_me: error: Cannot find symbol ekk_simplex with OSL" >&2;}
+   { (exit 1); exit 1; }; }
 fi
 rm -f conftest.err conftest.$ac_objext \
       conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-echo "$as_me:$LINENO: result: $ac_cv_lib_osl_ekk_simplex" >&5
-echo "${ECHO_T}$ac_cv_lib_osl_ekk_simplex" >&6
-if test $ac_cv_lib_osl_ekk_simplex = yes; then
-  :
-else
-  { { echo "$as_me:$LINENO: error: Cannot find symbol ekk_simplex in library -losl" >&5
-echo "$as_me: error: Cannot find symbol ekk_simplex in library -losl" >&2;}
-   { (exit 1); exit 1; }; }
-fi
-
                   LIBS="$coin_save_LIBS"
 
-  ADDLIBS="-L$OSLLIBDIR -losl $ADDLIBS"
+  ADDLIBS="$OSLLIB $ADDLIBS"
 
 cat >>confdefs.h <<\_ACEOF
 #define COIN_HAS_OSL 1
@@ -20822,13 +20611,13 @@ if test "${with_soplex_incdir+set}" = set; then
 fi;
 # Check for library directory
 
-# Check whether --with-soplex-libdir or --without-soplex-libdir was given.
-if test "${with_soplex_libdir+set}" = set; then
-  withval="$with_soplex_libdir"
-  SPXLIBDIR=`cd $withval; pwd`
+# Check whether --with-soplex-lib or --without-soplex-lib was given.
+if test "${with_soplex_lib+set}" = set; then
+  withval="$with_soplex_lib"
+  SPXLIB=$withval
 fi;
 
-if test x"$SPXINCDIR" != x || test x"$SPXLIBDIR" != x; then
+if test x"$SPXINCDIR" != x || test x"$SPXLIB" != x; then
   coin_has_spx=true
 else
   coin_has_spx=false
@@ -20836,9 +20625,9 @@ fi
 
 if test $coin_has_spx = true; then
 # Check either both arguments or none are given
-  if test x"$SPXINCDIR" = x || test x"$SPXLIBDIR" = x; then
-    { { echo "$as_me:$LINENO: error: You need to specify both --with-soplex-incdir and --with-soplex-libdir if you want to use library Soplex" >&5
-echo "$as_me: error: You need to specify both --with-soplex-incdir and --with-soplex-libdir if you want to use library Soplex" >&2;}
+  if test x"$SPXINCDIR" = x || test x"$SPXLIB" = x; then
+    { { echo "$as_me:$LINENO: error: You need to specify both --with-soplex-incdir and --with-soplex-lib if you want to use library Soplex" >&5
+echo "$as_me: error: You need to specify both --with-soplex-incdir and --with-soplex-lib if you want to use library Soplex" >&2;}
    { (exit 1); exit 1; }; }
   fi
   echo "$as_me:$LINENO: result: yes" >&5
@@ -20872,8 +20661,9 @@ fi
 
 
   # Check if the symbol is provided in the library
+  # ToDo: FOR NOW WE ASSUME THAT WE ARE USING THE C++ COMPILER
 
-  ADDLIBS="-L$SPXLIBDIR -lspx $ADDLIBS"
+  ADDLIBS="$SPXLIB $ADDLIBS"
 
 cat >>confdefs.h <<\_ACEOF
 #define COIN_HAS_SPX 1
@@ -20910,13 +20700,13 @@ if test "${with_xpress_incdir+set}" = set; then
 fi;
 # Check for library directory
 
-# Check whether --with-xpress-libdir or --without-xpress-libdir was given.
-if test "${with_xpress_libdir+set}" = set; then
-  withval="$with_xpress_libdir"
-  XPRLIBDIR=`cd $withval; pwd`
+# Check whether --with-xpress-lib or --without-xpress-lib was given.
+if test "${with_xpress_lib+set}" = set; then
+  withval="$with_xpress_lib"
+  XPRLIB=$withval
 fi;
 
-if test x"$XPRINCDIR" != x || test x"$XPRLIBDIR" != x; then
+if test x"$XPRINCDIR" != x || test x"$XPRLIB" != x; then
   coin_has_xpr=true
 else
   coin_has_xpr=false
@@ -20924,9 +20714,9 @@ fi
 
 if test $coin_has_xpr = true; then
 # Check either both arguments or none are given
-  if test x"$XPRINCDIR" = x || test x"$XPRLIBDIR" = x; then
-    { { echo "$as_me:$LINENO: error: You need to specify both --with-xpress-incdir and --with-xpress-libdir if you want to use library Xpress" >&5
-echo "$as_me: error: You need to specify both --with-xpress-incdir and --with-xpress-libdir if you want to use library Xpress" >&2;}
+  if test x"$XPRINCDIR" = x || test x"$XPRLIB" = x; then
+    { { echo "$as_me:$LINENO: error: You need to specify both --with-xpress-incdir and --with-xpress-lib if you want to use library Xpress" >&5
+echo "$as_me: error: You need to specify both --with-xpress-incdir and --with-xpress-lib if you want to use library Xpress" >&2;}
    { (exit 1); exit 1; }; }
   fi
   echo "$as_me:$LINENO: result: yes" >&5
@@ -20960,33 +20750,22 @@ fi
 
 
   # Check if the symbol is provided in the library
+  # ToDo: FOR NOW WE ASSUME THAT WE ARE USING THE C++ COMPILER
   coin_save_LIBS="$LIBS"
-                  LIBS="-L$XPRLIBDIR -lxpr $ADDLIBS"
-                  echo "$as_me:$LINENO: checking for XPRSsetintcontrol in -lxpr" >&5
-echo $ECHO_N "checking for XPRSsetintcontrol in -lxpr... $ECHO_C" >&6
-if test "${ac_cv_lib_xpr_XPRSsetintcontrol+set}" = set; then
-  echo $ECHO_N "(cached) $ECHO_C" >&6
-else
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-lxpr  $LIBS"
-cat >conftest.$ac_ext <<_ACEOF
+                  LIBS="$XPRLIB $ADDLIBS"
+		  echo "$as_me:$LINENO: checking whether symbol XPRSsetintcontrol is available with XPR" >&5
+echo $ECHO_N "checking whether symbol XPRSsetintcontrol is available with XPR... $ECHO_C" >&6
+                  cat >conftest.$ac_ext <<_ACEOF
 /* confdefs.h.  */
 _ACEOF
 cat confdefs.h >>conftest.$ac_ext
 cat >>conftest.$ac_ext <<_ACEOF
 /* end confdefs.h.  */
-
-/* Override any gcc2 internal prototype to avoid an error.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-/* We use char because int might match the return type of a gcc2
-   builtin and then its argument prototype would still apply.  */
-char XPRSsetintcontrol ();
+extern "C" {void XPRSsetintcontrol();}
 int
 main ()
 {
-XPRSsetintcontrol ();
+XPRSsetintcontrol()
   ;
   return 0;
 }
@@ -21013,30 +20792,23 @@ if { (eval echo "$as_me:$LINENO: \"$ac_link\"") >&5
   ac_status=$?
   echo "$as_me:$LINENO: \$? = $ac_status" >&5
   (exit $ac_status); }; }; then
-  ac_cv_lib_xpr_XPRSsetintcontrol=yes
+  echo "$as_me:$LINENO: result: yes" >&5
+echo "${ECHO_T}yes" >&6
 else
   echo "$as_me: failed program was:" >&5
 sed 's/^/| /' conftest.$ac_ext >&5
 
-ac_cv_lib_xpr_XPRSsetintcontrol=no
+echo "$as_me:$LINENO: result: no" >&5
+echo "${ECHO_T}no" >&6
+                               { { echo "$as_me:$LINENO: error: Cannot find symbol XPRSsetintcontrol with XPR" >&5
+echo "$as_me: error: Cannot find symbol XPRSsetintcontrol with XPR" >&2;}
+   { (exit 1); exit 1; }; }
 fi
 rm -f conftest.err conftest.$ac_objext \
       conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-echo "$as_me:$LINENO: result: $ac_cv_lib_xpr_XPRSsetintcontrol" >&5
-echo "${ECHO_T}$ac_cv_lib_xpr_XPRSsetintcontrol" >&6
-if test $ac_cv_lib_xpr_XPRSsetintcontrol = yes; then
-  :
-else
-  { { echo "$as_me:$LINENO: error: Cannot find symbol XPRSsetintcontrol in library -lxpr" >&5
-echo "$as_me: error: Cannot find symbol XPRSsetintcontrol in library -lxpr" >&2;}
-   { (exit 1); exit 1; }; }
-fi
-
                   LIBS="$coin_save_LIBS"
 
-  ADDLIBS="-L$XPRLIBDIR -lxpr $ADDLIBS"
+  ADDLIBS="$XPRLIB $ADDLIBS"
 
 cat >>confdefs.h <<\_ACEOF
 #define COIN_HAS_XPR 1
@@ -21987,31 +21759,31 @@ s,@VOLOBJDIR@,$VOLOBJDIR,;t t
 s,@COIN_HAS_VOL_TRUE@,$COIN_HAS_VOL_TRUE,;t t
 s,@COIN_HAS_VOL_FALSE@,$COIN_HAS_VOL_FALSE,;t t
 s,@CPXINCDIR@,$CPXINCDIR,;t t
-s,@CPXLIBDIR@,$CPXLIBDIR,;t t
+s,@CPXLIB@,$CPXLIB,;t t
 s,@COIN_HAS_CPX_TRUE@,$COIN_HAS_CPX_TRUE,;t t
 s,@COIN_HAS_CPX_FALSE@,$COIN_HAS_CPX_FALSE,;t t
 s,@GLPKINCDIR@,$GLPKINCDIR,;t t
-s,@GLPKLIBDIR@,$GLPKLIBDIR,;t t
+s,@GLPKLIB@,$GLPKLIB,;t t
 s,@COIN_HAS_GLPK_TRUE@,$COIN_HAS_GLPK_TRUE,;t t
 s,@COIN_HAS_GLPK_FALSE@,$COIN_HAS_GLPK_FALSE,;t t
 s,@FMPINCDIR@,$FMPINCDIR,;t t
-s,@FMPLIBDIR@,$FMPLIBDIR,;t t
+s,@FMPLIB@,$FMPLIB,;t t
 s,@COIN_HAS_FMP_TRUE@,$COIN_HAS_FMP_TRUE,;t t
 s,@COIN_HAS_FMP_FALSE@,$COIN_HAS_FMP_FALSE,;t t
 s,@MSKINCDIR@,$MSKINCDIR,;t t
-s,@MSKLIBDIR@,$MSKLIBDIR,;t t
+s,@MSKLIB@,$MSKLIB,;t t
 s,@COIN_HAS_MSK_TRUE@,$COIN_HAS_MSK_TRUE,;t t
 s,@COIN_HAS_MSK_FALSE@,$COIN_HAS_MSK_FALSE,;t t
 s,@OSLINCDIR@,$OSLINCDIR,;t t
-s,@OSLLIBDIR@,$OSLLIBDIR,;t t
+s,@OSLLIB@,$OSLLIB,;t t
 s,@COIN_HAS_OSL_TRUE@,$COIN_HAS_OSL_TRUE,;t t
 s,@COIN_HAS_OSL_FALSE@,$COIN_HAS_OSL_FALSE,;t t
 s,@SPXINCDIR@,$SPXINCDIR,;t t
-s,@SPXLIBDIR@,$SPXLIBDIR,;t t
+s,@SPXLIB@,$SPXLIB,;t t
 s,@COIN_HAS_SPX_TRUE@,$COIN_HAS_SPX_TRUE,;t t
 s,@COIN_HAS_SPX_FALSE@,$COIN_HAS_SPX_FALSE,;t t
 s,@XPRINCDIR@,$XPRINCDIR,;t t
-s,@XPRLIBDIR@,$XPRLIBDIR,;t t
+s,@XPRLIB@,$XPRLIB,;t t
 s,@COIN_HAS_XPR_TRUE@,$COIN_HAS_XPR_TRUE,;t t
 s,@COIN_HAS_XPR_FALSE@,$COIN_HAS_XPR_FALSE,;t t
 s,@LIBOBJS@,$LIBOBJS,;t t

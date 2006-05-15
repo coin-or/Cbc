@@ -53,7 +53,8 @@ DIST_COMMON = $(am__configure_deps) $(srcdir)/BuildTools/Makemain.inc \
 	$(srcdir)/Makefile.am $(srcdir)/Makefile.in \
 	$(top_srcdir)/configure config.guess config.sub depcomp \
 	install-sh ltmain.sh missing
-@HAVE_EXTERNALS_TRUE@@MAINTAINER_MODE_TRUE@am__append_1 = Externals
+@HAVE_EXTERNALS_TRUE@@MAINTAINER_MODE_TRUE@am__append_1 = .Externals-stamp
+@HAVE_EXTERNALS_TRUE@@MAINTAINER_MODE_TRUE@am__append_2 = Externals
 subdir = .
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/acinclude.m4 \
@@ -155,7 +156,7 @@ subdirs = @subdirs@
 sysconfdir = @sysconfdir@
 target_alias = @target_alias@
 AUTOMAKE_OPTIONS = foreign
-EXTRA_DIST = $(am__append_1)
+EXTRA_DIST = $(am__append_2)
 
 ########################################################################
 #                          Subdirectories                              #
@@ -164,6 +165,13 @@ EXTRA_DIST = $(am__append_1)
 # subdirs is set by configure as the list of all subdirectories to recurse
 # into
 SUBDIRS = $(subdirs)
+
+########################################################################
+#                         Maintainer Stuff                             #
+########################################################################
+
+# Files that are generated and should be cleaned with make distclean
+DISTCLEANFILES = $(am__append_1)
 all: all-recursive
 
 .SUFFIXES:
@@ -501,12 +509,11 @@ clean-generic:
 
 distclean-generic:
 	-test -z "$(CONFIG_CLEAN_FILES)" || rm -f $(CONFIG_CLEAN_FILES)
+	-test -z "$(DISTCLEANFILES)" || rm -f $(DISTCLEANFILES)
 
 maintainer-clean-generic:
 	@echo "This command is intended for maintainers to use"
 	@echo "it deletes files that may require special tools to rebuild."
-@HAVE_EXTERNALS_FALSE@distclean-local:
-@MAINTAINER_MODE_FALSE@distclean-local:
 clean: clean-recursive
 
 clean-am: clean-generic mostlyclean-am
@@ -514,8 +521,7 @@ clean-am: clean-generic mostlyclean-am
 distclean: distclean-recursive
 	-rm -f $(am__CONFIG_DISTCLEAN_FILES)
 	-rm -f Makefile
-distclean-am: clean-am distclean-generic distclean-local \
-	distclean-tags
+distclean-am: clean-am distclean-generic distclean-tags
 
 dvi: dvi-recursive
 
@@ -563,16 +569,15 @@ uninstall-info: uninstall-info-recursive
 	check-am clean clean-generic clean-recursive ctags \
 	ctags-recursive dist dist-all dist-bzip2 dist-gzip dist-shar \
 	dist-tarZ dist-zip distcheck distclean distclean-generic \
-	distclean-local distclean-recursive distclean-tags \
-	distcleancheck distdir distuninstallcheck dvi dvi-am html \
-	html-am info info-am install install-am install-data \
-	install-data-am install-exec install-exec-am install-info \
-	install-info-am install-man install-strip installcheck \
-	installcheck-am installdirs installdirs-am maintainer-clean \
-	maintainer-clean-generic maintainer-clean-recursive \
-	mostlyclean mostlyclean-generic mostlyclean-recursive pdf \
-	pdf-am ps ps-am tags tags-recursive uninstall uninstall-am \
-	uninstall-info-am
+	distclean-recursive distclean-tags distcleancheck distdir \
+	distuninstallcheck dvi dvi-am html html-am info info-am \
+	install install-am install-data install-data-am install-exec \
+	install-exec-am install-info install-info-am install-man \
+	install-strip installcheck installcheck-am installdirs \
+	installdirs-am maintainer-clean maintainer-clean-generic \
+	maintainer-clean-recursive mostlyclean mostlyclean-generic \
+	mostlyclean-recursive pdf pdf-am ps ps-am tags tags-recursive \
+	uninstall uninstall-am uninstall-info-am
 
 
 ########################################################################
@@ -627,15 +632,6 @@ unitTests: tests
 
 @HAVE_EXTERNALS_TRUE@@MAINTAINER_MODE_TRUE@update-externals: .Externals-stamp
 @HAVE_EXTERNALS_TRUE@@MAINTAINER_MODE_TRUE@	cd $(srcdir); svn update
-
-@HAVE_EXTERNALS_TRUE@@MAINTAINER_MODE_TRUE@distclean-local: clean-externals-stamp
-
-@HAVE_EXTERNALS_TRUE@@MAINTAINER_MODE_TRUE@clean-externals-stamp:
-@HAVE_EXTERNALS_TRUE@@MAINTAINER_MODE_TRUE@	rm -f .Externals-stamp
-
-########################################################################
-#                         Maintainer Stuff                             #
-########################################################################
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
 .NOEXPORT:

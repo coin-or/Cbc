@@ -58,3 +58,12 @@ install-exec-local:
 
 uninstall-local:
 	rm -f $(DESTDIR)$(libdir)/$(addlibsfile)
+
+########################################################################
+#                         Maintainer Stuff                             #
+########################################################################
+
+# Files that are generated and should be cleaned with make distclean
+DISTCLEANFILES =
+
+include ../BuildTools/Makemain.inc

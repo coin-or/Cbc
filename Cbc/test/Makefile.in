@@ -408,9 +408,9 @@ uninstall-am: uninstall-info-am
 
 # We are using the CLP solver executable to do the unit test
 
-test: ../src/cbc ../src/solve
-	../src/cbc -miplib -unitTest
-	../src/solve -unitTest -netlib
+test: ../src/cbc$(EXEEXT) ../src/solve$(EXEEXT)
+	../src/cbc$(EXEEXT) -miplib -unitTest
+	../src/solve$(EXEEXT) -unitTest -netlib
 
 .PHONY: test
 # Tell versions [3.59,3.63) of GNU make to not export all variables.

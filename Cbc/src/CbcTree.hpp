@@ -56,15 +56,15 @@ public:
 
   /// Return size
   inline int size() const
-  { return nodes_.size();};
+  { return nodes_.size();}
 
   /// [] operator
   inline CbcNode * operator [] (int i) const
-  { return nodes_[i];};
+  { return nodes_[i];}
 
   /// Return a node pointer
   inline CbcNode * nodePointer (int i) const
-  { return nodes_[i];};
+  { return nodes_[i];}
 
 //@}
 
@@ -85,7 +85,7 @@ public:
   CbcNode * bestAlternate();
 
   /// We may have got an intelligent tree so give it one more chance
-  virtual void endSearch() {};
+  virtual void endSearch() {}
 //@}
 protected:
   std::vector <CbcNode *> nodes_;

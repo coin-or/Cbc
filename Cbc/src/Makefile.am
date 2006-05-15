@@ -253,7 +253,7 @@ nodist_include_HEADERS = ../inc/$(CONFIG_DIST)
 	$(EGREP) 'COIN_|CBC_DEFAULT_SOLVER' $< >>bla.tmp
 	echo "#endif" >>bla.tmp
 	if test -r ../inc/$(CONFIG_DIST); then \
-	  if diff ./inc/$(CONFIG_DIST) bla.tmp >/dev/null 2>1 ; then \
+	  if diff ../inc/$(CONFIG_DIST) bla.tmp >/dev/null 2>&1 ; then \
 	    rm -f bla.tmp; \
 	  else \
 	    rm -f ../inc/$(CONFIG_DIST); \

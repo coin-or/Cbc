@@ -203,7 +203,7 @@ CbcTree::cleanTree(CbcModel * model, double cutoff, double & bestPossibleObjecti
   }
   delete [] nodeArray;
   delete [] depth;
-};
+}
 
 // Return the best node of the heap using alternate criterion
 CbcNode * 

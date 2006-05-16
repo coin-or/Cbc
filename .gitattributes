@@ -11,3 +11,4 @@ Cbc/inc/config_cbc.h.in -text
 /depcomp -text
 /install-sh -text
 /missing -text
+share/config.site -text

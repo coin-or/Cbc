@@ -2308,7 +2308,7 @@ else
         ;;
       *)
 # ToDo decide about unroll-loops
-        coin_opt_cxxflags="-O3"
+        coin_opt_cxxflags="-O3 -fomit-frame-pointer"
         coin_add_cxxflags="-pipe"
         coin_dbg_cxxflags="-g"
         coin_warn_cxxflags="-pedantic-errors -Wimplicit -Wparentheses -Wreturn-type -Wcast-qual -Wall -Wpointer-arith -Wwrite-strings -Wconversion"

@@ -19521,7 +19521,9 @@ echo "$as_me: Applying patches to libtool for cl compiler" >&6;}
           -e 's%compile_deplibs=\"\$dir/\$old_library \$compile_deplibs\"%compile_deplibs="'\`"$CYGPATH_W"' \$dir/\$old_library | sed -e '"'"'sY\\\\\\\\Y/Yg'"'"\`' \$compile_deplibs\"'% \
           -e 's%compile_deplibs=\"\$dir/\$linklib \$compile_deplibs\"%compile_deplibs="'\`"$CYGPATH_W"' \$dir/\$linklib | sed -e '"'"'sY\\\\\\\\Y/Yg'"'"\`' \$compile_deplibs\"'% \
 	  -e 's%lib /OUT:%lib -OUT:%' \
-	  -e "s%cygpath -w%$CYGPATH_W%"\
+	  -e "s%cygpath -w%$CYGPATH_W%" \
+	  -e 's%$AR x \\$f_ex_an_ar_oldlib%bla=\\`lib -nologo -list \\$f_ex_an_ar_oldlib | xargs echo\\`; echo dd \\$bla; for i in \\$bla; do lib -nologo -extract:\\$i \\$f_ex_an_ar_oldlib; done%' \
+	  -e 's/$AR t/lib -nologo -list/' \
       libtool > conftest.bla
 
       mv conftest.bla libtool

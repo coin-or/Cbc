@@ -181,7 +181,6 @@ solve_DEPENDENCIES = libCbc.la $(CGLOBJDIR)/src/libCgl.la \
 	$(OSIOBJDIR)/src/OsiClp/libOsiClp.la \
 	$(OSIOBJDIR)/src/libOsi.la $(CLPOBJDIR)/src/libClp.la \
 	$(COINUTILSOBJDIR)/src/libCoinUtils.la
-DEFAULT_INCLUDES = -I. -I$(srcdir) -I$(top_builddir)/inc
 depcomp = $(SHELL) $(top_srcdir)/../depcomp
 am__depfiles_maybe = depfiles
 CXXCOMPILE = $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
@@ -503,6 +502,10 @@ solve_LDADD = libCbc.la \
 # library is found (in the lib install directory) when we are using dynamic
 # libraries.
 solve_LDFLAGS = -rpath $(libdir)
+
+# This line is necessary to allow VPATH compilation with MS compilers
+# on Cygwin
+DEFAULT_INCLUDES = -I. -I`$(CYGPATH_W) $(srcdir)` -I$(top_builddir)/inc
 
 ########################################################################
 #                Headers that need to be installed                     #

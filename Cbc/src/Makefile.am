@@ -213,6 +213,10 @@ CXXFLAGS += \
 # List additional defines
 DEFS += -DCOIN_NO_CLP_MESSAGE -DUSE_CBCCONFIG
 
+# This line is necessary to allow VPATH compilation with MS compilers
+# on Cygwin
+DEFAULT_INCLUDES = -I. -I`$(CYGPATH_W) $(srcdir)` -I$(top_builddir)/inc
+
 ########################################################################
 #                Headers that need to be installed                     #
 ########################################################################

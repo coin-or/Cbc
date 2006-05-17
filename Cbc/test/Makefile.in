@@ -403,16 +403,18 @@ uninstall-am: uninstall-info-am
 
 
 ########################################################################
-#                         unitTest for Clp                             #
+#                         unitTest for Cbc                             #
 ########################################################################
 
-# We are using the CLP solver executable to do the unit test
+# We are using the Cbc solver executable to do the unit test
 
-test: ../src/cbc$(EXEEXT) ../src/solve$(EXEEXT)
+test: ../src/cbc$(EXEEXT) ../src/solve$(EXEEXT) $(extra_target)
+	cd ../../Data/Netlib; make uncompress
+	cd ../../Data/miplib3; make uncompress
 	../src/cbc$(EXEEXT) -miplib -unitTest
 	../src/solve$(EXEEXT) -unitTest -netlib
 
-.PHONY: test
+.PHONY: test example_files
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
 .NOEXPORT:

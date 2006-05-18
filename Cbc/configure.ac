@@ -48,9 +48,6 @@ AC_COIN_SRCDIR_INIT
 # Check if user wants to produce debugging code
 AC_COIN_DEBUG_COMPILE
 
-# This package is written in C++
-AC_LANG(C++)
-
 # Get the name of the C++ compiler and appropriate compiler options
 AC_COIN_PROG_CXX
 

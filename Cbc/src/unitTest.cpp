@@ -2,7 +2,7 @@
 // Corporation and others.  All Rights Reserved.
 // Test individual classes or groups of classes
 
-#include "CbcConfig.hpp"
+#include "CbcConfig.h"
 
 #if defined(_MSC_VER)
 // Turn off compiler warning about long names

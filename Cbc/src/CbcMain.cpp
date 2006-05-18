@@ -1,7 +1,7 @@
 // copyright (C) 2002, International Business Machines
 // Corporation and others.  All Rights Reserved.
 
-#include "CbcConfig.hpp"
+#include "CbcConfig.h"
 
 #if defined(_MSC_VER)
 // Turn off compiler warning about long names

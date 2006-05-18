@@ -5,7 +5,7 @@
 #  pragma warning(disable:4786)
 #endif
 
-#include "CbcConfig.hpp"
+#include "CbcConfig.h"
 
 #include <cassert>
 #include <cmath>

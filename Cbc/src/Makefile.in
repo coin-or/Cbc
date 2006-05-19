@@ -333,6 +333,7 @@ LIBTOOL = @LIBTOOL@
 LIBTOOLM4 = @LIBTOOLM4@
 LN_S = @LN_S@
 LTLIBOBJS = @LTLIBOBJS@
+LT_LDFLAGS = @LT_LDFLAGS@
 MAINT = @MAINT@
 MAINTAINER_MODE_FALSE = @MAINTAINER_MODE_FALSE@
 MAINTAINER_MODE_TRUE = @MAINTAINER_MODE_TRUE@
@@ -453,7 +454,7 @@ libCbc_la_SOURCES = \
 
 
 # This is for libtool (on Windows)
-libCbc_la_LDFLAGS = #-no-undefined
+libCbc_la_LDFLAGS = $(LT_LDFLAGS)
 
 # List all source files for this executable, including headers
 cbc_SOURCES = \

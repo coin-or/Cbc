@@ -18,6 +18,7 @@ lib_LTLIBRARIES = libCbc.la
 
 # List all source files for this library, including headers
 libCbc_la_SOURCES = \
+	CbcConfig.h \
 	CbcBranchActual.cpp CbcBranchActual.hpp \
 	CbcBranchBase.cpp CbcBranchBase.hpp \
 	CbcBranchCut.cpp CbcBranchCut.hpp \

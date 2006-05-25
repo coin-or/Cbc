@@ -473,7 +473,7 @@ ac_includes_default="\
 # include <unistd.h>
 #endif"
 
-ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS build build_cpu build_vendor build_os ADDLIBS ALWAYS_FALSE_TRUE ALWAYS_FALSE_FALSE COIN_DEBUG_TRUE COIN_DEBUG_FALSE CDEFS CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT CXXDEFS CXX CXXFLAGS ac_ct_CXX EGREP INSTALL_PROGRAM INSTALL_SCRIPT INSTALL_DATA CYGPATH_W PACKAGE VERSION ACLOCAL AUTOCONF AUTOMAKE AUTOHEADER MAKEINFO install_sh STRIP ac_ct_STRIP INSTALL_STRIP_PROGRAM mkdir_p AWK SET_MAKE am__leading_dot AMTAR am__tar am__untar DEPDIR am__include am__quote AMDEP_TRUE AMDEP_FALSE AMDEPBACKSLASH CCDEPMODE am__fastdepCC_TRUE am__fastdepCC_FALSE CXXDEPMODE am__fastdepCXX_TRUE am__fastdepCXX_FALSE MAINTAINER_MODE_TRUE MAINTAINER_MODE_FALSE MAINT LIBTOOLM4 have_autoconf have_automake BUILDTOOLSDIR AUX_DIR HAVE_EXTERNALS_TRUE HAVE_EXTERNALS_FALSE MAINTAINER_SMALL_TRUE MAINTAINER_SMALL_FALSE host host_cpu host_vendor host_os LN_S ECHO AR ac_ct_AR RANLIB ac_ct_RANLIB CPP CXXCPP F77 FFLAGS ac_ct_F77 LIBTOOL LT_LDFLAGS pkg_lib_dir pkg_include_dir pkg_bin_dir CBCSRCDIR CBCOBJDIR COIN_HAS_CBC_TRUE COIN_HAS_CBC_FALSE CGLSRCDIR CGLOBJDIR COIN_HAS_CGL_TRUE COIN_HAS_CGL_FALSE CLPSRCDIR CLPOBJDIR COIN_HAS_CLP_TRUE COIN_HAS_CLP_FALSE COINUTILSSRCDIR COINUTILSOBJDIR COIN_HAS_COINUTILS_TRUE COIN_HAS_COINUTILS_FALSE DYLPSRCDIR DYLPOBJDIR COIN_HAS_DYLP_TRUE COIN_HAS_DYLP_FALSE OSISRCDIR OSIOBJDIR COIN_HAS_OSI_TRUE COIN_HAS_OSI_FALSE SYMSRCDIR SYMOBJDIR COIN_HAS_SYM_TRUE COIN_HAS_SYM_FALSE VOLSRCDIR VOLOBJDIR COIN_HAS_VOL_TRUE COIN_HAS_VOL_FALSE CPXINCDIR CPXLIB COIN_HAS_CPX_TRUE COIN_HAS_CPX_FALSE GLPKINCDIR GLPKLIB COIN_HAS_GLPK_TRUE COIN_HAS_GLPK_FALSE FMPINCDIR FMPLIB COIN_HAS_FMP_TRUE COIN_HAS_FMP_FALSE MSKINCDIR MSKLIB COIN_HAS_MSK_TRUE COIN_HAS_MSK_FALSE OSLINCDIR OSLLIB COIN_HAS_OSL_TRUE COIN_HAS_OSL_FALSE SPXINCDIR SPXLIB COIN_HAS_SPX_TRUE COIN_HAS_SPX_FALSE XPRINCDIR XPRLIB COIN_HAS_XPR_TRUE COIN_HAS_XPR_FALSE LIBOBJS LTLIBOBJS'
+ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS build build_cpu build_vendor build_os ADDLIBS ALWAYS_FALSE_TRUE ALWAYS_FALSE_FALSE COIN_DEBUG_TRUE COIN_DEBUG_FALSE CDEFS CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT CXXDEFS CXX CXXFLAGS ac_ct_CXX EGREP INSTALL_PROGRAM INSTALL_SCRIPT INSTALL_DATA CYGPATH_W PACKAGE VERSION ACLOCAL AUTOCONF AUTOMAKE AUTOHEADER MAKEINFO install_sh STRIP ac_ct_STRIP INSTALL_STRIP_PROGRAM mkdir_p AWK SET_MAKE am__leading_dot AMTAR am__tar am__untar DEPDIR am__include am__quote AMDEP_TRUE AMDEP_FALSE AMDEPBACKSLASH CCDEPMODE am__fastdepCC_TRUE am__fastdepCC_FALSE CXXDEPMODE am__fastdepCXX_TRUE am__fastdepCXX_FALSE MAINTAINER_MODE_TRUE MAINTAINER_MODE_FALSE MAINT LIBTOOLM4 have_autoconf have_automake BUILDTOOLSDIR AUX_DIR HAVE_EXTERNALS_TRUE HAVE_EXTERNALS_FALSE host host_cpu host_vendor host_os LN_S ECHO AR ac_ct_AR RANLIB ac_ct_RANLIB CPP CXXCPP F77 FFLAGS ac_ct_F77 LIBTOOL LT_LDFLAGS abs_lib_dir abs_include_dir abs_bin_dir RPATH_FLAGS CBCSRCDIR CBCOBJDIR COIN_HAS_CBC_TRUE COIN_HAS_CBC_FALSE CGLSRCDIR CGLOBJDIR COIN_HAS_CGL_TRUE COIN_HAS_CGL_FALSE CLPSRCDIR CLPOBJDIR COIN_HAS_CLP_TRUE COIN_HAS_CLP_FALSE COINUTILSSRCDIR COINUTILSOBJDIR COIN_HAS_COINUTILS_TRUE COIN_HAS_COINUTILS_FALSE DYLPSRCDIR DYLPOBJDIR COIN_HAS_DYLP_TRUE COIN_HAS_DYLP_FALSE OSISRCDIR OSIOBJDIR COIN_HAS_OSI_TRUE COIN_HAS_OSI_FALSE SYMSRCDIR SYMOBJDIR COIN_HAS_SYM_TRUE COIN_HAS_SYM_FALSE VOLSRCDIR VOLOBJDIR COIN_HAS_VOL_TRUE COIN_HAS_VOL_FALSE CPXINCDIR CPXLIB COIN_HAS_CPX_TRUE COIN_HAS_CPX_FALSE GLPKINCDIR GLPKLIB COIN_HAS_GLPK_TRUE COIN_HAS_GLPK_FALSE FMPINCDIR FMPLIB COIN_HAS_FMP_TRUE COIN_HAS_FMP_FALSE MSKINCDIR MSKLIB COIN_HAS_MSK_TRUE COIN_HAS_MSK_FALSE OSLINCDIR OSLLIB COIN_HAS_OSL_TRUE COIN_HAS_OSL_FALSE SPXINCDIR SPXLIB COIN_HAS_SPX_TRUE COIN_HAS_SPX_FALSE XPRINCDIR XPRLIB COIN_HAS_XPR_TRUE COIN_HAS_XPR_FALSE LIBOBJS LTLIBOBJS'
 ac_subst_files=''
 
 # Initialize some variables set by options.
@@ -19335,7 +19335,6 @@ fi
 
 
 coin_have_externals=no
-coin_maintainer_small=no
 if test "$enable_maintainer_mode" = yes; then
 
   # If maintainer mode is chosen, we make sure that the correct versions
@@ -19584,11 +19583,6 @@ echo "$as_me: error: I cannot find the file ltmain.sh in $LIBTOOLPREFIX/share/li
     coin_have_externals=yes
   fi
 
-  # Check if this is a limited project (without config.guess)
-  if test -r $srcdir/config.guess; then :; else
-    coin_maintainer_small=yes
-  fi
-
   # Find the location of the BuildTools directory
   BUILDTOOLSDIR=
   if test -r $srcdir/BuildTools/coin.m4; then
@@ -19621,16 +19615,6 @@ if test $coin_have_externals = yes; then
 else
   HAVE_EXTERNALS_TRUE='#'
   HAVE_EXTERNALS_FALSE=
-fi
-
-
-
-if test $coin_maintainer_small = yes; then
-  MAINTAINER_SMALL_TRUE=
-  MAINTAINER_SMALL_FALSE='#'
-else
-  MAINTAINER_SMALL_TRUE='#'
-  MAINTAINER_SMALL_FALSE=
 fi
 
 
@@ -19714,16 +19698,69 @@ esac
 
 
 # helpful variable for the base directory of this package
-pkg_source_dir=`cd $srcdir; pwd`
+abs_source_dir=`cd $srcdir; pwd`
 
 # Stuff for example Makefiles
-full_prefix=`echo $exec_prefix | pwd`
+if test x$prefix = xNONE; then
+  full_prefix=$ac_default_prefix
+else
+  full_prefix=$prefix
+fi
+full_prefix=`cd $full_prefix ; pwd`
 
-pkg_lib_dir=$full_prefix/lib
+abs_lib_dir=$full_prefix/lib
 
-pkg_include_dir=$full_prefix/include
+abs_include_dir=$full_prefix/include
 
-pkg_bin_dir=$full_prefix/bin
+abs_bin_dir=$full_prefix/bin
+
+# set RPATH_FLAGS to the compiler link flags required to hardcode location
+# of the shared objects
+RPATH_FLAGS=
+
+if test $enable_shared = yes; then
+  if test "$GXX" = "yes"; then
+    RPATH_FLAGS=
+    for dir in $abs_lib_dir; do
+      RPATH_FLAGS="$RPATH_FLAGS -Wl,--rpath -Wl,$dir"
+    done
+  else
+    case $build in
+      *-linux-*)
+        case "$CXX" in
+        icpc | */icpc)
+          RPATH_FLAGS=
+          for dir in $abs_lib_dir; do
+            RPATH_FLAGS="$RPATH_FLAGS -Wl,--rpath -Wl,$dir"
+          done
+        esac ;;
+      *-ibm-*)
+        case "$CXX" in
+        xlC* | */xlC* | mpxlC* | */mpxlC*)
+          RPATH_FLAGS=nothing ;;
+        esac ;;
+      *-hp-*)
+          RPATH_FLAGS=nothing ;;
+      *-mingw32)
+          RPATH_FLAGS=nothing ;;
+      *-sun-*)
+          RPATH_FLAGS=
+          for dir in $abs_lib_dir; do
+            RPATH_FLAGS="$RPATH_FLAGS -R$dir"
+          done
+     esac
+  fi
+
+  if test "$RPATH_FLAGS" = ""; then
+    { echo "$as_me:$LINENO: WARNING: Could not automatically determine how to tell the linker about automatic inclusion of the path for shared libraries.  The test examples might not work if you link against shared objects.  You will need to set the LD_LIBRARY_PATH or LIBDIR variable manually." >&5
+echo "$as_me: WARNING: Could not automatically determine how to tell the linker about automatic inclusion of the path for shared libraries.  The test examples might not work if you link against shared objects.  You will need to set the LD_LIBRARY_PATH or LIBDIR variable manually." >&2;}
+  fi
+  if test "$RPATH_FLAGS" = "nothing"; then
+    RPATH_FLAGS=
+  fi
+fi
+
+
 
 
 
@@ -19907,8 +19944,8 @@ fi
 echo "$as_me:$LINENO: result: $coin_has_coinutils" >&5
 echo "${ECHO_T}$coin_has_coinutils" >&6
 
-echo "$as_me:$LINENO: checking for COIN project Dylp" >&5
-echo $ECHO_N "checking for COIN project Dylp... $ECHO_C" >&6
+echo "$as_me:$LINENO: checking for COIN project DyLP" >&5
+echo $ECHO_N "checking for COIN project DyLP... $ECHO_C" >&6
 
 # First check, if the sub-project is actually available (ToDo: allow
 # other locations)
@@ -19917,8 +19954,8 @@ coin_has_dylp=unavailable
 if test $PACKAGE_TARNAME = dylp; then
   coin_has_dylp=.
 else
-  if test -d $srcdir/../Dylp; then
-    coin_has_dylp=../Dylp
+  if test -d $srcdir/../DyLP; then
+    coin_has_dylp=../DyLP
   fi
 fi
 
@@ -21168,13 +21205,6 @@ echo "$as_me: error: conditional \"HAVE_EXTERNALS\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi
-if test -z "${MAINTAINER_SMALL_TRUE}" && test -z "${MAINTAINER_SMALL_FALSE}"; then
-  { { echo "$as_me:$LINENO: error: conditional \"MAINTAINER_SMALL\" was never defined.
-Usually this means the macro was only invoked conditionally." >&5
-echo "$as_me: error: conditional \"MAINTAINER_SMALL\" was never defined.
-Usually this means the macro was only invoked conditionally." >&2;}
-   { (exit 1); exit 1; }; }
-fi
 if test -z "${COIN_HAS_CBC_TRUE}" && test -z "${COIN_HAS_CBC_FALSE}"; then
   { { echo "$as_me:$LINENO: error: conditional \"COIN_HAS_CBC\" was never defined.
 Usually this means the macro was only invoked conditionally." >&5
@@ -21887,8 +21917,6 @@ s,@BUILDTOOLSDIR@,$BUILDTOOLSDIR,;t t
 s,@AUX_DIR@,$AUX_DIR,;t t
 s,@HAVE_EXTERNALS_TRUE@,$HAVE_EXTERNALS_TRUE,;t t
 s,@HAVE_EXTERNALS_FALSE@,$HAVE_EXTERNALS_FALSE,;t t
-s,@MAINTAINER_SMALL_TRUE@,$MAINTAINER_SMALL_TRUE,;t t
-s,@MAINTAINER_SMALL_FALSE@,$MAINTAINER_SMALL_FALSE,;t t
 s,@host@,$host,;t t
 s,@host_cpu@,$host_cpu,;t t
 s,@host_vendor@,$host_vendor,;t t
@@ -21906,9 +21934,10 @@ s,@FFLAGS@,$FFLAGS,;t t
 s,@ac_ct_F77@,$ac_ct_F77,;t t
 s,@LIBTOOL@,$LIBTOOL,;t t
 s,@LT_LDFLAGS@,$LT_LDFLAGS,;t t
-s,@pkg_lib_dir@,$pkg_lib_dir,;t t
-s,@pkg_include_dir@,$pkg_include_dir,;t t
-s,@pkg_bin_dir@,$pkg_bin_dir,;t t
+s,@abs_lib_dir@,$abs_lib_dir,;t t
+s,@abs_include_dir@,$abs_include_dir,;t t
+s,@abs_bin_dir@,$abs_bin_dir,;t t
+s,@RPATH_FLAGS@,$RPATH_FLAGS,;t t
 s,@CBCSRCDIR@,$CBCSRCDIR,;t t
 s,@CBCOBJDIR@,$CBCOBJDIR,;t t
 s,@COIN_HAS_CBC_TRUE@,$COIN_HAS_CBC_TRUE,;t t

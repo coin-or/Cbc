@@ -86,10 +86,12 @@ if COIN_HAS_CPX
 endif
 
 if COIN_HAS_DYLP
-  CXXFLAGS += -I`$(CYGPATH_W) $(DYLPSRCDIR)/src` \
+  CXXFLAGS += -I`$(CYGPATH_W) $(DYLPSRCDIR)/src/DylpStdLib` \
+        -I`$(CYGPATH_W) $(DYLPSRCDIR)/src/Dylp` \
+        -I`$(CYGPATH_W) $(DYLPOBJDIR)/inc` \
 	-I`$(CYGPATH_W) $(OSISRCDIR)/src/OsiDylp`
   cbc_LDADD += $(OSIOBJDIR)/src/OsiDylp/libOsiDylp.la \
-	$(DYLPOBJDIR)/src/libDylp.la
+	$(DYLPOBJDIR)/src/Dylp/libDylp.la
   LIBS += `cat $(DYLPOBJDIR)/dylp_addlibs.txt`
 endif
 

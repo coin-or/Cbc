@@ -59,11 +59,13 @@ bin_PROGRAMS = cbc$(EXEEXT) solve$(EXEEXT)
 @COIN_HAS_CPX_TRUE@	-I`$(CYGPATH_W) $(OSISRCDIR)/src/OsiCpx`
 
 @COIN_HAS_CPX_TRUE@am__append_5 = $(OSIOBJDIR)/src/OsiCpx/libOsiCpx.la
-@COIN_HAS_DYLP_TRUE@am__append_6 = -I`$(CYGPATH_W) $(DYLPSRCDIR)/src` \
+@COIN_HAS_DYLP_TRUE@am__append_6 = -I`$(CYGPATH_W) $(DYLPSRCDIR)/src/DylpStdLib` \
+@COIN_HAS_DYLP_TRUE@        -I`$(CYGPATH_W) $(DYLPSRCDIR)/src/Dylp` \
+@COIN_HAS_DYLP_TRUE@        -I`$(CYGPATH_W) $(DYLPOBJDIR)/inc` \
 @COIN_HAS_DYLP_TRUE@	-I`$(CYGPATH_W) $(OSISRCDIR)/src/OsiDylp`
 
 @COIN_HAS_DYLP_TRUE@am__append_7 = $(OSIOBJDIR)/src/OsiDylp/libOsiDylp.la \
-@COIN_HAS_DYLP_TRUE@	$(DYLPOBJDIR)/src/libDylp.la
+@COIN_HAS_DYLP_TRUE@	$(DYLPOBJDIR)/src/Dylp/libDylp.la
 
 @COIN_HAS_DYLP_TRUE@am__append_8 = `cat $(DYLPOBJDIR)/dylp_addlibs.txt`
 @COIN_HAS_FMP_TRUE@am__append_9 = -I`$(CYGPATH_W) $(OSISRCDIR)/src/OsiFmp`
@@ -145,7 +147,7 @@ cbc_OBJECTS = $(am_cbc_OBJECTS) $(nodist_cbc_OBJECTS)
 @COIN_HAS_CPX_TRUE@	$(OSIOBJDIR)/src/OsiCpx/libOsiCpx.la
 @COIN_HAS_DYLP_TRUE@am__DEPENDENCIES_3 =  \
 @COIN_HAS_DYLP_TRUE@	$(OSIOBJDIR)/src/OsiDylp/libOsiDylp.la \
-@COIN_HAS_DYLP_TRUE@	$(DYLPOBJDIR)/src/libDylp.la
+@COIN_HAS_DYLP_TRUE@	$(DYLPOBJDIR)/src/Dylp/libDylp.la
 @COIN_HAS_FMP_TRUE@am__DEPENDENCIES_4 =  \
 @COIN_HAS_FMP_TRUE@	$(OSIOBJDIR)/src/OsiFmp/libOsiFmp.la
 @COIN_HAS_GLPK_TRUE@am__DEPENDENCIES_5 =  \
@@ -337,8 +339,6 @@ LT_LDFLAGS = @LT_LDFLAGS@
 MAINT = @MAINT@
 MAINTAINER_MODE_FALSE = @MAINTAINER_MODE_FALSE@
 MAINTAINER_MODE_TRUE = @MAINTAINER_MODE_TRUE@
-MAINTAINER_SMALL_FALSE = @MAINTAINER_SMALL_FALSE@
-MAINTAINER_SMALL_TRUE = @MAINTAINER_SMALL_TRUE@
 MAKEINFO = @MAKEINFO@
 MSKINCDIR = @MSKINCDIR@
 MSKLIB = @MSKLIB@
@@ -355,6 +355,7 @@ PACKAGE_TARNAME = @PACKAGE_TARNAME@
 PACKAGE_VERSION = @PACKAGE_VERSION@
 PATH_SEPARATOR = @PATH_SEPARATOR@
 RANLIB = @RANLIB@
+RPATH_FLAGS = @RPATH_FLAGS@
 SET_MAKE = @SET_MAKE@
 SHELL = @SHELL@
 SPXINCDIR = @SPXINCDIR@
@@ -367,6 +368,9 @@ VOLOBJDIR = @VOLOBJDIR@
 VOLSRCDIR = @VOLSRCDIR@
 XPRINCDIR = @XPRINCDIR@
 XPRLIB = @XPRLIB@
+abs_bin_dir = @abs_bin_dir@
+abs_include_dir = @abs_include_dir@
+abs_lib_dir = @abs_lib_dir@
 ac_ct_AR = @ac_ct_AR@
 ac_ct_CC = @ac_ct_CC@
 ac_ct_CXX = @ac_ct_CXX@
@@ -406,9 +410,6 @@ localstatedir = @localstatedir@
 mandir = @mandir@
 mkdir_p = @mkdir_p@
 oldincludedir = @oldincludedir@
-pkg_bin_dir = @pkg_bin_dir@
-pkg_include_dir = @pkg_include_dir@
-pkg_lib_dir = @pkg_lib_dir@
 prefix = @prefix@
 program_transform_name = @program_transform_name@
 sbindir = @sbindir@

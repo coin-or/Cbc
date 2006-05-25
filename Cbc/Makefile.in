@@ -202,8 +202,6 @@ LT_LDFLAGS = @LT_LDFLAGS@
 MAINT = @MAINT@
 MAINTAINER_MODE_FALSE = @MAINTAINER_MODE_FALSE@
 MAINTAINER_MODE_TRUE = @MAINTAINER_MODE_TRUE@
-MAINTAINER_SMALL_FALSE = @MAINTAINER_SMALL_FALSE@
-MAINTAINER_SMALL_TRUE = @MAINTAINER_SMALL_TRUE@
 MAKEINFO = @MAKEINFO@
 MSKINCDIR = @MSKINCDIR@
 MSKLIB = @MSKLIB@
@@ -220,6 +218,7 @@ PACKAGE_TARNAME = @PACKAGE_TARNAME@
 PACKAGE_VERSION = @PACKAGE_VERSION@
 PATH_SEPARATOR = @PATH_SEPARATOR@
 RANLIB = @RANLIB@
+RPATH_FLAGS = @RPATH_FLAGS@
 SET_MAKE = @SET_MAKE@
 SHELL = @SHELL@
 SPXINCDIR = @SPXINCDIR@
@@ -232,6 +231,9 @@ VOLOBJDIR = @VOLOBJDIR@
 VOLSRCDIR = @VOLSRCDIR@
 XPRINCDIR = @XPRINCDIR@
 XPRLIB = @XPRLIB@
+abs_bin_dir = @abs_bin_dir@
+abs_include_dir = @abs_include_dir@
+abs_lib_dir = @abs_lib_dir@
 ac_ct_AR = @ac_ct_AR@
 ac_ct_CC = @ac_ct_CC@
 ac_ct_CXX = @ac_ct_CXX@
@@ -271,9 +273,6 @@ localstatedir = @localstatedir@
 mandir = @mandir@
 mkdir_p = @mkdir_p@
 oldincludedir = @oldincludedir@
-pkg_bin_dir = @pkg_bin_dir@
-pkg_include_dir = @pkg_include_dir@
-pkg_lib_dir = @pkg_lib_dir@
 prefix = @prefix@
 program_transform_name = @program_transform_name@
 sbindir = @sbindir@
@@ -779,17 +778,17 @@ uninstall-local:
 @MAINTAINER_MODE_TRUE@$(AUX_DIR)/missing: $(BUILDTOOLSDIR)/missing
 @MAINTAINER_MODE_TRUE@	cp $< $@
 
-@MAINTAINER_MODE_TRUE@@MAINTAINER_SMALL_FALSE@$(AUX_DIR)/config.guess: $(BUILDTOOLSDIR)/config.guess
-@MAINTAINER_MODE_TRUE@@MAINTAINER_SMALL_FALSE@	cp $< $@
+@MAINTAINER_MODE_TRUE@$(AUX_DIR)/config.guess: $(BUILDTOOLSDIR)/config.guess
+@MAINTAINER_MODE_TRUE@	cp $< $@
 
-@MAINTAINER_MODE_TRUE@@MAINTAINER_SMALL_FALSE@$(AUX_DIR)/config.sub: $(BUILDTOOLSDIR)/config.sub
-@MAINTAINER_MODE_TRUE@@MAINTAINER_SMALL_FALSE@	cp $< $@
+@MAINTAINER_MODE_TRUE@$(AUX_DIR)/config.sub: $(BUILDTOOLSDIR)/config.sub
+@MAINTAINER_MODE_TRUE@	cp $< $@
 
-@MAINTAINER_MODE_TRUE@@MAINTAINER_SMALL_FALSE@$(AUX_DIR)/depcomp: $(BUILDTOOLSDIR)/depcomp
-@MAINTAINER_MODE_TRUE@@MAINTAINER_SMALL_FALSE@	cp $< $@
+@MAINTAINER_MODE_TRUE@$(AUX_DIR)/depcomp: $(BUILDTOOLSDIR)/depcomp
+@MAINTAINER_MODE_TRUE@	cp $< $@
 
-@MAINTAINER_MODE_TRUE@@MAINTAINER_SMALL_FALSE@$(AUX_DIR)/ltmain.sh: $(BUILDTOOLSDIR)/ltmain.sh
-@MAINTAINER_MODE_TRUE@@MAINTAINER_SMALL_FALSE@	cp $< $@
+@MAINTAINER_MODE_TRUE@$(AUX_DIR)/ltmain.sh: $(BUILDTOOLSDIR)/ltmain.sh
+@MAINTAINER_MODE_TRUE@	cp $< $@
 
 # Take care of updating externals (if Externals file exists)
 @HAVE_EXTERNALS_TRUE@@MAINTAINER_MODE_TRUE@$(top_builddir)/Makefile: .Externals-stamp

@@ -11,7 +11,7 @@ int main (int argc, const char *argv[])
   OsiClpSolverInterface solver1;
   // Read in example model
   // and assert that it is a clean model
-  int numMpsReadErrors = solver1.readMps("../../Mps/Sample/p0033.mps","");
+  int numMpsReadErrors = solver1.readMps("../../Data/Sample/p0033.mps","");
   assert(numMpsReadErrors==0);
 
   // Pass data and solver to CbcModel 

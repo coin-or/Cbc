@@ -5,6 +5,8 @@
 #  pragma warning(disable:4786)
 #endif
 
+#include "CbcConfig.h"
+
 #include <assert.h>
 #include <iomanip>
 
@@ -17,10 +19,10 @@
 #include "CbcTreeLocal.hpp"
 #include "CbcCutGenerator.hpp"
 #include "CbcHeuristicLocal.hpp"
-#ifdef COIN_USE_CLP
+#ifdef COIN_HAS_CLP
 #include "OsiClpSolverInterface.hpp"
 #endif
-#ifdef COIN_USE_OSL
+#ifdef COIN_HAS_OSL
 #include "OsiOslSolverInterface.hpp"
 #endif
 
@@ -89,12 +91,12 @@ int main (int argc, const char *argv[])
 
   // Define your favorite OsiSolver
   
-#ifdef COIN_USE_CLP
+#ifdef COIN_HAS_CLP
   OsiClpSolverInterface solver1;
   //solver1.messageHandler()->setLogLevel(0);
   solver1.getModelPtr()->setDualBound(1.0e10);
 #endif
-#ifdef COIN_USE_OSL
+#ifdef COIN_HAS_OSL
   OsiOslSolverInterface solver1;
   //solver1.messageHandler()->setLogLevel(0);
 #endif

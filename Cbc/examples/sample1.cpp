@@ -7,11 +7,13 @@
 
 #include <cassert>
 
+#include "CbcConfig.h"
+
 // For Branch and bound
 #include "OsiSolverInterface.hpp"
 #include "CbcModel.hpp"
 
-#ifdef COIN_USE_CLP
+#ifdef COIN_HAS_CLP
 #include "OsiClpSolverInterface.hpp"
 #endif
 #include "ClpPresolve.hpp"
@@ -79,7 +81,7 @@ int main (int argc, const char *argv[])
 
   // Define your favorite OsiSolver
   
-#ifdef COIN_USE_CLP
+#ifdef COIN_HAS_CLP
   ClpSimplex simplex;
 #endif
   double time0 = cpuTime();

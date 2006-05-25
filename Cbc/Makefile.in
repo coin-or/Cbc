@@ -64,8 +64,8 @@ DIST_COMMON = README $(am__configure_deps) \
 	$(srcdir)/cbc_addlibs.txt.in \
 	$(top_srcdir)/../Clp/src/CbcOrClpParam.cpp \
 	$(top_srcdir)/../Clp/src/CbcOrClpParam.hpp \
-	$(top_srcdir)/configure $(top_srcdir)/inc/config_cbc.h.in \
-	AUTHORS INSTALL
+	$(top_srcdir)/configure $(top_srcdir)/examples/Makefile.in \
+	$(top_srcdir)/inc/config_cbc.h.in AUTHORS INSTALL
 @HAVE_EXTERNALS_TRUE@@MAINTAINER_MODE_TRUE@am__append_2 = .Externals-stamp
 @HAVE_EXTERNALS_TRUE@@MAINTAINER_MODE_TRUE@am__append_3 = Externals
 subdir = .
@@ -78,7 +78,9 @@ am__CONFIG_DISTCLEAN_FILES = config.status config.cache config.log \
  configure.lineno configure.status.lineno
 mkinstalldirs = $(install_sh) -d
 CONFIG_HEADER = $(top_builddir)/inc/config_cbc.h
-CONFIG_CLEAN_FILES = cbc_addlibs.txt
+CONFIG_CLEAN_FILES = examples/Makefile cbc_addlibs.txt \
+	examples/sudoku_sample.csv examples/quad.mps \
+	examples/quad2.mps
 SOURCES =
 DIST_SOURCES =
 RECURSIVE_TARGETS = all-recursive check-recursive dvi-recursive \
@@ -357,6 +359,8 @@ $(top_srcdir)/inc/config_cbc.h.in: @MAINTAINER_MODE_TRUE@ $(am__configure_deps)
 
 distclean-hdr:
 	-rm -f inc/config_cbc.h inc/stamp-h1
+examples/Makefile: $(top_builddir)/config.status $(top_srcdir)/examples/Makefile.in
+	cd $(top_builddir) && $(SHELL) ./config.status $@
 cbc_addlibs.txt: $(top_builddir)/config.status $(srcdir)/cbc_addlibs.txt.in
 	cd $(top_builddir) && $(SHELL) ./config.status $@
 
@@ -505,7 +509,7 @@ distclean-tags:
 distdir: $(DISTFILES)
 	$(am__remove_distdir)
 	mkdir $(distdir)
-	$(mkdir_p) $(distdir)/. $(distdir)/.. $(distdir)/../BuildTools $(distdir)/../Clp/src $(distdir)/inc
+	$(mkdir_p) $(distdir)/. $(distdir)/.. $(distdir)/../BuildTools $(distdir)/../Clp/src $(distdir)/examples $(distdir)/inc
 	@srcdirstrip=`echo "$(srcdir)" | sed 's|.|.|g'`; \
 	topsrcdirstrip=`echo "$(top_srcdir)" | sed 's|.|.|g'`; \
 	list='$(DISTFILES)'; for file in $$list; do \

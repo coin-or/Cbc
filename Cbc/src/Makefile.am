@@ -227,8 +227,11 @@ DEFAULT_INCLUDES = -I. -I`$(CYGPATH_W) $(srcdir)` -I$(top_builddir)/inc
 # Here list all the header files that are required by a user of the library,
 # and that therefore should be installed in 'install'
 include_HEADERS = \
+	../inc/config_cbc.h \
 	CbcBranchActual.hpp \
 	CbcBranchBase.hpp \
+	CbcBranchLotsize.hpp \
+	CbcBranchCut.hpp \
 	CbcCompareActual.hpp \
 	CbcCompareBase.hpp \
 	CbcCutGenerator.hpp \

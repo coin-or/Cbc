@@ -21052,12 +21052,48 @@ fi
 
 
 ##############################################################################
+#                   VPATH links for example input files                      #
+##############################################################################
+
+# In case this is a VPATH configuration we need to make sure that the
+# input files for the examples are available in the VPATH directory.
+
+echo "$as_me:$LINENO: checking whether this is a VPATH configuration" >&5
+echo $ECHO_N "checking whether this is a VPATH configuration... $ECHO_C" >&6
+if test `cd $srcdir; pwd` != `pwd`; then
+  coin_vpath_config=yes;
+else
+  coin_vpath_config=no;
+fi
+echo "$as_me:$LINENO: result: $coin_vpath_config" >&5
+echo "${ECHO_T}$coin_vpath_config" >&6
+
+
+if test $coin_vpath_config = yes; then
+            ac_config_links="$ac_config_links examples/sudoku_sample.csv:examples/sudoku_sample.csv"
+
+fi
+
+
+if test $coin_vpath_config = yes; then
+            ac_config_links="$ac_config_links examples/quad.mps:examples/quad.mps"
+
+fi
+
+
+if test $coin_vpath_config = yes; then
+            ac_config_links="$ac_config_links examples/quad2.mps:examples/quad2.mps"
+
+fi
+
+
+##############################################################################
 #                   Finishing up by writing all the output                   #
 ##############################################################################
 
 # Here list all the files that configure should create (except for the
 # configuration header file)
-                                        ac_config_files="$ac_config_files Makefile src/Makefile test/Makefile cbc_addlibs.txt"
+                                                  ac_config_files="$ac_config_files Makefile examples/Makefile src/Makefile test/Makefile cbc_addlibs.txt"
 
 
 # Here put the location and name of the configuration header file
@@ -21758,11 +21794,15 @@ do
   case "$ac_config_target" in
   # Handling of arguments.
   "Makefile" ) CONFIG_FILES="$CONFIG_FILES Makefile" ;;
+  "examples/Makefile" ) CONFIG_FILES="$CONFIG_FILES examples/Makefile" ;;
   "src/Makefile" ) CONFIG_FILES="$CONFIG_FILES src/Makefile" ;;
   "test/Makefile" ) CONFIG_FILES="$CONFIG_FILES test/Makefile" ;;
   "cbc_addlibs.txt" ) CONFIG_FILES="$CONFIG_FILES cbc_addlibs.txt" ;;
   "src/CbcOrClpParam.cpp" ) CONFIG_LINKS="$CONFIG_LINKS src/CbcOrClpParam.cpp:../Clp/src/CbcOrClpParam.cpp" ;;
   "src/CbcOrClpParam.hpp" ) CONFIG_LINKS="$CONFIG_LINKS src/CbcOrClpParam.hpp:../Clp/src/CbcOrClpParam.hpp" ;;
+  "examples/sudoku_sample.csv" ) CONFIG_LINKS="$CONFIG_LINKS examples/sudoku_sample.csv:examples/sudoku_sample.csv" ;;
+  "examples/quad.mps" ) CONFIG_LINKS="$CONFIG_LINKS examples/quad.mps:examples/quad.mps" ;;
+  "examples/quad2.mps" ) CONFIG_LINKS="$CONFIG_LINKS examples/quad2.mps:examples/quad2.mps" ;;
   "depfiles" ) CONFIG_COMMANDS="$CONFIG_COMMANDS depfiles" ;;
   "inc/config_cbc.h" ) CONFIG_HEADERS="$CONFIG_HEADERS inc/config_cbc.h" ;;
   *) { { echo "$as_me:$LINENO: error: invalid argument: $ac_config_target" >&5

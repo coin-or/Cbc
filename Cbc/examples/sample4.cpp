@@ -5,6 +5,8 @@
 #  pragma warning(disable:4786)
 #endif
 
+#include "CbcConfig.h"
+
 #include <cassert>
 #include <iomanip>
 
@@ -16,7 +18,7 @@
 #include "CbcBranchActual.hpp"
 #include "CbcCompareUser.hpp"
 #include "CoinTime.hpp"
-#ifdef COIN_USE_CLP
+#ifdef COIN_HAS_CLP
 #include "OsiClpSolverInterface.hpp"
 #endif
 
@@ -40,7 +42,7 @@ int main (int argc, const char *argv[])
 
   // Define your favorite OsiSolver
   
-#ifdef COIN_USE_CLP
+#ifdef COIN_HAS_CLP
   OsiClpSolverInterface solver1;
   //solver1.messageHandler()->setLogLevel(0);
   CbcModel model(solver1);

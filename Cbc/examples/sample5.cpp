@@ -5,6 +5,8 @@
 #  pragma warning(disable:4786)
 #endif
 
+#include "CbcConfig.h"
+
 #include <cassert>
 #include <iomanip>
 
@@ -16,10 +18,10 @@
 #include "CbcCompareUser.hpp"
 #include "CbcCutGenerator.hpp"
 #include "CbcHeuristicLocal.hpp"
-#ifdef COIN_USE_CLP
+#ifdef COIN_HAS_CLP
 #include "OsiClpSolverInterface.hpp"
 #endif
-#ifdef COIN_USE_OSL
+#ifdef COIN_HAS_OSL
 #include "OsiOslSolverInterface.hpp"
 #endif
 
@@ -76,9 +78,9 @@ int main (int argc, const char *argv[])
      to CbcModel then use a pointer to cloned solver (model.solver())
   */
   
-#ifdef COIN_USE_CLP
+#ifdef COIN_HAS_CLP
   OsiClpSolverInterface solver1;
-#elif COIN_USE_OSL
+#elif COIN_HAS_OSL
   OsiOslSolverInterface solver1;
 #endif
   /* From now on we can build model in a solver independent way.
@@ -209,7 +211,7 @@ int main (int argc, const char *argv[])
   model.addCutGenerator(&flowGen,-1,"FlowCover");
   model.addCutGenerator(&mixedGen,-1,"MixedIntegerRounding");
 
-#ifdef COIN_USE_CLP
+#ifdef COIN_HAS_CLP
   OsiClpSolverInterface * osiclp = dynamic_cast< OsiClpSolverInterface*> (model.solver());
   // go faster stripes
   if (osiclp->getNumRows()<300&&osiclp->getNumCols()<500) {

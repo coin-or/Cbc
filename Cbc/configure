@@ -2619,7 +2619,7 @@ rm -f conftest.err conftest.$ac_objext \
         coin_dbg_cflags="-g"
         ;;
       *-sun-*)
-        coin_opt_cflags="-xO4 -xtarget=native"
+        coin_opt_cflags="-xO4"
         coin_dbg_cflags="-g"
         ;;
       *-sgi-*)
@@ -3352,7 +3352,7 @@ rm -f conftest.err conftest.$ac_objext \
         esac
         ;;
       *-sun-*)
-          coin_opt_cxxflags="-O4 -xtarget=native"
+          coin_opt_cxxflags="-O4"
           coin_dbg_cxxflags="-g"
         ;;
     esac

@@ -2,6 +2,7 @@
 Cbc/cbc_addlibs.txt.in -text
 Cbc/configure -text
 Cbc/configure.ac -text
+Cbc/doc/doxygen.conf -text
 Cbc/examples/Makefile.in -text
 Cbc/inc/config_cbc.h.in -text
 /Externals -text

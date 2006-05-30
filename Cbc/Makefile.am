@@ -29,6 +29,21 @@ endif
 # Here we need include all files that are not mentioned in other Makefiles
 
 EXTRA_DIST = \
+	doc/authors.xml \
+	doc/cbcexe.xml \
+	doc/cbcmodelclass.xml \
+	doc/cbcuserguide.xml \
+	doc/doxygen.conf \
+	doc/doxygen.xml \
+	doc/faqcontent.xml \
+	doc/faq.xml \
+	doc/intro.xml \
+	doc/legal.xml \
+	doc/messages.xml \
+	doc/moresamples.xml \
+	doc/osibuild.xml \
+	doc/otherclasses.xml \
+	doc/revhist.xml \
 	examples/CbcBranchFollow2.cpp \
 	examples/CbcBranchFollow2.hpp \
 	examples/CbcBranchLink.cpp \
@@ -80,13 +95,16 @@ test: all
 
 unitTest: test
 
+doc:
+	cd $(srcdir); doxygen doc/doxygen.conf
+
 clean-local:
 	if test -r test/Makefile; then cd test; make clean; fi
 
 distclean-local:
 	if test -r test/Makefile; then cd test; make distclean; fi
 
-.PHONY: test unitTest
+.PHONY: test unitTest doc
 
 ########################################################################
 #                  Installation of the addlibs file                    #

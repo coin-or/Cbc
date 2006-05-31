@@ -2,7 +2,7 @@
 # All Rights Reserved.
 # This file is distributed under the Common Public License.
 
-## $Id: configure.ac,v 1.1.2.1 2006/04/19 23:25:12 andreasw Exp $
+## $Id$
 
 # Author:  Andreas Waechter            IBM    2006-04-13
 
@@ -19,8 +19,6 @@ Copyright 2006 International Business Machines and others.
 All Rights Reserved.
 This file is part of the open source package Coin which is distributed
 under the Common Public License.])
-
-AC_REVISION(0.9)
 
 # List one file in the package so that the configure script can test
 # whether the package is actually there

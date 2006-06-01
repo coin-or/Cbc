@@ -66,8 +66,8 @@ DIST_COMMON = README $(am__configure_deps) \
 	$(top_srcdir)/../Clp/src/CbcOrClpParam.hpp \
 	$(top_srcdir)/configure $(top_srcdir)/examples/Makefile.in \
 	$(top_srcdir)/inc/config_cbc.h.in AUTHORS INSTALL
-@HAVE_EXTERNALS_TRUE@@MAINTAINER_MODE_TRUE@am__append_2 = .Externals-stamp
-@HAVE_EXTERNALS_TRUE@@MAINTAINER_MODE_TRUE@am__append_3 = Externals
+@HAVE_EXTERNALS_TRUE@am__append_2 = Externals
+@HAVE_EXTERNALS_TRUE@am__append_3 = .Externals-stamp
 subdir = .
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/acinclude.m4 \
@@ -78,9 +78,7 @@ am__CONFIG_DISTCLEAN_FILES = config.status config.cache config.log \
  configure.lineno configure.status.lineno
 mkinstalldirs = $(install_sh) -d
 CONFIG_HEADER = $(top_builddir)/inc/config_cbc.h
-CONFIG_CLEAN_FILES = examples/Makefile cbc_addlibs.txt \
-	examples/sudoku_sample.csv examples/quad.mps \
-	examples/quad2.mps
+CONFIG_CLEAN_FILES = examples/Makefile cbc_addlibs.txt
 SOURCES =
 DIST_SOURCES =
 RECURSIVE_TARGETS = all-recursive check-recursive dvi-recursive \
@@ -231,6 +229,7 @@ SYMSRCDIR = @SYMSRCDIR@
 VERSION = @VERSION@
 VOLOBJDIR = @VOLOBJDIR@
 VOLSRCDIR = @VOLSRCDIR@
+VPATH_DISTCLEANFILES = @VPATH_DISTCLEANFILES@
 XPRINCDIR = @XPRINCDIR@
 XPRLIB = @XPRLIB@
 abs_bin_dir = @abs_bin_dir@
@@ -314,7 +313,7 @@ EXTRA_DIST = doc/authors.xml doc/cbcexe.xml doc/cbcmodelclass.xml \
 	examples/quad.mps examples/repeat.cpp examples/sample1.cpp \
 	examples/sample2.cpp examples/sample3.cpp examples/sample4.cpp \
 	examples/sample5.cpp examples/sos.cpp examples/sudoku.cpp \
-	examples/sudoku_sample.csv $(am__append_3)
+	examples/sudoku_sample.csv $(am__append_2)
 
 ########################################################################
 #                  Installation of the addlibs file                    #
@@ -326,7 +325,7 @@ addlibsfile = cbc_addlibs.txt
 ########################################################################
 
 # Files that are generated and should be cleaned with make distclean
-DISTCLEANFILES = $(am__append_2)
+DISTCLEANFILES = $(am__append_3) $(VPATH_DISTCLEANFILES)
 all: all-recursive
 
 .SUFFIXES:

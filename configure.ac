@@ -62,7 +62,4 @@ AC_COIN_MAIN_SUBDIRS(Cbc)
 AC_CONFIG_FILES([Makefile])
 
 # Finally, we let configure write all the output...
-AC_OUTPUT
-
-# ...and tell the user, that the configuration finished
-AC_MSG_NOTICE([Cbc main configuration successful])
+AC_COIN_FINALIZE

@@ -11,5 +11,6 @@ Cbc/inc/config_cbc.h.in -text
 /configure -text
 /configure.ac -text
 /depcomp -text
+doxydoc/doxygen.conf -text
 /install-sh -text
 /missing -text

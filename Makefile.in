@@ -155,7 +155,7 @@ subdirs = @subdirs@
 sysconfdir = @sysconfdir@
 target_alias = @target_alias@
 AUTOMAKE_OPTIONS = foreign
-EXTRA_DIST = $(am__append_1)
+EXTRA_DIST = doxydoc/doxygen.conf $(am__append_1)
 
 ########################################################################
 #                          Subdirectories                              #
@@ -344,7 +344,7 @@ distclean-tags:
 distdir: $(DISTFILES)
 	$(am__remove_distdir)
 	mkdir $(distdir)
-	$(mkdir_p) $(distdir)/BuildTools
+	$(mkdir_p) $(distdir)/BuildTools $(distdir)/doxydoc
 	@srcdirstrip=`echo "$(srcdir)" | sed 's|.|.|g'`; \
 	topsrcdirstrip=`echo "$(top_srcdir)" | sed 's|.|.|g'`; \
 	list='$(DISTFILES)'; for file in $$list; do \
@@ -597,7 +597,10 @@ tests: all
 
 unitTests: tests
 
-.PHONY: test unitTest tests unitTests
+doxydoc:
+	cd $(srcdir); doxygen doxydoc/doxygen.conf
+
+.PHONY: test unitTest tests unitTests doxydoc
 
 # Make sure acinclude is using most recent coin.m4
 @MAINTAINER_MODE_TRUE@$(srcdir)/acinclude.m4: $(BUILDTOOLSDIR)/coin.m4

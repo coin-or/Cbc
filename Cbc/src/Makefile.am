@@ -67,11 +67,11 @@ nodist_cbc_SOURCES = CbcOrClpParam.cpp
 cbc_LDADD = libCbc.la \
 	$(CGLOBJDIR)/src/libCgl.la \
 	$(OSIOBJDIR)/src/OsiCbc/libOsiCbc.la
-CXXFLAGS += -I`$(CYGPATH_W) $(OSISRCDIR)/src/OsiCbc`
+AM_CPPFLAGS = -I`$(CYGPATH_W) $(OSISRCDIR)/src/OsiCbc`
 
 # List all additionally required solver and Osi libraries
 if COIN_HAS_CLP
-  CXXFLAGS += -I`$(CYGPATH_W) $(CLPSRCDIR)/src` \
+  AM_CPPFLAGS += -I`$(CYGPATH_W) $(CLPSRCDIR)/src` \
 	-I`$(CYGPATH_W) $(OSISRCDIR)/src/OsiClp` \
 	-I`$(CYGPATH_W) $(CLPOBJDIR)/inc`
   cbc_LDADD += $(OSIOBJDIR)/src/OsiClp/libOsiClp.la \
@@ -80,13 +80,13 @@ if COIN_HAS_CLP
 endif
 
 if COIN_HAS_CPX
-  CXXFLAGS += -I`$(CYGPATH_W) $(CPXINCDIR)` \
+  AM_CPPFLAGS += -I`$(CYGPATH_W) $(CPXINCDIR)` \
 	-I`$(CYGPATH_W) $(OSISRCDIR)/src/OsiCpx`
   cbc_LDADD += $(OSIOBJDIR)/src/OsiCpx/libOsiCpx.la
 endif
 
 if COIN_HAS_DYLP
-  CXXFLAGS += -I`$(CYGPATH_W) $(DYLPSRCDIR)/src/DylpStdLib` \
+  AM_CPPFLAGS += -I`$(CYGPATH_W) $(DYLPSRCDIR)/src/DylpStdLib` \
         -I`$(CYGPATH_W) $(DYLPSRCDIR)/src/Dylp` \
         -I`$(CYGPATH_W) $(DYLPOBJDIR)/inc` \
 	-I`$(CYGPATH_W) $(OSISRCDIR)/src/OsiDylp`
@@ -96,36 +96,36 @@ if COIN_HAS_DYLP
 endif
 
 if COIN_HAS_FMP
-  CXXFLAGS += -I`$(CYGPATH_W) $(OSISRCDIR)/src/OsiFmp`
+  AM_CPPFLAGS += -I`$(CYGPATH_W) $(OSISRCDIR)/src/OsiFmp`
   cbc_LDADD += $(OSIOBJDIR)/src/OsiFmp/libOsiFmp.la
 endif
 
 if COIN_HAS_GLPK
-  CXXFLAGS += -I`$(CYGPATH_W) $(GLPKINCDIR)` \
+  AM_CPPFLAGS += -I`$(CYGPATH_W) $(GLPKINCDIR)` \
 	-I`$(CYGPATH_W) $(OSISRCDIR)/src/OsiGlpk`
   cbc_LDADD += $(OSIOBJDIR)/src/OsiGlpk/libOsiGlpk.la
 endif
 
 if COIN_HAS_MSK
-  CXXFLAGS += -I`$(CYGPATH_W) $(MSKINCDIR)` \
+  AM_CPPFLAGS += -I`$(CYGPATH_W) $(MSKINCDIR)` \
 	-I`$(CYGPATH_W) $(OSISRCDIR)/src/OsiMsk`
   cbc_LDADD += $(OSIOBJDIR)/src/OsiMsk/libOsiMsk.la
 endif
 
 if COIN_HAS_OSL
-  CXXFLAGS += -I`$(CYGPATH_W) $(OSLINCDIR)` \
+  AM_CPPFLAGS += -I`$(CYGPATH_W) $(OSLINCDIR)` \
 	-I`$(CYGPATH_W) $(OSISRCDIR)/src/OsiOsl`
   cbc_LDADD += $(OSIOBJDIR)/src/OsiOsl/libOsiOsl.la
 endif
 
 if COIN_HAS_SPX
-  CXXFLAGS += -I`$(CYGPATH_W) $(SPXINCDIR)` \
+  AM_CPPFLAGS += -I`$(CYGPATH_W) $(SPXINCDIR)` \
 	-I`$(CYGPATH_W) $(OSISRCDIR)/src/OsiSpx`
   cbc_LDADD += $(OSIOBJDIR)/src/OsiSpx/libOsiSpx.la
 endif
 
 if COIN_HAS_SYM
-  CXXFLAGS += -I`$(CYGPATH_W) $(SYMSRCDIR)/src` \
+  AM_CPPFLAGS += -I`$(CYGPATH_W) $(SYMSRCDIR)/src` \
 	-I`$(CYGPATH_W) $(OSISRCDIR)/src/OsiSym`
   cbc_LDADD += $(OSIOBJDIR)/src/OsiSym/libOsiSym.la \
 	$(SYMOBJDIR)/src/libSym.la
@@ -133,7 +133,7 @@ if COIN_HAS_SYM
 endif
 
 if COIN_HAS_VOL
-  CXXFLAGS += -I`$(CYGPATH_W) $(VOLSRCDIR)/src` \
+  AM_CPPFLAGS += -I`$(CYGPATH_W) $(VOLSRCDIR)/src` \
 	-I`$(CYGPATH_W) $(OSISRCDIR)/src/OsiVol`
   cbc_LDADD += $(OSIOBJDIR)/src/OsiVol/libOsiVol.la \
 	$(VOLOBJDIR)/src/libVol.la
@@ -141,7 +141,7 @@ if COIN_HAS_VOL
 endif
 
 if COIN_HAS_XPR
-  CXXFLAGS += -I`$(CYGPATH_W) $(XPRINCDIR)` \
+  AM_CPPFLAGS += -I`$(CYGPATH_W) $(XPRINCDIR)` \
 	-I`$(CYGPATH_W) $(OSISRCDIR)/src/OsiXpr`
   cbc_LDADD += $(OSIOBJDIR)/src/OsiXpr/libOsiXpr.la
 endif
@@ -160,8 +160,6 @@ cbc_LDFLAGS = -rpath $(libdir)
 ########################################################################
 #                           solve program                              #
 ########################################################################
-
-#ToDo: I'm not sure if I'm doing the right thing here
 
 # Name of the executable compiled in this directory.  We want it to be
 # installed in the 'bin' directory
@@ -197,7 +195,7 @@ solve_LDFLAGS = -rpath $(libdir)
 # "cygpath" stuff is necessary to compile with native compilers on Windows.
 # "top_srcdir" refers to the basic directory for the main package that is
 # being compiled.
-CXXFLAGS += \
+AM_CPPFLAGS += \
 	-I`$(CYGPATH_W) $(CGLSRCDIR)/src` \
 	-I`$(CYGPATH_W) $(CGLSRCDIR)/src/CglClique` \
 	-I`$(CYGPATH_W) $(CGLSRCDIR)/src/CglFlowCover` \
@@ -214,7 +212,7 @@ CXXFLAGS += \
 	-I`$(CYGPATH_W) $(OSISRCDIR)/src`
 
 # List additional defines
-DEFS += -DCOIN_NO_CLP_MESSAGE -DUSE_CBCCONFIG
+AM_CPPFLAGS += -DCOIN_NO_CLP_MESSAGE -DUSE_CBCCONFIG
 
 # This line is necessary to allow VPATH compilation with MS compilers
 # on Cygwin

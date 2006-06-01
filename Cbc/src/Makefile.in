@@ -275,36 +275,9 @@ CXX = @CXX@
 CXXCPP = @CXXCPP@
 CXXDEFS = @CXXDEFS@
 CXXDEPMODE = @CXXDEPMODE@
-
-########################################################################
-#                            Additional flags                          #
-########################################################################
-
-# Here list all include flags, relative to this "srcdir" directory.  This
-# "cygpath" stuff is necessary to compile with native compilers on Windows.
-# "top_srcdir" refers to the basic directory for the main package that is
-# being compiled.
-CXXFLAGS = @CXXFLAGS@ -I`$(CYGPATH_W) $(OSISRCDIR)/src/OsiCbc` \
-	$(am__append_1) $(am__append_4) $(am__append_6) \
-	$(am__append_9) $(am__append_11) $(am__append_13) \
-	$(am__append_15) $(am__append_17) $(am__append_19) \
-	$(am__append_22) $(am__append_25) -I`$(CYGPATH_W) \
-	$(CGLSRCDIR)/src` -I`$(CYGPATH_W) $(CGLSRCDIR)/src/CglClique` \
-	-I`$(CYGPATH_W) $(CGLSRCDIR)/src/CglFlowCover` -I`$(CYGPATH_W) \
-	$(CGLSRCDIR)/src/CglGomory` -I`$(CYGPATH_W) \
-	$(CGLSRCDIR)/src/CglKnapsackCover` -I`$(CYGPATH_W) \
-	$(CGLSRCDIR)/src/CglMixedIntegerRounding` -I`$(CYGPATH_W) \
-	$(CGLSRCDIR)/src/CglMixedIntegerRounding2` -I`$(CYGPATH_W) \
-	$(CGLSRCDIR)/src/CglOddHole` -I`$(CYGPATH_W) \
-	$(CGLSRCDIR)/src/CglPreProcess` -I`$(CYGPATH_W) \
-	$(CGLSRCDIR)/src/CglProbing` -I`$(CYGPATH_W) \
-	$(CGLSRCDIR)/src/CglRedSplit` -I`$(CYGPATH_W) \
-	$(CGLSRCDIR)/src/CglTwomir` -I`$(CYGPATH_W) \
-	$(COINUTILSSRCDIR)/src` -I`$(CYGPATH_W) $(OSISRCDIR)/src`
+CXXFLAGS = @CXXFLAGS@
 CYGPATH_W = @CYGPATH_W@
-
-# List additional defines
-DEFS = @DEFS@ -DCOIN_NO_CLP_MESSAGE -DUSE_CBCCONFIG
+DEFS = @DEFS@
 DEPDIR = @DEPDIR@
 DYLPOBJDIR = @DYLPOBJDIR@
 DYLPSRCDIR = @DYLPSRCDIR@
@@ -477,6 +450,35 @@ cbc_LDADD = libCbc.la $(CGLOBJDIR)/src/libCgl.la \
 	$(am__append_18) $(am__append_20) $(am__append_23) \
 	$(am__append_26) $(OSIOBJDIR)/src/libOsi.la \
 	$(COINUTILSOBJDIR)/src/libCoinUtils.la
+
+########################################################################
+#                            Additional flags                          #
+########################################################################
+
+# Here list all include flags, relative to this "srcdir" directory.  This
+# "cygpath" stuff is necessary to compile with native compilers on Windows.
+# "top_srcdir" refers to the basic directory for the main package that is
+# being compiled.
+
+# List additional defines
+AM_CPPFLAGS = -I`$(CYGPATH_W) $(OSISRCDIR)/src/OsiCbc` $(am__append_1) \
+	$(am__append_4) $(am__append_6) $(am__append_9) \
+	$(am__append_11) $(am__append_13) $(am__append_15) \
+	$(am__append_17) $(am__append_19) $(am__append_22) \
+	$(am__append_25) -I`$(CYGPATH_W) $(CGLSRCDIR)/src` \
+	-I`$(CYGPATH_W) $(CGLSRCDIR)/src/CglClique` -I`$(CYGPATH_W) \
+	$(CGLSRCDIR)/src/CglFlowCover` -I`$(CYGPATH_W) \
+	$(CGLSRCDIR)/src/CglGomory` -I`$(CYGPATH_W) \
+	$(CGLSRCDIR)/src/CglKnapsackCover` -I`$(CYGPATH_W) \
+	$(CGLSRCDIR)/src/CglMixedIntegerRounding` -I`$(CYGPATH_W) \
+	$(CGLSRCDIR)/src/CglMixedIntegerRounding2` -I`$(CYGPATH_W) \
+	$(CGLSRCDIR)/src/CglOddHole` -I`$(CYGPATH_W) \
+	$(CGLSRCDIR)/src/CglPreProcess` -I`$(CYGPATH_W) \
+	$(CGLSRCDIR)/src/CglProbing` -I`$(CYGPATH_W) \
+	$(CGLSRCDIR)/src/CglRedSplit` -I`$(CYGPATH_W) \
+	$(CGLSRCDIR)/src/CglTwomir` -I`$(CYGPATH_W) \
+	$(COINUTILSSRCDIR)/src` -I`$(CYGPATH_W) $(OSISRCDIR)/src` \
+	-DCOIN_NO_CLP_MESSAGE -DUSE_CBCCONFIG
 
 # Finally, the -rpath flag is used by libtool to make sure that the shared
 # library is found (in the lib install directory) when we are using dynamic

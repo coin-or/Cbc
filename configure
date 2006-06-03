@@ -1835,6 +1835,28 @@ echo "$as_me: error: You don't have the correct version of autoconf as the first
   fi
   rm -f confauto.out
 
+  # Check if the executable autoconf is picked up from the correct location
+  echo "$as_me:$LINENO: checking whether autoconf is coming from the correct location" >&5
+echo $ECHO_N "checking whether autoconf is coming from the correct location... $ECHO_C" >&6
+  autoconf_dir=`which autoconf | sed -e 's=/autoconf=='`
+  autoconf_dir=`cd $autoconf_dir; pwd`
+  if test x$AUTOTOOLS_DIR = x; then
+    want_dir=$HOME/bin
+  else
+    want_dir=$AUTOTOOLS_DIR/bin
+  fi
+  if test $autoconf_dir = `cd $want_dir; pwd`; then
+    echo "$as_me:$LINENO: result: yes" >&5
+echo "${ECHO_T}yes" >&6
+  else
+    rm -f confauto.out
+    echo "$as_me:$LINENO: result: no" >&5
+echo "${ECHO_T}no" >&6
+    { { echo "$as_me:$LINENO: error: The autoconf executable should be picked up from \$HOME/bin or \$AUTOTOOLS_DIR/bin." >&5
+echo "$as_me: error: The autoconf executable should be picked up from \$HOME/bin or \$AUTOTOOLS_DIR/bin." >&2;}
+   { (exit 1); exit 1; }; }
+  fi
+
   # Check if we have automake
   # Extract the first word of "automake", so it can be a program name with args.
 set dummy automake; ac_word=$2
@@ -1897,45 +1919,37 @@ echo "$as_me: error: You don't have the correct version of automake as the first
   fi
   rm -f confauto.out
 
-  # Check if we can find the libtool file
-  if test "${LIBTOOLPREFIX:+set}" != set; then
-    for p in $HOME ; do
-      as_ac_File=`echo "ac_cv_file_$p/share/aclocal/libtool.m4" | $as_tr_sh`
-echo "$as_me:$LINENO: checking for $p/share/aclocal/libtool.m4" >&5
-echo $ECHO_N "checking for $p/share/aclocal/libtool.m4... $ECHO_C" >&6
-if eval "test \"\${$as_ac_File+set}\" = set"; then
-  echo $ECHO_N "(cached) $ECHO_C" >&6
-else
-  test "$cross_compiling" = yes &&
-  { { echo "$as_me:$LINENO: error: cannot check for file existence when cross compiling" >&5
-echo "$as_me: error: cannot check for file existence when cross compiling" >&2;}
-   { (exit 1); exit 1; }; }
-if test -r "$p/share/aclocal/libtool.m4"; then
-  eval "$as_ac_File=yes"
-else
-  eval "$as_ac_File=no"
-fi
-fi
-echo "$as_me:$LINENO: result: `eval echo '${'$as_ac_File'}'`" >&5
-echo "${ECHO_T}`eval echo '${'$as_ac_File'}'`" >&6
-if test `eval echo '${'$as_ac_File'}'` = yes; then
-  LIBTOOLM4="$p/share/aclocal/libtool.m4"
-                     LIBTOOLPREFIX="$p"
-fi
-
-      if test x"$LIBTOOLM4" != x; then
-        break;
-      fi
-    done
-    if test x"$LIBTOOLM4" = x; then
-      { { echo "$as_me:$LINENO: error: You specified you want to use maintainer mode, but I cannot find the file libtool.m4 on your system.  Please set the prefix of the location of the correct file with the LIBTOOLPREFIX variable, so that it is in $LIBTOOLPREFIX/share/aclocal.  We assume here that it is the plain version obtained from the GNU tarball." >&5
-echo "$as_me: error: You specified you want to use maintainer mode, but I cannot find the file libtool.m4 on your system.  Please set the prefix of the location of the correct file with the LIBTOOLPREFIX variable, so that it is in $LIBTOOLPREFIX/share/aclocal.  We assume here that it is the plain version obtained from the GNU tarball." >&2;}
-   { (exit 1); exit 1; }; }
-    fi
+  # Check if the executable automake is picked up from the correct location
+  echo "$as_me:$LINENO: checking whether automake is coming from the correct location" >&5
+echo $ECHO_N "checking whether automake is coming from the correct location... $ECHO_C" >&6
+  automake_dir=`which automake | sed -e 's=/automake=='`
+  automake_dir=`cd $automake_dir; pwd`
+  if test x$AUTOTOOLS_DIR = x; then
+    want_dir=$HOME/bin
   else
-    as_ac_File=`echo "ac_cv_file_$LIBTOOLPREFIX/share/aclocal/libtool.m4" | $as_tr_sh`
-echo "$as_me:$LINENO: checking for $LIBTOOLPREFIX/share/aclocal/libtool.m4" >&5
-echo $ECHO_N "checking for $LIBTOOLPREFIX/share/aclocal/libtool.m4... $ECHO_C" >&6
+    want_dir=$AUTOTOOLS_DIR/bin
+  fi
+  if test $automake_dir = `cd $want_dir; pwd`; then
+    echo "$as_me:$LINENO: result: yes" >&5
+echo "${ECHO_T}yes" >&6
+  else
+    rm -f confauto.out
+    echo "$as_me:$LINENO: result: no" >&5
+echo "${ECHO_T}no" >&6
+    { { echo "$as_me:$LINENO: error: The automake executable should be picked up from \$HOME/bin or \$AUTOTOOLS_DIR/bin." >&5
+echo "$as_me: error: The automake executable should be picked up from \$HOME/bin or \$AUTOTOOLS_DIR/bin." >&2;}
+   { (exit 1); exit 1; }; }
+  fi
+
+  # Check if we can find the libtool file
+  if test x$AUTOTOOLS_DIR = x; then
+    want_dir=$HOME/share
+  else
+    want_dir=$AUTOTOOLS_DIR/share
+  fi
+  as_ac_File=`echo "ac_cv_file_$want_dir/aclocal/libtool.m4" | $as_tr_sh`
+echo "$as_me:$LINENO: checking for $want_dir/aclocal/libtool.m4" >&5
+echo $ECHO_N "checking for $want_dir/aclocal/libtool.m4... $ECHO_C" >&6
 if eval "test \"\${$as_ac_File+set}\" = set"; then
   echo $ECHO_N "(cached) $ECHO_C" >&6
 else
@@ -1943,7 +1957,7 @@ else
   { { echo "$as_me:$LINENO: error: cannot check for file existence when cross compiling" >&5
 echo "$as_me: error: cannot check for file existence when cross compiling" >&2;}
    { (exit 1); exit 1; }; }
-if test -r "$LIBTOOLPREFIX/share/aclocal/libtool.m4"; then
+if test -r "$want_dir/aclocal/libtool.m4"; then
   eval "$as_ac_File=yes"
 else
   eval "$as_ac_File=no"
@@ -1952,21 +1966,20 @@ fi
 echo "$as_me:$LINENO: result: `eval echo '${'$as_ac_File'}'`" >&5
 echo "${ECHO_T}`eval echo '${'$as_ac_File'}'`" >&6
 if test `eval echo '${'$as_ac_File'}'` = yes; then
-  LIBTOOLM4="$LIBTOOLPREFIX/share/aclocal/libtool.m4"
+  LIBTOOLM4="$want_dir/aclocal/libtool.m4"
 else
-  { { echo "$as_me:$LINENO: error: You specified LIBTOOLPREFIX, but I cannot find the file libtool.m4 in $LIBTOOLPREFIX/share/aclocal." >&5
-echo "$as_me: error: You specified LIBTOOLPREFIX, but I cannot find the file libtool.m4 in $LIBTOOLPREFIX/share/aclocal." >&2;}
+  { { echo "$as_me:$LINENO: error: I cannot find the libtool.m4 file." >&5
+echo "$as_me: error: I cannot find the libtool.m4 file." >&2;}
    { (exit 1); exit 1; }; }
 fi
 
-  fi
 
   # Check if this is the correct version of libtool (with escaped dots)
   correct_version='1.5.22'
   grep_version=`echo  $correct_version | sed -e 's/\\./\\\\\\./g'`
-  as_ac_File=`echo "ac_cv_file_$LIBTOOLPREFIX/share/libtool/ltmain.sh" | $as_tr_sh`
-echo "$as_me:$LINENO: checking for $LIBTOOLPREFIX/share/libtool/ltmain.sh" >&5
-echo $ECHO_N "checking for $LIBTOOLPREFIX/share/libtool/ltmain.sh... $ECHO_C" >&6
+  as_ac_File=`echo "ac_cv_file_$want_dir/libtool/ltmain.sh" | $as_tr_sh`
+echo "$as_me:$LINENO: checking for $want_dir/libtool/ltmain.sh" >&5
+echo $ECHO_N "checking for $want_dir/libtool/ltmain.sh... $ECHO_C" >&6
 if eval "test \"\${$as_ac_File+set}\" = set"; then
   echo $ECHO_N "(cached) $ECHO_C" >&6
 else
@@ -1974,7 +1987,7 @@ else
   { { echo "$as_me:$LINENO: error: cannot check for file existence when cross compiling" >&5
 echo "$as_me: error: cannot check for file existence when cross compiling" >&2;}
    { (exit 1); exit 1; }; }
-if test -r "$LIBTOOLPREFIX/share/libtool/ltmain.sh"; then
+if test -r "$want_dir/libtool/ltmain.sh"; then
   eval "$as_ac_File=yes"
 else
   eval "$as_ac_File=no"
@@ -1991,19 +2004,21 @@ fi
   echo "$as_me:$LINENO: checking whether we are using the correct version ($correct_version) of libtool." >&5
 echo $ECHO_N "checking whether we are using the correct version ($correct_version) of libtool.... $ECHO_C" >&6
   if test $have_ltmain = yes; then
-    if $EGREP $grep_version $LIBTOOLPREFIX/share/libtool/ltmain.sh >/dev/null 2>&1; then
+    if $EGREP $grep_version $want_dir/libtool/ltmain.sh >/dev/null 2>&1; then
       echo "$as_me:$LINENO: result: yes" >&5
 echo "${ECHO_T}yes" >&6
     else
       echo "$as_me:$LINENO: result: no" >&5
 echo "${ECHO_T}no" >&6
-      { { echo "$as_me:$LINENO: error: You don't have the correct version of libtool.  Please set LIBTOOLPREFIX to the correct installation prefix, so that the correct version of ltmain.sh is in $LIBTOOLPREFIX/share/libtool." >&5
-echo "$as_me: error: You don't have the correct version of libtool.  Please set LIBTOOLPREFIX to the correct installation prefix, so that the correct version of ltmain.sh is in $LIBTOOLPREFIX/share/libtool." >&2;}
+      { { echo "$as_me:$LINENO: error: You don't have the correct version of libtool." >&5
+echo "$as_me: error: You don't have the correct version of libtool." >&2;}
    { (exit 1); exit 1; }; }
     fi
   else
-    { { echo "$as_me:$LINENO: error: I cannot find the file ltmain.sh in $LIBTOOLPREFIX/share/libtool" >&5
-echo "$as_me: error: I cannot find the file ltmain.sh in $LIBTOOLPREFIX/share/libtool" >&2;}
+    echo "$as_me:$LINENO: result: no" >&5
+echo "${ECHO_T}no" >&6
+    { { echo "$as_me:$LINENO: error: I cannot find the ltmain.sh file." >&5
+echo "$as_me: error: I cannot find the ltmain.sh file." >&2;}
    { (exit 1); exit 1; }; }
   fi
 

@@ -472,7 +472,7 @@ ac_includes_default="\
 # include <unistd.h>
 #endif"
 
-ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS build build_cpu build_vendor build_os ADDLIBS ALWAYS_FALSE_TRUE ALWAYS_FALSE_FALSE COIN_DEBUG_TRUE COIN_DEBUG_FALSE CDEFS CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT CXXDEFS CXX CXXFLAGS ac_ct_CXX EGREP INSTALL_PROGRAM INSTALL_SCRIPT INSTALL_DATA CYGPATH_W PACKAGE VERSION ACLOCAL AUTOCONF AUTOMAKE AUTOHEADER MAKEINFO install_sh STRIP ac_ct_STRIP INSTALL_STRIP_PROGRAM mkdir_p AWK SET_MAKE am__leading_dot AMTAR am__tar am__untar DEPDIR am__include am__quote AMDEP_TRUE AMDEP_FALSE AMDEPBACKSLASH CCDEPMODE am__fastdepCC_TRUE am__fastdepCC_FALSE CXXDEPMODE am__fastdepCXX_TRUE am__fastdepCXX_FALSE MAINTAINER_MODE_TRUE MAINTAINER_MODE_FALSE MAINT LIBTOOLM4 have_autoconf have_automake BUILDTOOLSDIR AUX_DIR HAVE_EXTERNALS_TRUE HAVE_EXTERNALS_FALSE host host_cpu host_vendor host_os LN_S ECHO AR ac_ct_AR RANLIB ac_ct_RANLIB CPP CXXCPP F77 FFLAGS ac_ct_F77 LIBTOOL LT_LDFLAGS abs_lib_dir abs_include_dir abs_bin_dir RPATH_FLAGS CBCSRCDIR CBCOBJDIR COIN_HAS_CBC_TRUE COIN_HAS_CBC_FALSE CGLSRCDIR CGLOBJDIR COIN_HAS_CGL_TRUE COIN_HAS_CGL_FALSE CLPSRCDIR CLPOBJDIR COIN_HAS_CLP_TRUE COIN_HAS_CLP_FALSE COINUTILSSRCDIR COINUTILSOBJDIR COIN_HAS_COINUTILS_TRUE COIN_HAS_COINUTILS_FALSE DYLPSRCDIR DYLPOBJDIR COIN_HAS_DYLP_TRUE COIN_HAS_DYLP_FALSE OSISRCDIR OSIOBJDIR COIN_HAS_OSI_TRUE COIN_HAS_OSI_FALSE SYMSRCDIR SYMOBJDIR COIN_HAS_SYM_TRUE COIN_HAS_SYM_FALSE VOLSRCDIR VOLOBJDIR COIN_HAS_VOL_TRUE COIN_HAS_VOL_FALSE CPXINCDIR CPXLIB COIN_HAS_CPX_TRUE COIN_HAS_CPX_FALSE GLPKINCDIR GLPKLIB COIN_HAS_GLPK_TRUE COIN_HAS_GLPK_FALSE FMPINCDIR FMPLIB COIN_HAS_FMP_TRUE COIN_HAS_FMP_FALSE MSKINCDIR MSKLIB COIN_HAS_MSK_TRUE COIN_HAS_MSK_FALSE OSLINCDIR OSLLIB COIN_HAS_OSL_TRUE COIN_HAS_OSL_FALSE SPXINCDIR SPXLIB COIN_HAS_SPX_TRUE COIN_HAS_SPX_FALSE XPRINCDIR XPRLIB COIN_HAS_XPR_TRUE COIN_HAS_XPR_FALSE LIBOBJS LTLIBOBJS VPATH_DISTCLEANFILES'
+ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS build build_cpu build_vendor build_os ADDLIBS ALWAYS_FALSE_TRUE ALWAYS_FALSE_FALSE COIN_DEBUG_TRUE COIN_DEBUG_FALSE CDEFS CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT CXXDEFS CXX CXXFLAGS ac_ct_CXX EGREP INSTALL_PROGRAM INSTALL_SCRIPT INSTALL_DATA CYGPATH_W PACKAGE VERSION ACLOCAL AUTOCONF AUTOMAKE AUTOHEADER MAKEINFO install_sh STRIP ac_ct_STRIP INSTALL_STRIP_PROGRAM mkdir_p AWK SET_MAKE am__leading_dot AMTAR am__tar am__untar DEPDIR am__include am__quote AMDEP_TRUE AMDEP_FALSE AMDEPBACKSLASH CCDEPMODE am__fastdepCC_TRUE am__fastdepCC_FALSE CXXDEPMODE am__fastdepCXX_TRUE am__fastdepCXX_FALSE MAINTAINER_MODE_TRUE MAINTAINER_MODE_FALSE MAINT LIBTOOLM4 have_autoconf have_automake BUILDTOOLSDIR AUX_DIR HAVE_EXTERNALS_TRUE HAVE_EXTERNALS_FALSE host host_cpu host_vendor host_os LN_S ECHO AR ac_ct_AR RANLIB ac_ct_RANLIB CPP CXXCPP F77 FFLAGS ac_ct_F77 LIBTOOL LT_LDFLAGS abs_source_dir abs_lib_dir abs_include_dir abs_bin_dir RPATH_FLAGS CBCSRCDIR CBCOBJDIR COIN_HAS_CBC_TRUE COIN_HAS_CBC_FALSE CGLSRCDIR CGLOBJDIR COIN_HAS_CGL_TRUE COIN_HAS_CGL_FALSE CLPSRCDIR CLPOBJDIR COIN_HAS_CLP_TRUE COIN_HAS_CLP_FALSE COINUTILSSRCDIR COINUTILSOBJDIR COIN_HAS_COINUTILS_TRUE COIN_HAS_COINUTILS_FALSE DYLPSRCDIR DYLPOBJDIR COIN_HAS_DYLP_TRUE COIN_HAS_DYLP_FALSE OSISRCDIR OSIOBJDIR COIN_HAS_OSI_TRUE COIN_HAS_OSI_FALSE SYMSRCDIR SYMOBJDIR COIN_HAS_SYM_TRUE COIN_HAS_SYM_FALSE VOLSRCDIR VOLOBJDIR COIN_HAS_VOL_TRUE COIN_HAS_VOL_FALSE CPXINCDIR CPXLIB COIN_HAS_CPX_TRUE COIN_HAS_CPX_FALSE GLPKINCDIR GLPKLIB COIN_HAS_GLPK_TRUE COIN_HAS_GLPK_FALSE FMPINCDIR FMPLIB COIN_HAS_FMP_TRUE COIN_HAS_FMP_FALSE MSKINCDIR MSKLIB COIN_HAS_MSK_TRUE COIN_HAS_MSK_FALSE OSLINCDIR OSLLIB COIN_HAS_OSL_TRUE COIN_HAS_OSL_FALSE SPXINCDIR SPXLIB COIN_HAS_SPX_TRUE COIN_HAS_SPX_FALSE XPRINCDIR XPRLIB COIN_HAS_XPR_TRUE COIN_HAS_XPR_FALSE LIBOBJS LTLIBOBJS VPATH_DISTCLEANFILES'
 ac_subst_files=''
 
 # Initialize some variables set by options.
@@ -19711,6 +19711,7 @@ LT_LDFLAGS=
 # helpful variable for the base directory of this package
 abs_source_dir=`cd $srcdir; pwd`
 
+
 # Stuff for example Makefiles
 if test x$prefix = xNONE; then
   full_prefix=$ac_default_prefix
@@ -20252,13 +20253,15 @@ fi
                   LIBS="$CPXLIB $ADDLIBS"
 		  echo "$as_me:$LINENO: checking whether symbol CPXgetstat is available with CPX" >&5
 echo $ECHO_N "checking whether symbol CPXgetstat is available with CPX... $ECHO_C" >&6
+# ToDo find out what to do about extern "C"
+#                  AC_TRY_LINK([extern "C" {void CPXgetstat();}],[CPXgetstat()],
                   cat >conftest.$ac_ext <<_ACEOF
 /* confdefs.h.  */
 _ACEOF
 cat confdefs.h >>conftest.$ac_ext
 cat >>conftest.$ac_ext <<_ACEOF
 /* end confdefs.h.  */
-extern "C" {void CPXgetstat();}
+void CPXgetstat();
 int
 main ()
 {
@@ -20397,13 +20400,15 @@ fi
                   LIBS="$GLPKLIB $ADDLIBS"
 		  echo "$as_me:$LINENO: checking whether symbol glp_lpx_simplex is available with GLPK" >&5
 echo $ECHO_N "checking whether symbol glp_lpx_simplex is available with GLPK... $ECHO_C" >&6
+# ToDo find out what to do about extern "C"
+#                  AC_TRY_LINK([extern "C" {void glp_lpx_simplex();}],[glp_lpx_simplex()],
                   cat >conftest.$ac_ext <<_ACEOF
 /* confdefs.h.  */
 _ACEOF
 cat confdefs.h >>conftest.$ac_ext
 cat >>conftest.$ac_ext <<_ACEOF
 /* end confdefs.h.  */
-extern "C" {void glp_lpx_simplex();}
+void glp_lpx_simplex();
 int
 main ()
 {
@@ -20605,13 +20610,15 @@ fi
                   LIBS="$MSKLIB $ADDLIBS"
 		  echo "$as_me:$LINENO: checking whether symbol MSK_openmosek is available with MSK" >&5
 echo $ECHO_N "checking whether symbol MSK_openmosek is available with MSK... $ECHO_C" >&6
+# ToDo find out what to do about extern "C"
+#                  AC_TRY_LINK([extern "C" {void MSK_openmosek();}],[MSK_openmosek()],
                   cat >conftest.$ac_ext <<_ACEOF
 /* confdefs.h.  */
 _ACEOF
 cat confdefs.h >>conftest.$ac_ext
 cat >>conftest.$ac_ext <<_ACEOF
 /* end confdefs.h.  */
-extern "C" {void MSK_openmosek();}
+void MSK_openmosek();
 int
 main ()
 {
@@ -20750,13 +20757,15 @@ fi
                   LIBS="$OSLLIB $ADDLIBS"
 		  echo "$as_me:$LINENO: checking whether symbol ekk_simplex is available with OSL" >&5
 echo $ECHO_N "checking whether symbol ekk_simplex is available with OSL... $ECHO_C" >&6
+# ToDo find out what to do about extern "C"
+#                  AC_TRY_LINK([extern "C" {void ekk_simplex();}],[ekk_simplex()],
                   cat >conftest.$ac_ext <<_ACEOF
 /* confdefs.h.  */
 _ACEOF
 cat confdefs.h >>conftest.$ac_ext
 cat >>conftest.$ac_ext <<_ACEOF
 /* end confdefs.h.  */
-extern "C" {void ekk_simplex();}
+void ekk_simplex();
 int
 main ()
 {
@@ -20984,13 +20993,15 @@ fi
                   LIBS="$XPRLIB $ADDLIBS"
 		  echo "$as_me:$LINENO: checking whether symbol XPRSsetintcontrol is available with XPR" >&5
 echo $ECHO_N "checking whether symbol XPRSsetintcontrol is available with XPR... $ECHO_C" >&6
+# ToDo find out what to do about extern "C"
+#                  AC_TRY_LINK([extern "C" {void XPRSsetintcontrol();}],[XPRSsetintcontrol()],
                   cat >conftest.$ac_ext <<_ACEOF
 /* confdefs.h.  */
 _ACEOF
 cat confdefs.h >>conftest.$ac_ext
 cat >>conftest.$ac_ext <<_ACEOF
 /* end confdefs.h.  */
-extern "C" {void XPRSsetintcontrol();}
+void XPRSsetintcontrol();
 int
 main ()
 {
@@ -21980,6 +21991,7 @@ s,@FFLAGS@,$FFLAGS,;t t
 s,@ac_ct_F77@,$ac_ct_F77,;t t
 s,@LIBTOOL@,$LIBTOOL,;t t
 s,@LT_LDFLAGS@,$LT_LDFLAGS,;t t
+s,@abs_source_dir@,$abs_source_dir,;t t
 s,@abs_lib_dir@,$abs_lib_dir,;t t
 s,@abs_include_dir@,$abs_include_dir,;t t
 s,@abs_bin_dir@,$abs_bin_dir,;t t

@@ -345,6 +345,7 @@ XPRLIB = @XPRLIB@
 abs_bin_dir = @abs_bin_dir@
 abs_include_dir = @abs_include_dir@
 abs_lib_dir = @abs_lib_dir@
+abs_source_dir = @abs_source_dir@
 ac_ct_AR = @ac_ct_AR@
 ac_ct_CC = @ac_ct_CC@
 ac_ct_CXX = @ac_ct_CXX@

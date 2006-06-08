@@ -5,7 +5,6 @@ Cbc/configure.ac -text
 Cbc/doc/doxygen.conf -text
 Cbc/examples/Makefile.in -text
 Cbc/inc/config_cbc.h.in -text
-/Externals -text
 /config.guess -text
 /config.sub -text
 /configure -text

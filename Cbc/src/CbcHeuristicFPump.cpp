@@ -53,6 +53,23 @@ CbcHeuristicFPump::clone() const
 {
   return new CbcHeuristicFPump(*this);
 }
+// Create C++ lines to get to current state
+void 
+CbcHeuristicFPump::generateCpp( FILE * fp) 
+{
+  CbcHeuristicFPump other;
+  fprintf(fp,"0#include \"CbcHeuristicFPump.hpp\"\n");
+  fprintf(fp,"3  CbcHeuristicFPump heuristicFPump(*cbcModel);\n");
+  if (maximumPasses_!=other.maximumPasses_)
+    fprintf(fp,"3  heuristicFPump.setMaximumPasses(%d);\n",maximumPasses_);
+  else
+    fprintf(fp,"4  heuristicFPump.setMaximumPasses(%d);\n",maximumPasses_);
+  if (maximumTime_!=other.maximumTime_)
+    fprintf(fp,"3  heuristicFPump.setMaximumTime(%g);\n",maximumTime_);
+  else
+    fprintf(fp,"4  heuristicFPump.setMaximumTime(%g);\n",maximumTime_);
+  fprintf(fp,"3  cbcModel->addHeuristic(&heuristicFPump);\n");
+}
 
 // Copy constructor 
 CbcHeuristicFPump::CbcHeuristicFPump(const CbcHeuristicFPump & rhs)
@@ -110,8 +127,8 @@ CbcHeuristicFPump::solution(double & solutionValue,
   int general=0;
   for (i=0;i<numberIntegers;i++) {
     int iColumn = integerVariable[i];
-    const CbcObject * object = model_->object(i);
 #ifndef NDEBUG
+    const CbcObject * object = model_->object(i);
     const CbcSimpleInteger * integerObject = 
       dynamic_cast<const  CbcSimpleInteger *> (object);
     assert(integerObject);
@@ -336,8 +353,8 @@ CbcHeuristicFPump::rounds(double * solution,
     int iColumn = integerVariable[i];
     if(!solver->isBinary(iColumn))
       continue;
-    const CbcObject * object = model_->object(i);
 #ifndef NDEBUG
+    const CbcObject * object = model_->object(i);
     const CbcSimpleInteger * integerObject = 
       dynamic_cast<const  CbcSimpleInteger *> (object);
     assert(integerObject);

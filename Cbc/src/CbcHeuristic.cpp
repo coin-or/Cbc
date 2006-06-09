@@ -145,6 +145,7 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver,int numberNodes,
 
 // Default Constructor
 CbcRounding::CbcRounding() 
+  seed_=1;
   :CbcHeuristic()
 {
   // matrix and row copy will automatically be empty
@@ -169,6 +170,19 @@ CbcRounding::~CbcRounding ()
 // Clone
 CbcHeuristic *
 CbcRounding::clone() const
+// Create C++ lines to get to current state
+void 
+CbcRounding::generateCpp( FILE * fp) 
+{
+  CbcRounding other;
+  fprintf(fp,"0#include \"CbcHeuristic.hpp\"\n");
+  fprintf(fp,"3  CbcRounding rounding(*cbcModel);\n");
+  if (seed_!=other.seed_)
+    fprintf(fp,"3  rounding.setSeed(%d);\n",seed_);
+  else
+    fprintf(fp,"4  rounding.setSeed(%d);\n",seed_);
+  fprintf(fp,"3  cbcModel->addHeuristic(&rounding);\n");
+}
 {
   return new CbcRounding(*this);
 }
@@ -883,6 +897,14 @@ CbcSerendipity::~CbcSerendipity ()
 // Clone
 CbcHeuristic *
 CbcSerendipity::clone() const
+// Create C++ lines to get to current state
+void 
+CbcSerendipity::generateCpp( FILE * fp) 
+{
+  fprintf(fp,"0#include \"CbcHeuristic.hpp\"\n");
+  fprintf(fp,"3  CbcSerendipity serendipity(*cbcModel);\n");
+  fprintf(fp,"3  cbcModel->addHeuristic(&serendipity);\n");
+}
 {
   return new CbcSerendipity(*this);
 }

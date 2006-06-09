@@ -1,3 +1,5 @@
+NOTE: The information in this file might not yet include the changes introduced with the switch to the autotools.
+
 To build Cbc see INSTALL file
 
 To use Cbc you need the Cbc, Cgl, Coin and Osi libraries.  You

@@ -291,7 +291,7 @@ ac_subdirs_all="$ac_subdirs_all Vol"
 ac_subdirs_all="$ac_subdirs_all Osi"
 ac_subdirs_all="$ac_subdirs_all Cgl"
 ac_subdirs_all="$ac_subdirs_all Cbc"
-ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS EGREP INSTALL_PROGRAM INSTALL_SCRIPT INSTALL_DATA CYGPATH_W PACKAGE VERSION ACLOCAL AUTOCONF AUTOMAKE AUTOHEADER MAKEINFO install_sh STRIP ac_ct_STRIP INSTALL_STRIP_PROGRAM mkdir_p AWK SET_MAKE am__leading_dot AMTAR am__tar am__untar MAINTAINER_MODE_TRUE MAINTAINER_MODE_FALSE MAINT LIBTOOLM4 have_autoconf have_automake BUILDTOOLSDIR AUX_DIR HAVE_EXTERNALS_TRUE HAVE_EXTERNALS_FALSE subdirs LIBOBJS LTLIBOBJS VPATH_DISTCLEANFILES'
+ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS EGREP INSTALL_PROGRAM INSTALL_SCRIPT INSTALL_DATA CYGPATH_W PACKAGE VERSION ACLOCAL AUTOCONF AUTOMAKE AUTOHEADER MAKEINFO install_sh STRIP ac_ct_STRIP INSTALL_STRIP_PROGRAM mkdir_p AWK SET_MAKE am__leading_dot AMTAR am__tar am__untar MAINTAINER_MODE_TRUE MAINTAINER_MODE_FALSE MAINT LIBTOOLM4 have_autoconf have_automake have_svn BUILDTOOLSDIR AUX_DIR HAVE_EXTERNALS_TRUE HAVE_EXTERNALS_FALSE subdirs LIBOBJS LTLIBOBJS VPATH_DISTCLEANFILES'
 ac_subst_files=''
 
 # Initialize some variables set by options.
@@ -2026,6 +2026,56 @@ echo "$as_me: error: I cannot find the ltmain.sh file." >&2;}
   if test -r $srcdir/Externals; then
     coin_have_externals=yes
   fi
+  # Check if subversion is installed and understands https
+  # Extract the first word of "svn", so it can be a program name with args.
+set dummy svn; ac_word=$2
+echo "$as_me:$LINENO: checking for $ac_word" >&5
+echo $ECHO_N "checking for $ac_word... $ECHO_C" >&6
+if test "${ac_cv_prog_have_svn+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  if test -n "$have_svn"; then
+  ac_cv_prog_have_svn="$have_svn" # Let the user override the test.
+else
+as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+  for ac_exec_ext in '' $ac_executable_extensions; do
+  if $as_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
+    ac_cv_prog_have_svn="yes"
+    echo "$as_me:$LINENO: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+done
+
+  test -z "$ac_cv_prog_have_svn" && ac_cv_prog_have_svn="no"
+fi
+fi
+have_svn=$ac_cv_prog_have_svn
+if test -n "$have_svn"; then
+  echo "$as_me:$LINENO: result: $have_svn" >&5
+echo "${ECHO_T}$have_svn" >&6
+else
+  echo "$as_me:$LINENO: result: no" >&5
+echo "${ECHO_T}no" >&6
+fi
+
+  if test x$have_svn = xyes; then
+    echo "$as_me:$LINENO: checking svn understands https" >&5
+echo $ECHO_N "checking svn understands https... $ECHO_C" >&6
+    svn --version > confauto.out 2>&1
+    if $EGREP https confauto.out >/dev/null 2>&1; then
+      echo "$as_me:$LINENO: result: yes" >&5
+echo "${ECHO_T}yes" >&6
+    else
+      echo "$as_me:$LINENO: result: no" >&5
+echo "${ECHO_T}no" >&6
+      have_svn=no
+    fi
+  fi
 
   # Find the location of the BuildTools directory
   BUILDTOOLSDIR=
@@ -2053,7 +2103,10 @@ echo "$as_me: error: Cannot find the BuildTools directory" >&2;}
 fi
 
 
-if test $coin_have_externals = yes; then
+
+
+
+if test $coin_have_externals = yes && test x$have_svn = xyes; then
   HAVE_EXTERNALS_TRUE=
   HAVE_EXTERNALS_FALSE='#'
 else
@@ -2991,6 +3044,7 @@ s,@MAINT@,$MAINT,;t t
 s,@LIBTOOLM4@,$LIBTOOLM4,;t t
 s,@have_autoconf@,$have_autoconf,;t t
 s,@have_automake@,$have_automake,;t t
+s,@have_svn@,$have_svn,;t t
 s,@BUILDTOOLSDIR@,$BUILDTOOLSDIR,;t t
 s,@AUX_DIR@,$AUX_DIR,;t t
 s,@HAVE_EXTERNALS_TRUE@,$HAVE_EXTERNALS_TRUE,;t t

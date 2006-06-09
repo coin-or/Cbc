@@ -65,7 +65,7 @@ DIST_COMMON = README $(am__configure_deps) \
 	$(top_srcdir)/../Clp/src/CbcOrClpParam.cpp \
 	$(top_srcdir)/../Clp/src/CbcOrClpParam.hpp \
 	$(top_srcdir)/configure $(top_srcdir)/examples/Makefile.in \
-	$(top_srcdir)/inc/config_cbc.h.in AUTHORS INSTALL
+	$(top_srcdir)/inc/config_cbc.h.in AUTHORS
 @HAVE_EXTERNALS_TRUE@am__append_2 = Externals
 @HAVE_EXTERNALS_TRUE@am__append_3 = .Externals-stamp
 subdir = .
@@ -263,6 +263,7 @@ datadir = @datadir@
 exec_prefix = @exec_prefix@
 have_autoconf = @have_autoconf@
 have_automake = @have_automake@
+have_svn = @have_svn@
 host = @host@
 host_alias = @host_alias@
 host_cpu = @host_cpu@

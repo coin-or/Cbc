@@ -901,10 +901,9 @@ public:
       Solution is number columns in size.
       If fixVariables true then bounds of continuous solver updated.
       Returns objective value (worse than cutoff if not feasible)
-      Previously computed objective value is now passed in (in case user does not do solve)
  */
   double checkSolution(double cutoff, const double * solution,
-		       bool fixVariables, double originalObjValue);
+		       bool fixVariables);
   /** Test the current solution for feasiblility.
 
     Scan all objects for indications of infeasibility. This is broken down
@@ -1287,7 +1286,6 @@ public:
       2 bit (4) - don't check integer solution (by solving LP)
       3 bit (8) - fast analyze
       4 bit (16) - non-linear model and someone too lazy to code "times" correctly - so skip row check
-      5 bit (32) - keep names
   */
   /// Set special options
   inline void setSpecialOptions(int value)
@@ -1465,8 +1463,6 @@ public:
   /// Increment strong info
   void incrementStrongInfo(int numberTimes, int numberIterations,
                            int numberFixed, bool ifInfeasible);
-  /// Create C++ lines to get to current state
-  void generateCpp( FILE * fp,int options);
   //@}
 
 //---------------------------------------------------------------------------

@@ -8,7 +8,6 @@ typedef struct
   int numberColumns;
   int numberBinary;
   int numberIntegers; /* non binary */
-  int numberSos;
   int numberElements;
   int numberArguments;
   int problemStatus;
@@ -31,11 +30,6 @@ typedef struct
   int * branchDirection;
   double * pseudoDown;
   double * pseudoUp;
-  char * sosType;
-  int * sosPriority;
-  int * sosStart;
-  int * sosIndices;
-  double * sosReference;
   char ** arguments;
   char buffer[300];
 } ampl_info;

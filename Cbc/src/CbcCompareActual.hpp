@@ -30,8 +30,6 @@ public:
 
   /// Clone
   virtual CbcCompareBase * clone() const;
-  /// Create C++ lines to get to current state
-  virtual void generateCpp( FILE * fp);
 
   // This returns true if the depth of node y is greater than depth of node x
   virtual bool test (CbcNode * x, CbcNode * y);
@@ -50,8 +48,6 @@ public:
 
   /// Clone
   virtual CbcCompareBase * clone() const;
-  /// Create C++ lines to get to current state
-  virtual void generateCpp( FILE * fp);
 
   /* This returns true if objective value of node y is less than
      objective value of node x */
@@ -77,8 +73,6 @@ public:
 
   /// Clone
   virtual CbcCompareBase * clone() const;
-  /// Create C++ lines to get to current state
-  virtual void generateCpp( FILE * fp);
 
   ~CbcCompareDefault() ;
   /* This returns true if weighted value of node y is less than
@@ -126,8 +120,6 @@ public:
 
   /// Clone
   virtual CbcCompareBase * clone() const;
-  /// Create C++ lines to get to current state
-  virtual void generateCpp( FILE * fp);
 
   virtual bool test (CbcNode * x, CbcNode * y) ;
 };

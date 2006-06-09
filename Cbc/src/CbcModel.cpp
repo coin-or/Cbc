@@ -705,14 +705,12 @@ void CbcModel::branchAndBound(int doStatistics)
 */
   continuousSolver_ = solver_->clone() ;
 #ifdef COIN_HAS_CLP
-  if ((specialOptions_&32)==0) {
-    OsiClpSolverInterface * clpSolver 
-      = dynamic_cast<OsiClpSolverInterface *> (solver_);
-    if (clpSolver) {
-      ClpSimplex * clpSimplex = clpSolver->getModelPtr();
-      // take off names
-      clpSimplex->dropNames();
-    }
+  OsiClpSolverInterface * clpSolver 
+    = dynamic_cast<OsiClpSolverInterface *> (solver_);
+  if (clpSolver) {
+    ClpSimplex * clpSimplex = clpSolver->getModelPtr();
+    // take off names
+    clpSimplex->dropNames();
   }
 #endif
 
@@ -1295,7 +1293,8 @@ void CbcModel::branchAndBound(int doStatistics)
         feasible = solveWithCuts(cuts,maximumCutPasses_,node);
       }
       if ((specialOptions_&1)!=0&&onOptimalPath) {
-        assert (solver_->getRowCutDebugger()) ;
+        const OsiRowCutDebugger *debugger = solver_->getRowCutDebugger() ;
+        assert (debugger) ;
       }
       if (statistics_) {
         assert (numberNodes2_);
@@ -2337,18 +2336,6 @@ void
 CbcModel::assignSolver(OsiSolverInterface *&solver, bool deleteSolver)
 
 {
-  // resize best solution if exists
-  if (bestSolution_) {
-    int nOld = solver_->getNumCols();
-    int nNew = solver->getNumCols();
-    if (nNew>nOld) {
-      double * temp = new double[nNew];
-      memcpy(temp,bestSolution_,nOld*sizeof(double));
-      memset(temp+nOld,0,(nNew-nOld)*sizeof(double));
-      delete [] bestSolution_;
-      bestSolution_=temp;
-    }
-  }
   // Keep the current message level for solver (if solver exists)
   if (solver_)
     solver->messageHandler()->setLogLevel(solver_->messageHandler()->logLevel()) ;
@@ -3360,8 +3347,9 @@ int CbcModel::addCuts (CbcNode *node, CoinWarmStartBasis *&lastws,bool canFix)
       int *cutsToDrop ;
       addCuts = new const OsiRowCut* [currentNumberCuts];
       cutsToDrop = new int[currentNumberCuts] ;
-      assert (currentNumberCuts+numberRowsAtContinuous_<=lastws->getNumArtificial());
+      int nxrow = lastws->getNumArtificial();
       for (i=0;i<currentNumberCuts;i++) {
+	assert (i+numberRowsAtContinuous_<nxrow);
 	CoinWarmStartBasis::Status status = 
 	  lastws->getArtifStatus(i+numberRowsAtContinuous_);
 	if (addedCuts_[i] &&
@@ -3472,20 +3460,16 @@ int CbcModel::reducedCostFix ()
     { if (solution[iColumn] < lower[iColumn]+integerTolerance && djValue > gap)
       { solver_->setColUpper(iColumn,lower[iColumn]) ;
 #ifdef COIN_HAS_CLP
-      // may just have been fixed before
       if (clpSimplex)
-        assert(clpSimplex->getColumnStatus(iColumn)==ClpSimplex::atLowerBound||
-	       clpSimplex->getColumnStatus(iColumn)==ClpSimplex::isFixed);
+        assert (clpSimplex->getColumnStatus(iColumn)==ClpSimplex::atLowerBound);
 #endif
 	numberFixed++ ; }
       else
       if (solution[iColumn] > upper[iColumn]-integerTolerance && -djValue > gap)
       { solver_->setColLower(iColumn,upper[iColumn]) ;
 #ifdef COIN_HAS_CLP
-      // may just have been fixed before
       if (clpSimplex)
-        assert(clpSimplex->getColumnStatus(iColumn)==ClpSimplex::atUpperBound||
-	       clpSimplex->getColumnStatus(iColumn)==ClpSimplex::isFixed);
+        assert (clpSimplex->getColumnStatus(iColumn)==ClpSimplex::atUpperBound);
 #endif
 	numberFixed++ ; } } }
   
@@ -5556,7 +5540,7 @@ void CbcModel::setCutoff (double value)
 */
 double 
 CbcModel::checkSolution (double cutoff, const double *solution,
-			 bool fixVariables, double objectiveValue))
+			 bool fixVariables)
 
 {
   if (!solverCharacteristics_->solutionAddsCuts()) {
@@ -5616,12 +5600,8 @@ CbcModel::checkSolution (double cutoff, const double *solution,
       // Give a hint to do dual
       bool saveTakeHint;
       OsiHintStrength saveStrength;
-#ifndef NDEBUG
       bool gotHint = (solver_->getHintParam(OsiDoDualInInitial,saveTakeHint,saveStrength));
       assert (gotHint);
-#else
-      (solver_->getHintParam(OsiDoDualInInitial,saveTakeHint,saveStrength));
-#endif
       solver_->setHintParam(OsiDoDualInInitial,true,OsiHintTry);
       solver_->initialSolve();
       if (!solver_->isProvenOptimal())
@@ -5641,8 +5621,8 @@ CbcModel::checkSolution (double cutoff, const double *solution,
         }
       //assert(solver_->isProvenOptimal());
       solver_->setHintParam(OsiDoDualInInitial,saveTakeHint,saveStrength);
-      objectiveValue = solver_->getObjValue()*solver_->getObjSense();
     }
+    double objectiveValue = solver_->getObjValue()*solver_->getObjSense();
     
     /*
       Check that the solution still beats the objective cutoff.
@@ -5860,7 +5840,7 @@ CbcModel::setBestSolution (CBC_Message how,
     /*
       Double check the solution to catch pretenders.
     */
-    objectiveValue = checkSolution(cutoff,solution,fixVariables,objectiveValue);
+    objectiveValue = checkSolution(cutoff,solution,fixVariables);
     if (objectiveValue > cutoff) {
       if (objectiveValue>1.0e30)
         handler_->message(CBC_NOTFEAS1, messages_) << CoinMessageEol ;
@@ -5954,9 +5934,9 @@ CbcModel::setBestSolution (CBC_Message how,
     
     int numberRowBefore = solver_->getNumRows();
     int numberColBefore = solver_->getNumCols();
-    double *saveColSol=NULL;
+    double *saveColSol;
     
-    CoinWarmStart * saveWs=NULL;
+    CoinWarmStart * saveWs;
     // if(how!=CBC_SOLUTION) return;
     if(how==CBC_ROUNDING)//We don't want to make any change to solver_
       //take a snapshot of current state
@@ -5974,7 +5954,7 @@ CbcModel::setBestSolution (CBC_Message how,
     fixVariables = fixVariables || (how==CBC_ROUNDING) || (how==CBC_STRONGSOL);
     double * candidate = new double[numberColBefore];
     CoinCopyN(solution, numberColBefore, candidate);
-    objectiveValue = checkSolution(cutoff,candidate,fixVariables,objectiveValue);
+    objectiveValue = checkSolution(cutoff,candidate,fixVariables);
     
     //If it was an heuristic solution we have to clean up the solver
     if (how==CBC_ROUNDING)
@@ -7613,141 +7593,4 @@ CbcModel::setObjectiveValue(CbcNode * thisNode, const CbcNode * parentNode) cons
 double 
 CbcModel::getCurrentSeconds() const {
   return CoinCpuTime()-getDblParam(CbcStartSeconds);
-}
-// Create C++ lines to get to current state
-void 
-CbcModel::generateCpp( FILE * fp,int options)
-{
-  // Do cut generators
-  int i;
-  for (i=0;i<numberCutGenerators_;i++) {
-    CglCutGenerator * generator = generator_[i]->generator();
-    std::string name = generator->generateCpp(fp);
-    int howOften = generator_[i]->howOften();
-    int howOftenInSub = generator_[i]->howOftenInSub();
-    int whatDepth = generator_[i]->whatDepth();
-    int whatDepthInSub = generator_[i]->whatDepthInSub();
-    bool normal = generator_[i]->normal();
-    bool atSolution = generator_[i]->atSolution();
-    bool whenInfeasible = generator_[i]->whenInfeasible();
-    bool timing = generator_[i]->timing();
-    fprintf(fp,"3  cbcModel->addCutGenerator(&%s,%d,",
-	    name.c_str(),howOften);
-    // change name
-    name[0]=toupper(name[0]);
-    fprintf(fp,"\"%s\",%s,%s,%s,%d,%d,%d);\n",
-	    name.c_str(),normal ? "true" : "false",
-	    atSolution ? "true" : "false",
-	    whenInfeasible ? "true" : "false",
-	    howOftenInSub,whatDepth,whatDepthInSub);
-    fprintf(fp,"3  cbcModel->cutGenerator(%d)->setTiming(%s);\n",
-	    i,timing ? "true" : "false");
-    fprintf(fp,"3  \n");
-  }
-  for (i=0;i<numberHeuristics_;i++) {
-    CbcHeuristic * heuristic = heuristic_[i];
-    heuristic->generateCpp(fp);
-    fprintf(fp,"3  \n");
-  }
-  if (nodeCompare_)
-    nodeCompare_->generateCpp(fp);
-  CbcModel defaultModel;
-  CbcModel * other = &defaultModel;
-  int iValue1, iValue2;
-  double dValue1, dValue2;
-  iValue1 = this->getMaximumNodes();
-  iValue2 = other->getMaximumNodes();
-  fprintf(fp,"%d  int save_getMaximumNodes = cbcModel->getMaximumNodes();\n",iValue1==iValue2 ? 2 : 1);
-  fprintf(fp,"%d  cbcModel->setMaximumNodes(%d);\n",iValue1==iValue2 ? 4 : 3,iValue1);
-  fprintf(fp,"%d  cbcModel->setMaximumNodes(save_getMaximumNodes);\n",iValue1==iValue2 ? 7 : 6);
-  iValue1 = this->getMaximumSolutions();
-  iValue2 = other->getMaximumSolutions();
-  fprintf(fp,"%d  int save_getMaximumSolutions = cbcModel->getMaximumSolutions();\n",iValue1==iValue2 ? 2 : 1);
-  fprintf(fp,"%d  cbcModel->setMaximumSolutions(%d);\n",iValue1==iValue2 ? 4 : 3,iValue1);
-  fprintf(fp,"%d  cbcModel->setMaximumSolutions(save_getMaximumSolutions);\n",iValue1==iValue2 ? 7 : 6);
-  iValue1 = this->numberStrong();
-  iValue2 = other->numberStrong();
-  fprintf(fp,"%d  int save_numberStrong = cbcModel->numberStrong();\n",iValue1==iValue2 ? 2 : 1);
-  fprintf(fp,"%d  cbcModel->setNumberStrong(%d);\n",iValue1==iValue2 ? 4 : 3,iValue1);
-  fprintf(fp,"%d  cbcModel->setNumberStrong(save_numberStrong);\n",iValue1==iValue2 ? 7 : 6);
-  iValue1 = this->numberBeforeTrust();
-  iValue2 = other->numberBeforeTrust();
-  fprintf(fp,"%d  int save_numberBeforeTrust = cbcModel->numberBeforeTrust();\n",iValue1==iValue2 ? 2 : 1);
-  fprintf(fp,"%d  cbcModel->setNumberBeforeTrust(%d);\n",iValue1==iValue2 ? 4 : 3,iValue1);
-  fprintf(fp,"%d  cbcModel->setNumberBeforeTrust(save_numberBeforeTrust);\n",iValue1==iValue2 ? 7 : 6);
-  iValue1 = this->numberPenalties();
-  iValue2 = other->numberPenalties();
-  fprintf(fp,"%d  int save_numberPenalties = cbcModel->numberPenalties();\n",iValue1==iValue2 ? 2 : 1);
-  fprintf(fp,"%d  cbcModel->setNumberPenalties(%d);\n",iValue1==iValue2 ? 4 : 3,iValue1);
-  fprintf(fp,"%d  cbcModel->setNumberPenalties(save_numberPenalties);\n",iValue1==iValue2 ? 7 : 6);
-  iValue1 = this->howOftenGlobalScan();
-  iValue2 = other->howOftenGlobalScan();
-  fprintf(fp,"%d  int save_howOftenGlobalScan = cbcModel->howOftenGlobalScan();\n",iValue1==iValue2 ? 2 : 1);
-  fprintf(fp,"%d  cbcModel->setHowOftenGlobalScan(%d);\n",iValue1==iValue2 ? 4 : 3,iValue1);
-  fprintf(fp,"%d  cbcModel->setHowOftenGlobalScan(save_howOftenGlobalScan);\n",iValue1==iValue2 ? 7 : 6);
-  iValue1 = this->printFrequency();
-  iValue2 = other->printFrequency();
-  fprintf(fp,"%d  int save_printFrequency = cbcModel->printFrequency();\n",iValue1==iValue2 ? 2 : 1);
-  fprintf(fp,"%d  cbcModel->setPrintFrequency(%d);\n",iValue1==iValue2 ? 4 : 3,iValue1);
-  fprintf(fp,"%d  cbcModel->setPrintFrequency(save_printFrequency);\n",iValue1==iValue2 ? 7 : 6);
-  iValue1 = this->searchStrategy();
-  iValue2 = other->searchStrategy();
-  fprintf(fp,"%d  int save_searchStrategy = cbcModel->searchStrategy();\n",iValue1==iValue2 ? 2 : 1);
-  fprintf(fp,"%d  cbcModel->setSearchStrategy(%d);\n",iValue1==iValue2 ? 4 : 3,iValue1);
-  fprintf(fp,"%d  cbcModel->setSearchStrategy(save_searchStrategy);\n",iValue1==iValue2 ? 7 : 6);
-  iValue1 = this->specialOptions();
-  iValue2 = other->specialOptions();
-  fprintf(fp,"%d  int save_cbcSpecialOptions = cbcModel->specialOptions();\n",iValue1==iValue2 ? 2 : 1);
-  fprintf(fp,"%d  cbcModel->setSpecialOptions(%d);\n",iValue1==iValue2 ? 4 : 3,iValue1);
-  fprintf(fp,"%d  cbcModel->setSpecialOptions(save_cbcSpecialOptions);\n",iValue1==iValue2 ? 7 : 6);
-  iValue1 = this->messageHandler()->logLevel();
-  iValue2 = other->messageHandler()->logLevel();
-  fprintf(fp,"%d  int save_cbcMessageLevel = cbcModel->messageHandler()->logLevel();\n",iValue1==iValue2 ? 2 : 1);
-  fprintf(fp,"%d  cbcModel->messageHandler()->setLogLevel(%d);\n",iValue1==iValue2 ? 4 : 3,iValue1);
-  fprintf(fp,"%d  cbcModel->messageHandler()->setLogLevel(save_cbcMessageLevel);\n",iValue1==iValue2 ? 7 : 6);
-  iValue1 = this->getMaximumCutPassesAtRoot();
-  iValue2 = other->getMaximumCutPassesAtRoot();
-  fprintf(fp,"%d  int save_getMaximumCutPassesAtRoot = cbcModel->getMaximumCutPassesAtRoot();\n",iValue1==iValue2 ? 2 : 1);
-  fprintf(fp,"%d  cbcModel->setMaximumCutPassesAtRoot(%d);\n",iValue1==iValue2 ? 4 : 3,iValue1);
-  fprintf(fp,"%d  cbcModel->setMaximumCutPassesAtRoot(save_getMaximumCutPassesAtRoot);\n",iValue1==iValue2 ? 7 : 6);
-  iValue1 = this->getMaximumCutPasses();
-  iValue2 = other->getMaximumCutPasses();
-  fprintf(fp,"%d  int save_getMaximumCutPasses = cbcModel->getMaximumCutPasses();\n",iValue1==iValue2 ? 2 : 1);
-  fprintf(fp,"%d  cbcModel->setMaximumCutPasses(%d);\n",iValue1==iValue2 ? 4 : 3,iValue1);
-  fprintf(fp,"%d  cbcModel->setMaximumCutPasses(save_getMaximumCutPasses);\n",iValue1==iValue2 ? 7 : 6);
-  dValue1 = this->getMinimumDrop();
-  dValue2 = other->getMinimumDrop();
-  fprintf(fp,"%d  double save_getMinimumDrop = cbcModel->getMinimumDrop();\n",dValue1==dValue2 ? 2 : 1);
-  fprintf(fp,"%d  cbcModel->setMinimumDrop(%g);\n",dValue1==dValue2 ? 4 : 3,dValue1);
-  fprintf(fp,"%d  cbcModel->setMinimumDrop(save_getMinimumDrop);\n",dValue1==dValue2 ? 7 : 6);
-  dValue1 = this->getIntegerTolerance();
-  dValue2 = other->getIntegerTolerance();
-  fprintf(fp,"%d  double save_getIntegerTolerance = cbcModel->getIntegerTolerance();\n",dValue1==dValue2 ? 2 : 1);
-  fprintf(fp,"%d  cbcModel->setIntegerTolerance(%g);\n",dValue1==dValue2 ? 4 : 3,dValue1);
-  fprintf(fp,"%d  cbcModel->setIntegerTolerance(save_getIntegerTolerance);\n",dValue1==dValue2 ? 7 : 6);
-  dValue1 = this->getInfeasibilityWeight();
-  dValue2 = other->getInfeasibilityWeight();
-  fprintf(fp,"%d  double save_getInfeasibilityWeight = cbcModel->getInfeasibilityWeight();\n",dValue1==dValue2 ? 2 : 1);
-  fprintf(fp,"%d  cbcModel->setInfeasibilityWeight(%g);\n",dValue1==dValue2 ? 4 : 3,dValue1);
-  fprintf(fp,"%d  cbcModel->setInfeasibilityWeight(save_getInfeasibilityWeight);\n",dValue1==dValue2 ? 7 : 6);
-  dValue1 = this->getCutoffIncrement();
-  dValue2 = other->getCutoffIncrement();
-  fprintf(fp,"%d  double save_getCutoffIncrement = cbcModel->getCutoffIncrement();\n",dValue1==dValue2 ? 2 : 1);
-  fprintf(fp,"%d  cbcModel->setCutoffIncrement(%g);\n",dValue1==dValue2 ? 4 : 3,dValue1);
-  fprintf(fp,"%d  cbcModel->setCutoffIncrement(save_getCutoffIncrement);\n",dValue1==dValue2 ? 7 : 6);
-  dValue1 = this->getAllowableGap();
-  dValue2 = other->getAllowableGap();
-  fprintf(fp,"%d  double save_getAllowableGap = cbcModel->getAllowableGap();\n",dValue1==dValue2 ? 2 : 1);
-  fprintf(fp,"%d  cbcModel->setAllowableGap(%g);\n",dValue1==dValue2 ? 4 : 3,dValue1);
-  fprintf(fp,"%d  cbcModel->setAllowableGap(save_getAllowableGap);\n",dValue1==dValue2 ? 7 : 6);
-  dValue1 = this->getAllowableFractionGap();
-  dValue2 = other->getAllowableFractionGap();
-  fprintf(fp,"%d  double save_getAllowableFractionGap = cbcModel->getAllowableFractionGap();\n",dValue1==dValue2 ? 2 : 1);
-  fprintf(fp,"%d  cbcModel->setAllowableFractionGap(%g);\n",dValue1==dValue2 ? 4 : 3,dValue1);
-  fprintf(fp,"%d  cbcModel->setAllowableFractionGap(save_getAllowableFractionGap);\n",dValue1==dValue2 ? 7 : 6);
-  dValue1 = this->getMaximumSeconds();
-  dValue2 = other->getMaximumSeconds();
-  fprintf(fp,"%d  double save_cbcMaximumSeconds = cbcModel->getMaximumSeconds();\n",dValue1==dValue2 ? 2 : 1);
-  fprintf(fp,"%d  cbcModel->setMaximumSeconds(%g);\n",dValue1==dValue2 ? 4 : 3,dValue1);
-  fprintf(fp,"%d  cbcModel->setMaximumSeconds(save_cbcMaximumSeconds);\n",dValue1==dValue2 ? 7 : 6);
 }

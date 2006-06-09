@@ -44,8 +44,6 @@ public:
   virtual bool fullScan() const { return false;};
 
   virtual ~CbcCompareBase() {};
-  /// Create C++ lines to get to current state
-  virtual void generateCpp( FILE * fp) {};
 
   // Copy constructor 
   CbcCompareBase ( const CbcCompareBase & rhs)

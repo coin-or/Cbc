@@ -47,23 +47,6 @@ CbcHeuristicGreedyCover::clone() const
 {
   return new CbcHeuristicGreedyCover(*this);
 }
-// Create C++ lines to get to current state
-void 
-CbcHeuristicGreedyCover::generateCpp( FILE * fp) 
-{
-  CbcHeuristicGreedyCover other;
-  fprintf(fp,"0#include \"CbcHeuristicGreedy.hpp\"\n");
-  fprintf(fp,"3  CbcHeuristicGreedyCover heuristicGreedyCover(*cbcModel);\n");
-  if (algorithm_!=other.algorithm_)
-    fprintf(fp,"3  heuristicGreedyCover.setAlgorithm(%d);\n",algorithm_);
-  else
-    fprintf(fp,"4  heuristicGreedyCover.setAlgorithm(%d);\n",algorithm_);
-  if (numberTimes_!=other.numberTimes_)
-    fprintf(fp,"3  heuristicGreedyCover.setNumberTimes(%d);\n",numberTimes_);
-  else
-    fprintf(fp,"4  heuristicGreedyCover.setNumberTimes(%d);\n",numberTimes_);
-  fprintf(fp,"3  cbcModel->addHeuristic(&heuristicGreedyCover);\n");
-}
 
 // Copy constructor 
 CbcHeuristicGreedyCover::CbcHeuristicGreedyCover(const CbcHeuristicGreedyCover & rhs)
@@ -452,27 +435,6 @@ CbcHeuristic *
 CbcHeuristicGreedyEquality::clone() const
 {
   return new CbcHeuristicGreedyEquality(*this);
-}
-// Create C++ lines to get to current state
-void 
-CbcHeuristicGreedyEquality::generateCpp( FILE * fp) 
-{
-  CbcHeuristicGreedyEquality other;
-  fprintf(fp,"0#include \"CbcHeuristicGreedy.hpp\"\n");
-  fprintf(fp,"3  CbcHeuristicGreedyEquality heuristicGreedyEquality(*cbcModel);\n");
-  if (algorithm_!=other.algorithm_)
-    fprintf(fp,"3  heuristicGreedyEquality.setAlgorithm(%d);\n",algorithm_);
-  else
-    fprintf(fp,"4  heuristicGreedyEquality.setAlgorithm(%d);\n",algorithm_);
-  if (fraction_!=other.fraction_)
-    fprintf(fp,"3  heuristicGreedyEquality.setFraction(%g);\n",fraction_);
-  else
-    fprintf(fp,"4  heuristicGreedyEquality.setFraction(%g);\n",fraction_);
-  if (numberTimes_!=other.numberTimes_)
-    fprintf(fp,"3  heuristicGreedyEquality.setNumberTimes(%d);\n",numberTimes_);
-  else
-    fprintf(fp,"4  heuristicGreedyEquality.setNumberTimes(%d);\n",numberTimes_);
-  fprintf(fp,"3  cbcModel->addHeuristic(&heuristicGreedyEquality);\n");
 }
 
 // Copy constructor 

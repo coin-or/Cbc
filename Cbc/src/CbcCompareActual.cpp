@@ -60,14 +60,6 @@ CbcCompareDepth::test (CbcNode * x, CbcNode * y)
 {
   return x->depth() < y->depth();
 }
-// Create C++ lines to get to current state
-void
-CbcCompareDepth::generateCpp( FILE * fp) 
-{
-  fprintf(fp,"0#include \"CbcCompareActual.hpp\"\n");
-  fprintf(fp,"3  CbcCompareDepth compare;\n");
-  fprintf(fp,"3  cbcModel->setNodeComparison(compare);\n");
-}
 
 /** Default Constructor
 
@@ -112,15 +104,6 @@ bool
 CbcCompareObjective::test (CbcNode * x, CbcNode * y)
 {
   return x->objectiveValue() > y->objectiveValue();
-}
-
-// Create C++ lines to get to current state
-void
-CbcCompareObjective::generateCpp( FILE * fp) 
-{
-  fprintf(fp,"0#include \"CbcCompareActual.hpp\"\n");
-  fprintf(fp,"3  CbcCompareObjective compare;\n");
-  fprintf(fp,"3  cbcModel->setNodeComparison(compare);\n");
 }
 
 /** Default Constructor
@@ -289,18 +272,6 @@ CbcCompareDefault::every1000Nodes(CbcModel * model, int numberNodes)
   return (weight_!=saveWeight);
 }
 
-// Create C++ lines to get to current state
-void
-CbcCompareDefault::generateCpp( FILE * fp) 
-{
-  CbcCompareDefault other;
-  fprintf(fp,"0#include \"CbcCompareActual.hpp\"\n");
-  fprintf(fp,"3  CbcCompareDefault compare;\n");
-  if (weight_!=other.weight_)
-    fprintf(fp,"3  compare.setWeight(%g);\n",weight_);
-  fprintf(fp,"3  cbcModel->setNodeComparison(compare);\n");
-}
-
 /** Default Constructor
 
 */
@@ -344,14 +315,5 @@ bool
 CbcCompareEstimate::test (CbcNode * x, CbcNode * y)
 {
   return x->guessedObjectiveValue() >  y->guessedObjectiveValue() ;
-}
-
-// Create C++ lines to get to current state
-void
-CbcCompareEstimate::generateCpp( FILE * fp) 
-{
-  fprintf(fp,"0#include \"CbcCompareActual.hpp\"\n");
-  fprintf(fp,"3  CbcCompareEstimate compare;\n");
-  fprintf(fp,"3  cbcModel->setNodeComparison(compare);\n");
 }
 

@@ -70,8 +70,6 @@ public:
   int smallBranchAndBound(OsiSolverInterface * solver,int numberNodes,
                           double * newSolution, double & newSolutionValue,
                           double cutoff , std::string name) const;
-  /// Create C++ lines to get to current state
-  virtual void generateCpp( FILE * fp) {};
 
 protected:
 
@@ -106,8 +104,6 @@ public:
   
   /// Clone
   virtual CbcHeuristic * clone() const;
-  /// Create C++ lines to get to current state
-  virtual void generateCpp( FILE * fp) ;
 
   /// Resets stuff if model changes
   virtual void resetModel(CbcModel * model);
@@ -169,8 +165,6 @@ public:
   
   /// Clone
   virtual CbcHeuristic * clone() const;
-  /// Create C++ lines to get to current state
-  virtual void generateCpp( FILE * fp) ;
 
   /// update model
   virtual void setModel(CbcModel * model);

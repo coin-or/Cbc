@@ -432,19 +432,6 @@ CbcStrategyDefault::setupOther(CbcModel & model)
       }
     }
   }
-// Create C++ lines to get to current state
-void 
-CbcStrategyDefault::generateCpp( FILE * fp) 
-{
-  fprintf(fp,"0#include \"CbcStrategy.hpp\"\n");
-  fprintf(fp,"3  CbcStrategyDefault strategy(%s,%d,%d,%d);\n",
-	  cutsOnlyAtRoot_ ? "true" : "false",
-	  numberStrong_,
-	  numberBeforeTrust_,
-	  printLevel_);
-  fprintf(fp,"3  strategy.setupPreProcessing(%d,%d);\n",
-	  desiredPreProcess_,preProcessPasses_);
-}
   model.setNumberStrong(numberStrong_);
   model.setNumberBeforeTrust(numberBeforeTrust_);
 }

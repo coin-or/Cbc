@@ -859,7 +859,6 @@ ClpSimplexUnitTest(const std::string & mpsDir,
     assert (fabs(valueDecrease[3]-0.642857)<1.0e-4);
     assert (fabs(valueDecrease[8]-2.95113)<1.0e-4);
 #if 0
-#if 0
     // out until I find optimization bug
     // Test parametrics
     ClpSimplexOther * model2 = (ClpSimplexOther *) (&model);
@@ -867,7 +866,6 @@ ClpSimplexUnitTest(const std::string & mpsDir,
     double endingTheta=1.0;
     model2->scaling(0);
     model2->setLogLevel(63);
-#endif
     model2->parametrics(0.0,endingTheta,0.1,
                         NULL,NULL,rhs,rhs,NULL);
 #endif
@@ -1777,10 +1775,8 @@ void CbcClpUnitTest (const CbcModel & saveModel)
     fclose(fp);
   }
 #endif
-  if (!doTest) {
-    printf("Not doing miplib run as can't find mps files - ? .gz without libz\n");
+  if (!doTest)
     return;
-  }
   /*
     Vectors to hold test problem names and characteristics. The objective value
     after optimization (objValue) must agree to the specified tolerance
@@ -1938,7 +1934,7 @@ void CbcClpUnitTest (const CbcModel & saveModel)
     */
 
     double startTime = CoinCpuTime();
-    model->setMaximumNodes(100000);
+    model->setMaximumNodes(50000);
     OsiClpSolverInterface * si =
       dynamic_cast<OsiClpSolverInterface *>(model->solver()) ;
     assert (si != NULL);

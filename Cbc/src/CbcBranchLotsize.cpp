@@ -591,9 +591,9 @@ CbcBranchingObject *
 CbcLotsize::notPreferredNewFeasible() const 
 {
   OsiSolverInterface * solver = model_->solver();
+  double value = model_->testSolution()[columnNumber_];
 
 #ifndef NDEBUG
-  double value = model_->testSolution()[columnNumber_];
   double nearest = floor(value+0.5);
   double integerTolerance = 
     model_->getDblParam(CbcModel::CbcIntegerTolerance);

@@ -422,8 +422,6 @@ public:
   /** Sets or gets best criterion so far */
   virtual void setBestCriterion(double value) {};
   virtual double getBestCriterion() const {return 0.0;};
-  /// Create C++ lines to get to current state
-  virtual void generateCpp( FILE * fp) {};
 
 protected:
   

@@ -148,6 +148,7 @@ CbcRounding::CbcRounding()
   :CbcHeuristic()
 {
   // matrix and row copy will automatically be empty
+  seed_=1;
 }
 
 // Constructor from model
@@ -171,6 +172,19 @@ CbcHeuristic *
 CbcRounding::clone() const
 {
   return new CbcRounding(*this);
+}
+// Create C++ lines to get to current state
+void 
+CbcRounding::generateCpp( FILE * fp) 
+{
+  CbcRounding other;
+  fprintf(fp,"0#include \"CbcHeuristic.hpp\"\n");
+  fprintf(fp,"3  CbcRounding rounding(*cbcModel);\n");
+  if (seed_!=other.seed_)
+    fprintf(fp,"3  rounding.setSeed(%d);\n",seed_);
+  else
+    fprintf(fp,"4  rounding.setSeed(%d);\n",seed_);
+  fprintf(fp,"3  cbcModel->addHeuristic(&rounding);\n");
 }
 
 // Copy constructor 
@@ -885,6 +899,14 @@ CbcHeuristic *
 CbcSerendipity::clone() const
 {
   return new CbcSerendipity(*this);
+}
+// Create C++ lines to get to current state
+void 
+CbcSerendipity::generateCpp( FILE * fp) 
+{
+  fprintf(fp,"0#include \"CbcHeuristic.hpp\"\n");
+  fprintf(fp,"3  CbcSerendipity serendipity(*cbcModel);\n");
+  fprintf(fp,"3  cbcModel->addHeuristic(&serendipity);\n");
 }
 
 // Copy constructor 

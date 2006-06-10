@@ -54,6 +54,8 @@ public:
                                         int numberChangedBounds,const int * variables,
                                         const double * boundChanges,
                                         const CoinWarmStartDiff *basisDiff) const;
+  /// Create C++ lines to get to current state
+  virtual void generateCpp( FILE * fp) {};
   /** After a CbcModel::resolve this can return a status
       -1 no effect
       0 treat as optimal
@@ -151,6 +153,8 @@ public:
   /// See how many passes wanted
   inline int preProcessPasses() const
   { return preProcessPasses_;};
+  /// Create C++ lines to get to current state
+  virtual void generateCpp( FILE * fp) ;
 
 protected:
   // Data

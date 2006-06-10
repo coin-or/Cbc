@@ -27,6 +27,9 @@ public:
   /// Clone
   virtual CbcHeuristic * clone() const;
 
+  /// Create C++ lines to get to current state
+  virtual void generateCpp( FILE * fp) ;
+
   /// Resets stuff if model changes
   virtual void resetModel(CbcModel * model);
 

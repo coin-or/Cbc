@@ -52,6 +52,19 @@ CbcHeuristicLocal::clone() const
 {
   return new CbcHeuristicLocal(*this);
 }
+// Create C++ lines to get to current state
+void 
+CbcHeuristicLocal::generateCpp( FILE * fp) 
+{
+  CbcHeuristicLocal other;
+  fprintf(fp,"0#include \"CbcHeuristicLocal.hpp\"\n");
+  fprintf(fp,"3  CbcHeuristicLocal heuristicLocal(*cbcModel);\n");
+  if (swap_!=other.swap_)
+    fprintf(fp,"3  heuristicLocal.setSearchType(%d);\n",swap_);
+  else
+    fprintf(fp,"4  heuristicLocal.setSearchType(%d);\n",swap_);
+  fprintf(fp,"3  cbcModel->addHeuristic(&heuristicLocal);\n");
+}
 
 // Copy constructor 
 CbcHeuristicLocal::CbcHeuristicLocal(const CbcHeuristicLocal & rhs)

@@ -1775,8 +1775,10 @@ void CbcClpUnitTest (const CbcModel & saveModel)
     fclose(fp);
   }
 #endif
-  if (!doTest)
+  if (!doTest) {
+    printf("Not doing miplib run as can't find mps files - ? .gz without libz\n");
     return;
+  }
   /*
     Vectors to hold test problem names and characteristics. The objective value
     after optimization (objValue) must agree to the specified tolerance
@@ -1934,7 +1936,7 @@ void CbcClpUnitTest (const CbcModel & saveModel)
     */
 
     double startTime = CoinCpuTime();
-    model->setMaximumNodes(50000);
+    model->setMaximumNodes(100000);
     OsiClpSolverInterface * si =
       dynamic_cast<OsiClpSolverInterface *>(model->solver()) ;
     assert (si != NULL);

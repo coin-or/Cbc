@@ -631,7 +631,7 @@ void CbcPartialNodeInfo::applyToModel (CbcModel *model,
   }
   for (i=0;i<numberCuts_;i++) {
     addCuts[currentNumberCuts+i]= cuts_[i];
-    if (cuts_[i]&&model->messageHandler()->logLevel()>2) {
+    if (cuts_[i]&&model->messageHandler()->logLevel()>4) {
       cuts_[i]->print();
     }
   }
@@ -1972,7 +1972,7 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
   if (osiclp) {
     // for faster hot start
     saveClpOptions = osiclp->specialOptions();
-    osiclp->setSpecialOptions(saveClpOptions|1024);
+    osiclp->setSpecialOptions(saveClpOptions|8192);
   }
 # else
   OsiSolverInterface *osiclp = 0 ;
@@ -2039,10 +2039,10 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
   int saveSearchStrategy = saveSearchStrategy2<99 ? saveSearchStrategy2 : saveSearchStrategy2-100;
   bool newWay = saveSearchStrategy2>98;
   int numberNotTrusted=0;
-  int numberStrongDone;
-  int numberUnfinished;
-  int numberStrongInfeasible;
-  int numberStrongIterations;
+  int numberStrongDone=0;
+  int numberUnfinished=0;
+  int numberStrongInfeasible=0;
+  int numberStrongIterations=0;
   while(!finished) {
     finished=true;
     decision->initialize(model);
@@ -2112,10 +2112,10 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
 #endif
         if (infeasibility) {
           int iColumn = dynamicObject->columnNumber();
-          double gap = saveUpper[iColumn]-saveLower[iColumn];
+          //double gap = saveUpper[iColumn]-saveLower[iColumn];
           // Give precedence to ones with gap of 1.0 
-          assert(gap>0.0);
-          infeasibility /= CoinMin(gap,100.0);
+          //assert(gap>0.0);
+          //infeasibility /= CoinMin(gap,100.0);
           if (!depth_&&false) {
             // try closest to 0.5
             double part =saveSolution[iColumn]-floor(saveSolution[iColumn]);
@@ -2496,6 +2496,7 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
         } else {
           doQuickly=false;
           numberTest=2*numberStrong;
+          skipAll=false;
         }
       } else if (searchStrategy!=3) {
         doQuickly=true;
@@ -2510,6 +2511,7 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
           if (!depth_) 
             numberStrong=CoinMin(6*numberStrong,numberToDo);
           numberTest=numberStrong;
+          skipAll=false;
         }
         model->setStateOfSearch(2); // use min min
       }
@@ -2576,6 +2578,30 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
         doQuickly=true;
       }
       }
+#if 0
+      // temp - always switch off
+      if (0) {
+        int numberIterations = model->getIterationCount();
+        int numberStrongIterations = model->numberStrongIterations();
+        if (numberStrongIterations>numberIterations+10000&&depth_>=5) {
+          skipAll=true;
+          newWay=false;
+          numberTest=0;
+          doQuickly=true;
+        }
+      }
+      // temp - always switch on
+      if (0) {
+        int numberIterations = model->getIterationCount();
+        int numberStrongIterations = model->numberStrongIterations();
+        if (2*numberStrongIterations<numberIterations||depth_<=5) {
+          skipAll=false;
+          newWay=false;
+          numberTest=CoinMax(numberTest,numberStrong);
+          doQuickly=false;
+        }
+      }
+#endif
       px[0]=numberTest;
       px[1]=numberTest2;
       px[2]= doQuickly ? 1 : -1;
@@ -2587,6 +2613,9 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
       if (model->sizeMiniTree()&&depth_>7&&saveStateOfSearch>0)
         wantMiniTree=true;
       numberMini=0;
+      //if (skipAll&&numberTest==0&&doQuickly)
+      //numberToDo = 1; // trust previous stuff
+      bool couldChooseFirst = false ; //(skipAll&&numberTest==0&&doQuickly);
       for ( iDo=0;iDo<numberToDo;iDo++) {
         CbcStrongInfo choice;
         int iObject = whichObject[iDo];
@@ -2636,6 +2665,16 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
         if (newWay)
         numberTest2--;
         if (!canSkip) {
+          //#ifndef RANGING 
+          if (!doneHotStart) {
+            // Mark hot start
+            doneHotStart=true;
+            assert (auxiliaryInfo->warmStart());
+            solver->markHotStart();
+            xMark++;
+          }
+          //#endif
+          assert (!couldChooseFirst);
           numberTest--;
           if (!newWay)
           numberTest2--;
@@ -2880,6 +2919,8 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
             // In case solution coming in was odd
             choice.upMovement = CoinMax(0.0,choice.upMovement);
             choice.downMovement = CoinMax(0.0,choice.downMovement);
+            if (couldChooseFirst)
+              printf("candidate %d up %g down %g sort %g\n",iDo,choice.upMovement,choice.downMovement,sort[iDo]);
 #if ZERO_ONE==2
             // branch on 0-1 first (temp)
             if (fabs(choice.possibleBranch->value())<1.0) {
@@ -2911,10 +2952,10 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
             if (wantMiniTree)
               decision->setBestCriterion(-1.0);
             double bestCriterion = -1.0;
-            double gap = saveUpper[iColumn]-saveLower[iColumn];
+            //double gap = saveUpper[iColumn]-saveLower[iColumn];
             // Give precedence to ones with gap of 1.0 
-            assert(gap>0.0);
-            double factor = changeFactor/CoinMin(gap,100.0);
+            //assert(gap>0.0);
+            double factor = 1.0; //changeFactor/CoinMin(gap,100.0);
             int betterWay = decision->betterBranch(choice.possibleBranch,
                                                    branch_,
                                                    choice.upMovement*factor,
@@ -2942,6 +2983,8 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
               branch_ = choice.possibleBranch;
               choice.possibleBranch=NULL;
               branch_->way(betterWay);
+              if (couldChooseFirst)
+                printf("choosing %d way %d\n",iDo,betterWay);
               bestChoice = choice.objectNumber;
               whichChoice = iDo;
               if (numberStrong<=1) {
@@ -3287,7 +3330,7 @@ int CbcNode::analyze (CbcModel *model, double * results)
   if (osiclp&&fastIterations) {
     // for faster hot start
     saveClpOptions = osiclp->specialOptions();
-    osiclp->setSpecialOptions(saveClpOptions|1024);
+    osiclp->setSpecialOptions(saveClpOptions|8192);
   }
 # else
   bool fastIterations = false ;

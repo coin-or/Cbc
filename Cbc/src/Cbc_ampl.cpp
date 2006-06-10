@@ -27,6 +27,7 @@ THIS SOFTWARE.
 #include "Cbc_ampl.h"
 #include "unistd.h"
 #include <string>
+#include <cassert>
 /* so decodePhrase and clpCheck can access */
 static ampl_info * saveInfo=NULL;
 // Set to 1 if algorithm found
@@ -68,6 +69,24 @@ decodePhrase(char * phrase,ftnlen length)
   }
   return 0;
 }
+static void
+sos_kludge(int nsos, int *sosbeg, double *sosref)
+{
+  // Adjust sosref if necessary to make monotonic increasing
+  int i, j, k;
+  double t, t1;
+  for(i = j = 0; i++ < nsos; ) {
+    k = sosbeg[i];
+    t = sosref[j];
+    while(++j < k) {
+      t1 = sosref[j];
+      t += 1e-10;
+      if (t1 <= t)
+        sosref[j] = t1 = t + 1e-10;
+      t = t1;
+    }
+  }
+}
 static char xxxxxx[20];
 #define VP (char*)
  static keyword keywds[] = { /* must be sorted */
@@ -93,15 +112,15 @@ suftab[] = {
 	{ "down", 0, ASL_Sufkind_con | ASL_Sufkind_outonly },
 	{ "down", 0, ASL_Sufkind_var | ASL_Sufkind_outonly },
 	{ "priority", 0, ASL_Sufkind_var },
+#endif
+	{ "direction", 0, ASL_Sufkind_var },
+	{ "downPseudocost", 0, ASL_Sufkind_var | ASL_Sufkind_real },
+	{ "priority", 0, ASL_Sufkind_var },
 	{ "ref", 0, ASL_Sufkind_var | ASL_Sufkind_real },
 	{ "sos", 0, ASL_Sufkind_var },
 	{ "sos", 0, ASL_Sufkind_con },
 	{ "sosno", 0, ASL_Sufkind_var | ASL_Sufkind_real },
 	{ "sosref", 0, ASL_Sufkind_var | ASL_Sufkind_real },
-#endif
-	{ "direction", 0, ASL_Sufkind_var },
-	{ "downPseudocost", 0, ASL_Sufkind_var | ASL_Sufkind_real },
-	{ "priority", 0, ASL_Sufkind_var },
 	{ strdup("sstatus"), 0, ASL_Sufkind_var, 0 },
 	{ strdup("sstatus"), 0, ASL_Sufkind_con, 0 },
 	{ "upPseudocost", 0, ASL_Sufkind_var | ASL_Sufkind_real }
@@ -258,7 +277,6 @@ readAmpl(ampl_info * info, int argc, char **argv)
   if (!stub)
     usage_ASL(&Oinfo, 1);
   nl = jac0dim(stub, 0);
-  /*void * specialOrderedInfo = sos_add(nl,0);*/
   suf_declare(suftab, sizeof(suftab)/sizeof(SufDecl));
   
   /* set A_vals to get the constraints column-wise (malloc so can be freed) */
@@ -276,6 +294,38 @@ readAmpl(ampl_info * info, int argc, char **argv)
   rsd = suf_iput("sstatus", ASL_Sufkind_con, info->rowStatus);
   /* read linear model*/
   f_read(nl,0);
+  // see if any sos
+  if (true) {
+    char *sostype;
+    int nsosnz, *sosbeg, *sosind, * sospri;
+    double *sosref;
+    int nsos;
+    int i = ASL_suf_sos_explict_free;
+    int copri[2], **p_sospri;
+    copri[0] = 0;
+    copri[1] = 0;
+    p_sospri = &sospri;
+    nsos = suf_sos(i, &nsosnz, &sostype, p_sospri, copri,
+				&sosbeg, &sosind, &sosref);
+    if (nsos) {
+      info->numberSos=nsos;
+      info->sosType = (char *) malloc(nsos);
+      info->sosPriority = (int *) malloc(nsos*sizeof(int));
+      info->sosStart = (int *) malloc((nsos+1)*sizeof(int));
+      info->sosIndices = (int *) malloc(nsosnz*sizeof(int));
+      info->sosReference = (double *) malloc(nsosnz*sizeof(double));
+      sos_kludge(nsos, sosbeg, sosref);
+      for (int i=0;i<nsos;i++) {
+        int ichar = sostype[i];
+        assert (ichar=='1'||ichar=='2');
+        info->sosType[i]=ichar-'0';
+      }	
+      memcpy(info->sosPriority,sospri,nsos*sizeof(int));
+      memcpy(info->sosStart,sosbeg,(nsos+1)*sizeof(int));
+      memcpy(info->sosIndices,sosind,nsosnz*sizeof(int));
+      memcpy(info->sosReference,sosref,nsosnz*sizeof(double));
+    }
+  }
 
   /*sos_finish(&specialOrderedInfo, 0, &j, 0, 0, 0, 0, 0);*/
   Oinfo.uinfo = tempBuffer;
@@ -361,7 +411,7 @@ readAmpl(ampl_info * info, int argc, char **argv)
     int found=0;
     int foundLog=0;
     int foundSleep=0;
-    const char * something[]={"solve","branch","duals","primals"};
+    const char * something[]={"solve","branch","duals","primals","user"};
     for (i=0;i<info->numberArguments;i++) {
       unsigned int j;
       const char * argument = info->arguments[i];
@@ -451,6 +501,16 @@ void freeArrays2(ampl_info * info)
   info->pseudoDown=NULL;
   free(info->pseudoUp);
   info->pseudoUp=NULL;
+  free(info->sosType);
+  info->sosType=NULL;
+  free(info->sosPriority);
+  info->sosPriority=NULL;
+  free(info->sosStart);
+  info->sosStart=NULL;
+  free(info->sosIndices);
+  info->sosIndices=NULL;
+  free(info->sosReference);
+  info->sosReference=NULL;
   ASL_free(&asl);
 }
 void freeArgs(ampl_info * info)

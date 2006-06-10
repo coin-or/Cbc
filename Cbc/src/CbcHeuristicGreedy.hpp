@@ -26,6 +26,8 @@ public:
   
   /// Clone
   virtual CbcHeuristic * clone() const;
+  /// Create C++ lines to get to current state
+  virtual void generateCpp( FILE * fp) ;
 
   /// update model (This is needed if cliques update matrix etc)
   virtual void setModel(CbcModel * model);
@@ -103,6 +105,8 @@ public:
   
   /// Clone
   virtual CbcHeuristic * clone() const;
+  /// Create C++ lines to get to current state
+  virtual void generateCpp( FILE * fp) ;
 
   /// update model (This is needed if cliques update matrix etc)
   virtual void setModel(CbcModel * model);

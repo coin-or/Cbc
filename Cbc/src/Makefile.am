@@ -198,6 +198,7 @@ solve_LDFLAGS = -rpath $(libdir)
 AM_CPPFLAGS += \
 	-I`$(CYGPATH_W) $(CGLSRCDIR)/src` \
 	-I`$(CYGPATH_W) $(CGLSRCDIR)/src/CglClique` \
+	-I`$(CYGPATH_W) $(CGLSRCDIR)/src/CglDuplicateRow` \
 	-I`$(CYGPATH_W) $(CGLSRCDIR)/src/CglFlowCover` \
 	-I`$(CYGPATH_W) $(CGLSRCDIR)/src/CglGomory` \
 	-I`$(CYGPATH_W) $(CGLSRCDIR)/src/CglKnapsackCover` \

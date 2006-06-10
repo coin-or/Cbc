@@ -471,6 +471,7 @@ AM_CPPFLAGS = -I`$(CYGPATH_W) $(OSISRCDIR)/src/OsiCbc` $(am__append_1) \
 	$(am__append_17) $(am__append_19) $(am__append_22) \
 	$(am__append_25) -I`$(CYGPATH_W) $(CGLSRCDIR)/src` \
 	-I`$(CYGPATH_W) $(CGLSRCDIR)/src/CglClique` -I`$(CYGPATH_W) \
+	$(CGLSRCDIR)/src/CglDuplicateRow` -I`$(CYGPATH_W) \
 	$(CGLSRCDIR)/src/CglFlowCover` -I`$(CYGPATH_W) \
 	$(CGLSRCDIR)/src/CglGomory` -I`$(CYGPATH_W) \
 	$(CGLSRCDIR)/src/CglKnapsackCover` -I`$(CYGPATH_W) \

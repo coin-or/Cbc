@@ -490,12 +490,6 @@ int main (int argc, const char *argv[])
     double * pseudoUp=NULL;
     double * solutionIn = NULL;
     int * prioritiesIn = NULL;
-    int numberSOS = 0;
-    int * sosStart = NULL;
-    int * sosIndices = NULL;
-    char * sosType = NULL;
-    double * sosReference = NULL;
-    int * sosPriority=NULL;
 #ifdef CBC_AMPL
     ampl_info info;
     if (argc>2&&!strcmp(argv[2],"-AMPL")) {
@@ -1685,6 +1679,65 @@ int main (int argc, const char *argv[])
               time1 = time2;
               double timeLeft = babModel->getMaximumSeconds();
               int numberOriginalColumns = babModel->solver()->getNumCols();
+#ifdef CBC_AMPL
+              if (usingAmpl&&info.numberSos&&doSOS) {
+                // SOS
+                assert (!preProcess); // do later
+                int numberSOS = info.numberSos;
+                int numberIntegers = babModel->numberIntegers();
+                int numberColumns = babModel->getNumCols();
+                /* model may not have created objects
+                   If none then create
+                */
+                if (!numberIntegers||!babModel->numberObjects()) {
+                  int type = (pseudoUp) ? 1 : 0;
+                  babModel->findIntegers(true,type);
+                  numberIntegers = babModel->numberIntegers();
+                }
+                // Do sets and priorities
+                CbcObject ** objects = new CbcObject * [numberSOS];
+                const int * starts = info.sosStart;
+                const int * which = info.sosIndices;
+                const char * type = info.sosType;
+                const double * weight = info.sosReference;
+                // see if any priorities
+                int i;
+                bool gotPriorities=false;
+                int * priorities=info.priorities;
+                if (priorities) {
+                  for (i=0;i<numberColumns;i++) {
+                    if (priorities[i]) {
+                      gotPriorities=true;
+                      break;
+                    }
+                  }
+                }
+                priorities=info.sosPriority;
+                if (priorities) {
+                  for (i=0;i<numberSOS;i++) {
+                    if (priorities[i]) {
+                      gotPriorities=true;
+                      break;
+                    }
+                  }
+                }
+                int iSOS;
+                for (iSOS =0;iSOS<numberSOS;iSOS++) {
+                  int iStart = starts[iSOS];
+                  int n=starts[iSOS+1]-iStart;
+                  objects[iSOS] = new CbcSOS(babModel,n,which+iStart,weight+iStart,
+                                             iSOS,type[iSOS]);
+                  // higher for set
+                  objects[iSOS]->setPriority(10);
+                  if (gotPriorities&&info.sosPriority&&info.sosPriority[iSOS])
+                    objects[iSOS]->setPriority(info.sosPriority[iSOS]);
+                }
+                babModel->addObjects(numberSOS,objects);
+                for (iSOS=0;iSOS<numberSOS;iSOS++)
+                  delete objects[iSOS];
+                delete [] objects;
+              }
+#endif
               if (preProcess==6) {
 		// use strategy instead
 		preProcess=0;
@@ -1990,15 +2043,6 @@ int main (int argc, const char *argv[])
                   pseudoUp=info.pseudoUp;
                   solutionIn=info.primalSolution;
                   prioritiesIn = info.priorities;
-                  if (info.numberSos&&doSOS) {
-                    // SOS
-                    numberSOS = info.numberSos;
-                    sosStart = info.sosStart;
-                    sosIndices = info.sosIndices;
-                    sosType = info.sosType;
-                    sosReference = info.sosReference;
-                    sosPriority = info.sosPriority;
-                  }
                 }
 #endif                
                 const int * originalColumns = preProcess ? process.originalColumns() : NULL;
@@ -2089,7 +2133,7 @@ int main (int argc, const char *argv[])
                   for (iSOS=0;iSOS<numberSOS;iSOS++)
                     delete objects[iSOS];
                   delete [] objects;
-                } else if (priorities||branchDirection||pseudoDown||pseudoUp||numberSOS) {
+                } else if (priorities||branchDirection||pseudoDown||pseudoUp) {
                   // do anyway for priorities etc
                   int numberIntegers = babModel->numberIntegers();
                   /* model may not have created objects
@@ -2098,50 +2142,6 @@ int main (int argc, const char *argv[])
                   if (!numberIntegers||!babModel->numberObjects()) {
                     int type = (pseudoUp) ? 1 : 0;
                     babModel->findIntegers(true,type);
-                  }
-                  if (numberSOS) {
-                    // Do sets and priorities
-                    CbcObject ** objects = new CbcObject * [numberSOS];
-                    int iSOS;
-                    if (originalColumns) {
-                      // redo sequence numbers
-                      int numberColumns = babModel->getNumCols();
-                      int nOld = originalColumns[numberColumns-1]+1;
-                      int * back = new int[nOld];
-                      int i;
-                      for (i=0;i<nOld;i++)
-                        back[i]=-1;
-                      for (i=0;i<numberColumns;i++)
-                        back[originalColumns[i]]=i;
-                      // Really need better checks
-                      int nMissing=0;
-                      int n=sosStart[numberSOS];
-                      for (i=0;i<n;i++) {
-                        int iColumn = sosIndices[i];
-                        int jColumn = back[iColumn];
-                        if (jColumn>=0) 
-                          sosIndices[i] = jColumn;
-                        else 
-                          nMissing++;
-                      }
-                      delete [] back;
-                      if (nMissing)
-                        printf("%d SOS variables vanished due to pre processing? - check validity?\n",nMissing);
-                    }
-                    for (iSOS =0;iSOS<numberSOS;iSOS++) {
-                      int iStart = sosStart[iSOS];
-                      int n=sosStart[iSOS+1]-iStart;
-                      objects[iSOS] = new CbcSOS(babModel,n,sosIndices+iStart,sosReference+iStart,
-                                                 iSOS,sosType[iSOS]);
-                      if (sosPriority)
-                        objects[iSOS]->setPriority(sosPriority[iSOS]);
-                      else if (!prioritiesIn)
-                        objects[iSOS]->setPriority(10);  // rather than 1000 
-                    }
-                    babModel->addObjects(numberSOS,objects);
-                    for (iSOS=0;iSOS<numberSOS;iSOS++)
-                      delete objects[iSOS];
-                    delete [] objects;
                   }
                   CbcObject ** objects = babModel->objects();
                   int numberObjects = babModel->numberObjects();
@@ -2189,16 +2189,6 @@ int main (int argc, const char *argv[])
                   solutionIn=NULL;
                   free(prioritiesIn);
                   prioritiesIn=NULL;
-                  free(sosStart);
-                  sosStart=NULL;
-                  free(sosIndices);
-                  sosIndices=NULL;
-                  free(sosType);
-                  sosType=NULL;
-                  free(sosReference);
-                  sosReference=NULL;
-                  free(sosPriority);
-                  sosPriority=NULL;
 #ifdef CBC_AMPL
                 }
 #endif                
@@ -2397,16 +2387,6 @@ int main (int argc, const char *argv[])
                 solutionIn=NULL;
                 free(prioritiesIn);
                 prioritiesIn=NULL;
-                free(sosStart);
-                sosStart=NULL;
-                free(sosIndices);
-                sosIndices=NULL;
-                free(sosType);
-                sosType=NULL;
-                free(sosReference);
-                sosReference=NULL;
-                free(sosPriority);
-                sosPriority=NULL;
 #ifdef CBC_AMPL
               }
 #endif                

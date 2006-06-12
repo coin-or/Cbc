@@ -423,10 +423,6 @@ void CbcModel::branchAndBound(int doStatistics)
         const int * originalColumns = process->originalColumns();
         // allow for cliques etc
         nOrig = CoinMax(nOrig,originalColumns[numberColumns-1]+1);
-        // try and redo debugger
-        OsiRowCutDebugger * debugger = const_cast<OsiRowCutDebugger *> (solver_->getRowCutDebuggerAlways());
-        if (debugger)
-          debugger->redoSolution(numberColumns,originalColumns);
         originalObject = object_;
         // object number or -1
         int * temp = new int[nOrig];
@@ -520,15 +516,6 @@ void CbcModel::branchAndBound(int doStatistics)
         delete [] temp;
         if (!numberObjects_)
           handler_->message(CBC_NOINT,messages_) << CoinMessageEol ;
-      } else {
-        int numberColumns = getNumCols();
-        CglPreProcess * process = strategy_->process();
-        assert (process);
-        const int * originalColumns = process->originalColumns();
-        // try and redo debugger
-        OsiRowCutDebugger * debugger = const_cast<OsiRowCutDebugger *> (solver_->getRowCutDebuggerAlways());
-        if (debugger)
-          debugger->redoSolution(numberColumns,originalColumns);
       }
     } else {
       //no preprocessing

@@ -19793,7 +19793,7 @@ esac
 case $build in
   *-cygwin* | *-mingw*)
   case "$CXX" in
-    cl | */cl)
+    cl* | */cl*)
       { echo "$as_me:$LINENO: Applying patches to libtool for cl compiler" >&5
 echo "$as_me: Applying patches to libtool for cl compiler" >&6;}
       sed -e 's|fix_srcfile_path=\"`cygpath -w \"\$srcfile\"`\"|fix_srcfile_path=\"\\\`'"$CYGPATH_W"' \\\"\\$srcfile\\\"\\\`\"|' \

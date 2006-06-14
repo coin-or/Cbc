@@ -111,6 +111,13 @@ AC_COIN_HAS_USER_LIBRARY([Osl],[OSL],[ekk_c_api.h],[ekk_simplex])
 AC_COIN_HAS_USER_LIBRARY([Soplex],[SPX],[spxsolver.h]) # ToDo
 AC_COIN_HAS_USER_LIBRARY([Xpress],[XPR],[xprs.h],[XPRSsetintcontrol])
 
+#############################################################################
+#                       Other third party software                          #
+#############################################################################
+
+# Ampl Solver library
+AC_COIN_HAS_ASL
+
 ##############################################################################
 #                   VPATH links for example input files                      #
 ##############################################################################

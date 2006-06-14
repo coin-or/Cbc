@@ -168,7 +168,6 @@ bin_PROGRAMS += solve
 # List all source files for this executable, including headers
 solve_SOURCES = \
 	CoinSolve.cpp \
-	Cbc_ampl.cpp Cbc_ampl.h \
 	unitTestClp.cpp
 
 # The following file is not to be distributed, since it is "borrowed" from Clp
@@ -186,6 +185,13 @@ solve_LDADD = libCbc.la \
 # library is found (in the lib install directory) when we are using dynamic
 # libraries.
 solve_LDFLAGS = -rpath $(libdir)
+
+# If we have the Ampl solver library, we need to add additional things
+if COIN_HAS_ASL
+solve_SOURCES += Cbc_ampl.cpp Cbc_ampl.h
+solve_LDADD += $(ASLLIB)
+AM_CPPFLAGS += $(ASL_CPPFLAGS)
+endif
 
 ########################################################################
 #                            Additional flags                          #

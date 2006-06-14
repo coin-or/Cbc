@@ -22,7 +22,7 @@ IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION,
 ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF
 THIS SOFTWARE.
 ****************************************************************/
-#ifdef CBC_AMPL
+
 #include "getstub.h"
 #include "Cbc_ampl.h"
 #include "unistd.h"
@@ -553,5 +553,3 @@ void writeAmpl(ampl_info * info)
   }
   write_sol(buf,info->primalSolution,info->dualSolution,&Oinfo);
 }
-
-#endif

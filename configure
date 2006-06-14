@@ -282,6 +282,7 @@ PACKAGE_BUGREPORT='coin-cbc@lists.coin-or.org'
 
 ac_unique_file="configure.ac"
 ac_default_prefix=`pwd`
+ac_subdirs_all="$ac_subdirs_all ThirdParty/ASL"
 ac_subdirs_all="$ac_subdirs_all CoinUtils"
 ac_subdirs_all="$ac_subdirs_all Data/Netlib"
 ac_subdirs_all="$ac_subdirs_all Data/Sample"
@@ -2131,6 +2132,26 @@ else
   HAVE_EXTERNALS_FALSE=
 fi
 
+
+
+#############################################################################
+#             Check which ThirdParty sources are available                  #
+#############################################################################
+
+echo "$as_me:$LINENO: checking whether code for third party package ASL is available" >&5
+echo $ECHO_N "checking whether code for third party package ASL is available... $ECHO_C" >&6
+if test -r $srcdir/ThirdParty/ASL/solvers/asl.h; then
+  coin_subdirs="$coin_subdirs ThirdParty/ASL"
+  echo "$as_me:$LINENO: result: yes" >&5
+echo "${ECHO_T}yes" >&6
+
+
+subdirs="$subdirs ThirdParty/ASL"
+
+else
+  echo "$as_me:$LINENO: result: no" >&5
+echo "${ECHO_T}no" >&6
+fi
 
 
 #############################################################################

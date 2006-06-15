@@ -44,7 +44,7 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
-bin_PROGRAMS = cbc$(EXEEXT) solve$(EXEEXT)
+bin_PROGRAMS = cbc-generic$(EXEEXT) cbc$(EXEEXT)
 
 # List all additionally required solver and Osi libraries
 @COIN_HAS_CLP_TRUE@am__append_1 = -I`$(CYGPATH_W) $(CLPSRCDIR)/src` \
@@ -141,58 +141,59 @@ am_libCbc_la_OBJECTS = CbcBranchActual.lo CbcBranchBase.lo \
 libCbc_la_OBJECTS = $(am_libCbc_la_OBJECTS)
 binPROGRAMS_INSTALL = $(INSTALL_PROGRAM)
 PROGRAMS = $(bin_PROGRAMS)
-am_cbc_OBJECTS = CbcMain.$(OBJEXT) CbcParam.$(OBJEXT) \
-	unitTest.$(OBJEXT)
+am__cbc_SOURCES_DIST = CoinSolve.cpp unitTestClp.cpp Cbc_ampl.cpp \
+	Cbc_ampl.h
+@COIN_HAS_ASL_TRUE@am__objects_1 = Cbc_ampl.$(OBJEXT)
+am_cbc_OBJECTS = CoinSolve.$(OBJEXT) unitTestClp.$(OBJEXT) \
+	$(am__objects_1)
 nodist_cbc_OBJECTS = CbcOrClpParam.$(OBJEXT)
 cbc_OBJECTS = $(am_cbc_OBJECTS) $(nodist_cbc_OBJECTS)
-@COIN_HAS_CLP_TRUE@am__DEPENDENCIES_1 =  \
+am__DEPENDENCIES_1 =
+@COIN_HAS_ASL_TRUE@am__DEPENDENCIES_2 = $(am__DEPENDENCIES_1)
+cbc_DEPENDENCIES = libCbc.la $(CGLOBJDIR)/src/libCgl.la \
+	$(OSIOBJDIR)/src/OsiClp/libOsiClp.la \
+	$(OSIOBJDIR)/src/libOsi.la $(CLPOBJDIR)/src/libClp.la \
+	$(COINUTILSOBJDIR)/src/libCoinUtils.la $(am__DEPENDENCIES_2)
+am_cbc_generic_OBJECTS = CbcMain.$(OBJEXT) CbcParam.$(OBJEXT) \
+	unitTest.$(OBJEXT)
+nodist_cbc_generic_OBJECTS = CbcOrClpParam.$(OBJEXT)
+cbc_generic_OBJECTS = $(am_cbc_generic_OBJECTS) \
+	$(nodist_cbc_generic_OBJECTS)
+@COIN_HAS_CLP_TRUE@am__DEPENDENCIES_3 =  \
 @COIN_HAS_CLP_TRUE@	$(OSIOBJDIR)/src/OsiClp/libOsiClp.la \
 @COIN_HAS_CLP_TRUE@	$(CLPOBJDIR)/src/libClp.la
-@COIN_HAS_CPX_TRUE@am__DEPENDENCIES_2 =  \
+@COIN_HAS_CPX_TRUE@am__DEPENDENCIES_4 =  \
 @COIN_HAS_CPX_TRUE@	$(OSIOBJDIR)/src/OsiCpx/libOsiCpx.la
-@COIN_HAS_DYLP_TRUE@am__DEPENDENCIES_3 =  \
+@COIN_HAS_DYLP_TRUE@am__DEPENDENCIES_5 =  \
 @COIN_HAS_DYLP_TRUE@	$(OSIOBJDIR)/src/OsiDylp/libOsiDylp.la \
 @COIN_HAS_DYLP_TRUE@	$(DYLPOBJDIR)/src/Dylp/libDylp.la
-@COIN_HAS_FMP_TRUE@am__DEPENDENCIES_4 =  \
+@COIN_HAS_FMP_TRUE@am__DEPENDENCIES_6 =  \
 @COIN_HAS_FMP_TRUE@	$(OSIOBJDIR)/src/OsiFmp/libOsiFmp.la
-@COIN_HAS_GLPK_TRUE@am__DEPENDENCIES_5 =  \
+@COIN_HAS_GLPK_TRUE@am__DEPENDENCIES_7 =  \
 @COIN_HAS_GLPK_TRUE@	$(OSIOBJDIR)/src/OsiGlpk/libOsiGlpk.la
-@COIN_HAS_MSK_TRUE@am__DEPENDENCIES_6 =  \
+@COIN_HAS_MSK_TRUE@am__DEPENDENCIES_8 =  \
 @COIN_HAS_MSK_TRUE@	$(OSIOBJDIR)/src/OsiMsk/libOsiMsk.la
-@COIN_HAS_OSL_TRUE@am__DEPENDENCIES_7 =  \
+@COIN_HAS_OSL_TRUE@am__DEPENDENCIES_9 =  \
 @COIN_HAS_OSL_TRUE@	$(OSIOBJDIR)/src/OsiOsl/libOsiOsl.la
-@COIN_HAS_SPX_TRUE@am__DEPENDENCIES_8 =  \
+@COIN_HAS_SPX_TRUE@am__DEPENDENCIES_10 =  \
 @COIN_HAS_SPX_TRUE@	$(OSIOBJDIR)/src/OsiSpx/libOsiSpx.la
-@COIN_HAS_SYM_TRUE@am__DEPENDENCIES_9 =  \
+@COIN_HAS_SYM_TRUE@am__DEPENDENCIES_11 =  \
 @COIN_HAS_SYM_TRUE@	$(OSIOBJDIR)/src/OsiSym/libOsiSym.la \
 @COIN_HAS_SYM_TRUE@	$(SYMOBJDIR)/src/libSym.la
-@COIN_HAS_VOL_TRUE@am__DEPENDENCIES_10 =  \
+@COIN_HAS_VOL_TRUE@am__DEPENDENCIES_12 =  \
 @COIN_HAS_VOL_TRUE@	$(OSIOBJDIR)/src/OsiVol/libOsiVol.la \
 @COIN_HAS_VOL_TRUE@	$(VOLOBJDIR)/src/libVol.la
-@COIN_HAS_XPR_TRUE@am__DEPENDENCIES_11 =  \
+@COIN_HAS_XPR_TRUE@am__DEPENDENCIES_13 =  \
 @COIN_HAS_XPR_TRUE@	$(OSIOBJDIR)/src/OsiXpr/libOsiXpr.la
-cbc_DEPENDENCIES = libCbc.la $(CGLOBJDIR)/src/libCgl.la \
-	$(OSIOBJDIR)/src/OsiCbc/libOsiCbc.la $(am__DEPENDENCIES_1) \
-	$(am__DEPENDENCIES_2) $(am__DEPENDENCIES_3) \
+cbc_generic_DEPENDENCIES = libCbc.la $(CGLOBJDIR)/src/libCgl.la \
+	$(OSIOBJDIR)/src/OsiCbc/libOsiCbc.la $(am__DEPENDENCIES_3) \
 	$(am__DEPENDENCIES_4) $(am__DEPENDENCIES_5) \
 	$(am__DEPENDENCIES_6) $(am__DEPENDENCIES_7) \
 	$(am__DEPENDENCIES_8) $(am__DEPENDENCIES_9) \
 	$(am__DEPENDENCIES_10) $(am__DEPENDENCIES_11) \
+	$(am__DEPENDENCIES_12) $(am__DEPENDENCIES_13) \
 	$(OSIOBJDIR)/src/libOsi.la \
 	$(COINUTILSOBJDIR)/src/libCoinUtils.la
-am__solve_SOURCES_DIST = CoinSolve.cpp unitTestClp.cpp Cbc_ampl.cpp \
-	Cbc_ampl.h
-@COIN_HAS_ASL_TRUE@am__objects_1 = Cbc_ampl.$(OBJEXT)
-am_solve_OBJECTS = CoinSolve.$(OBJEXT) unitTestClp.$(OBJEXT) \
-	$(am__objects_1)
-nodist_solve_OBJECTS = CbcOrClpParam.$(OBJEXT)
-solve_OBJECTS = $(am_solve_OBJECTS) $(nodist_solve_OBJECTS)
-am__DEPENDENCIES_12 =
-@COIN_HAS_ASL_TRUE@am__DEPENDENCIES_13 = $(am__DEPENDENCIES_12)
-solve_DEPENDENCIES = libCbc.la $(CGLOBJDIR)/src/libCgl.la \
-	$(OSIOBJDIR)/src/OsiClp/libOsiClp.la \
-	$(OSIOBJDIR)/src/libOsi.la $(CLPOBJDIR)/src/libClp.la \
-	$(COINUTILSOBJDIR)/src/libCoinUtils.la $(am__DEPENDENCIES_13)
 depcomp = $(SHELL) $(top_srcdir)/../depcomp
 am__depfiles_maybe = depfiles
 CXXCOMPILE = $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
@@ -212,9 +213,9 @@ CCLD = $(CC)
 LINK = $(LIBTOOL) --tag=CC --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
 	$(AM_LDFLAGS) $(LDFLAGS) -o $@
 SOURCES = $(libCbc_la_SOURCES) $(cbc_SOURCES) $(nodist_cbc_SOURCES) \
-	$(solve_SOURCES) $(nodist_solve_SOURCES)
-DIST_SOURCES = $(libCbc_la_SOURCES) $(cbc_SOURCES) \
-	$(am__solve_SOURCES_DIST)
+	$(cbc_generic_SOURCES) $(nodist_cbc_generic_SOURCES)
+DIST_SOURCES = $(libCbc_la_SOURCES) $(am__cbc_SOURCES_DIST) \
+	$(cbc_generic_SOURCES)
 includeHEADERS_INSTALL = $(INSTALL_HEADER)
 HEADERS = $(include_HEADERS)
 ETAGS = etags
@@ -452,17 +453,17 @@ libCbc_la_SOURCES = \
 libCbc_la_LDFLAGS = $(LT_LDFLAGS)
 
 # List all source files for this executable, including headers
-cbc_SOURCES = \
+cbc_generic_SOURCES = \
 	CbcMain.cpp \
 	CbcParam.cpp CbcParam.hpp \
 	unitTest.cpp
 
 
 # The following file is not to be distributed, since it is "borrowed" from Clp
-nodist_cbc_SOURCES = CbcOrClpParam.cpp
+nodist_cbc_generic_SOURCES = CbcOrClpParam.cpp
 
 # Finally the Osi Coin library (many of the above need it)
-cbc_LDADD = libCbc.la $(CGLOBJDIR)/src/libCgl.la \
+cbc_generic_LDADD = libCbc.la $(CGLOBJDIR)/src/libCgl.la \
 	$(OSIOBJDIR)/src/OsiCbc/libOsiCbc.la $(am__append_2) \
 	$(am__append_5) $(am__append_7) $(am__append_10) \
 	$(am__append_12) $(am__append_14) $(am__append_16) \
@@ -503,16 +504,16 @@ AM_CPPFLAGS = -I`$(CYGPATH_W) $(OSISRCDIR)/src/OsiCbc` $(am__append_1) \
 # Finally, the -rpath flag is used by libtool to make sure that the shared
 # library is found (in the lib install directory) when we are using dynamic
 # libraries.
-cbc_LDFLAGS = -rpath $(libdir)
+cbc_generic_LDFLAGS = -rpath $(libdir)
 
 # List all source files for this executable, including headers
-solve_SOURCES = CoinSolve.cpp unitTestClp.cpp $(am__append_27)
+cbc_SOURCES = CoinSolve.cpp unitTestClp.cpp $(am__append_27)
 
 # The following file is not to be distributed, since it is "borrowed" from Clp
-nodist_solve_SOURCES = CbcOrClpParam.cpp
+nodist_cbc_SOURCES = CbcOrClpParam.cpp
 
 # Additional COIN libraries
-solve_LDADD = libCbc.la $(CGLOBJDIR)/src/libCgl.la \
+cbc_LDADD = libCbc.la $(CGLOBJDIR)/src/libCgl.la \
 	$(OSIOBJDIR)/src/OsiClp/libOsiClp.la \
 	$(OSIOBJDIR)/src/libOsi.la $(CLPOBJDIR)/src/libClp.la \
 	$(COINUTILSOBJDIR)/src/libCoinUtils.la $(am__append_28)
@@ -520,7 +521,7 @@ solve_LDADD = libCbc.la $(CGLOBJDIR)/src/libCgl.la \
 # Finally, the -rpath flag is used by libtool to make sure that the shared
 # library is found (in the lib install directory) when we are using dynamic
 # libraries.
-solve_LDFLAGS = -rpath $(libdir)
+cbc_LDFLAGS = -rpath $(libdir)
 
 # This line is necessary to allow VPATH compilation with MS compilers
 # on Cygwin
@@ -653,9 +654,9 @@ clean-binPROGRAMS:
 cbc$(EXEEXT): $(cbc_OBJECTS) $(cbc_DEPENDENCIES) 
 	@rm -f cbc$(EXEEXT)
 	$(CXXLINK) $(cbc_LDFLAGS) $(cbc_OBJECTS) $(cbc_LDADD) $(LIBS)
-solve$(EXEEXT): $(solve_OBJECTS) $(solve_DEPENDENCIES) 
-	@rm -f solve$(EXEEXT)
-	$(CXXLINK) $(solve_LDFLAGS) $(solve_OBJECTS) $(solve_LDADD) $(LIBS)
+cbc-generic$(EXEEXT): $(cbc_generic_OBJECTS) $(cbc_generic_DEPENDENCIES) 
+	@rm -f cbc-generic$(EXEEXT)
+	$(CXXLINK) $(cbc_generic_LDFLAGS) $(cbc_generic_OBJECTS) $(cbc_generic_LDADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)

@@ -418,13 +418,13 @@ uninstall-am: uninstall-info-am
 
 # We are using the Cbc solver executable to do the unit test
 
-test: ../src/cbc$(EXEEXT) ../src/solve$(EXEEXT) $(extra_target)
+test: ../src/cbc-generic$(EXEEXT) ../src/cbc$(EXEEXT)
 	cd ../../Data/Netlib; make uncompress
 	cd ../../Data/miplib3; make uncompress
-	../src/cbc$(EXEEXT) -miplib -unitTest
-	../src/solve$(EXEEXT) -unitTest -netlib
+	../src/cbc-generic$(EXEEXT) -miplib -unitTest
+	../src/cbc$(EXEEXT) -unitTest -netlib
 
-.PHONY: test example_files
+.PHONY: test
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
 .NOEXPORT:

@@ -340,6 +340,7 @@ CbcParam::setIntParameter (OsiSolverInterface * model,int value) const
     int oldValue;
     switch(type_) {
     case LOGLEVEL:
+      oldValue=model->messageHandler()->logLevel();
       model->messageHandler()->setLogLevel(value);
       break;
     default:

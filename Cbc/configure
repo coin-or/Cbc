@@ -19926,15 +19926,26 @@ echo $ECHO_N "checking for COIN project Cbc... $ECHO_C" >&6
 # other locations)
 
 coin_has_cbc=unavailable
-if test $PACKAGE_TARNAME = cbc; then
-  coin_has_cbc=.
-else
-  if test -d $srcdir/../Cbc; then
-    coin_has_cbc=../Cbc
+if test x"$COIN_SKIP_PROJECTS" != x; then
+  for dir in $COIN_SKIP_PROJECTS; do
+    if test $dir = Cbc; then
+      coin_has_cbc=skipping
+    fi
+  done
+fi
+
+if test $coin_has_cbc != skipping; then
+  if test $PACKAGE_TARNAME = cbc; then
+    coin_has_cbc=.
+  else
+    if test -d $srcdir/../Cbc; then
+      coin_has_cbc=../Cbc
+    fi
   fi
 fi
 
-if test $coin_has_cbc != unavailable; then
+if test $coin_has_cbc != unavailable &&
+   test $coin_has_cbc != skipping; then
   # Set the #define if the component is available
 
 cat >>confdefs.h <<\_ACEOF
@@ -19952,7 +19963,8 @@ fi
   # Define the Makefile conditional
 
 
-if test $coin_has_cbc != unavailable; then
+if test $coin_has_cbc != unavailable &&
+                test $coin_has_cbc != skipping; then
   COIN_HAS_CBC_TRUE=
   COIN_HAS_CBC_FALSE='#'
 else
@@ -19970,15 +19982,26 @@ echo $ECHO_N "checking for COIN project Cgl... $ECHO_C" >&6
 # other locations)
 
 coin_has_cgl=unavailable
-if test $PACKAGE_TARNAME = cgl; then
-  coin_has_cgl=.
-else
-  if test -d $srcdir/../Cgl; then
-    coin_has_cgl=../Cgl
+if test x"$COIN_SKIP_PROJECTS" != x; then
+  for dir in $COIN_SKIP_PROJECTS; do
+    if test $dir = Cgl; then
+      coin_has_cgl=skipping
+    fi
+  done
+fi
+
+if test $coin_has_cgl != skipping; then
+  if test $PACKAGE_TARNAME = cgl; then
+    coin_has_cgl=.
+  else
+    if test -d $srcdir/../Cgl; then
+      coin_has_cgl=../Cgl
+    fi
   fi
 fi
 
-if test $coin_has_cgl != unavailable; then
+if test $coin_has_cgl != unavailable &&
+   test $coin_has_cgl != skipping; then
   # Set the #define if the component is available
 
 cat >>confdefs.h <<\_ACEOF
@@ -19996,7 +20019,8 @@ fi
   # Define the Makefile conditional
 
 
-if test $coin_has_cgl != unavailable; then
+if test $coin_has_cgl != unavailable &&
+                test $coin_has_cgl != skipping; then
   COIN_HAS_CGL_TRUE=
   COIN_HAS_CGL_FALSE='#'
 else
@@ -20014,15 +20038,26 @@ echo $ECHO_N "checking for COIN project Clp... $ECHO_C" >&6
 # other locations)
 
 coin_has_clp=unavailable
-if test $PACKAGE_TARNAME = clp; then
-  coin_has_clp=.
-else
-  if test -d $srcdir/../Clp; then
-    coin_has_clp=../Clp
+if test x"$COIN_SKIP_PROJECTS" != x; then
+  for dir in $COIN_SKIP_PROJECTS; do
+    if test $dir = Clp; then
+      coin_has_clp=skipping
+    fi
+  done
+fi
+
+if test $coin_has_clp != skipping; then
+  if test $PACKAGE_TARNAME = clp; then
+    coin_has_clp=.
+  else
+    if test -d $srcdir/../Clp; then
+      coin_has_clp=../Clp
+    fi
   fi
 fi
 
-if test $coin_has_clp != unavailable; then
+if test $coin_has_clp != unavailable &&
+   test $coin_has_clp != skipping; then
   # Set the #define if the component is available
 
 cat >>confdefs.h <<\_ACEOF
@@ -20040,7 +20075,8 @@ fi
   # Define the Makefile conditional
 
 
-if test $coin_has_clp != unavailable; then
+if test $coin_has_clp != unavailable &&
+                test $coin_has_clp != skipping; then
   COIN_HAS_CLP_TRUE=
   COIN_HAS_CLP_FALSE='#'
 else
@@ -20058,15 +20094,26 @@ echo $ECHO_N "checking for COIN project CoinUtils... $ECHO_C" >&6
 # other locations)
 
 coin_has_coinutils=unavailable
-if test $PACKAGE_TARNAME = coinutils; then
-  coin_has_coinutils=.
-else
-  if test -d $srcdir/../CoinUtils; then
-    coin_has_coinutils=../CoinUtils
+if test x"$COIN_SKIP_PROJECTS" != x; then
+  for dir in $COIN_SKIP_PROJECTS; do
+    if test $dir = CoinUtils; then
+      coin_has_coinutils=skipping
+    fi
+  done
+fi
+
+if test $coin_has_coinutils != skipping; then
+  if test $PACKAGE_TARNAME = coinutils; then
+    coin_has_coinutils=.
+  else
+    if test -d $srcdir/../CoinUtils; then
+      coin_has_coinutils=../CoinUtils
+    fi
   fi
 fi
 
-if test $coin_has_coinutils != unavailable; then
+if test $coin_has_coinutils != unavailable &&
+   test $coin_has_coinutils != skipping; then
   # Set the #define if the component is available
 
 cat >>confdefs.h <<\_ACEOF
@@ -20084,7 +20131,8 @@ fi
   # Define the Makefile conditional
 
 
-if test $coin_has_coinutils != unavailable; then
+if test $coin_has_coinutils != unavailable &&
+                test $coin_has_coinutils != skipping; then
   COIN_HAS_COINUTILS_TRUE=
   COIN_HAS_COINUTILS_FALSE='#'
 else
@@ -20102,15 +20150,26 @@ echo $ECHO_N "checking for COIN project DyLP... $ECHO_C" >&6
 # other locations)
 
 coin_has_dylp=unavailable
-if test $PACKAGE_TARNAME = dylp; then
-  coin_has_dylp=.
-else
-  if test -d $srcdir/../DyLP; then
-    coin_has_dylp=../DyLP
+if test x"$COIN_SKIP_PROJECTS" != x; then
+  for dir in $COIN_SKIP_PROJECTS; do
+    if test $dir = DyLP; then
+      coin_has_dylp=skipping
+    fi
+  done
+fi
+
+if test $coin_has_dylp != skipping; then
+  if test $PACKAGE_TARNAME = dylp; then
+    coin_has_dylp=.
+  else
+    if test -d $srcdir/../DyLP; then
+      coin_has_dylp=../DyLP
+    fi
   fi
 fi
 
-if test $coin_has_dylp != unavailable; then
+if test $coin_has_dylp != unavailable &&
+   test $coin_has_dylp != skipping; then
   # Set the #define if the component is available
 
 cat >>confdefs.h <<\_ACEOF
@@ -20128,7 +20187,8 @@ fi
   # Define the Makefile conditional
 
 
-if test $coin_has_dylp != unavailable; then
+if test $coin_has_dylp != unavailable &&
+                test $coin_has_dylp != skipping; then
   COIN_HAS_DYLP_TRUE=
   COIN_HAS_DYLP_FALSE='#'
 else
@@ -20146,15 +20206,26 @@ echo $ECHO_N "checking for COIN project Osi... $ECHO_C" >&6
 # other locations)
 
 coin_has_osi=unavailable
-if test $PACKAGE_TARNAME = osi; then
-  coin_has_osi=.
-else
-  if test -d $srcdir/../Osi; then
-    coin_has_osi=../Osi
+if test x"$COIN_SKIP_PROJECTS" != x; then
+  for dir in $COIN_SKIP_PROJECTS; do
+    if test $dir = Osi; then
+      coin_has_osi=skipping
+    fi
+  done
+fi
+
+if test $coin_has_osi != skipping; then
+  if test $PACKAGE_TARNAME = osi; then
+    coin_has_osi=.
+  else
+    if test -d $srcdir/../Osi; then
+      coin_has_osi=../Osi
+    fi
   fi
 fi
 
-if test $coin_has_osi != unavailable; then
+if test $coin_has_osi != unavailable &&
+   test $coin_has_osi != skipping; then
   # Set the #define if the component is available
 
 cat >>confdefs.h <<\_ACEOF
@@ -20172,7 +20243,8 @@ fi
   # Define the Makefile conditional
 
 
-if test $coin_has_osi != unavailable; then
+if test $coin_has_osi != unavailable &&
+                test $coin_has_osi != skipping; then
   COIN_HAS_OSI_TRUE=
   COIN_HAS_OSI_FALSE='#'
 else
@@ -20190,15 +20262,26 @@ echo $ECHO_N "checking for COIN project Sym... $ECHO_C" >&6
 # other locations)
 
 coin_has_sym=unavailable
-if test $PACKAGE_TARNAME = sym; then
-  coin_has_sym=.
-else
-  if test -d $srcdir/../Sym; then
-    coin_has_sym=../Sym
+if test x"$COIN_SKIP_PROJECTS" != x; then
+  for dir in $COIN_SKIP_PROJECTS; do
+    if test $dir = Sym; then
+      coin_has_sym=skipping
+    fi
+  done
+fi
+
+if test $coin_has_sym != skipping; then
+  if test $PACKAGE_TARNAME = sym; then
+    coin_has_sym=.
+  else
+    if test -d $srcdir/../Sym; then
+      coin_has_sym=../Sym
+    fi
   fi
 fi
 
-if test $coin_has_sym != unavailable; then
+if test $coin_has_sym != unavailable &&
+   test $coin_has_sym != skipping; then
   # Set the #define if the component is available
 
 cat >>confdefs.h <<\_ACEOF
@@ -20216,7 +20299,8 @@ fi
   # Define the Makefile conditional
 
 
-if test $coin_has_sym != unavailable; then
+if test $coin_has_sym != unavailable &&
+                test $coin_has_sym != skipping; then
   COIN_HAS_SYM_TRUE=
   COIN_HAS_SYM_FALSE='#'
 else
@@ -20234,15 +20318,26 @@ echo $ECHO_N "checking for COIN project Vol... $ECHO_C" >&6
 # other locations)
 
 coin_has_vol=unavailable
-if test $PACKAGE_TARNAME = vol; then
-  coin_has_vol=.
-else
-  if test -d $srcdir/../Vol; then
-    coin_has_vol=../Vol
+if test x"$COIN_SKIP_PROJECTS" != x; then
+  for dir in $COIN_SKIP_PROJECTS; do
+    if test $dir = Vol; then
+      coin_has_vol=skipping
+    fi
+  done
+fi
+
+if test $coin_has_vol != skipping; then
+  if test $PACKAGE_TARNAME = vol; then
+    coin_has_vol=.
+  else
+    if test -d $srcdir/../Vol; then
+      coin_has_vol=../Vol
+    fi
   fi
 fi
 
-if test $coin_has_vol != unavailable; then
+if test $coin_has_vol != unavailable &&
+   test $coin_has_vol != skipping; then
   # Set the #define if the component is available
 
 cat >>confdefs.h <<\_ACEOF
@@ -20260,7 +20355,8 @@ fi
   # Define the Makefile conditional
 
 
-if test $coin_has_vol != unavailable; then
+if test $coin_has_vol != unavailable &&
+                test $coin_has_vol != skipping; then
   COIN_HAS_VOL_TRUE=
   COIN_HAS_VOL_FALSE='#'
 else

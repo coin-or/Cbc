@@ -3681,7 +3681,7 @@ if test x"$coin_vpath_link_files" = x; then : ; else
 echo "$as_me: Creating VPATH links for data files" >&6;}
   for file in $coin_vpath_link_files; do
     rm -f $file
-    $LN_S $srcdir/$file $file
+    $LN_S $abs_source_dir/$file $file
   done
 fi
 

@@ -74,6 +74,30 @@ INCL =  -I`$(CYGPATH_W) $(COININCDIR)` $(ADDINCFLAGS)
 # The following is necessary under cygwin, if native compilers are used
 CYGPATH_W = @CYGPATH_W@
 
+# Here we list all possible generated objects or executables to delete them
+CLEANFILES = \
+	crew.@OBJEXT@ crew@EXEEXT@ \
+	driver2.@OBJEXT@ driver2@EXEEXT@ \
+	driver.@OBJEXT@ driver@EXEEXT@ \
+	fast0507b.@OBJEXT@ fast0507b@EXEEXT@ \
+	fast0507.@OBJEXT@ fast0507@EXEEXT@ \
+	gear.@OBJEXT@ gear@EXEEXT@ \
+	hotstart.@OBJEXT@ hotstart@EXEEXT@ \
+	link.@OBJEXT@ link@EXEEXT@ \
+	longthin.@OBJEXT@ longthin@EXEEXT@ \
+	lotsize.@OBJEXT@ lotsize@EXEEXT@ \
+	minimum.@OBJEXT@ minimum@EXEEXT@ \
+	nway.@OBJEXT@ nway@EXEEXT@ \
+	qmip.@OBJEXT@ qmip@EXEEXT@ \
+	repeat.@OBJEXT@ repeat@EXEEXT@ \
+	sample1.@OBJEXT@ sample1@EXEEXT@ \
+	sample2.@OBJEXT@ sample2@EXEEXT@ \
+	sample3.@OBJEXT@ sample3@EXEEXT@ \
+	sample4.@OBJEXT@ sample4@EXEEXT@ \
+	sample5.@OBJEXT@ sample5@EXEEXT@ \
+	sos.@OBJEXT@ sos@EXEEXT@ \
+	sudoku.@OBJEXT@ sudoku@EXEEXT@
+
 all: $(EXE)
 
 .SUFFIXES: .cpp .c .o .obj
@@ -84,7 +108,7 @@ $(EXE): $(OBJS)
 	$(CXX) $(CXXLINKFLAGS) $(CXXFLAGS) -o $@ $$bla $(ADDLIBS) $(LIBS)
 
 clean:
-	rm -rf $(EXE) $(OBJS)
+	rm -rf $(CLEANFILES)
 
 .cpp.o:
 	$(CXX) $(CXXFLAGS) $(INCL) -c -o $@ `test -f '$<' || echo '$(SRCDIR)/'`$<

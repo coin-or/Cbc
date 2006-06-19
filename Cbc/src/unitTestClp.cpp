@@ -9,6 +9,7 @@
 #include <string>
 #include <iostream>
 
+#include "CoinUtilsConfig.h"
 #include "CoinMpsIO.hpp"
 #include "CoinPackedMatrix.hpp"
 #include "CoinPackedVector.hpp"

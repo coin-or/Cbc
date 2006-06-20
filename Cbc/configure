@@ -21454,10 +21454,10 @@ if test "$use_asldir" = BUILD; then
   coin_aslobjdir=`cd $coin_aslobjdir; pwd`
   ASLLIB="$coin_aslobjdir/$ampllib"
   coin_aslsrcdir=`cd $coin_aslsrcdir; pwd`
-  ASL_CPPFLAGS="-I"`$CYGPATH_W $coin_aslobjdir`" -I"`$CYGPATH_W $coin_aslsrcdir/solvers`
+  ASL_CPPFLAGS="-I"`$CYGPATH_W $coin_aslobjdir | sed -e sX\\\\\\\\X/Xg`" -I"`$CYGPATH_W $coin_aslsrcdir/solvers | sed -e sX\\\\\\\\X/Xg`
 elif test "$use_asldir" != no; then
   ASLLIB="$use_asldir/$ampllib"
-  ASL_CPPFLAGS="-I"`$CYGPATH_W $use_asldir`
+  ASL_CPPFLAGS="-I"`$CYGPATH_W $use_asldir | sed -e sX\\\\\\\\X/Xg`
 fi
 
 if test "$use_asldir" != no; then

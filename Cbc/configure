@@ -19873,7 +19873,7 @@ if test $enable_shared = yes; then
   if test "$GXX" = "yes"; then
     RPATH_FLAGS=
     for dir in $abs_lib_dir; do
-      RPATH_FLAGS="$RPATH_FLAGS -Wl,--rpath -Wl,$dir"
+      RPATH_FLAGS="$RPATH_FLAGS -Wl,-rpath -Wl,$dir"
     done
   else
     case $build in
@@ -19882,7 +19882,7 @@ if test $enable_shared = yes; then
         icpc* | */icpc*)
           RPATH_FLAGS=
           for dir in $abs_lib_dir; do
-            RPATH_FLAGS="$RPATH_FLAGS -Wl,--rpath -Wl,$dir"
+            RPATH_FLAGS="$RPATH_FLAGS -Wl,-rpath -Wl,$dir"
           done
         esac ;;
       *-ibm-*)

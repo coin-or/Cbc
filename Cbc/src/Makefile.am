@@ -235,6 +235,7 @@ include_HEADERS = \
 	../inc/config_cbc.h \
 	CbcBranchActual.hpp \
 	CbcBranchBase.hpp \
+	CbcBranchDynamic.hpp \
 	CbcBranchLotsize.hpp \
 	CbcBranchCut.hpp \
 	CbcCompareActual.hpp \

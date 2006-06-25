@@ -367,7 +367,7 @@ activity at continuous solution",
 	      MIPLIB);
     parameters[numberParameters++]=
       CbcParam("ver!sion","Print out version",
-	      VERSION);
+	      PRINTVERSION);
     parameters[numberParameters++]=
       CbcParam("alg!orithm","Whether to use dual or primal",
 	      "dual",ALGORITHM);
@@ -1419,7 +1419,7 @@ int main (int argc, const char *argv[])
 	  case STDIN:
 	    read_mode=-1;
 	    break;
-	  case VERSION:
+	  case PRINTVERSION:
 	    std::cout<<"Coin LP version "<<CBCVERSION
 		     <<", build "<<__DATE__<<std::endl;
 	    break;

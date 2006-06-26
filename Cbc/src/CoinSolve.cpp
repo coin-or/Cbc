@@ -1,6 +1,7 @@
 // Copyright (C) 2004, International Business Machines
 // Corporation and others.  All Rights Reserved.
    
+#include "CbcConfig.h"
 #include "CoinPragma.hpp"
 
 #include <cassert>
@@ -78,7 +79,7 @@
 #include  "CbcStrategy.hpp"
 
 #include "OsiClpSolverInterface.hpp"
-#ifdef CBC_AMPL
+#ifdef COIN_HAS_ASL
 #include "Cbc_ampl.h"
 static bool usingAmpl=false;
 #endif
@@ -496,7 +497,7 @@ int main (int argc, const char *argv[])
     char * sosType = NULL;
     double * sosReference = NULL;
     int * sosPriority=NULL;
-#ifdef CBC_AMPL
+#ifdef COIN_HAS_ASL
     ampl_info info;
     if (argc>2&&!strcmp(argv[2],"-AMPL")) {
       usingAmpl=true;
@@ -823,7 +824,7 @@ int main (int argc, const char *argv[])
 	    evenHidden = true;
 	    verbose &= ~8;
 	  }
-#ifdef CBC_AMPL
+#ifdef COIN_HAS_ASL
           if (verbose<4&&usingAmpl)
             verbose +=4;
 #endif
@@ -1244,7 +1245,7 @@ int main (int argc, const char *argv[])
 	} else {
 	  // action
 	  if (type==EXIT) {
-#ifdef CBC_AMPL
+#ifdef COIN_HAS_ASL
             if(usingAmpl) {
               if (info.numberIntegers||info.numberBinary) {
                 // integer
@@ -1402,7 +1403,7 @@ int main (int argc, const char *argv[])
                 delete model2;
                 model2=lpSolver;
               }
-#ifdef CBC_AMPL
+#ifdef COIN_HAS_ASL
               if (usingAmpl) {
                 double value = model2->getObjValue()*model2->getObjSense();
                 char buf[300];
@@ -1710,13 +1711,34 @@ int main (int argc, const char *argv[])
                   process.addCutGenerator(&generator1);
                   int translate[]={9999,0,0,-1,2,3};
                   process.messageHandler()->setLogLevel(babModel->logLevel());
+#ifdef COIN_HAS_ASL
+                  if (info.numberSos&&doSOS&&usingAmpl) {
+                    // SOS
+                    numberSOS = info.numberSos;
+                    sosStart = info.sosStart;
+                    sosIndices = info.sosIndices;
+                  }
+#endif
+                  if (numberSOS&&doSOS) {
+                    // SOS
+                    int numberColumns = saveSolver->getNumCols();
+                    char * prohibited = new char[numberColumns];
+                    memset(prohibited,0,numberColumns);
+                    int n=sosStart[numberSOS];
+                    for (int i=0;i<n;i++) {
+                      int iColumn = sosIndices[i];
+                      prohibited[iColumn]=1;
+                    }
+                    process.passInProhibited(prohibited,numberColumns);
+                    delete [] prohibited;
+                  }
                   solver2 = process.preProcessNonDefault(*saveSolver,translate[preProcess],10);
                   // Tell solver we are not in Branch and Cut
                   saveSolver->setHintParam(OsiDoInBranchAndCut,false,OsiHintDo) ;
                   if (solver2)
                     solver2->setHintParam(OsiDoInBranchAndCut,false,OsiHintDo) ;
                 }
-#ifdef CBC_AMPL
+#ifdef COIN_HAS_ASL
                 if (!solver2&&usingAmpl) {
                   // infeasible
                   info.problemStatus=1;
@@ -1982,7 +2004,7 @@ int main (int argc, const char *argv[])
                 }
               }
               if (type==BAB) {
-#ifdef CBC_AMPL
+#ifdef COIN_HAS_ASL
                 if (usingAmpl) {
                   priorities=info.priorities;
                   branchDirection=info.branchDirection;
@@ -2174,7 +2196,7 @@ int main (int argc, const char *argv[])
                   }
                 }
                 int statistics = (printOptions>0) ? printOptions: 0;
-#ifdef CBC_AMPL
+#ifdef COIN_HAS_ASL
                 if (!usingAmpl) {
 #endif
                   free(priorities);
@@ -2199,7 +2221,7 @@ int main (int argc, const char *argv[])
                   sosReference=NULL;
                   free(sosPriority);
                   sosPriority=NULL;
-#ifdef CBC_AMPL
+#ifdef COIN_HAS_ASL
                 }
 #endif                
 	        if (cppValue>=0) {
@@ -2316,7 +2338,7 @@ int main (int argc, const char *argv[])
                     " after "<<babModel->getNodeCount()<<" nodes and "
                            <<babModel->getIterationCount()<<
                     " iterations - took "<<time2-time1<<" seconds"<<std::endl;
-#ifdef CBC_AMPL
+#ifdef COIN_HAS_ASL
                 if (usingAmpl) {
                   double value = babModel->getObjValue()*lpSolver->getObjSense();
                   char buf[300];
@@ -2370,7 +2392,7 @@ int main (int argc, const char *argv[])
                 }
 #endif
               } else {
-                std::cout<<"Model strengthend - now has "<<clpSolver->getNumRows()
+                std::cout<<"Model strengthened - now has "<<clpSolver->getNumRows()
                          <<" rows"<<std::endl;
               }
               time1 = time2;
@@ -2382,7 +2404,7 @@ int main (int argc, const char *argv[])
             break ;
 	  case IMPORT:
 	    {
-#ifdef CBC_AMPL
+#ifdef COIN_HAS_ASL
               if (!usingAmpl) {
 #endif
                 free(priorities);
@@ -2407,7 +2429,7 @@ int main (int argc, const char *argv[])
                 sosReference=NULL;
                 free(sosPriority);
                 sosPriority=NULL;
-#ifdef CBC_AMPL
+#ifdef COIN_HAS_ASL
               }
 #endif                
               delete babModel;

@@ -22,7 +22,7 @@ IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION,
 ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF
 THIS SOFTWARE.
 ****************************************************************/
-#ifdef CBC_AMPL
+
 #include "getstub.h"
 #include "Cbc_ampl.h"
 #include "unistd.h"
@@ -62,8 +62,9 @@ decodePhrase(char * phrase,ftnlen length)
     saveInfo->arguments[saveInfo->numberArguments++]=strdup(phrase);
     *blank=' ';
     phrase=blank+1; /* move on */
-    saveInfo->arguments[saveInfo->numberArguments++]=strdup(phrase);
-  } else {
+    if (strlen(phrase))
+      saveInfo->arguments[saveInfo->numberArguments++]=strdup(phrase);
+  } else if (strlen(phrase)) {
     saveInfo->arguments=(char **) realloc(saveInfo->arguments,(saveInfo->numberArguments+1)*sizeof(char *));
     saveInfo->arguments[saveInfo->numberArguments++]=strdup(phrase);
   }
@@ -553,5 +554,3 @@ void writeAmpl(ampl_info * info)
   }
   write_sol(buf,info->primalSolution,info->dualSolution,&Oinfo);
 }
-
-#endif

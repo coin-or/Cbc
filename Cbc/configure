@@ -429,8 +429,8 @@ SHELL=${CONFIG_SHELL-/bin/sh}
 # Identity of this package.
 PACKAGE_NAME='Cbc'
 PACKAGE_TARNAME='cbc'
-PACKAGE_VERSION='1.01.00'
-PACKAGE_STRING='Cbc 1.01.00'
+PACKAGE_VERSION='0.1'
+PACKAGE_STRING='Cbc 0.1'
 PACKAGE_BUGREPORT='coin-cbc@list.coin-or.org'
 
 ac_unique_file="src/CbcTree.hpp"
@@ -1070,6 +1070,23 @@ Optional Features:
   --enable-fast-install[=PKGS]
                           optimize for fast installation [default=yes]
   --disable-libtool-lock  avoid locking (might break parallel builds)
+  --enable-cplex-libcheck use disable-cplex-libcheck to skip the
+                          link check at configuration time
+  --enable-glpk-libcheck use disable-glpk-libcheck to skip the
+                          link check at configuration time
+  --enable-fortmp-libcheck
+                          use disable-fortmp-libcheck to skip the
+                          link check at configuration time
+  --enable-mosek-libcheck use disable-mosek-libcheck to skip the
+                          link check at configuration time
+  --enable-osl-libcheck use disable-osl-libcheck to skip the link
+                          check at configuration time
+  --enable-soplex-libcheck
+                          use disable-soplex-libcheck to skip the
+                          link check at configuration time
+  --enable-xpress-libcheck
+                          use disable-xpress-libcheck to skip the
+                          link check at configuration time
 
 Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
@@ -4659,7 +4676,7 @@ ia64-*-hpux*)
   ;;
 *-*-irix6*)
   # Find out which ABI we are using.
-  echo '#line 4662 "configure"' > conftest.$ac_ext
+  echo '#line 4679 "configure"' > conftest.$ac_ext
   if { (eval echo "$as_me:$LINENO: \"$ac_compile\"") >&5
   (eval $ac_compile) 2>&5
   ac_status=$?
@@ -5793,7 +5810,7 @@ fi
 
 
 # Provide some information about the compiler.
-echo "$as_me:5796:" \
+echo "$as_me:5813:" \
      "checking for Fortran 77 compiler version" >&5
 ac_compiler=`set X $ac_compile; echo $2`
 { (eval echo "$as_me:$LINENO: \"$ac_compiler --version </dev/null >&5\"") >&5
@@ -6860,11 +6877,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:6863: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:6880: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:6867: \$? = $ac_status" >&5
+   echo "$as_me:6884: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -7128,11 +7145,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:7131: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:7148: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:7135: \$? = $ac_status" >&5
+   echo "$as_me:7152: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -7232,11 +7249,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:7235: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:7252: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:7239: \$? = $ac_status" >&5
+   echo "$as_me:7256: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -9577,7 +9594,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<EOF
-#line 9580 "configure"
+#line 9597 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -9677,7 +9694,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<EOF
-#line 9680 "configure"
+#line 9697 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -12021,11 +12038,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:12024: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:12041: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:12028: \$? = $ac_status" >&5
+   echo "$as_me:12045: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -12125,11 +12142,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:12128: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:12145: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:12132: \$? = $ac_status" >&5
+   echo "$as_me:12149: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -13695,11 +13712,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:13698: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:13715: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:13702: \$? = $ac_status" >&5
+   echo "$as_me:13719: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -13799,11 +13816,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:13802: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:13819: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:13806: \$? = $ac_status" >&5
+   echo "$as_me:13823: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -16006,11 +16023,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:16009: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:16026: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:16013: \$? = $ac_status" >&5
+   echo "$as_me:16030: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -16274,11 +16291,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:16277: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:16294: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:16281: \$? = $ac_status" >&5
+   echo "$as_me:16298: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -16378,11 +16395,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:16381: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:16398: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:16385: \$? = $ac_status" >&5
+   echo "$as_me:16402: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -20457,6 +20474,14 @@ if test "${with_cplex_lib+set}" = set; then
   withval="$with_cplex_lib"
   CPXLIB=$withval
 fi;
+# Switch to disable library check if requested
+# Check whether --enable-cplex-libcheck or --disable-cplex-libcheck was given.
+if test "${enable_cplex_libcheck+set}" = set; then
+  enableval="$enable_cplex_libcheck"
+  cplex_libcheck=$enableval
+else
+  cplex_libcheck=yes
+fi;
 
 if test x"$CPXINCDIR" != x || test x"$CPXLIB" != x; then
   coin_has_cpx=true
@@ -20503,13 +20528,14 @@ fi
 
   # Check if the symbol is provided in the library
   # ToDo: FOR NOW WE ASSUME THAT WE ARE USING THE C++ COMPILER
-  coin_save_LIBS="$LIBS"
-                  LIBS="$CPXLIB $ADDLIBS"
-		  echo "$as_me:$LINENO: checking whether symbol CPXgetstat is available with CPX" >&5
+  if test x"$cplex_libcheck" != xno; then
+                    coin_save_LIBS="$LIBS"
+                    LIBS="$CPXLIB $ADDLIBS"
+		    echo "$as_me:$LINENO: checking whether symbol CPXgetstat is available with CPX" >&5
 echo $ECHO_N "checking whether symbol CPXgetstat is available with CPX... $ECHO_C" >&6
 # ToDo find out what to do about extern "C"
-#                  AC_TRY_LINK([extern "C" {void CPXgetstat();}],[CPXgetstat()],
-                  cat >conftest.$ac_ext <<_ACEOF
+#                    AC_TRY_LINK([extern "C" {void CPXgetstat();}],[CPXgetstat()],
+                    cat >conftest.$ac_ext <<_ACEOF
 /* confdefs.h.  */
 _ACEOF
 cat confdefs.h >>conftest.$ac_ext
@@ -20554,13 +20580,14 @@ sed 's/^/| /' conftest.$ac_ext >&5
 
 echo "$as_me:$LINENO: result: no" >&5
 echo "${ECHO_T}no" >&6
-                               { { echo "$as_me:$LINENO: error: Cannot find symbol CPXgetstat with CPX" >&5
+                                 { { echo "$as_me:$LINENO: error: Cannot find symbol CPXgetstat with CPX" >&5
 echo "$as_me: error: Cannot find symbol CPXgetstat with CPX" >&2;}
    { (exit 1); exit 1; }; }
 fi
 rm -f conftest.err conftest.$ac_objext \
       conftest$ac_exeext conftest.$ac_ext
-                  LIBS="$coin_save_LIBS"
+                    LIBS="$coin_save_LIBS"
+                  fi
 
   ADDLIBS="$CPXLIB $ADDLIBS"
 
@@ -20603,6 +20630,14 @@ fi;
 if test "${with_glpk_lib+set}" = set; then
   withval="$with_glpk_lib"
   GLPKLIB=$withval
+fi;
+# Switch to disable library check if requested
+# Check whether --enable-glpk-libcheck or --disable-glpk-libcheck was given.
+if test "${enable_glpk_libcheck+set}" = set; then
+  enableval="$enable_glpk_libcheck"
+  glpk_libcheck=$enableval
+else
+  glpk_libcheck=yes
 fi;
 
 if test x"$GLPKINCDIR" != x || test x"$GLPKLIB" != x; then
@@ -20650,13 +20685,14 @@ fi
 
   # Check if the symbol is provided in the library
   # ToDo: FOR NOW WE ASSUME THAT WE ARE USING THE C++ COMPILER
-  coin_save_LIBS="$LIBS"
-                  LIBS="$GLPKLIB $ADDLIBS"
-		  echo "$as_me:$LINENO: checking whether symbol glp_lpx_simplex is available with GLPK" >&5
+  if test x"$glpk_libcheck" != xno; then
+                    coin_save_LIBS="$LIBS"
+                    LIBS="$GLPKLIB $ADDLIBS"
+		    echo "$as_me:$LINENO: checking whether symbol glp_lpx_simplex is available with GLPK" >&5
 echo $ECHO_N "checking whether symbol glp_lpx_simplex is available with GLPK... $ECHO_C" >&6
 # ToDo find out what to do about extern "C"
-#                  AC_TRY_LINK([extern "C" {void glp_lpx_simplex();}],[glp_lpx_simplex()],
-                  cat >conftest.$ac_ext <<_ACEOF
+#                    AC_TRY_LINK([extern "C" {void glp_lpx_simplex();}],[glp_lpx_simplex()],
+                    cat >conftest.$ac_ext <<_ACEOF
 /* confdefs.h.  */
 _ACEOF
 cat confdefs.h >>conftest.$ac_ext
@@ -20701,13 +20737,14 @@ sed 's/^/| /' conftest.$ac_ext >&5
 
 echo "$as_me:$LINENO: result: no" >&5
 echo "${ECHO_T}no" >&6
-                               { { echo "$as_me:$LINENO: error: Cannot find symbol glp_lpx_simplex with GLPK" >&5
+                                 { { echo "$as_me:$LINENO: error: Cannot find symbol glp_lpx_simplex with GLPK" >&5
 echo "$as_me: error: Cannot find symbol glp_lpx_simplex with GLPK" >&2;}
    { (exit 1); exit 1; }; }
 fi
 rm -f conftest.err conftest.$ac_objext \
       conftest$ac_exeext conftest.$ac_ext
-                  LIBS="$coin_save_LIBS"
+                    LIBS="$coin_save_LIBS"
+                  fi
 
   ADDLIBS="$GLPKLIB $ADDLIBS"
 
@@ -20750,6 +20787,14 @@ fi;
 if test "${with_fortmp_lib+set}" = set; then
   withval="$with_fortmp_lib"
   FMPLIB=$withval
+fi;
+# Switch to disable library check if requested
+# Check whether --enable-fortmp-libcheck or --disable-fortmp-libcheck was given.
+if test "${enable_fortmp_libcheck+set}" = set; then
+  enableval="$enable_fortmp_libcheck"
+  fortmp_libcheck=$enableval
+else
+  fortmp_libcheck=yes
 fi;
 
 if test x"$FMPINCDIR" != x || test x"$FMPLIB" != x; then
@@ -20814,6 +20859,14 @@ if test "${with_mosek_lib+set}" = set; then
   withval="$with_mosek_lib"
   MSKLIB=$withval
 fi;
+# Switch to disable library check if requested
+# Check whether --enable-mosek-libcheck or --disable-mosek-libcheck was given.
+if test "${enable_mosek_libcheck+set}" = set; then
+  enableval="$enable_mosek_libcheck"
+  mosek_libcheck=$enableval
+else
+  mosek_libcheck=yes
+fi;
 
 if test x"$MSKINCDIR" != x || test x"$MSKLIB" != x; then
   coin_has_msk=true
@@ -20860,13 +20913,14 @@ fi
 
   # Check if the symbol is provided in the library
   # ToDo: FOR NOW WE ASSUME THAT WE ARE USING THE C++ COMPILER
-  coin_save_LIBS="$LIBS"
-                  LIBS="$MSKLIB $ADDLIBS"
-		  echo "$as_me:$LINENO: checking whether symbol MSK_openmosek is available with MSK" >&5
+  if test x"$mosek_libcheck" != xno; then
+                    coin_save_LIBS="$LIBS"
+                    LIBS="$MSKLIB $ADDLIBS"
+		    echo "$as_me:$LINENO: checking whether symbol MSK_openmosek is available with MSK" >&5
 echo $ECHO_N "checking whether symbol MSK_openmosek is available with MSK... $ECHO_C" >&6
 # ToDo find out what to do about extern "C"
-#                  AC_TRY_LINK([extern "C" {void MSK_openmosek();}],[MSK_openmosek()],
-                  cat >conftest.$ac_ext <<_ACEOF
+#                    AC_TRY_LINK([extern "C" {void MSK_openmosek();}],[MSK_openmosek()],
+                    cat >conftest.$ac_ext <<_ACEOF
 /* confdefs.h.  */
 _ACEOF
 cat confdefs.h >>conftest.$ac_ext
@@ -20911,13 +20965,14 @@ sed 's/^/| /' conftest.$ac_ext >&5
 
 echo "$as_me:$LINENO: result: no" >&5
 echo "${ECHO_T}no" >&6
-                               { { echo "$as_me:$LINENO: error: Cannot find symbol MSK_openmosek with MSK" >&5
+                                 { { echo "$as_me:$LINENO: error: Cannot find symbol MSK_openmosek with MSK" >&5
 echo "$as_me: error: Cannot find symbol MSK_openmosek with MSK" >&2;}
    { (exit 1); exit 1; }; }
 fi
 rm -f conftest.err conftest.$ac_objext \
       conftest$ac_exeext conftest.$ac_ext
-                  LIBS="$coin_save_LIBS"
+                    LIBS="$coin_save_LIBS"
+                  fi
 
   ADDLIBS="$MSKLIB $ADDLIBS"
 
@@ -20960,6 +21015,14 @@ fi;
 if test "${with_osl_lib+set}" = set; then
   withval="$with_osl_lib"
   OSLLIB=$withval
+fi;
+# Switch to disable library check if requested
+# Check whether --enable-osl-libcheck or --disable-osl-libcheck was given.
+if test "${enable_osl_libcheck+set}" = set; then
+  enableval="$enable_osl_libcheck"
+  osl_libcheck=$enableval
+else
+  osl_libcheck=yes
 fi;
 
 if test x"$OSLINCDIR" != x || test x"$OSLLIB" != x; then
@@ -21007,13 +21070,14 @@ fi
 
   # Check if the symbol is provided in the library
   # ToDo: FOR NOW WE ASSUME THAT WE ARE USING THE C++ COMPILER
-  coin_save_LIBS="$LIBS"
-                  LIBS="$OSLLIB $ADDLIBS"
-		  echo "$as_me:$LINENO: checking whether symbol ekk_simplex is available with OSL" >&5
+  if test x"$osl_libcheck" != xno; then
+                    coin_save_LIBS="$LIBS"
+                    LIBS="$OSLLIB $ADDLIBS"
+		    echo "$as_me:$LINENO: checking whether symbol ekk_simplex is available with OSL" >&5
 echo $ECHO_N "checking whether symbol ekk_simplex is available with OSL... $ECHO_C" >&6
 # ToDo find out what to do about extern "C"
-#                  AC_TRY_LINK([extern "C" {void ekk_simplex();}],[ekk_simplex()],
-                  cat >conftest.$ac_ext <<_ACEOF
+#                    AC_TRY_LINK([extern "C" {void ekk_simplex();}],[ekk_simplex()],
+                    cat >conftest.$ac_ext <<_ACEOF
 /* confdefs.h.  */
 _ACEOF
 cat confdefs.h >>conftest.$ac_ext
@@ -21058,13 +21122,14 @@ sed 's/^/| /' conftest.$ac_ext >&5
 
 echo "$as_me:$LINENO: result: no" >&5
 echo "${ECHO_T}no" >&6
-                               { { echo "$as_me:$LINENO: error: Cannot find symbol ekk_simplex with OSL" >&5
+                                 { { echo "$as_me:$LINENO: error: Cannot find symbol ekk_simplex with OSL" >&5
 echo "$as_me: error: Cannot find symbol ekk_simplex with OSL" >&2;}
    { (exit 1); exit 1; }; }
 fi
 rm -f conftest.err conftest.$ac_objext \
       conftest$ac_exeext conftest.$ac_ext
-                  LIBS="$coin_save_LIBS"
+                    LIBS="$coin_save_LIBS"
+                  fi
 
   ADDLIBS="$OSLLIB $ADDLIBS"
 
@@ -21107,6 +21172,14 @@ fi;
 if test "${with_soplex_lib+set}" = set; then
   withval="$with_soplex_lib"
   SPXLIB=$withval
+fi;
+# Switch to disable library check if requested
+# Check whether --enable-soplex-libcheck or --disable-soplex-libcheck was given.
+if test "${enable_soplex_libcheck+set}" = set; then
+  enableval="$enable_soplex_libcheck"
+  soplex_libcheck=$enableval
+else
+  soplex_libcheck=yes
 fi;
 
 if test x"$SPXINCDIR" != x || test x"$SPXLIB" != x; then
@@ -21197,6 +21270,14 @@ if test "${with_xpress_lib+set}" = set; then
   withval="$with_xpress_lib"
   XPRLIB=$withval
 fi;
+# Switch to disable library check if requested
+# Check whether --enable-xpress-libcheck or --disable-xpress-libcheck was given.
+if test "${enable_xpress_libcheck+set}" = set; then
+  enableval="$enable_xpress_libcheck"
+  xpress_libcheck=$enableval
+else
+  xpress_libcheck=yes
+fi;
 
 if test x"$XPRINCDIR" != x || test x"$XPRLIB" != x; then
   coin_has_xpr=true
@@ -21243,13 +21324,14 @@ fi
 
   # Check if the symbol is provided in the library
   # ToDo: FOR NOW WE ASSUME THAT WE ARE USING THE C++ COMPILER
-  coin_save_LIBS="$LIBS"
-                  LIBS="$XPRLIB $ADDLIBS"
-		  echo "$as_me:$LINENO: checking whether symbol XPRSsetintcontrol is available with XPR" >&5
+  if test x"$xpress_libcheck" != xno; then
+                    coin_save_LIBS="$LIBS"
+                    LIBS="$XPRLIB $ADDLIBS"
+		    echo "$as_me:$LINENO: checking whether symbol XPRSsetintcontrol is available with XPR" >&5
 echo $ECHO_N "checking whether symbol XPRSsetintcontrol is available with XPR... $ECHO_C" >&6
 # ToDo find out what to do about extern "C"
-#                  AC_TRY_LINK([extern "C" {void XPRSsetintcontrol();}],[XPRSsetintcontrol()],
-                  cat >conftest.$ac_ext <<_ACEOF
+#                    AC_TRY_LINK([extern "C" {void XPRSsetintcontrol();}],[XPRSsetintcontrol()],
+                    cat >conftest.$ac_ext <<_ACEOF
 /* confdefs.h.  */
 _ACEOF
 cat confdefs.h >>conftest.$ac_ext
@@ -21294,13 +21376,14 @@ sed 's/^/| /' conftest.$ac_ext >&5
 
 echo "$as_me:$LINENO: result: no" >&5
 echo "${ECHO_T}no" >&6
-                               { { echo "$as_me:$LINENO: error: Cannot find symbol XPRSsetintcontrol with XPR" >&5
+                                 { { echo "$as_me:$LINENO: error: Cannot find symbol XPRSsetintcontrol with XPR" >&5
 echo "$as_me: error: Cannot find symbol XPRSsetintcontrol with XPR" >&2;}
    { (exit 1); exit 1; }; }
 fi
 rm -f conftest.err conftest.$ac_objext \
       conftest$ac_exeext conftest.$ac_ext
-                  LIBS="$coin_save_LIBS"
+                    LIBS="$coin_save_LIBS"
+                  fi
 
   ADDLIBS="$XPRLIB $ADDLIBS"
 

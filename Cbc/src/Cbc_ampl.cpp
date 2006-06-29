@@ -62,8 +62,9 @@ decodePhrase(char * phrase,ftnlen length)
     saveInfo->arguments[saveInfo->numberArguments++]=strdup(phrase);
     *blank=' ';
     phrase=blank+1; /* move on */
-    saveInfo->arguments[saveInfo->numberArguments++]=strdup(phrase);
-  } else {
+    if (strlen(phrase))
+      saveInfo->arguments[saveInfo->numberArguments++]=strdup(phrase);
+  } else if (strlen(phrase)) {
     saveInfo->arguments=(char **) realloc(saveInfo->arguments,(saveInfo->numberArguments+1)*sizeof(char *));
     saveInfo->arguments[saveInfo->numberArguments++]=strdup(phrase);
   }

@@ -429,8 +429,8 @@ SHELL=${CONFIG_SHELL-/bin/sh}
 # Identity of this package.
 PACKAGE_NAME='Cbc'
 PACKAGE_TARNAME='cbc'
-PACKAGE_VERSION='0.1'
-PACKAGE_STRING='Cbc 0.1'
+PACKAGE_VERSION='1.01.00'
+PACKAGE_STRING='Cbc 1.01.00'
 PACKAGE_BUGREPORT='coin-cbc@list.coin-or.org'
 
 ac_unique_file="src/CbcTree.hpp"

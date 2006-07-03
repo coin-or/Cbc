@@ -89,6 +89,7 @@ CLEANFILES = \
 	minimum.@OBJEXT@ minimum@EXEEXT@ \
 	nway.@OBJEXT@ nway@EXEEXT@ \
 	qmip.@OBJEXT@ qmip@EXEEXT@ \
+	qmip2.@OBJEXT@ qmip2@EXEEXT@ \
 	repeat.@OBJEXT@ repeat@EXEEXT@ \
 	sample1.@OBJEXT@ sample1@EXEEXT@ \
 	sample2.@OBJEXT@ sample2@EXEEXT@ \

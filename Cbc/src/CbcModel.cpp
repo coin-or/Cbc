@@ -6573,6 +6573,18 @@ CbcModel::integerPresolveThisModel(OsiSolverInterface * originalSolver,
   int originalNumberColumns = numberColumns;
   currentPassNumber_=0;
   synchronizeModel(); // make sure everything that needs solver has it
+  if (!solverCharacteristics_) {
+    OsiBabSolver * solverCharacteristics = dynamic_cast<OsiBabSolver *> (solver_->getAuxiliaryInfo());
+    if (solverCharacteristics) {
+      solverCharacteristics_ = solverCharacteristics;
+    } else {
+      // replace in solver
+      OsiBabSolver defaultC;
+      solver_->setAuxiliaryInfo(&defaultC);
+      solverCharacteristics_ = dynamic_cast<OsiBabSolver *> (solver_->getAuxiliaryInfo());
+    }
+  }
+  solverCharacteristics_->setSolver(solver_);
   // just point to solver_
   delete continuousSolver_;
   continuousSolver_ = solver_;

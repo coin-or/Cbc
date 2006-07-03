@@ -614,15 +614,16 @@ void CbcModel::branchAndBound(int doStatistics)
   generators attached to this model all refer to this model.
 */
   synchronizeModel() ;
-  assert (!solverCharacteristics_);
-  OsiBabSolver * solverCharacteristics = dynamic_cast<OsiBabSolver *> (solver_->getAuxiliaryInfo());
-  if (solverCharacteristics) {
-    solverCharacteristics_ = solverCharacteristics;
-  } else {
-    // replace in solver
-    OsiBabSolver defaultC;
-    solver_->setAuxiliaryInfo(&defaultC);
-    solverCharacteristics_ = dynamic_cast<OsiBabSolver *> (solver_->getAuxiliaryInfo());
+  if (!solverCharacteristics_) {
+    OsiBabSolver * solverCharacteristics = dynamic_cast<OsiBabSolver *> (solver_->getAuxiliaryInfo());
+    if (solverCharacteristics) {
+      solverCharacteristics_ = solverCharacteristics;
+    } else {
+      // replace in solver
+      OsiBabSolver defaultC;
+      solver_->setAuxiliaryInfo(&defaultC);
+      solverCharacteristics_ = dynamic_cast<OsiBabSolver *> (solver_->getAuxiliaryInfo());
+    }
   }
   solverCharacteristics_->setSolver(solver_);
   // Set so we can tell we are in initial phase in resolve
@@ -636,7 +637,7 @@ void CbcModel::branchAndBound(int doStatistics)
 */
   bool feasible;
   // If NLP then we assume already solved outside branchAndbound
-  if (!solverCharacteristics_->solverType()) {
+  if (!solverCharacteristics_->solverType()||solverCharacteristics_->solverType()==4) {
     feasible=resolve(NULL,0) != 0 ;
   } else {
     // pick up given status
@@ -826,10 +827,12 @@ void CbcModel::branchAndBound(int doStatistics)
       if (infeasibility ) numberUnsatisfied++ ; }
     // replace solverType 
     if(solverCharacteristics_->tryCuts())  {
+
       if (numberUnsatisfied)   {
         feasible = solveWithCuts(cuts,maximumCutPassesAtRoot_,
                                  NULL);
-      }	else if (solverCharacteristics_->solutionAddsCuts()) {
+      }	else if (solverCharacteristics_->solutionAddsCuts()||
+                 solverCharacteristics_->alwaysTryCutsAtRootNode()) {
         // may generate cuts and turn the solution
         //to an infeasible one
         feasible = solveWithCuts(cuts, 1,
@@ -1891,7 +1894,7 @@ void CbcModel::branchAndBound(int doStatistics)
   outside world will be able to obtain information about the solution using
   public methods.
 */
-  if (bestSolution_&&solverCharacteristics_->solverType()<2)
+  if (bestSolution_&&(solverCharacteristics_->solverType()<2||solverCharacteristics_->solverType()==4)) 
   { setCutoff(1.0e50) ; // As best solution should be worse than cutoff
     phase_=5;
     double increment = getDblParam(CbcModel::CbcCutoffIncrement) ;
@@ -3672,6 +3675,8 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
 
   currentPassNumber_ = 0 ;
   double primalTolerance = 1.0e-7 ;
+  // We may need to keep going on
+  bool keepGoing=false;
 /*
   Begin cut generation loop. Cuts generated during each iteration are
   collected in theseCuts. The loop can be divided into four phases:
@@ -3688,6 +3693,14 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
   do
   { currentPassNumber_++ ;
     numberTries-- ;
+    if (numberTries<0&&keepGoing) {
+      // switch off all normal ones
+      for (int i = 0;i<numberCutGenerators_;i++) {
+        if (!generator_[i]->mustCallAgain())
+          generator_[i]->setSwitchedOff(true);
+      }
+    }
+    keepGoing=false;
     OsiCuts theseCuts ;
 /*
   Scan previously generated global column and row cuts to see if any are
@@ -3782,9 +3795,14 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
         // skip if not optimal and should be (maybe a cut generator has fixed variables)
         if (generator_[i]->needsOptimalBasis()&&!solver_->basisIsAvailable())
           generate=false;
+        if (generator_[i]->switchedOff())
+          generate=false;;
 	if (generate) {
 	  bool mustResolve = 
 	    generator_[i]->generateCuts(theseCuts,fullScan,node) ;
+          if(numberRowCutsBefore < theseCuts.sizeRowCuts() &&
+             generator_[i]->mustCallAgain())
+            keepGoing=true; // say must go round
 #ifdef CBC_DEBUG
           {
             int numberRowCutsAfter = theseCuts.sizeRowCuts() ;
@@ -4172,7 +4190,7 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
 	numberRowsAtStart = numberOldActiveCuts_+numberRowsAtContinuous_ ;
         lastNumberCuts = numberNewCuts_ ;
         if (direction*solver_->getObjValue() < lastObjective+minimumDrop &&
-            currentPassNumber_ >= 3)
+            currentPassNumber_ >= 3 && !keepGoing)
           { numberTries = 0 ; }
         if (numberRowCuts+numberColumnCuts == 0 || cutIterations == 0)
           { break ; }
@@ -4198,7 +4216,12 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
       }
       numberTries = 0 ;
     }
-  } while (numberTries>0) ;
+  } while (numberTries>0||keepGoing) ;
+  {
+    // switch on
+    for (int i = 0;i<numberCutGenerators_;i++) 
+      generator_[i]->setSwitchedOff(false);
+  }
   //check feasibility.
   //If solution seems to be integer feasible calling setBestSolution
   //will eventually add extra global cuts which we need to install at
@@ -7626,6 +7649,22 @@ CbcModel::setObjectiveValue(CbcNode * thisNode, const CbcNode * parentNode) cons
 double 
 CbcModel::getCurrentSeconds() const {
   return CoinCpuTime()-getDblParam(CbcStartSeconds);
+}
+/* 
+   For advanced applications you may wish to modify the behavior of Cbc
+   e.g. if the solver is a NLP solver then you may not have an exact
+   optimum solution at each step.  Information could be built into
+   OsiSolverInterface but this is an alternative so that that interface 
+   does not have to be changed.  If something similar is useful to
+   enough solvers then it could be migrated.
+   You can also pass in by using solver->setAuxiliaryInfo.
+   You should do that if solver is odd - if solver is normal simplex
+   then use this
+*/
+void 
+CbcModel::passInSolverCharacteristics(OsiBabSolver * solverCharacteristics)
+{
+  solverCharacteristics_ = solverCharacteristics;
 }
 // Create C++ lines to get to current state
 void 

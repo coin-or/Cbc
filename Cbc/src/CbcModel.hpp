@@ -1247,8 +1247,15 @@ public:
       OsiSolverInterface but this is an alternative so that that interface 
       does not have to be changed.  If something similar is useful to
       enough solvers then it could be migrated
+      You can also pass in by using solver->setAuxiliaryInfo.
+      You should do that if solver is odd - if solver is normal simplex
+      then use this.
+      NOTE - characteristics are not cloned
   */
   void passInSolverCharacteristics(OsiBabSolver * solverCharacteristics);
+  /// Get solver characteristics
+  inline const OsiBabSolver * solverCharacteristics() const
+  { return solverCharacteristics_;};
   //@}
   
   //---------------------------------------------------------------------------

@@ -214,6 +214,18 @@ public:
   /// Say if optimal basis needed
   inline bool needsOptimalBasis() const
   { return generator_->needsOptimalBasis();};
+  /// Whether generator MUST be called again if any cuts (i.e. ignore break from loop)
+  inline bool mustCallAgain() const
+  { return mustCallAgain_;};
+  /// Set whether generator MUST be called again if any cuts (i.e. ignore break from loop)
+  inline void setMustCallAgain(bool yesNo)
+  { mustCallAgain_=yesNo;};
+  /// Whether generator switched off for moment
+  inline bool switchedOff() const
+  { return switchedOff_;};
+  /// Set whether generator switched off for moment
+  inline void setSwitchedOff(bool yesNo)
+  { switchedOff_=yesNo;};
   //@}
   
 private:
@@ -257,6 +269,10 @@ private:
 
   /// Whether to call generator when a subproblem is found to be infeasible
   bool whenInfeasible_;
+  /// Whether generator MUST be called again if any cuts (i.e. ignore break from loop)
+  bool mustCallAgain_;
+  /// Temporary switch off marker
+  bool switchedOff_;
   /// Whether call generator being timed
   bool timing_;
   /// Time in cut generator

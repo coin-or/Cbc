@@ -1886,6 +1886,11 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
   // get information on solver type
   const OsiAuxInfo * auxInfo = solver->getAuxiliaryInfo();
   const OsiBabSolver * auxiliaryInfo = dynamic_cast<const OsiBabSolver *> (auxInfo);
+  if (!auxiliaryInfo) {
+    // use one from CbcModel
+    auxiliaryInfo = model->solverCharacteristics();
+  }
+  assert (auxiliaryInfo);
   //assert(objectiveValue_ == solver->getObjSense()*solver->getObjValue());
   double cutoff =model->getCutoff();
   double distanceToCutoff=cutoff-objectiveValue_;

@@ -28,6 +28,8 @@ CbcCutGenerator::CbcCutGenerator ()
     normal_(true),
     atSolution_(false),
     whenInfeasible_(false),
+    mustCallAgain_(false),
+    switchedOff_(false),
     timing_(false),
     timeInCutGenerator_(0.0),
     numberTimes_(0),
@@ -46,6 +48,8 @@ CbcCutGenerator::CbcCutGenerator(CbcModel * model,CglCutGenerator * generator,
   : 
     depthCutGenerator_(whatDepth),
     depthCutGeneratorInSub_(whatDepthInSub),
+    mustCallAgain_(false),
+    switchedOff_(false),
     timing_(false),
     timeInCutGenerator_(0.0),
     numberTimes_(0),
@@ -83,6 +87,8 @@ CbcCutGenerator::CbcCutGenerator ( const CbcCutGenerator & rhs)
   normal_=rhs.normal_;
   atSolution_=rhs.atSolution_;
   whenInfeasible_=rhs.whenInfeasible_;
+  mustCallAgain_ = rhs.mustCallAgain_;
+  switchedOff_ = rhs.switchedOff_;
   timing_ = rhs.timing_;
   timeInCutGenerator_ = rhs.timeInCutGenerator_;
   numberTimes_ = rhs.numberTimes_;
@@ -110,6 +116,8 @@ CbcCutGenerator::operator=( const CbcCutGenerator& rhs)
     normal_=rhs.normal_;
     atSolution_=rhs.atSolution_;
     whenInfeasible_=rhs.whenInfeasible_;
+    mustCallAgain_ = rhs.mustCallAgain_;
+    switchedOff_ = rhs.switchedOff_;
     timing_ = rhs.timing_;
     timeInCutGenerator_ = rhs.timeInCutGenerator_;
     numberTimes_ = rhs.numberTimes_;

@@ -6286,7 +6286,7 @@ CbcModel::tightenVubs(int numberSolves, const int * which,
   int numberFixedByProbing=0;
   int numberTightenedByProbing=0;
   int printFrequency = (numberSolves+19)/20; // up to 20 messages
-  int save[4];
+  int save[4]={0,0,0,0};
   if (generator) {
     // set to cheaper and then restore at end
     save[0]=generator->getMaxPass();

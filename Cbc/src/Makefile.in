@@ -433,7 +433,7 @@ libCbc_la_SOURCES = \
 	CbcBranchDynamic.cpp CbcBranchDynamic.hpp \
 	CbcBranchLotsize.cpp CbcBranchLotsize.hpp \
 	CbcCompareActual.cpp CbcCompareActual.hpp \
-	CbcCompareBase.hpp CbcFeasibilityBase.hpp \
+	CbcCompareBase.hpp \
 	CbcCountRowCut.cpp CbcCountRowCut.hpp \
 	CbcCutGenerator.cpp CbcCutGenerator.hpp \
 	CbcEventHandler.cpp CbcEventHandler.hpp \
@@ -546,7 +546,6 @@ include_HEADERS = \
 	CbcBranchCut.hpp \
 	CbcCompareActual.hpp \
 	CbcCompareBase.hpp \
-	CbcFeasibilityBase.hpp \
 	CbcCutGenerator.hpp \
 	CbcEventHandler.hpp \
 	CbcHeuristic.hpp \

@@ -1931,6 +1931,17 @@ void CbcModel::branchAndBound(int doStatistics)
   Destroy global cuts by replacing with an empty OsiCuts object.
 */
   globalCuts_= OsiCuts() ;
+  if (!bestSolution_) {
+    // make sure lp solver is infeasible
+    int numberColumns = solver_->getNumCols();
+    const double * columnLower = solver_->getColLower();
+    int iColumn;
+    for (iColumn=0;iColumn<numberColumns;iColumn++) {
+      if (solver_->isInteger(iColumn)) 
+	solver_->setColUpper(iColumn,columnLower[iColumn]);
+    }
+    solver_->initialSolve();
+  }
   if (strategy_&&strategy_->preProcessState()>0) {
     // undo preprocessing
     CglPreProcess * process = strategy_->process();

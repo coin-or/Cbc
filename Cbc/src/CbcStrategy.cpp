@@ -298,6 +298,8 @@ CbcStrategyDefault::setupOther(CbcModel & model)
     delete process_;
     // solver_ should have been cloned outside
     CglPreProcess * process = new CglPreProcess();
+    // Pass in models message handler
+    process->passInMessageHandler(model.messageHandler());
     OsiSolverInterface * solver = model.solver();
     int logLevel = model.messageHandler()->logLevel();
 #ifdef COIN_HAS_CLP
@@ -324,7 +326,7 @@ CbcStrategyDefault::setupOther(CbcModel & model)
     generator1.setMaxLookRoot(50);
     generator1.setRowCuts(3);
     //generator1.messageHandler()->setLogLevel(logLevel);
-    process->messageHandler()->setLogLevel(logLevel);
+    // Not needed with pass in process->messageHandler()->setLogLevel(logLevel);
     // Add in generators
     process->addCutGenerator(&generator1);
     int translate[]={9999,0,2,3};

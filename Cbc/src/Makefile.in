@@ -44,7 +44,7 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
-bin_PROGRAMS = cbc-generic$(EXEEXT) cbc$(EXEEXT)
+bin_PROGRAMS = cbc-generic$(EXEEXT) $(am__EXEEXT_1)
 
 # List all additionally required solver and Osi libraries
 @COIN_HAS_CLP_TRUE@am__append_1 = -I`$(CYGPATH_W) $(CLPSRCDIR)/src` \
@@ -105,10 +105,18 @@ bin_PROGRAMS = cbc-generic$(EXEEXT) cbc$(EXEEXT)
 
 @COIN_HAS_XPR_TRUE@am__append_26 = $(OSIOBJDIR)/src/OsiXpr/libOsiXpr.la
 
+########################################################################
+#                            cbc program                               #
+########################################################################
+
+# Name of the executable compiled in this directory.  We want it to be
+# installed in the 'bin' directory
+@COIN_HAS_CLP_TRUE@am__append_27 = cbc
+
 # If we have the Ampl solver library, we need to add additional things
-@COIN_HAS_ASL_TRUE@am__append_27 = Cbc_ampl.cpp Cbc_ampl.h
-@COIN_HAS_ASL_TRUE@am__append_28 = $(ASLLIB)
-@COIN_HAS_ASL_TRUE@am__append_29 = $(ASL_CPPFLAGS)
+@COIN_HAS_ASL_TRUE@@COIN_HAS_CLP_TRUE@am__append_28 = Cbc_ampl.cpp Cbc_ampl.h
+@COIN_HAS_ASL_TRUE@@COIN_HAS_CLP_TRUE@am__append_29 = $(ASLLIB)
+@COIN_HAS_ASL_TRUE@@COIN_HAS_CLP_TRUE@am__append_30 = $(ASL_CPPFLAGS)
 subdir = src
 DIST_COMMON = $(include_HEADERS) $(srcdir)/Makefile.am \
 	$(srcdir)/Makefile.in
@@ -139,21 +147,27 @@ am_libCbc_la_OBJECTS = CbcBranchActual.lo CbcBranchBase.lo \
 	CbcHeuristicLocal.lo CbcMessage.lo CbcModel.lo CbcNode.lo \
 	CbcStatistics.lo CbcStrategy.lo CbcTree.lo CbcTreeLocal.lo
 libCbc_la_OBJECTS = $(am_libCbc_la_OBJECTS)
+@COIN_HAS_CLP_TRUE@am__EXEEXT_1 = cbc$(EXEEXT)
 binPROGRAMS_INSTALL = $(INSTALL_PROGRAM)
 PROGRAMS = $(bin_PROGRAMS)
 am__cbc_SOURCES_DIST = CoinSolve.cpp unitTestClp.cpp Cbc_ampl.cpp \
 	Cbc_ampl.h
-@COIN_HAS_ASL_TRUE@am__objects_1 = Cbc_ampl.$(OBJEXT)
-am_cbc_OBJECTS = CoinSolve.$(OBJEXT) unitTestClp.$(OBJEXT) \
-	$(am__objects_1)
-nodist_cbc_OBJECTS = CbcOrClpParam.$(OBJEXT)
+@COIN_HAS_ASL_TRUE@@COIN_HAS_CLP_TRUE@am__objects_1 =  \
+@COIN_HAS_ASL_TRUE@@COIN_HAS_CLP_TRUE@	Cbc_ampl.$(OBJEXT)
+@COIN_HAS_CLP_TRUE@am_cbc_OBJECTS = CoinSolve.$(OBJEXT) \
+@COIN_HAS_CLP_TRUE@	unitTestClp.$(OBJEXT) $(am__objects_1)
+@COIN_HAS_CLP_TRUE@nodist_cbc_OBJECTS = CbcOrClpParam.$(OBJEXT)
 cbc_OBJECTS = $(am_cbc_OBJECTS) $(nodist_cbc_OBJECTS)
 am__DEPENDENCIES_1 =
-@COIN_HAS_ASL_TRUE@am__DEPENDENCIES_2 = $(am__DEPENDENCIES_1)
-cbc_DEPENDENCIES = libCbc.la $(CGLOBJDIR)/src/libCgl.la \
-	$(OSIOBJDIR)/src/OsiClp/libOsiClp.la \
-	$(OSIOBJDIR)/src/libOsi.la $(CLPOBJDIR)/src/libClp.la \
-	$(COINUTILSOBJDIR)/src/libCoinUtils.la $(am__DEPENDENCIES_2)
+@COIN_HAS_ASL_TRUE@@COIN_HAS_CLP_TRUE@am__DEPENDENCIES_2 =  \
+@COIN_HAS_ASL_TRUE@@COIN_HAS_CLP_TRUE@	$(am__DEPENDENCIES_1)
+@COIN_HAS_CLP_TRUE@cbc_DEPENDENCIES = libCbc.la \
+@COIN_HAS_CLP_TRUE@	$(CGLOBJDIR)/src/libCgl.la \
+@COIN_HAS_CLP_TRUE@	$(OSIOBJDIR)/src/OsiClp/libOsiClp.la \
+@COIN_HAS_CLP_TRUE@	$(OSIOBJDIR)/src/libOsi.la \
+@COIN_HAS_CLP_TRUE@	$(CLPOBJDIR)/src/libClp.la \
+@COIN_HAS_CLP_TRUE@	$(COINUTILSOBJDIR)/src/libCoinUtils.la \
+@COIN_HAS_CLP_TRUE@	$(am__DEPENDENCIES_2)
 am_cbc_generic_OBJECTS = CbcMain.$(OBJEXT) CbcParam.$(OBJEXT) \
 	unitTest.$(OBJEXT)
 nodist_cbc_generic_OBJECTS = CbcOrClpParam.$(OBJEXT)
@@ -251,8 +265,6 @@ CLPOBJDIR = @CLPOBJDIR@
 CLPSRCDIR = @CLPSRCDIR@
 COINUTILSOBJDIR = @COINUTILSOBJDIR@
 COINUTILSSRCDIR = @COINUTILSSRCDIR@
-COIN_DEBUG_FALSE = @COIN_DEBUG_FALSE@
-COIN_DEBUG_TRUE = @COIN_DEBUG_TRUE@
 COIN_HAS_ASL_FALSE = @COIN_HAS_ASL_FALSE@
 COIN_HAS_ASL_TRUE = @COIN_HAS_ASL_TRUE@
 COIN_HAS_CBC_FALSE = @COIN_HAS_CBC_FALSE@
@@ -295,6 +307,8 @@ CXXDEFS = @CXXDEFS@
 CXXDEPMODE = @CXXDEPMODE@
 CXXFLAGS = @CXXFLAGS@
 CYGPATH_W = @CYGPATH_W@
+DBG_CFLAGS = @DBG_CFLAGS@
+DBG_CXXFLAGS = @DBG_CXXFLAGS@
 DEFS = @DEFS@
 DEPDIR = @DEPDIR@
 DYLPOBJDIR = @DYLPOBJDIR@
@@ -338,6 +352,8 @@ MPICXX = @MPICXX@
 MSKINCDIR = @MSKINCDIR@
 MSKLIB = @MSKLIB@
 OBJEXT = @OBJEXT@
+OPT_CFLAGS = @OPT_CFLAGS@
+OPT_CXXFLAGS = @OPT_CXXFLAGS@
 OSIOBJDIR = @OSIOBJDIR@
 OSISRCDIR = @OSISRCDIR@
 OSLINCDIR = @OSLINCDIR@
@@ -489,7 +505,7 @@ AM_CPPFLAGS = -I`$(CYGPATH_W) $(OSISRCDIR)/src/OsiCbc` $(am__append_1) \
 	$(am__append_4) $(am__append_6) $(am__append_9) \
 	$(am__append_11) $(am__append_13) $(am__append_15) \
 	$(am__append_17) $(am__append_19) $(am__append_22) \
-	$(am__append_25) $(am__append_29) -I`$(CYGPATH_W) \
+	$(am__append_25) $(am__append_30) -I`$(CYGPATH_W) \
 	$(CGLSRCDIR)/src` -I`$(CYGPATH_W) $(CGLSRCDIR)/src/CglClique` \
 	-I`$(CYGPATH_W) $(CGLSRCDIR)/src/CglDuplicateRow` \
 	-I`$(CYGPATH_W) $(CGLSRCDIR)/src/CglFlowCover` -I`$(CYGPATH_W) \
@@ -502,8 +518,10 @@ AM_CPPFLAGS = -I`$(CYGPATH_W) $(OSISRCDIR)/src/OsiCbc` $(am__append_1) \
 	$(CGLSRCDIR)/src/CglProbing` -I`$(CYGPATH_W) \
 	$(CGLSRCDIR)/src/CglRedSplit` -I`$(CYGPATH_W) \
 	$(CGLSRCDIR)/src/CglTwomir` -I`$(CYGPATH_W) \
-	$(COINUTILSSRCDIR)/src` -I`$(CYGPATH_W) $(OSISRCDIR)/src` \
-	-DCOIN_NO_CLP_MESSAGE -DUSE_CBCCONFIG
+	$(COINUTILSSRCDIR)/src` -I`$(CYGPATH_W) \
+	$(COINUTILSOBJDIR)/inc` -I`$(CYGPATH_W) $(OSISRCDIR)/src` \
+	-I`$(CYGPATH_W) $(OSIOBJDIR)/inc` -DCOIN_NO_CLP_MESSAGE \
+	-DUSE_CBCCONFIG
 
 # Finally, the -rpath flag is used by libtool to make sure that the shared
 # library is found (in the lib install directory) when we are using dynamic
@@ -511,21 +529,24 @@ AM_CPPFLAGS = -I`$(CYGPATH_W) $(OSISRCDIR)/src/OsiCbc` $(am__append_1) \
 cbc_generic_LDFLAGS = -rpath $(libdir)
 
 # List all source files for this executable, including headers
-cbc_SOURCES = CoinSolve.cpp unitTestClp.cpp $(am__append_27)
+@COIN_HAS_CLP_TRUE@cbc_SOURCES = CoinSolve.cpp unitTestClp.cpp \
+@COIN_HAS_CLP_TRUE@	$(am__append_28)
 
 # The following file is not to be distributed, since it is "borrowed" from Clp
-nodist_cbc_SOURCES = CbcOrClpParam.cpp
+@COIN_HAS_CLP_TRUE@nodist_cbc_SOURCES = CbcOrClpParam.cpp
 
 # Additional COIN libraries
-cbc_LDADD = libCbc.la $(CGLOBJDIR)/src/libCgl.la \
-	$(OSIOBJDIR)/src/OsiClp/libOsiClp.la \
-	$(OSIOBJDIR)/src/libOsi.la $(CLPOBJDIR)/src/libClp.la \
-	$(COINUTILSOBJDIR)/src/libCoinUtils.la $(am__append_28)
+@COIN_HAS_CLP_TRUE@cbc_LDADD = libCbc.la $(CGLOBJDIR)/src/libCgl.la \
+@COIN_HAS_CLP_TRUE@	$(OSIOBJDIR)/src/OsiClp/libOsiClp.la \
+@COIN_HAS_CLP_TRUE@	$(OSIOBJDIR)/src/libOsi.la \
+@COIN_HAS_CLP_TRUE@	$(CLPOBJDIR)/src/libClp.la \
+@COIN_HAS_CLP_TRUE@	$(COINUTILSOBJDIR)/src/libCoinUtils.la \
+@COIN_HAS_CLP_TRUE@	$(am__append_29)
 
 # Finally, the -rpath flag is used by libtool to make sure that the shared
 # library is found (in the lib install directory) when we are using dynamic
 # libraries.
-cbc_LDFLAGS = -rpath $(libdir)
+@COIN_HAS_CLP_TRUE@cbc_LDFLAGS = -rpath $(libdir)
 
 # This line is necessary to allow VPATH compilation with MS compilers
 # on Cygwin

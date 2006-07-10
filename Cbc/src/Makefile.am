@@ -161,6 +161,8 @@ cbc_generic_LDFLAGS = -rpath $(libdir)
 #                            cbc program                               #
 ########################################################################
 
+if COIN_HAS_CLP
+
 # Name of the executable compiled in this directory.  We want it to be
 # installed in the 'bin' directory
 bin_PROGRAMS += cbc
@@ -193,6 +195,8 @@ cbc_LDADD += $(ASLLIB)
 AM_CPPFLAGS += $(ASL_CPPFLAGS)
 endif
 
+endif
+
 ########################################################################
 #                            Additional flags                          #
 ########################################################################
@@ -216,7 +220,9 @@ AM_CPPFLAGS += \
 	-I`$(CYGPATH_W) $(CGLSRCDIR)/src/CglRedSplit` \
 	-I`$(CYGPATH_W) $(CGLSRCDIR)/src/CglTwomir` \
 	-I`$(CYGPATH_W) $(COINUTILSSRCDIR)/src` \
-	-I`$(CYGPATH_W) $(OSISRCDIR)/src`
+	-I`$(CYGPATH_W) $(COINUTILSOBJDIR)/inc` \
+	-I`$(CYGPATH_W) $(OSISRCDIR)/src` \
+	-I`$(CYGPATH_W) $(OSIOBJDIR)/inc`
 
 # List additional defines
 AM_CPPFLAGS += -DCOIN_NO_CLP_MESSAGE -DUSE_CBCCONFIG

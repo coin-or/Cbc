@@ -44,7 +44,7 @@ AC_CANONICAL_BUILD
 AC_COIN_PROJECTDIR_INIT
 
 # Check if user wants to produce debugging code
-AC_COIN_DEBUG_COMPILE
+AC_COIN_DEBUG_COMPILE(Cbc)
 
 # Get the name of the C++ compiler and appropriate compiler options
 AC_COIN_PROG_CXX
@@ -73,7 +73,7 @@ AC_MSG_CHECKING(for CBC default solver)
 AC_ARG_WITH([cbc-default-solver],
             AC_HELP_STRING([--with-cbc-default-solver],
                            [specify default solver for Cbc in lower case letters (if not given, clp is assumed)]),
-            [cbc_default_solver=$with_val],
+            [cbc_default_solver=$withval],
             [cbc_default_solver=clp])
 AC_MSG_RESULT($cbc_default_solver)
 

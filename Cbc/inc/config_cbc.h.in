@@ -4,8 +4,11 @@
    */
 #undef CBC_DEFAULT_SOLVER
 
-/* If defined, debug sanity checks are performed during runtime */
-#undef COIN_DEBUG
+/* Define to the debug sanity check level (0 is no test) */
+#undef COIN_CBC_CHECKLEVEL
+
+/* Define to the debug verbosity level (0 is no output) */
+#undef COIN_CBC_VERBOSITY
 
 /* If defined, the Ampl Solver Library is available. */
 #undef COIN_HAS_ASL

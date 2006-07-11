@@ -651,13 +651,19 @@ void CbcModel::branchAndBound(int doStatistics)
   If the linear relaxation of the root is infeasible, bail out now. Otherwise,
   continue with processing the root node.
 */
-  if (!feasible)
-  { handler_->message(CBC_INFEAS,messages_)<< CoinMessageEol ;
+  if (!feasible) {
     status_ = 0 ;
-    secondaryStatus_ = 1;
+    if (!solver_->isProvenDualInfeasible()) {
+      handler_->message(CBC_INFEAS,messages_)<< CoinMessageEol ;
+      secondaryStatus_ = 1;
+    } else {
+      handler_->message(CBC_UNBOUNDED,messages_)<< CoinMessageEol ;
+      secondaryStatus_ = 7;
+    }
     originalContinuousObjective_ = COIN_DBL_MAX;
     solverCharacteristics_ = NULL;
-    return ; }
+    return ;
+  }
   // Save objective (just so user can access it)
   originalContinuousObjective_ = solver_->getObjValue();
   bestPossibleObjective_=originalContinuousObjective_;
@@ -1698,7 +1704,9 @@ void CbcModel::branchAndBound(int doStatistics)
   if ( numberStoppedSubTrees_)
     status_=1;
   if (!status_) {
-    bestPossibleObjective_=bestObjective_;
+    // Set best possible unless stopped on gap
+    if(secondaryStatus_ != 2)
+      bestPossibleObjective_=bestObjective_;
     handler_->message(CBC_END_GOOD,messages_)
       << bestObjective_ << numberIterations_ << numberNodes_<<getCurrentSeconds()
       << CoinMessageEol ;
@@ -3079,6 +3087,24 @@ bool
 CbcModel::isProvenInfeasible() const
 {
   if (!status_ && bestObjective_>=1.0e30)
+    return true;
+  else
+    return false;
+}
+// Was continuous solution unbounded
+bool 
+CbcModel::isContinuousUnbounded() const
+{
+  if (!status_ && secondaryStatus_==7)
+    return true;
+  else
+    return false;
+}
+// Was continuous solution unbounded
+bool 
+CbcModel::isProvenDualInfeasible() const
+{
+  if (!status_ && secondaryStatus_==7)
     return true;
   else
     return false;

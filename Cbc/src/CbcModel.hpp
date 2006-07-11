@@ -668,6 +668,10 @@ public:
     bool isProvenOptimal() const;
     /// Is  infeasiblity proven (or none better than cutoff)?
     bool isProvenInfeasible() const;
+    /// Was continuous solution unbounded
+    bool isContinuousUnbounded() const;
+    /// Was continuous solution unbounded
+    bool isProvenDualInfeasible() const;
     /// Node limit reached?
     bool isNodeLimitReached() const;
     /// Time limit reached?
@@ -700,6 +704,7 @@ public:
         4 stopped on time
         5 stopped on user event
         6 stopped on solutions
+        7 linear relaxation unbounded
     */
     inline int secondaryStatus() const
     { return secondaryStatus_;};

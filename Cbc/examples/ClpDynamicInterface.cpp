@@ -138,7 +138,7 @@ void ClpDynamicInterface::resolve()
       }
       if (nInt==numberColumns2&&!iPass&&!cbcModel_->getNodeCount())
         printf("pure 0-1 problem\n");
-#define ENUMERATE
+      //#define ENUMERATE
 #ifndef ENUMERATE
       CbcModel small(solver);
       // Normal type strategy

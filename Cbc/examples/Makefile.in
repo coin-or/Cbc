@@ -22,7 +22,9 @@ OBJS =  $(DRIVER).@OBJEXT@ \
 	CbcCompareUser.@OBJEXT@ \
 	CbcSolver2.@OBJEXT@ \
 	CbcSolver3.@OBJEXT@ \
+	ClpDynamicInterface.@OBJEXT@ \
 	ClpQuadInterface.@OBJEXT@ \
+	CoinWarmStartBasisDynamic.@OBJEXT@ \
 	CbcBranchFollow2.@OBJEXT@ \
 	CbcBranchUser.@OBJEXT@ \
 	CbcBranchLink.@OBJEXT@
@@ -79,6 +81,7 @@ CLEANFILES = \
 	crew.@OBJEXT@ crew@EXEEXT@ \
 	driver2.@OBJEXT@ driver2@EXEEXT@ \
 	driver.@OBJEXT@ driver@EXEEXT@ \
+	dynamic.@OBJEXT@ dynamic@EXEEXT@ \
 	fast0507b.@OBJEXT@ fast0507b@EXEEXT@ \
 	fast0507.@OBJEXT@ fast0507@EXEEXT@ \
 	gear.@OBJEXT@ gear@EXEEXT@ \

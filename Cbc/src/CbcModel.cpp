@@ -3837,9 +3837,18 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
 	if (generate) {
 	  bool mustResolve = 
 	    generator_[i]->generateCuts(theseCuts,fullScan,node) ;
-          if(numberRowCutsBefore < theseCuts.sizeRowCuts() &&
+	  int numberRowCutsAfter = theseCuts.sizeRowCuts() ;
+          if(numberRowCutsBefore < numberRowCutsAfter &&
              generator_[i]->mustCallAgain())
             keepGoing=true; // say must go round
+	  // Check last cut to see if infeasible
+          if(numberRowCutsBefore < numberRowCutsAfter) {
+	    const OsiRowCut * thisCut = theseCuts.rowCutPtr(numberRowCutsAfter-1) ;
+	    if (thisCut->lb()>thisCut->ub()) {
+	      feasible = false; // sub-problem is infeasible
+	      break;
+	    }
+	  }
 #ifdef CBC_DEBUG
           {
             int numberRowCutsAfter = theseCuts.sizeRowCuts() ;

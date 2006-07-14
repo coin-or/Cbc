@@ -7551,7 +7551,10 @@ bool
 CbcModel::isInitialSolveProvenPrimalInfeasible() const 
 {
   if (status_!=-1) {
-    return originalContinuousObjective_>=1.0e50;
+    if (status_==0&&secondaryStatus_==7)
+      return false;
+    else
+      return originalContinuousObjective_>=1.0e50;
   } else {
     return solver_->isProvenPrimalInfeasible();
   }
@@ -7561,7 +7564,10 @@ bool
 CbcModel::isInitialSolveProvenDualInfeasible() const 
 {
   if (status_!=-1) {
-    return originalContinuousObjective_>=1.0e50;
+    if (status_==0&&secondaryStatus_==7)
+      return true;
+    else
+      return false;
   } else {
     return solver_->isProvenDualInfeasible();
   }

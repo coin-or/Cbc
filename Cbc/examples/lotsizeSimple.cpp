@@ -40,7 +40,7 @@ int main (int argc, const char *argv[])
   
   // Read in model using argv[1]
   // and assert that it is a clean model
-  std::string mpsFileName = "miplib3/10teams";
+  std::string mpsFileName = "miplib3/bell3a";
   if (argc>=2) mpsFileName = argv[1];
   int numMpsReadErrors = solver1.readMps(mpsFileName.c_str(),"");
   assert(numMpsReadErrors==0);
@@ -68,7 +68,16 @@ int main (int argc, const char *argv[])
   // Do lotsizing
   CbcObject ** objects = new CbcObject * [numberLot];
   double * points = new double [largestBound+1];
+  // If extra parameter not numeric then every second
   bool ordinary = argc==2;
+  int increment=2;
+  if (!ordinary&&argc>2) {
+    int value = atoi(argv[2]);
+    if (value>2) {
+      printf("Using increment of %d\n",value);
+      increment=value;
+    }
+  } 
   CoinIotaN(points,largestBound+1,0.0);
   
   numberLot=0;
@@ -83,16 +92,23 @@ int main (int argc, const char *argv[])
         // recreate points
         int i;
         int n=0;
-        if (((iUp-iLo)&1)==0) {
-          // every second
-          for (i=iLo;i<=iUp;i+=2) 
-            points[n++]=i;
-        } else {
-          // iLo,iLo+1 then every second
-          points[n++]=iLo;
-          for (i=iLo+1;i<=iUp;i+=2) 
-            points[n++]=i;
-        }
+        if (increment==2) {
+	  if (((iUp-iLo)&1)==0) {
+	    // every second
+	    for (i=iLo;i<=iUp;i+=2) 
+	      points[n++]=i;
+	  } else {
+	    // iLo,iLo+1 then every second
+	    points[n++]=iLo;
+	    for (i=iLo+1;i<=iUp;i+=2) 
+	      points[n++]=i;
+	  }
+	} else {
+	  for (i=iLo;i<=iUp;i+=increment) 
+	    points[n++]=i;
+	  if (i-increment!=iUp)
+	    points[n++]=iUp; // add in last
+	}
         objects[numberLot++]= new CbcLotsizeSimple(&model,iColumn,n,
                                                    points);
       }

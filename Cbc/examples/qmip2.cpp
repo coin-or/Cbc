@@ -187,13 +187,14 @@ int main (int argc, const char *argv[])
   solver1.setHintParam(OsiDoReducePrint,true,OsiHintTry);
   // This clones solver 
   CbcModel model(solver1);
-  // Add stored cuts
-  model.addCutGenerator(&stored,-1,"Stored");
+  // Add stored cuts (making sure at all depths)
+  model.addCutGenerator(&stored,1,"Stored",true,false,false,-100,1,-1);
   /*  You need the next few lines -
       a) so that cut generator will always be called again if it generated cuts
       b) it is known that matrix is not enough to define problem so do cuts even
          if it looks integer feasible at continuous optimum.
-      c) a solution found ny strong branching will be ignored.
+      c) a solution found by strong branching will be ignored.
+      d) don't recompute a solution once found
   */
   // Make sure cut generator called correctly (a)
   model.cutGenerator(0)->setMustCallAgain(true);
@@ -204,6 +205,8 @@ int main (int argc, const char *argv[])
   // Say no to all solutions by strong branching (c)
   CbcFeasibilityNoStrong noStrong;
   model.setProblemFeasibility(noStrong);
+  // Say don't recompute solution d)
+  model.setSpecialOptions(4);
   
   double time1 = CoinCpuTime();
 

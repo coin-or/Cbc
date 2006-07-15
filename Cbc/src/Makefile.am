@@ -59,10 +59,8 @@ bin_PROGRAMS = cbc-generic
 cbc_generic_SOURCES = \
 	CbcMain.cpp \
 	CbcParam.cpp CbcParam.hpp \
+	CbcCbcParam.cpp \
 	unitTest.cpp
-
-# The following file is not to be distributed, since it is "borrowed" from Clp
-nodist_cbc_generic_SOURCES = CbcOrClpParam.cpp
 
 cbc_generic_LDADD = libCbc.la \
 	$(CGLOBJDIR)/src/libCgl.la \
@@ -170,10 +168,8 @@ bin_PROGRAMS += cbc
 # List all source files for this executable, including headers
 cbc_SOURCES = \
 	CoinSolve.cpp \
+	CbcCbcParam.cpp \
 	unitTestClp.cpp
-
-# The following file is not to be distributed, since it is "borrowed" from Clp
-nodist_cbc_SOURCES = CbcOrClpParam.cpp
 
 # Additional COIN libraries
 cbc_LDADD = libCbc.la \

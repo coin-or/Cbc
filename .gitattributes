@@ -15,6 +15,7 @@ Cbc/examples/dynamic.cpp -text
 Cbc/examples/lotsizeSimple.cpp -text
 Cbc/examples/qmip2.cpp -text
 Cbc/inc/config_cbc.h.in -text
+Cbc/src/CbcCbcParam.cpp -text
 /LICENSE -text
 /README -text
 /config.guess -text

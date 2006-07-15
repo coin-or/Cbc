@@ -929,7 +929,11 @@ void CbcModel::branchAndBound(int doStatistics)
       }
       numberPassesLeft--;
       if (anyAction == -1)
-      { feasible = resolve(NULL,10) != 0 ;
+      { 
+	//if (solverCharacteristics_->solverType()!=4) 
+	  feasible = resolve(NULL,10) != 0 ;
+	  //else
+	  //feasible = solveWithCuts(cuts,maximumCutPassesAtRoot_,NULL);
       if (problemFeasibility_->feasible(this,0)<0) {
         feasible=false; // pretend infeasible
       }
@@ -1440,7 +1444,10 @@ void CbcModel::branchAndBound(int doStatistics)
               // can do quick optimality check
               int easy=2;
               solver_->setHintParam(OsiDoInBranchAndCut,true,OsiHintDo,&easy) ;
-              feasible = resolve(node ? node->nodeInfo() : NULL,11) != 0 ;
+	      //if (solverCharacteristics_->solverType()!=4) 
+		feasible = resolve(node ? node->nodeInfo() : NULL,11) != 0 ;
+		//else
+		//feasible = solveWithCuts(cuts,maximumCutPasses_,node);
               solver_->setHintParam(OsiDoInBranchAndCut,true,OsiHintDo,NULL) ;
 	      resolved = true ;
               if (problemFeasibility_->feasible(this,0)<0) {
@@ -1906,7 +1913,8 @@ void CbcModel::branchAndBound(int doStatistics)
   { setCutoff(1.0e50) ; // As best solution should be worse than cutoff
     phase_=5;
     double increment = getDblParam(CbcModel::CbcCutoffIncrement) ;
-    bestObjective_ += 100.0*increment+1.0e-3;
+    if ((specialOptions_&4)!=0)
+      bestObjective_ += 100.0*increment+1.0e-3; // only set if we are going to solve
     setBestSolution(CBC_END_SOLUTION,bestObjective_,bestSolution_,true) ;
     continuousSolver_->resolve() ;
     if (!continuousSolver_->isProvenOptimal())

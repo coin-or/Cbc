@@ -150,14 +150,14 @@ libCbc_la_OBJECTS = $(am_libCbc_la_OBJECTS)
 @COIN_HAS_CLP_TRUE@am__EXEEXT_1 = cbc$(EXEEXT)
 binPROGRAMS_INSTALL = $(INSTALL_PROGRAM)
 PROGRAMS = $(bin_PROGRAMS)
-am__cbc_SOURCES_DIST = CoinSolve.cpp unitTestClp.cpp Cbc_ampl.cpp \
-	Cbc_ampl.h
+am__cbc_SOURCES_DIST = CoinSolve.cpp CbcCbcParam.cpp unitTestClp.cpp \
+	Cbc_ampl.cpp Cbc_ampl.h
 @COIN_HAS_ASL_TRUE@@COIN_HAS_CLP_TRUE@am__objects_1 =  \
 @COIN_HAS_ASL_TRUE@@COIN_HAS_CLP_TRUE@	Cbc_ampl.$(OBJEXT)
 @COIN_HAS_CLP_TRUE@am_cbc_OBJECTS = CoinSolve.$(OBJEXT) \
-@COIN_HAS_CLP_TRUE@	unitTestClp.$(OBJEXT) $(am__objects_1)
-@COIN_HAS_CLP_TRUE@nodist_cbc_OBJECTS = CbcOrClpParam.$(OBJEXT)
-cbc_OBJECTS = $(am_cbc_OBJECTS) $(nodist_cbc_OBJECTS)
+@COIN_HAS_CLP_TRUE@	CbcCbcParam.$(OBJEXT) unitTestClp.$(OBJEXT) \
+@COIN_HAS_CLP_TRUE@	$(am__objects_1)
+cbc_OBJECTS = $(am_cbc_OBJECTS)
 am__DEPENDENCIES_1 =
 @COIN_HAS_ASL_TRUE@@COIN_HAS_CLP_TRUE@am__DEPENDENCIES_2 =  \
 @COIN_HAS_ASL_TRUE@@COIN_HAS_CLP_TRUE@	$(am__DEPENDENCIES_1)
@@ -169,10 +169,8 @@ am__DEPENDENCIES_1 =
 @COIN_HAS_CLP_TRUE@	$(COINUTILSOBJDIR)/src/libCoinUtils.la \
 @COIN_HAS_CLP_TRUE@	$(am__DEPENDENCIES_2)
 am_cbc_generic_OBJECTS = CbcMain.$(OBJEXT) CbcParam.$(OBJEXT) \
-	unitTest.$(OBJEXT)
-nodist_cbc_generic_OBJECTS = CbcOrClpParam.$(OBJEXT)
-cbc_generic_OBJECTS = $(am_cbc_generic_OBJECTS) \
-	$(nodist_cbc_generic_OBJECTS)
+	CbcCbcParam.$(OBJEXT) unitTest.$(OBJEXT)
+cbc_generic_OBJECTS = $(am_cbc_generic_OBJECTS)
 @COIN_HAS_CLP_TRUE@am__DEPENDENCIES_3 =  \
 @COIN_HAS_CLP_TRUE@	$(OSIOBJDIR)/src/OsiClp/libOsiClp.la \
 @COIN_HAS_CLP_TRUE@	$(CLPOBJDIR)/src/libClp.la
@@ -226,8 +224,7 @@ LTCOMPILE = $(LIBTOOL) --tag=CC --mode=compile $(CC) $(DEFS) \
 CCLD = $(CC)
 LINK = $(LIBTOOL) --tag=CC --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
 	$(AM_LDFLAGS) $(LDFLAGS) -o $@
-SOURCES = $(libCbc_la_SOURCES) $(cbc_SOURCES) $(nodist_cbc_SOURCES) \
-	$(cbc_generic_SOURCES) $(nodist_cbc_generic_SOURCES)
+SOURCES = $(libCbc_la_SOURCES) $(cbc_SOURCES) $(cbc_generic_SOURCES)
 DIST_SOURCES = $(libCbc_la_SOURCES) $(am__cbc_SOURCES_DIST) \
 	$(cbc_generic_SOURCES)
 includeHEADERS_INSTALL = $(INSTALL_HEADER)
@@ -476,11 +473,9 @@ libCbc_la_LDFLAGS = $(LT_LDFLAGS)
 cbc_generic_SOURCES = \
 	CbcMain.cpp \
 	CbcParam.cpp CbcParam.hpp \
+	CbcCbcParam.cpp \
 	unitTest.cpp
 
-
-# The following file is not to be distributed, since it is "borrowed" from Clp
-nodist_cbc_generic_SOURCES = CbcOrClpParam.cpp
 
 # Finally the Osi Coin library (many of the above need it)
 cbc_generic_LDADD = libCbc.la $(CGLOBJDIR)/src/libCgl.la \
@@ -529,11 +524,8 @@ AM_CPPFLAGS = -I`$(CYGPATH_W) $(OSISRCDIR)/src/OsiCbc` $(am__append_1) \
 cbc_generic_LDFLAGS = -rpath $(libdir)
 
 # List all source files for this executable, including headers
-@COIN_HAS_CLP_TRUE@cbc_SOURCES = CoinSolve.cpp unitTestClp.cpp \
-@COIN_HAS_CLP_TRUE@	$(am__append_28)
-
-# The following file is not to be distributed, since it is "borrowed" from Clp
-@COIN_HAS_CLP_TRUE@nodist_cbc_SOURCES = CbcOrClpParam.cpp
+@COIN_HAS_CLP_TRUE@cbc_SOURCES = CoinSolve.cpp CbcCbcParam.cpp \
+@COIN_HAS_CLP_TRUE@	unitTestClp.cpp $(am__append_28)
 
 # Additional COIN libraries
 @COIN_HAS_CLP_TRUE@cbc_LDADD = libCbc.la $(CGLOBJDIR)/src/libCgl.la \
@@ -696,6 +688,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcBranchCut.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcBranchDynamic.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcBranchLotsize.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcCbcParam.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcCompareActual.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcCountRowCut.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcCutGenerator.Plo@am__quote@
@@ -710,7 +703,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcMessage.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcModel.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcNode.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcOrClpParam.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcParam.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcStatistics.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcStrategy.Plo@am__quote@

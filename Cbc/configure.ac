@@ -90,14 +90,6 @@ case $cbc_default_solver in
     ;;
 esac
 
-# Steal some files from Clp - they are going to be deleted by a
-# distclean in src (see the Makefile.am there)
-if test x"$coin_has_clp" != xunavailable; then
-  AC_MSG_NOTICE([Stealing CbcOrClpParam's files from Clp])
-  AC_CONFIG_LINKS([src/CbcOrClpParam.cpp:../Clp/src/CbcOrClpParam.cpp
-                   src/CbcOrClpParam.hpp:../Clp/src/CbcOrClpParam.hpp])
-fi
-
 #############################################################################
 #                            Third party solvers                            #
 #############################################################################

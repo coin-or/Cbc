@@ -542,11 +542,14 @@ public:
   inline void setGuessedObjectiveValue(double value)
   {guessedObjectiveValue_=value;};
   /// Branching object for this node
-  const CbcBranchingObject * branchingObject() const
+  inline const CbcBranchingObject * branchingObject() const
   { return branch_;};
   /// Modifiable branching object for this node
-  CbcBranchingObject * modifiableBranchingObject() const
+  inline CbcBranchingObject * modifiableBranchingObject() const
   { return branch_;};
+  /// Set branching object for this node (takes ownership)
+  inline void setBranchingObject(CbcBranchingObject * branchingObject)
+  { branch_ = branchingObject;};
 
 private:
   // Data

@@ -3324,3 +3324,55 @@ CbcFixVariable::applyToSolver(OsiSolverInterface * solver, int state) const
     //printf(" => %g\n",solver->getColUpper()[iColumn]);
   }
 }
+
+// Default Constructor 
+CbcDummyBranchingObject::CbcDummyBranchingObject(CbcModel * model)
+  :CbcBranchingObject(model,0,0,0.5)
+{
+  numberBranchesLeft_=1;
+}
+
+
+// Copy constructor 
+CbcDummyBranchingObject::CbcDummyBranchingObject ( const CbcDummyBranchingObject & rhs) :CbcBranchingObject(rhs)
+{
+}
+
+// Assignment operator 
+CbcDummyBranchingObject & 
+CbcDummyBranchingObject::operator=( const CbcDummyBranchingObject& rhs)
+{
+  if (this != &rhs) {
+    CbcBranchingObject::operator=(rhs);
+  }
+  return *this;
+}
+CbcBranchingObject * 
+CbcDummyBranchingObject::clone() const
+{ 
+  return (new CbcDummyBranchingObject(*this));
+}
+
+
+// Destructor 
+CbcDummyBranchingObject::~CbcDummyBranchingObject ()
+{
+}
+
+/*
+  Perform a dummy branch
+*/
+double
+CbcDummyBranchingObject::branch(bool normalBranch)
+{
+  if (model_->messageHandler()->logLevel()>2&&normalBranch)
+    print(normalBranch);
+  numberBranchesLeft_=0;
+  return 0.0;
+}
+// Print what would happen  
+void
+CbcDummyBranchingObject::print(bool normalBranch)
+{
+  printf("Dummy branch\n");
+}

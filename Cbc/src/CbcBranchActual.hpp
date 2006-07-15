@@ -1010,5 +1010,40 @@ protected:
   /// Variable
   int * variable_;
 };
+/** Dummy branching object
+
+  This object specifies a one-way dummy branch.
+  This is so one can carry on branching even when it looks feasible
+*/
+
+class CbcDummyBranchingObject : public CbcBranchingObject {
+
+public:
+
+  /// Default constructor 
+  CbcDummyBranchingObject (CbcModel * model=NULL);
+
+  /// Copy constructor 
+  CbcDummyBranchingObject ( const CbcDummyBranchingObject &);
+   
+  /// Assignment operator 
+  CbcDummyBranchingObject & operator= (const CbcDummyBranchingObject& rhs);
+
+  /// Clone
+  virtual CbcBranchingObject * clone() const;
+
+  /// Destructor 
+  virtual ~CbcDummyBranchingObject ();
+  
+  /** \brief Dummy branch
+  */
+  virtual double branch(bool normalBranch=false);
+
+  /** \brief Print something about branch - only if log level high
+  */
+  virtual void print(bool normalBranch);
+
+};
+
 
 #endif

@@ -1547,8 +1547,30 @@ void CbcModel::branchAndBound(int doStatistics)
           else
             statistics_[numberNodes2_-1]->sayInfeasible();
         }
-	if (newNode)
-	{ if (newNode->variable() >= 0)
+	if (newNode) {
+	  if (newNode->variable() < 0&&solverCharacteristics_->solverType()==4) {
+	    // need to check if any cuts would do anything
+	    OsiCuts theseCuts;
+	    for (int i = 0;i<numberCutGenerators_;i++) {
+	      bool generate = generator_[i]->normal();
+	      // skip if not optimal and should be (maybe a cut generator has fixed variables)
+	      if (generator_[i]->needsOptimalBasis()&&!solver_->basisIsAvailable())
+		generate=false;
+	      if (!generator_[i]->mustCallAgain())
+		generate=false; // only special cuts
+	      if (generate) {
+		generator_[i]->generateCuts(theseCuts,true,NULL) ;
+		int numberRowCutsAfter = theseCuts.sizeRowCuts() ;
+		if (numberRowCutsAfter) {
+		  // need dummy branch
+		  newNode->setBranchingObject(new CbcDummyBranchingObject(this));
+		  newNode->nodeInfo()->initializeInfo(1);
+		  break;
+		}
+	      }
+	    }
+	  }
+	  if (newNode->variable() >= 0)
 	  { handler_->message(CBC_BRANCH,messages_)
 	       << numberNodes_<< newNode->objectiveValue()
 	       << newNode->numberUnsatisfied()<< newNode->depth()

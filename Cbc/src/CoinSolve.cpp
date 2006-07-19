@@ -4218,6 +4218,8 @@ static void generateCode(const char * fileName,int type,int preProcess)
   strcpy(line[numberLines++],"0#include \"CbcStrategy.hpp\"");
   strcpy(line[numberLines++],"0#include \"CglPreProcess.hpp\"");
   strcpy(line[numberLines++],"0#include \"CoinTime.hpp\"");
+  if (preProcess>0) 
+    strcpy(line[numberLines++],"0#include \"CglProbing.hpp\""); // possibly redundant
   while (fgets(line[numberLines],MAXONELINE,fp)) {
     assert (numberLines<MAXLINES);
     clean(line[numberLines]);

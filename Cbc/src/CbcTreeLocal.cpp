@@ -327,7 +327,7 @@ CbcTreeLocal::passInSolution(const double * solution, double solutionValue)
 }
 // Return the top node of the heap 
 CbcNode * 
-CbcTreeLocal::top() {
+CbcTreeLocal::top() const{
 #ifdef CBC_DEBUG
   int smallest=9999999;
   int largest=-1;
@@ -387,7 +387,7 @@ CbcTreeLocal::pop() {
 }
 // Test if empty - does work if so
 bool 
-CbcTreeLocal::empty()   
+CbcTreeLocal::empty() 
 {
   if (typeCuts_<0) 
     return !nodes_.size();

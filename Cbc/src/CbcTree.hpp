@@ -37,7 +37,7 @@ public:
   void setComparison(CbcCompareBase  &compare);
 
   /// Return the top node of the heap 
-  virtual CbcNode * top();
+  virtual CbcNode * top() const;
 
   /// Add a node to the heap
   virtual void push(CbcNode * x);

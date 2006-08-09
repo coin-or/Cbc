@@ -42,7 +42,8 @@ CbcTree::setComparison(CbcCompareBase  &compare)
 
 // Return the top node of the heap 
 CbcNode * 
-CbcTree::top() {
+CbcTree::top() const
+{
   return nodes_.front();
 }
 
@@ -103,6 +104,8 @@ CbcTree::bestNode(double cutoff)
     } else {
       // make impossible
       nodes_[iBest]=NULL;
+      printf("needs coding CbcTree::bestNode\n");
+      abort();
     }
   } else if (best) {
     // take off

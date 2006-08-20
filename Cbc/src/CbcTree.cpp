@@ -104,8 +104,8 @@ CbcTree::bestNode(double cutoff)
     } else {
       // make impossible
       nodes_[iBest]=NULL;
-      printf("needs coding CbcTree::bestNode\n");
-      abort();
+      //printf("needs coding CbcTree::bestNode\n");
+      //abort();
     }
   } else if (best) {
     // take off

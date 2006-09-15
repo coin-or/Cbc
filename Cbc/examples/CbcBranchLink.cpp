@@ -14,6 +14,7 @@
 #include "CbcMessage.hpp"
 #include "CbcBranchLink.hpp"
 #include "CoinError.hpp"
+#include "CoinPackedMatrix.hpp"
 
 // Default Constructor 
 CbcLink::CbcLink ()
@@ -21,7 +22,8 @@ CbcLink::CbcLink ()
     weights_(NULL),
     numberMembers_(0),
     numberLinks_(0),
-    which_(NULL)
+    which_(NULL),
+    sosType_(1)
 {
 }
 
@@ -31,7 +33,8 @@ CbcLink::CbcLink (CbcModel * model,  int numberMembers,
   : CbcObject(model),
     numberMembers_(numberMembers),
     numberLinks_(numberLinks),
-    which_(NULL)
+    which_(NULL),
+    sosType_(1)
 {
   id_=identifier;
   if (numberMembers_) {
@@ -60,11 +63,12 @@ CbcLink::CbcLink (CbcModel * model,  int numberMembers,
 
 // Useful constructor (which are indices)
 CbcLink::CbcLink (CbcModel * model,  int numberMembers,
-	   int numberLinks, const int * which , const double * weights, int identifier)
+	   int numberLinks, int sosType, const int * which , const double * weights, int identifier)
   : CbcObject(model),
     numberMembers_(numberMembers),
     numberLinks_(numberLinks),
-    which_(NULL)
+    which_(NULL),
+    sosType_(sosType)
 {
   id_=identifier;
   if (numberMembers_) {
@@ -97,6 +101,7 @@ CbcLink::CbcLink ( const CbcLink & rhs)
 {
   numberMembers_ = rhs.numberMembers_;
   numberLinks_ = rhs.numberLinks_;
+  sosType_ = rhs.sosType_;
   if (numberMembers_) {
     weights_ = CoinCopyOfArray(rhs.weights_,numberMembers_);
     which_ = CoinCopyOfArray(rhs.which_,numberMembers_*numberLinks_);
@@ -123,6 +128,7 @@ CbcLink::operator=( const CbcLink& rhs)
     delete [] which_;
     numberMembers_ = rhs.numberMembers_;
     numberLinks_ = rhs.numberLinks_;
+    sosType_ = rhs.sosType_;
     if (numberMembers_) {
       weights_ = CoinCopyOfArray(rhs.weights_,numberMembers_);
       which_ = CoinCopyOfArray(rhs.which_,numberMembers_*numberLinks_);
@@ -179,7 +185,8 @@ CbcLink::infeasibility(int & preferredWay) const
                    iColumn,j,value,upper[iColumn]);
 #endif
         } 
-        weight += weights_[j]*CoinMin(value,upper[iColumn]);
+	value = CoinMin(value,upper[iColumn]);
+        weight += weights_[j]*value;
         if (firstNonZero<0)
           firstNonZero=j;
         lastNonZero=j;
@@ -187,17 +194,118 @@ CbcLink::infeasibility(int & preferredWay) const
     }
     base += numberLinks_;
   }
+  double valueInfeasibility;
   preferredWay=1;
-  if (lastNonZero-firstNonZero>=1) {
+  if (lastNonZero-firstNonZero>=sosType_) {
     // find where to branch
     assert (sum>0.0);
     weight /= sum;
-    double value = lastNonZero-firstNonZero+1;
-    value *= 0.5/((double) numberMembers_);
-    return value;
+    valueInfeasibility = lastNonZero-firstNonZero+1;
+    valueInfeasibility *= 0.5/((double) numberMembers_);
+    //#define DISTANCE
+#ifdef DISTANCE
+    assert (sosType_==1); // code up
+    /* may still be satisfied.
+       For LOS type 2 we might wish to move coding around
+       and keep initial info in model_ for speed
+    */
+    int iWhere;
+    bool possible=false;
+    for (iWhere=firstNonZero;iWhere<=lastNonZero;iWhere++) {
+      if (fabs(weight-weights_[iWhere])<1.0e-8) {
+	possible=true;
+	break;
+      }
+    }
+    if (possible) {
+      // One could move some of this (+ arrays) into model_
+      const CoinPackedMatrix * matrix = solver->getMatrixByCol();
+      const double * element = matrix->getMutableElements();
+      const int * row = matrix->getIndices();
+      const CoinBigIndex * columnStart = matrix->getVectorStarts();
+      const int * columnLength = matrix->getVectorLengths();
+      const double * rowSolution = solver->getRowActivity();
+      const double * rowLower = solver->getRowLower();
+      const double * rowUpper = solver->getRowUpper();
+      int numberRows = matrix->getNumRows();
+      double * array = new double [numberRows];
+      CoinZeroN(array,numberRows);
+      int * which = new int [numberRows];
+      int n=0;
+      int base=numberLinks_*firstNonZero;
+      for (j=firstNonZero;j<=lastNonZero;j++) {
+	for (int k=0;k<numberLinks_;k++) {
+	  int iColumn = which_[base+k];
+	  double value = CoinMax(0.0,solution[iColumn]);
+	  if (value>integerTolerance&&upper[iColumn]) {
+	    value = CoinMin(value,upper[iColumn]);
+	    for (int j=columnStart[iColumn];j<columnStart[iColumn]+columnLength[iColumn];j++) {
+	      int iRow = row[j];
+	      double a = array[iRow];
+	      if (a) {
+		a += value*element[j];
+		if (!a)
+		  a = 1.0e-100;
+	      } else {
+		which[n++]=iRow;
+		a=value*element[j];
+		assert (a);
+	      }
+	      array[iRow]=a;
+	    }
+	  }
+	}
+	base += numberLinks_;
+      }
+      base=numberLinks_*iWhere;
+      for (int k=0;k<numberLinks_;k++) {
+	int iColumn = which_[base+k];
+	const double value = 1.0;
+	for (int j=columnStart[iColumn];j<columnStart[iColumn]+columnLength[iColumn];j++) {
+	  int iRow = row[j];
+	  double a = array[iRow];
+	  if (a) {
+	    a -= value*element[j];
+	    if (!a)
+	      a = 1.0e-100;
+	  } else {
+	    which[n++]=iRow;
+	    a=-value*element[j];
+	    assert (a);
+	  }
+	  array[iRow]=a;
+	}
+      }
+      for (j=0;j<n;j++) {
+	int iRow = which[j];
+	// moving to point will increase row solution by this
+	double distance = array[iRow];
+	if (distance>1.0e-8) {
+	  if (distance+rowSolution[iRow]>rowUpper[iRow]+1.0e-8) {
+	    possible=false;
+	    break;
+	  }
+	} else if (distance<-1.0e-8) {
+	  if (distance+rowSolution[iRow]<rowLower[iRow]-1.0e-8) {
+	    possible=false;
+	    break;
+	  } 
+	}
+      }
+      for (j=0;j<n;j++)
+	array[which[j]]=0.0;
+      delete [] array;
+      delete [] which;
+      if (possible) {
+	valueInfeasibility=0.0;
+	printf("possible %d %d %d\n",firstNonZero,lastNonZero,iWhere);
+      }
+    }
+#endif
   } else {
-    return 0.0; // satisfied
+    valueInfeasibility = 0.0; // satisfied
   }
+  return valueInfeasibility;
 }
 
 // This looks at solution and sets bounds to contain solution
@@ -230,7 +338,109 @@ CbcLink::feasibleRegion()
     }
     base += numberLinks_;
   }
-  assert (lastNonZero-firstNonZero==0) ;
+#ifdef DISTANCE
+  if (lastNonZero-firstNonZero>sosType_-1) {
+    /* may still be satisfied.
+       For LOS type 2 we might wish to move coding around
+       and keep initial info in model_ for speed
+    */
+    int iWhere;
+    bool possible=false;
+    for (iWhere=firstNonZero;iWhere<=lastNonZero;iWhere++) {
+      if (fabs(weight-weights_[iWhere])<1.0e-8) {
+	possible=true;
+	break;
+      }
+    }
+    if (possible) {
+      // One could move some of this (+ arrays) into model_
+      const CoinPackedMatrix * matrix = solver->getMatrixByCol();
+      const double * element = matrix->getMutableElements();
+      const int * row = matrix->getIndices();
+      const CoinBigIndex * columnStart = matrix->getVectorStarts();
+      const int * columnLength = matrix->getVectorLengths();
+      const double * rowSolution = solver->getRowActivity();
+      const double * rowLower = solver->getRowLower();
+      const double * rowUpper = solver->getRowUpper();
+      int numberRows = matrix->getNumRows();
+      double * array = new double [numberRows];
+      CoinZeroN(array,numberRows);
+      int * which = new int [numberRows];
+      int n=0;
+      int base=numberLinks_*firstNonZero;
+      for (j=firstNonZero;j<=lastNonZero;j++) {
+	for (int k=0;k<numberLinks_;k++) {
+	  int iColumn = which_[base+k];
+	  double value = CoinMax(0.0,solution[iColumn]);
+	  if (value>integerTolerance&&upper[iColumn]) {
+	    value = CoinMin(value,upper[iColumn]);
+	    for (int j=columnStart[iColumn];j<columnStart[iColumn]+columnLength[iColumn];j++) {
+	      int iRow = row[j];
+	      double a = array[iRow];
+	      if (a) {
+		a += value*element[j];
+		if (!a)
+		  a = 1.0e-100;
+	      } else {
+		which[n++]=iRow;
+		a=value*element[j];
+		assert (a);
+	      }
+	      array[iRow]=a;
+	    }
+	  }
+	}
+	base += numberLinks_;
+      }
+      base=numberLinks_*iWhere;
+      for (int k=0;k<numberLinks_;k++) {
+	int iColumn = which_[base+k];
+	const double value = 1.0;
+	for (int j=columnStart[iColumn];j<columnStart[iColumn]+columnLength[iColumn];j++) {
+	  int iRow = row[j];
+	  double a = array[iRow];
+	  if (a) {
+	    a -= value*element[j];
+	    if (!a)
+	      a = 1.0e-100;
+	  } else {
+	    which[n++]=iRow;
+	    a=-value*element[j];
+	    assert (a);
+	  }
+	  array[iRow]=a;
+	}
+      }
+      for (j=0;j<n;j++) {
+	int iRow = which[j];
+	// moving to point will increase row solution by this
+	double distance = array[iRow];
+	if (distance>1.0e-8) {
+	  if (distance+rowSolution[iRow]>rowUpper[iRow]+1.0e-8) {
+	    possible=false;
+	    break;
+	  }
+	} else if (distance<-1.0e-8) {
+	  if (distance+rowSolution[iRow]<rowLower[iRow]-1.0e-8) {
+	    possible=false;
+	    break;
+	  } 
+	}
+      }
+      for (j=0;j<n;j++)
+	array[which[j]]=0.0;
+      delete [] array;
+      delete [] which;
+      if (possible) {
+	printf("possible feas region %d %d %d\n",firstNonZero,lastNonZero,iWhere);
+	firstNonZero=iWhere;
+	lastNonZero=iWhere;
+      }
+    }
+  }
+#else
+  assert (lastNonZero-firstNonZero<sosType_) ;
+#endif
   base=0;
   for (j=0;j<firstNonZero;j++) {
     for (int k=0;k<numberLinks_;k++) {
@@ -287,7 +497,7 @@ CbcLink::createBranch(int way)
     }
     base += numberLinks_;
   }
-  assert (lastNonZero-firstNonZero>=1) ;
+  assert (lastNonZero-firstNonZero>=sosType_) ;
   // find where to branch
   assert (sum>0.0);
   weight /= sum;
@@ -296,7 +506,17 @@ CbcLink::createBranch(int way)
   for (iWhere=firstNonZero;iWhere<lastNonZero;iWhere++) 
     if (weight<weights_[iWhere+1])
       break;
-  separator = 0.5 *(weights_[iWhere]+weights_[iWhere+1]);
+  if (sosType_==1) {
+    // SOS 1
+    separator = 0.5 *(weights_[iWhere]+weights_[iWhere+1]);
+  } else {
+    // SOS 2
+    if (iWhere==firstNonFixed)
+      iWhere++;;
+    if (iWhere==lastNonFixed-1)
+      iWhere = lastNonFixed-2;
+    separator = weights_[iWhere+1];
+  }
   // create object
   CbcBranchingObject * branch;
   branch = new CbcLinkBranchingObject(model_,this,way,separator);

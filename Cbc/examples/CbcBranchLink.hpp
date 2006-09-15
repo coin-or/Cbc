@@ -33,7 +33,7 @@ public:
       If weights null then 0,1,2..
   */
   CbcLink (CbcModel * model, int numberMembers,
-           int numberLinks, const int * which,
+           int numberLinks, int typeSOS, const int * which,
            const double * weights, int setNumber);
   
   // Copy constructor 
@@ -84,6 +84,8 @@ private:
    int numberLinks_;
   /// Members
   int * which_;
+  /// Type 1 or 2
+  int sosType_;
 };
 /** Branching object for Special ordered sets
 

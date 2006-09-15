@@ -112,6 +112,10 @@ public:
   /// Ranges
   inline double * bound() const
   { return bound_;};
+  /** \brief Return true if object can take part in normal heuristics
+  */
+  virtual bool canDoHeuristics() const 
+  {return false;};
 
 private:
   /// Just for debug (CBC_PRINT defined in CbcBranchLotsize.cpp)

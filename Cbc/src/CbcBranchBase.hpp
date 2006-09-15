@@ -146,6 +146,10 @@ public:
   */
   virtual bool boundBranch() const 
   {return true;};
+  /** \brief Return true if object can take part in normal heuristics
+  */
+  virtual bool canDoHeuristics() const 
+  {return true;};
   /** Returns floor and ceiling i.e. closest valid points
   */
   virtual void floorCeiling(double & floorValue, double & ceilingValue, double value,

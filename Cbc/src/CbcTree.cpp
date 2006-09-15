@@ -75,6 +75,8 @@ CbcTree::bestNode(double cutoff)
   while (!best&&nodes_.size()) {
     best = nodes_.front();
     if (best)
+      assert(best->objectiveValue()!=COIN_DBL_MAX&&best->nodeInfo());
+    if (best&&best->objectiveValue()!=COIN_DBL_MAX&&best->nodeInfo())
       assert (best->nodeInfo()->numberBranchesLeft());
     if (!best||best->objectiveValue()>=cutoff) {
       // take off
@@ -83,12 +85,16 @@ CbcTree::bestNode(double cutoff)
       best=NULL;
     }
   }
-  if (best&&comparison_.test_->fullScan()) {
+  // switched off for now
+  if (best&&comparison_.test_->fullScan()&&false) {
     CbcNode * saveBest=best;
     int n=nodes_.size();
     int iBest=-1;
     for (int i=0;i<n;i++) {
-      if (nodes_[i])
+      // temp
+      assert (nodes_[i]);
+      assert (nodes_[i]->nodeInfo());
+      if (nodes_[i]&&nodes_[i]->objectiveValue()!=COIN_DBL_MAX&&nodes_[i]->nodeInfo())
         assert (nodes_[i]->nodeInfo()->numberBranchesLeft());
       if (nodes_[i]&&nodes_[i]->objectiveValue()<cutoff
           &&comparison_.alternateTest(best,nodes_[i])) {
@@ -104,8 +110,6 @@ CbcTree::bestNode(double cutoff)
     } else {
       // make impossible
       nodes_[iBest]=NULL;
-      //printf("needs coding CbcTree::bestNode\n");
-      //abort();
     }
   } else if (best) {
     // take off
@@ -187,7 +191,9 @@ CbcTree::cleanTree(CbcModel * model, double cutoff, double & bestPossibleObjecti
     
     model->addCuts1(node,lastws);
     // Decrement cut counts 
-    int numberLeft = node->nodeInfo()->numberBranchesLeft();
+    assert (node);
+    //assert (node->nodeInfo());
+    int numberLeft = (node->nodeInfo()) ? node->nodeInfo()->numberBranchesLeft() : 0;
     int i;
     for (i=0;i<model->currentNumberCuts();i++) {
       // take off node
@@ -200,7 +206,8 @@ CbcTree::cleanTree(CbcModel * model, double cutoff, double & bestPossibleObjecti
       }
     }
     // node should not have anything pointing to it
-    node->nodeInfo()->throwAway();
+    if (node->nodeInfo())   
+      node->nodeInfo()->throwAway();
     delete node ;
     delete lastws ;
   }

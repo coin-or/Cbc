@@ -58,7 +58,12 @@ CbcCompareDepth::~CbcCompareDepth ()
 bool 
 CbcCompareDepth::test (CbcNode * x, CbcNode * y)
 {
-  return x->depth() < y->depth();
+  int testX = x->depth();
+  int testY = y->depth();
+  if (testX!=testY)
+    return testX < testY;
+  else
+    return equalityTest(x,y); // so ties will be broken in consistent manner
 }
 // Create C++ lines to get to current state
 void
@@ -111,7 +116,12 @@ CbcCompareObjective::~CbcCompareObjective ()
 bool 
 CbcCompareObjective::test (CbcNode * x, CbcNode * y)
 {
-  return x->objectiveValue() > y->objectiveValue();
+  double testX = x->objectiveValue();
+  double testY = y->objectiveValue();
+  if (testX!=testY)
+    return testX > testY;
+  else
+    return equalityTest(x,y); // so ties will be broken in consistent manner
 }
 // Create C++ lines to get to current state
 void
@@ -213,17 +223,27 @@ CbcCompareDefault::test (CbcNode * x, CbcNode * y)
     /* printf("x %d %d %g, y %d %d %g\n",
        x->numberUnsatisfied(),x->depth(),x->objectiveValue(),
        y->numberUnsatisfied(),y->depth(),y->objectiveValue()); */
-    if (x->numberUnsatisfied() > y->numberUnsatisfied())
+    if (x->numberUnsatisfied() > y->numberUnsatisfied()) {
       return true;
-    else if (x->numberUnsatisfied() < y->numberUnsatisfied())
+    } else if (x->numberUnsatisfied() < y->numberUnsatisfied()) {
       return false;
-    else
-      return x->depth() < y->depth();
+    } else {
+      int testX = x->depth();
+      int testY = y->depth();
+      if (testX!=testY)
+	return testX < testY;
+      else
+	return equalityTest(x,y); // so ties will be broken in consistent manner
+    }
   } else {
     // after solution
     double weight = CoinMax(weight_,0.0);
-    return x->objectiveValue()+ weight*x->numberUnsatisfied() > 
-      y->objectiveValue() + weight*y->numberUnsatisfied();
+    double testX =  x->objectiveValue()+ weight*x->numberUnsatisfied();
+    double testY = y->objectiveValue() + weight*y->numberUnsatisfied();
+    if (testX!=testY)
+      return testX > testY;
+    else
+      return equalityTest(x,y); // so ties will be broken in consistent manner
   }
 #endif
 }
@@ -343,7 +363,12 @@ CbcCompareEstimate::~CbcCompareEstimate ()
 bool 
 CbcCompareEstimate::test (CbcNode * x, CbcNode * y)
 {
-  return x->guessedObjectiveValue() >  y->guessedObjectiveValue() ;
+  double testX = x->guessedObjectiveValue();
+  double testY = y->guessedObjectiveValue();
+  if (testX!=testY)
+    return testX > testY;
+  else
+    return equalityTest(x,y); // so ties will be broken in consistent manner
 }
 
 // Create C++ lines to get to current state
@@ -354,4 +379,3 @@ CbcCompareEstimate::generateCpp( FILE * fp)
   fprintf(fp,"3  CbcCompareEstimate compare;\n");
   fprintf(fp,"3  cbcModel->setNodeComparison(compare);\n");
 }
-

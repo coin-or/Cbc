@@ -21,7 +21,7 @@ CbcLink::CbcLink ()
     weights_(NULL),
     numberMembers_(0),
     numberLinks_(0),
-    first_(-1)
+    which_(NULL)
 {
 }
 
@@ -31,11 +31,12 @@ CbcLink::CbcLink (CbcModel * model,  int numberMembers,
   : CbcObject(model),
     numberMembers_(numberMembers),
     numberLinks_(numberLinks),
-    first_(first)
+    which_(NULL)
 {
   id_=identifier;
   if (numberMembers_) {
     weights_ = new double[numberMembers_];
+    which_ = new int[numberMembers_*numberLinks_];
     if (weights) {
       memcpy(weights_,weights,numberMembers_*sizeof(double));
     } else {
@@ -49,6 +50,42 @@ CbcLink::CbcLink (CbcModel * model,  int numberMembers,
       assert (weights_[i]>last+1.0e-12);
       last=weights_[i];
     }
+    for (i=0;i<numberMembers_*numberLinks_;i++) {
+      which_[i]=first+i;
+    }
+  } else {
+    weights_ = NULL;
+  }
+}
+
+// Useful constructor (which are indices)
+CbcLink::CbcLink (CbcModel * model,  int numberMembers,
+	   int numberLinks, const int * which , const double * weights, int identifier)
+  : CbcObject(model),
+    numberMembers_(numberMembers),
+    numberLinks_(numberLinks),
+    which_(NULL)
+{
+  id_=identifier;
+  if (numberMembers_) {
+    weights_ = new double[numberMembers_];
+    which_ = new int[numberMembers_*numberLinks_];
+    if (weights) {
+      memcpy(weights_,weights,numberMembers_*sizeof(double));
+    } else {
+      for (int i=0;i<numberMembers_;i++)
+        weights_[i]=i;
+    }
+    // weights must be increasing
+    int i;
+    double last=-COIN_DBL_MAX;
+    for (i=0;i<numberMembers_;i++) {
+      assert (weights_[i]>last+1.0e-12);
+      last=weights_[i];
+    }
+    for (i=0;i<numberMembers_*numberLinks_;i++) {
+      which_[i]= which[i];
+    }
   } else {
     weights_ = NULL;
   }
@@ -60,12 +97,12 @@ CbcLink::CbcLink ( const CbcLink & rhs)
 {
   numberMembers_ = rhs.numberMembers_;
   numberLinks_ = rhs.numberLinks_;
-  first_ = rhs.first_;
   if (numberMembers_) {
-    weights_ = new double[numberMembers_];
-    memcpy(weights_,rhs.weights_,numberMembers_*sizeof(double));
+    weights_ = CoinCopyOfArray(rhs.weights_,numberMembers_);
+    which_ = CoinCopyOfArray(rhs.which_,numberMembers_*numberLinks_);
   } else {
     weights_ = NULL;
+    which_ = NULL;
   }
 }
 
@@ -83,14 +120,15 @@ CbcLink::operator=( const CbcLink& rhs)
   if (this!=&rhs) {
     CbcObject::operator=(rhs);
     delete [] weights_;
+    delete [] which_;
     numberMembers_ = rhs.numberMembers_;
     numberLinks_ = rhs.numberLinks_;
-    first_ = rhs.first_;
     if (numberMembers_) {
-      weights_ = new double[numberMembers_];
-      memcpy(weights_,rhs.weights_,numberMembers_*sizeof(double));
+      weights_ = CoinCopyOfArray(rhs.weights_,numberMembers_);
+      which_ = CoinCopyOfArray(rhs.which_,numberMembers_*numberLinks_);
     } else {
       weights_ = NULL;
+      which_ = NULL;
     }
   }
   return *this;
@@ -100,6 +138,7 @@ CbcLink::operator=( const CbcLink& rhs)
 CbcLink::~CbcLink ()
 {
   delete [] weights_;
+  delete [] which_;
 }
 
 // Infeasibility - large is 0.5
@@ -111,7 +150,7 @@ CbcLink::infeasibility(int & preferredWay) const
   int lastNonZero = -1;
   OsiSolverInterface * solver = model_->solver();
   const double * solution = model_->testSolution();
-  const double * lower = solver->getColLower();
+  //const double * lower = solver->getColLower();
   const double * upper = solver->getColUpper();
   double integerTolerance = 
     model_->getDblParam(CbcModel::CbcIntegerTolerance);
@@ -120,12 +159,12 @@ CbcLink::infeasibility(int & preferredWay) const
 
   // check bounds etc
   double lastWeight=-1.0e100;
-  int base=first_;
+  int base=0;
   for (j=0;j<numberMembers_;j++) {
     for (int k=0;k<numberLinks_;k++) {
-      int iColumn = base+k;
-      if (lower[iColumn])
-        throw CoinError("Non zero lower bound in CBCLink","infeasibility","CbcLink");
+      int iColumn = which_[base+k];
+      //if (lower[iColumn])
+      //throw CoinError("Non zero lower bound in CBCLink","infeasibility","CbcLink");
       if (lastWeight>=weights_[j]-1.0e-7)
         throw CoinError("Weights too close together in CBCLink","infeasibility","CbcLink");
       double value = CoinMax(0.0,solution[iColumn]);
@@ -176,10 +215,10 @@ CbcLink::feasibleRegion()
   double weight = 0.0;
   double sum =0.0;
 
-  int base=first_;
+  int base=0;
   for (j=0;j<numberMembers_;j++) {
     for (int k=0;k<numberLinks_;k++) {
-      int iColumn = base+k;
+      int iColumn = which_[base+k];
       double value = CoinMax(0.0,solution[iColumn]);
       sum += value;
       if (value>integerTolerance&&upper[iColumn]) {
@@ -192,10 +231,10 @@ CbcLink::feasibleRegion()
     base += numberLinks_;
   }
   assert (lastNonZero-firstNonZero==0) ;
-  base=first_;
+  base=0;
   for (j=0;j<firstNonZero;j++) {
     for (int k=0;k<numberLinks_;k++) {
-      int iColumn = base+k;
+      int iColumn = which_[base+k];
       solver->setColUpper(iColumn,0.0);
     }
     base += numberLinks_;
@@ -204,7 +243,7 @@ CbcLink::feasibleRegion()
   base += numberLinks_;
   for (j=lastNonZero+1;j<numberMembers_;j++) {
     for (int k=0;k<numberLinks_;k++) {
-      int iColumn = base+k;
+      int iColumn = which_[base+k];
       solver->setColUpper(iColumn,0.0);
     }
     base += numberLinks_;
@@ -228,10 +267,10 @@ CbcLink::createBranch(int way)
   int lastNonZero = -1;
   double weight = 0.0;
   double sum =0.0;
-  int base=first_;
+  int base=0;
   for (j=0;j<numberMembers_;j++) {
     for (int k=0;k<numberLinks_;k++) {
-      int iColumn = base+k;
+      int iColumn = which_[base+k];
       if (upper[iColumn]) {
         double value = CoinMax(0.0,solution[iColumn]);
         sum += value;
@@ -312,6 +351,7 @@ CbcLinkBranchingObject::branch(bool normalBranch)
   int numberMembers = set_->numberMembers();
   int numberLinks = set_->numberLinks();
   const double * weights = set_->weights();
+  const int * which = set_->which();
   OsiSolverInterface * solver = model_->solver();
   //const double * lower = solver->getColLower();
   //const double * upper = solver->getColUpper();
@@ -323,10 +363,10 @@ CbcLinkBranchingObject::branch(bool normalBranch)
 	break;
     }
     assert (i<numberMembers);
-    int base=set_->first()+i*numberLinks;;
+    int base=i*numberLinks;;
     for (;i<numberMembers;i++) {
       for (int k=0;k<numberLinks;k++) {
-        int iColumn = base+k;
+        int iColumn = which[base+k];
         solver->setColUpper(iColumn,0.0);
       }
       base += numberLinks;
@@ -334,13 +374,13 @@ CbcLinkBranchingObject::branch(bool normalBranch)
     way_=1;	  // Swap direction
   } else {
     int i;
-    int base=set_->first();
+    int base=0;
     for ( i=0;i<numberMembers;i++) { 
       if (weights[i] >= separator_) {
 	break;
       } else {
         for (int k=0;k<numberLinks;k++) {
-          int iColumn = base+k;
+	  int iColumn = which[base+k];
           solver->setColUpper(iColumn,0.0);
         }
         base += numberLinks;
@@ -358,6 +398,7 @@ CbcLinkBranchingObject::print(bool normalBranch)
   int numberMembers = set_->numberMembers();
   int numberLinks = set_->numberLinks();
   const double * weights = set_->weights();
+  const int * which = set_->which();
   OsiSolverInterface * solver = model_->solver();
   const double * upper = solver->getColUpper();
   int first=numberMembers;
@@ -365,10 +406,10 @@ CbcLinkBranchingObject::print(bool normalBranch)
   int numberFixed=0;
   int numberOther=0;
   int i;
-  int base=set_->first();
+  int base=0;
   for ( i=0;i<numberMembers;i++) {
     for (int k=0;k<numberLinks;k++) {
-      int iColumn = base+k;
+      int iColumn = which[base+k];
       double bound = upper[iColumn];
       if (bound) {
         first = CoinMin(first,i);
@@ -378,16 +419,16 @@ CbcLinkBranchingObject::print(bool normalBranch)
     base += numberLinks;
   }
   // *** for way - up means fix all those in down section
-  base=set_->first();
+  base=0;
   if (way_<0) {
     printf("SOS Down");
     for ( i=0;i<numberMembers;i++) {
+      if (weights[i] > separator_) 
+	break;
       for (int k=0;k<numberLinks;k++) {
-        int iColumn = base+k;
+        int iColumn = which[base+k];
         double bound = upper[iColumn];
-        if (weights[i] > separator_)
-          break;
-        else if (bound)
+	if (bound)
           numberOther++;
       }
       base += numberLinks;
@@ -395,7 +436,7 @@ CbcLinkBranchingObject::print(bool normalBranch)
     assert (i<numberMembers);
     for (;i<numberMembers;i++) {
       for (int k=0;k<numberLinks;k++) {
-        int iColumn = base+k;
+        int iColumn = which[base+k];
         double bound = upper[iColumn];
         if (bound)
           numberFixed++;
@@ -405,12 +446,12 @@ CbcLinkBranchingObject::print(bool normalBranch)
   } else {
     printf("SOS Up");
     for ( i=0;i<numberMembers;i++) {
+      if (weights[i] >= separator_)
+	break;
       for (int k=0;k<numberLinks;k++) {
-        int iColumn = base+k;
+        int iColumn = which[base+k];
         double bound = upper[iColumn];
-        if (weights[i] >= separator_)
-          break;
-        else if (bound)
+	if (bound)
           numberFixed++;
       }
       base += numberLinks;
@@ -418,7 +459,7 @@ CbcLinkBranchingObject::print(bool normalBranch)
     assert (i<numberMembers);
     for (;i<numberMembers;i++) {
       for (int k=0;k<numberLinks;k++) {
-        int iColumn = base+k;
+        int iColumn = which[base+k];
         double bound = upper[iColumn];
         if (bound)
           numberOther++;
@@ -427,7 +468,7 @@ CbcLinkBranchingObject::print(bool normalBranch)
     }
   }
   assert ((numberFixed%numberLinks)==0);
-  assert ((numberFixed%numberOther)==0);
+  assert ((numberOther%numberLinks)==0);
   printf(" - at %g, free range %d (%g) => %d (%g), %d would be fixed, %d other way\n",
 	 separator_,first,weights[first],last,weights[last],numberFixed/numberLinks,
          numberOther/numberLinks);

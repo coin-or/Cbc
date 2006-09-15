@@ -198,6 +198,8 @@ public:
   void setDownInformation(double changeObjectiveDown, int changeInfeasibilityDown);
   /// Pass in information on a up branch
   void setUpInformation(double changeObjectiveUp, int changeInfeasibilityUp);
+  /// Pass in probing information
+  void setProbingInformation(int fixedDown, int fixedUp);
 
   /// Print - 0 -summary, 1 just before strong
   void print(int type=0, double value=0.0) const;
@@ -247,8 +249,19 @@ protected:
   int numberTimesUpInfeasible_;
   /// Number of branches before we trust
   int numberBeforeTrust_;
+  /// Number of local probing fixings going down
+  int numberTimesDownLocalFixed_;
+  /// Number of local probing fixings going up
+  int numberTimesUpLocalFixed_;
+  /// Number of total probing fixings going down
+  double numberTimesDownTotalFixed_;
+  /// Number of total probing fixings going up
+  double numberTimesUpTotalFixed_;
+  /// Number of times probing done 
+  int numberTimesProbingTotal_;
   /** Method - 
-      ??
+      0 - pseudo costs
+      1 - probing
   */
   int method_;
 };

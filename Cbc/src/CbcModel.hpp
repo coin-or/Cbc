@@ -19,6 +19,7 @@ class OsiRowCut;
 class OsiBabSolver;
 class OsiRowCutDebugger;
 class CglCutGenerator;
+class CglTreeProbingInfo;
 class CbcHeuristic;
 class CbcObject;
 class CbcTree;
@@ -1104,13 +1105,13 @@ public:
   { return branchingMethod_;};
   /// Set the branching decision method.
   inline void setBranchingMethod(CbcBranchDecision * method)
-  { branchingMethod_ = method;};
+  { branchingMethod_ = method->clone();};
   /** Set the branching method
   
     \overload
   */
   inline void setBranchingMethod(CbcBranchDecision & method)
-  { branchingMethod_ = &method;};
+  { branchingMethod_ = method.clone();};
   //@}
 
   /** \name Row (constraint) and Column (variable) cut generation */
@@ -1300,6 +1301,7 @@ public:
       3 bit (8) - fast analyze
       4 bit (16) - non-linear model and someone too lazy to code "times" correctly - so skip row check
       5 bit (32) - keep names
+      6 bit (64) - try for dominated columns
   */
   /// Set special options
   inline void setSpecialOptions(int value)
@@ -1381,6 +1383,8 @@ public:
     penalties.  Returns number fixed
   */
   int reducedCostFix() ;
+  /// Encapsulates solver resolve
+  int resolve(OsiSolverInterface * solver);
 
   /** Return an empty basis object of the specified size
 
@@ -1468,6 +1472,9 @@ public:
   /// Get a pointer to current node (be careful)
   inline CbcNode * currentNode() const
   { return currentNode_;};
+  /// Get a pointer to probing info
+  inline CglTreeProbingInfo * probingInfo() const
+  { return probingInfo_;};
   /// Set the number of iterations done in strong branching.
   inline void setNumberStrongIterations(int number)
   { numberStrongIterations_ = number;};
@@ -1792,6 +1799,12 @@ private:
   int maximumStatistics_;
   /// statistics
   CbcStatistics ** statistics_;
+  /// Maximum depth reached
+  int maximumDepthActual_;
+  /// Number of reduced cost fixings
+  double numberDJFixed_;
+  /// Probing info
+  CglTreeProbingInfo * probingInfo_;
   /// Number of fixed by analyze at root
   int numberFixedAtRoot_;
   /// Number fixed by analyze so far

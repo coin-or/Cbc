@@ -153,6 +153,13 @@ public:
   inline const double * weights() const
   { return weights_;};
 
+  /** \brief Return true if object can take part in normal heuristics
+  */
+  virtual bool canDoHeuristics() const 
+  {return (sosType_==1&&integerValued_);};
+  /// Set whether set is integer valued or not
+  inline void setIntegerValued(bool yesNo)
+  { integerValued_=yesNo;};
 private:
   /// data
 
@@ -165,6 +172,8 @@ private:
   int numberMembers_;
   /// SOS type
    int sosType_;
+  /// Whether integer valued
+  bool integerValued_;
 };
 
 /// Define a single integer class

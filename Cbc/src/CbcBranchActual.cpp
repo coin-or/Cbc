@@ -337,7 +337,8 @@ CbcSOS::CbcSOS ()
     members_(NULL),
     weights_(NULL),
     numberMembers_(0),
-    sosType_(-1)
+    sosType_(-1),
+    integerValued_(false)
 {
 }
 
@@ -349,6 +350,7 @@ CbcSOS::CbcSOS (CbcModel * model,  int numberMembers,
     sosType_(type)
 {
   id_=identifier;
+  integerValued_ = type==1;
   if (numberMembers_) {
     members_ = new int[numberMembers_];
     weights_ = new double[numberMembers_];
@@ -361,6 +363,13 @@ CbcSOS::CbcSOS (CbcModel * model,  int numberMembers,
     }
     // sort so weights increasing
     CoinSort_2(weights_,weights_+numberMembers_,members_);
+    double last = -COIN_DBL_MAX;
+    int i;
+    for (i=0;i<numberMembers_;i++) {
+      double possible = CoinMax(last+1.0e-10,weights_[i]);
+      weights_[i] = possible;
+      last=possible;
+    }
   } else {
     members_ = NULL;
     weights_ = NULL;
@@ -374,6 +383,7 @@ CbcSOS::CbcSOS ( const CbcSOS & rhs)
 {
   numberMembers_ = rhs.numberMembers_;
   sosType_ = rhs.sosType_;
+  integerValued_ = rhs.integerValued_;
   if (numberMembers_) {
     members_ = new int[numberMembers_];
     weights_ = new double[numberMembers_];
@@ -402,6 +412,7 @@ CbcSOS::operator=( const CbcSOS& rhs)
     delete [] weights_;
     numberMembers_ = rhs.numberMembers_;
     sosType_ = rhs.sosType_;
+    integerValued_ = rhs.integerValued_;
     if (numberMembers_) {
       members_ = new int[numberMembers_];
       weights_ = new double[numberMembers_];

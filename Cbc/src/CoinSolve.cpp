@@ -15,7 +15,7 @@
 #include "CoinPragma.hpp"
 #include "CoinHelperFunctions.hpp"
 // Same version as CBC
-#define CBCVERSION "1.01.00"
+#define CBCVERSION "1.02.00"
 
 #include "CoinMpsIO.hpp"
 

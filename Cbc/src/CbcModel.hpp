@@ -27,6 +27,7 @@ class CbcStrategy;
 class CbcFeasibilityBase;
 class CbcStatistics;
 class CbcEventHandler ;
+class CglPreProcess;
 
 //#############################################################################
 
@@ -219,6 +220,20 @@ public:
       to the strengthened model (or NULL if infeasible)
     */
      OsiSolverInterface *  strengthenedModel();
+  /** preProcess problem - replacing solver
+      If makeEquality true then <= cliques converted to ==.
+      Presolve will be done numberPasses times.
+
+      Returns NULL if infeasible
+
+      If makeEquality is 1 add slacks to get cliques,
+      if 2 add slacks to get sos (but only if looks plausible) and keep sos info
+  */
+  CglPreProcess * preProcess( int makeEquality=0, int numberPasses=5,
+		  int tuning=5);
+  /** Does postprocessing - original solver back.
+      User has to delete process */
+  void postProcess(CglPreProcess * process);
 private:
     /** \brief Evaluate a subproblem using cutting planes and heuristics
 

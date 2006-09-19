@@ -53,6 +53,7 @@
 #include "CglStored.hpp"
 
 #include "CoinTime.hpp"
+#include "CoinMpsIO.hpp"
 
 #include "CbcCompareActual.hpp"
 #include "CbcTree.hpp"
@@ -5561,6 +5562,7 @@ CbcModel::findIntegers(bool startAgain,int type)
   variables.
 */
   delete [] integerVariable_;
+  integerVariable_ = NULL;
   numberIntegers_=0;
   int numberColumns = getNumCols();
   int iColumn;
@@ -5580,11 +5582,34 @@ CbcModel::findIntegers(bool startAgain,int type)
     else
       oldObject[nObjects++]=oldObject[iObject];
   }
+  // See if there any SOS
+#ifdef COIN_HAS_CLP
+  if (!nObjects) {
+    OsiClpSolverInterface * clpSolver 
+      = dynamic_cast<OsiClpSolverInterface *> (solver_);
+    if (clpSolver&&clpSolver->numberSOS()) {
+      // deal with sos
+      const CoinSet * setInfo = clpSolver->setInfo();
+      int numberSOS = clpSolver->numberSOS();
+      nObjects=0;
+      delete [] oldObject;
+      oldObject = new CbcObject * [numberSOS];
+      for (int i=0;i<numberSOS;i++) {
+	int type = setInfo[i].setType();
+	int n=setInfo[i].numberEntries();
+	const int * which = setInfo[i].which();
+	const double * weights = setInfo[i].weights();
+	oldObject[nObjects++] = new CbcSOS(this,n,which,weights,i,type);
+      }
+    }
+  }
+#endif
     
 /*
   Found any? Allocate an array to hold the indices of the integer variables.
   Make a large enough array for all objects
 */
+  delete [] integerVariable_;
   object_ = new CbcObject * [numberIntegers_+nObjects];
   numberObjects_=numberIntegers_+nObjects;
   integerVariable_ = new int [numberIntegers_];
@@ -7953,6 +7978,202 @@ void
 CbcModel::passInSolverCharacteristics(OsiBabSolver * solverCharacteristics)
 {
   solverCharacteristics_ = solverCharacteristics;
+}
+/* preProcess problem - replacing solver
+   If makeEquality true then <= cliques converted to ==.
+   Presolve will be done numberPasses times.
+   
+   Returns NULL if infeasible
+   
+   If makeEquality is 1 add slacks to get cliques,
+   if 2 add slacks to get sos (but only if looks plausible) and keep sos info
+*/
+CglPreProcess *
+CbcModel::preProcess( int makeEquality, int numberPasses, int tuning)
+{
+  CglPreProcess * process = new CglPreProcess();
+  // Default set of cut generators
+  CglProbing generator1;
+  generator1.setUsingObjective(true);
+  generator1.setMaxPass(3);
+  generator1.setMaxProbeRoot(solver_->getNumCols());
+  generator1.setMaxElements(100);
+  generator1.setMaxLookRoot(50);
+  generator1.setRowCuts(3);
+  // Add in generators
+  process->addCutGenerator(&generator1);
+  process->messageHandler()->setLogLevel(this->logLevel());
+  /* model may not have created objects
+     If none then create
+  */
+  if (!numberIntegers_||!numberObjects_) {
+    this->findIntegers(true,1);
+  }
+  // Do SOS
+  int i;
+  int numberSOS2=0;
+  for (i=0;i<numberObjects_;i++) {
+    CbcSOS * objSOS =
+      dynamic_cast <CbcSOS *>(object_[i]) ;
+    if (objSOS) {
+      int type = objSOS->sosType();
+      if (type==2)
+	numberSOS2++;
+    }
+  }
+  if (numberSOS2) {
+    // SOS
+    int numberColumns = solver_->getNumCols();
+    char * prohibited = new char[numberColumns];
+    memset(prohibited,0,numberColumns);
+    for (i=0;i<numberObjects_;i++) {
+      CbcSOS * objSOS =
+	dynamic_cast <CbcSOS *>(object_[i]) ;
+      if (objSOS) {
+	int type = objSOS->sosType();
+	if (type==2) {
+	  int n=objSOS->numberMembers();
+	  const int * which = objSOS->members();
+	  for (int j=0;j<n;j++) {
+	    int iColumn = which[j];
+	    prohibited[iColumn]=1;
+	  }
+	}
+      }
+    }
+    process->passInProhibited(prohibited,numberColumns);
+    delete [] prohibited;
+  }
+  // Tell solver we are not in Branch and Cut
+  solver_->setHintParam(OsiDoInBranchAndCut,true,OsiHintDo) ;
+  OsiSolverInterface * newSolver = process->preProcessNonDefault(*solver_, makeEquality,
+								numberPasses, tuning);
+  // Tell solver we are not in Branch and Cut
+  solver_->setHintParam(OsiDoInBranchAndCut,false,OsiHintDo) ;
+  if (newSolver) {
+    int numberOriginalObjects=numberObjects_;
+    OsiSolverInterface * originalSolver = solver_;
+    solver_=newSolver->clone(); // clone as process owns solver
+    // redo sequence
+    numberIntegers_=0;
+    int numberColumns = solver_->getNumCols();
+    int nOrig = originalSolver->getNumCols();
+    const int * originalColumns = process->originalColumns();
+    // allow for cliques etc
+    nOrig = CoinMax(nOrig,originalColumns[numberColumns-1]+1);
+    CbcObject ** originalObject = object_;
+    // object number or -1
+    int * temp = new int[nOrig];
+    int iColumn;
+    for (iColumn=0;iColumn<nOrig;iColumn++) 
+      temp[iColumn]=-1;
+    int iObject;
+    numberObjects_=0;
+    int nNonInt=0;
+    for (iObject=0;iObject<numberOriginalObjects;iObject++) {
+      iColumn = originalObject[iObject]->columnNumber();
+      if (iColumn<0) {
+	nNonInt++;
+      } else {
+	temp[iColumn]=iObject;
+      }
+    }
+    int numberNewIntegers=0;
+    int numberOldIntegers=0;
+    int numberOldOther=0;
+    for (iColumn=0;iColumn<numberColumns;iColumn++) {
+      int jColumn = originalColumns[iColumn];
+      if (temp[jColumn]>=0) {
+	int iObject= temp[jColumn];
+	CbcSimpleInteger * obj =
+	  dynamic_cast <CbcSimpleInteger *>(originalObject[iObject]) ;
+	if (obj) 
+	  numberOldIntegers++;
+	else
+	  numberOldOther++;
+      } else if (isInteger(iColumn)) {
+	numberNewIntegers++;
+      }
+    }
+    /*
+      Allocate an array to hold the indices of the integer variables.
+      Make a large enough array for all objects
+    */
+    numberObjects_= numberNewIntegers+numberOldIntegers+numberOldOther+nNonInt;
+    object_ = new CbcObject * [numberObjects_];
+    delete [] integerVariable_;
+    integerVariable_ = new int [numberNewIntegers+numberOldIntegers];
+    /*
+      Walk the variables again, filling in the indices and creating objects for
+      the integer variables. Initially, the objects hold the index and upper &
+      lower bounds.
+    */
+    numberIntegers_=0;
+    for (iColumn=0;iColumn<numberColumns;iColumn++) {
+      int jColumn = originalColumns[iColumn];
+      if (temp[jColumn]>=0) {
+	int iObject= temp[jColumn];
+	CbcSimpleInteger * obj =
+	  dynamic_cast <CbcSimpleInteger *>(originalObject[iObject]) ;
+	if (obj) {
+	  object_[numberIntegers_] = originalObject[iObject]->clone();
+	  // redo ids etc
+	  object_[numberIntegers_]->redoSequenceEtc(this,numberColumns,originalColumns);
+	  integerVariable_[numberIntegers_++]=iColumn;
+	}
+      } else if (isInteger(iColumn)) {
+	object_[numberIntegers_] =
+	  new CbcSimpleInteger(this,numberIntegers_,iColumn);
+	integerVariable_[numberIntegers_++]=iColumn;
+      }
+    }
+    numberObjects_=numberIntegers_;
+    // Now append other column stuff
+    for (iColumn=0;iColumn<numberColumns;iColumn++) {
+      int jColumn = originalColumns[iColumn];
+      if (temp[jColumn]>=0) {
+	int iObject= temp[jColumn];
+	CbcSimpleInteger * obj =
+	  dynamic_cast <CbcSimpleInteger *>(originalObject[iObject]) ;
+	if (!obj) {
+	  object_[numberObjects_] = originalObject[iObject]->clone();
+	  // redo ids etc
+	  object_[numberObjects_]->redoSequenceEtc(this,numberColumns,originalColumns);
+	  numberObjects_++;
+	}
+      }
+    }
+    // now append non column stuff
+    for (iObject=0;iObject<numberOriginalObjects;iObject++) {
+      iColumn = originalObject[iObject]->columnNumber();
+      if (iColumn<0) {
+	object_[numberObjects_] = originalObject[iObject]->clone();
+	// redo ids etc
+	object_[numberObjects_]->redoSequenceEtc(this,numberColumns,originalColumns);
+	numberObjects_++;
+      }
+      delete originalObject[iObject];
+    }
+    delete [] originalObject;
+    delete [] temp;
+    if (!numberObjects_)
+      handler_->message(CBC_NOINT,messages_) << CoinMessageEol ;
+    return process;
+  } else {
+    // infeasible
+    delete process;
+    return NULL;
+  }
+    
+}
+/* Does postprocessing - original solver back.
+   User has to delete process */
+void 
+CbcModel::postProcess(CglPreProcess * process)
+{
+  process->postProcess(*solver_);
+  delete solver_;
+  solver_ = process->originalModel();
 }
 // Create C++ lines to get to current state
 void 

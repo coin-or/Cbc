@@ -3165,6 +3165,18 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
               assert(doneHotStart);
               solver->unmarkHotStart();
               solver->markHotStart();
+	      // may be infeasible (if other way stopped on iterations)
+	      if (!solver->isProvenOptimal()) {
+		// neither side feasible
+		anyAction=-2;
+		delete choice.possibleBranch;
+		choice.possibleBranch=NULL;
+		//printf("Both infeasible for choice %d sequence %d\n",i,
+		// model->object(choice.objectNumber)->columnNumber());
+		delete ws;
+		ws=NULL;
+		break;
+	      }
 #endif
             }
           }
@@ -3194,6 +3206,18 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
               assert(doneHotStart);
               solver->unmarkHotStart();
               solver->markHotStart();
+	      // may be infeasible (if other way stopped on iterations)
+	      if (!solver->isProvenOptimal()) {
+		// neither side feasible
+		anyAction=-2;
+		delete choice.possibleBranch;
+		choice.possibleBranch=NULL;
+		//printf("Both infeasible for choice %d sequence %d\n",i,
+		// model->object(choice.objectNumber)->columnNumber());
+		delete ws;
+		ws=NULL;
+		break;
+	      }
 #endif
             }
           } else {

@@ -1775,7 +1775,7 @@ int main (int argc, const char *argv[])
 		  }
 		  //if (!noPrinting)
 		  //std::cout<<"Largest (scaled) away from bound "<<largest<<std::endl;
-		  clpSolver->setDualBound(CoinMin(1000.0*largest,1.00001e10));
+		  clpSolver->setDualBound(CoinMax(1.0001e8,CoinMin(1000.0*largest,1.00001e10)));
 		}
 		clpSolver->dual();  // clean up
 	      }

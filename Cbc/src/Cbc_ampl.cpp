@@ -408,10 +408,13 @@ readAmpl(ampl_info * info, int argc, char **argv)
     stat_map(info->rowStatus, n_con, map, 6, "incoming rowStatus");
   } else {
     /* all slack basis */
+    // leave status for output */
+#if 0
     free(info->rowStatus);
     info->rowStatus=NULL;
     free(info->columnStatus);
     info->columnStatus=NULL;
+#endif
   }
   /* add -solve - unless something there already
    - also check for sleep=yes */

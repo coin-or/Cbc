@@ -28,6 +28,7 @@ THIS SOFTWARE.
 #include "unistd.h"
 #include <string>
 #include <cassert>
+#include "CoinSort.hpp"
 /* so decodePhrase and clpCheck can access */
 static ampl_info * saveInfo=NULL;
 // Set to 1 if algorithm found
@@ -71,10 +72,16 @@ decodePhrase(char * phrase,ftnlen length)
   return 0;
 }
 static void
-sos_kludge(int nsos, int *sosbeg, double *sosref)
+sos_kludge(int nsos, int *sosbeg, double *sosref,int * sosind)
 {
   // Adjust sosref if necessary to make monotonic increasing
   int i, j, k;
+  // first sort
+  for (i=0;i<nsos;i++) {
+    k = sosbeg[i];
+    int end=sosbeg[i+1];
+    CoinSort_2(sosref+k,sosref+end,sosind+k);
+  }
   double t, t1;
   for(i = j = 0; i++ < nsos; ) {
     k = sosbeg[i];
@@ -315,7 +322,7 @@ readAmpl(ampl_info * info, int argc, char **argv)
       info->sosStart = (int *) malloc((nsos+1)*sizeof(int));
       info->sosIndices = (int *) malloc(nsosnz*sizeof(int));
       info->sosReference = (double *) malloc(nsosnz*sizeof(double));
-      sos_kludge(nsos, sosbeg, sosref);
+      sos_kludge(nsos, sosbeg, sosref,sosind);
       for (int i=0;i<nsos;i++) {
         int ichar = sostype[i];
         assert (ichar=='1'||ichar=='2');
@@ -401,10 +408,13 @@ readAmpl(ampl_info * info, int argc, char **argv)
     stat_map(info->rowStatus, n_con, map, 6, "incoming rowStatus");
   } else {
     /* all slack basis */
+    // leave status for output */
+#if 0
     free(info->rowStatus);
     info->rowStatus=NULL;
     free(info->columnStatus);
     info->columnStatus=NULL;
+#endif
   }
   /* add -solve - unless something there already
    - also check for sleep=yes */

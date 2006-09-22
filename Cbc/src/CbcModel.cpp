@@ -1698,7 +1698,9 @@ void CbcModel::branchAndBound(int doStatistics)
   if ( numberStoppedSubTrees_)
     status_=1;
   if (!status_) {
-    bestPossibleObjective_=bestObjective_;
+    // Set best possible unless stopped on gap
+    if(secondaryStatus_ != 2)
+      bestPossibleObjective_=bestObjective_;
     handler_->message(CBC_END_GOOD,messages_)
       << bestObjective_ << numberIterations_ << numberNodes_<<getCurrentSeconds()
       << CoinMessageEol ;

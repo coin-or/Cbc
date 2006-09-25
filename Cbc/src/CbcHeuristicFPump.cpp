@@ -119,6 +119,18 @@ CbcHeuristicFPump::solution(double & solutionValue,
   solver->getDblParam(OsiPrimalTolerance,primalTolerance);
   
   int numberColumns = model_->getNumCols();
+  char * usedColumn = NULL;
+  double * lastSolution=NULL;
+  bool fixContinuous=false;
+  bool fixInternal=false;
+  if (when_>=11&&when_<=13) {
+    fixInternal = when_ >11;
+    fixContinuous = when_==13;
+    when_=1;
+    usedColumn = new char [numberColumns];
+    memset(usedColumn,0,numberColumns);
+    lastSolution = CoinCopyOfArray(solver->getColSolution(),numberColumns);
+  }
   int numberIntegers = model_->numberIntegers();
   const int * integerVariable = model_->integerVariable();
 
@@ -174,9 +186,19 @@ CbcHeuristicFPump::solution(double & solutionValue,
 
 // 5. MAIN WHILE LOOP
   int numberPasses=0;
+  double newSolutionValue=COIN_DBL_MAX;
   bool newLineNeeded=false;
   while (!finished) {
     returnCode=0;
+    // see what changed
+    if (usedColumn) {
+      const double * solution = solver->getColSolution();
+      for (i=0;i<numberColumns;i++) {
+	if (fabs(solution[i]-lastSolution[i])>1.0e-8) 
+	  usedColumn[i]=1;
+	lastSolution[i]=solution[i];
+      }
+    }
     if (numberPasses>=maximumPasses_) {
       break;
     }
@@ -193,7 +215,7 @@ CbcHeuristicFPump::solution(double & solutionValue,
       // solution - but may not be better
       // Compute using dot product
       solver->setDblParam(OsiObjOffset,saveOffset);
-      double newSolutionValue = direction*solver->OsiSolverInterface::getObjValue();
+      newSolutionValue = direction*solver->OsiSolverInterface::getObjValue();
       if (model_->logLevel())
         printf(" - solution found\n");
       newLineNeeded=false;
@@ -293,7 +315,7 @@ CbcHeuristicFPump::solution(double & solutionValue,
       solver->setDblParam(OsiObjOffset,-offset);
       solver->resolve();
       if (model_->logLevel())
-        printf("\npass %3d: obj. %10.5lf --> ", numberPasses,solver->getObjValue());
+        printf("\npass %3d: obj. %10.5f --> ", numberPasses,solver->getObjValue());
       newLineNeeded=true;
 
     }
@@ -301,11 +323,83 @@ CbcHeuristicFPump::solution(double & solutionValue,
   if (newLineNeeded&&model_->logLevel())
     printf(" - no solution found\n");
   delete solver;
-  delete [] newSolution;
   for ( j=0;j<NUMBER_OLD;j++) 
     delete [] oldSolution[j];
   delete [] oldSolution;
   delete [] saveObjective;
+  if (usedColumn) {
+    OsiSolverInterface * newSolver = model_->continuousSolver()->clone();
+    const double * colLower = newSolver->getColLower();
+    const double * colUpper = newSolver->getColUpper();
+    int i;
+    int nFix=0;
+    int nFixI=0;
+    int nFixC=0;
+    for (i=0;i<numberIntegers;i++) {
+      int iColumn=integerVariable[i];
+      const CbcObject * object = model_->object(i);
+      const CbcSimpleInteger * integerObject = 
+	dynamic_cast<const  CbcSimpleInteger *> (object);
+      assert(integerObject);
+      // get original bounds
+      double originalLower = integerObject->originalLowerBound();
+      assert(colLower[iColumn]==originalLower);
+      newSolver->setColLower(iColumn,CoinMax(colLower[iColumn],originalLower));
+      double originalUpper = integerObject->originalUpperBound();
+      assert(colUpper[iColumn]==originalUpper);
+      newSolver->setColUpper(iColumn,CoinMin(colUpper[iColumn],originalUpper));
+      if (!usedColumn[iColumn]) {
+	double value=lastSolution[iColumn];
+	double nearest = floor(value+0.5);
+	if (fabs(value-nearest)<1.0e-7) {
+	  if (nearest==colLower[iColumn]) {
+	    newSolver->setColUpper(iColumn,colLower[iColumn]);
+	    nFix++;
+	  } else if (nearest==colUpper[iColumn]) {
+	    newSolver->setColLower(iColumn,colUpper[iColumn]);
+	    nFix++;
+	  } else if (fixInternal) {
+	    newSolver->setColLower(iColumn,nearest);
+	    newSolver->setColUpper(iColumn,nearest);
+	    nFix++;
+	    nFixI++;
+	  }
+	}
+      }
+    }
+    if (fixContinuous) {
+      for (int iColumn=0;iColumn<numberColumns;iColumn++) {
+	if (!newSolver->isInteger(iColumn)&&!usedColumn[iColumn]) {
+	  double value=lastSolution[iColumn];
+	  if (value<colLower[iColumn]+1.0e-8) {
+	    newSolver->setColUpper(iColumn,colLower[iColumn]);
+	    nFix++;
+	    nFixC++;
+	  } else if (value>colUpper[iColumn]-1.0e-8) {
+	    newSolver->setColLower(iColumn,colUpper[iColumn]);
+	    nFix++;
+	    nFixC++;
+	  }
+	}
+      }
+    }
+    newSolver->initialSolve();
+    assert (newSolver->isProvenOptimal());
+    printf("%d integers at bound fixed, %d internal and %d continuous\n",
+	   nFix,nFixI,nFixC);
+    double saveValue = newSolutionValue;
+    returnCode = smallBranchAndBound(newSolver,200,newSolution,newSolutionValue,
+				     newSolutionValue,"CbcHeuristicLocalAfterFPump");
+    if (returnCode) {
+      printf("old sol of %g new of %g\n",saveValue,newSolutionValue);
+      memcpy(betterSolution,newSolution,numberColumns*sizeof(double));
+      solutionValue=newSolutionValue;
+    }
+    delete newSolver;
+    delete [] usedColumn;
+    delete [] lastSolution;
+  }
+  delete [] newSolution;
   return returnCode;
 }
 

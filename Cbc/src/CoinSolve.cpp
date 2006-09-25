@@ -1524,8 +1524,10 @@ int main (int argc, const char *argv[])
 	      model2->initialSolve(solveOptions);
 	      basisHasValues=1;
               if (dualize) {
-                ((ClpSimplexOther *) lpSolver)->restoreFromDual(model2);
+                int returnCode=((ClpSimplexOther *) lpSolver)->restoreFromDual(model2);
                 delete model2;
+		if (returnCode)
+		  lpSolver->primal(1);
                 model2=lpSolver;
               }
 #ifdef COIN_HAS_ASL
@@ -2054,6 +2056,10 @@ int main (int argc, const char *argv[])
               CbcHeuristicFPump heuristic4(*babModel);
               if (useFpump) {
                 heuristic4.setMaximumPasses(parameters[whichParam(FPUMPITS,numberParameters,parameters)].intValue());
+		if (doIdiot>10&&doIdiot<14) {
+		  heuristic4.setWhen(doIdiot);
+		  doIdiot=-1;
+		}
                 babModel->addHeuristic(&heuristic4);
               }
               if (!miplib) {
@@ -2082,6 +2088,14 @@ int main (int argc, const char *argv[])
               if (probingAction) {
 		if (probingAction==5)
 		  probingGen.setRowCuts(-3); // strengthening etc just at root
+		if (probingAction==4) {
+		  // Number of unsatisfied variables to look at
+		  probingGen.setMaxProbe(1000);
+		  probingGen.setMaxProbeRoot(1000);
+		  // How far to follow the consequences
+		  probingGen.setMaxLook(50);
+		  probingGen.setMaxLookRoot(50);
+		}
                 babModel->addCutGenerator(&probingGen,translate[probingAction],"Probing");
                 switches[numberGenerators++]=0;
               }
@@ -4494,7 +4508,8 @@ static void generateCode(const char * fileName,int type,int preProcess)
     strcpy(line[numberLines++],"5  } else {");
     strcpy(line[numberLines++],"5    std::cout<<\"processed model has \"<<solver2->getNumRows()");
     strcpy(line[numberLines++],"5	     <<\" rows, \"<<solver2->getNumCols()");
-    strcpy(line[numberLines++],"5	     <<\" and \"<<solver2->getNumElements()<<std::endl;");
+    strcpy(line[numberLines++],"5	     <<\" columns and \"<<solver2->getNumElements()");
+    strcpy(line[numberLines++],"5	     <<\" elements\"<<solver2->getNumElements()<<std::endl;");
     strcpy(line[numberLines++],"5  }");
     strcpy(line[numberLines++],"5  // we have to keep solver2 so pass clone");
     strcpy(line[numberLines++],"5  solver2 = solver2->clone();");

@@ -6146,7 +6146,9 @@ CbcModel::setBestSolution (CBC_Message how,
 {
   if (!solverCharacteristics_->solutionAddsCuts()) {
     // Can trust solution
-    double cutoff = CoinMin(getCutoff(),bestObjective_) ;
+    double cutoff = getCutoff();
+    if (cutoff<1.0e30)
+      cutoff = CoinMin(cutoff,bestObjective_) ;
     
     /*
       Double check the solution to catch pretenders.

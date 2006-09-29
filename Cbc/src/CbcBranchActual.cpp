@@ -743,7 +743,9 @@ CbcSimpleInteger::operator=( const CbcSimpleInteger& rhs)
 {
   if (this!=&rhs) {
     CbcObject::operator=(rhs);
-    columnNumber_ = model_->integerVariable()[sequence_];
+    columnNumber_ = rhs.columnNumber_;
+    originalLower_ = rhs.originalLower_;
+    originalUpper_ = rhs.originalUpper_;
     breakEven_ = rhs.breakEven_;
   }
   return *this;

@@ -129,15 +129,40 @@ extern "C"{
       3 - stopped on iterations etc
       4 - stopped due to errors
   */
-  COINLIBAPI int COINLINKAGE Cbc_status(Cbc_Model * model);
+  COINLIBAPI int COINLINKAGE Cbc_LPstatus(Cbc_Model * model);
   /** Set problem status */
-  COINLIBAPI void COINLINKAGE Cbc_setProblemStatus(Cbc_Model * model, int problemStatus);
+  COINLIBAPI void COINLINKAGE Cbc_setProblemLPStatus(Cbc_Model * model, int problemStatus);
   /** Secondary status of problem - may get extended
       0 - none
       1 - primal infeasible because dual limit reached
       2 - scaled problem optimal - unscaled has primal infeasibilities
       3 - scaled problem optimal - unscaled has dual infeasibilities
       4 - scaled problem optimal - unscaled has both dual and primal infeasibilities
+  */
+  COINLIBAPI int COINLINKAGE Cbc_secondaryLPStatus(Cbc_Model * model);
+  COINLIBAPI void COINLINKAGE Cbc_setSecondaryLPStatus(Cbc_Model * model, int status);
+  /** Final status of BAB problem
+      Some of these can be found out by is...... functions
+      -1 before branchAndBound
+      0 finished - check isProvenOptimal or isProvenInfeasible to see if solution found
+      (or check value of best solution)
+      1 stopped - on maxnodes, maxsols, maxtime
+      2 difficulties so run was abandoned
+      (5 event user programmed event occurred)
+  */
+  COINLIBAPI int COINLINKAGE Cbc_status(Cbc_Model * model);
+  /** Set problem status */
+  COINLIBAPI void COINLINKAGE Cbc_setProblemStatus(Cbc_Model * model, int problemStatus);
+  /** Secondary status of BAB problem
+      -1 unset (status_ will also be -1)
+      0 search completed with solution
+      1 linear relaxation not feasible (or worse than cutoff)
+      2 stopped on gap
+      3 stopped on nodes
+      4 stopped on time
+      5 stopped on user event
+      6 stopped on solutions
+      7 linear relaxation unbounded
   */
   COINLIBAPI int COINLINKAGE Cbc_secondaryStatus(Cbc_Model * model);
   COINLIBAPI void COINLINKAGE Cbc_setSecondaryStatus(Cbc_Model * model, int status);

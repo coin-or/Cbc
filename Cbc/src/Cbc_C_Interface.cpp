@@ -862,6 +862,75 @@ Cbc_hitMaximumIterations(Cbc_Model * model)
    4 - stopped due to errors
 */
 COINLIBAPI int COINLINKAGE 
+Cbc_LPstatus(Cbc_Model * model)
+{
+  const char prefix[] = "Cbc_C_Interface::Cbc_LPstatus(): ";
+//  const int  VERBOSE = 1;
+  if (VERBOSE>0) printf("%s begin\n",prefix);
+
+  int result = 0;
+  OsiClpSolverInterface * solver  =  dynamic_cast< OsiClpSolverInterface*> (model->model_->solver());
+  result = solver->getModelPtr()->status();
+
+  if (VERBOSE>0) printf("%s return %i\n",prefix,result);
+  return result;
+}
+/* Set problem status */
+COINLIBAPI void COINLINKAGE 
+Cbc_setProblemLPStatus(Cbc_Model * model, int problemStatus)
+{
+  const char prefix[] = "Cbc_C_Interface::Cbc_setLPProblemStatus(): ";
+//  const int  VERBOSE = 1;
+  if (VERBOSE>0) printf("%s begin\n",prefix);
+
+  OsiClpSolverInterface * solver  =  dynamic_cast< OsiClpSolverInterface*> (model->model_->solver());
+  solver->getModelPtr()->setProblemStatus(problemStatus);
+
+  if (VERBOSE>0) printf("%s return\n",prefix);
+}
+/* Secondary status of problem - may get extended
+   0 - none
+   1 - primal infeasible because dual limit reached
+   2 - scaled problem optimal - unscaled has primal infeasibilities
+   3 - scaled problem optimal - unscaled has dual infeasibilities
+   4 - scaled problem optimal - unscaled has both dual and primal infeasibilities
+*/
+COINLIBAPI int COINLINKAGE 
+Cbc_secondaryLPStatus(Cbc_Model * model)
+{
+  const char prefix[] = "Cbc_C_Interface::Cbc_secondaryLPStatus(): ";
+//  const int  VERBOSE = 1;
+  if (VERBOSE>0) printf("%s begin\n",prefix);
+
+  int result = 0;
+  OsiClpSolverInterface * solver  =  dynamic_cast< OsiClpSolverInterface*> (model->model_->solver());
+  result = solver->getModelPtr()->secondaryStatus();
+
+  if (VERBOSE>0) printf("%s return %i\n",prefix,result);
+  return result;
+}
+COINLIBAPI void COINLINKAGE 
+Cbc_setSecondaryLPStatus(Cbc_Model * model, int status)
+{
+  const char prefix[] = "Cbc_C_Interface::Cbc_setSecondaryLPStatus(): ";
+//  const int  VERBOSE = 1;
+  if (VERBOSE>0) printf("%s begin\n",prefix);
+
+  OsiClpSolverInterface * solver  =  dynamic_cast< OsiClpSolverInterface*> (model->model_->solver());
+  solver->getModelPtr()->setSecondaryStatus(status);
+
+  if (VERBOSE>0) printf("%s return\n",prefix);
+}
+/* Final status of BAB problem
+   Some of these can be found out by is...... functions
+   -1 before branchAndBound
+   0 finished - check isProvenOptimal or isProvenInfeasible to see if solution found
+   (or check value of best solution)
+   1 stopped - on maxnodes, maxsols, maxtime
+   2 difficulties so run was abandoned
+   (5 event user programmed event occurred)
+*/
+COINLIBAPI int COINLINKAGE 
 Cbc_status(Cbc_Model * model)
 {
   const char prefix[] = "Cbc_C_Interface::Cbc_status(): ";
@@ -882,18 +951,20 @@ Cbc_setProblemStatus(Cbc_Model * model, int problemStatus)
 //  const int  VERBOSE = 1;
   if (VERBOSE>0) printf("%s begin\n",prefix);
 
-// cannot find this in Cbc, Osi, or OsiClp
-//tbd  model->model_->setProblemStatus(problemStatus);
-  printf("%s ERROR: NOT IMPLEMENTED\n",prefix);
+  model->model_->setProblemStatus(problemStatus);
 
   if (VERBOSE>0) printf("%s return\n",prefix);
 }
-/* Secondary status of problem - may get extended
-   0 - none
-   1 - primal infeasible because dual limit reached
-   2 - scaled problem optimal - unscaled has primal infeasibilities
-   3 - scaled problem optimal - unscaled has dual infeasibilities
-   4 - scaled problem optimal - unscaled has both dual and primal infeasibilities
+/* Secondary status of BAB problem
+   -1 unset (status_ will also be -1)
+   0 search completed with solution
+   1 linear relaxation not feasible (or worse than cutoff)
+   2 stopped on gap
+   3 stopped on nodes
+   4 stopped on time
+   5 stopped on user event
+   6 stopped on solutions
+   7 linear relaxation unbounded
 */
 COINLIBAPI int COINLINKAGE 
 Cbc_secondaryStatus(Cbc_Model * model)
@@ -903,9 +974,7 @@ Cbc_secondaryStatus(Cbc_Model * model)
   if (VERBOSE>0) printf("%s begin\n",prefix);
 
   int result = 0;
-// cannot find this in Cbc, Osi, or OsiClp
-//tbd  result = model->model_->secondaryStatus();
-  printf("%s ERROR: NOT IMPLEMENTED\n",prefix);
+  result = model->model_->secondaryStatus();
 
   if (VERBOSE>0) printf("%s return %i\n",prefix,result);
   return result;
@@ -917,9 +986,7 @@ Cbc_setSecondaryStatus(Cbc_Model * model, int status)
 //  const int  VERBOSE = 1;
   if (VERBOSE>0) printf("%s begin\n",prefix);
 
-// cannot find this in Cbc, Osi, or OsiClp
-//tbd  model->model_->setSecondaryStatus(status);
-  printf("%s ERROR: NOT IMPLEMENTED\n",prefix);
+  model->model_->setSecondaryStatus(status);
 
   if (VERBOSE>0) printf("%s return\n",prefix);
 }

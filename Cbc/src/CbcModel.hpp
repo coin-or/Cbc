@@ -691,6 +691,8 @@ public:
     */
     inline int status() const
     { return status_;};
+    inline void setProblemStatus(int value)
+    { status_=value;};
     /** Secondary status of problem
         -1 unset (status_ will also be -1)
         0 search completed with solution
@@ -700,9 +702,12 @@ public:
         4 stopped on time
         5 stopped on user event
         6 stopped on solutions
+	7 linear relaxation unbounded
     */
     inline int secondaryStatus() const
     { return secondaryStatus_;};
+    inline void setSecondaryStatus(int value)
+    { secondaryStatus_=value;};
     /// Are there numerical difficulties (for initialSolve) ?
     bool isInitialSolveAbandoned() const ;
     /// Is optimality proven (for initialSolve) ?

@@ -16,6 +16,8 @@ Cbc/examples/lotsizeSimple.cpp -text
 Cbc/examples/qmip2.cpp -text
 Cbc/inc/config_cbc.h.in -text
 Cbc/src/CbcCbcParam.cpp -text
+Cbc/src/CoinChooseVariable.cpp -text
+Cbc/src/CoinChooseVariable.hpp -text
 /LICENSE -text
 /README -text
 /config.guess -text

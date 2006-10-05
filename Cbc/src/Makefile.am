@@ -42,7 +42,8 @@ libCbc_la_SOURCES = \
 	CbcStatistics.cpp CbcStatistics.hpp \
 	CbcStrategy.cpp CbcStrategy.hpp \
 	CbcTree.cpp CbcTree.hpp \
-	CbcTreeLocal.cpp CbcTreeLocal.hpp
+	CbcTreeLocal.cpp CbcTreeLocal.hpp \
+	CoinChooseVariable.cpp CoinChooseVariable.hpp
 
 # This is for libtool (on Windows)
 libCbc_la_LDFLAGS = $(LT_LDFLAGS)
@@ -255,7 +256,8 @@ include_HEADERS = \
 	CbcNode.hpp \
 	CbcStrategy.hpp \
 	CbcTree.hpp \
-	CbcTreeLocal.hpp
+	CbcTreeLocal.hpp \
+	CoinChooseVariable.hpp
 
 #############################################################################
 # Create the Config.h file that always defines HAVE_CONFIG_H and install it #

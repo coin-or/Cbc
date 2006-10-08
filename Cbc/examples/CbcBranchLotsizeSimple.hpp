@@ -142,7 +142,7 @@ public:
   /** \brief Sets the bounds for the variable according to the current arm
 	     of the branch and advances the object state to the next arm.
   */
-  virtual double branch(bool normalBranch=false);
+  virtual double branch();
 
 protected:
   /// Lower [0] and upper [1] bounds for the down arm (way_ = -1)

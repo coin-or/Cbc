@@ -117,11 +117,11 @@ public:
   virtual ~CbcLinkBranchingObject ();
   
   /// Does next branch and updates state
-  virtual double branch(bool normalBranch=false);
+  virtual double branch();
 
   /** \brief Print something about branch - only if log level high
   */
-  virtual void print(bool normalBranch);
+  virtual void print();
 private:
   /// data
   const CbcLink * set_;

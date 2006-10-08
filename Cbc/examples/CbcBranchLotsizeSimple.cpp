@@ -340,9 +340,9 @@ CbcLotsizeSimpleBranchingObject::~CbcLotsizeSimpleBranchingObject ()
   be easily extensible to multi-way branching.
 */
 double
-CbcLotsizeSimpleBranchingObject::branch(bool normalBranch)
+CbcLotsizeSimpleBranchingObject::branch()
 {
-  numberBranchesLeft_--;
+  decrementNumberBranchesLeft();
   int iColumn = variable_;
   if (way_<0) {
     model_->solver()->setColLower(iColumn,down_[0]);

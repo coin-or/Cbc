@@ -563,11 +563,9 @@ CbcLinkBranchingObject::~CbcLinkBranchingObject ()
 {
 }
 double
-CbcLinkBranchingObject::branch(bool normalBranch)
+CbcLinkBranchingObject::branch()
 {
-  if (model_->messageHandler()->logLevel()>2&&normalBranch)
-    print(normalBranch);
-  numberBranchesLeft_--;
+  decrementNumberBranchesLeft();
   int numberMembers = set_->numberMembers();
   int numberLinks = set_->numberLinks();
   const double * weights = set_->weights();
@@ -613,7 +611,7 @@ CbcLinkBranchingObject::branch(bool normalBranch)
 }
 // Print what would happen  
 void
-CbcLinkBranchingObject::print(bool normalBranch)
+CbcLinkBranchingObject::print()
 {
   int numberMembers = set_->numberMembers();
   int numberLinks = set_->numberLinks();

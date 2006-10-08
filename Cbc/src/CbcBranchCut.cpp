@@ -185,11 +185,9 @@ CbcCutBranchingObject::~CbcCutBranchingObject ()
   Returns change in guessed objective on next branch
 */
 double
-CbcCutBranchingObject::branch(bool normalBranch)
+CbcCutBranchingObject::branch()
 {
-  if (model_->messageHandler()->logLevel()>2&&normalBranch)
-    print(normalBranch);
-  numberBranchesLeft_--;
+  decrementNumberBranchesLeft();
   OsiRowCut * cut;
   if (way_<0) {
     cut = &down_;
@@ -251,7 +249,7 @@ CbcCutBranchingObject::branch(bool normalBranch)
 }
 // Print what would happen  
 void
-CbcCutBranchingObject::print(bool normalBranch)
+CbcCutBranchingObject::print()
 {
   OsiRowCut * cut;
   if (way_<0) {

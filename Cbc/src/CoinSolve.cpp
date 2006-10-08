@@ -35,6 +35,7 @@
 #include "ClpPresolve.hpp"
 #include "CbcOrClpParam.hpp"
 #include "OsiRowCutDebugger.hpp"
+#include "OsiChooseVariable.hpp"
 #ifdef DMALLOC
 #include "dmalloc.h"
 #endif
@@ -494,7 +495,7 @@ void checkSOS(CbcModel * babModel, const OsiSolverInterface * solver)
 
   const double * rowLower = solver->getRowLower();
   const double * rowUpper = solver->getRowUpper();
-  CbcObject ** objects = babModel->objects();
+  OsiObject ** objects = babModel->objects();
   int numberObjects = babModel->numberObjects();
   for (int iObj = 0;iObj<numberObjects;iObj++) {
     CbcSOS * objSOS =
@@ -741,6 +742,8 @@ int main (int argc, const char *argv[])
     parameters[whichParam(MAXHOTITS,numberParameters,parameters)].setIntValue(100);
     parameters[whichParam(CUTSSTRATEGY,numberParameters,parameters)].setCurrentOption("on");
     parameters[whichParam(HEURISTICSTRATEGY,numberParameters,parameters)].setCurrentOption("on");
+    parameters[whichParam(NODESTRATEGY,numberParameters,parameters)].setCurrentOption("fewest");
+    int nodeStrategy=0;
     int doSOS=1;
     int verbose=0;
     CglGomory gomoryGen;
@@ -1306,7 +1309,7 @@ int main (int argc, const char *argv[])
 	      flowAction = action;
 	      mixedAction = action;
 	      twomirAction = action;
-	      landpAction = action;
+	      //landpAction = action;
               parameters[whichParam(GOMORYCUTS,numberParameters,parameters)].setCurrentOption(action);
               parameters[whichParam(PROBINGCUTS,numberParameters,parameters)].setCurrentOption(action);
               parameters[whichParam(KNAPSACKCUTS,numberParameters,parameters)].setCurrentOption(action);
@@ -1349,6 +1352,9 @@ int main (int argc, const char *argv[])
 	      break;
 	    case COSTSTRATEGY:
 	      useCosts=action;
+	      break;
+	    case NODESTRATEGY:
+	      nodeStrategy=action;
 	      break;
 	    case PREPROCESS:
 	      preProcess = action;
@@ -2056,9 +2062,42 @@ int main (int argc, const char *argv[])
               CbcHeuristicFPump heuristic4(*babModel);
               if (useFpump) {
                 heuristic4.setMaximumPasses(parameters[whichParam(FPUMPITS,numberParameters,parameters)].intValue());
-		if (doIdiot>10&&doIdiot<14) {
-		  heuristic4.setWhen(doIdiot);
-		  doIdiot=-1;
+                int pumpTune=parameters[whichParam(FPUMPTUNE,numberParameters,parameters)].intValue();
+		if (pumpTune>10) {
+		  /*
+		    >=1000 use index+2 as number of large loops, if >4 decrement by 5 and clean used array
+		    >=100 use 0.05 objvalue as increment
+		    >=10 use +0.1 objvalue for cutoff (add)
+		    1 == fix ints at bounds, 2 fix all integral ints, 3 and continuous at bounds
+		  */
+		  if (pumpTune) {
+		    double value = babModel->solver()->getObjSense()*babModel->solver()->getObjValue();
+		    int w = pumpTune/10;
+		    int c = w % 10;
+		    w /= 10;
+		    int i = w % 10;
+		    w /= 10;
+		    int r = w%10;
+		    // fake cutoff
+		    if (c) {
+		      double cutoff;
+		      babModel->solver()->getDblParam(OsiDualObjectiveLimit,cutoff);
+		      cutoff = CoinMin(cutoff,value + 0.1*fabs(value)*c);
+		      heuristic4.setFakeCutoff(cutoff);
+		    }
+		    if (i||r) {
+		      // also set increment
+		      heuristic4.setAbsoluteIncrement((0.01*i+0.005)*(fabs(value)+1.0e-12));
+		      if (r>4) {
+			r -=5;
+			heuristic4.setMaximumRetries(-r-2);
+		      } else {
+			heuristic4.setMaximumRetries(r+2);
+		      }
+		    }
+		    pumpTune = pumpTune%100;
+		    heuristic4.setWhen(pumpTune+10);
+		  }
 		}
                 babModel->addHeuristic(&heuristic4);
               }
@@ -2084,11 +2123,11 @@ int main (int argc, const char *argv[])
               // add cut generators if wanted
               int switches[20];
               int numberGenerators=0;
-	      int translate[6]={-100,-1,-99,-98,1,1};
+	      int translate[]={-100,-1,-99,-98,1,1,1,1};
               if (probingAction) {
-		if (probingAction==5)
+		if (probingAction==5||probingAction==7)
 		  probingGen.setRowCuts(-3); // strengthening etc just at root
-		if (probingAction==4) {
+		if (probingAction==6||probingAction==7) {
 		  // Number of unsatisfied variables to look at
 		  probingGen.setMaxProbe(1000);
 		  probingGen.setMaxProbeRoot(1000);
@@ -2170,6 +2209,11 @@ int main (int argc, const char *argv[])
               //if (babModel->getNumCols()>10*babModel->getNumRows())
               //babModel->setNumberStrong(0);
               if (!noPrinting) {
+		int iLevel = parameters[log].intValue();
+		if (iLevel<0) {
+		  babModel->setPrintingMode(1);
+		  iLevel = -iLevel;
+		}
                 babModel->messageHandler()->setLogLevel(parameters[log].intValue());
                 if (babModel->getNumCols()>2000||babModel->getNumRows()>1500||
                     babModel->messageHandler()->logLevel()>1)
@@ -2298,9 +2342,9 @@ int main (int argc, const char *argv[])
                     babModel->findIntegers(true,type);
                     numberIntegers = babModel->numberIntegers();
                   }
-                  CbcObject ** oldObjects = babModel->objects();
+                  OsiObject ** oldObjects = babModel->objects();
                   // Do sets and priorities
-                  CbcObject ** objects = new CbcObject * [numberSOS];
+                  OsiObject ** objects = new OsiObject * [numberSOS];
                   // set old objects to have low priority
                   int numberOldObjects = babModel->numberObjects();
                   int numberColumns = babModel->getNumCols();
@@ -2312,8 +2356,18 @@ int main (int argc, const char *argv[])
                       continue;
                     if (originalColumns)
                       iColumn = originalColumns[iColumn];
-                    if (branchDirection)
-                      oldObjects[iObj]->setPreferredWay(branchDirection[iColumn]);
+                    if (branchDirection) {
+		      CbcSimpleInteger * obj =
+			dynamic_cast <CbcSimpleInteger *>(oldObjects[iObj]) ;
+		      if (obj) { 
+			obj->setPreferredWay(branchDirection[iColumn]);
+		      } else {
+			CbcObject * obj =
+			  dynamic_cast <CbcObject *>(oldObjects[iObj]) ;
+			assert (obj);
+			obj->setPreferredWay(branchDirection[iColumn]);
+		      }
+		    }
                     if (pseudoUp) {
                       CbcSimpleIntegerPseudoCost * obj1a =
                         dynamic_cast <CbcSimpleIntegerPseudoCost *>(oldObjects[iObj]) ;
@@ -2353,7 +2407,7 @@ int main (int argc, const char *argv[])
                   }
                   if (numberSOS) {
                     // Do sets and priorities
-                    CbcObject ** objects = new CbcObject * [numberSOS];
+                    OsiObject ** objects = new OsiObject * [numberSOS];
                     int iSOS;
                     if (originalColumns) {
                       // redo sequence numbers
@@ -2395,7 +2449,7 @@ int main (int argc, const char *argv[])
                       delete objects[iSOS];
                     delete [] objects;
                   }
-                  CbcObject ** objects = babModel->objects();
+                  OsiObject ** objects = babModel->objects();
                   int numberObjects = babModel->numberObjects();
                   for (int iObj = 0;iObj<numberObjects;iObj++) {
                     // skip sos
@@ -2407,8 +2461,18 @@ int main (int argc, const char *argv[])
                     assert (iColumn>=0);
                     if (originalColumns)
                       iColumn = originalColumns[iColumn];
-                    if (branchDirection)
-                      objects[iObj]->setPreferredWay(branchDirection[iColumn]);
+                    if (branchDirection) {
+		      CbcSimpleInteger * obj =
+			dynamic_cast <CbcSimpleInteger *>(objects[iObj]) ;
+		      if (obj) { 
+			obj->setPreferredWay(branchDirection[iColumn]);
+		      } else {
+			CbcObject * obj =
+			  dynamic_cast <CbcObject *>(objects[iObj]) ;
+			assert (obj);
+			obj->setPreferredWay(branchDirection[iColumn]);
+		      }
+		    }
                     if (priorities) {
                       int iPriority = priorities[iColumn];
                       if (iPriority>0)
@@ -2454,6 +2518,30 @@ int main (int argc, const char *argv[])
 #ifdef COIN_HAS_ASL
                 }
 #endif                
+		if (nodeStrategy) {
+		  // change default
+		  if (nodeStrategy>1) {
+		    // up or down
+		    int way = ((nodeStrategy%1)==1) ? -1 : +1;
+		    babModel->setPreferredWay(way);
+#if 0
+		    OsiObject ** objects = babModel->objects();
+		    int numberObjects = babModel->numberObjects();
+		    for (int iObj = 0;iObj<numberObjects;iObj++) {
+		      CbcObject * obj =
+			dynamic_cast <CbcObject *>(objects[iObj]) ;
+		      assert (obj);
+		      obj->setPreferredWay(way);
+		    }
+#endif
+		  }
+		  if (nodeStrategy==1||nodeStrategy>3) {
+		    // depth
+		    CbcCompareDefault compare;
+		    compare.setWeight(-3.0);
+		    babModel->setNodeComparison(compare);
+		  }
+		}
 	        if (cppValue>=0) {
 		  int prepro = useStrategy ? -1 : preProcess;
                   // generate code
@@ -2479,6 +2567,14 @@ int main (int argc, const char *argv[])
 		  CbcStrategyDefault strategy(true,5,5);
                   strategy.setupPreProcessing(1);
 		  babModel->setStrategy(strategy);
+		}
+		int testOsiOptions = parameters[whichParam(TESTOSI,numberParameters,parameters)].intValue();
+                if (testOsiOptions>0) {
+                  printf("Testing OsiObject options %d\n",testOsiOptions);
+		  CbcBranchDefaultDecision decision;
+		  OsiChooseVariable choose(babModel->solver());
+		  decision.setChooseMethod(choose);
+		  babModel->setBranchingMethod(decision);
 		}
 		checkSOS(babModel, babModel->solver());
                 babModel->branchAndBound(statistics);
@@ -4570,7 +4666,7 @@ static void generateCode(const char * fileName,int type,int preProcess)
     wanted[2]=wanted[4]=wanted[7]=1;
   std::string header[9]=
   { "","Save values","Redundant save of default values","Set changed values",
-    "Redundant set default values","Solve","Restore values","Redundant restore values","Add to model"};
+    "Redundant set default values","Solve","Restore values","Redundant restore values","Finish up"};
   for (int iType=0;iType<9;iType++) {
     if (!wanted[iType])
       continue;

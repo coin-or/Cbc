@@ -50,6 +50,7 @@ CbcTree::top() const
 // Add a node to the heap
 void 
 CbcTree::push(CbcNode * x) {
+  assert(x->objectiveValue()!=COIN_DBL_MAX&&x->nodeInfo());
   nodes_.push_back(x);
   push_heap(nodes_.begin(), nodes_.end(), comparison_);
 }

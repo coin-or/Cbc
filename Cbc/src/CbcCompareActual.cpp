@@ -218,14 +218,15 @@ CbcCompareDefault::test (CbcNode * x, CbcNode * y)
       y->objectiveValue() + weight_*y->numberUnsatisfied();
   }
 #else
-  if (weight_==-1.0&&(y->depth()>7||x->depth()>7)) {
+  if ((weight_==-1.0&&(y->depth()>7||x->depth()>7))||weight_==-3.0) {
+    int adjust =  (weight_==-3.0) ? 10000 : 0;
     // before solution
-    /* printf("x %d %d %g, y %d %d %g\n",
+    /*printf("x %d %d %g, y %d %d %g\n",
        x->numberUnsatisfied(),x->depth(),x->objectiveValue(),
        y->numberUnsatisfied(),y->depth(),y->objectiveValue()); */
-    if (x->numberUnsatisfied() > y->numberUnsatisfied()) {
+    if (x->numberUnsatisfied() > y->numberUnsatisfied()+adjust) {
       return true;
-    } else if (x->numberUnsatisfied() < y->numberUnsatisfied()) {
+    } else if (x->numberUnsatisfied() < y->numberUnsatisfied()-adjust) {
       return false;
     } else {
       int testX = x->depth();

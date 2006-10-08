@@ -56,9 +56,9 @@ CbcSimpleIntegerDynamicPseudoCost::CbcSimpleIntegerDynamicPseudoCost ()
 
   Loads dynamic upper & lower bounds for the specified variable.
 */
-CbcSimpleIntegerDynamicPseudoCost::CbcSimpleIntegerDynamicPseudoCost (CbcModel * model, int sequence,
+CbcSimpleIntegerDynamicPseudoCost::CbcSimpleIntegerDynamicPseudoCost (CbcModel * model,
 				    int iColumn, double breakEven)
-  : CbcSimpleInteger(model,sequence,iColumn,breakEven),
+  : CbcSimpleInteger(model,iColumn,breakEven),
     upDownSeparator_(-1.0),
     sumDownCost_(0.0),
     sumUpCost_(0.0),
@@ -119,10 +119,10 @@ CbcSimpleIntegerDynamicPseudoCost::CbcSimpleIntegerDynamicPseudoCost (CbcModel *
 
   Loads dynamic upper & lower bounds for the specified variable.
 */
-CbcSimpleIntegerDynamicPseudoCost::CbcSimpleIntegerDynamicPseudoCost (CbcModel * model, int sequence,
+CbcSimpleIntegerDynamicPseudoCost::CbcSimpleIntegerDynamicPseudoCost (CbcModel * model,
 				    int iColumn, double downDynamicPseudoCost,
 							double upDynamicPseudoCost)
-  : CbcSimpleInteger(model,sequence,iColumn),
+  : CbcSimpleInteger(model,iColumn),
     upDownSeparator_(-1.0),
     sumDownCost_(0.0),
     sumUpCost_(0.0),
@@ -174,6 +174,16 @@ CbcSimpleIntegerDynamicPseudoCost::CbcSimpleIntegerDynamicPseudoCost (CbcModel *
   sumDownChange_ = 1.0;
   numberTimesDown_ = 1;
 #endif
+}
+/** Useful constructor
+
+  Loads dynamic upper & lower bounds for the specified variable.
+*/
+CbcSimpleIntegerDynamicPseudoCost::CbcSimpleIntegerDynamicPseudoCost (CbcModel * model,
+				    int dummy, int iColumn, double downDynamicPseudoCost,
+							double upDynamicPseudoCost)
+{
+  CbcSimpleIntegerDynamicPseudoCost(model,iColumn,downDynamicPseudoCost,upDynamicPseudoCost);
 }
 
 // Copy constructor 
@@ -283,7 +293,7 @@ CbcSimpleIntegerDynamicPseudoCost::createBranch(int way)
       value = targetValue+0.1;
   }
   CbcDynamicPseudoCostBranchingObject * newObject = 
-    new CbcDynamicPseudoCostBranchingObject(model_,sequence_,way,
+    new CbcDynamicPseudoCostBranchingObject(model_,columnNumber_,way,
 					    value,this);
   double up =  upDynamicPseudoCost_*(ceil(value)-value);
   double down =  downDynamicPseudoCost_*(value-floor(value));
@@ -440,6 +450,150 @@ CbcSimpleIntegerDynamicPseudoCost::infeasibility(int & preferredWay) const
     }
     return CoinMax(returnValue,1.0e-15);
   }
+}
+
+double
+CbcSimpleIntegerDynamicPseudoCost::infeasibility(const OsiSolverInterface * solver, const OsiBranchingInformation * info,
+			 int & preferredWay) const
+{
+  double value = info->solution_[columnNumber_];
+  value = CoinMax(value, info->lower_[columnNumber_]);
+  value = CoinMin(value, info->upper_[columnNumber_]);
+  if (info->upper_[columnNumber_]==info->lower_[columnNumber_]) {
+    // fixed
+    preferredWay=1;
+    return 0.0;
+  }
+  assert (breakEven_>0.0&&breakEven_<1.0);
+  double nearest = floor(value+0.5);
+  double integerTolerance = info->integerTolerance_; 
+  double below = floor(value+integerTolerance);
+  double above = below+1.0;
+  if (above>info->upper_[columnNumber_]) {
+    above=below;
+    below = above -1;
+  }
+#if INFEAS==1
+  double objectiveValue = info->objectiveValue_;
+  double distanceToCutoff =  info->cutoff_  - objectiveValue;
+  if (distanceToCutoff<1.0e20) 
+    distanceToCutoff *= 10.0;
+  else 
+    distanceToCutoff = 1.0e2 + fabs(objectiveValue);
+#endif
+  double sum;
+  int number;
+  double downCost = CoinMax(value-below,0.0);
+  sum = sumDownCost_;
+  number = numberTimesDown_;
+#if INFEAS==1
+  sum += numberTimesDownInfeasible_*(distanceToCutoff/(downCost+1.0e-12));
+  number += numberTimesDownInfeasible_;
+#endif
+  if (number>0)
+    downCost *= sum / (double) number;
+  else
+    downCost  *=  downDynamicPseudoCost_;
+  double upCost = CoinMax((above-value),0.0);
+  sum = sumUpCost_;
+  number = numberTimesUp_;
+#if INFEAS==1
+  sum += numberTimesUpInfeasible_*(distanceToCutoff/(upCost+1.0e-12));
+  number += numberTimesUpInfeasible_;
+#endif
+  if (number>0)
+    upCost *= sum / (double) number;
+  else
+    upCost  *=  upDynamicPseudoCost_;
+  if (downCost>=upCost)
+    preferredWay=1;
+  else
+    preferredWay=-1;
+  // See if up down choice set
+  if (upDownSeparator_>0.0) {
+    preferredWay = (value-below>=upDownSeparator_) ? 1 : -1;
+  }
+  if (preferredWay_)
+    preferredWay=preferredWay_;
+  // weight at 1.0 is max min
+#define WEIGHT_BEFORE 0.3
+  if (fabs(value-nearest)<=integerTolerance) {
+    return 0.0;
+  } else {
+    double returnValue=0.0;
+    double minValue = CoinMin(downCost,upCost);
+    double maxValue = CoinMax(downCost,upCost);
+    if (!info->numberBranchingSolutions_||info->depth_<=10/* was ||maxValue>0.2*distanceToCutoff*/) {
+      // no solution
+      returnValue = WEIGHT_BEFORE*minValue + (1.0-WEIGHT_BEFORE)*maxValue;
+    } else {
+      // some solution
+      returnValue = WEIGHT_AFTER*minValue + (1.0-WEIGHT_AFTER)*maxValue;
+    }
+    if (numberTimesUp_<numberBeforeTrust_||
+        numberTimesDown_<numberBeforeTrust_) {
+      //if (returnValue<1.0e10)
+      //returnValue += 1.0e12;
+      //else
+      returnValue *= 1.0e3;
+      if (!numberTimesUp_&&!numberTimesDown_)
+        returnValue=1.0e50;
+    }
+    //if (fabs(value-0.5)<1.0e-5) {
+    //returnValue = 3.0*returnValue + 0.2;
+    //} else if (value>0.9) {
+    //returnValue = 2.0*returnValue + 0.1;
+    //}
+    if (method_==1) {
+      // probing
+      // average 
+      double up=1.0e-15;
+      double down=1.0e-15;
+      if (numberTimesProbingTotal_) {
+	up += numberTimesUpTotalFixed_/((double) numberTimesProbingTotal_);
+	down += numberTimesDownTotalFixed_/((double) numberTimesProbingTotal_);
+      }
+      returnValue = 1 + 10.0*CoinMin(numberTimesDownLocalFixed_,numberTimesUpLocalFixed_) +
+	CoinMin(down,up);
+      returnValue *= 1.0e-3;
+    }
+    return CoinMax(returnValue,1.0e-15);
+  }
+}
+// Creates a branching object
+CbcBranchingObject * 
+CbcSimpleIntegerDynamicPseudoCost::createBranch(OsiSolverInterface * solver, const OsiBranchingInformation * info, int way) 
+{
+  double value = info->solution_[columnNumber_];
+  value = CoinMax(value, info->lower_[columnNumber_]);
+  value = CoinMin(value, info->upper_[columnNumber_]);
+  assert (info->upper_[columnNumber_]>info->lower_[columnNumber_]);
+  if (!info->hotstartSolution_) {
+#ifndef NDEBUG
+    double nearest = floor(value+0.5);
+    assert (fabs(value-nearest)>info->integerTolerance_);
+#endif
+  } else {
+    double targetValue = info->hotstartSolution_[columnNumber_];
+    if (way>0)
+      value = targetValue-0.1;
+    else
+      value = targetValue+0.1;
+  }
+  CbcDynamicPseudoCostBranchingObject * newObject = 
+    new CbcDynamicPseudoCostBranchingObject(model_,columnNumber_,way,
+					    value,this);
+  double up =  upDynamicPseudoCost_*(ceil(value)-value);
+  double down =  downDynamicPseudoCost_*(value-floor(value));
+  double changeInGuessed=up-down;
+  if (way>0)
+    changeInGuessed = - changeInGuessed;
+  changeInGuessed=CoinMax(0.0,changeInGuessed);
+  //if (way>0)
+  //changeInGuessed += 1.0e8; // bias to stay up
+  newObject->setChangeInGuessed(changeInGuessed);
+  newObject->setOriginalObject(this);
+  return newObject;
 }
 
 // Return "up" estimate
@@ -652,9 +806,9 @@ CbcDynamicPseudoCostBranchingObject::~CbcDynamicPseudoCostBranchingObject ()
   Returns change in guessed objective on next branch
 */
 double
-CbcDynamicPseudoCostBranchingObject::branch(bool normalBranch)
+CbcDynamicPseudoCostBranchingObject::branch()
 {
-  CbcIntegerBranchingObject::branch(normalBranch);
+  CbcIntegerBranchingObject::branch();
   return changeInGuessed_;
 }
 /* Some branchingObjects may claim to be able to skip
@@ -738,9 +892,13 @@ CbcBranchDynamicDecision::initialize(CbcModel * model)
 /* Saves a clone of current branching object.  Can be used to update
       information on object causing branch - after branch */
 void 
-CbcBranchDynamicDecision::saveBranchingObject(CbcBranchingObject * object) 
+CbcBranchDynamicDecision::saveBranchingObject(OsiBranchingObject * object) 
 {
-  object_ = object->clone();
+  OsiBranchingObject * obj = object->clone();
+  CbcDynamicPseudoCostBranchingObject * branchingObject =
+    dynamic_cast<CbcDynamicPseudoCostBranchingObject *>(obj);
+  assert (branchingObject);
+  object_=branchingObject;
 }
 /* Pass in information on branch just done.
    assumes object can get information from solver */

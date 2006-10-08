@@ -145,8 +145,7 @@ am_libCbc_la_OBJECTS = CbcBranchActual.lo CbcBranchBase.lo \
 	CbcEventHandler.lo CbcFathom.lo CbcFathomDynamicProgramming.lo \
 	CbcHeuristic.lo CbcHeuristicFPump.lo CbcHeuristicGreedy.lo \
 	CbcHeuristicLocal.lo CbcMessage.lo CbcModel.lo CbcNode.lo \
-	CbcStatistics.lo CbcStrategy.lo CbcTree.lo CbcTreeLocal.lo \
-	CoinChooseVariable.lo
+	CbcStatistics.lo CbcStrategy.lo CbcTree.lo CbcTreeLocal.lo
 libCbc_la_OBJECTS = $(am_libCbc_la_OBJECTS)
 @COIN_HAS_CLP_TRUE@am__EXEEXT_1 = cbc$(EXEEXT)
 binPROGRAMS_INSTALL = $(INSTALL_PROGRAM)
@@ -464,8 +463,7 @@ libCbc_la_SOURCES = \
 	CbcStatistics.cpp CbcStatistics.hpp \
 	CbcStrategy.cpp CbcStrategy.hpp \
 	CbcTree.cpp CbcTree.hpp \
-	CbcTreeLocal.cpp CbcTreeLocal.hpp \
-	CoinChooseVariable.cpp CoinChooseVariable.hpp
+	CbcTreeLocal.cpp CbcTreeLocal.hpp 
 
 
 # This is for libtool (on Windows)
@@ -574,8 +572,7 @@ include_HEADERS = \
 	CbcNode.hpp \
 	CbcStrategy.hpp \
 	CbcTree.hpp \
-	CbcTreeLocal.hpp \
-	CoinChooseVariable.hpp
+	CbcTreeLocal.hpp 
 
 
 #############################################################################
@@ -713,7 +710,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcTree.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcTreeLocal.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Cbc_ampl.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CoinChooseVariable.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CoinSolve.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/unitTest.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/unitTestClp.Po@am__quote@

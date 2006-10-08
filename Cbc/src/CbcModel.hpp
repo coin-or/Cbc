@@ -7,6 +7,7 @@
 #include "CoinFinite.hpp"
 #include "CoinMessageHandler.hpp"
 #include "OsiSolverInterface.hpp"
+#include "OsiBranchingObject.hpp"
 #include "OsiCuts.hpp"
 #include "CoinWarmStartBasis.hpp"
 #include "CbcCompareBase.hpp"
@@ -21,7 +22,7 @@ class OsiRowCutDebugger;
 class CglCutGenerator;
 class CglTreeProbingInfo;
 class CbcHeuristic;
-class CbcObject;
+class OsiObject;
 class CbcTree;
 class CbcStrategy;
 class CbcFeasibilityBase;
@@ -102,6 +103,10 @@ enum CbcIntParam {
     the target.
   */
   CbcFathomDiscipline,
+  /** Adjusts printout
+      1 does different node message with number unsatisfied on last branch
+  */
+  CbcPrinting,
   /** Just a marker, so that a static sized array can store parameters. */
   CbcLastIntParam
 };
@@ -349,7 +354,7 @@ public:
 
   /** \name Object manipulation routines
   
-    See CbcObject for an explanation of `object' in the context of CbcModel.
+    See OsiObject for an explanation of `object' in the context of CbcModel.
   */
   //@{
 
@@ -360,15 +365,21 @@ public:
   {  numberObjects_=number;};
 
   /// Get the array of objects
-  inline CbcObject ** objects() const { return object_;};
+  inline OsiObject ** objects() const { return object_;};
 
   /// Get the specified object
-  const inline CbcObject * object(int which) const { return object_[which];};
+  const inline OsiObject * object(int which) const { return object_[which];};
   /// Get the specified object
-  inline CbcObject * modifiableObject(int which) const { return object_[which];};
+  inline OsiObject * modifiableObject(int which) const { return object_[which];};
 
   /// Delete all object information
   void deleteObjects();
+
+  /** Add in object information.
+  
+    Objects are cloned; the owner can delete the originals.
+  */
+  void addObjects(int numberObjects, OsiObject ** objects);
 
   /** Add in object information.
   
@@ -458,6 +469,13 @@ public:
   inline int getMaximumSolutions() const {
     return getIntParam(CbcMaxNumSol);
   }
+  /// Set the printing mode
+  inline bool setPrintingMode( int value)
+  { return setIntParam(CbcPrinting,value); }
+
+  /// Get the printing mode
+  inline int getPrintingMode() const
+  { return getIntParam(CbcPrinting); }
 
   /** Set the
       \link CbcModel::CbcMaximumSeconds maximum number of seconds \endlink
@@ -600,6 +618,13 @@ public:
   */
   inline int numberStrong() const
   { return numberStrong_;};
+  /** Set global preferred way to branch
+      -1 down, +1 up, 0 no preference */
+  inline void setPreferredWay(int value)
+  {preferredWay_=value;};
+  /** Get the preferred way to branch (default 0) */
+  inline int getPreferredWay() const
+  { return preferredWay_;};
   /** Set size of mini - tree.  If > 1 then does total enumeration of
       tree given by this best variables to branch on
   */
@@ -711,6 +736,8 @@ public:
     */
     inline int status() const
     { return status_;};
+    inline void setProblemStatus(int value)
+    { status_=value;};
     /** Secondary status of problem
         -1 unset (status_ will also be -1)
         0 search completed with solution
@@ -724,6 +751,8 @@ public:
     */
     inline int secondaryStatus() const
     { return secondaryStatus_;};
+    inline void setSecondaryStatus(int value)
+    { secondaryStatus_=value;};
     /// Are there numerical difficulties (for initialSolve) ?
     bool isInitialSolveAbandoned() const ;
     /// Is optimality proven (for initialSolve) ?
@@ -1120,13 +1149,13 @@ public:
   { return branchingMethod_;};
   /// Set the branching decision method.
   inline void setBranchingMethod(CbcBranchDecision * method)
-  { branchingMethod_ = method->clone();};
+  { delete branchingMethod_; branchingMethod_ = method->clone();};
   /** Set the branching method
   
     \overload
   */
   inline void setBranchingMethod(CbcBranchDecision & method)
-  { branchingMethod_ = method.clone();};
+  { delete branchingMethod_; branchingMethod_ = method.clone();};
   //@}
 
   /** \name Row (constraint) and Column (variable) cut generation */
@@ -1401,6 +1430,17 @@ public:
   /// Encapsulates solver resolve
   int resolve(OsiSolverInterface * solver);
 
+  /** Encapsulates choosing a variable -
+      anyAction -2, infeasible (-1 round again), 0 done
+  */
+  int chooseBranch(CbcNode * newNode, int numberPassesLeft,
+		   CbcNode * oldNode, OsiCuts & cuts,
+		   bool & resolved, CoinWarmStartBasis *lastws,
+		   const double * lowerBefore,const double * upperBefore,
+		   OsiSolverBranch * & branches,
+		   OsiBranchingInformation * usefulInfo);
+  int chooseBranch(CbcNode * newNode, int numberPassesLeft, bool & resolved);
+
   /** Return an empty basis object of the specified size
 
     A useful utility when constructing a basis for a subproblem from scratch.
@@ -1501,6 +1541,8 @@ public:
                            int numberFixed, bool ifInfeasible);
   /// Create C++ lines to get to current state
   void generateCpp( FILE * fp,int options);
+  /// Generate an OsiBranchingInformation object
+  OsiBranchingInformation usefulInformation() const;
   //@}
 
 //---------------------------------------------------------------------------
@@ -1781,7 +1823,7 @@ private:
 	  SimpleInteger. As of 2003.08, SimpleIntegers and Cliques are the only
 	  objects.
   */
-  CbcObject ** object_;
+  OsiObject ** object_;
 
   
   /// Original columns as created by integerPresolve
@@ -1804,6 +1846,8 @@ private:
   int maximumCutPassesAtRoot_;
   /// Maximum number of cut passes
   int maximumCutPasses_;
+  /// Preferred way of branching
+  int preferredWay_;
   /// Current cut pass number
   int currentPassNumber_;
   /// Maximum number of cuts (for whichGenerator_)
@@ -1853,5 +1897,7 @@ private:
   bool resolveAfterTakeOffCuts_;
  //@}
 };
-
+/// So we can use osiObject or CbcObject during transition
+void getIntegerInformation(const OsiObject * object, double & originalLower,
+			   double & originalUpper) ;
 #endif

@@ -381,9 +381,9 @@ CbcStrategyDefault::setupOther(CbcModel & model)
             model.findIntegers(true);
             numberIntegers = model.numberIntegers();
           }
-          CbcObject ** oldObjects = model.objects();
+          OsiObject ** oldObjects = model.objects();
           // Do sets and priorities
-          CbcObject ** objects = new CbcObject * [numberSOS];
+          OsiObject ** objects = new OsiObject * [numberSOS];
           // set old objects to have low priority
           int numberOldObjects = model.numberObjects();
           int numberColumns = model.getNumCols();
@@ -421,7 +421,17 @@ CbcStrategyDefault::setupOther(CbcModel & model)
               fake[originalColumns[i]]=i;
             for (int iObject=0;iObject<model.numberObjects();iObject++) {
               // redo ids etc
-              model.modifiableObject(iObject)->redoSequenceEtc(&model,n,fake);
+	      CbcSimpleInteger * obj =
+		dynamic_cast <CbcSimpleInteger *>(model.modifiableObject(iObject)) ;
+	      if (obj) {
+		obj->resetSequenceEtc(n,fake);
+	      } else {
+		// redo ids etc
+		CbcObject * obj =
+		  dynamic_cast <CbcObject *>(model.modifiableObject(iObject)) ;
+		assert (obj);
+		obj->redoSequenceEtc(&model,n,fake);
+	      }
             }
             delete [] fake;
           }

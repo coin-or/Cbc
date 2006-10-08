@@ -51,7 +51,7 @@ CbcStatistics::CbcStatistics(CbcNode * node)
   CbcNodeInfo * nodeInfo = node->nodeInfo();
   CbcNodeInfo * parent = nodeInfo->parent();
   int numberBranches = nodeInfo->numberBranchesLeft();
-  const CbcBranchingObject * branch = node->branchingObject();
+  const CbcBranchingObject * branch = dynamic_cast <const CbcBranchingObject *>(node->branchingObject());
   startingObjective_=node->objectiveValue();
   way_=node->way();
   depth_=node->depth();

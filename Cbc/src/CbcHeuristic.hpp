@@ -85,7 +85,6 @@ private:
   CbcHeuristic & operator=(const CbcHeuristic& rhs);
   
 };
-
 /** Rounding class
  */
 

@@ -117,7 +117,7 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver,int numberNodes,
         model_->messageHandler()->message(CBC_END_SUB,model_->messages())
           << name
           <<CoinMessageEol;
-      if (model.getMinimizationObjValue()<cutoff) {
+      if (model.getMinimizationObjValue()<CoinMin(cutoff,1.0e30)) {
         // solution
         returnCode=1;
         // post process

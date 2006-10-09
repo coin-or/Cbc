@@ -861,8 +861,8 @@ CbcSimpleInteger::columnNumber() const
 double 
 CbcSimpleInteger::infeasibility(int & preferredWay) const
 {
-  abort();
-  return 0.0;
+  OsiBranchingInformation info(model_->solver());
+  return infeasibility(model_->solver(),&info,preferredWay);
 }
 
 // This looks at solution and sets bounds to contain solution

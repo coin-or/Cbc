@@ -42,6 +42,13 @@ public:
 
       It may make sense for user to call this outside Branch and Cut to
       get solution.  Or normally is just at root node.
+
+      * new meanings for when_ - on first try then set back to 1
+        11 - at end fix all integers at same bound throughout
+        12 - also fix all integers staying at same internal integral value throughout
+        13 - also fix all continuous variables staying at same bound throughout
+        14 - also fix all continuous variables staying at same internal value throughout
+        15 - as 13 but no internal integers
   */
   virtual int solution(double & objectiveValue,
 		       double * newSolution);
@@ -81,6 +88,17 @@ public:
   /// Get maximum retries (default 1)
   inline int maximumRetries() const
   { return maximumRetries_;};
+  /**  Set use of multiple solutions and solves
+       0 - do not reuse solves, do not accumulate integer solutions for local search
+       1 - do not reuse solves, accumulate integer solutions for local search
+       2 - reuse solves, do not accumulate integer solutions for local search
+       3 - reuse solves, accumulate integer solutions for local search
+  */
+  inline void setAccumulate(int value)
+  { accumulate_=value;};
+  /// Get accumulation option
+  inline int accumulate() const
+  { return accumulate_;};
 
 protected:
   // Data
@@ -104,6 +122,13 @@ protected:
       If negative we clean out used array
   */
   int maximumRetries_;
+  /**  Set use of multiple solutions and solves
+       0 - do not reuse solves, do not accumulate integer solutions for local search
+       1 - do not reuse solves, accumulate integer solutions for local search
+       2 - reuse solves, do not accumulate integer solutions for local search
+       3 - reuse solves, accumulate integer solutions for local search
+  */
+  int accumulate_;
   /// If true round to expensive
   bool roundExpensive_;
 

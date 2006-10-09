@@ -836,6 +836,27 @@ CbcTreeLocal::deleteCut(OsiRowCut & cut)
 	 i,n,rowCut->lb(),rowCut->ub());
   global->eraseRowCut(i);
 }
+// Create C++ lines to get to current state
+void 
+CbcTreeLocal::generateCpp( FILE * fp) 
+{
+  CbcTreeLocal other;
+  fprintf(fp,"0#include \"CbcTreeLocal.hpp\"\n");
+  fprintf(fp,"5  CbcTreeLocal localTree(cbcModel,NULL);\n");
+  if (range_!=other.range_)
+    fprintf(fp,"5  localTree.setRange(%d);\n",range_);
+  if (typeCuts_!=other.typeCuts_)
+    fprintf(fp,"5  localTree.setTypeCuts(%d);\n",typeCuts_);
+  if (maxDiversification_!=other.maxDiversification_)
+    fprintf(fp,"5  localTree.setMaxDiversification(%d);\n",maxDiversification_);
+  if (timeLimit_!=other.timeLimit_)
+    fprintf(fp,"5  localTree.setTimeLimit(%d);\n",timeLimit_);
+  if (nodeLimit_!=other.nodeLimit_)
+    fprintf(fp,"5  localTree.setNodeLimit(%d);\n",nodeLimit_);
+  if (refine_!=other.refine_)
+    fprintf(fp,"5  localTree.setRefine(%s);\n",refine_ ? "true" : "false");
+  fprintf(fp,"5  cbcModel->passInTreeHandler(localTree);\n");
+}
 
 
 

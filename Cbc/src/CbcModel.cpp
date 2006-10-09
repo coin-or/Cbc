@@ -8578,6 +8578,7 @@ CbcModel::generateCpp( FILE * fp,int options)
   }
   if (nodeCompare_)
     nodeCompare_->generateCpp(fp);
+  tree_->generateCpp(fp);
   CbcModel defaultModel;
   CbcModel * other = &defaultModel;
   int iValue1, iValue2;
@@ -8617,6 +8618,11 @@ CbcModel::generateCpp( FILE * fp,int options)
   fprintf(fp,"%d  int save_printFrequency = cbcModel->printFrequency();\n",iValue1==iValue2 ? 2 : 1);
   fprintf(fp,"%d  cbcModel->setPrintFrequency(%d);\n",iValue1==iValue2 ? 4 : 3,iValue1);
   fprintf(fp,"%d  cbcModel->setPrintFrequency(save_printFrequency);\n",iValue1==iValue2 ? 7 : 6);
+  iValue1 = this->getPrintingMode();
+  iValue2 = other->getPrintingMode();
+  fprintf(fp,"%d  int save_printingMode = cbcModel->getPrintingMode();\n",iValue1==iValue2 ? 2 : 1);
+  fprintf(fp,"%d  cbcModel->setPrintingMode(%d);\n",iValue1==iValue2 ? 4 : 3,iValue1);
+  fprintf(fp,"%d  cbcModel->setPrintingMode(save_printingMode);\n",iValue1==iValue2 ? 7 : 6);
   iValue1 = this->searchStrategy();
   iValue2 = other->searchStrategy();
   fprintf(fp,"%d  int save_searchStrategy = cbcModel->searchStrategy();\n",iValue1==iValue2 ? 2 : 1);

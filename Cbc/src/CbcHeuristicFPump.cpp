@@ -28,6 +28,7 @@ CbcHeuristicFPump::CbcHeuristicFPump()
    relativeIncrement_(0.0),
    maximumPasses_(100),
    maximumRetries_(1),
+   accumulate_(0),
    roundExpensive_(false)
 {
   setWhen(1);
@@ -45,6 +46,7 @@ CbcHeuristicFPump::CbcHeuristicFPump(CbcModel & model,
    relativeIncrement_(0.0),
    maximumPasses_(100),
    maximumRetries_(1),
+   accumulate_(0),
    roundExpensive_(roundExpensive)
 {
   setWhen(1);
@@ -76,6 +78,10 @@ CbcHeuristicFPump::generateCpp( FILE * fp)
     fprintf(fp,"3  heuristicFPump.setMaximumRetries(%d);\n",maximumRetries_);
   else
     fprintf(fp,"4  heuristicFPump.setMaximumRetries(%d);\n",maximumRetries_);
+  if (accumulate_!=other.accumulate_)
+    fprintf(fp,"3  heuristicFPump.setAccumulate(%d);\n",accumulate_);
+  else
+    fprintf(fp,"4  heuristicFPump.setAccumulate(%d);\n",accumulate_);
   if (maximumTime_!=other.maximumTime_)
     fprintf(fp,"3  heuristicFPump.setMaximumTime(%g);\n",maximumTime_);
   else
@@ -107,6 +113,7 @@ CbcHeuristicFPump::CbcHeuristicFPump(const CbcHeuristicFPump & rhs)
   relativeIncrement_(rhs.relativeIncrement_),
   maximumPasses_(rhs.maximumPasses_),
   maximumRetries_(rhs.maximumRetries_),
+  accumulate_(rhs.accumulate_),
   roundExpensive_(rhs.roundExpensive_)
 {
   setWhen(rhs.when());
@@ -149,11 +156,16 @@ CbcHeuristicFPump::solution(double & solutionValue,
   bool solutionFound=false;
   char * usedColumn = NULL;
   double * lastSolution=NULL;
-  bool fixContinuous=false;
+  int fixContinuous=0;
   bool fixInternal=false;
-  if (when_>=11&&when_<=13) {
-    fixInternal = when_ >11;
-    fixContinuous = when_==13;
+  if (when_>=11&&when_<=15) {
+    fixInternal = when_ >11&&when_<15;
+    if (when_<13)
+      fixContinuous = 0;
+    else if (when_!=14)
+      fixContinuous=1;
+    else
+      fixContinuous=2;
     when_=1;
     usedColumn = new char [numberColumns];
     memset(usedColumn,0,numberColumns);
@@ -313,6 +325,8 @@ CbcHeuristicFPump::solution(double & solutionValue,
 	  }
 	  if (returnCode) {
 	    memcpy(betterSolution,newSolution,numberColumns*sizeof(double));
+	    if ((accumulate_&1)!=0)
+	      model_->incrementUsed(betterSolution); // for local search
 	    solutionValue=newSolutionValue;
 	    solutionFound=true;
 	    if (general&&saveValue!=newSolutionValue)
@@ -437,6 +451,8 @@ CbcHeuristicFPump::solution(double & solutionValue,
 	      printf(" - intermediate solution found of %g",newSolutionValue);
 	    if (newSolutionValue<solutionValue) {
 	      memcpy(betterSolution,newSolution,numberColumns*sizeof(double));
+	      if ((accumulate_&1)!=0)
+		model_->incrementUsed(betterSolution); // for local search
 	      solutionValue=newSolutionValue;
 	      solutionFound=true;
 	    } else {
@@ -467,6 +483,7 @@ CbcHeuristicFPump::solution(double & solutionValue,
       int nFix=0;
       int nFixI=0;
       int nFixC=0;
+      int nFixC2=0;
       for (i=0;i<numberIntegers;i++) {
 	int iColumn=integerVariable[i];
 	const OsiObject * object = model_->object(i);
@@ -506,6 +523,11 @@ CbcHeuristicFPump::solution(double & solutionValue,
 	    } else if (value>colUpper[iColumn]-1.0e-8) {
 	      newSolver->setColLower(iColumn,colUpper[iColumn]);
 	      nFixC++;
+	    } else if (fixContinuous==2) {
+	      newSolver->setColLower(iColumn,value);
+	      newSolver->setColUpper(iColumn,value);
+	      nFixC++;
+	      nFixC2++;
 	    }
 	  }
 	}
@@ -516,14 +538,47 @@ CbcHeuristicFPump::solution(double & solutionValue,
 	assert (newSolver->isProvenOptimal());
 	break;
       }
-      printf("%d integers at bound fixed (of which %d were internal) and %d continuous\n",
-	     nFix,nFixI,nFixC);
+      printf("%d integers at bound fixed and %d continuous",
+	     nFix,nFixC);
+      if (nFixC2+nFixI==0)
+	printf("\n");
+      else
+	printf("of which %d were internal integer and %d internal continuous\n",
+	     nFixI,nFixC2);
       double saveValue = newSolutionValue;
       returnCode = smallBranchAndBound(newSolver,200,newSolution,newSolutionValue,
 				       newSolutionValue,"CbcHeuristicLocalAfterFPump");
       if (returnCode) {
 	printf("old sol of %g new of %g\n",saveValue,newSolutionValue);
 	memcpy(betterSolution,newSolution,numberColumns*sizeof(double));
+	if (fixContinuous) {
+	  // may be able to do even better
+	  const double * lower = model_->solver()->getColLower();
+	  const double * upper = model_->solver()->getColUpper();
+	  for (int iColumn=0;iColumn<numberColumns;iColumn++) {
+	    if (newSolver->isInteger(iColumn)) {
+	      double value=floor(newSolution[iColumn]+0.5);
+	      newSolver->setColLower(iColumn,value);
+	      newSolver->setColUpper(iColumn,value);
+	    } else {
+	      newSolver->setColLower(iColumn,lower[iColumn]);
+	      newSolver->setColUpper(iColumn,upper[iColumn]);
+	    }
+	  }
+	  newSolver->initialSolve();
+	  if (newSolver->isProvenOptimal()) {
+	    double value = newSolver->getObjValue()*newSolver->getObjSense();
+	    if (value<newSolutionValue) {
+	      printf("freeing continuous gives a solution of %g\n", value);
+	      newSolutionValue=value;
+	      memcpy(betterSolution,newSolver->getColSolution(),numberColumns*sizeof(double));
+	    }
+	  } else {
+	    newSolver->writeMps("bad3.mps");
+	  }
+	} 
+	if ((accumulate_&1)!=0)
+	  model_->incrementUsed(betterSolution); // for local search
 	solutionValue=newSolutionValue;
 	solutionFound=true;
       }
@@ -531,14 +586,14 @@ CbcHeuristicFPump::solution(double & solutionValue,
     }
     if (solutionFound) finalReturnCode=1;
     cutoff = CoinMin(cutoff,solutionValue);
-    if (numberTries>=CoinAbs(maximumRetries_)||!solutionFound) {
+    if (numberTries>=maximumRetries_||!solutionFound) {
       break;
     } else if (absoluteIncrement_>0.0||relativeIncrement_>0.0) {
       solutionFound=false;
       double gap = relativeIncrement_*fabs(solutionValue);
       cutoff -= CoinMax(CoinMax(gap,absoluteIncrement_),model_->getCutoffIncrement());
       printf("round again with cutoff of %g\n",cutoff);
-      if (maximumRetries_<0)
+      if (accumulate_<2)
 	memset(usedColumn,0,numberColumns);
       totalNumberPasses += numberPasses;
     } else {

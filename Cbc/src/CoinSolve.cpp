@@ -90,7 +90,7 @@ static double totalTime=0.0;
 static void statistics(ClpSimplex * originalModel, ClpSimplex * model);
 static bool maskMatches(const int * starts, char ** masks,
 			std::string & check);
-static void generateCode(const char * fileName,int type,int preProcess);
+static void generateCode(CbcModel * model, const char * fileName,int type,int preProcess);
 #ifdef NDEBUG
 #undef NDEBUG
 #endif
@@ -2063,41 +2063,47 @@ int main (int argc, const char *argv[])
               if (useFpump) {
                 heuristic4.setMaximumPasses(parameters[whichParam(FPUMPITS,numberParameters,parameters)].intValue());
                 int pumpTune=parameters[whichParam(FPUMPTUNE,numberParameters,parameters)].intValue();
-		if (pumpTune>10) {
+		if (pumpTune>0) {
 		  /*
-		    >=1000 use index+2 as number of large loops, if >4 decrement by 5 and clean used array
+		    >=1000000 use as accumulate switch
+		    >=1000 use index+2 as number of large loops
 		    >=100 use 0.05 objvalue as increment
 		    >=10 use +0.1 objvalue for cutoff (add)
 		    1 == fix ints at bounds, 2 fix all integral ints, 3 and continuous at bounds
+		    4 and static continuous, 5 as 3 but no internal integers
 		  */
-		  if (pumpTune) {
-		    double value = babModel->solver()->getObjSense()*babModel->solver()->getObjValue();
-		    int w = pumpTune/10;
-		    int c = w % 10;
-		    w /= 10;
-		    int i = w % 10;
-		    w /= 10;
-		    int r = w%10;
-		    // fake cutoff
-		    if (c) {
-		      double cutoff;
-		      babModel->solver()->getDblParam(OsiDualObjectiveLimit,cutoff);
-		      cutoff = CoinMin(cutoff,value + 0.1*fabs(value)*c);
-		      heuristic4.setFakeCutoff(cutoff);
-		    }
-		    if (i||r) {
-		      // also set increment
-		      heuristic4.setAbsoluteIncrement((0.01*i+0.005)*(fabs(value)+1.0e-12));
-		      if (r>4) {
-			r -=5;
-			heuristic4.setMaximumRetries(-r-2);
-		      } else {
-			heuristic4.setMaximumRetries(r+2);
-		      }
-		    }
-		    pumpTune = pumpTune%100;
-		    heuristic4.setWhen(pumpTune+10);
+		  double value = babModel->solver()->getObjSense()*babModel->solver()->getObjValue();
+		  int w = pumpTune/10;
+		  int c = w % 10;
+		  w /= 10;
+		  int i = w % 10;
+		  w /= 10;
+		  int r = w;
+		  int accumulate = r/1000;
+		  r -= 1000*accumulate;
+		  // fake cutoff
+		  printf("Setting ");
+		  if (c) {
+		    double cutoff;
+		    babModel->solver()->getDblParam(OsiDualObjectiveLimit,cutoff);
+		    cutoff = CoinMin(cutoff,value + 0.1*fabs(value)*c);
+		    heuristic4.setFakeCutoff(cutoff);
+		    printf("fake cutoff of %g ",cutoff);
 		  }
+		  if (i||r) {
+		    // also set increment
+		    heuristic4.setAbsoluteIncrement((0.01*i+0.005)*(fabs(value)+1.0e-12));
+		    heuristic4.setAccumulate(accumulate);
+		    heuristic4.setMaximumRetries(r+2);
+		    if (i)
+		      printf("increment of %g ",heuristic4.absoluteIncrement());
+		    if (accumulate)
+		      printf("accumulate of %d ",accumulate);
+		    printf("%d retries ",r+2);
+		  }
+		  pumpTune = pumpTune%100;
+		  printf("and setting when to %d\n",pumpTune+10);
+		  heuristic4.setWhen(pumpTune+10);
 		}
                 babModel->addHeuristic(&heuristic4);
               }
@@ -2214,7 +2220,7 @@ int main (int argc, const char *argv[])
 		  babModel->setPrintingMode(1);
 		  iLevel = -iLevel;
 		}
-                babModel->messageHandler()->setLogLevel(parameters[log].intValue());
+                babModel->messageHandler()->setLogLevel(iLevel);
                 if (babModel->getNumCols()>2000||babModel->getNumRows()>1500||
                     babModel->messageHandler()->logLevel()>1)
                   babModel->setPrintFrequency(100);
@@ -2558,7 +2564,7 @@ int main (int argc, const char *argv[])
                     //solveOptions.generateCpp(fp);
                     fclose(fp);
                     // now call generate code
-                    generateCode("user_driver.cpp",cppValue,prepro);
+                    generateCode(babModel,"user_driver.cpp",cppValue,prepro);
                   } else {
                     std::cout<<"Unable to open file user_driver.cpp"<<std::endl;
                   }
@@ -4495,7 +4501,7 @@ static void clean(char * temp)
     put++;
   *put='\0';
 }
-static void generateCode(const char * fileName,int type,int preProcess)
+static void generateCode(CbcModel * model, const char * fileName,int type,int preProcess)
 {
   // options on code generation
   bool sizecode = (type&4)!=0;
@@ -4520,33 +4526,7 @@ static void generateCode(const char * fileName,int type,int preProcess)
   strcpy(line[numberLines++],"0#include \"CoinTime.hpp\"");
   if (preProcess>0) 
     strcpy(line[numberLines++],"0#include \"CglProbing.hpp\""); // possibly redundant
-  while (fgets(line[numberLines],MAXONELINE,fp)) {
-    assert (numberLines<MAXLINES);
-    clean(line[numberLines]);
-    numberLines++;
-  }
-  fclose(fp);
-  strcpy(line[numberLines++],"0\nint main (int argc, const char *argv[])\n{");
-  strcpy(line[numberLines++],"0  OsiClpSolverInterface solver1;");
-  strcpy(line[numberLines++],"0  int status=1;");
-  strcpy(line[numberLines++],"0  if (argc<2)");
-  strcpy(line[numberLines++],"0    std::cout<<\"Please give file name\"<<std::endl;");
-  strcpy(line[numberLines++],"0  else");
-  strcpy(line[numberLines++],"0    status=solver1.readMps(argv[1],\"\");");
-  strcpy(line[numberLines++],"0  if (status) {");
-  strcpy(line[numberLines++],"0    std::cout<<\"Bad readMps \"<<argv[1]<<std::endl;");
-  strcpy(line[numberLines++],"0    exit(1);");
-  strcpy(line[numberLines++],"0  }\n");
-  strcpy(line[numberLines++],"0  double time1 = CoinCpuTime();");
-  strcpy(line[numberLines++],"0  CbcModel model(solver1);");
-  strcpy(line[numberLines++],"0  // Now do requested saves and modifications");
-  strcpy(line[numberLines++],"0  CbcModel * cbcModel = & model;");
-  strcpy(line[numberLines++],"0  OsiSolverInterface * osiModel = model.solver();");
-  strcpy(line[numberLines++],"0  OsiClpSolverInterface * osiclpModel = dynamic_cast< OsiClpSolverInterface*> (osiModel);");
-  strcpy(line[numberLines++],"0  ClpSimplex * clpModel = osiclpModel->getModelPtr();");
-  // add in comments about messages
-  strcpy(line[numberLines++],"3  // You can save some time by switching off message building");
-  strcpy(line[numberLines++],"3  // clpModel->messagesPointer()->setDetailMessages(100,10000,(int *) NULL);");
+  // To allow generated 5's to be just before branchAndBound - do rest here
   strcpy(line[numberLines++],"5  cbcModel->initialSolve();");
   strcpy(line[numberLines++],"5  if (clpModel->tightenPrimalBounds()!=0) {");
   strcpy(line[numberLines++],"5    std::cout<<\"Problem is infeasible - tightenPrimalBounds!\"<<std::endl;");
@@ -4612,6 +4592,33 @@ static void generateCode(const char * fileName,int type,int preProcess)
     strcpy(line[numberLines++],"5  cbcModel->assignSolver(solver2);");
     strcpy(line[numberLines++],"5  cbcModel->initialSolve();");
   }
+  while (fgets(line[numberLines],MAXONELINE,fp)) {
+    assert (numberLines<MAXLINES);
+    clean(line[numberLines]);
+    numberLines++;
+  }
+  fclose(fp);
+  strcpy(line[numberLines++],"0\nint main (int argc, const char *argv[])\n{");
+  strcpy(line[numberLines++],"0  OsiClpSolverInterface solver1;");
+  strcpy(line[numberLines++],"0  int status=1;");
+  strcpy(line[numberLines++],"0  if (argc<2)");
+  strcpy(line[numberLines++],"0    std::cout<<\"Please give file name\"<<std::endl;");
+  strcpy(line[numberLines++],"0  else");
+  strcpy(line[numberLines++],"0    status=solver1.readMps(argv[1],\"\");");
+  strcpy(line[numberLines++],"0  if (status) {");
+  strcpy(line[numberLines++],"0    std::cout<<\"Bad readMps \"<<argv[1]<<std::endl;");
+  strcpy(line[numberLines++],"0    exit(1);");
+  strcpy(line[numberLines++],"0  }\n");
+  strcpy(line[numberLines++],"0  double time1 = CoinCpuTime();");
+  strcpy(line[numberLines++],"0  CbcModel model(solver1);");
+  strcpy(line[numberLines++],"0  // Now do requested saves and modifications");
+  strcpy(line[numberLines++],"0  CbcModel * cbcModel = & model;");
+  strcpy(line[numberLines++],"0  OsiSolverInterface * osiModel = model.solver();");
+  strcpy(line[numberLines++],"0  OsiClpSolverInterface * osiclpModel = dynamic_cast< OsiClpSolverInterface*> (osiModel);");
+  strcpy(line[numberLines++],"0  ClpSimplex * clpModel = osiclpModel->getModelPtr();");
+  // add in comments about messages
+  strcpy(line[numberLines++],"3  // You can save some time by switching off message building");
+  strcpy(line[numberLines++],"3  // clpModel->messagesPointer()->setDetailMessages(100,10000,(int *) NULL);");
   // add in actual solve
   strcpy(line[numberLines++],"5  cbcModel->branchAndBound();");
   strcpy(line[numberLines++],"8  std::cout<<argv[1]<<\" took \"<<CoinCpuTime()-time1<<\" seconds, \"");

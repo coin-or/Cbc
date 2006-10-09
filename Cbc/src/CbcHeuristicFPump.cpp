@@ -70,6 +70,10 @@ CbcHeuristicFPump::generateCpp( FILE * fp)
   CbcHeuristicFPump other;
   fprintf(fp,"0#include \"CbcHeuristicFPump.hpp\"\n");
   fprintf(fp,"3  CbcHeuristicFPump heuristicFPump(*cbcModel);\n");
+  if (when_!=other.when_)
+    fprintf(fp,"3  heuristicFPump.setWhen(%d);\n",when_);
+  else
+    fprintf(fp,"4  heuristicFPump.setWhen(%d);\n",when_);
   if (maximumPasses_!=other.maximumPasses_)
     fprintf(fp,"3  heuristicFPump.setMaximumPasses(%d);\n",maximumPasses_);
   else
@@ -593,7 +597,7 @@ CbcHeuristicFPump::solution(double & solutionValue,
       double gap = relativeIncrement_*fabs(solutionValue);
       cutoff -= CoinMax(CoinMax(gap,absoluteIncrement_),model_->getCutoffIncrement());
       printf("round again with cutoff of %g\n",cutoff);
-      if (accumulate_<2)
+      if (accumulate_<2&&usedColumn)
 	memset(usedColumn,0,numberColumns);
       totalNumberPasses += numberPasses;
     } else {

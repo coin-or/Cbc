@@ -139,11 +139,12 @@ am__installdirs = "$(DESTDIR)$(libdir)" "$(DESTDIR)$(bindir)" \
 libLTLIBRARIES_INSTALL = $(INSTALL)
 LTLIBRARIES = $(lib_LTLIBRARIES)
 libCbc_la_LIBADD =
-am_libCbc_la_OBJECTS = CbcBranchActual.lo CbcBranchBase.lo \
-	CbcBranchCut.lo CbcBranchDynamic.lo CbcBranchLotsize.lo \
-	CbcCompareActual.lo CbcCountRowCut.lo CbcCutGenerator.lo \
-	CbcEventHandler.lo CbcFathom.lo CbcFathomDynamicProgramming.lo \
-	CbcHeuristic.lo CbcHeuristicFPump.lo CbcHeuristicGreedy.lo \
+am_libCbc_la_OBJECTS = Cbc_C_Interface.lo CbcBranchActual.lo \
+	CbcBranchBase.lo CbcBranchCut.lo CbcBranchDynamic.lo \
+	CbcBranchLotsize.lo CbcCompareActual.lo CbcCountRowCut.lo \
+	CbcCutGenerator.lo CbcEventHandler.lo CbcFathom.lo \
+	CbcFathomDynamicProgramming.lo CbcHeuristic.lo \
+	CbcHeuristicFPump.lo CbcHeuristicGreedy.lo \
 	CbcHeuristicLocal.lo CbcMessage.lo CbcModel.lo CbcNode.lo \
 	CbcStatistics.lo CbcStrategy.lo CbcTree.lo CbcTreeLocal.lo
 libCbc_la_OBJECTS = $(am_libCbc_la_OBJECTS)
@@ -442,6 +443,7 @@ lib_LTLIBRARIES = libCbc.la
 
 # List all source files for this library, including headers
 libCbc_la_SOURCES = \
+	Cbc_C_Interface.cpp Cbc_C_Interface.h \
 	CbcConfig.h \
 	CbcBranchActual.cpp CbcBranchActual.hpp \
 	CbcBranchBase.cpp CbcBranchBase.hpp \
@@ -560,6 +562,7 @@ DEFAULT_INCLUDES = -I. -I`$(CYGPATH_W) $(srcdir)` -I$(top_builddir)/inc
 # and that therefore should be installed in 'install'
 include_HEADERS = \
 	../inc/config_cbc.h \
+	Cbc_C_Interface.h \
 	CbcBranchActual.hpp \
 	CbcBranchBase.hpp \
 	CbcBranchDynamic.hpp \
@@ -715,6 +718,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcStrategy.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcTree.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcTreeLocal.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Cbc_C_Interface.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Cbc_ampl.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CoinSolve.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/unitTest.Po@am__quote@

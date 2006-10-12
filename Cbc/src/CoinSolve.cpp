@@ -95,7 +95,11 @@ static void generateCode(CbcModel * model, const char * fileName,int type,int pr
 #undef NDEBUG
 #endif
 //#############################################################################
+// To use USERCBC uncomment the following define and add in your fake main program here
+//#define USER_HAS_FAKE_MAIN
 //  Start any fake main program
+#ifdef USER_HAS_FAKE_MAIN
+#endif
 //  End any fake main program
 //#############################################################################
 
@@ -3726,7 +3730,7 @@ int main (int argc, const char *argv[])
 	  case USERCBC:
             // Replace the sample code by whatever you want
 	    if (goodModel) {
-#if 1
+#ifndef USER_HAS_FAKE_MAIN
               printf("Dummy user cbc code - model has %d rows and %d columns\n",
                      model.getNumRows(),model.getNumCols());
               // Reduce printout

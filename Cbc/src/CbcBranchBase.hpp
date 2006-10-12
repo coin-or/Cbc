@@ -144,6 +144,12 @@ public:
       variables, etc.)
   */
   virtual OsiBranchingObject * createBranch(OsiSolverInterface * solver, int way) const;
+  /** Create a branching object and indicate which way to branch first.
+      
+      The branching object has to know how to create branches (fix
+      variables, etc.)
+  */
+  virtual OsiBranchingObject * createBranch(OsiSolverInterface * solver,const OsiBranchingInformation * info, int way) const;
   /** Create an OsiSolverBranch object
 
       This returns NULL if branch not represented by bound changes

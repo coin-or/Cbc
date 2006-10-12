@@ -226,6 +226,16 @@ public:
   /// Set whether generator switched off for moment
   inline void setSwitchedOff(bool yesNo)
   { switchedOff_=yesNo;};
+  /// Number of cuts generated at root
+  inline int numberCutsAtRoot() const
+  { return numberCutsAtRoot_;};
+  inline void setNumberCutsAtRoot(int value)
+  { numberCutsAtRoot_ = value;};
+  /// Number of cuts active at root
+  inline int numberActiveCutsAtRoot() const
+  { return numberActiveCutsAtRoot_;};
+  inline void setNumberActiveCutsAtRoot(int value)
+  { numberActiveCutsAtRoot_ = value;};
   //@}
   
 private:
@@ -286,6 +296,10 @@ private:
   int numberColumnCuts_;
   /// Total number of cuts active after (at end of n cut passes at each node)
   int numberCutsActive_;
+  /// Number of cuts generated at root
+  int numberCutsAtRoot_;
+  /// Number of cuts active at root
+  int numberActiveCutsAtRoot_;
 };
 
 #endif

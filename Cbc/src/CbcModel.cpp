@@ -4796,6 +4796,11 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
     } 
     delete [] count ;
     if( !numberNodes_) {
+      // save statistics
+      for (i = 0;i<numberCutGenerators_;i++) {
+	generator_[i]->setNumberCutsAtRoot(generator_[i]->numberCutsInTotal());
+	generator_[i]->setNumberActiveCutsAtRoot(generator_[i]->numberCutsActive());
+      }
       // decide on pseudo cost strategy
       int howOften = iProbing>=0 ? generator_[iProbing]->howOften() : 0;
       if ((howOften %1000000)!=1) 

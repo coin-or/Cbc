@@ -158,6 +158,18 @@ CbcObject::createBranch(OsiSolverInterface * solver, int way) const
   CbcObject * fudge = const_cast<CbcObject *>(this);
   return fudge->createBranch(way);
 }
+/* Create a branching object and indicate which way to branch first.
+      
+      The branching object has to know how to create branches (fix
+      variables, etc.)
+*/
+OsiBranchingObject * 
+CbcObject::createBranch(OsiSolverInterface * solver,const OsiBranchingInformation * info, int way) const 
+{
+  assert (solver==model_->solver());
+  CbcObject * fudge = const_cast<CbcObject *>(this);
+  return fudge->createBranch(way);
+}
 /* Create an OsiSolverBranch object
    
 This returns NULL if branch not represented by bound changes

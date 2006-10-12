@@ -36,7 +36,9 @@ CbcCutGenerator::CbcCutGenerator ()
     numberTimes_(0),
     numberCuts_(0),
     numberColumnCuts_(0),
-    numberCutsActive_(0)
+    numberCutsActive_(0),
+    numberCutsAtRoot_(0),
+    numberActiveCutsAtRoot_(0)
 {
 }
 // Normal constructor
@@ -56,7 +58,9 @@ CbcCutGenerator::CbcCutGenerator(CbcModel * model,CglCutGenerator * generator,
     numberTimes_(0),
     numberCuts_(0),
     numberColumnCuts_(0),
-    numberCutsActive_(0)
+    numberCutsActive_(0),
+    numberCutsAtRoot_(0),
+    numberActiveCutsAtRoot_(0)
 {
   model_ = model;
   generator_=generator->clone();
@@ -96,6 +100,8 @@ CbcCutGenerator::CbcCutGenerator ( const CbcCutGenerator & rhs)
   numberCuts_ = rhs.numberCuts_;
   numberColumnCuts_ = rhs.numberColumnCuts_;
   numberCutsActive_ = rhs.numberCutsActive_;
+  numberCutsAtRoot_  = rhs.numberCutsAtRoot_;
+  numberActiveCutsAtRoot_ = rhs.numberActiveCutsAtRoot_;
 }
 
 // Assignment operator 
@@ -125,6 +131,8 @@ CbcCutGenerator::operator=( const CbcCutGenerator& rhs)
     numberCuts_ = rhs.numberCuts_;
     numberColumnCuts_ = rhs.numberColumnCuts_;
     numberCutsActive_ = rhs.numberCutsActive_;
+    numberCutsAtRoot_  = rhs.numberCutsAtRoot_;
+    numberActiveCutsAtRoot_ = rhs.numberActiveCutsAtRoot_;
   }
   return *this;
 }

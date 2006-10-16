@@ -3737,9 +3737,11 @@ int main (int argc, const char *argv[])
               model.solver()->setHintParam(OsiDoReducePrint,true,OsiHintTry);
               // Do complete search
               model.branchAndBound();
+#ifdef COIN_HAS_ASL
 	      double objectiveValue=model.getMinimizationObjValue();
 	      int iStat = model.status();
 	      int iStat2 = model.secondaryStatus();
+#endif
 #else
               // Way of using an existing piece of code
               OsiClpSolverInterface * clpSolver = dynamic_cast< OsiClpSolverInterface*> (model.solver());
@@ -3748,10 +3750,12 @@ int main (int argc, const char *argv[])
               double timeToGo = model.getMaximumSeconds();
               lpSolver->setMaximumSeconds(timeToGo);
               fakeMain(*lpSolver,*clpSolver,model);
+#ifdef COIN_HAS_ASL
 	      // My actual usage has objective only in clpSolver
 	      double objectiveValue=clpSolver->getObjValue();
 	      int iStat = lpSolver->status();
 	      int iStat2 = lpSolver->secondaryStatus();
+#endif
 #endif
 	      // make sure solution back in correct place
 	      clpSolver = dynamic_cast< OsiClpSolverInterface*> (model.solver());
@@ -3809,8 +3813,8 @@ int main (int argc, const char *argv[])
 		}
 		// put buffer into info
 		strcpy(info.buffer,buf);
-#endif
               }
+#endif
 	    }
 	    break;
 	  case HELP:

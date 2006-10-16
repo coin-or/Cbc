@@ -2005,7 +2005,7 @@ void CbcClpUnitTest (const CbcModel & saveModel)
 	  largest = CoinMax(largest,below);
       }
       //std::cout<<"Largest (scaled) away from bound "<<largest<<std::endl;
-      modelC->setDualBound(CoinMin(1000.0*largest,1.00001e10));
+      modelC->setDualBound(CoinMax(1.0001e8,CoinMin(1000.0*largest,1.00001e10)));
     }
     model->setMinimumDrop(min(5.0e-2,
                                  fabs(model->getMinimizationObjValue())*1.0e-3+1.0e-4));

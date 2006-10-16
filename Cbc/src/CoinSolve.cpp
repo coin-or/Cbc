@@ -2130,6 +2130,10 @@ int main (int argc, const char *argv[])
                   babModel->passInTreeHandler(localTree);
                 }
               }
+	      if (type==MIPLIB) {
+		if (babModel->numberStrong()==5&&babModel->numberBeforeTrust()==5) 
+		  babModel->setNumberBeforeTrust(50);
+	      }
               // add cut generators if wanted
               int switches[20];
               int numberGenerators=0;
@@ -2574,7 +2578,7 @@ int main (int argc, const char *argv[])
                   }
                 }
 		if (useStrategy) {
-		  CbcStrategyDefault strategy(true,5,5);
+		  CbcStrategyDefault strategy(true,babModel->numberStrong(),babModel->numberBeforeTrust());
                   strategy.setupPreProcessing(1);
 		  babModel->setStrategy(strategy);
 		}
@@ -2590,7 +2594,7 @@ int main (int argc, const char *argv[])
                 babModel->branchAndBound(statistics);
 		checkSOS(babModel, babModel->solver());
               } else if (type==MIPLIB) {
-                CbcStrategyDefault strategy(true,5,5);
+		CbcStrategyDefault strategy(true,babModel->numberStrong(),babModel->numberBeforeTrust());
                 // Set up pre-processing 
 		int translate2[]={9999,1,1,3,2,4,5};
                 if (preProcess)

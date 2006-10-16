@@ -1854,6 +1854,10 @@ int main (int argc, const char *argv[])
                   babModel->passInTreeHandler(localTree);
                 }
               }
+	      if (type==MIPLIB) {
+		if (babModel->numberStrong()==5&&babModel->numberBeforeTrust()==5) 
+		  babModel->setNumberBeforeTrust(50);
+	      }
               // add cut generators if wanted
               int switches[20];
               int numberGenerators=0;

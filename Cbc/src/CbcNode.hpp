@@ -535,6 +535,9 @@ public:
   /// Get the number of objects unsatisfied at this node.
   inline int numberUnsatisfied() const
   {return numberUnsatisfied_;};
+  /// Sum of "infeasibilities" reported by each object
+  inline double sumInfeasibilities() const
+  { return sumInfeasibilities_;};
 
   // Guessed objective value (for solution)
   inline double guessedObjectiveValue() const
@@ -556,6 +559,8 @@ private:
   double objectiveValue_;
   // Guessed satisfied Objective value
   double guessedObjectiveValue_;
+  /// Sum of "infeasibilities" reported by each object
+  double sumInfeasibilities_;
   /// Branching object for this node
   CbcBranchingObject * branch_;
   /// Depth of the node in the search tree

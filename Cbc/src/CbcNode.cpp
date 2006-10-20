@@ -657,6 +657,7 @@ CbcNode::CbcNode() :
   nodeInfo_(NULL),
   objectiveValue_(1.0e100),
   guessedObjectiveValue_(1.0e100),
+  sumInfeasibilities_(0.0),
   branch_(NULL),
   depth_(-1),
   numberUnsatisfied_(0)
@@ -671,6 +672,7 @@ CbcNode::CbcNode(CbcModel * model,
   nodeInfo_(NULL),
   objectiveValue_(1.0e100),
   guessedObjectiveValue_(1.0e100),
+  sumInfeasibilities_(0.0),
   branch_(NULL),
   depth_(-1),
   numberUnsatisfied_(0)
@@ -966,6 +968,8 @@ int CbcNode::chooseBranch (CbcModel *model, CbcNode *lastNode,int numberPassesLe
       // Some objects may compute an estimate of best solution from here
       estimatedDegradation=0.0; 
       numberUnsatisfied_ = 0;
+      // initialize sum of "infeasibilities"
+      sumInfeasibilities_ = 0.0;
       int bestPriority=INT_MAX;
       /*
         Scan for branching objects that indicate infeasibility. Choose the best
@@ -1056,6 +1060,7 @@ int CbcNode::chooseBranch (CbcModel *model, CbcNode *lastNode,int numberPassesLe
           // Increase estimated degradation to solution
           estimatedDegradation += CoinMin(object->upEstimate(),object->downEstimate());
           numberUnsatisfied_++;
+	  sumInfeasibilities_ += infeasibility;
           // Better priority? Flush choices.
           if (priorityLevel<bestPriority) {
             int j;
@@ -2078,6 +2083,8 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
       // Some objects may compute an estimate of best solution from here
       estimatedDegradation=0.0; 
       numberUnsatisfied_ = 0;
+      // initialize sum of "infeasibilities"
+      sumInfeasibilities_ = 0.0;
       int bestPriority=INT_MAX;
       /*
         Scan for branching objects that indicate infeasibility. Choose candidates
@@ -2143,6 +2150,7 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
           downEstimate[i]=object->downEstimate();
           upEstimate[i]=object->upEstimate();
           numberUnsatisfied_++;
+	  sumInfeasibilities_ += infeasibility;
           // Better priority? Flush choices.
           if (priorityLevel<bestPriority) {
             numberToDo=0;

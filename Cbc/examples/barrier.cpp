@@ -42,7 +42,12 @@ int main (int argc, const char *argv[])
   ClpSolve::SolveType method = ClpSolve::useBarrier;
   ClpSolve::PresolveType presolveType = ClpSolve::presolveOn;
   int numberPasses = 5;
+#ifndef UFL_BARRIER
   int options[] = {0,0,0,0,0,0};
+#else
+  // we can use UFL code
+  int options[] = {0,0,0,0,4,0};
+#endif
   int extraInfo[] = {-1,-1,-1,-1,-1,-1};
   int independentOptions[] = {0,0,3};
   ClpSolve clpSolve(method,presolveType,numberPasses,

@@ -1,9 +1,9 @@
 MSVisualStudio   https://projects.coin-or.org/svn/MSVisualStudio/branches/devel/ExternalsDirs/Cbc
-BuildTools    https://projects.coin-or.org/svn/BuildTools/releases/0.5.1
-ThirdParty/ASL https://projects.coin-or.org/svn/BuildTools/ThirdParty/ASL/releases/1.0.0
-Data/Netlib   https://projects.coin-or.org/svn/Data/releases/1.0.0/Netlib
-Data/Sample   https://projects.coin-or.org/svn/Data/releases/1.0.0/Sample
-Data/miplib3  https://projects.coin-or.org/svn/Data/releases/1.0.0/miplib3
+BuildTools    https://projects.coin-or.org/svn/BuildTools/stable/0.5
+ThirdParty/ASL https://projects.coin-or.org/svn/BuildTools/ThirdParty/ASL/stable/1.0
+Data/Netlib   https://projects.coin-or.org/svn/Data/stable/1.0/Netlib
+Data/Sample   https://projects.coin-or.org/svn/Data/stable/1.0/Sample
+Data/miplib3  https://projects.coin-or.org/svn/Data/stable/1.0/miplib3
 CoinUtils     https://projects.coin-or.org/svn/CoinUtils/branches/devel/CoinUtils
 Cgl           https://projects.coin-or.org/svn/Cgl/branches/devel/Cgl
 Clp           https://projects.coin-or.org/svn/Clp/branches/devel/Clp

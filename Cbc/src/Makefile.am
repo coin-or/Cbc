@@ -18,6 +18,7 @@ lib_LTLIBRARIES = libCbc.la
 
 # List all source files for this library, including headers
 libCbc_la_SOURCES = \
+	Cbc_C_Interface.cpp Cbc_C_Interface.h \
 	CbcConfig.h \
 	CbcBranchActual.cpp CbcBranchActual.hpp \
 	CbcBranchBase.cpp CbcBranchBase.hpp \
@@ -239,6 +240,7 @@ DEFAULT_INCLUDES = -I. -I`$(CYGPATH_W) $(srcdir)` -I$(top_builddir)/inc
 # and that therefore should be installed in 'install'
 include_HEADERS = \
 	../inc/config_cbc.h \
+	Cbc_C_Interface.h \
 	CbcBranchActual.hpp \
 	CbcBranchBase.hpp \
 	CbcBranchDynamic.hpp \

@@ -77,6 +77,7 @@ CYGPATH_W = @CYGPATH_W@
 # Here we list all possible generated objects or executables to delete them
 CLEANFILES = \
 	crew.@OBJEXT@ crew@EXEEXT@ \
+	barrier.@OBJEXT@ barrier@EXEEXT@ \
 	driver2.@OBJEXT@ driver2@EXEEXT@ \
 	driver.@OBJEXT@ driver@EXEEXT@ \
 	fast0507b.@OBJEXT@ fast0507b@EXEEXT@ \

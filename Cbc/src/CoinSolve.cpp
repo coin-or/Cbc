@@ -2069,6 +2069,7 @@ int main (int argc, const char *argv[])
                 int pumpTune=parameters[whichParam(FPUMPTUNE,numberParameters,parameters)].intValue();
 		if (pumpTune>0) {
 		  /*
+		    >=10000000 for using obj
 		    >=1000000 use as accumulate switch
 		    >=1000 use index+2 as number of large loops
 		    >=100 use 0.05 objvalue as increment
@@ -2085,6 +2086,15 @@ int main (int argc, const char *argv[])
 		  int r = w;
 		  int accumulate = r/1000;
 		  r -= 1000*accumulate;
+		  if (accumulate>=10) {
+		    int which = accumulate/10;
+		    accumulate -= which;
+		    // weights and factors
+		    double weight[]={0.1,0.1,0.5,0.5,1.0,1.0,5.0,5.0};
+		    double factor[] = {0.1,0.5,0.1,0.5,0.1,0.5,0.1,0.5};
+		    heuristic4.setInitialWeight(weight[which]);
+		    heuristic4.setWeightFactor(factor[which]);
+		  }
 		  // fake cutoff
 		  printf("Setting ");
 		  if (c) {
@@ -2458,6 +2468,23 @@ int main (int argc, const char *argv[])
                       else if (!prioritiesIn)
                         objects[iSOS]->setPriority(10);  // rather than 1000 
                     }
+		    // delete any existing SOS objects
+		    int numberObjects=babModel->numberObjects();
+		    OsiObject ** oldObjects=babModel->objects();
+		    int nNew=0;
+		    for (int i=0;i<numberObjects;i++) {
+		      OsiObject * objThis = oldObjects[i];
+                      CbcSOS * obj1 =
+                        dynamic_cast <CbcSOS *>(objThis) ;
+                      OsiSOS * obj2 =
+                        dynamic_cast <OsiSOS *>(objThis) ;
+		      if (!obj1&&!obj2) {
+			oldObjects[nNew++]=objThis;
+		      } else {
+			delete objThis;
+		      }
+		    }
+		    babModel->setNumberObjects(nNew);
                     babModel->addObjects(numberSOS,objects);
                     for (iSOS=0;iSOS<numberSOS;iSOS++)
                       delete objects[iSOS];
@@ -2586,7 +2613,11 @@ int main (int argc, const char *argv[])
                 if (testOsiOptions>0) {
                   printf("Testing OsiObject options %d\n",testOsiOptions);
 		  CbcBranchDefaultDecision decision;
-		  OsiChooseVariable choose(babModel->solver());
+		  babModel->solver()->findIntegersAndSOS(false);
+		  //OsiChooseVariable choose(babModel->solver());
+		  OsiChooseStrong choose(babModel->solver());
+		  choose.setNumberBeforeTrusted(babModel->numberBeforeTrust());
+		  choose.setNumberStrong(babModel->numberStrong());
 		  decision.setChooseMethod(choose);
 		  babModel->setBranchingMethod(decision);
 		}

@@ -137,6 +137,8 @@ public:
   /// Redoes data when sequence numbers change
   virtual void redoSequenceEtc(CbcModel * model, int numberColumns, const int * originalColumns);
   
+  /// Construct an OsiSOS object
+  OsiSOS * osiObject(const OsiSolverInterface * solver) const;
   /// Number of members
   inline int numberMembers() const
   {return numberMembers_;};
@@ -250,6 +252,11 @@ public:
   */
   virtual int columnNumber() const;
 
+  /** Reset variable bounds to their original values.
+  
+    Bounds may be tightened, so it may be good to be able to set this info in object.
+   */
+  virtual void resetBounds(const OsiSolverInterface * solver) ;
   /// Original bounds
   inline double originalLowerBound() const
   { return originalLower_;};

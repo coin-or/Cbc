@@ -525,7 +525,7 @@ public:
   void initializeInfo();
 
   /// Does next branch and updates state
-  int branch();
+  int branch(OsiSolverInterface * solver);
 
   // Information to make basis and bounds
   inline CbcNodeInfo * nodeInfo() const
@@ -556,7 +556,9 @@ public:
   /// Get the number of objects unsatisfied at this node.
   inline int numberUnsatisfied() const
   {return numberUnsatisfied_;};
-
+  /// Sum of "infeasibilities" reported by each object
+  inline double sumInfeasibilities() const
+  { return sumInfeasibilities_;};
   // Guessed objective value (for solution)
   inline double guessedObjectiveValue() const
   {return guessedObjectiveValue_;};
@@ -576,10 +578,12 @@ private:
   // Data
   /// Information to make basis and bounds
   CbcNodeInfo * nodeInfo_;
-  // Objective value
+  /// Objective value
   double objectiveValue_;
-  // Guessed satisfied Objective value
+  /// Guessed satisfied Objective value
   double guessedObjectiveValue_;
+  /// Sum of "infeasibilities" reported by each object
+  double sumInfeasibilities_;
   /// Branching object for this node
   OsiBranchingObject * branch_;
   /// Depth of the node in the search tree

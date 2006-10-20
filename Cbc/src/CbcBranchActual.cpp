@@ -685,7 +685,14 @@ CbcSOS::solverBranch() const
   delete [] which;
   return branch;
 }
-
+// Construct an OsiSOS object
+OsiSOS * 
+CbcSOS::osiObject(const OsiSolverInterface * solver) const
+{
+  OsiSOS * obj = new OsiSOS(solver,numberMembers_,members_,weights_,sosType_);
+  obj->setPriority(priority());
+  return obj;
+}
 
 /** Default Constructor
 
@@ -855,6 +862,16 @@ int
 CbcSimpleInteger::columnNumber() const
 {
   return columnNumber_;
+}
+/* Reset variable bounds to their original values.
+  
+    Bounds may be tightened, so it may be good to be able to set this info in object.
+*/
+void 
+CbcSimpleInteger::resetBounds(const OsiSolverInterface * solver) 
+{
+  originalLower_ = solver->getColLower()[columnNumber_] ;
+  originalUpper_ = solver->getColUpper()[columnNumber_] ;
 }
 
 // Infeasibility - large is 0.5

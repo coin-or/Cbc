@@ -180,8 +180,7 @@ public:
 
   /** Reset variable bounds to their original values.
   
-    Bounds may be tightened, so it may be good to be able to reset them to
-    their original values.
+    Bounds may be tightened, so it may be good to be able to set this info in object.
    */
   virtual void resetBounds(const OsiSolverInterface * solver) {};
   
@@ -279,6 +278,14 @@ public:
 	     Returns change in guessed objective on next branch
   */
   virtual double branch()=0;
+  /** \brief Execute the actions required to branch, as specified by the
+	     current state of the branching object, and advance the object's
+	     state.  Mainly for diagnostics, whether it is true branch or
+	     strong branching is also passed.
+	     Returns change in guessed objective on next branch
+  */
+  virtual double branch(OsiSolverInterface * solver)
+  { return branch();};
 
   /** \brief Print something about branch - only if log level high
   */

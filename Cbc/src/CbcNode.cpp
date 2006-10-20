@@ -658,6 +658,7 @@ CbcNode::CbcNode() :
   nodeInfo_(NULL),
   objectiveValue_(1.0e100),
   guessedObjectiveValue_(1.0e100),
+  sumInfeasibilities_(0.0),
   branch_(NULL),
   depth_(-1),
   numberUnsatisfied_(0)
@@ -672,6 +673,7 @@ CbcNode::CbcNode(CbcModel * model,
   nodeInfo_(NULL),
   objectiveValue_(1.0e100),
   guessedObjectiveValue_(1.0e100),
+  sumInfeasibilities_(0.0),
   branch_(NULL),
   depth_(-1),
   numberUnsatisfied_(0)
@@ -974,6 +976,8 @@ int CbcNode::chooseBranch (CbcModel *model, CbcNode *lastNode,int numberPassesLe
       // Some objects may compute an estimate of best solution from here
       estimatedDegradation=0.0; 
       numberUnsatisfied_ = 0;
+      // initialize sum of "infeasibilities"
+      sumInfeasibilities_ = 0.0;
       int bestPriority=INT_MAX;
       /*
         Scan for branching objects that indicate infeasibility. Choose the best
@@ -1064,6 +1068,7 @@ int CbcNode::chooseBranch (CbcModel *model, CbcNode *lastNode,int numberPassesLe
           // Increase estimated degradation to solution
           estimatedDegradation += CoinMin(object->upEstimate(),object->downEstimate());
           numberUnsatisfied_++;
+	  sumInfeasibilities_ += infeasibility;
           // Better priority? Flush choices.
           if (priorityLevel<bestPriority) {
             int j;
@@ -2146,6 +2151,8 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
       // Some objects may compute an estimate of best solution from here
       estimatedDegradation=0.0; 
       numberUnsatisfied_ = 0;
+      // initialize sum of "infeasibilities"
+      sumInfeasibilities_ = 0.0;
       int bestPriority=INT_MAX;
       int number01 = 0;
       const fixEntry * entry = NULL;
@@ -2246,6 +2253,7 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
           downEstimate[i]=object->downEstimate();
           upEstimate[i]=object->upEstimate();
           numberUnsatisfied_++;
+	  sumInfeasibilities_ += infeasibility;
           // Better priority? Flush choices.
           if (priorityLevel<bestPriority) {
             numberToDo=0;
@@ -3888,6 +3896,7 @@ CbcNode::CbcNode(const CbcNode & rhs)
     nodeInfo_=NULL;
   objectiveValue_=rhs.objectiveValue_;
   guessedObjectiveValue_ = rhs.guessedObjectiveValue_;
+  sumInfeasibilities_ = rhs.sumInfeasibilities_;
   if (rhs.branch_)
     branch_=rhs.branch_->clone();
   else
@@ -3907,6 +3916,7 @@ CbcNode::operator=(const CbcNode & rhs)
       nodeInfo_ = NULL;
     objectiveValue_=rhs.objectiveValue_;
     guessedObjectiveValue_ = rhs.guessedObjectiveValue_;
+    sumInfeasibilities_ = rhs.sumInfeasibilities_;
     if (rhs.branch_)
       branch_=rhs.branch_->clone();
     else
@@ -3977,9 +3987,13 @@ CbcNode::nullNodeInfo()
 }
 
 int
-CbcNode::branch()
+CbcNode::branch(OsiSolverInterface * solver)
 {
-  double changeInGuessed=branch_->branch();
+  double changeInGuessed;
+  if (!solver)
+    changeInGuessed=branch_->branch();
+  else
+    changeInGuessed=branch_->branch(solver);
   guessedObjectiveValue_+= changeInGuessed;
   //#define PRINTIT
 #ifdef PRINTIT
@@ -4059,42 +4073,50 @@ CbcNode::chooseOsiBranch (CbcModel * model,
     depth_ = lastNode->depth_+1;
   else
     depth_ = 0;
-  objectiveValue_ = usefulInfo->solver_->getObjValue()*usefulInfo->solver_->getObjSense();
+  OsiSolverInterface * solver = model->solver();
+  objectiveValue_ = solver->getObjValue()*solver->getObjSense();
   usefulInfo->objectiveValue_ = objectiveValue_;
   usefulInfo->depth_ = depth_;
+  const double * saveInfoSol = usefulInfo->solution_;
+  double * saveSolution = new double[solver->getNumCols()];
+  memcpy(saveSolution,solver->getColSolution(),solver->getNumCols()*sizeof(double));
+  usefulInfo->solution_ = saveSolution;
   OsiChooseVariable * choose = model->branchingMethod()->chooseMethod();
   int numberUnsatisfied=-1;
   if (branchState<0) {
     // initialize
+    // initialize sum of "infeasibilities"
+    sumInfeasibilities_ = 0.0;
     numberUnsatisfied = choose->setupList(usefulInfo,true);
     numberUnsatisfied_ = numberUnsatisfied;
     branchState=0;
   }
   // unset best
   int best=-1;
-  choose->setBestObject(-1);
+  choose->setBestObjectIndex(-1);
   if (numberUnsatisfied) {
     if (branchState>0||!choose->numberOnList()) {
       // we need to return at once - don't do strong branching or anything
       if (choose->numberOnList()||!choose->numberStrong()) {
 	best = choose->candidates()[0];
-	choose->setBestObject(best);
-	choose->updateInformation(usefulInfo);
+	choose->setBestObjectIndex(best);
       } else {
 	// nothing on list - need to try again - keep any solution
 	numberUnsatisfied = choose->setupList(usefulInfo, false);
 	numberUnsatisfied_ = numberUnsatisfied;
 	if (numberUnsatisfied) {
 	  best = choose->candidates()[0];
-	  choose->setBestObject(best);
-	  choose->updateInformation(usefulInfo);
+	  choose->setBestObjectIndex(best);
 	}
       }
     } else {
       // carry on with strong branching or whatever
-      int returnCode = choose->chooseVariable(usefulInfo);
+      int returnCode = choose->chooseVariable(solver, usefulInfo,true);
+      // update number of strong iterations etc
+      model->incrementStrongInfo(choose->numberStrongDone(),choose->numberStrongIterations(),
+                                 returnCode==-1 ? 0:choose->numberStrongFixed(),returnCode==-1);
       if (returnCode>1) {
-	// can fix
+	// has fixed some
 	returnStatus=-1;
       } else if (returnCode==-1) {
 	// infeasible
@@ -4109,8 +4131,7 @@ CbcNode::chooseOsiBranch (CbcModel * model,
 	numberUnsatisfied_ = numberUnsatisfied;
 	if (numberUnsatisfied) {
 	  best = choose->candidates()[0];
-	  choose->setBestObject(best);
-	  choose->updateInformation( usefulInfo);
+	  choose->setBestObjectIndex(best);
 	}
       }
     }
@@ -4121,10 +4142,24 @@ CbcNode::chooseOsiBranch (CbcModel * model,
   if (!returnStatus) {
     if (numberUnsatisfied) {
       // create branching object
-      const OsiObject * obj = model->object(choose->bestObject());
+      const OsiObject * obj = model->object(choose->bestObjectIndex());
       //const OsiSolverInterface * solver = usefulInfo->solver_;
       branch_ = obj->createBranch(model->solver(),usefulInfo,obj->whichWay());
     }
+  }
+  usefulInfo->solution_=saveInfoSol;
+  delete [] saveSolution;
+  // may have got solution
+  if (choose->goodSolution()
+      &&model->problemFeasibility()->feasible(model,-1)>=0) {
+    // yes
+    double objValue = choose->goodObjectiveValue();
+    model->setBestSolution(CBC_STRONGSOL,
+                                     objValue,
+                                     choose->goodSolution()) ;
+    model->setLastHeuristic(NULL);
+    model->incrementUsed(choose->goodSolution());
+    choose->clearGoodSolution();
   }
   return returnStatus;
 }

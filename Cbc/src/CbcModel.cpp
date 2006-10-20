@@ -708,31 +708,59 @@ void CbcModel::branchAndBound(int doStatistics)
     return ;
   }
   // Convert to Osi if wanted
-  OsiBranchingInformation * persistentInfo = NULL;
+  bool useOsiBranching=false;
+  //OsiBranchingInformation * persistentInfo = NULL;
   if (branchingMethod_&&branchingMethod_->chooseMethod()) {
-    persistentInfo = new OsiBranchingInformation(solver_);
-    for (int iObject = 0 ; iObject < numberObjects_ ; iObject++) {
-      CbcObject * obj =
-	dynamic_cast <CbcObject *>(object_[iObject]) ;
-      if (obj) {
-	CbcSimpleInteger * obj2 =
-	  dynamic_cast <CbcSimpleInteger *>(obj) ;
-	if (obj2) {
-	  // back to Osi land
-	  object_[iObject]=obj2->osiObject();
-	  delete obj;
-	} else {
-	  printf("Code up CbcObject type in Osi land\n");
-	  abort();
+    useOsiBranching=true;
+    //persistentInfo = new OsiBranchingInformation(solver_);
+    if (numberOriginalObjects) {
+      for (int iObject = 0 ; iObject < numberObjects_ ; iObject++) {
+	CbcObject * obj =
+	  dynamic_cast <CbcObject *>(object_[iObject]) ;
+	if (obj) {
+	  CbcSimpleInteger * obj2 =
+	    dynamic_cast <CbcSimpleInteger *>(obj) ;
+	  if (obj2) {
+	    // back to Osi land
+	    object_[iObject]=obj2->osiObject();
+	    delete obj;
+	  } else {
+	    OsiSimpleInteger * obj3 =
+	      dynamic_cast <OsiSimpleInteger *>(obj) ;
+	    if (!obj3) {
+	      OsiSOS * obj4 =
+		dynamic_cast <OsiSOS *>(obj) ;
+	      if (!obj4) {
+		CbcSOS * obj5 =
+		  dynamic_cast <CbcSOS *>(obj) ;
+		if (obj5) {
+		  // back to Osi land
+		  object_[iObject]=obj5->osiObject(solver_);
+		} else {
+		  printf("Code up CbcObject type in Osi land\n");
+		  abort();
+		}
+	      }
+	    }
+	  }
 	}
       }
-    }
-    // and add to solver if none
-    if (!solver_->numberObjects()) {
-      solver_->addObjects(numberObjects_,object_);
+      // and add to solver if none
+      if (!solver_->numberObjects()) {
+	solver_->addObjects(numberObjects_,object_);
+      } else {
+	printf("should have trapped that solver has objects before\n");
+	abort();
+      }
     } else {
-      printf("should have trapped that solver has objects before\n");
-      abort();
+      // do from solver
+      deleteObjects();
+      solver_->findIntegersAndSOS(false);
+      numberObjects_=solver_->numberObjects();
+      object_ = new OsiObject * [numberObjects_];
+      for (int iObject = 0 ; iObject < numberObjects_ ; iObject++) {
+	object_[iObject]=solver_->object(iObject)->clone();
+      }
     }
     branchingMethod_->chooseMethod()->setSolver(solver_);
   }
@@ -1034,8 +1062,10 @@ void CbcModel::branchAndBound(int doStatistics)
 	feasible = false ; } }
 #else
   OsiSolverBranch * branches = NULL;
+  // point to useful information
+  OsiBranchingInformation usefulInfo=usefulInformation();
   anyAction = chooseBranch(newNode, numberPassesLeft, NULL, cuts,resolved,
-			   NULL,NULL,NULL,branches,persistentInfo);
+			   NULL,NULL,NULL,branches,&usefulInfo);
   if (anyAction == -2||newNode->objectiveValue() >= cutoff) {
     delete newNode ;
     newNode = NULL ;
@@ -1330,7 +1360,12 @@ void CbcModel::branchAndBound(int doStatistics)
       bool deleteNode ;
       if (messageHandler()->logLevel()>2)
 	node->modifiableBranchingObject()->print();
-      if (node->branch())
+      int retCode;
+      if (!useOsiBranching) 
+	retCode = node->branch(NULL); // old way
+      else
+	retCode = node->branch(solver_); // new way
+      if (retCode)
       { 
         // set nodenumber correctly
         node->nodeInfo()->setNodeNumber(numberNodes2_);
@@ -1484,8 +1519,8 @@ void CbcModel::branchAndBound(int doStatistics)
 	  resolved = false ;
 	  if (newNode->objectiveValue() >= getCutoff()) 
 	    anyAction=-2;
-          // only allow twenty passes
-          int numberPassesLeft=20;
+          // only allow at most a few passes
+          int numberPassesLeft=5;
           checkingNode=true;
 #if 0
 	  while (anyAction == -1)
@@ -1631,8 +1666,10 @@ void CbcModel::branchAndBound(int doStatistics)
         }
 #else
 	OsiSolverBranch * branches=NULL;
+	// point to useful information
+	OsiBranchingInformation usefulInfo=usefulInformation();
 	anyAction = chooseBranch(newNode, numberPassesLeft,node, cuts,resolved,
-				 lastws, lowerBefore, upperBefore, branches,persistentInfo);
+				 lastws, lowerBefore, upperBefore, branches,&usefulInfo);
 /*
   If we end up infeasible, we can delete the new node immediately. Since this
   node won't be needing the cuts we collected, decrement the reference counts.
@@ -2100,7 +2137,7 @@ void CbcModel::branchAndBound(int doStatistics)
   walkback_ = NULL ;
   delete [] addedCuts_ ;
   addedCuts_ = NULL ;
-  delete persistentInfo;
+  //delete persistentInfo;
   // Get rid of characteristics
   solverCharacteristics_=NULL;
   if (continuousSolver_)
@@ -4158,6 +4195,11 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
       // Save number solutions
       int saveNumberSolutions = numberSolutions_;
       int saveNumberHeuristicSolutions = numberHeuristicSolutions_;
+      // make sure bounds tight
+      { 
+	for (int i = 0;i < numberObjects_;i++)
+	  object_[i]->resetBounds(solver_) ;
+      }
       for (int i = 0;i<numberHeuristics_;i++) {
         // see if heuristic will do anything
         double saveValue = heuristicValue ;
@@ -8192,8 +8234,8 @@ CbcModel::chooseBranch(CbcNode * newNode, int numberPassesLeft,
   while (anyAction == -1) {
     // Set objective value (not so obvious if NLP etc)
     setObjectiveValue(newNode,oldNode);
-    if (numberPassesLeft<=0)
-      branchingState=1;
+    //if (numberPassesLeft<=0)
+    //branchingState=1;
     if (!branchingMethod_||!branchingMethod_->chooseMethod()) {
       if (numberBeforeTrust_==0 ) {
 	anyAction = newNode->chooseBranch(this,oldNode,numberPassesLeft) ;
@@ -8204,7 +8246,7 @@ CbcModel::chooseBranch(CbcNode * newNode, int numberPassesLeft,
       }
     } else {
       anyAction = newNode->chooseOsiBranch(this,oldNode,usefulInfo,branchingState) ;; // Osi method
-      branchingState=0;
+      //branchingState=0;
     }
     if (solverCharacteristics_ && 
 	solverCharacteristics_->solutionAddsCuts() && // we are in some OA based bab

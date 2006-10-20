@@ -76,6 +76,18 @@ public:
   /// Get relative increment (default 0.0 == off)
   inline double relativeIncrement() const
   { return relativeIncrement_;};
+  /// Set initial weight (default 0.0 == off)
+  inline void setInitialWeight(double value)
+  { initialWeight_ = value;};
+  /// Get initial weight (default 0.0 == off)
+  inline double initialWeight() const
+  { return initialWeight_;};
+  /// Set weight factor (default 0.1) 
+  inline void setWeightFactor(double value)
+  { weightFactor_ = value;};
+  /// Get weight factor (default 0.1)
+  inline double weightFactor() const
+  { return weightFactor_;};
   /// Set maximum passes (default 100)
   inline void setMaximumPasses(int value)
   { maximumPasses_=value;};
@@ -116,6 +128,10 @@ protected:
   double absoluteIncrement_;
   /// If positive carry on after solution expecting gain of at least this times objective
   double relativeIncrement_;
+  /// Initial weight for true objective
+  double initialWeight_;
+  /// factor for decreasing weight
+  double weightFactor_;
   /// Maximum number of passes
   int maximumPasses_;
   /** Maximum number of retries if we find a solution.
@@ -127,6 +143,7 @@ protected:
        1 - do not reuse solves, accumulate integer solutions for local search
        2 - reuse solves, do not accumulate integer solutions for local search
        3 - reuse solves, accumulate integer solutions for local search
+       If we add 4 then use second form of problem (with extra rows and variables)
   */
   int accumulate_;
   /// If true round to expensive
@@ -140,6 +157,7 @@ private:
       returns 0 if current is solution
   */
   int rounds(double * solution, const double * objective, 
+	     int numberIntegers, const int * integerVariable,
 	     bool roundExpensive=false,
 	     double downValue=0.5, int *flip=0);
   /* note for eagle eyed readers.

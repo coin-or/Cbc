@@ -178,7 +178,7 @@ CbcHeuristicFPump::solution(double & solutionValue,
   int * integerVariable = new int[numberIntegers];
   const double * lower = model_->solver()->getColLower();
   const double * upper = model_->solver()->getColUpper();
-  bool doGeneral = (accumulate_&4)!=0;
+  bool doGeneral = (accumulate_&(4+8))!=0;
   j=0;
   for (i=0;i<numberIntegers;i++) {
     int iColumn = integerVariableOrig[i];
@@ -198,14 +198,16 @@ CbcHeuristicFPump::solution(double & solutionValue,
       integerVariable[j++]=iColumn;
     }
   }
-  if (general*3>numberIntegers&&!doGeneral) {
+  if (general*3>2*numberIntegers&&!doGeneral) {
     delete [] integerVariable;
     return 0;
+  } else if ((accumulate_&8)==0) {
+    doGeneral=false;
   }
+  if (!general)
+    doGeneral=false;
   int numberIntegersOrig = numberIntegers;
   numberIntegers = j;
-  if (!doGeneral) 
-    general=0;
   double * newSolution = new double [numberColumns];
   double newSolutionValue=COIN_DBL_MAX;
   bool solutionFound=false;
@@ -341,12 +343,12 @@ CbcHeuristicFPump::solution(double & solutionValue,
 	newLineNeeded=false;
 	if (newSolutionValue<solutionValue) {
 	  double saveValue = newSolutionValue;
-	  if (general) {
+	  if (!doGeneral) {
 	    int numberLeft=0;
 	    for (i=0;i<numberIntegersOrig;i++) {
 	      int iColumn = integerVariableOrig[i];
 	      double value = floor(newSolution[iColumn]+0.5);
-	      if(solver->isBinary(iColumn)||general) {
+	      if(solver->isBinary(iColumn)) {
 		solver->setColLower(iColumn,value);
 		solver->setColUpper(iColumn,value);
 	      } else {
@@ -433,7 +435,7 @@ CbcHeuristicFPump::solution(double & solutionValue,
 	for (i=0;i<numberColumns;i++) {
 	  // below so we can keep original code and allow for objective
 	  int iColumn = i;
-	  if(!solver->isBinary(iColumn)&&!general)
+	  if(!solver->isBinary(iColumn)&&!doGeneral)
 	    continue;
 	  // deal with fixed variables (i.e., upper=lower)
 	  if (fabs(lower[iColumn]-upper[iColumn]) < primalTolerance) {
@@ -447,7 +449,7 @@ CbcHeuristicFPump::solution(double & solutionValue,
 	    if (newSolution[iColumn]>upper[iColumn]-primalTolerance) {
 	      solver->setObjCoeff(iColumn,-costValue+scaleFactor*saveObjective[iColumn]);
 	    } else {
-	      abort();
+	      solver->setObjCoeff(iColumn,0.0);
 	    }
 	  }
 	  offset += costValue*newSolution[iColumn];
@@ -503,7 +505,7 @@ CbcHeuristicFPump::solution(double & solutionValue,
 	    }
 	  }      
 	}
-	if (!general) {
+	if (!doGeneral) {
 	  solver->resolve();
 	  assert (solver->isProvenOptimal());
 	} else {
@@ -601,8 +603,8 @@ CbcHeuristicFPump::solution(double & solutionValue,
       int nFixI=0;
       int nFixC=0;
       int nFixC2=0;
-      for (i=0;i<numberIntegers;i++) {
-	int iColumn=integerVariable[i];
+      for (i=0;i<numberIntegersOrig;i++) {
+	int iColumn=integerVariableOrig[i];
 	//const OsiObject * object = model_->object(i);
 	//double originalLower;
 	//double originalUpper;
@@ -662,7 +664,7 @@ CbcHeuristicFPump::solution(double & solutionValue,
       if (nFixC2+nFixI==0)
 	printf("\n");
       else
-	printf("of which %d were internal integer and %d internal continuous\n",
+	printf(" of which %d were internal integer and %d internal continuous\n",
 	     nFixI,nFixC2);
       double saveValue = newSolutionValue;
       returnCode = smallBranchAndBound(newSolver,200,newSolution,newSolutionValue,

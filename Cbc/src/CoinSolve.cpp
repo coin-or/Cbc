@@ -2088,7 +2088,8 @@ int main (int argc, const char *argv[])
 		  r -= 1000*accumulate;
 		  if (accumulate>=10) {
 		    int which = accumulate/10;
-		    accumulate -= which;
+		    accumulate -= 10*which;
+		    which--;
 		    // weights and factors
 		    double weight[]={0.1,0.1,0.5,0.5,1.0,1.0,5.0,5.0};
 		    double factor[] = {0.1,0.5,0.1,0.5,0.1,0.5,0.1,0.5};
@@ -2610,7 +2611,7 @@ int main (int argc, const char *argv[])
 		  babModel->setStrategy(strategy);
 		}
 		int testOsiOptions = parameters[whichParam(TESTOSI,numberParameters,parameters)].intValue();
-                if (testOsiOptions>0) {
+                if (testOsiOptions>=0) {
                   printf("Testing OsiObject options %d\n",testOsiOptions);
 		  CbcBranchDefaultDecision decision;
 		  babModel->solver()->findIntegersAndSOS(false);
@@ -2618,6 +2619,7 @@ int main (int argc, const char *argv[])
 		  OsiChooseStrong choose(babModel->solver());
 		  choose.setNumberBeforeTrusted(babModel->numberBeforeTrust());
 		  choose.setNumberStrong(babModel->numberStrong());
+		  choose.setShadowPriceMode(testOsiOptions);
 		  decision.setChooseMethod(choose);
 		  babModel->setBranchingMethod(decision);
 		}

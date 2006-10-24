@@ -22,6 +22,7 @@ OBJS =  $(DRIVER).@OBJEXT@ \
 	CbcCompareUser.@OBJEXT@ \
 	CbcSolver2.@OBJEXT@ \
 	CbcSolver3.@OBJEXT@ \
+	CbcSolverLink.@OBJEXT@ \
 	ClpDynamicInterface.@OBJEXT@ \
 	ClpQuadInterface.@OBJEXT@ \
 	CoinWarmStartBasisDynamic.@OBJEXT@ \

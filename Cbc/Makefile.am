@@ -57,6 +57,8 @@ EXTRA_DIST = \
 	examples/CbcSolver3.hpp \
 	examples/CbcSolverLongThin.cpp \
 	examples/CbcSolverLongThin.hpp \
+	examples/CbcSolverLink.hpp \
+	examples/CbcSolverLink.cpp \
 	examples/ClpQuadInterface.cpp \
 	examples/ClpQuadInterface.hpp \
 	examples/crew.cpp \

@@ -315,7 +315,8 @@ EXTRA_DIST = doc/authors.xml doc/cbcexe.xml doc/cbcmodelclass.xml \
 	examples/CbcCompareUser.hpp examples/CbcSolver2.cpp \
 	examples/CbcSolver2.hpp examples/CbcSolver3.cpp \
 	examples/CbcSolver3.hpp examples/CbcSolverLongThin.cpp \
-	examples/CbcSolverLongThin.hpp examples/ClpQuadInterface.cpp \
+	examples/CbcSolverLongThin.hpp examples/CbcSolverLink.hpp \
+	examples/CbcSolverLink.cpp examples/ClpQuadInterface.cpp \
 	examples/ClpQuadInterface.hpp examples/crew.cpp \
 	examples/driver2.cpp examples/driver.cpp \
 	examples/fast0507b.cpp examples/fast0507.cpp examples/gear.cpp \

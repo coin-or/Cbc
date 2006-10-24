@@ -90,7 +90,14 @@ public:
 
     The preferred direction is set by \p way, -1 for down, +1 for up.
   */
-  virtual CbcBranchingObject * createBranch(int way) ;
+  //virtual CbcBranchingObject * createBranch(int way) ;
+  /** Create a branching object and indicate which way to branch first.
+      
+      The branching object has to know how to create branches (fix
+      variables, etc.)
+  */
+  virtual CbcBranchingObject * createBranch(OsiSolverInterface * solver,
+					    const OsiBranchingInformation * info, int way) ;
 
 protected:
   /// data

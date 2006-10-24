@@ -6,6 +6,8 @@ Cbc/configure.ac -text
 Cbc/doc/doxygen.conf -text
 Cbc/examples/CbcBranchLotsizeSimple.cpp -text
 Cbc/examples/CbcBranchLotsizeSimple.hpp -text
+Cbc/examples/CbcSolverLink.cpp -text
+Cbc/examples/CbcSolverLink.hpp -text
 Cbc/examples/ClpDynamicInterface.cpp -text
 Cbc/examples/ClpDynamicInterface.hpp -text
 Cbc/examples/CoinWarmStartBasisDynamic.cpp -text

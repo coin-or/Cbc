@@ -415,9 +415,9 @@ CbcSimpleIntegerFixed::infeasibility(int & preferredWay) const
 }
 // Creates a branching object
 CbcBranchingObject * 
-CbcSimpleIntegerFixed::createBranch(int way) 
+CbcSimpleIntegerFixed::createBranch(OsiSolverInterface * solver,
+					    const OsiBranchingInformation * info, int way)  
 {
-  OsiSolverInterface * solver = model_->solver();
   const double * solution = model_->testSolution();
   const double * lower = solver->getColLower();
   const double * upper = solver->getColUpper();

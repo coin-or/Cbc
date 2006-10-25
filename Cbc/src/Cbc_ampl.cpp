@@ -23,9 +23,16 @@ ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF
 THIS SOFTWARE.
 ****************************************************************/
 
-#include "getstub.h"
+#include "CbcConfig.h"
+#ifdef HAVE_UNISTD_H
+# include "unistd.h"
+#endif
+
+extern "C" {
+# include "getstub.h"
+}
+
 #include "Cbc_ampl.h"
-#include "unistd.h"
 #include <string>
 #include <cassert>
 #include "CoinSort.hpp"

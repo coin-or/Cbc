@@ -1343,7 +1343,7 @@ public:
       1 bit (2) - use current basis to check integer solution (rather than all slack)
       2 bit (4) - don't check integer solution (by solving LP)
       3 bit (8) - fast analyze
-      4 bit (16) - non-linear model and someone too lazy to code "times" correctly - so skip row check
+      4 bit (16) - non-linear model - so no well defined CoinPackedMatrix
       5 bit (32) - keep names
       6 bit (64) - try for dominated columns
   */
@@ -1353,6 +1353,9 @@ public:
   /// Get special options
   inline int specialOptions() const
   { return specialOptions_;};
+  /// Says if normal solver i.e. has well defined CoinPackedMatrix
+  inline bool normalSolver() const
+  { return (specialOptions_&16)==0;};
   //@}
   //---------------------------------------------------------------------------
 

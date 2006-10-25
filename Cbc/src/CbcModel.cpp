@@ -8569,7 +8569,7 @@ CbcModel::preProcess( int makeEquality, int numberPasses, int tuning)
 OsiBranchingInformation 
 CbcModel::usefulInformation() const
 {
-  OsiBranchingInformation usefulInfo(solver_);
+  OsiBranchingInformation usefulInfo(solver_,normalSolver());
   // and modify
   usefulInfo.solution_=testSolution_;
   usefulInfo.integerTolerance_= dblParam_[CbcIntegerTolerance] ;

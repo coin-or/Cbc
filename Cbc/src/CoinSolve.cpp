@@ -2356,140 +2356,146 @@ int main (int argc, const char *argv[])
                     babModel->setHotstartSolution(solutionIn,prioritiesIn);
                   }
                 }
-                if (preProcess&&process.numberSOS()) {
-                  int numberSOS = process.numberSOS();
-                  int numberIntegers = babModel->numberIntegers();
-                  /* model may not have created objects
-                     If none then create
-                  */
-                  if (!numberIntegers||!babModel->numberObjects()) {
-                    int type = (pseudoUp) ? 1 : 0;
-                    babModel->findIntegers(true,type);
-                    numberIntegers = babModel->numberIntegers();
-                  }
-                  OsiObject ** oldObjects = babModel->objects();
-                  // Do sets and priorities
-                  OsiObject ** objects = new OsiObject * [numberSOS];
-                  // set old objects to have low priority
-                  int numberOldObjects = babModel->numberObjects();
-                  int numberColumns = babModel->getNumCols();
-                  for (int iObj = 0;iObj<numberOldObjects;iObj++) {
-                    oldObjects[iObj]->setPriority(numberColumns+1);
-                    int iColumn = oldObjects[iObj]->columnNumber();
-                    assert (iColumn>=0);
-                    if (iColumn>=numberOriginalColumns)
-                      continue;
-                    if (originalColumns)
-                      iColumn = originalColumns[iColumn];
-                    if (branchDirection) {
-		      CbcSimpleInteger * obj =
-			dynamic_cast <CbcSimpleInteger *>(oldObjects[iObj]) ;
-		      if (obj) { 
-			obj->setPreferredWay(branchDirection[iColumn]);
-		      } else {
-			CbcObject * obj =
-			  dynamic_cast <CbcObject *>(oldObjects[iObj]) ;
-			assert (obj);
-			obj->setPreferredWay(branchDirection[iColumn]);
+		int testOsiOptions = parameters[whichParam(TESTOSI,numberParameters,parameters)].intValue();
+		OsiSolverInterface * testOsiSolver= (testOsiOptions>=0) ? babModel->solver() : NULL;
+		if (!testOsiSolver) {
+		  // *************************************************************
+		  // CbcObjects
+		  if (preProcess&&process.numberSOS()) {
+		    int numberSOS = process.numberSOS();
+		    int numberIntegers = babModel->numberIntegers();
+		    /* model may not have created objects
+		       If none then create
+		    */
+		    if (!numberIntegers||!babModel->numberObjects()) {
+		      int type = (pseudoUp) ? 1 : 0;
+		      babModel->findIntegers(true,type);
+		      numberIntegers = babModel->numberIntegers();
+		    }
+		    OsiObject ** oldObjects = babModel->objects();
+		    // Do sets and priorities
+		    OsiObject ** objects = new OsiObject * [numberSOS];
+		    // set old objects to have low priority
+		    int numberOldObjects = babModel->numberObjects();
+		    int numberColumns = babModel->getNumCols();
+		    for (int iObj = 0;iObj<numberOldObjects;iObj++) {
+		      oldObjects[iObj]->setPriority(numberColumns+1);
+		      int iColumn = oldObjects[iObj]->columnNumber();
+		      assert (iColumn>=0);
+		      if (iColumn>=numberOriginalColumns)
+			continue;
+		      if (originalColumns)
+			iColumn = originalColumns[iColumn];
+		      if (branchDirection) {
+			CbcSimpleInteger * obj =
+			  dynamic_cast <CbcSimpleInteger *>(oldObjects[iObj]) ;
+			if (obj) { 
+			  obj->setPreferredWay(branchDirection[iColumn]);
+			} else {
+			  CbcObject * obj =
+			    dynamic_cast <CbcObject *>(oldObjects[iObj]) ;
+			  assert (obj);
+			  obj->setPreferredWay(branchDirection[iColumn]);
+			}
+		      }
+		      if (pseudoUp) {
+			CbcSimpleIntegerPseudoCost * obj1a =
+			  dynamic_cast <CbcSimpleIntegerPseudoCost *>(oldObjects[iObj]) ;
+			assert (obj1a);
+			if (pseudoDown[iColumn]>0.0)
+			  obj1a->setDownPseudoCost(pseudoDown[iColumn]);
+			if (pseudoUp[iColumn]>0.0)
+			  obj1a->setUpPseudoCost(pseudoUp[iColumn]);
 		      }
 		    }
-                    if (pseudoUp) {
-                      CbcSimpleIntegerPseudoCost * obj1a =
-                        dynamic_cast <CbcSimpleIntegerPseudoCost *>(oldObjects[iObj]) ;
-                      assert (obj1a);
-                      if (pseudoDown[iColumn]>0.0)
-                        obj1a->setDownPseudoCost(pseudoDown[iColumn]);
-                      if (pseudoUp[iColumn]>0.0)
-                        obj1a->setUpPseudoCost(pseudoUp[iColumn]);
-                    }
-                  }
-                  const int * starts = process.startSOS();
-                  const int * which = process.whichSOS();
-                  const int * type = process.typeSOS();
-                  const double * weight = process.weightSOS();
-                  int iSOS;
-                  for (iSOS =0;iSOS<numberSOS;iSOS++) {
-                    int iStart = starts[iSOS];
-                    int n=starts[iSOS+1]-iStart;
-                    objects[iSOS] = new CbcSOS(babModel,n,which+iStart,weight+iStart,
-                                               iSOS,type[iSOS]);
-                    // branch on long sets first
-                    objects[iSOS]->setPriority(numberColumns-n);
-                  }
-                  babModel->addObjects(numberSOS,objects);
-                  for (iSOS=0;iSOS<numberSOS;iSOS++)
-                    delete objects[iSOS];
-                  delete [] objects;
-                } else if (priorities||branchDirection||pseudoDown||pseudoUp||numberSOS) {
-                  // do anyway for priorities etc
-                  int numberIntegers = babModel->numberIntegers();
-                  /* model may not have created objects
-                     If none then create
-                  */
-                  if (!numberIntegers||!babModel->numberObjects()) {
-                    int type = (pseudoUp) ? 1 : 0;
-                    babModel->findIntegers(true,type);
-                  }
-                  if (numberSOS) {
-                    // Do sets and priorities
-                    OsiObject ** objects = new OsiObject * [numberSOS];
-                    int iSOS;
-                    if (originalColumns) {
-                      // redo sequence numbers
-                      int numberColumns = babModel->getNumCols();
-                      int nOld = originalColumns[numberColumns-1]+1;
-                      int * back = new int[nOld];
-                      int i;
-                      for (i=0;i<nOld;i++)
-                        back[i]=-1;
-                      for (i=0;i<numberColumns;i++)
-                        back[originalColumns[i]]=i;
-                      // Really need better checks
-                      int nMissing=0;
-                      int n=sosStart[numberSOS];
-                      for (i=0;i<n;i++) {
-                        int iColumn = sosIndices[i];
-                        int jColumn = back[iColumn];
-                        if (jColumn>=0) 
-                          sosIndices[i] = jColumn;
-                        else 
-                          nMissing++;
-                      }
-                      delete [] back;
-                      if (nMissing)
-                        printf("%d SOS variables vanished due to pre processing? - check validity?\n",nMissing);
-                    }
-                    for (iSOS =0;iSOS<numberSOS;iSOS++) {
-                      int iStart = sosStart[iSOS];
-                      int n=sosStart[iSOS+1]-iStart;
-                      objects[iSOS] = new CbcSOS(babModel,n,sosIndices+iStart,sosReference+iStart,
-                                                 iSOS,sosType[iSOS]);
-                      if (sosPriority)
-                        objects[iSOS]->setPriority(sosPriority[iSOS]);
-                      else if (!prioritiesIn)
-                        objects[iSOS]->setPriority(10);  // rather than 1000 
-                    }
-		    // delete any existing SOS objects
-		    int numberObjects=babModel->numberObjects();
-		    OsiObject ** oldObjects=babModel->objects();
-		    int nNew=0;
-		    for (int i=0;i<numberObjects;i++) {
-		      OsiObject * objThis = oldObjects[i];
-                      CbcSOS * obj1 =
-                        dynamic_cast <CbcSOS *>(objThis) ;
-                      OsiSOS * obj2 =
-                        dynamic_cast <OsiSOS *>(objThis) ;
-		      if (!obj1&&!obj2) {
-			oldObjects[nNew++]=objThis;
-		      } else {
-			delete objThis;
-		      }
+		    const int * starts = process.startSOS();
+		    const int * which = process.whichSOS();
+		    const int * type = process.typeSOS();
+		    const double * weight = process.weightSOS();
+		    int iSOS;
+		    for (iSOS =0;iSOS<numberSOS;iSOS++) {
+		      int iStart = starts[iSOS];
+		      int n=starts[iSOS+1]-iStart;
+		      objects[iSOS] = new CbcSOS(babModel,n,which+iStart,weight+iStart,
+						 iSOS,type[iSOS]);
+		      // branch on long sets first
+		      objects[iSOS]->setPriority(numberColumns-n);
 		    }
-		    babModel->setNumberObjects(nNew);
-                    babModel->addObjects(numberSOS,objects);
-                    for (iSOS=0;iSOS<numberSOS;iSOS++)
-                      delete objects[iSOS];
-                    delete [] objects;
+		    babModel->addObjects(numberSOS,objects);
+		    for (iSOS=0;iSOS<numberSOS;iSOS++)
+		      delete objects[iSOS];
+		    delete [] objects;
+		  } else if (priorities||branchDirection||pseudoDown||pseudoUp||numberSOS) {
+		    // do anyway for priorities etc
+		    int numberIntegers = babModel->numberIntegers();
+		    /* model may not have created objects
+		       If none then create
+		    */
+		    if (!numberIntegers||!babModel->numberObjects()) {
+		      int type = (pseudoUp) ? 1 : 0;
+		      babModel->findIntegers(true,type);
+		    }
+		    if (numberSOS) {
+		      // Do sets and priorities
+		      OsiObject ** objects = new OsiObject * [numberSOS];
+		      int iSOS;
+		      if (originalColumns) {
+			// redo sequence numbers
+			int numberColumns = babModel->getNumCols();
+			int nOld = originalColumns[numberColumns-1]+1;
+			int * back = new int[nOld];
+			int i;
+			for (i=0;i<nOld;i++)
+			  back[i]=-1;
+			for (i=0;i<numberColumns;i++)
+			  back[originalColumns[i]]=i;
+			// Really need better checks
+			int nMissing=0;
+			int n=sosStart[numberSOS];
+			for (i=0;i<n;i++) {
+			  int iColumn = sosIndices[i];
+			  int jColumn = back[iColumn];
+			  if (jColumn>=0) 
+			    sosIndices[i] = jColumn;
+			  else 
+			    nMissing++;
+			}
+			delete [] back;
+			if (nMissing)
+			  printf("%d SOS variables vanished due to pre processing? - check validity?\n",nMissing);
+		      }
+		      for (iSOS =0;iSOS<numberSOS;iSOS++) {
+			int iStart = sosStart[iSOS];
+			int n=sosStart[iSOS+1]-iStart;
+			objects[iSOS] = new CbcSOS(babModel,n,sosIndices+iStart,sosReference+iStart,
+						   iSOS,sosType[iSOS]);
+			if (sosPriority)
+			  objects[iSOS]->setPriority(sosPriority[iSOS]);
+			else if (!prioritiesIn)
+			  objects[iSOS]->setPriority(10);  // rather than 1000 
+		      }
+		      // delete any existing SOS objects
+		      int numberObjects=babModel->numberObjects();
+		      OsiObject ** oldObjects=babModel->objects();
+		      int nNew=0;
+		      for (int i=0;i<numberObjects;i++) {
+			OsiObject * objThis = oldObjects[i];
+			CbcSOS * obj1 =
+			  dynamic_cast <CbcSOS *>(objThis) ;
+			OsiSOS * obj2 =
+			  dynamic_cast <OsiSOS *>(objThis) ;
+			if (!obj1&&!obj2) {
+			  oldObjects[nNew++]=objThis;
+			} else {
+			  delete objThis;
+			}
+		      }
+		      babModel->setNumberObjects(nNew);
+		      babModel->addObjects(numberSOS,objects);
+		      for (iSOS=0;iSOS<numberSOS;iSOS++)
+			delete objects[iSOS];
+		      delete [] objects;
+		    }
                   }
                   OsiObject ** objects = babModel->objects();
                   int numberObjects = babModel->numberObjects();
@@ -2530,6 +2536,174 @@ int main (int argc, const char *argv[])
                         obj1a->setUpPseudoCost(pseudoUp[iColumn]);
                     }
                   }
+		  // *************************************************************
+		} else {
+		  // *************************************************************
+		  // OsiObjects
+		  if (preProcess&&process.numberSOS()) {
+		    int numberSOS = process.numberSOS();
+		    int numberIntegers = testOsiSolver->getNumIntegers();
+		    /* model may not have created objects
+		       If none then create
+		    */
+		    if (!numberIntegers||!testOsiSolver->numberObjects()) {
+		      //int type = (pseudoUp) ? 1 : 0;
+		      testOsiSolver->findIntegers(false);
+		      numberIntegers = testOsiSolver->getNumIntegers();
+		    }
+		    OsiObject ** oldObjects = testOsiSolver->objects();
+		    // Do sets and priorities
+		    OsiObject ** objects = new OsiObject * [numberSOS];
+		    // set old objects to have low priority
+		    int numberOldObjects = testOsiSolver->numberObjects();
+		    int numberColumns = testOsiSolver->getNumCols();
+		    for (int iObj = 0;iObj<numberOldObjects;iObj++) {
+		      oldObjects[iObj]->setPriority(numberColumns+1);
+		      int iColumn = oldObjects[iObj]->columnNumber();
+		      assert (iColumn>=0);
+		      if (iColumn>=numberOriginalColumns)
+			continue;
+		      if (originalColumns)
+			iColumn = originalColumns[iColumn];
+		      if (branchDirection) {
+			OsiSimpleInteger * obj =
+			  dynamic_cast <OsiSimpleInteger *>(oldObjects[iObj]) ;
+			if (obj) { 
+			  obj->setPreferredWay(branchDirection[iColumn]);
+			} else {
+			  OsiObject2 * obj =
+			    dynamic_cast <OsiObject2 *>(oldObjects[iObj]) ;
+			  if (obj)
+			    obj->setPreferredWay(branchDirection[iColumn]);
+			}
+		      }
+		      if (pseudoUp) {
+			abort();
+		      }
+		    }
+		    const int * starts = process.startSOS();
+		    const int * which = process.whichSOS();
+		    const int * type = process.typeSOS();
+		    const double * weight = process.weightSOS();
+		    int iSOS;
+		    for (iSOS =0;iSOS<numberSOS;iSOS++) {
+		      int iStart = starts[iSOS];
+		      int n=starts[iSOS+1]-iStart;
+		      objects[iSOS] = new OsiSOS(testOsiSolver,n,which+iStart,weight+iStart,
+						 type[iSOS]);
+		      // branch on long sets first
+		      objects[iSOS]->setPriority(numberColumns-n);
+		    }
+		    testOsiSolver->addObjects(numberSOS,objects);
+		    for (iSOS=0;iSOS<numberSOS;iSOS++)
+		      delete objects[iSOS];
+		    delete [] objects;
+		  } else if (priorities||branchDirection||pseudoDown||pseudoUp||numberSOS) {
+		    // do anyway for priorities etc
+		    int numberIntegers = testOsiSolver->getNumIntegers();
+		    /* model may not have created objects
+		       If none then create
+		    */
+		    if (!numberIntegers||!testOsiSolver->numberObjects()) {
+		      //int type = (pseudoUp) ? 1 : 0;
+		      testOsiSolver->findIntegers(false);
+		    }
+		    if (numberSOS) {
+		      // Do sets and priorities
+		      OsiObject ** objects = new OsiObject * [numberSOS];
+		      int iSOS;
+		      if (originalColumns) {
+			// redo sequence numbers
+			int numberColumns = testOsiSolver->getNumCols();
+			int nOld = originalColumns[numberColumns-1]+1;
+			int * back = new int[nOld];
+			int i;
+			for (i=0;i<nOld;i++)
+			  back[i]=-1;
+			for (i=0;i<numberColumns;i++)
+			  back[originalColumns[i]]=i;
+			// Really need better checks
+			int nMissing=0;
+			int n=sosStart[numberSOS];
+			for (i=0;i<n;i++) {
+			  int iColumn = sosIndices[i];
+			  int jColumn = back[iColumn];
+			  if (jColumn>=0) 
+			    sosIndices[i] = jColumn;
+			  else 
+			    nMissing++;
+			}
+			delete [] back;
+			if (nMissing)
+			  printf("%d SOS variables vanished due to pre processing? - check validity?\n",nMissing);
+		      }
+		      for (iSOS =0;iSOS<numberSOS;iSOS++) {
+			int iStart = sosStart[iSOS];
+			int n=sosStart[iSOS+1]-iStart;
+			objects[iSOS] = new OsiSOS(testOsiSolver,n,sosIndices+iStart,sosReference+iStart,
+						   sosType[iSOS]);
+			if (sosPriority)
+			  objects[iSOS]->setPriority(sosPriority[iSOS]);
+			else if (!prioritiesIn)
+			  objects[iSOS]->setPriority(10);  // rather than 1000 
+		      }
+		      // delete any existing SOS objects
+		      int numberObjects=testOsiSolver->numberObjects();
+		      OsiObject ** oldObjects=testOsiSolver->objects();
+		      int nNew=0;
+		      for (int i=0;i<numberObjects;i++) {
+			OsiObject * objThis = oldObjects[i];
+			OsiSOS * obj1 =
+			  dynamic_cast <OsiSOS *>(objThis) ;
+			OsiSOS * obj2 =
+			  dynamic_cast <OsiSOS *>(objThis) ;
+			if (!obj1&&!obj2) {
+			  oldObjects[nNew++]=objThis;
+			} else {
+			  delete objThis;
+			}
+		      }
+		      testOsiSolver->setNumberObjects(nNew);
+		      testOsiSolver->addObjects(numberSOS,objects);
+		      for (iSOS=0;iSOS<numberSOS;iSOS++)
+			delete objects[iSOS];
+		      delete [] objects;
+		    }
+                  }
+                  OsiObject ** objects = testOsiSolver->objects();
+                  int numberObjects = testOsiSolver->numberObjects();
+                  for (int iObj = 0;iObj<numberObjects;iObj++) {
+                    // skip sos
+                    OsiSOS * objSOS =
+                      dynamic_cast <OsiSOS *>(objects[iObj]) ;
+                    if (objSOS)
+                      continue;
+                    int iColumn = objects[iObj]->columnNumber();
+                    assert (iColumn>=0);
+                    if (originalColumns)
+                      iColumn = originalColumns[iColumn];
+                    if (branchDirection) {
+		      OsiSimpleInteger * obj =
+			dynamic_cast <OsiSimpleInteger *>(objects[iObj]) ;
+		      if (obj) { 
+			obj->setPreferredWay(branchDirection[iColumn]);
+		      } else {
+			OsiObject2 * obj =
+			  dynamic_cast <OsiObject2 *>(objects[iObj]) ;
+			if (obj)
+			  obj->setPreferredWay(branchDirection[iColumn]);
+		      }
+		    }
+                    if (priorities) {
+                      int iPriority = priorities[iColumn];
+                      if (iPriority>0)
+                        objects[iObj]->setPriority(iPriority);
+                    }
+                    if (pseudoUp&&pseudoUp[iColumn]) {
+		      abort();
+                    }
+                  }
+		  // *************************************************************
                 }
                 int statistics = (printOptions>0) ? printOptions: 0;
 #ifdef COIN_HAS_ASL
@@ -2610,11 +2784,16 @@ int main (int argc, const char *argv[])
                   strategy.setupPreProcessing(1);
 		  babModel->setStrategy(strategy);
 		}
-		int testOsiOptions = parameters[whichParam(TESTOSI,numberParameters,parameters)].intValue();
                 if (testOsiOptions>=0) {
                   printf("Testing OsiObject options %d\n",testOsiOptions);
 		  CbcBranchDefaultDecision decision;
-		  babModel->solver()->findIntegersAndSOS(false);
+		  if (!numberSOS) {
+		    babModel->solver()->findIntegersAndSOS(false);
+		  } else {
+		    // move across
+		    babModel->deleteObjects(false);
+		    //babModel->addObjects(babModel->solver()->numberObjects(),babModel->solver()->objects());
+		  }
 		  //OsiChooseVariable choose(babModel->solver());
 		  OsiChooseStrong choose(babModel->solver());
 		  choose.setNumberBeforeTrusted(babModel->numberBeforeTrust());
@@ -2624,6 +2803,23 @@ int main (int argc, const char *argv[])
 		  babModel->setBranchingMethod(decision);
 		}
 		checkSOS(babModel, babModel->solver());
+		if (doSprint>0) {
+		  // Sprint for primal solves
+		  ClpSolve::SolveType method = ClpSolve::usePrimalorSprint;
+		  ClpSolve::PresolveType presolveType = ClpSolve::presolveOff;
+		  int numberPasses = 5;
+		  int options[] = {0,3,0,0,0,0};
+		  int extraInfo[] = {-1,20,-1,-1,-1,-1};
+		  extraInfo[1]=doSprint;
+		  int independentOptions[] = {0,0,3};
+		  ClpSolve clpSolve(method,presolveType,numberPasses,
+				    options,extraInfo,independentOptions);
+		  // say use in OsiClp
+		  clpSolve.setSpecialOption(6,1);
+		  OsiClpSolverInterface * osiclp = dynamic_cast< OsiClpSolverInterface*> (babModel->solver());
+		  osiclp->setSolveOptions(clpSolve);
+		  osiclp->setHintParam(OsiDoDualInResolve,false);
+		}
                 babModel->branchAndBound(statistics);
 		checkSOS(babModel, babModel->solver());
               } else if (type==MIPLIB) {

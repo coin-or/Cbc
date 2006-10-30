@@ -111,8 +111,8 @@ static int gcd(int a, int b)
 
 void verifyTreeNodes (const CbcTree * branchingTree, const CbcModel &model)
 
-{ printf("*** CHECKING tree after %d nodes\n",model.getNodeCount()) ;
-
+{if (model.getNodeCount()==661) return;  printf("*** CHECKING tree after %d nodes\n",model.getNodeCount()) ;
+ 
   int j ;
   int nNodes = branchingTree->size() ;
 # define MAXINFO 1000
@@ -615,22 +615,6 @@ void CbcModel::branchAndBound(int doStatistics)
   // If dynamic pseudo costs then do
   if (numberBeforeTrust_)
     convertToDynamic();
-  // take off heuristics if have to
-  if (numberHeuristics_) {
-    int numberOdd=0;
-    for (int i=0;i<numberObjects_;i++) {
-      if (!object_[i]->canDoHeuristics()) 
-	numberOdd++;
-    }
-    if (numberOdd) {
-      for (int i=0;i<numberHeuristics_;i++) 
-	delete heuristic_[i];
-      delete [] heuristic_;
-      heuristic_=NULL;
-      numberHeuristics_=0;
-      handler_->message(CBC_HEURISTICS_OFF,messages_)<< numberOdd<<CoinMessageEol ;
-    }
-  }
   // Set up char array to say if integer
   delete [] integerInfo_;
   {
@@ -749,12 +733,14 @@ void CbcModel::branchAndBound(int doStatistics)
       if (!solver_->numberObjects()) {
 	solver_->addObjects(numberObjects_,object_);
       } else {
-	printf("should have trapped that solver has objects before\n");
-	abort();
+	if (solver_->numberObjects()!=numberOriginalObjects) {
+	  printf("should have trapped that solver has objects before\n");
+	  abort();
+	}
       }
     } else {
       // do from solver
-      deleteObjects();
+      deleteObjects(false);
       solver_->findIntegersAndSOS(false);
       numberObjects_=solver_->numberObjects();
       object_ = new OsiObject * [numberObjects_];
@@ -763,6 +749,22 @@ void CbcModel::branchAndBound(int doStatistics)
       }
     }
     branchingMethod_->chooseMethod()->setSolver(solver_);
+  }
+  // take off heuristics if have to
+  if (numberHeuristics_) {
+    int numberOdd=0;
+    for (int i=0;i<numberObjects_;i++) {
+      if (!object_[i]->canDoHeuristics()) 
+	numberOdd++;
+    }
+    if (numberOdd) {
+      for (int i=0;i<numberHeuristics_;i++) 
+	delete heuristic_[i];
+      delete [] heuristic_;
+      heuristic_=NULL;
+      numberHeuristics_=0;
+      handler_->message(CBC_HEURISTICS_OFF,messages_)<< numberOdd<<CoinMessageEol ;
+    }
   }
   // Save objective (just so user can access it)
   originalContinuousObjective_ = solver_->getObjValue();
@@ -1067,6 +1069,13 @@ void CbcModel::branchAndBound(int doStatistics)
   anyAction = chooseBranch(newNode, numberPassesLeft, NULL, cuts,resolved,
 			   NULL,NULL,NULL,branches,&usefulInfo);
   if (anyAction == -2||newNode->objectiveValue() >= cutoff) {
+    if (anyAction != -2) {
+      // zap parent nodeInfo
+#ifdef COIN_DEVELOP
+      printf("zapping CbcNodeInfo %x\n",newNode->nodeInfo()->parent());
+#endif
+      newNode->nodeInfo()->nullParent();
+    }
     delete newNode ;
     newNode = NULL ;
     feasible = false ;
@@ -1633,14 +1642,19 @@ void CbcModel::branchAndBound(int doStatistics)
           anyAction = -2 ; 
           // Reset bound anyway (no harm if not odd)
           solverCharacteristics_->setMipBound(-COIN_DBL_MAX);
+	  node->nodeInfo()->decrement();
         }
 	// May have slipped through i.e. anyAction == 0 and objective above cutoff
 	// I think this will screw up cut reference counts if executed.
 	// We executed addCuts just above. (lh)
 	if ( anyAction >=0 ) {
 	  assert (newNode);
-	  if (newNode->objectiveValue() >= getCutoff()) 
+	  if (newNode->objectiveValue() >= getCutoff()) {
 	    anyAction = -2; // say bad after all
+	    printf("zapping2 CbcNodeInfo %x\n",newNode->nodeInfo()->parent());
+	    // zap parent nodeInfo
+	    newNode->nodeInfo()->nullParent();
+	  }
 	}
 /*
   If we end up infeasible, we can delete the new node immediately. Since this
@@ -5629,7 +5643,7 @@ CbcModel::passInPriorities (const int * priorities,
 
 // Delete all object information
 void 
-CbcModel::deleteObjects()
+CbcModel::deleteObjects(bool getIntegers)
 {
   int i;
   for (i=0;i<numberObjects_;i++)
@@ -5637,7 +5651,8 @@ CbcModel::deleteObjects()
   delete [] object_;
   object_ = NULL;
   numberObjects_=0;
-  findIntegers(true);
+  if (getIntegers)
+    findIntegers(true);
 }
 
 /*!
@@ -5953,6 +5968,15 @@ CbcModel::addObjects(int numberObjects, OsiObject ** objects)
       int iColumn = obj->columnNumber();
       mark[iColumn]=i+numberColumns;
       newIntegers++;
+    } else {
+      OsiSimpleInteger * obj2 =
+      dynamic_cast <OsiSimpleInteger *>(objects[i]) ;
+      if (obj2) {
+	// Osi takes precedence
+	int iColumn = obj2->columnNumber();
+	mark[iColumn]=i+numberColumns;
+	newIntegers++;
+      }
     }
   }
   // and existing
@@ -6006,7 +6030,7 @@ CbcModel::addObjects(int numberObjects, OsiObject ** objects)
       if (obj) {
         delete object_[i];
       } else {
-        temp[n++]=object_[i];
+	temp[n++]=object_[i];
       }
     }
   }
@@ -6014,7 +6038,9 @@ CbcModel::addObjects(int numberObjects, OsiObject ** objects)
   for (i=0;i<numberObjects;i++) { 
     CbcSimpleInteger * obj =
       dynamic_cast <CbcSimpleInteger *>(objects[i]) ;
-    if (!obj) {
+    OsiSimpleInteger * obj2 =
+      dynamic_cast <OsiSimpleInteger *>(objects[i]) ;
+    if (!obj&&!obj2) {
       temp[n]=objects[i]->clone();
       CbcObject * obj =
 	dynamic_cast <CbcObject *>(temp[n]) ;
@@ -8350,8 +8376,14 @@ CbcModel::chooseBranch(CbcNode * newNode, int numberPassesLeft,
   // We executed addCuts just above. (lh)
   if ( anyAction >=0 ) {
     assert (newNode);
-    if (newNode->objectiveValue() >= getCutoff()) 
+    if (newNode->objectiveValue() >= getCutoff()) {
       anyAction = -2; // say bad after all
+      // zap parent nodeInfo
+#ifdef COIN_DEVELOP
+      printf("zapping3 CbcNodeInfo %x\n",newNode->nodeInfo()->parent());
+#endif
+      newNode->nodeInfo()->nullParent();
+    }
   }
   return anyAction;
 }

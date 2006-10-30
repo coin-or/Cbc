@@ -72,6 +72,7 @@ CbcNodeInfo::CbcNodeInfo (CbcNodeInfo * parent)
 #endif
   if (parent_) {
     numberRows_ = parent_->numberRows_+parent_->numberCuts_;
+    //parent_->increment();
   }
 }
 // Copy Constructor 
@@ -3942,6 +3943,7 @@ CbcNode::~CbcNode ()
     nodeInfo_->nullOwner();
     int numberToDelete=nodeInfo_->numberBranchesLeft();
     //    CbcNodeInfo * parent = nodeInfo_->parent();
+    //assert (nodeInfo_->numberPointingToThis()>0);
     if (nodeInfo_->decrement(numberToDelete)==0) {
       delete nodeInfo_;
     } else {

@@ -116,11 +116,11 @@ public:
 
   /// Increment number of references
   inline void increment(int amount=1)
-  {numberPointingToThis_+=amount;};
+  {numberPointingToThis_+=amount;/*printf("CbcNodeInfo %x incremented by %d to %d\n",this,amount,numberPointingToThis_);*/};
 
   /// Decrement number of references and return number left
   inline int decrement(int amount=1)
-  {numberPointingToThis_-=amount;return numberPointingToThis_;};
+  {numberPointingToThis_-=amount;/*printf("CbcNodeInfo %x decremented by %d to %d\n",this,amount,numberPointingToThis_);*/return numberPointingToThis_;};
 
   /** Initialize reference counts
 
@@ -149,6 +149,9 @@ public:
   /// Parent of this
   CbcNodeInfo * parent() const
   {return parent_;};
+  /// Set parent null
+  inline void nullParent()
+  { parent_=NULL;};
 
   void addCuts(OsiCuts & cuts,int numberToBranch, int * whichGenerator);
   void addCuts(int numberCuts, CbcCountRowCut ** cuts,int numberToBranch);

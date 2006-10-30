@@ -372,8 +372,8 @@ public:
   /// Get the specified object
   inline OsiObject * modifiableObject(int which) const { return object_[which];};
 
-  /// Delete all object information
-  void deleteObjects();
+  /// Delete all object information (and just back to integers if true)
+  void deleteObjects(bool findIntegers=true);
 
   /** Add in object information.
   

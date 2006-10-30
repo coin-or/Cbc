@@ -508,6 +508,10 @@ CbcHeuristicFPump::solution(double & solutionValue,
 	if (!doGeneral) {
 	  solver->resolve();
 	  assert (solver->isProvenOptimal());
+	  // in case very dubious solver
+	  lower = solver->getColLower();
+	  upper = solver->getColUpper();
+	  solution = solver->getColSolution();
 	} else {
 	  int * addStart = new int[2*general+1];
 	  int * addIndex = new int[4*general];

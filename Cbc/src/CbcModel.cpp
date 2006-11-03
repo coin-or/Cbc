@@ -322,30 +322,49 @@ CbcModel::analyzeObjective ()
 
   2520.0 is used as it is a nice multiple of 2,3,5,7
 */
-    if (possibleMultiple&&maximumCost)
-    { int increment = 0 ;
-      double multiplier = 2520.0 ;
-      while (10.0*multiplier*maximumCost < 1.0e8)
-	multiplier *= 10.0 ;
-
-      for (iColumn = 0 ; iColumn < numberColumns ; iColumn++)
-      { if (upper[iColumn] > lower[iColumn]+1.0e-8)
-	{ if (isInteger(iColumn)&&objective[iColumn])
-	  { double value = fabs(objective[iColumn])*multiplier ;
+  if (possibleMultiple&&maximumCost) {
+    int increment = 0 ;
+    double multiplier = 2520.0 ;
+    while (10.0*multiplier*maximumCost < 1.0e8)
+      multiplier *= 10.0 ;
+    int bigIntegers = 0; // Count of large costs which are integer
+    for (iColumn = 0 ; iColumn < numberColumns ; iColumn++) {
+      if (upper[iColumn] > lower[iColumn]+1.0e-8) {
+	if (isInteger(iColumn)&&objective[iColumn]) {
+	  double value = fabs(objective[iColumn])*multiplier ;
+	  if (value <2.1e9) {
 	    int nearest = (int) floor(value+0.5) ;
 	    if (fabs(value-floor(value+0.5)) > 1.0e-8)
-	    { increment = 0 ;
+	      { increment = 0 ;
 	      break ; }
 	    else if (!increment)
-	    { increment = nearest ; }
+	      { increment = nearest ; }
 	    else
-	    { increment = gcd(increment,nearest) ; } } } }
+	      { increment = gcd(increment,nearest) ; }
+	  } else {
+	    // large value - may still be multiple of 1.0
+	    value = fabs(objective[iColumn]);
+	    if (fabs(value-floor(value+0.5)) > 1.0e-8) {
+	      increment=0;
+	      break;
+	    } else {
+	      bigIntegers++;
+	    }
+	  }
+	}
+      }
+    }
 /*
   If the increment beats the current value for objective change, install it.
 */
       if (increment)
       { double value = increment ;
 	double cutoff = getDblParam(CbcModel::CbcCutoffIncrement) ;
+	if (bigIntegers) {
+	  // allow for 1.0
+	  increment = gcd(increment,(int) multiplier);
+	  value = increment;
+	}
 	value /= multiplier ;
 	if (value*0.999 > cutoff)
 	{ messageHandler()->message(CBC_INTEGERINCREMENT,

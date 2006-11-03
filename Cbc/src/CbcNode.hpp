@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "CoinWarmStartBasis.hpp"
+#include "CoinSearchTree.hpp"
 #include "CbcBranchBase.hpp"
 
 class OsiSolverInterface;
@@ -385,7 +386,7 @@ private:
   node.
 */
 
-class CbcNode  {
+class CbcNode : public CoinTreeNode {
  
 public:
     

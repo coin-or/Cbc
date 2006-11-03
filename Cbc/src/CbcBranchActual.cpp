@@ -984,6 +984,9 @@ CbcIntegerBranchingObject::branch()
   decrementNumberBranchesLeft();
   int iColumn = originalCbcObject_->columnNumber();
   assert (variable_==iColumn);
+  double olb,oub ;
+  olb = model_->solver()->getColLower()[iColumn] ;
+  oub = model_->solver()->getColUpper()[iColumn] ;
   if (way_<0) {
 #ifdef CBC_DEBUG
   { double olb,oub ;
@@ -1007,6 +1010,24 @@ CbcIntegerBranchingObject::branch()
     model_->solver()->setColUpper(iColumn,up_[1]);
     way_=-1;	  // Swap direction
   }
+  double nlb = model_->solver()->getColLower()[iColumn];
+  if (nlb<olb) {
+#ifndef NDEBUG
+    printf("bad lb change for column %d from %g to %g\n",iColumn,olb,nlb);
+#endif
+    model_->solver()->setColLower(iColumn,olb);
+  }
+  double nub = model_->solver()->getColUpper()[iColumn];
+  if (nub>oub) {
+#ifndef NDEBUG
+    printf("bad ub change for column %d from %g to %g\n",iColumn,oub,nub);
+#endif
+    model_->solver()->setColUpper(iColumn,oub);
+  }
+#ifndef NDEBUG
+  if (nlb<olb+1.0e-8&&nub>oub-1.0e-8)
+    printf("bad null change for column %d - bounds %g,%g\n",iColumn,olb,oub);
+#endif
   return 0.0;
 }
 // Print what would happen  

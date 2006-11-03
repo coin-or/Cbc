@@ -474,6 +474,8 @@ static int outDupRow(OsiSolverInterface * solver)
 void checkSOS(CbcModel * babModel, const OsiSolverInterface * solver)
 {
 #ifdef COIN_DEVELOP
+  if (!babModel->ownObjects())
+    return;
   //const double *objective = solver->getObjCoefficients() ;
   const double *columnLower = solver->getColLower() ;
   const double * columnUpper = solver->getColUpper() ;

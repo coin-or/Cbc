@@ -1356,6 +1356,9 @@ public:
   /// Says if normal solver i.e. has well defined CoinPackedMatrix
   inline bool normalSolver() const
   { return (specialOptions_&16)==0;};
+  /// Now we may not own objects - just point to solver's objects
+  inline bool ownObjects() const
+  { return ownObjects_;};
   //@}
   //---------------------------------------------------------------------------
 
@@ -1827,7 +1830,8 @@ private:
 	  objects.
   */
   OsiObject ** object_;
-
+  /// Now we may not own objects - just point to solver's objects
+  bool ownObjects_;
   
   /// Original columns as created by integerPresolve
   int * originalColumns_;

@@ -277,7 +277,7 @@ void verifyCutCounts (const CbcTree * branchingTree, CbcModel &model)
  /* End unnamed namespace for CbcModel.cpp */
 
 
-
+static double trueIncrement=0.0;
 void 
 CbcModel::analyzeObjective ()
 /*
@@ -307,6 +307,7 @@ CbcModel::analyzeObjective ()
   fathoming discipline to strict.
 */
   double maximumCost = 0.0 ;
+  trueIncrement=0.0;
   bool possibleMultiple = true ;
   int iColumn ;
   int numberColumns = getNumCols() ;
@@ -331,26 +332,47 @@ CbcModel::analyzeObjective ()
       double multiplier = 2520.0 ;
       while (10.0*multiplier*maximumCost < 1.0e8)
 	multiplier *= 10.0 ;
-
-      for (iColumn = 0 ; iColumn < numberColumns ; iColumn++)
-      { if (upper[iColumn] > lower[iColumn]+1.0e-8)
-	{ if (isInteger(iColumn)&&objective[iColumn])
-	  { double value = fabs(objective[iColumn])*multiplier ;
+    int bigIntegers = 0; // Count of large costs which are integer
+    for (iColumn = 0 ; iColumn < numberColumns ; iColumn++) {
+      if (upper[iColumn] > lower[iColumn]+1.0e-8) {
+	if (isInteger(iColumn)&&objective[iColumn]) {
+	  double value = fabs(objective[iColumn])*multiplier ;
+	  if (value <2.1e9) {
 	    int nearest = (int) floor(value+0.5) ;
 	    if (fabs(value-floor(value+0.5)) > 1.0e-8)
-	    { increment = 0 ;
+	      { increment = 0 ;
 	      break ; }
 	    else if (!increment)
-	    { increment = nearest ; }
+	      { increment = nearest ; }
 	    else
-	    { increment = gcd(increment,nearest) ; } } } }
+	      { increment = gcd(increment,nearest) ; }
+	  } else {
+	    // large value - may still be multiple of 1.0
+	    value = fabs(objective[iColumn]);
+	    if (fabs(value-floor(value+0.5)) > 1.0e-8) {
+	      increment=0;
+	      break;
+	    } else {
+	      bigIntegers++;
+	    }
+	  }
+	}
+      }
+    }
+
 /*
   If the increment beats the current value for objective change, install it.
 */
       if (increment)
       { double value = increment ;
 	double cutoff = getDblParam(CbcModel::CbcCutoffIncrement) ;
+	if (bigIntegers) {
+	  // allow for 1.0
+	  increment = gcd(increment,(int) multiplier);
+	  value = increment;
+	}
 	value /= multiplier ;
+	trueIncrement=CoinMax(cutoff,value);;
 	if (value*0.999 > cutoff)
 	{ messageHandler()->message(CBC_INTEGERINCREMENT,
 					  messages())
@@ -743,10 +765,8 @@ void CbcModel::branchAndBound(int doStatistics)
       deleteObjects(false);
       solver_->findIntegersAndSOS(false);
       numberObjects_=solver_->numberObjects();
-      object_ = new OsiObject * [numberObjects_];
-      for (int iObject = 0 ; iObject < numberObjects_ ; iObject++) {
-	object_[iObject]=solver_->object(iObject)->clone();
-      }
+      object_ = solver_->objects();
+      ownObjects_ = false;
     }
     branchingMethod_->chooseMethod()->setSolver(solver_);
   }
@@ -2191,6 +2211,7 @@ void CbcModel::branchAndBound(int doStatistics)
     // put back original objects if there were any
     if (originalObject) {
       int iColumn;
+      assert (ownObjects_);
       for (iColumn=0;iColumn<numberObjects_;iColumn++) 
         delete object_[iColumn];
       delete [] object_;
@@ -2347,6 +2368,7 @@ CbcModel::CbcModel()
   eventHandler_(0),
   numberObjects_(0),
   object_(NULL),
+  ownObjects_(true),
   originalColumns_(NULL),
   howOftenGlobalScan_(1),
   numberGlobalViolations_(0),
@@ -2475,6 +2497,7 @@ CbcModel::CbcModel(const OsiSolverInterface &rhs)
   eventHandler_(0),
   numberObjects_(0),
   object_(NULL),
+  ownObjects_(true),
   originalColumns_(NULL),
   howOftenGlobalScan_(1),
   numberGlobalViolations_(0),
@@ -2761,13 +2784,20 @@ CbcModel::CbcModel(const CbcModel & rhs, bool noTree)
   { eventHandler_ = new CbcEventHandler(*rhs.eventHandler_) ; }
   else
   { eventHandler_ = NULL ; }
-  numberObjects_=rhs.numberObjects_;
-  if (numberObjects_) {
-    object_ = new OsiObject * [numberObjects_];
-    int i;
-    for (i=0;i<numberObjects_;i++) 
-      object_[i]=(rhs.object_[i])->clone();
+  ownObjects_ = rhs.ownObjects_;
+  if (ownObjects_) {
+    numberObjects_=rhs.numberObjects_;
+    if (numberObjects_) {
+      object_ = new OsiObject * [numberObjects_];
+      int i;
+      for (i=0;i<numberObjects_;i++) 
+	object_[i]=(rhs.object_[i])->clone();
+    } else {
+      object_=NULL;
+    }
   } else {
+    // assume will be redone
+    numberObjects_=0;
     object_=NULL;
   }
   if (rhs.referenceSolver_)
@@ -3041,16 +3071,22 @@ CbcModel::operator=(const CbcModel& rhs)
     { eventHandler_ = new CbcEventHandler(*rhs.eventHandler_) ; }
     else
     { eventHandler_ = NULL ; }
-    for (i=0;i<numberObjects_;i++)
-      delete object_[i];
-    delete [] object_;
-    numberObjects_=rhs.numberObjects_;
-    if (numberObjects_) {
-      object_ = new OsiObject * [numberObjects_];
-      int i;
-      for (i=0;i<numberObjects_;i++) 
-	object_[i]=(rhs.object_[i])->clone();
+    if (ownObjects_) {
+      for (i=0;i<numberObjects_;i++)
+	delete object_[i];
+      delete [] object_;
+      numberObjects_=rhs.numberObjects_;
+      if (numberObjects_) {
+	object_ = new OsiObject * [numberObjects_];
+	int i;
+	for (i=0;i<numberObjects_;i++) 
+	  object_[i]=(rhs.object_[i])->clone();
+      } else {
+	object_=NULL;
+    }
     } else {
+      // assume will be redone
+      numberObjects_=0;
       object_=NULL;
     }
     delete [] originalColumns_;
@@ -3179,9 +3215,12 @@ CbcModel::gutsOfDestructor2()
   delete [] integerVariable_;
   integerVariable_=NULL;
   int i;
-  for (i=0;i<numberObjects_;i++)
-    delete object_[i];
-  delete [] object_;
+  if (ownObjects_) {
+    for (i=0;i<numberObjects_;i++)
+      delete object_[i];
+    delete [] object_;
+  }
+  ownObjects_=true;
   object_=NULL;
   numberIntegers_=0;
   numberObjects_=0;
@@ -3853,6 +3892,10 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
   if (node)
     objectiveValue= node->objectiveValue();
   int returnCode = resolve(node ? node->nodeInfo() : NULL,1);
+#ifdef COIN_DEVELOP
+  //if (!solver_->getIterationCount()&&solver_->isProvenOptimal())
+  //printf("zero iterations on first solve of branch\n");
+#endif
   if (node&&!node->nodeInfo()->numberBranchesLeft())
     node->nodeInfo()->allBranchesGone(); // can clean up
   feasible = returnCode  != 0 ;
@@ -5207,7 +5250,7 @@ CbcModel::resolve(CbcNodeInfo * parent, int whereFrom)
         printf("error %d %g %g %g %g\n",i,dj[i],lb[i],x[i],ub[i]);
     }
   } 
-  if (!feasible&& continuousObjective_ <-1.0e30) {
+  if (false&&!feasible&& continuousObjective_ <-1.0e30) {
     // at root node - double double check
     bool saveTakeHint;
     OsiHintStrength saveStrength;
@@ -5221,6 +5264,83 @@ CbcModel::resolve(CbcNodeInfo * parent, int whereFrom)
       //      solver_->writeMps("infeas");
     }
   }
+  if (feasible&&!solverCharacteristics_->solutionAddsCuts()) {
+    //double increment = getDblParam(CbcModel::CbcCutoffIncrement) ;
+    double cutoff ;
+    solver_->getDblParam(OsiDualObjectiveLimit,cutoff) ;
+    double distance = fabs(cutoff-solver_->getObjValue());
+    if (distance<10.0*trueIncrement) {
+      double offset;
+      solver_->getDblParam(OsiObjOffset,offset);
+      double objFixedValue = -offset;
+      double objValue=0.0;
+      double direction = solver_->getObjSense();
+      const double * solution = solver_->getColSolution();
+      const double * objective = solver_->getObjCoefficients();
+      const double * columnLower = solver_->getColLower();
+      const double * columnUpper = solver_->getColUpper();
+      int numberColumns = solver_->getNumCols();
+      int increment = 0 ;
+      double multiplier = 1.0/trueIncrement;
+      int bigIntegers = 0; // Count of large costs which are integer
+      for (int iColumn=0;iColumn<numberColumns;iColumn++) {
+	double value = solution[iColumn];
+	// make sure clean
+	value = CoinMin(value,columnUpper[iColumn]);
+	value = CoinMax(value,columnLower[iColumn]);
+	double cost = direction * objective[iColumn];
+	if (cost) {
+	  if (columnLower[iColumn]<columnUpper[iColumn]) {
+	    objValue += value*cost;
+	    value = fabs(cost)*multiplier ;
+	    if (value <2.1e9) {
+	      int nearest = (int) floor(value+0.5) ;
+	      assert (fabs(value-floor(value+0.5)) < 1.0e-8);
+	      if (!increment) 
+		increment = nearest ; 
+	      else
+		increment = gcd(increment,nearest) ;
+	    } else {
+	      // large value - may still be multiple of 1.0
+	      value = fabs(objective[iColumn]);
+	      assert(fabs(value-floor(value+0.5)) < 1.0e-8);
+	      bigIntegers++;
+	    }
+	  } else {
+	    // fixed
+	    objFixedValue += value*cost;
+	  }
+	}
+      }
+      if (increment) {
+	double value = increment ;
+	value /= multiplier ;
+	if (value>trueIncrement) {
+	  double x = objValue/value;
+	  x = ceil(x-1.0e-5);
+	  x *= value;
+	  //printf("fixed %g, variable %g -> %g, sum %g - cutoff %g\n",
+	  // objFixedValue,objValue,x,x+objFixedValue,cutoff);
+	  x += objFixedValue;
+	  if (x>cutoff + 1.0e-5*fabs(cutoff)+1.0e-5) {
+	    //printf("Node cutoff\n");
+	    feasible=false;
+	  }
+	} else {
+	  value = trueIncrement;
+	  double x = objValue/value;
+	  x = ceil(x-1.0e-5);
+	  x *= value;
+	  x += objFixedValue;
+	  if (x>cutoff + 1.0e-5*fabs(cutoff)+1.0e-5) {
+	    //printf("Node cutoff\n");
+	    feasible=false;
+	  }
+	}
+      }
+    }
+  }
+
   setPointers(solver_);
   int returnStatus = feasible ? 1 : 0;
   if (strategy_) {
@@ -5498,12 +5618,14 @@ CbcModel::findCliques(bool makeEquality,
     delete [] rows;
     delete [] element;
     newModel->addObjects(numberCliques,object);
+    assert (ownObjects_);
     for (;i<numberCliques;i++) 
       delete object[i];
     delete [] object;
     newModel->synchronizeModel();
     return newModel;
   } else {
+    assert (ownObjects_);
     if (numberCliques>0) {
       addObjects(numberCliques,object);
       for (;i<numberCliques;i++) 
@@ -5645,13 +5767,15 @@ CbcModel::passInPriorities (const int * priorities,
 void 
 CbcModel::deleteObjects(bool getIntegers)
 {
-  int i;
-  for (i=0;i<numberObjects_;i++)
-    delete object_[i];
-  delete [] object_;
+  if (ownObjects_) {
+    int i;
+    for (i=0;i<numberObjects_;i++)
+      delete object_[i];
+    delete [] object_;
+  }
   object_ = NULL;
   numberObjects_=0;
-  if (getIntegers)
+  if (getIntegers&&ownObjects_)
     findIntegers(true);
 }
 
@@ -5937,6 +6061,7 @@ CbcModel::addObjects(int numberObjects, CbcObject ** objects)
     }
   }
   delete [] mark;
+  assert (ownObjects_);
   delete [] object_;
   object_ = temp;
   assert (n==newNumberObjects);
@@ -6050,6 +6175,7 @@ CbcModel::addObjects(int numberObjects, OsiObject ** objects)
     }
   }
   delete [] mark;
+  assert (ownObjects_);
   delete [] object_;
   object_ = temp;
   assert (n==newNumberObjects);
@@ -7091,6 +7217,7 @@ bool
 CbcModel::integerPresolveThisModel(OsiSolverInterface * originalSolver,
 				   bool weak)
 {
+  printf("DEPRECATED\n");
   status_ = 0;
   // solve LP
   bool feasible = resolve(NULL,3);
@@ -7216,7 +7343,7 @@ CbcModel::integerPresolveThisModel(OsiSolverInterface * originalSolver,
 	    if(objective[iColumn]) {
 	      double value = fabs(objective[iColumn])*multiplier;
 	      int nearest = (int) floor(value+0.5);
-	      if (fabs(value-floor(value+0.5))>1.0e-8) {
+	      if (fabs(value-floor(value+0.5))>1.0e-8||value>2.1e9) {
 		increment=0;
 		break; // no good
 	      } else if (!increment) {

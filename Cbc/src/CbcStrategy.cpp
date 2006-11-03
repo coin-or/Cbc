@@ -284,9 +284,9 @@ CbcStrategyDefault::setupPrinting(CbcModel & model,int modelLogLevel)
     model.messageHandler()->setLogLevel(1);
     model.solver()->messageHandler()->setLogLevel(0);
   } else {
-    model.messageHandler()->setLogLevel(2);
-    model.solver()->messageHandler()->setLogLevel(1);
-    model.setPrintFrequency(50);
+    model.messageHandler()->setLogLevel(CoinMax(2,model.messageHandler()->logLevel()));
+    model.solver()->messageHandler()->setLogLevel(CoinMax(1,model.solver()->messageHandler()->logLevel()));
+    model.setPrintFrequency(CoinMin(50,model.printFrequency()));
   }
 }
 // Other stuff e.g. strong branching

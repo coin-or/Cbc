@@ -623,12 +623,25 @@ void CbcPartialNodeInfo::applyToModel (CbcModel *model,
   int i;
   for (i=0;i<numberChangedBounds_;i++) {
     int variable = variables_[i];
+    int k = variable&0x7fffffff;
     if ((variable&0x80000000)==0) {
       // lower bound changing
-      solver->setColLower(variable,newBounds_[i]);
+#ifndef NDEBUG
+      double oldValue = solver->getColLower()[k];
+      assert (newBounds_[i]>oldValue-1.0e-8);
+      if (newBounds_[i]<oldValue+1.0e-8)
+	printf("bad null lower change for column %d - bound %g\n",k,oldValue);
+#endif
+      solver->setColLower(k,newBounds_[i]);
     } else {
       // upper bound changing
-      solver->setColUpper(variable&0x7fffffff,newBounds_[i]);
+#ifndef NDEBUG
+      double oldValue = solver->getColUpper()[k];
+      assert (newBounds_[i]<oldValue+1.0e-8);
+      if (newBounds_[i]>oldValue-1.0e-8)
+	printf("bad null upper change for column %d - bound %g\n",k,oldValue);
+#endif
+      solver->setColUpper(k,newBounds_[i]);
     }
   }
   for (i=0;i<numberCuts_;i++) {
@@ -3166,7 +3179,8 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
 		CbcBranchingObject * branchObj =
 		  dynamic_cast <CbcBranchingObject *>(branch_) ;
 		assert (branchObj);
-		branchObj->way(preferredWay);
+		//branchObj->way(preferredWay);
+		branchObj->way(betterWay);
 	      }
               if (couldChooseFirst)
                 printf("choosing %d way %d\n",iDo,betterWay);

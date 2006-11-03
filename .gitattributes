@@ -13,6 +13,10 @@ Cbc/examples/ClpDynamicInterface.hpp -text
 Cbc/examples/CoinWarmStartBasisDynamic.cpp -text
 Cbc/examples/CoinWarmStartBasisDynamic.hpp -text
 Cbc/examples/Makefile.in -text
+Cbc/examples/OsiBranchLink.cpp -text
+Cbc/examples/OsiBranchLink.hpp -text
+Cbc/examples/OsiSolverLink.cpp -text
+Cbc/examples/OsiSolverLink.hpp -text
 Cbc/examples/dynamic.cpp -text
 Cbc/examples/lotsizeSimple.cpp -text
 Cbc/examples/qmip2.cpp -text

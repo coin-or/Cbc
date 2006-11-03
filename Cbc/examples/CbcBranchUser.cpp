@@ -426,7 +426,6 @@ CbcSimpleIntegerFixed::createBranch(OsiSolverInterface * solver,
   value = CoinMin(value, upper[columnNumber_]);
   assert (upper[columnNumber_]>lower[columnNumber_]);
   if (!model_->hotstartSolution()) {
-#ifndef NDEBUG
     double nearest = floor(value+0.5);
     double integerTolerance = 
     model_->getDblParam(CbcModel::CbcIntegerTolerance);
@@ -437,7 +436,6 @@ CbcSimpleIntegerFixed::createBranch(OsiSolverInterface * solver,
       else
 	value = nearest-2.0*integerTolerance;
     }
-#endif
   } else {
     const double * hotstartSolution = model_->hotstartSolution();
     double targetValue = hotstartSolution[columnNumber_];

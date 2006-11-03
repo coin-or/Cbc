@@ -61,6 +61,10 @@ EXTRA_DIST = \
 	examples/CbcSolverLink.cpp \
 	examples/ClpQuadInterface.cpp \
 	examples/ClpQuadInterface.hpp \
+	examples/OsiBranchLink.cpp \
+	examples/OsiBranchLink.hpp \
+	examples/OsiSolverLink.hpp \
+	examples/OsiSolverLink.cpp \
 	examples/crew.cpp \
 	examples/driver2.cpp \
 	examples/driver.cpp \

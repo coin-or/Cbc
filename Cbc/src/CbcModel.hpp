@@ -668,6 +668,10 @@ public:
     bool isProvenOptimal() const;
     /// Is  infeasiblity proven (or none better than cutoff)?
     bool isProvenInfeasible() const;
+    /// Was continuous solution unbounded
+    bool isContinuousUnbounded() const;
+    /// Was continuous solution unbounded
+    bool isProvenDualInfeasible() const;
     /// Node limit reached?
     bool isNodeLimitReached() const;
     /// Time limit reached?

@@ -673,7 +673,13 @@ void CbcModel::branchAndBound(int doStatistics)
   if (!feasible)
   { handler_->message(CBC_INFEAS,messages_)<< CoinMessageEol ;
     status_ = 0 ;
-    secondaryStatus_ = 1;
+    if (!solver_->isProvenDualInfeasible()) {
+      handler_->message(CBC_INFEAS,messages_)<< CoinMessageEol ;
+      secondaryStatus_ = 1;
+    } else {
+      handler_->message(CBC_UNBOUNDED,messages_)<< CoinMessageEol ;
+      secondaryStatus_ = 7;
+    }
     originalContinuousObjective_ = COIN_DBL_MAX;
     solverCharacteristics_ = NULL;
     return ; }

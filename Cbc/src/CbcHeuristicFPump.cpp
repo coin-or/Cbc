@@ -215,6 +215,11 @@ CbcHeuristicFPump::solution(double & solutionValue,
   double * lastSolution=NULL;
   int fixContinuous=0;
   bool fixInternal=false;
+  bool allSlack=false;
+  if (when_>=21&&when_<=25) {
+    when_ -= 10;
+    allSlack=true;
+  }
   if (when_>=11&&when_<=15) {
     fixInternal = when_ >11&&when_<15;
     if (when_<13)
@@ -256,6 +261,12 @@ CbcHeuristicFPump::solution(double & solutionValue,
       solver->addRow(nel,which,els,-COIN_DBL_MAX,cutoff);
       delete [] which;
       delete [] els;
+      bool takeHint;
+      OsiHintStrength strength;
+      solver->getHintParam(OsiDoDualInResolve,takeHint,strength);
+      solver->setHintParam(OsiDoDualInResolve,true,OsiHintDo);
+      solver->resolve();
+      solver->setHintParam(OsiDoDualInResolve,takeHint,strength);
     }
     solver->setDblParam(OsiDualObjectiveLimit,1.0e50);
     solver->resolve();
@@ -506,6 +517,11 @@ CbcHeuristicFPump::solution(double & solutionValue,
 	  }      
 	}
 	if (!doGeneral) {
+	  // faster to do from all slack!!!!
+	  if (allSlack) {
+	    CoinWarmStartBasis dummy;
+	    solver->setWarmStart(&dummy);
+	  }
 	  solver->resolve();
 	  assert (solver->isProvenOptimal());
 	  // in case very dubious solver

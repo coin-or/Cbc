@@ -197,9 +197,7 @@ CbcCutGenerator::generateCuts( OsiCuts & cs , bool fullScan, CbcNode * node)
     if (timing_)
       time1 = CoinCpuTime();
     //#define CBC_DEBUG
-#ifdef CBC_DEBUG
     int numberRowCutsBefore = cs.sizeRowCuts() ;
-#endif
     int cutsBefore = cs.sizeCuts();
     CglTreeInfo info;
     info.level = depth;
@@ -348,6 +346,25 @@ CbcCutGenerator::generateCuts( OsiCuts & cs , bool fullScan, CbcNode * node)
       delete [] mark;
 #endif
     }
+    CbcCutModifier * modifier = model_->cutModifier();
+    if (modifier) {
+      int numberRowCutsAfter = cs.sizeRowCuts() ;
+      int k ;
+      int nOdd=0;
+      const OsiSolverInterface * solver = model_->solver();
+      for (k = numberRowCutsAfter-1;k>=numberRowCutsBefore;k--) {
+	OsiRowCut & thisCut = cs.rowCut(k) ;
+	int returnCode = modifier->modify(solver,thisCut);
+	if (returnCode) {
+	  nOdd++;
+	  if (returnCode==3)
+	    cs.eraseRowCut(k);
+	}
+      }
+      if (nOdd) 
+	printf("Cut generator %s produced %d cuts of which %d were modified\n",
+		 generatorName_,numberRowCutsAfter-numberRowCutsBefore,nOdd);
+    }
 #ifdef CBC_DEBUG
     {
       int numberRowCutsAfter = cs.sizeRowCuts() ;
@@ -414,3 +431,106 @@ CbcCutGenerator::setWhatDepthInSub(int value)
 {
   depthCutGeneratorInSub_ = value;
 }
+
+
+// Default Constructor
+CbcCutModifier::CbcCutModifier() 
+{
+}
+
+
+// Destructor 
+CbcCutModifier::~CbcCutModifier ()
+{
+}
+
+// Copy constructor 
+CbcCutModifier::CbcCutModifier ( const CbcCutModifier & rhs)
+{
+}
+
+// Assignment operator 
+CbcCutModifier & 
+CbcCutModifier::operator=( const CbcCutModifier& rhs)
+{
+  if (this!=&rhs) {
+  }
+  return *this;
+}
+
+// Default Constructor 
+CbcCutSubsetModifier::CbcCutSubsetModifier ()
+  : CbcCutModifier(),
+    firstOdd_(INT_MAX)
+{
+}
+
+// Useful constructor 
+CbcCutSubsetModifier::CbcCutSubsetModifier (int firstOdd)
+  : CbcCutModifier()
+{
+  firstOdd_=firstOdd;
+}
+
+// Copy constructor 
+CbcCutSubsetModifier::CbcCutSubsetModifier ( const CbcCutSubsetModifier & rhs)
+  :CbcCutModifier(rhs)
+{
+  firstOdd_ = rhs.firstOdd_;
+}
+
+// Clone
+CbcCutModifier *
+CbcCutSubsetModifier::clone() const
+{
+  return new CbcCutSubsetModifier(*this);
+}
+
+// Assignment operator 
+CbcCutSubsetModifier & 
+CbcCutSubsetModifier::operator=( const CbcCutSubsetModifier& rhs)
+{
+  if (this!=&rhs) {
+    CbcCutModifier::operator=(rhs);
+    firstOdd_ = rhs.firstOdd_;
+  }
+  return *this;
+}
+
+// Destructor 
+CbcCutSubsetModifier::~CbcCutSubsetModifier ()
+{
+}
+/* Returns
+   0 unchanged
+   1 strengthened
+   2 weakened
+   3 deleted
+*/
+int 
+CbcCutSubsetModifier::modify(const OsiSolverInterface * solver, OsiRowCut & cut) 
+{
+  int n=cut.row().getNumElements();
+  if (!n)
+    return 0;
+  const int * column = cut.row().getIndices();
+  //const double * element = cut.row().getElements();
+  int returnCode=0;
+  for (int i=0;i<n;i++) {
+    if (column[i]>=firstOdd_) {
+      returnCode=3;
+      break;
+    }
+  }
+  if (!returnCode) {
+    const double * element = cut.row().getElements();
+    printf("%g <= ",cut.lb());
+    for (int i=0;i<n;i++) {
+      printf("%g*x%d ",element[i],column[i]);
+    }
+    printf("<= %g\n",cut.ub());
+  }
+  //return 3;
+  return returnCode;
+}
+

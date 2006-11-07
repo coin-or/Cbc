@@ -20,6 +20,7 @@ class OsiRowCut;
 class OsiBabSolver;
 class OsiRowCutDebugger;
 class CglCutGenerator;
+class CbcCutModifier;
 class CglTreeProbingInfo;
 class CbcHeuristic;
 class OsiObject;
@@ -1156,6 +1157,16 @@ public:
   */
   inline void setBranchingMethod(CbcBranchDecision & method)
   { delete branchingMethod_; branchingMethod_ = method.clone();};
+  /// Get the current cut modifier method
+  inline CbcCutModifier * cutModifier() const
+  { return cutModifier_;};
+  /// Set the cut modifier method
+  void setCutModifier(CbcCutModifier * modifier);
+  /** Set the cut modifier method
+  
+    \overload
+  */
+  void setCutModifier(CbcCutModifier & modifier);
   //@}
 
   /** \name Row (constraint) and Column (variable) cut generation */
@@ -1443,8 +1454,7 @@ public:
 		   CbcNode * oldNode, OsiCuts & cuts,
 		   bool & resolved, CoinWarmStartBasis *lastws,
 		   const double * lowerBefore,const double * upperBefore,
-		   OsiSolverBranch * & branches,
-		   OsiBranchingInformation * usefulInfo);
+		   OsiSolverBranch * & branches);
   int chooseBranch(CbcNode * newNode, int numberPassesLeft, bool & resolved);
 
   /** Return an empty basis object of the specified size
@@ -1740,6 +1750,8 @@ private:
   int numberStoppedSubTrees_;
   /// Variable selection function
   CbcBranchDecision * branchingMethod_;
+  /// Cut modifier function
+  CbcCutModifier * cutModifier_;
   /// Strategy
   CbcStrategy * strategy_;
   /// Parent model

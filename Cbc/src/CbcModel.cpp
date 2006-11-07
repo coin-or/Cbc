@@ -1084,10 +1084,8 @@ void CbcModel::branchAndBound(int doStatistics)
 	feasible = false ; } }
 #else
   OsiSolverBranch * branches = NULL;
-  // point to useful information
-  OsiBranchingInformation usefulInfo=usefulInformation();
   anyAction = chooseBranch(newNode, numberPassesLeft, NULL, cuts,resolved,
-			   NULL,NULL,NULL,branches,&usefulInfo);
+			   NULL,NULL,NULL,branches);
   if (anyAction == -2||newNode->objectiveValue() >= cutoff) {
     if (anyAction != -2) {
       // zap parent nodeInfo
@@ -1671,7 +1669,9 @@ void CbcModel::branchAndBound(int doStatistics)
 	  assert (newNode);
 	  if (newNode->objectiveValue() >= getCutoff()) {
 	    anyAction = -2; // say bad after all
+#ifdef COIN_DEVELOP
 	    printf("zapping2 CbcNodeInfo %x\n",newNode->nodeInfo()->parent());
+#endif
 	    // zap parent nodeInfo
 	    newNode->nodeInfo()->nullParent();
 	  }
@@ -1701,9 +1701,8 @@ void CbcModel::branchAndBound(int doStatistics)
 #else
 	OsiSolverBranch * branches=NULL;
 	// point to useful information
-	OsiBranchingInformation usefulInfo=usefulInformation();
 	anyAction = chooseBranch(newNode, numberPassesLeft,node, cuts,resolved,
-				 lastws, lowerBefore, upperBefore, branches,&usefulInfo);
+				 lastws, lowerBefore, upperBefore, branches);
 /*
   If we end up infeasible, we can delete the new node immediately. Since this
   node won't be needing the cuts we collected, decrement the reference counts.
@@ -2422,6 +2421,7 @@ CbcModel::CbcModel()
   problemFeasibility_=new CbcFeasibilityBase();
   tree_= new CbcTree();
   branchingMethod_=NULL;
+  cutModifier_=NULL;
   strategy_=NULL;
   parentModel_=NULL;
   cbcColLower_ = NULL;
@@ -2552,6 +2552,7 @@ CbcModel::CbcModel(const OsiSolverInterface &rhs)
   problemFeasibility_=new CbcFeasibilityBase();
   tree_= new CbcTree();
   branchingMethod_=NULL;
+  cutModifier_=NULL;
   strategy_=NULL;
   parentModel_=NULL;
   appData_=NULL;
@@ -2824,6 +2825,10 @@ CbcModel::CbcModel(const CbcModel & rhs, bool noTree)
     branchingMethod_=rhs.branchingMethod_->clone();
   else
     branchingMethod_=NULL;
+  if (rhs.cutModifier_)
+    cutModifier_=rhs.cutModifier_->clone();
+  else
+    cutModifier_=NULL;
   cbcColLower_ = NULL;
   cbcColUpper_ = NULL;
   cbcRowLower_ = NULL;
@@ -3105,6 +3110,10 @@ CbcModel::operator=(const CbcModel& rhs)
       branchingMethod_=rhs.branchingMethod_->clone();
     else
       branchingMethod_=NULL;
+    if (rhs.cutModifier_)
+      cutModifier_=rhs.cutModifier_->clone();
+    else
+      cutModifier_=NULL;
     delete strategy_;
     if (rhs.strategy_)
       strategy_=rhs.strategy_->clone();
@@ -3284,6 +3293,8 @@ CbcModel::gutsOfDestructor2()
   currentNode_=NULL;
   delete branchingMethod_;
   branchingMethod_=NULL;
+  delete cutModifier_;
+  cutModifier_=NULL;
   // clear out tree
   if (tree_&&tree_->size())
     tree_->cleanTree(this, -1.0e100,bestPossibleObjective_) ;
@@ -5264,7 +5275,7 @@ CbcModel::resolve(CbcNodeInfo * parent, int whereFrom)
       //      solver_->writeMps("infeas");
     }
   }
-  if (feasible&&!solverCharacteristics_->solutionAddsCuts()) {
+  if (cutModifier_&&feasible&&!solverCharacteristics_->solutionAddsCuts()) {
     //double increment = getDblParam(CbcModel::CbcCutoffIncrement) ;
     double cutoff ;
     solver_->getDblParam(OsiDualObjectiveLimit,cutoff) ;
@@ -8374,8 +8385,7 @@ CbcModel::chooseBranch(CbcNode * newNode, int numberPassesLeft,
 		       CbcNode * oldNode, OsiCuts & cuts,
 		       bool & resolved, CoinWarmStartBasis *lastws,
 		       const double * lowerBefore,const double * upperBefore,
-		       OsiSolverBranch * & branches,
-		       OsiBranchingInformation * usefulInfo)
+		       OsiSolverBranch * & branches)
 {
   int anyAction =-1 ;
   resolved = false ;
@@ -8398,7 +8408,8 @@ CbcModel::chooseBranch(CbcNode * newNode, int numberPassesLeft,
 	anyAction = newNode->chooseBranch(this,oldNode,numberPassesLeft) ; // dynamic did nothing
       }
     } else {
-      anyAction = newNode->chooseOsiBranch(this,oldNode,usefulInfo,branchingState) ;; // Osi method
+      OsiBranchingInformation usefulInfo=usefulInformation();
+      anyAction = newNode->chooseOsiBranch(this,oldNode,&usefulInfo,branchingState) ;; // Osi method
       //branchingState=0;
     }
     if (solverCharacteristics_ && 
@@ -8913,4 +8924,19 @@ void getIntegerInformation(const OsiObject * object, double & originalLower,
     originalLower = integerObject->originalLowerBound();
     originalUpper = integerObject->originalUpperBound();
   }
+}
+// Set the cut modifier method
+void 
+CbcModel::setCutModifier(CbcCutModifier * modifier)
+{ 
+  delete cutModifier_; 
+  cutModifier_ = modifier->clone();
+}
+/* Set the cut modifier method
+ */
+void 
+CbcModel::setCutModifier(CbcCutModifier & modifier)
+{ 
+  delete cutModifier_;
+  cutModifier_ = modifier.clone();
 }

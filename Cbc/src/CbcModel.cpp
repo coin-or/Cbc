@@ -961,7 +961,12 @@ void CbcModel::branchAndBound(int doStatistics)
 #	endif
       if (!feasible) anyAction = -2 ; }
       if (anyAction == -2||newNode->objectiveValue() >= cutoff)
-      { delete newNode ;
+      { 
+	if (anyAction != -2) {
+	  // zap parent nodeInfo
+	  newNode->nodeInfo()->nullParent();
+	}
+	delete newNode ;
 	newNode = NULL ;
 	feasible = false ; } } }
 /*
@@ -972,7 +977,7 @@ void CbcModel::branchAndBound(int doStatistics)
   assert (!newNode || newNode->objectiveValue() <= cutoff) ;
   // Save address of root node as we don't want to delete it
   CbcNode * rootNode = newNode;
-/*
+/*g
   The common case is that the lp relaxation is feasible but doesn't satisfy
   integrality (i.e., newNode->variable() >= 0, indicating we've been able to
   select a branching variable). Remove any cuts that have gone slack due to
@@ -1501,14 +1506,21 @@ void CbcModel::branchAndBound(int doStatistics)
           anyAction = -2 ; 
           // Reset bound anyway (no harm if not odd)
           solverCharacteristics_->setMipBound(-COIN_DBL_MAX);
+	  //node->nodeInfo()->decrement();
         }
 	// May have slipped through i.e. anyAction == 0 and objective above cutoff
 	// I think this will screw up cut reference counts if executed.
 	// We executed addCuts just above. (lh)
 	if ( anyAction >=0 ) {
 	  assert (newNode);
-	  if (newNode->objectiveValue() >= getCutoff()) 
+	  if (newNode->objectiveValue() >= getCutoff()) {
 	    anyAction = -2; // say bad after all
+#ifdef COIN_DEVELOP
+	    printf("zapping2 CbcNodeInfo %x\n",newNode->nodeInfo()->parent());
+#endif
+	    // zap parent nodeInfo
+	    newNode->nodeInfo()->nullParent();
+	  }
 	}
 /*
   If we end up infeasible, we can delete the new node immediately. Since this
@@ -3095,6 +3107,24 @@ bool
 CbcModel::isProvenInfeasible() const
 {
   if (!status_ && bestObjective_>=1.0e30)
+    return true;
+  else
+    return false;
+}
+// Was continuous solution unbounded
+bool 
+CbcModel::isContinuousUnbounded() const
+{
+  if (!status_ && secondaryStatus_==7)
+    return true;
+  else
+    return false;
+}
+// Was continuous solution unbounded
+bool 
+CbcModel::isProvenDualInfeasible() const
+{
+  if (!status_ && secondaryStatus_==7)
     return true;
   else
     return false;

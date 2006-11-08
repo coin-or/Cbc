@@ -149,6 +149,9 @@ public:
   /// Parent of this
   CbcNodeInfo * parent() const
   {return parent_;};
+  /// Set parent null
+  inline void nullParent()
+  { parent_=NULL;};
 
   void addCuts(OsiCuts & cuts,int numberToBranch, int * whichGenerator);
   void addCuts(int numberCuts, CbcCountRowCut ** cuts,int numberToBranch);

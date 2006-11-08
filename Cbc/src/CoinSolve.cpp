@@ -2073,11 +2073,12 @@ int main (int argc, const char *argv[])
 		  /*
 		    >=10000000 for using obj
 		    >=1000000 use as accumulate switch
-		    >=1000 use index+2 as number of large loops
+		    >=1000 use index+1 as number of large loops
 		    >=100 use 0.05 objvalue as increment
 		    >=10 use +0.1 objvalue for cutoff (add)
 		    1 == fix ints at bounds, 2 fix all integral ints, 3 and continuous at bounds
 		    4 and static continuous, 5 as 3 but no internal integers
+		    6 as 3 but all slack basis!
 		  */
 		  double value = babModel->solver()->getObjSense()*babModel->solver()->getObjValue();
 		  int w = pumpTune/10;
@@ -2111,7 +2112,7 @@ int main (int argc, const char *argv[])
 		    // also set increment
 		    heuristic4.setAbsoluteIncrement((0.01*i+0.005)*(fabs(value)+1.0e-12));
 		    heuristic4.setAccumulate(accumulate);
-		    heuristic4.setMaximumRetries(r+2);
+		    heuristic4.setMaximumRetries(r+1);
 		    if (i)
 		      printf("increment of %g ",heuristic4.absoluteIncrement());
 		    if (accumulate)
@@ -2120,6 +2121,8 @@ int main (int argc, const char *argv[])
 		  }
 		  pumpTune = pumpTune%100;
 		  printf("and setting when to %d\n",pumpTune+10);
+		  if (pumpTune==6)
+		    pumpTune =13;
 		  heuristic4.setWhen(pumpTune+10);
 		}
                 babModel->addHeuristic(&heuristic4);

@@ -229,14 +229,22 @@ CbcCompareDefault::test (CbcNode * x, CbcNode * y)
     } else if (x->numberUnsatisfied() < y->numberUnsatisfied()-adjust) {
       return false;
     } else {
-      int testX = x->depth();
-      int testY = y->depth();
-      if (testX!=testY)
-	return testX < testY;
+      int depthX = x->depth();
+      int depthY = y->depth();
+      if (depthX!=depthY)
+	return depthX < depthY;
       else
 	return equalityTest(x,y); // so ties will be broken in consistent manner
     }
   } else {
+    // always choose *smallest* depth if <= 7
+    int depthX = x->depth();
+    int depthY = y->depth();
+    if (depthX<=7||depthY<=7) {
+      if (depthX!=depthY) {
+	return depthX < depthY;
+      }
+    }
     // after solution
     double weight = CoinMax(weight_,0.0);
     double testX =  x->objectiveValue()+ weight*x->numberUnsatisfied();

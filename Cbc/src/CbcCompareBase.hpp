@@ -40,7 +40,9 @@ public:
   // Return true if want tree re-sorted
   virtual bool every1000Nodes(CbcModel * model,int numberNodes) {return false;};
 
-  /// Returns true if wants code to do scan with alternate criterion
+  /** Returns true if wants code to do scan with alternate criterion
+      NOTE - this is temporarily disabled
+  */
   virtual bool fullScan() const { return false;};
 
   virtual ~CbcCompareBase() {};
@@ -69,6 +71,20 @@ public:
   bool operator() (CbcNode * x, CbcNode * y) {
     return test(x,y);
   }
+  /// Further test if everything else equal
+  inline bool equalityTest (CbcNode * x, CbcNode * y) const
+  {
+    assert (x);
+    CbcNodeInfo * infoX = x->nodeInfo();
+    assert (infoX);
+    int nodeNumberX = infoX->nodeNumber();
+    assert (y);
+    CbcNodeInfo * infoY = y->nodeInfo();
+    assert (infoY);
+    int nodeNumberY = infoY->nodeNumber();
+    assert (nodeNumberX!=nodeNumberY);
+    return (nodeNumberX>nodeNumberY);
+  };
 protected:
   CbcCompareBase * test_;
 };

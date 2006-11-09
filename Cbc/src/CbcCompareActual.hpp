@@ -101,6 +101,9 @@ public:
   { return weight_;};
   inline void setWeight(double weight)
   { weight_ = weight;};
+  // Depth above which want to explore first
+  inline void setBreadthDepth(int value)
+  {  breadthDepth_ = value;};
 protected:
   // Weight for each infeasibility
   double weight_;
@@ -110,6 +113,8 @@ protected:
   int numberSolutions_;
   // Tree size (at last check)
   int treeSize_;
+  // Depth above which want to explore first
+  int breadthDepth_;
 };
 
 /* This is when rounding is being done

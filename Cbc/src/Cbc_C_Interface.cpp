@@ -216,7 +216,7 @@ COINLIBAPI Cbc_Model *  COINLINKAGE
 Cbc_newModel()
 {
   const char prefix[] = "Cbc_C_Interface::Cbc_newModel(): ";
-  const int  VERBOSE = 1;
+  // const int  VERBOSE = 1;
   if (VERBOSE>0) printf("%s begin\n",prefix);
   
   Cbc_Model * model = new Cbc_Model;
@@ -235,7 +235,7 @@ COINLIBAPI void COINLINKAGE
 Cbc_deleteModel(Cbc_Model * model)
 {
   const char prefix[] = "Cbc_C_Interface::Cbc_deleteModel(): ";
-  const int  VERBOSE = 1;
+  // const int  VERBOSE = 1;
   if (VERBOSE>0) printf("%s begin\n",prefix); fflush(stdout);
   
   if (VERBOSE>1) printf("%s delete model->model_\n",prefix); fflush(stdout);
@@ -743,9 +743,7 @@ Cbc_maximumIterations(Cbc_Model * model)
   if (VERBOSE>0) printf("%s begin\n",prefix);
 
   int result = 0;
-// cannot find this in Cbc, Osi, or OsiClp
-//tbd  result = model->model_->solver()->maximumIterations();
-  printf("%s ERROR: NOT IMPLEMENTED\n",prefix);
+  model->model_->solver()->getIntParam(OsiMaxNumIteration,result);
 
   if (VERBOSE>0) printf("%s return %i\n",prefix,result);
   return result;
@@ -757,9 +755,7 @@ Cbc_setMaximumIterations(Cbc_Model * model, int value)
 //  const int  VERBOSE = 1;
   if (VERBOSE>0) printf("%s begin\n",prefix);
 
-// cannot find this in Cbc, Osi, or OsiClp
-//tbd  model->model_->setMaximumIterations(value);
-  printf("%s ERROR: NOT IMPLEMENTED\n",prefix);
+  model->model_->solver()->setIntParam(OsiMaxNumIteration,value);
 
   if (VERBOSE>0) printf("%s return\n",prefix);
 }
@@ -2262,7 +2258,7 @@ COINLIBAPI int COINLINKAGE Cbc_getNodeCount(Cbc_Model * model)
 COINLIBAPI Cbc_Model * COINLINKAGE Cbc_clone(Cbc_Model * model)
 {
   const char prefix[] = "Cbc_C_Interface::Cbc_clone(): ";
-  const int  VERBOSE = 1;
+  // const int  VERBOSE = 1;
   if (VERBOSE>0) printf("%s begin\n",prefix);
   
   Cbc_Model * result = new Cbc_Model;

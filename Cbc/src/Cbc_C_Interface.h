@@ -114,7 +114,7 @@ extern "C"{
   /** Number of iterations */
   COINLIBAPI int COINLINKAGE Cbc_numberIterations(Cbc_Model * model);
   COINLIBAPI void COINLINKAGE Cbc_setNumberIterations(Cbc_Model * model, int numberIterations);
-  /** Maximum number of iterations */
+  /** Maximum number of iterations (only useful in initial solve) */
   COINLIBAPI int Cbc_maximumIterations(Cbc_Model * model);
   COINLIBAPI void COINLINKAGE Cbc_setMaximumIterations(Cbc_Model * model, int value);
   /** Maximum time in seconds (from when set called) */

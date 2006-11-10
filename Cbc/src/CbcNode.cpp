@@ -4106,6 +4106,11 @@ CbcNode::chooseOsiBranch (CbcModel * model,
     numberUnsatisfied = choose->setupList(usefulInfo,true);
     numberUnsatisfied_ = numberUnsatisfied;
     branchState=0;
+    if (numberUnsatisfied_<0) {
+      // infeasible
+      delete [] saveSolution;
+      return -2;
+    }
   }
   // unset best
   int best=-1;

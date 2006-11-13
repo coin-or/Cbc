@@ -4163,7 +4163,7 @@ CbcNode::chooseOsiBranch (CbcModel * model,
   if (!returnStatus) {
     if (numberUnsatisfied) {
       // create branching object
-      const OsiObject * obj = model->object(choose->bestObjectIndex());
+      const OsiObject * obj = model->solver()->object(choose->bestObjectIndex());
       //const OsiSolverInterface * solver = usefulInfo->solver_;
       branch_ = obj->createBranch(model->solver(),usefulInfo,obj->whichWay());
     }

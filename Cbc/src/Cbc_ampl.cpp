@@ -27,6 +27,13 @@ THIS SOFTWARE.
 #ifdef HAVE_UNISTD_H
 # include "unistd.h"
 #endif
+#include "CoinUtilsConfig.h"
+#include "CoinHelperFunctions.hpp"
+#include "CoinModel.hpp"
+#include "CoinSort.hpp"
+#include "CoinPackedMatrix.hpp"
+#include "CoinMpsIO.hpp"
+#include "CoinFloatEqual.hpp"
 
 extern "C" {
 # include "getstub.h"
@@ -35,7 +42,6 @@ extern "C" {
 #include "Cbc_ampl.h"
 #include <string>
 #include <cassert>
-#include "CoinSort.hpp"
 /* so decodePhrase and clpCheck can access */
 static ampl_info * saveInfo=NULL;
 // Set to 1 if algorithm found
@@ -570,4 +576,484 @@ void writeAmpl(ampl_info * info)
     suf_iput("sstatus", ASL_Sufkind_con, info->rowStatus);
   }
   write_sol(buf,info->primalSolution,info->dualSolution,&Oinfo);
+}
+/* Read a problem from AMPL nl file
+ */
+CoinModel::CoinModel( int nonLinear, const char * fileName)
+ :  numberRows_(0),
+    maximumRows_(0),
+    numberColumns_(0),
+    maximumColumns_(0),
+    numberElements_(0),
+    maximumElements_(0),
+    numberQuadraticElements_(0),
+    maximumQuadraticElements_(0),
+    optimizationDirection_(1.0),
+    objectiveOffset_(0.0),
+    rowLower_(NULL),
+    rowUpper_(NULL),
+    rowType_(NULL),
+    objective_(NULL),
+    columnLower_(NULL),
+    columnUpper_(NULL),
+    integerType_(NULL),
+    columnType_(NULL),
+    start_(NULL),
+    elements_(NULL),
+    quadraticElements_(NULL),
+    sortIndices_(NULL),
+    sortElements_(NULL),
+    sortSize_(0),
+    sizeAssociated_(0),
+    associated_(NULL),
+    logLevel_(0),
+    type_(-1),
+    links_(0)
+{
+  problemName_ = strdup("");
+  int status=0;
+  if (!strcmp(fileName,"-")||!strcmp(fileName,"stdin")) {
+    // stdin
+  } else {
+    std::string name=fileName;
+    bool readable = fileCoinReadable(name);
+    if (!readable) {
+      std::cerr<<"Unable to open file "
+	       <<fileName<<std::endl;
+      status = -1;
+    }
+  }
+  if (!status) {
+    gdb(nonLinear,fileName);
+  }
+}
+ static real
+qterm(ASL *asl, fint *colq, fint *rowq, real *delsq)
+{
+  double t, t1, *x, *x0, *xe;
+  fint *rq0, *rqe;
+  
+  t = 0.;
+  x0 = x = X0;
+  xe = x + n_var;
+  rq0 = rowq;
+  while(x < xe) {
+    t1 = *x++;
+    rqe = rq0 + *++colq;
+    while(rowq < rqe)
+      t += t1*x0[*rowq++]**delsq++;
+  }
+  return 0.5 * t;
+}
+
+void
+CoinModel::gdb( int nonLinear, const char * fileName)
+{
+  ograd *og=NULL;
+  int i;
+  SufDesc *csd=NULL;
+  SufDesc *rsd=NULL;
+  /*bool *basis, *lower;*/
+  /*double *LU, *c, lb, objadj, *rshift, *shift, t, ub, *x, *x0, *x1;*/
+  //char tempBuffer[20];
+  double * objective=NULL;
+  double * columnLower=NULL;
+  double * columnUpper=NULL;
+  double * rowLower=NULL;
+  double * rowUpper=NULL;
+  int * columnStatus=NULL;
+  int * rowStatus=NULL;
+  int numberRows=-1;
+  int numberColumns=-1;
+  int numberElements=-1;
+  int numberBinary=-1;
+  int numberIntegers=-1;
+  double * primalSolution=NULL;
+  double direction=1.0;
+  char * stub = strdup(fileName);
+  CoinPackedMatrix matrixByRow;
+  fint ** colqp=NULL;
+  int *z = NULL;
+  if (nonLinear==0) {
+    // linear
+    asl = ASL_alloc(ASL_read_f);
+    nl = jac0dim(stub, 0);
+    free(stub);
+    suf_declare(suftab, sizeof(suftab)/sizeof(SufDecl));
+    
+    /* set A_vals to get the constraints column-wise (malloc so can be freed) */
+    A_vals = (double *) malloc(nzc*sizeof(double));
+    if (!A_vals) {
+      printf("no memory\n");
+      return ;
+    }
+    /* say we want primal solution */
+    want_xpi0=1;
+    /* for basis info */
+    columnStatus = (int *) malloc(n_var*sizeof(int));
+    rowStatus = (int *) malloc(n_con*sizeof(int));
+    csd = suf_iput("sstatus", ASL_Sufkind_var, columnStatus);
+    rsd = suf_iput("sstatus", ASL_Sufkind_con, rowStatus);
+    /* read linear model*/
+    f_read(nl,0);
+    // see if any sos
+    if (true) {
+      char *sostype;
+      int nsosnz, *sosbeg, *sosind, * sospri;
+      double *sosref;
+      int nsos;
+      int i = ASL_suf_sos_explict_free;
+      int copri[2], **p_sospri;
+      copri[0] = 0;
+      copri[1] = 0;
+      p_sospri = &sospri;
+      nsos = suf_sos(i, &nsosnz, &sostype, p_sospri, copri,
+		     &sosbeg, &sosind, &sosref);
+      if (nsos) {
+	abort();
+#if 0
+	info->numberSos=nsos;
+	info->sosType = (char *) malloc(nsos);
+	info->sosPriority = (int *) malloc(nsos*sizeof(int));
+	info->sosStart = (int *) malloc((nsos+1)*sizeof(int));
+	info->sosIndices = (int *) malloc(nsosnz*sizeof(int));
+	info->sosReference = (double *) malloc(nsosnz*sizeof(double));
+	sos_kludge(nsos, sosbeg, sosref,sosind);
+	for (int i=0;i<nsos;i++) {
+	  int ichar = sostype[i];
+	  assert (ichar=='1'||ichar=='2');
+	  info->sosType[i]=ichar-'0';
+	}	
+	memcpy(info->sosPriority,sospri,nsos*sizeof(int));
+	memcpy(info->sosStart,sosbeg,(nsos+1)*sizeof(int));
+	memcpy(info->sosIndices,sosind,nsosnz*sizeof(int));
+	memcpy(info->sosReference,sosref,nsosnz*sizeof(double));
+#endif
+      }
+    }
+    
+    /*sos_finish(&specialOrderedInfo, 0, &j, 0, 0, 0, 0, 0);*/
+    //Oinfo.uinfo = tempBuffer;
+    //if (getopts(argv, &Oinfo))
+    //return 1;
+    /* objective*/
+    objective = (double *) malloc(n_var*sizeof(double));
+    for (i=0;i<n_var;i++)
+      objective[i]=0.0;;
+    if (n_obj) {
+      for (og = Ograd[0];og;og = og->next)
+	objective[og->varno] = og->coef;
+    }
+    if (objtype[0])
+      direction=-1.0;
+    else
+      direction=1.0;
+    objectiveOffset_=objconst(0);
+    /* Column bounds*/
+    columnLower = (double *) malloc(n_var*sizeof(double));
+    columnUpper = (double *) malloc(n_var*sizeof(double));
+#define COIN_DBL_MAX DBL_MAX
+    for (i=0;i<n_var;i++) {
+      columnLower[i]=LUv[2*i];
+      if (columnLower[i]<= negInfinity)
+	columnLower[i]=-COIN_DBL_MAX;
+      columnUpper[i]=LUv[2*i+1];
+      if (columnUpper[i]>= Infinity)
+	columnUpper[i]=COIN_DBL_MAX;
+    }
+    /* Row bounds*/
+    rowLower = (double *) malloc(n_con*sizeof(double));
+    rowUpper = (double *) malloc(n_con*sizeof(double));
+    for (i=0;i<n_con;i++) {
+      rowLower[i]=LUrhs[2*i];
+      if (rowLower[i]<= negInfinity)
+	rowLower[i]=-COIN_DBL_MAX;
+      rowUpper[i]=LUrhs[2*i+1];
+      if (rowUpper[i]>= Infinity)
+	rowUpper[i]=COIN_DBL_MAX;
+    }
+    numberRows=n_con;
+    numberColumns=n_var;
+    numberElements=nzc;;
+    numberBinary=nbv;
+    numberIntegers=niv;
+    /* put in primalSolution if exists */
+    if (X0) {
+      primalSolution=(double *) malloc(n_var*sizeof(double));
+      memcpy( primalSolution,X0,n_var*sizeof(double));
+    }
+    //double * dualSolution=NULL;
+    if (niv+nbv>0)
+      mip_stuff(); // get any extra info
+    if ((!(niv+nbv)&&(csd->kind & ASL_Sufkind_input))
+	||(rsd->kind & ASL_Sufkind_input)) {
+      /* convert status - need info on map */
+      static int map[] = {1, 3, 1, 1, 2, 1, 1};
+      stat_map(columnStatus, n_var, map, 6, "incoming columnStatus");
+      stat_map(rowStatus, n_con, map, 6, "incoming rowStatus");
+    } else {
+      /* all slack basis */
+      // leave status for output */
+#if 0
+      free(rowStatus);
+      rowStatus=NULL;
+      free(columnStatus);
+      columnStatus=NULL;
+#endif
+    }
+    CoinPackedMatrix columnCopy(true,numberRows,numberColumns,numberElements,
+				A_vals,A_rownos,A_colstarts,NULL);
+    matrixByRow.reverseOrderedCopyOf(columnCopy);
+  } else if (nonLinear==1) {
+    // quadratic
+    asl = ASL_alloc(ASL_read_fg);
+    nl = jac0dim(stub, (long) strlen(stub));
+    free(stub);
+    /* read  model*/
+    X0 = (double*) malloc(n_var*sizeof(double));
+    CoinZeroN(X0,n_var);
+    qp_read(nl,0);
+    assert (n_obj==1);
+    int nz = 1 + n_con;
+    colqp = (fint**) malloc(nz*(2*sizeof(int*)
+				      + sizeof(double*)));
+    fint ** rowqp = colqp + nz;
+    double ** delsqp = (double **)(rowqp + nz);
+    z = (int*) malloc(nz*sizeof(int));
+    for (i=0;i<=n_con;i++) {
+      z[i] = nqpcheck(-i, rowqp+i, colqp+i, delsqp+i);
+    }
+    qp_opify();
+    /* objective*/
+    objective = (double *) malloc(n_var*sizeof(double));
+    for (i=0;i<n_var;i++)
+      objective[i]=0.0;;
+    if (n_obj) {
+      for (og = Ograd[0];og;og = og->next)
+	objective[og->varno] = og->coef;
+    }
+    if (objtype[0])
+      direction=-1.0;
+    else
+      direction=1.0;
+    objectiveOffset_=objconst(0);
+    /* Column bounds*/
+    columnLower = (double *) malloc(n_var*sizeof(double));
+    columnUpper = (double *) malloc(n_var*sizeof(double));
+    for (i=0;i<n_var;i++) {
+      columnLower[i]=LUv[2*i];
+      if (columnLower[i]<= negInfinity)
+	columnLower[i]=-COIN_DBL_MAX;
+      columnUpper[i]=LUv[2*i+1];
+      if (columnUpper[i]>= Infinity)
+	columnUpper[i]=COIN_DBL_MAX;
+    }
+    // Build by row from scratch
+    //matrixByRow.reserve(n_var,nzc,true);
+    // say row orderded
+    matrixByRow.transpose();
+    /* Row bounds*/
+    rowLower = (double *) malloc(n_con*sizeof(double));
+    rowUpper = (double *) malloc(n_con*sizeof(double));
+    int * column = new int [n_var];
+    double * element = new double [n_var];
+    for (i=0;i<n_con;i++) {
+      rowLower[i]=LUrhs[2*i];
+      if (rowLower[i]<= negInfinity)
+	rowLower[i]=-COIN_DBL_MAX;
+      rowUpper[i]=LUrhs[2*i+1];
+      if (rowUpper[i]>= Infinity)
+	rowUpper[i]=COIN_DBL_MAX;
+      int k=0;
+      for(cgrad * cg = Cgrad[i]; cg; cg = cg->next) {
+	column[k]=cg->varno;
+	element[k++]=cg->coef;
+      }
+      matrixByRow.appendRow(k,column,element);
+    }
+    numberRows=n_con;
+    numberColumns=n_var;
+    numberElements=nzc;;
+    numberBinary=nbv;
+    numberIntegers=niv+nlvci;
+    //double * dualSolution=NULL;
+  } else {
+    abort();
+  }
+  // set problem name
+  free(problemName_);
+  problemName_=strdup("???");
+
+  // Build by row from scratch
+  const double * element = matrixByRow.getElements();
+  const int * column = matrixByRow.getIndices();
+  const CoinBigIndex * rowStart = matrixByRow.getVectorStarts();
+  const int * rowLength = matrixByRow.getVectorLengths();
+  for (i=0;i<numberRows;i++) {
+    addRow(rowLength[i],column+rowStart[i],
+	   element+rowStart[i],rowLower[i],rowUpper[i]);
+  }
+  // Now do column part
+  for (i=0;i<numberColumns;i++) {
+    setColumnBounds(i,columnLower[i],columnUpper[i]);
+    setColumnObjective(i,objective[i]);
+  }
+  for ( i=numberColumns-numberBinary-numberIntegers;
+	i<numberColumns;i++) {
+      setColumnIsInteger(i,true);;
+  }
+  // do names
+  int iRow;
+  for (iRow=0;iRow<numberRows_;iRow++) {
+    char name[9];
+    sprintf(name,"r%7.7d",iRow);
+    setRowName(iRow,name);
+  }
+    
+  int iColumn;
+  for (iColumn=0;iColumn<numberColumns_;iColumn++) {
+    char name[9];
+    sprintf(name,"c%7.7d",iColumn);
+    setColumnName(iColumn,name);
+  }
+  if (colqp) {
+    // add in quadratic
+    int nz = 1 + n_con;
+    fint ** rowqp = colqp + nz;
+    double ** delsqp = (double **)(rowqp + nz);
+    for (i=0;i<=n_con;i++) {
+      int nels = z[i];
+      if (nels) {
+	double * element = delsqp[i];
+	int * start = (int *) colqp[i];
+	int * row = (int *) rowqp[i];
+#if 0
+	printf("%d quadratic els\n",nels);
+	for (int j=0;j<n_var;j++) {
+	  for (int k=start[j];k<start[j+1];k++)
+	    printf("%d %d %g\n",j,row[k],element[k]);
+	}
+#endif
+	if (i) {
+	  int iRow = i-1;
+	  for (int j=0;j<n_var;j++) {
+	    for (int k=start[j];k<start[j+1];k++) {
+	      int kColumn = row[k];
+	      double value = element[k];
+	      // ampl gives twice with assumed 0.5
+	      if (kColumn>j)
+		continue;
+	      else if (kColumn==j)
+		value *= 0.5;
+	      const char * expr = getElementAsString(iRow,j);
+	      double constant=0.0;
+	      bool linear;
+	      if (expr&&strcmp(expr,"Numeric")) {
+		linear=false;
+	      } else {
+		constant = getElement(iRow,j);
+		linear=true;
+	      }
+	      char temp[100];
+	      char temp2[30];
+	      if (value==1.0) 
+		sprintf(temp2,"c%7.7d",kColumn);
+	      else
+		sprintf(temp2,"%g*c%7.7d",value,kColumn);
+	      if (linear) {
+		if (!constant)
+		  strcpy(temp,temp2);
+		else if (value>0.0) 
+		  sprintf(temp,"%g+%s",constant,temp2);
+		else
+		  sprintf(temp,"%g%s",constant,temp2);
+	      } else {
+		if (value>0.0) 
+		  sprintf(temp,"%s+%s",expr,temp2);
+		else
+		  sprintf(temp,"%s%s",expr,temp2);
+	      }
+	      setElement(iRow,j,temp);
+	      printf("el for row %d column c%7.7d is %s\n",iRow,j,temp);
+	    }
+	  }
+	} else {
+	  // objective
+	  for (int j=0;j<n_var;j++) {
+	    for (int k=start[j];k<start[j+1];k++) {
+	      int kColumn = row[k];
+	      double value = element[k];
+	      // ampl gives twice with assumed 0.5
+	      if (kColumn>j)
+		continue;
+	      else if (kColumn==j)
+		value *= 0.5;
+	      const char * expr = getColumnObjectiveAsString(j);
+	      double constant=0.0;
+	      bool linear;
+	      if (expr&&strcmp(expr,"Numeric")) {
+		linear=false;
+	      } else {
+		constant = getColumnObjective(j);
+		linear=true;
+	      }
+	      char temp[100];
+	      char temp2[30];
+	      if (value==1.0) 
+		sprintf(temp2,"c%7.7d",kColumn);
+	      else
+		sprintf(temp2,"%g*c%7.7d",value,kColumn);
+	      if (linear) {
+		if (!constant)
+		  strcpy(temp,temp2);
+		else if (value>0.0) 
+		  sprintf(temp,"%g+%s",constant,temp2);
+		else
+		  sprintf(temp,"%g%s",constant,temp2);
+	      } else {
+		if (value>0.0) 
+		  sprintf(temp,"%s+%s",expr,temp2);
+		else
+		  sprintf(temp,"%s%s",expr,temp2);
+	      }
+	      setObjective(j,temp);
+	      printf("el for objective column c%7.7d is %s\n",j,temp);
+	    }
+	  }
+	}
+      }
+    }
+  }
+  // see if any sos
+  {
+    char *sostype;
+    int nsosnz, *sosbeg, *sosind, * sospri;
+    double *sosref;
+    int nsos;
+    int i = ASL_suf_sos_explict_free;
+    int copri[2], **p_sospri;
+    copri[0] = 0;
+    copri[1] = 0;
+    p_sospri = &sospri;
+    nsos = suf_sos(i, &nsosnz, &sostype, p_sospri, copri,
+		   &sosbeg, &sosind, &sosref);
+    if (nsos) {
+      numberSOS_=nsos;
+      typeSOS_ = new int [numberSOS_];
+      prioritySOS_ = new int [numberSOS_];
+      startSOS_ = new int [numberSOS_+1];
+      memberSOS_ = new int[nsosnz];
+      referenceSOS_ = new double [nsosnz];
+      sos_kludge(nsos, sosbeg, sosref,sosind);
+      for (int i=0;i<nsos;i++) {
+	int ichar = sostype[i];
+	assert (ichar=='1'||ichar=='2');
+	typeSOS_[i]=ichar-'0';
+      }	
+      memcpy(prioritySOS_,sospri,nsos*sizeof(int));
+      memcpy(startSOS_,sosbeg,(nsos+1)*sizeof(int));
+      memcpy(memberSOS_,sosind,nsosnz*sizeof(int));
+      memcpy(referenceSOS_,sosref,nsosnz*sizeof(double));
+    }
+  }
 }

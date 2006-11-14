@@ -72,6 +72,9 @@ public:
                           double cutoff , std::string name) const;
   /// Create C++ lines to get to current state
   virtual void generateCpp( FILE * fp) {};
+  /// Returns true if can deal with "odd" problems e.g. sos type 2
+  virtual bool canDealWithOdd() const
+  { return false;};
 
 protected:
 

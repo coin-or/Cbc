@@ -878,7 +878,7 @@ CbcSimpleInteger::resetBounds(const OsiSolverInterface * solver)
 double 
 CbcSimpleInteger::infeasibility(int & preferredWay) const
 {
-  OsiBranchingInformation info(model_->solver(),model_->normalSolver());
+  OsiBranchingInformation info(model_->solver(),model_->normalSolver(),false);
   return infeasibility(model_->solver(),&info,preferredWay);
 }
 

@@ -778,11 +778,18 @@ void CbcModel::branchAndBound(int doStatistics)
 	numberOdd++;
     }
     if (numberOdd) {
-      for (int i=0;i<numberHeuristics_;i++) 
-	delete heuristic_[i];
-      delete [] heuristic_;
-      heuristic_=NULL;
-      numberHeuristics_=0;
+      int k=0;
+      for (int i=0;i<numberHeuristics_;i++) {
+	if (!heuristic_[i]->canDealWithOdd())
+	  delete heuristic_[i];
+	else
+	  heuristic_[k++]=heuristic_[i];
+      }
+      if (!k) {
+	delete [] heuristic_;
+	heuristic_=NULL;
+      }
+      numberHeuristics_=k;
       handler_->message(CBC_HEURISTICS_OFF,messages_)<< numberOdd<<CoinMessageEol ;
     }
   }
@@ -8739,7 +8746,7 @@ CbcModel::preProcess( int makeEquality, int numberPasses, int tuning)
 OsiBranchingInformation 
 CbcModel::usefulInformation() const
 {
-  OsiBranchingInformation usefulInfo(solver_,normalSolver());
+  OsiBranchingInformation usefulInfo(solver_,normalSolver(),false);
   // and modify
   usefulInfo.solution_=testSolution_;
   usefulInfo.integerTolerance_= dblParam_[CbcIntegerTolerance] ;

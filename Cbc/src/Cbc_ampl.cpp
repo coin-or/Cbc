@@ -606,6 +606,13 @@ CoinModel::CoinModel( int nonLinear, const char * fileName)
     sortSize_(0),
     sizeAssociated_(0),
     associated_(NULL),
+    numberSOS_(0),
+    startSOS_(NULL),
+    memberSOS_(NULL),
+    typeSOS_(NULL),
+    prioritySOS_(NULL),
+    referenceSOS_(NULL),
+    priority_(NULL),
     logLevel_(0),
     type_(-1),
     links_(0)
@@ -809,6 +816,7 @@ CoinModel::gdb( int nonLinear, const char * fileName)
     asl = ASL_alloc(ASL_read_fg);
     nl = jac0dim(stub, (long) strlen(stub));
     free(stub);
+    suf_declare(suftab, sizeof(suftab)/sizeof(SufDecl));
     /* read  model*/
     X0 = (double*) malloc(n_var*sizeof(double));
     CoinZeroN(X0,n_var);
@@ -954,7 +962,7 @@ CoinModel::gdb( int nonLinear, const char * fileName)
 		constant = getElement(iRow,j);
 		linear=true;
 	      }
-	      char temp[100];
+	      char temp[1000];
 	      char temp2[30];
 	      if (value==1.0) 
 		sprintf(temp2,"c%7.7d",kColumn);
@@ -973,6 +981,7 @@ CoinModel::gdb( int nonLinear, const char * fileName)
 		else
 		  sprintf(temp,"%s%s",expr,temp2);
 	      }
+	      assert (strlen(temp)<1000);
 	      setElement(iRow,j,temp);
 	      printf("el for row %d column c%7.7d is %s\n",iRow,j,temp);
 	    }
@@ -997,7 +1006,7 @@ CoinModel::gdb( int nonLinear, const char * fileName)
 		constant = getColumnObjective(j);
 		linear=true;
 	      }
-	      char temp[100];
+	      char temp[1000];
 	      char temp2[30];
 	      if (value==1.0) 
 		sprintf(temp2,"c%7.7d",kColumn);
@@ -1016,6 +1025,7 @@ CoinModel::gdb( int nonLinear, const char * fileName)
 		else
 		  sprintf(temp,"%s%s",expr,temp2);
 	      }
+	      assert (strlen(temp)<1000);
 	      setObjective(j,temp);
 	      printf("el for objective column c%7.7d is %s\n",j,temp);
 	    }

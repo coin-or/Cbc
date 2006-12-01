@@ -77,12 +77,12 @@ void OsiSolverLink::initialSolve()
       writeMps("sol_query"); 
 
   }
-  static int iPass=0;
-  char temp[50];
-  iPass++;
-  sprintf(temp,"cc%d",iPass);
-  writeMps(temp);
-  printf("wrote cc%d\n",iPass);
+  //static int iPass=0;
+  //char temp[50];
+  //iPass++;
+  //sprintf(temp,"cc%d",iPass);
+  //writeMps(temp);
+  //printf("wrote cc%d\n",iPass);
   OsiClpSolverInterface::initialSolve();
   int secondaryStatus = modelPtr_->secondaryStatus();
   if (modelPtr_->status()==0&&(secondaryStatus==2||secondaryStatus==4))
@@ -2999,6 +2999,8 @@ OsiBiLinear::feasibleRegion(OsiSolverInterface * solver, const OsiBranchingInfor
       }
     }
   }
+  if (yRow_<0)
+    yLambda = xLambda;
 #if 0
   if (fabs(x-xLambda)>1.0e-4||
       fabs(y-yLambda)>1.0e-4)
@@ -3338,6 +3340,7 @@ OsiBiLinear::getCoefficients(const OsiSolverInterface * solver,double xB[2], dou
 {
   const CoinPackedMatrix * matrix = solver->getMatrixByCol();
   const double * element = matrix->getElements();
+  const double * objective = solver->getObjCoefficients();
   const int * row = matrix->getIndices();
   const CoinBigIndex * columnStart = matrix->getVectorStarts();
   const int * columnLength = matrix->getVectorLengths();
@@ -3360,6 +3363,10 @@ OsiBiLinear::getCoefficients(const OsiSolverInterface * solver,double xB[2], dou
       if (xyRow_==row[k])
 	xybar[j] = element[k]*multiplier;
     }
+    if (yRow_<0)
+      y=x;
+    if (xyRow_<0)
+      xybar[j] = objective[iColumn]*multiplier;
     assert (fabs(xybar[j]-x*y)<1.0e-4);
     if (j==0)
       xB[0]=x;

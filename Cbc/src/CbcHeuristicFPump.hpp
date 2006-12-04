@@ -76,6 +76,12 @@ public:
   /// Get relative increment (default 0.0 == off)
   inline double relativeIncrement() const
   { return relativeIncrement_;};
+  /// Set default rounding (default 0.5)
+  inline void setDefaultRounding(double value)
+  { defaultRounding_ = value;};
+  /// Get default rounding (default 0.5)
+  inline double defaultRounding() const
+  { return defaultRounding_;};
   /// Set initial weight (default 0.0 == off)
   inline void setInitialWeight(double value)
   { initialWeight_ = value;};
@@ -118,8 +124,6 @@ protected:
   double startTime_;
   /// Maximum Cpu seconds
   double maximumTime_;
-  /// If less than this round down
-  double downValue_;
   /** Fake cutoff value.
       If set then better of real cutoff and this used to add a constraint
   */
@@ -128,6 +132,8 @@ protected:
   double absoluteIncrement_;
   /// If positive carry on after solution expecting gain of at least this times objective
   double relativeIncrement_;
+  /// Default is round up if > this
+  double defaultRounding_;
   /// Initial weight for true objective
   double initialWeight_;
   /// factor for decreasing weight

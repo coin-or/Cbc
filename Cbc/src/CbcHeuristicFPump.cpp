@@ -22,10 +22,10 @@ CbcHeuristicFPump::CbcHeuristicFPump()
   :CbcHeuristic(),
    startTime_(0.0),
    maximumTime_(0.0),
-   downValue_(0.5),
    fakeCutoff_(COIN_DBL_MAX),
    absoluteIncrement_(0.0),
    relativeIncrement_(0.0),
+   defaultRounding_(0.49999),
    initialWeight_(0.0),
    weightFactor_(0.1),
    maximumPasses_(100),
@@ -42,10 +42,10 @@ CbcHeuristicFPump::CbcHeuristicFPump(CbcModel & model,
   :CbcHeuristic(model),
    startTime_(0.0),
    maximumTime_(0.0),
-   downValue_(downValue),
    fakeCutoff_(COIN_DBL_MAX),
    absoluteIncrement_(0.0),
    relativeIncrement_(0.0),
+   defaultRounding_(downValue),
    initialWeight_(0.0),
    weightFactor_(0.1),
    maximumPasses_(100),
@@ -106,6 +106,10 @@ CbcHeuristicFPump::generateCpp( FILE * fp)
     fprintf(fp,"3  heuristicFPump.setRelativeIncrement(%g);\n",relativeIncrement_);
   else
     fprintf(fp,"4  heuristicFPump.setRelativeIncrement(%g);\n",relativeIncrement_);
+  if (defaultRounding_!=other.defaultRounding_)
+    fprintf(fp,"3  heuristicFPump.setDefaultRounding(%g);\n",defaultRounding_);
+  else
+    fprintf(fp,"4  heuristicFPump.setDefaultRounding(%g);\n",defaultRounding_);
   fprintf(fp,"3  cbcModel->addHeuristic(&heuristicFPump);\n");
   if (initialWeight_!=other.initialWeight_)
     fprintf(fp,"3  heuristicFPump.setInitialWeight(%g);\n",initialWeight_);
@@ -123,10 +127,10 @@ CbcHeuristicFPump::CbcHeuristicFPump(const CbcHeuristicFPump & rhs)
   CbcHeuristic(rhs),
   startTime_(rhs.startTime_),
   maximumTime_(rhs.maximumTime_),
-  downValue_(rhs.downValue_),
   fakeCutoff_(rhs.fakeCutoff_),
   absoluteIncrement_(rhs.absoluteIncrement_),
   relativeIncrement_(rhs.relativeIncrement_),
+  defaultRounding_(rhs.defaultRounding_),
   initialWeight_(rhs.initialWeight_),
   weightFactor_(rhs.weightFactor_),
   maximumPasses_(rhs.maximumPasses_),
@@ -206,6 +210,10 @@ CbcHeuristicFPump::solution(double & solutionValue,
   }
   if (!general)
     doGeneral=false;
+  // For solution closest to feasible if none found
+  int * closestSolution = general ? NULL : new int[numberIntegers];
+  double closestObjectiveValue = COIN_DBL_MAX;
+  
   int numberIntegersOrig = numberIntegers;
   numberIntegers = j;
   double * newSolution = new double [numberColumns];
@@ -335,7 +343,7 @@ CbcHeuristicFPump::solution(double & solutionValue,
       memcpy(newSolution,solution,numberColumns*sizeof(double));
       int flip;
       returnCode = rounds(newSolution,saveObjective,numberIntegers,integerVariable,
-			  roundExpensive_,downValue_,&flip);
+			  roundExpensive_,defaultRounding_,&flip);
       if (returnCode) {
 	// SOLUTION IS INTEGER
 	// Put back correct objective
@@ -495,7 +503,7 @@ CbcHeuristicFPump::solution(double & solutionValue,
 	  memcpy(newSolution,solution,numberColumns*sizeof(double));
 	  int flip;
 	  returnCode = rounds(newSolution,saveObjective,numberIntegers,integerVariable,
-			      roundExpensive_,downValue_,&flip);
+			      roundExpensive_,defaultRounding_,&flip);
 	  if (returnCode) {
 	    // solution - but may not be better
 	    // Compute using dot product
@@ -601,6 +609,18 @@ CbcHeuristicFPump::solution(double & solutionValue,
 	}
 	if (model_->logLevel())
 	  printf("\npass %3d: obj. %10.5f --> ", numberPasses+totalNumberPasses,solver->getObjValue());
+	if (closestSolution&&solver->getObjValue()<closestObjectiveValue) {
+	  int i;
+	  const double * objective = solver->getObjCoefficients();
+	  for (i=0;i<numberIntegersOrig;i++) {
+	    int iColumn=integerVariableOrig[i];
+	    if (objective[iColumn]>0.0)
+	      closestSolution[i]=0;
+	    else
+	      closestSolution[i]=1;
+	  }
+	  closestObjectiveValue = solver->getObjValue();
+	}
 	newLineNeeded=true;
 	
       }
@@ -741,9 +761,44 @@ CbcHeuristicFPump::solution(double & solutionValue,
       break;
     }
   }
+  if (!finalReturnCode&&closestSolution&&closestObjectiveValue <= 10.0&&usedColumn) {
+    // try a bit of branch and bound
+    OsiSolverInterface * newSolver = model_->continuousSolver()->clone();
+    const double * colLower = newSolver->getColLower();
+    const double * colUpper = newSolver->getColUpper();
+    int i;
+    double rhs = 0.0;
+    for (i=0;i<numberIntegersOrig;i++) {
+      int iColumn=integerVariableOrig[i];
+      int direction = closestSolution[i];
+      closestSolution[i]=iColumn;
+      if (direction==0) {
+	// keep close to LB
+	rhs += colLower[iColumn];
+	lastSolution[i]=1.0;
+      } else {
+	// keep close to UB
+	rhs -= colUpper[iColumn];
+	lastSolution[i]=-1.0;
+      }
+    }
+    newSolver->addRow(numberIntegersOrig,closestSolution,
+		      lastSolution,-COIN_DBL_MAX,rhs+10.0);
+    double saveValue = newSolutionValue;
+    newSolver->writeMps("sub");
+    int returnCode = smallBranchAndBound(newSolver,200,newSolution,newSolutionValue,
+				     newSolutionValue,"CbcHeuristicLocalAfterFPump");
+    if (returnCode) {
+      printf("old sol of %g new of %g\n",saveValue,newSolutionValue);
+      memcpy(betterSolution,newSolution,numberColumns*sizeof(double));
+      abort();
+    }
+    delete newSolver;
+  }
   delete [] usedColumn;
   delete [] lastSolution;
   delete [] newSolution;
+  delete [] closestSolution;
   delete [] integerVariable;
   return finalReturnCode;
 }
@@ -791,7 +846,7 @@ CbcHeuristicFPump::rounds(double * solution,
     int iColumn = integerVariable[i];
     double value=solution[iColumn];
     double round = floor(value+primalTolerance);
-    if (value-round > .5) round += 1.;
+    if (value-round > downValue) round += 1.;
     if (round < integerTolerance && tmp[iColumn] < -1. + integerTolerance) flip_down++;
     if (round > 1. - integerTolerance && tmp[iColumn] > 1. - integerTolerance) flip_up++;
     if (flip_up + flip_down == 0) { 

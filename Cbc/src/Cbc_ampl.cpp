@@ -268,7 +268,7 @@ stat_map(int *stat, int n, int *map, int mx, const char *what)
   }
 }
 int
-readAmpl(ampl_info * info, int argc, char **argv)
+readAmpl(ampl_info * info, int argc, char **argv, void ** coinModel)
 {
   char *stub;
   ograd *og;
@@ -285,6 +285,11 @@ readAmpl(ampl_info * info, int argc, char **argv)
   double * rowLower;
   double * rowUpper;
   char ** saveArgv=argv;
+  char fileName[1000];
+  if (argc>1)
+    strcpy(fileName,argv[1]);
+  else
+    fileName[0]='\0';
   int saveArgc = argc;
   memset(info,0,sizeof(ampl_info));
   /* save so can be accessed by decodePhrase */
@@ -313,121 +318,149 @@ readAmpl(ampl_info * info, int argc, char **argv)
   info->rowStatus = (int *) malloc(n_con*sizeof(int));
   csd = suf_iput("sstatus", ASL_Sufkind_var, info->columnStatus);
   rsd = suf_iput("sstatus", ASL_Sufkind_con, info->rowStatus);
-  /* read linear model*/
-  f_read(nl,0);
-  // see if any sos
-  if (true) {
-    char *sostype;
-    int nsosnz, *sosbeg, *sosind, * sospri;
-    double *sosref;
-    int nsos;
-    int i = ASL_suf_sos_explict_free;
-    int copri[2], **p_sospri;
-    copri[0] = 0;
-    copri[1] = 0;
-    p_sospri = &sospri;
-    nsos = suf_sos(i, &nsosnz, &sostype, p_sospri, copri,
-				&sosbeg, &sosind, &sosref);
-    if (nsos) {
-      info->numberSos=nsos;
-      info->sosType = (char *) malloc(nsos);
-      info->sosPriority = (int *) malloc(nsos*sizeof(int));
-      info->sosStart = (int *) malloc((nsos+1)*sizeof(int));
-      info->sosIndices = (int *) malloc(nsosnz*sizeof(int));
-      info->sosReference = (double *) malloc(nsosnz*sizeof(double));
-      sos_kludge(nsos, sosbeg, sosref,sosind);
-      for (int i=0;i<nsos;i++) {
-        int ichar = sostype[i];
-        assert (ichar=='1'||ichar=='2');
-        info->sosType[i]=ichar-'0';
-      }	
-      memcpy(info->sosPriority,sospri,nsos*sizeof(int));
-      memcpy(info->sosStart,sosbeg,(nsos+1)*sizeof(int));
-      memcpy(info->sosIndices,sosind,nsosnz*sizeof(int));
-      memcpy(info->sosReference,sosref,nsosnz*sizeof(double));
+  // testosi parameter - if >= 10 then go in through coinModel
+  int testOsi=-1;
+  for (i=0;i<saveArgc;i++) {
+    if (!strncmp(saveArgv[i],"testosi",7)) {
+      testOsi = atoi(saveArgv[i+1]);
+      break;
     }
   }
-
-  /*sos_finish(&specialOrderedInfo, 0, &j, 0, 0, 0, 0, 0);*/
-  Oinfo.uinfo = tempBuffer;
-  if (getopts(argv, &Oinfo))
-    return 1;
-  /* objective*/
-  obj = (double *) malloc(n_var*sizeof(double));
-  for (i=0;i<n_var;i++)
-    obj[i]=0.0;;
-  if (n_obj) {
-    for (og = Ograd[0];og;og = og->next)
-      obj[og->varno] = og->coef;
-  }
-  if (objtype[0])
-    info->direction=-1.0;
-  else
-    info->direction=1.0;
-  info->offset=objconst(0);
-  /* Column bounds*/
-  columnLower = (double *) malloc(n_var*sizeof(double));
-  columnUpper = (double *) malloc(n_var*sizeof(double));
+  if (!(nlvc+nlvo)||testOsi>=10) {
+    /* read linear model*/
+    f_read(nl,0);
+    // see if any sos
+    if (true) {
+      char *sostype;
+      int nsosnz, *sosbeg, *sosind, * sospri;
+      double *sosref;
+      int nsos;
+      int i = ASL_suf_sos_explict_free;
+      int copri[2], **p_sospri;
+      copri[0] = 0;
+      copri[1] = 0;
+      p_sospri = &sospri;
+      nsos = suf_sos(i, &nsosnz, &sostype, p_sospri, copri,
+		     &sosbeg, &sosind, &sosref);
+      if (nsos) {
+	info->numberSos=nsos;
+	info->sosType = (char *) malloc(nsos);
+	info->sosPriority = (int *) malloc(nsos*sizeof(int));
+	info->sosStart = (int *) malloc((nsos+1)*sizeof(int));
+	info->sosIndices = (int *) malloc(nsosnz*sizeof(int));
+	info->sosReference = (double *) malloc(nsosnz*sizeof(double));
+	sos_kludge(nsos, sosbeg, sosref,sosind);
+	for (int i=0;i<nsos;i++) {
+	  int ichar = sostype[i];
+	  assert (ichar=='1'||ichar=='2');
+	  info->sosType[i]=ichar-'0';
+	}	
+	memcpy(info->sosPriority,sospri,nsos*sizeof(int));
+	memcpy(info->sosStart,sosbeg,(nsos+1)*sizeof(int));
+	memcpy(info->sosIndices,sosind,nsosnz*sizeof(int));
+	memcpy(info->sosReference,sosref,nsosnz*sizeof(double));
+      }
+    }
+    
+    /*sos_finish(&specialOrderedInfo, 0, &j, 0, 0, 0, 0, 0);*/
+    Oinfo.uinfo = tempBuffer;
+    if (getopts(argv, &Oinfo))
+      return 1;
+    /* objective*/
+    obj = (double *) malloc(n_var*sizeof(double));
+    for (i=0;i<n_var;i++)
+      obj[i]=0.0;;
+    if (n_obj) {
+      for (og = Ograd[0];og;og = og->next)
+	obj[og->varno] = og->coef;
+    }
+    if (objtype[0])
+      info->direction=-1.0;
+    else
+      info->direction=1.0;
+    info->offset=objconst(0);
+    /* Column bounds*/
+    columnLower = (double *) malloc(n_var*sizeof(double));
+    columnUpper = (double *) malloc(n_var*sizeof(double));
 #define COIN_DBL_MAX DBL_MAX
-  for (i=0;i<n_var;i++) {
-    columnLower[i]=LUv[2*i];
-    if (columnLower[i]<= negInfinity)
-      columnLower[i]=-COIN_DBL_MAX;
-    columnUpper[i]=LUv[2*i+1];
-    if (columnUpper[i]>= Infinity)
-      columnUpper[i]=COIN_DBL_MAX;
-  }
-  /* Row bounds*/
-  rowLower = (double *) malloc(n_con*sizeof(double));
-  rowUpper = (double *) malloc(n_con*sizeof(double));
-  for (i=0;i<n_con;i++) {
-    rowLower[i]=LUrhs[2*i];
-    if (rowLower[i]<= negInfinity)
-      rowLower[i]=-COIN_DBL_MAX;
-    rowUpper[i]=LUrhs[2*i+1];
-    if (rowUpper[i]>= Infinity)
-      rowUpper[i]=COIN_DBL_MAX;
-  }
-  info->numberRows=n_con;
-  info->numberColumns=n_var;
-  info->numberElements=nzc;;
-  info->numberBinary=nbv;
-  info->numberIntegers=niv;
-  info->objective=obj;
-  info->rowLower=rowLower;
-  info->rowUpper=rowUpper;
-  info->columnLower=columnLower;
-  info->columnUpper=columnUpper;
-  info->starts=A_colstarts;
-  /*A_colstarts=NULL;*/
-  info->rows=A_rownos;
-  /*A_rownos=NULL;*/
-  info->elements=A_vals;
-  /*A_vals=NULL;*/
-  info->primalSolution=NULL;
-  /* put in primalSolution if exists */
-  if (X0) {
-    info->primalSolution=(double *) malloc(n_var*sizeof(double));
-    memcpy(info->primalSolution,X0,n_var*sizeof(double));
-  }
-  info->dualSolution=NULL;
-  if (niv+nbv>0)
-    mip_stuff(); // get any extra info
-  if ((!(niv+nbv)&&(csd->kind & ASL_Sufkind_input))
-      ||(rsd->kind & ASL_Sufkind_input)) {
-    /* convert status - need info on map */
-    static int map[] = {1, 3, 1, 1, 2, 1, 1};
-    stat_map(info->columnStatus, n_var, map, 6, "incoming columnStatus");
-    stat_map(info->rowStatus, n_con, map, 6, "incoming rowStatus");
-  } else {
-    /* all slack basis */
-    // leave status for output */
+    for (i=0;i<n_var;i++) {
+      columnLower[i]=LUv[2*i];
+      if (columnLower[i]<= negInfinity)
+	columnLower[i]=-COIN_DBL_MAX;
+      columnUpper[i]=LUv[2*i+1];
+      if (columnUpper[i]>= Infinity)
+	columnUpper[i]=COIN_DBL_MAX;
+    }
+    /* Row bounds*/
+    rowLower = (double *) malloc(n_con*sizeof(double));
+    rowUpper = (double *) malloc(n_con*sizeof(double));
+    for (i=0;i<n_con;i++) {
+      rowLower[i]=LUrhs[2*i];
+      if (rowLower[i]<= negInfinity)
+	rowLower[i]=-COIN_DBL_MAX;
+      rowUpper[i]=LUrhs[2*i+1];
+      if (rowUpper[i]>= Infinity)
+	rowUpper[i]=COIN_DBL_MAX;
+    }
+    info->numberRows=n_con;
+    info->numberColumns=n_var;
+    info->numberElements=nzc;;
+    info->numberBinary=nbv;
+    info->numberIntegers=niv;
+    info->objective=obj;
+    info->rowLower=rowLower;
+    info->rowUpper=rowUpper;
+    info->columnLower=columnLower;
+    info->columnUpper=columnUpper;
+    info->starts=A_colstarts;
+    /*A_colstarts=NULL;*/
+    info->rows=A_rownos;
+    /*A_rownos=NULL;*/
+    info->elements=A_vals;
+    /*A_vals=NULL;*/
+    info->primalSolution=NULL;
+    /* put in primalSolution if exists */
+    if (X0) {
+      info->primalSolution=(double *) malloc(n_var*sizeof(double));
+      memcpy(info->primalSolution,X0,n_var*sizeof(double));
+    }
+    info->dualSolution=NULL;
+    if (niv+nbv>0)
+      mip_stuff(); // get any extra info
+    if ((!(niv+nbv)&&(csd->kind & ASL_Sufkind_input))
+	||(rsd->kind & ASL_Sufkind_input)) {
+      /* convert status - need info on map */
+      static int map[] = {1, 3, 1, 1, 2, 1, 1};
+      stat_map(info->columnStatus, n_var, map, 6, "incoming columnStatus");
+      stat_map(info->rowStatus, n_con, map, 6, "incoming rowStatus");
+    } else {
+      /* all slack basis */
+      // leave status for output */
 #if 0
-    free(info->rowStatus);
-    info->rowStatus=NULL;
-    free(info->columnStatus);
-    info->columnStatus=NULL;
+      free(info->rowStatus);
+      info->rowStatus=NULL;
+      free(info->columnStatus);
+      info->columnStatus=NULL;
 #endif
+    }
+  } else {
+    // QP
+    CoinModel * model = new CoinModel(1,fileName);
+    if (model->numberRows()>0)
+      *coinModel=(void *) model;
+    Oinfo.uinfo = tempBuffer;
+    if (getopts(argv, &Oinfo))
+      return 1;
+    if (objtype[0])
+      info->direction=-1.0;
+    else
+      info->direction=1.0;
+    info->offset=objconst(0);
+    info->numberRows=n_con;
+    info->numberColumns=n_var;
+    info->numberElements=nzc;;
+    info->numberBinary=nbv;
+    info->numberIntegers=niv;
   }
   /* add -solve - unless something there already
    - also check for sleep=yes */

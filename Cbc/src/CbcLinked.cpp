@@ -430,7 +430,7 @@ void OsiSolverLink::resolve()
 	    }
 	  }
 	}
-	if (numberContinuous) {
+	if (numberContinuous&&0) {
 	  // iterate to get solution and fathom node
 	  int numberColumns2 = coinModel_.numberColumns();
 	  double * lower2 = CoinCopyOfArray(getColLower(),numberColumns2);
@@ -449,14 +449,14 @@ void OsiSolverLink::resolve()
 		  double yB[3];
 		  double xybar[4];
 		  obj->getCoefficients(this,xB,yB,xybar);
-		  double xyTrue = obj->xyCoefficient(solution);
+		  //double xyTrue = obj->xyCoefficient(solution);
 		  double xyLambda=0.0;
 		  int firstLambda = obj->firstLambda();
 		  for (int j=0;j<4;j++) {
 		    xyLambda += solution[firstLambda+j]*xybar[j];
 		  }
-		  printf ("x %d, y %d - true %g lambda %g\n",obj->xColumn(),obj->yColumn(),
-			  xyTrue,xyLambda);
+		  //printf ("x %d, y %d - true %g lambda %g\n",obj->xColumn(),obj->yColumn(),
+		  //  xyTrue,xyLambda);
 		  int xColumn = obj->xColumn();
 		  double gapX = upper[xColumn]-lower[xColumn];
 		  int yColumn = obj->yColumn();
@@ -477,9 +477,9 @@ void OsiSolverLink::resolve()
 		    xB[2]=value;
 		    yB[2]=solution[yColumn];
 		    xybar[0]=xB[0]*yB[0];
-		    xybar[0]=xB[0]*yB[1];
-		    xybar[0]=xB[1]*yB[0];
-		    xybar[0]=xB[1]*yB[1];
+		    xybar[1]=xB[0]*yB[1];
+		    xybar[2]=xB[1]*yB[0];
+		    xybar[3]=xB[1]*yB[1];
 		    double infeasibility=obj->computeLambdas(xB,yB,xybar,lambda);
 		    assert (infeasibility<1.0e-9);
 		    setColLower(xColumn,newLower);
@@ -501,9 +501,9 @@ void OsiSolverLink::resolve()
 		    yB[0]=newLower;
 		    yB[1]=newUpper;
 		    xybar[0]=xB[0]*yB[0];
-		    xybar[0]=xB[0]*yB[1];
-		    xybar[0]=xB[1]*yB[0];
-		    xybar[0]=xB[1]*yB[1];
+		    xybar[1]=xB[0]*yB[1];
+		    xybar[2]=xB[1]*yB[0];
+		    xybar[3]=xB[1]*yB[1];
 		    double infeasibility=obj->computeLambdas(xB,yB,xybar,lambda);
 		    assert (infeasibility<1.0e-9);
 		    setColLower(yColumn,newLower);
@@ -541,6 +541,29 @@ void OsiSolverLink::resolve()
 	      double offset;
 	      int numberColumns = quadraticModel_->numberColumns();
 	      double * gradient = new double [numberColumns+1];
+	      // for testing do gradient from bilinear
+	      if (false) {
+		int i;
+		double offset=0.0;
+		CoinZeroN(gradient,numberColumns+1);
+		const double * objective = modelPtr_->objective();
+		int numberColumns2 = coinModel_.numberColumns();
+		for ( i=0;i<numberColumns2;i++) 
+		  gradient[i] = objective[i];
+		for ( i =0;i<numberObjects_;i++) {
+		  OsiBiLinear * obj = dynamic_cast<OsiBiLinear *> (object_[i]);
+		  if (obj) {
+		    int xColumn = obj->xColumn();
+		    int yColumn = obj->yColumn();
+		    double coefficient = obj->coefficient();
+		    assert (obj->xyRow()<0); // objective
+		    gradient[xColumn] += coefficient*solution[yColumn];
+		    gradient[yColumn] += coefficient*solution[xColumn];
+		    offset += coefficient*solution[xColumn]*solution[yColumn];
+		  }
+		}
+		printf("what about offset %g\n",offset);
+	      }
 	      memcpy(gradient,quadraticModel_->objectiveAsObject()->gradient(quadraticModel_,solution,offset,true,2),
 		     numberColumns*sizeof(double));
 	      // assume convex
@@ -3347,35 +3370,64 @@ OsiBiLinear::getCoefficients(const OsiSolverInterface * solver,double xB[2], dou
   // order is LxLy, LxUy, UxLy and UxUy
   int j;
   double multiplier = (boundType_==0) ? 1.0/coefficient_ : 1.0;
-  for (j=0;j<4;j++) {
-    int iColumn = firstLambda_+j;
-    int iStart = columnStart[iColumn];
-    int iEnd = iStart + columnLength[iColumn];
-    int k=iStart;
-    double x=0.0;
-    double y=0.0;
-    xybar[j]=0.0;
-    for (;k<iEnd;k++) {
-      if (xRow_==row[k])
-	x = element[k];
-      if (yRow_==row[k])
-	y = element[k];
-      if (xyRow_==row[k])
-	xybar[j] = element[k]*multiplier;
+  if (yRow_>=0) {
+    for (j=0;j<4;j++) {
+      int iColumn = firstLambda_+j;
+      int iStart = columnStart[iColumn];
+      int iEnd = iStart + columnLength[iColumn];
+      int k=iStart;
+      double x=0.0;
+      double y=0.0;
+      xybar[j]=0.0;
+      for (;k<iEnd;k++) {
+	if (xRow_==row[k])
+	  x = element[k];
+	if (yRow_==row[k])
+	  y = element[k];
+	if (xyRow_==row[k])
+	  xybar[j] = element[k]*multiplier;
+      }
+      if (xyRow_<0)
+	xybar[j] = objective[iColumn]*multiplier;
+      if (j==0)
+	xB[0]=x;
+      else if (j==1)
+	yB[1]=y;
+      else if (j==2)
+	yB[0]=y;
+      else if (j==3)
+	xB[1]=x;
+      assert (fabs(xybar[j]-x*y)<1.0e-4);
     }
-    if (yRow_<0)
-      y=x;
-    if (xyRow_<0)
-      xybar[j] = objective[iColumn]*multiplier;
-    assert (fabs(xybar[j]-x*y)<1.0e-4);
-    if (j==0)
-      xB[0]=x;
-    else if (j==1)
-      yB[1]=y;
-    else if (j==2)
-      yB[0]=y;
-    else if (j==3)
-      xB[1]=x;
+  } else {
+    // x==y
+    for (j=0;j<4;j++) {
+      int iColumn = firstLambda_+j;
+      int iStart = columnStart[iColumn];
+      int iEnd = iStart + columnLength[iColumn];
+      int k=iStart;
+      double x=0.0;
+      xybar[j]=0.0;
+      for (;k<iEnd;k++) {
+	if (xRow_==row[k])
+	  x = element[k];
+	if (xyRow_==row[k])
+	  xybar[j] = element[k]*multiplier;
+      }
+      if (xyRow_<0)
+	xybar[j] = objective[iColumn]*multiplier;
+      if (j==0) {
+	xB[0]=x;
+	yB[0]=x;
+      } else if (j==2) {
+	xB[1]=x;
+	yB[1]=x;
+      }
+    }
+    assert (fabs(xybar[0]-xB[0]*yB[0])<1.0e-4);
+    assert (fabs(xybar[1]-xB[0]*yB[1])<1.0e-4);
+    assert (fabs(xybar[2]-xB[1]*yB[0])<1.0e-4);
+    assert (fabs(xybar[3]-xB[1]*yB[1])<1.0e-4);
   }
 }
 // Compute lambdas (third entry in each .B is current value)

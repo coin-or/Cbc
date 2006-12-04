@@ -18,6 +18,7 @@
 #define CBCVERSION "1.02.00"
 
 #include "CoinMpsIO.hpp"
+#include "CoinModel.hpp"
 
 #include "ClpFactorization.hpp"
 #include "CoinTime.hpp"
@@ -54,7 +55,12 @@
 #include "OsiCuts.hpp"
 #include "OsiRowCut.hpp"
 #include "OsiColCut.hpp"
-
+#ifdef COIN_HAS_ASL
+#define COIN_HAS_LINK
+#endif
+#ifdef COIN_HAS_LINK
+#include "CbcLinked.hpp"
+#endif
 #include "CglPreProcess.hpp"
 #include "CglCutGenerator.hpp"
 #include "CglGomory.hpp"
@@ -575,6 +581,8 @@ int main (int argc, const char *argv[])
     model.setNumberBeforeTrust(21);
     int cutPass=-1234567;
     int tunePreProcess=5;
+    int testOsiParameters=-1;
+    bool quadraticInteger=false;
     OsiSolverInterface * solver = model.solver();
     OsiClpSolverInterface * clpSolver = dynamic_cast< OsiClpSolverInterface*> (solver);
     ClpSimplex * lpSolver = clpSolver->getModelPtr();
@@ -595,10 +603,11 @@ int main (int argc, const char *argv[])
     int * sosPriority=NULL;
 #ifdef COIN_HAS_ASL
     ampl_info info;
+    CoinModel * coinModel = NULL;
     memset(&info,0,sizeof(info));
     if (argc>2&&!strcmp(argv[2],"-AMPL")) {
       usingAmpl=true;
-      int returnCode = readAmpl(&info,argc,const_cast<char **>(argv));
+      int returnCode = readAmpl(&info,argc,const_cast<char **>(argv),(void **) (& coinModel));
       if (returnCode)
         return returnCode;
       CbcOrClpRead_mode=2; // so will start with parameters
@@ -618,10 +627,40 @@ int main (int argc, const char *argv[])
       if (!noPrinting)
         printf("%d rows, %d columns and %d elements\n",
                info.numberRows,info.numberColumns,info.numberElements);
+#ifdef COIN_HAS_LINK
+      if (!coinModel) {
+#endif
       solver->loadProblem(info.numberColumns,info.numberRows,info.starts,
                           info.rows,info.elements,
                           info.columnLower,info.columnUpper,info.objective,
                           info.rowLower,info.rowUpper);
+#ifdef COIN_HAS_LINK
+      } else {
+	// load from coin model
+	OsiSolverLink solver1;
+	OsiSolverInterface * solver2 = solver1.clone();
+	model.assignSolver(solver2,true);
+	OsiSolverLink * si =
+	  dynamic_cast<OsiSolverLink *>(model.solver()) ;
+	assert (si != NULL);
+	si->setDefaultMeshSize(0.001);
+	// need some relative granularity
+	si->setDefaultBound(100.0);
+	si->setDefaultMeshSize(0.01);
+	si->setDefaultBound(100.0);
+	si->setIntegerPriority(1000);
+	si->setBiLinearPriority(10000);
+	CoinModel * model2 = (CoinModel *) coinModel;
+	si->load(*model2);
+	// redo
+	solver = model.solver();
+	clpSolver = dynamic_cast< OsiClpSolverInterface*> (solver);
+	lpSolver = clpSolver->getModelPtr();
+	clpSolver->messageHandler()->setLogLevel(0) ;
+	testOsiParameters=0;
+	quadraticInteger=true;
+      }
+#endif
       // If we had a solution use it
       if (info.primalSolution) {
         solver->setColSolution(info.primalSolution);
@@ -741,6 +780,11 @@ int main (int argc, const char *argv[])
     parameters[whichParam(INFEASIBILITYWEIGHT,numberParameters,parameters)].setDoubleValue(model.getDblParam(CbcModel::CbcInfeasibilityWeight));
     parameters[whichParam(INTEGERTOLERANCE,numberParameters,parameters)].setDoubleValue(model.getDblParam(CbcModel::CbcIntegerTolerance));
     parameters[whichParam(INCREMENT,numberParameters,parameters)].setDoubleValue(model.getDblParam(CbcModel::CbcCutoffIncrement));
+    parameters[whichParam(TESTOSI,numberParameters,parameters)].setIntValue(testOsiParameters);
+    if (testOsiParameters>=0) {
+      // trying nonlinear - switch off some stuff
+      preProcess=0;
+    }
     // Set up likely cut generators and defaults
     parameters[whichParam(PREPROCESS,numberParameters,parameters)].setCurrentOption("on");
     parameters[whichParam(MIPOPTIONS,numberParameters,parameters)].setIntValue(128|64|1);
@@ -761,7 +805,7 @@ int main (int argc, const char *argv[])
     parameters[whichParam(GOMORYCUTS,numberParameters,parameters)].setCurrentOption("ifmove");
 
     CglProbing probingGen;
-    probingGen.setUsingObjective(true);
+    probingGen.setUsingObjective(1);
     probingGen.setMaxPass(3);
     probingGen.setMaxPassRoot(3);
     // Number of unsatisfied variables to look at
@@ -1738,7 +1782,7 @@ int main (int argc, const char *argv[])
                 OsiClpSolverInterface * si =
                   dynamic_cast<OsiClpSolverInterface *>(solver) ;
 		ClpSimplex * clpSolver = si->getModelPtr();
-		if (clpSolver->tightenPrimalBounds()!=0) {
+		if (!quadraticInteger&&clpSolver->tightenPrimalBounds()!=0) {
 		  std::cout<<"Problem is infeasible - tightenPrimalBounds!"<<std::endl;
 		  exit(1);
 		}
@@ -1925,7 +1969,7 @@ int main (int argc, const char *argv[])
                   saveSolver->setHintParam(OsiDoInBranchAndCut,true,OsiHintDo) ;
                   // Default set of cut generators
                   CglProbing generator1;
-                  generator1.setUsingObjective(true);
+                  generator1.setUsingObjective(1);
                   generator1.setMaxPass(3);
                   generator1.setMaxProbeRoot(saveSolver->getNumCols());
                   generator1.setMaxElements(100);
@@ -2005,7 +2049,7 @@ int main (int argc, const char *argv[])
                 ClpSimplex * modelC = si->getModelPtr();
                 if (noPrinting)
                   modelC->setLogLevel(0);
-                if (modelC->tightenPrimalBounds()!=0) {
+                if (!quadraticInteger&&modelC->tightenPrimalBounds()!=0) {
                   std::cout<<"Problem is infeasible!"<<std::endl;
                   break;
                 }
@@ -2684,19 +2728,20 @@ int main (int argc, const char *argv[])
                     if (objSOS)
                       continue;
                     int iColumn = objects[iObj]->columnNumber();
-                    assert (iColumn>=0);
-                    if (originalColumns)
-                      iColumn = originalColumns[iColumn];
-                    if (branchDirection) {
-		      OsiSimpleInteger * obj =
-			dynamic_cast <OsiSimpleInteger *>(objects[iObj]) ;
-		      if (obj) { 
-			obj->setPreferredWay(branchDirection[iColumn]);
-		      } else {
-			OsiObject2 * obj =
-			  dynamic_cast <OsiObject2 *>(objects[iObj]) ;
-			if (obj)
+                    if (iColumn>=0) {
+		      if (originalColumns)
+			iColumn = originalColumns[iColumn];
+		      if (branchDirection) {
+			OsiSimpleInteger * obj =
+			  dynamic_cast <OsiSimpleInteger *>(objects[iObj]) ;
+			if (obj) { 
 			  obj->setPreferredWay(branchDirection[iColumn]);
+			} else {
+			  OsiObject2 * obj =
+			    dynamic_cast <OsiObject2 *>(objects[iObj]) ;
+			  if (obj)
+			    obj->setPreferredWay(branchDirection[iColumn]);
+			}
 		      }
 		    }
                     if (priorities) {
@@ -2948,9 +2993,14 @@ int main (int argc, const char *argv[])
                   }
                   info.problemStatus=iStat;
                   info.objValue = value;
-                  if (babModel->getObjValue()<1.0e40) 
-                    pos += sprintf(buf+pos," objective %.*g",ampl_obj_prec(),
-                                   value);
+                  if (babModel->getObjValue()<1.0e40) {
+		    int precision = ampl_obj_prec();
+		    if (precision>0)
+		      pos += sprintf(buf+pos," objective %.*g",precision,
+				     value);
+		    else
+		      pos += sprintf(buf+pos," objective %g",value);
+		  }
                   sprintf(buf+pos,"\n%d nodes, %d iterations",
                           babModel->getNodeCount(),
                           babModel->getIterationCount());
@@ -4809,7 +4859,7 @@ static void generateCode(CbcModel * model, const char * fileName,int type,int pr
     strcpy(line[numberLines++],"5  saveSolver->setHintParam(OsiDoInBranchAndCut,true,OsiHintDo) ;");
     strcpy(line[numberLines++],"5  // Default set of cut generators");
     strcpy(line[numberLines++],"5  CglProbing generator1;");
-    strcpy(line[numberLines++],"5  generator1.setUsingObjective(true);");
+    strcpy(line[numberLines++],"5  generator1.setUsingObjective(1);");
     strcpy(line[numberLines++],"5  generator1.setMaxPass(3);");
     strcpy(line[numberLines++],"5  generator1.setMaxProbeRoot(saveSolver->getNumCols());");
     strcpy(line[numberLines++],"5  generator1.setMaxElements(100);");

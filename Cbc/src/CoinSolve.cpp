@@ -58,6 +58,9 @@
 #ifdef COIN_HAS_ASL
 #define COIN_HAS_LINK
 #endif
+#ifndef COIN_DEVELOP
+#undef COIN_HAS_LINK
+#endif
 #ifdef COIN_HAS_LINK
 #include "CbcLinked.hpp"
 #endif

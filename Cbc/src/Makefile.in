@@ -108,17 +108,20 @@ bin_PROGRAMS = cbc-generic$(EXEEXT) $(am__EXEEXT_1)
 
 @COIN_HAS_XPR_TRUE@am__append_27 = $(OSIOBJDIR)/src/OsiXpr/libOsiXpr.la
 
+# If we have the Ampl solver library, we need to add additional things
+@COIN_HAS_ASL_TRUE@am__append_28 = $(ASLLIB)
+
 ########################################################################
 #                            cbc program                               #
 ########################################################################
 
 # Name of the executable compiled in this directory.  We want it to be
 # installed in the 'bin' directory
-@COIN_HAS_CLP_TRUE@am__append_28 = cbc
+@COIN_HAS_CLP_TRUE@am__append_29 = cbc
 
 # If we have the Ampl solver library, we need to add additional things
-@COIN_HAS_ASL_TRUE@@COIN_HAS_CLP_TRUE@am__append_29 = $(ASLLIB)
-@COIN_HAS_ASL_TRUE@@COIN_HAS_CLP_TRUE@am__append_30 = $(ASL_CPPFLAGS)
+@COIN_HAS_ASL_TRUE@@COIN_HAS_CLP_TRUE@am__append_30 = $(ASLLIB)
+@COIN_HAS_ASL_TRUE@@COIN_HAS_CLP_TRUE@am__append_31 = $(ASL_CPPFLAGS)
 subdir = src
 DIST_COMMON = $(include_HEADERS) $(srcdir)/Makefile.am \
 	$(srcdir)/Makefile.in
@@ -217,6 +220,7 @@ cbc_generic_OBJECTS = $(am_cbc_generic_OBJECTS)
 @COIN_HAS_VOL_TRUE@	$(VOLOBJDIR)/src/libVol.la
 @COIN_HAS_XPR_TRUE@am__DEPENDENCIES_13 =  \
 @COIN_HAS_XPR_TRUE@	$(OSIOBJDIR)/src/OsiXpr/libOsiXpr.la
+@COIN_HAS_ASL_TRUE@am__DEPENDENCIES_14 = $(am__DEPENDENCIES_1)
 cbc_generic_DEPENDENCIES = libCbc.la $(CGLOBJDIR)/src/libCgl.la \
 	$(OSIOBJDIR)/src/OsiCbc/libOsiCbc.la $(am__DEPENDENCIES_3) \
 	$(am__DEPENDENCIES_4) $(am__DEPENDENCIES_5) \
@@ -225,7 +229,7 @@ cbc_generic_DEPENDENCIES = libCbc.la $(CGLOBJDIR)/src/libCgl.la \
 	$(am__DEPENDENCIES_10) $(am__DEPENDENCIES_11) \
 	$(am__DEPENDENCIES_12) $(am__DEPENDENCIES_13) \
 	$(OSIOBJDIR)/src/libOsi.la \
-	$(COINUTILSOBJDIR)/src/libCoinUtils.la
+	$(COINUTILSOBJDIR)/src/libCoinUtils.la $(am__DEPENDENCIES_14)
 depcomp = $(SHELL) $(top_srcdir)/../depcomp
 am__depfiles_maybe = depfiles
 CXXCOMPILE = $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
@@ -496,7 +500,7 @@ cbc_generic_LDADD = libCbc.la $(CGLOBJDIR)/src/libCgl.la \
 	$(am__append_13) $(am__append_15) $(am__append_17) \
 	$(am__append_19) $(am__append_21) $(am__append_24) \
 	$(am__append_27) $(OSIOBJDIR)/src/libOsi.la \
-	$(COINUTILSOBJDIR)/src/libCoinUtils.la
+	$(COINUTILSOBJDIR)/src/libCoinUtils.la $(am__append_28)
 
 ########################################################################
 #                            Additional flags                          #
@@ -512,7 +516,7 @@ AM_CPPFLAGS = -I`$(CYGPATH_W) $(OSISRCDIR)/src/OsiCbc` $(am__append_2) \
 	$(am__append_5) $(am__append_7) $(am__append_10) \
 	$(am__append_12) $(am__append_14) $(am__append_16) \
 	$(am__append_18) $(am__append_20) $(am__append_23) \
-	$(am__append_26) $(am__append_30) -I`$(CYGPATH_W) \
+	$(am__append_26) $(am__append_31) -I`$(CYGPATH_W) \
 	$(CGLSRCDIR)/src` -I`$(CYGPATH_W) $(CGLSRCDIR)/src/CglClique` \
 	-I`$(CYGPATH_W) $(CGLSRCDIR)/src/CglDuplicateRow` \
 	-I`$(CYGPATH_W) $(CGLSRCDIR)/src/CglFlowCover` -I`$(CYGPATH_W) \
@@ -549,7 +553,7 @@ cbc_generic_LDFLAGS = -rpath $(libdir)
 @COIN_HAS_CLP_TRUE@	$(OSIOBJDIR)/src/libOsi.la \
 @COIN_HAS_CLP_TRUE@	$(CLPOBJDIR)/src/libClp.la \
 @COIN_HAS_CLP_TRUE@	$(COINUTILSOBJDIR)/src/libCoinUtils.la \
-@COIN_HAS_CLP_TRUE@	$(am__append_29)
+@COIN_HAS_CLP_TRUE@	$(am__append_30)
 
 # Finally, the -rpath flag is used by libtool to make sure that the shared
 # library is found (in the lib install directory) when we are using dynamic

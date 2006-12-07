@@ -162,6 +162,11 @@ LIBS += `cat $(OSIOBJDIR)/osi_addlibs.txt` \
 # libraries.
 cbc_generic_LDFLAGS = -rpath $(libdir)
 
+# If we have the Ampl solver library, we need to add additional things
+if COIN_HAS_ASL
+cbc_generic_LDADD += $(ASLLIB)
+endif
+
 ########################################################################
 #                            cbc program                               #
 ########################################################################

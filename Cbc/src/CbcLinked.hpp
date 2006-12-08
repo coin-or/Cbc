@@ -115,6 +115,12 @@ public:
   */
   CoinPackedMatrix * cleanMatrix() const
   { return matrix_;};
+  /** Row copy of matrix 
+      Just genuine columns and rows
+      Linear part
+  */
+  CoinPackedMatrix * originalRowCopy() const
+  { return originalRowCopy_;};
   /// Copy of quadratic model if one
   ClpSimplex * quadraticModel() const
   { return quadraticModel_;};
@@ -166,6 +172,10 @@ protected:
       Marked coefficients will be multiplied by L or U
   */
   CoinPackedMatrix * matrix_;
+  /** Row copy of matrix 
+      Just genuine columns and rows
+  */
+  CoinPackedMatrix * originalRowCopy_;
   /// Copy of quadratic model if one
   ClpSimplex * quadraticModel_;
   /// Pointer back to CbcModel

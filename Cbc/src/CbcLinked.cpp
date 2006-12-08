@@ -391,8 +391,35 @@ void OsiSolverLink::resolve()
 		double offset;
 		int numberColumns = quadraticModel_->numberColumns();
 		double * gradient = new double [numberColumns+1];
-		memcpy(gradient,quadraticModel_->objectiveAsObject()->gradient(quadraticModel_,bestSolution_,offset,true,2),
-		       numberColumns*sizeof(double));
+		// gradient from bilinear
+		int i;
+		CoinZeroN(gradient,numberColumns+1);
+		//const double * objective = modelPtr_->objective();
+		assert (objectiveRow_>=0);
+		const double * element = originalRowCopy_->getElements();
+		const int * column2 = originalRowCopy_->getIndices();
+		const CoinBigIndex * rowStart = originalRowCopy_->getVectorStarts();
+		//const int * rowLength = originalRowCopy_->getVectorLengths();
+		//int numberColumns2 = coinModel_.numberColumns();
+		for ( i=rowStart[objectiveRow_];i<rowStart[objectiveRow_+1];i++) 
+		  gradient[column2[i]] = element[i];
+		for ( i =0;i<numberObjects_;i++) {
+		  OsiBiLinear * obj = dynamic_cast<OsiBiLinear *> (object_[i]);
+		  if (obj) {
+		    int xColumn = obj->xColumn();
+		    int yColumn = obj->yColumn();
+		    if (xColumn!=yColumn) {
+		      double coefficient = 2.0*obj->coefficient();
+		      gradient[xColumn] += coefficient*solution[yColumn];
+		      gradient[yColumn] += coefficient*solution[xColumn];
+		      offset += coefficient*solution[xColumn]*solution[yColumn];
+		    } else {
+		      double coefficient = obj->coefficient();
+		      gradient[xColumn] += 2.0*coefficient*solution[yColumn];
+		      offset += coefficient*solution[xColumn]*solution[yColumn];
+		    }
+		  }
+		}
 		// assume convex
 		double rhs = 0.0;
 		int * column = new int[numberColumns+1];
@@ -544,31 +571,35 @@ void OsiSolverLink::resolve()
 	      double offset;
 	      int numberColumns = quadraticModel_->numberColumns();
 	      double * gradient = new double [numberColumns+1];
-	      // for testing do gradient from bilinear
-	      if (false) {
-		int i;
-		double offset=0.0;
-		CoinZeroN(gradient,numberColumns+1);
-		const double * objective = modelPtr_->objective();
-		int numberColumns2 = coinModel_.numberColumns();
-		for ( i=0;i<numberColumns2;i++) 
-		  gradient[i] = objective[i];
-		for ( i =0;i<numberObjects_;i++) {
-		  OsiBiLinear * obj = dynamic_cast<OsiBiLinear *> (object_[i]);
-		  if (obj) {
-		    int xColumn = obj->xColumn();
-		    int yColumn = obj->yColumn();
-		    double coefficient = obj->coefficient();
-		    assert (obj->xyRow()<0); // objective
+	      // gradient from bilinear
+	      int i;
+	      CoinZeroN(gradient,numberColumns+1);
+	      //const double * objective = modelPtr_->objective();
+	      assert (objectiveRow_>=0);
+	      const double * element = originalRowCopy_->getElements();
+	      const int * column2 = originalRowCopy_->getIndices();
+	      const CoinBigIndex * rowStart = originalRowCopy_->getVectorStarts();
+	      //const int * rowLength = originalRowCopy_->getVectorLengths();
+	      //int numberColumns2 = coinModel_.numberColumns();
+	      for ( i=rowStart[objectiveRow_];i<rowStart[objectiveRow_+1];i++) 
+		gradient[column2[i]] = element[i];
+	      for ( i =0;i<numberObjects_;i++) {
+		OsiBiLinear * obj = dynamic_cast<OsiBiLinear *> (object_[i]);
+		if (obj) {
+		  int xColumn = obj->xColumn();
+		  int yColumn = obj->yColumn();
+		  if (xColumn!=yColumn) {
+		    double coefficient = 2.0*obj->coefficient();
 		    gradient[xColumn] += coefficient*solution[yColumn];
 		    gradient[yColumn] += coefficient*solution[xColumn];
 		    offset += coefficient*solution[xColumn]*solution[yColumn];
+		  } else {
+		    double coefficient = obj->coefficient();
+		    gradient[xColumn] += 2.0*coefficient*solution[yColumn];
+		    offset += coefficient*solution[xColumn]*solution[yColumn];
 		  }
 		}
-		printf("what about offset %g\n",offset);
 	      }
-	      memcpy(gradient,quadraticModel_->objectiveAsObject()->gradient(quadraticModel_,solution,offset,true,2),
-		     numberColumns*sizeof(double));
 	      // assume convex
 	      double rhs = 0.0;
 	      int * column = new int[numberColumns+1];
@@ -1204,6 +1235,17 @@ void OsiSolverLink::load ( CoinModel & coinModel, bool tightenBounds)
       for ( i=0;i<numberVariables_;i++) {
 	info_[i] = OsiLinkedBound(this,which[i],0,NULL,NULL,NULL);
       }
+      // Do row copy but just part
+      int numberRows2 = objectiveRow_>=0 ? numberRows+1 : numberRows;
+      int * whichRows = new int [numberRows2];
+      int * whichColumns = new int [numberColumns];
+      CoinIotaN(whichRows,numberRows2,0);
+      CoinIotaN(whichColumns,numberColumns,0);
+      originalRowCopy_ = new CoinPackedMatrix(*getMatrixByRow(),
+					      numberRows2,whichRows,
+					      numberColumns,whichColumns);
+      delete [] whichRows;
+      delete [] whichColumns;
     }
   }
   // See if there are any quadratic bounds
@@ -1319,11 +1361,13 @@ OsiSolverLink::gutsOfDestructor(bool justNullify)
 {
   if (!justNullify) {
     delete matrix_;
+    delete originalRowCopy_;
     delete [] info_;
     delete [] bestSolution_;
     delete quadraticModel_;
   } 
   matrix_ = NULL;
+  originalRowCopy_ = NULL;
   quadraticModel_ = NULL;
   cbcModel_ = NULL;
   info_ = NULL;
@@ -1357,6 +1401,10 @@ OsiSolverLink::gutsOfCopy(const OsiSolverLink & rhs)
       matrix_ = new CoinPackedMatrix(*rhs.matrix_);
     else
       matrix_=NULL;
+    if (rhs.originalRowCopy_)
+      originalRowCopy_ = new CoinPackedMatrix(*rhs.originalRowCopy_);
+    else
+      originalRowCopy_=NULL;
     info_ = new OsiLinkedBound [numberVariables_];
     for (int i=0;i<numberVariables_;i++) {
       info_[i] = OsiLinkedBound(rhs.info_[i]);

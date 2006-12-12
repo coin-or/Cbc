@@ -90,6 +90,8 @@ public:
 			double multiplier=1.0);
   /// Update coefficients - returns number updated if in updating mode
   int updateCoefficients(ClpSimplex * solver, CoinPackedMatrix * matrix);
+  /// Analyze constraints to see which are convex (quadratic)
+  void analyzeObjects();
   /// Objective value of best solution found internally
   inline double bestObjectiveValue() const
   { return bestObjectiveValue_;};
@@ -180,6 +182,18 @@ protected:
   ClpSimplex * quadraticModel_;
   /// Pointer back to CbcModel
   CbcModel * cbcModel_;
+  /// Number of rows with nonLinearities
+  int numberNonLinearRows_;
+  /// Starts of lists
+  int * startNonLinear_;
+  /// Row number for a list
+  int * rowNonLinear_;
+  /** Indicator whether is convex, concave or neither
+      -1 concave, 0 neither, +1 convex
+  */
+  int * convex_;
+  /// Indices in a list/row
+  int * whichNonLinear_;
   /// Model in CoinModel format
   CoinModel coinModel_;
   /// Number of variables in tightening phase
@@ -188,8 +202,9 @@ protected:
   OsiLinkedBound * info_;
   /**
      0 bit (1) - don't do mini B&B
-     1 bit (2) - quadratic only in objective
+     1 bit (2) - quadratic only in objective (add OA cuts)
      2 bit (4) - convex
+     4 bit (8) - try adding OA cuts
   */
   int specialOptions2_;
   /// Objective transfer row if one

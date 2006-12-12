@@ -556,9 +556,11 @@ void OsiSolverLink::resolve()
 	}
       }
       // ???  - try
+      // But skip if strong branching
+      CbcModel * cbcModel = (modelPtr_->maximumIterations()<10000) ? cbcModel_ : NULL;
       if ((specialOptions2_&2)!=0) {
 	// If model has stored then add cut (if convex)
-	if (cbcModel_&&(specialOptions2_&4)!=0&&quadraticModel_) {
+	if (cbcModel&&(specialOptions2_&4)!=0&&quadraticModel_) {
 	  int numberGenerators = cbcModel_->numberCutGenerators();
 	  int iGenerator;
 	  for (iGenerator=0;iGenerator<numberGenerators;iGenerator++) {
@@ -624,6 +626,86 @@ void OsiSolverLink::resolve()
 	      delete [] column;
 	      break;
 	    }
+	  }
+	}
+      } else if (cbcModel&&(specialOptions2_&8)==8) {
+	// convex and nonlinear in constraints
+	int numberGenerators = cbcModel_->numberCutGenerators();
+	int iGenerator;
+	for (iGenerator=0;iGenerator<numberGenerators;iGenerator++) {
+	  CbcCutGenerator * generator = cbcModel_->cutGenerator(iGenerator);
+	  CglCutGenerator * gen = generator->generator();
+	  CglTemporary * gen2 = dynamic_cast<CglTemporary *> (gen);
+	  if (gen2) {
+	    const double * solution = getColSolution();
+	    const double * rowUpper = getRowUpper();
+	    const double * rowLower = getRowLower();
+	    const double * element = originalRowCopy_->getElements();
+	    const int * column2 = originalRowCopy_->getIndices();
+	    const CoinBigIndex * rowStart = originalRowCopy_->getVectorStarts();
+	    //const int * rowLength = originalRowCopy_->getVectorLengths();
+	    int numberColumns2 = CoinMax(coinModel_.numberColumns(),objectiveVariable_+1);
+	    double * gradient = new double [numberColumns2];
+	    int * column = new int[numberColumns2];
+	    for (int iNon=0;iNon<numberNonLinearRows_;iNon++) {
+	      int iRow = rowNonLinear_[iNon];
+	      bool convex = convex_[iNon]>0;
+	      if (!convex_[iNon])
+		continue; // can't use this row
+	      // add OA cuts
+	      double offset=0.0;
+	      // gradient from bilinear
+	      int i;
+	      CoinZeroN(gradient,numberColumns2);
+	      //const double * objective = modelPtr_->objective();
+	      for ( i=rowStart[iRow];i<rowStart[iRow+1];i++) 
+		gradient[column2[i]] = element[i];
+	      for ( i =startNonLinear_[iNon];i<startNonLinear_[iNon+1];i++) {
+		OsiBiLinear * obj = dynamic_cast<OsiBiLinear *> (object_[whichNonLinear_[i]]);
+		assert (obj);
+		int xColumn = obj->xColumn();
+		int yColumn = obj->yColumn();
+		if (xColumn!=yColumn) {
+		  double coefficient = 2.0*obj->coefficient();
+		  gradient[xColumn] += coefficient*solution[yColumn];
+		  gradient[yColumn] += coefficient*solution[xColumn];
+		  offset += coefficient*solution[xColumn]*solution[yColumn];
+		} else {
+		  double coefficient = obj->coefficient();
+		  gradient[xColumn] += 2.0*coefficient*solution[yColumn];
+		  offset += coefficient*solution[xColumn]*solution[yColumn];
+		}
+	      }
+	      // assume convex
+	      double rhs = 0.0;
+	      int n=0;
+	      for (int i=0;i<numberColumns2;i++) {
+		double value = gradient[i];
+		if (fabs(value)>1.0e-12) {
+		  gradient[n]=value;
+		  rhs += value*solution[i];
+		  column[n++]=i;
+		}
+	      }
+	      if (iRow==objectiveRow_) {
+		gradient[n]=-1.0;
+		assert (objectiveVariable_>=0);
+		rhs -= solution[objectiveVariable_];
+		column[n++]=objectiveVariable_;
+		assert (convex);
+	      } else if (convex) {
+		offset += rowUpper[iRow];
+	      } else if (!convex) {
+		offset += rowLower[iRow];
+	      }
+	      if (convex&&rhs>offset+1.0e-5) 
+		gen2->addCut(-COIN_DBL_MAX,offset+1.0e-7,n,column,gradient);
+	      else if (!convex&&rhs<offset-1.0e-5) 
+		gen2->addCut(offset-1.0e-7,COIN_DBL_MAX,n,column,gradient);
+	    }
+	    delete [] gradient;
+	    delete [] column;
+	    break;
 	  }
 	}
       }
@@ -825,7 +907,7 @@ void OsiSolverLink::load ( CoinModel & coinModel, bool tightenBounds)
   // List of nonlinear entries
   int * which = new int[numberColumns];
   numberVariables_=0;
-  specialOptions2_=0;
+  //specialOptions2_=0;
   int iColumn;
   int numberErrors=0;
   for (iColumn=0;iColumn<numberColumns;iColumn++) {
@@ -1023,6 +1105,8 @@ void OsiSolverLink::load ( CoinModel & coinModel, bool tightenBounds)
       columnQuadratic = new int [numberQuadratic];
       elementQuadratic = new double [numberQuadratic];
       numberQuadratic=0;
+    }
+    if (quadraticObjective||((specialOptions2_&8)!=0&&saveNBi)) {
       // add in objective as constraint
       objectiveVariable_= numberColumns;
       objectiveRow_ = modelPtr_->numberRows();
@@ -1244,8 +1328,55 @@ void OsiSolverLink::load ( CoinModel & coinModel, bool tightenBounds)
       originalRowCopy_ = new CoinPackedMatrix(*getMatrixByRow(),
 					      numberRows2,whichRows,
 					      numberColumns,whichColumns);
-      delete [] whichRows;
       delete [] whichColumns;
+      numberNonLinearRows_=0;
+      CoinZeroN(whichRows,numberRows2);
+      for ( i =0;i<numberObjects_;i++) {
+	OsiBiLinear * obj = dynamic_cast<OsiBiLinear *> (object_[i]);
+	if (obj) {
+	  int xyRow = obj->xyRow();
+	  assert (xyRow>=0&&xyRow<numberRows2); // even if obj we should move
+	  whichRows[xyRow]++;
+	}
+      }
+      int * pos = new int [numberRows2];
+      int n=0;
+      for (i=0;i<numberRows2;i++) {
+	if (whichRows[i]) {
+	  pos[numberNonLinearRows_]=n;
+	  n+=whichRows[i]; 
+	  whichRows[i]=numberNonLinearRows_;
+	  numberNonLinearRows_++;
+	} else {
+	  whichRows[i]=-1;
+	}
+      }
+      startNonLinear_ = new int [numberNonLinearRows_+1];
+      memcpy(startNonLinear_,pos,numberNonLinearRows_*sizeof(int));
+      startNonLinear_[numberNonLinearRows_]=n;
+      rowNonLinear_ = new int [numberNonLinearRows_];
+      convex_ = new int [numberNonLinearRows_];
+      // do row numbers now
+      numberNonLinearRows_=0;
+      for (i=0;i<numberRows2;i++) {
+	if (whichRows[i]>=0) {
+	  rowNonLinear_[numberNonLinearRows_++]=i;
+	}
+      }
+      whichNonLinear_ = new int [n];
+      for ( i =0;i<numberObjects_;i++) {
+	OsiBiLinear * obj = dynamic_cast<OsiBiLinear *> (object_[i]);
+	if (obj) {
+	  int xyRow = obj->xyRow();
+	  int k=whichRows[xyRow];
+	  int put = pos[k];
+	  pos[k]++;
+	  whichNonLinear_[put]=i;
+	}
+      }
+      delete [] pos;
+      delete [] whichRows;
+      analyzeObjects();
     }
   }
   // See if there are any quadratic bounds
@@ -1311,6 +1442,143 @@ void OsiSolverLink::load ( CoinModel & coinModel, bool tightenBounds)
   }
   delete [] which;
 }
+// Analyze constraints to see which are convex (quadratic)
+void 
+OsiSolverLink::analyzeObjects()
+{
+  // space for starts
+  int numberColumns = coinModel_.numberColumns();
+  int * start = new int [numberColumns+1];
+  const double * rowLower = getRowLower();
+  const double * rowUpper = getRowUpper();
+  for (int iNon=0;iNon<numberNonLinearRows_;iNon++) {
+    int iRow = rowNonLinear_[iNon];
+    int numberElements = startNonLinear_[iNon+1]-startNonLinear_[iNon];
+    // triplet arrays
+    int * iColumn = new int [2*numberElements+1];
+    int * jColumn = new int [2*numberElements];
+    double * element = new double [2*numberElements];
+    int i;
+    int n=0;
+    for ( i =startNonLinear_[iNon];i<startNonLinear_[iNon+1];i++) {
+      OsiBiLinear * obj = dynamic_cast<OsiBiLinear *> (object_[whichNonLinear_[i]]);
+      assert (obj);
+      int xColumn = obj->xColumn();
+      int yColumn = obj->yColumn();
+      double coefficient = obj->coefficient();
+      if (xColumn!=yColumn) {
+	iColumn[n]=xColumn;
+	jColumn[n]=yColumn;
+	element[n++]=coefficient;
+	iColumn[n]=yColumn;
+	jColumn[n]=xColumn;
+	element[n++]=coefficient;
+      } else {
+	iColumn[n]=xColumn;
+	jColumn[n]=xColumn;
+	element[n++]=coefficient;
+      }
+    }
+    // First sort in column order
+    CoinSort_3(iColumn,iColumn+n,jColumn,element);
+    // marker at end
+    iColumn[n]=numberColumns;
+    int lastI=iColumn[0];
+    // compute starts
+    start[0]=0;
+    for (i=1;i<n+1;i++) {
+      if (iColumn[i]!=lastI) {
+	while (lastI<iColumn[i]) {
+	  start[lastI+1]=i;
+	  lastI++;
+	}
+	lastI=iColumn[i];
+      }
+    }
+    // -1 unknown, 0 convex, 1 nonconvex
+    int status=-1;
+    int statusNegative=-1;
+    int numberLong=0; // number with >2 elements
+    for (int k=0;k<numberColumns;k++) {
+      int first = start[k];
+      int last = start[k+1];
+      if (last>first) {
+	int j;
+	double diagonal = 0.0;
+	int whichK=-1;
+	for (j=first;j<last;j++) {
+	  if (jColumn[j]==k) {
+	    diagonal = element[j];
+	    status = diagonal >0 ? 0 : 1;
+	    statusNegative = diagonal <0 ? 0 : 1;
+	    whichK = (j==first) ? j+1 :j-1;
+	    break;
+	  }
+	}
+	if (last==first+1) {
+	  // just one entry
+	  if (!diagonal) {
+	    // one off diagonal - not positive semi definite
+	    status=1;
+	    statusNegative=1;
+	  }
+	} else if (diagonal) {
+	  if (last==first+2) {
+	    // other column and element
+	    double otherElement=element[whichK];;
+	    int otherColumn = jColumn[whichK];
+	    double otherDiagonal=0.0;
+	    // check 2x2 determinant - unless past and 2 long
+	    if (otherColumn>i||start[otherColumn+1]>start[otherColumn]+2) {
+	      for (j=start[otherColumn];j<start[otherColumn+1];j++) {
+		if (jColumn[j]==otherColumn) {
+		  otherDiagonal = element[j];
+		  break;
+		}
+	      }
+	      // determinant
+	      double determinant = diagonal*otherDiagonal-otherElement*otherElement;
+	      if (determinant<-1.0e-12) {
+		// not positive semi definite
+		status=1;
+		statusNegative=1;
+	      } else if (start[otherColumn+1]>start[otherColumn]+2&&determinant<1.0e-12) {
+		// not positive semi definite
+		status=1;
+		statusNegative=1;
+	      }
+	    }
+	  } else {
+	    numberLong++;
+	  }
+	}
+      }
+    }
+    if ((status==0||statusNegative==0)&&numberLong) {
+      // need to do more work
+      printf("Needs more work\n");
+    }
+    assert (status>0||statusNegative>0);
+    if (!status) {
+      convex_[iNon]=1;
+      // equality may be ok
+      assert (rowUpper[iRow]<1.0e20);
+      specialOptions2_ |= 8;
+    } else if (!statusNegative) {
+      convex_[iNon]=-1;
+      // equality may be ok
+      assert (rowLower[iRow]>-1.0e20);
+      specialOptions2_ |= 8;
+    } else {
+      convex_[iNon]=0;
+    }
+    printf("Convexity of row %d is %d\n",iRow,convex_[iNon]);
+    delete [] iColumn;
+    delete [] jColumn;
+    delete [] element;
+  }
+  delete [] start;
+}
 //-------------------------------------------------------------------
 // Clone
 //-------------------------------------------------------------------
@@ -1365,10 +1633,19 @@ OsiSolverLink::gutsOfDestructor(bool justNullify)
     delete [] info_;
     delete [] bestSolution_;
     delete quadraticModel_;
+    delete [] startNonLinear_;
+    delete [] rowNonLinear_;
+    delete [] convex_;
+    delete [] whichNonLinear_;
   } 
   matrix_ = NULL;
   originalRowCopy_ = NULL;
   quadraticModel_ = NULL;
+  numberNonLinearRows_=0;
+  startNonLinear_ = NULL;
+  rowNonLinear_ = NULL;
+  convex_ = NULL;
+  whichNonLinear_ = NULL;
   cbcModel_ = NULL;
   info_ = NULL;
   numberVariables_ = 0;
@@ -1387,6 +1664,7 @@ OsiSolverLink::gutsOfCopy(const OsiSolverLink & rhs)
 {
   coinModel_ = rhs.coinModel_;
   numberVariables_ = rhs.numberVariables_;
+  numberNonLinearRows_ = rhs.numberNonLinearRows_;
   specialOptions2_ = rhs.specialOptions2_;
   objectiveRow_=rhs.objectiveRow_;
   objectiveVariable_=rhs.objectiveVariable_;
@@ -1414,6 +1692,13 @@ OsiSolverLink::gutsOfCopy(const OsiSolverLink & rhs)
     } else {
       bestSolution_=NULL;
     }
+  }
+  if (numberNonLinearRows_) {
+    startNonLinear_ = CoinCopyOfArray(rhs.startNonLinear_,numberNonLinearRows_+1);
+    rowNonLinear_ = CoinCopyOfArray(rhs.rowNonLinear_,numberNonLinearRows_);
+    convex_ = CoinCopyOfArray(rhs.convex_,numberNonLinearRows_);
+    int numberEntries = startNonLinear_[numberNonLinearRows_];
+    whichNonLinear_ = CoinCopyOfArray(rhs.whichNonLinear_,numberEntries);
   }
   if (rhs.quadraticModel_) {
     quadraticModel_ = new ClpSimplex(*rhs.quadraticModel_);

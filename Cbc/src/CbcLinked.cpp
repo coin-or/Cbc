@@ -254,33 +254,6 @@ void OsiSolverLink::resolve()
     sprintf(temp,"bb%d",xxxxxx);
     writeMps(temp);
     printf("wrote bb%d\n",xxxxxx);
-#if 0
-    const double * lower = getColLower();
-    const double * upper = getColUpper();
-    for (int i=0;i<8;i++) {
-      printf("%d bounds %g %g\n",i,lower[i],upper[i]);
-    }
-    if (lower[2]<=3.0&&upper[2]>=3) {
-      if (lower[3]<=2.0&&upper[3]>=2.0) {
-	if (lower[4]==0.0) {
-	  if (lower[7]==0.0) {
-	    if (lower[5]<=4.0&&upper[5]>=4.0) {
-	      if (lower[6]<=3.0&&upper[6]>=3.0) {
-		printf("writemps contains solution\n");
-		for (int i=8;i<24;i++) {
-		  printf("%d bounds %g %g\n",i,lower[i],upper[i]);
-		  if (false&&((!lower[i]&&upper[i]>lower[i]))) {
-		    setColLower(i,0.0);
-		    setColUpper(i,10.0);
-		  }
-		}
-	      }
-	    }
-	  }
-	}
-      }
-    }
-#endif
   }
 #endif
   if (0) {
@@ -355,6 +328,8 @@ void OsiSolverLink::resolve()
       }
     }
     if (isProvenOptimal()) {
+      if (satisfied)
+	printf("satisfied %d\n",satisfied);
       if (satisfied&&(specialOptions2_&2)!=0) {
 	assert (quadraticModel_);
 	// look at true objective
@@ -585,11 +560,16 @@ void OsiSolverLink::resolve()
 	      //int numberColumns2 = coinModel_.numberColumns();
 	      for ( i=rowStart[objectiveRow_];i<rowStart[objectiveRow_+1];i++) 
 		gradient[column2[i]] = element[i];
+	      const double * columnLower = modelPtr_->columnLower();
+	      const double * columnUpper = modelPtr_->columnUpper();
 	      for ( i =0;i<numberObjects_;i++) {
 		OsiBiLinear * obj = dynamic_cast<OsiBiLinear *> (object_[i]);
 		if (obj) {
 		  int xColumn = obj->xColumn();
 		  int yColumn = obj->yColumn();
+		  // We can do better if one fixed
+		  assert (columnUpper[xColumn]>columnLower[xColumn]);
+		  assert (columnUpper[yColumn]>columnLower[yColumn]);
 		  if (xColumn!=yColumn) {
 		    double coefficient = 2.0*obj->coefficient();
 		    gradient[xColumn] += coefficient*solution[yColumn];
@@ -647,6 +627,8 @@ void OsiSolverLink::resolve()
 	    int numberColumns2 = CoinMax(coinModel_.numberColumns(),objectiveVariable_+1);
 	    double * gradient = new double [numberColumns2];
 	    int * column = new int[numberColumns2];
+	    const double * columnLower = modelPtr_->columnLower();
+	    const double * columnUpper = modelPtr_->columnUpper();
 	    for (int iNon=0;iNon<numberNonLinearRows_;iNon++) {
 	      int iRow = rowNonLinear_[iNon];
 	      bool convex = convex_[iNon]>0;
@@ -665,6 +647,9 @@ void OsiSolverLink::resolve()
 		assert (obj);
 		int xColumn = obj->xColumn();
 		int yColumn = obj->yColumn();
+		// We can do better if one fixed
+		assert (columnUpper[xColumn]>columnLower[xColumn]);
+		assert (columnUpper[yColumn]>columnLower[yColumn]);
 		if (xColumn!=yColumn) {
 		  double coefficient = 2.0*obj->coefficient();
 		  gradient[xColumn] += coefficient*solution[yColumn];

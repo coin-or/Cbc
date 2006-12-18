@@ -1,34 +1,35 @@
-// Copyright (C) 2002, International Business Machines
+// Copyright (C) 2006, International Business Machines
 // Corporation and others.  All Rights Reserved.
-#ifndef CbcHeuristicLocal_H
-#define CbcHeuristicLocal_H
+#ifndef CbcHeuristicRINS_H
+#define CbcHeuristicRINS_H
 
 #include "CbcHeuristic.hpp"
 /** LocalSearch class
  */
 
-class CbcHeuristicLocal : public CbcHeuristic {
+class CbcHeuristicRINS : public CbcHeuristic {
 public:
 
   // Default Constructor 
-  CbcHeuristicLocal ();
+  CbcHeuristicRINS ();
 
   /* Constructor with model - assumed before cuts
      Initial version does not do Lps
   */
-  CbcHeuristicLocal (CbcModel & model);
+  CbcHeuristicRINS (CbcModel & model);
   
   // Copy constructor 
-  CbcHeuristicLocal ( const CbcHeuristicLocal &);
+  CbcHeuristicRINS ( const CbcHeuristicRINS &);
    
   // Destructor 
-  ~CbcHeuristicLocal ();
+  ~CbcHeuristicRINS ();
   
   /// Clone
   virtual CbcHeuristic * clone() const;
 
+
   /// Assignment operator 
-  CbcHeuristicLocal & operator=(const CbcHeuristicLocal& rhs);
+  CbcHeuristicRINS & operator=(const CbcHeuristicRINS& rhs);
 
   /// Create C++ lines to get to current state
   virtual void generateCpp( FILE * fp) ;
@@ -41,14 +42,7 @@ public:
   
   /** returns 0 if no solution, 1 if valid solution.
       Sets solution values if good, sets objective value (only if good)
-      This is called after cuts have been added - so can not add cuts
-      First tries setting a variable to better value.  If feasible then
-      tries setting others.  If not feasible then tries swaps
-
-      ********
-
-      This first version does not do LP's and does swaps of two integer 
-      variables.  Later versions could do Lps.
+      This does Relaxation Induced Neighborhood Search
   */
   virtual int solution(double & objectiveValue,
 		       double * newSolution);
@@ -57,9 +51,9 @@ public:
 		  double * newSolution,
 		  const int * keep);
 
-  /// Sets type of search
-  inline void setSearchType(int value)
-  { swap_=value;};
+  /// Sets how often to do it
+  inline void setHowOften(int value)
+  { howOften_=value;};
   /// Used array so we can set
   inline char * used() const
   { return used_;};
@@ -67,13 +61,14 @@ public:
 protected:
   // Data
 
-  // Original matrix by column
-  CoinPackedMatrix matrix_;
-
-  // Number of solutions so we only do after new solution
+  /// Number of solutions so we can do something at solution
   int numberSolutions_;
-  // Type of search 0=normal, 1=BAB
-  int swap_;
+  /// How often to do (code can change)
+  int howOften_;
+  /// Number of successes
+  int numberSuccesses_;
+  /// Number of tries
+  int numberTries_;
   /// Whether a variable has been in a solution
   char * used_;
 };

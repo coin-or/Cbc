@@ -74,10 +74,7 @@ CbcHeuristicFPump::generateCpp( FILE * fp)
   CbcHeuristicFPump other;
   fprintf(fp,"0#include \"CbcHeuristicFPump.hpp\"\n");
   fprintf(fp,"3  CbcHeuristicFPump heuristicFPump(*cbcModel);\n");
-  if (when_!=other.when_)
-    fprintf(fp,"3  heuristicFPump.setWhen(%d);\n",when_);
-  else
-    fprintf(fp,"4  heuristicFPump.setWhen(%d);\n",when_);
+  CbcHeuristic::generateCpp(fp,"heuristicFPump");
   if (maximumPasses_!=other.maximumPasses_)
     fprintf(fp,"3  heuristicFPump.setMaximumPasses(%d);\n",maximumPasses_);
   else
@@ -138,8 +135,30 @@ CbcHeuristicFPump::CbcHeuristicFPump(const CbcHeuristicFPump & rhs)
   accumulate_(rhs.accumulate_),
   roundExpensive_(rhs.roundExpensive_)
 {
-  setWhen(rhs.when());
 }
+
+// Assignment operator 
+CbcHeuristicFPump & 
+CbcHeuristicFPump::operator=( const CbcHeuristicFPump& rhs)
+{
+  if (this!=&rhs) {
+    CbcHeuristic::operator=(rhs);
+    startTime_ = rhs.startTime_;
+    maximumTime_ = rhs.maximumTime_;
+    fakeCutoff_ = rhs.fakeCutoff_;
+    absoluteIncrement_ = rhs.absoluteIncrement_;
+    relativeIncrement_ = rhs.relativeIncrement_;
+    defaultRounding_ = rhs.defaultRounding_;
+    initialWeight_ = rhs.initialWeight_;
+    weightFactor_ = rhs.weightFactor_;
+    maximumPasses_ = rhs.maximumPasses_;
+    maximumRetries_ = rhs.maximumRetries_;
+    accumulate_ = rhs.accumulate_;
+    roundExpensive_ = rhs.roundExpensive_;
+  }
+  return *this;
+}
+
 // Resets stuff if model changes
 void 
 CbcHeuristicFPump::resetModel(CbcModel * model)
@@ -376,8 +395,12 @@ CbcHeuristicFPump::solution(double & solutionValue,
 	      }
 	    }
 	    if (numberLeft) {
-	      returnCode = smallBranchAndBound(solver,200,newSolution,newSolutionValue,
+	      returnCode = smallBranchAndBound(solver,numberNodes_,newSolution,newSolutionValue,
 					       solutionValue,"CbcHeuristicFpump");
+	      if ((returnCode&2)!=0) {
+		// could add cut
+		returnCode &= ~2;
+	      }
 	    }
 	  }
 	  if (returnCode) {
@@ -707,8 +730,12 @@ CbcHeuristicFPump::solution(double & solutionValue,
 	printf(" of which %d were internal integer and %d internal continuous\n",
 	     nFixI,nFixC2);
       double saveValue = newSolutionValue;
-      returnCode = smallBranchAndBound(newSolver,200,newSolution,newSolutionValue,
+      returnCode = smallBranchAndBound(newSolver,numberNodes_,newSolution,newSolutionValue,
 				       newSolutionValue,"CbcHeuristicLocalAfterFPump");
+      if ((returnCode&2)!=0) {
+	// could add cut
+	returnCode &= ~2;
+      }
       if (returnCode) {
 	printf("old sol of %g new of %g\n",saveValue,newSolutionValue);
 	memcpy(betterSolution,newSolution,numberColumns*sizeof(double));
@@ -786,8 +813,12 @@ CbcHeuristicFPump::solution(double & solutionValue,
 		      lastSolution,-COIN_DBL_MAX,rhs+10.0);
     double saveValue = newSolutionValue;
     newSolver->writeMps("sub");
-    int returnCode = smallBranchAndBound(newSolver,200,newSolution,newSolutionValue,
+    int returnCode = smallBranchAndBound(newSolver,numberNodes_,newSolution,newSolutionValue,
 				     newSolutionValue,"CbcHeuristicLocalAfterFPump");
+    if ((returnCode&2)!=0) {
+      // could add cut
+      returnCode &= ~2;
+    }
     if (returnCode) {
       printf("old sol of %g new of %g\n",saveValue,newSolutionValue);
       memcpy(betterSolution,newSolution,numberColumns*sizeof(double));

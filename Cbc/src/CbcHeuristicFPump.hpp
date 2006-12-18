@@ -24,6 +24,8 @@ public:
   // Destructor 
   ~CbcHeuristicFPump ();
   
+  /// Assignment operator 
+  CbcHeuristicFPump & operator=(const CbcHeuristicFPump& rhs);
   /// Clone
   virtual CbcHeuristic * clone() const;
   /// Create C++ lines to get to current state
@@ -156,8 +158,6 @@ protected:
   bool roundExpensive_;
 
 private:
-  /// Illegal Assignment operator 
-  CbcHeuristicFPump & operator=(const CbcHeuristicFPump& rhs);
   /** Rounds solution - down if < downValue
       If roundExpensive then always to more expnsive.
       returns 0 if current is solution

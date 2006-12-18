@@ -59,6 +59,7 @@ CbcHeuristicLocal::generateCpp( FILE * fp)
   CbcHeuristicLocal other;
   fprintf(fp,"0#include \"CbcHeuristicLocal.hpp\"\n");
   fprintf(fp,"3  CbcHeuristicLocal heuristicLocal(*cbcModel);\n");
+  CbcHeuristic::generateCpp(fp,"heuristicLocal");
   if (swap_!=other.swap_)
     fprintf(fp,"3  heuristicLocal.setSearchType(%d);\n",swap_);
   else
@@ -74,7 +75,6 @@ CbcHeuristicLocal::CbcHeuristicLocal(const CbcHeuristicLocal & rhs)
   numberSolutions_(rhs.numberSolutions_),
   swap_(rhs.swap_)
 {
-  setWhen(rhs.when());
   if (model_&&rhs.used_) {
     int numberColumns = model_->solver()->getNumCols();
     used_ = new char[numberColumns];
@@ -83,6 +83,28 @@ CbcHeuristicLocal::CbcHeuristicLocal(const CbcHeuristicLocal & rhs)
     used_=NULL;
   }
 }
+
+// Assignment operator 
+CbcHeuristicLocal & 
+CbcHeuristicLocal::operator=( const CbcHeuristicLocal& rhs)
+{
+  if (this!=&rhs) {
+    CbcHeuristic::operator=(rhs);
+    matrix_ = rhs.matrix_;
+    numberSolutions_ = rhs.numberSolutions_;
+    swap_ = rhs.swap_;
+    delete [] used_;
+    if (model_&&rhs.used_) {
+      int numberColumns = model_->solver()->getNumCols();
+      used_ = new char[numberColumns];
+      memcpy(used_,rhs.used_,numberColumns);
+    } else {
+      used_=NULL;
+    }
+  }
+  return *this;
+}
+
 // Resets stuff if model changes
 void 
 CbcHeuristicLocal::resetModel(CbcModel * model)
@@ -131,8 +153,12 @@ CbcHeuristicLocal::solutionFix(double & objectiveValue,
       nFix++;
     }
   }
-  int returnCode = smallBranchAndBound(newSolver,200,newSolution,objectiveValue,
+  int returnCode = smallBranchAndBound(newSolver,numberNodes_,newSolution,objectiveValue,
                                          objectiveValue,"CbcHeuristicLocal");
+  if ((returnCode&2)!=0) {
+    // could add cut
+    returnCode &= ~2;
+  }
 
   delete newSolver;
   return returnCode;

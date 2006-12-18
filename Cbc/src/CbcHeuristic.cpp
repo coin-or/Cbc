@@ -24,17 +24,45 @@
 // Default Constructor
 CbcHeuristic::CbcHeuristic() 
   :model_(NULL),
-   when_(2)
+   when_(2),
+   numberNodes_(200),
+   fractionSmall_(1.0)
 {
+  // As CbcHeuristic virtual need to modify .cpp if above change
 }
 
 // Constructor from model
 CbcHeuristic::CbcHeuristic(CbcModel & model)
 :
   model_(&model),
-  when_(2)
+  when_(2),
+  numberNodes_(200),
+  fractionSmall_(1.0)
+{
+  // As CbcHeuristic virtual need to modify .cpp if above change
+}
+// Copy constructor 
+CbcHeuristic::CbcHeuristic(const CbcHeuristic & rhs)
+:
+  model_(rhs.model_),
+  when_(rhs.when_),
+  numberNodes_(rhs.numberNodes_),
+  fractionSmall_(rhs.fractionSmall_)
 {
 }
+// Assignment operator 
+CbcHeuristic & 
+CbcHeuristic::operator=( const CbcHeuristic& rhs)
+{
+  if (this!=&rhs) {
+    model_ = rhs.model_;
+    when_ = rhs.when_;
+    numberNodes_ = rhs.numberNodes_;
+    fractionSmall_ = rhs.fractionSmall_;
+  }
+  return *this;
+}
+
 // Resets stuff if model changes
 void 
 CbcHeuristic::resetModel(CbcModel * model)
@@ -42,6 +70,24 @@ CbcHeuristic::resetModel(CbcModel * model)
   model_=model;
 }
 
+// Create C++ lines to get to current state
+void 
+CbcHeuristic::generateCpp( FILE * fp, const char * heuristic) 
+{
+  // hard coded as CbcHeuristic virtual
+  if (when_!=2)
+    fprintf(fp,"3  %s.setWhen(%d);\n",heuristic,when_);
+  else
+    fprintf(fp,"4  %s.setWhen(%d);\n",heuristic,when_);
+  if (numberNodes_!=200)
+    fprintf(fp,"3  %s.setNumberNodes(%d);\n",heuristic,numberNodes_);
+  else
+    fprintf(fp,"4  %s.setNumberNodes(%d);\n",heuristic,numberNodes_);
+  if (fractionSmall_!=1.0)
+    fprintf(fp,"3  %s.setFractionSmall(%g);\n",heuristic,fractionSmall_);
+  else
+    fprintf(fp,"4  %s.setFractionSmall(%g);\n",heuristic,fractionSmall_);
+}
 // Destructor 
 CbcHeuristic::~CbcHeuristic ()
 {
@@ -89,8 +135,16 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver,int numberNodes,
     if (!solver2) {
       if (logLevel>1)
         printf("Pre-processing says infeasible\n");
-      returnCode=0; // so will be infeasible
+      returnCode=2; // so will be infeasible
     } else {
+      // see if too big
+      double before = solver->getNumRows()+solver->getNumCols();
+      double after = solver2->getNumRows()+solver2->getNumCols();
+      printf("before %d rows %d columns, after %d rows %d columns\n",
+	     solver->getNumRows(),solver->getNumCols(),
+	     solver2->getNumRows(),solver2->getNumCols());
+      if (after>fractionSmall_*before)
+	return 0;
       solver2->resolve();
       CbcModel model(*solver2);
       if (logLevel<=1)
@@ -119,7 +173,7 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver,int numberNodes,
           <<CoinMessageEol;
       if (model.getMinimizationObjValue()<CoinMin(cutoff,1.0e30)) {
         // solution
-        returnCode=1;
+        returnCode=model.isProvenOptimal() ? 3 : 1;
         // post process
         process.postProcess(*model.solver());
         if (solver->isProvenOptimal()) {
@@ -134,11 +188,11 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver,int numberNodes,
         }
       } else {
         // no good
-        returnCode=0; // so will be infeasible
+        returnCode=model.isProvenInfeasible() ? 2 : 0; // so will be infeasible
       }
     }
   } else {
-    returnCode=0;
+    returnCode=2; // infeasible finished
   }
   return returnCode;
 }
@@ -180,6 +234,7 @@ CbcRounding::generateCpp( FILE * fp)
   CbcRounding other;
   fprintf(fp,"0#include \"CbcHeuristic.hpp\"\n");
   fprintf(fp,"3  CbcRounding rounding(*cbcModel);\n");
+  CbcHeuristic::generateCpp(fp,"rounding");
   if (seed_!=other.seed_)
     fprintf(fp,"3  rounding.setSeed(%d);\n",seed_);
   else
@@ -195,7 +250,19 @@ CbcRounding::CbcRounding(const CbcRounding & rhs)
   matrixByRow_(rhs.matrixByRow_),
   seed_(rhs.seed_)
 {
-  setWhen(rhs.when());
+}
+
+// Assignment operator 
+CbcRounding & 
+CbcRounding::operator=( const CbcRounding& rhs)
+{
+  if (this!=&rhs) {
+    CbcHeuristic::operator=(rhs);
+    matrix_ = rhs.matrix_;
+    matrixByRow_ = rhs.matrixByRow_;
+    seed_ = rhs.seed_;
+  }
+  return *this;
 }
 
 // Resets stuff if model changes
@@ -906,6 +973,7 @@ CbcSerendipity::generateCpp( FILE * fp)
 {
   fprintf(fp,"0#include \"CbcHeuristic.hpp\"\n");
   fprintf(fp,"3  CbcSerendipity serendipity(*cbcModel);\n");
+  CbcHeuristic::generateCpp(fp,"serendipity");
   fprintf(fp,"3  cbcModel->addHeuristic(&serendipity);\n");
 }
 
@@ -914,6 +982,16 @@ CbcSerendipity::CbcSerendipity(const CbcSerendipity & rhs)
 :
   CbcHeuristic(rhs)
 {
+}
+
+// Assignment operator 
+CbcSerendipity & 
+CbcSerendipity::operator=( const CbcSerendipity& rhs)
+{
+  if (this!=&rhs) {
+    CbcHeuristic::operator=(rhs);
+  }
+  return *this;
 }
 
 // Returns 1 if solution, 0 if not

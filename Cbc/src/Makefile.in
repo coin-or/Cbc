@@ -157,7 +157,8 @@ am__libCbc_la_SOURCES_DIST = Cbc_C_Interface.cpp Cbc_C_Interface.h \
 	CbcHeuristic.cpp CbcHeuristic.hpp CbcHeuristicFPump.cpp \
 	CbcHeuristicFPump.hpp CbcHeuristicGreedy.cpp \
 	CbcHeuristicGreedy.hpp CbcHeuristicLocal.cpp \
-	CbcHeuristicLocal.hpp CbcMessage.cpp CbcMessage.hpp \
+	CbcHeuristicLocal.hpp CbcHeuristicRINS.cpp \
+	CbcHeuristicRINS.hpp CbcMessage.cpp CbcMessage.hpp \
 	CbcModel.cpp CbcModel.hpp CbcNode.cpp CbcNode.hpp \
 	CbcStatistics.cpp CbcStatistics.hpp CbcStrategy.cpp \
 	CbcStrategy.hpp CbcTree.cpp CbcTree.hpp CbcLinked.cpp \
@@ -170,9 +171,9 @@ am_libCbc_la_OBJECTS = Cbc_C_Interface.lo CbcBranchActual.lo \
 	CbcCutGenerator.lo CbcEventHandler.lo CbcFathom.lo \
 	CbcFathomDynamicProgramming.lo CbcHeuristic.lo \
 	CbcHeuristicFPump.lo CbcHeuristicGreedy.lo \
-	CbcHeuristicLocal.lo CbcMessage.lo CbcModel.lo CbcNode.lo \
-	CbcStatistics.lo CbcStrategy.lo CbcTree.lo CbcLinked.lo \
-	CbcTreeLocal.lo $(am__objects_1)
+	CbcHeuristicLocal.lo CbcHeuristicRINS.lo CbcMessage.lo \
+	CbcModel.lo CbcNode.lo CbcStatistics.lo CbcStrategy.lo \
+	CbcTree.lo CbcLinked.lo CbcTreeLocal.lo $(am__objects_1)
 libCbc_la_OBJECTS = $(am_libCbc_la_OBJECTS)
 @COIN_HAS_CLP_TRUE@am__EXEEXT_1 = cbc$(EXEEXT)
 binPROGRAMS_INSTALL = $(INSTALL_PROGRAM)
@@ -475,7 +476,8 @@ libCbc_la_SOURCES = Cbc_C_Interface.cpp Cbc_C_Interface.h CbcConfig.h \
 	CbcHeuristic.cpp CbcHeuristic.hpp CbcHeuristicFPump.cpp \
 	CbcHeuristicFPump.hpp CbcHeuristicGreedy.cpp \
 	CbcHeuristicGreedy.hpp CbcHeuristicLocal.cpp \
-	CbcHeuristicLocal.hpp CbcMessage.cpp CbcMessage.hpp \
+	CbcHeuristicLocal.hpp CbcHeuristicRINS.cpp \
+	CbcHeuristicRINS.hpp CbcMessage.cpp CbcMessage.hpp \
 	CbcModel.cpp CbcModel.hpp CbcNode.cpp CbcNode.hpp \
 	CbcStatistics.cpp CbcStatistics.hpp CbcStrategy.cpp \
 	CbcStrategy.hpp CbcTree.cpp CbcTree.hpp CbcLinked.cpp \
@@ -587,6 +589,7 @@ include_HEADERS = \
 	CbcHeuristicFPump.hpp \
 	CbcHeuristicGreedy.hpp \
 	CbcHeuristicLocal.hpp \
+	CbcHeuristicRINS.hpp \
 	CbcMessage.hpp \
 	CbcModel.hpp \
 	CbcNode.hpp \
@@ -721,6 +724,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcHeuristicFPump.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcHeuristicGreedy.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcHeuristicLocal.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcHeuristicRINS.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcLinked.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcMain.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcMessage.Plo@am__quote@

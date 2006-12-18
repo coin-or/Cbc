@@ -26,6 +26,8 @@ public:
   
   /// Clone
   virtual CbcHeuristic * clone() const;
+  /// Assignment operator 
+  CbcHeuristicGreedyCover & operator=(const CbcHeuristicGreedyCover& rhs);
   /// Create C++ lines to get to current state
   virtual void generateCpp( FILE * fp) ;
 
@@ -80,9 +82,6 @@ protected:
   /// Do this many times
   int numberTimes_;
 
-private:
-  /// Illegal Assignment operator 
-  CbcHeuristicGreedyCover & operator=(const CbcHeuristicGreedyCover& rhs);
 };
 
 
@@ -105,6 +104,8 @@ public:
   
   /// Clone
   virtual CbcHeuristic * clone() const;
+  /// Assignment operator 
+  CbcHeuristicGreedyEquality & operator=(const CbcHeuristicGreedyEquality& rhs);
   /// Create C++ lines to get to current state
   virtual void generateCpp( FILE * fp) ;
 
@@ -165,9 +166,6 @@ protected:
   /// Do this many times
   int numberTimes_;
 
-private:
-  /// Illegal Assignment operator 
-  CbcHeuristicGreedyEquality & operator=(const CbcHeuristicGreedyEquality& rhs);
 };
 
 

@@ -23,6 +23,8 @@ Cbc/examples/qmip2.cpp -text
 Cbc/examples/sample6.cpp -text
 Cbc/inc/config_cbc.h.in -text
 Cbc/src/CbcCbcParam.cpp -text
+Cbc/src/CbcHeuristicRINS.cpp -text
+Cbc/src/CbcHeuristicRINS.hpp -text
 Cbc/src/CbcLinked.cpp -text
 Cbc/src/CbcLinked.hpp -text
 /LICENSE -text

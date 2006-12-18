@@ -37,6 +37,7 @@ libCbc_la_SOURCES = \
 	CbcHeuristicFPump.cpp CbcHeuristicFPump.hpp \
 	CbcHeuristicGreedy.cpp CbcHeuristicGreedy.hpp \
 	CbcHeuristicLocal.cpp CbcHeuristicLocal.hpp \
+	CbcHeuristicRINS.cpp CbcHeuristicRINS.hpp \
 	CbcMessage.cpp CbcMessage.hpp \
 	CbcModel.cpp CbcModel.hpp \
 	CbcNode.cpp CbcNode.hpp \
@@ -262,6 +263,7 @@ include_HEADERS = \
 	CbcHeuristicFPump.hpp \
 	CbcHeuristicGreedy.hpp \
 	CbcHeuristicLocal.hpp \
+	CbcHeuristicRINS.hpp \
 	CbcMessage.hpp \
 	CbcModel.hpp \
 	CbcNode.hpp \

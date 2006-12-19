@@ -960,6 +960,7 @@ CoinModel::gdb( int nonLinear, const char * fileName)
   if (colqp) {
     // add in quadratic
     int nz = 1 + n_con;
+    int nOdd=0;
     fint ** rowqp = colqp + nz;
     double ** delsqp = (double **)(rowqp + nz);
     for (i=0;i<=n_con;i++) {
@@ -968,6 +969,11 @@ CoinModel::gdb( int nonLinear, const char * fileName)
 	double * element = delsqp[i];
 	int * start = (int *) colqp[i];
 	int * row = (int *) rowqp[i];
+	if (!element) {
+	  // odd row - probably not quadratic
+	  nOdd++;
+	  continue;
+	}
 #if 0
 	printf("%d quadratic els\n",nels);
 	for (int j=0;j<n_var;j++) {
@@ -1065,6 +1071,10 @@ CoinModel::gdb( int nonLinear, const char * fileName)
 	  }
 	}
       }
+    }
+    if (nOdd) {
+      printf("%d non-linear constraints could not be converted to quadratic\n",nOdd);
+      exit(77);
     }
   }
   // see if any sos

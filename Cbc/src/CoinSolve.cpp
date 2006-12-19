@@ -2080,7 +2080,8 @@ int main (int argc, const char *argv[])
                 //redsplitGen.set_given_optsol(babModel->solver()->getRowCutDebuggerAlways()->optimalSolution(),
                 //                         babModel->getNumCols());
               }
-	      if (useCosts) {
+	      int testOsiOptions = parameters[whichParam(TESTOSI,numberParameters,parameters)].intValue();
+	      if (useCosts&&testOsiOptions<0) {
 		int numberColumns = babModel->getNumCols();
 		int * sort = new int[numberColumns];
 		double * dsort = new double[numberColumns];
@@ -2230,7 +2231,7 @@ int main (int argc, const char *argv[])
                 babModel->addCutGenerator(&probingGen,translate[probingAction],"Probing");
                 switches[numberGenerators++]=0;
               }
-              if (gomoryAction&&!complicatedInteger) {
+              if (gomoryAction&&(!complicatedInteger||gomoryAction==1)) {
                 babModel->addCutGenerator(&gomoryGen,translate[gomoryAction],"Gomory");
                 switches[numberGenerators++]=-1;
               }
@@ -2423,7 +2424,6 @@ int main (int argc, const char *argv[])
                     babModel->setHotstartSolution(solutionIn,prioritiesIn);
                   }
                 }
-		int testOsiOptions = parameters[whichParam(TESTOSI,numberParameters,parameters)].intValue();
 		OsiSolverInterface * testOsiSolver= (testOsiOptions>=0) ? babModel->solver() : NULL;
 		if (!testOsiSolver) {
 		  // *************************************************************
@@ -2607,17 +2607,18 @@ int main (int argc, const char *argv[])
 		} else {
 		  // *************************************************************
 		  // OsiObjects
+		  // Find if none
+		  int numberIntegers = testOsiSolver->getNumIntegers();
+		  /* model may not have created objects
+		     If none then create
+		  */
+		  if (!numberIntegers||!testOsiSolver->numberObjects()) {
+		    //int type = (pseudoUp) ? 1 : 0;
+		    testOsiSolver->findIntegers(false);
+		    numberIntegers = testOsiSolver->getNumIntegers();
+		  }
 		  if (preProcess&&process.numberSOS()) {
 		    int numberSOS = process.numberSOS();
-		    int numberIntegers = testOsiSolver->getNumIntegers();
-		    /* model may not have created objects
-		       If none then create
-		    */
-		    if (!numberIntegers||!testOsiSolver->numberObjects()) {
-		      //int type = (pseudoUp) ? 1 : 0;
-		      testOsiSolver->findIntegers(false);
-		      numberIntegers = testOsiSolver->getNumIntegers();
-		    }
 		    OsiObject ** oldObjects = testOsiSolver->objects();
 		    // Do sets and priorities
 		    OsiObject ** objects = new OsiObject * [numberSOS];
@@ -2666,15 +2667,6 @@ int main (int argc, const char *argv[])
 		      delete objects[iSOS];
 		    delete [] objects;
 		  } else if (priorities||branchDirection||pseudoDown||pseudoUp||numberSOS) {
-		    // do anyway for priorities etc
-		    int numberIntegers = testOsiSolver->getNumIntegers();
-		    /* model may not have created objects
-		       If none then create
-		    */
-		    if (!numberIntegers||!testOsiSolver->numberObjects()) {
-		      //int type = (pseudoUp) ? 1 : 0;
-		      testOsiSolver->findIntegers(false);
-		    }
 		    if (numberSOS) {
 		      // Do sets and priorities
 		      OsiObject ** objects = new OsiObject * [numberSOS];
@@ -2879,6 +2871,53 @@ int main (int argc, const char *argv[])
 		  }
 		  decision.setChooseMethod(choose);
 		  babModel->setBranchingMethod(decision);
+		  if (useCosts&&testOsiOptions>=0) {
+		    int numberColumns = babModel->getNumCols();
+		    int * sort = new int[numberColumns];
+		    double * dsort = new double[numberColumns];
+		    int * priority = new int [numberColumns];
+		    const double * objective = babModel->getObjCoefficients();
+		    const double * lower = babModel->getColLower() ;
+		    const double * upper = babModel->getColUpper() ;
+		    const CoinPackedMatrix * matrix = babModel->solver()->getMatrixByCol();
+		    const int * columnLength = matrix->getVectorLengths();
+		    int iColumn;
+		    for (iColumn=0;iColumn<numberColumns;iColumn++) {
+		      sort[iColumn]=iColumn;
+		      if (useCosts==1)
+			dsort[iColumn]=-fabs(objective[iColumn]);
+		      else if (useCosts==2)
+			dsort[iColumn]=iColumn;
+		      else if (useCosts==3)
+			dsort[iColumn]=upper[iColumn]-lower[iColumn];
+		      else if (useCosts==4)
+			dsort[iColumn]=-(upper[iColumn]-lower[iColumn]);
+		      else if (useCosts==5)
+			dsort[iColumn]=-columnLength[iColumn];
+		    }
+		    CoinSort_2(dsort,dsort+numberColumns,sort);
+		    int level=0;
+		    double last = -1.0e100;
+		    for (int i=0;i<numberColumns;i++) {
+		      int iPut=sort[i];
+		      if (dsort[i]!=last) {
+			level++;
+			last=dsort[i];
+		      }
+		      priority[iPut]=level;
+		    }
+		    OsiObject ** objects = babModel->objects();
+		    int numberObjects = babModel->numberObjects();
+		    for (int iObj = 0;iObj<numberObjects;iObj++) {
+		      OsiObject * obj = objects[iObj] ;
+		      int iColumn = obj->columnNumber();
+		      if (iColumn>=0)
+			obj->setPriority(priority[iColumn]);
+		    }
+		    delete [] priority;
+		    delete [] sort;
+		    delete [] dsort;
+		  }
 		}
 		checkSOS(babModel, babModel->solver());
 		if (doSprint>0) {

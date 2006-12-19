@@ -83,6 +83,7 @@
 #include "CbcHeuristicLocal.hpp"
 #include "CbcHeuristicGreedy.hpp"
 #include "CbcHeuristicFPump.hpp"
+#include "CbcHeuristicRINS.hpp"
 #include "CbcTreeLocal.hpp"
 #include "CbcCompareActual.hpp"
 #include "CbcBranchActual.hpp"
@@ -104,7 +105,7 @@ static void generateCode(CbcModel * model, const char * fileName,int type,int pr
 #undef NDEBUG
 #endif
 //#############################################################################
-// To use USERCBC uncomment the following define and add in your fake main program here
+// To use USERCBC or USERCLP uncomment the following define and add in your fake main program here
 //#define USER_HAS_FAKE_MAIN
 //  Start any fake main program
 #ifdef USER_HAS_FAKE_MAIN
@@ -585,7 +586,8 @@ int main (int argc, const char *argv[])
     int cutPass=-1234567;
     int tunePreProcess=5;
     int testOsiParameters=-1;
-    bool quadraticInteger=false;
+    // 0 normal, 1 from ampl, 2 from other input
+    int complicatedInteger=0;
     OsiSolverInterface * solver = model.solver();
     OsiClpSolverInterface * clpSolver = dynamic_cast< OsiClpSolverInterface*> (solver);
     ClpSimplex * lpSolver = clpSolver->getModelPtr();
@@ -661,7 +663,7 @@ int main (int argc, const char *argv[])
 	lpSolver = clpSolver->getModelPtr();
 	clpSolver->messageHandler()->setLogLevel(0) ;
 	testOsiParameters=0;
-	quadraticInteger=true;
+	complicatedInteger=1;
       }
 #endif
       // If we had a solution use it
@@ -835,8 +837,8 @@ int main (int argc, const char *argv[])
     //redsplitGen.setLimit(100);
     // set default action (0=off,1=on,2=root)
     // Off as seems to give some bad cuts
-    int redsplitAction=2;
-    parameters[whichParam(REDSPLITCUTS,numberParameters,parameters)].setCurrentOption("root");
+    int redsplitAction=0;
+    parameters[whichParam(REDSPLITCUTS,numberParameters,parameters)].setCurrentOption("off");
 
     CglClique cliqueGen(false,true);
     cliqueGen.setStarCliqueReport(false);
@@ -877,6 +879,8 @@ int main (int argc, const char *argv[])
     bool useCombine=true;
     parameters[whichParam(COMBINE,numberParameters,parameters)].setCurrentOption("on");
     bool useLocalTree=false;
+    bool useRINS=false;
+    parameters[whichParam(RINS,numberParameters,parameters)].setCurrentOption("off");
     parameters[whichParam(COSTSTRATEGY,numberParameters,parameters)].setCurrentOption("off");
     int useCosts=0;
     // don't use input solution
@@ -1354,6 +1358,9 @@ int main (int argc, const char *argv[])
               defaultSettings=false; // user knows what she is doing
               useFpump=action;
 	      break;
+	    case RINS:
+              useRINS=action;
+	      break;
             case CUTSSTRATEGY:
 	      gomoryAction = action;
 	      probingAction = action;
@@ -1785,7 +1792,7 @@ int main (int argc, const char *argv[])
                 OsiClpSolverInterface * si =
                   dynamic_cast<OsiClpSolverInterface *>(solver) ;
 		ClpSimplex * clpSolver = si->getModelPtr();
-		if (!quadraticInteger&&clpSolver->tightenPrimalBounds()!=0) {
+		if (!complicatedInteger&&clpSolver->tightenPrimalBounds()!=0) {
 		  std::cout<<"Problem is infeasible - tightenPrimalBounds!"<<std::endl;
 		  exit(1);
 		}
@@ -2003,7 +2010,12 @@ int main (int argc, const char *argv[])
                     process.passInProhibited(prohibited,numberColumns);
                     delete [] prohibited;
                   }
-                  solver2 = process.preProcessNonDefault(*saveSolver,translate[preProcess],10,
+		  int numberPasses = 10;
+		  if (tunePreProcess>=1000) {
+		    numberPasses = (tunePreProcess/1000)-1;
+		    tunePreProcess = tunePreProcess % 1000;
+		  }
+                  solver2 = process.preProcessNonDefault(*saveSolver,translate[preProcess],numberPasses,
 							 tunePreProcess);
                   // Tell solver we are not in Branch and Cut
                   saveSolver->setHintParam(OsiDoInBranchAndCut,false,OsiHintDo) ;
@@ -2052,7 +2064,7 @@ int main (int argc, const char *argv[])
                 ClpSimplex * modelC = si->getModelPtr();
                 if (noPrinting)
                   modelC->setLogLevel(0);
-                if (!quadraticInteger&&modelC->tightenPrimalBounds()!=0) {
+                if (!complicatedInteger&&modelC->tightenPrimalBounds()!=0) {
                   std::cout<<"Problem is infeasible!"<<std::endl;
                   break;
                 }
@@ -2193,6 +2205,9 @@ int main (int argc, const char *argv[])
                   babModel->passInTreeHandler(localTree);
                 }
               }
+	      CbcHeuristicRINS heuristic5(*babModel);
+	      if (useRINS)
+		babModel->addHeuristic(&heuristic5) ;
 	      if (type==MIPLIB) {
 		if (babModel->numberStrong()==5&&babModel->numberBeforeTrust()==5) 
 		  babModel->setNumberBeforeTrust(50);
@@ -2215,7 +2230,7 @@ int main (int argc, const char *argv[])
                 babModel->addCutGenerator(&probingGen,translate[probingAction],"Probing");
                 switches[numberGenerators++]=0;
               }
-              if (gomoryAction) {
+              if (gomoryAction&&!complicatedInteger) {
                 babModel->addCutGenerator(&gomoryGen,translate[gomoryAction],"Gomory");
                 switches[numberGenerators++]=-1;
               }
@@ -2223,7 +2238,7 @@ int main (int argc, const char *argv[])
                 babModel->addCutGenerator(&knapsackGen,translate[knapsackAction],"Knapsack");
                 switches[numberGenerators++]=0;
               }
-              if (redsplitAction) {
+              if (redsplitAction&&!complicatedInteger) {
                 babModel->addCutGenerator(&redsplitGen,translate[redsplitAction],"Reduce-and-split");
                 switches[numberGenerators++]=1;
               }
@@ -2239,7 +2254,7 @@ int main (int argc, const char *argv[])
                 babModel->addCutGenerator(&flowGen,translate[flowAction],"FlowCover");
                 switches[numberGenerators++]=1;
               }
-              if (twomirAction) {
+              if (twomirAction&&!complicatedInteger) {
                 babModel->addCutGenerator(&twomirGen,translate[twomirAction],"TwoMirCuts");
                 switches[numberGenerators++]=1;
               }
@@ -2840,18 +2855,28 @@ int main (int argc, const char *argv[])
                 if (testOsiOptions>=0) {
                   printf("Testing OsiObject options %d\n",testOsiOptions);
 		  CbcBranchDefaultDecision decision;
+		  OsiChooseStrong choose(babModel->solver());
+		  choose.setNumberBeforeTrusted(babModel->numberBeforeTrust());
+		  choose.setNumberStrong(babModel->numberStrong());
+		  choose.setShadowPriceMode(testOsiOptions);
 		  if (!numberSOS) {
 		    babModel->solver()->findIntegersAndSOS(false);
+		    // If linked then pass in model
+		    OsiSolverLink * solver3 = dynamic_cast<OsiSolverLink *> (babModel->solver());
+		    if (solver3) {
+		      solver3->setCbcModel(babModel);
+		      CglStored stored;
+		      babModel->addCutGenerator(&stored,1,"Stored");
+		      CglTemporary temp;
+		      babModel->addCutGenerator(&temp,1,"OnceOnly");
+		      choose.setNumberBeforeTrusted(2000);
+		      choose.setNumberStrong(20);
+		    }
 		  } else {
 		    // move across
 		    babModel->deleteObjects(false);
 		    //babModel->addObjects(babModel->solver()->numberObjects(),babModel->solver()->objects());
 		  }
-		  //OsiChooseVariable choose(babModel->solver());
-		  OsiChooseStrong choose(babModel->solver());
-		  choose.setNumberBeforeTrusted(babModel->numberBeforeTrust());
-		  choose.setNumberStrong(babModel->numberStrong());
-		  choose.setShadowPriceMode(testOsiOptions);
 		  decision.setChooseMethod(choose);
 		  babModel->setBranchingMethod(decision);
 		}
@@ -3166,6 +3191,89 @@ int main (int argc, const char *argv[])
 		}
 	      }
 	    }
+	    break;
+	  case MODELIN:
+#ifdef COIN_HAS_LINK
+	    {
+	      // get next field
+	      field = CoinReadGetString(argc,argv);
+	      if (field=="$") {
+		field = parameters[iParam].stringValue();
+	      } else if (field=="EOL") {
+		parameters[iParam].printString();
+		break;
+	      } else {
+		parameters[iParam].setStringValue(field);
+	      }
+	      std::string fileName;
+	      bool canOpen=false;
+	      if (field=="-") {
+		// stdin
+		canOpen=true;
+		fileName = "-";
+	      } else {
+                bool absolutePath;
+                if (dirsep=='/') {
+                  // non Windows (or cygwin)
+                  absolutePath=(field[0]=='/');
+                } else {
+                  //Windows (non cycgwin)
+                  absolutePath=(field[0]=='\\');
+                  // but allow for :
+                  if (strchr(field.c_str(),':'))
+                    absolutePath=true;
+                }
+		if (absolutePath) {
+		  fileName = field;
+		} else if (field[0]=='~') {
+		  char * environVar = getenv("HOME");
+		  if (environVar) {
+		    std::string home(environVar);
+		    field=field.erase(0,1);
+		    fileName = home+field;
+		  } else {
+		    fileName=field;
+		  }
+		} else {
+		  fileName = directory+field;
+		}
+		FILE *fp=fopen(fileName.c_str(),"r");
+		if (fp) {
+		  // can open - lets go for it
+		  fclose(fp);
+		  canOpen=true;
+		} else {
+		  std::cout<<"Unable to open file "<<fileName<<std::endl;
+		}
+	      }
+	      if (canOpen) {
+		CoinModel coinModel(fileName.c_str(),2);
+		// load from coin model
+		OsiSolverLink solver1;
+		OsiSolverInterface * solver2 = solver1.clone();
+		model.assignSolver(solver2,true);
+		OsiSolverLink * si =
+		  dynamic_cast<OsiSolverLink *>(model.solver()) ;
+		assert (si != NULL);
+		si->setDefaultMeshSize(0.001);
+		// need some relative granularity
+		si->setDefaultBound(100.0);
+		si->setDefaultMeshSize(0.01);
+		si->setDefaultBound(100.0);
+		si->setIntegerPriority(1000);
+		si->setBiLinearPriority(10000);
+		CoinModel * model2 = (CoinModel *) &coinModel;
+		si->load(*model2);
+		// redo
+		solver = model.solver();
+		clpSolver = dynamic_cast< OsiClpSolverInterface*> (solver);
+		lpSolver = clpSolver->getModelPtr();
+		clpSolver->messageHandler()->setLogLevel(0) ;
+		testOsiParameters=0;
+		complicatedInteger=2;
+	      }
+	    }
+#endif
 	    break;
 	  case EXPORT:
 	    if (goodModel) {
@@ -4014,8 +4122,24 @@ int main (int argc, const char *argv[])
 	  case USERCLP:
             // Replace the sample code by whatever you want
 	    if (goodModel) {
+#ifndef USER_HAS_FAKE_MAIN
               printf("Dummy user clp code - model has %d rows and %d columns\n",
                      lpSolver->numberRows(),lpSolver->numberColumns());
+#else
+              // Way of using an existing piece of code
+              OsiClpSolverInterface * clpSolver = dynamic_cast< OsiClpSolverInterface*> (model.solver());
+              ClpSimplex * lpSolver = clpSolver->getModelPtr();
+              // set time from integer model
+              double timeToGo = model.getMaximumSeconds();
+              lpSolver->setMaximumSeconds(timeToGo);
+              fakeMain2(*lpSolver,*clpSolver);
+#ifdef COIN_HAS_ASL
+	      // My actual usage has objective only in clpSolver
+	      double objectiveValue=clpSolver->getObjValue();
+	      int iStat = lpSolver->status();
+	      int iStat2 = lpSolver->secondaryStatus();
+#endif
+#endif
 	    }
 	    break;
 	  case USERCBC:

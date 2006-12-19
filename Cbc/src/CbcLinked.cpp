@@ -328,8 +328,8 @@ void OsiSolverLink::resolve()
       }
     }
     if (isProvenOptimal()) {
-      if (satisfied)
-	printf("satisfied %d\n",satisfied);
+      //if (satisfied==2)
+      //printf("satisfied %d\n",satisfied);
       if (satisfied&&(specialOptions2_&2)!=0) {
 	assert (quadraticModel_);
 	// look at true objective
@@ -567,9 +567,6 @@ void OsiSolverLink::resolve()
 		if (obj) {
 		  int xColumn = obj->xColumn();
 		  int yColumn = obj->yColumn();
-		  // We can do better if one fixed
-		  assert (columnUpper[xColumn]>columnLower[xColumn]);
-		  assert (columnUpper[yColumn]>columnLower[yColumn]);
 		  if (xColumn!=yColumn) {
 		    double coefficient = 2.0*obj->coefficient();
 		    gradient[xColumn] += coefficient*solution[yColumn];
@@ -647,9 +644,6 @@ void OsiSolverLink::resolve()
 		assert (obj);
 		int xColumn = obj->xColumn();
 		int yColumn = obj->yColumn();
-		// We can do better if one fixed
-		assert (columnUpper[xColumn]>columnLower[xColumn]);
-		assert (columnUpper[yColumn]>columnLower[yColumn]);
 		if (xColumn!=yColumn) {
 		  double coefficient = 2.0*obj->coefficient();
 		  gradient[xColumn] += coefficient*solution[yColumn];
@@ -1091,7 +1085,8 @@ void OsiSolverLink::load ( CoinModel & coinModel, bool tightenBounds)
       elementQuadratic = new double [numberQuadratic];
       numberQuadratic=0;
     }
-    if (quadraticObjective||((specialOptions2_&8)!=0&&saveNBi)) {
+    //if (quadraticObjective||((specialOptions2_&8)!=0&&saveNBi)) {
+    if (saveNBi) {
       // add in objective as constraint
       objectiveVariable_= numberColumns;
       objectiveRow_ = modelPtr_->numberRows();
@@ -1557,7 +1552,7 @@ OsiSolverLink::analyzeObjects()
     } else {
       convex_[iNon]=0;
     }
-    printf("Convexity of row %d is %d\n",iRow,convex_[iNon]);
+    //printf("Convexity of row %d is %d\n",iRow,convex_[iNon]);
     delete [] iColumn;
     delete [] jColumn;
     delete [] element;

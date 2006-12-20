@@ -2853,6 +2853,7 @@ int main (int argc, const char *argv[])
 		  choose.setShadowPriceMode(testOsiOptions);
 		  if (!numberSOS) {
 		    babModel->solver()->findIntegersAndSOS(false);
+#ifdef COIN_HAS_LINK
 		    // If linked then pass in model
 		    OsiSolverLink * solver3 = dynamic_cast<OsiSolverLink *> (babModel->solver());
 		    if (solver3) {
@@ -2864,6 +2865,7 @@ int main (int argc, const char *argv[])
 		      choose.setNumberBeforeTrusted(2000);
 		      choose.setNumberStrong(20);
 		    }
+#endif
 		  } else {
 		    // move across
 		    babModel->deleteObjects(false);

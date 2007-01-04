@@ -445,12 +445,16 @@ readAmpl(ampl_info * info, int argc, char **argv, void ** coinModel)
     }
   } else {
     // QP
+    // Add .nl if not there
+    if (!strstr(fileName,".nl"))
+      strcat(fileName,".nl");
     CoinModel * model = new CoinModel(1,fileName);
     if (model->numberRows()>0)
       *coinModel=(void *) model;
     Oinfo.uinfo = tempBuffer;
     if (getopts(argv, &Oinfo))
       return 1;
+    Oinfo.wantsol=1;
     if (objtype[0])
       info->direction=-1.0;
     else
@@ -917,6 +921,8 @@ CoinModel::gdb( int nonLinear, const char * fileName)
     numberElements=nzc;;
     numberBinary=nbv;
     numberIntegers=niv+nlvci;
+    /* say we want primal solution */
+    want_xpi0=1;
     //double * dualSolution=NULL;
   } else {
     abort();

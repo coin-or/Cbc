@@ -465,6 +465,8 @@ readAmpl(ampl_info * info, int argc, char **argv, void ** coinModel)
     info->numberElements=nzc;;
     info->numberBinary=nbv;
     info->numberIntegers=niv;
+    if (niv+nbv>0)
+      mip_stuff(); // get any extra info
   }
   /* add -solve - unless something there already
    - also check for sleep=yes */

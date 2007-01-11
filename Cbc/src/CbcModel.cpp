@@ -964,7 +964,8 @@ void CbcModel::branchAndBound(int doStatistics)
       { 
 	if (anyAction != -2) {
 	  // zap parent nodeInfo
-	  newNode->nodeInfo()->nullParent();
+	  if (newNode->nodeInfo())
+	    newNode->nodeInfo()->nullParent();
 	}
 	delete newNode ;
 	newNode = NULL ;
@@ -1519,7 +1520,8 @@ void CbcModel::branchAndBound(int doStatistics)
 	    printf("zapping2 CbcNodeInfo %x\n",newNode->nodeInfo()->parent());
 #endif
 	    // zap parent nodeInfo
-	    newNode->nodeInfo()->nullParent();
+	    if (newNode->nodeInfo())
+	      newNode->nodeInfo()->nullParent();
 	  }
 	}
 /*

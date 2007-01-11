@@ -67,12 +67,14 @@ public:
 
   /// Clone
   virtual CbcTree * clone() const;
+  /// Create C++ lines to get to current state
+  virtual void generateCpp( FILE * fp) ;
 
 /*! \name Heap access and maintenance methods */
 //@{
 
   /// Return the top node of the heap 
-  virtual CbcNode * top();
+  virtual CbcNode * top() const;
 
   /// Add a node to the heap
   virtual void push(CbcNode * x);
@@ -98,6 +100,42 @@ public:
   void deleteCut(OsiRowCut & cut);
   /// Pass in solution (so can be used after heuristic)
   void passInSolution(const double * solution, double solutionValue);
+  // range i.e. k
+  inline int range() const
+  { return range_;};
+  // setrange i.e. k
+  inline void setRange(int value)
+  { range_ = value;};
+  // Type of cuts - 0=just 0-1, 1=all
+  inline int typeCuts() const
+  { return typeCuts_;};
+  // Type of cuts - 0=just 0-1, 1=all
+  inline void setTypeCuts(int value)
+  { typeCuts_ = value;};
+  // maximum number of diversifications
+  inline int maxDiversification() const
+  { return maxDiversification_;};
+  // maximum number of diversifications
+  inline void setMaxDiversification(int value)
+  { maxDiversification_ = value;};
+  // time limit per subtree
+  inline int timeLimit() const
+  { return timeLimit_;};
+  // time limit per subtree
+  inline void setTimeLimit(int value)
+  { timeLimit_ = value;};
+  // node limit for subtree
+  inline int nodeLimit() const
+  { return nodeLimit_;};
+  // node limit for subtree
+  inline void setNodeLimit(int value)
+  { nodeLimit_ = value;};
+  // Whether to do refinement step
+  inline bool refine() const
+  { return refine_;};
+  // Whether to do refinement step
+  inline void setRefine(bool yesNo)
+    { refine_ = yesNo;};
 
 //@}
 private:

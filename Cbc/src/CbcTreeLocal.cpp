@@ -122,22 +122,25 @@ CbcTreeLocal::CbcTreeLocal(CbcModel * model,const double * solution ,
   if (all01 && !typeCuts_)
     typeCuts_=1; // may as well so we don't have to deal with refine
   if (!number01&&!typeCuts_) {
-    printf("** No 0-1 variables and local search only on 0-1 - switching off\n");
+    if (model_->messageHandler()->logLevel()>0)
+      printf("** No 0-1 variables and local search only on 0-1 - switching off\n");
     typeCuts_=-1;
   } else {
-    std::string type;
-    if (all01) {
-      printf("%d 0-1 variables normal local  cuts\n",
-	     number01);
-    } else if (typeCuts_) {
-      printf("%d 0-1 variables, %d other - general integer local cuts\n",
-	     number01,numberIntegers-number01);
-    } else {
-      printf("%d 0-1 variables, %d other - local cuts but just on 0-1 variables\n",
-	     number01,numberIntegers-number01);
+    if (model_->messageHandler()->logLevel()>0) {
+      std::string type;
+      if (all01) {
+	printf("%d 0-1 variables normal local  cuts\n",
+	       number01);
+      } else if (typeCuts_) {
+	printf("%d 0-1 variables, %d other - general integer local cuts\n",
+	       number01,numberIntegers-number01);
+      } else {
+	printf("%d 0-1 variables, %d other - local cuts but just on 0-1 variables\n",
+	       number01,numberIntegers-number01);
+      }
+      printf("maximum diversifications %d, initial cutspace %d, max time %d seconds, max nodes %d\n",
+	     maxDiversification_,range_,timeLimit_,nodeLimit_);
     }
-    printf("maximum diversifications %d, initial cutspace %d, max time %d seconds, max nodes %d\n",
-	   maxDiversification_,range_,timeLimit_,nodeLimit_);
   }
   int numberColumns = model_->getNumCols();
   savedSolution_ = new double [numberColumns];
@@ -327,7 +330,7 @@ CbcTreeLocal::passInSolution(const double * solution, double solutionValue)
 }
 // Return the top node of the heap 
 CbcNode * 
-CbcTreeLocal::top() {
+CbcTreeLocal::top() const{
 #ifdef CBC_DEBUG
   int smallest=9999999;
   int largest=-1;
@@ -342,9 +345,11 @@ CbcTreeLocal::top() {
     largestD=max(largestD,dd);
     smallestD=min(smallestD,dd);
   }
-  printf("smallest %d, largest %d, top %d\n",smallest,largest,
-	 nodes_.front()->nodeInfo()->nodeNumber());
-  printf("smallestD %g, largestD %g, top %g\n",smallestD,largestD,nodes_.front()->objectiveValue());
+  if (model_->messageHandler()->logLevel()>0) {
+    printf("smallest %d, largest %d, top %d\n",smallest,largest,
+	   nodes_.front()->nodeInfo()->nodeNumber());
+    printf("smallestD %g, largestD %g, top %g\n",smallestD,largestD,nodes_.front()->objectiveValue());
+  }
 #endif
   return nodes_.front();
 }
@@ -361,8 +366,9 @@ CbcTreeLocal::push(CbcNode * x) {
       // Add to global cuts 
       // we came in with solution
       model_->globalCuts()->insert(cut_);
-      printf("initial cut - rhs %g %g\n",
-	     cut_.lb(),cut_.ub());
+      if (model_->messageHandler()->logLevel()>0)
+	printf("initial cut - rhs %g %g\n",
+	       cut_.lb(),cut_.ub());
       searchType_=1;
     } else {
       // stop on first solution
@@ -373,8 +379,9 @@ CbcTreeLocal::push(CbcNode * x) {
   }
   nodes_.push_back(x);
 #ifdef CBC_DEBUG
-  printf("pushing node onto heap %d %x %x\n",
-	 x->nodeInfo()->nodeNumber(),x,x->nodeInfo());
+  if (model_->messageHandler()->logLevel()>0)
+    printf("pushing node onto heap %d %x %x\n",
+	   x->nodeInfo()->nodeNumber(),x,x->nodeInfo());
 #endif
   push_heap(nodes_.begin(), nodes_.end(), comparison_);
 }
@@ -387,7 +394,7 @@ CbcTreeLocal::pop() {
 }
 // Test if empty - does work if so
 bool 
-CbcTreeLocal::empty()   
+CbcTreeLocal::empty() 
 {
   if (typeCuts_<0) 
     return !nodes_.size();
@@ -431,11 +438,12 @@ CbcTreeLocal::empty()
   cleanTree(model_,-COIN_DBL_MAX,bestPossibleObjective);
 
   double increment = model_->getDblParam(CbcModel::CbcCutoffIncrement) ;
-  printf("local state %d after %d nodes and %d seconds, new solution %g, best solution %g, k was %g\n",
-	 state,
-	 model_->getNodeCount()-startNode_,
-	 (int) CoinCpuTime()-startTime_,
-	 model_->getCutoff()+increment,bestCutoff_+increment,rhs_);
+  if (model_->messageHandler()->logLevel()>0)
+    printf("local state %d after %d nodes and %d seconds, new solution %g, best solution %g, k was %g\n",
+	   state,
+	   model_->getNodeCount()-startNode_,
+	   (int) CoinCpuTime()-startTime_,
+	   model_->getCutoff()+increment,bestCutoff_+increment,rhs_);
   saveNumberSolutions_ = model_->getSolutionCount();
   bool finished=false;
   bool lastTry=false;
@@ -477,7 +485,8 @@ CbcTreeLocal::empty()
         if (!maxDiversification_)
           typeCuts_=-1; // make sure can't start again
 	model_->setCutoff(bestCutoff_);
-	printf("Exiting local search with current set of cuts\n");
+	if (model_->messageHandler()->logLevel()>0)
+	  printf("Exiting local search with current set of cuts\n");
 	rhs_=1.0e100;
 	// Can now stop on gap
 	model_->setDblParam(CbcModel::CbcAllowableGap,savedGap_);
@@ -607,7 +616,8 @@ CbcTreeLocal::empty()
       // This will be last try (may hit max time0
       lastTry=true;
       model_->setCutoff(bestCutoff_);
-      printf("Exiting local search with current set of cuts\n");
+      if (model_->messageHandler()->logLevel()>0)
+	printf("Exiting local search with current set of cuts\n");
       rhs_=1.0e100;
       // Can now stop on gap
       model_->setDblParam(CbcModel::CbcAllowableGap,savedGap_);
@@ -623,8 +633,9 @@ CbcTreeLocal::empty()
       OsiCuts * global = model_->globalCuts();
       int n = global->sizeRowCuts();
       OsiRowCut * rowCut = global->rowCutPtr(n-1);
-      printf("inserting cut - now %d cuts, rhs %g %g, cutspace %g, diversification %d\n",
-             n,rowCut->lb(),rowCut->ub(),rhs_,diversification_);
+      if (model_->messageHandler()->logLevel()>0)
+	printf("inserting cut - now %d cuts, rhs %g %g, cutspace %g, diversification %d\n",
+	       n,rowCut->lb(),rowCut->ub(),rhs_,diversification_);
       const OsiRowCutDebugger *debugger = model_->solver()->getRowCutDebuggerAlways() ;
       if (debugger) {
         if(debugger->invalidCut(*rowCut))
@@ -632,8 +643,9 @@ CbcTreeLocal::empty()
       }
       for (int i=0;i<n;i++) {
         rowCut = global->rowCutPtr(i);
-        printf("%d - rhs %g %g\n",
-               i,rowCut->lb(),rowCut->ub());
+	if (model_->messageHandler()->logLevel()>0)
+	  printf("%d - rhs %g %g\n",
+		 i,rowCut->lb(),rowCut->ub());
       }
     }
     // put back node
@@ -747,27 +759,32 @@ CbcTreeLocal::createCut(const double * solution,OsiRowCut & rowCut)
       }
     }
     if (maxValue<rhs-primalTolerance) {
-      printf("slack cut\n");
+      if (model_->messageHandler()->logLevel()>0)
+	printf("slack cut\n");
       goodSolution=1;
     }
     rowCut.setRow(cut);
     rowCut.setLb(-COIN_DBL_MAX);
     rowCut.setUb(rhs);   
     rowCut.setGloballyValid();
+    if (model_->messageHandler()->logLevel()>0)
     printf("Cut size: %i Cut rhs: %g\n",cut.getNumElements(), rhs);
 #ifdef CBC_DEBUG
-    int k;
-    for (k=0; k<cut.getNumElements(); k++){
-      printf("%i    %g ",cut.getIndices()[k], cut.getElements()[k]);
-      if ((k+1)%5==0)
+    if (model_->messageHandler()->logLevel()>0) {
+      int k;
+      for (k=0; k<cut.getNumElements(); k++){
+	printf("%i    %g ",cut.getIndices()[k], cut.getElements()[k]);
+	if ((k+1)%5==0)
+	  printf("\n");
+      }
+      if (k%5!=0)
 	printf("\n");
     }
-    if (k%5!=0)
-      printf("\n");
 #endif
     return goodSolution;
   } else {
-    printf("Not a good solution\n");
+    if (model_->messageHandler()->logLevel()>0)
+      printf("Not a good solution\n");
     return -1;
   }
 }
@@ -803,12 +820,14 @@ CbcTreeLocal::reverseCut(int state, double bias)
       smallest=0.0;
   }
   // replace by other way
-  printf("reverseCut - changing cut %d out of %d, old rhs %g %g ",
-	 i,n,rowCut->lb(),rowCut->ub());
+  if (model_->messageHandler()->logLevel()>0)
+    printf("reverseCut - changing cut %d out of %d, old rhs %g %g ",
+	   i,n,rowCut->lb(),rowCut->ub());
   rowCut->setLb(rowCut->ub()+smallest-bias);
   rowCut->setUb(COIN_DBL_MAX);
-  printf("new rhs %g %g, bias %g smallest %g ",
-	 rowCut->lb(),rowCut->ub(),bias,smallest);
+  if (model_->messageHandler()->logLevel()>0)
+    printf("new rhs %g %g, bias %g smallest %g ",
+	   rowCut->lb(),rowCut->ub(),bias,smallest);
   const OsiRowCutDebugger *debugger = model_->solver()->getRowCutDebuggerAlways() ;
   if (debugger) {
     if(debugger->invalidCut(*rowCut))
@@ -832,9 +851,31 @@ CbcTreeLocal::deleteCut(OsiRowCut & cut)
   }
   assert (i<n);
   // delete last cut
-  printf("deleteCut - deleting cut %d out of %d, rhs %g %g\n",
-	 i,n,rowCut->lb(),rowCut->ub());
+  if (model_->messageHandler()->logLevel()>0)
+    printf("deleteCut - deleting cut %d out of %d, rhs %g %g\n",
+	   i,n,rowCut->lb(),rowCut->ub());
   global->eraseRowCut(i);
+}
+// Create C++ lines to get to current state
+void 
+CbcTreeLocal::generateCpp( FILE * fp) 
+{
+  CbcTreeLocal other;
+  fprintf(fp,"0#include \"CbcTreeLocal.hpp\"\n");
+  fprintf(fp,"5  CbcTreeLocal localTree(cbcModel,NULL);\n");
+  if (range_!=other.range_)
+    fprintf(fp,"5  localTree.setRange(%d);\n",range_);
+  if (typeCuts_!=other.typeCuts_)
+    fprintf(fp,"5  localTree.setTypeCuts(%d);\n",typeCuts_);
+  if (maxDiversification_!=other.maxDiversification_)
+    fprintf(fp,"5  localTree.setMaxDiversification(%d);\n",maxDiversification_);
+  if (timeLimit_!=other.timeLimit_)
+    fprintf(fp,"5  localTree.setTimeLimit(%d);\n",timeLimit_);
+  if (nodeLimit_!=other.nodeLimit_)
+    fprintf(fp,"5  localTree.setNodeLimit(%d);\n",nodeLimit_);
+  if (refine_!=other.refine_)
+    fprintf(fp,"5  localTree.setRefine(%s);\n",refine_ ? "true" : "false");
+  fprintf(fp,"5  cbcModel->passInTreeHandler(localTree);\n");
 }
 
 

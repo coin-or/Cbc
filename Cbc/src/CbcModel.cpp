@@ -1099,7 +1099,8 @@ void CbcModel::branchAndBound(int doStatistics)
 #ifdef COIN_DEVELOP
       printf("zapping CbcNodeInfo %x\n",newNode->nodeInfo()->parent());
 #endif
-      newNode->nodeInfo()->nullParent();
+      if (newNode->nodeInfo())
+	newNode->nodeInfo()->nullParent();
     }
     delete newNode ;
     newNode = NULL ;
@@ -1680,7 +1681,8 @@ void CbcModel::branchAndBound(int doStatistics)
 	    printf("zapping2 CbcNodeInfo %x\n",newNode->nodeInfo()->parent());
 #endif
 	    // zap parent nodeInfo
-	    newNode->nodeInfo()->nullParent();
+	    if (newNode->nodeInfo())
+	      newNode->nodeInfo()->nullParent();
 	  }
 	}
 /*
@@ -8527,7 +8529,8 @@ CbcModel::chooseBranch(CbcNode * newNode, int numberPassesLeft,
 #ifdef COIN_DEVELOP
       printf("zapping3 CbcNodeInfo %x\n",newNode->nodeInfo()->parent());
 #endif
-      newNode->nodeInfo()->nullParent();
+      if (newNode->nodeInfo())
+	newNode->nodeInfo()->nullParent();
     }
   }
   return anyAction;

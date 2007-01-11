@@ -7621,7 +7621,7 @@ CbcModel::setPointers(const OsiSolverInterface * solver)
 void CbcModel::passInEventHandler (const CbcEventHandler *eventHandler)
 {
   delete eventHandler_;
-  eventHandler = NULL ;
+  eventHandler_ = NULL ;
   if (eventHandler)
     eventHandler_ = eventHandler->clone();
 }

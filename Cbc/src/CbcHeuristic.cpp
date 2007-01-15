@@ -75,7 +75,7 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver,int numberNodes,
   // Reduce printout
   solver->setHintParam(OsiDoReducePrint,true,OsiHintTry);
   solver->setHintParam(OsiDoPresolveInInitial,false,OsiHintTry);
-  solver->setDblParam(OsiDualObjectiveLimit,cutoff);
+  solver->setDblParam(OsiDualObjectiveLimit,cutoff*solver->getObjSense());
   solver->initialSolve();
   int returnCode=1;
   int logLevel = model_->logLevel();

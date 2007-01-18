@@ -560,8 +560,8 @@ void OsiSolverLink::resolve()
 	      //int numberColumns2 = coinModel_.numberColumns();
 	      for ( i=rowStart[objectiveRow_];i<rowStart[objectiveRow_+1];i++) 
 		gradient[column2[i]] = element[i];
-	      const double * columnLower = modelPtr_->columnLower();
-	      const double * columnUpper = modelPtr_->columnUpper();
+	      //const double * columnLower = modelPtr_->columnLower();
+	      //const double * columnUpper = modelPtr_->columnUpper();
 	      for ( i =0;i<numberObjects_;i++) {
 		OsiBiLinear * obj = dynamic_cast<OsiBiLinear *> (object_[i]);
 		if (obj) {
@@ -624,8 +624,8 @@ void OsiSolverLink::resolve()
 	    int numberColumns2 = CoinMax(coinModel_.numberColumns(),objectiveVariable_+1);
 	    double * gradient = new double [numberColumns2];
 	    int * column = new int[numberColumns2];
-	    const double * columnLower = modelPtr_->columnLower();
-	    const double * columnUpper = modelPtr_->columnUpper();
+	    //const double * columnLower = modelPtr_->columnLower();
+	    //const double * columnUpper = modelPtr_->columnUpper();
 	    for (int iNon=0;iNon<numberNonLinearRows_;iNon++) {
 	      int iRow = rowNonLinear_[iNon];
 	      bool convex = convex_[iNon]>0;
@@ -1421,6 +1421,666 @@ void OsiSolverLink::load ( CoinModel & coinModel, bool tightenBounds)
     }
   }
   delete [] which;
+}
+/* Solves nonlinear problem from CoinModel using SLP - may be used as crash
+   for other algorithms when number of iterations small.
+   Also exits if all problematical variables are changing
+   less than deltaTolerance
+   Returns solution array
+*/
+double * 
+OsiSolverLink::nonlinearSLP(int numberPasses,double deltaTolerance)
+{
+  if (!coinModel_.numberRows()) {
+    printf("Model not set up or nonlinear arrays not created!\n");
+    return NULL;
+  }
+  // first check and set up arrays
+  int numberColumns = coinModel_.numberColumns();
+  int numberRows = coinModel_.numberRows();
+  char * markNonlinear = new char [numberColumns+numberRows];
+  CoinZeroN(markNonlinear,numberColumns+numberRows);
+  // List of nonlinear entries
+  int * listNonLinearColumn = new int[numberColumns];
+  // List of nonlinear constraints
+  int * whichRow = new int [numberRows];
+  CoinZeroN(whichRow,numberRows);
+  int numberNonLinearColumns=0;
+  int iColumn;
+  CoinModel coinModel = coinModel_;
+  //const CoinModelHash * stringArray = coinModel.stringArray();
+  for (iColumn=0;iColumn<numberColumns;iColumn++) {
+    CoinModelLink triple=coinModel.firstInColumn(iColumn);
+    bool linear=true;
+    int n=0;
+    // See if nonlinear objective
+    const char * expr = coinModel.getColumnObjectiveAsString(iColumn);
+    if (strcmp(expr,"Numeric")) {
+      linear=false;
+      // try and see which columns
+      assert (strlen(expr)<20000);
+      char temp[20000];
+      strcpy(temp,expr);
+      char * pos = temp;
+      bool ifFirst=true;
+      double linearTerm=0.0;
+      while (*pos) {
+	double value;
+	int jColumn = decodeBit(pos, pos, value, ifFirst, coinModel_);
+	// must be column unless first when may be linear term
+	if (jColumn>=0) {
+	  markNonlinear[jColumn]=1;
+	} else if (jColumn==-2) {
+	  linearTerm = value;
+	} else {
+	  printf("bad nonlinear term %s\n",temp);
+	  abort();
+	}
+	ifFirst=false;
+      }
+    }
+    while (triple.row()>=0) {
+      int iRow = triple.row();
+      const char * expr = coinModel.getElementAsString(iRow,iColumn);
+      if (strcmp(expr,"Numeric")) {
+	linear=false;
+	whichRow[iRow]++;
+	// try and see which columns
+	assert (strlen(expr)<20000);
+	char temp[20000];
+	strcpy(temp,expr);
+	char * pos = temp;
+	bool ifFirst=true;
+	double linearTerm=0.0;
+	while (*pos) {
+	  double value;
+	  int jColumn = decodeBit(pos, pos, value, ifFirst, coinModel_);
+	  // must be column unless first when may be linear term
+	  if (jColumn>=0) {
+	    markNonlinear[jColumn]=1;
+	  } else if (jColumn==-2) {
+	    linearTerm = value;
+	  } else {
+	    printf("bad nonlinear term %s\n",temp);
+	    abort();
+	  }
+	  ifFirst=false;
+	}
+      }
+      triple=coinModel.next(triple);
+      n++;
+    }
+    if (!linear) {
+      markNonlinear[iColumn]=1;
+    }
+  }
+  //int xxxx[]={3,2,0,4,3,0};
+  //double initialSolution[6];
+  for (iColumn=0;iColumn<numberColumns;iColumn++) {
+    if (markNonlinear[iColumn]) {
+      // put in something
+      double lower = coinModel.columnLower(iColumn);
+      double upper = CoinMin(coinModel.columnUpper(iColumn),lower+1000.0);
+      coinModel.associateElement(coinModel.columnName(iColumn),0.5*(lower+upper));
+      //coinModel.associateElement(coinModel.columnName(iColumn),xxxx[iColumn]);
+      listNonLinearColumn[numberNonLinearColumns++]=iColumn;
+      //initialSolution[iColumn]=xxxx[iColumn];
+    }
+  }
+  // if nothing just solve
+  if (!numberNonLinearColumns) {
+    delete [] listNonLinearColumn;
+    delete [] whichRow;
+    delete [] markNonlinear;
+    ClpSimplex tempModel;
+    tempModel.loadProblem(coinModel,true);
+    tempModel.initialSolve();
+    double * solution = CoinCopyOfArray(tempModel.getColSolution(),numberColumns);
+    return solution;
+  }
+  // Create artificials
+  ClpSimplex tempModel;
+  tempModel.loadProblem(coinModel,true);
+  const double * rowLower = tempModel.rowLower();
+  const double * rowUpper = tempModel.rowUpper();
+  bool takeAll=false;
+  int iRow;
+  int numberArtificials=0;
+  for (iRow=0;iRow<numberRows;iRow++) {
+    if (whichRow[iRow]||takeAll) {
+      if (rowLower[iRow]>-1.0e30)
+	numberArtificials++;
+      if (rowUpper[iRow]<1.0e30)
+	numberArtificials++;
+    }
+  }
+  CoinBigIndex * startArtificial = new CoinBigIndex [numberArtificials+1];
+  int * rowArtificial = new int [numberArtificials];
+  double * elementArtificial = new double [numberArtificials];
+  double * objectiveArtificial = new double [numberArtificials];
+  numberArtificials=0;
+  startArtificial[0]=0;
+  double artificialCost =1.0e9;
+  for (iRow=0;iRow<numberRows;iRow++) {
+    if (whichRow[iRow]||takeAll) {
+      if (rowLower[iRow]>-1.0e30) {
+	rowArtificial[numberArtificials]=iRow;
+	elementArtificial[numberArtificials]=1.0;
+	objectiveArtificial[numberArtificials]=artificialCost;
+	numberArtificials++;
+	startArtificial[numberArtificials]=numberArtificials;
+      }
+      if (rowUpper[iRow]<1.0e30) {
+	rowArtificial[numberArtificials]=iRow;
+	elementArtificial[numberArtificials]=-1.0;
+	objectiveArtificial[numberArtificials]=artificialCost;
+	numberArtificials++;
+	startArtificial[numberArtificials]=numberArtificials;
+      }
+    }
+  }
+  // Get first solution
+  int numberColumnsSmall=numberColumns;
+  ClpSimplex model;
+  model.loadProblem(coinModel,true);
+  model.addColumns(numberArtificials,NULL,NULL,objectiveArtificial,
+		       startArtificial,rowArtificial,elementArtificial);
+  double * columnLower = model.columnLower();
+  double * columnUpper = model.columnUpper();
+  double * trueLower = new double[numberNonLinearColumns];
+  double * trueUpper = new double[numberNonLinearColumns];
+  int jNon;
+  for (jNon=0;jNon<numberNonLinearColumns;jNon++) {
+    iColumn=listNonLinearColumn[jNon];
+    trueLower[jNon]=columnLower[iColumn];
+    trueUpper[jNon]=columnUpper[iColumn];
+    //columnLower[iColumn]=initialSolution[iColumn];
+    //columnUpper[iColumn]=initialSolution[iColumn];
+  }
+  model.initialSolve();
+  model.writeMps("bad.mps");
+  // redo number of columns
+  numberColumns = model.numberColumns();
+  int * last[3];
+  double * solution = model.primalColumnSolution();
+  
+  double * trust = new double[numberNonLinearColumns];
+  for (jNon=0;jNon<numberNonLinearColumns;jNon++) {
+    iColumn=listNonLinearColumn[jNon];
+    trust[jNon]=0.5;
+    if (solution[iColumn]<trueLower[jNon])
+      solution[iColumn]=trueLower[jNon];
+    else if (solution[iColumn]>trueUpper[jNon])
+      solution[iColumn]=trueUpper[jNon];
+  }
+  int iPass;
+  double lastObjective=1.0e31;
+  double * saveSolution = new double [numberColumns];
+  double * saveRowSolution = new double [numberRows];
+  memset(saveRowSolution,0,numberRows*sizeof(double));
+  double * savePi = new double [numberRows];
+  double * safeSolution = new double [numberColumns];
+  unsigned char * saveStatus = new unsigned char[numberRows+numberColumns];
+  double targetDrop=1.0e31;
+  //double objectiveOffset;
+  //model.getDblParam(ClpObjOffset,objectiveOffset);
+  // 1 bound up, 2 up, -1 bound down, -2 down, 0 no change
+  for (iPass=0;iPass<3;iPass++) {
+    last[iPass]=new int[numberNonLinearColumns];
+    for (jNon=0;jNon<numberNonLinearColumns;jNon++) 
+      last[iPass][jNon]=0;
+  }
+  // goodMove +1 yes, 0 no, -1 last was bad - just halve gaps, -2 do nothing
+  int goodMove=-2;
+  char * statusCheck = new char[numberColumns];
+  double * changeRegion = new double [numberColumns];
+  int logLevel=63;
+  double dualTolerance = model.dualTolerance();
+  double primalTolerance = model.primalTolerance();
+  int lastGoodMove=1;
+  for (iPass=0;iPass<numberPasses;iPass++) {
+    lastGoodMove=goodMove;
+    columnLower = model.columnLower();
+    columnUpper = model.columnUpper();
+    solution = model.primalColumnSolution();
+    double * rowActivity = model.primalRowSolution();
+    // redo objective
+    ClpSimplex tempModel;
+    // load new values
+    for (jNon=0;jNon<numberNonLinearColumns;jNon++) {
+      iColumn=listNonLinearColumn[jNon];
+      coinModel.associateElement(coinModel.columnName(iColumn),solution[iColumn]);
+    }
+    tempModel.loadProblem(coinModel);
+    double objectiveOffset;
+    tempModel.getDblParam(ClpObjOffset,objectiveOffset);
+    double objValue=-objectiveOffset;
+    const double * objective = tempModel.objective();
+    for (iColumn=0;iColumn<numberColumnsSmall;iColumn++)
+      objValue += solution[iColumn]*objective[iColumn];
+    double * rowActivity2 = tempModel.primalRowSolution();
+    const double * rowLower2 = tempModel.rowLower();
+    const double * rowUpper2 = tempModel.rowUpper();
+    memset(rowActivity2,0,numberRows*sizeof(double));
+    tempModel.times(1.0,solution,rowActivity2);
+    for (iRow=0;iRow<numberRows;iRow++) {
+      if (rowActivity2[iRow]<rowLower2[iRow]-primalTolerance)
+	objValue += (rowLower2[iRow]-rowActivity2[iRow]-primalTolerance)*artificialCost;
+      else if (rowActivity2[iRow]>rowUpper2[iRow]+primalTolerance)
+	objValue -= (rowUpper2[iRow]-rowActivity2[iRow]+primalTolerance)*artificialCost;
+    }
+    double theta=-1.0;
+    double maxTheta=COIN_DBL_MAX;
+    if (objValue<=lastObjective+1.0e-15*fabs(lastObjective)||!iPass) 
+      goodMove=1;
+    else
+      goodMove=-1;
+    //maxTheta=1.0;
+    if (iPass) {
+      int jNon=0;
+      for (iColumn=0;iColumn<numberColumns;iColumn++) { 
+	changeRegion[iColumn]=solution[iColumn]-saveSolution[iColumn];
+	double alpha = changeRegion[iColumn];
+	double oldValue = saveSolution[iColumn];
+	if (markNonlinear[iColumn]==0) {
+	  // linear
+	  if (alpha<-1.0e-15) {
+	    // variable going towards lower bound
+	    double bound = columnLower[iColumn];
+	    oldValue -= bound;
+	    if (oldValue+maxTheta*alpha<0.0) {
+	      maxTheta = CoinMax(0.0,oldValue/(-alpha));
+	    }
+	  } else if (alpha>1.0e-15) {
+	    // variable going towards upper bound
+	    double bound = columnUpper[iColumn];
+	    oldValue = bound-oldValue;
+	    if (oldValue-maxTheta*alpha<0.0) {
+	      maxTheta = CoinMax(0.0,oldValue/alpha);
+	    }
+	  }
+	} else {
+	  // nonlinear
+	  if (alpha<-1.0e-15) {
+	    // variable going towards lower bound
+	    double bound = trueLower[jNon];
+	    oldValue -= bound;
+	    if (oldValue+maxTheta*alpha<0.0) {
+	      maxTheta = CoinMax(0.0,oldValue/(-alpha));
+	    }
+	  } else if (alpha>1.0e-15) {
+	    // variable going towards upper bound
+	    double bound = trueUpper[jNon];
+	    oldValue = bound-oldValue;
+	    if (oldValue-maxTheta*alpha<0.0) {
+	      maxTheta = CoinMax(0.0,oldValue/alpha);
+	    }
+	  }
+	  jNon++;
+	}
+      }
+      // make sure both accurate
+      memset(rowActivity,0,numberRows*sizeof(double));
+      model.times(1.0,solution,rowActivity);
+      memset(saveRowSolution,0,numberRows*sizeof(double));
+      model.times(1.0,saveSolution,saveRowSolution);
+      for (int iRow=0;iRow<numberRows;iRow++) { 
+	double alpha =rowActivity[iRow]-saveRowSolution[iRow];
+	double oldValue = saveRowSolution[iRow];
+	if (alpha<-1.0e-15) {
+	  // variable going towards lower bound
+	  double bound = rowLower[iRow];
+	  oldValue -= bound;
+	  if (oldValue+maxTheta*alpha<0.0) {
+	    maxTheta = CoinMax(0.0,oldValue/(-alpha));
+	  }
+	} else if (alpha>1.0e-15) {
+	  // variable going towards upper bound
+	  double bound = rowUpper[iRow];
+	  oldValue = bound-oldValue;
+	  if (oldValue-maxTheta*alpha<0.0) {
+	    maxTheta = CoinMax(0.0,oldValue/alpha);
+	  }
+	}
+      }
+    } else {
+      for (iColumn=0;iColumn<numberColumns;iColumn++) {
+	changeRegion[iColumn]=0.0;
+	saveSolution[iColumn]=solution[iColumn];
+      }
+      memcpy(saveRowSolution,rowActivity,numberRows*sizeof(double));
+    }
+    if (goodMove>=0) {
+      //theta = CoinMin(theta2,maxTheta);
+      theta = maxTheta;
+      if (theta>0.0&&theta<=1.0) {
+	// update solution
+	double lambda = 1.0-theta;
+	for (iColumn=0;iColumn<numberColumns;iColumn++) 
+	  solution[iColumn] = lambda * saveSolution[iColumn] 
+	    + theta * solution[iColumn];
+	memset(rowActivity,0,numberRows*sizeof(double));
+	model.times(1.0,solution,rowActivity);
+	if (lambda>0.999) {
+	  memcpy(model.dualRowSolution(),savePi,numberRows*sizeof(double));
+	  memcpy(model.statusArray(),saveStatus,numberRows+numberColumns);
+	}
+	// redo rowActivity
+	memset(rowActivity,0,numberRows*sizeof(double));
+	model.times(1.0,solution,rowActivity);
+      }
+    }
+    // load new values
+    for (jNon=0;jNon<numberNonLinearColumns;jNon++) {
+      iColumn=listNonLinearColumn[jNon];
+      coinModel.associateElement(coinModel.columnName(iColumn),solution[iColumn]);
+    }
+    double * sol2 = CoinCopyOfArray(model.primalColumnSolution(),numberColumns);
+    unsigned char * status2 = CoinCopyOfArray(model.statusArray(),numberColumns);
+    model.loadProblem(coinModel);
+    model.addColumns(numberArtificials,NULL,NULL,objectiveArtificial,
+		     startArtificial,rowArtificial,elementArtificial);
+    memcpy(model.primalColumnSolution(),sol2,numberColumns*sizeof(double));
+    memcpy(model.statusArray(),status2,numberColumns);
+    delete [] sol2;
+    delete [] status2;
+    columnLower = model.columnLower();
+    columnUpper = model.columnUpper();
+    solution = model.primalColumnSolution();
+    rowActivity = model.primalRowSolution();
+    int * temp=last[2];
+    last[2]=last[1];
+    last[1]=last[0];
+    last[0]=temp;
+    for (jNon=0;jNon<numberNonLinearColumns;jNon++) {
+      iColumn=listNonLinearColumn[jNon];
+      double change = solution[iColumn]-saveSolution[iColumn];
+      if (change<-1.0e-5) {
+	if (fabs(change+trust[jNon])<1.0e-5) 
+	  temp[jNon]=-1;
+	else
+	  temp[jNon]=-2;
+      } else if(change>1.0e-5) {
+	if (fabs(change-trust[jNon])<1.0e-5) 
+	  temp[jNon]=1;
+	else
+	  temp[jNon]=2;
+      } else {
+	temp[jNon]=0;
+      }
+    } 
+    // goodMove +1 yes, 0 no, -1 last was bad - just halve gaps, -2 do nothing
+    double maxDelta=0.0;
+    if (goodMove>=0) {
+      if (objValue<=lastObjective+1.0e-15*fabs(lastObjective)) 
+	goodMove=1;
+      else
+	goodMove=0;
+    } else {
+      maxDelta=1.0e10;
+    }
+    double maxGap=0.0;
+    int numberSmaller=0;
+    int numberSmaller2=0;
+    int numberLarger=0;
+    for (jNon=0;jNon<numberNonLinearColumns;jNon++) {
+      iColumn=listNonLinearColumn[jNon];
+      maxDelta = CoinMax(maxDelta,
+		     fabs(solution[iColumn]-saveSolution[iColumn]));
+      if (goodMove>0) {
+	if (last[0][jNon]*last[1][jNon]<0) {
+	  // halve
+	  trust[jNon] *= 0.5;
+	  numberSmaller2++;
+	} else {
+	  if (last[0][jNon]==last[1][jNon]&&
+	      last[0][jNon]==last[2][jNon])
+	    trust[jNon] = CoinMin(1.5*trust[jNon],1.0e6); 
+	  numberLarger++;
+	}
+      } else if (goodMove!=-2&&trust[jNon]>10.0*deltaTolerance) {
+	trust[jNon] *= 0.2;
+	numberSmaller++;
+      }
+      maxGap = CoinMax(maxGap,trust[jNon]);
+    }
+#ifdef CLP_DEBUG
+    if (logLevel&32) 
+      std::cout<<"largest gap is "<<maxGap<<" "
+	       <<numberSmaller+numberSmaller2<<" reduced ("
+	       <<numberSmaller<<" badMove ), "
+	       <<numberLarger<<" increased"<<std::endl;
+#endif
+    if (iPass>10000) {
+      for (jNon=0;jNon<numberNonLinearColumns;jNon++) 
+	trust[jNon] *=0.0001;
+    }
+    printf("last good %d goodMove %d\n",lastGoodMove,goodMove);
+    if (goodMove>0) {
+      double drop = lastObjective-objValue;
+      printf("Pass %d, objective %g - drop %g maxDelta %g\n",iPass,objValue,drop,maxDelta);
+      if (iPass>20&&drop<1.0e-12*fabs(objValue)&&lastGoodMove>0)
+	drop=0.999e-4; // so will exit
+      if (maxDelta<deltaTolerance&&drop<1.0e-4&&goodMove&&theta<0.99999&&lastGoodMove>0) {
+	if (logLevel>1) 
+	  std::cout<<"Exiting as maxDelta < tolerance and small drop"<<std::endl;
+	break;
+      }
+    } else if (!numberSmaller&&iPass>1) {
+      if (logLevel>1) 
+	  std::cout<<"Exiting as all gaps small"<<std::endl;
+	break;
+    }
+    if (!iPass)
+      goodMove=1;
+    targetDrop=0.0;
+    double * r = model.dualColumnSolution();
+    for (jNon=0;jNon<numberNonLinearColumns;jNon++) {
+      iColumn=listNonLinearColumn[jNon];
+      columnLower[iColumn]=CoinMax(solution[iColumn]
+				   -trust[jNon],
+				   trueLower[jNon]);
+      columnUpper[iColumn]=CoinMin(solution[iColumn]
+				   +trust[jNon],
+				   trueUpper[jNon]);
+    }
+    if (iPass) {
+      // get reduced costs
+      model.matrix()->transposeTimes(savePi,
+				     model.dualColumnSolution());
+      const double * objective = model.objective();
+      for (jNon=0;jNon<numberNonLinearColumns;jNon++) {
+	iColumn=listNonLinearColumn[jNon];
+	double dj = objective[iColumn]-r[iColumn];
+	r[iColumn]=dj;
+	if (dj<-dualTolerance) 
+	  targetDrop -= dj*(columnUpper[iColumn]-solution[iColumn]);
+	else if (dj>dualTolerance)
+	  targetDrop -= dj*(columnLower[iColumn]-solution[iColumn]);
+      }
+    } else {
+      memset(r,0,numberColumns*sizeof(double));
+    }
+#if 0
+    for (jNon=0;jNon<numberNonLinearColumns;jNon++) {
+      iColumn=listNonLinearColumn[jNon];
+      if (statusCheck[iColumn]=='L'&&r[iColumn]<-1.0e-4) {
+	columnLower[iColumn]=CoinMax(solution[iColumn],
+				     trueLower[jNon]);
+	columnUpper[iColumn]=CoinMin(solution[iColumn]
+				     +trust[jNon],
+				     trueUpper[jNon]);
+      } else if (statusCheck[iColumn]=='U'&&r[iColumn]>1.0e-4) {
+	columnLower[iColumn]=CoinMax(solution[iColumn]
+				     -trust[jNon],
+				     trueLower[jNon]);
+	columnUpper[iColumn]=CoinMin(solution[iColumn],
+				     trueUpper[jNon]);
+      } else {
+	columnLower[iColumn]=CoinMax(solution[iColumn]
+				     -trust[jNon],
+				     trueLower[jNon]);
+	columnUpper[iColumn]=CoinMin(solution[iColumn]
+				     +trust[jNon],
+				     trueUpper[jNon]);
+      }
+    }
+#endif
+    if (goodMove>0) {
+      memcpy(saveSolution,solution,numberColumns*sizeof(double));
+      memcpy(saveRowSolution,rowActivity,numberRows*sizeof(double));
+      memcpy(savePi,model.dualRowSolution(),numberRows*sizeof(double));
+      memcpy(saveStatus,model.statusArray(),numberRows+numberColumns);
+      
+#ifdef CLP_DEBUG
+      if (logLevel&32) 
+	std::cout<<"Pass - "<<iPass
+		 <<", target drop is "<<targetDrop
+		 <<std::endl;
+#endif
+      lastObjective = objValue;
+      if (targetDrop<CoinMax(1.0e-8,CoinMin(1.0e-6,1.0e-6*fabs(objValue)))&&lastGoodMove&&iPass>3) {
+	if (logLevel>1) 
+	  printf("Exiting on target drop %g\n",targetDrop);
+	break;
+      }
+#ifdef CLP_DEBUG
+      {
+	double * r = model.dualColumnSolution();
+	for (jNon=0;jNon<numberNonLinearColumns;jNon++) {
+	  iColumn=listNonLinearColumn[jNon];
+	  if (logLevel&32) 
+	    printf("Trust %d %g - solution %d %g obj %g dj %g state %c - bounds %g %g\n",
+		   jNon,trust[jNon],iColumn,solution[iColumn],objective[iColumn],
+		   r[iColumn],statusCheck[iColumn],columnLower[iColumn],
+		   columnUpper[iColumn]);
+	}
+      }
+#endif
+      model.scaling(false);
+      model.primal(1);
+      for (jNon=0;jNon<numberNonLinearColumns;jNon++) {
+	iColumn=listNonLinearColumn[jNon];
+	printf("%d bounds etc %g %g %g\n",iColumn, columnLower[iColumn],solution[iColumn],columnUpper[iColumn]);
+      }
+      char temp[20];
+      sprintf(temp,"pass%d.mps",iPass);
+      model.writeMps(temp);
+#ifdef CLP_DEBUG
+      if (model.status()) {
+	model.writeMps("xx.mps");
+      }
+#endif
+      if (model.status()==1) {
+	// not feasible ! - backtrack and exit
+	// use safe solution
+	memcpy(solution,safeSolution,numberColumns*sizeof(double));
+	memcpy(saveSolution,solution,numberColumns*sizeof(double));
+	memset(rowActivity,0,numberRows*sizeof(double));
+	model.times(1.0,solution,rowActivity);
+	memcpy(saveRowSolution,rowActivity,numberRows*sizeof(double));
+	memcpy(model.dualRowSolution(),savePi,numberRows*sizeof(double));
+	memcpy(model.statusArray(),saveStatus,numberRows+numberColumns);
+	for (jNon=0;jNon<numberNonLinearColumns;jNon++) {
+	  iColumn=listNonLinearColumn[jNon];
+	  columnLower[iColumn]=CoinMax(solution[iColumn]
+				       -trust[jNon],
+				       trueLower[jNon]);
+	  columnUpper[iColumn]=CoinMin(solution[iColumn]
+				       +trust[jNon],
+				       trueUpper[jNon]);
+	}
+	break;
+      } else {
+	// save in case problems
+	memcpy(safeSolution,solution,numberColumns*sizeof(double));
+      }
+      goodMove=1;
+    } else {
+      // bad pass - restore solution
+#ifdef CLP_DEBUG
+      if (logLevel&32) 
+	printf("Backtracking\n");
+#endif
+      // load old values
+      for (jNon=0;jNon<numberNonLinearColumns;jNon++) {
+	iColumn=listNonLinearColumn[jNon];
+	coinModel.associateElement(coinModel.columnName(iColumn),saveSolution[iColumn]);
+      }
+      model.loadProblem(coinModel);
+      model.addColumns(numberArtificials,NULL,NULL,objectiveArtificial,
+		     startArtificial,rowArtificial,elementArtificial);
+      solution = model.primalColumnSolution();
+      rowActivity = model.primalRowSolution();
+      memcpy(solution,saveSolution,numberColumns*sizeof(double));
+      memcpy(rowActivity,saveRowSolution,numberRows*sizeof(double));
+      memcpy(model.dualRowSolution(),savePi,numberRows*sizeof(double));
+      memcpy(model.statusArray(),saveStatus,numberRows+numberColumns);
+      columnLower = model.columnLower();
+      columnUpper = model.columnUpper();
+      for (jNon=0;jNon<numberNonLinearColumns;jNon++) {
+	iColumn=listNonLinearColumn[jNon];
+	columnLower[iColumn]=solution[iColumn];
+	columnUpper[iColumn]=solution[iColumn];
+      }
+      model.primal(1);
+      model.writeMps("xx.mps");
+      iPass--;
+      goodMove=-1;
+    }
+  }
+  // restore solution
+  memcpy(solution,saveSolution,numberColumns*sizeof(double));
+  delete [] statusCheck;
+  delete [] savePi;
+  delete [] saveStatus;
+  // load new values
+  for (jNon=0;jNon<numberNonLinearColumns;jNon++) {
+    iColumn=listNonLinearColumn[jNon];
+    coinModel.associateElement(coinModel.columnName(iColumn),solution[iColumn]);
+  }
+  double * sol2 = CoinCopyOfArray(model.primalColumnSolution(),numberColumns);
+  unsigned char * status2 = CoinCopyOfArray(model.statusArray(),numberColumns);
+  model.loadProblem(coinModel);
+  model.addColumns(numberArtificials,NULL,NULL,objectiveArtificial,
+		   startArtificial,rowArtificial,elementArtificial);
+  memcpy(model.primalColumnSolution(),sol2,numberColumns*sizeof(double));
+  memcpy(model.statusArray(),status2,numberColumns);
+  delete [] sol2;
+  delete [] status2;
+  columnLower = model.columnLower();
+  columnUpper = model.columnUpper();
+  solution = model.primalColumnSolution();
+  for (jNon=0;jNon<numberNonLinearColumns;jNon++) {
+    iColumn=listNonLinearColumn[jNon];
+    columnLower[iColumn]=CoinMax(solution[iColumn],
+				 trueLower[jNon]);
+    columnUpper[iColumn]=CoinMin(solution[iColumn],
+				 trueUpper[jNon]);
+  }
+  model.primal(1);
+  for (jNon=0;jNon<numberNonLinearColumns;jNon++) {
+    iColumn=listNonLinearColumn[jNon];
+    columnLower[iColumn]= trueLower[jNon];
+    columnUpper[iColumn]= trueUpper[jNon];
+  }
+  delete [] saveSolution;
+  delete [] safeSolution;
+  delete [] saveRowSolution;
+  for (iPass=0;iPass<3;iPass++) 
+    delete [] last[iPass];
+  delete [] trust;
+  delete [] trueUpper;
+  delete [] trueLower;
+  delete [] changeRegion;
+  delete [] startArtificial;
+  delete [] rowArtificial;
+  delete [] elementArtificial;
+  delete [] objectiveArtificial;
+  delete [] listNonLinearColumn;
+  delete [] whichRow;
+  delete [] markNonlinear;
+  return CoinCopyOfArray(solution,coinModel.numberColumns());
 }
 // Analyze constraints to see which are convex (quadratic)
 void 

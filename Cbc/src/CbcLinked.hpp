@@ -45,6 +45,13 @@ public:
      allFixed is true if all LinkedBound variables are fixed
   */
   virtual int fathom(bool allFixed) {return 0;};
+  /** Solves nonlinear problem from CoinModel using SLP - may be used as crash
+      for other algorithms when number of iterations small.
+      Also exits if all problematical variables are changing
+      less than deltaTolerance
+      Returns solution array
+  */
+  double * nonlinearSLP(int numberPasses,double deltaTolerance);
   //@}
   
   
@@ -151,6 +158,9 @@ public:
   /// Set Cbc Model
   inline void setCbcModel(CbcModel * model)
   { cbcModel_=model;};
+  /// Return CoinModel
+  inline const CoinModel * coinModel() const
+  { return &coinModel_;};
   //@}
   
   //---------------------------------------------------------------------------
@@ -161,7 +171,7 @@ protected:
   /**@name functions */
   //@{
   /// Do real work of initialize
-  void initialize(ClpSimplex * & solver, OsiObject ** & object) const;
+  //void initialize(ClpSimplex * & solver, OsiObject ** & object) const;
   /// Do real work of delete
   void gutsOfDestructor(bool justNullify=false);
   /// Do real work of copy

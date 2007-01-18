@@ -1587,7 +1587,21 @@ int main (int argc, const char *argv[])
 		  barrierOptions |= 256; // try presolve in crossover
 		solveOptions.setSpecialOption(4,barrierOptions);
 	      }
-	      model2->initialSolve(solveOptions);
+	      OsiSolverInterface * coinSolver = model.solver();
+	      OsiSolverLink * linkSolver = dynamic_cast< OsiSolverLink*> (coinSolver);
+	      if (!linkSolver) {
+		model2->initialSolve(solveOptions);
+	      } else {
+		// special solver
+		double * solution = linkSolver->nonlinearSLP(slpValue,1.0e-5);
+		if (solution) {
+		  memcpy(model2->primalColumnSolution(),solution,
+			 CoinMin(model2->numberColumns(),linkSolver->coinModel()->numberColumns())*sizeof(double));
+		  delete [] solution;
+		} else {
+		  printf("No nonlinear solution\n");
+		}
+	      }
 	      basisHasValues=1;
               if (dualize) {
                 int returnCode=((ClpSimplexOther *) lpSolver)->restoreFromDual(model2);

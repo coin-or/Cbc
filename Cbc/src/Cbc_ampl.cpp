@@ -714,6 +714,12 @@ CoinModel::gdb( int nonLinear, const char * fileName)
   int numberElements=-1;
   int numberBinary=-1;
   int numberIntegers=-1;
+  int numberAllNonLinearBoth=0;
+  int numberIntegerNonLinearBoth=0;
+  int numberAllNonLinearConstraints=0;
+  int numberIntegerNonLinearConstraints=0;
+  int numberAllNonLinearObjective=0;
+  int numberIntegerNonLinearObjective=0;
   double * primalSolution=NULL;
   double direction=1.0;
   char * stub = strdup(fileName);
@@ -922,7 +928,13 @@ CoinModel::gdb( int nonLinear, const char * fileName)
     numberColumns=n_var;
     numberElements=nzc;;
     numberBinary=nbv;
-    numberIntegers=niv+nlvci;
+    numberIntegers=niv;
+    numberAllNonLinearBoth=nlvb;
+    numberIntegerNonLinearBoth=nlvbi;
+    numberAllNonLinearConstraints=nlvc;
+    numberIntegerNonLinearConstraints=nlvci;
+    numberAllNonLinearObjective=nlvo;
+    numberIntegerNonLinearObjective=nlvoi;
     /* say we want primal solution */
     want_xpi0=1;
     //double * dualSolution=NULL;
@@ -950,6 +962,19 @@ CoinModel::gdb( int nonLinear, const char * fileName)
   for ( i=numberColumns-numberBinary-numberIntegers;
 	i<numberColumns;i++) {
       setColumnIsInteger(i,true);;
+  }
+  // and non linear
+  for (i=numberAllNonLinearBoth-numberIntegerNonLinearBoth;
+       i<numberAllNonLinearBoth;i++) {
+    setColumnIsInteger(i,true);;
+  }
+  for (i=numberAllNonLinearConstraints-numberIntegerNonLinearConstraints;
+       i<numberAllNonLinearConstraints;i++) {
+    setColumnIsInteger(i,true);;
+  }
+  for (i=numberAllNonLinearObjective-numberIntegerNonLinearObjective;
+       i<numberAllNonLinearObjective;i++) {
+    setColumnIsInteger(i,true);;
   }
   // do names
   int iRow;

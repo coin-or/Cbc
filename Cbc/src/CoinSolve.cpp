@@ -1587,6 +1587,7 @@ int main (int argc, const char *argv[])
 		  barrierOptions |= 256; // try presolve in crossover
 		solveOptions.setSpecialOption(4,barrierOptions);
 	      }
+#ifdef COIN_HAS_LINK
 	      OsiSolverInterface * coinSolver = model.solver();
 	      OsiSolverLink * linkSolver = dynamic_cast< OsiSolverLink*> (coinSolver);
 	      if (!linkSolver) {
@@ -1602,6 +1603,9 @@ int main (int argc, const char *argv[])
 		  printf("No nonlinear solution\n");
 		}
 	      }
+#else
+	      model2->initialSolve(solveOptions);
+#endif
 	      basisHasValues=1;
               if (dualize) {
                 int returnCode=((ClpSimplexOther *) lpSolver)->restoreFromDual(model2);

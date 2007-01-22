@@ -140,9 +140,10 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver,int numberNodes,
       // see if too big
       double before = solver->getNumRows()+solver->getNumCols();
       double after = solver2->getNumRows()+solver2->getNumCols();
-      printf("before %d rows %d columns, after %d rows %d columns\n",
-	     solver->getNumRows(),solver->getNumCols(),
-	     solver2->getNumRows(),solver2->getNumCols());
+      if (logLevel>1)
+	printf("before %d rows %d columns, after %d rows %d columns\n",
+	       solver->getNumRows(),solver->getNumCols(),
+	       solver2->getNumRows(),solver2->getNumCols());
       if (after>fractionSmall_*before)
 	return 0;
       solver2->resolve();

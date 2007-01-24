@@ -17,6 +17,7 @@ class CbcModel;
 class CoinPackedMatrix;
 class OsiLinkedBound;
 class OsiObject;
+class CglStored;
 //#############################################################################
 
 /**
@@ -44,7 +45,7 @@ public:
 	      1 if node fathomed and solution
      allFixed is true if all LinkedBound variables are fixed
   */
-  virtual int fathom(bool allFixed) {return 0;};
+  virtual int fathom(bool allFixed) ;
   /** Solves nonlinear problem from CoinModel using SLP - may be used as crash
       for other algorithms when number of iterations small.
       Also exits if all problematical variables are changing
@@ -52,6 +53,10 @@ public:
       Returns solution array
   */
   double * nonlinearSLP(int numberPasses,double deltaTolerance);
+  /** Solve linearized quadratic objective branch and bound.
+      Return cutoff and OA cut
+  */
+  double linearizedBAB(CglStored * cut) ;
   //@}
   
   
@@ -74,7 +79,7 @@ public:
   */
   OsiSolverLink(  CoinModel & modelObject);
   // Other way with existing object
-  void load(  CoinModel & modelObject,bool tightenBounds=false);
+  void load(  CoinModel & modelObject,bool tightenBounds=false,int logLevel=1);
   /// Clone
   virtual OsiSolverInterface * clone(bool copyData=true) const;
   
@@ -133,6 +138,10 @@ public:
   /// Copy of quadratic model if one
   ClpSimplex * quadraticModel() const
   { return quadraticModel_;};
+  /// Gets correct form for a quadratic row - user to delete
+  CoinPackedMatrix * quadraticRow(int rowNumber,double * linear) const;
+  /// Replaces a quadratic row
+  void replaceQuadraticRow(int rowNumber,const double * linear, const CoinPackedMatrix * quadraticPart);
   /// Default meshSize 
   inline double defaultMeshSize() const
   { return defaultMeshSize_;};
@@ -161,6 +170,14 @@ public:
   /// Return CoinModel
   inline const CoinModel * coinModel() const
   { return &coinModel_;};
+  /// Set all biLinear priorities on x-x variables
+  void setBiLinearPriorities(int value);
+  /// Set all mesh sizes on x-x variables
+  void setMeshSizes(double value);
+  /** Two tier integer problem where when set of variables with priority
+      less than this are fixed the problem becomes an easier integer problem
+  */
+  void setFixedPriority(int priorityValue);
   //@}
   
   //---------------------------------------------------------------------------
@@ -211,7 +228,7 @@ protected:
   /// Information
   OsiLinkedBound * info_;
   /**
-     0 bit (1) - don't do mini B&B
+     0 bit (1) - call fathom (may do mini B&B)
      1 bit (2) - quadratic only in objective (add OA cuts)
      2 bit (4) - convex
      4 bit (8) - try adding OA cuts
@@ -233,6 +250,10 @@ protected:
   int integerPriority_;
   /// Priority for bilinear
   int biLinearPriority_;
+  /// Number of variables which when fixed help
+  int numberFix_;
+  /// list of fixed variables
+  int * fixVariables_;
   //@}
 };
 /**
@@ -1025,6 +1046,87 @@ private:
  // Private member methods
 
   // Private member data
+};
+//#############################################################################
+
+/**
+   
+This is to allow the user to replace initialSolve and resolve
+*/
+
+class OsiSolverLinearizedQuadratic : public OsiClpSolverInterface {
+  
+public:
+  //---------------------------------------------------------------------------
+  /**@name Solve methods */
+  //@{
+  /// Solve initial LP relaxation 
+  virtual void initialSolve();
+  //@}
+  
+  
+  /**@name Constructors and destructors */
+  //@{
+  /// Default Constructor
+  OsiSolverLinearizedQuadratic ();
+  /// Useful constructor (solution should be good)
+  OsiSolverLinearizedQuadratic(  ClpSimplex * quadraticModel);
+  /// Clone
+  virtual OsiSolverInterface * clone(bool copyData=true) const;
+  
+  /// Copy constructor 
+  OsiSolverLinearizedQuadratic (const OsiSolverLinearizedQuadratic &);
+  
+  /// Assignment operator 
+  OsiSolverLinearizedQuadratic & operator=(const OsiSolverLinearizedQuadratic& rhs);
+  
+  /// Destructor 
+  virtual ~OsiSolverLinearizedQuadratic ();
+  
+  //@}
+  
+  
+  /**@name Sets and Gets */
+  //@{
+  /// Objective value of best solution found internally
+  inline double bestObjectiveValue() const
+  { return bestObjectiveValue_;};
+  /// Best solution found internally
+  const double * bestSolution() const
+  { return bestSolution_;};
+  /// Set special options
+  inline void setSpecialOptions3(int value)
+  { specialOptions3_=value;};
+  /// Get special options
+  inline int specialOptions3() const
+  { return specialOptions3_;};
+  /// Copy of quadratic model if one
+  ClpSimplex * quadraticModel() const
+  { return quadraticModel_;};
+  //@}
+  
+  //---------------------------------------------------------------------------
+  
+protected:
+  
+  
+  /**@name functions */
+  //@{
+  
+  /**@name Private member data */
+  //@{
+  /// Objective value of best solution found internally
+  double bestObjectiveValue_;
+  /// Copy of quadratic model if one
+  ClpSimplex * quadraticModel_;
+  /// Best solution found internally
+  double * bestSolution_;
+  /**
+     0 bit (1) - don't do mini B&B
+     1 bit (2) - quadratic only in objective
+  */
+  int specialOptions3_;
+  //@}
 };
 #endif
 #endif

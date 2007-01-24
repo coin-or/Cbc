@@ -38,6 +38,7 @@ typedef struct
   double * sosReference;
   char ** arguments;
   char buffer[300];
+  int logLevel;
 } ampl_info;
 #ifdef __cplusplus
 extern "C"{

@@ -30,7 +30,23 @@
 #include "CbcModel.hpp"
 #include "CbcCutGenerator.hpp"
 #include "CglStored.hpp"
-//#include "CglTemporary.hpp"
+#include "CglPreProcess.hpp"
+#include "CglGomory.hpp"
+#include "CglProbing.hpp"
+#include "CglKnapsackCover.hpp"
+#include "CglRedSplit.hpp"
+#include "CglClique.hpp"
+#include "CglFlowCover.hpp"
+#include "CglMixedIntegerRounding2.hpp"
+#include "CglTwomir.hpp"
+#include "CglDuplicateRow.hpp"
+#include "CbcHeuristicFPump.hpp"
+#include "CbcHeuristic.hpp"
+#include "CbcHeuristicLocal.hpp"
+#include "CbcHeuristicGreedy.hpp"
+#include "ClpLinearObjective.hpp"
+#include "CbcBranchActual.hpp"
+#include "CbcCompareActual.hpp"
 //#############################################################################
 // Solve methods
 //#############################################################################
@@ -182,11 +198,10 @@ void OsiSolverLink::resolve()
 {
   specialOptions_ =0;
   modelPtr_->setWhatsChanged(0);
-  bool allFixed=false;
+  bool allFixed=numberFix_>0;
   bool feasible=true;
   if (numberVariables_) {
     CoinPackedMatrix * temp = new CoinPackedMatrix(*matrix_);
-    allFixed=true;
     //bool best=true;
     const double * lower = modelPtr_->columnLower();
     const double * upper = modelPtr_->columnUpper();
@@ -196,9 +211,7 @@ void OsiSolverLink::resolve()
       int iColumn = info_[i].variable();
       double lo = lower[iColumn];
       double up = upper[iColumn];
-      if (up>lo)
-	allFixed=false;
-      else if (up<lo)
+      if (up<lo)
 	feasible=false;
     }
     int updated=updateCoefficients(modelPtr_,temp);
@@ -283,7 +296,7 @@ void OsiSolverLink::resolve()
   }
   if (!feasible)
     allFixed=false;
-  if ((specialOptions2_&1)!=0)
+  if ((specialOptions2_&1)==0)
     allFixed=false;
   int returnCode=-1;
   // See if in strong branching
@@ -291,7 +304,23 @@ void OsiSolverLink::resolve()
   if (feasible) {
     if(maxIts>10000) {
       // may do lots of work
-      returnCode=fathom(allFixed);
+      if ((specialOptions2_&1)!=0) {
+	// see if fixed
+	const double * lower = modelPtr_->columnLower();
+	const double * upper = modelPtr_->columnUpper();
+	for (int i=0;i<numberFix_;i++ ) {
+	  int iColumn = fixVariables_[i];
+	  double lo = lower[iColumn];
+	  double up = upper[iColumn];
+	  if (up>lo) {
+	    allFixed=false;
+	    break;
+	  }
+	}
+	returnCode=allFixed ? fathom(allFixed) : 0;
+      } else {
+	returnCode=0;
+      }
     } else {
       returnCode=0;
     }
@@ -299,7 +328,7 @@ void OsiSolverLink::resolve()
   if (returnCode>=0) {
     if (returnCode==0)
       OsiClpSolverInterface::resolve();
-    if (!allFixed&&(specialOptions2_&1)==0) {
+    if (!allFixed&&(specialOptions2_&1)!=0) {
       const double * solution = getColSolution();
       bool satisfied=true;
       for (int i=0;i<numberVariables_;i++) {
@@ -532,10 +561,11 @@ void OsiSolverLink::resolve()
       }
       // ???  - try
       // But skip if strong branching
-      CbcModel * cbcModel = (modelPtr_->maximumIterations()<10000) ? cbcModel_ : NULL;
+      CbcModel * cbcModel = (modelPtr_->maximumIterations()>10000) ? cbcModel_ : NULL;
       if ((specialOptions2_&2)!=0) {
 	// If model has stored then add cut (if convex)
-	if (cbcModel&&(specialOptions2_&4)!=0&&quadraticModel_) {
+	// off until I work out problem with ibell3a
+	if (cbcModel&&(specialOptions2_&4)!=0&&quadraticModel_&&false) {
 	  int numberGenerators = cbcModel_->numberCutGenerators();
 	  int iGenerator;
 	  for (iGenerator=0;iGenerator<numberGenerators;iGenerator++) {
@@ -878,7 +908,7 @@ int decodeBit(char * phrase, char * & nextPhrase, double & coefficient, bool ifF
   nextPhrase = pos;
   return jColumn;
 }
-void OsiSolverLink::load ( CoinModel & coinModel, bool tightenBounds)
+void OsiSolverLink::load ( CoinModel & coinModel, bool tightenBounds,int logLevel)
 {
   // first check and set up arrays
   int numberColumns = coinModel.numberColumns();
@@ -1039,6 +1069,8 @@ void OsiSolverLink::load ( CoinModel & coinModel, bool tightenBounds)
       }
       tempModel.deleteRows(nDelete,freeRow);
       tempModel.setOptimizationDirection(1.0);
+      if (logLevel<3)
+	tempModel.setLogLevel(0);
       double * objective = tempModel.objective();
       CoinZeroN(objective,numberColumns);
       // now up and down
@@ -1053,8 +1085,10 @@ void OsiSolverLink::load ( CoinModel & coinModel, bool tightenBounds)
 	    double value = solution[iColumn];
 	    if (coinModel_.isInteger(iColumn))
 	      value = ceil(value-0.9e-3);
-	    printf("lower bound on %d changed from %g to %g\n",iColumn,columnLower[iColumn],value);
+	    if (logLevel>1)
+	      printf("lower bound on %d changed from %g to %g\n",iColumn,columnLower[iColumn],value);
 	    columnLower[iColumn]=value;
+	    coinModel_.setColumnLower(iColumn,value);
 	  }
 	  objective[iColumn]=-1.0;
 	  tempModel.primal(1);
@@ -1062,8 +1096,10 @@ void OsiSolverLink::load ( CoinModel & coinModel, bool tightenBounds)
 	    double value = solution[iColumn];
 	    if (coinModel_.isInteger(iColumn))
 	      value = floor(value+0.9e-3);
-	    printf("upper bound on %d changed from %g to %g\n",iColumn,columnUpper[iColumn],value);
+	    if (logLevel>1)
+	      printf("upper bound on %d changed from %g to %g\n",iColumn,columnUpper[iColumn],value);
 	    columnUpper[iColumn]=value;
+	    coinModel_.setColumnUpper(iColumn,value);
 	  }
 	  objective[iColumn]=0.0;
 	}
@@ -1421,6 +1457,43 @@ void OsiSolverLink::load ( CoinModel & coinModel, bool tightenBounds)
     }
   }
   delete [] which;
+}
+// Set all biLinear priorities on x-x variables
+void 
+OsiSolverLink::setBiLinearPriorities(int value)
+{
+  int i;
+  for ( i =0;i<numberObjects_;i++) {
+    OsiBiLinear * obj = dynamic_cast<OsiBiLinear *> (object_[i]);
+    if (obj) {
+      if (obj->xMeshSize()<1.0&&obj->yMeshSize()<1.0) {
+	obj->setPriority(value);
+      }
+    }
+  }
+}
+// Set all mesh sizes on x-x variables
+void 
+OsiSolverLink::setMeshSizes(double value)
+{
+  int i;
+  for ( i =0;i<numberObjects_;i++) {
+    OsiBiLinear * obj = dynamic_cast<OsiBiLinear *> (object_[i]);
+    if (obj) {
+      if (obj->xMeshSize()<1.0&&obj->yMeshSize()<1.0) {
+#if 0
+	numberContinuous++;
+	int xColumn = obj->xColumn();
+	double gapX = upper[xColumn]-lower[xColumn];
+	int yColumn = obj->yColumn();
+	double gapY = upper[yColumn]-lower[yColumn];
+	gap = CoinMax(gap,CoinMax(gapX,gapY));
+#endif
+	obj->setXMeshSize(value);
+	obj->setYMeshSize(value);
+      }
+    }
+  }
 }
 /* Solves nonlinear problem from CoinModel using SLP - may be used as crash
    for other algorithms when number of iterations small.
@@ -2082,6 +2155,166 @@ OsiSolverLink::nonlinearSLP(int numberPasses,double deltaTolerance)
   delete [] markNonlinear;
   return CoinCopyOfArray(solution,coinModel.numberColumns());
 }
+/* Solve linearized quadratic objective branch and bound.
+   Return cutoff and OA cut
+*/
+double 
+OsiSolverLink::linearizedBAB(CglStored * cut) 
+{
+  double bestObjectiveValue=COIN_DBL_MAX;
+  if (quadraticModel_) {
+    ClpSimplex * qp = new ClpSimplex(*quadraticModel_);
+    // bounds
+    int numberColumns = qp->numberColumns();
+    double * lower = qp->columnLower();
+    double * upper = qp->columnUpper();
+    const double * lower2 = getColLower();
+    const double * upper2 = getColUpper();
+    for (int i=0;i<numberColumns;i++) {
+      lower[i] = CoinMax(lower[i],lower2[i]);
+      upper[i] = CoinMin(upper[i],upper2[i]);
+    }
+    qp->nonlinearSLP(20,1.0e-5);
+    qp->primal();
+    OsiSolverLinearizedQuadratic solver2(qp);
+    const double * solution=NULL;
+    // Reduce printout
+    solver2.setHintParam(OsiDoReducePrint,true,OsiHintTry);
+    CbcModel model2(solver2);
+    // Now do requested saves and modifications
+    CbcModel * cbcModel = & model2;
+    OsiSolverInterface * osiModel = model2.solver();
+    OsiClpSolverInterface * osiclpModel = dynamic_cast< OsiClpSolverInterface*> (osiModel);
+    ClpSimplex * clpModel = osiclpModel->getModelPtr();
+    
+    // Set changed values
+    
+    CglProbing probing;
+    probing.setMaxProbe(10);
+    probing.setMaxLook(10);
+    probing.setMaxElements(200);
+    probing.setMaxProbeRoot(50);
+    probing.setMaxLookRoot(10);
+    probing.setRowCuts(3);
+    probing.setUsingObjective(true);
+    cbcModel->addCutGenerator(&probing,-1,"Probing",true,false,false,-100,-1,-1);
+    cbcModel->cutGenerator(0)->setTiming(true);
+    
+    CglGomory gomory;
+    gomory.setLimitAtRoot(512);
+    cbcModel->addCutGenerator(&gomory,-98,"Gomory",true,false,false,-100,-1,-1);
+    cbcModel->cutGenerator(1)->setTiming(true);
+    
+    CglKnapsackCover knapsackCover;
+    cbcModel->addCutGenerator(&knapsackCover,-98,"KnapsackCover",true,false,false,-100,-1,-1);
+    cbcModel->cutGenerator(2)->setTiming(true);
+    
+    CglClique clique;
+    clique.setStarCliqueReport(false);
+    clique.setRowCliqueReport(false);
+    clique.setMinViolation(0.1);
+    cbcModel->addCutGenerator(&clique,-98,"Clique",true,false,false,-100,-1,-1);
+    cbcModel->cutGenerator(3)->setTiming(true);
+    
+    CglMixedIntegerRounding2 mixedIntegerRounding2;
+    cbcModel->addCutGenerator(&mixedIntegerRounding2,-98,"MixedIntegerRounding2",true,false,false,-100,-1,-1);
+    cbcModel->cutGenerator(4)->setTiming(true);
+    
+    CglFlowCover flowCover;
+    cbcModel->addCutGenerator(&flowCover,-98,"FlowCover",true,false,false,-100,-1,-1);
+    cbcModel->cutGenerator(5)->setTiming(true);
+    
+    CglTwomir twomir;
+    twomir.setMaxElements(250);
+    cbcModel->addCutGenerator(&twomir,-99,"Twomir",true,false,false,-100,-1,-1);
+    cbcModel->cutGenerator(6)->setTiming(true);
+    // For now - switch off most heuristics (because CglPreProcess is bad with QP)
+#if 0    
+    CbcHeuristicFPump heuristicFPump(*cbcModel);
+    heuristicFPump.setWhen(13);
+    heuristicFPump.setMaximumPasses(20);
+    heuristicFPump.setMaximumRetries(7);
+    heuristicFPump.setAbsoluteIncrement(4332.64);
+    cbcModel->addHeuristic(&heuristicFPump);
+    heuristicFPump.setInitialWeight(1);
+    
+    CbcHeuristicLocal heuristicLocal(*cbcModel);
+    heuristicLocal.setSearchType(1);
+    cbcModel->addHeuristic(&heuristicLocal);
+    
+    CbcHeuristicGreedyCover heuristicGreedyCover(*cbcModel);
+    cbcModel->addHeuristic(&heuristicGreedyCover);
+    
+    CbcHeuristicGreedyEquality heuristicGreedyEquality(*cbcModel);
+    cbcModel->addHeuristic(&heuristicGreedyEquality);
+#endif
+    
+    CbcRounding rounding(*cbcModel);
+    cbcModel->addHeuristic(&rounding);
+    
+    cbcModel->setNumberBeforeTrust(5);
+    cbcModel->setSpecialOptions(2);
+    cbcModel->messageHandler()->setLogLevel(1);
+    cbcModel->setMaximumCutPassesAtRoot(-100);
+    cbcModel->setMaximumCutPasses(1);
+    cbcModel->setMinimumDrop(0.05);
+    // For branchAndBound this may help
+    clpModel->defaultFactorizationFrequency();
+    clpModel->setDualBound(1.0001e+08);
+    clpModel->setPerturbation(50);
+    osiclpModel->setSpecialOptions(193);
+    osiclpModel->messageHandler()->setLogLevel(0);
+    osiclpModel->setIntParam(OsiMaxNumIterationHotStart,100);
+    osiclpModel->setHintParam(OsiDoReducePrint,true,OsiHintTry);
+    // You can save some time by switching off message building
+    // clpModel->messagesPointer()->setDetailMessages(100,10000,(int *) NULL);
+    
+    // Solve
+    
+    cbcModel->initialSolve();
+    if (clpModel->tightenPrimalBounds()!=0) {
+      std::cout<<"Problem is infeasible - tightenPrimalBounds!"<<std::endl;
+      delete qp;
+      return COIN_DBL_MAX;
+    }
+    clpModel->dual();  // clean up
+    cbcModel->initialSolve();
+    cbcModel->branchAndBound();
+    OsiSolverLinearizedQuadratic * solver3 = dynamic_cast<OsiSolverLinearizedQuadratic *> (model2.solver());
+    assert (solver3);
+    solution = solver3->bestSolution();
+    bestObjectiveValue = solver3->bestObjectiveValue();
+    setBestObjectiveValue(bestObjectiveValue);
+    setBestSolution(solution,solver3->getNumCols());
+    // if convex
+    if ((specialOptions2()&4)!=0) {
+      // add OA cut
+      double offset;
+      double * gradient = new double [numberColumns+1];
+      memcpy(gradient,qp->objectiveAsObject()->gradient(qp,solution,offset,true,2),
+	     numberColumns*sizeof(double));
+      double rhs = 0.0;
+      int * column = new int[numberColumns+1];
+      int n=0;
+      for (int i=0;i<numberColumns;i++) {
+	double value = gradient[i];
+	if (fabs(value)>1.0e-12) {
+	  gradient[n]=value;
+	  rhs += value*solution[i];
+	  column[n++]=i;
+	}
+      }
+      gradient[n]=-1.0;
+      column[n++]=numberColumns;
+      cut->addCut(-COIN_DBL_MAX,offset+1.0e-7,n,column,gradient);
+      delete [] gradient;
+      delete [] column;
+    }
+    delete qp;
+    printf("obj %g\n",bestObjectiveValue);
+  } 
+  return bestObjectiveValue;
+}
 // Analyze constraints to see which are convex (quadratic)
 void 
 OsiSolverLink::analyzeObjects()
@@ -2277,6 +2510,7 @@ OsiSolverLink::gutsOfDestructor(bool justNullify)
     delete [] rowNonLinear_;
     delete [] convex_;
     delete [] whichNonLinear_;
+    delete [] fixVariables_;
   } 
   matrix_ = NULL;
   originalRowCopy_ = NULL;
@@ -2288,6 +2522,7 @@ OsiSolverLink::gutsOfDestructor(bool justNullify)
   whichNonLinear_ = NULL;
   cbcModel_ = NULL;
   info_ = NULL;
+  fixVariables_=NULL;
   numberVariables_ = 0;
   specialOptions2_ = 0;
   objectiveRow_=-1;
@@ -2298,6 +2533,7 @@ OsiSolverLink::gutsOfDestructor(bool justNullify)
   defaultBound_ = 1.0e4;
   integerPriority_ = 1000;
   biLinearPriority_ = 10000;
+  numberFix_=0;
 }
 void 
 OsiSolverLink::gutsOfCopy(const OsiSolverLink & rhs)
@@ -2313,6 +2549,7 @@ OsiSolverLink::gutsOfCopy(const OsiSolverLink & rhs)
   defaultBound_ = rhs.defaultBound_;
   integerPriority_ = rhs.integerPriority_;
   biLinearPriority_ = rhs.biLinearPriority_;
+  numberFix_ = rhs.numberFix_;
   cbcModel_ = rhs.cbcModel_;
   if (numberVariables_) { 
     if (rhs.matrix_)
@@ -2345,6 +2582,7 @@ OsiSolverLink::gutsOfCopy(const OsiSolverLink & rhs)
   } else {
     quadraticModel_ = NULL;
   }
+  fixVariables_ = CoinCopyOfArray(rhs.fixVariables_,numberFix_);
 }
 // Add a bound modifier
 void 
@@ -2395,6 +2633,571 @@ OsiSolverLink::setBestSolution(const double * solution, int numberColumns)
   bestSolution_ = new double [numberColumnsThis];
   CoinZeroN(bestSolution_,numberColumnsThis);
   memcpy(bestSolution_,solution,CoinMin(numberColumns,numberColumnsThis)*sizeof(double));
+}
+/* Two tier integer problem where when set of variables with priority
+   less than this are fixed the problem becomes an easier integer problem
+*/
+void 
+OsiSolverLink::setFixedPriority(int priorityValue)
+{
+  delete [] fixVariables_;
+  fixVariables_=NULL;
+  numberFix_=0;
+  int i;
+  for ( i =0;i<numberObjects_;i++) {
+    OsiSimpleInteger * obj = dynamic_cast<OsiSimpleInteger *> (object_[i]);
+    if (obj) {
+      int iColumn = obj->columnNumber();
+      assert (iColumn>=0);
+      if (obj->priority()<priorityValue)
+	numberFix_++;
+    }
+  }
+  if (numberFix_) {
+    specialOptions2_ |= 1;
+    fixVariables_ = new int [numberFix_];
+    numberFix_=0;
+    // need to make sure coinModel_ is correct 
+    int numberColumns = coinModel_.numberColumns();
+    char * highPriority = new char [numberColumns];
+    CoinZeroN(highPriority,numberColumns);
+    for ( i =0;i<numberObjects_;i++) {
+      OsiSimpleInteger * obj = dynamic_cast<OsiSimpleInteger *> (object_[i]);
+      if (obj) {
+	int iColumn = obj->columnNumber();
+	assert (iColumn>=0);
+	if (iColumn<numberColumns) {
+	  if (obj->priority()<priorityValue) {
+	    object_[i]=new OsiSimpleFixedInteger(*obj);
+	    delete obj;
+	    fixVariables_[numberFix_++]=iColumn;
+	    highPriority[iColumn]=2;
+	  } else {
+	    highPriority[iColumn]=1;
+	  }
+	}
+      }
+    }
+    // All nonlinear terms must involve high priority (as known)
+    double * linear = new double[numberColumns];
+    int numberRows = coinModel_.numberRows();
+    for (int iRow=0;iRow<numberRows;iRow++) {
+      CoinPackedMatrix * row = quadraticRow(iRow,linear);
+      if (row) {
+	// see if valid
+	const double * element = row->getElements();
+	const int * columnLow = row->getIndices();
+	const CoinBigIndex * columnHigh = row->getVectorStarts();
+	const int * columnLength = row->getVectorLengths();
+	int numberLook = row->getNumCols();
+	int canSwap=0;
+	for (int i=0;i<numberLook;i++) {
+	  // this one needs to be available
+	  int iPriority = highPriority[i];
+	  for (int j=columnHigh[i];j<columnHigh[i]+columnLength[i];j++) {
+	    int iColumn = columnLow[j];
+	    if (highPriority[iColumn]<=1) {
+	      assert (highPriority[iColumn]==1);
+	      if (iPriority==1) {
+		canSwap=-1; // no good
+		break;
+	      } else {
+		canSwap=1;
+	      }
+	    }
+	  }
+	}
+	if (canSwap) {
+	  if (canSwap>0) {
+	    // rewrite row
+	    /* get triples
+	       then swap ones needed
+	       then create packedmatrix
+	       then replace row
+	    */
+	    int numberElements=columnHigh[numberLook];
+	    int * columnHigh2 = new int [numberElements];
+	    int * columnLow2 = new int [numberElements];
+	    double * element2 = new double [numberElements];
+	    for (int i=0;i<numberLook;i++) {
+	      // this one needs to be available
+	      int iPriority = highPriority[i];
+	      if (iPriority==2) {
+		for (int j=columnHigh[i];j<columnHigh[i]+columnLength[i];j++) {
+		  columnHigh2[j]=i;
+		  columnLow2[j]=columnLow[j];
+		  element2[j]=element[j];
+		}
+	      } else {
+		for (int j=columnHigh[i];j<columnHigh[i]+columnLength[i];j++) {
+		  columnLow2[j]=i;
+		  columnHigh2[j]=columnLow[j];
+		  element2[j]=element[j];
+		}
+	      }
+	    }
+	    delete row;
+	    row = new CoinPackedMatrix(true,columnHigh2,columnLow2,element2,numberElements);
+	    delete [] columnHigh2;
+	    delete [] columnLow2;
+	    delete [] element2;
+	    // Now replace row
+	    replaceQuadraticRow(iRow,linear,row);
+	    delete row;
+	  } else {
+	    delete row;
+	    printf("Unable to use priority - row %d\n",iRow);
+	    delete [] fixVariables_;
+	    fixVariables_ = NULL;
+	    numberFix_=0;
+	    break;
+	  }
+	}
+      }
+    }
+    delete [] highPriority;
+    delete [] linear;
+  }
+}
+// Replaces a quadratic row
+void 
+OsiSolverLink::replaceQuadraticRow(int rowNumber,const double * linearRow, const CoinPackedMatrix * quadraticPart)
+{
+  int numberColumns = coinModel_.numberColumns();
+  int numberRows = coinModel_.numberRows();
+  assert (rowNumber>=0&&rowNumber<numberRows);
+  CoinModelLink triple=coinModel_.firstInRow(rowNumber);
+  while (triple.column()>=0) {
+    int iColumn = triple.column();
+    coinModel_.deleteElement(rowNumber,iColumn);
+    // triple stale - so start over
+    triple=coinModel_.firstInRow(rowNumber);
+  }
+  const double * element = quadraticPart->getElements();
+  const int * column = quadraticPart->getIndices();
+  const CoinBigIndex * columnStart = quadraticPart->getVectorStarts();
+  const int * columnLength = quadraticPart->getVectorLengths();
+  int numberLook = quadraticPart->getNumCols();
+  int i;
+  for (i=0;i<numberLook;i++) {
+    if (!columnLength[i]) {
+      // just linear part
+      if (linearRow[i])
+	coinModel_.setElement(rowNumber,i,linearRow[i]);
+    } else {
+      char temp[10000];
+      int put=0;
+      char temp2[30];
+      bool first=true;
+      if (linearRow[i]) {
+	sprintf(temp,"%g",linearRow[i]);
+	first=false;
+	put = strlen(temp);
+      }
+      for (int j=columnStart[i];j<columnStart[i]+columnLength[i];j++) {
+	int jColumn = column[j];
+	double value = element[j];
+	if (value<0.0||first) 
+	  sprintf(temp2,"%g*c%7.7d",value,jColumn);
+	else
+	  sprintf(temp2,"+%g*c%7.7d",value,jColumn);
+	int nextPut = put + strlen(temp2);
+	assert (nextPut<10000);
+	strcpy(temp+put,temp2);
+	put = nextPut;
+      }
+      coinModel_.setElement(rowNumber,i,temp);
+    }
+  }
+  // rest of linear
+  for (;i<numberColumns;i++) {
+    if (linearRow[i])
+      coinModel_.setElement(rowNumber,i,linearRow[i]);
+  }
+}
+// Gets correct form for a quadratic row - user to delete
+CoinPackedMatrix * 
+OsiSolverLink::quadraticRow(int rowNumber,double * linearRow) const
+{
+  int numberColumns = coinModel_.numberColumns();
+  int numberRows = coinModel_.numberRows();
+  CoinZeroN(linearRow,numberColumns);
+  int numberElements=0;
+  assert (rowNumber>=0&&rowNumber<numberRows);
+  CoinModelLink triple=coinModel_.firstInRow(rowNumber);
+  while (triple.column()>=0) {
+    int iColumn = triple.column();
+    const char * expr = coinModel_.getElementAsString(rowNumber,iColumn);
+    if (strcmp(expr,"Numeric")) {
+      // try and see which columns
+      assert (strlen(expr)<20000);
+      char temp[20000];
+      strcpy(temp,expr);
+      char * pos = temp;
+      bool ifFirst=true;
+      while (*pos) {
+	double value;
+	int jColumn = decodeBit(pos, pos, value, ifFirst, coinModel_);
+	// must be column unless first when may be linear term
+	if (jColumn>=0) {
+	  numberElements++;
+	} else if (jColumn==-2) {
+	  linearRow[iColumn]=value;
+	} else {
+	  printf("bad nonlinear term %s\n",temp);
+	  abort();
+	}
+	ifFirst=false;
+      }
+    } else {
+      linearRow[iColumn]=coinModel_.getElement(rowNumber,iColumn);
+    }
+    triple=coinModel_.next(triple);
+  }
+  if (!numberElements) {
+    return NULL;
+  } else {
+    int * column = new int[numberElements];
+    int * column2 = new int[numberElements];
+    double * element = new double[numberElements];
+    numberElements=0;
+    CoinModelLink triple=coinModel_.firstInRow(rowNumber);
+    while (triple.column()>=0) {
+      int iColumn = triple.column();
+      const char * expr = coinModel_.getElementAsString(rowNumber,iColumn);
+      if (strcmp(expr,"Numeric")) {
+	// try and see which columns
+	assert (strlen(expr)<20000);
+	char temp[20000];
+	strcpy(temp,expr);
+	char * pos = temp;
+	bool ifFirst=true;
+	while (*pos) {
+	  double value;
+	  int jColumn = decodeBit(pos, pos, value, ifFirst, coinModel_);
+	  // must be column unless first when may be linear term
+	  if (jColumn>=0) {
+	    column[numberElements]=iColumn;
+	    column2[numberElements]=jColumn;
+	    element[numberElements++]=value;
+	  } else if (jColumn!=-2) {
+	    printf("bad nonlinear term %s\n",temp);
+	    abort();
+	  }
+	  ifFirst=false;
+	}
+      }
+      triple=coinModel_.next(triple);
+    }
+    return new CoinPackedMatrix(true,column2,column,element,numberElements);
+  }
+}
+/*
+  Problem specific 
+  Returns -1 if node fathomed and no solution
+  0 if did nothing
+  1 if node fathomed and solution
+  allFixed is true if all LinkedBound variables are fixed
+*/
+int 
+OsiSolverLink::fathom(bool allFixed)
+{
+  int returnCode=0;
+  if (allFixed) {
+    // all fixed so we can reformulate
+    OsiClpSolverInterface newSolver;
+    // set values
+    const double * lower = modelPtr_->columnLower();
+    const double * upper = modelPtr_->columnUpper();
+    int i;
+    for (i=0;i<numberFix_;i++ ) {
+      int iColumn = fixVariables_[i];
+      double lo = lower[iColumn];
+      double up = upper[iColumn];
+      assert (lo==up);
+      //printf("column %d fixed to %g\n",iColumn,lo);
+      coinModel_.associateElement(coinModel_.columnName(iColumn),lo);
+    }
+    newSolver.loadFromCoinModel(coinModel_,true);
+    for (i=0;i<numberFix_;i++ ) {
+      int iColumn = fixVariables_[i];
+      newSolver.setColLower(iColumn,lower[iColumn]);
+      newSolver.setColUpper(iColumn,lower[iColumn]);
+    }
+    // see if everything with objective fixed
+    const double * objective = modelPtr_->objective();
+    int numberColumns = newSolver.getNumCols();
+    bool zeroObjective=true;
+    double sum=0.0;
+    for (i=0;i<numberColumns;i++) {
+      if (upper[i]>lower[i]&&objective[i]) {
+	zeroObjective=false;
+	break;
+      } else {
+	sum += lower[i]*objective[i];
+      }
+    }
+    //if (fabs(sum-8.3)<1.0e-5)
+    //printf("possible\n");
+    if (zeroObjective) {
+      // randomize objective
+      ClpSimplex * clpModel = newSolver.getModelPtr();
+      const double * element = clpModel->matrix()->getMutableElements();
+      //const int * row = clpModel->matrix()->getIndices();
+      const CoinBigIndex * columnStart = clpModel->matrix()->getVectorStarts();
+      const int * columnLength = clpModel->matrix()->getVectorLengths();
+      double * objective = clpModel->objective();
+      for (i=0;i<numberColumns;i++) {
+	if (clpModel->isInteger(i)) {
+	  double value=0.0;
+	  for (int j=columnStart[i];j<columnStart[i]+columnLength[i];j++) {
+	    value += fabs(element[j]);
+	  }
+	  objective[i]=value;
+	}
+      }
+    }
+    newSolver.writeMps("xx");
+    CbcModel model(newSolver);
+    // Now do requested saves and modifications
+    CbcModel * cbcModel = & model;
+    OsiSolverInterface * osiModel = model.solver();
+    OsiClpSolverInterface * osiclpModel = dynamic_cast< OsiClpSolverInterface*> (osiModel);
+    ClpSimplex * clpModel = osiclpModel->getModelPtr();
+    CglProbing probing;
+    probing.setMaxProbe(10);
+    probing.setMaxLook(10);
+    probing.setMaxElements(200);
+    probing.setMaxProbeRoot(50);
+    probing.setMaxLookRoot(10);
+    probing.setRowCuts(3);
+    probing.setRowCuts(0);
+    probing.setUsingObjective(true);
+    cbcModel->addCutGenerator(&probing,-1,"Probing",true,false,false,-100,-1,-1);
+    
+    CglGomory gomory;
+    gomory.setLimitAtRoot(512);
+    cbcModel->addCutGenerator(&gomory,-98,"Gomory",true,false,false,-100,-1,-1);
+    
+    CglKnapsackCover knapsackCover;
+    cbcModel->addCutGenerator(&knapsackCover,-98,"KnapsackCover",true,false,false,-100,-1,-1);
+  
+    CglClique clique;
+    clique.setStarCliqueReport(false);
+    clique.setRowCliqueReport(false);
+    clique.setMinViolation(0.1);
+    cbcModel->addCutGenerator(&clique,-98,"Clique",true,false,false,-100,-1,-1);
+    CglMixedIntegerRounding2 mixedIntegerRounding2;
+    cbcModel->addCutGenerator(&mixedIntegerRounding2,-98,"MixedIntegerRounding2",true,false,false,-100,-1,-1);
+    
+    CglFlowCover flowCover;
+    cbcModel->addCutGenerator(&flowCover,-98,"FlowCover",true,false,false,-100,-1,-1);
+    
+    CglTwomir twomir;
+    twomir.setMaxElements(250);
+    cbcModel->addCutGenerator(&twomir,-99,"Twomir",true,false,false,-100,-1,-1);
+    cbcModel->cutGenerator(6)->setTiming(true);
+    
+    CbcHeuristicFPump heuristicFPump(*cbcModel);
+    heuristicFPump.setWhen(1);
+    heuristicFPump.setMaximumPasses(20);
+    heuristicFPump.setDefaultRounding(0.5);
+    cbcModel->addHeuristic(&heuristicFPump);
+    
+    CbcRounding rounding(*cbcModel);
+    cbcModel->addHeuristic(&rounding);
+    
+    CbcHeuristicLocal heuristicLocal(*cbcModel);
+    heuristicLocal.setSearchType(1);
+    cbcModel->addHeuristic(&heuristicLocal);
+    
+    CbcHeuristicGreedyCover heuristicGreedyCover(*cbcModel);
+    cbcModel->addHeuristic(&heuristicGreedyCover);
+    
+    CbcHeuristicGreedyEquality heuristicGreedyEquality(*cbcModel);
+    cbcModel->addHeuristic(&heuristicGreedyEquality);
+    
+    CbcCompareDefault compare;
+    cbcModel->setNodeComparison(compare);
+    cbcModel->setNumberBeforeTrust(5);
+    cbcModel->setSpecialOptions(2);
+    cbcModel->messageHandler()->setLogLevel(1);
+    cbcModel->setMaximumCutPassesAtRoot(-100);
+    cbcModel->setMaximumCutPasses(1);
+    cbcModel->setMinimumDrop(0.05);
+    clpModel->setNumberIterations(1);
+    // For branchAndBound this may help
+    clpModel->defaultFactorizationFrequency();
+    clpModel->setDualBound(6.71523e+07);
+    clpModel->setPerturbation(50);
+    osiclpModel->setSpecialOptions(193);
+    osiclpModel->messageHandler()->setLogLevel(0);
+    osiclpModel->setIntParam(OsiMaxNumIterationHotStart,100);
+    osiclpModel->setHintParam(OsiDoReducePrint,true,OsiHintTry);
+    // You can save some time by switching off message building
+    // clpModel->messagesPointer()->setDetailMessages(100,10000,(int *) NULL);
+    // Solve
+    
+    cbcModel->initialSolve();
+    //double cutoff = model_->getCutoff();
+    cbcModel->setCutoff(1.0e50);
+    // to change exits
+    bool isFeasible=false;
+    int saveLogLevel=clpModel->logLevel();
+    clpModel->setLogLevel(0);
+    if (clpModel->tightenPrimalBounds()!=0) {
+      clpModel->setLogLevel(saveLogLevel);
+      returnCode=-1; // infeasible//std::cout<<"Problem is infeasible - tightenPrimalBounds!"<<std::endl;
+    } else {
+      clpModel->setLogLevel(saveLogLevel);
+      clpModel->dual();  // clean up
+      // compute some things using problem size
+      cbcModel->setMinimumDrop(min(5.0e-2,
+				   fabs(cbcModel->getMinimizationObjValue())*1.0e-3+1.0e-4));
+      if (cbcModel->getNumCols()<500)
+	cbcModel->setMaximumCutPassesAtRoot(-100); // always do 100 if possible
+      else if (cbcModel->getNumCols()<5000)
+	cbcModel->setMaximumCutPassesAtRoot(100); // use minimum drop
+      else
+	cbcModel->setMaximumCutPassesAtRoot(20);
+      cbcModel->setMaximumCutPasses(1);
+      // Hand coded preprocessing
+      CglPreProcess process;
+      OsiSolverInterface * saveSolver=cbcModel->solver()->clone();
+      // Tell solver we are in Branch and Cut
+      saveSolver->setHintParam(OsiDoInBranchAndCut,true,OsiHintDo) ;
+      // Default set of cut generators
+      CglProbing generator1;
+      generator1.setUsingObjective(true);
+      generator1.setMaxPass(3);
+      generator1.setMaxProbeRoot(saveSolver->getNumCols());
+      generator1.setMaxElements(100);
+      generator1.setMaxLookRoot(50);
+      generator1.setRowCuts(3);
+      // Add in generators
+      process.addCutGenerator(&generator1);
+      process.messageHandler()->setLogLevel(cbcModel->logLevel());
+      OsiSolverInterface * solver2 = 
+	process.preProcessNonDefault(*saveSolver,0,10);
+      // Tell solver we are not in Branch and Cut
+      saveSolver->setHintParam(OsiDoInBranchAndCut,false,OsiHintDo) ;
+      if (solver2)
+	solver2->setHintParam(OsiDoInBranchAndCut,false,OsiHintDo) ;
+      if (!solver2) {
+	std::cout<<"Pre-processing says infeasible!"<<std::endl;
+	delete saveSolver;
+	returnCode=-1;
+      } else {
+	std::cout<<"processed model has "<<solver2->getNumRows()
+		 <<" rows, "<<solver2->getNumCols()
+		 <<" and "<<solver2->getNumElements()<<std::endl;
+	// we have to keep solver2 so pass clone
+	solver2 = solver2->clone();
+	//solver2->writeMps("intmodel");
+	cbcModel->assignSolver(solver2);
+	cbcModel->initialSolve();
+	if (zeroObjective) {
+	  cbcModel->setMaximumSolutions(1); // just getting a solution
+#if 0
+	  OsiClpSolverInterface * osiclpModel = dynamic_cast< OsiClpSolverInterface*> (cbcModel->solver());
+	  ClpSimplex * clpModel = osiclpModel->getModelPtr();
+	  const double * element = clpModel->matrix()->getMutableElements();
+	  //const int * row = clpModel->matrix()->getIndices();
+	  const CoinBigIndex * columnStart = clpModel->matrix()->getVectorStarts();
+	  const int * columnLength = clpModel->matrix()->getVectorLengths();
+	  int n=clpModel->numberColumns();
+	  int * sort2 = new int[n];
+	  int * pri = new int[n];
+	  double * sort = new double[n];
+	  int i;
+	  int nint=0;
+	  for (i=0;i<n;i++) {
+	    if (clpModel->isInteger(i)) {
+	      double largest=0.0;
+	      for (int j=columnStart[i];j<columnStart[i]+columnLength[i];j++) {
+		largest = CoinMax(largest,fabs(element[j]));
+	      }
+	      sort2[nint]=nint;
+	      sort[nint++]=-largest;
+	    }
+	  }
+	  CoinSort_2(sort,sort+nint,sort2);
+	  int kpri=1;
+	  double last = sort[0];
+	  for (i=0;i<nint;i++) {
+	    if (sort[i]!=last) {
+	      kpri++;
+	      last=sort[i];
+	    }
+	    pri[sort2[i]]=kpri;
+	  }
+	  cbcModel->passInPriorities(pri,false);
+	  delete [] sort;
+	  delete [] sort2;
+	  delete [] pri;
+#endif
+	}
+	cbcModel->branchAndBound();
+	// For best solution
+	int numberColumns = newSolver.getNumCols();
+	if (cbcModel->getMinimizationObjValue()<1.0e50) {
+	  // post process
+	  process.postProcess(*cbcModel->solver());
+	  // Solution now back in saveSolver
+	  cbcModel->assignSolver(saveSolver);
+	  memcpy(cbcModel->bestSolution(),cbcModel->solver()->getColSolution(),
+		 numberColumns*sizeof(double));
+	  // put back in original solver
+	  newSolver.setColSolution(cbcModel->bestSolution());
+	  isFeasible=true;
+	} else {
+	  delete saveSolver;
+	}
+      }
+      //const double * solution = newSolver.getColSolution();
+      if (isFeasible&&cbcModel->getMinimizationObjValue()<1.0e50) {
+	int numberColumns = this->getNumCols();
+	int i;
+	const double * solution = cbcModel->bestSolution();
+	int numberColumns2 = newSolver.getNumCols();
+	for (i=0;i<numberColumns2;i++) {
+	  double value = solution[i];
+	  assert (fabs(value-floor(value+0.5))<0.0001);
+	  value = floor(value+0.5);
+	  this->setColLower(i,value);
+	  this->setColUpper(i,value);
+	}
+	for (;i<numberColumns;i++) {
+	  this->setColLower(i,0.0);
+	  this->setColUpper(i,1.1);
+	}
+	// but take off cuts
+	int numberRows = getNumRows();
+	int numberRows2 = cbcModel_->continuousSolver()->getNumRows();
+	    
+	for (i=numberRows2;i<numberRows;i++) 
+	  setRowBounds(i,-COIN_DBL_MAX,COIN_DBL_MAX);
+	initialSolve();
+	if (!isProvenOptimal())
+	  getModelPtr()->writeMps("bad.mps");
+	if (isProvenOptimal()) {
+	  delete [] bestSolution_;
+	  bestSolution_ = CoinCopyOfArray(modelPtr_->getColSolution(),modelPtr_->getNumCols());
+	  bestObjectiveValue_ = modelPtr_->objectiveValue();
+	  printf("BB best value %g\n",bestObjectiveValue_);
+	  returnCode = 1;
+	} else {
+	  printf("*** WHY BAD SOL\n");
+	  returnCode=-1;
+	}
+      } else {
+	modelPtr_->setProblemStatus(1);
+	modelPtr_->setObjectiveValue(COIN_DBL_MAX);
+	returnCode = -1;
+      }
+    }
+  }
+  return returnCode;
 }
 //#############################################################################
 // Constructors, destructors  and assignment
@@ -5227,6 +6030,189 @@ CglTemporary::operator=(const CglTemporary& rhs)
 {
   if (this != &rhs) {
     CglStored::operator=(rhs);
+  }
+  return *this;
+}
+void checkQP(ClpSimplex * model)
+{
+#if 0
+  printf("Checking quadratic model %x\n",model);
+  if (model) {
+    ClpQuadraticObjective * quadraticObj = (dynamic_cast< ClpQuadraticObjective*>(model->objectiveAsObject()));
+    assert (quadraticObj);
+    CoinPackedMatrix * quadraticObjective = quadraticObj->quadraticObjective();
+    int numberColumns = quadraticObj->numberColumns();
+    const int * columnQuadratic = quadraticObjective->getIndices();
+    const CoinBigIndex * columnQuadraticStart = quadraticObjective->getVectorStarts();
+    const int * columnQuadraticLength = quadraticObjective->getVectorLengths();
+    //const double * quadraticElement = quadraticObjective->getElements();
+    for (int i=0;i<numberColumns;i++) {
+      for (int j=columnQuadraticStart[i];j<columnQuadraticStart[i]+columnQuadraticLength[i];j++)
+	assert (columnQuadratic[j]>=0&&columnQuadratic[j]<1000);
+    }
+  }
+#endif
+}
+//#############################################################################
+// Solve methods
+//#############################################################################
+void OsiSolverLinearizedQuadratic::initialSolve()
+{
+  OsiClpSolverInterface::initialSolve();
+  int secondaryStatus = modelPtr_->secondaryStatus();
+  if (modelPtr_->status()==0&&(secondaryStatus==2||secondaryStatus==4))
+    modelPtr_->cleanup(1);
+  if (isProvenOptimal()&&modelPtr_->numberColumns()==quadraticModel_->numberColumns()) {
+    // see if qp can get better solution
+    const double * solution = modelPtr_->primalColumnSolution();
+    int numberColumns = modelPtr_->numberColumns();
+    bool satisfied=true;
+    for (int i=0;i<numberColumns;i++) {
+      if (isInteger(i)) {
+	double value = solution[i];
+	if (fabs(value-floor(value+0.5))>1.0e-6) {
+	  satisfied=false;
+	  break;
+	}
+      }
+    }
+    if (satisfied) {
+      checkQP(quadraticModel_);
+      ClpSimplex qpTemp(*quadraticModel_);
+      checkQP(&qpTemp);
+      double * lower = qpTemp.columnLower();
+      double * upper = qpTemp.columnUpper();
+      double * lower2 = modelPtr_->columnLower();
+      double * upper2 = modelPtr_->columnUpper();
+      for (int i=0;i<numberColumns;i++) {
+	if (isInteger(i)) {
+	  double value = floor(solution[i]+0.5);
+	  lower[i]=value;
+	  upper[i]=value;
+	} else {
+	  lower[i]=lower2[i];
+	  upper[i]=upper2[i];
+	}
+      }
+      //qpTemp.writeMps("bad.mps");
+      //modelPtr_->writeMps("bad2.mps");
+      //qpTemp.objectiveAsObject()->setActivated(0);
+      //qpTemp.primal();
+      //qpTemp.objectiveAsObject()->setActivated(1);
+      qpTemp.primal();
+      //assert (!qpTemp.problemStatus());
+      if (qpTemp.objectiveValue()<bestObjectiveValue_&&!qpTemp.problemStatus()) {
+	delete [] bestSolution_;
+	bestSolution_ = CoinCopyOfArray(qpTemp.primalColumnSolution(),numberColumns);
+	bestObjectiveValue_ = qpTemp.objectiveValue();
+	printf("better qp objective of %g\n",bestObjectiveValue_);
+      }
+    }
+  }
+}
+//#############################################################################
+// Constructors, destructors clone and assignment
+//#############################################################################
+//-------------------------------------------------------------------
+// Default Constructor 
+//-------------------------------------------------------------------
+OsiSolverLinearizedQuadratic::OsiSolverLinearizedQuadratic ()
+  : OsiClpSolverInterface()
+{
+  bestObjectiveValue_=COIN_DBL_MAX;
+  bestSolution_=NULL;
+  specialOptions3_=0;
+  quadraticModel_=NULL;
+}
+OsiSolverLinearizedQuadratic::OsiSolverLinearizedQuadratic ( ClpSimplex * quadraticModel)
+  : OsiClpSolverInterface(new ClpSimplex(*quadraticModel),true)
+{
+  bestObjectiveValue_=COIN_DBL_MAX;
+  bestSolution_=NULL;
+  specialOptions3_=0;
+  quadraticModel_=new ClpSimplex(*quadraticModel);
+  // linearize
+  int numberColumns = modelPtr_->numberColumns();
+  const double * solution = modelPtr_->primalColumnSolution();
+  // Replace objective
+  ClpObjective * trueObjective = modelPtr_->objectiveAsObject();
+  ClpObjective * objective=new ClpLinearObjective(NULL,numberColumns);
+  modelPtr_->setObjectivePointer(objective);
+  double offset;
+  double saveOffset = modelPtr_->objectiveOffset();
+  memcpy(modelPtr_->objective(),trueObjective->gradient(modelPtr_,solution,offset,true,2),
+	 numberColumns*sizeof(double));
+  modelPtr_->setObjectiveOffset(saveOffset+offset);
+  delete trueObjective;
+  checkQP(quadraticModel_);
+}
+//-------------------------------------------------------------------
+// Clone
+//-------------------------------------------------------------------
+OsiSolverInterface * 
+OsiSolverLinearizedQuadratic::clone(bool copyData) const
+{
+  assert (copyData);
+  return new OsiSolverLinearizedQuadratic(*this);
+}
+
+
+//-------------------------------------------------------------------
+// Copy constructor 
+//-------------------------------------------------------------------
+OsiSolverLinearizedQuadratic::OsiSolverLinearizedQuadratic (
+                  const OsiSolverLinearizedQuadratic & rhs)
+  : OsiClpSolverInterface(rhs)
+{
+  bestObjectiveValue_=rhs.bestObjectiveValue_;
+  if (rhs.bestSolution_) {
+    bestSolution_ = CoinCopyOfArray(rhs.bestSolution_,modelPtr_->numberColumns());
+  } else {
+    bestSolution_=NULL;
+  }
+  specialOptions3_=rhs.specialOptions3_;
+  if (rhs.quadraticModel_) {
+    quadraticModel_ = new ClpSimplex(*rhs.quadraticModel_);
+  } else {
+    quadraticModel_=NULL;
+  }
+  checkQP(rhs.quadraticModel_);
+  checkQP(quadraticModel_);
+}
+
+//-------------------------------------------------------------------
+// Destructor 
+//-------------------------------------------------------------------
+OsiSolverLinearizedQuadratic::~OsiSolverLinearizedQuadratic ()
+{
+  delete [] bestSolution_;
+  delete quadraticModel_;
+}
+
+//-------------------------------------------------------------------
+// Assignment operator 
+//-------------------------------------------------------------------
+OsiSolverLinearizedQuadratic &
+OsiSolverLinearizedQuadratic::operator=(const OsiSolverLinearizedQuadratic& rhs)
+{
+  if (this != &rhs) { 
+    delete [] bestSolution_;
+    delete quadraticModel_;
+    OsiClpSolverInterface::operator=(rhs);
+    bestObjectiveValue_=rhs.bestObjectiveValue_;
+    if (rhs.bestSolution_) {
+      bestSolution_ = CoinCopyOfArray(rhs.bestSolution_,modelPtr_->numberColumns());
+    } else {
+      bestSolution_=NULL;
+    }
+    specialOptions3_=rhs.specialOptions3_;
+    if (rhs.quadraticModel_) {
+      quadraticModel_ = new ClpSimplex(*rhs.quadraticModel_);
+    } else {
+      quadraticModel_=NULL;
+    }
+    checkQP(rhs.quadraticModel_);
+    checkQP(quadraticModel_);
   }
   return *this;
 }

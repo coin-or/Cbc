@@ -987,6 +987,16 @@ CbcIntegerBranchingObject::branch()
   double olb,oub ;
   olb = model_->solver()->getColLower()[iColumn] ;
   oub = model_->solver()->getColUpper()[iColumn] ;
+#ifdef COIN_DEVELOP
+  if (olb!=down_[0]||oub!=up_[1]) {
+    if (way_>0)
+      printf("branching up on var %d: [%g,%g] => [%g,%g] - other [%g,%g]\n",
+	     iColumn,olb,oub,up_[0],up_[1],down_[0],down_[1]) ; 
+    else
+      printf("branching down on var %d: [%g,%g] => [%g,%g] - other [%g,%g]\n",
+	     iColumn,olb,oub,down_[0],down_[1],up_[0],up_[1]) ; 
+  }
+#endif
   if (way_<0) {
 #ifdef CBC_DEBUG
   { double olb,oub ;
@@ -1011,18 +1021,19 @@ CbcIntegerBranchingObject::branch()
     way_=-1;	  // Swap direction
   }
   double nlb = model_->solver()->getColLower()[iColumn];
+  double nub = model_->solver()->getColUpper()[iColumn];
   if (nlb<olb) {
 #ifndef NDEBUG
     printf("bad lb change for column %d from %g to %g\n",iColumn,olb,nlb);
 #endif
-    model_->solver()->setColLower(iColumn,olb);
+    model_->solver()->setColLower(iColumn,CoinMin(olb,nub));
+    nlb=olb;
   }
-  double nub = model_->solver()->getColUpper()[iColumn];
   if (nub>oub) {
 #ifndef NDEBUG
     printf("bad ub change for column %d from %g to %g\n",iColumn,oub,nub);
 #endif
-    model_->solver()->setColUpper(iColumn,oub);
+    model_->solver()->setColUpper(iColumn,CoinMax(oub,nlb));
   }
 #ifndef NDEBUG
   if (nlb<olb+1.0e-8&&nub>oub-1.0e-8)

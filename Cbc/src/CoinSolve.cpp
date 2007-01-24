@@ -612,12 +612,25 @@ int main (int argc, const char *argv[])
     memset(&info,0,sizeof(info));
     if (argc>2&&!strcmp(argv[2],"-AMPL")) {
       usingAmpl=true;
+      // see if log in list
+      noPrinting=true;
+      for (int i=1;i<argc;i++) {
+        if (!strncmp(argv[i],"log",3)) {
+	  char * equals = strchr(argv[i],'=');
+          if (equals&&atoi(equals+1)>0) {
+            noPrinting=false;
+	    info.logLevel=atoi(equals+1);
+	    // mark so won't be overWritten
+	    info.numberRows=-1234567;
+	    break;
+	  }
+        }
+      }
       int returnCode = readAmpl(&info,argc,const_cast<char **>(argv),(void **) (& coinModel));
       if (returnCode)
         return returnCode;
       CbcOrClpRead_mode=2; // so will start with parameters
-      // see if log in list
-      noPrinting=true;
+      // see if log in list (including environment)
       for (int i=1;i<info.numberArguments;i++) {
         if (!strcmp(info.arguments[i],"log")) {
           if (i<info.numberArguments-1&&atoi(info.arguments[i+1])>0)
@@ -652,11 +665,11 @@ int main (int argc, const char *argv[])
 	// need some relative granularity
 	si->setDefaultBound(100.0);
 	si->setDefaultMeshSize(0.01);
-	si->setDefaultBound(100.0);
+	si->setDefaultBound(1000.0);
 	si->setIntegerPriority(1000);
 	si->setBiLinearPriority(10000);
 	CoinModel * model2 = (CoinModel *) coinModel;
-	si->load(*model2);
+	si->load(*model2,true,info.logLevel);
 	// redo
 	solver = model.solver();
 	clpSolver = dynamic_cast< OsiClpSolverInterface*> (solver);
@@ -1119,7 +1132,8 @@ int main (int argc, const char *argv[])
 		break;
 	      case TIGHTENFACTOR:
 		tightenFactor=value;
-                defaultSettings=false; // user knows what she is doing
+		if(!complicatedInteger)
+		  defaultSettings=false; // user knows what she is doing
 		break;
 	      default:
 		abort();
@@ -1880,7 +1894,7 @@ int main (int argc, const char *argv[])
                 //break;
                 //}
                 // bounds based on continuous
-                if (tightenFactor) {
+                if (tightenFactor&&!complicatedInteger) {
                   if (modelC->tightenPrimalBounds(tightenFactor)!=0) {
                     std::cout<<"Problem is infeasible!"<<std::endl;
                     break;
@@ -2088,6 +2102,19 @@ int main (int argc, const char *argv[])
                 }
                 modelC->dual();
               }
+#if 0
+	      numberDebugValues=599;
+	      debugValues = new double[numberDebugValues];
+	      CoinZeroN(debugValues,numberDebugValues);
+	      debugValues[3]=1.0;
+	      debugValues[6]=25.0;
+	      debugValues[9]=4.0;
+	      debugValues[26]=4.0;
+	      debugValues[27]=6.0;
+	      debugValues[35]=8.0;
+	      debugValues[53]=21.0;
+	      debugValues[56]=4.0;
+#endif
               if (debugValues) {
                 // for debug
                 std::string problemName ;
@@ -2355,7 +2382,7 @@ int main (int argc, const char *argv[])
               babModel->setCutoffIncrement(CoinMax(babModel->getCutoffIncrement(),increment));
               // Turn this off if you get problems
               // Used to be automatically set
-              int mipOptions = parameters[whichParam(MIPOPTIONS,numberParameters,parameters)].intValue();
+              int mipOptions = parameters[whichParam(MIPOPTIONS,numberParameters,parameters)].intValue()%10000;
               if (mipOptions!=(128|64|1))
                 printf("mip options %d\n",mipOptions);
               osiclp->setSpecialOptions(mipOptions);
@@ -2875,8 +2902,33 @@ int main (int argc, const char *argv[])
 		    // If linked then pass in model
 		    OsiSolverLink * solver3 = dynamic_cast<OsiSolverLink *> (babModel->solver());
 		    if (solver3) {
-		      solver3->setCbcModel(babModel);
+		      if (tightenFactor>0.0) {
+			// set grid size for all continuous bi-linear
+			solver3->setMeshSizes(tightenFactor);
+		      }
+		      int options = parameters[whichParam(MIPOPTIONS,numberParameters,parameters)].intValue()/10000;
 		      CglStored stored;
+		      if (options) {
+			printf("nlp options %d\n",options);
+			/*
+			  1 - force mini branch and bound
+			  2 - set priorities high on continuous
+			  4 - try adding OA cuts
+			  8 - try doing quadratic linearization
+			*/
+			if ((options&2))
+			  solver3->setBiLinearPriorities(10);
+			if ((options&4))
+			  solver3->setSpecialOptions2(solver3->specialOptions2()|(8+4));
+			if ((options&1)!=0&&slpValue>0)
+			  solver3->setFixedPriority(slpValue);
+			double cutoff=COIN_DBL_MAX;
+			if ((options&4))
+			  cutoff=solver3->linearizedBAB(&stored);
+			if (cutoff<babModel->getCutoff())
+			  babModel->setCutoff(cutoff);
+		      }
+		      solver3->setCbcModel(babModel);
 		      babModel->addCutGenerator(&stored,1,"Stored");
 		      CglTemporary temp;
 		      babModel->addCutGenerator(&temp,1,"OnceOnly");

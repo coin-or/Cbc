@@ -291,7 +291,8 @@ readAmpl(ampl_info * info, int argc, char **argv, void ** coinModel)
   else
     fileName[0]='\0';
   int saveArgc = argc;
-  memset(info,0,sizeof(ampl_info));
+  if (info->numberRows!=-1234567)
+    memset(info,0,sizeof(ampl_info)); // overwrite unless magic number set
   /* save so can be accessed by decodePhrase */
   saveInfo = info;
   info->numberArguments=0;
@@ -448,7 +449,7 @@ readAmpl(ampl_info * info, int argc, char **argv, void ** coinModel)
     // Add .nl if not there
     if (!strstr(fileName,".nl"))
       strcat(fileName,".nl");
-    CoinModel * model = new CoinModel(1,fileName);
+    CoinModel * model = new CoinModel(1,fileName,info);
     if (model->numberRows()>0)
       *coinModel=(void *) model;
     Oinfo.uinfo = tempBuffer;
@@ -465,7 +466,7 @@ readAmpl(ampl_info * info, int argc, char **argv, void ** coinModel)
     info->numberElements=nzc;;
     info->numberBinary=nbv;
     info->numberIntegers=niv;
-    if (niv+nbv>0)
+    if (nbv+niv+nlvbi+nlvci+nlvoi>0)
       mip_stuff(); // get any extra info
   }
   /* add -solve - unless something there already
@@ -618,7 +619,7 @@ void writeAmpl(ampl_info * info)
 }
 /* Read a problem from AMPL nl file
  */
-CoinModel::CoinModel( int nonLinear, const char * fileName)
+CoinModel::CoinModel( int nonLinear, const char * fileName,const void * info)
  :  numberRows_(0),
     maximumRows_(0),
     numberColumns_(0),
@@ -670,10 +671,11 @@ CoinModel::CoinModel( int nonLinear, const char * fileName)
     }
   }
   if (!status) {
-    gdb(nonLinear,fileName);
+    gdb(nonLinear,fileName,info);
   }
 }
- static real
+#if 0
+static real
 qterm(ASL *asl, fint *colq, fint *rowq, real *delsq)
 {
   double t, t1, *x, *x0, *xe;
@@ -691,10 +693,11 @@ qterm(ASL *asl, fint *colq, fint *rowq, real *delsq)
   }
   return 0.5 * t;
 }
-
+#endif
 void
-CoinModel::gdb( int nonLinear, const char * fileName)
+CoinModel::gdb( int nonLinear, const char * fileName,const void * info)
 {
+  const ampl_info * amplInfo = (const ampl_info *) info;
   ograd *og=NULL;
   int i;
   SufDesc *csd=NULL;
@@ -1021,7 +1024,7 @@ CoinModel::gdb( int nonLinear, const char * fileName)
 	      int kColumn = row[k];
 	      double value = element[k];
 	      // ampl gives twice with assumed 0.5
-	      if (kColumn>j)
+	      if (kColumn<j)
 		continue;
 	      else if (kColumn==j)
 		value *= 0.5;
@@ -1055,7 +1058,8 @@ CoinModel::gdb( int nonLinear, const char * fileName)
 	      }
 	      assert (strlen(temp)<1000);
 	      setElement(iRow,j,temp);
-	      printf("el for row %d column c%7.7d is %s\n",iRow,j,temp);
+	      if (amplInfo->logLevel>1)
+		printf("el for row %d column c%7.7d is %s\n",iRow,j,temp);
 	    }
 	  }
 	} else {
@@ -1065,7 +1069,7 @@ CoinModel::gdb( int nonLinear, const char * fileName)
 	      int kColumn = row[k];
 	      double value = element[k];
 	      // ampl gives twice with assumed 0.5
-	      if (kColumn>j)
+	      if (kColumn<j)
 		continue;
 	      else if (kColumn==j)
 		value *= 0.5;
@@ -1099,7 +1103,8 @@ CoinModel::gdb( int nonLinear, const char * fileName)
 	      }
 	      assert (strlen(temp)<1000);
 	      setObjective(j,temp);
-	      printf("el for objective column c%7.7d is %s\n",j,temp);
+	      if (amplInfo->logLevel>1)
+		printf("el for objective column c%7.7d is %s\n",j,temp);
 	    }
 	  }
 	}

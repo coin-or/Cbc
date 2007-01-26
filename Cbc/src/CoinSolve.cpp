@@ -2884,6 +2884,8 @@ int main (int argc, const char *argv[])
                     std::cout<<"Unable to open file user_driver.cpp"<<std::endl;
                   }
                 }
+		if (!babModel->numberStrong())
+		  babModel->setNumberBeforeTrust(0);
 		if (useStrategy) {
 		  CbcStrategyDefault strategy(true,babModel->numberStrong(),babModel->numberBeforeTrust());
                   strategy.setupPreProcessing(1);

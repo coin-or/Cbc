@@ -46,11 +46,11 @@ libCbc_la_SOURCES = \
 	CbcTree.cpp CbcTree.hpp \
 	CbcLinked.cpp CbcLinked.hpp \
 	CbcTreeLocal.cpp CbcTreeLocal.hpp 
-# If we have the Ampl solver library, we need to add additional things
-# also see lower down
-if COIN_HAS_ASL
-libCbc_la_SOURCES += Cbc_ampl.cpp Cbc_ampl.h
-endif
+## If we have the Ampl solver library, we need to add additional things
+## also see lower down
+#if COIN_HAS_ASL
+#libCbc_la_SOURCES += Cbc_ampl.cpp Cbc_ampl.h
+#endif
 
 # This is for libtool (on Windows)
 libCbc_la_LDFLAGS = $(LT_LDFLAGS)
@@ -163,10 +163,10 @@ LIBS += `cat $(OSIOBJDIR)/osi_addlibs.txt` \
 # libraries.
 cbc_generic_LDFLAGS = -rpath $(libdir)
 
-# If we have the Ampl solver library, we need to add additional things
-if COIN_HAS_ASL
-cbc_generic_LDADD += $(ASLLIB)
-endif
+## If we have the Ampl solver library, we need to add additional things
+#if COIN_HAS_ASL
+#cbc_generic_LDADD += $(ASLLIB)
+#endif
 
 ########################################################################
 #                            cbc program                               #
@@ -199,6 +199,7 @@ cbc_LDFLAGS = -rpath $(libdir)
 
 # If we have the Ampl solver library, we need to add additional things
 if COIN_HAS_ASL
+cbc_SOURCES += Cbc_ampl.cpp Cbc_ampl.h
 cbc_LDADD += $(ASLLIB)
 AM_CPPFLAGS += $(ASL_CPPFLAGS)
 endif

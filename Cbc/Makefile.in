@@ -248,12 +248,14 @@ abs_bin_dir = @abs_bin_dir@
 abs_include_dir = @abs_include_dir@
 abs_lib_dir = @abs_lib_dir@
 abs_source_dir = @abs_source_dir@
+ac_c_preproc_warn_flag = @ac_c_preproc_warn_flag@
 ac_ct_AR = @ac_ct_AR@
 ac_ct_CC = @ac_ct_CC@
 ac_ct_CXX = @ac_ct_CXX@
 ac_ct_F77 = @ac_ct_F77@
 ac_ct_RANLIB = @ac_ct_RANLIB@
 ac_ct_STRIP = @ac_ct_STRIP@
+ac_cxx_preproc_warn_flag = @ac_cxx_preproc_warn_flag@
 am__fastdepCC_FALSE = @am__fastdepCC_FALSE@
 am__fastdepCC_TRUE = @am__fastdepCC_TRUE@
 am__fastdepCXX_FALSE = @am__fastdepCXX_FALSE@
@@ -787,15 +789,15 @@ uninstall-info: uninstall-info-recursive
 ########################################################################
 
 test: all
-	cd test; make test
+	cd test; $(MAKE) test
 
 unitTest: test
 
 clean-local:
-	if test -r test/Makefile; then cd test; make clean; fi
+	if test -r test/Makefile; then cd test; $(MAKE) clean; fi
 
 distclean-local:
-	if test -r test/Makefile; then cd test; make distclean; fi
+	if test -r test/Makefile; then cd test; $(MAKE) distclean; fi
 
 .PHONY: test unitTest
 

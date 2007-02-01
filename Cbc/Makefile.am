@@ -90,15 +90,15 @@ EXTRA_DIST = \
 ########################################################################
 
 test: all
-	cd test; make test
+	cd test; $(MAKE) test
 
 unitTest: test
 
 clean-local:
-	if test -r test/Makefile; then cd test; make clean; fi
+	if test -r test/Makefile; then cd test; $(MAKE) clean; fi
 
 distclean-local:
-	if test -r test/Makefile; then cd test; make distclean; fi
+	if test -r test/Makefile; then cd test; $(MAKE) distclean; fi
 
 .PHONY: test unitTest
 

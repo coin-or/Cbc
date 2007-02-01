@@ -15,8 +15,8 @@ AUTOMAKE_OPTIONS = foreign
 # We are using the Cbc solver executable to do the unit test
 
 test: ../src/cbc-generic$(EXEEXT) ../src/cbc$(EXEEXT)
-	cd ../../Data/Netlib; make uncompress
-	cd ../../Data/miplib3; make uncompress
+	cd ../../Data/Netlib; $(MAKE) uncompress
+	cd ../../Data/miplib3; $(MAKE) uncompress
 	../src/cbc-generic$(EXEEXT) -miplib -unitTest
 	../src/cbc$(EXEEXT) -unitTest -netlib
 

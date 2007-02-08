@@ -460,6 +460,7 @@ static int * analyze(OsiClpSolverInterface * solverMod, int & numberChanged, dou
     return NULL;
   }
 }
+#ifdef COIN_HAS_LINK
 /*  Returns OsiSolverInterface (User should delete)
     On entry numberKnapsack is maximum number of Total entries
 */
@@ -1005,6 +1006,7 @@ afterKnapsack(const CoinModel & coinModel2, const int * whichColumn, const int *
   }
 #endif
 }
+#endif
 static int outDupRow(OsiSolverInterface * solver) 
 {
   CglDuplicateRow dupCuts(solver);
@@ -2587,12 +2589,14 @@ int main (int argc, const char *argv[])
 		// use strategy instead
 		preProcess=0;
 		useStrategy=true;
+#ifdef COIN_HAS_LINK
 		// empty out any cuts
 		if (storedAmpl.sizeRowCuts()) {
 		  printf("Emptying ampl stored cuts as internal preprocessing\n");
 		  CglStored temp;
 		  storedAmpl=temp;
 		}
+#endif
 	      }
               if (preProcess&&type==BAB) {
 		// See if sos from mps file
@@ -3684,6 +3688,7 @@ int main (int argc, const char *argv[])
 		  // switch off row copy
 		  osiclp->getModelPtr()->setSpecialOptions(osiclp->getModelPtr()->specialOptions()|256);
 		}
+#ifdef COIN_HAS_LINK
 		if (storedAmpl.sizeRowCuts()) {
 		  if (preProcess) {
 		    const int * originalColumns = process.originalColumns();
@@ -3734,6 +3739,7 @@ int main (int argc, const char *argv[])
 		  if (storedAmpl.sizeRowCuts()) 
 		    babModel->addCutGenerator(&storedAmpl,1,"AmplStored");
 		}
+#endif
                 babModel->branchAndBound(statistics);
 		checkSOS(babModel, babModel->solver());
               } else if (type==MIPLIB) {
@@ -3798,8 +3804,10 @@ int main (int argc, const char *argv[])
               }
               if (type==STRENGTHEN&&strengthenedModel)
                 clpSolver = dynamic_cast< OsiClpSolverInterface*> (strengthenedModel);
+#ifdef COIN_HAS_ASL
 	      else if (usingAmpl) 
 		clpSolver = dynamic_cast< OsiClpSolverInterface*> (babModel->solver());
+#endif
               lpSolver = clpSolver->getModelPtr();
               if (numberChanged) {
                 for (int i=0;i<numberChanged;i++) {

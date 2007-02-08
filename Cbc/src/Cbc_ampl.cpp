@@ -134,6 +134,7 @@ suftab[] = {
 	{ "down", 0, ASL_Sufkind_var | ASL_Sufkind_outonly },
 	{ "priority", 0, ASL_Sufkind_var },
 #endif
+	{ "cut", 0, ASL_Sufkind_con },
 	{ "direction", 0, ASL_Sufkind_var },
 	{ "downPseudocost", 0, ASL_Sufkind_var | ASL_Sufkind_real },
 	{ "priority", 0, ASL_Sufkind_var },
@@ -162,12 +163,16 @@ mip_stuff(void)
   int i;
   double *pseudoUp, *pseudoDown;
   int *priority, *direction;
-  SufDesc *dpup, *dpdown, *dpri, *ddir;
+  // To label cuts
+  int *cut;
+  SufDesc *dpup, *dpdown, *dpri, *ddir, *dcut;
   
   ddir = suf_get("direction", ASL_Sufkind_var);
   direction = ddir->u.i;
   dpri = suf_get("priority", ASL_Sufkind_var);
   priority = dpri->u.i;
+  dcut = suf_get("cut", ASL_Sufkind_con);
+  cut = dcut->u.i;
   dpdown = suf_get("downPseudocost", ASL_Sufkind_var);
   pseudoDown = dpdown->u.r;
   dpup = suf_get("upPseudocost", ASL_Sufkind_var);
@@ -205,6 +210,23 @@ mip_stuff(void)
       fprintf(Stderr,
               "Treating %d negative .priority values as 0\n",
               badpri);
+  }
+  int numberRows = saveInfo->numberRows;
+  if (cut) {
+    int badcut=0;
+    saveInfo->cut= (int *) malloc(numberRows*sizeof(int));
+    for (i=0;i<numberRows;i++) {
+      int value = cut[i];
+      if (value<0) {
+        badcut++;
+        value=0;
+      }
+      saveInfo->cut[i]=value;
+    }
+    if (badcut)
+      fprintf(Stderr,
+              "Treating %d negative cut values as 0\n",
+              badcut);
   }
   if (pseudoDown||pseudoUp) {
     int badpseudo=0;
@@ -466,8 +488,13 @@ readAmpl(ampl_info * info, int argc, char **argv, void ** coinModel)
     info->numberElements=nzc;;
     info->numberBinary=nbv;
     info->numberIntegers=niv;
-    if (nbv+niv+nlvbi+nlvci+nlvoi>0)
+    if (nbv+niv+nlvbi+nlvci+nlvoi>0) {
       mip_stuff(); // get any extra info
+      if (info->cut) 
+	model->setCutMarker(info->numberRows,info->cut);
+      if (info->priorities)
+	model->setPriorities(info->numberColumns,info->priorities);
+    }
   }
   /* add -solve - unless something there already
    - also check for sleep=yes */
@@ -575,6 +602,8 @@ void freeArrays2(ampl_info * info)
   info->sosIndices=NULL;
   free(info->sosReference);
   info->sosReference=NULL;
+  free(info->cut);
+  info->cut=NULL;
   ASL_free(&asl);
 }
 void freeArgs(ampl_info * info)
@@ -653,6 +682,7 @@ CoinModel::CoinModel( int nonLinear, const char * fileName,const void * info)
     prioritySOS_(NULL),
     referenceSOS_(NULL),
     priority_(NULL),
+    cut_(NULL),
     logLevel_(0),
     type_(-1),
     links_(0)
@@ -927,6 +957,8 @@ CoinModel::gdb( int nonLinear, const char * fileName,const void * info)
       }
       matrixByRow.appendRow(k,column,element);
     }
+    delete [] column;
+    delete [] element;
     numberRows=n_con;
     numberColumns=n_var;
     numberElements=nzc;;
@@ -979,6 +1011,11 @@ CoinModel::gdb( int nonLinear, const char * fileName,const void * info)
        i<numberAllNonLinearObjective;i++) {
     setColumnIsInteger(i,true);;
   }
+  free(columnLower);
+  free(columnUpper);
+  free(rowLower);
+  free(rowUpper);
+  free(objective);
   // do names
   int iRow;
   for (iRow=0;iRow<numberRows_;iRow++) {
@@ -986,7 +1023,6 @@ CoinModel::gdb( int nonLinear, const char * fileName,const void * info)
     sprintf(name,"r%7.7d",iRow);
     setRowName(iRow,name);
   }
-    
   int iColumn;
   for (iColumn=0;iColumn<numberColumns_;iColumn++) {
     char name[9];
@@ -1115,6 +1151,8 @@ CoinModel::gdb( int nonLinear, const char * fileName,const void * info)
       exit(77);
     }
   }
+  free(colqp);
+  free(z);
   // see if any sos
   {
     char *sostype;

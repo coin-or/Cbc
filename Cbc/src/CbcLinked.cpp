@@ -2,11 +2,10 @@
 // Corporation and others.  All Rights Reserved.
 #include "CbcConfig.h"
 
+#ifndef COIN_HAS_LINK
 #ifdef COIN_HAS_ASL
 #define COIN_HAS_LINK
 #endif
-#ifndef COIN_DEVELOP
-#undef COIN_HAS_LINK
 #endif
 #ifdef COIN_HAS_LINK
 #include <cassert>
@@ -1456,6 +1455,14 @@ void OsiSolverLink::load ( CoinModel & coinModel, bool tightenBounds,int logLeve
       }
     }
   }
+#if 0
+  //int fake[10]={3,4,2,5,5,3,1,11,2,0};
+  int fake[10]={11,5,5,4,3,3,2,2,1,0};
+  for (int kk=0;kk<10;kk++) {
+    setColUpper(kk,fake[kk]);
+    setColLower(kk,fake[kk]);
+  }
+#endif
   delete [] which;
 }
 // Set all biLinear priorities on x-x variables
@@ -2671,148 +2678,22 @@ OsiSolverLink::setFixedPriority(int priorityValue)
 	    object_[i]=new OsiSimpleFixedInteger(*obj);
 	    delete obj;
 	    fixVariables_[numberFix_++]=iColumn;
-	    highPriority[iColumn]=2;
-	  } else {
 	    highPriority[iColumn]=1;
 	  }
 	}
       }
     }
-    // All nonlinear terms must involve high priority (as known)
-    double * linear = new double[numberColumns];
-    int numberRows = coinModel_.numberRows();
-    for (int iRow=0;iRow<numberRows;iRow++) {
-      CoinPackedMatrix * row = quadraticRow(iRow,linear);
-      if (row) {
-	// see if valid
-	const double * element = row->getElements();
-	const int * columnLow = row->getIndices();
-	const CoinBigIndex * columnHigh = row->getVectorStarts();
-	const int * columnLength = row->getVectorLengths();
-	int numberLook = row->getNumCols();
-	int canSwap=0;
-	for (int i=0;i<numberLook;i++) {
-	  // this one needs to be available
-	  int iPriority = highPriority[i];
-	  for (int j=columnHigh[i];j<columnHigh[i]+columnLength[i];j++) {
-	    int iColumn = columnLow[j];
-	    if (highPriority[iColumn]<=1) {
-	      assert (highPriority[iColumn]==1);
-	      if (iPriority==1) {
-		canSwap=-1; // no good
-		break;
-	      } else {
-		canSwap=1;
-	      }
-	    }
-	  }
-	}
-	if (canSwap) {
-	  if (canSwap>0) {
-	    // rewrite row
-	    /* get triples
-	       then swap ones needed
-	       then create packedmatrix
-	       then replace row
-	    */
-	    int numberElements=columnHigh[numberLook];
-	    int * columnHigh2 = new int [numberElements];
-	    int * columnLow2 = new int [numberElements];
-	    double * element2 = new double [numberElements];
-	    for (int i=0;i<numberLook;i++) {
-	      // this one needs to be available
-	      int iPriority = highPriority[i];
-	      if (iPriority==2) {
-		for (int j=columnHigh[i];j<columnHigh[i]+columnLength[i];j++) {
-		  columnHigh2[j]=i;
-		  columnLow2[j]=columnLow[j];
-		  element2[j]=element[j];
-		}
-	      } else {
-		for (int j=columnHigh[i];j<columnHigh[i]+columnLength[i];j++) {
-		  columnLow2[j]=i;
-		  columnHigh2[j]=columnLow[j];
-		  element2[j]=element[j];
-		}
-	      }
-	    }
-	    delete row;
-	    row = new CoinPackedMatrix(true,columnHigh2,columnLow2,element2,numberElements);
-	    delete [] columnHigh2;
-	    delete [] columnLow2;
-	    delete [] element2;
-	    // Now replace row
-	    replaceQuadraticRow(iRow,linear,row);
-	    delete row;
-	  } else {
-	    delete row;
-	    printf("Unable to use priority - row %d\n",iRow);
-	    delete [] fixVariables_;
-	    fixVariables_ = NULL;
-	    numberFix_=0;
-	    break;
-	  }
-	}
-      }
-    }
-    delete [] highPriority;
-    delete [] linear;
-  }
-}
-// Replaces a quadratic row
-void 
-OsiSolverLink::replaceQuadraticRow(int rowNumber,const double * linearRow, const CoinPackedMatrix * quadraticPart)
-{
-  int numberColumns = coinModel_.numberColumns();
-  int numberRows = coinModel_.numberRows();
-  assert (rowNumber>=0&&rowNumber<numberRows);
-  CoinModelLink triple=coinModel_.firstInRow(rowNumber);
-  while (triple.column()>=0) {
-    int iColumn = triple.column();
-    coinModel_.deleteElement(rowNumber,iColumn);
-    // triple stale - so start over
-    triple=coinModel_.firstInRow(rowNumber);
-  }
-  const double * element = quadraticPart->getElements();
-  const int * column = quadraticPart->getIndices();
-  const CoinBigIndex * columnStart = quadraticPart->getVectorStarts();
-  const int * columnLength = quadraticPart->getVectorLengths();
-  int numberLook = quadraticPart->getNumCols();
-  int i;
-  for (i=0;i<numberLook;i++) {
-    if (!columnLength[i]) {
-      // just linear part
-      if (linearRow[i])
-	coinModel_.setElement(rowNumber,i,linearRow[i]);
+    CoinModel * newModel = coinModel_.reorder(highPriority);
+    if (newModel) {
+      coinModel_ = * newModel;
     } else {
-      char temp[10000];
-      int put=0;
-      char temp2[30];
-      bool first=true;
-      if (linearRow[i]) {
-	sprintf(temp,"%g",linearRow[i]);
-	first=false;
-	put = strlen(temp);
-      }
-      for (int j=columnStart[i];j<columnStart[i]+columnLength[i];j++) {
-	int jColumn = column[j];
-	double value = element[j];
-	if (value<0.0||first) 
-	  sprintf(temp2,"%g*c%7.7d",value,jColumn);
-	else
-	  sprintf(temp2,"+%g*c%7.7d",value,jColumn);
-	int nextPut = put + strlen(temp2);
-	assert (nextPut<10000);
-	strcpy(temp+put,temp2);
-	put = nextPut;
-      }
-      coinModel_.setElement(rowNumber,i,temp);
+      printf("Unable to use priorities\n");
+      delete [] fixVariables_;
+      fixVariables_ = NULL;
+      numberFix_=0;
     }
-  }
-  // rest of linear
-  for (;i<numberColumns;i++) {
-    if (linearRow[i])
-      coinModel_.setElement(rowNumber,i,linearRow[i]);
+    delete newModel;
+    delete [] highPriority;
   }
 }
 // Gets correct form for a quadratic row - user to delete
@@ -2904,6 +2785,12 @@ OsiSolverLink::fathom(bool allFixed)
 {
   int returnCode=0;
   if (allFixed) {
+    // solve anyway
+    OsiClpSolverInterface::resolve();
+    if (!isProvenOptimal()) {
+      printf("cutoff before fathoming\n");
+      return -1;
+    }
     // all fixed so we can reformulate
     OsiClpSolverInterface newSolver;
     // set values
@@ -2937,8 +2824,14 @@ OsiSolverLink::fathom(bool allFixed)
 	sum += lower[i]*objective[i];
       }
     }
-    //if (fabs(sum-8.3)<1.0e-5)
-    //printf("possible\n");
+    int fake[]={5,4,3,2,0,0,0};
+    bool onOptimalPath=true;
+    for (i=0;i<7;i++) {
+      if ((int) upper[i]!=fake[i])
+	onOptimalPath=false;
+    }
+    if (onOptimalPath)
+      printf("possible\n");
     if (zeroObjective) {
       // randomize objective
       ClpSimplex * clpModel = newSolver.getModelPtr();
@@ -3040,7 +2933,10 @@ OsiSolverLink::fathom(bool allFixed)
     
     cbcModel->initialSolve();
     //double cutoff = model_->getCutoff();
-    cbcModel->setCutoff(1.0e50);
+    if (zeroObjective||!cbcModel_) 
+      cbcModel->setCutoff(1.0e50);
+    else
+      cbcModel->setCutoff(cbcModel_->getCutoff());
     // to change exits
     bool isFeasible=false;
     int saveLogLevel=clpModel->logLevel();
@@ -6215,5 +6111,286 @@ OsiSolverLinearizedQuadratic::operator=(const OsiSolverLinearizedQuadratic& rhs)
     checkQP(quadraticModel_);
   }
   return *this;
+}
+/* Expands out all possible combinations for a knapsack
+   If buildObj NULL then just computes space needed - returns number elements
+   On entry numberOutput is maximum allowed, on exit it is number needed or
+   -1 (as will be number elements) if maximum exceeded.  numberOutput will have at
+   least space to return values which reconstruct input.
+   Rows returned will be original rows but no entries will be returned for
+   any rows all of whose entries are in knapsack.  So up to user to allow for this.
+   If reConstruct >=0 then returns number of entrie which make up item "reConstruct"
+   in expanded knapsack.  Values in buildRow and buildElement;
+*/
+int 
+CoinModel::expandKnapsack(int knapsackRow, int & numberOutput,double * buildObj, CoinBigIndex * buildStart,
+			  int * buildRow, double * buildElement,int reConstruct) const
+{
+  /* mark rows
+     -2 in knapsack and other variables
+     -1 not involved
+     0 only in knapsack 
+  */
+  int * markRow = new int [numberRows_];
+  int iRow;
+  int iColumn;
+  int * whichColumn = new int [numberColumns_];
+  for (iColumn=0;iColumn<numberColumns_;iColumn++)
+    whichColumn[iColumn]=-1;
+  int numJ=0;
+  for (iRow=0;iRow<numberRows_;iRow++) 
+    markRow[iRow]=-1;
+  CoinModelLink triple;
+  triple=firstInRow(knapsackRow);
+  while (triple.column()>=0) {
+    int iColumn = triple.column();
+    const char *  el = getElementAsString(knapsackRow,iColumn);
+    assert (!strcmp("Numeric",el));
+    whichColumn[iColumn]=numJ;
+    numJ++;
+    triple=next(triple);
+  }
+  for (iRow=0;iRow<numberRows_;iRow++) {
+    triple=firstInRow(iRow);
+    int type=-3;
+    while (triple.column()>=0) {
+      int iColumn = triple.column();
+      if (whichColumn[iColumn]>=0) {
+	if (type==-3)
+	  type=0;
+	else if (type!=0)
+	  type=-2;
+      } else {
+	if (type==-3)
+	  type=-1;
+	else if (type==0)
+	  type=-2;
+      }
+      triple=next(triple);
+    }
+    if (type==-3)
+      type=-1;
+    markRow[iRow]=type;
+  }
+  int * bound = new int [numberColumns_+1];
+  int * whichRow = new int [numberRows_];
+  ClpSimplex tempModel;
+  CoinModel tempModel2(*this);
+  tempModel.loadProblem(tempModel2);
+  int * stack = new int [numberColumns_+1];
+  double * size = new double [numberColumns_+1];
+  double * rhsOffset = new double[numberRows_];
+  int * build = new int[numberColumns_];
+  int maxNumber=numberOutput;
+  numJ=0;
+  double minSize = getRowLower(knapsackRow);
+  double maxSize = getRowUpper(knapsackRow);
+  double offset=0.0;
+  triple=firstInRow(knapsackRow);
+  while (triple.column()>=0) {
+    iColumn = triple.column();
+    double lowerColumn=columnLower(iColumn);
+    double upperColumn=columnUpper(iColumn);
+    double gap = upperColumn-lowerColumn;
+    assert (fabs(floor(gap+0.5)-gap)<1.0e-5);
+    whichColumn[numJ]=iColumn;
+    bound[numJ]=(int) gap;
+    size[numJ++]=triple.value();
+    offset += triple.value()*lowerColumn;
+    triple=next(triple);
+  }  
+  int jRow;
+  for (iRow=0;iRow<numberRows_;iRow++)
+    whichRow[iRow]=iRow;
+  ClpSimplex smallModel(&tempModel,numberRows_,whichRow,numJ,whichColumn,true,true,true);
+  // modify rhs to allow for nonzero lower bounds
+  double * rowLower = smallModel.rowLower();
+  double * rowUpper = smallModel.rowUpper();
+  const double * columnLower = smallModel.columnLower();
+  //const double * columnUpper = smallModel.columnUpper();
+  const CoinPackedMatrix * matrix = smallModel.matrix();
+  const double * element = matrix->getElements();
+  const int * row = matrix->getIndices();
+  const CoinBigIndex * columnStart = matrix->getVectorStarts();
+  const int * columnLength = matrix->getVectorLengths();
+  const double * objective = smallModel.objective();
+  double objectiveOffset=0.0;
+  CoinZeroN(rhsOffset,numberRows_);
+  for (iColumn=0;iColumn<numJ;iColumn++) {
+    double lower = columnLower[iColumn];
+    if (lower) {
+      objectiveOffset += objective[iColumn];
+      for (CoinBigIndex j=columnStart[iColumn];
+	   j<columnStart[iColumn]+columnLength[iColumn];j++) {
+	double value = element[j]*lower;
+	int kRow = row[j];
+	rhsOffset[kRow] += value;
+	if (rowLower[kRow]>-1.0e20)
+	  rowLower[kRow] -= value;
+	if (rowUpper[kRow]<1.0e20)
+	  rowUpper[kRow] -= value;
+      }
+    }
+  }
+  // relax
+  for (jRow=0;jRow<numberRows_;jRow++) {
+    if (markRow[jRow]==0&&knapsackRow!=jRow) {
+      if (rowLower[jRow]>-1.0e20)
+	rowLower[jRow] -= 1.0e-7;
+      if (rowUpper[jRow]<1.0e20)
+	rowUpper[jRow] += 1.0e-7;
+    } else {
+      rowLower[jRow]=-COIN_DBL_MAX;
+      rowUpper[jRow]=COIN_DBL_MAX;
+    }
+  }
+  double * rowActivity = smallModel.primalRowSolution();
+  CoinZeroN(rowActivity,numberRows_);
+  maxSize -= offset;
+  minSize -= offset;
+  // now generate
+  int i;
+  int iStack=numJ;
+  for (i=0;i<numJ;i++) {
+    stack[i]=0;
+  }
+  double tooMuch = 10.0*maxSize;
+  stack[numJ]=1;
+  size[numJ]=tooMuch;
+  bound[numJ]=0;
+  double sum=tooMuch;
+  numberOutput=0;
+  int nelCreate=0;
+  /* typeRun is - 0 for initial sizes
+                  1 for build
+		  2 for reconstruct
+  */
+  int typeRun = buildObj ? 1 : 0;
+  if (reConstruct>=0) {
+    assert (buildRow&&buildElement);
+    typeRun=2;
+  }
+  if (typeRun==1)
+    buildStart[0]=0;
+  while (iStack>=0) {
+    if (sum>=minSize&&sum<=maxSize) {
+      double checkSize =0.0;
+      bool good=true;
+      int nRow=0;
+      double obj=objectiveOffset;
+      CoinZeroN(rowActivity,nRow);
+      for (iColumn=0;iColumn<numJ;iColumn++) {
+	int iValue = stack[iColumn];
+	if (iValue>bound[iColumn]) {
+	  good=false;
+	  break;
+	} else if (iValue) {
+	  obj += objective[iColumn]*iValue;
+	  for (CoinBigIndex j=columnStart[iColumn];
+	       j<columnStart[iColumn]+columnLength[iColumn];j++) {
+	    double value = element[j]*iValue;
+	    int kRow = row[j];
+	    if (rowActivity[kRow]) {
+	      rowActivity[kRow] += value;
+	      if (!rowActivity[kRow])
+		rowActivity[kRow]=1.0e-100;
+	    } else {
+	      build[nRow++]=kRow;
+	      rowActivity[kRow]=value;
+	    }
+	  }
+	}
+      }
+      if (good) {
+	for (jRow=0;jRow<nRow;jRow++) {
+	  int kRow=build[jRow];
+	  double value = rowActivity[kRow];
+	  if (value>rowUpper[kRow]||value<rowLower[kRow]) {
+	    good=false;
+	    break;
+	  }
+	}
+      }
+      if (good) {
+	if (typeRun==1) {
+	  buildObj[numberOutput]=obj;
+	  for (jRow=0;jRow<nRow;jRow++) {
+	    int kRow=build[jRow];
+	    double value = rowActivity[kRow];
+	    if (markRow[kRow]<0&&fabs(value)>1.0e-13) {
+	      buildElement[nelCreate]=value;
+	      buildRow[nelCreate++]=kRow;
+	    }
+	  }
+	  buildStart[numberOutput+1]=nelCreate;
+	} else if (!typeRun) {
+	  for (jRow=0;jRow<nRow;jRow++) {
+	    int kRow=build[jRow];
+	    double value = rowActivity[kRow];
+	    if (markRow[kRow]<0&&fabs(value)>1.0e-13) {
+	      nelCreate++;
+	    }
+	  }
+	}
+	if (typeRun==2&&reConstruct==numberOutput) {
+	  // build and exit
+	  nelCreate=0;
+	  for (iColumn=0;iColumn<numJ;iColumn++) {
+	    int iValue = stack[iColumn];
+	    if (iValue) {
+	      buildRow[nelCreate]=whichColumn[iColumn];
+	      buildElement[nelCreate++]=iValue;
+	    }
+	  }
+	  numberOutput=1;
+	  for (i=0;i<numJ;i++) {
+	    bound[i]=0;
+	  }
+	  break;
+	}
+	numberOutput++;
+	if (numberOutput>maxNumber) {
+	  nelCreate=-1;
+	  numberOutput=-1;
+	  for (i=0;i<numJ;i++) {
+	    bound[i]=0;
+	  }
+	  break;
+	}
+	for (int j=0;j<numJ;j++) {
+	  checkSize += stack[j]*size[j];
+	}
+	assert (fabs(sum-checkSize)<1.0e-3);
+      }
+      for (jRow=0;jRow<nRow;jRow++) {
+	int kRow=build[jRow];
+	rowActivity[kRow]=0.0;
+      }
+    }
+    if (sum>maxSize||stack[iStack]>bound[iStack]) {
+      sum -= size[iStack]*stack[iStack]; 
+      stack[iStack--]=0;
+      if (iStack>=0) {
+	stack[iStack] ++;
+	sum += size[iStack];
+      }
+    } else {
+      // must be less
+      // add to last possible
+      iStack = numJ-1;
+      sum += size[iStack];
+      stack[iStack]++;
+    }
+  }
+  //printf("%d will be created\n",numberOutput);
+  delete [] whichColumn;
+  delete [] whichRow;
+  delete [] bound;
+  delete [] stack;
+  delete [] size;
+  delete [] rhsOffset;
+  delete [] build;
+  delete [] markRow;
+  return nelCreate;
 }
 #endif

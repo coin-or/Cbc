@@ -138,9 +138,14 @@ CbcNodeInfo::~CbcNodeInfo()
 
   assert(!numberPointingToThis_);
   // But they may be some left (max nodes?)
-  for (int i=0;i<numberCuts_;i++) 
+  for (int i=0;i<numberCuts_;i++) {
+#ifndef GLOBAL_CUTS_JUST_POINTERS
     delete cuts_[i];
-
+#else
+    if (cuts_[i]->globallyValidAsInteger()!=2)
+      delete cuts_[i];
+#endif
+  }
   delete [] cuts_;
   if (owner_) 
     owner_->nullNodeInfo();
@@ -168,7 +173,12 @@ CbcNodeInfo::decrementCuts(int change)
       int number = cuts_[i]->decrement(changeThis);
       if (!number) {
 	//printf("info %x del cut %d %x\n",this,i,cuts_[i]);
+#ifndef GLOBAL_CUTS_JUST_POINTERS
 	delete cuts_[i];
+#else
+	if (cuts_[i]->globallyValidAsInteger()!=2)
+	  delete cuts_[i];
+#endif
 	cuts_[i]=NULL;
       }
     }
@@ -213,7 +223,12 @@ CbcNodeInfo::decrementParentCuts(int change)
 	      number = thisInfo->cuts_[i]->decrement(change);
 	  }
 	  if (!number) {
+#ifndef GLOBAL_CUTS_JUST_POINTERS
 	    delete thisInfo->cuts_[i];
+#else
+	    if (thisInfo->cuts_[i]->globallyValidAsInteger()!=2)
+	      delete thisInfo->cuts_[i];
+#endif
 	    thisInfo->cuts_[i]=NULL;
 	  }
 	}
@@ -373,8 +388,14 @@ CbcNodeInfo::deleteCuts(int numberToDelete, CbcCountRowCut ** cuts)
     }
     last=j;
     int number = cuts_[j]->decrement();
-    if (!number)
+    if (!number) {
+#ifndef GLOBAL_CUTS_JUST_POINTERS
       delete cuts_[j];
+#else
+      if (cuts_[j]->globallyValidAsInteger()!=2)
+	delete cuts_[j];
+#endif
+    }
     cuts_[j]=NULL;
   }
   j=0;
@@ -393,8 +414,14 @@ CbcNodeInfo::deleteCuts(int numberToDelete, int * which)
   for (i=0;i<numberToDelete;i++) {
     int iCut=which[i];
     int number = cuts_[iCut]->decrement();
-    if (!number)
+    if (!number) {
+#ifndef GLOBAL_CUTS_JUST_POINTERS
       delete cuts_[iCut];
+#else
+      if (cuts_[iCut]->globallyValidAsInteger()!=2)
+	delete cuts_[iCut];
+#endif
+    }
     cuts_[iCut]=NULL;
   }
   int j=0;

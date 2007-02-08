@@ -12,6 +12,7 @@
 //#define CHECK_CUT_COUNTS
 //#define CHECK_NODE_FULL
 //#define NODE_LOG
+//#define GLOBAL_CUTS_JUST_POINTERS
 #include <cassert>
 #include <cmath>
 #include <cfloat>
@@ -271,6 +272,40 @@ void verifyCutCounts (const CbcTree * branchingTree, CbcModel &model)
   return ; }
 
 #endif /* CHECK_CUT_COUNTS */
+
+
+//#define CHECK_CUT_SIZE
+#ifdef CHECK_CUT_SIZE
+
+/*
+  Routine to verify that cut reference counts are correct.
+*/
+void verifyCutSize (const CbcTree * branchingTree, CbcModel &model)
+{ 
+
+  int j ;
+  int nNodes = branchingTree->size() ;
+  int totalCuts=0;
+
+/*
+  cut.tempNumber_ exists for the purpose of doing this verification. Clear it
+  in all cuts. We traverse the tree by starting from each live node and working
+  back to the root. At each CbcNodeInfo, check for cuts.
+*/
+  for (j = 0 ; j < nNodes ; j++) {
+    CbcNode *node = branchingTree->nodePointer(j) ;
+    CbcNodeInfo * nodeInfo = node->nodeInfo() ;
+    assert (node->nodeInfo()->numberBranchesLeft()) ;
+    while (nodeInfo) {
+      totalCuts += nodeInfo->numberCuts();
+      nodeInfo = nodeInfo->parent() ;
+    }
+  }
+  printf("*** CHECKING cuts (size) after %d nodes - %d cuts\n",model.getNodeCount(),totalCuts) ;
+  return ;
+}
+
+#endif /* CHECK_CUT_SIZE */
 
 }
 
@@ -1283,6 +1318,9 @@ void CbcModel::branchAndBound(int doStatistics)
 */
     if ((numberNodes_%1000) == 0) {
       bool redoTree=nodeCompare_->every1000Nodes(this, numberNodes_) ;
+#ifdef CHECK_CUT_SIZE
+      verifyCutSize (tree_, *this);
+#endif
       // redo tree if wanted
       if (redoTree)
 	tree_->setComparison(*nodeCompare_) ;
@@ -1495,10 +1533,17 @@ void CbcModel::branchAndBound(int doStatistics)
         }
       } else {
         // normal
+	//int zzzzzz=0;
+	//if (zzzzzz)
+	//solver_->writeMps("before");
         feasible = solveWithCuts(cuts,maximumCutPasses_,node);
       }
       if ((specialOptions_&1)!=0&&onOptimalPath) {
-        assert (solver_->getRowCutDebugger()) ;
+        if (!solver_->getRowCutDebugger()) {
+	  // dj fix did something???
+	  solver_->writeMps("infeas2");
+	  assert (solver_->getRowCutDebugger()) ;
+	}
       }
       if (statistics_) {
         assert (numberNodes2_);
@@ -4057,24 +4102,32 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
       // possibly extend whichGenerator
       resizeWhichGenerator(numberViolated, numberViolated+numberCuts);
       for ( i = 0 ; i < numberCuts ; i++)
-      { const OsiColCut *thisCut = globalCuts_.colCutPtr(i) ;
+      { OsiColCut *thisCut = globalCuts_.colCutPtr(i) ;
 	if (thisCut->violated(cbcColSolution_)>primalTolerance) {
 	  printf("Global cut added - violation %g\n",
 		 thisCut->violated(cbcColSolution_)) ;
 	  whichGenerator_[numberViolated++]=-1;
+#ifndef GLOBAL_CUTS_JUST_POINTERS
 	  theseCuts.insert(*thisCut) ;
+#else
+	  theseCuts.insert(thisCut) ;
+#endif
 	}
       }
       numberCuts = globalCuts_.sizeRowCuts() ;
       // possibly extend whichGenerator
       resizeWhichGenerator(numberViolated, numberViolated+numberCuts);
       for ( i = 0;i<numberCuts;i++) {
-	const OsiRowCut * thisCut = globalCuts_.rowCutPtr(i) ;
+	OsiRowCut * thisCut = globalCuts_.rowCutPtr(i) ;
 	if (thisCut->violated(cbcColSolution_)>primalTolerance) {
 	  //printf("Global cut added - violation %g\n",
 	  // thisCut->violated(cbcColSolution_)) ;
 	  whichGenerator_[numberViolated++]=-1;
+#ifndef GLOBAL_CUTS_JUST_POINTERS
 	  theseCuts.insert(*thisCut) ;
+#else
+	  theseCuts.insert(thisCut) ;
+#endif
 	}
       }
       numberGlobalViolations_+=numberViolated;
@@ -4255,7 +4308,10 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
 	  violated=-2; // sub-problem is infeasible
 	if (thisCut->globallyValid()) {
 	  // add to global list
-	  globalCuts_.insert(*thisCut) ;
+	  OsiRowCut newCut(*thisCut);
+	  newCut.setGloballyValid(2);
+	  newCut.mutableRow().setTestForDuplicateIndex(false);
+	  globalCuts_.insert(newCut) ;
 	}
       }
       for (j = numberColumnCutsBefore;j<numberColumnCutsAfter;j++) {
@@ -4263,7 +4319,9 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
 	const OsiColCut * thisCut = theseCuts.colCutPtr(j) ;
 	if (thisCut->globallyValid()) {
 	  // add to global list
-	  globalCuts_.insert(*thisCut) ;
+	  OsiColCut newCut(*thisCut);
+	  newCut.setGloballyValid(2);
+	  globalCuts_.insert(newCut) ;
 	}
       }
     }
@@ -4627,7 +4685,11 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
           for (int i = numberGlobalBefore ; i < numberGlobalAfter ; i++)
 	    { 	     
 	      whichGenerator_[numberNewCuts_++]=-1;
+#ifndef GLOBAL_CUTS_JUST_POINTERS
 	      cuts.insert(globalCuts_.rowCut(i)) ; 
+#else
+	      cuts.insert(globalCuts_.rowCutPtr(i)) ; 
+#endif
 	    }
 	  numberNewCuts_ = lastNumberCuts+numberToAdd;
           //now take off the cuts which are not tight anymore
@@ -6491,7 +6553,10 @@ CbcModel::checkSolution (double cutoff, const double *solution,
                         //             }
                         //           }
                         // add to global list
-                        globalCuts_.insert(*thisCut);
+			OsiRowCut newCut(*thisCut);
+			newCut.setGloballyValid(2);
+			newCut.mutableRow().setTestForDuplicateIndex(false);
+			globalCuts_.insert(newCut) ;
                         generator_[i]->incrementNumberCutsInTotal();
                       }
                   }
@@ -6569,6 +6634,7 @@ CbcModel::setBestSolution (CBC_Message how,
     /*
       Double check the solution to catch pretenders.
     */
+    double saveObjectiveValue = objectiveValue;
     objectiveValue =checkSolution(cutoff,solution,fixVariables,objectiveValue);
     if (objectiveValue>cutoff&&objectiveValue<cutoff+1.0e-8+1.0e-8*fabs(cutoff))
       cutoff = objectiveValue; // relax
@@ -6591,6 +6657,9 @@ CbcModel::setBestSolution (CBC_Message how,
       CoinCopyN(solution,numberColumns,bestSolution_);
       
       cutoff = bestObjective_-dblParam_[CbcCutoffIncrement];
+      // But allow for rounding errors
+      if (dblParam_[CbcCutoffIncrement] == 1e-5)
+	cutoff = CoinMin(bestObjective_,saveObjectiveValue)-1.0e-5;
       // This is not correct - that way cutoff can go up if maximization
       //double direction = solver_->getObjSense();
       //setCutoff(cutoff*direction);
@@ -6643,7 +6712,10 @@ CbcModel::setBestSolution (CBC_Message how,
                 }
               }
               // add to global list
-              globalCuts_.insert(*thisCut);
+	      OsiRowCut newCut(*thisCut);
+	      newCut.setGloballyValid(2);
+	      newCut.mutableRow().setTestForDuplicateIndex(false);
+	      globalCuts_.insert(newCut) ;
               generator_[i]->incrementNumberCutsInTotal();
             }
           }
@@ -6654,7 +6726,9 @@ CbcModel::setBestSolution (CBC_Message how,
         const OsiColCut * thisCut = theseCuts.colCutPtr(i);
         if (thisCut->globallyValid()) {
           // add to global list
-          globalCuts_.insert(*thisCut);
+	  OsiColCut newCut(*thisCut);
+	  newCut.setGloballyValid(2);
+	  globalCuts_.insert(newCut) ;
         }
       }
     }
@@ -8126,7 +8200,8 @@ CbcModel::makeGlobalCuts(int number,const int * which)
         thisCut.setLb(rowLower[iRow]);
         thisCut.setUb(rowUpper[iRow]);
         int start = rowStart[iRow];
-        thisCut.setRow(rowLength[iRow],column+start,elementByRow+start);
+        thisCut.setRow(rowLength[iRow],column+start,elementByRow+start,false);
+	thisCut.setGloballyValid(2);
         globalCuts_.insert(thisCut) ;
       }
     }
@@ -8134,6 +8209,24 @@ CbcModel::makeGlobalCuts(int number,const int * which)
   if (nDelete)
     solver_->deleteRows(nDelete,whichDelete);
   delete [] whichDelete;
+}
+// Make given cut into a global cut
+void 
+CbcModel::makeGlobalCut(const OsiRowCut * cut)
+{
+  OsiRowCut newCut(*cut);
+  newCut.setGloballyValid(2);
+  newCut.mutableRow().setTestForDuplicateIndex(false);
+  globalCuts_.insert(newCut) ;
+}
+// Make given cut into a global cut
+void 
+CbcModel::makeGlobalCut(const OsiRowCut & cut)
+{
+  OsiRowCut newCut(cut);
+  newCut.setGloballyValid(2);
+  newCut.mutableRow().setTestForDuplicateIndex(false);
+  globalCuts_.insert(newCut) ;
 }
 void 
 CbcModel::setNodeComparison(CbcCompareBase * compare)
@@ -8283,7 +8376,7 @@ CbcModel::resolve(OsiSolverInterface * solver)
     if (strength!=OsiHintIgnore)
       algorithm = takeHint ? -1 : 1;
       assert (algorithm==-1);*/
-    clpSolver->setHintParam(OsiDoDualInResolve,true,OsiHintTry);
+    //clpSolver->setHintParam(OsiDoDualInResolve,true,OsiHintTry);
     ClpSimplex * clpSimplex = clpSolver->getModelPtr();
     int save = clpSimplex->specialOptions();
     clpSimplex->setSpecialOptions(save|0x01000000); // say is Cbc (and in branch and bound)

@@ -276,6 +276,10 @@ public:
     int resolve(CbcNodeInfo * parent, int whereFrom);
     /// Make given rows (L or G) into global cuts and remove from lp
     void makeGlobalCuts(int numberRows,const int * which); 
+    /// Make given cut into a global cut
+    void makeGlobalCut(const OsiRowCut * cut); 
+    /// Make given cut into a global cut
+    void makeGlobalCut(const OsiRowCut & cut); 
   //@}
 
   /** \name Presolve methods */

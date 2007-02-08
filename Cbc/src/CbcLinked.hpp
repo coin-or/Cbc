@@ -7,8 +7,10 @@
    OsiBranchLink
    CglTemporary
 */
+#ifndef COIN_HAS_LINK
 #ifdef COIN_HAS_ASL
 #define COIN_HAS_LINK
+#endif
 #endif
 #ifdef COIN_HAS_LINK
 #include "OsiClpSolverInterface.hpp"
@@ -140,8 +142,6 @@ public:
   { return quadraticModel_;};
   /// Gets correct form for a quadratic row - user to delete
   CoinPackedMatrix * quadraticRow(int rowNumber,double * linear) const;
-  /// Replaces a quadratic row
-  void replaceQuadraticRow(int rowNumber,const double * linear, const CoinPackedMatrix * quadraticPart);
   /// Default meshSize 
   inline double defaultMeshSize() const
   { return defaultMeshSize_;};

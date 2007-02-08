@@ -365,6 +365,15 @@ CbcCutGenerator::generateCuts( OsiCuts & cs , bool fullScan, CbcNode * node)
 	printf("Cut generator %s produced %d cuts of which %d were modified\n",
 		 generatorName_,numberRowCutsAfter-numberRowCutsBefore,nOdd);
     }
+    { 
+      // make all row cuts without test for duplicate
+      int numberRowCutsAfter = cs.sizeRowCuts() ;
+      int k ;
+      for (k = numberRowCutsBefore;k<numberRowCutsAfter;k++) {
+	OsiRowCut * thisCut = cs.rowCutPtr(k) ;
+	thisCut->mutableRow().setTestForDuplicateIndex(false);
+      }
+    }
 #ifdef CBC_DEBUG
     {
       int numberRowCutsAfter = cs.sizeRowCuts() ;

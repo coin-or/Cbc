@@ -37,6 +37,42 @@
 #include "CbcOrClpParam.hpp"
 #include "OsiRowCutDebugger.hpp"
 #include "OsiChooseVariable.hpp"
+//#define CLP_MALLOC_STATISTICS
+#ifdef CLP_MALLOC_STATISTICS
+#include <exception>
+#include <new>
+static double malloc_times=0.0;
+static double malloc_total=0.0;
+static int malloc_amount[]={0,32,128,256,1024,4096,16384,65536,262144,INT_MAX};
+static int malloc_n=10;
+double malloc_counts[10]={0,0,0,0,0,0,0,0,0,0};
+void * operator new (size_t size)
+{
+  malloc_times ++;
+  malloc_total += size;
+  int i;
+  for (i=0;i<malloc_n;i++) {
+    if ((int) size<=malloc_amount[i]) {
+      malloc_counts[i]++;
+      break;
+    }
+  }
+  void * p =malloc(size);
+  return p;
+}
+void operator delete (void *p)
+{
+  free(p);
+}
+static voif malloc_stats()
+{
+  double average = malloc_total/malloc_times;
+  printf("count %g bytes %g - average %g\n",malloc_times,malloc_total,average);
+  for (int i=0;i<malloc_n;i++) 
+    printf("%g ",malloc_counts[i]);
+  printf("\n");
+}
+#endif
 #ifdef DMALLOC
 #include "dmalloc.h"
 #endif
@@ -55,11 +91,10 @@
 #include "OsiCuts.hpp"
 #include "OsiRowCut.hpp"
 #include "OsiColCut.hpp"
+#ifndef COIN_HAS_LINK
 #ifdef COIN_HAS_ASL
 #define COIN_HAS_LINK
 #endif
-#ifndef COIN_DEVELOP
-#undef COIN_HAS_LINK
 #endif
 #ifdef COIN_HAS_LINK
 #include "CbcLinked.hpp"
@@ -425,6 +460,551 @@ static int * analyze(OsiClpSolverInterface * solverMod, int & numberChanged, dou
     return NULL;
   }
 }
+/*  Returns OsiSolverInterface (User should delete)
+    On entry numberKnapsack is maximum number of Total entries
+*/
+static OsiSolverInterface *  
+expandKnapsack(CoinModel & model, int * whichColumn, int * knapsackStart, 
+	       int * knapsackRow, int &numberKnapsack,
+	       CglStored & stored, int logLevel,
+	       int fixedPriority)
+{
+  int maxTotal = numberKnapsack;
+  // load from coin model
+  OsiSolverLink *si = new OsiSolverLink();
+  OsiSolverInterface * finalModel=NULL;
+  si->setDefaultMeshSize(0.001);
+  // need some relative granularity
+  si->setDefaultBound(100.0);
+  si->setDefaultMeshSize(0.01);
+  si->setDefaultBound(1000.0);
+  si->setIntegerPriority(1000);
+  si->setBiLinearPriority(10000);
+  si->load(model,true,logLevel);
+  // get priorities
+  const int * priorities=model.priorities();
+  int numberColumns = model.numberColumns();
+  int SOSPriority=10000;
+  if (priorities) {
+    OsiObject ** objects = si->objects();
+    int numberObjects = si->numberObjects();
+    for (int iObj = 0;iObj<numberObjects;iObj++) {
+      int iColumn = objects[iObj]->columnNumber();
+      if (iColumn>=0&&iColumn<numberColumns) {
+	OsiSimpleInteger * obj =
+	  dynamic_cast <OsiSimpleInteger *>(objects[iObj]) ;
+	assert (obj);
+	int iPriority = priorities[iColumn];
+	if (iPriority>0)
+	  objects[iObj]->setPriority(iPriority);
+      }
+    }
+    if (fixedPriority>0) {
+      si->setFixedPriority(fixedPriority);
+      SOSPriority=fixedPriority+1;
+    }
+  } 
+  CoinModel coinModel=*si->coinModel();
+  assert(coinModel.numberRows()>0);
+  int numberRows = coinModel.numberRows();
+  // Mark variables
+  int * whichKnapsack = new int [numberColumns];
+  int iRow,iColumn;
+  for (iColumn=0;iColumn<numberColumns;iColumn++) 
+    whichKnapsack[iColumn]=-1;
+  int kRow;
+  bool badModel=false;
+  // analyze
+  if (logLevel>1) {
+    for (iRow=0;iRow<numberRows;iRow++) {
+      /* Just obvious one at first
+	 positive non unit coefficients 
+	 all integer
+	 positive rowUpper
+	 for now - linear (but further down in code may use nonlinear)
+	 column bounds should be tight
+      */
+      //double lower = coinModel.getRowLower(iRow);
+      double upper = coinModel.getRowUpper(iRow);
+      if (upper<1.0e10) {
+	CoinModelLink triple=coinModel.firstInRow(iRow);
+	bool possible=true;
+	int n=0;
+	int n1=0;
+	while (triple.column()>=0) {
+	  int iColumn = triple.column();
+	  const char *  el = coinModel.getElementAsString(iRow,iColumn);
+	  if (!strcmp("Numeric",el)) {
+	    if (coinModel.columnLower(iColumn)==coinModel.columnUpper(iColumn)) {
+	      triple=coinModel.next(triple);
+	      continue; // fixed
+	    }
+	    double value=coinModel.getElement(iRow,iColumn);
+	    if (value<0.0) {
+	      possible=false;
+	    } else {
+	      n++;
+	      if (value==1.0)
+		n1++;
+	      if (coinModel.columnLower(iColumn)<0.0)
+		possible=false;
+	      if (!coinModel.isInteger(iColumn))
+		possible=false;
+	      if (whichKnapsack[iColumn]>=0)
+		possible=false;
+	    }
+	  } else {
+	    possible=false; // non linear
+	  } 
+	  triple=coinModel.next(triple);
+	}
+	if (n-n1>1&&possible) {
+	  double lower = coinModel.getRowLower(iRow);
+	  double upper = coinModel.getRowUpper(iRow);
+	  CoinModelLink triple=coinModel.firstInRow(iRow);
+	  while (triple.column()>=0) {
+	    int iColumn = triple.column();
+	    lower -= coinModel.columnLower(iColumn)*triple.value();
+	    upper -= coinModel.columnLower(iColumn)*triple.value();
+	    triple=coinModel.next(triple);
+	  }
+	  printf("%d is possible %g <=",iRow,lower);
+	  // print
+	  triple=coinModel.firstInRow(iRow);
+	  while (triple.column()>=0) {
+	    int iColumn = triple.column();
+	    if (coinModel.columnLower(iColumn)!=coinModel.columnUpper(iColumn))
+	      printf(" (%d,el %g up %g)",iColumn,triple.value(),
+		     coinModel.columnUpper(iColumn)-coinModel.columnLower(iColumn));
+	    triple=coinModel.next(triple);
+	  }
+	  printf(" <= %g\n",upper);
+	}
+      }
+    }
+  }
+  numberKnapsack=0;
+  for (kRow=0;kRow<numberRows;kRow++) {
+    iRow=kRow;
+    /* Just obvious one at first
+       positive non unit coefficients 
+       all integer
+       positive rowUpper
+       for now - linear (but further down in code may use nonlinear)
+       column bounds should be tight
+    */
+    //double lower = coinModel.getRowLower(iRow);
+    double upper = coinModel.getRowUpper(iRow);
+    if (upper<1.0e10) {
+      CoinModelLink triple=coinModel.firstInRow(iRow);
+      bool possible=true;
+      int n=0;
+      int n1=0;
+      while (triple.column()>=0) {
+	int iColumn = triple.column();
+	const char *  el = coinModel.getElementAsString(iRow,iColumn);
+	if (!strcmp("Numeric",el)) {
+	  if (coinModel.columnLower(iColumn)==coinModel.columnUpper(iColumn)) {
+	    triple=coinModel.next(triple);
+	    continue; // fixed
+	  }
+	  double value=coinModel.getElement(iRow,iColumn);
+	  if (value<0.0) {
+	    possible=false;
+	  } else {
+	    n++;
+	    if (value==1.0)
+	      n1++;
+	    if (coinModel.columnLower(iColumn)<0.0)
+	      possible=false;
+	    if (!coinModel.isInteger(iColumn))
+	      possible=false;
+	    if (whichKnapsack[iColumn]>=0)
+	      possible=false;
+	  }
+	} else {
+	  possible=false; // non linear
+	} 
+	triple=coinModel.next(triple);
+      }
+      if (n-n1>1&&possible) {
+	// try
+	CoinModelLink triple=coinModel.firstInRow(iRow);
+	while (triple.column()>=0) {
+	  int iColumn = triple.column();
+	  if (coinModel.columnLower(iColumn)!=coinModel.columnUpper(iColumn))
+	    whichKnapsack[iColumn]=numberKnapsack;
+	  triple=coinModel.next(triple);
+	}
+	knapsackRow[numberKnapsack++]=iRow;
+      }
+    }
+  }
+  if (logLevel>0)
+    printf("%d out of %d candidate rows are possible\n",numberKnapsack,numberRows);
+  // Check whether we can get rid of nonlinearities
+  /* mark rows
+     -2 in knapsack and other variables
+     -1 not involved
+     n only in knapsack n
+  */
+  int * markRow = new int [numberRows];
+  for (iRow=0;iRow<numberRows;iRow++) 
+    markRow[iRow]=-1;
+  int canDo=1; // OK and linear
+  for (iColumn=0;iColumn<numberColumns;iColumn++) {
+    CoinModelLink triple=coinModel.firstInColumn(iColumn);
+    int iKnapsack = whichKnapsack[iColumn];
+    bool linear=true;
+    // See if quadratic objective
+    const char * expr = coinModel.getColumnObjectiveAsString(iColumn);
+    if (strcmp(expr,"Numeric")) {
+      linear=false;
+    }
+    while (triple.row()>=0) {
+      int iRow = triple.row();
+      if (iKnapsack>=0) {
+	if (markRow[iRow]==-1) {
+	  markRow[iRow]=iKnapsack;
+	} else if (markRow[iRow]!=iKnapsack) {
+	  markRow[iRow]=-2;
+	}
+      }
+      const char * expr = coinModel.getElementAsString(iRow,iColumn);
+      if (strcmp(expr,"Numeric")) {
+	linear=false;
+      }
+      triple=coinModel.next(triple);
+    }
+    if (!linear) {
+      if (whichKnapsack[iColumn]<0) {
+	canDo=0;
+	break;
+      } else {
+	canDo=2;
+      }
+    }
+  }
+  int * markKnapsack = NULL;
+  double * coefficient = NULL;
+  double * linear = NULL;
+  int * whichRow = NULL;
+  int * lookupRow = NULL;
+  badModel=(canDo==0);
+  if (numberKnapsack&&canDo) {
+    /* double check - OK if
+       no nonlinear
+       nonlinear only on columns in knapsack
+       nonlinear only on columns in knapsack * ONE other - same for all in knapsack
+       AND that is only row connected to knapsack
+       (theoretically could split knapsack if two other and small numbers)
+       also ONE could be ONE expression - not just a variable
+    */
+    int iKnapsack;
+    markKnapsack = new int [numberKnapsack];
+    coefficient = new double [numberKnapsack];
+    linear = new double [numberColumns];
+    for (iKnapsack=0;iKnapsack<numberKnapsack;iKnapsack++) 
+      markKnapsack[iKnapsack]=-1;
+    if (canDo==2) {
+      for (iRow=-1;iRow<numberRows;iRow++) {
+	int numberOdd;
+	CoinPackedMatrix * row = coinModel.quadraticRow(iRow,linear,numberOdd);
+	if (row) {
+	  // see if valid
+	  const double * element = row->getElements();
+	  const int * column = row->getIndices();
+	  const CoinBigIndex * columnStart = row->getVectorStarts();
+	  const int * columnLength = row->getVectorLengths();
+	  int numberLook = row->getNumCols();
+	  for (int i=0;i<numberLook;i++) {
+	    int iKnapsack=whichKnapsack[i];
+	    if (iKnapsack<0) {
+	      // might be able to swap - but for now can't have knapsack in
+	      for (int j=columnStart[i];j<columnStart[i]+columnLength[i];j++) {
+		int iColumn = column[j];
+		if (whichKnapsack[iColumn]>=0) {
+		  canDo=0; // no good
+		  badModel=true;
+		  break;
+		}
+	      }
+	    } else {
+	      // OK if in same knapsack - or maybe just one
+	      int marked=markKnapsack[iKnapsack];
+	      for (int j=columnStart[i];j<columnStart[i]+columnLength[i];j++) {
+		int iColumn = column[j];
+		if (whichKnapsack[iColumn]!=iKnapsack&&whichKnapsack[iColumn]>=0) {
+		  canDo=0; // no good
+		  badModel=true;
+		  break;
+		} else if (marked==-1) {
+		  markKnapsack[iKnapsack]=iColumn;
+		  marked=iColumn;
+		  coefficient[iKnapsack]=element[j];
+		  coinModel.associateElement(coinModel.columnName(iColumn),1.0);
+		} else if (marked!=iColumn) {
+		  badModel=true;
+		  canDo=0; // no good
+		  break;
+		} else {
+		  // could manage with different coefficients - but for now ...
+		  assert(coefficient[iKnapsack]==element[j]);
+		}
+	      }
+	    }
+	  }
+	  delete row;
+	}
+      }
+    }
+    if (canDo) {
+      // for any rows which are cuts
+      whichRow = new int [numberRows];
+      lookupRow = new int [numberRows];
+      bool someNonlinear=false;
+      double maxCoefficient=1.0;
+      for (iKnapsack=0;iKnapsack<numberKnapsack;iKnapsack++) {
+	if (markKnapsack[iKnapsack]>=0) {
+	  someNonlinear=true;
+	  int iColumn = markKnapsack[iKnapsack];
+	  maxCoefficient = CoinMax(maxCoefficient,fabs(coefficient[iKnapsack]*coinModel.columnUpper(iColumn)));
+	}
+      }
+      if (someNonlinear) {
+	// associate all columns to stop possible error messages
+	for (iColumn=0;iColumn<numberColumns;iColumn++) {
+	  coinModel.associateElement(coinModel.columnName(iColumn),1.0);
+	}
+      }
+      ClpSimplex tempModel;
+      tempModel.loadProblem(coinModel);
+      // Create final model - first without knapsacks
+      int nCol=0;
+      int nRow=0;
+      for (iRow=0;iRow<numberRows;iRow++) {
+	if (markRow[iRow]<0) {
+	  lookupRow[iRow]=nRow;
+	  whichRow[nRow++]=iRow;
+	} else {
+	  lookupRow[iRow]=-1;
+	}
+      }
+      for (iColumn=0;iColumn<numberColumns;iColumn++) {
+	if (whichKnapsack[iColumn]<0)
+	  whichColumn[nCol++]=iColumn;
+      }
+      ClpSimplex finalModelX(&tempModel,nRow,whichRow,nCol,whichColumn,false,false,false);
+      OsiClpSolverInterface finalModelY(&finalModelX,true);
+      finalModel = finalModelY.clone();
+      finalModelY.releaseClp();
+      // Put back priorities
+      const int * priorities=model.priorities();
+      if (priorities) {
+	finalModel->findIntegers(false);
+	OsiObject ** objects = finalModel->objects();
+	int numberObjects = finalModel->numberObjects();
+	for (int iObj = 0;iObj<numberObjects;iObj++) {
+	  int iColumn = objects[iObj]->columnNumber();
+	  if (iColumn>=0&&iColumn<nCol) {
+	    OsiSimpleInteger * obj =
+	      dynamic_cast <OsiSimpleInteger *>(objects[iObj]) ;
+	    assert (obj);
+	    int iPriority = priorities[whichColumn[iColumn]];
+	    if (iPriority>0)
+	      objects[iObj]->setPriority(iPriority);
+	  }
+	}
+      }
+      for (iRow=0;iRow<numberRows;iRow++) {
+	whichRow[iRow]=iRow;
+      }
+      int numberOther=finalModel->getNumCols();
+      int nLargest=0;
+      int nelLargest=0;
+      int nTotal=0;
+      for (iKnapsack=0;iKnapsack<numberKnapsack;iKnapsack++) {
+	iRow = knapsackRow[iKnapsack];
+	int nCreate = maxTotal;
+	int nelCreate=coinModel.expandKnapsack(iRow,nCreate,NULL,NULL,NULL,NULL);
+	if (nelCreate<0)
+	  badModel=true;
+	nTotal+=nCreate;
+	nLargest = CoinMax(nLargest,nCreate);
+	nelLargest = CoinMax(nelLargest,nelCreate);
+      }
+      if (nTotal>maxTotal) 
+	badModel=true;
+      if (!badModel) {
+	// Now arrays for building
+	nelLargest = CoinMax(nelLargest,nLargest)+1;
+	double * buildObj = new double [nLargest];
+	double * buildElement = new double [nelLargest];
+	int * buildStart = new int[nLargest+1];
+	int * buildRow = new int[nelLargest];
+	OsiObject ** object = new OsiObject * [numberKnapsack];
+	int nSOS=0;
+	for (iKnapsack=0;iKnapsack<numberKnapsack;iKnapsack++) {
+	  knapsackStart[iKnapsack]=finalModel->getNumCols();
+	  iRow = knapsackRow[iKnapsack];
+	  int nCreate = 10000;
+	  coinModel.expandKnapsack(iRow,nCreate,buildObj,buildStart,buildRow,buildElement);
+	  // Redo row numbers
+	  for (iColumn=0;iColumn<nCreate;iColumn++) {
+	    for (int j=buildStart[iColumn];j<buildStart[iColumn+1];j++) {
+	      int jRow=buildRow[j];
+	      jRow=lookupRow[jRow];
+	      assert (jRow>=0&&jRow<nRow);
+	      buildRow[j]=jRow;
+	    }
+	  }
+	  finalModel->addCols(nCreate,buildStart,buildRow,buildElement,NULL,NULL,buildObj);
+	  int numberFinal=finalModel->getNumCols();
+	  for (iColumn=numberOther;iColumn<numberFinal;iColumn++) {
+	    if (markKnapsack[iKnapsack]<0) {
+	      finalModel->setColUpper(iColumn,maxCoefficient);
+	      finalModel->setInteger(iColumn);
+	    } else {
+	      finalModel->setColUpper(iColumn,maxCoefficient+1.0);
+	      finalModel->setInteger(iColumn);
+	    }
+	    buildRow[iColumn-numberOther]=iColumn;
+	    buildElement[iColumn-numberOther]=1.0;
+	  }
+	  if (markKnapsack[iKnapsack]<0) {
+	    // convexity row
+	    finalModel->addRow(numberFinal-numberOther,buildRow,buildElement,1.0,1.0);
+	  } else {
+	    int iColumn = markKnapsack[iKnapsack];
+	    int n=numberFinal-numberOther;
+	    buildRow[n]=iColumn;
+	    buildElement[n++]=coefficient[iKnapsack];
+	    // convexity row (sort of)
+	    finalModel->addRow(n,buildRow,buildElement,0.0,0.0);
+	    OsiSOS * sosObject = new OsiSOS(finalModel,n-1,buildRow,NULL,1);
+	    sosObject->setPriority(iKnapsack+SOSPriority);
+	    // Say not integral even if is (switch off heuristics)
+	    sosObject->setIntegerValued(false);
+	    object[nSOS++]=sosObject;
+	  }
+	  numberOther=numberFinal;
+	}
+	finalModel->addObjects(nSOS,object);
+	for (iKnapsack=0;iKnapsack<nSOS;iKnapsack++) 
+	  delete object[iKnapsack];
+	delete [] object;
+	// Can we move any rows to cuts
+	const int * cutMarker = coinModel.cutMarker();
+	if (cutMarker) {
+	  // Row copy
+	  const CoinPackedMatrix * matrixByRow = finalModel->getMatrixByRow();
+	  const double * elementByRow = matrixByRow->getElements();
+	  const int * column = matrixByRow->getIndices();
+	  const CoinBigIndex * rowStart = matrixByRow->getVectorStarts();
+	  const int * rowLength = matrixByRow->getVectorLengths();
+	  
+	  const double * rowLower = finalModel->getRowLower();
+	  const double * rowUpper = finalModel->getRowUpper();
+	  int nDelete=0;
+	  for (iRow=0;iRow<numberRows;iRow++) {
+	    if (cutMarker[iRow]&&lookupRow[iRow]>=0) {
+	      int jRow=lookupRow[iRow];
+	      whichRow[nDelete++]=jRow;
+	      int start = rowStart[jRow];
+	      stored.addCut(rowLower[jRow],rowUpper[jRow],
+			    rowLength[jRow],column+start,elementByRow+start);
+	    }
+	  }
+	  finalModel->deleteRows(nDelete,whichRow);
+	}
+	knapsackStart[numberKnapsack]=finalModel->getNumCols();
+	delete [] buildObj;
+	delete [] buildElement;
+	delete [] buildStart;
+	delete [] buildRow;
+	finalModel->writeMps("full");
+      }
+    }
+  }
+  delete [] whichKnapsack;
+  delete [] markRow;
+  delete [] markKnapsack;
+  delete [] coefficient;
+  delete [] linear;
+  delete [] whichRow;
+  delete [] lookupRow;
+  delete si;
+  si=NULL;
+  if (!badModel) {
+    return finalModel;
+  } else {
+    delete finalModel;
+    return NULL;
+  }
+}
+// Fills in original solution (coinModel length)
+static void 
+afterKnapsack(const CoinModel & coinModel2, const int * whichColumn, const int * knapsackStart, 
+		   const int * knapsackRow, int numberKnapsack,
+		   const double * knapsackSolution, double * solution, int logLevel)
+{
+  CoinModel coinModel = coinModel2;
+  int numberColumns = coinModel.numberColumns();
+  int iColumn;
+  // associate all columns to stop possible error messages
+  for (iColumn=0;iColumn<numberColumns;iColumn++) {
+    coinModel.associateElement(coinModel.columnName(iColumn),1.0);
+  }
+  CoinZeroN(solution,numberColumns);
+  int nCol=knapsackStart[0];
+  for (iColumn=0;iColumn<nCol;iColumn++) {
+    int jColumn = whichColumn[iColumn];
+    solution[jColumn]=knapsackSolution[iColumn];
+  }
+  int * buildRow = new int [numberColumns]; // wild overkill
+  double * buildElement = new double [numberColumns];
+  int iKnapsack;
+  for (iKnapsack=0;iKnapsack<numberKnapsack;iKnapsack++) {
+    int k=-1;
+    double value=0.0;
+    for (iColumn=knapsackStart[iKnapsack];iColumn<knapsackStart[iKnapsack+1];iColumn++) {
+      if (knapsackSolution[iColumn]>1.0e-5) {
+	if (k>=0) {
+	  printf("Two nonzero values for knapsack %d at (%d,%g) and (%d,%g)\n",iKnapsack,
+		 k,knapsackSolution[k],iColumn,knapsackSolution[iColumn]);
+	  abort();
+	}
+	k=iColumn;
+	value=floor(knapsackSolution[iColumn]+0.5);
+	assert (fabs(value-knapsackSolution[iColumn])<1.0e-5);
+      }
+    }
+    if (k>=0) {
+      int iRow = knapsackRow[iKnapsack];
+      int nCreate = 10000;
+      int nel=coinModel.expandKnapsack(iRow,nCreate,NULL,NULL,buildRow,buildElement,k-knapsackStart[iKnapsack]);
+      assert (nel);
+      if (logLevel>0) 
+	printf("expanded column %d in knapsack %d has %d nonzero entries:\n",
+	       k-knapsackStart[iKnapsack],iKnapsack,nel);
+      for (int i=0;i<nel;i++) {
+	int jColumn = buildRow[i];
+	double value = buildElement[i];
+	if (logLevel>0) 
+	  printf("%d - original %d has value %g\n",i,jColumn,value);
+	solution[jColumn]=value;
+      }
+    }
+  }
+  delete [] buildRow;
+  delete [] buildElement;
+#if 0
+  for (iColumn=0;iColumn<numberColumns;iColumn++) {
+    if (solution[iColumn]>1.0e-5&&coinModel.isInteger(iColumn))
+      printf("%d %g\n",iColumn,solution[iColumn]);
+  }
+#endif
+}
 static int outDupRow(OsiSolverInterface * solver) 
 {
   CglDuplicateRow dupCuts(solver);
@@ -605,10 +1185,17 @@ int main (int argc, const char *argv[])
     int * sosIndices = NULL;
     char * sosType = NULL;
     double * sosReference = NULL;
+    int * cut=NULL;
     int * sosPriority=NULL;
 #ifdef COIN_HAS_ASL
     ampl_info info;
+    CglStored storedAmpl;
     CoinModel * coinModel = NULL;
+    CoinModel saveCoinModel;
+    int * whichColumn = NULL;
+    int * knapsackStart=NULL;
+    int * knapsackRow=NULL;
+    int numberKnapsack=0;
     memset(&info,0,sizeof(info));
     if (argc>2&&!strcmp(argv[2],"-AMPL")) {
       usingAmpl=true;
@@ -652,8 +1239,35 @@ int main (int argc, const char *argv[])
                           info.rows,info.elements,
                           info.columnLower,info.columnUpper,info.objective,
                           info.rowLower,info.rowUpper);
+      // take off cuts if ampl wants that
+      if (info.cut) {
+	int numberRows = info.numberRows;
+	int * whichRow = new int [numberRows];
+	// Row copy
+	const CoinPackedMatrix * matrixByRow = solver->getMatrixByRow();
+	const double * elementByRow = matrixByRow->getElements();
+	const int * column = matrixByRow->getIndices();
+	const CoinBigIndex * rowStart = matrixByRow->getVectorStarts();
+	const int * rowLength = matrixByRow->getVectorLengths();
+	
+	const double * rowLower = solver->getRowLower();
+	const double * rowUpper = solver->getRowUpper();
+	int nDelete=0;
+	for (int iRow=0;iRow<numberRows;iRow++) {
+	  if (info.cut[iRow]) {
+	    whichRow[nDelete++]=iRow;
+	    int start = rowStart[iRow];
+	    storedAmpl.addCut(rowLower[iRow],rowUpper[iRow],
+			  rowLength[iRow],column+start,elementByRow+start);
+	  }
+	}
+	solver->deleteRows(nDelete,whichRow);
+	delete [] whichRow;
+      }
 #ifdef COIN_HAS_LINK
       } else {
+	// save
+	saveCoinModel = *coinModel;
 	// load from coin model
 	OsiSolverLink solver1;
 	OsiSolverInterface * solver2 = solver1.clone();
@@ -1819,6 +2433,10 @@ int main (int argc, const char *argv[])
                 si->setSpecialOptions(0x40000000);
               }
               if (!miplib) {
+		if (!preSolve) {
+		  model.solver()->setHintParam(OsiDoPresolveInInitial,false,OsiHintTry);
+		  model.solver()->setHintParam(OsiDoPresolveInResolve,false,OsiHintTry);
+		}
                 model.initialSolve();
                 OsiSolverInterface * solver = model.solver();
                 OsiClpSolverInterface * si =
@@ -1969,6 +2587,12 @@ int main (int argc, const char *argv[])
 		// use strategy instead
 		preProcess=0;
 		useStrategy=true;
+		// empty out any cuts
+		if (storedAmpl.sizeRowCuts()) {
+		  printf("Emptying ampl stored cuts as internal preprocessing\n");
+		  CglStored temp;
+		  storedAmpl=temp;
+		}
 	      }
               if (preProcess&&type==BAB) {
 		// See if sos from mps file
@@ -2126,6 +2750,50 @@ int main (int argc, const char *argv[])
                 //                         babModel->getNumCols());
               }
 	      int testOsiOptions = parameters[whichParam(TESTOSI,numberParameters,parameters)].intValue();
+#ifdef COIN_HAS_LINK
+	      // If linked then see if expansion wanted
+	      {
+		OsiSolverLink * solver3 = dynamic_cast<OsiSolverLink *> (babModel->solver());
+		if (solver3) {
+		  int options = parameters[whichParam(MIPOPTIONS,numberParameters,parameters)].intValue()/10000;
+		  if (options) {
+		    /*
+		      1 - force mini branch and bound
+		      2 - set priorities high on continuous
+		      4 - try adding OA cuts
+		      8 - try doing quadratic linearization
+		      16 - try expanding knapsacks
+		    */
+		    if ((options&16)) {
+		      int numberColumns = saveCoinModel.numberColumns();
+		      int numberRows = saveCoinModel.numberRows();
+		      whichColumn = new int[numberColumns];
+		      knapsackStart=new int[numberRows+1];
+		      knapsackRow=new int[numberRows];
+		      numberKnapsack=10000;
+		      OsiSolverInterface * solver = expandKnapsack(saveCoinModel,whichColumn,knapsackStart,
+								   knapsackRow,numberKnapsack,
+								   storedAmpl,2,slpValue);
+		      if (solver) {
+			clpSolver = dynamic_cast< OsiClpSolverInterface*> (solver);
+			assert (clpSolver);
+			lpSolver = clpSolver->getModelPtr();
+			babModel->assignSolver(solver);
+			testOsiOptions=0;
+		      } else {
+			numberKnapsack=0;
+			delete [] whichColumn;
+			delete [] knapsackStart;
+			delete [] knapsackRow;
+			whichColumn=NULL;
+			knapsackStart=NULL;
+			knapsackRow=NULL;
+		      }
+		    }
+		  }
+		}
+	      }
+#endif
 	      if (useCosts&&testOsiOptions<0) {
 		int numberColumns = babModel->getNumCols();
 		int * sort = new int[numberColumns];
@@ -2834,6 +3502,8 @@ int main (int argc, const char *argv[])
                   sosType=NULL;
                   free(sosReference);
                   sosReference=NULL;
+		  free(cut);
+		  cut=NULL;
                   free(sosPriority);
                   sosPriority=NULL;
 #ifdef COIN_HAS_ASL
@@ -2917,6 +3587,7 @@ int main (int argc, const char *argv[])
 			  2 - set priorities high on continuous
 			  4 - try adding OA cuts
 			  8 - try doing quadratic linearization
+			  16 - try expanding knapsacks
 			*/
 			if ((options&2))
 			  solver3->setBiLinearPriorities(10);
@@ -3010,6 +3681,58 @@ int main (int argc, const char *argv[])
 		  OsiClpSolverInterface * osiclp = dynamic_cast< OsiClpSolverInterface*> (babModel->solver());
 		  osiclp->setSolveOptions(clpSolve);
 		  osiclp->setHintParam(OsiDoDualInResolve,false);
+		  // switch off row copy
+		  osiclp->getModelPtr()->setSpecialOptions(osiclp->getModelPtr()->specialOptions()|256);
+		}
+		if (storedAmpl.sizeRowCuts()) {
+		  if (preProcess) {
+		    const int * originalColumns = process.originalColumns();
+                    int numberColumns = babModel->getNumCols();
+                    int * newColumn = new int[numberOriginalColumns];
+                    int i;
+                    for (i=0;i<numberOriginalColumns;i++) 
+		      newColumn[i]=-1;
+                    for (i=0;i<numberColumns;i++) {
+                      int iColumn = originalColumns[i];
+		      newColumn[iColumn]=i;
+                    }
+		    int * buildColumn = new int[numberColumns];
+		    // Build up valid cuts
+		    int nBad=0;
+		    int nCuts = storedAmpl.sizeRowCuts();
+		    CglStored newCuts;
+		    for (i=0;i<nCuts;i++) {
+		      const OsiRowCut * cut = storedAmpl.rowCutPointer(i);
+		      double lb = cut->lb();
+		      double ub = cut->ub();
+		      int n=cut->row().getNumElements();
+		      const int * column = cut->row().getIndices();
+		      const double * element = cut->row().getElements();
+		      bool bad=false;
+		      for (int i=0;i<n;i++) {
+			int iColumn = column[i];
+			iColumn = newColumn[iColumn];
+			if (iColumn>=0) {
+			  buildColumn[i]=iColumn;
+			} else {
+			  bad=true;
+			  break;
+			}
+		      }
+		      if (!bad) {
+			newCuts.addCut(lb,ub,n,buildColumn,element);
+		      } else {
+			nBad++;
+		      }
+		    }
+		    storedAmpl=newCuts;
+		    if (nBad)
+		      printf("%d cuts dropped\n",nBad);
+		    delete [] newColumn;
+		    delete [] buildColumn;
+		  }
+		  if (storedAmpl.sizeRowCuts()) 
+		    babModel->addCutGenerator(&storedAmpl,1,"AmplStored");
 		}
                 babModel->branchAndBound(statistics);
 		checkSOS(babModel, babModel->solver());
@@ -3075,6 +3798,8 @@ int main (int argc, const char *argv[])
               }
               if (type==STRENGTHEN&&strengthenedModel)
                 clpSolver = dynamic_cast< OsiClpSolverInterface*> (strengthenedModel);
+	      else if (usingAmpl) 
+		clpSolver = dynamic_cast< OsiClpSolverInterface*> (babModel->solver());
               lpSolver = clpSolver->getModelPtr();
               if (numberChanged) {
                 for (int i=0;i<numberChanged;i++) {
@@ -3105,6 +3830,8 @@ int main (int argc, const char *argv[])
                     " iterations - took "<<time2-time1<<" seconds"<<std::endl;
 #ifdef COIN_HAS_ASL
                 if (usingAmpl) {
+		  clpSolver = dynamic_cast< OsiClpSolverInterface*> (babModel->solver());
+		  lpSolver = clpSolver->getModelPtr();
                   double value = babModel->getObjValue()*lpSolver->getObjSense();
                   char buf[300];
                   int pos=0;
@@ -3147,12 +3874,23 @@ int main (int argc, const char *argv[])
                           babModel->getIterationCount());
                   if (bestSolution) {
                     free(info.primalSolution);
-                    info.primalSolution = (double *) malloc(n*sizeof(double));
-                    CoinCopyN(lpSolver->primalColumnSolution(),n,info.primalSolution);
-                    int numberRows = lpSolver->numberRows();
-                    free(info.dualSolution);
-                    info.dualSolution = (double *) malloc(numberRows*sizeof(double));
-                    CoinCopyN(lpSolver->dualRowSolution(),numberRows,info.dualSolution);
+		    if (!numberKnapsack) {
+		      info.primalSolution = (double *) malloc(n*sizeof(double));
+		      CoinCopyN(lpSolver->primalColumnSolution(),n,info.primalSolution);
+		      int numberRows = lpSolver->numberRows();
+		      free(info.dualSolution);
+		      info.dualSolution = (double *) malloc(numberRows*sizeof(double));
+		      CoinCopyN(lpSolver->dualRowSolution(),numberRows,info.dualSolution);
+		    } else {
+		      // expanded knapsack
+		      info.dualSolution=NULL;
+		      int numberColumns = saveCoinModel.numberColumns();
+		      info.primalSolution = (double *) malloc(numberColumns*sizeof(double));
+		      // Fills in original solution (coinModel length)
+		      afterKnapsack(saveCoinModel,  whichColumn,  knapsackStart, 
+				    knapsackRow,  numberKnapsack,
+				    lpSolver->primalColumnSolution(), info.primalSolution,1);
+		    }
                   } else {
                     info.primalSolution=NULL;
                     info.dualSolution=NULL;
@@ -3197,6 +3935,8 @@ int main (int argc, const char *argv[])
                 sosType=NULL;
                 free(sosReference);
                 sosReference=NULL;
+		free(cut);
+		cut=NULL;
                 free(sosPriority);
                 sosPriority=NULL;
 #ifdef COIN_HAS_ASL

@@ -6,7 +6,7 @@ ThirdParty/Lapack https://projects.coin-or.org/svn/BuildTools/ThirdParty/Lapack/
 Data/Netlib   https://projects.coin-or.org/svn/Data/stable/1.0/Netlib
 Data/Sample   https://projects.coin-or.org/svn/Data/stable/1.0/Sample
 Data/miplib3  https://projects.coin-or.org/svn/Data/stable/1.0/miplib3
-CoinUtils     https://projects.coin-or.org/svn/CoinUtils/branches/devel/CoinUtils
+CoinUtils     https://projects.coin-or.org/svn/CoinUtils/trunk/CoinUtils
 Cgl           https://projects.coin-or.org/svn/Cgl/trunk/Cgl
 Clp           https://projects.coin-or.org/svn/Clp/branches/devel/Clp
 Osi           https://projects.coin-or.org/svn/Osi/branches/devel/Osi

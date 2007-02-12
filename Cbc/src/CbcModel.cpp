@@ -1528,8 +1528,10 @@ void CbcModel::branchAndBound(int doStatistics)
             }
           }
           // check extra info on feasibility
-          if (!solverCharacteristics_->mipFeasible())
+          if (!solverCharacteristics_->mipFeasible()) {
             feasible = false;
+	    solverCharacteristics_->setMipBound(-COIN_DBL_MAX);
+	  }
         }
       } else {
         // normal

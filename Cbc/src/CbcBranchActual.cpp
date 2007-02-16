@@ -232,7 +232,7 @@ CbcClique::redoSequenceEtc(CbcModel * model, int numberColumns, const int * orig
     }
   }
   if (n2<numberMembers_) {
-    printf("** SOS number of members reduced from %d to %d!\n",numberMembers_,n2);
+    //printf("** SOS number of members reduced from %d to %d!\n",numberMembers_,n2);
     numberMembers_=n2;
   }
   // Find out how many non sos
@@ -538,7 +538,7 @@ CbcSOS::redoSequenceEtc(CbcModel * model, int numberColumns, const int * origina
     }
   }
   if (n2<numberMembers_) {
-    printf("** SOS number of members reduced from %d to %d!\n",numberMembers_,n2);
+    //printf("** SOS number of members reduced from %d to %d!\n",numberMembers_,n2);
     numberMembers_=n2;
   }
 }

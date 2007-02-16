@@ -936,7 +936,12 @@ void CbcModel::branchAndBound(int doStatistics)
 #	endif
       if (!feasible) anyAction = -2 ; }
       if (anyAction == -2||newNode->objectiveValue() >= cutoff)
-      { delete newNode ;
+      { 
+	if (anyAction != -2) {
+	  // zap parent nodeInfo
+	  newNode->nodeInfo()->nullParent();
+	}
+	delete newNode ;
 	newNode = NULL ;
 	feasible = false ; } } }
 /*
@@ -1026,6 +1031,7 @@ void CbcModel::branchAndBound(int doStatistics)
 #     ifdef CHECK_NODE
       printf("Node %x on tree\n",newNode) ;
 #     endif
+      newNode=NULL;
     } else {
       // continuous is integer
       double objectiveValue = newNode->objectiveValue();
@@ -1482,8 +1488,14 @@ void CbcModel::branchAndBound(int doStatistics)
 	// We executed addCuts just above. (lh)
 	if ( anyAction >=0 ) {
 	  assert (newNode);
-	  if (newNode->objectiveValue() >= getCutoff()) 
+	  if (newNode->objectiveValue() >= getCutoff()) {
 	    anyAction = -2; // say bad after all
+#ifdef COIN_DEVELOP
+	    printf("zapping2 CbcNodeInfo %x\n",newNode->nodeInfo()->parent());
+#endif
+	    // zap parent nodeInfo
+	    newNode->nodeInfo()->nullParent();
+	  }
 	}
 /*
   If we end up infeasible, we can delete the new node immediately. Since this
@@ -1593,6 +1605,7 @@ void CbcModel::branchAndBound(int doStatistics)
 #	    ifdef CHECK_NODE
 	    printf("Node %x pushed on tree c\n",newNode) ;
 #	    endif
+	    newNode=NULL;
 	  }
 	  else
 	  { 

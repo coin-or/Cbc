@@ -6356,7 +6356,13 @@ CoinModel::expandKnapsack(int knapsackRow, int & numberOutput,double * buildObj,
 	    bound[i]=0;
 	  }
 	  break;
-	}
+	} else if (typeRun==1&&numberOutput==maxNumber) {
+	  // On second run 
+	  for (i=0;i<numJ;i++) {
+	    bound[i]=0;
+	  }
+	  break;
+	} 
 	for (int j=0;j<numJ;j++) {
 	  checkSize += stack[j]*size[j];
 	}

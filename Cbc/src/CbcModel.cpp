@@ -12,7 +12,7 @@
 //#define CHECK_CUT_COUNTS
 //#define CHECK_NODE_FULL
 //#define NODE_LOG
-//#define GLOBAL_CUTS_JUST_POINTERS
+#define GLOBAL_CUTS_JUST_POINTERS
 #include <cassert>
 #include <cmath>
 #include <cfloat>
@@ -548,7 +548,7 @@ void CbcModel::branchAndBound(int doStatistics)
             }
           } else if (isInteger(iColumn)) {
             object_[numberIntegers_] =
-              new CbcSimpleInteger(this,numberIntegers_,iColumn);
+              new CbcSimpleInteger(this,iColumn);
             integerVariable_[numberIntegers_++]=iColumn;
           }
         }
@@ -883,16 +883,13 @@ void CbcModel::branchAndBound(int doStatistics)
   /* Tell solver we are in Branch and Cut
      Could use last parameter for subtle differences */
   solver_->setHintParam(OsiDoInBranchAndCut,true,OsiHintDo,NULL) ;
-/*
-  Create a copy of the solver, thus capturing the original (root node)
-  constraint system (aka the continuous system).
-*/
-  continuousSolver_ = solver_->clone() ;
 #ifdef COIN_HAS_CLP
  {
    OsiClpSolverInterface * clpSolver 
      = dynamic_cast<OsiClpSolverInterface *> (solver_);
    if (clpSolver) {
+     // Try and re-use regions
+     clpSolver->getModelPtr()->setPersistenceFlag(1);
      if ((specialOptions_&32)==0) {
        ClpSimplex * clpSimplex = clpSolver->getModelPtr();
        // take off names
@@ -905,6 +902,11 @@ void CbcModel::branchAndBound(int doStatistics)
    }
  }
 #endif
+/*
+  Create a copy of the solver, thus capturing the original (root node)
+  constraint system (aka the continuous system).
+*/
+  continuousSolver_ = solver_->clone() ;
 
   numberRowsAtContinuous_ = getNumRows() ;
 /*
@@ -4690,7 +4692,8 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
 #ifndef GLOBAL_CUTS_JUST_POINTERS
 	      cuts.insert(globalCuts_.rowCut(i)) ; 
 #else
-	      cuts.insert(globalCuts_.rowCutPtr(i)) ; 
+	      OsiRowCut * rowCutPointer = globalCuts_.rowCutPtr(i);
+	      cuts.insert(rowCutPointer) ; 
 #endif
 	    }
 	  numberNewCuts_ = lastNumberCuts+numberToAdd;
@@ -5051,17 +5054,29 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
 #endif
       }
     }
-  } else if (numberCutGenerators_) {
-    int i;
-    // add to counts anyway
-    for (i = 0;i<numberCutGenerators_;i++) 
-      generator_[i]->incrementNumberCutsInTotal(countRowCuts[i]);
-    // What if not feasible as cuts may have helped
-    if (feasible) {
-      for (i = 0;i<numberNewCuts_;i++) {
-	int iGenerator = whichGenerator_[i];
-	if (iGenerator>=0)
-	  generator_[iGenerator]->incrementNumberCutsActive();
+  } else {
+#ifdef COIN_HAS_CLP
+    OsiClpSolverInterface * clpSolver 
+      = dynamic_cast<OsiClpSolverInterface *> (solver_);
+    if (clpSolver) {
+      // Maybe solver might like to know only column bounds will change
+      //int options = clpSolver->specialOptions();
+      //clpSolver->setSpecialOptions(options|128);
+      clpSolver->synchronizeModel();
+    }
+#endif
+    if (numberCutGenerators_) {
+      int i;
+      // add to counts anyway
+      for (i = 0;i<numberCutGenerators_;i++) 
+	generator_[i]->incrementNumberCutsInTotal(countRowCuts[i]);
+      // What if not feasible as cuts may have helped
+      if (feasible) {
+	for (i = 0;i<numberNewCuts_;i++) {
+	  int iGenerator = whichGenerator_[i];
+	  if (iGenerator>=0)
+	    generator_[iGenerator]->incrementNumberCutsActive();
+	}
       }
     }
   }
@@ -5982,7 +5997,7 @@ CbcModel::findIntegers(bool startAgain,int type)
           new CbcSimpleInteger(this,iColumn);
       else if (type==1)
         object_[numberIntegers_] =
-          new CbcSimpleIntegerPseudoCost(this,numberIntegers_,iColumn,0.3);
+          new CbcSimpleIntegerPseudoCost(this,iColumn,0.3);
       integerVariable_[numberIntegers_++]=iColumn;
     }
   }
@@ -8217,7 +8232,7 @@ void
 CbcModel::makeGlobalCut(const OsiRowCut * cut)
 {
   OsiRowCut newCut(*cut);
-  newCut.setGloballyValid(2);
+  newCut.setGloballyValidAsInteger(2);
   newCut.mutableRow().setTestForDuplicateIndex(false);
   globalCuts_.insert(newCut) ;
 }
@@ -8791,7 +8806,7 @@ CbcModel::preProcess( int makeEquality, int numberPasses, int tuning)
 	}
       } else if (isInteger(iColumn)) {
 	object_[numberIntegers_] =
-	  new CbcSimpleInteger(this,numberIntegers_,iColumn);
+	  new CbcSimpleInteger(this,iColumn);
 	integerVariable_[numberIntegers_++]=iColumn;
       }
     }

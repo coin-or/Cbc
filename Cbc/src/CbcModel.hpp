@@ -1337,7 +1337,7 @@ public:
   inline CoinMessageHandler * messageHandler() const
   {return handler_;};
   /// Return messages
-  inline CoinMessages messages() 
+  inline CoinMessages & messages() 
   {return messages_;};
   /// Return pointer to messages
   inline CoinMessages * messagesPointer() 

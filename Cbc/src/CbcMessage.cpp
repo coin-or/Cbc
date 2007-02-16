@@ -72,6 +72,8 @@ CbcMessage::CbcMessage(Language language) :
     addMessage(message->internalNumber,oneMessage);
     message ++;
   }
+  // Put into compact form
+  toCompact();
 
   // now override any language ones
 

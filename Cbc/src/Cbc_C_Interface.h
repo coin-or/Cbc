@@ -108,7 +108,7 @@ extern "C"{
   COINLIBAPI void COINLINKAGE Cbc_setObjectiveOffset(Cbc_Model * model, double value);
   /** Fills in array with problem name  */
   COINLIBAPI void COINLINKAGE Cbc_problemName(Cbc_Model * model, int maxNumberCharacters, char * array);
-  /** Sets problem name.  Must have \0 at end.  */
+  /** Sets problem name.  Must have NULL at end.  */
   COINLIBAPI int COINLINKAGE 
   Cbc_setProblemName(Cbc_Model * model, int maxNumberCharacters, char * array);
   /** Number of iterations */

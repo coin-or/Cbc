@@ -37,7 +37,7 @@
 #include "CbcOrClpParam.hpp"
 #include "OsiRowCutDebugger.hpp"
 #include "OsiChooseVariable.hpp"
-//#define CLP_MALLOC_STATISTICS
+#define CLP_MALLOC_STATISTICS
 #ifdef CLP_MALLOC_STATISTICS
 #include <exception>
 #include <new>
@@ -46,7 +46,7 @@ static double malloc_total=0.0;
 static int malloc_amount[]={0,32,128,256,1024,4096,16384,65536,262144,INT_MAX};
 static int malloc_n=10;
 double malloc_counts[10]={0,0,0,0,0,0,0,0,0,0};
-void * operator new (size_t size)
+void * operator new (size_t size) throw (std::bad_alloc)
 {
   malloc_times ++;
   malloc_total += size;
@@ -60,17 +60,20 @@ void * operator new (size_t size)
   void * p =malloc(size);
   return p;
 }
-void operator delete (void *p)
+void operator delete (void *p) throw()
 {
   free(p);
 }
-static voif malloc_stats()
+static void malloc_stats2()
 {
   double average = malloc_total/malloc_times;
   printf("count %g bytes %g - average %g\n",malloc_times,malloc_total,average);
   for (int i=0;i<malloc_n;i++) 
     printf("%g ",malloc_counts[i]);
   printf("\n");
+  malloc_times=0.0;
+  malloc_total=0.0;
+  memset(malloc_counts,0,sizeof(malloc_counts));
 }
 #endif
 #ifdef DMALLOC
@@ -468,7 +471,7 @@ static OsiSolverInterface *
 expandKnapsack(CoinModel & model, int * whichColumn, int * knapsackStart, 
 	       int * knapsackRow, int &numberKnapsack,
 	       CglStored & stored, int logLevel,
-	       int fixedPriority)
+	       int fixedPriority, int SOSPriority)
 {
   int maxTotal = numberKnapsack;
   // load from coin model
@@ -485,7 +488,6 @@ expandKnapsack(CoinModel & model, int * whichColumn, int * knapsackStart,
   // get priorities
   const int * priorities=model.priorities();
   int numberColumns = model.numberColumns();
-  int SOSPriority=10000;
   if (priorities) {
     OsiObject ** objects = si->objects();
     int numberObjects = si->numberObjects();
@@ -502,8 +504,9 @@ expandKnapsack(CoinModel & model, int * whichColumn, int * knapsackStart,
     }
     if (fixedPriority>0) {
       si->setFixedPriority(fixedPriority);
-      SOSPriority=fixedPriority+1;
     }
+    if (SOSPriority<0)
+      SOSPriority=100000;
   } 
   CoinModel coinModel=*si->coinModel();
   assert(coinModel.numberRows()>0);
@@ -843,8 +846,10 @@ expandKnapsack(CoinModel & model, int * whichColumn, int * knapsackStart,
 	double * buildElement = new double [nelLargest];
 	int * buildStart = new int[nLargest+1];
 	int * buildRow = new int[nelLargest];
-	OsiObject ** object = new OsiObject * [numberKnapsack];
+	// alow for integers in knapsacks
+	OsiObject ** object = new OsiObject * [numberKnapsack+nTotal];
 	int nSOS=0;
+	int nObj=numberKnapsack;
 	for (iKnapsack=0;iKnapsack<numberKnapsack;iKnapsack++) {
 	  knapsackStart[iKnapsack]=finalModel->getNumCols();
 	  iRow = knapsackRow[iKnapsack];
@@ -869,6 +874,9 @@ expandKnapsack(CoinModel & model, int * whichColumn, int * knapsackStart,
 	      finalModel->setColUpper(iColumn,maxCoefficient+1.0);
 	      finalModel->setInteger(iColumn);
 	    }
+	    OsiSimpleInteger * sosObject = new OsiSimpleInteger(finalModel,iColumn);
+	    sosObject->setPriority(1000000);
+	    object[nObj++]=sosObject;
 	    buildRow[iColumn-numberOther]=iColumn;
 	    buildElement[iColumn-numberOther]=1.0;
 	  }
@@ -879,7 +887,7 @@ expandKnapsack(CoinModel & model, int * whichColumn, int * knapsackStart,
 	    int iColumn = markKnapsack[iKnapsack];
 	    int n=numberFinal-numberOther;
 	    buildRow[n]=iColumn;
-	    buildElement[n++]=coefficient[iKnapsack];
+	    buildElement[n++]=-fabs(coefficient[iKnapsack]);
 	    // convexity row (sort of)
 	    finalModel->addRow(n,buildRow,buildElement,0.0,0.0);
 	    OsiSOS * sosObject = new OsiSOS(finalModel,n-1,buildRow,NULL,1);
@@ -890,12 +898,16 @@ expandKnapsack(CoinModel & model, int * whichColumn, int * knapsackStart,
 	  }
 	  numberOther=numberFinal;
 	}
-	finalModel->addObjects(nSOS,object);
-	for (iKnapsack=0;iKnapsack<nSOS;iKnapsack++) 
+	finalModel->addObjects(nObj,object);
+	for (iKnapsack=0;iKnapsack<nObj;iKnapsack++) 
 	  delete object[iKnapsack];
 	delete [] object;
 	// Can we move any rows to cuts
 	const int * cutMarker = coinModel.cutMarker();
+	if (cutMarker&&0) {
+	  printf("AMPL CUTS OFF until global cuts fixed\n");
+	  cutMarker=NULL;
+	}
 	if (cutMarker) {
 	  // Row copy
 	  const CoinPackedMatrix * matrixByRow = finalModel->getMatrixByRow();
@@ -1242,6 +1254,10 @@ int main (int argc, const char *argv[])
                           info.columnLower,info.columnUpper,info.objective,
                           info.rowLower,info.rowUpper);
       // take off cuts if ampl wants that
+      if (info.cut&&0) {
+	printf("AMPL CUTS OFF until global cuts fixed\n");
+	info.cut=NULL;
+      }
       if (info.cut) {
 	int numberRows = info.numberRows;
 	int * whichRow = new int [numberRows];
@@ -2775,15 +2791,21 @@ int main (int argc, const char *argv[])
 		      knapsackStart=new int[numberRows+1];
 		      knapsackRow=new int[numberRows];
 		      numberKnapsack=10000;
+		      int extra1 = parameters[whichParam(EXTRA1,numberParameters,parameters)].intValue();
+		      int extra2 = parameters[whichParam(EXTRA2,numberParameters,parameters)].intValue();
+		      int logLevel = parameters[log].intValue();
 		      OsiSolverInterface * solver = expandKnapsack(saveCoinModel,whichColumn,knapsackStart,
 								   knapsackRow,numberKnapsack,
-								   storedAmpl,2,slpValue);
+								   storedAmpl,logLevel,extra1,extra2);
 		      if (solver) {
 			clpSolver = dynamic_cast< OsiClpSolverInterface*> (solver);
 			assert (clpSolver);
 			lpSolver = clpSolver->getModelPtr();
 			babModel->assignSolver(solver);
 			testOsiOptions=0;
+			// Priorities already done
+			free(info.priorities);
+			info.priorities=NULL;
 		      } else {
 			numberKnapsack=0;
 			delete [] whichColumn;
@@ -3074,9 +3096,18 @@ int main (int argc, const char *argv[])
 		int moreMipOptions = parameters[whichParam(MOREMIPOPTIONS,numberParameters,parameters)].intValue();
                 if (moreMipOptions>=0) {
                   printf("more mip options %d\n",moreMipOptions);
+		  OsiClpSolverInterface * osiclp = dynamic_cast< OsiClpSolverInterface*> (babModel->solver());
+		  if (moreMipOptions==10000) {
+		    // test memory saving
+		    moreMipOptions -= 10000;
+		    ClpSimplex * lpSolver = osiclp->getModelPtr();
+                    lpSolver->setPersistenceFlag(1);
+		    // switch off row copy if few rows
+		    if (lpSolver->numberRows()<150)
+		      lpSolver->setSpecialOptions(lpSolver->specialOptions()|256);
+		  }
 		  if (((moreMipOptions+1)%1000000)!=0)
 		    babModel->setSearchStrategy(moreMipOptions%1000000);
-		  OsiClpSolverInterface * osiclp = dynamic_cast< OsiClpSolverInterface*> (babModel->solver());
 		  // go faster stripes
 		  if( moreMipOptions >=999999) {
 		    if (osiclp) {
@@ -3448,12 +3479,16 @@ int main (int argc, const char *argv[])
                   }
                   OsiObject ** objects = testOsiSolver->objects();
                   int numberObjects = testOsiSolver->numberObjects();
+		  int logLevel = parameters[log].intValue();
                   for (int iObj = 0;iObj<numberObjects;iObj++) {
                     // skip sos
                     OsiSOS * objSOS =
                       dynamic_cast <OsiSOS *>(objects[iObj]) ;
-                    if (objSOS)
+                    if (objSOS) {
+		      if (logLevel>2)
+			printf("Set %d is SOS - priority %d\n",iObj,objSOS->priority());
                       continue;
+		    }
                     int iColumn = objects[iObj]->columnNumber();
                     if (iColumn>=0) {
 		      if (originalColumns)
@@ -3476,6 +3511,8 @@ int main (int argc, const char *argv[])
                       if (iPriority>0)
                         objects[iObj]->setPriority(iPriority);
                     }
+		    if (logLevel>2)
+		      printf("Obj %d is int? - priority %d\n",iObj,objects[iObj]->priority());
                     if (pseudoUp&&pseudoUp[iColumn]) {
 		      abort();
                     }
@@ -3736,11 +3773,30 @@ int main (int argc, const char *argv[])
 		    delete [] newColumn;
 		    delete [] buildColumn;
 		  }
-		  if (storedAmpl.sizeRowCuts()) 
-		    babModel->addCutGenerator(&storedAmpl,1,"AmplStored");
+		  if (storedAmpl.sizeRowCuts()) {
+		    //babModel->addCutGenerator(&storedAmpl,1,"AmplStored");
+		    int numberRowCuts = storedAmpl.sizeRowCuts();
+		    for (int i=0;i<numberRowCuts;i++) {
+		      const OsiRowCut * rowCutPointer = storedAmpl.rowCutPointer(i);
+		      babModel->makeGlobalCut(rowCutPointer);
+		    }
+		  }
 		}
 #endif
+#ifdef CLP_MALLOC_STATISTICS
+		malloc_stats();
+		malloc_stats2();
+#endif
+		if (outputFormat==5) {
+		  osiclp = dynamic_cast< OsiClpSolverInterface*> (babModel->solver());
+		  lpSolver = osiclp->getModelPtr();
+		  lpSolver->setPersistenceFlag(1);
+		}
                 babModel->branchAndBound(statistics);
+#ifdef CLP_MALLOC_STATISTICS
+		malloc_stats();
+		malloc_stats2();
+#endif
 		checkSOS(babModel, babModel->solver());
               } else if (type==MIPLIB) {
 		CbcStrategyDefault strategy(true,babModel->numberStrong(),babModel->numberBeforeTrust());
@@ -3749,6 +3805,11 @@ int main (int argc, const char *argv[])
                 if (preProcess)
                   strategy.setupPreProcessing(translate2[preProcess]);
                 babModel->setStrategy(strategy);
+		if (outputFormat==5) {
+		  osiclp = dynamic_cast< OsiClpSolverInterface*> (babModel->solver());
+		  lpSolver = osiclp->getModelPtr();
+		  lpSolver->setPersistenceFlag(1);
+		}
                 CbcClpUnitTest(*babModel);
                 goodModel=false;
                 break;

@@ -352,6 +352,7 @@ CbcStrategyDefault::setupOther(CbcModel & model)
         solver = model.solver();
         OsiClpSolverInterface * clpSolver = dynamic_cast< OsiClpSolverInterface*> (solver);
         ClpSimplex * lpSolver = clpSolver->getModelPtr();
+	lpSolver->passInMessageHandler(solver->messageHandler());
         if (lpSolver->tightenPrimalBounds()==0) {
           lpSolver->dual();
         } else {

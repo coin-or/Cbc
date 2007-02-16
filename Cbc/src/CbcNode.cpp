@@ -1330,7 +1330,7 @@ int CbcNode::chooseBranch (CbcModel *model, CbcNode *lastNode,int numberPassesLe
         if ((clp->specialOptions()&32)!=0) {
           clp->primal(1);
           if (clp->numberIterations())
-            model->messageHandler()->message(CBC_ITERATE_STRONG,model->messages())
+            model->messageHandler()->message(CBC_ITERATE_STRONG,*model->messagesPointer())
               << clp->numberIterations()
               <<CoinMessageEol;
         }
@@ -1836,7 +1836,7 @@ int CbcNode::chooseBranch (CbcModel *model, CbcNode *lastNode,int numberPassesLe
         CbcBranchingObject ** objects = new CbcBranchingObject * [ numberStrong];
         for (i = 0 ; i < numberStrong ; i++) {
           int iColumn = choice[i].possibleBranch->variable() ;
-          model->messageHandler()->message(CBC_STRONG,model->messages())
+          model->messageHandler()->message(CBC_STRONG,*model->messagesPointer())
             << i << iColumn
             <<choice[i].downMovement<<choice[i].numIntInfeasDown 
             <<choice[i].upMovement<<choice[i].numIntInfeasUp 
@@ -3153,7 +3153,7 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
               if (model->messageHandler()->logLevel()>3) 
                 printf("sort %g downest %g upest %g ",sort[iDo],downEstimate[iObject],
                      upEstimate[iObject]);
-              model->messageHandler()->message(CBC_STRONG,model->messages())
+              model->messageHandler()->message(CBC_STRONG,*model->messagesPointer())
                 << iObject << iColumn
                 <<choice.downMovement<<choice.numIntInfeasDown 
                 <<choice.upMovement<<choice.numIntInfeasUp 
@@ -3357,17 +3357,18 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
       if (depth_<10||worstFeasible>0.2*averageChange) 
         solveAll=false;
       if (model->messageHandler()->logLevel()>3||false) { 
-        if (anyAction==-2)
+        if (anyAction==-2) {
           printf("infeasible\n");
-        else if(anyAction==-1)
+        } else if(anyAction==-1) {
           if (!solveAll)
             printf("%d fixed\n",numberToFix);
           else
             printf("%d fixed AND choosing %d iDo %d iChosenWhen %d numberToDo %d\n",numberToFix,bestChoice,
                    iDo,whichChoice,numberToDo);
-        else
-          printf("choosing %d iDo %d iChosenWhen %d numberToDo %d\n",bestChoice,
+        } else {
+          printf("choosing %d  iDo %d iChosenWhen %d numberToDo %d\n",bestChoice,
                  iDo,whichChoice,numberToDo);
+	}
       }
       if (doneHotStart) {
         // Delete the snapshot
@@ -3850,7 +3851,7 @@ int CbcNode::analyze (CbcModel *model, double * results)
         choice.upMovement = CoinMax(0.0,choice.upMovement);
         choice.downMovement = CoinMax(0.0,choice.downMovement);
         // feasible -
-        model->messageHandler()->message(CBC_STRONG,model->messages())
+        model->messageHandler()->message(CBC_STRONG,*model->messagesPointer())
           << iObject << iColumn
           <<choice.downMovement<<choice.numIntInfeasDown 
           <<choice.upMovement<<choice.numIntInfeasUp 

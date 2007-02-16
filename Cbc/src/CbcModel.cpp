@@ -6358,7 +6358,8 @@ CbcModel::tightenVubs(int numberSolves, const int * which,
     generator->setRowCuts(0);
     
     // Probing - return tight column bounds
-    generator->generateCutsAndModify(*solver,cuts);
+    CglTreeInfo info;
+    generator->generateCutsAndModify(*solver,cuts,&info);
     const double * tightLower = generator->tightLower();
     const double * lower = solver->getColLower();
     const double * tightUpper = generator->tightUpper();
@@ -6462,7 +6463,8 @@ CbcModel::tightenVubs(int numberSolves, const int * which,
 	if (generator) {
 	  // Probing - return tight column bounds
 	  cuts = OsiCuts();
-	  generator->generateCutsAndModify(*solver,cuts);
+	  CglTreeInfo info;
+	  generator->generateCutsAndModify(*solver,cuts,&info);
 	  const double * tightLower = generator->tightLower();
 	  const double * lower = solver->getColLower();
 	  const double * tightUpper = generator->tightUpper();

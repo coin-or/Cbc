@@ -205,7 +205,7 @@ CbcCutGenerator::generateCuts( OsiCuts & cs , bool fullScan, CbcNode * node)
       //solver->setApplicationData(saveData);
     } else {
       // Probing - return tight column bounds
-      generator->generateCutsAndModify(*solver,cs,info);
+      generator->generateCutsAndModify(*solver,cs,&info);
       const double * tightLower = generator->tightLower();
       const double * lower = solver->getColLower();
       const double * tightUpper = generator->tightUpper();

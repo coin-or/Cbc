@@ -37,7 +37,7 @@
 #include "CbcOrClpParam.hpp"
 #include "OsiRowCutDebugger.hpp"
 #include "OsiChooseVariable.hpp"
-#define CLP_MALLOC_STATISTICS
+//#define CLP_MALLOC_STATISTICS
 #ifdef CLP_MALLOC_STATISTICS
 #include <exception>
 #include <new>

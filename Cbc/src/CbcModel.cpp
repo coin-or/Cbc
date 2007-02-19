@@ -889,7 +889,7 @@ void CbcModel::branchAndBound(int doStatistics)
      = dynamic_cast<OsiClpSolverInterface *> (solver_);
    if (clpSolver) {
      // Try and re-use regions
-     clpSolver->getModelPtr()->setPersistenceFlag(1);
+     //clpSolver->getModelPtr()->setPersistenceFlag(1);
      if ((specialOptions_&32)==0) {
        ClpSimplex * clpSimplex = clpSolver->getModelPtr();
        // take off names

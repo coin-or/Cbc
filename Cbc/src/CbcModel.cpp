@@ -6095,7 +6095,7 @@ CbcModel::setBestSolution (CBC_Message how,
         
         handler_->message(how,messages_)
           <<bestObjective_<<numberIterations_
-          <<numberNodes_
+          <<numberNodes_<<getCurrentSeconds()
           <<CoinMessageEol;
       }
     }

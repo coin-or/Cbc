@@ -2691,6 +2691,26 @@ int main (int argc, const char *argv[])
 		    numberPasses = (tunePreProcess/1000)-1;
 		    tunePreProcess = tunePreProcess % 1000;
 		  }
+		  if (doSprint>0) {
+		    // Sprint for primal solves
+		    ClpSolve::SolveType method = ClpSolve::usePrimalorSprint;
+		    ClpSolve::PresolveType presolveType = ClpSolve::presolveOff;
+		    int numberPasses = 5;
+		    int options[] = {0,3,0,0,0,0};
+		    int extraInfo[] = {-1,20,-1,-1,-1,-1};
+		    extraInfo[1]=doSprint;
+		    int independentOptions[] = {0,0,3};
+		    ClpSolve clpSolve(method,presolveType,numberPasses,
+				      options,extraInfo,independentOptions);
+		    // say use in OsiClp
+		    clpSolve.setSpecialOption(6,1);
+		    OsiClpSolverInterface * osiclp = dynamic_cast< OsiClpSolverInterface*> (saveSolver);
+		    osiclp->setSolveOptions(clpSolve);
+		    osiclp->setHintParam(OsiDoDualInResolve,false);
+		    // switch off row copy
+		    osiclp->getModelPtr()->setSpecialOptions(osiclp->getModelPtr()->specialOptions()|256);
+		    osiclp->getModelPtr()->setInfeasibilityCost(1.0e11);
+		  }
                   solver2 = process.preProcessNonDefault(*saveSolver,translate[preProcess],numberPasses,
 							 tunePreProcess);
                   // Tell solver we are not in Branch and Cut
@@ -3724,6 +3744,7 @@ int main (int argc, const char *argv[])
 		  osiclp->setHintParam(OsiDoDualInResolve,false);
 		  // switch off row copy
 		  osiclp->getModelPtr()->setSpecialOptions(osiclp->getModelPtr()->specialOptions()|256);
+		  osiclp->getModelPtr()->setInfeasibilityCost(1.0e11);
 		}
 #ifdef COIN_HAS_LINK
 		if (storedAmpl.sizeRowCuts()) {
@@ -3810,6 +3831,17 @@ int main (int argc, const char *argv[])
 		  lpSolver = osiclp->getModelPtr();
 		  lpSolver->setPersistenceFlag(1);
 		}
+                if (testOsiOptions>=0) {
+                  printf("Testing OsiObject options %d\n",testOsiOptions);
+		  CbcBranchDefaultDecision decision;
+		  OsiChooseStrong choose(babModel->solver());
+		  choose.setNumberBeforeTrusted(babModel->numberBeforeTrust());
+		  choose.setNumberStrong(babModel->numberStrong());
+		  choose.setShadowPriceMode(testOsiOptions);
+		  //babModel->deleteObjects(false);
+		  decision.setChooseMethod(choose);
+		  babModel->setBranchingMethod(decision);
+		}
                 CbcClpUnitTest(*babModel);
                 goodModel=false;
                 break;
@@ -3880,8 +3912,14 @@ int main (int argc, const char *argv[])
               if (type==BAB) {
                 //move best solution (should be there -- but ..)
                 int n = lpSolver->getNumCols();
-                if (bestSolution)
+                if (bestSolution) {
                   memcpy(lpSolver->primalColumnSolution(),bestSolution,n*sizeof(double));
+		  // now see what that does to row solution
+		  int numberRows=lpSolver->numberRows();
+		  double * rowSolution = lpSolver->primalRowSolution();
+		  memset (rowSolution,0,numberRows*sizeof(double));
+		  lpSolver->clpMatrix()->times(1.0,bestSolution,rowSolution);
+		}
                 if (debugFile=="create"&&bestSolution) {
                   saveSolution(lpSolver,"debug.file");
                 }
@@ -5054,12 +5092,14 @@ int main (int argc, const char *argv[])
               // set time from integer model
               double timeToGo = model.getMaximumSeconds();
               lpSolver->setMaximumSeconds(timeToGo);
-              fakeMain2(*lpSolver,*clpSolver);
+	      int extra1 = parameters[whichParam(EXTRA1,numberParameters,parameters)].intValue();
+              fakeMain2(*lpSolver,*clpSolver,extra1);
+              lpSolver = clpSolver->getModelPtr();
 #ifdef COIN_HAS_ASL
 	      // My actual usage has objective only in clpSolver
-	      double objectiveValue=clpSolver->getObjValue();
-	      int iStat = lpSolver->status();
-	      int iStat2 = lpSolver->secondaryStatus();
+	      //double objectiveValue=clpSolver->getObjValue();
+	      //int iStat = lpSolver->status();
+	      //int iStat2 = lpSolver->secondaryStatus();
 #endif
 #endif
 	    }

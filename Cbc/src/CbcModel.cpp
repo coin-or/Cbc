@@ -1432,6 +1432,10 @@ void CbcModel::branchAndBound(int doStatistics)
       for (i = 0 ; i < numberColumns ; i++)
       { lowerBefore[i]= lower[i] ;
 	upperBefore[i]= upper[i] ; }
+      if ((solverCharacteristics_->extraCharacteristics()&2)!=0) {
+	solverCharacteristics_->setBeforeLower(lowerBefore);
+	solverCharacteristics_->setBeforeUpper(upperBefore);
+      }
       bool deleteNode ;
       if (messageHandler()->logLevel()>2)
 	node->modifiableBranchingObject()->print();
@@ -5101,7 +5105,6 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
   if (clpSolver) 
     clpSolver->setSpecialOptions(saveClpOptions);
 # endif
-
   return feasible ; }
 
 

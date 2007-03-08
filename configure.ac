@@ -44,6 +44,8 @@ AC_COIN_INIT_AUTOMAKE
 #############################################################################
 
 AC_COIN_THIRDPARTY_SUBDIRS([ASL],[ThirdParty/ASL],[solvers/asl.h])
+AC_COIN_THIRDPARTY_SUBDIRS([Blas],[ThirdParty/Blas],[daxpy.f])
+AC_COIN_THIRDPARTY_SUBDIRS([Lapack],[ThirdParty/Lapack],[LAPACK/SRC/dlarf.f])
 
 #############################################################################
 #                  Check which subprojects are there                        #

@@ -6,8 +6,8 @@
 #include <cfloat>
 
 #include "CoinPragma.hpp"
-#include "CoinHelperFunctions.hpp"
-#include "CoinPackedMatrix.hpp"
+//#include "CoinHelperFunctions.hpp"
+//#include "CoinPackedMatrix.hpp"
 #include "CoinTime.hpp"
 
 #include "CbcModel.hpp"
@@ -18,7 +18,7 @@
 
 //  bobe including extras.h to get strdup()
 #if defined(__MWERKS__) 
-#include <extras.h>
+// #include <extras.h>  // bobe 06-02-14
 #endif
 
 // Get C stuff but with extern C
@@ -211,12 +211,19 @@ Cbc_MessageHandler::setCallBack(cbc_callback callback)
 #pragma export on
 #endif
 
+/* Version */
+COINLIBAPI double COINLINKAGE Cbc_getVersion()
+{
+  double v = 1.0;
+  return v;
+}
+
 /* Default Cbc_Model constructor */
 COINLIBAPI Cbc_Model *  COINLINKAGE 
 Cbc_newModel()
 {
   const char prefix[] = "Cbc_C_Interface::Cbc_newModel(): ";
-  // const int  VERBOSE = 1;
+//  const int  VERBOSE = 1;
   if (VERBOSE>0) printf("%s begin\n",prefix);
   
   Cbc_Model * model = new Cbc_Model;
@@ -235,7 +242,7 @@ COINLIBAPI void COINLINKAGE
 Cbc_deleteModel(Cbc_Model * model)
 {
   const char prefix[] = "Cbc_C_Interface::Cbc_deleteModel(): ";
-  // const int  VERBOSE = 1;
+//  const int  VERBOSE = 1;
   if (VERBOSE>0) printf("%s begin\n",prefix); fflush(stdout);
   
   if (VERBOSE>1) printf("%s delete model->model_\n",prefix); fflush(stdout);
@@ -285,9 +292,9 @@ Cbc_loadProblem (Cbc_Model * model,  const int numcols, const int numrows,
     printf("%s numcols = %i, numrows = %i\n", 
       prefix, numcols, numrows);
     printf("%s model = %p, start = %p, index = %p, value = %p\n",
-      prefix, (void*)model, (void*)start, (void*)index, (void*)value);
+      prefix, model, start, index, value);
     printf("%s collb = %p, colub = %p, obj = %p, rowlb = %p, rowub = %p\n",
-      prefix, (void*)collb, (void*)colub, (void*)obj, (void*)rowlb, (void*)rowub);
+      prefix, collb, colub, obj, rowlb, rowub);
   }
 
   if (VERBOSE>1) printf("%s Calling solver->loadProblem()\n",prefix);
@@ -326,7 +333,7 @@ Cbc_readMps(Cbc_Model * model,const char *filename)
 COINLIBAPI void COINLINKAGE 
 Cbc_writeMps(Cbc_Model * model,const char *filename)
 {
-  const char prefix[] = "Cbc_C_Interface::Cbc_readMps(): ";
+  const char prefix[] = "Cbc_C_Interface::Cbc_writeMps(): ";
 //  const int  VERBOSE = 2;
   if (VERBOSE>0) printf("%s begin\n",prefix);
   if (VERBOSE>1) printf("%s filename = '%s'\n",prefix,filename);
@@ -360,7 +367,7 @@ Cbc_integerInformation(Cbc_Model * model)
 
   char * result = model->information_;
 
-  if (VERBOSE>0) printf("%s return %p\n",prefix,(void*)result);
+  if (VERBOSE>0) printf("%s return %p\n",prefix,result);
   return result;
 }
 /* Copy in integer information */
@@ -392,7 +399,7 @@ Cbc_deleteIntegerInformation(Cbc_Model * model)
 //  available through 
 //    OsiClpSolverInterface::setContinuous
 //tbd  model->model_->deleteIntegerInformation();
-  printf("%s ERROR: NOT IMPLEMENTED\n",prefix);
+  if (VERBOSE>0) printf("%s WARNING: NOT IMPLEMENTED\n",prefix);
 
   if (VERBOSE>0) printf("%s return\n",prefix);
 }
@@ -406,7 +413,7 @@ Cbc_resize (Cbc_Model * model, int newNumberRows, int newNumberColumns)
 
 // cannot find this in Cbc, Osi, or OsiClp
 //tbd  model->model_->solver()->resize(newNumberRows,newNumberColumns);
-  printf("%s ERROR: NOT IMPLEMENTED\n",prefix);
+  if (VERBOSE>0) printf("%s WARNING: NOT IMPLEMENTED\n",prefix);
 
   if (VERBOSE>0) printf("%s return\n",prefix);
 }
@@ -436,7 +443,7 @@ Cbc_addRows(Cbc_Model * model, const int number, const double * rowLower,
 
 // available through OsiClp
 //tbd  model->model_->addRows(number,rowLower,rowUpper,rowStarts,columns,elements);
-  printf("%s ERROR: NOT IMPLEMENTED\n",prefix);
+  if (VERBOSE>0) printf("%s WARNING: NOT IMPLEMENTED\n",prefix);
 
   if (VERBOSE>0) printf("%s return\n",prefix);
 }
@@ -469,7 +476,7 @@ Cbc_addColumns(Cbc_Model * model, int number, const double * columnLower,
 // available through OsiClp
 //tbd  model->model_->addColumns(number,columnLower,columnUpper,objective,
 //tbd			    columnStarts,rows,elements);
-  printf("%s ERROR: NOT IMPLEMENTED\n",prefix);
+  if (VERBOSE>0) printf("%s WARNING: NOT IMPLEMENTED\n",prefix);
 
   if (VERBOSE>0) printf("%s return\n",prefix);
 }
@@ -483,7 +490,7 @@ Cbc_dropNames(Cbc_Model * model)
   
 // cannot find names in Cbc, Osi, or OsiClp
 //tbd  model->model_->dropNames();
-  printf("%s ERROR: NOT IMPLEMENTED\n",prefix);
+  if (VERBOSE>0) printf("%s WARNING: NOT IMPLEMENTED\n",prefix);
 
   if (VERBOSE>0) printf("%s return\n",prefix);
 }
@@ -658,7 +665,7 @@ Cbc_objectiveOffset(Cbc_Model * model)
   double result = 0.0;
 // cannot find names in Cbc, Osi, or OsiClp
 //tbd  return model->model_->objectiveOffset();
-  printf("%s ERROR: NOT IMPLEMENTED\n",prefix);
+  if (VERBOSE>0) printf("%s WARNING: NOT IMPLEMENTED\n",prefix);
 
   if (VERBOSE>0) printf("%s return %g\n",prefix,result);
   return result;
@@ -672,7 +679,7 @@ Cbc_setObjectiveOffset(Cbc_Model * model, double value)
 
 // cannot find names in Cbc, Osi, or OsiClp
 //tbd  model->model_->solver()->setObjectiveOffset(value);
-  printf("%s ERROR: NOT IMPLEMENTED\n",prefix);
+  if (VERBOSE>0) printf("%s WARNING: NOT IMPLEMENTED\n",prefix);
 
   if (VERBOSE>0) printf("%s return\n",prefix);
 }
@@ -729,7 +736,7 @@ Cbc_setNumberIterations(Cbc_Model * model, int numberIterations)
 
 // cannot find this in Cbc, Osi, or OsiClp
 //tbd  model->model_->setNumberIterations(numberIterations);
-  printf("%s ERROR: NOT IMPLEMENTED\n",prefix);
+  if (VERBOSE>0) printf("%s WARNING: NOT IMPLEMENTED\n",prefix);
 
   if (VERBOSE>0) printf("%s return\n",prefix);
   return;
@@ -743,7 +750,9 @@ Cbc_maximumIterations(Cbc_Model * model)
   if (VERBOSE>0) printf("%s begin\n",prefix);
 
   int result = 0;
-  model->model_->solver()->getIntParam(OsiMaxNumIteration,result);
+// cannot find this in Cbc, Osi, or OsiClp
+//tbd  result = model->model_->solver()->maximumIterations();
+  if (VERBOSE>0) printf("%s WARNING: NOT IMPLEMENTED\n",prefix);
 
   if (VERBOSE>0) printf("%s return %i\n",prefix,result);
   return result;
@@ -755,7 +764,9 @@ Cbc_setMaximumIterations(Cbc_Model * model, int value)
 //  const int  VERBOSE = 1;
   if (VERBOSE>0) printf("%s begin\n",prefix);
 
-  model->model_->solver()->setIntParam(OsiMaxNumIteration,value);
+// cannot find this in Cbc, Osi, or OsiClp
+//tbd  model->model_->setMaximumIterations(value);
+  if (VERBOSE>0) printf("%s WARNING: NOT IMPLEMENTED\n",prefix);
 
   if (VERBOSE>0) printf("%s return\n",prefix);
 }
@@ -845,7 +856,7 @@ Cbc_hitMaximumIterations(Cbc_Model * model)
   int result = 0;
 // cannot find names in Cbc, Osi, or OsiClp
 //tbd  result = model->model_->solver()->hitMaximumIterations() ? 1 : 0;
-  printf("%s ERROR: NOT IMPLEMENTED\n",prefix);
+  if (VERBOSE>0) printf("%s WARNING: NOT IMPLEMENTED\n",prefix);
 
   if (VERBOSE>0) printf("%s return %i\n",prefix,result);
   return result;
@@ -856,75 +867,6 @@ Cbc_hitMaximumIterations(Cbc_Model * model)
    2 - dual infeasible
    3 - stopped on iterations etc
    4 - stopped due to errors
-*/
-COINLIBAPI int COINLINKAGE 
-Cbc_LPstatus(Cbc_Model * model)
-{
-  const char prefix[] = "Cbc_C_Interface::Cbc_LPstatus(): ";
-//  const int  VERBOSE = 1;
-  if (VERBOSE>0) printf("%s begin\n",prefix);
-
-  int result = 0;
-  OsiClpSolverInterface * solver  =  dynamic_cast< OsiClpSolverInterface*> (model->model_->solver());
-  result = solver->getModelPtr()->status();
-
-  if (VERBOSE>0) printf("%s return %i\n",prefix,result);
-  return result;
-}
-/* Set problem status */
-COINLIBAPI void COINLINKAGE 
-Cbc_setProblemLPStatus(Cbc_Model * model, int problemStatus)
-{
-  const char prefix[] = "Cbc_C_Interface::Cbc_setLPProblemStatus(): ";
-//  const int  VERBOSE = 1;
-  if (VERBOSE>0) printf("%s begin\n",prefix);
-
-  OsiClpSolverInterface * solver  =  dynamic_cast< OsiClpSolverInterface*> (model->model_->solver());
-  solver->getModelPtr()->setProblemStatus(problemStatus);
-
-  if (VERBOSE>0) printf("%s return\n",prefix);
-}
-/* Secondary status of problem - may get extended
-   0 - none
-   1 - primal infeasible because dual limit reached
-   2 - scaled problem optimal - unscaled has primal infeasibilities
-   3 - scaled problem optimal - unscaled has dual infeasibilities
-   4 - scaled problem optimal - unscaled has both dual and primal infeasibilities
-*/
-COINLIBAPI int COINLINKAGE 
-Cbc_secondaryLPStatus(Cbc_Model * model)
-{
-  const char prefix[] = "Cbc_C_Interface::Cbc_secondaryLPStatus(): ";
-//  const int  VERBOSE = 1;
-  if (VERBOSE>0) printf("%s begin\n",prefix);
-
-  int result = 0;
-  OsiClpSolverInterface * solver  =  dynamic_cast< OsiClpSolverInterface*> (model->model_->solver());
-  result = solver->getModelPtr()->secondaryStatus();
-
-  if (VERBOSE>0) printf("%s return %i\n",prefix,result);
-  return result;
-}
-COINLIBAPI void COINLINKAGE 
-Cbc_setSecondaryLPStatus(Cbc_Model * model, int status)
-{
-  const char prefix[] = "Cbc_C_Interface::Cbc_setSecondaryLPStatus(): ";
-//  const int  VERBOSE = 1;
-  if (VERBOSE>0) printf("%s begin\n",prefix);
-
-  OsiClpSolverInterface * solver  =  dynamic_cast< OsiClpSolverInterface*> (model->model_->solver());
-  solver->getModelPtr()->setSecondaryStatus(status);
-
-  if (VERBOSE>0) printf("%s return\n",prefix);
-}
-/* Final status of BAB problem
-   Some of these can be found out by is...... functions
-   -1 before branchAndBound
-   0 finished - check isProvenOptimal or isProvenInfeasible to see if solution found
-   (or check value of best solution)
-   1 stopped - on maxnodes, maxsols, maxtime
-   2 difficulties so run was abandoned
-   (5 event user programmed event occurred)
 */
 COINLIBAPI int COINLINKAGE 
 Cbc_status(Cbc_Model * model)
@@ -947,20 +889,18 @@ Cbc_setProblemStatus(Cbc_Model * model, int problemStatus)
 //  const int  VERBOSE = 1;
   if (VERBOSE>0) printf("%s begin\n",prefix);
 
-  model->model_->setProblemStatus(problemStatus);
+// cannot find this in Cbc, Osi, or OsiClp
+//tbd  model->model_->setProblemStatus(problemStatus);
+  if (VERBOSE>0) printf("%s WARNING: NOT IMPLEMENTED\n",prefix);
 
   if (VERBOSE>0) printf("%s return\n",prefix);
 }
-/* Secondary status of BAB problem
-   -1 unset (status_ will also be -1)
-   0 search completed with solution
-   1 linear relaxation not feasible (or worse than cutoff)
-   2 stopped on gap
-   3 stopped on nodes
-   4 stopped on time
-   5 stopped on user event
-   6 stopped on solutions
-   7 linear relaxation unbounded
+/* Secondary status of problem - may get extended
+   0 - none
+   1 - primal infeasible because dual limit reached
+   2 - scaled problem optimal - unscaled has primal infeasibilities
+   3 - scaled problem optimal - unscaled has dual infeasibilities
+   4 - scaled problem optimal - unscaled has both dual and primal infeasibilities
 */
 COINLIBAPI int COINLINKAGE 
 Cbc_secondaryStatus(Cbc_Model * model)
@@ -970,7 +910,9 @@ Cbc_secondaryStatus(Cbc_Model * model)
   if (VERBOSE>0) printf("%s begin\n",prefix);
 
   int result = 0;
-  result = model->model_->secondaryStatus();
+// cannot find this in Cbc, Osi, or OsiClp
+//tbd  result = model->model_->secondaryStatus();
+  if (VERBOSE>0) printf("%s WARNING: NOT IMPLEMENTED\n",prefix);
 
   if (VERBOSE>0) printf("%s return %i\n",prefix,result);
   return result;
@@ -982,7 +924,9 @@ Cbc_setSecondaryStatus(Cbc_Model * model, int status)
 //  const int  VERBOSE = 1;
   if (VERBOSE>0) printf("%s begin\n",prefix);
 
-  model->model_->setSecondaryStatus(status);
+// cannot find this in Cbc, Osi, or OsiClp
+//tbd  model->model_->setSecondaryStatus(status);
+  if (VERBOSE>0) printf("%s WARNING: NOT IMPLEMENTED\n",prefix);
 
   if (VERBOSE>0) printf("%s return\n",prefix);
 }
@@ -1005,7 +949,7 @@ Cbc_setOptimizationDirection(Cbc_Model * model, double value)
 {
   const char prefix[] = "Cbc_C_Interface::Cbc_setOptimizationDirection(): ";
 //  const int  VERBOSE = 1;
-  if (VERBOSE>0) printf("%s begin\n",prefix);
+  if (VERBOSE>0) printf("%s begin, value = %g\n",prefix,value);
 
   model->model_->setObjSense(value);
 //  model->model_->solver()->setObjSense(value);
@@ -1025,9 +969,9 @@ Cbc_primalRowSolution(Cbc_Model * model)
 // cannot find this in Cbc, Osi, or OsiClp
 // may have to make it somehow
 //tbd  return model->model_->primalRowSolution();
-  printf("%s ERROR: NOT IMPLEMENTED\n",prefix);
+  if (VERBOSE>0) printf("%s WARNING: NOT IMPLEMENTED\n",prefix);
 
-  if (VERBOSE>0) printf("%s return %p\n",prefix,(void*)result);
+  if (VERBOSE>0) printf("%s return %p\n",prefix,result);
   return result;
 }
 /* Primal column solution */
@@ -1042,9 +986,9 @@ Cbc_primalColumnSolution(Cbc_Model * model)
 // cannot find this in Cbc, Osi, or OsiClp
 // may have to make it somehow
 //  result = model->model_->getColSolution();
-  printf("%s ERROR: NOT IMPLEMENTED\n",prefix);
+  if (VERBOSE>0) printf("%s WARNING: NOT IMPLEMENTED\n",prefix);
 
-  if (VERBOSE>0) printf("%s return %p\n",prefix,(void*)result);
+  if (VERBOSE>0) printf("%s return %p\n",prefix,result);
   return result;
 }
 /* Dual row solution */
@@ -1059,9 +1003,9 @@ Cbc_dualRowSolution(Cbc_Model * model)
 // cannot find this in Cbc, Osi, or OsiClp
 // may have to make it somehow
 //tbd  return model->model_->dualRowSolution();
-  printf("%s ERROR: NOT IMPLEMENTED\n",prefix);
+  if (VERBOSE>0) printf("%s WARNING: NOT IMPLEMENTED\n",prefix);
 
-  if (VERBOSE>0) printf("%s return %p\n",prefix,(void*)result);
+  if (VERBOSE>0) printf("%s return %p\n",prefix,result);
   return NULL;
 }
 /* Reduced costs */
@@ -1076,9 +1020,9 @@ Cbc_dualColumnSolution(Cbc_Model * model)
 // cannot find this in Cbc, Osi, or OsiClp
 // may have to make it somehow
 //tbd  return model->model_->dualColumnSolution();
-  printf("%s ERROR: NOT IMPLEMENTED\n",prefix);
+  if (VERBOSE>0) printf("%s WARNING: NOT IMPLEMENTED\n",prefix);
 
-  if (VERBOSE>0) printf("%s return %p\n",prefix,(void*)result);
+  if (VERBOSE>0) printf("%s return %p\n",prefix,result);
   return NULL;
 }
 /* Row lower */
@@ -1093,9 +1037,9 @@ Cbc_rowLower(Cbc_Model * model)
 // cannot find this in Cbc, Osi, or OsiClp
 // may have to make it somehow
 //tbd  return model->model_->rowLower();
-  printf("%s ERROR: NOT IMPLEMENTED\n",prefix);
+  if (VERBOSE>0) printf("%s WARNING: NOT IMPLEMENTED\n",prefix);
 
-  if (VERBOSE>0) printf("%s return %p\n",prefix,(void*)result);
+  if (VERBOSE>0) printf("%s return %p\n",prefix,result);
   return NULL;
 }
 /* Row upper  */
@@ -1110,9 +1054,9 @@ Cbc_rowUpper(Cbc_Model * model)
 // cannot find this in Cbc, Osi, or OsiClp
 // may have to make it somehow
 //tbd  return model->model_->rowUpper();
-  printf("%s ERROR: NOT IMPLEMENTED\n",prefix);
+  if (VERBOSE>0) printf("%s WARNING: NOT IMPLEMENTED\n",prefix);
 
-  if (VERBOSE>0) printf("%s return %p\n",prefix,(void*)result);
+  if (VERBOSE>0) printf("%s return %p\n",prefix,result);
   return NULL;
 }
 /* Objective Coefficients */
@@ -1127,9 +1071,9 @@ Cbc_objective(Cbc_Model * model)
 // cannot find this in Cbc, Osi, or OsiClp
 // may have to make it somehow
 //  result = model->model_->objective();
-  printf("%s ERROR: NOT IMPLEMENTED\n",prefix);
+  if (VERBOSE>0) printf("%s WARNING: NOT IMPLEMENTED\n",prefix);
 
-  if (VERBOSE>0) printf("%s return %p\n",prefix,(void*)result);
+  if (VERBOSE>0) printf("%s return %p\n",prefix,result);
   return NULL;
 }
 /* Column Lower */
@@ -1144,9 +1088,9 @@ Cbc_columnLower(Cbc_Model * model)
 // cannot find this in Cbc, Osi, or OsiClp
 // may have to make it somehow
 //tbd  return model->model_->columnLower();
-  printf("%s ERROR: NOT IMPLEMENTED\n",prefix);
+  if (VERBOSE>0) printf("%s WARNING: NOT IMPLEMENTED\n",prefix);
 
-  if (VERBOSE>0) printf("%s return %p\n",prefix,(void*)result);
+  if (VERBOSE>0) printf("%s return %p\n",prefix,result);
   return NULL;
 }
 /* Column Upper */
@@ -1161,9 +1105,9 @@ Cbc_columnUpper(Cbc_Model * model)
 // cannot find this in Cbc, Osi, or OsiClp
 // may have to make it somehow
 //tbd  return model->model_->columnUpper();
-  printf("%s ERROR: NOT IMPLEMENTED\n",prefix);
+  if (VERBOSE>0) printf("%s WARNING: NOT IMPLEMENTED\n",prefix);
 
-  if (VERBOSE>0) printf("%s return %p\n",prefix,(void*)result);
+  if (VERBOSE>0) printf("%s return %p\n",prefix,result);
   return NULL;
 }
 /* Number of elements in matrix */
@@ -1201,7 +1145,7 @@ Cbc_getIndices(Cbc_Model * model)
   matrix = model->model_->solver()->getMatrixByCol();
   result = (matrix == NULL) ? NULL : matrix->getIndices();
 
-  if (VERBOSE>0) printf("%s return %p\n",prefix,(void*)result);
+  if (VERBOSE>0) printf("%s return %p\n",prefix,result);
   return result;
 } 
 
@@ -1218,7 +1162,7 @@ Cbc_getVectorLengths(Cbc_Model * model)
   matrix = model->model_->solver()->getMatrixByCol();
   result = (matrix == NULL) ? NULL : matrix->getVectorLengths();
 
-  if (VERBOSE>0) printf("%s return %p\n",prefix,(void*)result);
+  if (VERBOSE>0) printf("%s return %p\n",prefix,result);
   return result;
 } 
   
@@ -1235,7 +1179,7 @@ Cbc_getElements(Cbc_Model * model)
   matrix = model->model_->solver()->getMatrixByCol();
   result = (matrix == NULL) ? NULL : matrix->getElements();
 
-  if (VERBOSE>0) printf("%s return %p\n",prefix,(void*)result);
+  if (VERBOSE>0) printf("%s return %p\n",prefix,result);
   return result;
 }
 // ======================================================================
@@ -1268,9 +1212,9 @@ Cbc_infeasibilityRay(Cbc_Model * model)
   // OsiClpSolverInterface::getDualRays()
   //
 //tbd  result = model->model_->infeasibilityRay();
-  printf("%s ERROR: NOT IMPLEMENTED\n",prefix);
+  if (VERBOSE>0) printf("%s WARNING: NOT IMPLEMENTED\n",prefix);
 
-  if (VERBOSE>0) printf("%s return %p\n",prefix,(void*)result);
+  if (VERBOSE>0) printf("%s return %p\n",prefix,result);
   return result;
 }
 COINLIBAPI double * COINLINKAGE 
@@ -1285,9 +1229,9 @@ Cbc_unboundedRay(Cbc_Model * model)
   // OsiClpSolverInterface::getPrimalRays()
   //
 //tbd  result = model->model_->unboundedRay();
-  printf("%s ERROR: NOT IMPLEMENTED\n",prefix);
+  if (VERBOSE>0) printf("%s WARNING: NOT IMPLEMENTED\n",prefix);
 
-  if (VERBOSE>0) printf("%s return %p\n",prefix,(void*)result);
+  if (VERBOSE>0) printf("%s return %p\n",prefix,result);
   return result;
 }
 /* See if status array exists (partly for OsiClp) */
@@ -1300,7 +1244,7 @@ Cbc_statusExists(Cbc_Model * model)
 
   int result = 0;
 //tbd  result = model->model_->statusExists() ? 1 : 0;
-  printf("%s ERROR: NOT IMPLEMENTED\n",prefix);
+  if (VERBOSE>0) printf("%s WARNING: NOT IMPLEMENTED\n",prefix);
 
   if (VERBOSE>0) printf("%s return %i\n",prefix,result);
   return result;
@@ -1315,7 +1259,7 @@ Cbc_getBasisStatus(Cbc_Model * model, int * cstat, int * rstat)
 
 // have to figure this out
 //tbd  model->model_->solver()->getBasisStatus(cstat, rstat);
-  printf("%s ERROR: NOT IMPLEMENTED\n",prefix);
+  if (VERBOSE>0) printf("%s WARNING: NOT IMPLEMENTED\n",prefix);
 
   if (VERBOSE>0) printf("%s return\n",prefix);
   return;
@@ -1329,7 +1273,7 @@ setBasisStatus(Cbc_Model * model,  int * cstat, int * rstat)
   if (VERBOSE>0) printf("%s begin\n",prefix);
 
 //  model->model_->solver()->setBasisStatus(cstat, rstat);
-  printf("%s ERROR: NOT IMPLEMENTED\n",prefix);
+  if (VERBOSE>0) printf("%s WARNING: NOT IMPLEMENTED\n",prefix);
 
   if (VERBOSE>0) printf("%s return\n",prefix);
 }
@@ -1345,7 +1289,7 @@ Cbc_setUserPointer (Cbc_Model * model, void * pointer)
   // not sure what this is for
   //
 //tbd  model->model_->setUserPointer(pointer);
-  printf("%s ERROR: NOT IMPLEMENTED\n",prefix);
+  if (VERBOSE>0) printf("%s WARNING: NOT IMPLEMENTED\n",prefix);
 
   if (VERBOSE>0) printf("%s return\n",prefix);
 }
@@ -1360,9 +1304,9 @@ Cbc_getUserPointer (Cbc_Model * model)
   // not sure what this is for
   //
 //tbd result = model->model_->getUserPointer();
-  printf("%s ERROR: NOT IMPLEMENTED\n",prefix);
+  if (VERBOSE>0) printf("%s WARNING:  NOT IMPLEMENTED\n",prefix);
 
-  if (VERBOSE>0) printf("%s return %p\n",prefix,(void*)result);
+  if (VERBOSE>0) printf("%s return %p\n",prefix,result);
   return result;
 }
 /* Pass in Callback function */
@@ -1408,7 +1352,7 @@ COINLIBAPI void COINLINKAGE
 Cbc_setLogLevel(Cbc_Model * model, int value)
 {
   const char prefix[] = "Cbc_C_Interface::Cbc_setLogLevel(): ";
-//  const int  VERBOSE = 2;
+//  const int  VERBOSE = 1;
   if (VERBOSE>0) printf("%s begin\n",prefix);
   if (VERBOSE>1) printf("%s value = %i\n",prefix, value);
   
@@ -1440,7 +1384,7 @@ Cbc_lengthNames(Cbc_Model * model)
   int result = 0;
 // cannot find names in Cbc, Osi, or OsiClp
 //tbd  result = model->model_->lengthNames();
-  printf("%s ERROR: NOT IMPLEMENTED\n",prefix);
+  if (VERBOSE>0) printf("%s WARNING:  NOT IMPLEMENTED\n",prefix);
 
   if (VERBOSE>0) printf("%s return %i\n",prefix,result);
   return result;
@@ -1507,6 +1451,7 @@ Cbc_branchAndBound(Cbc_Model * model)
   if (VERBOSE>2) Cbc_printModel(model,prefix);
   try {
     model->model_->branchAndBound();
+    model->model_->solver()->resolve();
   } catch (CoinError e) {
     printf("%s ERROR: %s::%s, %s\n", prefix,
       e.className().c_str(), e.methodName().c_str(), e.message().c_str());
@@ -1540,7 +1485,7 @@ Cbc_scalingFlag(Cbc_Model * model)
   int result = 0;
 // try to use OsiSolverInterface::getHintParam(OsiDoScale, ???)
 //tbd  result = model->model_->scalingFlag();
-  printf("%s ERROR: NOT IMPLEMENTED\n",prefix);
+  if (VERBOSE>0) printf("%s WARNING:  NOT IMPLEMENTED\n",prefix);
 
   if (VERBOSE>0) printf("%s return %i\n",prefix,result);
   return result;
@@ -1569,7 +1514,7 @@ Cbc_crash(Cbc_Model * model, double gap,int pivot)
   int result = 0;
 // cannot find names in Cbc, Osi, or OsiClp
 //tbd  result = model->model_->crash(gap,pivot);
-  printf("%s ERROR: NOT IMPLEMENTED\n",prefix);
+  if (VERBOSE>0) printf("%s WARNING:  NOT IMPLEMENTED\n",prefix);
 
   if (VERBOSE>0) printf("%s return %i\n",prefix,result);
   return result;
@@ -1615,7 +1560,7 @@ Cbc_dualBound(Cbc_Model * model)
   double result = 0;
 // cannot find in Cbc, Osi, or OsiClp
 //tbd  result = model->model_->dualBound();
-  printf("%s ERROR: NOT IMPLEMENTED\n",prefix);
+  if (VERBOSE>0) printf("%s WARNING:  NOT IMPLEMENTED\n",prefix);
 
   if (VERBOSE>0) printf("%s return %g\n",prefix,result);
   return result;
@@ -1629,7 +1574,7 @@ Cbc_setDualBound(Cbc_Model * model, double value)
   
 // cannot find names in Cbc, Osi, or OsiClp
 //tbd  model->model_->setDualBound(value);
-  printf("%s ERROR: NOT IMPLEMENTED\n",prefix);
+  if (VERBOSE>0) printf("%s WARNING:  NOT IMPLEMENTED\n",prefix);
 
   if (VERBOSE>0) printf("%s return\n",prefix);
 }
@@ -1644,7 +1589,7 @@ Cbc_infeasibilityCost(Cbc_Model * model)
   double result = 0;
 // cannot find names in Cbc, Osi, or OsiClp
 //tbd  result = model->model_->solver()->infeasibilityCost();
-  printf("%s ERROR: NOT IMPLEMENTED\n",prefix);
+  if (VERBOSE>0) printf("%s WARNING:  NOT IMPLEMENTED\n",prefix);
 
   if (VERBOSE>0) printf("%s return %g\n",prefix,result);
   return result;
@@ -1658,7 +1603,7 @@ Cbc_setInfeasibilityCost(Cbc_Model * model, double value)
   
 // cannot find names in Cbc, Osi, or OsiClp
 //tbd  model->model_->setInfeasibilityCost(value);
-  printf("%s ERROR: NOT IMPLEMENTED\n",prefix);
+  if (VERBOSE>0) printf("%s WARNING:  NOT IMPLEMENTED\n",prefix);
 
   if (VERBOSE>0) printf("%s return\n",prefix);
 }
@@ -1680,7 +1625,7 @@ Cbc_perturbation(Cbc_Model * model)
   int result = 0;
 // cannot find names in Cbc, Osi, or OsiClp
 //tbd  result = model->model_->perturbation();
-  printf("%s ERROR: NOT IMPLEMENTED\n",prefix);
+  if (VERBOSE>0) printf("%s WARNING:  NOT IMPLEMENTED\n",prefix);
 
   if (VERBOSE>0) printf("%s return %i\n",prefix,result);
   return result;
@@ -1694,7 +1639,7 @@ Cbc_setPerturbation(Cbc_Model * model, int value)
   
 // cannot find names in Cbc, Osi, or OsiClp
 //tbd  model->model_->setPerturbation(value);
-  printf("%s ERROR: NOT IMPLEMENTED\n",prefix);
+  if (VERBOSE>0) printf("%s WARNING:  NOT IMPLEMENTED\n",prefix);
 
   if (VERBOSE>0) printf("%s return\n",prefix);
 }
@@ -1709,7 +1654,7 @@ Cbc_algorithm(Cbc_Model * model)
   int result = 0;
 // cannot find names in Cbc, Osi, or OsiClp
 //tbd  result = model->model_->algorithm();
-  printf("%s ERROR: NOT IMPLEMENTED\n",prefix);
+  if (VERBOSE>0) printf("%s WARNING:  NOT IMPLEMENTED\n",prefix);
 
   if (VERBOSE>0) printf("%s return %i\n",prefix,result);
   return result;
@@ -1724,7 +1669,7 @@ Cbc_setAlgorithm(Cbc_Model * model, int value)
   
 // cannot find names in Cbc, Osi, or OsiClp
 //tbd  model->model_->setAlgorithm(value);
-  printf("%s ERROR: NOT IMPLEMENTED\n",prefix);
+  if (VERBOSE>0) printf("%s WARNING:  NOT IMPLEMENTED\n",prefix);
 
   if (VERBOSE>0) printf("%s return\n",prefix);
 }
@@ -1739,7 +1684,7 @@ Cbc_sumDualInfeasibilities(Cbc_Model * model)
   double result = 0;
 // cannot find names in Cbc, Osi, or OsiClp
 //tbd  result = model->model_->sumDualInfeasibilities();
-  printf("%s ERROR: NOT IMPLEMENTED\n",prefix);
+  if (VERBOSE>0) printf("%s WARNING:  NOT IMPLEMENTED\n",prefix);
 
   if (VERBOSE>0) printf("%s return %g\n",prefix,result);
   return result;
@@ -1755,7 +1700,7 @@ Cbc_numberDualInfeasibilities(Cbc_Model * model)
   int result = 0;
 // cannot find names in Cbc, Osi, or OsiClp
 //tbd  result = model->model_->numberDualInfeasibilities();
-  printf("%s ERROR: NOT IMPLEMENTED\n",prefix);
+  if (VERBOSE>0) printf("%s WARNING:  NOT IMPLEMENTED\n",prefix);
 
   if (VERBOSE>0) printf("%s return %i\n",prefix,result);
   return result;
@@ -1771,7 +1716,7 @@ Cbc_sumPrimalInfeasibilities(Cbc_Model * model)
   double result = 0;
 // cannot find names in Cbc, Osi, or OsiClp
 //tbd result = model->model_->sumPrimalInfeasibilities();
-  printf("%s ERROR: NOT IMPLEMENTED\n",prefix);
+  if (VERBOSE>0) printf("%s WARNING:  NOT IMPLEMENTED\n",prefix);
 
   if (VERBOSE>0) printf("%s return %g\n",prefix,result);
   return result;
@@ -1786,7 +1731,7 @@ Cbc_numberPrimalInfeasibilities(Cbc_Model * model)
   
   int result = 0;
 //tbd  result = model->model_->getContinuousInfeasibilities();
-  printf("%s ERROR: NOT IMPLEMENTED\n",prefix);
+  if (VERBOSE>0) printf("%s WARNING:  NOT IMPLEMENTED\n",prefix);
 
   if (VERBOSE>0) printf("%s return %i\n",prefix,result);
   return result;
@@ -1807,7 +1752,7 @@ Cbc_saveModel(Cbc_Model * model, const char * fileName)
   int result = 0;
 // there is a writeMPS method in Osi 
 //tbd  result = model->model_->saveModel(fileName);
-  printf("%s ERROR: NOT IMPLEMENTED\n",prefix);
+  if (VERBOSE>0) printf("%s WARNING:  NOT IMPLEMENTED\n",prefix);
 
   if (VERBOSE>0) printf("%s return %i\n",prefix,result);
   return result;
@@ -1824,7 +1769,7 @@ Cbc_restoreModel(Cbc_Model * model, const char * fileName)
   int result = 0;
 // there is a readMPS method in Osi
 //tbd  result = model->model_->restoreModel(fileName);
-  printf("%s ERROR: NOT IMPLEMENTED\n",prefix);
+  if (VERBOSE>0) printf("%s WARNING:  NOT IMPLEMENTED\n",prefix);
 
   if (VERBOSE>0) printf("%s return %i\n",prefix,result);
   return result;
@@ -2019,7 +1964,7 @@ Cbc_getRowActivity(Cbc_Model * model)
   const double * result = NULL;
   result = model->model_->getRowActivity();
 
-  if (VERBOSE>0) printf("%s return %p\n",prefix,(void*)result);
+  if (VERBOSE>0) printf("%s return %p\n",prefix,result);
   return result;
 }
 /* Primal column solution */
@@ -2033,7 +1978,7 @@ Cbc_getColSolution(Cbc_Model * model)
   const double * result = NULL;
   result = model->model_->getColSolution();
 
-  if (VERBOSE>0) printf("%s return %p\n",prefix,(void*)result);
+  if (VERBOSE>0) printf("%s return %p\n",prefix,result);
   return result;
 }
 COINLIBAPI void COINLINKAGE 
@@ -2060,7 +2005,7 @@ Cbc_getRowPrice(Cbc_Model * model)
   const double * result = NULL;
   result = model->model_->getRowPrice();
 
-  if (VERBOSE>0) printf("%s return %p\n",prefix,(void*)result);
+  if (VERBOSE>0) printf("%s return %p\n",prefix,result);
   return result;
 }
 /* Reduced costs */
@@ -2074,7 +2019,7 @@ Cbc_getReducedCost(Cbc_Model * model)
   const double * result = NULL;
   result = model->model_->getReducedCost();
 
-  if (VERBOSE>0) printf("%s return %p\n",prefix,(void*)result);
+  if (VERBOSE>0) printf("%s return %p\n",prefix,result);
   return result;
 }
 /* Row lower */
@@ -2088,7 +2033,7 @@ Cbc_getRowLower(Cbc_Model * model)
   const double * result = NULL;
   result = model->model_->getRowLower();
 
-  if (VERBOSE>0) printf("%s return %p\n",prefix,(void*)result);
+  if (VERBOSE>0) printf("%s return %p\n",prefix,result);
   return result;
 }
 /* Row upper  */
@@ -2102,7 +2047,7 @@ Cbc_getRowUpper(Cbc_Model * model)
   const double * result = NULL;
   result = model->model_->getRowUpper();
 
-  if (VERBOSE>0) printf("%s return %p\n",prefix,(void*)result);
+  if (VERBOSE>0) printf("%s return %p\n",prefix,result);
   return result;
 }
 /* Objective Coefficients */
@@ -2116,7 +2061,7 @@ Cbc_getObjCoefficients(Cbc_Model * model)
   const double * result = NULL;
   result = model->model_->getObjCoefficients();
 
-  if (VERBOSE>0) printf("%s return %p\n",prefix,(void*)result);
+  if (VERBOSE>0) printf("%s return %p\n",prefix,result);
   return result;
 }
 /* Column Lower */
@@ -2130,7 +2075,7 @@ Cbc_getColLower(Cbc_Model * model)
   const double * result = NULL;
   result = model->model_->getColLower();
 
-  if (VERBOSE>0) printf("%s return %p\n",prefix,(void*)result);
+  if (VERBOSE>0) printf("%s return %p\n",prefix,result);
   return result;
 }
 /* Column Upper */
@@ -2144,7 +2089,7 @@ Cbc_getColUpper(Cbc_Model * model)
   const double * result = NULL;
   result = model->model_->getColUpper();
 
-  if (VERBOSE>0) printf("%s return %p\n",prefix,(void*)result);
+  if (VERBOSE>0) printf("%s return %p\n",prefix,result);
   return result;
 }
 /* Objective value */
@@ -2186,7 +2131,7 @@ Cbc_printModel(Cbc_Model * model, const char * argPrefix)
   printf("%s numcols = %i, numrows = %i, numelem = %i\n", 
     argPrefix, numcols, numrows, numelem);
   printf("%s model = %p, start = %p, index = %p, value = %p\n",
-    argPrefix, (void*)model, (void*)start, (void*)index, (void*)value);
+    argPrefix, model, start, index, value);
   matrix->dumpMatrix(NULL);
   {
     int i;
@@ -2198,7 +2143,7 @@ Cbc_printModel(Cbc_Model * model, const char * argPrefix)
   }
   
   printf("%s collb = %p, colub = %p, obj = %p, rowlb = %p, rowub = %p\n",
-    argPrefix, (void*)collb, (void*)colub, (void*)obj, (void*)rowlb, (void*)rowub);
+    argPrefix, collb, colub, obj, rowlb, rowub);
   printf("%s optimization direction = %g\n",argPrefix, Cbc_optimizationDirection(model));
   printf("  (1 - minimize, -1 - maximize, 0 - ignore)\n");
   {
@@ -2258,12 +2203,12 @@ COINLIBAPI int COINLINKAGE Cbc_getNodeCount(Cbc_Model * model)
 COINLIBAPI Cbc_Model * COINLINKAGE Cbc_clone(Cbc_Model * model)
 {
   const char prefix[] = "Cbc_C_Interface::Cbc_clone(): ";
-  // const int  VERBOSE = 1;
+  const int  VERBOSE = 1;
   if (VERBOSE>0) printf("%s begin\n",prefix);
   
   Cbc_Model * result = new Cbc_Model;
   result->model_     = new CbcModel(*(model->model_));
-  result->solver_    =  dynamic_cast< OsiClpSolverInterface*> (result->model_->solver());
+  result->solver_    = dynamic_cast< OsiClpSolverInterface*> (result->model_->solver());
   result->handler_   = NULL;
 
   if (VERBOSE>0) printf("%s return\n",prefix);
@@ -2296,38 +2241,148 @@ Cbc_deleteObjects(Cbc_Model * model)
 }
 /* Add an SOS constraint to the model */
 COINLIBAPI void  COINLINKAGE 
-Cbc_addSOS(Cbc_Model * model, int numberMembers,
-           const int * which, const double * weights, int identifier, int type)
+Cbc_addSOS_Dense(Cbc_Model * model, int numObjects, const int * len,
+           const int ** which, const double * weights, const int type)
 {
-  const char prefix[] = "Cbc_C_Interface::Cbc_addSOS(): ";
-//  const int  VERBOSE = 2;
-  if (VERBOSE>0) printf("%s begin\n",prefix);
-  if (VERBOSE>1) {
-    int i;
-    printf("%s numberMembers = %i, identifier = %i, type = %i\n",
-      prefix,numberMembers, identifier, type); fflush(stdout);
-    for (i=0;i<numberMembers;i++) 
-      printf("%s which[%i] = %d, weights[%i] = %g\n",
-        prefix, i, which[i], i, weights[i]); fflush(stdout);
-  }
+  const char prefix[] = "Cbc_C_Interface::Cbc_addSOS_Dense(): ";
+  const int  VERBOSE = 2;
+  if (VERBOSE>0) printf("%sbegin\n",prefix);
   
-  CbcObject ** objects = new CbcObject * [1];
-  if (VERBOSE>1) printf("%s new CbcSOS()\n",prefix);
-  objects[0] = new CbcSOS(model->model_,numberMembers,which,weights,identifier,type);
-  if (objects[0] == NULL) {
-    printf("%s ERROR: objects[0] == NULL\n",prefix); fflush(stdout);
-    assert(objects[0] != NULL);
+  assert(1>0);// this is probably broken
+  int i,j,l;
+  const int *w;
+  // I think this is a different model due to overriding = operator
+  CbcModel m = *(model->model_); 
+  
+  CbcObject ** objects = new CbcObject * [numObjects];
+
+  if (VERBOSE>1) printf("%s numObjects = %i\n",prefix,numObjects);
+  for (i=0;i<numObjects;i++) {
+    if (VERBOSE>1) {
+      printf("%s len[%i] = %i, identifier = %i, type = %i\n",
+        prefix,i,len[i], i, type); 
+      fflush(stdout);
+      for (j=0;j<len[i];j++) {
+        if (VERBOSE>2 || j==0 || j==(len[i]-1)) {
+          printf("%s which[%i][%i] = %d, weights[%i] = %g\n",
+            prefix, i,j, which[i][j], j, weights[j]); 
+          fflush(stdout);
+        }
+      }
+    }
+    
+    // Make a CbcSOS and assign it to objects
+    printf("%s len[%i] = %i\n",prefix, i, len[i]);
+    l = len[i];
+    w = which[i];
+    if (VERBOSE>1) printf("%s new CbcSOS()\n",prefix);
+    // ***
+    objects[i] = new CbcSOS(model->model_, (int)(len[i]), 
+      (const int*)which[i], (const double*)weights, (int)i, (int)type);
+    // ***
+    if (objects[i] == NULL) {
+      printf("%s ERROR: objects[%i] == NULL\n",prefix,i); fflush(stdout);
+      assert(objects[i] != NULL);
+    }
   }
   if (VERBOSE>1) printf("%s calling addObjects()\n",prefix);
   fflush(stdout);
-  model->model_->addObjects(1, objects);
+  model->model_->addObjects(numObjects, objects);
   if (VERBOSE>1) printf("%s finished addObjects()\n",prefix);
-  delete objects[0]; 
+  
+  for (i=0;i<numObjects;i++) delete objects[i]; 
   delete [] objects;
 
-  if (VERBOSE>0) printf("%s return\n",prefix);
+  if (VERBOSE>0) printf("%sreturn\n",prefix);
   return;
 }
+/* Add SOS constraints to the model using row-order matrix */
+COINLIBAPI void  COINLINKAGE 
+Cbc_addSOS_Sparse(Cbc_Model * model, const int * rowStarts,
+           const int * rowIndices, const double * weights, const int type)
+{
+  const char prefix[] = "Cbc_C_Interface::Cbc_addSOS_Sparse(): ";
+//  const int  VERBOSE = 1;
+  if (VERBOSE>0) printf("%sbegin\n",prefix);
+  
+  int numRows = Cbc_numberRows(model);
+  if (VERBOSE>0) printf("%s numRows = %i\n",prefix,numRows);
+  
+  // The passed sparse matrix must have the same number of rows as the model
+  assert(numRows==Cbc_numberRows(model)); 
+  
+  int row, i;
+  const int *colIndex;
+  const double *colWeight;
+  
+  // loop on rows and count number of objects according to numWeights>0
+  int numObjects = 0;
+  for (row=0; row<numRows; row++) {
+    if (VERBOSE>2) {
+      printf("%s row = %i\n",prefix,row);
+      printf("%s rowStarts[%i] = %i\n",prefix,row,rowStarts[row]);
+      printf("%s rowStarts[%i+1] = %i\n",prefix,row,rowStarts[row+1]);
+      fflush(stdout);
+    }
+    const int numWeights = rowStarts[row+1]-rowStarts[row];
+    if (VERBOSE>2) printf("%s  numWeights = %i\n",prefix,numWeights);
+    if (numWeights>0) numObjects++;    
+  }
+  
+  // make objects
+  CbcObject ** objects = new CbcObject * [numObjects];
+//  if (VERBOSE>1) printf("%s numObjects = %i, objects = %X\n",prefix,numObjects,objects);
+
+  // loop on rows and make an object when numWeights>0
+  int objNum = 0;
+  for (row=0; row<numRows; row++) {
+    if (VERBOSE>2) {
+      printf("%s row = %i\n",prefix,row);
+      printf("%s rowStarts[%i] = %i\n",prefix,row,rowStarts[row]);
+      printf("%s rowStarts[%i+1] = %i\n",prefix,row,rowStarts[row+1]);
+    }
+    const int numWeights = rowStarts[row+1]-rowStarts[row];
+    if (VERBOSE>2) printf("%s  numWeights = %i\n",prefix,numWeights);
+    colIndex    = rowIndices+rowStarts[row];
+    colWeight   = weights+rowStarts[row];
+    if (numWeights>0) {
+      // Make a CbcSOS and assign it to objects
+      if (VERBOSE>3) {
+        for (i=0;i<numWeights;i++) {
+          printf("%s  colIndex [%i] = %i\n",prefix,i,colIndex[i]);
+          printf("%s  colWeight[%i] = %f\n",prefix,i,colWeight[i]);
+        }
+        fflush(stdout);
+      }
+      objects[objNum] = new CbcSOS(model->model_, (int)(numWeights), 
+        (const int*)colIndex, (const double*)colWeight, (int)objNum, (int)type);
+//      if (VERBOSE>2) printf("%s objects[%i] = %X\n",prefix,objNum,objects[objNum]);
+      if (objects[objNum] == NULL) {
+        printf("%s ERROR: objects[%i] == NULL\n",prefix,objNum); fflush(stdout);
+        assert(objects[objNum] != NULL);
+      }
+      objNum++;
+    } 
+  }
+  if (VERBOSE>2) {
+    printf("%s calling addObjects()\n",prefix);
+/*
+    printf("%s numObjects = %i, objects = %X\n",prefix,numObjects,objects);
+    for (row=0; row<numObjects; row++)
+      printf("%s  objects[%i] = %X\n",prefix,row,objects[row]);   
+*/   
+  }
+  fflush(stdout);
+  model->model_->addObjects(numObjects, objects);
+  if (VERBOSE>1) printf("%s finished addObjects()\n",prefix);
+  
+  for (objNum=0;objNum<numObjects;objNum++) delete objects[objNum]; 
+  delete [] objects;
+
+  if (VERBOSE>0) printf("%sreturn\n",prefix);
+  return;
+}
+
 /* Print the solution */
 COINLIBAPI void  COINLINKAGE 
 Cbc_printSolution(Cbc_Model * model)

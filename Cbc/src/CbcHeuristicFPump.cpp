@@ -812,7 +812,7 @@ CbcHeuristicFPump::solution(double & solutionValue,
     newSolver->addRow(numberIntegersOrig,closestSolution,
 		      lastSolution,-COIN_DBL_MAX,rhs+10.0);
     double saveValue = newSolutionValue;
-    newSolver->writeMps("sub");
+    //newSolver->writeMps("sub");
     int returnCode = smallBranchAndBound(newSolver,numberNodes_,newSolution,newSolutionValue,
 				     newSolutionValue,"CbcHeuristicLocalAfterFPump");
     if ((returnCode&2)!=0) {
@@ -820,9 +820,11 @@ CbcHeuristicFPump::solution(double & solutionValue,
       returnCode &= ~2;
     }
     if (returnCode) {
-      printf("old sol of %g new of %g\n",saveValue,newSolutionValue);
+      //printf("old sol of %g new of %g\n",saveValue,newSolutionValue);
       memcpy(betterSolution,newSolution,numberColumns*sizeof(double));
-      abort();
+      //abort();
+      solutionValue=newSolutionValue;
+      solutionFound=true;
     }
     delete newSolver;
   }

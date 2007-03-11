@@ -564,7 +564,7 @@ void OsiSolverLink::resolve()
       if ((specialOptions2_&2)!=0) {
 	// If model has stored then add cut (if convex)
 	// off until I work out problem with ibell3a
-	if (cbcModel&&(specialOptions2_&4)!=0&&quadraticModel_&&false) {
+	if (cbcModel&&(specialOptions2_&4)!=0&&quadraticModel_) {
 	  int numberGenerators = cbcModel_->numberCutGenerators();
 	  int iGenerator;
 	  for (iGenerator=0;iGenerator<numberGenerators;iGenerator++) {
@@ -1053,7 +1053,7 @@ void OsiSolverLink::load ( CoinModel & coinModel, bool tightenBounds,int logLeve
     }
     printf("There are %d bilinear and %d integers\n",nBi,nInt);
     loadFromCoinModel(coinModel,true);
-    if (tightenBounds) {
+    if (tightenBounds&&numberColumns<100) {
       // first fake bounds
       for (iColumn=0;iColumn<numberColumns;iColumn++) {
 	if (tryColumn[iColumn]) {
@@ -1476,6 +1476,17 @@ OsiSolverLink::setBiLinearPriorities(int value)
       if (obj->xMeshSize()<1.0&&obj->yMeshSize()<1.0) {
 	obj->setPriority(value);
       }
+    }
+  }
+}
+// Say convex (should work it out)
+void 
+OsiSolverLink::sayConvex(bool convex)
+{ 
+  specialOptions2_ |= 4;
+  if (convex_) {
+    for (int iNon=0;iNon<numberNonLinearRows_;iNon++) {
+      convex_[iNon]=convex ? 1 : -1;
     }
   }
 }
@@ -2436,7 +2447,7 @@ OsiSolverLink::analyzeObjects()
     }
     if ((status==0||statusNegative==0)&&numberLong) {
       // need to do more work
-      printf("Needs more work\n");
+      //printf("Needs more work\n");
     }
     assert (status>0||statusNegative>0);
     if (!status) {

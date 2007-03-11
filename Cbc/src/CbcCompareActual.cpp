@@ -204,22 +204,42 @@ bool
 CbcCompareDefault::test (CbcNode * x, CbcNode * y)
 {
 #if 0
-  // was
-  if (weight_<0.0||treeSize_>100000) {
+  // always choose *smallest* depth if one or both <= breadthDepth_ 
+  int depthX = x->depth();
+  int depthY = y->depth();
+  if (depthX<=breadthDepth_||depthY<=breadthDepth_) {
+    if (depthX!=depthY) 
+      return depthX > depthY;
+    else
+      return equalityTest(x,y); // so ties will be broken in consistent manner
+  }
+  if (weight_==-1.0||weight_==-3.0) {
+    int adjust =  (weight_==-3.0) ? 10000 : 0;
     // before solution
-    /* printf("x %d %d %g, y %d %d %g\n",
+    /*printf("x %d %d %g, y %d %d %g\n",
        x->numberUnsatisfied(),x->depth(),x->objectiveValue(),
        y->numberUnsatisfied(),y->depth(),y->objectiveValue()); */
-    if (x->numberUnsatisfied() > y->numberUnsatisfied())
+    if (x->numberUnsatisfied() > y->numberUnsatisfied()+adjust) {
       return true;
-    else if (x->numberUnsatisfied() < y->numberUnsatisfied())
+    } else if (x->numberUnsatisfied() < y->numberUnsatisfied()-adjust) {
       return false;
-    else
-      return x->depth() < y->depth();
+    } else {
+      int depthX = x->depth();
+      int depthY = y->depth();
+      if (depthX!=depthY)
+	return depthX < depthY;
+      else
+	return equalityTest(x,y); // so ties will be broken in consistent manner
+    }
   } else {
     // after solution
-    return x->objectiveValue()+ weight_*x->numberUnsatisfied() > 
-      y->objectiveValue() + weight_*y->numberUnsatisfied();
+    double weight = CoinMax(weight_,0.0);
+    double testX =  x->objectiveValue()+ weight*x->numberUnsatisfied();
+    double testY = y->objectiveValue() + weight*y->numberUnsatisfied();
+    if (testX!=testY)
+      return testX > testY;
+    else
+      return equalityTest(x,y); // so ties will be broken in consistent manner
   }
 #else
   if ((weight_==-1.0&&(y->depth()>breadthDepth_||x->depth()>breadthDepth_))||weight_==-3.0) {

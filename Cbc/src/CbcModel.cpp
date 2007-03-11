@@ -888,8 +888,19 @@ void CbcModel::branchAndBound(int doStatistics)
    OsiClpSolverInterface * clpSolver 
      = dynamic_cast<OsiClpSolverInterface *> (solver_);
    if (clpSolver) {
-     // Try and re-use regions
-     //clpSolver->getModelPtr()->setPersistenceFlag(1);
+#define CLP_QUICK_OPTIONS
+#ifdef CLP_QUICK_OPTIONS
+     // Try and re-use regions   
+     ClpSimplex * simplex = clpSolver->getModelPtr();
+     simplex->setPersistenceFlag(1);
+     clpSolver->deleteScaleFactors();
+     int value=131072;
+     clpSolver->setSpecialOptions(clpSolver->specialOptions()|value);
+     simplex->setSpecialOptions(simplex->specialOptions()|value);
+     //if (simplex->numberRows()<50)
+     //simplex->setAlphaAccuracy(1.0);
+     //clpSolver->setSpecialOptions((clpSolver->specialOptions()&~128)|65536);
+#endif
      if ((specialOptions_&32)==0) {
        ClpSimplex * clpSimplex = clpSolver->getModelPtr();
        // take off names
@@ -2292,7 +2303,24 @@ void CbcModel::branchAndBound(int doStatistics)
       }
     }
   }
-  return ; }
+#ifdef CLP_QUICK_OPTIONS
+  {
+    OsiClpSolverInterface * clpSolver 
+      = dynamic_cast<OsiClpSolverInterface *> (solver_);
+    if (clpSolver) {
+      // Try and re-use regions   
+      ClpSimplex * simplex = clpSolver->getModelPtr();
+      simplex->setPersistenceFlag(0);
+      clpSolver->deleteScaleFactors();
+      clpSolver->setSpecialOptions(clpSolver->specialOptions()&(~131072));
+      simplex->setSpecialOptions(simplex->specialOptions()&(~131072));
+      simplex->setAlphaAccuracy(-1.0);
+      //clpSolver->setSpecialOptions((clpSolver->specialOptions()&~128)|65536);
+    }
+  }
+#endif
+  return ;
+ }
 
 
 // Solve the initial LP relaxation 
@@ -5105,6 +5133,7 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
   if (clpSolver) 
     clpSolver->setSpecialOptions(saveClpOptions);
 # endif
+
   return feasible ; }
 
 

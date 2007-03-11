@@ -2820,7 +2820,10 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
           dynamic_cast <CbcSimpleIntegerDynamicPseudoCost *>(object) ;
         int iColumn = dynamicObject->columnNumber();
         int preferredWay;
-        object->infeasibility(&usefulInfo,preferredWay);
+	double infeasibility = object->infeasibility(&usefulInfo,preferredWay);
+	// may have become feasible
+	if (!infeasibility)
+	  continue;
 	CbcSimpleInteger * obj =
 	  dynamic_cast <CbcSimpleInteger *>(object) ;
 	if (obj) {
@@ -3267,6 +3270,7 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
               solver->setColLower(iColumn,value);
               assert(doneHotStart);
               solver->unmarkHotStart();
+	      solver->resolve();
               solver->markHotStart();
 	      // may be infeasible (if other way stopped on iterations)
 	      if (!solver->isProvenOptimal()) {
@@ -3308,6 +3312,7 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
               solver->setColUpper(iColumn,value);
               assert(doneHotStart);
               solver->unmarkHotStart();
+	      solver->resolve();
               solver->markHotStart();
 	      // may be infeasible (if other way stopped on iterations)
 	      if (!solver->isProvenOptimal()) {

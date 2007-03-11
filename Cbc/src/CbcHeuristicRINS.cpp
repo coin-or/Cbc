@@ -86,9 +86,9 @@ CbcHeuristicRINS::generateCpp( FILE * fp)
   fprintf(fp,"3  CbcHeuristicRINS heuristicRINS(*cbcModel);\n");
   CbcHeuristic::generateCpp(fp,"heuristicRINS");
   if (howOften_!=other.howOften_)
-    fprintf(fp,"3  heuristicLocal.setHowOften(%d);\n",howOften_);
+    fprintf(fp,"3  heuristicRINS.setHowOften(%d);\n",howOften_);
   else
-    fprintf(fp,"4  heuristicLocal.setHowOften(%d);\n",howOften_);
+    fprintf(fp,"4  heuristicRINS.setHowOften(%d);\n",howOften_);
   fprintf(fp,"3  cbcModel->addHeuristic(&heuristicRINS);\n");
 }
 
@@ -199,18 +199,18 @@ CbcHeuristicRINS::solution(double & solutionValue,
       }
     }
     if (nFix>numberIntegers/5) {
-      printf("%d integers have same value\n",nFix);
+      //printf("%d integers have same value\n",nFix);
       returnCode = smallBranchAndBound(newSolver,numberNodes_,betterSolution,solutionValue,
                                          model_->getCutoff(),"CbcHeuristicRINS");
       if ((returnCode&1)!=0)
 	numberSuccesses_++;
-      printf("return code %d",returnCode);
+      //printf("return code %d",returnCode);
       if ((returnCode&2)!=0) {
 	// could add cut
 	returnCode &= ~2;
-	printf("could add cut with %d elements (if all 0-1)\n",nFix);
+	//printf("could add cut with %d elements (if all 0-1)\n",nFix);
       } else {
-	printf("\n");
+	//printf("\n");
       }
       numberTries_++;
       if ((numberTries_%10)==0&&numberSuccesses_*3<numberTries_)

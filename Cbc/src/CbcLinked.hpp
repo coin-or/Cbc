@@ -120,9 +120,8 @@ public:
   /// Set special options
   inline void setSpecialOptions2(int value)
   { specialOptions2_=value;};
-  /// Say convex (should work it out)
-  inline void sayConvex()
-  { specialOptions2_ |= 4;};
+  /// Say convex (should work it out) - if convex false then strictly concave
+  void sayConvex(bool convex);
   /// Get special options
   inline int specialOptions2() const
   { return specialOptions2_;};

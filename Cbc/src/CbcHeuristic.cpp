@@ -106,7 +106,7 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver,int numberNodes,
 {
 #ifdef COIN_HAS_CLP
   OsiClpSolverInterface * osiclp = dynamic_cast< OsiClpSolverInterface*> (solver);
-  if (osiclp&&(osiclp->specialOptions()&1024)==0) {
+  if (osiclp&&(osiclp->specialOptions()&65536)==0) {
     // go faster stripes
     if (osiclp->getNumRows()<300&&osiclp->getNumCols()<500) {
       osiclp->setupForRepeatedUse(2,0);

@@ -6436,19 +6436,39 @@ CbcModel::checkSolution (double cutoff, const double *solution,
       solver_->setHintParam(OsiDoDualInInitial,true,OsiHintTry);
       solver_->initialSolve();
       if (!solver_->isProvenOptimal())
-        { //printf("checkSolution infeas! Retrying wihout scaling.\n");
-          bool saveTakeHint;
-          OsiHintStrength saveStrength;
-          bool savePrintHint;
+        { 
+#ifdef COIN_DEVELOP
+	  printf("checkSolution infeas! Retrying with primal.\n");
+#endif
+          //bool saveTakeHint;
+          //OsiHintStrength saveStrength;
+          //bool savePrintHint;
           //solver_->writeMps("infeas");
-          bool gotHint = (solver_->getHintParam(OsiDoReducePrint,savePrintHint,saveStrength));
-          gotHint = (solver_->getHintParam(OsiDoScale,saveTakeHint,saveStrength));
-          solver_->setHintParam(OsiDoScale,false,OsiHintTry);
+          //bool gotHint = (solver_->getHintParam(OsiDoReducePrint,savePrintHint,saveStrength));
+          //gotHint = (solver_->getHintParam(OsiDoScale,saveTakeHint,saveStrength));
+          //solver_->setHintParam(OsiDoScale,false,OsiHintTry);
           //solver_->setHintParam(OsiDoReducePrint,false,OsiHintTry) ;
           solver_->setHintParam(OsiDoDualInInitial,false,OsiHintTry);
           solver_->initialSolve();
-          solver_->setHintParam(OsiDoScale,saveTakeHint,saveStrength);
+          //solver_->setHintParam(OsiDoScale,saveTakeHint,saveStrength);
           //solver_->setHintParam(OsiDoReducePrint,savePrintHint,OsiHintTry) ;
+	  // go from all slack now
+	  specialOptions_ &= ~2;
+	  if (!solver_->isProvenOptimal()) { 
+	    CoinWarmStartBasis *slack =
+	      dynamic_cast<CoinWarmStartBasis *>(solver_->getEmptyWarmStart()) ;
+	    solver_->setWarmStart(slack);
+	    delete slack ;
+#ifdef COIN_DEVELOP
+	    printf("checkSolution infeas! Retrying wihout basis and with primal.\n");
+#endif
+	    solver_->initialSolve();
+#ifdef COIN_DEVELOP
+	    if (!solver_->isProvenOptimal()) { 
+	      printf("checkSolution still infeas!\n");
+	    }
+#endif
+	  }
         }
       //assert(solver_->isProvenOptimal());
       solver_->setHintParam(OsiDoDualInInitial,saveTakeHint,saveStrength);
@@ -6687,7 +6707,7 @@ CbcModel::setBestSolution (CBC_Message how,
     objectiveValue =checkSolution(cutoff,solution,fixVariables,objectiveValue);
     if (objectiveValue>cutoff&&objectiveValue<cutoff+1.0e-8+1.0e-8*fabs(cutoff))
       cutoff = objectiveValue; // relax
-    if (objectiveValue > cutoff) {
+    if (objectiveValue > cutoff||objectiveValue>1.0e30) {
       if (objectiveValue>1.0e30)
         handler_->message(CBC_NOTFEAS1, messages_) << CoinMessageEol ;
       else

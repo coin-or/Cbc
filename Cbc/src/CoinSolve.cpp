@@ -483,7 +483,7 @@ expandKnapsack(CoinModel & model, int * whichColumn, int * knapsackStart,
   // need some relative granularity
   si->setDefaultBound(100.0);
   si->setDefaultMeshSize(0.01);
-  si->setDefaultBound(1000.0);
+  si->setDefaultBound(100000.0);
   si->setIntegerPriority(1000);
   si->setBiLinearPriority(10000);
   si->load(model,true,logLevel);
@@ -1299,7 +1299,7 @@ int main (int argc, const char *argv[])
 	// need some relative granularity
 	si->setDefaultBound(100.0);
 	si->setDefaultMeshSize(0.01);
-	si->setDefaultBound(1000.0);
+	si->setDefaultBound(100000.0);
 	si->setIntegerPriority(1000);
 	si->setBiLinearPriority(10000);
 	CoinModel * model2 = (CoinModel *) coinModel;

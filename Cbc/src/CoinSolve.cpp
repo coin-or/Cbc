@@ -454,7 +454,7 @@ static int * analyze(OsiClpSolverInterface * solverMod, int & numberChanged, dou
       model.setLogLevel(0);
     model.analyzeObjective();
     double increment2=model.getCutoffIncrement();
-    if (increment2>increment) {
+    if (increment2>increment&&increment2>0.0) {
       if (!noPrinting)
         printf("cutoff increment increased from %g to %g\n",increment,increment2);
       increment=increment2;
@@ -1431,6 +1431,7 @@ int main (int argc, const char *argv[])
     parameters[whichParam(STRONGBRANCHING,numberParameters,parameters)].setIntValue(model.numberStrong());
     parameters[whichParam(INFEASIBILITYWEIGHT,numberParameters,parameters)].setDoubleValue(model.getDblParam(CbcModel::CbcInfeasibilityWeight));
     parameters[whichParam(INTEGERTOLERANCE,numberParameters,parameters)].setDoubleValue(model.getDblParam(CbcModel::CbcIntegerTolerance));
+    double normalIncrement=model.getCutoffIncrement();;
     parameters[whichParam(INCREMENT,numberParameters,parameters)].setDoubleValue(model.getDblParam(CbcModel::CbcCutoffIncrement));
     parameters[whichParam(TESTOSI,numberParameters,parameters)].setIntValue(testOsiParameters);
     parameters[whichParam(FPUMPTUNE,numberParameters,parameters)].setIntValue(1003);
@@ -3280,7 +3281,7 @@ int main (int argc, const char *argv[])
               }
               double increment=babModel->getCutoffIncrement();;
               int * changed = NULL;
-              if (!miplib)
+              if (!miplib&&increment==normalIncrement)
                 changed=analyze( osiclp,numberChanged,increment,false);
               if (debugValues) {
                 if (numberDebugValues==babModel->getNumCols()) {

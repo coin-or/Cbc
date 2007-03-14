@@ -1068,8 +1068,10 @@ void OsiSolverLink::load ( CoinModel & coinModel, bool tightenBounds,int logLeve
       }
       tempModel.deleteRows(nDelete,freeRow);
       tempModel.setOptimizationDirection(1.0);
-      if (logLevel<3)
+      if (logLevel<3) {
 	tempModel.setLogLevel(0);
+	tempModel.setSpecialOptions(32768);
+      }
       double * objective = tempModel.objective();
       CoinZeroN(objective,numberColumns);
       // now up and down
@@ -2548,7 +2550,7 @@ OsiSolverLink::gutsOfDestructor(bool justNullify)
   bestSolution_ = NULL;
   bestObjectiveValue_ =1.0e100;
   defaultMeshSize_ = 1.0e-4;
-  defaultBound_ = 1.0e4;
+  defaultBound_ = 1.0e5;
   integerPriority_ = 1000;
   biLinearPriority_ = 10000;
   numberFix_=0;
@@ -4354,6 +4356,23 @@ OsiBiLinear::infeasibility(const OsiBranchingInformation * info,int & whichWay) 
   xB[1]=info->upper_[xColumn_];
   yB[0]=info->lower_[yColumn_];
   yB[1]=info->upper_[yColumn_];
+#if 0
+  if (info->lower_[1]<=43.0&&info->upper_[1]>=43.0) {
+    if (info->lower_[4]<=49.0&&info->upper_[4]>=49.0) {
+      if (info->lower_[2]<=16.0&&info->upper_[2]>=16.0) {
+	if (info->lower_[3]<=19.0&&info->upper_[3]>=19.0) {
+	  printf("feas %g %g %g %g  p %g t %g\n",
+		info->solution_[1],
+		info->solution_[2],
+		info->solution_[3],
+		info->solution_[4],
+		info->solution_[0],
+		info->solution_[5]);
+	}
+      }
+    }
+  }
+#endif
   double x = info->solution_[xColumn_];
   x = CoinMax(x,xB[0]);
   x = CoinMin(x,xB[1]);

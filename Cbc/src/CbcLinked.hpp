@@ -170,7 +170,7 @@ public:
   inline const CoinModel * coinModel() const
   { return &coinModel_;};
   /// Set all biLinear priorities on x-x variables
-  void setBiLinearPriorities(int value);
+  void setBiLinearPriorities(int value, double meshSize=1.0);
   /// Set all mesh sizes on x-x variables
   void setMeshSizes(double value);
   /** Two tier integer problem where when set of variables with priority

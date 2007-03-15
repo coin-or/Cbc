@@ -3828,10 +3828,6 @@ int main (int argc, const char *argv[])
 		    // If linked then pass in model
 		    OsiSolverLink * solver3 = dynamic_cast<OsiSolverLink *> (babModel->solver());
 		    if (solver3) {
-		      if (tightenFactor>0.0) {
-			// set grid size for all continuous bi-linear
-			solver3->setMeshSizes(tightenFactor);
-		      }
 		      int options = parameters[whichParam(MIPOPTIONS,numberParameters,parameters)].intValue()/10000;
 		      CglStored stored;
 		      if (options) {
@@ -3844,8 +3840,12 @@ int main (int argc, const char *argv[])
 			  16 - try expanding knapsacks
                           32 - OA cuts strictly concave
 			*/
-			if ((options&2))
-			  solver3->setBiLinearPriorities(10);
+			if ((options&2)) {
+			  solver3->setBiLinearPriorities(10,tightenFactor > 0.0 ? tightenFactor : 1.0);
+			} else if (tightenFactor>0.0) {
+			  // set grid size for all continuous bi-linear
+			  solver3->setMeshSizes(tightenFactor);
+			}
 			if ((options&4)) {
 			  solver3->setSpecialOptions2(solver3->specialOptions2()|(8+4));
 			  // say convex
@@ -4183,9 +4183,10 @@ int main (int argc, const char *argv[])
 		    else
 		      pos += sprintf(buf+pos," objective %g",value);
 		  }
-                  sprintf(buf+pos,"\n%d nodes, %d iterations",
+                  sprintf(buf+pos,"\n%d nodes, %d iterations, %g seconds",
                           babModel->getNodeCount(),
-                          babModel->getIterationCount());
+                          babModel->getIterationCount(),
+			  totalTime);
                   if (bestSolution) {
                     free(info.primalSolution);
 		    if (!numberKnapsack) {

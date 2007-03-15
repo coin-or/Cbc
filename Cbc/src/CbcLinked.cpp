@@ -1409,7 +1409,7 @@ void OsiSolverLink::load ( CoinModel & coinModel, bool tightenBounds,int logLeve
     OsiBiLinear * obj = dynamic_cast<OsiBiLinear *> (object_[iObject]);
     if (obj) {
       int xyRow = obj->xyRow();
-      if (rowLength[xyRow]==4) {
+      if (rowLength[xyRow]==4&&false) {
 	// we have simple bound
 	nQ++;
 	double coefficient = obj->coefficient();
@@ -1469,17 +1469,31 @@ void OsiSolverLink::load ( CoinModel & coinModel, bool tightenBounds,int logLeve
 }
 // Set all biLinear priorities on x-x variables
 void 
-OsiSolverLink::setBiLinearPriorities(int value)
+OsiSolverLink::setBiLinearPriorities(int value,double meshSize)
 {
+  OsiObject ** newObject = new OsiObject * [numberObjects_];
+  int numberOdd=0;
   int i;
   for ( i =0;i<numberObjects_;i++) {
     OsiBiLinear * obj = dynamic_cast<OsiBiLinear *> (object_[i]);
     if (obj) {
       if (obj->xMeshSize()<1.0&&obj->yMeshSize()<1.0) {
-	obj->setPriority(value);
+	OsiBiLinear * objNew = new OsiBiLinear(*obj);
+	newObject[numberOdd++]=objNew;
+	objNew->setXSatisfied(0.5*meshSize);
+	objNew->setXMeshSize(meshSize);
+	objNew->setYSatisfied(0.5*meshSize);
+	objNew->setYMeshSize(meshSize);
+	objNew->setXYSatisfied(0.5*meshSize);
+	objNew->setPriority(value);
+	objNew->setBranchingStrategy(8);
       }
     }
   }
+  addObjects(numberOdd,newObject);
+  for (i=0;i<numberOdd;i++)
+    delete newObject[i];
+  delete [] newObject;
 }
 // Say convex (should work it out)
 void 
@@ -4433,6 +4447,13 @@ OsiBiLinear::infeasibility(const OsiBranchingInformation * info,int & whichWay) 
       assert (xNew>=xB[0]-xSatisfied_);
       xSatisfied =  (fabs(xNew-x)<xSatisfied_);
     }
+    // but if first coarse grid then only if gap small
+    if ((branchingStrategy_&8)!=0&&xSatisfied&&
+	xB[1]-xB[0]>=xMeshSize_) {
+      xNew = 0.5*(xB[0]+xB[1]);
+      x = xNew;
+      xSatisfied=false;
+    }
   } else {
     xSatisfied=true;
   }
@@ -4451,6 +4472,13 @@ OsiBiLinear::infeasibility(const OsiBranchingInformation * info,int & whichWay) 
       yNew = yB[1]-steps*yMeshSize_;
       assert (yNew>=yB[0]-ySatisfied_);
       ySatisfied =  (fabs(yNew-y)<ySatisfied_);
+    }
+    // but if first coarse grid then only if gap small
+    if ((branchingStrategy_&8)!=0&&ySatisfied&&
+	yB[1]-yB[0]>=yMeshSize_) {
+      yNew = 0.5*(yB[0]+yB[1]);
+      y = yNew;
+      ySatisfied=false;
     }
   } else {
     ySatisfied=true;

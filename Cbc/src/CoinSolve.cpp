@@ -688,7 +688,7 @@ int main (int argc, const char *argv[])
     //redsplitGen.setLimit(100);
     // set default action (0=off,1=on,2=root)
     // Off as seems to give some bad cuts
-    int redsplitAction=2;
+    int redsplitAction=0;
     parameters[whichParam(REDSPLITCUTS,numberParameters,parameters)].setCurrentOption("root");
 
     CglClique cliqueGen(false,true);

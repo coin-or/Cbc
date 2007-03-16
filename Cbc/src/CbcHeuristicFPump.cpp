@@ -285,7 +285,7 @@ CbcHeuristicFPump::solution(double & solutionValue,
           if (newSolution[iColumn]>upper[iColumn]-primalTolerance) {
 	    solver->setObjCoeff(iColumn,-costValue);
 	  } else {
-	    abort();
+	    solver->setObjCoeff(iColumn,0.0);
           }
 	}
 	offset += costValue*newSolution[iColumn];

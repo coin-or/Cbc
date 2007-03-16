@@ -2447,7 +2447,7 @@ int main (int argc, const char *argv[])
               // Reduce printout
               if (logLevel<=1)
                 model.solver()->setHintParam(OsiDoReducePrint,true,OsiHintTry);
-              // Don't switch off all output
+#ifdef COIN_HAS_LINK
               {
                 OsiSolverInterface * solver = model.solver();
                 OsiClpSolverInterface * si =
@@ -2642,6 +2642,7 @@ int main (int argc, const char *argv[])
 		}
                 si->setSpecialOptions(0x40000000);
               }
+#endif
               if (!miplib) {
 		if (!preSolve) {
 		  model.solver()->setHintParam(OsiDoPresolveInInitial,false,OsiHintTry);

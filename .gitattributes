@@ -21,6 +21,8 @@ Cbc/examples/dynamic.cpp -text
 Cbc/examples/lotsizeSimple.cpp -text
 Cbc/examples/qmip2.cpp -text
 Cbc/examples/sample6.cpp -text
+Cbc/examples/strategy.cpp -text
+Cbc/examples/strategy2.cpp -text
 Cbc/inc/config_cbc.h.in -text
 Cbc/src/CbcCbcParam.cpp -text
 Cbc/src/CbcHeuristicRINS.cpp -text

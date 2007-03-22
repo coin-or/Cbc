@@ -12,7 +12,7 @@
 //#define CHECK_CUT_COUNTS
 //#define CHECK_NODE_FULL
 //#define NODE_LOG
-#define GLOBAL_CUTS_JUST_POINTERS
+//#define GLOBAL_CUTS_JUST_POINTERS
 #include <cassert>
 #include <cmath>
 #include <cfloat>

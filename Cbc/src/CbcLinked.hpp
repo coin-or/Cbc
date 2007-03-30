@@ -755,6 +755,16 @@ public:
   { return ySatisfied_;};
   inline void setYSatisfied(double value)
   { ySatisfied_=value;};
+  /// X other satisfied if less than this away from mesh
+  inline double xOtherSatisfied() const
+  { return xOtherSatisfied_;};
+  inline void setXOtherSatisfied(double value)
+  { xOtherSatisfied_=value;};
+  /// Y other satisfied if less than this away from mesh
+  inline double yOtherSatisfied() const
+  { return yOtherSatisfied_;};
+  inline void setYOtherSatisfied(double value)
+  { yOtherSatisfied_=value;};
   /// X meshSize 
   inline double xMeshSize() const
   { return xMeshSize_;};
@@ -820,6 +830,10 @@ protected:
   double xSatisfied_;
   /// y satisfied if less than this away from mesh
   double ySatisfied_;
+  /// X other satisfied if less than this away from mesh
+  double xOtherSatisfied_;
+  /// Y other satisfied if less than this away from mesh
+  double yOtherSatisfied_;
   /// xy satisfied if less than this away from true
   double xySatisfied_;
   /// value of x or y to branch about

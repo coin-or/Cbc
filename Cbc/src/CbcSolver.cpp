@@ -2961,7 +2961,10 @@ int CbcMain (int argc, const char *argv[],
                     delete [] prohibited;
                   }
 		  int numberPasses = 10;
-		  if (tunePreProcess>=1000) {
+		  if (tunePreProcess>=1000000) {
+		    numberPasses = (tunePreProcess/1000000)-1;
+		    tunePreProcess = tunePreProcess % 1000000;
+		  } else if (tunePreProcess>=1000) {
 		    numberPasses = (tunePreProcess/1000)-1;
 		    tunePreProcess = tunePreProcess % 1000;
 		  }

@@ -1478,11 +1478,17 @@ OsiSolverLink::setBiLinearPriorities(int value,double meshSize)
     OsiBiLinear * obj = dynamic_cast<OsiBiLinear *> (object_[i]);
     if (obj) {
       if (obj->xMeshSize()<1.0&&obj->yMeshSize()<1.0) {
+	double oldSatisfied = CoinMax(obj->xSatisfied(),
+				      obj->ySatisfied());
 	OsiBiLinear * objNew = new OsiBiLinear(*obj);
 	newObject[numberOdd++]=objNew;
 	objNew->setXSatisfied(0.5*meshSize);
+	obj->setXOtherSatisfied(0.5*meshSize);
+	objNew->setXOtherSatisfied(oldSatisfied);
 	objNew->setXMeshSize(meshSize);
 	objNew->setYSatisfied(0.5*meshSize);
+	obj->setYOtherSatisfied(0.5*meshSize);
+	objNew->setYOtherSatisfied(oldSatisfied);
 	objNew->setYMeshSize(meshSize);
 	objNew->setXYSatisfied(0.5*meshSize);
 	objNew->setPriority(value);
@@ -4072,6 +4078,8 @@ OsiBiLinear::OsiBiLinear ()
     yMeshSize_(0.0),
     xSatisfied_(1.0e-6),
     ySatisfied_(1.0e-6),
+    xOtherSatisfied_(0.0),
+    yOtherSatisfied_(0.0),
     xySatisfied_(1.0e-6),
     xyBranchValue_(0.0),
     xColumn_(-1),
@@ -4098,6 +4106,8 @@ OsiBiLinear::OsiBiLinear (OsiSolverInterface * solver, int xColumn,
     yMeshSize_(yMesh),
     xSatisfied_(1.0e-6),
     ySatisfied_(1.0e-6),
+    xOtherSatisfied_(0.0),
+    yOtherSatisfied_(0.0),
     xySatisfied_(1.0e-6),
     xyBranchValue_(0.0),
     xColumn_(xColumn),
@@ -4305,6 +4315,8 @@ OsiBiLinear::OsiBiLinear ( const OsiBiLinear & rhs)
    yMeshSize_(rhs.yMeshSize_),
    xSatisfied_(rhs.xSatisfied_),
    ySatisfied_(rhs.ySatisfied_),
+   xOtherSatisfied_(rhs.xOtherSatisfied_),
+   yOtherSatisfied_(rhs.yOtherSatisfied_),
    xySatisfied_(rhs.xySatisfied_),
    xyBranchValue_(rhs.xyBranchValue_),
    xColumn_(rhs.xColumn_),
@@ -4338,6 +4350,8 @@ OsiBiLinear::operator=( const OsiBiLinear& rhs)
     yMeshSize_ = rhs.yMeshSize_;
     xSatisfied_ = rhs.xSatisfied_;
     ySatisfied_ = rhs.ySatisfied_;
+    xOtherSatisfied_ = rhs.xOtherSatisfied_;
+    yOtherSatisfied_ = rhs.yOtherSatisfied_;
     xySatisfied_ = rhs.xySatisfied_;
     xyBranchValue_ = rhs.xyBranchValue_;
     xColumn_ = rhs.xColumn_;
@@ -4448,11 +4462,15 @@ OsiBiLinear::infeasibility(const OsiBranchingInformation * info,int & whichWay) 
       xSatisfied =  (fabs(xNew-x)<xSatisfied_);
     }
     // but if first coarse grid then only if gap small
-    if ((branchingStrategy_&8)!=0&&xSatisfied&&
+    if (false&&(branchingStrategy_&8)!=0&&xSatisfied&&
 	xB[1]-xB[0]>=xMeshSize_) {
-      xNew = 0.5*(xB[0]+xB[1]);
-      x = xNew;
-      xSatisfied=false;
+      // but allow if fine grid would allow
+      if (fabs(xNew-x)>=xOtherSatisfied_&&fabs(yB[0]-y)>yOtherSatisfied_
+	  &&fabs(yB[1]-y)>yOtherSatisfied_) {
+	xNew = 0.5*(xB[0]+xB[1]);
+	x = xNew;
+	xSatisfied=false;
+      }
     }
   } else {
     xSatisfied=true;
@@ -4474,11 +4492,15 @@ OsiBiLinear::infeasibility(const OsiBranchingInformation * info,int & whichWay) 
       ySatisfied =  (fabs(yNew-y)<ySatisfied_);
     }
     // but if first coarse grid then only if gap small
-    if ((branchingStrategy_&8)!=0&&ySatisfied&&
+    if (false&&(branchingStrategy_&8)!=0&&ySatisfied&&
 	yB[1]-yB[0]>=yMeshSize_) {
-      yNew = 0.5*(yB[0]+yB[1]);
-      y = yNew;
-      ySatisfied=false;
+      // but allow if fine grid would allow
+      if (fabs(yNew-y)>=yOtherSatisfied_&&fabs(xB[0]-x)>xOtherSatisfied_
+	  &&fabs(xB[1]-x)>xOtherSatisfied_) {
+	yNew = 0.5*(yB[0]+yB[1]);
+	y = yNew;
+	ySatisfied=false;
+      }
     }
   } else {
     ySatisfied=true;

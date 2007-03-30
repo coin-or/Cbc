@@ -19,6 +19,7 @@ Cbc/examples/OsiSolverLink.cpp -text
 Cbc/examples/OsiSolverLink.hpp -text
 Cbc/examples/dynamic.cpp -text
 Cbc/examples/lotsizeSimple.cpp -text
+Cbc/examples/multiRun.cpp -text
 Cbc/examples/qmip2.cpp -text
 Cbc/examples/sample6.cpp -text
 Cbc/examples/strategy.cpp -text

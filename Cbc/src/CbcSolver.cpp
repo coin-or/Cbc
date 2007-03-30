@@ -1254,6 +1254,15 @@ int CbcMain (int argc, const char *argv[],
     OsiClpSolverInterface solver1;
     if (goodModel)
       solver1=originalSolver;
+    /*int kkkkkk=0;
+    while (kkkkkk==0) {
+      time2=CoinCpuTime();
+      if (time2-time1>10.0) {
+	printf("time %g\n",time2);
+	time1=time2;
+      }
+      }*/
+
     CoinSighandler_t saveSignal=SIG_DFL;
     // register signal handler
     saveSignal = signal(SIGINT,signal_handler);
@@ -1649,6 +1658,18 @@ int CbcMain (int argc, const char *argv[],
     while (1) {
       // next command
       field=CoinReadGetCommand(argc,argv);
+      // adjust field if has odd trailing characters
+      char temp [200];
+      strcpy(temp,field.c_str());
+      int length = strlen(temp);
+      for (int k=length-1;k>=0;k--) {
+	if (temp[k]<' ')
+	  length--;
+	else
+	  break;
+      }
+      temp[length]='\0';
+      field=temp;
       // exit if null or similar
       if (!field.length()) {
 	if (numberGoodCommands==1&&goodModel) {

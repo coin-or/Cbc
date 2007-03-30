@@ -1,5 +1,9 @@
-// copyright (C) 2002, International Business Machines
-// Corporation and others.  All Rights Reserved.
+/*
+  Copyright (C) 2007, Lou Hafer, International Business Machines Corporation
+  and others.  All Rights Reserved.
+
+  This file is part of cbc-generic.
+*/
 
 #include "CbcConfig.h"
 #include "CoinPragma.hpp"
@@ -54,7 +58,7 @@
 #include "CbcGenCbcParam.hpp"
 #include "CbcGenOsiParam.hpp"
 
-namespace CbcSolvers
+namespace CbcGenSolvers
 {
   OsiSolverInterface *setupSolvers() ;
   void deleteSolvers() ;
@@ -120,11 +124,9 @@ int main (int argc, const char *argv[])
   solvers and set the default.
 */
   CbcGenCtlBlk ctlBlk ;
-  OsiSolverInterface *dfltSolver = CbcSolvers::setupSolvers() ;
+  OsiSolverInterface *dfltSolver = CbcGenSolvers::setupSolvers() ;
   ctlBlk.dfltSolver_ = dfltSolver ;
   assert (ctlBlk.dfltSolver_) ;
-  dfltSolver->messageHandler()->setLogLevel(0) ;
-  CbcOsiParamUtils::setOsiSolverInterfaceDefaults(dfltSolver) ;
 /*
   Now we can begin to initialise the parameter vector. Create a vector of the
   proper size, then load up the parameters that are relevant to the main
@@ -188,8 +190,10 @@ int main (int argc, const char *argv[])
   bool keepParsing = true ;
   bool forceImport = false ;
   std::string forceImportFile = "" ;
+  std::string prompt = "cbcGen: " ;
+  std::string pfx = "" ;
   while (keepParsing)
-  { std::string paramName = CoinParamUtils::getCommand(argc,argv);
+  { std::string paramName = CoinParamUtils::getCommand(argc,argv,prompt,&pfx);
     if (paramName.length() == 0)
     { if (ctlBlk.paramsProcessed_ == 0)
       { if (CoinParamUtils::isInteractive())
@@ -206,28 +210,41 @@ int main (int argc, const char *argv[])
       { keepParsing = false ;
 	if (ctlBlk.goodModel_ == true &&
 	    ctlBlk.bab_.majorStatus_ == CbcGenCtlBlk::BACNotRun)
-	{ paramName = "branchAndCut" ; } } }
+	{ paramName = "branchAndCut" ;
+	  pfx = "-" ; } } }
     if (paramName == "")
     { continue ; }
 /*
-  Do we have a parameter we recognise? If matchNdx is positive, we have a
-  unique parameter match and we can get on with processing. If the return value
-  is negative, and we're not interactive, quit. If we're interactive, react
-  as appropriate:
+  Do we have a parameter we recognise? In command line mode, if there was no
+  prefix (either `-' or `--'), the user didn't intend this as a command
+  keyword.
+*/
+    int matchNdx ;
+    if (!CoinParamUtils::isCommandLine() || pfx == "-" || pfx == "--")
+    { matchNdx = CoinParamUtils::lookupParam(paramName,paramVec) ; }
+    else
+    { matchNdx = -3 ; }
+    std::cout
+      << "Command is `" << paramName
+      << "', pfx `" << pfx
+      << "', match = " << matchNdx << std::endl ;
+/*
+  If matchNdx is positive, we have a unique parameter match and we can get on
+  with processing. If the return value is negative, and we're not
+  interactive, quit. If we're interactive, react as appropriate:
     -1: There was a `?' in the command string. Prompt again.
     -2: No `?', and one or more short matches. Prompt again.
     -3: No `?', but we didn't match anything either. If we're in command line
-	mode, try forcing `import' (but just once, eh). This is the other
-	piece required to get `cbc-generic [parameters] foo.mps' to work as
-	expected.) In interactive mode, we'll require the user to say `import'.
-	Interactive mode and no history of successful commands gets the help
-	message.
+	mode, and there was no `-' or `--' prefix, try forcing `import' (but
+	just once, eh). This is the other piece required to get `cbc-generic
+	[parameters] foo.mps' to work as expected.) In interactive mode,
+	we'll require the user to say `import'.  Interactive mode and no
+	history of successful commands gets the help message.
     -4: Configuration error, offer `report to maintainers' message.
 */
-    int matchNdx = CoinParamUtils::lookupParam(paramName,paramVec) ;
     if (matchNdx < 0)
     { if (matchNdx == -3)
-      { if (!CoinParamUtils::isInteractive())
+      { if (CoinParamUtils::isCommandLine() && pfx == "")
 	{ if (!forceImport)
 	  { forceImportFile = paramName ;
 	    paramName = "import" ;
@@ -266,12 +283,12 @@ int main (int argc, const char *argv[])
       { break ; }
       case CoinParam::coinParamInt:
       { int ival = CoinParamUtils::getIntField(argc,argv,&valid) ;
-	if (valid != 2)
+	if (valid == 0)
 	{ param->setIntVal(ival) ; }
 	break ; }
       case CoinParam::coinParamDbl:
       { double dval = CoinParamUtils::getDoubleField(argc,argv,&valid) ;
-	if (valid != 2)
+	if (valid == 0)
 	{ param->setDblVal(dval) ; }
 	break ; }
       case CoinParam::coinParamStr:
@@ -280,33 +297,52 @@ int main (int argc, const char *argv[])
 	else
 	{ const std::string tmp =
 		CoinParamUtils::getStringField(argc,argv,&valid) ;
-	  if (valid != 2)
+	  if (valid == 0)
 	  { param->setStrVal(tmp) ; } }
 	break ; }
       case CoinParam::coinParamKwd:
       { const std::string tmp =
 		CoinParamUtils::getStringField(argc,argv,&valid) ;
-	if (valid != 2)
+	if (valid == 0)
 	{ param->setKwdVal(tmp) ;
 	  if (param->kwdVal() != tmp)
 	  { std::cout
 	      << "Unrecognised keyword `" << tmp << "' for parameter "
 	      << param->name() << std::endl ;
 	    param->printKwds() ;
-	    std::cout << std::endl ; } }
+	    std::cout << std::endl ;
+	    valid = 1 ; } }
 	break ; }
       default:
       { assert (false) ;
 	break ; } }
 /*
+  Deal with missing or incorrect values.
+
   If valid came back as 2, we're short a parameter. This is interpreted as a
-  request to tell the user the current value. Note that this will never happenf
-  for an action parameter.
+  request to tell the user the current value.  If valid came back as 1, we
+  had some sort of parse error. Print an error message.
 */
-    if (valid == 2)
-    { std::cout
-	<< "Current value of " << param->name() << " parameter is `"
-        << *param << "'." << std::endl ;
+    if (valid != 0)
+    { switch (valid)
+      { case 1:
+	{ std::cout
+	    << "Could not parse the value given for parameter `"
+	    << param->name() << "'." << std::endl ;
+	  break ; }
+	case 2:
+	{ std::cout
+	    << "Current value of " << param->name() << " parameter is `"
+	    << *param << "'." << std::endl ;
+	  break ; }
+	default:
+	{ std::cout
+	    << "Parse status is " << valid
+	    << "; this indicates internal confusion." << std::endl
+	    << "Please report this error by filing a ticket at "
+	    << "https://projects.coin-or.org/Cbc/wiki."
+	    << std::endl ; } }
+      keepParsing = CoinParamUtils::isInteractive() ;
       continue ; }
 /*
   Ok, call the parameter's push function to do the heavy lifting. Push and pull
@@ -326,7 +362,7 @@ int main (int argc, const char *argv[])
   so we need to be careful that the default solver is deleted only once.
 */
     ctlBlk.dfltSolver_ = 0 ;
-    CbcSolvers::deleteSolvers() ;
+    CbcGenSolvers::deleteSolvers() ;
     for (int i = 0 ; i < paramVec.size() ; i++)
     { if (paramVec[i] != 0) delete paramVec[i] ; }
   }

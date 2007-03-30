@@ -65,31 +65,6 @@ AC_COIN_HAS_PROJECT(Osi)
 AC_COIN_HAS_PROJECT(Sym)
 AC_COIN_HAS_PROJECT(Vol)
 
-# ToDo: find out when CBC_HAS_CLP should be defined!  For now, I
-# replaced all CBC_USE by COIN_HAS #ifdef's
-
-# Decide which one is the default solver
-AC_MSG_CHECKING(for CBC default solver)
-AC_ARG_WITH([cbc-default-solver],
-            AC_HELP_STRING([--with-cbc-default-solver],
-                           [specify default solver for Cbc in lower case letters (if not given, clp is assumed)]),
-            [cbc_default_solver=$withval],
-            [cbc_default_solver=clp])
-AC_MSG_RESULT($cbc_default_solver)
-
-case $cbc_default_solver in
-  clp)
-    AC_DEFINE([CBC_DEFAULT_SOLVER],"clp",
-              [Define to the name of the default solver to be used in CBC in small letters])
-    ;;
-  dylp)
-    AC_DEFINE([CBC_DEFAULT_SOLVER],"dylp")
-    ;;
-  *)
-    AC_MSG_ERROR([Unknown solver $cbc_default_solver chosen as CBC's default solver])
-    ;;
-esac
-
 #############################################################################
 #                            Third party solvers                            #
 #############################################################################
@@ -109,6 +84,54 @@ AC_COIN_HAS_USER_LIBRARY([Xpress],[XPR],[xprs.h],[XPRSsetintcontrol])
 
 # Ampl Solver library
 AC_COIN_HAS_ASL
+
+#############################################################################
+#                       CbcGeneric configuration			    #
+#############################################################################
+
+# Are we building cbc-generic? Default is no (false).
+
+AC_ARG_WITH([cbc-generic],
+  AS_HELP_STRING([--with-cbc-generic],
+		 [specify whether to build cbc-generic (default: no)]),
+  [case $withval in
+    yes) cbc_with_cbc_generic=true ;;
+      *) cbc_with_cbc_generic=false ;;
+   esac],
+  [cbc_with_cbc_generic=false])
+if test x"$cbc_with_cbc_generic" = xyes ; then
+  AC_MSG_NOTICE([building cbc-generic])
+fi
+AM_CONDITIONAL(CBC_BUILD_CBC_GENERIC,
+	       test x"$cbc_with_cbc_generic" = xtrue)
+
+# Set the default solver for cbc-generic. In theory, any OsiXXX should work.
+# In practice, only the three listed below have had any testing.
+
+AC_MSG_CHECKING(for cbc-generic default solver)
+AC_ARG_WITH([cbc-generic-solver],
+            AC_HELP_STRING([--with-cbc-generic-solver],
+                           [specify default solver for cbc-generic in lower
+			    case letters (if not given, clp is assumed)]),
+            [cbc_default_solver=$withval],
+            [cbc_default_solver=clp])
+AC_MSG_RESULT($cbc_default_solver)
+
+case $cbc_default_solver in
+   clp)
+    ;;
+  dylp)
+    ;;
+  glpk)
+    ;;
+     *)
+    AC_MSG_WARN([Unrecognised solver $cbc_default_solver chosen as cbc-generic default solver.])
+    ;;
+esac
+AC_DEFINE_UNQUOTED([CBC_DEFAULT_SOLVER],"$cbc_default_solver",
+  [Define to the name of the default solver to be used in cbc-generic in small letters])
+
+# 
 
 ##############################################################################
 #                   VPATH links for example input files                      #

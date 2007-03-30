@@ -1,7 +1,7 @@
 /* inc/config_cbc.h.in.  Generated from configure.ac by autoheader.  */
 
-/* Define to the name of the default solver to be used in CBC in small letters
-   */
+/* Define to the name of the default solver to be used in cbc-generic in small
+   letters */
 #undef CBC_DEFAULT_SOLVER
 
 /* Define to the debug sanity check level (0 is no test) */

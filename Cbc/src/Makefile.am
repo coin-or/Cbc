@@ -47,34 +47,100 @@ libCbc_la_SOURCES = \
 	CbcTree.cpp CbcTree.hpp \
 	CbcLinked.cpp CbcLinked.hpp \
 	CbcTreeLocal.cpp CbcTreeLocal.hpp 
+
 ## If we have the Ampl solver library, we need to add additional things
 ## also see lower down
 ## new idea is to add in source code anyway
 libCbc_la_SOURCES += Cbc_ampl.cpp Cbc_ampl.h
 
+
 # This is for libtool (on Windows)
+
 libCbc_la_LDFLAGS = $(LT_LDFLAGS)
+
+# Some common setup for cbc and cbc-generic.
+
+bin_PROGRAMS =
+AM_CPPFLAGS = 
+
+LIBS += `cat $(CGLOBJDIR)/cgl_addlibs.txt` \
+	`cat $(OSIOBJDIR)/osi_addlibs.txt` \
+	`cat $(COINUTILSOBJDIR)/coinutils_addlibs.txt` $(ADDLIBS)
+
+
+########################################################################
+#                            cbc program                               #
+########################################################################
+
+if COIN_HAS_CLP
+
+# Name of the executable compiled in this directory.  We want it to be
+# installed in the 'bin' directory
+bin_PROGRAMS += cbc
+
+# List all source files for this executable, including headers
+cbc_SOURCES = \
+	CoinSolve.cpp \
+	unitTestClp.cpp
+
+# Additional COIN libraries
+cbc_LDADD = libCbc.la \
+	$(CGLOBJDIR)/src/libCgl.la \
+	$(OSIOBJDIR)/src/OsiClp/libOsiClp.la \
+	$(OSIOBJDIR)/src/libOsi.la \
+	$(CLPOBJDIR)/src/libClp.la \
+	$(COINUTILSOBJDIR)/src/libCoinUtils.la
+
+# Finally, the -rpath flag is used by libtool to make sure that the shared
+# library is found (in the lib install directory) when we are using dynamic
+# libraries.
+cbc_LDFLAGS = -rpath $(libdir)
+
+# Add locations of include files.
+
+AM_CPPFLAGS += -I`$(CYGPATH_W) $(CLPSRCDIR)/src` \
+	-I`$(CYGPATH_W) $(OSISRCDIR)/src/OsiClp` \
+	-I`$(CYGPATH_W) $(CLPOBJDIR)/inc`
+LIBS  += `cat $(CLPOBJDIR)/clp_addlibs.txt`
+
+# If we have the Ampl solver library, we need to add additional things
+if COIN_HAS_ASL
+#cbc_SOURCES += Cbc_ampl.cpp Cbc_ampl.h
+cbc_LDADD += $(ASLLIB)
+AM_CPPFLAGS += $(ASL_CPPFLAGS)
+endif
+
+endif
+
 
 ########################################################################
 #                        cbc-generic program                           #
 ########################################################################
 
+if CBC_BUILD_CBC_GENERIC
+
 # Name of the executable compiled in this directory.  We want it to be
 # installed in the 'bin' directory
-bin_PROGRAMS = cbc-generic
+
+bin_PROGRAMS += cbc-generic
 
 # List all source files for this executable, including headers
+
 cbc_generic_SOURCES = \
-	CbcMain.cpp \
-	CbcParam.cpp CbcParam.hpp \
-	unitTest.cpp
+	CbcGenBaB.cpp \
+	CbcGenCbcParam.cpp CbcGenCbcParam.hpp CbcGenCbcParamUtils.cpp \
+	CbcGenCtlBlk.cpp CbcGenCtlBlk.hpp \
+	CbcGeneric.cpp \
+	CbcGenOsiParam.cpp CbcGenOsiParam.hpp CbcGenOsiParamUtils.cpp \
+	CbcGenParam.cpp CbcGenParam.hpp CbcGenParamUtils.cpp \
+	CbcGenSolution.cpp \
+	CbcGenSolvers.cpp
 
 cbc_generic_LDADD = libCbc.la \
-	$(CGLOBJDIR)/src/libCgl.la \
-	$(OSIOBJDIR)/src/OsiCbc/libOsiCbc.la
-AM_CPPFLAGS = -I`$(CYGPATH_W) $(OSISRCDIR)/src/OsiCbc`
+	$(CGLOBJDIR)/src/libCgl.la
 
 # List all additionally required solver and Osi libraries
+
 if COIN_HAS_CLP
   AM_CPPFLAGS += -I`$(CYGPATH_W) $(CLPSRCDIR)/src` \
 	-I`$(CYGPATH_W) $(OSISRCDIR)/src/OsiClp` \
@@ -154,53 +220,12 @@ endif
 # Finally the Osi Coin library (many of the above need it)
 cbc_generic_LDADD += $(OSIOBJDIR)/src/libOsi.la \
 	$(COINUTILSOBJDIR)/src/libCoinUtils.la
-LIBS += `cat $(OSIOBJDIR)/osi_addlibs.txt` \
-	`cat $(COINUTILSOBJDIR)/coinutils_addlibs.txt` $(ADDLIBS)
 
 # Finally, the -rpath flag is used by libtool to make sure that the shared
 # library is found (in the lib install directory) when we are using dynamic
 # libraries.
+
 cbc_generic_LDFLAGS = -rpath $(libdir)
-
-## If we have the Ampl solver library, we need to add additional things
-#if COIN_HAS_ASL
-#cbc_generic_LDADD += $(ASLLIB)
-#endif
-
-########################################################################
-#                            cbc program                               #
-########################################################################
-
-if COIN_HAS_CLP
-
-# Name of the executable compiled in this directory.  We want it to be
-# installed in the 'bin' directory
-bin_PROGRAMS += cbc
-
-# List all source files for this executable, including headers
-cbc_SOURCES = \
-	CoinSolve.cpp \
-	unitTestClp.cpp
-
-# Additional COIN libraries
-cbc_LDADD = libCbc.la \
-	$(CGLOBJDIR)/src/libCgl.la \
-	$(OSIOBJDIR)/src/OsiClp/libOsiClp.la \
-	$(OSIOBJDIR)/src/libOsi.la \
-	$(CLPOBJDIR)/src/libClp.la \
-	$(COINUTILSOBJDIR)/src/libCoinUtils.la
-
-# Finally, the -rpath flag is used by libtool to make sure that the shared
-# library is found (in the lib install directory) when we are using dynamic
-# libraries.
-cbc_LDFLAGS = -rpath $(libdir)
-
-# If we have the Ampl solver library, we need to add additional things
-if COIN_HAS_ASL
-#cbc_SOURCES += Cbc_ampl.cpp Cbc_ampl.h
-cbc_LDADD += $(ASLLIB)
-AM_CPPFLAGS += $(ASL_CPPFLAGS)
-endif
 
 endif
 

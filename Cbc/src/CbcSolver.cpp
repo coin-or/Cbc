@@ -1215,12 +1215,13 @@ int callCbc(const char * input2, OsiClpSolverInterface& solver1)
   for (int k=0;k<n+2;k++)
     free(argv[k]);
   delete [] argv;
+  return returnCode;
 }
 int callCbc(const char * input2)
 {
   {
     OsiClpSolverInterface solver1;
-    int returnCode=callCbc(input2,solver1);
+     return callCbc(input2,solver1);
   }
 }
 int callCbc(const std::string input2, OsiClpSolverInterface& solver1) 

@@ -37,6 +37,7 @@ typedef struct
   int * sosIndices;
   double * sosReference;
   int * cut;
+  int * special;
   char ** arguments;
   char buffer[300];
   int logLevel;

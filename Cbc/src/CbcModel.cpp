@@ -1590,13 +1590,13 @@ void CbcModel::branchAndBound(int doStatistics)
   created back in solveWithCuts. addCuts() will initialise the reference
   counts for these new cuts.
 
-  TODO: (lh) I'm confused. We create a nodeInfo without checking whether we
-	have a solution or not. Then we use numberUnsatisfied() to decide
-	whether to stash the cuts and bump reference counts. Other places we
-	use variable() (i.e., presence of a branching variable). Equivalent?
+  This next test can be problematic if we've discovered an
+  alternate equivalent answer and subsequently fathom the solution
+  known to the row cut debugger due to bounds.
 */
         if (onOptimalPath) {
-          if (!feasible) {
+	  bool objLim = solver_->isDualObjectiveLimitReached() ;
+          if (!feasible && !objLim) {
             printf("infeas2\n");
             solver_->writeMps("infeas");
             CoinWarmStartBasis *slack =
@@ -1607,7 +1607,7 @@ void CbcModel::branchAndBound(int doStatistics)
             solver_->initialSolve();
             assert (!solver_->isProvenOptimal());
           }
-          assert (feasible);
+          assert (feasible || objLim);
         }
         bool checkingNode=false;
 	if (feasible) {
@@ -4750,8 +4750,11 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
       }
     }
   }
-  // Reduced cost fix at end
-  if (solver_->isProvenOptimal())
+/*
+  Reduced cost fix at end. Must also check feasible, in case we've popped out
+  because a generator indicated we're infeasible.
+*/
+  if (feasible && solver_->isProvenOptimal())
     reducedCostFix();
   // If at root node do heuristics
   if (!numberNodes_) {
@@ -8651,7 +8654,13 @@ CbcModel::chooseBranch(CbcNode * newNode, int numberPassesLeft,
   }
   if (anyAction >= 0) {
     if (resolved) { 
-      bool needValidSolution = (newNode->branchingObject() == NULL) ;
+/*
+  Used to be that when the node was not fathomed (branching object present)
+  the solution was not needed. But that's no longer the case --- heuristics
+  are applied, and they may want the solution.
+*/
+      // bool needValidSolution = (newNode->branchingObject() == NULL) ;
+      bool needValidSolution = true ;
       takeOffCuts(cuts,needValidSolution,NULL) ; 
 #	      ifdef CHECK_CUT_COUNTS
       {

@@ -31,6 +31,8 @@ class CbcStatistics;
 class CbcEventHandler ;
 class CglPreProcess;
 
+// #define CBC_CHECK_BASIS 1
+
 //#############################################################################
 
 /** Simple Branch and bound class
@@ -1394,6 +1396,27 @@ public:
 	    the incoming solver.
     */
     void assignSolver(OsiSolverInterface *&solver,bool deleteSolver=true);
+
+    /** \brief Set ownership of solver
+
+      A parameter of false tells CbcModel it does not own the solver and
+      should not delete it. Once you claim ownership of the solver, you're
+      responsible for eventually deleting it. Note that CbcModel clones
+      solvers with abandon.  Unless you have a deep understanding of the
+      workings of CbcModel, the only time you want to claim ownership is when
+      you're about to delete the CbcModel object but want the solver to
+      continue to exist (as, for example, when branchAndBound has finished
+      and you want to hang on to the answer).
+    */
+    inline void setModelOwnsSolver (bool ourSolver)
+    { ourSolver_ = ourSolver ; } ;
+
+    /*! \brief Get ownership of solver
+    
+      A return value of true means that CbcModel owns the solver and will
+      take responsibility for deleting it when that becomes necessary.
+    */
+    inline bool modelOwnsSolver () { return (ourSolver_) ; } ;
   
     /** Copy constructor .
       If noTree is true then tree and cuts are not copied
@@ -1789,11 +1812,15 @@ private:
     To disable strong branching, set this to 0.
   */
   int numberStrong_;
-  /** The number of branches before pseudo costs believed
-      in dynamic strong branching. (0 off) */
+  /** \brief The number of branches before pseudo costs believed
+	     in dynamic strong branching.
+      
+    A value of 0 is  off.
+  */
   int numberBeforeTrust_;
-  /** The number of variable sfor which to compute penalties
-      in dynamic strong branching. (0 off) */
+  /** \brief The number of variables for which to compute penalties
+	     in dynamic strong branching.
+  */
   int numberPenalties_;
   /** Scale factor to make penalties match strong.
       Should/will be computed */
@@ -1923,4 +1950,13 @@ private:
 /// So we can use osiObject or CbcObject during transition
 void getIntegerInformation(const OsiObject * object, double & originalLower,
 			   double & originalUpper) ;
+// So we can call from other programs
+// Real main program
+class OsiClpSolverInterface;
+int CbcMain (int argc, const char *argv[],OsiClpSolverInterface & solver,CbcModel ** babSolver);
+// four ways of calling
+int callCbc(const char * input2, OsiClpSolverInterface& solver1); 
+int callCbc(const char * input2);
+int callCbc(const std::string input2, OsiClpSolverInterface& solver1); 
+int callCbc(const std::string input2) ;
 #endif

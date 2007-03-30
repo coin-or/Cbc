@@ -729,6 +729,215 @@ CbcNode::CbcNode(CbcModel * model,
     lastNode->nodeInfo_->increment();
 }
 
+#define CBC_NEW_CREATEINFO
+#ifdef CBC_NEW_CREATEINFO
+
+/*
+  New createInfo, with basis manipulation hidden inside mergeBasis. Allows
+  solvers to override and carry over all information from one basis to
+  another.
+*/
+
+void
+CbcNode::createInfo (CbcModel *model,
+		     CbcNode *lastNode,
+		     const CoinWarmStartBasis *lastws,
+		     const double *lastLower, const double *lastUpper,
+		     int numberOldActiveCuts, int numberNewCuts)
+
+{ OsiSolverInterface *solver = model->solver();
+  CbcStrategy *strategy = model->strategy();
+/*
+  The root --- no parent. Create full basis and bounds information.
+*/
+  if (!lastNode)
+  { 
+    if (!strategy)
+      nodeInfo_=new CbcFullNodeInfo(model,solver->getNumRows());
+    else
+      nodeInfo_ = strategy->fullNodeInfo(model,solver->getNumRows());
+  } else {
+/*
+  Not the root. Create an edit from the parent's basis & bound information.
+  This is not quite as straightforward as it seems. We need to reintroduce
+  cuts we may have dropped out of the basis, in the correct position, because
+  this whole process is strictly positional. Start by grabbing the current
+  basis.
+*/
+    const CoinWarmStartBasis *ws =
+      dynamic_cast<const CoinWarmStartBasis*>(solver->getWarmStart());
+    assert(ws!=NULL); // make sure not volume
+    //int numberArtificials = lastws->getNumArtificial();
+    int numberColumns = solver->getNumCols();
+    int numberRowsAtContinuous = model->numberRowsAtContinuous();
+    int currentNumberCuts = model->currentNumberCuts();
+#   ifdef CBC_CHECK_BASIS
+    std::cout
+      << "Before expansion: orig " << numberRowsAtContinuous
+      << ", old " << numberOldActiveCuts
+      << ", new " << numberNewCuts
+      << ", current " << currentNumberCuts << "." << std::endl ;
+    ws->print();
+#   endif
+/*
+  Clone the basis and resize it to hold the structural constraints, plus
+  all the cuts: old cuts, both active and inactive (currentNumberCuts),
+  and new cuts (numberNewCuts). This will become the expanded basis.
+*/
+    CoinWarmStartBasis *expanded = 
+      dynamic_cast<CoinWarmStartBasis *>(ws->clone()) ;
+    int iCompact = numberRowsAtContinuous+numberOldActiveCuts+numberNewCuts ;
+    // int nPartial = numberRowsAtContinuous+currentNumberCuts;
+    int iFull = numberRowsAtContinuous+currentNumberCuts+numberNewCuts;
+    // int maxBasisLength = ((iFull+15)>>4)+((numberColumns+15)>>4);
+    // printf("l %d full %d\n",maxBasisLength,iFull);
+    expanded->resize(iFull,numberColumns);
+#   ifdef CBC_CHECK_BASIS
+    std::cout
+      << "\tFull basis " << iFull << " rows, "
+      << numberColumns << " columns; compact "
+      << iCompact << " rows." << std::endl ;
+#   endif
+/*
+  Now flesh out the expanded basis. The clone already has the
+  correct status information for the variables and for the structural
+  (numberRowsAtContinuous) constraints. Any indices beyond nPartial must be
+  cuts created while processing this node --- they can be copied en bloc
+  into the correct position in the expanded basis. The space reserved for
+  xferRows is a gross overestimate.
+*/
+    CoinWarmStartBasis::XferVec xferRows ;
+    xferRows.reserve(iFull-numberRowsAtContinuous+1) ;
+    if (numberNewCuts) {
+      xferRows.push_back(
+          CoinWarmStartBasis::XferEntry(iCompact-numberNewCuts,
+					iFull-numberNewCuts,numberNewCuts)) ;
+    }
+/*
+  From nPartial down, record the entries we want to copy from the current
+  basis (the entries for the active cuts; non-zero in the list returned
+  by addedCuts). Fill the expanded basis with entries showing a status of
+  basic for the deactivated (loose) cuts.
+*/
+    CbcCountRowCut **cut = model->addedCuts();
+    iFull -= (numberNewCuts+1) ;
+    iCompact -= (numberNewCuts+1) ;
+    int runLen = 0 ;
+    CoinWarmStartBasis::XferEntry entry(-1,-1,-1) ;
+    while (iFull >= numberRowsAtContinuous) { 
+      for ( ; iFull >= numberRowsAtContinuous &&
+	      cut[iFull-numberRowsAtContinuous] ; iFull--)
+        runLen++ ;
+      if (runLen) {
+        iCompact -= runLen ;
+        entry.first = iCompact+1 ;
+        entry.second = iFull+1 ;
+	entry.third = runLen ;
+	runLen = 0 ;
+        xferRows.push_back(entry) ;
+      }
+      for ( ; iFull >= numberRowsAtContinuous &&
+      	      !cut[iFull-numberRowsAtContinuous] ; iFull--)
+	expanded->setArtifStatus(iFull,CoinWarmStartBasis::basic);
+    }
+/*
+  Finally, call mergeBasis to copy over entries from the current basis to
+  the expanded basis. Since we cloned the expanded basis from the active basis
+  and haven't changed the number of variables, only row status entries need
+  to be copied.
+*/
+    expanded->mergeBasis(ws,&xferRows,0) ;
+
+#ifdef CBC_CHECK_BASIS
+    std::cout << "Expanded basis:" << std::endl ;
+    expanded->print() ;
+    std::cout << "Diffing against:" << std::endl ;
+    lastws->print() ;
+#endif    
+
+/*
+  Now that we have two bases in proper positional correspondence, creating
+  the actual diff is dead easy.
+
+  Note that we're going to compare the expanded basis here to the stripped
+  basis (lastws) produced by addCuts. It doesn't affect the correctness (the
+  diff process has no knowledge of the meaning of an entry) but it does
+  mean that we'll always generate a whack of diff entries because the expanded
+  basis is considerably larger than the stripped basis.
+*/
+    CoinWarmStartDiff *basisDiff = expanded->generateDiff(lastws) ;
+/*
+  Diff the bound vectors. It's assumed the number of structural variables
+  is not changing. For branching objects that change bounds on integer
+  variables, we should see at least one bound change as a consequence
+  of applying the branch that generated this subproblem from its parent.
+  This need not hold for other types of branching objects (hyperplane
+  branches, for example).
+*/
+    const double * lower = solver->getColLower();
+    const double * upper = solver->getColUpper();
+
+    double *boundChanges = new double [2*numberColumns] ;
+    int *variables = new int [2*numberColumns] ;
+    int numberChangedBounds=0;
+    
+    int i;
+    for (i=0;i<numberColumns;i++) {
+      if (lower[i]!=lastLower[i]) {
+	variables[numberChangedBounds]=i;
+	boundChanges[numberChangedBounds++]=lower[i];
+      }
+      if (upper[i]!=lastUpper[i]) {
+	variables[numberChangedBounds]=i|0x80000000;
+	boundChanges[numberChangedBounds++]=upper[i];
+      }
+#ifdef CBC_DEBUG
+      if (lower[i] != lastLower[i]) {
+        std::cout
+	  << "lower on " << i << " changed from "
+	  << lastLower[i] << " to " << lower[i] << std::endl ;
+      }
+      if (upper[i] != lastUpper[i]) {
+        std::cout
+	  << "upper on " << i << " changed from "
+	  << lastUpper[i] << " to " << upper[i] << std::endl ;
+      }
+#endif
+    }
+#ifdef CBC_DEBUG
+    std::cout << numberChangedBounds << " changed bounds." << std::endl ;
+#endif
+    //if (lastNode->branchingObject()->boundBranch())
+    //assert (numberChangedBounds);
+/*
+  Hand the lot over to the CbcPartialNodeInfo constructor, then clean up and
+  return.
+*/
+    if (!strategy)
+      nodeInfo_ =
+        new CbcPartialNodeInfo(lastNode->nodeInfo_,this,numberChangedBounds,
+                               variables,boundChanges,basisDiff) ;
+    else
+      nodeInfo_ =
+        strategy->partialNodeInfo(model,lastNode->nodeInfo_,this,
+				  numberChangedBounds,variables,boundChanges,
+				  basisDiff) ;
+    delete basisDiff ;
+    delete [] boundChanges;
+    delete [] variables;
+    delete expanded ;
+    delete ws;
+  }
+  // Set node number
+  nodeInfo_->setNodeNumber(model->getNodeCount2());
+}
+
+#else	// CBC_NEW_CREATEINFO
+
+/*
+  Original createInfo, with bare manipulation of basis vectors. Fails if solver
+  maintains additional information in basis.
+*/
 
 void
 CbcNode::createInfo (CbcModel *model,
@@ -901,6 +1110,8 @@ CbcNode::createInfo (CbcModel *model,
   // Set node number
   nodeInfo_->setNodeNumber(model->getNodeCount2());
 }
+
+#endif	// CBC_NEW_CREATEINFO
 
 /*
   The routine scans through the object list of the model looking for objects

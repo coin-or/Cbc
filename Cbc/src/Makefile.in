@@ -118,9 +118,9 @@ bin_PROGRAMS = cbc-generic$(EXEEXT) $(am__EXEEXT_1)
 @COIN_HAS_CLP_TRUE@am__append_27 = cbc
 
 # If we have the Ampl solver library, we need to add additional things
-@COIN_HAS_ASL_TRUE@@COIN_HAS_CLP_TRUE@am__append_28 = Cbc_ampl.cpp Cbc_ampl.h
-@COIN_HAS_ASL_TRUE@@COIN_HAS_CLP_TRUE@am__append_29 = $(ASLLIB)
-@COIN_HAS_ASL_TRUE@@COIN_HAS_CLP_TRUE@am__append_30 = $(ASL_CPPFLAGS)
+#cbc_SOURCES += Cbc_ampl.cpp Cbc_ampl.h
+@COIN_HAS_ASL_TRUE@@COIN_HAS_CLP_TRUE@am__append_28 = $(ASLLIB)
+@COIN_HAS_ASL_TRUE@@COIN_HAS_CLP_TRUE@am__append_29 = $(ASL_CPPFLAGS)
 subdir = src
 DIST_COMMON = $(include_HEADERS) $(srcdir)/Makefile.am \
 	$(srcdir)/Makefile.in
@@ -150,19 +150,16 @@ am_libCbc_la_OBJECTS = Cbc_C_Interface.lo CbcBranchActual.lo \
 	CbcFathomDynamicProgramming.lo CbcHeuristic.lo \
 	CbcHeuristicFPump.lo CbcHeuristicGreedy.lo \
 	CbcHeuristicLocal.lo CbcHeuristicRINS.lo CbcMessage.lo \
-	CbcModel.lo CbcNode.lo CbcStatistics.lo CbcStrategy.lo \
-	CbcTree.lo CbcLinked.lo CbcTreeLocal.lo
+	CbcModel.lo CbcNode.lo CbcSolver.lo CbcCbcParam.lo \
+	CbcStatistics.lo CbcStrategy.lo CbcTree.lo CbcLinked.lo \
+	CbcTreeLocal.lo Cbc_ampl.lo
 libCbc_la_OBJECTS = $(am_libCbc_la_OBJECTS)
 @COIN_HAS_CLP_TRUE@am__EXEEXT_1 = cbc$(EXEEXT)
 binPROGRAMS_INSTALL = $(INSTALL_PROGRAM)
 PROGRAMS = $(bin_PROGRAMS)
-am__cbc_SOURCES_DIST = CoinSolve.cpp CbcCbcParam.cpp unitTestClp.cpp \
-	Cbc_ampl.cpp Cbc_ampl.h
-@COIN_HAS_ASL_TRUE@@COIN_HAS_CLP_TRUE@am__objects_1 =  \
-@COIN_HAS_ASL_TRUE@@COIN_HAS_CLP_TRUE@	Cbc_ampl.$(OBJEXT)
+am__cbc_SOURCES_DIST = CoinSolve.cpp unitTestClp.cpp
 @COIN_HAS_CLP_TRUE@am_cbc_OBJECTS = CoinSolve.$(OBJEXT) \
-@COIN_HAS_CLP_TRUE@	CbcCbcParam.$(OBJEXT) unitTestClp.$(OBJEXT) \
-@COIN_HAS_CLP_TRUE@	$(am__objects_1)
+@COIN_HAS_CLP_TRUE@	unitTestClp.$(OBJEXT)
 cbc_OBJECTS = $(am_cbc_OBJECTS)
 am__DEPENDENCIES_1 =
 @COIN_HAS_ASL_TRUE@@COIN_HAS_CLP_TRUE@am__DEPENDENCIES_2 =  \
@@ -175,7 +172,7 @@ am__DEPENDENCIES_1 =
 @COIN_HAS_CLP_TRUE@	$(COINUTILSOBJDIR)/src/libCoinUtils.la \
 @COIN_HAS_CLP_TRUE@	$(am__DEPENDENCIES_2)
 am_cbc_generic_OBJECTS = CbcMain.$(OBJEXT) CbcParam.$(OBJEXT) \
-	CbcCbcParam.$(OBJEXT) unitTest.$(OBJEXT)
+	unitTest.$(OBJEXT)
 cbc_generic_OBJECTS = $(am_cbc_generic_OBJECTS)
 @COIN_HAS_CLP_TRUE@am__DEPENDENCIES_3 =  \
 @COIN_HAS_CLP_TRUE@	$(OSIOBJDIR)/src/OsiClp/libOsiClp.la \
@@ -446,39 +443,26 @@ AUTOMAKE_OPTIONS = foreign
 lib_LTLIBRARIES = libCbc.la
 
 # List all source files for this library, including headers
-libCbc_la_SOURCES = \
-	Cbc_C_Interface.cpp Cbc_C_Interface.h \
-	CbcConfig.h \
-	CbcBranchActual.cpp CbcBranchActual.hpp \
-	CbcBranchBase.cpp CbcBranchBase.hpp \
-	CbcBranchCut.cpp CbcBranchCut.hpp \
-	CbcBranchDynamic.cpp CbcBranchDynamic.hpp \
-	CbcBranchLotsize.cpp CbcBranchLotsize.hpp \
-	CbcCompareActual.cpp CbcCompareActual.hpp \
-	CbcCompareBase.hpp \
-	CbcCountRowCut.cpp CbcCountRowCut.hpp \
-	CbcCutGenerator.cpp CbcCutGenerator.hpp \
-	CbcEventHandler.cpp CbcEventHandler.hpp \
-	CbcFathom.cpp CbcFathom.hpp \
-	CbcFathomDynamicProgramming.cpp CbcFathomDynamicProgramming.hpp \
-	CbcFeasibilityBase.hpp \
-	CbcHeuristic.cpp CbcHeuristic.hpp \
-	CbcHeuristicFPump.cpp CbcHeuristicFPump.hpp \
-	CbcHeuristicGreedy.cpp CbcHeuristicGreedy.hpp \
-	CbcHeuristicLocal.cpp CbcHeuristicLocal.hpp \
-	CbcHeuristicRINS.cpp CbcHeuristicRINS.hpp \
-	CbcMessage.cpp CbcMessage.hpp \
-	CbcModel.cpp CbcModel.hpp \
-	CbcNode.cpp CbcNode.hpp \
-	CbcStatistics.cpp CbcStatistics.hpp \
-	CbcStrategy.cpp CbcStrategy.hpp \
-	CbcTree.cpp CbcTree.hpp \
-	CbcLinked.cpp CbcLinked.hpp \
-	CbcTreeLocal.cpp CbcTreeLocal.hpp 
-
-#if COIN_HAS_ASL
-#libCbc_la_SOURCES += Cbc_ampl.cpp Cbc_ampl.h
-#endif
+libCbc_la_SOURCES = Cbc_C_Interface.cpp Cbc_C_Interface.h CbcConfig.h \
+	CbcBranchActual.cpp CbcBranchActual.hpp CbcBranchBase.cpp \
+	CbcBranchBase.hpp CbcBranchCut.cpp CbcBranchCut.hpp \
+	CbcBranchDynamic.cpp CbcBranchDynamic.hpp CbcBranchLotsize.cpp \
+	CbcBranchLotsize.hpp CbcCompareActual.cpp CbcCompareActual.hpp \
+	CbcCompareBase.hpp CbcCountRowCut.cpp CbcCountRowCut.hpp \
+	CbcCutGenerator.cpp CbcCutGenerator.hpp CbcEventHandler.cpp \
+	CbcEventHandler.hpp CbcFathom.cpp CbcFathom.hpp \
+	CbcFathomDynamicProgramming.cpp \
+	CbcFathomDynamicProgramming.hpp CbcFeasibilityBase.hpp \
+	CbcHeuristic.cpp CbcHeuristic.hpp CbcHeuristicFPump.cpp \
+	CbcHeuristicFPump.hpp CbcHeuristicGreedy.cpp \
+	CbcHeuristicGreedy.hpp CbcHeuristicLocal.cpp \
+	CbcHeuristicLocal.hpp CbcHeuristicRINS.cpp \
+	CbcHeuristicRINS.hpp CbcMessage.cpp CbcMessage.hpp \
+	CbcModel.cpp CbcModel.hpp CbcNode.cpp CbcNode.hpp \
+	CbcSolver.cpp CbcCbcParam.cpp CbcStatistics.cpp \
+	CbcStatistics.hpp CbcStrategy.cpp CbcStrategy.hpp CbcTree.cpp \
+	CbcTree.hpp CbcLinked.cpp CbcLinked.hpp CbcTreeLocal.cpp \
+	CbcTreeLocal.hpp Cbc_ampl.cpp Cbc_ampl.h
 
 # This is for libtool (on Windows)
 libCbc_la_LDFLAGS = $(LT_LDFLAGS)
@@ -487,7 +471,6 @@ libCbc_la_LDFLAGS = $(LT_LDFLAGS)
 cbc_generic_SOURCES = \
 	CbcMain.cpp \
 	CbcParam.cpp CbcParam.hpp \
-	CbcCbcParam.cpp \
 	unitTest.cpp
 
 
@@ -514,7 +497,7 @@ AM_CPPFLAGS = -I`$(CYGPATH_W) $(OSISRCDIR)/src/OsiCbc` $(am__append_1) \
 	$(am__append_4) $(am__append_6) $(am__append_9) \
 	$(am__append_11) $(am__append_13) $(am__append_15) \
 	$(am__append_17) $(am__append_19) $(am__append_22) \
-	$(am__append_25) $(am__append_30) -I`$(CYGPATH_W) \
+	$(am__append_25) $(am__append_29) -I`$(CYGPATH_W) \
 	$(CGLSRCDIR)/src` -I`$(CYGPATH_W) $(CGLSRCDIR)/src/CglClique` \
 	-I`$(CYGPATH_W) $(CGLSRCDIR)/src/CglDuplicateRow` \
 	-I`$(CYGPATH_W) $(CGLSRCDIR)/src/CglFlowCover` -I`$(CYGPATH_W) \
@@ -539,8 +522,10 @@ AM_CPPFLAGS = -I`$(CYGPATH_W) $(OSISRCDIR)/src/OsiCbc` $(am__append_1) \
 cbc_generic_LDFLAGS = -rpath $(libdir)
 
 # List all source files for this executable, including headers
-@COIN_HAS_CLP_TRUE@cbc_SOURCES = CoinSolve.cpp CbcCbcParam.cpp \
-@COIN_HAS_CLP_TRUE@	unitTestClp.cpp $(am__append_28)
+@COIN_HAS_CLP_TRUE@cbc_SOURCES = \
+@COIN_HAS_CLP_TRUE@	CoinSolve.cpp \
+@COIN_HAS_CLP_TRUE@	unitTestClp.cpp
+
 
 # Additional COIN libraries
 @COIN_HAS_CLP_TRUE@cbc_LDADD = libCbc.la $(CGLOBJDIR)/src/libCgl.la \
@@ -548,7 +533,7 @@ cbc_generic_LDFLAGS = -rpath $(libdir)
 @COIN_HAS_CLP_TRUE@	$(OSIOBJDIR)/src/libOsi.la \
 @COIN_HAS_CLP_TRUE@	$(CLPOBJDIR)/src/libClp.la \
 @COIN_HAS_CLP_TRUE@	$(COINUTILSOBJDIR)/src/libCoinUtils.la \
-@COIN_HAS_CLP_TRUE@	$(am__append_29)
+@COIN_HAS_CLP_TRUE@	$(am__append_28)
 
 # Finally, the -rpath flag is used by libtool to make sure that the shared
 # library is found (in the lib install directory) when we are using dynamic
@@ -706,7 +691,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcBranchCut.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcBranchDynamic.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcBranchLotsize.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcCbcParam.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcCbcParam.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcCompareActual.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcCountRowCut.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcCutGenerator.Plo@am__quote@
@@ -724,12 +709,13 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcModel.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcNode.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcParam.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcSolver.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcStatistics.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcStrategy.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcTree.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcTreeLocal.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Cbc_C_Interface.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Cbc_ampl.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Cbc_ampl.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CoinSolve.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/unitTest.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/unitTestClp.Po@am__quote@

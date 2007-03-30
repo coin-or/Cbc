@@ -41,6 +41,7 @@ libCbc_la_SOURCES = \
 	CbcMessage.cpp CbcMessage.hpp \
 	CbcModel.cpp CbcModel.hpp \
 	CbcNode.cpp CbcNode.hpp \
+	CbcSolver.cpp CbcCbcParam.cpp \
 	CbcStatistics.cpp CbcStatistics.hpp \
 	CbcStrategy.cpp CbcStrategy.hpp \
 	CbcTree.cpp CbcTree.hpp \
@@ -48,9 +49,8 @@ libCbc_la_SOURCES = \
 	CbcTreeLocal.cpp CbcTreeLocal.hpp 
 ## If we have the Ampl solver library, we need to add additional things
 ## also see lower down
-#if COIN_HAS_ASL
-#libCbc_la_SOURCES += Cbc_ampl.cpp Cbc_ampl.h
-#endif
+## new idea is to add in source code anyway
+libCbc_la_SOURCES += Cbc_ampl.cpp Cbc_ampl.h
 
 # This is for libtool (on Windows)
 libCbc_la_LDFLAGS = $(LT_LDFLAGS)
@@ -67,7 +67,6 @@ bin_PROGRAMS = cbc-generic
 cbc_generic_SOURCES = \
 	CbcMain.cpp \
 	CbcParam.cpp CbcParam.hpp \
-	CbcCbcParam.cpp \
 	unitTest.cpp
 
 cbc_generic_LDADD = libCbc.la \
@@ -181,7 +180,6 @@ bin_PROGRAMS += cbc
 # List all source files for this executable, including headers
 cbc_SOURCES = \
 	CoinSolve.cpp \
-	CbcCbcParam.cpp \
 	unitTestClp.cpp
 
 # Additional COIN libraries
@@ -199,7 +197,7 @@ cbc_LDFLAGS = -rpath $(libdir)
 
 # If we have the Ampl solver library, we need to add additional things
 if COIN_HAS_ASL
-cbc_SOURCES += Cbc_ampl.cpp Cbc_ampl.h
+#cbc_SOURCES += Cbc_ampl.cpp Cbc_ampl.h
 cbc_LDADD += $(ASLLIB)
 AM_CPPFLAGS += $(ASL_CPPFLAGS)
 endif

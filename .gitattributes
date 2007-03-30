@@ -30,6 +30,7 @@ Cbc/src/CbcHeuristicRINS.cpp -text
 Cbc/src/CbcHeuristicRINS.hpp -text
 Cbc/src/CbcLinked.cpp -text
 Cbc/src/CbcLinked.hpp -text
+Cbc/src/CbcSolver.cpp -text
 Cbc/src/OMI_code/Base.c -text
 Cbc/src/OMI_code/Block.c -text
 Cbc/src/OMI_code/Model.c -text

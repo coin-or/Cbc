@@ -22,6 +22,7 @@ IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION,
 ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF
 THIS SOFTWARE.
 ****************************************************************/
+#ifdef COIN_HAS_ASL
 
 #include "CbcConfig.h"
 #ifdef HAVE_UNISTD_H
@@ -35,11 +36,12 @@ THIS SOFTWARE.
 #include "CoinMpsIO.hpp"
 #include "CoinFloatEqual.hpp"
 
+#include "Cbc_ampl.h"
 extern "C" {
 # include "getstub.h"
+# include "asl_pfgh.h"
 }
 
-#include "Cbc_ampl.h"
 #include <string>
 #include <cassert>
 /* so decodePhrase and clpCheck can access */
@@ -143,6 +145,8 @@ suftab[] = {
 	{ "sos", 0, ASL_Sufkind_con },
 	{ "sosno", 0, ASL_Sufkind_var | ASL_Sufkind_real },
 	{ "sosref", 0, ASL_Sufkind_var | ASL_Sufkind_real },
+	{ "special", 0, ASL_Sufkind_var },
+	/*{ "special", 0, ASL_Sufkind_con },*/
 	{ strdup("sstatus"), 0, ASL_Sufkind_var, 0 },
 	{ strdup("sstatus"), 0, ASL_Sufkind_con, 0 },
 	{ "upPseudocost", 0, ASL_Sufkind_var | ASL_Sufkind_real }
@@ -163,16 +167,21 @@ mip_stuff(void)
   int i;
   double *pseudoUp, *pseudoDown;
   int *priority, *direction;
-  // To label cuts
+  // To label cuts (there will be other uses for special)
   int *cut;
-  SufDesc *dpup, *dpdown, *dpri, *ddir, *dcut;
+  // To label special variables - at present 1= must be >= 1 or <= -1
+  int * special;
+  SufDesc *dpup, *dpdown, *dpri, *ddir, *dcut, *dspecial;
   
   ddir = suf_get("direction", ASL_Sufkind_var);
   direction = ddir->u.i;
   dpri = suf_get("priority", ASL_Sufkind_var);
   priority = dpri->u.i;
+  dcut = suf_get("special", ASL_Sufkind_con);
   dcut = suf_get("cut", ASL_Sufkind_con);
   cut = dcut->u.i;
+  dspecial = suf_get("special", ASL_Sufkind_var);
+  special = dspecial->u.i;
   dpdown = suf_get("downPseudocost", ASL_Sufkind_var);
   pseudoDown = dpdown->u.r;
   dpup = suf_get("upPseudocost", ASL_Sufkind_var);
@@ -210,6 +219,22 @@ mip_stuff(void)
       fprintf(Stderr,
               "Treating %d negative .priority values as 0\n",
               badpri);
+  }
+  if (special) {
+    int badspecial=0;
+    saveInfo->special= (int *) malloc(numberColumns*sizeof(int));
+    for (i=0;i<numberColumns;i++) {
+      int value = special[i];
+      if (value<0) {
+        badspecial++;
+        value=0;
+      }
+      saveInfo->special[i]=value;
+    }
+    if (badspecial)
+      fprintf(Stderr,
+              "Treating %d negative special values as 0\n",
+              badspecial);
   }
   int numberRows = saveInfo->numberRows;
   if (cut) {
@@ -724,6 +749,343 @@ qterm(ASL *asl, fint *colq, fint *rowq, real *delsq)
   return 0.5 * t;
 }
 #endif
+// stolen from IPopt with changes
+typedef struct {
+  double obj_sign_;
+  ASL_pfgh * asl_;
+  double * non_const_x_;
+  int nz_h_full_; // number of nonzeros in hessian
+  int nerror_;
+  bool objval_called_with_current_x_;
+  bool conval_called_with_current_x_;
+} CbcAmplInfo;
+
+static bool get_nlp_info(void * amplInfo,int & n, int & m, int & nnz_jac_g,
+                              int & nnz_h_lag)
+{
+  CbcAmplInfo * info = (CbcAmplInfo *) amplInfo;
+  ASL_pfgh* asl = info->asl_;
+  
+  n = n_var; // # of variables 
+  m = n_con; // # of constraints
+  nnz_jac_g = nzc; // # of non-zeros in the jacobian
+  nnz_h_lag = info->nz_h_full_; // # of non-zeros in the hessian
+  
+  return true;
+}
+
+static bool get_bounds_info(void * amplInfo,int  n, double * x_l, 
+			    double * x_u, int  m, double * g_l, double * g_u)
+{
+  CbcAmplInfo * info = (CbcAmplInfo *) amplInfo;
+  ASL_pfgh* asl = info->asl_;
+  assert(n == n_var);
+  assert(m == n_con);
+  int i;
+  for (i=0; i<n; i++) {
+    x_l[i] = LUv[2*i];
+    x_u[i] = LUv[2*i+1];
+  }
+  
+  for (i=0; i<m; i++) {
+    g_l[i] = LUrhs[2*i];
+    g_u[i] = LUrhs[2*i+1];
+  }
+  return true;
+}
+
+
+bool get_constraints_linearity(void * amplInfo,int  n,
+      int * const_types)
+{
+  CbcAmplInfo * info = (CbcAmplInfo *) amplInfo;
+  ASL_pfgh* asl = info->asl_;
+  //check that n is good
+  assert(n == n_con);
+  // check that there are no network constraints
+  assert(nlnc == 0 && lnc == 0);
+  //the first nlc constraints are non linear the rest is linear
+  int i;
+  for (i=0; i<nlc; i++) {
+    const_types[i]=1;
+  }
+  // the rest is linear
+  for (i=nlc; i<n_con; i++)
+    const_types[i]=0;
+  return true;
+}
+#if 0
+bool get_starting_point(int  n, bool init_x, double * x, bool init_z, 
+			double * z_L, double * z_U, int  m, bool init_lambda, double * lambda)
+{
+  CbcAmplInfo * info = (CbcAmplInfo *) amplInfo;
+  ASL_pfgh* asl = info->asl_;
+  assert(n == n_var);
+  assert(m == n_con);
+  int i;
+  
+  if (init_x) {
+    for (i=0; i<n; i++) {
+      if (havex0[i]) {
+	x[i] = X0[i];
+      }
+      else {
+	x[i] = 0.0;
+      }
+    }
+  }
+  
+  if (init_z) {
+    for (i=0; i<n; i++) {
+      z_L[i] = z_U[i] = 1.0;
+    }
+  }
+  
+  if (init_lambda) {
+    for (i=0; i<m; i++) {
+      if (havepi0[i]) {
+	lambda[i] = pi0[i];
+      }
+      else {
+	lambda[i] = 0.0;
+      }
+    }
+  }
+  
+  return true;
+}
+#endif
+static bool internal_objval(CbcAmplInfo * info ,double & obj_val)
+{
+  ASL_pfgh* asl = info->asl_;
+  info->objval_called_with_current_x_ = false; // in case the call below fails
+
+  if (n_obj==0) {
+    obj_val = 0;
+    info->objval_called_with_current_x_ = true;
+    return true;
+  }  else {
+    double  retval = objval(0, info->non_const_x_, (fint*)info->nerror_);
+    if (!info->nerror_) {
+      obj_val = info->obj_sign_*retval;
+      info->objval_called_with_current_x_ = true;
+      return true;
+    } else {
+      abort();
+    }
+  }
+  
+  return false;
+}
+
+static bool internal_conval(CbcAmplInfo * info ,int  m, double * g)
+{
+  ASL_pfgh* asl = info->asl_;
+  info->conval_called_with_current_x_ = false; // in case the call below fails
+  
+  bool allocated = false;
+  if (!g) {
+    g = new double[m];
+    allocated = true;
+  }
+  
+  conval(info->non_const_x_, g, (fint*)info->nerror_);
+
+  if (allocated) {
+    delete [] g;
+    g = NULL;
+  }
+  
+  if (!info->nerror_) {
+    info->conval_called_with_current_x_ = true;
+    return true;
+  } else {
+    abort();
+  }
+  return false;
+}
+
+
+static bool apply_new_x(CbcAmplInfo * info  ,bool new_x, int  n, const double * x)
+{
+  ASL_pfgh* asl = info->asl_;
+  
+  if (new_x) {
+    // update the flags so these methods are called
+    // before evaluating the hessian
+    info->conval_called_with_current_x_ = false;
+    info->objval_called_with_current_x_ = false;
+
+    //copy the data to the non_const_x_
+    if (!info->non_const_x_) {
+      info->non_const_x_ = new double [n];
+    }
+
+    for (int  i=0; i<n; i++) {
+      info->non_const_x_[i] = x[i];
+    }
+    
+    // tell ampl that we have a new x
+    xknowne(info->non_const_x_, (fint*)info->nerror_);
+    return info->nerror_ ? false : true;
+  }
+  
+  return true;
+}
+bool eval_f(void * amplInfo,int  n, const double * x, bool new_x, double & obj_value)
+{
+  CbcAmplInfo * info = (CbcAmplInfo *) amplInfo;
+  if (!apply_new_x(info,new_x, n, x)) {
+    return false;
+  }
+  
+  return internal_objval(info,obj_value);
+}
+
+bool eval_grad_f(void * amplInfo,int  n, const double * x, bool new_x, double * grad_f)
+{
+  CbcAmplInfo * info = (CbcAmplInfo *) amplInfo;
+  ASL_pfgh* asl = info->asl_;
+  if (!apply_new_x(info,new_x, n, x)) {
+    return false;
+  }
+  int i;
+  
+  if (n_obj==0) {
+    for (i=0; i<n; i++) {
+      grad_f[i] = 0.;
+    }
+  }
+  else {
+    objgrd(0, info->non_const_x_, grad_f, (fint*)info->nerror_);
+    if (info->nerror_) {
+      return false;
+    }
+    
+    if (info->obj_sign_==-1) {
+      for (i=0; i<n; i++) {
+	grad_f[i] = -grad_f[i];
+      }
+    }
+  }
+  return true;
+}
+
+bool eval_g(void * amplInfo,int  n, const double * x, bool new_x, int  m, double * g)
+{
+  CbcAmplInfo * info = (CbcAmplInfo *) amplInfo;
+  ASL_pfgh* asl = info->asl_;
+  assert(n == n_var);
+  assert(m == n_con);
+  
+  if (!apply_new_x(info,new_x, n, x)) {
+    return false;
+  }
+  
+  return internal_conval(info,m, g);
+}
+
+bool eval_jac_g(void * amplInfo,int  n, const double * x, bool new_x,
+		int  m, int  nele_jac, int * iRow,
+		int  *jCol, double * values)
+{
+  CbcAmplInfo * info = (CbcAmplInfo *) amplInfo;
+  ASL_pfgh* asl = info->asl_;
+  assert(n == n_var);
+  assert(m == n_con);
+  int i;
+  
+  if (iRow && jCol && !values) {
+    // setup the structure
+    int  current_nz = 0;
+    for (i=0; i<n_con; i++) {
+      for (cgrad* cg=Cgrad[i]; cg; cg = cg->next) {
+	//iRow[cg->goff] = i + 1;
+	iRow[cg->goff] = i ;
+	jCol[cg->goff] = cg->varno + 1;
+	//				iRow[current_nz] = i + 1;
+	//				jCol[current_nz] = cg->varno+1;
+	current_nz++;
+      }
+    }
+    assert(current_nz == nele_jac);
+    return true;
+  }
+  else if (!iRow && !jCol && values) {
+    if (!apply_new_x(info,new_x, n, x)) {
+      return false;
+    }
+    
+    jacval(info->non_const_x_, values, (fint*)info->nerror_);
+    if (!info->nerror_) {
+      return true;
+    } else {
+      abort();
+    }
+  }
+  else {
+    assert(false && "Invalid combination of iRow, jCol, and values pointers");
+  }
+  
+  return false;
+}
+
+bool eval_h(void * amplInfo,int  n, const double * x, bool new_x,
+	    double  obj_factor, int  m, const double * lambda,
+	    bool new_lambda, int  nele_hess, int * iRow,
+	    int * jCol, double * values)
+{
+  CbcAmplInfo * info = (CbcAmplInfo *) amplInfo;
+  ASL_pfgh* asl = info->asl_;
+  assert(n == n_var);
+  assert(m == n_con);
+  int i;
+  
+  if (iRow && jCol && !values) {
+    // setup the structure
+    int k=0;
+    for (int i=0; i<n; i++) {
+      for (int j=sputinfo->hcolstarts[i]; j<sputinfo->hcolstarts[i+1]; j++) {
+	//iRow[k] = i + 1;
+	iRow[k] = i;
+	jCol[k] = sputinfo->hrownos[j]+1;
+	k++;
+      }
+    }
+    assert(k==nele_hess);
+    return true;
+  }
+  else if (!iRow & !jCol && values) {
+    if (!apply_new_x(info,new_x, n, x)) {
+      return false;
+    }
+    if (!info->objval_called_with_current_x_) {
+      double  dummy;
+      internal_objval(info,dummy);
+      internal_conval(info,m,NULL);
+    }
+    if (!info->conval_called_with_current_x_) {
+      internal_conval(info,m,NULL);
+    }
+    // copy lambda to non_const_lambda - note, we do not store a copy like
+    // we do with x since lambda is only used here and not in other calls
+    double * non_const_lambda = new double [m];
+    for (i=0; i<m; i++) {
+      non_const_lambda[i] = lambda[i];
+    }
+    
+    real ow=info->obj_sign_*obj_factor;
+    sphes(values, -1, &ow, non_const_lambda);
+    
+    delete [] non_const_lambda;
+    return true;
+  }
+  else {
+    assert(false && "Invalid combination of iRow, jCol, and values pointers");
+  }
+  
+  return false;
+}
 void
 CoinModel::gdb( int nonLinear, const char * fileName,const void * info)
 {
@@ -973,6 +1335,163 @@ CoinModel::gdb( int nonLinear, const char * fileName,const void * info)
     /* say we want primal solution */
     want_xpi0=1;
     //double * dualSolution=NULL;
+    // save asl
+    // Fix memory leak one day
+    CbcAmplInfo * info = new CbcAmplInfo;
+    amplGamsData_ = info;
+    info->asl_=NULL; // as wrong form asl;
+    info->nz_h_full_=-1; // number of nonzeros in hessian
+    info->objval_called_with_current_x_=false;
+    info->nerror_=0;
+    info->obj_sign_=direction;
+    info->conval_called_with_current_x_=false;
+    info->non_const_x_=NULL;
+  } else if (nonLinear==2) {
+    // General nonlinear!
+    ASL_pfgh* asl = (ASL_pfgh*)ASL_alloc(ASL_read_pfgh);
+    // was asl = ASL_alloc(ASL_read_fg);
+    nl = jac0dim(stub, (long) strlen(stub));
+    free(stub);
+    suf_declare(suftab, sizeof(suftab)/sizeof(SufDecl));
+    /* read  model*/
+    X0 = (double*) malloc(n_var*sizeof(double));
+    CoinZeroN(X0,n_var);
+    // code stolen from Ipopt
+    int retcode = pfgh_read(nl, ASL_return_read_err | ASL_findgroups);
+
+    switch (retcode) {
+      case ASL_readerr_none : {}
+      break;
+      case ASL_readerr_nofile : {
+        printf( "Cannot open .nl file\n");
+        exit(-1);
+      }
+      break;
+      case ASL_readerr_nonlin : {
+        assert(false); // this better not be an error!
+        printf( "model involves nonlinearities (ed0read)\n");
+        exit(-1);
+      }
+      break;
+      case  ASL_readerr_argerr : {
+        printf( "user-defined function with bad args\n");
+        exit(-1);
+      }
+      break;
+      case ASL_readerr_unavail : {
+        printf( "user-defined function not available\n");
+        exit(-1);
+      }
+      break;
+      case ASL_readerr_corrupt : {
+        printf( "corrupt .nl file\n");
+        exit(-1);
+      }
+      break;
+      case ASL_readerr_bug : {
+        printf( "bug in .nl reader\n");
+        exit(-1);
+      }
+      break;
+      case ASL_readerr_CLP : {
+        printf( "ASL error message: \"solver cannot handle CLP extensions\"\n");
+        exit(-1);
+      }
+      break;
+      default: {
+        printf( "Unknown error in stub file read. retcode = %d\n", retcode);
+        exit(-1);
+      }
+      break;
+    }
+
+    // see "changes" in solvers directory of ampl code...
+    hesset(1,0,1,0,nlc);
+
+    assert (n_obj==1);
+    // find the nonzero structure for the hessian
+    // parameters to sphsetup:
+    int coeff_obj = 1; // coefficient of the objective fn ???
+    int mult_supplied = 1; // multipliers will be supplied
+    int uptri = 1; // only need the upper triangular part
+    // save asl
+    // Fix memory leak one day
+    CbcAmplInfo * info = new CbcAmplInfo;
+    amplGamsData_ = info;
+    info->asl_=asl;
+    // This is not easy to get from ampl so save
+    info->nz_h_full_= sphsetup(-1, coeff_obj, mult_supplied, uptri);
+    info->objval_called_with_current_x_=false;
+    info->nerror_=0;
+    info->obj_sign_=direction;
+    info->conval_called_with_current_x_=false;
+    info->non_const_x_=NULL;
+    /* objective*/
+    objective = (double *) malloc(n_var*sizeof(double));
+    for (i=0;i<n_var;i++)
+      objective[i]=0.0;;
+    if (n_obj) {
+      for (og = Ograd[0];og;og = og->next)
+	objective[og->varno] = og->coef;
+    }
+    if (objtype[0])
+      direction=-1.0;
+    else
+      direction=1.0;
+    objectiveOffset_=objconst(0);
+    /* Column bounds*/
+    columnLower = (double *) malloc(n_var*sizeof(double));
+    columnUpper = (double *) malloc(n_var*sizeof(double));
+    for (i=0;i<n_var;i++) {
+      columnLower[i]=LUv[2*i];
+      if (columnLower[i]<= negInfinity)
+	columnLower[i]=-COIN_DBL_MAX;
+      columnUpper[i]=LUv[2*i+1];
+      if (columnUpper[i]>= Infinity)
+	columnUpper[i]=COIN_DBL_MAX;
+    }
+    // Build by row from scratch
+    //matrixByRow.reserve(n_var,nzc,true);
+    // say row orderded
+    matrixByRow.transpose();
+    /* Row bounds*/
+    rowLower = (double *) malloc(n_con*sizeof(double));
+    rowUpper = (double *) malloc(n_con*sizeof(double));
+    int * column = new int [n_var];
+    double * element = new double [n_var];
+    for (i=0;i<n_con;i++) {
+      rowLower[i]=LUrhs[2*i];
+      if (rowLower[i]<= negInfinity)
+	rowLower[i]=-COIN_DBL_MAX;
+      rowUpper[i]=LUrhs[2*i+1];
+      if (rowUpper[i]>= Infinity)
+	rowUpper[i]=COIN_DBL_MAX;
+      int k=0;
+      for(cgrad * cg = Cgrad[i]; cg; cg = cg->next) {
+	column[k]=cg->varno;
+	double value = cg->coef;
+	if (!value)
+	  value = -1.2345e-29;
+	element[k++]=value;
+      }
+      matrixByRow.appendRow(k,column,element);
+    }
+    delete [] column;
+    delete [] element;
+    numberRows=n_con;
+    numberColumns=n_var;
+    numberElements=nzc;;
+    numberBinary=nbv;
+    numberIntegers=niv;
+    numberAllNonLinearBoth=nlvb;
+    numberIntegerNonLinearBoth=nlvbi;
+    numberAllNonLinearConstraints=nlvc;
+    numberIntegerNonLinearConstraints=nlvci;
+    numberAllNonLinearObjective=nlvo;
+    numberIntegerNonLinearObjective=nlvoi;
+    /* say we want primal solution */
+    want_xpi0=1;
+    //double * dualSolution=NULL;
   } else {
     abort();
   }
@@ -1186,3 +1705,27 @@ CoinModel::gdb( int nonLinear, const char * fileName,const void * info)
     }
   }
 }
+#else
+#include "Cbc_ampl.h"
+int
+readAmpl(ampl_info * info, int argc, char **argv, void ** coinModel)
+{
+  return 0;
+}
+void freeArrays1(ampl_info * info)
+{
+}
+void freeArrays2(ampl_info * info)
+{
+}
+void freeArgs(ampl_info * info)
+{
+}
+int ampl_obj_prec()
+{
+  return 0;
+}
+void writeAmpl(ampl_info * info)
+{
+}
+#endif

@@ -146,6 +146,7 @@ suftab[] = {
 	{ "sosno", 0, ASL_Sufkind_var | ASL_Sufkind_real },
 	{ "sosref", 0, ASL_Sufkind_var | ASL_Sufkind_real },
 	{ "special", 0, ASL_Sufkind_var },
+	{ "special", 0, ASL_Sufkind_con },
 	/*{ "special", 0, ASL_Sufkind_con },*/
 	{ strdup("sstatus"), 0, ASL_Sufkind_var, 0 },
 	{ strdup("sstatus"), 0, ASL_Sufkind_con, 0 },
@@ -177,9 +178,14 @@ mip_stuff(void)
   direction = ddir->u.i;
   dpri = suf_get("priority", ASL_Sufkind_var);
   priority = dpri->u.i;
-  dcut = suf_get("special", ASL_Sufkind_con);
+  dspecial = suf_get("special", ASL_Sufkind_con);
   dcut = suf_get("cut", ASL_Sufkind_con);
   cut = dcut->u.i;
+  if (!cut) {
+    // try special
+    dcut = suf_get("special", ASL_Sufkind_con);
+    cut = dcut->u.i;
+  }
   dspecial = suf_get("special", ASL_Sufkind_var);
   special = dspecial->u.i;
   dpdown = suf_get("downPseudocost", ASL_Sufkind_var);

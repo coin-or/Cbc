@@ -189,6 +189,7 @@ CbcHeuristicFPump::solution(double & solutionValue,
   model_->solver()->getDblParam(OsiDualObjectiveLimit,cutoff);
   double direction = model_->solver()->getObjSense();
   cutoff *= direction;
+  double firstCutoff = fabs(cutoff);
   cutoff = CoinMin(cutoff,solutionValue);
   // check plausible and space for rounded solution
   int numberColumns = model_->getNumCols();
@@ -270,8 +271,12 @@ CbcHeuristicFPump::solution(double & solutionValue,
     numberTries++;
     // Clone solver - otherwise annoys root node computations
     OsiSolverInterface * solver = model_->solver()->clone();
-    // if cutoff exists then add constraint
-    if (fabs(cutoff)<1.0e20&&(fakeCutoff_!=COIN_DBL_MAX||numberTries>1)) {
+    // if cutoff exists then add constraint 
+    bool useCutoff = (fabs(cutoff)<1.0e20&&(fakeCutoff_!=COIN_DBL_MAX||numberTries>1));
+    // but there may be a close one
+    if (firstCutoff<2.0*solutionValue&&numberTries==1) 
+      useCutoff=true;
+    if (useCutoff) {
       cutoff = CoinMin(cutoff,fakeCutoff_);
       const double * objective = solver->getObjCoefficients();
       int numberColumns = solver->getNumCols();

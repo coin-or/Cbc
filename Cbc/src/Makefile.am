@@ -107,7 +107,7 @@ LIBS  += `cat $(CLPOBJDIR)/clp_addlibs.txt`
 if COIN_HAS_ASL
 #cbc_SOURCES += Cbc_ampl.cpp Cbc_ampl.h
 cbc_LDADD += $(ASLLIB)
-AM_CPPFLAGS += $(ASL_CPPFLAGS)
+AM_CPPFLAGS += $(ASL_CPPFLAGS) -DCOIN_HAS_ASL
 endif
 
 endif

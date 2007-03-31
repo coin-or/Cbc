@@ -64,7 +64,7 @@ bin_PROGRAMS = $(am__EXEEXT_1) $(am__EXEEXT_2)
 # If we have the Ampl solver library, we need to add additional things
 #cbc_SOURCES += Cbc_ampl.cpp Cbc_ampl.h
 @COIN_HAS_ASL_TRUE@@COIN_HAS_CLP_TRUE@am__append_4 = $(ASLLIB)
-@COIN_HAS_ASL_TRUE@@COIN_HAS_CLP_TRUE@am__append_5 = $(ASL_CPPFLAGS)
+@COIN_HAS_ASL_TRUE@@COIN_HAS_CLP_TRUE@am__append_5 = $(ASL_CPPFLAGS) -DCOIN_HAS_ASL
 
 ########################################################################
 #                        cbc-generic program                           #
@@ -133,7 +133,7 @@ bin_PROGRAMS = $(am__EXEEXT_1) $(am__EXEEXT_2)
 
 @CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_XPR_TRUE@am__append_32 = $(OSIOBJDIR)/src/OsiXpr/libOsiXpr.la
 subdir = src
-DIST_COMMON = README $(include_HEADERS) $(srcdir)/Makefile.am \
+DIST_COMMON = $(include_HEADERS) $(srcdir)/Makefile.am \
 	$(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/acinclude.m4 \

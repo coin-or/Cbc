@@ -1344,7 +1344,7 @@ CoinModel::gdb( int nonLinear, const char * fileName,const void * info)
     // save asl
     // Fix memory leak one day
     CbcAmplInfo * info = new CbcAmplInfo;
-    amplGamsData_ = info;
+    //amplGamsData_ = info;
     info->asl_=NULL; // as wrong form asl;
     info->nz_h_full_=-1; // number of nonzeros in hessian
     info->objval_called_with_current_x_=false;
@@ -1423,7 +1423,7 @@ CoinModel::gdb( int nonLinear, const char * fileName,const void * info)
     // save asl
     // Fix memory leak one day
     CbcAmplInfo * info = new CbcAmplInfo;
-    amplGamsData_ = info;
+    //amplGamsData_ = info;
     info->asl_=asl;
     // This is not easy to get from ampl so save
     info->nz_h_full_= sphsetup(-1, coeff_obj, mult_supplied, uptri);

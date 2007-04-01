@@ -147,7 +147,7 @@ static void generateCode(CbcModel * model, const char * fileName,int type,int pr
 #endif
 //#############################################################################
 // To use USERCBC or USERCLP uncomment the following define and add in your fake main program in CoinSolve.cpp
-#define USER_HAS_FAKE_MAIN
+//#define USER_HAS_FAKE_MAIN
 //  Start any fake main program
 #ifdef USER_HAS_FAKE_MAIN
 void fakeMain (ClpSimplex & model,OsiSolverInterface & osiSolver, CbcModel & babSolver);

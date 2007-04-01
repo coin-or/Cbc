@@ -146,10 +146,13 @@ static void generateCode(CbcModel * model, const char * fileName,int type,int pr
 #undef NDEBUG
 #endif
 //#############################################################################
-// To use USERCBC or USERCLP uncomment the following define and add in your fake main program here
-//#define USER_HAS_FAKE_MAIN
+// To use USERCBC or USERCLP uncomment the following define and add in your fake main program in CoinSolve.cpp
+#define USER_HAS_FAKE_MAIN
 //  Start any fake main program
 #ifdef USER_HAS_FAKE_MAIN
+void fakeMain (ClpSimplex & model,OsiSolverInterface & osiSolver, CbcModel & babSolver);
+// Clp stuff to reduce problem
+void fakeMain2 (ClpSimplex & model,OsiClpSolverInterface & osiSolver,int options);
 #endif
 //  End any fake main program
 //#############################################################################

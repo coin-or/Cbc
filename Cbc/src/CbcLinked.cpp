@@ -2475,13 +2475,17 @@ OsiSolverLink::analyzeObjects()
     if (!status) {
       convex_[iNon]=1;
       // equality may be ok
-      assert (rowUpper[iRow]<1.0e20);
-      specialOptions2_ |= 8;
+      if (rowUpper[iRow]<1.0e20)
+	specialOptions2_ |= 8;
+      else
+	convex_[iNon]=0;
     } else if (!statusNegative) {
       convex_[iNon]=-1;
       // equality may be ok
-      assert (rowLower[iRow]>-1.0e20);
-      specialOptions2_ |= 8;
+      if (rowLower[iRow]>-1.0e20)
+	specialOptions2_ |= 8;
+      else
+	convex_[iNon]=0;
     } else {
       convex_[iNon]=0;
     }

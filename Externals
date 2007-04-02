@@ -1,4 +1,4 @@
-MSVisualStudio   https://projects.coin-or.org/svn/MSVisualStudio/stable/1.0/ExternalsDirs/Cbc
+MSVisualStudio   https://projects.coin-or.org/svn/MSVisualStudio/trunk/ExternalsDirs/Cbc
 BuildTools    https://projects.coin-or.org/svn/BuildTools/stable/0.5
 ThirdParty/ASL https://projects.coin-or.org/svn/BuildTools/ThirdParty/ASL/stable/1.0
 Data/Netlib   https://projects.coin-or.org/svn/Data/stable/1.0/Netlib

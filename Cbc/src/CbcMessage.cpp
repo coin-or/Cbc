@@ -1,10 +1,7 @@
 // Copyright (C) 2002, International Business Machines
 // Corporation and others.  All Rights Reserved.
-#if defined(_MSC_VER)
-// Turn off compiler warning about long names
-#  pragma warning(disable:4786)
-#endif
 
+#include "CoinPragma.hpp"
 #include "CbcMessage.hpp"
 
 typedef struct {

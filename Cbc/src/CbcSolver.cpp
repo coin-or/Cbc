@@ -2759,6 +2759,7 @@ int CbcMain (int argc, const char *argv[],
                 OsiClpSolverInterface * si =
                   dynamic_cast<OsiClpSolverInterface *>(solver) ;
 		ClpSimplex * clpSolver = si->getModelPtr();
+		clpSolver->setSpecialOptions(clpSolver->specialOptions()|0x01000000); // say is Cbc (and in branch and bound)
 		if (!complicatedInteger&&clpSolver->tightenPrimalBounds()!=0) {
 		  std::cout<<"Problem is infeasible - tightenPrimalBounds!"<<std::endl;
 		  exit(1);
@@ -5433,13 +5434,13 @@ int CbcMain (int argc, const char *argv[],
 	  case NETLIB_TUNE:
 	    {
 	      printf("unit test is now only from clp - does same thing\n");
-	      return(22);
+	      //return(22);
 	    }
 	    break;
 	  case UNITTEST:
 	    {
 	      printf("unit test is now only from clp - does same thing\n");
-	      return(22);
+	      //return(22);
 	    }
 	    break;
 	  case FAKEBOUND:

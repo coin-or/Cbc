@@ -1405,6 +1405,31 @@ int CbcMain (int argc, const char *argv[],
 	clpSolver->messageHandler()->setLogLevel(0) ;
 	testOsiParameters=0;
 	complicatedInteger=1;
+	if (info.cut) {
+	  printf("warning - cuts with LOS\n");
+	  int numberRows = info.numberRows;
+	  int * whichRow = new int [numberRows];
+	  // Row copy
+	  const CoinPackedMatrix * matrixByRow = solver->getMatrixByRow();
+	  const double * elementByRow = matrixByRow->getElements();
+	  const int * column = matrixByRow->getIndices();
+	  const CoinBigIndex * rowStart = matrixByRow->getVectorStarts();
+	  const int * rowLength = matrixByRow->getVectorLengths();
+	  
+	  const double * rowLower = solver->getRowLower();
+	  const double * rowUpper = solver->getRowUpper();
+	  int nDelete=0;
+	  for (int iRow=0;iRow<numberRows;iRow++) {
+	    if (info.cut[iRow]) {
+	      whichRow[nDelete++]=iRow;
+	      int start = rowStart[iRow];
+	      storedAmpl.addCut(rowLower[iRow],rowUpper[iRow],
+				rowLength[iRow],column+start,elementByRow+start);
+	    }
+	  }
+	  solver->deleteRows(nDelete,whichRow);
+	  delete [] whichRow;
+	}
       }
 #endif
       // If we had a solution use it
@@ -4112,14 +4137,6 @@ int CbcMain (int argc, const char *argv[],
 		    delete [] newColumn;
 		    delete [] buildColumn;
 		  }
-		  if (storedAmpl.sizeRowCuts()) {
-		    //babModel->addCutGenerator(&storedAmpl,1,"AmplStored");
-		    int numberRowCuts = storedAmpl.sizeRowCuts();
-		    for (int i=0;i<numberRowCuts;i++) {
-		      const OsiRowCut * rowCutPointer = storedAmpl.rowCutPointer(i);
-		      babModel->makeGlobalCut(rowCutPointer);
-		    }
-		  }
 		}
 #endif
 #ifdef CLP_MALLOC_STATISTICS
@@ -4213,6 +4230,14 @@ int CbcMain (int argc, const char *argv[],
 		  }
 		}
 #endif
+		if (storedAmpl.sizeRowCuts()) {
+		  //babModel->addCutGenerator(&storedAmpl,1,"AmplStored");
+		  int numberRowCuts = storedAmpl.sizeRowCuts();
+		  for (int i=0;i<numberRowCuts;i++) {
+		    const OsiRowCut * rowCutPointer = storedAmpl.rowCutPointer(i);
+		    babModel->makeGlobalCut(rowCutPointer);
+		  }
+		}
                 babModel->branchAndBound(statistics);
 #ifdef CLP_MALLOC_STATISTICS
 		malloc_stats();

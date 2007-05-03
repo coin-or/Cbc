@@ -376,11 +376,11 @@ readAmpl(ampl_info * info, int argc, char **argv, void ** coinModel)
   int testOsi=-1;
   for (i=0;i<saveArgc;i++) {
     if (!strncmp(saveArgv[i],"testosi",7)) {
-      testOsi = atoi(saveArgv[i+1]);
+      testOsi = atoi(saveArgv[i]+8);
       break;
     }
   }
-  if (!(nlvc+nlvo)||testOsi>=10) {
+  if (!(nlvc+nlvo)&&testOsi<10) {
     /* read linear model*/
     f_read(nl,0);
     // see if any sos

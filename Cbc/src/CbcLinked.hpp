@@ -12,9 +12,9 @@
 #define COIN_HAS_LINK
 #endif
 #endif
+#include "CoinModel.hpp"
 #ifdef COIN_HAS_LINK
 #include "OsiClpSolverInterface.hpp"
-#include "CoinModel.hpp"
 class CbcModel;
 class CoinPackedMatrix;
 class OsiLinkedBound;
@@ -1142,4 +1142,12 @@ protected:
   //@}
 };
 #endif
+class ClpSimplex;
+/** Return an approximate solution to a CoinModel.
+    Lots of bounds may be odd to force a solution.
+    mode = 0 just tries to get a continuous solution
+*/
+ClpSimplex * approximateSolution(CoinModel & coinModel, 
+				 int numberPasses, double deltaTolerance,
+				 int mode=0);
 #endif

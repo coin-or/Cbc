@@ -2376,7 +2376,17 @@ int CbcMain (int argc, const char *argv[],
 		model2->initialSolve(solveOptions);
 	      } else {
 		// special solver
-		double * solution = linkSolver->nonlinearSLP(slpValue,1.0e-5);
+		int testOsiOptions = parameters[whichParam(TESTOSI,numberParameters,parameters)].intValue();
+		double * solution = NULL;
+		if (testOsiOptions<10) {
+		  solution = linkSolver->nonlinearSLP(slpValue,1.0e-5);
+		} else {
+		  CoinModel coinModel = *linkSolver->coinModel();
+		  ClpSimplex * tempModel = approximateSolution(coinModel,slpValue>0 ? slpValue : 20 ,1.0e-5,0);
+		  assert (tempModel);
+		  solution = CoinCopyOfArray(tempModel->primalColumnSolution(),coinModel.numberColumns());
+		  delete tempModel;
+		}
 		if (solution) {
 		  memcpy(model2->primalColumnSolution(),solution,
 			 CoinMin(model2->numberColumns(),linkSolver->coinModel()->numberColumns())*sizeof(double));
@@ -2590,7 +2600,8 @@ int CbcMain (int argc, const char *argv[],
 		  ClpQuadraticObjective * obj = (dynamic_cast< ClpQuadraticObjective*>(lpSolver->objectiveAsObject()));
 		  if (obj) {
 		    preProcess=0;
-		    parameters[whichParam(TESTOSI,numberParameters,parameters)].setIntValue(0);
+		    int testOsiOptions = parameters[whichParam(TESTOSI,numberParameters,parameters)].intValue();
+		    parameters[whichParam(TESTOSI,numberParameters,parameters)].setIntValue(CoinMax(0,testOsiOptions));
 		    // create coin model
 		    coinModel = lpSolver->createCoinModel();
 		    assert (coinModel);

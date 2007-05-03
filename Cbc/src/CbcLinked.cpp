@@ -7,6 +7,90 @@
 #define COIN_HAS_LINK
 #endif
 #endif
+#include "CoinTime.hpp"
+
+#include "CoinHelperFunctions.hpp"
+#include "CoinModel.hpp"
+#include "ClpSimplex.hpp"
+// returns jColumn (-2 if linear term, -1 if unknown) and coefficient
+static
+int decodeBit(char * phrase, char * & nextPhrase, double & coefficient, bool ifFirst, const CoinModel & model)
+{
+  char * pos = phrase;
+  // may be leading - (or +)
+  char * pos2 = pos;
+  double value=1.0;
+  if (*pos2=='-'||*pos2=='+')
+    pos2++;
+  // next terminator * or + or -
+  while (*pos2) {
+    if (*pos2=='*') {
+      break;
+    } else if (*pos2=='-'||*pos2=='+') {
+      if (pos2==pos||*(pos2-1)!='e')
+	break;
+    }
+    pos2++;
+  }
+  // if * must be number otherwise must be name
+  if (*pos2=='*') {
+    char * pos3 = pos;
+    while (pos3!=pos2) {
+      char x = *pos3;
+      pos3++;
+      assert ((x>='0'&&x<='9')||x=='.'||x=='+'||x=='-'||x=='e');
+    }
+    char saved = *pos2;
+    *pos2='\0';
+    value = atof(pos);
+    *pos2=saved;
+    // and down to next
+    pos2++;
+    pos=pos2;
+    while (*pos2) {
+      if (*pos2=='-'||*pos2=='+')
+	break;
+      pos2++;
+    }
+  }
+  char saved = *pos2;
+  *pos2='\0';
+  // now name
+  // might have + or -
+  if (*pos=='+') {
+    pos++;
+  } else if (*pos=='-') {
+    pos++;
+    assert (value==1.0);
+    value = - value;
+  }
+  int jColumn = model.column(pos);
+  // must be column unless first when may be linear term
+  if (jColumn<0) {
+    if (ifFirst) {
+      char * pos3 = pos;
+      while (pos3!=pos2) {
+	char x = *pos3;
+	pos3++;
+	assert ((x>='0'&&x<='9')||x=='.'||x=='+'||x=='-'||x=='e');
+      }
+      assert(*pos2=='\0');
+      // keep possible -
+      value = value * atof(pos);
+      jColumn=-2;
+    } else {
+      // bad
+      *pos2=saved;
+      printf("bad nonlinear term %s\n",phrase);
+      abort();
+    }
+  }
+  *pos2=saved;
+  pos=pos2;
+  coefficient=value;
+  nextPhrase = pos;
+  return jColumn;
+}
 #ifdef COIN_HAS_LINK
 #include <cassert>
 #if defined(_MSC_VER)
@@ -14,13 +98,8 @@
 #  pragma warning(disable:4786)
 #endif
 #include "CbcLinked.hpp"
-#include "CoinTime.hpp"
-
-#include "CoinHelperFunctions.hpp"
 #include "CoinIndexedVector.hpp"
 #include "CoinMpsIO.hpp"
-#include "CoinModel.hpp"
-#include "ClpSimplex.hpp"
 //#include "OsiSolverLink.hpp"
 //#include "OsiBranchLink.hpp"
 #include "ClpPackedMatrix.hpp"
@@ -827,85 +906,6 @@ static void fakeBounds(OsiSolverInterface * solver,int column,double maximumValu
   double up = solver->getColUpper()[column];
   if (up>maximumValue)
     solver->setColUpper(column,maximumValue);
-}
-// returns jColumn (-2 if linear term, -1 if unknown) and coefficient
-static
-int decodeBit(char * phrase, char * & nextPhrase, double & coefficient, bool ifFirst, const CoinModel & model)
-{
-  char * pos = phrase;
-  // may be leading - (or +)
-  char * pos2 = pos;
-  double value=1.0;
-  if (*pos2=='-'||*pos2=='+')
-    pos2++;
-  // next terminator * or + or -
-  while (*pos2) {
-    if (*pos2=='*') {
-      break;
-    } else if (*pos2=='-'||*pos2=='+') {
-      if (pos2==pos||*(pos2-1)!='e')
-	break;
-    }
-    pos2++;
-  }
-  // if * must be number otherwise must be name
-  if (*pos2=='*') {
-    char * pos3 = pos;
-    while (pos3!=pos2) {
-      char x = *pos3;
-      pos3++;
-      assert ((x>='0'&&x<='9')||x=='.'||x=='+'||x=='-'||x=='e');
-    }
-    char saved = *pos2;
-    *pos2='\0';
-    value = atof(pos);
-    *pos2=saved;
-    // and down to next
-    pos2++;
-    pos=pos2;
-    while (*pos2) {
-      if (*pos2=='-'||*pos2=='+')
-	break;
-      pos2++;
-    }
-  }
-  char saved = *pos2;
-  *pos2='\0';
-  // now name
-  // might have + or -
-  if (*pos=='+') {
-    pos++;
-  } else if (*pos=='-') {
-    pos++;
-    assert (value==1.0);
-    value = - value;
-  }
-  int jColumn = model.column(pos);
-  // must be column unless first when may be linear term
-  if (jColumn<0) {
-    if (ifFirst) {
-      char * pos3 = pos;
-      while (pos3!=pos2) {
-	char x = *pos3;
-	pos3++;
-	assert ((x>='0'&&x<='9')||x=='.'||x=='+'||x=='-'||x=='e');
-      }
-      assert(*pos2=='\0');
-      // keep possible -
-      value = value * atof(pos);
-      jColumn=-2;
-    } else {
-      // bad
-      *pos2=saved;
-      printf("bad nonlinear term %s\n",phrase);
-      abort();
-    }
-  }
-  *pos2=saved;
-  pos=pos2;
-  coefficient=value;
-  nextPhrase = pos;
-  return jColumn;
 }
 void OsiSolverLink::load ( CoinModel & coinModel, bool tightenBounds,int logLevel)
 {
@@ -6484,3 +6484,225 @@ CoinModel::expandKnapsack(int knapsackRow, int & numberOutput,double * buildObj,
   return nelCreate;
 }
 #endif
+#include "ClpConstraint.hpp"
+#include "ClpConstraintLinear.hpp"
+/* Return an approximate solution to a CoinModel.
+    Lots of bounds may be odd to force a solution.
+    mode = 0 just tries to get a continuous solution
+*/
+ClpSimplex * 
+approximateSolution(CoinModel & coinModel, 
+		    int numberPasses, double deltaTolerance,
+		    int mode)
+{
+  // first check and set up arrays
+  int numberColumns = coinModel.numberColumns();
+  int numberRows = coinModel.numberRows();
+  // List of nonlinear rows
+  int * which = new int[numberRows+1];
+  bool testLinear=true;
+  int numberConstraints=0;
+  int iColumn;
+  // matrix etc will be changed
+  CoinModel coinModel2 = coinModel;
+  bool linearObjective=true;
+  int maximumQuadraticElements=0;
+  for (iColumn=0;iColumn<numberColumns;iColumn++) {
+    // See if quadratic objective
+    const char * expr = coinModel.getColumnObjectiveAsString(iColumn);
+    if (strcmp(expr,"Numeric")) {
+      linearObjective=false;
+      // check if value*x+-value*y....
+      assert (strlen(expr)<20000);
+      char temp[20000];
+      strcpy(temp,expr);
+      char * pos = temp;
+      bool ifFirst=true;
+      double linearTerm=0.0;
+      while (*pos) {
+	double value;
+	int jColumn = decodeBit(pos, pos, value, ifFirst, coinModel);
+	// must be column unless first when may be linear term
+	if (jColumn>=0) {
+	  maximumQuadraticElements++;
+	} else if (jColumn==-2) {
+	  linearTerm = value;
+	} else {
+	  printf("bad nonlinear term %s\n",temp);
+	  abort();
+	}
+	ifFirst=false;
+      }
+    }
+  }
+  if (!linearObjective) {
+    // zero objective
+    for (iColumn=0;iColumn<numberColumns;iColumn++) 
+      coinModel2.setObjective(iColumn,0.0);
+    which[numberConstraints++]=-1;
+  }
+  int iRow;
+  for (iRow=0;iRow<numberRows;iRow++) {   
+    int numberQuadratic=0;
+    bool linear=true;
+    CoinModelLink triple=coinModel.firstInRow(iRow);
+    while (triple.column()>=0) {
+      int iColumn = triple.column();
+      const char *  expr = coinModel.getElementAsString(iRow,iColumn);
+      if (strcmp("Numeric",expr)) {
+	linear=false;
+	// check if value*x+-value*y....
+	assert (strlen(expr)<20000);
+	char temp[20000];
+	strcpy(temp,expr);
+	char * pos = temp;
+	bool ifFirst=true;
+	double linearTerm=0.0;
+	while (*pos) {
+	  double value;
+	  int jColumn = decodeBit(pos, pos, value, ifFirst, coinModel);
+	  // must be column unless first when may be linear term
+	  if (jColumn>=0) {
+	    numberQuadratic++;
+	  } else if (jColumn==-2) {
+	    linearTerm = value;
+	  } else {
+	    printf("bad nonlinear term %s\n",temp);
+	    abort();
+	  }
+	  ifFirst=false;
+	}
+      }
+      triple=coinModel.next(triple);
+    }
+    if (!linear||testLinear) {
+      CoinModelLink triple=coinModel.firstInRow(iRow);
+      while (triple.column()>=0) {
+	int iColumn = triple.column();
+	coinModel2.setElement(iRow,iColumn,0.0);
+	triple=coinModel.next(triple);
+      }
+      which[numberConstraints++]=iRow;
+      maximumQuadraticElements=CoinMax(maximumQuadraticElements,numberQuadratic);
+    }
+  }
+  ClpSimplex * model = new ClpSimplex();
+  // return if nothing
+  if (!numberConstraints) {
+    delete [] which;
+    model->loadProblem(coinModel);
+    model->dual();
+    return model;
+  } 
+  // space for quadratic
+  CoinBigIndex * startQuadratic = new CoinBigIndex [numberColumns+1];
+  int * columnQuadratic = new int [maximumQuadraticElements];
+  double * elementQuadratic = new double [maximumQuadraticElements];
+  ClpConstraint ** constraints = new ClpConstraint * [numberConstraints];
+  double * linearTerm = new double [numberColumns];
+  int saveNumber=numberConstraints;
+  numberConstraints=0;
+  if (!linearObjective) {
+    int numberQuadratic=0;
+    CoinZeroN(linearTerm,numberColumns);
+    for (iColumn=0;iColumn<numberColumns;iColumn++) {
+      startQuadratic[iColumn] = numberQuadratic;
+      // See if quadratic objective
+      const char * expr = coinModel.getColumnObjectiveAsString(iColumn);
+      if (strcmp(expr,"Numeric")) {
+	// value*x*y
+	char temp[20000];
+	strcpy(temp,expr);
+	char * pos = temp;
+	bool ifFirst=true;
+	while (*pos) {
+	  double value;
+	  int jColumn = decodeBit(pos, pos, value, ifFirst, coinModel);
+	  // must be column unless first when may be linear term
+	  if (jColumn>=0) {
+	    columnQuadratic[numberQuadratic]=jColumn;
+	    elementQuadratic[numberQuadratic++]=2.0*value; // convention
+	  } else if (jColumn==-2) {
+	    linearTerm[iColumn] = value;
+	  } else {
+	    printf("bad nonlinear term %s\n",temp);
+	    abort();
+	  }
+	  ifFirst=false;
+	}
+      }
+    }
+    startQuadratic[numberColumns] = numberQuadratic;
+    // here we create ClpConstraint
+    abort();
+  }
+  int iConstraint;
+  for (iConstraint=0;iConstraint<saveNumber;iConstraint++) {
+    iRow = which[iConstraint];
+    if (iRow>=0) {
+      int numberQuadratic=0;
+      CoinZeroN(linearTerm,numberColumns);
+      CoinModelLink triple=coinModel.firstInRow(iRow);
+      while (triple.column()>=0) {
+	int iColumn = triple.column();
+	const char *  expr = coinModel.getElementAsString(iRow,iColumn);
+	if (strcmp("Numeric",expr)) {
+	  // value*x*y
+	  char temp[20000];
+	  strcpy(temp,expr);
+	  char * pos = temp;
+	  bool ifFirst=true;
+	  while (*pos) {
+	    double value;
+	    int jColumn = decodeBit(pos, pos, value, ifFirst, coinModel);
+	    // must be column unless first when may be linear term
+	    if (jColumn>=0) {
+	      columnQuadratic[numberQuadratic]=jColumn;
+	      elementQuadratic[numberQuadratic++]=2.0*value; // convention
+	    } else if (jColumn==-2) {
+	      linearTerm[iColumn] = value;
+	    } else {
+	      printf("bad nonlinear term %s\n",temp);
+	      abort();
+	    }
+	    ifFirst=false;
+	  }
+	}
+	triple=coinModel.next(triple);
+      }
+      startQuadratic[numberColumns] = numberQuadratic;
+      // here we create ClpConstraint
+      if (testLinear) {
+	int n=0;
+	int * indices = new int[numberColumns];
+	for (int j=0;j<numberColumns;j++) {
+	  if (linearTerm[j]) {
+	    linearTerm[n]=linearTerm[j];
+	    indices[n++]=j;
+	  }
+	}
+	/// Constructor from constraint
+	constraints[numberConstraints++] = new ClpConstraintLinear(iRow, n, numberColumns,
+		      indices,linearTerm);
+	delete [] indices;
+      } else {
+	abort();
+      }
+    }
+  }
+  delete [] startQuadratic;
+  delete [] columnQuadratic;
+  delete [] elementQuadratic;
+  delete [] linearTerm;
+  delete [] which;
+  model->loadProblem(coinModel2);
+  int returnCode = model->nonlinearSLP(numberConstraints, constraints,
+				       numberPasses,deltaTolerance);
+  for (iConstraint=0;iConstraint<saveNumber;iConstraint++) 
+    delete constraints[iConstraint];
+  
+  delete [] constraints;
+  assert (!returnCode);
+  abort();
+  return model;
+}

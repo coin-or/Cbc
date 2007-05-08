@@ -2402,7 +2402,7 @@ int CbcMain (int argc, const char *argv[],
               if (dualize) {
                 int returnCode=((ClpSimplexOther *) lpSolver)->restoreFromDual(model2);
                 delete model2;
-		if (returnCode)
+		if (returnCode&&dualize!=2)
 		  lpSolver->primal(1);
                 model2=lpSolver;
               }

@@ -59,6 +59,11 @@ public:
       Return cutoff and OA cut
   */
   double linearizedBAB(CglStored * cut) ;
+  /** Solves nonlinear problem from CoinModel using SLP - and then tries to get
+      heuristic solution
+      Returns solution array
+  */
+  double * heuristicSolution(int numberPasses,double deltaTolerance,int mode);
   //@}
   
   

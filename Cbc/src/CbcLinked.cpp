@@ -2355,6 +2355,212 @@ OsiSolverLink::linearizedBAB(CglStored * cut)
   } 
   return bestObjectiveValue;
 }
+/* Solves nonlinear problem from CoinModel using SLP - and then tries to get
+   heuristic solution
+   Returns solution array
+*/
+double * 
+OsiSolverLink::heuristicSolution(int numberPasses,double deltaTolerance,int mode)
+{
+  // get a solution
+  CoinModel tempModel = coinModel_;
+  ClpSimplex * temp = approximateSolution(tempModel, numberPasses, deltaTolerance);
+  int numberColumns = coinModel_.numberColumns();
+  double * solution = CoinCopyOfArray(temp->primalColumnSolution(),numberColumns);
+  delete temp;
+  OsiClpSolverInterface newSolver;
+  if (mode==1) {
+    // round all with priority < biLinearPriority_
+    setFixedPriority(biLinearPriority_);
+    // ? should we save and restore coin model
+    tempModel = coinModel_;
+    // solve modified problem
+    for (int iObject =0;iObject<numberObjects_;iObject++) {
+      OsiSimpleInteger * obj = dynamic_cast<OsiSimpleInteger *> (object_[iObject]);
+      if (obj&&obj->priority()<biLinearPriority_) {
+	int iColumn = obj->columnNumber();
+	double value = solution[iColumn];
+	value = ceil(value-1.0e-7);
+	tempModel.associateElement(coinModel_.columnName(iColumn),value);
+      }
+    }
+    newSolver.loadFromCoinModel(tempModel,true);
+    for (int iObject =0;iObject<numberObjects_;iObject++) {
+      OsiSimpleInteger * obj = dynamic_cast<OsiSimpleInteger *> (object_[iObject]);
+      if (obj&&obj->priority()<biLinearPriority_) {
+	int iColumn = obj->columnNumber();
+	double value = solution[iColumn];
+	value = ceil(value-1.0e-7);
+	newSolver.setColLower(iColumn,value);
+	newSolver.setColUpper(iColumn,value);
+      }
+    }
+  }
+  CbcModel model(newSolver);
+  // Now do requested saves and modifications
+  CbcModel * cbcModel = & model;
+  OsiSolverInterface * osiModel = model.solver();
+  OsiClpSolverInterface * osiclpModel = dynamic_cast< OsiClpSolverInterface*> (osiModel);
+  ClpSimplex * clpModel = osiclpModel->getModelPtr();
+  CglProbing probing;
+  probing.setMaxProbe(10);
+  probing.setMaxLook(10);
+  probing.setMaxElements(200);
+  probing.setMaxProbeRoot(50);
+  probing.setMaxLookRoot(10);
+  probing.setRowCuts(3);
+  probing.setRowCuts(0);
+  probing.setUsingObjective(true);
+  cbcModel->addCutGenerator(&probing,-1,"Probing",true,false,false,-100,-1,-1);
+  
+  CglGomory gomory;
+  gomory.setLimitAtRoot(512);
+  cbcModel->addCutGenerator(&gomory,-98,"Gomory",true,false,false,-100,-1,-1);
+  
+  CglKnapsackCover knapsackCover;
+  cbcModel->addCutGenerator(&knapsackCover,-98,"KnapsackCover",true,false,false,-100,-1,-1);
+  
+  CglClique clique;
+  clique.setStarCliqueReport(false);
+  clique.setRowCliqueReport(false);
+  clique.setMinViolation(0.1);
+  cbcModel->addCutGenerator(&clique,-98,"Clique",true,false,false,-100,-1,-1);
+  CglMixedIntegerRounding2 mixedIntegerRounding2;
+  cbcModel->addCutGenerator(&mixedIntegerRounding2,-98,"MixedIntegerRounding2",true,false,false,-100,-1,-1);
+  
+  CglFlowCover flowCover;
+  cbcModel->addCutGenerator(&flowCover,-98,"FlowCover",true,false,false,-100,-1,-1);
+  
+  CglTwomir twomir;
+  twomir.setMaxElements(250);
+  cbcModel->addCutGenerator(&twomir,-99,"Twomir",true,false,false,-100,-1,-1);
+  cbcModel->cutGenerator(6)->setTiming(true);
+  
+  CbcHeuristicFPump heuristicFPump(*cbcModel);
+  heuristicFPump.setWhen(1);
+  heuristicFPump.setMaximumPasses(20);
+  heuristicFPump.setDefaultRounding(0.5);
+  cbcModel->addHeuristic(&heuristicFPump);
+  
+  CbcRounding rounding(*cbcModel);
+  cbcModel->addHeuristic(&rounding);
+  
+  CbcHeuristicLocal heuristicLocal(*cbcModel);
+  heuristicLocal.setSearchType(1);
+  cbcModel->addHeuristic(&heuristicLocal);
+  
+  CbcHeuristicGreedyCover heuristicGreedyCover(*cbcModel);
+  cbcModel->addHeuristic(&heuristicGreedyCover);
+  
+  CbcHeuristicGreedyEquality heuristicGreedyEquality(*cbcModel);
+  cbcModel->addHeuristic(&heuristicGreedyEquality);
+  
+  CbcCompareDefault compare;
+  cbcModel->setNodeComparison(compare);
+  cbcModel->setNumberBeforeTrust(5);
+  cbcModel->setSpecialOptions(2);
+  cbcModel->messageHandler()->setLogLevel(1);
+  cbcModel->setMaximumCutPassesAtRoot(-100);
+  cbcModel->setMaximumCutPasses(1);
+  cbcModel->setMinimumDrop(0.05);
+  clpModel->setNumberIterations(1);
+  // For branchAndBound this may help
+  clpModel->defaultFactorizationFrequency();
+  clpModel->setDualBound(6.71523e+07);
+  clpModel->setPerturbation(50);
+  osiclpModel->setSpecialOptions(193);
+  osiclpModel->messageHandler()->setLogLevel(0);
+  osiclpModel->setIntParam(OsiMaxNumIterationHotStart,100);
+  osiclpModel->setHintParam(OsiDoReducePrint,true,OsiHintTry);
+  // You can save some time by switching off message building
+  // clpModel->messagesPointer()->setDetailMessages(100,10000,(int *) NULL);
+  // Solve
+  
+  cbcModel->initialSolve();
+  //double cutoff = model_->getCutoff();
+  if (!cbcModel_) 
+    cbcModel->setCutoff(1.0e50);
+  else
+    cbcModel->setCutoff(cbcModel_->getCutoff());
+  // to change exits
+  bool isFeasible=false;
+  int saveLogLevel=clpModel->logLevel();
+  clpModel->setLogLevel(0);
+  int returnCode=0;
+  if (clpModel->tightenPrimalBounds()!=0) {
+    clpModel->setLogLevel(saveLogLevel);
+    returnCode=-1; // infeasible//std::cout<<"Problem is infeasible - tightenPrimalBounds!"<<std::endl;
+    clpModel->writeMps("infeas2.mps");
+  } else {
+    clpModel->setLogLevel(saveLogLevel);
+    clpModel->dual();  // clean up
+    // compute some things using problem size
+    cbcModel->setMinimumDrop(min(5.0e-2,
+				 fabs(cbcModel->getMinimizationObjValue())*1.0e-3+1.0e-4));
+    if (cbcModel->getNumCols()<500)
+      cbcModel->setMaximumCutPassesAtRoot(-100); // always do 100 if possible
+    else if (cbcModel->getNumCols()<5000)
+      cbcModel->setMaximumCutPassesAtRoot(100); // use minimum drop
+    else
+      cbcModel->setMaximumCutPassesAtRoot(20);
+    cbcModel->setMaximumCutPasses(1);
+    // Hand coded preprocessing
+    CglPreProcess process;
+    OsiSolverInterface * saveSolver=cbcModel->solver()->clone();
+    // Tell solver we are in Branch and Cut
+    saveSolver->setHintParam(OsiDoInBranchAndCut,true,OsiHintDo) ;
+    // Default set of cut generators
+    CglProbing generator1;
+    generator1.setUsingObjective(true);
+    generator1.setMaxPass(3);
+    generator1.setMaxProbeRoot(saveSolver->getNumCols());
+    generator1.setMaxElements(100);
+    generator1.setMaxLookRoot(50);
+    generator1.setRowCuts(3);
+    // Add in generators
+    process.addCutGenerator(&generator1);
+    process.messageHandler()->setLogLevel(cbcModel->logLevel());
+    OsiSolverInterface * solver2 = 
+      process.preProcessNonDefault(*saveSolver,0,10);
+    // Tell solver we are not in Branch and Cut
+    saveSolver->setHintParam(OsiDoInBranchAndCut,false,OsiHintDo) ;
+    if (solver2)
+      solver2->setHintParam(OsiDoInBranchAndCut,false,OsiHintDo) ;
+    if (!solver2) {
+      std::cout<<"Pre-processing says infeasible!"<<std::endl;
+      delete saveSolver;
+      returnCode=-1;
+    } else {
+      std::cout<<"processed model has "<<solver2->getNumRows()
+	       <<" rows, "<<solver2->getNumCols()
+	       <<" and "<<solver2->getNumElements()<<std::endl;
+      // we have to keep solver2 so pass clone
+      solver2 = solver2->clone();
+      //solver2->writeMps("intmodel");
+      cbcModel->assignSolver(solver2);
+      cbcModel->initialSolve();
+      cbcModel->branchAndBound();
+      // For best solution
+      int numberColumns = newSolver.getNumCols();
+      if (cbcModel->getMinimizationObjValue()<1.0e50) {
+	// post process
+	process.postProcess(*cbcModel->solver());
+	// Solution now back in saveSolver
+	cbcModel->assignSolver(saveSolver);
+	memcpy(cbcModel->bestSolution(),cbcModel->solver()->getColSolution(),
+	       numberColumns*sizeof(double));
+	// put back in original solver
+	newSolver.setColSolution(cbcModel->bestSolution());
+	isFeasible=true;
+      } else {
+	delete saveSolver;
+      }
+    }
+  }
+  assert (!returnCode);
+  abort();
+  return solution;
+}
 // Analyze constraints to see which are convex (quadratic)
 void 
 OsiSolverLink::analyzeObjects()
@@ -6486,6 +6692,7 @@ CoinModel::expandKnapsack(int knapsackRow, int & numberOutput,double * buildObj,
 #endif
 #include "ClpConstraint.hpp"
 #include "ClpConstraintLinear.hpp"
+#include "ClpConstraintQuadratic.hpp"
 /* Return an approximate solution to a CoinModel.
     Lots of bounds may be odd to force a solution.
     mode = 0 just tries to get a continuous solution
@@ -6500,7 +6707,7 @@ approximateSolution(CoinModel & coinModel,
   int numberRows = coinModel.numberRows();
   // List of nonlinear rows
   int * which = new int[numberRows+1];
-  bool testLinear=true;
+  bool testLinear=false;
   int numberConstraints=0;
   int iColumn;
   // matrix etc will be changed
@@ -6593,8 +6800,10 @@ approximateSolution(CoinModel & coinModel,
     model->loadProblem(coinModel);
     model->dual();
     return model;
-  } 
+  }
   // space for quadratic
+  // allow for linear term
+  maximumQuadraticElements += numberColumns;
   CoinBigIndex * startQuadratic = new CoinBigIndex [numberColumns+1];
   int * columnQuadratic = new int [maximumQuadraticElements];
   double * elementQuadratic = new double [maximumQuadraticElements];
@@ -6604,12 +6813,14 @@ approximateSolution(CoinModel & coinModel,
   numberConstraints=0;
   if (!linearObjective) {
     int numberQuadratic=0;
+    int largestColumn=-1;
     CoinZeroN(linearTerm,numberColumns);
     for (iColumn=0;iColumn<numberColumns;iColumn++) {
       startQuadratic[iColumn] = numberQuadratic;
       // See if quadratic objective
       const char * expr = coinModel.getColumnObjectiveAsString(iColumn);
       if (strcmp(expr,"Numeric")) {
+	largestColumn = CoinMax(largestColumn,iColumn);
 	// value*x*y
 	char temp[20000];
 	strcpy(temp,expr);
@@ -6622,31 +6833,52 @@ approximateSolution(CoinModel & coinModel,
 	  if (jColumn>=0) {
 	    columnQuadratic[numberQuadratic]=jColumn;
 	    elementQuadratic[numberQuadratic++]=2.0*value; // convention
+	    largestColumn = CoinMax(largestColumn,jColumn);
 	  } else if (jColumn==-2) {
 	    linearTerm[iColumn] = value;
+	    // and put in as row -1
+	    columnQuadratic[numberQuadratic]=-1;
+	    elementQuadratic[numberQuadratic++]=value;
+	    largestColumn = CoinMax(largestColumn,iColumn);
 	  } else {
 	    printf("bad nonlinear term %s\n",temp);
 	    abort();
 	  }
 	  ifFirst=false;
 	}
+      } else {
+	// linear part
+	linearTerm[iColumn] = coinModel.getColumnObjective(iColumn);
+	// and put in as row -1
+	columnQuadratic[numberQuadratic]=-1;
+	elementQuadratic[numberQuadratic++]=linearTerm[iColumn];
+	if (linearTerm[iColumn])
+	  largestColumn = CoinMax(largestColumn,iColumn);
       }
     }
     startQuadratic[numberColumns] = numberQuadratic;
     // here we create ClpConstraint
-    abort();
+    constraints[numberConstraints++] = new ClpConstraintQuadratic(-1, largestColumn+1, numberColumns,
+								  startQuadratic,columnQuadratic,elementQuadratic);
   }
   int iConstraint;
   for (iConstraint=0;iConstraint<saveNumber;iConstraint++) {
     iRow = which[iConstraint];
     if (iRow>=0) {
       int numberQuadratic=0;
+      int lastColumn = -1;
+      int largestColumn=-1;
       CoinZeroN(linearTerm,numberColumns);
       CoinModelLink triple=coinModel.firstInRow(iRow);
       while (triple.column()>=0) {
 	int iColumn = triple.column();
+	while (lastColumn<iColumn) {
+	  startQuadratic[lastColumn+1]=numberQuadratic;
+	  lastColumn++;
+	}
 	const char *  expr = coinModel.getElementAsString(iRow,iColumn);
 	if (strcmp("Numeric",expr)) {
+	  largestColumn = CoinMax(largestColumn,iColumn);
 	  // value*x*y
 	  char temp[20000];
 	  strcpy(temp,expr);
@@ -6659,18 +6891,34 @@ approximateSolution(CoinModel & coinModel,
 	    if (jColumn>=0) {
 	      columnQuadratic[numberQuadratic]=jColumn;
 	      elementQuadratic[numberQuadratic++]=2.0*value; // convention
+	      largestColumn = CoinMax(largestColumn,jColumn);
 	    } else if (jColumn==-2) {
 	      linearTerm[iColumn] = value;
+	      // and put in as row -1
+	      columnQuadratic[numberQuadratic]=-1;
+	      elementQuadratic[numberQuadratic++]=value;
+	      largestColumn = CoinMax(largestColumn,iColumn);
 	    } else {
 	      printf("bad nonlinear term %s\n",temp);
 	      abort();
 	    }
 	    ifFirst=false;
 	  }
+	} else {
+	  // linear part
+	  linearTerm[iColumn] = coinModel.getElement(iRow,iColumn);
+	  // and put in as row -1
+	  columnQuadratic[numberQuadratic]=-1;
+	  elementQuadratic[numberQuadratic++]=linearTerm[iColumn];
+	  if (linearTerm[iColumn])
+	    largestColumn = CoinMax(largestColumn,iColumn);
 	}
 	triple=coinModel.next(triple);
       }
-      startQuadratic[numberColumns] = numberQuadratic;
+      while (lastColumn<numberColumns) {
+	startQuadratic[lastColumn+1]=numberQuadratic;
+	lastColumn++;
+      }
       // here we create ClpConstraint
       if (testLinear) {
 	int n=0;
@@ -6686,7 +6934,8 @@ approximateSolution(CoinModel & coinModel,
 		      indices,linearTerm);
 	delete [] indices;
       } else {
-	abort();
+	constraints[numberConstraints++] = new ClpConstraintQuadratic(iRow, largestColumn+1, numberColumns,
+		      startQuadratic,columnQuadratic,elementQuadratic);
       }
     }
   }
@@ -6698,11 +6947,11 @@ approximateSolution(CoinModel & coinModel,
   model->loadProblem(coinModel2);
   int returnCode = model->nonlinearSLP(numberConstraints, constraints,
 				       numberPasses,deltaTolerance);
+  // See if any integers
   for (iConstraint=0;iConstraint<saveNumber;iConstraint++) 
     delete constraints[iConstraint];
   
   delete [] constraints;
   assert (!returnCode);
-  abort();
   return model;
 }

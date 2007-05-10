@@ -2258,6 +2258,7 @@ int CbcMain (int argc, const char *argv[],
 	      ClpSolve::PresolveType presolveType;
 	      ClpSimplex * model2 = lpSolver;
               if (dualize) {
+		//printf("dualize %d\n",dualize);
                 model2 = ((ClpSimplexOther *) model2)->dualOfModel();
                 printf("Dual of model has %d rows and %d columns\n",
                        model2->numberRows(),model2->numberColumns());
@@ -2379,8 +2380,8 @@ int CbcMain (int argc, const char *argv[],
 		int testOsiOptions = parameters[whichParam(TESTOSI,numberParameters,parameters)].intValue();
 		double * solution = NULL;
 		if (testOsiOptions<10) {
-		  solution = linkSolver->nonlinearSLP(slpValue,1.0e-5);
-		} else {
+		  solution = linkSolver->nonlinearSLP(slpValue>0 ? slpValue : 20 ,1.0e-5);
+		} else if (testOsiOptions==10) {
 		  CoinModel coinModel = *linkSolver->coinModel();
 		  ClpSimplex * tempModel = approximateSolution(coinModel,slpValue>0 ? slpValue : 20 ,1.0e-5,0);
 		  assert (tempModel);
@@ -4012,6 +4013,15 @@ int CbcMain (int argc, const char *argv[],
 		      babModel->addCutGenerator(&temp,1,"OnceOnly");
 		      //choose.setNumberBeforeTrusted(2000);
 		      //choose.setNumberStrong(20);
+		    }
+		    // For temporary testing of heuristics
+		    //int testOsiOptions = parameters[whichParam(TESTOSI,numberParameters,parameters)].intValue();
+		    if (testOsiOptions>=10) {
+		      printf("*** Temp heuristic with mode %d\n",testOsiOptions-10);
+		      OsiSolverLink * solver3 = dynamic_cast<OsiSolverLink *> (babModel->solver());
+		      assert (solver3) ;
+		      double * solution = solver3->heuristicSolution(slpValue>0 ? slpValue : 20 ,1.0e-5,testOsiOptions-10);
+		      assert(solution);
 		    }
 #endif
 		  } else {

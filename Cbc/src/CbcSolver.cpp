@@ -1297,8 +1297,8 @@ int CbcMain (int argc, const char *argv[],
     double * sosReference = NULL;
     int * cut=NULL;
     int * sosPriority=NULL;
-    CoinModel * coinModel = NULL;
 #ifdef COIN_HAS_ASL
+    CoinModel * coinModel = NULL;
     ampl_info info;
     CglStored storedAmpl;
     CoinModel saveCoinModel;
@@ -4250,7 +4250,6 @@ int CbcMain (int argc, const char *argv[],
 		    delete [] objects;
 		  }
 		}
-#endif
 		if (storedAmpl.sizeRowCuts()) {
 		  //babModel->addCutGenerator(&storedAmpl,1,"AmplStored");
 		  int numberRowCuts = storedAmpl.sizeRowCuts();
@@ -4259,6 +4258,7 @@ int CbcMain (int argc, const char *argv[],
 		    babModel->makeGlobalCut(rowCutPointer);
 		  }
 		}
+#endif
                 babModel->branchAndBound(statistics);
 #ifdef CLP_MALLOC_STATISTICS
 		malloc_stats();

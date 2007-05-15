@@ -3577,13 +3577,16 @@ CbcModel::addCutGenerator(CglCutGenerator * generator,
 }
 // Add one heuristic
 void 
-CbcModel::addHeuristic(CbcHeuristic * generator)
+CbcModel::addHeuristic(CbcHeuristic * generator, const char *name)
 {
   CbcHeuristic ** temp = heuristic_;
   heuristic_ = new CbcHeuristic * [numberHeuristics_+1];
   memcpy(heuristic_,temp,numberHeuristics_*sizeof(CbcHeuristic *));
   delete [] temp;
-  heuristic_[numberHeuristics_++]=generator->clone();
+  heuristic_[numberHeuristics_]=generator->clone();
+  if (name)
+  { heuristic_[numberHeuristics_]->setHeuristicName(name) ; }
+  numberHeuristics_++ ;
 }
 
 /*

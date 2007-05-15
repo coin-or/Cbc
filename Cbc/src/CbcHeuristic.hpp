@@ -103,6 +103,12 @@ public:
   /// Returns true if can deal with "odd" problems e.g. sos type 2
   virtual bool canDealWithOdd() const
   { return false;};
+  /// return name of heuristic
+  inline const char *heuristicName() const
+  { return heuristicName_.c_str();};
+  /// set name of heuristic
+  inline void setHeuristicName(const char *name)
+  { heuristicName_ = name;};
 
 protected:
 
@@ -114,6 +120,8 @@ protected:
   int numberNodes_;
   /// Fraction of new(rows+columns)/old(rows+columns) before doing small branch and bound
   double fractionSmall_;
+  /// Name for printing
+  std::string heuristicName_;
   
 };
 /** Rounding class

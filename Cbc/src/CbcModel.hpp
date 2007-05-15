@@ -1243,8 +1243,11 @@ public:
 
   /** \name Heuristics and priorities */
   //@{
-  /// Add one heuristic - up to user to delete
-  void addHeuristic(CbcHeuristic * generator);
+  /*! \brief Add one heuristic - up to user to delete
+
+    The name is just used for print messages.
+  */
+  void addHeuristic(CbcHeuristic * generator, const char *name = NULL);
   ///Get the specified heuristic
   inline CbcHeuristic * heuristic(int i) const
   { return heuristic_[i];};

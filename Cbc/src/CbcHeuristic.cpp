@@ -26,7 +26,8 @@ CbcHeuristic::CbcHeuristic()
   :model_(NULL),
    when_(2),
    numberNodes_(200),
-   fractionSmall_(1.0)
+   fractionSmall_(1.0),
+   heuristicName_("Unknown")
 {
   // As CbcHeuristic virtual need to modify .cpp if above change
 }
@@ -37,7 +38,8 @@ CbcHeuristic::CbcHeuristic(CbcModel & model)
   model_(&model),
   when_(2),
   numberNodes_(200),
-  fractionSmall_(1.0)
+  fractionSmall_(1.0),
+  heuristicName_("Unknown")
 {
   // As CbcHeuristic virtual need to modify .cpp if above change
 }
@@ -47,7 +49,8 @@ CbcHeuristic::CbcHeuristic(const CbcHeuristic & rhs)
   model_(rhs.model_),
   when_(rhs.when_),
   numberNodes_(rhs.numberNodes_),
-  fractionSmall_(rhs.fractionSmall_)
+  fractionSmall_(rhs.fractionSmall_),
+  heuristicName_(rhs.heuristicName_)
 {
 }
 // Assignment operator 
@@ -59,6 +62,7 @@ CbcHeuristic::operator=( const CbcHeuristic& rhs)
     when_ = rhs.when_;
     numberNodes_ = rhs.numberNodes_;
     fractionSmall_ = rhs.fractionSmall_;
+    heuristicName_ = rhs.heuristicName_ ;
   }
   return *this;
 }
@@ -87,6 +91,12 @@ CbcHeuristic::generateCpp( FILE * fp, const char * heuristic)
     fprintf(fp,"3  %s.setFractionSmall(%g);\n",heuristic,fractionSmall_);
   else
     fprintf(fp,"4  %s.setFractionSmall(%g);\n",heuristic,fractionSmall_);
+  if (heuristicName_ != "Unknown")
+    fprintf(fp,"3  %s.setHeuristicName(\"%s\");\n",
+	    heuristic,heuristicName_.c_str()) ;
+  else
+    fprintf(fp,"4  %s.setHeuristicName(\"%s\");\n",
+	    heuristic,heuristicName_.c_str()) ;
 }
 // Destructor 
 CbcHeuristic::~CbcHeuristic ()

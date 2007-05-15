@@ -1301,10 +1301,7 @@ int CbcMain (int argc, const char *argv[],
     int * sosPriority=NULL;
 #ifdef COIN_HAS_ASL
     CoinModel * coinModel = NULL;
-<<<<<<< .mine
     CglStored storedAmpl;
-=======
->>>>>>> .r611
     ampl_info info;
     CoinModel saveCoinModel;
     CoinModel saveTightenedModel;

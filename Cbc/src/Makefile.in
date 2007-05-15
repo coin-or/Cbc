@@ -185,16 +185,17 @@ am__DEPENDENCIES_1 =
 @COIN_HAS_CLP_TRUE@	$(am__DEPENDENCIES_2)
 am__cbc_generic_SOURCES_DIST = CbcGenBaB.cpp CbcGenCbcParam.cpp \
 	CbcGenCbcParam.hpp CbcGenCbcParamUtils.cpp CbcGenCtlBlk.cpp \
-	CbcGenCtlBlk.hpp CbcGeneric.cpp CbcGenOsiParam.cpp \
-	CbcGenOsiParam.hpp CbcGenOsiParamUtils.cpp CbcGenParam.cpp \
-	CbcGenParam.hpp CbcGenParamUtils.cpp CbcGenSolution.cpp \
-	CbcGenSolvers.cpp
+	CbcGenCtlBlk.hpp CbcGeneric.cpp CbcGenMessages.cpp \
+	CbcGenMessages.hpp CbcGenOsiParam.cpp CbcGenOsiParam.hpp \
+	CbcGenOsiParamUtils.cpp CbcGenParam.cpp CbcGenParam.hpp \
+	CbcGenParamUtils.cpp CbcGenSolution.cpp CbcGenSolvers.cpp
 @CBC_BUILD_CBC_GENERIC_TRUE@am_cbc_generic_OBJECTS =  \
 @CBC_BUILD_CBC_GENERIC_TRUE@	CbcGenBaB.$(OBJEXT) \
 @CBC_BUILD_CBC_GENERIC_TRUE@	CbcGenCbcParam.$(OBJEXT) \
 @CBC_BUILD_CBC_GENERIC_TRUE@	CbcGenCbcParamUtils.$(OBJEXT) \
 @CBC_BUILD_CBC_GENERIC_TRUE@	CbcGenCtlBlk.$(OBJEXT) \
 @CBC_BUILD_CBC_GENERIC_TRUE@	CbcGeneric.$(OBJEXT) \
+@CBC_BUILD_CBC_GENERIC_TRUE@	CbcGenMessages.$(OBJEXT) \
 @CBC_BUILD_CBC_GENERIC_TRUE@	CbcGenOsiParam.$(OBJEXT) \
 @CBC_BUILD_CBC_GENERIC_TRUE@	CbcGenOsiParamUtils.$(OBJEXT) \
 @CBC_BUILD_CBC_GENERIC_TRUE@	CbcGenParam.$(OBJEXT) \
@@ -552,6 +553,7 @@ AM_CPPFLAGS = $(am__append_2) $(am__append_5) $(am__append_7) \
 @CBC_BUILD_CBC_GENERIC_TRUE@	CbcGenCbcParam.cpp CbcGenCbcParam.hpp CbcGenCbcParamUtils.cpp \
 @CBC_BUILD_CBC_GENERIC_TRUE@	CbcGenCtlBlk.cpp CbcGenCtlBlk.hpp \
 @CBC_BUILD_CBC_GENERIC_TRUE@	CbcGeneric.cpp \
+@CBC_BUILD_CBC_GENERIC_TRUE@	CbcGenMessages.cpp CbcGenMessages.hpp \
 @CBC_BUILD_CBC_GENERIC_TRUE@	CbcGenOsiParam.cpp CbcGenOsiParam.hpp CbcGenOsiParamUtils.cpp \
 @CBC_BUILD_CBC_GENERIC_TRUE@	CbcGenParam.cpp CbcGenParam.hpp CbcGenParamUtils.cpp \
 @CBC_BUILD_CBC_GENERIC_TRUE@	CbcGenSolution.cpp \
@@ -737,6 +739,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcGenCbcParam.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcGenCbcParamUtils.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcGenCtlBlk.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcGenMessages.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcGenOsiParam.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcGenOsiParamUtils.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcGenParam.Po@am__quote@

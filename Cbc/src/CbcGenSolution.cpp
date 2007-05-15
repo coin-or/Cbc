@@ -17,9 +17,13 @@
 #include "CbcGenCtlBlk.hpp"
 #include "CbcGenParam.hpp"
 
-
 namespace {
 
+  char svnid[] = "$Id$" ;
+
+}
+
+namespace {
 
 /*
   Helper routine to generate masks for selecting names to print. Returns true

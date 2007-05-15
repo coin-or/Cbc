@@ -32,6 +32,8 @@
 
 namespace {
 
+  char svnid[] = "$Id$" ;
+
 /*
   A hack to fix variables based on reduced cost prior to branch-and-cut. Note
   that we're *not* looking at the integrality gap here. Given the reduced costs
@@ -210,19 +212,19 @@ void installHeuristics (CbcGenCtlBlk *ctlBlk, CbcModel *model)
 */
   action = ctlBlk->getFPump(gen,model) ;
   if (action != CbcGenCtlBlk::CGOff)
-  { model->addHeuristic(gen) ; }
+  { model->addHeuristic(gen,"FPump") ; }
   action = ctlBlk->getRounding(gen,model) ;
   if (action != CbcGenCtlBlk::CGOff)
-  { model->addHeuristic(gen) ; }
+  { model->addHeuristic(gen,"Rounding") ; }
   action = ctlBlk->getCombine(gen,model) ;
   if (action != CbcGenCtlBlk::CGOff)
-  { model->addHeuristic(gen) ; }
+  { model->addHeuristic(gen,"Combine") ; }
   action = ctlBlk->getGreedyCover(gen,model) ;
   if (action != CbcGenCtlBlk::CGOff)
-  { model->addHeuristic(gen) ; }
+  { model->addHeuristic(gen,"GCov") ; }
   action = ctlBlk->getGreedyEquality(gen,model) ;
   if (action != CbcGenCtlBlk::CGOff)
-  { model->addHeuristic(gen) ; }
+  { model->addHeuristic(gen,"GEq") ; }
 /*
   This one's a bit different. We acquire the local tree and install it in the
   model.

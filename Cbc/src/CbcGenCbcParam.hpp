@@ -12,6 +12,9 @@
    \brief Declarations for parameters that act on a CbcModel object.
 */
 
+/*
+  $Id$
+*/
 
 /*! \class CbcCbcParam
     \brief Class for control parameters that act on a CbcModel object.

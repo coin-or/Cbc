@@ -12,6 +12,10 @@
    \brief Declarations for parameters that act on a OsiSolverInterface object.
 */
 
+/*
+  $Id$
+*/
+
 /*! \class CbcOsiParam
     \brief Class for control parameters that act on a OsiSolverInterface object.
 

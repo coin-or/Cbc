@@ -131,6 +131,7 @@ cbc_generic_SOURCES = \
 	CbcGenCbcParam.cpp CbcGenCbcParam.hpp CbcGenCbcParamUtils.cpp \
 	CbcGenCtlBlk.cpp CbcGenCtlBlk.hpp \
 	CbcGeneric.cpp \
+	CbcGenMessages.cpp CbcGenMessages.hpp \
 	CbcGenOsiParam.cpp CbcGenOsiParam.hpp CbcGenOsiParamUtils.cpp \
 	CbcGenParam.cpp CbcGenParam.hpp CbcGenParamUtils.cpp \
 	CbcGenSolution.cpp \

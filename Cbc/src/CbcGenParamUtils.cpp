@@ -26,6 +26,12 @@
     \brief Implementation functions for CbcGenParam parameters.
 */
 
+namespace {
+
+  char svnid[] = "$Id$" ;
+
+}
+
 namespace CbcGenSolvers
 {
   void setupSolverParam(CbcGenParam &solverParam) ;
@@ -320,6 +326,16 @@ void addCbcGenParams (int &numberParameters, CoinParamVec &parameters,
   param->setObj(ctlBlk) ;
   param->setLongHelp(
 	"This switches on a local search algorithm when a solution is found.  This is from Fischetti and Lodi and is not really a heuristic although it can be used as one. When used from this program it has limited functionality.  It is not controlled by heuristicsOnOff."
+	) ;
+  parameters.push_back(param) ;
+
+  param = new CbcGenParam(CbcGenParam::LOGLEVEL,
+	"log!Level","Level of detail in cbc-generic output.",
+	-1,999999,ctlBlk->logLvl_) ;
+  param->setObj(ctlBlk) ;
+  param->setPushFunc(pushCbcGenIntParam) ;
+  param->setLongHelp(
+	"If set to 0 then there should be no output in normal circumstances. A value of 1 is probably the best value for most uses, while 2 and 3 give more information."
 	) ;
   parameters.push_back(param) ;
 
@@ -811,6 +827,9 @@ int pushCbcGenIntParam (CoinParam *param)
   switch (code)
   { case CbcGenParam::CUTDEPTH:
     { ctlBlk->setCutDepth(val) ;
+      break ; }
+    case CbcGenParam::LOGLEVEL:
+    { ctlBlk->setLogLevel(val) ;
       break ; }
     case CbcGenParam::PRINTOPTIONS:
     { ctlBlk->printOpt_ = val ;

@@ -22,6 +22,12 @@
 #include "CbcGenCbcParam.hpp"
 #include "CbcGenOsiParam.hpp"
 
+namespace {
+
+  char svnid[] = "$Id$" ;
+
+}
+
 /*
   Constructors and destructors
 

@@ -58,6 +58,12 @@
 #include "CbcGenCbcParam.hpp"
 #include "CbcGenOsiParam.hpp"
 
+namespace {
+
+  char svnid[] = "$Id$" ;
+
+}
+
 namespace CbcGenSolvers
 {
   OsiSolverInterface *setupSolvers() ;
@@ -124,6 +130,8 @@ int main (int argc, const char *argv[])
   solvers and set the default.
 */
   CbcGenCtlBlk ctlBlk ;
+  ctlBlk.setMessages() ;
+  ctlBlk.setLogLevel(1) ;
   OsiSolverInterface *dfltSolver = CbcGenSolvers::setupSolvers() ;
   ctlBlk.dfltSolver_ = dfltSolver ;
   assert (ctlBlk.dfltSolver_) ;

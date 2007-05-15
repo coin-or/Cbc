@@ -28,6 +28,12 @@
     \brief Implementation functions for CbcOsiParam parameters.
 */
 
+namespace {
+
+  char svnid[] = "$Id$" ;
+
+}
+
 namespace CbcOsiParamUtils
 {
 
@@ -168,11 +174,18 @@ void loadOsiParamObj (const CoinParamVec paramVec, int first, int last,
 
 void setOsiSolverInterfaceDefaults (OsiSolverInterface *osi)
 
-{ 
+{ bool result ;
 
+/*
+  OsiNameDiscipline isn't supported by all solvers, so check to see that it
+  worked. If not, fall back to zero.
+*/
   osi->setIntParam(OsiMaxNumIteration,1000000) ;
   osi->setIntParam(OsiMaxNumIterationHotStart,1000) ;
   osi->setIntParam(OsiNameDiscipline,1) ;
+  if (!result)
+  { result = osi->setIntParam(OsiNameDiscipline,0) ; }
+
 /*
   Primal and dual feasibility tolerances (OsiPrimalTolerance and
   OsiDualTolerance, respectively)  are left to the discretion of the solver.
@@ -181,14 +194,14 @@ void setOsiSolverInterfaceDefaults (OsiSolverInterface *osi)
   osi->setDblParam(OsiPrimalObjectiveLimit,1.0e100) ;
   osi->setDblParam(OsiObjOffset,0.0) ;
 
-  (void) osi->setHintParam(OsiDoPresolveInInitial,true,OsiHintDo) ;
-  (void) osi->setHintParam(OsiDoDualInInitial,true,OsiHintIgnore) ;
-  (void) osi->setHintParam(OsiDoPresolveInResolve,false,OsiHintTry) ;
-  (void) osi->setHintParam(OsiDoDualInInitial,true,OsiHintTry) ;
-  (void) osi->setHintParam(OsiDoScale,true,OsiHintDo) ;
-  (void) osi->setHintParam(OsiDoCrash,true,OsiHintIgnore) ;
-  (void) osi->setHintParam(OsiDoReducePrint,true,OsiHintDo) ;
-  (void) osi->setHintParam(OsiDoInBranchAndCut,true,OsiHintTry) ;
+  osi->setHintParam(OsiDoPresolveInInitial,true,OsiHintDo) ;
+  osi->setHintParam(OsiDoDualInInitial,true,OsiHintIgnore) ;
+  osi->setHintParam(OsiDoPresolveInResolve,false,OsiHintTry) ;
+  osi->setHintParam(OsiDoDualInInitial,true,OsiHintTry) ;
+  osi->setHintParam(OsiDoScale,true,OsiHintDo) ;
+  osi->setHintParam(OsiDoCrash,true,OsiHintIgnore) ;
+  osi->setHintParam(OsiDoReducePrint,true,OsiHintDo) ;
+  osi->setHintParam(OsiDoInBranchAndCut,true,OsiHintTry) ;
 
   return ; }
 

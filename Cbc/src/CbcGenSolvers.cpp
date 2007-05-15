@@ -58,6 +58,12 @@
 #include "CbcGenCbcParam.hpp"
 #include "CbcGenOsiParam.hpp"
 
+namespace {
+
+  char svnid[] = "$Id$" ;
+
+}
+
 /*
   Unnamed local namespace to hide the data structures used to maintain the
   vector of OsiSolverInterface objects.
@@ -157,6 +163,7 @@ int changeCbcSolver (CoinParam *param)
   assert (genParam != 0) ;
   CbcGenCtlBlk *ctlBlk = genParam->obj() ;
   assert (ctlBlk != 0) ;
+  CoinMessageHandler *msghandler = ctlBlk->messageHandler() ;
 /*
   Setup to return nonfatal/fatal error (1/-1) by default.
 */
@@ -179,6 +186,8 @@ int changeCbcSolver (CoinParam *param)
 /*
   We have a solver. 
 */
+  ctlBlk->message(CBCGEN_NEW_SOLVER)
+    << solverName << CoinMessageEol ;
   CbcModel *model = ctlBlk->model_ ;
   assert (model != 0) ;
   OsiSolverInterface *newOsi = protoOsi->clone() ;

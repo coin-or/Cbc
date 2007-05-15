@@ -13,6 +13,7 @@
 */
 
 #include "CoinParam.hpp"
+#include "CoinMessageHandler.hpp"
 
 #include "CglCutGenerator.hpp"
 #include "CglProbing.hpp"
@@ -32,6 +33,17 @@
 #include "CbcHeuristicGreedy.hpp"
 #include "CbcHeuristicLocal.hpp"
 #include "CbcTreeLocal.hpp"
+
+#include "CbcGenMessages.hpp"
+
+/*
+  It turns out that doxygen is not good with anonymous structures. Hence the
+  `struct nameCtl_struct' style used for structured fields in CbcGenCtlBlk.
+*/
+
+/*
+  $Id$
+*/
 
 #define CBC_GENERIC_VERSION "00.01.00"
 
@@ -408,7 +420,9 @@ typedef enum { BACwInvalid = -1, BACwNotStarted = 0, BACwBareRoot,
 
 //@}
 
-/*! \brief Convenience routines for status codes. */
+/*! \name Status Functions
+    \brief Convenience routines for status codes.
+*/
 //@{
 
   /*! \brief Set the result of branch-and-cut search */
@@ -431,21 +445,21 @@ typedef enum { BACwInvalid = -1, BACwNotStarted = 0, BACwBareRoot,
 		    bool haveAnswer = false,
 		    OsiSolverInterface *answerSolver = 0) ;
 
-  /*! \brief Translate CbcModel major status to BACMajor
+  /*! \brief Translate CbcModel major status to #BACMajor
   
-    See the BACMajor enum for details.
+    See the #BACMajor enum for details.
   */
   BACMajor translateMajor(int status) ;
 
-  /*!\brief Translate CbcModel minor status to BACMinor
+  /*!\brief Translate CbcModel minor status to #BACMinor
 
-    See the BACMinor enum for details.
+    See the #BACMinor enum for details.
   */
   BACMinor translateMinor(int status) ;
 
-  /*!\brief Translate OsiSolverInterface status to BACMinor
+  /*!\brief Translate OsiSolverInterface status to #BACMinor
 
-    See the BACMinor enum for details. Optimal, infeasible, and unbounded
+    See the #BACMinor enum for details. Optimal, infeasible, and unbounded
     get their own codes; everything else maps to BACmOther.
   */
   BACMinor translateMinor(const OsiSolverInterface *osi) ;
@@ -456,7 +470,55 @@ typedef enum { BACwInvalid = -1, BACwNotStarted = 0, BACwBareRoot,
 
 //@}
 
-/*! \name Parameter parsing, input/output, and such like. */
+/*! \name Messages and statistics */
+//@{
+
+  /*! \brief Print a message
+
+    Uses the current message handler and messages.
+  */
+  CoinMessageHandler &message(CbcGenMsgCode inID) ;
+
+  /*! \brief Supply a new message handler.
+
+    Replaces the current message handler. The current handler is destroyed
+    if ourMsgHandler_ is true, and the call will set ourMsgHandler_ = true.
+  */
+  void passInMessageHandler(CoinMessageHandler *handler) ;
+
+  /*! \brief Return a pointer to the message handler */
+  inline CoinMessageHandler *messageHandler() const { return msgHandler_ ; } ;
+
+  /*! \brief Set up messages in the specified language.
+
+    Building a set of messages in a given language implies rebuilding the
+    whole set of messages, for reasons explained in the body of the code.
+    Hence there's no separate setLanguage routine. Use this routine for the
+    initial setup of messages and any subsequent change in language. Note
+    that the constructor gives you a message handler by default, but \e not
+    messages. You need to call setMessages explicitly.
+
+    The default value specified here for lang effectively sets the default
+    language.
+  */
+  void setMessages(CoinMessages::Language lang = CoinMessages::us_en) ;
+
+  /*! \brief Set log level */
+  inline void setLogLevel(int lvl)
+  { logLvl_ = lvl ;
+    if (msgHandler_) msgHandler_->setLogLevel(lvl) ; } ;
+
+  /*! \brief Get log level */
+  inline int logLevel() const { return (logLvl_) ; } ;
+
+  /*! \brief When greater than 0, integer presolve gives more information and
+	     branch-and-cut provides statistics.
+  */
+  int printOpt_ ;
+
+//@}
+
+/*! \name Parameter parsing and input/output. */
 //@{
   /*! \brief cbc-generic version */
 
@@ -498,20 +560,23 @@ typedef enum { BACwInvalid = -1, BACwNotStarted = 0, BACwBareRoot,
 
   /*! \brief Start and end of cbc-generic parameters in parameter vector */
 
-  struct { int first_ ;
-	   int last_ ; } genParams_ ;
+  struct genParamsInfo_struct
+  { int first_ ;
+    int last_ ; } genParams_ ;
 
   /*! \brief Start and end of CbcModel parameters in parameter vector */
 
-  struct { int first_ ;
-	   int last_ ; } cbcParams_ ;
+  struct cbcParamsInfo_struct
+  { int first_ ;
+    int last_ ; } cbcParams_ ;
 
   /*! \brief Start and end of OsiSolverInterface  parameters in parameter
 	     vector
   */
 
-  struct { int first_ ;
-	   int last_ ; } osiParams_ ;
+  struct osiParamsInfo_struct
+  { int first_ ;
+    int last_ ; } osiParams_ ;
 
   /*! \brief Verbosity level for help messages.
   
@@ -528,7 +593,7 @@ typedef enum { BACwInvalid = -1, BACwNotStarted = 0, BACwBareRoot,
 
   int paramsProcessed_ ;
 
-  /*! \brief Record of parameters changed by the user command */
+  /*! \brief Record of parameters changed by user command */
 
   std::vector<bool> setByUser_ ;
 
@@ -563,15 +628,9 @@ typedef enum { BACwInvalid = -1, BACwNotStarted = 0, BACwBareRoot,
     Used to provide a known optimal solution to activateRowCutDebugger().
   */
 
-  struct { int numCols_ ;
-	   double *values_ ; } debugSol_ ;
-
-  /*! \brief When greater than 0, presolve gives more information and
-	     branch-and-cut provides statistics.
-  */
-
-  int printOpt_ ;
-
+  struct debugSolInfo_struct
+  { int numCols_ ;
+    double *values_ ; } debugSol_ ;
 //@}
 
 /* \name Timing */
@@ -617,11 +676,12 @@ typedef enum { BACwInvalid = -1, BACwNotStarted = 0, BACwBareRoot,
     BACMinor, and BACWhere enums for the meaning of the codes.
   */
 
-  struct { BACMajor majorStatus_ ;
-	   BACMinor minorStatus_ ;
-	   BACWhere where_ ;
-	   bool haveAnswer_ ;
-	   OsiSolverInterface *answerSolver_ ; } bab_ ;
+  struct babState_struct
+  { BACMajor majorStatus_ ;
+    BACMinor minorStatus_ ;
+    BACWhere where_ ;
+    bool haveAnswer_ ;
+    OsiSolverInterface *answerSolver_ ; } bab_ ;
 
 //@}
 
@@ -636,8 +696,9 @@ typedef enum { BACwInvalid = -1, BACwNotStarted = 0, BACwBareRoot,
     at the wrong bound!
   */
 
-  struct { bool action_ ;
-	   double threshold_ ; } djFix_ ;
+  struct djFixCtl_struct
+  { bool action_ ;
+    double threshold_ ; } djFix_ ;
 
   /*! \brief Control the assignment of branching priorities to integer
 	     variables.
@@ -660,9 +721,10 @@ typedef enum { BACwInvalid = -1, BACwNotStarted = 0, BACwBareRoot,
     pseudo costs are trusted (numBeforeTrust_) and the number of variables
     evaluated with strong branching (numStrong_) are parameters of CbcModel.
   */
-  struct { int numBeforeTrust_ ;
-	   int numStrong_ ;
-	   int shadowPriceMode_ ; } chooseStrong_ ;
+  struct chooseStrongCtl_struct
+  { int numBeforeTrust_ ;
+    int numStrong_ ;
+    int shadowPriceMode_ ; } chooseStrong_ ;
 //@}
 
 private:
@@ -685,85 +747,100 @@ private:
   int cutDepth_ ;
 
   /*! \brief Control variable and prototype for probing cut generator */
-  struct { CGControl action_ ;
-	   CglProbing *proto_ ;
-	   bool usingObjective_ ;
-	   int maxPass_ ;
-	   int maxPassRoot_ ;
-	   int maxProbe_ ;
-	   int maxProbeRoot_ ;
-	   int maxLook_ ;
-	   int maxLookRoot_ ;
-	   int maxElements_ ;
-	   int rowCuts_ ; } probing_ ;
+  struct probingCtl_struct
+  { CGControl action_ ;
+    CglProbing *proto_ ;
+    bool usingObjective_ ;
+    int maxPass_ ;
+    int maxPassRoot_ ;
+    int maxProbe_ ;
+    int maxProbeRoot_ ;
+    int maxLook_ ;
+    int maxLookRoot_ ;
+    int maxElements_ ;
+    int rowCuts_ ; } probing_ ;
 
   /*! \brief Control variable and prototype for clique cut generator */
-  struct { CGControl action_ ;
-	   CglClique *proto_ ;
-	   bool starCliqueReport_ ;
-	   bool rowCliqueReport_ ;
-	   double minViolation_ ; } clique_ ;
+  struct cliqueCtl_struct
+  { CGControl action_ ;
+    CglClique *proto_ ;
+    bool starCliqueReport_ ;
+    bool rowCliqueReport_ ;
+    double minViolation_ ; } clique_ ;
 
   /*! \brief Control variable and prototype for flow cover cut generator */
-  struct { CGControl action_ ;
-	   CglFlowCover *proto_ ; } flow_ ;
+  struct flowCtl_struct
+  { CGControl action_ ;
+    CglFlowCover *proto_ ; } flow_ ;
 
   /*! \brief Control variable and prototype for Gomory cut generator */
-  struct { CGControl action_ ;
-	   CglGomory *proto_ ;
-	   int limit_ ;
-	   int limitAtRoot_ ; } gomory_ ;
+  struct gomoryCtl_struct
+  { CGControl action_ ;
+    CglGomory *proto_ ;
+    int limit_ ;
+    int limitAtRoot_ ; } gomory_ ;
 
 /*   \brief Control variable and prototype for lift-and-project cut
 	     generator
-   struct { CGControl action_ ;
-	   CglLandP *proto_ ; } landp_ ;
+   struct landpCtl_struct
+   { CGControl action_ ;
+     CglLandP *proto_ ; } landp_ ;
 */
 
   /*! \brief Control variable and prototype for knapsack cover cut generator */
-  struct { CGControl action_ ;
-	   CglKnapsackCover *proto_ ; } knapsack_ ;
+  struct knapsackCtl_struct
+  { CGControl action_ ;
+    CglKnapsackCover *proto_ ; } knapsack_ ;
 
   /*! \brief Control variable and prototype for MIR cut generator */
-  struct { CGControl action_ ;
-	   CglMixedIntegerRounding2 *proto_ ; } mir_ ;
+  struct mirCtl_struct
+  { CGControl action_ ;
+    CglMixedIntegerRounding2 *proto_ ; } mir_ ;
 
   /*! \brief Control variable and prototype for odd hole cut generator */
-  struct { CGControl action_ ;
-	   CglOddHole *proto_ ; } oddHole_ ;
+  struct oddHoleCtl_struct
+  { CGControl action_ ;
+    CglOddHole *proto_ ; } oddHole_ ;
 
   /*! \brief Control variable and prototype for reduce-and-split
 	     cut generator
   */
-  struct { CGControl action_ ;
-	   CglRedSplit *proto_ ; } redSplit_ ;
+  struct redSplitCtl_struct
+  { CGControl action_ ;
+    CglRedSplit *proto_ ; } redSplit_ ;
 
   /*! \brief Control variable and prototype for Two-MIR cut generator */
-  struct { CGControl action_ ;
-	   CglTwomir *proto_ ;
-	   int maxElements_ ; } twomir_ ;
+  struct twomirCtl_struct
+  { CGControl action_ ;
+    CglTwomir *proto_ ;
+    int maxElements_ ; } twomir_ ;
 
   /*! \brief Control variable and prototype for feasibility pump heuristic */
-  struct { CGControl action_ ;
-	   CbcHeuristicFPump *proto_ ;
-	   int iters_ ; } fpump_ ;
+  struct fpumpCtl_struct
+  { CGControl action_ ;
+    CbcHeuristicFPump *proto_ ;
+    int iters_ ; } fpump_ ;
 
   /*! \brief Control variable and prototype for combine heuristic */
-  struct { CGControl action_ ;
-	   CbcHeuristicLocal *proto_ ;
-	   int trySwap_ ; } combine_ ;
+  struct combineCtl_struct
+  { CGControl action_ ;
+    CbcHeuristicLocal *proto_ ;
+    int trySwap_ ; } combine_ ;
 
   /*! \brief Control variable and prototype for greedy cover heuristic */
-  struct { CGControl action_ ;
-	   CbcHeuristicGreedyCover *proto_ ; } greedyCover_ ;
+  struct greedyCoverCtl_struct
+  { CGControl action_ ;
+    CbcHeuristicGreedyCover *proto_ ; } greedyCover_ ;
 
   /*! \brief Control variable and prototype for greedy equality heuristic */
-  struct { CGControl action_ ;
-	   CbcHeuristicGreedyEquality *proto_ ; } greedyEquality_ ;
+  struct greedyEqualityCtl_struct
+  { CGControl action_ ;
+    CbcHeuristicGreedyEquality *proto_ ; } greedyEquality_ ;
 
   /*! \brief Control variable and prototype for simple rounding heuristic */
-  struct { CGControl action_ ;
-	   CbcRounding *proto_ ; } rounding_ ;
+  struct roundingCtl_struct
+  { CGControl action_ ;
+    CbcRounding *proto_ ; } rounding_ ;
 
 
   /*! \brief Control variables for local tree
@@ -772,15 +849,44 @@ private:
     and installs a local tree object. But we can keep the parameters here and
     hide the details. Consult CbcTreeLocal.hpp for details.
   */
-  struct { CGControl action_ ;
-	   CbcTreeLocal *proto_ ;
-	   double *soln_ ;
-	   int range_ ;
-	   int typeCuts_ ;
-	   int maxDiverge_ ;
-	   int timeLimit_ ;
-	   int nodeLimit_ ;
-	   bool refine_ ; } localTree_ ;
+  struct localTreeCtl_struct
+  { CGControl action_ ;
+    CbcTreeLocal *proto_ ;
+    double *soln_ ;
+    int range_ ;
+    int typeCuts_ ;
+    int maxDiverge_ ;
+    int timeLimit_ ;
+    int nodeLimit_ ;
+    bool refine_ ; } localTree_ ;
+
+//@}
+
+/*! \name Messages and statistics (private)
+    \brief Data and objects related to messages and statistics that should be
+	   protected from direct manipulation.
+*/
+//@{
+
+  /*! \brief Message handler. */
+  CoinMessageHandler *msgHandler_ ;
+
+  /*! \brief Ownership of message handler.
+
+    If true, the control block owns the message handler and it will be destroyed
+    with the control block. If false, the client is responsible for the message
+    handler.
+  */
+  bool ourMsgHandler_ ;
+
+  /*! \brief The current language */
+  CoinMessages::Language cur_lang_ ;
+
+  /*! \brief The current set of messages. */
+  CoinMessages *msgs_ ;
+
+  /*! \brief The current log level */
+  int logLvl_ ;
 
 //@}
 

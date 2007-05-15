@@ -12,6 +12,12 @@
 
 #include "CbcGenCtlBlk.hpp"
 
+namespace {
+
+  char svnid[] = "$Id$" ;
+
+}
+
 /*
   Constructor for cbc-generic control block.
 
@@ -58,6 +64,16 @@ CbcGenCtlBlk::CbcGenCtlBlk ()
   debugSol_.values_ = 0 ;
 
   printOpt_ = 0 ;
+
+/*
+  Assigning us_en to cur_lang_ is entirely bogus, but CoinMessages::Language
+  does not provide an `unspecified' code.
+*/
+  msgHandler_ = new CoinMessageHandler() ;
+  ourMsgHandler_ = true ;
+  cur_lang_ = CoinMessages::us_en ;
+  msgs_ = 0 ;
+  logLvl_ = 0 ;
 
   totalTime_ = 0.0 ;
 
@@ -184,6 +200,9 @@ CbcGenCtlBlk::~CbcGenCtlBlk ()
   if (greedyCover_.proto_) delete greedyCover_.proto_ ;
   if (greedyEquality_.proto_) delete greedyEquality_.proto_ ;
   if (rounding_.proto_) delete rounding_.proto_ ;
+
+  if (msgHandler_ && ourMsgHandler_) delete msgHandler_ ;
+  if (msgs_) delete msgs_ ;
 
   return ; }
 

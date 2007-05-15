@@ -25,6 +25,12 @@
     \brief Implementation functions for CbcGenParam parameters.
 */
 
+namespace {
+
+  char svnid[] = "$Id$" ;
+
+}
+
 namespace CbcCbcParamUtils
 {
 
@@ -102,7 +108,7 @@ void addCbcCbcParams (int &numberParameters, CoinParamVec &parameters,
   parameters.push_back(param) ;
 
   param = new CbcCbcParam(CbcCbcParam::LOGLEVEL,
-	"log!Level","Level of detail in Coin branch and Cut output",
+	"bclog!Level","Level of detail in Coin branch and Cut output",
 	-1,63,model->messageHandler()->logLevel()) ;
   param->setPushFunc(pushCbcCbcInt) ;
   param->setObj(model) ;

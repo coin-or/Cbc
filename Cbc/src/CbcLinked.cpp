@@ -6482,6 +6482,8 @@ CoinModel::expandKnapsack(int knapsackRow, int & numberOutput,double * buildObj,
     double lowerColumn=columnLower(iColumn);
     double upperColumn=columnUpper(iColumn);
     double gap = upperColumn-lowerColumn;
+    if (gap>1.0e8)
+      gap=1.0e8;
     assert (fabs(floor(gap+0.5)-gap)<1.0e-5);
     whichColumn[numJ]=iColumn;
     bound[numJ]=(int) gap;
@@ -6890,7 +6892,8 @@ approximateSolution(CoinModel & coinModel,
 	    // must be column unless first when may be linear term
 	    if (jColumn>=0) {
 	      columnQuadratic[numberQuadratic]=jColumn;
-	      elementQuadratic[numberQuadratic++]=2.0*value; // convention
+	      //? elementQuadratic[numberQuadratic++]=2.0*value; // convention
+	      elementQuadratic[numberQuadratic++]=value; // ? what about diagonal
 	      largestColumn = CoinMax(largestColumn,jColumn);
 	    } else if (jColumn==-2) {
 	      linearTerm[iColumn] = value;

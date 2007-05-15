@@ -474,7 +474,7 @@ static OsiSolverInterface *
 expandKnapsack(CoinModel & model, int * whichColumn, int * knapsackStart, 
 	       int * knapsackRow, int &numberKnapsack,
 	       CglStored & stored, int logLevel,
-	       int fixedPriority, int SOSPriority)
+	       int fixedPriority, int SOSPriority,CoinModel & tightenedModel)
 {
   int maxTotal = numberKnapsack;
   // load from coin model
@@ -513,6 +513,7 @@ expandKnapsack(CoinModel & model, int * whichColumn, int * knapsackStart,
   } 
   CoinModel coinModel=*si->coinModel();
   assert(coinModel.numberRows()>0);
+  tightenedModel = coinModel;
   int numberRows = coinModel.numberRows();
   // Mark variables
   int * whichKnapsack = new int [numberColumns];
@@ -952,6 +953,7 @@ expandKnapsack(CoinModel & model, int * whichColumn, int * knapsackStart,
   delete si;
   si=NULL;
   if (!badModel) {
+    finalModel->setDblParam(OsiObjOffset,coinModel.objectiveOffset());
     return finalModel;
   } else {
     delete finalModel;
@@ -1299,9 +1301,13 @@ int CbcMain (int argc, const char *argv[],
     int * sosPriority=NULL;
 #ifdef COIN_HAS_ASL
     CoinModel * coinModel = NULL;
-    ampl_info info;
+<<<<<<< .mine
     CglStored storedAmpl;
+=======
+>>>>>>> .r611
+    ampl_info info;
     CoinModel saveCoinModel;
+    CoinModel saveTightenedModel;
     int * whichColumn = NULL;
     int * knapsackStart=NULL;
     int * knapsackRow=NULL;
@@ -1406,7 +1412,8 @@ int CbcMain (int argc, const char *argv[],
 	testOsiParameters=0;
 	complicatedInteger=1;
 	if (info.cut) {
-	  printf("warning - cuts with LOS\n");
+	  printf("Sorry - can't do cuts with LOS as ruins delicate row order\n");
+	  abort();
 	  int numberRows = info.numberRows;
 	  int * whichRow = new int [numberRows];
 	  // Row copy
@@ -1428,6 +1435,8 @@ int CbcMain (int argc, const char *argv[],
 	    }
 	  }
 	  solver->deleteRows(nDelete,whichRow);
+	  // and special matrix
+	  si->cleanMatrix()->deleteRows(nDelete,whichRow);
 	  delete [] whichRow;
 	}
       }
@@ -3156,7 +3165,8 @@ int CbcMain (int argc, const char *argv[],
 		      int logLevel = parameters[log].intValue();
 		      OsiSolverInterface * solver = expandKnapsack(saveCoinModel,whichColumn,knapsackStart,
 								   knapsackRow,numberKnapsack,
-								   storedAmpl,logLevel,extra1,extra2);
+								   storedAmpl,logLevel,extra1,extra2,
+								   saveTightenedModel);
 		      if (solver) {
 			clpSolver = dynamic_cast< OsiClpSolverInterface*> (solver);
 			assert (clpSolver);
@@ -4456,7 +4466,7 @@ int CbcMain (int argc, const char *argv[],
 		      int numberColumns = saveCoinModel.numberColumns();
 		      info.primalSolution = (double *) malloc(numberColumns*sizeof(double));
 		      // Fills in original solution (coinModel length)
-		      afterKnapsack(saveCoinModel,  whichColumn,  knapsackStart, 
+		      afterKnapsack(saveTightenedModel,  whichColumn,  knapsackStart, 
 				    knapsackRow,  numberKnapsack,
 				    lpSolver->primalColumnSolution(), info.primalSolution,1);
 		    }

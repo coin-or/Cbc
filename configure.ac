@@ -33,11 +33,10 @@ AC_CONFIG_SRCDIR(configure.ac)
 AC_PREFIX_DEFAULT([`pwd`])
 
 #############################################################################
-#     We only need automake to generate Makefiles for the distribution      #
+#  Do the tests necessary to configure compilers and initialise autotools   #
 #############################################################################
 
-# Initialize automake
-AC_COIN_INIT_AUTOMAKE
+AC_COIN_CREATE_LIBTOOL
 
 #############################################################################
 #             Check which ThirdParty sources are available                  #
@@ -56,6 +55,7 @@ AC_COIN_MAIN_SUBDIRS(Data/Netlib)
 AC_COIN_MAIN_SUBDIRS(Data/Sample)
 AC_COIN_MAIN_SUBDIRS(Data/miplib3)
 AC_COIN_MAIN_SUBDIRS(Clp)
+AC_COIN_MAIN_SUBDIRS(DyLP)
 AC_COIN_MAIN_SUBDIRS(Vol)
 AC_COIN_MAIN_SUBDIRS(Osi)
 AC_COIN_MAIN_SUBDIRS(Cgl)

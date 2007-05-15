@@ -1,5 +1,5 @@
 MSVisualStudio   https://projects.coin-or.org/svn/MSVisualStudio/branches/devel/ExternalsDirs/Cbc
-BuildTools    https://projects.coin-or.org/svn/BuildTools/stable/0.5
+BuildTools    https://projects.coin-or.org/svn/BuildTools/trunk
 ThirdParty/ASL https://projects.coin-or.org/svn/BuildTools/ThirdParty/ASL/stable/1.0
 ThirdParty/Blas https://projects.coin-or.org/svn/BuildTools/ThirdParty/Blas/stable/1.0
 ThirdParty/Lapack https://projects.coin-or.org/svn/BuildTools/ThirdParty/Lapack/stable/1.0
@@ -10,4 +10,4 @@ CoinUtils     https://projects.coin-or.org/svn/CoinUtils/trunk/CoinUtils
 Cgl           https://projects.coin-or.org/svn/Cgl/trunk/Cgl
 Clp           https://projects.coin-or.org/svn/Clp/branches/devel/Clp
 Osi           https://projects.coin-or.org/svn/Osi/branches/devel/Osi
-Vol           https://projects.coin-or.org/svn/Vol/branches/devel/Vol
+Vol           https://projects.coin-or.org/svn/Vol/trunk/Vol

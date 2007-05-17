@@ -4015,7 +4015,8 @@ int CbcMain (int argc, const char *argv[],
 			  babModel->setCutoff(cutoff);
 		      }
 		      solver3->setCbcModel(babModel);
-		      babModel->addCutGenerator(&stored,1,"Stored");
+		      if (stored.sizeRowCuts()) 
+			babModel->addCutGenerator(&stored,1,"Stored");
 		      CglTemporary temp;
 		      babModel->addCutGenerator(&temp,1,"OnceOnly");
 		      //choose.setNumberBeforeTrusted(2000);
@@ -4027,6 +4028,9 @@ int CbcMain (int argc, const char *argv[],
 		      printf("*** Temp heuristic with mode %d\n",testOsiOptions-10);
 		      OsiSolverLink * solver3 = dynamic_cast<OsiSolverLink *> (babModel->solver());
 		      assert (solver3) ;
+		      int extra1 = parameters[whichParam(EXTRA1,numberParameters,parameters)].intValue();
+		      solver3->setBiLinearPriority(extra1);
+		      printf("bilinear priority now %d\n",extra1);
 		      double * solution = solver3->heuristicSolution(slpValue>0 ? slpValue : 20 ,1.0e-5,testOsiOptions-10);
 		      assert(solution);
 		    }
@@ -4605,10 +4609,20 @@ int CbcMain (int argc, const char *argv[],
 	      if (canOpen) {
                 int status;
 		ClpSimplex * lpSolver = clpSolver->getModelPtr();
-                if (!gmpl)
+                if (!gmpl) {
                   status =clpSolver->readMps(fileName.c_str(),
                                                  keepImportNames!=0,
                                                  allowImportErrors!=0);
+		  if (!status||(status>0&&allowImportErrors)) {
+		    if (keepImportNames) {
+		      lengthName = lpSolver->lengthNames();
+		      rowNames = *(lpSolver->rowNames());
+		      columnNames = *(lpSolver->columnNames());
+		    } else {
+		      lengthName=0;
+		    }
+		  }
+		}
                 else if (gmpl>0)
                   status= lpSolver->readGMPL(fileName.c_str(),
                                                   (gmpl==2) ? gmplData.c_str() : NULL,

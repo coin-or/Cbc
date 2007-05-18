@@ -2704,21 +2704,25 @@ int CbcMain (int argc, const char *argv[],
 		      heuristicFPump.setWhen(13);
 		      heuristicFPump.setMaximumPasses(20);
 		      heuristicFPump.setMaximumRetries(7);
-		      heuristicFPump.setAbsoluteIncrement(4332.64);
-		      cbcModel->addHeuristic(&heuristicFPump);
+		      heuristicFPump.setHeuristicName("feasibility pump");
 		      heuristicFPump.setInitialWeight(1);
+		      cbcModel->addHeuristic(&heuristicFPump);
 		      
 		      CbcRounding rounding(*cbcModel);
+		      rounding.setHeuristicName("rounding");
 		      cbcModel->addHeuristic(&rounding);
 		      
 		      CbcHeuristicLocal heuristicLocal(*cbcModel);
+		      heuristicLocal.setHeuristicName("join solutions");
 		      heuristicLocal.setSearchType(1);
 		      cbcModel->addHeuristic(&heuristicLocal);
 		      
 		      CbcHeuristicGreedyCover heuristicGreedyCover(*cbcModel);
+		      heuristicGreedyCover.setHeuristicName("greedy cover");
 		      cbcModel->addHeuristic(&heuristicGreedyCover);
 		      
 		      CbcHeuristicGreedyEquality heuristicGreedyEquality(*cbcModel);
+		      heuristicGreedyEquality.setHeuristicName("greedy equality");
 		      cbcModel->addHeuristic(&heuristicGreedyEquality);
 		      
 		      CbcCompareDefault compare;
@@ -2757,6 +2761,7 @@ int CbcMain (int argc, const char *argv[],
 		      linkSolver->setBestObjectiveValue(bestObjectiveValue);
 		      linkSolver->setBestSolution(solution,solver3->getNumCols());
 		      CbcHeuristicDynamic3 dynamic(model);
+		      dynamic.setHeuristicName("dynamic pass thru");
 		      model.addHeuristic(&dynamic);
 		      // if convex
 		      if ((linkSolver->specialOptions2()&4)!=0) {
@@ -3297,18 +3302,23 @@ int CbcMain (int argc, const char *argv[],
 		    pumpTune =13;
 		  heuristic4.setWhen(pumpTune+10);
 		}
+		heuristic4.setHeuristicName("feasibility pump");
                 babModel->addHeuristic(&heuristic4);
               }
               if (!miplib) {
                 CbcRounding heuristic1(*babModel);
+		heuristic1.setHeuristicName("rounding");
                 if (useRounding)
                   babModel->addHeuristic(&heuristic1) ;
                 CbcHeuristicLocal heuristic2(*babModel);
+		heuristic2.setHeuristicName("join solutions");
                 heuristic2.setSearchType(1);
                 if (useCombine)
                   babModel->addHeuristic(&heuristic2);
                 CbcHeuristicGreedyCover heuristic3(*babModel);
+		heuristic3.setHeuristicName("greedy cover");
                 CbcHeuristicGreedyEquality heuristic3a(*babModel);
+		heuristic3a.setHeuristicName("greedy equality");
                 if (useGreedy) {
                   babModel->addHeuristic(&heuristic3);
                   babModel->addHeuristic(&heuristic3a);
@@ -3319,6 +3329,7 @@ int CbcMain (int argc, const char *argv[],
                 }
               }
 	      CbcHeuristicRINS heuristic5(*babModel);
+	      heuristic5.setHeuristicName("RINS");
 	      if (useRINS)
 		babModel->addHeuristic(&heuristic5) ;
 	      if (type==MIPLIB) {
@@ -4613,23 +4624,21 @@ int CbcMain (int argc, const char *argv[],
                   status =clpSolver->readMps(fileName.c_str(),
                                                  keepImportNames!=0,
                                                  allowImportErrors!=0);
-		  if (!status||(status>0&&allowImportErrors)) {
-		    if (keepImportNames) {
-		      lengthName = lpSolver->lengthNames();
-		      rowNames = *(lpSolver->rowNames());
-		      columnNames = *(lpSolver->columnNames());
-		    } else {
-		      lengthName=0;
-		    }
-		  }
-		}
-                else if (gmpl>0)
+		} else if (gmpl>0) {
                   status= lpSolver->readGMPL(fileName.c_str(),
-                                                  (gmpl==2) ? gmplData.c_str() : NULL,
-                                                  keepImportNames!=0);
-		else
+					     (gmpl==2) ? gmplData.c_str() : NULL,
+					     keepImportNames!=0);
+		} else {
                   status= lpSolver->readLp(fileName.c_str(),1.0e-12);
+		}
 		if (!status||(status>0&&allowImportErrors)) {
+		  if (keepImportNames&&gmpl<=0) {
+		    lengthName = lpSolver->lengthNames();
+		    rowNames = *(lpSolver->rowNames());
+		    columnNames = *(lpSolver->columnNames());
+		  } else {
+		    lengthName=0;
+		  }
 		  goodModel=true;
 		  // sets to all slack (not necessary?)
 		  lpSolver->createStatus();

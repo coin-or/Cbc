@@ -896,7 +896,8 @@ void CbcModel::branchAndBound(int doStatistics)
      clpSolver->deleteScaleFactors();
      int value=131072;
      clpSolver->setSpecialOptions(clpSolver->specialOptions()|value);
-     simplex->setSpecialOptions(simplex->specialOptions()|value);
+     if ((clpSolver->specialOptions()&value)!=0)
+       simplex->setSpecialOptions(simplex->specialOptions()|value);
      //if (simplex->numberRows()<50)
      //simplex->setAlphaAccuracy(1.0);
      //clpSolver->setSpecialOptions((clpSolver->specialOptions()&~128)|65536);
@@ -1050,6 +1051,24 @@ void CbcModel::branchAndBound(int doStatistics)
     generator->setAggressiveness(generator->getAggressiveness()-100);
   }
   currentNumberCuts_ = numberNewCuts_ ;
+  // See if can stop on gap
+  stoppedOnGap_ = false ;
+  bestPossibleObjective_ = solver_->getObjValue()*solver_->getObjSense();
+  double testGap = CoinMax(dblParam_[CbcAllowableGap],
+			   CoinMax(fabs(bestObjective_),fabs(bestPossibleObjective_))
+			   *dblParam_[CbcAllowableFractionGap]);
+  if (bestObjective_-bestPossibleObjective_ < testGap && getCutoffIncrement()>=0.0) {
+    if (bestPossibleObjective_<getCutoff()) {
+      stoppedOnGap_ = true ;
+      messageHandler()->message(CBC_GAP,messages())
+	<< bestObjective_-bestPossibleObjective_
+	<< dblParam_[CbcAllowableGap]
+	<< dblParam_[CbcAllowableFractionGap]*100.0
+	<< CoinMessageEol ;
+      secondaryStatus_ = 2;
+    }
+    feasible = false;
+  }
 /*
   We've taken the continuous relaxation as far as we can. Time to branch.
   The first order of business is to actually create a node. chooseBranch
@@ -1216,7 +1235,6 @@ void CbcModel::branchAndBound(int doStatistics)
   { int i ;
     for (i = 0;i < numberObjects_;i++)
       object_[i]->resetBounds(solver_) ; }
-  stoppedOnGap_ = false ;
 /*
   Feasible? Then we should have either a live node prepped for future
   expansion (indicated by variable() >= 0), or (miracle of miracles) an
@@ -1951,7 +1969,8 @@ void CbcModel::branchAndBound(int doStatistics)
 */
       else
       { 
-	tree_->cleanTree(this,-COIN_DBL_MAX,bestPossibleObjective_) ;
+	if (tree_->size())
+	  tree_->cleanTree(this,-COIN_DBL_MAX,bestPossibleObjective_) ;
 	delete nextRowCut_;
 	// We need to get rid of node if is has already been popped from tree
 	if (!nodeOnTree&&!stoppedOnGap_&&node!=rootNode)

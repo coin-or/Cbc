@@ -251,12 +251,18 @@ public:
       Used by heuristics
   */
   virtual int columnNumber() const;
+  /// Set column number
+  inline void setColumnNumber(int value)
+  { columnNumber_ = value;};
 
   /** Reset variable bounds to their original values.
   
     Bounds may be tightened, so it may be good to be able to set this info in object.
    */
   virtual void resetBounds(const OsiSolverInterface * solver) ;
+  /**  Change column numbers after preprocessing
+   */
+  virtual void resetSequenceEtc(int numberColumns, const int * originalColumns) ;
   /// Original bounds
   inline double originalLowerBound() const
   { return originalLower_;};

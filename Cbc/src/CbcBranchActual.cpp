@@ -874,6 +874,20 @@ CbcSimpleInteger::resetBounds(const OsiSolverInterface * solver)
   originalUpper_ = solver->getColUpper()[columnNumber_] ;
 }
 
+/*  Change column numbers after preprocessing
+ */
+void 
+CbcSimpleInteger::resetSequenceEtc(int numberColumns, const int * originalColumns) 
+{
+  int iColumn;
+  for (iColumn=0;iColumn<numberColumns;iColumn++) {
+    if (columnNumber_==originalColumns[iColumn])
+      break;
+  }
+  assert (iColumn<numberColumns);
+  columnNumber_ = iColumn;
+}
+
 // Infeasibility - large is 0.5
 double 
 CbcSimpleInteger::infeasibility(int & preferredWay) const
@@ -966,6 +980,8 @@ CbcIntegerBranchingObject::clone() const
 // Destructor 
 CbcIntegerBranchingObject::~CbcIntegerBranchingObject ()
 {
+  // for debugging threads
+  way_=-23456789;
 }
 
 /*
@@ -981,6 +997,13 @@ CbcIntegerBranchingObject::~CbcIntegerBranchingObject ()
 double
 CbcIntegerBranchingObject::branch()
 {
+  // for debugging threads
+  if (way_<-1||way_>100000) {
+    printf("way %d, left %d, iCol %d, variable %d\n",
+	   way_,numberBranchesLeft(),
+	   originalCbcObject_->columnNumber(),variable_);
+    assert (way_!=-23456789);
+  }
   decrementNumberBranchesLeft();
   int iColumn = originalCbcObject_->columnNumber();
   assert (variable_==iColumn);

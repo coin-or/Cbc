@@ -36,6 +36,7 @@
 // Heuristics
 
 #include "CbcHeuristic.hpp"
+#include "CbcHeuristicLocal.hpp"
 
 // Default Constructor
 CbcStrategy::CbcStrategy() 
@@ -256,6 +257,7 @@ CbcStrategyDefault::setupHeuristics(CbcModel & model)
   // Allow rounding heuristic
 
   CbcRounding heuristic1(model);
+  heuristic1.setHeuristicName("rounding");
   int numberHeuristics = model.numberHeuristics();
   int iHeuristic;
   bool found;
@@ -270,6 +272,23 @@ CbcStrategyDefault::setupHeuristics(CbcModel & model)
   }
   if (!found)
     model.addHeuristic(&heuristic1);
+#if 0
+  // Allow join solutions
+  CbcHeuristicLocal heuristic2(model);
+  heuristic2.setHeuristicName("join solutions");
+  heuristic2.setSearchType(1);
+  found=false;
+  for (iHeuristic=0;iHeuristic<numberHeuristics;iHeuristic++) {
+    CbcHeuristic * heuristic = model.heuristic(iHeuristic);
+    CbcHeuristicLocal * cgl = dynamic_cast<CbcHeuristicLocal *>(heuristic);
+    if (cgl) {
+      found=true;
+      break;
+    }
+  }
+  if (!found)
+    model.addHeuristic(&heuristic2);
+#endif
 }
 // Do printing stuff
 void 
@@ -301,6 +320,36 @@ CbcStrategyDefault::setupOther(CbcModel & model)
     // Pass in models message handler
     process->passInMessageHandler(model.messageHandler());
     OsiSolverInterface * solver = model.solver();
+    {
+      // mark some columns as ineligible for presolve
+      int numberColumns = solver->getNumCols();
+      char * prohibited = new char[numberColumns];
+      memset(prohibited,0,numberColumns);
+      int numberProhibited=0;
+      // convert to Cbc integers
+      model.findIntegers(false);
+      int numberObjects = model.numberObjects();
+      if (numberObjects) { 
+	OsiObject ** objects = model.objects();
+	for (int iObject=0;iObject<numberObjects;iObject++) {
+	  CbcSOS * obj =
+	    dynamic_cast <CbcSOS *>(objects[iObject]) ;
+	  if (obj) {
+	    // SOS
+	    int n = obj->numberMembers();
+	    const int * which = obj->members();
+	    for (int i=0;i<n;i++) {
+	      int iColumn = which[i];
+	      prohibited[iColumn]=1;
+	      numberProhibited++;
+	    }
+	  }
+	}
+      }
+      if (numberProhibited)
+	process->passInProhibited(prohibited,numberColumns);
+      delete [] prohibited;
+    }
     int logLevel = model.messageHandler()->logLevel();
 #ifdef COIN_HAS_CLP
     OsiClpSolverInterface * clpSolver = dynamic_cast< OsiClpSolverInterface*> (solver);
@@ -706,6 +755,7 @@ CbcStrategyDefaultSubTree::setupHeuristics(CbcModel & model)
   // Allow rounding heuristic
 
   CbcRounding heuristic1(model);
+  heuristic1.setHeuristicName("rounding");
   int numberHeuristics = model.numberHeuristics();
   int iHeuristic;
   bool found;

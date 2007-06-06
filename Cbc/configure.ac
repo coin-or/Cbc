@@ -1,4 +1,4 @@
-# Copyright (C) 2006 International Business Machines.
+# Copyright (C) 2006, 2007 International Business Machines.
 # All Rights Reserved.
 # This file is distributed under the Common Public License.
 
@@ -132,7 +132,27 @@ esac
 AC_DEFINE_UNQUOTED([CBC_DEFAULT_SOLVER],"$cbc_default_solver",
   [Define to the name of the default solver to be used in cbc-generic in small letters])
 
-# 
+
+#############################################################################
+#                       Cbc parallel configuration			    #
+#############################################################################
+
+# First we define a new option, --enable-cbc-parallel
+
+AC_ARG_ENABLE([cbc-parallel],
+[AC_HELP_STRING([--enable-cbc-parallel],
+                [enables compilation of the SMP version of Cbc])])
+
+if test "$enable_cbc_parallel" = yes; then
+  # Define the preprocessor macro
+  AC_DEFINE([CBC_THREAD],[1],[Define to 1 if the SMP version of Cbc should be compiled])
+  AC_CHECK_LIB([rt],[clock_gettime],
+               [ADDLIBS="-lrt $ADDLIBS"],
+	       [AC_MSG_ERROR([--enable-cbc-parallel selected, but -lrt unavailable])])
+  AC_CHECK_LIB([pthread],[pthread_create],
+               [ADDLIBS="-lpthread $ADDLIBS"],
+	       [AC_MSG_ERROR([--enable-cbc-parallel selected, but -lpthreads unavailable])])
+fi
 
 ##############################################################################
 #                   VPATH links for example input files                      #

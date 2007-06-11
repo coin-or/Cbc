@@ -1316,7 +1316,7 @@ int CbcMain (int argc, const char *argv[],
       noPrinting=true;
       for (int i=1;i<argc;i++) {
         if (!strncmp(argv[i],"log",3)) {
-	  char * equals = strchr(argv[i],'=');
+	  const char * equals = strchr(argv[i],'=');
           if (equals&&atoi(equals+1)>0) {
             noPrinting=false;
 	    info.logLevel=atoi(equals+1);

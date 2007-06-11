@@ -41,11 +41,21 @@
 /*             HERE DEFINE THE CONFIGURATION SPECIFIC MACROS               */
 /***************************************************************************/
 
+/* Define to the name of the default solver to be used in cbc-generic in small
+   letters */
+#define CBC_DEFAULT_SOLVER "clp"
+
+/* Define to 1 if the SMP version of Cbc should be compiled */
+/* #undef CBC_THREAD */
+
 /* Define to the debug sanity check level (0 is no test) */
 #define COIN_CBC_CHECKLEVEL 0
 
 /* Define to the debug verbosity level (0 is no output) */
 #define COIN_CBC_VERBOSITY 0
+
+/* If defined, the Ampl Solver Library is available. */
+/* #undef COIN_HAS_ASL 1 */
 
 /* Define to 1 if the Cbc package is used */
 #define COIN_HAS_CBC 1

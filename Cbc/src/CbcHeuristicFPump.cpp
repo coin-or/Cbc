@@ -184,7 +184,7 @@ CbcHeuristicFPump::solution(double & solutionValue,
     numberPasses++;
     memcpy(newSolution,solution,numberColumns*sizeof(double));
     int flip;
-    returnCode = rounds(newSolution,saveObjective,roundExpensive_,downValue_,&flip);
+    returnCode = rounds(solver,newSolution,saveObjective,roundExpensive_,downValue_,&flip);
     if (returnCode) {
       // SOLUTION IS INTEGER
       // Put back correct objective
@@ -321,11 +321,10 @@ void CbcHeuristicFPump::setModel(CbcModel * model)
    returns 1 if current is a feasible solution
 */
 int 
-CbcHeuristicFPump::rounds(double * solution,
+CbcHeuristicFPump::rounds(OsiSolverInterface * solver, double * solution,
 			  const double * objective,
 			  bool roundExpensive, double downValue, int *flip)
 {
-  OsiSolverInterface * solver = model_->solver();
   double integerTolerance = model_->getDblParam(CbcModel::CbcIntegerTolerance);
   double primalTolerance ;
   solver->getDblParam(OsiPrimalTolerance,primalTolerance) ;

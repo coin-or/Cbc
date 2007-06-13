@@ -366,7 +366,7 @@ CbcHeuristicFPump::solution(double & solutionValue,
       numberPasses++;
       memcpy(newSolution,solution,numberColumns*sizeof(double));
       int flip;
-      returnCode = rounds(newSolution,saveObjective,numberIntegers,integerVariable,
+      returnCode = rounds(solver,newSolution,saveObjective,numberIntegers,integerVariable,
 			  roundExpensive_,defaultRounding_,&flip);
       if (returnCode) {
 	// SOLUTION IS INTEGER
@@ -530,7 +530,7 @@ CbcHeuristicFPump::solution(double & solutionValue,
 	  }
 	  memcpy(newSolution,solution,numberColumns*sizeof(double));
 	  int flip;
-	  returnCode = rounds(newSolution,saveObjective,numberIntegers,integerVariable,
+	  returnCode = rounds(solver,newSolution,saveObjective,numberIntegers,integerVariable,
 			      roundExpensive_,defaultRounding_,&flip);
 	  if (returnCode) {
 	    // solution - but may not be better
@@ -853,12 +853,11 @@ void CbcHeuristicFPump::setModel(CbcModel * model)
    returns 1 if current is a feasible solution
 */
 int 
-CbcHeuristicFPump::rounds(double * solution,
+CbcHeuristicFPump::rounds(OsiSolverInterface * solver,double * solution,
 			  const double * objective,
 			  int numberIntegers, const int * integerVariable,
 			  bool roundExpensive, double downValue, int *flip)
 {
-  OsiSolverInterface * solver = model_->solver();
   double integerTolerance = model_->getDblParam(CbcModel::CbcIntegerTolerance);
   double primalTolerance ;
   solver->getDblParam(OsiPrimalTolerance,primalTolerance) ;

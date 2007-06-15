@@ -911,7 +911,7 @@ Cbc_secondaryStatus(Cbc_Model * model)
 
   int result = 0;
 // cannot find this in Cbc, Osi, or OsiClp
-//tbd  result = model->model_->secondaryStatus();
+  result = model->model_->secondaryStatus();
   if (VERBOSE>0) printf("%s WARNING: NOT IMPLEMENTED\n",prefix);
 
   if (VERBOSE>0) printf("%s return %i\n",prefix,result);

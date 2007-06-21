@@ -413,6 +413,25 @@ void CbcModel::branchAndBound(int doStatistics)
   strongInfo_[1]=0;
   strongInfo_[2]=0;
   numberStrongIterations_ = 0;
+#ifndef NDEBUG
+  {
+    int n = solver_->getNumCols();
+    int i;
+    const double *lower = solver_->getColLower() ;
+    const double *upper = solver_->getColUpper() ;
+    for (i=0;i<n;i++) {
+      assert (lower[i]<1.0e10);
+      assert (upper[i]>-1.0e10);
+    }
+    n = solver_->getNumRows();
+    lower = solver_->getRowLower() ;
+    upper = solver_->getRowUpper() ;
+    for (i=0;i<n;i++) {
+      assert (lower[i]<1.0e10);
+      assert (upper[i]>-1.0e10);
+    }
+  }
+#endif
   // original solver (only set if pre-processing)
   OsiSolverInterface * originalSolver=NULL;
   int numberOriginalObjects=numberObjects_;
@@ -3862,6 +3881,15 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
           if(numberRowCutsBefore < theseCuts.sizeRowCuts() &&
              generator_[i]->mustCallAgain())
             keepGoing=true; // say must go round
+	  // Check last cut to see if infeasible
+	  int numberRowCutsAfter = theseCuts.sizeRowCuts() ;
+	  if(numberRowCutsBefore < numberRowCutsAfter) {
+	    const OsiRowCut * thisCut = theseCuts.rowCutPtr(numberRowCutsAfter-1) ;
+	    if (thisCut->lb()>thisCut->ub()) {
+	      feasible = false; // sub-problem is infeasible
+	      break;
+	    }
+	  }
 #ifdef CBC_DEBUG
           {
             int numberRowCutsAfter = theseCuts.sizeRowCuts() ;

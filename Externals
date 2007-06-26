@@ -1,6 +1,8 @@
-MSVisualStudio   https://projects.coin-or.org/svn/MSVisualStudio/trunk/ExternalsDirs/Cbc
-BuildTools    https://projects.coin-or.org/svn/BuildTools/stable/0.5
+MSVisualStudio   https://projects.coin-or.org/svn/MSVisualStudio/branches/devel/ExternalsDirs/Cbc
+BuildTools    https://projects.coin-or.org/svn/BuildTools/trunk
 ThirdParty/ASL https://projects.coin-or.org/svn/BuildTools/ThirdParty/ASL/stable/1.0
+ThirdParty/Blas https://projects.coin-or.org/svn/BuildTools/ThirdParty/Blas/stable/1.0
+ThirdParty/Lapack https://projects.coin-or.org/svn/BuildTools/ThirdParty/Lapack/stable/1.0
 Data/Netlib   https://projects.coin-or.org/svn/Data/stable/1.0/Netlib
 Data/Sample   https://projects.coin-or.org/svn/Data/stable/1.0/Sample
 Data/miplib3  https://projects.coin-or.org/svn/Data/stable/1.0/miplib3

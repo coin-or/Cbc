@@ -12,13 +12,28 @@ AUTOMAKE_OPTIONS = foreign
 #                         unitTest for Cbc                             #
 ########################################################################
 
-# We are using the Cbc solver executable to do the unit test
+CBC_TEST_TGTS =
 
-test: ../src/cbc-generic$(EXEEXT) ../src/cbc$(EXEEXT)
-	cd ../../Data/Netlib; $(MAKE) uncompress
-	cd ../../Data/miplib3; $(MAKE) uncompress
-	../src/cbc-generic$(EXEEXT) -miplib -unitTest
-	../src/cbc$(EXEEXT) -unitTest -netlib
+if COIN_HAS_CLP
+  CBC_TEST_TGTS += test_cbc
+endif
+if CBC_BUILD_CBC_GENERIC
+  CBC_TEST_TGTS += test_cbc_generic
+endif
+
+# We are using the solver executables to do the unit test
+
+test: $(CBC_TEST_TGTS)
+
+test_cbc: ../src/cbc$(EXEEXT)
+	cd ../../Data/Netlib; make uncompress
+	cd ../../Data/miplib3; make uncompress
+	../src/cbc$(EXEEXT) -unitTest -netlib -miplib
+
+test_cbc_generic: ../src/cbc-generic$(EXEEXT)
+	echo "A minimal test is all that cbc-generic can manage just yet."
+	../src/cbc-generic$(EXEEXT) \
+	    -directory ../../Data/miplib3 -import p0033 -branch
 
 .PHONY: test
 

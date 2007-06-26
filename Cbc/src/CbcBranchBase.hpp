@@ -5,7 +5,7 @@
 
 #include <string>
 #include <vector>
-
+#include "OsiBranchingObject.hpp"
 class OsiSolverInterface;
 class OsiSolverBranch;
 
@@ -13,10 +13,12 @@ class CbcModel;
 class CbcNode;
 class CbcNodeInfo;
 class CbcBranchingObject;
+class OsiChooseVariable;
 
 //#############################################################################
 
 /** Abstract base class for `objects'.
+    It now just has stuff that OsiObject does not have
 
   The branching model used in Cbc is based on the idea of an <i>object</i>.
   In the abstract, an object is something that has a feasible region, can be
@@ -57,7 +59,7 @@ class CbcBranchingObject;
     int fix; // 0 if no fix, 1 if we can fix up, -1 if we can fix down
   } CbcStrongInfo;
 
-class CbcObject {
+class CbcObject : public OsiObject {
 
 public:
 
@@ -94,11 +96,16 @@ public:
       This will probably be based on pseudo-cost ideas
   */
   virtual double infeasibility(int &preferredWay) const = 0;
+  /// Dummy one for compatibility
+  virtual double infeasibility(const OsiBranchingInformation * info,
+			       int &preferredWay) const;
 
   /** For the variable(s) referenced by the object,
       look at the current solution and set bounds to match the solution.
   */
   virtual void feasibleRegion() = 0;
+  /// Dummy one for compatibility
+  virtual double feasibleRegion(OsiSolverInterface * solver, const OsiBranchingInformation * info) const;
 
   /** Create a branching object and indicate which way to branch first.
 
@@ -107,6 +114,42 @@ public:
   */
   virtual CbcBranchingObject * createBranch(int way) = 0;
   
+  /** Infeasibility of the object
+      
+    This is some measure of the infeasibility of the object. 0.0 
+    indicates that the object is satisfied.
+  
+    The preferred branching direction is returned in way,
+  
+    This is used to prepare for strong branching but should also think of
+    case when no strong branching
+  
+    The object may also compute an estimate of cost of going "up" or "down".
+    This will probably be based on pseudo-cost ideas
+
+    This should also set mutable infeasibility_ and whichWay_
+    This is for instant re-use for speed
+  */
+  virtual double infeasibility(const OsiSolverInterface * solver,int &preferredWay) const;
+  
+  /** For the variable(s) referenced by the object,
+      look at the current solution and set bounds to match the solution.
+      Returns measure of how much it had to move solution to make feasible
+  */
+  virtual double feasibleRegion(OsiSolverInterface * solver) const ;
+  
+  /** Create a branching object and indicate which way to branch first.
+      
+      The branching object has to know how to create branches (fix
+      variables, etc.)
+  */
+  virtual OsiBranchingObject * createBranch(OsiSolverInterface * solver, int way) const;
+  /** Create a branching object and indicate which way to branch first.
+      
+      The branching object has to know how to create branches (fix
+      variables, etc.)
+  */
+  virtual OsiBranchingObject * createBranch(OsiSolverInterface * solver,const OsiBranchingInformation * info, int way) const;
   /** Create an OsiSolverBranch object
 
       This returns NULL if branch not represented by bound changes
@@ -137,15 +180,10 @@ public:
 
   /** Reset variable bounds to their original values.
   
-    Bounds may be tightened, so it may be good to be able to reset them to
-    their original values.
+    Bounds may be tightened, so it may be good to be able to set this info in object.
    */
-  virtual void resetBounds() {};
+  virtual void resetBounds(const OsiSolverInterface * solver) {};
   
-  /** \brief Return true if branch created by object should fix variables
-  */
-  virtual bool boundBranch() const 
-  {return true;};
   /** Returns floor and ceiling i.e. closest valid points
   */
   virtual void floorCeiling(double & floorValue, double & ceilingValue, double value,
@@ -154,16 +192,6 @@ public:
   /// Identifier (normally column number in matrix)
   inline int id() const
   { return id_;};
-  /// Return Priority
-  inline int priority() const
-  { return priority_;};
-  /// Set priority
-  inline void setPriority(int priority)
-  { priority_ = priority;};
-  
-  /// Column number if single column object -1 otherwise
-  virtual int columnNumber() const;
-
   
    /// update model
   inline void setModel(CbcModel * model)
@@ -173,10 +201,6 @@ public:
   inline CbcModel * model() const
   {return  model_;};
 
-  /// Return "up" estimate (default 1.0e-5)
-  virtual double upEstimate() const;
-  /// Return "down" estimate (default 1.0e-5)
-  virtual double downEstimate() const;
   /// If -1 down always chosen first, +1 up always, 0 normal
   inline int preferredWay() const
   { return preferredWay_;};
@@ -193,14 +217,13 @@ protected:
   CbcModel * model_;
   /// Identifier (normally column number in matrix)
   int id_;
-  /// Priority
-  int priority_;
   /// If -1 down always chosen first, +1 up always, 0 normal
   int preferredWay_;
 
 };
 
 /** \brief Abstract branching object base class
+    Now just difference with OsiBranchingObject
 
   In the abstract, an CbcBranchingObject contains instructions for how to
   branch. We want an abstract class so that we can describe how to branch on
@@ -217,7 +240,7 @@ protected:
   model.
 */
 
-class CbcBranchingObject {
+class CbcBranchingObject : public OsiBranchingObject {
 
 public:
 
@@ -244,20 +267,9 @@ public:
       The object mention in incoming CbcStrongInfo must match.
       Returns nonzero if skip is wanted */
   virtual int fillStrongInfo( CbcStrongInfo & info) {return 0;};
-  /** The number of branch arms created for this branching object
-
-    \todo The hardwired `2' has to be changed before cbc can do branches with
-	  more than two arms.
-  */
-  virtual int numberBranches() const
-  {return 2;};
-
-  /// The number of branch arms left to be evaluated
-  virtual int numberBranchesLeft() const
-  {return numberBranchesLeft_;};
   /// Reset number of branches left to original
   inline void resetNumberBranchesLeft()
-  { numberBranchesLeft_ = numberBranches();};
+  { branchIndex_=0;};
 
   /** \brief Execute the actions required to branch, as specified by the
 	     current state of the branching object, and advance the object's
@@ -265,16 +277,19 @@ public:
 	     strong branching is also passed.
 	     Returns change in guessed objective on next branch
   */
-  virtual double branch(bool normalBranch=false)=0;
+  virtual double branch()=0;
+  /** \brief Execute the actions required to branch, as specified by the
+	     current state of the branching object, and advance the object's
+	     state.  Mainly for diagnostics, whether it is true branch or
+	     strong branching is also passed.
+	     Returns change in guessed objective on next branch
+  */
+  virtual double branch(OsiSolverInterface * solver)
+  { return branch();};
 
   /** \brief Print something about branch - only if log level high
   */
-  virtual void print(bool normalBranch) {};
-
-  /** \brief Return true if branch should fix variables
-  */
-  virtual bool boundBranch() const 
-  {return true;};
+  virtual void print() const {};
 
   /** \brief Index identifying the associated CbcObject within its class.
   
@@ -307,27 +322,23 @@ public:
   inline void way(int way)
   {way_=way;};
 
-  /// Current value
-  inline double value() const
-  {return value_;};
-  
   /// Return model
   inline CbcModel * model() const
   {return  model_;};
 
   /// Return pointer back to object which created
   inline CbcObject * object() const
-  {return  originalObject_;};
+  {return  originalCbcObject_;};
   /// Set pointer back to object which created
   inline void setOriginalObject(CbcObject * object)
-  {originalObject_=object;};
+  {originalCbcObject_=object;};
 
 protected:
 
   /// The model that owns this branching object
   CbcModel * model_;
   /// Pointer back to object which created
-  CbcObject * originalObject_;
+  CbcObject * originalCbcObject_;
 
   /// Branching variable (0 is first integer)
   int variable_;
@@ -340,16 +351,6 @@ protected:
     The precise meaning is defined in the derived class.
   */
   int way_;
-
-  /// Current value
-  double value_;
-
-  /** Number of arms remaining to be evaluated
-
-    \todo Compare with CbcNodeInfo::numberBranchesLeft_, and check for
-	  redundancy.
-  */
-  int numberBranchesLeft_;
 
 };
 
@@ -372,6 +373,9 @@ public:
   /// Default Constructor 
   CbcBranchDecision ();
 
+  // Copy constructor 
+  CbcBranchDecision ( const CbcBranchDecision &);
+   
   /// Destructor
   virtual ~CbcBranchDecision();
 
@@ -414,7 +418,7 @@ public:
 
   /** Saves a clone of current branching object.  Can be used to update
       information on object causing branch - after branch */
-  virtual void saveBranchingObject(CbcBranchingObject * object) {};
+  virtual void saveBranchingObject(OsiBranchingObject * object) {};
   /** Pass in information on branch just done.
       assumes object can get information from solver */
   virtual void updateInformation(OsiSolverInterface * solver, 
@@ -424,11 +428,27 @@ public:
   virtual double getBestCriterion() const {return 0.0;};
   /// Create C++ lines to get to current state
   virtual void generateCpp( FILE * fp) {};
+  /// Model
+  inline CbcModel * cbcModel() const
+  { return model_;}
+  /* If chooseMethod_ id non-null then the rest is fairly pointless
+     as choosemethod_ will be doing all work
+  */
+  OsiChooseVariable * chooseMethod() const
+  { return chooseMethod_;};
+  /// Set (clone) chooseMethod
+  void setChooseMethod(const OsiChooseVariable & method);
 
 protected:
   
   // Clone of branching object
   CbcBranchingObject * object_;
+  /// Pointer to model
+  CbcModel * model_;
+  /* If chooseMethod_ id non-null then the rest is fairly pointless
+     as choosemethod_ will be doing all work
+  */
+  OsiChooseVariable * chooseMethod_;
 private:
   /// Assignment is illegal
   CbcBranchDecision & operator=(const CbcBranchDecision& rhs);

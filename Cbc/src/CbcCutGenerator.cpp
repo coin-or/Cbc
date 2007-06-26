@@ -12,6 +12,7 @@
 #include "CbcModel.hpp"
 #include "CbcMessage.hpp"
 #include "CbcCutGenerator.hpp"
+#include "CbcBranchDynamic.hpp"
 #include "CglProbing.hpp"
 #include "CoinTime.hpp"
 
@@ -35,7 +36,9 @@ CbcCutGenerator::CbcCutGenerator ()
     numberTimes_(0),
     numberCuts_(0),
     numberColumnCuts_(0),
-    numberCutsActive_(0)
+    numberCutsActive_(0),
+    numberCutsAtRoot_(0),
+    numberActiveCutsAtRoot_(0)
 {
 }
 // Normal constructor
@@ -55,7 +58,9 @@ CbcCutGenerator::CbcCutGenerator(CbcModel * model,CglCutGenerator * generator,
     numberTimes_(0),
     numberCuts_(0),
     numberColumnCuts_(0),
-    numberCutsActive_(0)
+    numberCutsActive_(0),
+    numberCutsAtRoot_(0),
+    numberActiveCutsAtRoot_(0)
 {
   model_ = model;
   generator_=generator->clone();
@@ -95,6 +100,8 @@ CbcCutGenerator::CbcCutGenerator ( const CbcCutGenerator & rhs)
   numberCuts_ = rhs.numberCuts_;
   numberColumnCuts_ = rhs.numberColumnCuts_;
   numberCutsActive_ = rhs.numberCutsActive_;
+  numberCutsAtRoot_  = rhs.numberCutsAtRoot_;
+  numberActiveCutsAtRoot_ = rhs.numberActiveCutsAtRoot_;
 }
 
 // Assignment operator 
@@ -124,6 +131,8 @@ CbcCutGenerator::operator=( const CbcCutGenerator& rhs)
     numberCuts_ = rhs.numberCuts_;
     numberColumnCuts_ = rhs.numberColumnCuts_;
     numberCutsActive_ = rhs.numberCutsActive_;
+    numberCutsAtRoot_  = rhs.numberCutsAtRoot_;
+    numberActiveCutsAtRoot_ = rhs.numberActiveCutsAtRoot_;
   }
   return *this;
 }
@@ -187,6 +196,8 @@ CbcCutGenerator::generateCuts( OsiCuts & cs , bool fullScan, CbcNode * node)
     double time1=0.0;
     if (timing_)
       time1 = CoinCpuTime();
+    //#define CBC_DEBUG
+    int numberRowCutsBefore = cs.sizeRowCuts() ;
     int cutsBefore = cs.sizeCuts();
     CglTreeInfo info;
     info.level = depth;
@@ -205,7 +216,16 @@ CbcCutGenerator::generateCuts( OsiCuts & cs , bool fullScan, CbcNode * node)
       //solver->setApplicationData(saveData);
     } else {
       // Probing - return tight column bounds
-      generator->generateCutsAndModify(*solver,cs,&info);
+      CglTreeProbingInfo * info2 = model_->probingInfo();
+      if (info2) {
+	info2->level = depth;
+	info2->pass = pass;
+	info2->formulation_rows = model_->numberRowsAtContinuous();
+	info2->inTree = node!=NULL;
+	generator->generateCutsAndModify(*solver,cs,info2);
+      } else {
+	generator->generateCutsAndModify(*solver,cs,&info);
+      }
       const double * tightLower = generator->tightLower();
       const double * lower = solver->getColLower();
       const double * tightUpper = generator->tightUpper();
@@ -264,38 +284,123 @@ CbcCutGenerator::generateCuts( OsiCuts & cs , bool fullScan, CbcNode * node)
       returnCode = !solver->basisIsAvailable();
       assert (!returnCode);
 #else
+      const char * tightenBounds = generator->tightenBounds();
       for (j=0;j<numberColumns;j++) {
         if (solver->isInteger(j)) {
           if (tightUpper[j]<upper[j]) {
             double nearest = floor(tightUpper[j]+0.5);
-            assert (fabs(tightUpper[j]-nearest)<1.0e-7);
+            //assert (fabs(tightUpper[j]-nearest)<1.0e-5); may be infeasible
             solver->setColUpper(j,nearest);
             if (nearest<solution[j]-primalTolerance)
               returnCode=true;
           }
           if (tightLower[j]>lower[j]) {
             double nearest = floor(tightLower[j]+0.5);
-            assert (fabs(tightLower[j]-nearest)<1.0e-7);
+            //assert (fabs(tightLower[j]-nearest)<1.0e-5); may be infeasible
             solver->setColLower(j,nearest);
             if (nearest>solution[j]+primalTolerance)
               returnCode=true;
           }
         } else {
-          if (tightUpper[j]==tightLower[j]&&
-              upper[j]>lower[j]) {
-            // fix
-            solver->setColLower(j,tightLower[j]);
-            solver->setColUpper(j,tightUpper[j]);
-            if (tightLower[j]>solution[j]+primalTolerance||
-                tightUpper[j]<solution[j]-primalTolerance)
-              returnCode=true;
-          }
+	  if (upper[j]>lower[j]) {
+	    if (tightUpper[j]==tightLower[j]) {
+	      // fix
+	      solver->setColLower(j,tightLower[j]);
+	      solver->setColUpper(j,tightUpper[j]);
+	      if (tightLower[j]>solution[j]+primalTolerance||
+		  tightUpper[j]<solution[j]-primalTolerance)
+		returnCode=true;
+	    } else if (tightenBounds&&tightenBounds[j]) {
+	      solver->setColLower(j,CoinMax(tightLower[j],lower[j]));
+	      solver->setColUpper(j,CoinMin(tightUpper[j],upper[j]));
+	      if (tightLower[j]>solution[j]+primalTolerance||
+		  tightUpper[j]<solution[j]-primalTolerance)
+		returnCode=true;
+	    }
+	  }
         }
       }
       //if (!solver->basisIsAvailable()) 
       //returnCode=true;
 #endif
+#if 0
+      // Pass across info to pseudocosts
+      char * mark = new char[numberColumns];
+      memset(mark,0,numberColumns);
+      int nLook = generator->numberThisTime();
+      const int * lookedAt = generator->lookedAt();
+      const int * fixedDown = generator->fixedDown();
+      const int * fixedUp = generator->fixedUp();
+      for (j=0;j<nLook;j++) 
+	mark[lookedAt[j]]=1;
+      int numberObjects = model_->numberObjects();
+      for (int i=0;i<numberObjects;i++) {
+	CbcSimpleIntegerDynamicPseudoCost * obj1 =
+	  dynamic_cast <CbcSimpleIntegerDynamicPseudoCost *>(model_->modifiableObject(i)) ;
+	if (obj1) {
+	  int iColumn = obj1->columnNumber();
+	  if (mark[iColumn]) 
+	    obj1->setProbingInformation(fixedDown[iColumn],fixedUp[iColumn]);
+	}
+      }
+      delete [] mark;
+#endif
     }
+    CbcCutModifier * modifier = model_->cutModifier();
+    if (modifier) {
+      int numberRowCutsAfter = cs.sizeRowCuts() ;
+      int k ;
+      int nOdd=0;
+      const OsiSolverInterface * solver = model_->solver();
+      for (k = numberRowCutsAfter-1;k>=numberRowCutsBefore;k--) {
+	OsiRowCut & thisCut = cs.rowCut(k) ;
+	int returnCode = modifier->modify(solver,thisCut);
+	if (returnCode) {
+	  nOdd++;
+	  if (returnCode==3)
+	    cs.eraseRowCut(k);
+	}
+      }
+      if (nOdd) 
+	printf("Cut generator %s produced %d cuts of which %d were modified\n",
+		 generatorName_,numberRowCutsAfter-numberRowCutsBefore,nOdd);
+    }
+    { 
+      // make all row cuts without test for duplicate
+      int numberRowCutsAfter = cs.sizeRowCuts() ;
+      int k ;
+      for (k = numberRowCutsBefore;k<numberRowCutsAfter;k++) {
+	OsiRowCut * thisCut = cs.rowCutPtr(k) ;
+	thisCut->mutableRow().setTestForDuplicateIndex(false);
+      }
+    }
+#ifdef CBC_DEBUG
+    {
+      int numberRowCutsAfter = cs.sizeRowCuts() ;
+      int k ;
+      int nBad=0;
+      for (k = numberRowCutsBefore;k<numberRowCutsAfter;k++) {
+	OsiRowCut thisCut = cs.rowCut(k) ;
+	if (thisCut.lb()<=thisCut.ub()) {
+	  /* check size of elements.
+	     We can allow smaller but this helps debug generators as it
+	     is unsafe to have small elements */
+	  int n=thisCut.row().getNumElements();
+	  const int * column = thisCut.row().getIndices();
+	  const double * element = thisCut.row().getElements();
+	  assert (n);
+	  for (int i=0;i<n;i++) {
+	    double value = element[i];
+	    if (fabs(value)<=1.0e-12||fabs(value)>=1.0e20)
+	      nBad++;
+	  }
+	}
+	if (nBad) 
+	  printf("Cut generator %s produced %d cuts of which %d had tiny or large elements\n",
+		 generatorName_,numberRowCutsAfter-numberRowCutsBefore,nBad);
+      }
+    }
+#endif
     if (timing_)
       timeInCutGenerator_ += CoinCpuTime()-time1;
     // switch off if first time and no good
@@ -335,3 +440,106 @@ CbcCutGenerator::setWhatDepthInSub(int value)
 {
   depthCutGeneratorInSub_ = value;
 }
+
+
+// Default Constructor
+CbcCutModifier::CbcCutModifier() 
+{
+}
+
+
+// Destructor 
+CbcCutModifier::~CbcCutModifier ()
+{
+}
+
+// Copy constructor 
+CbcCutModifier::CbcCutModifier ( const CbcCutModifier & rhs)
+{
+}
+
+// Assignment operator 
+CbcCutModifier & 
+CbcCutModifier::operator=( const CbcCutModifier& rhs)
+{
+  if (this!=&rhs) {
+  }
+  return *this;
+}
+
+// Default Constructor 
+CbcCutSubsetModifier::CbcCutSubsetModifier ()
+  : CbcCutModifier(),
+    firstOdd_(INT_MAX)
+{
+}
+
+// Useful constructor 
+CbcCutSubsetModifier::CbcCutSubsetModifier (int firstOdd)
+  : CbcCutModifier()
+{
+  firstOdd_=firstOdd;
+}
+
+// Copy constructor 
+CbcCutSubsetModifier::CbcCutSubsetModifier ( const CbcCutSubsetModifier & rhs)
+  :CbcCutModifier(rhs)
+{
+  firstOdd_ = rhs.firstOdd_;
+}
+
+// Clone
+CbcCutModifier *
+CbcCutSubsetModifier::clone() const
+{
+  return new CbcCutSubsetModifier(*this);
+}
+
+// Assignment operator 
+CbcCutSubsetModifier & 
+CbcCutSubsetModifier::operator=( const CbcCutSubsetModifier& rhs)
+{
+  if (this!=&rhs) {
+    CbcCutModifier::operator=(rhs);
+    firstOdd_ = rhs.firstOdd_;
+  }
+  return *this;
+}
+
+// Destructor 
+CbcCutSubsetModifier::~CbcCutSubsetModifier ()
+{
+}
+/* Returns
+   0 unchanged
+   1 strengthened
+   2 weakened
+   3 deleted
+*/
+int 
+CbcCutSubsetModifier::modify(const OsiSolverInterface * solver, OsiRowCut & cut) 
+{
+  int n=cut.row().getNumElements();
+  if (!n)
+    return 0;
+  const int * column = cut.row().getIndices();
+  //const double * element = cut.row().getElements();
+  int returnCode=0;
+  for (int i=0;i<n;i++) {
+    if (column[i]>=firstOdd_) {
+      returnCode=3;
+      break;
+    }
+  }
+  if (!returnCode) {
+    const double * element = cut.row().getElements();
+    printf("%g <= ",cut.lb());
+    for (int i=0;i<n;i++) {
+      printf("%g*x%d ",element[i],column[i]);
+    }
+    printf("<= %g\n",cut.ub());
+  }
+  //return 3;
+  return returnCode;
+}
+

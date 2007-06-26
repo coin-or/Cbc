@@ -44,66 +44,7 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
-bin_PROGRAMS = cbc-generic$(EXEEXT) $(am__EXEEXT_1)
-
-# List all additionally required solver and Osi libraries
-@COIN_HAS_CLP_TRUE@am__append_1 = -I`$(CYGPATH_W) $(CLPSRCDIR)/src` \
-@COIN_HAS_CLP_TRUE@	-I`$(CYGPATH_W) $(OSISRCDIR)/src/OsiClp` \
-@COIN_HAS_CLP_TRUE@	-I`$(CYGPATH_W) $(CLPOBJDIR)/inc`
-
-@COIN_HAS_CLP_TRUE@am__append_2 = $(OSIOBJDIR)/src/OsiClp/libOsiClp.la \
-@COIN_HAS_CLP_TRUE@	$(CLPOBJDIR)/src/libClp.la
-
-@COIN_HAS_CLP_TRUE@am__append_3 = `cat $(CLPOBJDIR)/clp_addlibs.txt`
-@COIN_HAS_CPX_TRUE@am__append_4 = -I`$(CYGPATH_W) $(CPXINCDIR)` \
-@COIN_HAS_CPX_TRUE@	-I`$(CYGPATH_W) $(OSISRCDIR)/src/OsiCpx`
-
-@COIN_HAS_CPX_TRUE@am__append_5 = $(OSIOBJDIR)/src/OsiCpx/libOsiCpx.la
-@COIN_HAS_DYLP_TRUE@am__append_6 = -I`$(CYGPATH_W) $(DYLPSRCDIR)/src/DylpStdLib` \
-@COIN_HAS_DYLP_TRUE@        -I`$(CYGPATH_W) $(DYLPSRCDIR)/src/Dylp` \
-@COIN_HAS_DYLP_TRUE@        -I`$(CYGPATH_W) $(DYLPOBJDIR)/inc` \
-@COIN_HAS_DYLP_TRUE@	-I`$(CYGPATH_W) $(OSISRCDIR)/src/OsiDylp`
-
-@COIN_HAS_DYLP_TRUE@am__append_7 = $(OSIOBJDIR)/src/OsiDylp/libOsiDylp.la \
-@COIN_HAS_DYLP_TRUE@	$(DYLPOBJDIR)/src/Dylp/libDylp.la
-
-@COIN_HAS_DYLP_TRUE@am__append_8 = `cat $(DYLPOBJDIR)/dylp_addlibs.txt`
-@COIN_HAS_FMP_TRUE@am__append_9 = -I`$(CYGPATH_W) $(OSISRCDIR)/src/OsiFmp`
-@COIN_HAS_FMP_TRUE@am__append_10 = $(OSIOBJDIR)/src/OsiFmp/libOsiFmp.la
-@COIN_HAS_GLPK_TRUE@am__append_11 = -I`$(CYGPATH_W) $(GLPKINCDIR)` \
-@COIN_HAS_GLPK_TRUE@	-I`$(CYGPATH_W) $(OSISRCDIR)/src/OsiGlpk`
-
-@COIN_HAS_GLPK_TRUE@am__append_12 = $(OSIOBJDIR)/src/OsiGlpk/libOsiGlpk.la
-@COIN_HAS_MSK_TRUE@am__append_13 = -I`$(CYGPATH_W) $(MSKINCDIR)` \
-@COIN_HAS_MSK_TRUE@	-I`$(CYGPATH_W) $(OSISRCDIR)/src/OsiMsk`
-
-@COIN_HAS_MSK_TRUE@am__append_14 = $(OSIOBJDIR)/src/OsiMsk/libOsiMsk.la
-@COIN_HAS_OSL_TRUE@am__append_15 = -I`$(CYGPATH_W) $(OSLINCDIR)` \
-@COIN_HAS_OSL_TRUE@	-I`$(CYGPATH_W) $(OSISRCDIR)/src/OsiOsl`
-
-@COIN_HAS_OSL_TRUE@am__append_16 = $(OSIOBJDIR)/src/OsiOsl/libOsiOsl.la
-@COIN_HAS_SPX_TRUE@am__append_17 = -I`$(CYGPATH_W) $(SPXINCDIR)` \
-@COIN_HAS_SPX_TRUE@	-I`$(CYGPATH_W) $(OSISRCDIR)/src/OsiSpx`
-
-@COIN_HAS_SPX_TRUE@am__append_18 = $(OSIOBJDIR)/src/OsiSpx/libOsiSpx.la
-@COIN_HAS_SYM_TRUE@am__append_19 = -I`$(CYGPATH_W) $(SYMSRCDIR)/src` \
-@COIN_HAS_SYM_TRUE@	-I`$(CYGPATH_W) $(OSISRCDIR)/src/OsiSym`
-
-@COIN_HAS_SYM_TRUE@am__append_20 = $(OSIOBJDIR)/src/OsiSym/libOsiSym.la \
-@COIN_HAS_SYM_TRUE@	$(SYMOBJDIR)/src/libSym.la
-
-@COIN_HAS_SYM_TRUE@am__append_21 = `cat $(SYMOBJDIR)/sym_addlibs.txt`
-@COIN_HAS_VOL_TRUE@am__append_22 = -I`$(CYGPATH_W) $(VOLSRCDIR)/src` \
-@COIN_HAS_VOL_TRUE@	-I`$(CYGPATH_W) $(OSISRCDIR)/src/OsiVol`
-
-@COIN_HAS_VOL_TRUE@am__append_23 = $(OSIOBJDIR)/src/OsiVol/libOsiVol.la \
-@COIN_HAS_VOL_TRUE@	$(VOLOBJDIR)/src/libVol.la
-
-@COIN_HAS_VOL_TRUE@am__append_24 = `cat $(VOLOBJDIR)/vol_addlibs.txt`
-@COIN_HAS_XPR_TRUE@am__append_25 = -I`$(CYGPATH_W) $(XPRINCDIR)` \
-@COIN_HAS_XPR_TRUE@	-I`$(CYGPATH_W) $(OSISRCDIR)/src/OsiXpr`
-
-@COIN_HAS_XPR_TRUE@am__append_26 = $(OSIOBJDIR)/src/OsiXpr/libOsiXpr.la
+bin_PROGRAMS = $(am__EXEEXT_1) $(am__EXEEXT_2)
 
 ########################################################################
 #                            cbc program                               #
@@ -111,12 +52,86 @@ bin_PROGRAMS = cbc-generic$(EXEEXT) $(am__EXEEXT_1)
 
 # Name of the executable compiled in this directory.  We want it to be
 # installed in the 'bin' directory
-@COIN_HAS_CLP_TRUE@am__append_27 = cbc
+@COIN_HAS_CLP_TRUE@am__append_1 = cbc
+
+# Add locations of include files.
+@COIN_HAS_CLP_TRUE@am__append_2 = -I`$(CYGPATH_W) $(CLPSRCDIR)/src` \
+@COIN_HAS_CLP_TRUE@	-I`$(CYGPATH_W) $(OSISRCDIR)/src/OsiClp` \
+@COIN_HAS_CLP_TRUE@	-I`$(CYGPATH_W) $(CLPOBJDIR)/inc`
+
+@COIN_HAS_CLP_TRUE@am__append_3 = `cat $(CLPOBJDIR)/clp_addlibs.txt`
 
 # If we have the Ampl solver library, we need to add additional things
-@COIN_HAS_ASL_TRUE@@COIN_HAS_CLP_TRUE@am__append_28 = Cbc_ampl.cpp Cbc_ampl.h
-@COIN_HAS_ASL_TRUE@@COIN_HAS_CLP_TRUE@am__append_29 = $(ASLLIB)
-@COIN_HAS_ASL_TRUE@@COIN_HAS_CLP_TRUE@am__append_30 = $(ASL_CPPFLAGS)
+#cbc_SOURCES += Cbc_ampl.cpp Cbc_ampl.h
+@COIN_HAS_ASL_TRUE@@COIN_HAS_CLP_TRUE@am__append_4 = $(ASLLIB)
+@COIN_HAS_ASL_TRUE@@COIN_HAS_CLP_TRUE@am__append_5 = $(ASL_CPPFLAGS) -DCOIN_HAS_ASL
+
+########################################################################
+#                        cbc-generic program                           #
+########################################################################
+
+# Name of the executable compiled in this directory.  We want it to be
+# installed in the 'bin' directory
+@CBC_BUILD_CBC_GENERIC_TRUE@am__append_6 = cbc-generic
+
+# List all additionally required solver and Osi libraries
+@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_CLP_TRUE@am__append_7 = -I`$(CYGPATH_W) $(CLPSRCDIR)/src` \
+@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_CLP_TRUE@	-I`$(CYGPATH_W) $(OSISRCDIR)/src/OsiClp` \
+@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_CLP_TRUE@	-I`$(CYGPATH_W) $(CLPOBJDIR)/inc`
+
+@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_CLP_TRUE@am__append_8 = $(OSIOBJDIR)/src/OsiClp/libOsiClp.la \
+@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_CLP_TRUE@	$(CLPOBJDIR)/src/libClp.la
+
+@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_CLP_TRUE@am__append_9 = `cat $(CLPOBJDIR)/clp_addlibs.txt`
+@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_CPX_TRUE@am__append_10 = -I`$(CYGPATH_W) $(CPXINCDIR)` \
+@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_CPX_TRUE@	-I`$(CYGPATH_W) $(OSISRCDIR)/src/OsiCpx`
+
+@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_CPX_TRUE@am__append_11 = $(OSIOBJDIR)/src/OsiCpx/libOsiCpx.la
+@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_DYLP_TRUE@am__append_12 = -I`$(CYGPATH_W) $(DYLPSRCDIR)/src/DylpStdLib` \
+@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_DYLP_TRUE@        -I`$(CYGPATH_W) $(DYLPSRCDIR)/src/Dylp` \
+@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_DYLP_TRUE@        -I`$(CYGPATH_W) $(DYLPOBJDIR)/inc` \
+@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_DYLP_TRUE@	-I`$(CYGPATH_W) $(OSISRCDIR)/src/OsiDylp`
+
+@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_DYLP_TRUE@am__append_13 = $(OSIOBJDIR)/src/OsiDylp/libOsiDylp.la \
+@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_DYLP_TRUE@	$(DYLPOBJDIR)/src/Dylp/libDylp.la
+
+@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_DYLP_TRUE@am__append_14 = `cat $(DYLPOBJDIR)/dylp_addlibs.txt`
+@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_FMP_TRUE@am__append_15 = -I`$(CYGPATH_W) $(OSISRCDIR)/src/OsiFmp`
+@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_FMP_TRUE@am__append_16 = $(OSIOBJDIR)/src/OsiFmp/libOsiFmp.la
+@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_GLPK_TRUE@am__append_17 = -I`$(CYGPATH_W) $(GLPKINCDIR)` \
+@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_GLPK_TRUE@	-I`$(CYGPATH_W) $(OSISRCDIR)/src/OsiGlpk`
+
+@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_GLPK_TRUE@am__append_18 = $(OSIOBJDIR)/src/OsiGlpk/libOsiGlpk.la
+@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_MSK_TRUE@am__append_19 = -I`$(CYGPATH_W) $(MSKINCDIR)` \
+@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_MSK_TRUE@	-I`$(CYGPATH_W) $(OSISRCDIR)/src/OsiMsk`
+
+@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_MSK_TRUE@am__append_20 = $(OSIOBJDIR)/src/OsiMsk/libOsiMsk.la
+@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_OSL_TRUE@am__append_21 = -I`$(CYGPATH_W) $(OSLINCDIR)` \
+@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_OSL_TRUE@	-I`$(CYGPATH_W) $(OSISRCDIR)/src/OsiOsl`
+
+@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_OSL_TRUE@am__append_22 = $(OSIOBJDIR)/src/OsiOsl/libOsiOsl.la
+@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_SPX_TRUE@am__append_23 = -I`$(CYGPATH_W) $(SPXINCDIR)` \
+@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_SPX_TRUE@	-I`$(CYGPATH_W) $(OSISRCDIR)/src/OsiSpx`
+
+@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_SPX_TRUE@am__append_24 = $(OSIOBJDIR)/src/OsiSpx/libOsiSpx.la
+@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_SYM_TRUE@am__append_25 = -I`$(CYGPATH_W) $(SYMSRCDIR)/src` \
+@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_SYM_TRUE@	-I`$(CYGPATH_W) $(OSISRCDIR)/src/OsiSym`
+
+@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_SYM_TRUE@am__append_26 = $(OSIOBJDIR)/src/OsiSym/libOsiSym.la \
+@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_SYM_TRUE@	$(SYMOBJDIR)/src/libSym.la
+
+@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_SYM_TRUE@am__append_27 = `cat $(SYMOBJDIR)/sym_addlibs.txt`
+@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_VOL_TRUE@am__append_28 = -I`$(CYGPATH_W) $(VOLSRCDIR)/src` \
+@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_VOL_TRUE@	-I`$(CYGPATH_W) $(OSISRCDIR)/src/OsiVol`
+
+@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_VOL_TRUE@am__append_29 = $(OSIOBJDIR)/src/OsiVol/libOsiVol.la \
+@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_VOL_TRUE@	$(VOLOBJDIR)/src/libVol.la
+
+@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_VOL_TRUE@am__append_30 = `cat $(VOLOBJDIR)/vol_addlibs.txt`
+@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_XPR_TRUE@am__append_31 = -I`$(CYGPATH_W) $(XPRINCDIR)` \
+@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_XPR_TRUE@	-I`$(CYGPATH_W) $(OSISRCDIR)/src/OsiXpr`
+
+@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_XPR_TRUE@am__append_32 = $(OSIOBJDIR)/src/OsiXpr/libOsiXpr.la
 subdir = src
 DIST_COMMON = $(include_HEADERS) $(srcdir)/Makefile.am \
 	$(srcdir)/Makefile.in
@@ -127,7 +142,7 @@ am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
 mkinstalldirs = $(install_sh) -d
 CONFIG_HEADER = $(top_builddir)/inc/config_cbc.h
-CONFIG_CLEAN_FILES = CbcOrClpParam.cpp CbcOrClpParam.hpp
+CONFIG_CLEAN_FILES =
 am__vpath_adj_setup = srcdirstrip=`echo "$(srcdir)" | sed 's|.|.|g'`;
 am__vpath_adj = case $$p in \
     $(srcdir)/*) f=`echo "$$p" | sed "s|^$$srcdirstrip/||"`;; \
@@ -145,20 +160,19 @@ am_libCbc_la_OBJECTS = Cbc_C_Interface.lo CbcBranchActual.lo \
 	CbcCutGenerator.lo CbcEventHandler.lo CbcFathom.lo \
 	CbcFathomDynamicProgramming.lo CbcHeuristic.lo \
 	CbcHeuristicFPump.lo CbcHeuristicGreedy.lo \
-	CbcHeuristicLocal.lo CbcMessage.lo CbcModel.lo CbcNode.lo \
-	CbcStatistics.lo CbcStrategy.lo CbcTree.lo CbcTreeLocal.lo
+	CbcHeuristicLocal.lo CbcHeuristicRINS.lo CbcMessage.lo \
+	CbcModel.lo CbcNode.lo CbcSolver.lo CbcCbcParam.lo \
+	CbcStatistics.lo CbcStrategy.lo CbcTree.lo CbcLinked.lo \
+	CbcTreeLocal.lo Cbc_ampl.lo
 libCbc_la_OBJECTS = $(am_libCbc_la_OBJECTS)
 @COIN_HAS_CLP_TRUE@am__EXEEXT_1 = cbc$(EXEEXT)
+@CBC_BUILD_CBC_GENERIC_TRUE@am__EXEEXT_2 = cbc-generic$(EXEEXT)
 binPROGRAMS_INSTALL = $(INSTALL_PROGRAM)
 PROGRAMS = $(bin_PROGRAMS)
-am__cbc_SOURCES_DIST = CoinSolve.cpp unitTestClp.cpp Cbc_ampl.cpp \
-	Cbc_ampl.h
-@COIN_HAS_ASL_TRUE@@COIN_HAS_CLP_TRUE@am__objects_1 =  \
-@COIN_HAS_ASL_TRUE@@COIN_HAS_CLP_TRUE@	Cbc_ampl.$(OBJEXT)
+am__cbc_SOURCES_DIST = CoinSolve.cpp unitTestClp.cpp
 @COIN_HAS_CLP_TRUE@am_cbc_OBJECTS = CoinSolve.$(OBJEXT) \
-@COIN_HAS_CLP_TRUE@	unitTestClp.$(OBJEXT) $(am__objects_1)
-@COIN_HAS_CLP_TRUE@nodist_cbc_OBJECTS = CbcOrClpParam.$(OBJEXT)
-cbc_OBJECTS = $(am_cbc_OBJECTS) $(nodist_cbc_OBJECTS)
+@COIN_HAS_CLP_TRUE@	unitTestClp.$(OBJEXT)
+cbc_OBJECTS = $(am_cbc_OBJECTS)
 am__DEPENDENCIES_1 =
 @COIN_HAS_ASL_TRUE@@COIN_HAS_CLP_TRUE@am__DEPENDENCIES_2 =  \
 @COIN_HAS_ASL_TRUE@@COIN_HAS_CLP_TRUE@	$(am__DEPENDENCIES_1)
@@ -169,46 +183,56 @@ am__DEPENDENCIES_1 =
 @COIN_HAS_CLP_TRUE@	$(CLPOBJDIR)/src/libClp.la \
 @COIN_HAS_CLP_TRUE@	$(COINUTILSOBJDIR)/src/libCoinUtils.la \
 @COIN_HAS_CLP_TRUE@	$(am__DEPENDENCIES_2)
-am_cbc_generic_OBJECTS = CbcMain.$(OBJEXT) CbcParam.$(OBJEXT) \
-	unitTest.$(OBJEXT)
-nodist_cbc_generic_OBJECTS = CbcOrClpParam.$(OBJEXT)
-cbc_generic_OBJECTS = $(am_cbc_generic_OBJECTS) \
-	$(nodist_cbc_generic_OBJECTS)
-@COIN_HAS_CLP_TRUE@am__DEPENDENCIES_3 =  \
-@COIN_HAS_CLP_TRUE@	$(OSIOBJDIR)/src/OsiClp/libOsiClp.la \
-@COIN_HAS_CLP_TRUE@	$(CLPOBJDIR)/src/libClp.la
-@COIN_HAS_CPX_TRUE@am__DEPENDENCIES_4 =  \
-@COIN_HAS_CPX_TRUE@	$(OSIOBJDIR)/src/OsiCpx/libOsiCpx.la
-@COIN_HAS_DYLP_TRUE@am__DEPENDENCIES_5 =  \
-@COIN_HAS_DYLP_TRUE@	$(OSIOBJDIR)/src/OsiDylp/libOsiDylp.la \
-@COIN_HAS_DYLP_TRUE@	$(DYLPOBJDIR)/src/Dylp/libDylp.la
-@COIN_HAS_FMP_TRUE@am__DEPENDENCIES_6 =  \
-@COIN_HAS_FMP_TRUE@	$(OSIOBJDIR)/src/OsiFmp/libOsiFmp.la
-@COIN_HAS_GLPK_TRUE@am__DEPENDENCIES_7 =  \
-@COIN_HAS_GLPK_TRUE@	$(OSIOBJDIR)/src/OsiGlpk/libOsiGlpk.la
-@COIN_HAS_MSK_TRUE@am__DEPENDENCIES_8 =  \
-@COIN_HAS_MSK_TRUE@	$(OSIOBJDIR)/src/OsiMsk/libOsiMsk.la
-@COIN_HAS_OSL_TRUE@am__DEPENDENCIES_9 =  \
-@COIN_HAS_OSL_TRUE@	$(OSIOBJDIR)/src/OsiOsl/libOsiOsl.la
-@COIN_HAS_SPX_TRUE@am__DEPENDENCIES_10 =  \
-@COIN_HAS_SPX_TRUE@	$(OSIOBJDIR)/src/OsiSpx/libOsiSpx.la
-@COIN_HAS_SYM_TRUE@am__DEPENDENCIES_11 =  \
-@COIN_HAS_SYM_TRUE@	$(OSIOBJDIR)/src/OsiSym/libOsiSym.la \
-@COIN_HAS_SYM_TRUE@	$(SYMOBJDIR)/src/libSym.la
-@COIN_HAS_VOL_TRUE@am__DEPENDENCIES_12 =  \
-@COIN_HAS_VOL_TRUE@	$(OSIOBJDIR)/src/OsiVol/libOsiVol.la \
-@COIN_HAS_VOL_TRUE@	$(VOLOBJDIR)/src/libVol.la
-@COIN_HAS_XPR_TRUE@am__DEPENDENCIES_13 =  \
-@COIN_HAS_XPR_TRUE@	$(OSIOBJDIR)/src/OsiXpr/libOsiXpr.la
-cbc_generic_DEPENDENCIES = libCbc.la $(CGLOBJDIR)/src/libCgl.la \
-	$(OSIOBJDIR)/src/OsiCbc/libOsiCbc.la $(am__DEPENDENCIES_3) \
-	$(am__DEPENDENCIES_4) $(am__DEPENDENCIES_5) \
-	$(am__DEPENDENCIES_6) $(am__DEPENDENCIES_7) \
-	$(am__DEPENDENCIES_8) $(am__DEPENDENCIES_9) \
-	$(am__DEPENDENCIES_10) $(am__DEPENDENCIES_11) \
-	$(am__DEPENDENCIES_12) $(am__DEPENDENCIES_13) \
-	$(OSIOBJDIR)/src/libOsi.la \
-	$(COINUTILSOBJDIR)/src/libCoinUtils.la
+am__cbc_generic_SOURCES_DIST = CbcGenBaB.cpp CbcGenCbcParam.cpp \
+	CbcGenCbcParam.hpp CbcGenCbcParamUtils.cpp CbcGenCtlBlk.cpp \
+	CbcGenCtlBlk.hpp CbcGeneric.cpp CbcGenMessages.cpp \
+	CbcGenMessages.hpp CbcGenOsiParam.cpp CbcGenOsiParam.hpp \
+	CbcGenOsiParamUtils.cpp CbcGenParam.cpp CbcGenParam.hpp \
+	CbcGenParamUtils.cpp CbcGenSolution.cpp CbcGenSolvers.cpp
+@CBC_BUILD_CBC_GENERIC_TRUE@am_cbc_generic_OBJECTS =  \
+@CBC_BUILD_CBC_GENERIC_TRUE@	CbcGenBaB.$(OBJEXT) \
+@CBC_BUILD_CBC_GENERIC_TRUE@	CbcGenCbcParam.$(OBJEXT) \
+@CBC_BUILD_CBC_GENERIC_TRUE@	CbcGenCbcParamUtils.$(OBJEXT) \
+@CBC_BUILD_CBC_GENERIC_TRUE@	CbcGenCtlBlk.$(OBJEXT) \
+@CBC_BUILD_CBC_GENERIC_TRUE@	CbcGeneric.$(OBJEXT) \
+@CBC_BUILD_CBC_GENERIC_TRUE@	CbcGenMessages.$(OBJEXT) \
+@CBC_BUILD_CBC_GENERIC_TRUE@	CbcGenOsiParam.$(OBJEXT) \
+@CBC_BUILD_CBC_GENERIC_TRUE@	CbcGenOsiParamUtils.$(OBJEXT) \
+@CBC_BUILD_CBC_GENERIC_TRUE@	CbcGenParam.$(OBJEXT) \
+@CBC_BUILD_CBC_GENERIC_TRUE@	CbcGenParamUtils.$(OBJEXT) \
+@CBC_BUILD_CBC_GENERIC_TRUE@	CbcGenSolution.$(OBJEXT) \
+@CBC_BUILD_CBC_GENERIC_TRUE@	CbcGenSolvers.$(OBJEXT)
+cbc_generic_OBJECTS = $(am_cbc_generic_OBJECTS)
+@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_CLP_TRUE@am__DEPENDENCIES_3 = $(OSIOBJDIR)/src/OsiClp/libOsiClp.la \
+@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_CLP_TRUE@	$(CLPOBJDIR)/src/libClp.la
+@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_CPX_TRUE@am__DEPENDENCIES_4 = $(OSIOBJDIR)/src/OsiCpx/libOsiCpx.la
+@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_DYLP_TRUE@am__DEPENDENCIES_5 = $(OSIOBJDIR)/src/OsiDylp/libOsiDylp.la \
+@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_DYLP_TRUE@	$(DYLPOBJDIR)/src/Dylp/libDylp.la
+@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_FMP_TRUE@am__DEPENDENCIES_6 = $(OSIOBJDIR)/src/OsiFmp/libOsiFmp.la
+@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_GLPK_TRUE@am__DEPENDENCIES_7 = $(OSIOBJDIR)/src/OsiGlpk/libOsiGlpk.la
+@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_MSK_TRUE@am__DEPENDENCIES_8 = $(OSIOBJDIR)/src/OsiMsk/libOsiMsk.la
+@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_OSL_TRUE@am__DEPENDENCIES_9 = $(OSIOBJDIR)/src/OsiOsl/libOsiOsl.la
+@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_SPX_TRUE@am__DEPENDENCIES_10 = $(OSIOBJDIR)/src/OsiSpx/libOsiSpx.la
+@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_SYM_TRUE@am__DEPENDENCIES_11 = $(OSIOBJDIR)/src/OsiSym/libOsiSym.la \
+@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_SYM_TRUE@	$(SYMOBJDIR)/src/libSym.la
+@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_VOL_TRUE@am__DEPENDENCIES_12 = $(OSIOBJDIR)/src/OsiVol/libOsiVol.la \
+@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_VOL_TRUE@	$(VOLOBJDIR)/src/libVol.la
+@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_XPR_TRUE@am__DEPENDENCIES_13 = $(OSIOBJDIR)/src/OsiXpr/libOsiXpr.la
+@CBC_BUILD_CBC_GENERIC_TRUE@cbc_generic_DEPENDENCIES = libCbc.la \
+@CBC_BUILD_CBC_GENERIC_TRUE@	$(CGLOBJDIR)/src/libCgl.la \
+@CBC_BUILD_CBC_GENERIC_TRUE@	$(am__DEPENDENCIES_3) \
+@CBC_BUILD_CBC_GENERIC_TRUE@	$(am__DEPENDENCIES_4) \
+@CBC_BUILD_CBC_GENERIC_TRUE@	$(am__DEPENDENCIES_5) \
+@CBC_BUILD_CBC_GENERIC_TRUE@	$(am__DEPENDENCIES_6) \
+@CBC_BUILD_CBC_GENERIC_TRUE@	$(am__DEPENDENCIES_7) \
+@CBC_BUILD_CBC_GENERIC_TRUE@	$(am__DEPENDENCIES_8) \
+@CBC_BUILD_CBC_GENERIC_TRUE@	$(am__DEPENDENCIES_9) \
+@CBC_BUILD_CBC_GENERIC_TRUE@	$(am__DEPENDENCIES_10) \
+@CBC_BUILD_CBC_GENERIC_TRUE@	$(am__DEPENDENCIES_11) \
+@CBC_BUILD_CBC_GENERIC_TRUE@	$(am__DEPENDENCIES_12) \
+@CBC_BUILD_CBC_GENERIC_TRUE@	$(am__DEPENDENCIES_13) \
+@CBC_BUILD_CBC_GENERIC_TRUE@	$(OSIOBJDIR)/src/libOsi.la \
+@CBC_BUILD_CBC_GENERIC_TRUE@	$(COINUTILSOBJDIR)/src/libCoinUtils.la
 depcomp = $(SHELL) $(top_srcdir)/../depcomp
 am__depfiles_maybe = depfiles
 CXXCOMPILE = $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
@@ -227,10 +251,9 @@ LTCOMPILE = $(LIBTOOL) --tag=CC --mode=compile $(CC) $(DEFS) \
 CCLD = $(CC)
 LINK = $(LIBTOOL) --tag=CC --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
 	$(AM_LDFLAGS) $(LDFLAGS) -o $@
-SOURCES = $(libCbc_la_SOURCES) $(cbc_SOURCES) $(nodist_cbc_SOURCES) \
-	$(cbc_generic_SOURCES) $(nodist_cbc_generic_SOURCES)
+SOURCES = $(libCbc_la_SOURCES) $(cbc_SOURCES) $(cbc_generic_SOURCES)
 DIST_SOURCES = $(libCbc_la_SOURCES) $(am__cbc_SOURCES_DIST) \
-	$(cbc_generic_SOURCES)
+	$(am__cbc_generic_SOURCES_DIST)
 includeHEADERS_INSTALL = $(INSTALL_HEADER)
 HEADERS = $(include_HEADERS)
 ETAGS = etags
@@ -256,6 +279,8 @@ AWK = @AWK@
 BUILDTOOLSDIR = @BUILDTOOLSDIR@
 CBCOBJDIR = @CBCOBJDIR@
 CBCSRCDIR = @CBCSRCDIR@
+CBC_BUILD_CBC_GENERIC_FALSE = @CBC_BUILD_CBC_GENERIC_FALSE@
+CBC_BUILD_CBC_GENERIC_TRUE = @CBC_BUILD_CBC_GENERIC_TRUE@
 CC = @CC@
 CCDEPMODE = @CCDEPMODE@
 CDEFS = @CDEFS@
@@ -336,9 +361,11 @@ INSTALL_STRIP_PROGRAM = @INSTALL_STRIP_PROGRAM@
 LDFLAGS = @LDFLAGS@
 LIBEXT = @LIBEXT@
 LIBOBJS = @LIBOBJS@
-LIBS = @LIBS@ $(am__append_3) $(am__append_8) $(am__append_21) \
-	$(am__append_24) `cat $(OSIOBJDIR)/osi_addlibs.txt` `cat \
-	$(COINUTILSOBJDIR)/coinutils_addlibs.txt` $(ADDLIBS)
+LIBS = @LIBS@ `cat $(CGLOBJDIR)/cgl_addlibs.txt` `cat \
+	$(OSIOBJDIR)/osi_addlibs.txt` `cat \
+	$(COINUTILSOBJDIR)/coinutils_addlibs.txt` $(ADDLIBS) \
+	$(am__append_3) $(am__append_9) $(am__append_14) \
+	$(am__append_27) $(am__append_30)
 LIBTOOL = @LIBTOOL@
 LIBTOOLM4 = @LIBTOOLM4@
 LN_S = @LN_S@
@@ -444,56 +471,29 @@ AUTOMAKE_OPTIONS = foreign
 lib_LTLIBRARIES = libCbc.la
 
 # List all source files for this library, including headers
-libCbc_la_SOURCES = \
-	Cbc_C_Interface.cpp Cbc_C_Interface.h \
-	CbcConfig.h \
-	CbcBranchActual.cpp CbcBranchActual.hpp \
-	CbcBranchBase.cpp CbcBranchBase.hpp \
-	CbcBranchCut.cpp CbcBranchCut.hpp \
-	CbcBranchDynamic.cpp CbcBranchDynamic.hpp \
-	CbcBranchLotsize.cpp CbcBranchLotsize.hpp \
-	CbcCompareActual.cpp CbcCompareActual.hpp \
-	CbcCompareBase.hpp \
-	CbcCountRowCut.cpp CbcCountRowCut.hpp \
-	CbcCutGenerator.cpp CbcCutGenerator.hpp \
-	CbcEventHandler.cpp CbcEventHandler.hpp \
-	CbcFathom.cpp CbcFathom.hpp \
-	CbcFathomDynamicProgramming.cpp CbcFathomDynamicProgramming.hpp \
-	CbcFeasibilityBase.hpp \
-	CbcHeuristic.cpp CbcHeuristic.hpp \
-	CbcHeuristicFPump.cpp CbcHeuristicFPump.hpp \
-	CbcHeuristicGreedy.cpp CbcHeuristicGreedy.hpp \
-	CbcHeuristicLocal.cpp CbcHeuristicLocal.hpp \
-	CbcMessage.cpp CbcMessage.hpp \
-	CbcModel.cpp CbcModel.hpp \
-	CbcNode.cpp CbcNode.hpp \
-	CbcStatistics.cpp CbcStatistics.hpp \
-	CbcStrategy.cpp CbcStrategy.hpp \
-	CbcTree.cpp CbcTree.hpp \
-	CbcTreeLocal.cpp CbcTreeLocal.hpp
-
+libCbc_la_SOURCES = Cbc_C_Interface.cpp Cbc_C_Interface.h CbcConfig.h \
+	CbcBranchActual.cpp CbcBranchActual.hpp CbcBranchBase.cpp \
+	CbcBranchBase.hpp CbcBranchCut.cpp CbcBranchCut.hpp \
+	CbcBranchDynamic.cpp CbcBranchDynamic.hpp CbcBranchLotsize.cpp \
+	CbcBranchLotsize.hpp CbcCompareActual.cpp CbcCompareActual.hpp \
+	CbcCompareBase.hpp CbcCountRowCut.cpp CbcCountRowCut.hpp \
+	CbcCutGenerator.cpp CbcCutGenerator.hpp CbcEventHandler.cpp \
+	CbcEventHandler.hpp CbcFathom.cpp CbcFathom.hpp \
+	CbcFathomDynamicProgramming.cpp \
+	CbcFathomDynamicProgramming.hpp CbcFeasibilityBase.hpp \
+	CbcHeuristic.cpp CbcHeuristic.hpp CbcHeuristicFPump.cpp \
+	CbcHeuristicFPump.hpp CbcHeuristicGreedy.cpp \
+	CbcHeuristicGreedy.hpp CbcHeuristicLocal.cpp \
+	CbcHeuristicLocal.hpp CbcHeuristicRINS.cpp \
+	CbcHeuristicRINS.hpp CbcMessage.cpp CbcMessage.hpp \
+	CbcModel.cpp CbcModel.hpp CbcNode.cpp CbcNode.hpp \
+	CbcSolver.cpp CbcCbcParam.cpp CbcStatistics.cpp \
+	CbcStatistics.hpp CbcStrategy.cpp CbcStrategy.hpp CbcTree.cpp \
+	CbcTree.hpp CbcLinked.cpp CbcLinked.hpp CbcTreeLocal.cpp \
+	CbcTreeLocal.hpp Cbc_ampl.cpp Cbc_ampl.h
 
 # This is for libtool (on Windows)
 libCbc_la_LDFLAGS = $(LT_LDFLAGS)
-
-# List all source files for this executable, including headers
-cbc_generic_SOURCES = \
-	CbcMain.cpp \
-	CbcParam.cpp CbcParam.hpp \
-	unitTest.cpp
-
-
-# The following file is not to be distributed, since it is "borrowed" from Clp
-nodist_cbc_generic_SOURCES = CbcOrClpParam.cpp
-
-# Finally the Osi Coin library (many of the above need it)
-cbc_generic_LDADD = libCbc.la $(CGLOBJDIR)/src/libCgl.la \
-	$(OSIOBJDIR)/src/OsiCbc/libOsiCbc.la $(am__append_2) \
-	$(am__append_5) $(am__append_7) $(am__append_10) \
-	$(am__append_12) $(am__append_14) $(am__append_16) \
-	$(am__append_18) $(am__append_20) $(am__append_23) \
-	$(am__append_26) $(OSIOBJDIR)/src/libOsi.la \
-	$(COINUTILSOBJDIR)/src/libCoinUtils.la
 
 ########################################################################
 #                            Additional flags                          #
@@ -505,14 +505,14 @@ cbc_generic_LDADD = libCbc.la $(CGLOBJDIR)/src/libCgl.la \
 # being compiled.
 
 # List additional defines
-AM_CPPFLAGS = -I`$(CYGPATH_W) $(OSISRCDIR)/src/OsiCbc` $(am__append_1) \
-	$(am__append_4) $(am__append_6) $(am__append_9) \
-	$(am__append_11) $(am__append_13) $(am__append_15) \
-	$(am__append_17) $(am__append_19) $(am__append_22) \
-	$(am__append_25) $(am__append_30) -I`$(CYGPATH_W) \
-	$(CGLSRCDIR)/src` -I`$(CYGPATH_W) $(CGLSRCDIR)/src/CglClique` \
-	-I`$(CYGPATH_W) $(CGLSRCDIR)/src/CglDuplicateRow` \
-	-I`$(CYGPATH_W) $(CGLSRCDIR)/src/CglFlowCover` -I`$(CYGPATH_W) \
+AM_CPPFLAGS = $(am__append_2) $(am__append_5) $(am__append_7) \
+	$(am__append_10) $(am__append_12) $(am__append_15) \
+	$(am__append_17) $(am__append_19) $(am__append_21) \
+	$(am__append_23) $(am__append_25) $(am__append_28) \
+	$(am__append_31) -I`$(CYGPATH_W) $(CGLSRCDIR)/src` \
+	-I`$(CYGPATH_W) $(CGLSRCDIR)/src/CglClique` -I`$(CYGPATH_W) \
+	$(CGLSRCDIR)/src/CglDuplicateRow` -I`$(CYGPATH_W) \
+	$(CGLSRCDIR)/src/CglFlowCover` -I`$(CYGPATH_W) \
 	$(CGLSRCDIR)/src/CglGomory` -I`$(CYGPATH_W) \
 	$(CGLSRCDIR)/src/CglKnapsackCover` -I`$(CYGPATH_W) \
 	$(CGLSRCDIR)/src/CglMixedIntegerRounding` -I`$(CYGPATH_W) \
@@ -522,22 +522,18 @@ AM_CPPFLAGS = -I`$(CYGPATH_W) $(OSISRCDIR)/src/OsiCbc` $(am__append_1) \
 	$(CGLSRCDIR)/src/CglProbing` -I`$(CYGPATH_W) \
 	$(CGLSRCDIR)/src/CglRedSplit` -I`$(CYGPATH_W) \
 	$(CGLSRCDIR)/src/CglTwomir` -I`$(CYGPATH_W) \
+	$(CGLSRCDIR)/src/CglLandP` -I`$(CYGPATH_W) \
+	$(CGLSRCDIR)/src/CglResidualCapacity` -I`$(CYGPATH_W) \
 	$(COINUTILSSRCDIR)/src` -I`$(CYGPATH_W) \
 	$(COINUTILSOBJDIR)/inc` -I`$(CYGPATH_W) $(OSISRCDIR)/src` \
 	-I`$(CYGPATH_W) $(OSIOBJDIR)/inc` -DCOIN_NO_CLP_MESSAGE \
 	-DUSE_CBCCONFIG
 
-# Finally, the -rpath flag is used by libtool to make sure that the shared
-# library is found (in the lib install directory) when we are using dynamic
-# libraries.
-cbc_generic_LDFLAGS = -rpath $(libdir)
-
 # List all source files for this executable, including headers
-@COIN_HAS_CLP_TRUE@cbc_SOURCES = CoinSolve.cpp unitTestClp.cpp \
-@COIN_HAS_CLP_TRUE@	$(am__append_28)
+@COIN_HAS_CLP_TRUE@cbc_SOURCES = \
+@COIN_HAS_CLP_TRUE@	CoinSolve.cpp \
+@COIN_HAS_CLP_TRUE@	unitTestClp.cpp
 
-# The following file is not to be distributed, since it is "borrowed" from Clp
-@COIN_HAS_CLP_TRUE@nodist_cbc_SOURCES = CbcOrClpParam.cpp
 
 # Additional COIN libraries
 @COIN_HAS_CLP_TRUE@cbc_LDADD = libCbc.la $(CGLOBJDIR)/src/libCgl.la \
@@ -545,12 +541,42 @@ cbc_generic_LDFLAGS = -rpath $(libdir)
 @COIN_HAS_CLP_TRUE@	$(OSIOBJDIR)/src/libOsi.la \
 @COIN_HAS_CLP_TRUE@	$(CLPOBJDIR)/src/libClp.la \
 @COIN_HAS_CLP_TRUE@	$(COINUTILSOBJDIR)/src/libCoinUtils.la \
-@COIN_HAS_CLP_TRUE@	$(am__append_29)
+@COIN_HAS_CLP_TRUE@	$(am__append_4)
 
 # Finally, the -rpath flag is used by libtool to make sure that the shared
 # library is found (in the lib install directory) when we are using dynamic
 # libraries.
 @COIN_HAS_CLP_TRUE@cbc_LDFLAGS = -rpath $(libdir)
+
+# List all source files for this executable, including headers
+@CBC_BUILD_CBC_GENERIC_TRUE@cbc_generic_SOURCES = \
+@CBC_BUILD_CBC_GENERIC_TRUE@	CbcGenBaB.cpp \
+@CBC_BUILD_CBC_GENERIC_TRUE@	CbcGenCbcParam.cpp CbcGenCbcParam.hpp CbcGenCbcParamUtils.cpp \
+@CBC_BUILD_CBC_GENERIC_TRUE@	CbcGenCtlBlk.cpp CbcGenCtlBlk.hpp \
+@CBC_BUILD_CBC_GENERIC_TRUE@	CbcGeneric.cpp \
+@CBC_BUILD_CBC_GENERIC_TRUE@	CbcGenMessages.cpp CbcGenMessages.hpp \
+@CBC_BUILD_CBC_GENERIC_TRUE@	CbcGenOsiParam.cpp CbcGenOsiParam.hpp CbcGenOsiParamUtils.cpp \
+@CBC_BUILD_CBC_GENERIC_TRUE@	CbcGenParam.cpp CbcGenParam.hpp CbcGenParamUtils.cpp \
+@CBC_BUILD_CBC_GENERIC_TRUE@	CbcGenSolution.cpp \
+@CBC_BUILD_CBC_GENERIC_TRUE@	CbcGenSolvers.cpp
+
+
+# Finally the Osi Coin library (many of the above need it)
+@CBC_BUILD_CBC_GENERIC_TRUE@cbc_generic_LDADD = libCbc.la \
+@CBC_BUILD_CBC_GENERIC_TRUE@	$(CGLOBJDIR)/src/libCgl.la \
+@CBC_BUILD_CBC_GENERIC_TRUE@	$(am__append_8) $(am__append_11) \
+@CBC_BUILD_CBC_GENERIC_TRUE@	$(am__append_13) $(am__append_16) \
+@CBC_BUILD_CBC_GENERIC_TRUE@	$(am__append_18) $(am__append_20) \
+@CBC_BUILD_CBC_GENERIC_TRUE@	$(am__append_22) $(am__append_24) \
+@CBC_BUILD_CBC_GENERIC_TRUE@	$(am__append_26) $(am__append_29) \
+@CBC_BUILD_CBC_GENERIC_TRUE@	$(am__append_32) \
+@CBC_BUILD_CBC_GENERIC_TRUE@	$(OSIOBJDIR)/src/libOsi.la \
+@CBC_BUILD_CBC_GENERIC_TRUE@	$(COINUTILSOBJDIR)/src/libCoinUtils.la
+
+# Finally, the -rpath flag is used by libtool to make sure that the shared
+# library is found (in the lib install directory) when we are using dynamic
+# libraries.
+@CBC_BUILD_CBC_GENERIC_TRUE@cbc_generic_LDFLAGS = -rpath $(libdir)
 
 # This line is necessary to allow VPATH compilation with MS compilers
 # on Cygwin
@@ -574,16 +600,19 @@ include_HEADERS = \
 	CbcCompareBase.hpp \
 	CbcCutGenerator.hpp \
 	CbcEventHandler.hpp \
+	CbcFeasibilityBase.hpp \
 	CbcHeuristic.hpp \
 	CbcHeuristicFPump.hpp \
 	CbcHeuristicGreedy.hpp \
 	CbcHeuristicLocal.hpp \
+	CbcHeuristicRINS.hpp \
 	CbcMessage.hpp \
 	CbcModel.hpp \
 	CbcNode.hpp \
 	CbcStrategy.hpp \
 	CbcTree.hpp \
-	CbcTreeLocal.hpp
+	CbcLinked.hpp \
+	CbcTreeLocal.hpp 
 
 
 #############################################################################
@@ -700,30 +729,42 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcBranchCut.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcBranchDynamic.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcBranchLotsize.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcCbcParam.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcCompareActual.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcCountRowCut.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcCutGenerator.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcEventHandler.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcFathom.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcFathomDynamicProgramming.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcGenBaB.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcGenCbcParam.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcGenCbcParamUtils.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcGenCtlBlk.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcGenMessages.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcGenOsiParam.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcGenOsiParamUtils.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcGenParam.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcGenParamUtils.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcGenSolution.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcGenSolvers.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcGeneric.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcHeuristic.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcHeuristicFPump.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcHeuristicGreedy.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcHeuristicLocal.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcMain.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcHeuristicRINS.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcLinked.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcMessage.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcModel.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcNode.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcOrClpParam.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcParam.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcSolver.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcStatistics.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcStrategy.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcTree.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcTreeLocal.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Cbc_C_Interface.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Cbc_ampl.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Cbc_ampl.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CoinSolve.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/unitTest.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/unitTestClp.Po@am__quote@
 
 .cpp.o:

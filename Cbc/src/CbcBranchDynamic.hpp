@@ -23,11 +23,15 @@ public:
   // Default Constructor 
   CbcSimpleIntegerDynamicPseudoCost ();
 
-  // Useful constructor - passed integer index and model index
-  CbcSimpleIntegerDynamicPseudoCost (CbcModel * model, int sequence, int iColumn, double breakEven=0.5);
+  // Useful constructor - passed  model index
+  CbcSimpleIntegerDynamicPseudoCost (CbcModel * model,  int iColumn, double breakEven=0.5);
   
-  // Useful constructor - passed integer index and model index and pseudo costs
-  CbcSimpleIntegerDynamicPseudoCost (CbcModel * model, int sequence, int iColumn, 
+  // Useful constructor - passed  model index and pseudo costs
+  CbcSimpleIntegerDynamicPseudoCost (CbcModel * model, int iColumn, 
+			      double downDynamicPseudoCost, double upDynamicPseudoCost);
+  
+  // Useful constructor - passed  model index and pseudo costs
+  CbcSimpleIntegerDynamicPseudoCost (CbcModel * model, int dummy, int iColumn, 
 			      double downDynamicPseudoCost, double upDynamicPseudoCost);
   
   // Copy constructor 
@@ -47,6 +51,18 @@ public:
 
   /// Creates a branching object
   virtual CbcBranchingObject * createBranch(int way) ;
+  /// Infeasibility - large is 0.5
+  virtual double infeasibility(const OsiSolverInterface * solver, 
+			       const OsiBranchingInformation * info, int & preferredWay) const;
+
+
+  /** Create a branching object and indicate which way to branch first.
+      
+      The branching object has to know how to create branches (fix
+      variables, etc.)
+  */
+  virtual CbcBranchingObject * createBranch(OsiSolverInterface * solver,
+					    const OsiBranchingInformation * info, int way) ;
 
   /** Create an OsiSolverBranch object
 
@@ -198,6 +214,8 @@ public:
   void setDownInformation(double changeObjectiveDown, int changeInfeasibilityDown);
   /// Pass in information on a up branch
   void setUpInformation(double changeObjectiveUp, int changeInfeasibilityUp);
+  /// Pass in probing information
+  void setProbingInformation(int fixedDown, int fixedUp);
 
   /// Print - 0 -summary, 1 just before strong
   void print(int type=0, double value=0.0) const;
@@ -247,8 +265,19 @@ protected:
   int numberTimesUpInfeasible_;
   /// Number of branches before we trust
   int numberBeforeTrust_;
+  /// Number of local probing fixings going down
+  int numberTimesDownLocalFixed_;
+  /// Number of local probing fixings going up
+  int numberTimesUpLocalFixed_;
+  /// Number of total probing fixings going down
+  double numberTimesDownTotalFixed_;
+  /// Number of total probing fixings going up
+  double numberTimesUpTotalFixed_;
+  /// Number of times probing done 
+  int numberTimesProbingTotal_;
   /** Method - 
-      ??
+      0 - pseudo costs
+      1 - probing
   */
   int method_;
 };
@@ -308,7 +337,7 @@ public:
 	     of the branch and advances the object state to the next arm.
 	     This version also changes guessed objective value
   */
-  virtual double branch(bool normalBranch=false);
+  virtual double branch();
   /** Some branchingObjects may claim to be able to skip
       strong branching.  If so they have to fill in CbcStrongInfo.
       The object mention in incoming CbcStrongInfo must match.
@@ -385,7 +414,7 @@ public:
 
   /** Saves a clone of current branching object.  Can be used to update
       information on object causing branch - after branch */
-  virtual void saveBranchingObject(CbcBranchingObject * object) ;
+  virtual void saveBranchingObject(OsiBranchingObject * object) ;
   /** Pass in information on branch just done.
       assumes object can get information from solver */
   virtual void updateInformation(OsiSolverInterface * solver,

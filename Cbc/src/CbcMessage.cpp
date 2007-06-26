@@ -1,7 +1,10 @@
 // Copyright (C) 2002, International Business Machines
 // Corporation and others.  All Rights Reserved.
+#if defined(_MSC_VER)
+// Turn off compiler warning about long names
+#  pragma warning(disable:4786)
+#endif
 
-#include "CoinPragma.hpp"
 #include "CbcMessage.hpp"
 
 typedef struct {
@@ -49,6 +52,9 @@ static Cbc_message us_english[]=
   {CBC_CUTS_STATS,31,1,"%d added rows had average density of %g"},
   {CBC_STRONG_STATS,32,1,"Strong branching done %d times (%d iterations), fathomed %d nodes and fixed %d variables"},
   {CBC_UNBOUNDED,34,1,"The LP relaxation is unbounded!"},
+  {CBC_OTHER_STATS,35,1,"Maximum depth %d, %g variables fixed on reduced cost"},
+  {CBC_HEURISTICS_OFF,36,1,"Heuristics switched off as %d branching objects are of wrong type"},
+  {CBC_STATUS2,37,1,"%d nodes, %d on tree, best %g - possible %g depth %d unsat %d its %d (%.2f seconds)"},
   {CBC_DUMMY_END,999999,0,""}
 };
 /* Constructor */
@@ -66,6 +72,8 @@ CbcMessage::CbcMessage(Language language) :
     addMessage(message->internalNumber,oneMessage);
     message ++;
   }
+  // Put into compact form
+  toCompact();
 
   // now override any language ones
 

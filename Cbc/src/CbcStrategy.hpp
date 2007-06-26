@@ -175,6 +175,9 @@ protected:
       0 - none
       1 - ordinary
       2 - find sos
+      3 - find cliques
+      4 - more aggressive sos
+      5 - add integer slacks
   */
   int desiredPreProcess_;
   /// Number of pre-processing passes

@@ -137,6 +137,8 @@ public:
   /// Redoes data when sequence numbers change
   virtual void redoSequenceEtc(CbcModel * model, int numberColumns, const int * originalColumns);
   
+  /// Construct an OsiSOS object
+  OsiSOS * osiObject(const OsiSolverInterface * solver) const;
   /// Number of members
   inline int numberMembers() const
   {return numberMembers_;};
@@ -153,6 +155,13 @@ public:
   inline const double * weights() const
   { return weights_;};
 
+  /** \brief Return true if object can take part in normal heuristics
+  */
+  virtual bool canDoHeuristics() const 
+  {return (sosType_==1&&integerValued_);};
+  /// Set whether set is integer valued or not
+  inline void setIntegerValued(bool yesNo)
+  { integerValued_=yesNo;};
 private:
   /// data
 
@@ -165,6 +174,8 @@ private:
   int numberMembers_;
   /// SOS type
    int sosType_;
+  /// Whether integer valued
+  bool integerValued_;
 };
 
 /// Define a single integer class
@@ -177,8 +188,11 @@ public:
   // Default Constructor 
   CbcSimpleInteger ();
 
-  // Useful constructor - passed integer index and model index
-  CbcSimpleInteger (CbcModel * model, int sequence, int iColumn, double breakEven=0.5);
+  // Useful constructor - passed model and index
+  CbcSimpleInteger (CbcModel * model,  int iColumn, double breakEven=0.5);
+  
+  // Useful constructor - passed model and Osi object
+  CbcSimpleInteger (CbcModel * model,  const OsiSimpleInteger * object);
   
   // Copy constructor 
   CbcSimpleInteger ( const CbcSimpleInteger &);
@@ -191,7 +205,31 @@ public:
 
   // Destructor 
   ~CbcSimpleInteger ();
-  
+  /// Construct an OsiSimpleInteger object
+  OsiSimpleInteger * osiObject() const;
+  /// Infeasibility - large is 0.5
+  virtual double infeasibility(const OsiSolverInterface * solver, 
+			       const OsiBranchingInformation * info, int & preferredWay) const;
+
+  /** Set bounds to fix the variable at the current (integer) value.
+
+    Given an integer value, set the lower and upper bounds to fix the
+    variable. Returns amount it had to move variable.
+  */
+  virtual double feasibleRegion(OsiSolverInterface * solver, const OsiBranchingInformation * info) const;
+
+  /** Create a branching object and indicate which way to branch first.
+      
+      The branching object has to know how to create branches (fix
+      variables, etc.)
+  */
+  virtual CbcBranchingObject * createBranch(OsiSolverInterface * solver,
+					    const OsiBranchingInformation * info, int way) ;
+  /** Create an OsiSolverBranch object
+
+      This returns NULL if branch not represented by bound changes
+  */
+  virtual OsiSolverBranch * solverBranch(OsiSolverInterface * solver, const OsiBranchingInformation * info) const;
   /// Infeasibility - large is 0.5
   virtual double infeasibility(int & preferredWay) const;
 
@@ -208,64 +246,23 @@ public:
     The preferred direction is set by \p way, -1 for down, +1 for up.
   */
   virtual CbcBranchingObject * createBranch(int way) ;
-
-  /** Create an OsiSolverBranch object
-
-      This returns NULL if branch not represented by bound changes
-  */
-  virtual OsiSolverBranch * solverBranch() const;
-  /// Redoes data when sequence numbers change
-  virtual void redoSequenceEtc(CbcModel * model, int numberColumns, const int * originalColumns);
-  
-  /** \brief Given a valid solution (with reduced costs, etc.),
-      return a branching object which would give a new feasible
-      point in the good direction.
-
-    The preferred branching object will force the variable to be either the
-    floor or ceiling of its current value, depending on the reduced cost and
-    objective sense. If movement in the direction which improves the
-    objective is impossible due to bounds on the variable, the branching
-    object will move in the other direction.  If no movement is possible, the
-    method returns NULL.
-
-    Only the bounds on this variable are considered when determining if the new
-    point is feasible.
-  */
-  virtual CbcBranchingObject * preferredNewFeasible() const;
-  
-  /** \brief Given a valid solution (with reduced costs, etc.),
-      return a branching object which would give a new feasible
-      point in a bad direction.
-
-    As for preferredNewFeasible(), but the preferred branching object will
-    force movement in a direction that degrades the objective.
-  */
-  virtual CbcBranchingObject * notPreferredNewFeasible() const ;
-  
-  /** Reset original upper and lower bound values from the solver.
-  
-    Handy for updating bounds held in this object after bounds held in the
-    solver have been tightened.
-   */
-  virtual void resetBounds();
-  
-  /// Sequence number
-  inline int sequence() const
-  {return sequence_;};
-
-  /// Model column number
-  inline int modelSequence() const
-  {return columnNumber_;};
-  /// Set model column number
-  inline void setColumnNumber(int value)
-  {columnNumber_=value;};
-  
   /** Column number if single column object -1 otherwise,
       so returns >= 0
       Used by heuristics
   */
   virtual int columnNumber() const;
+  /// Set column number
+  inline void setColumnNumber(int value)
+  { columnNumber_ = value;};
 
+  /** Reset variable bounds to their original values.
+  
+    Bounds may be tightened, so it may be good to be able to set this info in object.
+   */
+  virtual void resetBounds(const OsiSolverInterface * solver) ;
+  /**  Change column numbers after preprocessing
+   */
+  virtual void resetSequenceEtc(int numberColumns, const int * originalColumns) ;
   /// Original bounds
   inline double originalLowerBound() const
   { return originalLower_;};
@@ -286,18 +283,17 @@ public:
 protected:
   /// data
 
-  /// Sequence
-  int sequence_;
-  /// Column number in model
-  int columnNumber_;
   /// Original lower bound
   double originalLower_;
   /// Original upper bound
   double originalUpper_;
   /// Breakeven i.e. >= this preferred is up
   double breakEven_;
+  /// Column number in model
+  int columnNumber_;
+  /// If -1 down always chosen first, +1 up always, 0 normal
+  int preferredWay_;
 };
-
 /** Define an n-way class for variables.
     Only valid value is one at UB others at LB
     Normally 0-1
@@ -415,11 +411,11 @@ public:
 	     of the branch and advances the object state to the next arm.
 	     Returns change in guessed objective on next branch
   */
-  virtual double branch(bool normalBranch=false);
+  virtual double branch();
 
   /** \brief Print something about branch - only if log level high
   */
-  virtual void print(bool normalBranch);
+  virtual void print();
 
 protected:
   /// Lower [0] and upper [1] bounds for the down arm (way_ = -1)
@@ -439,11 +435,14 @@ public:
   // Default Constructor 
   CbcSimpleIntegerPseudoCost ();
 
-  // Useful constructor - passed integer index and model index
-  CbcSimpleIntegerPseudoCost (CbcModel * model, int sequence, int iColumn, double breakEven=0.5);
+  // Useful constructor - passed model index
+  CbcSimpleIntegerPseudoCost (CbcModel * model, int iColumn, double breakEven=0.5);
   
-  // Useful constructor - passed integer index and model index and pseudo costs
-  CbcSimpleIntegerPseudoCost (CbcModel * model, int sequence, int iColumn, 
+  // Useful constructor - passed and model index and pseudo costs
+  CbcSimpleIntegerPseudoCost (CbcModel * model, int iColumn, 
+			      double downPseudoCost, double upPseudoCost);
+  // Useful constructor - passed and model index and pseudo costs
+  CbcSimpleIntegerPseudoCost (CbcModel * model, int dummy,int iColumn, 
 			      double downPseudoCost, double upPseudoCost);
   
   // Copy constructor 
@@ -572,7 +571,7 @@ public:
 	     of the branch and advances the object state to the next arm.
 	     This version also changes guessed objective value
   */
-  virtual double branch(bool normalBranch=false);
+  virtual double branch();
 
   /// Change in guessed
   inline double changeInGuessed() const
@@ -620,11 +619,11 @@ public:
   virtual ~CbcCliqueBranchingObject ();
   
   /// Does next branch and updates state
-  virtual double branch(bool normalBranch=false);
+  virtual double branch();
 
   /** \brief Print something about branch - only if log level high
   */
-  virtual void print(bool normalBranch);
+  virtual void print();
 private:
   /// data
   const CbcClique * clique_;
@@ -665,11 +664,11 @@ public:
   virtual ~CbcLongCliqueBranchingObject ();
   
   /// Does next branch and updates state
-  virtual double branch(bool normalBranch=false);
+  virtual double branch();
 
   /** \brief Print something about branch - only if log level high
   */
-  virtual void print(bool normalBranch);
+  virtual void print();
 private:
   /// data
   const CbcClique * clique_;
@@ -709,11 +708,11 @@ public:
   virtual ~CbcSOSBranchingObject ();
   
   /// Does next branch and updates state
-  virtual double branch(bool normalBranch=false);
+  virtual double branch();
 
   /** \brief Print something about branch - only if log level high
   */
-  virtual void print(bool normalBranch);
+  virtual void print();
 private:
   /// data
   const CbcSOS * set_;
@@ -751,11 +750,11 @@ public:
   virtual ~CbcNWayBranchingObject ();
   
   /// Does next branch and updates state
-  virtual double branch(bool normalBranch=false);
+  virtual double branch();
 
   /** \brief Print something about branch - only if log level high
   */
-  virtual void print(bool normalBranch);
+  virtual void print();
   /** The number of branch arms created for this branching object
   */
   virtual int numberBranches() const
@@ -851,11 +850,11 @@ private:
   /// Change down for best
   double bestChangeDown_;
 
-  /// Number of infeasibilities for down
-  int bestNumberDown_;
-
   /// Pointer to best branching object
   CbcBranchingObject * bestObject_;
+
+  /// Number of infeasibilities for down
+  int bestNumberDown_;
 
 };
 
@@ -941,11 +940,11 @@ public:
   virtual ~CbcFixingBranchingObject ();
   
   /// Does next branch and updates state
-  virtual double branch(bool normalBranch=false);
+  virtual double branch();
 
   /** \brief Print something about branch - only if log level high
   */
-  virtual void print(bool normalBranch);
+  virtual void print();
 private:
   /// data
   /// Number on down list
@@ -1010,5 +1009,40 @@ protected:
   /// Variable
   int * variable_;
 };
+/** Dummy branching object
+
+  This object specifies a one-way dummy branch.
+  This is so one can carry on branching even when it looks feasible
+*/
+
+class CbcDummyBranchingObject : public CbcBranchingObject {
+
+public:
+
+  /// Default constructor 
+  CbcDummyBranchingObject (CbcModel * model=NULL);
+
+  /// Copy constructor 
+  CbcDummyBranchingObject ( const CbcDummyBranchingObject &);
+   
+  /// Assignment operator 
+  CbcDummyBranchingObject & operator= (const CbcDummyBranchingObject& rhs);
+
+  /// Clone
+  virtual CbcBranchingObject * clone() const;
+
+  /// Destructor 
+  virtual ~CbcDummyBranchingObject ();
+  
+  /** \brief Dummy branch
+  */
+  virtual double branch();
+
+  /** \brief Print something about branch - only if log level high
+  */
+  virtual void print();
+
+};
+
 
 #endif

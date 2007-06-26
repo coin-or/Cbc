@@ -226,6 +226,16 @@ public:
   /// Set whether generator switched off for moment
   inline void setSwitchedOff(bool yesNo)
   { switchedOff_=yesNo;};
+  /// Number of cuts generated at root
+  inline int numberCutsAtRoot() const
+  { return numberCutsAtRoot_;};
+  inline void setNumberCutsAtRoot(int value)
+  { numberCutsAtRoot_ = value;};
+  /// Number of cuts active at root
+  inline int numberActiveCutsAtRoot() const
+  { return numberActiveCutsAtRoot_;};
+  inline void setNumberActiveCutsAtRoot(int value)
+  { numberActiveCutsAtRoot_ = value;};
   //@}
   
 private:
@@ -286,6 +296,93 @@ private:
   int numberColumnCuts_;
   /// Total number of cuts active after (at end of n cut passes at each node)
   int numberCutsActive_;
+  /// Number of cuts generated at root
+  int numberCutsAtRoot_;
+  /// Number of cuts active at root
+  int numberActiveCutsAtRoot_;
+};
+/** Abstract cut modifier base class
+
+    In exotic circumstances - cuts may need to be modified
+    a) strengthened - changed
+    b) weakened - changed
+    c) deleted - set to NULL
+    d) unchanged
+*/
+
+class CbcCutModifier {
+public:
+  /// Default Constructor 
+  CbcCutModifier ();
+
+  // Copy constructor 
+  CbcCutModifier ( const CbcCutModifier &);
+   
+  /// Destructor
+  virtual ~CbcCutModifier();
+
+  /// Assignment 
+  CbcCutModifier & operator=(const CbcCutModifier& rhs);
+ /// Clone
+  virtual CbcCutModifier * clone() const = 0;
+
+  /** Returns
+      0 unchanged
+      1 strengthened
+      2 weakened
+      3 deleted
+  */
+  virtual int modify(const OsiSolverInterface * solver, OsiRowCut & cut) =0;
+  /// Create C++ lines to get to current state
+  virtual void generateCpp( FILE * fp) {};
+protected:
+  
+};
+
+/** Simple cut modifier base class
+
+    In exotic circumstances - cuts may need to be modified
+    a) strengthened - changed
+    b) weakened - changed
+    c) deleted - set to NULL
+    d) unchanged
+
+    initially get rid of cuts with variables >= k
+    could weaken
+*/
+
+class CbcCutSubsetModifier  : public CbcCutModifier {
+public:
+  /// Default Constructor 
+  CbcCutSubsetModifier ();
+
+  /// Useful Constructor 
+  CbcCutSubsetModifier (int firstOdd);
+
+  // Copy constructor 
+  CbcCutSubsetModifier ( const CbcCutSubsetModifier &);
+   
+  /// Destructor
+  virtual ~CbcCutSubsetModifier();
+
+  /// Assignment 
+  CbcCutSubsetModifier & operator=(const CbcCutSubsetModifier& rhs);
+ /// Clone
+  virtual CbcCutModifier * clone() const ;
+
+  /** Returns
+      0 unchanged
+      1 strengthened
+      2 weakened
+      3 deleted
+  */
+  virtual int modify(const OsiSolverInterface * solver, OsiRowCut & cut) ;
+  /// Create C++ lines to get to current state
+  virtual void generateCpp( FILE * fp) {};
+protected:
+  /// data
+  /// First odd variable
+  int firstOdd_;
 };
 
 #endif

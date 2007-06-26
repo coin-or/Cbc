@@ -22,8 +22,12 @@ OBJS =  $(DRIVER).@OBJEXT@ \
 	CbcCompareUser.@OBJEXT@ \
 	CbcSolver2.@OBJEXT@ \
 	CbcSolver3.@OBJEXT@ \
+	CbcSolverLink.@OBJEXT@ \
+	ClpDynamicInterface.@OBJEXT@ \
 	ClpQuadInterface.@OBJEXT@ \
+	CoinWarmStartBasisDynamic.@OBJEXT@ \
 	CbcBranchFollow2.@OBJEXT@ \
+	CbcBranchLotsizeSimple.@OBJEXT@ \
 	CbcBranchUser.@OBJEXT@ \
 	CbcBranchLink.@OBJEXT@
 
@@ -80,6 +84,7 @@ CLEANFILES = \
 	barrier.@OBJEXT@ barrier@EXEEXT@ \
 	driver2.@OBJEXT@ driver2@EXEEXT@ \
 	driver.@OBJEXT@ driver@EXEEXT@ \
+	dynamic.@OBJEXT@ dynamic@EXEEXT@ \
 	fast0507b.@OBJEXT@ fast0507b@EXEEXT@ \
 	fast0507.@OBJEXT@ fast0507@EXEEXT@ \
 	gear.@OBJEXT@ gear@EXEEXT@ \
@@ -110,7 +115,7 @@ $(EXE): $(OBJS)
 	$(CXX) $(CXXLINKFLAGS) $(CXXFLAGS) -o $@ $$bla $(ADDLIBS) $(LIBS)
 
 clean:
-	rm -rf $(CLEANFILES)
+	rm -rf $(CLEANFILES) $(OBJS)
 
 .cpp.o:
 	$(CXX) $(CXXFLAGS) $(INCL) -c -o $@ `test -f '$<' || echo '$(SRCDIR)/'`$<

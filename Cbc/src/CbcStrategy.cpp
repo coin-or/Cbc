@@ -36,6 +36,7 @@
 // Heuristics
 
 #include "CbcHeuristic.hpp"
+#include "CbcHeuristicLocal.hpp"
 
 // Default Constructor
 CbcStrategy::CbcStrategy() 
@@ -256,6 +257,7 @@ CbcStrategyDefault::setupHeuristics(CbcModel & model)
   // Allow rounding heuristic
 
   CbcRounding heuristic1(model);
+  heuristic1.setHeuristicName("rounding");
   int numberHeuristics = model.numberHeuristics();
   int iHeuristic;
   bool found;
@@ -270,6 +272,23 @@ CbcStrategyDefault::setupHeuristics(CbcModel & model)
   }
   if (!found)
     model.addHeuristic(&heuristic1);
+#if 0
+  // Allow join solutions
+  CbcHeuristicLocal heuristic2(model);
+  heuristic2.setHeuristicName("join solutions");
+  heuristic2.setSearchType(1);
+  found=false;
+  for (iHeuristic=0;iHeuristic<numberHeuristics;iHeuristic++) {
+    CbcHeuristic * heuristic = model.heuristic(iHeuristic);
+    CbcHeuristicLocal * cgl = dynamic_cast<CbcHeuristicLocal *>(heuristic);
+    if (cgl) {
+      found=true;
+      break;
+    }
+  }
+  if (!found)
+    model.addHeuristic(&heuristic2);
+#endif
 }
 // Do printing stuff
 void 
@@ -284,9 +303,9 @@ CbcStrategyDefault::setupPrinting(CbcModel & model,int modelLogLevel)
     model.messageHandler()->setLogLevel(1);
     model.solver()->messageHandler()->setLogLevel(0);
   } else {
-    model.messageHandler()->setLogLevel(2);
-    model.solver()->messageHandler()->setLogLevel(1);
-    model.setPrintFrequency(50);
+    model.messageHandler()->setLogLevel(CoinMax(2,model.messageHandler()->logLevel()));
+    model.solver()->messageHandler()->setLogLevel(CoinMax(1,model.solver()->messageHandler()->logLevel()));
+    model.setPrintFrequency(CoinMin(50,model.printFrequency()));
   }
 }
 // Other stuff e.g. strong branching
@@ -301,6 +320,36 @@ CbcStrategyDefault::setupOther(CbcModel & model)
     // Pass in models message handler
     process->passInMessageHandler(model.messageHandler());
     OsiSolverInterface * solver = model.solver();
+    {
+      // mark some columns as ineligible for presolve
+      int numberColumns = solver->getNumCols();
+      char * prohibited = new char[numberColumns];
+      memset(prohibited,0,numberColumns);
+      int numberProhibited=0;
+      // convert to Cbc integers
+      model.findIntegers(false);
+      int numberObjects = model.numberObjects();
+      if (numberObjects) { 
+	OsiObject ** objects = model.objects();
+	for (int iObject=0;iObject<numberObjects;iObject++) {
+	  CbcSOS * obj =
+	    dynamic_cast <CbcSOS *>(objects[iObject]) ;
+	  if (obj) {
+	    // SOS
+	    int n = obj->numberMembers();
+	    const int * which = obj->members();
+	    for (int i=0;i<n;i++) {
+	      int iColumn = which[i];
+	      prohibited[iColumn]=1;
+	      numberProhibited++;
+	    }
+	  }
+	}
+      }
+      if (numberProhibited)
+	process->passInProhibited(prohibited,numberColumns);
+      delete [] prohibited;
+    }
     int logLevel = model.messageHandler()->logLevel();
 #ifdef COIN_HAS_CLP
     OsiClpSolverInterface * clpSolver = dynamic_cast< OsiClpSolverInterface*> (solver);
@@ -329,7 +378,7 @@ CbcStrategyDefault::setupOther(CbcModel & model)
     // Not needed with pass in process->messageHandler()->setLogLevel(logLevel);
     // Add in generators
     process->addCutGenerator(&generator1);
-    int translate[]={9999,0,2,3};
+    int translate[]={9999,0,3,2,-1,-2};
     OsiSolverInterface * solver2 = 
       process->preProcessNonDefault(*solver,
                                     translate[desiredPreProcess_],preProcessPasses_);
@@ -382,9 +431,9 @@ CbcStrategyDefault::setupOther(CbcModel & model)
             model.findIntegers(true);
             numberIntegers = model.numberIntegers();
           }
-          CbcObject ** oldObjects = model.objects();
+          OsiObject ** oldObjects = model.objects();
           // Do sets and priorities
-          CbcObject ** objects = new CbcObject * [numberSOS];
+          OsiObject ** objects = new OsiObject * [numberSOS];
           // set old objects to have low priority
           int numberOldObjects = model.numberObjects();
           int numberColumns = model.getNumCols();
@@ -422,7 +471,17 @@ CbcStrategyDefault::setupOther(CbcModel & model)
               fake[originalColumns[i]]=i;
             for (int iObject=0;iObject<model.numberObjects();iObject++) {
               // redo ids etc
-              model.modifiableObject(iObject)->redoSequenceEtc(&model,n,fake);
+	      CbcSimpleInteger * obj =
+		dynamic_cast <CbcSimpleInteger *>(model.modifiableObject(iObject)) ;
+	      if (obj) {
+		obj->resetSequenceEtc(n,fake);
+	      } else {
+		// redo ids etc
+		CbcObject * obj =
+		  dynamic_cast <CbcObject *>(model.modifiableObject(iObject)) ;
+		assert (obj);
+		obj->redoSequenceEtc(&model,n,fake);
+	      }
             }
             delete [] fake;
           }
@@ -696,6 +755,7 @@ CbcStrategyDefaultSubTree::setupHeuristics(CbcModel & model)
   // Allow rounding heuristic
 
   CbcRounding heuristic1(model);
+  heuristic1.setHeuristicName("rounding");
   int numberHeuristics = model.numberHeuristics();
   int iHeuristic;
   bool found;

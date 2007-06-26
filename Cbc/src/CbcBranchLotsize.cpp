@@ -641,9 +641,8 @@ CbcLotsize::notPreferredNewFeasible() const
   copy of the original bounds.
  */
 void 
-CbcLotsize::resetBounds()
+CbcLotsize::resetBounds(const OsiSolverInterface * solver)
 {
-  //printf("resetBounds needs coding for CbcLotSize\n");
 }
 
 
@@ -678,7 +677,7 @@ CbcLotsizeBranchingObject::CbcLotsizeBranchingObject (CbcModel * model,
 						      double upperValue)
   :CbcBranchingObject(model,variable,way,lowerValue)
 {
-  numberBranchesLeft_=1;
+  setNumberBranchesLeft(1);
   down_[0] = lowerValue;
   down_[1] = upperValue;
   up_[0] = lowerValue;
@@ -730,11 +729,9 @@ CbcLotsizeBranchingObject::~CbcLotsizeBranchingObject ()
   be easily extensible to multi-way branching.
 */
 double
-CbcLotsizeBranchingObject::branch(bool normalBranch)
+CbcLotsizeBranchingObject::branch()
 {
-  if (model_->messageHandler()->logLevel()>2&&normalBranch)
-    print(normalBranch);
-  numberBranchesLeft_--;
+  decrementNumberBranchesLeft();
   int iColumn = variable_;
   if (way_<0) {
 #ifdef CBC_DEBUG
@@ -763,7 +760,7 @@ CbcLotsizeBranchingObject::branch(bool normalBranch)
 }
 // Print
 void
-CbcLotsizeBranchingObject::print(bool normalBranch)
+CbcLotsizeBranchingObject::print()
 {
   int iColumn = variable_;
   if (way_<0) {

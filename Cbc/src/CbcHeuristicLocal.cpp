@@ -59,6 +59,7 @@ CbcHeuristicLocal::generateCpp( FILE * fp)
   CbcHeuristicLocal other;
   fprintf(fp,"0#include \"CbcHeuristicLocal.hpp\"\n");
   fprintf(fp,"3  CbcHeuristicLocal heuristicLocal(*cbcModel);\n");
+  CbcHeuristic::generateCpp(fp,"heuristicLocal");
   if (swap_!=other.swap_)
     fprintf(fp,"3  heuristicLocal.setSearchType(%d);\n",swap_);
   else
@@ -74,7 +75,6 @@ CbcHeuristicLocal::CbcHeuristicLocal(const CbcHeuristicLocal & rhs)
   numberSolutions_(rhs.numberSolutions_),
   swap_(rhs.swap_)
 {
-  setWhen(rhs.when());
   if (model_&&rhs.used_) {
     int numberColumns = model_->solver()->getNumCols();
     used_ = new char[numberColumns];
@@ -83,6 +83,28 @@ CbcHeuristicLocal::CbcHeuristicLocal(const CbcHeuristicLocal & rhs)
     used_=NULL;
   }
 }
+
+// Assignment operator 
+CbcHeuristicLocal & 
+CbcHeuristicLocal::operator=( const CbcHeuristicLocal& rhs)
+{
+  if (this!=&rhs) {
+    CbcHeuristic::operator=(rhs);
+    matrix_ = rhs.matrix_;
+    numberSolutions_ = rhs.numberSolutions_;
+    swap_ = rhs.swap_;
+    delete [] used_;
+    if (model_&&rhs.used_) {
+      int numberColumns = model_->solver()->getNumCols();
+      used_ = new char[numberColumns];
+      memcpy(used_,rhs.used_,numberColumns);
+    } else {
+      used_=NULL;
+    }
+  }
+  return *this;
+}
+
 // Resets stuff if model changes
 void 
 CbcHeuristicLocal::resetModel(CbcModel * model)
@@ -120,20 +142,23 @@ CbcHeuristicLocal::solutionFix(double & objectiveValue,
   int nFix=0;
   for (i=0;i<numberIntegers;i++) {
     int iColumn=integerVariable[i];
-    const CbcObject * object = model_->object(i);
-    const CbcSimpleInteger * integerObject = 
-      dynamic_cast<const  CbcSimpleInteger *> (object);
-    assert(integerObject);
+    const OsiObject * object = model_->object(i);
     // get original bounds
-    double originalLower = integerObject->originalLowerBound();
+    double originalLower;
+    double originalUpper;
+    getIntegerInformation( object,originalLower, originalUpper); 
     newSolver->setColLower(iColumn,CoinMax(colLower[iColumn],originalLower));
     if (!used_[iColumn]) {
       newSolver->setColUpper(iColumn,colLower[iColumn]);
       nFix++;
     }
   }
-  int returnCode = smallBranchAndBound(newSolver,200,newSolution,objectiveValue,
+  int returnCode = smallBranchAndBound(newSolver,numberNodes_,newSolution,objectiveValue,
                                          objectiveValue,"CbcHeuristicLocal");
+  if ((returnCode&2)!=0) {
+    // could add cut
+    returnCode &= ~2;
+  }
 
   delete newSolver;
   return returnCode;
@@ -199,14 +224,11 @@ CbcHeuristicLocal::solution(double & solutionValue,
   // clean solution
   for (i=0;i<numberIntegers;i++) {
     int iColumn = integerVariable[i];
-    const CbcObject * object = model_->object(i);
-    const CbcSimpleInteger * integerObject = 
-      dynamic_cast<const  CbcSimpleInteger *> (object);
-    assert(integerObject);
+    const OsiObject * object = model_->object(i);
     // get original bounds
-    double originalLower = integerObject->originalLowerBound();
-    double originalUpper = integerObject->originalUpperBound();
-
+    double originalLower;
+    double originalUpper;
+    getIntegerInformation( object,originalLower, originalUpper); 
     double value=newSolution[iColumn];
     if (value<originalLower) {
       value=originalLower;
@@ -462,12 +484,11 @@ CbcHeuristicLocal::solution(double & solutionValue,
 	}
 	newSolution[kColumn] += wayK;
 	// See if k can go further ?
-	const CbcObject * object = model_->object(goodK);
-	const CbcSimpleInteger * integerObject = 
-	  dynamic_cast<const  CbcSimpleInteger *> (object);
+	const OsiObject * object = model_->object(goodK);
 	// get original bounds
-	double originalLower = integerObject->originalLowerBound();
-	double originalUpper = integerObject->originalUpperBound();
+	double originalLower;
+	double originalUpper;
+	getIntegerInformation( object,originalLower, originalUpper); 
 	
 	double value=newSolution[kColumn];
 	int iway=0;
@@ -511,12 +532,11 @@ CbcHeuristicLocal::solution(double & solutionValue,
       if (!numberBad) {
         for (i=0;i<numberIntegers;i++) {
           int iColumn = integerVariable[i];
-          const CbcObject * object = model_->object(i);
-          const CbcSimpleInteger * integerObject = 
-            dynamic_cast<const  CbcSimpleInteger *> (object);
+          const OsiObject * object = model_->object(i);
           // get original bounds
-          double originalLower = integerObject->originalLowerBound();
-          //double originalUpper = integerObject->originalUpperBound();
+	  double originalLower;
+	  double originalUpper;
+	  getIntegerInformation( object,originalLower, originalUpper); 
           
           double value=newSolution[iColumn];
           // if away from lower bound mark that fact

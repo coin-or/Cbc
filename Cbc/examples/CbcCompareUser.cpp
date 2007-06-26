@@ -81,7 +81,8 @@ CbcCompareUser::operator=( const CbcCompareUser& rhs)
 CbcCompareUser::~CbcCompareUser ()
 {
 }
-
+// For moment go to default
+#if 0
 // Returns true if y better than x
 bool 
 CbcCompareUser::test (CbcNode * x, CbcNode * y)
@@ -178,3 +179,104 @@ CbcCompareUser::alternateTest (CbcNode * x, CbcNode * y)
     return true;
   }
 }
+#else
+
+// Returns true if y better than x
+bool 
+CbcCompareUser::test (CbcNode * x, CbcNode * y)
+{
+  if (weight_==-1.0&&(y->depth()>7||x->depth()>7)) {
+    // before solution
+    /* printf("x %d %d %g, y %d %d %g\n",
+       x->numberUnsatisfied(),x->depth(),x->objectiveValue(),
+       y->numberUnsatisfied(),y->depth(),y->objectiveValue()); */
+    if (x->numberUnsatisfied() > y->numberUnsatisfied()) {
+      return true;
+    } else if (x->numberUnsatisfied() < y->numberUnsatisfied()) {
+      return false;
+    } else {
+      int testX = x->depth();
+      int testY = y->depth();
+      if (testX!=testY)
+	return testX < testY;
+      else
+	return equalityTest(x,y); // so ties will be broken in consistent manner
+    }
+  } else {
+    // after solution
+    double weight = CoinMax(weight_,0.0);
+    double testX =  x->objectiveValue()+ weight*x->numberUnsatisfied();
+    double testY = y->objectiveValue() + weight*y->numberUnsatisfied();
+    if (testX!=testY)
+      return testX > testY;
+    else
+      return equalityTest(x,y); // so ties will be broken in consistent manner
+  }
+}
+// This allows method to change behavior as it is called
+// after each solution
+void 
+CbcCompareUser::newSolution(CbcModel * model,
+			       double objectiveAtContinuous,
+			       int numberInfeasibilitiesAtContinuous) 
+{
+  if (model->getSolutionCount()==model->getNumberHeuristicSolutions()&&
+      model->getSolutionCount()<5&&model->getNodeCount()<500)
+    return; // solution was got by rounding
+  // set to get close to this solution
+  double costPerInteger = 
+    (model->getObjValue()-objectiveAtContinuous)/
+    ((double) numberInfeasibilitiesAtContinuous);
+  weight_ = 0.95*costPerInteger;
+  saveWeight_ = 0.95*weight_;
+  numberSolutions_++;
+  if (numberSolutions_>5)
+    weight_ =0.0; // this searches on objective
+}
+// This allows method to change behavior 
+bool 
+CbcCompareUser::every1000Nodes(CbcModel * model, int numberNodes)
+{
+  double saveWeight=weight_;
+  int numberNodes1000 = numberNodes/1000;
+  if (numberNodes>10000) {
+    weight_ =0.0; // this searches on objective
+    // but try a bit of other stuff
+    if ((numberNodes1000%4)==1)
+      weight_=saveWeight_;
+  } else if (numberNodes==1000&&weight_==-2.0) {
+    weight_=-1.0; // Go to depth first
+  }
+  // get size of tree
+  treeSize_ = model->tree()->size();
+  if (treeSize_>10000) {
+    int n1 = model->solver()->getNumRows()+model->solver()->getNumCols();
+    int n2 = model->numberObjects();
+    double size = n1*0.1 + n2*2.0;
+    // set weight to reduce size most of time
+    if (treeSize_*size>5.0e7)
+      weight_=-1.0;
+    else if ((numberNodes1000%4)==0&&treeSize_*size>1.0e6)
+      weight_=-1.0;
+    else if ((numberNodes1000%4)==1)
+      weight_=0.0;
+    else
+      weight_=saveWeight_;
+  }
+  return (weight_!=saveWeight);
+}
+// Returns true if wants code to do scan with alternate criterion
+bool 
+CbcCompareUser::fullScan() const
+{
+  return false;
+}
+// This is alternate test function
+bool 
+CbcCompareUser::alternateTest (CbcNode * x, CbcNode * y)
+{
+  // not used
+  abort();
+  return false;
+}
+#endif

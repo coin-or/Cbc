@@ -16,6 +16,7 @@
 #include <cfloat>
 #define CUTS
 #include "OsiSolverInterface.hpp"
+#include "OsiChooseVariable.hpp"
 #include "OsiAuxInfo.hpp"
 #include "OsiSolverBranch.hpp"
 #include "CoinWarmStartBasis.hpp"
@@ -71,6 +72,7 @@ CbcNodeInfo::CbcNodeInfo (CbcNodeInfo * parent)
 #endif
   if (parent_) {
     numberRows_ = parent_->numberRows_+parent_->numberCuts_;
+    //parent_->increment();
   }
 }
 // Copy Constructor 
@@ -136,9 +138,14 @@ CbcNodeInfo::~CbcNodeInfo()
 
   assert(!numberPointingToThis_);
   // But they may be some left (max nodes?)
-  for (int i=0;i<numberCuts_;i++) 
+  for (int i=0;i<numberCuts_;i++) {
+#ifndef GLOBAL_CUTS_JUST_POINTERS
     delete cuts_[i];
-
+#else
+    if (cuts_[i]->globallyValidAsInteger()!=2)
+      delete cuts_[i];
+#endif
+  }
   delete [] cuts_;
   if (owner_) 
     owner_->nullNodeInfo();
@@ -166,7 +173,12 @@ CbcNodeInfo::decrementCuts(int change)
       int number = cuts_[i]->decrement(changeThis);
       if (!number) {
 	//printf("info %x del cut %d %x\n",this,i,cuts_[i]);
+#ifndef GLOBAL_CUTS_JUST_POINTERS
 	delete cuts_[i];
+#else
+	if (cuts_[i]->globallyValidAsInteger()!=2)
+	  delete cuts_[i];
+#endif
 	cuts_[i]=NULL;
       }
     }
@@ -211,7 +223,12 @@ CbcNodeInfo::decrementParentCuts(int change)
 	      number = thisInfo->cuts_[i]->decrement(change);
 	  }
 	  if (!number) {
+#ifndef GLOBAL_CUTS_JUST_POINTERS
 	    delete thisInfo->cuts_[i];
+#else
+	    if (thisInfo->cuts_[i]->globallyValidAsInteger()!=2)
+	      delete thisInfo->cuts_[i];
+#endif
 	    thisInfo->cuts_[i]=NULL;
 	  }
 	}
@@ -371,8 +388,14 @@ CbcNodeInfo::deleteCuts(int numberToDelete, CbcCountRowCut ** cuts)
     }
     last=j;
     int number = cuts_[j]->decrement();
-    if (!number)
+    if (!number) {
+#ifndef GLOBAL_CUTS_JUST_POINTERS
       delete cuts_[j];
+#else
+      if (cuts_[j]->globallyValidAsInteger()!=2)
+	delete cuts_[j];
+#endif
+    }
     cuts_[j]=NULL;
   }
   j=0;
@@ -391,8 +414,14 @@ CbcNodeInfo::deleteCuts(int numberToDelete, int * which)
   for (i=0;i<numberToDelete;i++) {
     int iCut=which[i];
     int number = cuts_[iCut]->decrement();
-    if (!number)
+    if (!number) {
+#ifndef GLOBAL_CUTS_JUST_POINTERS
       delete cuts_[iCut];
+#else
+      if (cuts_[iCut]->globallyValidAsInteger()!=2)
+	delete cuts_[iCut];
+#endif
+    }
     cuts_[iCut]=NULL;
   }
   int j=0;
@@ -621,12 +650,25 @@ void CbcPartialNodeInfo::applyToModel (CbcModel *model,
   int i;
   for (i=0;i<numberChangedBounds_;i++) {
     int variable = variables_[i];
+    int k = variable&0x7fffffff;
     if ((variable&0x80000000)==0) {
       // lower bound changing
-      solver->setColLower(variable,newBounds_[i]);
+#ifndef NDEBUG
+      double oldValue = solver->getColLower()[k];
+      assert (newBounds_[i]>oldValue-1.0e-8);
+      if (newBounds_[i]<oldValue+1.0e-8)
+	printf("bad null lower change for column %d - bound %g\n",k,oldValue);
+#endif
+      solver->setColLower(k,newBounds_[i]);
     } else {
       // upper bound changing
-      solver->setColUpper(variable&0x7fffffff,newBounds_[i]);
+#ifndef NDEBUG
+      double oldValue = solver->getColUpper()[k];
+      assert (newBounds_[i]<oldValue+1.0e-8);
+      if (newBounds_[i]>oldValue-1.0e-8)
+	printf("bad null upper change for column %d - bound %g\n",k,oldValue);
+#endif
+      solver->setColUpper(k,newBounds_[i]);
     }
   }
   for (i=0;i<numberCuts_;i++) {
@@ -683,9 +725,219 @@ CbcNode::CbcNode(CbcModel * model,
   model->setObjectiveValue(this,lastNode);
 
   if (lastNode)
+    if (lastNode->nodeInfo_)
     lastNode->nodeInfo_->increment();
 }
 
+#define CBC_NEW_CREATEINFO
+#ifdef CBC_NEW_CREATEINFO
+
+/*
+  New createInfo, with basis manipulation hidden inside mergeBasis. Allows
+  solvers to override and carry over all information from one basis to
+  another.
+*/
+
+void
+CbcNode::createInfo (CbcModel *model,
+		     CbcNode *lastNode,
+		     const CoinWarmStartBasis *lastws,
+		     const double *lastLower, const double *lastUpper,
+		     int numberOldActiveCuts, int numberNewCuts)
+
+{ OsiSolverInterface *solver = model->solver();
+  CbcStrategy *strategy = model->strategy();
+/*
+  The root --- no parent. Create full basis and bounds information.
+*/
+  if (!lastNode)
+  { 
+    if (!strategy)
+      nodeInfo_=new CbcFullNodeInfo(model,solver->getNumRows());
+    else
+      nodeInfo_ = strategy->fullNodeInfo(model,solver->getNumRows());
+  } else {
+/*
+  Not the root. Create an edit from the parent's basis & bound information.
+  This is not quite as straightforward as it seems. We need to reintroduce
+  cuts we may have dropped out of the basis, in the correct position, because
+  this whole process is strictly positional. Start by grabbing the current
+  basis.
+*/
+    const CoinWarmStartBasis *ws =
+      dynamic_cast<const CoinWarmStartBasis*>(solver->getWarmStart());
+    assert(ws!=NULL); // make sure not volume
+    //int numberArtificials = lastws->getNumArtificial();
+    int numberColumns = solver->getNumCols();
+    int numberRowsAtContinuous = model->numberRowsAtContinuous();
+    int currentNumberCuts = model->currentNumberCuts();
+#   ifdef CBC_CHECK_BASIS
+    std::cout
+      << "Before expansion: orig " << numberRowsAtContinuous
+      << ", old " << numberOldActiveCuts
+      << ", new " << numberNewCuts
+      << ", current " << currentNumberCuts << "." << std::endl ;
+    ws->print();
+#   endif
+/*
+  Clone the basis and resize it to hold the structural constraints, plus
+  all the cuts: old cuts, both active and inactive (currentNumberCuts),
+  and new cuts (numberNewCuts). This will become the expanded basis.
+*/
+    CoinWarmStartBasis *expanded = 
+      dynamic_cast<CoinWarmStartBasis *>(ws->clone()) ;
+    int iCompact = numberRowsAtContinuous+numberOldActiveCuts+numberNewCuts ;
+    // int nPartial = numberRowsAtContinuous+currentNumberCuts;
+    int iFull = numberRowsAtContinuous+currentNumberCuts+numberNewCuts;
+    // int maxBasisLength = ((iFull+15)>>4)+((numberColumns+15)>>4);
+    // printf("l %d full %d\n",maxBasisLength,iFull);
+    expanded->resize(iFull,numberColumns);
+#   ifdef CBC_CHECK_BASIS
+    std::cout
+      << "\tFull basis " << iFull << " rows, "
+      << numberColumns << " columns; compact "
+      << iCompact << " rows." << std::endl ;
+#   endif
+/*
+  Now flesh out the expanded basis. The clone already has the
+  correct status information for the variables and for the structural
+  (numberRowsAtContinuous) constraints. Any indices beyond nPartial must be
+  cuts created while processing this node --- they can be copied en bloc
+  into the correct position in the expanded basis. The space reserved for
+  xferRows is a gross overestimate.
+*/
+    CoinWarmStartBasis::XferVec xferRows ;
+    xferRows.reserve(iFull-numberRowsAtContinuous+1) ;
+    if (numberNewCuts) {
+      xferRows.push_back(
+          CoinWarmStartBasis::XferEntry(iCompact-numberNewCuts,
+					iFull-numberNewCuts,numberNewCuts)) ;
+    }
+/*
+  From nPartial down, record the entries we want to copy from the current
+  basis (the entries for the active cuts; non-zero in the list returned
+  by addedCuts). Fill the expanded basis with entries showing a status of
+  basic for the deactivated (loose) cuts.
+*/
+    CbcCountRowCut **cut = model->addedCuts();
+    iFull -= (numberNewCuts+1) ;
+    iCompact -= (numberNewCuts+1) ;
+    int runLen = 0 ;
+    CoinWarmStartBasis::XferEntry entry(-1,-1,-1) ;
+    while (iFull >= numberRowsAtContinuous) { 
+      for ( ; iFull >= numberRowsAtContinuous &&
+	      cut[iFull-numberRowsAtContinuous] ; iFull--)
+        runLen++ ;
+      if (runLen) {
+        iCompact -= runLen ;
+        entry.first = iCompact+1 ;
+        entry.second = iFull+1 ;
+	entry.third = runLen ;
+	runLen = 0 ;
+        xferRows.push_back(entry) ;
+      }
+      for ( ; iFull >= numberRowsAtContinuous &&
+      	      !cut[iFull-numberRowsAtContinuous] ; iFull--)
+	expanded->setArtifStatus(iFull,CoinWarmStartBasis::basic);
+    }
+/*
+  Finally, call mergeBasis to copy over entries from the current basis to
+  the expanded basis. Since we cloned the expanded basis from the active basis
+  and haven't changed the number of variables, only row status entries need
+  to be copied.
+*/
+    expanded->mergeBasis(ws,&xferRows,0) ;
+
+#ifdef CBC_CHECK_BASIS
+    std::cout << "Expanded basis:" << std::endl ;
+    expanded->print() ;
+    std::cout << "Diffing against:" << std::endl ;
+    lastws->print() ;
+#endif    
+
+/*
+  Now that we have two bases in proper positional correspondence, creating
+  the actual diff is dead easy.
+
+  Note that we're going to compare the expanded basis here to the stripped
+  basis (lastws) produced by addCuts. It doesn't affect the correctness (the
+  diff process has no knowledge of the meaning of an entry) but it does
+  mean that we'll always generate a whack of diff entries because the expanded
+  basis is considerably larger than the stripped basis.
+*/
+    CoinWarmStartDiff *basisDiff = expanded->generateDiff(lastws) ;
+/*
+  Diff the bound vectors. It's assumed the number of structural variables
+  is not changing. For branching objects that change bounds on integer
+  variables, we should see at least one bound change as a consequence
+  of applying the branch that generated this subproblem from its parent.
+  This need not hold for other types of branching objects (hyperplane
+  branches, for example).
+*/
+    const double * lower = solver->getColLower();
+    const double * upper = solver->getColUpper();
+
+    double *boundChanges = new double [2*numberColumns] ;
+    int *variables = new int [2*numberColumns] ;
+    int numberChangedBounds=0;
+    
+    int i;
+    for (i=0;i<numberColumns;i++) {
+      if (lower[i]!=lastLower[i]) {
+	variables[numberChangedBounds]=i;
+	boundChanges[numberChangedBounds++]=lower[i];
+      }
+      if (upper[i]!=lastUpper[i]) {
+	variables[numberChangedBounds]=i|0x80000000;
+	boundChanges[numberChangedBounds++]=upper[i];
+      }
+#ifdef CBC_DEBUG
+      if (lower[i] != lastLower[i]) {
+        std::cout
+	  << "lower on " << i << " changed from "
+	  << lastLower[i] << " to " << lower[i] << std::endl ;
+      }
+      if (upper[i] != lastUpper[i]) {
+        std::cout
+	  << "upper on " << i << " changed from "
+	  << lastUpper[i] << " to " << upper[i] << std::endl ;
+      }
+#endif
+    }
+#ifdef CBC_DEBUG
+    std::cout << numberChangedBounds << " changed bounds." << std::endl ;
+#endif
+    //if (lastNode->branchingObject()->boundBranch())
+    //assert (numberChangedBounds);
+/*
+  Hand the lot over to the CbcPartialNodeInfo constructor, then clean up and
+  return.
+*/
+    if (!strategy)
+      nodeInfo_ =
+        new CbcPartialNodeInfo(lastNode->nodeInfo_,this,numberChangedBounds,
+                               variables,boundChanges,basisDiff) ;
+    else
+      nodeInfo_ =
+        strategy->partialNodeInfo(model,lastNode->nodeInfo_,this,
+				  numberChangedBounds,variables,boundChanges,
+				  basisDiff) ;
+    delete basisDiff ;
+    delete [] boundChanges;
+    delete [] variables;
+    delete expanded ;
+    delete ws;
+  }
+  // Set node number
+  nodeInfo_->setNodeNumber(model->getNodeCount2());
+}
+
+#else	// CBC_NEW_CREATEINFO
+
+/*
+  Original createInfo, with bare manipulation of basis vectors. Fails if solver
+  maintains additional information in basis.
+*/
 
 void
 CbcNode::createInfo (CbcModel *model,
@@ -859,6 +1111,8 @@ CbcNode::createInfo (CbcModel *model,
   nodeInfo_->setNodeNumber(model->getNodeCount2());
 }
 
+#endif	// CBC_NEW_CREATEINFO
+
 /*
   The routine scans through the object list of the model looking for objects
   that indicate infeasibility. It tests each object using strong branching
@@ -905,6 +1159,10 @@ int CbcNode::chooseBranch (CbcModel *model, CbcNode *lastNode,int numberPassesLe
   }
   double integerTolerance = 
     model->getDblParam(CbcModel::CbcIntegerTolerance);
+  // point to useful information
+  OsiBranchingInformation usefulInfo = model->usefulInformation();
+  // and modify
+  usefulInfo.depth_=depth_;
   int i;
   bool beforeSolution = model->getSolutionCount()==0;
   int numberStrong=model->numberStrong();
@@ -933,9 +1191,11 @@ int CbcNode::chooseBranch (CbcModel *model, CbcNode *lastNode,int numberPassesLe
     the user has loaded a decision method into the model.
   */
   CbcBranchDecision *decision = model->branchingMethod();
-  if (!decision)
+  CbcDynamicPseudoCostBranchingObject * dynamicBranchingObject =
+    dynamic_cast<CbcDynamicPseudoCostBranchingObject *>(decision);
+  if (!decision||dynamicBranchingObject)
     decision = new CbcBranchDefaultDecision();
-
+  decision->initialize(model);
   CbcStrongInfo * choice = new CbcStrongInfo[maximumStrong];
   for (i=0;i<numberColumns;i++) {
     saveLower[i] = lower[i];
@@ -993,15 +1253,15 @@ int CbcNode::chooseBranch (CbcModel *model, CbcNode *lastNode,int numberPassesLe
       numberStrong=0;
       bool canDoOneHot=false;
       for (i=0;i<numberObjects;i++) {
-        CbcObject * object = model->modifiableObject(i);
+        OsiObject * object = model->modifiableObject(i);
         int preferredWay;
-        double infeasibility = object->infeasibility(preferredWay);
+        double infeasibility = object->infeasibility(&usefulInfo,preferredWay);
         int priorityLevel = object->priority();
         if (hotstartSolution) {
           // we are doing hot start
           const CbcSimpleInteger * thisOne = dynamic_cast <const CbcSimpleInteger *> (object);
           if (thisOne) {
-            int iColumn = thisOne->modelSequence();
+            int iColumn = thisOne->columnNumber();
             bool canDoThisHot=true;
             double targetValue = hotstartSolution[iColumn];
             if (saveUpper[iColumn]>saveLower[iColumn]) {
@@ -1081,7 +1341,16 @@ int CbcNode::chooseBranch (CbcModel *model, CbcNode *lastNode,int numberPassesLe
             //add to list
             choice[iSmallest].upMovement=infeasibility;
             delete choice[iSmallest].possibleBranch;
-            choice[iSmallest].possibleBranch=object->createBranch(preferredWay);
+	    CbcSimpleInteger * obj =
+	      dynamic_cast <CbcSimpleInteger *>(object) ;
+	    if (obj) {
+	      choice[iSmallest].possibleBranch=obj->createBranch(solver,&usefulInfo,preferredWay);
+	    } else {
+	      CbcObject * obj =
+		dynamic_cast <CbcObject *>(object) ;
+	      assert (obj);
+	      choice[iSmallest].possibleBranch=obj->createBranch(preferredWay);
+	    }
             numberStrong = CoinMax(numberStrong,iSmallest+1);
             // Save which object it was
             choice[iSmallest].objectNumber=i;
@@ -1272,7 +1541,7 @@ int CbcNode::chooseBranch (CbcModel *model, CbcNode *lastNode,int numberPassesLe
         if ((clp->specialOptions()&32)!=0) {
           clp->primal(1);
           if (clp->numberIterations())
-            model->messageHandler()->message(CBC_ITERATE_STRONG,model->messages())
+            model->messageHandler()->message(CBC_ITERATE_STRONG,*model->messagesPointer())
               << clp->numberIterations()
               <<CoinMessageEol;
         }
@@ -1282,9 +1551,9 @@ int CbcNode::chooseBranch (CbcModel *model, CbcNode *lastNode,int numberPassesLe
 #endif
         for (i=0;i<numberStrong;i++) {
           int iObject = choice[i].objectNumber;
-          const CbcObject * object = model->object(iObject);
+          const OsiObject * object = model->object(iObject);
           const CbcSimpleInteger * simple = dynamic_cast <const CbcSimpleInteger *> (object);
-          int iSequence = simple->modelSequence();
+          int iSequence = simple->columnNumber();
           newLower[i]= ceil(saveSolution[iSequence]);
           newUpper[i]= floor(saveSolution[iSequence]);
 #ifdef CRUNCH
@@ -1317,9 +1586,9 @@ int CbcNode::chooseBranch (CbcModel *model, CbcNode *lastNode,int numberPassesLe
           //bool checkSol=true;
           for (i=0;i<numberStrong;i++) {
             int iObject = choice[i].objectNumber;
-            const CbcObject * object = model->object(iObject);
+            const OsiObject * object = model->object(iObject);
             const CbcSimpleInteger * simple = dynamic_cast <const CbcSimpleInteger *> (object);
-            int iSequence = simple->modelSequence();
+            int iSequence = simple->columnNumber();
             which[i]=iSequence;
             double * sol = outputSolution[2*i];
             double * sol2 = outputSolution[2*i+1];
@@ -1699,9 +1968,9 @@ int CbcNode::chooseBranch (CbcModel *model, CbcNode *lastNode,int numberPassesLe
           for (i = 0 ; i < numberStrong ; i++) {
             CbcStrongInfo thisChoice = choice[i];
             choice[i].possibleBranch=NULL;
-            const CbcObject * object = model->object(thisChoice.objectNumber);
+            const OsiObject * object = model->object(thisChoice.objectNumber);
             int preferredWay;
-            double infeasibility = object->infeasibility(preferredWay);
+            double infeasibility = object->infeasibility(&usefulInfo,preferredWay);
             if (!infeasibility) {
               // take out
               delete thisChoice.possibleBranch;
@@ -1778,7 +2047,7 @@ int CbcNode::chooseBranch (CbcModel *model, CbcNode *lastNode,int numberPassesLe
         CbcBranchingObject ** objects = new CbcBranchingObject * [ numberStrong];
         for (i = 0 ; i < numberStrong ; i++) {
           int iColumn = choice[i].possibleBranch->variable() ;
-          model->messageHandler()->message(CBC_STRONG,model->messages())
+          model->messageHandler()->message(CBC_STRONG,*model->messagesPointer())
             << i << iColumn
             <<choice[i].downMovement<<choice[i].numIntInfeasDown 
             <<choice[i].upMovement<<choice[i].numIntInfeasUp 
@@ -1830,7 +2099,7 @@ int CbcNode::chooseBranch (CbcModel *model, CbcNode *lastNode,int numberPassesLe
 /*
   Cleanup, then we're outta here.
 */
-  if (!model->branchingMethod())
+  if (!model->branchingMethod()||dynamicBranchingObject)
     delete decision;
     
   for (i=0;i<maximumStrong;i++)
@@ -1895,6 +2164,10 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
     // use one from CbcModel
     auxiliaryInfo = model->solverCharacteristics();
   }
+  // point to useful information
+  OsiBranchingInformation usefulInfo = model->usefulInformation();
+  // and modify
+  usefulInfo.depth_=depth_;
   assert (auxiliaryInfo);
   //assert(objectiveValue_ == solver->getObjSense()*solver->getObjValue());
   double cutoff =model->getCutoff();
@@ -1964,6 +2237,51 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
   CbcStrongInfo * fixObject = new CbcStrongInfo[numberObjects];
   double estimatedDegradation=0.0; 
   int numberNodes=model->getNodeCount();
+  int saveLogLevel = model->logLevel();
+  if ((numberNodes%500)==0&&false) {
+    model->setLogLevel(6);
+    // Get average up and down costs
+    double averageUp=0.0;
+    double averageDown=0.0;
+    int numberUp=0;
+    int numberDown=0;
+    int i;
+    for ( i=0;i<numberObjects;i++) {
+      OsiObject * object = model->modifiableObject(i);
+      CbcSimpleIntegerDynamicPseudoCost * dynamicObject =
+	dynamic_cast <CbcSimpleIntegerDynamicPseudoCost *>(object) ;
+      assert(dynamicObject);
+      int  numberUp2=0;
+      int numberDown2=0;
+      double up=0.0;
+      double down=0.0;
+      if (dynamicObject->numberTimesUp()) {
+	numberUp++;
+	averageUp += dynamicObject->upDynamicPseudoCost();
+	numberUp2 += dynamicObject->numberTimesUp();
+	up = dynamicObject->upDynamicPseudoCost();
+      }
+      if (dynamicObject->numberTimesDown()) {
+	numberDown++;
+	averageDown += dynamicObject->downDynamicPseudoCost();
+	numberDown2 += dynamicObject->numberTimesDown();
+	down = dynamicObject->downDynamicPseudoCost();
+      }
+      if (numberUp2||numberDown2)
+	printf("col %d - up %d times cost %g, - down %d times cost %g\n",
+	       dynamicObject->columnNumber(),numberUp2,up,numberDown2,down);
+    }
+    if (numberUp) 
+      averageUp /= (double) numberUp;
+    else
+      averageUp=1.0;
+    if (numberDown) 
+      averageDown /= (double) numberDown;
+    else
+      averageDown=1.0;
+    printf("total - up %d vars average %g, - down %d vars average %g\n",
+	   numberUp,averageUp,numberDown,averageDown);
+  }
   int numberBeforeTrust = model->numberBeforeTrust();
   int numberPenalties = model->numberPenalties();
   if (numberBeforeTrust>=1000000) {
@@ -1987,6 +2305,7 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
 # else
   OsiSolverInterface *osiclp = 0 ;
 # endif
+  const CglTreeProbingInfo * probingInfo = model->probingInfo();
   int saveSearchStrategy2 = model->searchStrategy();
   if (saveSearchStrategy2<999) {
     // Get average up and down costs
@@ -1997,7 +2316,7 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
       int numberDown=0;
       int i;
       for ( i=0;i<numberObjects;i++) {
-        CbcObject * object = model->modifiableObject(i);
+        OsiObject * object = model->modifiableObject(i);
         CbcSimpleIntegerDynamicPseudoCost * dynamicObject =
           dynamic_cast <CbcSimpleIntegerDynamicPseudoCost *>(object) ;
         assert(dynamicObject);
@@ -2019,7 +2338,7 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
       else
         averageDown=1.0;
       for ( i=0;i<numberObjects;i++) {
-        CbcObject * object = model->modifiableObject(i);
+        OsiObject * object = model->modifiableObject(i);
         CbcSimpleIntegerDynamicPseudoCost * dynamicObject =
           dynamic_cast <CbcSimpleIntegerDynamicPseudoCost *>(object) ;
         assert(dynamicObject);
@@ -2071,6 +2390,7 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
     numberStrongIterations=0;
     int * which = objectMark+numberObjects+1;
     int neededPenalties;
+    int branchingMethod=-1;
     // We may go round this loop three times (only if we think we have solution)
     for (int iPass=0;iPass<3;iPass++) {
       
@@ -2086,6 +2406,24 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
       // initialize sum of "infeasibilities"
       sumInfeasibilities_ = 0.0;
       int bestPriority=INT_MAX;
+      int number01 = 0;
+      const fixEntry * entry = NULL;
+      const int * toZero = NULL;
+      const int * toOne = NULL;
+      const int * backward = NULL;
+      int numberUnsatisProbed=0;
+      int numberUnsatisNotProbed=0; // 0-1
+      if (probingInfo) {
+	number01 = probingInfo->numberIntegers();
+	entry = probingInfo->fixEntries();
+	toZero = probingInfo->toZero();
+	toOne = probingInfo->toOne();
+	backward = probingInfo->backward();
+	if (!toZero[number01]) {
+	  // no info
+	  probingInfo=NULL;
+	}
+      }
       /*
         Scan for branching objects that indicate infeasibility. Choose candidates
         using priority as the first criteria, then integer infeasibility.
@@ -2104,12 +2442,12 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
       best=0.0;
 #define PRINT_STUFF -1
       for (i=0;i<numberObjects;i++) {
-        CbcObject * object = model->modifiableObject(i);
+        OsiObject * object = model->modifiableObject(i);
         CbcSimpleIntegerDynamicPseudoCost * dynamicObject =
           dynamic_cast <CbcSimpleIntegerDynamicPseudoCost *>(object) ;
         assert(dynamicObject);
         int preferredWay;
-        double infeasibility = object->infeasibility(preferredWay);
+        double infeasibility = object->infeasibility(&usefulInfo,preferredWay);
         int priorityLevel = object->priority();
 #define ZERO_ONE 0
 #define ZERO_FAKE 1.0e20;
@@ -2123,7 +2461,24 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
           infeasibility *= ZERO_FAKE;
 #endif
         if (infeasibility) {
+	  // check branching method
+	  if (branchingMethod!=dynamicObject->method()) {
+	    if (branchingMethod==-1)
+	      branchingMethod = dynamicObject->method();
+	    else
+	      branchingMethod = 100;
+	  }
           int iColumn = dynamicObject->columnNumber();
+	  if (probingInfo) {
+	    int iSeq = backward[iColumn];
+	    if (iSeq>=0) {
+	      if (toZero[iSeq+1]>toZero[iSeq]) {
+		numberUnsatisProbed++;
+	      } else {
+		numberUnsatisNotProbed++;
+	      }
+	    }
+	  }
           //double gap = saveUpper[iColumn]-saveLower[iColumn];
           // Give precedence to ones with gap of 1.0 
           //assert(gap>0.0);
@@ -2191,6 +2546,9 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
         }
       }
       if (numberUnsatisfied_) {
+	if (probingInfo&&false)
+	  printf("nunsat %d, %d probed, %d other 0-1\n",numberUnsatisfied_,
+		 numberUnsatisProbed,numberUnsatisNotProbed);
         // some infeasibilities - go to next steps
         break;
       } else if (!iPass) {
@@ -2259,28 +2617,33 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
     //bool skipAll = (numberBeforeTrust>20&&numberNodes>20000&&numberNotTrusted==0);
     bool skipAll = numberNotTrusted==0;
     bool doneHotStart=false;
+    int searchStrategy = saveSearchStrategy>=0 ? (saveSearchStrategy%10) : -1;
 #ifndef CBC_WEAK_STRONG
-    if ((numberNodes%20)==0||(model->specialOptions()&8)!=0)
+    if (((numberNodes%20)==0&&searchStrategy!=2)||(model->specialOptions()&8)!=0)
       skipAll=false;
 #endif
-    int searchStrategy = saveSearchStrategy>=0 ? (saveSearchStrategy%10) : -1;
     if (!newWay) {
     // 10 up always use %10, 20 up as 10 and allow penalties
     // But adjust depending on ratio of iterations
     if (searchStrategy>0&&saveSearchStrategy<10) {
       if (numberBeforeTrust>=5&&numberBeforeTrust<=10) {
         if (searchStrategy!=2) {
-          int numberIterations = model->getIterationCount();
-          int numberStrongIterations = model->numberStrongIterations();
-          if (numberStrongIterations>numberIterations+10000) {
-            searchStrategy=2;
-            //skipAll=true;
-          } else if (numberStrongIterations*4+1000<numberIterations||depth_<5) {
-            searchStrategy=3;
-            skipAll=false;
-          }
+	  if (depth_>5) {
+	    int numberIterations = model->getIterationCount();
+	    int numberStrongIterations = model->numberStrongIterations();
+	    if (numberStrongIterations>numberIterations+10000) {
+	      searchStrategy=2;
+	      //skipAll=true;
+	    } else if (numberStrongIterations*4+1000<numberIterations||depth_<5) {
+	      searchStrategy=3;
+	      skipAll=false;
+	    }
+	  } else {
+	    searchStrategy=3;
+	    skipAll=false;
+	  }
         } else {
-          skipAll=true;
+          //skipAll=true;
         }
       }
     }
@@ -2345,13 +2708,27 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
     bool hitMaxTime = ( CoinCpuTime()-model->getDblParam(CbcModel::CbcStartSeconds) > 
                         model->getDblParam(CbcModel::CbcMaximumSeconds));
     // also give up if we are looping round too much
-    if (hitMaxTime||numberPassesLeft<=0||(!numberNotTrusted&&false)) {
+    if (hitMaxTime||numberPassesLeft<=0||(!numberNotTrusted&&false)||branchingMethod==11) {
       int iObject = whichObject[bestChoice];
-      CbcObject * object = model->modifiableObject(iObject);
+      OsiObject * object = model->modifiableObject(iObject);
       int preferredWay;
-      object->infeasibility(preferredWay);
-      branch_=object->createBranch(preferredWay);
-      branch_->way(preferredWay);
+      object->infeasibility(&usefulInfo,preferredWay);
+      CbcSimpleInteger * obj =
+	dynamic_cast <CbcSimpleInteger *>(object) ;
+      if (obj) {
+	branch_=obj->createBranch(solver,&usefulInfo,preferredWay);
+      } else {
+	CbcObject * obj =
+	  dynamic_cast <CbcObject *>(object) ;
+	assert (obj);
+	branch_=obj->createBranch(preferredWay);
+      }
+      {
+	CbcBranchingObject * branchObj =
+	  dynamic_cast <CbcBranchingObject *>(branch_) ;
+	assert (branchObj);
+	branchObj->way(preferredWay);
+      }
       delete ws;
       ws=NULL;
       break;
@@ -2401,7 +2778,7 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
         for (int i=0;i<neededPenalties;i++) {
           int j = objectMark[i];
           int iObject = whichObject[j];
-          CbcObject * object = model->modifiableObject(iObject);
+          OsiObject * object = model->modifiableObject(iObject);
           CbcSimpleIntegerDynamicPseudoCost * dynamicObject =
             dynamic_cast <CbcSimpleIntegerDynamicPseudoCost *>(object) ;
           int iSequence=dynamicObject->columnNumber();
@@ -2479,9 +2856,12 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
       int saveLimit2;
       solver->getIntParam(OsiMaxNumIterationHotStart,saveLimit2);
       bool doQuickly = false; // numberToDo>2*numberStrong;
+      if (searchStrategy==2)
+	doQuickly=true;
       //printf("todo %d, strong %d\n",numberToDo,numberStrong);
       int numberTest=numberNotTrusted>0 ? numberStrong : (numberStrong+1)/2;
       int numberTest2 = 2*numberStrong;
+      double distanceToCutoff2 = model->getCutoff()-objectiveValue_;
       if (!newWay) {
       if (searchStrategy==3) {
         // Previously decided we need strong
@@ -2516,13 +2896,17 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
         numberTest=numberStrong;
       }
 #endif
-      if (depth_<10&&numberStrong) {
+      if (depth_<8&&numberStrong) {
         if (searchStrategy!=2) {
           doQuickly=false;
-          if (depth_<7)
-            numberStrong *=3;
-          if (!depth_) 
-            numberStrong=CoinMin(6*numberStrong,numberToDo);
+	  int numberRows = solver->getNumRows();
+	  // whether to do this or not is important - think
+	  if (numberRows<300||numberRows+numberColumns<2500) {
+	    if (depth_<7)
+	      numberStrong = CoinMin(3*numberStrong,numberToDo);
+	    if (!depth_) 
+	      numberStrong=CoinMin(6*numberStrong,numberToDo);
+	  }
           numberTest=numberStrong;
           skipAll=false;
         }
@@ -2619,8 +3003,17 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
       px[1]=numberTest2;
       px[2]= doQuickly ? 1 : -1;
       px[3]=numberStrong;
+      if (!newWay) {
+	if (numberColumns>8*solver->getNumRows()&&false) {
+	  printf("skipAll %c doQuickly %c numberTest %d numberTest2 %d numberNot %d\n",
+		 skipAll ? 'Y' : 'N',doQuickly ? 'Y' : 'N',numberTest,numberTest2,numberNotTrusted);
+	  numberTest = CoinMin(numberTest,model->numberStrong());
+	  numberTest2 = CoinMin(numberTest2,model->numberStrong());
+	  printf("new test,test2 %d %d\n",numberTest,numberTest2);
+	}
+      }
       //printf("skipAll %c doQuickly %c numberTest %d numberTest2 %d numberNot %d\n",
-      //     skipAll ? 'Y' : 'N',doQuickly ? 'Y' : 'N',numberTest,numberTest2,numberNotTrusted);
+      //   skipAll ? 'Y' : 'N',doQuickly ? 'Y' : 'N',numberTest,numberTest2,numberNotTrusted);
       // See if we want mini tree
       bool wantMiniTree=false;
       if (model->sizeMiniTree()&&depth_>7&&saveStateOfSearch>0)
@@ -2629,16 +3022,29 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
       //if (skipAll&&numberTest==0&&doQuickly)
       //numberToDo = 1; // trust previous stuff
       bool couldChooseFirst = false ; //(skipAll&&numberTest==0&&doQuickly);
+      //skipAll=false;
       for ( iDo=0;iDo<numberToDo;iDo++) {
         CbcStrongInfo choice;
         int iObject = whichObject[iDo];
-        CbcObject * object = model->modifiableObject(iObject);
+        OsiObject * object = model->modifiableObject(iObject);
         CbcSimpleIntegerDynamicPseudoCost * dynamicObject =
           dynamic_cast <CbcSimpleIntegerDynamicPseudoCost *>(object) ;
         int iColumn = dynamicObject->columnNumber();
         int preferredWay;
-        object->infeasibility(preferredWay);
-        choice.possibleBranch=object->createBranch(preferredWay);
+	double infeasibility = object->infeasibility(&usefulInfo,preferredWay);
+	// may have become feasible
+	if (!infeasibility)
+	  continue;
+	CbcSimpleInteger * obj =
+	  dynamic_cast <CbcSimpleInteger *>(object) ;
+	if (obj) {
+	  choice.possibleBranch=obj->createBranch(solver,&usefulInfo,preferredWay);
+	} else {
+	  CbcObject * obj =
+	    dynamic_cast <CbcObject *>(object) ;
+	  assert (obj);
+	  choice.possibleBranch=obj->createBranch(preferredWay);
+	}
         // Save which object it was
         choice.objectNumber=iObject;
         choice.numIntInfeasUp = numberUnsatisfied_;
@@ -2648,10 +3054,18 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
         assert (choice.upMovement>=0.0);
         assert (choice.downMovement>=0.0);
         choice.fix=0; // say not fixed
+	double maxChange = 0.5*(choice.upMovement+choice.downMovement);
+	maxChange = CoinMin(choice.upMovement,choice.downMovement);
+	maxChange = CoinMax(choice.upMovement,choice.downMovement);
+	if (searchStrategy==2)
+	  maxChange = COIN_DBL_MAX;
+	//maxChange *= 5.0;
+	if (dynamicObject->method()==1)
+	  maxChange *= 0.1; // probing
         // see if can skip strong branching
         int canSkip = choice.possibleBranch->fillStrongInfo(choice);
         if (!newWay) {
-        if (!doQuickly||(numberTest>0&&searchStrategy!=2))
+	  if ((maxChange>distanceToCutoff2)&&(!doQuickly||(numberTest>0&&searchStrategy!=2)))
           canSkip=0;
         } else {
         if (skipAll)
@@ -2953,7 +3367,7 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
               if (model->messageHandler()->logLevel()>3) 
                 printf("sort %g downest %g upest %g ",sort[iDo],downEstimate[iObject],
                      upEstimate[iObject]);
-              model->messageHandler()->message(CBC_STRONG,model->messages())
+              model->messageHandler()->message(CBC_STRONG,*model->messagesPointer())
                 << iObject << iColumn
                 <<choice.downMovement<<choice.numIntInfeasDown 
                 <<choice.upMovement<<choice.numIntInfeasUp 
@@ -2969,12 +3383,19 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
             // Give precedence to ones with gap of 1.0 
             //assert(gap>0.0);
             double factor = 1.0; //changeFactor/CoinMin(gap,100.0);
-            int betterWay = decision->betterBranch(choice.possibleBranch,
-                                                   branch_,
-                                                   choice.upMovement*factor,
-                                                   choice.numIntInfeasUp ,
-                                                   choice.downMovement*factor,
-                                                   choice.numIntInfeasDown );
+	    int betterWay;
+	    {
+	      CbcBranchingObject * branchObj =
+		dynamic_cast <CbcBranchingObject *>(branch_) ;
+	      if (branch_)
+		assert (branchObj);
+	      betterWay = decision->betterBranch(choice.possibleBranch,
+						     branchObj,
+						     choice.upMovement*factor,
+						     choice.numIntInfeasUp ,
+						     choice.downMovement*factor,
+						     choice.numIntInfeasDown );
+	    }
             if (wantMiniTree) {
               double criterion = decision->getBestCriterion();
               sort[numberMini]=-criterion;
@@ -2995,7 +3416,13 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
               // C) create branching object
               branch_ = choice.possibleBranch;
               choice.possibleBranch=NULL;
-              branch_->way(betterWay);
+	      {
+		CbcBranchingObject * branchObj =
+		  dynamic_cast <CbcBranchingObject *>(branch_) ;
+		assert (branchObj);
+		//branchObj->way(preferredWay);
+		branchObj->way(betterWay);
+	      }
               if (couldChooseFirst)
                 printf("choosing %d way %d\n",iDo,betterWay);
               bestChoice = choice.objectNumber;
@@ -3054,7 +3481,20 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
               solver->setColLower(iColumn,value);
               assert(doneHotStart);
               solver->unmarkHotStart();
+	      solver->resolve();
               solver->markHotStart();
+	      // may be infeasible (if other way stopped on iterations)
+	      if (!solver->isProvenOptimal()) {
+		// neither side feasible
+		anyAction=-2;
+		delete choice.possibleBranch;
+		choice.possibleBranch=NULL;
+		//printf("Both infeasible for choice %d sequence %d\n",i,
+		// model->object(choice.objectNumber)->columnNumber());
+		delete ws;
+		ws=NULL;
+		break;
+	      }
 #endif
             }
           }
@@ -3083,7 +3523,20 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
               solver->setColUpper(iColumn,value);
               assert(doneHotStart);
               solver->unmarkHotStart();
+	      solver->resolve();
               solver->markHotStart();
+	      // may be infeasible (if other way stopped on iterations)
+	      if (!solver->isProvenOptimal()) {
+		// neither side feasible
+		anyAction=-2;
+		delete choice.possibleBranch;
+		choice.possibleBranch=NULL;
+		//printf("Both infeasible for choice %d sequence %d\n",i,
+		// model->object(choice.objectNumber)->columnNumber());
+		delete ws;
+		ws=NULL;
+		break;
+	      }
 #endif
             }
           } else {
@@ -3106,7 +3559,7 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
           doQuickly=true;
           for ( int jDo=iDo+1;jDo<numberToDo;jDo++) {
             int iObject = whichObject[iDo];
-            CbcObject * object = model->modifiableObject(iObject);
+            OsiObject * object = model->modifiableObject(iObject);
             CbcSimpleIntegerDynamicPseudoCost * dynamicObject =
               dynamic_cast <CbcSimpleIntegerDynamicPseudoCost *>(object) ;
             dynamicObject->setNumberBeforeTrust(0);
@@ -3120,17 +3573,18 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
       if (depth_<10||worstFeasible>0.2*averageChange) 
         solveAll=false;
       if (model->messageHandler()->logLevel()>3||false) { 
-        if (anyAction==-2)
+        if (anyAction==-2) {
           printf("infeasible\n");
-        else if(anyAction==-1)
+        } else if(anyAction==-1) {
           if (!solveAll)
             printf("%d fixed\n",numberToFix);
           else
             printf("%d fixed AND choosing %d iDo %d iChosenWhen %d numberToDo %d\n",numberToFix,bestChoice,
                    iDo,whichChoice,numberToDo);
-        else
-          printf("choosing %d iDo %d iChosenWhen %d numberToDo %d\n",bestChoice,
+        } else {
+          printf("choosing %d  iDo %d iChosenWhen %d numberToDo %d\n",bestChoice,
                  iDo,whichChoice,numberToDo);
+	}
       }
       if (doneHotStart) {
         // Delete the snapshot
@@ -3177,15 +3631,18 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
               model->setPointers(solver);
               // See if candidate still possible
               if (branch_) {
-                const CbcObject * object = model->object(bestChoice);
+                const OsiObject * object = model->object(bestChoice);
                 int preferredWay;
-                double infeasibility = object->infeasibility(preferredWay);
+                double infeasibility = object->infeasibility(&usefulInfo,preferredWay);
                 if (!infeasibility) {
                   // take out
                   delete branch_;
                   branch_=NULL;
                 } else {
-                  branch_->way(preferredWay);
+		  CbcBranchingObject * branchObj =
+		    dynamic_cast <CbcBranchingObject *>(branch_) ;
+		  assert (branchObj);
+		  branchObj->way(preferredWay);
                 }
               }
             } else {
@@ -3250,8 +3707,18 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
     branches = new OsiSolverBranch[numberMini];
     for (int iDo=0;iDo<numberMini;iDo++) {
       int iObject = whichObject[iDo];
-      CbcObject * object = model->modifiableObject(iObject);
-      OsiSolverBranch * oneBranch = object->solverBranch();
+      OsiObject * object = model->modifiableObject(iObject);
+      CbcSimpleInteger * obj =
+	dynamic_cast <CbcSimpleInteger *>(object) ;
+      OsiSolverBranch * oneBranch;
+      if (obj) {
+	oneBranch = obj->solverBranch(solver,&usefulInfo);
+      } else {
+	CbcObject * obj =
+	  dynamic_cast <CbcObject *>(object) ;
+	assert (obj);
+	oneBranch = obj->solverBranch();
+      }
       branches[iDo]=*oneBranch;
       delete oneBranch;
     }
@@ -3279,6 +3746,7 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
   model->reserveCurrentSolution(saveSolution);
   delete [] saveSolution;
   model->setStateOfSearch(saveStateOfSearch);
+  model->setLogLevel(saveLogLevel);
   return anyAction;
 }
 int CbcNode::analyze (CbcModel *model, double * results)
@@ -3329,6 +3797,12 @@ int CbcNode::analyze (CbcModel *model, double * results)
   int * whichObject = new int[numberObjects];
   int numberToFix=0;
   int numberToDo=0;
+  double integerTolerance = 
+    model->getDblParam(CbcModel::CbcIntegerTolerance);
+  // point to useful information
+  OsiBranchingInformation usefulInfo = model->usefulInformation();
+  // and modify
+  usefulInfo.depth_=depth_;
       
   // compute current state
   int numberObjectInfeasibilities; // just odd ones
@@ -3360,13 +3834,13 @@ int CbcNode::analyze (CbcModel *model, double * results)
   */
   numberToDo=0;
   for (i=0;i<numberObjects;i++) {
-    CbcObject * object = model->modifiableObject(i);
+    OsiObject * object = model->modifiableObject(i);
     CbcSimpleIntegerDynamicPseudoCost * dynamicObject =
       dynamic_cast <CbcSimpleIntegerDynamicPseudoCost *>(object) ;
     if(!dynamicObject)
       continue;
     int preferredWay;
-    double infeasibility = object->infeasibility(preferredWay);
+    double infeasibility = object->infeasibility(&usefulInfo,preferredWay);
     int iColumn = dynamicObject->columnNumber();
     if (saveUpper[iColumn]==saveLower[iColumn])
       continue;
@@ -3389,8 +3863,6 @@ int CbcNode::analyze (CbcModel *model, double * results)
   CoinSort_2(sort,sort+numberToDo,whichObject);
   //double distanceToCutoff=model->getCutoff()-objectiveValue_;
   double * currentSolution = model->currentSolution();
-  double integerTolerance = 
-    model->getDblParam(CbcModel::CbcIntegerTolerance);
   double objMin = 1.0e50;
   double objMax = -1.0e50;
   bool needResolve=false;
@@ -3398,12 +3870,12 @@ int CbcNode::analyze (CbcModel *model, double * results)
   for (iDo=0;iDo<numberToDo;iDo++) {
     CbcStrongInfo choice;
     int iObject = whichObject[iDo];
-    CbcObject * object = model->modifiableObject(iObject);
+    OsiObject * object = model->modifiableObject(iObject);
     CbcSimpleIntegerDynamicPseudoCost * dynamicObject =
       dynamic_cast <CbcSimpleIntegerDynamicPseudoCost *>(object) ;
     int iColumn = dynamicObject->columnNumber();
     int preferredWay;
-    object->infeasibility(preferredWay);
+    object->infeasibility(&usefulInfo,preferredWay);
     double value = currentSolution[iColumn];
     double nearest = floor(value+0.5);
     double lowerValue = floor(value);
@@ -3421,7 +3893,16 @@ int CbcNode::analyze (CbcModel *model, double * results)
       currentSolution[iColumn]=newValue;
     }
     double upperValue = lowerValue+1.0;
-    choice.possibleBranch=object->createBranch(preferredWay);
+    CbcSimpleInteger * obj =
+      dynamic_cast <CbcSimpleInteger *>(object) ;
+    if (obj) {
+      choice.possibleBranch=obj->createBranch(solver,&usefulInfo,preferredWay);
+    } else {
+      CbcObject * obj =
+	dynamic_cast <CbcObject *>(object) ;
+      assert (obj);
+      choice.possibleBranch=obj->createBranch(preferredWay);
+    }
     currentSolution[iColumn]=value;
     // Save which object it was
     choice.objectNumber=iObject;
@@ -3586,7 +4067,7 @@ int CbcNode::analyze (CbcModel *model, double * results)
         choice.upMovement = CoinMax(0.0,choice.upMovement);
         choice.downMovement = CoinMax(0.0,choice.downMovement);
         // feasible -
-        model->messageHandler()->message(CBC_STRONG,model->messages())
+        model->messageHandler()->message(CBC_STRONG,*model->messagesPointer())
           << iObject << iColumn
           <<choice.downMovement<<choice.numIntInfeasDown 
           <<choice.upMovement<<choice.numIntInfeasUp 
@@ -3674,6 +4155,7 @@ CbcNode::CbcNode(const CbcNode & rhs)
     nodeInfo_=NULL;
   objectiveValue_=rhs.objectiveValue_;
   guessedObjectiveValue_ = rhs.guessedObjectiveValue_;
+  sumInfeasibilities_ = rhs.sumInfeasibilities_;
   if (rhs.branch_)
     branch_=rhs.branch_->clone();
   else
@@ -3687,12 +4169,13 @@ CbcNode::operator=(const CbcNode & rhs)
 {
   if (this != &rhs) {
     delete nodeInfo_;
-    if (nodeInfo_)
+    if (rhs.nodeInfo_)
       nodeInfo_ = rhs.nodeInfo_->clone();
     else
       nodeInfo_ = NULL;
     objectiveValue_=rhs.objectiveValue_;
     guessedObjectiveValue_ = rhs.guessedObjectiveValue_;
+    sumInfeasibilities_ = rhs.sumInfeasibilities_;
     if (rhs.branch_)
       branch_=rhs.branch_->clone();
     else
@@ -3718,6 +4201,7 @@ CbcNode::~CbcNode ()
     nodeInfo_->nullOwner();
     int numberToDelete=nodeInfo_->numberBranchesLeft();
     //    CbcNodeInfo * parent = nodeInfo_->parent();
+    //assert (nodeInfo_->numberPointingToThis()>0);
     if (nodeInfo_->decrement(numberToDelete)==0) {
       delete nodeInfo_;
     } else {
@@ -3763,9 +4247,13 @@ CbcNode::nullNodeInfo()
 }
 
 int
-CbcNode::branch()
+CbcNode::branch(OsiSolverInterface * solver)
 {
-  double changeInGuessed=branch_->branch(true);
+  double changeInGuessed;
+  if (!solver)
+    changeInGuessed=branch_->branch();
+  else
+    changeInGuessed=branch_->branch(solver);
   guessedObjectiveValue_+= changeInGuessed;
   //#define PRINTIT
 #ifdef PRINTIT
@@ -3773,7 +4261,7 @@ CbcNode::branch()
   CbcNodeInfo * parent = nodeInfo_->parent();
   int parentNodeNumber = -1;
   //CbcBranchingObject * object1 = branch_->object_;
-  //CbcObject * object = object1->
+  //OsiObject * object = object1->
   //int sequence = object->columnNumber);
   int id=-1;
   double value=0.0;
@@ -3789,4 +4277,154 @@ CbcNode::branch()
 	 way(),depth_,parentNodeNumber);
 #endif
   return nodeInfo_->branchedOn();
+}
+/* Active arm of the attached OsiBranchingObject.
+  
+   In the simplest instance, coded -1 for the down arm of the branch, +1 for
+   the up arm. But see OsiBranchingObject::way() 
+     Use nodeInfo--.numberBranchesLeft_ to see how active
+*/
+int 
+CbcNode::way() const
+{
+  if (branch_) {
+    CbcBranchingObject * obj =
+      dynamic_cast <CbcBranchingObject *>(branch_) ;
+    assert (obj);
+    return obj->way();
+  } else {
+    return 0;
+  }
+}
+/* Create a branching object for the node
+
+    The routine scans the object list of the model and selects a set of
+    unsatisfied objects as candidates for branching. The candidates are
+    evaluated, and an appropriate branch object is installed.
+
+    The numberPassesLeft is decremented to stop fixing one variable each time
+    and going on and on (e.g. for stock cutting, air crew scheduling)
+
+    If evaluation determines that an object is monotone or infeasible,
+    the routine returns immediately. In the case of a monotone object,
+    the branch object has already been called to modify the model.
+
+    Return value:
+    <ul>
+      <li>  0: A branching object has been installed
+      <li> -1: A monotone object was discovered
+      <li> -2: An infeasible object was discovered
+    </ul>
+    Branch state:
+    <ul>
+      <li> -1: start
+      <li> -1: A monotone object was discovered
+      <li> -2: An infeasible object was discovered
+    </ul>
+*/
+int 
+CbcNode::chooseOsiBranch (CbcModel * model,
+			  CbcNode * lastNode,
+			  OsiBranchingInformation * usefulInfo,
+			  int branchState)
+{
+  int returnStatus=0;
+  if (lastNode)
+    depth_ = lastNode->depth_+1;
+  else
+    depth_ = 0;
+  OsiSolverInterface * solver = model->solver();
+  objectiveValue_ = solver->getObjValue()*solver->getObjSense();
+  usefulInfo->objectiveValue_ = objectiveValue_;
+  usefulInfo->depth_ = depth_;
+  const double * saveInfoSol = usefulInfo->solution_;
+  double * saveSolution = new double[solver->getNumCols()];
+  memcpy(saveSolution,solver->getColSolution(),solver->getNumCols()*sizeof(double));
+  usefulInfo->solution_ = saveSolution;
+  OsiChooseVariable * choose = model->branchingMethod()->chooseMethod();
+  int numberUnsatisfied=-1;
+  if (branchState<0) {
+    // initialize
+    // initialize sum of "infeasibilities"
+    sumInfeasibilities_ = 0.0;
+    numberUnsatisfied = choose->setupList(usefulInfo,true);
+    numberUnsatisfied_ = numberUnsatisfied;
+    branchState=0;
+    if (numberUnsatisfied_<0) {
+      // infeasible
+      delete [] saveSolution;
+      return -2;
+    }
+  }
+  // unset best
+  int best=-1;
+  choose->setBestObjectIndex(-1);
+  if (numberUnsatisfied) {
+    if (branchState>0||!choose->numberOnList()) {
+      // we need to return at once - don't do strong branching or anything
+      if (choose->numberOnList()||!choose->numberStrong()) {
+	best = choose->candidates()[0];
+	choose->setBestObjectIndex(best);
+      } else {
+	// nothing on list - need to try again - keep any solution
+	numberUnsatisfied = choose->setupList(usefulInfo, false);
+	numberUnsatisfied_ = numberUnsatisfied;
+	if (numberUnsatisfied) {
+	  best = choose->candidates()[0];
+	  choose->setBestObjectIndex(best);
+	}
+      }
+    } else {
+      // carry on with strong branching or whatever
+      int returnCode = choose->chooseVariable(solver, usefulInfo,true);
+      // update number of strong iterations etc
+      model->incrementStrongInfo(choose->numberStrongDone(),choose->numberStrongIterations(),
+                                 returnCode==-1 ? 0:choose->numberStrongFixed(),returnCode==-1);
+      if (returnCode>1) {
+	// has fixed some
+	returnStatus=-1;
+      } else if (returnCode==-1) {
+	// infeasible
+	returnStatus=-2;
+      } else if (returnCode==0) {
+	// normal
+	returnStatus=0;
+	numberUnsatisfied=1;
+      } else {
+	// ones on list satisfied - double check
+	numberUnsatisfied = choose->setupList(usefulInfo, false);
+	numberUnsatisfied_ = numberUnsatisfied;
+	if (numberUnsatisfied) {
+	  best = choose->candidates()[0];
+	  choose->setBestObjectIndex(best);
+	}
+      }
+    }
+  } 
+  delete branch_;
+  branch_ = NULL;
+  guessedObjectiveValue_ = objectiveValue_; // for now
+  if (!returnStatus) {
+    if (numberUnsatisfied) {
+      // create branching object
+      const OsiObject * obj = model->solver()->object(choose->bestObjectIndex());
+      //const OsiSolverInterface * solver = usefulInfo->solver_;
+      branch_ = obj->createBranch(model->solver(),usefulInfo,obj->whichWay());
+    }
+  }
+  usefulInfo->solution_=saveInfoSol;
+  delete [] saveSolution;
+  // may have got solution
+  if (choose->goodSolution()
+      &&model->problemFeasibility()->feasible(model,-1)>=0) {
+    // yes
+    double objValue = choose->goodObjectiveValue();
+    model->setBestSolution(CBC_STRONGSOL,
+                                     objValue,
+                                     choose->goodSolution()) ;
+    model->setLastHeuristic(NULL);
+    model->incrementUsed(choose->goodSolution());
+    choose->clearGoodSolution();
+  }
+  return returnStatus;
 }

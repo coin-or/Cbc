@@ -7,6 +7,7 @@
 #include "CoinFinite.hpp"
 #include "CoinMessageHandler.hpp"
 #include "OsiSolverInterface.hpp"
+#include "OsiBranchingObject.hpp"
 #include "OsiCuts.hpp"
 #include "CoinWarmStartBasis.hpp"
 #include "CbcCompareBase.hpp"
@@ -19,13 +20,18 @@ class OsiRowCut;
 class OsiBabSolver;
 class OsiRowCutDebugger;
 class CglCutGenerator;
+class CbcCutModifier;
+class CglTreeProbingInfo;
 class CbcHeuristic;
-class CbcObject;
+class OsiObject;
 class CbcTree;
 class CbcStrategy;
 class CbcFeasibilityBase;
 class CbcStatistics;
 class CbcEventHandler ;
+class CglPreProcess;
+
+// #define CBC_CHECK_BASIS 1
 
 //#############################################################################
 
@@ -100,6 +106,10 @@ enum CbcIntParam {
     the target.
   */
   CbcFathomDiscipline,
+  /** Adjusts printout
+      1 does different node message with number unsatisfied on last branch
+  */
+  CbcPrinting,
   /** Just a marker, so that a static sized array can store parameters. */
   CbcLastIntParam
 };
@@ -218,6 +228,20 @@ public:
       to the strengthened model (or NULL if infeasible)
     */
      OsiSolverInterface *  strengthenedModel();
+  /** preProcess problem - replacing solver
+      If makeEquality true then <= cliques converted to ==.
+      Presolve will be done numberPasses times.
+
+      Returns NULL if infeasible
+
+      If makeEquality is 1 add slacks to get cliques,
+      if 2 add slacks to get sos (but only if looks plausible) and keep sos info
+  */
+  CglPreProcess * preProcess( int makeEquality=0, int numberPasses=5,
+		  int tuning=5);
+  /** Does postprocessing - original solver back.
+      User has to delete process */
+  void postProcess(CglPreProcess * process);
 private:
     /** \brief Evaluate a subproblem using cutting planes and heuristics
 
@@ -254,6 +278,10 @@ public:
     int resolve(CbcNodeInfo * parent, int whereFrom);
     /// Make given rows (L or G) into global cuts and remove from lp
     void makeGlobalCuts(int numberRows,const int * which); 
+    /// Make given cut into a global cut
+    void makeGlobalCut(const OsiRowCut * cut); 
+    /// Make given cut into a global cut
+    void makeGlobalCut(const OsiRowCut & cut); 
   //@}
 
   /** \name Presolve methods */
@@ -333,7 +361,7 @@ public:
 
   /** \name Object manipulation routines
   
-    See CbcObject for an explanation of `object' in the context of CbcModel.
+    See OsiObject for an explanation of `object' in the context of CbcModel.
   */
   //@{
 
@@ -344,15 +372,21 @@ public:
   {  numberObjects_=number;};
 
   /// Get the array of objects
-  inline CbcObject ** objects() const { return object_;};
+  inline OsiObject ** objects() const { return object_;};
 
   /// Get the specified object
-  const inline CbcObject * object(int which) const { return object_[which];};
+  const inline OsiObject * object(int which) const { return object_[which];};
   /// Get the specified object
-  inline CbcObject * modifiableObject(int which) const { return object_[which];};
+  inline OsiObject * modifiableObject(int which) const { return object_[which];};
 
-  /// Delete all object information
-  void deleteObjects();
+  /// Delete all object information (and just back to integers if true)
+  void deleteObjects(bool findIntegers=true);
+
+  /** Add in object information.
+  
+    Objects are cloned; the owner can delete the originals.
+  */
+  void addObjects(int numberObjects, OsiObject ** objects);
 
   /** Add in object information.
   
@@ -442,6 +476,13 @@ public:
   inline int getMaximumSolutions() const {
     return getIntParam(CbcMaxNumSol);
   }
+  /// Set the printing mode
+  inline bool setPrintingMode( int value)
+  { return setIntParam(CbcPrinting,value); }
+
+  /// Get the printing mode
+  inline int getPrintingMode() const
+  { return getIntParam(CbcPrinting); }
 
   /** Set the
       \link CbcModel::CbcMaximumSeconds maximum number of seconds \endlink
@@ -584,6 +625,13 @@ public:
   */
   inline int numberStrong() const
   { return numberStrong_;};
+  /** Set global preferred way to branch
+      -1 down, +1 up, 0 no preference */
+  inline void setPreferredWay(int value)
+  {preferredWay_=value;};
+  /** Get the preferred way to branch (default 0) */
+  inline int getPreferredWay() const
+  { return preferredWay_;};
   /** Set size of mini - tree.  If > 1 then does total enumeration of
       tree given by this best variables to branch on
   */
@@ -706,7 +754,7 @@ public:
         4 stopped on time
         5 stopped on user event
         6 stopped on solutions
-	7 linear relaxation unbounded
+        7 linear relaxation unbounded
     */
     inline int secondaryStatus() const
     { return secondaryStatus_;};
@@ -1108,13 +1156,23 @@ public:
   { return branchingMethod_;};
   /// Set the branching decision method.
   inline void setBranchingMethod(CbcBranchDecision * method)
-  { branchingMethod_ = method;};
+  { delete branchingMethod_; branchingMethod_ = method->clone();};
   /** Set the branching method
   
     \overload
   */
   inline void setBranchingMethod(CbcBranchDecision & method)
-  { branchingMethod_ = &method;};
+  { delete branchingMethod_; branchingMethod_ = method.clone();};
+  /// Get the current cut modifier method
+  inline CbcCutModifier * cutModifier() const
+  { return cutModifier_;};
+  /// Set the cut modifier method
+  void setCutModifier(CbcCutModifier * modifier);
+  /** Set the cut modifier method
+  
+    \overload
+  */
+  void setCutModifier(CbcCutModifier & modifier);
   //@}
 
   /** \name Row (constraint) and Column (variable) cut generation */
@@ -1185,8 +1243,11 @@ public:
 
   /** \name Heuristics and priorities */
   //@{
-  /// Add one heuristic - up to user to delete
-  void addHeuristic(CbcHeuristic * generator);
+  /*! \brief Add one heuristic - up to user to delete
+
+    The name is just used for print messages.
+  */
+  void addHeuristic(CbcHeuristic * generator, const char *name = NULL);
   ///Get the specified heuristic
   inline CbcHeuristic * heuristic(int i) const
   { return heuristic_[i];};
@@ -1281,7 +1342,7 @@ public:
   inline CoinMessageHandler * messageHandler() const
   {return handler_;};
   /// Return messages
-  inline CoinMessages messages() 
+  inline CoinMessages & messages() 
   {return messages_;};
   /// Return pointer to messages
   inline CoinMessages * messagesPointer() 
@@ -1302,8 +1363,9 @@ public:
       1 bit (2) - use current basis to check integer solution (rather than all slack)
       2 bit (4) - don't check integer solution (by solving LP)
       3 bit (8) - fast analyze
-      4 bit (16) - non-linear model and someone too lazy to code "times" correctly - so skip row check
+      4 bit (16) - non-linear model - so no well defined CoinPackedMatrix
       5 bit (32) - keep names
+      6 bit (64) - try for dominated columns
   */
   /// Set special options
   inline void setSpecialOptions(int value)
@@ -1311,6 +1373,12 @@ public:
   /// Get special options
   inline int specialOptions() const
   { return specialOptions_;};
+  /// Says if normal solver i.e. has well defined CoinPackedMatrix
+  inline bool normalSolver() const
+  { return (specialOptions_&16)==0;};
+  /// Now we may not own objects - just point to solver's objects
+  inline bool ownObjects() const
+  { return ownObjects_;};
   //@}
   //---------------------------------------------------------------------------
 
@@ -1331,6 +1399,27 @@ public:
 	    the incoming solver.
     */
     void assignSolver(OsiSolverInterface *&solver,bool deleteSolver=true);
+
+    /** \brief Set ownership of solver
+
+      A parameter of false tells CbcModel it does not own the solver and
+      should not delete it. Once you claim ownership of the solver, you're
+      responsible for eventually deleting it. Note that CbcModel clones
+      solvers with abandon.  Unless you have a deep understanding of the
+      workings of CbcModel, the only time you want to claim ownership is when
+      you're about to delete the CbcModel object but want the solver to
+      continue to exist (as, for example, when branchAndBound has finished
+      and you want to hang on to the answer).
+    */
+    inline void setModelOwnsSolver (bool ourSolver)
+    { ourSolver_ = ourSolver ; } ;
+
+    /*! \brief Get ownership of solver
+    
+      A return value of true means that CbcModel owns the solver and will
+      take responsibility for deleting it when that becomes necessary.
+    */
+    inline bool modelOwnsSolver () { return (ourSolver_) ; } ;
   
     /** Copy constructor .
       If noTree is true then tree and cuts are not copied
@@ -1385,6 +1474,18 @@ public:
     penalties.  Returns number fixed
   */
   int reducedCostFix() ;
+  /// Encapsulates solver resolve
+  int resolve(OsiSolverInterface * solver);
+
+  /** Encapsulates choosing a variable -
+      anyAction -2, infeasible (-1 round again), 0 done
+  */
+  int chooseBranch(CbcNode * newNode, int numberPassesLeft,
+		   CbcNode * oldNode, OsiCuts & cuts,
+		   bool & resolved, CoinWarmStartBasis *lastws,
+		   const double * lowerBefore,const double * upperBefore,
+		   OsiSolverBranch * & branches);
+  int chooseBranch(CbcNode * newNode, int numberPassesLeft, bool & resolved);
 
   /** Return an empty basis object of the specified size
 
@@ -1472,6 +1573,9 @@ public:
   /// Get a pointer to current node (be careful)
   inline CbcNode * currentNode() const
   { return currentNode_;};
+  /// Get a pointer to probing info
+  inline CglTreeProbingInfo * probingInfo() const
+  { return probingInfo_;};
   /// Set the number of iterations done in strong branching.
   inline void setNumberStrongIterations(int number)
   { numberStrongIterations_ = number;};
@@ -1483,6 +1587,8 @@ public:
                            int numberFixed, bool ifInfeasible);
   /// Create C++ lines to get to current state
   void generateCpp( FILE * fp,int options);
+  /// Generate an OsiBranchingInformation object
+  OsiBranchingInformation usefulInformation() const;
   //@}
 
 //---------------------------------------------------------------------------
@@ -1674,6 +1780,8 @@ private:
   int numberStoppedSubTrees_;
   /// Variable selection function
   CbcBranchDecision * branchingMethod_;
+  /// Cut modifier function
+  CbcCutModifier * cutModifier_;
   /// Strategy
   CbcStrategy * strategy_;
   /// Parent model
@@ -1707,11 +1815,15 @@ private:
     To disable strong branching, set this to 0.
   */
   int numberStrong_;
-  /** The number of branches before pseudo costs believed
-      in dynamic strong branching. (0 off) */
+  /** \brief The number of branches before pseudo costs believed
+	     in dynamic strong branching.
+      
+    A value of 0 is  off.
+  */
   int numberBeforeTrust_;
-  /** The number of variable sfor which to compute penalties
-      in dynamic strong branching. (0 off) */
+  /** \brief The number of variables for which to compute penalties
+	     in dynamic strong branching.
+  */
   int numberPenalties_;
   /** Scale factor to make penalties match strong.
       Should/will be computed */
@@ -1763,8 +1875,9 @@ private:
 	  SimpleInteger. As of 2003.08, SimpleIntegers and Cliques are the only
 	  objects.
   */
-  CbcObject ** object_;
-
+  OsiObject ** object_;
+  /// Now we may not own objects - just point to solver's objects
+  bool ownObjects_;
   
   /// Original columns as created by integerPresolve
   int * originalColumns_;
@@ -1786,6 +1899,8 @@ private:
   int maximumCutPassesAtRoot_;
   /// Maximum number of cut passes
   int maximumCutPasses_;
+  /// Preferred way of branching
+  int preferredWay_;
   /// Current cut pass number
   int currentPassNumber_;
   /// Maximum number of cuts (for whichGenerator_)
@@ -1796,6 +1911,12 @@ private:
   int maximumStatistics_;
   /// statistics
   CbcStatistics ** statistics_;
+  /// Maximum depth reached
+  int maximumDepthActual_;
+  /// Number of reduced cost fixings
+  double numberDJFixed_;
+  /// Probing info
+  CglTreeProbingInfo * probingInfo_;
   /// Number of fixed by analyze at root
   int numberFixedAtRoot_;
   /// Number fixed by analyze so far
@@ -1829,5 +1950,16 @@ private:
   bool resolveAfterTakeOffCuts_;
  //@}
 };
-
+/// So we can use osiObject or CbcObject during transition
+void getIntegerInformation(const OsiObject * object, double & originalLower,
+			   double & originalUpper) ;
+// So we can call from other programs
+// Real main program
+class OsiClpSolverInterface;
+int CbcMain (int argc, const char *argv[],OsiClpSolverInterface & solver,CbcModel ** babSolver);
+// four ways of calling
+int callCbc(const char * input2, OsiClpSolverInterface& solver1); 
+int callCbc(const char * input2);
+int callCbc(const std::string input2, OsiClpSolverInterface& solver1); 
+int callCbc(const std::string input2) ;
 #endif

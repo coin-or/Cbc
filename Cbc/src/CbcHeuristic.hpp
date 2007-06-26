@@ -23,14 +23,20 @@ public:
   // Constructor with model - assumed before cuts
   CbcHeuristic (CbcModel & model);
 
+  // Copy constructor 
+  CbcHeuristic ( const CbcHeuristic &);
+   
   virtual ~CbcHeuristic();
+
+  /// Clone
+  virtual CbcHeuristic * clone() const=0;
+
+  /// Assignment operator 
+  CbcHeuristic & operator=(const CbcHeuristic& rhs);
 
   /// update model (This is needed if cliques update matrix etc)
   virtual void setModel(CbcModel * model);
   
-  /// Clone
-  virtual CbcHeuristic * clone() const=0;
-
   /// Resets stuff if model changes
   virtual void resetModel(CbcModel * model)=0;
 
@@ -66,12 +72,43 @@ public:
   inline int when() const
   { return when_;};
 
-  /// Do mini branch and bound (return 1 if solution)
+  /// Sets number of nodes in subtree (default 200)
+  inline void setNumberNodes(int value)
+  { numberNodes_=value;};
+  /// Gets number of nodes in a subtree (default 200)
+  inline int numberNodes() const
+  { return numberNodes_;};
+
+  /// Sets fraction of new(rows+columns)/old(rows+columns) before doing small branch and bound (default 1.0)
+  inline void setFractionSmall(double value)
+  { fractionSmall_=value;};
+  /// Gets fraction of new(rows+columns)/old(rows+columns) before doing small branch and bound (default 1.0)
+  inline double fractionSmall() const
+  { return fractionSmall_;};
+
+  /** Do mini branch and bound - return 
+      0 not finished - no solution
+      1 not finished - solution
+      2 finished - no solution
+      3 finished - solution
+      (could add global cut if finished)
+  */
   int smallBranchAndBound(OsiSolverInterface * solver,int numberNodes,
                           double * newSolution, double & newSolutionValue,
                           double cutoff , std::string name) const;
   /// Create C++ lines to get to current state
   virtual void generateCpp( FILE * fp) {};
+  /// Create C++ lines to get to current state - does work for base class
+  void generateCpp( FILE * fp,const char * heuristic) ;
+  /// Returns true if can deal with "odd" problems e.g. sos type 2
+  virtual bool canDealWithOdd() const
+  { return false;};
+  /// return name of heuristic
+  inline const char *heuristicName() const
+  { return heuristicName_.c_str();};
+  /// set name of heuristic
+  inline void setHeuristicName(const char *name)
+  { heuristicName_ = name;};
 
 protected:
 
@@ -79,13 +116,14 @@ protected:
   CbcModel * model_;
   /// When flag - 0 off, 1 at root, 2 other than root, 3 always
   int when_;
-private:
-  
-  /// Illegal Assignment operator 
-  CbcHeuristic & operator=(const CbcHeuristic& rhs);
+  /// Number of nodes in any sub tree
+  int numberNodes_;
+  /// Fraction of new(rows+columns)/old(rows+columns) before doing small branch and bound
+  double fractionSmall_;
+  /// Name for printing
+  std::string heuristicName_;
   
 };
-
 /** Rounding class
  */
 
@@ -104,6 +142,9 @@ public:
   // Destructor 
   ~CbcRounding ();
   
+  /// Assignment operator 
+  CbcRounding & operator=(const CbcRounding& rhs);
+
   /// Clone
   virtual CbcHeuristic * clone() const;
   /// Create C++ lines to get to current state
@@ -141,10 +182,6 @@ protected:
 
   // Seed for random stuff
   int seed_;
-
-private:
-  /// Illegal Assignment operator 
-  CbcRounding & operator=(const CbcRounding& rhs);
 };
 
 /** heuristic - just picks up any good solution
@@ -167,6 +204,9 @@ public:
   // Destructor 
   ~CbcSerendipity ();
   
+  /// Assignment operator 
+  CbcSerendipity & operator=(const CbcSerendipity& rhs);
+
   /// Clone
   virtual CbcHeuristic * clone() const;
   /// Create C++ lines to get to current state
@@ -191,9 +231,6 @@ public:
   virtual void resetModel(CbcModel * model);
 
 protected:
-private:
-  /// Illegal Assignment operator 
-  CbcSerendipity & operator=(const CbcSerendipity& rhs);
 };
 
 #endif

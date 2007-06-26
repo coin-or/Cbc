@@ -33,7 +33,7 @@ AC_CONFIG_SRCDIR(configure.ac)
 AC_PREFIX_DEFAULT([`pwd`])
 
 #############################################################################
-#              Create the libtool script for the subdirectories             #
+#  Do the tests necessary to configure compilers and initialise autotools   #
 #############################################################################
 
 AC_COIN_CREATE_LIBTOOL
@@ -43,6 +43,8 @@ AC_COIN_CREATE_LIBTOOL
 #############################################################################
 
 AC_COIN_THIRDPARTY_SUBDIRS([ASL],[ThirdParty/ASL],[solvers/asl.h])
+AC_COIN_THIRDPARTY_SUBDIRS([Blas],[ThirdParty/Blas],[daxpy.f])
+AC_COIN_THIRDPARTY_SUBDIRS([Lapack],[ThirdParty/Lapack],[LAPACK/SRC/dlarf.f])
 
 #############################################################################
 #                  Check which subprojects are there                        #
@@ -53,6 +55,7 @@ AC_COIN_MAIN_SUBDIRS(Data/Netlib)
 AC_COIN_MAIN_SUBDIRS(Data/Sample)
 AC_COIN_MAIN_SUBDIRS(Data/miplib3)
 AC_COIN_MAIN_SUBDIRS(Clp)
+AC_COIN_MAIN_SUBDIRS(DyLP)
 AC_COIN_MAIN_SUBDIRS(Vol)
 AC_COIN_MAIN_SUBDIRS(Osi)
 AC_COIN_MAIN_SUBDIRS(Cgl)

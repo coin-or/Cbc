@@ -4,6 +4,7 @@
 #define CbcBranchUser_H
 
 #include "CbcBranchBase.hpp"
+#include "CbcBranchActual.hpp"
 
 /** Branching decision user class */
 
@@ -52,6 +53,54 @@ private:
   /// Illegal Assignment operator 
   CbcBranchUserDecision & operator=(const CbcBranchUserDecision& rhs);
 
+};
+
+/// Define a single integer class where branching is forced until fixed
+
+
+class CbcSimpleIntegerFixed : public CbcSimpleInteger {
+
+public:
+
+  // Default Constructor 
+  CbcSimpleIntegerFixed ();
+
+  // Useful constructor - passed integer index and model index
+  CbcSimpleIntegerFixed (CbcModel * model, int iColumn, double breakEven=0.5);
+  
+  // Constructor from simple
+  CbcSimpleIntegerFixed (const CbcSimpleInteger & simple);
+  
+  // Copy constructor 
+  CbcSimpleIntegerFixed ( const CbcSimpleIntegerFixed &);
+   
+  /// Clone
+  virtual CbcObject * clone() const;
+
+  // Assignment operator 
+  CbcSimpleIntegerFixed & operator=( const CbcSimpleIntegerFixed& rhs);
+
+  // Destructor 
+  ~CbcSimpleIntegerFixed ();
+  
+  /// Infeasibility - large is 0.5
+  virtual double infeasibility(int & preferredWay) const;
+
+  /** Creates a branching object
+
+    The preferred direction is set by \p way, -1 for down, +1 for up.
+  */
+  //virtual CbcBranchingObject * createBranch(int way) ;
+  /** Create a branching object and indicate which way to branch first.
+      
+      The branching object has to know how to create branches (fix
+      variables, etc.)
+  */
+  virtual CbcBranchingObject * createBranch(OsiSolverInterface * solver,
+					    const OsiBranchingInformation * info, int way) ;
+
+protected:
+  /// data
 };
 
 #endif

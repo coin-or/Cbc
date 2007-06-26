@@ -322,3 +322,130 @@ CbcBranchUserDecision::bestBranch (CbcBranchingObject ** objects, int numberObje
   }
   return whichObject;
 }
+/** Default Constructor
+
+  Equivalent to an unspecified binary variable.
+*/
+CbcSimpleIntegerFixed::CbcSimpleIntegerFixed ()
+  : CbcSimpleInteger()
+{
+}
+
+/** Useful constructor
+
+  Loads actual upper & lower bounds for the specified variable.
+*/
+CbcSimpleIntegerFixed::CbcSimpleIntegerFixed (CbcModel * model,
+				    int iColumn, double breakEven)
+  : CbcSimpleInteger(model,iColumn,breakEven)
+{
+}
+// Constructor from simple
+CbcSimpleIntegerFixed::CbcSimpleIntegerFixed (const CbcSimpleInteger & rhs)
+  : CbcSimpleInteger(rhs)
+{
+}
+
+// Copy constructor 
+CbcSimpleIntegerFixed::CbcSimpleIntegerFixed ( const CbcSimpleIntegerFixed & rhs)
+  :CbcSimpleInteger(rhs)
+
+{
+}
+
+// Clone
+CbcObject *
+CbcSimpleIntegerFixed::clone() const
+{
+  return new CbcSimpleIntegerFixed(*this);
+}
+
+// Assignment operator 
+CbcSimpleIntegerFixed & 
+CbcSimpleIntegerFixed::operator=( const CbcSimpleIntegerFixed& rhs)
+{
+  if (this!=&rhs) {
+    CbcSimpleInteger::operator=(rhs);
+  }
+  return *this;
+}
+
+// Destructor 
+CbcSimpleIntegerFixed::~CbcSimpleIntegerFixed ()
+{
+}
+
+// Infeasibility - large is 0.5
+double 
+CbcSimpleIntegerFixed::infeasibility(int & preferredWay) const
+{
+  OsiSolverInterface * solver = model_->solver();
+  const double * solution = model_->testSolution();
+  const double * lower = solver->getColLower();
+  const double * upper = solver->getColUpper();
+  double value = solution[columnNumber_];
+  value = CoinMax(value, lower[columnNumber_]);
+  value = CoinMin(value, upper[columnNumber_]);
+  /*printf("%d %g %g %g %g\n",columnNumber_,value,lower[columnNumber_],
+    solution[columnNumber_],upper[columnNumber_]);*/
+  double nearest = floor(value+(1.0-breakEven_));
+  assert (breakEven_>0.0&&breakEven_<1.0);
+  double integerTolerance = 
+    model_->getDblParam(CbcModel::CbcIntegerTolerance);
+  if (nearest>value) 
+    preferredWay=1;
+  else
+    preferredWay=-1;
+  if (preferredWay_)
+    preferredWay=preferredWay_;
+  double weight = fabs(value-nearest);
+  // normalize so weight is 0.5 at break even
+  if (nearest<value)
+    weight = (0.5/breakEven_)*weight;
+  else
+    weight = (0.5/(1.0-breakEven_))*weight;
+  if (fabs(value-nearest)<=integerTolerance) {
+    if (upper[columnNumber_]==lower[columnNumber_])
+      return 0.0;
+    else
+      return 1.0e-5;
+  } else {
+    return weight;
+  }
+}
+// Creates a branching object
+CbcBranchingObject * 
+CbcSimpleIntegerFixed::createBranch(OsiSolverInterface * solver,
+					    const OsiBranchingInformation * info, int way)  
+{
+  const double * solution = model_->testSolution();
+  const double * lower = solver->getColLower();
+  const double * upper = solver->getColUpper();
+  double value = solution[columnNumber_];
+  value = CoinMax(value, lower[columnNumber_]);
+  value = CoinMin(value, upper[columnNumber_]);
+  assert (upper[columnNumber_]>lower[columnNumber_]);
+  if (!model_->hotstartSolution()) {
+    double nearest = floor(value+0.5);
+    double integerTolerance = 
+    model_->getDblParam(CbcModel::CbcIntegerTolerance);
+    if (fabs(value-nearest)<integerTolerance) {
+      // adjust value
+      if (nearest!=upper[columnNumber_])
+	value = nearest+2.0*integerTolerance;
+      else
+	value = nearest-2.0*integerTolerance;
+    }
+  } else {
+    const double * hotstartSolution = model_->hotstartSolution();
+    double targetValue = hotstartSolution[columnNumber_];
+    if (way>0)
+      value = targetValue-0.1;
+    else
+      value = targetValue+0.1;
+  }
+  CbcBranchingObject * branch = new CbcIntegerBranchingObject(model_,columnNumber_,way,
+					     value);
+  branch->setOriginalObject(this);
+  return branch;
+}

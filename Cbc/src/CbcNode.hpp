@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "CoinWarmStartBasis.hpp"
+#include "CoinSearchTree.hpp"
 #include "CbcBranchBase.hpp"
 
 class OsiSolverInterface;
@@ -116,11 +117,11 @@ public:
 
   /// Increment number of references
   inline void increment(int amount=1)
-  {numberPointingToThis_+=amount;};
+  {numberPointingToThis_+=amount;/*printf("CbcNodeInfo %x incremented by %d to %d\n",this,amount,numberPointingToThis_);*/};
 
   /// Decrement number of references and return number left
   inline int decrement(int amount=1)
-  {numberPointingToThis_-=amount;return numberPointingToThis_;};
+  {numberPointingToThis_-=amount;/*printf("CbcNodeInfo %x decremented by %d to %d\n",this,amount,numberPointingToThis_);*/return numberPointingToThis_;};
 
   /** Initialize reference counts
 
@@ -385,7 +386,7 @@ private:
   node.
 */
 
-class CbcNode  {
+class CbcNode : public CoinTreeNode {
  
 public:
     
@@ -478,6 +479,36 @@ public:
                            CbcNode * lastNode,
                            OsiSolverBranch * & branches,
                            int numberPassesLeft);
+  /** Create a branching object for the node
+
+    The routine scans the object list of the model and selects a set of
+    unsatisfied objects as candidates for branching. The candidates are
+    evaluated, and an appropriate branch object is installed.
+
+    The numberPassesLeft is decremented to stop fixing one variable each time
+    and going on and on (e.g. for stock cutting, air crew scheduling)
+
+    If evaluation determines that an object is monotone or infeasible,
+    the routine returns immediately. In the case of a monotone object,
+    the branch object has already been called to modify the model.
+
+    Return value:
+    <ul>
+      <li>  0: A branching object has been installed
+      <li> -1: A monotone object was discovered
+      <li> -2: An infeasible object was discovered
+    </ul>
+    Branch state:
+    <ul>
+      <li> -1: start
+      <li> -1: A monotone object was discovered
+      <li> -2: An infeasible object was discovered
+    </ul>
+  */
+  int chooseOsiBranch (CbcModel * model,
+		       CbcNode * lastNode,
+		       OsiBranchingInformation * usefulInfo,
+		       int branchState);
   int analyze(CbcModel * model,double * results);
   /// Decrement active cut counts
   void decrementCuts(int change=1);
@@ -491,14 +522,14 @@ public:
   
     This is a convenience routine, which will initialize the reference counts
     in the attached CbcNodeInfo object based on the attached
-    CbcBranchingObject.
+    OsiBranchingObject.
 
     \sa CbcNodeInfo::initializeInfo(int).
   */
   void initializeInfo();
 
   /// Does next branch and updates state
-  int branch();
+  int branch(OsiSolverInterface * solver);
 
   // Information to make basis and bounds
   inline CbcNodeInfo * nodeInfo() const
@@ -509,29 +540,20 @@ public:
   { return objectiveValue_;};
   inline void setObjectiveValue(double value)
   { objectiveValue_=value;};
-  /// Number of arms defined for the attached CbcBranchingObject.
+  /// Number of arms defined for the attached OsiBranchingObject.
   inline int numberBranches() const
   { if (branch_)
       return (branch_->numberBranches()) ;
     else
       return (-1) ; } ;
 
-  /** Branching `variable' associated with the attached CbcBranchingObject.
-
-    Check CbcBranchingObject::variable() for a longer explanation of
-    `variable'.
-  */
-  inline int variable() const
-  {if (branch_) return branch_->variable();else return -1;};
-
-  /* Active arm of the attached CbcBranchingObject.
+  /* Active arm of the attached OsiBranchingObject.
   
    In the simplest instance, coded -1 for the down arm of the branch, +1 for
-   the up arm. But see CbcBranchingObject::way() 
+   the up arm. But see OsiBranchingObject::way() 
      Use nodeInfo--.numberBranchesLeft_ to see how active
   */
-  inline int way() const
-  {if (branch_) return branch_->way();else return 0;};
+  int way() const;
   /// Depth in branch-and-cut search tree
   inline int depth() const
   {return depth_;};
@@ -541,31 +563,33 @@ public:
   /// Sum of "infeasibilities" reported by each object
   inline double sumInfeasibilities() const
   { return sumInfeasibilities_;};
-
   // Guessed objective value (for solution)
   inline double guessedObjectiveValue() const
   {return guessedObjectiveValue_;};
   inline void setGuessedObjectiveValue(double value)
   {guessedObjectiveValue_=value;};
   /// Branching object for this node
-  const CbcBranchingObject * branchingObject() const
+  inline const OsiBranchingObject * branchingObject() const
   { return branch_;};
   /// Modifiable branching object for this node
-  CbcBranchingObject * modifiableBranchingObject() const
+  inline OsiBranchingObject * modifiableBranchingObject() const
   { return branch_;};
+  /// Set branching object for this node (takes ownership)
+  inline void setBranchingObject(OsiBranchingObject * branchingObject)
+  { branch_ = branchingObject;};
 
 private:
   // Data
   /// Information to make basis and bounds
   CbcNodeInfo * nodeInfo_;
-  // Objective value
+  /// Objective value
   double objectiveValue_;
-  // Guessed satisfied Objective value
+  /// Guessed satisfied Objective value
   double guessedObjectiveValue_;
   /// Sum of "infeasibilities" reported by each object
   double sumInfeasibilities_;
   /// Branching object for this node
-  CbcBranchingObject * branch_;
+  OsiBranchingObject * branch_;
   /// Depth of the node in the search tree
   int depth_;
   /// The number of objects unsatisfied at this node.

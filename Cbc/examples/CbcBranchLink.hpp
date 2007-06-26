@@ -20,11 +20,20 @@ public:
   /** Useful constructor - A valid solution is if all variables are zero
       apart from k*numberLink to (k+1)*numberLink-1 where k is 0 through
       numberInSet-1.  The length of weights array is numberInSet.
-      For this simple version the variables in matrix are the numberInSet*numberLink
+      For this constructor the variables in matrix are the numberInSet*numberLink
       starting at first. If weights null then 0,1,2..
   */
   CbcLink (CbcModel * model, int numberMembers,
            int numberLinks, int first,
+           const double * weights, int setNumber);
+  /** Useful constructor - A valid solution is if all variables are zero
+      apart from k*numberLink to (k+1)*numberLink-1 where k is 0 through
+      numberInSet-1.  The length of weights array is numberInSet.
+      For this constructor the variables are given by list - grouped.
+      If weights null then 0,1,2..
+  */
+  CbcLink (CbcModel * model, int numberMembers,
+           int numberLinks, int typeSOS, const int * which,
            const double * weights, int setNumber);
   
   // Copy constructor 
@@ -55,9 +64,9 @@ public:
   inline int numberLinks() const
   {return numberLinks_;};
 
-  /// First variable in matrix
-  inline int first() const
-  {return first_;};
+  /// Which variables
+  inline const int * which() const
+  {return which_;};
 
   /** Array of weights */
   inline const double * weights() const
@@ -73,8 +82,10 @@ private:
   int numberMembers_;
   /// Number of links
    int numberLinks_;
-  /// First member
-  int first_;
+  /// Members
+  int * which_;
+  /// Type 1 or 2
+  int sosType_;
 };
 /** Branching object for Special ordered sets
 
@@ -106,11 +117,11 @@ public:
   virtual ~CbcLinkBranchingObject ();
   
   /// Does next branch and updates state
-  virtual double branch(bool normalBranch=false);
+  virtual double branch();
 
   /** \brief Print something about branch - only if log level high
   */
-  virtual void print(bool normalBranch);
+  virtual void print();
 private:
   /// data
   const CbcLink * set_;

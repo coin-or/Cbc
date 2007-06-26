@@ -10,6 +10,7 @@
 
 #include "OsiSolverInterface.hpp"
 #include "OsiSolverBranch.hpp"
+#include "OsiChooseVariable.hpp"
 #include "CbcModel.hpp"
 #include "CbcMessage.hpp"
 #include "CbcBranchBase.hpp"
@@ -17,20 +18,19 @@
 
 // Default Constructor
 CbcObject::CbcObject() 
-  :model_(NULL),
+  : OsiObject(),
+    model_(NULL),
    id_(-1),
-   priority_(1000),
    preferredWay_(0)
 {
 }
 
 // Constructor from model
 CbcObject::CbcObject(CbcModel * model)
-:
-  model_(model),
-  id_(-1),
-  priority_(1000),
-  preferredWay_(0)
+  : OsiObject(),
+    model_(model),
+    id_(-1),
+    preferredWay_(0)
 {
 }
 
@@ -42,10 +42,10 @@ CbcObject::~CbcObject ()
 
 // Copy constructor 
 CbcObject::CbcObject ( const CbcObject & rhs)
+  : OsiObject(rhs)
 {
   model_ = rhs.model_;
   id_ = rhs.id_;
-  priority_ = rhs.priority_;
   preferredWay_ = rhs.preferredWay_;
 }
 
@@ -54,9 +54,9 @@ CbcObject &
 CbcObject::operator=( const CbcObject& rhs)
 {
   if (this!=&rhs) {
+    OsiObject::operator=(rhs);
     model_ = rhs.model_;
     id_ = rhs.id_;
-    priority_ = rhs.priority_;
     preferredWay_ = rhs.preferredWay_;
   }
   return *this;
@@ -75,24 +75,100 @@ CbcObject::floorCeiling(double & floorValue, double & ceilingValue, double value
   }
   ceilingValue = floorValue+1.0;
 }
-// Return "up" estimate (default 1.0e-5)
+/* Infeasibility of the object
+      
+    This is some measure of the infeasibility of the object. 0.0 
+    indicates that the object is satisfied.
+  
+    The preferred branching direction is returned in way,
+  
+    This is used to prepare for strong branching but should also think of
+    case when no strong branching
+  
+    The object may also compute an estimate of cost of going "up" or "down".
+    This will probably be based on pseudo-cost ideas
+
+    This should also set mutable infeasibility_ and whichWay_
+    This is for instant re-use for speed
+*/
 double 
-CbcObject::upEstimate() const
+CbcObject::infeasibility(const OsiSolverInterface * solver,int &preferredWay) const 
 {
-  return 1.0e-5;
+  assert (solver==model_->solver());
+  return infeasibility(preferredWay);
 }
-// Return "down" estimate (default 1.0e-5)
+  
+/* For the variable(s) referenced by the object,
+      look at the current solution and set bounds to match the solution.
+      Returns measure of how much it had to move solution to make feasible
+*/
 double 
-CbcObject::downEstimate() const
+CbcObject::feasibleRegion(OsiSolverInterface * solver) const 
 {
-  return 1.0e-5;
+  assert (solver==model_->solver());
+  CbcObject * fudge = const_cast<CbcObject *>(this);
+  fudge->feasibleRegion();
+  return 0.0;
 }
-// Column number if single column object -1 otherwise
-int 
-CbcObject::columnNumber() const
+/* Infeasibility of the object
+      
+    This is some measure of the infeasibility of the object. 0.0 
+    indicates that the object is satisfied.
+  
+    The preferred branching direction is returned in way,
+  
+    This is used to prepare for strong branching but should also think of
+    case when no strong branching
+  
+    The object may also compute an estimate of cost of going "up" or "down".
+    This will probably be based on pseudo-cost ideas
+
+    This should also set mutable infeasibility_ and whichWay_
+    This is for instant re-use for speed
+*/
+double 
+CbcObject::infeasibility(const OsiBranchingInformation * info,
+			 int &preferredWay) const 
 {
-  // Say not as at present only used by heuristics
-  return -1;
+  return infeasibility(preferredWay);
+}
+  
+/* For the variable(s) referenced by the object,
+      look at the current solution and set bounds to match the solution.
+      Returns measure of how much it had to move solution to make feasible
+*/
+double 
+CbcObject::feasibleRegion(OsiSolverInterface * solver,const OsiBranchingInformation * info) const 
+{
+  assert (solver==model_->solver());
+  CbcObject * fudge = const_cast<CbcObject *>(this);
+  fudge->feasibleRegion();
+  return 0.0;
+}
+  
+/* Create a branching object and indicate which way to branch first.
+      
+      The branching object has to know how to create branches (fix
+      variables, etc.)
+*/
+OsiBranchingObject * 
+CbcObject::createBranch(OsiSolverInterface * solver, int way) const 
+{
+  assert (solver==model_->solver());
+  CbcObject * fudge = const_cast<CbcObject *>(this);
+  return fudge->createBranch(way);
+}
+/* Create a branching object and indicate which way to branch first.
+      
+      The branching object has to know how to create branches (fix
+      variables, etc.)
+*/
+OsiBranchingObject * 
+CbcObject::createBranch(OsiSolverInterface * solver,const OsiBranchingInformation * info, int way) const 
+{
+  assert (solver==model_->solver());
+  CbcObject * fudge = const_cast<CbcObject *>(this);
+  return fudge->createBranch(way);
 }
 /* Create an OsiSolverBranch object
    
@@ -106,35 +182,33 @@ CbcObject::solverBranch() const
   
 // Default Constructor 
 CbcBranchingObject::CbcBranchingObject()
+  : OsiBranchingObject()
 {
   model_=NULL;
-  originalObject_=NULL;
+  originalCbcObject_=NULL;
   variable_=-1;
   way_=0;
-  value_=0.0;
-  numberBranchesLeft_=2;
 }
 
 // Useful constructor
 CbcBranchingObject::CbcBranchingObject (CbcModel * model, int variable, int way , double value)
+  : OsiBranchingObject(model->solver(),value)
 {
   model_= model;
-  originalObject_=NULL;
+  originalCbcObject_=NULL;
   variable_=variable;
   way_=way;
-  value_=value;
-  numberBranchesLeft_=2;
 }
 
 // Copy constructor 
 CbcBranchingObject::CbcBranchingObject ( const CbcBranchingObject & rhs)
+  : OsiBranchingObject(rhs)
 {
   model_=rhs.model_;
-  originalObject_=rhs.originalObject_;
+  originalCbcObject_=rhs.originalCbcObject_;
   variable_=rhs.variable_;
   way_=rhs.way_;
   value_=rhs.value_;
-  numberBranchesLeft_=rhs.numberBranchesLeft_;
 }
 
 // Assignment operator 
@@ -142,12 +216,11 @@ CbcBranchingObject &
 CbcBranchingObject::operator=( const CbcBranchingObject& rhs)
 {
   if (this != &rhs) {
+    OsiBranchingObject::operator=(rhs);
     model_=rhs.model_;
-    originalObject_=rhs.originalObject_;
+    originalCbcObject_=rhs.originalCbcObject_;
     variable_=rhs.variable_;
     way_=rhs.way_;
-    value_=rhs.value_;
-    numberBranchesLeft_=rhs.numberBranchesLeft_;
   }
   return *this;
 }
@@ -158,13 +231,22 @@ CbcBranchingObject::~CbcBranchingObject ()
 }
 // Default Constructor 
 CbcBranchDecision::CbcBranchDecision ()
-  : object_(NULL)
+  : object_(NULL),model_(NULL),chooseMethod_(NULL)
 {
+}
+
+// Copy Constructor 
+CbcBranchDecision::CbcBranchDecision (const CbcBranchDecision &rhs)
+  : object_(NULL),model_(rhs.model_),chooseMethod_(NULL)
+{
+  if (rhs.chooseMethod_)
+    chooseMethod_ = rhs.chooseMethod_->clone();
 }
 
 CbcBranchDecision::~CbcBranchDecision()
 {
   delete object_;
+  delete chooseMethod_;
 }
 /* Compare N branching objects. Return index of best
    and sets way of branching in chosen object.
@@ -204,7 +286,13 @@ CbcBranchDecision::bestBranch (CbcBranchingObject ** objects, int numberObjects,
   }
   return whichObject;
 }
-
+// Set (clone) chooseMethod
+void 
+CbcBranchDecision::setChooseMethod(const OsiChooseVariable & method)
+{ 
+  delete chooseMethod_;
+  chooseMethod_ = method.clone();
+}
 // Default constructor
 CbcConsequence::CbcConsequence()
 {

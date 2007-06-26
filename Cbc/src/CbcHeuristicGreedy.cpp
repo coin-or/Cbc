@@ -54,6 +54,7 @@ CbcHeuristicGreedyCover::generateCpp( FILE * fp)
   CbcHeuristicGreedyCover other;
   fprintf(fp,"0#include \"CbcHeuristicGreedy.hpp\"\n");
   fprintf(fp,"3  CbcHeuristicGreedyCover heuristicGreedyCover(*cbcModel);\n");
+  CbcHeuristic::generateCpp(fp,"heuristicGreedyCover");
   if (algorithm_!=other.algorithm_)
     fprintf(fp,"3  heuristicGreedyCover.setAlgorithm(%d);\n",algorithm_);
   else
@@ -74,7 +75,6 @@ CbcHeuristicGreedyCover::CbcHeuristicGreedyCover(const CbcHeuristicGreedyCover &
   algorithm_(rhs.algorithm_),
   numberTimes_(rhs.numberTimes_)
 {
-  this->setWhen(rhs.when());
 }
 
 // Assignment operator 
@@ -82,7 +82,7 @@ CbcHeuristicGreedyCover &
 CbcHeuristicGreedyCover::operator=( const CbcHeuristicGreedyCover& rhs)
 {
   if (this != &rhs) {
-    setWhen(rhs.when());
+    CbcHeuristic::operator=(rhs);
     matrix_=rhs.matrix_;
     originalNumberRows_=rhs.originalNumberRows_;
     algorithm_=rhs.algorithm_;
@@ -460,6 +460,7 @@ CbcHeuristicGreedyEquality::generateCpp( FILE * fp)
   CbcHeuristicGreedyEquality other;
   fprintf(fp,"0#include \"CbcHeuristicGreedy.hpp\"\n");
   fprintf(fp,"3  CbcHeuristicGreedyEquality heuristicGreedyEquality(*cbcModel);\n");
+  CbcHeuristic::generateCpp(fp,"heuristicGreedyEquality");
   if (algorithm_!=other.algorithm_)
     fprintf(fp,"3  heuristicGreedyEquality.setAlgorithm(%d);\n",algorithm_);
   else
@@ -485,7 +486,6 @@ CbcHeuristicGreedyEquality::CbcHeuristicGreedyEquality(const CbcHeuristicGreedyE
   algorithm_(rhs.algorithm_),
   numberTimes_(rhs.numberTimes_)
 {
-  this->setWhen(rhs.when());
 }
 
 // Assignment operator 
@@ -493,7 +493,7 @@ CbcHeuristicGreedyEquality &
 CbcHeuristicGreedyEquality::operator=( const CbcHeuristicGreedyEquality& rhs)
 {
   if (this != &rhs) {
-    setWhen(rhs.when());
+    CbcHeuristic::operator=(rhs);
     matrix_=rhs.matrix_;
     fraction_ = rhs.fraction_;
     originalNumberRows_=rhs.originalNumberRows_;
@@ -730,6 +730,10 @@ CbcHeuristicGreedyEquality::solution(double & solutionValue,
     }
     int returnCode = smallBranchAndBound(newSolver,200,newSolution,newSolutionValue,
                                          solutionValue,"CbcHeuristicGreedy");
+    if ((returnCode&2)!=0) {
+      // could add cut
+      returnCode &= ~2;
+    }
     rhsNeeded = 1.0-returnCode;
     delete newSolver;
   }

@@ -61,10 +61,8 @@ DIST_COMMON = README $(am__configure_deps) \
 	$(srcdir)/../config.sub $(srcdir)/../install-sh \
 	$(srcdir)/../ltmain.sh $(srcdir)/../missing \
 	$(srcdir)/Makefile.am $(srcdir)/Makefile.in \
-	$(srcdir)/cbc_addlibs.txt.in \
-	$(top_srcdir)/../Clp/src/CbcOrClpParam.cpp \
-	$(top_srcdir)/../Clp/src/CbcOrClpParam.hpp \
-	$(top_srcdir)/configure $(top_srcdir)/examples/Makefile.in \
+	$(srcdir)/cbc_addlibs.txt.in $(top_srcdir)/configure \
+	$(top_srcdir)/examples/Makefile.in \
 	$(top_srcdir)/inc/config_cbc.h.in AUTHORS
 @HAVE_EXTERNALS_TRUE@am__append_2 = Externals
 @HAVE_EXTERNALS_TRUE@am__append_3 = .Externals-stamp
@@ -121,6 +119,8 @@ AWK = @AWK@
 BUILDTOOLSDIR = @BUILDTOOLSDIR@
 CBCOBJDIR = @CBCOBJDIR@
 CBCSRCDIR = @CBCSRCDIR@
+CBC_BUILD_CBC_GENERIC_FALSE = @CBC_BUILD_CBC_GENERIC_FALSE@
+CBC_BUILD_CBC_GENERIC_TRUE = @CBC_BUILD_CBC_GENERIC_TRUE@
 CC = @CC@
 CCDEPMODE = @CCDEPMODE@
 CDEFS = @CDEFS@
@@ -319,8 +319,11 @@ EXTRA_DIST = doc/authors.xml doc/cbcexe.xml doc/cbcmodelclass.xml \
 	examples/CbcCompareUser.hpp examples/CbcSolver2.cpp \
 	examples/CbcSolver2.hpp examples/CbcSolver3.cpp \
 	examples/CbcSolver3.hpp examples/CbcSolverLongThin.cpp \
-	examples/CbcSolverLongThin.hpp examples/ClpQuadInterface.cpp \
-	examples/ClpQuadInterface.hpp examples/crew.cpp \
+	examples/CbcSolverLongThin.hpp examples/CbcSolverLink.hpp \
+	examples/CbcSolverLink.cpp examples/ClpQuadInterface.cpp \
+	examples/ClpQuadInterface.hpp examples/OsiBranchLink.cpp \
+	examples/OsiBranchLink.hpp examples/OsiSolverLink.hpp \
+	examples/OsiSolverLink.cpp examples/crew.cpp \
 	examples/driver2.cpp examples/driver.cpp \
 	examples/fast0507b.cpp examples/fast0507.cpp examples/gear.cpp \
 	examples/hotstart.cpp examples/link.cpp examples/longthin.cpp \
@@ -545,7 +548,7 @@ distclean-tags:
 distdir: $(DISTFILES)
 	$(am__remove_distdir)
 	mkdir $(distdir)
-	$(mkdir_p) $(distdir)/. $(distdir)/.. $(distdir)/../BuildTools $(distdir)/../Clp/src $(distdir)/doc $(distdir)/examples $(distdir)/inc
+	$(mkdir_p) $(distdir)/. $(distdir)/.. $(distdir)/../BuildTools $(distdir)/doc $(distdir)/examples $(distdir)/inc
 	@srcdirstrip=`echo "$(srcdir)" | sed 's|.|.|g'`; \
 	topsrcdirstrip=`echo "$(top_srcdir)" | sed 's|.|.|g'`; \
 	list='$(DISTFILES)'; for file in $$list; do \

@@ -130,11 +130,11 @@ public:
              current arm of the branch and advances the object state to the next arm.
 	     Returns change in guessed objective on next branch
   */
-  virtual double branch(bool normalBranch=false);
+  virtual double branch();
 
   /** \brief Print something about branch - only if log level high
   */
-  virtual void print(bool normalBranch);
+  virtual void print();
 
   /** \brief Return true if branch should fix variables
   */

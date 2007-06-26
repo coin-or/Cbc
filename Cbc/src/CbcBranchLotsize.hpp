@@ -77,7 +77,7 @@ public:
     Handy for updating bounds held in this object after bounds held in the
     solver have been tightened.
    */
-  virtual void resetBounds();
+  virtual void resetBounds(const OsiSolverInterface * solver);
 
   /** Finds range of interest so value is feasible in range range_ or infeasible 
       between hi[range_] and lo[range_+1].  Returns true if feasible.
@@ -112,6 +112,10 @@ public:
   /// Ranges
   inline double * bound() const
   { return bound_;};
+  /** \brief Return true if object can take part in normal heuristics
+  */
+  virtual bool canDoHeuristics() const 
+  {return false;};
 
 private:
   /// Just for debug (CBC_PRINT defined in CbcBranchLotsize.cpp)
@@ -186,11 +190,11 @@ public:
   /** \brief Sets the bounds for the variable according to the current arm
 	     of the branch and advances the object state to the next arm.
   */
-  virtual double branch(bool normalBranch=false);
+  virtual double branch();
 
   /** \brief Print something about branch - only if log level high
   */
-  virtual void print(bool normalBranch);
+  virtual void print();
 
 protected:
   /// Lower [0] and upper [1] bounds for the down arm (way_ = -1)

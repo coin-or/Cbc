@@ -27,6 +27,9 @@ public:
   /// Clone
   virtual CbcHeuristic * clone() const;
 
+  /// Assignment operator 
+  CbcHeuristicLocal & operator=(const CbcHeuristicLocal& rhs);
+
   /// Create C++ lines to get to current state
   virtual void generateCpp( FILE * fp) ;
 
@@ -73,10 +76,6 @@ protected:
   int swap_;
   /// Whether a variable has been in a solution
   char * used_;
-
-private:
-  /// Illegal Assignment operator 
-  CbcHeuristicLocal & operator=(const CbcHeuristicLocal& rhs);
 };
 
 

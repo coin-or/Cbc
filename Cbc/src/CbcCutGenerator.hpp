@@ -63,7 +63,7 @@ public:
 
     If node then can find out depth
   */
-  bool generateCuts( OsiCuts &cs, bool fullScan,CbcNode * node); 
+  bool generateCuts( OsiCuts &cs, bool fullScan,OsiSolverInterface * solver,CbcNode * node); 
   //@}
 
     
@@ -176,6 +176,8 @@ public:
   /// Return time taken in cut generator
   inline double timeInCutGenerator() const
   { return timeInCutGenerator_;};
+  inline void incrementTimeInCutGenerator(double value)
+  { timeInCutGenerator_ += value;};
   /// Get the \c CglCutGenerator corresponding to this \c CbcCutGenerator.
   inline CglCutGenerator * generator() const
   { return generator_;};
@@ -236,6 +238,9 @@ public:
   { return numberActiveCutsAtRoot_;};
   inline void setNumberActiveCutsAtRoot(int value)
   { numberActiveCutsAtRoot_ = value;};
+  /// Set model
+  inline void setModel(CbcModel * model)
+  { model_ = model;};
   //@}
   
 private:

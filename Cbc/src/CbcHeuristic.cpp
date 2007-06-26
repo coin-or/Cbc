@@ -177,6 +177,15 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver,int numberNodes,
           <<CoinMessageEol;
       // probably faster to use a basis to get integer solutions
       model.setSpecialOptions(2);
+#ifdef CBC_THREAD
+      if (model_->getNumberThreads()>0&&(model_->getThreadMode()&1)!=0) {
+	// See if at root node
+	bool atRoot = model_->getNodeCount()==0;
+	int passNumber = model_->getCurrentPassNumber();
+	if (atRoot&&passNumber==1)
+	  model.setNumberThreads(model_->getNumberThreads());
+      }
+#endif
       model.branchAndBound();
       if (logLevel>1)
         model_->messageHandler()->message(CBC_END_SUB,model_->messages())
@@ -301,7 +310,6 @@ CbcRounding::solution(double & solutionValue,
   if (!when()||(when()%10==1&&model_->phase()!=1)||
       (when()%10==2&&(model_->phase()!=2&&model_->phase()!=3)))
     return 0; // switched off
-
   OsiSolverInterface * solver = model_->solver();
   const double * lower = solver->getColLower();
   const double * upper = solver->getColUpper();
@@ -314,14 +322,13 @@ CbcRounding::solution(double & solutionValue,
   solver->getDblParam(OsiPrimalTolerance,primalTolerance);
 
   int numberRows = matrix_.getNumRows();
-
+  assert (numberRows<=solver->getNumRows());
   int numberIntegers = model_->numberIntegers();
   const int * integerVariable = model_->integerVariable();
   int i;
   double direction = solver->getObjSense();
   double newSolutionValue = direction*solver->getObjValue();
   int returnCode = 0;
-
   // Column copy
   const double * element = matrix_.getElements();
   const int * row = matrix_.getIndices();
@@ -892,6 +899,14 @@ CbcRounding::solution(double & solutionValue,
 	}
       }
     }
+    // Just in case of some stupidity
+    double objOffset=0.0;
+    solver->getDblParam(OsiObjOffset,objOffset);
+    newSolutionValue = -objOffset;
+    for ( i=0 ; i<numberColumns ; i++ )
+      newSolutionValue += objective[i]*newSolution[i];
+    newSolutionValue *= direction;
+    //printf("new solution value %g %g\n",newSolutionValue,solutionValue);
     if (newSolutionValue<solutionValue) {
       // paranoid check
       memset(rowActivity,0,numberRows*sizeof(double));

@@ -11,6 +11,7 @@
 //#define CBC_DEBUG 1
 //#define CHECK_CUT_COUNTS
 //#define CHECK_NODE
+//#define CBC_CHECK_BASIS
 #define CBC_WEAK_STRONG
 #include <cassert>
 #include <cfloat>
@@ -643,7 +644,6 @@ void CbcPartialNodeInfo::applyToModel (CbcModel *model,
 				       int &currentNumberCuts) const 
 
 { OsiSolverInterface *solver = model->solver();
-
   basis->applyDiff(basisDiff_) ;
 
   // branch - do bounds
@@ -4100,7 +4100,7 @@ int CbcNode::analyze (CbcModel *model, double * results)
                model->object(choice.objectNumber)->columnNumber());
         delete ws;
         ws=NULL;
-        solver->writeMps("bad");
+        //solver->writeMps("bad");
         numberToFix=-1;
         delete choice.possibleBranch;
         choice.possibleBranch=NULL;
@@ -4185,8 +4185,6 @@ CbcNode::operator=(const CbcNode & rhs)
   }
   return *this;
 }
-
-
 CbcNode::~CbcNode ()
 {
 #ifdef CHECK_NODE
@@ -4205,7 +4203,7 @@ CbcNode::~CbcNode ()
     if (nodeInfo_->decrement(numberToDelete)==0) {
       delete nodeInfo_;
     } else {
-      //printf("node %x nodeinfo %x parent %x\n",this,nodeInfo_,parent);
+      //printf("node %x nodeinfo %x parent %x\n",this,nodeInfo_,nodeInfo_->parent());
       // anyway decrement parent
       //if (parent)
       ///parent->decrement(1);

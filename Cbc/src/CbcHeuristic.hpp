@@ -78,6 +78,10 @@ public:
   /// Gets number of nodes in a subtree (default 200)
   inline int numberNodes() const
   { return numberNodes_;};
+  /// Just set model - do not do anything else
+  inline void setModelOnly(CbcModel * model)
+  { model_ = model;};
+  
 
   /// Sets fraction of new(rows+columns)/old(rows+columns) before doing small branch and bound (default 1.0)
   inline void setFractionSmall(double value)

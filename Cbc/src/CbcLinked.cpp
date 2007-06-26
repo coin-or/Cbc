@@ -12,6 +12,7 @@
 #include "CoinHelperFunctions.hpp"
 #include "CoinModel.hpp"
 #include "ClpSimplex.hpp"
+#include "ClpAmplObjective.hpp"
 // returns jColumn (-2 if linear term, -1 if unknown) and coefficient
 static
 int decodeBit(char * phrase, char * & nextPhrase, double & coefficient, bool ifFirst, const CoinModel & model)
@@ -184,8 +185,8 @@ void OsiSolverLink::initialSolve()
   int secondaryStatus = modelPtr_->secondaryStatus();
   if (modelPtr_->status()==0&&(secondaryStatus==2||secondaryStatus==4))
     modelPtr_->cleanup(1);
-  if (!isProvenOptimal())
-    writeMps("yy");
+  //if (!isProvenOptimal())
+  //writeMps("yy");
   if (isProvenOptimal()&&quadraticModel_&&modelPtr_->numberColumns()==quadraticModel_->numberColumns()) {
     // see if qp can get better solution
     const double * solution = modelPtr_->primalColumnSolution();
@@ -232,6 +233,7 @@ void OsiSolverLink::initialSolve()
 	if (cbcModel_&&(specialOptions2_&4)!=0) {
 	  int numberGenerators = cbcModel_->numberCutGenerators();
 	  int iGenerator;
+	  cbcModel_->lockThread();
 	  for (iGenerator=0;iGenerator<numberGenerators;iGenerator++) {
 	    CbcCutGenerator * generator = cbcModel_->cutGenerator(iGenerator);
 	    CglCutGenerator * gen = generator->generator();
@@ -262,6 +264,7 @@ void OsiSolverLink::initialSolve()
 	      break;
 	    }
 	  }
+	  cbcModel_->unlockThread();
 	}
       }
     }
@@ -460,6 +463,18 @@ void OsiSolverLink::resolve()
 	  delete [] bestSolution_;
 	  bestSolution_ = CoinCopyOfArray(modelPtr_->getColSolution(),modelPtr_->getNumCols());
 	  bestObjectiveValue_ = value;
+	  if (maxIts<=10000&&cbcModel_) {
+	    OsiSolverLink * solver2 = dynamic_cast<OsiSolverLink *> (cbcModel_->solver());
+	    assert (solver2);
+	    if (solver2!=this) {
+	      // in strong branching - need to store in original solver
+	      if (value<solver2->bestObjectiveValue_-1.0e-3) {
+		delete [] solver2->bestSolution_;
+		solver2->bestSolution_ = CoinCopyOfArray(bestSolution_,modelPtr_->getNumCols());
+		solver2->bestObjectiveValue_ = value;
+	      }
+	    }
+	  }
 	  // If model has stored then add cut (if convex)
 	  if (cbcModel_&&(specialOptions2_&4)!=0&&quadraticModel_) {
 	    int numberGenerators = cbcModel_->numberCutGenerators();
@@ -469,8 +484,9 @@ void OsiSolverLink::resolve()
 	      CglCutGenerator * gen = generator->generator();
 	      CglStored * gen2 = dynamic_cast<CglStored *> (gen);
 	      if (gen2) {
+		cbcModel_->lockThread();
 		// add OA cut
-		double offset;
+		double offset=0.0;
 		int numberColumns = quadraticModel_->numberColumns();
 		double * gradient = new double [numberColumns+1];
 		// gradient from bilinear
@@ -491,7 +507,7 @@ void OsiSolverLink::resolve()
 		    int xColumn = obj->xColumn();
 		    int yColumn = obj->yColumn();
 		    if (xColumn!=yColumn) {
-		      double coefficient = 2.0*obj->coefficient();
+		      double coefficient = /* 2.0* */obj->coefficient();
 		      gradient[xColumn] += coefficient*solution[yColumn];
 		      gradient[yColumn] += coefficient*solution[xColumn];
 		      offset += coefficient*solution[xColumn]*solution[yColumn];
@@ -519,6 +535,7 @@ void OsiSolverLink::resolve()
 		gen2->addCut(-COIN_DBL_MAX,offset+1.0e-4,n,column,gradient);
 		delete [] gradient;
 		delete [] column;
+		cbcModel_->unlockThread();
 		break;
 	      }
 	    }
@@ -633,8 +650,8 @@ void OsiSolverLink::resolve()
 	  }
 	  delete [] lower2;
 	  delete [] upper2;
-	  if (isProvenOptimal())
-	    writeMps("zz");
+	  //if (isProvenOptimal())
+	  //writeMps("zz");
 	}
       }
       // ???  - try
@@ -651,9 +668,10 @@ void OsiSolverLink::resolve()
 	    CglCutGenerator * gen = generator->generator();
 	    CglTemporary * gen2 = dynamic_cast<CglTemporary *> (gen);
 	    if (gen2) {
+	      cbcModel_->lockThread();
 	      const double * solution = getColSolution();
 	      // add OA cut
-	      double offset;
+	      double offset=0.0;
 	      int numberColumns = quadraticModel_->numberColumns();
 	      double * gradient = new double [numberColumns+1];
 	      // gradient from bilinear
@@ -676,7 +694,7 @@ void OsiSolverLink::resolve()
 		  int xColumn = obj->xColumn();
 		  int yColumn = obj->yColumn();
 		  if (xColumn!=yColumn) {
-		    double coefficient = 2.0*obj->coefficient();
+		    double coefficient = /* 2.0* */obj->coefficient();
 		    gradient[xColumn] += coefficient*solution[yColumn];
 		    gradient[yColumn] += coefficient*solution[xColumn];
 		    offset += coefficient*solution[xColumn]*solution[yColumn];
@@ -709,6 +727,7 @@ void OsiSolverLink::resolve()
 	      }
 	      delete [] gradient;
 	      delete [] column;
+	      cbcModel_->unlockThread();
 	      break;
 	    }
 	  }
@@ -734,6 +753,7 @@ void OsiSolverLink::resolve()
 	    int * column = new int[numberColumns2];
 	    //const double * columnLower = modelPtr_->columnLower();
 	    //const double * columnUpper = modelPtr_->columnUpper();
+	    cbcModel_->lockThread();
 	    for (int iNon=0;iNon<numberNonLinearRows_;iNon++) {
 	      int iRow = rowNonLinear_[iNon];
 	      bool convex = convex_[iNon]>0;
@@ -753,7 +773,7 @@ void OsiSolverLink::resolve()
 		int xColumn = obj->xColumn();
 		int yColumn = obj->yColumn();
 		if (xColumn!=yColumn) {
-		  double coefficient = 2.0*obj->coefficient();
+		  double coefficient = /* 2.0* */obj->coefficient();
 		  gradient[xColumn] += coefficient*solution[yColumn];
 		  gradient[yColumn] += coefficient*solution[xColumn];
 		  offset += coefficient*solution[xColumn]*solution[yColumn];
@@ -790,6 +810,7 @@ void OsiSolverLink::resolve()
 	      else if (!convex&&rhs<offset-1.0e-5) 
 		gen2->addCut(offset-1.0e-7,COIN_DBL_MAX,n,column,gradient);
 	    }
+	    cbcModel_->unlockThread();
 	    delete [] gradient;
 	    delete [] column;
 	    break;
@@ -811,7 +832,7 @@ void OsiSolverLink::resolve()
 // Default Constructor 
 //-------------------------------------------------------------------
 OsiSolverLink::OsiSolverLink ()
-  : OsiClpSolverInterface()
+  : CbcOsiSolver()
 {
   gutsOfDestructor(true);
 }
@@ -892,26 +913,37 @@ static int getVariable(const CoinModel & model, char * expression,
    modelObject not const as may be changed as part of process.
 */
 OsiSolverLink::OsiSolverLink ( CoinModel & coinModel)
-  : OsiClpSolverInterface()
+  : CbcOsiSolver()
 {
   gutsOfDestructor(true);
   load(coinModel);
 }
 // need bounds
-static void fakeBounds(OsiSolverInterface * solver,int column,double maximumValue)
+static void fakeBounds(OsiSolverInterface * solver,int column,double maximumValue,
+		       CoinModel * model1, CoinModel * model2)
 {
   double lo = solver->getColLower()[column];
-  if (lo<-maximumValue)
+  if (lo<-maximumValue) {
     solver->setColLower(column,-maximumValue);
+    if (model1)
+      model1->setColLower(column,-maximumValue);
+    if (model2)
+      model2->setColLower(column,-maximumValue);
+  }
   double up = solver->getColUpper()[column];
-  if (up>maximumValue)
+  if (up>maximumValue) {
     solver->setColUpper(column,maximumValue);
+    if (model1)
+      model1->setColUpper(column,maximumValue);
+    if (model2)
+      model2->setColUpper(column,maximumValue);
+  }
 }
-void OsiSolverLink::load ( CoinModel & coinModel, bool tightenBounds,int logLevel)
+void OsiSolverLink::load ( CoinModel & coinModelOriginal, bool tightenBounds,int logLevel)
 {
   // first check and set up arrays
-  int numberColumns = coinModel.numberColumns();
-  int numberRows = coinModel.numberRows();
+  int numberColumns = coinModelOriginal.numberColumns();
+  int numberRows = coinModelOriginal.numberRows();
   // List of nonlinear entries
   int * which = new int[numberColumns];
   numberVariables_=0;
@@ -919,21 +951,21 @@ void OsiSolverLink::load ( CoinModel & coinModel, bool tightenBounds,int logLeve
   int iColumn;
   int numberErrors=0;
   for (iColumn=0;iColumn<numberColumns;iColumn++) {
-    CoinModelLink triple=coinModel.firstInColumn(iColumn);
+    CoinModelLink triple=coinModelOriginal.firstInColumn(iColumn);
     bool linear=true;
     int n=0;
     // See if quadratic objective
-    const char * expr = coinModel.getColumnObjectiveAsString(iColumn);
+    const char * expr = coinModelOriginal.getColumnObjectiveAsString(iColumn);
     if (strcmp(expr,"Numeric")) {
       linear=false;
     }
     while (triple.row()>=0) {
       int iRow = triple.row();
-      const char * expr = coinModel.getElementAsString(iRow,iColumn);
+      const char * expr = coinModelOriginal.getElementAsString(iRow,iColumn);
       if (strcmp(expr,"Numeric")) {
 	linear=false;
       }
-      triple=coinModel.next(triple);
+      triple=coinModelOriginal.next(triple);
       n++;
     }
     if (!linear) {
@@ -943,14 +975,14 @@ void OsiSolverLink::load ( CoinModel & coinModel, bool tightenBounds,int logLeve
   // return if nothing
   if (!numberVariables_) {
     delete [] which;
-    coinModel_ = coinModel;
+    coinModel_ = coinModelOriginal;
     int nInt=0;
     for (iColumn=0;iColumn<numberColumns;iColumn++) {   
       if (coinModel_.isInteger(iColumn))
 	nInt++;
     }
     printf("There are %d integers\n",nInt);
-    loadFromCoinModel(coinModel,true);
+    loadFromCoinModel(coinModelOriginal,true);
     OsiObject ** objects = new OsiObject * [nInt];
     nInt=0;
     for (iColumn=0;iColumn<numberColumns;iColumn++) {   
@@ -967,7 +999,7 @@ void OsiSolverLink::load ( CoinModel & coinModel, bool tightenBounds,int logLeve
     delete [] objects;
     return;
   } else {
-    coinModel_ = coinModel;
+    coinModel_ = coinModelOriginal;
     // arrays for tightening bounds
     int * freeRow = new int [numberRows];
     CoinZeroN(freeRow,numberRows);
@@ -1003,7 +1035,7 @@ void OsiSolverLink::load ( CoinModel & coinModel, bool tightenBounds,int logLeve
 	  }
 	  ifFirst=false;
 	}
-	coinModel.setObjective(iColumn,linearTerm);
+	coinModelOriginal.setObjective(iColumn,linearTerm);
       }
     }
     int iRow;
@@ -1038,7 +1070,7 @@ void OsiSolverLink::load ( CoinModel & coinModel, bool tightenBounds,int logLeve
 	    }
 	    ifFirst=false;
 	  }
-	  coinModel.setElement(iRow,iColumn,linearTerm);
+	  coinModelOriginal.setElement(iRow,iColumn,linearTerm);
 	}
 	triple=coinModel_.next(triple);
       }
@@ -1052,12 +1084,13 @@ void OsiSolverLink::load ( CoinModel & coinModel, bool tightenBounds,int logLeve
 	nInt++;
     }
     printf("There are %d bilinear and %d integers\n",nBi,nInt);
-    loadFromCoinModel(coinModel,true);
+    loadFromCoinModel(coinModelOriginal,true);
+    CoinModel coinModel = coinModelOriginal;
     if (tightenBounds&&numberColumns<100) {
       // first fake bounds
       for (iColumn=0;iColumn<numberColumns;iColumn++) {
 	if (tryColumn[iColumn]) {
-	  fakeBounds(this,iColumn,defaultBound_);
+	  fakeBounds(this,iColumn,defaultBound_,&coinModel,&coinModel_);
 	}
       }
       ClpSimplex tempModel(*modelPtr_);
@@ -1090,6 +1123,7 @@ void OsiSolverLink::load ( CoinModel & coinModel, bool tightenBounds,int logLeve
 	      printf("lower bound on %d changed from %g to %g\n",iColumn,columnLower[iColumn],value);
 	    columnLower[iColumn]=value;
 	    coinModel_.setColumnLower(iColumn,value);
+	    coinModel.setColumnLower(iColumn,value);
 	  }
 	  objective[iColumn]=-1.0;
 	  tempModel.primal(1);
@@ -1101,6 +1135,7 @@ void OsiSolverLink::load ( CoinModel & coinModel, bool tightenBounds,int logLeve
 	      printf("upper bound on %d changed from %g to %g\n",iColumn,columnUpper[iColumn],value);
 	    columnUpper[iColumn]=value;
 	    coinModel_.setColumnUpper(iColumn,value);
+	    coinModel.setColumnUpper(iColumn,value);
 	  }
 	  objective[iColumn]=0.0;
 	}
@@ -1126,13 +1161,12 @@ void OsiSolverLink::load ( CoinModel & coinModel, bool tightenBounds,int logLeve
     if (saveNBi) {
       // add in objective as constraint
       objectiveVariable_= numberColumns;
-      objectiveRow_ = modelPtr_->numberRows();
-      addCol(0,NULL,NULL,-COIN_DBL_MAX,COIN_DBL_MAX,1.0);
+      objectiveRow_ = coinModel.numberRows();
+      coinModel.addColumn(0,NULL,NULL,-COIN_DBL_MAX,COIN_DBL_MAX,1.0);
       int * column = new int[numberColumns+1];
       double * element = new double[numberColumns+1];
-      double * objective = modelPtr_->objective();
+      double * objective = coinModel.objectiveArray();
       int n=0;
-      int starts[2]={0,0};
       for (int i=0;i<numberColumns;i++) {
 	if (objective[i]) {
 	  column[n]=i;
@@ -1142,12 +1176,11 @@ void OsiSolverLink::load ( CoinModel & coinModel, bool tightenBounds,int logLeve
       }
       column[n]=objectiveVariable_;
       element[n++]=-1.0;
-      starts[1]=n;
-      double offset = - modelPtr_->objectiveOffset();
+      double offset = - coinModel.objectiveOffset();
       assert (!offset); // get sign right if happens
-      modelPtr_->setObjectiveOffset(0.0);
+      coinModel.setObjectiveOffset(0.0);
       double lowerBound = -COIN_DBL_MAX;
-      addRows(1,starts,column,element,&lowerBound,&offset);
+      coinModel.addRow(n,column,element,lowerBound,offset);
       delete [] column;
       delete [] element;
     }
@@ -1165,7 +1198,7 @@ void OsiSolverLink::load ( CoinModel & coinModel, bool tightenBounds,int logLeve
       const char * expr = coinModel_.getColumnObjectiveAsString(iColumn);
       if (strcmp(expr,"Numeric")) {
 	// need bounds
-	fakeBounds(this,iColumn,defaultBound_);
+	fakeBounds(this,iColumn,defaultBound_,&coinModel,&coinModel_);
 	// value*x*y
 	char temp[20000];
 	strcpy(temp,expr);
@@ -1178,10 +1211,13 @@ void OsiSolverLink::load ( CoinModel & coinModel, bool tightenBounds,int logLeve
 	  if (jColumn>=0) {
 	    if (quadraticObjective) {
 	      columnQuadratic[numberQuadratic]=jColumn;
-	      elementQuadratic[numberQuadratic++]=2.0*value; // convention
+	      if (jColumn==iColumn)
+		elementQuadratic[numberQuadratic++]=2.0*value; // convention
+	      else
+		elementQuadratic[numberQuadratic++]=1.0*value; // convention
 	    }
 	    // need bounds
-	    fakeBounds(this,jColumn,defaultBound_);
+	    fakeBounds(this,jColumn,defaultBound_,&coinModel,&coinModel_);
 	    double meshI = coinModel_.isInteger(iColumn) ? 1.0 : 0.0;
 	    if (meshI)
 	      marked[iColumn]=1;
@@ -1208,7 +1244,7 @@ void OsiSolverLink::load ( CoinModel & coinModel, bool tightenBounds,int logLeve
 	      meshI=defaultMeshSize_;
 	      meshJ=0.0;
 	    }
-	    OsiBiLinear * newObj = new OsiBiLinear(this,iColumn,jColumn,objectiveRow_,value,meshI,meshJ,
+	    OsiBiLinear * newObj = new OsiBiLinear(&coinModel,iColumn,jColumn,objectiveRow_,value,meshI,meshJ,
 						   nBi-nInt,(const OsiObject **) (objects+nInt));
 	    newObj->setPriority(biLinearPriority_);
 	    objects[nBi++] = newObj;
@@ -1239,7 +1275,7 @@ void OsiSolverLink::load ( CoinModel & coinModel, bool tightenBounds,int logLeve
 	const char *  el = coinModel_.getElementAsString(iRow,iColumn);
 	if (strcmp("Numeric",el)) {
 	  // need bounds
-	  fakeBounds(this,iColumn,defaultBound_);
+	  fakeBounds(this,iColumn,defaultBound_,&coinModel,&coinModel_);
 	  // value*x*y
 	  char temp[20000];
 	  strcpy(temp,el);
@@ -1251,7 +1287,7 @@ void OsiSolverLink::load ( CoinModel & coinModel, bool tightenBounds,int logLeve
 	    // must be column unless first when may be linear term
 	    if (jColumn>=0) {
 	      // need bounds
-	      fakeBounds(this,jColumn,defaultBound_);
+	      fakeBounds(this,jColumn,defaultBound_,&coinModel,&coinModel_);
 	      double meshI = coinModel_.isInteger(iColumn) ? 1.0 : 0.0;
 	      if (meshI)
 		marked[iColumn]=1;
@@ -1278,7 +1314,7 @@ void OsiSolverLink::load ( CoinModel & coinModel, bool tightenBounds,int logLeve
 		meshI=defaultMeshSize_;
 		meshJ=0.0;
 	      }
-	      OsiBiLinear * newObj = new OsiBiLinear(this,iColumn,jColumn,iRow,value,meshI,meshJ,
+	      OsiBiLinear * newObj = new OsiBiLinear(&coinModel,iColumn,jColumn,iRow,value,meshI,meshJ,
 						     nBi-nInt,(const OsiObject **) (objects+nInt));
 	      newObj->setPriority(biLinearPriority_);
 	      objects[nBi++] = newObj;
@@ -1307,6 +1343,9 @@ void OsiSolverLink::load ( CoinModel & coinModel, bool tightenBounds,int logLeve
       printf("There were %d I-I, %d I-x and %d x-x bilinear in total of which %d were duplicates\n",
 	     stats[0],stats[1],stats[2],nBi-nInt-nDiff);
     }
+    // reload with all bilinear stuff
+    loadFromCoinModel(coinModel,true);
+    //exit(77);
     nInt=0;
     for (iColumn=0;iColumn<numberColumns;iColumn++) {   
       if (coinModel_.isInteger(iColumn)) {
@@ -1501,6 +1540,41 @@ OsiSolverLink::setBiLinearPriorities(int value,double meshSize)
     delete newObject[i];
   delete [] newObject;
 }
+/* Set options and priority on all or some biLinear variables
+   1 - on I-I
+   2 - on I-x
+   4 - on x-x
+      or combinations.
+      -1 means leave (for priority value and strategy value)
+*/
+void 
+OsiSolverLink::setBranchingStrategyOnVariables(int strategyValue, int priorityValue,
+					       int mode)
+{
+  int i;
+  for ( i =0;i<numberObjects_;i++) {
+    OsiBiLinear * obj = dynamic_cast<OsiBiLinear *> (object_[i]);
+    if (obj) {
+      bool change=false;
+      if (obj->xMeshSize()<1.0&&obj->yMeshSize()<1.0&&(mode&4)!=0)
+	change=true;
+      else if (((obj->xMeshSize()==1.0&&obj->yMeshSize()<1.0)||
+		(obj->xMeshSize()<1.0&&obj->yMeshSize()==1.0))&&(mode&2)!=0)
+	change=true;
+      else if (obj->xMeshSize()==1.0&&obj->yMeshSize()==1.0&&(mode&1)!=0)
+	change=true;
+      else if (obj->xMeshSize()>1.0||obj->yMeshSize()>1.0)
+	abort();
+      if (change) {
+	if (strategyValue>=0)
+	  obj->setBranchingStrategy(strategyValue);
+	if (priorityValue>=0)
+	  obj->setPriority(priorityValue);
+      }
+    }
+  }
+}
+
 // Say convex (should work it out)
 void 
 OsiSolverLink::sayConvex(bool convex)
@@ -1711,7 +1785,7 @@ OsiSolverLink::nonlinearSLP(int numberPasses,double deltaTolerance)
     //columnUpper[iColumn]=initialSolution[iColumn];
   }
   model.initialSolve();
-  model.writeMps("bad.mps");
+  //model.writeMps("bad.mps");
   // redo number of columns
   numberColumns = model.numberColumns();
   int * last[3];
@@ -2078,7 +2152,7 @@ OsiSolverLink::nonlinearSLP(int numberPasses,double deltaTolerance)
       }
       char temp[20];
       sprintf(temp,"pass%d.mps",iPass);
-      model.writeMps(temp);
+      //model.writeMps(temp);
 #ifdef CLP_DEBUG
       if (model.status()) {
 	model.writeMps("xx.mps");
@@ -2137,7 +2211,7 @@ OsiSolverLink::nonlinearSLP(int numberPasses,double deltaTolerance)
 	columnUpper[iColumn]=solution[iColumn];
       }
       model.primal(1);
-      model.writeMps("xx.mps");
+      //model.writeMps("xx.mps");
       iPass--;
       goodMove=-1;
     }
@@ -2269,7 +2343,7 @@ OsiSolverLink::linearizedBAB(CglStored * cut)
     cbcModel->addCutGenerator(&twomir,-99,"Twomir",true,false,false,-100,-1,-1);
     cbcModel->cutGenerator(6)->setTiming(true);
     // For now - switch off most heuristics (because CglPreProcess is bad with QP)
-#if 0    
+#if 1    
     CbcHeuristicFPump heuristicFPump(*cbcModel);
     heuristicFPump.setWhen(13);
     heuristicFPump.setMaximumPasses(20);
@@ -2290,6 +2364,7 @@ OsiSolverLink::linearizedBAB(CglStored * cut)
 #endif
     
     CbcRounding rounding(*cbcModel);
+    rounding.setHeuristicName("rounding");
     cbcModel->addHeuristic(&rounding);
     
     cbcModel->setNumberBeforeTrust(5);
@@ -2328,6 +2403,8 @@ OsiSolverLink::linearizedBAB(CglStored * cut)
     setBestSolution(solution,solver3->getNumCols());
     // if convex
     if ((specialOptions2()&4)!=0) {
+      if (cbcModel_)
+	cbcModel_->lockThread();
       // add OA cut
       double offset;
       double * gradient = new double [numberColumns+1];
@@ -2349,6 +2426,8 @@ OsiSolverLink::linearizedBAB(CglStored * cut)
       cut->addCut(-COIN_DBL_MAX,offset+1.0e-7,n,column,gradient);
       delete [] gradient;
       delete [] column;
+      if (cbcModel_)
+	cbcModel_->unlockThread();
     }
     delete qp;
     printf("obj %g\n",bestObjectiveValue);
@@ -2368,6 +2447,29 @@ OsiSolverLink::heuristicSolution(int numberPasses,double deltaTolerance,int mode
   int numberColumns = coinModel_.numberColumns();
   double * solution = CoinCopyOfArray(temp->primalColumnSolution(),numberColumns);
   delete temp;
+  if (mode==0) {
+    return solution;
+  } else if (mode==2) {
+    const double * lower = getColLower();
+    const double * upper = getColUpper();
+    for (int iObject =0;iObject<numberObjects_;iObject++) {
+      OsiSimpleInteger * obj = dynamic_cast<OsiSimpleInteger *> (object_[iObject]);
+      if (obj&&(obj->priority()<biLinearPriority_||biLinearPriority_<=0)) {
+	int iColumn = obj->columnNumber();
+	double value = solution[iColumn];
+	value = floor(value+0.5);
+	if (fabs(value-solution[iColumn])>0.01) {
+	  setColLower(iColumn,CoinMax(lower[iColumn],value-CoinMax(defaultBound_,0.0)));
+	  setColUpper(iColumn,CoinMin(upper[iColumn],value+CoinMax(defaultBound_,1.0)));
+	} else {
+	  // could fix to integer
+	  setColLower(iColumn,CoinMax(lower[iColumn],value-CoinMax(defaultBound_,0.0)));
+	  setColUpper(iColumn,CoinMin(upper[iColumn],value+CoinMax(defaultBound_,0.0)));
+	}
+      }
+    }
+    return solution;
+  }
   OsiClpSolverInterface newSolver;
   if (mode==1) {
     // round all with priority < biLinearPriority_
@@ -2375,6 +2477,8 @@ OsiSolverLink::heuristicSolution(int numberPasses,double deltaTolerance,int mode
     // ? should we save and restore coin model
     tempModel = coinModel_;
     // solve modified problem
+    char * mark = new char[numberColumns];
+    memset(mark,0,numberColumns);
     for (int iObject =0;iObject<numberObjects_;iObject++) {
       OsiSimpleInteger * obj = dynamic_cast<OsiSimpleInteger *> (object_[iObject]);
       if (obj&&obj->priority()<biLinearPriority_) {
@@ -2382,8 +2486,29 @@ OsiSolverLink::heuristicSolution(int numberPasses,double deltaTolerance,int mode
 	double value = solution[iColumn];
 	value = ceil(value-1.0e-7);
 	tempModel.associateElement(coinModel_.columnName(iColumn),value);
+	mark[iColumn]=1;
+      }
+      OsiBiLinear * objB = dynamic_cast<OsiBiLinear *> (object_[iObject]);
+      if (objB) {
+	// if one or both continuous then fix one
+	if (objB->xMeshSize()<1.0) {
+	  int xColumn = objB->xColumn();
+	  double value = solution[xColumn];
+	  tempModel.associateElement(coinModel_.columnName(xColumn),value);
+	  mark[xColumn]=1;
+	} else if (objB->yMeshSize()<1.0) {
+	  int yColumn = objB->yColumn();
+	  double value = solution[yColumn];
+	  tempModel.associateElement(coinModel_.columnName(yColumn),value);
+	  mark[yColumn]=1;
+	}
       }
     }
+    CoinModel * reOrdered = tempModel.reorder(mark);
+    assert (reOrdered);
+    tempModel=*reOrdered;
+    delete reOrdered;
+    delete [] mark;
     newSolver.loadFromCoinModel(tempModel,true);
     for (int iObject =0;iObject<numberObjects_;iObject++) {
       OsiSimpleInteger * obj = dynamic_cast<OsiSimpleInteger *> (object_[iObject]);
@@ -2393,6 +2518,21 @@ OsiSolverLink::heuristicSolution(int numberPasses,double deltaTolerance,int mode
 	value = ceil(value-1.0e-7);
 	newSolver.setColLower(iColumn,value);
 	newSolver.setColUpper(iColumn,value);
+      }
+      OsiBiLinear * objB = dynamic_cast<OsiBiLinear *> (object_[iObject]);
+      if (objB) {
+	// if one or both continuous then fix one
+	if (objB->xMeshSize()<1.0) {
+	  int xColumn = objB->xColumn();
+	  double value = solution[xColumn];
+	  newSolver.setColLower(xColumn,value);
+	  newSolver.setColUpper(xColumn,value);
+	} else if (objB->yMeshSize()<1.0) {
+	  int yColumn = objB->yColumn();
+	  double value = solution[yColumn];
+	  newSolver.setColLower(yColumn,value);
+	  newSolver.setColUpper(yColumn,value);
+	}
       }
     }
   }
@@ -2490,7 +2630,7 @@ OsiSolverLink::heuristicSolution(int numberPasses,double deltaTolerance,int mode
   if (clpModel->tightenPrimalBounds()!=0) {
     clpModel->setLogLevel(saveLogLevel);
     returnCode=-1; // infeasible//std::cout<<"Problem is infeasible - tightenPrimalBounds!"<<std::endl;
-    clpModel->writeMps("infeas2.mps");
+    //clpModel->writeMps("infeas2.mps");
   } else {
     clpModel->setLogLevel(saveLogLevel);
     clpModel->dual();  // clean up
@@ -2709,7 +2849,8 @@ OsiSolverInterface *
 OsiSolverLink::clone(bool copyData) const
 {
   assert (copyData);
-  return new OsiSolverLink(*this);
+  OsiSolverLink * newModel = new OsiSolverLink(*this);
+  return newModel;
 }
 
 
@@ -2718,7 +2859,7 @@ OsiSolverLink::clone(bool copyData) const
 //-------------------------------------------------------------------
 OsiSolverLink::OsiSolverLink (
                   const OsiSolverLink & rhs)
-  : OsiClpSolverInterface(rhs)
+  : CbcOsiSolver(rhs)
 {
   gutsOfDestructor(true);
   gutsOfCopy(rhs);
@@ -2742,7 +2883,7 @@ OsiSolverLink::operator=(const OsiSolverLink& rhs)
 {
   if (this != &rhs) { 
     gutsOfDestructor();
-    OsiClpSolverInterface::operator=(rhs);
+    CbcOsiSolver::operator=(rhs);
     gutsOfCopy(rhs);
   }
   return *this;
@@ -2770,7 +2911,6 @@ OsiSolverLink::gutsOfDestructor(bool justNullify)
   rowNonLinear_ = NULL;
   convex_ = NULL;
   whichNonLinear_ = NULL;
-  cbcModel_ = NULL;
   info_ = NULL;
   fixVariables_=NULL;
   numberVariables_ = 0;
@@ -2800,7 +2940,6 @@ OsiSolverLink::gutsOfCopy(const OsiSolverLink & rhs)
   integerPriority_ = rhs.integerPriority_;
   biLinearPriority_ = rhs.biLinearPriority_;
   numberFix_ = rhs.numberFix_;
-  cbcModel_ = rhs.cbcModel_;
   if (numberVariables_) { 
     if (rhs.matrix_)
       matrix_ = new CoinPackedMatrix(*rhs.matrix_);
@@ -3093,7 +3232,7 @@ OsiSolverLink::fathom(bool allFixed)
 	}
       }
     }
-    newSolver.writeMps("xx");
+    //newSolver.writeMps("xx");
     CbcModel model(newSolver);
     // Now do requested saves and modifications
     CbcModel * cbcModel = & model;
@@ -3317,8 +3456,8 @@ OsiSolverLink::fathom(bool allFixed)
 	for (i=numberRows2;i<numberRows;i++) 
 	  setRowBounds(i,-COIN_DBL_MAX,COIN_DBL_MAX);
 	initialSolve();
-	if (!isProvenOptimal())
-	  getModelPtr()->writeMps("bad.mps");
+	//if (!isProvenOptimal())
+	//getModelPtr()->writeMps("bad.mps");
 	if (isProvenOptimal()) {
 	  delete [] bestSolution_;
 	  bestSolution_ = CoinCopyOfArray(modelPtr_->getColSolution(),modelPtr_->getNumCols());
@@ -4516,6 +4655,224 @@ OsiBiLinear::OsiBiLinear (OsiSolverInterface * solver, int xColumn,
     }
   }
 }
+// Useful constructor
+OsiBiLinear::OsiBiLinear (CoinModel * coinModel, int xColumn,
+			  int yColumn, int xyRow, double coefficient,
+			  double xMesh, double yMesh,
+			  int numberExistingObjects,const OsiObject ** objects )
+  : OsiObject2(),
+    coefficient_(coefficient),
+    xMeshSize_(xMesh),
+    yMeshSize_(yMesh),
+    xSatisfied_(1.0e-6),
+    ySatisfied_(1.0e-6),
+    xOtherSatisfied_(0.0),
+    yOtherSatisfied_(0.0),
+    xySatisfied_(1.0e-6),
+    xyBranchValue_(0.0),
+    xColumn_(xColumn),
+    yColumn_(yColumn),
+    firstLambda_(-1),
+    branchingStrategy_(0),
+    boundType_(0),
+    xRow_(-1),
+    yRow_(-1),
+    xyRow_(xyRow),
+    convexity_(-1),
+    chosen_(-1)
+{
+  double columnLower[4];
+  double columnUpper[4];
+  double objective[4];
+  double rowLower[3];
+  double rowUpper[3];
+  CoinBigIndex starts[5];
+  int index[16];
+  double element[16];
+  int i;
+  starts[0]=0;
+  // rows
+  int numberRows = coinModel->numberRows();
+  // convexity
+  rowLower[0]=1.0;
+  rowUpper[0]=1.0;
+  convexity_ = numberRows;
+  starts[1]=0;
+  // x
+  rowLower[1]=0.0;
+  rowUpper[1]=0.0;
+  index[0]=xColumn_;
+  element[0]=-1.0;
+  xRow_ = numberRows+1;
+  starts[2]=1;
+  int nAdd=2;
+  if (xColumn_!=yColumn_) {
+    rowLower[2]=0.0;
+    rowUpper[2]=0.0;
+    index[1]=yColumn;
+    element[1]=-1.0;
+    nAdd=3;
+    yRow_ = numberRows+2;
+    starts[3]=2;
+  } else {
+    yRow_=-1;
+    branchingStrategy_=1;
+  }
+  // may be objective
+  assert (xyRow_>=-1);
+  for (i=0;i<nAdd;i++) {
+    CoinBigIndex iStart = starts[i];
+    coinModel->addRow(starts[i+1]-iStart,index+iStart,element+iStart,rowLower[i],rowUpper[i]);
+  }
+  int n=0;
+  // order is LxLy, LxUy, UxLy and UxUy
+  firstLambda_ = coinModel->numberColumns();
+  // bit sloppy as theoretically could be infeasible but otherwise need to do more work
+  double xB[2];
+  double yB[2];
+  const double * lower = coinModel->columnLowerArray();
+  const double * upper = coinModel->columnUpperArray();
+  xB[0]=lower[xColumn_];
+  xB[1]=upper[xColumn_];
+  yB[0]=lower[yColumn_];
+  yB[1]=upper[yColumn_];
+  if (xMeshSize_!=floor(xMeshSize_)) {
+    // not integral
+    xSatisfied_ = CoinMax(xSatisfied_,0.51*xMeshSize_);
+    if (!yMeshSize_) {
+      xySatisfied_ = CoinMax(xySatisfied_,xSatisfied_*CoinMax(fabs(yB[0]),fabs(yB[1])));
+    }
+  }
+  if (yMeshSize_!=floor(yMeshSize_)) {
+    // not integral
+    ySatisfied_ = CoinMax(ySatisfied_,0.51*yMeshSize_);
+    if (!xMeshSize_) {
+      xySatisfied_ = CoinMax(xySatisfied_,ySatisfied_*CoinMax(fabs(xB[0]),fabs(xB[1])));
+    }
+  }
+  // adjust
+  double distance;
+  double steps;
+  if (xMeshSize_) {
+    distance = xB[1]-xB[0];
+    steps = floor ((distance+0.5*xMeshSize_)/xMeshSize_);
+    distance = xB[0]+xMeshSize_*steps;
+    if (fabs(xB[1]-distance)>xSatisfied_) {
+      printf("bad x mesh %g %g %g -> %g\n",xB[0],xMeshSize_,xB[1],distance);
+      //double newValue = CoinMax(fabs(xB[1]-distance),xMeshSize_);
+      //printf("xSatisfied increased to %g\n",newValue);
+      //xSatisfied_ = newValue;
+      //xB[1]=distance;
+      //coinModel->setColUpper(xColumn_,distance);
+    }
+  }
+  if (yMeshSize_) {
+    distance = yB[1]-yB[0];
+    steps = floor ((distance+0.5*yMeshSize_)/yMeshSize_);
+    distance = yB[0]+yMeshSize_*steps;
+    if (fabs(yB[1]-distance)>ySatisfied_) {
+      printf("bad y mesh %g %g %g -> %g\n",yB[0],yMeshSize_,yB[1],distance);
+      //double newValue = CoinMax(fabs(yB[1]-distance),yMeshSize_);
+      //printf("ySatisfied increased to %g\n",newValue);
+      //ySatisfied_ = newValue;
+      //yB[1]=distance;
+      //coinModel->setColUpper(yColumn_,distance);
+    }
+  }
+  for (i=0;i<4;i++) {
+    double x = (i<2) ? xB[0] : xB[1];
+    double y = ((i&1)==0) ? yB[0] : yB[1];
+    columnLower[i]=0.0;
+    columnUpper[i]=2.0;
+    objective[i]=0.0;
+    double value;
+    // xy
+    value=coefficient_*x*y;
+    if (xyRow_>=0) { 
+      if (fabs(value)<1.0e-19)
+	value = 1.0e-19;
+      element[n]=value;
+      index[n++]=xyRow_;
+    } else {
+      objective[i]=value;
+    }
+    // convexity
+    value=1.0;
+    element[n]=value;
+    index[n++]=0+numberRows;
+    // x
+    value=x;
+    if (fabs(value)<1.0e-19)
+      value = 1.0e-19;
+    element[n]=value;
+    index[n++]=1+numberRows;
+    if (xColumn_!=yColumn_) {
+      // y
+      value=y;
+      if (fabs(value)<1.0e-19)
+      value = 1.0e-19;
+      element[n]=value;
+      index[n++]=2+numberRows;
+    }
+    starts[i+1]=n;
+  }
+  for (i=0;i<4;i++) {
+    CoinBigIndex iStart = starts[i];
+    coinModel->addColumn(starts[i+1]-iStart,index+iStart,element+iStart,columnLower[i],
+			 columnUpper[i],objective[i]);
+  }
+  // At least one has to have a mesh
+  if (!xMeshSize_&&(!yMeshSize_||yRow_<0)) {
+    printf("one of x and y must have a mesh size\n");
+    abort();
+  } else if (yRow_>=0) {
+    if (!xMeshSize_)
+      branchingStrategy_ = 2;
+    else if (!yMeshSize_)
+      branchingStrategy_ = 1;
+  }
+  // Now add constraints to link in x and or y to existing ones.
+  bool xDone=false;
+  bool yDone=false;
+  // order is LxLy, LxUy, UxLy and UxUy
+  for (i=numberExistingObjects-1;i>=0;i--) {
+    const OsiObject * obj = objects[i];
+    const OsiBiLinear * obj2 =
+      dynamic_cast <const OsiBiLinear *>(obj) ;
+    if (obj2) {
+      if (xColumn_==obj2->xColumn_&&!xDone) {
+	// make sure y equal
+	double rhs=0.0;
+	CoinBigIndex starts[2];
+	int index[4];
+	double element[4]= {1.0,1.0,-1.0,-1.0};
+	starts[0]=0;
+	starts[1]=4;
+	index[0]=firstLambda_+0;
+	index[1]=firstLambda_+1;
+	index[2]=obj2->firstLambda_+0;
+	index[3]=obj2->firstLambda_+1;
+	coinModel->addRow(4,index,element,rhs,rhs);
+	xDone=true;
+      }
+      if (yColumn_==obj2->yColumn_&&yRow_>=0&&!yDone) {
+	// make sure x equal
+	double rhs=0.0;
+	CoinBigIndex starts[2];
+	int index[4];
+	double element[4]= {1.0,1.0,-1.0,-1.0};
+	starts[0]=0;
+	starts[1]=4;
+	index[0]=firstLambda_+0;
+	index[1]=firstLambda_+2;
+	index[2]=obj2->firstLambda_+0;
+	index[3]=obj2->firstLambda_+2;
+	coinModel->addRow(4,index,element,rhs,rhs);
+	yDone=true;
+      }
+    }
+  }
+}
 
 // Copy constructor 
 OsiBiLinear::OsiBiLinear ( const OsiBiLinear & rhs)
@@ -4582,7 +4939,7 @@ OsiBiLinear::operator=( const OsiBiLinear& rhs)
 OsiBiLinear::~OsiBiLinear ()
 {
 }
-
+static bool testCoarse=true;
 // Infeasibility - large is 0.5
 double 
 OsiBiLinear::infeasibility(const OsiBranchingInformation * info,int & whichWay) const
@@ -4656,7 +5013,7 @@ OsiBiLinear::infeasibility(const OsiBranchingInformation * info,int & whichWay) 
   double distance;
   double steps;
   bool xSatisfied;
-  double xNew;
+  double xNew=xB[0];
   if (xMeshSize_) {
     if (x<0.5*(xB[0]+xB[1])) {
       distance = x-xB[0];
@@ -4672,7 +5029,7 @@ OsiBiLinear::infeasibility(const OsiBranchingInformation * info,int & whichWay) 
       xSatisfied =  (fabs(xNew-x)<xSatisfied_);
     }
     // but if first coarse grid then only if gap small
-    if (false&&(branchingStrategy_&8)!=0&&xSatisfied&&
+    if (testCoarse&&(branchingStrategy_&8)!=0&&xSatisfied&&
 	xB[1]-xB[0]>=xMeshSize_) {
       // but allow if fine grid would allow
       if (fabs(xNew-x)>=xOtherSatisfied_&&fabs(yB[0]-y)>yOtherSatisfied_
@@ -4686,7 +5043,7 @@ OsiBiLinear::infeasibility(const OsiBranchingInformation * info,int & whichWay) 
     xSatisfied=true;
   }
   bool ySatisfied;
-  double yNew;
+  double yNew=yB[0];
   if (yMeshSize_) {
     if (y<0.5*(yB[0]+yB[1])) {
       distance = y-yB[0];
@@ -4702,7 +5059,7 @@ OsiBiLinear::infeasibility(const OsiBranchingInformation * info,int & whichWay) 
       ySatisfied =  (fabs(yNew-y)<ySatisfied_);
     }
     // but if first coarse grid then only if gap small
-    if (false&&(branchingStrategy_&8)!=0&&ySatisfied&&
+    if (testCoarse&&(branchingStrategy_&8)!=0&&ySatisfied&&
 	yB[1]-yB[0]>=yMeshSize_) {
       // but allow if fine grid would allow
       if (fabs(yNew-y)>=yOtherSatisfied_&&fabs(xB[0]-x)>xOtherSatisfied_
@@ -4780,6 +5137,12 @@ OsiBiLinear::infeasibility(const OsiBranchingInformation * info,int & whichWay) 
     } else {
       // == row so move x and y not xy
     }
+  }
+  if ((branchingStrategy_&16)!=0) {
+    // always treat as satisfied!!
+    xSatisfied=true;
+    ySatisfied=true;
+    xyTrue=xyLambda;
   }
   if ( !xSatisfied) {
     if (!ySatisfied) {
@@ -4937,6 +5300,8 @@ OsiBiLinear::infeasibility(const OsiBranchingInformation * info,int & whichWay) 
     }
   }
   whichWay=whichWay_;
+  //if (infeasibility_&&priority_==10)
+  //printf("x %d %g %g %g, y %d %g %g %g\n",xColumn_,xB[0],x,xB[1],yColumn_,yB[0],y,yB[1]);
   return infeasibility_;
 }
 
@@ -6704,16 +7069,37 @@ approximateSolution(CoinModel & coinModel,
 		    int numberPasses, double deltaTolerance,
 		    int mode)
 {
+  // matrix etc will be changed
+  CoinModel coinModel2 = coinModel;
+  if (coinModel2.moreInfo()) {
+    // for now just ampl objective
+    ClpSimplex * model = new ClpSimplex();
+    model->loadProblem(coinModel2);
+    int numberConstraints;
+    ClpConstraint ** constraints=NULL;
+    int type = model->loadNonLinear(coinModel2.moreInfo(),
+				    numberConstraints,constraints);
+    if (type==1||type==3) {
+      int returnCode = model->nonlinearSLP(numberPasses,deltaTolerance);
+      assert (!returnCode);
+    } else if (type==2||type==4) {
+      int returnCode = model->nonlinearSLP(numberConstraints,constraints,
+					   numberPasses,deltaTolerance);
+      assert (!returnCode);
+    } else {
+      printf("error or linear - fix %d\n",type);
+    }
+    //exit(66);
+    return model;
+  }
   // first check and set up arrays
   int numberColumns = coinModel.numberColumns();
   int numberRows = coinModel.numberRows();
   // List of nonlinear rows
-  int * which = new int[numberRows+1];
+  int * which = new int[numberRows];
   bool testLinear=false;
   int numberConstraints=0;
   int iColumn;
-  // matrix etc will be changed
-  CoinModel coinModel2 = coinModel;
   bool linearObjective=true;
   int maximumQuadraticElements=0;
   for (iColumn=0;iColumn<numberColumns;iColumn++) {
@@ -6748,7 +7134,6 @@ approximateSolution(CoinModel & coinModel,
     // zero objective
     for (iColumn=0;iColumn<numberColumns;iColumn++) 
       coinModel2.setObjective(iColumn,0.0);
-    which[numberConstraints++]=-1;
   }
   int iRow;
   for (iRow=0;iRow<numberRows;iRow++) {   
@@ -6797,7 +7182,7 @@ approximateSolution(CoinModel & coinModel,
   }
   ClpSimplex * model = new ClpSimplex();
   // return if nothing
-  if (!numberConstraints) {
+  if (!numberConstraints&&linearObjective) {
     delete [] which;
     model->loadProblem(coinModel);
     model->dual();
@@ -6813,16 +7198,15 @@ approximateSolution(CoinModel & coinModel,
   double * linearTerm = new double [numberColumns];
   int saveNumber=numberConstraints;
   numberConstraints=0;
+  ClpQuadraticObjective * quadObj = NULL;
   if (!linearObjective) {
     int numberQuadratic=0;
-    int largestColumn=-1;
     CoinZeroN(linearTerm,numberColumns);
     for (iColumn=0;iColumn<numberColumns;iColumn++) {
       startQuadratic[iColumn] = numberQuadratic;
       // See if quadratic objective
       const char * expr = coinModel.getColumnObjectiveAsString(iColumn);
       if (strcmp(expr,"Numeric")) {
-	largestColumn = CoinMax(largestColumn,iColumn);
 	// value*x*y
 	char temp[20000];
 	strcpy(temp,expr);
@@ -6834,14 +7218,12 @@ approximateSolution(CoinModel & coinModel,
 	  // must be column unless first when may be linear term
 	  if (jColumn>=0) {
 	    columnQuadratic[numberQuadratic]=jColumn;
-	    elementQuadratic[numberQuadratic++]=2.0*value; // convention
-	    largestColumn = CoinMax(largestColumn,jColumn);
+	    if (jColumn!=iColumn)
+	      elementQuadratic[numberQuadratic++]=1.0*value; // convention
+	    else if (jColumn==iColumn)
+	      elementQuadratic[numberQuadratic++]=2.0*value; // convention
 	  } else if (jColumn==-2) {
 	    linearTerm[iColumn] = value;
-	    // and put in as row -1
-	    columnQuadratic[numberQuadratic]=-1;
-	    elementQuadratic[numberQuadratic++]=value;
-	    largestColumn = CoinMax(largestColumn,iColumn);
 	  } else {
 	    printf("bad nonlinear term %s\n",temp);
 	    abort();
@@ -6851,17 +7233,11 @@ approximateSolution(CoinModel & coinModel,
       } else {
 	// linear part
 	linearTerm[iColumn] = coinModel.getColumnObjective(iColumn);
-	// and put in as row -1
-	columnQuadratic[numberQuadratic]=-1;
-	elementQuadratic[numberQuadratic++]=linearTerm[iColumn];
-	if (linearTerm[iColumn])
-	  largestColumn = CoinMax(largestColumn,iColumn);
       }
     }
     startQuadratic[numberColumns] = numberQuadratic;
-    // here we create ClpConstraint
-    constraints[numberConstraints++] = new ClpConstraintQuadratic(-1, largestColumn+1, numberColumns,
-								  startQuadratic,columnQuadratic,elementQuadratic);
+    quadObj = new ClpQuadraticObjective(linearTerm, numberColumns,
+					   startQuadratic,columnQuadratic,elementQuadratic);
   }
   int iConstraint;
   for (iConstraint=0;iConstraint<saveNumber;iConstraint++) {
@@ -6948,12 +7324,18 @@ approximateSolution(CoinModel & coinModel,
   delete [] linearTerm;
   delete [] which;
   model->loadProblem(coinModel2);
-  int returnCode = model->nonlinearSLP(numberConstraints, constraints,
-				       numberPasses,deltaTolerance);
-  // See if any integers
-  for (iConstraint=0;iConstraint<saveNumber;iConstraint++) 
-    delete constraints[iConstraint];
-  
+  if (quadObj)
+    model->setObjective(quadObj);
+  delete quadObj;
+  int returnCode;
+  if (numberConstraints) {
+    returnCode = model->nonlinearSLP(numberConstraints, constraints,
+				     numberPasses,deltaTolerance);
+    for (iConstraint=0;iConstraint<saveNumber;iConstraint++) 
+      delete constraints[iConstraint];
+  } else {
+    returnCode = model->nonlinearSLP(numberPasses,deltaTolerance);
+  }
   delete [] constraints;
   assert (!returnCode);
   return model;

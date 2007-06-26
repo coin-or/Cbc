@@ -46,7 +46,8 @@ libCbc_la_SOURCES = \
 	CbcStrategy.cpp CbcStrategy.hpp \
 	CbcTree.cpp CbcTree.hpp \
 	CbcLinked.cpp CbcLinked.hpp \
-	CbcTreeLocal.cpp CbcTreeLocal.hpp 
+	CbcTreeLocal.cpp CbcTreeLocal.hpp \
+	ClpConstraintAmpl.hpp ClpAmplObjective.hpp ClpAmplStuff.cpp 
 
 ## If we have the Ampl solver library, we need to add additional things
 ## also see lower down
@@ -296,7 +297,9 @@ include_HEADERS = \
 	CbcStrategy.hpp \
 	CbcTree.hpp \
 	CbcLinked.hpp \
-	CbcTreeLocal.hpp 
+	CbcTreeLocal.hpp \
+	ClpConstraintAmpl.hpp \
+	ClpAmplObjective.hpp 
 
 #############################################################################
 # Create the Config.h file that always defines HAVE_CONFIG_H and install it #

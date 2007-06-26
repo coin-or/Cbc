@@ -15,20 +15,19 @@
 #include "CoinModel.hpp"
 #ifdef COIN_HAS_LINK
 #include "OsiClpSolverInterface.hpp"
+#include "CbcFathom.hpp"
 class CbcModel;
 class CoinPackedMatrix;
 class OsiLinkedBound;
 class OsiObject;
 class CglStored;
-//#############################################################################
-
 /**
    
 This is to allow the user to replace initialSolve and resolve
 This version changes coefficients
 */
 
-class OsiSolverLink : public OsiClpSolverInterface {
+class OsiSolverLink : public CbcOsiSolver {
   
 public:
   //---------------------------------------------------------------------------
@@ -62,6 +61,10 @@ public:
   /** Solves nonlinear problem from CoinModel using SLP - and then tries to get
       heuristic solution
       Returns solution array
+      mode -
+      0 just get continuous
+      1 round and try normal bab
+      2 use defaultBound_ to bound integer variables near current solution
   */
   double * heuristicSolution(int numberPasses,double deltaTolerance,int mode);
   //@}
@@ -162,20 +165,29 @@ public:
   /// Get integer priority
   inline int integerPriority() const
   { return integerPriority_;};
+  /// Objective transfer variable if one
+  inline int objectiveVariable() const
+  { return objectiveVariable_;}
   /// Set biLinear priority
   inline void setBiLinearPriority(int value)
   { biLinearPriority_=value;};
   /// Get biLinear priority
   inline int biLinearPriority() const
   { return biLinearPriority_;};
-  /// Set Cbc Model
-  inline void setCbcModel(CbcModel * model)
-  { cbcModel_=model;};
   /// Return CoinModel
   inline const CoinModel * coinModel() const
   { return &coinModel_;};
   /// Set all biLinear priorities on x-x variables
   void setBiLinearPriorities(int value, double meshSize=1.0);
+  /** Set options and priority on all or some biLinear variables
+      1 - on I-I
+      2 - on I-x
+      4 - on x-x
+      or combinations.
+      -1 means leave (for priority value and strategy value)
+  */
+  void setBranchingStrategyOnVariables(int strategyValue, int priorityValue=-1,
+				       int mode=7);
   /// Set all mesh sizes on x-x variables
   void setMeshSizes(double value);
   /** Two tier integer problem where when set of variables with priority
@@ -211,8 +223,6 @@ protected:
   CoinPackedMatrix * originalRowCopy_;
   /// Copy of quadratic model if one
   ClpSimplex * quadraticModel_;
-  /// Pointer back to CbcModel
-  CbcModel * cbcModel_;
   /// Number of rows with nonLinearities
   int numberNonLinearRows_;
   /// Starts of lists
@@ -684,6 +694,16 @@ public:
 	       double xMesh, double yMesh,
 	       int numberExistingObjects=0,const OsiObject ** objects=NULL );
   
+  /** Useful constructor - 
+      This Adds in rows and variables to construct valid Linked Ordered Set
+      Adds extra constraints to match other x/y
+      So note not const model
+  */
+  OsiBiLinear (CoinModel * coinModel, int xColumn,
+	       int yColumn, int xyRow, double coefficient,
+	       double xMesh, double yMesh,
+	       int numberExistingObjects=0,const OsiObject ** objects=NULL );
+  
   // Copy constructor 
   OsiBiLinear ( const OsiBiLinear &);
    
@@ -792,6 +812,8 @@ public:
       4 set to say don't update coefficients
       next bit
       8 set to say don't use in feasible region
+      next bit
+      16 set to say - Always satisfied !!
   */
   inline int branchingStrategy() const
   { return branchingStrategy_;};
@@ -856,6 +878,8 @@ protected:
       4 set to say don't update coefficients
       next bit
       8 set to say don't use in feasible region
+      next bit
+      16 set to say - Always satisfied !!
   */
   int branchingStrategy_;
   /** Simple quadratic bound marker.

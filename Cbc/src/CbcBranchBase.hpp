@@ -322,6 +322,9 @@ public:
   inline void way(int way)
   {way_=way;};
 
+   /// update model
+  inline void setModel(CbcModel * model)
+  { model_ = model;};
   /// Return model
   inline CbcModel * model() const
   {return  model_;};

@@ -292,9 +292,12 @@ Cbc_loadProblem (Cbc_Model * model,  const int numcols, const int numrows,
     printf("%s numcols = %i, numrows = %i\n", 
       prefix, numcols, numrows);
     printf("%s model = %p, start = %p, index = %p, value = %p\n",
-      prefix, model, start, index, value);
+      prefix, static_cast<void*>(model), static_cast<const void*>(start),
+	   static_cast<const void*>(index), static_cast<const void*>(value));
     printf("%s collb = %p, colub = %p, obj = %p, rowlb = %p, rowub = %p\n",
-      prefix, collb, colub, obj, rowlb, rowub);
+      prefix, static_cast<const void*>(collb),
+	   static_cast<const void*>(colub), static_cast<const void*>(obj),
+	   static_cast<const void*>(rowlb), static_cast<const void*>(rowub));
   }
 
   if (VERBOSE>1) printf("%s Calling solver->loadProblem()\n",prefix);
@@ -971,7 +974,7 @@ Cbc_primalRowSolution(Cbc_Model * model)
 //tbd  return model->model_->primalRowSolution();
   if (VERBOSE>0) printf("%s WARNING: NOT IMPLEMENTED\n",prefix);
 
-  if (VERBOSE>0) printf("%s return %p\n",prefix,result);
+  if (VERBOSE>0) printf("%s return %p\n",prefix, static_cast<void*>(result));
   return result;
 }
 /* Primal column solution */
@@ -988,7 +991,7 @@ Cbc_primalColumnSolution(Cbc_Model * model)
 //  result = model->model_->getColSolution();
   if (VERBOSE>0) printf("%s WARNING: NOT IMPLEMENTED\n",prefix);
 
-  if (VERBOSE>0) printf("%s return %p\n",prefix,result);
+  if (VERBOSE>0) printf("%s return %p\n",prefix, static_cast<void*>(result));
   return result;
 }
 /* Dual row solution */
@@ -1005,7 +1008,7 @@ Cbc_dualRowSolution(Cbc_Model * model)
 //tbd  return model->model_->dualRowSolution();
   if (VERBOSE>0) printf("%s WARNING: NOT IMPLEMENTED\n",prefix);
 
-  if (VERBOSE>0) printf("%s return %p\n",prefix,result);
+  if (VERBOSE>0) printf("%s return %p\n",prefix, static_cast<void*>(result));
   return NULL;
 }
 /* Reduced costs */
@@ -1022,7 +1025,7 @@ Cbc_dualColumnSolution(Cbc_Model * model)
 //tbd  return model->model_->dualColumnSolution();
   if (VERBOSE>0) printf("%s WARNING: NOT IMPLEMENTED\n",prefix);
 
-  if (VERBOSE>0) printf("%s return %p\n",prefix,result);
+  if (VERBOSE>0) printf("%s return %p\n",prefix, static_cast<void*>(result));
   return NULL;
 }
 /* Row lower */
@@ -1039,7 +1042,7 @@ Cbc_rowLower(Cbc_Model * model)
 //tbd  return model->model_->rowLower();
   if (VERBOSE>0) printf("%s WARNING: NOT IMPLEMENTED\n",prefix);
 
-  if (VERBOSE>0) printf("%s return %p\n",prefix,result);
+  if (VERBOSE>0) printf("%s return %p\n",prefix, static_cast<void*>(result));
   return NULL;
 }
 /* Row upper  */
@@ -1056,7 +1059,7 @@ Cbc_rowUpper(Cbc_Model * model)
 //tbd  return model->model_->rowUpper();
   if (VERBOSE>0) printf("%s WARNING: NOT IMPLEMENTED\n",prefix);
 
-  if (VERBOSE>0) printf("%s return %p\n",prefix,result);
+  if (VERBOSE>0) printf("%s return %p\n",prefix, static_cast<void*>(result));
   return NULL;
 }
 /* Objective Coefficients */
@@ -1073,7 +1076,7 @@ Cbc_objective(Cbc_Model * model)
 //  result = model->model_->objective();
   if (VERBOSE>0) printf("%s WARNING: NOT IMPLEMENTED\n",prefix);
 
-  if (VERBOSE>0) printf("%s return %p\n",prefix,result);
+  if (VERBOSE>0) printf("%s return %p\n",prefix, static_cast<void*>(result));
   return NULL;
 }
 /* Column Lower */
@@ -1090,7 +1093,7 @@ Cbc_columnLower(Cbc_Model * model)
 //tbd  return model->model_->columnLower();
   if (VERBOSE>0) printf("%s WARNING: NOT IMPLEMENTED\n",prefix);
 
-  if (VERBOSE>0) printf("%s return %p\n",prefix,result);
+  if (VERBOSE>0) printf("%s return %p\n",prefix, static_cast<void*>(result));
   return NULL;
 }
 /* Column Upper */
@@ -1107,7 +1110,7 @@ Cbc_columnUpper(Cbc_Model * model)
 //tbd  return model->model_->columnUpper();
   if (VERBOSE>0) printf("%s WARNING: NOT IMPLEMENTED\n",prefix);
 
-  if (VERBOSE>0) printf("%s return %p\n",prefix,result);
+  if (VERBOSE>0) printf("%s return %p\n",prefix, static_cast<void*>(result));
   return NULL;
 }
 /* Number of elements in matrix */
@@ -1145,7 +1148,8 @@ Cbc_getIndices(Cbc_Model * model)
   matrix = model->model_->solver()->getMatrixByCol();
   result = (matrix == NULL) ? NULL : matrix->getIndices();
 
-  if (VERBOSE>0) printf("%s return %p\n",prefix,result);
+  if (VERBOSE>0)
+    printf("%s return %p\n",prefix, static_cast<const void*>(result));
   return result;
 } 
 
@@ -1162,7 +1166,8 @@ Cbc_getVectorLengths(Cbc_Model * model)
   matrix = model->model_->solver()->getMatrixByCol();
   result = (matrix == NULL) ? NULL : matrix->getVectorLengths();
 
-  if (VERBOSE>0) printf("%s return %p\n",prefix,result);
+  if (VERBOSE>0)
+    printf("%s return %p\n",prefix, static_cast<const void*>(result));
   return result;
 } 
   
@@ -1179,7 +1184,8 @@ Cbc_getElements(Cbc_Model * model)
   matrix = model->model_->solver()->getMatrixByCol();
   result = (matrix == NULL) ? NULL : matrix->getElements();
 
-  if (VERBOSE>0) printf("%s return %p\n",prefix,result);
+  if (VERBOSE>0)
+    printf("%s return %p\n",prefix, static_cast<const void*>(result));
   return result;
 }
 // ======================================================================
@@ -1214,7 +1220,7 @@ Cbc_infeasibilityRay(Cbc_Model * model)
 //tbd  result = model->model_->infeasibilityRay();
   if (VERBOSE>0) printf("%s WARNING: NOT IMPLEMENTED\n",prefix);
 
-  if (VERBOSE>0) printf("%s return %p\n",prefix,result);
+  if (VERBOSE>0) printf("%s return %p\n",prefix, static_cast<void*>(result));
   return result;
 }
 COINLIBAPI double * COINLINKAGE 
@@ -1231,7 +1237,7 @@ Cbc_unboundedRay(Cbc_Model * model)
 //tbd  result = model->model_->unboundedRay();
   if (VERBOSE>0) printf("%s WARNING: NOT IMPLEMENTED\n",prefix);
 
-  if (VERBOSE>0) printf("%s return %p\n",prefix,result);
+  if (VERBOSE>0) printf("%s return %p\n",prefix, static_cast<void*>(result));
   return result;
 }
 /* See if status array exists (partly for OsiClp) */
@@ -1964,7 +1970,8 @@ Cbc_getRowActivity(Cbc_Model * model)
   const double * result = NULL;
   result = model->model_->getRowActivity();
 
-  if (VERBOSE>0) printf("%s return %p\n",prefix,result);
+  if (VERBOSE>0)
+    printf("%s return %p\n",prefix, static_cast<const void*>(result));
   return result;
 }
 /* Primal column solution */
@@ -1978,7 +1985,8 @@ Cbc_getColSolution(Cbc_Model * model)
   const double * result = NULL;
   result = model->model_->getColSolution();
 
-  if (VERBOSE>0) printf("%s return %p\n",prefix,result);
+  if (VERBOSE>0)
+    printf("%s return %p\n",prefix, static_cast<const void*>(result));
   return result;
 }
 COINLIBAPI void COINLINKAGE 
@@ -2005,7 +2013,8 @@ Cbc_getRowPrice(Cbc_Model * model)
   const double * result = NULL;
   result = model->model_->getRowPrice();
 
-  if (VERBOSE>0) printf("%s return %p\n",prefix,result);
+  if (VERBOSE>0)
+    printf("%s return %p\n",prefix, static_cast<const void*>(result));
   return result;
 }
 /* Reduced costs */
@@ -2019,7 +2028,8 @@ Cbc_getReducedCost(Cbc_Model * model)
   const double * result = NULL;
   result = model->model_->getReducedCost();
 
-  if (VERBOSE>0) printf("%s return %p\n",prefix,result);
+  if (VERBOSE>0)
+    printf("%s return %p\n",prefix, static_cast<const void*>(result));
   return result;
 }
 /* Row lower */
@@ -2033,7 +2043,8 @@ Cbc_getRowLower(Cbc_Model * model)
   const double * result = NULL;
   result = model->model_->getRowLower();
 
-  if (VERBOSE>0) printf("%s return %p\n",prefix,result);
+  if (VERBOSE>0)
+    printf("%s return %p\n",prefix, static_cast<const void*>(result));
   return result;
 }
 /* Row upper  */
@@ -2047,7 +2058,8 @@ Cbc_getRowUpper(Cbc_Model * model)
   const double * result = NULL;
   result = model->model_->getRowUpper();
 
-  if (VERBOSE>0) printf("%s return %p\n",prefix,result);
+  if (VERBOSE>0)
+    printf("%s return %p\n",prefix, static_cast<const void*>(result));
   return result;
 }
 /* Objective Coefficients */
@@ -2061,7 +2073,8 @@ Cbc_getObjCoefficients(Cbc_Model * model)
   const double * result = NULL;
   result = model->model_->getObjCoefficients();
 
-  if (VERBOSE>0) printf("%s return %p\n",prefix,result);
+  if (VERBOSE>0)
+    printf("%s return %p\n",prefix, static_cast<const void*>(result));
   return result;
 }
 /* Column Lower */
@@ -2075,7 +2088,8 @@ Cbc_getColLower(Cbc_Model * model)
   const double * result = NULL;
   result = model->model_->getColLower();
 
-  if (VERBOSE>0) printf("%s return %p\n",prefix,result);
+  if (VERBOSE>0)
+    printf("%s return %p\n",prefix, static_cast<const void*>(result));
   return result;
 }
 /* Column Upper */
@@ -2089,7 +2103,8 @@ Cbc_getColUpper(Cbc_Model * model)
   const double * result = NULL;
   result = model->model_->getColUpper();
 
-  if (VERBOSE>0) printf("%s return %p\n",prefix,result);
+  if (VERBOSE>0)
+    printf("%s return %p\n",prefix, static_cast<const void*>(result));
   return result;
 }
 /* Objective value */
@@ -2103,7 +2118,8 @@ Cbc_getObjValue(Cbc_Model * model)
   double result = 0;
   result = model->model_->getObjValue();
 
-  if (VERBOSE>0) printf("%s return %g\n",prefix,result);
+  if (VERBOSE>0)
+    printf("%s return %g\n",prefix, result);
   return result;
 }
 /* Print model */
@@ -2131,7 +2147,8 @@ Cbc_printModel(Cbc_Model * model, const char * argPrefix)
   printf("%s numcols = %i, numrows = %i, numelem = %i\n", 
     argPrefix, numcols, numrows, numelem);
   printf("%s model = %p, start = %p, index = %p, value = %p\n",
-    argPrefix, model, start, index, value);
+    argPrefix, static_cast<void*>(model), static_cast<const void*>(start),
+	 static_cast<const void*>(index), static_cast<const void*>(value));
   matrix->dumpMatrix(NULL);
   {
     int i;
@@ -2143,7 +2160,9 @@ Cbc_printModel(Cbc_Model * model, const char * argPrefix)
   }
   
   printf("%s collb = %p, colub = %p, obj = %p, rowlb = %p, rowub = %p\n",
-    argPrefix, collb, colub, obj, rowlb, rowub);
+    argPrefix, static_cast<const void*>(collb),
+	 static_cast<const void*>(colub), static_cast<const void*>(obj),
+	 static_cast<const void*>(rowlb), static_cast<const void*>(rowub));
   printf("%s optimization direction = %g\n",argPrefix, Cbc_optimizationDirection(model));
   printf("  (1 - minimize, -1 - maximize, 0 - ignore)\n");
   {

@@ -15,6 +15,7 @@
 #include "CoinHelperFunctions.hpp"
 #include "CoinTime.hpp"
 #include "CbcModel.hpp"
+#include "CbcCutGenerator.hpp"
 #include "OsiClpSolverInterface.hpp"
 #include "ClpFactorization.hpp"
 #include "ClpSimplex.hpp"
@@ -199,7 +200,7 @@ ClpSolve setupForSolve(int algorithm, std::string & nameAlgorithm,
 // All parameters are optional.
 //----------------------------------------------------------------
 int mainTest (int argc, const char *argv[],int algorithm,
-	      ClpSimplex empty, bool doPresolve, int switchOffValue)
+	      ClpSimplex empty, bool doPresolve, int switchOffValue,bool doVector)
 {
   int i;
 
@@ -461,6 +462,13 @@ int mainTest (int argc, const char *argv[],int algorithm,
             ClpSimplex solution=solutionBase;
             if (solution.maximumSeconds()<0.0)
               solution.setMaximumSeconds(120.0);
+	    if (doVector) {
+	      ClpMatrixBase * matrix = solution.clpMatrix();
+	      if (dynamic_cast< ClpPackedMatrix*>(matrix)) {
+		ClpPackedMatrix * clpMatrix = dynamic_cast< ClpPackedMatrix*>(matrix);
+		clpMatrix->makeSpecialColumnCopy();
+	      }
+	    }
             solution.initialSolve(solveOptions);
             double time2 = CoinCpuTime()-time1;
             testTime[iTest]=time2;
@@ -548,6 +556,13 @@ int mainTest (int argc, const char *argv[],int algorithm,
         solveOptions=setupForSolve(iAlg,nameAlgorithm,0);
         if (presolveOff)
           solveOptions.setPresolveType(ClpSolve::presolveOff);
+      }
+      if (doVector) {
+	ClpMatrixBase * matrix = solution.clpMatrix();
+	if (dynamic_cast< ClpPackedMatrix*>(matrix)) {
+	  ClpPackedMatrix * clpMatrix = dynamic_cast< ClpPackedMatrix*>(matrix);
+	  clpMatrix->makeSpecialColumnCopy();
+	}
       }
       solution.initialSolve(solveOptions);
       double time2 = CoinCpuTime()-time1;
@@ -856,8 +871,8 @@ ClpSimplexUnitTest(const std::string & mpsDir,
       printf("%d increase %g %d, decrease %g %d\n",
 	     i,valueIncrease[i],sequenceIncrease[i],
 	     valueDecrease[i],sequenceDecrease[i]);
-    //assert (fabs(valueDecrease[3]-0.642857)<1.0e-4);
-    //assert (fabs(valueDecrease[8]-2.95113)<1.0e-4);
+    assert (fabs(valueDecrease[3]-0.642857)<1.0e-4);
+    assert (fabs(valueDecrease[8]-2.95113)<1.0e-4);
 #if 0
     // out until I find optimization bug
     // Test parametrics
@@ -1414,12 +1429,12 @@ ClpSimplexUnitTest(const std::string & mpsDir,
     
     FILE * fp = fopen(fn.c_str(),"r");
     if (!fp) {
-      // Try in Samples
-      fn = "Samples/input.130";
+      // Try in Data
+      fn = "Data/Sample/input.130";
       fp = fopen(fn.c_str(),"r");
     }
     if (!fp) {
-      fprintf(stderr,"Unable to open file input.130 in mpsDir or Samples directory\n");
+      fprintf(stderr,"Unable to open file input.130 in mpsDir or Data/Sample directory\n");
     } else {
       int problem;
       char temp[100];
@@ -1936,7 +1951,7 @@ void CbcClpUnitTest (const CbcModel & saveModel)
     */
 
     double startTime = CoinCpuTime();
-    model->setMaximumNodes(100000);
+    model->setMaximumNodes(200000);
     OsiClpSolverInterface * si =
       dynamic_cast<OsiClpSolverInterface *>(model->solver()) ;
     assert (si != NULL);
@@ -1944,6 +1959,54 @@ void CbcClpUnitTest (const CbcModel & saveModel)
     ClpSimplex * modelC = si->getModelPtr();
     modelC->tightenPrimalBounds();
     model->initialSolve();
+    if (modelC->dualBound()==1.0e10) {
+      // user did not set - so modify
+      // get largest scaled away from bound
+      double largest=1.0e-12;
+      int numberRows = modelC->numberRows();
+      const double * rowPrimal = modelC->primalRowSolution();
+      const double * rowLower = modelC->rowLower();
+      const double * rowUpper = modelC->rowUpper();
+      const double * rowScale = modelC->rowScale();
+      int iRow;
+      for (iRow=0;iRow<numberRows;iRow++) {
+	double value = rowPrimal[iRow];
+	double above = value-rowLower[iRow];
+	double below = rowUpper[iRow]-value;
+	if (rowScale) {
+	  double multiplier = rowScale[iRow];
+	  above *= multiplier;
+	  below *= multiplier;
+	}
+	if (above<1.0e12)
+	  largest = CoinMax(largest,above);
+	if (below<1.0e12)
+	  largest = CoinMax(largest,below);
+      }
+      
+      int numberColumns = modelC->numberColumns();
+      const double * columnPrimal = modelC->primalColumnSolution();
+      const double * columnLower = modelC->columnLower();
+      const double * columnUpper = modelC->columnUpper();
+      const double * columnScale = modelC->columnScale();
+      int iColumn;
+      for (iColumn=0;iColumn<numberColumns;iColumn++) {
+	double value = columnPrimal[iColumn];
+	double above = value-columnLower[iColumn];
+	double below = columnUpper[iColumn]-value;
+	if (columnScale) {
+	  double multiplier = 1.0/columnScale[iColumn];
+	  above *= multiplier;
+	  below *= multiplier;
+	}
+	if (above<1.0e12)
+	  largest = CoinMax(largest,above);
+	if (below<1.0e12)
+	  largest = CoinMax(largest,below);
+      }
+      //std::cout<<"Largest (scaled) away from bound "<<largest<<std::endl;
+      modelC->setDualBound(CoinMax(1.0001e8,CoinMin(1000.0*largest,1.00001e10)));
+    }
     model->setMinimumDrop(min(5.0e-2,
                                  fabs(model->getMinimizationObjValue())*1.0e-3+1.0e-4));
     if (model->getNumCols()<500)
@@ -1955,6 +2018,21 @@ void CbcClpUnitTest (const CbcModel & saveModel)
     model->branchAndBound();
       
     double timeOfSolution = CoinCpuTime()-startTime;
+    // Print more statistics
+    std::cout<<"Cuts at root node changed objective from "<<model->getContinuousObjective()
+	     <<" to "<<model->rootObjectiveAfterCuts()<<std::endl;
+    int numberGenerators = model->numberCutGenerators();
+    for (int iGenerator=0;iGenerator<numberGenerators;iGenerator++) {
+      CbcCutGenerator * generator = model->cutGenerator(iGenerator);
+      std::cout<<generator->cutGeneratorName()<<" was tried "
+	       <<generator->numberTimesEntered()<<" times and created "
+	       <<generator->numberCutsInTotal()<<" cuts of which "
+	       <<generator->numberCutsActive()<<" were active after adding rounds of cuts";
+      if (generator->timing())
+	std::cout<<" ( "<<generator->timeInCutGenerator()<<" seconds)"<<std::endl;
+      else
+	std::cout<<std::endl;
+    }
     if (!model->status()) { 
       double soln = model->getObjValue();       
       CoinRelFltEq eq(1.0e-3) ;

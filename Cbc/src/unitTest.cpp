@@ -308,7 +308,7 @@ void CbcMiplibTest (const std::vector<OsiCbcSolverInterface*> & vecEmptySiP,
 // 
 // where:
 //   -miplibDir: directory containing miplib files
-//       Default value V2="./Samples/miplib3"
+//       Default value V2="./examples/miplib3"
 //
 // All parameters are optional.
 //----------------------------------------------------------------
@@ -348,7 +348,7 @@ int mainTest (int argc, const char *argv[])
       std::cerr <<"  unitTest [-miplibDir=V2] \n";
       std::cerr <<"  where:\n";
       std::cerr <<"    -miplibDir: directory containing miplib files\n";
-      std::cerr <<"        Default value V2=\"./Samples/miplib3\"\n";
+      std::cerr <<"        Default value V2=\"./Data/miplib3\"\n";
       return 1;
     }
     parms[key]=value;
@@ -361,7 +361,7 @@ int mainTest (int argc, const char *argv[])
   if (parms.find("-miplibDir") != parms.end())
     miplibDir=parms["-miplibDir"] + dirsep;
   else 
-    miplibDir = dirsep == '/' ? "./Samples/miplib3/" : ".\\Samples\\miplib3\\";
+    miplibDir = dirsep == '/' ? "./Data/miplib3/" : ".\\Data\\miplib3\\";
 #ifdef COIN_HAS_CBC
 
   {

@@ -888,7 +888,7 @@ void CbcModel::branchAndBound(int doStatistics)
    OsiClpSolverInterface * clpSolver 
      = dynamic_cast<OsiClpSolverInterface *> (solver_);
    if (clpSolver) {
-#define CLP_QUICK_OPTIONS
+     //#define CLP_QUICK_OPTIONS
 #ifdef CLP_QUICK_OPTIONS
      // Try and re-use regions   
      ClpSimplex * simplex = clpSolver->getModelPtr();

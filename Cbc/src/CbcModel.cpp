@@ -64,7 +64,19 @@
 //#define CBC_THREAD
 #ifdef CBC_THREAD
 #include <pthread.h>
-//#define CBC_THREAD_DEBUG 1
+#define CBC_THREAD_DEBUG 1
+#ifdef CBC_THREAD_DEBUG 
+#ifdef NDEBUG
+#undef NDEBUG
+#undef assert
+#         define assert(expression) { 				   \
+             if (!(expression)) {					   \
+                throw CoinError(__STRING(expression), __PRETTY_FUNCTION__, \
+                                "", __FILE__, __LINE__);		   \
+             }								   \
+          }
+#endif
+#endif
 // To Pass across to doOneNode
 typedef struct {
   CbcModel * baseModel;
@@ -1444,6 +1456,9 @@ void CbcModel::branchAndBound(int doStatistics)
 #endif
     if (tree_->empty()) {
 #ifdef CBC_THREAD
+#ifdef COIN_DEVELOP
+      printf("empty\n");
+#endif
       if (numberThreads_) {
 	// may still be outstanding nodes
 	int iThread;
@@ -1454,6 +1469,9 @@ void CbcModel::branchAndBound(int doStatistics)
 	  }
 	}
 	if (iThread<numberThreads_) {
+#ifdef COIN_DEVELOP
+	  printf("waiting for thread %d code 0\n",iThread);
+#endif
 	  unlockThread();
 	  locked = false;
 	  pthread_cond_signal(threadInfo[iThread].condition2); // unlock in case
@@ -1490,8 +1508,14 @@ void CbcModel::branchAndBound(int doStatistics)
 	  // say available
 	  threadInfo[iThread].returnCode=-1;
 	  threadStats[4]++;
+#ifdef COIN_DEVELOP
+	  printf("thread %d code now -1\n",iThread);
+#endif
 	  continue;
 	} else {
+#ifdef COIN_DEVELOP
+	  printf("no threads at code 0 \n");
+#endif
 	  // now check if any have just finished
 	  for (iThread=0;iThread<numberThreads_;iThread++) {
 	    if (threadId[iThread]) {
@@ -1507,9 +1531,29 @@ void CbcModel::branchAndBound(int doStatistics)
 	    // say available
 	    threadInfo[iThread].returnCode=-1;
 	    threadStats[4]++;
+#ifdef COIN_DEVELOP
+	    printf("thread %d code now -1\n",iThread);
+#endif
 	    continue;
 	  }
 	}
+	if (!tree_->empty()) {
+#ifdef COIN_DEVELOP
+	  printf("tree not empty!!!!!!\n");
+#endif
+	  continue;
+	}
+	for (iThread=0;iThread<numberThreads_;iThread++) {
+	  if (threadId[iThread]) {
+	    if (threadInfo[iThread].returnCode!=-1) { 
+	      printf("bad end of tree\n");
+	      abort();
+	    }
+	  }
+	}
+#ifdef COIN_DEVELOP
+	printf("finished ************\n");
+#endif
       }
       unlockThread();
       locked=false; // not needed as break
@@ -1575,7 +1619,9 @@ void CbcModel::branchAndBound(int doStatistics)
       tree_->setComparison(*nodeCompare_) ;
       if (tree_->empty()) {
 	unlockThread();
-	break; // finished
+	// For threads we need to check further
+	//break; // finished
+	continue;
       }
       unlockThread();
     }

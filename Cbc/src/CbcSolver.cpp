@@ -14,7 +14,6 @@
 
 #include "CoinPragma.hpp"
 #include "CoinHelperFunctions.hpp"
-// Same version as CBC
 #define CBCVERSION "1.03.00"
 
 #include "CoinMpsIO.hpp"
@@ -6585,4 +6584,5 @@ static void generateCode(CbcModel * model, const char * fileName,int type,int pr
   Added use of referenceSolver for cleaner repetition of Cbc
   Version 1.01.00 February 2 2006
   Added first try at Ampl interface
+  Version 1.3 as trunk will go to stable/1.3
 */

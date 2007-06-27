@@ -1491,6 +1491,24 @@ void CbcModel::branchAndBound(int doStatistics)
 	  threadInfo[iThread].returnCode=-1;
 	  threadStats[4]++;
 	  continue;
+	} else {
+	  // now check if any have just finished
+	  for (iThread=0;iThread<numberThreads_;iThread++) {
+	    if (threadId[iThread]) {
+	      if (threadInfo[iThread].returnCode==1) 
+		break;
+	    }
+	  }
+	  if (iThread<numberThreads_) {
+	    unlockThread();
+	    locked = false;
+	    threadModel[iThread]->moveToModel(this,1);
+	    assert (threadInfo[iThread].returnCode==1);
+	    // say available
+	    threadInfo[iThread].returnCode=-1;
+	    threadStats[4]++;
+	    continue;
+	  }
 	}
       }
       unlockThread();
@@ -4644,9 +4662,14 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
 	}
 	countRowCuts[i] += numberRowCutsAfter-numberRowCutsBefore ;
 	
+	bool dodgyCuts=false;
 	for (j = numberRowCutsBefore;j<numberRowCutsAfter;j++) {
-	  whichGenerator_[numberBefore++] = i ;
 	  const OsiRowCut * thisCut = theseCuts.rowCutPtr(j) ;
+	  if (thisCut->lb()>1.0e10||thisCut->ub()<-1.0e10) {
+	    dodgyCuts=true;
+	    break;
+	  }
+	  whichGenerator_[numberBefore++] = i ;
 	  if (thisCut->lb()>thisCut->ub())
 	    violated=-2; // sub-problem is infeasible
 	  if (thisCut->globallyValid()) {
@@ -4655,6 +4678,27 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
 	    newCut.setGloballyValid(2);
 	    newCut.mutableRow().setTestForDuplicateIndex(false);
 	    globalCuts_.insert(newCut) ;
+	  }
+	}
+	if (dodgyCuts) {
+	  for (int k=numberRowCutsAfter-1;k>=j;k--) {
+	    const OsiRowCut * thisCut = theseCuts.rowCutPtr(k) ;
+	    if (thisCut->lb()>thisCut->ub())
+	      violated=-2; // sub-problem is infeasible
+	    if (thisCut->lb()>1.0e10||thisCut->ub()<-1.0e10) 
+	      theseCuts.eraseRowCut(k);
+	  }
+	  numberRowCutsAfter = theseCuts.sizeRowCuts() ;
+	  for (;j<numberRowCutsAfter;j++) {
+	    const OsiRowCut * thisCut = theseCuts.rowCutPtr(j) ;
+	    whichGenerator_[numberBefore++] = i ;
+	    if (thisCut->globallyValid()) {
+	      // add to global list
+	      OsiRowCut newCut(*thisCut);
+	      newCut.setGloballyValid(2);
+	      newCut.mutableRow().setTestForDuplicateIndex(false);
+	      globalCuts_.insert(newCut) ;
+	    }
 	  }
 	}
 	for (j = numberColumnCutsBefore;j<numberColumnCutsAfter;j++) {
@@ -4832,7 +4876,9 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
 	  + numberRowCuts;
 	if (numberRowCuts) {
 	  for (j=0;j<numberRowCuts;j++) {
-	    theseCuts.insert(eachCuts[i].rowCut(j));
+	    const OsiRowCut * thisCut = eachCuts[i].rowCutPtr(j) ;
+	    if (thisCut->lb()<=1.0e10&&thisCut->ub()>=-1.0e10) 
+	      theseCuts.insert(eachCuts[i].rowCut(j));
 	  }
 	  if (generator_[i]->mustCallAgain())
 	    keepGoing=true; // say must go round
@@ -10327,13 +10373,17 @@ CbcModel::moveToModel(CbcModel * baseModel,int mode)
     //stateOfSearch_
 #if 1
     if(stuff->saveStuff[0]!=searchStrategy_) {
+#ifdef COIN_DEVELOP
       printf("changing searchStrategy from %d to %d\n",
  	     baseModel->searchStrategy_,searchStrategy_);
+#endif
       baseModel->searchStrategy_=searchStrategy_;
     }
     if(stuff->saveStuff[1]!=stateOfSearch_) {
+#ifdef COIN_DEVELOP
       printf("changing stateOfSearch from %d to %d\n",
  	     baseModel->stateOfSearch_,stateOfSearch_);
+#endif
       baseModel->stateOfSearch_=stateOfSearch_;
     }
 #endif

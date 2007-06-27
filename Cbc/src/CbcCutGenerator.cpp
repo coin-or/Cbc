@@ -384,6 +384,11 @@ CbcCutGenerator::generateCuts( OsiCuts & cs , bool fullScan, OsiSolverInterface 
       int nBad=0;
       for (k = numberRowCutsBefore;k<numberRowCutsAfter;k++) {
 	OsiRowCut thisCut = cs.rowCut(k) ;
+	if (thisCut.lb()>thisCut.ub()||
+	    thisCut.lb()>1.0e8||
+	    thisCut.ub()<-1.0e8)
+	  printf("cut from %s has bounds %g and %g!\n",
+		 generatorName_,thisCut.lb(),thisCut.ub());
 	if (thisCut.lb()<=thisCut.ub()) {
 	  /* check size of elements.
 	     We can allow smaller but this helps debug generators as it

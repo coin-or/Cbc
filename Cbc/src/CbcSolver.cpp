@@ -1564,7 +1564,7 @@ int CbcMain (int argc, const char *argv[],
     parameters[whichParam(SPRINT,numberParameters,parameters)].setIntValue(doSprint);
     parameters[whichParam(SUBSTITUTION,numberParameters,parameters)].setIntValue(substitution);
     parameters[whichParam(DUALIZE,numberParameters,parameters)].setIntValue(dualize);
-    model.setNumberBeforeTrust(5);
+    model.setNumberBeforeTrust(10);
     parameters[whichParam(NUMBERBEFORE,numberParameters,parameters)].setIntValue(5);
     parameters[whichParam(MAXNODES,numberParameters,parameters)].setIntValue(model.getMaximumNodes());
     model.setNumberStrong(5);
@@ -3387,7 +3387,7 @@ int CbcMain (int argc, const char *argv[],
 		babModel->addHeuristic(&heuristic5) ;
 	      if (type==MIPLIB) {
 		if (babModel->numberStrong()==5&&babModel->numberBeforeTrust()==5) 
-		  babModel->setNumberBeforeTrust(50);
+		  babModel->setNumberBeforeTrust(10);
 	      }
               // add cut generators if wanted
               int switches[20];

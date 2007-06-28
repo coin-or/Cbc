@@ -32,7 +32,7 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "cbcSolve", "cbcSolve\cbcSol
 		{363BA154-FEC9-4E1E-BC23-93CEC58AB785} = {363BA154-FEC9-4E1E-BC23-93CEC58AB785}
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "clp", "..\Clp\clp\clp.vcproj", "{0E9135A7-CB30-48D9-A83D-0F49EC3B601B}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "clp", "..\..\..\Clp\MSVisualStudio\v7\clp\clp.vcproj", "{0E9135A7-CB30-48D9-A83D-0F49EC3B601B}"
 	ProjectSection(ProjectDependencies) = postProject
 		{D8879B84-4497-48E6-96A5-49B154FB0422} = {D8879B84-4497-48E6-96A5-49B154FB0422}
 		{02D45875-A8CF-41B9-990B-3699C0ECFE10} = {02D45875-A8CF-41B9-990B-3699C0ECFE10}
@@ -47,39 +47,39 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libCbc", "libCbc\libCbc.vcp
 	ProjectSection(ProjectDependencies) = postProject
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libCgl", "..\Cgl\libCgl\libCgl.vcproj", "{DBEA3904-F0B8-408A-9E1A-6497FEBE8C42}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libCgl", "..\..\..\Cgl\MSVisualStudio\v7\libCgl\libCgl.vcproj", "{DBEA3904-F0B8-408A-9E1A-6497FEBE8C42}"
 	ProjectSection(ProjectDependencies) = postProject
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libClp", "..\Clp\libClp\libClp.vcproj", "{4F8F7D1C-3A9E-444D-8EE9-77F33FA05994}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libClp", "..\..\..\Clp\MSVisualStudio\v7\libClp\libClp.vcproj", "{4F8F7D1C-3A9E-444D-8EE9-77F33FA05994}"
 	ProjectSection(ProjectDependencies) = postProject
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libCoinUtils", "..\CoinUtils\libCoinUtils\libCoinUtils.vcproj", "{C4867F15-438D-4FF8-8388-62FBAAA9786C}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libCoinUtils", "..\..\..\CoinUtils\MSVisualStudio\v7\libCoinUtils\libCoinUtils.vcproj", "{C4867F15-438D-4FF8-8388-62FBAAA9786C}"
 	ProjectSection(ProjectDependencies) = postProject
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libOsi", "..\Osi\libOsi\libOsi.vcproj", "{7D98E2CB-876E-4F75-9F71-77D3FE87E149}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libOsi", "..\..\..\Osi\MSVisualStudio\v7\libOsi\libOsi.vcproj", "{7D98E2CB-876E-4F75-9F71-77D3FE87E149}"
 	ProjectSection(ProjectDependencies) = postProject
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libOsiCbc", "..\Osi\libOsiCbc\libOsiCbc.vcproj", "{A4D8DB82-7DC6-45EE-AF08-2A6DD7E7AB56}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libOsiCbc", "..\..\..\Osi\MSVisualStudio\v7\libOsiCbc\libOsiCbc.vcproj", "{A4D8DB82-7DC6-45EE-AF08-2A6DD7E7AB56}"
 	ProjectSection(ProjectDependencies) = postProject
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libOsiClp", "..\Osi\libOsiClp\libOsiClp.vcproj", "{02D45875-A8CF-41B9-990B-3699C0ECFE10}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libOsiClp", "..\..\..\Osi\MSVisualStudio\v7\libOsiClp\libOsiClp.vcproj", "{02D45875-A8CF-41B9-990B-3699C0ECFE10}"
 	ProjectSection(ProjectDependencies) = postProject
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libOsiVol", "..\Osi\libOsiVol\libOsiVol.vcproj", "{F359370A-340C-4EE0-9B09-5BBE04C769B4}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libOsiVol", "..\..\..\Osi\MSVisualStudio\v7\libOsiVol\libOsiVol.vcproj", "{F359370A-340C-4EE0-9B09-5BBE04C769B4}"
 	ProjectSection(ProjectDependencies) = postProject
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libVol", "..\Vol\libVol\libVol.vcproj", "{DA559014-23BB-4FD9-B0FB-562CCF38C6B9}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libVol", "..\..\..\Vol\MSVisualStudio\v7\libVol\libVol.vcproj", "{DA559014-23BB-4FD9-B0FB-562CCF38C6B9}"
 	ProjectSection(ProjectDependencies) = postProject
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "unitTestCoinUtils", "..\CoinUtils\unitTestCoinUtils\unitTestCoinUtils.vcproj", "{D8879B84-4497-48E6-96A5-49B154FB0422}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "unitTestCoinUtils", "..\..\..\CoinUtils\MSVisualStudio\v7\unitTestCoinUtils\unitTestCoinUtils.vcproj", "{D8879B84-4497-48E6-96A5-49B154FB0422}"
 	ProjectSection(ProjectDependencies) = postProject
 		{C4867F15-438D-4FF8-8388-62FBAAA9786C} = {C4867F15-438D-4FF8-8388-62FBAAA9786C}
 	EndProjectSection

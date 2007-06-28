@@ -237,7 +237,7 @@ Package=<4>
 
 ###############################################################################
 
-Project: "clp"="..\Clp\clp\clp.dsp" - Package Owner=<4>
+Project: "clp"="..\..\..\Clp\MSVisualStudio\v6\clp\clp.dsp" - Package Owner=<4>
 
 Package=<5>
 {{{
@@ -282,7 +282,7 @@ Package=<4>
 
 ###############################################################################
 
-Project: "libCgl"="..\Cgl\libCgl\libCgl.dsp" - Package Owner=<4>
+Project: "libCgl"="..\..\..\Cgl\MSVisualStudio\v6\libCgl\libCgl.dsp" - Package Owner=<4>
 
 Package=<5>
 {{{
@@ -294,7 +294,7 @@ Package=<4>
 
 ###############################################################################
 
-Project: "libClp"="..\Clp\libClp\libClp.dsp" - Package Owner=<4>
+Project: "libClp"="..\..\..\Clp\MSVisualStudio\v6\libClp\libClp.dsp" - Package Owner=<4>
 
 Package=<5>
 {{{
@@ -306,7 +306,7 @@ Package=<4>
 
 ###############################################################################
 
-Project: "libCoinUtils"="..\CoinUtils\libCoinUtils\libCoinUtils.dsp" - Package Owner=<4>
+Project: "libCoinUtils"="..\..\..\CoinUtils\MSVisualStudio\v6\libCoinUtils\libCoinUtils.dsp" - Package Owner=<4>
 
 Package=<5>
 {{{
@@ -318,7 +318,7 @@ Package=<4>
 
 ###############################################################################
 
-Project: "libOsi"="..\Osi\libOsi\libOsi.dsp" - Package Owner=<4>
+Project: "libOsi"="..\..\..\Osi\MSVisualStudio\v6\libOsi\libOsi.dsp" - Package Owner=<4>
 
 Package=<5>
 {{{
@@ -330,7 +330,7 @@ Package=<4>
 
 ###############################################################################
 
-Project: "libOsiCbc"="..\Osi\libOsiCbc\libOsiCbc.dsp" - Package Owner=<4>
+Project: "libOsiCbc"="..\..\..\Osi\MSVisualStudio\v6\libOsiCbc\libOsiCbc.dsp" - Package Owner=<4>
 
 Package=<5>
 {{{
@@ -342,7 +342,7 @@ Package=<4>
 
 ###############################################################################
 
-Project: "libOsiClp"="..\Osi\libOsiClp\libOsiClp.dsp" - Package Owner=<4>
+Project: "libOsiClp"="..\..\..\Osi\MSVisualStudio\v6\libOsiClp\libOsiClp.dsp" - Package Owner=<4>
 
 Package=<5>
 {{{
@@ -354,7 +354,7 @@ Package=<4>
 
 ###############################################################################
 
-Project: "libOsiVol"="..\Osi\libOsiVol\libOsiVol.dsp" - Package Owner=<4>
+Project: "libOsiVol"="..\..\..\Osi\MSVisualStudio\v6\libOsiVol\libOsiVol.dsp" - Package Owner=<4>
 
 Package=<5>
 {{{
@@ -366,7 +366,7 @@ Package=<4>
 
 ###############################################################################
 
-Project: "libVol"="..\Vol\libVol\libVol.dsp" - Package Owner=<4>
+Project: "libVol"="..\..\..\Vol\MSVisualStudio\v6\libVol\libVol.dsp" - Package Owner=<4>
 
 Package=<5>
 {{{
@@ -378,7 +378,7 @@ Package=<4>
 
 ###############################################################################
 
-Project: "unitTestCoinUtils"="..\CoinUtils\unitTestCoinUtils\unitTestCoinUtils.dsp" - Package Owner=<4>
+Project: "unitTestCoinUtils"="..\..\..\CoinUtils\MSVisualStudio\v6\unitTestCoinUtils\unitTestCoinUtils.dsp" - Package Owner=<4>
 
 Package=<5>
 {{{

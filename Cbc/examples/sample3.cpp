@@ -145,6 +145,7 @@ int main (int argc, const char *argv[])
   // Allow rounding heuristic
 
   CbcRounding heuristic1(model);
+  heuristic1.setHeuristicName("rounding");
   model.addHeuristic(&heuristic1);
 
   // Redundant definition of default branching (as Default == User)

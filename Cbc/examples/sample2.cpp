@@ -196,11 +196,13 @@ int main (int argc, const char *argv[])
   // Allow rounding heuristic
 
   CbcRounding heuristic1(model);
+  heuristic1.setHeuristicName("rounding");
   model.addHeuristic(&heuristic1);
 
   // And local search when new solution found
 
   CbcHeuristicLocal heuristic2(model);
+  heuristic2.setHeuristicName("join solutions");
   model.addHeuristic(&heuristic2);
 
   // Redundant definition of default branching (as Default == User)

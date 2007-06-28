@@ -108,6 +108,7 @@ CbcStrategyUser::setupHeuristics(CbcModel & model)
     heuristic.setAccumulate(0);
     heuristic.setMaximumRetries(2);
     heuristic.setWhen(13);
+    heuristic.setHeuristicName("feasibility pump");
     model.addHeuristic(&heuristic);
   }
   // Allow CbcStrategyDefault heuristics
@@ -128,6 +129,7 @@ CbcStrategyUser::setupHeuristics(CbcModel & model)
   if (!found) {
     CbcHeuristicLocal heuristic(model);
     heuristic.setSearchType(1);
+    heuristic.setHeuristicName("join solutions");
     model.addHeuristic(&heuristic);
   }
   
@@ -145,6 +147,7 @@ CbcStrategyUser::setupHeuristics(CbcModel & model)
   }
   if (!found) {
     CbcHeuristicGreedyCover heuristic(model);
+    heuristic.setHeuristicName("greedy cover");
     model.addHeuristic(&heuristic);
   }
   
@@ -162,6 +165,7 @@ CbcStrategyUser::setupHeuristics(CbcModel & model)
   }
   if (!found) {
     CbcHeuristicGreedyEquality heuristic(model);
+    heuristic.setHeuristicName("greedy equality");
     model.addHeuristic(&heuristic);
   }
   
@@ -179,6 +183,7 @@ CbcStrategyUser::setupHeuristics(CbcModel & model)
   }
   if (!found) {
     CbcHeuristicRINS heuristic(model);
+    heuristic.setHeuristicName("RINS");
     model.addHeuristic(&heuristic);
   }
 }

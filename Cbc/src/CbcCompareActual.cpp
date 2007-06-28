@@ -241,8 +241,14 @@ CbcCompareDefault::test (CbcNode * x, CbcNode * y)
     int depthX = x->depth();
     int depthY = y->depth();
     if (depthX<=7||depthY<=7) {
-      if (depthX!=depthY) {
-	return depthX < depthY;
+      if (depthX<=7&&depthY<=7) {
+	if (depthX!=depthY) {
+	  return depthX < depthY;
+	}
+      } else {
+	if (depthX!=depthY) {
+	  return depthX > depthY;
+	}
       }
     }
     // after solution

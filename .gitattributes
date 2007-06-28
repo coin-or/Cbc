@@ -1,24 +1,5 @@
 * text=auto !eol
 Cbc/LICENSE -text
-Cbc/MSVisualStudio/v6/Cbc.dsw -text
-Cbc/MSVisualStudio/v6/Cbc.opt -text
-Cbc/MSVisualStudio/v6/cbc/cbc.dsp -text
-Cbc/MSVisualStudio/v6/cbcExamplesSample2/cbcExamplesSample2.dsp -text
-Cbc/MSVisualStudio/v6/cbcSolve/cbcSolve.dsp -text
-Cbc/MSVisualStudio/v6/libCbc/libCbc.dsp -text
-Cbc/MSVisualStudio/v7/Cbc.sln -text
-Cbc/MSVisualStudio/v7/Cbc.suo -text
-Cbc/MSVisualStudio/v7/cbc/cbc.vcproj -text
-Cbc/MSVisualStudio/v7/cbcExamplesSample2/cbcExamplesSample2.vcproj -text
-Cbc/MSVisualStudio/v7/cbcSolve/cbcSolve.vcproj -text
-Cbc/MSVisualStudio/v7/libCbc/libCbc.vcproj -text
-Cbc/MSVisualStudio/v8/Cbc.sln -text
-Cbc/MSVisualStudio/v8/Cbc.suo -text
-Cbc/MSVisualStudio/v8/cbcCInterfaceDll/cbcCInterfaceDll.vcproj -text
-Cbc/MSVisualStudio/v8/cbcExamplesSample2/cbcExamplesSample2.vcproj -text
-Cbc/MSVisualStudio/v8/cbcGeneric/cbcGeneric.vcproj -text
-Cbc/MSVisualStudio/v8/cbcSolve/cbcSolve.vcproj -text
-Cbc/MSVisualStudio/v8/libCbc/libCbc.vcproj -text
 Cbc/cbc_addlibs.txt.in -text
 Cbc/configure -text
 Cbc/configure.ac -text

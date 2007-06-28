@@ -1,0 +1,407 @@
+Microsoft Developer Studio Workspace File, Format Version 6.00
+# WARNING: DO NOT EDIT OR DELETE THIS WORKSPACE FILE!
+
+###############################################################################
+
+Project: "cbc"=".\cbc\cbc.dsp" - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name libCbc
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name libCgl
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name libCglAllDifferent
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name libCglClique
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name libCglDuplicateRow
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name libCglFlowCover
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name libCglGomory
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name libCglKnapsackCover
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name libCglLiftAndProject
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name libCglMixedIntegerRounding
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name libCglMixedIntegerRounding2
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name libCglOddHole
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name libCglPreProcess
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name libCglRedSplit
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name libCglSimpleRounding
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name libCglTwomir
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name libCoinUtils
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name libOsi
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name libOsiCbc
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name libOsiClp
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name libClp
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name libCglProbing
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "cbcExamplesSample2"=".\cbcExamplesSample2\cbcExamplesSample2.dsp" - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name libCbc
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name libCgl
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name libCglAllDifferent
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name libCglClique
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name libCglDuplicateRow
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name libCglFlowCover
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name libCglGomory
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name libCglKnapsackCover
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name libCglLiftAndProject
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name libCglMixedIntegerRounding
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name libCglMixedIntegerRounding2
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name libCglOddHole
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name libCglPreProcess
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name libCglProbing
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name libCglRedSplit
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name libCglSimpleRounding
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name libCglTwomir
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name libClp
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name libCoinUtils
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name libOsi
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name libOsiCbc
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name libOsiClp
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "cbcSolve"=".\cbcSolve\cbcSolve.dsp" - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name libCbc
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name libCgl
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name libCglAllDifferent
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name libCglClique
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name libCglDuplicateRow
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name libCglFlowCover
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name libCglGomory
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name libCglKnapsackCover
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name libCglLiftAndProject
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name libCglMixedIntegerRounding
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name libCglMixedIntegerRounding2
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name libCglOddHole
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name libCglPreProcess
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name libCglProbing
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name libCglRedSplit
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name libCglSimpleRounding
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name libCglTwomir
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name libClp
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name libCoinUtils
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name libOsi
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name libOsiCbc
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name libOsiClp
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "clp"="..\Clp\clp\clp.dsp" - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name libCbc
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name libClp
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name libCoinUtils
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name libOsi
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name libOsiCbc
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name libOsiClp
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name unitTestCoinUtils
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "libCbc"=".\libCbc\libCbc.dsp" - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+}}}
+
+###############################################################################
+
+Project: "libCgl"="..\Cgl\libCgl\libCgl.dsp" - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+}}}
+
+###############################################################################
+
+Project: "libClp"="..\Clp\libClp\libClp.dsp" - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+}}}
+
+###############################################################################
+
+Project: "libCoinUtils"="..\CoinUtils\libCoinUtils\libCoinUtils.dsp" - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+}}}
+
+###############################################################################
+
+Project: "libOsi"="..\Osi\libOsi\libOsi.dsp" - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+}}}
+
+###############################################################################
+
+Project: "libOsiCbc"="..\Osi\libOsiCbc\libOsiCbc.dsp" - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+}}}
+
+###############################################################################
+
+Project: "libOsiClp"="..\Osi\libOsiClp\libOsiClp.dsp" - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+}}}
+
+###############################################################################
+
+Project: "libOsiVol"="..\Osi\libOsiVol\libOsiVol.dsp" - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+}}}
+
+###############################################################################
+
+Project: "libVol"="..\Vol\libVol\libVol.dsp" - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+}}}
+
+###############################################################################
+
+Project: "unitTestCoinUtils"="..\CoinUtils\unitTestCoinUtils\unitTestCoinUtils.dsp" - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name libCoinUtils
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Global:
+
+Package=<5>
+{{{
+}}}
+
+Package=<3>
+{{{
+}}}
+
+###############################################################################
+

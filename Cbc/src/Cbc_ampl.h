@@ -36,14 +36,18 @@ typedef struct
   int * sosStart;
   int * sosIndices;
   double * sosReference;
+  int * cut;
+  int * special;
   char ** arguments;
   char buffer[300];
+  int logLevel;
 } ampl_info;
 #ifdef __cplusplus
 extern "C"{
 #endif
   /* return nonzero if bad */
-  int readAmpl(ampl_info * info,int argc, char ** argv);
+  int readAmpl(ampl_info * info,int argc, char ** argv,
+	       void ** coinModel);
   /* frees some input arrays */
   void freeArrays1(ampl_info * info);
   /* frees rest */

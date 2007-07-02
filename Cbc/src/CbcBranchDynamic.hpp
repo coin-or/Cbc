@@ -64,6 +64,17 @@ public:
   virtual CbcBranchingObject * createBranch(OsiSolverInterface * solver,
 					    const OsiBranchingInformation * info, int way) ;
 
+  /** Pass in information on branch just done and create CbcObjectUpdateData instance.
+      If object does not need data then backward pointer will be NULL.
+      Assumes can get information from solver */
+  virtual CbcObjectUpdateData createUpdateInformation(const OsiSolverInterface * solver, 
+							const CbcNode * node,
+							const CbcBranchingObject * branchingObject);
+  /// Update object by CbcObjectUpdateData
+  virtual void updateInformation(const CbcObjectUpdateData & data) ;
+  /// Copy some information i.e. just variable stuff
+  void copySome(CbcSimpleIntegerDynamicPseudoCost * otherObject);
+
   /** Create an OsiSolverBranch object
 
       This returns NULL if branch not represented by bound changes

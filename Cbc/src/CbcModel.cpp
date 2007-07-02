@@ -13,6 +13,11 @@
 //#define CHECK_NODE_FULL
 //#define NODE_LOG
 //#define GLOBAL_CUTS_JUST_POINTERS
+#ifndef CLP_FAST_CODE
+#ifdef NDEBUG
+#undef NDEBUG
+#endif
+#endif
 #include <cassert>
 #include <cmath>
 #include <cfloat>
@@ -64,7 +69,9 @@
 //#define CBC_THREAD
 #ifdef CBC_THREAD
 #include <pthread.h>
+#ifndef CLP_FAST_CODE
 #define CBC_THREAD_DEBUG 1
+#endif
 #ifdef CBC_THREAD_DEBUG 
 #ifdef NDEBUG
 #undef NDEBUG
@@ -527,7 +534,7 @@ void CbcModel::branchAndBound(int doStatistics)
 #if 0
   std::string problemName ;
   solver_->getStrParam(OsiProbName,problemName) ;
-  if (!strcmp(problemName.c_str(),"P0282")) solver_->activateRowCutDebugger(problemName.c_str()) ;
+  if (!strcmp(problemName.c_str(),"PP08A")) solver_->activateRowCutDebugger(problemName.c_str()) ;
 #endif
   if (strategy_) {
     // May do preprocessing
@@ -1456,10 +1463,10 @@ void CbcModel::branchAndBound(int doStatistics)
 #endif
     if (tree_->empty()) {
 #ifdef CBC_THREAD
-#ifdef COIN_DEVELOP
-      printf("empty\n");
-#endif
       if (numberThreads_) {
+#ifdef COIN_DEVELOP
+	printf("empty\n");
+#endif
 	// may still be outstanding nodes
 	int iThread;
 	for (iThread=0;iThread<numberThreads_;iThread++) {
@@ -1715,9 +1722,11 @@ void CbcModel::branchAndBound(int doStatistics)
 	   node->numberUnsatisfied(),node->way(),node->objectiveValue(),
 	   node->guessedObjectiveValue());
 #endif
+#if NEW_UPDATE_OBJECT==0
     // Save clone in branching decision
     if(branchingMethod_)
       branchingMethod_->saveBranchingObject(node->modifiableBranchingObject());
+#endif
     // Say not on optimal path
     bool onOptimalPath=false;
 #   ifdef CHECK_NODE
@@ -2805,6 +2814,11 @@ CbcModel::CbcModel()
   searchStrategy_(-1),
   numberStrongIterations_(0),
   resolveAfterTakeOffCuts_(true),
+#if NEW_UPDATE_OBJECT>1
+  numberUpdateItems_(0),
+  maximumNumberUpdateItems_(0),
+  updateItems_(NULL),
+#endif
   numberThreads_(0),
   threadMode_(0)
 {
@@ -2938,6 +2952,11 @@ CbcModel::CbcModel(const OsiSolverInterface &rhs)
   searchStrategy_(-1),
   numberStrongIterations_(0),
   resolveAfterTakeOffCuts_(true),
+#if NEW_UPDATE_OBJECT>1
+  numberUpdateItems_(0),
+  maximumNumberUpdateItems_(0),
+  updateItems_(NULL),
+#endif
   numberThreads_(0),
   threadMode_(0)
 {
@@ -3155,6 +3174,11 @@ CbcModel::CbcModel(const CbcModel & rhs, bool noTree)
   searchStrategy_(rhs.searchStrategy_),
   numberStrongIterations_(rhs.numberStrongIterations_),
   resolveAfterTakeOffCuts_(rhs.resolveAfterTakeOffCuts_),
+#if NEW_UPDATE_OBJECT>1
+  numberUpdateItems_(rhs.numberUpdateItems_),
+  maximumNumberUpdateItems_(rhs.maximumNumberUpdateItems_),
+  updateItems_(NULL),
+#endif
   numberThreads_(rhs.numberThreads_),
   threadMode_(rhs.threadMode_)
 {
@@ -3211,8 +3235,9 @@ CbcModel::CbcModel(const CbcModel & rhs, bool noTree)
       for (i=0;i<numberObjects_;i++) {
 	object_[i]=(rhs.object_[i])->clone();
 	CbcObject * obj = dynamic_cast <CbcObject *>(object_[i]) ;
-	assert (obj);
-	obj->setModel(this);
+	// Could be OsiObjects
+	if (obj)
+	  obj->setModel(this);
       }
     } else {
       object_=NULL;
@@ -3237,6 +3262,13 @@ CbcModel::CbcModel(const CbcModel & rhs, bool noTree)
   } else {
     originalColumns_=NULL;
   }
+#if NEW_UPDATE_OBJECT>1
+  if (maximumNumberUpdateItems_) {
+    updateItems_ = new CbcObjectUpdateData [maximumNumberUpdateItems_];
+    for (int i=0;i<maximumNumberUpdateItems_;i++)
+      updateItems_[i] = rhs.updateItems_[i];
+  }
+#endif
   if (maximumWhich_&&rhs.whichGenerator_)
     whichGenerator_ = CoinCopyOfArray(rhs.whichGenerator_,maximumWhich_);
   nodeCompare_=rhs.nodeCompare_->clone();
@@ -3462,6 +3494,18 @@ CbcModel::operator=(const CbcModel& rhs)
     numberOldActiveCuts_ = rhs.numberOldActiveCuts_;
     numberNewCuts_ = rhs.numberNewCuts_;
     resolveAfterTakeOffCuts_=rhs.resolveAfterTakeOffCuts_;
+#if NEW_UPDATE_OBJECT>1
+    numberUpdateItems_ = rhs.numberUpdateItems_;
+    maximumNumberUpdateItems_ = rhs.maximumNumberUpdateItems_;
+    delete [] updateItems_;
+    if (maximumNumberUpdateItems_) {
+      updateItems_ = new CbcObjectUpdateData [maximumNumberUpdateItems_];
+      for (i=0;i<maximumNumberUpdateItems_;i++)
+	updateItems_[i] = rhs.updateItems_[i];
+    } else {
+      updateItems_ = NULL;
+    }
+#endif
     numberThreads_ = rhs.numberThreads_;
     threadMode_ = rhs.threadMode_;
     sizeMiniTree_ = rhs.sizeMiniTree_;
@@ -3637,6 +3681,12 @@ CbcModel::gutsOfDestructor()
   delete [] originalColumns_;
   originalColumns_=NULL;
   delete strategy_;
+#if NEW_UPDATE_OBJECT>1
+  delete [] updateItems_;
+  updateItems_=NULL;
+  numberUpdateItems_=0;
+  maximumNumberUpdateItems_=0;
+#endif
   gutsOfDestructor2();
 }
 // Clears out enough to reset CbcModel
@@ -4390,9 +4440,50 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
     feasible=false; // pretend infeasible
   }
   
+#if NEW_UPDATE_OBJECT==0
   // Update branching information if wanted
   if(node &&branchingMethod_)
     branchingMethod_->updateInformation(solver_,node);
+#elif NEW_UPDATE_OBJECT<2
+  // Update branching information if wanted
+  if(node &&branchingMethod_) {
+    OsiBranchingObject * bobj = node->modifiableBranchingObject();
+    CbcBranchingObject * cbcobj = dynamic_cast<CbcBranchingObject *> (bobj);
+    if (cbcobj) {
+      CbcObject * object = cbcobj->object();
+      CbcObjectUpdateData update = object->createUpdateInformation(solver_,node,cbcobj);
+      object->updateInformation(update);
+    } else {
+      branchingMethod_->updateInformation(solver_,node);
+    }
+  }
+#else
+  // Update branching information if wanted
+  if(node &&branchingMethod_) {
+    OsiBranchingObject * bobj = node->modifiableBranchingObject();
+    CbcBranchingObject * cbcobj = dynamic_cast<CbcBranchingObject *> (bobj);
+    if (cbcobj) {
+      CbcObject * object = cbcobj->object();
+      CbcObjectUpdateData update = object->createUpdateInformation(solver_,node,cbcobj);
+      // have to compute object number as not saved
+      CbcSimpleInteger * simpleObject =
+	  dynamic_cast <CbcSimpleInteger *>(object) ;
+      int iObject;
+      int iColumn = simpleObject->columnNumber();
+      for (iObject = 0 ; iObject < numberObjects_ ; iObject++) {
+	simpleObject =
+	  dynamic_cast <CbcSimpleInteger *>(object_[iObject]) ;
+	if (simpleObject->columnNumber()==iColumn)
+	  break;
+      }
+      assert (iObject<numberObjects_);
+      update.objectNumber_ = iObject;
+      addUpdateInformation(update);
+    } else {
+      branchingMethod_->updateInformation(solver_,node);
+    }
+  }
+#endif
 
 #ifdef CBC_DEBUG
   if (feasible)
@@ -7411,7 +7502,7 @@ CbcModel::setBestSolution (CBC_Message how,
       else
         handler_->message(CBC_NOTFEAS2, messages_)
           << objectiveValue << cutoff << CoinMessageEol ; 
-    } else {
+    } else if (objectiveValue<bestObjective_) {
       /*
         We have a winner. Install it as the new incumbent.
         Bump the objective cutoff value and solution counts. Give the user the
@@ -9281,6 +9372,7 @@ CbcModel::chooseBranch(CbcNode * newNode, int numberPassesLeft,
   branches=NULL;
   bool feasible=true;
   int branchingState=-1;
+  currentNode_=newNode; // so can be used elsewhere
   while (anyAction == -1) {
     // Set objective value (not so obvious if NLP etc)
     setObjectiveValue(newNode,oldNode);
@@ -9878,9 +9970,13 @@ CbcModel::doOneNode(CbcModel * baseModel, CbcNode * & node, CbcNode * & newNode)
     return 0;
   }
 #endif
+#if NEW_UPDATE_OBJECT==0
   // Save clone in branching decision
   if(branchingMethod_)
     branchingMethod_->saveBranchingObject(node->modifiableBranchingObject());
+#elif NEW_UPDATE_OBJECT>1
+  numberUpdateItems_=0;
+#endif
   // Say not on optimal path
   bool onOptimalPath=false;
 #   ifdef CHECK_NODE
@@ -10026,10 +10122,11 @@ CbcModel::doOneNode(CbcModel * baseModel, CbcNode * & node, CbcNode * & newNode)
       feasible = solveWithCuts(cuts,maximumCutPasses_,node);
     }
     if ((specialOptions_&1)!=0&&onOptimalPath) {
-      if (!solver_->getRowCutDebugger()) {
+      if (!solver_->getRowCutDebugger()||!feasible) {
 	// dj fix did something???
 	solver_->writeMps("infeas2");
 	assert (solver_->getRowCutDebugger()) ;
+	assert (feasible);
       }
     }
     if (statistics_) {
@@ -10151,6 +10248,17 @@ CbcModel::doOneNode(CbcModel * baseModel, CbcNode * & node, CbcNode * & newNode)
 	statistics_[numberNodes2_-1]->sayInfeasible();
     }
     lockThread();
+#if NEW_UPDATE_OBJECT>1
+      if (numberUpdateItems_&&!numberThreads_) {
+	for (i=0;i<numberUpdateItems_;i++) {
+	  CbcObjectUpdateData * update = updateItems_+i;
+	  CbcObject * object = dynamic_cast<CbcObject *> (update->object_);
+	  if (object) 
+	    object->updateInformation(*update);
+	}
+	numberUpdateItems_=0;
+      }
+#endif
     if (newNode) {
       if (newNode->branchingObject() == NULL&&solverCharacteristics_->solverType()==4) {
 	// need to check if any cuts would do anything
@@ -10376,6 +10484,22 @@ CbcModel::doOneNode(CbcModel * baseModel, CbcNode * & node, CbcNode * & newNode)
   }
   return foundSolution;
 }
+#if NEW_UPDATE_OBJECT>1
+// Adds an update information object
+void 
+CbcModel::addUpdateInformation(const CbcObjectUpdateData & data)
+{
+  if (numberUpdateItems_==maximumNumberUpdateItems_) {
+    maximumNumberUpdateItems_ += 10;
+    CbcObjectUpdateData * temp = new CbcObjectUpdateData [maximumNumberUpdateItems_];
+    for (int i=0;i<maximumNumberUpdateItems_-10;i++)
+      temp[i] = updateItems_[i];
+    delete [] updateItems_;
+    updateItems_ = temp;
+  }
+  updateItems_[numberUpdateItems_++]=data;
+}
+#endif
 /* Move/copy information from one model to another
    -1 - initial setup
    0 - from base model
@@ -10412,6 +10536,18 @@ CbcModel::moveToModel(CbcModel * baseModel,int mode)
     stuff->saveStuff[0]=searchStrategy_;
     stateOfSearch_=baseModel->stateOfSearch_;
     stuff->saveStuff[1]=stateOfSearch_;
+#if NEW_UPDATE_OBJECT>1
+    for (int iObject = 0 ; iObject < numberObjects_ ; iObject++) {
+      CbcSimpleIntegerDynamicPseudoCost * dynamicObject =
+	dynamic_cast <CbcSimpleIntegerDynamicPseudoCost *>(object_[iObject]) ;
+      if (dynamicObject) {
+	CbcSimpleIntegerDynamicPseudoCost * baseObject =
+	dynamic_cast <CbcSimpleIntegerDynamicPseudoCost *>(baseModel->object_[iObject]) ;
+	assert (baseObject);
+	dynamicObject->copySome(baseObject);
+      }
+    }
+#endif
  } else if (mode==1) {
     lockThread();
     threadStruct * stuff = (threadStruct *) mutex_;
@@ -10431,6 +10567,18 @@ CbcModel::moveToModel(CbcModel * baseModel,int mode)
  	     baseModel->stateOfSearch_,stateOfSearch_);
 #endif
       baseModel->stateOfSearch_=stateOfSearch_;
+    }
+#endif
+#if NEW_UPDATE_OBJECT>1
+    if (numberUpdateItems_) {
+      for (int i=0;i<numberUpdateItems_;i++) {
+	CbcObjectUpdateData * update = updateItems_+i;
+	int objectNumber = update->objectNumber_;
+	CbcObject * object = dynamic_cast<CbcObject *> (baseModel->object_[objectNumber]);
+	if (object) 
+	  object->updateInformation(*update);
+      }
+      numberUpdateItems_=0;
     }
 #endif
     if (eventHappened_)
@@ -10470,7 +10618,8 @@ CbcModel::moveToModel(CbcModel * baseModel,int mode)
     eventHandler_=NULL;
     delete solverCharacteristics_;
     solverCharacteristics_ = NULL;
-    if (baseModel->branchingMethod_&&baseModel->branchingMethod_->chooseMethod()) {
+    bool newMethod = (baseModel->branchingMethod_&&baseModel->branchingMethod_->chooseMethod());
+    if (newMethod) {
       // new method - we were using base models
       numberObjects_=0;
       object_=NULL;
@@ -10491,8 +10640,10 @@ CbcModel::moveToModel(CbcModel * baseModel,int mode)
     delete nodeCompare_;
     nodeCompare_ = NULL;
     continuousSolver_ = baseModel->continuousSolver_->clone();
-    if (baseModel->branchingMethod_&&baseModel->branchingMethod_->chooseMethod()) {
+    bool newMethod = (baseModel->branchingMethod_&&baseModel->branchingMethod_->chooseMethod());
+    if (newMethod) {
       // new method uses solver - but point to base model
+      // We may update an object in wrong order - shouldn't matter?
       numberObjects_=baseModel->numberObjects_;
       object_=baseModel->object_;
     }

@@ -262,6 +262,15 @@ private:
   /// Update size of whichGenerator
   void resizeWhichGenerator(int numberNow, int numberAfter);
 public:
+#ifndef CBC_THREAD
+#define NEW_UPDATE_OBJECT 0
+#else
+#define NEW_UPDATE_OBJECT 2
+#endif
+#if NEW_UPDATE_OBJECT>1
+  /// Adds an update information object
+  void addUpdateInformation(const CbcObjectUpdateData & data);
+#endif
   /** Do one node - broken out for clarity?
       also for parallel (when baseModel!=this)
       Returns 1 if solution found
@@ -2005,6 +2014,14 @@ private:
   OsiBabSolver * solverCharacteristics_;
   /// Whether to force a resolve after takeOffCuts
   bool resolveAfterTakeOffCuts_;
+#if NEW_UPDATE_OBJECT>1
+  /// Number of outstanding update information items
+  int numberUpdateItems_;
+  /// Maximum number of outstanding update information items
+  int maximumNumberUpdateItems_;
+  /// Update items
+  CbcObjectUpdateData * updateItems_;
+#endif
   /**
      Parallel
      0 - off

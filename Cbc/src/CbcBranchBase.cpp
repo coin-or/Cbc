@@ -179,6 +179,16 @@ CbcObject::solverBranch() const
 {
   return NULL;
 }
+/* Pass in information on branch just done and create CbcObjectUpdateData instance.
+   If object does not need data then backward pointer will be NULL.
+   Assumes can get information from solver */
+CbcObjectUpdateData 
+CbcObject::createUpdateInformation(const OsiSolverInterface * solver, 
+							const CbcNode * node,
+							const CbcBranchingObject * branchingObject)
+{
+  return CbcObjectUpdateData();
+}
   
 // Default Constructor 
 CbcBranchingObject::CbcBranchingObject()
@@ -314,6 +324,67 @@ CbcConsequence &
 CbcConsequence::operator=( const CbcConsequence& rhs)
 {
   if (this!=&rhs) {
+  }
+  return *this;
+}
+// Default constructor
+CbcObjectUpdateData::CbcObjectUpdateData()
+  : object_(NULL),
+    way_(0),
+    objectNumber_(-1),
+    change_(0.0),
+    status_(0),
+    intDecrease_(0),
+    branchingValue_(0.0)
+{
+}
+
+// Useful constructor
+CbcObjectUpdateData::CbcObjectUpdateData (CbcObject * object,
+					  int way,
+					  double change,
+					  int status,
+					  int intDecrease,
+					  double branchingValue)
+  : object_(object),
+    way_(way),
+    objectNumber_(-1),
+    change_(change),
+    status_(status),
+    intDecrease_(intDecrease),
+    branchingValue_(branchingValue)
+{
+}
+
+// Destructor 
+CbcObjectUpdateData::~CbcObjectUpdateData ()
+{
+}
+
+// Copy constructor 
+CbcObjectUpdateData::CbcObjectUpdateData ( const CbcObjectUpdateData & rhs)
+  : object_(rhs.object_),
+    way_(rhs.way_),
+    objectNumber_(rhs.objectNumber_),
+    change_(rhs.change_),
+    status_(rhs.status_),
+    intDecrease_(rhs.intDecrease_),
+    branchingValue_(rhs.branchingValue_)
+{
+}
+
+// Assignment operator 
+CbcObjectUpdateData & 
+CbcObjectUpdateData::operator=( const CbcObjectUpdateData& rhs)
+{
+  if (this!=&rhs) {
+    object_ = rhs.object_;
+    way_ = rhs.way_;
+    objectNumber_ = rhs.objectNumber_;
+    change_ = rhs.change_;
+    status_ = rhs.status_;
+    intDecrease_ = rhs.intDecrease_;
+    branchingValue_ = rhs.branchingValue_;
   }
   return *this;
 }

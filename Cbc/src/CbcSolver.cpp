@@ -1505,6 +1505,7 @@ int CbcMain (int argc, const char *argv[],
     int preProcess=1;
     bool useStrategy=false;
     bool preSolveFile=false;
+    bool strongChanged=false;
    
     double djFix=1.0e100;
     double gapRatio=1.0e100;
@@ -1984,6 +1985,9 @@ int CbcMain (int argc, const char *argv[],
 		cutPassInTree = value;
 	      else if (parameters[iParam].type()==FPUMPITS)
 		{ useFpump = true;parameters[iParam].setIntValue(value);}
+	      else if (parameters[iParam].type()==STRONGBRANCHING||
+		       parameters[iParam].type()==NUMBERBEFORE)
+		strongChanged=true;
 	      parameters[iParam].setIntParameter(model,value);
 	    }
 	  } else if (valid==1) {
@@ -4379,6 +4383,16 @@ int CbcMain (int argc, const char *argv[],
 		  }
 		}
 #endif
+		// If defaults then increase trust for small models
+		if (!strongChanged) {
+		  int numberColumns = babModel->getNumCols();
+		  if (numberColumns<=50)
+		    babModel->setNumberBeforeTrust(1000);
+		  else if (numberColumns<=100)
+		    babModel->setNumberBeforeTrust(100);
+		  else if (numberColumns<=300)
+		    babModel->setNumberBeforeTrust(50);
+		}
 #ifdef CBC_THREAD
                 int numberThreads =parameters[whichParam(THREADS,numberParameters,parameters)].intValue();
 		babModel->setNumberThreads(numberThreads%100);

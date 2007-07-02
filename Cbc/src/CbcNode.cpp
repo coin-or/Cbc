@@ -2081,7 +2081,7 @@ int CbcNode::chooseBranch (CbcModel *model, CbcNode *lastNode,int numberPassesLe
         // back to normal
         osiclp->setHintParam(OsiDoInBranchAndCut,true,OsiHintDo,NULL) ;
       }
-#     endif
+#     endif  
     }
     /*
       Simple branching. Probably just one, but we may have got here
@@ -2615,7 +2615,7 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
     if (!numberUnsatisfied_)
       break;
     //bool skipAll = (numberBeforeTrust>20&&numberNodes>20000&&numberNotTrusted==0);
-    bool skipAll = numberNotTrusted==0;
+    bool skipAll = numberNotTrusted==0||numberToDo==1;
     bool doneHotStart=false;
     int searchStrategy = saveSearchStrategy>=0 ? (saveSearchStrategy%10) : -1;
 #ifndef CBC_WEAK_STRONG
@@ -3113,6 +3113,14 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
           int j;
           // status is 0 finished, 1 infeasible and other
           int iStatus;
+	  if (0) {
+	    CbcDynamicPseudoCostBranchingObject * cbcobj = dynamic_cast<CbcDynamicPseudoCostBranchingObject *> (choice.possibleBranch);
+	    if (cbcobj) {
+	      CbcSimpleIntegerDynamicPseudoCost * object = cbcobj->object();
+	      printf("strong %d ",iDo);
+	      object->print(1,0.5);
+	    }
+	  }
           /*
             Try the down direction first. (Specify the initial branching alternative as
             down with a call to way(-1). Each subsequent call to branch() performs the
@@ -3120,7 +3128,9 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
             alternative.)
           */
           choice.possibleBranch->way(-1) ;
+#if NEW_UPDATE_OBJECT==0
           decision->saveBranchingObject( choice.possibleBranch);
+#endif
           choice.possibleBranch->branch() ;
           solver->solveFromHotStart() ;
           bool needHotStartUpdate=false;
@@ -3143,7 +3153,29 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
           newObjectiveValue = solver->getObjSense()*solver->getObjValue();
           choice.numItersDown = solver->getIterationCount();
           objectiveChange = CoinMax(newObjectiveValue  - objectiveValue_,0.0);
+	  // Update branching information if wanted
+#if NEW_UPDATE_OBJECT==0
           decision->updateInformation( solver,this);
+#elif NEW_UPDATE_OBJECT<2
+	  CbcBranchingObject * cbcobj = dynamic_cast<CbcBranchingObject *> (choice.possibleBranch);
+	  if (cbcobj) {
+	    CbcObject * object = cbcobj->object();
+	    CbcObjectUpdateData update = object->createUpdateInformation(solver,this,cbcobj);
+	    object->updateInformation(update);
+	  } else {
+	    decision->updateInformation( solver,this);
+	  }
+#else
+	  CbcBranchingObject * cbcobj = dynamic_cast<CbcBranchingObject *> (choice.possibleBranch);
+	  if (cbcobj) {
+	    CbcObject * object = cbcobj->object();
+	    CbcObjectUpdateData update = object->createUpdateInformation(solver,this,cbcobj);
+	    update.objectNumber_ = choice.objectNumber;
+	    model->addUpdateInformation(update);
+	  } else {
+	    decision->updateInformation( solver,this);
+	  }
+#endif
           if (!iStatus) {
             choice.finishedDown = true ;
             if (newObjectiveValue>=cutoff) {
@@ -3225,7 +3257,9 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
           //     choice.numObjInfeasDown);
           
           // repeat the whole exercise, forcing the variable up
+#if NEW_UPDATE_OBJECT==0
           decision->saveBranchingObject( choice.possibleBranch);
+#endif
           choice.possibleBranch->branch();
           solver->solveFromHotStart() ;
           numberStrongDone++;
@@ -3247,7 +3281,29 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
           newObjectiveValue = solver->getObjSense()*solver->getObjValue();
           choice.numItersUp = solver->getIterationCount();
           objectiveChange = CoinMax(newObjectiveValue  - objectiveValue_,0.0);
+	  // Update branching information if wanted
+#if NEW_UPDATE_OBJECT==0
           decision->updateInformation( solver,this);
+#elif NEW_UPDATE_OBJECT<2
+	  cbcobj = dynamic_cast<CbcBranchingObject *> (choice.possibleBranch);
+	  if (cbcobj) {
+	    CbcObject * object = cbcobj->object();
+	    CbcObjectUpdateData update = object->createUpdateInformation(solver,this,cbcobj);
+	    object->updateInformation(update);
+	  } else {
+	    decision->updateInformation( solver,this);
+	  }
+#else
+	  cbcobj = dynamic_cast<CbcBranchingObject *> (choice.possibleBranch);
+	  if (cbcobj) {
+	    CbcObject * object = cbcobj->object();
+	    CbcObjectUpdateData update = object->createUpdateInformation(solver,this,cbcobj);
+	    update.objectNumber_ = choice.objectNumber;
+	    model->addUpdateInformation(update);
+	  } else {
+	    decision->updateInformation( solver,this);
+	  }
+#endif
           if (!iStatus) {
             choice.finishedUp = true ;
             if (newObjectiveValue>=cutoff) {

@@ -7069,6 +7069,7 @@ approximateSolution(CoinModel & coinModel,
 		    int numberPasses, double deltaTolerance,
 		    int mode)
 {
+#ifdef COIN_HAS_ASL
   // matrix etc will be changed
   CoinModel coinModel2 = coinModel;
   if (coinModel2.moreInfo()) {
@@ -7339,4 +7340,9 @@ approximateSolution(CoinModel & coinModel,
   delete [] constraints;
   assert (!returnCode);
   return model;
+#else
+  printf("loadNonLinear needs ampl\n");
+  abort();
+  return NULL;
+#endif
 }

@@ -1107,6 +1107,8 @@ void CbcModel::branchAndBound(int doStatistics)
       // For compiler error on terra cluster!
       if (found<numberHeuristics_)
 	lastHeuristic_ = heuristic_[found];
+      else
+	lastHeuristic_ = heuristic_[0];
       setBestSolution(CBC_ROUNDING,heuristicValue,newSolution) ;
       CbcTreeLocal * tree 
           = dynamic_cast<CbcTreeLocal *> (tree_);

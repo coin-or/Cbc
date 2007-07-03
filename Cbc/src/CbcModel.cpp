@@ -2231,7 +2231,6 @@ void CbcModel::branchAndBound(int doStatistics)
 	pthread_mutex_lock(&condition_mutex);
 	struct timespec absTime;
 	clock_gettime(CLOCK_REALTIME,&absTime);
-	double time = absTime.tv_sec+1.0e-9*absTime.tv_nsec;
 	absTime.tv_nsec += 1000000; // millisecond
 	if (absTime.tv_nsec>=1000000000) {
 	  absTime.tv_nsec -= 1000000000;
@@ -2239,7 +2238,6 @@ void CbcModel::branchAndBound(int doStatistics)
 	}
 	pthread_cond_timedwait(&condition_main,&condition_mutex,&absTime);
 	clock_gettime(CLOCK_REALTIME,&absTime);
-	double time2 = absTime.tv_sec+1.0e-9*absTime.tv_nsec;
 	pthread_mutex_unlock(&condition_mutex);
       }
       threadModel[i]->numberThreads_=0; // say exit
@@ -5864,7 +5862,6 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
 	pthread_mutex_lock(&condition_mutex);
 	struct timespec absTime;
 	clock_gettime(CLOCK_REALTIME,&absTime);
-	double time = absTime.tv_sec+1.0e-9*absTime.tv_nsec;
 	absTime.tv_nsec += 1000000; // millisecond
 	if (absTime.tv_nsec>=1000000000) {
 	  absTime.tv_nsec -= 1000000000;
@@ -5872,7 +5869,6 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
 	}
 	pthread_cond_timedwait(&condition_main,&condition_mutex,&absTime);
 	clock_gettime(CLOCK_REALTIME,&absTime);
-	double time2 = absTime.tv_sec+1.0e-9*absTime.tv_nsec;
 	pthread_mutex_unlock(&condition_mutex);
       }
       threadModel[i]->numberThreads_=0; // say exit
@@ -10687,6 +10683,7 @@ static void * doNodesThread(void * voidInfo)
   }
   pthread_mutex_unlock(mutex);
   pthread_exit(NULL);
+  return NULL;
 }
 static void * doCutsThread(void * voidInfo)
 {
@@ -10724,6 +10721,7 @@ static void * doCutsThread(void * voidInfo)
   }
   pthread_mutex_unlock(mutex);
   pthread_exit(NULL);
+  return NULL;
 }
 #endif
 #endif

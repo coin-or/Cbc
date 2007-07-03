@@ -92,6 +92,7 @@ int decodeBit(char * phrase, char * & nextPhrase, double & coefficient, bool ifF
   nextPhrase = pos;
   return jColumn;
 }
+#include "ClpQuadraticObjective.hpp"
 #ifdef COIN_HAS_LINK
 #include <cassert>
 #if defined(_MSC_VER)
@@ -105,7 +106,6 @@ int decodeBit(char * phrase, char * & nextPhrase, double & coefficient, bool ifF
 //#include "OsiBranchLink.hpp"
 #include "ClpPackedMatrix.hpp"
 #include "CoinTime.hpp"
-#include "ClpQuadraticObjective.hpp"
 #include "CbcModel.hpp"
 #include "CbcCutGenerator.hpp"
 #include "CglStored.hpp"

@@ -5011,11 +5011,13 @@ int CbcMain (int argc, const char *argv[],
 		      delete [] columnNames;
 		    }
 		  } else {
+#ifdef COIN_HAS_LINK
 		    OsiSolverLink * linkSolver = dynamic_cast< OsiSolverLink*> (clpSolver);
 		    if (!linkSolver||!linkSolver->quadraticModel()) 
 		      model2->writeMps(fileName.c_str(),(outputFormat-1)/2,1+((outputFormat-1)&1));
 		    else
 		      linkSolver->quadraticModel()->writeMps(fileName.c_str(),(outputFormat-1)/2,1+((outputFormat-1)&1));
+#endif
 		  }
 		}
 		time2 = CoinCpuTime();

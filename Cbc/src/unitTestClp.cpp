@@ -470,7 +470,7 @@ int mainTest (int argc, const char *argv[],int algorithm,
 	      }
 	    }
             solution.initialSolve(solveOptions);
-            double time2 = CoinCpuTime()-time1;
+            double time2 = CoinCpuTime()+CoinCpuTimeJustChildren()-time1;
             testTime[iTest]=time2;
             printf("Took %g seconds - status %d\n",time2,solution.problemStatus());
             if (solution.problemStatus()) 

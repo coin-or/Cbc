@@ -2226,12 +2226,22 @@ void CbcModel::branchAndBound(int doStatistics)
       time += threadInfo[i].timeInThread;
     bool goodTimer = time<(CoinCpuTime() - dblParam_[CbcStartSeconds]);
     for (i=0;i<numberThreads_;i++) {
-      pthread_cond_signal(threadInfo[i].condition2); // unlock
       while (threadInfo[i].returnCode==0) {
-	struct timespec moreTime;
-	moreTime.tv_nsec = 10000;
-	moreTime.tv_sec = 0;
-	nanosleep(&moreTime,NULL);
+	pthread_cond_signal(threadInfo[i].condition2); // unlock
+	pthread_mutex_lock(&condition_mutex);
+	struct timespec absTime;
+	clock_gettime(CLOCK_REALTIME,&absTime);
+	double time = absTime.tv_sec+1.0e-9*absTime.tv_nsec;
+	absTime.tv_nsec += 1000000; // millisecond
+	if (absTime.tv_nsec>=1000000000) {
+	  absTime.tv_nsec -= 1000000000;
+	  absTime.tv_sec++;
+	}
+	pthread_cond_timedwait(&condition_main,&condition_mutex,&absTime);
+	clock_gettime(CLOCK_REALTIME,&absTime);
+	double time2 = absTime.tv_sec+1.0e-9*absTime.tv_nsec;
+	timeWaiting += time2-time;
+	pthread_mutex_unlock(&condition_mutex);
       }
       threadModel[i]->numberThreads_=0; // say exit
       threadInfo[i].returnCode=0;
@@ -5850,12 +5860,22 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
     // stop threads
     int i;
     for (i=0;i<numberThreads_;i++) {
-      pthread_cond_signal(threadInfo[i].condition2); // unlock
       while (threadInfo[i].returnCode==0) {
-	struct timespec moreTime;
-	moreTime.tv_nsec = 10000;
-	moreTime.tv_sec = 0;
-	nanosleep(&moreTime,NULL);
+	pthread_cond_signal(threadInfo[i].condition2); // unlock
+	pthread_mutex_lock(&condition_mutex);
+	struct timespec absTime;
+	clock_gettime(CLOCK_REALTIME,&absTime);
+	double time = absTime.tv_sec+1.0e-9*absTime.tv_nsec;
+	absTime.tv_nsec += 1000000; // millisecond
+	if (absTime.tv_nsec>=1000000000) {
+	  absTime.tv_nsec -= 1000000000;
+	  absTime.tv_sec++;
+	}
+	pthread_cond_timedwait(&condition_main,&condition_mutex,&absTime);
+	clock_gettime(CLOCK_REALTIME,&absTime);
+	double time2 = absTime.tv_sec+1.0e-9*absTime.tv_nsec;
+	timeWaiting += time2-time;
+	pthread_mutex_unlock(&condition_mutex);
       }
       threadModel[i]->numberThreads_=0; // say exit
       threadInfo[i].returnCode=0;

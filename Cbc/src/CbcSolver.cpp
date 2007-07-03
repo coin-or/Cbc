@@ -4464,7 +4464,8 @@ int CbcMain (int argc, const char *argv[],
                     std::cout<<std::endl;
                 }
               }
-              time2 = CoinCpuTime();
+	      // adjust time to allow for children on some systems
+              time2 = CoinCpuTime() + CoinCpuTimeJustChildren();
               totalTime += time2-time1;
               // For best solution
               double * bestSolution = NULL;

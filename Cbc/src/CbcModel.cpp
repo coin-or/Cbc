@@ -2240,7 +2240,6 @@ void CbcModel::branchAndBound(int doStatistics)
 	pthread_cond_timedwait(&condition_main,&condition_mutex,&absTime);
 	clock_gettime(CLOCK_REALTIME,&absTime);
 	double time2 = absTime.tv_sec+1.0e-9*absTime.tv_nsec;
-	timeWaiting += time2-time;
 	pthread_mutex_unlock(&condition_mutex);
       }
       threadModel[i]->numberThreads_=0; // say exit
@@ -5874,7 +5873,6 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
 	pthread_cond_timedwait(&condition_main,&condition_mutex,&absTime);
 	clock_gettime(CLOCK_REALTIME,&absTime);
 	double time2 = absTime.tv_sec+1.0e-9*absTime.tv_nsec;
-	timeWaiting += time2-time;
 	pthread_mutex_unlock(&condition_mutex);
       }
       threadModel[i]->numberThreads_=0; // say exit

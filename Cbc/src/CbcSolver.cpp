@@ -1475,7 +1475,7 @@ int CbcMain (int argc, const char *argv[],
       solver->setObjSense(info.direction);
       solver->setDblParam(OsiObjOffset,info.offset);
       // Set integer variables
-      for (int i=info.numberColumns-info.numberBinary-info.numberIntegers;
+      for (int i=info.numberColumns-info.numberIntegers;
            i<info.numberColumns;i++)
         solver->setInteger(i);
       goodModel=true;

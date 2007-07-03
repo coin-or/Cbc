@@ -1482,8 +1482,6 @@ void CbcModel::branchAndBound(int doStatistics)
 	  unlockThread();
 	  locked = false;
 	  pthread_cond_signal(threadInfo[iThread].condition2); // unlock in case
-#define CONDITION_WAIT
-#ifdef CONDITION_WAIT
 	  while (true) {
 	    pthread_mutex_lock(&condition_mutex);
 	    struct timespec absTime;
@@ -1501,15 +1499,8 @@ void CbcModel::branchAndBound(int doStatistics)
 	    pthread_mutex_unlock(&condition_mutex);
 	    if (threadInfo[iThread].returnCode!=0) 
 	      break;
+	    pthread_cond_signal(threadInfo[iThread].condition2); // unlock
 	  }
-#else
-	  while (threadInfo[iThread].returnCode==0) {
-	    struct timespec moreTime;
-	    moreTime.tv_nsec = 10000;
-	    moreTime.tv_sec = 0;
-	    nanosleep(&moreTime,NULL);
-	  }
-#endif
 	  threadModel[iThread]->moveToModel(this,1);
 	  assert (threadInfo[iThread].returnCode==1);
 	  // say available
@@ -2180,7 +2171,6 @@ void CbcModel::branchAndBound(int doStatistics)
 	  // wait (for debug could sleep and use test)
 	  bool finished=false;
 	  while (!finished) {
-#ifdef CONDITION_WAIT
 	    pthread_mutex_lock(&condition_mutex);
 	    struct timespec absTime;
 	    clock_gettime(CLOCK_REALTIME,&absTime);
@@ -2195,12 +2185,6 @@ void CbcModel::branchAndBound(int doStatistics)
 	    double time2 = absTime.tv_sec+1.0e-9*absTime.tv_nsec;
 	    timeWaiting += time2-time;
 	    pthread_mutex_unlock(&condition_mutex);
-#else
-	    struct timespec moreTime;
-	    moreTime.tv_nsec = 100;
-	    moreTime.tv_sec = 0;
-	    nanosleep(&moreTime,NULL);
-#endif
 	    for (iThread=0;iThread<numberThreads_;iThread++) {
 	      if (threadInfo[iThread].returnCode>0) {
 		finished=true;
@@ -4908,13 +4892,10 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
 		finished=true;
 		break;
 	      } else if (threadInfo[iThread].returnCode==0) {
-#ifdef CONDITION_WAIT
 		pthread_cond_signal(threadInfo[iThread].condition2); // unlock
-#endif
 	      }
 	    }
 	    while (!finished) {
-#ifdef CONDITION_WAIT
 	      pthread_mutex_lock(&condition_mutex);
 	      struct timespec absTime;
 	      clock_gettime(CLOCK_REALTIME,&absTime);
@@ -4925,20 +4906,12 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
 	      }
 	      pthread_cond_timedwait(&condition_main,&condition_mutex,&absTime);
 	      pthread_mutex_unlock(&condition_mutex);
-#else
-	      struct timespec moreTime;
-	      moreTime.tv_nsec = 100;
-	      moreTime.tv_sec = 0 ;
-	      nanosleep(&moreTime,NULL);
-#endif
 	      for (iThread=0;iThread<numberThreads_;iThread++) {
 		if (threadInfo[iThread].returnCode>0) {
 		  finished=true;
 		  break;
 		} else if (threadInfo[iThread].returnCode==0) {
-#ifdef CONDITION_WAIT
 		  pthread_cond_signal(threadInfo[iThread].condition2); // unlock
-#endif
 		}
 	      }
 	    }
@@ -4948,20 +4921,15 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
 	    threadModel[iThread]->object_ = (OsiObject **) (eachCuts+i);
 	    // allow to start
 	    threadInfo[iThread].returnCode=0;
-#ifdef CONDITION_WAIT
 	    pthread_cond_signal(threadInfo[iThread].condition2); // unlock
-#endif
 	  }
 	}
 	// wait
 	for (int iThread=0;iThread<numberThreads_;iThread++) {
 	  if (threadInfo[iThread].returnCode==0) {
 	    bool finished=false;
-#ifdef CONDITION_WAIT
 	    pthread_cond_signal(threadInfo[iThread].condition2); // unlock
-#endif
 	    while (!finished) {
-#ifdef CONDITION_WAIT
 	      pthread_mutex_lock(&condition_mutex);
 	      struct timespec absTime;
 	      clock_gettime(CLOCK_REALTIME,&absTime);
@@ -4972,19 +4940,11 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
 	      }
 	      pthread_cond_timedwait(&condition_main,&condition_mutex,&absTime);
 	      pthread_mutex_unlock(&condition_mutex);
-#else
-	      struct timespec moreTime;
-	      moreTime.tv_nsec = 100;
-	      moreTime.tv_sec = 0;
-	      nanosleep(&moreTime,NULL);
-#endif
 	      if (threadInfo[iThread].returnCode>0) {
 		finished=true;
 		break;
 	      } else if (threadInfo[iThread].returnCode==0) {
-#ifdef CONDITION_WAIT
 		pthread_cond_signal(threadInfo[iThread].condition2); // unlock
-#endif
 	      }
 	    }
 	  }
@@ -10692,12 +10652,10 @@ static void * doNodesThread(void * voidInfo)
       thisModel->doOneNode(baseModel,stuff->node,stuff->createdNode);
       stuff->returnCode=1;
       //printf("end node %x\n",stuff->node);
-#ifdef CONDITION_WAIT
       threadStruct * stuffMain = (threadStruct *) baseModel->mutex();
       //pthread_mutex_t * condition_mutex = stuffMain->mutex2;
       pthread_cond_t * condition_main = stuffMain->condition2;
       pthread_cond_signal(condition_main); // unlock
-#endif
       pthread_mutex_unlock(mutex);
       stuff->timeInThread += CoinCpuTime()-time2;
     } else {
@@ -10732,12 +10690,10 @@ static void * doCutsThread(void * voidInfo)
       generator->generateCuts(*cuts,fullScan,thisSolver,NULL);
       stuff->returnCode=1;
       //printf("end node %x\n",stuff->node);
-#ifdef CONDITION_WAIT
       threadStruct * stuffMain = (threadStruct *) baseModel->mutex();
       //pthread_mutex_t * condition_mutex = stuffMain->mutex2;
       pthread_cond_t * condition_main = stuffMain->condition2;
       pthread_cond_signal(condition_main); // unlock
-#endif
       pthread_mutex_unlock(mutex);
     } else {
       // exit

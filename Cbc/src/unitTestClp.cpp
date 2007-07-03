@@ -470,7 +470,7 @@ int mainTest (int argc, const char *argv[],int algorithm,
 	      }
 	    }
             solution.initialSolve(solveOptions);
-            double time2 = CoinCpuTime()+CoinCpuTimeJustChildren()-time1;
+            double time2 = CoinCpuTime()-time1;
             testTime[iTest]=time2;
             printf("Took %g seconds - status %d\n",time2,solution.problemStatus());
             if (solution.problemStatus()) 
@@ -1950,7 +1950,7 @@ void CbcClpUnitTest (const CbcModel & saveModel)
       
     */
 
-    double startTime = CoinCpuTime();
+    double startTime = CoinCpuTime()+CoinCpuTimeJustChildren();
     model->setMaximumNodes(200000);
     OsiClpSolverInterface * si =
       dynamic_cast<OsiClpSolverInterface *>(model->solver()) ;
@@ -2027,7 +2027,7 @@ void CbcClpUnitTest (const CbcModel & saveModel)
     }
     model->branchAndBound();
       
-    double timeOfSolution = CoinCpuTime()-startTime;
+    double timeOfSolution = CoinCpuTime()+CoinCpuTimeJustChildren()-startTime;
     // Print more statistics
     std::cout<<"Cuts at root node changed objective from "<<model->getContinuousObjective()
 	     <<" to "<<model->rootObjectiveAfterCuts()<<std::endl;

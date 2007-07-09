@@ -180,6 +180,8 @@ void OsiSolverLink::initialSolve()
   //iPass++;
   //sprintf(temp,"cc%d",iPass);
   //writeMps(temp);
+  //writeMps("tight");
+  //exit(33);
   //printf("wrote cc%d\n",iPass);
   OsiClpSolverInterface::initialSolve();
   int secondaryStatus = modelPtr_->secondaryStatus();
@@ -1496,15 +1498,200 @@ void OsiSolverLink::load ( CoinModel & coinModelOriginal, bool tightenBounds,int
       }
     }
   }
+  delete [] which;
+#if 1
+  addTighterConstraints();
+#endif
+}
+// Add reformulated bilinear constraints
+void 
+OsiSolverLink::addTighterConstraints()
+{
+  // This is first attempt - for now get working on trimloss
+  int numberW=0;
+  int * xW = new int[numberObjects_];
+  int * yW = new int[numberObjects_];
+  // Points to firstlambda
+  int * wW = new int[numberObjects_];
+  // Coefficient
+  double * alphaW = new double[numberObjects_];
+  // Objects
+  OsiBiLinear ** objW = new OsiBiLinear * [numberObjects_];
+  int numberColumns = getNumCols();
+  int firstLambda=numberColumns;
+  // set up list (better to rethink and do properly as column ordered)
+  int * list = new int[numberColumns];
+  memset(list,0,numberColumns*sizeof(int));
+  int i;
+  for ( i =0;i<numberObjects_;i++) {
+    OsiBiLinear * obj = dynamic_cast<OsiBiLinear *> (object_[i]);
+    if (obj) {
+      //obj->setBranchingStrategy(4); // ***** temp
+      objW[numberW]=obj;
+      xW[numberW]=obj->xColumn();
+      yW[numberW]=obj->yColumn();
+      list[xW[numberW]]=1;
+      list[yW[numberW]]=1;
+      wW[numberW]=obj->firstLambda();
+      firstLambda = CoinMin(firstLambda,obj->firstLambda());
+      alphaW[numberW]=obj->coefficient();
+      //assert (alphaW[numberW]==1.0); // fix when occurs
+      numberW++;
+    }
+  }
+  int nList = 0;
+  for (i=0;i<numberColumns;i++) {
+    if (list[i])
+      list[nList++]=i;
+  }
+  // set up mark array
+  char * mark = new char [firstLambda*firstLambda];
+  memset(mark,0,firstLambda*firstLambda);
+  for (i=0;i<numberW;i++) {
+    int x = xW[i];
+    int y = yW[i];
+    mark[x*firstLambda+y]=1;
+    mark[y*firstLambda+x]=1;
+  }
+  int numberRows2 = originalRowCopy_->getNumRows();
+  int * addColumn = new int [numberColumns];
+  double * addElement = new double [numberColumns];
+  assert (objectiveRow_<0); // fix when occurs
+  for (int iRow=0;iRow<numberRows2;iRow++) {
+    for (int iList=0;iList<nList;iList++) {
+      int kColumn = list[iList];
+      const double * columnLower = getColLower();
+      //const double * columnUpper = getColUpper();
+      const double * rowLower = getRowLower();
+      const double * rowUpper = getRowUpper();
+      const CoinPackedMatrix * rowCopy = getMatrixByRow();
+      const double * element = rowCopy->getElements();
+      const int * column = rowCopy->getIndices();
+      const CoinBigIndex * rowStart = rowCopy->getVectorStarts();
+      const int * rowLength = rowCopy->getVectorLengths();
+      CoinBigIndex j;
+      int numberElements = rowLength[iRow];
+      int n=0;
+      for (j=rowStart[iRow];j<rowStart[iRow]+numberElements;j++) {
+	int iColumn = column[j];
+	if (iColumn>=firstLambda) {
+	  // no good
+	  n=-1;
+	  break;
+	}
+	if (mark[iColumn*firstLambda+kColumn])
+	  n++;
+      }
+      if (n==numberElements) {
+	printf("can add row %d\n",iRow);
+	assert (columnLower[kColumn]>=0); // might be able to fix
+	int xColumn=kColumn;
+	n=0;
+	for (j=rowStart[iRow];j<rowStart[iRow]+numberElements;j++) {
+	  int yColumn = column[j];
+	  int k;
+	  for (k=0;k<numberW;k++) {
+	    if ((xW[k]==yColumn&&yW[k]==xColumn)||
+		(yW[k]==yColumn&&xW[k]==xColumn))
+	      break;
+	  }
+	  assert (k<numberW);
+	  if (xW[k]!=xColumn) {
+	    int temp=xColumn;
+	    xColumn=yColumn;
+	    yColumn=temp;
+	  }
+	  int start = wW[k];
+	  double value = element[j];
+	  for (int kk=0;kk<4;kk++) {
+	    // Dummy value
+	    addElement[n]= 1.0e-19;
+	    addColumn[n++]=start+kk;
+	  }
+	  // Tell object about this
+	  objW[k]->addExtraRow(matrix_->getNumRows(),value);
+	}
+	addColumn[n++] = kColumn;
+	double lo = rowLower[iRow];
+	double up = rowUpper[iRow];
+	if (lo>-1.0e20) {
+	  addElement[n-1]=-lo;
+	  if (lo==up)
+	    addRow(n,addColumn,addElement,0.0,0.0);
+	  else
+	    addRow(n,addColumn,addElement,0.0,COIN_DBL_MAX);
+	  matrix_->appendRow(n,addColumn,addElement);
+	}
+	if (up<1.0e20&&up>lo) {
+	  addElement[n-1]=-up;
+	  addRow(n,addColumn,addElement,-COIN_DBL_MAX,0.0);
+	  matrix_->appendRow(n,addColumn,addElement);
+	}
+      }
+    }
+  }
 #if 0
-  //int fake[10]={3,4,2,5,5,3,1,11,2,0};
-  int fake[10]={11,5,5,4,3,3,2,2,1,0};
-  for (int kk=0;kk<10;kk++) {
-    setColUpper(kk,fake[kk]);
-    setColLower(kk,fake[kk]);
+  // possibly do bounds
+  for (int iColumn=0;iColumn<firstLambda;iColumn++) {
+    for (int iList=0;iList<nList;iList++) {
+      int kColumn = list[iList];
+      const double * columnLower = getColLower();
+      const double * columnUpper = getColUpper();
+      if (mark[iColumn*firstLambda+kColumn]) {
+	printf("can add column %d\n",iColumn);
+	assert (columnLower[kColumn]>=0); // might be able to fix
+	int xColumn=kColumn;
+	int yColumn = iColumn;
+	int k;
+	for (k=0;k<numberW;k++) {
+	  if ((xW[k]==yColumn&&yW[k]==xColumn)||
+	      (yW[k]==yColumn&&xW[k]==xColumn))
+	    break;
+	}
+	assert (k<numberW);
+	if (xW[k]!=xColumn) {
+	  int temp=xColumn;
+	  xColumn=yColumn;
+	  yColumn=temp;
+	}
+	int start = wW[k];
+	int n=0;
+	for (int kk=0;kk<4;kk++) {
+	  // Dummy value
+	  addElement[n]= 1.0e-19;
+	  addColumn[n++]=start+kk;
+	}
+	// Tell object about this
+	objW[k]->addExtraRow(matrix_->getNumRows(),1.0);
+	addColumn[n++] = kColumn;
+	double lo = columnLower[iColumn];
+	double up = columnUpper[iColumn];
+	if (lo>-1.0e20) {
+	  addElement[n-1]=-lo;
+	  if (lo==up)
+	    addRow(n,addColumn,addElement,0.0,0.0);
+	  else
+	    addRow(n,addColumn,addElement,0.0,COIN_DBL_MAX);
+	  matrix_->appendRow(n,addColumn,addElement);
+	}
+	if (up<1.0e20&&up>lo) {
+	  addElement[n-1]=-up;
+	  addRow(n,addColumn,addElement,-COIN_DBL_MAX,0.0);
+	  matrix_->appendRow(n,addColumn,addElement);
+	}
+      }
+    }
   }
 #endif
-  delete [] which;
+  delete [] xW;
+  delete [] yW;
+  delete [] wW;
+  delete [] alphaW;
+  delete [] addColumn;
+  delete [] addElement;
+  delete [] mark;
+  delete [] list;
+  delete [] objW;
 }
 // Set all biLinear priorities on x-x variables
 void 
@@ -4440,6 +4627,9 @@ OsiBiLinear::OsiBiLinear ()
     yRow_(-1),
     xyRow_(-1),
     convexity_(-1),
+    numberExtraRows_(0),
+    multiplier_(NULL),
+    extraRow_(NULL),
     chosen_(-1)
 {
 }
@@ -4468,6 +4658,9 @@ OsiBiLinear::OsiBiLinear (OsiSolverInterface * solver, int xColumn,
     yRow_(-1),
     xyRow_(xyRow),
     convexity_(-1),
+    numberExtraRows_(0),
+    multiplier_(NULL),
+    extraRow_(NULL),
     chosen_(-1)
 {
   double columnLower[4];
@@ -4679,6 +4872,9 @@ OsiBiLinear::OsiBiLinear (CoinModel * coinModel, int xColumn,
     yRow_(-1),
     xyRow_(xyRow),
     convexity_(-1),
+    numberExtraRows_(0),
+    multiplier_(NULL),
+    extraRow_(NULL),
     chosen_(-1)
 {
   double columnLower[4];
@@ -4895,8 +5091,15 @@ OsiBiLinear::OsiBiLinear ( const OsiBiLinear & rhs)
    yRow_(rhs.yRow_),
    xyRow_(rhs.xyRow_),
    convexity_(rhs.convexity_),
+   numberExtraRows_(rhs.numberExtraRows_),
+   multiplier_(NULL),
+   extraRow_(NULL),
    chosen_(rhs.chosen_)
 {
+  if (numberExtraRows_) {
+    multiplier_ = CoinCopyOfArray(rhs.multiplier_,numberExtraRows_);
+    extraRow_ = CoinCopyOfArray(rhs.extraRow_,numberExtraRows_);
+  }
 }
 
 // Clone
@@ -4930,6 +5133,16 @@ OsiBiLinear::operator=( const OsiBiLinear& rhs)
     yRow_ = rhs.yRow_;
     xyRow_ = rhs.xyRow_;
     convexity_ = rhs.convexity_;
+    numberExtraRows_ = rhs.numberExtraRows_;
+    delete [] multiplier_;
+    delete [] extraRow_;
+    if (numberExtraRows_) {
+      multiplier_ = CoinCopyOfArray(rhs.multiplier_,numberExtraRows_);
+      extraRow_ = CoinCopyOfArray(rhs.extraRow_,numberExtraRows_);
+    } else {
+      multiplier_ = NULL;
+      extraRow_ = NULL;
+    }
     chosen_ = rhs.chosen_;
   }
   return *this;
@@ -4938,6 +5151,24 @@ OsiBiLinear::operator=( const OsiBiLinear& rhs)
 // Destructor 
 OsiBiLinear::~OsiBiLinear ()
 {
+  delete [] multiplier_;
+  delete [] extraRow_;
+}
+// Adds in data for extra row with variable coefficients
+void 
+OsiBiLinear::addExtraRow(int row, double multiplier)
+{
+  int * tempI = new int [numberExtraRows_+1];
+  double * tempD = new double [numberExtraRows_+1];
+  memcpy(tempI,extraRow_,numberExtraRows_*sizeof(int));
+  memcpy(tempD,multiplier_,numberExtraRows_*sizeof(double));
+  tempI[numberExtraRows_]=row;
+  tempD[numberExtraRows_]=multiplier;
+  numberExtraRows_++;
+  delete [] extraRow_;
+  extraRow_ = tempI;
+  delete [] multiplier_;
+  multiplier_ = tempD;
 }
 static bool testCoarse=true;
 // Infeasibility - large is 0.5
@@ -5120,6 +5351,106 @@ OsiBiLinear::infeasibility(const OsiBranchingInformation * info,int & whichWay) 
       }
     }
     xyLambda /= coefficient_;
+  }
+  if (0) {
+    // only true with positive values
+    // see if all convexification constraints OK with true
+    assert (xyTrue+1.0e-5>xB[0]*y+yB[0]*x - xB[0]*yB[0]);
+    assert (xyTrue+1.0e-5>xB[1]*y+yB[1]*x - xB[1]*yB[1]);
+    assert (xyTrue-1.0e-5<xB[1]*y+yB[0]*x - xB[1]*yB[0]);
+    assert (xyTrue-1.0e-5<xB[0]*y+yB[1]*x - xB[0]*yB[1]);
+    // see if all convexification constraints OK with lambda version
+#if 1
+    assert (xyLambda+1.0e-5>xB[0]*y+yB[0]*x - xB[0]*yB[0]);
+    assert (xyLambda+1.0e-5>xB[1]*y+yB[1]*x - xB[1]*yB[1]);
+    assert (xyLambda-1.0e-5<xB[1]*y+yB[0]*x - xB[1]*yB[0]);
+    assert (xyLambda-1.0e-5<xB[0]*y+yB[1]*x - xB[0]*yB[1]);
+#endif
+    // see if other bound stuff true
+    assert (xyLambda+1.0e-5>xB[0]*y);
+    assert (xyLambda+1.0e-5>yB[0]*x);
+    assert (xyLambda-1.0e-5<xB[1]*y);
+    assert (xyLambda-1.0e-5<yB[1]*x);
+#define SIZE 2
+    if (yColumn_==xColumn_+SIZE) {
+#if SIZE==6
+      double bMax = 2200.0;
+      double bMin = bMax - 100.0;
+      double b[] = {330.0,360.0,380.0,430.0,490.0,530.0};
+#elif SIZE==2
+      double bMax = 1900.0;
+      double bMin = bMax - 200.0;
+      double b[] = {460.0,570.0};
+#else
+      abort();
+#endif
+      double sum =0.0;
+      double sum2 =0.0;
+      int m=xColumn_;
+      double x = info->solution_[m];
+      double xB[2];
+      double yB[2];
+      xB[0]=info->lower_[m];
+      xB[1]=info->upper_[m];
+      for (int i=0;i<SIZE*SIZE;i+=SIZE) {
+	int n = i+SIZE+m;
+	double y = info->solution_[n];
+	yB[0]=info->lower_[n];
+	yB[1]=info->upper_[n];
+	int firstLambda=SIZE*SIZE+2*SIZE+4*i+4*m;
+	double xyLambda=0.0;
+	for (int j=0;j<4;j++) {
+	  int iX = j>>1;
+	  int iY = j&1;
+	  xyLambda += xB[iX]*yB[iY]*info->solution_[firstLambda+j];
+	}
+	sum += xyLambda*b[i/SIZE];
+	double xyTrue = x*y;
+	sum2 += xyTrue*b[i/SIZE];
+      }
+      if (sum>bMax*x+1.0e-5||sum<bMin*x-1.0e-5) {
+	//if (sum<bMax*x+1.0e-5&&sum>bMin*x-1.0e-5) {
+	printf("bmin*x %g b*w %g bmax*x %g (true) %g\n",bMin*x,sum,bMax*x,sum2);
+	printf("m %d lb %g value %g up %g\n",
+	       m,xB[0],x,xB[1]);
+	sum=0.0;
+	for (int i=0;i<SIZE*SIZE;i+=SIZE) {
+	  int n = i+SIZE+m;
+	  double y = info->solution_[n];
+	  yB[0]=info->lower_[n];
+	  yB[1]=info->upper_[n];
+	  printf("n %d lb %g value %g up %g\n",
+		 n,yB[0],y,yB[1]);
+	  int firstLambda=SIZE*SIZE+2*SIZE+4*i+m*4;
+	  double xyLambda=0.0;
+	  for (int j=0;j<4;j++) {
+	    int iX = j>>1;
+	    int iY = j&1;
+	    xyLambda += xB[iX]*yB[iY]*info->solution_[firstLambda+j];
+	    printf("j %d l %d new xylambda %g ",j,firstLambda+j,xyLambda);
+	  }
+	  sum += xyLambda*b[i/SIZE];
+	  printf(" - sum now %g\n",sum);
+	}
+      }
+      if (sum2>bMax*x+1.0e-5||sum2<bMin*x-1.0e-5) {
+	printf("bmin*x %g b*x*y %g bmax*x %g (estimate) %g\n",bMin*x,sum2,bMax*x,sum);
+	printf("m %d lb %g value %g up %g\n",
+	       m,xB[0],x,xB[1]);
+	sum2=0.0;
+	for (int i=0;i<SIZE*SIZE;i+=SIZE) {
+	  int n = i+SIZE+m;
+	  double y = info->solution_[n];
+	  yB[0]=info->lower_[n];
+	  yB[1]=info->upper_[n];
+	  printf("n %d lb %g value %g up %g\n",
+		 n,yB[0],y,yB[1]);
+	  double xyTrue = x*y;
+	  sum2 += xyTrue*b[i/SIZE];
+	  printf("xyTrue %g - sum now %g\n",xyTrue,sum2);
+	}
+      }
+    }
   }
   // If pseudo shadow prices then see what would happen
   //double pseudoEstimate = 0.0;
@@ -5840,7 +6171,7 @@ OsiBiLinear::updateCoefficients(const double * lower, const double * upper, doub
   double * element = matrix->getMutableElements();
   const int * row = matrix->getIndices();
   const CoinBigIndex * columnStart = matrix->getVectorStarts();
-  //const int * columnLength = matrix->getVectorLengths();
+  const int * columnLength = matrix->getVectorLengths();
   // order is LxLy, LxUy, UxLy and UxUy
   double xB[2];
   double yB[2];
@@ -5861,6 +6192,7 @@ OsiBiLinear::updateCoefficients(const double * lower, const double * upper, doub
     int iY = j&1;
     double y = yB[iY];
     CoinBigIndex k = columnStart[j+firstLambda_];
+    CoinBigIndex last = k+columnLength[j+firstLambda_];
     double value;
     // xy
     value=coefficient*x*y;
@@ -5895,6 +6227,16 @@ OsiBiLinear::updateCoefficients(const double * lower, const double * upper, doub
       assert (row[k]==yRow_);
       element[k++]=value;
       numberUpdated++;
+    }
+    // Do extra rows
+    for (int i=0;i<numberExtraRows_;i++) {
+      int iRow = extraRow_[i];
+      for (;k<last;k++) {
+	if (row[k]==iRow)
+	  break;
+      }
+      assert (k<last);
+      element[k++] = x*y*multiplier_[i];
     }
   }
   

@@ -114,6 +114,8 @@ public:
   int updateCoefficients(ClpSimplex * solver, CoinPackedMatrix * matrix);
   /// Analyze constraints to see which are convex (quadratic)
   void analyzeObjects();
+  /// Add reformulated bilinear constraints
+  void addTighterConstraints();
   /// Objective value of best solution found internally
   inline double bestObjectiveValue() const
   { return bestObjectiveValue_;};
@@ -841,6 +843,8 @@ public:
   void getCoefficients(const OsiSolverInterface * solver,double xB[2], double yB[2], double xybar[4]) const;
   /// Compute lambdas (third entry in each .B is current value) (nonzero if bad)
   double computeLambdas(const double xB[3], const double yB[3],const double xybar[4],double lambda[4]) const;
+  /// Adds in data for extra row with variable coefficients
+  void addExtraRow(int row, double multiplier);
 
 protected:
   /// Compute lambdas if coefficients not changing
@@ -898,6 +902,12 @@ protected:
   int xyRow_;
   /// Convexity row
   int convexity_;
+  /// Number of extra rows (coefficients to be modified)
+  int numberExtraRows_;
+  /// Multiplier for coefficient on row
+  double * multiplier_;
+  /// Row number
+  int * extraRow_;
   /// Which chosen -1 none, 0 x, 1 y
   mutable short chosen_;
 };

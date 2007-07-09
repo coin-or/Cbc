@@ -963,6 +963,7 @@ expandKnapsack(CoinModel & model, int * whichColumn, int * knapsackStart,
     return finalModel;
   } else {
     delete finalModel;
+    printf("can't make knapsacks - did you set fixedPriority (extra1)\n");
     return NULL;
   }
 }
@@ -3232,6 +3233,8 @@ int CbcMain (int argc, const char *argv[],
 			lpSolver = clpSolver->getModelPtr();
 			babModel->assignSolver(solver);
 			testOsiOptions=0;
+			// allow gomory
+			complicatedInteger=0;
 			// Priorities already done
 			free(info.priorities);
 			info.priorities=NULL;
@@ -3969,16 +3972,16 @@ int CbcMain (int argc, const char *argv[],
 			    obj->setPreferredWay(branchDirection[iColumn]);
 			}
 		      }
-		    }
-                    if (priorities) {
-                      int iPriority = priorities[iColumn];
-                      if (iPriority>0)
-                        objects[iObj]->setPriority(iPriority);
-                    }
-		    if (logLevel>2)
-		      printf("Obj %d is int? - priority %d\n",iObj,objects[iObj]->priority());
-                    if (pseudoUp&&pseudoUp[iColumn]) {
-		      abort();
+		      if (priorities) {
+			int iPriority = priorities[iColumn];
+			if (iPriority>0)
+			  objects[iObj]->setPriority(iPriority);
+		      }
+		      if (logLevel>2)
+			printf("Obj %d is int? - priority %d\n",iObj,objects[iObj]->priority());
+		      if (pseudoUp&&pseudoUp[iColumn]) {
+			abort();
+		      }
                     }
                   }
 		  // *************************************************************

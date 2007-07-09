@@ -1,11 +1,5 @@
 * text=auto !eol
 Cbc/LICENSE -text
-Cbc/MSVisualStudio/v6/Cbc.dsw -text
-Cbc/MSVisualStudio/v6/Cbc.opt -text
-Cbc/MSVisualStudio/v6/cbc/cbc.dsp -text
-Cbc/MSVisualStudio/v6/cbcExamplesSample2/cbcExamplesSample2.dsp -text
-Cbc/MSVisualStudio/v6/cbcSolve/cbcSolve.dsp -text
-Cbc/MSVisualStudio/v6/libCbc/libCbc.dsp -text
 Cbc/MSVisualStudio/v7/Cbc.sln -text
 Cbc/MSVisualStudio/v7/Cbc.suo -text
 Cbc/MSVisualStudio/v7/cbc/cbc.vcproj -text

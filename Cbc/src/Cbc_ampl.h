@@ -41,6 +41,7 @@ typedef struct
   char ** arguments;
   char buffer[300];
   int logLevel;
+  int nonLinear;
 } ampl_info;
 #ifdef __cplusplus
 extern "C"{

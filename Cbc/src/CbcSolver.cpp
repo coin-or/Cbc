@@ -1475,10 +1475,12 @@ int CbcMain (int argc, const char *argv[],
       // modify objective if necessary
       solver->setObjSense(info.direction);
       solver->setDblParam(OsiObjOffset,info.offset);
-      // Set integer variables
-      for (int i=info.numberColumns-info.numberIntegers;
-           i<info.numberColumns;i++)
-        solver->setInteger(i);
+      // Set integer variables (unless nonlinear when set)
+      if (!info.nonLinear) {
+	for (int i=info.numberColumns-info.numberIntegers;
+	     i<info.numberColumns;i++)
+	  solver->setInteger(i);
+      }
       goodModel=true;
       // change argc etc
       argc = info.numberArguments;

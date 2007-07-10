@@ -531,6 +531,8 @@ readAmpl(ampl_info * info, int argc, char **argv, void ** coinModel)
 	  numberIntegers++;
     }
     info->numberIntegers=numberIntegers;
+    // Say nonlinear if it is
+    info->nonLinear=nlvc+nlvo;
     if (numberIntegers>0) {
       mip_stuff(); // get any extra info
       if (info->cut) 

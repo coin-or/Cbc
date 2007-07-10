@@ -247,7 +247,8 @@ protected:
      0 bit (1) - call fathom (may do mini B&B)
      1 bit (2) - quadratic only in objective (add OA cuts)
      2 bit (4) - convex
-     4 bit (8) - try adding OA cuts
+     3 bit (8) - try adding OA cuts
+     4 bit (16) - add linearized constraints
   */
   int specialOptions2_;
   /// Objective transfer row if one

@@ -1499,9 +1499,8 @@ void OsiSolverLink::load ( CoinModel & coinModelOriginal, bool tightenBounds,int
     }
   }
   delete [] which;
-#if 1
-  addTighterConstraints();
-#endif
+  if ((specialOptions2_&16)!=0)
+    addTighterConstraints();
 }
 // Add reformulated bilinear constraints
 void 
@@ -1556,6 +1555,7 @@ OsiSolverLink::addTighterConstraints()
   int numberRows2 = originalRowCopy_->getNumRows();
   int * addColumn = new int [numberColumns];
   double * addElement = new double [numberColumns];
+  int * addW = new int [numberColumns];
   assert (objectiveRow_<0); // fix when occurs
   for (int iRow=0;iRow<numberRows2;iRow++) {
     for (int iList=0;iList<nList;iList++) {
@@ -1585,9 +1585,9 @@ OsiSolverLink::addTighterConstraints()
       if (n==numberElements) {
 	printf("can add row %d\n",iRow);
 	assert (columnLower[kColumn]>=0); // might be able to fix
-	int xColumn=kColumn;
 	n=0;
 	for (j=rowStart[iRow];j<rowStart[iRow]+numberElements;j++) {
+	  int xColumn=kColumn;
 	  int yColumn = column[j];
 	  int k;
 	  for (k=0;k<numberW;k++) {
@@ -1601,20 +1601,24 @@ OsiSolverLink::addTighterConstraints()
 	    xColumn=yColumn;
 	    yColumn=temp;
 	  }
+	  addW[n/4]=k;
 	  int start = wW[k];
 	  double value = element[j];
 	  for (int kk=0;kk<4;kk++) {
 	    // Dummy value
-	    addElement[n]= 1.0e-19;
+	    addElement[n]= value;
 	    addColumn[n++]=start+kk;
 	  }
-	  // Tell object about this
-	  objW[k]->addExtraRow(matrix_->getNumRows(),value);
 	}
 	addColumn[n++] = kColumn;
 	double lo = rowLower[iRow];
 	double up = rowUpper[iRow];
 	if (lo>-1.0e20) {
+	  // and tell object
+	  for (j=0;j<n-1;j+=4) {
+	    int iObject = addW[j/4];
+	    objW[iObject]->addExtraRow(matrix_->getNumRows(),addElement[j]);
+	  }
 	  addElement[n-1]=-lo;
 	  if (lo==up)
 	    addRow(n,addColumn,addElement,0.0,0.0);
@@ -1623,6 +1627,11 @@ OsiSolverLink::addTighterConstraints()
 	  matrix_->appendRow(n,addColumn,addElement);
 	}
 	if (up<1.0e20&&up>lo) {
+	  // and tell object
+	  for (j=0;j<n-1;j+=4) {
+	    int iObject = addW[j/4];
+	    objW[iObject]->addExtraRow(matrix_->getNumRows(),addElement[j]);
+	  }
 	  addElement[n-1]=-up;
 	  addRow(n,addColumn,addElement,-COIN_DBL_MAX,0.0);
 	  matrix_->appendRow(n,addColumn,addElement);
@@ -1689,6 +1698,7 @@ OsiSolverLink::addTighterConstraints()
   delete [] alphaW;
   delete [] addColumn;
   delete [] addElement;
+  delete [] addW;
   delete [] mark;
   delete [] list;
   delete [] objW;
@@ -5164,6 +5174,8 @@ OsiBiLinear::addExtraRow(int row, double multiplier)
   memcpy(tempD,multiplier_,numberExtraRows_*sizeof(double));
   tempI[numberExtraRows_]=row;
   tempD[numberExtraRows_]=multiplier;
+  if (numberExtraRows_)
+    assert (row>tempI[numberExtraRows_-1]);
   numberExtraRows_++;
   delete [] extraRow_;
   extraRow_ = tempI;

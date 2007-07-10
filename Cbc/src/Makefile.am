@@ -284,6 +284,7 @@ include_HEADERS = \
 	CbcCompareBase.hpp \
 	CbcCutGenerator.hpp \
 	CbcEventHandler.hpp \
+	CbcFathom.hpp \
 	CbcFeasibilityBase.hpp \
 	CbcHeuristic.hpp \
 	CbcHeuristicFPump.hpp \

@@ -5650,7 +5650,102 @@ OsiBiLinear::infeasibility(const OsiBranchingInformation * info,int & whichWay) 
   //printf("x %d %g %g %g, y %d %g %g %g\n",xColumn_,xB[0],x,xB[1],yColumn_,yB[0],y,yB[1]);
   return infeasibility_;
 }
-
+// Sets infeasibility and other when pseudo shadow prices
+void
+OsiBiLinear::getPseudoShadow(const OsiBranchingInformation * info)
+{
+  // order is LxLy, LxUy, UxLy and UxUy
+  double xB[2];
+  double yB[2];
+  xB[0]=info->lower_[xColumn_];
+  xB[1]=info->upper_[xColumn_];
+  yB[0]=info->lower_[yColumn_];
+  yB[1]=info->upper_[yColumn_];
+  double x = info->solution_[xColumn_];
+  x = CoinMax(x,xB[0]);
+  x = CoinMin(x,xB[1]);
+  double y = info->solution_[yColumn_];
+  y = CoinMax(y,yB[0]);
+  y = CoinMin(y,yB[1]);
+  int j;
+  double xyTrue = x*y;
+  double xyLambda = 0.0;
+  if ((branchingStrategy_&4)==0) {
+    for (j=0;j<4;j++) {
+      int iX = j>>1;
+      int iY = j&1;
+      xyLambda += xB[iX]*yB[iY]*info->solution_[firstLambda_+j];
+    }
+  } else {
+    if (xyRow_>=0) {
+      const double * element = info->elementByColumn_;
+      const int * row = info->row_;
+      const CoinBigIndex * columnStart = info->columnStart_;
+      const int * columnLength = info->columnLength_;
+      for (j=0;j<4;j++) {
+	int iColumn = firstLambda_+j;
+	int iStart = columnStart[iColumn];
+	int iEnd = iStart + columnLength[iColumn];
+	int k=iStart;
+	double sol = info->solution_[iColumn];
+	for (;k<iEnd;k++) {
+	  if (xyRow_==row[k])
+	    xyLambda += element[k]*sol;
+	}
+      }
+    } else {
+      // objective
+      const double * objective = info->objective_;
+      for (j=0;j<4;j++) {
+	int iColumn = firstLambda_+j;
+	double sol = info->solution_[iColumn];
+	xyLambda += objective[iColumn]*sol;
+      }
+    }
+    xyLambda /= coefficient_;
+  }
+  assert (info->defaultDual_>=0.0);
+  // If we move to xy then we move by coefficient * (xyTrue-xyLambda) on row xyRow_
+  double movement = xyTrue-xyLambda;
+  infeasibility_=0.0;
+  const double * pi = info->pi_;
+  const double * activity = info->rowActivity_;
+  const double * lower = info->rowLower_;
+  const double * upper = info->rowUpper_;
+  double tolerance = info->primalTolerance_;
+  double direction = info->direction_;
+  if (xyRow_>=0) {
+    assert (!boundType_);
+    if (lower[xyRow_]<-1.0e20) 
+      assert (pi[xyRow_]<=1.0e-3);
+    if (upper[xyRow_]>1.0e20) 
+      assert (pi[xyRow_]>=-1.0e-3);
+    double valueP = pi[xyRow_]*direction;
+    // if move makes infeasible then make at least default
+    double newValue = activity[xyRow_] + movement*coefficient_;
+    if (newValue>upper[xyRow_]+tolerance||newValue<lower[xyRow_]-tolerance) 
+      infeasibility_ += fabs(movement*coefficient_)*CoinMax(fabs(valueP),info->defaultDual_);
+  } else {
+    // objective
+    assert (movement>-1.0e-7);
+    infeasibility_ += movement;
+  }
+  for (int i=0;i<numberExtraRows_;i++) {
+    int iRow = extraRow_[i];
+    if (lower[iRow]<-1.0e20) 
+      assert (pi[iRow]<=1.0e-3);
+    if (upper[iRow]>1.0e20) 
+      assert (pi[iRow]>=-1.0e-3);
+    double valueP = pi[iRow]*direction;
+    // if move makes infeasible then make at least default
+    double newValue = activity[iRow] + movement*multiplier_[i];
+    if (newValue>upper[iRow]+tolerance||newValue<lower[iRow]-tolerance) 
+      infeasibility_ += fabs(movement*multiplier_[i])*CoinMax(fabs(valueP),info->defaultDual_);
+  }
+  if (infeasibility_<1.0e-7)
+    infeasibility_=0.0;
+  otherInfeasibility_ = CoinMax(1.0e-12,infeasibility_*10.0);
+}
 // This looks at solution and sets bounds to contain solution
 double
 OsiBiLinear::feasibleRegion(OsiSolverInterface * solver, const OsiBranchingInformation * info) const
@@ -6820,12 +6915,12 @@ OsiSimpleFixedInteger::infeasibility(const OsiBranchingInformation * info, int &
       double newUp = activity[iRow] + upMovement*el2;
       if (newUp>upper[iRow]+tolerance||newUp<lower[iRow]-tolerance)
 	u = CoinMax(u,info->defaultDual_);
-      upEstimate += u*upMovement;
+      upEstimate += u*upMovement*fabs(el2);
       // if down makes infeasible then make at least default
       double newDown = activity[iRow] - downMovement*el2;
       if (newDown>upper[iRow]+tolerance||newDown<lower[iRow]-tolerance)
 	d = CoinMax(d,info->defaultDual_);
-      downEstimate += d*downMovement;
+      downEstimate += d*downMovement*fabs(el2);
     }
     if (downEstimate>=upEstimate) {
       infeasibility_ = CoinMax(1.0e-12,upEstimate);

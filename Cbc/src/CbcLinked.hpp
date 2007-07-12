@@ -850,6 +850,8 @@ public:
 protected:
   /// Compute lambdas if coefficients not changing
   void computeLambdas(const OsiSolverInterface * solver,double lambda[4]) const;
+  /// Sets infeasibility and other when pseudo shadow prices
+  void getPseudoShadow(const OsiBranchingInformation * info);
   /// data
   
   /// Coefficient

@@ -1951,7 +1951,8 @@ void CbcClpUnitTest (const CbcModel & saveModel)
     */
 
     double startTime = CoinCpuTime()+CoinCpuTimeJustChildren();
-    model->setMaximumNodes(200000);
+    if (model->getMaximumNodes()>200000)
+      model->setMaximumNodes(200000);
     OsiClpSolverInterface * si =
       dynamic_cast<OsiClpSolverInterface *>(model->solver()) ;
     assert (si != NULL);

@@ -1726,7 +1726,7 @@ OsiSolverLink::setBiLinearPriorities(int value,double meshSize)
 	obj->setYOtherSatisfied(0.5*meshSize);
 	objNew->setYOtherSatisfied(oldSatisfied);
 	objNew->setYMeshSize(meshSize);
-	objNew->setXYSatisfied(0.5*meshSize);
+	objNew->setXYSatisfied(0.25*meshSize);
 	objNew->setPriority(value);
 	objNew->setBranchingStrategy(8);
       }
@@ -5557,6 +5557,9 @@ OsiBiLinear::infeasibility(const OsiBranchingInformation * info,int & whichWay) 
 	      feasible=false;
 	  }
 	}
+	if (testCoarse&&(branchingStrategy_&8)!=0&&xB[1]-xB[0]<1.0001*xSatisfied_&&
+	    yB[1]-yB[0]<1.0001*ySatisfied_)
+	  feasible=true;
 	if (feasible) {
 	  if (xB[1]-xB[0]>=xSatisfied_&&xMeshSize_) {
 	    if (yB[1]-yB[0]>=ySatisfied_&&yMeshSize_) {

@@ -2225,6 +2225,10 @@ void CbcModel::branchAndBound(int doStatistics)
     for (i=0;i<numberThreads_;i++) 
       time += threadInfo[i].timeInThread;
     bool goodTimer = time<(getCurrentSeconds());
+    //bool stopped = (!(numberNodes_ < intParam_[CbcMaxNumNode] &&
+    //	      numberSolutions_ < intParam_[CbcMaxNumSol] &&
+    //	      totalTime < dblParam_[CbcMaximumSeconds] &&
+    //	      !stoppedOnGap_&&!eventHappened_));
     for (i=0;i<numberThreads_;i++) {
       while (threadInfo[i].returnCode==0) {
 	pthread_cond_signal(threadInfo[i].condition2); // unlock
@@ -2240,10 +2244,16 @@ void CbcModel::branchAndBound(int doStatistics)
 	clock_gettime(CLOCK_REALTIME,&absTime);
 	pthread_mutex_unlock(&condition_mutex);
       }
+      pthread_cond_signal(threadInfo[i].condition2); // unlock
+      pthread_mutex_lock(&condition_mutex); // not sure necessary but have had one hang on interrupt
       threadModel[i]->numberThreads_=0; // say exit
       threadInfo[i].returnCode=0;
+      pthread_mutex_unlock(&condition_mutex);
       pthread_cond_signal(threadInfo[i].condition2); // unlock
-      pthread_join(threadId[i],NULL);
+      //if (!stopped)
+	pthread_join(threadId[i],NULL);
+	//else
+	//pthread_kill(threadId[i]); // kill rather than try and synchronize
       threadModel[i]->moveToModel(this,2);
       pthread_mutex_destroy (threadInfo[i].mutex2);
       pthread_cond_destroy (threadInfo[i].condition2);
@@ -10656,7 +10666,9 @@ static void * doNodesThread(void * voidInfo)
       struct timespec absTime2;
       clock_gettime(CLOCK_REALTIME,&absTime2);
       double time2 = absTime2.tv_sec+1.0e-9*absTime2.tv_nsec;
-      pthread_cond_wait(condition,mutex);
+      // timed wait as seems to hang on max nodes at times
+      absTime2.tv_sec += 10;
+      pthread_cond_timedwait(condition,mutex,&absTime2);
       clock_gettime(CLOCK_REALTIME,&stuff->absTime);
       double time = stuff->absTime.tv_sec+1.0e-9*stuff->absTime.tv_nsec;
       stuff->timeWaitingToStart+=time-time2;;

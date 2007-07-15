@@ -50,6 +50,9 @@ CbcTree::top() const
 // Add a node to the heap
 void 
 CbcTree::push(CbcNode * x) {
+  /*printf("push obj %g, refcount %d, left %d, pointing to %d\n",
+	 x->objectiveValue(),x->nodeInfo()->decrement(0),
+	 x->nodeInfo()->numberBranchesLeft(),x->nodeInfo()->numberPointingToThis());*/
   assert(x->objectiveValue()!=COIN_DBL_MAX&&x->nodeInfo());
   nodes_.push_back(x);
   push_heap(nodes_.begin(), nodes_.end(), comparison_);
@@ -80,10 +83,16 @@ CbcTree::bestNode(double cutoff)
     if (best&&best->objectiveValue()!=COIN_DBL_MAX&&best->nodeInfo())
       assert (best->nodeInfo()->numberBranchesLeft());
     if (!best||best->objectiveValue()>=cutoff) {
+#if 0
       // take off
       pop_heap(nodes_.begin(), nodes_.end(), comparison_);
       nodes_.pop_back();
+      delete best;
       best=NULL;
+#else
+      // let code get rid of it
+      assert (best);
+#endif
     }
   }
   // switched off for now

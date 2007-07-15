@@ -763,10 +763,6 @@ CbcHeuristicGreedyEquality::solution(double & solutionValue,
       // new solution
       memcpy(betterSolution,newSolution,numberColumns*sizeof(double));
       solutionValue = newSolutionValue;
-      model_->messageHandler()->message(CBC_HEURISTIC_SOLUTION,model_->messages())
-        << newSolutionValue
-        << "CbcHeuristicGreedy"<<model_->getCurrentSeconds()
-        <<CoinMessageEol;
       returnCode=1;
     }
   }

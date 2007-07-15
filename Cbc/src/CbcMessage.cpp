@@ -30,7 +30,7 @@ static Cbc_message us_english[]=
   {CBC_INTEGERINCREMENT,9,1,"Objective coefficients multiple of %g"},
   {CBC_STATUS,10,1,"After %d nodes, %d on tree, %g best solution, best possible %g (%.2f seconds)"},
   {CBC_GAP,11,1,"Exiting as integer gap of %g less than %g or %g%%"},
-  {CBC_ROUNDING,12,1,"Integer solution of %g found by heuristic after %d iterations and %d nodes (%.2f seconds)"},
+  {CBC_ROUNDING,12,1,"Integer solution of %g found by %s after %d iterations and %d nodes (%.2f seconds)"},
   {CBC_TREE_SOL,24,1,"Integer solution of %g found by subtree after %d iterations and %d nodes (%.2f seconds)"},
   {CBC_ROOT,13,1,"At root node, %d cuts changed objective from %g to %g in %d passes"},
   {CBC_GENERATOR,14,1,"Cut generator %d (%s) - %d row cuts (%d active), %d column cuts %? in %g seconds - new frequency is %d"},
@@ -48,13 +48,15 @@ static Cbc_message us_english[]=
   {CBC_WARNING_STRONG,3008,1,"Strong branching is fixing too many variables, too expensively!"},
   {CBC_START_SUB,28,1,"Starting sub-tree for %s - maximum nodes %d"},
   {CBC_END_SUB,29,1,"Ending sub-tree for %s"},
-  {CBC_HEURISTIC_SOLUTION,30,1,"solution of %g found by %s after %2.f seconds"},
+  {CBC_THREAD_STATS,30,1,"%s%? %d used %d times,  waiting to start %g, %?%g cpu time,%? %g waiting for threads, %? %d locks, %g locked, %g waiting for locks"},
   {CBC_CUTS_STATS,31,1,"%d added rows had average density of %g"},
   {CBC_STRONG_STATS,32,1,"Strong branching done %d times (%d iterations), fathomed %d nodes and fixed %d variables"},
   {CBC_UNBOUNDED,34,1,"The LP relaxation is unbounded!"},
   {CBC_OTHER_STATS,35,1,"Maximum depth %d, %g variables fixed on reduced cost"},
   {CBC_HEURISTICS_OFF,36,1,"Heuristics switched off as %d branching objects are of wrong type"},
   {CBC_STATUS2,37,1,"%d nodes, %d on tree, best %g - possible %g depth %d unsat %d its %d (%.2f seconds)"},
+  {CBC_FPUMP1,38,1,"%s"},
+  {CBC_FPUMP2,39,2,"%s"},
   {CBC_DUMMY_END,999999,0,""}
 };
 /* Constructor */

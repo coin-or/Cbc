@@ -2,6 +2,7 @@
 // Corporation and others.  All Rights Reserved.
 #ifndef CbcFathom_H
 #define CbcFathom_H
+#include "CbcConfig.h"
 
 class CbcModel;
 
@@ -62,5 +63,60 @@ private:
   CbcFathom & operator=(const CbcFathom& rhs);
   
 };
+#ifdef COIN_HAS_CLP
+#include "OsiClpSolverInterface.hpp"
 
+//#############################################################################
+
+/**
+   
+This is for codes where solver needs to know about CbcModel
+*/
+
+class CbcOsiSolver : public OsiClpSolverInterface {
+  
+public:
+  
+  /**@name Constructors and destructors */
+  //@{
+  /// Default Constructor
+  CbcOsiSolver ();
+  
+  /// Clone
+  virtual OsiSolverInterface * clone(bool copyData=true) const;
+  
+  /// Copy constructor 
+  CbcOsiSolver (const CbcOsiSolver &);
+  
+  /// Assignment operator 
+  CbcOsiSolver & operator=(const CbcOsiSolver& rhs);
+  
+  /// Destructor 
+  virtual ~CbcOsiSolver ();
+  
+  //@}
+  
+  
+  /**@name Sets and Gets */
+  //@{
+  /// Set Cbc Model
+  inline void setCbcModel(CbcModel * model)
+  { cbcModel_=model;};
+  /// Return Cbc Model
+  inline CbcModel * cbcModel() const
+  { return cbcModel_;};
+  //@}
+  
+  //---------------------------------------------------------------------------
+  
+protected:
+  
+  
+  /**@name Private member data */
+  //@{
+  /// Pointer back to CbcModel
+  CbcModel * cbcModel_;
+  //@}
+};
+#endif
 #endif

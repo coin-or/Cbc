@@ -14,6 +14,7 @@ class CbcNode;
 class CbcNodeInfo;
 class CbcBranchingObject;
 class OsiChooseVariable;
+class CbcObjectUpdateData;
 
 //#############################################################################
 
@@ -189,6 +190,16 @@ public:
   virtual void floorCeiling(double & floorValue, double & ceilingValue, double value,
 			    double tolerance) const;
 
+  /** Pass in information on branch just done and create CbcObjectUpdateData instance.
+      If object does not need data then backward pointer will be NULL.
+      Assumes can get information from solver */
+  virtual CbcObjectUpdateData createUpdateInformation(const OsiSolverInterface * solver, 
+							const CbcNode * node,
+							const CbcBranchingObject * branchingObject);
+
+  /// Update object by CbcObjectUpdateData
+  virtual void updateInformation(const CbcObjectUpdateData & data) {};
+
   /// Identifier (normally column number in matrix)
   inline int id() const
   { return id_;};
@@ -322,6 +333,9 @@ public:
   inline void way(int way)
   {way_=way;};
 
+   /// update model
+  inline void setModel(CbcModel * model)
+  { model_ = model;};
   /// Return model
   inline CbcModel * model() const
   {return  model_;};
@@ -487,6 +501,52 @@ public:
   virtual void applyToSolver(OsiSolverInterface * solver, int state) const=0;
   
 protected:
+};
+/*  This stores data so an object can be updated
+ */
+class CbcObjectUpdateData {
+
+public:
+
+  /// Default Constructor 
+  CbcObjectUpdateData ();
+
+  /// Useful constructor
+  CbcObjectUpdateData (CbcObject * object,
+		       int way,
+		       double change,
+		       int status,
+		       int intDecrease_,
+		       double branchingValue);
+  
+  /// Copy constructor 
+  CbcObjectUpdateData ( const CbcObjectUpdateData &);
+   
+  /// Assignment operator 
+  CbcObjectUpdateData & operator=( const CbcObjectUpdateData& rhs);
+
+  /// Destructor 
+  virtual ~CbcObjectUpdateData ();
+
+  
+public:
+  /// data
+
+  /// Object
+  CbcObject * object_;
+  /// Branch as defined by instance of CbcObject
+  int way_;
+  /// Object number
+  int objectNumber_;
+  /// Change in objective
+  double change_;
+  /// Status 0 Optimal, 1 infeasible, 2 unknown
+  int status_;
+  /// Decrease in number unsatisfied
+  int intDecrease_;
+  /// Branching value
+  double branchingValue_;
+
 };
 
 #endif

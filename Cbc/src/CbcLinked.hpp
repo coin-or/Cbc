@@ -7,28 +7,22 @@
    OsiBranchLink
    CglTemporary
 */
-#ifndef COIN_HAS_LINK
-#ifdef COIN_HAS_ASL
-#define COIN_HAS_LINK
-#endif
-#endif
 #include "CoinModel.hpp"
-#ifdef COIN_HAS_LINK
 #include "OsiClpSolverInterface.hpp"
+#include "OsiChooseVariable.hpp"
+#include "CbcFathom.hpp"
 class CbcModel;
 class CoinPackedMatrix;
 class OsiLinkedBound;
 class OsiObject;
 class CglStored;
-//#############################################################################
-
 /**
    
 This is to allow the user to replace initialSolve and resolve
 This version changes coefficients
 */
 
-class OsiSolverLink : public OsiClpSolverInterface {
+class OsiSolverLink : public CbcOsiSolver {
   
 public:
   //---------------------------------------------------------------------------
@@ -62,6 +56,10 @@ public:
   /** Solves nonlinear problem from CoinModel using SLP - and then tries to get
       heuristic solution
       Returns solution array
+      mode -
+      0 just get continuous
+      1 round and try normal bab
+      2 use defaultBound_ to bound integer variables near current solution
   */
   double * heuristicSolution(int numberPasses,double deltaTolerance,int mode);
   //@}
@@ -111,6 +109,8 @@ public:
   int updateCoefficients(ClpSimplex * solver, CoinPackedMatrix * matrix);
   /// Analyze constraints to see which are convex (quadratic)
   void analyzeObjects();
+  /// Add reformulated bilinear constraints
+  void addTighterConstraints();
   /// Objective value of best solution found internally
   inline double bestObjectiveValue() const
   { return bestObjectiveValue_;};
@@ -162,20 +162,29 @@ public:
   /// Get integer priority
   inline int integerPriority() const
   { return integerPriority_;};
+  /// Objective transfer variable if one
+  inline int objectiveVariable() const
+  { return objectiveVariable_;}
   /// Set biLinear priority
   inline void setBiLinearPriority(int value)
   { biLinearPriority_=value;};
   /// Get biLinear priority
   inline int biLinearPriority() const
   { return biLinearPriority_;};
-  /// Set Cbc Model
-  inline void setCbcModel(CbcModel * model)
-  { cbcModel_=model;};
   /// Return CoinModel
   inline const CoinModel * coinModel() const
   { return &coinModel_;};
   /// Set all biLinear priorities on x-x variables
   void setBiLinearPriorities(int value, double meshSize=1.0);
+  /** Set options and priority on all or some biLinear variables
+      1 - on I-I
+      2 - on I-x
+      4 - on x-x
+      or combinations.
+      -1 means leave (for priority value and strategy value)
+  */
+  void setBranchingStrategyOnVariables(int strategyValue, int priorityValue=-1,
+				       int mode=7);
   /// Set all mesh sizes on x-x variables
   void setMeshSizes(double value);
   /** Two tier integer problem where when set of variables with priority
@@ -211,8 +220,6 @@ protected:
   CoinPackedMatrix * originalRowCopy_;
   /// Copy of quadratic model if one
   ClpSimplex * quadraticModel_;
-  /// Pointer back to CbcModel
-  CbcModel * cbcModel_;
   /// Number of rows with nonLinearities
   int numberNonLinearRows_;
   /// Starts of lists
@@ -235,7 +242,8 @@ protected:
      0 bit (1) - call fathom (may do mini B&B)
      1 bit (2) - quadratic only in objective (add OA cuts)
      2 bit (4) - convex
-     4 bit (8) - try adding OA cuts
+     3 bit (8) - try adding OA cuts
+     4 bit (16) - add linearized constraints
   */
   int specialOptions2_;
   /// Objective transfer row if one
@@ -684,6 +692,16 @@ public:
 	       double xMesh, double yMesh,
 	       int numberExistingObjects=0,const OsiObject ** objects=NULL );
   
+  /** Useful constructor - 
+      This Adds in rows and variables to construct valid Linked Ordered Set
+      Adds extra constraints to match other x/y
+      So note not const model
+  */
+  OsiBiLinear (CoinModel * coinModel, int xColumn,
+	       int yColumn, int xyRow, double coefficient,
+	       double xMesh, double yMesh,
+	       int numberExistingObjects=0,const OsiObject ** objects=NULL );
+  
   // Copy constructor 
   OsiBiLinear ( const OsiBiLinear &);
    
@@ -792,6 +810,8 @@ public:
       4 set to say don't update coefficients
       next bit
       8 set to say don't use in feasible region
+      next bit
+      16 set to say - Always satisfied !!
   */
   inline int branchingStrategy() const
   { return branchingStrategy_;};
@@ -819,6 +839,10 @@ public:
   void getCoefficients(const OsiSolverInterface * solver,double xB[2], double yB[2], double xybar[4]) const;
   /// Compute lambdas (third entry in each .B is current value) (nonzero if bad)
   double computeLambdas(const double xB[3], const double yB[3],const double xybar[4],double lambda[4]) const;
+  /// Adds in data for extra row with variable coefficients
+  void addExtraRow(int row, double multiplier);
+  /// Sets infeasibility and other when pseudo shadow prices
+  void getPseudoShadow(const OsiBranchingInformation * info);
 
 protected:
   /// Compute lambdas if coefficients not changing
@@ -856,6 +880,8 @@ protected:
       4 set to say don't update coefficients
       next bit
       8 set to say don't use in feasible region
+      next bit
+      16 set to say - Always satisfied !!
   */
   int branchingStrategy_;
   /** Simple quadratic bound marker.
@@ -874,6 +900,12 @@ protected:
   int xyRow_;
   /// Convexity row
   int convexity_;
+  /// Number of extra rows (coefficients to be modified)
+  int numberExtraRows_;
+  /// Multiplier for coefficient on row
+  double * multiplier_;
+  /// Row number
+  int * extraRow_;
   /// Which chosen -1 none, 0 x, 1 y
   mutable short chosen_;
 };
@@ -971,7 +1003,7 @@ private:
   /// Number of points
   int numberPoints_;
 };
-/// Define a single integer class - but one where you kep branching until fixed even if satsified
+/// Define a single integer class - but one where you keep branching until fixed even if satisfied
 
 
 class OsiSimpleFixedInteger : public OsiSimpleInteger {
@@ -1012,6 +1044,128 @@ public:
 protected:
   /// data
   
+};
+/** Define a single variable class which is involved with OsiBiLinear objects.
+    This is used so can make better decision on where to branch as it can look at 
+    all objects.
+
+    This version sees if it can re-use code from OsiSimpleInteger
+    even if not an integer variable.  If not then need to duplicate code.
+*/
+
+
+class OsiUsesBiLinear : public OsiSimpleInteger {
+
+public:
+
+  /// Default Constructor 
+  OsiUsesBiLinear ();
+
+  /// Useful constructor - passed solver index
+  OsiUsesBiLinear (const OsiSolverInterface * solver, int iColumn, int type);
+  
+  /// Useful constructor - passed solver index and original bounds
+  OsiUsesBiLinear (int iColumn, double lower, double upper, int type);
+  
+  /// Useful constructor - passed simple integer
+  OsiUsesBiLinear (const OsiSimpleInteger & rhs, int type);
+  
+  /// Copy constructor 
+  OsiUsesBiLinear ( const OsiUsesBiLinear & rhs);
+   
+  /// Clone
+  virtual OsiObject * clone() const;
+
+  /// Assignment operator 
+  OsiUsesBiLinear & operator=( const OsiUsesBiLinear& rhs);
+
+  /// Destructor 
+  virtual ~OsiUsesBiLinear ();
+  
+  /// Infeasibility - large is 0.5
+  virtual double infeasibility(const OsiBranchingInformation * info, int & whichWay) const;
+  /** Creates a branching object
+
+    The preferred direction is set by \p way, 0 for down, 1 for up.
+  */
+  virtual OsiBranchingObject * createBranch(OsiSolverInterface * solver, const OsiBranchingInformation * info, int way) const;
+  /** Set bounds to fix the variable at the current value.
+
+    Given an current value, set the lower and upper bounds to fix the
+    variable. Returns amount it had to move variable.
+  */
+  virtual double feasibleRegion(OsiSolverInterface * solver, const OsiBranchingInformation * info) const;
+  /// Add all bi-linear objects
+  void addBiLinearObjects(OsiSolverLink * solver);
+protected:
+  /// data
+  /// Number of bilinear objects (maybe could be more general)
+  int numberBiLinear_;
+  /// Type of variable - 0 continuous, 1 integer
+  int type_;
+  /// Objects
+  OsiObject ** objects_;
+};
+/** This class chooses a variable to branch on
+
+    This is just as OsiChooseStrong but it fakes it so only
+    first so many are looked at in this phase
+
+*/
+
+class OsiChooseStrongSubset  : public OsiChooseStrong {
+ 
+public:
+    
+  /// Default Constructor 
+  OsiChooseStrongSubset ();
+
+  /// Constructor from solver (so we can set up arrays etc)
+  OsiChooseStrongSubset (const OsiSolverInterface * solver);
+
+  /// Copy constructor 
+  OsiChooseStrongSubset (const OsiChooseStrongSubset &);
+   
+  /// Assignment operator 
+  OsiChooseStrongSubset & operator= (const OsiChooseStrongSubset& rhs);
+
+  /// Clone
+  virtual OsiChooseVariable * clone() const;
+
+  /// Destructor 
+  virtual ~OsiChooseStrongSubset ();
+
+  /** Sets up strong list and clears all if initialize is true.
+      Returns number of infeasibilities. 
+      If returns -1 then has worked out node is infeasible!
+  */
+  virtual int setupList ( OsiBranchingInformation *info, bool initialize);
+  /** Choose a variable
+      Returns - 
+     -1 Node is infeasible
+     0  Normal termination - we have a candidate
+     1  All looks satisfied - no candidate
+     2  We can change the bound on a variable - but we also have a strong branching candidate
+     3  We can change the bound on a variable - but we have a non-strong branching candidate
+     4  We can change the bound on a variable - no other candidates
+     We can pick up branch from bestObjectIndex() and bestWhichWay()
+     We can pick up a forced branch (can change bound) from firstForcedObjectIndex() and firstForcedWhichWay()
+     If we have a solution then we can pick up from goodObjectiveValue() and goodSolution()
+     If fixVariables is true then 2,3,4 are all really same as problem changed
+  */
+  virtual int chooseVariable( OsiSolverInterface * solver, OsiBranchingInformation *info, bool fixVariables);
+
+  /// Number of objects to use
+  inline int numberObjectsToUse() const
+  { return numberObjectsToUse_;};
+  /// Set number of objects to use
+  inline void setNumberObjectsToUse(int value)
+  { numberObjectsToUse_ = value;};
+
+protected:
+  // Data
+  /// Number of objects to be used (and set in solver)
+  int numberObjectsToUse_;
 };
 
 #include <string>
@@ -1146,7 +1300,6 @@ protected:
   int specialOptions3_;
   //@}
 };
-#endif
 class ClpSimplex;
 /** Return an approximate solution to a CoinModel.
     Lots of bounds may be odd to force a solution.

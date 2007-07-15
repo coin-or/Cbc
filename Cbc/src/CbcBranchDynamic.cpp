@@ -266,6 +266,34 @@ CbcSimpleIntegerDynamicPseudoCost::operator=( const CbcSimpleIntegerDynamicPseud
 CbcSimpleIntegerDynamicPseudoCost::~CbcSimpleIntegerDynamicPseudoCost ()
 {
 }
+// Copy some information i.e. just variable stuff
+void 
+CbcSimpleIntegerDynamicPseudoCost::copySome(CbcSimpleIntegerDynamicPseudoCost * otherObject)
+{
+  downDynamicPseudoCost_=otherObject->downDynamicPseudoCost_;
+  upDynamicPseudoCost_=otherObject->upDynamicPseudoCost_;
+  sumDownCost_ = otherObject->sumDownCost_;
+  sumUpCost_ = otherObject->sumUpCost_;
+  sumDownChange_ = otherObject->sumDownChange_;
+  sumUpChange_ = otherObject->sumUpChange_;
+  sumDownCostSquared_ = otherObject->sumDownCostSquared_;
+  sumUpCostSquared_ = otherObject->sumUpCostSquared_;
+  sumDownDecrease_ = otherObject->sumDownDecrease_;
+  sumUpDecrease_ = otherObject->sumUpDecrease_;
+  lastDownCost_ = otherObject->lastDownCost_;
+  lastUpCost_ = otherObject->lastUpCost_;
+  lastDownDecrease_ = otherObject->lastDownDecrease_;
+  lastUpDecrease_ = otherObject->lastUpDecrease_;
+  numberTimesDown_ = otherObject->numberTimesDown_;
+  numberTimesUp_ = otherObject->numberTimesUp_;
+  numberTimesDownInfeasible_ = otherObject->numberTimesDownInfeasible_;
+  numberTimesUpInfeasible_ = otherObject->numberTimesUpInfeasible_;
+  numberTimesDownLocalFixed_ = otherObject->numberTimesDownLocalFixed_;
+  numberTimesUpLocalFixed_ = otherObject->numberTimesUpLocalFixed_;
+  numberTimesDownTotalFixed_ = otherObject->numberTimesDownTotalFixed_;
+  numberTimesUpTotalFixed_ = otherObject->numberTimesUpTotalFixed_;
+  numberTimesProbingTotal_ = otherObject->numberTimesProbingTotal_;
+}
 // Creates a branching object
 CbcBranchingObject * 
 CbcSimpleIntegerDynamicPseudoCost::createBranch(int way) 
@@ -646,6 +674,155 @@ CbcSimpleIntegerDynamicPseudoCost::downEstimate() const
   double downCost = CoinMax((value-below)*downDynamicPseudoCost_,0.0);
   return downCost;
 }
+/* Pass in information on branch just done and create CbcObjectUpdateData instance.
+   If object does not need data then backward pointer will be NULL.
+   Assumes can get information from solver */
+CbcObjectUpdateData 
+CbcSimpleIntegerDynamicPseudoCost::createUpdateInformation(const OsiSolverInterface * solver, 
+							   const CbcNode * node,
+							   const CbcBranchingObject * branchingObject)
+{
+  double originalValue=node->objectiveValue();
+  int originalUnsatisfied = node->numberUnsatisfied();
+  double objectiveValue = solver->getObjValue()*solver->getObjSense();
+  int unsatisfied=0;
+  int i;
+  //might be base model - doesn't matter
+  int numberIntegers = model_->numberIntegers();;
+  const double * solution = solver->getColSolution();
+  //const double * lower = solver->getColLower();
+  //const double * upper = solver->getColUpper();
+  double change = CoinMax(0.0,objectiveValue-originalValue);
+  int iStatus;
+  if (solver->isProvenOptimal())
+    iStatus=0; // optimal
+  else if (solver->isIterationLimitReached()
+           &&!solver->isDualObjectiveLimitReached())
+    iStatus=2; // unknown 
+  else
+    iStatus=1; // infeasible
+
+  bool feasible = iStatus!=1;
+  if (feasible) {
+    double integerTolerance = 
+      model_->getDblParam(CbcModel::CbcIntegerTolerance);
+    const int * integerVariable = model_->integerVariable();
+    for (i=0;i<numberIntegers;i++) {
+      int j=integerVariable[i];
+      double value = solution[j];
+      double nearest = floor(value+0.5);
+      if (fabs(value-nearest)>integerTolerance) 
+        unsatisfied++;
+    }
+  }
+  int way = branchingObject->way();
+  way = - way; // because after branch so moved on
+  double value = branchingObject->value();
+  return CbcObjectUpdateData (this, way,
+				  change, iStatus,
+				  originalUnsatisfied-unsatisfied,value);
+}
+// Update object by CbcObjectUpdateData
+void 
+CbcSimpleIntegerDynamicPseudoCost::updateInformation(const CbcObjectUpdateData & data)
+{
+  bool feasible = data.status_!=1;
+  int way = data.way_;
+  double value = data.branchingValue_;
+  double change = data.change_;
+#define TYPE2 1
+#define TYPERATIO 0.9
+  if (way<0) {
+    // down
+    if (feasible) {
+      //printf("(down change %g value down %g ",change,value-floor(value));
+      incrementNumberTimesDown();
+      addToSumDownChange(1.0e-30+value-floor(value));
+      addToSumDownDecrease(data.intDecrease_);
+#if TYPE2==0
+      addToSumDownCost(change/(1.0e-30+(value-floor(value))));
+      setDownDynamicPseudoCost(sumDownCost()/(double) numberTimesDown());
+#elif TYPE2==1
+      addToSumDownCost(change);
+      setDownDynamicPseudoCost(sumDownCost()/sumDownChange());
+#elif TYPE2==2
+      addToSumDownCost(change*TYPERATIO+(1.0-TYPERATIO)*change/(1.0e-30+(value-floor(value))));
+      setDownDynamicPseudoCost(sumDownCost()*(TYPERATIO/sumDownChange()+(1.0-TYPERATIO)/(double) numberTimesDown()));
+#endif
+    } else {
+      //printf("(down infeasible value down %g ",change,value-floor(value));
+      incrementNumberTimesDownInfeasible();
+#if INFEAS==2
+      double distanceToCutoff=0.0;
+      double objectiveValue = model->getCurrentMinimizationObjValue();
+      distanceToCutoff =  model->getCutoff()  - originalValue;
+      if (distanceToCutoff<1.0e20) 
+	change = distanceToCutoff*2.0;
+      else 
+	change = downDynamicPseudoCost()*(value-floor(value))*10.0; 
+      change = CoinMax(1.0e-12*(1.0+fabs(originalValue)),change);
+      incrementNumberTimesDown();
+      addToSumDownChange(1.0e-30+value-floor(value));
+      addToSumDownDecrease(data.intDecrease_);
+#if TYPE2==0
+      addToSumDownCost(change/(1.0e-30+(value-floor(value))));
+      setDownDynamicPseudoCost(sumDownCost()/(double) numberTimesDown());
+#elif TYPE2==1
+      addToSumDownCost(change);
+      setDownDynamicPseudoCost(sumDownCost()/sumDownChange());
+#elif TYPE2==2
+      addToSumDownCost(change*TYPERATIO+(1.0-TYPERATIO)*change/(1.0e-30+(value-floor(value))));
+      setDownDynamicPseudoCost(sumDownCost()*(TYPERATIO/sumDownChange()+(1.0-TYPERATIO)/(double) numberTimesDown()));
+#endif
+#endif
+    }
+  } else {
+    // up
+    if (feasible) {
+      //printf("(up change %g value down %g ",change,ceil(value)-value);
+      incrementNumberTimesUp();
+      addToSumUpChange(1.0e-30+ceil(value)-value);
+      addToSumUpDecrease(data.intDecrease_);
+#if TYPE2==0
+      addToSumUpCost(change/(1.0e-30+(ceil(value)-value)));
+      setUpDynamicPseudoCost(sumUpCost()/(double) numberTimesUp());
+#elif TYPE2==1
+      addToSumUpCost(change);
+      setUpDynamicPseudoCost(sumUpCost()/sumUpChange());
+#elif TYPE2==2
+      addToSumUpCost(change*TYPERATIO+(1.0-TYPERATIO)*change/(1.0e-30+(ceil(value)-value)));
+      setUpDynamicPseudoCost(sumUpCost()*(TYPERATIO/sumUpChange()+(1.0-TYPERATIO)/(double) numberTimesUp()));
+#endif
+    } else {
+      //printf("(up infeasible value down %g ",change,ceil(value)-value);
+      incrementNumberTimesUpInfeasible();
+#if INFEAS==2
+      double distanceToCutoff=0.0;
+      double objectiveValue = model->getCurrentMinimizationObjValue();
+      distanceToCutoff =  model->getCutoff()  - originalValue;
+      if (distanceToCutoff<1.0e20) 
+	change = distanceToCutoff*2.0;
+      else 
+	change = upDynamicPseudoCost()*(ceil(value)-value)*10.0; 
+      change = CoinMax(1.0e-12*(1.0+fabs(originalValue)),change);
+      incrementNumberTimesUp();
+      addToSumUpChange(1.0e-30+ceil(value)-value);
+      addToSumUpDecrease(data.intDecrease_);
+#if TYPE2==0
+      addToSumUpCost(change/(1.0e-30+(ceil(value)-value)));
+      setUpDynamicPseudoCost(sumUpCost()/(double) numberTimesUp());
+#elif TYPE2==1
+      addToSumUpCost(change);
+      setUpDynamicPseudoCost(sumUpCost()/sumUpChange());
+#elif TYPE2==2
+      addToSumUpCost(change*TYPERATIO+(1.0-TYPERATIO)*change/(1.0e-30+(ceil(value)-value)));
+      setUpDynamicPseudoCost(sumUpCost()*(TYPERATIO/sumUpChange()+(1.0-TYPERATIO)/(double) numberTimesUp()));
+#endif
+#endif
+    }
+  }
+  //print(1,0.5);
+}
 // Pass in probing information
 void 
 CbcSimpleIntegerDynamicPseudoCost::setProbingInformation(int fixedDown, int fixedUp)
@@ -951,8 +1128,8 @@ CbcBranchDynamicDecision::updateInformation(OsiSolverInterface * solver,
   }
   int way = object_->way();
   double value = object_->value();
-#define TYPE2 1
-#define TYPERATIO 0.9
+  //#define TYPE2 1
+  //#define TYPERATIO 0.9
   if (way<0) {
     // down
     if (feasible) {
@@ -1042,7 +1219,7 @@ CbcBranchDynamicDecision::updateInformation(OsiSolverInterface * solver,
 #endif
     }
   }
-  //object->print();
+  //object->print(1,0.5);
   delete object_;
   object_=NULL;
 }
@@ -1060,15 +1237,18 @@ CbcBranchDynamicDecision::betterBranch(CbcBranchingObject * thisOne,
 			    double changeUp, int numInfUp,
 			    double changeDown, int numInfDown)
 {
-  int stateOfSearch = thisOne->model()->stateOfSearch();
+  CbcModel * model = thisOne->model();
+  int stateOfSearch = model->stateOfSearch();
   int betterWay=0;
   double value=0.0;
+  if (!bestObject_) {
+    bestCriterion_=-1.0;
+    bestNumberUp_=INT_MAX;
+    bestNumberDown_=INT_MAX;
+  }
   if (stateOfSearch<=1&&thisOne->model()->currentNode()->depth()>10) {
-#if 0
-    if (!bestObject_) {
-      bestNumberUp_=INT_MAX;
-      bestNumberDown_=INT_MAX;
-    }
+#define TRY_STUFF 1
+#ifdef TRY_STUFF
     // before solution - choose smallest number 
     // could add in depth as well
     int bestNumber = CoinMin(bestNumberUp_,bestNumberDown_);
@@ -1107,9 +1287,6 @@ CbcBranchDynamicDecision::betterBranch(CbcBranchingObject * thisOne,
       value = CoinMin(numInfUp,numInfDown);
     }
 #else
-    if (!bestObject_) {
-      bestCriterion_=-1.0;
-    }
     // got a solution
     double minValue = CoinMin(changeDown,changeUp);
     double maxValue = CoinMax(changeDown,changeUp);
@@ -1123,16 +1300,41 @@ CbcBranchDynamicDecision::betterBranch(CbcBranchingObject * thisOne,
     }
 #endif
   } else {
-    if (!bestObject_) {
-      bestCriterion_=-1.0;
-    }
+#if TRY_STUFF > 1
+    // Get current number of infeasibilities, cutoff and current objective
+    CbcNode * node = model->currentNode();
+    int numberUnsatisfied = node->numberUnsatisfied();
+    double cutoff = model->getCutoff();
+    double objectiveValue = node->objectiveValue();
+#endif
     // got a solution
     double minValue = CoinMin(changeDown,changeUp);
     double maxValue = CoinMax(changeDown,changeUp);
     // Reduce
+#ifdef TRY_STUFF
+    //maxValue = CoinMin(maxValue,minValue*4.0);
+#else
     maxValue = CoinMin(maxValue,minValue*2.0);
+#endif
     value = WEIGHT_AFTER*minValue + (1.0-WEIGHT_AFTER)*maxValue;
-    if (value>bestCriterion_+1.0e-8) {
+    double useValue = value;
+    double useBest = bestCriterion_;
+#if TRY_STUFF>1
+    int thisNumber = CoinMin(numInfUp,numInfDown);
+    int bestNumber = CoinMin(bestNumberUp_,bestNumberDown_);
+    double distance = cutoff-objectiveValue;
+    assert (distance>=0.0);
+    if (useValue+0.1*distance>useBest&&useValue*1.1>useBest&&
+	useBest+0.1*distance>useValue&&useBest*1.1>useValue) {
+      // not much in it - look at unsatisfied
+      if (thisNumber<numberUnsatisfied||bestNumber<numberUnsatisfied) {
+	double perInteger = distance/ ((double) numberUnsatisfied);
+	useValue += thisNumber*perInteger;
+	useBest += bestNumber*perInteger;
+      }
+    }
+#endif
+    if (useValue>useBest+1.0e-8) {
       if (changeUp<=changeDown) {
         betterWay=1;
       } else {

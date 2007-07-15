@@ -8,7 +8,9 @@
 #include <cmath>
 #include <cfloat>
 
-#include "OsiSolverInterface.hpp"
+#ifdef COIN_HAS_CLP
+#include "OsiClpSolverInterface.hpp"
+#endif
 #include "CbcModel.hpp"
 #include "CbcMessage.hpp"
 #include "CbcFathom.hpp"
@@ -44,3 +46,58 @@ void CbcFathom::setModel(CbcModel * model)
 {
   model_ = model;
 }
+#ifdef COIN_HAS_CLP
+
+//#############################################################################
+// Constructors, destructors clone and assignment
+//#############################################################################
+
+//-------------------------------------------------------------------
+// Default Constructor 
+//-------------------------------------------------------------------
+CbcOsiSolver::CbcOsiSolver ()
+  : OsiClpSolverInterface()
+{
+  cbcModel_ = NULL;
+}
+//-------------------------------------------------------------------
+// Clone
+//-------------------------------------------------------------------
+OsiSolverInterface * 
+CbcOsiSolver::clone(bool copyData) const
+{
+  assert (copyData);
+  return new CbcOsiSolver(*this);
+}
+
+
+//-------------------------------------------------------------------
+// Copy constructor 
+//-------------------------------------------------------------------
+CbcOsiSolver::CbcOsiSolver (
+                  const CbcOsiSolver & rhs)
+  : OsiClpSolverInterface(rhs)
+{
+  cbcModel_ = rhs.cbcModel_;
+}
+
+//-------------------------------------------------------------------
+// Destructor 
+//-------------------------------------------------------------------
+CbcOsiSolver::~CbcOsiSolver ()
+{
+}
+
+//-------------------------------------------------------------------
+// Assignment operator 
+//-------------------------------------------------------------------
+CbcOsiSolver &
+CbcOsiSolver::operator=(const CbcOsiSolver& rhs)
+{
+  if (this != &rhs) { 
+    OsiClpSolverInterface::operator=(rhs);
+    cbcModel_ = rhs.cbcModel_;
+  }
+  return *this;
+}
+#endif

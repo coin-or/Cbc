@@ -35,7 +35,9 @@ THIS SOFTWARE.
 #include "CoinPackedMatrix.hpp"
 #include "CoinMpsIO.hpp"
 #include "CoinFloatEqual.hpp"
-
+#ifdef COIN_HAS_CLP
+#include "OsiClpSolverInterface.hpp"
+#endif
 #include "Cbc_ampl.h"
 extern "C" {
 # include "getstub.h"
@@ -54,7 +56,7 @@ checkPhrase(Option_Info *oi, keyword *kw, char *v)
   if (strlen(v))
     printf("string %s\n",v);
   // Say algorithm found
-  strcpy(algFound,kw->desc);;
+  strcpy(algFound,kw->desc);
   return v;
 }
 static char*
@@ -123,8 +125,8 @@ static char xxxxxx[20];
 	{ "quit",	checkPhrase2,		(char *) xxxxxx , "-quit"},
 	{ "wantsol",	WS_val,		NULL, "write .sol file (without -AMPL)" }
 	};
-static Option_Info Oinfo = {"cbc", "Cbc 1.01", "cbc_options", keywds, nkeywds, 0, "",
-				0,decodePhrase,0,0,0, 20060130 };
+static Option_Info Oinfo = {"cbc", "Cbc 1.04", "cbc_options", keywds, nkeywds, 0, "",
+				0,decodePhrase,0,0,0, 20070606 };
 // strdup used to avoid g++ compiler warning
  static SufDecl
 suftab[] = {
@@ -343,6 +345,17 @@ readAmpl(ampl_info * info, int argc, char **argv, void ** coinModel)
     strcpy(fileName,argv[1]);
   else
     fileName[0]='\0';
+  int nonLinearType=-1;
+  // testosi parameter - if >= 10 then go in through coinModel
+  for (i=1;i<argc;i++) {
+    if (!strncmp(argv[i],"testosi",7)) {
+      char * equals = strchr(argv[i],'=');
+      if (equals&&atoi(equals+1)>=10&&atoi(equals+1)<=20) {
+	nonLinearType=atoi(equals+1);
+	break;
+      }
+    }
+  }
   int saveArgc = argc;
   if (info->numberRows!=-1234567)
     memset(info,0,sizeof(ampl_info)); // overwrite unless magic number set
@@ -372,15 +385,7 @@ readAmpl(ampl_info * info, int argc, char **argv, void ** coinModel)
   info->rowStatus = (int *) malloc(n_con*sizeof(int));
   csd = suf_iput("sstatus", ASL_Sufkind_var, info->columnStatus);
   rsd = suf_iput("sstatus", ASL_Sufkind_con, info->rowStatus);
-  // testosi parameter - if >= 10 then go in through coinModel
-  int testOsi=-1;
-  for (i=0;i<saveArgc;i++) {
-    if (!strncmp(saveArgv[i],"testosi",7)) {
-      testOsi = atoi(saveArgv[i]+8);
-      break;
-    }
-  }
-  if (!(nlvc+nlvo)&&testOsi<10) {
+  if (!(nlvc+nlvo)&&nonLinearType<10) {
     /* read linear model*/
     f_read(nl,0);
     // see if any sos
@@ -423,7 +428,7 @@ readAmpl(ampl_info * info, int argc, char **argv, void ** coinModel)
     /* objective*/
     obj = (double *) malloc(n_var*sizeof(double));
     for (i=0;i<n_var;i++)
-      obj[i]=0.0;;
+      obj[i]=0.0;
     if (n_obj) {
       for (og = Ograd[0];og;og = og->next)
 	obj[og->varno] = og->coef;
@@ -458,7 +463,7 @@ readAmpl(ampl_info * info, int argc, char **argv, void ** coinModel)
     }
     info->numberRows=n_con;
     info->numberColumns=n_var;
-    info->numberElements=nzc;;
+    info->numberElements=nzc;
     info->numberBinary=nbv;
     info->numberIntegers=niv;
     info->objective=obj;
@@ -502,8 +507,8 @@ readAmpl(ampl_info * info, int argc, char **argv, void ** coinModel)
     // Add .nl if not there
     if (!strstr(fileName,".nl"))
       strcat(fileName,".nl");
-    CoinModel * model = new CoinModel(1,fileName,info);
-    if (model->numberRows()>0)
+    CoinModel * model = new CoinModel((nonLinearType>10) ? 2 : 1,fileName,info);
+    if (model->numberRows()>0||model->numberColumns()>0)
       *coinModel=(void *) model;
     Oinfo.uinfo = tempBuffer;
     if (getopts(argv, &Oinfo))
@@ -516,10 +521,19 @@ readAmpl(ampl_info * info, int argc, char **argv, void ** coinModel)
     info->offset=objconst(0);
     info->numberRows=n_con;
     info->numberColumns=n_var;
-    info->numberElements=nzc;;
+    info->numberElements=nzc;
     info->numberBinary=nbv;
-    info->numberIntegers=niv;
-    if (nbv+niv+nlvbi+nlvci+nlvoi>0) {
+    info->numberIntegers=niv+nlvci+nlvoi;
+    // No idea if there are overlaps so compute
+    int numberIntegers=0;
+    for ( i=0; i<n_var;i++) {
+      if (model->columnIsInteger(i))
+	  numberIntegers++;
+    }
+    info->numberIntegers=numberIntegers;
+    // Say nonlinear if it is
+    info->nonLinear=nlvc+nlvo;
+    if (numberIntegers>0) {
       mip_stuff(); // get any extra info
       if (info->cut) 
 	model->setCutMarker(info->numberRows,info->cut);
@@ -760,338 +774,17 @@ typedef struct {
   double obj_sign_;
   ASL_pfgh * asl_;
   double * non_const_x_;
+  int * column_; // for jacobian
+  int * rowStart_;
+  double * gradient_;
+  double * constraintValues_;
   int nz_h_full_; // number of nonzeros in hessian
   int nerror_;
   bool objval_called_with_current_x_;
   bool conval_called_with_current_x_;
+  bool jacval_called_with_current_x_;
 } CbcAmplInfo;
 
-static bool get_nlp_info(void * amplInfo,int & n, int & m, int & nnz_jac_g,
-                              int & nnz_h_lag)
-{
-  CbcAmplInfo * info = (CbcAmplInfo *) amplInfo;
-  ASL_pfgh* asl = info->asl_;
-  
-  n = n_var; // # of variables 
-  m = n_con; // # of constraints
-  nnz_jac_g = nzc; // # of non-zeros in the jacobian
-  nnz_h_lag = info->nz_h_full_; // # of non-zeros in the hessian
-  
-  return true;
-}
-
-static bool get_bounds_info(void * amplInfo,int  n, double * x_l, 
-			    double * x_u, int  m, double * g_l, double * g_u)
-{
-  CbcAmplInfo * info = (CbcAmplInfo *) amplInfo;
-  ASL_pfgh* asl = info->asl_;
-  assert(n == n_var);
-  assert(m == n_con);
-  int i;
-  for (i=0; i<n; i++) {
-    x_l[i] = LUv[2*i];
-    x_u[i] = LUv[2*i+1];
-  }
-  
-  for (i=0; i<m; i++) {
-    g_l[i] = LUrhs[2*i];
-    g_u[i] = LUrhs[2*i+1];
-  }
-  return true;
-}
-
-
-bool get_constraints_linearity(void * amplInfo,int  n,
-      int * const_types)
-{
-  CbcAmplInfo * info = (CbcAmplInfo *) amplInfo;
-  ASL_pfgh* asl = info->asl_;
-  //check that n is good
-  assert(n == n_con);
-  // check that there are no network constraints
-  assert(nlnc == 0 && lnc == 0);
-  //the first nlc constraints are non linear the rest is linear
-  int i;
-  for (i=0; i<nlc; i++) {
-    const_types[i]=1;
-  }
-  // the rest is linear
-  for (i=nlc; i<n_con; i++)
-    const_types[i]=0;
-  return true;
-}
-#if 0
-bool get_starting_point(int  n, bool init_x, double * x, bool init_z, 
-			double * z_L, double * z_U, int  m, bool init_lambda, double * lambda)
-{
-  CbcAmplInfo * info = (CbcAmplInfo *) amplInfo;
-  ASL_pfgh* asl = info->asl_;
-  assert(n == n_var);
-  assert(m == n_con);
-  int i;
-  
-  if (init_x) {
-    for (i=0; i<n; i++) {
-      if (havex0[i]) {
-	x[i] = X0[i];
-      }
-      else {
-	x[i] = 0.0;
-      }
-    }
-  }
-  
-  if (init_z) {
-    for (i=0; i<n; i++) {
-      z_L[i] = z_U[i] = 1.0;
-    }
-  }
-  
-  if (init_lambda) {
-    for (i=0; i<m; i++) {
-      if (havepi0[i]) {
-	lambda[i] = pi0[i];
-      }
-      else {
-	lambda[i] = 0.0;
-      }
-    }
-  }
-  
-  return true;
-}
-#endif
-static bool internal_objval(CbcAmplInfo * info ,double & obj_val)
-{
-  ASL_pfgh* asl = info->asl_;
-  info->objval_called_with_current_x_ = false; // in case the call below fails
-
-  if (n_obj==0) {
-    obj_val = 0;
-    info->objval_called_with_current_x_ = true;
-    return true;
-  }  else {
-    double  retval = objval(0, info->non_const_x_, (fint*)info->nerror_);
-    if (!info->nerror_) {
-      obj_val = info->obj_sign_*retval;
-      info->objval_called_with_current_x_ = true;
-      return true;
-    } else {
-      abort();
-    }
-  }
-  
-  return false;
-}
-
-static bool internal_conval(CbcAmplInfo * info ,int  m, double * g)
-{
-  ASL_pfgh* asl = info->asl_;
-  info->conval_called_with_current_x_ = false; // in case the call below fails
-  
-  bool allocated = false;
-  if (!g) {
-    g = new double[m];
-    allocated = true;
-  }
-  
-  conval(info->non_const_x_, g, (fint*)info->nerror_);
-
-  if (allocated) {
-    delete [] g;
-    g = NULL;
-  }
-  
-  if (!info->nerror_) {
-    info->conval_called_with_current_x_ = true;
-    return true;
-  } else {
-    abort();
-  }
-  return false;
-}
-
-
-static bool apply_new_x(CbcAmplInfo * info  ,bool new_x, int  n, const double * x)
-{
-  ASL_pfgh* asl = info->asl_;
-  
-  if (new_x) {
-    // update the flags so these methods are called
-    // before evaluating the hessian
-    info->conval_called_with_current_x_ = false;
-    info->objval_called_with_current_x_ = false;
-
-    //copy the data to the non_const_x_
-    if (!info->non_const_x_) {
-      info->non_const_x_ = new double [n];
-    }
-
-    for (int  i=0; i<n; i++) {
-      info->non_const_x_[i] = x[i];
-    }
-    
-    // tell ampl that we have a new x
-    xknowne(info->non_const_x_, (fint*)info->nerror_);
-    return info->nerror_ ? false : true;
-  }
-  
-  return true;
-}
-bool eval_f(void * amplInfo,int  n, const double * x, bool new_x, double & obj_value)
-{
-  CbcAmplInfo * info = (CbcAmplInfo *) amplInfo;
-  if (!apply_new_x(info,new_x, n, x)) {
-    return false;
-  }
-  
-  return internal_objval(info,obj_value);
-}
-
-bool eval_grad_f(void * amplInfo,int  n, const double * x, bool new_x, double * grad_f)
-{
-  CbcAmplInfo * info = (CbcAmplInfo *) amplInfo;
-  ASL_pfgh* asl = info->asl_;
-  if (!apply_new_x(info,new_x, n, x)) {
-    return false;
-  }
-  int i;
-  
-  if (n_obj==0) {
-    for (i=0; i<n; i++) {
-      grad_f[i] = 0.;
-    }
-  }
-  else {
-    objgrd(0, info->non_const_x_, grad_f, (fint*)info->nerror_);
-    if (info->nerror_) {
-      return false;
-    }
-    
-    if (info->obj_sign_==-1) {
-      for (i=0; i<n; i++) {
-	grad_f[i] = -grad_f[i];
-      }
-    }
-  }
-  return true;
-}
-
-bool eval_g(void * amplInfo,int  n, const double * x, bool new_x, int  m, double * g)
-{
-  CbcAmplInfo * info = (CbcAmplInfo *) amplInfo;
-  ASL_pfgh* asl = info->asl_;
-  assert(n == n_var);
-  assert(m == n_con);
-  
-  if (!apply_new_x(info,new_x, n, x)) {
-    return false;
-  }
-  
-  return internal_conval(info,m, g);
-}
-
-bool eval_jac_g(void * amplInfo,int  n, const double * x, bool new_x,
-		int  m, int  nele_jac, int * iRow,
-		int  *jCol, double * values)
-{
-  CbcAmplInfo * info = (CbcAmplInfo *) amplInfo;
-  ASL_pfgh* asl = info->asl_;
-  assert(n == n_var);
-  assert(m == n_con);
-  int i;
-  
-  if (iRow && jCol && !values) {
-    // setup the structure
-    int  current_nz = 0;
-    for (i=0; i<n_con; i++) {
-      for (cgrad* cg=Cgrad[i]; cg; cg = cg->next) {
-	//iRow[cg->goff] = i + 1;
-	iRow[cg->goff] = i ;
-	jCol[cg->goff] = cg->varno + 1;
-	//				iRow[current_nz] = i + 1;
-	//				jCol[current_nz] = cg->varno+1;
-	current_nz++;
-      }
-    }
-    assert(current_nz == nele_jac);
-    return true;
-  }
-  else if (!iRow && !jCol && values) {
-    if (!apply_new_x(info,new_x, n, x)) {
-      return false;
-    }
-    
-    jacval(info->non_const_x_, values, (fint*)info->nerror_);
-    if (!info->nerror_) {
-      return true;
-    } else {
-      abort();
-    }
-  }
-  else {
-    assert(false && "Invalid combination of iRow, jCol, and values pointers");
-  }
-  
-  return false;
-}
-
-bool eval_h(void * amplInfo,int  n, const double * x, bool new_x,
-	    double  obj_factor, int  m, const double * lambda,
-	    bool new_lambda, int  nele_hess, int * iRow,
-	    int * jCol, double * values)
-{
-  CbcAmplInfo * info = (CbcAmplInfo *) amplInfo;
-  ASL_pfgh* asl = info->asl_;
-  assert(n == n_var);
-  assert(m == n_con);
-  int i;
-  
-  if (iRow && jCol && !values) {
-    // setup the structure
-    int k=0;
-    for (int i=0; i<n; i++) {
-      for (int j=sputinfo->hcolstarts[i]; j<sputinfo->hcolstarts[i+1]; j++) {
-	//iRow[k] = i + 1;
-	iRow[k] = i;
-	jCol[k] = sputinfo->hrownos[j]+1;
-	k++;
-      }
-    }
-    assert(k==nele_hess);
-    return true;
-  }
-  else if (!iRow & !jCol && values) {
-    if (!apply_new_x(info,new_x, n, x)) {
-      return false;
-    }
-    if (!info->objval_called_with_current_x_) {
-      double  dummy;
-      internal_objval(info,dummy);
-      internal_conval(info,m,NULL);
-    }
-    if (!info->conval_called_with_current_x_) {
-      internal_conval(info,m,NULL);
-    }
-    // copy lambda to non_const_lambda - note, we do not store a copy like
-    // we do with x since lambda is only used here and not in other calls
-    double * non_const_lambda = new double [m];
-    for (i=0; i<m; i++) {
-      non_const_lambda[i] = lambda[i];
-    }
-    
-    real ow=info->obj_sign_*obj_factor;
-    sphes(values, -1, &ow, non_const_lambda);
-    
-    delete [] non_const_lambda;
-    return true;
-  }
-  else {
-    assert(false && "Invalid combination of iRow, jCol, and values pointers");
-  }
-  
-  return false;
-}
 void
 CoinModel::gdb( int nonLinear, const char * fileName,const void * info)
 {
@@ -1192,7 +885,7 @@ CoinModel::gdb( int nonLinear, const char * fileName,const void * info)
     /* objective*/
     objective = (double *) malloc(n_var*sizeof(double));
     for (i=0;i<n_var;i++)
-      objective[i]=0.0;;
+      objective[i]=0.0;
     if (n_obj) {
       for (og = Ograd[0];og;og = og->next)
 	objective[og->varno] = og->coef;
@@ -1227,7 +920,7 @@ CoinModel::gdb( int nonLinear, const char * fileName,const void * info)
     }
     numberRows=n_con;
     numberColumns=n_var;
-    numberElements=nzc;;
+    numberElements=nzc;
     numberBinary=nbv;
     numberIntegers=niv;
     /* put in primalSolution if exists */
@@ -1281,7 +974,7 @@ CoinModel::gdb( int nonLinear, const char * fileName,const void * info)
     /* objective*/
     objective = (double *) malloc(n_var*sizeof(double));
     for (i=0;i<n_var;i++)
-      objective[i]=0.0;;
+      objective[i]=0.0;
     if (n_obj) {
       for (og = Ograd[0];og;og = og->next)
 	objective[og->varno] = og->coef;
@@ -1329,7 +1022,7 @@ CoinModel::gdb( int nonLinear, const char * fileName,const void * info)
     delete [] element;
     numberRows=n_con;
     numberColumns=n_var;
-    numberElements=nzc;;
+    numberElements=nzc;
     numberBinary=nbv;
     numberIntegers=niv;
     numberAllNonLinearBoth=nlvb;
@@ -1352,10 +1045,15 @@ CoinModel::gdb( int nonLinear, const char * fileName,const void * info)
     info->obj_sign_=direction;
     info->conval_called_with_current_x_=false;
     info->non_const_x_=NULL;
+    info->jacval_called_with_current_x_=false;
+    info->rowStart_ = NULL;
+    info->column_ = NULL;
+    info->gradient_ = NULL;
+    info->constraintValues_ = NULL;
   } else if (nonLinear==2) {
     // General nonlinear!
-    ASL_pfgh* asl = (ASL_pfgh*)ASL_alloc(ASL_read_pfgh);
-    // was asl = ASL_alloc(ASL_read_fg);
+    //ASL_pfgh* asl = (ASL_pfgh*)ASL_alloc(ASL_read_pfgh);
+    asl = ASL_alloc(ASL_read_pfgh);
     nl = jac0dim(stub, (long) strlen(stub));
     free(stub);
     suf_declare(suftab, sizeof(suftab)/sizeof(SufDecl));
@@ -1423,8 +1121,9 @@ CoinModel::gdb( int nonLinear, const char * fileName,const void * info)
     // save asl
     // Fix memory leak one day
     CbcAmplInfo * info = new CbcAmplInfo;
+    moreInfo_ = (void *) info;
     //amplGamsData_ = info;
-    info->asl_=asl;
+    info->asl_=(ASL_pfgh *) asl;
     // This is not easy to get from ampl so save
     info->nz_h_full_= sphsetup(-1, coeff_obj, mult_supplied, uptri);
     info->objval_called_with_current_x_=false;
@@ -1432,10 +1131,41 @@ CoinModel::gdb( int nonLinear, const char * fileName,const void * info)
     info->obj_sign_=direction;
     info->conval_called_with_current_x_=false;
     info->non_const_x_=NULL;
+    info->jacval_called_with_current_x_=false;
+    // Look at nonlinear
+    if (nzc) {
+      n_conjac[1]=nlc; // just nonlinear
+      int * rowStart = new int [nlc+1];
+      info->rowStart_ = rowStart;
+      // See how many
+      int  current_nz = 0;
+      for (int i=0; i<nlc; i++) {
+	for (cgrad* cg=Cgrad[i]; cg; cg = cg->next) {
+	  current_nz++;
+	}
+      }
+      // setup the structure
+      int * column = new int [current_nz];
+      info->column_ = column;
+      current_nz = 0;
+      rowStart[0]=0;
+      for (int i=0; i<nlc; i++) {
+	for (cgrad* cg=Cgrad[i]; cg; cg = cg->next) {
+	  cg->goff=current_nz;
+	  //iRow[cg->goff] = i ;
+	  //jCol[cg->goff] = cg->varno + 1;
+	  column[cg->goff] = cg->varno ;
+	  current_nz++;
+	}
+	rowStart[i+1]=current_nz;
+      }
+      info->gradient_ = new double [nzc];
+      info->constraintValues_ = new double [nlc];
+    }
     /* objective*/
     objective = (double *) malloc(n_var*sizeof(double));
     for (i=0;i<n_var;i++)
-      objective[i]=0.0;;
+      objective[i]=0.0;
     if (n_obj) {
       for (og = Ograd[0];og;og = og->next)
 	objective[og->varno] = og->coef;
@@ -1486,7 +1216,7 @@ CoinModel::gdb( int nonLinear, const char * fileName,const void * info)
     delete [] element;
     numberRows=n_con;
     numberColumns=n_var;
-    numberElements=nzc;;
+    numberElements=nzc;
     numberBinary=nbv;
     numberIntegers=niv;
     numberAllNonLinearBoth=nlvb;
@@ -1521,20 +1251,20 @@ CoinModel::gdb( int nonLinear, const char * fileName,const void * info)
   }
   for ( i=numberColumns-numberBinary-numberIntegers;
 	i<numberColumns;i++) {
-      setColumnIsInteger(i,true);;
+    setColumnIsInteger(i,true);
   }
   // and non linear
   for (i=numberAllNonLinearBoth-numberIntegerNonLinearBoth;
        i<numberAllNonLinearBoth;i++) {
-    setColumnIsInteger(i,true);;
+    setColumnIsInteger(i,true);
   }
   for (i=numberAllNonLinearConstraints-numberIntegerNonLinearConstraints;
        i<numberAllNonLinearConstraints;i++) {
-    setColumnIsInteger(i,true);;
+    setColumnIsInteger(i,true);
   }
   for (i=numberAllNonLinearObjective-numberIntegerNonLinearObjective;
        i<numberAllNonLinearObjective;i++) {
-    setColumnIsInteger(i,true);;
+    setColumnIsInteger(i,true);
   }
   free(columnLower);
   free(columnUpper);

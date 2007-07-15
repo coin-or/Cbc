@@ -262,6 +262,48 @@ private:
   /// Update size of whichGenerator
   void resizeWhichGenerator(int numberNow, int numberAfter);
 public:
+#ifndef CBC_THREAD
+#define NEW_UPDATE_OBJECT 0
+#else
+#define NEW_UPDATE_OBJECT 2
+#endif
+#if NEW_UPDATE_OBJECT>1
+  /// Adds an update information object
+  void addUpdateInformation(const CbcObjectUpdateData & data);
+#endif
+  /** Do one node - broken out for clarity?
+      also for parallel (when baseModel!=this)
+      Returns 1 if solution found
+      node NULL on return if no branches left
+      newNode NULL if no new node created
+  */
+  int doOneNode(CbcModel * baseModel, CbcNode * & node, CbcNode * & newNode);
+
+  /// Returns true if locked
+  bool isLocked() const;
+#ifdef CBC_THREAD
+  /**
+     Locks a thread if parallel so that stuff like cut pool
+     can be updated and/or used.
+  */
+  void lockThread();
+  /**
+     Unlocks a thread if parallel to say cut pool stuff not needed
+  */
+  void unlockThread();
+#else
+  inline void lockThread() {};
+  inline void unlockThread() {};
+#endif
+private:
+  /** Move/copy information from one model to another
+      -1 - initialization
+      0 - from base model
+      1 - to base model (and reset)
+      2 - add in final statistics etc (and reset so can do clean destruction)
+  */
+  void moveToModel(CbcModel * baseModel,int mode);
+public:
     /** \brief Reoptimise an LP relaxation
     
       Invoke the solver's %resolve() method.
@@ -1039,6 +1081,7 @@ public:
 
   inline double * bestSolution() const
   { return bestSolution_;};
+  void setBestSolution(const double * solution,int numberColumns,double objectiveValue);
   
   /// Get number of solutions
   inline int getSolutionCount() const
@@ -1092,6 +1135,23 @@ public:
   { return resolveAfterTakeOffCuts_;};
   inline void setResolveAfterTakeOffCuts(bool yesNo)
   { resolveAfterTakeOffCuts_=yesNo;};
+  /// Get number of threads
+  inline int getNumberThreads() const
+  { return numberThreads_;};
+  /// Set number of threads 
+  inline void setNumberThreads(int value) 
+  { numberThreads_=value;};
+  /// Get thread mode
+  inline int getThreadMode() const
+  { return threadMode_;};
+  /** Set thread mode
+      always use numberThreads for branching
+      1 set then use numberThreads in root mini branch and bound
+      2 set then use numberThreads for root cuts
+      default is 0
+  */
+  inline void setThreadMode(int value) 
+  { threadMode_=value;};
   //@}
 
   /** \name Node selection */
@@ -1143,6 +1203,7 @@ public:
   { return presolve_;};
   inline void setTypePresolve(int value)
   { presolve_=value;};
+  
   //@}
 
   /** \name Branching Decisions
@@ -1379,6 +1440,9 @@ public:
   /// Now we may not own objects - just point to solver's objects
   inline bool ownObjects() const
   { return ownObjects_;};
+  /// Pointer to a mutex 
+  inline void * mutex()
+  { return mutex_;};
   //@}
   //---------------------------------------------------------------------------
 
@@ -1809,7 +1873,9 @@ private:
   const double * cbcRowActivity_;
   /// Pointer to user-defined data structure
   void * appData_;
-  /// Pointer to 
+  /// Pointer to a mutex 
+  void * mutex_;
+  /// Presolve for CbcTreeLocal
   int presolve_;
   /** Maximum number of candidates to consider for strong branching.
     To disable strong branching, set this to 0.
@@ -1948,6 +2014,29 @@ private:
   OsiBabSolver * solverCharacteristics_;
   /// Whether to force a resolve after takeOffCuts
   bool resolveAfterTakeOffCuts_;
+#if NEW_UPDATE_OBJECT>1
+  /// Number of outstanding update information items
+  int numberUpdateItems_;
+  /// Maximum number of outstanding update information items
+  int maximumNumberUpdateItems_;
+  /// Update items
+  CbcObjectUpdateData * updateItems_;
+#endif
+  /**
+     Parallel
+     0 - off
+     1 - testing
+     2-99 threads
+     other special meanings
+  */
+  int numberThreads_;
+  /** thread mode
+      always use numberThreads for branching
+      1 set then use numberThreads in root mini branch and bound
+      2 set then use numberThreads for root cuts
+      default is 0
+  */
+  int threadMode_;
  //@}
 };
 /// So we can use osiObject or CbcObject during transition

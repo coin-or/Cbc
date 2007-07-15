@@ -82,7 +82,7 @@ CbcCutGenerator::CbcCutGenerator ( const CbcCutGenerator & rhs)
 {
   model_ = rhs.model_;
   generator_=rhs.generator_->clone();
-  generator_->refreshSolver(model_->solver());
+  //generator_->refreshSolver(model_->solver());
   whenCutGenerator_=rhs.whenCutGenerator_;
   whenCutGeneratorInSub_ = rhs.whenCutGeneratorInSub_;
   switchOffIfLessThan_ = rhs.switchOffIfLessThan_;
@@ -159,7 +159,7 @@ CbcCutGenerator::refreshModel(CbcModel * model)
    collection of cuts cs.
 */
 bool
-CbcCutGenerator::generateCuts( OsiCuts & cs , bool fullScan, CbcNode * node)
+CbcCutGenerator::generateCuts( OsiCuts & cs , bool fullScan, OsiSolverInterface * solver, CbcNode * node)
 {
   int howOften = whenCutGenerator_;
   if (howOften==-100)
@@ -171,7 +171,7 @@ CbcCutGenerator::generateCuts( OsiCuts & cs , bool fullScan, CbcNode * node)
   if (!howOften)
     howOften=1;
   bool returnCode=false;
-  OsiSolverInterface * solver = model_->solver();
+  //OsiSolverInterface * solver = model_->solver();
   int depth;
   if (node)
     depth=node->depth();
@@ -209,7 +209,6 @@ CbcCutGenerator::generateCuts( OsiCuts & cs , bool fullScan, CbcNode * node)
       dynamic_cast<CglProbing*>(generator_);
     if (!generator) {
       // Pass across model information in case it could be useful
-      //OsiSolverInterface * solver = model_->solver();
       //void * saveData = solver->getApplicationData();
       //solver->setApplicationData(model_);
       generator_->generateCuts(*solver,cs,info);
@@ -234,95 +233,99 @@ CbcCutGenerator::generateCuts( OsiCuts & cs , bool fullScan, CbcNode * node)
       int j;
       int numberColumns = solver->getNumCols();
       double primalTolerance = 1.0e-8;
-#if 0
-      int numberChanged=0,ifCut=0;
-      CoinPackedVector lbs;
-      CoinPackedVector ubs;
-      for (j=0;j<numberColumns;j++) {
-        if (solver->isInteger(j)) {
-          if (tightUpper[j]<upper[j]) {
-            numberChanged++;
-            assert (tightUpper[j]==floor(tightUpper[j]+0.5));
-            ubs.insert(j,tightUpper[j]);
-            if (tightUpper[j]<solution[j]-primalTolerance)
-              ifCut=1;
-          }
-          if (tightLower[j]>lower[j]) {
-            numberChanged++;
-            assert (tightLower[j]==floor(tightLower[j]+0.5));
-            lbs.insert(j,tightLower[j]);
-            if (tightLower[j]>solution[j]+primalTolerance)
-              ifCut=1;
-          }
-        } else {
-          if (tightUpper[j]==tightLower[j]&&
-              upper[j]>lower[j]) {
-            // fix
-            //solver->setColLower(j,tightLower[j]);
-            //solver->setColUpper(j,tightUpper[j]);
-            double value = tightUpper[j];
-            numberChanged++;
-            if (value<upper[j])
-              ubs.insert(j,value);
-            if (value>lower[j])
-              lbs.insert(j,value);
-          }
-	}
-      }
-      if (numberChanged) {
-        OsiColCut cc;
-        cc.setUbs(ubs);
-        cc.setLbs(lbs);
-        if (ifCut) {
-          cc.setEffectiveness(100.0);
-        } else {
-          cc.setEffectiveness(1.0e-5);
-        }
-        cs.insert(cc);
-      }
-      // need to resolve if some bounds changed
-      returnCode = !solver->basisIsAvailable();
-      assert (!returnCode);
-#else
       const char * tightenBounds = generator->tightenBounds();
-      for (j=0;j<numberColumns;j++) {
-        if (solver->isInteger(j)) {
-          if (tightUpper[j]<upper[j]) {
-            double nearest = floor(tightUpper[j]+0.5);
-            //assert (fabs(tightUpper[j]-nearest)<1.0e-5); may be infeasible
-            solver->setColUpper(j,nearest);
-            if (nearest<solution[j]-primalTolerance)
-              returnCode=true;
-          }
-          if (tightLower[j]>lower[j]) {
-            double nearest = floor(tightLower[j]+0.5);
-            //assert (fabs(tightLower[j]-nearest)<1.0e-5); may be infeasible
-            solver->setColLower(j,nearest);
-            if (nearest>solution[j]+primalTolerance)
-              returnCode=true;
-          }
-        } else {
-	  if (upper[j]>lower[j]) {
-	    if (tightUpper[j]==tightLower[j]) {
-	      // fix
-	      solver->setColLower(j,tightLower[j]);
-	      solver->setColUpper(j,tightUpper[j]);
-	      if (tightLower[j]>solution[j]+primalTolerance||
-		  tightUpper[j]<solution[j]-primalTolerance)
-		returnCode=true;
-	    } else if (tightenBounds&&tightenBounds[j]) {
-	      solver->setColLower(j,CoinMax(tightLower[j],lower[j]));
-	      solver->setColUpper(j,CoinMin(tightUpper[j],upper[j]));
-	      if (tightLower[j]>solution[j]+primalTolerance||
-		  tightUpper[j]<solution[j]-primalTolerance)
+      if ((model_->getThreadMode()&2)==0) {
+	for (j=0;j<numberColumns;j++) {
+	  if (solver->isInteger(j)) {
+	    if (tightUpper[j]<upper[j]) {
+	      double nearest = floor(tightUpper[j]+0.5);
+	      //assert (fabs(tightUpper[j]-nearest)<1.0e-5); may be infeasible
+	      solver->setColUpper(j,nearest);
+	      if (nearest<solution[j]-primalTolerance)
 		returnCode=true;
 	    }
+	    if (tightLower[j]>lower[j]) {
+	      double nearest = floor(tightLower[j]+0.5);
+	      //assert (fabs(tightLower[j]-nearest)<1.0e-5); may be infeasible
+	      solver->setColLower(j,nearest);
+	      if (nearest>solution[j]+primalTolerance)
+		returnCode=true;
+	    }
+	  } else {
+	    if (upper[j]>lower[j]) {
+	      if (tightUpper[j]==tightLower[j]) {
+		// fix
+		solver->setColLower(j,tightLower[j]);
+		solver->setColUpper(j,tightUpper[j]);
+		if (tightLower[j]>solution[j]+primalTolerance||
+		    tightUpper[j]<solution[j]-primalTolerance)
+		  returnCode=true;
+	      } else if (tightenBounds&&tightenBounds[j]) {
+		solver->setColLower(j,CoinMax(tightLower[j],lower[j]));
+		solver->setColUpper(j,CoinMin(tightUpper[j],upper[j]));
+		if (tightLower[j]>solution[j]+primalTolerance||
+		    tightUpper[j]<solution[j]-primalTolerance)
+		  returnCode=true;
+	      }
+	    }
 	  }
-        }
+	}
+      } else {
+	CoinPackedVector lbs;
+	CoinPackedVector ubs;
+	int numberChanged=0;
+	bool ifCut=false;
+	for (j=0;j<numberColumns;j++) {
+	  if (solver->isInteger(j)) {
+	    if (tightUpper[j]<upper[j]) {
+	      double nearest = floor(tightUpper[j]+0.5);
+	      //assert (fabs(tightUpper[j]-nearest)<1.0e-5); may be infeasible
+	      ubs.insert(j,nearest);
+	      numberChanged++;
+	      if (nearest<solution[j]-primalTolerance)
+		ifCut=true;
+	    }
+	    if (tightLower[j]>lower[j]) {
+	      double nearest = floor(tightLower[j]+0.5);
+	      //assert (fabs(tightLower[j]-nearest)<1.0e-5); may be infeasible
+	      lbs.insert(j,nearest);
+	      numberChanged++;
+	      if (nearest>solution[j]+primalTolerance)
+		ifCut=true;
+	    }
+	  } else {
+	    if (upper[j]>lower[j]) {
+	      if (tightUpper[j]==tightLower[j]) {
+		// fix
+		lbs.insert(j,tightLower[j]);
+		ubs.insert(j,tightUpper[j]);
+		if (tightLower[j]>solution[j]+primalTolerance||
+		    tightUpper[j]<solution[j]-primalTolerance)
+		  ifCut=true;
+	      } else if (tightenBounds&&tightenBounds[j]) {
+		lbs.insert(j,CoinMax(tightLower[j],lower[j]));
+		ubs.insert(j,CoinMin(tightUpper[j],upper[j]));
+		if (tightLower[j]>solution[j]+primalTolerance||
+		    tightUpper[j]<solution[j]-primalTolerance)
+		  ifCut=true;
+	      }
+	    }
+	  }
+	}
+	if (numberChanged) {
+	  OsiColCut cc;
+	  cc.setUbs(ubs);
+	  cc.setLbs(lbs);
+	  if (ifCut) {
+	    cc.setEffectiveness(100.0);
+	  } else {
+	    cc.setEffectiveness(1.0e-5);
+	  }
+	  cs.insert(cc);
+	}
       }
       //if (!solver->basisIsAvailable()) 
       //returnCode=true;
-#endif
 #if 0
       // Pass across info to pseudocosts
       char * mark = new char[numberColumns];
@@ -351,7 +354,7 @@ CbcCutGenerator::generateCuts( OsiCuts & cs , bool fullScan, CbcNode * node)
       int numberRowCutsAfter = cs.sizeRowCuts() ;
       int k ;
       int nOdd=0;
-      const OsiSolverInterface * solver = model_->solver();
+      //const OsiSolverInterface * solver = model_->solver();
       for (k = numberRowCutsAfter-1;k>=numberRowCutsBefore;k--) {
 	OsiRowCut & thisCut = cs.rowCut(k) ;
 	int returnCode = modifier->modify(solver,thisCut);
@@ -381,6 +384,11 @@ CbcCutGenerator::generateCuts( OsiCuts & cs , bool fullScan, CbcNode * node)
       int nBad=0;
       for (k = numberRowCutsBefore;k<numberRowCutsAfter;k++) {
 	OsiRowCut thisCut = cs.rowCut(k) ;
+	if (thisCut.lb()>thisCut.ub()||
+	    thisCut.lb()>1.0e8||
+	    thisCut.ub()<-1.0e8)
+	  printf("cut from %s has bounds %g and %g!\n",
+		 generatorName_,thisCut.lb(),thisCut.ub());
 	if (thisCut.lb()<=thisCut.ub()) {
 	  /* check size of elements.
 	     We can allow smaller but this helps debug generators as it

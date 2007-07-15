@@ -17,6 +17,7 @@
 
 */
 #include "CbcNode.hpp"
+#include "CbcConfig.h"
 
 class CbcModel;
 class CbcTree;
@@ -75,15 +76,21 @@ public:
   inline bool equalityTest (CbcNode * x, CbcNode * y) const
   {
     assert (x);
+    assert (y);
+#ifndef CBC_THREAD
     CbcNodeInfo * infoX = x->nodeInfo();
     assert (infoX);
     int nodeNumberX = infoX->nodeNumber();
-    assert (y);
     CbcNodeInfo * infoY = y->nodeInfo();
     assert (infoY);
     int nodeNumberY = infoY->nodeNumber();
     assert (nodeNumberX!=nodeNumberY);
     return (nodeNumberX>nodeNumberY);
+#else
+    // doesn't work if threaded
+    assert (x!=y);
+    return (x>y);
+#endif
   };
 protected:
   CbcCompareBase * test_;

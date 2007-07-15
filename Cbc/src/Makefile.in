@@ -163,7 +163,7 @@ am_libCbc_la_OBJECTS = Cbc_C_Interface.lo CbcBranchActual.lo \
 	CbcHeuristicLocal.lo CbcHeuristicRINS.lo CbcMessage.lo \
 	CbcModel.lo CbcNode.lo CbcSolver.lo CbcCbcParam.lo \
 	CbcStatistics.lo CbcStrategy.lo CbcTree.lo CbcLinked.lo \
-	CbcTreeLocal.lo Cbc_ampl.lo
+	CbcTreeLocal.lo ClpAmplStuff.lo Cbc_ampl.lo
 libCbc_la_OBJECTS = $(am_libCbc_la_OBJECTS)
 @COIN_HAS_CLP_TRUE@am__EXEEXT_1 = cbc$(EXEEXT)
 @CBC_BUILD_CBC_GENERIC_TRUE@am__EXEEXT_2 = cbc-generic$(EXEEXT)
@@ -490,7 +490,8 @@ libCbc_la_SOURCES = Cbc_C_Interface.cpp Cbc_C_Interface.h CbcConfig.h \
 	CbcSolver.cpp CbcCbcParam.cpp CbcStatistics.cpp \
 	CbcStatistics.hpp CbcStrategy.cpp CbcStrategy.hpp CbcTree.cpp \
 	CbcTree.hpp CbcLinked.cpp CbcLinked.hpp CbcTreeLocal.cpp \
-	CbcTreeLocal.hpp Cbc_ampl.cpp Cbc_ampl.h
+	CbcTreeLocal.hpp ClpConstraintAmpl.hpp ClpAmplObjective.hpp \
+	ClpAmplStuff.cpp Cbc_ampl.cpp Cbc_ampl.h
 
 # This is for libtool (on Windows)
 libCbc_la_LDFLAGS = $(LT_LDFLAGS)
@@ -599,8 +600,8 @@ include_HEADERS = \
 	CbcCompareActual.hpp \
 	CbcCompareBase.hpp \
 	CbcCutGenerator.hpp \
-	CbcEventHandler.hpp \
 	CbcFathom.hpp \
+	CbcEventHandler.hpp \
 	CbcFeasibilityBase.hpp \
 	CbcHeuristic.hpp \
 	CbcHeuristicFPump.hpp \
@@ -613,7 +614,9 @@ include_HEADERS = \
 	CbcStrategy.hpp \
 	CbcTree.hpp \
 	CbcLinked.hpp \
-	CbcTreeLocal.hpp 
+	CbcTreeLocal.hpp \
+	ClpConstraintAmpl.hpp \
+	ClpAmplObjective.hpp 
 
 
 #############################################################################
@@ -765,6 +768,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcTreeLocal.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Cbc_C_Interface.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Cbc_ampl.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ClpAmplStuff.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CoinSolve.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/unitTestClp.Po@am__quote@
 

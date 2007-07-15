@@ -548,11 +548,6 @@ CbcHeuristicLocal::solution(double & solutionValue,
         memcpy(betterSolution,newSolution,numberColumns*sizeof(double));
         returnCode=1;
         solutionValue = newSolutionValue + bestChange;
-        if (bestChange<-1.0e-1)
-          model_->messageHandler()->message(CBC_HEURISTIC_SOLUTION,model_->messages())
-            << solutionValue
-            << "CbcHeuristicLocal"<<model_->getCurrentSeconds()
-            <<CoinMessageEol;
       } else {
         // bad solution - should not happen so debug if see message
         printf("Local search got bad solution with %d infeasibilities summing to %g\n",

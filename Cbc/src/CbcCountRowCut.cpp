@@ -40,10 +40,10 @@ CbcCountRowCut::CbcCountRowCut (const OsiRowCut & rhs,
 				CbcNodeInfo * info, int whichOne,
 				int whichGenerator)
   : OsiRowCut(rhs),
-  owner_(info),
-  ownerCut_(whichOne),
+    owner_(info),
+    ownerCut_(whichOne),
     numberPointingToThis_(0),
-  whichCutGenerator_(whichGenerator)
+    whichCutGenerator_(whichGenerator)
 {
 #ifdef CHECK_CUT_COUNTS
   printf("CbcCountRowCut constructor %x from RowCut and info\n",this);
@@ -57,11 +57,13 @@ CbcCountRowCut::~CbcCountRowCut()
 #endif
   // Look at owner and delete
   owner_->deleteCut(ownerCut_);
+  ownerCut_=-1234567;
 }
 // Increment number of references
 void 
 CbcCountRowCut::increment(int change)
 {
+  assert(ownerCut_!=-1234567);
   numberPointingToThis_+=change;
 }
 
@@ -69,10 +71,18 @@ CbcCountRowCut::increment(int change)
 int 
 CbcCountRowCut::decrement(int change)
 {
-  assert(numberPointingToThis_>=change);
+  assert(ownerCut_!=-1234567);
+  //assert(numberPointingToThis_>=change);
+  assert(numberPointingToThis_>=0);
+  if(numberPointingToThis_<change) {
+    assert(numberPointingToThis_>0);
+    printf("negative cut count %d - %d\n",numberPointingToThis_, change);
+    change = numberPointingToThis_;
+  }
   numberPointingToThis_-=change;
   return numberPointingToThis_;
 }
+
 // Set information
 void 
 CbcCountRowCut::setInfo(CbcNodeInfo * info, int whichOne)

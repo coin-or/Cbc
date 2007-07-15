@@ -1950,8 +1950,9 @@ void CbcClpUnitTest (const CbcModel & saveModel)
       
     */
 
-    double startTime = CoinCpuTime();
-    model->setMaximumNodes(200000);
+    double startTime = CoinCpuTime()+CoinCpuTimeJustChildren();
+    if (model->getMaximumNodes()>200000)
+      model->setMaximumNodes(200000);
     OsiClpSolverInterface * si =
       dynamic_cast<OsiClpSolverInterface *>(model->solver()) ;
     assert (si != NULL);
@@ -2015,9 +2016,19 @@ void CbcClpUnitTest (const CbcModel & saveModel)
       model->setMaximumCutPassesAtRoot(100); // use minimum drop
     else
       model->setMaximumCutPassesAtRoot(20);
+    // If defaults then increase trust for small models
+    if (model->numberStrong()==5&&model->numberBeforeTrust()==10) {
+      int numberColumns = model->getNumCols();
+      if (numberColumns<=50)
+	model->setNumberBeforeTrust(1000);
+      else if (numberColumns<=100)
+	model->setNumberBeforeTrust(100);
+      else if (numberColumns<=300)
+	model->setNumberBeforeTrust(50);
+    }
     model->branchAndBound();
       
-    double timeOfSolution = CoinCpuTime()-startTime;
+    double timeOfSolution = CoinCpuTime()+CoinCpuTimeJustChildren()-startTime;
     // Print more statistics
     std::cout<<"Cuts at root node changed objective from "<<model->getContinuousObjective()
 	     <<" to "<<model->rootObjectiveAfterCuts()<<std::endl;

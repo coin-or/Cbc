@@ -2,6 +2,7 @@
 // Corporation and others.  All Rights Reserved.
 
 #include "ClpConfig.h"
+#include "CbcConfig.h"
 #ifdef COIN_HAS_ASL
 #include "CoinPragma.hpp"
 #include "CoinHelperFunctions.hpp"

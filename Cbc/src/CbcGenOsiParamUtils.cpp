@@ -182,7 +182,7 @@ void setOsiSolverInterfaceDefaults (OsiSolverInterface *osi)
 */
   osi->setIntParam(OsiMaxNumIteration,1000000) ;
   osi->setIntParam(OsiMaxNumIterationHotStart,1000) ;
-  osi->setIntParam(OsiNameDiscipline,1) ;
+  result=osi->setIntParam(OsiNameDiscipline,1) ;
   if (!result)
   { result = osi->setIntParam(OsiNameDiscipline,0) ; }
 

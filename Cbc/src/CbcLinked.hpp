@@ -843,6 +843,8 @@ public:
   void addExtraRow(int row, double multiplier);
   /// Sets infeasibility and other when pseudo shadow prices
   void getPseudoShadow(const OsiBranchingInformation * info);
+  /// Gets sum of movements to correct value
+  double getMovement(const OsiBranchingInformation * info);
 
 protected:
   /// Compute lambdas if coefficients not changing

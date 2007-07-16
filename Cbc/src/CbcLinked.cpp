@@ -5711,6 +5711,7 @@ OsiBiLinear::getPseudoShadow(const OsiBranchingInformation * info)
   const double * upper = info->rowUpper_;
   double tolerance = info->primalTolerance_;
   double direction = info->direction_;
+  bool infeasible=false;
   if (xyRow_>=0) {
     assert (!boundType_);
     if (lower[xyRow_]<-1.0e20) 
@@ -5720,8 +5721,10 @@ OsiBiLinear::getPseudoShadow(const OsiBranchingInformation * info)
     double valueP = pi[xyRow_]*direction;
     // if move makes infeasible then make at least default
     double newValue = activity[xyRow_] + movement*coefficient_;
-    if (newValue>upper[xyRow_]+tolerance||newValue<lower[xyRow_]-tolerance) 
+    if (newValue>upper[xyRow_]+tolerance||newValue<lower[xyRow_]-tolerance) {
       infeasibility_ += fabs(movement*coefficient_)*CoinMax(fabs(valueP),info->defaultDual_);
+      infeasible=true;
+    }
   } else {
     // objective
     assert (movement>-1.0e-7);
@@ -5736,12 +5739,103 @@ OsiBiLinear::getPseudoShadow(const OsiBranchingInformation * info)
     double valueP = pi[iRow]*direction;
     // if move makes infeasible then make at least default
     double newValue = activity[iRow] + movement*multiplier_[i];
-    if (newValue>upper[iRow]+tolerance||newValue<lower[iRow]-tolerance) 
+    if (newValue>upper[iRow]+tolerance||newValue<lower[iRow]-tolerance) {
       infeasibility_ += fabs(movement*multiplier_[i])*CoinMax(fabs(valueP),info->defaultDual_);
+      infeasible=true;
+    }
   }
-  if (infeasibility_<1.0e-7)
-    infeasibility_=0.0;
+  if (infeasibility_<info->integerTolerance_) {
+    if (!infeasible)
+      infeasibility_=0.0;
+    else
+      infeasibility_ = info->integerTolerance_;
+  }
   otherInfeasibility_ = CoinMax(1.0e-12,infeasibility_*10.0);
+}
+// Gets sum of movements to correct value
+double 
+OsiBiLinear::getMovement(const OsiBranchingInformation * info)
+{
+  // order is LxLy, LxUy, UxLy and UxUy
+  double xB[2];
+  double yB[2];
+  xB[0]=info->lower_[xColumn_];
+  xB[1]=info->upper_[xColumn_];
+  yB[0]=info->lower_[yColumn_];
+  yB[1]=info->upper_[yColumn_];
+  double x = info->solution_[xColumn_];
+  x = CoinMax(x,xB[0]);
+  x = CoinMin(x,xB[1]);
+  double y = info->solution_[yColumn_];
+  y = CoinMax(y,yB[0]);
+  y = CoinMin(y,yB[1]);
+  int j;
+  double xyTrue = x*y;
+  double xyLambda = 0.0;
+  if ((branchingStrategy_&4)==0) {
+    for (j=0;j<4;j++) {
+      int iX = j>>1;
+      int iY = j&1;
+      xyLambda += xB[iX]*yB[iY]*info->solution_[firstLambda_+j];
+    }
+  } else {
+    if (xyRow_>=0) {
+      const double * element = info->elementByColumn_;
+      const int * row = info->row_;
+      const CoinBigIndex * columnStart = info->columnStart_;
+      const int * columnLength = info->columnLength_;
+      for (j=0;j<4;j++) {
+	int iColumn = firstLambda_+j;
+	int iStart = columnStart[iColumn];
+	int iEnd = iStart + columnLength[iColumn];
+	int k=iStart;
+	double sol = info->solution_[iColumn];
+	for (;k<iEnd;k++) {
+	  if (xyRow_==row[k])
+	    xyLambda += element[k]*sol;
+	}
+      }
+    } else {
+      // objective
+      const double * objective = info->objective_;
+      for (j=0;j<4;j++) {
+	int iColumn = firstLambda_+j;
+	double sol = info->solution_[iColumn];
+	xyLambda += objective[iColumn]*sol;
+      }
+    }
+    xyLambda /= coefficient_;
+  }
+  // If we move to xy then we move by coefficient * (xyTrue-xyLambda) on row xyRow_
+  double movement = xyTrue-xyLambda;
+  const double * activity = info->rowActivity_;
+  const double * lower = info->rowLower_;
+  const double * upper = info->rowUpper_;
+  double tolerance = info->primalTolerance_;
+  double  infeasibility=0.0;
+  if (xyRow_>=0) {
+    assert (!boundType_);
+    // if move makes infeasible
+    double newValue = activity[xyRow_] + movement*coefficient_;
+    if (newValue>upper[xyRow_]+tolerance)
+      infeasibility += newValue-upper[xyRow_];
+    else if (newValue<lower[xyRow_]-tolerance)
+      infeasibility += lower[xyRow_]-newValue;
+  } else {
+    // objective
+    assert (movement>-1.0e-7);
+    infeasibility += movement;
+  }
+  for (int i=0;i<numberExtraRows_;i++) {
+    int iRow = extraRow_[i];
+    // if move makes infeasible
+    double newValue = activity[iRow] + movement*multiplier_[i];
+    if (newValue>upper[iRow]+tolerance)
+      infeasibility += newValue-upper[iRow];
+    else if (newValue<lower[iRow]-tolerance)
+      infeasibility += lower[iRow]-newValue;
+  }
+  return infeasibility;
 }
 // This looks at solution and sets bounds to contain solution
 double
@@ -7888,7 +7982,7 @@ OsiChooseStrongSubset::setupList ( OsiBranchingInformation *info, bool initializ
   solver->setNumberObjects(numberObjectsToUse_);
   numberObjects_=numberObjectsToUse_;
   // Use shadow prices
-  info->defaultDual_=0.0;
+  //info->defaultDual_=0.0;
   int numberUnsatisfied=OsiChooseStrong::setupList ( info, initialize);
   solver->setNumberObjects(numberObjects);
   numberObjects_=numberObjects;
@@ -7909,14 +8003,14 @@ OsiChooseStrongSubset::setupList ( OsiBranchingInformation *info, bool initializ
 int 
 OsiChooseStrongSubset::chooseVariable( OsiSolverInterface * solver, OsiBranchingInformation *info, bool fixVariables)
 {
-  int numberObjects = solver->numberObjects();
-  solver->setNumberObjects(numberObjectsToUse_);
-  numberObjects_=numberObjectsToUse_;
+  //int numberObjects = solver->numberObjects();
+  //solver->setNumberObjects(numberObjectsToUse_);
+  //numberObjects_=numberObjectsToUse_;
   // Use shadow prices
-  info->defaultDual_=0.0;
+  //info->defaultDual_=0.0;
   int returnCode=OsiChooseStrong::chooseVariable(solver,info,fixVariables);
-  solver->setNumberObjects(numberObjects);
-  numberObjects_=numberObjects;
+  //solver->setNumberObjects(numberObjects);
+  //numberObjects_=numberObjects;
   return returnCode;
 }
 /** Default Constructor
@@ -8022,12 +8116,13 @@ OsiUsesBiLinear::infeasibility(const OsiBranchingInformation * info, int & which
   for (int i=0;i<numberBiLinear_;i++) {
     OsiBiLinear * obj = dynamic_cast<OsiBiLinear *> (objects_[i]);
     assert (obj);
-    obj->getPseudoShadow(info);
-    infeasibility_ += objects_[i]->infeasibility();
+    //obj->getPseudoShadow(info);
+    //infeasibility_ += objects_[i]->infeasibility(info,whichWay);
+    infeasibility_ += obj->getMovement(info);
   }
   bool satisfied=false;
   whichWay=-1;
-  if (infeasibility_<=info->integerTolerance_) {
+  if (!infeasibility_) {
     otherInfeasibility_ = 1.0;
     satisfied=true;
     infeasibility_ = 0.0;

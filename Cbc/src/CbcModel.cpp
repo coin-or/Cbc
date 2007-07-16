@@ -4488,7 +4488,33 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
       update.objectNumber_ = iObject;
       addUpdateInformation(update);
     } else {
-      branchingMethod_->updateInformation(solver_,node);
+      OsiTwoWayBranchingObject * obj = dynamic_cast<OsiTwoWayBranchingObject *> (bobj);
+      if (obj) {
+	const OsiObject * object = obj->originalObject();
+	// have to compute object number as not saved
+	int iObject;
+	int iColumn = object->columnNumber();
+	for (iObject = 0 ; iObject < numberObjects_ ; iObject++) {
+	  if (object_[iColumn]->columnNumber()==iColumn)
+	    break;
+	}
+	assert (iObject<numberObjects_);
+	int branch = obj->firstBranch();
+	if (obj->branchIndex()==2)
+	  branch = 1-branch;
+	assert (branch==0||branch==1);
+	double originalValue=node->objectiveValue();
+	double objectiveValue = solver_->getObjValue()*solver_->getObjSense();
+	double changeInObjective = CoinMax(0.0,objectiveValue-originalValue);
+	int iStatus = (feasible) ? 0 : 0;
+	double value = obj->value();
+	if (branch)
+	  value = ceil(value)-value;
+	else
+	  value = value -floor(value);
+	branchingMethod_->chooseMethod()->updateInformation(iObject,branch,changeInObjective,
+							    value,iStatus);
+      }
     }
   }
 #endif

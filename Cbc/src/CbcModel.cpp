@@ -4495,7 +4495,7 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
 	int iObject;
 	int iColumn = object->columnNumber();
 	for (iObject = 0 ; iObject < numberObjects_ ; iObject++) {
-	  if (object_[iColumn]->columnNumber()==iColumn)
+	  if (object_[iObject]->columnNumber()==iColumn)
 	    break;
 	}
 	assert (iObject<numberObjects_);

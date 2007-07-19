@@ -24,13 +24,13 @@ void CbcClpUnitTest (const CbcModel & saveModel);
 int main (int argc, const char *argv[])
 {
   OsiClpSolverInterface solver1;
-  CbcModel * babSolver = NULL;
-  int returnCode = CbcMain (argc, argv,solver1,&babSolver);
+  CbcModel model(solver1);
+  int returnCode = CbcMain (argc, argv,model);
   if (returnCode!=777) {
     return returnCode;
   } else {
     // do miplib
-    CbcClpUnitTest(*babSolver);
+    CbcClpUnitTest(model);
     return 0;
   }
 }

@@ -150,8 +150,8 @@ suftab[] = {
 	{ "special", 0, ASL_Sufkind_var },
 	{ "special", 0, ASL_Sufkind_con },
 	/*{ "special", 0, ASL_Sufkind_con },*/
-	{ strdup("sstatus"), 0, ASL_Sufkind_var, 0 },
-	{ strdup("sstatus"), 0, ASL_Sufkind_con, 0 },
+	{ "sstatus", 0, ASL_Sufkind_var, 0 },
+	{ "sstatus", 0, ASL_Sufkind_con, 0 },
 	{ "upPseudocost", 0, ASL_Sufkind_var | ASL_Sufkind_real }
 #if 0
 	{ "unbdd", 0, ASL_Sufkind_var | ASL_Sufkind_outonly},

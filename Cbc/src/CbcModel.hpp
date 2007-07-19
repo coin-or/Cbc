@@ -1523,6 +1523,9 @@ public:
   /** Clears out enough to reset CbcModel as if no branch and bound done
    */
   void gutsOfDestructor2();
+  /** Clears out enough to reset CbcModel cutoff etc
+   */
+  void resetModel();
   //@}
 
   ///@semi-private i.e. users should not use
@@ -2046,9 +2049,19 @@ void getIntegerInformation(const OsiObject * object, double & originalLower,
 // Real main program
 class OsiClpSolverInterface;
 int CbcMain (int argc, const char *argv[],OsiClpSolverInterface & solver,CbcModel ** babSolver);
+int CbcMain (int argc, const char *argv[],CbcModel & babSolver);
 // four ways of calling
 int callCbc(const char * input2, OsiClpSolverInterface& solver1); 
 int callCbc(const char * input2);
 int callCbc(const std::string input2, OsiClpSolverInterface& solver1); 
 int callCbc(const std::string input2) ;
+// When we want to load up CbcModel with options first
+void CbcMain0 (CbcModel & babSolver);
+int CbcMain1 (int argc, const char *argv[],CbcModel & babSolver);
+// two ways of calling
+int callCbc(const char * input2, CbcModel & babSolver); 
+int callCbc(const std::string input2, CbcModel & babSolver); 
+// And when CbcMain0 already called to initialize
+int callCbc1(const char * input2, CbcModel & babSolver); 
+int callCbc1(const std::string input2, CbcModel & babSolver); 
 #endif

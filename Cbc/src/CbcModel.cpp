@@ -3658,7 +3658,10 @@ CbcModel::~CbcModel ()
   }
   delete tree_;
   tree_=NULL;
-  if (ourSolver_) delete solver_;
+  if (ourSolver_) {
+    delete solver_;
+    solver_ = NULL;
+  }
   gutsOfDestructor();
   delete eventHandler_ ;
   eventHandler_ = NULL ;
@@ -3715,6 +3718,18 @@ CbcModel::gutsOfDestructor2()
   object_=NULL;
   numberIntegers_=0;
   numberObjects_=0;
+  // Below here is whatever consensus is
+  ourSolver_=true;
+  delete branchingMethod_;
+  branchingMethod_=NULL;
+  delete cutModifier_;
+  cutModifier_=NULL;
+  resetModel();
+}
+// Clears out enough to reset CbcModel
+void 
+CbcModel::resetModel()
+{
   delete emptyWarmStart_ ;
   emptyWarmStart_ =NULL;
   delete continuousSolver_;
@@ -3738,7 +3753,7 @@ CbcModel::gutsOfDestructor2()
   walkback_=NULL;
   delete [] whichGenerator_;
   whichGenerator_ = NULL;
-  for (i=0;i<maximumStatistics_;i++)
+  for (int i=0;i<maximumStatistics_;i++)
     delete statistics_[i];
   delete [] statistics_;
   statistics_=NULL;
@@ -3749,8 +3764,6 @@ CbcModel::gutsOfDestructor2()
   maximumStatistics_=0;
   delete [] analyzeResults_;
   analyzeResults_=NULL;
-  // Below here is whatever consensus is
-  ourSolver_=true;
   bestObjective_=COIN_DBL_MAX;
   bestPossibleObjective_=COIN_DBL_MAX;
   sumChangeObjective1_=0.0;
@@ -3773,10 +3786,6 @@ CbcModel::gutsOfDestructor2()
   maximumDepth_=0;
   nextRowCut_=NULL;
   currentNode_=NULL;
-  delete branchingMethod_;
-  branchingMethod_=NULL;
-  delete cutModifier_;
-  cutModifier_=NULL;
   // clear out tree
   if (tree_&&tree_->size())
     tree_->cleanTree(this, -1.0e100,bestPossibleObjective_) ;
@@ -3797,6 +3806,7 @@ CbcModel::gutsOfDestructor2()
   searchStrategy_=-1;
   numberStrongIterations_=0;
   // Parameters which need to be reset
+  setCutoff(COIN_DBL_MAX);
   dblParam_[CbcCutoffIncrement] = 1e-5;
   dblParam_[CbcCurrentCutoff] = 1.0e100;
   dblParam_[CbcCurrentObjectiveValue] = 1.0e100;
@@ -4488,7 +4498,7 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
       update.objectNumber_ = iObject;
       addUpdateInformation(update);
     } else {
-      OsiTwoWayBranchingObject * obj = dynamic_cast<OsiTwoWayBranchingObject *> (bobj);
+      OsiIntegerBranchingObject * obj = dynamic_cast<OsiIntegerBranchingObject *> (bobj);
       if (obj) {
 	const OsiObject * object = obj->originalObject();
 	// have to compute object number as not saved
@@ -6493,6 +6503,7 @@ CbcModel::findCliques(bool makeEquality,
   delete [] which;
   delete [] type;
   delete [] lookup;
+#ifdef COIN_DEVELOP
   if (numberCliques<0) {
     printf("*** Problem infeasible\n");
   } else {
@@ -6509,6 +6520,7 @@ CbcModel::findCliques(bool makeEquality,
     if (numberFixed)
       printf("%d variables fixed\n",numberFixed);
   }
+#endif
   if (numberCliques>0&&numberSlacks&&makeEquality) {
     printf("adding %d integer slacks\n",numberSlacks);
     // add variables to make equality rows
@@ -6944,9 +6956,11 @@ CbcModel::addObjects(int numberObjects, CbcObject ** objects)
   } 
   delete [] integerVariable_;
   integerVariable_=NULL;
+#ifdef COIN_DEVELOP
   if (newIntegers!=numberIntegers_) 
     printf("changing number of integers from %d to %d\n",
            numberIntegers_,newIntegers);
+#endif
   numberIntegers_ = newIntegers;
   integerVariable_ = new int [numberIntegers_];
   OsiObject ** temp  = new OsiObject * [newNumberObjects];
@@ -6969,8 +6983,10 @@ CbcModel::addObjects(int numberObjects, CbcObject ** objects)
       integerVariable_[numberIntegers_++]=i;
     }
   }
+#ifdef COIN_DEVELOP
   if (newIntegers)
     printf("%d variables were declared integer\n",newIntegers);
+#endif
   int n=numberIntegers_;
   // Now rest of old
   for (i=0;i<numberObjects_;i++) { 
@@ -7056,9 +7072,11 @@ CbcModel::addObjects(int numberObjects, OsiObject ** objects)
   } 
   delete [] integerVariable_;
   integerVariable_=NULL;
+#ifdef COIN_DEVELOP
   if (newIntegers!=numberIntegers_) 
     printf("changing number of integers from %d to %d\n",
            numberIntegers_,newIntegers);
+#endif
   numberIntegers_ = newIntegers;
   integerVariable_ = new int [numberIntegers_];
   OsiObject ** temp  = new OsiObject * [newNumberObjects];
@@ -7081,8 +7099,10 @@ CbcModel::addObjects(int numberObjects, OsiObject ** objects)
       integerVariable_[numberIntegers_++]=i;
     }
   }
+#ifdef COIN_DEVELOP
   if (newIntegers)
     printf("%d variables were declared integer\n",newIntegers);
+#endif
   int n=numberIntegers_;
   // Now rest of old
   for (i=0;i<numberObjects_;i++) { 
@@ -7149,9 +7169,12 @@ void CbcModel::setCutoff (double value)
   value += tol ; }
 #endif
   dblParam_[CbcCurrentCutoff]=value;
-  // Solvers know about direction
-  double direction = solver_->getObjSense();
-  solver_->setDblParam(OsiDualObjectiveLimit,value*direction); }
+  if (solver_) {
+    // Solvers know about direction
+    double direction = solver_->getObjSense();
+    solver_->setDblParam(OsiDualObjectiveLimit,value*direction);
+  }
+}
 
 
 

@@ -174,7 +174,7 @@ int
 CbcHeuristicFPump::solution(double & solutionValue,
 			 double * betterSolution)
 {
-#define LEN_PRINT 132
+#define LEN_PRINT 200
   char pumpPrint[LEN_PRINT];
   pumpPrint[0]='\0';
   if (!when()||(when()==1&&model_->phase()!=1))

@@ -1404,7 +1404,7 @@ int CbcMain1 (int argc, const char *argv[],
   */
   OsiClpSolverInterface * originalSolver = dynamic_cast<OsiClpSolverInterface *> (model.solver());
   assert (originalSolver);
-  CoinMessageHandler * generalMessageHandler = originalSolver->messageHandler();
+  CoinMessageHandler * generalMessageHandler = originalSolver->messageHandler()->clone();
   CoinMessages generalMessages = originalSolver->getModelPtr()->messages();
   char generalPrint[10000];
   if (originalSolver->getModelPtr()->logLevel()==0)
@@ -3044,6 +3044,8 @@ int CbcMain1 (int argc, const char *argv[],
               // See if we want preprocessing
               OsiSolverInterface * saveSolver=NULL;
               CglPreProcess process;
+	      // Say integers in sync 
+	      bool integersOK=true;
               delete babModel;
               babModel = new CbcModel(model);
               OsiSolverInterface * solver3 = clpSolver->clone();
@@ -3194,6 +3196,7 @@ int CbcMain1 (int argc, const char *argv[],
 		  }
                   solver2 = process.preProcessNonDefault(*saveSolver,translate[preProcess],numberPasses,
 							 tunePreProcess);
+		  integersOK=false; // We need to redo if CbcObjects exist
                   // Tell solver we are not in Branch and Cut
                   saveSolver->setHintParam(OsiDoInBranchAndCut,false,OsiHintDo) ;
                   if (solver2)
@@ -3366,6 +3369,7 @@ int CbcMain1 (int argc, const char *argv[],
 		  priority[iPut]=level;
 		}
 		babModel->passInPriorities( priority,false);
+		integersOK=true;
 		delete [] priority;
 		delete [] sort;
 		delete [] dsort;
@@ -3710,7 +3714,7 @@ int CbcMain1 (int argc, const char *argv[],
 		if (!testOsiSolver) {
 		  // *************************************************************
 		  // CbcObjects
-		  if (preProcess&&process.numberSOS()) {
+		  if (preProcess&&(process.numberSOS()||babModel->numberObjects())) {
 		    int numberSOS = process.numberSOS();
 		    int numberIntegers = babModel->numberIntegers();
 		    /* model may not have created objects
@@ -3720,6 +3724,7 @@ int CbcMain1 (int argc, const char *argv[],
 		      int type = (pseudoUp) ? 1 : 0;
 		      babModel->findIntegers(true,type);
 		      numberIntegers = babModel->numberIntegers();
+		      integersOK=true;
 		    }
 		    OsiObject ** oldObjects = babModel->objects();
 		    // Do sets and priorities
@@ -3727,11 +3732,42 @@ int CbcMain1 (int argc, const char *argv[],
 		    // set old objects to have low priority
 		    int numberOldObjects = babModel->numberObjects();
 		    int numberColumns = babModel->getNumCols();
+		    if (!integersOK) {
+		      // backward pointer to new variables
+		      int * newColumn = new int[numberOriginalColumns];
+		      int i;
+		      for (i=0;i<numberOriginalColumns;i++)
+			newColumn[i]=-1;
+		      assert (originalColumns);
+		      for (i=0;i<numberColumns;i++)
+			newColumn[originalColumns[i]]=i;
+		      // Change column numbers etc
+		      int n=0;
+		      for (int iObj = 0;iObj<numberOldObjects;iObj++) {
+			int iColumn = oldObjects[iObj]->columnNumber();
+			if (iColumn<0||iColumn>=numberOriginalColumns) {
+			  oldObjects[n++]=oldObjects[iObj];
+			} else {
+			  iColumn = newColumn[iColumn];
+			  if (iColumn>=0) {
+			    CbcSimpleInteger * obj =
+			      dynamic_cast <CbcSimpleInteger *>(oldObjects[iObj]) ;
+			    assert (obj);
+			    obj->setColumnNumber(iColumn);
+			    oldObjects[n++]=oldObjects[iObj];
+			  } else {
+			    delete oldObjects[iObj];
+			  }
+			}
+		      }
+		      delete [] newColumn;
+		      babModel->setNumberObjects(n);
+		    }
 		    for (int iObj = 0;iObj<numberOldObjects;iObj++) {
-		      oldObjects[iObj]->setPriority(numberColumns+1);
+		      if (process.numberSOS())
+			oldObjects[iObj]->setPriority(numberColumns+1);
 		      int iColumn = oldObjects[iObj]->columnNumber();
-		      assert (iColumn>=0);
-		      if (iColumn>=numberOriginalColumns)
+		      if (iColumn<0||iColumn>=numberOriginalColumns) 
 			continue;
 		      if (originalColumns)
 			iColumn = originalColumns[iColumn];
@@ -4511,6 +4547,7 @@ int CbcMain1 (int argc, const char *argv[],
 		  babModel->setBranchingMethod(decision);
 		}
 		model = *babModel;
+		delete generalMessageHandler;
 		return 777;
               } else {
                 strengthenedModel = babModel->strengthenedModel();
@@ -6262,6 +6299,7 @@ clp watson.mps -\nscaling off\nprimalsimplex"
   dmalloc_log_unfreed();
   dmalloc_shutdown();
 #endif
+  delete generalMessageHandler;
   return 0;
 }    
 static void breakdown(const char * name, int numberLook, const double * region)

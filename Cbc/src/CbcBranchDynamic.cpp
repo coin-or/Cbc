@@ -433,8 +433,8 @@ CbcSimpleIntegerDynamicPseudoCost::infeasibility(int & preferredWay) const
   if (preferredWay_)
     preferredWay=preferredWay_;
   // weight at 1.0 is max min
-#define WEIGHT_AFTER 0.9
-#define WEIGHT_BEFORE 0.3
+#define WEIGHT_AFTER 0.7
+#define WEIGHT_BEFORE 0.1
   if (fabs(value-nearest)<=integerTolerance) {
     return 0.0;
   } else {
@@ -445,6 +445,29 @@ CbcSimpleIntegerDynamicPseudoCost::infeasibility(int & preferredWay) const
     if (stateOfSearch<=1||model_->currentNode()->depth()<=10/* was ||maxValue>0.2*distanceToCutoff*/) {
       // no solution
       returnValue = WEIGHT_BEFORE*minValue + (1.0-WEIGHT_BEFORE)*maxValue;
+      if (0) {
+	double sum;
+	int number;
+	double downCost2 = CoinMax(value-below,0.0);
+	sum = sumDownCost_;
+	number = numberTimesDown_;
+	if (number>0)
+	  downCost2 *= sum / (double) number;
+	else
+	  downCost2  *=  downDynamicPseudoCost_;
+	double upCost2 = CoinMax((above-value),0.0);
+	sum = sumUpCost_;
+	number = numberTimesUp_;
+	if (number>0)
+	  upCost2 *= sum / (double) number;
+	else
+	  upCost2  *=  upDynamicPseudoCost_;
+	double minValue2 = CoinMin(downCost2,upCost2);
+	double maxValue2 = CoinMax(downCost2,upCost2);
+	printf("%d value %g downC %g upC %g minV %g maxV %g downC2 %g upC2 %g minV2 %g maxV2 %g\n",
+	       columnNumber_,value,downCost,upCost,minValue,maxValue,
+	       downCost2,upCost2,minValue2,maxValue2);
+      }
     } else {
       // some solution
       returnValue = WEIGHT_AFTER*minValue + (1.0-WEIGHT_AFTER)*maxValue;
@@ -544,7 +567,6 @@ CbcSimpleIntegerDynamicPseudoCost::infeasibility(const OsiSolverInterface * solv
   if (preferredWay_)
     preferredWay=preferredWay_;
   // weight at 1.0 is max min
-#define WEIGHT_BEFORE 0.3
   if (fabs(value-nearest)<=integerTolerance) {
     return 0.0;
   } else {
@@ -1246,7 +1268,7 @@ CbcBranchDynamicDecision::betterBranch(CbcBranchingObject * thisOne,
     bestNumberUp_=INT_MAX;
     bestNumberDown_=INT_MAX;
   }
-  if (stateOfSearch<=1&&thisOne->model()->currentNode()->depth()>10) {
+  if (stateOfSearch<=1&&thisOne->model()->currentNode()->depth()>=8) {
 #define TRY_STUFF 1
 #ifdef TRY_STUFF
     // before solution - choose smallest number 

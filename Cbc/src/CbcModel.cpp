@@ -1115,23 +1115,23 @@ void CbcModel::branchAndBound(int doStatistics)
           = dynamic_cast<CbcTreeLocal *> (tree_);
       if (tree)
         tree->passInSolution(bestSolution_,heuristicValue);
-    }
-    for (i = 0;i<numberHeuristics_;i++) {
-      // delete FPump
-      CbcHeuristicFPump * pump 
-	= dynamic_cast<CbcHeuristicFPump *> (heuristic_[i]);
-      if (pump) {
-	delete pump;
-	numberHeuristics_ --;
-	for (int j=i;j<numberHeuristics_;j++)
-	  heuristic_[j] = heuristic_[j+1];
+      for (i = 0;i<numberHeuristics_;i++) {
+	// delete FPump
+	CbcHeuristicFPump * pump 
+	  = dynamic_cast<CbcHeuristicFPump *> (heuristic_[i]);
+	if (pump) {
+	  delete pump;
+	  numberHeuristics_ --;
+	  for (int j=i;j<numberHeuristics_;j++)
+	    heuristic_[j] = heuristic_[j+1];
+	}
       }
     }
     delete [] newSolution ;
   } 
   statistics_ = NULL;
   // Do on switch
-  if (doStatistics) {
+  if (doStatistics>0&&doStatistics<100) {
     maximumStatistics_=10000;
     statistics_ = new CbcStatistics * [maximumStatistics_];
     memset(statistics_,0,maximumStatistics_*sizeof(CbcStatistics *));
@@ -2370,6 +2370,14 @@ void CbcModel::branchAndBound(int doStatistics)
   handler_->message(CBC_OTHER_STATS,messages_)
       << maximumDepthActual_ 
       << numberDJFixed_ << CoinMessageEol ;
+  if (doStatistics==100) {
+    for (int i=0;i<numberObjects_;i++) {
+      CbcSimpleIntegerDynamicPseudoCost * obj =
+	dynamic_cast <CbcSimpleIntegerDynamicPseudoCost *>(object_[i]) ;
+      if (obj)
+	obj->print();
+    }
+  }
   if (statistics_) {
     // report in some way
     int * lookup = new int[numberObjects_];
@@ -6898,6 +6906,9 @@ CbcModel::convertToDynamic()
       object_[iObject] = newObject;
     } else if (!obj2) {
       allDynamic=false;
+    } else {
+      // synchronize trust
+      obj2->setNumberBeforeTrust(numberBeforeTrust_);
     }
   }
   if (branchingMethod_) {

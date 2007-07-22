@@ -2727,6 +2727,7 @@ int CbcMain1 (int argc, const char *argv[],
                   dynamic_cast<OsiClpSolverInterface *>(solver) ;
                 assert (si != NULL);
 		// See if quadratic
+#ifdef COIN_HAS_LINK
 		if (!complicatedInteger) {
 		  ClpSimplex * lpSolver = si->getModelPtr();
 		  ClpQuadraticObjective * obj = (dynamic_cast< ClpQuadraticObjective*>(lpSolver->objectiveAsObject()));
@@ -2925,6 +2926,7 @@ int CbcMain1 (int argc, const char *argv[],
 		    }
 		  }
 		}
+#endif
                 si->setSpecialOptions(0x40000000);
               }
               if (!miplib) {

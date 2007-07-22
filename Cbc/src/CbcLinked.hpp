@@ -16,6 +16,7 @@ class CoinPackedMatrix;
 class OsiLinkedBound;
 class OsiObject;
 class CglStored;
+class CglTemporary;
 /**
    
 This is to allow the user to replace initialSolve and resolve
@@ -62,6 +63,9 @@ public:
       2 use defaultBound_ to bound integer variables near current solution
   */
   double * heuristicSolution(int numberPasses,double deltaTolerance,int mode);
+  
+  /// Do OA cuts
+  int doAOCuts(CglTemporary * cutGen, const double * solution, const double * solution2);
   //@}
   
   

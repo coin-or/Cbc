@@ -1404,7 +1404,7 @@ int CbcMain1 (int argc, const char *argv[],
   */
   OsiClpSolverInterface * originalSolver = dynamic_cast<OsiClpSolverInterface *> (model.solver());
   assert (originalSolver);
-  CoinMessageHandler * generalMessageHandler = originalSolver->messageHandler()->clone();
+  CoinMessageHandler * generalMessageHandler = originalSolver->messageHandler();
   CoinMessages generalMessages = originalSolver->getModelPtr()->messages();
   char generalPrint[10000];
   if (originalSolver->getModelPtr()->logLevel()==0)
@@ -1462,9 +1462,9 @@ int CbcMain1 (int argc, const char *argv[],
     double * sosReference = NULL;
     int * cut=NULL;
     int * sosPriority=NULL;
+    CglStored storedAmpl;
 #ifdef COIN_HAS_ASL
     CoinModel * coinModel = NULL;
-    CglStored storedAmpl;
     ampl_info info;
     CoinModel saveCoinModel;
     CoinModel saveTightenedModel;
@@ -1551,7 +1551,7 @@ int CbcMain1 (int argc, const char *argv[],
 	// load from coin model
 	OsiSolverLink solver1;
 	OsiSolverInterface * solver2 = solver1.clone();
-	model.assignSolver(solver2,true);
+	model.assignSolver(solver2,false);
 	OsiSolverLink * si =
 	  dynamic_cast<OsiSolverLink *>(model.solver()) ;
 	assert (si != NULL);
@@ -2721,7 +2721,6 @@ int CbcMain1 (int argc, const char *argv[],
               // Reduce printout
               if (logLevel<=1)
                 model.solver()->setHintParam(OsiDoReducePrint,true,OsiHintTry);
-#ifdef COIN_HAS_LINK
               {
                 OsiSolverInterface * solver = model.solver();
                 OsiClpSolverInterface * si =
@@ -2741,7 +2740,7 @@ int CbcMain1 (int argc, const char *argv[],
 		    // load from coin model
 		    OsiSolverLink solver1;
 		    OsiSolverInterface * solver2 = solver1.clone();
-		    model.assignSolver(solver2,true);
+		    model.assignSolver(solver2,false);
 		    OsiSolverLink * si =
 		      dynamic_cast<OsiSolverLink *>(model.solver()) ;
 		    assert (si != NULL);
@@ -2879,6 +2878,11 @@ int CbcMain1 (int argc, const char *argv[],
 		      }
 		      clpModel->dual();  // clean up
 		      cbcModel->initialSolve();
+#ifdef CBC_THREAD
+		      int numberThreads =parameters[whichParam(THREADS,numberParameters,parameters)].intValue();
+		      cbcModel->setNumberThreads(numberThreads%100);
+		      cbcModel->setThreadMode(numberThreads/100);
+#endif
 		      cbcModel->branchAndBound();
 		      OsiSolverLinearizedQuadratic * solver3 = dynamic_cast<OsiSolverLinearizedQuadratic *> (model2.solver());
 		      assert (solver3);
@@ -2923,7 +2927,6 @@ int CbcMain1 (int argc, const char *argv[],
 		}
                 si->setSpecialOptions(0x40000000);
               }
-#endif
               if (!miplib) {
 		if (!preSolve) {
 		  model.solver()->setHintParam(OsiDoPresolveInInitial,false,OsiHintTry);
@@ -4488,6 +4491,7 @@ int CbcMain1 (int argc, const char *argv[],
 		    delete [] objects;
 		  }
 		}
+#endif
 		if (storedAmpl.sizeRowCuts()) {
 		  //babModel->addCutGenerator(&storedAmpl,1,"AmplStored");
 		  int numberRowCuts = storedAmpl.sizeRowCuts();
@@ -4496,7 +4500,6 @@ int CbcMain1 (int argc, const char *argv[],
 		    babModel->makeGlobalCut(rowCutPointer);
 		  }
 		}
-#endif
 		// If defaults then increase trust for small models
 		if (!strongChanged) {
 		  int numberColumns = babModel->getNumCols();
@@ -4547,7 +4550,6 @@ int CbcMain1 (int argc, const char *argv[],
 		  babModel->setBranchingMethod(decision);
 		}
 		model = *babModel;
-		delete generalMessageHandler;
 		return 777;
               } else {
                 strengthenedModel = babModel->strengthenedModel();
@@ -4589,6 +4591,9 @@ int CbcMain1 (int argc, const char *argv[],
                 if (preProcess) {
                   int n = saveSolver->getNumCols();
                   bestSolution = new double [n];
+		  OsiClpSolverInterface * clpSolver = dynamic_cast< OsiClpSolverInterface*> (babModel->solver());
+		  ClpSimplex * lpSolver = clpSolver->getModelPtr();
+		  lpSolver->setSpecialOptions(lpSolver->specialOptions()|0x01000000); // say is Cbc (and in branch and bound)
                   process.postProcess(*babModel->solver());
                   // Solution now back in saveSolver
                   babModel->assignSolver(saveSolver);
@@ -4605,7 +4610,7 @@ int CbcMain1 (int argc, const char *argv[],
 		  double * upper = original->columnUpper();
 		  double * solution = original->primalColumnSolution();
 		  int n = original->numberColumns();
-		  assert (!n||n==babModel->solver()->getNumCols());
+		  //assert (!n||n==babModel->solver()->getNumCols());
 		  for (int i=0;i<n;i++) {
 		    solution[i]=bestSolution[i];
 		    if (originalSolver->isInteger(i)) {
@@ -4979,7 +4984,7 @@ int CbcMain1 (int argc, const char *argv[],
 		// load from coin model
 		OsiSolverLink solver1;
 		OsiSolverInterface * solver2 = solver1.clone();
-		model.assignSolver(solver2,true);
+		model.assignSolver(solver2,false);
 		OsiSolverLink * si =
 		  dynamic_cast<OsiSolverLink *>(model.solver()) ;
 		assert (si != NULL);
@@ -6299,7 +6304,6 @@ clp watson.mps -\nscaling off\nprimalsimplex"
   dmalloc_log_unfreed();
   dmalloc_shutdown();
 #endif
-  delete generalMessageHandler;
   return 0;
 }    
 static void breakdown(const char * name, int numberLook, const double * region)

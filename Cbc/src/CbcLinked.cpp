@@ -666,11 +666,30 @@ void OsiSolverLink::resolve()
 	    CglCutGenerator * gen = generator->generator();
 	    CglTemporary * gen2 = dynamic_cast<CglTemporary *> (gen);
 	    if (gen2) {
+	      double * solution2 = NULL;
+	      int numberColumns = quadraticModel_->numberColumns();
+	      int depth=6;
+	      if (depth<5) {
+		ClpSimplex qpTemp(*quadraticModel_);
+		double * lower = qpTemp.columnLower();
+		double * upper = qpTemp.columnUpper();
+		double * lower2 = modelPtr_->columnLower();
+		double * upper2 = modelPtr_->columnUpper();
+		for (int i=0;i<numberColumns;i++) {
+		  lower[i]=lower2[i];
+		  upper[i]=upper2[i];
+		}
+		qpTemp.primal();
+		assert (!qpTemp.problemStatus());
+		if (qpTemp.objectiveValue()<bestObjectiveValue_-1.0e-3&&!qpTemp.problemStatus()) {
+		} else {
+		  printf("QP says expensive - kill\n");
+		}
+	      }
 	      cbcModel_->lockThread();
 	      const double * solution = getColSolution();
 	      // add OA cut
 	      double offset=0.0;
-	      int numberColumns = quadraticModel_->numberColumns();
 	      double * gradient = new double [numberColumns+1];
 	      // gradient from bilinear
 	      int i;
@@ -722,6 +741,10 @@ void OsiSolverLink::resolve()
 	      if (rhs>offset+1.0e-5) {
 		gen2->addCut(-COIN_DBL_MAX,offset+1.0e-7,n,column,gradient);
 		//printf("added cut with %d elements\n",n);
+	      }
+	      if (solution2) {
+		doAOCuts(gen2, solution, solution2);
+		delete [] solution2;
 	      }
 	      delete [] gradient;
 	      delete [] column;
@@ -820,6 +843,73 @@ void OsiSolverLink::resolve()
     modelPtr_->setProblemStatus(1);
     modelPtr_->setObjectiveValue(COIN_DBL_MAX);
   }
+}
+// Do OA cuts
+int 
+OsiSolverLink::doAOCuts(CglTemporary * cutGen, const double * solution, const double * solution2)
+{
+  cbcModel_->lockThread();
+  // add OA cut
+  double offset=0.0;
+  int numberColumns = quadraticModel_->numberColumns();
+  double * gradient = new double [numberColumns+1];
+  // gradient from bilinear
+  int i;
+  CoinZeroN(gradient,numberColumns+1);
+  //const double * objective = modelPtr_->objective();
+  assert (objectiveRow_>=0);
+  const double * element = originalRowCopy_->getElements();
+  const int * column2 = originalRowCopy_->getIndices();
+  const CoinBigIndex * rowStart = originalRowCopy_->getVectorStarts();
+  //const int * rowLength = originalRowCopy_->getVectorLengths();
+  //int numberColumns2 = coinModel_.numberColumns();
+  for ( i=rowStart[objectiveRow_];i<rowStart[objectiveRow_+1];i++) 
+    gradient[column2[i]] = element[i];
+  //const double * columnLower = modelPtr_->columnLower();
+  //const double * columnUpper = modelPtr_->columnUpper();
+  for ( i =0;i<numberObjects_;i++) {
+    OsiBiLinear * obj = dynamic_cast<OsiBiLinear *> (object_[i]);
+    if (obj) {
+      int xColumn = obj->xColumn();
+      int yColumn = obj->yColumn();
+      if (xColumn!=yColumn) {
+	double coefficient = /* 2.0* */obj->coefficient();
+	gradient[xColumn] += coefficient*solution2[yColumn];
+	gradient[yColumn] += coefficient*solution2[xColumn];
+	offset += coefficient*solution2[xColumn]*solution2[yColumn];
+      } else {
+	double coefficient = obj->coefficient();
+	gradient[xColumn] += 2.0*coefficient*solution2[yColumn];
+	offset += coefficient*solution2[xColumn]*solution2[yColumn];
+      }
+    }
+  }
+  // assume convex
+  double rhs = 0.0;
+  int * column = new int[numberColumns+1];
+  int n=0;
+  for (int i=0;i<numberColumns;i++) {
+    double value = gradient[i];
+    if (fabs(value)>1.0e-12) {
+      gradient[n]=value;
+      rhs += value*solution[i];
+      column[n++]=i;
+    }
+  }
+  gradient[n]=-1.0;
+  assert (objectiveVariable_>=0);
+  rhs -= solution[objectiveVariable_];
+  column[n++]=objectiveVariable_;
+  int returnCode=0;
+  if (rhs>offset+1.0e-5) {
+    cutGen->addCut(-COIN_DBL_MAX,offset+1.0e-7,n,column,gradient);
+    //printf("added cut with %d elements\n",n);
+    returnCode=1;
+  }
+  delete [] gradient;
+  delete [] column;
+  cbcModel_->unlockThread();
+  return returnCode;
 }
 
 //#############################################################################

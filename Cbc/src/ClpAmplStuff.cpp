@@ -915,4 +915,14 @@ ClpSimplex::loadNonLinear(void * amplInfo, int & numberConstraints,
   }
   return type;
 }
+#else
+#include "ClpSimplex.hpp"
+#include "ClpConstraint.hpp"
+int 
+ClpSimplex::loadNonLinear(void * amplInfo, int & numberConstraints, 
+			  ClpConstraint ** & constraints)
+{
+  abort();
+  return 0;
+}
 #endif

@@ -126,6 +126,8 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver,int numberNodes,
     // Turn this off if you get problems
     // Used to be automatically set
     osiclp->setSpecialOptions(osiclp->specialOptions()|(128+64));
+    ClpSimplex * lpSolver = osiclp->getModelPtr();
+    lpSolver->setSpecialOptions(lpSolver->specialOptions()|0x01000000); // say is Cbc (and in branch and bound)
   }
 #endif
   // Reduce printout
@@ -195,6 +197,13 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver,int numberNodes,
         // solution
         returnCode=model.isProvenOptimal() ? 3 : 1;
         // post process
+#ifdef COIN_HAS_CLP
+	OsiClpSolverInterface * clpSolver = dynamic_cast< OsiClpSolverInterface*> (model.solver());
+	if (clpSolver) {
+	  ClpSimplex * lpSolver = clpSolver->getModelPtr();
+	  lpSolver->setSpecialOptions(lpSolver->specialOptions()|0x01000000); // say is Cbc (and in branch and bound)
+	}
+#endif
         process.postProcess(*model.solver());
         if (solver->isProvenOptimal()) {
           // Solution now back in solver

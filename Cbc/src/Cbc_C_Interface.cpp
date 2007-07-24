@@ -745,7 +745,7 @@ Cbc_setNumberIterations(Cbc_Model * model, int numberIterations)
   return;
 }
 /* Maximum number of iterations */
-COINLIBAPI int 
+COINLIBAPI int COINLINKAGE
 Cbc_maximumIterations(Cbc_Model * model)
 {
   const char prefix[] = "Cbc_C_Interface::Cbc_maximumIterations(): ";
@@ -774,7 +774,7 @@ Cbc_setMaximumIterations(Cbc_Model * model, int value)
   if (VERBOSE>0) printf("%s return\n",prefix);
 }
 /* Maximum number of nodes */
-COINLIBAPI int 
+COINLIBAPI int COINLINKAGE
 Cbc_maxNumNode(Cbc_Model * model)
 {
   const char prefix[] = "Cbc_C_Interface::Cbc_maxNumNode(): ";
@@ -799,7 +799,7 @@ Cbc_setMaxNumNode(Cbc_Model * model, int value)
   if (VERBOSE>0) printf("%s return\n",prefix);
 }
 /* Maximum number of solutions */
-COINLIBAPI int 
+COINLIBAPI int COINLINKAGE
 Cbc_maxNumSol(Cbc_Model * model)
 {
   const char prefix[] = "Cbc_C_Interface::maxNumSol(): ";
@@ -1029,7 +1029,7 @@ Cbc_dualColumnSolution(Cbc_Model * model)
   return NULL;
 }
 /* Row lower */
-COINLIBAPI double* COINLINKAGE 
+COINLIBAPI double * COINLINKAGE 
 Cbc_rowLower(Cbc_Model * model)
 {
   const char prefix[] = "Cbc_C_Interface::Cbc_rowLower(): ";
@@ -1046,7 +1046,7 @@ Cbc_rowLower(Cbc_Model * model)
   return NULL;
 }
 /* Row upper  */
-COINLIBAPI double* COINLINKAGE 
+COINLIBAPI double * COINLINKAGE 
 Cbc_rowUpper(Cbc_Model * model)
 {
   const char prefix[] = "Cbc_C_Interface::Cbc_rowUpper(): ";
@@ -1129,7 +1129,8 @@ Cbc_getNumElements(Cbc_Model * model)
 }
 
 // Column starts in matrix 
-COINLIBAPI const CoinBigIndex * COINLINKAGE Cbc_getVectorStarts(Cbc_Model * model)
+COINLIBAPI const CoinBigIndex * COINLINKAGE 
+Cbc_getVectorStarts(Cbc_Model * model)
 {
   const CoinPackedMatrix * matrix = NULL;
   matrix = model->model_->solver()->getMatrixByCol();
@@ -1272,9 +1273,9 @@ Cbc_getBasisStatus(Cbc_Model * model, int * cstat, int * rstat)
 }
 /* Copy in status vector */
 COINLIBAPI void COINLINKAGE 
-setBasisStatus(Cbc_Model * model,  int * cstat, int * rstat)
+Cbc_setBasisStatus(Cbc_Model * model,  int * cstat, int * rstat)
 {
-  const char prefix[] = "Cbc_C_Interface::setBasisStatus(): ";
+  const char prefix[] = "Cbc_C_Interface::Cbc_setBasisStatus(): ";
 //  const int  VERBOSE = 1;
   if (VERBOSE>0) printf("%s begin\n",prefix);
 
@@ -1324,12 +1325,15 @@ Cbc_registerCallBack(Cbc_Model * model,
 //  const int  VERBOSE = 1;
   if (VERBOSE>0) printf("%s begin\n",prefix);
 
+  // reuse existing log level
+  int oldLogLevel = model->model_->messageHandler()->logLevel();
   // Will be copy of users one
   delete model->handler_;
   model->handler_ = new Cbc_MessageHandler(*(model->model_->messageHandler()));
   model->handler_->setCallBack(userCallBack);
   model->handler_->setModel(model);
   model->model_->passInMessageHandler(model->handler_);
+  model->model_->messageHandler()->setLogLevel(oldLogLevel);
 
   if (VERBOSE>0) printf("%s return\n",prefix);
 }
@@ -1476,7 +1480,8 @@ Cbc_scaling(Cbc_Model * model, int mode)
   if (VERBOSE>0) printf("%s begin\n",prefix);
   
   OsiSolverInterface * solver = model->model_->solver();
-  solver->setHintParam(OsiDoScale,mode);
+  bool modeBool = (mode == 0);
+  solver->setHintParam(OsiDoScale, modeBool);
 
   if (VERBOSE>0) printf("%s return\n",prefix);
 }
@@ -2206,7 +2211,8 @@ Cbc_cpuTime(Cbc_Model * model)
   return result;
 }
 /** Number of nodes explored in B&B tree */
-COINLIBAPI int COINLINKAGE Cbc_getNodeCount(Cbc_Model * model)
+COINLIBAPI int COINLINKAGE 
+Cbc_getNodeCount(Cbc_Model * model)
 {
   const char prefix[] = "Cbc_C_Interface::Cbc_getNodeCount(): ";
 //  const int  VERBOSE = 1;
@@ -2219,10 +2225,11 @@ COINLIBAPI int COINLINKAGE Cbc_getNodeCount(Cbc_Model * model)
   return result;
 }
 /** Return a copy of this model */
-COINLIBAPI Cbc_Model * COINLINKAGE Cbc_clone(Cbc_Model * model)
+COINLIBAPI Cbc_Model * COINLINKAGE 
+Cbc_clone(Cbc_Model * model)
 {
   const char prefix[] = "Cbc_C_Interface::Cbc_clone(): ";
-  const int  VERBOSE = 1;
+//  const int  VERBOSE = 1;
   if (VERBOSE>0) printf("%s begin\n",prefix);
   
   Cbc_Model * result = new Cbc_Model;
@@ -2234,7 +2241,8 @@ COINLIBAPI Cbc_Model * COINLINKAGE Cbc_clone(Cbc_Model * model)
   return model;
 }
 /** Set this the variable to be continuous */
-COINLIBAPI Cbc_Model * COINLINKAGE Cbc_setContinuous(Cbc_Model * model, int iColumn)
+COINLIBAPI Cbc_Model * COINLINKAGE 
+Cbc_setContinuous(Cbc_Model * model, int iColumn)
 {
   const char prefix[] = "Cbc_C_Interface::Cbc_setContinuous(): ";
 //  const int  VERBOSE = 1;
@@ -2245,26 +2253,13 @@ COINLIBAPI Cbc_Model * COINLINKAGE Cbc_setContinuous(Cbc_Model * model, int iCol
   if (VERBOSE>0) printf("%s return\n",prefix);
   return model;
 }
-/* Delete all object information */
-COINLIBAPI void  COINLINKAGE 
-Cbc_deleteObjects(Cbc_Model * model)
-{
-  const char prefix[] = "Cbc_C_Interface::Cbc_deleteObjects(): ";
-//  const int  VERBOSE = 2;
-  if (VERBOSE>0) printf("%s begin\n",prefix);
-
-  model->model_->deleteObjects();
-
-  if (VERBOSE>0) printf("%s return\n",prefix);
-  return;
-}
 /* Add an SOS constraint to the model */
 COINLIBAPI void  COINLINKAGE 
 Cbc_addSOS_Dense(Cbc_Model * model, int numObjects, const int * len,
            const int ** which, const double * weights, const int type)
 {
   const char prefix[] = "Cbc_C_Interface::Cbc_addSOS_Dense(): ";
-  const int  VERBOSE = 2;
+//  const int  VERBOSE = 2;
   if (VERBOSE>0) printf("%sbegin\n",prefix);
   
   assert(1>0);// this is probably broken
@@ -2291,7 +2286,7 @@ Cbc_addSOS_Dense(Cbc_Model * model, int numObjects, const int * len,
     }
     
     // Make a CbcSOS and assign it to objects
-    printf("%s len[%i] = %i\n",prefix, i, len[i]);
+    if (VERBOSE>1) printf("%s len[%i] = %i\n",prefix, i, len[i]);
     l = len[i];
     w = which[i];
     if (VERBOSE>1) printf("%s new CbcSOS()\n",prefix);
@@ -2315,7 +2310,7 @@ Cbc_addSOS_Dense(Cbc_Model * model, int numObjects, const int * len,
   if (VERBOSE>0) printf("%sreturn\n",prefix);
   return;
 }
-/* Add SOS constraints to the model using row-order matrix */
+/** Add SOS constraints to the model using row-order matrix */
 COINLIBAPI void  COINLINKAGE 
 Cbc_addSOS_Sparse(Cbc_Model * model, const int * rowStarts,
            const int * rowIndices, const double * weights, const int type)
@@ -2402,7 +2397,21 @@ Cbc_addSOS_Sparse(Cbc_Model * model, const int * rowStarts,
   return;
 }
 
-/* Print the solution */
+/** Delete all object information */
+COINLIBAPI void  COINLINKAGE 
+Cbc_deleteObjects(Cbc_Model * model)
+{
+  const char prefix[] = "Cbc_C_Interface::Cbc_deleteObjects(): ";
+//  const int  VERBOSE = 2;
+  if (VERBOSE>0) printf("%s begin\n",prefix);
+
+  model->model_->deleteObjects();
+
+  if (VERBOSE>0) printf("%s return\n",prefix);
+  return;
+}
+
+/** Print the solution */
 COINLIBAPI void  COINLINKAGE 
 Cbc_printSolution(Cbc_Model * model)
 {
@@ -2506,6 +2515,30 @@ Cbc_printSolution(Cbc_Model * model)
   if (0) Cbc_printModel(model, "cbc::main(): ");
   return;
 }
+  /** Dual initial solve */
+  COINLIBAPI int COINLINKAGE 
+  Cbc_initialDualSolve(Cbc_Model * model)
+  {
+    return 0;
+  }
+  /** Primal initial solve */
+  COINLIBAPI int COINLINKAGE 
+  Cbc_initialPrimalSolve(Cbc_Model * model)
+  {
+    return 0;
+  }
+  /** Dual algorithm - see ClpSimplexDual.hpp for method */
+  COINLIBAPI int COINLINKAGE 
+  Cbc_dual(Cbc_Model * model, int ifValuesPass)
+  {
+    return 0;
+  }
+  /** Primal algorithm - see ClpSimplexPrimal.hpp for method */
+  COINLIBAPI int COINLINKAGE 
+  Cbc_primal(Cbc_Model * model, int ifValuesPass)
+  {
+    return 0;
+  }
 #if defined(__MWERKS__) 
 #pragma export off
 #endif

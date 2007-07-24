@@ -565,6 +565,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\..\src\CbcLinked.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\..\..\Cbc\src\CbcMessage.cpp"
 				>
 				<FileConfiguration
@@ -851,6 +855,10 @@
 			</File>
 			<File
 				RelativePath="..\..\..\..\Cbc\src\CbcHeuristicRINS.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\..\src\CbcLinked.hpp"
 				>
 			</File>
 			<File

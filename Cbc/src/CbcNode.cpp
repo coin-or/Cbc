@@ -1230,7 +1230,7 @@ int CbcNode::chooseBranch (CbcModel *model, CbcNode *lastNode,int numberPassesLe
       numberUnsatisfied_ = 0;
       // initialize sum of "infeasibilities"
       sumInfeasibilities_ = 0.0;
-      int bestPriority=INT_MAX;
+      int bestPriority=COIN_INT_MAX;
       /*
         Scan for branching objects that indicate infeasibility. Choose the best
         maximumStrong candidates, using priority as the first criteria, then
@@ -2020,7 +2020,7 @@ int CbcNode::chooseBranch (CbcModel *model, CbcNode *lastNode,int numberPassesLe
         // would stop after 50% more iterations at average cost??? !!! ???
         double averageCostPerIteration=0.0;
         double totalNumberIterations=1.0;
-        int smallestNumberInfeasibilities=INT_MAX;
+        int smallestNumberInfeasibilities=COIN_INT_MAX;
         for (i=0;i<numberStrong;i++) {
           totalNumberIterations += choice[i].numItersDown +
             choice[i].numItersUp ;
@@ -2405,7 +2405,7 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
       numberUnsatisfied_ = 0;
       // initialize sum of "infeasibilities"
       sumInfeasibilities_ = 0.0;
-      int bestPriority=INT_MAX;
+      int bestPriority=COIN_INT_MAX;
       int number01 = 0;
       const fixEntry * entry = NULL;
       const int * toZero = NULL;

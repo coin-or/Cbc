@@ -478,7 +478,7 @@ CbcCutModifier::operator=( const CbcCutModifier& rhs)
 // Default Constructor 
 CbcCutSubsetModifier::CbcCutSubsetModifier ()
   : CbcCutModifier(),
-    firstOdd_(INT_MAX)
+    firstOdd_(COIN_INT_MAX)
 {
 }
 

@@ -1966,8 +1966,8 @@ CbcBranchDefaultDecision::betterBranch(CbcBranchingObject * thisOne,
   int betterWay=0;
   if (beforeSolution) {
     if (!bestObject_) {
-      bestNumberUp_=INT_MAX;
-      bestNumberDown_=INT_MAX;
+      bestNumberUp_=COIN_INT_MAX;
+      bestNumberDown_=COIN_INT_MAX;
     }
     // before solution - choose smallest number 
     // could add in depth as well
@@ -2116,7 +2116,7 @@ CbcBranchDefaultDecision::bestBranch (CbcBranchingObject ** objects, int numberO
        3 - predicted best solution
        4 - take cheapest up branch if infeasibilities same
     */
-    int bestNumber=INT_MAX;
+    int bestNumber=COIN_INT_MAX;
     double bestCriterion=-1.0e50;
     double alternativeCriterion = -1.0;
     double bestEstimate = 1.0e100;

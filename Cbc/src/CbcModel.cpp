@@ -2807,7 +2807,7 @@ CbcModel::CbcModel()
   numberGlobalViolations_(0),
   continuousObjective_(COIN_DBL_MAX),
   originalContinuousObjective_(COIN_DBL_MAX),
-  continuousInfeasibilities_(INT_MAX),
+  continuousInfeasibilities_(COIN_INT_MAX),
   maximumCutPassesAtRoot_(20),
   maximumCutPasses_(10),
   preferredWay_(0),
@@ -2945,7 +2945,7 @@ CbcModel::CbcModel(const OsiSolverInterface &rhs)
   numberGlobalViolations_(0),
   continuousObjective_(COIN_DBL_MAX),
   originalContinuousObjective_(COIN_DBL_MAX),
-  continuousInfeasibilities_(INT_MAX),
+  continuousInfeasibilities_(COIN_INT_MAX),
   maximumCutPassesAtRoot_(20),
   maximumCutPasses_(10),
   preferredWay_(0),
@@ -3368,7 +3368,7 @@ CbcModel::CbcModel(const CbcModel & rhs, bool noTree)
     numberStoppedSubTrees_=0;
     continuousObjective_=COIN_DBL_MAX;
     originalContinuousObjective_=COIN_DBL_MAX;
-    continuousInfeasibilities_=INT_MAX;
+    continuousInfeasibilities_=COIN_INT_MAX;
     maximumNumberCuts_=0;
     tree_->cleanTree(this,-COIN_DBL_MAX,bestPossibleObjective_);
     bestPossibleObjective_ = COIN_DBL_MAX;

@@ -68,7 +68,7 @@ public:
   */
   bool tryColumn(int numberElements, const int * rows,
                     const double * coefficients, float cost,
-                    int upper=INT_MAX);
+                    int upper=COIN_INT_MAX);
   /// Returns cost array
   inline const float * cost() const
   { return cost_;};

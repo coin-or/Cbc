@@ -668,7 +668,7 @@ void OsiSolverLink::resolve()
 	    if (gen2) {
 	      double * solution2 = NULL;
 	      int numberColumns = quadraticModel_->numberColumns();
-	      int depth=6;
+	      int depth = cbcModel_->currentNode() ? cbcModel_->currentNode()->depth() : 0;
 	      if (depth<5) {
 		ClpSimplex qpTemp(*quadraticModel_);
 		double * lower = qpTemp.columnLower();
@@ -682,73 +682,21 @@ void OsiSolverLink::resolve()
 		qpTemp.primal();
 		assert (!qpTemp.problemStatus());
 		if (qpTemp.objectiveValue()<bestObjectiveValue_-1.0e-3&&!qpTemp.problemStatus()) {
+		  solution2 = CoinCopyOfArray(qpTemp.primalColumnSolution(),numberColumns);
 		} else {
 		  printf("QP says expensive - kill\n");
+		  modelPtr_->setProblemStatus(1);
+		  modelPtr_->setObjectiveValue(COIN_DBL_MAX);
+		  break;
 		}
 	      }
-	      cbcModel_->lockThread();
 	      const double * solution = getColSolution();
 	      // add OA cut
-	      double offset=0.0;
-	      double * gradient = new double [numberColumns+1];
-	      // gradient from bilinear
-	      int i;
-	      CoinZeroN(gradient,numberColumns+1);
-	      //const double * objective = modelPtr_->objective();
-	      assert (objectiveRow_>=0);
-	      const double * element = originalRowCopy_->getElements();
-	      const int * column2 = originalRowCopy_->getIndices();
-	      const CoinBigIndex * rowStart = originalRowCopy_->getVectorStarts();
-	      //const int * rowLength = originalRowCopy_->getVectorLengths();
-	      //int numberColumns2 = coinModel_.numberColumns();
-	      for ( i=rowStart[objectiveRow_];i<rowStart[objectiveRow_+1];i++) 
-		gradient[column2[i]] = element[i];
-	      //const double * columnLower = modelPtr_->columnLower();
-	      //const double * columnUpper = modelPtr_->columnUpper();
-	      for ( i =0;i<numberObjects_;i++) {
-		OsiBiLinear * obj = dynamic_cast<OsiBiLinear *> (object_[i]);
-		if (obj) {
-		  int xColumn = obj->xColumn();
-		  int yColumn = obj->yColumn();
-		  if (xColumn!=yColumn) {
-		    double coefficient = /* 2.0* */obj->coefficient();
-		    gradient[xColumn] += coefficient*solution[yColumn];
-		    gradient[yColumn] += coefficient*solution[xColumn];
-		    offset += coefficient*solution[xColumn]*solution[yColumn];
-		  } else {
-		    double coefficient = obj->coefficient();
-		    gradient[xColumn] += 2.0*coefficient*solution[yColumn];
-		    offset += coefficient*solution[xColumn]*solution[yColumn];
-		  }
-		}
-	      }
-	      // assume convex
-	      double rhs = 0.0;
-	      int * column = new int[numberColumns+1];
-	      int n=0;
-	      for (int i=0;i<numberColumns;i++) {
-		double value = gradient[i];
-		if (fabs(value)>1.0e-12) {
-		  gradient[n]=value;
-		  rhs += value*solution[i];
-		  column[n++]=i;
-		}
-	      }
-	      gradient[n]=-1.0;
-	      assert (objectiveVariable_>=0);
-	      rhs -= solution[objectiveVariable_];
-	      column[n++]=objectiveVariable_;
-	      if (rhs>offset+1.0e-5) {
-		gen2->addCut(-COIN_DBL_MAX,offset+1.0e-7,n,column,gradient);
-		//printf("added cut with %d elements\n",n);
-	      }
+	      doAOCuts(gen2, solution, solution);
 	      if (solution2) {
 		doAOCuts(gen2, solution, solution2);
 		delete [] solution2;
 	      }
-	      delete [] gradient;
-	      delete [] column;
-	      cbcModel_->unlockThread();
 	      break;
 	    }
 	  }

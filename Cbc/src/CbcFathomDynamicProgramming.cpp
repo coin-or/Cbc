@@ -194,7 +194,7 @@ CbcFathomDynamicProgramming::checkPossible(int allowableSize)
   }
   // check size of array needed
   double size=1.0;
-  double check = INT_MAX;
+  double check = COIN_INT_MAX;
   for (i=0;i<numberRows;i++) {
     int n= (int) floor(rhs[i]+0.5);
     if (n) {
@@ -223,7 +223,7 @@ CbcFathomDynamicProgramming::checkPossible(int allowableSize)
   }
   // set size needed
   if (size>=check)
-    size_=INT_MAX;
+    size_=COIN_INT_MAX;
   else
     size_=(int) size;
         

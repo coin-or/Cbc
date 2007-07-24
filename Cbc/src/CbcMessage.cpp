@@ -6,6 +6,7 @@
 #endif
 
 #include "CbcMessage.hpp"
+#include <cstring>
 
 typedef struct {
   CBC_Message internalNumber;

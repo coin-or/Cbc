@@ -1265,8 +1265,8 @@ CbcBranchDynamicDecision::betterBranch(CbcBranchingObject * thisOne,
   double value=0.0;
   if (!bestObject_) {
     bestCriterion_=-1.0;
-    bestNumberUp_=INT_MAX;
-    bestNumberDown_=INT_MAX;
+    bestNumberUp_=COIN_INT_MAX;
+    bestNumberDown_=COIN_INT_MAX;
   }
   if (stateOfSearch<=1&&thisOne->model()->currentNode()->depth()>=8) {
 #define TRY_STUFF 1

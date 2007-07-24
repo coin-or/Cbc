@@ -98,9 +98,9 @@ static void malloc_stats2()
 #include "OsiRowCut.hpp"
 #include "OsiColCut.hpp"
 #ifndef COIN_HAS_LINK
-#ifdef COIN_HAS_ASL
+//#ifdef COIN_HAS_ASL
 #define COIN_HAS_LINK
-#endif
+//#endif
 #endif
 #ifdef COIN_HAS_LINK
 #include "CbcLinked.hpp"
@@ -468,7 +468,7 @@ static int * analyze(OsiClpSolverInterface * solverMod, int & numberChanged, dou
     return NULL;
   }
 }
-#ifdef COIN_HAS_LINK
+#ifdef COIN_HAS_ASL
 /*  Returns OsiSolverInterface (User should delete)
     On entry numberKnapsack is maximum number of Total entries
 */
@@ -1463,8 +1463,8 @@ int CbcMain1 (int argc, const char *argv[],
     int * cut=NULL;
     int * sosPriority=NULL;
     CglStored storedAmpl;
-#ifdef COIN_HAS_ASL
     CoinModel * coinModel = NULL;
+#ifdef COIN_HAS_ASL
     ampl_info info;
     CoinModel saveCoinModel;
     CoinModel saveTightenedModel;
@@ -1483,6 +1483,8 @@ int CbcMain1 (int argc, const char *argv[],
           if (equals&&atoi(equals+1)>0) {
             noPrinting=false;
 	    info.logLevel=atoi(equals+1);
+	    int log = whichParam(LOGLEVEL,numberParameters,parameters);
+	    parameters[log].setIntValue(info.logLevel);
 	    // mark so won't be overWritten
 	    info.numberRows=-1234567;
 	    break;
@@ -1558,18 +1560,20 @@ int CbcMain1 (int argc, const char *argv[],
 	si->setDefaultMeshSize(0.001);
 	// need some relative granularity
 	si->setDefaultBound(100.0);
-	si->setDefaultMeshSize(0.01);
+	si->setDefaultMeshSize(0.001);
 	si->setDefaultBound(100000.0);
 	si->setIntegerPriority(1000);
 	si->setBiLinearPriority(10000);
 	CoinModel * model2 = (CoinModel *) coinModel;
-	si->load(*model2,true,info.logLevel);
+	int logLevel = whichParam(LOGLEVEL,numberParameters,parameters);
+	si->load(*model2,true,logLevel);
 	// redo
 	solver = model.solver();
 	clpSolver = dynamic_cast< OsiClpSolverInterface*> (solver);
 	lpSolver = clpSolver->getModelPtr();
 	clpSolver->messageHandler()->setLogLevel(0) ;
 	testOsiParameters=0;
+	parameters[whichParam(TESTOSI,numberParameters,parameters)].setIntValue(0);
 	complicatedInteger=1;
 	if (info.cut) {
 	  printf("Sorry - can't do cuts with LOS as ruins delicate row order\n");
@@ -2748,13 +2752,13 @@ int CbcMain1 (int argc, const char *argv[],
 		    si->setDefaultMeshSize(0.001);
 		    // need some relative granularity
 		    si->setDefaultBound(100.0);
-		    si->setDefaultMeshSize(0.01);
+		    si->setDefaultMeshSize(0.001);
 		    si->setDefaultBound(1000.0);
 		    si->setIntegerPriority(1000);
 		    si->setBiLinearPriority(10000);
 		    si->setSpecialOptions2(2+4+8);
 		    CoinModel * model2 = (CoinModel *) coinModel;
-		    si->load(*model2,true,info.logLevel);
+		    si->load(*model2,true, parameters[log].intValue());
 		    // redo
 		    solver = model.solver();
 		    clpSolver = dynamic_cast< OsiClpSolverInterface*> (solver);
@@ -3282,7 +3286,7 @@ int CbcMain1 (int argc, const char *argv[],
                 //                         babModel->getNumCols());
               }
 	      int testOsiOptions = parameters[whichParam(TESTOSI,numberParameters,parameters)].intValue();
-#ifdef COIN_HAS_LINK
+#ifdef COIN_HAS_ASL
 	      // If linked then see if expansion wanted
 	      {
 		OsiSolverLink * solver3 = dynamic_cast<OsiSolverLink *> (babModel->solver());
@@ -4993,7 +4997,7 @@ int CbcMain1 (int argc, const char *argv[],
 		si->setDefaultMeshSize(0.001);
 		// need some relative granularity
 		si->setDefaultBound(100.0);
-		si->setDefaultMeshSize(0.01);
+		si->setDefaultMeshSize(0.001);
 		si->setDefaultBound(100.0);
 		si->setIntegerPriority(1000);
 		si->setBiLinearPriority(10000);

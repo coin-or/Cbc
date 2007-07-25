@@ -83,131 +83,131 @@ public:
   
   /// Down pseudo cost
   inline double downDynamicPseudoCost() const
-  { return downDynamicPseudoCost_;};
+  { return downDynamicPseudoCost_;}
   /// Set down pseudo cost
   inline void setDownDynamicPseudoCost(double value)
-  { downDynamicPseudoCost_=value;};
+  { downDynamicPseudoCost_=value;}
 
   /// Up pseudo cost
   inline double upDynamicPseudoCost() const
-  { return upDynamicPseudoCost_;};
+  { return upDynamicPseudoCost_;}
   /// Set up pseudo cost
   inline void setUpDynamicPseudoCost(double value)
-  { upDynamicPseudoCost_=value;};
+  { upDynamicPseudoCost_=value;}
 
   /// Up down separator
   inline double upDownSeparator() const
-  { return upDownSeparator_;};
+  { return upDownSeparator_;}
   /// Set up down separator
   inline void setUpDownSeparator(double value)
-  { upDownSeparator_=value;};
+  { upDownSeparator_=value;}
 
   /// Down sum cost
   inline double sumDownCost() const
-  { return sumDownCost_;};
+  { return sumDownCost_;}
   /// Set down sum cost
   inline void setSumDownCost(double value)
-  { sumDownCost_=value;};
+  { sumDownCost_=value;}
   /// Add to down sum cost and set last and square
   inline void addToSumDownCost(double value)
-  { sumDownCost_+=value;lastDownCost_=value;sumDownCostSquared_ += value*value;};
+  { sumDownCost_+=value;lastDownCost_=value;sumDownCostSquared_ += value*value;}
 
   /// Up sum cost
   inline double sumUpCost() const
-  { return sumUpCost_;};
+  { return sumUpCost_;}
   /// Set up sum cost
   inline void setSumUpCost(double value)
-  { sumUpCost_=value;};
+  { sumUpCost_=value;}
   /// Add to up sum cost and set last and square
   inline void addToSumUpCost(double value)
-  { sumUpCost_+=value;lastUpCost_=value;sumUpCostSquared_ += value*value;};
+  { sumUpCost_+=value;lastUpCost_=value;sumUpCostSquared_ += value*value;}
 
   /// Down sum change
   inline double sumDownChange() const
-  { return sumDownChange_;};
+  { return sumDownChange_;}
   /// Set down sum change
   inline void setSumDownChange(double value)
-  { sumDownChange_=value;};
+  { sumDownChange_=value;}
   /// Add to down sum change
   inline void addToSumDownChange(double value)
-  { sumDownChange_+=value;};
+  { sumDownChange_+=value;}
 
   /// Up sum change
   inline double sumUpChange() const
-  { return sumUpChange_;};
+  { return sumUpChange_;}
   /// Set up sum change
   inline void setSumUpChange(double value)
-  { sumUpChange_=value;};
+  { sumUpChange_=value;}
   /// Add to up sum change and set last and square
   inline void addToSumUpChange(double value)
-  { sumUpChange_+=value;};
+  { sumUpChange_+=value;}
 
   /// Sum down decrease number infeasibilities from strong or actual
   inline double sumDownDecrease() const
-  { return sumDownDecrease_;};
+  { return sumDownDecrease_;}
   /// Set sum down decrease number infeasibilities from strong or actual
   inline void setSumDownDecrease(double value)
-  { sumDownDecrease_=value;};
+  { sumDownDecrease_=value;}
   /// Add to sum down decrease number infeasibilities from strong or actual
   inline void addToSumDownDecrease(double value)
-  { sumDownDecrease_+=value;lastDownDecrease_ = (int) value;};
+  { sumDownDecrease_+=value;lastDownDecrease_ = (int) value;}
 
   /// Sum up decrease number infeasibilities from strong or actual
   inline double sumUpDecrease() const
-  { return sumUpDecrease_;};
+  { return sumUpDecrease_;}
   /// Set sum up decrease number infeasibilities from strong or actual
   inline void setSumUpDecrease(double value)
-  { sumUpDecrease_=value;};
+  { sumUpDecrease_=value;}
   /// Add to sum up decrease number infeasibilities from strong or actual
   inline void addToSumUpDecrease(double value)
-  { sumUpDecrease_+=value;lastUpDecrease_ = (int) value;};
+  { sumUpDecrease_+=value;lastUpDecrease_ = (int) value;}
 
   /// Down number times
   inline int numberTimesDown() const
-  { return numberTimesDown_;};
+  { return numberTimesDown_;}
   /// Set down number times
   inline void setNumberTimesDown(int value)
-  { numberTimesDown_=value;};
+  { numberTimesDown_=value;}
   /// Increment down number times
   inline void incrementNumberTimesDown()
-  { numberTimesDown_++;};
+  { numberTimesDown_++;}
 
   /// Up number times
   inline int numberTimesUp() const
-  { return numberTimesUp_;};
+  { return numberTimesUp_;}
   /// Set up number times
   inline void setNumberTimesUp(int value)
-  { numberTimesUp_=value;};
+  { numberTimesUp_=value;}
   /// Increment up number times
   inline void incrementNumberTimesUp()
-  { numberTimesUp_++;};
+  { numberTimesUp_++;}
 
   /// Down number times infeasible
   inline int numberTimesDownInfeasible() const
-  { return numberTimesDownInfeasible_;};
+  { return numberTimesDownInfeasible_;}
   /// Set down number times infeasible
   inline void setNumberTimesDownInfeasible(int value)
-  { numberTimesDownInfeasible_=value;};
+  { numberTimesDownInfeasible_=value;}
   /// Increment down number times infeasible
   inline void incrementNumberTimesDownInfeasible()
-  { numberTimesDownInfeasible_++;};
+  { numberTimesDownInfeasible_++;}
 
   /// Up number times infeasible
   inline int numberTimesUpInfeasible() const
-  { return numberTimesUpInfeasible_;};
+  { return numberTimesUpInfeasible_;}
   /// Set up number times infeasible
   inline void setNumberTimesUpInfeasible(int value)
-  { numberTimesUpInfeasible_=value;};
+  { numberTimesUpInfeasible_=value;}
   /// Increment up number times infeasible
   inline void incrementNumberTimesUpInfeasible()
-  { numberTimesUpInfeasible_++;};
+  { numberTimesUpInfeasible_++;}
 
   /// Number of times before trusted
   inline int numberBeforeTrust() const
-  { return numberBeforeTrust_;};
+  { return numberBeforeTrust_;}
   /// Set number of times before trusted
   inline void setNumberBeforeTrust(int value)
-  { numberBeforeTrust_=value;};
+  { numberBeforeTrust_=value;}
 
   /// Return "up" estimate
   virtual double upEstimate() const;
@@ -216,10 +216,10 @@ public:
   
   /// method - see below for details
   inline int method() const
-  { return method_;};
+  { return method_;}
   /// Set method
   inline void setMethod(int value)
-  { method_=value;};
+  { method_=value;}
 
   /// Pass in information on a down branch
   void setDownInformation(double changeObjectiveDown, int changeInfeasibilityDown);
@@ -357,13 +357,13 @@ public:
 
   /// Change in guessed
   inline double changeInGuessed() const
-  { return changeInGuessed_;};
+  { return changeInGuessed_;}
   /// Set change in guessed
   inline void setChangeInGuessed(double value)
-  { changeInGuessed_=value;};
+  { changeInGuessed_=value;}
   /// Return object
   inline CbcSimpleIntegerDynamicPseudoCost * object() const
-  { return object_;};
+  { return object_;}
 protected:
   /// Change in guessed objective value for next branch
   double changeInGuessed_;
@@ -421,7 +421,7 @@ public:
   virtual double getBestCriterion() const;
   /** Says whether this method can handle both methods -
       1 better, 2 best, 3 both */
-  virtual int whichMethod() {return 3;};
+  virtual int whichMethod() {return 3;}
 
   /** Saves a clone of current branching object.  Can be used to update
       information on object causing branch - after branch */

@@ -24,50 +24,50 @@ class CbcTree;
 class CbcCompareBase {
 public:
   // Default Constructor 
-  CbcCompareBase () {test_=NULL;};
+  CbcCompareBase () {test_=NULL;}
 
   // This allows any method to change behavior as it is called
   // after each solution
-  virtual void newSolution(CbcModel * model) {};
+  virtual void newSolution(CbcModel * model) {}
 
   // This Also allows any method to change behavior as it is called
   // after each solution
   virtual void newSolution(CbcModel * model,
 			   double objectiveAtContinuous,
-			   int numberInfeasibilitiesAtContinuous) {};
+			   int numberInfeasibilitiesAtContinuous) {}
 
   // This allows any method to change behavior as it is called
   // after every 1000 nodes.
   // Return true if want tree re-sorted
-  virtual bool every1000Nodes(CbcModel * model,int numberNodes) {return false;};
+  virtual bool every1000Nodes(CbcModel * model,int numberNodes) {return false;}
 
   /** Returns true if wants code to do scan with alternate criterion
       NOTE - this is temporarily disabled
   */
-  virtual bool fullScan() const { return false;};
+  virtual bool fullScan() const { return false;}
 
-  virtual ~CbcCompareBase() {};
+  virtual ~CbcCompareBase() {}
   /// Create C++ lines to get to current state
-  virtual void generateCpp( FILE * fp) {};
+  virtual void generateCpp( FILE * fp) {}
 
   // Copy constructor 
   CbcCompareBase ( const CbcCompareBase & rhs)
-  {test_=rhs.test_;};
+  {test_=rhs.test_;}
    
   // Assignment operator 
   CbcCompareBase & operator=( const CbcCompareBase& rhs)
   {  if (this!=&rhs) {test_=rhs.test_;}
   return *this;
-  };
+  }
 
   /// Clone
   virtual CbcCompareBase * clone() const=0;
 
   /// This is test function
-  virtual bool test (CbcNode * x, CbcNode * y) {return true;};
+  virtual bool test (CbcNode * x, CbcNode * y) {return true;}
 
   /// This is alternate test function
-  virtual bool alternateTest (CbcNode * x, CbcNode * y) {return test(x,y);};
+  virtual bool alternateTest (CbcNode * x, CbcNode * y) {return test(x,y);}
 
   bool operator() (CbcNode * x, CbcNode * y) {
     return test(x,y);
@@ -91,7 +91,7 @@ public:
     assert (x!=y);
     return (x>y);
 #endif
-  };
+  }
 protected:
   CbcCompareBase * test_;
 };
@@ -99,19 +99,19 @@ class CbcCompare {
 public:
   CbcCompareBase * test_;
   // Default Constructor 
-  CbcCompare () {test_=NULL;};
+  CbcCompare () {test_=NULL;}
 
-  virtual ~CbcCompare() {};
+  virtual ~CbcCompare() {}
 
   bool operator() (CbcNode * x, CbcNode * y) {
     return test_->test(x,y);
   }
   /// This is alternate test function
-  inline bool alternateTest (CbcNode * x, CbcNode * y) {return test_->alternateTest(x,y);};
+  inline bool alternateTest (CbcNode * x, CbcNode * y) {return test_->alternateTest(x,y);}
 
   /// return comparison object
   inline CbcCompareBase * comparisonObject() const
-  { return test_;};
+  { return test_;}
 };
 //#############################################################################
 /*  These can be alternative strategies for choosing variables
@@ -121,9 +121,9 @@ public:
 class CbcChooseVariable {
 public:
   // Default Constructor 
-  CbcChooseVariable () {};
+  CbcChooseVariable () {}
 
-  virtual ~CbcChooseVariable() {};
+  virtual ~CbcChooseVariable() {}
   /** If strong branching, then only those passed in (and movement is that length)
       .  If not strong
       branching then all passed in and ignore movement.

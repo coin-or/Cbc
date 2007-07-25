@@ -45,24 +45,24 @@ public:
   virtual CbcBranchingObject * createBranch(int way) ;
   /// Number of members
   inline int numberMembers() const
-  {return numberMembers_;};
+  {return numberMembers_;}
 
   /// Number of Non SOS members i.e. fixing to zero is strong
   inline int numberNonSOSMembers() const
-  {return numberNonSOSMembers_;};
+  {return numberNonSOSMembers_;}
 
   /// Members (indices in range 0 ... numberIntegers_-1)
   inline const int * members() const
-  {return members_;};
+  {return members_;}
 
   /** Type of each member i.e. which way is strong 0=non SOS, 1 =SOS,
       index is 0 ... numberMembers_-1 */
   inline const char type(int index) const
-  {if (type_) return type_[index]; else return 1;};
+  {if (type_) return type_[index]; else return 1;}
 
   /// Clique type - 0 <=, 1 == 
   inline int cliqueType() const
-  {return cliqueType_;};
+  {return cliqueType_;}
   /// Redoes data when sequence numbers change
   virtual void redoSequenceEtc(CbcModel * model, int numberColumns, const int * originalColumns);
 
@@ -141,27 +141,27 @@ public:
   OsiSOS * osiObject(const OsiSolverInterface * solver) const;
   /// Number of members
   inline int numberMembers() const
-  {return numberMembers_;};
+  {return numberMembers_;}
 
   /// Members (indices in range 0 ... numberColumns-1)
   inline const int * members() const
-  {return members_;};
+  {return members_;}
 
   /// SOS type
   inline int sosType() const
-  {return sosType_;};
+  {return sosType_;}
 
   /** Array of weights */
   inline const double * weights() const
-  { return weights_;};
+  { return weights_;}
 
   /** \brief Return true if object can take part in normal heuristics
   */
   virtual bool canDoHeuristics() const 
-  {return (sosType_==1&&integerValued_);};
+  {return (sosType_==1&&integerValued_);}
   /// Set whether set is integer valued or not
   inline void setIntegerValued(bool yesNo)
-  { integerValued_=yesNo;};
+  { integerValued_=yesNo;}
 private:
   /// data
 
@@ -253,7 +253,7 @@ public:
   virtual int columnNumber() const;
   /// Set column number
   inline void setColumnNumber(int value)
-  { columnNumber_ = value;};
+  { columnNumber_ = value;}
 
   /** Reset variable bounds to their original values.
   
@@ -265,19 +265,19 @@ public:
   virtual void resetSequenceEtc(int numberColumns, const int * originalColumns) ;
   /// Original bounds
   inline double originalLowerBound() const
-  { return originalLower_;};
+  { return originalLower_;}
   inline void setOriginalLowerBound(double value)
-  { originalLower_=value;};
+  { originalLower_=value;}
   inline double originalUpperBound() const
-  { return originalUpper_;};
+  { return originalUpper_;}
   inline void setOriginalUpperBound(double value)
-  { originalUpper_=value;};
+  { originalUpper_=value;}
   /// Breakeven e.g 0.7 -> >= 0.7 go up first
   inline double breakEven() const
-  { return breakEven_;};
+  { return breakEven_;}
   /// Set breakeven e.g 0.7 -> >= 0.7 go up first
   inline void setBreakEven(double value)
-  { breakEven_=value;};
+  { breakEven_=value;}
 
 
 protected:
@@ -339,11 +339,11 @@ public:
   virtual CbcBranchingObject * createBranch(int way) ;
   /// Number of members
   inline int numberMembers() const
-  {return numberMembers_;};
+  {return numberMembers_;}
 
   /// Members (indices in range 0 ... numberColumns-1)
   inline const int * members() const
-  {return members_;};
+  {return members_;}
   /// Redoes data when sequence numbers change
   virtual void redoSequenceEtc(CbcModel * model, int numberColumns, const int * originalColumns);
 
@@ -465,24 +465,24 @@ public:
 
   /// Down pseudo cost
   inline double downPseudoCost() const
-  { return downPseudoCost_;};
+  { return downPseudoCost_;}
   /// Set down pseudo cost
   inline void setDownPseudoCost(double value)
-  { downPseudoCost_=value;};
+  { downPseudoCost_=value;}
 
   /// Up pseudo cost
   inline double upPseudoCost() const
-  { return upPseudoCost_;};
+  { return upPseudoCost_;}
   /// Set up pseudo cost
   inline void setUpPseudoCost(double value)
-  { upPseudoCost_=value;};
+  { upPseudoCost_=value;}
 
   /// Up down separator
   inline double upDownSeparator() const
-  { return upDownSeparator_;};
+  { return upDownSeparator_;}
   /// Set up down separator
   inline void setUpDownSeparator(double value)
-  { upDownSeparator_=value;};
+  { upDownSeparator_=value;}
 
   /// Return "up" estimate
   virtual double upEstimate() const;
@@ -491,10 +491,10 @@ public:
   
   /// method - see below for details
   inline int method() const
-  { return method_;};
+  { return method_;}
   /// Set method
   inline void setMethod(int value)
-  { method_=value;};
+  { method_=value;}
 
 protected:
   /// data
@@ -575,10 +575,10 @@ public:
 
   /// Change in guessed
   inline double changeInGuessed() const
-  { return changeInGuessed_;};
+  { return changeInGuessed_;}
   /// Set change in guessed
   inline void setChangeInGuessed(double value)
-  { changeInGuessed_=value;};
+  { changeInGuessed_=value;}
 protected:
   /// Change in guessed objective value for next branch
   double changeInGuessed_;
@@ -758,10 +758,10 @@ public:
   /** The number of branch arms created for this branching object
   */
   virtual int numberBranches() const
-  {return numberInSet_;};
+  {return numberInSet_;}
   /// Is this a two way object (-1 down, +1 up)
   virtual bool twoWay() const
-  { return false;};
+  { return false;}
 private:
   /// order of branching - points back to CbcNWay
   int * order_;

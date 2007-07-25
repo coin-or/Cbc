@@ -59,55 +59,55 @@ public:
   void setMaximumTime(double value);
   /// Get maximum Time (default 0.0 == time limit off)
   inline double maximumTime() const
-  { return maximumTime_;};
+  { return maximumTime_;}
   /// Set fake cutoff (default COIN_DBL_MAX == off)
   inline void setFakeCutoff(double value)
-  { fakeCutoff_ = value;};
+  { fakeCutoff_ = value;}
   /// Get fake cutoff (default 0.0 == off)
   inline double fakeCutoff() const
-  { return fakeCutoff_;};
+  { return fakeCutoff_;}
   /// Set absolute increment (default 0.0 == off)
   inline void setAbsoluteIncrement(double value)
-  { absoluteIncrement_ = value;};
+  { absoluteIncrement_ = value;}
   /// Get absolute increment (default 0.0 == off)
   inline double absoluteIncrement() const
-  { return absoluteIncrement_;};
+  { return absoluteIncrement_;}
   /// Set relative increment (default 0.0 == off)
   inline void setRelativeIncrement(double value)
-  { relativeIncrement_ = value;};
+  { relativeIncrement_ = value;}
   /// Get relative increment (default 0.0 == off)
   inline double relativeIncrement() const
-  { return relativeIncrement_;};
+  { return relativeIncrement_;}
   /// Set default rounding (default 0.5)
   inline void setDefaultRounding(double value)
-  { defaultRounding_ = value;};
+  { defaultRounding_ = value;}
   /// Get default rounding (default 0.5)
   inline double defaultRounding() const
-  { return defaultRounding_;};
+  { return defaultRounding_;}
   /// Set initial weight (default 0.0 == off)
   inline void setInitialWeight(double value)
-  { initialWeight_ = value;};
+  { initialWeight_ = value;}
   /// Get initial weight (default 0.0 == off)
   inline double initialWeight() const
-  { return initialWeight_;};
+  { return initialWeight_;}
   /// Set weight factor (default 0.1) 
   inline void setWeightFactor(double value)
-  { weightFactor_ = value;};
+  { weightFactor_ = value;}
   /// Get weight factor (default 0.1)
   inline double weightFactor() const
-  { return weightFactor_;};
+  { return weightFactor_;}
   /// Set maximum passes (default 100)
   inline void setMaximumPasses(int value)
-  { maximumPasses_=value;};
+  { maximumPasses_=value;}
   /// Get maximum passes (default 100)
   inline int maximumPasses() const
-  { return maximumPasses_;};
+  { return maximumPasses_;}
   /// Set maximum retries (default 1)
   inline void setMaximumRetries(int value)
-  { maximumRetries_=value;};
+  { maximumRetries_=value;}
   /// Get maximum retries (default 1)
   inline int maximumRetries() const
-  { return maximumRetries_;};
+  { return maximumRetries_;}
   /**  Set use of multiple solutions and solves
        0 - do not reuse solves, do not accumulate integer solutions for local search
        1 - do not reuse solves, accumulate integer solutions for local search
@@ -115,10 +115,10 @@ public:
        3 - reuse solves, accumulate integer solutions for local search
   */
   inline void setAccumulate(int value)
-  { accumulate_=value;};
+  { accumulate_=value;}
   /// Get accumulation option
   inline int accumulate() const
-  { return accumulate_;};
+  { return accumulate_;}
 
 protected:
   // Data

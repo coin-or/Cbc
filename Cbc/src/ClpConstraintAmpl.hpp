@@ -78,10 +78,10 @@ public:
   virtual int numberCoefficients() const;
   /// Columns
   inline const int * column() const
-  { return column_;};
+  { return column_;}
   /// Coefficients
   inline const double * coefficient() const
-  { return coefficient_;};
+  { return coefficient_;}
   //@}
 
   //---------------------------------------------------------------------------

@@ -225,23 +225,23 @@ typedef enum { BACwInvalid = -1, BACwNotStarted = 0, BACwBareRoot,
     mod (cut depth) == 0'.
   */
 
-  inline int getCutDepth() { return cutDepth_ ; } ;
+  inline int getCutDepth() { return cutDepth_ ; } 
 
   /*! \brief Set cut depth setting.
 
     See comments for getCutDepth().
   */
 
-  inline void setCutDepth(int cutDepth) { cutDepth_ = cutDepth ; } ;
+  inline void setCutDepth(int cutDepth) { cutDepth_ = cutDepth ; } 
 
   /*1 \brief Get action state for use of integer preprocessing */
 
-  inline IPPControl getIPPAction() { return (preProcess_) ; } ;
+  inline IPPControl getIPPAction() { return (preProcess_) ; } 
 
   /*! \brief Set action state for use of integer preprocessing */
 
   inline void setIPPAction(IPPControl action)
-  { preProcess_ = action ; } ;
+  { preProcess_ = action ; } 
 
   /*! \brief Obtain a prototype for a probing cut generator. */
 
@@ -250,7 +250,7 @@ typedef enum { BACwInvalid = -1, BACwNotStarted = 0, BACwBareRoot,
   /*! \brief Set action state for use of probing cut generator. */
 
   inline void setProbingAction(CGControl action)
-  { probing_.action_ = action ; } ;
+  { probing_.action_ = action ; } 
 
   /*! \brief Obtain a prototype for a clique cut generator. */
 
@@ -259,7 +259,7 @@ typedef enum { BACwInvalid = -1, BACwNotStarted = 0, BACwBareRoot,
   /*! \brief Set action state for use of clique cut generator. */
 
   inline void setCliqueAction(CGControl action)
-  { clique_.action_ = action ; } ;
+  { clique_.action_ = action ; } 
 
   /*! \brief Obtain a prototype for a flow cover cut generator. */
 
@@ -268,7 +268,7 @@ typedef enum { BACwInvalid = -1, BACwNotStarted = 0, BACwBareRoot,
   /*! \brief Set action state for use of flow cover cut generator. */
 
   inline void setFlowAction(CGControl action)
-  { flow_.action_ = action ; } ;
+  { flow_.action_ = action ; } 
 
   /*! \brief Obtain a prototype for a Gomory cut generator. */
 
@@ -277,7 +277,7 @@ typedef enum { BACwInvalid = -1, BACwNotStarted = 0, BACwBareRoot,
   /*! \brief Set action state for use of Gomory cut generator. */
 
   inline void setGomoryAction(CGControl action)
-  { gomory_.action_ = action ; } ;
+  { gomory_.action_ = action ; } 
 
   /*! \brief Obtain a prototype for a knapsack cover cut generator. */
 
@@ -286,7 +286,7 @@ typedef enum { BACwInvalid = -1, BACwNotStarted = 0, BACwBareRoot,
   /*! \brief Set action state for use of knapsack cut generator. */
 
   inline void setKnapsackAction(CGControl action)
-  { knapsack_.action_ = action ; } ;
+  { knapsack_.action_ = action ; } 
 
 /*  \brief Obtain a prototype for a lift-and-project cut generator.
 
@@ -295,7 +295,7 @@ typedef enum { BACwInvalid = -1, BACwNotStarted = 0, BACwBareRoot,
    \brief Set action state for use of lift-and-project cut generator.
 
   inline void setLandPAction(CGControl action)
-  { landp_.action_ = action ; } ;
+  { landp_.action_ = action ; } 
 */
 
   /*! \brief Obtain a prototype for a mixed integer rounding (MIR)
@@ -307,7 +307,7 @@ typedef enum { BACwInvalid = -1, BACwNotStarted = 0, BACwBareRoot,
   /*! \brief Set action state for use of MIR cut generator. */
 
   inline void setMirAction(CGControl action)
-  { mir_.action_ = action ; } ;
+  { mir_.action_ = action ; } 
 
   /*! \brief Obtain a prototype for a reduce and split cut generator. */
 
@@ -316,7 +316,7 @@ typedef enum { BACwInvalid = -1, BACwNotStarted = 0, BACwBareRoot,
   /*! \brief Set action state for use of reduce and split cut generator. */
 
   inline void setRedSplitAction(CGControl action)
-  { redSplit_.action_ = action ; } ;
+  { redSplit_.action_ = action ; } 
 
   /*! \brief Obtain a prototype for a 2-MIR cut generator. */
 
@@ -325,7 +325,7 @@ typedef enum { BACwInvalid = -1, BACwNotStarted = 0, BACwBareRoot,
   /*! \brief Set action state for use of 2-MIR cut generator. */
 
   inline void setTwomirAction(CGControl action)
-  { twomir_.action_ = action ; } ;
+  { twomir_.action_ = action ; } 
 
 
   /*! \brief Obtain a feasibility pump heuristic.
@@ -341,7 +341,7 @@ typedef enum { BACwInvalid = -1, BACwNotStarted = 0, BACwBareRoot,
   /*! \brief Set action state for use of feasibility pump heuristic. */
 
   inline void setFPumpAction(CGControl action)
-  { fpump_.action_ = action ; } ;
+  { fpump_.action_ = action ; } 
 
   /*! \brief Obtain a local search/combine heuristic.
   
@@ -356,7 +356,7 @@ typedef enum { BACwInvalid = -1, BACwNotStarted = 0, BACwBareRoot,
   /*! \brief Set action state for use of local search/combine heuristic. */
 
   inline void setCombineAction(CGControl action)
-  { combine_.action_ = action ; } ;
+  { combine_.action_ = action ; } 
 
   /*! \brief Obtain a greedy cover heuristic.
   
@@ -371,7 +371,7 @@ typedef enum { BACwInvalid = -1, BACwNotStarted = 0, BACwBareRoot,
   /*! \brief Set action state for use of greedy cover heuristic. */
 
   inline void setGreedyCoverAction(CGControl action)
-  { greedyCover_.action_ = action ; } ;
+  { greedyCover_.action_ = action ; } 
 
   /*! \brief Obtain a greedy equality heuristic.
   
@@ -386,7 +386,7 @@ typedef enum { BACwInvalid = -1, BACwNotStarted = 0, BACwBareRoot,
   /*! \brief Set action state for use of greedy equality heuristic. */
 
   inline void setGreedyEqualityAction(CGControl action)
-  { greedyEquality_.action_ = action ; } ;
+  { greedyEquality_.action_ = action ; } 
 
   /*! \brief Obtain a simple rounding heuristic.
   
@@ -401,7 +401,7 @@ typedef enum { BACwInvalid = -1, BACwNotStarted = 0, BACwBareRoot,
   /*! \brief Set action state for use of simple rounding heuristic. */
 
   inline void setRoundingAction(CGControl action)
-  { rounding_.action_ = action ; } ;
+  { rounding_.action_ = action ; } 
 
   /*! \brief Obtain a local search tree object
   
@@ -416,7 +416,7 @@ typedef enum { BACwInvalid = -1, BACwNotStarted = 0, BACwBareRoot,
   /*! \brief Set action state for use of local tree. */
 
   inline void setTreeLocalAction(CGControl action)
-  { localTree_.action_ = action ; } ;
+  { localTree_.action_ = action ; } 
 
 //@}
 
@@ -487,7 +487,7 @@ typedef enum { BACwInvalid = -1, BACwNotStarted = 0, BACwBareRoot,
   void passInMessageHandler(CoinMessageHandler *handler) ;
 
   /*! \brief Return a pointer to the message handler */
-  inline CoinMessageHandler *messageHandler() const { return msgHandler_ ; } ;
+  inline CoinMessageHandler *messageHandler() const { return msgHandler_ ; } 
 
   /*! \brief Set up messages in the specified language.
 
@@ -506,10 +506,10 @@ typedef enum { BACwInvalid = -1, BACwNotStarted = 0, BACwBareRoot,
   /*! \brief Set log level */
   inline void setLogLevel(int lvl)
   { logLvl_ = lvl ;
-    if (msgHandler_) msgHandler_->setLogLevel(lvl) ; } ;
+    if (msgHandler_) msgHandler_->setLogLevel(lvl) ; } 
 
   /*! \brief Get log level */
-  inline int logLevel() const { return (logLvl_) ; } ;
+  inline int logLevel() const { return (logLvl_) ; } 
 
   /*! \brief When greater than 0, integer presolve gives more information and
 	     branch-and-cut provides statistics.

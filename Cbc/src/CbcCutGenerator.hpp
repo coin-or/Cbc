@@ -100,7 +100,7 @@ public:
 
   /// return name of generator
   inline const char * cutGeneratorName() const
-  { return generatorName_;};
+  { return generatorName_;}
 
   /** Set the cut generation interval
 
@@ -120,10 +120,10 @@ public:
 
   /// Get the cut generation interval.
   inline int howOften() const
-  { return whenCutGenerator_;};
+  { return whenCutGenerator_;}
   /// Get the cut generation interval.in sub tree
   inline int howOftenInSub() const
-  { return whenCutGeneratorInSub_;};
+  { return whenCutGeneratorInSub_;}
 
   /** Set the cut generation depth
 
@@ -140,107 +140,107 @@ public:
   void setWhatDepthInSub(int value) ;
   /// Get the cut generation depth criterion.
   inline int whatDepth() const
-  { return depthCutGenerator_;};
+  { return depthCutGenerator_;}
   /// Get the cut generation depth criterion.in sub tree
   inline int whatDepthInSub() const
-  { return depthCutGeneratorInSub_;};
+  { return depthCutGeneratorInSub_;}
 
   /// Get whether the cut generator should be called in the normal place
   inline bool normal() const
-  { return normal_;};
+  { return normal_;}
   /// Set whether the cut generator should be called in the normal place
   inline void setNormal(bool value) 
-  { normal_=value;};
+  { normal_=value;}
   /// Get whether the cut generator should be called when a solution is found
   inline bool atSolution() const
-  { return atSolution_;};
+  { return atSolution_;}
   /// Set whether the cut generator should be called when a solution is found
   inline void setAtSolution(bool value) 
-  { atSolution_=value;};
+  { atSolution_=value;}
   /** Get whether the cut generator should be called when the subproblem is
       found to be infeasible.
   */
   inline bool whenInfeasible() const
-  { return whenInfeasible_;};
+  { return whenInfeasible_;}
   /** Set whether the cut generator should be called when the subproblem is
       found to be infeasible.
   */
   inline void setWhenInfeasible(bool value) 
-  { whenInfeasible_=value;};
+  { whenInfeasible_=value;}
   /// Get whether the cut generator is being timed
   inline bool timing() const
-  { return timing_;};
+  { return timing_;}
   /// Set whether the cut generator is being timed
   inline void setTiming(bool value) 
-  { timing_=value; timeInCutGenerator_=0.0;};
+  { timing_=value; timeInCutGenerator_=0.0;}
   /// Return time taken in cut generator
   inline double timeInCutGenerator() const
-  { return timeInCutGenerator_;};
+  { return timeInCutGenerator_;}
   inline void incrementTimeInCutGenerator(double value)
-  { timeInCutGenerator_ += value;};
+  { timeInCutGenerator_ += value;}
   /// Get the \c CglCutGenerator corresponding to this \c CbcCutGenerator.
   inline CglCutGenerator * generator() const
-  { return generator_;};
+  { return generator_;}
   /// Number times cut generator entered
   inline int numberTimesEntered() const
-  { return numberTimes_;};
+  { return numberTimes_;}
   inline void setNumberTimesEntered(int value)
-  { numberTimes_ = value;};
+  { numberTimes_ = value;}
   inline void incrementNumberTimesEntered(int value=1)
-  { numberTimes_ += value;};
+  { numberTimes_ += value;}
   /// Total number of cuts added
   inline int numberCutsInTotal() const
-  { return numberCuts_;};
+  { return numberCuts_;}
   inline void setNumberCutsInTotal(int value)
-  { numberCuts_ = value;};
+  { numberCuts_ = value;}
   inline void incrementNumberCutsInTotal(int value=1)
-  { numberCuts_ += value;};
+  { numberCuts_ += value;}
   /// Total number of column cuts
   inline int numberColumnCuts() const
-  { return numberColumnCuts_;};
+  { return numberColumnCuts_;}
   inline void setNumberColumnCuts(int value)
-  { numberColumnCuts_ = value;};
+  { numberColumnCuts_ = value;}
   inline void incrementNumberColumnCuts(int value=1)
-  { numberColumnCuts_ += value;};
+  { numberColumnCuts_ += value;}
   /// Total number of cuts active after (at end of n cut passes at each node)
   inline int numberCutsActive() const
-  { return numberCutsActive_;};
+  { return numberCutsActive_;}
   inline void setNumberCutsActive(int value)
-  { numberCutsActive_ = value;};
+  { numberCutsActive_ = value;}
   inline void incrementNumberCutsActive(int value=1)
-  { numberCutsActive_ += value;};
+  { numberCutsActive_ += value;}
   inline void setSwitchOffIfLessThan(int value) 
-  { switchOffIfLessThan_ = value;};
+  { switchOffIfLessThan_ = value;}
   inline int switchOffIfLessThan() const
-  { return switchOffIfLessThan_;};
+  { return switchOffIfLessThan_;}
   /// Say if optimal basis needed
   inline bool needsOptimalBasis() const
-  { return generator_->needsOptimalBasis();};
+  { return generator_->needsOptimalBasis();}
   /// Whether generator MUST be called again if any cuts (i.e. ignore break from loop)
   inline bool mustCallAgain() const
-  { return mustCallAgain_;};
+  { return mustCallAgain_;}
   /// Set whether generator MUST be called again if any cuts (i.e. ignore break from loop)
   inline void setMustCallAgain(bool yesNo)
-  { mustCallAgain_=yesNo;};
+  { mustCallAgain_=yesNo;}
   /// Whether generator switched off for moment
   inline bool switchedOff() const
-  { return switchedOff_;};
+  { return switchedOff_;}
   /// Set whether generator switched off for moment
   inline void setSwitchedOff(bool yesNo)
-  { switchedOff_=yesNo;};
+  { switchedOff_=yesNo;}
   /// Number of cuts generated at root
   inline int numberCutsAtRoot() const
-  { return numberCutsAtRoot_;};
+  { return numberCutsAtRoot_;}
   inline void setNumberCutsAtRoot(int value)
-  { numberCutsAtRoot_ = value;};
+  { numberCutsAtRoot_ = value;}
   /// Number of cuts active at root
   inline int numberActiveCutsAtRoot() const
-  { return numberActiveCutsAtRoot_;};
+  { return numberActiveCutsAtRoot_;}
   inline void setNumberActiveCutsAtRoot(int value)
-  { numberActiveCutsAtRoot_ = value;};
+  { numberActiveCutsAtRoot_ = value;}
   /// Set model
   inline void setModel(CbcModel * model)
-  { model_ = model;};
+  { model_ = model;}
   //@}
   
 private:
@@ -339,7 +339,7 @@ public:
   */
   virtual int modify(const OsiSolverInterface * solver, OsiRowCut & cut) =0;
   /// Create C++ lines to get to current state
-  virtual void generateCpp( FILE * fp) {};
+  virtual void generateCpp( FILE * fp) {}
 protected:
   
 };
@@ -383,7 +383,7 @@ public:
   */
   virtual int modify(const OsiSolverInterface * solver, OsiRowCut & cut) ;
   /// Create C++ lines to get to current state
-  virtual void generateCpp( FILE * fp) {};
+  virtual void generateCpp( FILE * fp) {}
 protected:
   /// data
   /// First odd variable

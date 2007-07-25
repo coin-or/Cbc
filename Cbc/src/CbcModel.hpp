@@ -292,8 +292,8 @@ public:
   */
   void unlockThread();
 #else
-  inline void lockThread() {};
-  inline void unlockThread() {};
+  inline void lockThread() {}
+  inline void unlockThread() {}
 #endif
 private:
   /** Move/copy information from one model to another
@@ -408,18 +408,18 @@ public:
   //@{
 
   /// Get the number of objects
-  inline int numberObjects() const { return numberObjects_;};
+  inline int numberObjects() const { return numberObjects_;}
   /// Set the number of objects
   inline void setNumberObjects(int number) 
-  {  numberObjects_=number;};
+  {  numberObjects_=number;}
 
   /// Get the array of objects
-  inline OsiObject ** objects() const { return object_;};
+  inline OsiObject ** objects() const { return object_;}
 
   /// Get the specified object
-  const inline OsiObject * object(int which) const { return object_[which];};
+  const inline OsiObject * object(int which) const { return object_[which];}
   /// Get the specified object
-  inline OsiObject * modifiableObject(int which) const { return object_[which];};
+  inline OsiObject * modifiableObject(int which) const { return object_[which];}
 
   /// Delete all object information (and just back to integers if true)
   void deleteObjects(bool findIntegers=true);
@@ -631,30 +631,30 @@ public:
   
   /// Set the minimum drop to continue cuts
   inline void setMinimumDrop(double value)
-  {minimumDrop_=value;};
+  {minimumDrop_=value;}
   /// Get the minimum drop to continue cuts
   inline double getMinimumDrop() const
-  { return minimumDrop_;};
+  { return minimumDrop_;}
 
   /** Set the maximum number of cut passes at root node (default 20)
       Minimum drop can also be used for fine tuning */
   inline void setMaximumCutPassesAtRoot(int value)
-  {maximumCutPassesAtRoot_=value;};
+  {maximumCutPassesAtRoot_=value;}
   /** Get the maximum number of cut passes at root node */
   inline int getMaximumCutPassesAtRoot() const
-  { return maximumCutPassesAtRoot_;};
+  { return maximumCutPassesAtRoot_;}
 
   /** Set the maximum number of cut passes at other nodes (default 10)
       Minimum drop can also be used for fine tuning */
   inline void setMaximumCutPasses(int value)
-  {maximumCutPasses_=value;};
+  {maximumCutPasses_=value;}
   /** Get the maximum number of cut passes at other nodes (default 10) */
   inline int getMaximumCutPasses() const
-  { return maximumCutPasses_;};
+  { return maximumCutPasses_;}
   /** Get current cut pass number in this round of cuts.
       (1 is first pass) */
   inline int getCurrentPassNumber() const
-  { return currentPassNumber_;};
+  { return currentPassNumber_;}
 
   /** Set the maximum number of candidates to be evaluated for strong
     branching.
@@ -666,21 +666,21 @@ public:
     branching.
   */
   inline int numberStrong() const
-  { return numberStrong_;};
+  { return numberStrong_;}
   /** Set global preferred way to branch
       -1 down, +1 up, 0 no preference */
   inline void setPreferredWay(int value)
-  {preferredWay_=value;};
+  {preferredWay_=value;}
   /** Get the preferred way to branch (default 0) */
   inline int getPreferredWay() const
-  { return preferredWay_;};
+  { return preferredWay_;}
   /** Set size of mini - tree.  If > 1 then does total enumeration of
       tree given by this best variables to branch on
   */
   inline void setSizeMiniTree(int value)
-  { sizeMiniTree_=value;};
+  { sizeMiniTree_=value;}
   inline int sizeMiniTree() const
-  { return sizeMiniTree_;};
+  { return sizeMiniTree_;}
 
   /** Set the number of branches before pseudo costs believed
       in dynamic strong branching.
@@ -691,7 +691,7 @@ public:
   /** get the number of branches before pseudo costs believed
       in dynamic strong branching. */
   inline int numberBeforeTrust() const
-  { return numberBeforeTrust_;};
+  { return numberBeforeTrust_;}
   /** Set the number of variables for which to compute penalties
       in dynamic strong branching.
 
@@ -701,16 +701,16 @@ public:
   /** get the number of variables for which to compute penalties
       in dynamic strong branching. */
   inline int numberPenalties() const
-  { return numberPenalties_;};
+  { return numberPenalties_;}
   /// Number of analyze iterations to do
   inline void setNumberAnalyzeIterations(int number)
-  { numberAnalyzeIterations_=number;};
+  { numberAnalyzeIterations_=number;}
   inline int numberAnalyzeIterations() const
-  { return numberAnalyzeIterations_;};
+  { return numberAnalyzeIterations_;}
   /** Get scale factor to make penalties match strong.
       Should/will be computed */
   inline double penaltyScaleFactor() const
-  { return penaltyScaleFactor_;};
+  { return penaltyScaleFactor_;}
   /** Set scale factor to make penalties match strong.
       Should/will be computed */
   void setPenaltyScaleFactor(double value);
@@ -722,18 +722,18 @@ public:
       4 - all +- 1 or all +1 and odd
   */
   void inline setProblemType(int number)
-  { problemType_=number;};
+  { problemType_=number;}
   inline int problemType() const
-  { return problemType_;};
+  { return problemType_;}
 
   /// Set how often to scan global cuts 
   void setHowOftenGlobalScan(int number);
   /// Get how often to scan global cuts
   inline int howOftenGlobalScan() const
-  { return howOftenGlobalScan_;};
+  { return howOftenGlobalScan_;}
   /// Original columns as created by integerPresolve
   inline int * originalColumns() const
-  { return originalColumns_;};
+  { return originalColumns_;}
 
   /** Set the print frequency.
   
@@ -743,10 +743,10 @@ public:
     Print frequency has very slight overhead if small.
   */
   inline void setPrintFrequency(int number)
-  { printFrequency_=number;};
+  { printFrequency_=number;}
   /// Get the print frequency
   inline int printFrequency() const
-  { return printFrequency_;};
+  { return printFrequency_;}
   //@}
 
   //---------------------------------------------------------------------------
@@ -770,10 +770,10 @@ public:
     bool isSolutionLimitReached() const;
     /// Get how many iterations it took to solve the problem.
     inline int getIterationCount() const
-    { return numberIterations_;};
+    { return numberIterations_;}
     /// Get how many Nodes it took to solve the problem.
     inline int getNodeCount() const
-    { return numberNodes_;};
+    { return numberNodes_;}
     /** Final status of problem
         Some of these can be found out by is...... functions
         -1 before branchAndBound
@@ -784,9 +784,9 @@ public:
         (5 event user programmed event occurred)
     */
     inline int status() const
-    { return status_;};
+    { return status_;}
     inline void setProblemStatus(int value)
-    { status_=value;};
+    { status_=value;}
     /** Secondary status of problem
         -1 unset (status_ will also be -1)
         0 search completed with solution
@@ -799,9 +799,9 @@ public:
         7 linear relaxation unbounded
     */
     inline int secondaryStatus() const
-    { return secondaryStatus_;};
+    { return secondaryStatus_;}
     inline void setSecondaryStatus(int value)
-    { secondaryStatus_=value;};
+    { secondaryStatus_=value;}
     /// Are there numerical difficulties (for initialSolve) ?
     bool isInitialSolveAbandoned() const ;
     /// Is optimality proven (for initialSolve) ?
@@ -828,40 +828,40 @@ public:
   //@{
   /// Number of rows in continuous (root) problem.
   inline int numberRowsAtContinuous() const
-  { return numberRowsAtContinuous_;};
+  { return numberRowsAtContinuous_;}
 
   /// Get number of columns
   inline int getNumCols() const
-  { return solver_->getNumCols();};
+  { return solver_->getNumCols();}
   
   /// Get number of rows
   inline int getNumRows() const
-  { return solver_->getNumRows();};
+  { return solver_->getNumRows();}
   
   /// Get number of nonzero elements
   inline CoinBigIndex getNumElements() const
-  { return solver_->getNumElements();};
+  { return solver_->getNumElements();}
 
   /// Number of integers in problem
   inline int numberIntegers() const
-  { return numberIntegers_;};
+  { return numberIntegers_;}
   // Integer variables
   inline const int * integerVariable() const 
-  { return integerVariable_;};
+  { return integerVariable_;}
   /// Whether or not integer
   inline const char integerType(int i) const
-  { return integerInfo_[i];};
+  { return integerInfo_[i];}
   /// Whether or not integer
   inline const char * integerType() const
-  { return integerInfo_;};
+  { return integerInfo_;}
 
   /// Get pointer to array[getNumCols()] of column lower bounds
   inline const double * getColLower() const
-  { return solver_->getColLower();};
+  { return solver_->getColLower();}
   
   /// Get pointer to array[getNumCols()] of column upper bounds
   inline const double * getColUpper() const
-  { return solver_->getColUpper();};
+  { return solver_->getColUpper();}
   
   /** Get pointer to array[getNumRows()] of row constraint senses.
       <ul>
@@ -873,7 +873,7 @@ public:
       </ul>
   */
   inline const char * getRowSense() const
-  { return solver_->getRowSense();};
+  { return solver_->getRowSense();}
   
   /** Get pointer to array[getNumRows()] of rows right-hand sides
       <ul>
@@ -884,7 +884,7 @@ public:
       </ul>
   */
   inline const double * getRightHandSide() const
-  { return solver_->getRightHandSide();};
+  { return solver_->getRightHandSide();}
   
   /** Get pointer to array[getNumRows()] of row ranges.
       <ul>
@@ -895,84 +895,84 @@ public:
       </ul>
   */
   inline const double * getRowRange() const
-  { return solver_->getRowRange();};
+  { return solver_->getRowRange();}
   
   /// Get pointer to array[getNumRows()] of row lower bounds
   inline const double * getRowLower() const
-  { return solver_->getRowLower();};
+  { return solver_->getRowLower();}
   
   /// Get pointer to array[getNumRows()] of row upper bounds
   inline const double * getRowUpper() const
-  { return solver_->getRowUpper();};
+  { return solver_->getRowUpper();}
   
   /// Get pointer to array[getNumCols()] of objective function coefficients
   inline const double * getObjCoefficients() const
-  { return solver_->getObjCoefficients();};
+  { return solver_->getObjCoefficients();}
   
   /// Get objective function sense (1 for min (default), -1 for max)
   inline double getObjSense() const
   {
     //assert (dblParam_[CbcOptimizationDirection]== solver_->getObjSense());
-    return dblParam_[CbcOptimizationDirection];};
+    return dblParam_[CbcOptimizationDirection];}
   
   /// Return true if variable is continuous
   inline bool isContinuous(int colIndex) const
-  { return solver_->isContinuous(colIndex);};
+  { return solver_->isContinuous(colIndex);}
   
   /// Return true if variable is binary
   inline bool isBinary(int colIndex) const
-  { return solver_->isBinary(colIndex);};
+  { return solver_->isBinary(colIndex);}
   
   /** Return true if column is integer.
       Note: This function returns true if the the column
       is binary or a general integer.
   */
   inline bool isInteger(int colIndex) const
-  { return solver_->isInteger(colIndex);};
+  { return solver_->isInteger(colIndex);}
   
   /// Return true if variable is general integer
   inline bool isIntegerNonBinary(int colIndex) const
-  { return solver_->isIntegerNonBinary(colIndex);};
+  { return solver_->isIntegerNonBinary(colIndex);}
   
   /// Return true if variable is binary and not fixed at either bound
   inline bool isFreeBinary(int colIndex) const
-  { return solver_->isFreeBinary(colIndex) ;};
+  { return solver_->isFreeBinary(colIndex) ;}
   
   /// Get pointer to row-wise copy of matrix
   inline const CoinPackedMatrix * getMatrixByRow() const
-  { return solver_->getMatrixByRow();};
+  { return solver_->getMatrixByRow();}
   
   /// Get pointer to column-wise copy of matrix
   inline const CoinPackedMatrix * getMatrixByCol() const
-  { return solver_->getMatrixByCol();};
+  { return solver_->getMatrixByCol();}
   
   /// Get solver's value for infinity
   inline double getInfinity() const
-  { return solver_->getInfinity();};
+  { return solver_->getInfinity();}
   /// Get pointer to array[getNumCols()] (for speed) of column lower bounds
   inline const double * getCbcColLower() const
-  { return cbcColLower_;};
+  { return cbcColLower_;}
   /// Get pointer to array[getNumCols()] (for speed) of column upper bounds
   inline const double * getCbcColUpper() const
-  { return cbcColUpper_;};
+  { return cbcColUpper_;}
   /// Get pointer to array[getNumRows()] (for speed) of row lower bounds
   inline const double * getCbcRowLower() const
-  { return cbcRowLower_;};
+  { return cbcRowLower_;}
   /// Get pointer to array[getNumRows()] (for speed) of row upper bounds
   inline const double * getCbcRowUpper() const
-  { return cbcRowUpper_;};
+  { return cbcRowUpper_;}
   /// Get pointer to array[getNumCols()] (for speed) of primal solution vector
   inline const double * getCbcColSolution() const
-  { return cbcColSolution_;};
+  { return cbcColSolution_;}
   /// Get pointer to array[getNumRows()] (for speed) of dual prices
   inline const double * getCbcRowPrice() const
-  { return cbcRowPrice_;};
+  { return cbcRowPrice_;}
   /// Get a pointer to array[getNumCols()] (for speed) of reduced costs
   inline const double * getCbcReducedCost() const
-  { return cbcReducedCost_;};
+  { return cbcReducedCost_;}
   /// Get pointer to array[getNumRows()] (for speed) of row activity levels.
   inline const double * getCbcRowActivity() const
-  { return cbcRowActivity_;};
+  { return cbcRowActivity_;}
   //@}
   
   
@@ -980,13 +980,13 @@ public:
   //@{
   /// Holds solution at continuous (after cuts if branchAndBound called)
   inline double * continuousSolution() const
-  { return continuousSolution_;};
+  { return continuousSolution_;}
   /** Array marked whenever a solution is found if non-zero.
       Code marks if heuristic returns better so heuristic
       need only mark if it wants to on solutions which
       are worse than current */
   inline int * usedInSolution() const
-  { return usedInSolution_;};
+  { return usedInSolution_;}
   /// Increases usedInSolution for nonzeros
   void incrementUsed(const double * solution);
   /// Record a new incumbent solution and update objectiveValue
@@ -1019,32 +1019,32 @@ public:
   */
     
   inline double * currentSolution() const
-  { return currentSolution_;};
+  { return currentSolution_;}
   /** For testing infeasibilities - will point to
       currentSolution_ or solver-->getColSolution()
   */
   inline const double * testSolution() const
-  { return testSolution_;};
+  { return testSolution_;}
   inline void setTestSolution(const double * solution)
-  { testSolution_ = solution;};
+  { testSolution_ = solution;}
   /// Make sure region there and optionally copy solution
   void reserveCurrentSolution(const double * solution=NULL);
 
   /// Get pointer to array[getNumCols()] of primal solution vector
   inline const double * getColSolution() const
-  { return solver_->getColSolution();};
+  { return solver_->getColSolution();}
   
   /// Get pointer to array[getNumRows()] of dual prices
   inline const double * getRowPrice() const
-  { return solver_->getRowPrice();};
+  { return solver_->getRowPrice();}
   
   /// Get a pointer to array[getNumCols()] of reduced costs
   inline const double * getReducedCost() const
-  { return solver_->getReducedCost();};
+  { return solver_->getReducedCost();}
   
   /// Get pointer to array[getNumRows()] of row activity levels.
   inline const double * getRowActivity() const
-  { return solver_->getRowActivity();};
+  { return solver_->getRowActivity();}
   
   /// Get current objective function value
   inline double getCurrentObjValue() const
@@ -1055,14 +1055,14 @@ public:
   
   /// Get best objective function value as minimization
   inline double getMinimizationObjValue() const
-  { return bestObjective_;};
+  { return bestObjective_;}
   /// Set best objective function value as minimization
   inline void setMinimizationObjValue(double value) 
-  { bestObjective_=value;};
+  { bestObjective_=value;}
   
   /// Get best objective function value
   inline double getObjValue() const
-  { return bestObjective_ * solver_->getObjSense() ; } ;
+  { return bestObjective_ * solver_->getObjSense() ; } 
   /** Get best possible objective function value.
       This is better of best possible left on tree
       and best solution found.
@@ -1071,7 +1071,7 @@ public:
   double getBestPossibleObjValue() const;
   /// Set best objective function value
   inline void setObjValue(double value) 
-  { bestObjective_=value * solver_->getObjSense() ;};
+  { bestObjective_=value * solver_->getObjSense() ;}
   
   /** The best solution to the integer programming problem.
 
@@ -1080,16 +1080,16 @@ public:
   */
 
   inline double * bestSolution() const
-  { return bestSolution_;};
+  { return bestSolution_;}
   void setBestSolution(const double * solution,int numberColumns,double objectiveValue);
   
   /// Get number of solutions
   inline int getSolutionCount() const
-  { return numberSolutions_;};
+  { return numberSolutions_;}
   
   /// Set number of solutions (so heuristics will be different)
   inline void setSolutionCount(int value) 
-  { numberSolutions_=value;};
+  { numberSolutions_=value;}
   /** Current phase (so heuristics etc etc can find out).
       0 - initial solve
       1 - solve with cuts at root
@@ -1099,51 +1099,51 @@ public:
       5 - at end of search
   */
   inline int phase() const
-  { return phase_;};
+  { return phase_;}
   
   /// Get number of heuristic solutions
-  inline int getNumberHeuristicSolutions() const { return numberHeuristicSolutions_;};
+  inline int getNumberHeuristicSolutions() const { return numberHeuristicSolutions_;}
 
   /// Set objective function sense (1 for min (default), -1 for max,)
   inline void setObjSense(double s) { dblParam_[CbcOptimizationDirection]=s;
-  solver_->setObjSense(s);};
+  solver_->setObjSense(s);}
 
   /// Value of objective at continuous 
   inline double getContinuousObjective() const
-  { return originalContinuousObjective_;};
+  { return originalContinuousObjective_;}
   inline void setContinuousObjective(double value)
-  { originalContinuousObjective_=value;};
+  { originalContinuousObjective_=value;}
   /// Number of infeasibilities at continuous
   inline int getContinuousInfeasibilities() const
-  { return continuousInfeasibilities_;};
+  { return continuousInfeasibilities_;}
   inline void setContinuousInfeasibilities(int value)
-  { continuousInfeasibilities_=value;};
+  { continuousInfeasibilities_=value;}
   /// Value of objective after root node cuts added
   inline double rootObjectiveAfterCuts() const
-  { return continuousObjective_;};
+  { return continuousObjective_;}
   /// Sum of Changes to objective by first solve
   inline double sumChangeObjective() const
-  { return sumChangeObjective1_;};
+  { return sumChangeObjective1_;}
   /** Number of times global cuts violated.  When global cut pool then this
       should be kept for each cut and type of cut */
   inline int numberGlobalViolations() const
-  { return numberGlobalViolations_;};
+  { return numberGlobalViolations_;}
   inline void clearNumberGlobalViolations()
-  { numberGlobalViolations_=0;};
+  { numberGlobalViolations_=0;}
   /// Whether to force a resolve after takeOffCuts
   inline bool resolveAfterTakeOffCuts() const
-  { return resolveAfterTakeOffCuts_;};
+  { return resolveAfterTakeOffCuts_;}
   inline void setResolveAfterTakeOffCuts(bool yesNo)
-  { resolveAfterTakeOffCuts_=yesNo;};
+  { resolveAfterTakeOffCuts_=yesNo;}
   /// Get number of threads
   inline int getNumberThreads() const
-  { return numberThreads_;};
+  { return numberThreads_;}
   /// Set number of threads 
   inline void setNumberThreads(int value) 
-  { numberThreads_=value;};
+  { numberThreads_=value;}
   /// Get thread mode
   inline int getThreadMode() const
-  { return threadMode_;};
+  { return threadMode_;}
   /** Set thread mode
       always use numberThreads for branching
       1 set then use numberThreads in root mini branch and bound
@@ -1151,14 +1151,14 @@ public:
       default is 0
   */
   inline void setThreadMode(int value) 
-  { threadMode_=value;};
+  { threadMode_=value;}
   //@}
 
   /** \name Node selection */
   //@{
   // Comparison functions (which may be overridden by inheritance)
   inline CbcCompareBase * nodeComparison() const
-  { return nodeCompare_;};
+  { return nodeCompare_;}
   void setNodeComparison(CbcCompareBase * compare);
   void setNodeComparison(CbcCompareBase & compare);
   //@}
@@ -1167,7 +1167,7 @@ public:
   //@{
   // Feasibility functions (which may be overridden by inheritance)
   inline CbcFeasibilityBase * problemFeasibility() const
-  { return problemFeasibility_;};
+  { return problemFeasibility_;}
   void setProblemFeasibility(CbcFeasibilityBase * feasibility);
   void setProblemFeasibility(CbcFeasibilityBase & feasibility);
   //@}
@@ -1176,7 +1176,7 @@ public:
   //@{
   /// Tree method e.g. heap (which may be overridden by inheritance)
   inline CbcTree * tree() const
-  { return tree_;};
+  { return tree_;}
   /// For modifying tree handling (original is cloned)
   void passInTreeHandler(CbcTree & tree);
   /** For passing in an CbcModel to do a sub Tree (with derived tree handlers).
@@ -1193,16 +1193,16 @@ public:
   { return numberStoppedSubTrees_;}
   /// Says a sub tree was stopped
   inline void incrementSubTreeStopped()
-  { numberStoppedSubTrees_++;};
+  { numberStoppedSubTrees_++;}
   /** Whether to automatically do presolve before branch and bound (subTrees).
       0 - no
       1 - ordinary presolve
       2 - integer presolve (dodgy)
   */
   inline int typePresolve() const
-  { return presolve_;};
+  { return presolve_;}
   inline void setTypePresolve(int value)
-  { presolve_=value;};
+  { presolve_=value;}
   
   //@}
 
@@ -1214,19 +1214,19 @@ public:
 
   /// Get the current branching decision method.
   inline CbcBranchDecision * branchingMethod() const
-  { return branchingMethod_;};
+  { return branchingMethod_;}
   /// Set the branching decision method.
   inline void setBranchingMethod(CbcBranchDecision * method)
-  { delete branchingMethod_; branchingMethod_ = method->clone();};
+  { delete branchingMethod_; branchingMethod_ = method->clone();}
   /** Set the branching method
   
     \overload
   */
   inline void setBranchingMethod(CbcBranchDecision & method)
-  { delete branchingMethod_; branchingMethod_ = method.clone();};
+  { delete branchingMethod_; branchingMethod_ = method.clone();}
   /// Get the current cut modifier method
   inline CbcCutModifier * cutModifier() const
-  { return cutModifier_;};
+  { return cutModifier_;}
   /// Set the cut modifier method
   void setCutModifier(CbcCutModifier * modifier);
   /** Set the cut modifier method
@@ -1246,28 +1246,28 @@ public:
       3 - no solution but many nodes
   */
   inline int stateOfSearch() const
-  { return stateOfSearch_;};
+  { return stateOfSearch_;}
   inline void setStateOfSearch(int state)
-  { stateOfSearch_=state;};
+  { stateOfSearch_=state;}
   /// Strategy worked out - mainly at root node for use by CbcNode
   inline int searchStrategy() const
-  { return searchStrategy_;};
+  { return searchStrategy_;}
   /// Set strategy worked out - mainly at root node for use by CbcNode
   inline void setSearchStrategy(int value)
-  { searchStrategy_ = value; };
+  { searchStrategy_ = value; }
 
   /// Get the number of cut generators
   inline int numberCutGenerators() const
-  { return numberCutGenerators_;};
+  { return numberCutGenerators_;}
   /// Get the list of cut generators
   inline CbcCutGenerator ** cutGenerators() const
-  { return generator_;};
+  { return generator_;}
   ///Get the specified cut generator
   inline CbcCutGenerator * cutGenerator(int i) const
-  { return generator_[i];};
+  { return generator_[i];}
   ///Get the specified cut generator before any changes
   inline CbcCutGenerator * virginCutGenerator(int i) const
-  { return virginGenerator_[i];};
+  { return virginGenerator_[i];}
   /** Add one generator - up to user to delete generators.
       howoften affects how generator is used. 0 or 1 means always,
       >1 means every that number of nodes.  Negative values have same
@@ -1290,15 +1290,15 @@ public:
 
   /// Get the current strategy
   inline CbcStrategy * strategy() const
-  { return strategy_;};
+  { return strategy_;}
   /// Set the strategy. Clones
   void setStrategy(CbcStrategy & strategy);
   /// Get the current parent model
   inline CbcModel * parentModel() const
-  { return parentModel_;};
+  { return parentModel_;}
   /// Set the parent model
   inline void setParentModel(CbcModel & parentModel)
-  { parentModel_ = &parentModel;};
+  { parentModel_ = &parentModel;}
   //@}
 
 
@@ -1311,16 +1311,16 @@ public:
   void addHeuristic(CbcHeuristic * generator, const char *name = NULL);
   ///Get the specified heuristic
   inline CbcHeuristic * heuristic(int i) const
-  { return heuristic_[i];};
+  { return heuristic_[i];}
   /// Get the number of heuristics
   inline int numberHeuristics() const
-  { return numberHeuristics_;};
+  { return numberHeuristics_;}
   /// Pointer to heuristic solver which found last solution (or NULL)
   inline CbcHeuristic * lastHeuristic() const
-  { return lastHeuristic_;};
+  { return lastHeuristic_;}
   /// set last heuristic which found a solution
   inline void setLastHeuristic(CbcHeuristic * last)
-  { lastHeuristic_=last;};
+  { lastHeuristic_=last;}
 
   /** Pass in branching priorities.
   
@@ -1344,7 +1344,7 @@ public:
 
   /// Returns priority level for an object (or 1000 if no priorities exist)
   inline int priority(int sequence) const
-  { return object_[sequence]->priority();}; 
+  { return object_[sequence]->priority();}
 
   /*! \brief Set an event handler
   
@@ -1354,7 +1354,7 @@ public:
 
   /*! \brief Retrieve a pointer to the event handler */
   inline CbcEventHandler* getEventHandler() const
-  { return (eventHandler_) ; } ;
+  { return (eventHandler_) ; } 
 
   //@}
     
@@ -1386,7 +1386,7 @@ public:
   void passInSolverCharacteristics(OsiBabSolver * solverCharacteristics);
   /// Get solver characteristics
   inline const OsiBabSolver * solverCharacteristics() const
-  { return solverCharacteristics_;};
+  { return solverCharacteristics_;}
   //@}
   
   //---------------------------------------------------------------------------
@@ -1398,21 +1398,21 @@ public:
   /// Set language
   void newLanguage(CoinMessages::Language language);
   inline void setLanguage(CoinMessages::Language language)
-  {newLanguage(language);};
+  {newLanguage(language);}
   /// Return handler
   inline CoinMessageHandler * messageHandler() const
-  {return handler_;};
+  {return handler_;}
   /// Return messages
   inline CoinMessages & messages() 
-  {return messages_;};
+  {return messages_;}
   /// Return pointer to messages
   inline CoinMessages * messagesPointer() 
-  {return &messages_;};
+  {return &messages_;}
   /// Set log level
   void setLogLevel(int value);
   /// Get log level
   inline int logLevel() const
-  { return handler_->logLevel();};
+  { return handler_->logLevel();}
   //@}
   //---------------------------------------------------------------------------
   ///@name Specialized
@@ -1430,19 +1430,19 @@ public:
   */
   /// Set special options
   inline void setSpecialOptions(int value)
-  { specialOptions_=value;};
+  { specialOptions_=value;}
   /// Get special options
   inline int specialOptions() const
-  { return specialOptions_;};
+  { return specialOptions_;}
   /// Says if normal solver i.e. has well defined CoinPackedMatrix
   inline bool normalSolver() const
-  { return (specialOptions_&16)==0;};
+  { return (specialOptions_&16)==0;}
   /// Now we may not own objects - just point to solver's objects
   inline bool ownObjects() const
-  { return ownObjects_;};
+  { return ownObjects_;}
   /// Pointer to a mutex 
   inline void * mutex()
-  { return mutex_;};
+  { return mutex_;}
   //@}
   //---------------------------------------------------------------------------
 
@@ -1476,14 +1476,14 @@ public:
       and you want to hang on to the answer).
     */
     inline void setModelOwnsSolver (bool ourSolver)
-    { ourSolver_ = ourSolver ; } ;
+    { ourSolver_ = ourSolver ; } 
 
     /*! \brief Get ownership of solver
     
       A return value of true means that CbcModel owns the solver and will
       take responsibility for deleting it when that becomes necessary.
     */
-    inline bool modelOwnsSolver () { return (ourSolver_) ; } ;
+    inline bool modelOwnsSolver () { return (ourSolver_) ; } 
   
     /** Copy constructor .
       If noTree is true then tree and cuts are not copied
@@ -1498,15 +1498,15 @@ public:
 
     /// Returns solver - has current state
     inline OsiSolverInterface * solver() const
-    { return solver_;};
+    { return solver_;}
 
     /// Returns solver with continuous state
     inline OsiSolverInterface * continuousSolver() const
-    { return continuousSolver_;};
+    { return continuousSolver_;}
 
   /// A copy of the solver, taken at constructor or by saveReferenceSolver
   inline OsiSolverInterface * referenceSolver() const
-  { return referenceSolver_;};
+  { return referenceSolver_;}
 
   /// Save a copy of the current solver so can be reset to
   void saveReferenceSolver();
@@ -1532,7 +1532,7 @@ public:
   //@{
     /// Get how many Nodes it took to solve the problem.
     int getNodeCount2() const
-    { return numberNodes2_;};
+    { return numberNodes2_;}
   /// Set pointers for speed
   void setPointers(const OsiSolverInterface * solver);
   /** Perform reduced cost fixing
@@ -1621,34 +1621,34 @@ public:
 
   /// Get the hotstart solution 
   inline const double * hotstartSolution() const
-  { return hotstartSolution_;};
+  { return hotstartSolution_;}
   /// Get the hotstart priorities 
   inline const int * hotstartPriorities() const
-  { return hotstartPriorities_;};
+  { return hotstartPriorities_;}
 
   /// Return the list of cuts initially collected for this subproblem
   inline CbcCountRowCut ** addedCuts() const
-  { return addedCuts_;};
+  { return addedCuts_;}
   /// Number of entries in the list returned by #addedCuts()
   inline int currentNumberCuts() const
-  { return currentNumberCuts_;};
+  { return currentNumberCuts_;}
   /// Global cuts
   inline OsiCuts * globalCuts() 
-  { return &globalCuts_;};
+  { return &globalCuts_;}
   /// Copy and set a pointer to a row cut which will be added instead of normal branching.
   void setNextRowCut(const OsiRowCut & cut);
   /// Get a pointer to current node (be careful)
   inline CbcNode * currentNode() const
-  { return currentNode_;};
+  { return currentNode_;}
   /// Get a pointer to probing info
   inline CglTreeProbingInfo * probingInfo() const
-  { return probingInfo_;};
+  { return probingInfo_;}
   /// Set the number of iterations done in strong branching.
   inline void setNumberStrongIterations(int number)
-  { numberStrongIterations_ = number;};
+  { numberStrongIterations_ = number;}
   /// Get the number of iterations done in strong branching.
   inline int numberStrongIterations() const
-  { return numberStrongIterations_;};
+  { return numberStrongIterations_;}
   /// Increment strong info
   void incrementStrongInfo(int numberTimes, int numberIterations,
                            int numberFixed, bool ifInfeasible);

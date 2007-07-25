@@ -48,9 +48,9 @@ public:
      if -2.0 then do breadth first just for first 1000 nodes
   */
   inline double getWeight() const
-  { return weight_;};
+  { return weight_;}
   inline void setWeight(double weight)
-  { weight_ = weight;};
+  { weight_ = weight;}
 protected:
   // Weight for each infeasibility
   double weight_;

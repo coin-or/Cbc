@@ -72,11 +72,11 @@ public:
 
   /// Number of other CbcNodeInfo objects pointing to this row cut
   inline int numberPointingToThis()
-  { return numberPointingToThis_;};
+  { return numberPointingToThis_;}
 
   /// Which generator for cuts - as user order
    int whichCutGenerator() const
-  { return whichCutGenerator_;};
+  { return whichCutGenerator_;}
 
 #ifdef CHECK_CUT_COUNTS
   // Just for printing sanity checks

@@ -53,10 +53,10 @@ public:
 
   /// Sets how often to do it
   inline void setHowOften(int value)
-  { howOften_=value;};
+  { howOften_=value;}
   /// Used array so we can set
   inline char * used() const
-  { return used_;};
+  { return used_;}
 
 protected:
   // Data

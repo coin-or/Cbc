@@ -91,7 +91,7 @@ public:
   
   /// Model column number
   inline int modelSequence() const
-  {return columnNumber_;};
+  {return columnNumber_;}
 
   /** Column number if single column object -1 otherwise,
       so returns >= 0
@@ -100,22 +100,22 @@ public:
   virtual int columnNumber() const;
   /// Original bounds
   inline double originalLowerBound() const
-  { return bound_[0];};
+  { return bound_[0];}
   inline double originalUpperBound() const
-  { return bound_[rangeType_*numberRanges_-1];};
+  { return bound_[rangeType_*numberRanges_-1];}
   /// Type - 1 points, 2 ranges
   inline int rangeType() const
-  { return rangeType_;};
+  { return rangeType_;}
   /// Number of points
   inline int numberRanges() const
-  { return numberRanges_;};
+  { return numberRanges_;}
   /// Ranges
   inline double * bound() const
-  { return bound_;};
+  { return bound_;}
   /** \brief Return true if object can take part in normal heuristics
   */
   virtual bool canDoHeuristics() const 
-  {return false;};
+  {return false;}
 
 private:
   /// Just for debug (CBC_PRINT defined in CbcBranchLotsize.cpp)

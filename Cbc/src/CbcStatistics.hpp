@@ -29,34 +29,34 @@ public:
   void print(const int * sequenceLookup=NULL) const;
   // Node number
   inline int node() const
-  { return id_;};
+  { return id_;}
   // Parent node number
   inline int parentNode() const
-  { return parentId_;};
+  { return parentId_;}
   // depth
   inline int depth() const
-  { return depth_;};
+  { return depth_;}
   // way
   inline int way() const
-  { return way_;};
+  { return way_;}
   // value
   inline double value() const
-  { return value_;};
+  { return value_;}
   // starting objective
   inline double startingObjective() const
-  { return startingObjective_;};
+  { return startingObjective_;}
   // Unsatisfied at beginning
   inline int startingInfeasibility() const
-  { return startingInfeasibility_;};
+  { return startingInfeasibility_;}
   // starting objective
   inline double endingObjective() const
-  { return endingObjective_;};
+  { return endingObjective_;}
   // Unsatisfied at end
   inline int endingInfeasibility() const
-  { return endingInfeasibility_;};
+  { return endingInfeasibility_;}
   // Number iterations
   inline int numberIterations() const
-  { return numberIterations_;};
+  { return numberIterations_;}
 
 protected:
   // Data

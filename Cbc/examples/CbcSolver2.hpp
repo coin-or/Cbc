@@ -58,28 +58,28 @@ public:
   void initialize(CbcModel * model, const char * keep);
   /// get which ones have been used
   inline const int * when() const
-  { return node_;};
+  { return node_;}
   /// Get memory (i.e. how recent use should be)
   inline int getMemory() const
-  { return memory_;};
+  { return memory_;}
   /// Get current count
   inline int getCount() const
-  { return count_;};
+  { return count_;}
   /// Set memory (i.e. how recent use should be)
   inline void setMemory(int value)
-  { memory_=value;};
+  { memory_=value;}
   /// Say whether to just count usage
   inline void setAlgorithm(int value)
-  { algorithm_=value;};
+  { algorithm_=value;}
   /// Say whether to just count usage
   inline int getAlgorithm() const
-  { return algorithm_;};
+  { return algorithm_;}
   /// Strategy
   inline void setStrategy(int value)
-  { strategy_=value;};
+  { strategy_=value;}
   /// Strategy
   inline int getStrategy() const
-  { return strategy_;};
+  { return strategy_;}
   //@}
 
   //---------------------------------------------------------------------------

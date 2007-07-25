@@ -55,14 +55,14 @@ public:
 
   /// Maximum size allowed
   inline int maximumSize() const
-  { return maximumSizeAllowed_;};
+  { return maximumSizeAllowed_;}
   inline void setMaximumSize(int value)
-  { maximumSizeAllowed_=value;};
+  { maximumSizeAllowed_=value;}
   /// Returns type of algorithm and sets up arrays
   int checkPossible(int allowableSize=0);
   // set algorithm
   inline void setAlgorithm(int value)
-  { algorithm_=value;};
+  { algorithm_=value;}
   /** Tries a column
       returns true if was used in making any changes.
   */
@@ -71,16 +71,16 @@ public:
                     int upper=COIN_INT_MAX);
   /// Returns cost array
   inline const float * cost() const
-  { return cost_;};
+  { return cost_;}
   /// Returns back array
   inline const int * back() const
-  { return back_;};
+  { return back_;}
   /// Gets bit pattern for target result
   inline int target() const
-  { return target_;};
+  { return target_;}
   /// Sets bit pattern for target result
   inline void setTarget(int value)
-  { target_=value;};
+  { target_=value;}
 private:
   /// Does deleteions
   void gutsOfDelete();

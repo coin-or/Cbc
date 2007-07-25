@@ -29,19 +29,19 @@
 class CbcFeasibilityNoStrong : public CbcFeasibilityBase{
 public:
   // Default Constructor 
-  CbcFeasibilityNoStrong () {};
+  CbcFeasibilityNoStrong () {}
 
-  virtual ~CbcFeasibilityNoStrong() {};
+  virtual ~CbcFeasibilityNoStrong() {}
   // Copy constructor 
-  CbcFeasibilityNoStrong ( const CbcFeasibilityNoStrong &rhs) {};
+  CbcFeasibilityNoStrong ( const CbcFeasibilityNoStrong &rhs) {}
    
   // Assignment operator 
   CbcFeasibilityNoStrong & operator=( const CbcFeasibilityNoStrong& rhs)
-  { return * this;};
+  { return * this;}
 
   /// Clone
   virtual CbcFeasibilityBase * clone() const
-  { return new CbcFeasibilityNoStrong();};
+  { return new CbcFeasibilityNoStrong();}
 
   /**
      On input mode:
@@ -53,7 +53,7 @@ public:
      1 pretend integer solution
   */
   virtual int feasible(CbcModel * model, int mode) 
-  {return mode;};
+  {return mode;}
 };
 
 

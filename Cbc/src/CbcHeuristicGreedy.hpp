@@ -57,14 +57,14 @@ public:
      if 100 added round up all >=0.5
   */
   inline int algorithm() const
-  { return algorithm_; };
+  { return algorithm_; }
   inline void setAlgorithm(int value)
-  { algorithm_=value; };
+  { algorithm_=value; }
   // Only do this many times
   inline int numberTimes() const
-  { return numberTimes_; };
+  { return numberTimes_; }
   inline void setNumberTimes(int value)
-  { numberTimes_=value; };
+  { numberTimes_=value; }
 
 protected:
   // Data
@@ -135,19 +135,19 @@ public:
      if 100 added round up all >=0.5
   */
   inline int algorithm() const
-  { return algorithm_; };
+  { return algorithm_; }
   inline void setAlgorithm(int value)
-  { algorithm_=value; };
+  { algorithm_=value; }
   // Fraction of rhs to cover before branch and cut
   inline void setFraction(double value)
-  { fraction_ = value;};
+  { fraction_ = value;}
   inline double fraction() const
-  { return fraction_;};
+  { return fraction_;}
   // Only do this many times
   inline int numberTimes() const
-  { return numberTimes_; };
+  { return numberTimes_; }
   inline void setNumberTimes(int value)
-  { numberTimes_=value; };
+  { numberTimes_=value; }
 protected:
   // Data
 

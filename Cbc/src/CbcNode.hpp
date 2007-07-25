@@ -113,15 +113,15 @@ public:
   /// Clone
   virtual CbcNodeInfo * clone() const = 0;
   /// Called when number branches left down to zero
-  virtual void allBranchesGone() {};
+  virtual void allBranchesGone() {}
 
   /// Increment number of references
   inline void increment(int amount=1)
-  {numberPointingToThis_+=amount;/*printf("CbcNodeInfo %x incremented by %d to %d\n",this,amount,numberPointingToThis_);*/};
+  {numberPointingToThis_+=amount;/*printf("CbcNodeInfo %x incremented by %d to %d\n",this,amount,numberPointingToThis_);*/}
 
   /// Decrement number of references and return number left
   inline int decrement(int amount=1)
-  {numberPointingToThis_-=amount;/*printf("CbcNodeInfo %x decremented by %d to %d\n",this,amount,numberPointingToThis_);*/return numberPointingToThis_;};
+  {numberPointingToThis_-=amount;/*printf("CbcNodeInfo %x decremented by %d to %d\n",this,amount,numberPointingToThis_);*/return numberPointingToThis_;}
 
   /** Initialize reference counts
 
@@ -129,30 +129,30 @@ public:
   */
 
   inline void initializeInfo(int number)
-  {numberPointingToThis_=number;numberBranchesLeft_=number;};
+  {numberPointingToThis_=number;numberBranchesLeft_=number;}
 
   /// Return number of branches left in object
   inline int numberBranchesLeft() const
-  {return numberBranchesLeft_;};
+  {return numberBranchesLeft_;}
 
   /// Return number of objects pointing to this
   inline int numberPointingToThis() const
-  {return numberPointingToThis_;};
+  {return numberPointingToThis_;}
 
   /// Say one branch taken 
   inline int branchedOn()
-  {numberPointingToThis_--;numberBranchesLeft_--;return numberBranchesLeft_;};
+  {numberPointingToThis_--;numberBranchesLeft_--;return numberBranchesLeft_;}
 
   /// Say thrown away
   inline void throwAway()
-  {numberPointingToThis_-=numberBranchesLeft_;numberBranchesLeft_=0;};
+  {numberPointingToThis_-=numberBranchesLeft_;numberBranchesLeft_=0;}
 
   /// Parent of this
   CbcNodeInfo * parent() const
-  {return parent_;};
+  {return parent_;}
   /// Set parent null
   inline void nullParent()
-  { parent_=NULL;};
+  { parent_=NULL;}
 
   void addCuts(OsiCuts & cuts,int numberToBranch, int * whichGenerator);
   void addCuts(int numberCuts, CbcCountRowCut ** cuts,int numberToBranch);
@@ -176,24 +176,24 @@ public:
 
   /// Array of pointers to cuts
   inline CbcCountRowCut ** cuts() const
-  {return cuts_;};
+  {return cuts_;}
 
   /// Number of row cuts (this node)
   inline int numberCuts() const
-  {return numberCuts_;};
+  {return numberCuts_;}
   inline void setNumberCuts(int value)
-  {numberCuts_=value;};
+  {numberCuts_=value;}
 
   /// Set owner null
   inline void nullOwner()
-  { owner_=NULL;};
+  { owner_=NULL;}
   const inline CbcNode * owner() const
-  { return owner_;};
+  { return owner_;}
   /// The node number
   inline int nodeNumber() const
-  { return nodeNumber_;};
+  { return nodeNumber_;}
   inline void setNodeNumber(int node)
-  { nodeNumber_=node;};
+  { nodeNumber_=node;}
 protected:
 
   /** Number of other nodes pointing to this node.
@@ -305,7 +305,7 @@ private:
   CbcFullNodeInfo & operator=(const CbcFullNodeInfo& rhs);
 };
 
-
+
 
 /** \brief Holds information for recreating a subproblem by incremental change
 	   from the parent.
@@ -367,7 +367,7 @@ private:
   CbcPartialNodeInfo & operator=(const CbcPartialNodeInfo& rhs);
 };
 
-
+
 
 /** Information required while the node is live
 
@@ -533,19 +533,19 @@ public:
 
   // Information to make basis and bounds
   inline CbcNodeInfo * nodeInfo() const
-  {return nodeInfo_;};
+  {return nodeInfo_;}
 
   // Objective value
   inline double objectiveValue() const
-  { return objectiveValue_;};
+  { return objectiveValue_;}
   inline void setObjectiveValue(double value)
-  { objectiveValue_=value;};
+  { objectiveValue_=value;}
   /// Number of arms defined for the attached OsiBranchingObject.
   inline int numberBranches() const
   { if (branch_)
       return (branch_->numberBranches()) ;
     else
-      return (-1) ; } ;
+      return (-1) ; } 
 
   /* Active arm of the attached OsiBranchingObject.
   
@@ -556,27 +556,27 @@ public:
   int way() const;
   /// Depth in branch-and-cut search tree
   inline int depth() const
-  {return depth_;};
+  {return depth_;}
   /// Get the number of objects unsatisfied at this node.
   inline int numberUnsatisfied() const
-  {return numberUnsatisfied_;};
+  {return numberUnsatisfied_;}
   /// Sum of "infeasibilities" reported by each object
   inline double sumInfeasibilities() const
-  { return sumInfeasibilities_;};
+  { return sumInfeasibilities_;}
   // Guessed objective value (for solution)
   inline double guessedObjectiveValue() const
-  {return guessedObjectiveValue_;};
+  {return guessedObjectiveValue_;}
   inline void setGuessedObjectiveValue(double value)
-  {guessedObjectiveValue_=value;};
+  {guessedObjectiveValue_=value;}
   /// Branching object for this node
   inline const OsiBranchingObject * branchingObject() const
-  { return branch_;};
+  { return branch_;}
   /// Modifiable branching object for this node
   inline OsiBranchingObject * modifiableBranchingObject() const
-  { return branch_;};
+  { return branch_;}
   /// Set branching object for this node (takes ownership)
   inline void setBranchingObject(OsiBranchingObject * branchingObject)
-  { branch_ = branchingObject;};
+  { branch_ = branchingObject;}
 
 private:
   // Data

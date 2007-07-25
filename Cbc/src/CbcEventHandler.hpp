@@ -163,7 +163,7 @@ public:
   /*! \brief Get model. */
 
   inline const CbcModel* getModel() const
-  { return model_ ; } ;
+  { return model_ ; } 
 
   /*! \brief Set the default action */
 

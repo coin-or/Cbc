@@ -32,19 +32,19 @@ public:
   virtual void setupOther(CbcModel & model)=0;
   /// Set model depth (i.e. how nested)
   inline void setNested(int depth)
-  { depth_=depth;};
+  { depth_=depth;}
   /// Get model depth (i.e. how nested)
   inline int getNested() const
-  { return depth_;};
+  { return depth_;}
   /// Say preProcessing done
   inline void setPreProcessState(int state)
-  { preProcessState_=state;};
+  { preProcessState_=state;}
   /// See what sort of preprocessing was done
   inline int preProcessState() const
-  { return preProcessState_;};
+  { return preProcessState_;}
   /// Pre-processing object
   inline CglPreProcess * process() const
-  { return process_;};
+  { return process_;}
   /// Delete pre-processing object to save memory
   void deletePreProcess();
   /// Return a new Full node information pointer (descendant of CbcFullNodeInfo)
@@ -55,7 +55,7 @@ public:
                                         const double * boundChanges,
                                         const CoinWarmStartDiff *basisDiff) const;
   /// Create C++ lines to get to current state
-  virtual void generateCpp( FILE * fp) {};
+  virtual void generateCpp( FILE * fp) {}
   /** After a CbcModel::resolve this can return a status
       -1 no effect
       0 treat as optimal
@@ -91,22 +91,22 @@ public:
   CbcStrategyNull () {}
 
   // Copy constructor 
-  CbcStrategyNull ( const CbcStrategyNull & rhs) : CbcStrategy(rhs) {};
+  CbcStrategyNull ( const CbcStrategyNull & rhs) : CbcStrategy(rhs) {}
    
   // Destructor 
-  ~CbcStrategyNull () {};
+  ~CbcStrategyNull () {}
   
   /// Clone
-  virtual CbcStrategy * clone() const { return new CbcStrategyNull(*this);};
+  virtual CbcStrategy * clone() const { return new CbcStrategyNull(*this);}
 
   /// Setup cut generators
-  virtual void setupCutGenerators(CbcModel & model) {};
+  virtual void setupCutGenerators(CbcModel & model) {}
   /// Setup heuristics
-  virtual void setupHeuristics(CbcModel & model) {};
+  virtual void setupHeuristics(CbcModel & model) {}
   /// Do printing stuff
-  virtual void setupPrinting(CbcModel & model,int modelLogLevel) {};
+  virtual void setupPrinting(CbcModel & model,int modelLogLevel) {}
   /// Other stuff e.g. strong branching
-  virtual void setupOther(CbcModel & model) {};
+  virtual void setupOther(CbcModel & model) {}
 
 protected:
   // Data
@@ -146,13 +146,13 @@ public:
   virtual void setupOther(CbcModel & model);
   /// Set up preProcessing - see below
   inline void setupPreProcessing(int desired=1, int passes=10)
-  { desiredPreProcess_=desired;preProcessPasses_=passes;};
+  { desiredPreProcess_=desired;preProcessPasses_=passes;}
   /// See what sort of preprocessing wanted
   inline int desiredPreProcess() const
-  { return desiredPreProcess_;};
+  { return desiredPreProcess_;}
   /// See how many passes wanted
   inline int preProcessPasses() const
-  { return preProcessPasses_;};
+  { return preProcessPasses_;}
   /// Create C++ lines to get to current state
   virtual void generateCpp( FILE * fp) ;
 

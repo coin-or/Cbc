@@ -57,7 +57,7 @@ enum CbcParameterType
 
   OSLSTUFF = 401,CBCSTUFF,
 
-  INVALID = 1000 } ;
+  INVALID = 1000 } 
 
 
 /// Very simple class for setting parameters
@@ -136,43 +136,43 @@ public:
   void printOptions (  ) const;
   /// Returns current parameter option
   inline std::string currentOption (  ) const
-  { return definedKeyWords_[currentKeyWord_]; };
+  { return definedKeyWords_[currentKeyWord_]; }
   /// Sets current parameter option
   inline void setCurrentOption ( int value )
-  { currentKeyWord_=value; };
+  { currentKeyWord_=value; }
   /// Sets int value
   inline void setIntValue ( int value )
-  { intValue_=value; };
+  { intValue_=value; }
   inline int intValue () const
-  { return intValue_; };
+  { return intValue_; }
   /// Sets double value
   inline void setDoubleValue ( double value )
-  { doubleValue_=value; };
+  { doubleValue_=value; }
   inline double doubleValue () const
-  { return doubleValue_; };
+  { return doubleValue_; }
   /// Sets string value
   inline void setStringValue ( std::string value )
-  { stringValue_=value; };
+  { stringValue_=value; }
   inline std::string stringValue () const
-  { return stringValue_; };
+  { return stringValue_; }
   /// Returns 1 if matches minimum, 2 if matches less, 0 if not matched
   int matches (std::string input) const;
   /// type
   inline CbcParameterType type() const
-  { return type_;};
+  { return type_;}
   /// whether to display
   inline bool displayThis() const
-  { return display_;};
+  { return display_;}
   /// Set Long help
   inline void setLonghelp(const std::string help) 
-  {longHelp_=help;};
+  {longHelp_=help;}
   /// Print Long help
   void printLongHelp() const;
   /// Print action and string
   void printString() const;
   /// type for classification
   inline int indexNumber() const
-  { return indexNumber_;};
+  { return indexNumber_;}
 private:
   /// gutsOfConstructor
   void gutsOfConstructor();

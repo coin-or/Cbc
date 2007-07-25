@@ -19,7 +19,7 @@ class CbcModel;
 class CbcFeasibilityBase {
 public:
   // Default Constructor 
-  CbcFeasibilityBase () {};
+  CbcFeasibilityBase () {}
 
   /**
      On input mode:
@@ -30,22 +30,22 @@ public:
      -1 pretend infeasible
      1 pretend integer solution
   */
-  virtual int feasible(CbcModel * model, int mode) {return 0;};
+  virtual int feasible(CbcModel * model, int mode) {return 0;}
 
-  virtual ~CbcFeasibilityBase() {};
+  virtual ~CbcFeasibilityBase() {}
 
   // Copy constructor 
   CbcFeasibilityBase ( const CbcFeasibilityBase & rhs)
-  {};
+  {}
    
   // Assignment operator 
   CbcFeasibilityBase & operator=( const CbcFeasibilityBase& rhs)
   {  
     return *this;
-  };
+  }
 
   /// Clone
   virtual CbcFeasibilityBase * clone() const
-  { return new CbcFeasibilityBase(*this);};
+  { return new CbcFeasibilityBase(*this);}
 };
 #endif

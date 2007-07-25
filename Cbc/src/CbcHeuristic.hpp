@@ -57,38 +57,38 @@ public:
   */
   virtual int solution(double & objectiveValue,
 		       double * newSolution,
-		       OsiCuts & cs) {return 0;};
+		       OsiCuts & cs) {return 0;}
 
   /// Validate model i.e. sets when_ to 0 if necessary (may be NULL)
-  virtual void validate() {};
+  virtual void validate() {}
 
   /** Sets "when" flag - 0 off, 1 at root, 2 other than root, 3 always.
       If 10 added then don't worry if validate says there are funny objects
       as user knows it will be fine
   */
   inline void setWhen(int value)
-  { when_=value;};
+  { when_=value;}
   /// Gets "when" flag - 0 off, 1 at root, 2 other than root, 3 always
   inline int when() const
-  { return when_;};
+  { return when_;}
 
   /// Sets number of nodes in subtree (default 200)
   inline void setNumberNodes(int value)
-  { numberNodes_=value;};
+  { numberNodes_=value;}
   /// Gets number of nodes in a subtree (default 200)
   inline int numberNodes() const
-  { return numberNodes_;};
+  { return numberNodes_;}
   /// Just set model - do not do anything else
   inline void setModelOnly(CbcModel * model)
-  { model_ = model;};
+  { model_ = model;}
   
 
   /// Sets fraction of new(rows+columns)/old(rows+columns) before doing small branch and bound (default 1.0)
   inline void setFractionSmall(double value)
-  { fractionSmall_=value;};
+  { fractionSmall_=value;}
   /// Gets fraction of new(rows+columns)/old(rows+columns) before doing small branch and bound (default 1.0)
   inline double fractionSmall() const
-  { return fractionSmall_;};
+  { return fractionSmall_;}
 
   /** Do mini branch and bound - return 
       0 not finished - no solution
@@ -101,18 +101,18 @@ public:
                           double * newSolution, double & newSolutionValue,
                           double cutoff , std::string name) const;
   /// Create C++ lines to get to current state
-  virtual void generateCpp( FILE * fp) {};
+  virtual void generateCpp( FILE * fp) {}
   /// Create C++ lines to get to current state - does work for base class
   void generateCpp( FILE * fp,const char * heuristic) ;
   /// Returns true if can deal with "odd" problems e.g. sos type 2
   virtual bool canDealWithOdd() const
-  { return false;};
+  { return false;}
   /// return name of heuristic
   inline const char *heuristicName() const
-  { return heuristicName_.c_str();};
+  { return heuristicName_.c_str();}
   /// set name of heuristic
   inline void setHeuristicName(const char *name)
-  { heuristicName_ = name;};
+  { heuristicName_ = name;}
 
 protected:
 
@@ -173,7 +173,7 @@ public:
 
   /// Set seed
   void setSeed(int value)
-  { seed_ = value;};
+  { seed_ = value;}
 
 protected:
   // Data

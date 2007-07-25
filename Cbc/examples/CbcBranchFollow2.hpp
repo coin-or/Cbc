@@ -58,9 +58,9 @@ public:
 
   /// get and set for maximum rhws (affects cuts as branch)
   inline int maximumRhs() const
-  { return maximumRhs_;};
+  { return maximumRhs_;}
   inline void setMaximumRhs(int value)
-  { maximumRhs_=value;};
+  { maximumRhs_=value;}
 protected:
   /// data
   /// Matrix

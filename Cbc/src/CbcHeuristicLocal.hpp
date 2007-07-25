@@ -59,10 +59,10 @@ public:
 
   /// Sets type of search
   inline void setSearchType(int value)
-  { swap_=value;};
+  { swap_=value;}
   /// Used array so we can set
   inline char * used() const
-  { return used_;};
+  { return used_;}
 
 protected:
   // Data

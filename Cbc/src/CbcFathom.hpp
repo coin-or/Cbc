@@ -49,7 +49,7 @@ public:
 
   // Is this method possible
   inline bool possible() const
-  { return possible_;};
+  { return possible_;}
 
 protected:
 
@@ -101,10 +101,10 @@ public:
   //@{
   /// Set Cbc Model
   inline void setCbcModel(CbcModel * model)
-  { cbcModel_=model;};
+  { cbcModel_=model;}
   /// Return Cbc Model
   inline CbcModel * cbcModel() const
-  { return cbcModel_;};
+  { return cbcModel_;}
   //@}
   
   //---------------------------------------------------------------------------

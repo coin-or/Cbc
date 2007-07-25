@@ -135,19 +135,19 @@ public:
 
   /*! \brief Get the parameter code  */
 
-  inline CbcOsiParamCode paramCode() const { return (paramCode_) ; } ;
+  inline CbcOsiParamCode paramCode() const { return (paramCode_) ; } 
 
   /*! \brief Set the parameter code */
 
-  inline void setParamCode(CbcOsiParamCode code) { paramCode_ = code ; } ;
+  inline void setParamCode(CbcOsiParamCode code) { paramCode_ = code ; } 
 
   /*! \brief Get the underlying OsiSolverInterface object */
 
-  inline OsiSolverInterface *obj() const { return (obj_) ; } ;
+  inline OsiSolverInterface *obj() const { return (obj_) ; } 
 
   /*! \brief Set the underlying OsiSolverInterace object */
 
-  inline void setObj(OsiSolverInterface *obj) { obj_ = obj ; } ;
+  inline void setObj(OsiSolverInterface *obj) { obj_ = obj ; } 
 
 //@}
 

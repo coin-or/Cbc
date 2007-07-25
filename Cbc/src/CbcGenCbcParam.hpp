@@ -133,19 +133,19 @@ public:
 
   /*! \brief Get the parameter code  */
 
-  inline CbcCbcParamCode paramCode() const { return (paramCode_) ; } ;
+  inline CbcCbcParamCode paramCode() const { return (paramCode_) ; } 
 
   /*! \brief Set the parameter code */
 
-  inline void setParamCode(CbcCbcParamCode code) { paramCode_ = code ; } ;
+  inline void setParamCode(CbcCbcParamCode code) { paramCode_ = code ; } 
 
   /*! \brief Get the underlying CbcModel object */
 
-  inline CbcModel *obj() const { return (obj_) ; } ;
+  inline CbcModel *obj() const { return (obj_) ; } 
 
   /*! \brief Set the underlying CbcModel object */
 
-  inline void setObj(CbcModel *obj) { obj_ = obj ; } ;
+  inline void setObj(CbcModel *obj) { obj_ = obj ; } 
 
 //@}
 

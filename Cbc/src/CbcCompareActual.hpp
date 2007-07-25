@@ -98,12 +98,12 @@ public:
      if -3.0 then depth first before solution
   */
   inline double getWeight() const
-  { return weight_;};
+  { return weight_;}
   inline void setWeight(double weight)
-  { weight_ = weight;};
+  { weight_ = weight;}
   // Depth above which want to explore first
   inline void setBreadthDepth(int value)
-  {  breadthDepth_ = value;};
+  {  breadthDepth_ = value;}
 protected:
   // Weight for each infeasibility
   double weight_;

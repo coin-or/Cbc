@@ -166,7 +166,7 @@ public:
       return null.
   */
   virtual CbcBranchingObject * preferredNewFeasible() const 
-  { return NULL;};
+  { return NULL;}
   
   /** \brief Given a valid solution (with reduced costs, etc.),
       return a branching object which would give a new feasible
@@ -177,13 +177,13 @@ public:
       return null.
   */
   virtual CbcBranchingObject * notPreferredNewFeasible() const 
-  { return NULL;};
+  { return NULL;}
 
   /** Reset variable bounds to their original values.
   
     Bounds may be tightened, so it may be good to be able to set this info in object.
    */
-  virtual void resetBounds(const OsiSolverInterface * solver) {};
+  virtual void resetBounds(const OsiSolverInterface * solver) {}
   
   /** Returns floor and ceiling i.e. closest valid points
   */
@@ -198,28 +198,28 @@ public:
 							const CbcBranchingObject * branchingObject);
 
   /// Update object by CbcObjectUpdateData
-  virtual void updateInformation(const CbcObjectUpdateData & data) {};
+  virtual void updateInformation(const CbcObjectUpdateData & data) {}
 
   /// Identifier (normally column number in matrix)
   inline int id() const
-  { return id_;};
+  { return id_;}
   
    /// update model
   inline void setModel(CbcModel * model)
-  { model_ = model;};
+  { model_ = model;}
   
   /// Return model
   inline CbcModel * model() const
-  {return  model_;};
+  {return  model_;}
 
   /// If -1 down always chosen first, +1 up always, 0 normal
   inline int preferredWay() const
-  { return preferredWay_;};
+  { return preferredWay_;}
   /// Set -1 down always chosen first, +1 up always, 0 normal
   inline void setPreferredWay(int value)
-  { preferredWay_=value;};
+  { preferredWay_=value;}
   /// Redoes data when sequence numbers change
-  virtual void redoSequenceEtc(CbcModel * model, int numberColumns, const int * originalColumns) {};
+  virtual void redoSequenceEtc(CbcModel * model, int numberColumns, const int * originalColumns) {}
   
 protected:
   /// data
@@ -277,10 +277,10 @@ public:
       strong branching.  If so they ahve to fill in CbcStrongInfo.
       The object mention in incoming CbcStrongInfo must match.
       Returns nonzero if skip is wanted */
-  virtual int fillStrongInfo( CbcStrongInfo & info) {return 0;};
+  virtual int fillStrongInfo( CbcStrongInfo & info) {return 0;}
   /// Reset number of branches left to original
   inline void resetNumberBranchesLeft()
-  { branchIndex_=0;};
+  { branchIndex_=0;}
 
   /** \brief Execute the actions required to branch, as specified by the
 	     current state of the branching object, and advance the object's
@@ -296,11 +296,11 @@ public:
 	     Returns change in guessed objective on next branch
   */
   virtual double branch(OsiSolverInterface * solver)
-  { return branch();};
+  { return branch();}
 
   /** \brief Print something about branch - only if log level high
   */
-  virtual void print() const {};
+  virtual void print() const {}
 
   /** \brief Index identifying the associated CbcObject within its class.
   
@@ -314,7 +314,7 @@ public:
     the variable in the set of all variables).
   */
   inline int variable() const
-  {return variable_;};
+  {return variable_;}
 
   /** Get the state of the branching object
   
@@ -324,28 +324,28 @@ public:
     \sa #way_
   */
   inline int way() const
-  {return way_;};
+  {return way_;}
 
   /** Set the state of the branching object.
 
     See #way()
   */
   inline void way(int way)
-  {way_=way;};
+  {way_=way;}
 
    /// update model
   inline void setModel(CbcModel * model)
-  { model_ = model;};
+  { model_ = model;}
   /// Return model
   inline CbcModel * model() const
-  {return  model_;};
+  {return  model_;}
 
   /// Return pointer back to object which created
   inline CbcObject * object() const
-  {return  originalCbcObject_;};
+  {return  originalCbcObject_;}
   /// Set pointer back to object which created
   inline void setOriginalObject(CbcObject * object)
-  {originalCbcObject_=object;};
+  {originalCbcObject_=object;}
 
 protected:
 
@@ -428,20 +428,20 @@ public:
 
   /** Says whether this method can handle both methods -
       1 better, 2 best, 3 both */
-  virtual int whichMethod() {return 2;};
+  virtual int whichMethod() {return 2;}
 
   /** Saves a clone of current branching object.  Can be used to update
       information on object causing branch - after branch */
-  virtual void saveBranchingObject(OsiBranchingObject * object) {};
+  virtual void saveBranchingObject(OsiBranchingObject * object) {}
   /** Pass in information on branch just done.
       assumes object can get information from solver */
   virtual void updateInformation(OsiSolverInterface * solver, 
-                                 const CbcNode * node) {};
+                                 const CbcNode * node) {}
   /** Sets or gets best criterion so far */
-  virtual void setBestCriterion(double value) {};
-  virtual double getBestCriterion() const {return 0.0;};
+  virtual void setBestCriterion(double value) {}
+  virtual double getBestCriterion() const {return 0.0;}
   /// Create C++ lines to get to current state
-  virtual void generateCpp( FILE * fp) {};
+  virtual void generateCpp( FILE * fp) {}
   /// Model
   inline CbcModel * cbcModel() const
   { return model_;}
@@ -449,7 +449,7 @@ public:
      as choosemethod_ will be doing all work
   */
   OsiChooseVariable * chooseMethod() const
-  { return chooseMethod_;};
+  { return chooseMethod_;}
   /// Set (clone) chooseMethod
   void setChooseMethod(const OsiChooseVariable & method);
 

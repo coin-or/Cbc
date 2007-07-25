@@ -30,7 +30,7 @@ public:
   /// Clone
   virtual CbcTree * clone() const;
   /// Create C++ lines to get to current state
-  virtual void generateCpp( FILE * fp) {};
+  virtual void generateCpp( FILE * fp) {}
 
 /*! \name Heap access and maintenance methods */
 //@{
@@ -121,7 +121,7 @@ public:
   /// Clone
   virtual CbcNewTree * clone() const;
   /// Create C++ lines to get to current state
-  virtual void generateCpp( FILE * fp) {};
+  virtual void generateCpp( FILE * fp) {}
 
 /*! \name Heap access and maintenance methods */
 //@{

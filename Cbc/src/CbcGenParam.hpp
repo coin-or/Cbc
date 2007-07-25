@@ -142,19 +142,19 @@ public:
 
   /*! \brief Get the parameter code  */
 
-  inline CbcGenParamCode paramCode() const { return (paramCode_) ; } ;
+  inline CbcGenParamCode paramCode() const { return (paramCode_) ; } 
 
   /*! \brief Set the parameter code */
 
-  inline void setParamCode(CbcGenParamCode code) { paramCode_ = code ; } ;
+  inline void setParamCode(CbcGenParamCode code) { paramCode_ = code ; } 
 
   /*! \brief Get the underlying cbc-generic control object */
 
-  inline CbcGenCtlBlk *obj() const { return (obj_) ; } ;
+  inline CbcGenCtlBlk *obj() const { return (obj_) ; } 
 
   /*! \brief Set the underlying cbc-generic control object */
 
-  inline void setObj(CbcGenCtlBlk *obj) { obj_ = obj ; } ;
+  inline void setObj(CbcGenCtlBlk *obj) { obj_ = obj ; } 
 
 //@}
 

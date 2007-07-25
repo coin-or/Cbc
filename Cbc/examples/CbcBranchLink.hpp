@@ -58,19 +58,19 @@ public:
 
   /// Number of members
   inline int numberMembers() const
-  {return numberMembers_;};
+  {return numberMembers_;}
 
   /// Number of links for each member
   inline int numberLinks() const
-  {return numberLinks_;};
+  {return numberLinks_;}
 
   /// Which variables
   inline const int * which() const
-  {return which_;};
+  {return which_;}
 
   /** Array of weights */
   inline const double * weights() const
-  { return weights_;};
+  { return weights_;}
 
 private:
   /// data

@@ -102,40 +102,40 @@ public:
   void passInSolution(const double * solution, double solutionValue);
   // range i.e. k
   inline int range() const
-  { return range_;};
+  { return range_;}
   // setrange i.e. k
   inline void setRange(int value)
-  { range_ = value;};
+  { range_ = value;}
   // Type of cuts - 0=just 0-1, 1=all
   inline int typeCuts() const
-  { return typeCuts_;};
+  { return typeCuts_;}
   // Type of cuts - 0=just 0-1, 1=all
   inline void setTypeCuts(int value)
-  { typeCuts_ = value;};
+  { typeCuts_ = value;}
   // maximum number of diversifications
   inline int maxDiversification() const
-  { return maxDiversification_;};
+  { return maxDiversification_;}
   // maximum number of diversifications
   inline void setMaxDiversification(int value)
-  { maxDiversification_ = value;};
+  { maxDiversification_ = value;}
   // time limit per subtree
   inline int timeLimit() const
-  { return timeLimit_;};
+  { return timeLimit_;}
   // time limit per subtree
   inline void setTimeLimit(int value)
-  { timeLimit_ = value;};
+  { timeLimit_ = value;}
   // node limit for subtree
   inline int nodeLimit() const
-  { return nodeLimit_;};
+  { return nodeLimit_;}
   // node limit for subtree
   inline void setNodeLimit(int value)
-  { nodeLimit_ = value;};
+  { nodeLimit_ = value;}
   // Whether to do refinement step
   inline bool refine() const
-  { return refine_;};
+  { return refine_;}
   // Whether to do refinement step
   inline void setRefine(bool yesNo)
-    { refine_ = yesNo;};
+    { refine_ = yesNo;}
 
 //@}
 private:

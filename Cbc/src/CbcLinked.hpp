@@ -117,67 +117,67 @@ public:
   void addTighterConstraints();
   /// Objective value of best solution found internally
   inline double bestObjectiveValue() const
-  { return bestObjectiveValue_;};
+  { return bestObjectiveValue_;}
   /// Set objective value of best solution found internally
   inline void setBestObjectiveValue(double value)
-  { bestObjectiveValue_ = value;};
+  { bestObjectiveValue_ = value;}
   /// Best solution found internally
   inline const double * bestSolution() const
-  { return bestSolution_;};
+  { return bestSolution_;}
   /// Set best solution found internally
   void setBestSolution(const double * solution, int numberColumns);
   /// Set special options
   inline void setSpecialOptions2(int value)
-  { specialOptions2_=value;};
+  { specialOptions2_=value;}
   /// Say convex (should work it out) - if convex false then strictly concave
   void sayConvex(bool convex);
   /// Get special options
   inline int specialOptions2() const
-  { return specialOptions2_;};
+  { return specialOptions2_;}
   /** Clean copy of matrix
       So we can add rows
   */
   CoinPackedMatrix * cleanMatrix() const
-  { return matrix_;};
+  { return matrix_;}
   /** Row copy of matrix 
       Just genuine columns and rows
       Linear part
   */
   CoinPackedMatrix * originalRowCopy() const
-  { return originalRowCopy_;};
+  { return originalRowCopy_;}
   /// Copy of quadratic model if one
   ClpSimplex * quadraticModel() const
-  { return quadraticModel_;};
+  { return quadraticModel_;}
   /// Gets correct form for a quadratic row - user to delete
   CoinPackedMatrix * quadraticRow(int rowNumber,double * linear) const;
   /// Default meshSize 
   inline double defaultMeshSize() const
-  { return defaultMeshSize_;};
+  { return defaultMeshSize_;}
   inline void setDefaultMeshSize(double value)
-  { defaultMeshSize_=value;};
+  { defaultMeshSize_=value;}
   /// Default maximumbound 
   inline double defaultBound() const
-  { return defaultBound_;};
+  { return defaultBound_;}
   inline void setDefaultBound(double value)
-  { defaultBound_=value;};
+  { defaultBound_=value;}
   /// Set integer priority
   inline void setIntegerPriority(int value)
-  { integerPriority_=value;};
+  { integerPriority_=value;}
   /// Get integer priority
   inline int integerPriority() const
-  { return integerPriority_;};
+  { return integerPriority_;}
   /// Objective transfer variable if one
   inline int objectiveVariable() const
   { return objectiveVariable_;}
   /// Set biLinear priority
   inline void setBiLinearPriority(int value)
-  { biLinearPriority_=value;};
+  { biLinearPriority_=value;}
   /// Get biLinear priority
   inline int biLinearPriority() const
-  { return biLinearPriority_;};
+  { return biLinearPriority_;}
   /// Return CoinModel
   inline const CoinModel * coinModel() const
-  { return &coinModel_;};
+  { return &coinModel_;}
   /// Set all biLinear priorities on x-x variables
   void setBiLinearPriorities(int value, double meshSize=1.0);
   /** Set options and priority on all or some biLinear variables
@@ -311,7 +311,7 @@ public:
   //@{
   /// Get variable
   inline int variable() const
-  { return variable_;};
+  { return variable_;}
   /// Add a bound modifier
   void addBoundModifier(bool upperBoundAffected, bool useUpperBound, int whichVariable, 
 			double multiplier=1.0);
@@ -392,7 +392,7 @@ public:
   virtual void resetModel(CbcModel * model);
   /// Returns true if can deal with "odd" problems e.g. sos type 2
   virtual bool canDealWithOdd() const
-  { return true;};
+  { return true;}
   
 protected:
 private:
@@ -466,16 +466,16 @@ public:
 
   /// Number of links for each member
   inline int numberLinks() const
-  {return numberLinks_;};
+  {return numberLinks_;}
 
   /** \brief Return true if object can take part in normal heuristics
   */
   virtual bool canDoHeuristics() const 
-  {return false;};
+  {return false;}
   /** \brief Return true if branch should only bound variables
   */
   virtual bool boundBranch() const 
-  {return false;};
+  {return false;}
 
 private:
   /// data
@@ -612,16 +612,16 @@ public:
 
   /// Number of links for each member
   inline int numberLinks() const
-  {return numberLinks_;};
+  {return numberLinks_;}
 
   /** \brief Return true if object can take part in normal heuristics
   */
   virtual bool canDoHeuristics() const 
-  {return false;};
+  {return false;}
   /** \brief Return true if branch should only bound variables
   */
   virtual bool boundBranch() const 
-  {return false;};
+  {return false;}
 
 private:
   /// data
@@ -743,70 +743,70 @@ public:
   /** \brief Return true if object can take part in normal heuristics
   */
   virtual bool canDoHeuristics() const 
-  {return false;};
+  {return false;}
   /** \brief Return true if branch should only bound variables
   */
   virtual bool boundBranch() const 
-  { return (branchingStrategy_&4)!=0;};
+  { return (branchingStrategy_&4)!=0;}
   /// X column
   inline int xColumn() const
-  { return xColumn_;};
+  { return xColumn_;}
   /// Y column
   inline int yColumn() const
-  { return yColumn_;};
+  { return yColumn_;}
   /// X row
   inline int xRow() const
-  { return xRow_;};
+  { return xRow_;}
   /// Y row
   inline int yRow() const
-  { return yRow_;};
+  { return yRow_;}
   /// XY row
   inline int xyRow() const
-  { return xyRow_;};
+  { return xyRow_;}
   /// Coefficient
   inline double coefficient() const
-  { return coefficient_;};
+  { return coefficient_;}
   /// Set coefficient
   inline void setCoefficient(double value)
-  { coefficient_ = value;};
+  { coefficient_ = value;}
   /// First lambda (of 4)
   inline int firstLambda() const
-  { return firstLambda_;};
+  { return firstLambda_;}
   /// X satisfied if less than this away from mesh
   inline double xSatisfied() const
-  { return xSatisfied_;};
+  { return xSatisfied_;}
   inline void setXSatisfied(double value)
-  { xSatisfied_=value;};
+  { xSatisfied_=value;}
   /// Y satisfied if less than this away from mesh
   inline double ySatisfied() const
-  { return ySatisfied_;};
+  { return ySatisfied_;}
   inline void setYSatisfied(double value)
-  { ySatisfied_=value;};
+  { ySatisfied_=value;}
   /// X other satisfied if less than this away from mesh
   inline double xOtherSatisfied() const
-  { return xOtherSatisfied_;};
+  { return xOtherSatisfied_;}
   inline void setXOtherSatisfied(double value)
-  { xOtherSatisfied_=value;};
+  { xOtherSatisfied_=value;}
   /// Y other satisfied if less than this away from mesh
   inline double yOtherSatisfied() const
-  { return yOtherSatisfied_;};
+  { return yOtherSatisfied_;}
   inline void setYOtherSatisfied(double value)
-  { yOtherSatisfied_=value;};
+  { yOtherSatisfied_=value;}
   /// X meshSize 
   inline double xMeshSize() const
-  { return xMeshSize_;};
+  { return xMeshSize_;}
   inline void setXMeshSize(double value)
-  { xMeshSize_=value;};
+  { xMeshSize_=value;}
   /// Y meshSize 
   inline double yMeshSize() const
-  { return yMeshSize_;};
+  { return yMeshSize_;}
   inline void setYMeshSize(double value)
-  { yMeshSize_=value;};
+  { yMeshSize_=value;}
   /// XY satisfied if two version differ by less than this
   inline double xySatisfied() const
-  { return xySatisfied_;};
+  { return xySatisfied_;}
   inline void setXYSatisfied(double value)
-  { xySatisfied_=value;};
+  { xySatisfied_=value;}
   /** branching strategy etc
       bottom 2 bits
       0 branch on either, 1 branch on x, 2 branch on y
@@ -818,9 +818,9 @@ public:
       16 set to say - Always satisfied !!
   */
   inline int branchingStrategy() const
-  { return branchingStrategy_;};
+  { return branchingStrategy_;}
   inline void setBranchingStrategy(int value)
-  { branchingStrategy_=value;};
+  { branchingStrategy_=value;}
   /** Simple quadratic bound marker.
       0 no
       1 L if coefficient pos, G if negative i.e. value is ub on xy
@@ -829,9 +829,9 @@ public:
       If bound then real coefficient is 1.0 and coefficient_ is bound
   */
   inline int boundType() const
-  { return boundType_;};
+  { return boundType_;}
   inline void setBoundType(int value)
-  { boundType_ = value;};
+  { boundType_ = value;}
   /// Does work of branching
   void newBounds(OsiSolverInterface * solver, int way, short xOrY, double separator) const;
   /// Updates coefficients - returns number updated
@@ -1001,9 +1001,9 @@ public:
   double newGrid(OsiSolverInterface * solver, int type) const;
   /// Number of points
   inline int numberPoints() const
-  { return numberPoints_;};
+  { return numberPoints_;}
   inline void setNumberPoints(int value)
-  { numberPoints_ = value;};
+  { numberPoints_ = value;}
 
 private:
   /// Number of points
@@ -1163,10 +1163,10 @@ public:
 
   /// Number of objects to use
   inline int numberObjectsToUse() const
-  { return numberObjectsToUse_;};
+  { return numberObjectsToUse_;}
   /// Set number of objects to use
   inline void setNumberObjectsToUse(int value)
-  { numberObjectsToUse_ = value;};
+  { numberObjectsToUse_ = value;}
 
 protected:
   // Data
@@ -1268,19 +1268,19 @@ public:
   //@{
   /// Objective value of best solution found internally
   inline double bestObjectiveValue() const
-  { return bestObjectiveValue_;};
+  { return bestObjectiveValue_;}
   /// Best solution found internally
   const double * bestSolution() const
-  { return bestSolution_;};
+  { return bestSolution_;}
   /// Set special options
   inline void setSpecialOptions3(int value)
-  { specialOptions3_=value;};
+  { specialOptions3_=value;}
   /// Get special options
   inline int specialOptions3() const
-  { return specialOptions3_;};
+  { return specialOptions3_;}
   /// Copy of quadratic model if one
   ClpSimplex * quadraticModel() const
-  { return quadraticModel_;};
+  { return quadraticModel_;}
   //@}
   
   //---------------------------------------------------------------------------

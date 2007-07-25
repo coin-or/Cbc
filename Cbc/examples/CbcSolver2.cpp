@@ -444,7 +444,7 @@ CbcSolver2::initialize (CbcModel * model, const char * keep)
     howMany_ = new int[numberColumns];
     for (int i=0;i<numberColumns;i++) {
       if (keep&&keep[i])
-	node_[i]=INT_MAX;
+	node_[i]=COIN_INT_MAX;
       else
 	node_[i]=0;
       howMany_[i]=0;

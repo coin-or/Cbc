@@ -138,7 +138,7 @@ CbcBranchUserDecision::bestBranch (CbcBranchingObject ** objects, int numberObje
        3 - predicted best solution
        4 - take cheapest up branch if infeasibilities same
     */
-    int bestNumber=INT_MAX;
+    int bestNumber=COIN_INT_MAX;
     double bestCriterion=-1.0e50;
     double alternativeCriterion = -1.0;
     double bestEstimate = 1.0e100;

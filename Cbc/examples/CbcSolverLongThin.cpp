@@ -68,7 +68,7 @@ void CbcSolverLongThin::resolve()
   int nFix=0;
   int nNewRow=0;
   int nNewCol=0;
-  int sizeDynamic = INT_MAX;
+  int sizeDynamic = COIN_INT_MAX;
   int smallOriginalNumberRows=0;
   if (algorithm_==0) {
     for (i=0;i<numberIntegers;i++) {
@@ -713,7 +713,7 @@ CbcSolverLongThin::initialize (CbcModel * model, const char * keep)
     howMany_ = new int[numberColumns];
     for (int i=0;i<numberColumns;i++) {
       if (keep[i])
-	node_[i]=INT_MAX;
+	node_[i]=COIN_INT_MAX;
       else
 	node_[i]=0;
       howMany_[i]=0;

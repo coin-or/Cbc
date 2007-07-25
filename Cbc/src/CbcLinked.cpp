@@ -5847,7 +5847,7 @@ OsiBiLinear::getMovement(const OsiBranchingInformation * info)
   // If we move to xy then we move by coefficient * (xyTrue-xyLambda) on row xyRow_
   double movement = xyTrue-xyLambda;
   double mesh=CoinMax(xMeshSize_,yMeshSize_);
-  if (fabs(movement)<xySatisfied_&&(xB[1]-xB[0])<mesh||yB[1]-yB[0]<mesh)
+  if (fabs(movement)<xySatisfied_&&(xB[1]-xB[0]<mesh||yB[1]-yB[0]<mesh))
     return 0.0; // say feasible
   const double * activity = info->rowActivity_;
   const double * lower = info->rowLower_;

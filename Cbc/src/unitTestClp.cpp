@@ -548,11 +548,12 @@ int mainTest (int argc, const char *argv[],int algorithm,
         int iAlg = bestStrategy[m];
         int presolveOff=iAlg/100;
         iAlg=iAlg % 100;
-        if( !barrierAvailable&&iAlg==0)
+        if( !barrierAvailable&&iAlg==0) {
           if (nRows[m]!=2172)
             iAlg = 5; // try primal
           else
             iAlg=3; // d2q06c
+	}
         solveOptions=setupForSolve(iAlg,nameAlgorithm,0);
         if (presolveOff)
           solveOptions.setPresolveType(ClpSolve::presolveOff);

@@ -175,8 +175,8 @@ CbcHeuristicLocal::solution(double & solutionValue,
   if (numberSolutions_==model_->getSolutionCount())
     return 0;
   numberSolutions_=model_->getSolutionCount();
-  if (model_->getNumCols()>100000&&model_->getNumCols()>
-      10*model_->getNumRows()||numberSolutions_<=1)
+  if ((model_->getNumCols()>100000&&model_->getNumCols()>
+       10*model_->getNumRows())||numberSolutions_<=1)
     return 0; // probably not worth it
   // worth trying
 

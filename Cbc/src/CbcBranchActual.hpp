@@ -57,7 +57,7 @@ public:
 
   /** Type of each member i.e. which way is strong 0=non SOS, 1 =SOS,
       index is 0 ... numberMembers_-1 */
-  inline const char type(int index) const
+  inline char type(int index) const
   {if (type_) return type_[index]; else return 1;}
 
   /// Clique type - 0 <=, 1 == 

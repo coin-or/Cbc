@@ -849,7 +849,7 @@ public:
   inline const int * integerVariable() const 
   { return integerVariable_;}
   /// Whether or not integer
-  inline const char integerType(int i) const
+  inline char integerType(int i) const
   { return integerInfo_[i];}
   /// Whether or not integer
   inline const char * integerType() const

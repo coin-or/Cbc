@@ -2869,7 +2869,7 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
         numberTest = numberStrong;
         //numberTest2 = 1000000;
       }
-      if (searchStrategy<0||searchStrategy==1)
+      //if (searchStrategy<0||searchStrategy==1)
         //numberTest2 = 1000000;
 #if 0
       if (numberBeforeTrust>20&&(numberNodes>20000||(numberNodes>200&&numberNotTrusted==0))) {

@@ -472,7 +472,7 @@ ac_includes_default="\
 # include <unistd.h>
 #endif"
 
-ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS build build_cpu build_vendor build_os ADDLIBS FADDLIBS ALWAYS_FALSE_TRUE ALWAYS_FALSE_FALSE CDEFS ADD_CFLAGS DBG_CFLAGS OPT_CFLAGS CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT MPICC CXXDEFS ADD_CXXFLAGS DBG_CXXFLAGS OPT_CXXFLAGS CXX CXXFLAGS ac_ct_CXX MPICXX EGREP INSTALL_PROGRAM INSTALL_SCRIPT INSTALL_DATA CYGPATH_W PACKAGE VERSION ACLOCAL AUTOCONF AUTOMAKE AUTOHEADER MAKEINFO install_sh STRIP ac_ct_STRIP INSTALL_STRIP_PROGRAM mkdir_p AWK SET_MAKE am__leading_dot AMTAR am__tar am__untar DEPDIR am__include am__quote AMDEP_TRUE AMDEP_FALSE AMDEPBACKSLASH CCDEPMODE am__fastdepCC_TRUE am__fastdepCC_FALSE CXXDEPMODE am__fastdepCXX_TRUE am__fastdepCXX_FALSE MAINTAINER_MODE_TRUE MAINTAINER_MODE_FALSE MAINT LIBTOOLM4 have_autoconf have_automake have_svn BUILDTOOLSDIR AUX_DIR abs_source_dir abs_lib_dir abs_include_dir abs_bin_dir HAVE_EXTERNALS_TRUE HAVE_EXTERNALS_FALSE host host_cpu host_vendor host_os LN_S ECHO AR ac_ct_AR RANLIB ac_ct_RANLIB CPP CXXCPP F77 FFLAGS ac_ct_F77 LIBTOOL ac_c_preproc_warn_flag ac_cxx_preproc_warn_flag RPATH_FLAGS LT_LDFLAGS CBCSRCDIR CBCOBJDIR COIN_HAS_CBC_TRUE COIN_HAS_CBC_FALSE CGLSRCDIR CGLOBJDIR COIN_HAS_CGL_TRUE COIN_HAS_CGL_FALSE CLPSRCDIR CLPOBJDIR COIN_HAS_CLP_TRUE COIN_HAS_CLP_FALSE COINUTILSSRCDIR COINUTILSOBJDIR COIN_HAS_COINUTILS_TRUE COIN_HAS_COINUTILS_FALSE DYLPSRCDIR DYLPOBJDIR COIN_HAS_DYLP_TRUE COIN_HAS_DYLP_FALSE OSISRCDIR OSIOBJDIR COIN_HAS_OSI_TRUE COIN_HAS_OSI_FALSE SYMPHONYSRCDIR SYMPHONYOBJDIR COIN_HAS_SYMPHONY_TRUE COIN_HAS_SYMPHONY_FALSE VOLSRCDIR VOLOBJDIR COIN_HAS_VOL_TRUE COIN_HAS_VOL_FALSE CPXINCDIR CPXLIB COIN_HAS_CPX_TRUE COIN_HAS_CPX_FALSE FMPINCDIR FMPLIB COIN_HAS_FMP_TRUE COIN_HAS_FMP_FALSE MSKINCDIR MSKLIB COIN_HAS_MSK_TRUE COIN_HAS_MSK_FALSE OSLINCDIR OSLLIB COIN_HAS_OSL_TRUE COIN_HAS_OSL_FALSE SPXINCDIR SPXLIB COIN_HAS_SPX_TRUE COIN_HAS_SPX_FALSE XPRINCDIR XPRLIB COIN_HAS_XPR_TRUE COIN_HAS_XPR_FALSE GLPKINCDIR GLPKLIB COIN_HAS_GLPK_TRUE COIN_HAS_GLPK_FALSE COIN_BUILD_GLPK_TRUE COIN_BUILD_GLPK_FALSE ASLLIB ASL_CPPFLAGS COIN_HAS_ASL_TRUE COIN_HAS_ASL_FALSE CBC_BUILD_CBC_GENERIC_TRUE CBC_BUILD_CBC_GENERIC_FALSE LIBEXT VPATH_DISTCLEANFILES LIBOBJS LTLIBOBJS'
+ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS build build_cpu build_vendor build_os ADDLIBS FADDLIBS ALWAYS_FALSE_TRUE ALWAYS_FALSE_FALSE CDEFS ADD_CFLAGS DBG_CFLAGS OPT_CFLAGS CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT MPICC CXXDEFS ADD_CXXFLAGS DBG_CXXFLAGS OPT_CXXFLAGS CXX CXXFLAGS ac_ct_CXX MPICXX EGREP INSTALL_PROGRAM INSTALL_SCRIPT INSTALL_DATA CYGPATH_W PACKAGE VERSION ACLOCAL AUTOCONF AUTOMAKE AUTOHEADER MAKEINFO install_sh STRIP ac_ct_STRIP INSTALL_STRIP_PROGRAM mkdir_p AWK SET_MAKE am__leading_dot AMTAR am__tar am__untar DEPDIR am__include am__quote AMDEP_TRUE AMDEP_FALSE AMDEPBACKSLASH CCDEPMODE am__fastdepCC_TRUE am__fastdepCC_FALSE CXXDEPMODE am__fastdepCXX_TRUE am__fastdepCXX_FALSE MAINTAINER_MODE_TRUE MAINTAINER_MODE_FALSE MAINT LIBTOOLM4 have_autoconf have_automake have_svn BUILDTOOLSDIR AUX_DIR abs_source_dir abs_lib_dir abs_include_dir abs_bin_dir HAVE_EXTERNALS_TRUE HAVE_EXTERNALS_FALSE host host_cpu host_vendor host_os LN_S ECHO AR ac_ct_AR RANLIB ac_ct_RANLIB CPP CXXCPP F77 FFLAGS ac_ct_F77 LIBTOOL ac_c_preproc_warn_flag ac_cxx_preproc_warn_flag RPATH_FLAGS LT_LDFLAGS CBCSRCDIR CBCOBJDIR COIN_HAS_CBC_TRUE COIN_HAS_CBC_FALSE CGLSRCDIR CGLOBJDIR COIN_HAS_CGL_TRUE COIN_HAS_CGL_FALSE CLPSRCDIR CLPOBJDIR COIN_HAS_CLP_TRUE COIN_HAS_CLP_FALSE COINUTILSSRCDIR COINUTILSOBJDIR COIN_HAS_COINUTILS_TRUE COIN_HAS_COINUTILS_FALSE DYLPSRCDIR DYLPOBJDIR COIN_HAS_DYLP_TRUE COIN_HAS_DYLP_FALSE OSISRCDIR OSIOBJDIR COIN_HAS_OSI_TRUE COIN_HAS_OSI_FALSE VOLSRCDIR VOLOBJDIR COIN_HAS_VOL_TRUE COIN_HAS_VOL_FALSE SYMPHONYSRCDIR SYMPHONYOBJDIR COIN_HAS_SYMPHONY_TRUE COIN_HAS_SYMPHONY_FALSE CPXINCDIR CPXLIB COIN_HAS_CPX_TRUE COIN_HAS_CPX_FALSE FMPINCDIR FMPLIB COIN_HAS_FMP_TRUE COIN_HAS_FMP_FALSE MSKINCDIR MSKLIB COIN_HAS_MSK_TRUE COIN_HAS_MSK_FALSE OSLINCDIR OSLLIB COIN_HAS_OSL_TRUE COIN_HAS_OSL_FALSE SPXINCDIR SPXLIB COIN_HAS_SPX_TRUE COIN_HAS_SPX_FALSE XPRINCDIR XPRLIB COIN_HAS_XPR_TRUE COIN_HAS_XPR_FALSE GLPKINCDIR GLPKLIB COIN_HAS_GLPK_TRUE COIN_HAS_GLPK_FALSE COIN_BUILD_GLPK_TRUE COIN_BUILD_GLPK_FALSE ASLLIB ASL_CPPFLAGS COIN_HAS_ASL_TRUE COIN_HAS_ASL_FALSE CBC_BUILD_CBC_GENERIC_TRUE CBC_BUILD_CBC_GENERIC_FALSE LIBEXT VPATH_DISTCLEANFILES LIBOBJS LTLIBOBJS'
 ac_subst_files=''
 
 # Initialize some variables set by options.
@@ -20582,62 +20582,6 @@ fi
 echo "$as_me:$LINENO: result: $coin_has_osi" >&5
 echo "${ECHO_T}$coin_has_osi" >&6
 
-echo "$as_me:$LINENO: checking for COIN project SYMPHONY" >&5
-echo $ECHO_N "checking for COIN project SYMPHONY... $ECHO_C" >&6
-
-# First check, if the sub-project is actually available (ToDo: allow
-# other locations)
-
-coin_has_symphony=unavailable
-if test x"$COIN_SKIP_PROJECTS" != x; then
-  for dir in $COIN_SKIP_PROJECTS; do
-    if test $dir = SYMPHONY; then
-      coin_has_symphony=skipping
-    fi
-  done
-fi
-
-if test $coin_has_symphony != skipping; then
-  if test $PACKAGE_TARNAME = symphony; then
-    coin_has_symphony=.
-  else
-    if test -d $srcdir/../SYMPHONY; then
-      coin_has_symphony=../SYMPHONY
-    fi
-  fi
-fi
-
-if test $coin_has_symphony != unavailable &&
-   test $coin_has_symphony != skipping; then
-  # Set the #define if the component is available
-
-cat >>confdefs.h <<\_ACEOF
-#define COIN_HAS_SYMPHONY 1
-_ACEOF
-
-
-  # Set the variables for source and object code location
-
-  SYMPHONYSRCDIR=`cd $srcdir/$coin_has_symphony; pwd`
-
-  SYMPHONYOBJDIR=`pwd`/$coin_has_symphony
-fi
-
-  # Define the Makefile conditional
-
-
-if test $coin_has_symphony != unavailable &&
-                test $coin_has_symphony != skipping; then
-  COIN_HAS_SYMPHONY_TRUE=
-  COIN_HAS_SYMPHONY_FALSE='#'
-else
-  COIN_HAS_SYMPHONY_TRUE='#'
-  COIN_HAS_SYMPHONY_FALSE=
-fi
-
-echo "$as_me:$LINENO: result: $coin_has_symphony" >&5
-echo "${ECHO_T}$coin_has_symphony" >&6
-
 echo "$as_me:$LINENO: checking for COIN project Vol" >&5
 echo $ECHO_N "checking for COIN project Vol... $ECHO_C" >&6
 
@@ -20693,6 +20637,62 @@ fi
 
 echo "$as_me:$LINENO: result: $coin_has_vol" >&5
 echo "${ECHO_T}$coin_has_vol" >&6
+
+echo "$as_me:$LINENO: checking for COIN project SYMPHONY" >&5
+echo $ECHO_N "checking for COIN project SYMPHONY... $ECHO_C" >&6
+
+# First check, if the sub-project is actually available (ToDo: allow
+# other locations)
+
+coin_has_symphony=unavailable
+if test x"$COIN_SKIP_PROJECTS" != x; then
+  for dir in $COIN_SKIP_PROJECTS; do
+    if test $dir = SYMPHONY; then
+      coin_has_symphony=skipping
+    fi
+  done
+fi
+
+if test $coin_has_symphony != skipping; then
+  if test $PACKAGE_TARNAME = symphony; then
+    coin_has_symphony=.
+  else
+    if test -d $srcdir/../SYMPHONY; then
+      coin_has_symphony=../SYMPHONY
+    fi
+  fi
+fi
+
+if test $coin_has_symphony != unavailable &&
+   test $coin_has_symphony != skipping; then
+  # Set the #define if the component is available
+
+cat >>confdefs.h <<\_ACEOF
+#define COIN_HAS_SYMPHONY 1
+_ACEOF
+
+
+  # Set the variables for source and object code location
+
+  SYMPHONYSRCDIR=`cd $srcdir/$coin_has_symphony; pwd`
+
+  SYMPHONYOBJDIR=`pwd`/$coin_has_symphony
+fi
+
+  # Define the Makefile conditional
+
+
+if test $coin_has_symphony != unavailable &&
+                test $coin_has_symphony != skipping; then
+  COIN_HAS_SYMPHONY_TRUE=
+  COIN_HAS_SYMPHONY_FALSE='#'
+else
+  COIN_HAS_SYMPHONY_TRUE='#'
+  COIN_HAS_SYMPHONY_FALSE=
+fi
+
+echo "$as_me:$LINENO: result: $coin_has_symphony" >&5
+echo "${ECHO_T}$coin_has_symphony" >&6
 
 
 #############################################################################
@@ -22599,17 +22599,17 @@ echo "$as_me: error: conditional \"COIN_HAS_OSI\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi
-if test -z "${COIN_HAS_SYMPHONY_TRUE}" && test -z "${COIN_HAS_SYMPHONY_FALSE}"; then
-  { { echo "$as_me:$LINENO: error: conditional \"COIN_HAS_SYMPHONY\" was never defined.
-Usually this means the macro was only invoked conditionally." >&5
-echo "$as_me: error: conditional \"COIN_HAS_SYMPHONY\" was never defined.
-Usually this means the macro was only invoked conditionally." >&2;}
-   { (exit 1); exit 1; }; }
-fi
 if test -z "${COIN_HAS_VOL_TRUE}" && test -z "${COIN_HAS_VOL_FALSE}"; then
   { { echo "$as_me:$LINENO: error: conditional \"COIN_HAS_VOL\" was never defined.
 Usually this means the macro was only invoked conditionally." >&5
 echo "$as_me: error: conditional \"COIN_HAS_VOL\" was never defined.
+Usually this means the macro was only invoked conditionally." >&2;}
+   { (exit 1); exit 1; }; }
+fi
+if test -z "${COIN_HAS_SYMPHONY_TRUE}" && test -z "${COIN_HAS_SYMPHONY_FALSE}"; then
+  { { echo "$as_me:$LINENO: error: conditional \"COIN_HAS_SYMPHONY\" was never defined.
+Usually this means the macro was only invoked conditionally." >&5
+echo "$as_me: error: conditional \"COIN_HAS_SYMPHONY\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi
@@ -23348,14 +23348,14 @@ s,@OSISRCDIR@,$OSISRCDIR,;t t
 s,@OSIOBJDIR@,$OSIOBJDIR,;t t
 s,@COIN_HAS_OSI_TRUE@,$COIN_HAS_OSI_TRUE,;t t
 s,@COIN_HAS_OSI_FALSE@,$COIN_HAS_OSI_FALSE,;t t
-s,@SYMPHONYSRCDIR@,$SYMPHONYSRCDIR,;t t
-s,@SYMPHONYOBJDIR@,$SYMPHONYOBJDIR,;t t
-s,@COIN_HAS_SYMPHONY_TRUE@,$COIN_HAS_SYMPHONY_TRUE,;t t
-s,@COIN_HAS_SYMPHONY_FALSE@,$COIN_HAS_SYMPHONY_FALSE,;t t
 s,@VOLSRCDIR@,$VOLSRCDIR,;t t
 s,@VOLOBJDIR@,$VOLOBJDIR,;t t
 s,@COIN_HAS_VOL_TRUE@,$COIN_HAS_VOL_TRUE,;t t
 s,@COIN_HAS_VOL_FALSE@,$COIN_HAS_VOL_FALSE,;t t
+s,@SYMPHONYSRCDIR@,$SYMPHONYSRCDIR,;t t
+s,@SYMPHONYOBJDIR@,$SYMPHONYOBJDIR,;t t
+s,@COIN_HAS_SYMPHONY_TRUE@,$COIN_HAS_SYMPHONY_TRUE,;t t
+s,@COIN_HAS_SYMPHONY_FALSE@,$COIN_HAS_SYMPHONY_FALSE,;t t
 s,@CPXINCDIR@,$CPXINCDIR,;t t
 s,@CPXLIB@,$CPXLIB,;t t
 s,@COIN_HAS_CPX_TRUE@,$COIN_HAS_CPX_TRUE,;t t

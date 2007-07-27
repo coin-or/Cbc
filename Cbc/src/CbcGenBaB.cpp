@@ -24,7 +24,7 @@
 #include "CbcGenCbcParam.hpp"
 
 #define CBC_TRACK_SOLVERS 1
-#define COIN_CBC_VERBOSITY 5
+// #define COIN_CBC_VERBOSITY 5
 
 /*
   The support functions for the main branch-and-cut action routine.

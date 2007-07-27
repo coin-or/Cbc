@@ -28,37 +28,37 @@
 /* Define to 1 if the CoinUtils package is used */
 #undef COIN_HAS_COINUTILS
 
-/* Define to 1 if the Cplex package is used */
+/* Define to 1 if the Cplex package is available */
 #undef COIN_HAS_CPX
 
 /* Define to 1 if the DyLP package is used */
 #undef COIN_HAS_DYLP
 
-/* Define to 1 if the FortMP package is used */
+/* Define to 1 if the FortMP package is available */
 #undef COIN_HAS_FMP
 
-/* Define to 1 if the Glpk package is used */
+/* Define to 1 if Glpk package is available */
 #undef COIN_HAS_GLPK
 
-/* Define to 1 if the Mosek package is used */
+/* Define to 1 if the Mosek package is available */
 #undef COIN_HAS_MSK
 
 /* Define to 1 if the Osi package is used */
 #undef COIN_HAS_OSI
 
-/* Define to 1 if the Osl package is used */
+/* Define to 1 if the Osl package is available */
 #undef COIN_HAS_OSL
 
-/* Define to 1 if the Soplex package is used */
+/* Define to 1 if the Soplex package is available */
 #undef COIN_HAS_SPX
 
-/* Define to 1 if the Sym package is used */
-#undef COIN_HAS_SYM
+/* Define to 1 if the SYMPHONY package is used */
+#undef COIN_HAS_SYMPHONY
 
 /* Define to 1 if the Vol package is used */
 #undef COIN_HAS_VOL
 
-/* Define to 1 if the Xpress package is used */
+/* Define to 1 if the Xpress package is available */
 #undef COIN_HAS_XPR
 
 /* Define to 1 if you have the <dlfcn.h> header file. */

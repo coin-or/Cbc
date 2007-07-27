@@ -45,6 +45,7 @@ AC_COIN_CREATE_LIBTOOL
 AC_COIN_THIRDPARTY_SUBDIRS([ASL],[ThirdParty/ASL],[solvers/asl.h])
 AC_COIN_THIRDPARTY_SUBDIRS([Blas],[ThirdParty/Blas],[daxpy.f])
 AC_COIN_THIRDPARTY_SUBDIRS([Lapack],[ThirdParty/Lapack],[LAPACK/SRC/dlarf.f])
+AC_COIN_THIRDPARTY_SUBDIRS([Glpk],[ThirdParty/Glpk],[glpk/src/glplpx01.c])
 
 #############################################################################
 #                  Check which subprojects are there                        #
@@ -60,6 +61,7 @@ AC_COIN_MAIN_SUBDIRS(Vol)
 AC_COIN_MAIN_SUBDIRS(Osi)
 AC_COIN_MAIN_SUBDIRS(Cgl)
 AC_COIN_MAIN_SUBDIRS(Cbc)
+AC_COIN_MAIN_SUBDIRS(SYMPHONY)
 
 ##############################################################################
 #                   Finishing up by writing all the output                   #

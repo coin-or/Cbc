@@ -57,13 +57,13 @@ enum CbcParameterType
 
   OSLSTUFF = 401,CBCSTUFF,
 
-  INVALID = 1000 } 
+  INVALID = 1000 }; 
 
 
 /// Very simple class for setting parameters
 
-class CbcParam
-{
+class CbcParam {
+
 public:
 
   /**@name Constructor and destructor */

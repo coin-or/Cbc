@@ -69,8 +69,8 @@ Cbc_Model * getDefaultModel(int argc, const char *argv[])
   Cbc_registerCallBack(model,callBack);
   // Keep names when reading an mps file 
   if (argc<2)
-    //    status=Cbc_readMps(model,"../../../../../Data/Sample/ltw.mps");
-    status=Cbc_readMps(model,"../../Data/Sample/p0033.mps");
+    // status=Cbc_readMps(model,"../../../../../Data/Sample/ltw.mps");
+    status=Cbc_readMps(model,"../../../../../Data/Sample/p0033.mps");
   else
     status=Cbc_readMps(model,argv[1]);
 

@@ -154,18 +154,18 @@ Cbc_MessageHandler::print()
       messageNumber += 1000000;
     int i;
     int nDouble=numberDoubleFields();
-    assert (nDouble<=10);
-    double vDouble[10];
+    assert (nDouble<=20);
+    double vDouble[20];
     for (i=0;i<nDouble;i++)
       vDouble[i]=doubleValue(i);
     int nInt=numberIntFields();
-    assert (nInt<=10);
-    int vInt[10];
+    assert (nInt<=20);
+    int vInt[20];
     for (i=0;i<nInt;i++)
       vInt[i]=intValue(i);
     int nString=numberStringFields();
-    assert (nString<=10);
-    char * vString[10];
+    assert (nString<=20);
+    char * vString[20];
     for (i=0;i<nString;i++) {
       std::string value = stringValue(i);
       vString[i]=strdup(value.c_str());

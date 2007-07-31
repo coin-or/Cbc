@@ -1526,6 +1526,8 @@ public:
   /** Clears out enough to reset CbcModel cutoff etc
    */
   void resetModel();
+  /// Move status, nodes etc etc across
+  void moveInfo(const CbcModel & rhs);
   //@}
 
   ///@semi-private i.e. users should not use

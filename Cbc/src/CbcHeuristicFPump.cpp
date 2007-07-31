@@ -339,7 +339,7 @@ CbcHeuristicFPump::solution(double & solutionValue,
     OsiHintStrength strength;
     solver->getHintParam(OsiDoDualInResolve,takeHint,strength);
     solver->setHintParam(OsiDoDualInResolve,false);
-    solver->messageHandler()->setLogLevel(0);
+    //solver->messageHandler()->setLogLevel(0);
     
     // 4. Save objective offset so we can see progress
     double saveOffset;

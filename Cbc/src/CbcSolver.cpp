@@ -147,17 +147,9 @@ static void generateCode(CbcModel * model, const char * fileName,int type,int pr
 //#ifdef NDEBUG
 //#undef NDEBUG
 //#endif
-//#############################################################################
-// To use USERCBC or USERCLP uncomment the following define and add in your fake main program in CoinSolve.cpp
-//#define USER_HAS_FAKE_MAIN
-//  Start any fake main program
-#ifdef USER_HAS_FAKE_MAIN
+// define (probably dummy fake main programs for UserClp and UserCbc
 void fakeMain (ClpSimplex & model,OsiSolverInterface & osiSolver, CbcModel & babSolver);
-// Clp stuff to reduce problem
 void fakeMain2 (ClpSimplex & model,OsiClpSolverInterface & osiSolver,int options);
-#endif
-//  End any fake main program
-//#############################################################################
 
 // Allow for interrupts
 // But is this threadsafe ? (so switched off by option)
@@ -178,9 +170,10 @@ int CbcOrClpRead_mode=1;
 FILE * CbcOrClpReadCommand=stdin;
 static bool noPrinting=false;
 static int * analyze(OsiClpSolverInterface * solverMod, int & numberChanged, double & increment,
-                     bool changeInt)
+                     bool changeInt,  CoinMessageHandler * generalMessageHandler)
 {
   OsiSolverInterface * solver = solverMod->clone();
+  char generalPrint[200];
   if (0) {
     // just get increment
     CbcModel model(*solver);
@@ -421,15 +414,15 @@ static int * analyze(OsiClpSolverInterface * solverMod, int & numberChanged, dou
   delete [] which;
   delete [] changeRhs;
   delete [] ignore;
-  if (numberInteger&&!noPrinting)
-    printf("%d integer variables",numberInteger);
+  //if (numberInteger&&!noPrinting)
+  //printf("%d integer variables",numberInteger);
   if (changeInt) {
-    if (!noPrinting) {
-      if (numberChanged)
-        printf(" and %d variables made integer\n",numberChanged);
-      else
-        printf("\n");
-    }
+    //if (!noPrinting) {
+    //if (numberChanged)
+    //  printf(" and %d variables made integer\n",numberChanged);
+    //else
+    //  printf("\n");
+    //}
     delete [] ignore;
     //increment=0.0;
     if (!numberChanged) {
@@ -445,21 +438,29 @@ static int * analyze(OsiClpSolverInterface * solverMod, int & numberChanged, dou
       return changed;
     }
   } else {
-    if (!noPrinting) {
-      if (numberChanged)
-        printf(" and %d variables could be made integer\n",numberChanged);
-      else
-        printf("\n");
-    }
+    //if (!noPrinting) {
+    //if (numberChanged)
+    //  printf(" and %d variables could be made integer\n",numberChanged);
+    //else
+    //  printf("\n");
+    //}
     // just get increment
+    int logLevel=generalMessageHandler->logLevel();
     CbcModel model(*solver);
+    model.passInMessageHandler(generalMessageHandler);
     if (noPrinting)
       model.setLogLevel(0);
     model.analyzeObjective();
+    generalMessageHandler->setLogLevel(logLevel);
     double increment2=model.getCutoffIncrement();
     if (increment2>increment&&increment2>0.0) {
-      if (!noPrinting)
-        printf("cutoff increment increased from %g to %g\n",increment,increment2);
+      if (!noPrinting) {
+	sprintf(generalPrint,"Cutoff increment increased from %g to %g",increment,increment2);
+	CoinMessages generalMessages = solverMod->getModelPtr()->messages();
+	generalMessageHandler->message(CLP_GENERAL,generalMessages)
+	  << generalPrint
+	  <<CoinMessageEol;
+      }
       increment=increment2;
     }
     delete solver;
@@ -1297,8 +1298,6 @@ void CbcMain0 (CbcModel  & model)
   OsiSolverInterface * solver = model.solver();
   OsiClpSolverInterface * clpSolver = dynamic_cast< OsiClpSolverInterface*> (solver);
   ClpSimplex * lpSolver = clpSolver->getModelPtr();
-  clpSolver->messageHandler()->setLogLevel(0) ;
-  model.messageHandler()->setLogLevel(1);
   lpSolver->setPerturbation(50);
   lpSolver->messageHandler()->setPrefix(false);
   establishParams(numberParameters,parameters) ;
@@ -1337,7 +1336,10 @@ void CbcMain0 (CbcModel  & model)
   parameters[whichParam(PRESOLVETOLERANCE,numberParameters,parameters)].setDoubleValue(1.0e-8);
   int slog = whichParam(SOLVERLOGLEVEL,numberParameters,parameters);
   int log = whichParam(LOGLEVEL,numberParameters,parameters);
-  parameters[slog].setIntValue(0);
+  parameters[slog].setIntValue(1);
+  clpSolver->messageHandler()->setLogLevel(1) ;
+  model.messageHandler()->setLogLevel(1);
+  lpSolver->setLogLevel(1);
   parameters[log].setIntValue(1);
   parameters[whichParam(MAXFACTOR,numberParameters,parameters)].setIntValue(lpSolver->factorizationFrequency());
   parameters[whichParam(MAXITERATION,numberParameters,parameters)].setIntValue(lpSolver->maximumIterations());
@@ -1404,7 +1406,8 @@ int CbcMain1 (int argc, const char *argv[],
   */
   OsiClpSolverInterface * originalSolver = dynamic_cast<OsiClpSolverInterface *> (model.solver());
   assert (originalSolver);
-  CoinMessageHandler * generalMessageHandler = originalSolver->messageHandler();
+  CoinMessageHandler * generalMessageHandler = model.messageHandler();
+  generalMessageHandler->setPrefix(false);
   CoinMessages generalMessages = originalSolver->getModelPtr()->messages();
   char generalPrint[10000];
   if (originalSolver->getModelPtr()->logLevel()==0)
@@ -1426,6 +1429,7 @@ int CbcMain1 (int argc, const char *argv[],
       break;
     }
   }
+  CbcModel * babModel = NULL;
   {
     double time1 = CoinCpuTime(),time2;
     bool goodModel=(originalSolver->getNumRows()&&originalSolver->getNumCols()) ? true : false;
@@ -1434,7 +1438,6 @@ int CbcMain1 (int argc, const char *argv[],
     // register signal handler
     saveSignal = signal(SIGINT,signal_handler);
     // Set up all non-standard stuff
-    CbcModel * babModel = NULL;
     int cutPass=-1234567;
     int cutPassInTree=-1234567;
     int tunePreProcess=5;
@@ -3153,7 +3156,8 @@ int CbcMain1 (int argc, const char *argv[],
                   // Add in generators
                   process.addCutGenerator(&generator1);
                   int translate[]={9999,0,0,-1,2,3,-2};
-                  process.messageHandler()->setLogLevel(babModel->logLevel());
+		  process.passInMessageHandler(babModel->messageHandler());
+                  //process.messageHandler()->setLogLevel(babModel->logLevel());
 #ifdef COIN_HAS_ASL
                   if (info.numberSos&&doSOS&&usingAmpl) {
                     // SOS
@@ -3604,7 +3608,7 @@ int CbcMain1 (int argc, const char *argv[],
               double increment=babModel->getCutoffIncrement();;
               int * changed = NULL;
               if (!miplib&&increment==normalIncrement)
-                changed=analyze( osiclp,numberChanged,increment,false);
+                changed=analyze( osiclp,numberChanged,increment,false,generalMessageHandler);
               if (debugValues) {
                 if (numberDebugValues==babModel->getNumCols()) {
                   // for debug
@@ -4571,20 +4575,28 @@ int CbcMain1 (int argc, const char *argv[],
               }
               if (!noPrinting) {
                 // Print more statistics
-                std::cout<<"Cuts at root node changed objective from "<<babModel->getContinuousObjective()
-                         <<" to "<<babModel->rootObjectiveAfterCuts()<<std::endl;
+		sprintf(generalPrint,"Cuts at root node changed objective from %g to %g",
+			babModel->getContinuousObjective(),babModel->rootObjectiveAfterCuts());
+		generalMessageHandler->message(CLP_GENERAL,generalMessages)
+		  << generalPrint
+		  <<CoinMessageEol;
                 
 		numberGenerators = babModel->numberCutGenerators();
+		char timing[30];
                 for (iGenerator=0;iGenerator<numberGenerators;iGenerator++) {
                   CbcCutGenerator * generator = babModel->cutGenerator(iGenerator);
-                  std::cout<<generator->cutGeneratorName()<<" was tried "
-                           <<generator->numberTimesEntered()<<" times and created "
-                           <<generator->numberCutsInTotal()<<" cuts of which "
-                           <<generator->numberCutsActive()<<" were active after adding rounds of cuts";
-                  if (generator->timing())
-                    std::cout<<" ( "<<generator->timeInCutGenerator()<<" seconds)"<<std::endl;
-                  else
-                    std::cout<<std::endl;
+		  sprintf(generalPrint,"%s was tried %d times and created %d cuts of which %d were active after adding rounds of cuts",
+			  generator->cutGeneratorName(),
+			  generator->numberTimesEntered(),
+			  generator->numberCutsInTotal(),
+			  generator->numberCutsActive());
+                  if (generator->timing()) {
+		    sprintf(timing," (%.3f seconds)",generator->timeInCutGenerator());
+		    strcat(generalPrint,timing);
+		  }
+		  generalMessageHandler->message(CLP_GENERAL,generalMessages)
+		    << generalPrint
+		    <<CoinMessageEol;
                 }
               }
 	      // adjust time to allow for children on some systems
@@ -4594,8 +4606,9 @@ int CbcMain1 (int argc, const char *argv[],
               double * bestSolution = NULL;
               if (babModel->getMinimizationObjValue()<1.0e50&&type==BAB) {
                 // post process
+		int n;
                 if (preProcess) {
-                  int n = saveSolver->getNumCols();
+                  n = saveSolver->getNumCols();
                   bestSolution = new double [n];
 		  OsiClpSolverInterface * clpSolver = dynamic_cast< OsiClpSolverInterface*> (babModel->solver());
 		  ClpSimplex * lpSolver = clpSolver->getModelPtr();
@@ -4605,10 +4618,11 @@ int CbcMain1 (int argc, const char *argv[],
                   babModel->assignSolver(saveSolver);
                   memcpy(bestSolution,babModel->solver()->getColSolution(),n*sizeof(double));
                 } else {
-                  int n = babModel->solver()->getNumCols();
+                  n = babModel->solver()->getNumCols();
                   bestSolution = new double [n];
                   memcpy(bestSolution,babModel->solver()->getColSolution(),n*sizeof(double));
                 }
+		model.setBestSolution(bestSolution,n,babModel->getObjValue());
 		// and put back in very original solver
 		{
 		  ClpSimplex * original = originalSolver->getModelPtr();
@@ -4661,12 +4675,15 @@ int CbcMain1 (int argc, const char *argv[],
                 std::string minor[]={"","","gap","nodes","time","","solutions","user ctrl-c"};
                 int iStat = babModel->status();
                 int iStat2 = babModel->secondaryStatus();
-                if (!noPrinting)
-                  std::cout<<"Result - "<<statusName[iStat]<<minor[iStat2]
-                           <<" objective "<<babModel->getObjValue()<<
-                    " after "<<babModel->getNodeCount()<<" nodes and "
-                           <<babModel->getIterationCount()<<
-                    " iterations - took "<<time2-time1<<" seconds"<<std::endl;
+                if (!noPrinting) {
+		  sprintf(generalPrint,"Result - %s%s objective %.16g after %d nodes and %d iterations - took %.2f seconds",
+			  statusName[iStat].c_str(),minor[iStat2].c_str(),
+                          babModel->getObjValue(),babModel->getNodeCount(),
+                          babModel->getIterationCount(),time2-time1);
+		  generalMessageHandler->message(CLP_GENERAL,generalMessages)
+		    << generalPrint
+		    <<CoinMessageEol;
+		}
 #ifdef COIN_HAS_ASL
                 if (usingAmpl) {
 		  clpSolver = dynamic_cast< OsiClpSolverInterface*> (babModel->solver());
@@ -4754,8 +4771,8 @@ int CbcMain1 (int argc, const char *argv[],
 		  babModel->setModelOwnsSolver(false);
 	      }
 #endif
-              delete babModel;
-              babModel=NULL;
+              //delete babModel;
+              //babModel=NULL;
             } else {
               std::cout << "** Current model not valid" << std::endl ; 
             }
@@ -4792,8 +4809,8 @@ int CbcMain1 (int argc, const char *argv[],
 #ifdef COIN_HAS_ASL
               }
 #endif                
-              delete babModel;
-              babModel=NULL;
+              //delete babModel;
+              //babModel=NULL;
 	      // get next field
 	      field = CoinReadGetString(argc,argv);
 	      if (field=="$") {
@@ -5834,12 +5851,9 @@ int CbcMain1 (int argc, const char *argv[],
 	    }
 	    break;
 	  case USERCLP:
+#ifdef USER_HAS_FAKE_CLP
             // Replace the sample code by whatever you want
 	    if (goodModel) {
-#ifndef USER_HAS_FAKE_MAIN
-              printf("Dummy user clp code - model has %d rows and %d columns\n",
-                     lpSolver->numberRows(),lpSolver->numberColumns());
-#else
               // Way of using an existing piece of code
               OsiClpSolverInterface * clpSolver = dynamic_cast< OsiClpSolverInterface*> (model.solver());
               ClpSimplex * lpSolver = clpSolver->getModelPtr();
@@ -5855,25 +5869,13 @@ int CbcMain1 (int argc, const char *argv[],
 	      //int iStat = lpSolver->status();
 	      //int iStat2 = lpSolver->secondaryStatus();
 #endif
-#endif
 	    }
+#endif
 	    break;
 	  case USERCBC:
+#ifdef USER_HAS_FAKE_CBC
             // Replace the sample code by whatever you want
 	    if (goodModel) {
-#ifndef USER_HAS_FAKE_MAIN
-              printf("Dummy user cbc code - model has %d rows and %d columns\n",
-                     model.getNumRows(),model.getNumCols());
-              // Reduce printout
-              model.solver()->setHintParam(OsiDoReducePrint,true,OsiHintTry);
-              // Do complete search
-              model.branchAndBound();
-#ifdef COIN_HAS_ASL
-	      double objectiveValue=model.getMinimizationObjValue();
-	      int iStat = model.status();
-	      int iStat2 = model.secondaryStatus();
-#endif
-#else
               // Way of using an existing piece of code
               OsiClpSolverInterface * clpSolver = dynamic_cast< OsiClpSolverInterface*> (model.solver());
               ClpSimplex * lpSolver = clpSolver->getModelPtr();
@@ -5886,7 +5888,6 @@ int CbcMain1 (int argc, const char *argv[],
 	      double objectiveValue=clpSolver->getObjValue();
 	      int iStat = lpSolver->status();
 	      int iStat2 = lpSolver->secondaryStatus();
-#endif
 #endif
 	      // make sure solution back in correct place
 	      clpSolver = dynamic_cast< OsiClpSolverInterface*> (model.solver());
@@ -5947,6 +5948,7 @@ int CbcMain1 (int argc, const char *argv[],
               }
 #endif
 	    }
+#endif
 	    break;
 	  case HELP:
 	    std::cout<<"Coin Solver version "<<CBCVERSION
@@ -6310,6 +6312,9 @@ clp watson.mps -\nscaling off\nprimalsimplex"
   dmalloc_log_unfreed();
   dmalloc_shutdown();
 #endif
+  if (babModel)
+    model.moveInfo(*babModel);
+  delete babModel;
   return 0;
 }    
 static void breakdown(const char * name, int numberLook, const double * region)

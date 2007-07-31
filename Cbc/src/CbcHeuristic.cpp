@@ -223,6 +223,7 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver,int numberNodes,
   } else {
     returnCode=2; // infeasible finished
   }
+  model_->setLogLevel(logLevel);
   return returnCode;
 }
 

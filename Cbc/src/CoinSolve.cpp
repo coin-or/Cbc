@@ -12,12 +12,177 @@
 #include <cfloat>
 #include <cstring>
 #include <iostream>
+// This driver shows how to trap messages - this is just as in unitTest.cpp
+// ****** THis code is similar to MyMessageHandler.hpp and MyMessagehandler.cpp
+#include "CoinMessageHandler.hpp"
+
+/** This just adds a model to CoinMessage and a void pointer so
+    user can trap messages and do useful stuff.  
+    This is used in Clp/Test/unitTest.cpp
+
+    The file pointer is just there as an example of user stuff.
+
+*/
+class CbcModel;
+
+class MyMessageHandler : public CoinMessageHandler {
+  
+public:
+  /**@name Overrides */
+  //@{
+  virtual int print();
+  //@}
+  /**@name set and get */
+  //@{
+  /// Model
+  const CbcModel * model() const;
+  void setModel(CbcModel * model);
+  //@}
+
+  /**@name Constructors, destructor */
+  //@{
+  /** Default constructor. */
+  MyMessageHandler();
+  /// Constructor with pointer to model
+  MyMessageHandler(CbcModel * model,
+			   FILE * userPointer=NULL);
+  /** Destructor */
+  virtual ~MyMessageHandler();
+  //@}
+
+  /**@name Copy method */
+  //@{
+  /** The copy constructor. */
+  MyMessageHandler(const MyMessageHandler&);
+  /** The copy constructor from an CoinSimplexMessageHandler. */
+  MyMessageHandler(const CoinMessageHandler&);
+  
+  MyMessageHandler& operator=(const MyMessageHandler&);
+  /// Clone
+  virtual CoinMessageHandler * clone() const ;
+  //@}
+   
+    
+protected:
+  /**@name Data members
+     The data members are protected to allow access for derived classes. */
+  //@{
+  /// Pointer back to model
+  CbcModel * model_;
+  //@}
+};
+
+
 //#############################################################################
-// To use USERCBC or USERCLP uncomment the following define and add in your fake main program here
-//#define USER_HAS_FAKE_MAIN
-//  Start any fake main program
-#ifdef USER_HAS_FAKE_MAIN
+// Constructors / Destructor / Assignment
+//#############################################################################
+
+//-------------------------------------------------------------------
+// Default Constructor 
+//-------------------------------------------------------------------
+MyMessageHandler::MyMessageHandler () 
+  : CoinMessageHandler(),
+    model_(NULL)
+{
+}
+
+//-------------------------------------------------------------------
+// Copy constructor 
+//-------------------------------------------------------------------
+MyMessageHandler::MyMessageHandler (const MyMessageHandler & rhs) 
+: CoinMessageHandler(rhs),
+    model_(rhs.model_)
+{  
+}
+
+MyMessageHandler::MyMessageHandler (const CoinMessageHandler & rhs) 
+  : CoinMessageHandler(),
+    model_(NULL)
+{  
+}
+
+// Constructor with pointer to model
+MyMessageHandler::MyMessageHandler(CbcModel * model,
+               FILE * userPointer)
+  : CoinMessageHandler(),
+    model_(model)
+{
+}
+
+//-------------------------------------------------------------------
+// Destructor 
+//-------------------------------------------------------------------
+MyMessageHandler::~MyMessageHandler ()
+{
+}
+
+//----------------------------------------------------------------
+// Assignment operator 
+//-------------------------------------------------------------------
+MyMessageHandler &
+MyMessageHandler::operator=(const MyMessageHandler& rhs)
+{
+  if (this != &rhs) {
+    CoinMessageHandler::operator=(rhs);
+    model_ = rhs.model_;
+  }
+  return *this;
+}
+//-------------------------------------------------------------------
+// Clone
+//-------------------------------------------------------------------
+CoinMessageHandler * MyMessageHandler::clone() const
+{
+  return new MyMessageHandler(*this);
+}
+int 
+MyMessageHandler::print()
+{
+  // Just add ==
+  fprintf(fp_," == ");
+  fprintf(fp_,"%s\n",messageBuffer_);
+  return 0;
+}
+const CbcModel *
+MyMessageHandler::model() const
+{
+  return model_;
+}
+void 
+MyMessageHandler::setModel(CbcModel * model)
+{
+  model_ = model;
+}
+//#############################################################################
+// To use USERCBC or USERCLP change 0 to 1 in defines and add in your fake main program(s) and any other code
+//#define USER_HAS_FAKE_CBC 
+//#define USER_HAS_FAKE_CLP 
+#ifdef USER_HAS_FAKE_CBC
 #endif
+void fakeMain (ClpSimplex & model,OsiSolverInterface & osiSolver, CbcModel & babSolver)
+{
+#ifdef USER_HAS_FAKE_CBC
+#else
+  printf("Dummy user cbc code - model has %d rows and %d columns\n",
+	 model.getNumRows(),model.getNumCols());
+  // Reduce printout
+  babSolver.solver()->setHintParam(OsiDoReducePrint,true,OsiHintTry);
+  // Do complete search
+  babSolver.branchAndBound();
+#endif
+}
+// Clp stuff
+#ifdef USER_HAS_FAKE_CLP
+#endif
+void fakeMain2 (ClpSimplex & model,OsiClpSolverInterface & osiSolver,int options) {
+#ifdef USER_HAS_FAKE_CLP
+#else
+  ClpSimplex * lpSolver = osiSolver.getModelPtr();
+  printf("Dummy user clp code - model has %d rows and %d columns\n",
+	 lpSolver->numberRows(),lpSolver->numberColumns());
+  osiSolver.initialSolve();
+#endif
+}
 //  End any fake main program
 //#############################################################################
 void CbcClpUnitTest (const CbcModel & saveModel);
@@ -25,7 +190,25 @@ int main (int argc, const char *argv[])
 {
   OsiClpSolverInterface solver1;
   CbcModel model(solver1);
-  int returnCode = CbcMain (argc, argv,model);
+  // define TEST_MESSAGE_HANDLER to check works on all messages
+  //#define TEST_MESSAGE_HANDLER
+#ifdef TEST_MESSAGE_HANDLER
+  MyMessageHandler messageHandler(&model);
+  std::cout<<"Testing derived message handler"<<std::endl;
+  model.passInMessageHandler(&messageHandler);
+  OsiClpSolverInterface * clpSolver = dynamic_cast< OsiClpSolverInterface*> (model.solver());
+  // Could use different handlers (if different log levels)
+  clpSolver->passInMessageHandler(&messageHandler);
+  clpSolver->getModelPtr()->passInMessageHandler(&messageHandler);
+#endif
+  // initialize
+  CbcMain0(model);
+#ifdef TEST_MESSAGE_HANDLER
+  // Set log levels same so can use one message handler
+  clpSolver->messageHandler()->setLogLevel(1) ;
+  model.messageHandler()->setLogLevel(1);
+#endif
+  int returnCode = CbcMain1 (argc, argv,model);
   if (returnCode!=777) {
     return returnCode;
   } else {

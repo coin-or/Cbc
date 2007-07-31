@@ -3393,6 +3393,10 @@ CbcModel &
 CbcModel::operator=(const CbcModel& rhs)
 {
   if (this!=&rhs) {
+    if (ourSolver_) {
+      delete solver_;
+      solver_=NULL;
+    }
     gutsOfDestructor();
     if (defaultHandler_)
     { delete handler_;
@@ -3405,8 +3409,6 @@ CbcModel::operator=(const CbcModel& rhs)
     { handler_ = rhs.handler_; }
     messages_ = rhs.messages_;
     messageHandler()->setLogLevel(rhs.messageHandler()->logLevel());
-
-    delete solver_;
     if (rhs.solver_)
     { solver_ = rhs.solver_->clone() ; }
     else
@@ -3414,12 +3416,12 @@ CbcModel::operator=(const CbcModel& rhs)
     ourSolver_ = true ;
     delete continuousSolver_ ;
     if (rhs.continuousSolver_)
-    { solver_ = rhs.continuousSolver_->clone() ; }
+    { continuousSolver_ = rhs.continuousSolver_->clone() ; }
     else
     { continuousSolver_ = 0 ; }
-
+    delete referenceSolver_;
     if (rhs.referenceSolver_)
-    { solver_ = rhs.referenceSolver_->clone() ; }
+    { referenceSolver_ = rhs.referenceSolver_->clone() ; }
     else
     { referenceSolver_ = NULL ; }
 
@@ -3441,7 +3443,7 @@ CbcModel::operator=(const CbcModel& rhs)
     } else {
       bestSolution_=NULL;
     }
-    int numberColumns = solver_->getNumCols();
+    int numberColumns = rhs.getNumCols();
     currentSolution_ = CoinCopyOfArray(rhs.currentSolution_,numberColumns);
     continuousSolution_ = CoinCopyOfArray(rhs.continuousSolution_,numberColumns);
     usedInSolution_ = CoinCopyOfArray(rhs.usedInSolution_,numberColumns);
@@ -3612,7 +3614,7 @@ CbcModel::operator=(const CbcModel& rhs)
       integerVariable_ = new int [numberIntegers_];
       memcpy(integerVariable_,rhs.integerVariable_,
 	     numberIntegers_*sizeof(int));
-      integerInfo_ = CoinCopyOfArray(rhs.integerInfo_,solver_->getNumCols());
+      integerInfo_ = CoinCopyOfArray(rhs.integerInfo_,rhs.getNumCols());
     } else {
       integerVariable_ = NULL;
       integerInfo_=NULL;
@@ -3819,6 +3821,36 @@ CbcModel::resetModel()
   dblParam_[CbcCurrentCutoff] = 1.0e100;
   dblParam_[CbcCurrentObjectiveValue] = 1.0e100;
   dblParam_[CbcCurrentMinimizationObjectiveValue] = 1.0e100;
+}
+// Move status, nodes etc etc across
+void 
+CbcModel::moveInfo(const CbcModel & rhs)
+{
+  bestObjective_ = rhs.bestObjective_;
+  bestPossibleObjective_=rhs.bestPossibleObjective_;
+  numberSolutions_=rhs.numberSolutions_;
+  numberHeuristicSolutions_=rhs.numberHeuristicSolutions_;
+  numberNodes_ = rhs.numberNodes_;
+  numberNodes2_ = rhs.numberNodes2_;
+  numberIterations_ = rhs.numberIterations_;
+  status_ = rhs.status_;
+  secondaryStatus_ = rhs.secondaryStatus_;
+  numberStoppedSubTrees_ = rhs.numberStoppedSubTrees_;
+  numberInfeasibleNodes_ = rhs.numberInfeasibleNodes_;
+  continuousObjective_=rhs.continuousObjective_;
+  originalContinuousObjective_ = rhs.originalContinuousObjective_;
+  continuousInfeasibilities_ = rhs.continuousInfeasibilities_;
+  numberFixedAtRoot_ = rhs.numberFixedAtRoot_;
+  numberFixedNow_ = rhs.numberFixedNow_;
+  stoppedOnGap_ = rhs.stoppedOnGap_;
+  eventHappened_ = rhs.eventHappened_;
+  numberLongStrong_ = rhs.numberLongStrong_;
+  numberStrongIterations_ = rhs.numberStrongIterations_;
+  strongInfo_[0]=rhs.strongInfo_[0];
+  strongInfo_[1]=rhs.strongInfo_[1];
+  strongInfo_[2]=rhs.strongInfo_[2];
+  numberRowsAtContinuous_ = rhs.numberRowsAtContinuous_;
+  maximumDepth_= rhs.maximumDepth_;
 }
 // Save a copy of the current solver so can be reset to
 void 

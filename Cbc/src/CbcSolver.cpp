@@ -3000,7 +3000,7 @@ int CbcMain1 (int argc, const char *argv[],
 		  //std::cout<<"Largest (scaled) away from bound "<<largest<<std::endl;
 		  clpSolver->setDualBound(CoinMax(1.0001e8,CoinMin(1000.0*largest,1.00001e10)));
 		}
-		clpSolver->dual();  // clean up
+		si->resolve();  // clean up
 	      }
               // If user made settings then use them
               if (!defaultSettings) {
@@ -3258,13 +3258,13 @@ int CbcMain1 (int argc, const char *argv[],
                 assert (si != NULL);
                 // get clp itself
                 ClpSimplex * modelC = si->getModelPtr();
-                if (noPrinting)
-                  modelC->setLogLevel(0);
+                //if (noPrinting)
+		//modelC->setLogLevel(0);
                 if (!complicatedInteger&&modelC->tightenPrimalBounds()!=0) {
                   std::cout<<"Problem is infeasible!"<<std::endl;
                   break;
                 }
-                modelC->dual();
+                si->resolve();
               }
 #if 0
 	      numberDebugValues=599;
@@ -4665,6 +4665,7 @@ int CbcMain1 (int argc, const char *argv[],
 		  double * rowSolution = lpSolver->primalRowSolution();
 		  memset (rowSolution,0,numberRows*sizeof(double));
 		  lpSolver->clpMatrix()->times(1.0,bestSolution,rowSolution);
+		  lpSolver->setObjectiveValue(babModel->getObjValue());
 		}
                 if (debugFile=="create"&&bestSolution) {
                   saveSolution(lpSolver,"debug.file");

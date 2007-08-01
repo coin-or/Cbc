@@ -199,7 +199,7 @@ int main (int argc, const char *argv[])
   OsiClpSolverInterface * clpSolver = dynamic_cast< OsiClpSolverInterface*> (model.solver());
   // Could use different handlers (if different log levels)
   clpSolver->passInMessageHandler(&messageHandler);
-  clpSolver->getModelPtr()->passInMessageHandler(&messageHandler);
+  //clpSolver->getModelPtr()->passInMessageHandler(&messageHandler);
 #endif
   // initialize
   CbcMain0(model);

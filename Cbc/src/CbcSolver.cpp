@@ -1432,7 +1432,7 @@ int CbcMain1 (int argc, const char *argv[],
   CbcModel * babModel = NULL;
   {
     double time1 = CoinCpuTime(),time2;
-    bool goodModel=(originalSolver->getNumRows()&&originalSolver->getNumCols()) ? true : false;
+    bool goodModel=(originalSolver->getNumCols()) ? true : false;
 
     CoinSighandler_t saveSignal=SIG_DFL;
     // register signal handler

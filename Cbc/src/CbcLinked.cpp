@@ -7852,14 +7852,19 @@ approximateSolution(CoinModel & coinModel,
 	    // must be column unless first when may be linear term
 	    if (jColumn>=0) {
 	      columnQuadratic[numberQuadratic]=jColumn;
-	      //? elementQuadratic[numberQuadratic++]=2.0*value; // convention
-	      elementQuadratic[numberQuadratic++]=value; // ? what about diagonal
+	      if (jColumn==iColumn)
+		elementQuadratic[numberQuadratic++]=2.0*value; // convention
+	      else
+		elementQuadratic[numberQuadratic++]=1.0*value; // convention
 	      largestColumn = CoinMax(largestColumn,jColumn);
 	    } else if (jColumn==-2) {
 	      linearTerm[iColumn] = value;
 	      // and put in as row -1
 	      columnQuadratic[numberQuadratic]=-1;
-	      elementQuadratic[numberQuadratic++]=value;
+	      if (jColumn==iColumn)
+		elementQuadratic[numberQuadratic++]=2.0*value; // convention
+	      else
+		elementQuadratic[numberQuadratic++]=1.0*value; // convention
 	      largestColumn = CoinMax(largestColumn,iColumn);
 	    } else {
 	      printf("bad nonlinear term %s\n",temp);

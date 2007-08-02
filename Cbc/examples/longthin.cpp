@@ -120,7 +120,7 @@ int main (int argc, const char *argv[])
       */
       double cost = objective[iColumn]*(1.0 + 0.2*((double) columnLength[iColumn]));
       CbcSimpleIntegerPseudoCost * newObject =
-        new CbcSimpleIntegerPseudoCost(&model,numberIntegers,iColumn,
+        new CbcSimpleIntegerPseudoCost(&model,iColumn,
                                        2.0*cost,cost);
       newObject->setMethod(3);
       objects[numberIntegers++]= newObject;

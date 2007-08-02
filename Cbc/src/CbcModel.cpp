@@ -6980,6 +6980,7 @@ CbcModel::addObjects(int numberObjects, CbcObject ** objects)
       dynamic_cast <CbcSimpleInteger *>(objects[i]) ;
     if (obj) {
       int iColumn = obj->columnNumber();
+      assert (iColumn>=0);
       mark[iColumn]=i+numberColumns;
       newIntegers++;
     }

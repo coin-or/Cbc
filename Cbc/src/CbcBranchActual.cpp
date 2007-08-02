@@ -1137,6 +1137,7 @@ CbcSimpleIntegerPseudoCost::CbcSimpleIntegerPseudoCost (CbcModel * model, int du
 							double downPseudoCost, double upPseudoCost)
 {
   CbcSimpleIntegerPseudoCost(model,iColumn,downPseudoCost,upPseudoCost);
+  columnNumber_=iColumn;
 }
 
 // Copy constructor 

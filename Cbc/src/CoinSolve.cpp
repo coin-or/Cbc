@@ -12,6 +12,9 @@
 #include <cfloat>
 #include <cstring>
 #include <iostream>
+  // define TEST_MESSAGE_HANDLER to check works on all messages
+  //#define TEST_MESSAGE_HANDLER
+#ifdef TEST_MESSAGE_HANDLER
 // This driver shows how to trap messages - this is just as in unitTest.cpp
 // ****** THis code is similar to MyMessageHandler.hpp and MyMessagehandler.cpp
 #include "CoinMessageHandler.hpp"
@@ -25,7 +28,7 @@
 */
 class CbcModel;
 
-class MyMessageHandler : public CoinMessageHandler {
+class MyMessageHandler2 : public CoinMessageHandler {
   
 public:
   /**@name Overrides */
@@ -42,22 +45,22 @@ public:
   /**@name Constructors, destructor */
   //@{
   /** Default constructor. */
-  MyMessageHandler();
+  MyMessageHandler2();
   /// Constructor with pointer to model
-  MyMessageHandler(CbcModel * model,
+  MyMessageHandler2(CbcModel * model,
 			   FILE * userPointer=NULL);
   /** Destructor */
-  virtual ~MyMessageHandler();
+  virtual ~MyMessageHandler2();
   //@}
 
   /**@name Copy method */
   //@{
   /** The copy constructor. */
-  MyMessageHandler(const MyMessageHandler&);
+  MyMessageHandler2(const MyMessageHandler2&);
   /** The copy constructor from an CoinSimplexMessageHandler. */
-  MyMessageHandler(const CoinMessageHandler&);
+  MyMessageHandler2(const CoinMessageHandler&);
   
-  MyMessageHandler& operator=(const MyMessageHandler&);
+  MyMessageHandler2& operator=(const MyMessageHandler2&);
   /// Clone
   virtual CoinMessageHandler * clone() const ;
   //@}
@@ -80,7 +83,7 @@ protected:
 //-------------------------------------------------------------------
 // Default Constructor 
 //-------------------------------------------------------------------
-MyMessageHandler::MyMessageHandler () 
+MyMessageHandler2::MyMessageHandler2 () 
   : CoinMessageHandler(),
     model_(NULL)
 {
@@ -89,20 +92,20 @@ MyMessageHandler::MyMessageHandler ()
 //-------------------------------------------------------------------
 // Copy constructor 
 //-------------------------------------------------------------------
-MyMessageHandler::MyMessageHandler (const MyMessageHandler & rhs) 
+MyMessageHandler2::MyMessageHandler2 (const MyMessageHandler2 & rhs) 
 : CoinMessageHandler(rhs),
     model_(rhs.model_)
 {  
 }
 
-MyMessageHandler::MyMessageHandler (const CoinMessageHandler & rhs) 
+MyMessageHandler2::MyMessageHandler2 (const CoinMessageHandler & rhs) 
   : CoinMessageHandler(),
     model_(NULL)
 {  
 }
 
 // Constructor with pointer to model
-MyMessageHandler::MyMessageHandler(CbcModel * model,
+MyMessageHandler2::MyMessageHandler2(CbcModel * model,
                FILE * userPointer)
   : CoinMessageHandler(),
     model_(model)
@@ -112,15 +115,15 @@ MyMessageHandler::MyMessageHandler(CbcModel * model,
 //-------------------------------------------------------------------
 // Destructor 
 //-------------------------------------------------------------------
-MyMessageHandler::~MyMessageHandler ()
+MyMessageHandler2::~MyMessageHandler2 ()
 {
 }
 
 //----------------------------------------------------------------
 // Assignment operator 
 //-------------------------------------------------------------------
-MyMessageHandler &
-MyMessageHandler::operator=(const MyMessageHandler& rhs)
+MyMessageHandler2 &
+MyMessageHandler2::operator=(const MyMessageHandler2& rhs)
 {
   if (this != &rhs) {
     CoinMessageHandler::operator=(rhs);
@@ -131,12 +134,12 @@ MyMessageHandler::operator=(const MyMessageHandler& rhs)
 //-------------------------------------------------------------------
 // Clone
 //-------------------------------------------------------------------
-CoinMessageHandler * MyMessageHandler::clone() const
+CoinMessageHandler * MyMessageHandler2::clone() const
 {
-  return new MyMessageHandler(*this);
+  return new MyMessageHandler2(*this);
 }
 int 
-MyMessageHandler::print()
+MyMessageHandler2::print()
 {
   // Just add ==
   fprintf(fp_," == ");
@@ -144,15 +147,16 @@ MyMessageHandler::print()
   return 0;
 }
 const CbcModel *
-MyMessageHandler::model() const
+MyMessageHandler2::model() const
 {
   return model_;
 }
 void 
-MyMessageHandler::setModel(CbcModel * model)
+MyMessageHandler2::setModel(CbcModel * model)
 {
   model_ = model;
 }
+#endif
 //#############################################################################
 // To use USERCBC or USERCLP change 0 to 1 in defines and add in your fake main program(s) and any other code
 //#define USER_HAS_FAKE_CBC 
@@ -190,10 +194,9 @@ int main (int argc, const char *argv[])
 {
   OsiClpSolverInterface solver1;
   CbcModel model(solver1);
-  // define TEST_MESSAGE_HANDLER to check works on all messages
-  //#define TEST_MESSAGE_HANDLER
+  // define TEST_MESSAGE_HANDLER at top of file to check works on all messages
 #ifdef TEST_MESSAGE_HANDLER
-  MyMessageHandler messageHandler(&model);
+  MyMessageHandler2 messageHandler(&model);
   std::cout<<"Testing derived message handler"<<std::endl;
   model.passInMessageHandler(&messageHandler);
   OsiClpSolverInterface * clpSolver = dynamic_cast< OsiClpSolverInterface*> (model.solver());

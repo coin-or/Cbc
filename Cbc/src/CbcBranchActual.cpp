@@ -351,6 +351,19 @@ CbcSOS::CbcSOS (CbcModel * model,  int numberMembers,
 {
   id_=identifier;
   integerValued_ = type==1;
+  if (integerValued_) {
+    // check all members integer
+    OsiSolverInterface * solver = model->solver();
+    if (solver) {
+      for (int i=0;i<numberMembers_;i++) {
+	if (!solver->isInteger(which[i]))
+	  integerValued_=false;
+      }
+    } else {
+      // can't tell
+      integerValued_=false;
+    }
+  }
   if (numberMembers_) {
     members_ = new int[numberMembers_];
     weights_ = new double[numberMembers_];

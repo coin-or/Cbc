@@ -39,6 +39,8 @@
 #include "CbcOrClpParam.hpp"
 #include "OsiRowCutDebugger.hpp"
 #include "OsiChooseVariable.hpp"
+//#define USER_HAS_FAKE_CLP
+//#define USER_HAS_FAKE_CBC
 //#define CLP_MALLOC_STATISTICS
 #ifdef CLP_MALLOC_STATISTICS
 #include <malloc.h>
@@ -1408,6 +1410,9 @@ int CbcMain1 (int argc, const char *argv[],
   assert (originalSolver);
   CoinMessageHandler * generalMessageHandler = model.messageHandler();
   generalMessageHandler->setPrefix(false);
+  // Move handler across if not default
+  if (!originalSolver->defaultHandler()&&originalSolver->getModelPtr()->defaultHandler())
+    originalSolver->getModelPtr()->passInMessageHandler(originalSolver->messageHandler());
   CoinMessages generalMessages = originalSolver->getModelPtr()->messages();
   char generalPrint[10000];
   if (originalSolver->getModelPtr()->logLevel()==0)
@@ -1629,6 +1634,13 @@ int CbcMain1 (int argc, const char *argv[],
       // modify objective if necessary
       solver->setObjSense(info.direction);
       solver->setDblParam(OsiObjOffset,info.offset);
+      if (info.offset) {
+	sprintf(generalPrint,"Ampl objective offset is %g",
+		info.offset);
+	generalMessageHandler->message(CLP_GENERAL,generalMessages)
+	  << generalPrint
+	  <<CoinMessageEol;
+      }
       // Set integer variables (unless nonlinear when set)
       if (!info.nonLinear) {
 	for (int i=info.numberColumns-info.numberIntegers;
@@ -1877,7 +1889,7 @@ int CbcMain1 (int argc, const char *argv[],
 	  }
 #endif
 	  if (!lpSolver->integerInformation()&&!numberSOS&&
-	      !clpSolver->numberSOS())
+	      !clpSolver->numberSOS()&&!model.numberObjects()&&!clpSolver->numberObjects())
 	    type=DUALSIMPLEX;
 	}
 	if (type==GENERALQUERY) {
@@ -2506,6 +2518,7 @@ int CbcMain1 (int argc, const char *argv[],
 		  barrierOptions |= 256; // try presolve in crossover
 		solveOptions.setSpecialOption(4,barrierOptions);
 	      }
+	      model2->setMaximumSeconds(model.getMaximumSeconds());
 #ifdef COIN_HAS_LINK
 	      OsiSolverInterface * coinSolver = model.solver();
 	      OsiSolverLink * linkSolver = dynamic_cast< OsiSolverLink*> (coinSolver);
@@ -2535,6 +2548,76 @@ int CbcMain1 (int argc, const char *argv[],
 #else
 	      model2->initialSolve(solveOptions);
 #endif
+	      {
+		// map states
+		/* clp status
+		   -1 - unknown e.g. before solve or if postSolve says not optimal
+		   0 - optimal
+		   1 - primal infeasible
+		   2 - dual infeasible
+		   3 - stopped on iterations or time
+		   4 - stopped due to errors
+		   5 - stopped by event handler (virtual int ClpEventHandler::event()) */
+		/* cbc status
+		   -1 before branchAndBound
+		   0 finished - check isProvenOptimal or isProvenInfeasible to see if solution found
+		   (or check value of best solution)
+		   1 stopped - on maxnodes, maxsols, maxtime
+		   2 difficulties so run was abandoned
+		   (5 event user programmed event occurred) */
+		/* clp secondary status of problem - may get extended
+		   0 - none
+		   1 - primal infeasible because dual limit reached OR probably primal
+		   infeasible but can't prove it (main status 4)
+		   2 - scaled problem optimal - unscaled problem has primal infeasibilities
+		   3 - scaled problem optimal - unscaled problem has dual infeasibilities
+		   4 - scaled problem optimal - unscaled problem has primal and dual infeasibilities
+		   5 - giving up in primal with flagged variables
+		   6 - failed due to empty problem check 
+		   7 - postSolve says not optimal
+		   8 - failed due to bad element check
+		   9 - status was 3 and stopped on time
+		   100 up - translation of enum from ClpEventHandler
+		*/
+		/* cbc secondary status of problem
+		   -1 unset (status_ will also be -1)
+		   0 search completed with solution
+		   1 linear relaxation not feasible (or worse than cutoff)
+		   2 stopped on gap
+		   3 stopped on nodes
+		   4 stopped on time
+		   5 stopped on user event
+		   6 stopped on solutions
+		   7 linear relaxation unbounded
+		*/
+		int iStatus = model2->status();
+		int iStatus2 = model2->secondaryStatus();
+		if (iStatus==0) {
+		  iStatus2=0;
+		} else if (iStatus==1) {
+		  iStatus=0;
+		  iStatus2=1; // say infeasible
+		} else if (iStatus==2) {
+		  iStatus=0;
+		  iStatus2=7; // say unbounded
+		} else if (iStatus==3) {
+		  iStatus=1;
+		  if (iStatus2==9)
+		    iStatus2=4;
+		  else
+		    iStatus2=3; // Use nodes - as closer than solutions
+		} else if (iStatus==4) {
+		  iStatus=2; // difficulties
+		  iStatus2=0; 
+		}
+		model.setProblemStatus(iStatus);
+		model.setSecondaryStatus(iStatus2);
+		// and in babModel if exists
+		if (babModel) {
+		  babModel->setProblemStatus(iStatus);
+		  babModel->setSecondaryStatus(iStatus2);
+		}
+	      }
 	      basisHasValues=1;
               if (dualize) {
                 int returnCode=((ClpSimplexOther *) lpSolver)->restoreFromDual(model2);
@@ -3179,6 +3262,28 @@ int CbcMain1 (int argc, const char *argv[],
                     process.passInProhibited(prohibited,numberColumns);
                     delete [] prohibited;
                   }
+		  if (model.numberObjects()) {
+		    OsiObject ** oldObjects = babModel->objects();
+		    int numberOldObjects = babModel->numberObjects();
+                    // SOS
+                    int numberColumns = saveSolver->getNumCols();
+                    char * prohibited = new char[numberColumns];
+                    memset(prohibited,0,numberColumns);
+		    for (int iObj = 0;iObj<numberOldObjects;iObj++) {
+		      CbcSOS * obj =
+			dynamic_cast <CbcSOS *>(oldObjects[iObj]) ;
+		      if (obj) {
+			int n=obj->numberMembers();
+			const int * which = obj->members();
+			for (int i=0;i<n;i++) {
+			  int iColumn = which[i];
+			  prohibited[iColumn]=1;
+			}
+		      }
+                    }
+                    process.passInProhibited(prohibited,numberColumns);
+                    delete [] prohibited;
+		  }
 		  int numberPasses = 10;
 		  if (tunePreProcess>=1000000) {
 		    numberPasses = (tunePreProcess/1000000)-1;
@@ -3745,15 +3850,15 @@ int CbcMain1 (int argc, const char *argv[],
 		    // set old objects to have low priority
 		    int numberOldObjects = babModel->numberObjects();
 		    int numberColumns = babModel->getNumCols();
+		    // backward pointer to new variables
+		    int * newColumn = new int[numberOriginalColumns];
+		    int i;
+		    for (i=0;i<numberOriginalColumns;i++)
+		      newColumn[i]=-1;
+		    assert (originalColumns);
+		    for (i=0;i<numberColumns;i++)
+		      newColumn[originalColumns[i]]=i;
 		    if (!integersOK) {
-		      // backward pointer to new variables
-		      int * newColumn = new int[numberOriginalColumns];
-		      int i;
-		      for (i=0;i<numberOriginalColumns;i++)
-			newColumn[i]=-1;
-		      assert (originalColumns);
-		      for (i=0;i<numberColumns;i++)
-			newColumn[originalColumns[i]]=i;
 		      // Change column numbers etc
 		      int n=0;
 		      for (int iObj = 0;iObj<numberOldObjects;iObj++) {
@@ -3773,15 +3878,35 @@ int CbcMain1 (int argc, const char *argv[],
 			  }
 			}
 		      }
-		      delete [] newColumn;
 		      babModel->setNumberObjects(n);
 		    }
+		    int nMissing=0;
 		    for (int iObj = 0;iObj<numberOldObjects;iObj++) {
 		      if (process.numberSOS())
 			oldObjects[iObj]->setPriority(numberColumns+1);
 		      int iColumn = oldObjects[iObj]->columnNumber();
-		      if (iColumn<0||iColumn>=numberOriginalColumns) 
+		      if (iColumn<0||iColumn>=numberOriginalColumns) {
+			CbcSOS * obj =
+			  dynamic_cast <CbcSOS *>(oldObjects[iObj]) ;
+			if (obj) {
+			  int n=obj->numberMembers();
+			  int * which = obj->mutableMembers();
+			  double * weights = obj->mutableWeights();
+			  int nn=0;
+			  for (i=0;i<n;i++) {
+			    int iColumn = which[i];
+			    int jColumn = newColumn[iColumn];
+			    if (jColumn>=0) { 
+			      which[nn] = jColumn;
+			      weights[nn++]=weights[i];
+			    } else {
+			      nMissing++;
+			    }
+			  }
+			  obj->setNumberMembers(nn);
+			}
 			continue;
+		      }
 		      if (originalColumns)
 			iColumn = originalColumns[iColumn];
 		      if (branchDirection) {
@@ -3806,6 +3931,13 @@ int CbcMain1 (int argc, const char *argv[],
 			  obj1a->setUpPseudoCost(pseudoUp[iColumn]);
 		      }
 		    }
+		    if (nMissing) {
+		      sprintf(generalPrint,"%d SOS variables vanished due to pre processing? - check validity?\n",nMissing);
+		      generalMessageHandler->message(CLP_GENERAL,generalMessages)
+			<< generalPrint
+			<<CoinMessageEol;
+		    }
+		    delete [] newColumn;
 		    const int * starts = process.startSOS();
 		    const int * which = process.whichSOS();
 		    const int * type = process.typeSOS();
@@ -3819,7 +3951,8 @@ int CbcMain1 (int argc, const char *argv[],
 		      // branch on long sets first
 		      objects[iSOS]->setPriority(numberColumns-n);
 		    }
-		    babModel->addObjects(numberSOS,objects);
+		    if (numberSOS)
+		      babModel->addObjects(numberSOS,objects);
 		    for (iSOS=0;iSOS<numberSOS;iSOS++)
 		      delete objects[iSOS];
 		    delete [] objects;
@@ -6316,6 +6449,7 @@ clp watson.mps -\nscaling off\nprimalsimplex"
   if (babModel)
     model.moveInfo(*babModel);
   delete babModel;
+  model.solver()->setWarmStart(NULL);
   return 0;
 }    
 static void breakdown(const char * name, int numberLook, const double * region)

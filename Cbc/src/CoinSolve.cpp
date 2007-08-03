@@ -13,7 +13,7 @@
 #include <cstring>
 #include <iostream>
   // define TEST_MESSAGE_HANDLER to check works on all messages
-  //#define TEST_MESSAGE_HANDLER
+//#define TEST_MESSAGE_HANDLER
 #ifdef TEST_MESSAGE_HANDLER
 // This driver shows how to trap messages - this is just as in unitTest.cpp
 // ****** THis code is similar to MyMessageHandler.hpp and MyMessagehandler.cpp
@@ -210,9 +210,16 @@ int main (int argc, const char *argv[])
   // Set log levels same so can use one message handler
   clpSolver->messageHandler()->setLogLevel(1) ;
   model.messageHandler()->setLogLevel(1);
+  // switch off some printing
+  void setCbcOrClpPrinting(bool yesNo);
+  setCbcOrClpPrinting(false);
 #endif
   int returnCode = CbcMain1 (argc, argv,model);
   if (returnCode!=777) {
+    //const CoinWarmStartBasis* debugws =
+    //dynamic_cast <const CoinWarmStartBasis*>(model.solver()->getWarmStart()) ;
+    //debugws->print() ;
+    //delete debugws ; 
     return returnCode;
   } else {
     // do miplib

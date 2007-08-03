@@ -155,6 +155,18 @@ public:
   inline const double * weights() const
   { return weights_;}
 
+  /// Set number of members
+  inline void setNumberMembers(int n)
+  {numberMembers_ = n;}
+
+  /// Members (indices in range 0 ... numberColumns-1)
+  inline int * mutableMembers() const
+  {return members_;}
+
+  /** Array of weights */
+  inline double * mutableWeights() const
+  { return weights_;}
+
   /** \brief Return true if object can take part in normal heuristics
   */
   virtual bool canDoHeuristics() const 

@@ -4520,7 +4520,7 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
   if(node &&branchingMethod_) {
     OsiBranchingObject * bobj = node->modifiableBranchingObject();
     CbcBranchingObject * cbcobj = dynamic_cast<CbcBranchingObject *> (bobj);
-    if (cbcobj) {
+    if (cbcobj&&cbcobj->object()) {
       CbcObject * object = cbcobj->object();
       CbcObjectUpdateData update = object->createUpdateInformation(solver_,node,cbcobj);
       // have to compute object number as not saved
@@ -6848,19 +6848,39 @@ CbcModel::findIntegers(bool startAgain,int type)
   if (!nObjects) {
     OsiClpSolverInterface * clpSolver 
       = dynamic_cast<OsiClpSolverInterface *> (solver_);
-    if (clpSolver&&clpSolver->numberSOS()) {
+    if (clpSolver&&(clpSolver->numberSOS()||clpSolver->numberObjects())) {
       // deal with sos
       const CoinSet * setInfo = clpSolver->setInfo();
       int numberSOS = clpSolver->numberSOS();
-      nObjects=0;
-      delete [] oldObject;
-      oldObject = new OsiObject * [numberSOS];
-      for (int i=0;i<numberSOS;i++) {
-	int type = setInfo[i].setType();
-	int n=setInfo[i].numberEntries();
-	const int * which = setInfo[i].which();
-	const double * weights = setInfo[i].weights();
-	oldObject[nObjects++] = new CbcSOS(this,n,which,weights,i,type);
+      if (numberSOS) {
+	nObjects=0;
+	delete [] oldObject;
+	oldObject = new OsiObject * [numberSOS];
+	for (int i=0;i<numberSOS;i++) {
+	  int type = setInfo[i].setType();
+	  int n=setInfo[i].numberEntries();
+	  const int * which = setInfo[i].which();
+	  const double * weights = setInfo[i].weights();
+	  oldObject[nObjects++] = new CbcSOS(this,n,which,weights,i,type);
+	}
+      } else {
+	// objects - only works with SOS at present
+	int numberObjects = clpSolver->numberObjects();
+	nObjects=0;
+	delete [] oldObject;
+	oldObject = new OsiObject * [numberObjects];
+	OsiObject ** osiObjects = clpSolver->objects();
+	for (int i=0;i<numberObjects;i++) {
+	  OsiSOS * obj =
+	    dynamic_cast <OsiSOS *>(osiObjects[i]) ;
+	  if (obj) {
+	    int type = obj->setType();
+	    int n=obj->numberMembers();
+	    const int * which = obj->members();
+	    const double * weights = obj->weights();
+	    oldObject[nObjects++] = new CbcSOS(this,n,which,weights,i,type);
+	  }
+	}
       }
     }
   }

@@ -21857,9 +21857,6 @@ if test x"$use_thirdpartyglpk" = xtry ; then
 # exists).
 
   if test x"$use_thirdpartyglpk" = xbuild ; then
-    GLPKLIB=`cd $coin_glpkobjdir; pwd`/libcoinglpk.la
-
-    ADDLIBS="$GLPKLIB $ADDLIBS"
     GLPKINCDIR="$coin_glpksrcdir/glpk/include"
 
 

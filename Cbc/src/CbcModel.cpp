@@ -7812,10 +7812,21 @@ CbcModel::setBestSolution (CBC_Message how,
         else 
           stateOfSearch_ = 2;
         
-        handler_->message(how,messages_)
-          <<bestObjective_<<numberIterations_
-          <<numberNodes_<<getCurrentSeconds()
-          <<CoinMessageEol;
+	if (how!=CBC_ROUNDING) {
+	  handler_->message(how,messages_)
+	    <<bestObjective_<<numberIterations_
+	    <<numberNodes_<<getCurrentSeconds()
+	    <<CoinMessageEol;
+	} else {
+	  assert (lastHeuristic_);
+	  const char * name = lastHeuristic_->heuristicName();
+	  handler_->message(CBC_ROUNDING,messages_)
+	    <<bestObjective_
+	    <<name
+	    <<numberIterations_
+	  <<numberNodes_<<getCurrentSeconds()
+	    <<CoinMessageEol;
+	}
       }
     }
     delete [] candidate;

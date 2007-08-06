@@ -961,7 +961,7 @@ expandKnapsack(CoinModel & model, int * whichColumn, int * knapsackStart,
   delete [] lookupRow;
   delete si;
   si=NULL;
-  if (!badModel) {
+  if (!badModel&&finalModel) {
     finalModel->setDblParam(OsiObjOffset,coinModel.objectiveOffset());
     return finalModel;
   } else {
@@ -3024,12 +3024,20 @@ int CbcMain1 (int argc, const char *argv[],
 		  model.solver()->setHintParam(OsiDoPresolveInInitial,false,OsiHintTry);
 		  model.solver()->setHintParam(OsiDoPresolveInResolve,false,OsiHintTry);
 		}
+		double time1a = CoinCpuTime();
                 model.initialSolve();
                 OsiSolverInterface * solver = model.solver();
                 OsiClpSolverInterface * si =
                   dynamic_cast<OsiClpSolverInterface *>(solver) ;
 		ClpSimplex * clpSolver = si->getModelPtr();
 		clpSolver->setSpecialOptions(clpSolver->specialOptions()|0x01000000); // say is Cbc (and in branch and bound)
+		if (!noPrinting) {
+		  sprintf(generalPrint,"Continuous objective value is %g - %.2f seconds",
+			  solver->getObjValue(),CoinCpuTime()-time1a);
+		  generalMessageHandler->message(CLP_GENERAL,generalMessages)
+		    << generalPrint
+		    <<CoinMessageEol;
+		}
 		if (!complicatedInteger&&clpSolver->tightenPrimalBounds()!=0) {
 		  std::cout<<"Problem is infeasible - tightenPrimalBounds!"<<std::endl;
 		  exit(1);
@@ -3399,8 +3407,8 @@ int CbcMain1 (int argc, const char *argv[],
 	      // If linked then see if expansion wanted
 	      {
 		OsiSolverLink * solver3 = dynamic_cast<OsiSolverLink *> (babModel->solver());
-		if (solver3) {
-		  int options = parameters[whichParam(MIPOPTIONS,numberParameters,parameters)].intValue()/10000;
+		int options = parameters[whichParam(MIPOPTIONS,numberParameters,parameters)].intValue()/10000;
+		if (solver3||(options&16)!=0) {
 		  if (options) {
 		    /*
 		      1 - force mini branch and bound

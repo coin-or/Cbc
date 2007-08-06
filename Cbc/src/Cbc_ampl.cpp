@@ -465,7 +465,7 @@ readAmpl(ampl_info * info, int argc, char **argv, void ** coinModel)
     info->numberColumns=n_var;
     info->numberElements=nzc;
     info->numberBinary=nbv;
-    info->numberIntegers=niv;
+    info->numberIntegers=niv+nbv;
     info->objective=obj;
     info->rowLower=rowLower;
     info->rowUpper=rowUpper;
@@ -523,12 +523,15 @@ readAmpl(ampl_info * info, int argc, char **argv, void ** coinModel)
     info->numberColumns=n_var;
     info->numberElements=nzc;
     info->numberBinary=nbv;
-    info->numberIntegers=niv+nlvci+nlvoi;
-    // No idea if there are overlaps so compute
-    int numberIntegers=0;
-    for ( i=0; i<n_var;i++) {
-      if (model->columnIsInteger(i))
+    int numberIntegers=niv+nlvci+nlvoi+nbv;
+    if (nlvci+nlvoi+nlvc+nlvo) {
+      // Non linear
+      // No idea if there are overlaps so compute
+      int numberIntegers=0;
+      for ( i=0; i<n_var;i++) {
+	if (model->columnIsInteger(i))
 	  numberIntegers++;
+      }
     }
     info->numberIntegers=numberIntegers;
     // Say nonlinear if it is

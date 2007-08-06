@@ -251,6 +251,7 @@ CbcHeuristicFPump::solution(double & solutionValue,
     when_ -= 10;
     allSlack=true;
   }
+  double time1 = CoinCpuTime();
   if (when_>=11&&when_<=15) {
     fixInternal = when_ >11&&when_<15;
     if (when_<13)
@@ -650,7 +651,11 @@ CbcHeuristicFPump::solution(double & solutionValue,
 	    << pumpPrint
 	    <<CoinMessageEol;
 	pumpPrint[0]='\0';
-	sprintf(pumpPrint+strlen(pumpPrint),"Pass %3d: obj. %10.5f --> ", numberPasses+totalNumberPasses,solver->getObjValue());
+	if (solver->getNumRows()<3000)
+	  sprintf(pumpPrint+strlen(pumpPrint),"Pass %3d: obj. %10.5f --> ", numberPasses+totalNumberPasses,solver->getObjValue());
+	else
+	  sprintf(pumpPrint+strlen(pumpPrint),"Pass %3d: (%.2f seconds) obj. %10.5f --> ", numberPasses+totalNumberPasses,
+		  model_->getCurrentSeconds(),solver->getObjValue());
 	if (closestSolution&&solver->getObjValue()<closestObjectiveValue) {
 	  int i;
 	  const double * objective = solver->getObjCoefficients();
@@ -763,7 +768,8 @@ CbcHeuristicFPump::solution(double & solutionValue,
 	returnCode &= ~2;
       }
       if (returnCode) {
-	sprintf(pumpPrint+strlen(pumpPrint),"Mini branch and bound improved solution from %g to %g",saveValue,newSolutionValue);
+	sprintf(pumpPrint+strlen(pumpPrint),"Mini branch and bound improved solution from %g to %g (%.2f seconds)",
+		saveValue,newSolutionValue,model_->getCurrentSeconds());
 	model_->messageHandler()->message(CBC_FPUMP1,model_->messages())
 	  << pumpPrint
 	  <<CoinMessageEol;
@@ -803,6 +809,13 @@ CbcHeuristicFPump::solution(double & solutionValue,
 	  model_->incrementUsed(betterSolution); // for local search
 	solutionValue=newSolutionValue;
 	solutionFound=true;
+      } else {
+	sprintf(pumpPrint+strlen(pumpPrint),"Mini branch and bound did not improve solution (%.2f seconds)",
+		model_->getCurrentSeconds());
+	model_->messageHandler()->message(CBC_FPUMP1,model_->messages())
+	  << pumpPrint
+	  <<CoinMessageEol;
+	pumpPrint[0]='\0';
       }
       delete newSolver;
     }
@@ -871,6 +884,11 @@ CbcHeuristicFPump::solution(double & solutionValue,
   delete [] newSolution;
   delete [] closestSolution;
   delete [] integerVariable;
+  sprintf(pumpPrint,"After %.2f seconds - Feasibility pump exiting - took %.2f seconds",
+	  model_->getCurrentSeconds(),CoinCpuTime()-time1);
+  model_->messageHandler()->message(CBC_FPUMP1,model_->messages())
+    << pumpPrint
+    <<CoinMessageEol;
   return finalReturnCode;
 }
 

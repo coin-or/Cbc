@@ -2614,6 +2614,9 @@ int CbcMain1 (int argc, const char *argv[],
 		}
 		model.setProblemStatus(iStatus);
 		model.setSecondaryStatus(iStatus2);
+		assert (lpSolver==clpSolver->getModelPtr());
+		assert (clpSolver==model.solver());
+		clpSolver->setWarmStart(NULL);
 		// and in babModel if exists
 		if (babModel) {
 		  babModel->setProblemStatus(iStatus);
@@ -5383,6 +5386,8 @@ int CbcMain1 (int argc, const char *argv[],
 		  basisHasValues=-1;
 		else
 		  basisHasValues=1;
+		assert (lpSolver==clpSolver->getModelPtr());
+		clpSolver->setWarmStart(NULL);
 	      }
 	    } else {
 	      std::cout<<"** Current model not valid"<<std::endl;

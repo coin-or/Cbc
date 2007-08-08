@@ -162,9 +162,11 @@ static CbcModel * currentBranchModel = NULL;
 extern "C" {
    static void signal_handler(int whichSignal)
    {
-      if (currentBranchModel!=NULL) 
-	 currentBranchModel->setMaximumNodes(0); // stop at next node
-      return;
+     if (currentBranchModel!=NULL) {
+       currentBranchModel->setMaximumNodes(0); // stop at next node
+       currentBranchModel->setMaximumSeconds(0.0); // stop 
+     }
+     return;
    }
 }
 
@@ -2034,7 +2036,7 @@ int CbcMain1 (int argc, const char *argv[],
 		  defaultSettings=false; // user knows what she is doing
 		break;
 	      default:
-		abort();
+		break;
 	      }
 	    }
 	  } else if (valid==1) {
@@ -2922,6 +2924,7 @@ int CbcMain1 (int argc, const char *argv[],
 		      heuristicFPump.setMaximumRetries(7);
 		      heuristicFPump.setHeuristicName("feasibility pump");
 		      heuristicFPump.setInitialWeight(1);
+		      heuristicFPump.setFractionSmall(0.6);
 		      cbcModel->addHeuristic(&heuristicFPump);
 		      
 		      CbcRounding rounding(*cbcModel);
@@ -2931,6 +2934,7 @@ int CbcMain1 (int argc, const char *argv[],
 		      CbcHeuristicLocal heuristicLocal(*cbcModel);
 		      heuristicLocal.setHeuristicName("combine solutions");
 		      heuristicLocal.setSearchType(1);
+		      heuristicLocal.setFractionSmall(0.6);
 		      cbcModel->addHeuristic(&heuristicLocal);
 		      
 		      CbcHeuristicGreedyCover heuristicGreedyCover(*cbcModel);
@@ -3502,6 +3506,7 @@ int CbcMain1 (int argc, const char *argv[],
 	      }
               // FPump done first as it only works if no solution
               CbcHeuristicFPump heuristic4(*babModel);
+	      heuristic4.setFractionSmall(0.6);
               if (useFpump) {
                 heuristic4.setMaximumPasses(parameters[whichParam(FPUMPITS,numberParameters,parameters)].intValue());
                 int pumpTune=parameters[whichParam(FPUMPTUNE,numberParameters,parameters)].intValue();
@@ -3543,13 +3548,20 @@ int CbcMain1 (int argc, const char *argv[],
 		    double cutoff;
 		    babModel->solver()->getDblParam(OsiDualObjectiveLimit,cutoff);
 		    cutoff = CoinMin(cutoff,value + 0.1*fabs(value)*c);
+		    double dextra1 = parameters[whichParam(DEXTRA1,numberParameters,parameters)].doubleValue();
+		    if (dextra1)
+		      cutoff=dextra1;
 		    heuristic4.setFakeCutoff(cutoff);
 		    if (logLevel>1)
 		      printf("fake cutoff of %g ",cutoff);
 		  }
 		  if (i||r) {
 		    // also set increment
-		    heuristic4.setAbsoluteIncrement((0.01*i+0.005)*(fabs(value)+1.0e-12));
+		    double increment = (0.01*i+0.005)*(fabs(value)+1.0e-12);
+		    double dextra2 = parameters[whichParam(DEXTRA2,numberParameters,parameters)].doubleValue();
+		    if (dextra2)
+		      increment = dextra2;
+		    heuristic4.setAbsoluteIncrement(increment);
 		    heuristic4.setAccumulate(accumulate);
 		    heuristic4.setMaximumRetries(r+1);
 		    if (logLevel>1) {
@@ -3577,6 +3589,7 @@ int CbcMain1 (int argc, const char *argv[],
                   babModel->addHeuristic(&heuristic1) ;
                 CbcHeuristicLocal heuristic2(*babModel);
 		heuristic2.setHeuristicName("combine solutions");
+		heuristic2.setFractionSmall(0.6);
                 heuristic2.setSearchType(1);
                 if (useCombine)
                   babModel->addHeuristic(&heuristic2);
@@ -3595,6 +3608,7 @@ int CbcMain1 (int argc, const char *argv[],
               }
 	      CbcHeuristicRINS heuristic5(*babModel);
 	      heuristic5.setHeuristicName("RINS");
+	      heuristic5.setFractionSmall(0.6);
 	      if (useRINS)
 		babModel->addHeuristic(&heuristic5) ;
 	      if (type==MIPLIB) {
@@ -4284,9 +4298,9 @@ int CbcMain1 (int argc, const char *argv[],
 #endif                
 		if (nodeStrategy) {
 		  // change default
-		  if (nodeStrategy>1) {
+		  if (nodeStrategy>2) {
 		    // up or down
-		    int way = ((nodeStrategy%1)==1) ? -1 : +1;
+		    int way = (((nodeStrategy-1)%1)==1) ? -1 : +1;
 		    babModel->setPreferredWay(way);
 #if 0
 		    OsiObject ** objects = babModel->objects();
@@ -4299,10 +4313,17 @@ int CbcMain1 (int argc, const char *argv[],
 		    }
 #endif
 		  }
-		  if (nodeStrategy==1||nodeStrategy>3) {
+		  if (nodeStrategy==2||nodeStrategy>4) {
 		    // depth
 		    CbcCompareDefault compare;
 		    compare.setWeight(-3.0);
+		    babModel->setNodeComparison(compare);
+		  } else if (nodeStrategy==0) {
+		    // hybrid was default i.e. mixture of low depth and infeasibility
+		  } else if (nodeStrategy==1) {
+		    // real fewest
+		    CbcCompareDefault compare;
+		    compare.setWeight(-2.0);
 		    babModel->setNodeComparison(compare);
 		  }
 		}

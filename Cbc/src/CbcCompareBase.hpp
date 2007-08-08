@@ -61,7 +61,8 @@ public:
   }
 
   /// Clone
-  virtual CbcCompareBase * clone() const=0;
+  virtual CbcCompareBase * clone() const
+  { abort(); return NULL;}
 
   /// This is test function
   virtual bool test (CbcNode * x, CbcNode * y) {return true;}
@@ -104,6 +105,9 @@ public:
   virtual ~CbcCompare() {}
 
   bool operator() (CbcNode * x, CbcNode * y) {
+    return test_->test(x,y);
+  }
+  bool compareNodes (CbcNode * x, CbcNode * y) {
     return test_->test(x,y);
   }
   /// This is alternate test function

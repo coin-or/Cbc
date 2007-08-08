@@ -242,7 +242,7 @@ CbcCompareDefault::test (CbcNode * x, CbcNode * y)
       return equalityTest(x,y); // so ties will be broken in consistent manner
   }
 #else
-  if ((weight_==-1.0&&(y->depth()>breadthDepth_||x->depth()>breadthDepth_))||weight_==-3.0) {
+  if ((weight_==-1.0&&(y->depth()>breadthDepth_&&x->depth()>breadthDepth_))||weight_==-3.0||weight_==-2.0) {
     int adjust =  (weight_==-3.0) ? 10000 : 0;
     // before solution
     /*printf("x %d %d %g, y %d %d %g\n",
@@ -264,15 +264,17 @@ CbcCompareDefault::test (CbcNode * x, CbcNode * y)
     // always choose *greatest* depth if both <= breadthDepth_ otherwise <= breadthDepth_ if just one
     int depthX = x->depth();
     int depthY = y->depth();
+    /*if ((depthX==4&&depthY==5)||(depthX==5&&depthY==4))
+      printf("X %x depth %d, Y %x depth %d, breadth %d\n",
+      x,depthX,y,depthY,breadthDepth_);*/
     if (depthX<=breadthDepth_||depthY<=breadthDepth_) {
       if (depthX<=breadthDepth_&&depthY<=breadthDepth_) {
 	if (depthX!=depthY) {
 	  return depthX < depthY;
 	}
       } else {
-	if (depthX!=depthY) {
-	  return depthX > depthY;
-	}
+	assert (depthX!=depthY) ;
+	return depthX > depthY;
       }
     }
     // after solution

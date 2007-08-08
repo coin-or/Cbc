@@ -615,7 +615,7 @@ CbcStrategyDefaultSubTree::setupCutGenerators(CbcModel & model)
         break;
       }
     }
-    if (!found)
+    if (!found) 
       model.addCutGenerator(&generator1,setting,"Probing");
   }
   found=false;

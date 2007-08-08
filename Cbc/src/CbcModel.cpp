@@ -1571,9 +1571,12 @@ void CbcModel::branchAndBound(int doStatistics)
   Check for abort on limits: node count, solution count, time, integrality gap.
 */
     totalTime = getCurrentSeconds() ;
+    double maxSeconds = getMaximumSeconds();
+    if (parentModel_)
+      maxSeconds=CoinMin(maxSeconds,parentModel_->getMaximumSeconds());
     if (!(numberNodes_ < intParam_[CbcMaxNumNode] &&
 	  numberSolutions_ < intParam_[CbcMaxNumSol] &&
-	  totalTime < dblParam_[CbcMaximumSeconds] &&
+	  totalTime < maxSeconds &&
 	  !stoppedOnGap_&&!eventHappened_)) {
       // out of loop
       break;
@@ -3658,7 +3661,6 @@ CbcModel::operator=(const CbcModel& rhs)
   }
   return *this;
 }
-  
 // Destructor 
 CbcModel::~CbcModel ()
 {
@@ -4783,6 +4785,8 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
       for (i = 0;i<numberCutGenerators_;i++) {
 	int numberRowCutsBefore = theseCuts.sizeRowCuts() ;
 	int numberColumnCutsBefore = theseCuts.sizeColCuts() ;
+	int numberRowCutsAfter = numberRowCutsBefore;
+	int numberColumnCutsAfter = numberColumnCutsBefore;
 	bool generate = generator_[i]->normal();
 	// skip if not optimal and should be (maybe a cut generator has fixed variables)
 	if (generator_[i]->needsOptimalBasis()&&!solver_->basisIsAvailable())
@@ -4792,7 +4796,7 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
 	if (generate) {
 	  bool mustResolve = 
 	    generator_[i]->generateCuts(theseCuts,fullScan,solver_,node) ;
-	  int numberRowCutsAfter = theseCuts.sizeRowCuts() ;
+	  numberRowCutsAfter = theseCuts.sizeRowCuts() ;
 	  if(numberRowCutsBefore < numberRowCutsAfter &&
 	     generator_[i]->mustCallAgain())
 	    keepGoing=true; // say must go round
@@ -4841,8 +4845,8 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
 	      break ;
 	  }
 	}
-	int numberRowCutsAfter = theseCuts.sizeRowCuts() ;
-	int numberColumnCutsAfter = theseCuts.sizeColCuts() ;
+	numberRowCutsAfter = theseCuts.sizeRowCuts() ;
+	numberColumnCutsAfter = theseCuts.sizeColCuts() ;
 	
 	if ((specialOptions_&1)!=0) {
 	  if (onOptimalPath) {
@@ -4935,7 +4939,7 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
       }
       // Add in any violated saved cuts
       if (!theseCuts.sizeRowCuts()&&!theseCuts.sizeColCuts()) {
-	int numberOld = theseCuts.sizeRowCuts();
+	int numberOld = theseCuts.sizeRowCuts()+lastNumberCuts;
 	int numberCuts = slackCuts.sizeRowCuts() ;
 	int i;
 	// possibly extend whichGenerator
@@ -5169,7 +5173,7 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
       }
       // Add in any violated saved cuts
       if (!theseCuts.sizeRowCuts()&&!theseCuts.sizeColCuts()) {
-	int numberOld = theseCuts.sizeRowCuts();
+	int numberOld = theseCuts.sizeRowCuts()+lastNumberCuts;
 	int numberCuts = slackCuts.sizeRowCuts() ;
 	int i;
 	// possibly extend whichGenerator

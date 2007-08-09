@@ -14,8 +14,6 @@
 
 #include "CoinPragma.hpp"
 #include "CoinHelperFunctions.hpp"
-// Version
-#define CBCVERSION "1.04.00"
 
 #include "CoinMpsIO.hpp"
 #include "CoinModel.hpp"
@@ -137,6 +135,13 @@ static void malloc_stats2()
 #include "CbcBranchLotsize.hpp"
 
 #include "OsiClpSolverInterface.hpp"
+
+// If HAVE_CONFIG_H is not defined, CLPVERSION is defined in ClpConfig.h
+#ifdef HAVE_CONFIG_H
+# include "config_clp.h"
+# define CBCVERSION PACKAGE_VERSION
+#endif
+
 #ifdef COIN_HAS_ASL
 #include "Cbc_ampl.h"
 static bool usingAmpl=false;

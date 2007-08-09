@@ -41,6 +41,9 @@
 /*             HERE DEFINE THE CONFIGURATION SPECIFIC MACROS               */
 /***************************************************************************/
 
+/* This needs to be updated "by hand"!!!! */
+#define CBCVERSION "1.4trunk"
+
 /* Define to the debug sanity check level (0 is no test) */
 #define COIN_CBC_CHECKLEVEL 0
 

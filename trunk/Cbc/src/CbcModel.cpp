@@ -8276,7 +8276,7 @@ CbcModel::integerPresolve(bool weak)
   status_ = 0;
   // solve LP
   //solver_->writeMps("bad");
-  bool feasible = resolve(NULL,3);
+  bool feasible = (resolve(NULL,3)!=0);
 
   CbcModel * newModel = NULL;
   if (feasible) {
@@ -8309,7 +8309,7 @@ CbcModel::integerPresolveThisModel(OsiSolverInterface * originalSolver,
   printf("DEPRECATED\n");
   status_ = 0;
   // solve LP
-  bool feasible = resolve(NULL,3);
+  bool feasible = (resolve(NULL,3)!=0);
 
   bestObjective_=1.0e50;
   numberSolutions_=0;
@@ -8504,7 +8504,7 @@ CbcModel::integerPresolveThisModel(OsiSolverInterface * originalSolver,
 	synchronizeModel(); // make sure everything that needs solver has it
 	// just point to solver_
 	continuousSolver_ = solver_;
-	feasible=resolve(NULL,3);
+	feasible=(resolve(NULL,3)!=0);
 	if (!feasible||!doIntegerPresolve||weak) break;
 	// see if we can get solution by heuristics
 	int found=-1;

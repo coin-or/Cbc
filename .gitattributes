@@ -1,4 +1,23 @@
 * text=auto !eol
+stable/1.2/Cbc/LICENSE -text
+stable/1.2/Cbc/cbc_addlibs.txt.in -text
+stable/1.2/Cbc/configure -text
+stable/1.2/Cbc/configure.ac -text
+stable/1.2/Cbc/doc/doxygen.conf -text
+stable/1.2/Cbc/examples/Makefile.in -text
+stable/1.2/Cbc/examples/barrier.cpp -text
+stable/1.2/Cbc/examples/qmip2.cpp -text
+stable/1.2/Cbc/inc/config_cbc.h.in -text
+stable/1.2/LICENSE -text
+stable/1.2/README -text
+stable/1.2/config.guess -text
+stable/1.2/config.sub -text
+stable/1.2/configure -text
+stable/1.2/configure.ac -text
+stable/1.2/depcomp -text
+stable/1.2/doxydoc/doxygen.conf -text
+stable/1.2/install-sh -text
+stable/1.2/missing -text
 trunk/Cbc/LICENSE -text
 trunk/Cbc/MSVisualStudio/v7/Cbc.sln -text
 trunk/Cbc/MSVisualStudio/v7/Cbc.suo -text

@@ -1,0 +1,72 @@
+NOTE: The information in this file might not yet include the changes introduced with the switch to the autotools.
+
+To build Cbc see INSTALL file
+
+To use Cbc you need the Cbc, Cgl, Coin and Osi libraries.  You
+will probably need Clp as well.
+
+If you are using Clp as your solver then you can make the unitTest and standalone executable by doing
+
+make solve in this directory.  This creates an executable solve.
+
+solve takes various options - try solve and then ? to get some idea of what you can do.
+solve file will do branch and bound if file is integer mps file and will do dual if non-integer mps file
+options start with - (although the code will also try without -) e.g.
+
+solve file -cuts root -solve will import file and do branch and bound with cuts only at root
+
+- by itself goes to interactive mode.
+
+If you wish to use the Cbc solver from AMPL there is a bit of work involved.  You
+will need to uncomment COIN_ampl in Makefiles/makefile.location - and also
+download the ampl glue code - see Makefiles/Makefile.location for http.  Then solve
+will assume it is being called from AMPL if the first two arguments are xxx.nl -AMPL.
+Of course "solve" is not a good name (cbc is much better but already used) so copy
+"solve" to "cbc" in ampl accessible path.
+Options may be set by e.g. option cbc_options "cuts=off log=0"
+No keywords are recognized by ampl parsing so above format should be used. 
+All options are as found by "cbc(solve) " and then ?
+Current ugliness is that ampl glue code assumes "=" (on undefined keywords) so to maximize you
+would have to say "maximize=".  I will add to AMPL keywords if this interface gets much use.
+
+If you are not using Clp then fewer options are available - 
+make the unitTest and standalone executable by doing
+
+make unitTest in this directory.  This creates an executable cbc.
+
+Running cbc gives you some hints.  Just do 
+
+cbc -
+ 
+and then try ? or setting various stuff.
+
+On Linux cbc can do file completion and line editing.  
+
+There are samples in ./Samples.  Use make DRIVER=xxxxxx where xxxxxx.cpp is driver file to
+create an executable - testit.
+
+The two simplest samples are:
+
+sample.cpp  This is a simple program to read an mps file.and solve the
+		integer problem.
+
+sample2.cpp.  This is the benchmark driver for the competition.  It overrides
+		the default branching methods and adds a (mildly useless)
+		heuristic.  It is intended to show you how to add your
+		own methods.  See CbcCompareUser.hpp for how to modify
+		choice of node from tree.  See CbcBranchUser.?pp for
+		how to modify which variable is chosen at a node.  For
+		more complex stuff such as new types of branches see
+		CbcBranchBase and CbcBranchActual in directory Cbc.
+		To see how to add heuristics see CbcHeuristicUser.?pp.
+
+		To add cut generators - define them as in Cgl and then just
+		add them as in sample2.cpp
+
+		The script "runtimes" in Samples directory will
+		run some or all of test set.  The version checked in
+		does some - just take off # to run.  An optional time
+		in minutes can be passed.
+
+
+

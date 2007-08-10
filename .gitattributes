@@ -22,6 +22,7 @@ Cbc/examples/Makefile.in -text
 Cbc/examples/barrier.cpp -text
 Cbc/examples/cbc_driverC_sos.c -text
 Cbc/examples/driver3.cpp -text
+Cbc/examples/driver4.cpp -text
 Cbc/examples/qmip2.cpp -text
 Cbc/inc/config_cbc.h.in -text
 Cbc/src/CbcCbcParam.cpp -text

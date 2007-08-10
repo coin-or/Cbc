@@ -1477,8 +1477,10 @@ int main (int argc, const char *argv[])
 	      const char * fields[3];
 	      int nFields=1;
 	      fields[0]="fake main for miplib";
+	      std::string dirfield="-miplibDir=";
 	      if (directory!="./") {
-		fields[1]=("-miplibDir="+directory).c_str();
+		dirfield+=directory.c_str();
+		fields[1]=dirfield.c_str();
 		nFields=2;
 	      }
 	      mainTest(nFields,fields);

@@ -333,7 +333,7 @@ private:
     */
     unsigned int type:4; // type of computation
     unsigned int affected:25; // variable or element affected
-    float multiplier; // to use in computation 
+    double multiplier; // to use in computation 
   } boundElementAction;
   
   /**@name Private member data */

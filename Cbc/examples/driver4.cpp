@@ -84,6 +84,102 @@ static int callBack(CbcModel * model, int whereFrom)
   }
   return returnCode;
 }
+#include "CbcEventHandler.hpp"
+/** This is so user can trap events and do useful stuff.  
+
+    CbcModel model_ is available as well as anything else you care 
+    to pass in
+*/
+
+class MyEventHandler3 : public CbcEventHandler {
+  
+public:
+  /**@name Overrides */
+  //@{
+  virtual CbcAction event(CbcEvent whichEvent);
+  //@}
+
+  /**@name Constructors, destructor etc*/
+  //@{
+  /** Default constructor. */
+  MyEventHandler3();
+  /// Constructor with pointer to model (redundant as setEventHandler does)
+  MyEventHandler3(CbcModel * model);
+  /** Destructor */
+  virtual ~MyEventHandler3();
+  /** The copy constructor. */
+  MyEventHandler3(const MyEventHandler3 & rhs);
+  /// Assignment
+  MyEventHandler3& operator=(const MyEventHandler3 & rhs);
+  /// Clone
+  virtual CbcEventHandler * clone() const ;
+  //@}
+   
+    
+protected:
+  // data goes here
+};
+//-------------------------------------------------------------------
+// Default Constructor 
+//-------------------------------------------------------------------
+MyEventHandler3::MyEventHandler3 () 
+  : CbcEventHandler()
+{
+}
+
+//-------------------------------------------------------------------
+// Copy constructor 
+//-------------------------------------------------------------------
+MyEventHandler3::MyEventHandler3 (const MyEventHandler3 & rhs) 
+: CbcEventHandler(rhs)
+{  
+}
+
+// Constructor with pointer to model
+MyEventHandler3::MyEventHandler3(CbcModel * model)
+  : CbcEventHandler(model)
+{
+}
+
+//-------------------------------------------------------------------
+// Destructor 
+//-------------------------------------------------------------------
+MyEventHandler3::~MyEventHandler3 ()
+{
+}
+
+//----------------------------------------------------------------
+// Assignment operator 
+//-------------------------------------------------------------------
+MyEventHandler3 &
+MyEventHandler3::operator=(const MyEventHandler3& rhs)
+{
+  if (this != &rhs) {
+    CbcEventHandler::operator=(rhs);
+  }
+  return *this;
+}
+//-------------------------------------------------------------------
+// Clone
+//-------------------------------------------------------------------
+CbcEventHandler * MyEventHandler3::clone() const
+{
+  return new MyEventHandler3(*this);
+}
+
+CbcEventHandler::CbcAction 
+MyEventHandler3::event(CbcEvent whichEvent)
+{
+  // If in sub tree carry on
+  if (!model_->parentModel()) {
+    if (whichEvent==solution||whichEvent==heuristicSolution)
+      return stop; // say finished
+    else
+      return noAction; // carry on
+  } else {
+      return noAction; // carry on
+  }
+}
 
 int main (int argc, const char *argv[])
 {
@@ -106,6 +202,9 @@ int main (int argc, const char *argv[])
   // Pass to Cbc initialize defaults 
   CbcModel model(solver1);    
   CbcMain0(model);
+  // Event handler
+  MyEventHandler3 eventHandler;
+  model.passInEventHandler(&eventHandler);
   /* Now go into code for standalone solver
      Could copy arguments and add -quit at end to be safe
      but this will do

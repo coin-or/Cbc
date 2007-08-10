@@ -685,6 +685,8 @@ void CbcModel::branchAndBound(int doStatistics)
   }
   eventHappened_=false;
   CbcEventHandler *eventHandler = getEventHandler() ;
+  if (eventHandler)
+    eventHandler->setModel(this);
   // set up for probing
   probingInfo_ = new CglTreeProbingInfo(solver_);
 
@@ -1126,6 +1128,11 @@ void CbcModel::branchAndBound(int doStatistics)
 	    heuristic_[j] = heuristic_[j+1];
 	}
       }
+      if (eventHandler) {
+	if (!eventHandler->event(CbcEventHandler::solution)) {
+	  eventHappened_=true; // exit
+	}
+      }
     }
     delete [] newSolution ;
   } 
@@ -1153,8 +1160,12 @@ void CbcModel::branchAndBound(int doStatistics)
     if(solverCharacteristics_->tryCuts())  {
 
       if (numberUnsatisfied)   {
-        feasible = solveWithCuts(cuts,maximumCutPassesAtRoot_,
-                                 NULL);
+	// User event
+	if (!eventHappened_)
+	  feasible = solveWithCuts(cuts,maximumCutPassesAtRoot_,
+				   NULL);
+	else
+	  feasible=false;
       }	else if (solverCharacteristics_->solutionAddsCuts()||
                  solverCharacteristics_->alwaysTryCutsAtRootNode()) {
         // may generate cuts and turn the solution
@@ -1184,6 +1195,9 @@ void CbcModel::branchAndBound(int doStatistics)
       stoppedOnGap_ = true ;
     feasible = false;
   }
+  // User event
+  if (eventHappened_)
+    feasible=false;
 /*
   We've taken the continuous relaxation as far as we can. Time to branch.
   The first order of business is to actually create a node. chooseBranch
@@ -3246,7 +3260,7 @@ CbcModel::CbcModel(const CbcModel & rhs, bool noTree)
   }
   lastHeuristic_ = NULL;
   if (rhs.eventHandler_)
-  { eventHandler_ = new CbcEventHandler(*rhs.eventHandler_) ; }
+    { eventHandler_ = rhs.eventHandler_->clone() ; }
   else
   { eventHandler_ = NULL ; }
   ownObjects_ = rhs.ownObjects_;
@@ -3567,7 +3581,7 @@ CbcModel::operator=(const CbcModel& rhs)
     if (eventHandler_)
       delete eventHandler_ ;
     if (rhs.eventHandler_)
-    { eventHandler_ = new CbcEventHandler(*rhs.eventHandler_) ; }
+      { eventHandler_ = rhs.eventHandler_->clone() ; }
     else
     { eventHandler_ = NULL ; }
     if (ownObjects_) {

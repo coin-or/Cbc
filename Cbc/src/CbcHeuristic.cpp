@@ -156,7 +156,7 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver,int numberNodes,
 	printf("before %d rows %d columns, after %d rows %d columns\n",
 	       solver->getNumRows(),solver->getNumCols(),
 	       solver2->getNumRows(),solver2->getNumCols());
-      if (after>fractionSmall_*before)
+      if (after>fractionSmall_*before&&after>300)
 	return 0;
       solver2->resolve();
       CbcModel model(*solver2);

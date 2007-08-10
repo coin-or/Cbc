@@ -5392,7 +5392,7 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
 			  "solveWithCuts","CbcModel") ; }
         delete basis;
       }
-      feasible = resolve(node ? node->nodeInfo() : NULL,2) ;
+      feasible = ( resolve(node ? node->nodeInfo() : NULL,2) != 0) ;
       if ( getCurrentSeconds() > dblParam_[CbcMaximumSeconds] )
         numberTries=0; // exit
 #     ifdef CBC_DEBUG

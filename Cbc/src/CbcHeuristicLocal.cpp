@@ -546,6 +546,12 @@ CbcHeuristicLocal::solution(double & solutionValue,
         }
         // new solution
         memcpy(betterSolution,newSolution,numberColumns*sizeof(double));
+	CoinWarmStartBasis * basis =
+	  dynamic_cast<CoinWarmStartBasis *>(solver->getWarmStart()) ;
+	if (basis) {
+	  model_->setBestSolutionBasis(* basis);
+	  delete basis;
+	}
         returnCode=1;
         solutionValue = newSolutionValue + bestChange;
       } else {

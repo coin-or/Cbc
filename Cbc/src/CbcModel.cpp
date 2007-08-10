@@ -2255,7 +2255,10 @@ void CbcModel::branchAndBound(int doStatistics)
       pthread_mutex_unlock(&condition_mutex);
       pthread_cond_signal(threadInfo[i].condition2); // unlock
       //if (!stopped)
-	pthread_join(threadId[i],NULL);
+      //pthread_join(threadId[i],NULL);
+      int returnCode;
+      returnCode=pthread_join(threadId[i],NULL);
+      assert (!returnCode);
 	//else
 	//pthread_kill(threadId[i]); // kill rather than try and synchronize
       threadModel[i]->moveToModel(this,2);
@@ -3081,7 +3084,7 @@ CbcModel::assignSolver(OsiSolverInterface *&solver, bool deleteSolver)
 
 {
   // resize best solution if exists
-  if (bestSolution_) {
+  if (bestSolution_&&solver&&solver_) {
     int nOld = solver_->getNumCols();
     int nNew = solver->getNumCols();
     if (nNew>nOld) {
@@ -3106,6 +3109,7 @@ CbcModel::assignSolver(OsiSolverInterface *&solver, bool deleteSolver)
   if (emptyWarmStart_)
   { delete emptyWarmStart_  ;
     emptyWarmStart_ = 0 ; }
+  bestSolutionBasis_ = CoinWarmStartBasis();
 /*
   Initialize integer variable vector.
 */
@@ -3382,6 +3386,7 @@ CbcModel::CbcModel(const CbcModel & rhs, bool noTree)
   } else {
     addedCuts_ = NULL;
   }
+  bestSolutionBasis_ = rhs.bestSolutionBasis_;
   nextRowCut_ = NULL;
   currentNode_ = NULL;
   if (maximumDepth_)
@@ -3643,6 +3648,7 @@ CbcModel::operator=(const CbcModel& rhs)
     } else {
       addedCuts_ = NULL;
     }
+    bestSolutionBasis_ = rhs.bestSolutionBasis_;
     nextRowCut_ = NULL;
     currentNode_ = NULL;
     if (maximumDepth_)
@@ -4900,7 +4906,7 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
 	  if (thisCut->globallyValid()) {
 	    // add to global list
 	    OsiRowCut newCut(*thisCut);
-	    newCut.setGloballyValid(2);
+	    newCut.setGloballyValid(true);
 	    newCut.mutableRow().setTestForDuplicateIndex(false);
 	    globalCuts_.insert(newCut) ;
 	  }
@@ -4920,7 +4926,7 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
 	    if (thisCut->globallyValid()) {
 	      // add to global list
 	      OsiRowCut newCut(*thisCut);
-	      newCut.setGloballyValid(2);
+	      newCut.setGloballyValid(true);
 	      newCut.mutableRow().setTestForDuplicateIndex(false);
 	      globalCuts_.insert(newCut) ;
 	    }
@@ -4932,7 +4938,7 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
 	  if (thisCut->globallyValid()) {
 	    // add to global list
 	    OsiColCut newCut(*thisCut);
-	    newCut.setGloballyValid(2);
+	    newCut.setGloballyValid(true);
 	    globalCuts_.insert(newCut) ;
 	  }
 	}
@@ -5155,7 +5161,7 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
 	  if (thisCut->globallyValid()) {
 	    // add to global list
 	    OsiRowCut newCut(*thisCut);
-	    newCut.setGloballyValid(2);
+	    newCut.setGloballyValid(true);
 	    newCut.mutableRow().setTestForDuplicateIndex(false);
 	    globalCuts_.insert(newCut) ;
 	  }
@@ -5166,7 +5172,7 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
 	  if (thisCut->globallyValid()) {
 	    // add to global list
 	    OsiColCut newCut(*thisCut);
-	    newCut.setGloballyValid(2);
+	    newCut.setGloballyValid(true);
 	    globalCuts_.insert(newCut) ;
 	  }
 	}
@@ -5340,7 +5346,18 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
 	just fine.
 */
     int numberRowsNow = solver_->getNumRows() ;
+#ifndef NDEBUG
     assert(numberRowsNow == numberRowsAtStart+lastNumberCuts) ;
+#else
+    // ? maybe clue to threaded problems
+    if(numberRowsNow != numberRowsAtStart+lastNumberCuts) {
+      fprintf(stderr,"*** threaded error - numberRowsNow(%d) != numberRowsAtStart(%d)+lastNumberCuts(%d)\n",
+	      numberRowsNow,numberRowsAtStart,lastNumberCuts);
+      fprintf(stdout,"*** threaded error - numberRowsNow(%d) != numberRowsAtStart(%d)+lastNumberCuts(%d)\n",
+	      numberRowsNow,numberRowsAtStart,lastNumberCuts);
+      abort();
+    }
+#endif
     int numberToAdd = theseCuts.sizeRowCuts() ;
     numberNewCuts_ = lastNumberCuts+numberToAdd ;
 /*
@@ -7320,6 +7337,10 @@ CbcModel::checkSolution (double cutoff, const double *solution,
           dynamic_cast<CoinWarmStartBasis *>(solver_->getEmptyWarmStart()) ;
         solver_->setWarmStart(slack);
         delete slack ;
+      } else {
+	if (bestSolutionBasis_.getNumStructural()==solver_->getNumCols()&&
+	    bestSolutionBasis_.getNumArtificial()==solver_->getNumRows())
+	  solver_->setWarmStart(&bestSolutionBasis_);
       }
       // Give a hint to do dual
       bool saveTakeHint;
@@ -7371,6 +7392,7 @@ CbcModel::checkSolution (double cutoff, const double *solution,
       solver_->setHintParam(OsiDoDualInInitial,saveTakeHint,saveStrength);
       objectiveValue = solver_->getObjValue()*solver_->getObjSense();
     }
+    bestSolutionBasis_ = CoinWarmStartBasis();
     
     /*
       Check that the solution still beats the objective cutoff.
@@ -7520,7 +7542,7 @@ CbcModel::checkSolution (double cutoff, const double *solution,
                         //           }
                         // add to global list
 			OsiRowCut newCut(*thisCut);
-			newCut.setGloballyValid(2);
+			newCut.setGloballyValid(true);
 			newCut.mutableRow().setTestForDuplicateIndex(false);
 			globalCuts_.insert(newCut) ;
                         generator_[i]->incrementNumberCutsInTotal();
@@ -7697,7 +7719,7 @@ CbcModel::setBestSolution (CBC_Message how,
               }
               // add to global list
 	      OsiRowCut newCut(*thisCut);
-	      newCut.setGloballyValid(2);
+	      newCut.setGloballyValid(true);
 	      newCut.mutableRow().setTestForDuplicateIndex(false);
 	      globalCuts_.insert(newCut) ;
               generator_[i]->incrementNumberCutsInTotal();
@@ -7711,7 +7733,7 @@ CbcModel::setBestSolution (CBC_Message how,
         if (thisCut->globallyValid()) {
           // add to global list
 	  OsiColCut newCut(*thisCut);
-	  newCut.setGloballyValid(2);
+	  newCut.setGloballyValid(true);
 	  globalCuts_.insert(newCut) ;
         }
       }
@@ -9196,7 +9218,7 @@ CbcModel::makeGlobalCuts(int number,const int * which)
         thisCut.setUb(rowUpper[iRow]);
         int start = rowStart[iRow];
         thisCut.setRow(rowLength[iRow],column+start,elementByRow+start,false);
-	thisCut.setGloballyValid(2);
+	thisCut.setGloballyValid(true);
         globalCuts_.insert(thisCut) ;
       }
     }
@@ -9219,7 +9241,7 @@ void
 CbcModel::makeGlobalCut(const OsiRowCut & cut)
 {
   OsiRowCut newCut(cut);
-  newCut.setGloballyValid(2);
+  newCut.setGloballyValid(true);
   newCut.mutableRow().setTestForDuplicateIndex(false);
   globalCuts_.insert(newCut) ;
 }

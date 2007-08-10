@@ -14,6 +14,7 @@
 #include "CbcHeuristicFPump.hpp"
 #include "CbcBranchActual.hpp"
 #include "CoinHelperFunctions.hpp"
+#include "CoinWarmStartBasis.hpp"
 #include "CoinTime.hpp"
 
 
@@ -270,6 +271,7 @@ CbcHeuristicFPump::solution(double & solutionValue,
   int finalReturnCode=0;
   int totalNumberPasses=0;
   int numberTries=0;
+  CoinWarmStartBasis bestBasis;
   while (true) {
     int numberPasses=0;
     numberTries++;
@@ -411,8 +413,14 @@ CbcHeuristicFPump::solution(double & solutionValue,
 	      }
 	    }
 	  }
-	  if (returnCode) {
+	  if (returnCode&&newSolutionValue<saveValue) {
 	    memcpy(betterSolution,newSolution,numberColumns*sizeof(double));
+	    CoinWarmStartBasis * basis =
+	      dynamic_cast<CoinWarmStartBasis *>(solver->getWarmStart()) ;
+	    if (basis) {
+	      bestBasis = * basis;
+	      delete basis;
+	    }
 	    if ((accumulate_&1)!=0)
 	      model_->incrementUsed(betterSolution); // for local search
 	    solutionValue=newSolutionValue;
@@ -425,7 +433,7 @@ CbcHeuristicFPump::solution(double & solutionValue,
 		<<CoinMessageEol;
 	    pumpPrint[0]='\0';
 	  } else {
-	    sprintf(pumpPrint+strlen(pumpPrint)," - not good enough after mini branch and bound");
+	    sprintf(pumpPrint+strlen(pumpPrint)," - not improved by mini branch and bound");
 	    model_->messageHandler()->message(CBC_FPUMP1,model_->messages())
 	      << pumpPrint
 	      <<CoinMessageEol;
@@ -554,6 +562,12 @@ CbcHeuristicFPump::solution(double & solutionValue,
 	    sprintf(pumpPrint+strlen(pumpPrint)," - intermediate solution found of %g",newSolutionValue);
 	    if (newSolutionValue<solutionValue) {
 	      memcpy(betterSolution,newSolution,numberColumns*sizeof(double));
+	      CoinWarmStartBasis * basis =
+		dynamic_cast<CoinWarmStartBasis *>(solver->getWarmStart()) ;
+	      if (basis) {
+		bestBasis = * basis;
+		delete basis;
+	      }
 	      if ((accumulate_&1)!=0)
 		model_->incrementUsed(betterSolution); // for local search
 	      solutionValue=newSolutionValue;
@@ -767,7 +781,7 @@ CbcHeuristicFPump::solution(double & solutionValue,
 	// could add cut
 	returnCode &= ~2;
       }
-      if (returnCode) {
+      if (returnCode&&newSolutionValue<saveValue) {
 	sprintf(pumpPrint+strlen(pumpPrint),"Mini branch and bound improved solution from %g to %g (%.2f seconds)",
 		saveValue,newSolutionValue,model_->getCurrentSeconds());
 	model_->messageHandler()->message(CBC_FPUMP1,model_->messages())
@@ -809,6 +823,12 @@ CbcHeuristicFPump::solution(double & solutionValue,
 	  model_->incrementUsed(betterSolution); // for local search
 	solutionValue=newSolutionValue;
 	solutionFound=true;
+	CoinWarmStartBasis * basis =
+	  dynamic_cast<CoinWarmStartBasis *>(newSolver->getWarmStart()) ;
+	if (basis) {
+	  bestBasis = * basis;
+	  delete basis;
+	}
       } else {
 	sprintf(pumpPrint+strlen(pumpPrint),"Mini branch and bound did not improve solution (%.2f seconds)",
 		model_->getCurrentSeconds());
@@ -889,6 +909,8 @@ CbcHeuristicFPump::solution(double & solutionValue,
   model_->messageHandler()->message(CBC_FPUMP1,model_->messages())
     << pumpPrint
     <<CoinMessageEol;
+  if (bestBasis.getNumStructural())
+    model_->setBestSolutionBasis(bestBasis);
   return finalReturnCode;
 }
 

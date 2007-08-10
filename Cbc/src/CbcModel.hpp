@@ -1658,6 +1658,14 @@ public:
   void generateCpp( FILE * fp,int options);
   /// Generate an OsiBranchingInformation object
   OsiBranchingInformation usefulInformation() const;
+  /** Warm start object produced by heuristic or strong branching
+
+      If get a valid integer solution outside branch and bound then it can take
+      a reasonable time to solve LP which produces clean solution.  If this object has
+      any size then it will be used in solve.
+  */
+  inline void setBestSolutionBasis(const CoinWarmStartBasis & bestSolutionBasis)
+  { bestSolutionBasis_ = bestSolutionBasis;}
   //@}
 
 //---------------------------------------------------------------------------
@@ -1733,6 +1741,13 @@ private:
       currentSolution_ or solver-->getColSolution()
   */
   mutable const double * testSolution_;
+  /** Warm start object produced by heuristic or strong branching
+
+      If get a valid integer solution outside branch and bound then it can take
+      a reasonable time to solve LP which produces clean solution.  If this object has
+      any size then it will be used in solve.
+  */
+  CoinWarmStartBasis bestSolutionBasis_ ;
   /// Global cuts
   OsiCuts globalCuts_;
 
@@ -2066,4 +2081,8 @@ int callCbc(const std::string input2, CbcModel & babSolver);
 // And when CbcMain0 already called to initialize
 int callCbc1(const char * input2, CbcModel & babSolver); 
 int callCbc1(const std::string input2, CbcModel & babSolver); 
+// And when CbcMain0 already called to initialize (with call back) (see CbcMain1 for whereFrom)
+int callCbc1(const char * input2, CbcModel & babSolver, int (CbcModel * currentSolver, int whereFrom)); 
+int callCbc1(const std::string input2, CbcModel & babSolver, int (CbcModel * currentSolver, int whereFrom)); 
+int CbcMain1 (int argc, const char *argv[],CbcModel & babSolver, int (CbcModel * currentSolver, int whereFrom));
 #endif

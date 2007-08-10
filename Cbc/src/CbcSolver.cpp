@@ -81,6 +81,7 @@ static void malloc_stats2()
   memset(malloc_counts,0,sizeof(malloc_counts));
 }
 #endif
+//#define DMALLOC
 #ifdef DMALLOC
 #include "dmalloc.h"
 #endif
@@ -169,6 +170,17 @@ extern "C" {
      return;
    }
 }
+//#define CBC_SIG_TRAP
+#ifdef CBC_SIG_TRAP
+#include <setjmp.h>
+static sigjmp_buf cbc_seg_buffer;
+extern "C" {
+   static void signal_handler_error(int whichSignal)
+   {
+     siglongjmp(cbc_seg_buffer,1);
+   }
+}
+#endif
 
 int CbcOrClpRead_mode=1;
 FILE * CbcOrClpReadCommand=stdin;
@@ -1179,7 +1191,7 @@ void checkSOS(CbcModel * babModel, const OsiSolverInterface * solver)
   }
 #endif
 }
-int callCbc1(const char * input2, CbcModel & model)
+int callCbc1(const char * input2, CbcModel & model, int callBack(CbcModel * currentSolver, int whereFrom))
 {
   char * input = strdup(input2);
   int length = strlen(input);
@@ -1230,7 +1242,7 @@ int callCbc1(const char * input2, CbcModel & model)
   CbcOrClpRead_mode=1;
   CbcOrClpReadCommand=stdin;
   noPrinting=false;
-  int returnCode = CbcMain1(n+2,const_cast<const char **>(argv),model);
+  int returnCode = CbcMain1(n+2,const_cast<const char **>(argv),model,callBack);
   for (int k=0;k<n+2;k++)
     free(argv[k]);
   delete [] argv;
@@ -1283,7 +1295,26 @@ int callCbc(const std::string input2)
   free(input3);
   return returnCode;
 }
-
+static int dummyCallBack(CbcModel * model, int whereFrom)
+{
+  return 0;
+}
+int CbcMain1 (int argc, const char *argv[],
+	     CbcModel  & model)
+{
+  return CbcMain1(argc,argv,model,dummyCallBack);
+}
+int callCbc1(const std::string input2, CbcModel & babSolver, int callBack(CbcModel * currentSolver, int whereFrom))
+{
+  char * input3 = strdup(input2.c_str());
+  int returnCode=callCbc1(input3,babSolver,callBack);
+  free(input3);
+  return returnCode;
+}
+int callCbc1(const char * input2, CbcModel & model)
+{
+  return callCbc1(input2,model,dummyCallBack);
+}
 int CbcMain (int argc, const char *argv[],
 	     CbcModel  & model)
 {
@@ -1401,8 +1432,15 @@ void CbcMain0 (CbcModel  & model)
   parameters[whichParam(RINS,numberParameters,parameters)].setCurrentOption("off");
   parameters[whichParam(COSTSTRATEGY,numberParameters,parameters)].setCurrentOption("off");
 }
+/* Meaning of whereFrom:
+   1 after initial solve by dualsimplex etc
+   2 after preprocessing
+   3 just before branchAndBound (so user can override)
+   4 just after branchAndBound (before postprocessing)
+   5 after postprocessing
+*/
 int CbcMain1 (int argc, const char *argv[],
-	     CbcModel  & model)
+	     CbcModel  & model, int callBack(CbcModel * currentSolver, int whereFrom))
 {
   /* Note
      This is meant as a stand-alone executable to do as much of coin as possible. 
@@ -2621,6 +2659,12 @@ int CbcMain1 (int argc, const char *argv[],
 		if (babModel) {
 		  babModel->setProblemStatus(iStatus);
 		  babModel->setSecondaryStatus(iStatus2);
+		} 
+		int returnCode=callBack(&model,1);
+		if (returnCode) {
+		  // exit if user wants
+		  delete babModel;
+		  return returnCode;
 		}
 	      }
 	      basisHasValues=1;
@@ -3037,6 +3081,35 @@ int CbcMain1 (int argc, const char *argv[],
                 OsiClpSolverInterface * si =
                   dynamic_cast<OsiClpSolverInterface *>(solver) ;
 		ClpSimplex * clpSolver = si->getModelPtr();
+		int iStatus = clpSolver->status();
+		int iStatus2 = clpSolver->secondaryStatus();
+		if (iStatus==0) {
+		  iStatus2=0;
+		} else if (iStatus==1) {
+		  iStatus=0;
+		  iStatus2=1; // say infeasible
+		} else if (iStatus==2) {
+		  iStatus=0;
+		  iStatus2=7; // say unbounded
+		} else if (iStatus==3) {
+		  iStatus=1;
+		  if (iStatus2==9)
+		    iStatus2=4;
+		  else
+		    iStatus2=3; // Use nodes - as closer than solutions
+		} else if (iStatus==4) {
+		  iStatus=2; // difficulties
+		  iStatus2=0; 
+		}
+		model.setProblemStatus(iStatus);
+		model.setSecondaryStatus(iStatus2);
+		si->setWarmStart(NULL);
+		int returnCode=callBack(&model,1);
+		if (returnCode) {
+		  // exit if user wants
+		  delete babModel;
+		  return returnCode;
+		}
 		clpSolver->setSpecialOptions(clpSolver->specialOptions()|0x01000000); // say is Cbc (and in branch and bound)
 		if (!noPrinting) {
 		  sprintf(generalPrint,"Continuous objective value is %g - %.2f seconds",
@@ -3352,12 +3425,28 @@ int CbcMain1 (int argc, const char *argv[],
 		    generalMessageHandler->message(CLP_GENERAL,generalMessages)
 		      << generalPrint
 		      <<CoinMessageEol;
-                    break;
                   } else {
                     //printf("processed model has %d rows, %d columns and %d elements\n",
 		    //     solver2->getNumRows(),solver2->getNumCols(),solver2->getNumElements());
                   }
-                }
+		}
+		if (!solver2) {
+		  model.setProblemStatus(0);
+		  model.setSecondaryStatus(1);
+		  babModel->setProblemStatus(0);
+		  babModel->setSecondaryStatus(1);
+		} else {
+		  model.setProblemStatus(-1);
+		  babModel->setProblemStatus(-1);
+		}
+		int returnCode=callBack(babModel,2);
+		if (returnCode) {
+		  // exit if user wants
+		  delete babModel;
+		  return returnCode;
+		}
+		if (!solver2)
+		  break;
                 //solver2->resolve();
                 if (preProcess==2) {
                   OsiClpSolverInterface * clpSolver2 = dynamic_cast< OsiClpSolverInterface*> (solver2);
@@ -4690,7 +4779,20 @@ int CbcMain1 (int argc, const char *argv[],
 		babModel->setNumberThreads(numberThreads%100);
 		babModel->setThreadMode(numberThreads/100);
 #endif
+		int returnCode=callBack(babModel,3);
+		if (returnCode) {
+		  // exit if user wants
+		  delete babModel;
+		  return returnCode;
+		}
                 babModel->branchAndBound(statistics);
+		returnCode=callBack(babModel,4);
+		if (returnCode) {
+		  // exit if user wants
+		  model.moveInfo(*babModel);
+		  delete babModel;
+		  return returnCode;
+		}
 #ifdef CLP_MALLOC_STATISTICS
 		malloc_stats();
 		malloc_stats2();
@@ -4849,6 +4951,13 @@ int CbcMain1 (int argc, const char *argv[],
 		  generalMessageHandler->message(CLP_GENERAL,generalMessages)
 		    << generalPrint
 		    <<CoinMessageEol;
+		}
+		int returnCode=callBack(babModel,5);
+		if (returnCode) {
+		  // exit if user wants
+		  model.moveInfo(*babModel);
+		  delete babModel;
+		  return returnCode;
 		}
 #ifdef COIN_HAS_ASL
                 if (usingAmpl) {
@@ -6477,12 +6586,27 @@ clp watson.mps -\nscaling off\nprimalsimplex"
   }
   // By now all memory should be freed
 #ifdef DMALLOC
-  dmalloc_log_unfreed();
-  dmalloc_shutdown();
+  //dmalloc_log_unfreed();
+  //dmalloc_shutdown();
 #endif
-  if (babModel)
+  if (babModel) {
     model.moveInfo(*babModel);
-  delete babModel;
+    //babModel->setModelOwnsSolver(false);
+  }
+#ifdef CBC_SIG_TRAP
+  // On Sun sometimes seems to be error - try and get round it
+  CoinSighandler_t saveSignal=SIG_DFL;
+  // register signal handler
+  saveSignal=signal(SIGSEGV,signal_handler_error);
+  // to force failure!babModel->setNumberObjects(20000);
+  if (!sigsetjmp(cbc_seg_buffer,1)) {
+#endif
+    delete babModel;
+#ifdef CBC_SIG_TRAP
+  } else {
+    std::cerr<<"delete babModel failed"<<std::endl;
+  }
+  #endif
   model.solver()->setWarmStart(NULL);
   return 0;
 }    

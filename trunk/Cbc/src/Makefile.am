@@ -219,6 +219,11 @@ if COIN_HAS_XPR
   cbc_generic_LDADD += $(OSIOBJDIR)/src/OsiXpr/libOsiXpr.la
 endif
 
+if COIN_HAS_ASL
+  cbc_generic_LDADD += $(ASLLIB)
+  AM_CPPFLAGS += $(ASL_CPPFLAGS) -DCOIN_HAS_ASL
+endif
+
 # Finally the Osi Coin library (many of the above need it)
 cbc_generic_LDADD += $(OSIOBJDIR)/src/libOsi.la \
 	$(COINUTILSOBJDIR)/src/libCoinUtils.la

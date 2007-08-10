@@ -189,7 +189,7 @@ void fakeMain2 (ClpSimplex & model,OsiClpSolverInterface & osiSolver,int options
 }
 //  End any fake main program
 //#############################################################################
-void CbcClpUnitTest (const CbcModel & saveModel);
+// void CbcClpUnitTest (const CbcModel & saveModel);
 int main (int argc, const char *argv[])
 {
   OsiClpSolverInterface solver1;
@@ -214,7 +214,11 @@ int main (int argc, const char *argv[])
   void setCbcOrClpPrinting(bool yesNo);
   setCbcOrClpPrinting(false);
 #endif
-  int returnCode = CbcMain1 (argc, argv,model);
+  int returnCode = CbcMain1 (argc, argv,model, 777);
+#if 0
+  /* The call to CbcClpUnitTest was moved into CbcMain1. To make sure
+     CbcMain1 behaves as it did before for any other call, I have added one more
+     argument to indicate that it was called from here. */
   if (returnCode!=777) {
     //const CoinWarmStartBasis* debugws =
     //dynamic_cast <const CoinWarmStartBasis*>(model.solver()->getWarmStart()) ;
@@ -226,7 +230,15 @@ int main (int argc, const char *argv[])
     CbcClpUnitTest(model);
     return 0;
   }
+#else
+  if (returnCode!=777) {
+    return returnCode;
+  } else {
+    return 0;
+  }
+#endif
 }
+
 /*
   Version 1.00.00 November 16 2005.
   This is to stop me (JJF) messing about too much.

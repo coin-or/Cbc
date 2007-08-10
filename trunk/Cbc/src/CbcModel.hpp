@@ -2059,7 +2059,8 @@ int callCbc(const std::string input2, OsiClpSolverInterface& solver1);
 int callCbc(const std::string input2) ;
 // When we want to load up CbcModel with options first
 void CbcMain0 (CbcModel & babSolver);
-int CbcMain1 (int argc, const char *argv[],CbcModel & babSolver);
+int CbcMain1 (int argc, const char *argv[],CbcModel & babSolver,
+	      int call_CbcClpUnitTest_on_777 = 0);
 // two ways of calling
 int callCbc(const char * input2, CbcModel & babSolver); 
 int callCbc(const std::string input2, CbcModel & babSolver); 

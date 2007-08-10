@@ -26,11 +26,13 @@ endif
 test: $(CBC_TEST_TGTS)
 
 test_cbc: ../src/cbc$(EXEEXT)
-	if test x"$(MIPLIBDIR)" != x; then \
-		../src/clp$(EXEEXT) -unitTest -directory $(MIPLIBDIR) -miplib; \
-	else \
-		../src/clp$(EXEEXT) -unitTest; \
-	fi
+	if test x"$(DIRMIPLIB)" != x; then \
+		MIPLIBARG="-dirMiplib $(DIRMIPLIB) -miplib"; \
+	fi; \
+	if test x"$(DIRSAMPLE)" != x; then \
+		SAMPLEARG="-dirSample $(DIRSAMPLE)"; \
+	fi; \
+	../src/cbc$(EXEEXT) $$SAMPLEARG -unitTest $$MIPLIBARG
 
 test_cbc_generic: ../src/cbc-generic$(EXEEXT)
 	echo "A minimal test is all that cbc-generic can manage just yet."

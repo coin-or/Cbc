@@ -1311,7 +1311,21 @@ void CbcMain0 (CbcModel  & model)
   lpSolver->messageHandler()->setPrefix(false);
   establishParams(numberParameters,parameters) ;
   const char dirsep =  CoinFindDirSeparator();
-  std::string directory = (dirsep == '/' ? "./" : ".\\");
+  std::string directory;
+  std::string dirSample;
+  std::string dirNetlib;
+  std::string dirMiplib;
+  if (dirsep == '/') {
+    directory = "./";
+    dirSample = "../../Data/Sample/";
+    dirNetlib = "../../Data/Netlib/";
+    dirMiplib = "../../Data/miplib3/";
+  } else {
+    directory = ".\\";
+    dirSample = "..\\..\\Data\\Sample\\";
+    dirNetlib = "..\\..\\Data\\Netlib\\";
+    dirMiplib = "..\\..\\Data\\miplib3\\";
+  }
   std::string defaultDirectory = directory;
   std::string importFile ="";
   std::string exportFile ="default.mps";
@@ -1337,6 +1351,9 @@ void CbcMain0 (CbcModel  & model)
   parameters[whichParam(DEBUG,numberParameters,parameters)].setStringValue(debugFile);
   parameters[whichParam(PRINTMASK,numberParameters,parameters)].setStringValue(printMask);
   parameters[whichParam(DIRECTORY,numberParameters,parameters)].setStringValue(directory);
+  parameters[whichParam(DIRSAMPLE,numberParameters,parameters)].setStringValue(dirSample);
+  parameters[whichParam(DIRNETLIB,numberParameters,parameters)].setStringValue(dirNetlib);
+  parameters[whichParam(DIRMIPLIB,numberParameters,parameters)].setStringValue(dirMiplib);
   parameters[whichParam(DUALBOUND,numberParameters,parameters)].setDoubleValue(lpSolver->dualBound());
   parameters[whichParam(DUALTOLERANCE,numberParameters,parameters)].setDoubleValue(lpSolver->dualTolerance());
   parameters[whichParam(EXPORT,numberParameters,parameters)].setStringValue(exportFile);
@@ -1407,7 +1424,7 @@ void CbcMain0 (CbcModel  & model)
   parameters[whichParam(COSTSTRATEGY,numberParameters,parameters)].setCurrentOption("off");
 }
 int CbcMain1 (int argc, const char *argv[],
-	     CbcModel  & model)
+	      CbcModel  & model, int call_CbcClpUnitTest_on_777)
 {
   /* Note
      This is meant as a stand-alone executable to do as much of coin as possible. 
@@ -1687,7 +1704,21 @@ int CbcMain1 (int argc, const char *argv[],
     double gapRatio=1.0e100;
     double tightenFactor=0.0;
     const char dirsep =  CoinFindDirSeparator();
-    std::string directory = (dirsep == '/' ? "./" : ".\\");
+    std::string directory;
+    std::string dirSample;
+    std::string dirNetlib;
+    std::string dirMiplib;
+    if (dirsep == '/') {
+      directory = "./";
+      dirSample = "../../Data/Sample/";
+      dirNetlib = "../../Data/Netlib/";
+      dirMiplib = "../../Data/miplib3/";
+    } else {
+      directory = ".\\";
+      dirSample = "..\\..\\Data\\Sample\\";
+      dirNetlib = "..\\..\\Data\\Netlib\\";
+      dirMiplib = "..\\..\\Data\\miplib3\\";
+    }
     std::string defaultDirectory = directory;
     std::string importFile ="";
     std::string exportFile ="default.mps";
@@ -4730,6 +4761,14 @@ int CbcMain1 (int argc, const char *argv[],
 		  babModel->setBranchingMethod(decision);
 		}
 		model = *babModel;
+		/* LL: this was done in CoinSolve.cpp: main(argc, argv).
+		   I have moved it here so that the miplib directory location
+		   could be passed to CbcClpUnitTest. */
+		if (call_CbcClpUnitTest_on_777 == 777) {
+		  void CbcClpUnitTest (const CbcModel & saveModel,
+				       std::string& dirMiplib);
+		  CbcClpUnitTest(model, dirMiplib);
+		}
 		return 777;
               } else {
                 strengthenedModel = babModel->strengthenedModel();
@@ -5953,6 +5992,51 @@ int CbcMain1 (int argc, const char *argv[],
 		else
 		  directory = name+"/";
 		parameters[iParam].setStringValue(directory);
+	      } else {
+		parameters[iParam].printString();
+	      }
+	    }
+	    break;
+	  case DIRSAMPLE:
+	    {
+	      std::string name = CoinReadGetString(argc,argv);
+	      if (name!="EOL") {
+		int length=name.length();
+		if (name[length-1]=='/'||name[length-1]=='\\')
+		  dirSample=name;
+		else
+		  dirSample = name+"/";
+		parameters[iParam].setStringValue(dirSample);
+	      } else {
+		parameters[iParam].printString();
+	      }
+	    }
+	    break;
+	  case DIRNETLIB:
+	    {
+	      std::string name = CoinReadGetString(argc,argv);
+	      if (name!="EOL") {
+		int length=name.length();
+		if (name[length-1]=='/'||name[length-1]=='\\')
+		  dirNetlib=name;
+		else
+		  dirNetlib = name+"/";
+		parameters[iParam].setStringValue(dirNetlib);
+	      } else {
+		parameters[iParam].printString();
+	      }
+	    }
+	    break;
+	  case DIRMIPLIB:
+	    {
+	      std::string name = CoinReadGetString(argc,argv);
+	      if (name!="EOL") {
+		int length=name.length();
+		if (name[length-1]=='/'||name[length-1]=='\\')
+		  dirMiplib=name;
+		else
+		  dirMiplib = name+"/";
+		parameters[iParam].setStringValue(dirMiplib);
 	      } else {
 		parameters[iParam].printString();
 	      }

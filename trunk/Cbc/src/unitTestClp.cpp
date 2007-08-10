@@ -1766,7 +1766,7 @@ ClpSimplexUnitTest(const std::string & mpsDir,
   }
 #endif  
 }
-void CbcClpUnitTest (const CbcModel & saveModel)
+void CbcClpUnitTest (const CbcModel & saveModel, std::string& miplibDir)
 {
   unsigned int m ;
   // See if files exist
@@ -1775,8 +1775,6 @@ void CbcClpUnitTest (const CbcModel & saveModel)
   const char dirsep =  CoinFindDirSeparator();
  
   // Set directory containing miplib data files.
-  std::string miplibDir;
-  miplibDir = dirsep == '/' ? "../../Data/miplib3/" : "..\\..\\Data\\miplib3\\";
   std::string test1 = miplibDir +"p0033";
   fp=fopen(test1.c_str(),"r");
   if (fp) {

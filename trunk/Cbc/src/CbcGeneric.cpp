@@ -64,6 +64,13 @@ namespace {
 
 }
 
+/*
+  We need a local dummy of this to satisfy libCbc when linking. FIXME: But why
+  only for the optimised build?
+*/
+void CbcClpUnitTest (const CbcModel & saveModel, std::string& miplibDir)
+{ return ; }
+
 namespace CbcGenSolvers
 {
   OsiSolverInterface *setupSolvers() ;
@@ -106,7 +113,6 @@ void markAsSetByUser (CbcGenCtlBlk &ctlBlk, CoinParam *param)
   { ctlBlk.setByUser_[code] = true ; }
 
   return ; }
-
 
 } // end unnamed namespace
 

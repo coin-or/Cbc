@@ -46,11 +46,14 @@ public:
   // Destructor 
   ~CbcSimpleIntegerDynamicPseudoCost ();
   
+  using CbcObject::infeasibility ;
   /// Infeasibility - large is 0.5
   virtual double infeasibility(int & preferredWay) const;
 
+  using CbcObject::createBranch ;
   /// Creates a branching object
   virtual CbcBranchingObject * createBranch(int way) ;
+
   /// Infeasibility - large is 0.5
   virtual double infeasibility(const OsiSolverInterface * solver, 
 			       const OsiBranchingInformation * info, int & preferredWay) const;
@@ -75,6 +78,7 @@ public:
   /// Copy some information i.e. just variable stuff
   void copySome(CbcSimpleIntegerDynamicPseudoCost * otherObject);
 
+  using CbcSimpleInteger::solverBranch ;
   /** Create an OsiSolverBranch object
 
       This returns NULL if branch not represented by bound changes
@@ -344,11 +348,13 @@ public:
   /// Destructor 
   virtual ~CbcDynamicPseudoCostBranchingObject ();
   
+  using CbcBranchingObject::branch ;
   /** \brief Sets the bounds for the variable according to the current arm
 	     of the branch and advances the object state to the next arm.
 	     This version also changes guessed objective value
   */
   virtual double branch();
+
   /** Some branchingObjects may claim to be able to skip
       strong branching.  If so they have to fill in CbcStrongInfo.
       The object mention in incoming CbcStrongInfo must match.

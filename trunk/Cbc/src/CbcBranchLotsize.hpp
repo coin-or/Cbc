@@ -33,9 +33,11 @@ public:
   // Destructor 
   ~CbcLotsize ();
   
+  using CbcObject::infeasibility ;
   /// Infeasibility - large is 0.5
   virtual double infeasibility(int & preferredWay) const;
 
+  using CbcObject::feasibleRegion ;
   /** Set bounds to contain the current solution.
 
     More precisely, for the variable associated with this object, take the
@@ -45,6 +47,7 @@ public:
   */
   virtual void feasibleRegion();
 
+  using CbcObject::createBranch ;
   /// Creates a branching object
   virtual CbcBranchingObject * createBranch(int way) ;
 
@@ -187,11 +190,13 @@ public:
   /// Destructor 
   virtual ~CbcLotsizeBranchingObject ();
   
+  using CbcBranchingObject::branch ;
   /** \brief Sets the bounds for the variable according to the current arm
 	     of the branch and advances the object state to the next arm.
   */
   virtual double branch();
 
+  using CbcBranchingObject::print ;
   /** \brief Print something about branch - only if log level high
   */
   virtual void print();

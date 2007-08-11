@@ -40,6 +40,7 @@ public:
   /// update model (This is needed if cliques update matrix etc)
   virtual void setModel(CbcModel * model);
   
+  using CbcHeuristic::solution ;
   /** returns 0 if no solution, 1 if valid solution.
       Sets solution values if good, sets objective value (only if good)
       This does Relaxation Induced Neighborhood Search

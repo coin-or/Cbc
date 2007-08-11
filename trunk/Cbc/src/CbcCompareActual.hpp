@@ -84,6 +84,8 @@ public:
   /* This returns true if weighted value of node y is less than
      weighted value of node x */
   virtual bool test (CbcNode * x, CbcNode * y) ;
+
+  using CbcCompareBase::newSolution ;
   // This allows method to change behavior as it is called
   // after each solution
   virtual void newSolution(CbcModel * model,

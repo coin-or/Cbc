@@ -298,6 +298,7 @@ public:
   virtual double branch(OsiSolverInterface * solver)
   { return branch();}
 
+  using OsiBranchingObject::print ;
   /** \brief Print something about branch - only if log level high
   */
   virtual void print() const {}

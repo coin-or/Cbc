@@ -47,7 +47,9 @@ libCbc_la_SOURCES = \
 	CbcTree.cpp CbcTree.hpp \
 	CbcLinked.cpp CbcLinked.hpp \
 	CbcTreeLocal.cpp CbcTreeLocal.hpp \
-	ClpConstraintAmpl.hpp ClpAmplObjective.hpp ClpAmplStuff.cpp 
+	ClpConstraintAmpl.hpp ClpAmplObjective.hpp ClpAmplStuff.cpp \
+	unitTestClp.cpp
+#Stefan: added unitTestClp.cpp because CbcSolver defines reference to it
 
 ## If we have the Ampl solver library, we need to add additional things
 ## also see lower down

@@ -165,7 +165,7 @@ am_libCbc_la_OBJECTS = Cbc_C_Interface.lo CbcBranchActual.lo \
 	CbcHeuristicLocal.lo CbcHeuristicRINS.lo CbcMessage.lo \
 	CbcModel.lo CbcNode.lo CbcSolver.lo CbcCbcParam.lo \
 	CbcStatistics.lo CbcStrategy.lo CbcTree.lo CbcLinked.lo \
-	CbcTreeLocal.lo ClpAmplStuff.lo Cbc_ampl.lo
+	CbcTreeLocal.lo ClpAmplStuff.lo unitTestClp.lo Cbc_ampl.lo
 libCbc_la_OBJECTS = $(am_libCbc_la_OBJECTS)
 @COIN_HAS_CLP_TRUE@am__EXEEXT_1 = cbc$(EXEEXT)
 @CBC_BUILD_CBC_GENERIC_TRUE@am__EXEEXT_2 = cbc-generic$(EXEEXT)
@@ -477,6 +477,7 @@ AUTOMAKE_OPTIONS = foreign
 lib_LTLIBRARIES = libCbc.la
 
 # List all source files for this library, including headers
+#Stefan: added unitTestClp.cpp because CbcSolver defines reference to it
 libCbc_la_SOURCES = Cbc_C_Interface.cpp Cbc_C_Interface.h CbcConfig.h \
 	CbcBranchActual.cpp CbcBranchActual.hpp CbcBranchBase.cpp \
 	CbcBranchBase.hpp CbcBranchCut.cpp CbcBranchCut.hpp \
@@ -497,7 +498,7 @@ libCbc_la_SOURCES = Cbc_C_Interface.cpp Cbc_C_Interface.h CbcConfig.h \
 	CbcStatistics.hpp CbcStrategy.cpp CbcStrategy.hpp CbcTree.cpp \
 	CbcTree.hpp CbcLinked.cpp CbcLinked.hpp CbcTreeLocal.cpp \
 	CbcTreeLocal.hpp ClpConstraintAmpl.hpp ClpAmplObjective.hpp \
-	ClpAmplStuff.cpp Cbc_ampl.cpp Cbc_ampl.h
+	ClpAmplStuff.cpp unitTestClp.cpp Cbc_ampl.cpp Cbc_ampl.h
 
 # This is for libtool (on Windows)
 libCbc_la_LDFLAGS = $(LT_LDFLAGS)
@@ -776,6 +777,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Cbc_ampl.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ClpAmplStuff.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CoinSolve.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/unitTestClp.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/unitTestClp.Po@am__quote@
 
 .cpp.o:

@@ -64,13 +64,6 @@ namespace {
 
 }
 
-/*
-  We need a local dummy of this to satisfy libCbc when linking. FIXME: But why
-  only for the optimised build?
-*/
-void CbcClpUnitTest (const CbcModel & saveModel, std::string& miplibDir)
-{ return ; }
-
 namespace CbcGenSolvers
 {
   OsiSolverInterface *setupSolvers() ;

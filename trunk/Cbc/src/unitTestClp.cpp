@@ -1772,7 +1772,7 @@ void CbcClpUnitTest (const CbcModel & saveModel, std::string& miplibDir)
   // See if files exist
   FILE * fp;
   bool doTest=false;
-  const char dirsep =  CoinFindDirSeparator();
+//  const char dirsep =  CoinFindDirSeparator();
  
   // Set directory containing miplib data files.
   std::string test1 = miplibDir +"p0033";

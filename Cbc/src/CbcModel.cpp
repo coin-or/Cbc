@@ -507,6 +507,8 @@ void CbcModel::branchAndBound(int doStatistics)
   strongInfo_[1]=0;
   strongInfo_[2]=0;
   numberStrongIterations_ = 0;
+  // Initialize random seed
+  CoinSeedRandom(1234567);
 #ifndef NDEBUG
   {
     int i;
@@ -10079,6 +10081,14 @@ void getIntegerInformation(const OsiObject * object, double & originalLower,
     originalLower = integerObject->originalLowerBound();
     originalUpper = integerObject->originalUpperBound();
   }
+}
+// Set original columns as created by preprocessing
+void 
+CbcModel::setOriginalColumns(const int * originalColumns) 
+{
+  int numberColumns = getNumCols();
+  delete [] originalColumns_;
+  originalColumns_ = CoinCopyOfArray(originalColumns,numberColumns);
 }
 // Set the cut modifier method
 void 

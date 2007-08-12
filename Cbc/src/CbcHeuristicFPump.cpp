@@ -16,6 +16,7 @@
 #include "CoinHelperFunctions.hpp"
 #include "CoinWarmStartBasis.hpp"
 #include "CoinTime.hpp"
+#include "CbcEventHandler.hpp"
 
 
 // Default Constructor
@@ -272,7 +273,9 @@ CbcHeuristicFPump::solution(double & solutionValue,
   int totalNumberPasses=0;
   int numberTries=0;
   CoinWarmStartBasis bestBasis;
-  while (true) {
+  bool exitAll=false;
+  double saveBestObjective = model_->getMinimizationObjValue();
+  while (!exitAll) {
     int numberPasses=0;
     numberTries++;
     // Clone solver - otherwise annoys root node computations
@@ -357,6 +360,10 @@ CbcHeuristicFPump::solution(double & solutionValue,
     bool newLineNeeded=false;
     while (!finished) {
       returnCode=0;
+      if (model_->getCurrentSeconds()>model_->getMaximumSeconds()) {
+	exitAll=true;
+	break;
+      }
       // see what changed
       if (usedColumn) {
 	for (i=0;i<numberColumns;i++) {
@@ -390,7 +397,7 @@ CbcHeuristicFPump::solution(double & solutionValue,
 	sprintf(pumpPrint+strlen(pumpPrint)," - solution found of %g",newSolutionValue);
 	newLineNeeded=false;
 	if (newSolutionValue<solutionValue) {
-	  double saveValue = newSolutionValue;
+	  double saveValue = solutionValue;
 	  if (!doGeneral) {
 	    int numberLeft=0;
 	    for (i=0;i<numberIntegersOrig;i++) {
@@ -411,15 +418,33 @@ CbcHeuristicFPump::solution(double & solutionValue,
 		// could add cut
 		returnCode &= ~2;
 	      }
+	      if (returnCode!=1)
+		newSolutionValue=saveValue;
 	    }
 	  }
 	  if (returnCode&&newSolutionValue<saveValue) {
 	    memcpy(betterSolution,newSolution,numberColumns*sizeof(double));
+	    solutionFound=true;
 	    CoinWarmStartBasis * basis =
 	      dynamic_cast<CoinWarmStartBasis *>(solver->getWarmStart()) ;
 	    if (basis) {
 	      bestBasis = * basis;
 	      delete basis;
+	      CbcEventHandler * handler = model_->getEventHandler();
+	      if (handler) {
+		double * saveOldSolution = CoinCopyOfArray(model_->bestSolution(),numberColumns);
+		double saveObjectiveValue = model_->getMinimizationObjValue();
+		model_->setBestSolution(betterSolution,numberColumns,newSolutionValue);
+		int action = handler->event(CbcEventHandler::heuristicSolution);
+		if (saveOldSolution) {
+		  model_->setBestSolution(saveOldSolution,numberColumns,saveObjectiveValue);
+		  delete [] saveOldSolution;
+		}
+		if (!action||model_->getCurrentSeconds()>model_->getMaximumSeconds()) {
+		  exitAll=true; // exit
+		  break;
+		}
+	      }
 	    }
 	    if ((accumulate_&1)!=0)
 	      model_->incrementUsed(betterSolution); // for local search
@@ -433,7 +458,7 @@ CbcHeuristicFPump::solution(double & solutionValue,
 		<<CoinMessageEol;
 	    pumpPrint[0]='\0';
 	  } else {
-	    sprintf(pumpPrint+strlen(pumpPrint)," - not improved by mini branch and bound");
+	    sprintf(pumpPrint+strlen(pumpPrint)," - mini branch and bound could not fix general integers");
 	    model_->messageHandler()->message(CBC_FPUMP1,model_->messages())
 	      << pumpPrint
 	      <<CoinMessageEol;
@@ -564,9 +589,25 @@ CbcHeuristicFPump::solution(double & solutionValue,
 	      memcpy(betterSolution,newSolution,numberColumns*sizeof(double));
 	      CoinWarmStartBasis * basis =
 		dynamic_cast<CoinWarmStartBasis *>(solver->getWarmStart()) ;
+	      solutionFound=true;
 	      if (basis) {
 		bestBasis = * basis;
 		delete basis;
+		CbcEventHandler * handler = model_->getEventHandler();
+		if (handler) {
+		  double * saveOldSolution = CoinCopyOfArray(model_->bestSolution(),numberColumns);
+		  double saveObjectiveValue = model_->getMinimizationObjValue();
+		  model_->setBestSolution(betterSolution,numberColumns,newSolutionValue);
+		  int action = handler->event(CbcEventHandler::heuristicSolution);
+		  if (saveOldSolution) {
+		    model_->setBestSolution(saveOldSolution,numberColumns,saveObjectiveValue);
+		    delete [] saveOldSolution;
+		  }
+		  if (!action||model_->getCurrentSeconds()>model_->getMaximumSeconds()) {
+		    exitAll=true; // exit
+		    break;
+		  }
+		}
 	      }
 	      if ((accumulate_&1)!=0)
 		model_->incrementUsed(betterSolution); // for local search
@@ -688,8 +729,9 @@ CbcHeuristicFPump::solution(double & solutionValue,
       // reduce scale factor
       scaleFactor *= weightFactor_;
     } // END WHILE
-    if (!solutionFound) {
+    if (!solutionFound) 
       sprintf(pumpPrint+strlen(pumpPrint),"No solution found this major pass");
+    if (strlen(pumpPrint)) {
       model_->messageHandler()->message(CBC_FPUMP1,model_->messages())
 	<< pumpPrint
 	<<CoinMessageEol;
@@ -700,7 +742,7 @@ CbcHeuristicFPump::solution(double & solutionValue,
       delete [] oldSolution[j];
     delete [] oldSolution;
     delete [] saveObjective;
-    if (usedColumn) {
+    if (usedColumn&&!exitAll) {
       OsiSolverInterface * newSolver = model_->continuousSolver()->clone();
       const double * colLower = newSolver->getColLower();
       const double * colUpper = newSolver->getColUpper();
@@ -828,6 +870,21 @@ CbcHeuristicFPump::solution(double & solutionValue,
 	if (basis) {
 	  bestBasis = * basis;
 	  delete basis;
+	  CbcEventHandler * handler = model_->getEventHandler();
+	  if (handler) {
+	    double * saveOldSolution = CoinCopyOfArray(model_->bestSolution(),numberColumns);
+	    double saveObjectiveValue = model_->getMinimizationObjValue();
+	    model_->setBestSolution(betterSolution,numberColumns,newSolutionValue);
+	    int action = handler->event(CbcEventHandler::heuristicSolution);
+	    if (saveOldSolution) {
+	      model_->setBestSolution(saveOldSolution,numberColumns,saveObjectiveValue);
+	      delete [] saveOldSolution;
+	    }
+	    if (!action||model_->getCurrentSeconds()>model_->getMaximumSeconds()) {
+	      exitAll=true; // exit
+	      break;
+	    }
+	  }
 	}
       } else {
 	sprintf(pumpPrint+strlen(pumpPrint),"Mini branch and bound did not improve solution (%.2f seconds)",
@@ -841,7 +898,7 @@ CbcHeuristicFPump::solution(double & solutionValue,
     }
     if (solutionFound) finalReturnCode=1;
     cutoff = CoinMin(cutoff,solutionValue);
-    if (numberTries>=maximumRetries_||!solutionFound) {
+    if (numberTries>=maximumRetries_||!solutionFound||exitAll) {
       break;
     } else if (absoluteIncrement_>0.0||relativeIncrement_>0.0) {
       solutionFound=false;
@@ -911,6 +968,7 @@ CbcHeuristicFPump::solution(double & solutionValue,
     <<CoinMessageEol;
   if (bestBasis.getNumStructural())
     model_->setBestSolutionBasis(bestBasis);
+  model_->setMinimizationObjValue(saveBestObjective);
   return finalReturnCode;
 }
 

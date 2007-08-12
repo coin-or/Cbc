@@ -190,6 +190,7 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver,int numberNodes,
 #endif
       model.setMaximumCutPassesAtRoot(CoinMin(20,model_->getMaximumCutPassesAtRoot()));
       model.setParentModel(*model_);
+      model.setOriginalColumns(process.originalColumns());
       model.branchAndBound();
       if (logLevel>1)
         model_->messageHandler()->message(CBC_END_SUB,model_->messages())

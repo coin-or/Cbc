@@ -731,9 +731,11 @@ public:
   /// Get how often to scan global cuts
   inline int howOftenGlobalScan() const
   { return howOftenGlobalScan_;}
-  /// Original columns as created by integerPresolve
+  /// Original columns as created by integerPresolve or preprocessing
   inline int * originalColumns() const
   { return originalColumns_;}
+  /// Set original columns as created by preprocessing
+  void setOriginalColumns(const int * originalColumns) ;
 
   /** Set the print frequency.
   
@@ -1965,7 +1967,7 @@ private:
   /// Now we may not own objects - just point to solver's objects
   bool ownObjects_;
   
-  /// Original columns as created by integerPresolve
+  /// Original columns as created by integerPresolve or preprocessing
   int * originalColumns_;
   /// How often to scan global cuts
   int howOftenGlobalScan_;

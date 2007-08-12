@@ -3408,6 +3408,7 @@ int CbcMain1 (int argc, const char *argv[],
                   if (solver2)
                     solver2->setHintParam(OsiDoInBranchAndCut,false,OsiHintDo) ;
                 }
+		babModel->setOriginalColumns(process.originalColumns());
 #ifdef COIN_HAS_ASL
                 if (!solver2&&usingAmpl) {
                   // infeasible

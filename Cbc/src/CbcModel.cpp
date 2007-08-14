@@ -511,20 +511,25 @@ void CbcModel::branchAndBound(int doStatistics)
   CoinSeedRandom(1234567);
 #ifndef NDEBUG
   {
+#ifdef COIN_DEVELOP
+    double big = 1.0e10;
+#else
+    double big = 1.0e20;
+#endif
     int i;
     int n = solver_->getNumCols();
     const double *lower = solver_->getColLower() ;
     const double *upper = solver_->getColUpper() ;
     for (i=0;i<n;i++) {
-      assert (lower[i]<1.0e10);
-      assert (upper[i]>-1.0e10);
+      assert (lower[i]<big);
+      assert (upper[i]>-big);
     }
     n = solver_->getNumRows();
     lower = solver_->getRowLower() ;
     upper = solver_->getRowUpper() ;
     for (i=0;i<n;i++) {
-      assert (lower[i]<1.0e10);
-      assert (upper[i]>-1.0e10);
+      assert (lower[i]<big);
+      assert (upper[i]>-big);
     }
   }
 #endif

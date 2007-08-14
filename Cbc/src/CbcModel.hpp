@@ -1105,6 +1105,8 @@ public:
   
   /// Get number of heuristic solutions
   inline int getNumberHeuristicSolutions() const { return numberHeuristicSolutions_;}
+  /// Set number of heuristic solutions
+  inline void setNumberHeuristicSolutions(int value) { numberHeuristicSolutions_=value;}
 
   /// Set objective function sense (1 for min (default), -1 for max,)
   inline void setObjSense(double s) { dblParam_[CbcOptimizationDirection]=s;
@@ -1506,6 +1508,13 @@ public:
     inline OsiSolverInterface * continuousSolver() const
     { return continuousSolver_;}
 
+    /// Create solver with continuous state
+    inline void createContinuousSolver()
+    { continuousSolver_ = solver_->clone();}
+    /// Clear solver with continuous state
+    inline void clearContinuousSolver()
+    { delete continuousSolver_; continuousSolver_ = NULL;}
+
   /// A copy of the solver, taken at constructor or by saveReferenceSolver
   inline OsiSolverInterface * referenceSolver() const
   { return referenceSolver_;}
@@ -1618,11 +1627,14 @@ public:
       Scan and convert CbcSimpleInteger objects
   */
   void convertToDynamic();
+  /// Zap integer information in problem (may leave object info)
+  void zapIntegerInformation(bool leaveObjects=true);
   /// Use cliques for pseudocost information - return nonzero if infeasible
   int cliquePseudoCosts(int doStatistics);
   /// Fill in useful estimates
   void pseudoShadow(double * down, double * up);
-
+  /// Do heuristics at root
+  void doHeuristicsAtRoot(bool deleteHeuristicsAfterwards=false);
   /// Get the hotstart solution 
   inline const double * hotstartSolution() const
   { return hotstartSolution_;}

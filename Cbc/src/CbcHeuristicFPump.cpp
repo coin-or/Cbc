@@ -490,15 +490,69 @@ CbcHeuristicFPump::solution(double & solutionValue,
 	  }
 	  if (matched) break;
 	}
+	int numberPerturbed=0;
 	if (matched || numberPasses%100 == 0) {
 	  // perturbation
 	  sprintf(pumpPrint+strlen(pumpPrint)," perturbation applied");
 	  newLineNeeded=true;
+	  double factorX[10]={0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0};
+	  double factor=1.0;
+	  double target=-1.0;
+	  double * randomX = new double [numberIntegers];
+	  for (i=0;i<numberIntegers;i++) 
+	    randomX[i] = max(0.0,CoinDrand48()-0.3);
+	  for (int k=0;k<10;k++) {
+#ifdef COIN_DEVELOP
+	    printf("kpass %d\n",k);
+#endif
+	    int numberX[10]={0,0,0,0,0,0,0,0,0,0};
+	    for (i=0;i<numberIntegers;i++) {
+	      int iColumn = integerVariable[i];
+	      double value = randomX[i];
+	      double difference = fabs(solution[iColumn]-newSolution[iColumn]);
+	      for (int j=0;j<10;j++) {
+		if (difference+value*factorX[j]>0.5) 
+		  numberX[j]++;
+	      }
+	    }
+	    if (target<0.0) {
+	      if (numberX[9]<=200)
+		break; // not very many changes
+	      target=CoinMax(200.0,0.05*numberX[9]);
+	    }
+	    int iX=-1;
+	    int iBand=-1;
+	    for (i=0;i<10;i++) {
+#ifdef COIN_DEVELOP
+	      printf("** %d changed at %g\n",numberX[i],factorX[i]);
+#endif
+	      if (numberX[i]>=target&&numberX[i]<2.0*target&&iX<0)
+		iX=i;
+	      if (iBand<0&&numberX[i]>target) {
+		iBand=i;
+		factor=factorX[i];
+	      }
+	    }
+	    if (iX>=0) {
+	      factor=factorX[iX];
+	      break;
+	    } else {
+	      assert (iBand>=0);
+	      double hi = factor;
+	      double lo = (iBand>0) ? factorX[iBand-1] : 0.0;
+	      double diff = (hi-lo)/9.0;
+	      for (i=0;i<10;i++) {
+		factorX[i]=lo;
+		lo += diff;
+	      }
+	    }
+	  }
 	  for (i=0;i<numberIntegers;i++) {
 	    int iColumn = integerVariable[i];
-	    double value = max(0.0,CoinDrand48()-0.3);
+	    double value = randomX[i];
 	    double difference = fabs(solution[iColumn]-newSolution[iColumn]);
-	    if (difference+value>0.5) {
+	    if (difference+value*factor>0.5) {
+	      numberPerturbed++;
 	      if (newSolution[iColumn]<lower[iColumn]+primalTolerance) {
 		newSolution[iColumn] += 1.0;
 	      } else if (newSolution[iColumn]>upper[iColumn]-primalTolerance) {
@@ -512,6 +566,7 @@ CbcHeuristicFPump::solution(double & solutionValue,
 	      }
 	    }
 	  }
+	  delete [] randomX;
 	} else {
 	  for (j=NUMBER_OLD-1;j>0;j--) {
 	    for (i = 0; i < numberColumns; i++) oldSolution[j][i]=oldSolution[j-1][i];
@@ -522,7 +577,8 @@ CbcHeuristicFPump::solution(double & solutionValue,
 	// 2. update the objective function based on the new rounded solution
 	double offset=0.0;
 	double costValue = (1.0-scaleFactor)*solver->getObjSense();
-	
+	int numberChanged=0;
+	const double * oldObjective = solver->getObjCoefficients();
 	for (i=0;i<numberColumns;i++) {
 	  // below so we can keep original code and allow for objective
 	  int iColumn = i;
@@ -534,15 +590,17 @@ CbcHeuristicFPump::solution(double & solutionValue,
 	    //else                                       solver->setObjCoeff(iColumn,costValue);
 	    continue;
 	  }
+	  double newValue=0.0;
 	  if (newSolution[iColumn]<lower[iColumn]+primalTolerance) {
-	    solver->setObjCoeff(iColumn,costValue+scaleFactor*saveObjective[iColumn]);
+	    newValue = costValue+scaleFactor*saveObjective[iColumn];
 	  } else {
 	    if (newSolution[iColumn]>upper[iColumn]-primalTolerance) {
-	      solver->setObjCoeff(iColumn,-costValue+scaleFactor*saveObjective[iColumn]);
-	    } else {
-	      solver->setObjCoeff(iColumn,0.0);
+	      newValue = -costValue+scaleFactor*saveObjective[iColumn];
 	    }
 	  }
+	  if (newValue!=oldObjective[iColumn])
+	    numberChanged++;
+	  solver->setObjCoeff(iColumn,newValue);
 	  offset += costValue*newSolution[iColumn];
 	}
 	solver->setDblParam(OsiObjOffset,-offset);
@@ -624,7 +682,19 @@ CbcHeuristicFPump::solution(double & solutionValue,
 	    CoinWarmStartBasis dummy;
 	    solver->setWarmStart(&dummy);
 	  }
+#ifdef COIN_DEVELOP
+	  printf("%d perturbed out of %d columns (%d changed)\n",numberPerturbed,numberColumns,numberChanged);
+#endif
+	  bool takeHint;
+	  OsiHintStrength strength;
+	  solver->getHintParam(OsiDoDualInResolve,takeHint,strength);
+	  if (numberPerturbed>numberColumns)
+	    solver->setHintParam(OsiDoDualInResolve,true); // dual may be better
 	  solver->resolve();
+	  solver->setHintParam(OsiDoDualInResolve,takeHint);
+#ifdef COIN_DEVELOP
+	  printf("took %d iterations\n",solver->getIterationCount());
+#endif
 	  assert (solver->isProvenOptimal());
 	  // in case very dubious solver
 	  lower = solver->getColLower();

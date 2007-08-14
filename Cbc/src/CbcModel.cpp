@@ -934,9 +934,11 @@ void CbcModel::branchAndBound(int doStatistics)
   Begin setup to process a feasible root node.
 */
   bestObjective_ = CoinMin(bestObjective_,1.0e50) ;
-  numberSolutions_ = 0 ;
-  stateOfSearch_=0;
-  numberHeuristicSolutions_ = 0 ;
+  if (!bestSolution_) {
+    numberSolutions_ = 0 ;
+    numberHeuristicSolutions_ = 0 ;
+  } 
+  stateOfSearch_ = 0; 
   // Everything is minimization
   { 
     // needed to sync cutoffs
@@ -1080,64 +1082,7 @@ void CbcModel::branchAndBound(int doStatistics)
   maximumDepthActual_=0;
   numberDJFixed_=0.0;
   // Do heuristics
-  {
-    double * newSolution = new double [numberColumns] ;
-    double heuristicValue = getCutoff() ;
-    int found = -1; // no solution found
-
-    currentPassNumber_ = 1; // so root heuristics will run
-    int i;
-    for (i = 0;i<numberHeuristics_;i++) {
-      // see if heuristic will do anything
-      double saveValue = heuristicValue ;
-      int ifSol = heuristic_[i]->solution(heuristicValue,
-					  newSolution);
-      if (ifSol>0) {
-	// better solution found
-	found = i ;
-	incrementUsed(newSolution);
-	// increment number of solutions so other heuristics can test
-	numberSolutions_++;
-	numberHeuristicSolutions_++;
-      } else {
-	heuristicValue = saveValue ;
-      }
-    }
-    currentPassNumber_ = 0;
-    /*
-      Did any of the heuristics turn up a new solution? Record it before we free
-      the vector.
-    */
-    if (found >= 0) { 
-      // For compiler error on terra cluster!
-      if (found<numberHeuristics_)
-	lastHeuristic_ = heuristic_[found];
-      else
-	lastHeuristic_ = heuristic_[0];
-      setBestSolution(CBC_ROUNDING,heuristicValue,newSolution) ;
-      CbcTreeLocal * tree 
-          = dynamic_cast<CbcTreeLocal *> (tree_);
-      if (tree)
-        tree->passInSolution(bestSolution_,heuristicValue);
-      for (i = 0;i<numberHeuristics_;i++) {
-	// delete FPump
-	CbcHeuristicFPump * pump 
-	  = dynamic_cast<CbcHeuristicFPump *> (heuristic_[i]);
-	if (pump) {
-	  delete pump;
-	  numberHeuristics_ --;
-	  for (int j=i;j<numberHeuristics_;j++)
-	    heuristic_[j] = heuristic_[j+1];
-	}
-      }
-      if (eventHandler) {
-	if (!eventHandler->event(CbcEventHandler::solution)) {
-	  eventHappened_=true; // exit
-	}
-      }
-    }
-    delete [] newSolution ;
-  } 
+  doHeuristicsAtRoot();
   statistics_ = NULL;
   // Do on switch
   if (doStatistics>0&&doStatistics<100) {
@@ -9914,6 +9859,103 @@ CbcModel::setBestSolution(const double * solution,int numberColumns,double objec
   bestSolution_ = new double [n];
   memset(bestSolution_,0,n*sizeof(double));
   memcpy(bestSolution_,solution,numberColumns*sizeof(double));
+}
+// Do heuristics at root
+void 
+CbcModel::doHeuristicsAtRoot(bool deleteHeuristicsAfterwards)
+{
+  int numberColumns = getNumCols() ;
+  if (deleteHeuristicsAfterwards) {
+    assert (!usedInSolution_);
+    usedInSolution_ = new int [numberColumns];
+    CoinZeroN(usedInSolution_,numberColumns);
+  }
+  double * newSolution = new double [numberColumns] ;
+  double heuristicValue = getCutoff() ;
+  int found = -1; // no solution found
+  CbcEventHandler *eventHandler = getEventHandler() ;
+  if (eventHandler)
+    eventHandler->setModel(this);
+  
+  currentPassNumber_ = 1; // so root heuristics will run
+  int i;
+  for (i = 0;i<numberHeuristics_;i++) {
+    // see if heuristic will do anything
+    double saveValue = heuristicValue ;
+    int ifSol = heuristic_[i]->solution(heuristicValue,
+					newSolution);
+    if (ifSol>0) {
+      // better solution found
+      found = i ;
+      incrementUsed(newSolution);
+      // increment number of solutions so other heuristics can test
+      numberSolutions_++;
+      numberHeuristicSolutions_++;
+    } else {
+      heuristicValue = saveValue ;
+    }
+  }
+  currentPassNumber_ = 0;
+  /*
+    Did any of the heuristics turn up a new solution? Record it before we free
+    the vector.
+  */
+  if (found >= 0) { 
+    // For compiler error on terra cluster!
+    if (found<numberHeuristics_)
+      lastHeuristic_ = heuristic_[found];
+    else
+      lastHeuristic_ = heuristic_[0];
+    setBestSolution(CBC_ROUNDING,heuristicValue,newSolution) ;
+    CbcTreeLocal * tree 
+      = dynamic_cast<CbcTreeLocal *> (tree_);
+    if (tree)
+      tree->passInSolution(bestSolution_,heuristicValue);
+    if (eventHandler) {
+      if (!eventHandler->event(CbcEventHandler::solution)) {
+	eventHappened_=true; // exit
+      }
+    }
+  }
+  if (!deleteHeuristicsAfterwards) {
+    for (i = 0;i<numberHeuristics_;i++) {
+      // delete FPump
+      CbcHeuristicFPump * pump 
+	= dynamic_cast<CbcHeuristicFPump *> (heuristic_[i]);
+      if (pump) {
+	delete pump;
+	numberHeuristics_ --;
+	for (int j=i;j<numberHeuristics_;j++)
+	  heuristic_[j] = heuristic_[j+1];
+      }
+    }
+  } else {
+    // delete all
+    for (i = 0;i<numberHeuristics_;i++) 
+      delete heuristic_[i];
+    numberHeuristics_=0;
+    delete [] heuristic_;
+    heuristic_=NULL;
+    delete [] usedInSolution_;
+    usedInSolution_ = NULL;
+  }
+  delete [] newSolution ;
+}
+// Zap integer information in problem (may leave object info)
+void 
+CbcModel::zapIntegerInformation(bool leaveObjects)
+{
+  numberIntegers_ = 0; 
+  delete [] integerVariable_; 
+  integerVariable_ = NULL;
+  if (!leaveObjects&&ownObjects_) {
+    int i;
+    for (i=0;i<numberObjects_;i++) 
+      delete object_[i];
+    delete [] object_;
+    numberObjects_=0;
+    object_=NULL;
+  }
 }
 // Create C++ lines to get to current state
 void 

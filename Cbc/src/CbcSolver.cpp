@@ -39,6 +39,7 @@
 #include "CbcOrClpParam.hpp"
 #include "OsiRowCutDebugger.hpp"
 #include "OsiChooseVariable.hpp"
+#include "OsiAuxInfo.hpp"
 //#define USER_HAS_FAKE_CLP
 //#define USER_HAS_FAKE_CBC
 //#define CLP_MALLOC_STATISTICS
@@ -1430,14 +1431,167 @@ void CbcMain0 (CbcModel  & model)
   parameters[whichParam(GREEDY,numberParameters,parameters)].setCurrentOption("on");
   parameters[whichParam(COMBINE,numberParameters,parameters)].setCurrentOption("on");
   parameters[whichParam(RINS,numberParameters,parameters)].setCurrentOption("off");
+  parameters[whichParam(LOCALTREE,numberParameters,parameters)].setCurrentOption("off");
   parameters[whichParam(COSTSTRATEGY,numberParameters,parameters)].setCurrentOption("off");
 }
+/* 1 - add heuristics to model
+   2 - do heuristics (and set cutoff and best solution)
+   3 - for miplib test so skip some
+*/
+static int doHeuristics(CbcModel * model,int type) 
+{
+  bool anyToDo=false;
+  int logLevel = parameters[whichParam(LOGLEVEL,numberParameters,parameters)].intValue();
+  int useFpump = parameters[whichParam(FPUMP,numberParameters,parameters)].currentOptionAsInteger();
+  int useRounding = parameters[whichParam(ROUNDING,numberParameters,parameters)].currentOptionAsInteger();
+  int useGreedy = parameters[whichParam(GREEDY,numberParameters,parameters)].currentOptionAsInteger();
+  int useCombine = parameters[whichParam(COMBINE,numberParameters,parameters)].currentOptionAsInteger();
+  int useRINS = parameters[whichParam(RINS,numberParameters,parameters)].currentOptionAsInteger();
+  // FPump done first as it only works if no solution
+  int kType = (type<3) ? type : 1;
+  if (useFpump>=kType) {
+    anyToDo=true;
+    CbcHeuristicFPump heuristic4(*model);
+    heuristic4.setFractionSmall(0.6);
+    heuristic4.setMaximumPasses(parameters[whichParam(FPUMPITS,numberParameters,parameters)].intValue());
+    int pumpTune=parameters[whichParam(FPUMPTUNE,numberParameters,parameters)].intValue();
+    if (pumpTune>0) {
+      /*
+	>=10000000 for using obj
+	>=1000000 use as accumulate switch
+	>=1000 use index+1 as number of large loops
+	>=100 use 0.05 objvalue as increment
+	>=10 use +0.1 objvalue for cutoff (add)
+	1 == fix ints at bounds, 2 fix all integral ints, 3 and continuous at bounds
+	4 and static continuous, 5 as 3 but no internal integers
+	6 as 3 but all slack basis!
+      */
+      double value = model->solver()->getObjSense()*model->solver()->getObjValue();
+      int w = pumpTune/10;
+      int c = w % 10;
+      w /= 10;
+      int i = w % 10;
+      w /= 10;
+      int r = w;
+      int accumulate = r/1000;
+      r -= 1000*accumulate;
+      if (accumulate>=10) {
+	int which = accumulate/10;
+	accumulate -= 10*which;
+	which--;
+	// weights and factors
+	double weight[]={0.1,0.1,0.5,0.5,1.0,1.0,5.0,5.0};
+	double factor[] = {0.1,0.5,0.1,0.5,0.1,0.5,0.1,0.5};
+	heuristic4.setInitialWeight(weight[which]);
+	heuristic4.setWeightFactor(factor[which]);
+      }
+      // fake cutoff
+      if (logLevel>1)
+	printf("Setting ");
+      if (c) {
+	double cutoff;
+	model->solver()->getDblParam(OsiDualObjectiveLimit,cutoff);
+	cutoff = CoinMin(cutoff,value + 0.1*fabs(value)*c);
+	double dextra1 = parameters[whichParam(DEXTRA1,numberParameters,parameters)].doubleValue();
+	if (dextra1)
+	  cutoff=dextra1;
+	heuristic4.setFakeCutoff(cutoff);
+	if (logLevel>1)
+	  printf("fake cutoff of %g ",cutoff);
+      }
+      if (i||r) {
+	// also set increment
+	double increment = (0.01*i+0.005)*(fabs(value)+1.0e-12);
+	double dextra2 = parameters[whichParam(DEXTRA2,numberParameters,parameters)].doubleValue();
+	if (dextra2)
+	  increment = dextra2;
+	heuristic4.setAbsoluteIncrement(increment);
+	heuristic4.setAccumulate(accumulate);
+	heuristic4.setMaximumRetries(r+1);
+	if (logLevel>1) {
+	  if (i) 
+	    printf("increment of %g ",heuristic4.absoluteIncrement());
+	  if (accumulate) 
+	    printf("accumulate of %d ",accumulate);
+	  printf("%d retries ",r+2);
+	}
+      }
+      pumpTune = pumpTune%100;
+      if (logLevel>1)
+	printf("and setting when to %d\n",pumpTune+10);
+      if (pumpTune==6)
+	pumpTune =13;
+      heuristic4.setWhen(pumpTune+10);
+    }
+    heuristic4.setHeuristicName("feasibility pump");
+    model->addHeuristic(&heuristic4);
+  }
+  if (useRounding>=type) {
+    CbcRounding heuristic1(*model);
+    heuristic1.setHeuristicName("rounding");
+    model->addHeuristic(&heuristic1) ;
+    anyToDo=true;
+  }
+  if (useCombine>=type) {
+    CbcHeuristicLocal heuristic2(*model);
+    heuristic2.setHeuristicName("combine solutions");
+    heuristic2.setFractionSmall(0.6);
+    heuristic2.setSearchType(1);
+    model->addHeuristic(&heuristic2);
+    anyToDo=true;
+  }
+  if (useGreedy>=type) {
+    CbcHeuristicGreedyCover heuristic3(*model);
+    heuristic3.setHeuristicName("greedy cover");
+    CbcHeuristicGreedyEquality heuristic3a(*model);
+    heuristic3a.setHeuristicName("greedy equality");
+    model->addHeuristic(&heuristic3);
+    model->addHeuristic(&heuristic3a);
+    anyToDo=true;
+  }
+  if (useRINS>=kType) {
+    CbcHeuristicRINS heuristic5(*model);
+    heuristic5.setHeuristicName("RINS");
+    heuristic5.setFractionSmall(0.6);
+    model->addHeuristic(&heuristic5) ;
+    anyToDo=true;
+  }
+  if (type==2&&anyToDo) {
+    // Do heuristics
+    // clean copy
+    CbcModel model2(*model);
+    if (logLevel<=1)
+      model2.solver()->setHintParam(OsiDoReducePrint,true,OsiHintTry);
+    OsiBabSolver defaultC;
+    //solver_->setAuxiliaryInfo(&defaultC);
+    model2.passInSolverCharacteristics(&defaultC);
+    // Save bounds
+    int numberColumns = model2.solver()->getNumCols();
+    model2.createContinuousSolver();
+    bool cleanModel = !model2.numberIntegers()&&!model2.numberObjects();
+    model2.findIntegers(false);
+    model2.doHeuristicsAtRoot(true);
+    if (cleanModel)
+      model2.zapIntegerInformation(false);
+    if (model2.bestSolution()) {
+      double value = model2.getMinimizationObjValue();
+      model->setCutoff(value);
+      model->setBestSolution(model2.bestSolution(),numberColumns,value);
+      model->setSolutionCount(1);
+      model->setNumberHeuristicSolutions(1);
+    }
+    return 0;
+  } else {
+    return 0;
+  }
+} 
 /* Meaning of whereFrom:
    1 after initial solve by dualsimplex etc
    2 after preprocessing
    3 just before branchAndBound (so user can override)
    4 just after branchAndBound (before postprocessing)
    5 after postprocessing
+   6 after a user called heuristic phase
 */
 int CbcMain1 (int argc, const char *argv[],
 	     CbcModel  & model, int callBack(CbcModel * currentSolver, int whereFrom))
@@ -1475,8 +1629,10 @@ int CbcMain1 (int argc, const char *argv[],
     }
   }
   CbcModel * babModel = NULL;
+  double time0;
   {
     double time1 = CoinCpuTime(),time2;
+    time0=time1;
     bool goodModel=(originalSolver->getNumCols()) ? true : false;
 
     CoinSighandler_t saveSignal=SIG_DFL;
@@ -1810,12 +1966,6 @@ int CbcMain1 (int argc, const char *argv[],
     // Stored cuts
     bool storedCuts = false;
 
-    bool useRounding=true;
-    bool useFpump=true;
-    bool useGreedy=true;
-    bool useCombine=true;
-    bool useLocalTree=false;
-    bool useRINS=false;
     int useCosts=0;
     // don't use input solution
     int useSolution=0;
@@ -1856,6 +2006,8 @@ int CbcMain1 (int argc, const char *argv[],
     while (1) {
       // next command
       field=CoinReadGetCommand(argc,argv);
+      // Reset time
+      time1 = CoinCpuTime();
       // adjust field if has odd trailing characters
       char temp [200];
       strcpy(temp,field.c_str());
@@ -2119,7 +2271,7 @@ int CbcMain1 (int argc, const char *argv[],
 	      else if (parameters[iParam].type()==CUTPASSINTREE)
 		cutPassInTree = value;
 	      else if (parameters[iParam].type()==FPUMPITS)
-		{ useFpump = true;parameters[iParam].setIntValue(value);}
+		{ parameters[iParam].setIntValue(value);}
 	      else if (parameters[iParam].type()==STRONGBRANCHING||
 		       parameters[iParam].type()==NUMBERBEFORE)
 		strongChanged=true;
@@ -2313,14 +2465,11 @@ int CbcMain1 (int argc, const char *argv[],
 	      break;
 	    case ROUNDING:
               defaultSettings=false; // user knows what she is doing
-	      useRounding = action;
 	      break;
 	    case FPUMP:
               defaultSettings=false; // user knows what she is doing
-              useFpump=action;
 	      break;
 	    case RINS:
-              useRINS=action;
 	      break;
             case CUTSSTRATEGY:
 	      gomoryAction = action;
@@ -2348,11 +2497,6 @@ int CbcMain1 (int argc, const char *argv[],
               }
               break;
             case HEURISTICSTRATEGY:
-              useRounding = action;
-              useGreedy = action;
-              useCombine = action;
-              //useLocalTree = action;
-              useFpump=action;
               parameters[whichParam(ROUNDING,numberParameters,parameters)].setCurrentOption(action);
               parameters[whichParam(GREEDY,numberParameters,parameters)].setCurrentOption(action);
               parameters[whichParam(COMBINE,numberParameters,parameters)].setCurrentOption(action);
@@ -2361,15 +2505,12 @@ int CbcMain1 (int argc, const char *argv[],
               break;
 	    case GREEDY:
               defaultSettings=false; // user knows what she is doing
-	      useGreedy = action;
 	      break;
 	    case COMBINE:
               defaultSettings=false; // user knows what she is doing
-	      useCombine = action;
 	      break;
 	    case LOCALTREE:
               defaultSettings=false; // user knows what she is doing
-	      useLocalTree = action;
 	      break;
 	    case COSTSTRATEGY:
 	      useCosts=action;
@@ -2439,7 +2580,7 @@ int CbcMain1 (int argc, const char *argv[],
               if (dualize) {
 		//printf("dualize %d\n",dualize);
                 model2 = ((ClpSimplexOther *) model2)->dualOfModel();
-                sprintf(generalPrint,"Dual of model has %d rows and %d columns\n",
+                sprintf(generalPrint,"Dual of model has %d rows and %d columns",
                        model2->numberRows(),model2->numberColumns());
 		generalMessageHandler->message(CLP_GENERAL,generalMessages)
 		  << generalPrint
@@ -2457,7 +2598,7 @@ int CbcMain1 (int argc, const char *argv[],
                   preSolve = - preSolve;
                   if (preSolve<=100) {
                     presolveType=ClpSolve::presolveNumber;
-                    sprintf(generalPrint,"Doing %d presolve passes - picking up non-costed slacks\n",
+                    sprintf(generalPrint,"Doing %d presolve passes - picking up non-costed slacks",
                            preSolve);
 		    generalMessageHandler->message(CLP_GENERAL,generalMessages)
 		      << generalPrint
@@ -2466,7 +2607,7 @@ int CbcMain1 (int argc, const char *argv[],
                   } else {
                     preSolve -=100;
                     presolveType=ClpSolve::presolveNumberCost;
-                    sprintf(generalPrint,"Doing %d presolve passes - picking up costed slacks\n",
+                    sprintf(generalPrint,"Doing %d presolve passes - picking up costed slacks",
                            preSolve);
 		    generalMessageHandler->message(CLP_GENERAL,generalMessages)
 		      << generalPrint
@@ -2814,7 +2955,7 @@ int CbcMain1 (int argc, const char *argv[],
 	      storedCuts = dupcuts.outDuplicates(clpSolver)!=0;
 	      int nOut = numberRows-clpSolver->getNumRows();
               if (nOut&&!noPrinting)
-                sprintf(generalPrint,"%d rows eliminated\n",nOut);
+                sprintf(generalPrint,"%d rows eliminated",nOut);
 	      generalMessageHandler->message(CLP_GENERAL,generalMessages)
 		<< generalPrint
 		<<CoinMessageEol;
@@ -2841,6 +2982,22 @@ int CbcMain1 (int argc, const char *argv[],
 	      }
 	    } else {
 	      std::cout<<"** Current model not valid"<<std::endl;
+	    }
+	    break;
+	  case DOHEURISTIC:
+	    if (goodModel) {
+	      // Actually do heuristics
+	      doHeuristics(&model,2);
+	      if (model.bestSolution()) {
+		model.setProblemStatus(1);
+		model.setSecondaryStatus(6);
+	      }
+	      int returnCode=callBack(&model,6);
+	      if (returnCode) {
+		// exit if user wants
+		delete babModel;
+		return returnCode;
+	      }
 	    }
 	    break;
           case MIPLIB:
@@ -3408,7 +3565,6 @@ int CbcMain1 (int argc, const char *argv[],
                   if (solver2)
                     solver2->setHintParam(OsiDoInBranchAndCut,false,OsiHintDo) ;
                 }
-		babModel->setOriginalColumns(process.originalColumns());
 #ifdef COIN_HAS_ASL
                 if (!solver2&&usingAmpl) {
                   // infeasible
@@ -3422,7 +3578,7 @@ int CbcMain1 (int argc, const char *argv[],
 #endif
                 if (!noPrinting) {
                   if (!solver2) {
-                    sprintf(generalPrint,"Pre-processing says infeasible or unbounded\n");
+                    sprintf(generalPrint,"Pre-processing says infeasible or unbounded");
 		    generalMessageHandler->message(CLP_GENERAL,generalMessages)
 		      << generalPrint
 		      <<CoinMessageEol;
@@ -3458,6 +3614,7 @@ int CbcMain1 (int argc, const char *argv[],
                 // we have to keep solver2 so pass clone
                 solver2 = solver2->clone();
                 babModel->assignSolver(solver2);
+		babModel->setOriginalColumns(process.originalColumns());
                 babModel->initialSolve();
                 babModel->setMaximumSeconds(timeLeft-(CoinCpuTime()-time1));
               }
@@ -3597,113 +3754,14 @@ int CbcMain1 (int argc, const char *argv[],
 		delete [] sort;
 		delete [] dsort;
 	      }
-              // FPump done first as it only works if no solution
-              CbcHeuristicFPump heuristic4(*babModel);
-	      heuristic4.setFractionSmall(0.6);
-              if (useFpump) {
-                heuristic4.setMaximumPasses(parameters[whichParam(FPUMPITS,numberParameters,parameters)].intValue());
-                int pumpTune=parameters[whichParam(FPUMPTUNE,numberParameters,parameters)].intValue();
-		if (pumpTune>0) {
-		  /*
-		    >=10000000 for using obj
-		    >=1000000 use as accumulate switch
-		    >=1000 use index+1 as number of large loops
-		    >=100 use 0.05 objvalue as increment
-		    >=10 use +0.1 objvalue for cutoff (add)
-		    1 == fix ints at bounds, 2 fix all integral ints, 3 and continuous at bounds
-		    4 and static continuous, 5 as 3 but no internal integers
-		    6 as 3 but all slack basis!
-		  */
-		  int logLevel = parameters[log].intValue();
-		  double value = babModel->solver()->getObjSense()*babModel->solver()->getObjValue();
-		  int w = pumpTune/10;
-		  int c = w % 10;
-		  w /= 10;
-		  int i = w % 10;
-		  w /= 10;
-		  int r = w;
-		  int accumulate = r/1000;
-		  r -= 1000*accumulate;
-		  if (accumulate>=10) {
-		    int which = accumulate/10;
-		    accumulate -= 10*which;
-		    which--;
-		    // weights and factors
-		    double weight[]={0.1,0.1,0.5,0.5,1.0,1.0,5.0,5.0};
-		    double factor[] = {0.1,0.5,0.1,0.5,0.1,0.5,0.1,0.5};
-		    heuristic4.setInitialWeight(weight[which]);
-		    heuristic4.setWeightFactor(factor[which]);
-		  }
-		  // fake cutoff
-		  if (logLevel>1)
-		    printf("Setting ");
-		  if (c) {
-		    double cutoff;
-		    babModel->solver()->getDblParam(OsiDualObjectiveLimit,cutoff);
-		    cutoff = CoinMin(cutoff,value + 0.1*fabs(value)*c);
-		    double dextra1 = parameters[whichParam(DEXTRA1,numberParameters,parameters)].doubleValue();
-		    if (dextra1)
-		      cutoff=dextra1;
-		    heuristic4.setFakeCutoff(cutoff);
-		    if (logLevel>1)
-		      printf("fake cutoff of %g ",cutoff);
-		  }
-		  if (i||r) {
-		    // also set increment
-		    double increment = (0.01*i+0.005)*(fabs(value)+1.0e-12);
-		    double dextra2 = parameters[whichParam(DEXTRA2,numberParameters,parameters)].doubleValue();
-		    if (dextra2)
-		      increment = dextra2;
-		    heuristic4.setAbsoluteIncrement(increment);
-		    heuristic4.setAccumulate(accumulate);
-		    heuristic4.setMaximumRetries(r+1);
-		    if (logLevel>1) {
-		      if (i) 
-			printf("increment of %g ",heuristic4.absoluteIncrement());
-		      if (accumulate) 
-			printf("accumulate of %d ",accumulate);
-		      printf("%d retries ",r+2);
-		    }
-		  }
-		  pumpTune = pumpTune%100;
-		  if (logLevel>1)
-		    printf("and setting when to %d\n",pumpTune+10);
-		  if (pumpTune==6)
-		    pumpTune =13;
-		  heuristic4.setWhen(pumpTune+10);
-		}
-		heuristic4.setHeuristicName("feasibility pump");
-                babModel->addHeuristic(&heuristic4);
-              }
+	      // Set up heuristics
+	      doHeuristics(babModel,(!miplib) ? 1 : 3);
               if (!miplib) {
-                CbcRounding heuristic1(*babModel);
-		heuristic1.setHeuristicName("rounding");
-                if (useRounding)
-                  babModel->addHeuristic(&heuristic1) ;
-                CbcHeuristicLocal heuristic2(*babModel);
-		heuristic2.setHeuristicName("combine solutions");
-		heuristic2.setFractionSmall(0.6);
-                heuristic2.setSearchType(1);
-                if (useCombine)
-                  babModel->addHeuristic(&heuristic2);
-                CbcHeuristicGreedyCover heuristic3(*babModel);
-		heuristic3.setHeuristicName("greedy cover");
-                CbcHeuristicGreedyEquality heuristic3a(*babModel);
-		heuristic3a.setHeuristicName("greedy equality");
-                if (useGreedy) {
-                  babModel->addHeuristic(&heuristic3);
-                  babModel->addHeuristic(&heuristic3a);
-                }
-                if (useLocalTree) {
+		if(parameters[whichParam(LOCALTREE,numberParameters,parameters)].currentOptionAsInteger()) {
                   CbcTreeLocal localTree(babModel,NULL,10,0,0,10000,2000);
                   babModel->passInTreeHandler(localTree);
                 }
               }
-	      CbcHeuristicRINS heuristic5(*babModel);
-	      heuristic5.setHeuristicName("RINS");
-	      heuristic5.setFractionSmall(0.6);
-	      if (useRINS)
-		babModel->addHeuristic(&heuristic5) ;
 	      if (type==MIPLIB) {
 		if (babModel->numberStrong()==5&&babModel->numberBeforeTrust()==5) 
 		  babModel->setNumberBeforeTrust(10);
@@ -3842,7 +3900,7 @@ int CbcMain1 (int argc, const char *argv[],
               // Used to be automatically set
               int mipOptions = parameters[whichParam(MIPOPTIONS,numberParameters,parameters)].intValue()%10000;
               if (mipOptions!=(1)) {
-                sprintf(generalPrint,"mip options %d\n",mipOptions);
+                sprintf(generalPrint,"mip options %d",mipOptions);
 		generalMessageHandler->message(CLP_GENERAL,generalMessages)
 		  << generalPrint
 		  <<CoinMessageEol;
@@ -3863,7 +3921,7 @@ int CbcMain1 (int argc, const char *argv[],
               if (type==BAB||type==MIPLIB) {
 		int moreMipOptions = parameters[whichParam(MOREMIPOPTIONS,numberParameters,parameters)].intValue();
                 if (moreMipOptions>=0) {
-                  sprintf(generalPrint,"more mip options %d\n",moreMipOptions);
+                  sprintf(generalPrint,"more mip options %d",moreMipOptions);
 		  generalMessageHandler->message(CLP_GENERAL,generalMessages)
 		    << generalPrint
 		    <<CoinMessageEol;
@@ -3994,6 +4052,7 @@ int CbcMain1 (int argc, const char *argv[],
 			}
 		      }
 		      babModel->setNumberObjects(n);
+		      babModel->zapIntegerInformation();
 		    }
 		    int nMissing=0;
 		    for (int iObj = 0;iObj<numberOldObjects;iObj++) {
@@ -4047,7 +4106,7 @@ int CbcMain1 (int argc, const char *argv[],
 		      }
 		    }
 		    if (nMissing) {
-		      sprintf(generalPrint,"%d SOS variables vanished due to pre processing? - check validity?\n",nMissing);
+		      sprintf(generalPrint,"%d SOS variables vanished due to pre processing? - check validity?",nMissing);
 		      generalMessageHandler->message(CLP_GENERAL,generalMessages)
 			<< generalPrint
 			<<CoinMessageEol;
@@ -4108,7 +4167,7 @@ int CbcMain1 (int argc, const char *argv[],
 			}
 			delete [] back;
 			if (nMissing) {
-			  sprintf(generalPrint,"%d SOS variables vanished due to pre processing? - check validity?\n",nMissing);
+			  sprintf(generalPrint,"%d SOS variables vanished due to pre processing? - check validity?",nMissing);
 			  generalMessageHandler->message(CLP_GENERAL,generalMessages)
 			    << generalPrint
 			    <<CoinMessageEol;
@@ -4277,7 +4336,7 @@ int CbcMain1 (int argc, const char *argv[],
 			}
 			delete [] back;
 			if (nMissing) {
-			  sprintf(generalPrint,"%d SOS variables vanished due to pre processing? - check validity?\n",nMissing);
+			  sprintf(generalPrint,"%d SOS variables vanished due to pre processing? - check validity?",nMissing);
 			  generalMessageHandler->message(CLP_GENERAL,generalMessages)
 			    << generalPrint
 			    <<CoinMessageEol;
@@ -4449,7 +4508,7 @@ int CbcMain1 (int argc, const char *argv[],
 		  babModel->setStrategy(strategy);
 		}
                 if (testOsiOptions>=0) {
-                  sprintf(generalPrint,"Testing OsiObject options %d\n",testOsiOptions);
+                  sprintf(generalPrint,"Testing OsiObject options %d",testOsiOptions);
 		  generalMessageHandler->message(CLP_GENERAL,generalMessages)
 		    << generalPrint
 		    <<CoinMessageEol;
@@ -4764,7 +4823,7 @@ int CbcMain1 (int argc, const char *argv[],
 		    const OsiRowCut * rowCutPointer = storedAmpl.rowCutPointer(i);
 		    babModel->makeGlobalCut(rowCutPointer);
 		  }
-		}
+		}  
 		// If defaults then increase trust for small models
 		if (!strongChanged) {
 		  int numberColumns = babModel->getNumCols();
@@ -5349,7 +5408,7 @@ int CbcMain1 (int argc, const char *argv[],
 		ClpSimplex * model2 = lpSolver;
 		if (dualize) {
 		  model2 = ((ClpSimplexOther *) model2)->dualOfModel();
-		  sprintf(generalPrint,"Dual of model has %d rows and %d columns\n",
+		  sprintf(generalPrint,"Dual of model has %d rows and %d columns",
 			 model2->numberRows(),model2->numberColumns());
 		  generalMessageHandler->message(CLP_GENERAL,generalMessages)
 		    << generalPrint
@@ -6609,6 +6668,10 @@ clp watson.mps -\nscaling off\nprimalsimplex"
   }
   #endif
   model.solver()->setWarmStart(NULL);
+  sprintf(generalPrint,"Total time %.2f",CoinCpuTime()-time0);
+  generalMessageHandler->message(CLP_GENERAL,generalMessages)
+    << generalPrint
+    <<CoinMessageEol;
   return 0;
 }    
 static void breakdown(const char * name, int numberLook, const double * region)

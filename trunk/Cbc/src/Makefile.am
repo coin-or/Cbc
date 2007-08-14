@@ -1,4 +1,4 @@
-# Copyright (C) 2006 International Business Machines and others.
+# Copyright (C) 2006, 2007 International Business Machines and others.
 # All Rights Reserved.
 # This file is distributed under the Common Public License.
 
@@ -83,8 +83,7 @@ bin_PROGRAMS += cbc
 
 # List all source files for this executable, including headers
 cbc_SOURCES = \
-	CoinSolve.cpp \
-	unitTestClp.cpp
+	CoinSolve.cpp
 
 # Additional COIN libraries
 cbc_LDADD = libCbc.la \

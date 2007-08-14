@@ -14,7 +14,7 @@
 
 @SET_MAKE@
 
-# Copyright (C) 2006 International Business Machines and others.
+# Copyright (C) 2006, 2007 International Business Machines and others.
 # All Rights Reserved.
 # This file is distributed under the Common Public License.
 
@@ -171,9 +171,8 @@ libCbc_la_OBJECTS = $(am_libCbc_la_OBJECTS)
 @CBC_BUILD_CBC_GENERIC_TRUE@am__EXEEXT_2 = cbc-generic$(EXEEXT)
 binPROGRAMS_INSTALL = $(INSTALL_PROGRAM)
 PROGRAMS = $(bin_PROGRAMS)
-am__cbc_SOURCES_DIST = CoinSolve.cpp unitTestClp.cpp
-@COIN_HAS_CLP_TRUE@am_cbc_OBJECTS = CoinSolve.$(OBJEXT) \
-@COIN_HAS_CLP_TRUE@	unitTestClp.$(OBJEXT)
+am__cbc_SOURCES_DIST = CoinSolve.cpp
+@COIN_HAS_CLP_TRUE@am_cbc_OBJECTS = CoinSolve.$(OBJEXT)
 cbc_OBJECTS = $(am_cbc_OBJECTS)
 am__DEPENDENCIES_1 =
 @COIN_HAS_ASL_TRUE@@COIN_HAS_CLP_TRUE@am__DEPENDENCIES_2 =  \
@@ -539,8 +538,7 @@ AM_CPPFLAGS = $(am__append_2) $(am__append_5) $(am__append_7) \
 
 # List all source files for this executable, including headers
 @COIN_HAS_CLP_TRUE@cbc_SOURCES = \
-@COIN_HAS_CLP_TRUE@	CoinSolve.cpp \
-@COIN_HAS_CLP_TRUE@	unitTestClp.cpp
+@COIN_HAS_CLP_TRUE@	CoinSolve.cpp
 
 
 # Additional COIN libraries
@@ -778,7 +776,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ClpAmplStuff.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CoinSolve.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/unitTestClp.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/unitTestClp.Po@am__quote@
 
 .cpp.o:
 @am__fastdepCXX_TRUE@	if $(CXXCOMPILE) -MT $@ -MD -MP -MF "$(DEPDIR)/$*.Tpo" -c -o $@ $<; \

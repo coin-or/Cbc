@@ -188,7 +188,7 @@ CbcHeuristicFPump::solution(double & solutionValue,
   if (!atRoot||passNumber!=1)
     return 0;
   // probably a good idea
-  if (model_->getSolutionCount()) return 0;
+  //if (model_->getSolutionCount()) return 0;
   // loop round doing repeated pumps
   double cutoff;
   model_->solver()->getDblParam(OsiDualObjectiveLimit,cutoff);
@@ -254,6 +254,29 @@ CbcHeuristicFPump::solution(double & solutionValue,
     allSlack=true;
   }
   double time1 = CoinCpuTime();
+  model_->solver()->resolve();
+  if (cutoff<1.0e50&&false) {
+    // Fix on djs
+    double direction = model_->solver()->getObjSense() ;
+    double gap = cutoff - model_->solver()->getObjValue()*direction ;
+    double tolerance;
+    model_->solver()->getDblParam(OsiDualTolerance,tolerance) ;
+    if (gap>0.0) {
+      gap += 100.0*tolerance;
+      model_->solver()->reducedCostFix(gap);
+    }
+  }
+  CoinWarmStartBasis saveBasis;
+  CoinWarmStartBasis * basis =
+    dynamic_cast<CoinWarmStartBasis *>(model_->solver()->getWarmStart()) ;
+  if (basis) {
+    saveBasis = * basis;
+    delete basis;
+  }
+  double continuousObjectiveValue = model_->solver()->getObjValue()*model_->solver()->getObjSense();
+  double * firstPerturbedObjective = NULL;
+  double * firstPerturbedSolution = NULL;
+  assert (model_->solver()->isProvenOptimal());
   if (when_>=11&&when_<=15) {
     fixInternal = when_ >11&&when_<15;
     if (when_<13)
@@ -265,8 +288,6 @@ CbcHeuristicFPump::solution(double & solutionValue,
     when_=1;
     usedColumn = new char [numberColumns];
     memset(usedColumn,0,numberColumns);
-    model_->solver()->resolve();
-    assert (model_->solver()->isProvenOptimal());
     lastSolution = CoinCopyOfArray(model_->solver()->getColSolution(),numberColumns);
   }
   int finalReturnCode=0;
@@ -280,6 +301,17 @@ CbcHeuristicFPump::solution(double & solutionValue,
     numberTries++;
     // Clone solver - otherwise annoys root node computations
     OsiSolverInterface * solver = model_->solver()->clone();
+    if (CoinMin(fakeCutoff_,cutoff)<1.0e50) {
+      // Fix on djs
+      double direction = solver->getObjSense() ;
+      double gap = CoinMin(fakeCutoff_,cutoff) - solver->getObjValue()*direction ;
+      double tolerance;
+      solver->getDblParam(OsiDualTolerance,tolerance) ;
+      if (gap>0.0) {
+	gap += 100.0*tolerance;
+	solver->reducedCostFix(gap);
+      }
+    }
     // if cutoff exists then add constraint 
     bool useCutoff = (fabs(cutoff)<1.0e20&&(fakeCutoff_!=COIN_DBL_MAX||numberTries>1));
     // but there may be a close one
@@ -299,7 +331,13 @@ CbcHeuristicFPump::solution(double & solutionValue,
 	  els[nel++] = direction*value;
 	}
       }
-      solver->addRow(nel,which,els,-COIN_DBL_MAX,cutoff);
+      double offset;
+      solver->getDblParam(OsiObjOffset,offset);
+#ifdef COIN_DEVELOP
+      if (offset)
+	printf("CbcHeuristicFPump obj offset %g\n",offset);
+#endif
+      solver->addRow(nel,which,els,-COIN_DBL_MAX,cutoff+offset);
       delete [] which;
       delete [] els;
       bool takeHint;
@@ -378,8 +416,17 @@ CbcHeuristicFPump::solution(double & solutionValue,
       if (maximumTime_>0.0&&CoinCpuTime()>=startTime_+maximumTime_) break;
       memcpy(newSolution,solution,numberColumns*sizeof(double));
       int flip;
+      if (numberPasses==0&&false) {
+	// always use same seed
+	CoinSeedRandom(987654321);
+      }
       returnCode = rounds(solver, newSolution,saveObjective,numberIntegers,integerVariable,
 			  pumpPrint,numberPasses,roundExpensive_,defaultRounding_,&flip);
+      if (numberPasses==0&&false) {
+	// Make sure random will be different
+	for (i=1;i<numberTries;i++)
+	  CoinDrand48();
+      }
       numberPasses++;
       if (returnCode) {
 	// SOLUTION IS INTEGER
@@ -502,7 +549,7 @@ CbcHeuristicFPump::solution(double & solutionValue,
 	  for (i=0;i<numberIntegers;i++) 
 	    randomX[i] = max(0.0,CoinDrand48()-0.3);
 	  for (int k=0;k<10;k++) {
-#ifdef COIN_DEVELOP
+#ifdef COIN_DEVELOP_x
 	    printf("kpass %d\n",k);
 #endif
 	    int numberX[10]={0,0,0,0,0,0,0,0,0,0};
@@ -518,12 +565,12 @@ CbcHeuristicFPump::solution(double & solutionValue,
 	    if (target<0.0) {
 	      if (numberX[9]<=200)
 		break; // not very many changes
-	      target=CoinMax(200.0,0.05*numberX[9]);
+	      target=CoinMax(200.0,CoinMin(0.05*numberX[9],1000.0));
 	    }
 	    int iX=-1;
 	    int iBand=-1;
 	    for (i=0;i<10;i++) {
-#ifdef COIN_DEVELOP
+#ifdef COIN_DEVELOP_x
 	      printf("** %d changed at %g\n",numberX[i],factorX[i]);
 #endif
 	      if (numberX[i]>=target&&numberX[i]<2.0*target&&iX<0)
@@ -690,10 +737,36 @@ CbcHeuristicFPump::solution(double & solutionValue,
 	  solver->getHintParam(OsiDoDualInResolve,takeHint,strength);
 	  if (numberPerturbed>numberColumns)
 	    solver->setHintParam(OsiDoDualInResolve,true); // dual may be better
+	  if (numberTries>1&&numberPasses==1&&false) {
+	    // use basis from first time
+	    solver->setWarmStart(&saveBasis);
+	    // and objective
+	    solver->setObjective(firstPerturbedObjective);
+	    // and solution
+	    solver->setColSolution(firstPerturbedSolution);
+	  }
 	  solver->resolve();
+	  if (numberTries==1&&numberPasses==1&&false) {
+	    // save basis
+	    CoinWarmStartBasis * basis =
+	      dynamic_cast<CoinWarmStartBasis *>(solver->getWarmStart()) ;
+	    if (basis) {
+	      saveBasis = * basis;
+	      delete basis;
+	    }
+	    firstPerturbedObjective = CoinCopyOfArray(solver->getObjCoefficients(),numberColumns);
+	    firstPerturbedSolution = CoinCopyOfArray(solver->getColSolution(),numberColumns);
+	  }
 	  solver->setHintParam(OsiDoDualInResolve,takeHint);
 #ifdef COIN_DEVELOP
-	  printf("took %d iterations\n",solver->getIterationCount());
+	  {
+	    double newSolutionValue = -saveOffset;
+	    const double * newSolution = solver->getColSolution();
+	    for (  i=0 ; i<numberColumns ; i++ )
+	      newSolutionValue += saveObjective[i]*newSolution[i];
+	    newSolutionValue *= direction;
+	    printf("took %d iterations - true obj %g\n",solver->getIterationCount(),newSolutionValue);
+	  }
 #endif
 	  assert (solver->isProvenOptimal());
 	  // in case very dubious solver
@@ -968,12 +1041,18 @@ CbcHeuristicFPump::solution(double & solutionValue,
     }
     if (solutionFound) finalReturnCode=1;
     cutoff = CoinMin(cutoff,solutionValue);
-    if (numberTries>=maximumRetries_||!solutionFound||exitAll) {
+    if (numberTries>=maximumRetries_||!solutionFound||exitAll||cutoff<continuousObjectiveValue+1.0e-7) {
       break;
-    } else if (absoluteIncrement_>0.0||relativeIncrement_>0.0) {
+    } else {
       solutionFound=false;
-      double gap = relativeIncrement_*fabs(solutionValue);
-      cutoff -= CoinMax(CoinMax(gap,absoluteIncrement_),model_->getCutoffIncrement());
+      if (absoluteIncrement_>0.0||relativeIncrement_>0.0) {
+	double gap = relativeIncrement_*fabs(solutionValue);
+	cutoff -= CoinMax(CoinMax(gap,absoluteIncrement_),model_->getCutoffIncrement());
+      } else {
+	cutoff -= 0.1*(cutoff-continuousObjectiveValue);
+      }
+      if (cutoff<continuousObjectiveValue)
+	break;
       sprintf(pumpPrint+strlen(pumpPrint),"Round again with cutoff of %g",cutoff);
       model_->messageHandler()->message(CBC_FPUMP1,model_->messages())
 	<< pumpPrint
@@ -982,8 +1061,6 @@ CbcHeuristicFPump::solution(double & solutionValue,
       if ((accumulate_&3)<2&&usedColumn)
 	memset(usedColumn,0,numberColumns);
       totalNumberPasses += numberPasses-1;
-    } else {
-      break;
     }
   }
   if (!finalReturnCode&&closestSolution&&closestObjectiveValue <= 10.0&&usedColumn) {
@@ -1031,6 +1108,8 @@ CbcHeuristicFPump::solution(double & solutionValue,
   delete [] newSolution;
   delete [] closestSolution;
   delete [] integerVariable;
+  delete [] firstPerturbedObjective;
+  delete [] firstPerturbedSolution;
   sprintf(pumpPrint,"After %.2f seconds - Feasibility pump exiting - took %.2f seconds",
 	  model_->getCurrentSeconds(),CoinCpuTime()-time1);
   model_->messageHandler()->message(CBC_FPUMP1,model_->messages())

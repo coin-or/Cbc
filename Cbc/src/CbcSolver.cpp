@@ -40,8 +40,8 @@
 #include "OsiRowCutDebugger.hpp"
 #include "OsiChooseVariable.hpp"
 #include "OsiAuxInfo.hpp"
-//#define USER_HAS_FAKE_CLP
-//#define USER_HAS_FAKE_CBC
+#define USER_HAS_FAKE_CLP
+#define USER_HAS_FAKE_CBC
 //#define CLP_MALLOC_STATISTICS
 #ifdef CLP_MALLOC_STATISTICS
 #include <malloc.h>
@@ -1501,7 +1501,8 @@ static int doHeuristics(CbcModel * model,int type)
       }
       if (i||r) {
 	// also set increment
-	double increment = (0.01*i+0.005)*(fabs(value)+1.0e-12);
+	//double increment = (0.01*i+0.005)*(fabs(value)+1.0e-12);
+	double increment = 0.0;
 	double dextra2 = parameters[whichParam(DEXTRA2,numberParameters,parameters)].doubleValue();
 	if (dextra2)
 	  increment = dextra2;
@@ -1558,6 +1559,7 @@ static int doHeuristics(CbcModel * model,int type)
   }
   if (type==2&&anyToDo) {
     // Do heuristics
+#if 1
     // clean copy
     CbcModel model2(*model);
     if (logLevel<=1)
@@ -1580,6 +1582,21 @@ static int doHeuristics(CbcModel * model,int type)
       model->setSolutionCount(1);
       model->setNumberHeuristicSolutions(1);
     }
+#else
+    if (logLevel<=1)
+      model->solver()->setHintParam(OsiDoReducePrint,true,OsiHintTry);
+    OsiBabSolver defaultC;
+    //solver_->setAuxiliaryInfo(&defaultC);
+    model->passInSolverCharacteristics(&defaultC);
+    // Save bounds
+    int numberColumns = model->solver()->getNumCols();
+    model->createContinuousSolver();
+    bool cleanModel = !model->numberIntegers()&&!model->numberObjects();
+    model->findIntegers(false);
+    model->doHeuristicsAtRoot(true);
+    if (cleanModel)
+      model->zapIntegerInformation(false);
+#endif
     return 0;
   } else {
     return 0;
@@ -2080,6 +2097,7 @@ int CbcMain1 (int argc, const char *argv[],
 	    numberSOS = info.numberSos;
 	  }
 #endif
+	  lpSolver = clpSolver->getModelPtr();
 	  if (!lpSolver->integerInformation()&&!numberSOS&&
 	      !clpSolver->numberSOS()&&!model.numberObjects()&&!clpSolver->numberObjects())
 	    type=DUALSIMPLEX;
@@ -2214,8 +2232,44 @@ int CbcMain1 (int argc, const char *argv[],
 	      switch(type) {
 	      case DJFIX:
 		djFix=value;
-		preSolve=5;
-                defaultSettings=false; // user knows what she is doing
+                if (goodModel&&djFix<1.0e20) {
+                  // do some fixing
+		  clpSolver = dynamic_cast< OsiClpSolverInterface*> (model.solver());
+		  clpSolver->initialSolve();
+		  lpSolver = clpSolver->getModelPtr();
+                  int numberColumns = lpSolver->numberColumns();
+                  int i;
+                  const char * type = lpSolver->integerInformation();
+                  double * lower = lpSolver->columnLower();
+                  double * upper = lpSolver->columnUpper();
+                  double * solution = lpSolver->primalColumnSolution();
+                  double * dj = lpSolver->dualColumnSolution();
+                  int numberFixed=0;
+		  double dextra4 = parameters[whichParam(DEXTRA4,numberParameters,parameters)].doubleValue();
+		  if (dextra4)
+		    printf("Multiple for continuous dj fixing is %g\n",dextra4);
+                  for (i=0;i<numberColumns;i++) {
+		    double djValue = dj[i];
+		    if (!type[i])
+		      djValue *= dextra4;
+                    if (type[i]||dextra4) {
+                      double value = solution[i];
+                      if (value<lower[i]+1.0e-5&&djValue>djFix) {
+                        solution[i]=lower[i];
+                        upper[i]=lower[i];
+                        numberFixed++;
+                      } else if (value>upper[i]-1.0e-5&&djValue<-djFix) {
+                        solution[i]=upper[i];
+                        lower[i]=upper[i];
+                        numberFixed++;
+                      }
+                    }
+                  }
+                  sprintf(generalPrint,"%d columns fixed\n",numberFixed);
+		  generalMessageHandler->message(CLP_GENERAL,generalMessages)
+		    << generalPrint
+		    <<CoinMessageEol;
+		}
 		break;
 	      case GAPRATIO:
 		gapRatio=value;
@@ -3351,36 +3405,7 @@ int CbcMain1 (int argc, const char *argv[],
                     break;
                   }
                 }
-                if (djFix<1.0e20) {
-                  // do some fixing
-                  int numberColumns = modelC->numberColumns();
-                  int i;
-                  const char * type = modelC->integerInformation();
-                  double * lower = modelC->columnLower();
-                  double * upper = modelC->columnUpper();
-                  double * solution = modelC->primalColumnSolution();
-                  double * dj = modelC->dualColumnSolution();
-                  int numberFixed=0;
-                  for (i=0;i<numberColumns;i++) {
-                    if (type[i]) {
-                      double value = solution[i];
-                      if (value<lower[i]+1.0e-5&&dj[i]>djFix) {
-                        solution[i]=lower[i];
-                        upper[i]=lower[i];
-                        numberFixed++;
-                      } else if (value>upper[i]-1.0e-5&&dj[i]<-djFix) {
-                        solution[i]=upper[i];
-                        lower[i]=upper[i];
-                        numberFixed++;
-                      }
-                    }
-                  }
-                  sprintf(generalPrint,"%d columns fixed\n",numberFixed);
-		  generalMessageHandler->message(CLP_GENERAL,generalMessages)
-		    << generalPrint
-		    <<CoinMessageEol;
-                }
-              }
+	      }
               // See if we want preprocessing
               OsiSolverInterface * saveSolver=NULL;
               CglPreProcess process;
@@ -5004,10 +5029,10 @@ int CbcMain1 (int argc, const char *argv[],
                 int iStat = babModel->status();
                 int iStat2 = babModel->secondaryStatus();
                 if (!noPrinting) {
-		  sprintf(generalPrint,"Result - %s%s objective %.16g after %d nodes and %d iterations - took %.2f seconds",
+		  sprintf(generalPrint,"Result - %s%s objective %.16g after %d nodes and %d iterations - took %.2f seconds (total time %.2f)",
 			  statusName[iStat].c_str(),minor[iStat2].c_str(),
                           babModel->getObjValue(),babModel->getNodeCount(),
-                          babModel->getIterationCount(),time2-time1);
+                          babModel->getIterationCount(),time2-time1,time2-time0);
 		  generalMessageHandler->message(CLP_GENERAL,generalMessages)
 		    << generalPrint
 		    <<CoinMessageEol;

@@ -159,8 +159,8 @@ MyMessageHandler2::setModel(CbcModel * model)
 #endif
 //#############################################################################
 // To use USERCBC or USERCLP change 0 to 1 in defines and add in your fake main program(s) and any other code
-#define USER_HAS_FAKE_CBC 
-#define USER_HAS_FAKE_CLP 
+//#define USER_HAS_FAKE_CBC 
+//#define USER_HAS_FAKE_CLP 
 #ifdef USER_HAS_FAKE_CBC
 #endif
 void fakeMain (ClpSimplex & model,OsiSolverInterface & osiSolver, CbcModel & babSolver)

@@ -2311,14 +2311,14 @@ int CbcMain1 (int argc, const char *argv[],
 	      break;
 	    case ROUNDING:
               defaultSettings=false; // user knows what she is doing
-	      useRounding = action;
+	      useRounding = (action!=0);
 	      break;
 	    case FPUMP:
               defaultSettings=false; // user knows what she is doing
-              useFpump=action;
+              useFpump=(action!=0);
 	      break;
 	    case RINS:
-              useRINS=action;
+              useRINS=(action!=0);
 	      break;
             case CUTSSTRATEGY:
 	      gomoryAction = action;
@@ -2346,11 +2346,11 @@ int CbcMain1 (int argc, const char *argv[],
               }
               break;
             case HEURISTICSTRATEGY:
-              useRounding = action;
-              useGreedy = action;
-              useCombine = action;
+              useRounding = (action!=0);
+              useGreedy = (action!=0);
+              useCombine = (action!=0);
               //useLocalTree = action;
-              useFpump=action;
+              useFpump=(action!=0);
               parameters[whichParam(ROUNDING,numberParameters,parameters)].setCurrentOption(action);
               parameters[whichParam(GREEDY,numberParameters,parameters)].setCurrentOption(action);
               parameters[whichParam(COMBINE,numberParameters,parameters)].setCurrentOption(action);
@@ -2359,15 +2359,15 @@ int CbcMain1 (int argc, const char *argv[],
               break;
 	    case GREEDY:
               defaultSettings=false; // user knows what she is doing
-	      useGreedy = action;
+	      useGreedy = (action!=0);
 	      break;
 	    case COMBINE:
               defaultSettings=false; // user knows what she is doing
-	      useCombine = action;
+	      useCombine = (action!=0);
 	      break;
 	    case LOCALTREE:
               defaultSettings=false; // user knows what she is doing
-	      useLocalTree = action;
+	      useLocalTree = (action!=0);
 	      break;
 	    case COSTSTRATEGY:
 	      useCosts=action;

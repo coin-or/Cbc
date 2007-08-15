@@ -86,12 +86,6 @@ AC_COIN_HAS_GLPK(Glpk)
 # Ampl Solver library
 AC_COIN_HAS_ASL
 
-# In this particular case we include the ASL in ADDLIBS, since currently
-# code in libCbc requires symbols from the ASL.  Later, when any AMPL code
-# is separated, this should go again.  NOTE: At that point, ASLLIB needs
-# to be used in Cbc/src/Makefile.am again (see comment there)
-ADDLIBS="$ASLLIB $ADDLIBS"
-
 #############################################################################
 #                       CbcGeneric configuration			    #
 #############################################################################

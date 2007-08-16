@@ -1633,8 +1633,12 @@ public:
   int cliquePseudoCosts(int doStatistics);
   /// Fill in useful estimates
   void pseudoShadow(double * down, double * up);
-  /// Do heuristics at root
-  void doHeuristicsAtRoot(bool deleteHeuristicsAfterwards=false);
+  /** Do heuristics at root.
+      0 - don't delete
+      1 - delete
+      2 - just delete - don't even use
+  */
+  void doHeuristicsAtRoot(int deleteHeuristicsAfterwards=0);
   /// Get the hotstart solution 
   inline const double * hotstartSolution() const
   { return hotstartSolution_;}

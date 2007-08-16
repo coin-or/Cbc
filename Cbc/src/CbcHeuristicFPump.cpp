@@ -33,6 +33,7 @@ CbcHeuristicFPump::CbcHeuristicFPump()
    maximumPasses_(100),
    maximumRetries_(1),
    accumulate_(0),
+   fixOnReducedCosts_(1),
    roundExpensive_(false)
 {
   setWhen(1);
@@ -53,6 +54,7 @@ CbcHeuristicFPump::CbcHeuristicFPump(CbcModel & model,
    maximumPasses_(100),
    maximumRetries_(1),
    accumulate_(0),
+   fixOnReducedCosts_(1),
    roundExpensive_(roundExpensive)
 {
   setWhen(1);
@@ -89,6 +91,10 @@ CbcHeuristicFPump::generateCpp( FILE * fp)
     fprintf(fp,"3  heuristicFPump.setAccumulate(%d);\n",accumulate_);
   else
     fprintf(fp,"4  heuristicFPump.setAccumulate(%d);\n",accumulate_);
+  if (fixOnReducedCosts_!=other.fixOnReducedCosts_)
+    fprintf(fp,"3  heuristicFPump.setFixOnReducedCosts(%d);\n",fixOnReducedCosts_);
+  else
+    fprintf(fp,"4  heuristicFPump.setFixOnReducedCosts(%d);\n",fixOnReducedCosts_);
   if (maximumTime_!=other.maximumTime_)
     fprintf(fp,"3  heuristicFPump.setMaximumTime(%g);\n",maximumTime_);
   else
@@ -135,6 +141,7 @@ CbcHeuristicFPump::CbcHeuristicFPump(const CbcHeuristicFPump & rhs)
   maximumPasses_(rhs.maximumPasses_),
   maximumRetries_(rhs.maximumRetries_),
   accumulate_(rhs.accumulate_),
+  fixOnReducedCosts_(rhs.fixOnReducedCosts_),
   roundExpensive_(rhs.roundExpensive_)
 {
 }
@@ -156,6 +163,7 @@ CbcHeuristicFPump::operator=( const CbcHeuristicFPump& rhs)
     maximumPasses_ = rhs.maximumPasses_;
     maximumRetries_ = rhs.maximumRetries_;
     accumulate_ = rhs.accumulate_;
+    fixOnReducedCosts_ = rhs.fixOnReducedCosts_;
     roundExpensive_ = rhs.roundExpensive_;
   }
   return *this;
@@ -263,7 +271,8 @@ CbcHeuristicFPump::solution(double & solutionValue,
     model_->solver()->getDblParam(OsiDualTolerance,tolerance) ;
     if (gap>0.0) {
       gap += 100.0*tolerance;
-      model_->solver()->reducedCostFix(gap);
+      int nFix=model_->solver()->reducedCostFix(gap);
+      printf("dj fixing fixed %d variables\n",nFix);
     }
   }
   CoinWarmStartBasis saveBasis;
@@ -307,9 +316,16 @@ CbcHeuristicFPump::solution(double & solutionValue,
       double gap = CoinMin(fakeCutoff_,cutoff) - solver->getObjValue()*direction ;
       double tolerance;
       solver->getDblParam(OsiDualTolerance,tolerance) ;
-      if (gap>0.0) {
+      if (gap>0.0&&(fixOnReducedCosts_==1||(numberTries==1&&fixOnReducedCosts_==2))) {
 	gap += 100.0*tolerance;
-	solver->reducedCostFix(gap);
+	int nFix=solver->reducedCostFix(gap);
+	if (nFix) {
+	  sprintf(pumpPrint,"Reduced cost fixing fixed %d variables on pass %d",nFix,numberTries);
+	  model_->messageHandler()->message(CBC_FPUMP1,model_->messages())
+	    << pumpPrint
+	    <<CoinMessageEol;
+	  pumpPrint[0]='\0';
+	}
       }
     }
     // if cutoff exists then add constraint 

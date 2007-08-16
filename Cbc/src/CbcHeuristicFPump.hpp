@@ -119,6 +119,16 @@ public:
   /// Get accumulation option
   inline int accumulate() const
   { return accumulate_;}
+  /**  Set whether to fix variables on known solution
+       0 - do not fix
+       1 - fix integers on reduced costs
+       2 - fix integers on reduced costs but only on entry
+  */
+  inline void setFixOnReducedCosts(int value)
+  { fixOnReducedCosts_=value;}
+  /// Get reduced cost option
+  inline int fixOnReducedCosts() const
+  { return fixOnReducedCosts_;}
 
 protected:
   // Data
@@ -154,6 +164,12 @@ protected:
        If we add 4 then use second form of problem (with extra rows and variables)
   */
   int accumulate_;
+  /**  Set whether to fix variables on known solution
+       0 - do not fix
+       1 - fix integers on reduced costs
+       2 - fix integers on reduced costs but only on entry
+  */
+  int fixOnReducedCosts_;
   /// If true round to expensive
   bool roundExpensive_;
 

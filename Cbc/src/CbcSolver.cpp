@@ -1525,7 +1525,20 @@ static int doHeuristics(CbcModel * model,int type)
       heuristic4.setWhen(pumpTune+10);
     }
     heuristic4.setHeuristicName("feasibility pump");
+    //#define ROLF
+#ifdef ROLF    
+    CbcHeuristicFPump pump(*model);
+    pump.setMaximumTime(60);
+    pump.setMaximumPasses(100);
+    pump.setMaximumRetries(1);
+    pump.setFixOnReducedCosts(0);
+    pump.setHeuristicName("Feasibility pump");
+    pump.setFractionSmall(1.0);
+    pump.setWhen(13);
+    model->addHeuristic(&pump);
+#else
     model->addHeuristic(&heuristic4);
+#endif
   }
   if (useRounding>=type) {
     CbcRounding heuristic1(*model);
@@ -1562,6 +1575,8 @@ static int doHeuristics(CbcModel * model,int type)
 #if 1
     // clean copy
     CbcModel model2(*model);
+    // But get rid of heuristics in model
+    model->doHeuristicsAtRoot(2);
     if (logLevel<=1)
       model2.solver()->setHintParam(OsiDoReducePrint,true,OsiHintTry);
     OsiBabSolver defaultC;
@@ -1572,7 +1587,7 @@ static int doHeuristics(CbcModel * model,int type)
     model2.createContinuousSolver();
     bool cleanModel = !model2.numberIntegers()&&!model2.numberObjects();
     model2.findIntegers(false);
-    model2.doHeuristicsAtRoot(true);
+    model2.doHeuristicsAtRoot(1);
     if (cleanModel)
       model2.zapIntegerInformation(false);
     if (model2.bestSolution()) {
@@ -3629,6 +3644,18 @@ int CbcMain1 (int argc, const char *argv[],
 		}
 		if (!solver2)
 		  break;
+		if (model.bestSolution()) {
+		  // need to redo - in case no better found in BAB
+		  // just get integer part right
+		  const int * originalColumns = process.originalColumns();
+		  int numberColumns = solver2->getNumCols();
+		  double * bestSolution = babModel->bestSolution();
+		  const double * oldBestSolution = model.bestSolution();
+		  for (int i=0;i<numberColumns;i++) {
+		    int jColumn = originalColumns[i];
+		    bestSolution[i]=oldBestSolution[jColumn];
+		  }
+		}
                 //solver2->resolve();
                 if (preProcess==2) {
                   OsiClpSolverInterface * clpSolver2 = dynamic_cast< OsiClpSolverInterface*> (solver2);

@@ -5352,7 +5352,6 @@ int CbcMain1 (int argc, const char *argv[],
               totalTime += time2-time1;
               // For best solution
               double * bestSolution = NULL;
-              printf ("bab best %g %x\n",babModel->getMinimizationObjValue(),babModel->bestSolution());
               if (babModel->getMinimizationObjValue()<1.0e50&&type==BAB) {
                 // post process
 		int n;

@@ -163,10 +163,13 @@ am_libCbc_la_OBJECTS = Cbc_C_Interface.lo CbcBranchActual.lo \
 	CbcFathomDynamicProgramming.lo CbcHeuristic.lo \
 	CbcHeuristicFPump.lo CbcHeuristicGreedy.lo \
 	CbcHeuristicLocal.lo CbcHeuristicRINS.lo CbcMessage.lo \
-	CbcModel.lo CbcNode.lo CbcSolver.lo CbcCbcParam.lo \
-	CbcStatistics.lo CbcStrategy.lo CbcTree.lo CbcLinked.lo \
-	CbcTreeLocal.lo ClpAmplStuff.lo unitTestClp.lo Cbc_ampl.lo
+	CbcModel.lo CbcNode.lo CbcCbcParam.lo CbcStatistics.lo \
+	CbcStrategy.lo CbcTree.lo CbcTreeLocal.lo
 libCbc_la_OBJECTS = $(am_libCbc_la_OBJECTS)
+libCbcSolver_la_LIBADD =
+am_libCbcSolver_la_OBJECTS = Cbc_ampl.lo ClpAmplStuff.lo CbcLinked.lo \
+	unitTestClp.lo CbcSolver.lo
+libCbcSolver_la_OBJECTS = $(am_libCbcSolver_la_OBJECTS)
 @COIN_HAS_CLP_TRUE@am__EXEEXT_1 = cbc$(EXEEXT)
 @CBC_BUILD_CBC_GENERIC_TRUE@am__EXEEXT_2 = cbc-generic$(EXEEXT)
 binPROGRAMS_INSTALL = $(INSTALL_PROGRAM)
@@ -177,7 +180,7 @@ cbc_OBJECTS = $(am_cbc_OBJECTS)
 am__DEPENDENCIES_1 =
 @COIN_HAS_ASL_TRUE@@COIN_HAS_CLP_TRUE@am__DEPENDENCIES_2 =  \
 @COIN_HAS_ASL_TRUE@@COIN_HAS_CLP_TRUE@	$(am__DEPENDENCIES_1)
-@COIN_HAS_CLP_TRUE@cbc_DEPENDENCIES = libCbc.la \
+@COIN_HAS_CLP_TRUE@cbc_DEPENDENCIES = libCbcSolver.la libCbc.la \
 @COIN_HAS_CLP_TRUE@	$(CGLOBJDIR)/src/libCgl.la \
 @COIN_HAS_CLP_TRUE@	$(OSIOBJDIR)/src/OsiClp/libOsiClp.la \
 @COIN_HAS_CLP_TRUE@	$(OSIOBJDIR)/src/libOsi.la \
@@ -254,9 +257,10 @@ LTCOMPILE = $(LIBTOOL) --tag=CC --mode=compile $(CC) $(DEFS) \
 CCLD = $(CC)
 LINK = $(LIBTOOL) --tag=CC --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
 	$(AM_LDFLAGS) $(LDFLAGS) -o $@
-SOURCES = $(libCbc_la_SOURCES) $(cbc_SOURCES) $(cbc_generic_SOURCES)
-DIST_SOURCES = $(libCbc_la_SOURCES) $(am__cbc_SOURCES_DIST) \
-	$(am__cbc_generic_SOURCES_DIST)
+SOURCES = $(libCbc_la_SOURCES) $(libCbcSolver_la_SOURCES) \
+	$(cbc_SOURCES) $(cbc_generic_SOURCES)
+DIST_SOURCES = $(libCbc_la_SOURCES) $(libCbcSolver_la_SOURCES) \
+	$(am__cbc_SOURCES_DIST) $(am__cbc_generic_SOURCES_DIST)
 includeHEADERS_INSTALL = $(INSTALL_HEADER)
 HEADERS = $(include_HEADERS)
 ETAGS = etags
@@ -473,34 +477,51 @@ AUTOMAKE_OPTIONS = foreign
 
 # Name of the library compiled in this directory.  We want it to be installed
 # in the 'lib' directory
-lib_LTLIBRARIES = libCbc.la
+lib_LTLIBRARIES = libCbc.la libCbcSolver.la
 
 # List all source files for this library, including headers
+libCbc_la_SOURCES = \
+	Cbc_C_Interface.cpp Cbc_C_Interface.h \
+	CbcConfig.h \
+	CbcBranchActual.cpp CbcBranchActual.hpp \
+	CbcBranchBase.cpp CbcBranchBase.hpp \
+	CbcBranchCut.cpp CbcBranchCut.hpp \
+	CbcBranchDynamic.cpp CbcBranchDynamic.hpp \
+	CbcBranchLotsize.cpp CbcBranchLotsize.hpp \
+	CbcCompareActual.cpp CbcCompareActual.hpp \
+	CbcCompareBase.hpp \
+	CbcCountRowCut.cpp CbcCountRowCut.hpp \
+	CbcCutGenerator.cpp CbcCutGenerator.hpp \
+	CbcEventHandler.cpp CbcEventHandler.hpp \
+	CbcFathom.cpp CbcFathom.hpp \
+	CbcFathomDynamicProgramming.cpp CbcFathomDynamicProgramming.hpp \
+	CbcFeasibilityBase.hpp \
+	CbcHeuristic.cpp CbcHeuristic.hpp \
+	CbcHeuristicFPump.cpp CbcHeuristicFPump.hpp \
+	CbcHeuristicGreedy.cpp CbcHeuristicGreedy.hpp \
+	CbcHeuristicLocal.cpp CbcHeuristicLocal.hpp \
+	CbcHeuristicRINS.cpp CbcHeuristicRINS.hpp \
+	CbcMessage.cpp CbcMessage.hpp \
+	CbcModel.cpp CbcModel.hpp \
+	CbcNode.cpp CbcNode.hpp \
+	CbcCbcParam.cpp \
+	CbcStatistics.cpp CbcStatistics.hpp \
+	CbcStrategy.cpp CbcStrategy.hpp \
+	CbcTree.cpp CbcTree.hpp \
+	CbcTreeLocal.cpp CbcTreeLocal.hpp
+
+libCbcSolver_la_SOURCES = \
+	Cbc_ampl.cpp Cbc_ampl.h \
+	ClpConstraintAmpl.hpp ClpAmplObjective.hpp ClpAmplStuff.cpp \
+	CbcLinked.cpp CbcLinked.hpp \
+	unitTestClp.cpp CbcSolver.cpp 
+
+
 #Stefan: added unitTestClp.cpp because CbcSolver defines reference to it
-libCbc_la_SOURCES = Cbc_C_Interface.cpp Cbc_C_Interface.h CbcConfig.h \
-	CbcBranchActual.cpp CbcBranchActual.hpp CbcBranchBase.cpp \
-	CbcBranchBase.hpp CbcBranchCut.cpp CbcBranchCut.hpp \
-	CbcBranchDynamic.cpp CbcBranchDynamic.hpp CbcBranchLotsize.cpp \
-	CbcBranchLotsize.hpp CbcCompareActual.cpp CbcCompareActual.hpp \
-	CbcCompareBase.hpp CbcCountRowCut.cpp CbcCountRowCut.hpp \
-	CbcCutGenerator.cpp CbcCutGenerator.hpp CbcEventHandler.cpp \
-	CbcEventHandler.hpp CbcFathom.cpp CbcFathom.hpp \
-	CbcFathomDynamicProgramming.cpp \
-	CbcFathomDynamicProgramming.hpp CbcFeasibilityBase.hpp \
-	CbcHeuristic.cpp CbcHeuristic.hpp CbcHeuristicFPump.cpp \
-	CbcHeuristicFPump.hpp CbcHeuristicGreedy.cpp \
-	CbcHeuristicGreedy.hpp CbcHeuristicLocal.cpp \
-	CbcHeuristicLocal.hpp CbcHeuristicRINS.cpp \
-	CbcHeuristicRINS.hpp CbcMessage.cpp CbcMessage.hpp \
-	CbcModel.cpp CbcModel.hpp CbcNode.cpp CbcNode.hpp \
-	CbcSolver.cpp CbcCbcParam.cpp CbcStatistics.cpp \
-	CbcStatistics.hpp CbcStrategy.cpp CbcStrategy.hpp CbcTree.cpp \
-	CbcTree.hpp CbcLinked.cpp CbcLinked.hpp CbcTreeLocal.cpp \
-	CbcTreeLocal.hpp ClpConstraintAmpl.hpp ClpAmplObjective.hpp \
-	ClpAmplStuff.cpp unitTestClp.cpp Cbc_ampl.cpp Cbc_ampl.h
 
 # This is for libtool (on Windows)
 libCbc_la_LDFLAGS = $(LT_LDFLAGS)
+libCbcSolver_la_LDFLAGS = $(LT_LDFLAGS)
 
 ########################################################################
 #                            Additional flags                          #
@@ -542,7 +563,8 @@ AM_CPPFLAGS = $(am__append_2) $(am__append_5) $(am__append_7) \
 
 
 # Additional COIN libraries
-@COIN_HAS_CLP_TRUE@cbc_LDADD = libCbc.la $(CGLOBJDIR)/src/libCgl.la \
+@COIN_HAS_CLP_TRUE@cbc_LDADD = libCbcSolver.la libCbc.la \
+@COIN_HAS_CLP_TRUE@	$(CGLOBJDIR)/src/libCgl.la \
 @COIN_HAS_CLP_TRUE@	$(OSIOBJDIR)/src/OsiClp/libOsiClp.la \
 @COIN_HAS_CLP_TRUE@	$(OSIOBJDIR)/src/libOsi.la \
 @COIN_HAS_CLP_TRUE@	$(CLPOBJDIR)/src/libClp.la \
@@ -692,6 +714,8 @@ clean-libLTLIBRARIES:
 	done
 libCbc.la: $(libCbc_la_OBJECTS) $(libCbc_la_DEPENDENCIES) 
 	$(CXXLINK) -rpath $(libdir) $(libCbc_la_LDFLAGS) $(libCbc_la_OBJECTS) $(libCbc_la_LIBADD) $(LIBS)
+libCbcSolver.la: $(libCbcSolver_la_OBJECTS) $(libCbcSolver_la_DEPENDENCIES) 
+	$(CXXLINK) -rpath $(libdir) $(libCbcSolver_la_LDFLAGS) $(libCbcSolver_la_OBJECTS) $(libCbcSolver_la_LIBADD) $(LIBS)
 install-binPROGRAMS: $(bin_PROGRAMS)
 	@$(NORMAL_INSTALL)
 	test -z "$(bindir)" || $(mkdir_p) "$(DESTDIR)$(bindir)"

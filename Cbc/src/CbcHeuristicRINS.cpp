@@ -202,6 +202,8 @@ CbcHeuristicRINS::solution(double & solutionValue,
       //printf("%d integers have same value\n",nFix);
       returnCode = smallBranchAndBound(newSolver,numberNodes_,betterSolution,solutionValue,
                                          model_->getCutoff(),"CbcHeuristicRINS");
+      if (returnCode<0)
+	returnCode=0; // returned on size
       if ((returnCode&1)!=0)
 	numberSuccesses_++;
       //printf("return code %d",returnCode);

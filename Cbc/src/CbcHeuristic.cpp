@@ -140,10 +140,10 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver,int numberNodes,
   if (solver->isProvenOptimal()) {
     CglPreProcess process;
     /* Do not try and produce equality cliques and
-       do up to 5 passes */
+       do up to 2 passes */
     if (logLevel<=1)
       process.messageHandler()->setLogLevel(0);
-    OsiSolverInterface * solver2= process.preProcess(*solver);
+    OsiSolverInterface * solver2= process.preProcessNonDefault(*solver,false,2);
     if (!solver2) {
       if (logLevel>1)
         printf("Pre-processing says infeasible\n");
@@ -152,12 +152,23 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver,int numberNodes,
       // see if too big
       double before = solver->getNumRows()+solver->getNumCols();
       double after = solver2->getNumRows()+solver2->getNumCols();
-      if (logLevel>1)
-	printf("before %d rows %d columns, after %d rows %d columns\n",
-	       solver->getNumRows(),solver->getNumCols(),
-	       solver2->getNumRows(),solver2->getNumCols());
-      if (after>fractionSmall_*before&&after>300)
-	return 0;
+      char generalPrint[100];
+      if (after>fractionSmall_*before&&after>300) {
+	sprintf(generalPrint,"Full problem %d rows %d columns, reduced to %d rows %d columns - too large",
+		solver->getNumRows(),solver->getNumCols(),
+		solver2->getNumRows(),solver2->getNumCols());
+	model_->messageHandler()->message(CBC_FPUMP1,model_->messages())
+	  << generalPrint
+	  <<CoinMessageEol;
+	return -1;
+      } else {
+	sprintf(generalPrint,"Full problem %d rows %d columns, reduced to %d rows %d columns",
+		solver->getNumRows(),solver->getNumCols(),
+		solver2->getNumRows(),solver2->getNumCols());
+	model_->messageHandler()->message(CBC_FPUMP1,model_->messages())
+	  << generalPrint
+	  <<CoinMessageEol;
+      }
       solver2->resolve();
       CbcModel model(*solver2);
       if (logLevel<=1)

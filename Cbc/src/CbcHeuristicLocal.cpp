@@ -155,6 +155,8 @@ CbcHeuristicLocal::solutionFix(double & objectiveValue,
   }
   int returnCode = smallBranchAndBound(newSolver,numberNodes_,newSolution,objectiveValue,
                                          objectiveValue,"CbcHeuristicLocal");
+  if (returnCode<0)
+    returnCode=0; // returned on size
   if ((returnCode&2)!=0) {
     // could add cut
     returnCode &= ~2;

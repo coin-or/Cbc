@@ -477,6 +477,8 @@ CbcHeuristicFPump::solution(double & solutionValue,
 	    if (numberLeft) {
 	      returnCode = smallBranchAndBound(solver,numberNodes_,newSolution,newSolutionValue,
 					       solutionValue,"CbcHeuristicFpump");
+	      if (returnCode<0)
+		returnCode=0; // returned on size
 	      if ((returnCode&2)!=0) {
 		// could add cut
 		returnCode &= ~2;
@@ -978,6 +980,8 @@ CbcHeuristicFPump::solution(double & solutionValue,
       double saveValue = newSolutionValue;
       returnCode = smallBranchAndBound(newSolver,numberNodes_,newSolution,newSolutionValue,
 				       cutoff,"CbcHeuristicLocalAfterFPump");
+      if (returnCode<0)
+	returnCode=0; // returned on size - could try changing
       if ((returnCode&2)!=0) {
 	// could add cut
 	returnCode &= ~2;
@@ -1106,6 +1110,8 @@ CbcHeuristicFPump::solution(double & solutionValue,
     //newSolver->writeMps("sub");
     int returnCode = smallBranchAndBound(newSolver,numberNodes_,newSolution,newSolutionValue,
 				     newSolutionValue,"CbcHeuristicLocalAfterFPump");
+    if (returnCode<0)
+      returnCode=0; // returned on size
     if ((returnCode&2)!=0) {
       // could add cut
       returnCode &= ~2;

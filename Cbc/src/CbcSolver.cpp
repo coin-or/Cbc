@@ -486,6 +486,366 @@ static int * analyze(OsiClpSolverInterface * solverMod, int & numberChanged, dou
     return NULL;
   }
 }
+#if 1
+/*
+  On input
+  doAction - 0 just fix in original and return NULL 
+             1 return fixed non-presolved solver
+             2 return fixed presolved solver 
+             3 do heuristics and set best solution
+	     4 do BAB and just set best solution
+             -2 cleanup afterwards if using 2
+  On ouput - number fixed
+*/
+static OsiClpSolverInterface * fixVubs(CbcModel & model, int numberLevels,
+				       int & doAction, CoinMessageHandler * generalMessageHandler)
+{
+  OsiSolverInterface * solver = model.solver()->clone();
+  OsiClpSolverInterface * clpSolver = dynamic_cast< OsiClpSolverInterface*> (solver);
+  ClpSimplex * lpSolver = clpSolver->getModelPtr();
+  // Tighten bounds
+  lpSolver->tightenPrimalBounds(0.0,11,true);
+  char generalPrint[200];
+  //const double *objective = solver->getObjCoefficients() ;
+  double *columnLower = lpSolver->columnLower() ;
+  double *columnUpper = lpSolver->columnUpper() ;
+  int numberColumns = solver->getNumCols() ;
+  int numberRows = solver->getNumRows();
+  int iRow,iColumn;
+
+  // Row copy
+  CoinPackedMatrix matrixByRow(*solver->getMatrixByRow());
+  const double * elementByRow = matrixByRow.getElements();
+  const int * column = matrixByRow.getIndices();
+  const CoinBigIndex * rowStart = matrixByRow.getVectorStarts();
+  const int * rowLength = matrixByRow.getVectorLengths();
+
+  // Column copy
+  CoinPackedMatrix  matrixByCol(*solver->getMatrixByCol());
+  //const double * element = matrixByCol.getElements();
+  const int * row = matrixByCol.getIndices();
+  const CoinBigIndex * columnStart = matrixByCol.getVectorStarts();
+  const int * columnLength = matrixByCol.getVectorLengths();
+
+  const double * rowLower = solver->getRowLower();
+  const double * rowUpper = solver->getRowUpper();
+
+  // Get maximum size of VUB tree
+  // otherColumn is one fixed to 0 if this one zero
+  int nEl = matrixByCol.getNumElements();
+  CoinBigIndex * fixColumn = new CoinBigIndex [numberColumns+1];
+  int * otherColumn = new int [nEl];
+  int * fix = new int[numberColumns];
+  char * mark = new char [numberColumns];
+  memset(mark,0,numberColumns);
+  int numberInteger=0;
+  int numberOther=0;
+  fixColumn[0]=0;
+  double large = lpSolver->largeValue(); // treat bounds > this as infinite
+#ifndef NDEBUG
+  double large2= 1.0e10*large;
+#endif
+  double tolerance = lpSolver->primalTolerance();
+  int * check = new int[numberRows];
+  for (iRow=0;iRow<numberRows;iRow++)
+    check[iRow]=-1;
+  for (iColumn=0;iColumn<numberColumns;iColumn++) {
+    fix[iColumn]=-1;
+    if (columnUpper[iColumn] > columnLower[iColumn]+1.0e-8) {
+      if (solver->isInteger(iColumn))
+	numberInteger++;
+      if (columnLower[iColumn]==0.0) {
+	bool infeasible=false;
+	fix[iColumn]=0;
+	// fake upper bound
+	double saveUpper = columnUpper[iColumn];
+	columnUpper[iColumn]=0.0;
+	for (CoinBigIndex i=columnStart[iColumn];
+	     i<columnStart[iColumn]+columnLength[iColumn];i++) {
+	  iRow = row[i];
+	  if (rowLower[iRow]<-1.0e6&&rowUpper[iRow]>1.0e6)
+	    continue; // unlikely
+	  //==
+	  // possible row
+	  int infiniteUpper = 0;
+	  int infiniteLower = 0;
+	  double maximumUp = 0.0;
+	  double maximumDown = 0.0;
+	  double newBound;
+	  CoinBigIndex rStart = rowStart[iRow];
+	  CoinBigIndex rEnd = rowStart[iRow]+rowLength[iRow];
+	  CoinBigIndex j;
+	  int kColumn;
+	  // Compute possible lower and upper ranges
+	  for (j = rStart; j < rEnd; ++j) {
+	    double value=elementByRow[j];
+	    kColumn = column[j];
+	    if (value > 0.0) {
+	      if (columnUpper[kColumn] >= large) {
+		++infiniteUpper;
+	      } else {
+		maximumUp += columnUpper[kColumn] * value;
+	      }
+	      if (columnLower[kColumn] <= -large) {
+		++infiniteLower;
+	      } else {
+		maximumDown += columnLower[kColumn] * value;
+	      }
+	    } else if (value<0.0) {
+	      if (columnUpper[kColumn] >= large) {
+		++infiniteLower;
+	      } else {
+		maximumDown += columnUpper[kColumn] * value;
+	      }
+	      if (columnLower[kColumn] <= -large) {
+		++infiniteUpper;
+	      } else {
+		maximumUp += columnLower[kColumn] * value;
+	      }
+	    }
+	  }
+	  // Build in a margin of error
+	  maximumUp += 1.0e-8*fabs(maximumUp);
+	  maximumDown -= 1.0e-8*fabs(maximumDown);
+	  double maxUp = maximumUp+infiniteUpper*1.0e31;
+	  double maxDown = maximumDown-infiniteLower*1.0e31;
+	  if (maxUp <= rowUpper[iRow] + tolerance && 
+	      maxDown >= rowLower[iRow] - tolerance) {
+	    //printf("Redundant row in vubs %d\n",iRow);
+	  } else {
+	    if (maxUp < rowLower[iRow] -100.0*tolerance ||
+		maxDown > rowUpper[iRow]+100.0*tolerance) {
+	      infeasible=true;
+	      break;
+	    }
+	    double lower = rowLower[iRow];
+	    double upper = rowUpper[iRow];
+	    for (j = rStart; j < rEnd; ++j) {
+	      double value=elementByRow[j];
+	      kColumn = column[j];
+	      double nowLower = columnLower[kColumn];
+	      double nowUpper = columnUpper[kColumn];
+	      if (value > 0.0) {
+		// positive value
+		if (lower>-large) {
+		  if (!infiniteUpper) {
+		    assert(nowUpper < large2);
+		    newBound = nowUpper + 
+		      (lower - maximumUp) / value;
+		    // relax if original was large
+		    if (fabs(maximumUp)>1.0e8)
+		      newBound -= 1.0e-12*fabs(maximumUp);
+		  } else if (infiniteUpper==1&&nowUpper>large) {
+		    newBound = (lower -maximumUp) / value;
+		    // relax if original was large
+		    if (fabs(maximumUp)>1.0e8)
+		      newBound -= 1.0e-12*fabs(maximumUp);
+		  } else {
+		    newBound = -COIN_DBL_MAX;
+		  }
+		  if (newBound > nowLower + 1.0e-12&&newBound>-large) {
+		    // Tighten the lower bound 
+		    // check infeasible (relaxed)
+		    if (nowUpper < newBound) { 
+		      if (nowUpper - newBound < 
+			  -100.0*tolerance) { 
+			infeasible=true;
+			break;
+		      }
+		    }
+		  }
+		} 
+		if (upper <large) {
+		  if (!infiniteLower) {
+		    assert(nowLower >- large2);
+		    newBound = nowLower + 
+		      (upper - maximumDown) / value;
+		    // relax if original was large
+		    if (fabs(maximumDown)>1.0e8)
+		    newBound += 1.0e-12*fabs(maximumDown);
+		  } else if (infiniteLower==1&&nowLower<-large) {
+		    newBound =   (upper - maximumDown) / value;
+		    // relax if original was large
+		    if (fabs(maximumDown)>1.0e8)
+		      newBound += 1.0e-12*fabs(maximumDown);
+		  } else {
+		    newBound = COIN_DBL_MAX;
+		  }
+		  if (newBound < nowUpper - 1.0e-12&&newBound<large) {
+		    // Tighten the upper bound 
+		    // check infeasible (relaxed)
+		    if (nowLower > newBound) { 
+		      if (newBound - nowLower < 
+			  -100.0*tolerance) {
+			infeasible=true;
+			break;
+		      } else {
+			newBound=nowLower;
+		      }
+		    }
+		    if (!newBound||(solver->isInteger(kColumn)&&newBound<0.999)) {
+		      // fix to zero
+		      if (!mark[kColumn]) {
+			otherColumn[numberOther++]=kColumn;
+			mark[kColumn]=1;
+			if (check[iRow]==-1)
+			  check[iRow]=iColumn;
+			else
+			  assert(check[iRow]==iColumn);
+		      }
+		    }
+		  }
+		}
+	      } else {
+		// negative value
+		if (lower>-large) {
+		  if (!infiniteUpper) {
+		    assert(nowLower < large2);
+		    newBound = nowLower + 
+		      (lower - maximumUp) / value;
+		    // relax if original was large
+		    if (fabs(maximumUp)>1.0e8)
+		      newBound += 1.0e-12*fabs(maximumUp);
+		  } else if (infiniteUpper==1&&nowLower<-large) {
+		    newBound = (lower -maximumUp) / value;
+		    // relax if original was large
+		    if (fabs(maximumUp)>1.0e8)
+		      newBound += 1.0e-12*fabs(maximumUp);
+		  } else {
+		    newBound = COIN_DBL_MAX;
+		  }
+		  if (newBound < nowUpper - 1.0e-12&&newBound<large) {
+		    // Tighten the upper bound 
+		    // check infeasible (relaxed)
+		    if (nowLower > newBound) { 
+		      if (newBound - nowLower < 
+			  -100.0*tolerance) {
+			infeasible=true;
+			break;
+		      } else { 
+			newBound=nowLower;
+		      }
+		    }
+		    if (!newBound||(solver->isInteger(kColumn)&&newBound<0.999)) {
+		      // fix to zero
+		      if (!mark[kColumn]) {
+			otherColumn[numberOther++]=kColumn;
+			mark[kColumn]=1;
+			if (check[iRow]==-1)
+			  check[iRow]=iColumn;
+			else
+			  assert(check[iRow]==iColumn);
+		      }
+		    }
+		  }
+		}
+		if (upper <large) {
+		  if (!infiniteLower) {
+		    assert(nowUpper < large2);
+		    newBound = nowUpper + 
+		      (upper - maximumDown) / value;
+		    // relax if original was large
+		    if (fabs(maximumDown)>1.0e8)
+		      newBound -= 1.0e-12*fabs(maximumDown);
+		  } else if (infiniteLower==1&&nowUpper>large) {
+		    newBound =   (upper - maximumDown) / value;
+		    // relax if original was large
+		    if (fabs(maximumDown)>1.0e8)
+		      newBound -= 1.0e-12*fabs(maximumDown);
+		  } else {
+		    newBound = -COIN_DBL_MAX;
+		  }
+		  if (newBound > nowLower + 1.0e-12&&newBound>-large) {
+		    // Tighten the lower bound 
+		    // check infeasible (relaxed)
+		    if (nowUpper < newBound) { 
+		      if (nowUpper - newBound < 
+			  -100.0*tolerance) {
+			infeasible=true;
+			break;
+		      }
+		    }
+		  }
+		}
+	      }
+	    }
+	  }
+	}
+	for (int i=fixColumn[iColumn];i<numberOther;i++)
+	  mark[otherColumn[i]]=0;
+	// reset bound unless infeasible
+	if (!infeasible||!solver->isInteger(iColumn))
+	  columnUpper[iColumn]=saveUpper;
+	else if (solver->isInteger(iColumn))
+	  columnLower[iColumn]=1.0;
+      }
+    }
+    fixColumn[iColumn+1]=numberOther;
+  }
+  delete [] check;
+  delete [] mark;
+  // Now do reverse way
+  int * counts = new int [numberColumns];
+  CoinZeroN(counts,numberColumns);
+  for (iColumn=0;iColumn<numberColumns;iColumn++) {
+    for (int i=fixColumn[iColumn];i<fixColumn[iColumn+1];i++)
+      counts[otherColumn[i]]++;
+  }
+  numberOther=0;
+  CoinBigIndex * fixColumn2 = new CoinBigIndex [numberColumns+1];
+  int * otherColumn2 = new int [fixColumn[numberColumns]];
+  fixColumn2[0]=0;
+  for ( iColumn=0;iColumn<numberColumns;iColumn++) {
+    numberOther += counts[iColumn];
+    counts[iColumn]=0;
+    fixColumn2[iColumn+1]=numberOther;
+  }
+  for ( iColumn=0;iColumn<numberColumns;iColumn++) {
+    for (int i=fixColumn[iColumn];i<fixColumn[iColumn+1];i++) {
+      int jColumn=otherColumn[i];
+      CoinBigIndex put = fixColumn2[jColumn] + counts[jColumn];
+      counts[jColumn]++;
+      otherColumn2[put]=iColumn;
+    }
+  }
+  // get top layer i.e. those which are not fixed by any other
+  int kLayer=0;
+  while (true) {
+    int numberLayered=0;
+    int numberInteger=0;
+    for ( iColumn=0;iColumn<numberColumns;iColumn++) {
+      if (fix[iColumn]==kLayer) {
+	for (int i=fixColumn2[iColumn];i<fixColumn2[iColumn+1];i++) {
+	  int jColumn=otherColumn2[i];
+	  if (fix[jColumn]==kLayer) {
+	    fix[iColumn]=kLayer+1;
+	  }
+	}
+      }
+      if (fix[iColumn]==kLayer) {
+	numberLayered++;
+	if (solver->isInteger(iColumn))
+	  numberInteger++;
+      }
+    }
+    if (numberLayered) {
+      printf("%d (%d integer) at priority %d\n",numberLayered,numberInteger,kLayer);
+      kLayer++;
+    } else {
+      break;
+    }
+  }
+  delete [] counts;
+  delete [] fixColumn;
+  delete [] otherColumn;
+  delete [] otherColumn2;
+  delete [] fixColumn2;
+  // Now do fixing
+  delete [] fix;
+  delete solver;
+  return NULL;
+}
+#endif
 #ifdef COIN_HAS_ASL
 /*  Returns OsiSolverInterface (User should delete)
     On entry numberKnapsack is maximum number of Total entries
@@ -1452,7 +1812,10 @@ static int doHeuristics(CbcModel * model,int type)
   if (useFpump>=kType) {
     anyToDo=true;
     CbcHeuristicFPump heuristic4(*model);
-    heuristic4.setFractionSmall(0.6);
+    heuristic4.setFractionSmall(0.5);
+    double dextra3 = parameters[whichParam(DEXTRA3,numberParameters,parameters)].doubleValue();
+    if (dextra3)
+      heuristic4.setFractionSmall(dextra3);
     heuristic4.setMaximumPasses(parameters[whichParam(FPUMPITS,numberParameters,parameters)].intValue());
     int pumpTune=parameters[whichParam(FPUMPTUNE,numberParameters,parameters)].intValue();
     if (pumpTune>0) {
@@ -2299,7 +2662,8 @@ int CbcMain1 (int argc, const char *argv[],
 	      }
 	    }
 	  } else if (valid==1) {
-	    abort();
+	    std::cout<<" is illegal for double parameter "<<parameters[iParam].name()<<" value remains "<<
+	      parameters[iParam].doubleValue()<<std::endl;
 	  } else {
 	    std::cout<<parameters[iParam].name()<<" has value "<<
 	      parameters[iParam].doubleValue()<<std::endl;
@@ -2339,15 +2703,14 @@ int CbcMain1 (int argc, const char *argv[],
 		cutPass = value;
 	      else if (parameters[iParam].type()==CUTPASSINTREE)
 		cutPassInTree = value;
-	      else if (parameters[iParam].type()==FPUMPITS)
-		{ parameters[iParam].setIntValue(value);}
 	      else if (parameters[iParam].type()==STRONGBRANCHING||
 		       parameters[iParam].type()==NUMBERBEFORE)
 		strongChanged=true;
 	      parameters[iParam].setIntParameter(model,value);
 	    }
 	  } else if (valid==1) {
-	    abort();
+	    std::cout<<" is illegal for integer parameter "<<parameters[iParam].name()<<" value remains "<<
+	      parameters[iParam].intValue()<<std::endl;
 	  } else {
 	    std::cout<<parameters[iParam].name()<<" has value "<<
 	      parameters[iParam].intValue()<<std::endl;
@@ -3055,6 +3418,12 @@ int CbcMain1 (int argc, const char *argv[],
 	    break;
 	  case DOHEURISTIC:
 	    if (goodModel) {
+	      int vubAction = parameters[whichParam(VUBTRY,numberParameters,parameters)].intValue();
+	      if (vubAction!=-1) {
+		// look at vubs
+		OsiClpSolverInterface * newSolver = fixVubs(model,1,vubAction,generalMessageHandler);
+		assert (!newSolver);
+	      }
 	      // Actually do heuristics
 	      doHeuristics(&model,2);
 	      if (model.bestSolution()) {
@@ -4983,6 +5352,7 @@ int CbcMain1 (int argc, const char *argv[],
               totalTime += time2-time1;
               // For best solution
               double * bestSolution = NULL;
+              printf ("bab best %g %x\n",babModel->getMinimizationObjValue(),babModel->bestSolution());
               if (babModel->getMinimizationObjValue()<1.0e50&&type==BAB) {
                 // post process
 		int n;
@@ -5019,6 +5389,33 @@ int CbcMain1 (int argc, const char *argv[],
 		  }
 		}
 		checkSOS(babModel, babModel->solver());
+	      } else if (model.bestSolution()&&type==BAB&&model.getMinimizationObjValue()&&preProcess) {
+		sprintf(generalPrint,"Restoring heuristic best solution of %g",model.getMinimizationObjValue());
+		generalMessageHandler->message(CLP_GENERAL,generalMessages)
+		  << generalPrint
+		  <<CoinMessageEol;
+		int n = saveSolver->getNumCols();
+		bestSolution = new double [n];
+		// Put solution now back in saveSolver
+		babModel->assignSolver(saveSolver);
+		saveSolver->setColSolution(model.bestSolution());
+		memcpy(bestSolution,babModel->solver()->getColSolution(),n*sizeof(double));
+		// and put back in very original solver
+		{
+		  ClpSimplex * original = originalSolver->getModelPtr();
+		  double * lower = original->columnLower();
+		  double * upper = original->columnUpper();
+		  double * solution = original->primalColumnSolution();
+		  int n = original->numberColumns();
+		  //assert (!n||n==babModel->solver()->getNumCols());
+		  for (int i=0;i<n;i++) {
+		    solution[i]=bestSolution[i];
+		    if (originalSolver->isInteger(i)) {
+		      lower[i]=solution[i];
+		      upper[i]=solution[i];
+		    }
+		  }
+		}
               }
               if (type==STRENGTHEN&&strengthenedModel)
                 clpSolver = dynamic_cast< OsiClpSolverInterface*> (strengthenedModel);

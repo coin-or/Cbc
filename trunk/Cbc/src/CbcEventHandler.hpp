@@ -87,7 +87,9 @@ public:
     /*! A tree status interval has arrived. */
     treeStatus,
     /*! A solution has been found. */
-    solution 
+    solution, 
+    /*! A heuristic solution has been found. */
+    heuristicSolution 
   } ;
 
   /*! \brief Action codes returned by the event handler.

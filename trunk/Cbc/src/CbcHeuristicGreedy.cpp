@@ -730,6 +730,8 @@ CbcHeuristicGreedyEquality::solution(double & solutionValue,
     }
     int returnCode = smallBranchAndBound(newSolver,200,newSolution,newSolutionValue,
                                          solutionValue,"CbcHeuristicGreedy");
+    if (returnCode<0)
+      returnCode=0; // returned on size
     if ((returnCode&2)!=0) {
       // could add cut
       returnCode &= ~2;

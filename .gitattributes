@@ -41,6 +41,7 @@ trunk/Cbc/examples/Makefile.in -text
 trunk/Cbc/examples/barrier.cpp -text
 trunk/Cbc/examples/cbc_driverC_sos.c -text
 trunk/Cbc/examples/driver3.cpp -text
+trunk/Cbc/examples/driver4.cpp -text
 trunk/Cbc/examples/qmip2.cpp -text
 trunk/Cbc/inc/config_cbc.h.in -text
 trunk/Cbc/src/CbcCbcParam.cpp -text

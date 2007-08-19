@@ -731,9 +731,11 @@ public:
   /// Get how often to scan global cuts
   inline int howOftenGlobalScan() const
   { return howOftenGlobalScan_;}
-  /// Original columns as created by integerPresolve
+  /// Original columns as created by integerPresolve or preprocessing
   inline int * originalColumns() const
   { return originalColumns_;}
+  /// Set original columns as created by preprocessing
+  void setOriginalColumns(const int * originalColumns) ;
 
   /** Set the print frequency.
   
@@ -1103,6 +1105,8 @@ public:
   
   /// Get number of heuristic solutions
   inline int getNumberHeuristicSolutions() const { return numberHeuristicSolutions_;}
+  /// Set number of heuristic solutions
+  inline void setNumberHeuristicSolutions(int value) { numberHeuristicSolutions_=value;}
 
   /// Set objective function sense (1 for min (default), -1 for max,)
   inline void setObjSense(double s) { dblParam_[CbcOptimizationDirection]=s;
@@ -1504,6 +1508,13 @@ public:
     inline OsiSolverInterface * continuousSolver() const
     { return continuousSolver_;}
 
+    /// Create solver with continuous state
+    inline void createContinuousSolver()
+    { continuousSolver_ = solver_->clone();}
+    /// Clear solver with continuous state
+    inline void clearContinuousSolver()
+    { delete continuousSolver_; continuousSolver_ = NULL;}
+
   /// A copy of the solver, taken at constructor or by saveReferenceSolver
   inline OsiSolverInterface * referenceSolver() const
   { return referenceSolver_;}
@@ -1616,11 +1627,18 @@ public:
       Scan and convert CbcSimpleInteger objects
   */
   void convertToDynamic();
+  /// Zap integer information in problem (may leave object info)
+  void zapIntegerInformation(bool leaveObjects=true);
   /// Use cliques for pseudocost information - return nonzero if infeasible
   int cliquePseudoCosts(int doStatistics);
   /// Fill in useful estimates
   void pseudoShadow(double * down, double * up);
-
+  /** Do heuristics at root.
+      0 - don't delete
+      1 - delete
+      2 - just delete - don't even use
+  */
+  void doHeuristicsAtRoot(int deleteHeuristicsAfterwards=0);
   /// Get the hotstart solution 
   inline const double * hotstartSolution() const
   { return hotstartSolution_;}
@@ -1658,6 +1676,14 @@ public:
   void generateCpp( FILE * fp,int options);
   /// Generate an OsiBranchingInformation object
   OsiBranchingInformation usefulInformation() const;
+  /** Warm start object produced by heuristic or strong branching
+
+      If get a valid integer solution outside branch and bound then it can take
+      a reasonable time to solve LP which produces clean solution.  If this object has
+      any size then it will be used in solve.
+  */
+  inline void setBestSolutionBasis(const CoinWarmStartBasis & bestSolutionBasis)
+  { bestSolutionBasis_ = bestSolutionBasis;}
   //@}
 
 //---------------------------------------------------------------------------
@@ -1733,6 +1759,13 @@ private:
       currentSolution_ or solver-->getColSolution()
   */
   mutable const double * testSolution_;
+  /** Warm start object produced by heuristic or strong branching
+
+      If get a valid integer solution outside branch and bound then it can take
+      a reasonable time to solve LP which produces clean solution.  If this object has
+      any size then it will be used in solve.
+  */
+  CoinWarmStartBasis bestSolutionBasis_ ;
   /// Global cuts
   OsiCuts globalCuts_;
 
@@ -1950,7 +1983,7 @@ private:
   /// Now we may not own objects - just point to solver's objects
   bool ownObjects_;
   
-  /// Original columns as created by integerPresolve
+  /// Original columns as created by integerPresolve or preprocessing
   int * originalColumns_;
   /// How often to scan global cuts
   int howOftenGlobalScan_;
@@ -2067,4 +2100,8 @@ int callCbc(const std::string input2, CbcModel & babSolver);
 // And when CbcMain0 already called to initialize
 int callCbc1(const char * input2, CbcModel & babSolver); 
 int callCbc1(const std::string input2, CbcModel & babSolver); 
+// And when CbcMain0 already called to initialize (with call back) (see CbcMain1 for whereFrom)
+int callCbc1(const char * input2, CbcModel & babSolver, int (CbcModel * currentSolver, int whereFrom)); 
+int callCbc1(const std::string input2, CbcModel & babSolver, int (CbcModel * currentSolver, int whereFrom)); 
+int CbcMain1 (int argc, const char *argv[],CbcModel & babSolver, int (CbcModel * currentSolver, int whereFrom), int call_CbcClpUnitTest_on_777 = 0);
 #endif

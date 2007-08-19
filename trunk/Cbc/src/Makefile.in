@@ -163,12 +163,12 @@ am_libCbc_la_OBJECTS = Cbc_C_Interface.lo CbcBranchActual.lo \
 	CbcFathomDynamicProgramming.lo CbcHeuristic.lo \
 	CbcHeuristicFPump.lo CbcHeuristicGreedy.lo \
 	CbcHeuristicLocal.lo CbcHeuristicRINS.lo CbcMessage.lo \
-	CbcModel.lo CbcNode.lo CbcCbcParam.lo CbcStatistics.lo \
-	CbcStrategy.lo CbcTree.lo CbcTreeLocal.lo
+	CbcModel.lo CbcNode.lo CbcStatistics.lo CbcStrategy.lo \
+	CbcTree.lo CbcTreeLocal.lo
 libCbc_la_OBJECTS = $(am_libCbc_la_OBJECTS)
 libCbcSolver_la_LIBADD =
-am_libCbcSolver_la_OBJECTS = Cbc_ampl.lo ClpAmplStuff.lo CbcLinked.lo \
-	unitTestClp.lo CbcSolver.lo
+am_libCbcSolver_la_OBJECTS = CbcCbcParam.lo Cbc_ampl.lo \
+	ClpAmplStuff.lo CbcLinked.lo unitTestClp.lo CbcSolver.lo
 libCbcSolver_la_OBJECTS = $(am_libCbcSolver_la_OBJECTS)
 @COIN_HAS_CLP_TRUE@am__EXEEXT_1 = cbc$(EXEEXT)
 @CBC_BUILD_CBC_GENERIC_TRUE@am__EXEEXT_2 = cbc-generic$(EXEEXT)
@@ -223,7 +223,8 @@ cbc_generic_OBJECTS = $(am_cbc_generic_OBJECTS)
 @CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_VOL_TRUE@	$(VOLOBJDIR)/src/libVol.la
 @CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_XPR_TRUE@am__DEPENDENCIES_13 = $(OSIOBJDIR)/src/OsiXpr/libOsiXpr.la
 @CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_ASL_TRUE@am__DEPENDENCIES_14 = $(am__DEPENDENCIES_1)
-@CBC_BUILD_CBC_GENERIC_TRUE@cbc_generic_DEPENDENCIES = libCbc.la \
+@CBC_BUILD_CBC_GENERIC_TRUE@cbc_generic_DEPENDENCIES =  \
+@CBC_BUILD_CBC_GENERIC_TRUE@	libCbcSolver.la libCbc.la \
 @CBC_BUILD_CBC_GENERIC_TRUE@	$(CGLOBJDIR)/src/libCgl.la \
 @CBC_BUILD_CBC_GENERIC_TRUE@	$(am__DEPENDENCIES_3) \
 @CBC_BUILD_CBC_GENERIC_TRUE@	$(am__DEPENDENCIES_4) \
@@ -504,13 +505,13 @@ libCbc_la_SOURCES = \
 	CbcMessage.cpp CbcMessage.hpp \
 	CbcModel.cpp CbcModel.hpp \
 	CbcNode.cpp CbcNode.hpp \
-	CbcCbcParam.cpp \
 	CbcStatistics.cpp CbcStatistics.hpp \
 	CbcStrategy.cpp CbcStrategy.hpp \
 	CbcTree.cpp CbcTree.hpp \
 	CbcTreeLocal.cpp CbcTreeLocal.hpp
 
 libCbcSolver_la_SOURCES = \
+	CbcCbcParam.cpp \
 	Cbc_ampl.cpp Cbc_ampl.h \
 	ClpConstraintAmpl.hpp ClpAmplObjective.hpp ClpAmplStuff.cpp \
 	CbcLinked.cpp CbcLinked.hpp \
@@ -590,7 +591,8 @@ AM_CPPFLAGS = $(am__append_2) $(am__append_5) $(am__append_7) \
 
 
 # Finally the Osi Coin library (many of the above need it)
-@CBC_BUILD_CBC_GENERIC_TRUE@cbc_generic_LDADD = libCbc.la \
+@CBC_BUILD_CBC_GENERIC_TRUE@cbc_generic_LDADD = libCbcSolver.la \
+@CBC_BUILD_CBC_GENERIC_TRUE@	libCbc.la \
 @CBC_BUILD_CBC_GENERIC_TRUE@	$(CGLOBJDIR)/src/libCgl.la \
 @CBC_BUILD_CBC_GENERIC_TRUE@	$(am__append_8) $(am__append_11) \
 @CBC_BUILD_CBC_GENERIC_TRUE@	$(am__append_13) $(am__append_16) \

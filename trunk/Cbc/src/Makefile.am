@@ -41,13 +41,13 @@ libCbc_la_SOURCES = \
 	CbcMessage.cpp CbcMessage.hpp \
 	CbcModel.cpp CbcModel.hpp \
 	CbcNode.cpp CbcNode.hpp \
-	CbcCbcParam.cpp \
 	CbcStatistics.cpp CbcStatistics.hpp \
 	CbcStrategy.cpp CbcStrategy.hpp \
 	CbcTree.cpp CbcTree.hpp \
 	CbcTreeLocal.cpp CbcTreeLocal.hpp
 
 libCbcSolver_la_SOURCES = \
+	CbcCbcParam.cpp \
 	Cbc_ampl.cpp Cbc_ampl.h \
 	ClpConstraintAmpl.hpp ClpAmplObjective.hpp ClpAmplStuff.cpp \
 	CbcLinked.cpp CbcLinked.hpp \

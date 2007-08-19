@@ -17,7 +17,6 @@
 
 #include "CoinMpsIO.hpp"
 #include "CoinModel.hpp"
-#include "CoinRead.hpp"
 
 #include "ClpFactorization.hpp"
 #include "ClpQuadraticObjective.hpp"
@@ -176,8 +175,8 @@ extern "C" {
    }
 }
 
-int ReadMode=1;
-FILE * ReadCommand=stdin;
+int CbcOrClpRead_mode=1;
+FILE * CbcOrClpReadCommand=stdin;
 static bool noPrinting=false;
 static int * analyze(OsiClpSolverInterface * solverMod, int & numberChanged, double & increment,
                      bool changeInt,  CoinMessageHandler * generalMessageHandler)
@@ -1233,8 +1232,8 @@ int callCbc1(const char * input2, CbcModel & model)
   free(input);
   totalTime=0.0;
   currentBranchModel = NULL;
-  ReadMode=1;
-  ReadCommand=stdin;
+  CbcOrClpRead_mode=1;
+  CbcOrClpReadCommand=stdin;
   noPrinting=false;
   int returnCode = CbcMain1(n+2,const_cast<const char **>(argv),model);
   for (int k=0;k<n+2;k++)
@@ -1527,7 +1526,7 @@ int CbcMain1 (int argc, const char *argv[],
       int returnCode = readAmpl(&info,argc,const_cast<char **>(argv),(void **) (& coinModel));
       if (returnCode)
         return returnCode;
-      ReadMode=2; // so will start with parameters
+      CbcOrClpRead_mode=2; // so will start with parameters
       // see if log in list (including environment)
       for (int i=1;i<info.numberArguments;i++) {
         if (!strcmp(info.arguments[i],"log")) {
@@ -1854,7 +1853,7 @@ int CbcMain1 (int argc, const char *argv[],
     }
     while (1) {
       // next command
-      field=CoinReadGetCommand(argc,argv,ReadCommand,ReadMode);
+      field=CoinReadGetCommand(argc,argv);
       // adjust field if has odd trailing characters
       char temp [200];
       strcpy(temp,field.c_str());
@@ -2050,8 +2049,7 @@ int CbcMain1 (int argc, const char *argv[],
 	  }
 	} else if (type<101) {
 	  // get next field as double
-	  double value = CoinReadGetDoubleField(argc,argv,&valid,ReadCommand,
-						ReadMode);
+	  double value = CoinReadGetDoubleField(argc,argv,&valid);
 	  if (!valid) {
 	    if (type<51) {
 	      parameters[iParam].setDoubleParameter(lpSolver,value);
@@ -2085,8 +2083,7 @@ int CbcMain1 (int argc, const char *argv[],
 	  }
 	} else if (type<201) {
 	  // get next field as int
-	  int value = CoinReadGetIntField(argc,argv,&valid,ReadCommand,
-					  ReadMode);
+	  int value = CoinReadGetIntField(argc,argv,&valid);
 	  if (!valid) {
 	    if (type<151) {
 	      if (parameters[iParam].type()==PRESOLVEPASS)
@@ -2134,8 +2131,7 @@ int CbcMain1 (int argc, const char *argv[],
 	  }
 	} else if (type<301) {
 	  // one of several strings
-	  std::string value = CoinReadGetString(argc,argv,ReadCommand,
-						ReadMode);
+	  std::string value = CoinReadGetString(argc,argv);
 	  int action = parameters[iParam].parameterOption(value);
 	  if (action<0) {
 	    if (value!="EOL") {
@@ -5026,7 +5022,7 @@ int CbcMain1 (int argc, const char *argv[],
               //delete babModel;
               //babModel=NULL;
 	      // get next field
-	      field = CoinReadGetString(argc,argv,ReadCommand,ReadMode);
+	      field = CoinReadGetString(argc,argv);
 	      if (field=="$") {
 		field = parameters[iParam].stringValue();
 	      } else if (field=="EOL") {
@@ -5142,15 +5138,15 @@ int CbcMain1 (int argc, const char *argv[],
 		  totalTime += time2-time1;
 		  time1=time2;
 		  // Go to canned file if just input file
-		  if (ReadMode==2&&argc==2) {
+		  if (CbcOrClpRead_mode==2&&argc==2) {
 		    // only if ends .mps
 		    char * find = (char *)strstr(fileName.c_str(),".mps");
 		    if (find&&find[4]=='\0') {
 		      find[1]='p'; find[2]='a';find[3]='r';
 		      FILE *fp=fopen(fileName.c_str(),"r");
 		      if (fp) {
-			ReadCommand=fp; // Read from that file
-			ReadMode=-1;
+			CbcOrClpReadCommand=fp; // Read from that file
+			CbcOrClpRead_mode=-1;
 		      }
 		    }
 		  }
@@ -5166,7 +5162,7 @@ int CbcMain1 (int argc, const char *argv[],
 #ifdef COIN_HAS_LINK
 	    {
 	      // get next field
-	      field = CoinReadGetString(argc,argv,ReadCommand,ReadMode);
+	      field = CoinReadGetString(argc,argv);
 	      if (field=="$") {
 		field = parameters[iParam].stringValue();
 	      } else if (field=="EOL") {
@@ -5248,7 +5244,7 @@ int CbcMain1 (int argc, const char *argv[],
 	  case EXPORT:
 	    if (goodModel) {
 	      // get next field
-	      field = CoinReadGetString(argc,argv,ReadCommand,ReadMode);
+	      field = CoinReadGetString(argc,argv);
 	      if (field=="$") {
 		field = parameters[iParam].stringValue();
 	      } else if (field=="EOL") {
@@ -5389,7 +5385,7 @@ int CbcMain1 (int argc, const char *argv[],
 	  case BASISIN:
 	    if (goodModel) {
 	      // get next field
-	      field = CoinReadGetString(argc,argv,ReadCommand,ReadMode);
+	      field = CoinReadGetString(argc,argv);
 	      if (field=="$") {
 		field = parameters[iParam].stringValue();
 	      } else if (field=="EOL") {
@@ -5444,7 +5440,7 @@ int CbcMain1 (int argc, const char *argv[],
 	  case PRIORITYIN:
 	    if (goodModel) {
 	      // get next field
-	      field = CoinReadGetString(argc,argv,ReadCommand,ReadMode);
+	      field = CoinReadGetString(argc,argv);
 	      if (field=="$") {
 		field = parameters[iParam].stringValue();
 	      } else if (field=="EOL") {
@@ -5717,7 +5713,7 @@ int CbcMain1 (int argc, const char *argv[],
               delete [] debugValues;
               debugValues=NULL;
 	      // get next field
-	      field = CoinReadGetString(argc,argv,ReadCommand,ReadMode);
+	      field = CoinReadGetString(argc,argv);
 	      if (field=="$") {
 		field = parameters[iParam].stringValue();
 	      } else if (field=="EOL") {
@@ -5771,8 +5767,7 @@ int CbcMain1 (int argc, const char *argv[],
 	  case PRINTMASK:
             // get next field
 	    {
-	      std::string name = CoinReadGetString(argc,argv,ReadCommand,
-						   ReadMode);
+	      std::string name = CoinReadGetString(argc,argv);
 	      if (name!="EOL") {
 		parameters[iParam].setStringValue(name);
                 printMask = name;
@@ -5784,7 +5779,7 @@ int CbcMain1 (int argc, const char *argv[],
 	  case BASISOUT:
 	    if (goodModel) {
 	      // get next field
-	      field = CoinReadGetString(argc,argv,ReadCommand,ReadMode);
+	      field = CoinReadGetString(argc,argv);
 	      if (field=="$") {
 		field = parameters[iParam].stringValue();
 	      } else if (field=="EOL") {
@@ -5831,7 +5826,7 @@ int CbcMain1 (int argc, const char *argv[],
 	  case SAVE:
 	    {
 	      // get next field
-	      field = CoinReadGetString(argc,argv,ReadCommand,ReadMode);
+	      field = CoinReadGetString(argc,argv);
 	      if (field=="$") {
 		field = parameters[iParam].stringValue();
 	      } else if (field=="EOL") {
@@ -5909,7 +5904,7 @@ int CbcMain1 (int argc, const char *argv[],
 	  case RESTORE:
 	    {
 	      // get next field
-	      field = CoinReadGetString(argc,argv,ReadCommand,ReadMode);
+	      field = CoinReadGetString(argc,argv);
 	      if (field=="$") {
 		field = parameters[iParam].stringValue();
 	      } else if (field=="EOL") {
@@ -5989,8 +5984,7 @@ int CbcMain1 (int argc, const char *argv[],
 	    break;
 	  case DIRECTORY:
 	    {
-	      std::string name = CoinReadGetString(argc,argv,ReadCommand,
-						   ReadMode);
+	      std::string name = CoinReadGetString(argc,argv);
 	      if (name!="EOL") {
 		int length=name.length();
 		if (name[length-1]=='/'||name[length-1]=='\\')
@@ -6005,8 +5999,7 @@ int CbcMain1 (int argc, const char *argv[],
 	    break;
 	  case DIRSAMPLE:
 	    {
-	      std::string name = CoinReadGetString(argc,argv,ReadCommand,
-						   ReadMode);
+	      std::string name = CoinReadGetString(argc,argv);
 	      if (name!="EOL") {
 		int length=name.length();
 		if (name[length-1]=='/'||name[length-1]=='\\')
@@ -6021,8 +6014,7 @@ int CbcMain1 (int argc, const char *argv[],
 	    break;
 	  case DIRNETLIB:
 	    {
-	      std::string name = CoinReadGetString(argc,argv,ReadCommand,
-						   ReadMode);
+	      std::string name = CoinReadGetString(argc,argv);
 	      if (name!="EOL") {
 		int length=name.length();
 		if (name[length-1]=='/'||name[length-1]=='\\')
@@ -6037,8 +6029,7 @@ int CbcMain1 (int argc, const char *argv[],
 	    break;
 	  case DIRMIPLIB:
 	    {
-	      std::string name = CoinReadGetString(argc,argv,ReadCommand,
-						   ReadMode);
+	      std::string name = CoinReadGetString(argc,argv);
 	      if (name!="EOL") {
 		int length=name.length();
 		if (name[length-1]=='/'||name[length-1]=='\\')
@@ -6052,7 +6043,7 @@ int CbcMain1 (int argc, const char *argv[],
 	    }
 	    break;
 	  case STDIN:
-	    ReadMode=-1;
+	    CbcOrClpRead_mode=-1;
 	    break;
 	  case NETLIB_DUAL:
 	  case NETLIB_EITHER:
@@ -6073,8 +6064,7 @@ int CbcMain1 (int argc, const char *argv[],
 	  case FAKEBOUND:
 	    if (goodModel) {
 	      // get bound
-	      double value = CoinReadGetDoubleField(argc,argv,&valid,
-						    ReadCommand,ReadMode);
+	      double value = CoinReadGetDoubleField(argc,argv,&valid);
 	      if (!valid) {
 		std::cout<<"Setting "<<parameters[iParam].name()<<
 		  " to DEBUG "<<value<<std::endl;
@@ -6237,7 +6227,7 @@ clp watson.mps -\nscaling off\nprimalsimplex"
 	  case SOLUTION:
 	    if (goodModel) {
 	      // get next field
-	      field = CoinReadGetString(argc,argv,ReadCommand,ReadMode);
+	      field = CoinReadGetString(argc,argv);
 	      if (field=="$") {
 		field = parameters[iParam].stringValue();
 	      } else if (field=="EOL") {
@@ -6507,7 +6497,7 @@ clp watson.mps -\nscaling off\nprimalsimplex"
 	  case SAVESOL:
 	    if (goodModel) {
 	      // get next field
-	      field = CoinReadGetString(argc,argv,ReadCommand,ReadMode);
+	      field = CoinReadGetString(argc,argv);
 	      if (field=="$") {
 		field = parameters[iParam].stringValue();
 	      } else if (field=="EOL") {

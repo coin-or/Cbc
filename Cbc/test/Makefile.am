@@ -26,14 +26,18 @@ endif
 test: $(CBC_TEST_TGTS)
 
 test_cbc: ../src/cbc$(EXEEXT)
-	cd ../../Data/Netlib; make uncompress
-	cd ../../Data/miplib3; make uncompress
-	../src/cbc$(EXEEXT) -unitTest -netlib -miplib
+	if test x"$(DIRMIPLIB)" != x; then \
+		MIPLIBARG="-dirMiplib $(DIRMIPLIB) -miplib"; \
+	fi; \
+	if test x"$(DIRSAMPLE)" != x; then \
+		SAMPLEARG="-dirSample $(DIRSAMPLE)"; \
+	fi; \
+	../src/cbc$(EXEEXT) $$SAMPLEARG -unitTest $$MIPLIBARG
 
 test_cbc_generic: ../src/cbc-generic$(EXEEXT)
 	echo "A minimal test is all that cbc-generic can manage just yet."
 	../src/cbc-generic$(EXEEXT) \
-	    -directory ../../Data/miplib3 -import p0033 -branch
+	    -directory ../../Data/Sample -import p0033 -branch
 
 .PHONY: test
 

@@ -160,6 +160,7 @@ public:
   /// update model (This is needed if cliques update matrix etc)
   virtual void setModel(CbcModel * model);
   
+  using CbcHeuristic::solution ;
   /** returns 0 if no solution, 1 if valid solution
       with better objective value than one passed in
       Sets solution values if good, sets objective value (only if good)
@@ -219,6 +220,7 @@ public:
   /// update model
   virtual void setModel(CbcModel * model);
   
+  using CbcHeuristic::solution ;
   /** returns 0 if no solution, 1 if valid solution.
       Sets solution values if good, sets objective value (only if good)
       We leave all variables which are at one at this node of the

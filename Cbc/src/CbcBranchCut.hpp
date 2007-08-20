@@ -33,9 +33,11 @@ public:
   // Destructor 
   ~CbcBranchCut ();
   
+  using CbcObject::infeasibility ;
   /// Infeasibility 
   virtual double infeasibility(int & preferredWay) const;
 
+  using CbcObject::feasibleRegion ;
   /** Set bounds to contain the current solution.
 
     More precisely, for the variable associated with this object, take the
@@ -50,6 +52,8 @@ public:
   /** \brief Return true if branch created by object should fix variables
   */
   virtual bool boundBranch() const ;
+
+  using CbcObject::createBranch ;
   /// Creates a branching object
   virtual CbcBranchingObject * createBranch(int way) ;
 
@@ -81,6 +85,7 @@ public:
   */
   virtual CbcBranchingObject * notPreferredNewFeasible() const ;
   
+  using CbcObject::resetBounds ;
   /** Reset original upper and lower bound values from the solver.
   
     Handy for updating bounds held in this object after bounds held in the
@@ -126,12 +131,14 @@ public:
   /// Destructor 
   virtual ~CbcCutBranchingObject ();
   
+  using CbcBranchingObject::branch ;
   /** \brief Sets the bounds for variables or adds a cut depending on the
              current arm of the branch and advances the object state to the next arm.
 	     Returns change in guessed objective on next branch
   */
   virtual double branch();
 
+  using CbcBranchingObject::print ;
   /** \brief Print something about branch - only if log level high
   */
   virtual void print();
@@ -192,9 +199,12 @@ public:
       Returns 0 if no good, 1 if dj, 2 if clean, 3 if both
   */
   int shallWe() const;
+
+  using CbcObject::infeasibility ;
   /// Infeasibility - large is 0.5
   virtual double infeasibility(int & preferredWay) const;
 
+  using CbcObject::createBranch ;
   /// Creates a branching object
   virtual CbcBranchingObject * createBranch(int way);
 
@@ -247,9 +257,11 @@ public:
   // Destructor 
   ~CbcBranchAllDifferent ();
 
+  using CbcObject::infeasibility ;
   /// Infeasibility - large is 0.5
   virtual double infeasibility(int & preferredWay) const;
 
+  using CbcObject::createBranch ;
   /// Creates a branching object
   virtual CbcBranchingObject * createBranch(int way);
 

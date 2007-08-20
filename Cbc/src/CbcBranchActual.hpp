@@ -36,11 +36,15 @@ public:
   // Destructor 
   ~CbcClique ();
   
+  using CbcObject::infeasibility ;
   /// Infeasibility - large is 0.5
   virtual double infeasibility(int & preferredWay) const;
 
+  using CbcObject::feasibleRegion ;
   /// This looks at solution and sets bounds to contain solution
   virtual void feasibleRegion();
+
+  using CbcObject::createBranch ;
   /// Creates a branching object
   virtual CbcBranchingObject * createBranch(int way) ;
   /// Number of members
@@ -121,14 +125,19 @@ public:
   // Destructor 
   ~CbcSOS ();
   
+  using CbcObject::infeasibility ;
   /// Infeasibility - large is 0.5
   virtual double infeasibility(int & preferredWay) const;
 
+  using CbcObject::feasibleRegion ;
   /// This looks at solution and sets bounds to contain solution
   virtual void feasibleRegion();
+
+  using CbcObject::createBranch ;
   /// Creates a branching object
   virtual CbcBranchingObject * createBranch(int way) ;
 
+  using CbcObject::solverBranch ;
   /** Create an OsiSolverBranch object
 
       This returns NULL if branch not represented by bound changes
@@ -219,10 +228,12 @@ public:
   ~CbcSimpleInteger ();
   /// Construct an OsiSimpleInteger object
   OsiSimpleInteger * osiObject() const;
+  using CbcObject::infeasibility ;
   /// Infeasibility - large is 0.5
   virtual double infeasibility(const OsiSolverInterface * solver, 
 			       const OsiBranchingInformation * info, int & preferredWay) const;
 
+  using CbcObject::feasibleRegion ;
   /** Set bounds to fix the variable at the current (integer) value.
 
     Given an integer value, set the lower and upper bounds to fix the
@@ -230,6 +241,7 @@ public:
   */
   virtual double feasibleRegion(OsiSolverInterface * solver, const OsiBranchingInformation * info) const;
 
+  using CbcObject::createBranch ;
   /** Create a branching object and indicate which way to branch first.
       
       The branching object has to know how to create branches (fix
@@ -237,6 +249,8 @@ public:
   */
   virtual CbcBranchingObject * createBranch(OsiSolverInterface * solver,
 					    const OsiBranchingInformation * info, int way) ;
+
+  using CbcObject::solverBranch ;
   /** Create an OsiSolverBranch object
 
       This returns NULL if branch not represented by bound changes
@@ -342,13 +356,18 @@ public:
   /// Applies a consequence for a single member
   void applyConsequence(int iSequence, int state) const;
   
+  using CbcObject::infeasibility ;
   /// Infeasibility - large is 0.5 (and 0.5 will give this)
   virtual double infeasibility(int & preferredWay) const;
 
+  using CbcObject::feasibleRegion ;
   /// This looks at solution and sets bounds to contain solution
   virtual void feasibleRegion();
+
+  using CbcObject::createBranch ;
   /// Creates a branching object
   virtual CbcBranchingObject * createBranch(int way) ;
+
   /// Number of members
   inline int numberMembers() const
   {return numberMembers_;}
@@ -419,12 +438,14 @@ public:
   /// Destructor 
   virtual ~CbcIntegerBranchingObject ();
   
+  using CbcBranchingObject::branch ;
   /** \brief Sets the bounds for the variable according to the current arm
 	     of the branch and advances the object state to the next arm.
 	     Returns change in guessed objective on next branch
   */
   virtual double branch();
 
+  using CbcBranchingObject::print ;
   /** \brief Print something about branch - only if log level high
   */
   virtual void print();
@@ -469,9 +490,11 @@ public:
   // Destructor 
   ~CbcSimpleIntegerPseudoCost ();
   
+  using CbcObject::infeasibility ;
   /// Infeasibility - large is 0.5
   virtual double infeasibility(int & preferredWay) const;
 
+  using CbcObject::createBranch ;
   /// Creates a branching object
   virtual CbcBranchingObject * createBranch(int way) ;
 
@@ -579,6 +602,7 @@ public:
   /// Destructor 
   virtual ~CbcIntegerPseudoCostBranchingObject ();
   
+  using CbcBranchingObject::branch ;
   /** \brief Sets the bounds for the variable according to the current arm
 	     of the branch and advances the object state to the next arm.
 	     This version also changes guessed objective value
@@ -630,9 +654,11 @@ public:
   // Destructor 
   virtual ~CbcCliqueBranchingObject ();
   
+  using CbcBranchingObject::branch ;
   /// Does next branch and updates state
   virtual double branch();
 
+  using CbcBranchingObject::print ;
   /** \brief Print something about branch - only if log level high
   */
   virtual void print();
@@ -675,9 +701,11 @@ public:
   // Destructor 
   virtual ~CbcLongCliqueBranchingObject ();
   
+  using CbcBranchingObject::branch ;
   /// Does next branch and updates state
   virtual double branch();
 
+  using CbcBranchingObject::print ;
   /** \brief Print something about branch - only if log level high
   */
   virtual void print();
@@ -719,9 +747,11 @@ public:
   // Destructor 
   virtual ~CbcSOSBranchingObject ();
   
+  using CbcBranchingObject::branch ;
   /// Does next branch and updates state
   virtual double branch();
 
+  using CbcBranchingObject::print ;
   /** \brief Print something about branch - only if log level high
   */
   virtual void print();
@@ -761,9 +791,11 @@ public:
   // Destructor 
   virtual ~CbcNWayBranchingObject ();
   
+  using CbcBranchingObject::branch ;
   /// Does next branch and updates state
   virtual double branch();
 
+  using CbcBranchingObject::print ;
   /** \brief Print something about branch - only if log level high
   */
   virtual void print();
@@ -904,11 +936,15 @@ public:
   // Destructor 
   ~CbcFollowOn ();
   
+  using CbcObject::infeasibility ;
   /// Infeasibility - large is 0.5
   virtual double infeasibility(int & preferredWay) const;
 
+  using CbcObject::feasibleRegion ;
   /// This looks at solution and sets bounds to contain solution
   virtual void feasibleRegion();
+
+  using CbcObject::createBranch ;
   /// Creates a branching object
   virtual CbcBranchingObject * createBranch(int way) ;
   /// As some computation is needed in more than one place - returns row
@@ -951,9 +987,11 @@ public:
   // Destructor 
   virtual ~CbcFixingBranchingObject ();
   
+  using CbcBranchingObject::branch ;
   /// Does next branch and updates state
   virtual double branch();
 
+  using CbcBranchingObject::print ;
   /** \brief Print something about branch - only if log level high
   */
   virtual void print();
@@ -1046,10 +1084,12 @@ public:
   /// Destructor 
   virtual ~CbcDummyBranchingObject ();
   
+  using CbcBranchingObject::branch ;
   /** \brief Dummy branch
   */
   virtual double branch();
 
+  using CbcBranchingObject::print ;
   /** \brief Print something about branch - only if log level high
   */
   virtual void print();

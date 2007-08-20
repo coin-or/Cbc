@@ -333,7 +333,7 @@ private:
     */
     unsigned int type:4; // type of computation
     unsigned int affected:25; // variable or element affected
-    float multiplier; // to use in computation 
+    double multiplier; // to use in computation 
   } boundElementAction;
   
   /**@name Private member data */
@@ -376,6 +376,7 @@ public:
   /// update model
   virtual void setModel(CbcModel * model);
   
+  using CbcHeuristic::solution ;
   /** returns 0 if no solution, 1 if valid solution.
       Sets solution values if good, sets objective value (only if good)
       We leave all variables which are at one at this node of the
@@ -445,9 +446,11 @@ public:
   // Destructor 
   virtual ~OsiOldLink ();
   
+  using OsiObject::infeasibility ;
   /// Infeasibility - large is 0.5
   virtual double infeasibility(const OsiBranchingInformation * info,int & whichWay) const;
 
+  using OsiObject::feasibleRegion ;
   /** Set bounds to fix the variable at the current (integer) value.
 
     Given an integer value, set the lower and upper bounds to fix the
@@ -510,9 +513,11 @@ public:
   // Destructor 
   virtual ~OsiOldLinkBranchingObject ();
   
+  using OsiBranchingObject::branch ;
   /// Does next branch and updates state
   virtual double branch(OsiSolverInterface * solver);
 
+  using OsiBranchingObject::print ;
   /** \brief Print something about branch - only if log level high
   */
   virtual void print(const OsiSolverInterface * solver=NULL);
@@ -591,9 +596,11 @@ public:
   // Destructor 
   virtual ~OsiLink ();
   
+  using OsiObject::infeasibility ;
   /// Infeasibility - large is 0.5
   virtual double infeasibility(const OsiBranchingInformation * info,int & whichWay) const;
 
+  using OsiObject::feasibleRegion ;
   /** Set bounds to fix the variable at the current (integer) value.
 
     Given an integer value, set the lower and upper bounds to fix the
@@ -663,9 +670,11 @@ public:
   // Destructor 
   virtual ~OsiLinkBranchingObject ();
   
+  using OsiBranchingObject::branch ;
   /// Does next branch and updates state
   virtual double branch(OsiSolverInterface * solver);
 
+  using OsiBranchingObject::print ;
   /** \brief Print something about branch - only if log level high
   */
   virtual void print(const OsiSolverInterface * solver=NULL);
@@ -718,9 +727,11 @@ public:
   // Destructor 
   virtual ~OsiBiLinear ();
   
+  using OsiObject::infeasibility ;
   /// Infeasibility - large is 0.5
   virtual double infeasibility(const OsiBranchingInformation * info,int & whichWay) const;
 
+  using OsiObject::feasibleRegion ;
   /** Set bounds to fix the variable at the current (integer) value.
 
     Given an integer value, set the lower and upper bounds to fix the
@@ -942,9 +953,11 @@ public:
   // Destructor 
   virtual ~OsiBiLinearBranchingObject ();
   
+  using OsiBranchingObject::branch ;
   /// Does next branch and updates state
   virtual double branch(OsiSolverInterface * solver);
 
+  using OsiBranchingObject::print ;
   /** \brief Print something about branch - only if log level high
   */
   virtual void print(const OsiSolverInterface * solver=NULL);
@@ -1040,8 +1053,10 @@ public:
   /// Destructor 
   virtual ~OsiSimpleFixedInteger ();
   
+  using OsiObject::infeasibility ;
   /// Infeasibility - large is 0.5
   virtual double infeasibility(const OsiBranchingInformation * info, int & whichWay) const;
+
   /** Creates a branching object
 
     The preferred direction is set by \p way, 0 for down, 1 for up.
@@ -1088,19 +1103,24 @@ public:
   /// Destructor 
   virtual ~OsiUsesBiLinear ();
   
+  using OsiObject::infeasibility ;
   /// Infeasibility - large is 0.5
   virtual double infeasibility(const OsiBranchingInformation * info, int & whichWay) const;
+
   /** Creates a branching object
 
     The preferred direction is set by \p way, 0 for down, 1 for up.
   */
   virtual OsiBranchingObject * createBranch(OsiSolverInterface * solver, const OsiBranchingInformation * info, int way) const;
+
+  using OsiObject::feasibleRegion ;
   /** Set bounds to fix the variable at the current value.
 
     Given an current value, set the lower and upper bounds to fix the
     variable. Returns amount it had to move variable.
   */
   virtual double feasibleRegion(OsiSolverInterface * solver, const OsiBranchingInformation * info) const;
+
   /// Add all bi-linear objects
   void addBiLinearObjects(OsiSolverLink * solver);
 protected:

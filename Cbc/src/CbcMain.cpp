@@ -304,6 +304,15 @@ activity at continuous solution",
       CbcParam("directory","Set Default import directory",
 	      DIRECTORY);
     parameters[numberParameters++]=
+      CbcParam("dirSample","Set directory where the COIN-OR sample problems are.",
+	       DIRSAMPLE);
+    parameters[numberParameters++]=
+      CbcParam("dirNetlib","Set directory where the netlib problems are.",
+	       DIRNETLIB);
+    parameters[numberParameters++]=
+      CbcOrClpParam("dirMiplib","Set directory where the miplib 2003 problems are.",
+		    DIRMIPLIB);
+    parameters[numberParameters++]=
       CbcParam("solver!","Set the solver used by cbc",
 	       SOLVER) ;
     parameters[numberParameters++]=
@@ -725,7 +734,21 @@ int main (int argc, const char *argv[])
     bool defaultSettings=true;
 
     const char dirsep =  CoinFindDirSeparator();
-    std::string directory = (dirsep == '/' ? "./" : ".\\");
+    std::string directory;
+    std::string dirSample;
+    std::string dirNetlib;
+    std::string dirMiplib;
+    if (dirsep == '/') {
+      directory = "./";
+      dirSample = "../../Data/Sample/";
+      dirNetlib = "../../Data/Netlib/";
+      dirMiplib = "../../Data/miplib3/";
+    } else {
+      directory = ".\\";
+      dirSample = "..\\..\\Data\\Sample\\";
+      dirNetlib = "..\\..\\Data\\Netlib\\";
+      dirMiplib = "..\\..\\Data\\miplib3\\";
+    }
     std::string field;
 /*
   The main command parsing loop.
@@ -1418,6 +1441,21 @@ int main (int argc, const char *argv[])
 	    if (directory[directory.length()-1] != '/')
 	      directory += '/' ;
 	    break ; }
+	  case DIRSAMPLE:
+	  { dirSample = getString(argc,argv);
+	    if (dirSample[dirSample.length()-1] != '/')
+	      dirSample += '/' ;
+	    break ; }
+	  case DIRNETLIB:
+	  { dirNetlib = getString(argc,argv);
+	    if (dirNetlib[dirNetlib.length()-1] != '/')
+	      dirNetlib += '/' ;
+	    break ; }
+	  case DIRMIPLIB:
+	  { dirMiplib = getString(argc,argv);
+	    if (dirMiplib[dirMiplib.length()-1] != '/')
+	      dirMiplib += '/' ;
+	    break ; }
 	  case STDIN:
 	    read_mode=-1;
 	    break;
@@ -1477,12 +1515,14 @@ int main (int argc, const char *argv[])
 	      int mainTest (int argc, const char *argv[]);
 	      // create fields for test
 	      const char * fields[3];
-	      int nFields=1;
+	      int nFields=3;
 	      fields[0]="fake main for miplib";
-	      if (directory!="./") {
-		fields[1]=("-miplibDir="+directory).c_str();
-		nFields=2;
-	      }
+	      std::string mpsfield = "-mpsDir=";
+	      mpsfield += dirSample.c_str();
+	      fields[1]=mpsfield.c_str();
+	      std::string mipfield = "-miplibDir=";
+	      mipfield += dirMiplib.c_str();
+	      fields[2]=mipfield.c_str();
 	      mainTest(nFields,fields);
 	    }
 	    break;

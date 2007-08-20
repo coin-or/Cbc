@@ -1,4 +1,4 @@
-# Copyright (C) 2006 International Business Machines and others.
+# Copyright (C) 2006, 2007 International Business Machines and others.
 # All Rights Reserved.
 # This file is distributed under the Common Public License.
 
@@ -14,7 +14,7 @@ AUTOMAKE_OPTIONS = foreign
 
 # Name of the library compiled in this directory.  We want it to be installed
 # in the 'lib' directory
-lib_LTLIBRARIES = libCbc.la
+lib_LTLIBRARIES = libCbc.la libCbcSolver.la
 
 # List all source files for this library, including headers
 libCbc_la_SOURCES = \
@@ -41,23 +41,30 @@ libCbc_la_SOURCES = \
 	CbcMessage.cpp CbcMessage.hpp \
 	CbcModel.cpp CbcModel.hpp \
 	CbcNode.cpp CbcNode.hpp \
-	CbcSolver.cpp CbcCbcParam.cpp \
 	CbcStatistics.cpp CbcStatistics.hpp \
 	CbcStrategy.cpp CbcStrategy.hpp \
 	CbcTree.cpp CbcTree.hpp \
+	CbcTreeLocal.cpp CbcTreeLocal.hpp
+
+libCbcSolver_la_SOURCES = \
+	CbcCbcParam.cpp \
+	Cbc_ampl.cpp Cbc_ampl.h \
+	ClpConstraintAmpl.hpp ClpAmplObjective.hpp ClpAmplStuff.cpp \
 	CbcLinked.cpp CbcLinked.hpp \
-	CbcTreeLocal.cpp CbcTreeLocal.hpp \
-	ClpConstraintAmpl.hpp ClpAmplObjective.hpp ClpAmplStuff.cpp 
+	unitTestClp.cpp CbcSolver.cpp 
+
+#Stefan: added unitTestClp.cpp because CbcSolver defines reference to it
 
 ## If we have the Ampl solver library, we need to add additional things
 ## also see lower down
 ## new idea is to add in source code anyway
-libCbc_la_SOURCES += Cbc_ampl.cpp Cbc_ampl.h
+##libCbc_la_SOURCES += Cbc_ampl.cpp Cbc_ampl.h
 
 
 # This is for libtool (on Windows)
 
 libCbc_la_LDFLAGS = $(LT_LDFLAGS)
+libCbcSolver_la_LDFLAGS = $(LT_LDFLAGS)
 
 # Some common setup for cbc and cbc-generic.
 
@@ -81,11 +88,11 @@ bin_PROGRAMS += cbc
 
 # List all source files for this executable, including headers
 cbc_SOURCES = \
-	CoinSolve.cpp \
-	unitTestClp.cpp
+	CoinSolve.cpp
 
 # Additional COIN libraries
-cbc_LDADD = libCbc.la \
+cbc_LDADD = libCbcSolver.la \
+	libCbc.la \
 	$(CGLOBJDIR)/src/libCgl.la \
 	$(OSIOBJDIR)/src/OsiClp/libOsiClp.la \
 	$(OSIOBJDIR)/src/libOsi.la \
@@ -138,7 +145,8 @@ cbc_generic_SOURCES = \
 	CbcGenSolution.cpp \
 	CbcGenSolvers.cpp
 
-cbc_generic_LDADD = libCbc.la \
+cbc_generic_LDADD = libCbcSolver.la \
+	libCbc.la \
 	$(CGLOBJDIR)/src/libCgl.la
 
 # List all additionally required solver and Osi libraries
@@ -217,6 +225,11 @@ if COIN_HAS_XPR
   AM_CPPFLAGS += -I`$(CYGPATH_W) $(XPRINCDIR)` \
 	-I`$(CYGPATH_W) $(OSISRCDIR)/src/OsiXpr`
   cbc_generic_LDADD += $(OSIOBJDIR)/src/OsiXpr/libOsiXpr.la
+endif
+
+if COIN_HAS_ASL
+  cbc_generic_LDADD += $(ASLLIB)
+  AM_CPPFLAGS += $(ASL_CPPFLAGS) -DCOIN_HAS_ASL
 endif
 
 # Finally the Osi Coin library (many of the above need it)

@@ -2,8 +2,6 @@
 // Corporation and others.  All Rights Reserved.
 #ifndef CbcTree_H
 #define CbcTree_H
-using namespace std;
-
 
 #include <vector>
 #include <algorithm>

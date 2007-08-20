@@ -383,13 +383,13 @@ CbcTreeLocal::push(CbcNode * x) {
     printf("pushing node onto heap %d %x %x\n",
 	   x->nodeInfo()->nodeNumber(),x,x->nodeInfo());
 #endif
-  push_heap(nodes_.begin(), nodes_.end(), comparison_);
+  std::push_heap(nodes_.begin(), nodes_.end(), comparison_);
 }
 
 // Remove the top node from the heap
 void 
 CbcTreeLocal::pop() {
-  pop_heap(nodes_.begin(), nodes_.end(), comparison_);
+  std::pop_heap(nodes_.begin(), nodes_.end(), comparison_);
   nodes_.pop_back();
 }
 // Test if empty - does work if so
@@ -659,7 +659,7 @@ CbcTreeLocal::empty()
       //   localNode_,localNode_->nodeInfo());
       nodes_.push_back(localNode_);
       localNode_=localNode2;
-      make_heap(nodes_.begin(), nodes_.end(), comparison_);
+      std::make_heap(nodes_.begin(), nodes_.end(), comparison_);
     }
   }
   return finished;

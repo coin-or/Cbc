@@ -678,7 +678,7 @@ CbcRounding::solution(double & solutionValue,
     while (lastChange>1.0e-2) {
       lastChange=0;
       for (iColumn=0;iColumn<numberColumns;iColumn++) {
-        bool isInteger = integerType[iColumn];
+        bool isInteger = (integerType[iColumn]!=0);
         double currentValue = newSolution[iColumn];
         double lowerValue = lower[iColumn];
         double upperValue = upper[iColumn];

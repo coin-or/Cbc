@@ -40,7 +40,7 @@ void
 CbcTree::setComparison(CbcCompareBase  &compare)
 {
   comparison_.test_ = &compare;
-  make_heap(nodes_.begin(), nodes_.end(), comparison_);
+  std::make_heap(nodes_.begin(), nodes_.end(), comparison_);
 }
 
 // Return the top node of the heap 
@@ -58,13 +58,13 @@ CbcTree::push(CbcNode * x) {
 	 x->nodeInfo()->numberBranchesLeft(),x->nodeInfo()->numberPointingToThis());*/
   assert(x->objectiveValue()!=COIN_DBL_MAX&&x->nodeInfo());
   nodes_.push_back(x);
-  push_heap(nodes_.begin(), nodes_.end(), comparison_);
+  std::push_heap(nodes_.begin(), nodes_.end(), comparison_);
 }
 
 // Remove the top node from the heap
 void 
 CbcTree::pop() {
-  pop_heap(nodes_.begin(), nodes_.end(), comparison_);
+  std::pop_heap(nodes_.begin(), nodes_.end(), comparison_);
   nodes_.pop_back();
 }
 
@@ -88,7 +88,7 @@ CbcTree::bestNode(double cutoff)
     if (!best||best->objectiveValue()>=cutoff) {
 #if 0
       // take off
-      pop_heap(nodes_.begin(), nodes_.end(), comparison_);
+      std::pop_heap(nodes_.begin(), nodes_.end(), comparison_);
       nodes_.pop_back();
       delete best;
       best=NULL;
@@ -118,7 +118,7 @@ CbcTree::bestNode(double cutoff)
     if (best==saveBest) {
       // can pop
       // take off
-      pop_heap(nodes_.begin(), nodes_.end(), comparison_);
+      std::pop_heap(nodes_.begin(), nodes_.end(), comparison_);
       nodes_.pop_back();
     } else {
       // make impossible
@@ -126,7 +126,7 @@ CbcTree::bestNode(double cutoff)
     }
   } else if (best) {
     // take off
-    pop_heap(nodes_.begin(), nodes_.end(), comparison_);
+    std::pop_heap(nodes_.begin(), nodes_.end(), comparison_);
     nodes_.pop_back();
   }
 #ifdef DEBUG_CBC_HEAP
@@ -329,7 +329,7 @@ CbcTree::push(CbcNode * x) {
 void 
 CbcTree::pop() {
 #if 0
-  pop_heap(nodes_.begin(), nodes_.end(), comparison_);
+  std::pop_heap(nodes_.begin(), nodes_.end(), comparison_);
   nodes_.pop_back();
 #else
   if (nodes_.size()) {
@@ -361,7 +361,7 @@ CbcTree::bestNode(double cutoff)
     if (!best||best->objectiveValue()>=cutoff) {
 #if 0
       // take off
-      pop_heap(nodes_.begin(), nodes_.end(), comparison_);
+      std::pop_heap(nodes_.begin(), nodes_.end(), comparison_);
       nodes_.pop_back();
       delete best;
       best=NULL;
@@ -391,7 +391,7 @@ CbcTree::bestNode(double cutoff)
     if (best==saveBest) {
       // can pop
       // take off
-      pop_heap(nodes_.begin(), nodes_.end(), comparison_);
+      std::pop_heap(nodes_.begin(), nodes_.end(), comparison_);
       nodes_.pop_back();
     } else {
       // make impossible
@@ -400,7 +400,7 @@ CbcTree::bestNode(double cutoff)
   } else if (best) {
     // take off
 #if 0
-    pop_heap(nodes_.begin(), nodes_.end(), comparison_);
+    std::pop_heap(nodes_.begin(), nodes_.end(), comparison_);
     nodes_.pop_back();
 #else
     realpop();

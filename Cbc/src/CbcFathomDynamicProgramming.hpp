@@ -67,10 +67,10 @@ public:
       returns true if was used in making any changes.
   */
   bool tryColumn(int numberElements, const int * rows,
-                    const double * coefficients, float cost,
+                    const double * coefficients, double cost,
                     int upper=COIN_INT_MAX);
   /// Returns cost array
-  inline const float * cost() const
+  inline const double * cost() const
   { return cost_;}
   /// Returns back array
   inline const int * back() const
@@ -89,20 +89,20 @@ private:
       returns true if was used in making any changes
   */
   bool addOneColumn0(int numberElements, const int * rows,
-                     float cost);
+                     double cost);
   /** Adds one attempt of one column of type 1,
       returns true if was used in making any changes.
       At present the user has to call it once for each possible value
   */
   bool addOneColumn1(int numberElements, const int * rows,
-                     const int * coefficients, float cost);
+                     const int * coefficients, double cost);
   /** Adds one attempt of one column of type 1,
       returns true if was used in making any changes.
       At present the user has to call it once for each possible value.
       This version is when there are enough 1 rhs to do faster
   */
   bool addOneColumn1A(int numberElements, const int * rows,
-                     const int * coefficients, float cost);
+                     const int * coefficients, double cost);
   /// Gets bit pattern from original column
   int bitPattern(int numberElements, const int * rows,
                      const int * coefficients);
@@ -120,8 +120,8 @@ protected:
       1 - coefficients > 1 or rhs > 1
   */
   int type_;
-  /// Space for states (float as who cares)
-  float * cost_;
+  /// Space for states 
+  double * cost_;
   /// Which state produced this cheapest one
   int * back_;
   /// Some rows may be satisified so we need a lookup

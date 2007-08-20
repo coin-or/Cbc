@@ -2092,7 +2092,8 @@ int callCbc(const std::string input2, OsiClpSolverInterface& solver1);
 int callCbc(const std::string input2) ;
 // When we want to load up CbcModel with options first
 void CbcMain0 (CbcModel & babSolver);
-int CbcMain1 (int argc, const char *argv[],CbcModel & babSolver);
+int CbcMain1 (int argc, const char *argv[],CbcModel & babSolver,
+	      int call_CbcClpUnitTest_on_777 = 0);
 // two ways of calling
 int callCbc(const char * input2, CbcModel & babSolver); 
 int callCbc(const std::string input2, CbcModel & babSolver); 
@@ -2102,5 +2103,5 @@ int callCbc1(const std::string input2, CbcModel & babSolver);
 // And when CbcMain0 already called to initialize (with call back) (see CbcMain1 for whereFrom)
 int callCbc1(const char * input2, CbcModel & babSolver, int (CbcModel * currentSolver, int whereFrom)); 
 int callCbc1(const std::string input2, CbcModel & babSolver, int (CbcModel * currentSolver, int whereFrom)); 
-int CbcMain1 (int argc, const char *argv[],CbcModel & babSolver, int (CbcModel * currentSolver, int whereFrom));
+int CbcMain1 (int argc, const char *argv[],CbcModel & babSolver, int (CbcModel * currentSolver, int whereFrom), int call_CbcClpUnitTest_on_777 = 0);
 #endif

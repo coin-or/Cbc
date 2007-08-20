@@ -1661,9 +1661,9 @@ static int dummyCallBack(CbcModel * model, int whereFrom)
   return 0;
 }
 int CbcMain1 (int argc, const char *argv[],
-	     CbcModel  & model)
+	      CbcModel  & model, int call_CbcClpUnitTest_on_777)
 {
-  return CbcMain1(argc,argv,model,dummyCallBack);
+  return CbcMain1(argc,argv,model,dummyCallBack, call_CbcClpUnitTest_on_777);
 }
 int callCbc1(const std::string input2, CbcModel & babSolver, int callBack(CbcModel * currentSolver, int whereFrom))
 {
@@ -1698,7 +1698,21 @@ void CbcMain0 (CbcModel  & model)
   lpSolver->messageHandler()->setPrefix(false);
   establishParams(numberParameters,parameters) ;
   const char dirsep =  CoinFindDirSeparator();
-  std::string directory = (dirsep == '/' ? "./" : ".\\");
+  std::string directory;
+  std::string dirSample;
+  std::string dirNetlib;
+  std::string dirMiplib;
+  if (dirsep == '/') {
+    directory = "./";
+    dirSample = "../../Data/Sample/";
+    dirNetlib = "../../Data/Netlib/";
+    dirMiplib = "../../Data/miplib3/";
+  } else {
+    directory = ".\\";
+    dirSample = "..\\..\\Data\\Sample\\";
+    dirNetlib = "..\\..\\Data\\Netlib\\";
+    dirMiplib = "..\\..\\Data\\miplib3\\";
+  }
   std::string defaultDirectory = directory;
   std::string importFile ="";
   std::string exportFile ="default.mps";
@@ -1724,6 +1738,9 @@ void CbcMain0 (CbcModel  & model)
   parameters[whichParam(DEBUG,numberParameters,parameters)].setStringValue(debugFile);
   parameters[whichParam(PRINTMASK,numberParameters,parameters)].setStringValue(printMask);
   parameters[whichParam(DIRECTORY,numberParameters,parameters)].setStringValue(directory);
+  parameters[whichParam(DIRSAMPLE,numberParameters,parameters)].setStringValue(dirSample);
+  parameters[whichParam(DIRNETLIB,numberParameters,parameters)].setStringValue(dirNetlib);
+  parameters[whichParam(DIRMIPLIB,numberParameters,parameters)].setStringValue(dirMiplib);
   parameters[whichParam(DUALBOUND,numberParameters,parameters)].setDoubleValue(lpSolver->dualBound());
   parameters[whichParam(DUALTOLERANCE,numberParameters,parameters)].setDoubleValue(lpSolver->dualTolerance());
   parameters[whichParam(EXPORT,numberParameters,parameters)].setStringValue(exportFile);
@@ -1794,6 +1811,7 @@ void CbcMain0 (CbcModel  & model)
   parameters[whichParam(LOCALTREE,numberParameters,parameters)].setCurrentOption("off");
   parameters[whichParam(COSTSTRATEGY,numberParameters,parameters)].setCurrentOption("off");
 }
+
 /* 1 - add heuristics to model
    2 - do heuristics (and set cutoff and best solution)
    3 - for miplib test so skip some
@@ -1980,6 +1998,10 @@ static int doHeuristics(CbcModel * model,int type)
     return 0;
   }
 } 
+
+void CbcClpUnitTest (const CbcModel & saveModel,
+		     std::string& dirMiplib, bool unitTestOnly);
+
 /* Meaning of whereFrom:
    1 after initial solve by dualsimplex etc
    2 after preprocessing
@@ -1988,8 +2010,11 @@ static int doHeuristics(CbcModel * model,int type)
    5 after postprocessing
    6 after a user called heuristic phase
 */
+
 int CbcMain1 (int argc, const char *argv[],
-	     CbcModel  & model, int callBack(CbcModel * currentSolver, int whereFrom))
+	      CbcModel  & model,
+	      int callBack(CbcModel * currentSolver, int whereFrom),
+	      int call_CbcClpUnitTest_on_777)
 {
   /* Note
      This is meant as a stand-alone executable to do as much of coin as possible. 
@@ -2271,7 +2296,21 @@ int CbcMain1 (int argc, const char *argv[],
     double gapRatio=1.0e100;
     double tightenFactor=0.0;
     const char dirsep =  CoinFindDirSeparator();
-    std::string directory = (dirsep == '/' ? "./" : ".\\");
+    std::string directory;
+    std::string dirSample;
+    std::string dirNetlib;
+    std::string dirMiplib;
+    if (dirsep == '/') {
+      directory = "./";
+      dirSample = "../../Data/Sample/";
+      dirNetlib = "../../Data/Netlib/";
+      dirMiplib = "../../Data/miplib3/";
+    } else {
+      directory = ".\\";
+      dirSample = "..\\..\\Data\\Sample\\";
+      dirNetlib = "..\\..\\Data\\Netlib\\";
+      dirMiplib = "..\\..\\Data\\miplib3\\";
+    }
     std::string defaultDirectory = directory;
     std::string importFile ="";
     std::string exportFile ="default.mps";
@@ -5308,6 +5347,12 @@ int CbcMain1 (int argc, const char *argv[],
 		  babModel->setBranchingMethod(decision);
 		}
 		model = *babModel;
+		/* LL: this was done in CoinSolve.cpp: main(argc, argv).
+		   I have moved it here so that the miplib directory location
+		   could be passed to CbcClpUnitTest. */
+		if (call_CbcClpUnitTest_on_777 == 777) {
+		  CbcClpUnitTest(model, dirMiplib, false);
+		}
 		return 777;
               } else {
                 strengthenedModel = babModel->strengthenedModel();
@@ -6570,6 +6615,51 @@ int CbcMain1 (int argc, const char *argv[],
 	      }
 	    }
 	    break;
+	  case DIRSAMPLE:
+	    {
+	      std::string name = CoinReadGetString(argc,argv);
+	      if (name!="EOL") {
+		int length=name.length();
+		if (name[length-1]=='/'||name[length-1]=='\\')
+		  dirSample=name;
+		else
+		  dirSample = name+"/";
+		parameters[iParam].setStringValue(dirSample);
+	      } else {
+		parameters[iParam].printString();
+	      }
+	    }
+	    break;
+	  case DIRNETLIB:
+	    {
+	      std::string name = CoinReadGetString(argc,argv);
+	      if (name!="EOL") {
+		int length=name.length();
+		if (name[length-1]=='/'||name[length-1]=='\\')
+		  dirNetlib=name;
+		else
+		  dirNetlib = name+"/";
+		parameters[iParam].setStringValue(dirNetlib);
+	      } else {
+		parameters[iParam].printString();
+	      }
+	    }
+	    break;
+	  case DIRMIPLIB:
+	    {
+	      std::string name = CoinReadGetString(argc,argv);
+	      if (name!="EOL") {
+		int length=name.length();
+		if (name[length-1]=='/'||name[length-1]=='\\')
+		  dirMiplib=name;
+		else
+		  dirMiplib = name+"/";
+		parameters[iParam].setStringValue(dirMiplib);
+	      } else {
+		parameters[iParam].printString();
+	      }
+	    }
+	    break;
 	  case STDIN:
 	    CbcOrClpRead_mode=-1;
 	    break;
@@ -6585,8 +6675,7 @@ int CbcMain1 (int argc, const char *argv[],
 	    break;
 	  case UNITTEST:
 	    {
-	      printf("unit test is now only from clp - does same thing\n");
-	      //return(22);
+	      CbcClpUnitTest(model, dirSample, true);
 	    }
 	    break;
 	  case FAKEBOUND:

@@ -63,7 +63,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="cbcCInterfaceDll.lib"
+				AdditionalDependencies="$(InputDir)..\cbcCInterfaceDll\debug\cbcCInterfaceDll.lib"
 				LinkIncremental="2"
 				AdditionalLibraryDirectories="$(SolutionDir)cbcCInterfaceDll\Debug"
 				DelayLoadDLLs=""
@@ -144,7 +144,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="cbcCInterfaceDll.lib"
+				AdditionalDependencies="$(InputDir)..\cbcCInterfaceDll\release\cbcCInterfaceDll.lib"
 				LinkIncremental="1"
 				AdditionalLibraryDirectories="$(SolutionDir)cbcCInterfaceDll\Release"
 				DelayLoadDLLs=""

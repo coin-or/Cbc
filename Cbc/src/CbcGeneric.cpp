@@ -107,7 +107,6 @@ void markAsSetByUser (CbcGenCtlBlk &ctlBlk, CoinParam *param)
 
   return ; }
 
-
 } // end unnamed namespace
 
 int main (int argc, const char *argv[])

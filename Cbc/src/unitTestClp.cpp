@@ -28,29 +28,63 @@ void testingMessage( const char * const msg )
 
 //#############################################################################
 
-void CbcClpUnitTest (const CbcModel & saveModel, std::string& miplibDir,
+static inline bool CbcTestFile(const std::string name)
+{
+  FILE *fp = fopen(name.c_str(),"r");
+  if (fp) {
+    fclose(fp);
+    return true;
+  }
+  return false;
+}
+
+//#############################################################################
+
+bool CbcTestMpsFile(std::string& fname)
+{
+  if (CbcTestFile(fname)) {
+    return true;
+  }
+  if (CbcTestFile(fname+".mps")) {
+    fname += ".mps";
+    return true;
+  }
+  if (CbcTestFile(fname+".MPS")) {
+    fname += ".MPS";
+    return true;
+  }
+#ifdef COIN_HAS_ZLIB
+  if (CbcTestFile(fname+".gz")) {
+    return true;
+  }
+  if (CbcTestFile(fname+".mps.gz")) {
+    fname += ".mps";
+    return true;
+  }
+  if (CbcTestFile(fname+".MPS.gz")) {
+    fname += ".MPS";
+    return true;
+  }
+  if (CbcTestFile(fname+".MPS.GZ")) {
+    fname += ".MPS";
+    return true;
+  }
+#endif
+  return false;
+}
+
+//#############################################################################
+
+void CbcClpUnitTest (const CbcModel & saveModel, std::string& dirMiplib,
 		     bool unitTestOnly)
 {
   unsigned int m ;
-  // See if files exist
-  FILE * fp;
-  bool doTest=false;
 
   // Set directory containing miplib data files.
-  std::string test1 = miplibDir +"p0033";
-  fp=fopen(test1.c_str(),"r");
-  if (fp) {
-    doTest=true;
-    fclose(fp);
-  }
-#ifdef COIN_HAS_ZLIB
-  test1 += ".gz";
-  fp=fopen(test1.c_str(),"r");
-  if (fp) {
-    doTest=true;
-    fclose(fp);
-  }
-#endif
+  std::string test1 = dirMiplib +"p0033";
+  // See if files exist
+  bool doTest=CbcTestMpsFile(test1);
+
   if (!doTest) {
     printf("Not doing miplib run as can't find mps files - ? .gz without libz\n");
     return;
@@ -82,7 +116,6 @@ void CbcClpUnitTest (const CbcModel & saveModel, std::string& miplibDir,
   if (unitTestOnly) {
     PUSH_MPS("p0033",16,33,3089,2520.57,7);
     PUSH_MPS("p0201",133,201,7615,6875.0,7);
-    PUSH_MPS("p0548",176,548,8691,315.29,7);
   } else {
     /*
       Load up the problem vector. Note that the row counts here include the
@@ -203,7 +236,11 @@ void CbcClpUnitTest (const CbcModel & saveModel, std::string& miplibDir,
     */
     CbcModel * model = new CbcModel(saveModel);
       
-    std::string fn = miplibDir+mpsName[m] ;
+    std::string fn = dirMiplib+mpsName[m] ;
+    if (!CbcTestMpsFile(fn)) {
+      std::cout << "ERROR: Cannot find MPS file " << fn << "\n";
+      continue;
+    }
     model->solver()->readMps(fn.c_str(),"") ;
     assert(model->getNumRows() == nRows[m]) ;
     assert(model->getNumCols() == nCols[m]) ;

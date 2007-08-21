@@ -1438,23 +1438,23 @@ int main (int argc, const char *argv[])
 	    break;
 	  case DIRECTORY:
 	  { directory = getString(argc,argv);
-	    if (directory[directory.length()-1] != '/')
-	      directory += '/' ;
+	    if (directory[directory.length()-1] != dirsep)
+	      directory += dirsep ;
 	    break ; }
 	  case DIRSAMPLE:
 	  { dirSample = getString(argc,argv);
-	    if (dirSample[dirSample.length()-1] != '/')
-	      dirSample += '/' ;
+	    if (dirSample[dirSample.length()-1] != dirsep)
+	      dirSample += dirsep ;
 	    break ; }
 	  case DIRNETLIB:
 	  { dirNetlib = getString(argc,argv);
-	    if (dirNetlib[dirNetlib.length()-1] != '/')
-	      dirNetlib += '/' ;
+	    if (dirNetlib[dirNetlib.length()-1] != dirsep)
+	      dirNetlib += dirsep ;
 	    break ; }
 	  case DIRMIPLIB:
 	  { dirMiplib = getString(argc,argv);
-	    if (dirMiplib[dirMiplib.length()-1] != '/')
-	      dirMiplib += '/' ;
+	    if (dirMiplib[dirMiplib.length()-1] != dirsep)
+	      dirMiplib += dirsep ;
 	    break ; }
 	  case STDIN:
 	    read_mode=-1;
@@ -1517,10 +1517,10 @@ int main (int argc, const char *argv[])
 	      const char * fields[3];
 	      int nFields=3;
 	      fields[0]="fake main for miplib";
-	      std::string mpsfield = "-mpsDir=";
+	      std::string mpsfield = "-dirSample=";
 	      mpsfield += dirSample.c_str();
 	      fields[1]=mpsfield.c_str();
-	      std::string mipfield = "-miplibDir=";
+	      std::string mipfield = "-dirMiplib=";
 	      mipfield += dirMiplib.c_str();
 	      fields[2]=mipfield.c_str();
 	      mainTest(nFields,fields);

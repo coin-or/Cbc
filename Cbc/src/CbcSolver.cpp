@@ -6605,10 +6605,11 @@ int CbcMain1 (int argc, const char *argv[],
 	      std::string name = CoinReadGetString(argc,argv);
 	      if (name!="EOL") {
 		int length=name.length();
-		if (name[length-1]=='/'||name[length-1]=='\\')
-		  directory=name;
-		else
-		  directory = name+"/";
+		if (name[length-1]==dirsep) {
+		  directory = name;
+		} else {
+		  directory = name+dirsep;
+		}
 		parameters[iParam].setStringValue(directory);
 	      } else {
 		parameters[iParam].printString();
@@ -6620,10 +6621,11 @@ int CbcMain1 (int argc, const char *argv[],
 	      std::string name = CoinReadGetString(argc,argv);
 	      if (name!="EOL") {
 		int length=name.length();
-		if (name[length-1]=='/'||name[length-1]=='\\')
-		  dirSample=name;
-		else
-		  dirSample = name+"/";
+		if (name[length-1]==dirsep) {
+		  dirSample = name;
+		} else {
+		  dirSample = name+dirsep;
+		}
 		parameters[iParam].setStringValue(dirSample);
 	      } else {
 		parameters[iParam].printString();
@@ -6635,10 +6637,11 @@ int CbcMain1 (int argc, const char *argv[],
 	      std::string name = CoinReadGetString(argc,argv);
 	      if (name!="EOL") {
 		int length=name.length();
-		if (name[length-1]=='/'||name[length-1]=='\\')
-		  dirNetlib=name;
-		else
-		  dirNetlib = name+"/";
+		if (name[length-1]==dirsep) {
+		  dirNetlib = name;
+		} else {
+		  dirNetlib = name+dirsep;
+		}
 		parameters[iParam].setStringValue(dirNetlib);
 	      } else {
 		parameters[iParam].printString();
@@ -6650,10 +6653,11 @@ int CbcMain1 (int argc, const char *argv[],
 	      std::string name = CoinReadGetString(argc,argv);
 	      if (name!="EOL") {
 		int length=name.length();
-		if (name[length-1]=='/'||name[length-1]=='\\')
-		  dirMiplib=name;
-		else
-		  dirMiplib = name+"/";
+		if (name[length-1]==dirsep) {
+		  dirMiplib = name;
+		} else {
+		  dirMiplib = name+dirsep;
+		}
 		parameters[iParam].setStringValue(dirMiplib);
 	      } else {
 		parameters[iParam].printString();

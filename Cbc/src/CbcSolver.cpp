@@ -133,6 +133,7 @@ static void malloc_stats2()
 #include "CbcTreeLocal.hpp"
 #include "CbcCompareActual.hpp"
 #include "CbcBranchActual.hpp"
+#include "CbcBranchLotsize.hpp"
 #include  "CbcOrClpParam.hpp"
 #include  "CbcCutGenerator.hpp"
 #include  "CbcStrategy.hpp"
@@ -495,18 +496,19 @@ static int * analyze(OsiClpSolverInterface * solverMod, int & numberChanged, dou
              3 do heuristics and set best solution
 	     4 do BAB and just set best solution
              -2 cleanup afterwards if using 2
-  On ouput - number fixed
+  On output - number fixed
 */
 static OsiClpSolverInterface * fixVubs(CbcModel & model, int numberLevels,
 				       int & doAction, CoinMessageHandler * generalMessageHandler)
 {
+  double time1 = CoinCpuTime();
   OsiSolverInterface * solver = model.solver()->clone();
   OsiClpSolverInterface * clpSolver = dynamic_cast< OsiClpSolverInterface*> (solver);
   ClpSimplex * lpSolver = clpSolver->getModelPtr();
   // Tighten bounds
   lpSolver->tightenPrimalBounds(0.0,11,true);
   char generalPrint[200];
-  //const double *objective = solver->getObjCoefficients() ;
+  const double *objective = lpSolver->getObjCoefficients() ;
   double *columnLower = lpSolver->columnLower() ;
   double *columnUpper = lpSolver->columnUpper() ;
   int numberColumns = solver->getNumCols() ;
@@ -547,8 +549,39 @@ static OsiClpSolverInterface * fixVubs(CbcModel & model, int numberLevels,
 #endif
   double tolerance = lpSolver->primalTolerance();
   int * check = new int[numberRows];
-  for (iRow=0;iRow<numberRows;iRow++)
-    check[iRow]=-1;
+  for (iRow=0;iRow<numberRows;iRow++) {
+    check[iRow]=-2; // don't check
+    if (rowLower[iRow]<-1.0e6&&rowUpper[iRow]>1.0e6) 
+      continue;// unlikely
+    // possible row
+    int numberPositive=0;
+    int iPositive=-1;
+    int numberNegative=0;
+    int iNegative=-1;
+    CoinBigIndex rStart = rowStart[iRow];
+    CoinBigIndex rEnd = rowStart[iRow]+rowLength[iRow];
+    CoinBigIndex j;
+    int kColumn;
+    for (j = rStart; j < rEnd; ++j) {
+      double value=elementByRow[j];
+      kColumn = column[j];
+      if (columnUpper[kColumn]>columnLower[kColumn]) {
+	if (value > 0.0) { 
+	  numberPositive++;
+	  iPositive=kColumn;
+	} else {
+	  numberNegative++;
+	  iNegative=kColumn;
+	}
+      }
+    }
+    if (numberPositive==1&&numberNegative==1)
+      check[iRow]=-1; // try both
+    if (numberPositive==1&&rowLower[iRow]>-1.0e20)
+      check[iRow]=iPositive;
+    else if (numberNegative==1&&rowUpper[iRow]<1.0e20)
+      check[iRow]=iNegative;
+  }
   for (iColumn=0;iColumn<numberColumns;iColumn++) {
     fix[iColumn]=-1;
     if (columnUpper[iColumn] > columnLower[iColumn]+1.0e-8) {
@@ -563,9 +596,8 @@ static OsiClpSolverInterface * fixVubs(CbcModel & model, int numberLevels,
 	for (CoinBigIndex i=columnStart[iColumn];
 	     i<columnStart[iColumn]+columnLength[iColumn];i++) {
 	  iRow = row[i];
-	  if (rowLower[iRow]<-1.0e6&&rowUpper[iRow]>1.0e6)
+	  if (check[iRow]!=-1&&check[iRow]!=iColumn)
 	    continue; // unlikely
-	  //==
 	  // possible row
 	  int infiniteUpper = 0;
 	  int infiniteLower = 0;
@@ -800,6 +832,7 @@ static OsiClpSolverInterface * fixVubs(CbcModel & model, int numberLevels,
     counts[iColumn]=0;
     fixColumn2[iColumn+1]=numberOther;
   }
+  // Create other way and convert fixColumn to counts
   for ( iColumn=0;iColumn<numberColumns;iColumn++) {
     for (int i=fixColumn[iColumn];i<fixColumn[iColumn+1];i++) {
       int jColumn=otherColumn[i];
@@ -812,36 +845,241 @@ static OsiClpSolverInterface * fixVubs(CbcModel & model, int numberLevels,
   int kLayer=0;
   while (true) {
     int numberLayered=0;
-    int numberInteger=0;
     for ( iColumn=0;iColumn<numberColumns;iColumn++) {
       if (fix[iColumn]==kLayer) {
 	for (int i=fixColumn2[iColumn];i<fixColumn2[iColumn+1];i++) {
 	  int jColumn=otherColumn2[i];
 	  if (fix[jColumn]==kLayer) {
-	    fix[iColumn]=kLayer+1;
+	    fix[iColumn]=kLayer+100;
 	  }
 	}
       }
       if (fix[iColumn]==kLayer) {
 	numberLayered++;
-	if (solver->isInteger(iColumn))
-	  numberInteger++;
       }
     }
     if (numberLayered) {
-      printf("%d (%d integer) at priority %d\n",numberLayered,numberInteger,kLayer);
-      kLayer++;
+      kLayer+=100;
     } else {
       break;
     }
   }
+  for (int iPass=0;iPass<2;iPass++) {
+    for (int jLayer=0;jLayer<kLayer;jLayer++) {
+      int check[]={-1,0,1,2,3,4,5,10,50,100,500,1000,5000,10000,INT_MAX};
+      int nCheck = (int) (sizeof(check)/sizeof(int));
+      int countsI[20];
+      int countsC[20];
+      assert (nCheck<=20);
+      memset(countsI,0,nCheck*sizeof(int));
+      memset(countsC,0,nCheck*sizeof(int));
+      check[nCheck-1]=numberColumns;
+      int numberLayered=0;
+      int numberInteger=0;
+      for ( iColumn=0;iColumn<numberColumns;iColumn++) {
+	if (fix[iColumn]==jLayer) {
+	  numberLayered++;
+	  int nFix = fixColumn[iColumn+1]-fixColumn[iColumn];
+	  if (iPass) {
+	    // just integers
+	    nFix=0;
+	    for (int i=fixColumn[iColumn];i<fixColumn[iColumn+1];i++) {
+	      int jColumn=otherColumn[i];
+	      if (solver->isInteger(jColumn))
+		nFix++;
+	    }
+	  }
+	  int iFix;
+	  for (iFix=0;iFix<nCheck;iFix++) {
+	    if (nFix<=check[iFix])
+	      break;
+	  }
+	  assert (iFix<nCheck);
+	  if (solver->isInteger(iColumn)) {
+	    numberInteger++;
+	    countsI[iFix]++;
+	  } else {
+	    countsC[iFix]++;
+	  }
+	}
+      }
+      if (numberLayered) {
+	printf("%d (%d integer) at priority %d\n",numberLayered,numberInteger,1+(jLayer/100));
+	char buffer[50];
+	for (int i=1;i<nCheck;i++) {
+	  if (countsI[i]||countsC[i]) {
+	    if (i==1)
+	      sprintf(buffer," ==    zero            ");
+	    else if (i<nCheck-1)
+	      sprintf(buffer,"> %6d and <= %6d ",check[i-1],check[i]);
+	    else
+	      sprintf(buffer,"> %6d                ",check[i-1]);
+	    printf("%s %8d integers and %8d continuous\n",buffer,countsI[i],countsC[i]);
+	  }
+	}
+      }
+    }
+  }
   delete [] counts;
-  delete [] fixColumn;
-  delete [] otherColumn;
   delete [] otherColumn2;
   delete [] fixColumn2;
   // Now do fixing
+  {
+    // switch off presolve and up weight
+    ClpSolve solveOptions;
+    //solveOptions.setPresolveType(ClpSolve::presolveOff,0);
+    solveOptions.setSolveType(ClpSolve::usePrimalorSprint);
+    //solveOptions.setSpecialOption(1,3,30); // sprint
+    int numberColumns = lpSolver->numberColumns();
+    int iColumn;
+    bool allSlack=true; 
+    for (iColumn=0;iColumn<numberColumns;iColumn++) {
+      if (lpSolver->getColumnStatus(iColumn)==ClpSimplex::basic) {
+	allSlack=false;
+	break;
+      } 
+    }
+    if (allSlack)
+      solveOptions.setSpecialOption(1,2,50); // idiot
+    lpSolver->setInfeasibilityCost(1.0e11);
+    lpSolver->defaultFactorizationFrequency();
+    lpSolver->initialSolve(solveOptions);
+    double * columnLower = lpSolver->columnLower();
+    double * columnUpper = lpSolver->columnUpper();
+    double * fullSolution = lpSolver->primalColumnSolution();
+    const double * dj = lpSolver->dualColumnSolution();
+    // First squash small and fix big
+    //double small=1.0e-7;
+    //double djTol=20.0;
+    int iPass=0;
+#define MAXPROB 3
+    ClpSimplex models[MAXPROB];
+    int pass[MAXPROB];
+    int kPass=-1;
+    int kLayer=0;
+    while (true) {
+      double largest=-0.1;
+      double smallest=1.1;
+      int iLargest=-1;
+      int iSmallest=-1;
+      int atZero=0;
+      int atOne=0;
+      int toZero=0;
+      int toOne=0;
+      int numberFree=0;
+      int numberGreater=0;
+      columnLower = lpSolver->columnLower();
+      columnUpper = lpSolver->columnUpper();
+      fullSolution = lpSolver->primalColumnSolution();
+      for ( iColumn=0;iColumn<numberColumns;iColumn++) {
+	if (!solver->isInteger(iColumn)||fix[iColumn]>kLayer)
+	  continue;
+	double value = fullSolution[iColumn];
+	if (value>1.00001) {
+	  numberGreater++;
+	  continue;
+	}
+	double lower = columnLower[iColumn];
+	double upper = columnUpper[iColumn];
+	if (lower==upper) {
+	  if (lower)
+	    atOne++;
+	  else
+	    atZero++;
+	  continue;
+	}
+	if (value<1.0e-7) {
+	  toZero++;
+	  columnUpper[iColumn]=0.0;
+	  continue;
+	}
+	if (value>1.0-1.0e-7) {
+	  toOne++;
+	  columnLower[iColumn]=1.0;
+	  continue;
+	}
+	numberFree++;
+	if (value<smallest) {
+	  smallest=value;
+	  iSmallest=iColumn;
+	}
+	if (value>largest) {
+	  largest=value;
+	  iLargest=iColumn;
+	}
+      }
+      if (toZero||toOne)
+	printf("%d at 0 fixed and %d at one fixed\n",toZero,toOne);
+      printf("%d variables free, %d fixed to 0, %d to 1 - smallest %g, largest %g\n",
+	     numberFree,atZero,atOne,smallest,largest);
+      if (numberGreater&&!iPass)
+	printf("%d variables have value > 1.0\n",numberGreater);
+      int jLayer=0;
+      int nFixed=-1;
+      int nTotalFixed=0;
+      while (nFixed) {
+	nFixed=0;
+	for ( iColumn=0;iColumn<numberColumns;iColumn++) {
+	  if (columnUpper[iColumn]==0.0&&fix[iColumn]==jLayer) {
+	    for (int i=fixColumn[iColumn];i<fixColumn[iColumn+1];i++) {
+	      int jColumn=otherColumn[i];
+	      columnUpper[jColumn]=0.0;
+	      nFixed++;
+	    }
+	  }
+	}
+	nTotalFixed += nFixed;
+	jLayer++;
+      }
+      printf("This fixes %d variables in lower priorities\n",nTotalFixed);
+      if (iLargest<0)
+	break;
+      double movement;
+      int way;
+      if (smallest<=1.0-largest&&smallest<0.2) {
+	columnUpper[iSmallest]=0.0;
+	movement=smallest;
+	way=-1;
+      } else {
+	columnLower[iLargest]=1.0;
+	movement=1.0-largest;
+	way=1;
+      }
+      double saveObj = lpSolver->objectiveValue();
+      iPass++;
+      kPass = iPass%MAXPROB;
+      models[kPass]=*lpSolver;
+      pass[kPass]=iPass;
+      double maxCostUp = COIN_DBL_MAX;
+      if (way==-1)
+	maxCostUp= (1.0-movement)*objective[iSmallest];
+      lpSolver->setDualObjectiveLimit(saveObj+maxCostUp);
+      lpSolver->dual();
+      double moveObj = lpSolver->objectiveValue()-saveObj;
+      printf("movement %s was %g costing %g\n",
+	     (smallest<=1.0-largest) ? "down" : "up",movement,moveObj);
+      if (way==-1&&(moveObj>=(1.0-movement)*objective[iSmallest]||lpSolver->status())) {
+	// go up
+	columnLower = models[kPass].columnLower();
+	columnUpper = models[kPass].columnUpper();
+	columnLower[iSmallest]=1.0;
+	columnUpper[iSmallest]=lpSolver->columnUpper()[iSmallest];
+	*lpSolver=models[kPass];
+	columnLower = lpSolver->columnLower();
+	columnUpper = lpSolver->columnUpper();
+	fullSolution = lpSolver->primalColumnSolution();
+	dj = lpSolver->dualColumnSolution();
+	columnLower[iSmallest]=1.0;
+	columnUpper[iSmallest]=lpSolver->columnUpper()[iSmallest];
+	lpSolver->dual();
+      }
+      models[kPass]=*lpSolver;
+    }
+  }
+  printf("Fixing took %g seconds\n",CoinCpuTime()-time1);
   delete [] fix;
+  delete [] fixColumn;
+  delete [] otherColumn;
   delete solver;
   return NULL;
 }
@@ -2184,7 +2422,9 @@ int CbcMain1 (int argc, const char *argv[],
 	si->setDefaultMeshSize(0.001);
 	// need some relative granularity
 	si->setDefaultBound(100.0);
-	si->setDefaultMeshSize(0.001);
+	double dextra3 = parameters[whichParam(DEXTRA3,numberParameters,parameters)].doubleValue();
+	if (dextra3)
+	  si->setDefaultMeshSize(dextra3);
 	si->setDefaultBound(100000.0);
 	si->setIntegerPriority(1000);
 	si->setBiLinearPriority(10000);
@@ -3349,7 +3589,9 @@ int CbcMain1 (int argc, const char *argv[],
               }
 #endif
 	    } else {
+#ifndef DISALLOW_PRINTING
 	      std::cout<<"** Current model not valid"<<std::endl;
+#endif
 	    }
 	    break;
           case STATISTICS:
@@ -3385,7 +3627,9 @@ int CbcMain1 (int argc, const char *argv[],
               if (deleteModel2)
                 delete model2;
 	    } else {
+#ifndef DISALLOW_PRINTING
 	      std::cout<<"** Current model not valid"<<std::endl;
+#endif
 	    }
 	    break;
 	  case TIGHTEN:
@@ -3394,7 +3638,9 @@ int CbcMain1 (int argc, const char *argv[],
 	      if (numberInfeasibilities)
 		std::cout<<"** Analysis indicates model infeasible"<<std::endl;
 	    } else {
+#ifndef DISALLOW_PRINTING
 	      std::cout<<"** Current model not valid"<<std::endl;
+#endif
 	    }
 	    break;
 	  case PLUSMINUS:
@@ -3415,7 +3661,9 @@ int CbcMain1 (int argc, const char *argv[],
 		std::cout<<"Matrix not a ClpPackedMatrix"<<std::endl;
 	      }
 	    } else {
+#ifndef DISALLOW_PRINTING
 	      std::cout<<"** Current model not valid"<<std::endl;
+#endif
 	    }
 	    break;
 	  case OUTDUPROWS:
@@ -3431,7 +3679,9 @@ int CbcMain1 (int argc, const char *argv[],
 		<< generalPrint
 		<<CoinMessageEol;
 	    } else {
+#ifndef DISALLOW_PRINTING
 	      std::cout<<"** Current model not valid"<<std::endl;
+#endif
 	    }
 	    break;
 	  case NETWORK:
@@ -3452,7 +3702,9 @@ int CbcMain1 (int argc, const char *argv[],
 		std::cout<<"Matrix not a ClpPackedMatrix"<<std::endl;
 	      }
 	    } else {
+#ifndef DISALLOW_PRINTING
 	      std::cout<<"** Current model not valid"<<std::endl;
+#endif
 	    }
 	    break;
 	  case DOHEURISTIC:
@@ -3481,10 +3733,8 @@ int CbcMain1 (int argc, const char *argv[],
             // User can set options - main difference is lack of model and CglPreProcess
             goodModel=true;
 /*
-  Run branch-and-cut. First set a few options -- node comparison, scaling. If
-  the solver is Clp, consider running some presolve code (not yet converted
-  this to generic OSI) with branch-and-cut. If presolve is disabled, or the
-  solver is not Clp, simply run branch-and-cut. Print elapsed time at the end.
+  Run branch-and-cut. First set a few options -- node comparison, scaling.
+  Print elapsed time at the end.
 */
 	  case BAB: // branchAndBound
           case STRENGTHEN:
@@ -3521,7 +3771,9 @@ int CbcMain1 (int argc, const char *argv[],
 		    si->setDefaultMeshSize(0.001);
 		    // need some relative granularity
 		    si->setDefaultBound(100.0);
-		    si->setDefaultMeshSize(0.001);
+		    double dextra3 = parameters[whichParam(DEXTRA3,numberParameters,parameters)].doubleValue();
+		    if (dextra3)
+		      si->setDefaultMeshSize(dextra3);
 		    si->setDefaultBound(1000.0);
 		    si->setIntegerPriority(1000);
 		    si->setBiLinearPriority(10000);
@@ -3649,8 +3901,10 @@ int CbcMain1 (int argc, const char *argv[],
 		      
 		      cbcModel->initialSolve();
 		      if (clpModel->tightenPrimalBounds()!=0) {
+#ifndef DISALLOW_PRINTING
 			std::cout<<"Problem is infeasible - tightenPrimalBounds!"<<std::endl;
-			exit(1);
+#endif
+			break;
 		      }
 		      clpModel->dual();  // clean up
 		      cbcModel->initialSolve();
@@ -3753,8 +4007,17 @@ int CbcMain1 (int argc, const char *argv[],
 		    <<CoinMessageEol;
 		}
 		if (!complicatedInteger&&clpSolver->tightenPrimalBounds()!=0) {
+#ifndef DISALLOW_PRINTING
 		  std::cout<<"Problem is infeasible - tightenPrimalBounds!"<<std::endl;
-		  exit(1);
+#endif
+		  model.setProblemStatus(0);
+		  model.setSecondaryStatus(1);
+		  // and in babModel if exists
+		  if (babModel) {
+		    babModel->setProblemStatus(0);
+		    babModel->setSecondaryStatus(1);
+		  } 
+		  break;
 		}
 		if (clpSolver->dualBound()==1.0e10) {
 		  // user did not set - so modify
@@ -3824,7 +4087,16 @@ int CbcMain1 (int argc, const char *argv[],
                 // bounds based on continuous
                 if (tightenFactor&&!complicatedInteger) {
                   if (modelC->tightenPrimalBounds(tightenFactor)!=0) {
+#ifndef DISALLOW_PRINTING
                     std::cout<<"Problem is infeasible!"<<std::endl;
+#endif
+		    model.setProblemStatus(0);
+		    model.setSecondaryStatus(1);
+		    // and in babModel if exists
+		    if (babModel) {
+		      babModel->setProblemStatus(0);
+		      babModel->setSecondaryStatus(1);
+		    } 
                     break;
                   }
                 }
@@ -3973,6 +4245,12 @@ int CbcMain1 (int argc, const char *argv[],
 			  prohibited[iColumn]=1;
 			}
 		      }
+		      CbcLotsize * obj2 =
+			dynamic_cast <CbcLotsize *>(oldObjects[iObj]) ;
+		      if (obj2) {
+			int iColumn = obj2->columnNumber();
+			prohibited[iColumn]=1;
+		      }
                     }
                     process.passInProhibited(prohibited,numberColumns);
                     delete [] prohibited;
@@ -4088,7 +4366,16 @@ int CbcMain1 (int argc, const char *argv[],
                 //if (noPrinting)
 		//modelC->setLogLevel(0);
                 if (!complicatedInteger&&modelC->tightenPrimalBounds()!=0) {
+#ifndef DISALLOW_PRINTING
                   std::cout<<"Problem is infeasible!"<<std::endl;
+#endif
+		  model.setProblemStatus(0);
+		  model.setSecondaryStatus(1);
+		  // and in babModel if exists
+		  if (babModel) {
+		    babModel->setProblemStatus(0);
+		    babModel->setSecondaryStatus(1);
+		  } 
                   break;
                 }
                 si->resolve();
@@ -4981,6 +5268,9 @@ int CbcMain1 (int argc, const char *argv[],
 		      CbcHeuristicDynamic3 serendipity(*babModel);
 		      serendipity.setHeuristicName("linked");
 		      babModel->addHeuristic(&serendipity);
+		      double dextra3 = parameters[whichParam(DEXTRA3,numberParameters,parameters)].doubleValue();
+		      if (dextra3)
+			solver3->setMeshSizes(dextra3);
 		      int options = parameters[whichParam(MIPOPTIONS,numberParameters,parameters)].intValue()/10000;
 		      CglStored stored;
 		      if (options) {
@@ -5602,7 +5892,9 @@ int CbcMain1 (int argc, const char *argv[],
               //delete babModel;
               //babModel=NULL;
             } else {
+#ifndef DISALLOW_PRINTING
               std::cout << "** Current model not valid" << std::endl ; 
+#endif
             }
             break ;
 	  case IMPORT:
@@ -5842,7 +6134,9 @@ int CbcMain1 (int argc, const char *argv[],
 		si->setDefaultMeshSize(0.001);
 		// need some relative granularity
 		si->setDefaultBound(100.0);
-		si->setDefaultMeshSize(0.001);
+		double dextra3 = parameters[whichParam(DEXTRA3,numberParameters,parameters)].doubleValue();
+		if (dextra3)
+		  si->setDefaultMeshSize(dextra3);
 		si->setDefaultBound(100.0);
 		si->setIntegerPriority(1000);
 		si->setBiLinearPriority(10000);
@@ -5997,7 +6291,9 @@ int CbcMain1 (int argc, const char *argv[],
 		time1=time2;
 	      }
 	    } else {
+#ifndef DISALLOW_PRINTING
 	      std::cout<<"** Current model not valid"<<std::endl;
+#endif
 	    }
 	    break;
 	  case BASISIN:
@@ -6052,7 +6348,9 @@ int CbcMain1 (int argc, const char *argv[],
 		clpSolver->setWarmStart(NULL);
 	      }
 	    } else {
+#ifndef DISALLOW_PRINTING
 	      std::cout<<"** Current model not valid"<<std::endl;
+#endif
 	    }
 	    break;
 	  case PRIORITYIN:
@@ -6323,7 +6621,9 @@ int CbcMain1 (int argc, const char *argv[],
                 std::cout<<"Unable to open file "<<fileName<<std::endl;
 	      }
 	    } else {
+#ifndef DISALLOW_PRINTING
 	      std::cout<<"** Current model not valid"<<std::endl;
+#endif
 	    }
 	    break;
 	  case DEBUG:
@@ -6379,7 +6679,9 @@ int CbcMain1 (int argc, const char *argv[],
                 std::cout<<"Unable to open file "<<fileName<<std::endl;
               }
 	    } else {
+#ifndef DISALLOW_PRINTING
 	      std::cout<<"** Current model not valid"<<std::endl;
+#endif
 	    }
 	    break;
 	  case PRINTMASK:
@@ -6438,7 +6740,9 @@ int CbcMain1 (int argc, const char *argv[],
 		time1=time2;
 	      }
 	    } else {
+#ifndef DISALLOW_PRINTING
 	      std::cout<<"** Current model not valid"<<std::endl;
+#endif
 	    }
 	    break;
 	  case SAVE:
@@ -7111,8 +7415,9 @@ clp watson.mps -\nscaling off\nprimalsimplex"
 		std::cout<<"Unable to open file "<<fileName<<std::endl;
 	      }
 	    } else {
+#ifndef DISALLOW_PRINTING
 	      std::cout<<"** Current model not valid"<<std::endl;
-	      
+#endif
 	    }
 	    break;
 	  case SAVESOL:
@@ -7144,8 +7449,9 @@ clp watson.mps -\nscaling off\nprimalsimplex"
               }
               saveSolution(lpSolver,fileName);
 	    } else {
+#ifndef DISALLOW_PRINTING
 	      std::cout<<"** Current model not valid"<<std::endl;
-	      
+#endif
 	    }
 	    break;
           case DUMMY:

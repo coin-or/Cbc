@@ -275,6 +275,18 @@ static int xxxxxx=0;
 //-----------------------------------------------------------------------------
 void OsiSolverLink::resolve()
 {
+  if (false) {
+    bool takeHint;
+    OsiHintStrength strength;
+    // Switch off printing if asked to
+    bool gotHint = (getHintParam(OsiDoReducePrint,takeHint,strength));
+    assert (gotHint);
+    if (strength!=OsiHintIgnore&&takeHint) {
+      printf("no printing\n");
+    } else {
+      printf("printing\n");
+    }
+  }
   specialOptions_ =0;
   modelPtr_->setWhatsChanged(0);
   bool allFixed=numberFix_>0;
@@ -679,6 +691,7 @@ void OsiSolverLink::resolve()
 		  lower[i]=lower2[i];
 		  upper[i]=upper2[i];
 		}
+		qpTemp.setLogLevel(modelPtr_->logLevel());
 		qpTemp.primal();
 		assert (!qpTemp.problemStatus());
 		if (qpTemp.objectiveValue()<bestObjectiveValue_-1.0e-3&&!qpTemp.problemStatus()) {
@@ -1213,7 +1226,8 @@ void OsiSolverLink::load ( CoinModel & coinModelOriginal, bool tightenBounds,int
       column[n]=objectiveVariable_;
       element[n++]=-1.0;
       double offset = - coinModel.objectiveOffset();
-      assert (!offset); // get sign right if happens
+      //assert (!offset); // get sign right if happens
+      printf("***** offset %g\n",offset);
       coinModel.setObjectiveOffset(0.0);
       double lowerBound = -COIN_DBL_MAX;
       coinModel.addRow(n,column,element,lowerBound,offset);

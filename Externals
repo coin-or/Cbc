@@ -3,9 +3,7 @@ ThirdParty/ASL https://projects.coin-or.org/svn/BuildTools/ThirdParty/ASL/stable
 ThirdParty/Blas https://projects.coin-or.org/svn/BuildTools/ThirdParty/Blas/stable/1.0
 ThirdParty/Lapack https://projects.coin-or.org/svn/BuildTools/ThirdParty/Lapack/stable/1.0
 ThirdParty/Glpk https://projects.coin-or.org/svn/BuildTools/ThirdParty/Glpk/trunk
-Data/Netlib   https://projects.coin-or.org/svn/Data/stable/1.0/Netlib
 Data/Sample   https://projects.coin-or.org/svn/Data/trunk/Sample
-Data/miplib3  https://projects.coin-or.org/svn/Data/stable/1.0/miplib3
 CoinUtils     https://projects.coin-or.org/svn/CoinUtils/trunk/CoinUtils
 Cgl           https://projects.coin-or.org/svn/Cgl/trunk/Cgl
 Clp           https://projects.coin-or.org/svn/Clp/trunk/Clp

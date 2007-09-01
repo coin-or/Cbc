@@ -818,6 +818,8 @@ public:
   { return xySatisfied_;}
   inline void setXYSatisfied(double value)
   { xySatisfied_=value;}
+  /// Set sizes and other stuff
+  void setMeshSizes(const OsiSolverInterface * solver, double x, double y);
   /** branching strategy etc
       bottom 2 bits
       0 branch on either, 1 branch on x, 2 branch on y

@@ -1088,6 +1088,8 @@ void CbcModel::branchAndBound(int doStatistics)
   numberDJFixed_=0.0;
   // Do heuristics
   doHeuristicsAtRoot();
+  if ( intParam_[CbcMaxNumNode] < 0)
+    eventHappened_=true; // stop as fast as possible
   statistics_ = NULL;
   // Do on switch
   if (doStatistics>0&&doStatistics<100) {

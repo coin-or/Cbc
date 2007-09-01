@@ -488,6 +488,49 @@ static int * analyze(OsiClpSolverInterface * solverMod, int & numberChanged, dou
   }
 }
 #if 1
+#include "ClpSimplexOther.hpp"
+
+// Crunch down model
+static void 
+crunchIt(ClpSimplex * model)
+{
+#if 0
+  model->dual();
+#else
+  int numberColumns = model->numberColumns();
+  int numberRows = model->numberRows();
+  // Use dual region
+  double * rhs = model->dualRowSolution();
+  int * whichRow = new int[3*numberRows];
+  int * whichColumn = new int[2*numberColumns];
+  int nBound;
+  ClpSimplex * small = ((ClpSimplexOther *) model)->crunch(rhs,whichRow,whichColumn,
+                                                               nBound,false,false);
+  if (small) {
+    small->dual();
+    if (small->problemStatus()==0) {
+      model->setProblemStatus(0);
+      ((ClpSimplexOther *) model)->afterCrunch(*small,whichRow,whichColumn,nBound);
+    } else if (small->problemStatus()!=3) {
+      model->setProblemStatus(1);
+    } else {
+      if (small->problemStatus()==3) {
+	// may be problems
+	small->computeObjectiveValue();
+	model->setObjectiveValue(small->objectiveValue());
+	model->setProblemStatus(3);
+      } else {
+	model->setProblemStatus(3);
+      }
+    }
+    delete small;
+  } else {
+    model->setProblemStatus(1);
+  }
+  delete [] whichRow;
+  delete [] whichColumn;
+#endif
+}
 /*
   On input
   doAction - 0 just fix in original and return NULL 
@@ -495,13 +538,20 @@ static int * analyze(OsiClpSolverInterface * solverMod, int & numberChanged, dou
              2 return fixed presolved solver 
              3 do heuristics and set best solution
 	     4 do BAB and just set best solution
+	     10+ then use lastSolution and relax a few
              -2 cleanup afterwards if using 2
   On output - number fixed
 */
-static OsiClpSolverInterface * fixVubs(CbcModel & model, int numberLevels,
-				       int & doAction, CoinMessageHandler * generalMessageHandler)
+static OsiClpSolverInterface * fixVubs(CbcModel & model, int skipZero2,
+				       int & doAction, CoinMessageHandler * generalMessageHandler,
+				       const double * lastSolution, double dextra[5])
 {
+  assert ((doAction==1&&!lastSolution)||(doAction==11&&lastSolution));
+  double fractionIntFixed = dextra[3];
+  double fractionFixed = dextra[4];
   double time1 = CoinCpuTime();
+  OsiClpSolverInterface * originalClpSolver = dynamic_cast< OsiClpSolverInterface*> (model.solver());
+  ClpSimplex * originalLpSolver = originalClpSolver->getModelPtr();
   OsiSolverInterface * solver = model.solver()->clone();
   OsiClpSolverInterface * clpSolver = dynamic_cast< OsiClpSolverInterface*> (solver);
   ClpSimplex * lpSolver = clpSolver->getModelPtr();
@@ -832,7 +882,7 @@ static OsiClpSolverInterface * fixVubs(CbcModel & model, int numberLevels,
     counts[iColumn]=0;
     fixColumn2[iColumn+1]=numberOther;
   }
-  // Create other way and convert fixColumn to counts
+  // Create other way
   for ( iColumn=0;iColumn<numberColumns;iColumn++) {
     for (int i=fixColumn[iColumn];i<fixColumn[iColumn+1];i++) {
       int jColumn=otherColumn[i];
@@ -921,8 +971,6 @@ static OsiClpSolverInterface * fixVubs(CbcModel & model, int numberLevels,
     }
   }
   delete [] counts;
-  delete [] otherColumn2;
-  delete [] fixColumn2;
   // Now do fixing
   {
     // switch off presolve and up weight
@@ -952,11 +1000,23 @@ static OsiClpSolverInterface * fixVubs(CbcModel & model, int numberLevels,
     //double small=1.0e-7;
     //double djTol=20.0;
     int iPass=0;
-#define MAXPROB 3
+#define MAXPROB 2
     ClpSimplex models[MAXPROB];
     int pass[MAXPROB];
     int kPass=-1;
     int kLayer=0;
+    int skipZero=0;
+    if (skipZero2==-1)
+      skipZero2=40; //-1;
+    /* 0 fixed to 0 by choice
+       1 lb of 1 by choice
+       2 fixed to 0 by another
+       3 as 2 but this go
+       -1 free
+    */
+    char * state = new char [numberColumns];
+    for (iColumn=0;iColumn<numberColumns;iColumn++) 
+      state[iColumn]=-1;
     while (true) {
       double largest=-0.1;
       double smallest=1.1;
@@ -971,8 +1031,76 @@ static OsiClpSolverInterface * fixVubs(CbcModel & model, int numberLevels,
       columnLower = lpSolver->columnLower();
       columnUpper = lpSolver->columnUpper();
       fullSolution = lpSolver->primalColumnSolution();
+      if (doAction==11) {
+	for (iColumn=0;iColumn<numberColumns;iColumn++) {
+	  if (columnUpper[iColumn] > columnLower[iColumn]+1.0e-8) {
+	    if (solver->isInteger(iColumn)) {
+	      double value = lastSolution[iColumn];
+	      int iValue = (int) (value+0.5);
+	      assert (fabs(value-((double) iValue))<1.0e-3);
+	      assert (iValue>=columnLower[iColumn]&&
+		      iValue<=columnUpper[iColumn]);
+	      if (!fix[iColumn]) {
+		if (iValue==0) {
+		  state[iColumn]=0;
+		  assert (!columnLower[iColumn]);
+		  columnUpper[iColumn]=0.0;
+		} else if (iValue==1) {
+		  state[iColumn]=1;
+		  columnLower[iColumn]=1.0;
+		} else {
+		  // leave fixed
+		  columnLower[iColumn]=iValue;
+		  columnUpper[iColumn]=iValue;
+		}
+	      } else if (iValue==0) {
+		state[iColumn]=10;
+		columnUpper[iColumn]=0.0;
+	      } else {
+		// leave fixed
+		columnLower[iColumn]=iValue;
+		columnUpper[iColumn]=iValue;
+	      }
+	    }
+	  }
+	}
+	int jLayer=0;
+	int nFixed=-1;
+	int nTotalFixed=0;
+	while (nFixed) {
+	  nFixed=0;
+	  for ( iColumn=0;iColumn<numberColumns;iColumn++) {
+	    if (columnUpper[iColumn]==0.0&&fix[iColumn]==jLayer) {
+	      for (int i=fixColumn[iColumn];i<fixColumn[iColumn+1];i++) {
+		int jColumn=otherColumn[i];
+		if (columnUpper[jColumn]) {
+		  bool canFix=true;
+		  for (int k=fixColumn2[jColumn];k<fixColumn2[jColumn+1];k++) {
+		    int kColumn=otherColumn2[k];
+		    if (state[kColumn]==1) {
+		      canFix=false;
+		      break;
+		    }
+		  }
+		  if (canFix) {
+		    columnUpper[jColumn]=0.0;
+		    nFixed++;
+		  }
+		}
+	      }
+	    }
+	  }
+	  nTotalFixed += nFixed;
+	  jLayer += 100;
+	}
+	printf("This fixes %d variables in lower priorities\n",nTotalFixed);
+	break;
+      }
       for ( iColumn=0;iColumn<numberColumns;iColumn++) {
 	if (!solver->isInteger(iColumn)||fix[iColumn]>kLayer)
+	  continue;
+	// skip if fixes nothing
+	if (fixColumn[iColumn+1]-fixColumn[iColumn]<=skipZero2)
 	  continue;
 	double value = fullSolution[iColumn];
 	if (value>1.00001) {
@@ -991,14 +1119,19 @@ static OsiClpSolverInterface * fixVubs(CbcModel & model, int numberLevels,
 	if (value<1.0e-7) {
 	  toZero++;
 	  columnUpper[iColumn]=0.0;
+	  state[iColumn]=10;
 	  continue;
 	}
 	if (value>1.0-1.0e-7) {
 	  toOne++;
 	  columnLower[iColumn]=1.0;
+	  state[iColumn]=1;
 	  continue;
 	}
 	numberFree++;
+	// skip if fixes nothing
+	if (fixColumn[iColumn+1]-fixColumn[iColumn]<=skipZero)
+	  continue;
 	if (value<smallest) {
 	  smallest=value;
 	  iSmallest=iColumn;
@@ -1014,6 +1147,7 @@ static OsiClpSolverInterface * fixVubs(CbcModel & model, int numberLevels,
 	     numberFree,atZero,atOne,smallest,largest);
       if (numberGreater&&!iPass)
 	printf("%d variables have value > 1.0\n",numberGreater);
+      //skipZero2=0; // leave 0 fixing
       int jLayer=0;
       int nFixed=-1;
       int nTotalFixed=0;
@@ -1023,13 +1157,25 @@ static OsiClpSolverInterface * fixVubs(CbcModel & model, int numberLevels,
 	  if (columnUpper[iColumn]==0.0&&fix[iColumn]==jLayer) {
 	    for (int i=fixColumn[iColumn];i<fixColumn[iColumn+1];i++) {
 	      int jColumn=otherColumn[i];
-	      columnUpper[jColumn]=0.0;
-	      nFixed++;
+	      if (columnUpper[jColumn]) {
+		bool canFix=true;
+		for (int k=fixColumn2[jColumn];k<fixColumn2[jColumn+1];k++) {
+		  int kColumn=otherColumn2[k];
+		  if (state[kColumn]==1) {
+		    canFix=false;
+		    break;
+		  }
+		}
+		if (canFix) {
+		  columnUpper[jColumn]=0.0;
+		  nFixed++;
+		}
+	      }
 	    }
 	  }
 	}
 	nTotalFixed += nFixed;
-	jLayer++;
+	jLayer += 100;
       }
       printf("This fixes %d variables in lower priorities\n",nTotalFixed);
       if (iLargest<0)
@@ -1038,10 +1184,12 @@ static OsiClpSolverInterface * fixVubs(CbcModel & model, int numberLevels,
       int way;
       if (smallest<=1.0-largest&&smallest<0.2) {
 	columnUpper[iSmallest]=0.0;
+	state[iSmallest]=0;
 	movement=smallest;
 	way=-1;
       } else {
 	columnLower[iLargest]=1.0;
+	state[iLargest]=1;
 	movement=1.0-largest;
 	way=1;
       }
@@ -1049,12 +1197,22 @@ static OsiClpSolverInterface * fixVubs(CbcModel & model, int numberLevels,
       iPass++;
       kPass = iPass%MAXPROB;
       models[kPass]=*lpSolver;
+      if (way==-1) {
+	// fix others
+	for (int i=fixColumn[iSmallest];i<fixColumn[iSmallest+1];i++) {
+	  int jColumn=otherColumn[i];
+	  if (state[jColumn]==-1) {
+	    columnUpper[jColumn]=0.0;
+	    state[jColumn]=3;
+	  }
+	}
+      }
       pass[kPass]=iPass;
       double maxCostUp = COIN_DBL_MAX;
       if (way==-1)
 	maxCostUp= (1.0-movement)*objective[iSmallest];
       lpSolver->setDualObjectiveLimit(saveObj+maxCostUp);
-      lpSolver->dual();
+      crunchIt(lpSolver);
       double moveObj = lpSolver->objectiveValue()-saveObj;
       printf("movement %s was %g costing %g\n",
 	     (smallest<=1.0-largest) ? "down" : "up",movement,moveObj);
@@ -1063,23 +1221,230 @@ static OsiClpSolverInterface * fixVubs(CbcModel & model, int numberLevels,
 	columnLower = models[kPass].columnLower();
 	columnUpper = models[kPass].columnUpper();
 	columnLower[iSmallest]=1.0;
-	columnUpper[iSmallest]=lpSolver->columnUpper()[iSmallest];
+	columnUpper[iSmallest]=originalLpSolver->columnUpper()[iSmallest];
 	*lpSolver=models[kPass];
 	columnLower = lpSolver->columnLower();
 	columnUpper = lpSolver->columnUpper();
 	fullSolution = lpSolver->primalColumnSolution();
 	dj = lpSolver->dualColumnSolution();
 	columnLower[iSmallest]=1.0;
-	columnUpper[iSmallest]=lpSolver->columnUpper()[iSmallest];
-	lpSolver->dual();
+	columnUpper[iSmallest]=originalLpSolver->columnUpper()[iSmallest];
+	state[iSmallest]=1;
+	// unfix others
+	for (int i=fixColumn[iSmallest];i<fixColumn[iSmallest+1];i++) {
+	  int jColumn=otherColumn[i];
+	  if (state[jColumn]==3) {
+	    columnUpper[jColumn]=originalLpSolver->columnUpper()[jColumn];
+	    state[jColumn]=-1;
+	  }
+	}
+	crunchIt(lpSolver);
       }
       models[kPass]=*lpSolver;
     }
+    lpSolver->dual();
+    printf("Fixing took %g seconds\n",CoinCpuTime()-time1);
+    columnLower = lpSolver->columnLower();
+    columnUpper = lpSolver->columnUpper();
+    fullSolution = lpSolver->primalColumnSolution();
+    dj = lpSolver->dualColumnSolution();
+    int * sort = new int[numberColumns];
+    double * dsort = new double[numberColumns];
+    int chunk=20;
+    //double fractionFixed=6.0/8.0;
+    // relax while lots fixed
+    while (true) {
+      if (skipZero2>10&&doAction<10)
+	break;
+      int n=0;
+      double sum0=0.0;
+      double sum00=0.0;
+      double sum1=0.0;
+      for ( iColumn=0;iColumn<numberColumns;iColumn++) {
+	if (!solver->isInteger(iColumn)||fix[iColumn]>kLayer)
+	  continue;
+	// skip if fixes nothing
+	if (fixColumn[iColumn+1]-fixColumn[iColumn]==0&&doAction<10)
+	  continue;
+	double value = fullSolution[iColumn];
+	double djValue = dj[iColumn];
+	if (state[iColumn]==1) {
+	  assert (columnLower[iColumn]);
+	  assert (value>0.1);
+	  if (djValue>0.0) {
+	    //printf("YY dj of %d at %g is %g\n",iColumn,value,djValue);
+	    sum1 += djValue;
+	    sort[n]=iColumn;
+	    dsort[n++]=-djValue;
+	  } else {
+	    //printf("dj of %d at %g is %g\n",iColumn,value,djValue);
+	  }
+	} else if (state[iColumn]==0||state[iColumn]==10) {
+	  assert (value<0.1);
+	  assert (!columnUpper[iColumn]);
+	  double otherValue=0.0;
+	  int nn=0;
+	  for (int i=fixColumn[iColumn];i<fixColumn[iColumn+1];i++) {
+	    int jColumn=otherColumn[i];
+	    if (columnUpper[jColumn]==0.0) {
+	      if (dj[jColumn]<-1.0e-5) {
+		nn++;
+		otherValue += dj[jColumn]; // really need to look at rest
+	      }
+	    }
+	  }
+	  if (djValue<-1.0e-2||otherValue<-1.0e-2) {
+	    //printf("XX dj of %d at %g is %g - %d out of %d contribute %g\n",iColumn,value,djValue,
+	    // nn,fixColumn[iColumn+1]-fixColumn[iColumn],otherValue);
+	    if (djValue<1.0e-8) {
+	      sum0 -= djValue;
+	      sum00 -= otherValue;
+	      sort[n]=iColumn;
+	      if (djValue<-1.0e-2) 
+		dsort[n++]=djValue+otherValue;
+	      else
+		dsort[n++]=djValue+0.001*otherValue;
+	    }
+	  } else {
+	    //printf("dj of %d at %g is %g - no contribution from %d\n",iColumn,value,djValue,
+	    //   fixColumn[iColumn+1]-fixColumn[iColumn]);
+	  }
+	}
+      }
+      CoinSort_2(dsort,dsort+n,sort);
+      double * originalColumnLower = originalLpSolver->columnLower();
+      double * originalColumnUpper = originalLpSolver->columnUpper();
+      double * lo = CoinCopyOfArray(columnLower,numberColumns);
+      double * up = CoinCopyOfArray(columnUpper,numberColumns);
+      for (int k=0;k<CoinMin(chunk,n);k++) {
+	iColumn = sort[k];
+	state[iColumn]=-2;
+      }
+      memcpy(columnLower,originalColumnLower,numberColumns*sizeof(double));
+      memcpy(columnUpper,originalColumnUpper,numberColumns*sizeof(double));
+      int nFixed=0;
+      int nFixed0=0;
+      int nFixed1=0;
+      for ( iColumn=0;iColumn<numberColumns;iColumn++) {
+	if (state[iColumn]==0||state[iColumn]==10) {
+	  columnUpper[iColumn]=0.0;
+	  assert (lo[iColumn]==0.0);
+	  nFixed++;
+	  nFixed0++;
+	  for (int i=fixColumn[iColumn];i<fixColumn[iColumn+1];i++) {
+	    int jColumn=otherColumn[i];
+	    if (columnUpper[jColumn]) {
+	      bool canFix=true;
+	      for (int k=fixColumn2[jColumn];k<fixColumn2[jColumn+1];k++) {
+		int kColumn=otherColumn2[k];
+		if (state[kColumn]==1||state[kColumn]==-2) {
+		  canFix=false;
+		  break;
+		}
+	      }
+	      if (canFix) {
+		columnUpper[jColumn]=0.0;
+		assert (lo[jColumn]==0.0);
+		nFixed++;
+	      }
+	    }
+	  }
+	} else if (state[iColumn]==1) {
+	  columnLower[iColumn]=1.0;
+	  nFixed1++;
+	}
+      }
+      printf("%d fixed %d orig 0 %d 1\n",nFixed,nFixed0,nFixed1);
+      int jLayer=0;
+      nFixed=-1;
+      int nTotalFixed=0;
+      while (nFixed) {
+	nFixed=0;
+	for ( iColumn=0;iColumn<numberColumns;iColumn++) {
+	  if (columnUpper[iColumn]==0.0&&fix[iColumn]==jLayer) {
+	    for (int i=fixColumn[iColumn];i<fixColumn[iColumn+1];i++) {
+	      int jColumn=otherColumn[i];
+	      if (columnUpper[jColumn]) {
+		bool canFix=true;
+		for (int k=fixColumn2[jColumn];k<fixColumn2[jColumn+1];k++) {
+		  int kColumn=otherColumn2[k];
+		  if (state[kColumn]==1||state[kColumn]==-2) {
+		    canFix=false;
+		    break;
+		  }
+		}
+		if (canFix) {
+		  columnUpper[jColumn]=0.0;
+		  assert (lo[jColumn]==0.0);
+		  nFixed++;
+		}
+	      }
+	    }
+	  }
+	}
+	nTotalFixed += nFixed;
+	jLayer += 100;
+      }
+      nFixed=0;
+      int nFixedI=0;
+      for ( iColumn=0;iColumn<numberColumns;iColumn++) {
+	if (columnLower[iColumn]==columnUpper[iColumn]) {
+	  if (solver->isInteger(iColumn))
+	    nFixedI++;
+	  nFixed++;
+	}
+      }
+      printf("This fixes %d variables in lower priorities - total %d (%d integer) - all target %d, int target %d\n",
+	     nTotalFixed,nFixed,nFixedI,(int)(fractionFixed*numberColumns),(int) (fractionIntFixed*numberInteger));
+      int nBad=0;
+      int nRelax=0;
+      for ( iColumn=0;iColumn<numberColumns;iColumn++) {
+	if (lo[iColumn]<columnLower[iColumn]||
+	    up[iColumn]>columnUpper[iColumn]) {
+	  printf("bad %d old %g %g, new %g %g\n",iColumn,lo[iColumn],up[iColumn],
+		 columnLower[iColumn],columnUpper[iColumn]);
+	  nBad++;
+	}
+	if (lo[iColumn]>columnLower[iColumn]||
+	    up[iColumn]<columnUpper[iColumn]) {
+	  nRelax++;
+	}
+      }
+      printf("%d relaxed\n",nRelax);
+      assert (!nBad);
+      delete [] lo;
+      delete [] up;
+      lpSolver->primal(1);
+      if (nFixed<fractionFixed*numberColumns||nFixedI<fractionIntFixed*numberInteger||!nRelax)
+	break;
+    }
+    delete [] state;
+    delete [] sort;
+    delete [] dsort;
   }
-  printf("Fixing took %g seconds\n",CoinCpuTime()-time1);
   delete [] fix;
   delete [] fixColumn;
   delete [] otherColumn;
+  delete [] otherColumn2;
+  delete [] fixColumn2;
+  // Basis
+  memcpy(originalLpSolver->statusArray(),lpSolver->statusArray(),numberRows+numberColumns);
+  memcpy(originalLpSolver->primalColumnSolution(),lpSolver->primalColumnSolution(),numberColumns*sizeof(double));
+  memcpy(originalLpSolver->primalRowSolution(),lpSolver->primalRowSolution(),numberRows*sizeof(double));
+  // Fix in solver
+  columnLower = lpSolver->columnLower();
+  columnUpper = lpSolver->columnUpper();
+  double * originalColumnLower = originalLpSolver->columnLower();
+  double * originalColumnUpper = originalLpSolver->columnUpper();
+  // number fixed
+  doAction=0;
+  for ( iColumn=0;iColumn<numberColumns;iColumn++) {
+    originalColumnLower[iColumn] = columnLower[iColumn];
+    originalColumnUpper[iColumn] = columnUpper[iColumn];
+    if (columnLower[iColumn]==columnUpper[iColumn])
+      doAction++;
+  }
+  printf("%d fixed by vub preprocessing\n",doAction);
   delete solver;
   return NULL;
 }
@@ -3427,6 +3792,9 @@ int CbcMain1 (int argc, const char *argv[],
 		  ClpSimplex * tempModel = approximateSolution(coinModel,slpValue>0 ? slpValue : 50 ,1.0e-5,0);
 		  assert (tempModel);
 		  solution = CoinCopyOfArray(tempModel->primalColumnSolution(),coinModel.numberColumns());
+		  model2->setObjectiveValue(tempModel->objectiveValue());
+		  model2->setProblemStatus(tempModel->problemStatus());
+		  model2->setSecondaryStatus(tempModel->secondaryStatus());
 		  delete tempModel;
 		}
 		if (solution) {
@@ -3712,7 +4080,20 @@ int CbcMain1 (int argc, const char *argv[],
 	      int vubAction = parameters[whichParam(VUBTRY,numberParameters,parameters)].intValue();
 	      if (vubAction!=-1) {
 		// look at vubs
-		OsiClpSolverInterface * newSolver = fixVubs(model,1,vubAction,generalMessageHandler);
+		// Just ones which affect >= extra3
+		int extra3 = parameters[whichParam(EXTRA3,numberParameters,parameters)].intValue();
+		/* 3 is fraction of integer variables fixed (0.97)
+		   4 is fraction of all variables fixed (0.0)
+		*/
+		double dextra[5];
+		dextra[1] = parameters[whichParam(DEXTRA1,numberParameters,parameters)].doubleValue();
+		dextra[2] = parameters[whichParam(DEXTRA2,numberParameters,parameters)].doubleValue();
+		dextra[3] = parameters[whichParam(DEXTRA3,numberParameters,parameters)].doubleValue();
+		dextra[4] = parameters[whichParam(DEXTRA4,numberParameters,parameters)].doubleValue();
+		if (!dextra[3])
+		  dextra[3] = 0.97;
+		OsiClpSolverInterface * newSolver = fixVubs(model,extra3,vubAction,generalMessageHandler,
+							    debugValues,dextra);
 		assert (!newSolver);
 	      }
 	      // Actually do heuristics

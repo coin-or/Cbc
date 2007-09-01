@@ -1849,8 +1849,7 @@ OsiSolverLink::setMeshSizes(double value)
 	double gapY = upper[yColumn]-lower[yColumn];
 	gap = CoinMax(gap,CoinMax(gapX,gapY));
 #endif
-	obj->setXMeshSize(value);
-	obj->setYMeshSize(value);
+	obj->setMeshSizes(this,value,value);
       }
     }
   }
@@ -4904,6 +4903,35 @@ OsiBiLinear::OsiBiLinear (OsiSolverInterface * solver, int xColumn,
 	solver->addRows(1,starts,index,element,&rhs,&rhs);
 	yDone=true;
       }
+    }
+  }
+}
+// Set sizes and other stuff
+void 
+OsiBiLinear::setMeshSizes(const OsiSolverInterface * solver, double x, double y)
+{
+  xMeshSize_ = x;
+  yMeshSize_ = y;
+  double xB[2];
+  double yB[2];
+  const double * lower = solver->getColLower();
+  const double * upper = solver->getColUpper();
+  xB[0]=lower[xColumn_];
+  xB[1]=upper[xColumn_];
+  yB[0]=lower[yColumn_];
+  yB[1]=upper[yColumn_];
+  if (xMeshSize_!=floor(xMeshSize_)) {
+    // not integral
+    xSatisfied_ = CoinMax(xSatisfied_,0.51*xMeshSize_);
+    if (!yMeshSize_) {
+      xySatisfied_ = CoinMax(xySatisfied_,xSatisfied_*CoinMax(fabs(yB[0]),fabs(yB[1])));
+    }
+  }
+  if (yMeshSize_!=floor(yMeshSize_)) {
+    // not integral
+    ySatisfied_ = CoinMax(ySatisfied_,0.51*yMeshSize_);
+    if (!xMeshSize_) {
+      xySatisfied_ = CoinMax(xySatisfied_,ySatisfied_*CoinMax(fabs(xB[0]),fabs(xB[1])));
     }
   }
 }

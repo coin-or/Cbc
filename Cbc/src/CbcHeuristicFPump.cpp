@@ -305,6 +305,7 @@ CbcHeuristicFPump::solution(double & solutionValue,
   CoinWarmStartBasis bestBasis;
   bool exitAll=false;
   double saveBestObjective = model_->getMinimizationObjValue();
+  int numberSolutions=0;
   while (!exitAll) {
     int numberPasses=0;
     numberTries++;
@@ -511,8 +512,10 @@ CbcHeuristicFPump::solution(double & solutionValue,
 		}
 	      }
 	    }
-	    if ((accumulate_&1)!=0)
+	    if ((accumulate_&1)!=0) {
 	      model_->incrementUsed(betterSolution); // for local search
+	      numberSolutions++;
+	    }
 	    solutionValue=newSolutionValue;
 	    solutionFound=true;
 	    if (general&&saveValue!=newSolutionValue)
@@ -732,8 +735,10 @@ CbcHeuristicFPump::solution(double & solutionValue,
 		  }
 		}
 	      }
-	      if ((accumulate_&1)!=0)
+	      if ((accumulate_&1)!=0) {
 		model_->incrementUsed(betterSolution); // for local search
+		numberSolutions++;
+	      }
 	      solutionValue=newSolutionValue;
 	      solutionFound=true;
 	    } else {
@@ -1024,8 +1029,10 @@ CbcHeuristicFPump::solution(double & solutionValue,
 	    //newSolver->writeMps("bad3.mps");
 	  }
 	} 
-	if ((accumulate_&1)!=0)
+	if ((accumulate_&1)!=0) {
 	  model_->incrementUsed(betterSolution); // for local search
+	  numberSolutions++;
+	}
 	solutionValue=newSolutionValue;
 	solutionFound=true;
 	CoinWarmStartBasis * basis =
@@ -1140,6 +1147,10 @@ CbcHeuristicFPump::solution(double & solutionValue,
   if (bestBasis.getNumStructural())
     model_->setBestSolutionBasis(bestBasis);
   model_->setMinimizationObjValue(saveBestObjective);
+  if ((accumulate_&1)!=0&&numberSolutions>1&&!model_->getSolutionCount()) {
+    model_->setSolutionCount(1); // for local search
+    model_->setNumberHeuristicSolutions(1); 
+  }
   return finalReturnCode;
 }
 

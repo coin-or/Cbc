@@ -518,6 +518,7 @@ readAmpl(ampl_info * info, int argc, char **argv, void ** coinModel)
       info->direction=-1.0;
     else
       info->direction=1.0;
+    model->setOptimizationDirection(info->direction);
     info->offset=objconst(0);
     info->numberRows=n_con;
     info->numberColumns=n_var;
@@ -1005,8 +1006,11 @@ CoinModel::gdb( int nonLinear, const char * fileName,const void * info)
     /* Row bounds*/
     rowLower = (double *) malloc(n_con*sizeof(double));
     rowUpper = (double *) malloc(n_con*sizeof(double));
-    int * column = new int [n_var];
-    double * element = new double [n_var];
+    CoinBigIndex * rowStart = new CoinBigIndex [n_con+1];
+    int * column = new int [nzc];
+    double * element = new double [nzc];
+    rowStart[0]=0;
+    numberElements=0;
     for (i=0;i<n_con;i++) {
       rowLower[i]=LUrhs[2*i];
       if (rowLower[i]<= negInfinity)
@@ -1014,18 +1018,20 @@ CoinModel::gdb( int nonLinear, const char * fileName,const void * info)
       rowUpper[i]=LUrhs[2*i+1];
       if (rowUpper[i]>= Infinity)
 	rowUpper[i]=COIN_DBL_MAX;
-      int k=0;
       for(cgrad * cg = Cgrad[i]; cg; cg = cg->next) {
-	column[k]=cg->varno;
-	element[k++]=cg->coef;
+	column[numberElements]=cg->varno;
+	element[numberElements++]=cg->coef;
       }
-      matrixByRow.appendRow(k,column,element);
+      rowStart[i+1]=numberElements;
     }
+    assert (numberElements==nzc);
+    matrixByRow.appendRows(n_con,rowStart,column,element);
+    delete [] rowStart;
     delete [] column;
     delete [] element;
     numberRows=n_con;
     numberColumns=n_var;
-    numberElements=nzc;
+    //numberElements=nzc;
     numberBinary=nbv;
     numberIntegers=niv;
     numberAllNonLinearBoth=nlvb;
@@ -1193,11 +1199,14 @@ CoinModel::gdb( int nonLinear, const char * fileName,const void * info)
     //matrixByRow.reserve(n_var,nzc,true);
     // say row orderded
     matrixByRow.transpose();
+    CoinBigIndex * rowStart = new CoinBigIndex [n_con+1];
+    int * column = new int [nzc];
+    double * element = new double [nzc];
+    rowStart[0]=0;
+    numberElements=0;
     /* Row bounds*/
     rowLower = (double *) malloc(n_con*sizeof(double));
     rowUpper = (double *) malloc(n_con*sizeof(double));
-    int * column = new int [n_var];
-    double * element = new double [n_var];
     for (i=0;i<n_con;i++) {
       rowLower[i]=LUrhs[2*i];
       if (rowLower[i]<= negInfinity)
@@ -1205,16 +1214,18 @@ CoinModel::gdb( int nonLinear, const char * fileName,const void * info)
       rowUpper[i]=LUrhs[2*i+1];
       if (rowUpper[i]>= Infinity)
 	rowUpper[i]=COIN_DBL_MAX;
-      int k=0;
       for(cgrad * cg = Cgrad[i]; cg; cg = cg->next) {
-	column[k]=cg->varno;
+	column[numberElements]=cg->varno;
 	double value = cg->coef;
 	if (!value)
 	  value = -1.2345e-29;
-	element[k++]=value;
+	element[numberElements++]=value;
       }
-      matrixByRow.appendRow(k,column,element);
+      rowStart[i+1]=numberElements;
     }
+    assert (numberElements==nzc);
+    matrixByRow.appendRows(n_con,rowStart,column,element);
+    delete [] rowStart;
     delete [] column;
     delete [] element;
     numberRows=n_con;

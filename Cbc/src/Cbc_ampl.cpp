@@ -114,51 +114,71 @@ sos_kludge(int nsos, int *sosbeg, double *sosref,int * sosind)
 }
 static char xxxxxx[20];
 #define VP (char*)
- static keyword keywds[] = { /* must be sorted */
-	{ "barrier",	checkPhrase,		(char *) xxxxxx ,"-barrier" },
-	{ "dual",	checkPhrase,		(char *) xxxxxx , "-dualsimplex"},
-	{ "help",	checkPhrase2,		(char *) xxxxxx , "-?"},
-	{ "initial",	checkPhrase,		(char *) xxxxxx , "-initialsolve"},
-	{ "max",	checkPhrase2,		(char *) xxxxxx , "-maximize"},
-	{ "maximize",	checkPhrase2,		(char *) xxxxxx , "-maximize"},
-	{ "primal",	checkPhrase,		(char *) xxxxxx , "-primalsimplex"},
-	{ "quit",	checkPhrase2,		(char *) xxxxxx , "-quit"},
-	{ "wantsol",	WS_val,		NULL, "write .sol file (without -AMPL)" }
-	};
-static Option_Info Oinfo = {"cbc", "Cbc 1.04", "cbc_options", keywds, nkeywds, 0, "",
-				0,decodePhrase,0,0,0, 20070606 };
+static keyword keywds[] = { /* must be sorted */
+  { const_cast<char*>("barrier"),  checkPhrase,  (char *) xxxxxx ,
+    const_cast<char*>("-barrier")},
+  { const_cast<char*>("dual"),     checkPhrase,  (char *) xxxxxx ,
+    const_cast<char*>("-dualsimplex")},
+  { const_cast<char*>("help"),     checkPhrase2, (char *) xxxxxx ,
+    const_cast<char*>("-?")},
+  { const_cast<char*>("initial"),  checkPhrase,  (char *) xxxxxx ,
+    const_cast<char*>("-initialsolve")},
+  { const_cast<char*>("max"),      checkPhrase2, (char *) xxxxxx ,
+    const_cast<char*>("-maximize")},
+  { const_cast<char*>("maximize"), checkPhrase2, (char *) xxxxxx ,
+    const_cast<char*>("-maximize")},
+  { const_cast<char*>("primal"),   checkPhrase,  (char *) xxxxxx ,
+    const_cast<char*>("-primalsimplex")},
+  { const_cast<char*>("quit"),     checkPhrase2, (char *) xxxxxx ,
+    const_cast<char*>("-quit")},
+  { const_cast<char*>("wantsol"),  WS_val,       NULL,
+    const_cast<char*>("write .sol file (without -AMPL)")}
+};
+static Option_Info Oinfo = {
+  const_cast<char*>("cbc"),
+  const_cast<char*>("Cbc 1.04"),
+  const_cast<char*>("cbc_options"),
+  keywds,
+  nkeywds,
+  0,
+  const_cast<char*>(""),
+  0,
+  decodePhrase,
+  0,
+  0,
+  0,
+  20070606 };
 // strdup used to avoid g++ compiler warning
- static SufDecl
-suftab[] = {
+static SufDecl suftab[] = {
 #if 0
-	{ "current", 0, ASL_Sufkind_con | ASL_Sufkind_outonly },
-	{ "current", 0, ASL_Sufkind_var | ASL_Sufkind_outonly },
-	{ "direction", 0, ASL_Sufkind_var },
-	{ "down", 0, ASL_Sufkind_con | ASL_Sufkind_outonly },
-	{ "down", 0, ASL_Sufkind_var | ASL_Sufkind_outonly },
-	{ "priority", 0, ASL_Sufkind_var },
+  { const_cast<char*>("current"), 0, ASL_Sufkind_con | ASL_Sufkind_outonly },
+  { const_cast<char*>("current"), 0, ASL_Sufkind_var | ASL_Sufkind_outonly },
+  { const_cast<char*>("direction"), 0, ASL_Sufkind_var },
+  { const_cast<char*>("down"), 0, ASL_Sufkind_con | ASL_Sufkind_outonly },
+  { const_cast<char*>("down"), 0, ASL_Sufkind_var | ASL_Sufkind_outonly },
+  { const_cast<char*>("priority"), 0, ASL_Sufkind_var },
 #endif
-	{ "cut", 0, ASL_Sufkind_con },
-	{ "direction", 0, ASL_Sufkind_var },
-	{ "downPseudocost", 0, ASL_Sufkind_var | ASL_Sufkind_real },
-	{ "priority", 0, ASL_Sufkind_var },
-	{ "ref", 0, ASL_Sufkind_var | ASL_Sufkind_real },
-	{ "sos", 0, ASL_Sufkind_var },
-	{ "sos", 0, ASL_Sufkind_con },
-	{ "sosno", 0, ASL_Sufkind_var | ASL_Sufkind_real },
-	{ "sosref", 0, ASL_Sufkind_var | ASL_Sufkind_real },
-	{ "special", 0, ASL_Sufkind_var },
-	{ "special", 0, ASL_Sufkind_con },
-	/*{ "special", 0, ASL_Sufkind_con },*/
-	{ "sstatus", 0, ASL_Sufkind_var, 0 },
-	{ "sstatus", 0, ASL_Sufkind_con, 0 },
-	{ "upPseudocost", 0, ASL_Sufkind_var | ASL_Sufkind_real }
+  { const_cast<char*>("cut"), 0, ASL_Sufkind_con },
+  { const_cast<char*>("direction"), 0, ASL_Sufkind_var },
+  { const_cast<char*>("downPseudocost"), 0, ASL_Sufkind_var | ASL_Sufkind_real },
+  { const_cast<char*>("priority"), 0, ASL_Sufkind_var },
+  { const_cast<char*>("ref"), 0, ASL_Sufkind_var | ASL_Sufkind_real },
+  { const_cast<char*>("sos"), 0, ASL_Sufkind_var },
+  { const_cast<char*>("sos"), 0, ASL_Sufkind_con },
+  { const_cast<char*>("sosno"), 0, ASL_Sufkind_var | ASL_Sufkind_real },
+  { const_cast<char*>("sosref"), 0, ASL_Sufkind_var | ASL_Sufkind_real },
+  { const_cast<char*>("special"), 0, ASL_Sufkind_var },
+  { const_cast<char*>("special"), 0, ASL_Sufkind_con },
+  /*{ const_cast<char*>("special"), 0, ASL_Sufkind_con },*/
+  { const_cast<char*>("sstatus"), 0, ASL_Sufkind_var, 0 },
+  { const_cast<char*>("sstatus"), 0, ASL_Sufkind_con, 0 },
+  { const_cast<char*>("upPseudocost"), 0, ASL_Sufkind_var | ASL_Sufkind_real }
 #if 0
-	{ "unbdd", 0, ASL_Sufkind_var | ASL_Sufkind_outonly},
-	{ "up", 0, ASL_Sufkind_con | ASL_Sufkind_outonly },
-	{ "up", 0, ASL_Sufkind_var | ASL_Sufkind_outonly }
+  { const_cast<char*>("unbdd"), 0, ASL_Sufkind_var | ASL_Sufkind_outonly},
+  { const_cast<char*>("up"), 0, ASL_Sufkind_con | ASL_Sufkind_outonly },
+  { const_cast<char*>("up"), 0, ASL_Sufkind_var | ASL_Sufkind_outonly }
 #endif
-	};
+};
 #include "float.h"
 #include "limits.h"
 static ASL *asl=NULL;

@@ -2592,7 +2592,7 @@ static int doHeuristics(CbcModel * model,int type)
     model->createContinuousSolver();
     bool cleanModel = !model->numberIntegers()&&!model->numberObjects();
     model->findIntegers(false);
-    model->doHeuristicsAtRoot(true);
+    model->doHeuristicsAtRoot(1);
     if (cleanModel)
       model->zapIntegerInformation(false);
 #endif

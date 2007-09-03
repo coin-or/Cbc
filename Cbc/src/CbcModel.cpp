@@ -9881,7 +9881,7 @@ CbcModel::doHeuristicsAtRoot(int deleteHeuristicsAfterwards)
   int i;
   if (deleteHeuristicsAfterwards!=2) {
     if (deleteHeuristicsAfterwards) {
-      assert (!usedInSolution_);
+      delete [] usedInSolution_;
       usedInSolution_ = new int [numberColumns];
       CoinZeroN(usedInSolution_,numberColumns);
     }

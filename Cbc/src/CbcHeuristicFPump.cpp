@@ -263,6 +263,10 @@ CbcHeuristicFPump::solution(double & solutionValue,
   }
   double time1 = CoinCpuTime();
   model_->solver()->resolve();
+  if (!model_->solver()->isProvenOptimal()) {
+    // presumably max time or some such
+    return 0;
+  }
   if (cutoff<1.0e50&&false) {
     // Fix on djs
     double direction = model_->solver()->getObjSense() ;
@@ -285,7 +289,6 @@ CbcHeuristicFPump::solution(double & solutionValue,
   double continuousObjectiveValue = model_->solver()->getObjValue()*model_->solver()->getObjSense();
   double * firstPerturbedObjective = NULL;
   double * firstPerturbedSolution = NULL;
-  assert (model_->solver()->isProvenOptimal());
   if (when_>=11&&when_<=15) {
     fixInternal = when_ >11&&when_<15;
     if (when_<13)
@@ -363,11 +366,17 @@ CbcHeuristicFPump::solution(double & solutionValue,
       solver->setHintParam(OsiDoDualInResolve,true,OsiHintDo);
       solver->resolve();
       solver->setHintParam(OsiDoDualInResolve,takeHint,strength);
+      if (!solver->isProvenOptimal()) {
+	// presumably max time or some such
+	exitAll=true;
+	break;
+      }
     }
     solver->setDblParam(OsiDualObjectiveLimit,1.0e50);
     solver->resolve();
     // Solver may not be feasible
     if (!solver->isProvenOptimal()) {
+      exitAll=true;
       break;
     }
     const double * lower = solver->getColLower();
@@ -478,8 +487,11 @@ CbcHeuristicFPump::solution(double & solutionValue,
 	    if (numberLeft) {
 	      returnCode = smallBranchAndBound(solver,numberNodes_,newSolution,newSolutionValue,
 					       solutionValue,"CbcHeuristicFpump");
-	      if (returnCode<0)
-		returnCode=0; // returned on size
+	      if (returnCode<0) {
+		if (returnCode==-2)
+		  exitAll=true;
+		returnCode=0; // returned on size or event
+	      }
 	      if ((returnCode&2)!=0) {
 		// could add cut
 		returnCode &= ~2;
@@ -689,7 +701,11 @@ CbcHeuristicFPump::solution(double & solutionValue,
 	    }
 	  }
 	  solver->resolve();
-	  assert (solver->isProvenOptimal());
+	  if (!solver->isProvenOptimal()) {
+	    // presumably max time or some such
+	    exitAll=true;
+	    break;
+	  }
 	  for (i=0;i<numberIntegers;i++) {
 	    int iColumn = integerVariable[i];
 	    if (saveLower[i]!=COIN_DBL_MAX)
@@ -769,6 +785,11 @@ CbcHeuristicFPump::solution(double & solutionValue,
 	    solver->setColSolution(firstPerturbedSolution);
 	  }
 	  solver->resolve();
+	  if (!solver->isProvenOptimal()) {
+	    // presumably max time or some such
+	    exitAll=true;
+	    break;
+	  }
 	  if (numberTries==1&&numberPasses==1&&false) {
 	    // save basis
 	    CoinWarmStartBasis * basis =
@@ -791,7 +812,11 @@ CbcHeuristicFPump::solution(double & solutionValue,
 	    printf("took %d iterations - true obj %g\n",solver->getIterationCount(),newSolutionValue);
 	  }
 #endif
-	  assert (solver->isProvenOptimal());
+	  if (!solver->isProvenOptimal()) {
+	    // presumably max time or some such
+	    exitAll=true;
+	    break;
+	  }
 	  // in case very dubious solver
 	  lower = solver->getColLower();
 	  upper = solver->getColUpper();
@@ -861,7 +886,12 @@ CbcHeuristicFPump::solution(double & solutionValue,
 	  delete [] addUpper;
 	  delete [] obj;
 	  solver2->resolve();
-	  assert (solver2->isProvenOptimal());
+	  if (!solver2->isProvenOptimal()) {
+	    // presumably max time or some such
+	    exitAll=true;
+	    break;
+	  }
+	  //assert (solver2->isProvenOptimal());
 	  if (nAdd) {
 	    solver->setColSolution(solver2->getColSolution());
 	    delete solver2;
@@ -970,7 +1000,8 @@ CbcHeuristicFPump::solution(double & solutionValue,
       newSolver->initialSolve();
       if (!newSolver->isProvenOptimal()) {
 	//newSolver->writeMps("bad.mps");
-	assert (newSolver->isProvenOptimal());
+	//assert (newSolver->isProvenOptimal());
+	exitAll=true;
 	break;
       }
       sprintf(pumpPrint+strlen(pumpPrint),"Before mini branch and bound, %d integers at bound fixed and %d continuous",
@@ -985,8 +1016,11 @@ CbcHeuristicFPump::solution(double & solutionValue,
       double saveValue = newSolutionValue;
       returnCode = smallBranchAndBound(newSolver,numberNodes_,newSolution,newSolutionValue,
 				       cutoff,"CbcHeuristicLocalAfterFPump");
-      if (returnCode<0)
-	returnCode=0; // returned on size - could try changing
+      if (returnCode<0) {
+	if (returnCode==-2)
+	  exitAll=true;
+	returnCode=0; // returned on size (or event) - could try changing
+      }
       if ((returnCode&2)!=0) {
 	// could add cut
 	returnCode &= ~2;
@@ -1027,6 +1061,8 @@ CbcHeuristicFPump::solution(double & solutionValue,
 	    }
 	  } else {
 	    //newSolver->writeMps("bad3.mps");
+	    exitAll=true;
+	    break;
 	  }
 	} 
 	if ((accumulate_&1)!=0) {

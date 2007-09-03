@@ -233,6 +233,8 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver,int numberNodes,
         // no good
         returnCode=model.isProvenInfeasible() ? 2 : 0; // so will be infeasible
       }
+      if (model.status()==5)
+	returnCode=-2; // stop
     }
   } else {
     returnCode=2; // infeasible finished

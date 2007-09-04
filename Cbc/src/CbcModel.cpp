@@ -1631,12 +1631,9 @@ void CbcModel::branchAndBound(int doStatistics)
       lockThread();
       int j ;
       int nNodes = tree_->size() ;
-      bestPossibleObjective_ = 1.0e100 ;
-      for (j = 0;j < nNodes;j++) {
-	CbcNode * node = tree_->nodePointer(j) ;
-	if (node&&node->objectiveValue() < bestPossibleObjective_)
-	  bestPossibleObjective_ = node->objectiveValue() ;
-      }
+
+      //MODIF PIERRE
+      bestPossibleObjective_ = tree_->getBestPossibleObjective();
       unlockThread();
       if (!intParam_[CbcPrinting]) {
 	messageHandler()->message(CBC_STATUS,messages())
@@ -1884,7 +1881,7 @@ void CbcModel::branchAndBound(int doStatistics)
         }
         bool checkingNode=false;
 	if (feasible) {
-          newNode = new CbcNode ;
+          newNode = new CbcNode ;//Regular node of the tree
           // Set objective value (not so obvious if NLP etc)
           setObjectiveValue(newNode,node);
 	  anyAction =-1 ;

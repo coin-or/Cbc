@@ -178,6 +178,16 @@ CbcTree::bestNode(double cutoff)
   return best;
 }
 
+double
+CbcTree::getBestPossibleObjective(){
+  double r_val = 1e100;
+  for(int i = 0 ; i < nodes_.size() ; i++){
+    if(nodes_[i] && nodes_[i]->objectiveValue() < r_val){
+      r_val = nodes_[i]->objectiveValue();
+    }
+    return r_val;
+  }
+}
 /*! \brief Prune the tree using an objective function cutoff
 
   This routine removes all nodes with objective worst than the

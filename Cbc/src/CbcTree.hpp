@@ -64,16 +64,8 @@ public:
   virtual bool empty() ;
 
   /// Return size
-  inline int size() const
-  { return nodes_.size();}
-
-  /// [] operator
-  inline CbcNode * operator [] (int i) const
-  { return nodes_[i];}
-
-  /// Return a node pointer
-  inline CbcNode * nodePointer (int i) const
-  { return nodes_[i];}
+  virtual int size() const
+  {return nodes_.size();}
 
 //@}
 
@@ -88,13 +80,16 @@ public:
   of all on tree before deleting.
 */
 
-  void cleanTree(CbcModel * model, double cutoff, double & bestPossibleObjective);
+  virtual void cleanTree(CbcModel * model, double cutoff, double & bestPossibleObjective);
 
   /// Get best on list using alternate method
   CbcNode * bestAlternate();
 
   /// We may have got an intelligent tree so give it one more chance
   virtual void endSearch() {}
+
+  /// Get best possible objective function in the tree
+  virtual double getBestPossibleObjective();
 //@}
 protected:
   std::vector <CbcNode *> nodes_;

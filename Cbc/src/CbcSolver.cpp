@@ -6102,6 +6102,10 @@ int CbcMain1 (int argc, const char *argv[],
 		      upper[i]=solution[i];
 		    }
 		  }
+		  // basis
+		  CoinWarmStartBasis * basis = dynamic_cast<CoinWarmStartBasis *> (babModel->solver()->getWarmStart());
+		  originalSolver->setBasis(*basis);
+		  delete basis;
 		}
 		checkSOS(babModel, babModel->solver());
 	      } else if (model.bestSolution()&&type==BAB&&model.getMinimizationObjValue()&&preProcess) {
@@ -6130,6 +6134,10 @@ int CbcMain1 (int argc, const char *argv[],
 		      upper[i]=solution[i];
 		    }
 		  }
+		  // basis
+		  CoinWarmStartBasis * basis = dynamic_cast<CoinWarmStartBasis *> (babModel->solver()->getWarmStart());
+		  originalSolver->setBasis(*basis);
+		  delete basis;
 		}
               }
               if (type==STRENGTHEN&&strengthenedModel)

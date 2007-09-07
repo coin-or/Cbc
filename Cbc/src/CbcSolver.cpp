@@ -1771,7 +1771,7 @@ static OsiClpSolverInterface * fixVubs(CbcModel & model, int skipZero2,
 	// skip if fixes nothing
 	if (fixColumn[iColumn+1]-fixColumn[iColumn]==0&&doAction<10)
 	  continue;
-	//double value = fullSolution[iColumn];
+	double value = fullSolution[iColumn];
 	double djValue = dj[iColumn];
 	if (state[iColumn]==1) {
 	  assert (columnLower[iColumn]);

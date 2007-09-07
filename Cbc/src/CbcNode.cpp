@@ -4457,7 +4457,7 @@ CbcNode::chooseOsiBranch (CbcModel * model,
   } 
   delete branch_;
   branch_ = NULL;
-  guessedObjectiveValue_ = objectiveValue_; // for now
+  guessedObjectiveValue_ = COIN_DBL_MAX;//objectiveValue_; // for now
   if (!returnStatus) {
     if (numberUnsatisfied) {
       // create branching object

@@ -1629,7 +1629,6 @@ void CbcModel::branchAndBound(int doStatistics)
     }
     if ((numberNodes_%printFrequency_) == 0) {
       lockThread();
-      int j ;
       int nNodes = tree_->size() ;
 
       //MODIF PIERRE
@@ -2755,7 +2754,7 @@ CbcModel::CbcModel()
   mutex_(NULL),
   presolve_(0),
   numberStrong_(5),
-  numberBeforeTrust_(0),
+  numberBeforeTrust_(10),
   numberPenalties_(20),
   penaltyScaleFactor_(3.0),
   numberAnalyzeIterations_(0),
@@ -2893,7 +2892,7 @@ CbcModel::CbcModel(const OsiSolverInterface &rhs)
   mutex_(NULL),
   presolve_(0),
   numberStrong_(5),
-  numberBeforeTrust_(0),
+  numberBeforeTrust_(10),
   numberPenalties_(20),
   penaltyScaleFactor_(3.0),
   numberAnalyzeIterations_(0),

@@ -48,6 +48,7 @@ Cbc/src/CbcHeuristicRINS.hpp -text
 Cbc/src/CbcLinked.cpp -text
 Cbc/src/CbcLinked.hpp -text
 Cbc/src/CbcSolver.cpp -text
+Cbc/src/CbcSolver.hpp -text
 Cbc/src/ClpAmplObjective.cpp -text
 Cbc/src/ClpAmplObjective.hpp -text
 Cbc/src/ClpAmplStuff.cpp -text

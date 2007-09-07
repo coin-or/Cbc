@@ -4,6 +4,7 @@
 #include "CbcConfig.h"
 #include "CoinPragma.hpp"
 #include "CbcModel.hpp"
+#include "CbcOrClpParam.hpp"
 #include "OsiClpSolverInterface.hpp"
 
 #include <cassert>
@@ -12,6 +13,8 @@
 #include <cfloat>
 #include <cstring>
 #include <iostream>
+//#define NEW_STYLE_SOLVER
+#ifndef NEW_STYLE_SOLVER
   // define TEST_MESSAGE_HANDLER to check works on all messages
 //#define TEST_MESSAGE_HANDLER
 #ifdef TEST_MESSAGE_HANDLER
@@ -214,7 +217,7 @@ int main (int argc, const char *argv[])
   void setCbcOrClpPrinting(bool yesNo);
   setCbcOrClpPrinting(false);
 #endif
-  int returnCode = CbcMain1 (argc, argv,model, 777);
+  int returnCode = CbcMain1 (argc, argv,model);
 #if 0
   /* The call to CbcClpUnitTest was moved into CbcMain1. To make sure
      CbcMain1 behaves as it did before for any other call, I have added one more
@@ -238,7 +241,17 @@ int main (int argc, const char *argv[])
   }
 #endif
 }
-
+#else
+#include "CbcSolver.hpp"
+int main (int argc, const char *argv[])
+{
+  OsiClpSolverInterface solver1;
+  CbcSolver control(solver1);
+  // initialize
+  control.fillValuesInSolver();
+  return control.solve (argc, argv, 2);
+}
+#endif
 /*
   Version 1.00.00 November 16 2005.
   This is to stop me (JJF) messing about too much.

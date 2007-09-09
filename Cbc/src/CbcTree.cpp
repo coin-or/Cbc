@@ -185,8 +185,8 @@ CbcTree::getBestPossibleObjective(){
     if(nodes_[i] && nodes_[i]->objectiveValue() < r_val){
       r_val = nodes_[i]->objectiveValue();
     }
-    return r_val;
   }
+  return r_val;
 }
 /*! \brief Prune the tree using an objective function cutoff
 

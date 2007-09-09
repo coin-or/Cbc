@@ -8520,6 +8520,12 @@ clp watson.mps -\nscaling off\nprimalsimplex"
 #else
   if (babModel_) {
     model_.moveInfo(*babModel_);
+    OsiClpSolverInterface * clpSolver0 = dynamic_cast< OsiClpSolverInterface*> (babModel_->solver());
+    ClpSimplex * lpSolver0 = clpSolver0->getModelPtr();
+    OsiClpSolverInterface * clpSolver = dynamic_cast< OsiClpSolverInterface*> (model_.solver());
+    ClpSimplex * lpSolver = clpSolver->getModelPtr();
+    if (lpSolver0!=lpSolver) 
+      lpSolver->moveInfo(*lpSolver0);
     //babModel_->setModelOwnsSolver(false);
   }
 #ifdef CBC_SIG_TRAP

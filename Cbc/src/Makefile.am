@@ -309,6 +309,7 @@ include_HEADERS = \
 	CbcModel.hpp \
 	CbcNode.hpp \
 	CbcStrategy.hpp \
+	CbcSolver.hpp \
 	CbcTree.hpp \
 	CbcLinked.hpp \
 	CbcTreeLocal.hpp \

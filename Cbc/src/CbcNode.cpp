@@ -3516,6 +3516,12 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
             // up feasible, down infeasible
             anyAction=-1;
             worstFeasible = CoinMax(worstFeasible,choice.upMovement);
+	    model->messageHandler()->message(CBC_STRONG,*model->messagesPointer())
+	      << iObject << iColumn
+	      <<choice.downMovement<<choice.numIntInfeasDown 
+	      <<choice.upMovement<<choice.numIntInfeasUp 
+	      <<choice.possibleBranch->value()
+	      <<CoinMessageEol;
             //printf("Down infeasible for choice %d sequence %d\n",i,
             // model->object(choice.objectNumber)->columnNumber());
             if (!solveAll) {
@@ -3559,6 +3565,12 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
             // down feasible, up infeasible
             anyAction=-1;
             worstFeasible = CoinMax(worstFeasible,choice.downMovement);
+	    model->messageHandler()->message(CBC_STRONG,*model->messagesPointer())
+	      << iObject << iColumn
+	      <<choice.downMovement<<choice.numIntInfeasDown 
+	      <<choice.upMovement<<choice.numIntInfeasUp 
+	      <<choice.possibleBranch->value()
+	      <<CoinMessageEol;
             //printf("Up infeasible for choice %d sequence %d\n",i,
             // model->object(choice.objectNumber)->columnNumber());
             if (!solveAll) {

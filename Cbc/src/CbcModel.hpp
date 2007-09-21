@@ -1004,7 +1004,7 @@ public:
       Returns objective value (worse than cutoff if not feasible)
       Previously computed objective value is now passed in (in case user does not do solve)
  */
-  double checkSolution(double cutoff, const double * solution,
+  double checkSolution(double cutoff, double * solution,
 		       bool fixVariables, double originalObjValue);
   /** Test the current solution for feasiblility.
 

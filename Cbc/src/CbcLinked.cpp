@@ -7,9 +7,6 @@
 #include "CoinHelperFunctions.hpp"
 #include "CoinModel.hpp"
 #include "ClpSimplex.hpp"
-#ifdef COIN_HAS_ASL
-#include "ClpAmplObjective.hpp"
-#endif
 // returns jColumn (-2 if linear term, -1 if unknown) and coefficient
 static
 int decodeBit(char * phrase, char * & nextPhrase, double & coefficient, bool ifFirst, const CoinModel & model)
@@ -7685,6 +7682,9 @@ CoinModel::expandKnapsack(int knapsackRow, int & numberOutput,double * buildObj,
 #include "ClpConstraint.hpp"
 #include "ClpConstraintLinear.hpp"
 #include "ClpConstraintQuadratic.hpp"
+#ifdef COIN_HAS_ASL
+//#include "ClpAmplObjective.hpp"
+#endif
 /* Return an approximate solution to a CoinModel.
     Lots of bounds may be odd to force a solution.
     mode = 0 just tries to get a continuous solution
@@ -7694,7 +7694,8 @@ approximateSolution(CoinModel & coinModel,
 		    int numberPasses, double deltaTolerance,
 		    int mode)
 {
-#ifdef COIN_HAS_ASL
+#if 1
+  //#ifdef COIN_HAS_ASL
   // matrix etc will be changed
   CoinModel coinModel2 = coinModel;
   if (coinModel2.moreInfo()) {

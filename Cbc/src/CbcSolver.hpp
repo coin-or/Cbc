@@ -11,6 +11,7 @@
 #include "CbcOrClpParam.hpp"
 class CbcUser;
 class CbcStopNow;
+class CglCutGenerator;
 
 //#############################################################################
 
@@ -32,9 +33,16 @@ public:
       returnMode - 
       0 model and solver untouched - babModel updated
       1 model updated - just with solution basis etc
-      2 model updated i.e. as babModel (babModel NULL)
+      2 model updated i.e. as babModel (babModel NULL) (only use without preprocessing)
   */
   int solve(int argc, const char * argv[], int returnMode); 
+  /** This takes a list of commands, does "stuff" and returns 
+      returnMode - 
+      0 model and solver untouched - babModel updated
+      1 model updated - just with solution basis etc
+      2 model updated i.e. as babModel (babModel NULL) (only use without preprocessing)
+  */
+  int solve(const char * input, int returnMode); 
   //@}
   ///@name Constructors and destructors etc
   //@{
@@ -60,6 +68,12 @@ public:
   void fillParameters();
   /// Set default values in solvers from parameters
   void fillValuesInSolver();
+  /// Add user function
+  void addUserFunction(CbcUser * function);
+  /// Set user call back
+  void setUserCallBack(CbcStopNow * function);
+  /// Add cut generator
+  void addCutGenerator(CglCutGenerator * generator);
   //@}
   ///@name miscellaneous methods to line up with old
   //@{
@@ -76,7 +90,7 @@ public:
       returnMode - 
       0 model and solver untouched - babModel updated
       1 model updated - just with solution basis etc
-      2 model updated i.e. as babModel (babModel NULL)
+      2 model updated i.e. as babModel (babModel NULL) (only use without preprocessing)
   */
   void updateModel(ClpSimplex * model2, int returnMode);
   //@}
@@ -94,6 +108,37 @@ public:
   CbcUser * userFunction(const char * name) const;
   inline CbcModel * model() 
   { return &model_;}
+  /// Number of userFunctions
+  inline int numberUserFunctions() const
+  { return numberUserFunctions_;}
+  /// User function array
+  inline CbcUser ** userFunctionArray() const
+  { return userFunction_;}
+  /// Copy of model on initial load (will contain output solutions)
+  inline OsiClpSolverInterface * originalSolver() const
+  { return originalSolver_;}
+  /// Copy of model on initial load
+  inline CoinModel * originalCoinModel() const
+  { return originalCoinModel_;}
+  /// Copy of model on initial load (will contain output solutions)
+  void setOriginalSolver(OsiClpSolverInterface * originalSolver);
+  /// Copy of model on initial load
+  void setOriginalCoinModel(CoinModel * originalCoinModel);
+  /// Number of cutgenerators
+  inline int numberCutGenerators() const
+  { return numberCutGenerators_;}
+  /// Cut generator array
+  inline CglCutGenerator ** cutGeneratorArray() const
+  { return cutGenerator_;}
+  /// Start time
+  inline double startTime() const
+  { return startTime_;}
+  /// Whether to print to std::cout
+  inline void setPrinting(bool onOff)
+  { noPrinting_= !onOff;}
+  /// Where to start reading commands
+  inline void setReadMode(int value)
+  { readMode_ = value;}
   //@}
 private:
   ///@name Private member data 
@@ -107,8 +152,23 @@ private:
   
   /// User functions
   CbcUser ** userFunction_;
+  /** Status of user functions
+      0 - not used
+      1 - needs cbc_load
+      2 - available - data in coinModel
+      3 - data loaded - can do cbc_save
+  */
+  int * statusUserFunction_;
+  /// Copy of model on initial load (will contain output solutions)
+  OsiClpSolverInterface * originalSolver_;
+  /// Copy of model on initial load
+  CoinModel * originalCoinModel_;
+  /// Cut generators
+  CglCutGenerator ** cutGenerator_;
   /// Number of user functions
   int numberUserFunctions_;
+  /// Number of cut generators
+  int numberCutGenerators_;
   /// Stop now stuff
   CbcStopNow * callBack_;
   /// Cpu time at instantiation
@@ -121,11 +181,26 @@ private:
   bool doMiplib_;
   /// Whether to print to std::cout
   bool noPrinting_;
-  
+  /// Where to start reading commands
+  int readMode_;
   //@}
 };
 //#############################################################################
-
+/// Structure to hold useful arrays
+typedef struct {
+  // Priorities
+  int * priorities_;
+  // SOS priorities
+  int * sosPriority_;
+  // Direction to branch first
+  int * branchDirection_;
+  // Input solution
+  double * primalSolution_;
+  // Down pseudo costs
+  double * pseudoDown_; 
+  // Up pseudo costs
+  double * pseudoUp_; 
+} CbcSolverUsefulData;
 /** This allows the use of an unknown user stuff including modeling languages
  */
 
@@ -134,10 +209,20 @@ class CbcUser  {
 public:
   ///@name import/export methods 
   //@{
-  /// Import - 0 if good
-  virtual int importData(std::string fileName) {return 0;}
-  /// Export
-  virtual void exportSolution() {}
+  /** Import - gets full command arguments
+      Returns -1 - no action
+               0 - data read in without error
+	       1 - errors
+  */
+  virtual int importData(CbcSolver * model, int & argc, char * argv[]) {return -1;}
+  /// Export 1 OsiClpSolver, 2 CbcModel - add 10 if infeasible from odd situation
+  virtual void exportSolution(CbcSolver * model, int mode,const char * message=NULL) {}
+  /// Export Data (i.e. at very end)
+  virtual void exportData(CbcSolver * model) {}
+  /// Get useful stuff
+  virtual void fillInformation(CbcSolver * model,
+			       CbcSolverUsefulData & info) {}
+
   //@}
   ///@name usage methods 
   //@{
@@ -150,7 +235,9 @@ public:
   inline std::string name() const
   { return userName_;}
   /// Solve (whatever that means)
-  void solve(CbcSolver * model, const char * options) {}
+  virtual void solve(CbcSolver * model, const char * options) = 0;
+  /// Returns true if function knows about option
+  virtual bool canDo(const char * options) = 0;
   //@}
   ///@name Constructors and destructors etc
   //@{
@@ -165,7 +252,7 @@ public:
   CbcUser & operator=(const CbcUser& rhs);
 
   /// Clone
-  CbcUser * clone() const;
+  virtual CbcUser * clone() const = 0;
   
   /// Destructor 
   virtual ~CbcUser ();
@@ -218,7 +305,7 @@ public:
   CbcStopNow & operator=(const CbcStopNow& rhs);
 
   /// Clone
-  CbcStopNow * clone() const;
+  virtual CbcStopNow * clone() const;
   
   /// Destructor 
   virtual ~CbcStopNow ();

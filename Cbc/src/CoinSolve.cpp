@@ -243,13 +243,15 @@ int main (int argc, const char *argv[])
 }
 #else
 #include "CbcSolver.hpp"
+void addAmplToCbc(CbcSolver *);
 int main (int argc, const char *argv[])
 {
   OsiClpSolverInterface solver1;
   CbcSolver control(solver1);
   // initialize
   control.fillValuesInSolver();
-  return control.solve (argc, argv, 2);
+  addAmplToCbc(&control);
+  return control.solve (argc, argv, 1);
 }
 #endif
 /*

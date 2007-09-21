@@ -102,9 +102,7 @@ static void malloc_stats2()
 #include "OsiRowCut.hpp"
 #include "OsiColCut.hpp"
 #ifndef COIN_HAS_LINK
-//#ifdef COIN_HAS_ASL
 #define COIN_HAS_LINK
-//#endif
 #endif
 #ifdef COIN_HAS_LINK
 #include "CbcLinked.hpp"
@@ -140,18 +138,22 @@ static void malloc_stats2()
 #include "CbcBranchLotsize.hpp"
 
 #include "OsiClpSolverInterface.hpp"
-//#define NEW_STYLE_SOLVER
-#ifdef NEW_STYLE_SOLVER
 #include "CbcSolver.hpp"
 CbcSolver::CbcSolver()
   : babModel_(NULL),
     userFunction_(NULL),
+    statusUserFunction_(NULL),
+    originalSolver_(NULL),
+    originalCoinModel_(NULL),
+    cutGenerator_(NULL),
     numberUserFunctions_(0),
+    numberCutGenerators_(0),
     startTime_(CoinCpuTime()),
     parameters_(NULL),
     numberParameters_(0),
     doMiplib_(false),
-    noPrinting_(false)
+    noPrinting_(false),
+    readMode_(1)
 {
   callBack_ = new CbcStopNow();
   fillParameters();
@@ -159,12 +161,18 @@ CbcSolver::CbcSolver()
 CbcSolver::CbcSolver(const OsiClpSolverInterface & solver)
   : babModel_(NULL),
     userFunction_(NULL),
+    statusUserFunction_(NULL),
+    originalSolver_(NULL),
+    originalCoinModel_(NULL),
+    cutGenerator_(NULL),
     numberUserFunctions_(0),
+    numberCutGenerators_(0),
     startTime_(CoinCpuTime()),
     parameters_(NULL),
     numberParameters_(0),
     doMiplib_(false),
-    noPrinting_(false)
+    noPrinting_(false),
+    readMode_(1)
 {
   callBack_ = new CbcStopNow();
   model_ = CbcModel(solver);
@@ -173,12 +181,18 @@ CbcSolver::CbcSolver(const OsiClpSolverInterface & solver)
 CbcSolver::CbcSolver(const CbcModel & solver)
   : babModel_(NULL),
     userFunction_(NULL),
+    statusUserFunction_(NULL),
+    originalSolver_(NULL),
+    originalCoinModel_(NULL),
+    cutGenerator_(NULL),
     numberUserFunctions_(0),
+    numberCutGenerators_(0),
     startTime_(CoinCpuTime()),
     parameters_(NULL),
     numberParameters_(0),
     doMiplib_(false),
-    noPrinting_(false)
+    noPrinting_(false),
+    readMode_(1)
 {
   callBack_ = new CbcStopNow();
   model_ = solver;
@@ -190,6 +204,12 @@ CbcSolver::~CbcSolver()
   for (i=0;i<numberUserFunctions_;i++)
     delete userFunction_[i];
   delete [] userFunction_;
+  for (i=0;i<numberCutGenerators_;i++)
+    delete cutGenerator_[i];
+  delete [] cutGenerator_;
+  delete [] statusUserFunction_;
+  delete originalSolver_;
+  delete originalCoinModel_;
   delete babModel_;
   delete [] parameters_;
   delete callBack_;
@@ -199,12 +219,14 @@ CbcSolver::CbcSolver ( const CbcSolver & rhs)
   : model_(rhs.model_),
     babModel_(NULL),
     userFunction_(NULL),
+    statusUserFunction_(NULL),
     numberUserFunctions_(rhs.numberUserFunctions_),
     startTime_(CoinCpuTime()),
     parameters_(NULL),
     numberParameters_(rhs.numberParameters_),
     doMiplib_(rhs.doMiplib_),
-    noPrinting_(rhs.noPrinting_)
+    noPrinting_(rhs.noPrinting_),
+    readMode_(rhs.readMode_)
 {
   fillParameters();
   if (rhs.babModel_)
@@ -215,7 +237,18 @@ CbcSolver::CbcSolver ( const CbcSolver & rhs)
     userFunction_[i] = rhs.userFunction_[i]->clone();
   for (i=0;i<numberParameters_;i++)
     parameters_[i]=rhs.parameters_[i];
+  for (i=0;i<numberCutGenerators_;i++)
+    cutGenerator_[i] = rhs.cutGenerator_[i]->clone();
   callBack_ = rhs.callBack_->clone();
+  originalSolver_ = NULL;
+  if (rhs.originalSolver_) {
+    OsiSolverInterface * temp = rhs.originalSolver_->clone();
+    originalSolver_ = dynamic_cast<OsiClpSolverInterface *> (temp);
+    assert (originalSolver_);
+  }
+  originalCoinModel_ = NULL;
+  if (rhs.originalCoinModel_)
+    originalCoinModel_ = new CoinModel(*rhs.originalCoinModel_);
 }
 // Assignment operator 
 CbcSolver &
@@ -226,6 +259,13 @@ CbcSolver::operator=(const CbcSolver & rhs)
     for (i=0;i<numberUserFunctions_;i++)
       delete userFunction_[i];
     delete [] userFunction_;
+    for (i=0;i<numberCutGenerators_;i++)
+      delete cutGenerator_[i];
+    delete [] cutGenerator_;
+    delete [] statusUserFunction_;
+    delete originalSolver_;
+    delete originalCoinModel_;
+    statusUserFunction_ = NULL;
     delete babModel_;
     delete [] parameters_;
     delete callBack_;
@@ -234,7 +274,10 @@ CbcSolver::operator=(const CbcSolver & rhs)
     numberParameters_= rhs.numberParameters_;
     for (i=0;i<numberParameters_;i++)
       parameters_[i]=rhs.parameters_[i];
+    for (i=0;i<numberCutGenerators_;i++)
+      cutGenerator_[i] = rhs.cutGenerator_[i]->clone();
     noPrinting_ = rhs.noPrinting_;
+    readMode_ = rhs.readMode_;
     doMiplib_ = rhs.doMiplib_;
     model_ = rhs.model_;
     if (rhs.babModel_)
@@ -245,6 +288,15 @@ CbcSolver::operator=(const CbcSolver & rhs)
     for (i=0;i<numberUserFunctions_;i++)
       userFunction_[i] = rhs.userFunction_[i]->clone();
     callBack_ = rhs.callBack_->clone();
+    originalSolver_ = NULL;
+    if (rhs.originalSolver_) {
+      OsiSolverInterface * temp = rhs.originalSolver_->clone();
+      originalSolver_ = dynamic_cast<OsiClpSolverInterface *> (temp);
+    assert (originalSolver_);
+    }
+    originalCoinModel_ = NULL;
+    if (rhs.originalCoinModel_)
+      originalCoinModel_ = new CoinModel(*rhs.originalCoinModel_);
 }
   return *this;
 }
@@ -324,7 +376,7 @@ void CbcSolver::fillParameters()
   int doIdiot=-1;
   int outputFormat=2;
   int substitution=3;
-  int dualize=0;
+  int dualize=3;
   int preSolve=5;
   int doSprint=-1;
   int testOsiParameters=-1;
@@ -455,6 +507,56 @@ void CbcSolver::fillValuesInSolver()
   parameters_[whichParam(INTEGERTOLERANCE,numberParameters_,parameters_)].setDoubleValue(model_.getDblParam(CbcModel::CbcIntegerTolerance));
   parameters_[whichParam(INCREMENT,numberParameters_,parameters_)].setDoubleValue(model_.getDblParam(CbcModel::CbcCutoffIncrement));
 }
+// Add user function
+void 
+CbcSolver::addUserFunction(CbcUser * function)
+{
+  CbcUser ** temp = new CbcUser * [numberUserFunctions_+1];
+  int i;
+  for (i=0;i<numberUserFunctions_;i++)
+    temp[i]=userFunction_[i];
+  delete [] userFunction_;
+  userFunction_ = temp;
+  userFunction_[numberUserFunctions_++] = function->clone();
+  delete [] statusUserFunction_;
+  statusUserFunction_ = NULL;
+}
+// Set user call back
+void 
+CbcSolver::setUserCallBack(CbcStopNow * function)
+{
+  delete callBack_;
+  callBack_ = function->clone();
+}
+// Copy of model on initial load (will contain output solutions)
+void 
+CbcSolver::setOriginalSolver(OsiClpSolverInterface * originalSolver)
+{
+  delete originalSolver_;
+  OsiSolverInterface * temp = originalSolver->clone();
+  originalSolver_ = dynamic_cast<OsiClpSolverInterface *> (temp);
+  assert (originalSolver_);
+  
+}
+// Copy of model on initial load
+void 
+CbcSolver::setOriginalCoinModel(CoinModel * originalCoinModel)
+{
+  delete originalCoinModel_;
+  originalCoinModel_ = new CoinModel(*originalCoinModel);
+}
+// Add cut generator
+void 
+CbcSolver::addCutGenerator(CglCutGenerator * generator)
+{
+  CglCutGenerator ** temp = new CglCutGenerator * [numberCutGenerators_+1];
+  int i;
+  for (i=0;i<numberCutGenerators_;i++)
+    temp[i]=cutGenerator_[i];
+  delete [] cutGenerator_;
+  cutGenerator_ = temp;
+  cutGenerator_[numberCutGenerators_++] = generator->clone();
+}
 // User stuff (base class)
 CbcUser::CbcUser()
   : coinModel_(NULL),
@@ -491,7 +593,7 @@ CbcUser::operator=(const CbcUser & rhs)
    returnMode - 
    0 model and solver untouched - babModel updated
    1 model updated - just with solution basis etc
-   2 model updated i.e. as babModel (babModel NULL)
+   2 model updated i.e. as babModel (babModel NULL) (only use without preprocessing!)
 */
 void
 CbcSolver::updateModel(ClpSimplex * model2, int returnMode)
@@ -572,6 +674,12 @@ CbcSolver::updateModel(ClpSimplex * model2, int returnMode)
       lpSolver->moveInfo(*model2);
     }
     clpSolver->setWarmStart(NULL); // synchronize bases
+    if (originalSolver_) {
+      ClpSimplex * lpSolver2 = originalSolver_->getModelPtr();
+      assert (model2!=lpSolver2);
+      lpSolver2->moveInfo(*model2);
+      originalSolver_->setWarmStart(NULL); // synchronize bases
+    }
   } else if (returnMode==1) {
     OsiClpSolverInterface * clpSolver = dynamic_cast< OsiClpSolverInterface*> (model_.solver());
     ClpSimplex * lpSolver = clpSolver->getModelPtr();
@@ -582,7 +690,7 @@ CbcSolver::updateModel(ClpSimplex * model2, int returnMode)
 	model_.setBestSolution(babModel_->bestSolution(),numberColumns,babModel_->getObjValue());
       OsiClpSolverInterface * clpSolver1 = dynamic_cast< OsiClpSolverInterface*> (babModel_->solver());
       ClpSimplex * lpSolver1 = clpSolver1->getModelPtr();
-      if (lpSolver1!=lpSolver) {
+      if (lpSolver1!=lpSolver&&model_.bestSolution()) {
 	lpSolver->moveInfo(*lpSolver1);
       }
     }
@@ -592,12 +700,6 @@ CbcSolver::updateModel(ClpSimplex * model2, int returnMode)
     delete babModel_;
     babModel_=NULL;
   }
-}
-// Clone
-CbcUser *
-CbcUser::clone() const
-{
-  return new CbcUser(*this);
 }
 // Stop now stuff (base class)
 CbcStopNow::CbcStopNow()
@@ -624,10 +726,10 @@ CbcStopNow::clone() const
 {
   return new CbcStopNow(*this);
 }
-#endif
+//#define NEW_STYLE_SOLVER
+#undef COIN_HAS_ASL
 #ifdef COIN_HAS_ASL
 #include "Cbc_ampl.h"
-static bool usingAmpl=false;
 #endif
 static double totalTime=0.0;
 static void statistics(ClpSimplex * originalModel, ClpSimplex * model);
@@ -1051,6 +1153,8 @@ static OsiClpSolverInterface * fixVubs(CbcModel & model, int skipZero2,
 				       int & doAction, CoinMessageHandler * generalMessageHandler,
 				       const double * lastSolution, double dextra[5])
 {
+  if (doAction==11&&!lastSolution)
+    lastSolution = model.bestSolution();
   assert ((doAction==1&&!lastSolution)||(doAction==11&&lastSolution));
   double fractionIntFixed = dextra[3];
   double fractionFixed = dextra[4];
@@ -1062,7 +1166,7 @@ static OsiClpSolverInterface * fixVubs(CbcModel & model, int skipZero2,
   ClpSimplex * lpSolver = clpSolver->getModelPtr();
   // Tighten bounds
   lpSolver->tightenPrimalBounds(0.0,11,true);
-  char generalPrint[200];
+  //char generalPrint[200];
   const double *objective = lpSolver->getObjCoefficients() ;
   double *columnLower = lpSolver->columnLower() ;
   double *columnUpper = lpSolver->columnUpper() ;
@@ -1496,14 +1600,12 @@ static OsiClpSolverInterface * fixVubs(CbcModel & model, int skipZero2,
       solveOptions.setSpecialOption(1,2,50); // idiot
     lpSolver->setInfeasibilityCost(1.0e11);
     lpSolver->defaultFactorizationFrequency();
-    lpSolver->initialSolve(solveOptions);
+    if (doAction!=11)
+      lpSolver->initialSolve(solveOptions);
     double * columnLower = lpSolver->columnLower();
     double * columnUpper = lpSolver->columnUpper();
     double * fullSolution = lpSolver->primalColumnSolution();
     const double * dj = lpSolver->dualColumnSolution();
-    // First squash small and fix big
-    //double small=1.0e-7;
-    //double djTol=20.0;
     int iPass=0;
 #define MAXPROB 2
     ClpSimplex models[MAXPROB];
@@ -1537,6 +1639,31 @@ static OsiClpSolverInterface * fixVubs(CbcModel & model, int skipZero2,
       columnUpper = lpSolver->columnUpper();
       fullSolution = lpSolver->primalColumnSolution();
       if (doAction==11) {
+	{
+	  double * columnLower = lpSolver->columnLower();
+	  double * columnUpper = lpSolver->columnUpper();
+	  //	  lpSolver->dual();
+	  memcpy(columnLower,originalLpSolver->columnLower(),numberColumns*sizeof(double));
+	  memcpy(columnUpper,originalLpSolver->columnUpper(),numberColumns*sizeof(double));
+	  //	  lpSolver->dual();
+	  int iColumn;
+	  for (iColumn=0;iColumn<numberColumns;iColumn++) {
+	    if (columnUpper[iColumn] > columnLower[iColumn]+1.0e-8) {
+	      if (solver->isInteger(iColumn)) {
+		double value = lastSolution[iColumn];
+		int iValue = (int) (value+0.5);
+		assert (fabs(value-((double) iValue))<1.0e-3);
+		assert (iValue>=columnLower[iColumn]&&
+			iValue<=columnUpper[iColumn]);
+		columnLower[iColumn]=iValue;
+		columnUpper[iColumn]=iValue;
+	      }
+	    }
+	  }
+	  lpSolver->initialSolve(solveOptions);
+	  memcpy(columnLower,originalLpSolver->columnLower(),numberColumns*sizeof(double));
+	  memcpy(columnUpper,originalLpSolver->columnUpper(),numberColumns*sizeof(double));
+	}
 	for (iColumn=0;iColumn<numberColumns;iColumn++) {
 	  if (columnUpper[iColumn] > columnLower[iColumn]+1.0e-8) {
 	    if (solver->isInteger(iColumn)) {
@@ -1756,11 +1883,13 @@ static OsiClpSolverInterface * fixVubs(CbcModel & model, int skipZero2,
     int * sort = new int[numberColumns];
     double * dsort = new double[numberColumns];
     int chunk=20;
+    int iRelax=0;
     //double fractionFixed=6.0/8.0;
     // relax while lots fixed
     while (true) {
       if (skipZero2>10&&doAction<10)
 	break;
+      iRelax++;
       int n=0;
       double sum0=0.0;
       double sum00=0.0;
@@ -1916,6 +2045,10 @@ static OsiClpSolverInterface * fixVubs(CbcModel & model, int skipZero2,
 	}
       }
       printf("%d relaxed\n",nRelax);
+      if (iRelax>20&&nRelax==chunk)
+	nRelax=0;
+      if (iRelax>50)
+	nRelax=0;
       assert (!nBad);
       delete [] lo;
       delete [] up;
@@ -1954,7 +2087,7 @@ static OsiClpSolverInterface * fixVubs(CbcModel & model, int skipZero2,
   return NULL;
 }
 #endif
-#ifdef COIN_HAS_ASL
+#ifdef COIN_HAS_LINK
 /*  Returns OsiSolverInterface (User should delete)
     On entry numberKnapsack is maximum number of Total entries
 */
@@ -2837,7 +2970,7 @@ void CbcMain0 (CbcModel  & model)
   int doIdiot=-1;
   int outputFormat=2;
   int substitution=3;
-  int dualize=0;
+  int dualize=3;
   int preSolve=5;
   int doSprint=-1;
   int testOsiParameters=-1;
@@ -3119,7 +3252,69 @@ int
 
 void CbcClpUnitTest (const CbcModel & saveModel,
 		     std::string& dirMiplib, bool unitTestOnly);
-
+#ifdef NEW_STYLE_SOLVER
+/* This takes a list of commands, does "stuff" and returns 
+   returnMode - 
+   0 model and solver untouched - babModel updated
+   1 model updated - just with solution basis etc
+   2 model updated i.e. as babModel (babModel NULL) (only use without preprocessing)
+*/
+int 
+CbcSolver::solve(const char * input2, int returnMode)
+{
+  char * input = strdup(input2);
+  int length = strlen(input);
+  bool blank = input[0]=='0';
+  int n=blank ? 0 : 1;
+  for (int i=0;i<length;i++) {
+    if (blank) {
+      // look for next non blank
+      if (input[i]==' ') {
+	continue;
+      } else {
+	n++;
+	blank=false;
+      }
+    } else {
+      // look for next blank
+      if (input[i]!=' ') {
+	continue;
+      } else {
+	blank=true;
+      }
+    }
+  }
+  char ** argv = new char * [n+2];
+  argv[0]=strdup("cbc");
+  int i=0;
+  while(input[i]==' ')
+    i++;
+  for (int j=0;j<n;j++) {
+    int saveI=i;
+    for (;i<length;i++) {
+      // look for next blank
+      if (input[i]!=' ') {
+	continue;
+      } else {
+	break;
+      }
+    }
+    char save = input[i];
+    input[i]='\0';
+    argv[j+1]=strdup(input+saveI);
+    input[i]=save;
+    while(input[i]==' ')
+      i++;
+  }
+  argv[n+1]=strdup("-quit");
+  free(input);
+  int returnCode = solve(n+2,const_cast<const char **>(argv),returnMode);
+  for (int k=0;k<n+2;k++)
+    free(argv[k]);
+  delete [] argv;
+  return returnCode;
+}
+#endif
 /* Meaning of whereFrom:
    1 after initial solve by dualsimplex etc
    2 after preprocessing
@@ -3150,10 +3345,17 @@ int
   CbcModel & model_ = model;
   CbcModel * babModel_ = NULL;
   int returnMode=1;
+  int statusUserFunction_[1];
+  int numberUserFunctions_=1; // to allow for ampl
 #else
   delete babModel_;
   babModel_ = NULL;
+  CbcOrClpRead_mode=1;
+  delete [] statusUserFunction_;
+  statusUserFunction_ = new int [numberUserFunctions_];
+  int iUser;
 #endif 
+  memset(statusUserFunction_,0,numberUserFunctions_*sizeof(int));
   /* Note
      This is meant as a stand-alone executable to do as much of coin as possible. 
      It should only have one solver known to it.
@@ -3228,17 +3430,50 @@ int
     int * sosPriority=NULL;
     CglStored storedAmpl;
     CoinModel * coinModel = NULL;
-#ifdef COIN_HAS_ASL
-    ampl_info info;
     CoinModel saveCoinModel;
     CoinModel saveTightenedModel;
     int * whichColumn = NULL;
     int * knapsackStart=NULL;
     int * knapsackRow=NULL;
     int numberKnapsack=0;
+#ifdef NEW_STYLE_SOLVER
+    int numberInputs=0;
+    readMode_=CbcOrClpRead_mode;
+    for (iUser=0;iUser<numberUserFunctions_;iUser++) {
+      int status = userFunction_[iUser]->importData(this,argc,const_cast<char **>(argv));
+      if (status>=0) {
+	if (!status) {
+	  numberInputs++;
+	  statusUserFunction_[iUser]=1;
+	  goodModel=true;
+	  solver = model_.solver();
+	  clpSolver = dynamic_cast< OsiClpSolverInterface*> (solver);
+	  lpSolver = clpSolver->getModelPtr();
+	} else {
+	  printf("Bad input from user function %s\n",userFunction_[iUser]->name().c_str());
+	  abort();
+	}
+      }
+    }
+    if (numberInputs>1) {
+      printf("Two or more user inputs!\n");
+      abort();
+    }
+    if (originalCoinModel_)
+      complicatedInteger=1;
+    testOsiParameters = intValue(TESTOSI);
+    if (noPrinting_) {
+      model_.messageHandler()->setLogLevel(0);
+      setCbcOrClpPrinting(false);
+    }
+    CbcOrClpRead_mode=readMode_;
+#endif
+#ifdef COIN_HAS_ASL
+    ampl_info info;
+    {
     memset(&info,0,sizeof(info));
     if (argc>2&&!strcmp(argv[2],"-AMPL")) {
-      usingAmpl=true;
+      statusUserFunction_[0]=1;
       // see if log in list
       noPrinting_=true;
       for (int i=1;i<argc;i++) {
@@ -3331,7 +3566,7 @@ int
 	si->setIntegerPriority(1000);
 	si->setBiLinearPriority(10000);
 	CoinModel * model2 = (CoinModel *) coinModel;
-	int logLevel = whichParam(LOGLEVEL,numberParameters_,parameters_);
+	int logLevel = parameters_[whichParam(LOGLEVEL,numberParameters_,parameters_)].intValue();
 	si->load(*model2,true,logLevel);
 	// redo
 	solver = model_.solver();
@@ -3410,6 +3645,7 @@ int
       argc = info.numberArguments;
       argv = const_cast<const char **>(info.arguments);
     }
+    }
 #endif    
     // default action on import
     int allowImportErrors=0;
@@ -3422,7 +3658,7 @@ int
     int printMode=0;
     int presolveOptions=0;
     int substitution=3;
-    int dualize=0;
+    int dualize=3;
     int doCrash=0;
     int doVector=0;
     int doSprint=-1;
@@ -3572,8 +3808,11 @@ int
       // Print command line
       if (argc>1) {
         sprintf(generalPrint,"command line - ");
-        for (int i=0;i<argc;i++)
+        for (int i=0;i<argc;i++) {
+	  if (!argv[i])
+	    break;
           sprintf(generalPrint+strlen(generalPrint),"%s ",argv[i]);
+	}
 	generalMessageHandler->message(CLP_GENERAL,generalMessages)
 	  << generalPrint
 	  <<CoinMessageEol;
@@ -3651,7 +3890,7 @@ int
 	if (type==BAB&&goodModel) {
 	  // check if any integers
 #ifdef COIN_HAS_ASL
-	  if (info.numberSos&&doSOS&&usingAmpl) {
+	  if (info.numberSos&&doSOS&&statusUserFunction_[0]) {
 	    // SOS
 	    numberSOS = info.numberSos;
 	  }
@@ -3669,7 +3908,7 @@ int
 	    verbose &= ~8;
 	  }
 #ifdef COIN_HAS_ASL
-          if (verbose<4&&usingAmpl)
+          if (verbose<4&&statusUserFunction_[0])
             verbose +=4;
 #endif
           if (verbose<4) {
@@ -3949,13 +4188,13 @@ int
 		ClpPrimalColumnDantzig dantzig;
 		lpSolver->setPrimalColumnPivotAlgorithm(dantzig);
 	      } else if (action==3) {
-		ClpPrimalColumnSteepest steep(2);
+		ClpPrimalColumnSteepest steep(4);
 		lpSolver->setPrimalColumnPivotAlgorithm(steep);
 	      } else if (action==4) {
 		ClpPrimalColumnSteepest steep(1);
 		lpSolver->setPrimalColumnPivotAlgorithm(steep);
 	      } else if (action==5) {
-		ClpPrimalColumnSteepest steep(4);
+		ClpPrimalColumnSteepest steep(2);
 		lpSolver->setPrimalColumnPivotAlgorithm(steep);
 	      } else if (action==6) {
 		ClpPrimalColumnSteepest steep(10);
@@ -4145,7 +4384,7 @@ int
 	  // action
 	  if (type==EXIT) {
 #ifdef COIN_HAS_ASL
-            if(usingAmpl) {
+            if(statusUserFunction_[0]) {
               if (info.numberIntegers||info.numberBinary) {
                 // integer
               } else {
@@ -4191,14 +4430,36 @@ int
 	      ClpSolve::PresolveType presolveType;
 	      ClpSimplex * model2 = lpSolver;
               if (dualize) {
-		//printf("dualize %d\n",dualize);
-                model2 = ((ClpSimplexOther *) model2)->dualOfModel();
-                sprintf(generalPrint,"Dual of model has %d rows and %d columns",
-                       model2->numberRows(),model2->numberColumns());
-		generalMessageHandler->message(CLP_GENERAL,generalMessages)
-		  << generalPrint
-		  <<CoinMessageEol;
-                model2->setOptimizationDirection(1.0);
+		bool tryIt=true;
+		double fractionColumn=1.0;
+		double fractionRow=1.0;
+		if (dualize==3) {
+		  dualize=1;
+		  int numberColumns=lpSolver->numberColumns();
+		  int numberRows=lpSolver->numberRows();
+		  if (numberRows<50000||5*numberColumns>numberRows) {
+		    tryIt=false;
+		  } else {
+		    fractionColumn=0.1;
+		    fractionRow=0.1;
+		  }
+		}
+		if (tryIt) {
+		  model2 = ((ClpSimplexOther *) model2)->dualOfModel(fractionRow,fractionColumn);
+		  if (model2) {
+		    sprintf(generalPrint,"Dual of model has %d rows and %d columns",
+			    model2->numberRows(),model2->numberColumns());
+		    generalMessageHandler->message(CLP_GENERAL,generalMessages)
+		      << generalPrint
+		      <<CoinMessageEol;
+		    model2->setOptimizationDirection(1.0);
+		  } else {
+		    model2 = lpSolver;
+		    dualize=0;
+		  }
+		} else {
+		  dualize=0;
+		}
               }
               if (noPrinting_)
                 lpSolver->setLogLevel(0);
@@ -4436,13 +4697,22 @@ int
 	      basisHasValues=1;
               if (dualize) {
                 int returnCode=((ClpSimplexOther *) lpSolver)->restoreFromDual(model2);
+		if (model2->status()==3)
+		  returnCode=0;
                 delete model2;
 		if (returnCode&&dualize!=2)
 		  lpSolver->primal(1);
                 model2=lpSolver;
               }
+#ifdef NEW_STYLE_SOLVER
+	      updateModel(model2,returnMode);
+	      for (iUser=0;iUser<numberUserFunctions_;iUser++) {
+		if (statusUserFunction_[iUser])
+		  userFunction_[iUser]->exportSolution(this,1);
+	      }
+#endif
 #ifdef COIN_HAS_ASL
-              if (usingAmpl) {
+              if (statusUserFunction_[0]) {
                 double value = model2->getObjValue()*model2->getObjSense();
                 char buf[300];
                 int pos=0;
@@ -5152,7 +5422,7 @@ int
 		  process.passInMessageHandler(babModel_->messageHandler());
                   //process.messageHandler()->setLogLevel(babModel_->logLevel());
 #ifdef COIN_HAS_ASL
-                  if (info.numberSos&&doSOS&&usingAmpl) {
+                  if (info.numberSos&&doSOS&&statusUserFunction_[0]) {
                     // SOS
                     numberSOS = info.numberSos;
                     sosStart = info.sosStart;
@@ -5236,8 +5506,16 @@ int
                   if (solver2)
                     solver2->setHintParam(OsiDoInBranchAndCut,false,OsiHintDo) ;
                 }
+#ifdef NEW_STYLE_SOLVER
+		if (!solver2) {
+		  for (iUser=0;iUser<numberUserFunctions_;iUser++) {
+		    if (statusUserFunction_[iUser])
+		      userFunction_[iUser]->exportSolution(this,11,"infeasible/unbounded by pre-processing");
+		  }
+		}
+#endif
 #ifdef COIN_HAS_ASL
-                if (!solver2&&usingAmpl) {
+                if (!solver2&&statusUserFunction_[0]) {
                   // infeasible
                   info.problemStatus=1;
                   info.objValue = 1.0e100;
@@ -5358,7 +5636,8 @@ int
                 //                         babModel_->getNumCols());
               }
 	      int testOsiOptions = parameters_[whichParam(TESTOSI,numberParameters_,parameters_)].intValue();
-#ifdef COIN_HAS_ASL
+	      //#ifdef COIN_HAS_ASL
+#if 1
 	      // If linked then see if expansion wanted
 	      {
 		OsiSolverLink * solver3 = dynamic_cast<OsiSolverLink *> (babModel_->solver());
@@ -5394,9 +5673,11 @@ int
 			testOsiOptions=0;
 			// allow gomory
 			complicatedInteger=0;
+#ifdef COIN_HAS_ASL
 			// Priorities already done
 			free(info.priorities);
 			info.priorities=NULL;
+#endif
 		      } else {
 			numberKnapsack=0;
 			delete [] whichColumn;
@@ -5649,8 +5930,32 @@ int
                 }
               }
               if (type==BAB) {
+#ifdef NEW_STYLE_SOLVER
+		{
+		  CbcSolverUsefulData info;
+		  bool useInfo=false;
+		  for (iUser=0;iUser<numberUserFunctions_;iUser++) {
+		    if (statusUserFunction_[iUser]) {
+		      userFunction_[iUser]->fillInformation(this,info);
+		      useInfo=true;
+		    }
+		  }
+		  if (useInfo) {
+		    priorities=info.priorities_;
+		    branchDirection=info.branchDirection_;
+		    pseudoDown=info.pseudoDown_;
+		    pseudoUp=info.pseudoUp_;
+		    solutionIn=info.primalSolution_;
+		    int numberColumns = originalCoinModel_ ? originalCoinModel_->numberColumns() :
+		      lpSolver->getNumCols();
+		    prioritiesIn = (int *) malloc(numberColumns*sizeof(int));
+		    memcpy(prioritiesIn,info.priorities_,numberColumns*sizeof(int));
+                    sosPriority = info.sosPriority_;
+                  }
+		}
+#endif
 #ifdef COIN_HAS_ASL
-                if (usingAmpl) {
+                if (statusUserFunction_[0]) {
                   priorities=info.priorities;
                   branchDirection=info.branchDirection;
                   pseudoDown=info.pseudoDown;
@@ -6120,7 +6425,7 @@ int
                 }
                 int statistics = (printOptions>0) ? printOptions: 0;
 #ifdef COIN_HAS_ASL
-                if (!usingAmpl) {
+                if (!statusUserFunction_[0]) {
 #endif
                   free(priorities);
                   priorities=NULL;
@@ -6440,7 +6745,7 @@ int
 		}
 #ifdef COIN_HAS_ASL
 		// add in lotsizing
-		if (usingAmpl&&info.special) {
+		if (statusUserFunction_[0]&&info.special) {
 		  int numberColumns = babModel_->getNumCols();
 		  int i;
 		  int n=0;
@@ -6743,7 +7048,7 @@ int
               if (type==STRENGTHEN&&strengthenedModel)
                 clpSolver = dynamic_cast< OsiClpSolverInterface*> (strengthenedModel);
 #ifdef COIN_HAS_ASL
-	      else if (usingAmpl) 
+	      else if (statusUserFunction_[0]) 
 		clpSolver = dynamic_cast< OsiClpSolverInterface*> (babModel_->solver());
 #endif
               lpSolver = clpSolver->getModelPtr();
@@ -6800,8 +7105,32 @@ int
 #endif
 		  return returnCode;
 		}
+#ifdef NEW_STYLE_SOLVER
+		if (bestSolution&&numberKnapsack) {
+		  // expanded knapsack
+		  assert (originalCoinModel_);
+		  // Fills in original solution (coinModel length - rest junk)
+		  clpSolver = dynamic_cast< OsiClpSolverInterface*> (babModel_->solver());
+		  lpSolver = clpSolver->getModelPtr();
+		  int numberColumns = originalCoinModel_->numberColumns();
+		  int numberColumns2 = lpSolver->numberColumns();
+		  assert (numberColumns2>numberColumns);
+		  double * primalSolution = new double [numberColumns2];
+		  memset(primalSolution,0,numberColumns2*sizeof(double));
+		  afterKnapsack(saveTightenedModel,  whichColumn,  knapsackStart, 
+				knapsackRow,  numberKnapsack,
+				lpSolver->primalColumnSolution(), primalSolution,1);
+		  memcpy(lpSolver->primalColumnSolution(),primalSolution,numberColumns2*sizeof(double));
+		  delete [] primalSolution;
+                }
+		updateModel(NULL,returnMode);
+		for (iUser=0;iUser<numberUserFunctions_;iUser++) {
+		  if (statusUserFunction_[iUser])
+		    userFunction_[iUser]->exportSolution(this,2);
+		}
+#endif
 #ifdef COIN_HAS_ASL
-                if (usingAmpl) {
+                if (statusUserFunction_[0]) {
 		  clpSolver = dynamic_cast< OsiClpSolverInterface*> (babModel_->solver());
 		  lpSolver = clpSolver->getModelPtr();
                   double value = babModel_->getObjValue()*lpSolver->getObjSense();
@@ -6878,7 +7207,7 @@ int
               }
               time1 = time2;
 #ifdef COIN_HAS_ASL
-              if (usingAmpl) {
+              if (statusUserFunction_[0]) {
 		// keep if going to be destroyed
 		OsiSolverInterface * solver = babModel_->solver();
 		OsiClpSolverInterface * clpSolver = dynamic_cast< OsiClpSolverInterface*> (solver);
@@ -6898,7 +7227,7 @@ int
 	  case IMPORT:
 	    {
 #ifdef COIN_HAS_ASL
-              if (!usingAmpl) {
+              if (!statusUserFunction_[0]) {
 #endif
                 free(priorities);
                 priorities=NULL;
@@ -7191,7 +7520,7 @@ int
 		// If presolve on then save presolved
 		bool deleteModel2=false;
 		ClpSimplex * model2 = lpSolver;
-		if (dualize) {
+		if (dualize&&dualize<3) {
 		  model2 = ((ClpSimplexOther *) model2)->dualOfModel();
 		  sprintf(generalPrint,"Dual of model has %d rows and %d columns",
 			 model2->numberRows(),model2->numberColumns());
@@ -7201,7 +7530,7 @@ int
 		  model2->setOptimizationDirection(1.0);
 		}
 #ifdef COIN_HAS_ASL
-		if (info.numberSos&&doSOS&&usingAmpl) {
+		if (info.numberSos&&doSOS&&statusUserFunction_[0]) {
 		  // SOS
 		  numberSOS = info.numberSos;
 		  sosStart = info.sosStart;
@@ -7672,6 +8001,12 @@ int
                 fread(debugValues,sizeof(double),numRows,fp);
                 fread(debugValues,sizeof(double),numberDebugValues,fp);
                 printf("%d doubles read into debugValues\n",numberDebugValues);
+		if (numberDebugValues<200) {
+		  for (int i=0;i<numberDebugValues;i++) {
+		    if (lpSolver->isInteger(i)&&debugValues[i])
+		      printf("%d %g\n",i,debugValues[i]);
+		  }
+		}
                 fclose(fp);
               } else {
                 std::cout<<"Unable to open file "<<fileName<<std::endl;
@@ -8093,7 +8428,7 @@ int
 	      clpSolver = dynamic_cast< OsiClpSolverInterface*> (model_.solver());
 	      lpSolver = clpSolver->getModelPtr();
 #ifdef COIN_HAS_ASL
-	      if (usingAmpl) {
+	      if (statusUserFunction_[0]) {
 		int n = clpSolver->getNumCols();
 		double value = objectiveValue*lpSolver->getObjSense();
 		char buf[300];
@@ -8516,6 +8851,10 @@ clp watson.mps -\nscaling off\nprimalsimplex"
 #endif
 #ifdef NEW_STYLE_SOLVER
   updateModel(NULL,returnMode);
+  for (iUser=0;iUser<numberUserFunctions_;iUser++) {
+    if (statusUserFunction_[iUser])
+      userFunction_[iUser]->exportData(this);
+  }
   sprintf(generalPrint,"Total time %.2f",CoinCpuTime()-startTime_);
 #else
   if (babModel_) {

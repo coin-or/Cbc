@@ -11,8 +11,445 @@
 #include "ClpSimplex.hpp"
 #include "ClpAmplObjective.hpp"
 #include "ClpConstraintAmpl.hpp"
+#include "ClpMessage.hpp"
 #include "CoinUtilsConfig.h"
 #include "CoinHelperFunctions.hpp"
+#include "CoinWarmStartBasis.hpp"
+#include "OsiSolverInterface.hpp"
+#include "CbcSolver.hpp"
+#include "Cbc_ampl.h"
+#include "CoinTime.hpp"
+#include "CglStored.hpp"
+#include "CoinModel.hpp"
+#include "CbcLinked.hpp"
+class CbcAmpl  : public CbcUser {
+  
+public:
+  ///@name usage methods 
+  //@{
+  /// Solve (whatever that means)
+  virtual void solve(CbcSolver * model, const char * options);
+  /// Returns true if function knows about option
+  virtual bool canDo(const char * options) ;
+  /** Import - gets full command arguments
+      Returns -1 - no action
+               0 - data read in without error
+	       1 - errors
+  */
+  virtual int importData(CbcSolver * model, int & argc, char * argv[]);
+  /// Export 1 OsiClpSolver, 2 CbcModel - add 10 if infeasible from odd situation
+  virtual void exportSolution(CbcSolver * model, int mode,const char * message=NULL) ;
+  /// Export Data (i.e. at very end)
+  virtual void exportData(CbcSolver * model);
+  /// Get useful stuff
+  virtual void fillInformation(CbcSolver * model,
+			       CbcSolverUsefulData & info);
+  //@}
+  ///@name Constructors and destructors etc
+  //@{
+  /// Default Constructor
+  CbcAmpl(); 
+  
+  /** Copy constructor .
+   */  
+  CbcAmpl(const CbcAmpl & rhs);
+  
+  /// Assignment operator 
+  CbcAmpl & operator=(const CbcAmpl& rhs);
+
+  /// Clone
+  virtual CbcUser * clone() const;
+  
+  /// Destructor 
+  virtual ~CbcAmpl ();
+  //@}
+private:
+  ///@name Private member data 
+  //@{
+  /// AMPL info
+  ampl_info info_;
+  //@}
+};
+// Mechanicsburg stuff 
+CbcAmpl::CbcAmpl()
+  : CbcUser()
+{
+  userName_ = "mech";
+  memset(&info_,0,sizeof(info_));
+}
+CbcAmpl::~CbcAmpl()
+{
+}
+// Copy constructor 
+CbcAmpl::CbcAmpl ( const CbcAmpl & rhs)
+  : CbcUser(rhs)
+{
+  info_ = rhs.info_;
+}
+// Assignment operator 
+CbcAmpl &
+CbcAmpl::operator=(const CbcAmpl & rhs)
+{
+  if (this != &rhs) {
+    CbcUser::operator=(rhs);
+    info_ = rhs.info_;
+  }
+  return *this;
+}
+// Clone
+CbcUser *
+CbcAmpl::clone() const
+{
+  return new CbcAmpl(*this);
+}
+// Solve (whatever that means)
+void 
+CbcAmpl::solve(CbcSolver * controlModel, const char * options)
+{
+  CbcModel * model = controlModel->model();
+  assert (model);
+  //OsiClpSolverInterface * clpSolver = dynamic_cast< OsiClpSolverInterface*> (model->solver());
+  //ClpSimplex * lpSolver = clpSolver->getModelPtr();
+  if (!strcmp(options,"cbc_load")) {
+  } else if (!strcmp(options,"cbc_quit")) {
+  } else {
+    printf("unknown option for CbcAmpl is %s\n",options);
+    abort();
+  }
+}
+// Returns true if function knows about option
+bool 
+CbcAmpl::canDo(const char * options) 
+{
+  return (!strcmp(options,"cbc_load")||!strcmp(options,"cbc_quit"));
+}
+/* Import - gets full command arguments
+   Returns -1 - no action
+            0 - data read in without error
+	    1 - errors
+*/
+int 
+CbcAmpl::importData(CbcSolver * control, int &argc, char * argv[])
+{
+  CbcModel * babModel = control->model();
+  assert (babModel);
+  CoinMessageHandler * generalMessageHandler = babModel->messageHandler();
+  OsiClpSolverInterface * solver = dynamic_cast< OsiClpSolverInterface*> (control->model()->solver());
+  assert (solver);
+  CoinMessages generalMessages = solver->getModelPtr()->messages();
+  char generalPrint[10000];
+  OsiSolverLink * si = NULL;
+  ClpSimplex * lpSolver = solver->getModelPtr();
+  if (argc>2&&!strcmp(argv[2],"-AMPL")) {
+    // see if log in list
+    bool printing=false;
+    for (int i=1;i<argc;i++) {
+      if (!strncmp(argv[i],"log",3)) {
+	const char * equals = strchr(argv[i],'=');
+	if (equals&&atoi(equals+1)>0) {
+	  printing=true;
+	  info_.logLevel=atoi(equals+1);
+	  control->setIntValue(LOGLEVEL,info_.logLevel);
+	  // mark so won't be overWritten
+	  info_.numberRows=-1234567;
+	  break;
+	}
+      }
+    }
+    CoinModel * coinModel=NULL;
+    int returnCode = readAmpl(&info_,argc, argv,(void **) (& coinModel));
+    if (returnCode)
+      return returnCode;
+    control->setReadMode(3); // so will start with parameters
+    // see if log in list (including environment)
+    for (int i=1;i<info_.numberArguments;i++) {
+      if (!strcmp(info_.arguments[i],"log")) {
+	if (i<info_.numberArguments-1&&atoi(info_.arguments[i+1])>0)
+	  printing=true;
+	break;
+      }
+    }
+    control->setPrinting(printing);
+    if (printing)
+      printf("%d rows, %d columns and %d elements\n",
+	     info_.numberRows,info_.numberColumns,info_.numberElements);
+    if (!coinModel) {
+      solver->loadProblem(info_.numberColumns,info_.numberRows,info_.starts,
+                          info_.rows,info_.elements,
+                          info_.columnLower,info_.columnUpper,info_.objective,
+                          info_.rowLower,info_.rowUpper);
+      if (info_.numberSos) {
+	// SOS
+	solver->setSOSData(info_.numberSos,info_.sosType,info_.sosStart,
+			   info_.sosIndices,info_.sosReference);
+      }
+    } else {
+      // save
+      control->setOriginalCoinModel(coinModel);
+      // load from coin model
+      OsiSolverLink solver1;
+      OsiSolverInterface * solver2 = solver1.clone();
+      babModel->assignSolver(solver2,false);
+      si = dynamic_cast<OsiSolverLink *>(babModel->solver()) ;
+      assert (si != NULL);
+      si->setDefaultMeshSize(0.001);
+      // need some relative granularity
+      si->setDefaultBound(100.0);
+      double dextra3 = control->doubleValue(DEXTRA3);
+      if (dextra3)
+	si->setDefaultMeshSize(dextra3);
+      si->setDefaultBound(100000.0);
+      si->setIntegerPriority(1000);
+      si->setBiLinearPriority(10000);
+      CoinModel * model2 = (CoinModel *) coinModel;
+      int logLevel = control->intValue(LOGLEVEL);
+      si->load(*model2,true,logLevel);
+      // redo
+      solver = dynamic_cast< OsiClpSolverInterface*> (control->model()->solver());
+      lpSolver = solver->getModelPtr();
+      solver->messageHandler()->setLogLevel(0) ;
+      control->setIntValue(TESTOSI,0);
+      if (info_.cut) {
+	printf("Sorry - can't do cuts with LOS as ruins delicate row order\n");
+	abort();
+      }
+    }
+    if (info_.cut) {
+      int numberRows = info_.numberRows;
+      int * whichRow = new int [numberRows];
+      // Row copy
+      const CoinPackedMatrix * matrixByRow = solver->getMatrixByRow();
+      const double * elementByRow = matrixByRow->getElements();
+      const int * column = matrixByRow->getIndices();
+      const CoinBigIndex * rowStart = matrixByRow->getVectorStarts();
+      const int * rowLength = matrixByRow->getVectorLengths();
+      
+      const double * rowLower = solver->getRowLower();
+      const double * rowUpper = solver->getRowUpper();
+      int nDelete=0;
+      CglStored storedAmpl;
+      for (int iRow=0;iRow<numberRows;iRow++) {
+	if (info_.cut[iRow]) {
+	  whichRow[nDelete++]=iRow;
+	  int start = rowStart[iRow];
+	  storedAmpl.addCut(rowLower[iRow],rowUpper[iRow],
+			    rowLength[iRow],column+start,elementByRow+start);
+	}
+      }
+      control->addCutGenerator(&storedAmpl);
+      solver->deleteRows(nDelete,whichRow);
+      // and special matrix
+      si->cleanMatrix()->deleteRows(nDelete,whichRow);
+      delete [] whichRow;
+    }
+    // If we had a solution use it
+    if (info_.primalSolution) {
+      solver->setColSolution(info_.primalSolution);
+    }
+    // status
+    if (info_.rowStatus) {
+      unsigned char * statusArray = lpSolver->statusArray();
+      memset(statusArray,0,lpSolver->numberColumns()+lpSolver->numberRows());
+      int i;
+      for (i=0;i<info_.numberColumns;i++)
+	statusArray[i]=(char)info_.columnStatus[i];
+      statusArray+=info_.numberColumns;
+      for (i=0;i<info_.numberRows;i++)
+	statusArray[i]=(char)info_.rowStatus[i];
+      CoinWarmStartBasis * basis = lpSolver->getBasis();
+      solver->setWarmStart(basis);
+      delete basis;
+    }
+    freeArrays1(&info_);
+    // modify objective if necessary
+    solver->setObjSense(info_.direction);
+    solver->setDblParam(OsiObjOffset,info_.offset);
+    if (info_.offset) {
+      sprintf(generalPrint,"Ampl objective offset is %g",
+	      info_.offset);
+      generalMessageHandler->message(CLP_GENERAL,generalMessages)
+	<< generalPrint
+	<<CoinMessageEol;
+    }
+    // Set integer variables (unless nonlinear when set)
+    if (!info_.nonLinear) {
+      for (int i=info_.numberColumns-info_.numberIntegers;
+	   i<info_.numberColumns;i++)
+	solver->setInteger(i);
+    }
+    // change argc etc
+    argc = info_.numberArguments;
+    argv = info_.arguments;
+    return 0;
+  } else {
+    return -1;
+  }
+  abort();
+  return -1;
+}
+// Export 1 OsiClpSolver, 2 CbcModel - add 10 if infeasible from odd situation
+void 
+CbcAmpl::exportSolution(CbcSolver * model, int mode,const char * message)
+{
+  OsiClpSolverInterface * solver = model->originalSolver();
+  if (!solver) {
+    solver = dynamic_cast< OsiClpSolverInterface*> (model->model()->solver());
+    assert (solver);
+  }
+  ClpSimplex * lpSolver = solver->getModelPtr();
+  int numberColumns=lpSolver->numberColumns();
+  int numberRows = lpSolver->numberRows();
+  double totalTime = CoinCpuTime()-model->startTime();
+  if (mode==1) {
+    double value = lpSolver->getObjValue()*lpSolver->getObjSense();
+    char buf[300];
+    int pos=0;
+    int iStat = lpSolver->status();
+    if (iStat==0) {
+      pos += sprintf(buf+pos,"optimal," );
+    } else if (iStat==1) {
+      // infeasible
+      pos += sprintf(buf+pos,"infeasible,");
+    } else if (iStat==2) {
+      // unbounded
+      pos += sprintf(buf+pos,"unbounded,");
+    } else if (iStat==3) {
+      pos += sprintf(buf+pos,"stopped on iterations or time,");
+    } else if (iStat==4) {
+      iStat = 7;
+      pos += sprintf(buf+pos,"stopped on difficulties,");
+    } else if (iStat==5) {
+      iStat = 3;
+      pos += sprintf(buf+pos,"stopped on ctrl-c,");
+    } else {
+      pos += sprintf(buf+pos,"status unknown,");
+      iStat=6;
+    }
+    info_.problemStatus=iStat;
+    info_.objValue = value;
+    pos += sprintf(buf+pos," objective %.*g",ampl_obj_prec(),
+		   value);
+    sprintf(buf+pos,"\n%d iterations",
+	    lpSolver->getIterationCount());
+    free(info_.primalSolution);
+    info_.primalSolution = (double *) malloc(numberColumns*sizeof(double));
+    CoinCopyN(lpSolver->primalColumnSolution(),numberColumns,info_.primalSolution);
+    free(info_.dualSolution);
+    info_.dualSolution = (double *) malloc(numberRows*sizeof(double));
+    CoinCopyN(lpSolver->dualRowSolution(),numberRows,info_.dualSolution);
+    CoinWarmStartBasis * basis = lpSolver->getBasis();
+    free(info_.rowStatus);
+    info_.rowStatus = (int *) malloc(numberRows*sizeof(int));
+    free(info_.columnStatus);
+    info_.columnStatus = (int *) malloc(numberColumns*sizeof(int));
+    // Put basis in 
+    int i;
+    // free,basic,ub,lb are 0,1,2,3
+    for (i=0;i<numberRows;i++) {
+      CoinWarmStartBasis::Status status = basis->getArtifStatus(i);
+      info_.rowStatus[i]=status;
+    }
+    for (i=0;i<numberColumns;i++) {
+      CoinWarmStartBasis::Status status = basis->getStructStatus(i);
+      info_.columnStatus[i]=status;
+    }
+    // put buffer into info_
+    strcpy(info_.buffer,buf);
+    delete basis;
+  } else if (mode==2) {
+    CbcModel * babModel = model->model();
+    int iStat = babModel->status();
+    int iStat2 = babModel->secondaryStatus();
+    double value = babModel->getObjValue()*lpSolver->getObjSense();
+    char buf[300];
+    int pos=0;
+    if (iStat==0) {
+      if (babModel->getObjValue()<1.0e40) {
+	pos += sprintf(buf+pos,"optimal," );
+      } else {
+	// infeasible
+	iStat=1;
+	pos += sprintf(buf+pos,"infeasible,");
+      }
+    } else if (iStat==1) {
+      if (iStat2!=6)
+	iStat=3;
+      else
+	iStat=4;
+      std::string minor[]={"","","gap","nodes","time","","solutions","user ctrl-c"};
+      pos += sprintf(buf+pos,"stopped on %s,",minor[iStat2].c_str());
+    } else if (iStat==2) {
+      iStat = 7;
+      pos += sprintf(buf+pos,"stopped on difficulties,");
+    } else if (iStat==5) {
+      iStat = 3;
+      pos += sprintf(buf+pos,"stopped on ctrl-c,");
+    } else {
+      pos += sprintf(buf+pos,"status unknown,");
+      iStat=6;
+    }
+    info_.problemStatus=iStat;
+    info_.objValue = value;
+    if (babModel->getObjValue()<1.0e40) {
+      int precision = ampl_obj_prec();
+      if (precision>0)
+	pos += sprintf(buf+pos," objective %.*g",precision,
+		       value);
+      else
+	pos += sprintf(buf+pos," objective %g",value);
+    }
+    sprintf(buf+pos,"\n%d nodes, %d iterations, %g seconds",
+	    babModel->getNodeCount(),
+	    babModel->getIterationCount(),
+	    totalTime);
+    if (babModel->bestSolution()) {
+      free(info_.primalSolution);
+      info_.primalSolution = (double *) malloc(numberColumns*sizeof(double));
+      CoinCopyN(lpSolver->primalColumnSolution(),numberColumns,info_.primalSolution);
+      free(info_.dualSolution);
+      info_.dualSolution = (double *) malloc(numberRows*sizeof(double));
+      CoinCopyN(lpSolver->dualRowSolution(),numberRows,info_.dualSolution);
+    } else {
+      info_.primalSolution=NULL;
+      info_.dualSolution=NULL;
+    }
+    // put buffer into info
+    strcpy(info_.buffer,buf);
+  } else if (mode==11||mode==12) {
+    // infeasible
+    info_.problemStatus=1;
+    info_.objValue = 1.0e100;
+    sprintf(info_.buffer,"%s",message);
+    info_.primalSolution=NULL;
+    info_.dualSolution=NULL;
+  }
+}
+// Export Data (i.e. at very end)
+void 
+CbcAmpl::exportData(CbcSolver * model)
+{
+  writeAmpl(&info_);
+  freeArrays2(&info_);
+  freeArgs(&info_);
+}
+// Get useful stuff
+void 
+CbcAmpl::fillInformation(CbcSolver * model,
+			 CbcSolverUsefulData & info)
+{
+  memset(&info,0,sizeof(info));
+  info.priorities_ = info_.priorities;
+  info.sosPriority_ = info_.sosPriority;
+  info.branchDirection_ = info_.branchDirection;
+  info.primalSolution_ = info_.primalSolution;
+  info.pseudoDown_ = info_.pseudoDown;
+  info.pseudoUp_ = info_.pseudoUp;
+}
+void addAmplToCbc(CbcSolver * control)
+{
+  CbcAmpl ampl;
+  control->addUserFunction(&ampl);
+}
 extern "C" {
   //# include "getstub.h"
 # include "asl_pfgh.h"

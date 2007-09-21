@@ -752,6 +752,7 @@ CoinModel::CoinModel( int nonLinear, const char * fileName,const void * info)
     referenceSOS_(NULL),
     priority_(NULL),
     cut_(NULL),
+    moreInfo_(NULL),
     logLevel_(0),
     type_(-1),
     links_(0)

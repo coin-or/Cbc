@@ -1427,6 +1427,27 @@ void CbcModel::branchAndBound(int doStatistics)
   The first action is to winnow the live set to remove nodes which are worse
   than the current objective cutoff.
 */
+  if (solver_->getRowCutDebuggerAlways()) {
+    OsiRowCutDebugger * debuggerX = const_cast<OsiRowCutDebugger *> (solver_->getRowCutDebuggerAlways());
+    const OsiRowCutDebugger *debugger = solver_->getRowCutDebugger() ;
+    if (!debugger) {
+      // infeasible!!
+      printf("before search\n");
+      const double * lower = solver_->getColLower();
+      const double * upper = solver_->getColUpper();
+      const double * solution = debuggerX->optimalSolution();
+      int numberColumns = solver_->getNumCols();
+      for (int i=0;i<numberColumns;i++) {
+	if (solver_->isInteger(i)) {
+	  if (solution[i]<lower[i]-1.0e-6||solution[i]>upper[i]+1.0e-6)
+	    printf("**** ");
+	  printf("%d %g <= %g <= %g\n",
+		 i,lower[i],solution[i],upper[i]);
+	}
+      }
+      //abort();
+    }
+  }
   while (true) {
 #ifdef CBC_THREAD
     if (!locked) {
@@ -7242,7 +7263,7 @@ void CbcModel::setCutoff (double value)
 	isDualObjectiveLimitReached().
 */
 double 
-CbcModel::checkSolution (double cutoff, const double *solution,
+CbcModel::checkSolution (double cutoff, double *solution,
 			 bool fixVariables, double objectiveValue)
 
 {
@@ -7372,7 +7393,6 @@ CbcModel::checkSolution (double cutoff, const double *solution,
     if (objectiveValue>cutoff&&objectiveValue<cutoff+1.0e-8+1.0e-8*fabs(cutoff))
       cutoff = objectiveValue; // relax
     if ((solver_->isProvenOptimal()||(specialOptions_&4)!=0) && objectiveValue <= cutoff) { 
-      double * solution = new double[numberColumns];
       memcpy(solution ,solver_->getColSolution(),numberColumns*sizeof(double)) ;
       
       int iColumn;
@@ -7410,7 +7430,6 @@ CbcModel::checkSolution (double cutoff, const double *solution,
         }
         delete [] rowActivity ;
       }
-      delete [] solution;
     } else {
       objectiveValue=1.0e50 ; 
     }
@@ -7573,10 +7592,11 @@ CbcModel::checkSolution (double cutoff, const double *solution,
 
 void
 CbcModel::setBestSolution (CBC_Message how,
-			   double & objectiveValue, const double *solution,
+			   double & objectiveValue, const double *solutionIn,
 			   bool fixVariables)
 
 {
+  double * solution=CoinCopyOfArray(solutionIn,solver_->getNumCols());
   if (!solverCharacteristics_->solutionAddsCuts()) {
     // Can trust solution
     double cutoff = getCutoff();
@@ -7821,6 +7841,7 @@ CbcModel::setBestSolution (CBC_Message how,
     }
     delete [] candidate;
   }
+  delete [] solution;
   return ;
 }
 

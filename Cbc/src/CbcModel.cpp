@@ -5609,7 +5609,7 @@ void CbcModel::setCutoff (double value)
 	isDualObjectiveLimitReached().
 */
 double 
-CbcModel::checkSolution (double cutoff, const double *solution,
+CbcModel::checkSolution (double cutoff, double *solution,
 			 bool fixVariables, double objectiveValue)
 
 {
@@ -5710,7 +5710,6 @@ CbcModel::checkSolution (double cutoff, const double *solution,
       Perhaps an opportunity for a sanity check?
     */
     if ((solver_->isProvenOptimal()||(specialOptions_&4)!=0) && objectiveValue <= cutoff) { 
-      double * solution = new double[numberColumns];
       memcpy(solution ,solver_->getColSolution(),numberColumns*sizeof(double)) ;
       
       int iColumn;
@@ -5748,7 +5747,6 @@ CbcModel::checkSolution (double cutoff, const double *solution,
         }
         delete [] rowActivity ;
       }
-      delete [] solution;
     } else {
       objectiveValue=1.0e50 ; 
     }
@@ -5903,10 +5901,11 @@ CbcModel::checkSolution (double cutoff, const double *solution,
 
 void
 CbcModel::setBestSolution (CBC_Message how,
-			   double & objectiveValue, const double *solution,
+			   double & objectiveValue, const double *solutionIn,
 			   bool fixVariables)
 
 {
+  double * solution=CoinCopyOfArray(solutionIn,solver_->getNumCols());
   if (!solverCharacteristics_->solutionAddsCuts()) {
     // Can trust solution
     double cutoff = CoinMin(getCutoff(),bestObjective_) ;
@@ -6106,6 +6105,7 @@ CbcModel::setBestSolution (CBC_Message how,
     }
     delete [] candidate;
   }
+  delete [] solution;
   return ;
 }
 

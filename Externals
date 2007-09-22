@@ -4,8 +4,8 @@ ThirdParty/ASL https://projects.coin-or.org/svn/BuildTools/ThirdParty/ASL/stable
 Data/Netlib   https://projects.coin-or.org/svn/Data/stable/1.0/Netlib
 Data/Sample   https://projects.coin-or.org/svn/Data/stable/1.0/Sample
 Data/miplib3  https://projects.coin-or.org/svn/Data/stable/1.0/miplib3
-CoinUtils     https://projects.coin-or.org/svn/CoinUtils/releases/1.1.0/CoinUtils
-Cgl           https://projects.coin-or.org/svn/Cgl/releases/0.5.1/Cgl
-Clp           https://projects.coin-or.org/svn/Clp/releases/1.3.4/Clp
-Osi           https://projects.coin-or.org/svn/Osi/releases/0.95.3/Osi
-Vol           https://projects.coin-or.org/svn/Vol/releases/1.0.0/Vol
+CoinUtils     https://projects.coin-or.org/svn/CoinUtils/stable/1.1/CoinUtils
+Cgl           https://projects.coin-or.org/svn/Cgl/stable/0.5/Cgl
+Clp           https://projects.coin-or.org/svn/Clp/stable/1.3/Clp
+Osi           https://projects.coin-or.org/svn/Osi/stable/0.95/Osi
+Vol           https://projects.coin-or.org/svn/Vol/stable/1.0/Vol

@@ -768,6 +768,10 @@
 					/>
 				</FileConfiguration>
 			</File>
+			<File
+				RelativePath="..\..\..\src\ClpAmplStuff.cpp"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="Header Files"

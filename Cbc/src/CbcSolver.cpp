@@ -1525,7 +1525,7 @@ static OsiClpSolverInterface * fixVubs(CbcModel & model, int skipZero2,
   }
   for (int iPass=0;iPass<2;iPass++) {
     for (int jLayer=0;jLayer<kLayer;jLayer++) {
-      int check[]={-1,0,1,2,3,4,5,10,50,100,500,1000,5000,10000,INT_MAX};
+      int check[]={-1,0,1,2,3,4,5,10,50,100,500,1000,5000,10000,COIN_INT_MAX};
       int nCheck = (int) (sizeof(check)/sizeof(int));
       int countsI[20];
       int countsC[20];

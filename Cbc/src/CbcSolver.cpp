@@ -5418,7 +5418,7 @@ int
                   generator1.setRowCuts(3);
                   // Add in generators
                   process.addCutGenerator(&generator1);
-                  int translate[]={9999,0,0,-1,2,3,-2};
+                  int translate[]={9999,0,0,-1,2,3,-2,9999,4};
 		  process.passInMessageHandler(babModel_->messageHandler());
                   //process.messageHandler()->setLogLevel(babModel_->logLevel());
 #ifdef COIN_HAS_ASL

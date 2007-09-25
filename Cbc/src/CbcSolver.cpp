@@ -15,7 +15,7 @@
 #include "CoinPragma.hpp"
 #include "CoinHelperFunctions.hpp"
 // Version
-#define CBCVERSION "1.04.00"
+#define CBCVERSION "2.00.00"
 
 #include "CoinMpsIO.hpp"
 #include "CoinModel.hpp"
@@ -9433,4 +9433,7 @@ static void generateCode(CbcModel * model, const char * fileName,int type,int pr
   Added first try at Ampl interface
   Version 1.04 June 2007
   Goes parallel
+  Version 2.00 September 2007 
+  Improvements to feaspump
+  Source code changes so up to 2.0
 */

@@ -386,6 +386,191 @@ CbcModel::analyzeObjective ()
 { const double *objective = getObjCoefficients() ;
   const double *lower = getColLower() ;
   const double *upper = getColUpper() ;
+  /*
+    Scan continuous and integer variables to see if continuous
+    are cover or network with integral rhs.
+  */
+  double continuousMultiplier = 1.0;
+  double * coeffMultiplier=NULL;
+  {
+    const double *rowLower = getRowLower() ;
+    const double *rowUpper = getRowUpper() ;
+    int numberRows = solver_->getNumRows() ;
+    double * rhs = new double [numberRows];
+    memset(rhs,0,numberRows*sizeof(double));
+    int iColumn;
+    int numberColumns = solver_->getNumCols() ;
+    // Column copy of matrix
+    const double * element = solver_->getMatrixByCol()->getElements();
+    const int * row = solver_->getMatrixByCol()->getIndices();
+    const CoinBigIndex * columnStart = solver_->getMatrixByCol()->getVectorStarts();
+    const int * columnLength = solver_->getMatrixByCol()->getVectorLengths();
+    for (iColumn=0;iColumn<numberColumns;iColumn++) {
+      if (upper[iColumn]==lower[iColumn]) {
+	CoinBigIndex start = columnStart[iColumn];
+	CoinBigIndex end = start + columnLength[iColumn];
+	for (CoinBigIndex j=start;j<end;j++) {
+	  int iRow = row[j];
+	  rhs[iRow] += lower[iColumn]*element[j];
+	}
+      }
+    }
+    int iRow;
+    for (iRow=0;iRow<numberRows;iRow++) {
+      if (rowLower[iRow]>-1.0e20&&
+	  fabs(rowLower[iRow]-rhs[iRow]-floor(rowLower[iRow]-rhs[iRow]+0.5))>1.0e-10) {
+	continuousMultiplier=0.0;
+	break;
+      }
+      if (rowUpper[iRow]<1.0e20&&
+	  fabs(rowUpper[iRow]-rhs[iRow]-floor(rowUpper[iRow]-rhs[iRow]+0.5))>1.0e-10) {
+	continuousMultiplier=0.0;
+	break;
+      }
+      // set rhs to limiting value
+      if (rowLower[iRow]!=rowUpper[iRow]) {
+	if(rowLower[iRow]>-1.0e20) {
+	  if (rowUpper[iRow]<1.0e20) {
+	    // no good
+	    continuousMultiplier=0.0;
+	    break;
+	  } else {
+	    rhs[iRow] = rowLower[iRow]-rhs[iRow];
+	  }
+	} else {
+	  rhs[iRow] = rowUpper[iRow]-rhs[iRow];
+	}
+      } else {
+	rhs[iRow] = rowUpper[iRow]-rhs[iRow];
+      }
+    }
+    if (continuousMultiplier) {
+      // 1 network, 2 cover, 4 negative cover
+      int possible=7;
+      bool unitRhs=true;
+      // See which rows could be set cover
+      for (iColumn=0;iColumn<numberColumns;iColumn++) {
+	if (upper[iColumn] > lower[iColumn]+1.0e-8) {
+	  CoinBigIndex start = columnStart[iColumn];
+	  CoinBigIndex end = start + columnLength[iColumn];
+	  for (CoinBigIndex j=start;j<end;j++) {
+	    double value = element[j];
+	    if (value!=1.0)
+	      rhs[row[j]]=-0.5;
+	    else if (value!=-1.0)
+	      rhs[row[j]]=-COIN_DBL_MAX;
+	  }
+	}
+      }
+      for (iColumn=0;iColumn<numberColumns;iColumn++) {
+	if (upper[iColumn] > lower[iColumn]+1.0e-8) {
+	  if (!isInteger(iColumn)) {
+	    CoinBigIndex start = columnStart[iColumn];
+	    CoinBigIndex end = start + columnLength[iColumn];
+	    double rhsValue=0.0;
+	    // 1 all ones, -1 all -1s, 2 all +- 1, 3 no good
+	    int type=0;
+	    for (CoinBigIndex j=start;j<end;j++) {
+	      double value = element[j];
+	      if (fabs(value!=1.0)) {
+		type=3;
+		break;
+	      } else if (value==1.0) {
+		if (!type) 
+		  type=1;
+		else if (type!=1)
+		  type=2;
+	      } else {
+		if (!type) 
+		  type=-1;
+		else if (type!=-1)
+		  type=2;
+	      }
+	      int iRow = row[j];
+	      if (rhs[iRow]==-COIN_DBL_MAX) {
+		type=3;
+		break;
+	      } else if (rhs[iRow]==-0.5) {
+		// different values
+		unitRhs=false;
+	      } else if (rhsValue) {
+		if (rhsValue!=rhs[iRow])
+		  unitRhs=false;
+	      } else {
+		rhsValue=rhs[iRow];
+	      }
+	    }
+	    // if no elements OK
+	    if (type==3) {
+	      // no good
+	      possible=0;
+	      break;
+	    } else if (type==2) {
+	      if (end-start>2) {
+		// no good
+		possible=0;
+		break;
+	      } else {
+		// only network
+		possible &= 1;
+		if (!possible)
+		  break;
+	      }
+	    } else if (type==1) {
+	      // only cover
+	      possible &= 2;
+	      if (!possible)
+		break;
+	    } else if (type==-1) {
+	      // only negative cover
+	      possible &= 4;
+	      if (!possible)
+		break;
+	    }
+	  }
+	}
+      }
+      if ((possible==2||possible==4)&&!unitRhs) {
+	printf("XXXXXX Continuous all +1 but different rhs\n");
+	possible=0;
+      }
+      // may be all integer
+      if (possible!=7) {
+	if (!possible)
+	  continuousMultiplier=0.0;
+	else if (possible==1)
+	  continuousMultiplier=1.0;
+	else 
+	  continuousMultiplier=0.5;
+	if (continuousMultiplier)
+	  printf("XXXXXX multiplier of %g\n",continuousMultiplier);
+	if (continuousMultiplier==0.5) {
+	  coeffMultiplier=new double [numberColumns];
+	  bool allOne=true;
+	  for (iColumn=0;iColumn<numberColumns;iColumn++) {
+	    coeffMultiplier[iColumn]=1.0;
+	    if (upper[iColumn] > lower[iColumn]+1.0e-8) {
+	      if (!isInteger(iColumn)) {
+		CoinBigIndex start = columnStart[iColumn];
+		int iRow = row[start];
+		double value = rhs[iRow];
+		assert (value>=0.0);
+		if (value!=0.0&&value!=1.0)
+		  allOne=false;
+		coeffMultiplier[iColumn]=0.5*value;
+	      }
+	    }
+	  }
+	  if (allOne) {
+	    // back to old way
+	    delete [] coeffMultiplier;
+	    coeffMultiplier=NULL;
+	  }
+	}
+      }
+    }
+    delete [] rhs;
+  }
 /*
   Take a first scan to see if there are unfixed continuous variables in the
   objective.  If so, the minimum objective change could be arbitrarily small.
@@ -396,15 +581,14 @@ CbcModel::analyzeObjective ()
 */
   double maximumCost = 0.0 ;
   trueIncrement=0.0;
-  bool possibleMultiple = true ;
+  bool possibleMultiple = continuousMultiplier!=0.0 ;
   int iColumn ;
   int numberColumns = getNumCols() ;
-  for (iColumn = 0 ; iColumn < numberColumns ; iColumn++)
-  { if (upper[iColumn] > lower[iColumn]+1.0e-8)
-    { if (isInteger(iColumn)) 
-	maximumCost = CoinMax(maximumCost,fabs(objective[iColumn])) ;
-      else if (objective[iColumn]) 
-	possibleMultiple = false ; } }
+  if (possibleMultiple) {
+    for (iColumn = 0 ; iColumn < numberColumns ; iColumn++)
+      { if (upper[iColumn] > lower[iColumn]+1.0e-8)
+	  { maximumCost = CoinMax(maximumCost,fabs(objective[iColumn])) ; } }
+  }
   setIntParam(CbcModel::CbcFathomDiscipline,possibleMultiple) ;
 /*
   If a nontrivial increment is possible, try and figure it out. We're looking
@@ -423,8 +607,15 @@ CbcModel::analyzeObjective ()
     int bigIntegers = 0; // Count of large costs which are integer
     for (iColumn = 0 ; iColumn < numberColumns ; iColumn++) {
       if (upper[iColumn] > lower[iColumn]+1.0e-8) {
-	if (isInteger(iColumn)&&objective[iColumn]) {
-	  double value = fabs(objective[iColumn])*multiplier ;
+	double objValue = fabs(objective[iColumn]);
+	if (!isInteger(iColumn)) {
+	  if (!coeffMultiplier)
+	    objValue *= continuousMultiplier;
+	  else
+	    objValue *= coeffMultiplier[iColumn];
+	}
+	if (objValue) {
+	  double value = objValue*multiplier ;
 	  if (value <2.1e9) {
 	    int nearest = (int) floor(value+0.5) ;
 	    if (fabs(value-floor(value+0.5)) > 1.0e-8)
@@ -436,8 +627,7 @@ CbcModel::analyzeObjective ()
 	      { increment = gcd(increment,nearest) ; }
 	  } else {
 	    // large value - may still be multiple of 1.0
-	    value = fabs(objective[iColumn]);
-	    if (fabs(value-floor(value+0.5)) > 1.0e-8) {
+	    if (fabs(objValue-floor(objValue+0.5)) > 1.0e-8) {
 	      increment=0;
 	      break;
 	    } else {
@@ -447,7 +637,7 @@ CbcModel::analyzeObjective ()
 	}
       }
     }
-
+    delete [] coeffMultiplier;
 /*
   If the increment beats the current value for objective change, install it.
 */

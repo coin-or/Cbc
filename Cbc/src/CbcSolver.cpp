@@ -15,7 +15,7 @@
 #include "CoinPragma.hpp"
 #include "CoinHelperFunctions.hpp"
 // Version
-#define CBCVERSION "1.04.00"
+#define CBCVERSION "2.00.00"
 
 #include "CoinMpsIO.hpp"
 #include "CoinModel.hpp"
@@ -64,6 +64,10 @@ void * operator new (size_t size) throw (std::bad_alloc)
     }
   }
   void * p =malloc(size);
+  //char * xx = (char *) p;
+  //memset(xx,0,size);
+  // Initialize random seed
+  //CoinSeedRandom(987654321);
   return p;
 }
 void operator delete (void *p) throw()
@@ -727,7 +731,7 @@ CbcStopNow::clone() const
   return new CbcStopNow(*this);
 }
 //#define NEW_STYLE_SOLVER
-#undef COIN_HAS_ASL
+//#undef COIN_HAS_ASL
 #ifdef COIN_HAS_ASL
 #include "Cbc_ampl.h"
 #endif
@@ -1525,7 +1529,7 @@ static OsiClpSolverInterface * fixVubs(CbcModel & model, int skipZero2,
   }
   for (int iPass=0;iPass<2;iPass++) {
     for (int jLayer=0;jLayer<kLayer;jLayer++) {
-      int check[]={-1,0,1,2,3,4,5,10,50,100,500,1000,5000,10000,INT_MAX};
+      int check[]={-1,0,1,2,3,4,5,10,50,100,500,1000,5000,10000,COIN_INT_MAX};
       int nCheck = (int) (sizeof(check)/sizeof(int));
       int countsI[20];
       int countsC[20];
@@ -4917,6 +4921,46 @@ int
 	      if (model_.bestSolution()) {
 		model_.setProblemStatus(1);
 		model_.setSecondaryStatus(6);
+#ifdef COIN_HAS_ASL
+		if (statusUserFunction_[0]) {
+		  double value = model_.getObjValue();
+		  char buf[300];
+		  int pos=0;
+		  pos += sprintf(buf+pos,"feasible,");
+		  info.problemStatus=0;
+		  info.objValue = value;
+		  pos += sprintf(buf+pos," objective %.*g",ampl_obj_prec(),
+				 value);
+		  sprintf(buf+pos,"\n0 iterations");
+		  free(info.primalSolution);
+		  int numberColumns=lpSolver->numberColumns();
+		  info.primalSolution = (double *) malloc(numberColumns*sizeof(double));
+		  CoinCopyN(model_.bestSolution(),numberColumns,info.primalSolution);
+		  int numberRows = lpSolver->numberRows();
+		  free(info.dualSolution);
+		  info.dualSolution = (double *) malloc(numberRows*sizeof(double));
+		  CoinZeroN(info.dualSolution,numberRows);
+		  CoinWarmStartBasis * basis = lpSolver->getBasis();
+		  free(info.rowStatus);
+		  info.rowStatus = (int *) malloc(numberRows*sizeof(int));
+		  free(info.columnStatus);
+		  info.columnStatus = (int *) malloc(numberColumns*sizeof(int));
+		  // Put basis in 
+		  int i;
+		  // free,basic,ub,lb are 0,1,2,3
+		  for (i=0;i<numberRows;i++) {
+		    CoinWarmStartBasis::Status status = basis->getArtifStatus(i);
+		    info.rowStatus[i]=status;
+		  }
+		  for (i=0;i<numberColumns;i++) {
+		    CoinWarmStartBasis::Status status = basis->getStructStatus(i);
+		    info.columnStatus[i]=status;
+		  }
+		  // put buffer into info
+		  strcpy(info.buffer,buf);
+		  delete basis;
+		}
+#endif
 	      }
 #ifdef NEW_STYLE_SOLVER
 	      int returnCode = callBack_->callBack(&model_,6);
@@ -9433,4 +9477,7 @@ static void generateCode(CbcModel * model, const char * fileName,int type,int pr
   Added first try at Ampl interface
   Version 1.04 June 2007
   Goes parallel
+  Version 2.00 September 2007 
+  Improvements to feaspump
+  Source code changes so up to 2.0
 */

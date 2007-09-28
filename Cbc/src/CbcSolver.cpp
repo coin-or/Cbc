@@ -727,7 +727,7 @@ CbcStopNow::clone() const
   return new CbcStopNow(*this);
 }
 //#define NEW_STYLE_SOLVER
-#undef COIN_HAS_ASL
+//#undef COIN_HAS_ASL
 #ifdef COIN_HAS_ASL
 #include "Cbc_ampl.h"
 #endif

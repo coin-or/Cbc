@@ -472,7 +472,7 @@ CbcModel::analyzeObjective ()
 	    int type=0;
 	    for (CoinBigIndex j=start;j<end;j++) {
 	      double value = element[j];
-	      if (fabs(value!=1.0)) {
+	      if (fabs(value)!=1.0) {
 		type=3;
 		break;
 	      } else if (value==1.0) {
@@ -531,7 +531,9 @@ CbcModel::analyzeObjective ()
 	}
       }
       if ((possible==2||possible==4)&&!unitRhs) {
+#ifdef COIN_DEVELOP
 	printf("XXXXXX Continuous all +1 but different rhs\n");
+#endif
 	possible=0;
       }
       // may be all integer
@@ -542,8 +544,10 @@ CbcModel::analyzeObjective ()
 	  continuousMultiplier=1.0;
 	else 
 	  continuousMultiplier=0.5;
+#ifdef COIN_DEVELOP
 	if (continuousMultiplier)
 	  printf("XXXXXX multiplier of %g\n",continuousMultiplier);
+#endif
 	if (continuousMultiplier==0.5) {
 	  coeffMultiplier=new double [numberColumns];
 	  bool allOne=true;

@@ -156,8 +156,10 @@ CbcAmpl::importData(CbcSolver * control, int &argc, char * argv[])
 	}
       }
     }
-    CoinModel * coinModel=NULL;
-    int returnCode = readAmpl(&info_,argc, argv,(void **) (& coinModel));
+    union { void * voidModel; CoinModel * model; } coinModelStart;
+    coinModelStart.model=NULL;
+    int returnCode = readAmpl(&info_,argc, argv,& coinModelStart.voidModel);
+    CoinModel * coinModel=coinModelStart.model;
     if (returnCode)
       return returnCode;
     control->setReadMode(3); // so will start with parameters

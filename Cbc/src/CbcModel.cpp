@@ -401,6 +401,9 @@ CbcModel::analyzeObjective ()
     int iColumn;
     int numberColumns = solver_->getNumCols() ;
     // Column copy of matrix
+    bool allPlusOnes=true;
+    bool allOnes=true;
+    int problemType=-1;
     const double * element = solver_->getMatrixByCol()->getElements();
     const int * row = solver_->getMatrixByCol()->getIndices();
     const CoinBigIndex * columnStart = solver_->getMatrixByCol()->getVectorStarts();
@@ -436,13 +439,27 @@ CbcModel::analyzeObjective ()
 	    break;
 	  } else {
 	    rhs[iRow] = rowLower[iRow]-rhs[iRow];
+	    if (problemType<0)
+	      problemType=3; // set cover
+	    else if (problemType!=3)
+	      problemType=4;
 	  }
 	} else {
 	  rhs[iRow] = rowUpper[iRow]-rhs[iRow];
+	    if (problemType<0)
+	      problemType=1; // set partitioning <=
+	    else if (problemType!=1)
+	      problemType=4;
 	}
       } else {
 	rhs[iRow] = rowUpper[iRow]-rhs[iRow];
+	if (problemType<0)
+	  problemType=3; // set partitioning ==
+	else if (problemType!=2)
+	  problemType=2;
       }
+      if (fabs(rhs[iRow]-1.0)>1.0e-12)
+	problemType=4;
     }
     if (continuousMultiplier) {
       // 1 network, 2 cover, 4 negative cover
@@ -455,10 +472,14 @@ CbcModel::analyzeObjective ()
 	  CoinBigIndex end = start + columnLength[iColumn];
 	  for (CoinBigIndex j=start;j<end;j++) {
 	    double value = element[j];
-	    if (value!=1.0)
+	    if (value==1.0) {
+	    } else if (value==-1.0) {
 	      rhs[row[j]]=-0.5;
-	    else if (value!=-1.0)
+	      allPlusOnes=false;
+	    } else {
 	      rhs[row[j]]=-COIN_DBL_MAX;
+	      allOnes=false;
+	    }
 	  }
 	}
       }
@@ -571,6 +592,12 @@ CbcModel::analyzeObjective ()
 	    coeffMultiplier=NULL;
 	  }
 	}
+      } else {
+	// all integer
+	problemType_= problemType;
+#ifdef COIN_DEVELOP
+	printf("Problem type is %d\n",problemType_);
+#endif
       }
     }
     delete [] rhs;
@@ -889,7 +916,8 @@ void CbcModel::branchAndBound(int doStatistics)
   if (eventHandler)
     eventHandler->setModel(this);
   // set up for probing
-  probingInfo_ = new CglTreeProbingInfo(solver_);
+  //probingInfo_ = new CglTreeProbingInfo(solver_);
+  probingInfo_=NULL;
 
   // Try for dominated columns
   if ((specialOptions_&64)!=0) {
@@ -1542,6 +1570,7 @@ void CbcModel::branchAndBound(int doStatistics)
   double timeWaiting=0.0;
   // For now just one model
   if (numberThreads_) {
+    nodeCompare_->sayThreaded(); // need to use addresses
     threadId = new pthread_t [numberThreads_];
     threadCount = new int [numberThreads_];
     CoinZeroN(threadCount,numberThreads_);
@@ -4749,8 +4778,23 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
 	  value = ceil(value)-value;
 	else
 	  value = value -floor(value);
+#if 1
+	OsiBranchingInformation usefulInfo=usefulInformation();
+	OsiHotInfo hotInfo(solver_,&usefulInfo,&object,0);
+	if (branch) {
+	  hotInfo.setUpStatus(iStatus);
+	  hotInfo.setUpChange(changeInObjective);
+	  //object->setUpEstimate(value);
+	} else {
+	  hotInfo.setDownStatus(iStatus);
+	  hotInfo.setDownChange(changeInObjective);
+	  //object->setDownEstimate(value);
+	}
+	branchingMethod_->chooseMethod()->updateInformation(&usefulInfo,branch,&hotInfo);
+#else
 	branchingMethod_->chooseMethod()->updateInformation(iObject,branch,changeInObjective,
 							    value,iStatus);
+#endif
       }
     }
   }

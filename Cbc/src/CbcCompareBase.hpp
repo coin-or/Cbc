@@ -24,7 +24,7 @@ class CbcTree;
 class CbcCompareBase {
 public:
   // Default Constructor 
-  CbcCompareBase () {test_=NULL;}
+  CbcCompareBase () {test_=NULL;threaded_=false;}
 
   // This allows any method to change behavior as it is called
   // after each solution
@@ -52,11 +52,11 @@ public:
 
   // Copy constructor 
   CbcCompareBase ( const CbcCompareBase & rhs)
-  {test_=rhs.test_;}
+  {test_=rhs.test_;threaded_=rhs.threaded_;}
    
   // Assignment operator 
   CbcCompareBase & operator=( const CbcCompareBase& rhs)
-  {  if (this!=&rhs) {test_=rhs.test_;}
+  {  if (this!=&rhs) {test_=rhs.test_;threaded_=rhs.threaded_;}
   return *this;
   }
 
@@ -78,23 +78,28 @@ public:
   {
     assert (x);
     assert (y);
-#ifndef CBC_THREAD
-    CbcNodeInfo * infoX = x->nodeInfo();
-    assert (infoX);
-    int nodeNumberX = infoX->nodeNumber();
-    CbcNodeInfo * infoY = y->nodeInfo();
-    assert (infoY);
-    int nodeNumberY = infoY->nodeNumber();
-    assert (nodeNumberX!=nodeNumberY);
-    return (nodeNumberX>nodeNumberY);
-#else
-    // doesn't work if threaded
-    assert (x!=y);
-    return (x>y);
-#endif
+    if (!threaded_) {
+      CbcNodeInfo * infoX = x->nodeInfo();
+      assert (infoX);
+      int nodeNumberX = infoX->nodeNumber();
+      CbcNodeInfo * infoY = y->nodeInfo();
+      assert (infoY);
+      int nodeNumberY = infoY->nodeNumber();
+      assert (nodeNumberX!=nodeNumberY);
+      return (nodeNumberX>nodeNumberY);
+    } else {
+      // doesn't work if threaded
+      assert (x!=y);
+      return (x>y);
+    }
   }
+  /// Say threaded
+  inline void sayThreaded()
+  { threaded_ = true;}
 protected:
   CbcCompareBase * test_;
+  // If not threaded we can use better way to break ties
+  bool threaded_;
 };
 class CbcCompare {
 public:

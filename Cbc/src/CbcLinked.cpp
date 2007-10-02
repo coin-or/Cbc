@@ -8026,40 +8026,29 @@ OsiChooseStrongSubset::setupList ( OsiBranchingInformation *info, bool initializ
   OsiSolverLink * solver = dynamic_cast<OsiSolverLink *> (solverA);
   assert (solver);
   int numberObjects = solver->numberObjects();
-  if (numberObjects>numberObjects_) {
+  if (numberObjects>numberObjects()) {
     // redo useful arrays
-    delete [] upTotalChange_;
-    delete [] downTotalChange_;
-    delete [] upNumber_;
-    delete [] downNumber_;
-    numberObjects_ = solver->numberObjects();
-    upTotalChange_ = new double [numberObjects_];
-    downTotalChange_ = new double [numberObjects_];
-    upNumber_ = new int [numberObjects_];
-    downNumber_ = new int [numberObjects_];
-    CoinZeroN(upTotalChange_,numberObjects_);
-    CoinZeroN(downTotalChange_,numberObjects_);
-    CoinZeroN(upNumber_,numberObjects_);
-    CoinZeroN(downNumber_,numberObjects_);
+    pseudoCosts_->initialize(numberObjects);
   }
+  int numObj = numberObjects;
   if (numberObjectsToUse_<0) {
     // Sort objects so bilinear at end
     OsiObject ** sorted = new OsiObject * [numberObjects];
     OsiObject ** objects = solver->objects();
-    numberObjects_=0;
+    numObj=0;
     int numberBiLinear=0;
     int i;
     for (i=0;i<numberObjects;i++) {
       OsiObject * obj = objects[i];
       OsiBiLinear * objB = dynamic_cast<OsiBiLinear *> (obj);
       if (!objB)
-	objects[numberObjects_++]=obj;
+	objects[numObj++]=obj;
       else
 	sorted[numberBiLinear++]=obj;
     }
-    numberObjectsToUse_ = numberObjects_;
+    numberObjectsToUse_ = numObj;
     for (i=0;i<numberBiLinear;i++) 
-      objects[numberObjects_++]=sorted[i];
+      objects[numObj++]=sorted[i];
     delete [] sorted;
     // See if any master objects
     for (i=0;i<numberObjectsToUse_;i++) {
@@ -8069,12 +8058,12 @@ OsiChooseStrongSubset::setupList ( OsiBranchingInformation *info, bool initializ
     }
   }
   solver->setNumberObjects(numberObjectsToUse_);
-  numberObjects_=numberObjectsToUse_;
+  numObj=numberObjectsToUse_;
   // Use shadow prices
   //info->defaultDual_=0.0;
   int numberUnsatisfied=OsiChooseStrong::setupList ( info, initialize);
   solver->setNumberObjects(numberObjects);
-  numberObjects_=numberObjects;
+  numObj=numberObjects;
   return numberUnsatisfied;
 }
 /* Choose a variable

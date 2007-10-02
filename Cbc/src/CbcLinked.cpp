@@ -8026,9 +8026,9 @@ OsiChooseStrongSubset::setupList ( OsiBranchingInformation *info, bool initializ
   OsiSolverLink * solver = dynamic_cast<OsiSolverLink *> (solverA);
   assert (solver);
   int numberObjects = solver->numberObjects();
-  if (numberObjects>pseudoCosts_->numberObjects()) {
+  if (numberObjects>pseudoCosts_.numberObjects()) {
     // redo useful arrays
-    pseudoCosts_->initialize(numberObjects);
+    pseudoCosts_.initialize(numberObjects);
   }
   int numObj = numberObjects;
   if (numberObjectsToUse_<0) {

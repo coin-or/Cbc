@@ -2,7 +2,7 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="7.10"
-	Name="cbc"
+	Name="cbcGeneric"
 	SccProjectName=""
 	SccLocalPath="">
 	<Platforms>
@@ -22,7 +22,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				InlineFunctionExpansion="1"
-				AdditionalIncludeDirectories="..\..\..\..\Osi\src\OsiCbc,..\..\..\..\Osi\src,..\..\..\..\Cgl\src\CglTwomir,..\..\..\..\Cgl\src\CglMixedIntegerRounding,..\..\..\..\Cgl\src\CglMixedIntegerRounding2,..\..\..\..\Cgl\src\CglFlowCover,..\..\..\..\Cgl\src\CglClique,..\..\..\..\Cgl\src\CglOddHole,..\..\..\..\Cgl\src\CglKnapsackCover,..\..\..\..\Cgl\src\CglGomory,..\..\..\..\Cgl\src\CglPreProcess,..\..\..\..\Cgl\src\CglProbing,..\..\..\..\Cgl\src,..\..\..\..\Clp\src,..\..\..\..\Osi\src\OsiClp,..\..\..\..\CoinUtils\src,..\..\..\..\BuildTools\headers"
+				AdditionalIncludeDirectories="..\..\..\..\Osi\src\OsiCbc;..\..\..\..\Osi\src;..\..\..\..\Cgl\src\CglTwomir;..\..\..\..\Cgl\src\CglMixedIntegerRounding;..\..\..\..\Cgl\src\CglMixedIntegerRounding2;..\..\..\..\Cgl\src\CglFlowCover;..\..\..\..\Cgl\src\CglClique;..\..\..\..\Cgl\src\CglOddHole;..\..\..\..\Cgl\src\CglKnapsackCover;..\..\..\..\Cgl\src\CglGomory;..\..\..\..\Cgl\src\CglPreProcess;..\..\..\..\Cgl\src\CglRedSplit;..\..\..\..\Cgl\src\CglProbing;..\..\..\..\Cgl\src;..\..\..\..\Clp\src;..\..\..\..\Osi\src\OsiClp;..\..\..\..\CoinUtils\src;..\..\..\..\BuildTools\headers"
 				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE"
 				StringPooling="TRUE"
 				RuntimeLibrary="4"
@@ -82,7 +82,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\..\..\..\Osi\src\OsiCbc,..\..\..\..\Osi\src,..\..\..\..\Cgl\src\CglTwomir,..\..\..\..\Cgl\src\CglMixedIntegerRounding,..\..\..\..\Cgl\src\CglMixedIntegerRounding2,..\..\..\..\Cgl\src\CglFlowCover,..\..\..\..\Cgl\src\CglClique,..\..\..\..\Cgl\src\CglOddHole,..\..\..\..\Cgl\src\CglKnapsackCover,..\..\..\..\Cgl\src\CglGomory,..\..\..\..\Cgl\src\CglPreProcess,..\..\..\..\Cgl\src\CglProbing,..\..\..\..\Cgl\src,..\..\..\..\Clp\src,..\..\..\..\Osi\src\OsiClp,..\..\..\..\CoinUtils\src,..\..\..\..\BuildTools\headers"
+				AdditionalIncludeDirectories="..\..\..\..\Osi\src\OsiCbc;..\..\..\..\Osi\src;..\..\..\..\Cgl\src\CglTwomir;..\..\..\..\Cgl\src\CglMixedIntegerRounding;..\..\..\..\Cgl\src\CglMixedIntegerRounding2;..\..\..\..\Cgl\src\CglFlowCover;..\..\..\..\Cgl\src\CglClique;..\..\..\..\Cgl\src\CglOddHole;..\..\..\..\Cgl\src\CglKnapsackCover;..\..\..\..\Cgl\src\CglGomory;..\..\..\..\Cgl\src\CglPreProcess;..\..\..\..\Cgl\src\CglRedSplit;..\..\..\..\Cgl\src\CglProbing;..\..\..\..\Cgl\src;..\..\..\..\Clp\src;..\..\..\..\Osi\src\OsiClp;..\..\..\..\CoinUtils\src;..\..\..\..\BuildTools\headers"
 				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="5"
@@ -140,44 +140,40 @@
 			Name="Source Files"
 			Filter="cpp;c;cxx;rc;def;r;odl;idl;hpj;bat">
 			<File
-				RelativePath="..\..\..\..\Cbc\src\CbcMain.cpp">
-				<FileConfiguration
-					Name="Release|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="2"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Debug|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="0"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-						BasicRuntimeChecks="3"/>
-				</FileConfiguration>
+				RelativePath="..\..\..\src\CbcGenBaB.cpp">
 			</File>
 			<File
-				RelativePath="..\..\..\..\Cbc\src\unitTest.cpp">
-				<FileConfiguration
-					Name="Release|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="2"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Debug|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="0"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-						BasicRuntimeChecks="3"/>
-				</FileConfiguration>
+				RelativePath="..\..\..\src\CbcGenCbcParam.cpp">
+			</File>
+			<File
+				RelativePath="..\..\..\src\CbcGenCbcParamUtils.cpp">
+			</File>
+			<File
+				RelativePath="..\..\..\src\CbcGenCtlBlk.cpp">
+			</File>
+			<File
+				RelativePath="..\..\..\src\CbcGeneric.cpp">
+			</File>
+			<File
+				RelativePath="..\..\..\src\CbcGenMessages.cpp">
+			</File>
+			<File
+				RelativePath="..\..\..\src\CbcGenOsiParam.cpp">
+			</File>
+			<File
+				RelativePath="..\..\..\src\CbcGenOsiParamUtils.cpp">
+			</File>
+			<File
+				RelativePath="..\..\..\src\CbcGenParam.cpp">
+			</File>
+			<File
+				RelativePath="..\..\..\src\CbcGenParamUtils.cpp">
+			</File>
+			<File
+				RelativePath="..\..\..\src\CbcGenSolution.cpp">
+			</File>
+			<File
+				RelativePath="..\..\..\src\CbcGenSolvers.cpp">
 			</File>
 		</Filter>
 		<Filter
@@ -200,6 +196,21 @@
 			</File>
 			<File
 				RelativePath="..\..\..\..\Cbc\src\CbcEventHandler.hpp">
+			</File>
+			<File
+				RelativePath="..\..\..\src\CbcGenCbcParam.hpp">
+			</File>
+			<File
+				RelativePath="..\..\..\src\CbcGenCtlBlk.hpp">
+			</File>
+			<File
+				RelativePath="..\..\..\src\CbcGenMessages.hpp">
+			</File>
+			<File
+				RelativePath="..\..\..\src\CbcGenOsiParam.hpp">
+			</File>
+			<File
+				RelativePath="..\..\..\src\CbcGenParam.hpp">
 			</File>
 			<File
 				RelativePath="..\..\..\..\Cbc\src\CbcHeuristic.hpp">

@@ -449,6 +449,9 @@
 				RelativePath="..\..\..\src\CbcHeuristicRINS.cpp">
 			</File>
 			<File
+				RelativePath="..\..\..\src\CbcLinked.cpp">
+			</File>
+			<File
 				RelativePath="..\..\..\..\Cbc\src\CbcMessage.cpp">
 				<FileConfiguration
 					Name="Debug|Win32">
@@ -608,6 +611,9 @@
 						PreprocessorDefinitions=""/>
 				</FileConfiguration>
 			</File>
+			<File
+				RelativePath="..\..\..\src\ClpAmplStuff.cpp">
+			</File>
 		</Filter>
 		<Filter
 			Name="Header Files"
@@ -674,6 +680,9 @@
 			</File>
 			<File
 				RelativePath="..\..\..\src\CbcHeuristicRINS.hpp">
+			</File>
+			<File
+				RelativePath="..\..\..\src\CbcLinked.hpp">
 			</File>
 			<File
 				RelativePath="..\..\..\..\Cbc\src\CbcMessage.hpp">

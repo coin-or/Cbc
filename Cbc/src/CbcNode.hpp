@@ -350,6 +350,18 @@ public:
   
   /// Clone
   virtual CbcNodeInfo * clone() const;
+  /// Basis diff information
+  inline const CoinWarmStartDiff *basisDiff() const
+  { return basisDiff_ ;}
+  /// Which variable (top bit if upper bound changing)
+  inline const int * variables() const
+  { return variables_;}
+  // New bound
+  inline const double * newBounds() const
+  { return newBounds_;}
+  /// Number of bound changes
+  inline int numberChangedBounds() const
+  { return numberChangedBounds_;}
 protected:
   /* Data values */
 

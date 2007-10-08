@@ -138,6 +138,7 @@ CbcStrategyDefault::setupCutGenerators(CbcModel & model)
   CglProbing generator1;
   generator1.setUsingObjective(true);
   generator1.setMaxPass(1);
+  generator1.setMaxPassRoot(1);
   // Number of unsatisfied variables to look at
   generator1.setMaxProbe(10);
   // How far to follow the consequences
@@ -369,7 +370,8 @@ CbcStrategyDefault::setupOther(CbcModel & model)
     // Default set of cut generators
     CglProbing generator1;
     generator1.setUsingObjective(true);
-    generator1.setMaxPass(3);
+    generator1.setMaxPass(1);
+    generator1.setMaxPassRoot(1);
     generator1.setMaxProbeRoot(solver->getNumCols());
     generator1.setMaxElements(100);
     generator1.setMaxLookRoot(50);
@@ -378,7 +380,7 @@ CbcStrategyDefault::setupOther(CbcModel & model)
     // Not needed with pass in process->messageHandler()->setLogLevel(logLevel);
     // Add in generators
     process->addCutGenerator(&generator1);
-    int translate[]={9999,0,3,2,-1,-2};
+    int translate[]={9999,0,2,-2,3,4,4};
     OsiSolverInterface * solver2 = 
       process->preProcessNonDefault(*solver,
                                     translate[desiredPreProcess_],preProcessPasses_);

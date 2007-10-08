@@ -11,7 +11,6 @@
 #include <cstring>
 #include <iostream>
 
-
 #include "CoinPragma.hpp"
 #include "CoinHelperFunctions.hpp"
 // Version
@@ -448,7 +447,7 @@ void CbcSolver::fillParameters()
   parameters_[whichParam(THREADS,numberParameters_,parameters_)].setIntValue(0);
 #endif
   // Set up likely cut generators and defaults
-  parameters_[whichParam(PREPROCESS,numberParameters_,parameters_)].setCurrentOption("on");
+  parameters_[whichParam(PREPROCESS,numberParameters_,parameters_)].setCurrentOption("sos");
   parameters_[whichParam(MIPOPTIONS,numberParameters_,parameters_)].setIntValue(128|64|1);
   parameters_[whichParam(MIPOPTIONS,numberParameters_,parameters_)].setIntValue(1);
   parameters_[whichParam(CUTPASSINTREE,numberParameters_,parameters_)].setIntValue(1);
@@ -730,7 +729,7 @@ CbcStopNow::clone() const
 {
   return new CbcStopNow(*this);
 }
-//#define NEW_STYLE_SOLVER
+#define NEW_STYLE_SOLVER
 //#undef COIN_HAS_ASL
 #ifdef COIN_HAS_ASL
 #include "Cbc_ampl.h"
@@ -1146,7 +1145,7 @@ crunchIt(ClpSimplex * model)
   On input
   doAction - 0 just fix in original and return NULL 
              1 return fixed non-presolved solver
-             2 return fixed presolved solver 
+             2 as one but use presolve Inside this 
              3 do heuristics and set best solution
 	     4 do BAB and just set best solution
 	     10+ then use lastSolution and relax a few
@@ -1159,41 +1158,59 @@ static OsiClpSolverInterface * fixVubs(CbcModel & model, int skipZero2,
 {
   if (doAction==11&&!lastSolution)
     lastSolution = model.bestSolution();
-  assert ((doAction==1&&!lastSolution)||(doAction==11&&lastSolution));
+  assert (((doAction==1||doAction==2)&&!lastSolution)||(doAction==11&&lastSolution));
   double fractionIntFixed = dextra[3];
   double fractionFixed = dextra[4];
   double time1 = CoinCpuTime();
-  OsiClpSolverInterface * originalClpSolver = dynamic_cast< OsiClpSolverInterface*> (model.solver());
+  OsiSolverInterface * originalSolver = model.solver();
+  OsiClpSolverInterface * originalClpSolver = dynamic_cast< OsiClpSolverInterface*> (originalSolver);
   ClpSimplex * originalLpSolver = originalClpSolver->getModelPtr();
-  OsiSolverInterface * solver = model.solver()->clone();
-  OsiClpSolverInterface * clpSolver = dynamic_cast< OsiClpSolverInterface*> (solver);
-  ClpSimplex * lpSolver = clpSolver->getModelPtr();
+  int * originalColumns=NULL;
+  OsiClpSolverInterface * clpSolver;
+  ClpSimplex * lpSolver;
+  ClpPresolve pinfo;
+  if (doAction==2) {
+    doAction=1;
+    lpSolver = pinfo.presolvedModel(*originalLpSolver,1.0e-8,false,10);
+    assert (lpSolver);
+    clpSolver = new OsiClpSolverInterface(lpSolver,true);
+    assert(lpSolver == clpSolver->getModelPtr());
+    //int numberColumns = lpSolver->numberColumns();
+    int numberColumns = lpSolver->numberColumns();
+    originalColumns = CoinCopyOfArray(pinfo.originalColumns(),numberColumns);
+  } else {
+    OsiSolverInterface * solver = originalSolver->clone();
+    clpSolver = dynamic_cast< OsiClpSolverInterface*> (solver);
+    lpSolver = clpSolver->getModelPtr();
+  }
   // Tighten bounds
   lpSolver->tightenPrimalBounds(0.0,11,true);
+  int numberColumns = clpSolver->getNumCols() ;
+  double * saveColumnLower = CoinCopyOfArray(lpSolver->columnLower(),numberColumns);
+  double * saveColumnUpper = CoinCopyOfArray(lpSolver->columnUpper(),numberColumns);
   //char generalPrint[200];
   const double *objective = lpSolver->getObjCoefficients() ;
   double *columnLower = lpSolver->columnLower() ;
   double *columnUpper = lpSolver->columnUpper() ;
-  int numberColumns = solver->getNumCols() ;
-  int numberRows = solver->getNumRows();
+  int numberRows = clpSolver->getNumRows();
   int iRow,iColumn;
 
   // Row copy
-  CoinPackedMatrix matrixByRow(*solver->getMatrixByRow());
+  CoinPackedMatrix matrixByRow(*clpSolver->getMatrixByRow());
   const double * elementByRow = matrixByRow.getElements();
   const int * column = matrixByRow.getIndices();
   const CoinBigIndex * rowStart = matrixByRow.getVectorStarts();
   const int * rowLength = matrixByRow.getVectorLengths();
 
   // Column copy
-  CoinPackedMatrix  matrixByCol(*solver->getMatrixByCol());
+  CoinPackedMatrix  matrixByCol(*clpSolver->getMatrixByCol());
   //const double * element = matrixByCol.getElements();
   const int * row = matrixByCol.getIndices();
   const CoinBigIndex * columnStart = matrixByCol.getVectorStarts();
   const int * columnLength = matrixByCol.getVectorLengths();
 
-  const double * rowLower = solver->getRowLower();
-  const double * rowUpper = solver->getRowUpper();
+  const double * rowLower = clpSolver->getRowLower();
+  const double * rowUpper = clpSolver->getRowUpper();
 
   // Get maximum size of VUB tree
   // otherColumn is one fixed to 0 if this one zero
@@ -1248,7 +1265,7 @@ static OsiClpSolverInterface * fixVubs(CbcModel & model, int skipZero2,
   for (iColumn=0;iColumn<numberColumns;iColumn++) {
     fix[iColumn]=-1;
     if (columnUpper[iColumn] > columnLower[iColumn]+1.0e-8) {
-      if (solver->isInteger(iColumn))
+      if (clpSolver->isInteger(iColumn))
 	numberInteger++;
       if (columnLower[iColumn]==0.0) {
 	bool infeasible=false;
@@ -1378,7 +1395,7 @@ static OsiClpSolverInterface * fixVubs(CbcModel & model, int skipZero2,
 			newBound=nowLower;
 		      }
 		    }
-		    if (!newBound||(solver->isInteger(kColumn)&&newBound<0.999)) {
+		    if (!newBound||(clpSolver->isInteger(kColumn)&&newBound<0.999)) {
 		      // fix to zero
 		      if (!mark[kColumn]) {
 			otherColumn[numberOther++]=kColumn;
@@ -1421,7 +1438,7 @@ static OsiClpSolverInterface * fixVubs(CbcModel & model, int skipZero2,
 			newBound=nowLower;
 		      }
 		    }
-		    if (!newBound||(solver->isInteger(kColumn)&&newBound<0.999)) {
+		    if (!newBound||(clpSolver->isInteger(kColumn)&&newBound<0.999)) {
 		      // fix to zero
 		      if (!mark[kColumn]) {
 			otherColumn[numberOther++]=kColumn;
@@ -1469,9 +1486,9 @@ static OsiClpSolverInterface * fixVubs(CbcModel & model, int skipZero2,
 	for (int i=fixColumn[iColumn];i<numberOther;i++)
 	  mark[otherColumn[i]]=0;
 	// reset bound unless infeasible
-	if (!infeasible||!solver->isInteger(iColumn))
+	if (!infeasible||!clpSolver->isInteger(iColumn))
 	  columnUpper[iColumn]=saveUpper;
-	else if (solver->isInteger(iColumn))
+	else if (clpSolver->isInteger(iColumn))
 	  columnLower[iColumn]=1.0;
       }
     }
@@ -1548,7 +1565,7 @@ static OsiClpSolverInterface * fixVubs(CbcModel & model, int skipZero2,
 	    nFix=0;
 	    for (int i=fixColumn[iColumn];i<fixColumn[iColumn+1];i++) {
 	      int jColumn=otherColumn[i];
-	      if (solver->isInteger(jColumn))
+	      if (clpSolver->isInteger(jColumn))
 		nFix++;
 	    }
 	  }
@@ -1558,7 +1575,7 @@ static OsiClpSolverInterface * fixVubs(CbcModel & model, int skipZero2,
 	      break;
 	  }
 	  assert (iFix<nCheck);
-	  if (solver->isInteger(iColumn)) {
+	  if (clpSolver->isInteger(iColumn)) {
 	    numberInteger++;
 	    countsI[iFix]++;
 	  } else {
@@ -1647,13 +1664,13 @@ static OsiClpSolverInterface * fixVubs(CbcModel & model, int skipZero2,
 	  double * columnLower = lpSolver->columnLower();
 	  double * columnUpper = lpSolver->columnUpper();
 	  //	  lpSolver->dual();
-	  memcpy(columnLower,originalLpSolver->columnLower(),numberColumns*sizeof(double));
-	  memcpy(columnUpper,originalLpSolver->columnUpper(),numberColumns*sizeof(double));
+	  memcpy(columnLower,saveColumnLower,numberColumns*sizeof(double));
+	  memcpy(columnUpper,saveColumnUpper,numberColumns*sizeof(double));
 	  //	  lpSolver->dual();
 	  int iColumn;
 	  for (iColumn=0;iColumn<numberColumns;iColumn++) {
 	    if (columnUpper[iColumn] > columnLower[iColumn]+1.0e-8) {
-	      if (solver->isInteger(iColumn)) {
+	      if (clpSolver->isInteger(iColumn)) {
 		double value = lastSolution[iColumn];
 		int iValue = (int) (value+0.5);
 		assert (fabs(value-((double) iValue))<1.0e-3);
@@ -1665,12 +1682,12 @@ static OsiClpSolverInterface * fixVubs(CbcModel & model, int skipZero2,
 	    }
 	  }
 	  lpSolver->initialSolve(solveOptions);
-	  memcpy(columnLower,originalLpSolver->columnLower(),numberColumns*sizeof(double));
-	  memcpy(columnUpper,originalLpSolver->columnUpper(),numberColumns*sizeof(double));
+	  memcpy(columnLower,saveColumnLower,numberColumns*sizeof(double));
+	  memcpy(columnUpper,saveColumnUpper,numberColumns*sizeof(double));
 	}
 	for (iColumn=0;iColumn<numberColumns;iColumn++) {
 	  if (columnUpper[iColumn] > columnLower[iColumn]+1.0e-8) {
-	    if (solver->isInteger(iColumn)) {
+	    if (clpSolver->isInteger(iColumn)) {
 	      double value = lastSolution[iColumn];
 	      int iValue = (int) (value+0.5);
 	      assert (fabs(value-((double) iValue))<1.0e-3);
@@ -1733,7 +1750,7 @@ static OsiClpSolverInterface * fixVubs(CbcModel & model, int skipZero2,
 	break;
       }
       for ( iColumn=0;iColumn<numberColumns;iColumn++) {
-	if (!solver->isInteger(iColumn)||fix[iColumn]>kLayer)
+	if (!clpSolver->isInteger(iColumn)||fix[iColumn]>kLayer)
 	  continue;
 	// skip if fixes nothing
 	if (fixColumn[iColumn+1]-fixColumn[iColumn]<=skipZero2)
@@ -1857,20 +1874,20 @@ static OsiClpSolverInterface * fixVubs(CbcModel & model, int skipZero2,
 	columnLower = models[kPass].columnLower();
 	columnUpper = models[kPass].columnUpper();
 	columnLower[iSmallest]=1.0;
-	columnUpper[iSmallest]=originalLpSolver->columnUpper()[iSmallest];
+	columnUpper[iSmallest]=saveColumnUpper[iSmallest];
 	*lpSolver=models[kPass];
 	columnLower = lpSolver->columnLower();
 	columnUpper = lpSolver->columnUpper();
 	fullSolution = lpSolver->primalColumnSolution();
 	dj = lpSolver->dualColumnSolution();
 	columnLower[iSmallest]=1.0;
-	columnUpper[iSmallest]=originalLpSolver->columnUpper()[iSmallest];
+	columnUpper[iSmallest]=saveColumnUpper[iSmallest];
 	state[iSmallest]=1;
 	// unfix others
 	for (int i=fixColumn[iSmallest];i<fixColumn[iSmallest+1];i++) {
 	  int jColumn=otherColumn[i];
 	  if (state[jColumn]==3) {
-	    columnUpper[jColumn]=originalLpSolver->columnUpper()[jColumn];
+	    columnUpper[jColumn]=saveColumnUpper[jColumn];
 	    state[jColumn]=-1;
 	  }
 	}
@@ -1899,16 +1916,15 @@ static OsiClpSolverInterface * fixVubs(CbcModel & model, int skipZero2,
       double sum00=0.0;
       double sum1=0.0;
       for ( iColumn=0;iColumn<numberColumns;iColumn++) {
-	if (!solver->isInteger(iColumn)||fix[iColumn]>kLayer)
+	if (!clpSolver->isInteger(iColumn)||fix[iColumn]>kLayer)
 	  continue;
 	// skip if fixes nothing
 	if (fixColumn[iColumn+1]-fixColumn[iColumn]==0&&doAction<10)
 	  continue;
-	double value = fullSolution[iColumn];
 	double djValue = dj[iColumn];
 	if (state[iColumn]==1) {
 	  assert (columnLower[iColumn]);
-	  assert (value>0.1);
+	  assert (fullSolution[iColumn]>0.1);
 	  if (djValue>0.0) {
 	    //printf("YY dj of %d at %g is %g\n",iColumn,value,djValue);
 	    sum1 += djValue;
@@ -1918,7 +1934,7 @@ static OsiClpSolverInterface * fixVubs(CbcModel & model, int skipZero2,
 	    //printf("dj of %d at %g is %g\n",iColumn,value,djValue);
 	  }
 	} else if (state[iColumn]==0||state[iColumn]==10) {
-	  assert (value<0.1);
+	  assert (fullSolution[iColumn]<0.1);
 	  assert (!columnUpper[iColumn]);
 	  double otherValue=0.0;
 	  int nn=0;
@@ -1950,8 +1966,8 @@ static OsiClpSolverInterface * fixVubs(CbcModel & model, int skipZero2,
 	}
       }
       CoinSort_2(dsort,dsort+n,sort);
-      double * originalColumnLower = originalLpSolver->columnLower();
-      double * originalColumnUpper = originalLpSolver->columnUpper();
+      double * originalColumnLower = saveColumnLower;
+      double * originalColumnUpper = saveColumnUpper;
       double * lo = CoinCopyOfArray(columnLower,numberColumns);
       double * up = CoinCopyOfArray(columnUpper,numberColumns);
       for (int k=0;k<CoinMin(chunk,n);k++) {
@@ -2027,7 +2043,7 @@ static OsiClpSolverInterface * fixVubs(CbcModel & model, int skipZero2,
       int nFixedI=0;
       for ( iColumn=0;iColumn<numberColumns;iColumn++) {
 	if (columnLower[iColumn]==columnUpper[iColumn]) {
-	  if (solver->isInteger(iColumn))
+	  if (clpSolver->isInteger(iColumn))
 	    nFixedI++;
 	  nFixed++;
 	}
@@ -2069,13 +2085,36 @@ static OsiClpSolverInterface * fixVubs(CbcModel & model, int skipZero2,
   delete [] otherColumn;
   delete [] otherColumn2;
   delete [] fixColumn2;
-  // Basis
-  memcpy(originalLpSolver->statusArray(),lpSolver->statusArray(),numberRows+numberColumns);
-  memcpy(originalLpSolver->primalColumnSolution(),lpSolver->primalColumnSolution(),numberColumns*sizeof(double));
-  memcpy(originalLpSolver->primalRowSolution(),lpSolver->primalRowSolution(),numberRows*sizeof(double));
-  // Fix in solver
-  columnLower = lpSolver->columnLower();
-  columnUpper = lpSolver->columnUpper();
+  // See if was presolved
+  if (originalColumns) {
+    for ( iColumn=0;iColumn<numberColumns;iColumn++) {
+      saveColumnLower[iColumn] = columnLower[iColumn];
+      saveColumnUpper[iColumn] = columnUpper[iColumn];
+    }
+    pinfo.postsolve(true);
+    columnLower = originalLpSolver->columnLower();
+    columnUpper = originalLpSolver->columnUpper();
+    double * newColumnLower = lpSolver->columnLower();
+    double * newColumnUpper = lpSolver->columnUpper();
+    for (iColumn=0;iColumn<numberColumns;iColumn++) {
+      int jColumn = originalColumns[iColumn];
+      columnLower[jColumn] = CoinMax(columnLower[jColumn],newColumnLower[iColumn]);
+      columnUpper[jColumn] = CoinMin(columnUpper[jColumn],newColumnUpper[iColumn]);
+    }
+    numberColumns = originalLpSolver->numberColumns();
+    delete [] originalColumns;
+  }
+  delete [] saveColumnLower;
+  delete [] saveColumnUpper;
+  if (!originalColumns) {
+    // Basis
+    memcpy(originalLpSolver->statusArray(),lpSolver->statusArray(),numberRows+numberColumns);
+    memcpy(originalLpSolver->primalColumnSolution(),lpSolver->primalColumnSolution(),numberColumns*sizeof(double));
+    memcpy(originalLpSolver->primalRowSolution(),lpSolver->primalRowSolution(),numberRows*sizeof(double));
+    // Fix in solver
+    columnLower = lpSolver->columnLower();
+    columnUpper = lpSolver->columnUpper();
+  }
   double * originalColumnLower = originalLpSolver->columnLower();
   double * originalColumnUpper = originalLpSolver->columnUpper();
   // number fixed
@@ -2087,7 +2126,10 @@ static OsiClpSolverInterface * fixVubs(CbcModel & model, int skipZero2,
       doAction++;
   }
   printf("%d fixed by vub preprocessing\n",doAction);
-  delete solver;
+  if (originalColumns) {
+    originalLpSolver->initialSolve();
+  }
+  delete clpSolver;
   return NULL;
 }
 #endif
@@ -3030,7 +3072,7 @@ void CbcMain0 (CbcModel  & model)
   parameters[whichParam(THREADS,numberParameters,parameters)].setIntValue(0);
 #endif
   // Set up likely cut generators and defaults
-  parameters[whichParam(PREPROCESS,numberParameters,parameters)].setCurrentOption("on");
+  parameters[whichParam(PREPROCESS,numberParameters,parameters)].setCurrentOption("sos");
   parameters[whichParam(MIPOPTIONS,numberParameters,parameters)].setIntValue(128|64|1);
   parameters[whichParam(MIPOPTIONS,numberParameters,parameters)].setIntValue(1);
   parameters[whichParam(CUTPASSINTREE,numberParameters,parameters)].setIntValue(1);
@@ -3494,7 +3536,11 @@ int
 	  }
         }
       }
-      int returnCode = readAmpl(&info,argc,const_cast<char **>(argv),(void **) (& coinModel));
+
+      union { void * voidModel; CoinModel * model; } coinModelStart;
+      coinModelStart.model=NULL;
+      int returnCode = readAmpl(&info,argc, const_cast<char **>(argv),& coinModelStart.voidModel);
+      coinModel=coinModelStart.model;
       if (returnCode)
         return returnCode;
       CbcOrClpRead_mode=2; // so will start with parameters
@@ -3666,10 +3712,10 @@ int
     int doCrash=0;
     int doVector=0;
     int doSprint=-1;
-    int doScaling=1;
+    int doScaling=4;
     // set reasonable defaults
     int preSolve=5;
-    int preProcess=1;
+    int preProcess=4;
     bool useStrategy=false;
     bool preSolveFile=false;
     bool strongChanged=false;
@@ -3728,8 +3774,8 @@ int
 
     CglProbing probingGen;
     probingGen.setUsingObjective(1);
-    probingGen.setMaxPass(3);
-    probingGen.setMaxPassRoot(3);
+    probingGen.setMaxPass(1);
+    probingGen.setMaxPassRoot(1);
     // Number of unsatisfied variables to look at
     probingGen.setMaxProbe(10);
     probingGen.setMaxProbeRoot(50);
@@ -4208,7 +4254,7 @@ int
 	    case SCALING:
 	      lpSolver->scaling(action);
 	      solver->setHintParam(OsiDoScale,action!=0,OsiHintTry);
-	      doScaling = 1-action;
+	      doScaling = action;
 	      break;
 	    case AUTOSCALE:
 	      lpSolver->setAutomaticScaling(action!=0);
@@ -4912,9 +4958,10 @@ int
 		dextra[4] = parameters_[whichParam(DEXTRA4,numberParameters_,parameters_)].doubleValue();
 		if (!dextra[3])
 		  dextra[3] = 0.97;
-		OsiClpSolverInterface * newSolver = fixVubs(model_,extra3,vubAction,generalMessageHandler,
-							    debugValues,dextra);
-		assert (!newSolver);
+		//OsiClpSolverInterface * newSolver = 
+		fixVubs(model_,extra3,vubAction,generalMessageHandler,
+			debugValues,dextra);
+		//assert (!newSolver);
 	      }
 	      // Actually do heuristics
 	      doHeuristics(&model_,2);
@@ -4999,6 +5046,7 @@ int
                 OsiClpSolverInterface * si =
                   dynamic_cast<OsiClpSolverInterface *>(solver) ;
                 assert (si != NULL);
+		si->getModelPtr()->scaling(doScaling);
 		// See if quadratic
 #ifdef COIN_HAS_LINK
 		if (!complicatedInteger) {
@@ -5455,7 +5503,8 @@ int
                   // Default set of cut generators
                   CglProbing generator1;
                   generator1.setUsingObjective(1);
-                  generator1.setMaxPass(3);
+                  generator1.setMaxPass(1);
+                  generator1.setMaxPassRoot(1);
                   generator1.setMaxProbeRoot(saveSolver->getNumCols());
                   generator1.setMaxElements(100);
                   generator1.setMaxLookRoot(50);
@@ -6074,11 +6123,13 @@ int
 		    int numberOldObjects = babModel_->numberObjects();
 		    int numberColumns = babModel_->getNumCols();
 		    // backward pointer to new variables
-		    int * newColumn = new int[numberOriginalColumns];
+                    // extend arrays in case SOS
+		    assert (originalColumns);
+                    int n = originalColumns[numberColumns-1]+1;
+		    int * newColumn = new int[CoinMax(n,numberColumns)];
 		    int i;
 		    for (i=0;i<numberOriginalColumns;i++)
 		      newColumn[i]=-1;
-		    assert (originalColumns);
 		    for (i=0;i<numberColumns;i++)
 		      newColumn[originalColumns[i]]=i;
 		    if (!integersOK) {
@@ -6932,9 +6983,9 @@ int
               } else if (type==MIPLIB) {
 		CbcStrategyDefault strategy(true,babModel_->numberStrong(),babModel_->numberBeforeTrust());
                 // Set up pre-processing 
-		int translate2[]={9999,1,1,3,2,4,5};
+		int translate2[]={9999,1,1,3,2,4,5,6,6};
                 if (preProcess)
-                  strategy.setupPreProcessing(translate2[preProcess]);
+                  strategy.setupPreProcessing(translate2[ preProcess ]);
                 babModel_->setStrategy(strategy);
 #ifdef CBC_THREAD
                 int numberThreads =parameters_[whichParam(THREADS,numberParameters_,parameters_)].intValue();

@@ -1094,15 +1094,15 @@ void CbcModel::branchAndBound(int doStatistics)
 	  }
 	}
       }
-      // and add to solver if none
-      if (!solver_->numberObjects()) {
+      // and add to solver 
+      //if (!solver_->numberObjects()) {
 	solver_->addObjects(numberObjects_,object_);
-      } else {
-	if (solver_->numberObjects()!=numberOriginalObjects) {
-	  printf("should have trapped that solver has objects before\n");
-	  abort();
-	}
-      }
+	//} else {
+	//if (solver_->numberObjects()!=numberOriginalObjects) {
+	//printf("should have trapped that solver has objects before\n");
+	//abort();
+	//}
+	//}
     } else {
       // do from solver
       deleteObjects(false);
@@ -4774,26 +4774,40 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
 	double changeInObjective = CoinMax(0.0,objectiveValue-originalValue);
 	int iStatus = (feasible) ? 0 : 0;
 	double value = obj->value();
+	double movement;
 	if (branch)
-	  value = ceil(value)-value;
+	  movement = ceil(value)-value;
 	else
-	  value = value -floor(value);
-#if 1
+	  movement = value -floor(value);
+#if 0
+	// OUT as much too complicated - we are not at a natural hotstart place
 	OsiBranchingInformation usefulInfo=usefulInformation();
+	// hotInfo is meant for BEFORE a branch so we need to fool
+	// was much simpler with alternate method
+	double save[3];
+	save[0]=usefulInfo.lower_[iColumn];
+	save[1]=usefulInfo.solution_[iColumn];
+	save[2]=usefulInfo.upper_[iColumn];
+	usefulInfo.lower_[iColumn]=floor(value);
+	usefulInfo.solution_[iColumn]=value;
+	usefulInfo.upper_[iColumn]=ceil(value);
 	OsiHotInfo hotInfo(solver_,&usefulInfo,&object,0);
+	usefulInfo.lower_[iColumn]=save[0];
+	usefulInfo.solution_[iColumn]=save[1];
+	usefulInfo.upper_[iColumn]=save[2];
 	if (branch) {
 	  hotInfo.setUpStatus(iStatus);
 	  hotInfo.setUpChange(changeInObjective);
-	  //object->setUpEstimate(value);
+	  //object->setUpEstimate(movement);
 	} else {
 	  hotInfo.setDownStatus(iStatus);
 	  hotInfo.setDownChange(changeInObjective);
-	  //object->setDownEstimate(value);
+	  //object->setDownEstimate(movement);
 	}
 	branchingMethod_->chooseMethod()->updateInformation(&usefulInfo,branch,&hotInfo);
 #else
 	branchingMethod_->chooseMethod()->updateInformation(iObject,branch,changeInObjective,
-							    value,iStatus);
+							    movement,iStatus);
 #endif
       }
     }
@@ -7260,6 +7274,9 @@ CbcModel::addObjects(int numberObjects, CbcObject ** objects)
         newNumberObjects++;
         mark[iColumn]=i;
       }
+    } else {
+      // some other object - keep
+      newNumberObjects++;
     }
   } 
   delete [] integerVariable_;

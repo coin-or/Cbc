@@ -568,6 +568,7 @@ CbcFullNodeInfo::buildRowBasis(CoinWarmStartBasis & basis ) const
   return NULL;
 }
 
+
 // Default constructor
 CbcPartialNodeInfo::CbcPartialNodeInfo()
 
@@ -590,8 +591,10 @@ CbcPartialNodeInfo::CbcPartialNodeInfo (CbcNodeInfo *parent, CbcNode *owner,
   basisDiff_ = basisDiff->clone() ;
 
   numberChangedBounds_ = numberChangedBounds;
-  variables_ = new int [numberChangedBounds_];
-  newBounds_ = new double [numberChangedBounds_];
+  int size = numberChangedBounds_*(sizeof(double)+sizeof(int));
+  char * temp = new char [size];
+  newBounds_ = (double *) temp;
+  variables_ = (int *) (newBounds_+numberChangedBounds_);
 
   int i ;
   for (i=0;i<numberChangedBounds_;i++) {
@@ -607,8 +610,10 @@ CbcPartialNodeInfo::CbcPartialNodeInfo (const CbcPartialNodeInfo & rhs)
 { basisDiff_ = rhs.basisDiff_->clone() ;
 
   numberChangedBounds_ = rhs.numberChangedBounds_;
-  variables_ = new int [numberChangedBounds_];
-  newBounds_ = new double [numberChangedBounds_];
+  int size = numberChangedBounds_*(sizeof(double)+sizeof(int));
+  char * temp = new char [size];
+  newBounds_ = (double *) temp;
+  variables_ = (int *) (newBounds_+numberChangedBounds_);
 
   int i ;
   for (i=0;i<numberChangedBounds_;i++) {
@@ -627,7 +632,6 @@ CbcPartialNodeInfo::clone() const
 CbcPartialNodeInfo::~CbcPartialNodeInfo ()
 {
   delete basisDiff_ ;
-  delete [] variables_;
   delete [] newBounds_;
 }
 
@@ -693,7 +697,6 @@ CbcPartialNodeInfo::buildRowBasis(CoinWarmStartBasis & basis ) const
 { basis.applyDiff(basisDiff_) ;
 
   return parent_ ; }
-
 
 CbcNode::CbcNode() :
   nodeInfo_(NULL),
@@ -2440,6 +2443,14 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
       double bestNot=0.0;
       iBestGot=-1;
       best=0.0;
+      /* Problem type as set by user or found by analysis.  This will be extended
+	 0 - not known
+	 1 - Set partitioning <=
+	 2 - Set partitioning ==
+	 3 - Set covering
+	 4 - all +- 1 or all +1 and odd
+      */
+      int problemType = model->problemType();
 #define PRINT_STUFF -1
       for (i=0;i<numberObjects;i++) {
         OsiObject * object = model->modifiableObject(i);
@@ -2487,6 +2498,11 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
             // try closest to 0.5
             double part =saveSolution[iColumn]-floor(saveSolution[iColumn]);
             infeasibility = fabs(0.5-part);
+          }
+          if (problemType>0&&problemType<4) {
+            // try closest to 0.5
+            double part =saveSolution[iColumn]-floor(saveSolution[iColumn]);
+            infeasibility = 0.5-fabs(0.5-part);
           }
           bool gotDown=false;
           int numberThisDown = dynamicObject->numberTimesDown();

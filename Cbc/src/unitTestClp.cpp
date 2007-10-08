@@ -128,7 +128,7 @@ void CbcClpUnitTest (const CbcModel & saveModel, std::string& dirMiplib,
     PUSH_MPS("10teams",230,2025,924,917,7);
 #endif
     PUSH_MPS("air03",124,10757,340160,338864.25,7);
-#if HOWMANY==3
+#if HOWMANY>2
     PUSH_MPS("air04",823,8904,56137,55535.436,8);
     PUSH_MPS("air05",426,7195,26374,25877.609,8);
 #endif
@@ -147,7 +147,7 @@ void CbcClpUnitTest (const CbcModel & saveModel, std::string& dirMiplib,
     PUSH_MPS("dsbmip",1182,1886,-305.19817501,-305.19817501,7);
     PUSH_MPS("egout",98,141,568.101,149.589,7);
     PUSH_MPS("enigma",21,100,0.0,0.0,7);
-#if HOWMANY==3
+#if HOWMANY>3
     PUSH_MPS("fast0507",507,63009,174,172.14556668,7);
 #endif
     PUSH_MPS("fiber",363,1298,405935.18000,156082.51759,7);
@@ -163,7 +163,7 @@ void CbcClpUnitTest (const CbcModel & saveModel, std::string& dirMiplib,
     PUSH_MPS("gesa3",1368,1152,27991042.648,27833632.451,7);
     PUSH_MPS("gesa3_o",1224,1152,27991042.648,27833632.451,7);
     PUSH_MPS("gt2",29,188,21166.000,13460.233074,7);
-#if HOWMANY==3
+#if HOWMANY>2
     PUSH_MPS("harp2",112,2993,-73899798.00,-74353341.502,7);
 #endif
     PUSH_MPS("khb05250",101,1350,106940226,95919464.0,7);
@@ -179,9 +179,11 @@ void CbcClpUnitTest (const CbcModel & saveModel, std::string& dirMiplib,
 #endif
     PUSH_MPS("mod008",6,319,307,290.9,7);
     PUSH_MPS("mod010",146,2655,6548,6532.08,7);
-#if HOWMANY==3
+#if HOWMANY>2
     PUSH_MPS("mod011",4480,10958,-54558535,-62121982.55,7);
     PUSH_MPS("modglob",291,422,20740508,20430947.,7);
+#endif
+#if HOWMANY>3
     PUSH_MPS("noswot",182,128,-43,-43.0,7);
 #endif
 #if HOWMANY>1
@@ -192,21 +194,21 @@ void CbcClpUnitTest (const CbcModel & saveModel, std::string& dirMiplib,
     PUSH_MPS("p0282",241,282,258411,176867.50,7);
     PUSH_MPS("p0548",176,548,8691,315.29,7);
     PUSH_MPS("p2756",755,2756,3124,2688.75,7);
-#if HOWMANY==3
+#if HOWMANY>2
     PUSH_MPS("pk1",45,86,11.0,0.0,7);
 #endif
 #if HOWMANY>1
     PUSH_MPS("pp08a",136,240,7350.0,2748.3452381,7);
     PUSH_MPS("pp08aCUTS",246,240,7350.0,5480.6061563,7);
 #endif
-#if HOWMANY==3
+#if HOWMANY>2
     PUSH_MPS("qiu",1192,840,-132.873137,-931.638857,7);
 #endif
     PUSH_MPS("qnet1",503,1541,16029.692681,14274.102667,7);
     PUSH_MPS("qnet1_o",456,1541,16029.692681,12095.571667,7);
     PUSH_MPS("rentacar",6803,9557,30356761,28806137.644,7);
     PUSH_MPS("rgn",24,180,82.1999,48.7999,7);
-#if HOWMANY==3
+#if HOWMANY>3
     PUSH_MPS("rout",291,556,1077.56,981.86428571,7);
     PUSH_MPS("set1ch",492,712,54537.75,32007.73,7);
 #endif

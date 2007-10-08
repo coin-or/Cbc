@@ -872,15 +872,8 @@ void CbcModel::branchAndBound(int doStatistics)
 	  }
 	}
       }
-      // and add to solver if none
-      if (!solver_->numberObjects()) {
-	solver_->addObjects(numberObjects_,object_);
-      } else {
-	if (solver_->numberObjects()!=numberOriginalObjects) {
-	  printf("should have trapped that solver has objects before\n");
-	  abort();
-	}
-      }
+      // and add to solver
+      solver_->addObjects(numberObjects_,object_);
     } else {
       // do from solver
       deleteObjects(false);
@@ -7022,6 +7015,9 @@ CbcModel::addObjects(int numberObjects, CbcObject ** objects)
         newNumberObjects++;
         mark[iColumn]=i;
       }
+    } else {
+      // not integer - keep
+      newNumberObjects++;
     }
   } 
   delete [] integerVariable_;

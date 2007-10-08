@@ -13,7 +13,7 @@
 #include <cfloat>
 #include <cstring>
 #include <iostream>
-#define NEW_STYLE_SOLVER
+//#define NEW_STYLE_SOLVER
 #ifndef NEW_STYLE_SOLVER
   // define TEST_MESSAGE_HANDLER to check works on all messages
 //#define TEST_MESSAGE_HANDLER

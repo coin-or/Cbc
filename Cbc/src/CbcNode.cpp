@@ -2499,7 +2499,7 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
             double part =saveSolution[iColumn]-floor(saveSolution[iColumn]);
             infeasibility = fabs(0.5-part);
           }
-          if (problemType>0&&problemType<4) {
+          if (problemType>0&&problemType<4&&false) {
             // try closest to 0.5
             double part =saveSolution[iColumn]-floor(saveSolution[iColumn]);
             infeasibility = 0.5-fabs(0.5-part);

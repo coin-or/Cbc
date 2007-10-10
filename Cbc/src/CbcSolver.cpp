@@ -1171,7 +1171,7 @@ static OsiClpSolverInterface * fixVubs(CbcModel & model, int skipZero2,
   ClpPresolve pinfo;
   if (doAction==2) {
     doAction=1;
-    lpSolver = pinfo.presolvedModel(*originalLpSolver,1.0e-8,false,10);
+    lpSolver = pinfo.presolvedModel(*originalLpSolver,1.0e-8,true,10);
     assert (lpSolver);
     clpSolver = new OsiClpSolverInterface(lpSolver,true);
     assert(lpSolver == clpSolver->getModelPtr());
@@ -1862,6 +1862,7 @@ static OsiClpSolverInterface * fixVubs(CbcModel & model, int skipZero2,
       }
       pass[kPass]=iPass;
       double maxCostUp = COIN_DBL_MAX;
+      objective = lpSolver->getObjCoefficients() ;
       if (way==-1)
 	maxCostUp= (1.0-movement)*objective[iSmallest];
       lpSolver->setDualObjectiveLimit(saveObj+maxCostUp);
@@ -2087,6 +2088,8 @@ static OsiClpSolverInterface * fixVubs(CbcModel & model, int skipZero2,
   delete [] fixColumn2;
   // See if was presolved
   if (originalColumns) {
+    columnLower = lpSolver->columnLower();
+    columnUpper = lpSolver->columnUpper();
     for ( iColumn=0;iColumn<numberColumns;iColumn++) {
       saveColumnLower[iColumn] = columnLower[iColumn];
       saveColumnUpper[iColumn] = columnUpper[iColumn];
@@ -5860,9 +5863,16 @@ int
                 switches[numberGenerators++]=0;
               }
               if (gomoryAction&&(complicatedInteger!=1||
-				 (gomoryAction==1||gomoryAction==4))) {
+				 (gomoryAction==1||gomoryAction>=4))) {
+		// try larger limit
+		if (gomoryAction==5) {
+		  gomoryAction=4;
+		  int numberColumns = lpSolver->getNumCols();
+		  gomoryGen.setLimitAtRoot(numberColumns);
+		  gomoryGen.setLimit(numberColumns);
+		}
                 babModel_->addCutGenerator(&gomoryGen,translate[gomoryAction],"Gomory");
-                switches[numberGenerators++]=-1;
+                switches[numberGenerators++]=0;
               }
               if (knapsackAction) {
                 babModel_->addCutGenerator(&knapsackGen,translate[knapsackAction],"Knapsack");
@@ -7015,7 +7025,9 @@ int
 		/* JJF: No need to have 777 flag at all - user
 		   says -miplib
 		*/
-		CbcClpUnitTest(model_, dirMiplib, false);
+		int extra1 = parameters_[whichParam(EXTRA1,numberParameters_,parameters_)].intValue();
+		CbcClpUnitTest(model_, dirMiplib, extra1==1);
+		babModel_=NULL;
 		return 777;
               } else {
                 strengthenedModel = babModel_->strengthenedModel();

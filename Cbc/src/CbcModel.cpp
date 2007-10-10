@@ -5021,8 +5021,8 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
     }
 
     // reset probing info
-    if (probingInfo_)
-      probingInfo_->initializeFixing();
+    //if (probingInfo_)
+    //probingInfo_->initializeFixing();
     int i;
     if ((threadMode_&2)==0||numberNodes_) {
       for (i = 0;i<numberCutGenerators_;i++) {

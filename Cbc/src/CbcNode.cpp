@@ -2422,7 +2422,7 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
 	toZero = probingInfo->toZero();
 	toOne = probingInfo->toOne();
 	backward = probingInfo->backward();
-	if (!toZero[number01]) {
+	if (!toZero[number01]||number01<numberObjects) {
 	  // no info
 	  probingInfo=NULL;
 	}
@@ -2480,16 +2480,6 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
 	      branchingMethod = 100;
 	  }
           int iColumn = dynamicObject->columnNumber();
-	  if (probingInfo) {
-	    int iSeq = backward[iColumn];
-	    if (iSeq>=0) {
-	      if (toZero[iSeq+1]>toZero[iSeq]) {
-		numberUnsatisProbed++;
-	      } else {
-		numberUnsatisNotProbed++;
-	      }
-	    }
-	  }
           //double gap = saveUpper[iColumn]-saveLower[iColumn];
           // Give precedence to ones with gap of 1.0 
           //assert(gap>0.0);
@@ -2504,6 +2494,17 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
             double part =saveSolution[iColumn]-floor(saveSolution[iColumn]);
             infeasibility = 0.5-fabs(0.5-part);
           }
+	  if (probingInfo) {
+	    int iSeq = backward[iColumn];
+	    assert (iSeq>=0);
+	    infeasibility = 1.0 + (toZero[iSeq+1]-toZero[iSeq])+ 
+	      5.0*CoinMin(toOne[iSeq]-toZero[iSeq],toZero[iSeq+1]-toOne[iSeq]);
+	    if (toZero[iSeq+1]>toZero[iSeq]) {
+	      numberUnsatisProbed++;
+	    } else {
+	      numberUnsatisNotProbed++;
+	    }
+	  }
           bool gotDown=false;
           int numberThisDown = dynamicObject->numberTimesDown();
           if (numberThisDown>=numberBeforeTrust)

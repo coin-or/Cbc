@@ -216,7 +216,7 @@ CbcCutGenerator::generateCuts( OsiCuts & cs , bool fullScan, OsiSolverInterface 
     } else {
       // Probing - return tight column bounds
       CglTreeProbingInfo * info2 = model_->probingInfo();
-      if (info2) {
+      if (info2&&!depth) {
 	info2->level = depth;
 	info2->pass = pass;
 	info2->formulation_rows = model_->numberRowsAtContinuous();
@@ -411,6 +411,7 @@ CbcCutGenerator::generateCuts( OsiCuts & cs , bool fullScan, OsiSolverInterface 
 #endif
     if (timing_)
       timeInCutGenerator_ += CoinCpuTime()-time1;
+#if 0
     // switch off if first time and no good
     if (node==NULL&&!pass) {
       if (cs.sizeCuts()-cutsBefore<CoinAbs(switchOffIfLessThan_)) {
@@ -418,6 +419,7 @@ CbcCutGenerator::generateCuts( OsiCuts & cs , bool fullScan, OsiSolverInterface 
         whenCutGeneratorInSub_ = -200;
       }
     }
+#endif
   }
   return returnCode;
 }

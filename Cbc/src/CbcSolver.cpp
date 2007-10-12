@@ -729,6 +729,7 @@ CbcStopNow::clone() const
 {
   return new CbcStopNow(*this);
 }
+//#undef NEW_STYLE_SOLVER
 //#define NEW_STYLE_SOLVER
 //#undef COIN_HAS_ASL
 #ifdef COIN_HAS_ASL
@@ -3299,7 +3300,7 @@ int
   }
 } 
 
-void CbcClpUnitTest (const CbcModel & saveModel,
+int CbcClpUnitTest (const CbcModel & saveModel,
 		     std::string& dirMiplib, bool unitTestOnly);
 #ifdef NEW_STYLE_SOLVER
 /* This takes a list of commands, does "stuff" and returns 
@@ -7026,9 +7027,9 @@ int
 		   says -miplib
 		*/
 		int extra1 = parameters_[whichParam(EXTRA1,numberParameters_,parameters_)].intValue();
-		CbcClpUnitTest(model_, dirMiplib, extra1==1);
+		int returnCode=CbcClpUnitTest(model_, dirMiplib, extra1==1);
 		babModel_=NULL;
-		return 777;
+		return returnCode;
               } else {
                 strengthenedModel = babModel_->strengthenedModel();
               }

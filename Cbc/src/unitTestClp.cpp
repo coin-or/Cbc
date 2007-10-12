@@ -75,7 +75,7 @@ bool CbcTestMpsFile(std::string& fname)
 
 //#############################################################################
 
-void CbcClpUnitTest (const CbcModel & saveModel, std::string& dirMiplib,
+int CbcClpUnitTest (const CbcModel & saveModel, std::string& dirMiplib,
 		     bool unitTestOnly)
 {
   unsigned int m ;
@@ -87,7 +87,7 @@ void CbcClpUnitTest (const CbcModel & saveModel, std::string& dirMiplib,
 
   if (!doTest) {
     printf("Not doing miplib run as can't find mps files - ? .gz without libz\n");
-    return;
+    return -1;
   }
   /*
     Vectors to hold test problem names and characteristics. The objective value
@@ -225,6 +225,7 @@ void CbcClpUnitTest (const CbcModel & saveModel, std::string& dirMiplib,
     
   int numProbSolved = 0;
   double timeTaken=0.0;
+  int numberFailures=0;
   
   /*
     Open the main loop to step through the MPS problems.
@@ -365,6 +366,7 @@ void CbcClpUnitTest (const CbcModel & saveModel, std::string& dirMiplib,
       } else  { 
         std::cout <<"cbc_clp" <<" " <<soln << " != " <<objValue[m]
 		  << "; error=" << fabs(objValue[m] - soln); 
+	numberFailures++;
       }
     } else {
       std::cout << "error; too many nodes" ;
@@ -373,14 +375,27 @@ void CbcClpUnitTest (const CbcModel & saveModel, std::string& dirMiplib,
     timeTaken += timeOfSolution;
     delete model;
   }
+  int returnCode=0;
   std::cout 
     <<"cbc_clp" 
     <<" solved " 
     <<numProbSolved
     <<" out of "
-    <<objValue.size()
-    <<" and took "
+    <<objValue.size();
+  int numberOnNodes = objValue.size()-numProbSolved-numberFailures;
+  if (numberFailures||numberOnNodes) {
+    if (numberOnNodes) {
+      std::cout<<" ("<<numberOnNodes<<" stopped on nodes)";
+      returnCode = numberOnNodes;
+    }
+    if (numberFailures) {
+      std::cout<<" ("<<numberFailures<<" gave bad answer!)";
+      returnCode += 100*numberFailures;
+    }
+  }
+  std::cout<<" and took "
     <<timeTaken
     <<" seconds."
     <<std::endl;
+  return returnCode;
 }

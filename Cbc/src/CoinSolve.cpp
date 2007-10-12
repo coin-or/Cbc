@@ -13,6 +13,7 @@
 #include <cfloat>
 #include <cstring>
 #include <iostream>
+//#undef NEW_STYLE_SOLVER
 //#define NEW_STYLE_SOLVER
 #ifndef NEW_STYLE_SOLVER
   // define TEST_MESSAGE_HANDLER to check works on all messages
@@ -253,7 +254,8 @@ int main (int argc, const char *argv[])
 #ifdef COIN_HAS_ASL
   addAmplToCbc(&control);
 #endif
-  return control.solve (argc, argv, 1);
+  int returnCode= control.solve (argc, argv, 1);
+  return returnCode;
 }
 #endif
 /*

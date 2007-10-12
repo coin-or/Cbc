@@ -3250,7 +3250,7 @@ int
   }
 } 
 
-void CbcClpUnitTest (const CbcModel & saveModel,
+int CbcClpUnitTest (const CbcModel & saveModel,
 		     std::string& dirMiplib, bool unitTestOnly);
 #ifdef NEW_STYLE_SOLVER
 /* This takes a list of commands, does "stuff" and returns 
@@ -6920,8 +6920,7 @@ int
 		/* JJF: No need to have 777 flag at all - user
 		   says -miplib
 		*/
-		CbcClpUnitTest(model_, dirMiplib, false);
-		return 777;
+		return CbcClpUnitTest(model_, dirMiplib, false);
               } else {
                 strengthenedModel = babModel_->strengthenedModel();
               }

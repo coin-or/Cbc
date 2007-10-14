@@ -259,7 +259,7 @@ CbcFathomDynamicProgramming::checkPossible(int allowableSize)
     numberActive_=numberActive;
     indices_ = new int [numberActive_];
     cost_ = new double [size_];
-    CoinFillN(cost_,size_,DBL_MAX);
+    CoinFillN(cost_,size_,COIN_DBL_MAX);
     // but do nothing is okay
     cost_[0]=0.0;
     back_ = new int[size_];
@@ -474,7 +474,7 @@ CbcFathomDynamicProgramming::fathom(double * & betterSolution)
     double fixedObj=-offset;
     int i;
     // may be possible
-    double bestAtTarget = DBL_MAX;
+    double bestAtTarget = COIN_DBL_MAX;
     for (i=0;i<numberColumns;i++) {
       if (size_>10000000&&(i%100)==0)
         printf("column %d\n",i);
@@ -493,7 +493,7 @@ CbcFathomDynamicProgramming::fathom(double * & betterSolution)
     }
     returnCode=1;
     int needed=0;
-    double bestValue=DBL_MAX;
+    double bestValue=COIN_DBL_MAX;
     int iBest=-1;
     if (algorithm_==0) {
       int numberActive=0;
@@ -553,7 +553,7 @@ CbcFathomDynamicProgramming::fathom(double * & betterSolution)
       }
       delete [] lower;
     }
-    if (bestValue<DBL_MAX) {
+    if (bestValue<COIN_DBL_MAX) {
       bestValue += fixedObj;
       if (model_->messageHandler()->logLevel()>1)
         printf("Can get solution of %g\n",bestValue);
@@ -564,7 +564,7 @@ CbcFathomDynamicProgramming::fathom(double * & betterSolution)
         while (iBest>0) {
           int n=decodeBitPattern(iBest-back_[iBest],indices_,numberRows);
           // Search for cheapest
-          double bestCost=DBL_MAX;
+          double bestCost=COIN_DBL_MAX;
           int iColumn=-1;
           for (i=0;i<numberColumns;i++) {
             if (n==columnLength[i]) {
@@ -708,7 +708,7 @@ CbcFathomDynamicProgramming::addOneColumn0(int numberElements, const int * rows,
     int kMask = i&mask;
     if (kMask==0) {
       double thisCost = cost_[i];
-      if (thisCost!=DBL_MAX) {
+      if (thisCost!=COIN_DBL_MAX) {
         // possible
         double newCost=thisCost+cost;
         int next = i + mask;
@@ -823,7 +823,7 @@ CbcFathomDynamicProgramming::addOneColumn1(int numberElements, const int * rows,
       }
       if (good) {
         double thisCost = cost_[i];
-        if (thisCost!=DBL_MAX) {
+        if (thisCost!=COIN_DBL_MAX) {
           // possible
           double newCost=thisCost+cost;
           int next = i + maskAdd;
@@ -899,7 +899,7 @@ CbcFathomDynamicProgramming::addOneColumn1A(int numberElements, const int * rows
       int kMask = i&maskA;
       if (kMask==0) {
         double thisCost = cost_[i];
-        if (thisCost!=DBL_MAX) {
+        if (thisCost!=COIN_DBL_MAX) {
           // possible
           double newCost=thisCost+cost;
           int next = i + maskAdd;
@@ -926,7 +926,7 @@ CbcFathomDynamicProgramming::addOneColumn1A(int numberElements, const int * rows
         added &= (~maskD);
         if (added == 0) {
           double thisCost = cost_[i];
-          if (thisCost!=DBL_MAX) {
+          if (thisCost!=COIN_DBL_MAX) {
             // possible
             double newCost=thisCost+cost;
             int next = i + maskAdd;

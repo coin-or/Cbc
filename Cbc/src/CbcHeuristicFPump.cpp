@@ -309,11 +309,12 @@ CbcHeuristicFPump::solution(double & solutionValue,
   bool exitAll=false;
   double saveBestObjective = model_->getMinimizationObjValue();
   int numberSolutions=0;
+  OsiSolverInterface * solver = NULL;
   while (!exitAll) {
     int numberPasses=0;
     numberTries++;
     // Clone solver - otherwise annoys root node computations
-    OsiSolverInterface * solver = model_->solver()->clone();
+    solver = model_->solver()->clone();
     if (CoinMin(fakeCutoff_,cutoff)<1.0e50) {
       // Fix on djs
       double direction = solver->getObjSense() ;
@@ -934,6 +935,7 @@ CbcHeuristicFPump::solution(double & solutionValue,
       pumpPrint[0]='\0';
     }
     delete solver;
+    solver=NULL;
     for ( j=0;j<NUMBER_OLD;j++) 
       delete [] oldSolution[j];
     delete [] oldSolution;
@@ -1126,6 +1128,7 @@ CbcHeuristicFPump::solution(double & solutionValue,
       totalNumberPasses += numberPasses-1;
     }
   }
+  delete solver; // probably NULL but do anyway
   if (!finalReturnCode&&closestSolution&&closestObjectiveValue <= 10.0&&usedColumn) {
     // try a bit of branch and bound
     OsiSolverInterface * newSolver = model_->continuousSolver()->clone();

@@ -358,7 +358,7 @@ CbcHeuristicFPump::solution(double & solutionValue,
       if (offset)
 	printf("CbcHeuristicFPump obj offset %g\n",offset);
 #endif
-      solver->addRow(nel,which,els,-COIN_DBL_MAX,cutoff+offset);
+      solver->addRow(nel,which,els,-COIN_DBL_MAX,cutoff+offset*direction);
       delete [] which;
       delete [] els;
       bool takeHint;

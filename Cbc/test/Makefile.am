@@ -37,7 +37,7 @@ test_cbc: ../src/cbc$(EXEEXT)
 test_cbc_generic: ../src/cbc-generic$(EXEEXT)
 	echo "A minimal test is all that cbc-generic can manage just yet."
 	../src/cbc-generic$(EXEEXT) \
-	    -directory ../../Data/Sample -import p0033 -branch
+	    -directory ../../Data/Sample -import p0033.mps -branch
 
 .PHONY: test
 

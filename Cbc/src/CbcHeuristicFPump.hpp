@@ -97,6 +97,12 @@ public:
   /// Get weight factor (default 0.1)
   inline double weightFactor() const
   { return weightFactor_;}
+  /// Set threshold cost for using original cost - even on continuous (default infinity)
+  inline void setArtificialCost(double value)
+  { artificialCost_ = value;}
+  /// Get threshold cost for using original cost - even on continuous (default infinity)
+  inline double artificialCost() const
+  { return artificialCost_;}
   /// Set maximum passes (default 100)
   inline void setMaximumPasses(int value)
   { maximumPasses_=value;}
@@ -149,8 +155,10 @@ protected:
   double defaultRounding_;
   /// Initial weight for true objective
   double initialWeight_;
-  /// factor for decreasing weight
+  /// Factor for decreasing weight
   double weightFactor_;
+  /// Threshold cost for using original cost - even on continuous
+  double artificialCost_;
   /// Maximum number of passes
   int maximumPasses_;
   /** Maximum number of retries if we find a solution.

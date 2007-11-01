@@ -78,6 +78,12 @@ public:
   /// Gets number of nodes in a subtree (default 200)
   inline int numberNodes() const
   { return numberNodes_;}
+  /// Sets feasibility pump options (-1 is off)
+  inline void setFeasibilityPumpOptions(int value)
+  { feasibilityPumpOptions_=value;}
+  /// Gets feasibility pump options (-1 is off)
+  inline int feasibilityPumpOptions() const
+  { return feasibilityPumpOptions_;}
   /// Just set model - do not do anything else
   inline void setModelOnly(CbcModel * model)
   { model_ = model;}
@@ -122,6 +128,8 @@ protected:
   int when_;
   /// Number of nodes in any sub tree
   int numberNodes_;
+  /// Feasibility pump options (-1 is off)
+  int feasibilityPumpOptions_;
   /// Fraction of new(rows+columns)/old(rows+columns) before doing small branch and bound
   double fractionSmall_;
   /// Name for printing

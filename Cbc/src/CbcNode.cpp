@@ -2201,7 +2201,7 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
   // Return if doing hot start (in BAB sense)
   if (model->hotstartSolution()) 
     return -3;
-#define RANGING
+  //#define RANGING
 #ifdef RANGING
   // Pass number
   int kPass=0;
@@ -2422,7 +2422,7 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
 	toZero = probingInfo->toZero();
 	toOne = probingInfo->toOne();
 	backward = probingInfo->backward();
-	if (!toZero[number01]||number01<numberObjects) {
+	if (!toZero[number01]||number01<numberObjects||true) {
 	  // no info
 	  probingInfo=NULL;
 	}
@@ -2927,7 +2927,7 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
           numberTest=numberStrong;
           skipAll=false;
         }
-        model->setStateOfSearch(2); // use min min
+        //model->setStateOfSearch(2); // use min min
       }
       // could adjust using average iterations per branch
       // double average = ((double)model->getIterationCount())/
@@ -3081,6 +3081,7 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
 	  maxChange *= 0.1; // probing
         // see if can skip strong branching
         int canSkip = choice.possibleBranch->fillStrongInfo(choice);
+#if 0
         if (!newWay) {
 	  if ((maxChange>distanceToCutoff2)&&(!doQuickly||(numberTest>0&&searchStrategy!=2)))
           canSkip=0;
@@ -3103,6 +3104,16 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
             break; // give up anyway
           }
         }
+#else
+        if (((numberTest2<=0&&numberTest<=0)||skipAll)&&sort[iDo]>distanceToCutoff) {
+          //canSkip=1; // always skip
+          if (iDo>20) {
+            delete choice.possibleBranch;
+            choice.possibleBranch=NULL;
+            break; // give up anyway
+          }
+        }
+#endif
         if (model->messageHandler()->logLevel()>3&&numberBeforeTrust) 
           dynamicObject->print(1,choice.possibleBranch->value());
         // was if (!canSkip)
@@ -4125,12 +4136,12 @@ int CbcNode::analyze (CbcModel *model, double * results)
     // If objective goes above certain amount we can set bound
     int jInt = back[iColumn];
     newLower[jInt]=upperValue;
-    if (choice.finishedDown||!fastIterations)
+    if (choice.finishedDown)
       objLower[jInt]=choice.downMovement+objectiveValue_;
     else
       objLower[jInt]=objectiveValue_;
     newUpper[jInt]=lowerValue;
-    if (choice.finishedUp||!fastIterations)
+    if (choice.finishedUp)
       objUpper[jInt]=choice.upMovement+objectiveValue_;
     else
       objUpper[jInt]=objectiveValue_;

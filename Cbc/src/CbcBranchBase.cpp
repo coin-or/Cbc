@@ -335,7 +335,9 @@ CbcObjectUpdateData::CbcObjectUpdateData()
     change_(0.0),
     status_(0),
     intDecrease_(0),
-    branchingValue_(0.0)
+    branchingValue_(0.0),
+    originalObjective_(COIN_DBL_MAX),
+    cutoff_(COIN_DBL_MAX)
 {
 }
 
@@ -352,7 +354,9 @@ CbcObjectUpdateData::CbcObjectUpdateData (CbcObject * object,
     change_(change),
     status_(status),
     intDecrease_(intDecrease),
-    branchingValue_(branchingValue)
+    branchingValue_(branchingValue),
+    originalObjective_(COIN_DBL_MAX),
+    cutoff_(COIN_DBL_MAX)
 {
 }
 
@@ -369,7 +373,9 @@ CbcObjectUpdateData::CbcObjectUpdateData ( const CbcObjectUpdateData & rhs)
     change_(rhs.change_),
     status_(rhs.status_),
     intDecrease_(rhs.intDecrease_),
-    branchingValue_(rhs.branchingValue_)
+    branchingValue_(rhs.branchingValue_),
+    originalObjective_(rhs.originalObjective_),
+    cutoff_(rhs.cutoff_)
 {
 }
 
@@ -385,6 +391,8 @@ CbcObjectUpdateData::operator=( const CbcObjectUpdateData& rhs)
     status_ = rhs.status_;
     intDecrease_ = rhs.intDecrease_;
     branchingValue_ = rhs.branchingValue_;
+    originalObjective_ = rhs.originalObjective_;
+    cutoff_ = rhs.cutoff_;
   }
   return *this;
 }

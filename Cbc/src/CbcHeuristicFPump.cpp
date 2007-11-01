@@ -30,6 +30,7 @@ CbcHeuristicFPump::CbcHeuristicFPump()
    defaultRounding_(0.49999),
    initialWeight_(0.0),
    weightFactor_(0.1),
+   artificialCost_(COIN_DBL_MAX),
    maximumPasses_(100),
    maximumRetries_(1),
    accumulate_(0),
@@ -51,6 +52,7 @@ CbcHeuristicFPump::CbcHeuristicFPump(CbcModel & model,
    defaultRounding_(downValue),
    initialWeight_(0.0),
    weightFactor_(0.1),
+   artificialCost_(COIN_DBL_MAX),
    maximumPasses_(100),
    maximumRetries_(1),
    accumulate_(0),
@@ -138,6 +140,7 @@ CbcHeuristicFPump::CbcHeuristicFPump(const CbcHeuristicFPump & rhs)
   defaultRounding_(rhs.defaultRounding_),
   initialWeight_(rhs.initialWeight_),
   weightFactor_(rhs.weightFactor_),
+  artificialCost_(rhs.artificialCost_),
   maximumPasses_(rhs.maximumPasses_),
   maximumRetries_(rhs.maximumRetries_),
   accumulate_(rhs.accumulate_),
@@ -160,6 +163,7 @@ CbcHeuristicFPump::operator=( const CbcHeuristicFPump& rhs)
     defaultRounding_ = rhs.defaultRounding_;
     initialWeight_ = rhs.initialWeight_;
     weightFactor_ = rhs.weightFactor_;
+    artificialCost_ = rhs.artificialCost_;
     maximumPasses_ = rhs.maximumPasses_;
     maximumRetries_ = rhs.maximumRetries_;
     accumulate_ = rhs.accumulate_;
@@ -310,8 +314,10 @@ CbcHeuristicFPump::solution(double & solutionValue,
   double saveBestObjective = model_->getMinimizationObjValue();
   int numberSolutions=0;
   OsiSolverInterface * solver = NULL;
+  double artificialFactor = 0.00001;
   while (!exitAll) {
     int numberPasses=0;
+    artificialFactor *= 10.0;
     numberTries++;
     // Clone solver - otherwise annoys root node computations
     solver = model_->solver()->clone();
@@ -417,10 +423,26 @@ CbcHeuristicFPump::solution(double & solutionValue,
     solver->getDblParam(OsiObjOffset,saveOffset);
     // Get amount for original objective
     double scaleFactor = 0.0;
-    for (i=0;i<numberColumns;i++)
-      scaleFactor += saveObjective[i]*saveObjective[i];
+#ifdef COIN_DEVELOP
+    double largestCost=0.0;
+    int nArtificial=0;
+#endif
+    for (i=0;i<numberColumns;i++) {
+      double value = saveObjective[i];
+      scaleFactor += value*value;
+#ifdef COIN_DEVELOP
+      largestCost=CoinMax(largestCost,fabs(value));
+      if (value*direction>=artificialCost_)
+	nArtificial++;
+#endif
+    }
     if (scaleFactor)
       scaleFactor = (initialWeight_*sqrt((double) numberIntegers))/sqrt(scaleFactor);
+#ifdef COIN_DEVELOP
+    if (scaleFactor)
+      printf("Using %g fraction of original objective - largest %g - %d artificials\n",scaleFactor,
+	     largestCost,nArtificial);
+#endif
     // 5. MAIN WHILE LOOP
     bool newLineNeeded=false;
     while (!finished) {
@@ -663,10 +685,15 @@ CbcHeuristicFPump::solution(double & solutionValue,
 	for (i=0;i<numberColumns;i++) {
 	  // below so we can keep original code and allow for objective
 	  int iColumn = i;
+	  // Special code for "artificials"
+	  if (direction*saveObjective[iColumn]>=artificialCost_) {
+	    //solver->setObjCoeff(iColumn,scaleFactor*saveObjective[iColumn]);
+	    solver->setObjCoeff(iColumn,(artificialFactor*saveObjective[iColumn])/artificialCost_);
+	  }
 	  if(!solver->isBinary(iColumn)&&!doGeneral)
 	    continue;
 	  // deal with fixed variables (i.e., upper=lower)
-	  if (fabs(lower[iColumn]-upper[iColumn]) < primalTolerance) {
+	  if (fabs(lower[iColumn]-upper[iColumn]) < primalTolerance||!solver->isInteger(iColumn)) {
 	    //if (lower[iColumn] > 1. - primalTolerance) solver->setObjCoeff(iColumn,-costValue);
 	    //else                                       solver->setObjCoeff(iColumn,costValue);
 	    continue;

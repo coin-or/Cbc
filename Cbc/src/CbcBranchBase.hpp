@@ -547,6 +547,10 @@ public:
   int intDecrease_;
   /// Branching value
   double branchingValue_;
+  /// Objective value before branching
+  double originalObjective_;
+  /// Current cutoff
+  double cutoff_;
 
 };
 

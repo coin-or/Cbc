@@ -17,15 +17,18 @@
 #include "CbcModel.hpp"
 #include "CbcMessage.hpp"
 #include "CbcHeuristic.hpp"
+#include "CbcHeuristicFPump.hpp"
 #include "CbcStrategy.hpp"
 #include "CglPreProcess.hpp"
 #include "OsiAuxInfo.hpp"
+#include "OsiPresolve.hpp"
 
 // Default Constructor
 CbcHeuristic::CbcHeuristic() 
   :model_(NULL),
    when_(2),
    numberNodes_(200),
+   feasibilityPumpOptions_(-1),
    fractionSmall_(1.0),
    heuristicName_("Unknown")
 {
@@ -38,6 +41,7 @@ CbcHeuristic::CbcHeuristic(CbcModel & model)
   model_(&model),
   when_(2),
   numberNodes_(200),
+  feasibilityPumpOptions_(-1),
   fractionSmall_(1.0),
   heuristicName_("Unknown")
 {
@@ -49,6 +53,7 @@ CbcHeuristic::CbcHeuristic(const CbcHeuristic & rhs)
   model_(rhs.model_),
   when_(rhs.when_),
   numberNodes_(rhs.numberNodes_),
+  feasibilityPumpOptions_(rhs.feasibilityPumpOptions_),
   fractionSmall_(rhs.fractionSmall_),
   heuristicName_(rhs.heuristicName_)
 {
@@ -61,6 +66,7 @@ CbcHeuristic::operator=( const CbcHeuristic& rhs)
     model_ = rhs.model_;
     when_ = rhs.when_;
     numberNodes_ = rhs.numberNodes_;
+    feasibilityPumpOptions_ = rhs.feasibilityPumpOptions_;
     fractionSmall_ = rhs.fractionSmall_;
     heuristicName_ = rhs.heuristicName_ ;
   }
@@ -108,6 +114,9 @@ void CbcHeuristic::setModel(CbcModel * model)
 {
   model_ = model;
 }
+#ifdef COIN_DEVELOP
+extern bool getHistoryStatistics_;
+#endif
 // Do mini branch and bound (return 1 if solution)
 int 
 CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver,int numberNodes,
@@ -130,13 +139,124 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver,int numberNodes,
     lpSolver->setSpecialOptions(lpSolver->specialOptions()|0x01000000); // say is Cbc (and in branch and bound)
   }
 #endif
+#ifdef COIN_DEVELOP
+  getHistoryStatistics_=false;
+#endif
+  int logLevel = model_->logLevel();
+  char generalPrint[100];
+  // Do presolve to see if possible
+  int numberColumns = solver->getNumCols();
+  char * reset = NULL;
+  int returnCode=1;
+  {
+    int saveLogLevel = solver->messageHandler()->logLevel();
+    if (saveLogLevel==1)
+      solver->messageHandler()->setLogLevel(0);
+    OsiPresolve * pinfo = new OsiPresolve();
+    int presolveActions=0;
+    // Allow dual stuff on integers
+    presolveActions=1;
+    // Do not allow all +1 to be tampered with
+    //if (allPlusOnes)
+    //presolveActions |= 2;
+    // allow transfer of costs
+    // presolveActions |= 4;
+    pinfo->setPresolveActions(presolveActions);
+    OsiSolverInterface * presolvedModel = pinfo->presolvedModel(*solver,1.0e-8,true,2);
+    delete pinfo;
+    // see if too big
+    double before = 2*solver->getNumRows()+solver->getNumCols();
+    if (presolvedModel) {
+      int afterRows = presolvedModel->getNumRows();
+      int afterCols = presolvedModel->getNumCols();
+      delete presolvedModel;
+      double after = 2*afterRows+afterCols;
+      if (after>fractionSmall_*before&&after>300) {
+	// Need code to try again to compress further using used
+	const int * used =  model_->usedInSolution();
+	int maxUsed=0;
+	int iColumn;
+	const double * lower = solver->getColLower();
+	const double * upper = solver->getColUpper();
+	for (iColumn=0;iColumn<numberColumns;iColumn++) {
+	  if (upper[iColumn]>lower[iColumn]) {
+	    if (solver->isBinary(iColumn))
+	      maxUsed = CoinMax(maxUsed,used[iColumn]);
+	  }
+	}
+	if (maxUsed) {
+	  reset = new char [numberColumns];
+	  int nFix=0;
+	  for (iColumn=0;iColumn<numberColumns;iColumn++) {
+	    reset[iColumn]=0;
+	    if (upper[iColumn]>lower[iColumn]) {
+	      if (solver->isBinary(iColumn)&&used[iColumn]==maxUsed) {
+		bool setValue=true;
+		if (maxUsed==1) {
+		  double randomNumber = CoinDrand48();
+		  if (randomNumber>0.3)
+		    setValue=false;
+		}
+		if (setValue) {
+		  reset[iColumn]=1;
+		  solver->setColLower(iColumn,1.0);
+		  nFix++;
+		}
+	      }
+	    }
+	  }
+	  pinfo = new OsiPresolve();
+	  presolveActions=0;
+	  // Allow dual stuff on integers
+	  presolveActions=1;
+	  // Do not allow all +1 to be tampered with
+	  //if (allPlusOnes)
+	  //presolveActions |= 2;
+	  // allow transfer of costs
+	  // presolveActions |= 4;
+	  pinfo->setPresolveActions(presolveActions);
+	  presolvedModel = pinfo->presolvedModel(*solver,1.0e-8,true,2);
+	  delete pinfo;
+	  if(presolvedModel) {
+	    // see if too big
+	    int afterRows2 = presolvedModel->getNumRows();
+	    int afterCols2 = presolvedModel->getNumCols();
+	    delete presolvedModel;
+	    double after = 2*afterRows2+afterCols2;
+	    if (after>fractionSmall_*before&&after>300) {
+	      sprintf(generalPrint,"Full problem %d rows %d columns, reduced to %d rows %d columns - %d fixed gives %d, %d - still too large",
+		      solver->getNumRows(),solver->getNumCols(),
+		      afterRows,afterCols,nFix,afterRows2,afterCols2);
+	    } else {
+	      sprintf(generalPrint,"Full problem %d rows %d columns, reduced to %d rows %d columns - %d fixed gives %d, %d - ok now",
+		      solver->getNumRows(),solver->getNumCols(),
+		      afterRows,afterCols,nFix,afterRows2,afterCols2);
+	    }
+	    model_->messageHandler()->message(CBC_FPUMP1,model_->messages())
+	      << generalPrint
+	      <<CoinMessageEol;
+	  } else {
+	    returnCode=-1; // infeasible
+	  }
+	}
+      }
+    } else {
+      returnCode=-1; // infeasible
+    }
+    solver->messageHandler()->setLogLevel(saveLogLevel);
+  }
+  if (returnCode==-1) {
+    delete [] reset;
+#ifdef COIN_DEVELOP
+    getHistoryStatistics_=true;
+#endif
+    return returnCode;
+  }
   // Reduce printout
   solver->setHintParam(OsiDoReducePrint,true,OsiHintTry);
   solver->setHintParam(OsiDoPresolveInInitial,false,OsiHintTry);
   solver->setDblParam(OsiDualObjectiveLimit,cutoff*solver->getObjSense());
   solver->initialSolve();
-  int returnCode=1;
-  int logLevel = model_->logLevel();
   if (solver->isProvenOptimal()) {
     CglPreProcess process;
     /* Do not try and produce equality cliques and
@@ -150,9 +270,8 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver,int numberNodes,
       returnCode=2; // so will be infeasible
     } else {
       // see if too big
-      double before = solver->getNumRows()+solver->getNumCols();
-      double after = solver2->getNumRows()+solver2->getNumCols();
-      char generalPrint[100];
+      double before = 2*solver->getNumRows()+solver->getNumCols();
+      double after = 2*solver2->getNumRows()+solver2->getNumCols();
       if (after>fractionSmall_*before&&after>300) {
 	sprintf(generalPrint,"Full problem %d rows %d columns, reduced to %d rows %d columns - too large",
 		solver->getNumRows(),solver->getNumCols(),
@@ -160,7 +279,7 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver,int numberNodes,
 	model_->messageHandler()->message(CBC_FPUMP1,model_->messages())
 	  << generalPrint
 	  <<CoinMessageEol;
-	return -1;
+	returnCode = -1;
       } else {
 	sprintf(generalPrint,"Full problem %d rows %d columns, reduced to %d rows %d columns",
 		solver->getNumRows(),solver->getNumCols(),
@@ -169,77 +288,145 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver,int numberNodes,
 	  << generalPrint
 	  <<CoinMessageEol;
       }
-      solver2->resolve();
-      CbcModel model(*solver2);
-      if (logLevel<=1)
-        model.setLogLevel(0);
-      else
-        model.setLogLevel(logLevel);
-      model.setCutoff(cutoff);
-      model.setMaximumNodes(numberNodes);
-      model.solver()->setHintParam(OsiDoReducePrint,true,OsiHintTry);
-      // Lightweight
-      CbcStrategyDefaultSubTree strategy(model_,true,5,1,0);
-      model.setStrategy(strategy);
-      model.solver()->setIntParam(OsiMaxNumIterationHotStart,10);
-      // Do search
-      if (logLevel>1)
-        model_->messageHandler()->message(CBC_START_SUB,model_->messages())
-          << name
-          << model.getMaximumNodes()
-          <<CoinMessageEol;
-      // probably faster to use a basis to get integer solutions
-      model.setSpecialOptions(2);
+      if (returnCode==1) {
+	solver2->resolve();
+	CbcModel model(*solver2);
+	if (logLevel<=1)
+	  model.setLogLevel(0);
+	else
+	  model.setLogLevel(logLevel);
+	if (feasibilityPumpOptions_>=0) {
+	  CbcHeuristicFPump heuristic4;
+	  int pumpTune=feasibilityPumpOptions_;
+	  if (pumpTune>0) {
+	    /*
+	      >=10000000 for using obj
+	      >=1000000 use as accumulate switch
+	      >=1000 use index+1 as number of large loops
+	      >=100 use 0.05 objvalue as increment
+	      >=10 use +0.1 objvalue for cutoff (add)
+	      1 == fix ints at bounds, 2 fix all integral ints, 3 and continuous at bounds
+	      4 and static continuous, 5 as 3 but no internal integers
+	      6 as 3 but all slack basis!
+	    */
+	    double value = solver2->getObjSense()*solver2->getObjValue();
+	    int w = pumpTune/10;
+	    int c = w % 10;
+	    w /= 10;
+	    int i = w % 10;
+	    w /= 10;
+	    int r = w;
+	    int accumulate = r/1000;
+	    r -= 1000*accumulate;
+	    if (accumulate>=10) {
+	      int which = accumulate/10;
+	      accumulate -= 10*which;
+	      which--;
+	      // weights and factors
+	      double weight[]={0.1,0.1,0.5,0.5,1.0,1.0,5.0,5.0};
+	      double factor[] = {0.1,0.5,0.1,0.5,0.1,0.5,0.1,0.5};
+	      heuristic4.setInitialWeight(weight[which]);
+	      heuristic4.setWeightFactor(factor[which]);
+	    }
+	    // fake cutoff
+	    if (c) {
+	      double cutoff;
+	      solver2->getDblParam(OsiDualObjectiveLimit,cutoff);
+	      cutoff = CoinMin(cutoff,value + 0.1*fabs(value)*c);
+	      heuristic4.setFakeCutoff(cutoff);
+	    }
+	    if (i||r) {
+	      // also set increment
+	      //double increment = (0.01*i+0.005)*(fabs(value)+1.0e-12);
+	      double increment = 0.0;
+	      heuristic4.setAbsoluteIncrement(increment);
+	      heuristic4.setAccumulate(accumulate);
+	      heuristic4.setMaximumRetries(r+1);
+	    }
+	    pumpTune = pumpTune%100;
+	    if (pumpTune==6)
+	      pumpTune =13;
+	    heuristic4.setWhen(pumpTune+10);
+	  }
+	  heuristic4.setHeuristicName("feasibility pump");
+	  model.addHeuristic(&heuristic4);
+	}
+	model.setCutoff(cutoff);
+	model.setMaximumNodes(numberNodes);
+	model.solver()->setHintParam(OsiDoReducePrint,true,OsiHintTry);
+	// Lightweight
+	CbcStrategyDefaultSubTree strategy(model_,true,5,1,0);
+	model.setStrategy(strategy);
+	model.solver()->setIntParam(OsiMaxNumIterationHotStart,10);
+	// Do search
+	if (logLevel>1)
+	  model_->messageHandler()->message(CBC_START_SUB,model_->messages())
+	    << name
+	    << model.getMaximumNodes()
+	    <<CoinMessageEol;
+	// probably faster to use a basis to get integer solutions
+	model.setSpecialOptions(2);
 #ifdef CBC_THREAD
-      if (model_->getNumberThreads()>0&&(model_->getThreadMode()&1)!=0) {
-	// See if at root node
-	bool atRoot = model_->getNodeCount()==0;
-	int passNumber = model_->getCurrentPassNumber();
-	if (atRoot&&passNumber==1)
-	  model.setNumberThreads(model_->getNumberThreads());
-      }
-#endif
-      model.setMaximumCutPassesAtRoot(CoinMin(20,model_->getMaximumCutPassesAtRoot()));
-      model.setParentModel(*model_);
-      model.setOriginalColumns(process.originalColumns());
-      model.branchAndBound();
-      if (logLevel>1)
-        model_->messageHandler()->message(CBC_END_SUB,model_->messages())
-          << name
-          <<CoinMessageEol;
-      if (model.getMinimizationObjValue()<CoinMin(cutoff,1.0e30)) {
-        // solution
-        returnCode=model.isProvenOptimal() ? 3 : 1;
-        // post process
-#ifdef COIN_HAS_CLP
-	OsiClpSolverInterface * clpSolver = dynamic_cast< OsiClpSolverInterface*> (model.solver());
-	if (clpSolver) {
-	  ClpSimplex * lpSolver = clpSolver->getModelPtr();
-	  lpSolver->setSpecialOptions(lpSolver->specialOptions()|0x01000000); // say is Cbc (and in branch and bound)
+	if (model_->getNumberThreads()>0&&(model_->getThreadMode()&1)!=0) {
+	  // See if at root node
+	  bool atRoot = model_->getNodeCount()==0;
+	  int passNumber = model_->getCurrentPassNumber();
+	  if (atRoot&&passNumber==1)
+	    model.setNumberThreads(model_->getNumberThreads());
 	}
 #endif
-        process.postProcess(*model.solver());
-        if (solver->isProvenOptimal()) {
-          // Solution now back in solver
-          int numberColumns = solver->getNumCols();
-          memcpy(newSolution,solver->getColSolution(),
-                 numberColumns*sizeof(double));
-          newSolutionValue = model.getMinimizationObjValue();
-        } else {
-          // odd - but no good
-          returnCode=0; // so will be infeasible
-        }
-      } else {
+	model.setMaximumCutPassesAtRoot(CoinMin(20,model_->getMaximumCutPassesAtRoot()));
+	model.setParentModel(*model_);
+	model.setOriginalColumns(process.originalColumns());
+	model.branchAndBound();
+	if (logLevel>1)
+	  model_->messageHandler()->message(CBC_END_SUB,model_->messages())
+	    << name
+	    <<CoinMessageEol;
+	if (model.getMinimizationObjValue()<CoinMin(cutoff,1.0e30)) {
+	  // solution
+	  returnCode=model.isProvenOptimal() ? 3 : 1;
+	  // post process
+#ifdef COIN_HAS_CLP
+	  OsiClpSolverInterface * clpSolver = dynamic_cast< OsiClpSolverInterface*> (model.solver());
+	  if (clpSolver) {
+	    ClpSimplex * lpSolver = clpSolver->getModelPtr();
+	    lpSolver->setSpecialOptions(lpSolver->specialOptions()|0x01000000); // say is Cbc (and in branch and bound)
+	  }
+#endif
+	  process.postProcess(*model.solver());
+	  if (solver->isProvenOptimal()) {
+	    // Solution now back in solver
+	    int numberColumns = solver->getNumCols();
+	    memcpy(newSolution,solver->getColSolution(),
+		   numberColumns*sizeof(double));
+	    newSolutionValue = model.getMinimizationObjValue();
+	  } else {
+	    // odd - but no good
+	    returnCode=0; // so will be infeasible
+	  }
+	} else {
         // no good
-        returnCode=model.isProvenInfeasible() ? 2 : 0; // so will be infeasible
+	  returnCode=model.isProvenInfeasible() ? 2 : 0; // so will be infeasible
+	}
+	if (model.status()==5)
+	  returnCode=-2; // stop
       }
-      if (model.status()==5)
-	returnCode=-2; // stop
     }
   } else {
     returnCode=2; // infeasible finished
   }
   model_->setLogLevel(logLevel);
+  if (reset) {
+    for (int iColumn=0;iColumn<numberColumns;iColumn++) {
+      if (reset[iColumn])
+	solver->setColLower(iColumn,0.0);
+    }
+    delete [] reset;
+  }
+#ifdef COIN_DEVELOP
+  getHistoryStatistics_=true;
+#endif
   return returnCode;
 }
 

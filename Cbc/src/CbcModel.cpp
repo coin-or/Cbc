@@ -60,6 +60,7 @@
 #include "CglPreProcess.hpp"
 #include "CglDuplicateRow.hpp"
 #include "CglStored.hpp"
+#include "CglClique.hpp"
 
 #include "CoinTime.hpp"
 #include "CoinMpsIO.hpp"
@@ -600,6 +601,137 @@ CbcModel::analyzeObjective ()
 #endif
       }
     }
+    // But try again
+    if (continuousMultiplier<1.0) {
+      memset(rhs,0,numberRows*sizeof(double));
+      int * count = new int [numberRows];
+      memset(count,0,numberRows*sizeof(int));
+      for (iColumn=0;iColumn<numberColumns;iColumn++) {
+	CoinBigIndex start = columnStart[iColumn];
+	CoinBigIndex end = start + columnLength[iColumn];
+	if (upper[iColumn]==lower[iColumn]) {
+	  for (CoinBigIndex j=start;j<end;j++) {
+	    int iRow = row[j];
+	    rhs[iRow] += lower[iColumn]*element[j];
+	  }
+	} else if (solver_->isInteger(iColumn)) {
+	  for (CoinBigIndex j=start;j<end;j++) {
+	    int iRow = row[j];
+	    if (fabs(element[j]-floor(element[j]+0.5))>1.0e-10) 
+	      rhs[iRow]  = COIN_DBL_MAX;
+	  }
+	} else {
+	  for (CoinBigIndex j=start;j<end;j++) {
+	    int iRow = row[j];
+	    count[iRow]++;
+	    if (fabs(element[j])!=1.0)
+	      rhs[iRow]  = COIN_DBL_MAX;
+	  }
+	}
+      }
+      // now look at continuous
+      bool allGood=true;
+      double direction = solver_->getObjSense() ;
+      int numberObj=0;
+      for (iColumn=0;iColumn<numberColumns;iColumn++) {
+	if (upper[iColumn]>lower[iColumn]) {
+	  double objValue = objective[iColumn]*direction;
+	  if (objValue&&!solver_->isInteger(iColumn)) {
+	    numberObj++;
+	    CoinBigIndex start = columnStart[iColumn];
+	    CoinBigIndex end = start + columnLength[iColumn];
+	    if (objValue>0.0) {
+	      // wants to be as low as possible
+	      if (lower[iColumn]<-1.0e10||fabs(lower[iColumn]-floor(lower[iColumn]+0.5))>1.0e-10) {
+		allGood=false;
+		break;
+	      } else if (upper[iColumn]<1.0e10&&fabs(upper[iColumn]-floor(upper[iColumn]+0.5))>1.0e-10) {
+		allGood=false;
+		break;
+	      }
+	      bool singletonRow=true;
+	      bool equality=false;
+	      for (CoinBigIndex j=start;j<end;j++) {
+		int iRow = row[j];
+		if (count[iRow]>1)
+		  singletonRow=false;
+		else if (rowLower[iRow]==rowUpper[iRow])
+		  equality=true;
+		if (fabs(rhs[iRow])>1.0e20||fabs(rhs[iRow]-floor(rhs[iRow]+0.5))>1.0e-10
+		    ||fabs(element[j])!=1.0) {
+		  // no good
+		  allGood=false;
+		  break;
+		}
+		if (element[j]>0.0) {
+		  if (rowLower[iRow]>-1.0e20&&fabs(rowLower[iRow]-floor(rowLower[iRow]+0.5))>1.0e-10) {
+		    // no good
+		    allGood=false;
+		    break;
+		  }
+		} else {
+		  if (rowUpper[iRow]<1.0e20&&fabs(rowUpper[iRow]-floor(rowUpper[iRow]+0.5))>1.0e-10) {
+		    // no good
+		    allGood=false;
+		    break;
+		  }
+		}
+	      }
+	      if (!singletonRow&&end>start+1&&!equality)
+		allGood=false;
+	      if (!allGood)
+		break;
+	    } else {
+	      // wants to be as high as possible
+	      if (upper[iColumn]>1.0e10||fabs(upper[iColumn]-floor(upper[iColumn]+0.5))>1.0e-10) {
+		allGood=false;
+		break;
+	      } else if (lower[iColumn]>-1.0e10&&fabs(lower[iColumn]-floor(lower[iColumn]+0.5))>1.0e-10) {
+		allGood=false;
+		break;
+	      }
+	      bool singletonRow=true;
+	      bool equality=false;
+	      for (CoinBigIndex j=start;j<end;j++) {
+		int iRow = row[j];
+		if (count[iRow]>1)
+		  singletonRow=false;
+		else if (rowLower[iRow]==rowUpper[iRow])
+		  equality=true;
+		if (fabs(rhs[iRow])>1.0e20||fabs(rhs[iRow]-floor(rhs[iRow]+0.5))>1.0e-10
+		    ||fabs(element[j])!=1.0) {
+		  // no good
+		  allGood=false;
+		  break;
+		}
+		if (element[j]<0.0) {
+		  if (rowLower[iRow]>-1.0e20&&fabs(rowLower[iRow]-floor(rowLower[iRow]+0.5))>1.0e-10) {
+		    // no good
+		    allGood=false;
+		    break;
+		  }
+		} else {
+		  if (rowUpper[iRow]<1.0e20&&fabs(rowUpper[iRow]-floor(rowUpper[iRow]+0.5))>1.0e-10) {
+		    // no good
+		    allGood=false;
+		    break;
+		  }
+		}
+	      }
+	      if (!singletonRow&&end>start+1&&!equality)
+		allGood=false;
+	      if (!allGood)
+		break;
+	    }
+	  }
+	}
+      }
+      if (allGood) {
+	if (numberObj)
+	  printf("YYYY analysis says all continuous with costs will be integer\n");
+	continuousMultiplier=1.0;
+      }
+    }
     delete [] rhs;
   }
 /*
@@ -915,9 +1047,12 @@ void CbcModel::branchAndBound(int doStatistics)
   CbcEventHandler *eventHandler = getEventHandler() ;
   if (eventHandler)
     eventHandler->setModel(this);
+#ifdef CLIQUE_ANALYSIS
   // set up for probing
-  //probingInfo_ = new CglTreeProbingInfo(solver_);
+  probingInfo_ = new CglTreeProbingInfo(solver_);
+#else
   probingInfo_=NULL;
+#endif
 
   // Try for dominated columns
   if ((specialOptions_&64)!=0) {
@@ -1396,6 +1531,33 @@ void CbcModel::branchAndBound(int doStatistics)
   int numberIterationsAtContinuous = numberIterations_;
   //solverCharacteristics_->setSolver(solver_);
   if (feasible) {
+    if (probingInfo_) {
+      int number01 = probingInfo_->numberIntegers();
+      //const fixEntry * entry = probingInfo_->fixEntries();
+      const int * toZero = probingInfo_->toZero();
+      //const int * toOne = probingInfo_->toOne();
+      //const int * integerVariable = probingInfo_->integerVariable();
+      if (toZero[number01]) {
+	for (int i = 0;i<numberCutGenerators_;i++) {
+	  CglFakeClique * clique = dynamic_cast<CglFakeClique*>(generator_[i]->generator());
+	  if (clique) {
+	    OsiSolverInterface * fakeSolver = probingInfo_->analyze(*solver_,1);
+	    if (fakeSolver) {
+	      printf("Probing fake solver has %d rows\n",fakeSolver->getNumRows());
+	      //if (fakeSolver)
+	      //fakeSolver->writeMps("bad");
+	      if (generator_[i]->numberCutsInTotal())
+		generator_[i]->setHowOften(1);
+	    }
+	    clique->assignSolver(fakeSolver);
+	    //stored->setProbingInfo(probingInfo_);
+	    break;
+	  }
+	}
+      }
+      delete probingInfo_;
+      probingInfo_=NULL;
+    }
     newNode = new CbcNode ;
     // Set objective value (not so obvious if NLP etc)
     setObjectiveValue(newNode,NULL);
@@ -1894,9 +2056,6 @@ void CbcModel::branchAndBound(int doStatistics)
 	eventHappened_=true; // exit
       }
     }
-    // If no solution but many nodes - signal change in strategy
-    if (numberNodes_>2*numberObjects_+1000&&stateOfSearch_!=2)
-      stateOfSearch_=3;
     // See if can stop on gap
     double testGap = CoinMax(dblParam_[CbcAllowableGap],
 			     CoinMax(fabs(bestObjective_),fabs(bestPossibleObjective_))
@@ -2193,8 +2352,8 @@ void CbcModel::branchAndBound(int doStatistics)
 	    // need to check if any cuts would do anything
 	    OsiCuts theseCuts;
 	    // reset probing info
-	    if (probingInfo_)
-	      probingInfo_->initializeFixing();
+	    //if (probingInfo_)
+	    //probingInfo_->initializeFixing();
 	    for (int i = 0;i<numberCutGenerators_;i++) {
 	      bool generate = generator_[i]->normal();
 	      // skip if not optimal and should be (maybe a cut generator has fixed variables)
@@ -6065,6 +6224,9 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
       // increment cut counts
       generator_[i]->incrementNumberCutsInTotal(countRowCuts[i]);
       generator_[i]->incrementNumberCutsActive(count[i]);
+      CglStored * stored = dynamic_cast<CglStored*>(generator_[i]->generator());
+      if (stored&&!countRowCuts[i])
+	continue;
       if (handler_->logLevel()>1||!numberNodes_) {
 	handler_->message(CBC_GENERATOR,messages_)
 	  <<i
@@ -7752,8 +7914,8 @@ CbcModel::checkSolution (double cutoff, double *solution,
         int i;
         int lastNumberCuts=0;
 	// reset probing info
-	if (probingInfo_)
-	  probingInfo_->initializeFixing();
+	//if (probingInfo_)
+	//probingInfo_->initializeFixing();
         for (i=0;i<numberCutGenerators_;i++) 
           {
             if (generator_[i]->atSolution()) 
@@ -7902,10 +8064,6 @@ CbcModel::setBestSolution (CBC_Message how,
       if (how==CBC_ROUNDING)
         numberHeuristicSolutions_++;
       numberSolutions_++;
-      if (numberHeuristicSolutions_==numberSolutions_) 
-        stateOfSearch_ = 1;
-      else 
-        stateOfSearch_ = 2;
 
       if (how!=CBC_ROUNDING) {
 	handler_->message(how,messages_)
@@ -7932,8 +8090,8 @@ CbcModel::setBestSolution (CBC_Message how,
       int i;
       int lastNumberCuts=0;
       // reset probing info
-      if (probingInfo_)
-	probingInfo_->initializeFixing();
+      //if (probingInfo_)
+      //probingInfo_->initializeFixing();
       for (i=0;i<numberCutGenerators_;i++) {
         bool generate = generator_[i]->atSolution();
         // skip if not optimal and should be (maybe a cut generator has fixed variables)
@@ -8072,10 +8230,6 @@ CbcModel::setBestSolution (CBC_Message how,
         setCutoff(cutoff);
       
         numberSolutions_++;
-        if (numberNodes_== 0 || numberHeuristicSolutions_==numberSolutions_) 
-          stateOfSearch_ = 1;
-        else 
-          stateOfSearch_ = 2;
         
 	if (how!=CBC_ROUNDING) {
 	  handler_->message(how,messages_)
@@ -8288,8 +8442,8 @@ CbcModel::tightenVubs(int numberSolves, const int * which,
   CglProbing* generator = NULL;
   int iGen;
   // reset probing info
-  if (probingInfo_)
-    probingInfo_->initializeFixing();
+  //if (probingInfo_)
+  //probingInfo_->initializeFixing();
   for (iGen=0;iGen<numberCutGenerators_;iGen++) {
     generator = dynamic_cast<CglProbing*>(generator_[iGen]->generator());
     if (generator)
@@ -9746,6 +9900,27 @@ CbcModel::chooseBranch(CbcNode * newNode, int numberPassesLeft,
 		       const double * lowerBefore,const double * upperBefore,
 		       OsiSolverBranch * & branches)
 {
+  // Set state of search
+  /*
+    0 - outside CbcNode
+    1 - no solutions
+    2 - all heuristic solutions
+    3 - a solution reached by branching (could be strong)
+    4 - no solution but many nodes
+       add 10 if depth >= K
+  */
+  stateOfSearch_=1;
+  if (numberSolutions_>0) {
+    if (numberHeuristicSolutions_==numberSolutions_) 
+      stateOfSearch_ = 3;
+    else 
+      stateOfSearch_ = 3;
+  } if (numberNodes_>2*numberObjects_+1000) {
+    stateOfSearch_=4;
+  }
+  //stateOfSearch_=3;
+  if (currentNode_&&currentNode_->depth()>=8) 
+    stateOfSearch_ +=10;
   int anyAction =-1 ;
   resolved = false ;
   if (newNode->objectiveValue() >= getCutoff()) 
@@ -9894,6 +10069,7 @@ CbcModel::chooseBranch(CbcNode * newNode, int numberPassesLeft,
 	newNode->nodeInfo()->nullParent();
     }
   }
+  stateOfSearch_ =0; // outside chooseBranch
   return anyAction;
 }
 
@@ -10757,8 +10933,8 @@ CbcModel::doOneNode(CbcModel * baseModel, CbcNode * & node, CbcNode * & newNode)
 	// need to check if any cuts would do anything
 	OsiCuts theseCuts;
 	// reset probing info
-	if (probingInfo_)
-	  probingInfo_->initializeFixing();
+	//if (probingInfo_)
+	//probingInfo_->initializeFixing(solver_);
 	for (int i = 0;i<numberCutGenerators_;i++) {
 	  bool generate = generator_[i]->normal();
 	  // skip if not optimal and should be (maybe a cut generator has fixed variables)

@@ -216,7 +216,7 @@ CbcHeuristicRINS::solution(double & solutionValue,
       }
       numberTries_++;
       if ((numberTries_%10)==0&&numberSuccesses_*3<numberTries_)
-	howOften_ += howOften_/10;
+	howOften_ += howOften_/2;
     }
 
     delete newSolver;
@@ -233,6 +233,125 @@ void CbcHeuristicRINS::setModel(CbcModel * model)
   int numberColumns = model->solver()->getNumCols();
   used_ = new char[numberColumns];
   memset(used_,0,numberColumns);
+}
+// Default Constructor
+CbcHeuristicRENS::CbcHeuristicRENS() 
+  :CbcHeuristic()
+{
+  numberTries_=0;
+}
+
+// Constructor with model - assumed before cuts
+
+CbcHeuristicRENS::CbcHeuristicRENS(CbcModel & model)
+  :CbcHeuristic(model)
+{
+  numberTries_=0;
+}
+
+// Destructor 
+CbcHeuristicRENS::~CbcHeuristicRENS ()
+{
+}
+
+// Clone
+CbcHeuristic *
+CbcHeuristicRENS::clone() const
+{
+  return new CbcHeuristicRENS(*this);
+}
+
+// Assignment operator 
+CbcHeuristicRENS & 
+CbcHeuristicRENS::operator=( const CbcHeuristicRENS& rhs)
+{
+  if (this!=&rhs) {
+    CbcHeuristic::operator=(rhs);
+    numberTries_ = rhs.numberTries_;
+  }
+  return *this;
+}
+
+// Copy constructor 
+CbcHeuristicRENS::CbcHeuristicRENS(const CbcHeuristicRENS & rhs)
+:
+  CbcHeuristic(rhs),
+  numberTries_(rhs.numberTries_)
+{
+}
+// Resets stuff if model changes
+void 
+CbcHeuristicRENS::resetModel(CbcModel * model)
+{
+}
+int
+CbcHeuristicRENS::solution(double & solutionValue,
+			 double * betterSolution)
+{
+  int returnCode=0;
+  if (numberTries_)
+    return 0; 
+  numberTries_++;
+  OsiSolverInterface * solver = model_->solver();
+  
+  int numberIntegers = model_->numberIntegers();
+  const int * integerVariable = model_->integerVariable();
+  
+  const double * currentSolution = solver->getColSolution();
+  OsiSolverInterface * newSolver = model_->continuousSolver()->clone();
+  const double * colLower = newSolver->getColLower();
+  const double * colUpper = newSolver->getColUpper();
+
+  double primalTolerance;
+  solver->getDblParam(OsiPrimalTolerance,primalTolerance);
+    
+  int i;
+  int numberFixed=0;
+  int numberTightened=0;
+
+  for (i=0;i<numberIntegers;i++) {
+    int iColumn=integerVariable[i];
+    double value = currentSolution[iColumn];
+    double lower = colLower[iColumn];
+    double upper = colUpper[iColumn];
+    value = CoinMax(value,lower);
+    value = CoinMin(value,upper);
+    if (fabs(value-floor(value+0.5))<1.0e-8) {
+      value = floor(value+0.5);
+      newSolver->setColLower(iColumn,value);
+      newSolver->setColUpper(iColumn,value);
+      numberFixed++;
+    } else if (colUpper[iColumn]-colLower[iColumn]>=2.0) {
+      numberTightened++;
+      newSolver->setColLower(iColumn,floor(value));
+      newSolver->setColUpper(iColumn,ceil(value));
+    }
+  }
+  if (numberFixed>numberIntegers/5) {
+#ifdef COIN_DEVELOP
+    printf("%d integers fixed and %d tightened\n",numberFixed,numberTightened);
+#endif
+    returnCode = smallBranchAndBound(newSolver,numberNodes_,betterSolution,solutionValue,
+				     model_->getCutoff(),"CbcHeuristicRENS");
+    if (returnCode<0)
+      returnCode=0; // returned on size
+    //printf("return code %d",returnCode);
+    if ((returnCode&2)!=0) {
+      // could add cut
+      returnCode &= ~2;
+      //printf("could add cut with %d elements (if all 0-1)\n",nFix);
+    } else {
+      //printf("\n");
+    }
+  }
+  
+  delete newSolver;
+  return returnCode;
+}
+// update model
+void CbcHeuristicRENS::setModel(CbcModel * model)
+{
+  model_ = model;
 }
 
   

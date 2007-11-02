@@ -60,7 +60,7 @@ COININCDIR = @abs_include_dir@
 COINLIBDIR = @abs_lib_dir@
 
 # Libraries necessary to link with Clp
-LIBS = -L$(COINLIBDIR) -lCbc -lCgl -lOsiClp -lOsiCbc -lOsi -lClp -lCoinUtils \
+LIBS = -L$(COINLIBDIR) -lCbcSolver -lCbc -lCgl -lOsiClp -lOsiCbc -lOsi -lClp -lCoinUtils \
 	@ADDLIBS@ \
 	`cat $(COINLIBDIR)/cgl_addlibs.txt` \
 	`cat $(COINLIBDIR)/osi_addlibs.txt` \

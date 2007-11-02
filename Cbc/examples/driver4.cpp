@@ -12,6 +12,7 @@
 #include "CbcModel.hpp"
 #include "OsiClpSolverInterface.hpp"
 #include "CbcCompareUser.hpp"
+#include "CbcSolver.hpp"
 
 #include  "CoinTime.hpp"
 
@@ -172,10 +173,24 @@ MyEventHandler3::event(CbcEvent whichEvent)
 {
   // If in sub tree carry on
   if (!model_->parentModel()) {
-    if (whichEvent==solution||whichEvent==heuristicSolution)
+    if (whichEvent==solution||whichEvent==heuristicSolution) {
+#ifdef STOP_EARLY
       return stop; // say finished
-    else
+#else
+      // If preprocessing was done solution will be to processed model
+      int numberColumns = model_->getNumCols();
+      const double * bestSolution = model_->bestSolution();
+      assert (bestSolution);
+      printf("value of solution is %g\n",model_->getObjValue());
+      for (int i=0;i<numberColumns;i++) {
+	if (fabs(bestSolution[i])>1.0e-8)
+	  printf("%d %g\n",i,bestSolution[i]);
+      }
       return noAction; // carry on
+#endif
+    } else {
+      return noAction; // carry on
+    }
   } else {
       return noAction; // carry on
   }
@@ -199,28 +214,42 @@ int main (int argc, const char *argv[])
   // Tell solver to return fast if presolve or initial solve infeasible
   solver1.getModelPtr()->setMoreSpecialOptions(3);
 
+  /* Two ways of doing this depending on whether NEW_STYLE_SOLVER defined.
+     So we need pointer to model.  Old way could use modelA. rather than model->
+   */
+#ifndef NEW_STYLE_SOLVER
   // Pass to Cbc initialize defaults 
-  CbcModel model(solver1);    
-  CbcMain0(model);
+  CbcModel modelA(solver1);
+  CbcModel * model = &modelA;
+  CbcMain0(modelA);
   // Event handler
   MyEventHandler3 eventHandler;
-  model.passInEventHandler(&eventHandler);
+  model->passInEventHandler(&eventHandler);
   /* Now go into code for standalone solver
      Could copy arguments and add -quit at end to be safe
      but this will do
   */
   if (argc>2) {
-    CbcMain1(argc-1,argv+1,model,callBack);
+    CbcMain1(argc-1,argv+1,modelA,callBack);
   } else {
     const char * argv2[]={"driver3","-solve","-quit"};
-    CbcMain1(3,argv2,model,callBack);
+    CbcMain1(3,argv2,modelA,callBack);
   }
-
+#else
+  CbcSolver control(solver1);
+  // initialize
+  control.fillValuesInSolver();
+  // Event handler
+  MyEventHandler3 eventHandler;
+  CbcModel * model = control.model();
+  model->passInEventHandler(&eventHandler);
+  control.solve (argc-1, argv+1, 1);
+#endif
   // Solver was cloned so get current copy
-  OsiSolverInterface * solver = model.solver();
-  // Print solution if finished (could get from model.bestSolution() as well
+  OsiSolverInterface * solver = model->solver();
+  // Print solution if finished (could get from model->bestSolution() as well
 
-  if (model.bestSolution()) {
+  if (model->bestSolution()) {
     
     const double * solution = solver->getColSolution();
     

@@ -253,6 +253,7 @@ prefix = @prefix@
 program_transform_name = @program_transform_name@
 sbindir = @sbindir@
 sharedstatedir = @sharedstatedir@
+sol_cc_compiler = @sol_cc_compiler@
 sysconfdir = @sysconfdir@
 target_alias = @target_alias@
 AUTOMAKE_OPTIONS = foreign
@@ -447,7 +448,7 @@ test_cbc: ../src/cbc$(EXEEXT)
 test_cbc_generic: ../src/cbc-generic$(EXEEXT)
 	echo "A minimal test is all that cbc-generic can manage just yet."
 	../src/cbc-generic$(EXEEXT) \
-	    -directory ../../Data/Sample -import p0033 -branch
+	    -directory ../../Data/Sample -import p0033.mps -branch
 
 .PHONY: test
 # Tell versions [3.59,3.63) of GNU make to not export all variables.

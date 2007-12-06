@@ -49,6 +49,13 @@
 # endif
 #endif
 
+#ifdef COIN_HAS_MSK
+# include "OsiMskSolverInterface.hpp"
+# ifndef CBC_DEFAULT_SOLVER
+#   define CBC_DEFAULT_SOLVER "msk"
+# endif
+#endif
+
 #include "CoinParam.hpp"
 
 #include "CbcModel.hpp"
@@ -114,6 +121,9 @@ OsiSolverInterface *setupSolvers ()
 # endif
 # ifdef COIN_HAS_GLPK
   solvers["glpk"] = new OsiGlpkSolverInterface  ;
+# endif
+# ifdef COIN_HAS_MSK
+  solvers["msk"] = new OsiMskSolverInterface  ;
 # endif
 /*
   Set the standard default values in each solver.

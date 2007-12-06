@@ -21116,12 +21116,12 @@ echo "${ECHO_T}no" >&6
 # If argument 3 (file) is given, check for the file. Typically this will be a
 # header file, but that's not assumed.
 
-    if test -r $MSKINCDIR/mosekdl.h; then
+    if test -r $MSKINCDIR/mosek.h; then
 
   :
 else
-  { { echo "$as_me:$LINENO: error: Cannot find file mosekdl.h in $MSKINCDIR" >&5
-echo "$as_me: error: Cannot find file mosekdl.h in $MSKINCDIR" >&2;}
+  { { echo "$as_me:$LINENO: error: Cannot find file mosek.h in $MSKINCDIR" >&5
+echo "$as_me: error: Cannot find file mosek.h in $MSKINCDIR" >&2;}
    { (exit 1); exit 1; }; }
   :
 fi

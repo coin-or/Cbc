@@ -726,9 +726,12 @@ CbcModel::analyzeObjective ()
 	  }
 	}
       }
+      delete [] count;
       if (allGood) {
+#ifdef COIN_DEVELOP
 	if (numberObj)
 	  printf("YYYY analysis says all continuous with costs will be integer\n");
+#endif
 	continuousMultiplier=1.0;
       }
     }

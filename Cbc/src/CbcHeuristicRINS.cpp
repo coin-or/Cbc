@@ -24,6 +24,7 @@ CbcHeuristicRINS::CbcHeuristicRINS()
   numberSuccesses_=0;
   numberTries_=0;
   howOften_=100;
+  decayFactor_ = 0.5; 
   used_=NULL;
 }
 
@@ -36,6 +37,7 @@ CbcHeuristicRINS::CbcHeuristicRINS(CbcModel & model)
   numberSuccesses_=0;
   numberTries_=0;
   howOften_=100;
+  decayFactor_ = 0.5; 
   assert(model.solver());
   int numberColumns = model.solver()->getNumCols();
   used_ = new char[numberColumns];
@@ -63,6 +65,7 @@ CbcHeuristicRINS::operator=( const CbcHeuristicRINS& rhs)
     CbcHeuristic::operator=(rhs);
     numberSolutions_ = rhs.numberSolutions_;
     howOften_ = rhs.howOften_;
+    decayFactor_ = rhs.decayFactor_;
     numberSuccesses_ = rhs.numberSuccesses_;
     numberTries_ = rhs.numberTries_;
     delete [] used_;
@@ -98,6 +101,7 @@ CbcHeuristicRINS::CbcHeuristicRINS(const CbcHeuristicRINS & rhs)
   CbcHeuristic(rhs),
   numberSolutions_(rhs.numberSolutions_),
   howOften_(rhs.howOften_),
+  decayFactor_(rhs.decayFactor_),
   numberSuccesses_(rhs.numberSuccesses_),
   numberTries_(rhs.numberTries_)
 {
@@ -136,7 +140,7 @@ CbcHeuristicRINS::solution(double & solutionValue,
   if (!bestSolution)
     return 0; // No solution found yet
   if (numberSolutions_<model_->getSolutionCount()) {
-    // new solution - just add info
+    // new solution - add info
     numberSolutions_=model_->getSolutionCount();
 
     int numberIntegers = model_->numberIntegers();
@@ -162,7 +166,8 @@ CbcHeuristicRINS::solution(double & solutionValue,
 	used_[iColumn]=1;
       }
     }
-  } else if ((model_->getNodeCount()%howOften_)==0&&model_->getCurrentPassNumber()==1) {
+  } 
+  if ((model_->getNodeCount()%howOften_)==0&&model_->getCurrentPassNumber()==1) {
     OsiSolverInterface * solver = model_->solver();
 
     int numberIntegers = model_->numberIntegers();
@@ -216,7 +221,7 @@ CbcHeuristicRINS::solution(double & solutionValue,
       }
       numberTries_++;
       if ((numberTries_%10)==0&&numberSuccesses_*3<numberTries_)
-	howOften_ += howOften_/2;
+	howOften_ += howOften_*decayFactor_;
     }
 
     delete newSolver;

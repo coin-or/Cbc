@@ -50,7 +50,8 @@ CbcNodeInfo::CbcNodeInfo ()
   nodeNumber_(0),
   cuts_(NULL),
   numberRows_(0),
-  numberBranchesLeft_(0)
+  numberBranchesLeft_(0),
+  active_(7)
 {
 #ifdef CHECK_NODE
   printf("CbcNodeInfo %x Constructor\n",this);
@@ -66,7 +67,8 @@ CbcNodeInfo::CbcNodeInfo (CbcNodeInfo * parent)
   nodeNumber_(0),
   cuts_(NULL),
   numberRows_(0),
-  numberBranchesLeft_(2)
+  numberBranchesLeft_(2),
+  active_(7)
 {
 #ifdef CHECK_NODE
   printf("CbcNodeInfo %x Constructor from parent %x\n",this,parent_);
@@ -86,7 +88,8 @@ CbcNodeInfo::CbcNodeInfo (const CbcNodeInfo & rhs)
   nodeNumber_(rhs.nodeNumber_),
   cuts_(NULL),
   numberRows_(rhs.numberRows_),
-  numberBranchesLeft_(rhs.numberBranchesLeft_)
+  numberBranchesLeft_(rhs.numberBranchesLeft_),
+  active_(rhs.active_)
 {
 #ifdef CHECK_NODE
   printf("CbcNodeInfo %x Copy constructor\n",this);
@@ -116,7 +119,8 @@ CbcNodeInfo::CbcNodeInfo (CbcNodeInfo * parent, CbcNode * owner)
   nodeNumber_(0),
   cuts_(NULL),
   numberRows_(0),
-  numberBranchesLeft_(2)
+  numberBranchesLeft_(2),
+  active_(7)
 {
 #ifdef CHECK_NODE
   printf("CbcNodeInfo %x Constructor from parent %x\n",this,parent_);
@@ -138,14 +142,16 @@ CbcNodeInfo::~CbcNodeInfo()
 #endif
 
   assert(!numberPointingToThis_);
-  // But they may be some left (max nodes?)
+  // But there may be some left (max nodes?)
   for (int i=0;i<numberCuts_;i++) {
+    if (cuts_[i]) {
 #ifndef GLOBAL_CUTS_JUST_POINTERS
-    delete cuts_[i];
-#else
-    if (cuts_[i]->globallyValidAsInteger()!=2)
       delete cuts_[i];
+#else
+      if (cuts_[i]->globallyValidAsInteger()!=2)
+	delete cuts_[i];
 #endif
+    }
   }
   delete [] cuts_;
   if (owner_) 
@@ -183,6 +189,17 @@ CbcNodeInfo::decrementCuts(int change)
 	cuts_[i]=NULL;
       }
     }
+  }
+}
+void
+CbcNodeInfo::incrementCuts(int change)
+{
+  int i;
+  assert (change>0);
+  // increment cut counts
+  for (i=0;i<numberCuts_;i++) {
+    if (cuts_[i]) 
+      cuts_[i]->increment(change);
   }
 }
 void
@@ -440,6 +457,16 @@ CbcNodeInfo::deleteCut(int whichOne)
   assert(whichOne<numberCuts_);
   cuts_[whichOne]=NULL;
 }
+/* Deactivate node information.
+   1 - bounds
+   2 - cuts
+   4 - basis!
+*/
+void 
+CbcNodeInfo::deactivate(int mode)
+{
+  active_ &= (~mode);
+}
 
 CbcFullNodeInfo::CbcFullNodeInfo() :
   CbcNodeInfo(),
@@ -526,6 +553,7 @@ void CbcFullNodeInfo::applyToModel (CbcModel *model,
 { OsiSolverInterface *solver = model->solver() ;
 
   // branch - do bounds
+  assert (active_==7||active_==15);
   int i;
   solver->setColLower(lower_);
   solver->setColUpper(upper_);
@@ -546,6 +574,26 @@ void CbcFullNodeInfo::applyToModel (CbcModel *model,
   currentNumberCuts += numberCuts_;
   assert(!parent_);
   return ;
+}
+// Just apply bounds to one variable (1=>infeasible)
+int 
+CbcFullNodeInfo::applyBounds(int iColumn, double & lower, double & upper,int force) 
+{
+  if ((force&&1)==0) {
+    if (lower>lower_[iColumn])
+      printf("%d odd lower going from %g to %g\n",iColumn,lower,lower_[iColumn]);
+    lower = lower_[iColumn];
+  } else {
+    lower_[iColumn]=lower;
+  }
+  if ((force&&2)==0) {
+    if (upper<upper_[iColumn])
+      printf("%d odd upper going from %g to %g\n",iColumn,upper,upper_[iColumn]);
+    upper = upper_[iColumn];
+  } else {
+    upper_[iColumn]=upper;
+  }
+  return (upper_[iColumn]>=lower_[iColumn]) ? 0 : 1;
 }
 
 /* Builds up row basis backwards (until original model).
@@ -648,42 +696,142 @@ void CbcPartialNodeInfo::applyToModel (CbcModel *model,
 				       int &currentNumberCuts) const 
 
 { OsiSolverInterface *solver = model->solver();
-  basis->applyDiff(basisDiff_) ;
+  if ((active_&4)!=0) {
+    basis->applyDiff(basisDiff_) ;
+  }
 
   // branch - do bounds
   int i;
+  if ((active_&1)!=0) {
+    for (i=0;i<numberChangedBounds_;i++) {
+      int variable = variables_[i];
+      int k = variable&0x3fffffff;
+      if ((variable&0x80000000)==0) {
+	// lower bound changing
+	//#define CBC_PRINT2
+#ifdef CBC_PRINT2
+	if(solver->getColLower()[k]!=newBounds_[i])
+	  printf("lower change for column %d - from %g to %g\n",k,solver->getColLower()[k],newBounds_[i]);
+#endif
+#ifndef NDEBUG
+	if ((variable&0x40000000)==0&&false) {
+	  double oldValue = solver->getColLower()[k];
+	  assert (newBounds_[i]>oldValue-1.0e-8);
+	  if (newBounds_[i]<oldValue+1.0e-8)
+	    printf("bad null lower change for column %d - bound %g\n",k,oldValue);
+	}
+#endif
+	solver->setColLower(k,newBounds_[i]);
+      } else {
+	// upper bound changing
+#ifdef CBC_PRINT2
+	if(solver->getColUpper()[k]!=newBounds_[i])
+	  printf("upper change for column %d - from %g to %g\n",k,solver->getColUpper()[k],newBounds_[i]);
+#endif
+#ifndef NDEBUG
+	if ((variable&0x40000000)==0&&false) {
+	  double oldValue = solver->getColUpper()[k];
+	  assert (newBounds_[i]<oldValue+1.0e-8);
+	  if (newBounds_[i]>oldValue-1.0e-8)
+	    printf("bad null upper change for column %d - bound %g\n",k,oldValue);
+	}
+#endif
+	solver->setColUpper(k,newBounds_[i]);
+      }
+    }
+  }
+  if ((active_&2)!=0) {
+    for (i=0;i<numberCuts_;i++) {
+      addCuts[currentNumberCuts+i]= cuts_[i];
+      if (cuts_[i]&&model->messageHandler()->logLevel()>4) {
+	cuts_[i]->print();
+      }
+    }
+    
+    currentNumberCuts += numberCuts_;
+  }
+  return ;
+}
+// Just apply bounds to one variable (1=>infeasible)
+int
+CbcPartialNodeInfo::applyBounds(int iColumn, double & lower, double & upper,int force) 
+{
+  // branch - do bounds
+  int i;
+  int found=0;
+  double newLower = -COIN_DBL_MAX;
+  double newUpper = COIN_DBL_MAX;
   for (i=0;i<numberChangedBounds_;i++) {
     int variable = variables_[i];
-    int k = variable&0x7fffffff;
-    if ((variable&0x80000000)==0) {
-      // lower bound changing
-#ifndef NDEBUG
-      double oldValue = solver->getColLower()[k];
-      assert (newBounds_[i]>oldValue-1.0e-8);
-      if (newBounds_[i]<oldValue+1.0e-8)
-	printf("bad null lower change for column %d - bound %g\n",k,oldValue);
-#endif
-      solver->setColLower(k,newBounds_[i]);
-    } else {
-      // upper bound changing
-#ifndef NDEBUG
-      double oldValue = solver->getColUpper()[k];
-      assert (newBounds_[i]<oldValue+1.0e-8);
-      if (newBounds_[i]>oldValue-1.0e-8)
-	printf("bad null upper change for column %d - bound %g\n",k,oldValue);
-#endif
-      solver->setColUpper(k,newBounds_[i]);
+    int k = variable&0x3fffffff;
+    if (k==iColumn) {
+      if ((variable&0x80000000)==0) {
+	// lower bound changing
+	found |= 1;
+	newLower = CoinMax(newLower,newBounds_[i]);
+	if ((force&1)==0) {
+	  if (lower>newBounds_[i])
+	    printf("%d odd lower going from %g to %g\n",iColumn,lower,newBounds_[i]);
+	  lower = newBounds_[i];
+	} else {
+	  newBounds_[i]=lower;
+	  variables_[i] |= 0x40000000; // say can go odd way
+	}
+      } else {
+	// upper bound changing
+	found |= 2;
+	newUpper = CoinMin(newUpper,newBounds_[i]);
+	if ((force&2)==0) {
+	  if (upper<newBounds_[i])
+	    printf("%d odd upper going from %g to %g\n",iColumn,upper,newBounds_[i]);
+	  upper = newBounds_[i];
+	} else {
+	  newBounds_[i]=upper;
+	  variables_[i] |= 0x40000000; // say can go odd way
+	}
+      }
     }
   }
-  for (i=0;i<numberCuts_;i++) {
-    addCuts[currentNumberCuts+i]= cuts_[i];
-    if (cuts_[i]&&model->messageHandler()->logLevel()>4) {
-      cuts_[i]->print();
+  newLower = CoinMax(newLower,lower);
+  newUpper = CoinMin(newUpper,upper);
+  int nAdd=0;
+  if ((force&2)!=0&&(found&2)==0) {
+    // need to add new upper
+    nAdd++;
+  }
+  if ((force&1)!=0&&(found&1)==0) {
+    // need to add new lower
+    nAdd++;
+  }
+  if (nAdd) { 
+    int size = (numberChangedBounds_+nAdd)*(sizeof(double)+sizeof(int));
+    char * temp = new char [size];
+    double * newBounds = (double *) temp;
+    int * variables = (int *) (newBounds+numberChangedBounds_+nAdd);
+
+    int i ;
+    for (i=0;i<numberChangedBounds_;i++) {
+      variables[i]=variables_[i];
+      newBounds[i]=newBounds_[i];
+    }
+    delete [] newBounds_;
+    newBounds_ = newBounds;
+    variables_ = variables;
+    if ((force&2)!=0&&(found&2)==0) {
+      // need to add new upper
+      int variable = iColumn | 0x80000000;
+      variables_[numberChangedBounds_]=variable;
+      newBounds_[numberChangedBounds_++]=newUpper;
+    }
+    if ((force&1)!=0&&(found&1)==0) {
+      // need to add new lower
+      int variable = iColumn;
+      variables_[numberChangedBounds_]=variable;
+      newBounds_[numberChangedBounds_++]=newLower;
     }
   }
-    
-  currentNumberCuts += numberCuts_;
-  return ;
+  
+  return (newUpper>=newLower) ? 0 : 1;
 }
 
 /* Builds up row basis backwards (until original model).
@@ -705,13 +853,21 @@ CbcNode::CbcNode() :
   sumInfeasibilities_(0.0),
   branch_(NULL),
   depth_(-1),
-  numberUnsatisfied_(0)
+  numberUnsatisfied_(0),
+  nodeNumber_(-1),
+  state_(0)
 {
 #ifdef CHECK_NODE
   printf("CbcNode %x Constructor\n",this);
 #endif
 }
-
+// Print
+void 
+CbcNode::print() const
+{
+  printf("number %d obj %g depth %d sumun %g nunsat %d state %d\n",
+	 nodeNumber_,objectiveValue_,depth_,sumInfeasibilities_,numberUnsatisfied_,state_);
+}
 CbcNode::CbcNode(CbcModel * model,
 		 CbcNode * lastNode) :
   nodeInfo_(NULL),
@@ -720,16 +876,21 @@ CbcNode::CbcNode(CbcModel * model,
   sumInfeasibilities_(0.0),
   branch_(NULL),
   depth_(-1),
-  numberUnsatisfied_(0)
+  numberUnsatisfied_(0),
+  nodeNumber_(-1),
+  state_(0)
 {
 #ifdef CHECK_NODE
   printf("CbcNode %x Constructor from model\n",this);
 #endif
   model->setObjectiveValue(this,lastNode);
 
-  if (lastNode)
-    if (lastNode->nodeInfo_)
-    lastNode->nodeInfo_->increment();
+  if (lastNode) {
+    if (lastNode->nodeInfo_) {
+       lastNode->nodeInfo_->increment();
+    }
+  }
+  nodeNumber_= model->getNodeCount();
 }
 
 #define CBC_NEW_CREATEINFO
@@ -933,6 +1094,7 @@ CbcNode::createInfo (CbcModel *model,
   }
   // Set node number
   nodeInfo_->setNodeNumber(model->getNodeCount2());
+  state_ |= 2; // say active
 }
 
 #else	// CBC_NEW_CREATEINFO
@@ -1112,6 +1274,7 @@ CbcNode::createInfo (CbcModel *model,
   }
   // Set node number
   nodeInfo_->setNodeNumber(model->getNodeCount2());
+  state_ |= 2; // say active
 }
 
 #endif	// CBC_NEW_CREATEINFO
@@ -2291,7 +2454,10 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
     numberBeforeTrust = numberBeforeTrust % 1000000;
     numberPenalties=0;
   } else if (numberBeforeTrust<0) {
-    numberPenalties=numberColumns;
+    if (numberBeforeTrust==-1)
+      numberPenalties=numberColumns;
+    else if (numberBeforeTrust==-2)
+      numberPenalties=0;
     numberBeforeTrust=0;
   }
   // May go round twice if strong branching fixes all local candidates
@@ -2555,6 +2721,12 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
               bestNot = 1.0-fabs(part-0.5);
             }
           }
+	  if (model->messageHandler()->logLevel()>3) { 
+            int iColumn = dynamicObject->columnNumber();
+	    printf("%d (%d) down %d %g up %d %g - infeas %g - sort %g solution %g\n",
+		   i,iColumn,numberThisDown,object->downEstimate(),numberThisUp,object->upEstimate(),
+		   infeasibility,sort[numberToDo],saveSolution[iColumn]);
+	  }
           whichObject[numberToDo++]=i;
         } else {
           // for debug
@@ -2878,7 +3050,7 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
       //printf("todo %d, strong %d\n",numberToDo,numberStrong);
       int numberTest=numberNotTrusted>0 ? numberStrong : (numberStrong+1)/2;
       int numberTest2 = 2*numberStrong;
-      double distanceToCutoff2 = model->getCutoff()-objectiveValue_;
+      //double distanceToCutoff2 = model->getCutoff()-objectiveValue_;
       if (!newWay) {
       if (searchStrategy==3) {
         // Previously decided we need strong
@@ -3678,8 +3850,13 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
             printf("%d fixed AND choosing %d iDo %d iChosenWhen %d numberToDo %d\n",numberToFix,bestChoice,
                    iDo,whichChoice,numberToDo);
         } else {
-          printf("choosing %d  iDo %d iChosenWhen %d numberToDo %d\n",bestChoice,
-                 iDo,whichChoice,numberToDo);
+	  int iObject = whichObject[whichChoice];
+	  OsiObject * object = model->modifiableObject(iObject);
+	  CbcSimpleIntegerDynamicPseudoCost * dynamicObject =
+	    dynamic_cast <CbcSimpleIntegerDynamicPseudoCost *>(object) ;
+	  int iColumn = dynamicObject->columnNumber();
+          printf("choosing %d (column %d) iChosenWhen %d numberToDo %d\n",bestChoice,
+                 iColumn,whichChoice,numberToDo);
 	}
       }
       if (doneHotStart) {
@@ -3784,7 +3961,8 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
     }
     if (numberNodes)
       strategy=1;  // should only happen after hot start
-    model->setSearchStrategy(strategy);
+    if (model->searchStrategy()<999)
+      model->setSearchStrategy(strategy);
   }
   }
   //if (numberToFix&&depth_<5)
@@ -4258,6 +4436,12 @@ CbcNode::CbcNode(const CbcNode & rhs)
     branch_=NULL;
   depth_ = rhs.depth_;
   numberUnsatisfied_ = rhs.numberUnsatisfied_;
+  nodeNumber_ = rhs.nodeNumber_;
+  state_ = rhs.state_;
+  if (nodeInfo_)
+    assert ((state_&2)!=0);
+  else
+    assert ((state_&2)==0);
 }
 
 CbcNode &
@@ -4278,20 +4462,28 @@ CbcNode::operator=(const CbcNode & rhs)
       branch_=NULL,
     depth_ = rhs.depth_;
     numberUnsatisfied_ = rhs.numberUnsatisfied_;
+    nodeNumber_ = rhs.nodeNumber_;
+    state_ = rhs.state_;
+    if (nodeInfo_)
+      assert ((state_&2)!=0);
+    else
+      assert ((state_&2)==0);
   }
   return *this;
 }
 CbcNode::~CbcNode ()
 {
 #ifdef CHECK_NODE
-  if (nodeInfo_) 
+  if (nodeInfo_) {
     printf("CbcNode %x Destructor nodeInfo %x (%d)\n",
 	 this,nodeInfo_,nodeInfo_->numberPointingToThis());
-  else
+    //assert(nodeInfo_->numberPointingToThis()>=0);
+  } else {
     printf("CbcNode %x Destructor nodeInfo %x (?)\n",
 	 this,nodeInfo_);
+  }
 #endif
-  if (nodeInfo_) {
+  if (nodeInfo_&&(state_&2)!=0) {
     nodeInfo_->nullOwner();
     int numberToDelete=nodeInfo_->numberBranchesLeft();
     //    CbcNodeInfo * parent = nodeInfo_->parent();
@@ -4311,6 +4503,10 @@ CbcNode::~CbcNode ()
 void 
 CbcNode::decrementCuts(int change)
 {
+  if (nodeInfo_)
+    assert ((state_&2)!=0);
+  else
+    assert ((state_&2)==0);
   if(nodeInfo_) {
     nodeInfo_->decrementCuts(change);
   }
@@ -4318,6 +4514,10 @@ CbcNode::decrementCuts(int change)
 void 
 CbcNode::decrementParentCuts(int change)
 {
+  if (nodeInfo_)
+    assert ((state_&2)!=0);
+  else
+    assert ((state_&2)==0);
   if(nodeInfo_) {
     nodeInfo_->decrementParentCuts(change);
   }
@@ -4332,12 +4532,15 @@ CbcNode::initializeInfo()
 {
   assert(nodeInfo_ && branch_) ;
   nodeInfo_->initializeInfo(branch_->numberBranches());
+  assert ((state_&2)!=0);
 }
 // Nulls out node info
 void 
 CbcNode::nullNodeInfo()
 {
   nodeInfo_=NULL;
+  // say not active
+  state_ &= ~2;
 }
 
 int

@@ -41,7 +41,7 @@
 #include "OsiAuxInfo.hpp"
 //#define USER_HAS_FAKE_CLP
 //#define USER_HAS_FAKE_CBC
-//#define CLP_MALLOC_STATISTICS
+#define CLP_MALLOC_STATISTICS
 #ifdef CLP_MALLOC_STATISTICS
 #include <malloc.h>
 #include <exception>
@@ -447,7 +447,7 @@ void CbcSolver::fillParameters()
   parameters_[whichParam(THREADS,numberParameters_,parameters_)].setIntValue(0);
 #endif
   // Set up likely cut generators and defaults
-  parameters_[whichParam(PREPROCESS,numberParameters_,parameters_)].setCurrentOption("sos");
+  parameters_[whichParam(PREPROCESS,numberParameters_,parameters_)].setCurrentOption("on");
   parameters_[whichParam(MIPOPTIONS,numberParameters_,parameters_)].setIntValue(128|64|1);
   parameters_[whichParam(MIPOPTIONS,numberParameters_,parameters_)].setIntValue(1);
   parameters_[whichParam(CUTPASSINTREE,numberParameters_,parameters_)].setIntValue(1);
@@ -3129,7 +3129,7 @@ void CbcMain0 (CbcModel  & model)
   parameters[whichParam(THREADS,numberParameters,parameters)].setIntValue(0);
 #endif
   // Set up likely cut generators and defaults
-  parameters[whichParam(PREPROCESS,numberParameters,parameters)].setCurrentOption("sos");
+  parameters[whichParam(PREPROCESS,numberParameters,parameters)].setCurrentOption("on");
   parameters[whichParam(MIPOPTIONS,numberParameters,parameters)].setIntValue(128|64|1);
   parameters[whichParam(MIPOPTIONS,numberParameters,parameters)].setIntValue(1);
   parameters[whichParam(CUTPASSINTREE,numberParameters,parameters)].setIntValue(1);
@@ -3303,13 +3303,6 @@ int
     model->addHeuristic(&heuristic3a);
     anyToDo=true;
   }
-  if (useRINS>=kType) {
-    CbcHeuristicRINS heuristic5(*model);
-    heuristic5.setHeuristicName("RINS");
-    heuristic5.setFractionSmall(0.6);
-    model->addHeuristic(&heuristic5) ;
-    anyToDo=true;
-  }
   if (useRENS>=kType) {
     CbcHeuristicRENS heuristic6(*model);
     heuristic6.setHeuristicName("RENS");
@@ -3318,6 +3311,17 @@ int
     int nodes []={-2,-1,200,1000};
     heuristic6.setNumberNodes(nodes[useRENS]);
     model->addHeuristic(&heuristic6) ;
+    anyToDo=true;
+  }
+  if (useRINS>=kType) {
+    CbcHeuristicRINS heuristic5(*model);
+    heuristic5.setHeuristicName("RINS");
+    heuristic5.setFractionSmall(0.6);
+    if (useRINS==1)
+      heuristic5.setDecayFactor(5.0);
+    else
+      heuristic5.setDecayFactor(1.5);
+    model->addHeuristic(&heuristic5) ;
     anyToDo=true;
   }
   if (type==2&&anyToDo) {
@@ -3787,7 +3791,7 @@ int
     int doScaling=4;
     // set reasonable defaults
     int preSolve=5;
-    int preProcess=4;
+    int preProcess=1;
     bool useStrategy=false;
     bool preSolveFile=false;
     bool strongChanged=false;
@@ -3839,7 +3843,7 @@ int
     int verbose=0;
     CglGomory gomoryGen;
     // try larger limit
-    gomoryGen.setLimitAtRoot(512);
+    gomoryGen.setLimitAtRoot(1000);
     gomoryGen.setLimit(50);
     // set default action (0=off,1=on,2=root)
     int gomoryAction=3;
@@ -3857,6 +3861,7 @@ int
     probingGen.setMaxLookRoot(10);
     // Only look at rows with fewer than this number of elements
     probingGen.setMaxElements(200);
+    probingGen.setMaxElementsRoot(300);
     probingGen.setRowCuts(3);
     // set default action (0=off,1=on,2=root)
     int probingAction=1;
@@ -5330,6 +5335,8 @@ int
 		  }
 		}
 #endif
+		if (logLevel<=1)
+		  si->setHintParam(OsiDoReducePrint,true,OsiHintTry);
                 si->setSpecialOptions(0x40000000);
               }
               if (!miplib) {
@@ -5389,7 +5396,7 @@ int
 		    << generalPrint
 		    <<CoinMessageEol;
 		}
-		if (!complicatedInteger&&preProcess==0&&clpSolver->tightenPrimalBounds()!=0) {
+		if (!complicatedInteger&&preProcess==0&&clpSolver->tightenPrimalBounds(0.0,0,true)!=0) {
 #ifndef DISALLOW_PRINTING
 		  std::cout<<"Problem is infeasible - tightenPrimalBounds!"<<std::endl;
 #endif
@@ -5581,14 +5588,16 @@ int
                   generator1.setUsingObjective(1);
                   generator1.setMaxPass(1);
                   generator1.setMaxPassRoot(1);
-                  generator1.setMaxProbeRoot(saveSolver->getNumCols());
+                  generator1.setMaxProbeRoot(CoinMin(3000,saveSolver->getNumCols()));
                   generator1.setMaxElements(100);
+                  generator1.setMaxElementsRoot(200);
                   generator1.setMaxLookRoot(50);
                   generator1.setRowCuts(3);
 		  if ((tunePreProcess&1)!=0) {
 		    // heavy probing
 		    generator1.setMaxPassRoot(2);
 		    generator1.setMaxElements(300);
+		    generator1.setMaxProbeRoot(saveSolver->getNumCols());
 		  }
                   // Add in generators
                   process.addCutGenerator(&generator1);
@@ -5786,19 +5795,6 @@ int
                 }
                 si->resolve();
               }
-#if 0
-	      numberDebugValues=599;
-	      debugValues = new double[numberDebugValues];
-	      CoinZeroN(debugValues,numberDebugValues);
-	      debugValues[3]=1.0;
-	      debugValues[6]=25.0;
-	      debugValues[9]=4.0;
-	      debugValues[26]=4.0;
-	      debugValues[27]=6.0;
-	      debugValues[35]=8.0;
-	      debugValues[53]=21.0;
-	      debugValues[56]=4.0;
-#endif
               if (debugValues) {
                 // for debug
                 std::string problemName ;
@@ -5927,6 +5923,7 @@ int
               int numberGenerators=0;
 	      int translate[]={-100,-1,-99,-98,1,1,1,1,-1};
               if (probingAction) {
+		probingGen.setMaxProbeRoot(CoinMin(2000,babModel_->solver()->getNumCols()));
 		if (probingAction==5||probingAction==7)
 		  probingGen.setRowCuts(-3); // strengthening etc just at root
 		if (probingAction==6||probingAction==7) {
@@ -5940,7 +5937,7 @@ int
 		if (probingAction==8) {
 		  probingGen.setMaxPassRoot(2);
 		  probingGen.setMaxProbeRoot(babModel_->solver()->getNumCols());
-		  probingGen.setMaxLookRoot(50);
+		  probingGen.setMaxLookRoot(100);
 		}
                 babModel_->addCutGenerator(&probingGen,translate[probingAction],"Probing");
                 switches[numberGenerators++]=0;
@@ -6138,10 +6135,12 @@ int
 		    pseudoDown=info.pseudoDown_;
 		    pseudoUp=info.pseudoUp_;
 		    solutionIn=info.primalSolution_;
-		    int numberColumns = originalCoinModel_ ? originalCoinModel_->numberColumns() :
-		      lpSolver->getNumCols();
-		    prioritiesIn = (int *) malloc(numberColumns*sizeof(int));
-		    memcpy(prioritiesIn,info.priorities_,numberColumns*sizeof(int));
+		    if (info.priorities_) {
+		      int numberColumns = originalCoinModel_ ? originalCoinModel_->numberColumns() :
+			lpSolver->getNumCols();
+		      prioritiesIn = (int *) malloc(numberColumns*sizeof(int));
+		      memcpy(prioritiesIn,info.priorities_,numberColumns*sizeof(int));
+		    }
                     sosPriority = info.sosPriority_;
                   }
 		}
@@ -6700,7 +6699,7 @@ int
                     std::cout<<"Unable to open file user_driver.cpp"<<std::endl;
                   }
                 }
-		if (!babModel_->numberStrong())
+		if (!babModel_->numberStrong()&&babModel_->numberBeforeTrust()>0)
 		  babModel_->setNumberBeforeTrust(0);
 		if (useStrategy) {
 		  CbcStrategyDefault strategy(true,babModel_->numberStrong(),babModel_->numberBeforeTrust());
@@ -7075,6 +7074,8 @@ int
 		  babModel_->addCutGenerator(&storedAmpl,1,"Stored");
 		}
 #endif
+		if (logLevel<=1)
+		  babModel_->solver()->setHintParam(OsiDoReducePrint,true,OsiHintTry);
                 babModel_->branchAndBound(statistics);
 #ifdef COIN_DEVELOP
 		void printHistory(const char * file);

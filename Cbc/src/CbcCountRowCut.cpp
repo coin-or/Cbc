@@ -9,6 +9,7 @@
 #include "OsiRowCut.hpp"
 #include "CbcCountRowCut.hpp"
 #include "CbcNode.hpp"
+//#define CHECK_CUT_COUNTS
 // Default Constructor 
 CbcCountRowCut::CbcCountRowCut ()
   :
@@ -18,6 +19,9 @@ CbcCountRowCut::CbcCountRowCut ()
   numberPointingToThis_(0),
   whichCutGenerator_(-1)
 {
+#ifdef CBC_DETERMINISTIC_THREAD
+  numberPointingToThis_=10;
+#endif
 #ifdef CHECK_CUT_COUNTS
   printf("CbcCountRowCut default constructor %x\n",this);
 #endif
@@ -31,6 +35,9 @@ CbcCountRowCut::CbcCountRowCut (const OsiRowCut & rhs)
     numberPointingToThis_(0),
     whichCutGenerator_(-1)
 {
+#ifdef CBC_DETERMINISTIC_THREAD
+  numberPointingToThis_=10;
+#endif
 #ifdef CHECK_CUT_COUNTS
   printf("CbcCountRowCut constructor %x from RowCut\n",this);
 #endif
@@ -45,6 +52,9 @@ CbcCountRowCut::CbcCountRowCut (const OsiRowCut & rhs,
     numberPointingToThis_(0),
     whichCutGenerator_(whichGenerator)
 {
+#ifdef CBC_DETERMINISTIC_THREAD
+  numberPointingToThis_=10;
+#endif
 #ifdef CHECK_CUT_COUNTS
   printf("CbcCountRowCut constructor %x from RowCut and info\n",this);
 #endif
@@ -64,7 +74,9 @@ void
 CbcCountRowCut::increment(int change)
 {
   assert(ownerCut_!=-1234567);
+#ifndef CBC_DETERMINISTIC_THREAD
   numberPointingToThis_+=change;
+#endif
 }
 
 // Decrement number of references and return number left
@@ -72,6 +84,7 @@ int
 CbcCountRowCut::decrement(int change)
 {
   assert(ownerCut_!=-1234567);
+#ifndef CBC_DETERMINISTIC_THREAD
   //assert(numberPointingToThis_>=change);
   assert(numberPointingToThis_>=0);
   if(numberPointingToThis_<change) {
@@ -80,6 +93,9 @@ CbcCountRowCut::decrement(int change)
     change = numberPointingToThis_;
   }
   numberPointingToThis_-=change;
+#else
+  assert (numberPointingToThis_==10);
+#endif
   return numberPointingToThis_;
 }
 

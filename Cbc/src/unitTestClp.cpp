@@ -9,6 +9,7 @@
 #include "CbcModel.hpp"
 #include "CbcCutGenerator.hpp"
 #include "OsiClpSolverInterface.hpp"
+#include "OsiRowCutDebugger.hpp"
 
 //#############################################################################
 
@@ -125,6 +126,8 @@ int CbcClpUnitTest (const CbcModel & saveModel, std::string& dirMiplib,
 #define HOWMANY 2
 #if HOWMANY
 #if HOWMANY>1
+    PUSH_MPS("gen",780,870,112313,112130.0,7);
+    //PUSH_MPS("blend2",274,353,7.598985,6.9156751140,7);
     PUSH_MPS("10teams",230,2025,924,917,7);
 #endif
     PUSH_MPS("air03",124,10757,340160,338864.25,7);
@@ -337,6 +340,12 @@ int CbcClpUnitTest (const CbcModel & saveModel, std::string& dirMiplib,
 	model->setNumberBeforeTrust(50);
       }
     }
+    if (model->getNumCols()==-353) {
+      // blend2
+      std::string problemName ;
+      model->solver()->getStrParam(OsiProbName,problemName) ;
+      model->solver()->activateRowCutDebugger(problemName.c_str()) ;
+    }
     model->branchAndBound();
       
     double timeOfSolution = CoinCpuTime()+CoinCpuTimeJustChildren()-startTime;
@@ -367,11 +376,14 @@ int CbcClpUnitTest (const CbcModel & saveModel, std::string& dirMiplib,
         std::cout <<"cbc_clp" <<" " <<soln << " != " <<objValue[m]
 		  << "; error=" << fabs(objValue[m] - soln); 
 	numberFailures++;
+	abort();
       }
     } else {
       std::cout << "error; too many nodes" ;
     }
-    std::cout<<" - took " <<timeOfSolution<<" seconds.\n";
+    std::cout<<" - took " <<timeOfSolution<<" seconds.("<<
+      model->getNodeCount()<<" / "<<model->getIterationCount()<<
+      " )"<<std::endl;
     timeTaken += timeOfSolution;
     delete model;
   }

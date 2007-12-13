@@ -90,12 +90,15 @@ public:
 
   /// Get best possible objective function in the tree
   virtual double getBestPossibleObjective();
+  /// Reset maximum node number
+  inline void resetNodeNumbers()
+  { maximumNodeNumber_=0;}
 //@}
 protected:
   std::vector <CbcNode *> nodes_;
   CbcCompare comparison_;	///> Sort function for heap ordering.
-
-
+  /// Maximum "node" number so far to split ties
+  int maximumNodeNumber_;
 };
 
 /// New style
@@ -268,10 +271,15 @@ public:
 
   /// We may have got an intelligent tree so give it one more chance
   virtual void endSearch() {}
+  /// Reset maximum node number
+  inline void resetNodeNumbers()
+  { maximumNodeNumber_=0;}
 //@}
 protected:
   std::vector <CbcNode *> nodes_;
   CbcCompare comparison_;	///> Sort function for heap ordering.
+  /// Maximum "node" number so far to split ties
+  int maximumNodeNumber_;
 
 
 };

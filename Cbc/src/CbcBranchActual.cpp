@@ -933,8 +933,12 @@ CbcIntegerBranchingObject::CbcIntegerBranchingObject()
   down_[1] = 0.0;
   up_[0] = 0.0;
   up_[1] = 0.0;
+#ifdef FUNNY_BRANCHING
+  variables_ = NULL;
+  newBounds_ = NULL;
+  numberExtraChangedBounds_ = 0;
+#endif
 }
-
 // Useful constructor
 CbcIntegerBranchingObject::CbcIntegerBranchingObject (CbcModel * model, 
 						      int variable, int way , double value)
@@ -945,6 +949,11 @@ CbcIntegerBranchingObject::CbcIntegerBranchingObject (CbcModel * model,
   down_[1] = floor(value_);
   up_[0] = ceil(value_);
   up_[1] = model->getColUpper()[iColumn];
+#ifdef FUNNY_BRANCHING
+  variables_ = NULL;
+  newBounds_ = NULL;
+  numberExtraChangedBounds_ = 0;
+#endif
 }
 // Useful constructor for fixing
 CbcIntegerBranchingObject::CbcIntegerBranchingObject (CbcModel * model, 
@@ -958,6 +967,11 @@ CbcIntegerBranchingObject::CbcIntegerBranchingObject (CbcModel * model,
   down_[1] = upperValue;
   up_[0] = lowerValue;
   up_[1] = upperValue;
+#ifdef FUNNY_BRANCHING
+  variables_ = NULL;
+  newBounds_ = NULL;
+  numberExtraChangedBounds_ = 0;
+#endif
 }
   
 
@@ -968,6 +982,19 @@ CbcIntegerBranchingObject::CbcIntegerBranchingObject ( const CbcIntegerBranching
   down_[1] = rhs.down_[1];
   up_[0] = rhs.up_[0];
   up_[1] = rhs.up_[1];
+#ifdef FUNNY_BRANCHING
+  numberExtraChangedBounds_ = rhs.numberExtraChangedBounds_;
+  int size = numberExtraChangedBounds_*(sizeof(double)+sizeof(int));
+  char * temp = new char [size];
+  newBounds_ = (double *) temp;
+  variables_ = (int *) (newBounds_+numberExtraChangedBounds_);
+
+  int i ;
+  for (i=0;i<numberExtraChangedBounds_;i++) {
+    variables_[i]=rhs.variables_[i];
+    newBounds_[i]=rhs.newBounds_[i];
+  }
+#endif
 }
 
 // Assignment operator 
@@ -980,6 +1007,20 @@ CbcIntegerBranchingObject::operator=( const CbcIntegerBranchingObject& rhs)
     down_[1] = rhs.down_[1];
     up_[0] = rhs.up_[0];
     up_[1] = rhs.up_[1];
+#ifdef FUNNY_BRANCHING
+    delete [] newBounds_;
+    numberExtraChangedBounds_ = rhs.numberExtraChangedBounds_;
+    int size = numberExtraChangedBounds_*(sizeof(double)+sizeof(int));
+    char * temp = new char [size];
+    newBounds_ = (double *) temp;
+    variables_ = (int *) (newBounds_+numberExtraChangedBounds_);
+    
+    int i ;
+    for (i=0;i<numberExtraChangedBounds_;i++) {
+      variables_[i]=rhs.variables_[i];
+      newBounds_[i]=rhs.newBounds_[i];
+    }
+#endif
   }
   return *this;
 }
@@ -995,6 +1036,9 @@ CbcIntegerBranchingObject::~CbcIntegerBranchingObject ()
 {
   // for debugging threads
   way_=-23456789;
+#ifdef FUNNY_BRANCHING
+  delete [] newBounds_;
+#endif
 }
 
 /*
@@ -1018,6 +1062,8 @@ CbcIntegerBranchingObject::branch()
     assert (way_!=-23456789);
   }
   decrementNumberBranchesLeft();
+  if (down_[1]==-COIN_DBL_MAX)
+    return 0.0;
   int iColumn = originalCbcObject_->columnNumber();
   assert (variable_==iColumn);
   double olb,oub ;
@@ -1043,6 +1089,39 @@ CbcIntegerBranchingObject::branch()
 #endif
     model_->solver()->setColLower(iColumn,down_[0]);
     model_->solver()->setColUpper(iColumn,down_[1]);
+    //#define CBC_PRINT2
+#ifdef CBC_PRINT2
+    printf("%d branching down has bounds %g %g",iColumn,down_[0],down_[1]);
+#endif
+#ifdef FUNNY_BRANCHING
+    // branch - do extra bounds
+    for (int i=0;i<numberExtraChangedBounds_;i++) {
+      int variable = variables_[i];
+      if ((variable&0x40000000)!=0) {
+	// for going down
+	int k = variable&0x3fffffff;
+	assert (k!=iColumn);
+	if ((variable&0x80000000)==0) {
+	  // lower bound changing
+#ifdef CBC_PRINT2
+	  printf(" extra for %d changes lower from %g to %g",
+		 k,model_->solver()->getColLower()[k],newBounds_[i]);
+#endif
+	  model_->solver()->setColLower(k,newBounds_[i]);
+	} else {
+	  // upper bound changing
+#ifdef CBC_PRINT2
+	  printf(" extra for %d changes upper from %g to %g",
+		 k,model_->solver()->getColUpper()[k],newBounds_[i]);
+#endif
+	  model_->solver()->setColUpper(k,newBounds_[i]);
+	}
+      }
+    }
+#endif
+#ifdef CBC_PRINT2
+    printf("\n");
+#endif
     way_=1;
   } else {
 #ifdef CBC_DEBUG
@@ -1054,6 +1133,38 @@ CbcIntegerBranchingObject::branch()
 #endif
     model_->solver()->setColLower(iColumn,up_[0]);
     model_->solver()->setColUpper(iColumn,up_[1]);
+#ifdef CBC_PRINT2
+    printf("%d branching up has bounds %g %g",iColumn,up_[0],up_[1]);
+#endif
+#ifdef FUNNY_BRANCHING
+    // branch - do extra bounds
+    for (int i=0;i<numberExtraChangedBounds_;i++) {
+      int variable = variables_[i];
+      if ((variable&0x40000000)==0) {
+	// for going up
+	int k = variable&0x3fffffff;
+	assert (k!=iColumn);
+	if ((variable&0x80000000)==0) {
+	  // lower bound changing
+#ifdef CBC_PRINT2
+	  printf(" extra for %d changes lower from %g to %g",
+		 k,model_->solver()->getColLower()[k],newBounds_[i]);
+#endif
+	  model_->solver()->setColLower(k,newBounds_[i]);
+	} else {
+	  // upper bound changing
+#ifdef CBC_PRINT2
+	  printf(" extra for %d changes upper from %g to %g",
+		 k,model_->solver()->getColUpper()[k],newBounds_[i]);
+#endif
+	  model_->solver()->setColUpper(k,newBounds_[i]);
+	}
+      }
+    }
+#endif
+#ifdef CBC_PRINT2
+    printf("\n");
+#endif
     way_=-1;	  // Swap direction
   }
   double nlb = model_->solver()->getColLower()[iColumn];
@@ -1072,11 +1183,100 @@ CbcIntegerBranchingObject::branch()
     model_->solver()->setColUpper(iColumn,CoinMax(oub,nlb));
   }
 #ifndef NDEBUG
-  if (nlb<olb+1.0e-8&&nub>oub-1.0e-8)
+  if (nlb<olb+1.0e-8&&nub>oub-1.0e-8&&false)
     printf("bad null change for column %d - bounds %g,%g\n",iColumn,olb,oub);
 #endif
   return 0.0;
 }
+#ifdef FUNNY_BRANCHING
+// Deactivate bounds for branching
+void 
+CbcIntegerBranchingObject::deactivate()
+{
+  down_[1]=-COIN_DBL_MAX;
+}
+int
+CbcIntegerBranchingObject::applyExtraBounds(int iColumn, double lower, double upper, int way)
+{
+  // branch - do bounds
+
+  int i;
+  int found=0;
+  if (variable_==iColumn) {
+    printf("odd applyExtra %d\n",iColumn);
+    if (way<0) {
+      down_[0]=CoinMax(lower,down_[0]);
+      down_[1]=CoinMin(upper,down_[1]);
+      assert (down_[0]<=down_[1]);
+    } else {
+      up_[0]=CoinMax(lower,up_[0]);
+      up_[1]=CoinMin(upper,up_[1]);
+      assert (up_[0]<=up_[1]);
+    }
+    return 0;
+  }
+  int check = (way<0) ? 0x40000000 : 0;
+  double newLower=lower;
+  double newUpper=upper;
+  for (i=0;i<numberExtraChangedBounds_;i++) {
+    int variable = variables_[i];
+    if ((variable&0x40000000)==check) {
+      int k = variable&0x3fffffff;
+      if (k==iColumn) {
+	if ((variable&0x80000000)==0) {
+	  // lower bound changing
+	  found |= 1;
+	  newBounds_[i] = CoinMax(lower,newBounds_[i]);
+	  newLower = newBounds_[i];
+	} else {
+	  // upper bound changing
+	  found |= 2;
+	  newBounds_[i] = CoinMin(upper,newBounds_[i]);
+	  newUpper = newBounds_[i];
+	}
+      }
+    }
+  }
+  int nAdd=0;
+  if ((found&2)==0) {
+    // need to add new upper
+    nAdd++;
+  }
+  if ((found&1)==0) {
+    // need to add new lower
+    nAdd++;
+  }
+  if (nAdd) { 
+    int size = (numberExtraChangedBounds_+nAdd)*(sizeof(double)+sizeof(int));
+    char * temp = new char [size];
+    double * newBounds = (double *) temp;
+    int * variables = (int *) (newBounds+numberExtraChangedBounds_+nAdd);
+
+    int i ;
+    for (i=0;i<numberExtraChangedBounds_;i++) {
+      variables[i]=variables_[i];
+      newBounds[i]=newBounds_[i];
+    }
+    delete [] newBounds_;
+    newBounds_ = newBounds;
+    variables_ = variables;
+    if ((found&2)==0) {
+      // need to add new upper
+      int variable = iColumn | 0x80000000;
+      variables_[numberExtraChangedBounds_]=variable;
+      newBounds_[numberExtraChangedBounds_++]=newUpper;
+    }
+    if ((found&1)==0) {
+      // need to add new lower
+      int variable = iColumn;
+      variables_[numberExtraChangedBounds_]=variable;
+      newBounds_[numberExtraChangedBounds_++]=newLower;
+    }
+  }
+  
+  return (newUpper>=newLower) ? 0 : 1;
+}
+#endif
 // Print what would happen  
 void
 CbcIntegerBranchingObject::print()

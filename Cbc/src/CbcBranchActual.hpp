@@ -450,11 +450,52 @@ public:
   */
   virtual void print();
 
+  /// Lower and upper bounds for down branch
+  inline const double * downBounds() const
+  { return down_;}
+  /// Lower and upper bounds for up branch
+  inline const double * upBounds() const
+  { return up_;}
+  /// Set lower and upper bounds for down branch
+  inline void setDownBounds(const double bounds[2])
+  { memcpy(down_,bounds,2*sizeof(double));}
+  /// Set lower and upper bounds for up branch
+  inline void setUpBounds(const double bounds[2])
+  { memcpy(up_,bounds,2*sizeof(double));}
+#ifdef FUNNY_BRANCHING
+  /** Which variable (top bit if upper bound changing,
+      next bit if on down branch */
+  inline const int * variables() const
+  { return variables_;}
+  // New bound
+  inline const double * newBounds() const
+  { return newBounds_;}
+  /// Number of bound changes
+  inline int numberExtraChangedBounds() const
+  { return numberExtraChangedBounds_;}
+  /// Just apply extra bounds to one variable - COIN_DBL_MAX ignore
+  int applyExtraBounds(int iColumn, double lower, double upper, int way) ;
+  /// Deactivate bounds for branching
+  void deactivate();
+  /// Are active bounds for branching
+  inline bool active() const
+  { return (down_[1]!=-COIN_DBL_MAX);}
+#endif
+
 protected:
   /// Lower [0] and upper [1] bounds for the down arm (way_ = -1)
   double down_[2];
   /// Lower [0] and upper [1] bounds for the up arm (way_ = 1)
   double up_[2];
+#ifdef FUNNY_BRANCHING
+  /** Which variable (top bit if upper bound changing)
+      next bit if chnaging on down branch only */
+  int * variables_;
+  // New bound
+  double * newBounds_;
+  /// Number of Extra bound changes
+  int numberExtraChangedBounds_;
+#endif
 };
 
 

@@ -245,7 +245,7 @@ CbcHeuristicGreedyCover::solution(double & solutionValue,
 	  if (sum>0.0) {
             // add to next time
             which[newNumber++]=iColumn;
-	    double ratio = (cost/sum)*(1.0+perturb*CoinDrand48());
+	    double ratio = (cost/sum)*(1.0+perturb*randomNumberGenerator_.randomDouble());
             // If at root choose first
             if (atRoot)
               ratio = iColumn;
@@ -285,7 +285,7 @@ CbcHeuristicGreedyCover::solution(double & solutionValue,
               }
             }
             assert (sum>0.0);
-            double ratio = (cost/sum)*(1.0+perturb*CoinDrand48());
+            double ratio = (cost/sum)*(1.0+perturb*randomNumberGenerator_.randomDouble());
             if (ratio<bestRatio) {
               bestRatio=ratio;
               bestColumn=iColumn;
@@ -662,7 +662,7 @@ CbcHeuristicGreedyEquality::solution(double & solutionValue,
 	  if (movement>0.999999) {
             // add to next time
             which[newNumber++]=iColumn;
-	    double ratio = (cost/sum)*(1.0+perturb*CoinDrand48());
+	    double ratio = (cost/sum)*(1.0+perturb*randomNumberGenerator_.randomDouble());
             // If at root
             if (atRoot) {
               if (fraction_==1.0)
@@ -694,7 +694,7 @@ CbcHeuristicGreedyEquality::solution(double & solutionValue,
           if (movement>1.0e-7) {
             // add to next time
             which[newNumber++]=iColumn;
-            double ratio = (cost/sum)*(1.0+perturb*CoinDrand48());
+            double ratio = (cost/sum)*(1.0+perturb*randomNumberGenerator_.randomDouble());
             if (ratio<bestRatio) {
               bestRatio=ratio;
               bestColumn=iColumn;

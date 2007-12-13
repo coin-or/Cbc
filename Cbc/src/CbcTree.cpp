@@ -9,6 +9,7 @@
 
 CbcTree::CbcTree()
 {
+  maximumNodeNumber_=0;
 }
 CbcTree::~CbcTree()
 {
@@ -17,6 +18,7 @@ CbcTree::~CbcTree()
 CbcTree::CbcTree ( const CbcTree & rhs)
 {
   nodes_=rhs.nodes_;
+  maximumNodeNumber_=rhs.maximumNodeNumber_;
 }
 // Assignment operator 
 CbcTree &
@@ -24,6 +26,7 @@ CbcTree::operator=(const CbcTree & rhs)
 {
   if (this != &rhs) {
     nodes_=rhs.nodes_;
+    maximumNodeNumber_=rhs.maximumNodeNumber_;
   }
   return *this;
 }
@@ -53,10 +56,13 @@ CbcTree::top() const
 // Add a node to the heap
 void 
 CbcTree::push(CbcNode * x) {
+  x->setNodeNumber(maximumNodeNumber_);
+  maximumNodeNumber_++;
   /*printf("push obj %g, refcount %d, left %d, pointing to %d\n",
 	 x->objectiveValue(),x->nodeInfo()->decrement(0),
 	 x->nodeInfo()->numberBranchesLeft(),x->nodeInfo()->numberPointingToThis());*/
   assert(x->objectiveValue()!=COIN_DBL_MAX&&x->nodeInfo());
+  x->setOnTree(true);
   nodes_.push_back(x);
   std::push_heap(nodes_.begin(), nodes_.end(), comparison_);
 }
@@ -64,6 +70,7 @@ CbcTree::push(CbcNode * x) {
 // Remove the top node from the heap
 void 
 CbcTree::pop() {
+  nodes_.front()->setOnTree(false);
   std::pop_heap(nodes_.begin(), nodes_.end(), comparison_);
   nodes_.pop_back();
 }
@@ -175,6 +182,8 @@ CbcTree::bestNode(double cutoff)
     }
   }
 #endif
+  if (best)
+    best->setOnTree(false);
   return best;
 }
 
@@ -214,7 +223,7 @@ CbcTree::cleanTree(CbcModel * model, double cutoff, double & bestPossibleObjecti
     pop();
     double value = node ? node->objectiveValue() : COIN_DBL_MAX;
     bestPossibleObjective = CoinMin(bestPossibleObjective,value);
-    if (value >= cutoff) {
+    if (value >= cutoff||!node->active()) {
       if (node) {
         nodeArray[--kDelete] = node;
         depth[kDelete] = node->depth();
@@ -323,6 +332,8 @@ CbcTree::top() const
 // Add a node to the heap
 void 
 CbcTree::push(CbcNode * x) {
+  x->setNodeNumber(maximumNodeNumber_);
+  maximumNodeNumber_++;
   /*printf("push obj %g, refcount %d, left %d, pointing to %d\n",
 	 x->objectiveValue(),x->nodeInfo()->decrement(0),
 	 x->nodeInfo()->numberBranchesLeft(),x->nodeInfo()->numberPointingToThis());*/
@@ -462,6 +473,8 @@ CbcTree::bestNode(double cutoff)
     }
   }
 #endif
+  if (best)
+    best->setOnTree(false);
   return best;
 }
 
@@ -613,6 +626,7 @@ CbcTree::fixTop() {
 }
 void 
 CbcTree::realpush(CbcNode * node) {
+  node->setOnTree(true);
   nodes_.push_back(node);
   CbcNode** candidates = &nodes_[0];
   --candidates;

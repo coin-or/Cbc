@@ -119,6 +119,8 @@ public:
   /// set name of heuristic
   inline void setHeuristicName(const char *name)
   { heuristicName_ = name;}
+  /// Set random number generator seed
+  void setSeed(int value);
 
 protected:
 
@@ -132,6 +134,8 @@ protected:
   int feasibilityPumpOptions_;
   /// Fraction of new(rows+columns)/old(rows+columns) before doing small branch and bound
   double fractionSmall_;
+  /// Thread specific random number generator
+  CoinThreadRandom randomNumberGenerator_;
   /// Name for printing
   std::string heuristicName_;
   
@@ -176,6 +180,15 @@ public:
   */
   virtual int solution(double & objectiveValue,
 		       double * newSolution);
+  /** returns 0 if no solution, 1 if valid solution
+      with better objective value than one passed in
+      Sets solution values if good, sets objective value (only if good)
+      This is called after cuts have been added - so can not add cuts
+      Use solutionValue rather than solvers one
+  */
+  virtual int solution(double & objectiveValue,
+		       double * newSolution,
+		       double solutionValue);
   /// Validate model i.e. sets when_ to 0 if necessary (may be NULL)
   virtual void validate();
 
@@ -192,6 +205,15 @@ protected:
 
   // Original matrix by 
   CoinPackedMatrix matrixByRow_;
+
+  // Down locks
+  unsigned short * down_;
+
+  // Up locks
+  unsigned short * up_;
+
+  // Equality locks
+  unsigned short * equal_;
 
   // Seed for random stuff
   int seed_;

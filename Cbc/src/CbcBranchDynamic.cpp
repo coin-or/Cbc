@@ -350,7 +350,7 @@ CbcSimpleIntegerDynamicPseudoCost::~CbcSimpleIntegerDynamicPseudoCost ()
 }
 // Copy some information i.e. just variable stuff
 void 
-CbcSimpleIntegerDynamicPseudoCost::copySome(CbcSimpleIntegerDynamicPseudoCost * otherObject)
+CbcSimpleIntegerDynamicPseudoCost::copySome(const CbcSimpleIntegerDynamicPseudoCost * otherObject)
 {
   downDynamicPseudoCost_=otherObject->downDynamicPseudoCost_;
   upDynamicPseudoCost_=otherObject->upDynamicPseudoCost_;
@@ -376,7 +376,120 @@ CbcSimpleIntegerDynamicPseudoCost::copySome(CbcSimpleIntegerDynamicPseudoCost * 
   numberTimesUpTotalFixed_ = otherObject->numberTimesUpTotalFixed_;
   numberTimesProbingTotal_ = otherObject->numberTimesProbingTotal_;
 }
-// Creates a branching object
+// Updates stuff like pseudocosts before threads
+void 
+CbcSimpleIntegerDynamicPseudoCost::updateBefore(const OsiObject * rhs) 
+{
+  const CbcSimpleIntegerDynamicPseudoCost * rhsObject =
+    dynamic_cast <const CbcSimpleIntegerDynamicPseudoCost *>(rhs) ;
+  assert (rhsObject);
+  copySome(rhsObject);
+}
+  // was 1 - but that looks flakey
+#define INFEAS 1
+// Updates stuff like pseudocosts after threads finished
+void 
+CbcSimpleIntegerDynamicPseudoCost::updateAfter(const OsiObject * rhs, const OsiObject * baseObjectX) 
+{
+  const CbcSimpleIntegerDynamicPseudoCost * rhsObject =
+    dynamic_cast <const CbcSimpleIntegerDynamicPseudoCost *>(rhs) ;
+  assert (rhsObject);
+  const CbcSimpleIntegerDynamicPseudoCost * baseObject =
+    dynamic_cast <const CbcSimpleIntegerDynamicPseudoCost *>(baseObjectX) ;
+  assert (baseObject);
+  // compute current
+  double sumDown = downDynamicPseudoCost_*(numberTimesDown_+numberTimesDownInfeasible_);
+  sumDown -= baseObject->downDynamicPseudoCost_*(baseObject->numberTimesDown_+baseObject->numberTimesDownInfeasible_);
+  sumDown = CoinMax(sumDown,0.0);
+  sumDown += rhsObject->downDynamicPseudoCost_*(rhsObject->numberTimesDown_+rhsObject->numberTimesDownInfeasible_);
+  double sumUp = upDynamicPseudoCost_*(numberTimesUp_+numberTimesUpInfeasible_);
+  sumUp -= baseObject->upDynamicPseudoCost_*(baseObject->numberTimesUp_+baseObject->numberTimesUpInfeasible_);
+  sumUp += rhsObject->upDynamicPseudoCost_*(rhsObject->numberTimesUp_+rhsObject->numberTimesUpInfeasible_);
+  sumUp = CoinMax(sumUp,0.0);
+  sumDownCost_ += rhsObject->sumDownCost_-baseObject->sumDownCost_;
+  sumUpCost_ += rhsObject->sumUpCost_-baseObject->sumUpCost_;
+  sumDownChange_ += rhsObject->sumDownChange_-baseObject->sumDownChange_;
+  sumUpChange_ += rhsObject->sumUpChange_-baseObject->sumUpChange_;
+  sumDownCostSquared_ += rhsObject->sumDownCostSquared_-baseObject->sumDownCostSquared_;
+  sumUpCostSquared_ += rhsObject->sumUpCostSquared_-baseObject->sumUpCostSquared_;
+  sumDownDecrease_ += rhsObject->sumDownDecrease_-baseObject->sumDownDecrease_;
+  sumUpDecrease_ += rhsObject->sumUpDecrease_-baseObject->sumUpDecrease_;
+  lastDownCost_ += rhsObject->lastDownCost_-baseObject->lastDownCost_;
+  lastUpCost_ += rhsObject->lastUpCost_-baseObject->lastUpCost_;
+  lastDownDecrease_ += rhsObject->lastDownDecrease_-baseObject->lastDownDecrease_;
+  lastUpDecrease_ += rhsObject->lastUpDecrease_-baseObject->lastUpDecrease_;
+  numberTimesDown_ += rhsObject->numberTimesDown_-baseObject->numberTimesDown_;
+  numberTimesUp_ += rhsObject->numberTimesUp_-baseObject->numberTimesUp_;
+  numberTimesDownInfeasible_ += rhsObject->numberTimesDownInfeasible_-baseObject->numberTimesDownInfeasible_;
+  numberTimesUpInfeasible_ += rhsObject->numberTimesUpInfeasible_-baseObject->numberTimesUpInfeasible_;
+  numberTimesDownLocalFixed_ += rhsObject->numberTimesDownLocalFixed_-baseObject->numberTimesDownLocalFixed_;
+  numberTimesUpLocalFixed_ += rhsObject->numberTimesUpLocalFixed_-baseObject->numberTimesUpLocalFixed_;
+  numberTimesDownTotalFixed_ += rhsObject->numberTimesDownTotalFixed_-baseObject->numberTimesDownTotalFixed_;
+  numberTimesUpTotalFixed_ += rhsObject->numberTimesUpTotalFixed_-baseObject->numberTimesUpTotalFixed_;
+  numberTimesProbingTotal_ += rhsObject->numberTimesProbingTotal_-baseObject->numberTimesProbingTotal_;
+  if (numberTimesDown_+numberTimesDownInfeasible_>0) {
+    setDownDynamicPseudoCost(sumDown/(double) (numberTimesDown_+numberTimesDownInfeasible_));
+  }
+  if (numberTimesUp_+numberTimesUpInfeasible_>0) {
+    setUpDynamicPseudoCost(sumUp/(double) (numberTimesUp_+numberTimesUpInfeasible_));
+  }
+  //printf("XX %d down %d %d %g up %d %d %g\n",columnNumber_,numberTimesDown_,numberTimesDownInfeasible_,downDynamicPseudoCost_,
+  // numberTimesUp_,numberTimesUpInfeasible_,upDynamicPseudoCost_);
+}
+// Same - returns true if contents match(ish)
+bool 
+CbcSimpleIntegerDynamicPseudoCost::same(const CbcSimpleIntegerDynamicPseudoCost * otherObject) const
+{
+  bool okay = true;
+  if (downDynamicPseudoCost_!=otherObject->downDynamicPseudoCost_)
+    okay=false;
+  if (upDynamicPseudoCost_!=otherObject->upDynamicPseudoCost_)
+    okay=false;
+  if (sumDownCost_!= otherObject->sumDownCost_)
+    okay=false;
+  if (sumUpCost_!= otherObject->sumUpCost_)
+    okay=false;
+  if (sumDownChange_!= otherObject->sumDownChange_)
+    okay=false;
+  if (sumUpChange_!= otherObject->sumUpChange_)
+    okay=false;
+  if (sumDownCostSquared_!= otherObject->sumDownCostSquared_)
+    okay=false;
+  if (sumUpCostSquared_!= otherObject->sumUpCostSquared_)
+    okay=false;
+  if (sumDownDecrease_!= otherObject->sumDownDecrease_)
+    okay=false;
+  if (sumUpDecrease_!= otherObject->sumUpDecrease_)
+    okay=false;
+  if (lastDownCost_!= otherObject->lastDownCost_)
+    okay=false;
+  if (lastUpCost_!= otherObject->lastUpCost_)
+    okay=false;
+  if (lastDownDecrease_!= otherObject->lastDownDecrease_)
+    okay=false;
+  if (lastUpDecrease_!= otherObject->lastUpDecrease_)
+    okay=false;
+  if (numberTimesDown_!= otherObject->numberTimesDown_)
+    okay=false;
+  if (numberTimesUp_!= otherObject->numberTimesUp_)
+    okay=false;
+  if (numberTimesDownInfeasible_!= otherObject->numberTimesDownInfeasible_)
+    okay=false;
+  if (numberTimesUpInfeasible_!= otherObject->numberTimesUpInfeasible_)
+    okay=false;
+  if (numberTimesDownLocalFixed_!= otherObject->numberTimesDownLocalFixed_)
+    okay=false;
+  if (numberTimesUpLocalFixed_!= otherObject->numberTimesUpLocalFixed_)
+    okay=false;
+  if (numberTimesDownTotalFixed_!= otherObject->numberTimesDownTotalFixed_)
+    okay=false;
+  if (numberTimesUpTotalFixed_!= otherObject->numberTimesUpTotalFixed_)
+    okay=false;
+  if (numberTimesProbingTotal_!= otherObject->numberTimesProbingTotal_)
+    okay=false;
+  return okay;
+}
+// Creates a branching objecty
 CbcBranchingObject * 
 CbcSimpleIntegerDynamicPseudoCost::createBranch(int way) 
 {
@@ -442,7 +555,7 @@ CbcSimpleIntegerDynamicPseudoCost::solverBranch() const
   branch->addBranch(columnNumber_,value);
   return branch;
 }
-  
+//#define FUNNY_BRANCHING  
 // Infeasibility - large is 0.5
 double 
 CbcSimpleIntegerDynamicPseudoCost::infeasibility(int & preferredWay) const
@@ -450,6 +563,26 @@ CbcSimpleIntegerDynamicPseudoCost::infeasibility(int & preferredWay) const
   const double * solution = model_->testSolution();
   const double * lower = model_->getCbcColLower();
   const double * upper = model_->getCbcColUpper();
+#ifdef FUNNY_BRANCHING
+  const double * dj = model_->getCbcReducedCost();
+  double djValue = dj[columnNumber_];
+  lastDownDecrease_++;
+  if (djValue>1.0e-6) {
+    // wants to go down
+    if (true||lower[columnNumber_]>originalLower_) {
+      // Lower bound active
+      lastUpDecrease_++;
+      sumDownCostSquared_ += djValue;
+    }
+  } else if (djValue<-1.0e-6) {
+    // wants to go up
+    if (true||upper[columnNumber_]<originalUpper_) {
+      // Upper bound active
+      lastUpDecrease_++;
+      sumUpCostSquared_ -= djValue;
+    }
+  }
+#endif
   if (upper[columnNumber_]==lower[columnNumber_]) {
     // fixed
     preferredWay=1;
@@ -470,8 +603,6 @@ CbcSimpleIntegerDynamicPseudoCost::infeasibility(int & preferredWay) const
     above=below;
     below = above -1;
   }
-  // was 1 - but that looks flakey
-#define INFEAS 1
 #if INFEAS==1
   double distanceToCutoff=0.0;
   double objectiveValue = model_->getCurrentMinimizationObjValue();
@@ -543,6 +674,17 @@ CbcSimpleIntegerDynamicPseudoCost::infeasibility(int & preferredWay) const
   if (upDownSeparator_>0.0) {
     preferredWay = (value-below>=upDownSeparator_) ? 1 : -1;
   }
+#ifdef FUNNY_BRANCHING
+  if (fabs(value-nearest)>integerTolerance) {
+    double ratio = (100.0+lastUpDecrease_)/(100.0+lastDownDecrease_);
+    downCost *= ratio;
+    upCost *= ratio;
+    if ((lastUpDecrease_%100)==-1) 
+      printf("col %d total %d djtimes %d down %g up %g\n",
+	     columnNumber_,lastDownDecrease_,lastUpDecrease_,
+	     sumDownCostSquared_,sumUpCostSquared_);
+  }
+#endif
   if (preferredWay_)
     preferredWay=preferredWay_;
   // weight at 1.0 is max min
@@ -597,7 +739,7 @@ CbcSimpleIntegerDynamicPseudoCost::infeasibility(int & preferredWay) const
       //else
       returnValue *= 1.0e3;
       if (!numberTimesUp_&&!numberTimesDown_)
-        returnValue=1.0e50;
+        returnValue *= 1.0e10;
     }
     //if (fabs(value-0.5)<1.0e-5) {
     //returnValue = 3.0*returnValue + 0.2;
@@ -1028,6 +1170,14 @@ CbcSimpleIntegerDynamicPseudoCost::updateInformation(const CbcObjectUpdateData &
     setUpDynamicPseudoCost(sum/(double) number);
 #endif
   }
+  if (data.way_<0)
+    assert (numberTimesDown_+numberTimesDownInfeasible_>0);
+  else
+    assert (numberTimesUp_+numberTimesUpInfeasible_>0);
+  assert (downDynamicPseudoCost_>=0.0&&downDynamicPseudoCost_<1.0e100);
+  downDynamicPseudoCost_ = CoinMax(1.0e-10,downDynamicPseudoCost_);
+  assert (upDynamicPseudoCost_>=0.0&&upDynamicPseudoCost_<1.0e100);
+  upDynamicPseudoCost_ = CoinMax(1.0e-10,upDynamicPseudoCost_);
 #ifdef COIN_DEVELOP
   hist.sequence_=columnNumber_;
   hist.numberUp_=numberTimesUp_;
@@ -1220,11 +1370,13 @@ CbcDynamicPseudoCostBranchingObject::fillStrongInfo( CbcStrongInfo & info)
     info.downMovement = object_->downDynamicPseudoCost()*(value_-floor(value_));
     info.numIntInfeasUp  -= (int) (object_->sumUpDecrease()/
                                    (1.0e-12+(double) object_->numberTimesUp()));
+    info.numIntInfeasUp = CoinMax(info.numIntInfeasUp,0);
     info.numObjInfeasUp = 0;
     info.finishedUp = false;
     info.numItersUp = 0;
     info.numIntInfeasDown  -= (int) (object_->sumDownDecrease()/
                                    (1.0e-12+(double) object_->numberTimesDown()));
+    info.numIntInfeasDown = CoinMax(info.numIntInfeasDown,0);
     info.numObjInfeasDown = 0;
     info.finishedDown = false;
     info.numItersDown = 0;
@@ -1485,7 +1637,7 @@ CbcBranchDynamicDecision::betterBranch(CbcBranchingObject * thisOne,
     bestNumberDown_=COIN_INT_MAX;
   }
   if (stateOfSearch<=2) {
-#define TRY_STUFF 1
+    //#define TRY_STUFF 1
 #ifdef TRY_STUFF
     // before solution - choose smallest number 
     // could add in depth as well
@@ -1525,7 +1677,26 @@ CbcBranchDynamicDecision::betterBranch(CbcBranchingObject * thisOne,
       value = CoinMin(numInfUp,numInfDown);
     }
 #else
-    // got a solution
+    // use pseudo shadow prices modified by locks
+    // test testosi
+#if 1
+    double objectiveValue = model->getCurrentMinimizationObjValue();
+    double distanceToCutoff =  model->getCutoff()  - objectiveValue;
+    if (distanceToCutoff<1.0e20) 
+      distanceToCutoff *= 10.0;
+    else 
+      distanceToCutoff = 1.0e2 + fabs(objectiveValue);
+    double continuousObjective = model->getContinuousObjective();
+    double distanceToCutoffC =  model->getCutoff()  - continuousObjective;
+    if (distanceToCutoffC>1.0e20) 
+      distanceToCutoffC = 1.0e2 + fabs(objectiveValue);
+    int numberInfC = model->getContinuousInfeasibilities();
+    double perInf = distanceToCutoffC/((double) numberInfC);
+    assert (perInf>0.0);
+    //int numberIntegers = model->numberIntegers();
+    changeDown += perInf * numInfDown;
+    changeUp += perInf * numInfUp;
+#endif
     double minValue = CoinMin(changeDown,changeUp);
     double maxValue = CoinMax(changeDown,changeUp);
     value = WEIGHT_BEFORE*minValue + (1.0-WEIGHT_BEFORE)*maxValue;
@@ -1538,6 +1709,7 @@ CbcBranchDynamicDecision::betterBranch(CbcBranchingObject * thisOne,
     }
 #endif
   } else {
+    //#define TRY_STUFF 2
 #if TRY_STUFF > 1
     // Get current number of infeasibilities, cutoff and current objective
     CbcNode * node = model->currentNode();
@@ -1552,7 +1724,7 @@ CbcBranchDynamicDecision::betterBranch(CbcBranchingObject * thisOne,
 #ifdef TRY_STUFF
     //maxValue = CoinMin(maxValue,minValue*4.0);
 #else
-    maxValue = CoinMin(maxValue,minValue*2.0);
+    //maxValue = CoinMin(maxValue,minValue*2.0);
 #endif
     value = WEIGHT_AFTER*minValue + (1.0-WEIGHT_AFTER)*maxValue;
     double useValue = value;

@@ -372,7 +372,7 @@ CbcStrategyDefault::setupOther(CbcModel & model)
     generator1.setUsingObjective(true);
     generator1.setMaxPass(1);
     generator1.setMaxPassRoot(1);
-    generator1.setMaxProbeRoot(solver->getNumCols());
+    generator1.setMaxProbeRoot(CoinMin(3000,solver->getNumCols()));
     generator1.setMaxElements(100);
     generator1.setMaxLookRoot(50);
     generator1.setRowCuts(3);

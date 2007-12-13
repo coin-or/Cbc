@@ -105,5 +105,6 @@ private:
   int whichCutGenerator_;
 
 };
+//#define CBC_DETERMINISTIC_THREAD
 
 #endif

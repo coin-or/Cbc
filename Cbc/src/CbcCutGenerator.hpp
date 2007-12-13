@@ -63,7 +63,8 @@ public:
 
     If node then can find out depth
   */
-  bool generateCuts( OsiCuts &cs, bool fullScan,OsiSolverInterface * solver,CbcNode * node); 
+  bool generateCuts( OsiCuts &cs, bool fullScan,OsiSolverInterface * solver,
+		     CbcNode * node); 
   //@}
 
     

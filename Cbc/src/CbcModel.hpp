@@ -281,6 +281,14 @@ public:
 
   /// Returns true if locked
   bool isLocked() const;
+  /// Main loop (without threads but when subtrees) 1 if finished, 0 if stopped
+#if 0
+  int whileIterating(bool & locked, threadId, threadInfo,condition_mutex,condition_main,
+		     timeWaiting,threadModel,threadStats,totalTime,cutoff,
+		     eventHandler,saveCompare,lastDepth,lastUnsatisfied,createdNode);
+#else
+  int whileIterating(int numberIterations);
+#endif
 #ifdef CBC_THREAD
   /**
      Locks a thread if parallel so that stuff like cut pool
@@ -1156,6 +1164,12 @@ public:
   */
   inline void setThreadMode(int value) 
   { threadMode_=value;}
+  /// Get number of "iterations" to stop after
+  inline int getStopNumberIterations() const
+  { return stopNumberIterations_;}
+  /// Set number of "iterations" to stop after
+  inline void setStopNumberIterations(int value) 
+  { stopNumberIterations_=value;}
   //@}
 
   /** \name Node selection */
@@ -1447,6 +1461,14 @@ public:
   /// Pointer to a mutex 
   inline void * mutex()
   { return mutex_;}
+  /// Split up nodes
+  int splitModel(int numberModels, CbcModel ** model,
+		  int numberNodes);
+  /// Start threads
+  void startSplitModel(int numberIterations);
+  /// Merge models
+  void mergeModels(int numberModel, CbcModel ** model,
+		   int numberNodes);
   //@}
   //---------------------------------------------------------------------------
 
@@ -1480,14 +1502,14 @@ public:
       and you want to hang on to the answer).
     */
     inline void setModelOwnsSolver (bool ourSolver)
-    { ourSolver_ = ourSolver ; } 
+  { ownership_ = ourSolver ? (ownership_ |0x80000000) : (ownership_ & (~0x80000000)) ; } 
 
     /*! \brief Get ownership of solver
     
       A return value of true means that CbcModel owns the solver and will
       take responsibility for deleting it when that becomes necessary.
     */
-    inline bool modelOwnsSolver () { return (ourSolver_) ; } 
+  inline bool modelOwnsSolver () { return ((ownership_&0x80000000)!=0) ; } 
   
     /** Copy constructor .
       If noTree is true then tree and cuts are not copied
@@ -1503,6 +1525,10 @@ public:
     /// Returns solver - has current state
     inline OsiSolverInterface * solver() const
     { return solver_;}
+
+    /// Returns current solver - sets new one
+    inline OsiSolverInterface * swapSolver(OsiSolverInterface * solver) 
+    { OsiSolverInterface * returnSolver = solver_; solver_ = solver; return returnSolver;}
 
     /// Returns solver with continuous state
     inline OsiSolverInterface * continuousSolver() const
@@ -1617,6 +1643,11 @@ public:
 	  bounds and building a basis goes to waste.
   */
   void addCuts1(CbcNode * node, CoinWarmStartBasis *&lastws);
+  /** Returns bounds just before where - initially original bounds.
+      Also sets downstream nodes (lower if force 1, upper if 2)
+  */
+  void previousBounds (CbcNode * node, CbcNodeInfo * where,int iColumn,
+		       double & lower, double & upper,int force);
   /** Set objective value in a node.  This is separated out so that
      odd solvers can use.  It may look at extra information in
      solverCharacteriscs_ and will also use bound from parent node
@@ -1695,13 +1726,11 @@ private:
   /// The solver associated with this model.
   OsiSolverInterface * solver_;
 
-  /** Ownership of the solver object
+  /** Ownership of objects
 
-    The convention is that CbcModel owns the null solver. Currently there
-    is no public method to give CbcModel a solver without giving ownership,
-    but the hook is here.
+      0x80000000 model owns solver
   */
-  bool ourSolver_ ;
+  unsigned int ownership_ ;
 
   /// A copy of the solver, taken at the continuous (root) node.
   OsiSolverInterface * continuousSolver_;
@@ -1929,6 +1958,8 @@ private:
 	     in dynamic strong branching.
   */
   int numberPenalties_;
+  /// For threads - stop after this many "iterations"
+  int stopNumberIterations_;
   /** Scale factor to make penalties match strong.
       Should/will be computed */
   double penaltyScaleFactor_;

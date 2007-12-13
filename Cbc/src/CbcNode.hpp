@@ -104,6 +104,8 @@ public:
   virtual void applyToModel (CbcModel *model, CoinWarmStartBasis *&basis,
 			     CbcCountRowCut **addCuts,
 			     int &currentNumberCuts) const = 0 ;
+  /// Just apply bounds to one variable - force means overwrite by lower,upper (1=>infeasible)
+  virtual int applyBounds(int iColumn, double & lower, double & upper,int force) = 0;
 
   /** Builds up row basis backwards (until original model).
       Returns NULL or previous one to apply .
@@ -114,7 +116,7 @@ public:
   virtual CbcNodeInfo * clone() const = 0;
   /// Called when number branches left down to zero
   virtual void allBranchesGone() {}
-
+#if 1
   /// Increment number of references
   inline void increment(int amount=1)
   {numberPointingToThis_+=amount;/*printf("CbcNodeInfo %x incremented by %d to %d\n",this,amount,numberPointingToThis_);*/}
@@ -122,7 +124,12 @@ public:
   /// Decrement number of references and return number left
   inline int decrement(int amount=1)
   {numberPointingToThis_-=amount;/*printf("CbcNodeInfo %x decremented by %d to %d\n",this,amount,numberPointingToThis_);*/return numberPointingToThis_;}
-
+#else
+  /// Increment number of references
+  void increment(int amount=1);
+  /// Decrement number of references and return number left
+  int decrement(int amount=1);
+#endif
   /** Initialize reference counts
 
     Initialize the reference counts used for tree maintenance.
@@ -138,6 +145,10 @@ public:
   /// Return number of objects pointing to this
   inline int numberPointingToThis() const
   {return numberPointingToThis_;}
+
+  /// Set number of objects pointing to this
+  inline void setNumberPointingToThis(int number)
+  {numberPointingToThis_=number;}
 
   /// Say one branch taken 
   inline int branchedOn()
@@ -168,6 +179,9 @@ public:
   /// Decrement active cut counts
   void decrementCuts(int change=1);
 
+  /// Increment active cut counts
+  void incrementCuts(int change=1);
+
   /// Decrement all active cut counts in chain starting at parent
   void decrementParentCuts(int change=1);
 
@@ -189,11 +203,31 @@ public:
   { owner_=NULL;}
   const inline CbcNode * owner() const
   { return owner_;}
+  inline CbcNode * mutableOwner() const
+  { return owner_;}
   /// The node number
   inline int nodeNumber() const
   { return nodeNumber_;}
   inline void setNodeNumber(int node)
   { nodeNumber_=node;}
+  /** Deactivate node information.
+      1 - bounds
+      2 - cuts
+      4 - basis!
+  */
+  void deactivate(int mode=3);
+  /// Say if normal
+  inline bool allActivated() const
+  { return (active_==7);}
+  /// Say if marked
+  inline bool marked() const
+  { return ((active_&8)!=0);}
+  /// Mark
+  inline void mark()
+  { active_ |= 8;}
+  /// Unmark
+  inline void unmark()
+  { active_ &= ~8;}
 protected:
 
   /** Number of other nodes pointing to this node.
@@ -231,6 +265,12 @@ protected:
 	  both are necessary.
   */
   int numberBranchesLeft_;
+  /** Active node information.
+      1 - bounds
+      2 - cuts
+      4 - basis!
+  */
+  int active_;
       
 private:
   
@@ -266,6 +306,9 @@ public:
   virtual void applyToModel (CbcModel *model, CoinWarmStartBasis *&basis,
 			     CbcCountRowCut **addCuts,
 			     int &currentNumberCuts) const ;
+
+  /// Just apply bounds to one variable - force means overwrite by lower,upper (1=>infeasible)
+  virtual int applyBounds(int iColumn, double & lower, double & upper,int force) ;
 
   /** Builds up row basis backwards (until original model).
       Returns NULL or previous one to apply .
@@ -328,6 +371,8 @@ public:
 			     CbcCountRowCut **addCuts,
 			     int &currentNumberCuts) const ;
 
+  /// Just apply bounds to one variable - force means overwrite by lower,upper (1=>infeasible)
+  virtual int applyBounds(int iColumn, double & lower, double & upper,int force) ;
   /** Builds up row basis backwards (until original model).
       Returns NULL or previous one to apply .
       Depends on Free being 0 and impossible for cuts
@@ -589,6 +634,25 @@ public:
   /// Set branching object for this node (takes ownership)
   inline void setBranchingObject(OsiBranchingObject * branchingObject)
   { branch_ = branchingObject;}
+  /// The node number
+  inline int nodeNumber() const
+  { return nodeNumber_;}
+  inline void setNodeNumber(int node)
+  { nodeNumber_=node;}
+  /// Returns true if on tree
+  inline bool onTree() const
+  { return (state_&1)!=0;}
+  /// Sets true if on tree
+  inline void setOnTree(bool yesNo)
+  { if(yesNo) state_ |= 1; else state_ &= ~1; }
+  /// Returns true if active
+  inline bool active() const
+  { return (state_&2)!=0;}
+  /// Sets true if active
+  inline void setActive(bool yesNo)
+  { if(yesNo) state_ |= 2; else state_ &= ~2; }
+  /// Print
+  void print() const;
 
 private:
   // Data
@@ -606,6 +670,13 @@ private:
   int depth_;
   /// The number of objects unsatisfied at this node.
   int numberUnsatisfied_;
+  /// The node number
+  int nodeNumber_;
+  /** State
+      1 - on tree
+      2 - active
+  */
+  int state_;
 };
 
 

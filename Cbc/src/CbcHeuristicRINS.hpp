@@ -55,6 +55,9 @@ public:
   /// Sets how often to do it
   inline void setHowOften(int value)
   { howOften_=value;}
+  /// Sets decay factor (for howOften) on failure
+  inline void setDecayFactor(double value)
+  { decayFactor_=value;}
   /// Used array so we can set
   inline char * used() const
   { return used_;}
@@ -66,6 +69,8 @@ protected:
   int numberSolutions_;
   /// How often to do (code can change)
   int howOften_;
+  /// How much to increase how often
+  double decayFactor_;
   /// Number of successes
   int numberSuccesses_;
   /// Number of tries

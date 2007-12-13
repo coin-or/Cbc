@@ -88,9 +88,8 @@ public:
       assert (nodeNumberX!=nodeNumberY);
       return (nodeNumberX>nodeNumberY);
     } else {
-      // doesn't work if threaded
-      assert (x!=y);
-      return (x>y);
+      assert (x->nodeNumber()!=y->nodeNumber());
+      return (x->nodeNumber()>y->nodeNumber());
     }
   }
   /// Say threaded

@@ -4,11 +4,16 @@
 // Turn off compiler warning about long names
 #  pragma warning(disable:4786)
 #endif
+#include "CbcConfig.h"
 #include <cassert>
 #include <cmath>
 #include <cfloat>
 
+#ifdef COIN_HAS_CLP
+#include "OsiClpSolverInterface.hpp"
+#else
 #include "OsiSolverInterface.hpp"
+#endif
 #include "CbcModel.hpp"
 #include "CbcMessage.hpp"
 #include "CbcCutGenerator.hpp"
@@ -179,6 +184,15 @@ CbcCutGenerator::generateCuts( OsiCuts & cs , bool fullScan, OsiSolverInterface 
     depth=0;
   int pass=model_->getCurrentPassNumber()-1;
   bool doThis=(model_->getNodeCount()%howOften)==0;
+  CoinThreadRandom * randomNumberGenerator=NULL;
+#ifdef COIN_HAS_CLP
+  {
+    OsiClpSolverInterface * clpSolver 
+      = dynamic_cast<OsiClpSolverInterface *> (solver);
+    if (clpSolver) 
+      randomNumberGenerator = clpSolver->getModelPtr()->randomNumberGenerator();
+  }
+#endif
   if (depthCutGenerator_>0) {
     doThis = (depth % depthCutGenerator_) ==0;
     if (depth<depthCutGenerator_)
@@ -204,6 +218,7 @@ CbcCutGenerator::generateCuts( OsiCuts & cs , bool fullScan, OsiSolverInterface 
     info.pass = pass;
     info.formulation_rows = model_->numberRowsAtContinuous();
     info.inTree = node!=NULL;
+    info.randomNumberGenerator=randomNumberGenerator;
     incrementNumberTimesEntered();
     CglProbing* generator =
       dynamic_cast<CglProbing*>(generator_);
@@ -221,6 +236,7 @@ CbcCutGenerator::generateCuts( OsiCuts & cs , bool fullScan, OsiSolverInterface 
 	info2->pass = pass;
 	info2->formulation_rows = model_->numberRowsAtContinuous();
 	info2->inTree = node!=NULL;
+	info2->randomNumberGenerator=randomNumberGenerator;
 	generator->generateCutsAndModify(*solver,cs,info2);
       } else {
 	generator->generateCutsAndModify(*solver,cs,&info);

@@ -55,6 +55,7 @@ CbcHeuristic::CbcHeuristic(const CbcHeuristic & rhs)
   numberNodes_(rhs.numberNodes_),
   feasibilityPumpOptions_(rhs.feasibilityPumpOptions_),
   fractionSmall_(rhs.fractionSmall_),
+  randomNumberGenerator_(rhs.randomNumberGenerator_),
   heuristicName_(rhs.heuristicName_)
 {
 }
@@ -68,6 +69,7 @@ CbcHeuristic::operator=( const CbcHeuristic& rhs)
     numberNodes_ = rhs.numberNodes_;
     feasibilityPumpOptions_ = rhs.feasibilityPumpOptions_;
     fractionSmall_ = rhs.fractionSmall_;
+    randomNumberGenerator_ = rhs.randomNumberGenerator_;
     heuristicName_ = rhs.heuristicName_ ;
   }
   return *this;
@@ -78,6 +80,12 @@ void
 CbcHeuristic::resetModel(CbcModel * model)
 {
   model_=model;
+}
+// Set seed
+void
+CbcHeuristic::setSeed(int value)
+{
+  randomNumberGenerator_.setSeed(value);
 }
 
 // Create C++ lines to get to current state
@@ -142,6 +150,7 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver,int numberNodes,
 #ifdef COIN_DEVELOP
   getHistoryStatistics_=false;
 #endif
+  int status=0;
   int logLevel = model_->logLevel();
   char generalPrint[100];
   // Do presolve to see if possible
@@ -193,7 +202,7 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver,int numberNodes,
 	      if (solver->isBinary(iColumn)&&used[iColumn]==maxUsed) {
 		bool setValue=true;
 		if (maxUsed==1) {
-		  double randomNumber = CoinDrand48();
+		  double randomNumber = randomNumberGenerator_.randomDouble();
 		  if (randomNumber>0.3)
 		    setValue=false;
 		}
@@ -411,6 +420,10 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver,int numberNodes,
 	}
 	if (model.status()==5)
 	  returnCode=-2; // stop
+	if (model.isProvenInfeasible())
+	  status=1;
+	else if (model.isProvenOptimal())
+	  status=2;
       }
     }
   } else {
@@ -426,6 +439,12 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver,int numberNodes,
   }
 #ifdef COIN_DEVELOP
   getHistoryStatistics_=true;
+  if (returnCode==1||returnCode==2) {
+    if (status==1)
+      printf("heuristic could add cut because infeasible (%s)\n",heuristicName_.c_str()); 
+    else if (status==2)
+      printf("heuristic could add cut because optimal (%s)\n",heuristicName_.c_str());
+  } 
 #endif
   return returnCode;
 }
@@ -436,6 +455,9 @@ CbcRounding::CbcRounding()
 {
   // matrix and row copy will automatically be empty
   seed_=1;
+  down_ = NULL;
+  up_ = NULL;
+  equal_ = NULL;
 }
 
 // Constructor from model
@@ -446,12 +468,16 @@ CbcRounding::CbcRounding(CbcModel & model)
   assert(model.solver());
   matrix_ = *model.solver()->getMatrixByCol();
   matrixByRow_ = *model.solver()->getMatrixByRow();
+  validate();
   seed_=1;
 }
 
 // Destructor 
 CbcRounding::~CbcRounding ()
 {
+  delete [] down_;
+  delete [] up_;
+  delete [] equal_;
 }
 
 // Clone
@@ -474,7 +500,7 @@ CbcRounding::generateCpp( FILE * fp)
     fprintf(fp,"4  rounding.setSeed(%d);\n",seed_);
   fprintf(fp,"3  cbcModel->addHeuristic(&rounding);\n");
 }
-
+//#define NEW_ROUNDING
 // Copy constructor 
 CbcRounding::CbcRounding(const CbcRounding & rhs)
 :
@@ -483,6 +509,16 @@ CbcRounding::CbcRounding(const CbcRounding & rhs)
   matrixByRow_(rhs.matrixByRow_),
   seed_(rhs.seed_)
 {
+#ifdef NEW_ROUNDING
+  int numberColumns = matrix_.getNumCols();
+  down_ = CoinCopyOfArray(rhs.down_,numberColumns);
+  up_ = CoinCopyOfArray(rhs.up_,numberColumns);
+  equal_ = CoinCopyOfArray(rhs.equal_,numberColumns);
+#else
+  down_ = NULL;
+  up_ = NULL;
+  equal_ = NULL;
+#endif  
 }
 
 // Assignment operator 
@@ -493,6 +529,19 @@ CbcRounding::operator=( const CbcRounding& rhs)
     CbcHeuristic::operator=(rhs);
     matrix_ = rhs.matrix_;
     matrixByRow_ = rhs.matrixByRow_;
+#ifdef NEW_ROUNDING
+    delete [] down_;
+    delete [] up_;
+    delete [] equal_;
+    int numberColumns = matrix_.getNumCols();
+    down_ = CoinCopyOfArray(rhs.down_,numberColumns);
+    up_ = CoinCopyOfArray(rhs.up_,numberColumns);
+    equal_ = CoinCopyOfArray(rhs.equal_,numberColumns);
+#else
+    down_ = NULL;
+    up_ = NULL;
+    equal_ = NULL;
+#endif  
     seed_ = rhs.seed_;
   }
   return *this;
@@ -507,6 +556,7 @@ CbcRounding::resetModel(CbcModel * model)
   assert(model_->solver());
   matrix_ = *model_->solver()->getMatrixByCol();
   matrixByRow_ = *model_->solver()->getMatrixByRow();
+  validate();
 }
 // See if rounding will give solution
 // Sets value of solution
@@ -516,7 +566,28 @@ CbcRounding::resetModel(CbcModel * model)
 // Returns 1 if solution, 0 if not
 int
 CbcRounding::solution(double & solutionValue,
-			 double * betterSolution)
+		      double * betterSolution)
+{
+
+  // See if to do
+  if (!when()||(when()%10==1&&model_->phase()!=1)||
+      (when()%10==2&&(model_->phase()!=2&&model_->phase()!=3)))
+    return 0; // switched off
+  OsiSolverInterface * solver = model_->solver();
+  double direction = solver->getObjSense();
+  double newSolutionValue = direction*solver->getObjValue();
+  return solution(solutionValue,betterSolution,newSolutionValue);
+}
+// See if rounding will give solution
+// Sets value of solution
+// Assumes rhs for original matrix still okay
+// At present only works with integers 
+// Fix values if asked for
+// Returns 1 if solution, 0 if not
+int
+CbcRounding::solution(double & solutionValue,
+		      double * betterSolution,
+		      double newSolutionValue)
 {
 
   // See if to do
@@ -540,7 +611,7 @@ CbcRounding::solution(double & solutionValue,
   const int * integerVariable = model_->integerVariable();
   int i;
   double direction = solver->getObjSense();
-  double newSolutionValue = direction*solver->getObjValue();
+  //double newSolutionValue = direction*solver->getObjValue();
   int returnCode = 0;
   // Column copy
   const double * element = matrix_.getElements();
@@ -604,7 +675,7 @@ CbcRounding::solution(double & solutionValue,
 	move = below-value;
       } else {
 	// won't be able to move unless we can grab another variable
-        double randomNumber = CoinDrand48();
+        double randomNumber = randomNumberGenerator_.randomDouble();
 	// which way?
         if (randomNumber<0.5) 
           move = below-value;
@@ -1054,7 +1125,7 @@ CbcRounding::solution(double & solutionValue,
     //seed_++;
     //CoinSeedRandom(seed_);
     // Random number between 0 and 1.
-    double randomNumber = CoinDrand48();
+    double randomNumber = randomNumberGenerator_.randomDouble();
     int iPass;
     int start[2];
     int end[2];
@@ -1157,6 +1228,80 @@ CbcRounding::solution(double & solutionValue,
       }
     }
   }
+#ifdef NEW_ROUNDING
+  if (!returnCode) {
+#if 0
+    // back to starting point
+    memcpy(newSolution,solution,numberColumns*sizeof(double));
+    memset(rowActivity,0,numberRows*sizeof(double));
+    for (i=0;i<numberColumns;i++) {
+      int j;
+      double value = newSolution[i];
+      if (value<lower[i]) {
+	value=lower[i];
+	newSolution[i]=value;
+      } else if (value>upper[i]) {
+	value=upper[i];
+	newSolution[i]=value;
+      }
+      if (value) {
+	for (j=columnStart[i];
+	     j<columnStart[i]+columnLength[i];j++) {
+	  int iRow=row[j];
+	  rowActivity[iRow] += value*element[j];
+	}
+      }
+    }
+    // check was feasible - if not adjust (cleaning may move)
+    for (i=0;i<numberRows;i++) {
+      if(rowActivity[i]<rowLower[i]) {
+	//assert (rowActivity[i]>rowLower[i]-1000.0*primalTolerance);
+	rowActivity[i]=rowLower[i];
+      } else if(rowActivity[i]>rowUpper[i]) {
+	//assert (rowActivity[i]<rowUpper[i]+1000.0*primalTolerance);
+	rowActivity[i]=rowUpper[i];
+      }
+    }
+#endif
+    int * candidate = new int [numberColumns];
+    int nCandidate=0;
+    for (iColumn=0;iColumn<numberColumns;iColumn++) {
+      bool isInteger = (integerType[iColumn]!=0);
+      if (isInteger) {
+	double currentValue = newSolution[iColumn];
+	if (fabs(currentValue-floor(currentValue+0.5))>1.0e-8)
+	  candidate[nCandidate++]=iColumn;
+      }
+    }
+    if (true) {
+      // Rounding as in Berthold
+      while (nCandidate) {
+	double infeasibility =1.0e-7;
+	int iRow=-1;
+	for (i=0;i<numberRows;i++) {
+	  double value=0.0;
+	  if(rowActivity[i]<rowLower[i]) {
+	    value = rowLower[i]-rowActivity[i];
+	  } else if(rowActivity[i]>rowUpper[i]) {
+	    value = rowActivity[i]-rowUpper[i];
+	  }
+	  if (value>infeasibility) {
+	    infeasibility = value;
+	    iRow=i;
+	  }
+	}
+	if (iRow>=0) {
+	  // infeasible
+	} else {
+	  // feasible
+	}
+      }
+    } else {
+      // Shifting as in Berthold
+    }
+    delete [] candidate;
+  }
+#endif
   delete [] newSolution;
   delete [] rowActivity;
   return returnCode;
@@ -1181,6 +1326,52 @@ CbcRounding::validate()
         model_->numberObjects())
       setWhen(0);
   }
+#ifdef NEW_ROUNDING
+  int numberColumns = matrix_.getNumCols();
+  down_ = new unsigned short [numberColumns];
+  up_ = new unsigned short [numberColumns];
+  equal_ = new unsigned short [numberColumns];
+  // Column copy
+  const double * element = matrix_.getElements();
+  const int * row = matrix_.getIndices();
+  const CoinBigIndex * columnStart = matrix_.getVectorStarts();
+  const int * columnLength = matrix_.getVectorLengths();
+  const double * rowLower = model.solver()->getRowLower();
+  const double * rowUpper = model.solver()->getRowUpper();
+  for (int i=0;i<numberColumns;i++) {
+    int down=0;
+    int up=0;
+    int equal=0;
+    if (columnLength[i]>65535) {
+      equal[0]=65535; 
+      break; // unlikely to work
+    }
+    for (CoinBigIndex j=columnStart[i];
+	 j<columnStart[i]+columnLength[i];j++) {
+      int iRow=row[j];
+      if (rowLower[iRow]>-1.0e20&&rowUpper[iRow]<1.0e20) {
+	equal++;
+      } else if (element[j]>0.0) {
+	if (rowUpper[iRow]<1.0e20)
+	  up++;
+	else
+	  down--;
+      } else {
+	if (rowLower[iRow]>-1.0e20)
+	  up++;
+	else
+	  down--;
+      }
+    }
+    down_[i] = (unsigned short) down;
+    up_[i] = (unsigned short) up;
+    equal_[i] = (unsigned short) equal;
+  }
+#else
+  down_ = NULL;
+  up_ = NULL;
+  equal_ = NULL;
+#endif  
 }
 
 // Default Constructor

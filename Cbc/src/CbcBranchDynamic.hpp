@@ -76,7 +76,11 @@ public:
   /// Update object by CbcObjectUpdateData
   virtual void updateInformation(const CbcObjectUpdateData & data) ;
   /// Copy some information i.e. just variable stuff
-  void copySome(CbcSimpleIntegerDynamicPseudoCost * otherObject);
+  void copySome(const CbcSimpleIntegerDynamicPseudoCost * otherObject);
+  /// Updates stuff like pseudocosts before threads
+  virtual void updateBefore(const OsiObject * rhs) ;
+  /// Updates stuff like pseudocosts after threads finished
+  virtual void updateAfter(const OsiObject * rhs, const OsiObject * baseObject) ;
 
   using CbcSimpleInteger::solverBranch ;
   /** Create an OsiSolverBranch object
@@ -154,7 +158,7 @@ public:
   { sumDownDecrease_=value;}
   /// Add to sum down decrease number infeasibilities from strong or actual
   inline void addToSumDownDecrease(double value)
-  { sumDownDecrease_+=value;lastDownDecrease_ = (int) value;}
+  { sumDownDecrease_+=value;/*lastDownDecrease_ = (int) value;*/}
 
   /// Sum up decrease number infeasibilities from strong or actual
   inline double sumUpDecrease() const
@@ -164,7 +168,7 @@ public:
   { sumUpDecrease_=value;}
   /// Add to sum up decrease number infeasibilities from strong or actual
   inline void addToSumUpDecrease(double value)
-  { sumUpDecrease_+=value;lastUpDecrease_ = (int) value;}
+  { sumUpDecrease_+=value;/*lastUpDecrease_ = (int) value;*/}
 
   /// Down number times
   inline int numberTimesDown() const
@@ -234,6 +238,8 @@ public:
 
   /// Print - 0 -summary, 1 just before strong
   void print(int type=0, double value=0.0) const;
+  /// Same - returns true if contents match(ish)
+  bool same(const CbcSimpleIntegerDynamicPseudoCost * obj) const;
 protected:
   /// data
 
@@ -255,9 +261,9 @@ protected:
   /// Sum of all changes to x when going up
   double sumUpChange_;
   /// Sum down cost from strong or actual squared
-  double sumDownCostSquared_;
+  mutable double sumDownCostSquared_;
   /// Sum up cost from strong or actual squared
-  double sumUpCostSquared_;
+  mutable double sumUpCostSquared_;
   /// Sum down decrease number infeasibilities from strong or actual
   double sumDownDecrease_;
   /// Sum up decrease number infeasibilities from strong or actual
@@ -267,9 +273,9 @@ protected:
   /// Last up cost from strong (i.e. as computed by last strong)
   double lastUpCost_;
   /// Last down decrease number infeasibilities from strong (i.e. as computed by last strong)
-  int lastDownDecrease_;
+  mutable int lastDownDecrease_;
   /// Last up decrease number infeasibilities from strong (i.e. as computed by last strong)
-  int lastUpDecrease_;
+  mutable int lastUpDecrease_;
   /// Number of times we have gone down
   int numberTimesDown_;
   /// Number of times we have gone up

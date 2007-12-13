@@ -41,7 +41,7 @@
 #include "OsiAuxInfo.hpp"
 //#define USER_HAS_FAKE_CLP
 //#define USER_HAS_FAKE_CBC
-#define CLP_MALLOC_STATISTICS
+//#define CLP_MALLOC_STATISTICS
 #ifdef CLP_MALLOC_STATISTICS
 #include <malloc.h>
 #include <exception>

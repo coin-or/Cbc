@@ -126,7 +126,6 @@ int CbcClpUnitTest (const CbcModel & saveModel, std::string& dirMiplib,
 #define HOWMANY 2
 #if HOWMANY
 #if HOWMANY>1
-    PUSH_MPS("gen",780,870,112313,112130.0,7);
     //PUSH_MPS("blend2",274,353,7.598985,6.9156751140,7);
     PUSH_MPS("10teams",230,2025,924,917,7);
 #endif

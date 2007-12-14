@@ -7,6 +7,7 @@
 #include <vector>
 #include "CoinPackedMatrix.hpp"
 #include "OsiCuts.hpp"
+#include "CoinHelperFunctions.hpp"
 
 class OsiSolverInterface;
 

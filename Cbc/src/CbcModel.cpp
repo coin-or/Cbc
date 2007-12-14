@@ -12604,12 +12604,13 @@ int
 CbcModel::whileIterating(int numberIterations)
 {
   abort();
+  int returnCode=0;
+#if 0
   // this should be updated by heuristics strong branching etc etc
   if (numberIterations>0)
    stopNumberIterations_ = numberIterations_+numberIterations;
   else
     stopNumberIterations_=-1;
-  int returnCode=0;
   while (true) {
     if (tree_->empty()) {
       returnCode=1;
@@ -12645,6 +12646,7 @@ CbcModel::whileIterating(int numberIterations)
     doOneNode(this,node,createdNode);
   }
   stopNumberIterations_=-1;
+#endif
   return returnCode;
 }
 // Returns bounds just before where - initially original bounds - also sets bounds

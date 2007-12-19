@@ -375,7 +375,9 @@ int CbcClpUnitTest (const CbcModel & saveModel, std::string& dirMiplib,
         std::cout <<"cbc_clp" <<" " <<soln << " != " <<objValue[m]
 		  << "; error=" << fabs(objValue[m] - soln); 
 	numberFailures++;
+#ifdef COIN_DEVELOP
 	abort();
+#endif
       }
     } else {
       std::cout << "error; too many nodes" ;

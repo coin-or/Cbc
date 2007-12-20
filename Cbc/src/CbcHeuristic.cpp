@@ -997,6 +997,165 @@ CbcRounding::validate()
 }
 
 // Default Constructor
+CbcHeuristicPartial::CbcHeuristicPartial() 
+  :CbcHeuristic()
+{
+  fixPriority_ = 10000;
+}
+
+// Constructor from model
+CbcHeuristicPartial::CbcHeuristicPartial(CbcModel & model, int fixPriority, int numberNodes)
+  :CbcHeuristic(model)
+{
+  fixPriority_ = fixPriority;
+  setNumberNodes(numberNodes);
+  validate();
+}
+
+// Destructor 
+CbcHeuristicPartial::~CbcHeuristicPartial ()
+{
+}
+
+// Clone
+CbcHeuristic *
+CbcHeuristicPartial::clone() const
+{
+  return new CbcHeuristicPartial(*this);
+}
+// Create C++ lines to get to current state
+void 
+CbcHeuristicPartial::generateCpp( FILE * fp) 
+{
+  CbcHeuristicPartial other;
+  fprintf(fp,"0#include \"CbcHeuristic.hpp\"\n");
+  fprintf(fp,"3  CbcHeuristicPartial partial(*cbcModel);\n");
+  CbcHeuristic::generateCpp(fp,"partial");
+  if (fixPriority_!=other.fixPriority_)
+    fprintf(fp,"3  partial.setFixPriority(%d);\n",fixPriority_);
+  else
+    fprintf(fp,"4  partial.setFixPriority(%d);\n",fixPriority_);
+  fprintf(fp,"3  cbcModel->addHeuristic(&partial);\n");
+}
+//#define NEW_PARTIAL
+// Copy constructor 
+CbcHeuristicPartial::CbcHeuristicPartial(const CbcHeuristicPartial & rhs)
+:
+  CbcHeuristic(rhs),
+  fixPriority_(rhs.fixPriority_)
+{
+}
+
+// Assignment operator 
+CbcHeuristicPartial & 
+CbcHeuristicPartial::operator=( const CbcHeuristicPartial& rhs)
+{
+  if (this!=&rhs) {
+    CbcHeuristic::operator=(rhs);
+    fixPriority_ = rhs.fixPriority_;
+  }
+  return *this;
+}
+
+// Resets stuff if model changes
+void 
+CbcHeuristicPartial::resetModel(CbcModel * model)
+{
+  model_=model;
+  // Get a copy of original matrix (and by row for partial);
+  assert(model_->solver());
+  validate();
+}
+// See if partial will give solution
+// Sets value of solution
+// Assumes rhs for original matrix still okay
+// At present only works with integers 
+// Fix values if asked for
+// Returns 1 if solution, 0 if not
+int
+CbcHeuristicPartial::solution(double & solutionValue,
+		      double * betterSolution)
+{
+  // Return if already done
+  if (fixPriority_<0)
+    return 0; // switched off
+  const double * hotstartSolution = model_->hotstartSolution();
+  const int * hotstartPriorities = model_->hotstartPriorities();
+  if (!hotstartSolution)
+    return 0;
+  OsiSolverInterface * solver = model_->solver();
+  
+  int numberIntegers = model_->numberIntegers();
+  const int * integerVariable = model_->integerVariable();
+  
+  OsiSolverInterface * newSolver = model_->continuousSolver()->clone();
+  const double * colLower = newSolver->getColLower();
+  const double * colUpper = newSolver->getColUpper();
+
+  double primalTolerance;
+  solver->getDblParam(OsiPrimalTolerance,primalTolerance);
+    
+  int i;
+  int numberFixed=0;
+  int returnCode=0;
+
+  for (i=0;i<numberIntegers;i++) {
+    int iColumn=integerVariable[i];
+    if (abs(hotstartPriorities[iColumn])<=fixPriority_) {
+      double value = hotstartSolution[iColumn];
+      double lower = colLower[iColumn];
+      double upper = colUpper[iColumn];
+      value = CoinMax(value,lower);
+      value = CoinMin(value,upper);
+      if (fabs(value-floor(value+0.5))<1.0e-8) {
+	value = floor(value+0.5);
+	newSolver->setColLower(iColumn,value);
+	newSolver->setColUpper(iColumn,value);
+	numberFixed++;
+      }
+    }
+  }
+  if (numberFixed>numberIntegers/5-100000000) {
+#ifdef COIN_DEVELOP
+    printf("%d integers fixed\n",numberFixed);
+#endif
+    returnCode = smallBranchAndBound(newSolver,numberNodes_,betterSolution,solutionValue,
+				     model_->getCutoff(),"CbcHeuristicPartial");
+    if (returnCode<0)
+      returnCode=0; // returned on size
+    //printf("return code %d",returnCode);
+    if ((returnCode&2)!=0) {
+      // could add cut
+      returnCode &= ~2;
+      //printf("could add cut with %d elements (if all 0-1)\n",nFix);
+    } else {
+      //printf("\n");
+    }
+  }
+  fixPriority_=-1; // switch off
+  delete newSolver;
+  return returnCode;
+}
+// update model
+void CbcHeuristicPartial::setModel(CbcModel * model)
+{
+  model_ = model;
+  assert(model_->solver());
+  // make sure model okay for heuristic
+  validate();
+}
+// Validate model i.e. sets when_ to 0 if necessary (may be NULL)
+void 
+CbcHeuristicPartial::validate() 
+{
+  if (model_&&when()<10) {
+    if (model_->numberIntegers()!=
+        model_->numberObjects())
+      setWhen(0);
+  }
+}
+
+// Default Constructor
 CbcSerendipity::CbcSerendipity() 
   :CbcHeuristic()
 {

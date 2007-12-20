@@ -9435,11 +9435,15 @@ CbcModel::setHotstartSolution(const double * solution, const int * priorities)
   } else {
     int numberColumns = solver_->getNumCols();
     hotstartSolution_ = CoinCopyOfArray(solution,numberColumns);
+    hotstartPriorities_ = CoinCopyOfArray(priorities,numberColumns);
     for (int i=0;i<numberColumns;i++) {
+      if (hotstartSolution_[i]==-COIN_DBL_MAX) {
+	hotstartSolution_[i]=0.0;
+	hotstartPriorities_[i]+= 10000;
+      }
       if (solver_->isInteger(i)) 
         hotstartSolution_[i]=floor(hotstartSolution_[i]+0.5);
     }
-    hotstartPriorities_ = CoinCopyOfArray(priorities,numberColumns);
   }
 }
 // Increment strong info

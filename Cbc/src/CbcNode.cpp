@@ -1176,7 +1176,7 @@ int CbcNode::chooseBranch (CbcModel *model, CbcNode *lastNode,int numberPassesLe
   int saveNumberStrong=numberStrong;
   int numberObjects = model->numberObjects();
   bool checkFeasibility = numberObjects>model->numberIntegers();
-  int maximumStrong = CoinMax(CoinMin(model->numberStrong(),numberObjects),1);
+  int maximumStrong = CoinMax(CoinMin(numberStrong,numberObjects),1);
   int numberColumns = model->getNumCols();
   double * saveUpper = new double[numberColumns];
   double * saveLower = new double[numberColumns];
@@ -2154,6 +2154,9 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
     depth_ = lastNode->depth_+1;
   else
     depth_ = 0;
+  // Go to other choose if hot start
+  if (model->hotstartSolution()) 
+    return -3;
   delete branch_;
   branch_=NULL;
   OsiSolverInterface * solver = model->solver();

@@ -3780,7 +3780,7 @@ int
 
     int useCosts=0;
     // don't use input solution
-    int useSolution=0;
+    int useSolution=-1;
     
     // total number of commands read
     int numberGoodCommands=0;
@@ -4115,6 +4115,8 @@ int
                 dualize = value;
 	      else if (parameters_[iParam].type()==PROCESSTUNE)
 		tunePreProcess = value;
+	      else if (parameters_[iParam].type()==USESOLUTION)
+		useSolution = value;
 	      else if (parameters_[iParam].type()==VERBOSE)
 		verbose = value;
               parameters_[iParam].setIntParameter(lpSolver,value);
@@ -4372,9 +4374,6 @@ int
 	      break;
 	    case PREPROCESS:
 	      preProcess = action;
-	      break;
-	    case USESOLUTION:
-	      useSolution = action;
 	      break;
 	    default:
 	      abort();
@@ -5974,7 +5973,7 @@ int
                 }
 #endif                
                 const int * originalColumns = preProcess ? process.originalColumns() : NULL;
-                if (solutionIn&&useSolution) {
+                if (solutionIn&&useSolution>=0) {
                   if (preProcess) {
                     int numberColumns = babModel_->getNumCols();
                     // extend arrays in case SOS
@@ -6862,6 +6861,12 @@ int
 		  babModel_ = NULL;
 #endif
 		  return returnCode;
+		}
+		if (useSolution>0) {
+		  // use hotstart to try and find solution
+		  CbcHeuristicPartial partial(*babModel_,10000,useSolution);
+		  partial.setHeuristicName("Partial solution given");
+		  babModel_->addHeuristic(&partial);
 		}
                 babModel_->branchAndBound(statistics);
 #ifdef NEW_STYLE_SOLVER
@@ -7764,6 +7769,19 @@ int
                     good=false;
                   if (got[0]>=0&&!lpSolver->lengthNames())
                     good=false;
+		  int numberFields=99;
+		  if (good&&(strstr(fileName.c_str(),".mst")||strstr(fileName.c_str(),".MST"))) {
+		    numberFields=0;
+                    for (i=2;i<(int) (sizeof(got)/sizeof(int));i++) {
+		      if (got[i]>=0)
+			numberFields++;
+		    }
+		    if (!numberFields) {
+		      // Like Cplex format
+		      order[nAcross]=6;
+		      got[6]=nAcross++;
+		    }
+		  }
                   if (good) {
                     char ** columnNames = new char * [numberColumns];
                     pseudoDown= (double *) malloc(numberColumns*sizeof(double));
@@ -7777,9 +7795,10 @@ int
                     int iColumn;
                     if (got[6]>=0) {
                       solutionIn = (double *) malloc(numberColumns*sizeof(double));
-                      CoinZeroN(solutionIn,numberColumns);
+                      for (iColumn=0;iColumn<numberColumns;iColumn++) 
+                        solutionIn[iColumn]=-COIN_DBL_MAX;
                     }
-                    if (got[7]>=0) {
+                    if (got[7]>=0||!numberFields) {
                       prioritiesIn = (int *) malloc(numberColumns*sizeof(int));
                       for (iColumn=0;iColumn<numberColumns;iColumn++) 
                         prioritiesIn[iColumn]=10000;
@@ -7799,6 +7818,8 @@ int
                     int nBadLine=0;
                     int nLine=0;
                     while (fgets(line,1000,fp)) {
+		      if (!strncmp(line,"ENDATA",6))
+			break;
                       nLine++;
                       iColumn = -1;
                       double up =0.0;
@@ -7809,6 +7830,15 @@ int
                       int priValue=1000000;
                       char * pos = line;
                       char * put = line;
+		      if (!numberFields) {
+			// put in ,
+			for (i=4;i<100;i++) {
+			  if (line[i]==' '||line[i]=='\t') {
+			    line[i]=',';
+			    break;
+			  }
+			}
+		      }
                       while (*pos>=' '&&*pos!='\n') {
                         if (*pos!=' '&&*pos!='\t') {
                           *put=tolower(*pos);

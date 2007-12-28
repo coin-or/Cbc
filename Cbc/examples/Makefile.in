@@ -54,7 +54,7 @@ CXXFLAGS = @CXXFLAGS@
 CXXLINKFLAGS = @RPATH_FLAGS@
 
 # Directory with COIN header files
-COININCDIR = @abs_include_dir@
+COININCDIR = @abs_include_dir@/coin
 
 # Directory with COIN libraries
 COINLIBDIR = @abs_lib_dir@

@@ -131,6 +131,9 @@ CbcSimpleIntegerDynamicPseudoCost::CbcSimpleIntegerDynamicPseudoCost ()
     numberTimesProbingTotal_(0),
     method_(0)
 {
+#ifdef CBC_INSTRUMENT
+  numberTimesInfeasible_=0;
+#endif
 }
 
 /** Useful constructor
@@ -165,6 +168,9 @@ CbcSimpleIntegerDynamicPseudoCost::CbcSimpleIntegerDynamicPseudoCost (CbcModel *
     numberTimesProbingTotal_(0),
     method_(0)
 {
+#ifdef CBC_INSTRUMENT
+  numberTimesInfeasible_=0;
+#endif
   const double * cost = model->getObjCoefficients();
   double costValue = CoinMax(1.0e-5,fabs(cost[iColumn]));
   // treat as if will cost what it says up
@@ -230,6 +236,9 @@ CbcSimpleIntegerDynamicPseudoCost::CbcSimpleIntegerDynamicPseudoCost (CbcModel *
     numberTimesProbingTotal_(0),
     method_(0)
 {
+#ifdef CBC_INSTRUMENT
+  numberTimesInfeasible_=0;
+#endif
   downDynamicPseudoCost_ = downDynamicPseudoCost;
   upDynamicPseudoCost_ = upDynamicPseudoCost;
   breakEven_ = upDynamicPseudoCost_/(upDynamicPseudoCost_+downDynamicPseudoCost_);
@@ -299,6 +308,9 @@ CbcSimpleIntegerDynamicPseudoCost::CbcSimpleIntegerDynamicPseudoCost ( const Cbc
    method_(rhs.method_)
 
 {
+#ifdef CBC_INSTRUMENT
+  numberTimesInfeasible_=rhs.numberTimesInfeasible_;
+#endif
 }
 
 // Clone
@@ -339,6 +351,9 @@ CbcSimpleIntegerDynamicPseudoCost::operator=( const CbcSimpleIntegerDynamicPseud
     numberTimesDownTotalFixed_ = rhs.numberTimesDownTotalFixed_;
     numberTimesUpTotalFixed_ = rhs.numberTimesUpTotalFixed_;
     numberTimesProbingTotal_ = rhs.numberTimesProbingTotal_;
+#ifdef CBC_INSTRUMENT
+    numberTimesInfeasible_=rhs.numberTimesInfeasible_;
+#endif
     method_=rhs.method_;
   }
   return *this;
@@ -611,6 +626,7 @@ CbcSimpleIntegerDynamicPseudoCost::infeasibility(int & preferredWay) const
     distanceToCutoff *= 10.0;
   else 
     distanceToCutoff = 1.0e2 + fabs(objectiveValue);
+  distanceToCutoff = CoinMax(distanceToCutoff,1.0e-12*(1.0+fabs(objectiveValue)));
 #endif
   double sum;
   double number;
@@ -693,6 +709,9 @@ CbcSimpleIntegerDynamicPseudoCost::infeasibility(int & preferredWay) const
   if (fabs(value-nearest)<=integerTolerance) {
     return 0.0;
   } else {
+#ifdef CBC_INSTRUMENT
+    numberTimesInfeasible_++;
+#endif
     int stateOfSearch = model_->stateOfSearch()%10;
     double returnValue=0.0;
     double minValue = CoinMin(downCost,upCost);
@@ -759,6 +778,12 @@ CbcSimpleIntegerDynamicPseudoCost::infeasibility(int & preferredWay) const
 	CoinMin(down,up);
       returnValue *= 1.0e-3;
     }
+#ifdef CBC_INSTRUMENT
+    int nn = numberTimesInfeasible_  - CoinMax(numberTimesUp_,numberTimesDown_);
+    assert (nn>=0);
+    if (nn)
+      returnValue *= sqrt((double) nn);
+#endif
 #ifdef COIN_DEVELOP
     History hist;
     hist.where_=where;
@@ -808,6 +833,7 @@ CbcSimpleIntegerDynamicPseudoCost::infeasibility(const OsiSolverInterface * solv
   else 
     distanceToCutoff = 1.0e2 + fabs(objectiveValue);
 #endif
+  distanceToCutoff = CoinMax(distanceToCutoff,1.0e-12*(1.0+fabs(objectiveValue)));
   double sum;
   int number;
   double downCost = CoinMax(value-below,0.0);
@@ -1035,7 +1061,7 @@ CbcSimpleIntegerDynamicPseudoCost::updateInformation(const CbcObjectUpdateData &
   double value = data.branchingValue_;
   double change = data.change_;
 #define TYPERATIO 0.9
-#define MINIMUM_MOVEMENT 0.0
+#define MINIMUM_MOVEMENT 0.1
 #ifdef COIN_DEVELOP
   History hist;
   hist.where_='U'; // need to tell if hot
@@ -1101,7 +1127,7 @@ CbcSimpleIntegerDynamicPseudoCost::updateInformation(const CbcObjectUpdateData &
     double distanceToCutoff =  data.cutoff_  - originalValue;
     if (distanceToCutoff>1.0e20) 
       distanceToCutoff=10.0+fabs(originalValue);
-    sum += numberTimesDownInfeasible_*distanceToCutoff;
+    sum += numberTimesDownInfeasible_*CoinMax(distanceToCutoff,1.0e-12*(1.0+fabs(originalValue)));
     number += numberTimesDownInfeasible_;
     setDownDynamicPseudoCost(sum/(double) number);
 #endif
@@ -1165,7 +1191,7 @@ CbcSimpleIntegerDynamicPseudoCost::updateInformation(const CbcObjectUpdateData &
     double distanceToCutoff =  data.cutoff_  - originalValue;
     if (distanceToCutoff>1.0e20) 
       distanceToCutoff=10.0+fabs(originalValue);
-    sum += numberTimesUpInfeasible_*distanceToCutoff;
+    sum += numberTimesUpInfeasible_*CoinMax(distanceToCutoff,1.0e-12*(1.0+fabs(originalValue)));
     number += numberTimesUpInfeasible_;
     setUpDynamicPseudoCost(sum/(double) number);
 #endif
@@ -1231,10 +1257,14 @@ CbcSimpleIntegerDynamicPseudoCost::print(int type,double value) const
            numberTimesDown_,numberTimesDownInfeasible_,meanDown,devDown,
            numberTimesUp_,numberTimesUpInfeasible_,meanUp,devUp);
 #else
-    printf("%d down %d times (%d inf) mean %g  up %d times (%d inf) mean %g\n",
+    int n=0;
+#ifdef CBC_INSTRUMENT
+    n=numberTimesInfeasible_;
+#endif
+    printf("%d down %d times (%d inf) mean %g  up %d times (%d inf) mean %g - pseudocosts %g %g - inftimes %d\n",
            columnNumber_,
            numberTimesDown_,numberTimesDownInfeasible_,meanDown,
-           numberTimesUp_,numberTimesUpInfeasible_,meanUp);
+           numberTimesUp_,numberTimesUpInfeasible_,meanUp,downDynamicPseudoCost_,upDynamicPseudoCost_,n);
 #endif
   } else {
     const double * upper = model_->getCbcColUpper();
@@ -1252,6 +1282,7 @@ CbcSimpleIntegerDynamicPseudoCost::print(int type,double value) const
       distanceToCutoff *= 10.0;
     else 
       distanceToCutoff = 1.0e2 + fabs(objectiveValue);
+    distanceToCutoff = CoinMax(distanceToCutoff,1.0e-12*(1.0+fabs(objectiveValue)));
     double sum;
     int number;
     double downCost = CoinMax(value-below,0.0);
@@ -1297,6 +1328,16 @@ CbcDynamicPseudoCostBranchingObject::CbcDynamicPseudoCostBranchingObject (CbcMod
   changeInGuessed_=1.0e-5;
   object_=object;
 }
+// Does part of work for constructor
+void 
+CbcDynamicPseudoCostBranchingObject::fillPart (int variable,
+					   int way , double value, 
+					   CbcSimpleIntegerDynamicPseudoCost * object) 
+{
+  CbcIntegerBranchingObject::fillPart(variable,way,value);
+  changeInGuessed_=1.0e-5;
+  object_=object;
+}
 // Useful constructor for fixing
 CbcDynamicPseudoCostBranchingObject::CbcDynamicPseudoCostBranchingObject (CbcModel * model, 
 						      int variable, int way,
@@ -1334,7 +1375,6 @@ CbcDynamicPseudoCostBranchingObject::clone() const
 { 
   return (new CbcDynamicPseudoCostBranchingObject(*this));
 }
-
 
 // Destructor 
 CbcDynamicPseudoCostBranchingObject::~CbcDynamicPseudoCostBranchingObject ()
@@ -1686,10 +1726,12 @@ CbcBranchDynamicDecision::betterBranch(CbcBranchingObject * thisOne,
       distanceToCutoff *= 10.0;
     else 
       distanceToCutoff = 1.0e2 + fabs(objectiveValue);
+    distanceToCutoff = CoinMax(distanceToCutoff,1.0e-12*(1.0+fabs(objectiveValue)));
     double continuousObjective = model->getContinuousObjective();
     double distanceToCutoffC =  model->getCutoff()  - continuousObjective;
     if (distanceToCutoffC>1.0e20) 
       distanceToCutoffC = 1.0e2 + fabs(objectiveValue);
+    distanceToCutoffC = CoinMax(distanceToCutoffC,1.0e-12*(1.0+fabs(objectiveValue)));
     int numberInfC = model->getContinuousInfeasibilities();
     double perInf = distanceToCutoffC/((double) numberInfC);
     assert (perInf>0.0);

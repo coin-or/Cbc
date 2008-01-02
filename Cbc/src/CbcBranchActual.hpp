@@ -5,7 +5,7 @@
 
 #include "CbcBranchBase.hpp"
 #include "CoinPackedMatrix.hpp"
-
+class CbcIntegerBranchingObject;
 /// Define a clique class
 
 
@@ -249,6 +249,8 @@ public:
   */
   virtual CbcBranchingObject * createBranch(OsiSolverInterface * solver,
 					    const OsiBranchingInformation * info, int way) ;
+  /// Fills in a created branching object
+  void fillCreateBranch(CbcIntegerBranchingObject * branching, const OsiBranchingInformation * info, int way) ;
 
   using CbcObject::solverBranch ;
   /** Create an OsiSolverBranch object
@@ -437,7 +439,9 @@ public:
 
   /// Destructor 
   virtual ~CbcIntegerBranchingObject ();
-  
+
+  /// Does part of constructor
+  void fillPart ( int variable, int way , double value) ;
   using CbcBranchingObject::branch ;
   /** \brief Sets the bounds for the variable according to the current arm
 	     of the branch and advances the object state to the next arm.

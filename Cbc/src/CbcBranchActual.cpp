@@ -846,6 +846,15 @@ CbcSimpleInteger::solverBranch(OsiSolverInterface * solver, const OsiBranchingIn
 CbcBranchingObject * 
 CbcSimpleInteger::createBranch(OsiSolverInterface * solver, const OsiBranchingInformation * info, int way) 
 {
+  CbcIntegerBranchingObject * branch = new CbcIntegerBranchingObject(model_,0,-1,0.5);
+  fillCreateBranch(branch,info,way);
+  return branch;
+}
+// Fills in a created branching object
+void 
+CbcSimpleInteger::fillCreateBranch(CbcIntegerBranchingObject * branch, const OsiBranchingInformation * info, int way) 
+{
+  branch->setOriginalObject(this);
   double value = info->solution_[columnNumber_];
   value = CoinMax(value, info->lower_[columnNumber_]);
   value = CoinMin(value, info->upper_[columnNumber_]);
@@ -862,10 +871,7 @@ CbcSimpleInteger::createBranch(OsiSolverInterface * solver, const OsiBranchingIn
     else
       value = targetValue+0.1;
   }
-  CbcBranchingObject * branch = new CbcIntegerBranchingObject(model_,columnNumber_,way,
-					     value);
-  branch->setOriginalObject(this);
-  return branch;
+  branch->fillPart(columnNumber_,way,value);
 }
 /* Column number if single column object -1 otherwise,
    so returns >= 0
@@ -945,6 +951,7 @@ CbcIntegerBranchingObject::CbcIntegerBranchingObject (CbcModel * model,
   :CbcBranchingObject(model,variable,way,value)
 {
   int iColumn = variable;
+  assert (model_->solver()->getNumCols()>0);
   down_[0] = model_->solver()->getColLower()[iColumn];
   down_[1] = floor(value_);
   up_[0] = ceil(value_);
@@ -954,6 +961,25 @@ CbcIntegerBranchingObject::CbcIntegerBranchingObject (CbcModel * model,
   newBounds_ = NULL;
   numberExtraChangedBounds_ = 0;
 #endif
+}
+// Does part of constructor
+void 
+CbcIntegerBranchingObject::fillPart (int variable,
+				 int way , double value) 
+{
+  //originalObject_=NULL;
+  branchIndex_=0;
+  value_=value;
+  numberBranches_=2;
+  //model_= model;
+  //originalCbcObject_=NULL;
+  variable_=variable;
+  way_=way;
+  int iColumn = variable;
+  down_[0] = model_->solver()->getColLower()[iColumn];
+  down_[1] = floor(value_);
+  up_[0] = ceil(value_);
+  up_[1] = model_->getColUpper()[iColumn];
 }
 // Useful constructor for fixing
 CbcIntegerBranchingObject::CbcIntegerBranchingObject (CbcModel * model, 

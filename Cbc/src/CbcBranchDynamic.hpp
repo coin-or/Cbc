@@ -66,6 +66,9 @@ public:
   */
   virtual CbcBranchingObject * createBranch(OsiSolverInterface * solver,
 					    const OsiBranchingInformation * info, int way) ;
+  /// Fills in a created branching object
+  void fillCreateBranch(CbcIntegerBranchingObject * branching, const OsiBranchingInformation * info, int way) ;
+
 
   /** Pass in information on branch just done and create CbcObjectUpdateData instance.
       If object does not need data then backward pointer will be NULL.
@@ -296,6 +299,11 @@ protected:
   double numberTimesUpTotalFixed_;
   /// Number of times probing done 
   int numberTimesProbingTotal_;
+  /// Number of times infeasible when tested
+#define CBC_INSTRUMENT
+#ifdef CBC_INSTRUMENT
+  mutable int numberTimesInfeasible_;
+#endif
   /** Method - 
       0 - pseudo costs
       1 - probing
@@ -353,6 +361,11 @@ public:
 
   /// Destructor 
   virtual ~CbcDynamicPseudoCostBranchingObject ();
+
+  /// Does part of constructor
+  void fillPart (int variable,
+	     int way , double value, 
+	     CbcSimpleIntegerDynamicPseudoCost * object) ;
   
   using CbcBranchingObject::branch ;
   /** \brief Sets the bounds for the variable according to the current arm
@@ -376,6 +389,9 @@ public:
   /// Return object
   inline CbcSimpleIntegerDynamicPseudoCost * object() const
   { return object_;}
+  /// Set object
+  inline void setObject(CbcSimpleIntegerDynamicPseudoCost * object)
+  { object_=object;}
 protected:
   /// Change in guessed objective value for next branch
   double changeInGuessed_;

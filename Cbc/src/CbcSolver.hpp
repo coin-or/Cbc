@@ -106,8 +106,12 @@ public:
   void setDoubleValue(CbcOrClpParameterType type,double value);
   /// User function (NULL if no match)
   CbcUser * userFunction(const char * name) const;
+  /// Return original Cbc model
   inline CbcModel * model() 
   { return &model_;}
+  /// Return updated Cbc model
+  inline CbcModel * babModel() 
+  { return babModel_;}
   /// Number of userFunctions
   inline int numberUserFunctions() const
   { return numberUserFunctions_;}

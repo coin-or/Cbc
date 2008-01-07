@@ -5810,7 +5810,8 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
 	handler_->message(CBC_GENERATOR,messages_)
 	  <<i
 	  <<generator_[i]->cutGeneratorName()
-	  <<countRowCuts[i]<<count[i]
+	  //<<countRowCuts[i]<<count[i]
+	  << generator_[i]->numberCutsInTotal()<<generator_[i]->numberCutsActive()
 	  <<countColumnCuts[i];
         handler_->printing(!numberNodes_&&generator_[i]->timing())
           <<generator_[i]->timeInCutGenerator();
@@ -7525,7 +7526,12 @@ CbcModel::checkSolution (double cutoff, double *solution,
 			newCut.mutableRow().setTestForDuplicateIndex(false);
 			globalCuts_.insert(newCut) ;
                         generator_[i]->incrementNumberCutsInTotal();
-                      }
+            	    } else {
+		      // obviously wrong
+		      if (handler_->logLevel()>0)
+			printf("Cut generator %s set to run on new solution but NOT globally valid!!\n",
+			       generator_[i]->cutGeneratorName());
+                    }
                   }
               }
           }

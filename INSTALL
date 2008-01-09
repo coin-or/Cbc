@@ -15,19 +15,25 @@ You can obtain the source code for the Cbc package in two ways:
    your machine, and output of "svn --version" must contain 
    "handles 'https' scheme".
 
-   Assuming that you want to download the code into a subdirectory
-   "COIN-Cbc", you type
+   Assuming that you want to download the 'trunk' (where the
+   development happens) version of the code into a subdirectory
+   named "Cbc", you type
 
-   svn co https://projects.coin-or.org/svn/Cbc/trunk Coin-Cbc
+   svn co https://projects.coin-or.org/svn/Cbc/trunk Cbc
 
-2. Download the tarball from http://www.coin-or.org/Tarballs/Cbc and
-   extract it, for example, with
+   To download stable/2.0 you'd type:
 
-   gunzip Cbc_2006Jun07.tgz
-   tar xvf Cbc_2006Jun07.tar
 
-   (Here "2006Jun07" is of course replaced by the string in the
-   tarball you downloaded.)
+   svn co https://projects.coin-or.org/svn/Cbc/stable/2.0 Cbc
+
+
+   etc.
+
+2. Download the tarball from http://www.coin-or.org/download/source/Cbc 
+   and extract it. For example, for the release 2.0.0 you type
+
+   gunzip Cbc-2.0.0.tgz
+   tar xvf Cbc-2.0.0.tar
 
    More detailed download instructions can be found at
 
@@ -38,9 +44,12 @@ You can obtain the source code for the Cbc package in two ways:
 **********************************************************************
 
 Go into the directory that you just downloaded or extracted (e.g.,
-Coin-Cbc or Cbc_2006Jun07).  Then you type
+Cbc or Cbc-2.0.0).  Then create a build directory and
+configure the package by typing
 
-   ./configure
+   mkdir build
+   cd build
+   ../configure
 
 Note that you might have to specify additional options, in case you
 don't want to use the default choices that configure makes (e.g.,
@@ -95,56 +104,3 @@ find examples in the
 subdirectory, see also the information at
 
    https://projects.coin-or.org/BuildTools/wiki/user-examples
-
-
-
-==== 8< ======================================================
-
-From here on you find the original installation instructions for the
-previous GNU Makefile build system.  Most details have changed, but
-for now we keep it here so that possibly missing items might be found
-here.
-
-Prerequisites for installation:
-- at the moment on (*)nix platforms you must use g++ 2.95.2 or higher.
-- must use gnu make
-- to make the documentation doxygen must be installed
-
-Targets are put in subdirectories, whose name is derived from the
-platform name (as returned by `uname`) and the optimization level
-(e.g., Linux-g).
-
-To build Osi library and unitTest
-  - read and edit the top of Makefile to select
-      - whether shared or static library should be built
-      - optimization level
-      - where the compiled library should be installed
-        If you want to use the Volume Algorithm as a solver then first
-        you must build and install libvol. See Vol/INSTALL in the COIN
-        root directory.
-  - read and edit ../Makefiles/Makefile.locations to uncomment Clp lines
-  - 'make' to build and install the library.
-  - 'make unitTest' to create the unitTest program. It will be placed
-    in the target subdirectory.
-
-  - 'make doc' to create the html documentation of the classes in the
-    library and place them in doc/html.
-
-To run Osi unitTest
-  - unitTest from Osi directory
-
-To build Cbc executable
-  In This directory 'make unitTest'.  This actually creates and executable
-    cbc in this directory which can both do unit test and act as simple
-    driver.
-  Cbc is fairly complex in that it needs:
-    Cbc, Clp, Coin, Osi and Cgl
-
-  It has been slightly tested with Osl instead of Clp.  It worked but
-	more slowly as it was harder to give hints to OSL or switch off
-	output etc.
-
-Samples/sample2.cpp is preferred driver
-
-For more information see README and files in Samples
-

@@ -1,4 +1,6 @@
 * text=auto !eol
+/AUTHORS -text
+Cbc/INSTALL -text
 Cbc/LICENSE -text
 Cbc/MSVisualStudio/v7/Cbc.sln -text
 Cbc/MSVisualStudio/v7/Cbc.suo -text

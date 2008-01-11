@@ -183,10 +183,10 @@ public:
   void incrementCuts(int change=1);
 
   /// Decrement all active cut counts in chain starting at parent
-  void decrementParentCuts(int change=1);
+  void decrementParentCuts(CbcModel * model, int change=1);
 
   /// Increment all active cut counts in parent chain
-  void incrementParentCuts(int change=1);
+  void incrementParentCuts(CbcModel * model, int change=1);
 
   /// Array of pointers to cuts
   inline CbcCountRowCut ** cuts() const
@@ -571,7 +571,7 @@ public:
   void decrementCuts(int change=1);
 
   /// Decrement all active cut counts in chain starting at parent
-  void decrementParentCuts(int change=1);
+  void decrementParentCuts(CbcModel * model, int change=1);
 
   /// Nulls out node info
   void nullNodeInfo();

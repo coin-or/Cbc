@@ -1147,6 +1147,12 @@ public:
   { return resolveAfterTakeOffCuts_;}
   inline void setResolveAfterTakeOffCuts(bool yesNo)
   { resolveAfterTakeOffCuts_=yesNo;}
+  /// Maximum number of rows
+  inline int maximumRows() const
+  { return maximumRows_;}
+  /// Work basis for temporary use
+  inline CoinWarmStartBasis & workingBasis()
+  { return workingBasis_;}
   /// Get number of threads
   inline int getNumberThreads() const
   { return numberThreads_;}
@@ -1703,6 +1709,8 @@ public:
   /// Increment strong info
   void incrementStrongInfo(int numberTimes, int numberIterations,
                            int numberFixed, bool ifInfeasible);
+  /// Says whether all dynamic integers
+  inline bool allDynamic () { return ((ownership_&0x40000000)!=0) ; } 
   /// Create C++ lines to get to current state
   void generateCpp( FILE * fp,int options);
   /// Generate an OsiBranchingInformation object
@@ -1726,9 +1734,10 @@ private:
   /// The solver associated with this model.
   OsiSolverInterface * solver_;
 
-  /** Ownership of objects
+  /** Ownership of objects and other stuff
 
       0x80000000 model owns solver
+      0x40000000 all variables CbcDynamicPseudoCost
   */
   unsigned int ownership_ ;
 
@@ -2040,6 +2049,10 @@ private:
   int currentPassNumber_;
   /// Maximum number of cuts (for whichGenerator_)
   int maximumWhich_;
+  /// Maximum number of rows
+  int maximumRows_;
+  /// Work basis for temporary use
+  CoinWarmStartBasis workingBasis_;
   /// Which cut generator generated this cut
   int * whichGenerator_;
   /// Maximum number of statistics
@@ -2134,4 +2147,6 @@ int callCbc1(const std::string input2, CbcModel & babSolver);
 int callCbc1(const char * input2, CbcModel & babSolver, int (CbcModel * currentSolver, int whereFrom)); 
 int callCbc1(const std::string input2, CbcModel & babSolver, int (CbcModel * currentSolver, int whereFrom)); 
 int CbcMain1 (int argc, const char *argv[],CbcModel & babSolver, int (CbcModel * currentSolver, int whereFrom));
+// For uniform setting of cut and heuristic options
+void setCutAndHeuristicOptions(CbcModel & model);
 #endif

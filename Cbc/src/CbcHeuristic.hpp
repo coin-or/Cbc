@@ -220,6 +220,66 @@ protected:
   int seed_;
 };
 
+/** Partial solution class
+    If user knows a partial solution this tries to get an integer solution
+    it uses hotstart information
+ */
+
+class CbcHeuristicPartial : public CbcHeuristic {
+public:
+
+  // Default Constructor 
+  CbcHeuristicPartial ();
+
+  /** Constructor with model - assumed before cuts
+      Fixes all variables with priority <= given
+      and does given number of nodes
+  */
+  CbcHeuristicPartial (CbcModel & model, int fixPriority=10000, int numberNodes=200);
+  
+  // Copy constructor 
+  CbcHeuristicPartial ( const CbcHeuristicPartial &);
+   
+  // Destructor 
+  ~CbcHeuristicPartial ();
+  
+  /// Assignment operator 
+  CbcHeuristicPartial & operator=(const CbcHeuristicPartial& rhs);
+
+  /// Clone
+  virtual CbcHeuristic * clone() const;
+  /// Create C++ lines to get to current state
+  virtual void generateCpp( FILE * fp) ;
+
+  /// Resets stuff if model changes
+  virtual void resetModel(CbcModel * model);
+
+  /// update model (This is needed if cliques update matrix etc)
+  virtual void setModel(CbcModel * model);
+  
+  using CbcHeuristic::solution ;
+  /** returns 0 if no solution, 1 if valid solution
+      with better objective value than one passed in
+      Sets solution values if good, sets objective value (only if good)
+      This is called after cuts have been added - so can not add cuts
+  */
+  virtual int solution(double & objectiveValue,
+		       double * newSolution);
+  /// Validate model i.e. sets when_ to 0 if necessary (may be NULL)
+  virtual void validate();
+
+
+  /// Set priority level
+  void setFixPriority(int value)
+  { fixPriority_ = value;}
+
+protected:
+  // Data
+
+  // All variables with abs priority <= this will be fixed
+  int fixPriority_;
+};
+
 /** heuristic - just picks up any good solution
     found by solver - see OsiBabSolver
  */

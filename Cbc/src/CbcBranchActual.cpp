@@ -898,12 +898,18 @@ CbcSimpleInteger::resetBounds(const OsiSolverInterface * solver)
 void 
 CbcSimpleInteger::resetSequenceEtc(int numberColumns, const int * originalColumns) 
 {
+  assert (numberColumns>0);
   int iColumn;
+#if 0
   for (iColumn=0;iColumn<numberColumns;iColumn++) {
     if (columnNumber_==originalColumns[iColumn])
       break;
   }
   assert (iColumn<numberColumns);
+#else
+  iColumn=originalColumns[columnNumber_];
+  assert (iColumn>=0);
+#endif
   columnNumber_ = iColumn;
 }
 

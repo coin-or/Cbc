@@ -4415,11 +4415,15 @@ OsiOldLink::resetSequenceEtc(int numberColumns, const int * originalColumns)
   for (int j=0;j<numberMembers_*numberLinks_;j++) {
     int iColumn = members_[j];
     int i;
+#if 0
     for (i=0;i<numberColumns;i++) {
       if (originalColumns[i]==iColumn)
         break;
     }
-    if (i<numberColumns) {
+#else
+    i=originalColumns[iColumn];
+#endif
+    if (i>=0&&i<numberColumns) {
       members_[n2]=i;
       weights_[n2++]=weights_[j];
     }
@@ -6074,11 +6078,15 @@ void
 OsiBiLinear::resetSequenceEtc(int numberColumns, const int * originalColumns)
 {
   int i;
+#if 0
   for (i=0;i<numberColumns;i++) {
     if (originalColumns[i]==firstLambda_)
       break;
   }
-  if (i<numberColumns) {
+#else
+    i=originalColumns[firstLambda_];
+#endif
+  if (i>=0&&i<numberColumns) {
     firstLambda_ = i;
     for (int j=0;j<4;j++) {
       assert (originalColumns[j+i]-firstLambda_==j);

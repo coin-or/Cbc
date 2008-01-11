@@ -10,7 +10,6 @@
 #include "CbcCutGenerator.hpp"
 #include "OsiClpSolverInterface.hpp"
 #include "OsiRowCutDebugger.hpp"
-
 //#############################################################################
 
 #ifdef NDEBUG
@@ -123,10 +122,10 @@ int CbcClpUnitTest (const CbcModel & saveModel, std::string& dirMiplib,
       objective function.
     */
     // 0 for no test, 1 for some, 2 for many, 3 for all
+    //PUSH_MPS("blend2",274,353,7.598985,6.9156751140,7);
 #define HOWMANY 2
 #if HOWMANY
 #if HOWMANY>1
-    //PUSH_MPS("blend2",274,353,7.598985,6.9156751140,7);
     PUSH_MPS("10teams",230,2025,924,917,7);
 #endif
     PUSH_MPS("air03",124,10757,340160,338864.25,7);
@@ -345,6 +344,7 @@ int CbcClpUnitTest (const CbcModel & saveModel, std::string& dirMiplib,
       model->solver()->getStrParam(OsiProbName,problemName) ;
       model->solver()->activateRowCutDebugger(problemName.c_str()) ;
     }
+    setCutAndHeuristicOptions(*model);
     model->branchAndBound();
       
     double timeOfSolution = CoinCpuTime()+CoinCpuTimeJustChildren()-startTime;

@@ -142,6 +142,7 @@ static void malloc_stats2()
 
 #include "OsiClpSolverInterface.hpp"
 #include "CbcSolver.hpp"
+#define IN_BRANCH_AND_BOUND (0x01000000|262144)
 CbcSolver::CbcSolver()
   : babModel_(NULL),
     userFunction_(NULL),
@@ -3908,7 +3909,7 @@ int
 
     int useCosts=0;
     // don't use input solution
-    int useSolution=0;
+    int useSolution=-1;
     
     // total number of commands read
     int numberGoodCommands=0;
@@ -4243,6 +4244,8 @@ int
                 dualize = value;
 	      else if (parameters_[iParam].type()==PROCESSTUNE)
 		tunePreProcess = value;
+	      else if (parameters_[iParam].type()==USESOLUTION)
+		useSolution = value;
 	      else if (parameters_[iParam].type()==VERBOSE)
 		verbose = value;
               parameters_[iParam].setIntParameter(lpSolver,value);
@@ -4503,8 +4506,6 @@ int
 	    case PREPROCESS:
 	      preProcess = action;
 	      break;
-	    case USESOLUTION:
-	      useSolution = action;
 	      break;
 	    default:
 	      abort();
@@ -5292,6 +5293,7 @@ int
 		      cbcModel->setNumberThreads(numberThreads%100);
 		      cbcModel->setThreadMode(numberThreads/100);
 #endif
+		      //setCutAndHeuristicOptions(*cbcModel);
 		      cbcModel->branchAndBound();
 		      OsiSolverLinearizedQuadratic * solver3 = dynamic_cast<OsiSolverLinearizedQuadratic *> (model2.solver());
 		      assert (solver3);
@@ -5388,7 +5390,7 @@ int
 #endif
 		  return returnCode;
 		}
-		clpSolver->setSpecialOptions(clpSolver->specialOptions()|0x01000000); // say is Cbc (and in branch and bound)
+		clpSolver->setSpecialOptions(clpSolver->specialOptions()|IN_BRANCH_AND_BOUND); // say is Cbc (and in branch and bound)
 		if (!noPrinting_) {
 		  sprintf(generalPrint,"Continuous objective value is %g - %.2f seconds",
 			  solver->getObjValue(),CoinCpuTime()-time1a);
@@ -6165,7 +6167,7 @@ int
                 }
 #endif                
                 const int * originalColumns = preProcess ? process.originalColumns() : NULL;
-                if (solutionIn&&useSolution) {
+                if (solutionIn&&useSolution>=0) {
                   if (preProcess) {
                     int numberColumns = babModel_->getNumCols();
                     // extend arrays in case SOS
@@ -7074,6 +7076,12 @@ int
 		  babModel_->addCutGenerator(&storedAmpl,1,"Stored");
 		}
 #endif
+		if (useSolution>0) {
+		  // use hotstart to try and find solution
+		  CbcHeuristicPartial partial(*babModel_,10000,useSolution);
+		  partial.setHeuristicName("Partial solution given");
+		  babModel_->addHeuristic(&partial);
+		}
 		if (logLevel<=1)
 		  babModel_->solver()->setHintParam(OsiDoReducePrint,true,OsiHintTry);
                 babModel_->branchAndBound(statistics);
@@ -7195,7 +7203,7 @@ int
                   bestSolution = new double [n];
 		  OsiClpSolverInterface * clpSolver = dynamic_cast< OsiClpSolverInterface*> (babModel_->solver());
 		  ClpSimplex * lpSolver = clpSolver->getModelPtr();
-		  lpSolver->setSpecialOptions(lpSolver->specialOptions()|0x01000000); // say is Cbc (and in branch and bound)
+		  lpSolver->setSpecialOptions(lpSolver->specialOptions()|IN_BRANCH_AND_BOUND); // say is Cbc (and in branch and bound)
                   process.postProcess(*babModel_->solver());
                   // Solution now back in saveSolver
                   babModel_->assignSolver(saveSolver);
@@ -7986,6 +7994,19 @@ int
                     good=false;
                   if (got[0]>=0&&!lpSolver->lengthNames())
                     good=false;
+		  int numberFields=99;
+		  if (good&&(strstr(fileName.c_str(),".mst")||strstr(fileName.c_str(),".MST"))) {
+		    numberFields=0;
+                    for (i=2;i<(int) (sizeof(got)/sizeof(int));i++) {
+		      if (got[i]>=0)
+			numberFields++;
+		    }
+		    if (!numberFields) {
+		      // Like Cplex format
+		      order[nAcross]=6;
+		      got[6]=nAcross++;
+		    }
+		  }
                   if (good) {
                     char ** columnNames = new char * [numberColumns];
                     pseudoDown= (double *) malloc(numberColumns*sizeof(double));
@@ -7999,9 +8020,10 @@ int
                     int iColumn;
                     if (got[6]>=0) {
                       solutionIn = (double *) malloc(numberColumns*sizeof(double));
-                      CoinZeroN(solutionIn,numberColumns);
+                      for (iColumn=0;iColumn<numberColumns;iColumn++) 
+                        solutionIn[iColumn]=-COIN_DBL_MAX;
                     }
-                    if (got[7]>=0) {
+                    if (got[7]>=0||!numberFields) {
                       prioritiesIn = (int *) malloc(numberColumns*sizeof(int));
                       for (iColumn=0;iColumn<numberColumns;iColumn++) 
                         prioritiesIn[iColumn]=10000;
@@ -8021,6 +8043,8 @@ int
                     int nBadLine=0;
                     int nLine=0;
                     while (fgets(line,1000,fp)) {
+		      if (!strncmp(line,"ENDATA",6))
+			break;
                       nLine++;
                       iColumn = -1;
                       double up =0.0;
@@ -8031,6 +8055,15 @@ int
                       int priValue=1000000;
                       char * pos = line;
                       char * put = line;
+		      if (!numberFields) {
+			// put in ,
+			for (i=4;i<100;i++) {
+			  if (line[i]==' '||line[i]=='\t') {
+			    line[i]=',';
+			    break;
+			  }
+			}
+		      }
                       while (*pos>=' '&&*pos!='\n') {
                         if (*pos!=' '&&*pos!='\t') {
                           *put=tolower(*pos);

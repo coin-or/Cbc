@@ -145,6 +145,7 @@ CbcStrategyDefault::setupCutGenerators(CbcModel & model)
   generator1.setMaxLook(10);
   // Only look at rows with fewer than this number of elements
   generator1.setMaxElements(200);
+  generator1.setMaxElementsRoot(300);
   //generator1.setRowCuts(3);
 
   CglGomory generator2;
@@ -374,6 +375,7 @@ CbcStrategyDefault::setupOther(CbcModel & model)
     generator1.setMaxPassRoot(1);
     generator1.setMaxProbeRoot(CoinMin(3000,solver->getNumCols()));
     generator1.setMaxElements(100);
+    generator1.setMaxElementsRoot(200);
     generator1.setMaxLookRoot(50);
     generator1.setRowCuts(3);
     //generator1.messageHandler()->setLogLevel(logLevel);
@@ -467,6 +469,8 @@ CbcStrategyDefault::setupOther(CbcModel & model)
             int n=originalColumns[numberColumns-1]+1;
             int * fake = new int[n];
             int i;
+	    // This was wrong (now is correct) - so could never have been called
+	    abort();
             for ( i=0;i<n;i++)
               fake[i]=-1;
             for (i=0;i<numberColumns;i++)
@@ -797,6 +801,44 @@ CbcStrategyDefaultSubTree::setupOther(CbcModel & model)
 {
   model.setNumberStrong(numberStrong_);
   model.setNumberBeforeTrust(numberBeforeTrust_);
+}
+// For uniform setting of cut and heuristic options
+void 
+setCutAndHeuristicOptions(CbcModel & model)
+{
+  int numberGenerators = model.numberCutGenerators();
+  int iGenerator;
+  for (iGenerator=0;iGenerator<numberGenerators;iGenerator++) {
+    CglCutGenerator * generator = model.cutGenerator(iGenerator)->generator();
+    CglProbing * cglProbing = dynamic_cast<CglProbing *>(generator);
+    if (cglProbing) {
+      cglProbing->setUsingObjective(1);
+      cglProbing->setMaxPass(1);
+      cglProbing->setMaxPassRoot(1);
+      // Number of unsatisfied variables to look at
+      cglProbing->setMaxProbe(10);
+      cglProbing->setMaxProbeRoot(50);
+      // How far to follow the consequences
+      cglProbing->setMaxLook(10);
+      cglProbing->setMaxLookRoot(50);
+      cglProbing->setMaxLookRoot(10);
+      // Only look at rows with fewer than this number of elements
+      cglProbing->setMaxElements(200);
+      cglProbing->setMaxElementsRoot(300);
+      cglProbing->setRowCuts(3);
+    }
+#if 0
+    CglGomory * cglGomory = dynamic_cast<CglGomory *>(generator);
+    if (cglGomory) {
+      // try larger limit
+      cglGomory->setLimitAtRoot(1000);
+      cglGomory->setLimit(50);
+    }
+    CglKnapsackCover * cglKnapsackCover = dynamic_cast<CglKnapsackCover *>(generator);
+    if (cglKnapsackCoverq) {
+    }
+#endif
+  }
 }
 
 

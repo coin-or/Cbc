@@ -1384,7 +1384,7 @@ void CbcModel::branchAndBound(int doStatistics)
 #undef CLP_QUICK_OPTIONS
      //if (simplex->numberRows()<50)
      //simplex->setAlphaAccuracy(1.0);
-     clpSolver->setSpecialOptions((clpSolver->specialOptions()&~128)|65536);
+     //clpSolver->setSpecialOptions((clpSolver->specialOptions()&~128)|65536);
      //simplex->setMoreSpecialOptions(simplex->moreSpecialOptions()|4);
      //simplex->setSpecialOptions(simplex->specialOptions()|65536);
      //simplex->startPermanentArrays();
@@ -3241,7 +3241,7 @@ void CbcModel::branchAndBound(int doStatistics)
   { setCutoff(1.0e50) ; // As best solution should be worse than cutoff
     phase_=5;
     double increment = getDblParam(CbcModel::CbcCutoffIncrement) ;
-    if ((specialOptions_&4)!=0)
+    if ((specialOptions_&4)==0)
       bestObjective_ += 100.0*increment+1.0e-3; // only set if we are going to solve
     setBestSolution(CBC_END_SOLUTION,bestObjective_,bestSolution_,true) ;
     continuousSolver_->resolve() ;

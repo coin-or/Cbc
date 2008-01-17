@@ -245,16 +245,26 @@ int main (int argc, const char *argv[])
 #else
 #include "CbcSolver.hpp"
 void addAmplToCbc(CbcSolver *);
+extern bool malloc_counts_on;
+extern void stolen_from_ekk_memory(void * info,int type);
 int main (int argc, const char *argv[])
 {
-  OsiClpSolverInterface solver1;
-  CbcSolver control(solver1);
-  // initialize
-  control.fillValuesInSolver();
+  int returnCode;
+  // Only active if malloc switched on in CbcSolver.cpp
+  stolen_from_ekk_memory(NULL,0);
+  malloc_counts_on=true;
+  {
+    OsiClpSolverInterface solver1;
+    CbcSolver control(solver1);
+    // initialize
+    control.fillValuesInSolver();
 #ifdef COIN_HAS_ASL
-  addAmplToCbc(&control);
+    addAmplToCbc(&control);
 #endif
-  int returnCode= control.solve (argc, argv, 1);
+    returnCode= control.solve (argc, argv, 1);
+  }
+  stolen_from_ekk_memory(NULL,1);
+  malloc_counts_on=false; 
   return returnCode;
 }
 #endif

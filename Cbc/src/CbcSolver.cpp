@@ -46,11 +46,13 @@
 #include <malloc.h>
 #include <exception>
 #include <new>
+#include "stolen_from_ekk_malloc.cpp"
 static double malloc_times=0.0;
 static double malloc_total=0.0;
 static int malloc_amount[]={0,32,128,256,1024,4096,16384,65536,262144,INT_MAX};
 static int malloc_n=10;
 double malloc_counts[10]={0,0,0,0,0,0,0,0,0,0};
+bool malloc_counts_on=false;
 void * operator new (size_t size) throw (std::bad_alloc)
 {
   malloc_times ++;
@@ -62,7 +64,15 @@ void * operator new (size_t size) throw (std::bad_alloc)
       break;
     }
   }
+#ifdef DEBUG_MALLOC 
+  void *p;
+  if (malloc_counts_on)
+    p =stolen_from_ekk_mallocBase(size);
+  else
+    p =malloc(size);
+#else
   void * p =malloc(size);
+#endif
   //char * xx = (char *) p;
   //memset(xx,0,size);
   // Initialize random seed
@@ -71,7 +81,14 @@ void * operator new (size_t size) throw (std::bad_alloc)
 }
 void operator delete (void *p) throw()
 {
+#ifdef DEBUG_MALLOC 
+  if (malloc_counts_on)
+    stolen_from_ekk_freeBase(p);
+  else
+    free(p);
+#else
   free(p);
+#endif
 }
 static void malloc_stats2()
 {
@@ -83,7 +100,13 @@ static void malloc_stats2()
   malloc_times=0.0;
   malloc_total=0.0;
   memset(malloc_counts,0,sizeof(malloc_counts));
+  // print results
 }
+#else
+void stolen_from_ekk_memory(void * dummy,int type)
+{
+}
+bool malloc_counts_on=false;
 #endif
 //#define DMALLOC
 #ifdef DMALLOC
@@ -3477,7 +3500,13 @@ int
   delete [] statusUserFunction_;
   statusUserFunction_ = new int [numberUserFunctions_];
   int iUser;
-#endif 
+#endif
+  // Statistics
+  double statistics_seconds=0.0, statistics_obj=0.0;
+  double statistics_continuous=0.0, statistics_tighter=0.0;
+  double statistics_cut_time=0.0;
+  int statistics_nodes=0, statistics_iterations=0;
+  std::string statistics_result;
   memset(statusUserFunction_,0,numberUserFunctions_*sizeof(int));
   /* Note
      This is meant as a stand-alone executable to do as much of coin as possible. 
@@ -3898,7 +3927,9 @@ int
     twomirGen.setMaxElements(250);
     // set default action (0=off,1=on,2=root)
     int twomirAction=2;
+#ifndef DEBUG_MALLOC 
     CglLandP landpGen;
+#endif
     // set default action (0=off,1=on,2=root)
     int landpAction=0;
     CglResidualCapacity residualCapacityGen;
@@ -4296,8 +4327,8 @@ int
 		ClpDualRowSteepest steep(3);
 		lpSolver->setDualRowPivotAlgorithm(steep);
 	      } else if (action==1) {
-		//ClpDualRowDantzig dantzig;
-		ClpDualRowSteepest dantzig(5);
+		ClpDualRowDantzig dantzig;
+		//ClpDualRowSteepest dantzig(5);
 		lpSolver->setDualRowPivotAlgorithm(dantzig);
 	      } else if (action==2) {
 		// partial steep
@@ -5986,10 +6017,12 @@ int
                 babModel_->addCutGenerator(&twomirGen,translate[twomirAction],"TwoMirCuts");
                 switches[numberGenerators++]=1;
               }
+#ifndef DEBUG_MALLOC 
               if (landpAction) {
                 babModel_->addCutGenerator(&landpGen,translate[landpAction],"LiftAndProject");
                 switches[numberGenerators++]=1;
               }
+#endif
               if (residualCapacityAction) {
                 babModel_->addCutGenerator(&residualCapacityGen,translate[residualCapacityAction],"ResidualCapacity");
                 switches[numberGenerators++]=1;
@@ -7058,6 +7091,12 @@ int
 #endif
 		  return returnCode;
 		}
+		int denseCode = parameters_[whichParam(DENSE,numberParameters_,parameters_)].intValue();
+		osiclp = dynamic_cast< OsiClpSolverInterface*> (babModel_->solver());
+		lpSolver = osiclp->getModelPtr();
+		if (denseCode>=lpSolver->numberRows()) {
+		  lpSolver->factorization()->goDense();
+		}
 		{
 		  int extra1 = parameters_[whichParam(EXTRA1,numberParameters_,parameters_)].intValue();
 		  if (extra1!=-1) {
@@ -7161,6 +7200,7 @@ int
                 memcpy(lpSolver->primalColumnSolution(),babModel_->bestSolution(),n*sizeof(double));
                 saveSolution(osiclp->getModelPtr(),"debug.file");
               }
+	      statistics_cut_time=0.0;
               if (!noPrinting_) {
                 // Print more statistics
 		sprintf(generalPrint,"Cuts at root node changed objective from %g to %g",
@@ -7184,6 +7224,7 @@ int
                   if (generator->timing()) {
 		    sprintf(timing," (%.3f seconds)",generator->timeInCutGenerator());
 		    strcat(generalPrint,timing);
+		    statistics_cut_time += generator->timeInCutGenerator();
 		  }
 		  generalMessageHandler->message(CLP_GENERAL,generalMessages)
 		    << generalPrint
@@ -7310,6 +7351,13 @@ int
                 std::string minor[]={"","","gap","nodes","time","","solutions","user ctrl-c"};
                 int iStat = babModel_->status();
                 int iStat2 = babModel_->secondaryStatus();
+		statistics_seconds=time2-time1;
+		statistics_obj=babModel_->getObjValue();
+		statistics_continuous=babModel_->getContinuousObjective();
+		statistics_tighter=babModel_->rootObjectiveAfterCuts();
+		statistics_nodes=babModel_->getNodeCount();
+		statistics_iterations=babModel_->getIterationCount();;
+		statistics_result=statusName[iStat];;
                 if (!noPrinting_) {
 		  sprintf(generalPrint,"Result - %s%s objective %.16g after %d nodes and %d iterations - took %.2f seconds (total time %.2f)",
 			  statusName[iStat].c_str(),minor[iStat2].c_str(),
@@ -8756,6 +8804,67 @@ clp watson.mps -scaling off -primalsimplex\nis the same as\n\
 clp watson.mps -\nscaling off\nprimalsimplex"
 		    );
   	    break;
+	  case CSVSTATISTICS:
+	    {
+	      // get next field
+	      field = CoinReadGetString(argc,argv);
+	      if (field=="$") {
+		field = parameters_[iParam].stringValue();
+	      } else if (field=="EOL") {
+		parameters_[iParam].printString();
+		break;
+	      } else {
+		parameters_[iParam].setStringValue(field);
+	      }
+	      std::string fileName;
+	      if (field[0]=='/'||field[0]=='\\') {
+		fileName = field;
+	      } else if (field[0]=='~') {
+		char * environVar = getenv("HOME");
+		if (environVar) {
+		  std::string home(environVar);
+		  field=field.erase(0,1);
+		  fileName = home+field;
+		} else {
+		  fileName=field;
+		}
+	      } else {
+		fileName = directory+field;
+	      }
+	      int state=0;
+	      char buffer[1000];
+	      FILE *fp=fopen(fileName.c_str(),"r");
+	      if (fp) {
+		// file already there
+		state=1;
+		char * getBuffer = fgets(buffer,1000,fp);
+		if (getBuffer) {
+		  // assume header there
+		  state=2;
+		}
+		fclose(fp);
+	      }
+	      fp=fopen(fileName.c_str(),"a");
+	      if (fp) {
+		// can open - lets go for it
+		// first header if needed
+		if (state!=2) 
+		  fputs("Name,result,time,objective,continuous,tightened,cut_time,nodes,iterations\n",fp);
+		strcpy(buffer,argv[1]);
+		char * slash=buffer;
+		for (int i=0;i<(int)strlen(buffer);i++) {
+		  if (buffer[i]=='/'||buffer[i]=='\\')
+		    slash=buffer+i+1;
+		}
+		fprintf(fp,"%s,%s,%.2f,%.16g,%g,%g,%.2f,%d,%d\n",
+			slash,statistics_result.c_str(),statistics_seconds,statistics_obj,
+			statistics_continuous,statistics_tighter,statistics_cut_time,statistics_nodes,
+			statistics_iterations);
+		fclose(fp);
+	      } else {
+		std::cout<<"Unable to open file "<<fileName<<std::endl;
+	      }
+	    }
 	  case SOLUTION:
 	    if (goodModel) {
 	      // get next field

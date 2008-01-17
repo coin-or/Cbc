@@ -376,7 +376,7 @@ int CbcClpUnitTest (const CbcModel & saveModel, std::string& dirMiplib,
 		  << "; error=" << fabs(objValue[m] - soln); 
 	numberFailures++;
 	//#ifdef COIN_DEVELOP
-	abort();
+	//abort();
 	//#endif
       }
     } else {

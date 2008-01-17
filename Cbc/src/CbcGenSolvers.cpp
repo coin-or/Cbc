@@ -35,6 +35,13 @@
 # endif
 #endif
 
+#ifdef COIN_HAS_CPX
+# include "OsiCpxSolverInterface.hpp"
+# ifndef CBC_DEFAULT_SOLVER
+#   define CBC_DEFAULT_SOLVER "cpx"
+# endif
+#endif
+
 #ifdef COIN_HAS_DYLP
 # include "OsiDylpSolverInterface.hpp"
 # ifndef CBC_DEFAULT_SOLVER
@@ -46,6 +53,13 @@
 # include "OsiGlpkSolverInterface.hpp"
 # ifndef CBC_DEFAULT_SOLVER
 #   define CBC_DEFAULT_SOLVER "glpk"
+# endif
+#endif
+
+#ifdef COIN_HAS_MSK
+# include "OsiMskSolverInterface.hpp"
+# ifndef CBC_DEFAULT_SOLVER
+#   define CBC_DEFAULT_SOLVER "msk"
 # endif
 #endif
 
@@ -109,11 +123,17 @@ OsiSolverInterface *setupSolvers ()
 # ifdef COIN_HAS_CLP
   solvers["clp"] = new OsiClpSolverInterface ;
 # endif
+# ifdef COIN_HAS_CPX
+  solvers["cpx"] = new OsiCpxSolverInterface ;
+# endif
 # ifdef COIN_HAS_DYLP
   solvers["dylp"] = new OsiDylpSolverInterface  ;
 # endif
 # ifdef COIN_HAS_GLPK
   solvers["glpk"] = new OsiGlpkSolverInterface  ;
+# endif
+# ifdef COIN_HAS_MSK
+  solvers["msk"] = new OsiMskSolverInterface  ;
 # endif
 /*
   Set the standard default values in each solver.

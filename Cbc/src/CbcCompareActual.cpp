@@ -336,8 +336,8 @@ CbcCompareDefault::every1000Nodes(CbcModel * model, int numberNodes)
     int n2 = model->numberObjects();
     double size = n1*0.1 + n2*2.0;
     // set weight to reduce size most of time
-    if (treeSize_*size>5.0e7)
-      weight_=-1.0;
+    if (treeSize_*(size+100.0)>5.0e7)
+      weight_=-3.0;
     else if ((numberNodes1000%4)==0&&treeSize_*size>1.0e6)
       weight_=-1.0;
     else if ((numberNodes1000%4)==1)

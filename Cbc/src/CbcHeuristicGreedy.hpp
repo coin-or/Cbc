@@ -68,6 +68,8 @@ public:
   { numberTimes_=value; }
 
 protected:
+  /// Guts of constructor from a CbcModel
+  void gutsOfConstructor(CbcModel * model);
   // Data
 
   // Original matrix by column
@@ -151,6 +153,8 @@ public:
   inline void setNumberTimes(int value)
   { numberTimes_=value; }
 protected:
+  /// Guts of constructor from a CbcModel
+  void gutsOfConstructor(CbcModel * model);
   // Data
 
   // Original matrix by column

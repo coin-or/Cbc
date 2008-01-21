@@ -28,10 +28,7 @@ CbcHeuristicGreedyCover::CbcHeuristicGreedyCover()
 CbcHeuristicGreedyCover::CbcHeuristicGreedyCover(CbcModel & model)
   :CbcHeuristic(model)
 {
-  // Get a copy of original matrix
-  assert(model.solver());
-  matrix_ = *model.solver()->getMatrixByCol();
-  originalNumberRows_=model.solver()->getNumRows();
+  gutsOfConstructor(&model);
   algorithm_=0;
   numberTimes_=100;
 }
@@ -46,6 +43,16 @@ CbcHeuristic *
 CbcHeuristicGreedyCover::clone() const
 {
   return new CbcHeuristicGreedyCover(*this);
+}
+// Guts of constructor from a CbcModel
+void 
+CbcHeuristicGreedyCover::gutsOfConstructor(CbcModel * model)
+{
+  model_=model;
+  // Get a copy of original matrix
+  assert(model->solver());
+  matrix_ = *model->solver()->getMatrixByCol();
+  originalNumberRows_=model->solver()->getNumRows();
 }
 // Create C++ lines to get to current state
 void 
@@ -348,33 +355,14 @@ CbcHeuristicGreedyCover::solution(double & solutionValue,
 // update model
 void CbcHeuristicGreedyCover::setModel(CbcModel * model)
 {
-#define SLOPPY
-#ifndef SLOPPY
-  model_ = model;
-  assert(model_->solver());
-  *this = CbcHeuristicGreedyCover(*model); 
-#else
-  if (model_&&model!=model_) {
-    model_ = model;
-    assert(model_->solver());
-    *this = CbcHeuristicGreedyCover(*model); 
-  }
-#endif
+  gutsOfConstructor(model);
   validate();
 }
 // Resets stuff if model changes
 void 
 CbcHeuristicGreedyCover::resetModel(CbcModel * model)
 {
-#ifndef SLOPPY
-  model_ = model;
-  assert(model_->solver());
-  *this = CbcHeuristicGreedyCover(*model); 
-#else
-  // switch off
-  model_ = NULL;
-  matrix_ = CoinPackedMatrix();
-#endif
+  gutsOfConstructor(model);
 }
 // Validate model i.e. sets when_ to 0 if necessary (may be NULL)
 void 
@@ -434,10 +422,8 @@ CbcHeuristicGreedyEquality::CbcHeuristicGreedyEquality(CbcModel & model)
   :CbcHeuristic(model)
 {
   // Get a copy of original matrix
-  assert(model.solver());
-  matrix_ = *model.solver()->getMatrixByCol();
+  gutsOfConstructor(&model);
   fraction_=1.0; // no branch and bound
-  originalNumberRows_=model.solver()->getNumRows();
   algorithm_=0;
   numberTimes_=100;
 }
@@ -452,6 +438,16 @@ CbcHeuristic *
 CbcHeuristicGreedyEquality::clone() const
 {
   return new CbcHeuristicGreedyEquality(*this);
+}
+// Guts of constructor from a CbcModel
+void 
+CbcHeuristicGreedyEquality::gutsOfConstructor(CbcModel * model)
+{
+  model_=model;
+  // Get a copy of original matrix
+  assert(model->solver());
+  matrix_ = *model->solver()->getMatrixByCol();
+  originalNumberRows_=model->solver()->getNumRows();
 }
 // Create C++ lines to get to current state
 void 
@@ -783,33 +779,14 @@ CbcHeuristicGreedyEquality::solution(double & solutionValue,
 // update model
 void CbcHeuristicGreedyEquality::setModel(CbcModel * model)
 {
-#define SLOPPY
-#ifndef SLOPPY
-  model_ = model;
-  assert(model_->solver());
-  *this = CbcHeuristicGreedyEquality(*model); 
-#else
-  if (model_&&model!=model_) {
-    model_ = model;
-    assert(model_->solver());
-    *this = CbcHeuristicGreedyEquality(*model); 
-  }
-#endif
+  gutsOfConstructor(model);
   validate();
 }
 // Resets stuff if model changes
 void 
 CbcHeuristicGreedyEquality::resetModel(CbcModel * model)
 {
-#ifndef SLOPPY
-  model_ = model;
-  assert(model_->solver());
-  *this = CbcHeuristicGreedyEquality(*model); 
-#else
-  // switch off
-  model_ = NULL;
-  matrix_ = CoinPackedMatrix();
-#endif
+  gutsOfConstructor(model);
 }
 // Validate model i.e. sets when_ to 0 if necessary (may be NULL)
 void 

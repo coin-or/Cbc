@@ -263,7 +263,7 @@ int CbcClpUnitTest (const CbcModel & saveModel, std::string& dirMiplib,
     assert (si != NULL);
     // get clp itself
     ClpSimplex * modelC = si->getModelPtr();
-    modelC->tightenPrimalBounds();
+    modelC->tightenPrimalBounds(0.0,0,true);
     model->initialSolve();
     if (modelC->dualBound()==1.0e10) {
       // user did not set - so modify

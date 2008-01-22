@@ -165,7 +165,9 @@ bool malloc_counts_on=false;
 
 #include "OsiClpSolverInterface.hpp"
 #include "CbcSolver.hpp"
-#define IN_BRANCH_AND_BOUND (0x01000000|262144)
+//#define IN_BRANCH_AND_BOUND (0x01000000|262144)
+#define IN_BRANCH_AND_BOUND (0x01000000|262144|128|1024|2048)
+//#define IN_BRANCH_AND_BOUND (0x01000000|262144|128)
 CbcSolver::CbcSolver()
   : babModel_(NULL),
     userFunction_(NULL),
@@ -3506,6 +3508,8 @@ int
   double statistics_continuous=0.0, statistics_tighter=0.0;
   double statistics_cut_time=0.0;
   int statistics_nodes=0, statistics_iterations=0;
+  int statistics_nrows=0, statistics_ncols=0;
+  int statistics_nprocessedrows=0, statistics_nprocessedcols=0;
   std::string statistics_result;
   memset(statusUserFunction_,0,numberUserFunctions_*sizeof(int));
   /* Note
@@ -5154,12 +5158,18 @@ int
               // Reduce printout
               if (logLevel<=1)
                 model_.solver()->setHintParam(OsiDoReducePrint,true,OsiHintTry);
+	      else
+                model_.solver()->setHintParam(OsiDoReducePrint,false,OsiHintTry);
               {
                 OsiSolverInterface * solver = model_.solver();
                 OsiClpSolverInterface * si =
                   dynamic_cast<OsiClpSolverInterface *>(solver) ;
                 assert (si != NULL);
 		si->getModelPtr()->scaling(doScaling);
+		statistics_nrows=si->getNumRows();
+		statistics_ncols=si->getNumCols();
+		statistics_nprocessedrows=si->getNumRows();
+		statistics_nprocessedcols=si->getNumCols();
 		// See if quadratic
 #ifdef COIN_HAS_LINK
 		if (!complicatedInteger) {
@@ -5758,6 +5768,8 @@ int
 		  babModel_->setProblemStatus(0);
 		  babModel_->setSecondaryStatus(1);
 		} else {
+		  statistics_nprocessedrows=solver2->getNumRows();
+		  statistics_nprocessedcols=solver2->getNumCols();
 		  model_.setProblemStatus(-1);
 		  babModel_->setProblemStatus(-1);
 		}
@@ -8849,17 +8861,18 @@ clp watson.mps -\nscaling off\nprimalsimplex"
 		// can open - lets go for it
 		// first header if needed
 		if (state!=2) 
-		  fputs("Name,result,time,objective,continuous,tightened,cut_time,nodes,iterations\n",fp);
+		  fputs("Name,result,time,objective,continuous,tightened,cut_time,nodes,iterations,rows,columns,processed_rows,processed_columns\n",fp);
 		strcpy(buffer,argv[1]);
 		char * slash=buffer;
 		for (int i=0;i<(int)strlen(buffer);i++) {
 		  if (buffer[i]=='/'||buffer[i]=='\\')
 		    slash=buffer+i+1;
 		}
-		fprintf(fp,"%s,%s,%.2f,%.16g,%g,%g,%.2f,%d,%d\n",
+		fprintf(fp,"%s,%s,%.2f,%.16g,%g,%g,%.2f,%d,%d,%d,%d,%d,%d\n",
 			slash,statistics_result.c_str(),statistics_seconds,statistics_obj,
 			statistics_continuous,statistics_tighter,statistics_cut_time,statistics_nodes,
-			statistics_iterations);
+			statistics_iterations,statistics_nrows,statistics_ncols,
+			statistics_nprocessedrows,statistics_nprocessedcols);
 		fclose(fp);
 	      } else {
 		std::cout<<"Unable to open file "<<fileName<<std::endl;

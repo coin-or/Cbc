@@ -405,6 +405,8 @@ public:
     Analyze problem to find a minimum change in the objective function.
   */
   void analyzeObjective();
+  /// Tighten bounds - lightweight
+  int tightenBounds();
 
 
   //@}

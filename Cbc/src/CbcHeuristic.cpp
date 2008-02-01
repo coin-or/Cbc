@@ -152,7 +152,8 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver,int numberNodes,
 #endif
   int status=0;
   int logLevel = model_->logLevel();
-  char generalPrint[100];
+#define LEN_PRINT 250
+  char generalPrint[LEN_PRINT];
   // Do presolve to see if possible
   int numberColumns = solver->getNumCols();
   char * reset = NULL;

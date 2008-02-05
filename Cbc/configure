@@ -472,7 +472,7 @@ ac_includes_default="\
 # include <unistd.h>
 #endif"
 
-ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS build build_cpu build_vendor build_os ADDLIBS FADDLIBS ALWAYS_FALSE_TRUE ALWAYS_FALSE_FALSE CDEFS ADD_CFLAGS DBG_CFLAGS OPT_CFLAGS sol_cc_compiler CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT MPICC CXXDEFS ADD_CXXFLAGS DBG_CXXFLAGS OPT_CXXFLAGS CXX CXXFLAGS ac_ct_CXX MPICXX EGREP INSTALL_PROGRAM INSTALL_SCRIPT INSTALL_DATA CYGPATH_W PACKAGE VERSION ACLOCAL AUTOCONF AUTOMAKE AUTOHEADER MAKEINFO install_sh STRIP ac_ct_STRIP INSTALL_STRIP_PROGRAM mkdir_p AWK SET_MAKE am__leading_dot AMTAR am__tar am__untar DEPDIR am__include am__quote AMDEP_TRUE AMDEP_FALSE AMDEPBACKSLASH CCDEPMODE am__fastdepCC_TRUE am__fastdepCC_FALSE CXXDEPMODE am__fastdepCXX_TRUE am__fastdepCXX_FALSE MAINTAINER_MODE_TRUE MAINTAINER_MODE_FALSE MAINT LIBTOOLM4 have_autoconf have_automake have_svn BUILDTOOLSDIR AUX_DIR abs_source_dir abs_lib_dir abs_include_dir abs_bin_dir HAVE_EXTERNALS_TRUE HAVE_EXTERNALS_FALSE host host_cpu host_vendor host_os LN_S ECHO AR ac_ct_AR RANLIB ac_ct_RANLIB CPP CXXCPP F77 FFLAGS ac_ct_F77 LIBTOOL ac_c_preproc_warn_flag ac_cxx_preproc_warn_flag RPATH_FLAGS LT_LDFLAGS CBCSRCDIR CBCOBJDIR COIN_HAS_CBC_TRUE COIN_HAS_CBC_FALSE CGLSRCDIR CGLOBJDIR COIN_HAS_CGL_TRUE COIN_HAS_CGL_FALSE CLPSRCDIR CLPOBJDIR COIN_HAS_CLP_TRUE COIN_HAS_CLP_FALSE COINUTILSSRCDIR COINUTILSOBJDIR COIN_HAS_COINUTILS_TRUE COIN_HAS_COINUTILS_FALSE DYLPSRCDIR DYLPOBJDIR COIN_HAS_DYLP_TRUE COIN_HAS_DYLP_FALSE OSISRCDIR OSIOBJDIR COIN_HAS_OSI_TRUE COIN_HAS_OSI_FALSE VOLSRCDIR VOLOBJDIR COIN_HAS_VOL_TRUE COIN_HAS_VOL_FALSE SYMPHONYSRCDIR SYMPHONYOBJDIR COIN_HAS_SYMPHONY_TRUE COIN_HAS_SYMPHONY_FALSE CPXINCDIR CPXLIB COIN_HAS_CPX_TRUE COIN_HAS_CPX_FALSE FMPINCDIR FMPLIB COIN_HAS_FMP_TRUE COIN_HAS_FMP_FALSE MSKINCDIR MSKLIB COIN_HAS_MSK_TRUE COIN_HAS_MSK_FALSE OSLINCDIR OSLLIB COIN_HAS_OSL_TRUE COIN_HAS_OSL_FALSE SPXINCDIR SPXLIB COIN_HAS_SPX_TRUE COIN_HAS_SPX_FALSE XPRINCDIR XPRLIB COIN_HAS_XPR_TRUE COIN_HAS_XPR_FALSE GLPKINCDIR GLPKLIB COIN_HAS_GLPK_TRUE COIN_HAS_GLPK_FALSE COIN_BUILD_GLPK_TRUE COIN_BUILD_GLPK_FALSE ASLLIB ASL_CPPFLAGS COIN_HAS_ASL_TRUE COIN_HAS_ASL_FALSE CBC_BUILD_CBC_GENERIC_TRUE CBC_BUILD_CBC_GENERIC_FALSE LIBEXT VPATH_DISTCLEANFILES LIBOBJS LTLIBOBJS'
+ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS build build_cpu build_vendor build_os ADDLIBS FADDLIBS ALWAYS_FALSE_TRUE ALWAYS_FALSE_FALSE CDEFS ADD_CFLAGS DBG_CFLAGS OPT_CFLAGS sol_cc_compiler CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT MPICC CXXDEFS ADD_CXXFLAGS DBG_CXXFLAGS OPT_CXXFLAGS CXX CXXFLAGS ac_ct_CXX MPICXX EGREP INSTALL_PROGRAM INSTALL_SCRIPT INSTALL_DATA CYGPATH_W PACKAGE VERSION ACLOCAL AUTOCONF AUTOMAKE AUTOHEADER MAKEINFO install_sh STRIP ac_ct_STRIP INSTALL_STRIP_PROGRAM mkdir_p AWK SET_MAKE am__leading_dot AMTAR am__tar am__untar DEPDIR am__include am__quote AMDEP_TRUE AMDEP_FALSE AMDEPBACKSLASH CCDEPMODE am__fastdepCC_TRUE am__fastdepCC_FALSE CXXDEPMODE am__fastdepCXX_TRUE am__fastdepCXX_FALSE MAINTAINER_MODE_TRUE MAINTAINER_MODE_FALSE MAINT LIBTOOLM4 have_autoconf have_automake have_svn BUILDTOOLSDIR AUX_DIR abs_source_dir abs_lib_dir abs_include_dir abs_bin_dir HAVE_EXTERNALS_TRUE HAVE_EXTERNALS_FALSE host host_cpu host_vendor host_os LN_S ECHO AR ac_ct_AR RANLIB ac_ct_RANLIB CPP CXXCPP F77 FFLAGS ac_ct_F77 LIBTOOL ac_c_preproc_warn_flag ac_cxx_preproc_warn_flag RPATH_FLAGS LT_LDFLAGS CBCSRCDIR CBCOBJDIR CBCDOCDIR COIN_HAS_CBC_TRUE COIN_HAS_CBC_FALSE CGLSRCDIR CGLOBJDIR CGLDOCDIR COIN_HAS_CGL_TRUE COIN_HAS_CGL_FALSE CLPSRCDIR CLPOBJDIR CLPDOCDIR COIN_HAS_CLP_TRUE COIN_HAS_CLP_FALSE COINUTILSSRCDIR COINUTILSOBJDIR COINUTILSDOCDIR COIN_HAS_COINUTILS_TRUE COIN_HAS_COINUTILS_FALSE DYLPSRCDIR DYLPOBJDIR DYLPDOCDIR COIN_HAS_DYLP_TRUE COIN_HAS_DYLP_FALSE OSISRCDIR OSIOBJDIR OSIDOCDIR COIN_HAS_OSI_TRUE COIN_HAS_OSI_FALSE VOLSRCDIR VOLOBJDIR VOLDOCDIR COIN_HAS_VOL_TRUE COIN_HAS_VOL_FALSE SYMPHONYSRCDIR SYMPHONYOBJDIR SYMPHONYDOCDIR COIN_HAS_SYMPHONY_TRUE COIN_HAS_SYMPHONY_FALSE CPXINCDIR CPXLIB COIN_HAS_CPX_TRUE COIN_HAS_CPX_FALSE FMPINCDIR FMPLIB COIN_HAS_FMP_TRUE COIN_HAS_FMP_FALSE MSKINCDIR MSKLIB COIN_HAS_MSK_TRUE COIN_HAS_MSK_FALSE OSLINCDIR OSLLIB COIN_HAS_OSL_TRUE COIN_HAS_OSL_FALSE SPXINCDIR SPXLIB COIN_HAS_SPX_TRUE COIN_HAS_SPX_FALSE XPRINCDIR XPRLIB COIN_HAS_XPR_TRUE COIN_HAS_XPR_FALSE GLPKINCDIR GLPKLIB COIN_HAS_GLPK_TRUE COIN_HAS_GLPK_FALSE COIN_BUILD_GLPK_TRUE COIN_BUILD_GLPK_FALSE ASLLIB ASL_CPPFLAGS COIN_HAS_ASL_TRUE COIN_HAS_ASL_FALSE CBC_BUILD_CBC_GENERIC_TRUE CBC_BUILD_CBC_GENERIC_FALSE LIBEXT VPATH_DISTCLEANFILES LIBOBJS LTLIBOBJS'
 ac_subst_files=''
 
 # Initialize some variables set by options.
@@ -1078,9 +1078,9 @@ Optional Features:
   --enable-debug-cbc compile this project (Cbc) with debug options
   --enable-doscompile     Under Cygwin, compile so that executables run under
                           DOS. Set to mingw to use gcc/g++/ld with
-                          -mno-cygwin. Set to msvc to use cl/link. Default
-                          when mentioned: mingw. Default when not mentioned:
-                          disabled.
+                          -mno-cygwin. Set to msvc to use cl/link (or
+                          icl/link). Default when mentioned: mingw. Default
+                          when not mentioned: disabled.
   --enable-static[=PKGS]
                           build static libraries [default=no]
   --disable-dependency-tracking  speeds up one-time build
@@ -1891,7 +1891,7 @@ ac_compiler_gnu=$ac_cv_c_compiler_gnu
 # compiler, if the C++ is set, but the C compiler isn't (only for CXX=cl)
 if test x"$CXX" != x; then
   case "$CXX" in
-    cl* | */cl* | CL* | */CL*)
+    cl* | */cl* | CL* | */CL* | icl* | */icl* | ICL* | */ICL*)
       if test x"$CC" = x; then
         CC="$CXX"
         { echo "$as_me:$LINENO: WARNING: C++ compiler name provided as $CXX, but CC is unset. Setting CC to $CXX" >&5
@@ -1918,7 +1918,7 @@ save_cflags="$CFLAGS"
 case $build in
   *-cygwin* | *-mingw*)
   	     if test "$enable_doscompile" = msvc ; then
-	       comps="cl"
+	       comps="icl cl"
 	     else
 	       comps="gcc cl"
 	     fi ;;
@@ -2804,6 +2804,11 @@ rm -f conftest.err conftest.$ac_objext \
             coin_add_cflags='-nologo -wd4996 -D_CRT_SECURE_NO_DEPRECATE'
             coin_dbg_cflags='-MTd'
             ;;
+          icl* | */icl* | ICL* | */ICL*)
+            coin_opt_cflags='-MT -Ox'
+            coin_add_cflags='-nologo -D_CRT_SECURE_NO_DEPRECATE'
+            coin_dbg_cflags='-MTd -debug'
+            ;;
         esac
         ;;
       *-linux-*)
@@ -3110,7 +3115,7 @@ fi
 
 # Correct ADDLIBS initialization if we are using the MS compiler
 case "$CC" in
-  cl* | */cl* | CL* | */CL*)
+  cl* | */cl* | CL* | */CL* | icl* | */icl* | ICL* | */ICL*)
     ADDLIBS=
     case $build in
   *-mingw*)
@@ -3159,7 +3164,7 @@ save_cxxflags="$CXXFLAGS"
 case $build in
   *-cygwin* | *-mingw*)
   	     if test "$enable_doscompile" = msvc ; then
-	       comps="cl"
+	       comps="icl cl"
 	     else
 	       comps="g++ cl"
 	     fi ;;
@@ -3536,7 +3541,7 @@ fi
 
 # It seems that we need to cleanup something here for the Windows
 case "$CXX" in
-  cl* | */cl* | CL* | */CL* )
+  cl* | */cl* | CL* | */CL* | icl* | */icl* | ICL* | */ICL*)
     sed -e 's/^void exit (int);//' confdefs.h >> confdefs.hh
     mv confdefs.hh confdefs.h
     ;;
@@ -3644,6 +3649,12 @@ rm -f conftest.err conftest.$ac_objext \
             coin_opt_cxxflags='-MT -O2'
             coin_add_cxxflags='-nologo -EHsc -GR -wd4996 -D_CRT_SECURE_NO_DEPRECATE'
             coin_dbg_cxxflags='-MTd'
+            ;;
+          icl* | */icl* | ICL* | */ICL*)
+	    # The MT and MTd options are mutually exclusive
+            coin_opt_cxxflags='-MT -Ox'
+            coin_add_cxxflags='-nologo -EHsc -GR -D_CRT_SECURE_NO_DEPRECATE'
+            coin_dbg_cxxflags='-MTd -debug'
             ;;
         esac
         ;;
@@ -5715,7 +5726,7 @@ ia64-*-hpux*)
   ;;
 *-*-irix6*)
   # Find out which ABI we are using.
-  echo '#line 5718 "configure"' > conftest.$ac_ext
+  echo '#line 5729 "configure"' > conftest.$ac_ext
   if { (eval echo "$as_me:$LINENO: \"$ac_compile\"") >&5
   (eval $ac_compile) 2>&5
   ac_status=$?
@@ -6849,7 +6860,7 @@ fi
 
 
 # Provide some information about the compiler.
-echo "$as_me:6852:" \
+echo "$as_me:6863:" \
      "checking for Fortran 77 compiler version" >&5
 ac_compiler=`set X $ac_compile; echo $2`
 { (eval echo "$as_me:$LINENO: \"$ac_compiler --version </dev/null >&5\"") >&5
@@ -7916,11 +7927,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:7919: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:7930: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:7923: \$? = $ac_status" >&5
+   echo "$as_me:7934: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -8184,11 +8195,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:8187: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:8198: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:8191: \$? = $ac_status" >&5
+   echo "$as_me:8202: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -8288,11 +8299,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:8291: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:8302: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:8295: \$? = $ac_status" >&5
+   echo "$as_me:8306: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -10633,7 +10644,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<EOF
-#line 10636 "configure"
+#line 10647 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -10733,7 +10744,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<EOF
-#line 10736 "configure"
+#line 10747 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -13077,11 +13088,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:13080: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:13091: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:13084: \$? = $ac_status" >&5
+   echo "$as_me:13095: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -13181,11 +13192,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:13184: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:13195: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:13188: \$? = $ac_status" >&5
+   echo "$as_me:13199: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -14751,11 +14762,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:14754: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:14765: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:14758: \$? = $ac_status" >&5
+   echo "$as_me:14769: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -14855,11 +14866,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:14858: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:14869: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:14862: \$? = $ac_status" >&5
+   echo "$as_me:14873: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -17062,11 +17073,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:17065: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:17076: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:17069: \$? = $ac_status" >&5
+   echo "$as_me:17080: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -17330,11 +17341,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:17333: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:17344: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:17337: \$? = $ac_status" >&5
+   echo "$as_me:17348: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -17434,11 +17445,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:17437: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:17448: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:17441: \$? = $ac_status" >&5
+   echo "$as_me:17452: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -20174,7 +20185,7 @@ echo "$as_me: Applying patches to libtool for 64-bit GCC compilation" >&6;}
     # Cygwin. Ah, cygwin. Too big and ugly to inline; see the macro.
     *-cygwin* | *-mingw*)
        case "$CXX" in
-    cl* | */cl* | CL* | */CL*)
+    cl* | */cl* | CL* | */CL* | icl* | */icl* | ICL* | */ICL*)
       { echo "$as_me:$LINENO: Applying patches to libtool for cl compiler" >&5
 echo "$as_me: Applying patches to libtool for cl compiler" >&6;}
       sed -e 's|fix_srcfile_path=\"`cygpath -w \"\$srcfile\"`\"|fix_srcfile_path=\"\\\`'"$CYGPATH_W"' \\\"\\$srcfile\\\"\\\`\"|' \
@@ -20365,6 +20376,8 @@ _ACEOF
   CBCSRCDIR=`cd $srcdir/$coin_has_cbc; pwd`
 
   CBCOBJDIR=`pwd`/$coin_has_cbc
+
+  CBCDOCDIR=$abs_lib_dir/../share/doc/coin/Cbc
 fi
 
   # Define the Makefile conditional
@@ -20421,6 +20434,8 @@ _ACEOF
   CGLSRCDIR=`cd $srcdir/$coin_has_cgl; pwd`
 
   CGLOBJDIR=`pwd`/$coin_has_cgl
+
+  CGLDOCDIR=$abs_lib_dir/../share/doc/coin/Cgl
 fi
 
   # Define the Makefile conditional
@@ -20477,6 +20492,8 @@ _ACEOF
   CLPSRCDIR=`cd $srcdir/$coin_has_clp; pwd`
 
   CLPOBJDIR=`pwd`/$coin_has_clp
+
+  CLPDOCDIR=$abs_lib_dir/../share/doc/coin/Clp
 fi
 
   # Define the Makefile conditional
@@ -20533,6 +20550,8 @@ _ACEOF
   COINUTILSSRCDIR=`cd $srcdir/$coin_has_coinutils; pwd`
 
   COINUTILSOBJDIR=`pwd`/$coin_has_coinutils
+
+  COINUTILSDOCDIR=$abs_lib_dir/../share/doc/coin/CoinUtils
 fi
 
   # Define the Makefile conditional
@@ -20589,6 +20608,8 @@ _ACEOF
   DYLPSRCDIR=`cd $srcdir/$coin_has_dylp; pwd`
 
   DYLPOBJDIR=`pwd`/$coin_has_dylp
+
+  DYLPDOCDIR=$abs_lib_dir/../share/doc/coin/DyLP
 fi
 
   # Define the Makefile conditional
@@ -20645,6 +20666,8 @@ _ACEOF
   OSISRCDIR=`cd $srcdir/$coin_has_osi; pwd`
 
   OSIOBJDIR=`pwd`/$coin_has_osi
+
+  OSIDOCDIR=$abs_lib_dir/../share/doc/coin/Osi
 fi
 
   # Define the Makefile conditional
@@ -20701,6 +20724,8 @@ _ACEOF
   VOLSRCDIR=`cd $srcdir/$coin_has_vol; pwd`
 
   VOLOBJDIR=`pwd`/$coin_has_vol
+
+  VOLDOCDIR=$abs_lib_dir/../share/doc/coin/Vol
 fi
 
   # Define the Makefile conditional
@@ -20757,6 +20782,8 @@ _ACEOF
   SYMPHONYSRCDIR=`cd $srcdir/$coin_has_symphony; pwd`
 
   SYMPHONYOBJDIR=`pwd`/$coin_has_symphony
+
+  SYMPHONYDOCDIR=$abs_lib_dir/../share/doc/coin/SYMPHONY
 fi
 
   # Define the Makefile conditional
@@ -21986,7 +22013,7 @@ coin_aslsrcdir=$srcdir/$coin_aslobjdir
 
 # Determine the name of the ASL library
 case "$CC" in
-  cl* | */cl* | CL* | */CL*)
+  cl* | */cl* | CL* | */CL* | icl* | */icl* | ICL* | */ICL*)
     ampllib=amplsolv.lib ;;
   *)
     ampllib=amplsolver.a ;;
@@ -22455,7 +22482,7 @@ if test "$enable_doscompile" = mingw; then
   coin_link_input_cmd=cp
 fi
 case "$CC" in
-  cl* | */cl* | CL* | */CL*)
+  cl* | */cl* | CL* | */CL* | icl* | */icl* | ICL* | */ICL*)
     coin_link_input_cmd=cp ;;
 esac
 echo "$as_me:$LINENO: result: $coin_link_input_cmd" >&5
@@ -22473,7 +22500,7 @@ if test x$coin_skip_ac_output != xyes; then
   # library extension
 
   case "$CC" in
-    cl* | */cl* | CL* | */CL*)
+    cl* | */cl* | CL* | */CL* | icl* | */icl* | ICL* | */ICL*)
          LIBEXT=lib ;;
       *) LIBEXT=a ;;
   esac
@@ -23404,34 +23431,42 @@ s,@RPATH_FLAGS@,$RPATH_FLAGS,;t t
 s,@LT_LDFLAGS@,$LT_LDFLAGS,;t t
 s,@CBCSRCDIR@,$CBCSRCDIR,;t t
 s,@CBCOBJDIR@,$CBCOBJDIR,;t t
+s,@CBCDOCDIR@,$CBCDOCDIR,;t t
 s,@COIN_HAS_CBC_TRUE@,$COIN_HAS_CBC_TRUE,;t t
 s,@COIN_HAS_CBC_FALSE@,$COIN_HAS_CBC_FALSE,;t t
 s,@CGLSRCDIR@,$CGLSRCDIR,;t t
 s,@CGLOBJDIR@,$CGLOBJDIR,;t t
+s,@CGLDOCDIR@,$CGLDOCDIR,;t t
 s,@COIN_HAS_CGL_TRUE@,$COIN_HAS_CGL_TRUE,;t t
 s,@COIN_HAS_CGL_FALSE@,$COIN_HAS_CGL_FALSE,;t t
 s,@CLPSRCDIR@,$CLPSRCDIR,;t t
 s,@CLPOBJDIR@,$CLPOBJDIR,;t t
+s,@CLPDOCDIR@,$CLPDOCDIR,;t t
 s,@COIN_HAS_CLP_TRUE@,$COIN_HAS_CLP_TRUE,;t t
 s,@COIN_HAS_CLP_FALSE@,$COIN_HAS_CLP_FALSE,;t t
 s,@COINUTILSSRCDIR@,$COINUTILSSRCDIR,;t t
 s,@COINUTILSOBJDIR@,$COINUTILSOBJDIR,;t t
+s,@COINUTILSDOCDIR@,$COINUTILSDOCDIR,;t t
 s,@COIN_HAS_COINUTILS_TRUE@,$COIN_HAS_COINUTILS_TRUE,;t t
 s,@COIN_HAS_COINUTILS_FALSE@,$COIN_HAS_COINUTILS_FALSE,;t t
 s,@DYLPSRCDIR@,$DYLPSRCDIR,;t t
 s,@DYLPOBJDIR@,$DYLPOBJDIR,;t t
+s,@DYLPDOCDIR@,$DYLPDOCDIR,;t t
 s,@COIN_HAS_DYLP_TRUE@,$COIN_HAS_DYLP_TRUE,;t t
 s,@COIN_HAS_DYLP_FALSE@,$COIN_HAS_DYLP_FALSE,;t t
 s,@OSISRCDIR@,$OSISRCDIR,;t t
 s,@OSIOBJDIR@,$OSIOBJDIR,;t t
+s,@OSIDOCDIR@,$OSIDOCDIR,;t t
 s,@COIN_HAS_OSI_TRUE@,$COIN_HAS_OSI_TRUE,;t t
 s,@COIN_HAS_OSI_FALSE@,$COIN_HAS_OSI_FALSE,;t t
 s,@VOLSRCDIR@,$VOLSRCDIR,;t t
 s,@VOLOBJDIR@,$VOLOBJDIR,;t t
+s,@VOLDOCDIR@,$VOLDOCDIR,;t t
 s,@COIN_HAS_VOL_TRUE@,$COIN_HAS_VOL_TRUE,;t t
 s,@COIN_HAS_VOL_FALSE@,$COIN_HAS_VOL_FALSE,;t t
 s,@SYMPHONYSRCDIR@,$SYMPHONYSRCDIR,;t t
 s,@SYMPHONYOBJDIR@,$SYMPHONYOBJDIR,;t t
+s,@SYMPHONYDOCDIR@,$SYMPHONYDOCDIR,;t t
 s,@COIN_HAS_SYMPHONY_TRUE@,$COIN_HAS_SYMPHONY_TRUE,;t t
 s,@COIN_HAS_SYMPHONY_FALSE@,$COIN_HAS_SYMPHONY_FALSE,;t t
 s,@CPXINCDIR@,$CPXINCDIR,;t t

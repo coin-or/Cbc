@@ -71,9 +71,9 @@ libCbcSolver_la_LDFLAGS = $(LT_LDFLAGS)
 bin_PROGRAMS =
 AM_CPPFLAGS = 
 
-LIBS += `cat $(CGLOBJDIR)/cgl_addlibs.txt` \
-	`cat $(OSIOBJDIR)/osi_addlibs.txt` \
-	`cat $(COINUTILSOBJDIR)/coinutils_addlibs.txt` $(ADDLIBS)
+LIBS += `cat $(CGLDOCDIR)/cgl_addlibs.txt` \
+	`cat $(OSIDOCDIR)/osi_addlibs.txt` \
+	`cat $(COINUTILSDOCDIR)/coinutils_addlibs.txt` $(ADDLIBS)
 
 
 ########################################################################

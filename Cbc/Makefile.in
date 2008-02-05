@@ -20,7 +20,7 @@
 
 # Author:  Andreas Waechter           IBM    2006-04-13
 
-# Copyright (C) 2006 International Business Machines and others.
+# Copyright (C) 2006, 2007 International Business Machines and others.
 # All Rights Reserved.
 # This file is distributed under the Common Public License.
 
@@ -63,7 +63,7 @@ DIST_COMMON = README $(am__configure_deps) \
 	$(srcdir)/Makefile.am $(srcdir)/Makefile.in \
 	$(srcdir)/cbc_addlibs.txt.in $(top_srcdir)/configure \
 	$(top_srcdir)/examples/Makefile.in \
-	$(top_srcdir)/inc/config_cbc.h.in AUTHORS
+	$(top_srcdir)/inc/config_cbc.h.in AUTHORS INSTALL
 @HAVE_EXTERNALS_TRUE@am__append_2 = Externals
 @HAVE_EXTERNALS_TRUE@am__append_3 = .Externals-stamp
 subdir = .
@@ -117,6 +117,7 @@ AUTOMAKE = @AUTOMAKE@
 AUX_DIR = @AUX_DIR@
 AWK = @AWK@
 BUILDTOOLSDIR = @BUILDTOOLSDIR@
+CBCDOCDIR = @CBCDOCDIR@
 CBCOBJDIR = @CBCOBJDIR@
 CBCSRCDIR = @CBCSRCDIR@
 CBC_BUILD_CBC_GENERIC_FALSE = @CBC_BUILD_CBC_GENERIC_FALSE@
@@ -125,10 +126,13 @@ CC = @CC@
 CCDEPMODE = @CCDEPMODE@
 CDEFS = @CDEFS@
 CFLAGS = @CFLAGS@
+CGLDOCDIR = @CGLDOCDIR@
 CGLOBJDIR = @CGLOBJDIR@
 CGLSRCDIR = @CGLSRCDIR@
+CLPDOCDIR = @CLPDOCDIR@
 CLPOBJDIR = @CLPOBJDIR@
 CLPSRCDIR = @CLPSRCDIR@
+COINUTILSDOCDIR = @COINUTILSDOCDIR@
 COINUTILSOBJDIR = @COINUTILSOBJDIR@
 COINUTILSSRCDIR = @COINUTILSSRCDIR@
 COIN_BUILD_GLPK_FALSE = @COIN_BUILD_GLPK_FALSE@
@@ -179,6 +183,7 @@ DBG_CFLAGS = @DBG_CFLAGS@
 DBG_CXXFLAGS = @DBG_CXXFLAGS@
 DEFS = @DEFS@
 DEPDIR = @DEPDIR@
+DYLPDOCDIR = @DYLPDOCDIR@
 DYLPOBJDIR = @DYLPOBJDIR@
 DYLPSRCDIR = @DYLPSRCDIR@
 ECHO = @ECHO@
@@ -220,6 +225,7 @@ MSKLIB = @MSKLIB@
 OBJEXT = @OBJEXT@
 OPT_CFLAGS = @OPT_CFLAGS@
 OPT_CXXFLAGS = @OPT_CXXFLAGS@
+OSIDOCDIR = @OSIDOCDIR@
 OSIOBJDIR = @OSIOBJDIR@
 OSISRCDIR = @OSISRCDIR@
 OSLINCDIR = @OSLINCDIR@
@@ -238,9 +244,11 @@ SHELL = @SHELL@
 SPXINCDIR = @SPXINCDIR@
 SPXLIB = @SPXLIB@
 STRIP = @STRIP@
+SYMPHONYDOCDIR = @SYMPHONYDOCDIR@
 SYMPHONYOBJDIR = @SYMPHONYOBJDIR@
 SYMPHONYSRCDIR = @SYMPHONYSRCDIR@
 VERSION = @VERSION@
+VOLDOCDIR = @VOLDOCDIR@
 VOLOBJDIR = @VOLOBJDIR@
 VOLSRCDIR = @VOLSRCDIR@
 VPATH_DISTCLEANFILES = @VPATH_DISTCLEANFILES@
@@ -341,6 +349,7 @@ EXTRA_DIST = doc/authors.xml doc/cbcexe.xml doc/cbcmodelclass.xml \
 #                  Installation of the addlibs file                    #
 ########################################################################
 addlibsfile = cbc_addlibs.txt
+addlibsdir = $(prefix)/share/doc/coin/$(PACKAGE_NAME)/
 
 ########################################################################
 #                         Maintainer Stuff                             #
@@ -349,7 +358,7 @@ addlibsfile = cbc_addlibs.txt
 # Files that are generated and should be cleaned with make distclean
 DISTCLEANFILES = $(am__append_3) $(VPATH_DISTCLEANFILES)
 DocFiles = README AUTHORS LICENSE
-DocInstallDir = $(prefix)/share/doc/$(PACKAGE_NAME)
+DocInstallDir = $(prefix)/share/doc/coin/$(PACKAGE_NAME)
 all: all-recursive
 
 .SUFFIXES:
@@ -810,12 +819,12 @@ distclean-local:
 .PHONY: test unitTest
 
 install-exec-local: install-doc
-	$(install_sh_DATA) $(addlibsfile) $(DESTDIR)$(libdir)/$(addlibsfile)
+	$(install_sh_DATA) $(addlibsfile) $(addlibsdir)/$(addlibsfile)
 
 uninstall-local: uninstall-doc
 	rm -f $(DESTDIR)$(libdir)/$(addlibsfile)
 
-install-doc:
+install-doc: $(DocFiles)
 	test -z "$(DocInstallDir)" || $(mkdir_p) "$(DESTDIR)$(DocInstallDir)"
 	for file in $(DocFiles); do \
 	  if test -f "$$file"; then dir=; else dir="$(srcdir)/"; fi; \

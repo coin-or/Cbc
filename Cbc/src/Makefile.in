@@ -376,9 +376,9 @@ INSTALL_STRIP_PROGRAM = @INSTALL_STRIP_PROGRAM@
 LDFLAGS = @LDFLAGS@
 LIBEXT = @LIBEXT@
 LIBOBJS = @LIBOBJS@
-LIBS = @LIBS@ `cat $(CGLDOCDIR)/cgl_addlibs.txt` `cat \
-	$(OSIDOCDIR)/osi_addlibs.txt` `cat \
-	$(COINUTILSDOCDIR)/coinutils_addlibs.txt` $(ADDLIBS) \
+LIBS = @LIBS@ `cat $(CGLOBJDIR)/cgl_addlibs.txt` `cat \
+	$(OSIOBJDIR)/osi_addlibs.txt` `cat \
+	$(COINUTILSOBJDIR)/coinutils_addlibs.txt` $(ADDLIBS) \
 	$(am__append_3) $(am__append_9) $(am__append_14) \
 	$(am__append_27) $(am__append_30)
 LIBTOOL = @LIBTOOL@

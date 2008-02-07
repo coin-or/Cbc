@@ -1507,6 +1507,9 @@ void CbcModel::branchAndBound(int doStatistics)
   { int iObject ;
     int preferredWay ;
     int numberUnsatisfied = 0 ;
+    delete [] currentSolution_;
+    currentSolution_ = new double [numberColumns];
+    testSolution_ = currentSolution_;
     memcpy(currentSolution_,solver_->getColSolution(),
 	   numberColumns*sizeof(double)) ;
     // point to useful information
@@ -3720,6 +3723,7 @@ CbcModel::CbcModel(const OsiSolverInterface &rhs)
     currentSolution_ = new double[numberColumns];
     continuousSolution_ = new double[numberColumns];
     usedInSolution_ = new int[numberColumns];
+    CoinZeroN(usedInSolution_,numberColumns);
     for (iColumn=0;iColumn<numberColumns;iColumn++) {
       if( solver_->isInteger(iColumn)) 
 	numberIntegers_++;
@@ -4033,9 +4037,11 @@ CbcModel::CbcModel(const CbcModel & rhs, bool noTree)
   }
   if (!noTree) {
     int numberColumns = solver_->getNumCols();
-    currentSolution_ = CoinCopyOfArray(rhs.currentSolution_,numberColumns);
-    continuousSolution_ = CoinCopyOfArray(rhs.continuousSolution_,numberColumns);
-    usedInSolution_ = CoinCopyOfArray(rhs.usedInSolution_,numberColumns);
+    // Space for current solution
+    currentSolution_ = new double[numberColumns];
+    continuousSolution_ = new double[numberColumns];
+    usedInSolution_ = new int[numberColumns];
+    CoinZeroN(usedInSolution_,numberColumns);
   } else {
     currentSolution_=NULL;
     continuousSolution_=NULL;
@@ -4137,9 +4143,17 @@ CbcModel::operator=(const CbcModel& rhs)
       bestSolution_=NULL;
     }
     int numberColumns = rhs.getNumCols();
-    currentSolution_ = CoinCopyOfArray(rhs.currentSolution_,numberColumns);
-    continuousSolution_ = CoinCopyOfArray(rhs.continuousSolution_,numberColumns);
-    usedInSolution_ = CoinCopyOfArray(rhs.usedInSolution_,numberColumns);
+    if (numberColumns) {
+      // Space for current solution
+      currentSolution_ = new double[numberColumns];
+      continuousSolution_ = new double[numberColumns];
+      usedInSolution_ = new int[numberColumns];
+      CoinZeroN(usedInSolution_,numberColumns);
+    } else {
+      currentSolution_=NULL;
+      continuousSolution_=NULL;
+      usedInSolution_=NULL;
+    }
     testSolution_=currentSolution_;
     minimumDrop_ = rhs.minimumDrop_;
     numberSolutions_=rhs.numberSolutions_;

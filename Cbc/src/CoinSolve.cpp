@@ -250,7 +250,9 @@ int main (int argc, const char *argv[])
   CbcSolver control(solver1);
   // initialize
   control.fillValuesInSolver();
+#ifdef COIN_HAS_ASL
   addAmplToCbc(&control);
+#endif
   return control.solve (argc, argv, 1);
 }
 #endif

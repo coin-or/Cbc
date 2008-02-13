@@ -4151,7 +4151,13 @@ int
 		parameters_[iParam].currentOption()<<std::endl;
 	    }
 	  } else {
-	    parameters_[iParam].setCurrentOption(action,!noPrinting_);
+	    const char * message = 
+	      parameters_[iParam].setCurrentOptionWithMessage(action);
+	    if (!noPrinting_) {
+	      generalMessageHandler->message(CLP_GENERAL,generalMessages)
+		<< message
+		<<CoinMessageEol;
+	    }
 	    // for now hard wired
 	    switch (type) {
 	    case DIRECTION:

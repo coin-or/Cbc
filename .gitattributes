@@ -46,6 +46,14 @@ Cbc/src/CbcGenParamUtils.cpp -text
 Cbc/src/CbcGenSolution.cpp -text
 Cbc/src/CbcGenSolvers.cpp -text
 Cbc/src/CbcGeneric.cpp -text
+Cbc/src/CbcHeuristicDiveCoefficient.cpp -text
+Cbc/src/CbcHeuristicDiveCoefficient.hpp -text
+Cbc/src/CbcHeuristicDiveFractional.cpp -text
+Cbc/src/CbcHeuristicDiveFractional.hpp -text
+Cbc/src/CbcHeuristicDiveGuided.cpp -text
+Cbc/src/CbcHeuristicDiveGuided.hpp -text
+Cbc/src/CbcHeuristicDiveVectorLength.cpp -text
+Cbc/src/CbcHeuristicDiveVectorLength.hpp -text
 Cbc/src/CbcHeuristicRINS.cpp -text
 Cbc/src/CbcHeuristicRINS.hpp -text
 Cbc/src/CbcLinked.cpp -text

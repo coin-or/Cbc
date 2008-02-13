@@ -12877,3 +12877,35 @@ void CbcModel::previousBounds (CbcNode * node, CbcNodeInfo * where,int iColumn,
 #endif
   }
 }
+/* Return pseudo costs
+   If not all integers or not pseudo costs - returns all zero
+   Length of arrays are numberIntegers() and entries
+      correspond to integerVariable()[i]
+      User must allocate arrays before call
+*/
+void 
+CbcModel::fillPseudoCosts(double * downCosts, double * upCosts) const
+{
+  CoinZeroN(downCosts,numberIntegers_);
+  CoinZeroN(upCosts,numberIntegers_);
+  if (!allDynamic())
+    return; // Odd problem
+  int numberColumns = getNumCols();
+  int * back = new int[numberColumns];
+  int i;
+  for (i=0;i<numberColumns;i++)
+    back[i]=-1;
+  for (i=0;i<numberIntegers_;i++) 
+    back[integerVariable_[i]]=i;
+  for ( i=0;i<numberObjects_;i++) {
+    CbcSimpleIntegerDynamicPseudoCost * obj =
+      dynamic_cast <CbcSimpleIntegerDynamicPseudoCost *>(object_[i]) ;
+    assert (obj);
+    int iColumn = obj->columnNumber();
+    iColumn = back[iColumn];
+    assert (iColumn>=0);
+    downCosts[iColumn]=obj->downDynamicPseudoCost();
+    upCosts[iColumn]=obj->upDynamicPseudoCost();
+  }
+  delete [] back;
+}

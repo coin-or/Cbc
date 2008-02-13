@@ -25,10 +25,15 @@ CbcHeuristicDiveGuided::CbcHeuristicDiveGuided()
 CbcHeuristicDiveGuided::CbcHeuristicDiveGuided(CbcModel & model)
   :CbcHeuristic(model)
 {
+  downLocks_ =NULL;
+  upLocks_ = NULL;
   // Get a copy of original matrix
   assert(model.solver());
-  matrix_ = *model.solver()->getMatrixByCol();
-  validate();
+  // model may have empty matrix - wait until setModel
+  const CoinPackedMatrix * matrix = model.solver()->getMatrixByCol();
+  if (matrix) {
+    matrix_ = *matrix;
+  }
   percentageToFix_ = 0.2;
   maxIterations_ = 100;
   maxTime_ = 60;
@@ -57,17 +62,17 @@ CbcHeuristicDiveGuided::generateCpp( FILE * fp)
   fprintf(fp,"3  CbcHeuristicDiveGuided heuristicDiveGuided(*cbcModel);\n");
   CbcHeuristic::generateCpp(fp,"heuristicDiveGuided");
   if (percentageToFix_!=other.percentageToFix_)
-    fprintf(fp,"3  heuristicDiveGuided.setPercentageToFix(%d);\n",percentageToFix_);
+    fprintf(fp,"3  heuristicDiveGuided.setPercentageToFix(%.2f);\n",percentageToFix_);
   else
-    fprintf(fp,"4  heuristicDiveGuided.setPercentageToFix(%d);\n",percentageToFix_);
+    fprintf(fp,"4  heuristicDiveGuided.setPercentageToFix(%.2f);\n",percentageToFix_);
   if (maxIterations_!=other.maxIterations_)
     fprintf(fp,"3  heuristicDiveGuided.setMaxIterations(%d);\n",maxIterations_);
   else
     fprintf(fp,"4  heuristicDiveGuided.setMaxIterations(%d);\n",maxIterations_);
   if (maxTime_!=other.maxTime_)
-    fprintf(fp,"3  heuristicDiveGuided.setMaxTime(%d);\n",maxTime_);
+    fprintf(fp,"3  heuristicDiveGuided.setMaxTime(%.2f);\n",maxTime_);
   else
-    fprintf(fp,"4  heuristicDiveGuided.setMaxTime(%d);\n",maxTime_);
+    fprintf(fp,"4  heuristicDiveGuided.setMaxTime(%.2f);\n",maxTime_);
   fprintf(fp,"3  cbcModel->addHeuristic(&heuristicDiveGuided);\n");
 }
 
@@ -81,8 +86,14 @@ CbcHeuristicDiveGuided::CbcHeuristicDiveGuided(const CbcHeuristicDiveGuided & rh
   maxTime_(rhs.maxTime_)
 {
   int numberIntegers = model_->numberIntegers();
-  downLocks_ = CoinCopyOfArray(rhs.downLocks_,numberIntegers);
-  upLocks_ = CoinCopyOfArray(rhs.upLocks_,numberIntegers);
+  if (rhs.downLocks_) {
+    int numberIntegers = model_->numberIntegers();
+    downLocks_ = CoinCopyOfArray(rhs.downLocks_,numberIntegers);
+    upLocks_ = CoinCopyOfArray(rhs.upLocks_,numberIntegers);
+  } else {
+    downLocks_ = NULL;
+    upLocks_ = NULL;
+  }
 }
 
 // Assignment operator 
@@ -97,9 +108,14 @@ CbcHeuristicDiveGuided::operator=( const CbcHeuristicDiveGuided& rhs)
     maxTime_ = rhs.maxTime_;
     delete [] downLocks_;
     delete [] upLocks_;
-    int numberIntegers = model_->numberIntegers();
-    downLocks_ = CoinCopyOfArray(rhs.downLocks_,numberIntegers);
-    upLocks_ = CoinCopyOfArray(rhs.upLocks_,numberIntegers);
+    if (rhs.downLocks_) {
+      int numberIntegers = model_->numberIntegers();
+      downLocks_ = CoinCopyOfArray(rhs.downLocks_,numberIntegers);
+      upLocks_ = CoinCopyOfArray(rhs.upLocks_,numberIntegers);
+    } else {
+      downLocks_ = NULL;
+      upLocks_ = NULL;
+    }
   }
   return *this;
 }
@@ -111,8 +127,12 @@ CbcHeuristicDiveGuided::resetModel(CbcModel * model)
   model_=model;
   // Get a copy of original matrix
   assert(model_->solver());
-  matrix_ = *model_->solver()->getMatrixByCol();
-  validate();
+  // model may have empty matrix - wait until setModel
+  const CoinPackedMatrix * matrix = model_->solver()->getMatrixByCol();
+  if (matrix) {
+    matrix_ = *matrix;
+    validate();
+  }
 }
 
 // See if dive guided will give better solution
@@ -168,7 +188,7 @@ CbcHeuristicDiveGuided::solution(double & solutionValue,
   double* originalBound = new double [numberIntegers];
   bool * fixedAtLowerBound = new bool [numberIntegers];
 
-  const int maxNumberAtBoundToFix = floor(percentageToFix_ * numberIntegers);
+  const int maxNumberAtBoundToFix = (int) floor(percentageToFix_ * numberIntegers);
 
   // count how many fractional variables
   int numberFractionalVariables = 0;
@@ -407,10 +427,12 @@ void CbcHeuristicDiveGuided::setModel(CbcModel * model)
   model_ = model;
   // Get a copy of original matrix (and by row for rounding);
   assert(model_->solver());
-  matrix_ = *model_->solver()->getMatrixByCol();
-  //  matrixByRow_ = *model_->solver()->getMatrixByRow();
-  // make sure model okay for heuristic
-  validate();
+  const CoinPackedMatrix * matrix = model_->solver()->getMatrixByCol();
+  if (matrix) {
+    matrix_ = *matrix;
+    // make sure model okay for heuristic
+    validate();
+  }
 }
 
 // Validate model i.e. sets when_ to 0 if necessary (may be NULL)
@@ -425,6 +447,8 @@ CbcHeuristicDiveGuided::validate()
 
   int numberIntegers = model_->numberIntegers();
   const int * integerVariable = model_->integerVariable();
+  delete [] downLocks_;
+  delete [] upLocks_;
   downLocks_ = new unsigned short [numberIntegers];
   upLocks_ = new unsigned short [numberIntegers];
   // Column copy

@@ -221,7 +221,7 @@ CbcHeuristicRINS::solution(double & solutionValue,
       }
       numberTries_++;
       if ((numberTries_%10)==0&&numberSuccesses_*3<numberTries_)
-	howOften_ += howOften_*decayFactor_;
+	howOften_ += (int) (howOften_*decayFactor_);
     }
 
     delete newSolver;

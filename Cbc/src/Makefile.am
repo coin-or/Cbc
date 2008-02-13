@@ -34,6 +34,10 @@ libCbc_la_SOURCES = \
 	CbcFathomDynamicProgramming.cpp CbcFathomDynamicProgramming.hpp \
 	CbcFeasibilityBase.hpp \
 	CbcHeuristic.cpp CbcHeuristic.hpp \
+	CbcHeuristicDiveCoefficient.cpp CbcHeuristicDiveCoefficient.hpp \
+	CbcHeuristicDiveFractional.cpp CbcHeuristicDiveFractional.hpp \
+	CbcHeuristicDiveGuided.cpp CbcHeuristicDiveGuided.hpp \
+	CbcHeuristicDiveVectorLength.cpp CbcHeuristicDiveLength.hpp \
 	CbcHeuristicFPump.cpp CbcHeuristicFPump.hpp \
 	CbcHeuristicGreedy.cpp CbcHeuristicGreedy.hpp \
 	CbcHeuristicLocal.cpp CbcHeuristicLocal.hpp \
@@ -302,6 +306,10 @@ includecoin_HEADERS = \
 	CbcEventHandler.hpp \
 	CbcFeasibilityBase.hpp \
 	CbcHeuristic.hpp \
+	CbcHeuristicDiveCoefficient.hpp \
+	CbcHeuristicDiveFractional.hpp \
+	CbcHeuristicDiveGuided.hpp \
+	CbcHeuristicDiveVectorLength.hpp \
 	CbcHeuristicFPump.hpp \
 	CbcHeuristicGreedy.hpp \
 	CbcHeuristicLocal.hpp \

@@ -154,6 +154,10 @@ bool malloc_counts_on=false;
 #include "CbcHeuristicGreedy.hpp"
 #include "CbcHeuristicFPump.hpp"
 #include "CbcHeuristicRINS.hpp"
+#include "CbcHeuristicDiveCoefficient.hpp"
+#include "CbcHeuristicDiveFractional.hpp"
+#include "CbcHeuristicDiveGuided.hpp"
+#include "CbcHeuristicDiveVectorLength.hpp"
 #include "CbcTreeLocal.hpp"
 #include "CbcCompareActual.hpp"
 #include "CbcBranchActual.hpp"
@@ -3207,6 +3211,7 @@ int
   int useCombine = parameters_[whichParam(COMBINE,numberParameters_,parameters_)].currentOptionAsInteger();
   int useRINS = parameters_[whichParam(RINS,numberParameters_,parameters_)].currentOptionAsInteger();
   int useRENS = parameters_[whichParam(RENS,numberParameters_,parameters_)].currentOptionAsInteger();
+  int useDIVING = parameters_[whichParam(DIVING,numberParameters_,parameters_)].currentOptionAsInteger();
   // FPump done first as it only works if no solution
   int kType = (type<3) ? type : 1;
   if (useFpump>=kType) {
@@ -3348,6 +3353,30 @@ int
     else
       heuristic5.setDecayFactor(1.5);
     model->addHeuristic(&heuristic5) ;
+    anyToDo=true;
+  }
+  // change later?
+  if (useDIVING>=kType) {
+    if ((useDIVING&1)!=0) {
+      CbcHeuristicDiveCoefficient heuristicDC(*model);
+      heuristicDC.setHeuristicName("DiveCoefficient");
+      model->addHeuristic(&heuristicDC) ;
+    }
+    if ((useDIVING&2)!=0) {
+      CbcHeuristicDiveFractional heuristicDF(*model);
+      heuristicDF.setHeuristicName("DiveFractional");
+      model->addHeuristic(&heuristicDF) ;
+    }
+    if ((useDIVING&4)!=0) {
+      CbcHeuristicDiveGuided heuristicDG(*model);
+      heuristicDG.setHeuristicName("DiveGuided");
+      model->addHeuristic(&heuristicDG) ;
+    }
+    if ((useDIVING&8)!=0) {
+      CbcHeuristicDiveVectorLength heuristicDV(*model);
+      heuristicDV.setHeuristicName("DiveVectorLength");
+      model->addHeuristic(&heuristicDV) ;
+    }
     anyToDo=true;
   }
   if (type==2&&anyToDo) {
@@ -4315,7 +4344,13 @@ int
 		parameters_[iParam].currentOption()<<std::endl;
 	    }
 	  } else {
-	    parameters_[iParam].setCurrentOption(action,!noPrinting_);
+	    const char * message = 
+	      parameters_[iParam].setCurrentOptionWithMessage(action);
+	    if (!noPrinting_) {
+	      generalMessageHandler->message(CLP_GENERAL,generalMessages)
+		<< message
+		<<CoinMessageEol;
+	    }
 	    // for now hard wired
 	    switch (type) {
 	    case DIRECTION:
@@ -4524,11 +4559,8 @@ int
               parameters_[whichParam(FPUMP,numberParameters_,parameters_)].setCurrentOption(action);
               break;
 	    case GREEDY:
-              defaultSettings=false; // user knows what she is doing
-	      break;
+	    case DIVING:
 	    case COMBINE:
-              defaultSettings=false; // user knows what she is doing
-	      break;
 	    case LOCALTREE:
               defaultSettings=false; // user knows what she is doing
 	      break;

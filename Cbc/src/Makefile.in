@@ -161,6 +161,8 @@ am_libCbc_la_OBJECTS = Cbc_C_Interface.lo CbcBranchActual.lo \
 	CbcBranchLotsize.lo CbcCompareActual.lo CbcCountRowCut.lo \
 	CbcCutGenerator.lo CbcEventHandler.lo CbcFathom.lo \
 	CbcFathomDynamicProgramming.lo CbcHeuristic.lo \
+	CbcHeuristicDiveCoefficient.lo CbcHeuristicDiveFractional.lo \
+	CbcHeuristicDiveGuided.lo CbcHeuristicDiveVectorLength.lo \
 	CbcHeuristicFPump.lo CbcHeuristicGreedy.lo \
 	CbcHeuristicLocal.lo CbcHeuristicRINS.lo CbcMessage.lo \
 	CbcModel.lo CbcNode.lo CbcStatistics.lo CbcStrategy.lo \
@@ -507,6 +509,10 @@ libCbc_la_SOURCES = \
 	CbcFathomDynamicProgramming.cpp CbcFathomDynamicProgramming.hpp \
 	CbcFeasibilityBase.hpp \
 	CbcHeuristic.cpp CbcHeuristic.hpp \
+	CbcHeuristicDiveCoefficient.cpp CbcHeuristicDiveCoefficient.hpp \
+	CbcHeuristicDiveFractional.cpp CbcHeuristicDiveFractional.hpp \
+	CbcHeuristicDiveGuided.cpp CbcHeuristicDiveGuided.hpp \
+	CbcHeuristicDiveVectorLength.cpp CbcHeuristicDiveLength.hpp \
 	CbcHeuristicFPump.cpp CbcHeuristicFPump.hpp \
 	CbcHeuristicGreedy.cpp CbcHeuristicGreedy.hpp \
 	CbcHeuristicLocal.cpp CbcHeuristicLocal.hpp \
@@ -643,6 +649,10 @@ includecoin_HEADERS = \
 	CbcEventHandler.hpp \
 	CbcFeasibilityBase.hpp \
 	CbcHeuristic.hpp \
+	CbcHeuristicDiveCoefficient.hpp \
+	CbcHeuristicDiveFractional.hpp \
+	CbcHeuristicDiveGuided.hpp \
+	CbcHeuristicDiveVectorLength.hpp \
 	CbcHeuristicFPump.hpp \
 	CbcHeuristicGreedy.hpp \
 	CbcHeuristicLocal.hpp \
@@ -795,6 +805,10 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcGenSolvers.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcGeneric.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcHeuristic.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcHeuristicDiveCoefficient.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcHeuristicDiveFractional.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcHeuristicDiveGuided.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcHeuristicDiveVectorLength.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcHeuristicFPump.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcHeuristicGreedy.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcHeuristicLocal.Plo@am__quote@

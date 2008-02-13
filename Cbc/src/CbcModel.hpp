@@ -1670,6 +1670,13 @@ public:
   int cliquePseudoCosts(int doStatistics);
   /// Fill in useful estimates
   void pseudoShadow(double * down, double * up);
+  /** Return pseudo costs
+      If not all integers or not pseudo costs - returns all zero
+      Length of arrays are numberIntegers() and entries
+      correspond to integerVariable()[i]
+      User must allocate arrays before call
+  */
+  void fillPseudoCosts(double * downCosts, double * upCosts) const;
   /** Do heuristics at root.
       0 - don't delete
       1 - delete
@@ -1708,9 +1715,9 @@ public:
   { return numberStrongIterations_;}
   /// Increment strong info
   void incrementStrongInfo(int numberTimes, int numberIterations,
-                           int numberFixed, bool ifInfeasible);
+			   int numberFixed, bool ifInfeasible);
   /// Says whether all dynamic integers
-  inline bool allDynamic () { return ((ownership_&0x40000000)!=0) ; } 
+  inline bool allDynamic () const { return ((ownership_&0x40000000)!=0) ; } 
   /// Create C++ lines to get to current state
   void generateCpp( FILE * fp,int options);
   /// Generate an OsiBranchingInformation object

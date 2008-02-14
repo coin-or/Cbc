@@ -204,7 +204,7 @@ CbcHeuristicDiveCoefficient::solution(double & solutionValue,
     double bestFraction = DBL_MAX;
     int bestColumn = -1;
     int bestRound = -1; // -1 rounds down, +1 rounds up
-    int bestLocks = INT_MAX;
+    int bestLocks = COIN_INT_MAX;
     int numberAtBoundFixed = 0;
     bool canRoundSolution = true;
     for (int i=0; i<numberIntegers; i++) {

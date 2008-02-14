@@ -486,6 +486,22 @@
 				</FileConfiguration>
 			</File>
 			<File
+				RelativePath="..\..\..\src\CbcHeuristicDiveCoefficient.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\..\src\CbcHeuristicDiveFractional.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\..\src\CbcHeuristicDiveGuided.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\..\src\CbcHeuristicDiveVectorLength.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\..\..\Cbc\src\CbcHeuristicFPump.cpp"
 				>
 				<FileConfiguration
@@ -843,6 +859,22 @@
 			</File>
 			<File
 				RelativePath="..\..\..\..\Cbc\src\CbcHeuristic.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\..\src\CbcHeuristicDiveCoefficient.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\..\src\CbcHeuristicDiveFractional.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\..\src\CbcHeuristicDiveGuided.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\..\src\CbcHeuristicDiveVectorLength.hpp"
 				>
 			</File>
 			<File

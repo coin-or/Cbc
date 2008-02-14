@@ -4215,11 +4215,32 @@ int
 	  double value = CoinReadGetDoubleField(argc,argv,&valid);
 	  if (!valid) {
 	    if (type<51) {
-	      parameters_[iParam].setDoubleParameter(lpSolver,value);
+	      int returnCode;
+	      const char * message = 
+		parameters_[iParam].setDoubleParameterWithMessage(lpSolver,value,returnCode);
+	      if (!noPrinting_&&strlen(message)) {
+		generalMessageHandler->message(CLP_GENERAL,generalMessages)
+		  << message
+		  <<CoinMessageEol;
+	      }
 	    } else if (type<81) {
-	      parameters_[iParam].setDoubleParameter(model_,value);
+	      int returnCode;
+	      const char * message = 
+		parameters_[iParam].setDoubleParameterWithMessage(model_,value,returnCode);
+	      if (!noPrinting_&&strlen(message)) {
+		generalMessageHandler->message(CLP_GENERAL,generalMessages)
+		  << message
+		  <<CoinMessageEol;
+	      }
 	    } else {
-	      parameters_[iParam].setDoubleParameter(lpSolver,value);
+	      int returnCode;
+	      const char * message = 
+		parameters_[iParam].setDoubleParameterWithMessage(lpSolver,value,returnCode);
+	      if (!noPrinting_&&strlen(message)) {
+		generalMessageHandler->message(CLP_GENERAL,generalMessages)
+		  << message
+		  <<CoinMessageEol;
+	      }
 	      switch(type) {
 	      case DJFIX:
 		djFix=value;
@@ -4312,7 +4333,14 @@ int
 		useSolution = value;
 	      else if (parameters_[iParam].type()==VERBOSE)
 		verbose = value;
-              parameters_[iParam].setIntParameter(lpSolver,value);
+	      int returnCode;
+	      const char * message = 
+		parameters_[iParam].setIntParameterWithMessage(lpSolver,value,returnCode);
+	      if (!noPrinting_&&strlen(message)) {
+		generalMessageHandler->message(CLP_GENERAL,generalMessages)
+		  << message
+		  <<CoinMessageEol;
+	      }
 	    } else {
 	      if (parameters_[iParam].type()==CUTPASS)
 		cutPass = value;
@@ -4321,7 +4349,14 @@ int
 	      else if (parameters_[iParam].type()==STRONGBRANCHING||
 		       parameters_[iParam].type()==NUMBERBEFORE)
 		strongChanged=true;
-	      parameters_[iParam].setIntParameter(model_,value);
+	      int returnCode;
+	      const char * message = 
+		parameters_[iParam].setIntParameterWithMessage(model_,value,returnCode);
+	      if (!noPrinting_&&strlen(message)) {
+		generalMessageHandler->message(CLP_GENERAL,generalMessages)
+		  << message
+		  <<CoinMessageEol;
+	      }
 	    }
 	  } else if (valid==1) {
 	    std::cout<<" is illegal for integer parameter "<<parameters_[iParam].name()<<" value remains "<<
@@ -4346,7 +4381,7 @@ int
 	  } else {
 	    const char * message = 
 	      parameters_[iParam].setCurrentOptionWithMessage(action);
-	    if (!noPrinting_) {
+	    if (!noPrinting_&&strlen(message)) {
 	      generalMessageHandler->message(CLP_GENERAL,generalMessages)
 		<< message
 		<<CoinMessageEol;

@@ -819,10 +819,10 @@ distclean-local:
 .PHONY: test unitTest
 
 install-exec-local: install-doc
-	$(install_sh_DATA) $(addlibsfile) $(addlibsdir)/$(addlibsfile)
+	$(install_sh_DATA) $(addlibsfile) $(DESTDIR)$(addlibsdir)/$(addlibsfile)
 
 uninstall-local: uninstall-doc
-	rm -f $(DESTDIR)$(libdir)/$(addlibsfile)
+	rm -f $(DESTDIR)$(addlibsdir)/$(addlibsfile)
 
 install-doc: $(DocFiles)
 	test -z "$(DocInstallDir)" || $(mkdir_p) "$(DESTDIR)$(DocInstallDir)"

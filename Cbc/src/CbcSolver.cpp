@@ -3540,6 +3540,9 @@ int
   int statistics_nrows=0, statistics_ncols=0;
   int statistics_nprocessedrows=0, statistics_nprocessedcols=0;
   std::string statistics_result;
+  int * statistics_number_cuts=NULL;
+  const char ** statistics_name_generators=NULL;
+  int statistics_number_generators=0;
   memset(statusUserFunction_,0,numberUserFunctions_*sizeof(int));
   /* Note
      This is meant as a stand-alone executable to do as much of coin as possible. 
@@ -7289,10 +7292,16 @@ int
 		  <<CoinMessageEol;
                 
 		numberGenerators = babModel_->numberCutGenerators();
+		statistics_number_cuts=new int [numberGenerators];;
+		statistics_number_generators=numberGenerators;
+		statistics_name_generators=new const char *[numberGenerators];
 		char timing[30];
                 for (iGenerator=0;iGenerator<numberGenerators;iGenerator++) {
                   CbcCutGenerator * generator = babModel_->cutGenerator(iGenerator);
 		  CglStored * stored = dynamic_cast<CglStored*>(generator->generator());
+		  statistics_name_generators[iGenerator]=
+		    generator->cutGeneratorName();
+		  statistics_number_cuts[iGenerator]=generator->numberCutsInTotal();
 		  if (stored&&!generator->numberCutsInTotal())
 		    continue;
 		  sprintf(generalPrint,"%s was tried %d times and created %d cuts of which %d were active after adding rounds of cuts",
@@ -8927,19 +8936,26 @@ clp watson.mps -\nscaling off\nprimalsimplex"
 	      if (fp) {
 		// can open - lets go for it
 		// first header if needed
-		if (state!=2) 
-		  fputs("Name,result,time,objective,continuous,tightened,cut_time,nodes,iterations,rows,columns,processed_rows,processed_columns\n",fp);
+		if (state!=2) {
+		  fprintf(fp,"Name,result,time,objective,continuous,tightened,cut_time,nodes,iterations,rows,columns,processed_rows,processed_columns");
+		  for (int i=0;i<statistics_number_generators;i++) 
+		    fprintf(fp,",%s",statistics_name_generators[i]);
+		  fprintf(fp,"\n");
+		}
 		strcpy(buffer,argv[1]);
 		char * slash=buffer;
 		for (int i=0;i<(int)strlen(buffer);i++) {
 		  if (buffer[i]=='/'||buffer[i]=='\\')
 		    slash=buffer+i+1;
 		}
-		fprintf(fp,"%s,%s,%.2f,%.16g,%g,%g,%.2f,%d,%d,%d,%d,%d,%d\n",
+		fprintf(fp,"%s,%s,%.2f,%.16g,%g,%g,%.2f,%d,%d,%d,%d,%d,%d",
 			slash,statistics_result.c_str(),statistics_seconds,statistics_obj,
 			statistics_continuous,statistics_tighter,statistics_cut_time,statistics_nodes,
 			statistics_iterations,statistics_nrows,statistics_ncols,
 			statistics_nprocessedrows,statistics_nprocessedcols);
+		for (int i=0;i<statistics_number_generators;i++) 
+		  fprintf(fp,",%d",statistics_number_cuts[i]);
+		fprintf(fp,"\n");
 		fclose(fp);
 	      } else {
 		std::cout<<"Unable to open file "<<fileName<<std::endl;

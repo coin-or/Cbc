@@ -4648,8 +4648,14 @@ CbcNode::way() const
   if (branch_) {
     CbcBranchingObject * obj =
       dynamic_cast <CbcBranchingObject *>(branch_) ;
-    assert (obj);
-    return obj->way();
+    if (obj) {
+      return obj->way();
+    } else {
+      OsiTwoWayBranchingObject * obj2 =
+      dynamic_cast <OsiTwoWayBranchingObject *>(branch_) ;
+      assert (obj2);
+      return obj2->way();
+    }
   } else {
     return 0;
   }

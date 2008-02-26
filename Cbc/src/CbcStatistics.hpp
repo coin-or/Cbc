@@ -12,7 +12,7 @@ public:
   // Default Constructor 
   CbcStatistics ();
   // Branch
-  CbcStatistics(CbcNode * node);
+  CbcStatistics(CbcNode * node, CbcModel * model);
 
   ~CbcStatistics();
   // Copy

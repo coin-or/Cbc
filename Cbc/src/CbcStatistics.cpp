@@ -43,7 +43,7 @@ CbcStatistics::CbcStatistics () :
 {
 }
 // First or second branch 
-CbcStatistics::CbcStatistics(CbcNode * node)
+CbcStatistics::CbcStatistics(CbcNode * node, CbcModel * model)
   :  endingObjective_(COIN_DBL_MAX),
      endingInfeasibility_(0),
      numberIterations_(0)
@@ -52,6 +52,7 @@ CbcStatistics::CbcStatistics(CbcNode * node)
   CbcNodeInfo * parent = nodeInfo->parent();
   int numberBranches = nodeInfo->numberBranchesLeft();
   const CbcBranchingObject * branch = dynamic_cast <const CbcBranchingObject *>(node->branchingObject());
+  const OsiTwoWayBranchingObject * branch2 = dynamic_cast <const OsiTwoWayBranchingObject *>(node->branchingObject());
   startingObjective_=node->objectiveValue();
   way_=node->way();
   depth_=node->depth();
@@ -60,8 +61,10 @@ CbcStatistics::CbcStatistics(CbcNode * node)
     sequence_=branch->variable();
     value_ = branch->value();
   } else {
-    sequence_=-1;
-    value_=0.0;
+    const OsiSimpleInteger * obj = dynamic_cast<const OsiSimpleInteger *>(branch2->originalObject());
+    assert (obj);
+    sequence_=obj->columnNumber();
+    value_=branch2->value();
   }
   if (parent)
     parentId_=parent->nodeNumber();
@@ -71,8 +74,6 @@ CbcStatistics::CbcStatistics(CbcNode * node)
     id_=nodeInfo->nodeNumber();
   } else {
     way_ *= 10;
-    assert (branch);
-    CbcModel * model = branch->model();
     id_=model->getNodeCount2();
   } 
 }

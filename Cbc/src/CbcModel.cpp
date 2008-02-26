@@ -2271,7 +2271,7 @@ void CbcModel::branchAndBound(int doStatistics)
             statistics_=temp;
           }
           assert (!statistics_[numberNodes2_]);
-          statistics_[numberNodes2_]=new CbcStatistics(node);
+          statistics_[numberNodes2_]=new CbcStatistics(node,this);
         }
         numberNodes2_++;
 	//nodeOnTree=true; // back on tree
@@ -2543,7 +2543,7 @@ void CbcModel::branchAndBound(int doStatistics)
                 statistics_=temp;
               }
               assert (!statistics_[numberNodes2_]);
-              statistics_[numberNodes2_]=new CbcStatistics(newNode);
+              statistics_[numberNodes2_]=new CbcStatistics(newNode,this);
             }
             numberNodes2_++;
 #	    ifdef CHECK_NODE

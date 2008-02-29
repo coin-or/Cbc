@@ -14,6 +14,51 @@ class OsiSolverInterface;
 class CbcModel;
 
 //#############################################################################
+
+/** A class describing the branching decisions that were made to get
+    to the node where a heuristics was invoked from */
+
+class CbcHeuristicNode {
+private::
+  /// The number of branching decisions made
+  int numObjects_;
+  /** The indices of the branching objects. Note: an index may be
+      listed multiple times. E.g., a general integer variable that has
+      been branched on multiple times. */
+  OsiBranchingObject** brObj_;
+public:
+  inline swap(CbcHeuristicNode& node) {
+    ::swap(numObjects_, node.numObjects_);
+    ::swap(objects_, node.objects_);
+    ::swap(bounds_, node.bounds_);
+  }
+};
+
+class CbcHeuristicNodeList {
+private:
+  std::vector<CbcHeuristicNode*> nodes_;
+public:
+  CbcHeuristicNodeList() {}
+  CbcHeuristicNodeList(const CbcHeuristicNodeList& rhs);
+  CbcHeuristicNodeList& operator=(const CbcHeuristicNodeList& rhs);
+  ~CbcHeuristicNodeList() {
+    for (int i = nodes_.size() - 1; i >= 0; --i) {
+      delete nodes_[i];
+    }
+  }
+
+  bool farFrom(const CbcHeuristicNode& node);
+  void append(CbcHeuristicNode*& node) {
+    nodes_.push_back(node);
+    node = NULL;
+  }
+  void append(CbcHeuristicNodeList& nodes) {
+    nodes_.insert(nodes_.end(), nodes.begin(), nodes.end());
+    nodes.clear();
+  }
+};
+
+//#############################################################################
 /** Heuristic base class */
 
 class CbcHeuristic {
@@ -47,7 +92,8 @@ public:
       This is called after cuts have been added - so can not add cuts
   */
   virtual int solution(double & objectiveValue,
-		       double * newSolution)=0;
+		       double * newSolution, 
+		       CbcHeuristicInfo* info = NULL)=0;
 
   /** returns 0 if no solution, 1 if valid solution, -1 if just
       returning an estimate of best possible solution
@@ -58,7 +104,8 @@ public:
   */
   virtual int solution(double & objectiveValue,
 		       double * newSolution,
-		       OsiCuts & cs) {return 0;}
+		       OsiCuts & cs,
+		       CbcHeuristicInfo* info = NULL) {return 0;}
 
   /// Validate model i.e. sets when_ to 0 if necessary (may be NULL)
   virtual void validate() {}
@@ -139,7 +186,18 @@ protected:
   CoinThreadRandom randomNumberGenerator_;
   /// Name for printing
   std::string heuristicName_;
-  
+  /// How often to do (code can change)
+  int howOften_;
+  /// How much to increase how often
+  double decayFactor_;
+  /// The description of the nodes where this heuristic has been applied
+  CbcHeuristicNode* runNodes_;
+#if 0
+  /// Lower bounds of last node where the heuristic found a solution
+  double * lowerBoundLastNode_;
+  /// Upper bounds of last node where the heuristic found a solution
+  double * upperBoundLastNode_;
+#endif
 };
 /** Rounding class
  */

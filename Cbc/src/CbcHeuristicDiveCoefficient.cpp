@@ -33,6 +33,7 @@ CbcHeuristicDiveCoefficient::CbcHeuristicDiveCoefficient(CbcModel & model)
   const CoinPackedMatrix * matrix = model.solver()->getMatrixByCol();
   if (matrix) {
     matrix_ = *matrix;
+    validate();
   }
   percentageToFix_ = 0.2;
   maxIterations_ = 100;
@@ -142,11 +143,31 @@ int
 CbcHeuristicDiveCoefficient::solution(double & solutionValue,
 				     double * betterSolution)
 {
+  if (model_->getCurrentPassNumber() != 1) {
+    return NULL;
+  }
+  
+  const int nodeCount = model_->getNodeCount();  // FIXME: check that this is correct in parallel
+  CbcHeuristicNode* nodeDesc = NULL;
+  if (nodeCount != 0) {
+    if (nodeCount - lastRun_ < howOften_) {
+      return NULL;
+    }
 
+    // Get where we are and create the appropriate CbcHeuristicNode object
+    nodeDesc = new CbcHeuristicNode(model_);
+    if (!nodes_.farFrom(nodeDesc)) {
+      delete nodeDesc;
+      return NULL;
+    }
+  }
+
+#if 0
   // See if to do
   if (!when()||(when()%10==1&&model_->phase()!=1)||
       (when()%10==2&&(model_->phase()!=2&&model_->phase()!=3)))
     return 0; // switched off
+#endif
 
   double time1 = CoinCpuTime();
 
@@ -365,6 +386,11 @@ CbcHeuristicDiveCoefficient::solution(double & solutionValue,
 
   }
 
+  bool updateHowOften = false;
+  // Good question when... every time the heur was run? every time it
+  // has found a solution? every time it has found a better solution?
+  // for now update every time
+  updateHowOften = true;
 
   double * rowActivity = new double[numberRows];
   memset(rowActivity,0,numberRows*sizeof(double));
@@ -416,11 +442,15 @@ CbcHeuristicDiveCoefficient::solution(double & solutionValue,
       solutionValue = newSolutionValue;
       //printf("** Solution of %g found by CbcHeuristicDiveCoefficient\n",newSolutionValue);
       returnCode=1;
-    } else {
-      // Can easily happen
-      //printf("Debug CbcHeuristicDiveCoefficient giving bad solution\n");
+
+      setCurrentNode(model_->solver());
     }
   }
+
+  if (updateHowOften) {
+    howOften_ += (int) (howOften_*decayFactor_);
+  }
+    
 
   delete [] newSolution;
   delete [] columnFixed;
@@ -428,6 +458,7 @@ CbcHeuristicDiveCoefficient::solution(double & solutionValue,
   delete [] fixedAtLowerBound;
   delete [] rowActivity;
   delete solver;
+  delete nodeDesc;
   return returnCode;
 }
 

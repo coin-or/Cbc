@@ -30,7 +30,9 @@ CbcHeuristic::CbcHeuristic()
    numberNodes_(200),
    feasibilityPumpOptions_(-1),
    fractionSmall_(1.0),
-   heuristicName_("Unknown")
+   heuristicName_("Unknown"),
+   howOften_(100),
+   decayFactor_(0.5)
 {
   // As CbcHeuristic virtual need to modify .cpp if above change
 }
@@ -43,10 +45,11 @@ CbcHeuristic::CbcHeuristic(CbcModel & model)
   numberNodes_(200),
   feasibilityPumpOptions_(-1),
   fractionSmall_(1.0),
-  heuristicName_("Unknown")
-{
-  // As CbcHeuristic virtual need to modify .cpp if above change
-}
+  heuristicName_("Unknown"),
+  howOften_(100),
+  decayFactor_(0.5)
+{}
+
 // Copy constructor 
 CbcHeuristic::CbcHeuristic(const CbcHeuristic & rhs)
 :
@@ -56,9 +59,12 @@ CbcHeuristic::CbcHeuristic(const CbcHeuristic & rhs)
   feasibilityPumpOptions_(rhs.feasibilityPumpOptions_),
   fractionSmall_(rhs.fractionSmall_),
   randomNumberGenerator_(rhs.randomNumberGenerator_),
-  heuristicName_(rhs.heuristicName_)
-{
-}
+  heuristicName_(rhs.heuristicName_),
+  howOften_(rhs.howOften_),
+  decayFactor_(rhs.howOften_),
+  runNodes_(rhs.runNodes_)
+{}
+
 // Assignment operator 
 CbcHeuristic & 
 CbcHeuristic::operator=( const CbcHeuristic& rhs)
@@ -71,6 +77,9 @@ CbcHeuristic::operator=( const CbcHeuristic& rhs)
     fractionSmall_ = rhs.fractionSmall_;
     randomNumberGenerator_ = rhs.randomNumberGenerator_;
     heuristicName_ = rhs.heuristicName_ ;
+    howOften_ = rhs.howOften_;
+    decayFactor_ = rhs.howOften_;
+    runNodes_ = rhs.runNodes_;
   }
   return *this;
 }
@@ -80,7 +89,7 @@ void
 CbcHeuristic::resetModel(CbcModel * model)
 {
   model_=model;
-}
+  }
 // Set seed
 void
 CbcHeuristic::setSeed(int value)
@@ -458,6 +467,159 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver,int numberNodes,
 #endif
   return returnCode;
 }
+
+//#######################################################################################
+
+inline int compare3BranchingObjects(const OsiBranchingObject* br0,
+				    const OsiBranchingObject* br1)
+{
+  const int t0 = br0->type();
+  const int t1 = br1->type();
+  if (t0 < t1) {
+    return -1;
+  }
+  if (t0 > t1) {
+    return 1;
+  }
+  return br0->compareBaseObject(br1);
+}
+
+//=======================================================================================
+
+inline bool compareBranchingObjects(const OsiBranchingObject* br0,
+				    const OsiBranchingObject* br1)
+{
+  return compare3BranchingObjects(br0, br1) < 0;
+}
+
+//=======================================================================================
+
+CbcHeuristicNode::CbcHeuristicNode(CbcModel& model)
+{
+  CbcNode* node = model->currentNode();
+  int depth = node->depth();
+  numObjects_ = depth; //??
+  brObj_ = new int[numObjects_];
+  CbcNodeInfo* nodeInfo = node->nodeInfo();
+  int depth = 0;
+  while (nodeInfo) {
+    brObj_[depth++] = nodeInfo->branchingObject()->clone();
+    nodeInfo = nodeInfo->parent();
+  }
+  std::sort(brObj_, brObj_+depth, compareBranchingObjects);
+  cnt = 0;
+  OsiBranchingObject* br;
+  for (int i = 1; i < depth; ++i) {
+    if (compare3BranchingObjects(brObj_[cnt], brObj_[i]) == 0) {
+      int comp = brObj_[cnt]->compareBranchingObject(brObj_[i], &br);
+      switch (comp) {
+      case 0: // disjoint decisions
+	// should not happen! we are on a chain!
+	abort();
+      case 1: // brObj_[cnt] is a subset of brObj_[i]
+	delete brObj_[i];
+	break;
+      case 2: // brObj_[i] is a subset of brObj_[cnt]
+	delete brObj_[cnt];
+	brObj_[cnt] = brObj_[i];
+	break;
+      case 3: // overlap
+	delete brObj_[i];
+	delete brObj_[cnt];
+	brObj_[cnt] = br;
+	break;
+      }
+      continue;
+    } else {
+      brObj_[++cnt] = brObj_[i];
+    }
+  }
+  numObjects_ = cnt + 1;
+}
+
+//=======================================================================================
+
+double
+CbcHeuristicNode::distance(const CbcHeuristicNode* node) const 
+{
+  const double disjointWeight = 1;
+  const double overlapWeight = 0.2;
+  const double subsetWeight = 0.1;
+  int i = 0; 
+  int j = 0;
+  double dist = 0.0;
+  while( i < numObjects_ && j < node.numObjects_) {
+    const OsiBranchingObject* br0 = brObj_[i];
+    const OsiBranchingObject* br1 = node.brObj_[j];
+    const int brComp = compare3BranchingObjects(br0, br1);
+    switch (brcomp) {
+    case -1:
+      distance += subsetWeight;
+      ++i;
+      break;
+    case 1:
+      distance += subsetWeight;
+      ++j;
+      break;
+    case 0: 
+      {
+	const int comp = brObj_[cnt]->compareBranchingObject(brObj_[i], NULL);
+	switch (comp) {
+	case 0: // disjoint decisions
+	  distance += disjointWeight;
+	  break;
+	case 1: // subset one way or another
+	case 2:
+	  distance += subsetWeight;
+	  break;
+	case 3: // overlap
+	  distance += overlapWeight;
+	  break;
+	}
+      }
+      break;
+    }
+  }
+  distance += subsetWeight * (numObjects_ - i + node.numObjects_ - j);
+  return distance;
+}
+
+//=======================================================================================
+
+CbcHeuristicNode::~CbcHeuristicNode()
+{
+  for (int i = 0; i < numObjects_; ++i) {
+    delete brObj_[i];
+  }
+}
+
+//=======================================================================================
+
+bool
+CbcHeuristicNodeList::farFrom(const CbcHeuristicNode* node) 
+{
+  
+  
+  // Get Hamming distance to last node where a solution was found
+  double
+    CbcHeuristic::getHammingDistance(const OsiSolverInterface* solver) const
+  {
+    double hammingDistance = 0.0;
+    int numberIntegers = model_->numberIntegers();
+    const double * lower = solver->getColLower();
+    const double * upper = solver->getColUpper();
+    const int * integerVariable = model_->integerVariable();
+    for (int i=0; i<numberIntegers; i++) {
+      int iColumn = integerVariable[i];
+      if(lowerBoundLastNode_[i] != lower[iColumn] ||
+	 upperBoundLastNode_[i] != upper[iColumn])
+	hammingDistance += 1.0;
+    }
+    return hammingDistance;
+  }
+}
+
+//#######################################################################################
 
 // Default Constructor
 CbcRounding::CbcRounding() 

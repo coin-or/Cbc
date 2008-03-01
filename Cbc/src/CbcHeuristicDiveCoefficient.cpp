@@ -155,12 +155,17 @@ CbcHeuristicDiveCoefficient::solution(double & solutionValue,
     }
 
     // Get where we are and create the appropriate CbcHeuristicNode object
-    nodeDesc = new CbcHeuristicNode(model_);
-    if (!nodes_.farFrom(nodeDesc)) {
+    nodeDesc = new CbcHeuristicNode(*model_);
+    if (!runNodes_->farFrom(nodeDesc)) {
       delete nodeDesc;
       return NULL;
     }
   }
+
+  if(nodeDesc != NULL)
+    runNodes_->append(nodeDesc);
+  
+  lastRun_ = nodeCount;
 
 #if 0
   // See if to do
@@ -443,7 +448,7 @@ CbcHeuristicDiveCoefficient::solution(double & solutionValue,
       //printf("** Solution of %g found by CbcHeuristicDiveCoefficient\n",newSolutionValue);
       returnCode=1;
 
-      setCurrentNode(model_->solver());
+      //      setCurrentNode(model_->solver());
     }
   }
 

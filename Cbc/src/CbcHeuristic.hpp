@@ -8,6 +8,7 @@
 #include "CoinPackedMatrix.hpp"
 #include "OsiCuts.hpp"
 #include "CoinHelperFunctions.hpp"
+#include "OsiBranchingObject.hpp"
 
 class OsiSolverInterface;
 
@@ -19,7 +20,7 @@ class CbcModel;
     to the node where a heuristics was invoked from */
 
 class CbcHeuristicNode {
-private::
+private:
   /// The number of branching decisions made
   int numObjects_;
   /** The indices of the branching objects. Note: an index may be
@@ -27,11 +28,17 @@ private::
       been branched on multiple times. */
   OsiBranchingObject** brObj_;
 public:
+  CbcHeuristicNode() {}
+  CbcHeuristicNode(CbcModel& model);
+  ~CbcHeuristicNode();
+
+  double distance(const CbcHeuristicNode* node) const;
+#if 0
   inline swap(CbcHeuristicNode& node) {
     ::swap(numObjects_, node.numObjects_);
     ::swap(objects_, node.objects_);
-    ::swap(bounds_, node.bounds_);
   }
+#endif
 };
 
 class CbcHeuristicNodeList {
@@ -47,14 +54,14 @@ public:
     }
   }
 
-  bool farFrom(const CbcHeuristicNode& node);
+  bool farFrom(const CbcHeuristicNode* node);
   void append(CbcHeuristicNode*& node) {
     nodes_.push_back(node);
     node = NULL;
   }
   void append(CbcHeuristicNodeList& nodes) {
-    nodes_.insert(nodes_.end(), nodes.begin(), nodes.end());
-    nodes.clear();
+    nodes_.insert(nodes_.end(), nodes.nodes_.begin(), nodes.nodes_.end());
+    nodes.nodes_.clear();
   }
 };
 
@@ -92,8 +99,7 @@ public:
       This is called after cuts have been added - so can not add cuts
   */
   virtual int solution(double & objectiveValue,
-		       double * newSolution, 
-		       CbcHeuristicInfo* info = NULL)=0;
+		       double * newSolution)=0;
 
   /** returns 0 if no solution, 1 if valid solution, -1 if just
       returning an estimate of best possible solution
@@ -104,8 +110,7 @@ public:
   */
   virtual int solution(double & objectiveValue,
 		       double * newSolution,
-		       OsiCuts & cs,
-		       CbcHeuristicInfo* info = NULL) {return 0;}
+		       OsiCuts & cs) {return 0;}
 
   /// Validate model i.e. sets when_ to 0 if necessary (may be NULL)
   virtual void validate() {}
@@ -190,8 +195,10 @@ protected:
   int howOften_;
   /// How much to increase how often
   double decayFactor_;
+  /// Last node count where the heuristic was applied
+  int lastRun_;
   /// The description of the nodes where this heuristic has been applied
-  CbcHeuristicNode* runNodes_;
+  CbcHeuristicNodeList* runNodes_;
 #if 0
   /// Lower bounds of last node where the heuristic found a solution
   double * lowerBoundLastNode_;

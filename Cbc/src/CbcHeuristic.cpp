@@ -32,7 +32,9 @@ CbcHeuristic::CbcHeuristic()
    fractionSmall_(1.0),
    heuristicName_("Unknown"),
    howOften_(100),
-   decayFactor_(0.5)
+   decayFactor_(0.5),
+   lastRun_(0),
+   runNodes_(NULL)
 {
   // As CbcHeuristic virtual need to modify .cpp if above change
 }
@@ -47,7 +49,9 @@ CbcHeuristic::CbcHeuristic(CbcModel & model)
   fractionSmall_(1.0),
   heuristicName_("Unknown"),
   howOften_(100),
-  decayFactor_(0.5)
+  decayFactor_(0.5),
+  lastRun_(0),
+  runNodes_(NULL)
 {}
 
 // Copy constructor 
@@ -62,6 +66,7 @@ CbcHeuristic::CbcHeuristic(const CbcHeuristic & rhs)
   heuristicName_(rhs.heuristicName_),
   howOften_(rhs.howOften_),
   decayFactor_(rhs.howOften_),
+  lastRun_(rhs.lastRun_),
   runNodes_(rhs.runNodes_)
 {}
 
@@ -79,6 +84,7 @@ CbcHeuristic::operator=( const CbcHeuristic& rhs)
     heuristicName_ = rhs.heuristicName_ ;
     howOften_ = rhs.howOften_;
     decayFactor_ = rhs.howOften_;
+    lastRun_ = rhs.lastRun_;
     runNodes_ = rhs.runNodes_;
   }
   return *this;
@@ -496,18 +502,18 @@ inline bool compareBranchingObjects(const OsiBranchingObject* br0,
 
 CbcHeuristicNode::CbcHeuristicNode(CbcModel& model)
 {
-  CbcNode* node = model->currentNode();
+  CbcNode* node = model.currentNode();
   int depth = node->depth();
   numObjects_ = depth; //??
-  brObj_ = new int[numObjects_];
+  brObj_ = new OsiBranchingObject*[numObjects_];
   CbcNodeInfo* nodeInfo = node->nodeInfo();
-  int depth = 0;
+  depth = 0;
   while (nodeInfo) {
-    brObj_[depth++] = nodeInfo->branchingObject()->clone();
+    brObj_[depth++] = node->branchingObject()->clone();
     nodeInfo = nodeInfo->parent();
   }
   std::sort(brObj_, brObj_+depth, compareBranchingObjects);
-  cnt = 0;
+  int cnt = 0;
   OsiBranchingObject* br;
   for (int i = 1; i < depth; ++i) {
     if (compare3BranchingObjects(brObj_[cnt], brObj_[i]) == 0) {
@@ -547,12 +553,12 @@ CbcHeuristicNode::distance(const CbcHeuristicNode* node) const
   const double subsetWeight = 0.1;
   int i = 0; 
   int j = 0;
-  double dist = 0.0;
-  while( i < numObjects_ && j < node.numObjects_) {
+  double distance = 0.0;
+  while( i < numObjects_ && j < node->numObjects_) {
     const OsiBranchingObject* br0 = brObj_[i];
-    const OsiBranchingObject* br1 = node.brObj_[j];
+    const OsiBranchingObject* br1 = node->brObj_[j];
     const int brComp = compare3BranchingObjects(br0, br1);
-    switch (brcomp) {
+    switch (brComp) {
     case -1:
       distance += subsetWeight;
       ++i;
@@ -580,7 +586,7 @@ CbcHeuristicNode::distance(const CbcHeuristicNode* node) const
       break;
     }
   }
-  distance += subsetWeight * (numObjects_ - i + node.numObjects_ - j);
+  distance += subsetWeight * (numObjects_ - i + node->numObjects_ - j);
   return distance;
 }
 
@@ -591,6 +597,25 @@ CbcHeuristicNode::~CbcHeuristicNode()
   for (int i = 0; i < numObjects_; ++i) {
     delete brObj_[i];
   }
+  delete [] brObj_;
+}
+
+//=======================================================================================
+
+CbcHeuristicNodeList::CbcHeuristicNodeList(const CbcHeuristicNodeList& rhs)
+{
+  nodes_ = rhs.nodes_;
+}
+
+//=======================================================================================
+
+CbcHeuristicNodeList& 
+CbcHeuristicNodeList::operator=(const CbcHeuristicNodeList& rhs)
+{
+  if (this != &rhs)
+    nodes_ = rhs.nodes_;
+
+  return *this;
 }
 
 //=======================================================================================
@@ -598,25 +623,18 @@ CbcHeuristicNode::~CbcHeuristicNode()
 bool
 CbcHeuristicNodeList::farFrom(const CbcHeuristicNode* node) 
 {
-  
-  
-  // Get Hamming distance to last node where a solution was found
-  double
-    CbcHeuristic::getHammingDistance(const OsiSolverInterface* solver) const
-  {
-    double hammingDistance = 0.0;
-    int numberIntegers = model_->numberIntegers();
-    const double * lower = solver->getColLower();
-    const double * upper = solver->getColUpper();
-    const int * integerVariable = model_->integerVariable();
-    for (int i=0; i<numberIntegers; i++) {
-      int iColumn = integerVariable[i];
-      if(lowerBoundLastNode_[i] != lower[iColumn] ||
-	 upperBoundLastNode_[i] != upper[iColumn])
-	hammingDistance += 1.0;
-    }
-    return hammingDistance;
+  const double minDistance = 10.0;
+
+  double distance = 0.0;
+  for (int i = 0; i < (int) nodes_.size(); i++) {
+    if(nodes_[i] != NULL)
+      distance += nodes_[i]->distance(node);
   }
+  
+  if(distance > minDistance)
+    return true;
+
+  return false;
 }
 
 //#######################################################################################

@@ -16,59 +16,58 @@ class CbcModel;
 
 //#############################################################################
 
+class CbcHeuristicNodeList;
+class CbcBranchingObject;
+
 /** A class describing the branching decisions that were made to get
     to the node where a heuristics was invoked from */
 
 class CbcHeuristicNode {
+private:
+  CbcHeuristicNode();
+  CbcHeuristicNode& operator=(const CbcHeuristicNode&);
 private:
   /// The number of branching decisions made
   int numObjects_;
   /** The indices of the branching objects. Note: an index may be
       listed multiple times. E.g., a general integer variable that has
       been branched on multiple times. */
-  OsiBranchingObject** brObj_;
+  CbcBranchingObject** brObj_;
 public:
-  CbcHeuristicNode() {}
   CbcHeuristicNode(CbcModel& model);
+  CbcHeuristicNode(const CbcHeuristicNode& rhs);
   ~CbcHeuristicNode();
-
   double distance(const CbcHeuristicNode* node) const;
-#if 0
-  inline swap(CbcHeuristicNode& node) {
-    ::swap(numObjects_, node.numObjects_);
-    ::swap(objects_, node.objects_);
-  }
-#endif
+  double minDistance(const CbcHeuristicNodeList& nodeList);
+  double avgDistance(const CbcHeuristicNodeList& nodeList);
 };
 
 class CbcHeuristicNodeList {
+private:
+  void gutsOfDelete();
+  void gutsOfCopy(const CbcHeuristicNodeList& rhs);
 private:
   std::vector<CbcHeuristicNode*> nodes_;
 public:
   CbcHeuristicNodeList() {}
   CbcHeuristicNodeList(const CbcHeuristicNodeList& rhs);
   CbcHeuristicNodeList& operator=(const CbcHeuristicNodeList& rhs);
-  ~CbcHeuristicNodeList() {
-    for (int i = nodes_.size() - 1; i >= 0; --i) {
-      delete nodes_[i];
-    }
-  }
-
-  bool farFrom(const CbcHeuristicNode* node);
-  void append(CbcHeuristicNode*& node) {
-    nodes_.push_back(node);
-    node = NULL;
-  }
-  void append(CbcHeuristicNodeList& nodes) {
-    nodes_.insert(nodes_.end(), nodes.nodes_.begin(), nodes.nodes_.end());
-    nodes.nodes_.clear();
-  }
+  ~CbcHeuristicNodeList();
+  
+  void append(CbcHeuristicNode*& node);
+  void append(const CbcHeuristicNodeList& nodes);
+  inline const CbcHeuristicNode* node(int i) const { return nodes_[i]; }
+  inline int size() const { return nodes_.size(); }
 };
 
 //#############################################################################
 /** Heuristic base class */
 
 class CbcHeuristic {
+private:
+  void gutsOfDelete() {}
+  void gutsOfCopy(const CbcHeuristic & rhs);
+
 public:
   // Default Constructor 
   CbcHeuristic ();
@@ -175,6 +174,9 @@ public:
   /// Set random number generator seed
   void setSeed(int value);
 
+  /** Check whether the heuristic should run */
+  bool shouldHeurRun();
+
 protected:
 
   /// Model
@@ -191,14 +193,38 @@ protected:
   CoinThreadRandom randomNumberGenerator_;
   /// Name for printing
   std::string heuristicName_;
+
   /// How often to do (code can change)
   int howOften_;
   /// How much to increase how often
   double decayFactor_;
-  /// Last node count where the heuristic was applied
-  int lastRun_;
+  /** Upto this depth we call the tree shallow and the heuristic can be called
+      multiple times. That is, the test whether the current node is far from
+      the others where the jeuristic was invoked will not be done, only the
+      frequency will be tested. After that depth the heuristic will can be
+      invoked only once per node, right before branching. That's when it'll be
+      tested whether the heur should run at all. */
+  int shallowDepth_;
+  /** How often to invoke the heuristics in the shallow part of the tree */
+  int howOftenShallow_;
+  /** How many invocations happened within the same node when in a shallow
+      part of the tree. */
+  int numInvocationsInShallow_;
+  /** How many invocations happened when in the deep part of the tree. For
+      every node we count only one invocation. */
+  int numInvocationsInDeep_;
+  /** After how many deep invocations was the heuristic run last time */
+  int lastRunDeep_;
+  /// how many times the heuristic has actually run
+  int numRuns_;
+  /** How "far" should this node be from every other where the heuristic was
+      run in order to allow the heuristic to run in this node, too. Currently
+      this is tested, but we may switch to avgDistanceToRun_ in the future. */
+  int minDistanceToRun_;
+
   /// The description of the nodes where this heuristic has been applied
-  CbcHeuristicNodeList* runNodes_;
+  CbcHeuristicNodeList runNodes_;
+
 #if 0
   /// Lower bounds of last node where the heuristic found a solution
   double * lowerBoundLastNode_;

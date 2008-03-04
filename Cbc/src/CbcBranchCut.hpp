@@ -147,6 +147,20 @@ public:
   */
   virtual bool boundBranch() const;
 
+  /** Return the type (an integer identifier) of \c this */
+  virtual int type() const { return 200; }
+
+  /** Compare the \c this with \c brObj. \c this and \c brObj must be os the
+      same type and must have the same original object, but they may have
+      different feasible regions.
+      Return the appropriate CbcRangeCompare value (first argument being the
+      sub/superset if that's the case). In case of overlap (and if \c
+      replaceIfOverlap is true) replace the current branching object with one
+      whose feasible region is the overlap.
+   */
+  virtual CbcRangeCompare compareBranchingObject
+  (const CbcBranchingObject* brObj, const bool replaceIfOverlap = false);
+
 protected:
   /// Cut for the down arm (way_ = -1)
   OsiRowCut down_;

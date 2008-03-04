@@ -141,31 +141,11 @@ CbcHeuristicDiveCoefficient::resetModel(CbcModel * model)
 // Returns 1 if solution, 0 if not
 int
 CbcHeuristicDiveCoefficient::solution(double & solutionValue,
-				     double * betterSolution)
+				      double * betterSolution)
 {
-  if (model_->getCurrentPassNumber() != 1) {
-    return NULL;
+  if (! shouldHeurRun()) {
+    return 0;
   }
-  
-  const int nodeCount = model_->getNodeCount();  // FIXME: check that this is correct in parallel
-  CbcHeuristicNode* nodeDesc = NULL;
-  if (nodeCount != 0) {
-    if (nodeCount - lastRun_ < howOften_) {
-      return NULL;
-    }
-
-    // Get where we are and create the appropriate CbcHeuristicNode object
-    nodeDesc = new CbcHeuristicNode(*model_);
-    if (!runNodes_->farFrom(nodeDesc)) {
-      delete nodeDesc;
-      return NULL;
-    }
-  }
-
-  if(nodeDesc != NULL)
-    runNodes_->append(nodeDesc);
-  
-  lastRun_ = nodeCount;
 
 #if 0
   // See if to do
@@ -463,7 +443,6 @@ CbcHeuristicDiveCoefficient::solution(double & solutionValue,
   delete [] fixedAtLowerBound;
   delete [] rowActivity;
   delete solver;
-  delete nodeDesc;
   return returnCode;
 }
 

@@ -18,6 +18,16 @@ class CbcObjectUpdateData;
 
 //#############################################################################
 
+enum CbcRangeCompare {
+  CbcRangeSame,
+  CbcRangeDisjoint,
+  CbcRangeSubset,
+  CbcRangeSuperset,
+  CbcRangeOverlap
+};
+
+//#############################################################################
+
 /** Abstract base class for `objects'.
     It now just has stuff that OsiObject does not have
 
@@ -348,6 +358,35 @@ public:
   inline void setOriginalObject(CbcObject * object)
   {originalCbcObject_=object;}
 
+  // Methods used in heuristics
+  
+  /** Return the type (an integer identifier) of \c this */
+  virtual int type() const = 0;
+
+  /** Compare the original object of \c this with the original object of \c
+      brObj. Assumes that there is an ordering of the original objects.
+      This method should be invoked only if \c this and brObj are of the same
+      type. 
+      Return negative/0/positive depending on whether \c this is
+      smaller/same/larger than the argument.
+  */
+  virtual int compareOriginalObject(const CbcBranchingObject* brObj) const
+  {
+    const CbcBranchingObject* br=dynamic_cast<const CbcBranchingObject*>(brObj);
+    return variable() - br->variable();
+  }
+
+  /** Compare the \c this with \c brObj. \c this and \c brObj must be os the
+      same type and must have the same original object, but they may have
+      different feasible regions.
+      Return the appropriate CbcRangeCompare value (first argument being the
+      sub/superset if that's the case). In case of overlap (and if \c
+      replaceIfOverlap is true) replace the current branching object with one
+      whose feasible region is the overlap.
+   */
+  virtual CbcRangeCompare compareBranchingObject
+  (const CbcBranchingObject* brObj, const bool replaceIfOverlap = false) = 0;
+
 protected:
 
   /// The model that owns this branching object
@@ -553,5 +592,7 @@ public:
   double cutoff_;
 
 };
+
+//#############################################################################
 
 #endif

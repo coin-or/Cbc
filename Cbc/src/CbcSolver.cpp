@@ -8940,6 +8940,7 @@ clp watson.mps -\nscaling off\nprimalsimplex"
 		  fprintf(fp,"Name,result,time,objective,continuous,tightened,cut_time,nodes,iterations,rows,columns,processed_rows,processed_columns");
 		  for (int i=0;i<statistics_number_generators;i++) 
 		    fprintf(fp,",%s",statistics_name_generators[i]);
+		  fprintf(fp,",runtime_options");
 		  fprintf(fp,"\n");
 		}
 		strcpy(buffer,argv[1]);
@@ -8955,6 +8956,14 @@ clp watson.mps -\nscaling off\nprimalsimplex"
 			statistics_nprocessedrows,statistics_nprocessedcols);
 		for (int i=0;i<statistics_number_generators;i++) 
 		  fprintf(fp,",%d",statistics_number_cuts[i]);
+		fprintf(fp,",");
+		for (int i=1;i<argc;i++) {
+		  if (strstr(argv[i],".gz")||strstr(argv[i],".mps"))
+		    continue;
+		  if (!argv[i]||!strncmp(argv[i],"-csv",4))
+		    break;
+		  fprintf(fp,"%s ",argv[i]);
+		}
 		fprintf(fp,"\n");
 		fclose(fp);
 	      } else {

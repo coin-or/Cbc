@@ -780,9 +780,12 @@ CbcSimpleIntegerDynamicPseudoCost::infeasibility(int & preferredWay) const
     }
 #ifdef CBC_INSTRUMENT
     int nn = numberTimesInfeasible_  - CoinMax(numberTimesUp_,numberTimesDown_);
-    assert (nn>=0);
-    if (nn)
+    if (nn<0) {
+      // Something to do with parallel synchronization
+      numberTimesInfeasible_  = CoinMax(numberTimesUp_,numberTimesDown_);
+    } else if (nn) {
       returnValue *= sqrt((double) nn);
+    }
 #endif
 #ifdef COIN_DEVELOP
     History hist;

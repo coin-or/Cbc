@@ -150,6 +150,15 @@ public:
   /** Return the type (an integer identifier) of \c this */
   virtual int type() const { return 200; }
 
+  /** Compare the original object of \c this with the original object of \c
+      brObj. Assumes that there is an ordering of the original objects.
+      This method should be invoked only if \c this and brObj are of the same
+      type. 
+      Return negative/0/positive depending on whether \c this is
+      smaller/same/larger than the argument.
+  */
+  virtual int compareOriginalObject(const CbcBranchingObject* brObj) const;
+
   /** Compare the \c this with \c brObj. \c this and \c brObj must be os the
       same type and must have the same original object, but they may have
       different feasible regions.

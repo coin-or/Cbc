@@ -204,6 +204,9 @@ public:
   /** Return the type (an integer identifier) of \c this */
   virtual int type() const { return 300; }
 
+  // LL: compareOriginalObject can be inherited from the CbcBranchingObject
+  // since variable_ uniquely defines the lot sizing object.
+
   /** Compare the \c this with \c brObj. \c this and \c brObj must be os the
       same type and must have the same original object, but they may have
       different feasible regions.

@@ -396,16 +396,11 @@ public:
   /** Return the type (an integer identifier) of \c this */
   virtual int type() const { return 400; }
 
-  /** Compare the \c this with \c brObj. \c this and \c brObj must be os the
-      same type and must have the same original object, but they may have
-      different feasible regions.
-      Return the appropriate CbcRangeCompare value (first argument being the
-      sub/superset if that's the case). In case of overlap (and if \c
-      replaceIfOverlap is true) replace the current branching object with one
-      whose feasible region is the overlap.
-   */
-  virtual CbcRangeCompare compareBranchingObject
-  (const CbcBranchingObject* brObj, const bool replaceIfOverlap = false);
+  // LL: compareOriginalObject and compareBranchingObject are inherited from
+  // CbcIntegerBranchingObject thus need not be declared/defined here. After
+  // all, this kind of branching object is simply using pseudocosts to make
+  // decisions, but once the decisions are made they are the same kind as in
+  // the underlying class.
 
 protected:
   /// Change in guessed objective value for next branch

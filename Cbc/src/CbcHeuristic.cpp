@@ -641,7 +641,7 @@ CbcHeuristicNode::CbcHeuristicNode(CbcModel& model)
   brObj_ = new CbcBranchingObject*[numObjects_];
   CbcNodeInfo* nodeInfo = node->nodeInfo();
   depth = 0;
-  while (nodeInfo) {
+  while (nodeInfo->owner() != NULL) {
     const OsiBranchingObject* osibr =
       nodeInfo->owner()->branchingObject();
     const CbcBranchingObject* cbcbr =
@@ -657,17 +657,18 @@ CbcHeuristicNode::CbcHeuristicNode(CbcModel& model)
     if (compare3BranchingObjects(brObj_[cnt], brObj_[i]) == 0) {
       int comp = brObj_[cnt]->compareBranchingObject(brObj_[i], &br);
       switch (comp) {
-      case 0: // disjoint decisions
+      case CbcRangeSame: // the same range
+      case CbcRangeDisjoint: // disjoint decisions
 	// should not happen! we are on a chain!
 	abort();
-      case 1: // brObj_[cnt] is a subset of brObj_[i]
+      case CbcRangeSubset: // brObj_[cnt] is a subset of brObj_[i]
 	delete brObj_[i];
 	break;
-      case 2: // brObj_[i] is a subset of brObj_[cnt]
+      case CbcRangeSuperset: // brObj_[i] is a subset of brObj_[cnt]
 	delete brObj_[cnt];
 	brObj_[cnt] = brObj_[i];
 	break;
-      case 3: // overlap
+      case CbcRangeOverlap: // overlap
 	delete brObj_[i];
 	delete brObj_[cnt];
 	brObj_[cnt] = br;
@@ -696,32 +697,33 @@ CbcHeuristicNode::distance(const CbcHeuristicNode* node) const
     CbcBranchingObject* br0 = brObj_[i];
     const CbcBranchingObject* br1 = node->brObj_[j];
     const int brComp = compare3BranchingObjects(br0, br1);
-    switch (brComp) {
-    case -1:
+    if (brComp < 0) {
       dist += subsetWeight;
       ++i;
-      break;
-    case 1:
+    }
+    else if (brComp > 0) {
       dist += subsetWeight;
       ++j;
-      break;
-    case 0: 
-      {
-	const int comp = br0->compareBranchingObject(br1, false);
-	switch (comp) {
-	case 0: // disjoint decisions
-	  dist += disjointWeight;
-	  break;
-	case 1: // subset one way or another
-	case 2:
-	  dist += subsetWeight;
-	  break;
-	case 3: // overlap
-	  dist += overlapWeight;
-	  break;
-	}
+    }
+    else {
+      const int comp = br0->compareBranchingObject(br1, false);
+      switch (comp) {
+      case CbcRangeSame:
+	// do nothing
+	break;
+      case CbcRangeDisjoint: // disjoint decisions
+	dist += disjointWeight;
+	break;
+      case CbcRangeSubset: // subset one way or another
+      case CbcRangeSuperset:
+	dist += subsetWeight;
+	break;
+      case CbcRangeOverlap: // overlap
+	dist += overlapWeight;
+	break;
       }
-      break;
+      ++i;
+      ++j;
     }
   }
   dist += subsetWeight * (numObjects_ - i + node->numObjects_ - j);

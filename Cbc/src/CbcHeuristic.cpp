@@ -633,7 +633,8 @@ inline bool compareBranchingObjects(const CbcBranchingObject* br0,
 
 //==============================================================================
 
-CbcHeuristicNode::CbcHeuristicNode(CbcModel& model)
+void
+CbcHeuristicNode::gutsOfConstructor(CbcModel& model)
 {
   CbcNode* node = model.currentNode();
   int depth = node->depth();
@@ -680,6 +681,13 @@ CbcHeuristicNode::CbcHeuristicNode(CbcModel& model)
     }
   }
   numObjects_ = cnt + 1;
+}
+
+//==============================================================================
+
+CbcHeuristicNode::CbcHeuristicNode(CbcModel& model)
+{
+  gutsOfConstructor(model);
 }
 
 //==============================================================================

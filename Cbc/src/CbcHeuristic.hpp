@@ -24,6 +24,7 @@ class CbcBranchingObject;
 
 class CbcHeuristicNode {
 private:
+  void gutsOfConstructor(CbcModel& model);
   CbcHeuristicNode();
   CbcHeuristicNode& operator=(const CbcHeuristicNode&);
 private:

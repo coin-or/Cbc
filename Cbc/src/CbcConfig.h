@@ -18,6 +18,7 @@
  */
 
 #ifndef __CBCCONFIG_H__
+#define __CBCCONFIG_H__
 
 #ifdef HAVE_CONFIG_H
 #include "config_cbc.h"

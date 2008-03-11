@@ -177,6 +177,7 @@ public:
 
   /** Check whether the heuristic should run */
   bool shouldHeurRun();
+  void debugNodes();
 
 protected:
 

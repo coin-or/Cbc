@@ -22,7 +22,7 @@
 #include "CglPreProcess.hpp"
 #include "OsiAuxInfo.hpp"
 #include "OsiPresolve.hpp"
-
+#include "CbcBranchActual.hpp"
 //==============================================================================
 
 CbcHeuristicNode::CbcHeuristicNode(const CbcHeuristicNode& rhs)
@@ -95,7 +95,7 @@ CbcHeuristic::CbcHeuristic() :
   feasibilityPumpOptions_(-1),
   fractionSmall_(1.0),
   heuristicName_("Unknown"),
-  howOften_(100),
+  howOften_(2),
   decayFactor_(0.5),
   shallowDepth_(0),
   howOftenShallow_(100),
@@ -117,7 +117,7 @@ CbcHeuristic::CbcHeuristic(CbcModel & model) :
   feasibilityPumpOptions_(-1),
   fractionSmall_(1.0),
   heuristicName_("Unknown"),
-  howOften_(100),
+  howOften_(2),
   decayFactor_(0.5),
   shallowDepth_(0),
   howOftenShallow_(100),
@@ -167,13 +167,50 @@ CbcHeuristic::operator=( const CbcHeuristic& rhs)
   return *this;
 }
 
+void
+CbcHeuristic::debugNodes()
+{
+  CbcNode* node = model_->currentNode();
+  CbcNodeInfo* nodeInfo = node->nodeInfo();
+  while (nodeInfo->owner() != NULL) {
+    const CbcNode* node = nodeInfo->owner();
+    int depth = node->depth();
+    int nodeNumber = node->nodeNumber();
+    bool onTree = node->onTree();
+    bool active = node->active();
+    std::cout<<"nodeNumber= "<<nodeNumber
+	     <<", depth= "<<depth
+	     <<", onTree= "<<onTree
+	     <<", active= "<<active<<std::endl;
+    const OsiBranchingObject* osibr =
+      nodeInfo->owner()->branchingObject();
+    const CbcBranchingObject* cbcbr =
+      dynamic_cast<const CbcBranchingObject*>(osibr);
+    assert(cbcbr);
+    const CbcIntegerBranchingObject* brPrint =
+      dynamic_cast<const CbcIntegerBranchingObject*>(cbcbr);
+    const double* downBounds = brPrint->downBounds();
+    const double* upBounds = brPrint->upBounds();
+    int variable = brPrint->variable();
+    int way = brPrint->way();
+    std::cout<<"downBounds= ["<<downBounds[0]<<","<<downBounds[1]<<"]"
+	     <<", upBounds= ["<<upBounds[0]<<","<<upBounds[1]<<"]"
+	     <<", variable= "<<variable
+	     <<", way= "<<way<<std::endl;
+    nodeInfo = nodeInfo->parent();
+  }
+}
+
 bool
 CbcHeuristic::shouldHeurRun()
 {
+
   const CbcNode* currentNode = model_->currentNode();
   if (currentNode == NULL) {
     return false;
   }
+
+  debugNodes();
 
   const int depth = currentNode->depth();
 
@@ -211,6 +248,7 @@ CbcHeuristic::shouldHeurRun()
     }
     // Get where we are and create the appropriate CbcHeuristicNode object
     CbcHeuristicNode* nodeDesc = new CbcHeuristicNode(*model_);
+    std::cout<<"minDistance = "<<nodeDesc->minDistance(runNodes_)<<std::endl;
     if (nodeDesc->minDistance(runNodes_) < minDistanceToRun_) {
       delete nodeDesc;
       return false;
@@ -643,11 +681,17 @@ CbcHeuristicNode::gutsOfConstructor(CbcModel& model)
   CbcNodeInfo* nodeInfo = node->nodeInfo();
   depth = 0;
   while (nodeInfo->owner() != NULL) {
+#if 0
+    const OsiBranchingObject* osibr = nodeInfo->parentBranchingObject();
+#else
     const OsiBranchingObject* osibr =
       nodeInfo->owner()->branchingObject();
+#endif
     const CbcBranchingObject* cbcbr =
       dynamic_cast<const CbcBranchingObject*>(osibr);
     assert(cbcbr);
+    const CbcIntegerBranchingObject* brPrint =
+      dynamic_cast<const CbcIntegerBranchingObject*>(cbcbr);
     brObj_[depth++] = cbcbr->clone();
     nodeInfo = nodeInfo->parent();
   }

@@ -228,6 +228,10 @@ public:
   /// Unmark
   inline void unmark()
   { active_ &= ~8;}
+
+  /// Branching object for the parent
+  inline const OsiBranchingObject * parentBranchingObject() const
+  { return branch_;}
 protected:
 
   /** Number of other nodes pointing to this node.
@@ -271,6 +275,9 @@ protected:
       4 - basis!
   */
   int active_;
+
+  /// Copy of the branching object of the parent when the node is created
+  OsiBranchingObject * branch_;
       
 private:
   
@@ -634,7 +641,7 @@ public:
   /// Set branching object for this node (takes ownership)
   inline void setBranchingObject(OsiBranchingObject * branchingObject)
   { branch_ = branchingObject;}
-  /// The node number
+  /// The node number  
   inline int nodeNumber() const
   { return nodeNumber_;}
   inline void setNodeNumber(int node)

@@ -51,7 +51,8 @@ CbcNodeInfo::CbcNodeInfo ()
   cuts_(NULL),
   numberRows_(0),
   numberBranchesLeft_(0),
-  active_(7)
+  active_(7),
+  branch_(NULL)
 {
 #ifdef CHECK_NODE
   printf("CbcNodeInfo %x Constructor\n",this);
@@ -76,6 +77,9 @@ CbcNodeInfo::CbcNodeInfo (CbcNodeInfo * parent)
   if (parent_) {
     numberRows_ = parent_->numberRows_+parent_->numberCuts_;
     //parent_->increment();
+#if 0
+    branch_ = parent_->owner()->branchingObject()->clone();
+#endif
   }
 }
 // Copy Constructor 
@@ -89,7 +93,8 @@ CbcNodeInfo::CbcNodeInfo (const CbcNodeInfo & rhs)
   cuts_(NULL),
   numberRows_(rhs.numberRows_),
   numberBranchesLeft_(rhs.numberBranchesLeft_),
-  active_(rhs.active_)
+  active_(rhs.active_),
+  branch_(rhs.branch_)
 {
 #ifdef CHECK_NODE
   printf("CbcNodeInfo %x Copy constructor\n",this);
@@ -127,6 +132,9 @@ CbcNodeInfo::CbcNodeInfo (CbcNodeInfo * parent, CbcNode * owner)
 #endif
   if (parent_) {
     numberRows_ = parent_->numberRows_+parent_->numberCuts_;
+#if 0
+    branch_ = parent_->owner()->branchingObject()->clone();
+#endif
   }
 }
 

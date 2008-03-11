@@ -45,24 +45,41 @@ CbcNodeInfo::CbcNodeInfo ()
   :
   numberPointingToThis_(0),
   parent_(NULL),
+  parentBranch_(NULL),
   owner_(NULL),
   numberCuts_(0),
   nodeNumber_(0),
   cuts_(NULL),
   numberRows_(0),
   numberBranchesLeft_(0),
-  active_(7),
-  branch_(NULL)
+  active_(7)
 {
 #ifdef CHECK_NODE
   printf("CbcNodeInfo %x Constructor\n",this);
 #endif
 }
+
+void
+CbcNodeInfo::setParentBasedData()
+{
+  if (parent_) {
+    numberRows_ = parent_->numberRows_+parent_->numberCuts_;
+    //parent_->increment();
+    if (parent_->owner()) {
+      const OsiBranchingObject* br = parent_->owner()->branchingObject();
+      const CbcBranchingObject* cbcbr = dynamic_cast<const CbcBranchingObject*>(br);
+      assert(cbcbr);
+      parentBranch_ = cbcbr->clone();
+    }
+  }
+}
+
 // Constructor given parent
 CbcNodeInfo::CbcNodeInfo (CbcNodeInfo * parent)
   :
   numberPointingToThis_(2),
   parent_(parent),
+  parentBranch_(NULL),
   owner_(NULL),
   numberCuts_(0),
   nodeNumber_(0),
@@ -74,27 +91,21 @@ CbcNodeInfo::CbcNodeInfo (CbcNodeInfo * parent)
 #ifdef CHECK_NODE
   printf("CbcNodeInfo %x Constructor from parent %x\n",this,parent_);
 #endif
-  if (parent_) {
-    numberRows_ = parent_->numberRows_+parent_->numberCuts_;
-    //parent_->increment();
-#if 0
-    branch_ = parent_->owner()->branchingObject()->clone();
-#endif
-  }
+  setParentBasedData();
 }
 // Copy Constructor 
 CbcNodeInfo::CbcNodeInfo (const CbcNodeInfo & rhs)
   :
   numberPointingToThis_(rhs.numberPointingToThis_),
   parent_(rhs.parent_),
+  parentBranch_(NULL),
   owner_(rhs.owner_),
   numberCuts_(rhs.numberCuts_),
   nodeNumber_(rhs.nodeNumber_),
   cuts_(NULL),
   numberRows_(rhs.numberRows_),
   numberBranchesLeft_(rhs.numberBranchesLeft_),
-  active_(rhs.active_),
-  branch_(rhs.branch_)
+  active_(rhs.active_)
 {
 #ifdef CHECK_NODE
   printf("CbcNodeInfo %x Copy constructor\n",this);
@@ -113,12 +124,16 @@ CbcNodeInfo::CbcNodeInfo (const CbcNodeInfo & rhs)
     }
     numberCuts_=n;
   }
+  if (rhs.parentBranch_) {
+    parentBranch_ = rhs.parentBranch_->clone();
+  }
 }
 // Constructor given parent and owner
 CbcNodeInfo::CbcNodeInfo (CbcNodeInfo * parent, CbcNode * owner)
   :
   numberPointingToThis_(2),
   parent_(parent),
+  parentBranch_(NULL),
   owner_(owner),
   numberCuts_(0),
   nodeNumber_(0),
@@ -130,12 +145,7 @@ CbcNodeInfo::CbcNodeInfo (CbcNodeInfo * parent, CbcNode * owner)
 #ifdef CHECK_NODE
   printf("CbcNodeInfo %x Constructor from parent %x\n",this,parent_);
 #endif
-  if (parent_) {
-    numberRows_ = parent_->numberRows_+parent_->numberCuts_;
-#if 0
-    branch_ = parent_->owner()->branchingObject()->clone();
-#endif
-  }
+  setParentBasedData();
 }
 
 /**

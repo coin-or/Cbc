@@ -230,8 +230,8 @@ public:
   { active_ &= ~8;}
 
   /// Branching object for the parent
-  inline const OsiBranchingObject * parentBranchingObject() const
-  { return branch_;}
+  inline const CbcBranchingObject * parentBranch() const
+  { return parentBranch_;}
 protected:
 
   /** Number of other nodes pointing to this node.
@@ -246,6 +246,9 @@ protected:
   /// parent
   CbcNodeInfo * parent_;
 
+  /// Copy of the branching object of the parent when the node is created
+  CbcBranchingObject * parentBranch_;
+      
   /// Owner
   CbcNode * owner_;
 
@@ -276,14 +279,13 @@ protected:
   */
   int active_;
 
-  /// Copy of the branching object of the parent when the node is created
-  OsiBranchingObject * branch_;
-      
 private:
   
   /// Illegal Assignment operator 
   CbcNodeInfo & operator=(const CbcNodeInfo& rhs);
-  
+
+  /// routine common to constructors 
+  void setParentBasedData();
 };
 
 /** \brief Holds complete information for recreating a subproblem.

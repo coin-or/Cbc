@@ -95,10 +95,10 @@ CbcHeuristic::CbcHeuristic() :
   feasibilityPumpOptions_(-1),
   fractionSmall_(1.0),
   heuristicName_("Unknown"),
-  howOften_(2),
+  howOften_(1),
   decayFactor_(0.5),
   shallowDepth_(0),
-  howOftenShallow_(100),
+  howOftenShallow_(1),
   numInvocationsInShallow_(0),
   numInvocationsInDeep_(0),
   lastRunDeep_(0),
@@ -117,10 +117,10 @@ CbcHeuristic::CbcHeuristic(CbcModel & model) :
   feasibilityPumpOptions_(-1),
   fractionSmall_(1.0),
   heuristicName_("Unknown"),
-  howOften_(2),
+  howOften_(1),
   decayFactor_(0.5),
   shallowDepth_(0),
-  howOftenShallow_(100),
+  howOftenShallow_(1),
   numInvocationsInShallow_(0),
   numInvocationsInDeep_(0),
   lastRunDeep_(0),
@@ -172,31 +172,48 @@ CbcHeuristic::debugNodes()
 {
   CbcNode* node = model_->currentNode();
   CbcNodeInfo* nodeInfo = node->nodeInfo();
-  while (nodeInfo->owner() != NULL) {
+  std::cout << "===============================================================\n";
+  while (nodeInfo) {
     const CbcNode* node = nodeInfo->owner();
-    int depth = node->depth();
-    int nodeNumber = node->nodeNumber();
-    bool onTree = node->onTree();
-    bool active = node->active();
-    std::cout<<"nodeNumber= "<<nodeNumber
-	     <<", depth= "<<depth
-	     <<", onTree= "<<onTree
-	     <<", active= "<<active<<std::endl;
-    const OsiBranchingObject* osibr =
-      nodeInfo->owner()->branchingObject();
-    const CbcBranchingObject* cbcbr =
-      dynamic_cast<const CbcBranchingObject*>(osibr);
-    assert(cbcbr);
-    const CbcIntegerBranchingObject* brPrint =
-      dynamic_cast<const CbcIntegerBranchingObject*>(cbcbr);
-    const double* downBounds = brPrint->downBounds();
-    const double* upBounds = brPrint->upBounds();
-    int variable = brPrint->variable();
-    int way = brPrint->way();
-    std::cout<<"downBounds= ["<<downBounds[0]<<","<<downBounds[1]<<"]"
-	     <<", upBounds= ["<<upBounds[0]<<","<<upBounds[1]<<"]"
-	     <<", variable= "<<variable
-	     <<", way= "<<way<<std::endl;
+    printf("nodeinfo: node %i\n", nodeInfo->nodeNumber());
+    {
+      const CbcIntegerBranchingObject* brPrint =
+	dynamic_cast<const CbcIntegerBranchingObject*>(nodeInfo->parentBranch());
+      if (!brPrint) {
+	printf("    parentBranch: NULL\n");
+      } else {
+	const double* downBounds = brPrint->downBounds();
+	const double* upBounds = brPrint->upBounds();
+	int variable = brPrint->variable();
+	int way = brPrint->way();
+	printf("   parentBranch: var %i downBd [%i,%i] upBd [%i,%i] way %i\n",
+	       variable, (int)downBounds[0], (int)downBounds[1],
+	       (int)upBounds[0], (int)upBounds[1], way);
+      }
+    }
+    if (! node) {
+      printf("    owner: NULL\n");
+    } else {
+      printf("    owner: node %i depth %i onTree %i active %i",
+	     node->nodeNumber(), node->depth(), node->onTree(), node->active());
+      const OsiBranchingObject* osibr =
+	nodeInfo->owner()->branchingObject();
+      const CbcBranchingObject* cbcbr =
+	dynamic_cast<const CbcBranchingObject*>(osibr);
+      const CbcIntegerBranchingObject* brPrint =
+	dynamic_cast<const CbcIntegerBranchingObject*>(cbcbr);
+      if (!brPrint) {
+	printf("        ownerBranch: NULL\n");
+      } else {
+	const double* downBounds = brPrint->downBounds();
+	const double* upBounds = brPrint->upBounds();
+	int variable = brPrint->variable();
+	int way = brPrint->way();
+	printf("        ownerbranch: var %i downBd [%i,%i] upBd [%i,%i] way %i\n",
+	       variable, (int)downBounds[0], (int)downBounds[1],
+	       (int)upBounds[0], (int)upBounds[1], way);
+      }
+    }
     nodeInfo = nodeInfo->parent();
   }
 }
@@ -211,6 +228,7 @@ CbcHeuristic::shouldHeurRun()
   }
 
   debugNodes();
+  return false;
 
   const int depth = currentNode->depth();
 
@@ -675,56 +693,47 @@ void
 CbcHeuristicNode::gutsOfConstructor(CbcModel& model)
 {
   CbcNode* node = model.currentNode();
-  int depth = node->depth();
-  numObjects_ = depth; //??
-  brObj_ = new CbcBranchingObject*[numObjects_];
+  brObj_ = new CbcBranchingObject*[node->depth()-1];
   CbcNodeInfo* nodeInfo = node->nodeInfo();
-  depth = 0;
-  while (nodeInfo->owner() != NULL) {
-#if 0
-    const OsiBranchingObject* osibr = nodeInfo->parentBranchingObject();
-#else
-    const OsiBranchingObject* osibr =
-      nodeInfo->owner()->branchingObject();
-#endif
-    const CbcBranchingObject* cbcbr =
-      dynamic_cast<const CbcBranchingObject*>(osibr);
-    assert(cbcbr);
-    const CbcIntegerBranchingObject* brPrint =
-      dynamic_cast<const CbcIntegerBranchingObject*>(cbcbr);
-    brObj_[depth++] = cbcbr->clone();
+  int cnt = 0;
+  while (nodeInfo->parentBranch() != NULL) {
+    brObj_[cnt++] = nodeInfo->parentBranch()->clone();
     nodeInfo = nodeInfo->parent();
   }
-  std::sort(brObj_, brObj_+depth, compareBranchingObjects);
-  int cnt = 0;
-  CbcBranchingObject* br;
-  for (int i = 1; i < depth; ++i) {
-    if (compare3BranchingObjects(brObj_[cnt], brObj_[i]) == 0) {
-      int comp = brObj_[cnt]->compareBranchingObject(brObj_[i], &br);
-      switch (comp) {
-      case CbcRangeSame: // the same range
-      case CbcRangeDisjoint: // disjoint decisions
-	// should not happen! we are on a chain!
-	abort();
-      case CbcRangeSubset: // brObj_[cnt] is a subset of brObj_[i]
-	delete brObj_[i];
-	break;
-      case CbcRangeSuperset: // brObj_[i] is a subset of brObj_[cnt]
-	delete brObj_[cnt];
-	brObj_[cnt] = brObj_[i];
-	break;
-      case CbcRangeOverlap: // overlap
-	delete brObj_[i];
-	delete brObj_[cnt];
-	brObj_[cnt] = br;
-	break;
+  std::sort(brObj_, brObj_+cnt, compareBranchingObjects);
+  if (cnt <= 1) {
+    numObjects_ = cnt;
+  } else {
+    numObjects_ = 0;
+    CbcBranchingObject* br;
+    for (int i = 1; i < cnt; ++i) {
+      if (compare3BranchingObjects(brObj_[numObjects_], brObj_[i]) == 0) {
+	int comp = brObj_[numObjects_]->compareBranchingObject(brObj_[i], &br);
+	switch (comp) {
+	case CbcRangeSame: // the same range
+	case CbcRangeDisjoint: // disjoint decisions
+	  // should not happen! we are on a chain!
+	  abort();
+	case CbcRangeSubset: // brObj_[numObjects_] is a subset of brObj_[i]
+	  delete brObj_[i];
+	  break;
+	case CbcRangeSuperset: // brObj_[i] is a subset of brObj_[numObjects_]
+	  delete brObj_[numObjects_];
+	  brObj_[numObjects_] = brObj_[i];
+	  break;
+	case CbcRangeOverlap: // overlap
+	  delete brObj_[i];
+	  delete brObj_[numObjects_];
+	  brObj_[numObjects_] = br;
+	  break;
       }
-      continue;
-    } else {
-      brObj_[++cnt] = brObj_[i];
+	continue;
+      } else {
+	brObj_[++numObjects_] = brObj_[i];
+      }
     }
+    ++numObjects_;
   }
-  numObjects_ = cnt + 1;
 }
 
 //==============================================================================

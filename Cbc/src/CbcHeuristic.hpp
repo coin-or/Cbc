@@ -36,6 +36,7 @@ private:
   CbcBranchingObject** brObj_;
 public:
   CbcHeuristicNode(CbcModel& model);
+
   CbcHeuristicNode(const CbcHeuristicNode& rhs);
   ~CbcHeuristicNode();
   double distance(const CbcHeuristicNode* node) const;

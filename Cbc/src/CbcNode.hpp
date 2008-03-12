@@ -73,13 +73,14 @@ public:
   /// Copy constructor 
   CbcNodeInfo ( const CbcNodeInfo &);
    
-
+#if 0
   /** Construct with parent
 
     Creates a NodeInfo object which knows its parent and assumes it will
     in turn have two children.
   */
   CbcNodeInfo (CbcNodeInfo * parent);
+#endif
    
   /** Construct with parent and owner
 

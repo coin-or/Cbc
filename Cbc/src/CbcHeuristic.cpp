@@ -167,8 +167,7 @@ CbcHeuristic::operator=( const CbcHeuristic& rhs)
   return *this;
 }
 
-void
-CbcHeuristic::debugNodes()
+void CbcHeurDebugNodes(CbcModel* model_)
 {
   CbcNode* node = model_->currentNode();
   CbcNodeInfo* nodeInfo = node->nodeInfo();
@@ -218,6 +217,12 @@ CbcHeuristic::debugNodes()
   }
 }
 
+void
+CbcHeuristic::debugNodes()
+{
+  CbcHeurDebugNodes(model_);
+}
+
 bool
 CbcHeuristic::shouldHeurRun()
 {
@@ -227,8 +232,8 @@ CbcHeuristic::shouldHeurRun()
     return false;
   }
 
-  debugNodes();
-  return false;
+//   debugNodes();
+//   return false;
 
   const int depth = currentNode->depth();
 
@@ -692,8 +697,9 @@ inline bool compareBranchingObjects(const CbcBranchingObject* br0,
 void
 CbcHeuristicNode::gutsOfConstructor(CbcModel& model)
 {
+  //  CbcHeurDebugNodes(&model);
   CbcNode* node = model.currentNode();
-  brObj_ = new CbcBranchingObject*[node->depth()-1];
+  brObj_ = new CbcBranchingObject*[node->depth()];
   CbcNodeInfo* nodeInfo = node->nodeInfo();
   int cnt = 0;
   while (nodeInfo->parentBranch() != NULL) {

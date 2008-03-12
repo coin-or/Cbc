@@ -308,6 +308,15 @@ public:
   virtual double branch(OsiSolverInterface * solver)
   { return branch();}
 
+  /** Reset every information so that the branching object appears to point to
+      the previous child. This method does not need to modify anything in any
+      solver. */
+  virtual void previousBranch() {
+    assert(branchIndex_ > 0);
+    branchIndex_--;
+    way_ = -way_;
+  }
+
   using OsiBranchingObject::print ;
   /** \brief Print something about branch - only if log level high
   */

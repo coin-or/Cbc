@@ -70,10 +70,12 @@ CbcNodeInfo::setParentBasedData()
       const CbcBranchingObject* cbcbr = dynamic_cast<const CbcBranchingObject*>(br);
       assert(cbcbr);
       parentBranch_ = cbcbr->clone();
+      parentBranch_->previousBranch();
     }
   }
 }
 
+#if 0
 // Constructor given parent
 CbcNodeInfo::CbcNodeInfo (CbcNodeInfo * parent)
   :
@@ -93,6 +95,8 @@ CbcNodeInfo::CbcNodeInfo (CbcNodeInfo * parent)
 #endif
   setParentBasedData();
 }
+#endif
+
 // Copy Constructor 
 CbcNodeInfo::CbcNodeInfo (const CbcNodeInfo & rhs)
   :
@@ -178,6 +182,7 @@ CbcNodeInfo::~CbcNodeInfo()
     int numberLinks = parent_->decrement();
     if (!numberLinks) delete parent_;
   }
+  delete parentBranch_;
 }
 
 
@@ -496,7 +501,7 @@ CbcFullNodeInfo::CbcFullNodeInfo() :
 }
 CbcFullNodeInfo::CbcFullNodeInfo(CbcModel * model,
 				 int numberRowsAtContinuous) :
-  CbcNodeInfo()
+  CbcNodeInfo(NULL, model->currentNode())
 {
   OsiSolverInterface * solver = model->solver();
   numberRows_ = numberRowsAtContinuous;
@@ -671,7 +676,7 @@ CbcPartialNodeInfo::CbcPartialNodeInfo (CbcNodeInfo *parent, CbcNode *owner,
 
 CbcPartialNodeInfo::CbcPartialNodeInfo (const CbcPartialNodeInfo & rhs)
 
-  : CbcNodeInfo(rhs.parent_)
+  : CbcNodeInfo(rhs)
 
 { basisDiff_ = rhs.basisDiff_->clone() ;
 
@@ -1113,6 +1118,10 @@ CbcNode::createInfo (CbcModel *model,
       delete ws;
   }
   // Set node number
+#ifdef CBC_DEBUG_NODENUMBER
+  printf("CbcNode: model->getNodeCount2(): %i,     this->nodeNumber_: %i\n",
+	 model->getNodeCount2(), nodeNumber_);
+#endif
   nodeInfo_->setNodeNumber(model->getNodeCount2());
   state_ |= 2; // say active
 }
@@ -1296,6 +1305,10 @@ CbcNode::createInfo (CbcModel *model,
       delete ws;
   }
   // Set node number
+#ifdef CBC_DEBUG_NODENUMBER
+  printf("CbcNode: model->getNodeCount2(): %i,     this->nodeNumber_: %i\n",
+	 model->getNodeCount2(), nodeNumber_);
+#endif
   nodeInfo_->setNodeNumber(model->getNodeCount2());
   state_ |= 2; // say active
 }

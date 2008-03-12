@@ -2259,6 +2259,10 @@ void CbcModel::branchAndBound(int doStatistics)
 	branchesLeft = node->branch(solver_); // new way
       if (branchesLeft) {
         // set nodenumber correctly
+#ifdef CBC_DEBUG_NODENUMBER
+	printf("CbcModel: numberNodes2_: %i,  node->nodeNumber(): %i\n",
+	       numberNodes2_, node->nodeNumber());
+#endif
         node->nodeInfo()->setNodeNumber(numberNodes2_);
         tree_->push(node) ;
         if (statistics_) {
@@ -11883,8 +11887,13 @@ CbcModel::doOneNode(CbcModel * baseModel, CbcNode * & node, CbcNode * & newNode)
       }
       if (branchesLeft) {
 	// set nodenumber correctly
-	if (node->nodeInfo())
+	if (node->nodeInfo()) {
+#ifdef CBC_DEBUG_NODENUMBER
+	  printf("CbcModel: numberNodes2_: %i,  node->nodeNumber(): %i\n",
+		 numberNodes2_, node->nodeNumber());
+#endif
 	  node->nodeInfo()->setNodeNumber(numberNodes2_);
+	}
 #ifndef CBC_DETERMINISTIC_THREAD
 #ifdef PUSH_LATER
 	if (!mutex_) // only if serial

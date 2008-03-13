@@ -449,6 +449,14 @@ public:
   */
   virtual double branch();
 
+#if 0
+  // No need to override. Default works fine.
+  /** Reset every information so that the branching object appears to point to
+      the previous child. This method does not need to modify anything in any
+      solver. */
+  virtual void previousBranch();
+#endif
+
   using CbcBranchingObject::print ;
   /** \brief Print something about branch - only if log level high
   */
@@ -732,6 +740,14 @@ public:
   /// Does next branch and updates state
   virtual double branch();
 
+#if 0
+  // No need to override. Default works fine.
+  /** Reset every information so that the branching object appears to point to
+      the previous child. This method does not need to modify anything in any
+      solver. */
+  virtual void previousBranch();
+#endif
+
   using CbcBranchingObject::print ;
   /** \brief Print something about branch - only if log level high
   */
@@ -803,6 +819,14 @@ public:
   /// Does next branch and updates state
   virtual double branch();
 
+#if 0
+  // No need to override. Default works fine.
+  /** Reset every information so that the branching object appears to point to
+      the previous child. This method does not need to modify anything in any
+      solver. */
+  virtual void previousBranch();
+#endif
+
   using CbcBranchingObject::print ;
   /** \brief Print something about branch - only if log level high
   */
@@ -872,6 +896,14 @@ public:
   using CbcBranchingObject::branch ;
   /// Does next branch and updates state
   virtual double branch();
+
+  /** Reset every information so that the branching object appears to point to
+      the previous child. This method does not need to modify anything in any
+      solver. */
+  virtual void previousBranch() {
+    CbcBranchingObject::previousBranch();
+    computeNonzeroRange();
+  }
 
   using CbcBranchingObject::print ;
   /** \brief Print something about branch - only if log level high
@@ -950,6 +982,14 @@ public:
   using CbcBranchingObject::branch ;
   /// Does next branch and updates state
   virtual double branch();
+
+#if 0
+  // FIXME: what do we need to do here?
+  /** Reset every information so that the branching object appears to point to
+      the previous child. This method does not need to modify anything in any
+      solver. */
+  virtual void previousBranch();
+#endif
 
   using CbcBranchingObject::print ;
   /** \brief Print something about branch - only if log level high
@@ -1171,6 +1211,14 @@ public:
   /// Does next branch and updates state
   virtual double branch();
 
+#if 0
+  // No need to override. Default works fine.
+  /** Reset every information so that the branching object appears to point to
+      the previous child. This method does not need to modify anything in any
+      solver. */
+  virtual void previousBranch();
+#endif
+
   using CbcBranchingObject::print ;
   /** \brief Print something about branch - only if log level high
   */
@@ -1292,6 +1340,14 @@ public:
   /** \brief Dummy branch
   */
   virtual double branch();
+
+#if 0
+  // No need to override. Default works fine.
+  /** Reset every information so that the branching object appears to point to
+      the previous child. This method does not need to modify anything in any
+      solver. */
+  virtual void previousBranch();
+#endif
 
   using CbcBranchingObject::print ;
   /** \brief Print something about branch - only if log level high

@@ -5,6 +5,8 @@
 #  pragma warning(disable:4786)
 #endif
 
+#define PRINT_DEBUG
+
 #include "CbcHeuristicDiveCoefficient.hpp"
 #include "CbcStrategy.hpp"
 #include  "CoinTime.hpp"
@@ -143,7 +145,22 @@ int
 CbcHeuristicDiveCoefficient::solution(double & solutionValue,
 				      double * betterSolution)
 {
-  if (! shouldHeurRun()) {
+  ++numCouldRun_;
+
+  //  bool runHeuristic = shouldHeurRun();
+  bool runHeuristic = shouldHeurRun_randomChoice();
+  //  std::cout<<"shouldHeurRun = "<<runHeuristic<<std::endl;
+
+#ifdef PRINT_DEBUG
+  std::cout<<"numCouldRun_ = "<<numCouldRun_
+	   <<", numRuns_ = "<<numRuns_;
+#endif
+
+
+  if (! runHeuristic) {
+#ifdef PRINT_DEBUG
+    std::cout<<", solutionFound = 0"<<std::endl;
+#endif
     return 0;
   }
 
@@ -432,10 +449,15 @@ CbcHeuristicDiveCoefficient::solution(double & solutionValue,
     }
   }
 
+#if 0
   if (updateHowOften) {
     howOften_ += (int) (howOften_*decayFactor_);
   }
-    
+#endif
+
+#ifdef PRINT_DEBUG
+  std::cout<<", solutionFound = "<<returnCode<<std::endl;
+#endif
 
   delete [] newSolution;
   delete [] columnFixed;

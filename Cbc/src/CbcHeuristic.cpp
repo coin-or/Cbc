@@ -11,6 +11,7 @@
 #include <cmath>
 #include <cfloat>
 
+#define PRINT_DEBUG
 #ifdef COIN_HAS_CLP
 #include "OsiClpSolverInterface.hpp"
 #endif
@@ -96,14 +97,15 @@ CbcHeuristic::CbcHeuristic() :
   fractionSmall_(1.0),
   heuristicName_("Unknown"),
   howOften_(1),
-  decayFactor_(0.5),
-  shallowDepth_(0),
+  decayFactor_(0.0),
+  shallowDepth_(1),
   howOftenShallow_(1),
   numInvocationsInShallow_(0),
   numInvocationsInDeep_(0),
   lastRunDeep_(0),
   numRuns_(0),
-  minDistanceToRun_(4),
+  numCouldRun_(0),
+  minDistanceToRun_(1),
   runNodes_()
 {
   // As CbcHeuristic virtual need to modify .cpp if above change
@@ -118,14 +120,15 @@ CbcHeuristic::CbcHeuristic(CbcModel & model) :
   fractionSmall_(1.0),
   heuristicName_("Unknown"),
   howOften_(1),
-  decayFactor_(0.5),
-  shallowDepth_(0),
+  decayFactor_(0.0),
+  shallowDepth_(1),
   howOftenShallow_(1),
   numInvocationsInShallow_(0),
   numInvocationsInDeep_(0),
   lastRunDeep_(0),
   numRuns_(0),
-  minDistanceToRun_(4),
+  numCouldRun_(0),
+  minDistanceToRun_(1),
   runNodes_()
 {}
 
@@ -147,6 +150,7 @@ CbcHeuristic::gutsOfCopy(const CbcHeuristic & rhs)
   numInvocationsInDeep_ = rhs.numInvocationsInDeep_;
   lastRunDeep_ = rhs.lastRunDeep_;
   numRuns_ = rhs.numRuns_;
+  numCouldRun_ = rhs.numCouldRun_;
   minDistanceToRun_ = rhs.minDistanceToRun_;
   runNodes_ = rhs.runNodes_;
 }
@@ -227,15 +231,26 @@ bool
 CbcHeuristic::shouldHeurRun()
 {
 
+#if 0
   const CbcNode* currentNode = model_->currentNode();
   if (currentNode == NULL) {
     return false;
   }
 
-//   debugNodes();
+  debugNodes();
 //   return false;
 
   const int depth = currentNode->depth();
+#else
+  int depth = 0;
+  const CbcNode* currentNode = model_->currentNode();
+  if (currentNode != NULL) {
+    depth = currentNode->depth();
+#ifdef PRINT_DEBUG
+    debugNodes();
+#endif
+  }
+#endif
 
   const int nodeCount = model_->getNodeCount();  // FIXME: check that this is
 						 // correct in parallel
@@ -249,11 +264,19 @@ CbcHeuristic::shouldHeurRun()
     ++numInvocationsInShallow_;
     // Very large howOftenShallow_ will give the original test:
     // (model_->getCurrentPassNumber() != 1)
-    if ((numInvocationsInShallow_ % howOftenShallow_) != 1) {
+    //    if ((numInvocationsInShallow_ % howOftenShallow_) != 1) {
+    if ((numInvocationsInShallow_ % howOftenShallow_) != 0) {
       return false;
     }
     // LL: should we save these nodes in the list of nodes where the heur was
     // LL: run? 
+#if 1
+    if (currentNode != NULL) {
+      // Get where we are and create the appropriate CbcHeuristicNode object
+      CbcHeuristicNode* nodeDesc = new CbcHeuristicNode(*model_);
+      runNodes_.append(nodeDesc);
+    }
+#endif
   } else {
     // deeper in the tree
     if (model_->getCurrentPassNumber() == 1) {
@@ -271,18 +294,48 @@ CbcHeuristic::shouldHeurRun()
     }
     // Get where we are and create the appropriate CbcHeuristicNode object
     CbcHeuristicNode* nodeDesc = new CbcHeuristicNode(*model_);
-    std::cout<<"minDistance = "<<nodeDesc->minDistance(runNodes_)<<std::endl;
+#ifdef PRINT_DEBUG
+    double minDistance = nodeDesc->minDistance(runNodes_);
+    double minDistanceToRun = log(depth) / log(2);
+    std::cout<<"minDistance = "<<minDistance
+	     <<", minDistanceToRun = "<<minDistanceToRun<<std::endl;
+    if (minDistance < minDistanceToRun) {
+#else
     if (nodeDesc->minDistance(runNodes_) < minDistanceToRun_) {
+#endif
       delete nodeDesc;
       return false;
     }
     runNodes_.append(nodeDesc);
-    ++lastRunDeep_;
+    lastRunDeep_ = numInvocationsInDeep_;
+    //    ++lastRunDeep_;
   }
   ++numRuns_;
   return true;
 }
 
+bool
+CbcHeuristic::shouldHeurRun_randomChoice()
+{
+  int depth = 0;
+  const CbcNode* currentNode = model_->currentNode();
+  if (currentNode != NULL) {
+    depth = currentNode->depth();
+  }
+
+  if(depth != 0) {
+
+    double probability = depth / pow(2,depth);
+    double randomNumber = randomNumberGenerator_.randomDouble();
+    if (randomNumber>probability)
+      return false;
+    
+    if (model_->getCurrentPassNumber() > 1)
+      return false;
+  }
+  ++numRuns_;
+  return true;
+}
 
 // Resets stuff if model changes
 void 
@@ -754,15 +807,40 @@ CbcHeuristicNode::CbcHeuristicNode(CbcModel& model)
 double
 CbcHeuristicNode::distance(const CbcHeuristicNode* node) const 
 {
+
   const double disjointWeight = 1;
   const double overlapWeight = 0.4;
   const double subsetWeight = 0.2;
   int i = 0; 
   int j = 0;
   double dist = 0.0;
+#ifdef PRINT_DEBUG
+  printf(" numObjects_ = %i, node->numObjects_ = %i\n",
+	 numObjects_, node->numObjects_);
+#endif
   while( i < numObjects_ && j < node->numObjects_) {
     CbcBranchingObject* br0 = brObj_[i];
     const CbcBranchingObject* br1 = node->brObj_[j];
+#ifdef PRINT_DEBUG
+    const CbcIntegerBranchingObject* brPrint0 =
+      dynamic_cast<const CbcIntegerBranchingObject*>(br0);
+    const double* downBounds = brPrint0->downBounds();
+    const double* upBounds = brPrint0->upBounds();
+    int variable = brPrint0->variable();
+    int way = brPrint0->way();
+    printf("   br0: var %i downBd [%i,%i] upBd [%i,%i] way %i\n",
+	   variable, (int)downBounds[0], (int)downBounds[1],
+	   (int)upBounds[0], (int)upBounds[1], way);
+    const CbcIntegerBranchingObject* brPrint1 =
+      dynamic_cast<const CbcIntegerBranchingObject*>(br1);
+    downBounds = brPrint1->downBounds();
+    upBounds = brPrint1->upBounds();
+    variable = brPrint1->variable();
+    way = brPrint1->way();
+    printf("   br1: var %i downBd [%i,%i] upBd [%i,%i] way %i\n",
+	   variable, (int)downBounds[0], (int)downBounds[1],
+	   (int)upBounds[0], (int)upBounds[1], way);
+#endif
     const int brComp = compare3BranchingObjects(br0, br1);
     if (brComp < 0) {
       dist += subsetWeight;

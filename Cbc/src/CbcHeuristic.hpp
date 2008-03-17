@@ -178,6 +178,7 @@ public:
 
   /** Check whether the heuristic should run */
   bool shouldHeurRun();
+  bool shouldHeurRun_randomChoice();
   void debugNodes();
 
 protected:
@@ -227,6 +228,10 @@ protected:
 
   /// The description of the nodes where this heuristic has been applied
   CbcHeuristicNodeList runNodes_;
+
+  /// How many times the heuristic could run
+  int numCouldRun_;
+
 
 #if 0
   /// Lower bounds of last node where the heuristic found a solution

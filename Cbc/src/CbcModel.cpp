@@ -6940,7 +6940,6 @@ CbcModel::convertToDynamic()
       int iColumn = obj1->columnNumber();
       int priority = obj1->priority();
       int preferredWay = obj1->preferredWay();
-      delete object_[iObject];
       double costValue = CoinMax(1.0e-5,fabs(cost[iColumn]));
       // treat as if will cost what it says up
       double upCost=costValue;
@@ -6950,6 +6949,7 @@ CbcModel::convertToDynamic()
         upCost=obj1a->upPseudoCost();
         downCost=obj1a->downPseudoCost();
       }
+      delete object_[iObject];
       CbcSimpleIntegerDynamicPseudoCost * newObject =
         new CbcSimpleIntegerDynamicPseudoCost(this,iColumn,1.0e0*downCost,1.0e0*upCost);
       newObject->setNumberBeforeTrust(numberBeforeTrust_);

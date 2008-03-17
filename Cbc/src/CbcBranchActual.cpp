@@ -1381,7 +1381,7 @@ CbcSimpleIntegerPseudoCost::CbcSimpleIntegerPseudoCost (CbcModel * model,
 CbcSimpleIntegerPseudoCost::CbcSimpleIntegerPseudoCost (CbcModel * model, int dummy,int iColumn, 
 							double downPseudoCost, double upPseudoCost)
 {
-  CbcSimpleIntegerPseudoCost(model,iColumn,downPseudoCost,upPseudoCost);
+  *this=CbcSimpleIntegerPseudoCost(model,iColumn,downPseudoCost,upPseudoCost);
   columnNumber_=iColumn;
 }
 

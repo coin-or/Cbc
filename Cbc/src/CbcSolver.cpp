@@ -3358,24 +3358,24 @@ int
   // change later?
   if (useDIVING>=kType) {
     if ((useDIVING&1)!=0) {
-      CbcHeuristicDiveCoefficient heuristicDC(*model);
-      heuristicDC.setHeuristicName("DiveCoefficient");
-      model->addHeuristic(&heuristicDC) ;
+      CbcHeuristicDiveVectorLength heuristicDV(*model);
+      heuristicDV.setHeuristicName("DiveVectorLength");
+      model->addHeuristic(&heuristicDV) ;
     }
     if ((useDIVING&2)!=0) {
-      CbcHeuristicDiveFractional heuristicDF(*model);
-      heuristicDF.setHeuristicName("DiveFractional");
-      model->addHeuristic(&heuristicDF) ;
-    }
-    if ((useDIVING&4)!=0) {
       CbcHeuristicDiveGuided heuristicDG(*model);
       heuristicDG.setHeuristicName("DiveGuided");
       model->addHeuristic(&heuristicDG) ;
     }
+    if ((useDIVING&4)!=0) {
+      CbcHeuristicDiveFractional heuristicDF(*model);
+      heuristicDF.setHeuristicName("DiveFractional");
+      model->addHeuristic(&heuristicDF) ;
+    }
     if ((useDIVING&8)!=0) {
-      CbcHeuristicDiveVectorLength heuristicDV(*model);
-      heuristicDV.setHeuristicName("DiveVectorLength");
-      model->addHeuristic(&heuristicDV) ;
+      CbcHeuristicDiveCoefficient heuristicDC(*model);
+      heuristicDC.setHeuristicName("DiveCoefficient");
+      model->addHeuristic(&heuristicDC) ;
     }
     anyToDo=true;
   }

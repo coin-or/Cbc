@@ -23,6 +23,7 @@
 #include <cmath>
 #include <cfloat>
 
+
 #ifdef COIN_HAS_CLP
 // include Presolve from Clp
 #include "ClpPresolve.hpp"
@@ -70,12 +71,20 @@
 #include "CbcTree.hpp"
 //#define CBC_DETERMINISTIC_THREAD
 #ifdef CBC_THREAD
+
 #ifdef CBC_DETERMINISTIC_THREAD
 //#define DELETE_OUTSIDE
 #else
 #define CBC_NORMAL_THREAD
 #endif
 #include <pthread.h>
+//#include "clocktime.hpp"
+//#undef small
+
+struct Coin_pthread_t {
+	pthread_t	thr;
+	long		status;
+};
 #ifndef CLP_FAST_CODE
 #define CBC_THREAD_DEBUG 1
 #endif
@@ -97,7 +106,7 @@ typedef struct {
   CbcModel * thisModel;
   CbcNode * node; // filled in every time
   CbcNode * createdNode; // filled in every time on return
-  pthread_t threadIdOfBase;
+  Coin_pthread_t threadIdOfBase;
   pthread_mutex_t * mutex; // for locking data
   pthread_mutex_t * mutex2; // for waking up threads
   pthread_cond_t * condition2; // for waking up thread
@@ -161,7 +170,7 @@ static int gcd(int a, int b)
   return b;
 }
 
-
+
 
 #ifdef CHECK_NODE_FULL
 
@@ -254,7 +263,7 @@ void verifyTreeNodes (const CbcTree * branchingTree, const CbcModel &model)
 
 #endif	/* CHECK_NODE_FULL */
 
-
+
 
 #ifdef CHECK_CUT_COUNTS
 
@@ -340,7 +349,7 @@ void verifyCutCounts (const CbcTree * branchingTree, CbcModel &model)
 
 #endif /* CHECK_CUT_COUNTS */
 
-
+
 //#define CHECK_CUT_SIZE
 #ifdef CHECK_CUT_SIZE
 
@@ -378,7 +387,7 @@ void verifyCutSize (const CbcTree * branchingTree, CbcModel &model)
 
  /* End unnamed namespace for CbcModel.cpp */
 
-
+
 static double trueIncrement=0.0;
 void 
 CbcModel::analyzeObjective ()
@@ -578,7 +587,7 @@ CbcModel::analyzeObjective ()
 	else if (possible==1)
 	  continuousMultiplier=1.0;
 	else 
-	  continuousMultiplier=0.5;
+	  continuousMultiplier=0.0; // 0.5 was incorrect;
 #ifdef COIN_DEVELOP
 	if (continuousMultiplier)
 	  printf("XXXXXX multiplier of %g\n",continuousMultiplier);
@@ -838,7 +847,7 @@ CbcModel::analyzeObjective ()
 
   return ; 
 }
-
+
 
 /**
   \todo
@@ -1226,6 +1235,15 @@ void CbcModel::branchAndBound(int doStatistics)
     }
     originalContinuousObjective_ = COIN_DBL_MAX;
     solverCharacteristics_ = NULL;
+    return ;
+  } else if (!numberObjects_) {
+    // nothing to do
+    solverCharacteristics_ = NULL;
+    bestObjective_ = solver_->getObjValue()*solver_->getObjSense();
+    int numberColumns = solver_->getNumCols();
+    delete [] bestSolution_;
+    bestSolution_ = new double[numberColumns];
+    CoinCopyN(solver_->getColSolution(),numberColumns,bestSolution_);
     return ;
   }
   // Convert to Osi if wanted
@@ -1694,8 +1712,8 @@ void CbcModel::branchAndBound(int doStatistics)
 #     endif
     }
   //newNode->createInfo(this,NULL,NULL,NULL,NULL,0,0) ;
-    newNode->nodeInfo()->addCuts(cuts,
-				 newNode->numberBranches(),whichGenerator_) ;
+    //newNode->nodeInfo()->addCuts(cuts,
+    //			 newNode->numberBranches(),whichGenerator_) ;
     if (lastws) delete lastws ;
     lastws = dynamic_cast<CoinWarmStartBasis*>(solver_->getWarmStart()) ;
   }
@@ -1770,7 +1788,7 @@ void CbcModel::branchAndBound(int doStatistics)
 #ifdef CBC_THREAD
   CbcNode * createdNode=NULL;
   CbcModel ** threadModel = NULL;
-  pthread_t * threadId = NULL;
+  Coin_pthread_t * threadId = NULL;
   int * threadCount = NULL;
   pthread_mutex_t mutex;
   pthread_cond_t condition_main;
@@ -1791,7 +1809,7 @@ void CbcModel::branchAndBound(int doStatistics)
   // For now just one model
   if (numberThreads_) {
     nodeCompare_->sayThreaded(); // need to use addresses
-    threadId = new pthread_t [numberThreads_];
+    threadId = new Coin_pthread_t [numberThreads_];
     threadCount = new int [numberThreads_];
     CoinZeroN(threadCount,numberThreads_);
     pthread_mutex_init(&mutex,NULL);
@@ -1814,7 +1832,7 @@ void CbcModel::branchAndBound(int doStatistics)
     for (int i=0;i<numberThreads_;i++) {
       pthread_mutex_init(mutex2+i,NULL);
       pthread_cond_init(condition2+i,NULL);
-      threadId[i]=0;
+      threadId[i].status =0;
       threadInfo[i].baseModel=this;
       threadModel[i]=new CbcModel(*this);
 #ifdef COIN_HAS_CLP
@@ -1830,7 +1848,7 @@ void CbcModel::branchAndBound(int doStatistics)
       threadInfo[i].thisModel=threadModel[i];
       threadInfo[i].node=NULL;
       threadInfo[i].createdNode=NULL;
-      threadInfo[i].threadIdOfBase=pthread_self();
+	  threadInfo[i].threadIdOfBase.thr =pthread_self();
       threadInfo[i].mutex=&mutex;
       threadInfo[i].mutex2=mutex2+i;
       threadInfo[i].condition2=condition2+i;
@@ -1853,7 +1871,8 @@ void CbcModel::branchAndBound(int doStatistics)
       threadInfo[i].nodesThisTime=0;
       threadInfo[i].iterationsThisTime=0;
 #endif
-      pthread_create(threadId+i,NULL,doNodesThread,threadInfo+i);
+	  pthread_create(&(threadId[i].thr),NULL,doNodesThread,threadInfo+i);
+	  threadId[i].status = 1;
     }
     strategy_ = saveStrategy;
     // Do a partial one for base model
@@ -1930,7 +1949,7 @@ void CbcModel::branchAndBound(int doStatistics)
 	// may still be outstanding nodes
 	int iThread;
 	for (iThread=0;iThread<numberThreads_;iThread++) {
-	  if (threadId[iThread]) {
+	  if (threadId[iThread].status) {
 	    if (threadInfo[iThread].returnCode==0) 
 	      break;
 	  }
@@ -1978,7 +1997,7 @@ void CbcModel::branchAndBound(int doStatistics)
 #endif
 	  // now check if any have just finished
 	  for (iThread=0;iThread<numberThreads_;iThread++) {
-	    if (threadId[iThread]) {
+	    if (threadId[iThread].status) {
 	      if (threadInfo[iThread].returnCode==1) 
 		break;
 	    }
@@ -2006,7 +2025,7 @@ void CbcModel::branchAndBound(int doStatistics)
 	  continue;
 	}
 	for (iThread=0;iThread<numberThreads_;iThread++) {
-	  if (threadId[iThread]) {
+	  if (threadId[iThread].status) {
 	    if (threadInfo[iThread].returnCode!=-1) { 
 	      printf("bad end of tree\n");
 	      abort();
@@ -2934,8 +2953,9 @@ void CbcModel::branchAndBound(int doStatistics)
       //if (!stopped)
       //pthread_join(threadId[i],NULL);
       int returnCode;
-      returnCode=pthread_join(threadId[i],NULL);
+	  returnCode=pthread_join(threadId[i].thr,NULL);
       assert (!returnCode);
+	  threadId[i].status = 0;
 	//else
 	//pthread_kill(threadId[i]); // kill rather than try and synchronize
       threadModel[i]->moveToModel(this,2);
@@ -3352,7 +3372,7 @@ void CbcModel::branchAndBound(int doStatistics)
 #endif
   return ;
  }
-
+
 
 // Solve the initial LP relaxation 
 void 
@@ -5154,7 +5174,7 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
 
     node: (i)     So we can update dynamic pseudo costs
 */
-			
+
 
 {
 # ifdef COIN_HAS_CLP
@@ -5167,7 +5187,7 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
   //solver_->writeMps("saved");
 #ifdef CBC_THREAD
   CbcModel ** threadModel = NULL;
-  pthread_t * threadId = NULL;
+  Coin_pthread_t * threadId = NULL;
   pthread_cond_t condition_main;
   pthread_mutex_t condition_mutex;
   pthread_mutex_t * mutex2 = NULL;
@@ -5175,7 +5195,7 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
   threadStruct * threadInfo = NULL;
   void * saveMutex = NULL;
   if (numberThreads_&&(threadMode_&2)!=0&&!numberNodes_) {
-    threadId = new pthread_t [numberThreads_];
+    threadId = new Coin_pthread_t [numberThreads_];
     pthread_cond_init(&condition_main,NULL);
     pthread_mutex_init(&condition_mutex,NULL);
     threadModel = new CbcModel * [numberThreads_];
@@ -5186,7 +5206,7 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
     for (int i=0;i<numberThreads_;i++) {
       pthread_mutex_init(mutex2+i,NULL);
       pthread_cond_init(condition2+i,NULL);
-      threadId[i]=0;
+      threadId[i].status =0;
       threadModel[i]=new CbcModel;
       threadModel[i]->generator_ = new CbcCutGenerator * [1];
       delete threadModel[i]->solver_;
@@ -5195,11 +5215,13 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
       mutex_ = (void *) (threadInfo+i);
       threadInfo[i].thisModel=(CbcModel *) threadModel[i];
       threadInfo[i].baseModel=this;
-      threadInfo[i].threadIdOfBase=pthread_self();
+	  threadInfo[i].threadIdOfBase.thr=pthread_self();
       threadInfo[i].mutex2=mutex2+i;
       threadInfo[i].condition2=condition2+i;
       threadInfo[i].returnCode=-1;
-      pthread_create(threadId+i,NULL,doCutsThread,threadInfo+i);
+	  pthread_create(&threadId[i].thr,NULL,doCutsThread,threadInfo+i);
+	  threadId[i].status = 1;
+
     }
     // Do a partial one for base model
     threadInfo[numberThreads_].baseModel=this;
@@ -5631,7 +5653,7 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
 	}
 	numberRowCutsAfter = theseCuts.sizeRowCuts() ;
 	numberColumnCutsAfter = theseCuts.sizeColCuts() ;
-	
+
 	if ((specialOptions_&1)!=0) {
 	  if (onOptimalPath) {
 	    int k ;
@@ -5675,7 +5697,7 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
 	  countColumnCuts[i] += numberColumnCutsAfter-numberColumnCutsBefore ;
 	}
 	countRowCuts[i] += numberRowCutsAfter-numberRowCutsBefore ;
-	
+
 	bool dodgyCuts=false;
 	for (j = numberRowCutsBefore;j<numberRowCutsAfter;j++) {
 	  const OsiRowCut * thisCut = theseCuts.rowCutPtr(j) ;
@@ -5940,7 +5962,7 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
 	  countColumnCuts[i] += numberColumnCutsAfter-numberColumnCutsBefore ;
 	}
 	countRowCuts[i] += numberRowCutsAfter-numberRowCutsBefore ;
-	
+
 	for (j = numberRowCutsBefore;j<numberRowCutsAfter;j++) {
 	  whichGenerator_[numberBefore++] = i ;
 	  const OsiRowCut * thisCut = theseCuts.rowCutPtr(j) ;
@@ -6597,7 +6619,7 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
 	}
 	if (howOften==1)
 	  generator_[i]->setWhatDepth(1);
-	
+
 	if (howOften>=0&&generator_[i]->generator()->mayGenerateRowCutsInTree())
 	  willBeCutsInTree=1;
       }
@@ -6776,7 +6798,9 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
       threadModel[i]->numberThreads_=0; // say exit
       threadInfo[i].returnCode=0;
       pthread_cond_signal(threadInfo[i].condition2); // unlock
-      pthread_join(threadId[i],NULL);
+      pthread_join(threadId[i].thr,NULL);
+	  threadId[i].status = 0;
+
       pthread_mutex_destroy (threadInfo[i].mutex2);
       pthread_cond_destroy (threadInfo[i].condition2);
       threadModel[i]->generator_[0]=NULL;
@@ -9092,7 +9116,7 @@ CbcModel::tightenVubs(int numberSolves, const int * which,
 	else
 	  numberTightened++;
 	int saveFixed=numberFixed;
-	
+
 	int jColumn;
 	if (generator) {
 	  // Probing - return tight column bounds
@@ -9488,12 +9512,12 @@ CbcModel::integerPresolveThisModel(OsiSolverInterface * originalSolver,
 	currentNumberCuts_=0;
 	delete [] addedCuts_;
 	addedCuts_ = NULL;
-	
+
 	// maximum depth for tree walkback
 	maximumDepth_=10;
 	delete [] walkback_;
 	walkback_ = new CbcNodeInfo * [maximumDepth_];
-	
+
 	OsiCuts cuts;
 	numberOldActiveCuts_=0;
 	numberNewCuts_ = 0;
@@ -11359,7 +11383,7 @@ CbcModel::doOneNode(CbcModel * baseModel, CbcNode * & node, CbcNode * & newNode)
 	       numberColumns*sizeof(double)) ;
 	// point to useful information
 	OsiBranchingInformation usefulInfo=usefulInformation();
-	
+
 	for (iObject = 0 ; iObject < numberObjects_ ; iObject++) {
 	  double infeasibility =
 	    object_[iObject]->infeasibility(&usefulInfo,preferredWay) ;
@@ -11562,7 +11586,7 @@ CbcModel::doOneNode(CbcModel * baseModel, CbcNode * & node, CbcNode * & newNode)
 		    //break;
 		  } else {
 		    inBetween=true;
-		  } 		
+		  } 
 		} else {
 		  // must have been up branch
 		  const double * bounds = objectI->upBounds();
@@ -12013,7 +12037,7 @@ CbcModel::addUpdateInformation(const CbcObjectUpdateData & data)
       found=true;
       if (j!=data.objectNumber_) {
 	printf("bad number\n");
-      }	
+      }
       break;
     }
   }

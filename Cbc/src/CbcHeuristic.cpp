@@ -11,7 +11,7 @@
 #include <cmath>
 #include <cfloat>
 
-#define PRINT_DEBUG
+//#define PRINT_DEBUG
 #ifdef COIN_HAS_CLP
 #include "OsiClpSolverInterface.hpp"
 #endif
@@ -227,6 +227,19 @@ CbcHeuristic::debugNodes()
   CbcHeurDebugNodes(model_);
 }
 
+void
+CbcHeuristic::printDistanceToNodes()
+{
+  const CbcNode* currentNode = model_->currentNode();
+  if (currentNode != NULL) {
+    CbcHeuristicNode* nodeDesc = new CbcHeuristicNode(*model_);
+    for (int i = runNodes_.size() - 1; i >= 0; --i) {
+      nodeDesc->distance(runNodes_.node(i));
+    }
+    runNodes_.append(nodeDesc);
+  }
+}
+
 bool
 CbcHeuristic::shouldHeurRun()
 {
@@ -294,9 +307,10 @@ CbcHeuristic::shouldHeurRun()
     }
     // Get where we are and create the appropriate CbcHeuristicNode object
     CbcHeuristicNode* nodeDesc = new CbcHeuristicNode(*model_);
-#ifdef PRINT_DEBUG
+    //#ifdef PRINT_DEBUG
+#if 1
     double minDistance = nodeDesc->minDistance(runNodes_);
-    double minDistanceToRun = log(depth) / log(2);
+    double minDistanceToRun = 1.5 * log(depth) / log(2);
     std::cout<<"minDistance = "<<minDistance
 	     <<", minDistanceToRun = "<<minDistanceToRun<<std::endl;
     if (minDistance < minDistanceToRun) {
@@ -325,7 +339,7 @@ CbcHeuristic::shouldHeurRun_randomChoice()
 
   if(depth != 0) {
 
-    double probability = depth / pow(2,depth);
+    double probability = pow(depth,2) / pow(2,depth);
     double randomNumber = randomNumberGenerator_.randomDouble();
     if (randomNumber>probability)
       return false;
@@ -811,6 +825,9 @@ CbcHeuristicNode::distance(const CbcHeuristicNode* node) const
   const double disjointWeight = 1;
   const double overlapWeight = 0.4;
   const double subsetWeight = 0.2;
+  int countDisjointWeight = 0;
+  int countOverlapWeight = 0;
+  int countSubsetWeight = 0;
   int i = 0; 
   int j = 0;
   double dist = 0.0;
@@ -844,10 +861,12 @@ CbcHeuristicNode::distance(const CbcHeuristicNode* node) const
     const int brComp = compare3BranchingObjects(br0, br1);
     if (brComp < 0) {
       dist += subsetWeight;
+      countSubsetWeight++;
       ++i;
     }
     else if (brComp > 0) {
       dist += subsetWeight;
+      countSubsetWeight++;
       ++j;
     }
     else {
@@ -858,13 +877,16 @@ CbcHeuristicNode::distance(const CbcHeuristicNode* node) const
 	break;
       case CbcRangeDisjoint: // disjoint decisions
 	dist += disjointWeight;
+	countDisjointWeight++;
 	break;
       case CbcRangeSubset: // subset one way or another
       case CbcRangeSuperset:
 	dist += subsetWeight;
+	countSubsetWeight++;
 	break;
       case CbcRangeOverlap: // overlap
 	dist += overlapWeight;
+	countOverlapWeight++;
 	break;
       }
       ++i;
@@ -872,6 +894,9 @@ CbcHeuristicNode::distance(const CbcHeuristicNode* node) const
     }
   }
   dist += subsetWeight * (numObjects_ - i + node->numObjects_ - j);
+  countSubsetWeight += (numObjects_ - i + node->numObjects_ - j);
+  printf("subset = %i, overlap = %i, disjoint = %i\n", countSubsetWeight,
+	 countOverlapWeight, countDisjointWeight);
   return dist;
 }
 

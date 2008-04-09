@@ -180,6 +180,7 @@ public:
   bool shouldHeurRun();
   bool shouldHeurRun_randomChoice();
   void debugNodes();
+  void printDistanceToNodes();
 
 protected:
 

@@ -6,6 +6,7 @@
 #endif
 #include "CbcConfig.h"
 #include <cassert>
+#include <cstdlib>
 #include <cmath>
 #include <cfloat>
 

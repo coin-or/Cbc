@@ -5,6 +5,7 @@
 #  pragma warning(disable:4786)
 #endif
 #include <cassert>
+#include <cstdlib>
 #include <cmath>
 #include <cfloat>
 //#define CBC_DEBUG

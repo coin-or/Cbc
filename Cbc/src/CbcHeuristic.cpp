@@ -104,9 +104,9 @@ CbcHeuristic::CbcHeuristic() :
   numInvocationsInDeep_(0),
   lastRunDeep_(0),
   numRuns_(0),
-  numCouldRun_(0),
   minDistanceToRun_(1),
-  runNodes_()
+  runNodes_(),
+  numCouldRun_(0)
 {
   // As CbcHeuristic virtual need to modify .cpp if above change
 }
@@ -127,9 +127,9 @@ CbcHeuristic::CbcHeuristic(CbcModel & model) :
   numInvocationsInDeep_(0),
   lastRunDeep_(0),
   numRuns_(0),
-  numCouldRun_(0),
   minDistanceToRun_(1),
-  runNodes_()
+  runNodes_(),
+  numCouldRun_(0)
 {}
 
 void
@@ -310,7 +310,7 @@ CbcHeuristic::shouldHeurRun()
     //#ifdef PRINT_DEBUG
 #if 1
     double minDistance = nodeDesc->minDistance(runNodes_);
-    double minDistanceToRun = 1.5 * log(depth) / log(2);
+    double minDistanceToRun = 1.5 * log((double)depth) / log((double)2);
     std::cout<<"minDistance = "<<minDistance
 	     <<", minDistanceToRun = "<<minDistanceToRun<<std::endl;
     if (minDistance < minDistanceToRun) {
@@ -338,8 +338,9 @@ CbcHeuristic::shouldHeurRun_randomChoice()
   }
 
   if(depth != 0) {
-
-    double probability = pow(depth,2) / pow(2,depth);
+    const double numerator = depth * depth;
+    const double denominator = exp(depth * log((double)2));
+    double probability = numerator / denominator;
     double randomNumber = randomNumberGenerator_.randomDouble();
     if (randomNumber>probability)
       return false;

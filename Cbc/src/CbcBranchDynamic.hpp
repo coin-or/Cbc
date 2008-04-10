@@ -392,6 +392,16 @@ public:
   /// Set object
   inline void setObject(CbcSimpleIntegerDynamicPseudoCost * object)
   { object_=object;}
+
+  /** Return the type (an integer identifier) of \c this */
+  virtual int type() const { return 400; }
+
+  // LL: compareOriginalObject and compareBranchingObject are inherited from
+  // CbcIntegerBranchingObject thus need not be declared/defined here. After
+  // all, this kind of branching object is simply using pseudocosts to make
+  // decisions, but once the decisions are made they are the same kind as in
+  // the underlying class.
+
 protected:
   /// Change in guessed objective value for next branch
   double changeInGuessed_;

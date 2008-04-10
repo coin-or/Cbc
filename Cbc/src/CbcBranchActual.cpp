@@ -10,6 +10,7 @@
 #include <cfloat>
 //#define CBC_DEBUG
 
+#include "CoinTypes.hpp"
 #include "OsiSolverInterface.hpp"
 #include "OsiSolverBranch.hpp"
 #include "CbcModel.hpp"
@@ -17,6 +18,8 @@
 #include "CbcBranchActual.hpp"
 #include "CoinSort.hpp"
 #include "CoinError.hpp"
+
+//##############################################################################
 
 // Default Constructor 
 CbcClique::CbcClique ()
@@ -331,6 +334,8 @@ CbcClique::createBranch(int way)
   delete [] sort;
   return branch;
 }
+
+//##############################################################################
 
 // Default Constructor 
 CbcSOS::CbcSOS ()
@@ -708,6 +713,8 @@ CbcSOS::osiObject(const OsiSolverInterface * solver) const
   return obj;
 }
 
+//##############################################################################
+
 /** Default Constructor
 
   Equivalent to an unspecified binary variable.
@@ -938,6 +945,9 @@ CbcSimpleInteger::createBranch( int way)
   abort();
   return NULL;
 }
+
+//##############################################################################
+
 // Default Constructor 
 CbcIntegerBranchingObject::CbcIntegerBranchingObject()
   :CbcBranchingObject()
@@ -1331,6 +1341,27 @@ CbcIntegerBranchingObject::print()
   }
 }
 
+/** Compare the \c this with \c brObj. \c this and \c brObj must be os the
+    same type and must have the same original object, but they may have
+    different feasible regions.
+    Return the appropriate CbcRangeCompare value (first argument being the
+    sub/superset if that's the case). In case of overlap (and if \c
+    replaceIfOverlap is true) replace the current branching object with one
+    whose feasible region is the overlap.
+   */
+CbcRangeCompare
+CbcIntegerBranchingObject::compareBranchingObject
+(const CbcBranchingObject* brObj, const bool replaceIfOverlap)
+{
+  const CbcIntegerBranchingObject* br =
+    dynamic_cast<const CbcIntegerBranchingObject*>(brObj);
+  assert(br);
+  double* thisBd = way_ < 0 ? down_ : up_;
+  const double* otherBd = br->way_ < 0 ? br->down_ : br->up_;
+  return CbcCompareRanges(thisBd, otherBd, replaceIfOverlap);
+}
+
+//##############################################################################
 
 /** Default Constructor
 
@@ -1568,6 +1599,8 @@ CbcSimpleIntegerPseudoCost::downEstimate() const
   return downCost;
 }
 
+//##############################################################################
+
 // Default Constructor 
 CbcIntegerPseudoCostBranchingObject::CbcIntegerPseudoCostBranchingObject()
   :CbcIntegerBranchingObject()
@@ -1639,6 +1672,28 @@ CbcIntegerPseudoCostBranchingObject::branch()
   return changeInGuessed_;
 }
 
+/** Compare the \c this with \c brObj. \c this and \c brObj must be os the
+    same type and must have the same original object, but they may have
+    different feasible regions.
+    Return the appropriate CbcRangeCompare value (first argument being the
+    sub/superset if that's the case). In case of overlap (and if \c
+    replaceIfOverlap is true) replace the current branching object with one
+    whose feasible region is the overlap.
+*/
+CbcRangeCompare
+CbcIntegerPseudoCostBranchingObject::compareBranchingObject
+(const CbcBranchingObject* brObj, const bool replaceIfOverlap)
+{
+  const CbcIntegerPseudoCostBranchingObject* br =
+    dynamic_cast<const CbcIntegerPseudoCostBranchingObject*>(brObj);
+  assert(br);
+  double* thisBd = way_ < 0 ? down_ : up_;
+  const double* otherBd = br->way_ < 0 ? br->down_ : br->up_;
+  return CbcCompareRanges(thisBd, otherBd, replaceIfOverlap);
+}
+
+
+//##############################################################################
 
 // Default Constructor 
 CbcCliqueBranchingObject::CbcCliqueBranchingObject()
@@ -1813,7 +1868,86 @@ CbcCliqueBranchingObject::print()
   }
   printf("\n");
 }
-  
+
+static inline int
+CbcCompareCliques(const CbcClique* cl0, const CbcClique* cl1)
+{
+  if (cl0->cliqueType() < cl1->cliqueType()) {
+    return -1;
+  }
+  if (cl0->cliqueType() > cl1->cliqueType()) {
+    return 1;
+  }
+  if (cl0->numberMembers() != cl1->numberMembers()) {
+    return cl0->numberMembers() - cl1->numberMembers();
+  }
+  if (cl0->numberNonSOSMembers() != cl1->numberNonSOSMembers()) {
+    return cl0->numberNonSOSMembers() - cl1->numberNonSOSMembers();
+  }
+  return memcmp(cl0->members(), cl1->members(),
+		cl0->numberMembers() * sizeof(int));
+}
+
+/** Compare the original object of \c this with the original object of \c
+    brObj. Assumes that there is an ordering of the original objects.
+    This method should be invoked only if \c this and brObj are of the same
+    type. 
+    Return negative/0/positive depending on whether \c this is
+    smaller/same/larger than the argument.
+*/
+int
+CbcCliqueBranchingObject::compareOriginalObject
+(const CbcBranchingObject* brObj) const
+{
+  const CbcCliqueBranchingObject* br =
+    dynamic_cast<const CbcCliqueBranchingObject*>(brObj);
+  assert(br);
+  return CbcCompareCliques(clique_, br->clique_);
+}
+
+/** Compare the \c this with \c brObj. \c this and \c brObj must be os the
+    same type and must have the same original object, but they may have
+    different feasible regions.
+    Return the appropriate CbcRangeCompare value (first argument being the
+    sub/superset if that's the case). In case of overlap (and if \c
+    replaceIfOverlap is true) replace the current branching object with one
+    whose feasible region is the overlap.
+*/
+CbcRangeCompare
+CbcCliqueBranchingObject::compareBranchingObject
+(const CbcBranchingObject* brObj, const bool replaceIfOverlap)
+{
+  const CbcCliqueBranchingObject* br =
+    dynamic_cast<const CbcCliqueBranchingObject*>(brObj);
+  assert(br);
+  unsigned int* thisMask = way_ < 0 ? upMask_ : downMask_;
+  const unsigned int* otherMask = br->way_ < 0 ? br->upMask_ : br->downMask_;
+  const CoinUInt64 cl0 =
+    (static_cast<CoinUInt64>(thisMask[0]) << 32) | thisMask[1];
+  const CoinUInt64 cl1 =
+    (static_cast<CoinUInt64>(otherMask[0]) << 32) | otherMask[1];
+  if (cl0 == cl1) {
+    return CbcRangeSame;
+  }
+  const CoinUInt64 cl_intersection = (cl0 & cl1);
+  if (cl_intersection == cl0) {
+    return CbcRangeSuperset;
+  }
+  if (cl_intersection == cl1) {
+    return CbcRangeSubset;
+  }
+  const CoinUInt64 cl_xor = (cl0 ^ cl1);
+  if (cl_intersection == 0 && cl_xor == 0) {
+    return CbcRangeDisjoint;
+  }
+  const CoinUInt64 cl_union = (cl0 | cl1);
+  thisMask[0] = static_cast<unsigned int>(cl_union >> 32);
+  thisMask[1] = static_cast<unsigned int>(cl_union & 0xffffffff);
+  return CbcRangeOverlap;
+}
+
+//##############################################################################
+
 // Default Constructor 
 CbcLongCliqueBranchingObject::CbcLongCliqueBranchingObject()
   :CbcBranchingObject()
@@ -2004,9 +2138,84 @@ CbcLongCliqueBranchingObject::print()
   }
   printf("\n");
 }
+
+/** Compare the original object of \c this with the original object of \c
+    brObj. Assumes that there is an ordering of the original objects.
+    This method should be invoked only if \c this and brObj are of the same
+    type. 
+    Return negative/0/positive depending on whether \c this is
+    smaller/same/larger than the argument.
+*/
+int
+CbcLongCliqueBranchingObject::compareOriginalObject
+(const CbcBranchingObject* brObj) const
+{
+  const CbcLongCliqueBranchingObject* br =
+    dynamic_cast<const CbcLongCliqueBranchingObject*>(brObj);
+  assert(br);
+  return CbcCompareCliques(clique_, br->clique_);
+}
+
+/** Compare the \c this with \c brObj. \c this and \c brObj must be os the
+    same type and must have the same original object, but they may have
+    different feasible regions.
+    Return the appropriate CbcRangeCompare value (first argument being the
+    sub/superset if that's the case). In case of overlap (and if \c
+    replaceIfOverlap is true) replace the current branching object with one
+    whose feasible region is the overlap.
+*/
+CbcRangeCompare
+CbcLongCliqueBranchingObject::compareBranchingObject
+(const CbcBranchingObject* brObj, const bool replaceIfOverlap)
+{
+  const CbcLongCliqueBranchingObject* br =
+    dynamic_cast<const CbcLongCliqueBranchingObject*>(brObj);
+  assert(br);
+  const int numberMembers = clique_->numberMembers();
+  const int numberWords=(numberMembers+31)>>5;
+  unsigned int* thisMask = way_ < 0 ? upMask_ : downMask_;
+  const unsigned int* otherMask = br->way_ < 0 ? br->upMask_ : br->downMask_;
+
+  if (memcmp(thisMask, otherMask, numberWords * sizeof(unsigned int)) == 0) {
+    return CbcRangeSame;
+  }
+  bool canBeSuperset = true;
+  bool canBeSubset = true;
+  int i;
+  for (i = numberWords-1; i >= 0 && (canBeSuperset || canBeSubset); --i) {
+    const unsigned int both = (thisMask[i] & otherMask[i]);
+    canBeSuperset &= (both == thisMask[i]);
+    canBeSubset &= (both == otherMask[i]);
+  }
+  if (canBeSuperset) {
+    return CbcRangeSuperset;
+  }
+  if (canBeSubset) {
+    return CbcRangeSubset;
+  }
+
+  for (i = numberWords-1; i >= 0; --i) {
+    if ((thisMask[i] ^ otherMask[i]) != 0) {
+      break;
+    }
+  }
+  if (i == -1) { // complement
+    return CbcRangeDisjoint;
+  }
+  // must be overlap
+  for (i = numberWords-1; i >= 0; --i) {
+    thisMask[i] |= otherMask[i];
+  }
+  return CbcRangeOverlap;
+}
+
+//##############################################################################
+
 // Default Constructor 
 CbcSOSBranchingObject::CbcSOSBranchingObject()
-  :CbcBranchingObject()
+  :CbcBranchingObject(),
+   firstNonzero_(-1),
+   lastNonzero_(-1)
 {
   set_ = NULL;
   separator_=0.0;
@@ -2021,10 +2230,14 @@ CbcSOSBranchingObject::CbcSOSBranchingObject (CbcModel * model,
 {
   set_ = set;
   separator_ = separator;
+  computeNonzeroRange();
 }
 
 // Copy constructor 
-CbcSOSBranchingObject::CbcSOSBranchingObject ( const CbcSOSBranchingObject & rhs) :CbcBranchingObject(rhs)
+CbcSOSBranchingObject::CbcSOSBranchingObject (const CbcSOSBranchingObject & rhs)
+ :CbcBranchingObject(rhs),
+  firstNonzero_(rhs.firstNonzero_),
+  lastNonzero_(rhs.lastNonzero_)
 {
   set_=rhs.set_;
   separator_ = rhs.separator_;
@@ -2038,6 +2251,8 @@ CbcSOSBranchingObject::operator=( const CbcSOSBranchingObject& rhs)
     CbcBranchingObject::operator=(rhs);
     set_=rhs.set_;
     separator_ = rhs.separator_;
+    firstNonzero_ = rhs.firstNonzero_;
+    lastNonzero_ = rhs.lastNonzero_;
   }
   return *this;
 }
@@ -2052,6 +2267,32 @@ CbcSOSBranchingObject::clone() const
 CbcSOSBranchingObject::~CbcSOSBranchingObject ()
 {
 }
+
+void
+CbcSOSBranchingObject::computeNonzeroRange()
+{
+  const int numberMembers = set_->numberMembers();
+  const double * weights = set_->weights();
+  int i = 0;
+  if (way_ < 0) {
+    for ( i=0;i<numberMembers;i++) {
+      if (weights[i] > separator_)
+	break;
+    }
+    assert (i<numberMembers);
+    firstNonzero_ = 0;
+    lastNonzero_ = i;
+  } else {
+    for ( i=0;i<numberMembers;i++) {
+      if (weights[i] >= separator_)
+	break;
+    }
+    assert (i<numberMembers);
+    firstNonzero_ = i;
+    lastNonzero_ = numberMembers;
+  }
+}
+
 double
 CbcSOSBranchingObject::branch()
 {
@@ -2084,6 +2325,7 @@ CbcSOSBranchingObject::branch()
     assert (i<numberMembers);
     way_=-1;	  // Swap direction
   }
+  computeNonzeroRange();
   return 0.0;
 }
 // Print what would happen  
@@ -2144,6 +2386,87 @@ CbcSOSBranchingObject::print()
 	 separator_,which[first],weights[first],which[last],weights[last],numberFixed,numberOther);
 }
   
+/** Compare the original object of \c this with the original object of \c
+    brObj. Assumes that there is an ordering of the original objects.
+    This method should be invoked only if \c this and brObj are of the same
+    type. 
+    Return negative/0/positive depending on whether \c this is
+    smaller/same/larger than the argument.
+*/
+int
+CbcSOSBranchingObject::compareOriginalObject
+(const CbcBranchingObject* brObj) const
+{
+  const CbcSOSBranchingObject* br =
+    dynamic_cast<const CbcSOSBranchingObject*>(brObj);
+  assert(br);
+  const CbcSOS* s0 = set_;
+  const CbcSOS* s1 = br->set_;
+  if (s0->sosType() != s1->sosType()) {
+    return s0->sosType() - s1->sosType();
+  }
+  if (s0->numberMembers() != s1->numberMembers()) {
+    return s0->numberMembers() - s1->numberMembers();
+  }
+  const int memberCmp = memcmp(s0->members(), s1->members(),
+			       s0->numberMembers() * sizeof(int));
+  if (memberCmp != 0) {
+    return memberCmp;
+  }
+  return memcmp(s0->weights(), s1->weights(),
+		s0->numberMembers() * sizeof(double));
+}
+
+/** Compare the \c this with \c brObj. \c this and \c brObj must be os the
+    same type and must have the same original object, but they may have
+    different feasible regions.
+    Return the appropriate CbcRangeCompare value (first argument being the
+    sub/superset if that's the case). In case of overlap (and if \c
+    replaceIfOverlap is true) replace the current branching object with one
+    whose feasible region is the overlap.
+*/
+CbcRangeCompare
+CbcSOSBranchingObject::compareBranchingObject
+(const CbcBranchingObject* brObj, const bool replaceIfOverlap)
+{
+  const CbcSOSBranchingObject* br =
+    dynamic_cast<const CbcSOSBranchingObject*>(brObj);
+  assert(br);
+  if (firstNonzero_ < br->firstNonzero_) {
+    if (lastNonzero_ >= br->lastNonzero_) {
+      return CbcRangeSuperset;
+    } else if (lastNonzero_ <= br->firstNonzero_) {
+      return CbcRangeDisjoint;
+    } else {
+      // overlap
+      if (replaceIfOverlap) {
+	firstNonzero_ = br->firstNonzero_;
+      }
+      return CbcRangeOverlap;
+    }
+  } else if (firstNonzero_ > br->firstNonzero_) {
+    if (lastNonzero_ <= br->lastNonzero_) {
+      return CbcRangeSubset;
+    } else if (firstNonzero_ >= br->lastNonzero_) {
+      return CbcRangeDisjoint;
+    } else {
+      // overlap
+      if (replaceIfOverlap) {
+	lastNonzero_ = br->lastNonzero_;
+      }
+      return CbcRangeOverlap;
+    }
+  } else {
+    if (lastNonzero_ == br->lastNonzero_) {
+      return CbcRangeSame;
+    }
+    return lastNonzero_ < br->lastNonzero_ ? CbcRangeSubset : CbcRangeSuperset;
+  }
+  return CbcRangeSame; // fake return
+}
+
+//##############################################################################
+
 // Default Constructor 
 CbcBranchDefaultDecision::CbcBranchDefaultDecision()
   :CbcBranchDecision()
@@ -2554,6 +2877,8 @@ CbcBranchDefaultDecision::bestBranch (CbcBranchingObject ** objects, int numberO
   return whichObject;
 }
 
+//##############################################################################
+
 // Default Constructor 
 CbcFollowOn::CbcFollowOn ()
   : CbcObject(),
@@ -2892,6 +3217,9 @@ CbcFollowOn::createBranch(int way)
   delete [] downList;
   return branch;
 }
+
+//##############################################################################
+
 // Default Constructor 
 CbcFixingBranchingObject::CbcFixingBranchingObject()
   :CbcBranchingObject()
@@ -3012,6 +3340,43 @@ CbcFixingBranchingObject::print()
   }
   printf("\n");
 }
+
+/** Compare the original object of \c this with the original object of \c
+    brObj. Assumes that there is an ordering of the original objects.
+    This method should be invoked only if \c this and brObj are of the same
+    type. 
+    Return negative/0/positive depending on whether \c this is
+    smaller/same/larger than the argument.
+*/
+int
+CbcFixingBranchingObject::compareOriginalObject
+(const CbcBranchingObject* brObj) const
+{
+  throw("must implement");
+}
+
+/** Compare the \c this with \c brObj. \c this and \c brObj must be os the
+    same type and must have the same original object, but they may have
+    different feasible regions.
+    Return the appropriate CbcRangeCompare value (first argument being the
+    sub/superset if that's the case). In case of overlap (and if \c
+    replaceIfOverlap is true) replace the current branching object with one
+    whose feasible region is the overlap.
+   */
+CbcRangeCompare
+CbcFixingBranchingObject::compareBranchingObject
+(const CbcBranchingObject* brObj, const bool replaceIfOverlap)
+{
+  const CbcFixingBranchingObject* br =
+    dynamic_cast<const CbcFixingBranchingObject*>(brObj);
+  assert(br);
+  // If two FixingBranchingObject's have the same base object then it's pretty
+  // much guaranteed
+  throw("must implement");
+}
+
+//##############################################################################
+
 // Default Constructor 
 CbcNWay::CbcNWay ()
   : CbcObject(),
@@ -3261,6 +3626,8 @@ CbcNWay::createBranch(int way)
   return branch;
 }
   
+//##############################################################################
+
 // Default Constructor 
 CbcNWayBranchingObject::CbcNWayBranchingObject()
   :CbcBranchingObject()
@@ -3382,6 +3749,37 @@ CbcNWayBranchingObject::print()
   }
   printf("\n");
 }
+
+/** Compare the original object of \c this with the original object of \c
+    brObj. Assumes that there is an ordering of the original objects.
+    This method should be invoked only if \c this and brObj are of the same
+    type. 
+    Return negative/0/positive depending on whether \c this is
+    smaller/same/larger than the argument.
+*/
+int
+CbcNWayBranchingObject::compareOriginalObject
+(const CbcBranchingObject* brObj) const
+{
+  throw("must implement");
+}
+
+/** Compare the \c this with \c brObj. \c this and \c brObj must be os the
+    same type and must have the same original object, but they may have
+    different feasible regions.
+    Return the appropriate CbcRangeCompare value (first argument being the
+    sub/superset if that's the case). In case of overlap (and if \c
+    replaceIfOverlap is true) replace the current branching object with one
+    whose feasible region is the overlap.
+*/
+CbcRangeCompare
+CbcNWayBranchingObject::compareBranchingObject
+(const CbcBranchingObject* brObj, const bool replaceIfOverlap)
+{
+  throw("must implement");
+}
+
+//##############################################################################
 
 // Default Constructor 
 CbcFixVariable::CbcFixVariable ()
@@ -3549,6 +3947,8 @@ CbcFixVariable::applyToSolver(OsiSolverInterface * solver, int state) const
   }
 }
 
+//##############################################################################
+
 // Default Constructor 
 CbcDummyBranchingObject::CbcDummyBranchingObject(CbcModel * model)
   :CbcBranchingObject(model,0,0,0.5)
@@ -3598,3 +3998,33 @@ CbcDummyBranchingObject::print()
 {
   printf("Dummy branch\n");
 }
+
+/** Compare the original object of \c this with the original object of \c
+    brObj. Assumes that there is an ordering of the original objects.
+    This method should be invoked only if \c this and brObj are of the same
+    type. 
+    Return negative/0/positive depending on whether \c this is
+    smaller/same/larger than the argument.
+*/
+int
+CbcDummyBranchingObject::compareOriginalObject
+(const CbcBranchingObject* brObj) const
+{
+  throw("must implement");
+}
+
+/** Compare the \c this with \c brObj. \c this and \c brObj must be os the
+    same type and must have the same original object, but they may have
+    different feasible regions.
+    Return the appropriate CbcRangeCompare value (first argument being the
+    sub/superset if that's the case). In case of overlap (and if \c
+    replaceIfOverlap is true) replace the current branching object with one
+    whose feasible region is the overlap.
+*/
+CbcRangeCompare
+CbcDummyBranchingObject::compareBranchingObject
+(const CbcBranchingObject* brObj, const bool replaceIfOverlap)
+{
+  throw("must implement");
+}
+

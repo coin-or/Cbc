@@ -196,10 +196,35 @@ public:
   */
   virtual double branch();
 
+#if 0
+  // No need to override. Default works fine.
+  /** Reset every information so that the branching object appears to point to
+      the previous child. This method does not need to modify anything in any
+      solver. */
+  virtual void previousBranch();
+#endif
+
   using CbcBranchingObject::print ;
   /** \brief Print something about branch - only if log level high
   */
   virtual void print();
+
+  /** Return the type (an integer identifier) of \c this */
+  virtual int type() const { return 300; }
+
+  // LL: compareOriginalObject can be inherited from the CbcBranchingObject
+  // since variable_ uniquely defines the lot sizing object.
+
+  /** Compare the \c this with \c brObj. \c this and \c brObj must be os the
+      same type and must have the same original object, but they may have
+      different feasible regions.
+      Return the appropriate CbcRangeCompare value (first argument being the
+      sub/superset if that's the case). In case of overlap (and if \c
+      replaceIfOverlap is true) replace the current branching object with one
+      whose feasible region is the overlap.
+   */
+  virtual CbcRangeCompare compareBranchingObject
+  (const CbcBranchingObject* brObj, const bool replaceIfOverlap = false);
 
 protected:
   /// Lower [0] and upper [1] bounds for the down arm (way_ = -1)

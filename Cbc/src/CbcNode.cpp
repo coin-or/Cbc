@@ -45,6 +45,7 @@ CbcNodeInfo::CbcNodeInfo ()
   :
   numberPointingToThis_(0),
   parent_(NULL),
+  parentBranch_(NULL),
   owner_(NULL),
   numberCuts_(0),
   nodeNumber_(0),
@@ -57,11 +58,30 @@ CbcNodeInfo::CbcNodeInfo ()
   printf("CbcNodeInfo %x Constructor\n",this);
 #endif
 }
+
+void
+CbcNodeInfo::setParentBasedData()
+{
+  if (parent_) {
+    numberRows_ = parent_->numberRows_+parent_->numberCuts_;
+    //parent_->increment();
+    if (parent_->owner()) {
+      const OsiBranchingObject* br = parent_->owner()->branchingObject();
+      const CbcBranchingObject* cbcbr = dynamic_cast<const CbcBranchingObject*>(br);
+      assert(cbcbr);
+      parentBranch_ = cbcbr->clone();
+      parentBranch_->previousBranch();
+    }
+  }
+}
+
+#if 0
 // Constructor given parent
 CbcNodeInfo::CbcNodeInfo (CbcNodeInfo * parent)
   :
   numberPointingToThis_(2),
   parent_(parent),
+  parentBranch_(NULL),
   owner_(NULL),
   numberCuts_(0),
   nodeNumber_(0),
@@ -73,16 +93,16 @@ CbcNodeInfo::CbcNodeInfo (CbcNodeInfo * parent)
 #ifdef CHECK_NODE
   printf("CbcNodeInfo %x Constructor from parent %x\n",this,parent_);
 #endif
-  if (parent_) {
-    numberRows_ = parent_->numberRows_+parent_->numberCuts_;
-    //parent_->increment();
-  }
+  setParentBasedData();
 }
+#endif
+
 // Copy Constructor 
 CbcNodeInfo::CbcNodeInfo (const CbcNodeInfo & rhs)
   :
   numberPointingToThis_(rhs.numberPointingToThis_),
   parent_(rhs.parent_),
+  parentBranch_(NULL),
   owner_(rhs.owner_),
   numberCuts_(rhs.numberCuts_),
   nodeNumber_(rhs.nodeNumber_),
@@ -108,12 +128,16 @@ CbcNodeInfo::CbcNodeInfo (const CbcNodeInfo & rhs)
     }
     numberCuts_=n;
   }
+  if (rhs.parentBranch_) {
+    parentBranch_ = rhs.parentBranch_->clone();
+  }
 }
 // Constructor given parent and owner
 CbcNodeInfo::CbcNodeInfo (CbcNodeInfo * parent, CbcNode * owner)
   :
   numberPointingToThis_(2),
   parent_(parent),
+  parentBranch_(NULL),
   owner_(owner),
   numberCuts_(0),
   nodeNumber_(0),
@@ -125,9 +149,7 @@ CbcNodeInfo::CbcNodeInfo (CbcNodeInfo * parent, CbcNode * owner)
 #ifdef CHECK_NODE
   printf("CbcNodeInfo %x Constructor from parent %x\n",this,parent_);
 #endif
-  if (parent_) {
-    numberRows_ = parent_->numberRows_+parent_->numberCuts_;
-  }
+  setParentBasedData();
 }
 
 /**
@@ -160,6 +182,7 @@ CbcNodeInfo::~CbcNodeInfo()
     int numberLinks = parent_->decrement();
     if (!numberLinks) delete parent_;
   }
+  delete parentBranch_;
 }
 
 
@@ -478,7 +501,7 @@ CbcFullNodeInfo::CbcFullNodeInfo() :
 }
 CbcFullNodeInfo::CbcFullNodeInfo(CbcModel * model,
 				 int numberRowsAtContinuous) :
-  CbcNodeInfo()
+  CbcNodeInfo(NULL, model->currentNode())
 {
   OsiSolverInterface * solver = model->solver();
   numberRows_ = numberRowsAtContinuous;
@@ -653,7 +676,7 @@ CbcPartialNodeInfo::CbcPartialNodeInfo (CbcNodeInfo *parent, CbcNode *owner,
 
 CbcPartialNodeInfo::CbcPartialNodeInfo (const CbcPartialNodeInfo & rhs)
 
-  : CbcNodeInfo(rhs.parent_)
+  : CbcNodeInfo(rhs)
 
 { basisDiff_ = rhs.basisDiff_->clone() ;
 

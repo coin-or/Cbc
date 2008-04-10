@@ -285,6 +285,60 @@ CbcCutBranchingObject::boundBranch() const
   return false;
 }
 
+/** Compare the original object of \c this with the original object of \c
+    brObj. Assumes that there is an ordering of the original objects.
+    This method should be invoked only if \c this and brObj are of the same
+    type. 
+    Return negative/0/positive depending on whether \c this is
+    smaller/same/larger than the argument.
+*/
+int
+CbcCutBranchingObject::compareOriginalObject
+(const CbcBranchingObject* brObj) const
+{
+  const CbcCutBranchingObject* br =
+    dynamic_cast<const CbcCutBranchingObject*>(brObj);
+  assert(br);
+  const OsiRowCut& r0 = way_ == -1 ? down_ : up_;
+  const OsiRowCut& r1 = br->way_ == -1 ? br->down_ : br->up_;
+  return r0.row().compare(r1.row());
+}
+
+/** Compare the \c this with \c brObj. \c this and \c brObj must be os the
+    same type and must have the same original object, but they may have
+    different feasible regions.
+    Return the appropriate CbcRangeCompare value (first argument being the
+    sub/superset if that's the case). In case of overlap (and if \c
+    replaceIfOverlap is true) replace the current branching object with one
+    whose feasible region is the overlap.
+*/
+
+CbcRangeCompare
+CbcCutBranchingObject::compareBranchingObject
+(const CbcBranchingObject* brObj, const bool replaceIfOverlap)
+{
+  const CbcCutBranchingObject* br =
+    dynamic_cast<const CbcCutBranchingObject*>(brObj);
+  assert(br);
+  OsiRowCut& r0 = way_ == -1 ? down_ : up_;
+  const OsiRowCut& r1 = br->way_ == -1 ? br->down_ : br->up_;
+  double thisBd[2];
+  thisBd[0] = r0.lb();
+  thisBd[1] = r0.ub();
+  double otherBd[2];
+  otherBd[0] = r1.lb();
+  otherBd[1] = r1.ub();
+  CbcRangeCompare comp = CbcCompareRanges(thisBd, otherBd, replaceIfOverlap);
+  if (comp != CbcRangeOverlap || (comp==CbcRangeOverlap && !replaceIfOverlap)) {
+    return comp;
+  }
+  r0.setLb(thisBd[0]);
+  r0.setUb(thisBd[1]);
+  return comp;
+}
+
+//##############################################################################
+
 /** Default Constructor
 
   Equivalent to an unspecified binary variable.

@@ -73,13 +73,14 @@ public:
   /// Copy constructor 
   CbcNodeInfo ( const CbcNodeInfo &);
    
-
+#if 0
   /** Construct with parent
 
     Creates a NodeInfo object which knows its parent and assumes it will
     in turn have two children.
   */
   CbcNodeInfo (CbcNodeInfo * parent);
+#endif
    
   /** Construct with parent and owner
 
@@ -228,6 +229,10 @@ public:
   /// Unmark
   inline void unmark()
   { active_ &= ~8;}
+
+  /// Branching object for the parent
+  inline const CbcBranchingObject * parentBranch() const
+  { return parentBranch_;}
 protected:
 
   /** Number of other nodes pointing to this node.
@@ -242,6 +247,9 @@ protected:
   /// parent
   CbcNodeInfo * parent_;
 
+  /// Copy of the branching object of the parent when the node is created
+  CbcBranchingObject * parentBranch_;
+      
   /// Owner
   CbcNode * owner_;
 
@@ -271,12 +279,14 @@ protected:
       4 - basis!
   */
   int active_;
-      
+
 private:
   
   /// Illegal Assignment operator 
   CbcNodeInfo & operator=(const CbcNodeInfo& rhs);
-  
+
+  /// routine common to constructors 
+  void setParentBasedData();
 };
 
 /** \brief Holds complete information for recreating a subproblem.
@@ -634,7 +644,7 @@ public:
   /// Set branching object for this node (takes ownership)
   inline void setBranchingObject(OsiBranchingObject * branchingObject)
   { branch_ = branchingObject;}
-  /// The node number
+  /// The node number  
   inline int nodeNumber() const
   { return nodeNumber_;}
   inline void setNodeNumber(int node)

@@ -449,6 +449,14 @@ public:
   */
   virtual double branch();
 
+#if 0
+  // No need to override. Default works fine.
+  /** Reset every information so that the branching object appears to point to
+      the previous child. This method does not need to modify anything in any
+      solver. */
+  virtual void previousBranch();
+#endif
+
   using CbcBranchingObject::print ;
   /** \brief Print something about branch - only if log level high
   */
@@ -485,6 +493,20 @@ public:
   inline bool active() const
   { return (down_[1]!=-COIN_DBL_MAX);}
 #endif
+
+  /** Return the type (an integer identifier) of \c this */
+  virtual int type() const { return 100; }
+
+  /** Compare the \c this with \c brObj. \c this and \c brObj must be os the
+      same type and must have the same original object, but they may have
+      different feasible regions.
+      Return the appropriate CbcRangeCompare value (first argument being the
+      sub/superset if that's the case). In case of overlap (and if \c
+      replaceIfOverlap is true) replace the current branching object with one
+      whose feasible region is the overlap.
+   */
+  virtual CbcRangeCompare compareBranchingObject
+  (const CbcBranchingObject* brObj, const bool replaceIfOverlap = false);
 
 protected:
   /// Lower [0] and upper [1] bounds for the down arm (way_ = -1)
@@ -660,6 +682,21 @@ public:
   /// Set change in guessed
   inline void setChangeInGuessed(double value)
   { changeInGuessed_=value;}
+
+  /** Return the type (an integer identifier) of \c this */
+  virtual int type() const { return 101; }
+
+  /** Compare the \c this with \c brObj. \c this and \c brObj must be os the
+      same type and must have the same original object, but they may have
+      different feasible regions.
+      Return the appropriate CbcRangeCompare value (first argument being the
+      sub/superset if that's the case). In case of overlap (and if \c
+      replaceIfOverlap is true) replace the current branching object with one
+      whose feasible region is the overlap.
+   */
+  virtual CbcRangeCompare compareBranchingObject
+  (const CbcBranchingObject* brObj, const bool replaceIfOverlap = false);
+
 protected:
   /// Change in guessed objective value for next branch
   double changeInGuessed_;
@@ -703,10 +740,42 @@ public:
   /// Does next branch and updates state
   virtual double branch();
 
+#if 0
+  // No need to override. Default works fine.
+  /** Reset every information so that the branching object appears to point to
+      the previous child. This method does not need to modify anything in any
+      solver. */
+  virtual void previousBranch();
+#endif
+
   using CbcBranchingObject::print ;
   /** \brief Print something about branch - only if log level high
   */
   virtual void print();
+
+  /** Return the type (an integer identifier) of \c this */
+  virtual int type() const { return 102; }
+
+  /** Compare the original object of \c this with the original object of \c
+      brObj. Assumes that there is an ordering of the original objects.
+      This method should be invoked only if \c this and brObj are of the same
+      type. 
+      Return negative/0/positive depending on whether \c this is
+      smaller/same/larger than the argument.
+  */
+  virtual int compareOriginalObject(const CbcBranchingObject* brObj) const;
+
+  /** Compare the \c this with \c brObj. \c this and \c brObj must be os the
+      same type and must have the same original object, but they may have
+      different feasible regions.
+      Return the appropriate CbcRangeCompare value (first argument being the
+      sub/superset if that's the case). In case of overlap (and if \c
+      replaceIfOverlap is true) replace the current branching object with one
+      whose feasible region is the overlap.
+   */
+  virtual CbcRangeCompare compareBranchingObject
+  (const CbcBranchingObject* brObj, const bool replaceIfOverlap = false);
+
 private:
   /// data
   const CbcClique * clique_;
@@ -750,10 +819,42 @@ public:
   /// Does next branch and updates state
   virtual double branch();
 
+#if 0
+  // No need to override. Default works fine.
+  /** Reset every information so that the branching object appears to point to
+      the previous child. This method does not need to modify anything in any
+      solver. */
+  virtual void previousBranch();
+#endif
+
   using CbcBranchingObject::print ;
   /** \brief Print something about branch - only if log level high
   */
   virtual void print();
+
+  /** Return the type (an integer identifier) of \c this */
+  virtual int type() const { return 103; }
+
+  /** Compare the original object of \c this with the original object of \c
+      brObj. Assumes that there is an ordering of the original objects.
+      This method should be invoked only if \c this and brObj are of the same
+      type. 
+      Return negative/0/positive depending on whether \c this is
+      smaller/same/larger than the argument.
+  */
+  virtual int compareOriginalObject(const CbcBranchingObject* brObj) const;
+
+  /** Compare the \c this with \c brObj. \c this and \c brObj must be os the
+      same type and must have the same original object, but they may have
+      different feasible regions.
+      Return the appropriate CbcRangeCompare value (first argument being the
+      sub/superset if that's the case). In case of overlap (and if \c
+      replaceIfOverlap is true) replace the current branching object with one
+      whose feasible region is the overlap.
+   */
+  virtual CbcRangeCompare compareBranchingObject
+  (const CbcBranchingObject* brObj, const bool replaceIfOverlap = false);
+
 private:
   /// data
   const CbcClique * clique_;
@@ -796,15 +897,57 @@ public:
   /// Does next branch and updates state
   virtual double branch();
 
+  /** Reset every information so that the branching object appears to point to
+      the previous child. This method does not need to modify anything in any
+      solver. */
+  virtual void previousBranch() {
+    CbcBranchingObject::previousBranch();
+    computeNonzeroRange();
+  }
+
   using CbcBranchingObject::print ;
   /** \brief Print something about branch - only if log level high
   */
   virtual void print();
+
+  /** Return the type (an integer identifier) of \c this */
+  virtual int type() const { return 104; }
+
+  /** Compare the original object of \c this with the original object of \c
+      brObj. Assumes that there is an ordering of the original objects.
+      This method should be invoked only if \c this and brObj are of the same
+      type. 
+      Return negative/0/positive depending on whether \c this is
+      smaller/same/larger than the argument.
+  */
+  virtual int compareOriginalObject(const CbcBranchingObject* brObj) const;
+
+  /** Compare the \c this with \c brObj. \c this and \c brObj must be os the
+      same type and must have the same original object, but they may have
+      different feasible regions.
+      Return the appropriate CbcRangeCompare value (first argument being the
+      sub/superset if that's the case). In case of overlap (and if \c
+      replaceIfOverlap is true) replace the current branching object with one
+      whose feasible region is the overlap.
+   */
+  virtual CbcRangeCompare compareBranchingObject
+  (const CbcBranchingObject* brObj, const bool replaceIfOverlap = false);
+
+  /** Fill out the \c firstNonzero_ and \c lastNonzero_ data members */
+  void computeNonzeroRange();
+
 private:
   /// data
   const CbcSOS * set_;
   /// separator
   double separator_;
+  /** The following two members describe the range in the members_ of the
+      original object that whose upper bound is not fixed to 0. This is not
+      necessary for Cbc to function correctly, this is there for heuristics so
+      that separate branching decisions on the same object can be pooled into
+      one branching object. */
+  int firstNonzero_;
+  int lastNonzero_;
 };
 
 /** N way branching Object class.
@@ -840,6 +983,14 @@ public:
   /// Does next branch and updates state
   virtual double branch();
 
+#if 0
+  // FIXME: what do we need to do here?
+  /** Reset every information so that the branching object appears to point to
+      the previous child. This method does not need to modify anything in any
+      solver. */
+  virtual void previousBranch();
+#endif
+
   using CbcBranchingObject::print ;
   /** \brief Print something about branch - only if log level high
   */
@@ -851,6 +1002,30 @@ public:
   /// Is this a two way object (-1 down, +1 up)
   virtual bool twoWay() const
   { return false;}
+
+  /** Return the type (an integer identifier) of \c this */
+  virtual int type() const { return 105; }
+
+  /** Compare the original object of \c this with the original object of \c
+      brObj. Assumes that there is an ordering of the original objects.
+      This method should be invoked only if \c this and brObj are of the same
+      type. 
+      Return negative/0/positive depending on whether \c this is
+      smaller/same/larger than the argument.
+  */
+  virtual int compareOriginalObject(const CbcBranchingObject* brObj) const;
+
+  /** Compare the \c this with \c brObj. \c this and \c brObj must be os the
+      same type and must have the same original object, but they may have
+      different feasible regions.
+      Return the appropriate CbcRangeCompare value (first argument being the
+      sub/superset if that's the case). In case of overlap (and if \c
+      replaceIfOverlap is true) replace the current branching object with one
+      whose feasible region is the overlap.
+   */
+  virtual CbcRangeCompare compareBranchingObject
+  (const CbcBranchingObject* brObj, const bool replaceIfOverlap = false);
+
 private:
   /// order of branching - points back to CbcNWay
   int * order_;
@@ -1036,10 +1211,42 @@ public:
   /// Does next branch and updates state
   virtual double branch();
 
+#if 0
+  // No need to override. Default works fine.
+  /** Reset every information so that the branching object appears to point to
+      the previous child. This method does not need to modify anything in any
+      solver. */
+  virtual void previousBranch();
+#endif
+
   using CbcBranchingObject::print ;
   /** \brief Print something about branch - only if log level high
   */
   virtual void print();
+
+  /** Return the type (an integer identifier) of \c this */
+  virtual int type() const { return 106; }
+
+  /** Compare the original object of \c this with the original object of \c
+      brObj. Assumes that there is an ordering of the original objects.
+      This method should be invoked only if \c this and brObj are of the same
+      type. 
+      Return negative/0/positive depending on whether \c this is
+      smaller/same/larger than the argument.
+  */
+  virtual int compareOriginalObject(const CbcBranchingObject* brObj) const;
+
+  /** Compare the \c this with \c brObj. \c this and \c brObj must be os the
+      same type and must have the same original object, but they may have
+      different feasible regions.
+      Return the appropriate CbcRangeCompare value (first argument being the
+      sub/superset if that's the case). In case of overlap (and if \c
+      replaceIfOverlap is true) replace the current branching object with one
+      whose feasible region is the overlap.
+   */
+  virtual CbcRangeCompare compareBranchingObject
+  (const CbcBranchingObject* brObj, const bool replaceIfOverlap = false);
+
 private:
   /// data
   /// Number on down list
@@ -1134,10 +1341,41 @@ public:
   */
   virtual double branch();
 
+#if 0
+  // No need to override. Default works fine.
+  /** Reset every information so that the branching object appears to point to
+      the previous child. This method does not need to modify anything in any
+      solver. */
+  virtual void previousBranch();
+#endif
+
   using CbcBranchingObject::print ;
   /** \brief Print something about branch - only if log level high
   */
   virtual void print();
+
+  /** Return the type (an integer identifier) of \c this */
+  virtual int type() const { return 107; }
+
+  /** Compare the original object of \c this with the original object of \c
+      brObj. Assumes that there is an ordering of the original objects.
+      This method should be invoked only if \c this and brObj are of the same
+      type. 
+      Return negative/0/positive depending on whether \c this is
+      smaller/same/larger than the argument.
+  */
+  virtual int compareOriginalObject(const CbcBranchingObject* brObj) const;
+
+  /** Compare the \c this with \c brObj. \c this and \c brObj must be os the
+      same type and must have the same original object, but they may have
+      different feasible regions.
+      Return the appropriate CbcRangeCompare value (first argument being the
+      sub/superset if that's the case). In case of overlap (and if \c
+      replaceIfOverlap is true) replace the current branching object with one
+      whose feasible region is the overlap.
+   */
+  virtual CbcRangeCompare compareBranchingObject
+  (const CbcBranchingObject* brObj, const bool replaceIfOverlap = false);
 
 };
 

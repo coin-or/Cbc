@@ -778,3 +778,23 @@ CbcLotsizeBranchingObject::print()
 	   iColumn,olb,oub,up_[0],up_[1]) ; }
   }
 }
+
+/** Compare the \c this with \c brObj. \c this and \c brObj must be os the
+    same type and must have the same original object, but they may have
+    different feasible regions.
+    Return the appropriate CbcRangeCompare value (first argument being the
+    sub/superset if that's the case). In case of overlap (and if \c
+    replaceIfOverlap is true) replace the current branching object with one
+    whose feasible region is the overlap.
+*/
+CbcRangeCompare
+CbcLotsizeBranchingObject::compareBranchingObject
+(const CbcBranchingObject* brObj, const bool replaceIfOverlap)
+{
+  const CbcLotsizeBranchingObject* br =
+    dynamic_cast<const CbcLotsizeBranchingObject*>(brObj);
+  assert(br);
+  double* thisBd = way_ == -1 ? down_ : up_;
+  const double* otherBd = br->way_ == -1 ? br->down_ : br->up_;
+  return CbcCompareRanges(thisBd, otherBd, replaceIfOverlap);
+}

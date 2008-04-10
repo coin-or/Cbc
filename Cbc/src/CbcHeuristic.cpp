@@ -12,6 +12,7 @@
 #include <cmath>
 #include <cfloat>
 
+//#define PRINT_DEBUG
 #ifdef COIN_HAS_CLP
 #include "OsiClpSolverInterface.hpp"
 #endif
@@ -23,57 +24,333 @@
 #include "CglPreProcess.hpp"
 #include "OsiAuxInfo.hpp"
 #include "OsiPresolve.hpp"
+#include "CbcBranchActual.hpp"
+//==============================================================================
+
+CbcHeuristicNode::CbcHeuristicNode(const CbcHeuristicNode& rhs)
+{
+  numObjects_ = rhs.numObjects_;
+  brObj_ = new CbcBranchingObject*[numObjects_];
+  for (int i = 0; i < numObjects_; ++i) {
+    brObj_[i] = rhs.brObj_[i]->clone();
+  }
+}
+
+void
+CbcHeuristicNodeList::gutsOfDelete()
+{
+  for (int i = nodes_.size() - 1; i >= 0; --i) {
+    delete nodes_[i];
+  }
+}
+
+void
+CbcHeuristicNodeList::gutsOfCopy(const CbcHeuristicNodeList& rhs)
+{
+  append(rhs);
+}
+
+CbcHeuristicNodeList::CbcHeuristicNodeList(const CbcHeuristicNodeList& rhs)
+{
+  gutsOfCopy(rhs);
+}
+
+CbcHeuristicNodeList& CbcHeuristicNodeList::operator=
+(const CbcHeuristicNodeList& rhs)
+{
+  if (this != &rhs) {
+    gutsOfDelete();
+    gutsOfCopy(rhs);
+  }
+  return *this;
+}
+
+CbcHeuristicNodeList::~CbcHeuristicNodeList()
+{
+  gutsOfDelete();
+}
+
+void
+CbcHeuristicNodeList::append(CbcHeuristicNode*& node)
+{
+  nodes_.push_back(node);
+  node = NULL;
+}
+
+void
+CbcHeuristicNodeList::append(const CbcHeuristicNodeList& nodes)
+{
+  nodes_.reserve(nodes_.size() + nodes.size());
+  for (int i = 0; i < nodes.size(); ++i) {
+    CbcHeuristicNode* node = new CbcHeuristicNode(*nodes.node(i));
+    append(node);
+  }
+}
+
+//==============================================================================
 
 // Default Constructor
-CbcHeuristic::CbcHeuristic() 
-  :model_(NULL),
-   when_(2),
-   numberNodes_(200),
-   feasibilityPumpOptions_(-1),
-   fractionSmall_(1.0),
-   heuristicName_("Unknown")
+CbcHeuristic::CbcHeuristic() :
+  model_(NULL),
+  when_(2),
+  numberNodes_(200),
+  feasibilityPumpOptions_(-1),
+  fractionSmall_(1.0),
+  heuristicName_("Unknown"),
+  howOften_(1),
+  decayFactor_(0.0),
+  shallowDepth_(1),
+  howOftenShallow_(1),
+  numInvocationsInShallow_(0),
+  numInvocationsInDeep_(0),
+  lastRunDeep_(0),
+  numRuns_(0),
+  minDistanceToRun_(1),
+  runNodes_(),
+  numCouldRun_(0)
 {
   // As CbcHeuristic virtual need to modify .cpp if above change
 }
 
 // Constructor from model
-CbcHeuristic::CbcHeuristic(CbcModel & model)
-:
+CbcHeuristic::CbcHeuristic(CbcModel & model) :
   model_(&model),
   when_(2),
   numberNodes_(200),
   feasibilityPumpOptions_(-1),
   fractionSmall_(1.0),
-  heuristicName_("Unknown")
+  heuristicName_("Unknown"),
+  howOften_(1),
+  decayFactor_(0.0),
+  shallowDepth_(1),
+  howOftenShallow_(1),
+  numInvocationsInShallow_(0),
+  numInvocationsInDeep_(0),
+  lastRunDeep_(0),
+  numRuns_(0),
+  minDistanceToRun_(1),
+  runNodes_(),
+  numCouldRun_(0)
+{}
+
+void
+CbcHeuristic::gutsOfCopy(const CbcHeuristic & rhs)
 {
-  // As CbcHeuristic virtual need to modify .cpp if above change
+  model_ = rhs.model_;
+  when_ = rhs.when_;
+  numberNodes_ = rhs.numberNodes_;
+  feasibilityPumpOptions_ = rhs.feasibilityPumpOptions_;
+  fractionSmall_ = rhs.fractionSmall_;
+  randomNumberGenerator_ = rhs.randomNumberGenerator_;
+  heuristicName_ = rhs.heuristicName_;
+  howOften_ = rhs.howOften_;
+  decayFactor_ = rhs.howOften_;
+  shallowDepth_= rhs.shallowDepth_;
+  howOftenShallow_= rhs.howOftenShallow_;
+  numInvocationsInShallow_ = rhs.numInvocationsInShallow_;
+  numInvocationsInDeep_ = rhs.numInvocationsInDeep_;
+  lastRunDeep_ = rhs.lastRunDeep_;
+  numRuns_ = rhs.numRuns_;
+  numCouldRun_ = rhs.numCouldRun_;
+  minDistanceToRun_ = rhs.minDistanceToRun_;
+  runNodes_ = rhs.runNodes_;
 }
 // Copy constructor 
 CbcHeuristic::CbcHeuristic(const CbcHeuristic & rhs)
-:
-  model_(rhs.model_),
-  when_(rhs.when_),
-  numberNodes_(rhs.numberNodes_),
-  feasibilityPumpOptions_(rhs.feasibilityPumpOptions_),
-  fractionSmall_(rhs.fractionSmall_),
-  randomNumberGenerator_(rhs.randomNumberGenerator_),
-  heuristicName_(rhs.heuristicName_)
 {
+  gutsOfCopy(rhs);
 }
+
 // Assignment operator 
 CbcHeuristic & 
 CbcHeuristic::operator=( const CbcHeuristic& rhs)
 {
   if (this!=&rhs) {
-    model_ = rhs.model_;
-    when_ = rhs.when_;
-    numberNodes_ = rhs.numberNodes_;
-    feasibilityPumpOptions_ = rhs.feasibilityPumpOptions_;
-    fractionSmall_ = rhs.fractionSmall_;
-    randomNumberGenerator_ = rhs.randomNumberGenerator_;
-    heuristicName_ = rhs.heuristicName_ ;
+    gutsOfDelete();
+    gutsOfCopy(rhs);
   }
   return *this;
+}
+
+void CbcHeurDebugNodes(CbcModel* model_)
+{
+  CbcNode* node = model_->currentNode();
+  CbcNodeInfo* nodeInfo = node->nodeInfo();
+  std::cout << "===============================================================\n";
+  while (nodeInfo) {
+    const CbcNode* node = nodeInfo->owner();
+    printf("nodeinfo: node %i\n", nodeInfo->nodeNumber());
+    {
+      const CbcIntegerBranchingObject* brPrint =
+	dynamic_cast<const CbcIntegerBranchingObject*>(nodeInfo->parentBranch());
+      if (!brPrint) {
+	printf("    parentBranch: NULL\n");
+      } else {
+	const double* downBounds = brPrint->downBounds();
+	const double* upBounds = brPrint->upBounds();
+	int variable = brPrint->variable();
+	int way = brPrint->way();
+	printf("   parentBranch: var %i downBd [%i,%i] upBd [%i,%i] way %i\n",
+	       variable, (int)downBounds[0], (int)downBounds[1],
+	       (int)upBounds[0], (int)upBounds[1], way);
+      }
+    }
+    if (! node) {
+      printf("    owner: NULL\n");
+    } else {
+      printf("    owner: node %i depth %i onTree %i active %i",
+	     node->nodeNumber(), node->depth(), node->onTree(), node->active());
+      const OsiBranchingObject* osibr =
+	nodeInfo->owner()->branchingObject();
+      const CbcBranchingObject* cbcbr =
+	dynamic_cast<const CbcBranchingObject*>(osibr);
+      const CbcIntegerBranchingObject* brPrint =
+	dynamic_cast<const CbcIntegerBranchingObject*>(cbcbr);
+      if (!brPrint) {
+	printf("        ownerBranch: NULL\n");
+      } else {
+	const double* downBounds = brPrint->downBounds();
+	const double* upBounds = brPrint->upBounds();
+	int variable = brPrint->variable();
+	int way = brPrint->way();
+	printf("        ownerbranch: var %i downBd [%i,%i] upBd [%i,%i] way %i\n",
+	       variable, (int)downBounds[0], (int)downBounds[1],
+	       (int)upBounds[0], (int)upBounds[1], way);
+      }
+    }
+    nodeInfo = nodeInfo->parent();
+  }
+}
+
+void
+CbcHeuristic::debugNodes()
+{
+  CbcHeurDebugNodes(model_);
+}
+
+void
+CbcHeuristic::printDistanceToNodes()
+{
+  const CbcNode* currentNode = model_->currentNode();
+  if (currentNode != NULL) {
+    CbcHeuristicNode* nodeDesc = new CbcHeuristicNode(*model_);
+    for (int i = runNodes_.size() - 1; i >= 0; --i) {
+      nodeDesc->distance(runNodes_.node(i));
+    }
+    runNodes_.append(nodeDesc);
+  }
+}
+
+bool
+CbcHeuristic::shouldHeurRun()
+{
+
+#if 0
+  const CbcNode* currentNode = model_->currentNode();
+  if (currentNode == NULL) {
+    return false;
+  }
+
+  debugNodes();
+//   return false;
+
+  const int depth = currentNode->depth();
+#else
+  int depth = 0;
+  const CbcNode* currentNode = model_->currentNode();
+  if (currentNode != NULL) {
+    depth = currentNode->depth();
+#ifdef PRINT_DEBUG
+    debugNodes();
+#endif
+  }
+#endif
+
+  const int nodeCount = model_->getNodeCount();  // FIXME: check that this is
+						 // correct in parallel
+
+  if (nodeCount == 0 || depth <= shallowDepth_) {
+    // what to do when we are in the shallow part of the tree
+    if (model_->getCurrentPassNumber() == 1) {
+      // first time in the node...
+      numInvocationsInShallow_ = 0;
+    }
+    ++numInvocationsInShallow_;
+    // Very large howOftenShallow_ will give the original test:
+    // (model_->getCurrentPassNumber() != 1)
+    //    if ((numInvocationsInShallow_ % howOftenShallow_) != 1) {
+    if ((numInvocationsInShallow_ % howOftenShallow_) != 0) {
+      return false;
+    }
+    // LL: should we save these nodes in the list of nodes where the heur was
+    // LL: run? 
+#if 1
+    if (currentNode != NULL) {
+      // Get where we are and create the appropriate CbcHeuristicNode object
+      CbcHeuristicNode* nodeDesc = new CbcHeuristicNode(*model_);
+      runNodes_.append(nodeDesc);
+    }
+#endif
+  } else {
+    // deeper in the tree
+    if (model_->getCurrentPassNumber() == 1) {
+      // first time in the node...
+      ++numInvocationsInDeep_;
+    }
+    if (numInvocationsInDeep_ - lastRunDeep_ < howOften_) {
+      return false;
+    }
+    if (model_->getCurrentPassNumber() != 1) {
+      // Run the heuristic only when first entering the node.
+      // LL: I don't think this is right. It should run just before strong
+      // LL: branching, I believe.
+      return false;
+    }
+    // Get where we are and create the appropriate CbcHeuristicNode object
+    CbcHeuristicNode* nodeDesc = new CbcHeuristicNode(*model_);
+    //#ifdef PRINT_DEBUG
+#if 1
+    double minDistance = nodeDesc->minDistance(runNodes_);
+    double minDistanceToRun = 1.5 * log((double)depth) / log((double)2);
+    std::cout<<"minDistance = "<<minDistance
+	     <<", minDistanceToRun = "<<minDistanceToRun<<std::endl;
+    if (minDistance < minDistanceToRun) {
+#else
+    if (nodeDesc->minDistance(runNodes_) < minDistanceToRun_) {
+#endif
+      delete nodeDesc;
+      return false;
+    }
+    runNodes_.append(nodeDesc);
+    lastRunDeep_ = numInvocationsInDeep_;
+    //    ++lastRunDeep_;
+  }
+  ++numRuns_;
+  return true;
+}
+
+bool
+CbcHeuristic::shouldHeurRun_randomChoice()
+{
+  int depth = 0;
+  const CbcNode* currentNode = model_->currentNode();
+  if (currentNode != NULL) {
+    depth = currentNode->depth();
+  }
+
+  if(depth != 0) {
+    const double numerator = depth * depth;
+    const double denominator = exp(depth * log((double)2));
+    double probability = numerator / denominator;
+    double randomNumber = randomNumberGenerator_.randomDouble();
+    if (randomNumber>probability)
+      return false;
+    
+    if (model_->getCurrentPassNumber() > 1)
+      return false;
+  }
+  ++numRuns_;
+  return true;
 }
 
 // Resets stuff if model changes
@@ -81,7 +358,7 @@ void
 CbcHeuristic::resetModel(CbcModel * model)
 {
   model_=model;
-}
+  }
 // Set seed
 void
 CbcHeuristic::setSeed(int value)
@@ -459,6 +736,210 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver,int numberNodes,
 #endif
   return returnCode;
 }
+
+//##############################################################################
+
+inline int compare3BranchingObjects(const CbcBranchingObject* br0,
+				    const CbcBranchingObject* br1)
+{
+  const int t0 = br0->type();
+  const int t1 = br1->type();
+  if (t0 < t1) {
+    return -1;
+  }
+  if (t0 > t1) {
+    return 1;
+  }
+  return br0->compareOriginalObject(br1);
+}
+
+//==============================================================================
+
+inline bool compareBranchingObjects(const CbcBranchingObject* br0,
+				    const CbcBranchingObject* br1)
+{
+  return compare3BranchingObjects(br0, br1) < 0;
+}
+
+//==============================================================================
+
+void
+CbcHeuristicNode::gutsOfConstructor(CbcModel& model)
+{
+  //  CbcHeurDebugNodes(&model);
+  CbcNode* node = model.currentNode();
+  brObj_ = new CbcBranchingObject*[node->depth()];
+  CbcNodeInfo* nodeInfo = node->nodeInfo();
+  int cnt = 0;
+  while (nodeInfo->parentBranch() != NULL) {
+    brObj_[cnt++] = nodeInfo->parentBranch()->clone();
+    nodeInfo = nodeInfo->parent();
+  }
+  std::sort(brObj_, brObj_+cnt, compareBranchingObjects);
+  if (cnt <= 1) {
+    numObjects_ = cnt;
+  } else {
+    numObjects_ = 0;
+    CbcBranchingObject* br;
+    for (int i = 1; i < cnt; ++i) {
+      if (compare3BranchingObjects(brObj_[numObjects_], brObj_[i]) == 0) {
+	int comp = brObj_[numObjects_]->compareBranchingObject(brObj_[i], &br);
+	switch (comp) {
+	case CbcRangeSame: // the same range
+	case CbcRangeDisjoint: // disjoint decisions
+	  // should not happen! we are on a chain!
+	  abort();
+	case CbcRangeSubset: // brObj_[numObjects_] is a subset of brObj_[i]
+	  delete brObj_[i];
+	  break;
+	case CbcRangeSuperset: // brObj_[i] is a subset of brObj_[numObjects_]
+	  delete brObj_[numObjects_];
+	  brObj_[numObjects_] = brObj_[i];
+	  break;
+	case CbcRangeOverlap: // overlap
+	  delete brObj_[i];
+	  delete brObj_[numObjects_];
+	  brObj_[numObjects_] = br;
+	  break;
+      }
+	continue;
+      } else {
+	brObj_[++numObjects_] = brObj_[i];
+      }
+    }
+    ++numObjects_;
+  }
+}
+
+//==============================================================================
+
+CbcHeuristicNode::CbcHeuristicNode(CbcModel& model)
+{
+  gutsOfConstructor(model);
+}
+
+//==============================================================================
+
+double
+CbcHeuristicNode::distance(const CbcHeuristicNode* node) const 
+{
+
+  const double disjointWeight = 1;
+  const double overlapWeight = 0.4;
+  const double subsetWeight = 0.2;
+  int countDisjointWeight = 0;
+  int countOverlapWeight = 0;
+  int countSubsetWeight = 0;
+  int i = 0; 
+  int j = 0;
+  double dist = 0.0;
+#ifdef PRINT_DEBUG
+  printf(" numObjects_ = %i, node->numObjects_ = %i\n",
+	 numObjects_, node->numObjects_);
+#endif
+  while( i < numObjects_ && j < node->numObjects_) {
+    CbcBranchingObject* br0 = brObj_[i];
+    const CbcBranchingObject* br1 = node->brObj_[j];
+#ifdef PRINT_DEBUG
+    const CbcIntegerBranchingObject* brPrint0 =
+      dynamic_cast<const CbcIntegerBranchingObject*>(br0);
+    const double* downBounds = brPrint0->downBounds();
+    const double* upBounds = brPrint0->upBounds();
+    int variable = brPrint0->variable();
+    int way = brPrint0->way();
+    printf("   br0: var %i downBd [%i,%i] upBd [%i,%i] way %i\n",
+	   variable, (int)downBounds[0], (int)downBounds[1],
+	   (int)upBounds[0], (int)upBounds[1], way);
+    const CbcIntegerBranchingObject* brPrint1 =
+      dynamic_cast<const CbcIntegerBranchingObject*>(br1);
+    downBounds = brPrint1->downBounds();
+    upBounds = brPrint1->upBounds();
+    variable = brPrint1->variable();
+    way = brPrint1->way();
+    printf("   br1: var %i downBd [%i,%i] upBd [%i,%i] way %i\n",
+	   variable, (int)downBounds[0], (int)downBounds[1],
+	   (int)upBounds[0], (int)upBounds[1], way);
+#endif
+    const int brComp = compare3BranchingObjects(br0, br1);
+    if (brComp < 0) {
+      dist += subsetWeight;
+      countSubsetWeight++;
+      ++i;
+    }
+    else if (brComp > 0) {
+      dist += subsetWeight;
+      countSubsetWeight++;
+      ++j;
+    }
+    else {
+      const int comp = br0->compareBranchingObject(br1, false);
+      switch (comp) {
+      case CbcRangeSame:
+	// do nothing
+	break;
+      case CbcRangeDisjoint: // disjoint decisions
+	dist += disjointWeight;
+	countDisjointWeight++;
+	break;
+      case CbcRangeSubset: // subset one way or another
+      case CbcRangeSuperset:
+	dist += subsetWeight;
+	countSubsetWeight++;
+	break;
+      case CbcRangeOverlap: // overlap
+	dist += overlapWeight;
+	countOverlapWeight++;
+	break;
+      }
+      ++i;
+      ++j;
+    }
+  }
+  dist += subsetWeight * (numObjects_ - i + node->numObjects_ - j);
+  countSubsetWeight += (numObjects_ - i + node->numObjects_ - j);
+  printf("subset = %i, overlap = %i, disjoint = %i\n", countSubsetWeight,
+	 countOverlapWeight, countDisjointWeight);
+  return dist;
+}
+
+//==============================================================================
+
+CbcHeuristicNode::~CbcHeuristicNode()
+{
+  for (int i = 0; i < numObjects_; ++i) {
+    delete brObj_[i];
+  }
+  delete [] brObj_;
+}
+
+//==============================================================================
+
+double
+CbcHeuristicNode::minDistance(const CbcHeuristicNodeList& nodeList)
+{
+  double minDist = COIN_DBL_MAX;
+  for (int i = nodeList.size() - 1; i >= 0; --i) {
+    minDist = CoinMin(minDist, distance(nodeList.node(i)));
+  }
+  return minDist;
+}
+
+//==============================================================================
+
+double
+CbcHeuristicNode::avgDistance(const CbcHeuristicNodeList& nodeList)
+{
+  if (nodeList.size() == 0) {
+    return COIN_DBL_MAX;
+  }
+  double sumDist = 0;
+  for (int i = nodeList.size() - 1; i >= 0; --i) {
+    sumDist += distance(nodeList.node(i));
+  }
+  return sumDist/nodeList.size();
+}
+
+//##############################################################################
 
 // Default Constructor
 CbcRounding::CbcRounding() 

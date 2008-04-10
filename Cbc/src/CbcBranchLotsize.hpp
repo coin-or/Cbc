@@ -196,6 +196,14 @@ public:
   */
   virtual double branch();
 
+#if 0
+  // No need to override. Default works fine.
+  /** Reset every information so that the branching object appears to point to
+      the previous child. This method does not need to modify anything in any
+      solver. */
+  virtual void previousBranch();
+#endif
+
   using CbcBranchingObject::print ;
   /** \brief Print something about branch - only if log level high
   */

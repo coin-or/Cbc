@@ -231,7 +231,7 @@ public:
   { active_ &= ~8;}
 
   /// Branching object for the parent
-  inline const CbcBranchingObject * parentBranch() const
+  inline const OsiBranchingObject * parentBranch() const
   { return parentBranch_;}
 protected:
 
@@ -248,7 +248,7 @@ protected:
   CbcNodeInfo * parent_;
 
   /// Copy of the branching object of the parent when the node is created
-  CbcBranchingObject * parentBranch_;
+  OsiBranchingObject * parentBranch_;
       
   /// Owner
   CbcNode * owner_;

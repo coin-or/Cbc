@@ -40,8 +40,10 @@ public:
   CbcHeuristicNode(const CbcHeuristicNode& rhs);
   ~CbcHeuristicNode();
   double distance(const CbcHeuristicNode* node) const;
-  double minDistance(const CbcHeuristicNodeList& nodeList);
-  double avgDistance(const CbcHeuristicNodeList& nodeList);
+  double minDistance(const CbcHeuristicNodeList& nodeList) const;
+  bool minDistanceIsSmall(const CbcHeuristicNodeList& nodeList,
+			  const double threshold) const;
+  double avgDistance(const CbcHeuristicNodeList& nodeList) const;
 };
 
 class CbcHeuristicNodeList {

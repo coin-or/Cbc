@@ -67,10 +67,8 @@ CbcNodeInfo::setParentBasedData()
     //parent_->increment();
     if (parent_->owner()) {
       const OsiBranchingObject* br = parent_->owner()->branchingObject();
-      const CbcBranchingObject* cbcbr = dynamic_cast<const CbcBranchingObject*>(br);
-      assert(cbcbr);
-      parentBranch_ = cbcbr->clone();
-      parentBranch_->previousBranch();
+      assert(br);
+      parentBranch_ = br->clone();
     }
   }
 }

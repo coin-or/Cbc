@@ -310,14 +310,16 @@ CbcHeuristic::shouldHeurRun()
     CbcHeuristicNode* nodeDesc = new CbcHeuristicNode(*model_);
     //#ifdef PRINT_DEBUG
 #if 1
+    const double minDistanceToRun = 1.5 * log((double)depth) / log((double)2);
+#else
+    const double minDistanceToRun = minDistanceToRun_;
+#endif
+#ifdef PRINT_DEBUG
     double minDistance = nodeDesc->minDistance(runNodes_);
-    double minDistanceToRun = 1.5 * log((double)depth) / log((double)2);
     std::cout<<"minDistance = "<<minDistance
 	     <<", minDistanceToRun = "<<minDistanceToRun<<std::endl;
-    if (minDistance < minDistanceToRun) {
-#else
-    if (nodeDesc->minDistance(runNodes_) < minDistanceToRun_) {
 #endif
+    if (nodeDesc->minDistanceIsSmall(runNodes_, minDistanceToRun)) {
       delete nodeDesc;
       return false;
     }
@@ -772,7 +774,17 @@ CbcHeuristicNode::gutsOfConstructor(CbcModel& model)
   CbcNodeInfo* nodeInfo = node->nodeInfo();
   int cnt = 0;
   while (nodeInfo->parentBranch() != NULL) {
-    brObj_[cnt++] = nodeInfo->parentBranch()->clone();
+    const OsiBranchingObject* br = nodeInfo->parentBranch();
+    const CbcBranchingObject* cbcbr = dynamic_cast<const CbcBranchingObject*>(br);
+    if (! cbcbr) {
+      throw CoinError("CbcHeuristicNode can be used only with CbcBranchingObjects.\n",
+		      "gutsOfConstructor",
+		      "CbcHeuristicNode",
+		      __FILE__, __LINE__);
+    }
+    brObj_[cnt] = cbcbr->clone();
+    brObj_[cnt]->previousBranch();
+    ++cnt;
     nodeInfo = nodeInfo->parent();
   }
   std::sort(brObj_, brObj_+cnt, compareBranchingObjects);
@@ -915,7 +927,7 @@ CbcHeuristicNode::~CbcHeuristicNode()
 //==============================================================================
 
 double
-CbcHeuristicNode::minDistance(const CbcHeuristicNodeList& nodeList)
+CbcHeuristicNode::minDistance(const CbcHeuristicNodeList& nodeList) const
 {
   double minDist = COIN_DBL_MAX;
   for (int i = nodeList.size() - 1; i >= 0; --i) {
@@ -926,8 +938,24 @@ CbcHeuristicNode::minDistance(const CbcHeuristicNodeList& nodeList)
 
 //==============================================================================
 
+bool
+CbcHeuristicNode::minDistanceIsSmall(const CbcHeuristicNodeList& nodeList,
+				     const double threshold) const
+{
+  for (int i = nodeList.size() - 1; i >= 0; --i) {
+    if (distance(nodeList.node(i)) >= threshold) {
+      continue;
+    } else {
+      return true;
+    }
+  }
+  return false;
+}
+
+//==============================================================================
+
 double
-CbcHeuristicNode::avgDistance(const CbcHeuristicNodeList& nodeList)
+CbcHeuristicNode::avgDistance(const CbcHeuristicNodeList& nodeList) const
 {
   if (nodeList.size() == 0) {
     return COIN_DBL_MAX;

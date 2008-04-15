@@ -54,6 +54,9 @@ public:
   /// Validate model i.e. sets when_ to 0 if necessary (may be NULL)
   virtual void validate();
 
+  /// Select candidate binary variables for fixing
+  void selectBinaryVariables();
+
   /// Set percentage of integer variables to fix at bounds
   void setPercentageToFix(double value)
   { percentageToFix_ = value; }
@@ -81,11 +84,21 @@ protected:
   // Original matrix by column
   CoinPackedMatrix matrix_;
 
+  // Original matrix by 
+  CoinPackedMatrix matrixByRow_;
+
   // Down locks
   unsigned short * downLocks_;
 
   // Up locks
   unsigned short * upLocks_;
+
+  // Indexes of binary variables with 0 objective coefficient
+  // and in variable bound constraints
+  std::vector<int> binVarIndex_;
+
+  // Indexes of variable bound rows for each binary variable
+  std::vector<int> vbRowIndex_;
 
   // Percentage of integer variables to fix at bounds
   double percentageToFix_;

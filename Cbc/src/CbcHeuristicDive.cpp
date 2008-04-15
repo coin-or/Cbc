@@ -255,6 +255,50 @@ CbcHeuristicDive::solution(double & solutionValue,
       
     // fix binary variables based on pseudo reduced cost
     int numberAtBoundFixed = 0;
+#if 0
+    // This version uses generalized upper bounds. It doesn't seem to be working.
+    if(binVarIndex_.size()) {
+      int cnt = 0;
+      for (int j=0; j<(int)binVarIndex_.size(); j++) {
+	int iColumn1 = binVarIndex_[j];
+	double value = newSolution[iColumn1];
+	double maxPseudoReducedCost = 0.0;
+	if(fabs(value)<=integerTolerance &&
+	   lower[iColumn1] != upper[iColumn1]) {
+	  //	  std::cout<<"iColumn = "<<iColumn<<", value = "<<value<<std::endl;
+	  int iRow = vbRowIndex_[j];
+	  for (int k=rowStart[iRow];k<rowStart[iRow]+rowLength[iRow];k++) {
+	    int iColumn2 = column[k];
+	    if(iColumn1 != iColumn2) {
+	      double pseudoReducedCost = fabs(reducedCost[iColumn2] *
+					      elementByRow[iColumn2] / 
+					      elementByRow[iColumn1]);
+	      if(pseudoReducedCost > maxPseudoReducedCost)
+		maxPseudoReducedCost = pseudoReducedCost;
+	    }
+	  }
+	  //	  std::cout<<", pseudoRedCost = "<<pseudoReducedCost<<std::endl;
+	  candidate[cnt].var = iColumn1;
+	  candidate[cnt++].pseudoRedCost = maxPseudoReducedCost;
+	}
+      }
+      //      std::cout<<"candidates for rounding = "<<cnt<<std::endl;
+      std::sort(candidate, candidate+cnt, compareBinaryVars);
+      for (int i=0; i<cnt; i++) {
+	int iColumn = candidate[i].var;
+	if (numberAtBoundFixed < maxNumberAtBoundToFix) {
+	  columnFixed[numberAtBoundFixed] = iColumn;
+	  originalBound[numberAtBoundFixed] = upper[iColumn];
+	  fixedAtLowerBound[numberAtBoundFixed] = true;
+	  solver->setColUpper(iColumn, lower[iColumn]);
+	  numberAtBoundFixed++;
+	  if(numberAtBoundFixed == maxNumberAtBoundToFix)
+	    break;
+	}
+      }
+    }
+#else
+// THIS ONLY USES variable upper bound constraints with 1 continuous variable
     if(binVarIndex_.size()) {
       int cnt = 0;
       for (int j=0; j<(int)binVarIndex_.size(); j++) {
@@ -305,6 +349,7 @@ CbcHeuristicDive::solution(double & solutionValue,
 	}
       }
     }
+#endif
     //    std::cout<<"numberAtBoundFixed = "<<numberAtBoundFixed<<std::endl;
 
     // fix other integer variables that are at there bounds
@@ -557,6 +602,79 @@ CbcHeuristicDive::validate()
 #endif
 }
 
+#if 0
+// This version uses generalized upper bounds. It doesn't seem to be working.
+
+// Select candidate binary variables for fixing
+void
+CbcHeuristicDive::selectBinaryVariables()
+{
+  // Row copy
+  const double * elementByRow = matrixByRow_.getElements();
+  const int * column = matrixByRow_.getIndices();
+  const CoinBigIndex * rowStart = matrixByRow_.getVectorStarts();
+  const int * rowLength = matrixByRow_.getVectorLengths();
+
+  const int numberRows = matrixByRow_.getNumRows();
+  const int numberCols = matrixByRow_.getNumCols();
+
+  const double * lower = model_->solver()->getColLower();
+  const double * upper = model_->solver()->getColUpper();
+  const double * rowLower = model_->solver()->getRowLower();
+  const double * rowUpper = model_->solver()->getRowUpper();
+
+  //  const char * integerType = model_->integerType();
+  
+
+  //  const int numberIntegers = model_->numberIntegers();
+  //  const int * integerVariable = model_->integerVariable();
+  const double * objective = model_->solver()->getObjCoefficients();
+
+  // vector to store the row number of variable bound rows
+  int* rowIndexes = new int [numberCols];
+  memset(rowIndexes, -1, numberCols*sizeof(int));
+
+  for(int i=0; i<numberRows; i++) {
+    int binVar = -1;
+    int numIntegers = 0;
+    int numContinuous = 0;
+    for (int k=rowStart[i];k<rowStart[i]+rowLength[i];k++) {
+      int iColumn = column[k];
+      if(model_->solver()->isInteger(iColumn)) {
+	numIntegers++;
+	if(numIntegers > 1)
+	  break;
+	if(lower[iColumn] == 0.0 && upper[iColumn] == 1.0 &&
+	   objective[iColumn] == 0.0)
+	  binVar = iColumn;
+      }
+    }
+    if(numIntegers == 1 && binVar >= 0 &&
+       ((rowLower[i] == 0.0 && rowUpper[i] > 1.0e30) ||
+	(rowLower[i] < -1.0e30 && rowUpper[i] == 0))) {
+      if(rowIndexes[binVar] == -1)
+	rowIndexes[binVar] = i;
+      else if(rowIndexes[binVar] >= 0)
+	rowIndexes[binVar] = -2;
+    }
+  }
+
+  for(int j=0; j<numberCols; j++) {
+    if(rowIndexes[j] >= 0) {
+      binVarIndex_.push_back(j);
+      vbRowIndex_.push_back(rowIndexes[j]);
+    }
+  }
+
+  std::cout<<"number vub Binary = "<<binVarIndex_.size()<<std::endl;
+
+  delete [] rowIndexes;
+    
+}
+
+#else
+// THIS ONLY USES variable upper bound constraints with 1 continuous variable
+
 // Select candidate binary variables for fixing
 void
 CbcHeuristicDive::selectBinaryVariables()
@@ -626,3 +744,4 @@ CbcHeuristicDive::selectBinaryVariables()
   delete [] rowIndexes;
     
 }
+#endif

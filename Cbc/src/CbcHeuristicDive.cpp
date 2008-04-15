@@ -265,19 +265,26 @@ CbcHeuristicDive::solution(double & solutionValue,
 	double maxPseudoReducedCost = 0.0;
 	if(fabs(value)<=integerTolerance &&
 	   lower[iColumn1] != upper[iColumn1]) {
-	  //	  std::cout<<"iColumn = "<<iColumn<<", value = "<<value<<std::endl;
+	  //	  std::cout<<"iColumn1 = "<<iColumn1<<", value = "<<value<<std::endl;
 	  int iRow = vbRowIndex_[j];
 	  for (int k=rowStart[iRow];k<rowStart[iRow]+rowLength[iRow];k++) {
 	    int iColumn2 = column[k];
+	    //	    std::cout<<"iColumn2 = "<<iColumn2<<std::endl;
 	    if(iColumn1 != iColumn2) {
 	      double pseudoReducedCost = fabs(reducedCost[iColumn2] *
 					      elementByRow[iColumn2] / 
 					      elementByRow[iColumn1]);
+	      //	      std::cout<<"reducedCost["<<iColumn2<<"] = "
+	      //		       <<reducedCost[iColumn2]
+	      //		       <<", elementByRow["<<iColumn2<<"] = "<<elementByRow[iColumn2]
+	      //		       <<", elementByRow["<<iColumn1<<"] = "<<elementByRow[iColumn1]
+	      //		       <<", pseudoRedCost = "<<pseudoReducedCost
+	      //		       <<std::endl;
 	      if(pseudoReducedCost > maxPseudoReducedCost)
 		maxPseudoReducedCost = pseudoReducedCost;
 	    }
 	  }
-	  //	  std::cout<<", pseudoRedCost = "<<pseudoReducedCost<<std::endl;
+	  //	  std::cout<<", maxPseudoRedCost = "<<maxPseudoReducedCost<<std::endl;
 	  candidate[cnt].var = iColumn1;
 	  candidate[cnt++].pseudoRedCost = maxPseudoReducedCost;
 	}
@@ -648,8 +655,10 @@ CbcHeuristicDive::selectBinaryVariables()
 	   objective[iColumn] == 0.0)
 	  binVar = iColumn;
       }
+      else
+	numContinuous++;
     }
-    if(numIntegers == 1 && binVar >= 0 &&
+    if(numIntegers == 1 && binVar >= 0 && numContinuous > 0 &&
        ((rowLower[i] == 0.0 && rowUpper[i] > 1.0e30) ||
 	(rowLower[i] < -1.0e30 && rowUpper[i] == 0))) {
       if(rowIndexes[binVar] == -1)

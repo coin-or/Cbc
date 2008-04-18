@@ -250,6 +250,8 @@ CbcHeuristicDive::solution(double & solutionValue,
     selectVariableToBranch(solver, newSolution, bestColumn, bestRound);
 
     bool canRoundSolution = true;
+    // if it selected a variable to branch it is because that variable
+    // cannot be trivially rounded (i.e., it has down and up locks)
     if(bestColumn != -1)
       canRoundSolution = false;
       
@@ -461,7 +463,8 @@ CbcHeuristicDive::solution(double & solutionValue,
 	break;
     }
 
-    if(!solver->isProvenOptimal())
+    if(!solver->isProvenOptimal() || 
+       direction*solver->getObjValue() >= solutionValue)
       break;
 
     if(iteration > maxIterations_) {

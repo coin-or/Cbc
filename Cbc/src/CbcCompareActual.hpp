@@ -60,7 +60,7 @@ public:
 /* This is an example of a more complex rule with data
    It is default after first solution
    If weight is 0.0 then it is computed to hit first solution
-   less 2%
+   less 5%
 */
 class CbcCompareDefault  : public CbcCompareBase {
 public:

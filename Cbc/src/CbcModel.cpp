@@ -12327,7 +12327,7 @@ CbcModel::moveToModel(CbcModel * baseModel,int mode)
     assert(baseModel->solverCharacteristics_);
     solverCharacteristics_ = new OsiBabSolver (*baseModel->solverCharacteristics_);
     solverCharacteristics_->setSolver(solver_);
-    setMaximumNodes(INT_MAX);
+    setMaximumNodes(COIN_INT_MAX);
 #ifndef CBC_DETERMINISTIC_THREAD
     delete [] walkback_;
     //delete [] addedCuts_;

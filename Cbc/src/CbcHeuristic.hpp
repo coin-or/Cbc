@@ -151,6 +151,12 @@ public:
   /// Gets fraction of new(rows+columns)/old(rows+columns) before doing small branch and bound (default 1.0)
   inline double fractionSmall() const
   { return fractionSmall_;}
+  /// Get how many solutions the heuristic thought it got
+  inline int numberSolutionsFound() const
+  { return numberSolutionsFound_;}
+  /// Increment how many solutions the heuristic thought it got
+  inline void incrementNumberSolutionsFound()
+  { numberSolutionsFound_++;}
 
   /** Do mini branch and bound - return 
       0 not finished - no solution
@@ -183,6 +189,13 @@ public:
   bool shouldHeurRun_randomChoice();
   void debugNodes();
   void printDistanceToNodes();
+  /// how many times the heuristic has actually run
+  inline int numRuns() const
+  { return numRuns_;}
+
+  /// How many times the heuristic could run
+  inline int numCouldRun() const
+  { return numCouldRun_;}
 
 protected:
 
@@ -234,6 +247,9 @@ protected:
 
   /// How many times the heuristic could run
   int numCouldRun_;
+
+  /// How many solutions the heuristic thought it got
+  int numberSolutionsFound_;
 
 
 #if 0

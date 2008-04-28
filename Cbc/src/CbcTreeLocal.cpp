@@ -160,8 +160,7 @@ CbcTreeLocal::CbcTreeLocal(CbcModel * model,const double * solution ,
       model_->reserveCurrentSolution();
       // Create cut and get total gap
       if (newSolutionValue<bestCutoff_) {
-	model_->setBestSolution(CBC_ROUNDING,newSolutionValue,solution,
-				false);
+	model_->setBestSolution(CBC_ROUNDING,newSolutionValue,solution);
 	bestCutoff_=newSolutionValue;
 	// save as best solution
 	memcpy(savedSolution_,model_->bestSolution(),numberColumns*sizeof(double));

@@ -66,6 +66,14 @@ public:
   /// Return size
   virtual int size() const
   {return nodes_.size();}
+  /// [] operator
+  inline CbcNode * operator [] (int i) const
+  { return nodes_[i];}
+
+  /// Return a node pointer
+  inline CbcNode * nodePointer (int i) const
+  { return nodes_[i];}
+
 
 //@}
 

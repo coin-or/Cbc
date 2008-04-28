@@ -9,6 +9,7 @@
 #include "CbcModel.hpp"
 #include "CbcCutGenerator.hpp"
 #include "OsiClpSolverInterface.hpp"
+#include "ClpFactorization.hpp"
 #include "OsiRowCutDebugger.hpp"
 //#############################################################################
 
@@ -76,7 +77,8 @@ bool CbcTestMpsFile(std::string& fname)
 //#############################################################################
 
 int CbcClpUnitTest (const CbcModel & saveModel, std::string& dirMiplib,
-		     bool unitTestOnly)
+		    bool unitTestOnly,
+		    double * stuff)
 {
   unsigned int m ;
 
@@ -123,6 +125,8 @@ int CbcClpUnitTest (const CbcModel & saveModel, std::string& dirMiplib,
     */
     // 0 for no test, 1 for some, 2 for many, 3 for all
     //PUSH_MPS("blend2",274,353,7.598985,6.9156751140,7);
+    //PUSH_MPS("p2756",755,2756,3124,2688.75,7);
+    //PUSH_MPS("seymour_1",4944,1372,410.7637014,404.35152,7);
 #define HOWMANY 2
 #if HOWMANY
 #if HOWMANY>1
@@ -226,6 +230,10 @@ int CbcClpUnitTest (const CbcModel & saveModel, std::string& dirMiplib,
     
   int numProbSolved = 0;
   double timeTaken=0.0;
+  //#define CLP_FACTORIZATION_INSTRUMENT
+#ifdef CLP_FACTORIZATION_INSTRUMENT
+  double timeTakenFac=0.0;
+#endif
   int numberFailures=0;
   
   /*
@@ -254,6 +262,13 @@ int CbcClpUnitTest (const CbcModel & saveModel, std::string& dirMiplib,
       then check the return code and objective.
     */
 
+#ifdef CLP_FACTORIZATION_INSTRUMENT
+    extern double factorization_instrument(int type);
+    double facTime1=factorization_instrument(0);
+    printf("Factorization - initial solve %g seconds\n",
+	   facTime1);
+    timeTakenFac += facTime1;
+#endif
     double startTime = CoinCpuTime()+CoinCpuTimeJustChildren();
     if (model->getMaximumNodes()>200000) {
       model->setMaximumNodes(200000);
@@ -268,55 +283,76 @@ int CbcClpUnitTest (const CbcModel & saveModel, std::string& dirMiplib,
     if (modelC->dualBound()==1.0e10) {
       // user did not set - so modify
       // get largest scaled away from bound
+      ClpSimplex temp=*modelC;
+      temp.dual(0,7);
+      double largestScaled=1.0e-12;
       double largest=1.0e-12;
-      int numberRows = modelC->numberRows();
-      const double * rowPrimal = modelC->primalRowSolution();
-      const double * rowLower = modelC->rowLower();
-      const double * rowUpper = modelC->rowUpper();
-      const double * rowScale = modelC->rowScale();
+      int numberRows = temp.numberRows();
+      const double * rowPrimal = temp.primalRowSolution();
+      const double * rowLower = temp.rowLower();
+      const double * rowUpper = temp.rowUpper();
+      const double * rowScale = temp.rowScale();
       int iRow;
       for (iRow=0;iRow<numberRows;iRow++) {
 	double value = rowPrimal[iRow];
 	double above = value-rowLower[iRow];
 	double below = rowUpper[iRow]-value;
+	if (above<1.0e12) {
+	  largest = CoinMax(largest,above);
+	}
+	if (below<1.0e12) {
+	  largest = CoinMax(largest,below);
+	}
 	if (rowScale) {
 	  double multiplier = rowScale[iRow];
 	  above *= multiplier;
 	  below *= multiplier;
 	}
 	if (above<1.0e12) {
-	  largest = CoinMax(largest,above);
+	  largestScaled = CoinMax(largestScaled,above);
 	}
 	if (below<1.0e12) {
-	  largest = CoinMax(largest,below);
+	  largestScaled = CoinMax(largestScaled,below);
 	}
       }
       
-      int numberColumns = modelC->numberColumns();
-      const double * columnPrimal = modelC->primalColumnSolution();
-      const double * columnLower = modelC->columnLower();
-      const double * columnUpper = modelC->columnUpper();
-      const double * columnScale = modelC->columnScale();
+      int numberColumns = temp.numberColumns();
+      const double * columnPrimal = temp.primalColumnSolution();
+      const double * columnLower = temp.columnLower();
+      const double * columnUpper = temp.columnUpper();
+      const double * columnScale = temp.columnScale();
       int iColumn;
       for (iColumn=0;iColumn<numberColumns;iColumn++) {
 	double value = columnPrimal[iColumn];
 	double above = value-columnLower[iColumn];
 	double below = columnUpper[iColumn]-value;
-	if (columnScale) {
-	  double multiplier = 1.0/columnScale[iColumn];
-	  above *= multiplier;
-	  below *= multiplier;
-	}
 	if (above<1.0e12) {
 	  largest = CoinMax(largest,above);
 	}
 	if (below<1.0e12) {
 	  largest = CoinMax(largest,below);
 	}
+	if (columnScale) {
+	  double multiplier = 1.0/columnScale[iColumn];
+	  above *= multiplier;
+	  below *= multiplier;
+	}
+	if (above<1.0e12) {
+	  largestScaled = CoinMax(largestScaled,above);
+	}
+	if (below<1.0e12) {
+	  largestScaled = CoinMax(largestScaled,below);
+	}
       }
-      //std::cout<<"Largest (scaled) away from bound "<<largest<<std::endl;
+      std::cout<<"Largest (scaled) away from bound "<<largestScaled
+	       <<" unscaled "<<largest<<std::endl;
+#if 1
       modelC->setDualBound(CoinMax(1.0001e8,
-				   CoinMin(1000.0*largest,1.00001e10)));
+				   CoinMin(1000.0*largestScaled,1.00001e10)));
+#else
+      modelC->setDualBound(CoinMax(1.0001e9,
+				   CoinMin(1000.0*largestScaled,1.e10)));
+#endif
     }
     model->setMinimumDrop(min(5.0e-2,
 			      fabs(model->getMinimizationObjValue())*1.0e-3+1.0e-4));
@@ -338,14 +374,65 @@ int CbcClpUnitTest (const CbcModel & saveModel, std::string& dirMiplib,
 	model->setNumberBeforeTrust(50);
       }
     }
-    if (model->getNumCols()==-353) {
-      // blend2
+    //if (model->getNumCols()>=500) {
+      // switch off Clp stuff
+      //model->setFastNodeDepth(-1);
+    //}
+    if (model->getNumCols()==-2756) {
+      // p2756
+      std::string problemName ;
+      model->solver()->getStrParam(OsiProbName,problemName) ;
+      model->solver()->activateRowCutDebugger(problemName.c_str()) ;
+    }
+    if (model->getNumCols()==-141) {
+      // egout
+      std::string problemName ;
+      model->solver()->getStrParam(OsiProbName,problemName) ;
+      model->solver()->activateRowCutDebugger(problemName.c_str()) ;
+    }
+    if (model->getNumCols()==-378) {
+      // vpm2
+      std::string problemName ;
+      model->solver()->getStrParam(OsiProbName,problemName) ;
+      model->solver()->activateRowCutDebugger(problemName.c_str()) ;
+    }
+    if (model->getNumCols()==-240&&model->getNumRows()==246) {
+      // pp08aCUTS
+      std::string problemName ;
+      model->solver()->getStrParam(OsiProbName,problemName) ;
+      model->solver()->activateRowCutDebugger(problemName.c_str()) ;
+    }
+    if (model->getNumCols()==-1372&&model->getNumRows()==4944) {
+      // seymour1
       std::string problemName ;
       model->solver()->getStrParam(OsiProbName,problemName) ;
       model->solver()->activateRowCutDebugger(problemName.c_str()) ;
     }
     setCutAndHeuristicOptions(*model);
+    if (stuff&&stuff[8]==1) {
+      if (modelC->numberColumns()+modelC->numberRows()<=500) 
+	model->setFastNodeDepth(-9);
+#ifdef CLP_MULTIPLE_FACTORIZATIONS    
+      modelC->factorization()->setGoDenseThreshold(40);
+      if (modelC->numberRows()<=40) 
+	modelC->factorization()->goDense();
+#endif
+    }
+#ifdef CLP_MULTIPLE_FACTORIZATIONS    
+    if (stuff&&stuff[4]>0) 
+      modelC->factorization()->setGoDenseThreshold((int) stuff[4]);
+#endif
+    if (stuff&&stuff[4]>=modelC->numberRows()) {
+      printf("problem going dense\n");
+      modelC->factorization()->goDense();
+    }
     model->branchAndBound();
+#ifdef CLP_FACTORIZATION_INSTRUMENT
+    double facTime=factorization_instrument(0);
+    printf("Factorization %g seconds\n",
+	   facTime);
+    timeTakenFac += facTime;
+#endif
       
     double timeOfSolution = CoinCpuTime()+CoinCpuTimeJustChildren()-startTime;
     // Print more statistics
@@ -410,5 +497,9 @@ int CbcClpUnitTest (const CbcModel & saveModel, std::string& dirMiplib,
     <<timeTaken
     <<" seconds."
     <<std::endl;
+#ifdef CLP_FACTORIZATION_INSTRUMENT
+  printf("Total factorization time %g seconds\n",
+	 timeTakenFac);
+#endif
   return returnCode;
 }

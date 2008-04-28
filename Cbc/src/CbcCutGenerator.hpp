@@ -54,7 +54,7 @@ public:
     The generated cuts are inserted into and returned in the collection of cuts
     \p cs.
 
-    If \p fullScan is true, the generator is obliged to call the CGL
+    If \p fullScan is >0, the generator is obliged to call the CGL
     \c generateCuts routine.  Otherwise, it is free to make a local decision.
     The current implementation uses \c whenCutGenerator_ to decide.
 
@@ -63,7 +63,7 @@ public:
 
     If node then can find out depth
   */
-  bool generateCuts( OsiCuts &cs, bool fullScan,OsiSolverInterface * solver,
+  bool generateCuts( OsiCuts &cs, int fullScan,OsiSolverInterface * solver,
 		     CbcNode * node); 
   //@}
 
@@ -390,5 +390,9 @@ protected:
   /// First odd variable
   int firstOdd_;
 };
+// How often to do if mostly switched off (A) 
+# define SCANCUTS 1000  
+// How often to do if mostly switched off (probing B)
+# define SCANCUTS_PROBING 1000  
 
 #endif

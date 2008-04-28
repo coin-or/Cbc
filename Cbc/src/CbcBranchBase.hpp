@@ -291,6 +291,9 @@ public:
   /// Reset number of branches left to original
   inline void resetNumberBranchesLeft()
   { branchIndex_=0;}
+  /// Set number of branches to do
+  inline void setNumberBranches(int value)
+  { branchIndex_=0;numberBranches_=value;}
 
   /** \brief Execute the actions required to branch, as specified by the
 	     current state of the branching object, and advance the object's
@@ -307,6 +310,11 @@ public:
   */
   virtual double branch(OsiSolverInterface * solver)
   { return branch();}
+  /** Update bounds in solver as in 'branch' and update given bounds.
+      branchState is -1 for 'down' +1 for 'up' */
+  virtual void fix(OsiSolverInterface * solver,
+		   double * lower, double * upper,
+		   int branchState) const {};
 
   /** Reset every information so that the branching object appears to point to
       the previous child. This method does not need to modify anything in any

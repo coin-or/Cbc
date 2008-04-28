@@ -103,6 +103,12 @@ public:
   /// Get threshold cost for using original cost - even on continuous (default infinity)
   inline double artificialCost() const
   { return artificialCost_;}
+  /// Get iteration to size ratio
+  inline double iterationRatio() const
+  { return iterationRatio_;}
+  /// Set iteration to size ratio
+  inline void setIterationRatio(double value)
+  { iterationRatio_ = value;}
   /// Set maximum passes (default 100)
   inline void setMaximumPasses(int value)
   { maximumPasses_=value;}
@@ -159,6 +165,9 @@ protected:
   double weightFactor_;
   /// Threshold cost for using original cost - even on continuous
   double artificialCost_;
+  /** If iterationRatio >0 use instead of maximumPasses_
+      test is iterations > ratio*(2*nrow+ncol) */
+  double iterationRatio_;
   /// Maximum number of passes
   int maximumPasses_;
   /** Maximum number of retries if we find a solution.

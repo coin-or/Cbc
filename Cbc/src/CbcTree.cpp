@@ -92,6 +92,10 @@ CbcTree::bestNode(double cutoff)
       assert(best->objectiveValue()!=COIN_DBL_MAX&&best->nodeInfo());
     if (best&&best->objectiveValue()!=COIN_DBL_MAX&&best->nodeInfo())
       assert (best->nodeInfo()->numberBranchesLeft());
+    if (best&&best->objectiveValue()>=cutoff) {
+      // double check in case node can change its mind!
+      best->checkIsCutoff(cutoff);
+    }
     if (!best||best->objectiveValue()>=cutoff) {
 #if 0
       // take off
@@ -190,7 +194,7 @@ CbcTree::bestNode(double cutoff)
 double
 CbcTree::getBestPossibleObjective(){
   double r_val = 1e100;
-  for(int i = 0 ; i < nodes_.size() ; i++){
+  for(int i = 0 ; i < (int) nodes_.size() ; i++){
     if(nodes_[i] && nodes_[i]->objectiveValue() < r_val){
       r_val = nodes_[i]->objectiveValue();
     }
@@ -222,6 +226,10 @@ CbcTree::cleanTree(CbcModel * model, double cutoff, double & bestPossibleObjecti
     CbcNode * node = top();
     pop();
     double value = node ? node->objectiveValue() : COIN_DBL_MAX;
+    if (node&&value>=cutoff) {
+      // double check in case node can change its mind!
+      value=node->checkIsCutoff(cutoff);
+    }
     bestPossibleObjective = CoinMin(bestPossibleObjective,value);
     if (value >= cutoff||!node->active()) {
       if (node) {
@@ -379,6 +387,10 @@ CbcTree::bestNode(double cutoff)
       assert(best->objectiveValue()!=COIN_DBL_MAX&&best->nodeInfo());
     if (best&&best->objectiveValue()!=COIN_DBL_MAX&&best->nodeInfo())
       assert (best->nodeInfo()->numberBranchesLeft());
+    if (best&&best->objectiveValue()>=cutoff) {
+      // double check in case node can change its mind!
+      best->checkIsCutoff(cutoff);
+    }
     if (!best||best->objectiveValue()>=cutoff) {
 #if 0
       // take off
@@ -503,6 +515,10 @@ CbcTree::cleanTree(CbcModel * model, double cutoff, double & bestPossibleObjecti
     CbcNode * node = top();
     pop();
     double value = node ? node->objectiveValue() : COIN_DBL_MAX;
+    if (node&&value>=cutoff) {
+      // double check in case node can change its mind!
+      value=node->checkIsCutoff(cutoff);
+    }
     bestPossibleObjective = CoinMin(bestPossibleObjective,value);
     if (value >= cutoff) {
       if (node) {

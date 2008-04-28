@@ -30,7 +30,9 @@ class CbcFeasibilityBase;
 class CbcStatistics;
 class CbcEventHandler ;
 class CglPreProcess;
-
+# ifdef COIN_HAS_CLP
+class ClpNodeStuff;
+#endif
 // #define CBC_CHECK_BASIS 1
 
 //#############################################################################
@@ -1002,7 +1004,7 @@ public:
   /// Record a new incumbent solution and update objectiveValue
   void setBestSolution(CBC_Message how,
 		       double & objectiveValue, const double *solution,
-		       bool fixVariables=false);
+		       int fixVariables=0);
   /// Just update objectiveValue
   void setBestObjectiveValue( double objectiveValue);
 
@@ -1013,7 +1015,7 @@ public:
       Previously computed objective value is now passed in (in case user does not do solve)
  */
   double checkSolution(double cutoff, double * solution,
-		       bool fixVariables, double originalObjValue);
+		       int fixVariables, double originalObjValue);
   /** Test the current solution for feasiblility.
 
     Scan all objects for indications of infeasibility. This is broken down
@@ -1451,6 +1453,8 @@ public:
       4 bit (16) - non-linear model - so no well defined CoinPackedMatrix
       5 bit (32) - keep names
       6 bit (64) - try for dominated columns
+      7 bit (128) - SOS type 1 but all declared integer
+      8 bit (256) - Set to say solution just found, unset by doing cuts
   */
   /// Set special options
   inline void setSpecialOptions(int value)
@@ -1615,9 +1619,12 @@ public:
     will not be required, set allowResolve to false to suppress
     reoptimisation.
     If saveCuts then slack cuts will be saved
+    On input current cuts are cuts and newCuts
+    on exit current cuts will be correct
   */
   void takeOffCuts(OsiCuts &cuts, 
-		     bool allowResolve,OsiCuts * saveCuts) ;
+		   bool allowResolve,OsiCuts * saveCuts,
+		   int numberNewCuts=0, const OsiRowCut ** newCuts=NULL) ;
 
   /** Determine and install the active cuts that need to be added for
     the current subproblem
@@ -1664,6 +1671,8 @@ public:
       Scan and convert CbcSimpleInteger objects
   */
   void convertToDynamic();
+  /// Set numberBeforeTrust in all objects
+  void synchronizeNumberBeforeTrust();
   /// Zap integer information in problem (may leave object info)
   void zapIntegerInformation(bool leaveObjects=true);
   /// Use cliques for pseudocost information - return nonzero if infeasible
@@ -1676,7 +1685,10 @@ public:
       correspond to integerVariable()[i]
       User must allocate arrays before call
   */
-  void fillPseudoCosts(double * downCosts, double * upCosts) const;
+  void fillPseudoCosts(double * downCosts, double * upCosts,
+		       int * numberDown=NULL, int * numberUp=NULL,
+		       int * numberDownInfeasible=NULL,
+		       int * numberUpInfeasible=NULL) const;
   /** Do heuristics at root.
       0 - don't delete
       1 - delete
@@ -1713,6 +1725,16 @@ public:
   /// Get the number of iterations done in strong branching.
   inline int numberStrongIterations() const
   { return numberStrongIterations_;}
+# ifdef COIN_HAS_CLP
+  /// Set depth for fast nodes
+  inline void setFastNodeDepth(int value) 
+  { fastNodeDepth_ = value;}
+  /// Get depth for fast nodes
+  inline int fastNodeDepth() const
+  { return fastNodeDepth_;}
+  inline void incrementExtra(int nodes, int iterations)
+  { numberExtraNodes_ += nodes; numberExtraIterations_ += iterations;}
+#endif
   /// Increment strong info
   void incrementStrongInfo(int numberTimes, int numberIterations,
 			   int numberFixed, bool ifInfeasible);
@@ -2006,6 +2028,10 @@ private:
   CbcHeuristic ** heuristic_;
   /// Pointer to heuristic solver which found last solution (or NULL)
   CbcHeuristic * lastHeuristic_;
+# ifdef COIN_HAS_CLP
+  /// Depth for fast nodes
+  int fastNodeDepth_;
+#endif
   /*! Pointer to the event handler */
 # ifdef CBC_ONLY_CLP
   ClpEventHandler *eventHandler_ ;
@@ -2037,6 +2063,10 @@ private:
   /** Number of times global cuts violated.  When global cut pool then this
       should be kept for each cut and type of cut */
   int numberGlobalViolations_;
+  /// Number of extra iterations in fast lp
+  int numberExtraIterations_;
+  /// Number of extra nodes in fast lp
+  int numberExtraNodes_;
   /** Value of objective at continuous
       (Well actually after initial round of cuts)
   */

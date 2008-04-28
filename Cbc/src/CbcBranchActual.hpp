@@ -128,6 +128,9 @@ public:
   using CbcObject::infeasibility ;
   /// Infeasibility - large is 0.5
   virtual double infeasibility(int & preferredWay) const;
+  /// Infeasibility - large is 0.5
+  virtual double infeasibility(const OsiBranchingInformation * info, 
+			       int & preferredWay) const;
 
   using CbcObject::feasibleRegion ;
   /// This looks at solution and sets bounds to contain solution
@@ -137,6 +140,16 @@ public:
   /// Creates a branching object
   virtual CbcBranchingObject * createBranch(int way) ;
 
+
+
+  /** Pass in information on branch just done and create CbcObjectUpdateData instance.
+      If object does not need data then backward pointer will be NULL.
+      Assumes can get information from solver */
+  virtual CbcObjectUpdateData createUpdateInformation(const OsiSolverInterface * solver, 
+							const CbcNode * node,
+							const CbcBranchingObject * branchingObject);
+  /// Update object by CbcObjectUpdateData
+  virtual void updateInformation(const CbcObjectUpdateData & data) ;
   using CbcObject::solverBranch ;
   /** Create an OsiSolverBranch object
 
@@ -159,6 +172,12 @@ public:
   /// SOS type
   inline int sosType() const
   {return sosType_;}
+  /// Down number times
+  inline int numberTimesDown() const
+  { return numberTimesDown_;}
+  /// Up number times
+  inline int numberTimesUp() const
+  { return numberTimesUp_;}
 
   /** Array of weights */
   inline const double * weights() const
@@ -190,11 +209,22 @@ private:
   int * members_;
   /// Weights
   double * weights_;
-
+  /// Current pseudo-shadow price estimate down
+  mutable double shadowEstimateDown_;
+  /// Current pseudo-shadow price estimate up
+  mutable double shadowEstimateUp_;
+  /// Down pseudo ratio
+  double downDynamicPseudoRatio_;
+  /// Up pseudo ratio
+  double upDynamicPseudoRatio_;
+  /// Number of times we have gone down
+  int numberTimesDown_;
+  /// Number of times we have gone up
+  int numberTimesUp_;
   /// Number of members
   int numberMembers_;
   /// SOS type
-   int sosType_;
+  int sosType_;
   /// Whether integer valued
   bool integerValued_;
 };
@@ -448,6 +478,11 @@ public:
 	     Returns change in guessed objective on next branch
   */
   virtual double branch();
+  /** Update bounds in solver as in 'branch' and update given bounds.
+      branchState is -1 for 'down' +1 for 'up' */
+  virtual void fix(OsiSolverInterface * solver,
+		   double * lower, double * upper,
+		   int branchState) const ;
 
 #if 0
   // No need to override. Default works fine.
@@ -515,7 +550,7 @@ protected:
   double up_[2];
 #ifdef FUNNY_BRANCHING
   /** Which variable (top bit if upper bound changing)
-      next bit if chnaging on down branch only */
+      next bit if changing on down branch only */
   int * variables_;
   // New bound
   double * newBounds_;
@@ -896,6 +931,11 @@ public:
   using CbcBranchingObject::branch ;
   /// Does next branch and updates state
   virtual double branch();
+  /** Update bounds in solver as in 'branch' and update given bounds.
+      branchState is -1 for 'down' +1 for 'up' */
+  virtual void fix(OsiSolverInterface * solver,
+		   double * lower, double * upper,
+		   int branchState) const ;
 
   /** Reset every information so that the branching object appears to point to
       the previous child. This method does not need to modify anything in any
@@ -1379,5 +1419,250 @@ public:
 
 };
 
+/** Define a catch all class.
+    This will create a list of subproblems
+*/
 
+
+class CbcGeneral : public CbcObject {
+
+public:
+
+  // Default Constructor 
+  CbcGeneral ();
+
+  /** Useful constructor
+      Just needs to point to model.
+  */
+  CbcGeneral (CbcModel * model);
+  
+  // Copy constructor 
+  CbcGeneral ( const CbcGeneral &);
+   
+  /// Clone
+  virtual CbcObject * clone() const=0;
+
+  // Assignment operator 
+  CbcGeneral & operator=( const CbcGeneral& rhs);
+
+  // Destructor 
+  ~CbcGeneral ();
+  
+  using CbcObject::infeasibility ;
+  /// Infeasibility - large is 0.5
+  virtual double infeasibility(int & preferredWay) const=0;
+
+  using CbcObject::feasibleRegion ;
+  /// This looks at solution and sets bounds to contain solution
+  virtual void feasibleRegion()=0;
+
+  using CbcObject::createBranch ;
+  /// Creates a branching object
+  virtual CbcBranchingObject * createBranch(int way)=0 ;
+
+  /// Redoes data when sequence numbers change
+  virtual void redoSequenceEtc(CbcModel * model, int numberColumns, const int * originalColumns)=0;
+
+protected:
+  /// data
+};
+#ifdef COIN_HAS_CLP
+
+/** Define a catch all class.
+    This will create a list of subproblems using partial evaluation
+*/
+#include "ClpSimplex.hpp"
+#include "ClpNode.hpp"
+
+class CbcGeneralDepth : public CbcGeneral {
+
+public:
+
+  // Default Constructor 
+  CbcGeneralDepth ();
+
+  /** Useful constructor
+      Just needs to point to model.
+      Initial version does evaluation to depth N
+      This is stored in CbcModel but may be
+      better here
+  */
+  CbcGeneralDepth (CbcModel * model, int maximumDepth);
+  
+  // Copy constructor 
+  CbcGeneralDepth ( const CbcGeneralDepth &);
+   
+  /// Clone
+  virtual CbcObject * clone() const;
+
+  // Assignment operator 
+  CbcGeneralDepth & operator=( const CbcGeneralDepth& rhs);
+
+  // Destructor 
+  ~CbcGeneralDepth ();
+  
+  using CbcObject::infeasibility ;
+  /// Infeasibility - large is 0.5
+  virtual double infeasibility(int & preferredWay) const;
+
+  using CbcObject::feasibleRegion ;
+  /// This looks at solution and sets bounds to contain solution
+  virtual void feasibleRegion();
+
+  using CbcObject::createBranch ;
+  /// Creates a branching object
+  virtual CbcBranchingObject * createBranch(int way) ;
+  /// Get maximum depth
+  inline int maximumDepth() const
+  {return maximumDepth_;}
+  /// Set maximum depth
+  inline void setMaximumDepth(int value)
+  {maximumDepth_ = value;}
+  /// Get which solution
+  inline int whichSolution() const
+  {return whichSolution_;}
+  /// Get ClpNode info
+  inline ClpNode * nodeInfo(int which)
+  { return nodeInfo_->nodeInfo_[which];}
+
+  /// Redoes data when sequence numbers change
+  virtual void redoSequenceEtc(CbcModel * model, int numberColumns, const int * originalColumns);
+
+protected:
+  /// data
+  /// Maximum depth
+  int maximumDepth_;
+  /// Which node has solution (or -1)
+  mutable int whichSolution_;
+  /// Number of valid nodes (including whichSolution_)
+  mutable int numberNodes_;
+  /// For solving nodes
+  mutable ClpNodeStuff * nodeInfo_;
+};
+
+/** Defines a general subproblem
+    Basis will be made more compact later
+*/
+class CoinWarmStartDiff;
+class CbcSubProblem {
+
+public:
+
+  /// Default constructor 
+  CbcSubProblem ();
+
+  /// Constructor from model
+  CbcSubProblem (const OsiSolverInterface * solver,
+		 const double * lowerBefore,
+		 const double * upperBefore,
+		 const unsigned char * status);
+
+  /// Copy constructor 
+  CbcSubProblem ( const CbcSubProblem &);
+   
+  /// Assignment operator 
+  CbcSubProblem & operator= (const CbcSubProblem& rhs);
+
+  /// Destructor 
+  virtual ~CbcSubProblem ();
+
+  /// Apply subproblem
+  void apply(OsiSolverInterface * model);
+
+public:
+  /// Value of objective
+  double objectiveValue_;
+  /// Sum of infeasibilities
+  double sumInfeasibilities_;
+  /** Which variable (top bit if upper bound changing)
+      next bit if changing on down branch only */
+  int * variables_;
+  /// New bound
+  double * newBounds_;
+  /// Status as diff
+  CoinWarmStartDiff * statusDifference_;
+  /// Number of Extra bound changes
+  int numberChangedBounds_;
+  /// Number of infeasibilities
+  int numberInfeasibilities_;
+};
+
+/** Branching object for general objects
+
+ */
+class CbcNode;
+class CbcGeneralBranchingObject : public CbcBranchingObject {
+
+public:
+
+  // Default Constructor 
+  CbcGeneralBranchingObject ();
+
+  // Useful constructor
+  CbcGeneralBranchingObject (CbcModel * model);
+  
+  // Copy constructor 
+  CbcGeneralBranchingObject ( const CbcGeneralBranchingObject &);
+   
+  // Assignment operator 
+  CbcGeneralBranchingObject & operator=( const CbcGeneralBranchingObject& rhs);
+
+  /// Clone
+  virtual CbcBranchingObject * clone() const;
+
+  // Destructor 
+  virtual ~CbcGeneralBranchingObject ();
+  
+  using CbcBranchingObject::branch ;
+  /// Does next branch and updates state
+  virtual double branch();
+  /** Double checks in case node can change its mind!
+      Can change objective etc */
+  virtual void checkIsCutoff(double cutoff);
+
+  using CbcBranchingObject::print ;
+  /** \brief Print something about branch - only if log level high
+  */
+  virtual void print();
+  /// Fill in current objective etc
+  void state(double & objectiveValue,double & sumInfeasibilities,
+	     int & numberUnsatisfied,int which) const;
+  /// Set CbcNode
+  inline void setNode(CbcNode * node)
+  { node_ = node;}
+  /** Return the type (an integer identifier) of \c this */
+  virtual int type() const { return 108; }
+
+  /** Compare the original object of \c this with the original object of \c
+      brObj. Assumes that there is an ordering of the original objects.
+      This method should be invoked only if \c this and brObj are of the same
+      type. 
+      Return negative/0/positive depending on whether \c this is
+      smaller/same/larger than the argument.
+  */
+  virtual int compareOriginalObject(const CbcBranchingObject* brObj) const;
+
+  /** Compare the \c this with \c brObj. \c this and \c brObj must be os the
+      same type and must have the same original object, but they may have
+      different feasible regions.
+      Return the appropriate CbcRangeCompare value (first argument being the
+      sub/superset if that's the case). In case of overlap (and if \c
+      replaceIfOverlap is true) replace the current branching object with one
+      whose feasible region is the overlap.
+   */
+  virtual CbcRangeCompare compareBranchingObject
+  (const CbcBranchingObject* brObj, const bool replaceIfOverlap = false);
+
+public:
+  /// data
+  // Sub problems
+  CbcSubProblem * subProblems_;
+  /// Node
+  CbcNode * node_;
+  /// Number of subproblems
+  int numberSubProblems_;
+  /// Number of rows
+  int numberRows_;
+};
+#endif
 #endif

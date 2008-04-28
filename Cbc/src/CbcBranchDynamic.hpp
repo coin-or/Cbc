@@ -84,6 +84,9 @@ public:
   virtual void updateBefore(const OsiObject * rhs) ;
   /// Updates stuff like pseudocosts after threads finished
   virtual void updateAfter(const OsiObject * rhs, const OsiObject * baseObject) ;
+  /// Updates stuff like pseudocosts after mini branch and bound
+  void updateAfterMini(int numberDown,int numberDownInfeasible,double sumDown, 
+		       int numberUp,int numberUpInfeasible,double sumUp);
 
   using CbcSimpleInteger::solverBranch ;
   /** Create an OsiSolverBranch object

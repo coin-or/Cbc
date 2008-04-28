@@ -576,6 +576,23 @@ public:
 		       CbcNode * lastNode,
 		       OsiBranchingInformation * usefulInfo,
 		       int branchState);
+  /** Create a branching object for the node
+
+    The routine scans the object list of the model and selects a set of
+    unsatisfied objects as candidates for branching. It then solves a 
+    series of problems and a CbcGeneral branch object is installed.
+
+    If evaluation determines that an object is infeasible,
+    the routine returns immediately. 
+
+    Return value:
+    <ul>
+      <li>  0: A branching object has been installed
+      <li> -2: An infeasible object was discovered
+    </ul>
+  */
+  int chooseClpBranch (CbcModel * model,
+		       CbcNode * lastNode);
   int analyze(CbcModel * model,double * results);
   /// Decrement active cut counts
   void decrementCuts(int change=1);
@@ -598,6 +615,10 @@ public:
   /// Does next branch and updates state
   int branch(OsiSolverInterface * solver);
 
+  /** Double checks in case node can change its mind!
+      Returns objective value
+      Can change objective etc */
+  double checkIsCutoff(double cutoff);
   // Information to make basis and bounds
   inline CbcNodeInfo * nodeInfo() const
   {return nodeInfo_;}
@@ -626,10 +647,16 @@ public:
   {return depth_;}
   /// Get the number of objects unsatisfied at this node.
   inline int numberUnsatisfied() const
-  {return numberUnsatisfied_;}
-  /// Sum of "infeasibilities" reported by each object
+  { return numberUnsatisfied_;}
+  /// Set the number of objects unsatisfied at this node.
+  inline void setNumberUnsatisfied(int value)
+  { numberUnsatisfied_ = value;}
+  /// Get sum of "infeasibilities" reported by each object
   inline double sumInfeasibilities() const
   { return sumInfeasibilities_;}
+  /// Set sum of "infeasibilities" reported by each object
+  inline void setSumInfeasibilities(double value)
+  { sumInfeasibilities_ = value;}
   // Guessed objective value (for solution)
   inline double guessedObjectiveValue() const
   {return guessedObjectiveValue_;}
@@ -663,6 +690,10 @@ public:
   { if(yesNo) state_ |= 2; else state_ &= ~2; }
   /// Print
   void print() const;
+  /// Debug
+  inline void checkInfo() const
+  { assert (nodeInfo_->numberBranchesLeft()==
+	    branch_->numberBranchesLeft());}
 
 private:
   // Data

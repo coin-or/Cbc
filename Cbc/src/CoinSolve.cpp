@@ -13,9 +13,18 @@
 #include <cfloat>
 #include <cstring>
 #include <iostream>
-//#undef NEW_STYLE_SOLVER
-//#define NEW_STYLE_SOLVER
+#ifdef CLP_FAST_CODE
+// force new style solver
 #ifndef NEW_STYLE_SOLVER
+#define NEW_STYLE_SOLVER 1
+#endif
+#else
+// Not new style solver
+#ifndef NEW_STYLE_SOLVER
+#define NEW_STYLE_SOLVER 0
+#endif
+#endif
+#if NEW_STYLE_SOLVER==0
   // define TEST_MESSAGE_HANDLER to check works on all messages
 //#define TEST_MESSAGE_HANDLER
 #ifdef TEST_MESSAGE_HANDLER

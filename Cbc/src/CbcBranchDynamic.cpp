@@ -258,6 +258,8 @@ CbcSimpleIntegerDynamicPseudoCost::CbcSimpleIntegerDynamicPseudoCost (CbcModel *
   sumDownCost_ = 0.0;
   sumDownChange_ = 0.0;
   numberTimesDown_ = 0;
+  sumUpCost_ = 1.0e-4*upDynamicPseudoCost_;
+  sumDownCost_ = 1.0e-4*downDynamicPseudoCost_;
 #else
   sumUpCost_ = 1.0*upDynamicPseudoCost_;
   sumUpChange_ = 1.0;
@@ -451,6 +453,7 @@ CbcSimpleIntegerDynamicPseudoCost::updateAfter(const OsiObject * rhs, const OsiO
   }
   //printf("XX %d down %d %d %g up %d %d %g\n",columnNumber_,numberTimesDown_,numberTimesDownInfeasible_,downDynamicPseudoCost_,
   // numberTimesUp_,numberTimesUpInfeasible_,upDynamicPseudoCost_);
+  assert (downDynamicPseudoCost_>1.0e-40&&upDynamicPseudoCost_>1.0e-40);
 }
 // Same - returns true if contents match(ish)
 bool 
@@ -576,6 +579,7 @@ CbcSimpleIntegerDynamicPseudoCost::solverBranch() const
 double 
 CbcSimpleIntegerDynamicPseudoCost::infeasibility(int & preferredWay) const
 {
+  assert (downDynamicPseudoCost_>1.0e-40&&upDynamicPseudoCost_>1.0e-40);
   const double * solution = model_->testSolution();
   const double * lower = model_->getCbcColLower();
   const double * upper = model_->getCbcColUpper();
@@ -1221,6 +1225,34 @@ CbcSimpleIntegerDynamicPseudoCost::updateInformation(const CbcObjectUpdateData &
   addRecord(hist);
 #endif
   //print(1,0.5);
+  assert (downDynamicPseudoCost_>1.0e-40&&upDynamicPseudoCost_>1.0e-40);
+}
+// Updates stuff like pseudocosts after mini branch and bound
+void 
+CbcSimpleIntegerDynamicPseudoCost::updateAfterMini(int numberDown,int numberDownInfeasible,
+						   double sumDown, int numberUp,
+						   int numberUpInfeasible,double sumUp)
+{
+#ifdef CBC_INSTRUMENT
+  int difference = numberDown-numberTimesDown_;
+  difference += numberUp-numberTimesUp_;
+  numberTimesInfeasible_ += 2*difference;
+#endif
+  numberTimesDown_ = numberDown;
+  numberTimesDownInfeasible_ = numberDownInfeasible;
+  sumDownCost_ = sumDown;
+  numberTimesUp_ = numberUp;
+  numberTimesUpInfeasible_ = numberUpInfeasible;
+  sumUpCost_ = sumUp;
+  if (numberTimesDown_+numberTimesDownInfeasible_>0) {
+    setDownDynamicPseudoCost(sumDownCost_/(double) (numberTimesDown_+numberTimesDownInfeasible_));
+    assert (downDynamicPseudoCost_>0.0&&downDynamicPseudoCost_<1.0e50);
+  }
+  if (numberTimesUp_+numberTimesUpInfeasible_>0) {
+    setUpDynamicPseudoCost(sumUpCost_/(double) (numberTimesUp_+numberTimesUpInfeasible_));
+    assert (upDynamicPseudoCost_>0.0&&upDynamicPseudoCost_<1.0e50);
+  }
+  assert (downDynamicPseudoCost_>1.0e-40&&upDynamicPseudoCost_>1.0e-40);
 }
 // Pass in probing information
 void 
@@ -1502,10 +1534,17 @@ void
 CbcBranchDynamicDecision::saveBranchingObject(OsiBranchingObject * object) 
 {
   OsiBranchingObject * obj = object->clone();
+  CbcBranchingObject * obj2 =
+    dynamic_cast<CbcBranchingObject *>(obj);
+  assert (obj2);
   CbcDynamicPseudoCostBranchingObject * branchingObject =
     dynamic_cast<CbcDynamicPseudoCostBranchingObject *>(obj);
-  assert (branchingObject);
-  object_=branchingObject;
+#if COIN_DEVELOP>1
+  if (!branchingObject)
+    printf("no dynamic branching object Dynamic Decision\n");
+#endif
+  //object_=branchingObject;
+  object_ = obj2;
 }
 /* Pass in information on branch just done.
    assumes object can get information from solver */
@@ -1803,20 +1842,21 @@ CbcBranchDynamicDecision::betterBranch(CbcBranchingObject * thisOne,
   {
     CbcDynamicPseudoCostBranchingObject * branchingObject =
       dynamic_cast<CbcDynamicPseudoCostBranchingObject *>(thisOne);
-    assert (branchingObject);
-    CbcSimpleIntegerDynamicPseudoCost *  object = branchingObject->object();
-    assert (object);
-    hist.where_='C';
-    hist.status_=' ';
-    hist.sequence_=object->columnNumber();
-    hist.numberUp_=object->numberTimesUp();
-    hist.numberUpInf_=numInfUp;
-    hist.sumUp_=object->sumUpCost();
-    hist.upEst_=changeUp;
-    hist.numberDown_=object->numberTimesDown();
-    hist.numberDownInf_=numInfDown;
-    hist.sumDown_=object->sumDownCost();
-    hist.downEst_=changeDown;
+    if (branchingObject) {
+      CbcSimpleIntegerDynamicPseudoCost *  object = branchingObject->object();
+      assert (object);
+      hist.where_='C';
+      hist.status_=' ';
+      hist.sequence_=object->columnNumber();
+      hist.numberUp_=object->numberTimesUp();
+      hist.numberUpInf_=numInfUp;
+      hist.sumUp_=object->sumUpCost();
+      hist.upEst_=changeUp;
+      hist.numberDown_=object->numberTimesDown();
+      hist.numberDownInf_=numInfDown;
+      hist.sumDown_=object->sumDownCost();
+      hist.downEst_=changeDown;
+    }
   }
 #endif
   if (betterWay) {

@@ -34,7 +34,7 @@ static Cbc_message us_english[]=
   {CBC_ROUNDING,12,1,"Integer solution of %g found by %s after %d iterations and %d nodes (%.2f seconds)"},
   {CBC_TREE_SOL,24,1,"Integer solution of %g found by subtree after %d iterations and %d nodes (%.2f seconds)"},
   {CBC_ROOT,13,1,"At root node, %d cuts changed objective from %g to %g in %d passes"},
-  {CBC_GENERATOR,14,1,"Cut generator %d (%s) - %d row cuts (%d active), %d column cuts %? in %.3f seconds - new frequency is %d"},
+  {CBC_GENERATOR,14,1,"Cut generator %d (%s) - %d row cuts, %d column cuts (%d active) %? in %.3f seconds - new frequency is %d"},
   {CBC_BRANCH,15,2,"Node %d Obj %g Unsat %d depth %d"},
   {CBC_STRONGSOL,16,1,"Integer solution of %g found by strong branching after %d iterations and %d nodes (%.2f seconds)"},
   {CBC_NOINT,3007,1,"No integer variables - nothing to do"},
@@ -58,6 +58,10 @@ static Cbc_message us_english[]=
   {CBC_STATUS2,37,1,"%d nodes, %d on tree, best %g - possible %g depth %d unsat %d its %d (%.2f seconds)"},
   {CBC_FPUMP1,38,1,"%s"},
   {CBC_FPUMP2,39,2,"%s"},
+  {CBC_STATUS3,40,1,"%d nodes (+%d), %d on tree, best %g - possible %g depth %d unsat %d its %d (+%d) (%.2f seconds)"},
+  {CBC_OTHER_STATS2,41,1,"Maximum depth %d, %g variables fixed on reduced cost (%d nodes in complete fathoming taking %d iterations)"},
+  {CBC_RELAXED1,42,1,"Possible objective of %.18g but variable %d is %g from integer value, integer tolerance %g"},
+  {CBC_RELAXED2,43,1,"Possible objective of %.18g but variables are up to %g away from bound (within tolerance of %g) - might be able to fudge solution - but do you want to?"},
   {CBC_DUMMY_END,999999,0,""}
 };
 /* Constructor */

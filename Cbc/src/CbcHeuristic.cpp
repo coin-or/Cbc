@@ -107,7 +107,8 @@ CbcHeuristic::CbcHeuristic() :
   numRuns_(0),
   minDistanceToRun_(1),
   runNodes_(),
-  numCouldRun_(0)
+  numCouldRun_(0),
+  numberSolutionsFound_(0)
 {
   // As CbcHeuristic virtual need to modify .cpp if above change
 }
@@ -130,7 +131,8 @@ CbcHeuristic::CbcHeuristic(CbcModel & model) :
   numRuns_(0),
   minDistanceToRun_(1),
   runNodes_(),
-  numCouldRun_(0)
+  numCouldRun_(0),
+  numberSolutionsFound_(0)
 {}
 
 void
@@ -154,6 +156,7 @@ CbcHeuristic::gutsOfCopy(const CbcHeuristic & rhs)
   numCouldRun_ = rhs.numCouldRun_;
   minDistanceToRun_ = rhs.minDistanceToRun_;
   runNodes_ = rhs.runNodes_;
+  numberSolutionsFound_ = rhs.numberSolutionsFound_;
 }
 // Copy constructor 
 CbcHeuristic::CbcHeuristic(const CbcHeuristic & rhs)
@@ -345,6 +348,37 @@ CbcHeuristic::shouldHeurRun_randomChoice()
     const double denominator = exp(depth * log((double)2));
     double probability = numerator / denominator;
     double randomNumber = randomNumberGenerator_.randomDouble();
+    if (when_>2&&when_<7) {
+      /* JJF adjustments
+	 3 only at root and if no solution
+	 4 only at root and if this heuristic has not got solution
+	 5 only at depth <4
+	 6 decay
+      */
+      switch(when_) {
+      case 3:
+	if (model_->bestSolution())
+	  probability=-1.0;
+	break;
+      case 4:
+	if (numberSolutionsFound_)
+	  probability=-1.0;
+	break;
+      case 5:
+	if (depth>=4)
+	  probability=-1.0;
+	break;
+      case 6:
+	if (depth>=4) {
+	  if (numberSolutionsFound_*howOften_<numCouldRun_)
+	    howOften_ = (int) (howOften_*1.1);
+	  probability = 1.0/howOften_;
+	  if (model_->bestSolution())
+	    probability *= 0.5;
+	}
+	break;
+      }
+    }
     if (randomNumber>probability)
       return false;
     
@@ -411,6 +445,20 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver,int numberNodes,
                                   double * newSolution, double & newSolutionValue,
                                   double cutoff, std::string name) const
 {
+  // size before
+  double before = 2*solver->getNumRows()+solver->getNumCols();
+  // Use this fraction
+  double fractionSmall = fractionSmall_;
+  if (before>80000.0) {
+    // fairly large - be more conservative
+    double multiplier = (0.7*200000.0)/CoinMin(before,200000.0);
+    if (multiplier<1.0)
+      fractionSmall *= multiplier;
+#ifdef COIN_DEVELOP
+    printf("changing fractionSmall from %g to %g for %s\n",
+	   fractionSmall_,fractionSmall,name.c_str());
+#endif
+  }
 #ifdef COIN_HAS_CLP
   OsiClpSolverInterface * osiclp = dynamic_cast< OsiClpSolverInterface*> (solver);
   if (osiclp&&(osiclp->specialOptions()&65536)==0) {
@@ -455,13 +503,12 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver,int numberNodes,
     OsiSolverInterface * presolvedModel = pinfo->presolvedModel(*solver,1.0e-8,true,2);
     delete pinfo;
     // see if too big
-    double before = 2*solver->getNumRows()+solver->getNumCols();
     if (presolvedModel) {
       int afterRows = presolvedModel->getNumRows();
       int afterCols = presolvedModel->getNumCols();
       delete presolvedModel;
       double after = 2*afterRows+afterCols;
-      if (after>fractionSmall_*before&&after>300) {
+      if (after>fractionSmall*before&&after>300) {
 	// Need code to try again to compress further using used
 	const int * used =  model_->usedInSolution();
 	int maxUsed=0;
@@ -513,7 +560,7 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver,int numberNodes,
 	    int afterCols2 = presolvedModel->getNumCols();
 	    delete presolvedModel;
 	    double after = 2*afterRows2+afterCols2;
-	    if (after>fractionSmall_*before&&after>300) {
+	    if (after>fractionSmall*before&&after>300) {
 	      sprintf(generalPrint,"Full problem %d rows %d columns, reduced to %d rows %d columns - %d fixed gives %d, %d - still too large",
 		      solver->getNumRows(),solver->getNumCols(),
 		      afterRows,afterCols,nFix,afterRows2,afterCols2);
@@ -543,6 +590,9 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver,int numberNodes,
     return returnCode;
   }
   // Reduce printout
+  bool takeHint;
+  OsiHintStrength strength;
+  solver->getHintParam(OsiDoReducePrint,takeHint,strength);
   solver->setHintParam(OsiDoReducePrint,true,OsiHintTry);
   solver->setHintParam(OsiDoPresolveInInitial,false,OsiHintTry);
   solver->setDblParam(OsiDualObjectiveLimit,cutoff*solver->getObjSense());
@@ -560,9 +610,9 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver,int numberNodes,
       returnCode=2; // so will be infeasible
     } else {
       // see if too big
-      double before = 2*solver->getNumRows()+solver->getNumCols();
+      //double before = 2*solver->getNumRows()+solver->getNumCols();
       double after = 2*solver2->getNumRows()+solver2->getNumCols();
-      if (after>fractionSmall_*before&&after>300) {
+      if (after>fractionSmall*before&&after>300) {
 	sprintf(generalPrint,"Full problem %d rows %d columns, reduced to %d rows %d columns - too large",
 		solver->getNumRows(),solver->getNumCols(),
 		solver2->getNumRows(),solver2->getNumCols());
@@ -668,6 +718,11 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver,int numberNodes,
 	model.setMaximumCutPassesAtRoot(CoinMin(20,model_->getMaximumCutPassesAtRoot()));
 	model.setParentModel(*model_);
 	model.setOriginalColumns(process.originalColumns());
+	model.setSearchStrategy(-1);
+	if (model_->searchStrategy()==2) {
+	  model.setNumberStrong(5);
+	  model.setNumberBeforeTrust(5);
+	}
 	if (model.getNumCols()) {
 	  setCutAndHeuristicOptions(model);
 	  model.branchAndBound();
@@ -736,6 +791,7 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver,int numberNodes,
       printf("heuristic could add cut because optimal (%s)\n",heuristicName_.c_str());
   } 
 #endif
+  solver->setHintParam(OsiDoReducePrint,takeHint,strength);
   return returnCode;
 }
 
@@ -792,7 +848,7 @@ CbcHeuristicNode::gutsOfConstructor(CbcModel& model)
     numObjects_ = cnt;
   } else {
     numObjects_ = 0;
-    CbcBranchingObject* br;
+    CbcBranchingObject* br=NULL; // What should this be?
     for (int i = 1; i < cnt; ++i) {
       if (compare3BranchingObjects(brObj_[numObjects_], brObj_[i]) == 0) {
 	int comp = brObj_[numObjects_]->compareBranchingObject(brObj_[i], &br);

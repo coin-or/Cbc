@@ -165,7 +165,7 @@ CbcCutGenerator::refreshModel(CbcModel * model)
    collection of cuts cs.
 */
 bool
-CbcCutGenerator::generateCuts( OsiCuts & cs , bool fullScan, OsiSolverInterface * solver, CbcNode * node)
+CbcCutGenerator::generateCuts( OsiCuts & cs , int fullScan, OsiSolverInterface * solver, CbcNode * node)
 {
   int howOften = whenCutGenerator_;
   if (howOften==-100)
@@ -204,7 +204,7 @@ CbcCutGenerator::generateCuts( OsiCuts & cs , bool fullScan, OsiSolverInterface 
     doThis=false;
   // Switch off if special setting
   if (whenCutGeneratorInSub_==-200) {
-    fullScan=false;
+    fullScan=0;
     doThis=false;
   }
   if (fullScan||doThis) {
@@ -213,7 +213,10 @@ CbcCutGenerator::generateCuts( OsiCuts & cs , bool fullScan, OsiSolverInterface 
       time1 = CoinCpuTime();
     //#define CBC_DEBUG
     int numberRowCutsBefore = cs.sizeRowCuts() ;
+    int numberColumnCutsBefore = cs.sizeColCuts() ;
+#if 0
     int cutsBefore = cs.sizeCuts();
+#endif
     CglTreeInfo info;
     info.level = depth;
     info.pass = pass;
@@ -394,6 +397,24 @@ CbcCutGenerator::generateCuts( OsiCuts & cs , bool fullScan, OsiSolverInterface 
 	thisCut->mutableRow().setTestForDuplicateIndex(false);
       }
     }
+    {
+      int numberRowCutsAfter = cs.sizeRowCuts() ;
+      if (numberRowCutsBefore<numberRowCutsAfter) {
+#if 0
+	printf("generator %s generated %d row cuts\n",
+	       generatorName_,numberRowCutsAfter-numberRowCutsBefore);
+#endif
+	numberCuts_ += numberRowCutsAfter-numberRowCutsBefore;
+      }
+      int numberColumnCutsAfter = cs.sizeColCuts() ;
+      if (numberColumnCutsBefore<numberColumnCutsAfter) {
+#if 0
+	printf("generator %s generated %d column cuts\n",
+	       generatorName_,numberColumnCutsAfter-numberColumnCutsBefore);
+#endif
+	numberColumnCuts_ += numberColumnCutsAfter-numberColumnCutsBefore;
+      }
+    }
 #ifdef CBC_DEBUG
     {
       int numberRowCutsAfter = cs.sizeRowCuts() ;
@@ -445,13 +466,13 @@ CbcCutGenerator::setHowOften(int howOften)
 {
   
   if (howOften>=1000000) {
-    // leave Probing every 10
+    // leave Probing every SCANCUTS_PROBING
     howOften = howOften % 1000000;
     CglProbing* generator =
       dynamic_cast<CglProbing*>(generator_);
     
-    if (generator&&howOften>10) 
-      howOften=10+1000000;
+    if (generator&&howOften>SCANCUTS_PROBING) 
+      howOften=SCANCUTS_PROBING+1000000;
     else
       howOften += 1000000;
   }

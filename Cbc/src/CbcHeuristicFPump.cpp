@@ -32,6 +32,7 @@ CbcHeuristicFPump::CbcHeuristicFPump()
    initialWeight_(0.0),
    weightFactor_(0.1),
    artificialCost_(COIN_DBL_MAX),
+   iterationRatio_(0.0),
    maximumPasses_(100),
    maximumRetries_(1),
    accumulate_(0),
@@ -54,6 +55,7 @@ CbcHeuristicFPump::CbcHeuristicFPump(CbcModel & model,
    initialWeight_(0.0),
    weightFactor_(0.1),
    artificialCost_(COIN_DBL_MAX),
+   iterationRatio_(0.0),
    maximumPasses_(100),
    maximumRetries_(1),
    accumulate_(0),
@@ -142,6 +144,7 @@ CbcHeuristicFPump::CbcHeuristicFPump(const CbcHeuristicFPump & rhs)
   initialWeight_(rhs.initialWeight_),
   weightFactor_(rhs.weightFactor_),
   artificialCost_(rhs.artificialCost_),
+  iterationRatio_(rhs.iterationRatio_),
   maximumPasses_(rhs.maximumPasses_),
   maximumRetries_(rhs.maximumRetries_),
   accumulate_(rhs.accumulate_),
@@ -165,6 +168,7 @@ CbcHeuristicFPump::operator=( const CbcHeuristicFPump& rhs)
     initialWeight_ = rhs.initialWeight_;
     weightFactor_ = rhs.weightFactor_;
     artificialCost_ = rhs.artificialCost_;
+    iterationRatio_ = rhs.iterationRatio_;
     maximumPasses_ = rhs.maximumPasses_;
     maximumRetries_ = rhs.maximumRetries_;
     accumulate_ = rhs.accumulate_;
@@ -214,7 +218,12 @@ CbcHeuristicFPump::solution(double & solutionValue,
   int numberColumns = model_->getNumCols();
   int numberIntegers = model_->numberIntegers();
   const int * integerVariableOrig = model_->integerVariable();
-
+  double iterationLimit = -1.0;
+  //iterationRatio_=1.0;
+  if (iterationRatio_>0.0)
+    iterationLimit = (2*model_->solver()->getNumRows()+2*numberColumns)*
+      iterationRatio_;
+  double totalNumberIterations=0.0;
   // 1. initially check 0-1
   int i,j;
   int general=0;
@@ -323,6 +332,8 @@ CbcHeuristicFPump::solution(double & solutionValue,
   while (!exitAll) {
     int numberPasses=0;
     artificialFactor *= 10.0;
+    int lastMove= (!numberTries) ? -10 : 1000000;
+    double lastSumInfeas=COIN_DBL_MAX;
     numberTries++;
     // Clone solver - otherwise annoys root node computations
     solver = model_->solver()->clone();
@@ -466,7 +477,19 @@ CbcHeuristicFPump::solution(double & solutionValue,
 	  lastSolution[i]=solution[i];
 	}
       }
-      if (numberPasses>=maximumPasses_) {
+      if (iterationLimit<0.0) {
+	if (numberPasses>=maximumPasses_) {
+	  // If going well then keep going if maximumPasses_ small
+	  if (lastMove<numberPasses-4||lastMove==1000000)
+	    break;
+	  if (maximumPasses_>20||numberPasses>=40)
+	    break;
+	}
+      } else if (totalNumberIterations>iterationLimit&&numberPasses>15) {
+	  // exiting on iteration count
+	break;
+      } else if (maximumPasses_<30&&numberPasses>100) {
+	// too many passes anyway
 	break;
       }
       if (maximumTime_>0.0&&CoinCpuTime()>=startTime_+maximumTime_) break;
@@ -547,10 +570,9 @@ CbcHeuristicFPump::solution(double & solutionValue,
 		double saveObjectiveValue = model_->getMinimizationObjValue();
 		model_->setBestSolution(betterSolution,numberColumns,newSolutionValue);
 		int action = handler->event(CbcEventHandler::heuristicSolution);
-		if (saveOldSolution) {
+		if (saveOldSolution&&saveObjectiveValue<model_->getMinimizationObjValue())
 		  model_->setBestSolution(saveOldSolution,numberColumns,saveObjectiveValue);
-		  delete [] saveOldSolution;
-		}
+		delete [] saveOldSolution;
 		if (!action||model_->getCurrentSeconds()>model_->getMaximumSeconds()) {
 		  exitAll=true; // exit
 		  break;
@@ -779,10 +801,9 @@ CbcHeuristicFPump::solution(double & solutionValue,
 		  double saveObjectiveValue = model_->getMinimizationObjValue();
 		  model_->setBestSolution(betterSolution,numberColumns,newSolutionValue);
 		  int action = handler->event(CbcEventHandler::heuristicSolution);
-		  if (saveOldSolution) {
+		  if (saveOldSolution&&saveObjectiveValue<model_->getMinimizationObjValue())
 		    model_->setBestSolution(saveOldSolution,numberColumns,saveObjectiveValue);
-		    delete [] saveOldSolution;
-		  }
+		  delete [] saveOldSolution;
 		  if (!action||model_->getCurrentSeconds()>model_->getMaximumSeconds()) {
 		    exitAll=true; // exit
 		    break;
@@ -853,15 +874,20 @@ CbcHeuristicFPump::solution(double & solutionValue,
 	      newTrueSolutionValue += saveObjective[i]*newSolution[i];
 	    }
 	    newTrueSolutionValue *= direction;
+	  }
+	  if (false) {
 	    OsiSolverInterface * saveSolver = model_->swapSolver(solver);
 	    CbcRounding heuristic1(*model_);
 	    heuristic1.setHeuristicName("rounding in feaspump!");
 	    heuristic1.setWhen(1);
+	    roundingObjective = newTrueSolutionValue;
 	    double testObjectiveValue = CoinMin(solutionValue,roundingObjective);
 	    int returnCode = heuristic1.solution(testObjectiveValue,roundingSolution,newTrueSolutionValue) ;
 	    if (returnCode==1) {
 	      assert(testObjectiveValue < CoinMin(solutionValue,roundingObjective));
 	      roundingObjective = testObjectiveValue;
+	    } else {
+	      roundingObjective = COIN_DBL_MAX;
 	    }
 	    model_->swapSolver(saveSolver);
 	  }
@@ -950,6 +976,15 @@ CbcHeuristicFPump::solution(double & solutionValue,
 	    delete solver2;
 	  }
 	}
+	if (lastMove!=1000000) {
+	  if (newSumInfeas<lastSumInfeas) {
+	    lastMove=numberPasses;
+	    lastSumInfeas=newSumInfeas;
+	  } else if (newSumInfeas>lastSumInfeas+1.0e-5) {
+	    lastMove=1000000; // going up
+	  }
+	}
+	totalNumberIterations += solver->getIterationCount();
 	if (solver->getNumRows()<3000)
 	  sprintf(pumpPrint,"Pass %3d: suminf. %10.5f obj. %g iterations %d", numberPasses+totalNumberPasses,
 		  newSumInfeas,newTrueSolutionValue,solver->getIterationCount());
@@ -981,6 +1016,9 @@ CbcHeuristicFPump::solution(double & solutionValue,
     if (roundingObjective<solutionValue) {
       sprintf(pumpPrint,"Rounding solution of %g is better than previous of %g !\n",
 	      roundingObjective,solutionValue);
+      model_->messageHandler()->message(CBC_FPUMP1,model_->messages())
+	<< pumpPrint
+	<<CoinMessageEol;
       solutionValue=roundingObjective;
       memcpy(betterSolution,roundingSolution,numberColumns*sizeof(double));
       solutionFound=true;
@@ -1084,6 +1122,23 @@ CbcHeuristicFPump::solution(double & solutionValue,
 	// could add cut
 	returnCode &= ~2;
       }
+      // recompute solution value
+      if (returnCode&&true) {
+	delete newSolver;
+	newSolver = model_->continuousSolver()->clone();
+	newSolutionValue = -saveOffset;
+	double newSumInfeas=0.0;
+	const double * obj = newSolver->getObjCoefficients();
+	for (int i=0 ; i<numberColumns ; i++ ) {
+	  if (newSolver->isInteger(i)) {
+	    double value = newSolution[i];
+	    double nearest = floor(value+0.5);
+	    newSumInfeas += fabs(value-nearest);
+	  }
+	  newSolutionValue += obj[i]*newSolution[i];
+	}
+	newSolutionValue *= direction;
+      }
       if (returnCode&&newSolutionValue<saveValue) {
 	sprintf(pumpPrint,"Mini branch and bound improved solution from %g to %g (%.2f seconds)",
 		saveValue,newSolutionValue,model_->getCurrentSeconds());
@@ -1109,6 +1164,31 @@ CbcHeuristicFPump::solution(double & solutionValue,
 	  if (newSolver->isProvenOptimal()) {
 	    double value = newSolver->getObjValue()*newSolver->getObjSense();
 	    if (value<newSolutionValue) {
+	      //newSolver->writeMps("query","mps");
+#if 0
+	      {
+		double saveOffset;
+		newSolver->getDblParam(OsiObjOffset,saveOffset);
+		const double * obj = newSolver->getObjCoefficients();
+		double newTrueSolutionValue = -saveOffset;
+		double newSumInfeas=0.0;
+		int numberColumns = newSolver->getNumCols();
+		const double * solution = newSolver->getColSolution();
+		for (int  i=0 ; i<numberColumns ; i++ ) {
+		  if (newSolver->isInteger(i)) {
+		    double value = solution[i];
+		    double nearest = floor(value+0.5);
+		    newSumInfeas += fabs(value-nearest);
+		  }
+		  if (solution[i])
+		    printf("%d obj %g val %g - total %g\n",i,obj[i],solution[i],
+			   newTrueSolutionValue);
+		  newTrueSolutionValue += obj[i]*solution[i];
+		}
+		printf("obj %g - inf %g\n",newTrueSolutionValue,
+		       newSumInfeas);
+	      }
+#endif
 	      sprintf(pumpPrint,"Freeing continuous variables gives a solution of %g", value);
 	      model_->messageHandler()->message(CBC_FPUMP1,model_->messages())
 		<< pumpPrint
@@ -1139,10 +1219,10 @@ CbcHeuristicFPump::solution(double & solutionValue,
 	    double saveObjectiveValue = model_->getMinimizationObjValue();
 	    model_->setBestSolution(betterSolution,numberColumns,newSolutionValue);
 	    int action = handler->event(CbcEventHandler::heuristicSolution);
-	    if (saveOldSolution) {
+	    printf("cutoff %g\n",model_->getCutoff());
+	    if (saveOldSolution&&saveObjectiveValue<model_->getMinimizationObjValue())
 	      model_->setBestSolution(saveOldSolution,numberColumns,saveObjectiveValue);
-	      delete [] saveOldSolution;
-	    }
+	    delete [] saveOldSolution;
 	    if (!action||model_->getCurrentSeconds()>model_->getMaximumSeconds()) {
 	      exitAll=true; // exit
 	      break;
@@ -1248,6 +1328,17 @@ CbcHeuristicFPump::solution(double & solutionValue,
     model_->setSolutionCount(1); // for local search
     model_->setNumberHeuristicSolutions(1); 
   }
+#ifdef COIN_DEVELOP
+  {
+    double ncol = model_->solver()->getNumCols();
+    double nrow = model_->solver()->getNumRows();
+    printf("XXX total iterations %g ratios - %g %g %g\n",
+	   totalNumberIterations,
+	   totalNumberIterations/nrow,
+	   totalNumberIterations/ncol,
+	   totalNumberIterations/(2*nrow+2*ncol));
+  }
+#endif
   return finalReturnCode;
 }
 

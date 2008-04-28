@@ -323,6 +323,70 @@ CbcStrategyDefault::setupOther(CbcModel & model)
     // Pass in models message handler
     process->passInMessageHandler(model.messageHandler());
     OsiSolverInterface * solver = model.solver();
+#ifdef COIN_HAS_CLP
+    OsiClpSolverInterface * clpSolver = dynamic_cast< OsiClpSolverInterface*> (solver);
+    if (clpSolver&&false) {
+      // see if all coefficients multiple of 0.01 (close enough)
+      CoinPackedMatrix * matrix = clpSolver->getModelPtr()->matrix();
+      double * element = matrix->getMutableElements();
+      //const int * row = matrix->getIndices();
+      const CoinBigIndex * columnStart = matrix->getVectorStarts();
+      const int * columnLength = matrix->getVectorLengths();
+      int numberInt=0;
+      int numberNon=0;
+      int numberClose=0;
+      int numberColumns = clpSolver->getNumCols();
+      int iColumn;
+      for (iColumn=0;iColumn<numberColumns;iColumn++) {
+	for (int j=columnStart[iColumn];
+	     j<columnStart[iColumn]+columnLength[iColumn];j++) {
+	  //int iRow = row[j];
+	  double value1 = element[j];
+	  double value = fabs(value1);
+	  if (value>1.0e7) {
+	    if(value!=floor(value)) 
+	      numberNon++;
+	    else
+	      numberInt++;
+	  } else {
+	    int iValue = (int)( 100*(value+0.005));
+	    double value2 = iValue;
+	    if (value2==100.0*value) {
+	      numberInt++;
+	    } else if (fabs(value2-100.0*value)<1.0e-5) {
+	      numberClose++;
+	    } else {
+	      numberNon++;
+	    }
+	  }
+	}
+      }
+      if (!numberNon&&numberClose) {
+	printf("Tidying %d multiples of 0.01, %d close\n",
+	       numberInt,numberClose);
+	for (iColumn=0;iColumn<numberColumns;iColumn++) {
+	  for (int j=columnStart[iColumn];
+	       j<columnStart[iColumn]+columnLength[iColumn];j++) {
+	    //int iRow = row[j];
+	    double value1 = element[j];
+	    double value = fabs(value1);
+	    if (value<1.0e7) {
+	      int iValue = (int)( 100*(value+0.005));
+	      double value2 = iValue;
+	      if (value2!=100.0*value) {
+		value2 *= 0.01;
+		if (fabs(value-floor(value+0.5))<=1.0e-7)
+		  value2 = floor(value+0.5);
+		if (value1<0.0)
+		  value2 = -value2;
+		element[j]=value2;
+	      }
+	    }
+	  }
+	}
+      }
+    }
+#endif
     {
       // mark some columns as ineligible for presolve
       int numberColumns = solver->getNumCols();
@@ -355,7 +419,7 @@ CbcStrategyDefault::setupOther(CbcModel & model)
     }
     int logLevel = model.messageHandler()->logLevel();
 #ifdef COIN_HAS_CLP
-    OsiClpSolverInterface * clpSolver = dynamic_cast< OsiClpSolverInterface*> (solver);
+    //OsiClpSolverInterface * clpSolver = dynamic_cast< OsiClpSolverInterface*> (solver);
     ClpSimplex * lpSolver=NULL;
     if (clpSolver) {
       if (clpSolver->messageHandler()->logLevel())
@@ -375,6 +439,7 @@ CbcStrategyDefault::setupOther(CbcModel & model)
     generator1.setMaxPass(1);
     generator1.setMaxPassRoot(1);
     generator1.setMaxProbeRoot(CoinMin(3000,solver->getNumCols()));
+    generator1.setMaxProbeRoot(123);
     generator1.setMaxElements(100);
     generator1.setMaxElementsRoot(200);
     generator1.setMaxLookRoot(50);
@@ -383,10 +448,10 @@ CbcStrategyDefault::setupOther(CbcModel & model)
     // Not needed with pass in process->messageHandler()->setLogLevel(logLevel);
     // Add in generators
     process->addCutGenerator(&generator1);
-    int translate[]={9999,0,2,-2,3,4,4};
+    int translate[]={9999,0,2,-2,3,4,4,4};
     OsiSolverInterface * solver2 = 
       process->preProcessNonDefault(*solver,
-                                    translate[desiredPreProcess_],preProcessPasses_);
+                                    translate[desiredPreProcess_],preProcessPasses_,6);
     // Tell solver we are not in Branch and Cut
     solver->setHintParam(OsiDoInBranchAndCut,false,OsiHintDo) ;
     if (solver2)
@@ -819,8 +884,9 @@ setCutAndHeuristicOptions(CbcModel & model)
       // Number of unsatisfied variables to look at
       cglProbing->setMaxProbe(10);
       cglProbing->setMaxProbeRoot(50);
+      //cglProbing->setMaxProbeRoot(123);
       // How far to follow the consequences
-      cglProbing->setMaxLook(10);
+      cglProbing->setMaxLook(5);
       cglProbing->setMaxLookRoot(50);
       cglProbing->setMaxLookRoot(10);
       // Only look at rows with fewer than this number of elements
@@ -836,7 +902,7 @@ setCutAndHeuristicOptions(CbcModel & model)
       cglGomory->setLimit(50);
     }
     CglKnapsackCover * cglKnapsackCover = dynamic_cast<CglKnapsackCover *>(generator);
-    if (cglKnapsackCoverq) {
+    if (cglKnapsackCover) {
     }
 #endif
   }

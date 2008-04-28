@@ -122,6 +122,20 @@ public:
   /** \brief Print something about branch - only if log level high
   */
   virtual void print();
+  /** Return the type (an integer identifier) of \c this */
+  virtual int type() const 
+  { return -1;}
+
+  /** Compare the \c this with \c brObj. \c this and \c brObj must be os the
+      same type and must have the same original object, but they may have
+      different feasible regions.
+      Return the appropriate CbcRangeCompare value (first argument being the
+      sub/superset if that's the case). In case of overlap (and if \c
+      replaceIfOverlap is true) replace the current branching object with one
+      whose feasible region is the overlap.
+   */
+  virtual CbcRangeCompare compareBranchingObject
+  (const CbcBranchingObject* brObj, const bool replaceIfOverlap = false);
 private:
   /// data
   const CbcLink * set_;

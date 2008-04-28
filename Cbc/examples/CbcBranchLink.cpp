@@ -691,3 +691,17 @@ CbcLinkBranchingObject::print()
 	 separator_,first,weights[first],last,weights[last],numberFixed/numberLinks,
          numberOther/numberLinks);
 }
+/** Compare the \c this with \c brObj. \c this and \c brObj must be os the
+    same type and must have the same original object, but they may have
+    different feasible regions.
+    Return the appropriate CbcRangeCompare value (first argument being the
+    sub/superset if that's the case). In case of overlap (and if \c
+    replaceIfOverlap is true) replace the current branching object with one
+    whose feasible region is the overlap.
+*/
+CbcRangeCompare
+CbcLinkBranchingObject::compareBranchingObject
+(const CbcBranchingObject* brObj, const bool replaceIfOverlap)
+{
+  throw("must implement");
+}

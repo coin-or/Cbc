@@ -314,7 +314,7 @@ public:
       branchState is -1 for 'down' +1 for 'up' */
   virtual void fix(OsiSolverInterface * solver,
 		   double * lower, double * upper,
-		   int branchState) const {};
+		   int branchState) const {}
 
   /** Reset every information so that the branching object appears to point to
       the previous child. This method does not need to modify anything in any

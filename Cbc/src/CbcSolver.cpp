@@ -6147,7 +6147,7 @@ int
               if (gomoryAction&&(complicatedInteger!=1||
 				 (gomoryAction==1||gomoryAction>=4))) {
 		// try larger limit
-		int numberColumns = lpSolver->getNumCols();
+		int numberColumns = babModel_->getNumCols();
 		if (gomoryAction==5) {
 		  gomoryAction=4;
 		  gomoryGen.setLimitAtRoot(numberColumns);

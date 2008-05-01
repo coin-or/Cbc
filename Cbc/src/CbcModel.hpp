@@ -265,7 +265,7 @@ private:
   void resizeWhichGenerator(int numberNow, int numberAfter);
 public:
 #ifndef CBC_THREAD
-#define NEW_UPDATE_OBJECT 0
+#define NEW_UPDATE_OBJECT 2
 #else
 #define NEW_UPDATE_OBJECT 2
 #endif

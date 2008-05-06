@@ -497,6 +497,14 @@ int CbcClpUnitTest (const CbcModel & saveModel, std::string& dirMiplib,
     <<timeTaken
     <<" seconds."
     <<std::endl;
+  if (unitTestOnly) {
+    if(numberFailures||numberOnNodes) {
+      printf("****** Unit Test failed\n");
+      fprintf(stderr,"****** Unit Test failed\n");
+    } else {
+      fprintf(stderr,"Unit Test succeeded\n");
+    }
+  }
 #ifdef CLP_FACTORIZATION_INSTRUMENT
   printf("Total factorization time %g seconds\n",
 	 timeTakenFac);

@@ -4175,9 +4175,9 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
              numberNotTrusted);
     // decide what to do
     int strategy=1;
-    if ((numberUnfinished*4>numberStrongDone&&
+    if (((numberUnfinished*4>numberStrongDone&&
 	 numberStrongInfeasible*40<numberStrongDone)||
-	numberStrongInfeasible<0) {
+	 numberStrongInfeasible<0)&&model->numberStrong()<10&&model->numberBeforeTrust()<20) {
       strategy=2;
 #ifdef COIN_DEVELOP
       //if (model->logLevel()>1)

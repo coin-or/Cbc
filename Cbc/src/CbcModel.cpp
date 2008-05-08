@@ -5897,9 +5897,6 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
     //probingInfo_->initializeFixing();
     int i;
     if ((threadMode_&2)==0||numberNodes_) {
-      int nGen = numberCutGenerators_;
-      if (node&&node->depth()>10&&(node->depth()&1)==0&&!fullScan)
-	nGen=0;
 # ifdef COIN_HAS_CLP
       if (!node&&!parentModel_&& intParam_[CbcMaxNumNode] == -123456) {
 	OsiClpSolverInterface * clpSolver 
@@ -5909,7 +5906,7 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
 	}
       }
 # endif
-      for (i = 0;i<nGen;i++) {
+      for (i = 0;i<numberCutGenerators_;i++) {
 	int numberRowCutsBefore = theseCuts.sizeRowCuts() ;
 	int numberColumnCutsBefore = theseCuts.sizeColCuts() ;
 	int numberRowCutsAfter = numberRowCutsBefore;
@@ -5922,6 +5919,11 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
 	  generate=false;
 	if (generator_[i]->switchedOff())
 	  generate=false;;
+	if (node&&node->depth()>10&&(node->depth()&1)==0&&!fullScan) {
+	  // switch off if default
+	  if (generator_[i]->howOften()==1&&generator_[i]->whatDepth()<0)
+	    generate=false;
+	}
 	if (generate) {
 	  bool mustResolve = 
 	    generator_[i]->generateCuts(theseCuts,fullScan,solver_,node) ;

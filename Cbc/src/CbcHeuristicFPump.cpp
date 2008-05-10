@@ -1239,7 +1239,7 @@ CbcHeuristicFPump::solution(double & solutionValue,
       delete newSolver;
     }
     if (solutionFound) finalReturnCode=1;
-    cutoff = CoinMin(cutoff,solutionValue);
+    cutoff = CoinMin(cutoff,solutionValue-model_->getCutoffIncrement());
     if (numberTries>=maximumRetries_||!solutionFound||exitAll||cutoff<continuousObjectiveValue+1.0e-7) {
       break;
     } else {

@@ -1111,8 +1111,15 @@ CbcHeuristicFPump::solution(double & solutionValue,
 	<< pumpPrint
 	<<CoinMessageEol;
       double saveValue = newSolutionValue;
-      returnCode = smallBranchAndBound(newSolver,numberNodes_,newSolution,newSolutionValue,
-				       cutoff,"CbcHeuristicLocalAfterFPump");
+      if (newSolutionValue-model_->getCutoffIncrement()
+	  >continuousObjectiveValue-1.0e-7) {
+	returnCode = smallBranchAndBound(newSolver,numberNodes_,newSolution,newSolutionValue,
+					 cutoff,"CbcHeuristicLocalAfterFPump");
+      } else {
+	// no need
+	exitAll=true;
+	returnCode=0;
+      }
       if (returnCode<0) {
 	if (returnCode==-2)
 	  exitAll=true;

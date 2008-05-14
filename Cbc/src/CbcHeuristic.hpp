@@ -183,6 +183,8 @@ public:
   { heuristicName_ = name;}
   /// Set random number generator seed
   void setSeed(int value);
+  /// Set input solution
+  void setInputSolution(const double * solution, double objValue);
 
   /** Check whether the heuristic should run */
   bool shouldHeurRun();
@@ -250,6 +252,9 @@ protected:
 
   /// How many solutions the heuristic thought it got
   int numberSolutionsFound_;
+
+  // Input solution - so can be used as seed
+  double * inputSolution_;
 
 
 #if 0

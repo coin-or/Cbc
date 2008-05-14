@@ -341,6 +341,12 @@ public:
   
   /// Clone
   virtual CbcNodeInfo * clone() const;
+  /// Lower bounds
+  inline const double * lower() const
+  { return lower_;}
+  /// Upper bounds
+  inline const double * upper() const
+  { return upper_;}
 protected:
   // Data
   /** Full basis 

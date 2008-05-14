@@ -101,12 +101,47 @@ public:
   /// Reset maximum node number
   inline void resetNodeNumbers()
   { maximumNodeNumber_=0;}
+  /// Set number of branches
+  inline void setNumberBranching(int value)
+  { numberBranching_=value;}
+  /// Get number of branches
+  inline int getNumberBranching() const
+  { return numberBranching_;}
+  /// Set maximum branches
+  inline void setMaximumBranching(int value)
+  { maximumBranching_=value;}
+  /// Get maximum branches
+  inline int getMaximumBranching() const
+  { return maximumBranching_;}
+  /// Get branched variables
+  inline unsigned int * branched() const
+  { return branched_;}
+  /// Get bounds
+  inline int * newBounds() const
+  { return newBound_;}
+  /// Adds branching information to complete state
+  void addBranchingInformation(const CbcModel * model,const CbcNodeInfo * nodeInfo,
+			       const double * currentLower,
+			       const double * currentUpper);
+  /// Increase space for data
+  void increaseSpace();
 //@}
 protected:
   std::vector <CbcNode *> nodes_;
   CbcCompare comparison_;	///> Sort function for heap ordering.
   /// Maximum "node" number so far to split ties
   int maximumNodeNumber_;
+  /// Size of variable list
+  int numberBranching_;
+  /// Maximum size of variable list
+  int maximumBranching_;
+  /** Integer variables branched or bounded
+      top bit set if new upper bound
+      next bit set if a branch
+  */
+  unsigned int * branched_;
+  /// New bound
+  int * newBound_;
 };
 
 /// New style

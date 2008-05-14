@@ -1093,7 +1093,14 @@ public:
 
   inline double * bestSolution() const
   { return bestSolution_;}
-  void setBestSolution(const double * solution,int numberColumns,double objectiveValue);
+  /** User callable setBestSolution.
+      If check false does not check valid
+      If true then sees if feasible and warns if objective value
+      worse than given (so just set to COIN_DBL_MAX if you don't care).
+      If check true then does not save solution if not feasible
+  */
+  void setBestSolution(const double * solution,int numberColumns,
+		       double objectiveValue,bool check=false);
   
   /// Get number of solutions
   inline int getSolutionCount() const
@@ -1334,7 +1341,8 @@ public:
 
     The name is just used for print messages.
   */
-  void addHeuristic(CbcHeuristic * generator, const char *name = NULL);
+  void addHeuristic(CbcHeuristic * generator, const char *name = NULL,
+		    int before=-1);
   ///Get the specified heuristic
   inline CbcHeuristic * heuristic(int i) const
   { return heuristic_[i];}
@@ -1455,6 +1463,8 @@ public:
       6 bit (64) - try for dominated columns
       7 bit (128) - SOS type 1 but all declared integer
       8 bit (256) - Set to say solution just found, unset by doing cuts
+      9 bit (512) - Try reduced model after 100 nodes
+      10 bit (1024) - Switch on some heuristics even if seems unlikely
   */
   /// Set special options
   inline void setSpecialOptions(int value)
@@ -1573,6 +1583,12 @@ public:
   /** Clears out enough to reset CbcModel cutoff etc
    */
   void resetModel();
+  /** Most of copy constructor
+      mode - 0 copy but don't delete before
+             1 copy and delete before
+	     2 copy and delete before (but use virgin generators)
+  */
+  void gutsOfCopy(const CbcModel & rhs,int mode=0);
   /// Move status, nodes etc etc across
   void moveInfo(const CbcModel & rhs);
   //@}

@@ -4785,6 +4785,84 @@ CbcModel::resetModel()
   dblParam_[CbcCurrentObjectiveValue] = 1.0e100;
   dblParam_[CbcCurrentMinimizationObjectiveValue] = 1.0e100;
 }
+/* Most of copy constructor
+      mode - 0 copy but don't delete before
+             1 copy and delete before
+	     2 copy and delete before (but use virgin generators)
+*/
+void 
+CbcModel::gutsOfCopy(const CbcModel & rhs,int mode)
+{
+  minimumDrop_ = rhs.minimumDrop_;
+  specialOptions_ = rhs.specialOptions_;
+  numberStrong_ = rhs.numberStrong_;
+  numberBeforeTrust_ = rhs.numberBeforeTrust_;
+  numberPenalties_ = rhs.numberPenalties_;
+  printFrequency_ = rhs.printFrequency_;
+# ifdef COIN_HAS_CLP
+  fastNodeDepth_ = rhs.fastNodeDepth_;
+#endif
+  howOftenGlobalScan_ = rhs.howOftenGlobalScan_;
+  maximumCutPassesAtRoot_ = rhs.maximumCutPassesAtRoot_;
+  maximumCutPasses_ =  rhs.maximumCutPasses_;
+  preferredWay_ = rhs.preferredWay_;
+  resolveAfterTakeOffCuts_ = rhs.resolveAfterTakeOffCuts_;
+  numberThreads_ = rhs.numberThreads_;
+  threadMode_ = rhs.threadMode_;
+  memcpy(intParam_,rhs.intParam_,sizeof(intParam_));
+  memcpy(dblParam_,rhs.dblParam_,sizeof(dblParam_));
+  int i;
+  if (mode) {
+    for (i=0;i<numberCutGenerators_;i++) {
+      delete generator_[i];
+      delete virginGenerator_[i];
+    }
+    delete [] generator_;
+    delete [] virginGenerator_;
+    for (i=0;i<numberHeuristics_;i++) {
+      delete heuristic_[i];
+    }
+    delete [] heuristic_;
+    delete eventHandler_;
+    delete branchingMethod_;
+  }
+  numberCutGenerators_ = rhs.numberCutGenerators_;
+  if (numberCutGenerators_) {
+    generator_ = new CbcCutGenerator * [numberCutGenerators_];
+    virginGenerator_ = new CbcCutGenerator * [numberCutGenerators_];
+    int i;
+    for (i=0;i<numberCutGenerators_;i++) {
+      if (mode<2)
+	generator_[i]=new CbcCutGenerator(*rhs.generator_[i]);
+      else
+	generator_[i]=new CbcCutGenerator(*rhs.virginGenerator_[i]);
+      virginGenerator_[i]=new CbcCutGenerator(*rhs.virginGenerator_[i]);
+    }
+  } else {
+    generator_=NULL;
+    virginGenerator_=NULL;
+  }
+  numberHeuristics_ = rhs.numberHeuristics_;
+  if (numberHeuristics_) {
+    heuristic_ = new CbcHeuristic * [numberHeuristics_];
+    int i;
+    for (i=0;i<numberHeuristics_;i++) {
+      heuristic_[i]=rhs.heuristic_[i]->clone();
+    }
+  } else {
+    heuristic_=NULL;
+  }
+  if (rhs.eventHandler_)
+    eventHandler_ = rhs.eventHandler_->clone() ; 
+  else
+    eventHandler_ = NULL ; 
+  if (rhs.branchingMethod_)
+    branchingMethod_=rhs.branchingMethod_->clone();
+  else
+    branchingMethod_=NULL;
+  messageHandler()->setLogLevel(rhs.messageHandler()->logLevel());
+  synchronizeModel();
+}
 // Move status, nodes etc etc across
 void 
 CbcModel::moveInfo(const CbcModel & rhs)
@@ -4982,16 +5060,26 @@ CbcModel::addCutGenerator(CglCutGenerator * generator,
 }
 // Add one heuristic
 void 
-CbcModel::addHeuristic(CbcHeuristic * generator, const char *name)
+CbcModel::addHeuristic(CbcHeuristic * generator, const char *name,
+		       int before)
 {
   CbcHeuristic ** temp = heuristic_;
   heuristic_ = new CbcHeuristic * [numberHeuristics_+1];
   memcpy(heuristic_,temp,numberHeuristics_*sizeof(CbcHeuristic *));
   delete [] temp;
-  heuristic_[numberHeuristics_]=generator->clone();
+  int where;
+  if (before<0||before>=numberHeuristics_) {
+    where=numberHeuristics_;
+  } else {
+    // move up
+    for (int i=numberHeuristics_;i>before;i--) 
+      heuristic_[i]=heuristic_[i-1];
+    where=before;
+  }
+  heuristic_[where]=generator->clone();
   if (name)
-  { heuristic_[numberHeuristics_]->setHeuristicName(name) ; }
-  heuristic_[numberHeuristics_]->setSeed(987654321+numberHeuristics_);
+    heuristic_[where]->setHeuristicName(name) ; 
+  heuristic_[where]->setSeed(987654321+where);
   numberHeuristics_++ ;
 }
 
@@ -11500,8 +11588,70 @@ CbcModel::postProcess(CglPreProcess * process)
   solver_ = process->originalModel();
 }
 void 
-CbcModel::setBestSolution(const double * solution,int numberColumns,double objectiveValue)
+CbcModel::setBestSolution(const double * solution,int numberColumns,
+			  double objectiveValue, bool checkSolution)
 {
+  // May be odd discontinuities - so only chaeck if asked
+  if (checkSolution) {
+    assert (numberColumns==solver_->getNumCols());
+    double * saveLower = CoinCopyOfArray(solver_->getColLower(),numberColumns);
+    double * saveUpper = CoinCopyOfArray(solver_->getColUpper(),numberColumns);
+    // Fix integers
+    for (int i=0;i<numberColumns;i++) {
+      if (solver_->isInteger(i)) {
+	double value = solution[i];
+	double intValue = floor(value+0.5);
+	assert (fabs(value-intValue)<1.0e-4);
+	solver_->setColLower(i,intValue);
+	solver_->setColUpper(i,intValue);
+      }
+    }
+    // Save basis
+    CoinWarmStart * saveBasis = solver_->getWarmStart();
+    // Solve
+    solver_->initialSolve();
+    char printBuffer[200];
+    bool looksGood = solver_->isProvenOptimal();
+    if (looksGood) {
+      double direction = solver_->getObjSense() ;
+      double objValue =direction*solver_->getObjValue();
+      if (objValue>objectiveValue + 1.0e-8*(1.0+fabs(objectiveValue))) {
+	sprintf(printBuffer,"Given objective value %g, computed %g",
+		objectiveValue,objValue);
+	messageHandler()->message(CBC_FPUMP1,messages())
+	  << printBuffer << CoinMessageEol ;
+      }
+      // Use this as objective value and solution
+      objectiveValue = objValue;
+      solution = solver_->getColSolution();
+      // Save current basis
+      CoinWarmStartBasis* ws =
+	dynamic_cast <CoinWarmStartBasis*>(solver_->getWarmStart()) ;
+      assert(ws);
+      setBestSolutionBasis(*ws);
+      delete ws;
+    }
+    // Restore basis
+    solver_->setWarmStart(saveBasis);
+    delete saveBasis;
+    // Restore bounds
+    solver_->setColLower(saveLower);
+    delete [] saveLower;
+    solver_->setColUpper(saveUpper);
+    delete [] saveUpper;
+    // Return if no good
+    if (!looksGood) { 
+      messageHandler()->message(CBC_FPUMP1,messages())
+	<< "Error solution not saved as not feasible" << CoinMessageEol ;
+      return;
+    } else {
+      // message
+      sprintf(printBuffer,"Solution with objective value %g saved",
+	      objectiveValue);
+      messageHandler()->message(CBC_FPUMP1,messages())
+	<< printBuffer << CoinMessageEol ;
+    }
+  }
   bestObjective_ = objectiveValue;
   int n = CoinMax(numberColumns,solver_->getNumCols());
   delete [] bestSolution_;

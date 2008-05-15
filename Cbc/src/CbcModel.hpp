@@ -1091,7 +1091,14 @@ public:
 
   inline double * bestSolution() const
   { return bestSolution_;}
-  void setBestSolution(const double * solution,int numberColumns,double objectiveValue);
+  /** User callable setBestSolution.
+      If check false does not check valid
+      If true then sees if feasible and warns if objective value
+      worse than given (so just set to COIN_DBL_MAX if you don't care).
+      If check true then does not save solution if not feasible
+  */
+  void setBestSolution(const double * solution,int numberColumns,
+		       double objectiveValue,bool check=false);
   
   /// Get number of solutions
   inline int getSolutionCount() const

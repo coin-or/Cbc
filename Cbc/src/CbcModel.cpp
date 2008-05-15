@@ -10904,8 +10904,70 @@ CbcModel::postProcess(CglPreProcess * process)
   solver_ = process->originalModel();
 }
 void 
-CbcModel::setBestSolution(const double * solution,int numberColumns,double objectiveValue)
+CbcModel::setBestSolution(const double * solution,int numberColumns,
+			  double objectiveValue, bool checkSolution)
 {
+  // May be odd discontinuities - so only chaeck if asked
+  if (checkSolution) {
+    assert (numberColumns==solver_->getNumCols());
+    double * saveLower = CoinCopyOfArray(solver_->getColLower(),numberColumns);
+    double * saveUpper = CoinCopyOfArray(solver_->getColUpper(),numberColumns);
+    // Fix integers
+    for (int i=0;i<numberColumns;i++) {
+      if (solver_->isInteger(i)) {
+	double value = solution[i];
+	double intValue = floor(value+0.5);
+	assert (fabs(value-intValue)<1.0e-4);
+	solver_->setColLower(i,intValue);
+	solver_->setColUpper(i,intValue);
+      }
+    }
+    // Save basis
+    CoinWarmStart * saveBasis = solver_->getWarmStart();
+    // Solve
+    solver_->initialSolve();
+    char printBuffer[200];
+    bool looksGood = solver_->isProvenOptimal();
+    if (looksGood) {
+      double direction = solver_->getObjSense() ;
+      double objValue =direction*solver_->getObjValue();
+      if (objValue>objectiveValue + 1.0e-8*(1.0+fabs(objectiveValue))) {
+	sprintf(printBuffer,"Given objective value %g, computed %g",
+		objectiveValue,objValue);
+	messageHandler()->message(CBC_FPUMP1,messages())
+	  << printBuffer << CoinMessageEol ;
+      }
+      // Use this as objective value and solution
+      objectiveValue = objValue;
+      solution = solver_->getColSolution();
+      // Save current basis
+      CoinWarmStartBasis* ws =
+	dynamic_cast <CoinWarmStartBasis*>(solver_->getWarmStart()) ;
+      assert(ws);
+      setBestSolutionBasis(*ws);
+      delete ws;
+    }
+    // Restore basis
+    solver_->setWarmStart(saveBasis);
+    delete saveBasis;
+    // Restore bounds
+    solver_->setColLower(saveLower);
+    delete [] saveLower;
+    solver_->setColUpper(saveUpper);
+    delete [] saveUpper;
+    // Return if no good
+    if (!looksGood) { 
+      messageHandler()->message(CBC_FPUMP1,messages())
+	<< "Error solution not saved as not feasible" << CoinMessageEol ;
+      return;
+    } else {
+      // message
+      sprintf(printBuffer,"Solution with objective value %g saved",
+	      objectiveValue);
+      messageHandler()->message(CBC_FPUMP1,messages())
+	<< printBuffer << CoinMessageEol ;
+    }
+  }
   bestObjective_ = objectiveValue;
   int n = CoinMax(numberColumns,solver_->getNumCols());
   delete [] bestSolution_;

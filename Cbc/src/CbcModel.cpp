@@ -1437,6 +1437,12 @@ void CbcModel::branchAndBound(int doStatistics)
 */
   if(solverCharacteristics_->reducedCostsAccurate())
     analyzeObjective() ;
+  // may be able to change cutoff now
+  double increment = getDblParam(CbcModel::CbcCutoffIncrement) ;
+  if (cutoff > bestObjective_-increment) {
+    cutoff = bestObjective_-increment ;
+    setCutoff(cutoff) ;
+  }
 /*
   Set up for cut generation. addedCuts_ holds the cuts which are relevant for
   the active subproblem. whichGenerator will be used to record the generator
@@ -10966,6 +10972,13 @@ CbcModel::setBestSolution(const double * solution,int numberColumns,
 	      objectiveValue);
       messageHandler()->message(CBC_FPUMP1,messages())
 	<< printBuffer << CoinMessageEol ;
+      // may be able to change cutoff now
+      double cutoff = getCutoff();
+      double increment = getDblParam(CbcModel::CbcCutoffIncrement) ;
+      if (cutoff > objectiveValue-increment) {
+	cutoff = objectiveValue-increment ;
+	setCutoff(cutoff) ;
+      }
     }
   }
   bestObjective_ = objectiveValue;

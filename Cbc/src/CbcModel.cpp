@@ -4567,6 +4567,8 @@ CbcModel::moveInfo(const CbcModel & rhs)
   numberSolutions_=rhs.numberSolutions_;
   numberHeuristicSolutions_=rhs.numberHeuristicSolutions_;
   numberNodes_ = rhs.numberNodes_;
+  // In case of interrupt
+  intParam_[0] = rhs.intParam_[0];
   numberNodes2_ = rhs.numberNodes2_;
   numberIterations_ = rhs.numberIterations_;
   status_ = rhs.status_;

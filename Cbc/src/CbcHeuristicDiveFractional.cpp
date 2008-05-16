@@ -60,7 +60,7 @@ CbcHeuristicDiveFractional::operator=( const CbcHeuristicDiveFractional& rhs)
   return *this;
 }
 
-void
+bool
 CbcHeuristicDiveFractional::selectVariableToBranch(OsiSolverInterface* solver,
 						   const double* newSolution,
 						   int& bestColumn,
@@ -73,14 +73,21 @@ CbcHeuristicDiveFractional::selectVariableToBranch(OsiSolverInterface* solver,
   bestColumn = -1;
   bestRound = -1; // -1 rounds down, +1 rounds up
   double bestFraction = DBL_MAX;
+  bool allTriviallyRoundableSoFar = true;
   for (int i=0; i<numberIntegers; i++) {
     int iColumn = integerVariable[i];
     double value=newSolution[iColumn];
     double fraction=value-floor(value);
     int round = 0;
     if (fabs(floor(value+0.5)-value)>integerTolerance) {
-      if(downLocks_[i]>0&&upLocks_[i]>0) {
-	  // the variable cannot be rounded
+      if (allTriviallyRoundableSoFar||(downLocks_[i]>0&&upLocks_[i]>0)) {
+
+	if (allTriviallyRoundableSoFar&&downLocks_[i]>0&&upLocks_[i]>0) {
+	  allTriviallyRoundableSoFar = false;
+	  bestFraction = DBL_MAX;
+	}
+
+	// the variable cannot be rounded
 	if(fraction < 0.5)
 	  round = -1;
 	else {
@@ -90,7 +97,7 @@ CbcHeuristicDiveFractional::selectVariableToBranch(OsiSolverInterface* solver,
 	
 	// if variable is not binary, penalize it
 	if(!solver->isBinary(iColumn))
-	    fraction *= 1000.0;
+	  fraction *= 1000.0;
 	
 	if(fraction < bestFraction) {
 	  bestColumn = iColumn;
@@ -100,4 +107,5 @@ CbcHeuristicDiveFractional::selectVariableToBranch(OsiSolverInterface* solver,
       }
     }
   }
+  return allTriviallyRoundableSoFar;
 }

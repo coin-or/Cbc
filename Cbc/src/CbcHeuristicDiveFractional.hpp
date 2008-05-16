@@ -33,7 +33,12 @@ public:
   virtual void generateCpp( FILE * fp) ;
 
   /// Selects the next variable to branch on
-  virtual void selectVariableToBranch(OsiSolverInterface* solver,
+  /** Returns true if all the fractional variables can be trivially
+      rounded. Returns false, if there is at least one fractional variable
+      that is not trivially roundable. In this case, the bestColumn
+      returned will not be trivially roundable.
+  */
+  virtual bool selectVariableToBranch(OsiSolverInterface* solver,
 				      const double* newSolution,
 				      int& bestColumn,
 				      int& bestRound);

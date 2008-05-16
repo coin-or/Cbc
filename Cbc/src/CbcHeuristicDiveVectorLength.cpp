@@ -60,7 +60,7 @@ CbcHeuristicDiveVectorLength::operator=( const CbcHeuristicDiveVectorLength& rhs
   return *this;
 }
 
-void
+bool
 CbcHeuristicDiveVectorLength::selectVariableToBranch(OsiSolverInterface* solver,
 						   const double* newSolution,
 						   int& bestColumn,
@@ -77,13 +77,20 @@ CbcHeuristicDiveVectorLength::selectVariableToBranch(OsiSolverInterface* solver,
   bestColumn = -1;
   bestRound = -1; // -1 rounds down, +1 rounds up
   double bestScore = DBL_MAX;
+  bool allTriviallyRoundableSoFar = true;
   for (int i=0; i<numberIntegers; i++) {
     int iColumn = integerVariable[i];
     double value=newSolution[iColumn];
     double fraction=value-floor(value);
     int round = 0;
     if (fabs(floor(value+0.5)-value)>integerTolerance) {
-      if(downLocks_[i]>0&&upLocks_[i]>0) {
+      if(allTriviallyRoundableSoFar||(downLocks_[i]>0&&upLocks_[i]>0)) {
+
+	if (allTriviallyRoundableSoFar&&downLocks_[i]>0&&upLocks_[i]>0) {
+	  allTriviallyRoundableSoFar = false;
+	  bestScore = DBL_MAX;
+	}
+
 	// the variable cannot be rounded
 	double obj = direction * objective[iColumn];
 	if(obj >= 0.0)
@@ -111,4 +118,5 @@ CbcHeuristicDiveVectorLength::selectVariableToBranch(OsiSolverInterface* solver,
       }
     }
   }
+  return allTriviallyRoundableSoFar;
 }

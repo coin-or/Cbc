@@ -38,6 +38,8 @@ libCbc_la_SOURCES = \
 	CbcHeuristicDiveCoefficient.cpp CbcHeuristicDiveCoefficient.hpp \
 	CbcHeuristicDiveFractional.cpp CbcHeuristicDiveFractional.hpp \
 	CbcHeuristicDiveGuided.cpp CbcHeuristicDiveGuided.hpp \
+	CbcHeuristicDiveLineSearch.cpp CbcHeuristicDiveLineSearch.hpp \
+	CbcHeuristicDivePseudoCost.cpp CbcHeuristicDivePseudoCost.hpp \
 	CbcHeuristicDiveVectorLength.cpp CbcHeuristicDiveLength.hpp \
 	CbcHeuristicFPump.cpp CbcHeuristicFPump.hpp \
 	CbcHeuristicGreedy.cpp CbcHeuristicGreedy.hpp \
@@ -311,6 +313,8 @@ includecoin_HEADERS = \
 	CbcHeuristicDiveCoefficient.hpp \
 	CbcHeuristicDiveFractional.hpp \
 	CbcHeuristicDiveGuided.hpp \
+	CbcHeuristicDiveLineSearch.hpp \
+	CbcHeuristicDivePseudoCost.hpp \
 	CbcHeuristicDiveVectorLength.hpp \
 	CbcHeuristicFPump.hpp \
 	CbcHeuristicGreedy.hpp \

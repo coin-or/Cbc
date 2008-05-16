@@ -54,6 +54,10 @@ Cbc/src/CbcHeuristicDiveFractional.cpp -text
 Cbc/src/CbcHeuristicDiveFractional.hpp -text
 Cbc/src/CbcHeuristicDiveGuided.cpp -text
 Cbc/src/CbcHeuristicDiveGuided.hpp -text
+Cbc/src/CbcHeuristicDiveLineSearch.cpp -text
+Cbc/src/CbcHeuristicDiveLineSearch.hpp -text
+Cbc/src/CbcHeuristicDivePseudoCost.cpp -text
+Cbc/src/CbcHeuristicDivePseudoCost.hpp -text
 Cbc/src/CbcHeuristicDiveVectorLength.cpp -text
 Cbc/src/CbcHeuristicDiveVectorLength.hpp -text
 Cbc/src/CbcHeuristicRINS.cpp -text

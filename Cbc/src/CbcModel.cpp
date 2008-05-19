@@ -10921,11 +10921,13 @@ CbcModel::setBestSolution(const double * solution,int numberColumns,
     double * saveLower = CoinCopyOfArray(solver_->getColLower(),numberColumns);
     double * saveUpper = CoinCopyOfArray(solver_->getColUpper(),numberColumns);
     // Fix integers
+    int numberAway=0;
     for (int i=0;i<numberColumns;i++) {
       if (solver_->isInteger(i)) {
 	double value = solution[i];
 	double intValue = floor(value+0.5);
-	assert (fabs(value-intValue)<1.0e-4);
+	if (fabs(value-intValue)>1.0e-4)
+	  numberAway++;
 	solver_->setColLower(i,intValue);
 	solver_->setColUpper(i,intValue);
       }
@@ -10935,6 +10937,11 @@ CbcModel::setBestSolution(const double * solution,int numberColumns,
     // Solve
     solver_->initialSolve();
     char printBuffer[200];
+    if (numberAway) {
+      sprintf(printBuffer,"Warning %d integer variables were more than 1.0e-4 away from integer",numberAway);
+      messageHandler()->message(CBC_FPUMP1,messages())
+	<< printBuffer << CoinMessageEol ;
+    }
     bool looksGood = solver_->isProvenOptimal();
     if (looksGood) {
       double direction = solver_->getObjSense() ;

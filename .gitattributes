@@ -21,6 +21,7 @@ Cbc/configure -text
 Cbc/configure.ac -text
 Cbc/doc/doxygen.conf -text
 Cbc/examples/Makefile.in -text
+Cbc/examples/allCuts.cpp -text
 Cbc/examples/barrier.cpp -text
 Cbc/examples/cbc_driverC_sos.c -text
 Cbc/examples/driver3.cpp -text

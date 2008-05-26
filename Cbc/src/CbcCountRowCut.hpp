@@ -75,8 +75,11 @@ public:
   { return numberPointingToThis_;}
 
   /// Which generator for cuts - as user order
-   int whichCutGenerator() const
+  inline int whichCutGenerator() const
   { return whichCutGenerator_;}
+  
+  /// Returns true if can drop cut if slack basic
+  bool canDropCut(const OsiSolverInterface * solver, int row) const;
 
 #ifdef CHECK_CUT_COUNTS
   // Just for printing sanity checks

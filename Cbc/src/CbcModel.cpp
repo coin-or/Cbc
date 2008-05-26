@@ -5186,7 +5186,9 @@ void CbcModel::addCuts1 (CbcNode * node, CoinWarmStartBasis *&lastws)
     walkback_[nNode]->applyToModel(this,lastws,addedCuts_,currentNumberCuts);
   }
   if (!lastws->fullBasis()) {
+#ifdef COIN_DEVELOP
     printf("******* bad basis\n");
+#endif
     int numberRows = lastws->getNumArtificial();
     int i;
     for (i=0;i<numberRows;i++)
@@ -5382,7 +5384,8 @@ int CbcModel::addCuts (CbcNode *node, CoinWarmStartBasis *&lastws,bool canFix)
 	  lastws->getArtifStatus(i+numberRowsAtContinuous_);
 	if (addedCuts_[i] &&
 	    (status != CoinWarmStartBasis::basic ||
-	     addedCuts_[i]->effectiveness()==COIN_DBL_MAX)) {
+	     (addedCuts_[i]->effectiveness()>1.0e10&&
+	      !addedCuts_[i]->canDropCut(solver_,i+numberRowsAtContinuous_)))) {
 #	  ifdef CHECK_CUT_COUNTS
 	  printf("Using cut %d %x as row %d\n",i,addedCuts_[i],
 		 numberRowsAtContinuous_+numberToAdd);
@@ -7328,7 +7331,8 @@ CbcModel::takeOffCuts (OsiCuts &newCuts,
 	assert(oldCutIndex < currentNumberCuts_) ;
 	// always leave if from nextRowCut_
 	if (status == CoinWarmStartBasis::basic&&
-	    addedCuts_[oldCutIndex]->effectiveness()!=COIN_DBL_MAX)
+	    (addedCuts_[oldCutIndex]->effectiveness()<=1.0e10||
+	     addedCuts_[oldCutIndex]->canDropCut(solver_,i+firstOldCut)))
 	  { solverCutIndices[numberOldToDelete++] = i+firstOldCut ;
 	  if (saveCuts) {
 	    // send to cut pool
@@ -11597,11 +11601,13 @@ CbcModel::setBestSolution(const double * solution,int numberColumns,
     double * saveLower = CoinCopyOfArray(solver_->getColLower(),numberColumns);
     double * saveUpper = CoinCopyOfArray(solver_->getColUpper(),numberColumns);
     // Fix integers
+    int numberAway=0;
     for (int i=0;i<numberColumns;i++) {
       if (solver_->isInteger(i)) {
 	double value = solution[i];
 	double intValue = floor(value+0.5);
-	assert (fabs(value-intValue)<1.0e-4);
+	if (fabs(value-intValue)>1.0e-4)
+	  numberAway++;
 	solver_->setColLower(i,intValue);
 	solver_->setColUpper(i,intValue);
       }
@@ -11611,6 +11617,11 @@ CbcModel::setBestSolution(const double * solution,int numberColumns,
     // Solve
     solver_->initialSolve();
     char printBuffer[200];
+    if (numberAway) {
+      sprintf(printBuffer,"Warning %d integer variables were more than 1.0e-4 away from integer",numberAway);
+      messageHandler()->message(CBC_FPUMP1,messages())
+	<< printBuffer << CoinMessageEol ;
+    }
     bool looksGood = solver_->isProvenOptimal();
     if (looksGood) {
       double direction = solver_->getObjSense() ;
@@ -11650,6 +11661,13 @@ CbcModel::setBestSolution(const double * solution,int numberColumns,
 	      objectiveValue);
       messageHandler()->message(CBC_FPUMP1,messages())
 	<< printBuffer << CoinMessageEol ;
+      // may be able to change cutoff now
+      double cutoff = getCutoff();
+      double increment = getDblParam(CbcModel::CbcCutoffIncrement) ;
+      if (cutoff > objectiveValue-increment) {
+	cutoff = objectiveValue-increment ;
+	setCutoff(cutoff) ;
+      }
     }
   }
   bestObjective_ = objectiveValue;

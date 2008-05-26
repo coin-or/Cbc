@@ -106,4 +106,27 @@ CbcCountRowCut::setInfo(CbcNodeInfo * info, int whichOne)
   owner_=info;
   ownerCut_=whichOne;
 }
+// Returns true if can drop cut if slack basic
+bool 
+CbcCountRowCut::canDropCut(const OsiSolverInterface * solver, int iRow) const
+{
+  // keep if COIN_DBL_MAX otherwise keep if slack zero
+  if (effectiveness()<1.0e20) {
+    return true;
+  } else if (effectiveness()!=COIN_DBL_MAX) {
+    const double * rowActivity = solver->getRowActivity();
+    const double * rowLower = solver->getRowLower();
+    const double * rowUpper = solver->getRowUpper();
+    double tolerance;
+    solver->getDblParam(OsiPrimalTolerance,tolerance) ;
+    double value = rowActivity[iRow];
+    if (value<rowLower[iRow]+tolerance||
+	value>rowUpper[iRow]-tolerance)
+      return false;
+    else
+      return true;
+  } else {
+    return false;
+  }
+}
 

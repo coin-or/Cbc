@@ -656,6 +656,9 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver,int numberNodes,
 	  model.solver()->setIntParam(OsiMaxNumIterationHotStart,10);
 	  model.setMaximumCutPassesAtRoot(CoinMin(20,model_->getMaximumCutPassesAtRoot()));
 	} else {
+	  model_->messageHandler()->message(CBC_RESTART,model_->messages())
+	    <<solver2->getNumRows()<<solver2->getNumCols()
+	    <<CoinMessageEol;
 	  // going for full search and copy across more stuff
 	  model.gutsOfCopy(*model_,2);
 	  for (int i=0;i<model.numberCutGenerators();i++)
@@ -791,6 +794,8 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver,int numberNodes,
 	    setCutAndHeuristicOptions(model);
 	  model.branchAndBound();
 	  if (numberNodes<0) {
+	    model_->incrementIterationCount(model.getIterationCount());
+	    model_->incrementNodeCount(model.getNodeCount());
 	    for (int iGenerator=0;iGenerator<model.numberCutGenerators();iGenerator++) {
 	      CbcCutGenerator * generator = model.cutGenerator(iGenerator);
 	      printf("%s was tried %d times and created %d cuts of which %d were active after adding rounds of cuts",

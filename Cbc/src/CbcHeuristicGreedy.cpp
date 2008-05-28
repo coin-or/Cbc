@@ -371,7 +371,8 @@ CbcHeuristicGreedyCover::validate()
 {
   if (model_&&when()<10) {
     if (model_->numberIntegers()!=
-        model_->numberObjects())
+        model_->numberObjects()&&(model_->numberObjects()||
+				  (model_->specialOptions()&1024)==0))
       setWhen(0);
     // Only works if costs positive, coefficients positive and all rows G
     OsiSolverInterface * solver = model_->solver();

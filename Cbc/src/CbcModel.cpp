@@ -1659,6 +1659,10 @@ void CbcModel::branchAndBound(int doStatistics)
  }
 #endif
 #endif
+ // Save copy of solver
+ OsiSolverInterface * saveSolver = NULL;
+ if (!parentModel_&&(specialOptions_&512)!=0)
+   saveSolver = solver_->clone();
 /*
   We've taken the continuous relaxation as far as we can. Time to branch.
   The first order of business is to actually create a node. chooseBranch
@@ -2177,6 +2181,101 @@ void CbcModel::branchAndBound(int doStatistics)
     unlockThread();
     locked = false;
 #endif
+    // If done 100 nodes see if worth trying reduction
+    if (numberNodes_==100&&saveSolver) {
+      bool tryNewSearch=solverCharacteristics_->reducedCostsAccurate();
+      int numberColumns = getNumCols();
+      if (tryNewSearch) {
+	double cutoff = getCutoff() ;
+	saveSolver->resolve();
+	double direction = saveSolver->getObjSense() ;
+	double gap = cutoff - saveSolver->getObjValue()*direction ;
+	double tolerance;
+	saveSolver->getDblParam(OsiDualTolerance,tolerance) ;
+	if (gap<=0.0)
+	  gap = tolerance; 
+	gap += 100.0*tolerance;
+	double integerTolerance = getDblParam(CbcIntegerTolerance) ;
+	
+	const double *lower = saveSolver->getColLower() ;
+	const double *upper = saveSolver->getColUpper() ;
+	const double *solution = saveSolver->getColSolution() ;
+	const double *reducedCost = saveSolver->getReducedCost() ;
+	
+	int numberFixed = 0 ;
+	int numberFixed2=0;
+	for (int i = 0 ; i < numberIntegers_ ; i++) {
+	  int iColumn = integerVariable_[i] ;
+	  double djValue = direction*reducedCost[iColumn] ;
+	  if (upper[iColumn]-lower[iColumn] > integerTolerance) {
+	    if (solution[iColumn] < lower[iColumn]+integerTolerance && djValue > gap) {
+	      saveSolver->setColUpper(iColumn,lower[iColumn]) ;
+	      numberFixed++ ;
+	    } else if (solution[iColumn] > upper[iColumn]-integerTolerance && -djValue > gap) {
+	      saveSolver->setColLower(iColumn,upper[iColumn]) ;
+	      numberFixed++ ;
+	    }
+	  } else {
+	    numberFixed2++;
+	  }
+	}
+#ifdef COIN_DEVELOP
+	printf("Restart could fix %d integers (%d already fixed)\n",
+	       numberFixed+numberFixed2,numberFixed2);
+#endif
+	numberFixed += numberFixed2;
+	if (numberFixed*10<numberColumns)
+	  tryNewSearch=false;
+      }
+      if (tryNewSearch) {
+	// back to solver without cuts?
+#if 1
+	OsiSolverInterface * solver2 = continuousSolver_->clone();
+#else
+	OsiSolverInterface * solver2 = saveSolver->clone();
+#endif
+	const double *lower = saveSolver->getColLower() ;
+	const double *upper = saveSolver->getColUpper() ;
+	for (int i = 0 ; i < numberIntegers_ ; i++) {
+	  int iColumn = integerVariable_[i] ;
+	  solver2->setColLower(iColumn,lower[iColumn]);
+	  solver2->setColUpper(iColumn,upper[iColumn]);
+	}
+	// swap
+	delete saveSolver;
+	saveSolver=solver2;
+	double * newSolution = new double[numberColumns];
+	double objectiveValue=cutoff;
+	CbcSerendipity heuristic(*this);
+	if (bestSolution_)
+	  heuristic.setInputSolution(bestSolution_,bestObjective_);
+	heuristic.setFractionSmall(0.7);
+	heuristic.setFeasibilityPumpOptions(1008003);
+	int returnCode= heuristic.smallBranchAndBound(saveSolver,
+						      -1,newSolution,
+						      objectiveValue,
+						      cutoff,"Reduce");
+	if (returnCode==-1) {
+#ifdef COIN_DEVELOP
+	  printf("Restart - not small enough to do search after fixing\n");
+#endif
+	  delete [] newSolution;
+	} else {
+	  assert (returnCode>=0);
+	  if ((returnCode&1)!=0) {
+	    // increment number of solutions so other heuristics can test
+	    numberSolutions_++;
+	    numberHeuristicSolutions_++;
+	    lastHeuristic_ = NULL;
+	    setBestSolution(CBC_ROUNDING,objectiveValue,newSolution) ;
+	  }
+	  delete [] newSolution;
+	  break;
+	}
+      } 
+      delete saveSolver;
+      saveSolver=NULL;
+    }
 /*
   Check for abort on limits: node count, solution count, time, integrality gap.
 */
@@ -3521,6 +3620,7 @@ void CbcModel::branchAndBound(int doStatistics)
     delete object_[numberObjects_];
     fastNodeDepth_ -= 1000000;
   }
+  delete saveSolver;
 #if COIN_DEVELOP>1
   void print_fac_stats();
   //if (!parentModel_)
@@ -5462,7 +5562,7 @@ int CbcModel::addCuts (CbcNode *node, CoinWarmStartBasis *&lastws,bool canFix)
   The variables in question are already nonbasic at bound. We're just nailing
   down the current situation.
 */
-
+#if 0
 int CbcModel::reducedCostFix ()
 
 {
@@ -5537,7 +5637,108 @@ int CbcModel::reducedCostFix ()
   }
   numberDJFixed_ += numberFixed;
   return numberFixed; }
+#else
+int CbcModel::reducedCostFix ()
 
+{
+  if(!solverCharacteristics_->reducedCostsAccurate())
+    return 0; //NLP
+  double cutoff = getCutoff() ;
+  double direction = solver_->getObjSense() ;
+  double gap = cutoff - solver_->getObjValue()*direction ;
+  double tolerance;
+  solver_->getDblParam(OsiDualTolerance,tolerance) ;
+  if (gap<=0.0)
+    gap = tolerance; //return 0;
+  gap += 100.0*tolerance;
+  double integerTolerance = getDblParam(CbcIntegerTolerance) ;
+
+  const double *lower = solver_->getColLower() ;
+  const double *upper = solver_->getColUpper() ;
+  const double *solution = solver_->getColSolution() ;
+  const double *reducedCost = solver_->getReducedCost() ;
+
+  int numberFixed = 0 ;
+  int numberTightened = 0 ;
+
+# ifdef COIN_HAS_CLP
+  OsiClpSolverInterface * clpSolver 
+    = dynamic_cast<OsiClpSolverInterface *> (solver_);
+  ClpSimplex * clpSimplex=NULL;
+  if (clpSolver) 
+    clpSimplex = clpSolver->getModelPtr();
+# endif
+  for (int i = 0 ; i < numberIntegers_ ; i++) {
+    int iColumn = integerVariable_[i] ;
+    double djValue = direction*reducedCost[iColumn] ;
+    double boundGap=upper[iColumn]-lower[iColumn];
+    if (boundGap > integerTolerance) {
+      if (solution[iColumn] < lower[iColumn]+integerTolerance 
+	  && djValue*boundGap > gap) {
+#ifdef COIN_HAS_CLP
+	// may just have been fixed before
+	if (clpSimplex) {
+	  if (clpSimplex->getColumnStatus(iColumn)==ClpSimplex::basic) {
+#ifdef COIN_DEVELOP
+	    printf("DJfix %d has status of %d, dj of %g gap %g, bounds %g %g\n",
+		   iColumn,clpSimplex->getColumnStatus(iColumn),
+		   djValue,gap,lower[iColumn],upper[iColumn]);
+#endif
+	  } else {	    
+	    assert(clpSimplex->getColumnStatus(iColumn)==ClpSimplex::atLowerBound||
+		   clpSimplex->getColumnStatus(iColumn)==ClpSimplex::isFixed);
+	  }
+	}
+#endif
+	double newBound=lower[iColumn];
+	if (boundGap>1.99) {
+	  boundGap = gap/djValue+1.0e-4*boundGap;
+	  newBound=lower[iColumn]+floor(boundGap);
+	  numberTightened++;
+	  //if (newBound)
+	  //printf("tighter - gap %g dj %g newBound %g\n",
+	  //   gap,djValue,newBound);
+	}
+	solver_->setColUpper(iColumn,newBound) ;
+	numberFixed++ ;
+      } else if (solution[iColumn] > upper[iColumn]-integerTolerance && -djValue > boundGap*gap) {
+#ifdef COIN_HAS_CLP
+	// may just have been fixed before
+	if (clpSimplex) {
+	  if (clpSimplex->getColumnStatus(iColumn)==ClpSimplex::basic) {
+#ifdef COIN_DEVELOP
+	    printf("DJfix %d has status of %d, dj of %g gap %g, bounds %g %g\n",
+		   iColumn,clpSimplex->getColumnStatus(iColumn),
+		   djValue,gap,lower[iColumn],upper[iColumn]);
+#endif
+	  } else {	    
+	    assert(clpSimplex->getColumnStatus(iColumn)==ClpSimplex::atUpperBound||
+		   clpSimplex->getColumnStatus(iColumn)==ClpSimplex::isFixed);
+	  }
+	}
+#endif
+	double newBound=upper[iColumn];
+	if (boundGap>1.99) {
+	  boundGap = -gap/djValue+1.0e-4*boundGap;
+	  newBound=upper[iColumn]-floor(boundGap);
+	  //if (newBound)
+	  //printf("tighter - gap %g dj %g newBound %g\n",
+	  //   gap,djValue,newBound);
+	  numberTightened++;
+	}
+	solver_->setColLower(iColumn,newBound) ;
+	numberFixed++ ;
+      }
+    }
+  }
+  numberDJFixed_ += numberFixed-numberTightened;
+#ifdef COIN_DEVELOP
+  if (numberTightened)
+    printf("%d tightened, %d others fixed\n",numberTightened,
+	   numberFixed-numberTightened);
+#endif
+  return numberFixed; }
+#endif
 // Collect coding to replace whichGenerator
 void
 CbcModel::resizeWhichGenerator(int numberNow, int numberAfter)

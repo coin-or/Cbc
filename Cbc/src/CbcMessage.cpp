@@ -62,6 +62,7 @@ static Cbc_message us_english[]=
   {CBC_OTHER_STATS2,41,1,"Maximum depth %d, %g variables fixed on reduced cost (%d nodes in complete fathoming taking %d iterations)"},
   {CBC_RELAXED1,42,1,"Possible objective of %.18g but variable %d is %g from integer value, integer tolerance %g"},
   {CBC_RELAXED2,43,1,"Possible objective of %.18g but variables are up to %g away from bound (within tolerance of %g) - might be able to fudge solution - but do you want to?"},
+  {CBC_RESTART,44,1,"Reduced cost fixing - %d rows, %d columns - restarting search"},
   {CBC_DUMMY_END,999999,0,""}
 };
 /* Constructor */

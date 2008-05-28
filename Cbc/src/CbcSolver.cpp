@@ -163,6 +163,8 @@ bool malloc_counts_on=false;
 #include "CbcHeuristicDiveFractional.hpp"
 #include "CbcHeuristicDiveGuided.hpp"
 #include "CbcHeuristicDiveVectorLength.hpp"
+#include "CbcHeuristicDivePseudoCost.hpp"
+#include "CbcHeuristicDiveLineSearch.hpp"
 #include "CbcTreeLocal.hpp"
 #include "CbcCompareActual.hpp"
 #include "CbcBranchActual.hpp"
@@ -3231,7 +3233,7 @@ int
   int useCombine = parameters_[whichParam(COMBINE,numberParameters_,parameters_)].currentOptionAsInteger();
   int useRINS = parameters_[whichParam(RINS,numberParameters_,parameters_)].currentOptionAsInteger();
   int useRENS = parameters_[whichParam(RENS,numberParameters_,parameters_)].currentOptionAsInteger();
-  int useDIVING = parameters_[whichParam(DIVING,numberParameters_,parameters_)].currentOptionAsInteger();
+  int useDIVING = parameters_[whichParam(DIVINGA,numberParameters_,parameters_)].currentOptionAsInteger();
   // FPump done first as it only works if no solution
   int kType = (type<3) ? type : 1;
   if (useFpump>=kType) {
@@ -3378,6 +3380,17 @@ int
     anyToDo=true;
   }
   // change later?
+  {
+    int useDiving2=0;
+    useDiving2 |= 1*parameters_[whichParam(DIVINGV,numberParameters_,parameters_)].currentOptionAsInteger();
+    useDiving2 |= 2*parameters_[whichParam(DIVINGG,numberParameters_,parameters_)].currentOptionAsInteger();
+    useDiving2 |= 4*parameters_[whichParam(DIVINGF,numberParameters_,parameters_)].currentOptionAsInteger();
+    useDiving2 |= 8*parameters_[whichParam(DIVINGC,numberParameters_,parameters_)].currentOptionAsInteger();
+    useDiving2 |= 16*parameters_[whichParam(DIVINGL,numberParameters_,parameters_)].currentOptionAsInteger();
+    useDiving2 |= 32*parameters_[whichParam(DIVINGP,numberParameters_,parameters_)].currentOptionAsInteger();
+    if (useDiving2)
+      useDIVING=useDiving2;
+  }
   if (useDIVING>=kType) {
     int diveOptions=parameters_[whichParam(DIVEOPT,numberParameters_,parameters_)].intValue();
     if (diveOptions<3||diveOptions>6)
@@ -3405,6 +3418,18 @@ int
       heuristicDC.setHeuristicName("DiveCoefficient");
       heuristicDC.setWhen(diveOptions);
       model->addHeuristic(&heuristicDC) ;
+    }
+    if ((useDIVING&16)!=0) {
+      CbcHeuristicDiveLineSearch heuristicDL(*model);
+      heuristicDL.setHeuristicName("DiveLineSearch");
+      heuristicDL.setWhen(diveOptions);
+      model->addHeuristic(&heuristicDL) ;
+    }
+    if ((useDIVING&32)!=0) {
+      CbcHeuristicDivePseudoCost heuristicDP(*model);
+      heuristicDP.setHeuristicName("DivePseudoCost");
+      heuristicDP.setWhen(diveOptions);
+      model->addHeuristic(&heuristicDP) ;
     }
     anyToDo=true;
   }
@@ -4405,7 +4430,7 @@ int
 		  iParam = whichParam(PROCESSTUNE,numberParameters_,parameters_);
 		  parameters_[iParam].setIntValue(6);
 		  tunePreProcess=6;
-		  iParam = whichParam(DIVING,numberParameters_,parameters_);
+		  iParam = whichParam(DIVINGA,numberParameters_,parameters_);
 		  parameters_[iParam].setCurrentOption("C");
 		  iParam = whichParam(RINS,numberParameters_,parameters_);
 		  parameters_[iParam].setCurrentOption("on");
@@ -4659,7 +4684,7 @@ int
               parameters_[whichParam(FPUMP,numberParameters_,parameters_)].setCurrentOption(action);
               break;
 	    case GREEDY:
-	    case DIVING:
+	    case DIVINGA:
 	    case COMBINE:
 	    case LOCALTREE:
               defaultSettings=false; // user knows what she is doing
@@ -6303,6 +6328,11 @@ int
               currentBranchModel = babModel_;
               OsiSolverInterface * strengthenedModel=NULL;
               if (type==BAB||type==MIPLIB) {
+		if (parameters_[whichParam(EXPERIMENT,numberParameters_,
+					   parameters_)].intValue()==2) {
+		  // try reduced model
+		  babModel_->setSpecialOptions(babModel_->specialOptions()|512);
+		}
 		{
 		  int extra4 = parameters_[whichParam(EXTRA4,numberParameters_,parameters_)].intValue();
 		  if (extra4!=-1) 

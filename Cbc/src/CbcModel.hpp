@@ -783,9 +783,15 @@ public:
     /// Get how many iterations it took to solve the problem.
     inline int getIterationCount() const
     { return numberIterations_;}
+    /// Increment how many iterations it took to solve the problem.
+    inline void incrementIterationCount(int value)
+    { numberIterations_ += value;}
     /// Get how many Nodes it took to solve the problem.
     inline int getNodeCount() const
     { return numberNodes_;}
+    /// Increment how many nodes it took to solve the problem.
+    inline void incrementNodeCount(int value)
+    { numberNodes_ += value;}
     /** Final status of problem
         Some of these can be found out by is...... functions
         -1 before branchAndBound

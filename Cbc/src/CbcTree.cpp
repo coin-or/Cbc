@@ -360,13 +360,13 @@ CbcTree::cleanTree(CbcModel * model, double cutoff, double & bestPossibleObjecti
       // double check in case node can change its mind!
       value=node->checkIsCutoff(cutoff);
     }
-    bestPossibleObjective = CoinMin(bestPossibleObjective,value);
     if (value >= cutoff||!node->active()) {
       if (node) {
         nodeArray[--kDelete] = node;
         depth[kDelete] = node->depth();
       }
     } else {
+      bestPossibleObjective = CoinMin(bestPossibleObjective,value);
       nodeArray[k++]=node;
     }
   }

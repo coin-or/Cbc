@@ -598,7 +598,7 @@ CbcHeuristicFPump::solution(double & solutionValue,
 	      <<CoinMessageEol;
 	  }
 	} else {
-	  sprintf(pumpPrint,"Not good enough");
+	  sprintf(pumpPrint,"After further testing solution no better than previous of %g",solutionValue);
 	  model_->messageHandler()->message(CBC_FPUMP1,model_->messages())
 	    << pumpPrint
 	    <<CoinMessageEol;

@@ -2204,22 +2204,38 @@ void CbcModel::branchAndBound(int doStatistics)
 	
 	int numberFixed = 0 ;
 	int numberFixed2=0;
+	printf("gap %g\n",gap);
 	for (int i = 0 ; i < numberIntegers_ ; i++) {
 	  int iColumn = integerVariable_[i] ;
 	  double djValue = direction*reducedCost[iColumn] ;
 	  if (upper[iColumn]-lower[iColumn] > integerTolerance) {
 	    if (solution[iColumn] < lower[iColumn]+integerTolerance && djValue > gap) {
+	      //printf("%d to lb on dj of %g - bounds %g %g\n",
+	      //     iColumn,djValue,lower[iColumn],upper[iColumn]);
 	      saveSolver->setColUpper(iColumn,lower[iColumn]) ;
 	      numberFixed++ ;
 	    } else if (solution[iColumn] > upper[iColumn]-integerTolerance && -djValue > gap) {
+	      //printf("%d to ub on dj of %g - bounds %g %g\n",
+	      //     iColumn,djValue,lower[iColumn],upper[iColumn]);
 	      saveSolver->setColLower(iColumn,upper[iColumn]) ;
 	      numberFixed++ ;
 	    }
 	  } else {
+	    //printf("%d has dj of %g - already fixed to %g\n",
+	    //     iColumn,djValue,lower[iColumn]);
 	    numberFixed2++;
 	  }
 	}
 #ifdef COIN_DEVELOP
+	if ((specialOptions_&1)!=0) {
+	  const OsiRowCutDebugger *debugger = saveSolver->getRowCutDebugger() ;
+	  if (debugger) { 
+	    printf("Contains optimal\n") ;
+	    saveSolver->writeMps("reduced");
+	  } else {
+	    abort();
+	  }
+	}
 	printf("Restart could fix %d integers (%d already fixed)\n",
 	       numberFixed+numberFixed2,numberFixed2);
 #endif
@@ -2249,8 +2265,8 @@ void CbcModel::branchAndBound(int doStatistics)
 	CbcSerendipity heuristic(*this);
 	if (bestSolution_)
 	  heuristic.setInputSolution(bestSolution_,bestObjective_);
-	heuristic.setFractionSmall(0.7);
-	heuristic.setFeasibilityPumpOptions(1008003);
+	heuristic.setFractionSmall(0.6);
+	heuristic.setFeasibilityPumpOptions(1008013);
 	int returnCode= heuristic.smallBranchAndBound(saveSolver,
 						      -1,newSolution,
 						      objectiveValue,
@@ -5733,9 +5749,9 @@ int CbcModel::reducedCostFix ()
   }
   numberDJFixed_ += numberFixed-numberTightened;
 #ifdef COIN_DEVELOP
-  if (numberTightened)
-    printf("%d tightened, %d others fixed\n",numberTightened,
-	   numberFixed-numberTightened);
+  //if (numberTightened)
+  //printf("%d tightened, %d others fixed\n",numberTightened,
+  //   numberFixed-numberTightened);
 #endif
   return numberFixed; }
 #endif
@@ -9494,8 +9510,11 @@ CbcModel::setBestSolution (CBC_Message how,
 	  <<numberNodes_<<getCurrentSeconds()
 	  <<CoinMessageEol;
       } else {
-	assert (lastHeuristic_);
-	const char * name = lastHeuristic_->heuristicName();
+	const char * name ;
+	if (lastHeuristic_) 
+	  name = lastHeuristic_->heuristicName();
+	else
+	  name = "Reduced search";
 	handler_->message(CBC_ROUNDING,messages_)
 	  <<bestObjective_
 	  <<name

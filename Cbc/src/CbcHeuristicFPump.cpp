@@ -541,6 +541,10 @@ CbcHeuristicFPump::solution(double & solutionValue,
 	      }
 	    }
 	    if (numberLeft) {
+	      sprintf(pumpPrint,"Branch and bound needed to clear up %d general integers",numberLeft);
+	      model_->messageHandler()->message(CBC_FPUMP1,model_->messages())
+		<< pumpPrint
+		<<CoinMessageEol;
 	      returnCode = smallBranchAndBound(solver,numberNodes_,newSolution,newSolutionValue,
 					       solutionValue,"CbcHeuristicFpump");
 	      if (returnCode<0) {

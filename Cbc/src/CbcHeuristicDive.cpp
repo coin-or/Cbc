@@ -743,6 +743,7 @@ CbcHeuristicDive::selectBinaryVariables()
 int CbcHeuristicDive::reducedCostFix (OsiSolverInterface* solver)
 
 {
+  //return 0; //temp
 #if 0
   if(!solverCharacteristics_->reducedCostsAccurate())
     return 0; //NLP

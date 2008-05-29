@@ -4408,7 +4408,7 @@ int
 		       parameters_[iParam].type()==NUMBERBEFORE)
 		strongChanged=true;
 	      else if (parameters_[iParam].type()==EXPERIMENT) {
-		if (value==1) {
+		if (value>=1) {
 		  if (!noPrinting_) {
 		    generalMessageHandler->message(CLP_GENERAL,generalMessages)
 		      <<"switching on dense factorization if small, and maybe fast fathoming"
@@ -7305,7 +7305,7 @@ int
 #endif
 		  return returnCode;
 		}
-		if (parameters_[whichParam(EXPERIMENT,numberParameters_,parameters_)].intValue()==1) {
+		if (parameters_[whichParam(EXPERIMENT,numberParameters_,parameters_)].intValue()>=1) {
 		  osiclp = dynamic_cast< OsiClpSolverInterface*> (babModel_->solver());
 		  lpSolver = osiclp->getModelPtr();
 		  if (lpSolver->numberColumns()<200&&lpSolver->numberRows()<40) 

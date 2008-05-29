@@ -608,10 +608,12 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver,int numberNodes,
   if (solver->isProvenOptimal()) {
     CglPreProcess process;
     /* Do not try and produce equality cliques and
-       do up to 2 passes */
+       do up to 2 passes (normally) 5 if restart */
+    int numberPasses= (numberNodes<0) ? 5 : 2; 
     if (logLevel<=1)
       process.messageHandler()->setLogLevel(0);
-    OsiSolverInterface * solver2= process.preProcessNonDefault(*solver,false,2);
+    OsiSolverInterface * solver2= process.preProcessNonDefault(*solver,false,
+							       numberPasses);
     if (!solver2) {
       if (logLevel>1)
         printf("Pre-processing says infeasible\n");
@@ -674,6 +676,7 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver,int numberNodes,
 	  // Set up pre-processing - no 
 	  strategy.setupPreProcessing(0); // was (4);
 	  model.setStrategy(strategy);
+	  //model.solver()->writeMps("crunched");
 	}
 	if (inputSolution_) {
 	  // translate and add a serendipity heuristic
@@ -731,6 +734,7 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver,int numberNodes,
 	  }
 	  if (!gotPump) {
 	    CbcHeuristicFPump heuristic4;
+	    heuristic4.setMaximumPasses(30);
 	    int pumpTune=feasibilityPumpOptions_;
 	    if (pumpTune>0) {
 	      /*

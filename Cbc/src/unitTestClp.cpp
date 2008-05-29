@@ -384,6 +384,13 @@ int CbcClpUnitTest (const CbcModel & saveModel, std::string& dirMiplib,
       model->solver()->getStrParam(OsiProbName,problemName) ;
       model->solver()->activateRowCutDebugger(problemName.c_str()) ;
     }
+    if (model->getNumCols()==-1224) {
+      //PUSH_MPS("gesa2",1392,1224,25779856.372,25476489.678,7);
+      // gesa2
+      std::string problemName ;
+      model->solver()->getStrParam(OsiProbName,problemName) ;
+      model->solver()->activateRowCutDebugger(problemName.c_str()) ;
+    }
     if (model->getNumCols()==-141) {
       // egout
       std::string problemName ;
@@ -409,7 +416,7 @@ int CbcClpUnitTest (const CbcModel & saveModel, std::string& dirMiplib,
       model->solver()->activateRowCutDebugger(problemName.c_str()) ;
     }
     setCutAndHeuristicOptions(*model);
-    if (stuff&&stuff[8]==1) {
+    if (stuff&&stuff[8]>=1) {
       if (modelC->numberColumns()+modelC->numberRows()<=500) 
 	model->setFastNodeDepth(-9);
 #ifdef CLP_MULTIPLE_FACTORIZATIONS    

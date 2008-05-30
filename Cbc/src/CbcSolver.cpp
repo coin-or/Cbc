@@ -15,7 +15,7 @@
 #include "CoinPragma.hpp"
 #include "CoinHelperFunctions.hpp"
 // Version
-#define CBCVERSION "2.00.00"
+#define CBCVERSION "2.10.00"
 
 #include "CoinMpsIO.hpp"
 #include "CoinModel.hpp"
@@ -3541,8 +3541,8 @@ int
   int statistics_nrows=0, statistics_ncols=0;
   int statistics_nprocessedrows=0, statistics_nprocessedcols=0;
   std::string statistics_result;
-  int * statistics_number_cuts=NULL;
-  const char ** statistics_name_generators=NULL;
+  int statistics_number_cuts [120];
+  const char * statistics_name_generators[120];
   int statistics_number_generators=0;
   memset(statusUserFunction_,0,numberUserFunctions_*sizeof(int));
   /* Note
@@ -6342,6 +6342,7 @@ int
                     // extend arrays in case SOS
 		    assert (originalColumns);
                     int n = originalColumns[numberColumns-1]+1;
+		    n = CoinMax(n,CoinMax(numberColumns,numberOriginalColumns));
 		    int * newColumn = new int[CoinMax(n,numberColumns)];
 		    int i;
 		    for (i=0;i<numberOriginalColumns;i++)
@@ -6369,6 +6370,7 @@ int
 			}
 		      }
 		      babModel_->setNumberObjects(n);
+		      numberOldObjects=n;
 		      babModel_->zapIntegerInformation();
 		    }
 		    int nMissing=0;
@@ -7293,9 +7295,9 @@ int
 		  <<CoinMessageEol;
                 
 		numberGenerators = babModel_->numberCutGenerators();
-		statistics_number_cuts=new int [numberGenerators];;
 		statistics_number_generators=numberGenerators;
-		statistics_name_generators=new const char *[numberGenerators];
+		assert (numberGenerators<100);
+		statistics_number_generators=numberGenerators;
 		char timing[30];
                 for (iGenerator=0;iGenerator<numberGenerators;iGenerator++) {
                   CbcCutGenerator * generator = babModel_->cutGenerator(iGenerator);
@@ -9332,7 +9334,7 @@ clp watson.mps -\nscaling off\nprimalsimplex"
     ClpSimplex * lpSolver0 = clpSolver0->getModelPtr();
     OsiClpSolverInterface * clpSolver = dynamic_cast< OsiClpSolverInterface*> (model_.solver());
     ClpSimplex * lpSolver = clpSolver->getModelPtr();
-    if (lpSolver0!=lpSolver) 
+    if (lpSolver0!=lpSolver&&lpSolver!=originalSolver->getModelPtr()) 
       lpSolver->moveInfo(*lpSolver0);
     //babModel_->setModelOwnsSolver(false);
   }

@@ -15,6 +15,7 @@
 
 #include "CoinFileIO.hpp"
 
+#include "CoinFinite.hpp"
 #include "CoinParam.hpp"
 
 #include "CbcModel.hpp"
@@ -440,7 +441,7 @@ void addCbcGenParams (int &numberParameters, CoinParamVec &parameters,
   parameters.push_back(param) ;
 
   param = new CbcGenParam(CbcGenParam::PRINTOPTIONS,
-	"pO!ptions","Dubious print options",0,INT_MAX,0,false) ;
+	"pO!ptions","Dubious print options",0,COIN_INT_MAX,0,false) ;
   param->setObj(ctlBlk) ;
   param->setPushFunc(pushCbcGenIntParam) ;
   param->setLongHelp(
@@ -608,7 +609,7 @@ void addCbcGenParams (int &numberParameters, CoinParamVec &parameters,
   parameters.push_back(param) ;
 
   param = new CbcGenParam(CbcGenParam::USERCBC,
-			  "userCbc","Hand coded Cbc stuff",0,INT_MAX,0,false) ;
+			  "userCbc","Hand coded Cbc stuff",0,COIN_INT_MAX,0,false) ;
   param->setObj(ctlBlk) ;
   param->setLongHelp(
 	"There are times (e.g., when using AMPL interface) when you may wish to do something unusual.  Look for USERCBC in main driver and modify sample code."

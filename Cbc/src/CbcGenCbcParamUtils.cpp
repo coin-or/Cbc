@@ -13,6 +13,7 @@
 #include <string>
 #include <cassert>
 
+#include "CoinFinite.hpp"
 #include "CoinParam.hpp"
 
 #include "CbcModel.hpp"
@@ -142,15 +143,15 @@ void addCbcCbcParams (int &numberParameters, CoinParamVec &parameters,
   parameters.push_back(param) ;
 
   param = new CbcCbcParam(CbcCbcParam::MIPOPTIONS,
-	"mipO!ptions","Dubious options for mip",0,INT_MAX,0,false) ;
+	"mipO!ptions","Dubious options for mip",0,COIN_INT_MAX,0,false) ;
   parameters.push_back(param) ;
 
   param = new CbcCbcParam(CbcCbcParam::MOREMIPOPTIONS,
-	"more!MipOptions","More dubious options for mip",-1,INT_MAX,0,false) ;
+	"more!MipOptions","More dubious options for mip",-1,COIN_INT_MAX,0,false) ;
   parameters.push_back(param) ;
 
   param = new CbcCbcParam(CbcCbcParam::NUMBERMINI,
-	"miniT!ree","Size of fast mini tree",0,INT_MAX,0,false) ;
+	"miniT!ree","Size of fast mini tree",0,COIN_INT_MAX,0,false) ;
   param->setObj(model) ;
   param->setLongHelp(
 	"The idea is that I can do a small tree fast. This is a first try and will hopefully become more sophisticated."
@@ -159,7 +160,7 @@ void addCbcCbcParams (int &numberParameters, CoinParamVec &parameters,
 
   param = new CbcCbcParam(CbcCbcParam::NUMBERANALYZE,
 	"numberA!nalyze",
-	"Number of analysis iterations",-INT_MAX,INT_MAX,false) ;
+	"Number of analysis iterations",-COIN_INT_MAX,COIN_INT_MAX,false) ;
   param->setObj(model) ;
   param->setLongHelp(
 	"This says how many iterations to spend at the root node analyzing the problem.  This is a first try and will hopefully become more sophisticated."
@@ -242,7 +243,7 @@ void loadCbcParamObj (const CoinParamVec paramVec, int first, int last,
 
 void setCbcModelDefaults (CbcModel *model)
 
-{ model->setIntParam(CbcModel::CbcMaxNumNode,(INT_MAX/2)) ;
+{ model->setIntParam(CbcModel::CbcMaxNumNode,(COIN_INT_MAX/2)) ;
   model->setIntParam(CbcModel::CbcMaxNumSol,999999) ;
   model->setIntParam(CbcModel::CbcFathomDiscipline,0) ;
 

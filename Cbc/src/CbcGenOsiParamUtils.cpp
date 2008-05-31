@@ -13,6 +13,7 @@
 #include <string>
 #include <cassert>
 
+#include "CoinFinite.hpp"
 #include "CoinParam.hpp"
 
 #include "OsiSolverInterface.hpp"
@@ -70,7 +71,7 @@ void addCbcOsiParams (int &numberParameters, CoinParamVec &parameters,
   (void) osi->getIntParam(OsiMaxNumIteration,ival) ;
   param = new CbcOsiParam(CbcOsiParam::MAXITERATION,
     	"maxIt!erations","Iteration limit for OSI solver.",
-		  0,INT_MAX,ival) ;
+		  0,COIN_INT_MAX,ival) ;
   param->setPushFunc(pushCbcOsiInt) ;
   param->setObj(osi) ;
   param->setLongHelp(
@@ -82,7 +83,7 @@ void addCbcOsiParams (int &numberParameters, CoinParamVec &parameters,
   (void) osi->getIntParam(OsiMaxNumIterationHotStart,ival) ;
   param = new CbcOsiParam(CbcOsiParam::MAXHOTITS,
     	"hot!StartMaxIts","Iteration limit for OSI solver hot start.",
-		  0,INT_MAX,ival) ;
+		  0,COIN_INT_MAX,ival) ;
   param->setPushFunc(pushCbcOsiInt) ;
   param->setObj(osi) ;
   param->setLongHelp(

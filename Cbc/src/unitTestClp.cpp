@@ -123,6 +123,7 @@ int CbcClpUnitTest (const CbcModel & saveModel, std::string& dirMiplib,
     */
     // 0 for no test, 1 for some, 2 for many, 3 for all
     //PUSH_MPS("blend2",274,353,7.598985,6.9156751140,7);
+    //PUSH_MPS("egout",98,141,568.101,149.589,7);
 #define HOWMANY 2
 #if HOWMANY
 #if HOWMANY>1

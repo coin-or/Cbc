@@ -722,7 +722,7 @@ CbcSolver::updateModel(ClpSimplex * model2, int returnMode)
       model_.moveInfo(*babModel_);
       int numberColumns = babModel_->getNumCols();
       if (babModel_->bestSolution())
-	model_.setBestSolution(babModel_->bestSolution(),numberColumns,babModel_->getObjValue());
+	model_.setBestSolution(babModel_->bestSolution(),numberColumns,babModel_->getMinimizationObjValue());
       OsiClpSolverInterface * clpSolver1 = dynamic_cast< OsiClpSolverInterface*> (babModel_->solver());
       ClpSimplex * lpSolver1 = clpSolver1->getModelPtr();
       if (lpSolver1!=lpSolver&&model_.bestSolution()) {
@@ -7347,9 +7347,9 @@ int
                 }
 #ifndef NEW_STYLE_SOLVER
 		if (returnMode==1)
-		  model_.setBestSolution(bestSolution,n,babModel_->getObjValue());
+		  model_.setBestSolution(bestSolution,n,babModel_->getMinimizationObjValue());
 #endif
-		babModel_->setBestSolution(bestSolution,n,babModel_->getObjValue());
+		babModel_->setBestSolution(bestSolution,n,babModel_->getMinimizationObjValue());
 #ifndef NEW_STYLE_SOLVER
 		// and put back in very original solver
 		{

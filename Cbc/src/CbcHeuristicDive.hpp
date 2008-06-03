@@ -118,5 +118,4 @@ protected:
   double maxTime_;
 
 };
-
 #endif

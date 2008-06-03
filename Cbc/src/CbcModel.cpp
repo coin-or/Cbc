@@ -1507,6 +1507,7 @@ void CbcModel::branchAndBound(int doStatistics)
   addedCuts_ = NULL ;
   OsiObject ** saveObjects=NULL;
   maximumRows_ = numberRowsAtContinuous_;
+  currentDepth_=0;
   workingBasis_.resize(maximumRows_,numberColumns);
 /*
   Set up an empty heap and associated data structures to hold the live set
@@ -1661,8 +1662,116 @@ void CbcModel::branchAndBound(int doStatistics)
 #endif
  // Save copy of solver
  OsiSolverInterface * saveSolver = NULL;
- if (!parentModel_&&(specialOptions_&512)!=0)
+ if (!parentModel_&&(specialOptions_&(512+2048))!=0)
    saveSolver = solver_->clone();
+ if (!parentModel_&&(specialOptions_&2048)!=0) {
+   // See if worth trying reduction
+   bool tryNewSearch=solverCharacteristics_->reducedCostsAccurate();
+   int numberColumns = getNumCols();
+   if (tryNewSearch) {
+     double cutoff = getCutoff() ;
+     saveSolver->resolve();
+     double direction = saveSolver->getObjSense() ;
+     double gap = cutoff - saveSolver->getObjValue()*direction ;
+     double tolerance;
+     saveSolver->getDblParam(OsiDualTolerance,tolerance) ;
+     if (gap<=0.0)
+       gap = tolerance; 
+     gap += 100.0*tolerance;
+     double integerTolerance = getDblParam(CbcIntegerTolerance) ;
+     
+     const double *lower = saveSolver->getColLower() ;
+     const double *upper = saveSolver->getColUpper() ;
+     const double *solution = saveSolver->getColSolution() ;
+     const double *reducedCost = saveSolver->getReducedCost() ;
+     
+     int numberFixed = 0 ;
+     int numberFixed2=0;
+     for (int i = 0 ; i < numberIntegers_ ; i++) {
+       int iColumn = integerVariable_[i] ;
+       double djValue = direction*reducedCost[iColumn] ;
+       if (upper[iColumn]-lower[iColumn] > integerTolerance) {
+	 if (solution[iColumn] < lower[iColumn]+integerTolerance && djValue > gap) {
+	   saveSolver->setColUpper(iColumn,lower[iColumn]) ;
+	   numberFixed++ ;
+	 } else if (solution[iColumn] > upper[iColumn]-integerTolerance && -djValue > gap) {
+	   saveSolver->setColLower(iColumn,upper[iColumn]) ;
+	   numberFixed++ ;
+	 }
+       } else {
+	 numberFixed2++;
+       }
+     }
+#ifdef COIN_DEVELOP
+     if ((specialOptions_&1)!=0) {
+       const OsiRowCutDebugger *debugger = saveSolver->getRowCutDebugger() ;
+       if (debugger) { 
+	 printf("Contains optimal\n") ;
+	 saveSolver->writeMps("reduced");
+       } else {
+	 abort();
+       }
+     }
+     printf("Restart could fix %d integers (%d already fixed)\n",
+	    numberFixed+numberFixed2,numberFixed2);
+#endif
+     numberFixed += numberFixed2;
+     if (numberFixed*20<numberColumns)
+       tryNewSearch=false;
+   }
+   if (tryNewSearch) {
+     // back to solver without cuts?
+#if 0
+     OsiSolverInterface * solver2 = continuousSolver_->clone();
+#else
+     OsiSolverInterface * solver2 = saveSolver->clone();
+#endif
+     const double *lower = saveSolver->getColLower() ;
+     const double *upper = saveSolver->getColUpper() ;
+     for (int i = 0 ; i < numberIntegers_ ; i++) {
+       int iColumn = integerVariable_[i] ;
+       solver2->setColLower(iColumn,lower[iColumn]);
+       solver2->setColUpper(iColumn,upper[iColumn]);
+     }
+     // swap
+     delete saveSolver;
+     saveSolver=solver2;
+     double * newSolution = new double[numberColumns];
+     double objectiveValue=cutoff;
+     CbcSerendipity heuristic(*this);
+     if (bestSolution_)
+       heuristic.setInputSolution(bestSolution_,bestObjective_);
+     heuristic.setFractionSmall(0.9);
+     heuristic.setFeasibilityPumpOptions(1008013);
+     // Use numberNodes to say how many are original rows
+     heuristic.setNumberNodes(continuousSolver_->getNumRows());
+     if (continuousSolver_->getNumRows()<
+	 solver_->getNumRows())
+       printf("%d rows added ZZZZZ\n",
+	      solver_->getNumRows()-continuousSolver_->getNumRows());
+     int returnCode= heuristic.smallBranchAndBound(saveSolver,
+						   -1,newSolution,
+						   objectiveValue,
+						   cutoff,"Reduce");
+     if (returnCode==-1) {
+#ifdef COIN_DEVELOP
+       printf("Restart - not small enough to do search after fixing\n");
+#endif
+       delete [] newSolution;
+     } else {
+       assert (returnCode>=0);
+       if ((returnCode&1)!=0) {
+	 // increment number of solutions so other heuristics can test
+	 numberSolutions_++;
+	 numberHeuristicSolutions_++;
+	 lastHeuristic_ = NULL;
+	 setBestSolution(CBC_ROUNDING,objectiveValue,newSolution) ;
+       }
+       delete [] newSolution;
+       feasible=false; // stop search
+     }
+   } 
+ }
 /*
   We've taken the continuous relaxation as far as we can. Time to branch.
   The first order of business is to actually create a node. chooseBranch
@@ -3855,6 +3964,7 @@ CbcModel::CbcModel()
   currentPassNumber_(0),
   maximumWhich_(1000),
   maximumRows_(0),
+  currentDepth_(0),
   whichGenerator_(NULL),
   maximumStatistics_(0),
   statistics_(NULL),
@@ -4000,6 +4110,7 @@ CbcModel::CbcModel(const OsiSolverInterface &rhs)
   currentPassNumber_(0),
   maximumWhich_(1000),
   maximumRows_(0),
+  currentDepth_(0),
   whichGenerator_(NULL),
   maximumStatistics_(0),
   statistics_(NULL),
@@ -4231,6 +4342,7 @@ CbcModel::CbcModel(const CbcModel & rhs, bool noTree)
   currentPassNumber_(rhs.currentPassNumber_),
   maximumWhich_(rhs.maximumWhich_),
   maximumRows_(0),
+  currentDepth_(0),
   whichGenerator_(NULL),
   maximumStatistics_(0),
   statistics_(NULL),
@@ -4570,6 +4682,7 @@ CbcModel::operator=(const CbcModel& rhs)
     if (maximumWhich_&&rhs.whichGenerator_)
       whichGenerator_ = CoinCopyOfArray(rhs.whichGenerator_,maximumWhich_);
     maximumRows_=0;
+    currentDepth_ = 0;
     workingBasis_ = CoinWarmStartBasis();
     for (i=0;i<maximumStatistics_;i++)
       delete statistics_[i];
@@ -5297,6 +5410,7 @@ void CbcModel::addCuts1 (CbcNode * node, CoinWarmStartBasis *&lastws)
 #ifdef CBC_PRINT2
   printf("Starting bounds at node %d\n",numberNodes_);
 #endif
+  currentDepth_=nNode;
   while (nNode) {
     --nNode;
     walkback_[nNode]->applyToModel(this,lastws,addedCuts_,currentNumberCuts);

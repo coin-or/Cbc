@@ -167,7 +167,7 @@ inline bool compareBinaryVars(const PseudoReducedCost obj1,
   return obj1.pseudoRedCost > obj2.pseudoRedCost;
 }
 
-// See if dive fractional will give better solution
+// See if diving will give better solution
 // Sets value of solution
 // Returns 1 if solution, 0 if not
 int
@@ -584,7 +584,8 @@ CbcHeuristicDive::validate()
 {
   if (model_&&when()<10) {
     if (model_->numberIntegers()!=
-        model_->numberObjects())
+        model_->numberObjects()&&(model_->numberObjects()||
+				  (model_->specialOptions()&1024)==0))
       setWhen(0);
   }
 
@@ -743,7 +744,7 @@ CbcHeuristicDive::selectBinaryVariables()
 int CbcHeuristicDive::reducedCostFix (OsiSolverInterface* solver)
 
 {
-  //return 0; //temp
+  return 0; // temp
 #if 0
   if(!solverCharacteristics_->reducedCostsAccurate())
     return 0; //NLP

@@ -136,6 +136,7 @@ int
 CbcHeuristicRINS::solution(double & solutionValue,
 			 double * betterSolution)
 {
+  numCouldRun_++;
   int returnCode=0;
   const double * bestSolution = model_->bestSolution();
   if (!bestSolution)
@@ -210,6 +211,8 @@ CbcHeuristicRINS::solution(double & solutionValue,
                                          model_->getCutoff(),"CbcHeuristicRINS");
       if (returnCode<0)
 	returnCode=0; // returned on size
+      else
+	numRuns_++;
       if ((returnCode&1)!=0)
 	numberSuccesses_++;
       //printf("return code %d",returnCode);
@@ -314,6 +317,7 @@ CbcHeuristicRENS::solution(double & solutionValue,
   int i;
   int numberFixed=0;
   int numberTightened=0;
+  int numberAtBound=0;
 
   for (i=0;i<numberIntegers;i++) {
     int iColumn=integerVariable[i];
@@ -324,6 +328,8 @@ CbcHeuristicRENS::solution(double & solutionValue,
     value = CoinMin(value,upper);
     if (fabs(value-floor(value+0.5))<1.0e-8) {
       value = floor(value+0.5);
+      if (value==lower||value==upper)
+	numberAtBound++;
       newSolver->setColLower(iColumn,value);
       newSolver->setColUpper(iColumn,value);
       numberFixed++;
@@ -345,7 +351,10 @@ CbcHeuristicRENS::solution(double & solutionValue,
     if ((returnCode&2)!=0) {
       // could add cut
       returnCode &= ~2;
-      //printf("could add cut with %d elements (if all 0-1)\n",nFix);
+#ifdef COIN_DEVELOP
+      if (!numberTightened&&numberFixed==numberAtBound)
+	printf("could add cut with %d elements\n",numberFixed);
+#endif
     } else {
       //printf("\n");
     }

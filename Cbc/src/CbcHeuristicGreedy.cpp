@@ -103,6 +103,7 @@ int
 CbcHeuristicGreedyCover::solution(double & solutionValue,
 			 double * betterSolution)
 {
+  numCouldRun_++;
   if (!model_)
     return 0;
   // See if to do
@@ -135,6 +136,7 @@ CbcHeuristicGreedyCover::solution(double & solutionValue,
   if (!numberRows)
     return 0; // switched off
 
+  numRuns_++;
   assert (numberRows==matrix_.getNumRows());
   int iRow, iColumn;
   double direction = solver->getObjSense();
@@ -505,6 +507,7 @@ int
 CbcHeuristicGreedyEquality::solution(double & solutionValue,
 			 double * betterSolution)
 {
+  numCouldRun_++;
   if (!model_)
     return 0;
   // See if to do
@@ -537,6 +540,7 @@ CbcHeuristicGreedyEquality::solution(double & solutionValue,
   int numberRows = originalNumberRows_;
   if (!numberRows)
     return 0; // switched off
+  numRuns_++;
 
   assert (numberRows==matrix_.getNumRows());
   int iRow, iColumn;

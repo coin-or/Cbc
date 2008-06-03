@@ -80,6 +80,8 @@ int CbcClpUnitTest (const CbcModel & saveModel, std::string& dirMiplib,
 		    bool unitTestOnly,
 		    double * stuff)
 {
+  // Stop Windows popup
+  WindowsErrorPopupBlocker();
   unsigned int m ;
 
   // Set directory containing miplib data files.

@@ -345,26 +345,30 @@ CbcHeuristic::shouldHeurRun()
 bool
 CbcHeuristic::shouldHeurRun_randomChoice()
 {
+  if (!when_)
+    return false;
   int depth = 0;
   const CbcNode* currentNode = model_->currentNode();
   if (currentNode != NULL) {
     depth = currentNode->depth();
   }
-
-  if(depth != 0) {
+  // when_ -999 is special marker to force to run
+  if(depth != 0&&when_!=-999) {
     const double numerator = depth * depth;
     const double denominator = exp(depth * log((double)2));
     double probability = numerator / denominator;
     double randomNumber = randomNumberGenerator_.randomDouble();
-    if (when_>2&&when_<7) {
+    if (when_>2&&when_<8) {
       /* JJF adjustments
 	 3 only at root and if no solution
 	 4 only at root and if this heuristic has not got solution
 	 5 only at depth <4
 	 6 decay
+	 7 run up to 2 times if solution found 4 otherwise
       */
       switch(when_) {
       case 3:
+      default:
 	if (model_->bestSolution())
 	  probability=-1.0;
 	break;
@@ -377,13 +381,24 @@ CbcHeuristic::shouldHeurRun_randomChoice()
 	  probability=-1.0;
 	break;
       case 6:
-	if (depth>=4) {
-	  if (numberSolutionsFound_*howOften_<numCouldRun_)
-	    howOften_ = (int) (howOften_*1.1);
+	if (depth>=3) {
+	  if ((numCouldRun_%howOften_)==0&&
+	      numberSolutionsFound_*howOften_<numCouldRun_) {
+	    int old=howOften_;
+	    howOften_ = CoinMin(CoinMax((int) (howOften_*1.1),howOften_+1),10000);
+#ifdef COIN_DEVELOP
+	    printf("Howoften changed from %d to %d for %s\n",
+		   old,howOften_,heuristicName_.c_str());
+#endif
+	  }
 	  probability = 1.0/howOften_;
 	  if (model_->bestSolution())
 	    probability *= 0.5;
 	}
+	break;
+      case 7:
+	if ((model_->bestSolution()&&numRuns_>=2)||numRuns_>=4) 
+	  probability=-1.0;
 	break;
       }
     }
@@ -392,6 +407,15 @@ CbcHeuristic::shouldHeurRun_randomChoice()
     
     if (model_->getCurrentPassNumber() > 1)
       return false;
+#ifdef COIN_DEVELOP
+    printf("Running %s, random %g probability %g\n",
+	   heuristicName_.c_str(),randomNumber,probability);
+#endif
+  } else {
+#ifdef COIN_DEVELOP
+    printf("Running %s, depth %d when %d\n",
+	   heuristicName_.c_str(),depth,when_);
+#endif
   }
   ++numRuns_;
   return true;
@@ -609,7 +633,19 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver,int numberNodes,
     CglPreProcess process;
     /* Do not try and produce equality cliques and
        do up to 2 passes (normally) 5 if restart */
-    int numberPasses= (numberNodes<0) ? 5 : 2; 
+    int numberPasses= 2;
+    if (numberNodes<0) {
+      numberPasses = 5;
+      // Say some rows cuts
+      int numberRows = solver->getNumRows();
+      if (numberNodes_<numberRows) {
+	char * type = new char[numberRows];
+	memset(type,0,numberNodes_);
+	memset(type+numberNodes_,1,numberRows-numberNodes_);
+	process.passInRowTypes(type,numberRows);
+	delete [] type;
+      }
+    }
     if (logLevel<=1)
       process.messageHandler()->setLogLevel(0);
     OsiSolverInterface * solver2= process.preProcessNonDefault(*solver,false,
@@ -657,6 +693,7 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver,int numberNodes,
 	  model.setStrategy(strategy);
 	  model.solver()->setIntParam(OsiMaxNumIterationHotStart,10);
 	  model.setMaximumCutPassesAtRoot(CoinMin(20,model_->getMaximumCutPassesAtRoot()));
+	  model.setMaximumCutPasses(CoinMin(10,model_->getMaximumCutPasses()));
 	} else {
 	  model_->messageHandler()->message(CBC_RESTART,model_->messages())
 	    <<solver2->getNumRows()<<solver2->getNumCols()
@@ -666,6 +703,8 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver,int numberNodes,
 	  for (int i=0;i<model.numberCutGenerators();i++)
 	    model.cutGenerator(i)->setTiming(true);
 	  model.setCutoff(cutoff);
+	  // make sure can't do nested search! but allow heuristics
+	  model.setSpecialOptions((model.specialOptions()&(~(512+2048)))|1024);
 	  bool takeHint;
 	  OsiHintStrength strength;
 	  // Switch off printing if asked to
@@ -677,6 +716,12 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver,int numberNodes,
 	  strategy.setupPreProcessing(0); // was (4);
 	  model.setStrategy(strategy);
 	  //model.solver()->writeMps("crunched");
+	  int numberCuts = process.cuts().sizeRowCuts();
+	  if (numberCuts) {
+	    // add in cuts
+	    CglStored cuts = process.cuts();
+	    model.addCutGenerator(&cuts,1,"Stored from first");
+	  }
 	}
 	if (inputSolution_) {
 	  // translate and add a serendipity heuristic
@@ -1243,10 +1288,12 @@ CbcRounding::solution(double & solutionValue,
 		      double * betterSolution)
 {
 
+  numCouldRun_++;
   // See if to do
   if (!when()||(when()%10==1&&model_->phase()!=1)||
       (when()%10==2&&(model_->phase()!=2&&model_->phase()!=3)))
     return 0; // switched off
+  numRuns_++;
   OsiSolverInterface * solver = model_->solver();
   double direction = solver->getObjSense();
   double newSolutionValue = direction*solver->getObjValue();
@@ -2302,3 +2349,180 @@ CbcSerendipity::resetModel(CbcModel * model)
   model_ = model;
 }
   
+
+// Default Constructor
+CbcHeuristicJustOne::CbcHeuristicJustOne() 
+  :CbcHeuristic(),
+   probabilities_(NULL),
+   heuristic_(NULL),
+   numberHeuristics_(0)
+{
+}
+
+// Constructor from model
+CbcHeuristicJustOne::CbcHeuristicJustOne(CbcModel & model)
+  :CbcHeuristic(model),
+   probabilities_(NULL),
+   heuristic_(NULL),
+   numberHeuristics_(0)
+{
+}
+
+// Destructor 
+CbcHeuristicJustOne::~CbcHeuristicJustOne ()
+{
+  for (int i=0;i<numberHeuristics_;i++)
+    delete heuristic_[i];
+  delete [] heuristic_;
+  delete [] probabilities_;
+}
+
+// Clone
+CbcHeuristicJustOne *
+CbcHeuristicJustOne::clone() const
+{
+  return new CbcHeuristicJustOne(*this);
+}
+
+// Create C++ lines to get to current state
+void 
+CbcHeuristicJustOne::generateCpp( FILE * fp) 
+{
+  CbcHeuristicJustOne other;
+  fprintf(fp,"0#include \"CbcHeuristicJustOne.hpp\"\n");
+  fprintf(fp,"3  CbcHeuristicJustOne heuristicJustOne(*cbcModel);\n");
+  CbcHeuristic::generateCpp(fp,"heuristicJustOne");
+  fprintf(fp,"3  cbcModel->addHeuristic(&heuristicJustOne);\n");
+}
+
+// Copy constructor 
+CbcHeuristicJustOne::CbcHeuristicJustOne(const CbcHeuristicJustOne & rhs)
+:
+  CbcHeuristic(rhs),
+  probabilities_(NULL),
+  heuristic_(NULL),
+  numberHeuristics_(rhs.numberHeuristics_)
+{
+  if (numberHeuristics_) {
+    probabilities_ = CoinCopyOfArray(rhs.probabilities_,numberHeuristics_);
+    heuristic_ = new CbcHeuristic * [numberHeuristics_];
+    for (int i=0;i<numberHeuristics_;i++)
+      heuristic_[i]=rhs.heuristic_[i]->clone();
+  }
+}
+
+// Assignment operator 
+CbcHeuristicJustOne & 
+CbcHeuristicJustOne::operator=( const CbcHeuristicJustOne& rhs)
+{
+  if (this!=&rhs) {
+    CbcHeuristic::operator=(rhs);
+    for (int i=0;i<numberHeuristics_;i++)
+      delete heuristic_[i];
+    delete [] heuristic_;
+    delete [] probabilities_;
+    probabilities_=NULL;
+    heuristic_ = NULL;
+    numberHeuristics_=rhs.numberHeuristics_;
+    if (numberHeuristics_) {
+      probabilities_ = CoinCopyOfArray(rhs.probabilities_,numberHeuristics_);
+      heuristic_ = new CbcHeuristic * [numberHeuristics_];
+      for (int i=0;i<numberHeuristics_;i++)
+	heuristic_[i]=rhs.heuristic_[i]->clone();
+    }
+  }
+  return *this;
+}
+// Sets value of solution
+// Returns 1 if solution, 0 if not
+int
+CbcHeuristicJustOne::solution(double & solutionValue,
+			   double * betterSolution)
+{
+#ifdef DIVE_DEBUG
+  std::cout<<"solutionValue = "<<solutionValue<<std::endl;
+#endif
+  ++numCouldRun_;
+
+  // test if the heuristic can run
+  if(!shouldHeurRun_randomChoice()||!numberHeuristics_)
+    return 0;
+  double randomNumber = randomNumberGenerator_.randomDouble();
+  int i;
+  for (i=0;i<numberHeuristics_;i++) {
+    if (randomNumber<probabilities_[i])
+      break;
+  }
+  assert (i<numberHeuristics_);
+  int returnCode;
+  //model_->unsetDivingHasRun();
+#ifdef COIN_DEVELOP
+  printf("JustOne running %s\n",
+	   heuristic_[i]->heuristicName());
+#endif
+  returnCode = heuristic_[i]->solution(solutionValue,betterSolution);
+#ifdef COIN_DEVELOP
+  if (returnCode)
+    printf("JustOne running %s found solution\n",
+	   heuristic_[i]->heuristicName());
+#endif
+  return returnCode;
+}
+// Resets stuff if model changes
+void 
+CbcHeuristicJustOne::resetModel(CbcModel * model)
+{
+  CbcHeuristic::resetModel(model);
+  for (int i=0;i<numberHeuristics_;i++)
+    heuristic_[i]->resetModel(model);
+}
+// update model (This is needed if cliques update matrix etc)
+void 
+CbcHeuristicJustOne::setModel(CbcModel * model)
+{
+  CbcHeuristic::setModel(model);
+  for (int i=0;i<numberHeuristics_;i++)
+    heuristic_[i]->setModel(model);
+}
+// Validate model i.e. sets when_ to 0 if necessary (may be NULL)
+void 
+CbcHeuristicJustOne::validate()
+{
+  CbcHeuristic::validate();
+  for (int i=0;i<numberHeuristics_;i++)
+    heuristic_[i]->validate();
+}
+// Adds an heuristic with probability
+void 
+CbcHeuristicJustOne::addHeuristic(const CbcHeuristic * heuristic, double probability)
+{
+  CbcHeuristic * thisOne = heuristic->clone();
+  thisOne->setWhen(-999);
+  CbcHeuristic ** tempH = CoinCopyOfArrayPartial(heuristic_,numberHeuristics_+1,
+						 numberHeuristics_);
+  delete [] heuristic_;
+  heuristic_ = tempH;
+  heuristic_[numberHeuristics_]=thisOne;
+  double * tempP = CoinCopyOfArrayPartial(probabilities_,numberHeuristics_+1,
+					  numberHeuristics_);
+  delete [] probabilities_;
+  probabilities_ = tempP;
+  probabilities_[numberHeuristics_]=probability;
+  numberHeuristics_++;
+}
+// Normalize probabilities
+void 
+CbcHeuristicJustOne::normalizeProbabilities()
+{
+  double sum=0.0;
+  for (int i=0;i<numberHeuristics_;i++)
+    sum += probabilities_[i];
+  double multiplier = 1.0/sum;
+  sum=0.0;
+  for (int i=0;i<numberHeuristics_;i++) {
+    sum += probabilities_[i];
+    probabilities_[i] = sum*multiplier;
+  }
+  assert (fabs(probabilities_[numberHeuristics_-1]-1.0)<1.0e-5);
+  probabilities_[numberHeuristics_-1] = 1.000001;
+}

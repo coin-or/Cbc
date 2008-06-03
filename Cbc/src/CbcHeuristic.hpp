@@ -453,4 +453,76 @@ public:
 protected:
 };
 
+/** Just One class - this chooses one at random
+ */
+
+class CbcHeuristicJustOne : public CbcHeuristic {
+public:
+
+  // Default Constructor 
+  CbcHeuristicJustOne ();
+
+  // Constructor with model - assumed before cuts
+  CbcHeuristicJustOne (CbcModel & model);
+  
+  // Copy constructor 
+  CbcHeuristicJustOne ( const CbcHeuristicJustOne &);
+   
+  // Destructor 
+  ~CbcHeuristicJustOne ();
+
+  /// Clone
+  virtual CbcHeuristicJustOne * clone() const;
+  
+  /// Assignment operator 
+  CbcHeuristicJustOne & operator=(const CbcHeuristicJustOne& rhs);
+
+  /// Create C++ lines to get to current state
+  virtual void generateCpp( FILE * fp) ;
+
+  /** returns 0 if no solution, 1 if valid solution
+      with better objective value than one passed in
+      Sets solution values if good, sets objective value (only if good)
+      This is called after cuts have been added - so can not add cuts
+      This does Fractional Diving
+  */
+  virtual int solution(double & objectiveValue,
+		       double * newSolution);
+  /// Resets stuff if model changes
+  virtual void resetModel(CbcModel * model);
+
+  /// update model (This is needed if cliques update matrix etc)
+  virtual void setModel(CbcModel * model);
+  /// Selects the next variable to branch on
+  /** Returns true if all the fractional variables can be trivially
+      rounded. Returns false, if there is at least one fractional variable
+      that is not trivially roundable. In this case, the bestColumn
+      returned will not be trivially roundable.
+      This is dummy as never called
+  */
+  virtual bool selectVariableToBranch(OsiSolverInterface* solver,
+				      const double* newSolution,
+				      int& bestColumn,
+				      int& bestRound) 
+  { return true;}
+  /// Validate model i.e. sets when_ to 0 if necessary (may be NULL)
+  virtual void validate();
+  /// Adds an heuristic with probability
+  void addHeuristic(const CbcHeuristic * heuristic, double probability);
+  /// Normalize probabilities
+  void normalizeProbabilities();
+protected:
+  // Data
+
+  // Probability of running a heuristic
+  double * probabilities_;
+
+  // Heuristics
+  CbcHeuristic ** heuristic_;
+
+  // Number of heuristics
+  int numberHeuristics_;
+
+};
+
 #endif

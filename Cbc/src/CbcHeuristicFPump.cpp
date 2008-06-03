@@ -193,6 +193,7 @@ int
 CbcHeuristicFPump::solution(double & solutionValue,
 			 double * betterSolution)
 {
+  numCouldRun_++;
   double incomingObjective = solutionValue;
 #define LEN_PRINT 200
   char pumpPrint[LEN_PRINT];
@@ -282,6 +283,7 @@ CbcHeuristicFPump::solution(double & solutionValue,
     // presumably max time or some such
     return 0;
   }
+  numRuns_++;
   if (cutoff<1.0e50&&false) {
     // Fix on djs
     double direction = model_->solver()->getObjSense() ;

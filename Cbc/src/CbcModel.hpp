@@ -735,6 +735,9 @@ public:
   { problemType_=number;}
   inline int problemType() const
   { return problemType_;}
+  /// Current depth
+  inline int currentDepth() const
+  { return currentDepth_;}
 
   /// Set how often to scan global cuts 
   void setHowOftenGlobalScan(int number);
@@ -2110,6 +2113,8 @@ private:
   int maximumWhich_;
   /// Maximum number of rows
   int maximumRows_;
+  /// Current depth
+  int currentDepth_;
   /// Work basis for temporary use
   CoinWarmStartBasis workingBasis_;
   /// Which cut generator generated this cut

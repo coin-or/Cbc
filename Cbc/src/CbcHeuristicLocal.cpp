@@ -126,6 +126,7 @@ CbcHeuristicLocal::solutionFix(double & objectiveValue,
 			    double * newSolution,
 			    const int * keep)
 {
+  numCouldRun_++;
   // See if to do
   if (!when()||(when()==1&&model_->phase()!=1))
     return 0; // switched off
@@ -175,6 +176,7 @@ CbcHeuristicLocal::solution(double & solutionValue,
 			 double * betterSolution)
 {
 
+  numCouldRun_++;
   if (numberSolutions_==model_->getSolutionCount())
     return 0;
   numberSolutions_=model_->getSolutionCount();
@@ -202,7 +204,7 @@ CbcHeuristicLocal::solution(double & solutionValue,
   double direction = solver->getObjSense();
   double newSolutionValue = model_->getObjValue()*direction;
   int returnCode = 0;
-
+  numRuns_++;
   // Column copy
   const double * element = matrix_.getElements();
   const int * row = matrix_.getIndices();

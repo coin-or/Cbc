@@ -728,7 +728,7 @@ CbcSolver::updateModel(ClpSimplex * model2, int returnMode)
       model_.moveInfo(*babModel_);
       int numberColumns = babModel_->getNumCols();
       if (babModel_->bestSolution())
-	model_.setBestSolution(babModel_->bestSolution(),numberColumns,babModel_->getObjValue());
+	model_.setBestSolution(babModel_->bestSolution(),numberColumns,babModel_->getMinimizationObjValue());
       OsiClpSolverInterface * clpSolver1 = dynamic_cast< OsiClpSolverInterface*> (babModel_->solver());
       ClpSimplex * lpSolver1 = clpSolver1->getModelPtr();
       if (lpSolver1!=lpSolver&&model_.bestSolution()) {
@@ -3233,7 +3233,7 @@ int
   int useCombine = parameters_[whichParam(COMBINE,numberParameters_,parameters_)].currentOptionAsInteger();
   int useRINS = parameters_[whichParam(RINS,numberParameters_,parameters_)].currentOptionAsInteger();
   int useRENS = parameters_[whichParam(RENS,numberParameters_,parameters_)].currentOptionAsInteger();
-  int useDIVING = parameters_[whichParam(DIVINGA,numberParameters_,parameters_)].currentOptionAsInteger();
+  int useDIVING2 = parameters_[whichParam(DIVINGS,numberParameters_,parameters_)].currentOptionAsInteger();
   // FPump done first as it only works if no solution
   int kType = (type<3) ? type : 1;
   if (useFpump>=kType) {
@@ -3363,7 +3363,7 @@ int
     heuristic6.setHeuristicName("RENS");
     heuristic6.setFractionSmall(0.5);
     heuristic6.setFeasibilityPumpOptions(1008003);
-    int nodes []={-2,-1,200,1000};
+    int nodes []={-2,0,200,1000,10000};
     heuristic6.setNumberNodes(nodes[useRENS]);
     model->addHeuristic(&heuristic6) ;
     anyToDo=true;
@@ -3379,21 +3379,49 @@ int
     model->addHeuristic(&heuristic5) ;
     anyToDo=true;
   }
-  // change later?
+  int useDIVING=0;
   {
-    int useDiving2=0;
-    useDiving2 |= 1*parameters_[whichParam(DIVINGV,numberParameters_,parameters_)].currentOptionAsInteger();
-    useDiving2 |= 2*parameters_[whichParam(DIVINGG,numberParameters_,parameters_)].currentOptionAsInteger();
-    useDiving2 |= 4*parameters_[whichParam(DIVINGF,numberParameters_,parameters_)].currentOptionAsInteger();
-    useDiving2 |= 8*parameters_[whichParam(DIVINGC,numberParameters_,parameters_)].currentOptionAsInteger();
-    useDiving2 |= 16*parameters_[whichParam(DIVINGL,numberParameters_,parameters_)].currentOptionAsInteger();
-    useDiving2 |= 32*parameters_[whichParam(DIVINGP,numberParameters_,parameters_)].currentOptionAsInteger();
-    if (useDiving2)
-      useDIVING=useDiving2;
+    useDIVING |= 1*parameters_[whichParam(DIVINGV,numberParameters_,parameters_)].currentOptionAsInteger();
+    useDIVING |= 2*parameters_[whichParam(DIVINGG,numberParameters_,parameters_)].currentOptionAsInteger();
+    useDIVING |= 4*parameters_[whichParam(DIVINGF,numberParameters_,parameters_)].currentOptionAsInteger();
+    useDIVING |= 8*parameters_[whichParam(DIVINGC,numberParameters_,parameters_)].currentOptionAsInteger();
+    useDIVING |= 16*parameters_[whichParam(DIVINGL,numberParameters_,parameters_)].currentOptionAsInteger();
+    useDIVING |= 32*parameters_[whichParam(DIVINGP,numberParameters_,parameters_)].currentOptionAsInteger();
   }
+  if (useDIVING2>=kType) {
+    int diveOptions=parameters_[whichParam(DIVEOPT,numberParameters_,parameters_)].intValue();
+    if (diveOptions<0||diveOptions>10)
+      diveOptions=2;
+    CbcHeuristicJustOne heuristicJustOne(*model);
+    heuristicJustOne.setHeuristicName("DiveAny");
+    heuristicJustOne.setWhen(diveOptions);
+    // add in others
+    CbcHeuristicDiveCoefficient heuristicDC(*model);
+    heuristicDC.setHeuristicName("DiveCoefficient");
+    heuristicJustOne.addHeuristic(&heuristicDC,1.0) ;
+    CbcHeuristicDiveFractional heuristicDF(*model);
+    heuristicDF.setHeuristicName("DiveFractional");
+    heuristicJustOne.addHeuristic(&heuristicDF,1.0) ;
+    CbcHeuristicDiveGuided heuristicDG(*model);
+    heuristicDG.setHeuristicName("DiveGuided");
+    heuristicJustOne.addHeuristic(&heuristicDG,1.0) ;
+    CbcHeuristicDiveLineSearch heuristicDL(*model);
+    heuristicDL.setHeuristicName("DiveLineSearch");
+    heuristicJustOne.addHeuristic(&heuristicDL,1.0) ;
+    CbcHeuristicDivePseudoCost heuristicDP(*model);
+    heuristicDP.setHeuristicName("DivePseudoCost");
+    heuristicJustOne.addHeuristic(&heuristicDP,1.0) ;
+    CbcHeuristicDiveVectorLength heuristicDV(*model);
+    heuristicDV.setHeuristicName("DiveVectorLength");
+    heuristicJustOne.addHeuristic(&heuristicDV,1.0) ;
+    // Now normalize probabilities
+    heuristicJustOne.normalizeProbabilities();
+    model->addHeuristic(&heuristicJustOne) ;
+  }
+  
   if (useDIVING>=kType) {
     int diveOptions=parameters_[whichParam(DIVEOPT,numberParameters_,parameters_)].intValue();
-    if (diveOptions<3||diveOptions>6)
+    if (diveOptions<0||diveOptions>10)
       diveOptions=2;
     if ((useDIVING&1)!=0) {
       CbcHeuristicDiveVectorLength heuristicDV(*model);
@@ -4417,6 +4445,9 @@ int
 		      <<"Gomory cuts using tolerance of 0.01 at root"
 		      <<CoinMessageEol;
 		    generalMessageHandler->message(CLP_GENERAL,generalMessages)
+		      <<"Possible restart after 100 nodes if can fix many"
+		      <<CoinMessageEol;
+		    generalMessageHandler->message(CLP_GENERAL,generalMessages)
 		      <<"extra options - -diving C -diveopt 3 -rins on -tune 6 -probing on -passf 30!"
 		      <<CoinMessageEol;
 		  }
@@ -4430,8 +4461,8 @@ int
 		  iParam = whichParam(PROCESSTUNE,numberParameters_,parameters_);
 		  parameters_[iParam].setIntValue(6);
 		  tunePreProcess=6;
-		  iParam = whichParam(DIVINGA,numberParameters_,parameters_);
-		  parameters_[iParam].setCurrentOption("C");
+		  iParam = whichParam(DIVINGC,numberParameters_,parameters_);
+		  parameters_[iParam].setCurrentOption("on");
 		  iParam = whichParam(RINS,numberParameters_,parameters_);
 		  parameters_[iParam].setCurrentOption("on");
 		  iParam = whichParam(PROBINGCUTS,numberParameters_,parameters_);
@@ -4684,7 +4715,13 @@ int
               parameters_[whichParam(FPUMP,numberParameters_,parameters_)].setCurrentOption(action);
               break;
 	    case GREEDY:
-	    case DIVINGA:
+	    case DIVINGS:
+	    case DIVINGC:
+	    case DIVINGF:
+	    case DIVINGG:
+	    case DIVINGL:
+	    case DIVINGP:
+	    case DIVINGV:
 	    case COMBINE:
 	    case LOCALTREE:
               defaultSettings=false; // user knows what she is doing
@@ -6151,12 +6188,13 @@ int
 		probingGen.setMaxProbeRoot(CoinMin(2000,babModel_->solver()->getNumCols()));
 		probingGen.setMaxProbeRoot(123);
 		probingGen.setMaxProbe(123);
+		probingGen.setMaxLookRoot(20);
 		if (probingAction==5||probingAction==7)
 		  probingGen.setRowCuts(-3); // strengthening etc just at root
 		if (probingAction==6||probingAction==7) {
 		  // Number of unsatisfied variables to look at
-		  probingGen.setMaxProbe(1000);
-		  probingGen.setMaxProbeRoot(1000);
+		  probingGen.setMaxProbeRoot(babModel_->solver()->getNumCols());
+		  probingGen.setMaxProbe(babModel_->solver()->getNumCols());
 		  // How far to follow the consequences
 		  probingGen.setMaxLook(50);
 		  probingGen.setMaxLookRoot(50);
@@ -6210,7 +6248,16 @@ int
                 babModel_->addCutGenerator(&flowGen,translate[flowAction],"FlowCover");
                 switches[numberGenerators++]=1;
               }
-              if (twomirAction&&!complicatedInteger) {
+              if (twomirAction&&(complicatedInteger!=1||
+				 (twomirAction==1||twomirAction>=4))) {
+		// try larger limit
+		int numberColumns = babModel_->getNumCols();
+		if (twomirAction==5) {
+		  twomirAction=4;
+		  twomirGen.setMaxElements(numberColumns);
+		} else if (numberColumns>5000&&twomirAction==4) {
+		  twomirGen.setMaxElements(2000);
+		}
                 babModel_->addCutGenerator(&twomirGen,translate[twomirAction],"TwoMirCuts");
                 switches[numberGenerators++]=1;
               }
@@ -6332,6 +6379,10 @@ int
 					   parameters_)].intValue()==2) {
 		  // try reduced model
 		  babModel_->setSpecialOptions(babModel_->specialOptions()|512);
+		} else if (parameters_[whichParam(EXPERIMENT,numberParameters_,
+					   parameters_)].intValue()==3) {
+		  // try reduced model at root
+		  babModel_->setSpecialOptions(babModel_->specialOptions()|2048);
 		}
 		{
 		  int extra4 = parameters_[whichParam(EXTRA4,numberParameters_,parameters_)].intValue();
@@ -6354,8 +6405,13 @@ int
 		    if (lpSolver->numberRows()<150)
 		      lpSolver->setSpecialOptions(lpSolver->specialOptions()|256);
 		  }
-		  if (((moreMipOptions+1)%1000000)!=0)
-		    babModel_->setSearchStrategy(moreMipOptions%1000000);
+		  if (moreMipOptions<10000&&moreMipOptions) {
+		    if (((moreMipOptions+1)%1000000)!=0)
+		      babModel_->setSearchStrategy(moreMipOptions%1000000);
+		  } else if (moreMipOptions<100000) {
+		    // try reduced model
+		    babModel_->setSpecialOptions(babModel_->specialOptions()|512);
+		  }
 		  // go faster stripes
 		  if( moreMipOptions >=999999) {
 		    if (osiclp) {
@@ -6500,6 +6556,7 @@ int
 			}
 		      }
 		      babModel_->setNumberObjects(n);
+		      numberOldObjects=n;
 		      babModel_->zapIntegerInformation();
 		    }
 		    int nMissing=0;
@@ -7334,11 +7391,14 @@ int
 		{
 		  int extra1 = parameters_[whichParam(EXTRA1,numberParameters_,parameters_)].intValue();
 		  if (extra1!=-1) {
-		    if (extra1<10000) {
+		    if (extra1<19000) {
 		      babModel_->setSearchStrategy(extra1);
 		      printf("XXXXX searchStrategy %d\n",extra1);
 		    } else {
-		      babModel_->setNumberAnalyzeIterations(extra1);
+		      int n=extra1-20000;
+		      if (!n)
+			n--;
+		      babModel_->setNumberAnalyzeIterations(n);
 		      printf("XXXXX analyze %d\n",extra1);
 		    }
 		  }
@@ -7398,6 +7458,18 @@ int
 #endif
 #endif
 #ifdef COIN_DEVELOP
+#if 1
+		{ 
+		  int numberColumns = babModel_->getNumCols();
+		  const double * solution = babModel_->bestSolution();
+		  if (solution) {
+		    for (int i=0;i<numberColumns;i++) {
+		      if (solution[i])
+			printf("SOL %d %.18g\n",i,solution[i]);
+		    }
+		  }
+		}
+#endif
 		void printHistory(const char * file);
 		printHistory("branch.log");
 #endif
@@ -7464,7 +7536,7 @@ int
 		stuff[2]=parameters_[whichParam(DEXTRA3,numberParameters_,parameters_)].doubleValue();
 		stuff[3]=parameters_[whichParam(DEXTRA4,numberParameters_,parameters_)].doubleValue();
 		stuff[4]=parameters_[whichParam(DENSE,numberParameters_,parameters_)].intValue();
-		stuff[5]=parameters_[whichParam(EXTRA2,numberParameters_,parameters_)].intValue();
+		stuff[5]=parameters_[whichParam(EXTRA1,numberParameters_,parameters_)].intValue();
 		stuff[6]=parameters_[whichParam(EXTRA3,numberParameters_,parameters_)].intValue();
 		stuff[7]=parameters_[whichParam(EXTRA4,numberParameters_,parameters_)].intValue();
 		stuff[8]=parameters_[whichParam(EXPERIMENT,numberParameters_,parameters_)].intValue();
@@ -7526,16 +7598,18 @@ int
 		// Not really generator but I am feeling lazy
                 for (iGenerator=0;iGenerator<babModel_->numberHeuristics();iGenerator++) {
                   CbcHeuristic * heuristic = babModel_->heuristic(iGenerator);
-		  // Need to bring others inline
-		  sprintf(generalPrint,"%s was tried %d times out of %d and created %d solutions\n",
-			  heuristic->heuristicName(),
-			  heuristic->numRuns(),
-			  heuristic->numCouldRun(),
-			  heuristic->numberSolutionsFound());
-		  generalMessageHandler->message(CLP_GENERAL,generalMessages)
-		    << generalPrint
-		    <<CoinMessageEol;
-                }
+		  if (heuristic->numRuns()) {
+		    // Need to bring others inline
+		    sprintf(generalPrint,"%s was tried %d times out of %d and created %d solutions\n",
+			    heuristic->heuristicName(),
+			    heuristic->numRuns(),
+			    heuristic->numCouldRun(),
+			    heuristic->numberSolutionsFound());
+		    generalMessageHandler->message(CLP_GENERAL,generalMessages)
+		      << generalPrint
+		      <<CoinMessageEol;
+		  }
+		}
 #endif
               }
 	      // adjust time to allow for children on some systems
@@ -7563,9 +7637,9 @@ int
                 }
 #if NEW_STYLE_SOLVER==0
 		if (returnMode==1)
-		  model_.setBestSolution(bestSolution,n,babModel_->getObjValue());
+		  model_.setBestSolution(bestSolution,n,babModel_->getMinimizationObjValue());
 #endif
-		babModel_->setBestSolution(bestSolution,n,babModel_->getObjValue());
+		babModel_->setBestSolution(bestSolution,n,babModel_->getMinimizationObjValue());
 #if NEW_STYLE_SOLVER==0
 		// and put back in very original solver
 		{
@@ -9552,7 +9626,7 @@ clp watson.mps -\nscaling off\nprimalsimplex"
     ClpSimplex * lpSolver0 = clpSolver0->getModelPtr();
     OsiClpSolverInterface * clpSolver = dynamic_cast< OsiClpSolverInterface*> (model_.solver());
     ClpSimplex * lpSolver = clpSolver->getModelPtr();
-    if (lpSolver0!=lpSolver) 
+    if (lpSolver0!=lpSolver&&lpSolver!=originalSolver->getModelPtr()) 
       lpSolver->moveInfo(*lpSolver0);
     //babModel_->setModelOwnsSolver(false);
   }

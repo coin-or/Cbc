@@ -8,6 +8,7 @@ OBJS 	= $(SRC:.cpp=.o)
 
 LDFLAGS  = -Wl,-rpath,-L$(COININSTDIR)/lib
 LDFLAGS += -L$(COININSTDIR)/lib
+LDFLAGS += -lOsiClp 
 LDFLAGS += -lOsi 
 LDFLAGS += -lClp 
 LDFLAGS += -lCoinUtils 

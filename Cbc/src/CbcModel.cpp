@@ -3733,6 +3733,8 @@ void CbcModel::branchAndBound(int doStatistics)
     if (clpSolver) {
       // Possible restore of pivot method
       if(savePivotMethod) {
+	// model may have changed
+	savePivotMethod->setModel(NULL);
 	clpSolver->getModelPtr()->setDualRowPivotAlgorithm(*savePivotMethod);
 	delete savePivotMethod;
       }

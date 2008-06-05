@@ -1,0 +1,5 @@
+1) Check out https://projects.coin-or.org/svn/Osi/0.98
+2) Build it and install it.
+3) Edit the Makefile in this directory to set COININSTDIR to wherever Osi is
+   installed. Also, edit what is CXX if necessary.
+4) run make to create the executable

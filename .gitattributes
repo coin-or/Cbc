@@ -1,1 +1,4 @@
 * text=auto !eol
+/Makefile -text
+/README -text
+/dynamicbranching.cpp -text

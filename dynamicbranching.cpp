@@ -1054,7 +1054,12 @@ branchAndBound(OsiSolverInterface & model) {
       model.setDblParam(OsiDualObjectiveLimit,(bestNode.objectiveValue_+1.0e-5)*direction);
       model.resolve();
     } else {
-      //      modelPtr_->setProblemStatus(1);
+      OsiClpSolverInterface* clp =
+	dynamic_cast<OsiClpSolverInterface*>(&model);
+      if (clp) {
+	ClpSimplex* modelPtr_ = clp->getModelPtr();
+	modelPtr_->setProblemStatus(1);
+      }
     }
     delete [] which;
     delete [] originalLower;
@@ -1064,7 +1069,12 @@ branchAndBound(OsiSolverInterface & model) {
   } else {
     std::cout<<"The LP relaxation is infeasible"
              <<std::endl;
-    //    modelPtr_->setProblemStatus(1);
+    OsiClpSolverInterface* clp =
+      dynamic_cast<OsiClpSolverInterface*>(&model);
+    if (clp) {
+      ClpSimplex* modelPtr_ = clp->getModelPtr();
+      modelPtr_->setProblemStatus(1);
+    }
     //throw CoinError("The LP relaxation is infeasible or too expensive",
     //"branchAndBound", "OsiClpSolverInterface");
   }

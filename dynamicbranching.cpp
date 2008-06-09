@@ -11,12 +11,16 @@
 class DBNodeSimple  {
 public:
   enum DBNodeWay {
-    DOWN_UP__NOTHING_DONE,
-    DOWN_UP__DOWN_DONE,
-    DOWN_UP__BOTH_DONE,
-    UP_DOWN__NOTHING_DONE,
-    UP_DOWN__UP_DONE,
-    UP_DOWN__BOTH_DONE,
+    DOWN_UP__NOTHING_DONE=0x11,
+    DOWN_UP__DOWN_DONE=0x12,
+    DOWN_UP__BOTH_DONE=0x14,
+    DOWN_UP__=0x10,
+    UP_DOWN__NOTHING_DONE=0x21,
+    UP_DOWN__UP_DONE=0x24,
+    UP_DOWN__BOTH_DONE=0x22,
+    UP_DOWN__=0x20,
+    DOWN_CURRENT=0x02,
+    UP_CURRENT=0x04,
     WAY_UNSET
   };
   
@@ -67,9 +71,9 @@ public:
   // Parent 
   int parent_;
   // Left child
-  int child0_;
+  int child_down_;
   // Right child
-  int child1_;
+  int child_up_;
   // Previous in chain
   int previous_;
   // Next in chain
@@ -90,8 +94,8 @@ DBNodeSimple::DBNodeSimple() :
   value_(0.5),
   descendants_(-1),
   parent_(-1),
-  child0_(-1),
-  child1_(-1),
+  child_down_(-1),
+  child_up_(-1),
   previous_(-1),
   next_(-1),
   lower_(NULL),
@@ -114,8 +118,8 @@ DBNodeSimple::gutsOfConstructor(OsiSolverInterface & model,
   value_=0.0;
   descendants_ = 0;
   parent_ = -1;
-  child0_ = -1;
-  child1_ = -1;
+  child_down_ = -1;
+  child_up_ = -1;
   previous_ = -1;
   next_ = -1;
   if (model.isProvenOptimal()&&!model.isDualObjectiveLimitReached()) {
@@ -377,8 +381,8 @@ DBNodeSimple::DBNodeSimple(const DBNodeSimple & rhs)
   value_=rhs.value_;
   descendants_ = rhs.descendants_;
   parent_ = rhs.parent_;
-  child0_ = rhs.child0_;
-  child1_ = rhs.child1_;
+  child_down_ = rhs.child_down_;
+  child_up_ = rhs.child_up_;
   previous_ = rhs.previous_;
   next_ = rhs.next_;
   lower_=NULL;
@@ -406,8 +410,8 @@ DBNodeSimple::operator=(const DBNodeSimple & rhs)
     value_=rhs.value_;
     descendants_ = rhs.descendants_;
     parent_ = rhs.parent_;
-    child0_ = rhs.child0_;
-    child1_ = rhs.child1_;
+    child_down_ = rhs.child_down_;
+    child_up_ = rhs.child_up_;
     previous_ = rhs.previous_;
     next_ = rhs.next_;
     if (rhs.lower_!=NULL) {
@@ -674,6 +678,125 @@ DBVectorNode::pop_back()
 }
 #endif
 
+bool
+DBNodeSimple::isGrandparentIrrelevant()
+{
+#if !defined(FUNNY_BRANCHING)
+  return false;
+#endif
+
+  if (parent_ == -1) {
+    // can't flip root higher up...
+    return false;
+  }
+  
+  if (model.isProvenDualInfeasible()) {
+    // THINK: this is not going to happen, but if it does, what should we do???
+    return false;
+  }
+  if (model.isProvenPrimalInfeasible()) {
+    ...;
+  }
+  // Both primal and dual feasible, and in this case we don't care how we have
+  // stopped (iteration limit, obj val limit, time limit, optimal solution,
+  // etc.), we can just look at the reduced costs to figure out if the
+  // grandparent is irrelevant. Remember, we are using dual simplex!
+  const DBNodeSimple& parent = branchingTree.nodes_[parent_];
+  const int iColumn = which[parent.variable_];
+  double djValue = model.getReducedCost()[iColumn]*direction;
+  const bool down_child = branchingTree.nodeIndex(node) == parent.child_down_;
+  if (djValue>1.0e-6) {
+    // wants to go down
+    if (down_child) {
+      return true;
+    }
+    const double up_lower = std::floor(parent.value_);
+    if (model.getColLower()[iColumn] > up_lower) {
+      return true;
+    }
+    return false;
+  } else {
+    // wants to go up
+    if (!down_child) {
+      return true;
+    }
+    const double down_upper = std::ceil(parent.value_);
+    if (model.getColUpper()[iColumn] < down_upper) {
+      return true;
+    }
+    return false;
+  }
+  return false;
+}
+
+void
+DBVectorNode::moveNodeUp()
+{
+  assert(parent != -1);
+  const int parent_id = node.parent_;
+  const DBNodeSimple& parent = branchingTree.nodes_[parent_id];
+  const int node_id = branchingTree.nodeIndex(node);
+  const bool node_is_down_child = node_id == parent.child_down_;
+  const int grandparent_id = parent.parent_;
+
+  // First hang the nodes where they belong.
+  node.parent_ = grandparent_id;
+  parent.parent_ = node_id;
+#if 1
+  int& child_to_move = (node.way_ & DOWN_CURRENT) ? node.child_up_ : node.child_down_;
+  if (node_is_down_child) {
+    parent.child_down_ = child_to_move;
+  } else {
+    parent.child_up_ = child_to_move;
+  }
+  if (child_to_move >= 0) {
+    branchingTree.nodes_[child_to_move].parent_ = parent_id;
+  }
+  child_to_move = parent_id;
+#else
+  if (node.way_ & DOWN_CURRENT) {
+    if (node_is_down_child) {
+      parent.child_down_ = node.child_up_;
+    } else {
+      parent.child_up_ = node.child_up_;
+    }
+    if (node.child_up_ >= 0) {
+      branchingTree.nodes_[node.child_up_].parent_ = parent_id;
+    }
+    node.child_up_ = parent_id;
+  } else { // must be UP_CURRENT
+    if (node_is_down_child) {
+      parent.child_down_ = node.child_down_;
+    } else {
+      parent.child_up_ = node.child_down_;
+    }
+    if (node.child_down_ >= 0) {
+      branchingTree.nodes_[node.child_down_].parent_ = parent_id;
+    }
+    node.child_down_ = parent_id;
+  }
+#endif
+  if (grandparent_id >= 0) {
+    if (parent_id == branchingTree.nodes_[grandparent_id].child_down_) {
+      branchingTree.nodes_[grandparent_id].child_down_ = node_id;
+    } else {
+      branchingTree.nodes_[grandparent_id].child_up_ = node_id;
+    }
+  }
+
+  // Now modify bounds
+
+  // THINK: could be avoided if always start from original bounds and go back
+  // to root to apply all branching decisions. On the other hand, reduced cost
+  // fixing would be lost. And so would fixings by strong branching. Actually,
+  // what we'd ideally need to do is to apply flipping when strong branching
+  // fixes a variable.
+}
+
+
+
+
+
 bool moveNodes(OsiSolverInterface & model,
 	       DBVectorNode & branchingTree,
 	       int kNode)
@@ -846,7 +969,18 @@ branchAndBound(OsiSolverInterface & model) {
           //if (nFixed0+nFixed1)
           //printf("%d fixed to lower, %d fixed to upper\n",nFixed0,nFixed1);
         }
-        if (!model.isIterationLimitReached()) {
+	if (model.isAbandoned()) {
+	  // THINK: What the heck should we do???
+	  abort();
+	}
+	if (node.isGrandparentIrrelevant()) {
+	  branchingTree.moveNodeUp(node);
+	}
+
+
+
+
+	if (!model.isIterationLimitReached()) {
 	  if (model.isProvenOptimal()&&!model.isDualObjectiveLimitReached()) {
 #if FUNNY_BRANCHING
 	    // See if branched variable off bounds
@@ -1056,10 +1190,10 @@ branchAndBound(OsiSolverInterface & model) {
 	      newNode.parent_ = kNode;
 	      // push on stack
 	      branchingTree.push_back(newNode);
-	      if(branchingTree.nodes_[kNode].child0_ < 0)
-		branchingTree.nodes_[kNode].child0_ = branchingTree.last_;
+	      if(branchingTree.nodes_[kNode].child_down_ < 0)
+		branchingTree.nodes_[kNode].child_down_ = branchingTree.last_;
 	      else
-		branchingTree.nodes_[kNode].child1_ = branchingTree.last_;
+		branchingTree.nodes_[kNode].child_up_ = branchingTree.last_;
 #if 0
 	      } else {
 		// integer solution - save

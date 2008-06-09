@@ -973,7 +973,7 @@ branchAndBound(OsiSolverInterface & model) {
 	  // THINK: What the heck should we do???
 	  abort();
 	}
-	if (node.isGrandparentIrrelevant()) {
+	while (node.isGrandparentIrrelevant()) {
 	  branchingTree.moveNodeUp(node);
 	}
 

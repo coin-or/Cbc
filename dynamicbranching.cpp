@@ -56,6 +56,10 @@ public:
   int descendants_;
   // Parent 
   int parent_;
+  // Left child
+  int child1_;
+  // Right child
+  int child2_;
   // Previous in chain
   int previous_;
   // Next in chain
@@ -76,6 +80,8 @@ DBNodeSimple::DBNodeSimple() :
   value_(0.5),
   descendants_(-1),
   parent_(-1),
+  child1_(-1),
+  child2_(-1),
   previous_(-1),
   next_(-1),
   lower_(NULL),
@@ -98,6 +104,8 @@ DBNodeSimple::gutsOfConstructor(OsiSolverInterface & model,
   value_=0.0;
   descendants_ = 0;
   parent_ = -1;
+  child1_ = -1;
+  child2_ = -1;
   previous_ = -1;
   next_ = -1;
   if (model.isProvenOptimal()&&!model.isDualObjectiveLimitReached()) {
@@ -359,6 +367,8 @@ DBNodeSimple::DBNodeSimple(const DBNodeSimple & rhs)
   value_=rhs.value_;
   descendants_ = rhs.descendants_;
   parent_ = rhs.parent_;
+  child1_ = rhs.child1_;
+  child2_ = rhs.child2_;
   previous_ = rhs.previous_;
   next_ = rhs.next_;
   lower_=NULL;
@@ -386,6 +396,8 @@ DBNodeSimple::operator=(const DBNodeSimple & rhs)
     value_=rhs.value_;
     descendants_ = rhs.descendants_;
     parent_ = rhs.parent_;
+    child1_ = rhs.child1_;
+    child2_ = rhs.child2_;
     previous_ = rhs.previous_;
     next_ = rhs.next_;
     if (rhs.lower_!=NULL) {
@@ -651,6 +663,17 @@ DBVectorNode::pop_back()
   size_--;
 }
 #endif
+
+void moveNodes(OsiSolverInterface & model,
+	       DBVectorNode & branchingTree,
+	       DBNodeSimple & node)
+{
+
+
+
+
+}
+
 // Invoke solver's built-in enumeration algorithm
 void 
 branchAndBound(OsiSolverInterface & model) {
@@ -1003,6 +1026,10 @@ branchAndBound(OsiSolverInterface & model) {
 	      newNode.parent_ = kNode;
 	      // push on stack
 	      branchingTree.push_back(newNode);
+	      if(branchingTree.nodes_[kNode].child1_ < 0)
+		branchingTree.nodes_[kNode].child1_ = branchingTree.last_;
+	      else
+		branchingTree.nodes_[kNode].child2_ = branchingTree.last_;
 #if 0
 	      } else {
 		// integer solution - save

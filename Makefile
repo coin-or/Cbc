@@ -2,10 +2,6 @@ COININSTDIR = $(HOME)/COIN/Osi/0.98/build
 CXX = g++
 CXXFLAGS = -g -Wall -I$(COININSTDIR)/include/coin
 
-NAME = dynamicbranching
-SRC	= dynamicbranching.cpp
-OBJS 	= $(SRC:.cpp=.o)
-
 LDFLAGS  = -Wl,-rpath,-L$(COININSTDIR)/lib
 LDFLAGS += -L$(COININSTDIR)/lib
 LDFLAGS += -lOsiClp 
@@ -17,11 +13,14 @@ LDFLAGS += `cat $(COININSTDIR)/share/doc/coin/Clp/clp_addlibs.txt`
 LDFLAGS += `cat $(COININSTDIR)/share/doc/coin/CoinUtils/coinutils_addlibs.txt`
 
 
-$(NAME): $(OBJS) $(SRC) $(INCL)  
-	$(CXX) $(OBJS) $(LDFLAGS) -o $(NAME) 
+dynamicbranching: dynamicbranching.o
+	$(CXX) dynamicbranching.o $(LDFLAGS) -o $@
+
+dynamicLL: dynamicLL.o
+	$(CXX) dynamicbranching.o $(LDFLAGS) -o $@
 
 clean:
-	rm -f $(NAME) $(OBJS)
+	rm -f *.o dynamicbranching dynamicLL
 
 .cpp.o:
 	$(CXX) $(CXXFLAGS) -c $< 

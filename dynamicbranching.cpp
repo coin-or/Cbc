@@ -9,6 +9,16 @@
 // Trivial class for Branch and Bound
 
 class DBNodeSimple  {
+public:
+  enum DBNodeWay {
+    DOWN_UP__NOTHING_DONE,
+    DOWN_UP__DOWN_DONE,
+    DOWN_UP__BOTH_DONE,
+    UP_DOWN__NOTHING_DONE,
+    UP_DOWN__UP_DONE,
+    UP_DOWN__BOTH_DONE,
+    WAY_UNSET
+  };
   
 public:
     
@@ -46,7 +56,7 @@ public:
   double objectiveValue_;
   // Branching variable (0 is first integer) 
   int variable_;
-  // Way to branch - -1 down (first), 1 up, -2 down (second), 2 up (second)
+  // Way to branch: see enum DBNodeWay
   int way_;
   // Number of integers (for length of arrays)
   int numberIntegers_;
@@ -57,9 +67,9 @@ public:
   // Parent 
   int parent_;
   // Left child
-  int child1_;
+  int child0_;
   // Right child
-  int child2_;
+  int child1_;
   // Previous in chain
   int previous_;
   // Next in chain
@@ -75,13 +85,13 @@ DBNodeSimple::DBNodeSimple() :
   basis_(NULL),
   objectiveValue_(COIN_DBL_MAX),
   variable_(-100),
-  way_(-1),
+  way_(WAY_UNSET),
   numberIntegers_(0),
   value_(0.5),
   descendants_(-1),
   parent_(-1),
+  child0_(-1),
   child1_(-1),
-  child2_(-1),
   previous_(-1),
   next_(-1),
   lower_(NULL),
@@ -99,13 +109,13 @@ DBNodeSimple::gutsOfConstructor(OsiSolverInterface & model,
 {
   basis_ = basis;
   variable_=-1;
-  way_=-1;
+  way_=WAY_UNSET;
   numberIntegers_=numberIntegers;
   value_=0.0;
   descendants_ = 0;
   parent_ = -1;
+  child0_ = -1;
   child1_ = -1;
-  child2_ = -1;
   previous_ = -1;
   next_ = -1;
   if (model.isProvenOptimal()&&!model.isDualObjectiveLimitReached()) {
@@ -204,9 +214,9 @@ DBNodeSimple::gutsOfConstructor(OsiSolverInterface & model,
     double nearest = floor(value+0.5);
     value_=value;
     if (value<=nearest)
-      way_=1; // up
+      way_=UP_DOWN__NOTHING_DONE; // up
     else
-      way_=-1; // down
+      way_=DOWN_UP__NOTHING_DONE; // down
   } else if (numberStrong) {
     // more than one - choose
     bool chooseOne=true;
@@ -315,9 +325,9 @@ DBNodeSimple::gutsOfConstructor(OsiSolverInterface & model,
 	    value = min(value,(double) upper_[variable_]);
 	    value_=value;
 	    if (upMovement[i]<=downMovement[i])
-	      way_=1; // up
+	      way_=UP_DOWN__NOTHING_DONE; // up
 	    else
-	      way_=-1; // down
+	      way_=DOWN_UP__NOTHING_DONE; // down
 	  }
 	}
       }
@@ -346,9 +356,9 @@ DBNodeSimple::gutsOfConstructor(OsiSolverInterface & model,
       variable_=i;
       value_=value;
       if (value<=nearest)
-	way_=1; // up
+	way_=UP_DOWN__NOTHING_DONE; // up
       else
-	way_=-1; // down
+	way_=DOWN_UP__NOTHING_DONE; // down
     }
   }
 #endif
@@ -367,8 +377,8 @@ DBNodeSimple::DBNodeSimple(const DBNodeSimple & rhs)
   value_=rhs.value_;
   descendants_ = rhs.descendants_;
   parent_ = rhs.parent_;
+  child0_ = rhs.child0_;
   child1_ = rhs.child1_;
-  child2_ = rhs.child2_;
   previous_ = rhs.previous_;
   next_ = rhs.next_;
   lower_=NULL;
@@ -396,8 +406,8 @@ DBNodeSimple::operator=(const DBNodeSimple & rhs)
     value_=rhs.value_;
     descendants_ = rhs.descendants_;
     parent_ = rhs.parent_;
+    child0_ = rhs.child0_;
     child1_ = rhs.child1_;
-    child2_ = rhs.child2_;
     previous_ = rhs.previous_;
     next_ = rhs.next_;
     if (rhs.lower_!=NULL) {
@@ -771,27 +781,35 @@ branchAndBound(OsiSolverInterface & model) {
         model.setWarmStart(node.basis_);
         // do branching variable
 	node.incrementDescendants();
-        if (node.way_<0) {
+	bool down_branch = true;
+	switch (node.way_) {
+	case WAY_UNSET:
+	case DOWN_UP__BOTH_DONE:
+	case UP_DOWN__BOTH_DONE:
+	  abort();
+	case DOWN_UP__NOTHING_DONE:
+	  node.way_ = DOWN_UP__DOWN_DONE;
+	  break;
+	case DOWN_UP__DOWN_DONE:
+	  node.way_ = DOWN_UP__BOTH_DONE:
+	  down_branch = false;
+	  break;
+	case UP_DOWN__NOTHING_DONE:
+	  node.way_ = UP_DOWN__UP_DONE:
+	  down_branch = false;
+	  break;
+	case UP_DOWN__UP_DONE:
+	  node.way_ = UP_DOWN__BOTH_DONE;
+	  break;
+	}
+        if (down_branch) {
           model.setColUpper(which[node.variable_],floor(node.value_));
-          // now push back node if more to come
-          if (node.way_==-1) { 
-            node.way_=+2;	  // Swap direction
-            branchingTree.push_back(node);
-          } else if (funnyBranching) {
-	    // put back on tree anyway
-            branchingTree.push_back(node);
-	  }
         } else {
           model.setColLower(which[node.variable_],ceil(node.value_));
-          // now push back node if more to come
-          if (node.way_==1) { 
-            node.way_=-2;	  // Swap direction
-            branchingTree.push_back(node);
-          } else if (funnyBranching) {
-	    // put back on tree anyway
-            branchingTree.push_back(node);
-          }
         }
+	// put back on tree anyway regardless whether any processing is left
+	// to be done. We want the whole tree all the time.
+	branchingTree.push_back(node);
 	
         // solve
         model.resolve();
@@ -1038,10 +1056,10 @@ branchAndBound(OsiSolverInterface & model) {
 	      newNode.parent_ = kNode;
 	      // push on stack
 	      branchingTree.push_back(newNode);
-	      if(branchingTree.nodes_[kNode].child1_ < 0)
-		branchingTree.nodes_[kNode].child1_ = branchingTree.last_;
+	      if(branchingTree.nodes_[kNode].child0_ < 0)
+		branchingTree.nodes_[kNode].child0_ = branchingTree.last_;
 	      else
-		branchingTree.nodes_[kNode].child2_ = branchingTree.last_;
+		branchingTree.nodes_[kNode].child1_ = branchingTree.last_;
 #if 0
 	      } else {
 		// integer solution - save

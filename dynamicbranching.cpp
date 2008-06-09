@@ -664,12 +664,24 @@ DBVectorNode::pop_back()
 }
 #endif
 
-void moveNodes(OsiSolverInterface & model,
+bool moveNodes(OsiSolverInterface & model,
 	       DBVectorNode & branchingTree,
-	       DBNodeSimple & node)
+	       int kNode)
 {
 
+  DBNodeSimple & node = branchingTree[kNode];
+  DBNodeSimple & grandParent = branchingTree[node.parent_];
+  int grandParentVariable = grandParent.variable_;
+  // check if branching constraint of grandparent is tight
+  bool canMoveNodes = checkGrandparent();
 
+  if(!canMoveNodes)
+    return false;
+
+  node.parent_ = grandParent.parent_;
+  grandParent.parent_ = kNode;
+  // change bounds of grandParent
+  grandParent.lower_[
 
 
 }

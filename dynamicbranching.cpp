@@ -1,3 +1,44 @@
+/**********************************************************************
+TODO:
+
+If we swap two nodes (parent and grandparent) then we should check if anything
+has been explored under GP after the swap, and if not, just get rid of GP and
+everything below.
+
+If strong branching fixed anything in the grandparent we may still swap it
+with the parent (we don't do it yet, see the test on
+strong_branching_fixed_vars_), but those fixings must be moved to the parent as
+well.
+
+Same thing for locally valid cuts, if GP has them and GP is switched with P
+then locally valid cuts must be treated as generated in P.
+
+Same for reduced cost fixing :-(. If P has done any then P and GP can't be
+switched.
+
+Maybe the best solution is to create local information (strong branching, rc
+fixing, local cuts, etc.) only every so often, say every 10th level. Then that
+would block switches, but everywhere else we would be safe. Good question
+what is worth more: the switches or the local info.
+
+Alternative solution: Do not add local info to the tree, but keep it in a set
+of excluded clauses ala Todias Achterberg: Conflict Analysis in Mixed Integer
+Programming.
+
+We may want to disable fixing by strong branching completely and if such
+situation occurs then simply do the branch and one side will be fathomed
+immediately and we can try to switch.
+
+Bound modifications when nodes are swapped could be avoided if always start
+from original bounds and go back to root to apply all branching decisions. On
+the other hand, reduced cost fixing would be lost. And so would fixings by
+strong branching. Although both could be stored in an array keeping track of
+changes implied by the branching decisions.
+
+**********************************************************************
+
+
+**********************************************************************/
 #include "CoinTime.hpp"
 #include "OsiClpSolverInterface.hpp"
 
@@ -5,6 +46,8 @@
 // below needed for pathetic branch and bound code
 #include <vector>
 #include <map>
+
+class DBVectorNode;
 
 // Trivial class for Branch and Bound
 
@@ -32,11 +75,11 @@ public:
   // Constructor from current state (and list of integers)
   // Also chooses branching variable (if none set to -1)
   DBNodeSimple (OsiSolverInterface &model,
-                 int numberIntegers, int * integer,
-                 CoinWarmStart * basis);
+		int numberIntegers, int * integer,
+		CoinWarmStart * basis);
   void gutsOfConstructor (OsiSolverInterface &model,
-                 int numberIntegers, int * integer,
-                 CoinWarmStart * basis);
+			  int numberIntegers, int * integer,
+			  CoinWarmStart * basis);
   // Copy constructor 
   DBNodeSimple ( const DBNodeSimple &);
    
@@ -53,7 +96,16 @@ public:
 		 const double * originalUpper) const;
   inline void incrementDescendants()
   { descendants_++;}
+  // Tests if we can switch this node (this is the parent) with its parent
+  bool canSwitchParentWithGrandparent(const int* which,
+				      OsiSolverInterface & model,
+				      const int * original_lower,
+				      const int * original_upper,
+				      DBVectorNode & branchingTree);
+
   // Public data
+  // The id of the node
+  int node_id_;
   // Basis (should use tree, but not as wasteful as bounds!)
   CoinWarmStart * basis_;
   // Objective value (COIN_DBL_MAX) if spare node
@@ -74,6 +126,10 @@ public:
   int child_down_;
   // Right child
   int child_up_;
+  // Whether strong branching fixed variables when we branched on this node
+  bool strong_branching_fixed_vars_;
+  // Whether reduced cost fixing fixed anything in this node
+  bool reduced_cost_fixed_vars_;
   // Previous in chain
   int previous_;
   // Next in chain
@@ -86,6 +142,7 @@ public:
 
 
 DBNodeSimple::DBNodeSimple() :
+  node_id_(-1),
   basis_(NULL),
   objectiveValue_(COIN_DBL_MAX),
   variable_(-100),
@@ -96,6 +153,8 @@ DBNodeSimple::DBNodeSimple() :
   parent_(-1),
   child_down_(-1),
   child_up_(-1),
+  strong_branching_fixed_vars_(false),
+  reduced_cost_fixed_vars_(false),
   previous_(-1),
   next_(-1),
   lower_(NULL),
@@ -103,14 +162,15 @@ DBNodeSimple::DBNodeSimple() :
 {
 }
 DBNodeSimple::DBNodeSimple(OsiSolverInterface & model,
-		 int numberIntegers, int * integer,CoinWarmStart * basis)
+			   int numberIntegers, int * integer,CoinWarmStart * basis)
 {
   gutsOfConstructor(model,numberIntegers,integer,basis);
 }
 void
 DBNodeSimple::gutsOfConstructor(OsiSolverInterface & model,
-		 int numberIntegers, int * integer,CoinWarmStart * basis)
+				int numberIntegers, int * integer,CoinWarmStart * basis)
 {
+  node_id_ = -1;
   basis_ = basis;
   variable_=-1;
   way_=WAY_UNSET;
@@ -120,6 +180,8 @@ DBNodeSimple::gutsOfConstructor(OsiSolverInterface & model,
   parent_ = -1;
   child_down_ = -1;
   child_up_ = -1;
+  strong_branching_fixed_vars_ = false;
+  reduced_cost_fixed_vars_ = false;
   previous_ = -1;
   next_ = -1;
   if (model.isProvenOptimal()&&!model.isDualObjectiveLimitReached()) {
@@ -370,6 +432,7 @@ DBNodeSimple::gutsOfConstructor(OsiSolverInterface & model,
 
 DBNodeSimple::DBNodeSimple(const DBNodeSimple & rhs) 
 {
+  node_id_=rhs.node_id_;
   if (rhs.basis_)
     basis_=rhs.basis_->clone();
   else
@@ -383,6 +446,8 @@ DBNodeSimple::DBNodeSimple(const DBNodeSimple & rhs)
   parent_ = rhs.parent_;
   child_down_ = rhs.child_down_;
   child_up_ = rhs.child_up_;
+  strong_branching_fixed_vars_ = rhs.strong_branching_fixed_vars_;
+  reduced_cost_fixed_vars_ = rhs.reduced_cost_fixed_vars_;
   previous_ = rhs.previous_;
   next_ = rhs.next_;
   lower_=NULL;
@@ -401,6 +466,7 @@ DBNodeSimple::operator=(const DBNodeSimple & rhs)
 {
   if (this != &rhs) {
     gutsOfDestructor();
+    node_id_=rhs.node_id_;
     if (rhs.basis_)
       basis_=rhs.basis_->clone();
     objectiveValue_=rhs.objectiveValue_;
@@ -412,6 +478,8 @@ DBNodeSimple::operator=(const DBNodeSimple & rhs)
     parent_ = rhs.parent_;
     child_down_ = rhs.child_down_;
     child_up_ = rhs.child_up_;
+    strong_branching_fixed_vars_ = rhs.strong_branching_fixed_vars_;
+    reduced_cost_fixed_vars_ = rhs.reduced_cost_fixed_vars_;
     previous_ = rhs.previous_;
     next_ = rhs.next_;
     if (rhs.lower_!=NULL) {
@@ -445,8 +513,8 @@ DBNodeSimple::gutsOfDestructor()
 // Extension - true if other extension of this
 bool 
 DBNodeSimple::extension(const DBNodeSimple & other,
-			 const double * originalLower,
-			 const double * originalUpper) const
+			const double * originalLower,
+			const double * originalUpper) const
 {
   bool ok=true;
   for (int i=0;i<numberIntegers_;i++) {
@@ -464,11 +532,7 @@ DBNodeSimple::extension(const DBNodeSimple & other,
 
 #include <vector>
 #define FUNNY_BRANCHING 1
-#define FUNNY_TREE
-#ifndef FUNNY_TREE
-// Vector of DBNodeSimples 
-typedef std::vector<DBNodeSimple>    DBVectorNode;
-#else
+
 // Must code up by hand
 class DBVectorNode  {
   
@@ -489,14 +553,20 @@ public:
   inline int size() const
   { return size_-sizeDeferred_;}
   // Push
-  void push_back(const DBNodeSimple & node);
+  void push_back(DBNodeSimple & node); // the node_id_ of node will change
   // Last one in (or other criterion)
   DBNodeSimple back() const;
   // Get rid of last one
   void pop_back();
   // Works out best one
   int best() const;
-  
+  // Rearranges the tree
+  void moveNodeUp(const int* which,
+		  OsiSolverInterface& model, DBNodeSimple & node);
+  // It changes the bounds of the descendants of node with node_id
+  void changeDescendantBounds(const int node_id, const bool lower_bd,
+			      const int brvar, const int new_bd);
+
   // Public data
   // Maximum size
   int maximumSize_;
@@ -572,7 +642,7 @@ DBVectorNode::~DBVectorNode ()
 }
 // Push
 void 
-DBVectorNode::push_back(const DBNodeSimple & node)
+DBVectorNode::push_back(DBNodeSimple & node)
 {
   if (size_==maximumSize_) {
     assert (firstSpare_==size_);
@@ -596,6 +666,7 @@ DBVectorNode::push_back(const DBNodeSimple & node)
   assert (nodes_[firstSpare_].previous_<0);
   int next = nodes_[firstSpare_].next_;
   nodes_[firstSpare_]=node;
+  nodes_[firstSpare_].node_id_ = firstSpare_;
   if (last_>=0) {
     assert (nodes_[last_].next_==-1);
     nodes_[last_].next_=firstSpare_;
@@ -676,52 +747,194 @@ DBVectorNode::pop_back()
   assert (size_>0);
   size_--;
 }
-#endif
+
+static double
+compute_val_for_ray(const OsiSolverInterface& model)
+{
+  const std::vector<double*> dual_rays = model.getDualRays(1);
+  if (dual_rays.size() == 0) {
+    printf("WARNING: LP is infeas, but no dual ray is returned!\n");
+    return 0;
+  }
+  const double* dual_ray = dual_rays[0];
+  const double direction = model.getObjSense();
+  const double* rub = model.getRowUpper();
+  const double* rlb = model.getRowLower();
+  const double* cub = model.getColUpper();
+  const double* clb = model.getColLower();
+  const double* dj  = model.getReducedCost();
+  const double* obj = model.getObjCoefficients();
+  const int numRows = model.getNumRows();
+  const int numCols = model.getNumCols();
+  double yb_plus_rl_minus_su = 0;
+  for (int i = 0; i < numRows; ++i) {
+    const double ray_i = dual_ray[i];
+    if (ray_i > 1e-6) {
+      yb_plus_rl_minus_su += ray_i*rlb[i];
+    } else if (ray_i < 1e-6) {
+      yb_plus_rl_minus_su += ray_i*rub[i];
+    }
+  }
+  for (int j = 0; j < numCols; ++j) {
+    const double yA_j = dj[j] - obj[j];
+    if (direction * yA_j > 1e-6) {
+      yb_plus_rl_minus_su -= yA_j*cub[j];
+    } else if (direction * yA_j < -1e-6) {
+      yb_plus_rl_minus_su -= yA_j*clb[j];
+    }
+  }
+  for (int i = dual_rays.size()-1; i >= 0; --i) {
+    delete[] dual_rays[i];
+  }
+  return yb_plus_rl_minus_su;
+}
 
 bool
-DBNodeSimple::isGrandparentIrrelevant()
+DBNodeSimple::canSwitchParentWithGrandparent(const int* which,
+					     OsiSolverInterface & model,
+					     const int * original_lower,
+					     const int * original_upper,
+					     DBVectorNode & branchingTree)
 {
+  /*
+    The current node ('this') is really the parent (P) and the solution in the
+    model represents the child. The grandparent (GP) is this.parent_. Let's have
+    variable names respecting the truth.
+  */
 #if !defined(FUNNY_BRANCHING)
   return false;
 #endif
 
-  if (parent_ == -1) {
+  const int parent_id = node_id_;
+  const DBNodeSimple& parent = branchingTree.nodes_[parent_id];
+  const int grandparent_id = parent.parent_;
+
+  if (grandparent_id == -1) {
     // can't flip root higher up...
     return false;
   }
+  const DBNodeSimple& grandparent = branchingTree.nodes_[grandparent_id];
   
   if (model.isProvenDualInfeasible()) {
     // THINK: this is not going to happen, but if it does, what should we do???
     return false;
   }
+
+  if (parent.strong_branching_fixed_vars_ || parent.reduced_cost_fixed_vars_ ||
+      grandparent.strong_branching_fixed_vars_) {
+    return false;
+  }
+  
+  const double direction = model.getObjSense();
+
+  const int GP_brvar = grandparent.variable_;
+  const int GP_brvar_fullid = which[GP_brvar];
+  const bool parent_is_down_child = parent_id == grandparent.child_down_;
+
   if (model.isProvenPrimalInfeasible()) {
-    ...;
+    const int greatgrandparent_id = grandparent.parent_;
+    const int x = GP_brvar_fullid; // for easier reference... we'll use s_x
+
+    /*
+      Now we are going to check that if we relax the GP's branching decision
+      then the child's LP relaxation is still infeasible. The test is done by
+      checking whether the column (or its negative) of the GP's branching
+      variable cuts off the dual ray proving the infeasibility.
+    */
+    
+    const double* dj = model.getReducedCost();
+    const double* obj = model.getObjCoefficients();
+    const double yA_x = dj[x] - obj[x];
+    bool canSwitch = true;
+
+    if (direction > 0) { // minimization problem
+      if (parent_is_down_child) {
+	const double s_x = CoinMax(yA_x, -1e-8);
+	if (s_x > 1e-6) { // if 0 then canSwitch can stay true
+	  const double yb_plus_rl_minus_su = compute_val_for_ray(model);
+	  if (yb_plus_rl_minus_su < 1e-8) {
+	    printf("WARNING: yb_plus_rl_minus_su is not positive!\n");
+	    canSwitch = false;
+	  } else {
+	    const double max_u_x = yb_plus_rl_minus_su / s_x + model.getColUpper()[x];
+	    const double u_x_without_GP = greatgrandparent_id >= 0 ?
+	      branchingTree.nodes_[greatgrandparent_id].upper_[GP_brvar] :
+	      original_upper[GP_brvar];
+	    canSwitch = max_u_x > u_x_without_GP - 1e-8;
+	  }
+	}
+      } else {
+	const double r_x = CoinMax(yA_x, -1e-8);
+	if (r_x > 1e-6) { // if 0 then canSwitch can stay true
+	  const double yb_plus_rl_minus_su = compute_val_for_ray(model);
+	  if (yb_plus_rl_minus_su < 1e-8) {
+	    printf("WARNING: yb_plus_rl_minus_su is not positive!\n");
+	    canSwitch = false;
+	  } else {
+	    const double min_l_x = - yb_plus_rl_minus_su / r_x + model.getColLower()[x];
+	    const double l_x_without_GP = greatgrandparent_id >= 0 ?
+	      branchingTree.nodes_[greatgrandparent_id].lower_[GP_brvar] :
+	      original_lower[GP_brvar];
+	    canSwitch = min_l_x < l_x_without_GP + 1e-8;
+	  }
+	}
+      }
+    } else { // maximization problem
+      if (parent_is_down_child) {
+	const double s_x = CoinMin(yA_x, 1e-8);
+	if (s_x < -1e-6) { // if 0 then canSwitch can stay true
+	  const double yb_plus_rl_minus_su = compute_val_for_ray(model);
+	  if (yb_plus_rl_minus_su > -1e-8) {
+	    printf("WARNING: yb_plus_rl_minus_su is not negative!\n");
+	    canSwitch = false;
+	  } else {
+	    const double max_u_x = yb_plus_rl_minus_su / s_x + model.getColUpper()[x];
+	    const double u_x_without_GP = greatgrandparent_id >= 0 ?
+	      branchingTree.nodes_[greatgrandparent_id].upper_[GP_brvar] :
+	      original_upper[GP_brvar];
+	    canSwitch = max_u_x > u_x_without_GP - 1e-8;
+	  }
+	}
+      } else {
+	const double r_x = CoinMin(yA_x, 1e-8);
+	if (r_x > -1e-6) { // if 0 then canSwitch can stay true
+	  const double yb_plus_rl_minus_su = compute_val_for_ray(model);
+	  if (yb_plus_rl_minus_su > -1e-8) {
+	    printf("WARNING: yb_plus_rl_minus_su is not negative!\n");
+	    canSwitch = false;
+	  } else {
+	    const double min_l_x = - yb_plus_rl_minus_su / r_x + model.getColLower()[x];
+	    const double l_x_without_GP = greatgrandparent_id >= 0 ?
+	      branchingTree.nodes_[greatgrandparent_id].lower_[GP_brvar] :
+	      original_lower[GP_brvar];
+	    canSwitch = min_l_x < l_x_without_GP + 1e-8;
+	  }
+	}
+      }
+    }
+
+    return canSwitch;
   }
   // Both primal and dual feasible, and in this case we don't care how we have
   // stopped (iteration limit, obj val limit, time limit, optimal solution,
   // etc.), we can just look at the reduced costs to figure out if the
   // grandparent is irrelevant. Remember, we are using dual simplex!
-  const DBNodeSimple& parent = branchingTree.nodes_[parent_];
-  const int iColumn = which[parent.variable_];
-  double djValue = model.getReducedCost()[iColumn]*direction;
-  const bool down_child = branchingTree.nodeIndex(node) == parent.child_down_;
-  if (djValue>1.0e-6) {
+  double djValue = model.getReducedCost()[GP_brvar_fullid]*direction;
+  if (djValue > 1.0e-6) {
     // wants to go down
-    if (down_child) {
+    if (parent_is_down_child) {
       return true;
     }
-    const double up_lower = std::floor(parent.value_);
-    if (model.getColLower()[iColumn] > up_lower) {
+    if (model.getColLower()[GP_brvar_fullid] > std::ceil(grandparent.value_)) {
       return true;
     }
     return false;
-  } else {
+  } else if (djValue < -1.0e-6) {
     // wants to go up
-    if (!down_child) {
+    if (! parent_is_down_child) {
       return true;
     }
-    const double down_upper = std::ceil(parent.value_);
-    if (model.getColUpper()[iColumn] < down_upper) {
+    if (model.getColUpper()[GP_brvar_fullid] < std::floor(grandparent.value_)) {
       return true;
     }
     return false;
@@ -730,94 +943,107 @@ DBNodeSimple::isGrandparentIrrelevant()
 }
 
 void
-DBVectorNode::moveNodeUp()
+DBVectorNode::moveNodeUp(const int* which,
+			 OsiSolverInterface& model, DBNodeSimple & node)
 {
-  assert(parent != -1);
-  const int parent_id = node.parent_;
-  const DBNodeSimple& parent = branchingTree.nodes_[parent_id];
-  const int node_id = branchingTree.nodeIndex(node);
-  const bool node_is_down_child = node_id == parent.child_down_;
+  /*
+    The current node ('this') is really the parent (P) and the solution in the
+    model represents the child. The grandparent (GP) is this.parent_. Let's have
+    variable names respecting the truth.
+  */
+  const int parent_id = node.node_id_;
+  DBNodeSimple& parent = nodes_[parent_id];
   const int grandparent_id = parent.parent_;
+  assert(grandparent_id != -1);
+  DBNodeSimple& grandparent = nodes_[grandparent_id];
+  const int greatgrandparent_id = grandparent.parent_;
+  
+  const bool parent_is_down_child = parent_id == grandparent.child_down_;
 
   // First hang the nodes where they belong.
-  node.parent_ = grandparent_id;
-  parent.parent_ = node_id;
-#if 1
-  int& child_to_move = (node.way_ & DOWN_CURRENT) ? node.child_up_ : node.child_down_;
-  if (node_is_down_child) {
-    parent.child_down_ = child_to_move;
+  parent.parent_ = greatgrandparent_id;
+  grandparent.parent_ = parent_id;
+  const bool down_child_stays_with_parent = parent.way_ & DBNodeSimple::DOWN_CURRENT;
+  int& child_to_move =
+    down_child_stays_with_parent ? parent.child_up_ : parent.child_down_;
+  if (parent_is_down_child) {
+    grandparent.child_down_ = child_to_move;
   } else {
-    parent.child_up_ = child_to_move;
+    grandparent.child_up_ = child_to_move;
   }
   if (child_to_move >= 0) {
-    branchingTree.nodes_[child_to_move].parent_ = parent_id;
+    nodes_[child_to_move].parent_ = grandparent_id;
   }
-  child_to_move = parent_id;
-#else
-  if (node.way_ & DOWN_CURRENT) {
-    if (node_is_down_child) {
-      parent.child_down_ = node.child_up_;
+  child_to_move = grandparent_id;
+  if (greatgrandparent_id >= 0) {
+    DBNodeSimple& greatgrandparent = nodes_[greatgrandparent_id];
+    if (grandparent_id == greatgrandparent.child_down_) {
+      greatgrandparent.child_down_ = parent_id;
     } else {
-      parent.child_up_ = node.child_up_;
-    }
-    if (node.child_up_ >= 0) {
-      branchingTree.nodes_[node.child_up_].parent_ = parent_id;
-    }
-    node.child_up_ = parent_id;
-  } else { // must be UP_CURRENT
-    if (node_is_down_child) {
-      parent.child_down_ = node.child_down_;
-    } else {
-      parent.child_up_ = node.child_down_;
-    }
-    if (node.child_down_ >= 0) {
-      branchingTree.nodes_[node.child_down_].parent_ = parent_id;
-    }
-    node.child_down_ = parent_id;
-  }
-#endif
-  if (grandparent_id >= 0) {
-    if (parent_id == branchingTree.nodes_[grandparent_id].child_down_) {
-      branchingTree.nodes_[grandparent_id].child_down_ = node_id;
-    } else {
-      branchingTree.nodes_[grandparent_id].child_up_ = node_id;
+      greatgrandparent.child_up_ = parent_id;
     }
   }
 
   // Now modify bounds
 
-  // THINK: could be avoided if always start from original bounds and go back
-  // to root to apply all branching decisions. On the other hand, reduced cost
-  // fixing would be lost. And so would fixings by strong branching. Actually,
-  // what we'd ideally need to do is to apply flipping when strong branching
-  // fixes a variable.
+  // First, get rid of GP's bound change of its branching variable in the
+  // bound list of P. Note: If greatgrandparent_id is < 0 then GP is the root
+  // so its bounds are the original bounds.
+  const int GP_brvar = grandparent.variable_;
+  if (parent_is_down_child) {
+    const int old_upper = greatgrandparent_id >= 0 ?
+      nodes_[greatgrandparent_id].upper_[GP_brvar] :
+      grandparent.upper_[GP_brvar];
+    parent.upper_[GP_brvar] = old_upper;
+    model.setColUpper(which[GP_brvar], old_upper);
+  } else {
+    const int old_lower = greatgrandparent_id >= 0 ?
+      nodes_[greatgrandparent_id].lower_[GP_brvar] :
+      grandparent.lower_[GP_brvar];
+    parent.lower_[GP_brvar] = old_lower;
+    model.setColLower(which[GP_brvar], old_lower);
+  }
+  // THINK: this might not be necessary
+  model.resolve();
+
+  // Now add the branching var bound change of P to GP and all of its
+  // descendant
+  const int P_brvar = parent.variable_;
+  const double P_value = parent.value_;
+  int new_bd;
+  if (down_child_stays_with_parent) {
+    // Former up child of P is now the down child of GP, so we need to change
+    // bounds of GP, its up child and descendants of that one.
+    new_bd = (int)std::ceil(P_value);
+    grandparent.lower_[P_brvar] = new_bd;
+    changeDescendantBounds(grandparent.child_up_,
+			   true /*lower bd*/, P_brvar, new_bd);
+  } else {
+    // Former down child of P is now the up child of GP, so we need to change
+    // bounds of GP, its down child and descendants of that one.
+    new_bd = (int)floor(P_value);
+    grandparent.upper_[P_brvar] = new_bd;
+    changeDescendantBounds(grandparent.child_down_,
+			   false /*lower bd*/, P_brvar, new_bd);
+  }
 }
 
-
-
-
-
-bool moveNodes(OsiSolverInterface & model,
-	       DBVectorNode & branchingTree,
-	       int kNode)
+void
+DBVectorNode::changeDescendantBounds(const int node_id, const bool lower_bd,
+				     const int brvar, const int new_bd)
 {
-
-  DBNodeSimple & node = branchingTree[kNode];
-  DBNodeSimple & grandParent = branchingTree[node.parent_];
-  int grandParentVariable = grandParent.variable_;
-  // check if branching constraint of grandparent is tight
-  bool canMoveNodes = checkGrandparent();
-
-  if(!canMoveNodes)
-    return false;
-
-  node.parent_ = grandParent.parent_;
-  grandParent.parent_ = kNode;
-  // change bounds of grandParent
-  grandParent.lower_[
-
-
+  if (node_id == -1) {
+    return;
+  }
+  changeDescendantBounds(nodes_[node_id].child_down_, lower_bd, brvar, new_bd);
+  changeDescendantBounds(nodes_[node_id].child_up_, lower_bd, brvar, new_bd);
+  if (lower_bd) {
+    nodes_[node_id].lower_[brvar] = new_bd;
+  } else {
+    nodes_[node_id].upper_[brvar] = new_bd;
+  }
 }
+
 
 // Invoke solver's built-in enumeration algorithm
 void 
@@ -880,10 +1106,6 @@ branchAndBound(OsiSolverInterface & model) {
     // For printing totals
     int numberIterations=0;
     int numberNodes =0;
-    int nRedundantUp=0;
-    int nRedundantDown=0;
-    int nRedundantUp2=0;
-    int nRedundantDown2=0;
     DBNodeSimple bestNode;
     ////// Start main while of branch and bound
     // while until nothing on stack
@@ -906,23 +1128,23 @@ branchAndBound(OsiSolverInterface & model) {
 	node.incrementDescendants();
 	bool down_branch = true;
 	switch (node.way_) {
-	case WAY_UNSET:
-	case DOWN_UP__BOTH_DONE:
-	case UP_DOWN__BOTH_DONE:
+	case DBNodeSimple::WAY_UNSET:
+	case DBNodeSimple::DOWN_UP__BOTH_DONE:
+	case DBNodeSimple::UP_DOWN__BOTH_DONE:
 	  abort();
-	case DOWN_UP__NOTHING_DONE:
-	  node.way_ = DOWN_UP__DOWN_DONE;
+	case DBNodeSimple::DOWN_UP__NOTHING_DONE:
+	  node.way_ = DBNodeSimple::DOWN_UP__DOWN_DONE;
 	  break;
-	case DOWN_UP__DOWN_DONE:
-	  node.way_ = DOWN_UP__BOTH_DONE:
+	case DBNodeSimple::DOWN_UP__DOWN_DONE:
+	  node.way_ = DBNodeSimple::DOWN_UP__BOTH_DONE;
 	  down_branch = false;
 	  break;
-	case UP_DOWN__NOTHING_DONE:
-	  node.way_ = UP_DOWN__UP_DONE:
+	case DBNodeSimple::UP_DOWN__NOTHING_DONE:
+	  node.way_ = DBNodeSimple::UP_DOWN__UP_DONE;
 	  down_branch = false;
 	  break;
-	case UP_DOWN__UP_DONE:
-	  node.way_ = UP_DOWN__BOTH_DONE;
+	case DBNodeSimple::UP_DOWN__UP_DONE:
+	  node.way_ = DBNodeSimple::UP_DOWN__BOTH_DONE;
 	  break;
 	}
         if (down_branch) {
@@ -946,7 +1168,9 @@ branchAndBound(OsiSolverInterface & model) {
         double cutoff;
         model.getDblParam(OsiDualObjectiveLimit,cutoff);
         double gap=(cutoff-model.getObjValue())*direction+1.0e-4;
-	//        double gap=(cutoff-modelPtr_->objectiveValue())*direction+1.0e-4;
+	//        double
+	//        gap=(cutoff-modelPtr_->objectiveValue())*direction+1.0e-4;
+	bool did_reduced_cost_fixing_for_child = false;
         if (gap<1.0e10&&model.isProvenOptimal()&&!model.isDualObjectiveLimitReached()) {
           const double * dj = model.getReducedCost();
           const double * lower = model.getColLower();
@@ -966,234 +1190,49 @@ branchAndBound(OsiSolverInterface & model) {
               }
             }
           }
-          //if (nFixed0+nFixed1)
-          //printf("%d fixed to lower, %d fixed to upper\n",nFixed0,nFixed1);
-        }
-	if (model.isAbandoned()) {
-	  // THINK: What the heck should we do???
-	  abort();
-	}
-	while (node.isGrandparentIrrelevant()) {
-	  branchingTree.moveNodeUp(node);
-	}
-
-
-
-
-	if (!model.isIterationLimitReached()) {
-	  if (model.isProvenOptimal()&&!model.isDualObjectiveLimitReached()) {
-#if FUNNY_BRANCHING
-	    // See if branched variable off bounds
-	    const double * dj = model.getReducedCost();
-	    const double * lower = model.getColLower();
-	    const double * upper = model.getColUpper();
-	    const double * solution = model.getColSolution();
-	    // Better to use "natural" value - need flag to say fixed
-	    for (i=0;i<numberIntegers;i++) {
-	      iColumn=which[i];
-	      relaxedLower[i]=originalLower[i];
-	      relaxedUpper[i]=originalUpper[i];
-	      double djValue = dj[iColumn]*direction;
-	      if (djValue>1.0e-6) {
-		// wants to go down
-		if (lower[iColumn]>originalLower[i]) {
-		  // Lower bound active
-		  relaxedLower[i]=(int) lower[iColumn];
-		}
-		if (upper[iColumn]<originalUpper[i]) {
-		  // Upper bound NOT active
-		}
-	      } else if (djValue<-1.0e-6) {
-		// wants to go up
-		if (lower[iColumn]>originalLower[i]) {
-		  // Lower bound NOT active
-		}
-		if (upper[iColumn]<originalUpper[i]) {
-		  // Upper bound active
-		  relaxedUpper[i]=(int) upper[iColumn];
-		}
+          if (nFixed0+nFixed1) {
+	    // 	    printf("%d fixed to lower, %d fixed to upper\n",
+	    // 		   nFixed0,nFixed1);
+	    did_reduced_cost_fixing_for_child = true;
+	  }
+	  if (model.isAbandoned()) {
+	    // THINK: What the heck should we do???
+	    abort();
+	  }
+	  while (node.canSwitchParentWithGrandparent(which, model,
+						     originalLower,
+						     originalUpper,
+						     branchingTree)) {
+	    branchingTree.moveNodeUp(which, model, node);
+	  }
+	  if (!model.isIterationLimitReached()) {
+	    if (model.isProvenOptimal()&&!model.isDualObjectiveLimitReached()) {
+	      if ((numberNodes%1000)==0) 
+		printf("%d nodes, tree size %d\n",
+		       numberNodes,branchingTree.size());
+	      if (CoinCpuTime()-time1>3600.0) {
+		printf("stopping after 3600 seconds\n");
+		exit(77);
 	      }
-	    }
-	    // See if can do anything
-	    {
-	      /*
-		If kNode is on second branch then
-		a) If other feasible could free up as well
-		b) If other infeasible could do something clever.
-		For now - we have to give up
-	      */
-	      int jNode=branchingTree.nodes_[kNode].parent_;
-	      bool canDelete = (branchingTree.nodes_[kNode].descendants_<2);
-	      while (jNode>=0) {
-		DBNodeSimple & node = branchingTree.nodes_[jNode];
-		int next = node.parent_;
-		if (node.descendants_<2) {
-		  int variable = node.variable_;
-		  iColumn=which[variable];
-		  double value = node.value_;
-		  double djValue = dj[iColumn]*direction;
-		  assert (node.way_==2||node.way_==-2);
-		  // we don't know which branch it was - look at current bounds
-		  if (upper[iColumn]<value&&node.lower_[variable]<upper[iColumn]) {
-		    // must have been down branch
-		    if (djValue>1.0e-3||solution[iColumn]<upper[iColumn]-1.0e-5) {
-		      if (canDelete) {
-			nRedundantDown++;
-#if 1
-			printf("%d redundant branch down with value %g current upper %g solution %g dj %g\n",
-			       variable,node.value_,upper[iColumn],solution[iColumn],djValue);
-#endif
-			node.descendants_=2; // ignore
-			branchingTree.sizeDeferred_++;
-			int newUpper = originalUpper[variable];
-			if (next>=0) {
-			  DBNodeSimple & node2 = branchingTree.nodes_[next];
-			  newUpper = node2.upper_[variable];
-			}
-			if (branchingTree.nodes_[jNode].parent_!=next)
-			  assert (newUpper>upper[iColumn]);
-			model.setColUpper(iColumn,newUpper);
-			int kNode2=next;
-			int jNode2=branchingTree.nodes_[kNode].parent_;
-			assert (newUpper>branchingTree.nodes_[kNode].upper_[variable]);
-			branchingTree.nodes_[kNode].upper_[variable]= newUpper;
-			while (jNode2!=kNode2) {
-			  DBNodeSimple & node2 = branchingTree.nodes_[jNode2];
-			  int next = node2.parent_;
-			  if (next!=kNode2)
-			    assert (newUpper>node2.upper_[variable]);
-			  node2.upper_[variable]= newUpper;
-			  jNode2=next;
-			}
-		      } else {
-			// can't delete but can add other way to jNode
-			nRedundantDown2++;
-			DBNodeSimple & node2 = branchingTree.nodes_[kNode];
-			assert (node2.way_==2||node2.way_==-2);
-			double value2 = node2.value_;
-			int variable2 = node2.variable_;
-			int iColumn2 = which[variable2];
-			if (variable != variable2) {
-			  if (node2.way_==2&&upper[iColumn2]<value2) {
-			    // must have been down branch which was done - carry over
-			    int newUpper = (int) floor(value2);
-			    assert (newUpper<node.upper_[variable2]);
-			    node.upper_[variable2]=newUpper;
-			  } else if (node2.way_==-2&&lower[iColumn2]>value2) {
-			    // must have been up branch which was done - carry over
-			    int newLower = (int) ceil(value2);
-			    assert (newLower>node.lower_[variable2]);
-			    node.lower_[variable2]=newLower;
-			  }
-			  if (node.lower_[variable2]>node.upper_[variable2]) {
-			    // infeasible
-			    node.descendants_=2; // ignore
-			    branchingTree.sizeDeferred_++;
-			  }
-			}
-		      }
-		      break;
-		    } 		
-		    // we don't know which branch it was - look at current bounds
-		  } else if (lower[iColumn]>value&&node.upper_[variable]>lower[iColumn]) {
-		    // must have been up branch
-		    if (djValue<-1.0e-3||solution[iColumn]>lower[iColumn]+1.0e-5) {
-		      if (canDelete) {
-			nRedundantUp++;
-#if 1
-			printf("%d redundant branch up with value %g current lower %g solution %g dj %g\n",
-			       variable,node.value_,lower[iColumn],solution[iColumn],djValue);
-#endif
-			node.descendants_=2; // ignore
-			branchingTree.sizeDeferred_++;
-			int newLower = originalLower[variable];
-			if (next>=0) {
-			  DBNodeSimple & node2 = branchingTree.nodes_[next];
-			  newLower = node2.lower_[variable];
-			}
-			if (branchingTree.nodes_[jNode].parent_!=next)
-			  assert (newLower<lower[iColumn]);
-			model.setColLower(iColumn,newLower);
-			int kNode2=next;
-			int jNode2=branchingTree.nodes_[kNode].parent_;
-			assert (newLower<branchingTree.nodes_[kNode].lower_[variable]);
-			branchingTree.nodes_[kNode].lower_[variable]= newLower;
-			while (jNode2!=kNode2) {
-			  DBNodeSimple & node2 = branchingTree.nodes_[jNode2];
-			  int next = node2.parent_;
-			  if (next!=kNode2)
-			    assert (newLower<node2.lower_[variable]);
-			  node2.lower_[variable]=newLower;
-			  jNode2=next;
-			}
-		      } else {
-			// can't delete but can add other way to jNode
-			nRedundantUp2++;
-			DBNodeSimple & node2 = branchingTree.nodes_[kNode];
-			assert (node2.way_==2||node2.way_==-2);
-			double value2 = node2.value_;
-			int variable2 = node2.variable_;
-			int iColumn2 = which[variable2];
-			if (variable != variable2) {
-			  if (node2.way_==2&&upper[iColumn2]<value2) {
-			    // must have been down branch which was done - carry over
-			    int newUpper = (int) floor(value2);
-			    assert (newUpper<node.upper_[variable2]);
-			    node.upper_[variable2]=newUpper;
-			  } else if (node2.way_==-2&&lower[iColumn2]>value2) {
-			    // must have been up branch which was done - carry over
-			    int newLower = (int) ceil(value2);
-			    assert (newLower>node.lower_[variable2]);
-			    node.lower_[variable2]=newLower;
-			  }
-			  if (node.lower_[variable2]>node.upper_[variable2]) {
-			    // infeasible
-			    node.descendants_=2; // ignore
-			    branchingTree.sizeDeferred_++;
-			  }
-			}
-		      }
-		      break;
-		    } 		
-		  }
-		} else {
-		  break;
-		}
-		jNode=next;
+	      DBNodeSimple newNode(model,numberIntegers,which,ws);
+	      // something extra may have been fixed by strong branching
+	      // if so go round again
+	      while (newNode.variable_==numberIntegers) {
+		model.resolve();
+		newNode = DBNodeSimple(model,numberIntegers,which,model.getWarmStart());
+		newNode.strong_branching_fixed_vars_ = true;
 	      }
-	    }
-	    // solve
-	    //resolve();
-	    //assert(!getIterationCount());
-	    if ((numberNodes%1000)==0) 
-	      printf("%d nodes, redundant down %d (%d) up %d (%d) tree size %d\n",
-		     numberNodes,nRedundantDown,nRedundantDown2,nRedundantUp,nRedundantUp2,branchingTree.size());
-#else
-	    if ((numberNodes%1000)==0) 
-	      printf("%d nodes, tree size %d\n",
-		     numberNodes,branchingTree.size());
-#endif
-	    if (CoinCpuTime()-time1>3600.0) {
-	      printf("stopping after 3600 seconds\n");
-	      exit(77);
-	    }
-	    DBNodeSimple newNode(model,numberIntegers,which,ws);
-	    // something extra may have been fixed by strong branching
-	    // if so go round again
-	    while (newNode.variable_==numberIntegers) {
-	      model.resolve();
-	      newNode = DBNodeSimple(model,numberIntegers,which,model.getWarmStart());
-	    }
-	    if (newNode.objectiveValue_<1.0e100) {
-	      if (newNode.variable_>=0) 
-		assert (fabs(newNode.value_-floor(newNode.value_+0.5))>1.0e-6);
-	      newNode.parent_ = kNode;
-	      // push on stack
-	      branchingTree.push_back(newNode);
-	      if(branchingTree.nodes_[kNode].child_down_ < 0)
-		branchingTree.nodes_[kNode].child_down_ = branchingTree.last_;
-	      else
-		branchingTree.nodes_[kNode].child_up_ = branchingTree.last_;
+	      newNode.reduced_cost_fixed_vars_ = did_reduced_cost_fixing_for_child;
+	      if (newNode.objectiveValue_<1.0e100) {
+		if (newNode.variable_>=0) 
+		  assert (fabs(newNode.value_-floor(newNode.value_+0.5))>1.0e-6);
+		newNode.parent_ = kNode;
+		// push on stack
+		branchingTree.push_back(newNode);
+		if(branchingTree.nodes_[kNode].child_down_ < 0)
+		  branchingTree.nodes_[kNode].child_down_ = branchingTree.last_;
+		else
+		  branchingTree.nodes_[kNode].child_up_ = branchingTree.last_;
 #if 0
 	      } else {
 		// integer solution - save
@@ -1204,7 +1243,7 @@ branchAndBound(OsiSolverInterface & model) {
 			 <<bestNode.objectiveValue_
 			 <<" found after "<<numberIterations
 			 <<" iterations and "<<numberNodes<<" nodes"
-                 <<std::endl;
+			 <<std::endl;
 	      }
 #endif
 	    }

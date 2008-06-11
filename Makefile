@@ -2,7 +2,7 @@ COININSTDIR = $(HOME)/COIN/Osi/0.98/build
 CXX = g++
 CXXFLAGS = -g -Wall -I$(COININSTDIR)/include/coin
 
-LDFLAGS  = -Wl,-rpath,-L$(COININSTDIR)/lib
+LDFLAGS  = -Wl,-rpath,$(COININSTDIR)/lib
 LDFLAGS += -L$(COININSTDIR)/lib
 LDFLAGS += -lOsiClp 
 LDFLAGS += -lOsi 

@@ -531,7 +531,7 @@ DBNodeSimple::extension(const DBNodeSimple & other,
 }
 
 #include <vector>
-#define FUNNY_BRANCHING 1
+// #define FUNNY_BRANCHING 1
 
 // Must code up by hand
 class DBVectorNode  {
@@ -699,12 +699,10 @@ DBVectorNode::best() const
   chosen_=-1;
   if (chosen_<0) {
     chosen_=last_;
-#if FUNNY_BRANCHING
     while (nodes_[chosen_].descendants_==2) {
       chosen_ = nodes_[chosen_].previous_;
       assert (chosen_>=0);
     }
-#endif
   }
   return chosen_;
 }
@@ -1194,63 +1192,63 @@ branchAndBound(OsiSolverInterface & model) {
 	    // 		   nFixed0,nFixed1);
 	    did_reduced_cost_fixing_for_child = true;
 	  }
-	  if (model.isAbandoned()) {
-	    // THINK: What the heck should we do???
-	    abort();
-	  }
-	  if (model.isIterationLimitReached()) {
-	    // maximum iterations - exit
-	    std::cout<<"Exiting on maximum iterations\n";
-	    break;
-	  }
+	}
+	if (model.isAbandoned()) {
+	  // THINK: What the heck should we do???
+	  abort();
+	}
+	if (model.isIterationLimitReached()) {
+	  // maximum iterations - exit
+	  std::cout<<"Exiting on maximum iterations\n";
+	  break;
+	}
 
-	  while (node.canSwitchParentWithGrandparent(which, model,
-						     originalLower,
-						     originalUpper,
-						     branchingTree)) {
-	    branchingTree.moveNodeUp(which, model, node);
+	while (node.canSwitchParentWithGrandparent(which, model,
+						   originalLower,
+						   originalUpper,
+						   branchingTree)) {
+	  branchingTree.moveNodeUp(which, model, node);
+	}
+	if ((numberNodes%1000)==0) 
+	  printf("%d nodes, tree size %d\n",
+		 numberNodes,branchingTree.size());
+	if (CoinCpuTime()-time1>3600.0) {
+	  printf("stopping after 3600 seconds\n");
+	  exit(77);
+	}
+	DBNodeSimple newNode(model,numberIntegers,which,ws);
+	// something extra may have been fixed by strong branching
+	// if so go round again
+	while (newNode.variable_==numberIntegers) {
+	  model.resolve();
+	  newNode = DBNodeSimple(model,numberIntegers,which,model.getWarmStart());
+	  newNode.strong_branching_fixed_vars_ = true;
+	}
+	newNode.reduced_cost_fixed_vars_ = did_reduced_cost_fixing_for_child;
+	if (newNode.objectiveValue_<1.0e100) {
+	  newNode.parent_ = kNode;
+	  // push on stack
+	  branchingTree.push_back(newNode);
+	  if(branchingTree.nodes_[kNode].child_down_ < 0)
+	    branchingTree.nodes_[kNode].child_down_ = branchingTree.last_;
+	  else
+	    branchingTree.nodes_[kNode].child_up_ = branchingTree.last_;
+	  if (newNode.variable_>=0) {
+	    assert (fabs(newNode.value_-floor(newNode.value_+0.5))>1.0e-6);
 	  }
-	  if ((numberNodes%1000)==0) 
-	    printf("%d nodes, tree size %d\n",
-		   numberNodes,branchingTree.size());
-	  if (CoinCpuTime()-time1>3600.0) {
-	    printf("stopping after 3600 seconds\n");
-	    exit(77);
-	  }
-	  DBNodeSimple newNode(model,numberIntegers,which,ws);
-	  // something extra may have been fixed by strong branching
-	  // if so go round again
-	  while (newNode.variable_==numberIntegers) {
-	    model.resolve();
-	    newNode = DBNodeSimple(model,numberIntegers,which,model.getWarmStart());
-	    newNode.strong_branching_fixed_vars_ = true;
-	  }
-	  newNode.reduced_cost_fixed_vars_ = did_reduced_cost_fixing_for_child;
-	  if (newNode.objectiveValue_<1.0e100) {
-	    newNode.parent_ = kNode;
-	    // push on stack
-	    branchingTree.push_back(newNode);
-	    if(branchingTree.nodes_[kNode].child_down_ < 0)
-	      branchingTree.nodes_[kNode].child_down_ = branchingTree.last_;
-	    else
-	      branchingTree.nodes_[kNode].child_up_ = branchingTree.last_;
-	    if (newNode.variable_>=0) {
-	      assert (fabs(newNode.value_-floor(newNode.value_+0.5))>1.0e-6);
-	    }
 #if 0
-	    else {
-	      // integer solution - save
-	      bestNode = node;
-	      // set cutoff (hard coded tolerance)
-	      model.setDblParam(OsiDualObjectiveLimit,(bestNode.objectiveValue_-1.0e-5)*direction);
-	      std::cout<<"Integer solution of "
-		       <<bestNode.objectiveValue_
-		       <<" found after "<<numberIterations
-		       <<" iterations and "<<numberNodes<<" nodes"
-		       <<std::endl;
-	    }
-#endif
+	  else {
+	    // integer solution - save
+	    bestNode = node;
+	    // set cutoff (hard coded tolerance)
+	    model.setDblParam(OsiDualObjectiveLimit,(bestNode.objectiveValue_-1.0e-5)*direction);
+	    std::cout<<"Integer solution of "
+		     <<bestNode.objectiveValue_
+		     <<" found after "<<numberIterations
+		     <<" iterations and "<<numberNodes<<" nodes"
+		     <<std::endl;
 	  }
+#endif
 	}
       } else {
         // Integer solution - save
@@ -1312,5 +1310,8 @@ branchAndBound(OsiSolverInterface & model) {
 
 int main(int argc, char* argv[])
 {
+  OsiClpSolverInterface model;
+  model.readMps(argv[1]);
+  branchAndBound(model);
   return 0;
 }

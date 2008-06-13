@@ -5851,7 +5851,8 @@ int
                   generator1.setMaxElements(100);
                   generator1.setMaxElementsRoot(200);
                   generator1.setMaxLookRoot(50);
-                  generator1.setMaxLookRoot(123);
+		  if (saveSolver->getNumCols()>3000)
+		    generator1.setMaxProbeRoot(123);
                   generator1.setRowCuts(3);
 		  if ((tunePreProcess&1)!=0) {
 		    // heavy probing

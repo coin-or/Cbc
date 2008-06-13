@@ -3413,8 +3413,10 @@ void CbcModel::branchAndBound(int doStatistics)
 	numberSolutions_ < intParam_[CbcMaxNumSol] &&
 	totalTime < dblParam_[CbcMaximumSeconds] &&
 	!stoppedOnGap_&&!eventHappened_)) {
-      if (tree_->size())
-	tree_->cleanTree(this,-COIN_DBL_MAX,bestPossibleObjective_) ;
+      if (tree_->size()) {
+	double dummyBest;
+	tree_->cleanTree(this,-COIN_DBL_MAX,dummyBest) ;
+      }
       delete nextRowCut_;
       if (stoppedOnGap_)
 	{ messageHandler()->message(CBC_GAP,messages())

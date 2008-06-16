@@ -54,16 +54,18 @@ class DBVectorNode;
 class DBNodeSimple  {
 public:
   enum DBNodeWay {
-    DOWN_UP__NOTHING_DONE=0x11,
-    DOWN_UP__DOWN_DONE=0x12,
-    DOWN_UP__BOTH_DONE=0x14,
-    DOWN_UP__=0x10,
-    UP_DOWN__NOTHING_DONE=0x21,
-    UP_DOWN__UP_DONE=0x24,
-    UP_DOWN__BOTH_DONE=0x22,
-    UP_DOWN__=0x20,
-    DOWN_CURRENT=0x02,
-    UP_CURRENT=0x04,
+    WAY_DOWN_UP__NOTHING_DONE=0x10,
+    WAY_DOWN_UP__DOWN_DONE=0x11,
+    WAY_DOWN_UP__BOTH_DONE=0x13,
+    WAY_DOWN_UP__=0x10,
+    WAY_UP_DOWN__NOTHING_DONE=0x20,
+    WAY_UP_DOWN__UP_DONE=0x22,
+    WAY_UP_DOWN__BOTH_DONE=0x23,
+    WAY_UP_DOWN__=0x20,
+    WAY_DOWN_CURRENT=0x01,
+    WAY_UP_CURRENT=0x02,
+    WAY_BOTH_DONE=0x03,
+    
     WAY_UNSET
   };
   
@@ -94,14 +96,15 @@ public:
   bool extension(const DBNodeSimple & other,
 		 const double * originalLower,
 		 const double * originalUpper) const;
-  inline void incrementDescendants()
-  { descendants_++;}
   // Tests if we can switch this node (this is the parent) with its parent
   bool canSwitchParentWithGrandparent(const int* which,
 				      OsiSolverInterface & model,
 				      const int * original_lower,
 				      const int * original_upper,
 				      DBVectorNode & branchingTree);
+  inline bool bothChildDone() const {
+    return (way_ & WAY_BOTH_DONE) == WAY_BOTH_DONE;
+  }
 
   // Public data
   // The id of the node
@@ -118,8 +121,6 @@ public:
   int numberIntegers_;
   // Current value
   double value_;
-  // Number of descendant nodes (so 2 is in interior)
-  int descendants_;
   // Parent 
   int parent_;
   // Left child
@@ -149,7 +150,6 @@ DBNodeSimple::DBNodeSimple() :
   way_(WAY_UNSET),
   numberIntegers_(0),
   value_(0.5),
-  descendants_(-1),
   parent_(-1),
   child_down_(-1),
   child_up_(-1),
@@ -173,10 +173,9 @@ DBNodeSimple::gutsOfConstructor(OsiSolverInterface & model,
   node_id_ = -1;
   basis_ = basis;
   variable_=-1;
-  way_=WAY_UNSET;
+  way_ = WAY_UNSET;
   numberIntegers_=numberIntegers;
   value_=0.0;
-  descendants_ = 0;
   parent_ = -1;
   child_down_ = -1;
   child_up_ = -1;
@@ -280,9 +279,9 @@ DBNodeSimple::gutsOfConstructor(OsiSolverInterface & model,
     double nearest = floor(value+0.5);
     value_=value;
     if (value<=nearest)
-      way_=UP_DOWN__NOTHING_DONE; // up
+      way_ = WAY_UP_DOWN__NOTHING_DONE; // up
     else
-      way_=DOWN_UP__NOTHING_DONE; // down
+      way_ = WAY_DOWN_UP__NOTHING_DONE; // down
   } else if (numberStrong) {
     // more than one - choose
     bool chooseOne=true;
@@ -391,9 +390,9 @@ DBNodeSimple::gutsOfConstructor(OsiSolverInterface & model,
 	    value = min(value,(double) upper_[variable_]);
 	    value_=value;
 	    if (upMovement[i]<=downMovement[i])
-	      way_=UP_DOWN__NOTHING_DONE; // up
+	      way_ = WAY_UP_DOWN__NOTHING_DONE; // up
 	    else
-	      way_=DOWN_UP__NOTHING_DONE; // down
+	      way_ = WAY_DOWN_UP__NOTHING_DONE; // down
 	  }
 	}
       }
@@ -422,9 +421,9 @@ DBNodeSimple::gutsOfConstructor(OsiSolverInterface & model,
       variable_=i;
       value_=value;
       if (value<=nearest)
-	way_=UP_DOWN__NOTHING_DONE; // up
+	way_ = WAY_UP_DOWN__NOTHING_DONE; // up
       else
-	way_=DOWN_UP__NOTHING_DONE; // down
+	way_ = WAY_DOWN_UP__NOTHING_DONE; // down
     }
   }
 #endif
@@ -442,7 +441,6 @@ DBNodeSimple::DBNodeSimple(const DBNodeSimple & rhs)
   way_=rhs.way_;
   numberIntegers_=rhs.numberIntegers_;
   value_=rhs.value_;
-  descendants_ = rhs.descendants_;
   parent_ = rhs.parent_;
   child_down_ = rhs.child_down_;
   child_up_ = rhs.child_up_;
@@ -474,7 +472,6 @@ DBNodeSimple::operator=(const DBNodeSimple & rhs)
     way_=rhs.way_;
     numberIntegers_=rhs.numberIntegers_;
     value_=rhs.value_;
-    descendants_ = rhs.descendants_;
     parent_ = rhs.parent_;
     child_down_ = rhs.child_down_;
     child_up_ = rhs.child_up_;
@@ -531,7 +528,7 @@ DBNodeSimple::extension(const DBNodeSimple & other,
 }
 
 #include <vector>
-// #define FUNNY_BRANCHING 1
+#define FUNNY_BRANCHING 1
 
 // Must code up by hand
 class DBVectorNode  {
@@ -687,8 +684,7 @@ DBVectorNode::push_back(DBNodeSimple & node)
   chosen_ = -1;
   //best();
   size_++;
-  assert (node.descendants_<=2);
-  if (node.descendants_==2)
+  if (node.bothChildDone())
     sizeDeferred_++;
 }
 // Works out best one
@@ -699,7 +695,7 @@ DBVectorNode::best() const
   chosen_=-1;
   if (chosen_<0) {
     chosen_=last_;
-    while (nodes_[chosen_].descendants_==2) {
+    while (nodes_[chosen_].bothChildDone()) {
       chosen_ = nodes_[chosen_].previous_;
       assert (chosen_>=0);
     }
@@ -719,7 +715,7 @@ DBVectorNode::pop_back()
 {
   // Temporary until more sophisticated
   //assert (last_==chosen_);
-  if (nodes_[chosen_].descendants_==2)
+  if (nodes_[chosen_].bothChildDone())
     sizeDeferred_--;
   int previous = nodes_[chosen_].previous_;
   int next = nodes_[chosen_].next_;
@@ -961,7 +957,7 @@ DBVectorNode::moveNodeUp(const int* which,
   // First hang the nodes where they belong.
   parent.parent_ = greatgrandparent_id;
   grandparent.parent_ = parent_id;
-  const bool down_child_stays_with_parent = parent.way_ & DBNodeSimple::DOWN_CURRENT;
+  const bool down_child_stays_with_parent = parent.way_ & DBNodeSimple::WAY_DOWN_CURRENT;
   int& child_to_move =
     down_child_stays_with_parent ? parent.child_up_ : parent.child_down_;
   if (parent_is_down_child) {
@@ -982,6 +978,56 @@ DBVectorNode::moveNodeUp(const int* which,
     }
   }
 
+  // Now make sure way_ is set properly
+  if (down_child_stays_with_parent) {
+    if (!parent.bothChildDone()) {
+      parent.way_ = DBNodeSimple::WAY_UP_DOWN__BOTH_DONE;
+      sizeDeferred_++;
+    }
+    if (grandparent.bothChildDone()) {
+      if (child_to_move == -1) {
+	grandparent.way_ = parent_is_down_child ?
+	  DBNodeSimple::WAY_UP_DOWN__UP_DONE :
+	  DBNodeSimple::WAY_DOWN_UP__DOWN_DONE;
+	sizeDeferred_--;
+      }
+    } else { // only parent is processed from the two children of grandparent
+      if (child_to_move == -1) {
+	grandparent.way_ = parent_is_down_child ?
+	  DBNodeSimple::WAY_DOWN_UP__NOTHING_DONE :
+	  DBNodeSimple::WAY_UP_DOWN__NOTHING_DONE;
+      } else {
+	grandparent.way_ = parent_is_down_child ?
+	  DBNodeSimple::WAY_DOWN_UP__DOWN_DONE :
+	  DBNodeSimple::WAY_UP_DOWN__UP_DONE;
+      }
+    }
+  } else {
+    if (!parent.bothChildDone()) {
+      parent.way_ = DBNodeSimple::WAY_DOWN_UP__BOTH_DONE;
+      sizeDeferred_++;
+    }
+    if (grandparent.bothChildDone()) {
+      if (child_to_move == -1) {
+	grandparent.way_ = parent_is_down_child ?
+	  DBNodeSimple::WAY_UP_DOWN__UP_DONE :
+	  DBNodeSimple::WAY_DOWN_UP__DOWN_DONE;
+	sizeDeferred_--;
+      }
+    } else { // only parent is processed from the two children of grandparent
+      if (child_to_move == -1) {
+	grandparent.way_ = parent_is_down_child ?
+	  DBNodeSimple::WAY_DOWN_UP__NOTHING_DONE :
+	  DBNodeSimple::WAY_UP_DOWN__NOTHING_DONE;
+      } else {
+	grandparent.way_ = parent_is_down_child ?
+	  DBNodeSimple::WAY_DOWN_UP__DOWN_DONE :
+	  DBNodeSimple::WAY_UP_DOWN__UP_DONE;
+      }
+    }
+  }
+  
+  
   // Now modify bounds
 
   // First, get rid of GP's bound change of its branching variable in the
@@ -1111,9 +1157,24 @@ branchAndBound(OsiSolverInterface & model) {
       DBNodeSimple node = branchingTree.back();
       int kNode = branchingTree.chosen_;
       branchingTree.pop_back();
-      assert (node.descendants_<2);
+      assert (! node.bothChildDone());
       numberNodes++;
-      if (node.variable_>=0) {
+      if (node.variable_ < 0) {
+	// put back on tree and pretend both children are done. We want the
+	// whole tree all the time.
+	node.way_ = DBNodeSimple::WAY_UP_DOWN__BOTH_DONE;
+	branchingTree.push_back(node);
+        // Integer solution - save
+        bestNode = node;
+        // set cutoff (hard coded tolerance)
+	const double limit = (bestNode.objectiveValue_-1.0e-5)*direction;
+        model.setDblParam(OsiDualObjectiveLimit, limit);
+        std::cout<<"Integer solution of "
+                 <<bestNode.objectiveValue_
+                 <<" found after "<<numberIterations
+                 <<" iterations and "<<numberNodes<<" nodes"
+                 <<std::endl;
+      } else {
         // branch - do bounds
         for (i=0;i<numberIntegers;i++) {
           iColumn=which[i];
@@ -1122,26 +1183,25 @@ branchAndBound(OsiSolverInterface & model) {
         // move basis
         model.setWarmStart(node.basis_);
         // do branching variable
-	node.incrementDescendants();
 	bool down_branch = true;
 	switch (node.way_) {
 	case DBNodeSimple::WAY_UNSET:
-	case DBNodeSimple::DOWN_UP__BOTH_DONE:
-	case DBNodeSimple::UP_DOWN__BOTH_DONE:
+	case DBNodeSimple::WAY_DOWN_UP__BOTH_DONE:
+	case DBNodeSimple::WAY_UP_DOWN__BOTH_DONE:
 	  abort();
-	case DBNodeSimple::DOWN_UP__NOTHING_DONE:
-	  node.way_ = DBNodeSimple::DOWN_UP__DOWN_DONE;
+	case DBNodeSimple::WAY_DOWN_UP__NOTHING_DONE:
+	  node.way_ = DBNodeSimple::WAY_DOWN_UP__DOWN_DONE;
 	  break;
-	case DBNodeSimple::DOWN_UP__DOWN_DONE:
-	  node.way_ = DBNodeSimple::DOWN_UP__BOTH_DONE;
+	case DBNodeSimple::WAY_DOWN_UP__DOWN_DONE:
+	  node.way_ = DBNodeSimple::WAY_DOWN_UP__BOTH_DONE;
 	  down_branch = false;
 	  break;
-	case DBNodeSimple::UP_DOWN__NOTHING_DONE:
-	  node.way_ = DBNodeSimple::UP_DOWN__UP_DONE;
+	case DBNodeSimple::WAY_UP_DOWN__NOTHING_DONE:
+	  node.way_ = DBNodeSimple::WAY_UP_DOWN__UP_DONE;
 	  down_branch = false;
 	  break;
-	case DBNodeSimple::UP_DOWN__UP_DONE:
-	  node.way_ = DBNodeSimple::UP_DOWN__BOTH_DONE;
+	case DBNodeSimple::WAY_UP_DOWN__UP_DONE:
+	  node.way_ = DBNodeSimple::WAY_UP_DOWN__BOTH_DONE;
 	  break;
 	}
         if (down_branch) {
@@ -1229,7 +1289,7 @@ branchAndBound(OsiSolverInterface & model) {
 	  newNode.parent_ = kNode;
 	  // push on stack
 	  branchingTree.push_back(newNode);
-	  if(branchingTree.nodes_[kNode].child_down_ < 0)
+	  if(branchingTree.nodes_[kNode].way_ & DBNodeSimple::WAY_DOWN_CURRENT)
 	    branchingTree.nodes_[kNode].child_down_ = branchingTree.last_;
 	  else
 	    branchingTree.nodes_[kNode].child_up_ = branchingTree.last_;
@@ -1250,16 +1310,6 @@ branchAndBound(OsiSolverInterface & model) {
 	  }
 #endif
 	}
-      } else {
-        // Integer solution - save
-        bestNode = node;
-        // set cutoff (hard coded tolerance)
-        model.setDblParam(OsiDualObjectiveLimit,(bestNode.objectiveValue_-1.0e-5)*direction);
-        std::cout<<"Integer solution of "
-                 <<bestNode.objectiveValue_
-                 <<" found after "<<numberIterations
-                 <<" iterations and "<<numberNodes<<" nodes"
-                 <<std::endl;
       }
     }
     ////// End main while of branch and bound

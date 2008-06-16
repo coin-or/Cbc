@@ -42,6 +42,7 @@ changes implied by the branching decisions.
 #include "CoinTime.hpp"
 #include "OsiClpSolverInterface.hpp"
 
+//#define DEBUG_DYNAMIC_BRANCHING
 
 // below needed for pathetic branch and bound code
 #include <vector>
@@ -954,12 +955,25 @@ DBVectorNode::moveNodeUp(const int* which,
   
   const bool parent_is_down_child = parent_id == grandparent.child_down_;
 
+#if defined(DEBUG_DYNAMIC_BRANCHING)
+  printf("entered moveNodeUp\n");
+  printf("parent_id %d grandparent_id %d greatgrandparent_id %d\n",
+	 parent_id, grandparent_id, greatgrandparent_id);
+  printf("parent.way_ %d\n", parent.way_);
+#endif
+
+
   // First hang the nodes where they belong.
   parent.parent_ = greatgrandparent_id;
   grandparent.parent_ = parent_id;
   const bool down_child_stays_with_parent = parent.way_ & DBNodeSimple::WAY_DOWN_CURRENT;
   int& child_to_move =
     down_child_stays_with_parent ? parent.child_up_ : parent.child_down_;
+
+#if defined(DEBUG_DYNAMIC_BRANCHING)
+  printf("parent_is_down_child %d down_child_stays_with_parent %d child_to_move %d\n", parent_is_down_child, down_child_stays_with_parent, child_to_move);
+#endif
+
   if (parent_is_down_child) {
     grandparent.child_down_ = child_to_move;
   } else {
@@ -977,6 +991,21 @@ DBVectorNode::moveNodeUp(const int* which,
       greatgrandparent.child_up_ = parent_id;
     }
   }
+
+#if defined(DEBUG_DYNAMIC_BRANCHING)
+  printf("after exchange\n");
+  printf("parent.parent_ %d parent.child_down_ %d parent.child_up_ %d\n",
+	 parent.parent_, parent.child_down_, parent.child_up_);
+  printf("grandparent.parent_ %d grandparent.child_down_ %d grandparent.child_up_ %d\n",
+	 grandparent.parent_, grandparent.child_down_, grandparent.child_up_);
+  if (greatgrandparent_id >= 0) {
+    DBNodeSimple& greatgrandparent = nodes_[greatgrandparent_id];
+    printf("greatgrandparent.parent_ %d greatgrandparent.child_down_ %d greatgrandparent.child_up_ %d\n",
+	 greatgrandparent.parent_, greatgrandparent.child_down_, greatgrandparent.child_up_);
+  }
+  printf("exiting moveNodeUp\n");
+#endif
+
 
   // Now make sure way_ is set properly
   if (down_child_stays_with_parent) {
@@ -1026,7 +1055,6 @@ DBVectorNode::moveNodeUp(const int* which,
       }
     }
   }
-  
   
   // Now modify bounds
 
@@ -1153,10 +1181,22 @@ branchAndBound(OsiSolverInterface & model) {
     ////// Start main while of branch and bound
     // while until nothing on stack
     while (branchingTree.size()) {
+#if defined(DEBUG_DYNAMIC_BRANCHING)
+      printf("branchingTree.size = %d %d\n",branchingTree.size(),branchingTree.size_);
+      printf("i node_id parent child_down child_up\n");
+      for(int k=0; k<branchingTree.size_; k++) {
+	DBNodeSimple& node = branchingTree.nodes_[k];
+	printf("%d %d %d %d %d\n",k, node.node_id_, node.parent_,
+	       node.child_down_, node.child_up_);
+      }
+#endif
       // last node
       DBNodeSimple node = branchingTree.back();
       int kNode = branchingTree.chosen_;
       branchingTree.pop_back();
+#if defined(DEBUG_DYNAMIC_BRANCHING)
+      printf("Deleted current parent %d %d\n",branchingTree.size(),branchingTree.size_);
+#endif
       assert (! node.bothChildDone());
       numberNodes++;
       if (node.variable_ < 0) {
@@ -1212,6 +1252,9 @@ branchAndBound(OsiSolverInterface & model) {
 	// put back on tree anyway regardless whether any processing is left
 	// to be done. We want the whole tree all the time.
 	branchingTree.push_back(node);
+#if defined(DEBUG_DYNAMIC_BRANCHING)
+      printf("Added current parent %d %d\n",branchingTree.size(),branchingTree.size_);
+#endif
 	
         // solve
         model.resolve();
@@ -1268,6 +1311,15 @@ branchAndBound(OsiSolverInterface & model) {
 						   originalUpper,
 						   branchingTree)) {
 	  branchingTree.moveNodeUp(which, model, node);
+#if defined(DEBUG_DYNAMIC_BRANCHING)
+	  printf("It moved a node up. The current state is:\n");
+	  printf("i node_id parent child_down child_up\n");
+	  for(int k=0; k<branchingTree.size_; k++) {
+	    DBNodeSimple& node = branchingTree.nodes_[k];
+	    printf("%d %d %d %d %d\n",k, node.node_id_, node.parent_,
+	       node.child_down_, node.child_up_);
+	  }
+#endif
 	}
 	if ((numberNodes%1000)==0) 
 	  printf("%d nodes, tree size %d\n",
@@ -1289,6 +1341,9 @@ branchAndBound(OsiSolverInterface & model) {
 	  newNode.parent_ = kNode;
 	  // push on stack
 	  branchingTree.push_back(newNode);
+#if defined(DEBUG_DYNAMIC_BRANCHING)
+      printf("Added current child %d %d\n",branchingTree.size(),branchingTree.size_);
+#endif
 	  if(branchingTree.nodes_[kNode].way_ & DBNodeSimple::WAY_DOWN_CURRENT)
 	    branchingTree.nodes_[kNode].child_down_ = branchingTree.last_;
 	  else

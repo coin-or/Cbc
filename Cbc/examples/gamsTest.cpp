@@ -399,15 +399,35 @@ void semicon1(int& error_count, int& warning_count) {
          ++error_count;
       }
       }
-      for (int i=0; i<numcols; ++i) {
-         cout << "Reduced cost variable " << i << " in model: " << model.getReducedCost()[i]
-        << "\t in solver: " << solver->getReducedCost()[i]
-        << "\t expected: " << redcost[i]
+      cout << "Reduced cost variable " << 0 << " in model: " << model.getReducedCost()[0]
+        << "\t in solver: " << solver->getReducedCost()[0]
+        << "\t expected: " << redcost[0]
         << endl;
-      if (CoinAbs(model.getReducedCost()[i]-redcost[i])>testtol || CoinAbs(solver->getReducedCost()[i]-redcost[i])>testtol) {
-         cerr << "Warning: Reduced cost incorrect." << endl;
-         ++warning_count;
+      if (CoinAbs(model.getReducedCost()[0]-redcost[0])>testtol || CoinAbs(solver->getReducedCost()[0]-redcost[0])>testtol) {
+      cerr << "Warning: Reduced cost incorrect." << endl;
+      ++warning_count;
       }
+      cout << "Reduced cost variable " << 3 << " in model: " << model.getReducedCost()[3]
+        << "\t in solver: " << solver->getReducedCost()[3]
+        << "\t expected: " << redcost[3]
+        << endl;
+      if (CoinAbs(model.getReducedCost()[3]-redcost[3])>testtol || CoinAbs(solver->getReducedCost()[3]-redcost[3])>testtol) {
+      cerr << "Warning: Reduced cost incorrect." << endl;
+      ++warning_count;
+      }
+      cout << "Reduced cost variable 1 plus - dual of row 0 in model: " << model.getReducedCost()[1]-model.getRowPrice()[0]
+        << "\t expected: " << redcost[1]
+        << endl;
+      if (CoinAbs(model.getReducedCost()[1]-model.getRowPrice()[0]-redcost[1])>testtol) {
+      cerr << "Warning: Reduced cost or row margin incorrect." << endl;
+      ++warning_count;
+      }
+      cout << "Reduced cost variable 2 plus + dual of row 1 in model: " << model.getReducedCost()[2]+model.getRowPrice()[1]
+        << "\t expected: " << redcost[2]
+        << endl;
+      if (CoinAbs(model.getReducedCost()[2]+model.getRowPrice()[1]-redcost[2])>testtol) {
+      cerr << "Warning: Reduced cost or row margin incorrect." << endl;
+      ++warning_count;
       }
       
       cout << "Row 2 marginal (price) in model: " << model.getRowPrice()[2] 
@@ -586,15 +606,28 @@ void semiint1(int& error_count, int& warning_count) {
          ++error_count;
       }
       }
-      for (int i=0; i<numcols; ++i) {
-         cout << "Reduced cost variable " << i << " in model: " << model.getReducedCost()[i]
-        << "\t in solver: " << solver->getReducedCost()[i]
-        << "\t expected: " << redcost[i]
+      cout << "Reduced cost variable " << 0 << " in model: " << model.getReducedCost()[0]
+        << "\t in solver: " << solver->getReducedCost()[0]
+        << "\t expected: " << redcost[0]
         << endl;
-      if (CoinAbs(model.getReducedCost()[i]-redcost[i])>testtol || CoinAbs(solver->getReducedCost()[i]-redcost[i])>testtol) {
-         cerr << "Warning: Reduced cost incorrect." << endl;
-         ++warning_count;
+      if (CoinAbs(model.getReducedCost()[0]-redcost[0])>testtol || CoinAbs(solver->getReducedCost()[0]-redcost[0])>testtol) {
+      cerr << "Warning: Reduced cost incorrect." << endl;
+      ++warning_count;
       }
+      cout << "Reduced cost variable " << 3 << " in model: " << model.getReducedCost()[3]
+        << "\t in solver: " << solver->getReducedCost()[3]
+        << "\t expected: " << redcost[3]
+        << endl;
+      if (CoinAbs(model.getReducedCost()[3]-redcost[3])>testtol || CoinAbs(solver->getReducedCost()[3]-redcost[3])>testtol) {
+      cerr << "Warning: Reduced cost incorrect." << endl;
+      ++warning_count;
+      }
+      cout << "Row 2 marginal (price) in model: " << model.getRowPrice()[2] 
+      << "\t in solver: " << solver->getRowPrice()[2]
+        << "\t expected: " << row2marg << endl;
+      if (CoinAbs(model.getRowPrice()[2]-row2marg)>testtol || CoinAbs(solver->getRowPrice()[2]-row2marg)>testtol) {
+         cerr << "Warning: Row price incorrect." << endl;
+         ++warning_count;
       }
       
       cout << "Row 2 marginal (price) in model: " << model.getRowPrice()[2] 

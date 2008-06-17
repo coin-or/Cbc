@@ -2411,7 +2411,8 @@ void CbcModel::branchAndBound(int doStatistics)
     if (!(numberNodes_ < intParam_[CbcMaxNumNode] &&
 	  numberSolutions_ < intParam_[CbcMaxNumSol] &&
 	  totalTime < maxSeconds &&
-	  !stoppedOnGap_&&!eventHappened_)) {
+	  !stoppedOnGap_&&!eventHappened_&&(maximumNumberIterations_<0||
+					    numberIterations_<maximumNumberIterations_))) {
       // out of loop
       break;
     }
@@ -3986,6 +3987,7 @@ CbcModel::CbcModel()
   searchStrategy_(-1),
   numberStrongIterations_(0),
   resolveAfterTakeOffCuts_(true),
+  maximumNumberIterations_(-1),
 #if NEW_UPDATE_OBJECT>1
   numberUpdateItems_(0),
   maximumNumberUpdateItems_(0),
@@ -4132,6 +4134,7 @@ CbcModel::CbcModel(const OsiSolverInterface &rhs)
   searchStrategy_(-1),
   numberStrongIterations_(0),
   resolveAfterTakeOffCuts_(true),
+  maximumNumberIterations_(-1),
 #if NEW_UPDATE_OBJECT>1
   numberUpdateItems_(0),
   maximumNumberUpdateItems_(0),
@@ -4364,6 +4367,7 @@ CbcModel::CbcModel(const CbcModel & rhs, bool noTree)
   searchStrategy_(rhs.searchStrategy_),
   numberStrongIterations_(rhs.numberStrongIterations_),
   resolveAfterTakeOffCuts_(rhs.resolveAfterTakeOffCuts_),
+  maximumNumberIterations_(rhs.maximumNumberIterations_),
 #if NEW_UPDATE_OBJECT>1
   numberUpdateItems_(rhs.numberUpdateItems_),
   maximumNumberUpdateItems_(rhs.maximumNumberUpdateItems_),
@@ -4490,6 +4494,7 @@ CbcModel::CbcModel(const CbcModel & rhs, bool noTree)
   ownership_ = 0x80000000;
   messageHandler()->setLogLevel(rhs.messageHandler()->logLevel());
   numberIntegers_=rhs.numberIntegers_;
+  randomNumberGenerator_ = rhs.randomNumberGenerator_;
   if (numberIntegers_) {
     integerVariable_ = new int [numberIntegers_];
     memcpy(integerVariable_,rhs.integerVariable_,numberIntegers_*sizeof(int));
@@ -4687,6 +4692,7 @@ CbcModel::operator=(const CbcModel& rhs)
       whichGenerator_ = CoinCopyOfArray(rhs.whichGenerator_,maximumWhich_);
     maximumRows_=0;
     currentDepth_ = 0;
+    randomNumberGenerator_ = rhs.randomNumberGenerator_;
     workingBasis_ = CoinWarmStartBasis();
     for (i=0;i<maximumStatistics_;i++)
       delete statistics_[i];
@@ -4703,6 +4709,7 @@ CbcModel::operator=(const CbcModel& rhs)
     numberOldActiveCuts_ = rhs.numberOldActiveCuts_;
     numberNewCuts_ = rhs.numberNewCuts_;
     resolveAfterTakeOffCuts_=rhs.resolveAfterTakeOffCuts_;
+    maximumNumberIterations_ = rhs.maximumNumberIterations_;
 #if NEW_UPDATE_OBJECT>1
     numberUpdateItems_ = rhs.numberUpdateItems_;
     maximumNumberUpdateItems_ = rhs.maximumNumberUpdateItems_;
@@ -5040,6 +5047,7 @@ CbcModel::gutsOfCopy(const CbcModel & rhs,int mode)
   maximumCutPasses_ =  rhs.maximumCutPasses_;
   preferredWay_ = rhs.preferredWay_;
   resolveAfterTakeOffCuts_ = rhs.resolveAfterTakeOffCuts_;
+  maximumNumberIterations_ = rhs.maximumNumberIterations_;
   numberThreads_ = rhs.numberThreads_;
   threadMode_ = rhs.threadMode_;
   memcpy(intParam_,rhs.intParam_,sizeof(intParam_));

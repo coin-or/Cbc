@@ -243,7 +243,64 @@ CbcCutGenerator::generateCuts( OsiCuts & cs , int fullScan, OsiSolverInterface *
 	info2->randomNumberGenerator=randomNumberGenerator;
 	generator->generateCutsAndModify(*solver,cs,info2);
       } else {
-	generator->generateCutsAndModify(*solver,cs,&info);
+	if ((numberTimes_==200||(numberTimes_>200&&(numberTimes_%2000)==0))
+	     &&!model_->parentModel()&&false) {
+	  // in tree, maxStack, maxProbe
+	  int test[]= {
+	    100123,
+	    199999,
+	    200123,
+	    299999,
+	    500123,
+	    599999,
+	    1000123,
+	    1099999,
+	    2000123,
+	    2099999};
+	  int n = (int) (sizeof(test)/sizeof(int));
+	  int saveStack = generator->getMaxLook();
+	  int saveNumber = generator->getMaxProbe();
+	  int kr1=0;
+	  int kc1=0;
+	  int bestStackTree=-1;
+	  int bestNumberTree=-1;
+	  for (int i=0;i<n;i++) {
+	    OsiCuts cs2 = cs;
+	    int stack = test[i]/100000;
+	    int number = test[i] - 100000*stack;
+	    generator->setMaxLook(stack);
+	    generator->setMaxProbe(number);
+	    generator_->generateCuts(*solver,cs2,info);
+	    int numberRowCuts = cs2.sizeRowCuts()-numberRowCutsBefore ;
+	    int numberColumnCuts= cs2.sizeColCuts()-numberColumnCutsBefore ;
+	    if (numberRowCuts<kr1||numberColumnCuts<kc1)
+	      printf("Odd ");
+	    if (numberRowCuts>kr1||numberColumnCuts>kc1) {
+	      printf("*** ");
+	      kr1=numberRowCuts;
+	      kc1=numberColumnCuts;
+	      bestStackTree=stack;
+	      bestNumberTree=number;
+	    }
+	    printf("maxStack %d number %d gives %d row cuts and %d column cuts\n",
+		   stack,number,numberRowCuts,numberColumnCuts);
+	  }
+	  generator->setMaxLook(saveStack);
+	  generator->setMaxProbe(saveNumber);
+	  if (bestStackTree>0) {
+	    generator->setMaxLook(bestStackTree);
+	    generator->setMaxProbe(bestNumberTree);
+	    printf("RRNumber %d -> %d, stack %d -> %d\n",
+		   saveNumber,bestNumberTree,saveStack,bestStackTree);
+	  } else {
+	    // no good
+	    generator->setMaxLook(1);
+	    printf("RRSwitching off number %d -> %d, stack %d -> %d\n",
+		   saveNumber,saveNumber,saveStack,1);
+	  }
+	}
+	if (generator->getMaxLook()>0)
+	  generator->generateCutsAndModify(*solver,cs,&info);
       }
       const double * tightLower = generator->tightLower();
       const double * lower = solver->getColLower();
@@ -413,6 +470,85 @@ CbcCutGenerator::generateCuts( OsiCuts & cs , int fullScan, OsiSolverInterface *
 	       generatorName_,numberColumnCutsAfter-numberColumnCutsBefore);
 #endif
 	numberColumnCuts_ += numberColumnCutsAfter-numberColumnCutsBefore;
+      }
+    }
+    {
+      int numberRowCutsAfter = cs.sizeRowCuts() ;
+      int k ;
+      int nEls=0;
+      int nCuts= numberRowCutsAfter-numberRowCutsBefore;
+      for (k = numberRowCutsBefore;k<numberRowCutsAfter;k++) {
+	OsiRowCut thisCut = cs.rowCut(k) ;
+	int n=thisCut.row().getNumElements();
+	nEls+= n;
+      }
+      //printf("%s has %d cuts and %d elements\n",generatorName_,
+      //     nCuts,nEls);
+      int nElsNow = solver->getMatrixByCol()->getNumElements();
+      if (nEls*8>nElsNow+8000+10000000) {
+	//printf("need to remove cuts\n");
+	// just add most effective
+	int numberColumns = solver->getNumCols();
+	int nReasonable = CoinMax(5*numberColumns,nElsNow/8);
+	int nDelete = nEls - nReasonable;
+	nElsNow = nEls;
+	const double * solution = solver->getColSolution();
+	double * sort = new double [nCuts];
+	int * which = new int [nCuts];
+	for (k = numberRowCutsBefore;k<numberRowCutsAfter;k++) {
+	  OsiRowCut thisCut = cs.rowCut(k) ;
+	  double sum=0.0;
+	  if (thisCut.lb()<=thisCut.ub()) {
+	    int n=thisCut.row().getNumElements();
+	    const int * column = thisCut.row().getIndices();
+	    const double * element = thisCut.row().getElements();
+	    assert (n);
+	    for (int i=0;i<n;i++) {
+	      double value = element[i];
+	      sum += value*solution[column[i]];
+	    }
+	    if (sum>thisCut.ub()) {
+	      sum= sum-thisCut.ub();
+	    } else if (sum<thisCut.lb()) {
+	      sum= thisCut.lb()-sum;
+	    } else {
+	      printf("ffffffffffffffff odd\n");
+	      sum=0.0;
+	    }
+	  } else {
+	    // keep
+	    sum=COIN_DBL_MAX;
+	  }
+	  sort[k-numberRowCutsBefore]=sum;
+	  which[k-numberRowCutsBefore]=k;
+	}
+	CoinSort_2(sort,sort+nCuts,which);
+	k=0;
+	while (nDelete>0) {
+	  int iCut=which[k];
+	  OsiRowCut thisCut = cs.rowCut(iCut) ;
+	  int n=thisCut.row().getNumElements();
+	  nDelete-=n; 
+	  k++;
+	}
+	std::sort(which,which+k);
+	k--;
+	for (;k>=0;k--) {
+	  cs.eraseRowCut(which[k]);
+	}
+	delete [] sort;
+	delete [] which;
+	int numberRowCutsAfter = cs.sizeRowCuts() ;
+	nEls=0;
+	nCuts= numberRowCutsAfter-numberRowCutsBefore;
+	for (k = numberRowCutsBefore;k<numberRowCutsAfter;k++) {
+	  OsiRowCut thisCut = cs.rowCut(k) ;
+	  int n=thisCut.row().getNumElements();
+	  nEls+= n;
+	}
+	printf("%s NOW has %d cuts and %d elements( down from %d els)\n",
+	       generatorName_,
+	       nCuts,nEls,nElsNow);
       }
     }
 #ifdef CBC_DEBUG

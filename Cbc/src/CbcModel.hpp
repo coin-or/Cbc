@@ -1744,12 +1744,21 @@ public:
   /// Get a pointer to probing info
   inline CglTreeProbingInfo * probingInfo() const
   { return probingInfo_;}
+  /// Thread specific random number generator
+  inline CoinThreadRandom * randomNumberGenerator()
+  { return &randomNumberGenerator_;}
   /// Set the number of iterations done in strong branching.
   inline void setNumberStrongIterations(int number)
   { numberStrongIterations_ = number;}
   /// Get the number of iterations done in strong branching.
   inline int numberStrongIterations() const
   { return numberStrongIterations_;}
+  /// Get maximum number of iterations (designed to be used in heuristics)
+  inline int maximumNumberIterations() const
+  { return maximumNumberIterations_;}
+  /// Set maximum number of iterations (designed to be used in heuristics)
+  inline void setMaximumNumberIterations(int value)
+  { maximumNumberIterations_ = value;}
 # ifdef COIN_HAS_CLP
   /// Set depth for fast nodes
   inline void setFastNodeDepth(int value) 
@@ -2115,6 +2124,8 @@ private:
   int maximumRows_;
   /// Current depth
   int currentDepth_;
+  /// Thread specific random number generator
+  mutable CoinThreadRandom randomNumberGenerator_;
   /// Work basis for temporary use
   CoinWarmStartBasis workingBasis_;
   /// Which cut generator generated this cut
@@ -2160,6 +2171,8 @@ private:
   OsiBabSolver * solverCharacteristics_;
   /// Whether to force a resolve after takeOffCuts
   bool resolveAfterTakeOffCuts_;
+  /// Maximum number of iterations (designed to be used in heuristics)
+  int maximumNumberIterations_;
 #if NEW_UPDATE_OBJECT>1
   /// Number of outstanding update information items
   int numberUpdateItems_;

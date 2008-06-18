@@ -639,6 +639,14 @@
 				</FileConfiguration>
 			</File>
 			<File
+				RelativePath="..\..\..\src\CbcHeuristicDiveLineSearch.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\..\src\CbcHeuristicDivePseudoCost.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\..\src\CbcHeuristicDiveVectorLength.cpp"
 				>
 				<FileConfiguration
@@ -1079,6 +1087,14 @@
 			</File>
 			<File
 				RelativePath="..\..\..\src\CbcHeuristicDiveGuided.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\..\src\CbcHeuristicDiveLineSearch.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\..\src\CbcHeuristicDivePseudoCost.hpp"
 				>
 			</File>
 			<File

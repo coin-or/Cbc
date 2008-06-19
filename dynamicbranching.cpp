@@ -891,6 +891,7 @@ DBNodeSimple::canSwitchParentWithGrandparent(const int* which,
     return false;
   } else {
     assert(model.isProvenPrimalInfeasible());
+    return false;
     const int greatgrandparent_id = grandparent.parent_;
     const int x = GP_brvar_fullid; // for easier reference... we'll use s_x
 
@@ -1341,8 +1342,10 @@ branchAndBound(OsiSolverInterface & model) {
 	if (canSwitch) {
 	  for(int k=0; k<branchingTree.size_; k++) {
 	    DBNodeSimple& node = branchingTree.nodes_[k];
-	    sprintf(line, "%d %d %d 0x%x %d %d\n",
-		    k, node.node_id_, node.parent_, node.way_,
+	    sprintf(line, "%d %d %d %d %d %d 0x%x %d %d\n",
+		    k, node.node_id_, node.parent_, node.variable_,
+		    node.lower_[node.variable_],
+		    node.upper_[node.variable_], node.way_,
 		    node.child_down_, node.child_up_);
 	    tree0 += line;
 	  }
@@ -1362,15 +1365,17 @@ branchAndBound(OsiSolverInterface & model) {
 	  std::string tree1;
 	  for(int k=0; k<branchingTree.size_; k++) {
 	    DBNodeSimple& node = branchingTree.nodes_[k];
-	    sprintf(line, "%d %d %d 0x%x %d %d\n",
-		    k, node.node_id_, node.parent_, node.way_,
+	    sprintf(line, "%d %d %d %d %d %d 0x%x %d %d\n",
+		    k, node.node_id_, node.parent_, node.variable_, 
+		    node.lower_[node.variable_],
+		    node.upper_[node.variable_], node.way_,
 		    node.child_down_, node.child_up_);
 	    tree1 += line;
 	  }
 	  printf("=====================================\n");
 	  printf("It can move node %i up. way_: 0x%x   brvar: %i\n",
 		 node.node_id_, node.way_, node.variable_);
-	  printf("i node_id parent child_down child_up\n");
+	  printf("i node_id parent brvar lb ub way child_down child_up\n");
 	  size_t pos = tree0.size();
 	  for (int ii = cnt + 10; ii >= 0; --ii) {
 	    pos = tree0.rfind('\n', pos-1);

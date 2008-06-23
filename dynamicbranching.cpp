@@ -1122,6 +1122,7 @@ DBVectorNode::moveNodeUp(const int* which,
   const int P_brvar = parent.variable_;
   const double P_value = parent.value_;
   int new_bd;
+#if 0
   if (down_child_stays_with_parent) {
     // Former up child of P is now the down child of GP, so we need to change
     // bounds of GP, its up child and descendants of that one.
@@ -1137,6 +1138,33 @@ DBVectorNode::moveNodeUp(const int* which,
     changeDescendantBounds(grandparent.child_down_,
 			   false /*lower bd*/, P_brvar, new_bd);
   }
+#else
+  if (down_child_stays_with_parent) {
+    // Former up child of P is now the down (or up) child of GP, 
+    // so we need to change
+    // bounds of GP, its up (or down) child and descendants of that one.
+    new_bd = (int)std::ceil(P_value);
+    grandparent.lower_[P_brvar] = new_bd;
+    if(parent_is_down_child)
+      changeDescendantBounds(grandparent.child_up_,
+			     true /*lower bd*/, P_brvar, new_bd);
+    else
+      changeDescendantBounds(grandparent.child_down_,
+			     true /*lower bd*/, P_brvar, new_bd);
+  } else {
+    // Former down child of P is now the up (or down) child of GP, 
+    // so we need to change
+    // bounds of GP, its down (or up) child and descendants of that one.
+    new_bd = (int)floor(P_value);
+    grandparent.upper_[P_brvar] = new_bd;
+    if(parent_is_down_child)
+      changeDescendantBounds(grandparent.child_up_,
+			     false /*lower bd*/, P_brvar, new_bd);
+    else
+      changeDescendantBounds(grandparent.child_down_,
+			     false /*lower bd*/, P_brvar, new_bd);
+  }
+#endif
 #if defined(DEBUG_DYNAMIC_BRANCHING) && DEBUG_DYNAMIC_BRANCHING >= 1000
   if (childWasInfeasible) {
     model.resolve();

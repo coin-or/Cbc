@@ -42,13 +42,124 @@ changes implied by the branching decisions.
 #include "CoinTime.hpp"
 #include "OsiClpSolverInterface.hpp"
 
-#define DEBUG_DYNAMIC_BRANCHING 100
+#define DEBUG_DYNAMIC_BRANCHING
+
+#ifdef DEBUG_DYNAMIC_BRANCHING
+int dyn_debug = 1;
+#endif
 
 // below needed for pathetic branch and bound code
 #include <vector>
 #include <map>
 
+using namespace std;
+
 class DBVectorNode;
+
+class LPresult {
+private:
+  LPresult(const LPresult& rhs);
+  LPresult& operator=(const LPresult& rhs);
+  void gutsOfConstructor(const OsiSolverInterface& model);
+public:
+  LPresult(const OsiSolverInterface& model);
+  ~LPresult();
+public:
+  bool isAbandoned;
+  bool isProvenDualInfeasible;
+  bool isPrimalObjectiveLimitReached;
+  bool isProvenOptimal;
+  bool isDualObjectiveLimitReached;
+  bool isIterationLimitReached;
+  bool isProvenPrimalInfeasible;
+  double getObjSense;
+  double* getReducedCost;
+  double* getColLower;
+  double* getColUpper;
+  double* getObjCoefficients;
+  double yb_plus_rl_minus_su;
+};
+
+void
+LPresult::gutsOfConstructor(const OsiSolverInterface& model)
+{
+  isAbandoned = model.isAbandoned();
+  isProvenDualInfeasible = model.isProvenDualInfeasible();
+  isPrimalObjectiveLimitReached = model.isPrimalObjectiveLimitReached();
+  isProvenOptimal = model.isProvenOptimal();
+  isDualObjectiveLimitReached = model.isDualObjectiveLimitReached();
+  isIterationLimitReached = model.isIterationLimitReached();
+  isProvenPrimalInfeasible = model.isProvenPrimalInfeasible();
+  getObjSense = model.getObjSense();
+
+  getReducedCost = new double[model.getNumCols()];
+  CoinDisjointCopyN(model.getReducedCost(), model.getNumCols(), getReducedCost);
+  getColLower = new double[model.getNumCols()];
+  CoinDisjointCopyN(model.getColLower(), model.getNumCols(), getColLower);
+  getColUpper = new double[model.getNumCols()];
+  CoinDisjointCopyN(model.getColUpper(), model.getNumCols(), getColUpper);
+
+  getObjCoefficients = NULL;
+  yb_plus_rl_minus_su = 0;
+  
+  if (!isProvenOptimal &&
+      !isDualObjectiveLimitReached &&
+      !isIterationLimitReached &&
+      !isAbandoned &&
+      !isProvenDualInfeasible &&
+      !isPrimalObjectiveLimitReached) {
+    assert(isProvenPrimalInfeasible);
+    getObjCoefficients = new double[model.getNumCols()];
+    CoinDisjointCopyN(model.getObjCoefficients(), model.getNumCols(), getObjCoefficients);
+    const std::vector<double*> dual_rays = model.getDualRays(1);
+    if (dual_rays.size() == 0) {
+      printf("WARNING: LP is infeas, but no dual ray is returned!\n");
+      return;
+    }
+    const double* dual_ray = dual_rays[0];
+    const double direction = model.getObjSense();
+    const double* rub = model.getRowUpper();
+    const double* rlb = model.getRowLower();
+    const double* cub = model.getColUpper();
+    const double* clb = model.getColLower();
+    const double* dj  = model.getReducedCost();
+    const double* obj = model.getObjCoefficients();
+    const int numRows = model.getNumRows();
+    const int numCols = model.getNumCols();
+    for (int i = 0; i < numRows; ++i) {
+      const double ray_i = dual_ray[i];
+      if (ray_i > 1e-6) {
+	yb_plus_rl_minus_su += ray_i*rlb[i];
+      } else if (ray_i < 1e-6) {
+	yb_plus_rl_minus_su += ray_i*rub[i];
+      }
+    }
+    for (int j = 0; j < numCols; ++j) {
+      const double yA_j = dj[j] - obj[j];
+      if (direction * yA_j > 1e-6) {
+	yb_plus_rl_minus_su -= yA_j*cub[j];
+      } else if (direction * yA_j < -1e-6) {
+	yb_plus_rl_minus_su -= yA_j*clb[j];
+      }
+    }
+    for (int i = dual_rays.size()-1; i >= 0; --i) {
+      delete[] dual_rays[i];
+    }
+  }
+}
+  
+LPresult::LPresult(const OsiSolverInterface& model)
+{
+  gutsOfConstructor(model);
+}
+
+LPresult::~LPresult()
+{
+  delete[] getReducedCost;
+  delete[] getColLower;
+  delete[] getColUpper;
+  delete[] getObjCoefficients;
+}
 
 // Trivial class for Branch and Bound
 
@@ -69,6 +180,13 @@ public:
     WAY_BOTH_DONE=0x03,
     
   };
+
+private:
+  void gutsOfCopy(const DBNodeSimple& rhs);
+  void gutsOfConstructor (OsiSolverInterface &model,
+			  int numberIntegers, int * integer,
+			  CoinWarmStart * basis);
+  void gutsOfDestructor();  
   
 public:
     
@@ -80,9 +198,6 @@ public:
   DBNodeSimple (OsiSolverInterface &model,
 		int numberIntegers, int * integer,
 		CoinWarmStart * basis);
-  void gutsOfConstructor (OsiSolverInterface &model,
-			  int numberIntegers, int * integer,
-			  CoinWarmStart * basis);
   // Copy constructor 
   DBNodeSimple ( const DBNodeSimple &);
    
@@ -91,15 +206,14 @@ public:
 
   // Destructor 
   ~DBNodeSimple ();
-  // Work of destructor
-  void gutsOfDestructor();
+
   // Extension - true if other extension of this
   bool extension(const DBNodeSimple & other,
 		 const double * originalLower,
 		 const double * originalUpper) const;
   // Tests if we can switch this node (this is the parent) with its parent
   bool canSwitchParentWithGrandparent(const int* which,
-				      OsiSolverInterface & model,
+				      const LPresult& lpres,
 				      const int * original_lower,
 				      const int * original_upper,
 				      DBVectorNode & branchingTree);
@@ -457,13 +571,11 @@ DBNodeSimple::gutsOfConstructor(OsiSolverInterface & model,
 #endif
 }
 
-DBNodeSimple::DBNodeSimple(const DBNodeSimple & rhs) 
+void
+DBNodeSimple::gutsOfCopy(const DBNodeSimple & rhs)
 {
   node_id_=rhs.node_id_;
-  if (rhs.basis_)
-    basis_=rhs.basis_->clone();
-  else
-    basis_ = NULL;
+  basis_ = rhs.basis_ ? rhs.basis_->clone() : NULL;
   objectiveValue_=rhs.objectiveValue_;
   variable_=rhs.variable_;
   way_=rhs.way_;
@@ -487,33 +599,19 @@ DBNodeSimple::DBNodeSimple(const DBNodeSimple & rhs)
   }
 }
 
+DBNodeSimple::DBNodeSimple(const DBNodeSimple & rhs)
+{
+  gutsOfCopy(rhs);
+}
+
 DBNodeSimple &
 DBNodeSimple::operator=(const DBNodeSimple & rhs)
 {
   if (this != &rhs) {
+    // LL: in original code basis/lower/upper was left alone if rhs did not
+    // have them. Was that intentional?
     gutsOfDestructor();
-    node_id_=rhs.node_id_;
-    if (rhs.basis_)
-      basis_=rhs.basis_->clone();
-    objectiveValue_=rhs.objectiveValue_;
-    variable_=rhs.variable_;
-    way_=rhs.way_;
-    numberIntegers_=rhs.numberIntegers_;
-    value_=rhs.value_;
-    parent_ = rhs.parent_;
-    child_down_ = rhs.child_down_;
-    child_up_ = rhs.child_up_;
-    strong_branching_fixed_vars_ = rhs.strong_branching_fixed_vars_;
-    reduced_cost_fixed_vars_ = rhs.reduced_cost_fixed_vars_;
-    previous_ = rhs.previous_;
-    next_ = rhs.next_;
-    if (rhs.lower_!=NULL) {
-      lower_ = new int [numberIntegers_];
-      upper_ = new int [numberIntegers_];
-      assert (upper_!=NULL);
-      memcpy(lower_,rhs.lower_,numberIntegers_*sizeof(int));
-      memcpy(upper_,rhs.upper_,numberIntegers_*sizeof(int));
-    }
+    gutsOfCopy(rhs);
   }
   return *this;
 }
@@ -579,6 +677,12 @@ public:
   { return size_-sizeDeferred_;}
   // Push
   void push_back(DBNodeSimple & node); // the node_id_ of node will change
+  /* Remove a single node from the tree and adjust the previos_/next_/first_
+     etc fields. Does NOT update child/parent relationship */
+  void removeNode(int n);
+  /* Remove the subtree rooted at node n. properly adjusts previos_/next_ etc
+     fields. Does NOT update child/parent relationships. */
+  void removeSubTree(int n);
   // Last one in (or other criterion)
   DBNodeSimple back() const;
   // Get rid of last one
@@ -588,9 +692,12 @@ public:
   // Rearranges the tree
   void moveNodeUp(const int* which,
 		  OsiSolverInterface& model, DBNodeSimple & node);
-  // It changes the bounds of the descendants of node with node_id
-  void changeDescendantBounds(const int node_id, const bool lower_bd,
-			      const int brvar, const int new_bd);
+  // Fix the bounds in the descendants of subroot
+  void adjustBounds(int subroot, int brvar, int brlb, int brub);
+
+  // Check that the bounds correspond to the branching decisions...
+  void checkTree() const;
+  void checkNode(int node) const;
 
   // Public data
   // Maximum size
@@ -737,90 +844,69 @@ DBVectorNode::back() const
   assert (last_>=0);
   return nodes_[best()];
 }
+
+void
+DBVectorNode::removeNode(int n)
+{
+  DBNodeSimple& node = nodes_[n];
+  if (node.bothChildDone())
+    sizeDeferred_--;
+  int previous = node.previous_;
+  int next = node.next_;
+  node.~DBNodeSimple();
+  if (previous >= 0) {
+    nodes_[previous].next_=next;
+  } else {
+    first_ = next;
+  }
+  if (next >= 0) {
+    nodes_[next].previous_ = previous;
+  } else {
+    last_ = previous;
+  }
+  node.previous_ = -1;
+  if (firstSpare_ >= 0) {
+    node.next_ = firstSpare_;
+  } else {
+    node.next_ = -1;
+  }
+  firstSpare_ = n;
+  assert (size_>0);
+  size_--;
+}
+
+void
+DBVectorNode::removeSubTree(int n)
+{
+  if (nodes_[n].child_down_ >= 0) {
+    removeSubTree(nodes_[n].child_down_);
+  }
+  if (nodes_[n].child_up_ >= 0) {
+    removeSubTree(nodes_[n].child_up_);
+  }
+  removeNode(n);
+}
+
 // Get rid of last one
 void 
 DBVectorNode::pop_back()
 {
   // Temporary until more sophisticated
   //assert (last_==chosen_);
-  if (nodes_[chosen_].bothChildDone())
-    sizeDeferred_--;
-  int previous = nodes_[chosen_].previous_;
-  int next = nodes_[chosen_].next_;
-  nodes_[chosen_].gutsOfDestructor();
-  if (previous>=0) {
-    nodes_[previous].next_=next;
-  } else {
-    first_ = next;
-  }
-  if (next>=0) {
-    nodes_[next].previous_ = previous;
-  } else {
-    last_ = previous;
-  }
-  nodes_[chosen_].previous_=-1;
-  if (firstSpare_>=0) {
-    nodes_[chosen_].next_ = firstSpare_;
-  } else {
-    nodes_[chosen_].next_ = -1;
-  }
-  firstSpare_ = chosen_;
+  removeNode(chosen_);
   chosen_ = -1;
-  assert (size_>0);
-  size_--;
-}
-
-static double
-compute_val_for_ray(const OsiSolverInterface& model)
-{
-  const std::vector<double*> dual_rays = model.getDualRays(1);
-  if (dual_rays.size() == 0) {
-    printf("WARNING: LP is infeas, but no dual ray is returned!\n");
-    return 0;
-  }
-  const double* dual_ray = dual_rays[0];
-  const double direction = model.getObjSense();
-  const double* rub = model.getRowUpper();
-  const double* rlb = model.getRowLower();
-  const double* cub = model.getColUpper();
-  const double* clb = model.getColLower();
-  const double* dj  = model.getReducedCost();
-  const double* obj = model.getObjCoefficients();
-  const int numRows = model.getNumRows();
-  const int numCols = model.getNumCols();
-  double yb_plus_rl_minus_su = 0;
-  for (int i = 0; i < numRows; ++i) {
-    const double ray_i = dual_ray[i];
-    if (ray_i > 1e-6) {
-      yb_plus_rl_minus_su += ray_i*rlb[i];
-    } else if (ray_i < 1e-6) {
-      yb_plus_rl_minus_su += ray_i*rub[i];
-    }
-  }
-  for (int j = 0; j < numCols; ++j) {
-    const double yA_j = dj[j] - obj[j];
-    if (direction * yA_j > 1e-6) {
-      yb_plus_rl_minus_su -= yA_j*cub[j];
-    } else if (direction * yA_j < -1e-6) {
-      yb_plus_rl_minus_su -= yA_j*clb[j];
-    }
-  }
-  for (int i = dual_rays.size()-1; i >= 0; --i) {
-    delete[] dual_rays[i];
-  }
-  return yb_plus_rl_minus_su;
 }
 
 bool
 DBNodeSimple::canSwitchParentWithGrandparent(const int* which,
-					     OsiSolverInterface & model,
+					     const LPresult& lpres,
 					     const int * original_lower,
 					     const int * original_upper,
 					     DBVectorNode & branchingTree)
 {
   /*
     The current node ('this') is really the parent (P) and the solution in the
-    model represents the child. The grandparent (GP) is this.parent_. Let's have
+    lpres represents the child. The grandparent (GP) is this.parent_. Let's have
     variable names respecting the truth.
   */
 #if !defined(FUNNY_BRANCHING)
@@ -839,16 +925,16 @@ DBNodeSimple::canSwitchParentWithGrandparent(const int* which,
   
   // THINK: these are not going to happen (hopefully), but if they do, what
   // should we do???
-  if (model.isAbandoned()) {
-    printf("WARNING: model.isAbandoned() true!\n");
+  if (lpres.isAbandoned) {
+    printf("WARNING: lpres.isAbandoned true!\n");
     return false;
   }
-  if (model.isProvenDualInfeasible()) {
-    printf("WARNING: model.isProvenDualInfeasible() true!\n");
+  if (lpres.isProvenDualInfeasible) {
+    printf("WARNING: lpres.isProvenDualInfeasible true!\n");
     return false;
   }
-  if (model.isPrimalObjectiveLimitReached()) {
-    printf("WARNING: model.isPrimalObjectiveLimitReached() true!\n");
+  if (lpres.isPrimalObjectiveLimitReached) {
+    printf("WARNING: lpres.isPrimalObjectiveLimitReached true!\n");
     return false;
   }
 
@@ -857,26 +943,26 @@ DBNodeSimple::canSwitchParentWithGrandparent(const int* which,
     return false;
   }
   
-  const double direction = model.getObjSense();
+  const double direction = lpres.getObjSense;
 
   const int GP_brvar = grandparent.variable_;
   const int GP_brvar_fullid = which[GP_brvar];
   const bool parent_is_down_child = parent_id == grandparent.child_down_;
 
-  if (model.isProvenOptimal() ||
-      model.isDualObjectiveLimitReached() ||
-      model.isIterationLimitReached()) {
+  if (lpres.isProvenOptimal ||
+      lpres.isDualObjectiveLimitReached ||
+      lpres.isIterationLimitReached) {
     // Dual feasible, and in this case we don't care how we have
     // stopped (iteration limit, obj val limit, time limit, optimal solution,
     // etc.), we can just look at the reduced costs to figure out if the
     // grandparent is irrelevant. Remember, we are using dual simplex!
-    double djValue = model.getReducedCost()[GP_brvar_fullid]*direction;
+    double djValue = lpres.getReducedCost[GP_brvar_fullid]*direction;
     if (djValue > 1.0e-6) {
       // wants to go down
       if (parent_is_down_child) {
 	return true;
       }
-      if (model.getColLower()[GP_brvar_fullid] > std::ceil(grandparent.value_)) {
+      if (lpres.getColLower[GP_brvar_fullid] > std::ceil(grandparent.value_)) {
 	return true;
       }
     } else if (djValue < -1.0e-6) {
@@ -884,13 +970,13 @@ DBNodeSimple::canSwitchParentWithGrandparent(const int* which,
       if (! parent_is_down_child) {
 	return true;
       }
-      if (model.getColUpper()[GP_brvar_fullid] < std::floor(grandparent.value_)) {
+      if (lpres.getColUpper[GP_brvar_fullid] < std::floor(grandparent.value_)) {
 	return true;
       }
     }
     return false;
   } else {
-    assert(model.isProvenPrimalInfeasible());
+    assert(lpres.isProvenPrimalInfeasible);
     return false;
     const int greatgrandparent_id = grandparent.parent_;
     const int x = GP_brvar_fullid; // for easier reference... we'll use s_x
@@ -902,8 +988,8 @@ DBNodeSimple::canSwitchParentWithGrandparent(const int* which,
       variable cuts off the dual ray proving the infeasibility.
     */
     
-    const double* dj = model.getReducedCost();
-    const double* obj = model.getObjCoefficients();
+    const double* dj = lpres.getReducedCost;
+    const double* obj = lpres.getObjCoefficients;
     const double yA_x = dj[x] - obj[x];
 
     if (direction > 0) { // minimization problem
@@ -912,12 +998,11 @@ DBNodeSimple::canSwitchParentWithGrandparent(const int* which,
 	if (s_x < 1e-6) {
 	  return true;
 	}
-	const double yb_plus_rl_minus_su = compute_val_for_ray(model);
-	if (yb_plus_rl_minus_su < 1e-8) {
-	  printf("WARNING: yb_plus_rl_minus_su is not positive!\n");
+	if (lpres.yb_plus_rl_minus_su < 1e-8) {
+	  printf("WARNING: lpres.yb_plus_rl_minus_su is not positive!\n");
 	  return false;
 	}
-	const double max_u_x = yb_plus_rl_minus_su / s_x + model.getColUpper()[x];
+	const double max_u_x = lpres.yb_plus_rl_minus_su / s_x + lpres.getColUpper[x];
 	const double u_x_without_GP = greatgrandparent_id >= 0 ?
 	  branchingTree.nodes_[greatgrandparent_id].upper_[GP_brvar] :
 	  original_upper[GP_brvar];
@@ -927,12 +1012,11 @@ DBNodeSimple::canSwitchParentWithGrandparent(const int* which,
 	if (r_x < 1e-6) {
 	  return true;
 	}
-	const double yb_plus_rl_minus_su = compute_val_for_ray(model);
-	if (yb_plus_rl_minus_su < 1e-8) {
-	  printf("WARNING: yb_plus_rl_minus_su is not positive!\n");
+	if (lpres.yb_plus_rl_minus_su < 1e-8) {
+	  printf("WARNING: lpres.yb_plus_rl_minus_su is not positive!\n");
 	  return false;
 	}
-	const double min_l_x = - yb_plus_rl_minus_su / r_x + model.getColLower()[x];
+	const double min_l_x = - lpres.yb_plus_rl_minus_su / r_x + lpres.getColLower[x];
 	const double l_x_without_GP = greatgrandparent_id >= 0 ?
 	  branchingTree.nodes_[greatgrandparent_id].lower_[GP_brvar] :
 	  original_lower[GP_brvar];
@@ -944,12 +1028,11 @@ DBNodeSimple::canSwitchParentWithGrandparent(const int* which,
 	if (s_x > -1e-6) {
 	  return true;
 	}
-	const double yb_plus_rl_minus_su = compute_val_for_ray(model);
-	if (yb_plus_rl_minus_su > -1e-8) {
-	  printf("WARNING: yb_plus_rl_minus_su is not negative!\n");
+	if (lpres.yb_plus_rl_minus_su > -1e-8) {
+	  printf("WARNING: lpres.yb_plus_rl_minus_su is not negative!\n");
 	  return false;
 	}
-	const double max_u_x = yb_plus_rl_minus_su / s_x + model.getColUpper()[x];
+	const double max_u_x = lpres.yb_plus_rl_minus_su / s_x + lpres.getColUpper[x];
 	const double u_x_without_GP = greatgrandparent_id >= 0 ?
 	  branchingTree.nodes_[greatgrandparent_id].upper_[GP_brvar] :
 	  original_upper[GP_brvar];
@@ -959,12 +1042,11 @@ DBNodeSimple::canSwitchParentWithGrandparent(const int* which,
 	if (r_x < -1e-6) {
 	  return true;
 	}
-	const double yb_plus_rl_minus_su = compute_val_for_ray(model);
-	if (yb_plus_rl_minus_su > -1e-8) {
-	  printf("WARNING: yb_plus_rl_minus_su is not negative!\n");
+	if (lpres.yb_plus_rl_minus_su > -1e-8) {
+	  printf("WARNING: lpres.yb_plus_rl_minus_su is not negative!\n");
 	  return false;
 	}
-	const double min_l_x = - yb_plus_rl_minus_su / r_x + model.getColLower()[x];
+	const double min_l_x = - lpres.yb_plus_rl_minus_su / r_x + lpres.getColLower[x];
 	const double l_x_without_GP = greatgrandparent_id >= 0 ?
 	  branchingTree.nodes_[greatgrandparent_id].lower_[GP_brvar] :
 	  original_lower[GP_brvar];
@@ -977,15 +1059,81 @@ DBNodeSimple::canSwitchParentWithGrandparent(const int* which,
 }
 
 void
+DBVectorNode::adjustBounds(int subroot, int brvar, int brlb, int brub)
+{
+  assert(subroot != -1);
+  DBNodeSimple& node = nodes_[subroot];
+  // Take the intersection of brvar's bounds in node and those passed in
+  brub = CoinMin(brub, node.upper_[brvar]);
+  brlb = CoinMax(brlb, node.lower_[brvar]);
+  if (brub < brlb) {
+    // This node became infeasible. Get rid of it and of its descendants
+    removeSubTree(subroot);
+    return;
+  }
+  if (node.variable_ == brvar) {
+    if (node.value_ < brlb) {
+      // child_down_ just became infeasible. Just cut out the current node
+      // together with its child_down_ from the tree and hang child_up_ on the
+      // parent of this node.
+      if (node.child_down_ >= 0) {
+	removeSubTree(node.child_down_);
+      }
+      const int parent_id = node.parent_;
+      const int child_remains = node.child_up_;
+      if (nodes_[parent_id].child_down_ == subroot) {
+	nodes_[parent_id].child_down_ = child_remains;
+      } else {
+	nodes_[parent_id].child_up_ = child_remains;
+      }
+      removeNode(subroot);
+      if (child_remains >= 0) {
+	nodes_[child_remains].parent_ = parent_id;
+	adjustBounds(child_remains, brvar, brlb, brub);
+      }
+      return;
+    }
+    if (node.value_ > brub) {
+      // child_up_ just became infeasible. Just cut out the current node
+      // together with its child_down_ from the tree and hang child_down_ on
+      // the parent of this node.
+      if (node.child_up_ >= 0) {
+	removeSubTree(node.child_up_);
+      }
+      const int parent_id = node.parent_;
+      const int child_remains = node.child_down_;
+      if (nodes_[parent_id].child_down_ == subroot) {
+	nodes_[parent_id].child_down_ = child_remains;
+      } else {
+	nodes_[parent_id].child_up_ = child_remains;
+      }
+      removeNode(subroot);
+      if (child_remains >= 0) {
+	nodes_[child_remains].parent_ = parent_id;
+	adjustBounds(child_remains, brvar, brlb, brub);
+      }
+      return;
+    }
+    // Now brlb < node.value_ < brub (value_ is fractional)
+  }
+  node.lower_[brvar] = brlb;
+  node.upper_[brvar] = brub;
+  if (node.child_down_ >= 0) {
+    adjustBounds(node.child_down_, brvar, brlb, brub);
+  }
+  if (node.child_up_ >= 0) {
+    adjustBounds(node.child_up_, brvar, brlb, brub);
+  }
+}
+
+void
 DBVectorNode::moveNodeUp(const int* which,
 			 OsiSolverInterface& model, DBNodeSimple & node)
 {
   /*
-    The current node ('this') is really the parent (P) and the solution in the
-    model represents the child. The grandparent (GP) is this.parent_. Let's have
-    variable names respecting the truth.
+    The current node ('this') is really the parent (P). The grandparent (GP)
+    is this.parent_. Let's have variable names respecting the truth.
   */
-  const bool childWasInfeasible = model.isProvenPrimalInfeasible();
   const int parent_id = node.node_id_;
   DBNodeSimple& parent = nodes_[parent_id];
   const int grandparent_id = parent.parent_;
@@ -995,11 +1143,13 @@ DBVectorNode::moveNodeUp(const int* which,
   
   const bool parent_is_down_child = parent_id == grandparent.child_down_;
 
-#if defined(DEBUG_DYNAMIC_BRANCHING) && DEBUG_DYNAMIC_BRANCHING >= 1000
-  printf("entered moveNodeUp\n");
-  printf("parent_id %d grandparent_id %d greatgrandparent_id %d\n",
-	 parent_id, grandparent_id, greatgrandparent_id);
-  printf("parent.way_ %d\n", parent.way_);
+#if defined(DEBUG_DYNAMIC_BRANCHING)
+  if (dyn_debug >= 100) {
+    printf("entered moveNodeUp\n");
+    printf("parent_id %d grandparent_id %d greatgrandparent_id %d\n",
+	   parent_id, grandparent_id, greatgrandparent_id);
+    printf("parent.way_ %d\n", parent.way_);
+  }
 #endif
 
 
@@ -1011,8 +1161,10 @@ DBVectorNode::moveNodeUp(const int* which,
     down_child_stays_with_parent ? parent.child_up_ : parent.child_down_;
   const bool child_to_move_is_processed = parent.bothChildDone();
 
-#if defined(DEBUG_DYNAMIC_BRANCHING) && DEBUG_DYNAMIC_BRANCHING >= 1000
-  printf("parent_is_down_child %d down_child_stays_with_parent %d child_to_move %d\n", parent_is_down_child, down_child_stays_with_parent, child_to_move);
+#if defined(DEBUG_DYNAMIC_BRANCHING)
+  if (dyn_debug >= 1000) {
+    printf("parent_is_down_child %d down_child_stays_with_parent %d child_to_move %d\n", parent_is_down_child, down_child_stays_with_parent, child_to_move);
+  }
 #endif
 
   if (parent_is_down_child) {
@@ -1033,18 +1185,20 @@ DBVectorNode::moveNodeUp(const int* which,
     }
   }
 
-#if defined(DEBUG_DYNAMIC_BRANCHING) && DEBUG_DYNAMIC_BRANCHING >= 1000
-  printf("after exchange\n");
-  printf("parent.parent_ %d parent.child_down_ %d parent.child_up_ %d\n",
-	 parent.parent_, parent.child_down_, parent.child_up_);
-  printf("grandparent.parent_ %d grandparent.child_down_ %d grandparent.child_up_ %d\n",
-	 grandparent.parent_, grandparent.child_down_, grandparent.child_up_);
-  if (greatgrandparent_id >= 0) {
-    DBNodeSimple& greatgrandparent = nodes_[greatgrandparent_id];
-    printf("greatgrandparent.parent_ %d greatgrandparent.child_down_ %d greatgrandparent.child_up_ %d\n",
-	 greatgrandparent.parent_, greatgrandparent.child_down_, greatgrandparent.child_up_);
+#if defined(DEBUG_DYNAMIC_BRANCHING)
+  if (dyn_debug >= 1000) {
+    printf("after exchange\n");
+    printf("parent.parent_ %d parent.child_down_ %d parent.child_up_ %d\n",
+	   parent.parent_, parent.child_down_, parent.child_up_);
+    printf("grandparent.parent_ %d grandparent.child_down_ %d grandparent.child_up_ %d\n",
+	   grandparent.parent_, grandparent.child_down_, grandparent.child_up_);
+    if (greatgrandparent_id >= 0) {
+      DBNodeSimple& greatgrandparent = nodes_[greatgrandparent_id];
+      printf("greatgrandparent.parent_ %d greatgrandparent.child_down_ %d greatgrandparent.child_up_ %d\n",
+	     greatgrandparent.parent_, greatgrandparent.child_down_, greatgrandparent.child_up_);
+    }
+    printf("exiting moveNodeUp\n");
   }
-  printf("exiting moveNodeUp\n");
 #endif
 
 
@@ -1106,89 +1260,113 @@ DBVectorNode::moveNodeUp(const int* which,
   if (parent_is_down_child) {
     const int old_upper = grandparent.upper_[GP_brvar];
     parent.upper_[GP_brvar] = old_upper;
-    model.setColUpper(which[GP_brvar], old_upper);
+    if ((GP_brvar != parent.variable_) ||
+	(GP_brvar == parent.variable_ && !down_child_stays_with_parent)) {
+      model.setColUpper(which[GP_brvar], old_upper);
+    }
   } else {
     const int old_lower = grandparent.lower_[GP_brvar];
     parent.lower_[GP_brvar] = old_lower;
-    model.setColLower(which[GP_brvar], old_lower);
+    if ((GP_brvar != parent.variable_) ||
+	(GP_brvar == parent.variable_ && down_child_stays_with_parent)) {
+      model.setColLower(which[GP_brvar], old_lower);
+    }
   }
-#if 0
-  // THINK: this might not be necessary
-  model.resolve();
-#endif
 
   // Now add the branching var bound change of P to GP and all of its
   // descendant
-  const int P_brvar = parent.variable_;
-  const double P_value = parent.value_;
-  int new_bd;
-#if 0
   if (down_child_stays_with_parent) {
-    // Former up child of P is now the down child of GP, so we need to change
-    // bounds of GP, its up child and descendants of that one.
-    new_bd = (int)std::ceil(P_value);
-    grandparent.lower_[P_brvar] = new_bd;
-    changeDescendantBounds(grandparent.child_up_,
-			   true /*lower bd*/, P_brvar, new_bd);
+    adjustBounds(grandparent_id, parent.variable_,
+		 (int)ceil(parent.value_), parent.upper_[parent.variable_]);
   } else {
-    // Former down child of P is now the up child of GP, so we need to change
-    // bounds of GP, its down child and descendants of that one.
-    new_bd = (int)floor(P_value);
-    grandparent.upper_[P_brvar] = new_bd;
-    changeDescendantBounds(grandparent.child_down_,
-			   false /*lower bd*/, P_brvar, new_bd);
+    adjustBounds(grandparent_id, parent.variable_,
+		 parent.lower_[parent.variable_], (int)floor(parent.value_));
   }
-#else
-  if (down_child_stays_with_parent) {
-    // Former up child of P is now the down (or up) child of GP, 
-    // so we need to change
-    // bounds of GP, its up (or down) child and descendants of that one.
-    new_bd = (int)std::ceil(P_value);
-    grandparent.lower_[P_brvar] = new_bd;
-    if(parent_is_down_child)
-      changeDescendantBounds(grandparent.child_up_,
-			     true /*lower bd*/, P_brvar, new_bd);
-    else
-      changeDescendantBounds(grandparent.child_down_,
-			     true /*lower bd*/, P_brvar, new_bd);
-  } else {
-    // Former down child of P is now the up (or down) child of GP, 
-    // so we need to change
-    // bounds of GP, its down (or up) child and descendants of that one.
-    new_bd = (int)floor(P_value);
-    grandparent.upper_[P_brvar] = new_bd;
-    if(parent_is_down_child)
-      changeDescendantBounds(grandparent.child_up_,
-			     false /*lower bd*/, P_brvar, new_bd);
-    else
-      changeDescendantBounds(grandparent.child_down_,
-			     false /*lower bd*/, P_brvar, new_bd);
-  }
-#endif
-#if defined(DEBUG_DYNAMIC_BRANCHING) && DEBUG_DYNAMIC_BRANCHING >= 1000
-  if (childWasInfeasible) {
-    model.resolve();
-    assert(model.isProvenPrimalInfeasible());
-  }
-#endif
 }
 
 void
-DBVectorNode::changeDescendantBounds(const int node_id, const bool lower_bd,
-				     const int brvar, const int new_bd)
+DBVectorNode::checkNode(int node) const
 {
-  if (node_id == -1) {
+  if (node == -1) {
     return;
   }
-  changeDescendantBounds(nodes_[node_id].child_down_, lower_bd, brvar, new_bd);
-  changeDescendantBounds(nodes_[node_id].child_up_, lower_bd, brvar, new_bd);
-  if (lower_bd) {
-    nodes_[node_id].lower_[brvar] = new_bd;
-  } else {
-    nodes_[node_id].upper_[brvar] = new_bd;
+  const DBNodeSimple* n = nodes_ + node;
+  const DBNodeSimple* p = nodes_ + n->parent_;
+  for (int i = n->numberIntegers_-1; i >= 0; --i) {
+    if (i == p->variable_) {
+      if (node == p->child_down_) {
+	assert(p->lower_[i] <= n->lower_[i]);
+	assert((int)(floor(p->value_)) == n->upper_[i]);
+      } else {
+	assert((int)(ceil(p->value_)) == n->lower_[i]);
+	assert(p->upper_[i] >= n->upper_[i]);
+      }
+    } else {
+      assert(p->lower_[i] <= n->lower_[i]);
+      assert(p->upper_[i] >= n->upper_[i]);
+    }
   }
+  checkNode(n->child_down_);
+  checkNode(n->child_up_);
 }
 
+void
+DBVectorNode::checkTree() const
+{
+  // find the root
+  int root = first_;
+  while (true) {
+    if (nodes_[root].parent_ == -1) {
+      break;
+    }
+  }
+  checkNode(nodes_[root].child_down_);
+  checkNode(nodes_[root].child_up_);
+}
+
+std::string getTree(DBVectorNode& branchingTree)
+{
+  std::string tree;
+  char line[1000];
+  for(int k=0; k<branchingTree.size_; k++) {
+    DBNodeSimple& node = branchingTree.nodes_[k];
+    sprintf(line, "%d %d %d %d %f %d %d 0x%x %d %d\n",
+	    k, node.node_id_, node.parent_, node.variable_,
+	    node.value_, node.lower_[node.variable_],
+	    node.upper_[node.variable_], node.way_,
+	    node.child_down_, node.child_up_);
+    tree += line;
+  }
+  return tree;
+}
+
+void printTree(const std::string& tree, int levels)
+{
+  size_t pos = tree.size();
+  for (int i = levels-1; i >= 0; --i) {
+    pos = tree.rfind('\n', pos-1);
+    if (pos == std::string::npos) {
+      pos = 0;
+      break;
+    }
+  }
+  printf("%s", tree.c_str() + (pos+1));
+}
+
+void printChain(DBVectorNode& branchingTree, int k)
+{
+  while (k != -1) {
+    DBNodeSimple& node = branchingTree.nodes_[k];
+    printf("   %d %d %d %d %f %d %d 0x%x %d %d %c %c\n",
+	   k, node.node_id_, node.parent_, node.variable_,
+	   node.value_, node.lower_[node.variable_],
+	   node.upper_[node.variable_], node.way_,
+	   node.child_down_, node.child_up_,
+	   node.strong_branching_fixed_vars_ ? 'T' : 'F',
+	   node.reduced_cost_fixed_vars_ ? 'T' : 'F');
+    k = node.parent_;
+  }
+}
 
 // Invoke solver's built-in enumeration algorithm
 void 
@@ -1254,21 +1432,25 @@ branchAndBound(OsiSolverInterface & model) {
     ////// Start main while of branch and bound
     // while until nothing on stack
     while (branchingTree.size()) {
-#if defined(DEBUG_DYNAMIC_BRANCHING) && DEBUG_DYNAMIC_BRANCHING >= 1000
-      printf("branchingTree.size = %d %d\n",branchingTree.size(),branchingTree.size_);
-      printf("i node_id parent child_down child_up\n");
-      for(int k=0; k<branchingTree.size_; k++) {
-	DBNodeSimple& node = branchingTree.nodes_[k];
-	printf("%d %d %d %d %d\n",k, node.node_id_, node.parent_,
-	       node.child_down_, node.child_up_);
+#if defined(DEBUG_DYNAMIC_BRANCHING)
+      if (dyn_debug >= 1000) {
+	printf("branchingTree.size = %d %d\n",branchingTree.size(),branchingTree.size_);
+	printf("i node_id parent child_down child_up\n");
+	for(int k=0; k<branchingTree.size_; k++) {
+	  DBNodeSimple& node = branchingTree.nodes_[k];
+	  printf("%d %d %d %d %d\n",k, node.node_id_, node.parent_,
+		 node.child_down_, node.child_up_);
+	}
       }
 #endif
       // last node
       DBNodeSimple node = branchingTree.back();
       int kNode = branchingTree.chosen_;
       branchingTree.pop_back();
-#if defined(DEBUG_DYNAMIC_BRANCHING) && DEBUG_DYNAMIC_BRANCHING >= 1000
-      printf("Deleted current parent %d %d\n",branchingTree.size(),branchingTree.size_);
+#if defined(DEBUG_DYNAMIC_BRANCHING)
+      if (dyn_debug >= 1000) {
+	printf("Deleted current parent %d %d\n",branchingTree.size(),branchingTree.size_);
+      }
 #endif
       assert (! node.bothChildDone());
       numberNodes++;
@@ -1287,6 +1469,12 @@ branchAndBound(OsiSolverInterface & model) {
                  <<" found after "<<numberIterations
                  <<" iterations and "<<numberNodes<<" nodes"
                  <<std::endl;
+#if defined(DEBUG_DYNAMIC_BRANCHING)
+	if (dyn_debug >= 1) {
+	  branchingTree.checkTree();
+	}
+#endif
+
       } else {
         // branch - do bounds
         for (i=0;i<numberIntegers;i++) {
@@ -1305,8 +1493,10 @@ branchAndBound(OsiSolverInterface & model) {
 	// put back on tree anyway regardless whether any processing is left
 	// to be done. We want the whole tree all the time.
 	branchingTree.push_back(node);
-#if defined(DEBUG_DYNAMIC_BRANCHING) && DEBUG_DYNAMIC_BRANCHING >= 1000
-      printf("Added current parent %d %d\n",branchingTree.size(),branchingTree.size_);
+#if defined(DEBUG_DYNAMIC_BRANCHING)
+	if (dyn_debug >= 1000) {
+	  printf("Added current parent %d %d\n",branchingTree.size(),branchingTree.size_);
+	}
 #endif
 	
         // solve
@@ -1359,72 +1549,66 @@ branchAndBound(OsiSolverInterface & model) {
 	  break;
 	}
 
-	bool canSwitch = node.canSwitchParentWithGrandparent(which, model,
+	LPresult lpres(model);
+
+	bool canSwitch = node.canSwitchParentWithGrandparent(which, lpres,
 							     originalLower,
 							     originalUpper,
 							     branchingTree);
 	int cnt = 0;
-#if defined(DEBUG_DYNAMIC_BRANCHING) && DEBUG_DYNAMIC_BRANCHING >= 100
+
+#if defined(DEBUG_DYNAMIC_BRANCHING)
+	if (dyn_debug >= 1) {
+	  branchingTree.checkTree();
+	}
+#endif
+
+#if defined(DEBUG_DYNAMIC_BRANCHING)
 	std::string tree0;
-	char line[1000];
-	if (canSwitch) {
-	  for(int k=0; k<branchingTree.size_; k++) {
-	    DBNodeSimple& node = branchingTree.nodes_[k];
-	    sprintf(line, "%d %d %d %d %d %d 0x%x %d %d\n",
-		    k, node.node_id_, node.parent_, node.variable_,
-		    node.lower_[node.variable_],
-		    node.upper_[node.variable_], node.way_,
-		    node.child_down_, node.child_up_);
-	    tree0 += line;
+	if (dyn_debug >= 10) {
+	  if (canSwitch) {
+	    tree0 = getTree(branchingTree);
 	  }
 	}
 #endif
 
 	while (canSwitch) {
 	  branchingTree.moveNodeUp(which, model, node);
-	  canSwitch = node.canSwitchParentWithGrandparent(which, model,
+	  canSwitch = node.canSwitchParentWithGrandparent(which, lpres,
 							  originalLower,
 							  originalUpper,
 							  branchingTree);
+#if defined(DEBUG_DYNAMIC_BRANCHING)
+	  if (dyn_debug >= 1) {
+	    branchingTree.checkTree();
+	  }
+#endif
 	  ++cnt;
 	}
-#if defined(DEBUG_DYNAMIC_BRANCHING) && DEBUG_DYNAMIC_BRANCHING >= 100
 	if (cnt > 0) {
-	  std::string tree1;
-	  for(int k=0; k<branchingTree.size_; k++) {
-	    DBNodeSimple& node = branchingTree.nodes_[k];
-	    sprintf(line, "%d %d %d %d %d %d 0x%x %d %d\n",
-		    k, node.node_id_, node.parent_, node.variable_, 
-		    node.lower_[node.variable_],
-		    node.upper_[node.variable_], node.way_,
-		    node.child_down_, node.child_up_);
-	    tree1 += line;
+	  model.resolve();
+	  // This is horribly looking... Get rid of it when properly debugged...
+	  assert(lpres.isAbandoned == model.isAbandoned());
+	  assert(lpres.isDualObjectiveLimitReached == model.isDualObjectiveLimitReached());
+	  assert(lpres.isDualObjectiveLimitReached ||
+		 (lpres.isProvenOptimal == model.isProvenOptimal()));
+	  assert(lpres.isDualObjectiveLimitReached ||
+		 (lpres.isProvenPrimalInfeasible == model.isProvenPrimalInfeasible()));
+	}
+	    
+#if defined(DEBUG_DYNAMIC_BRANCHING)
+	if (dyn_debug >= 10) {
+	  if (cnt > 0) {
+	    std::string tree1 = getTree(branchingTree);
+	    printf("=====================================\n");
+	    printf("It can move node %i up. way_: 0x%x   brvar: %i\n",
+		   node.node_id_, node.way_, node.variable_);
+	    printTree(tree0, cnt+10);
+	    printf("=====================================\n");
+	    printf("Finished moving the node up by %i levels.\n", cnt);
+	    printTree(tree1, cnt+10);
+	    printf("=====================================\n");
 	  }
-	  printf("=====================================\n");
-	  printf("It can move node %i up. way_: 0x%x   brvar: %i\n",
-		 node.node_id_, node.way_, node.variable_);
-	  printf("i node_id parent brvar lb ub way child_down child_up\n");
-	  size_t pos = tree0.size();
-	  for (int ii = cnt + 10; ii >= 0; --ii) {
-	    pos = tree0.rfind('\n', pos-1);
-	    if (pos == std::string::npos) {
-	      pos = 0;
-	      break;
-	    }
-	  }
-	  printf("%s", tree0.c_str() + (pos+1));
-	  printf("=====================================\n");
-	  printf("Finished moving the node up by %i levels.\n", cnt);
-	  pos = tree1.size();
-	  for (int ii = cnt + 10; ii >= 0; --ii) {
-	    pos = tree1.rfind('\n', pos-1);
-	    if (pos == std::string::npos) {
-	      pos = 0;
-	      break;
-	    }
-	  }
-	  printf("%s", tree1.c_str() + (pos+1));
-	  printf("=====================================\n");
 	}
 #endif
 	if ((numberNodes%1000)==0) 
@@ -1447,8 +1631,10 @@ branchAndBound(OsiSolverInterface & model) {
 	  newNode.parent_ = kNode;
 	  // push on stack
 	  branchingTree.push_back(newNode);
-#if defined(DEBUG_DYNAMIC_BRANCHING) && DEBUG_DYNAMIC_BRANCHING >= 1000
-	  printf("Added current child %d %d\n",branchingTree.size(),branchingTree.size_);
+#if defined(DEBUG_DYNAMIC_BRANCHING)
+	  if (dyn_debug >= 1000) {
+	    printf("Added current child %d %d\n",branchingTree.size(),branchingTree.size_);
+	  }
 #endif
 	  if (branchingTree.nodes_[kNode].workingOnDownChild()) {
 	    branchingTree.nodes_[kNode].child_down_ = branchingTree.last_;
@@ -1472,6 +1658,11 @@ branchAndBound(OsiSolverInterface & model) {
 	  }
 #endif
 	}
+#if defined(DEBUG_DYNAMIC_BRANCHING)
+	if (dyn_debug >= 1) {
+	  branchingTree.checkTree();
+	}
+#endif
       }
     }
     ////// End main while of branch and bound

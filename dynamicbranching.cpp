@@ -939,7 +939,8 @@ DBNodeSimple::canSwitchParentWithGrandparent(const int* which,
   }
 
   if (parent.strong_branching_fixed_vars_ || parent.reduced_cost_fixed_vars_ ||
-      grandparent.strong_branching_fixed_vars_) {
+      grandparent.strong_branching_fixed_vars_ ||
+      grandparent.reduced_cost_fixed_vars_) {
     return false;
   }
   
@@ -1318,6 +1319,8 @@ DBVectorNode::checkTree() const
   while (true) {
     if (nodes_[root].parent_ == -1) {
       break;
+    } else {
+      root = nodes_[root].parent_;
     }
   }
   checkNode(nodes_[root].child_down_);

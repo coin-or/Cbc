@@ -953,8 +953,21 @@ DBNodeSimple::canSwitchParentWithGrandparent(const int* which,
   const bool parent_is_down_child = parent_id == grandparent.child_down_;
 
   if (lpres.isProvenOptimal ||
-      lpres.isDualObjectiveLimitReached ||
       lpres.isIterationLimitReached) {
+    // THINK: should we do anything? like:
+#if 0
+    double djValue = lpres.getReducedCost[GP_brvar_fullid]*direction;
+    if (djValue > 1.0e-6) {
+      // wants to go down
+      return (parent_is_down_child);
+    } else if (djValue < -1.0e-6) {
+      return (! parent_is_down_child);
+    }
+#endif
+    return false;
+  }
+    
+  if (lpres.isDualObjectiveLimitReached) {
     // Dual feasible, and in this case we don't care how we have
     // stopped (iteration limit, obj val limit, time limit, optimal solution,
     // etc.), we can just look at the reduced costs to figure out if the

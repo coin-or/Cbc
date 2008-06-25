@@ -78,6 +78,7 @@ public:
   double* getReducedCost;
   double* getColLower;
   double* getColUpper;
+  double* getColSolution; // FIXME Not needed, just for debugging
   double* getObjCoefficients;
   double yb_plus_rl_minus_su;
 };
@@ -101,6 +102,8 @@ LPresult::gutsOfConstructor(const OsiSolverInterface& model)
   CoinDisjointCopyN(model.getColLower(), model.getNumCols(), getColLower);
   getColUpper = new double[model.getNumCols()];
   CoinDisjointCopyN(model.getColUpper(), model.getNumCols(), getColUpper);
+  getColSolution = new double[model.getNumCols()];
+  CoinDisjointCopyN(model.getColSolution(), model.getNumCols(), getColSolution);
 
   getObjCoefficients = NULL;
   yb_plus_rl_minus_su = 0;
@@ -161,6 +164,7 @@ LPresult::~LPresult()
   delete[] getReducedCost;
   delete[] getColLower;
   delete[] getColUpper;
+  delete[] getColSolution;
   delete[] getObjCoefficients;
 }
 
@@ -952,8 +956,12 @@ DBNodeSimple::canSwitchParentWithGrandparent(const int* which,
   const int GP_brvar_fullid = which[GP_brvar];
   const bool parent_is_down_child = parent_id == grandparent.child_down_;
 
-  if (lpres.isProvenOptimal ||
-      lpres.isIterationLimitReached) {
+  if (lpres.isIterationLimitReached) {
+    // THINK: should we do anything?
+    return false;
+  }
+    
+  if (lpres.isProvenOptimal) {
     // THINK: should we do anything? like:
 #if 0
     double djValue = lpres.getReducedCost[GP_brvar_fullid]*direction;
@@ -1577,7 +1585,20 @@ branchAndBound(OsiSolverInterface & model) {
 	  break;
 	}
 
+	const bool mustResolve =
+	  model.isDualObjectiveLimitReached() && !model.isProvenOptimal();
+	double oldlimit = 0;
+
+	if (mustResolve) {
+	  // THINK: Something faster would be better...
+	  model.getDblParam(OsiDualObjectiveLimit, oldlimit);
+	  model.setDblParam(OsiDualObjectiveLimit, 1e100);
+	  model.resolve();
+	}
 	LPresult lpres(model);
+	if (mustResolve) {
+	  model.setDblParam(OsiDualObjectiveLimit, oldlimit);
+	}
 
 	bool canSwitch = node.canSwitchParentWithGrandparent(which, lpres,
 							     originalLower,
@@ -1615,7 +1636,9 @@ branchAndBound(OsiSolverInterface & model) {
 	}
 	if (cnt > 0) {
 	  model.resolve();
-	  // This is horribly looking... Get rid of it when properly debugged...
+	  // This is horribly looking... Get rid of it when properly
+	  // debugged...
+	  LPresult lpres1(model);
 	  assert(lpres.isAbandoned == model.isAbandoned());
 	  assert(lpres.isDualObjectiveLimitReached == model.isDualObjectiveLimitReached());
 	  assert(lpres.isDualObjectiveLimitReached ||

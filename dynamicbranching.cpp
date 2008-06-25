@@ -42,6 +42,7 @@ changes implied by the branching decisions.
 #include "CoinTime.hpp"
 #include "OsiClpSolverInterface.hpp"
 
+#define FUNNY_BRANCHING 1
 #define DEBUG_DYNAMIC_BRANCHING
 
 #ifdef DEBUG_DYNAMIC_BRANCHING
@@ -654,7 +655,6 @@ DBNodeSimple::extension(const DBNodeSimple & other,
 }
 
 #include <vector>
-#define FUNNY_BRANCHING 1
 
 // Must code up by hand
 class DBVectorNode  {
@@ -1069,7 +1069,13 @@ DBVectorNode::adjustBounds(int subroot, int brvar, int brlb, int brub)
   brlb = CoinMax(brlb, node.lower_[brvar]);
   if (brub < brlb) {
     // This node became infeasible. Get rid of it and of its descendants
+    const int parent_id = node.parent_;
     removeSubTree(subroot);
+    if (nodes_[parent_id].child_down_ == subroot) {
+      nodes_[parent_id].child_down_ = -1;
+    } else {
+      nodes_[parent_id].child_up_ = -1;
+    }
     return;
   }
   if (node.variable_ == brvar) {
@@ -1218,9 +1224,12 @@ DBVectorNode::moveNodeUp(const int* which,
       }
     } else { // only parent is processed from the two children of grandparent
       if (! child_to_move_is_processed) {
-	grandparent.way_ = parent_is_down_child ?
-	  DBNodeSimple::WAY_DOWN_UP__NOTHING_DONE :
-	  DBNodeSimple::WAY_UP_DOWN__NOTHING_DONE;
+	// remove grandparent, none of its children is processed now, why
+	// force its branching decision?
+	removeNode(grandparent_id);
+	parent.child_up_ = -1;
+	parent.way_ = DBNodeSimple::WAY_DOWN_UP__DOWN_DONE;
+	sizeDeferred_--;
       } else {
 	grandparent.way_ = parent_is_down_child ?
 	  DBNodeSimple::WAY_DOWN_UP__DOWN_DONE :
@@ -1241,9 +1250,10 @@ DBVectorNode::moveNodeUp(const int* which,
       }
     } else { // only parent is processed from the two children of grandparent
       if (! child_to_move_is_processed) {
-	grandparent.way_ = parent_is_down_child ?
-	  DBNodeSimple::WAY_DOWN_UP__NOTHING_DONE :
-	  DBNodeSimple::WAY_UP_DOWN__NOTHING_DONE;
+	removeNode(grandparent_id);
+	parent.child_down_ = -1;
+	parent.way_ = DBNodeSimple::WAY_UP_DOWN__UP_DONE;
+	sizeDeferred_--;
       } else {
 	grandparent.way_ = parent_is_down_child ?
 	  DBNodeSimple::WAY_DOWN_UP__DOWN_DONE :
@@ -1597,6 +1607,7 @@ branchAndBound(OsiSolverInterface & model) {
 		 (lpres.isProvenOptimal == model.isProvenOptimal()));
 	  assert(lpres.isDualObjectiveLimitReached ||
 		 (lpres.isProvenPrimalInfeasible == model.isProvenPrimalInfeasible()));
+	  printf("Finished moving node %d up by %i levels.\n", node.node_id_, cnt);
 	}
 	    
 #if defined(DEBUG_DYNAMIC_BRANCHING)
@@ -1614,7 +1625,7 @@ branchAndBound(OsiSolverInterface & model) {
 	  }
 	}
 #endif
-	if ((numberNodes%1000)==0) 
+	if ((numberNodes%10)==0) 
 	  printf("%d nodes, tree size %d\n",
 		 numberNodes,branchingTree.size());
 	if (CoinCpuTime()-time1>3600.0) {

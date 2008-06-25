@@ -108,13 +108,18 @@ LPresult::gutsOfConstructor(const OsiSolverInterface& model)
   getObjCoefficients = NULL;
   yb_plus_rl_minus_su = 0;
   
-  if (!isProvenOptimal &&
-      !isDualObjectiveLimitReached &&
-      !isIterationLimitReached &&
-      !isAbandoned &&
-      !isProvenDualInfeasible &&
-      !isPrimalObjectiveLimitReached) {
-    assert(isProvenPrimalInfeasible);
+  if (isIterationLimitReached ||
+      isAbandoned ||
+      isProvenDualInfeasible ||
+      isPrimalObjectiveLimitReached) {
+    return; // None of these should happen
+  }
+  // If isDualObjectiveLimitReached is true then isProvenOptimal and
+  // isProvenPrimalInfeasible are correct (search for mustResolve).
+  // If isDualObjectiveLimitReached false, then the others were correct even
+  // without resolve. So... we need some data only if we are infeasible, but
+  // that flag is correct, so we can test it.
+  if (isProvenPrimalInfeasible) {
     getObjCoefficients = new double[model.getNumCols()];
     CoinDisjointCopyN(model.getObjCoefficients(), model.getNumCols(), getObjCoefficients);
     const std::vector<double*> dual_rays = model.getDualRays(1);
@@ -190,7 +195,7 @@ public:
 
 private:
   void gutsOfCopy(const DBNodeSimple& rhs);
-  void gutsOfConstructor (OsiSolverInterface &model,
+  void gutsOfConstructor (int index, OsiSolverInterface &model,
 			  int numberIntegers, int * integer,
 			  CoinWarmStart * basis);
   void gutsOfDestructor();  
@@ -202,7 +207,7 @@ public:
 
   // Constructor from current state (and list of integers)
   // Also chooses branching variable (if none set to -1)
-  DBNodeSimple (OsiSolverInterface &model,
+  DBNodeSimple (int index, OsiSolverInterface &model,
 		int numberIntegers, int * integer,
 		CoinWarmStart * basis);
   // Copy constructor 
@@ -256,6 +261,7 @@ public:
     
   
   // Public data
+  int index_;
   // The id of the node
   int node_id_;
   // Basis (should use tree, but not as wasteful as bounds!)
@@ -292,6 +298,7 @@ public:
 
 
 DBNodeSimple::DBNodeSimple() :
+  index_(-1),
   node_id_(-1),
   basis_(NULL),
   objectiveValue_(COIN_DBL_MAX),
@@ -310,15 +317,16 @@ DBNodeSimple::DBNodeSimple() :
   upper_(NULL)
 {
 }
-DBNodeSimple::DBNodeSimple(OsiSolverInterface & model,
+DBNodeSimple::DBNodeSimple(int index, OsiSolverInterface & model,
 			   int numberIntegers, int * integer,CoinWarmStart * basis)
 {
-  gutsOfConstructor(model,numberIntegers,integer,basis);
+  gutsOfConstructor(index, model,numberIntegers,integer,basis);
 }
 void
-DBNodeSimple::gutsOfConstructor(OsiSolverInterface & model,
+DBNodeSimple::gutsOfConstructor(int index, OsiSolverInterface & model,
 				int numberIntegers, int * integer,CoinWarmStart * basis)
 {
+  index_ = index;
   node_id_ = -1;
   basis_ = basis;
   variable_=-1;
@@ -581,6 +589,7 @@ DBNodeSimple::gutsOfConstructor(OsiSolverInterface & model,
 void
 DBNodeSimple::gutsOfCopy(const DBNodeSimple & rhs)
 {
+  index_=rhs.index_;
   node_id_=rhs.node_id_;
   basis_ = rhs.basis_ ? rhs.basis_->clone() : NULL;
   objectiveValue_=rhs.objectiveValue_;
@@ -961,7 +970,7 @@ DBNodeSimple::canSwitchParentWithGrandparent(const int* which,
     return false;
   }
     
-  if (lpres.isProvenOptimal) {
+  if (lpres.isProvenOptimal && !lpres.isDualObjectiveLimitReached) {
     // THINK: should we do anything? like:
 #if 0
     double djValue = lpres.getReducedCost[GP_brvar_fullid]*direction;
@@ -976,106 +985,108 @@ DBNodeSimple::canSwitchParentWithGrandparent(const int* which,
   }
     
   if (lpres.isDualObjectiveLimitReached) {
-    // Dual feasible, and in this case we don't care how we have
-    // stopped (iteration limit, obj val limit, time limit, optimal solution,
-    // etc.), we can just look at the reduced costs to figure out if the
-    // grandparent is irrelevant. Remember, we are using dual simplex!
-    double djValue = lpres.getReducedCost[GP_brvar_fullid]*direction;
-    if (djValue > 1.0e-6) {
-      // wants to go down
-      if (parent_is_down_child) {
-	return true;
+    // Dual feasible, Because of reswolving (search for mustResolve) the
+    // problem here is either optimal or infeasible. If infeasible then we
+    // just need to fall out of this, if optimal then we test the reduced
+    // cost.
+    if (lpres.isProvenOptimal) {
+      double djValue = lpres.getReducedCost[GP_brvar_fullid]*direction;
+      if (djValue > 1.0e-6) {
+	// wants to go down
+	if (parent_is_down_child) {
+	  return true;
+	}
+	if (lpres.getColLower[GP_brvar_fullid] > std::ceil(grandparent.value_)) {
+	  return true;
+	}
+      } else if (djValue < -1.0e-6) {
+	// wants to go up
+	if (! parent_is_down_child) {
+	  return true;
+	}
+	if (lpres.getColUpper[GP_brvar_fullid] < std::floor(grandparent.value_)) {
+	  return true;
+	}
       }
-      if (lpres.getColLower[GP_brvar_fullid] > std::ceil(grandparent.value_)) {
-	return true;
-      }
-    } else if (djValue < -1.0e-6) {
-      // wants to go up
-      if (! parent_is_down_child) {
-	return true;
-      }
-      if (lpres.getColUpper[GP_brvar_fullid] < std::floor(grandparent.value_)) {
-	return true;
-      }
+      return false;
     }
-    return false;
-  } else {
-    assert(lpres.isProvenPrimalInfeasible);
-    return false;
-    const int greatgrandparent_id = grandparent.parent_;
-    const int x = GP_brvar_fullid; // for easier reference... we'll use s_x
+  }
 
-    /*
-      Now we are going to check that if we relax the GP's branching decision
-      then the child's LP relaxation is still infeasible. The test is done by
-      checking whether the column (or its negative) of the GP's branching
-      variable cuts off the dual ray proving the infeasibility.
-    */
+  // Problem is really infeasible and has a dual ray.
+  assert(lpres.isProvenPrimalInfeasible);
+  const int greatgrandparent_id = grandparent.parent_;
+  const int x = GP_brvar_fullid; // for easier reference... we'll use s_x
+
+  /*
+    Now we are going to check that if we relax the GP's branching decision
+    then the child's LP relaxation is still infeasible. The test is done by
+    checking whether the column (or its negative) of the GP's branching
+    variable cuts off the dual ray proving the infeasibility.
+  */
     
-    const double* dj = lpres.getReducedCost;
-    const double* obj = lpres.getObjCoefficients;
-    const double yA_x = dj[x] - obj[x];
+  const double* dj = lpres.getReducedCost;
+  const double* obj = lpres.getObjCoefficients;
+  const double yA_x = dj[x] - obj[x];
 
-    if (direction > 0) { // minimization problem
-      if (parent_is_down_child) {
-	const double s_x = CoinMax(yA_x, -1e-8);
-	if (s_x < 1e-6) {
-	  return true;
-	}
-	if (lpres.yb_plus_rl_minus_su < 1e-8) {
-	  printf("WARNING: lpres.yb_plus_rl_minus_su is not positive!\n");
-	  return false;
-	}
-	const double max_u_x = lpres.yb_plus_rl_minus_su / s_x + lpres.getColUpper[x];
-	const double u_x_without_GP = greatgrandparent_id >= 0 ?
-	  branchingTree.nodes_[greatgrandparent_id].upper_[GP_brvar] :
-	  original_upper[GP_brvar];
-	return max_u_x > u_x_without_GP - 1e-8;
-      } else {
-	const double r_x = CoinMax(yA_x, -1e-8);
-	if (r_x < 1e-6) {
-	  return true;
-	}
-	if (lpres.yb_plus_rl_minus_su < 1e-8) {
-	  printf("WARNING: lpres.yb_plus_rl_minus_su is not positive!\n");
-	  return false;
-	}
-	const double min_l_x = - lpres.yb_plus_rl_minus_su / r_x + lpres.getColLower[x];
-	const double l_x_without_GP = greatgrandparent_id >= 0 ?
-	  branchingTree.nodes_[greatgrandparent_id].lower_[GP_brvar] :
-	  original_lower[GP_brvar];
-	return min_l_x < l_x_without_GP + 1e-8;
+  if (direction > 0) { // minimization problem
+    if (parent_is_down_child) {
+      const double s_x = CoinMax(yA_x, -1e-8);
+      if (s_x < 1e-6) {
+	return true;
       }
-    } else { // maximization problem
-      if (parent_is_down_child) {
-	const double s_x = CoinMin(yA_x, 1e-8);
-	if (s_x > -1e-6) {
-	  return true;
-	}
-	if (lpres.yb_plus_rl_minus_su > -1e-8) {
-	  printf("WARNING: lpres.yb_plus_rl_minus_su is not negative!\n");
-	  return false;
-	}
-	const double max_u_x = lpres.yb_plus_rl_minus_su / s_x + lpres.getColUpper[x];
-	const double u_x_without_GP = greatgrandparent_id >= 0 ?
-	  branchingTree.nodes_[greatgrandparent_id].upper_[GP_brvar] :
-	  original_upper[GP_brvar];
-	return max_u_x > u_x_without_GP - 1e-8;
-      } else {
-	const double r_x = CoinMin(yA_x, 1e-8);
-	if (r_x < -1e-6) {
-	  return true;
-	}
-	if (lpres.yb_plus_rl_minus_su > -1e-8) {
-	  printf("WARNING: lpres.yb_plus_rl_minus_su is not negative!\n");
-	  return false;
-	}
-	const double min_l_x = - lpres.yb_plus_rl_minus_su / r_x + lpres.getColLower[x];
-	const double l_x_without_GP = greatgrandparent_id >= 0 ?
-	  branchingTree.nodes_[greatgrandparent_id].lower_[GP_brvar] :
-	  original_lower[GP_brvar];
-	return min_l_x < l_x_without_GP + 1e-8;
+      if (lpres.yb_plus_rl_minus_su < 1e-8) {
+	printf("WARNING: lpres.yb_plus_rl_minus_su is not positive!\n");
+	return false;
       }
+      const double max_u_x = lpres.yb_plus_rl_minus_su / s_x + lpres.getColUpper[x];
+      const double u_x_without_GP = greatgrandparent_id >= 0 ?
+	branchingTree.nodes_[greatgrandparent_id].upper_[GP_brvar] :
+	original_upper[GP_brvar];
+      return max_u_x > u_x_without_GP - 1e-8;
+    } else {
+      const double r_x = CoinMax(yA_x, -1e-8);
+      if (r_x < 1e-6) {
+	return true;
+      }
+      if (lpres.yb_plus_rl_minus_su < 1e-8) {
+	printf("WARNING: lpres.yb_plus_rl_minus_su is not positive!\n");
+	return false;
+      }
+      const double min_l_x = - lpres.yb_plus_rl_minus_su / r_x + lpres.getColLower[x];
+      const double l_x_without_GP = greatgrandparent_id >= 0 ?
+	branchingTree.nodes_[greatgrandparent_id].lower_[GP_brvar] :
+	original_lower[GP_brvar];
+      return min_l_x < l_x_without_GP + 1e-8;
+    }
+  } else { // maximization problem
+    if (parent_is_down_child) {
+      const double s_x = CoinMin(yA_x, 1e-8);
+      if (s_x > -1e-6) {
+	return true;
+      }
+      if (lpres.yb_plus_rl_minus_su > -1e-8) {
+	printf("WARNING: lpres.yb_plus_rl_minus_su is not negative!\n");
+	return false;
+      }
+      const double max_u_x = lpres.yb_plus_rl_minus_su / s_x + lpres.getColUpper[x];
+      const double u_x_without_GP = greatgrandparent_id >= 0 ?
+	branchingTree.nodes_[greatgrandparent_id].upper_[GP_brvar] :
+	original_upper[GP_brvar];
+      return max_u_x > u_x_without_GP - 1e-8;
+    } else {
+      const double r_x = CoinMin(yA_x, 1e-8);
+      if (r_x < -1e-6) {
+	return true;
+      }
+      if (lpres.yb_plus_rl_minus_su > -1e-8) {
+	printf("WARNING: lpres.yb_plus_rl_minus_su is not negative!\n");
+	return false;
+      }
+      const double min_l_x = - lpres.yb_plus_rl_minus_su / r_x + lpres.getColLower[x];
+      const double l_x_without_GP = greatgrandparent_id >= 0 ?
+	branchingTree.nodes_[greatgrandparent_id].lower_[GP_brvar] :
+	original_lower[GP_brvar];
+      return min_l_x < l_x_without_GP + 1e-8;
     }
   }
 
@@ -1253,6 +1264,8 @@ DBVectorNode::moveNodeUp(const int* which,
 	parent.child_up_ = -1;
 	parent.way_ = DBNodeSimple::WAY_DOWN_UP__DOWN_DONE;
 	sizeDeferred_--;
+	return; // No bound changes are needed on the GO side as GP is
+		// deleted...
       } else {
 	grandparent.way_ = parent_is_down_child ?
 	  DBNodeSimple::WAY_DOWN_UP__DOWN_DONE :
@@ -1277,6 +1290,7 @@ DBVectorNode::moveNodeUp(const int* which,
 	parent.child_down_ = -1;
 	parent.way_ = DBNodeSimple::WAY_UP_DOWN__UP_DONE;
 	sizeDeferred_--;
+	return;
       } else {
 	grandparent.way_ = parent_is_down_child ?
 	  DBNodeSimple::WAY_DOWN_UP__DOWN_DONE :
@@ -1449,12 +1463,12 @@ branchAndBound(OsiSolverInterface & model) {
     DBVectorNode branchingTree;
     
     // Add continuous to it;
-    DBNodeSimple rootNode(model,numberIntegers,which,model.getWarmStart());
+    DBNodeSimple rootNode(0,model,numberIntegers,which,model.getWarmStart());
     // something extra may have been fixed by strong branching
     // if so go round again
     while (rootNode.variable_==numberIntegers) {
       model.resolve();
-      rootNode = DBNodeSimple(model,numberIntegers,which,model.getWarmStart());
+      rootNode = DBNodeSimple(0,model,numberIntegers,which,model.getWarmStart());
     }
     if (rootNode.objectiveValue_<1.0e100) {
       // push on stack
@@ -1597,6 +1611,7 @@ branchAndBound(OsiSolverInterface & model) {
 	}
 	LPresult lpres(model);
 	if (mustResolve) {
+	  lpres.isDualObjectiveLimitReached = true;
 	  model.setDblParam(OsiDualObjectiveLimit, oldlimit);
 	}
 
@@ -1635,10 +1650,18 @@ branchAndBound(OsiSolverInterface & model) {
 	  ++cnt;
 	}
 	if (cnt > 0) {
+	  printf("Before switch: opt: %c   inf: %c   dual_bd: %c\n",
+		 lpres.isProvenOptimal ? 'T' : 'F',
+		 lpres.isProvenPrimalInfeasible ? 'T' : 'F',
+		 lpres.isDualObjectiveLimitReached ? 'T' : 'F');
 	  model.resolve();
 	  // This is horribly looking... Get rid of it when properly
 	  // debugged...
 	  LPresult lpres1(model);
+	  printf("After resolve: opt: %c   inf: %c   dual_bd: %c\n",
+		 lpres1.isProvenOptimal ? 'T' : 'F',
+		 lpres1.isProvenPrimalInfeasible ? 'T' : 'F',
+		 lpres1.isDualObjectiveLimitReached ? 'T' : 'F');
 	  assert(lpres.isAbandoned == model.isAbandoned());
 	  assert(lpres.isDualObjectiveLimitReached == model.isDualObjectiveLimitReached());
 	  assert(lpres.isDualObjectiveLimitReached ||
@@ -1673,12 +1696,12 @@ branchAndBound(OsiSolverInterface & model) {
 	  printf("stopping after 3600 seconds\n");
 	  exit(77);
 	}
-	DBNodeSimple newNode(model,numberIntegers,which,ws);
+	DBNodeSimple newNode(numberNodes, model,numberIntegers,which,ws);
 	// something extra may have been fixed by strong branching
 	// if so go round again
 	while (newNode.variable_==numberIntegers) {
 	  model.resolve();
-	  newNode = DBNodeSimple(model,numberIntegers,which,model.getWarmStart());
+	  newNode = DBNodeSimple(numberNodes, model,numberIntegers,which,model.getWarmStart());
 	  newNode.strong_branching_fixed_vars_ = true;
 	}
 	newNode.reduced_cost_fixed_vars_ = did_reduced_cost_fixing_for_child;

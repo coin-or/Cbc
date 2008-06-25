@@ -74,6 +74,7 @@ public:
   bool isIterationLimitReached;
   bool isProvenPrimalInfeasible;
   double getObjSense;
+  double getObjValue;
   double* getReducedCost;
   double* getColLower;
   double* getColUpper;
@@ -92,6 +93,7 @@ LPresult::gutsOfConstructor(const OsiSolverInterface& model)
   isIterationLimitReached = model.isIterationLimitReached();
   isProvenPrimalInfeasible = model.isProvenPrimalInfeasible();
   getObjSense = model.getObjSense();
+  getObjValue = model.getObjValue();
 
   getReducedCost = new double[model.getNumCols()];
   CoinDisjointCopyN(model.getReducedCost(), model.getNumCols(), getReducedCost);
@@ -1607,6 +1609,9 @@ branchAndBound(OsiSolverInterface & model) {
 		 (lpres.isProvenOptimal == model.isProvenOptimal()));
 	  assert(lpres.isDualObjectiveLimitReached ||
 		 (lpres.isProvenPrimalInfeasible == model.isProvenPrimalInfeasible()));
+	  assert(!lpres.isProvenOptimal || ! model.isProvenOptimal() ||
+		 (lpres.isProvenOptimal && model.isProvenOptimal() &&
+		  lpres.getObjValue == model.getObjValue()));
 	  printf("Finished moving node %d up by %i levels.\n", node.node_id_, cnt);
 	}
 	    

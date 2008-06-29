@@ -78,8 +78,9 @@ public:
   double* getReducedCost;
   double* getColLower;
   double* getColUpper;
+  double* rowDualRay;
+  double* colDualRay;
   double* getColSolution; // FIXME Not needed, just for debugging
-  double* getObjCoefficients;
   double yb_plus_rl_minus_su;
 };
 
@@ -104,8 +105,9 @@ LPresult::gutsOfConstructor(const OsiSolverInterface& model)
   CoinDisjointCopyN(model.getColUpper(), model.getNumCols(), getColUpper);
   getColSolution = new double[model.getNumCols()];
   CoinDisjointCopyN(model.getColSolution(), model.getNumCols(), getColSolution);
+  rowDualRay = NULL;
+  colDualRay = NULL;
 
-  getObjCoefficients = NULL;
   yb_plus_rl_minus_su = 0;
   
   if (isIterationLimitReached ||
@@ -120,42 +122,52 @@ LPresult::gutsOfConstructor(const OsiSolverInterface& model)
   // without resolve. So... we need some data only if we are infeasible, but
   // that flag is correct, so we can test it.
   if (isProvenPrimalInfeasible) {
-    getObjCoefficients = new double[model.getNumCols()];
-    CoinDisjointCopyN(model.getObjCoefficients(), model.getNumCols(), getObjCoefficients);
     const std::vector<double*> dual_rays = model.getDualRays(1);
     if (dual_rays.size() == 0) {
       printf("WARNING: LP is infeas, but no dual ray is returned!\n");
       return;
     }
-    const double* dual_ray = dual_rays[0];
-    const double direction = model.getObjSense();
     const double* rub = model.getRowUpper();
     const double* rlb = model.getRowLower();
     const double* cub = model.getColUpper();
     const double* clb = model.getColLower();
-    const double* dj  = model.getReducedCost();
-    const double* obj = model.getObjCoefficients();
     const int numRows = model.getNumRows();
     const int numCols = model.getNumCols();
+    rowDualRay = dual_rays[0];
+    colDualRay = new double[model.getNumCols()];
+#if 1
+    // WARNING  ==== WARNING ==== WARNING ==== WARNING ==== WARNING
+    // For some reason clp returns the negative of the dual ray...
     for (int i = 0; i < numRows; ++i) {
-      const double ray_i = dual_ray[i];
-      if (ray_i > 1e-6) {
+      rowDualRay[i] = -rowDualRay[i];
+    }
+#endif
+    const CoinPackedMatrix* m = model.getMatrixByCol();
+    m->transposeTimes(rowDualRay, colDualRay);
+    
+    for (int i = 0; i < numRows; ++i) {
+      const double ray_i = rowDualRay[i]; 
+      if (ray_i > 1e-8) {
 	yb_plus_rl_minus_su += ray_i*rlb[i];
-      } else if (ray_i < 1e-6) {
+	assert(rlb[i] > -1e29);
+      } else if (ray_i < 1e-8) {
 	yb_plus_rl_minus_su += ray_i*rub[i];
+	assert(rub[i] < 1e29);
       }
     }
     for (int j = 0; j < numCols; ++j) {
-      const double yA_j = dj[j] - obj[j];
-      if (direction * yA_j > 1e-6) {
-	yb_plus_rl_minus_su -= yA_j*cub[j];
-      } else if (direction * yA_j < -1e-6) {
-	yb_plus_rl_minus_su -= yA_j*clb[j];
+      if (colDualRay[j] > 1e-8) { //
+	yb_plus_rl_minus_su -= colDualRay[j] * cub[j];
+	assert(cub[j] < 1e29);
+      } else if (colDualRay[j] < -1e-8) {
+	yb_plus_rl_minus_su -= colDualRay[j] * clb[j];
+	assert(clb[j] > -1e29);
       }
     }
-    for (int i = dual_rays.size()-1; i >= 0; --i) {
+    for (int i = dual_rays.size()-1; i > 0; --i) {
       delete[] dual_rays[i];
     }
+    assert(yb_plus_rl_minus_su > 1e-8);
   }
 }
   
@@ -170,7 +182,8 @@ LPresult::~LPresult()
   delete[] getColLower;
   delete[] getColUpper;
   delete[] getColSolution;
-  delete[] getObjCoefficients;
+  delete[] colDualRay;
+  delete[] rowDualRay;
 }
 
 // Trivial class for Branch and Bound
@@ -225,7 +238,7 @@ public:
 		 const double * originalUpper) const;
   // Tests if we can switch this node (this is the parent) with its parent
   bool canSwitchParentWithGrandparent(const int* which,
-				      const LPresult& lpres,
+				      LPresult& lpres,
 				      const int * original_lower,
 				      const int * original_upper,
 				      DBVectorNode & branchingTree);
@@ -914,7 +927,7 @@ DBVectorNode::pop_back()
 
 bool
 DBNodeSimple::canSwitchParentWithGrandparent(const int* which,
-					     const LPresult& lpres,
+					     LPresult& lpres,
 					     const int * original_lower,
 					     const int * original_upper,
 					     DBVectorNode & branchingTree)
@@ -1024,71 +1037,47 @@ DBNodeSimple::canSwitchParentWithGrandparent(const int* which,
     variable cuts off the dual ray proving the infeasibility.
   */
     
-  const double* dj = lpres.getReducedCost;
-  const double* obj = lpres.getObjCoefficients;
-  const double yA_x = dj[x] - obj[x];
+  const double* colDualRay = lpres.colDualRay;
+  const double ub_without_GP = greatgrandparent_id >= 0 ?
+    branchingTree.nodes_[greatgrandparent_id].upper_[GP_brvar] :
+    original_upper[GP_brvar];
+  const double lb_without_GP = greatgrandparent_id >= 0 ?
+    branchingTree.nodes_[greatgrandparent_id].lower_[GP_brvar] :
+    original_lower[GP_brvar];
 
-  if (direction > 0) { // minimization problem
-    if (parent_is_down_child) {
-      const double s_x = CoinMax(yA_x, -1e-8);
-      if (s_x < 1e-6) {
-	return true;
-      }
-      if (lpres.yb_plus_rl_minus_su < 1e-8) {
-	printf("WARNING: lpres.yb_plus_rl_minus_su is not positive!\n");
-	return false;
-      }
-      const double max_u_x = lpres.yb_plus_rl_minus_su / s_x + lpres.getColUpper[x];
-      const double u_x_without_GP = greatgrandparent_id >= 0 ?
-	branchingTree.nodes_[greatgrandparent_id].upper_[GP_brvar] :
-	original_upper[GP_brvar];
-      return max_u_x > u_x_without_GP - 1e-8;
-    } else {
-      const double r_x = CoinMax(yA_x, -1e-8);
-      if (r_x < 1e-6) {
-	return true;
-      }
-      if (lpres.yb_plus_rl_minus_su < 1e-8) {
-	printf("WARNING: lpres.yb_plus_rl_minus_su is not positive!\n");
-	return false;
-      }
-      const double min_l_x = - lpres.yb_plus_rl_minus_su / r_x + lpres.getColLower[x];
-      const double l_x_without_GP = greatgrandparent_id >= 0 ?
-	branchingTree.nodes_[greatgrandparent_id].lower_[GP_brvar] :
-	original_lower[GP_brvar];
-      return min_l_x < l_x_without_GP + 1e-8;
+  if (parent_is_down_child) { // upper bound on x is forced
+    if (colDualRay[x] < 1e-8) { // if yA_x] is non-positive then the var is
+				// at its lower bound (or has 0 red cost)
+				// so same dual ray still proves infeas
+      return true;
     }
-  } else { // maximization problem
-    if (parent_is_down_child) {
-      const double s_x = CoinMin(yA_x, 1e-8);
-      if (s_x > -1e-6) {
-	return true;
-      }
-      if (lpres.yb_plus_rl_minus_su > -1e-8) {
-	printf("WARNING: lpres.yb_plus_rl_minus_su is not negative!\n");
-	return false;
-      }
-      const double max_u_x = lpres.yb_plus_rl_minus_su / s_x + lpres.getColUpper[x];
-      const double u_x_without_GP = greatgrandparent_id >= 0 ?
-	branchingTree.nodes_[greatgrandparent_id].upper_[GP_brvar] :
-	original_upper[GP_brvar];
-      return max_u_x > u_x_without_GP - 1e-8;
-    } else {
-      const double r_x = CoinMin(yA_x, 1e-8);
-      if (r_x < -1e-6) {
-	return true;
-      }
-      if (lpres.yb_plus_rl_minus_su > -1e-8) {
-	printf("WARNING: lpres.yb_plus_rl_minus_su is not negative!\n");
-	return false;
-      }
-      const double min_l_x = - lpres.yb_plus_rl_minus_su / r_x + lpres.getColLower[x];
-      const double l_x_without_GP = greatgrandparent_id >= 0 ?
-	branchingTree.nodes_[greatgrandparent_id].lower_[GP_brvar] :
-	original_lower[GP_brvar];
-      return min_l_x < l_x_without_GP + 1e-8;
+    const double max_ub_increase = lpres.yb_plus_rl_minus_su / colDualRay[x];
+    assert(max_ub_increase >= 1e-8);
+    const bool willSwitch =
+      max_ub_increase > ub_without_GP - lpres.getColUpper[x] + 1e-8;
+    if (willSwitch) {
+      // The switch will happen so we might as well update the "infeasibility"
+      lpres.yb_plus_rl_minus_su -= colDualRay[x] * (ub_without_GP - lpres.getColUpper[x]);
     }
+    return willSwitch;
+  } else { // lower bound on x is forced
+    if (colDualRay[x] > -1e-8) { // if yA_x is non-negative then the var is
+				 // at its upper bound (or has 0 red cost)
+				 // so same dual ray still proves infeas
+      return true;
+    }
+    const double max_lb_decrease = - lpres.yb_plus_rl_minus_su / colDualRay[x];
+    assert(max_lb_decrease >= 1e-8);
+    const bool willSwitch =
+      max_lb_decrease > lpres.getColLower[x] - lb_without_GP + 1e-8;
+    if (willSwitch) {
+      // The switch will happen so we might as well update the "infeasibility"
+      lpres.yb_plus_rl_minus_su += colDualRay[x] * (lpres.getColLower[x] - lb_without_GP);
+    }
+    return willSwitch;
   }
+  // THINK: the above is definitely good for minimization problems. Is it good
+  // for max?
 
   return true; // to placate some compilers
 }
@@ -1657,7 +1646,22 @@ branchAndBound(OsiSolverInterface & model) {
 	  model.resolve();
 	  // This is horribly looking... Get rid of it when properly
 	  // debugged...
+#if 1
+	  const bool mustResolve =
+	    model.isDualObjectiveLimitReached() && !model.isProvenOptimal();
+	  double oldlimit = 0;
+
+	  if (mustResolve) {
+	    // THINK: Something faster would be better...
+	    model.getDblParam(OsiDualObjectiveLimit, oldlimit);
+	    model.setDblParam(OsiDualObjectiveLimit, 1e100);
+	    model.resolve();
+	  }
 	  LPresult lpres1(model);
+	  if (mustResolve) {
+	    lpres.isDualObjectiveLimitReached = true;
+	    model.setDblParam(OsiDualObjectiveLimit, oldlimit);
+	  }
 	  printf("After resolve: opt: %c   inf: %c   dual_bd: %c\n",
 		 lpres1.isProvenOptimal ? 'T' : 'F',
 		 lpres1.isProvenPrimalInfeasible ? 'T' : 'F',
@@ -1671,6 +1675,7 @@ branchAndBound(OsiSolverInterface & model) {
 	  assert(!lpres.isProvenOptimal || ! model.isProvenOptimal() ||
 		 (lpres.isProvenOptimal && model.isProvenOptimal() &&
 		  lpres.getObjValue == model.getObjValue()));
+#endif
 	  printf("Finished moving node %d up by %i levels.\n", node.node_id_, cnt);
 	}
 	    

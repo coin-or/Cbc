@@ -993,7 +993,6 @@ DBNodeSimple::canSwitchParentWithGrandparent(const int* which,
     // higher than that of the grandparent then we allow switching.
     // NOTE: grandparent's obj val can;t be 1e100 since then parent would not
     // exist...
-    return false;
     if (lpres.getObjValue > grandparent.objectiveValue_ + 1e-8) {
       double djValue = lpres.getReducedCost[GP_brvar_fullid]*direction;
       if (djValue > 1.0e-6) {
@@ -1361,11 +1360,12 @@ std::string getTree(DBVectorNode& branchingTree)
   char line[1000];
   for(int k=0; k<branchingTree.size_; k++) {
     DBNodeSimple& node = branchingTree.nodes_[k];
-    sprintf(line, "%d %d %d %d %f %d %d 0x%x %d %d\n",
-	    k, node.node_id_, node.parent_, node.variable_,
-	    node.value_, node.lower_[node.variable_],
-	    node.upper_[node.variable_], node.way_,
-	    node.child_down_, node.child_up_);
+    if(node.previous_ >= 0)
+      sprintf(line, "%d %d %d %d %f %d %d 0x%x %d %d %f\n",
+	      k, node.node_id_, node.parent_, node.variable_,
+	      node.value_, node.lower_[node.variable_],
+	      node.upper_[node.variable_], node.way_,
+	      node.child_down_, node.child_up_, node.objectiveValue_);
     tree += line;
   }
   return tree;
@@ -1590,7 +1590,7 @@ branchAndBound(OsiSolverInterface & model) {
 
         const double parentGap = (cutoff-node.objectiveValue_)*direction + 1.0e-4;
 	assert (parentGap >= 0);
-	const bool smallGap = false; // parentGap / fabs(cutoff) < 0.05;
+	const bool smallGap = parentGap / fabs(cutoff) < 0.05;
 
 	// We are not going to do any switching unless the gap is small
 	if (smallGap) {

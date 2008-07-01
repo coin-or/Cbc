@@ -982,27 +982,19 @@ DBNodeSimple::canSwitchParentWithGrandparent(const int* which,
     // THINK: should we do anything?
     return false;
   }
-    
-  if (lpres.isProvenOptimal && !lpres.isDualObjectiveLimitReached) {
-    // THINK: should we do anything? like:
-#if 0
-    double djValue = lpres.getReducedCost[GP_brvar_fullid]*direction;
-    if (djValue > 1.0e-6) {
-      // wants to go down
-      return (parent_is_down_child);
-    } else if (djValue < -1.0e-6) {
-      return (! parent_is_down_child);
-    }
-#endif
+
+  // At this point the only flags of interest are isProvenOptimal,
+  // isDualObjectiveLimitReached and isProvenPrimalInfeasible.
+  // Note that isDualObjectiveLimitReached can't be true alone (search for
+  // mustResolve).
+
+  if (lpres.isProvenOptimal) {
+    // May or may not be over the dual obj limit. If the obj val of parent is
+    // higher than that of the grandparent then we allow switching.
+    // NOTE: grandparent's obj val can;t be 1e100 since then parent would not
+    // exist...
     return false;
-  }
-    
-  if (lpres.isDualObjectiveLimitReached) {
-    // Dual feasible, Because of reswolving (search for mustResolve) the
-    // problem here is either optimal or infeasible. If infeasible then we
-    // just need to fall out of this, if optimal then we test the reduced
-    // cost.
-    if (lpres.isProvenOptimal) {
+    if (lpres.getObjValue > grandparent.objectiveValue_ + 1e-8) {
       double djValue = lpres.getReducedCost[GP_brvar_fullid]*direction;
       if (djValue > 1.0e-6) {
 	// wants to go down
@@ -1021,8 +1013,8 @@ DBNodeSimple::canSwitchParentWithGrandparent(const int* which,
 	  return true;
 	}
       }
-      return false;
     }
+    return false;
   }
 
   // Problem is really infeasible and has a dual ray.
@@ -1413,6 +1405,7 @@ branchAndBound(OsiSolverInterface & model) {
   double time1 = CoinCpuTime();
   // solve LP
   model.initialSolve();
+  model.setLogLevel(0);
 
   if (model.isProvenOptimal()&&!model.isDualObjectiveLimitReached()) {
     // Continuous is feasible - find integers
@@ -1588,112 +1581,119 @@ branchAndBound(OsiSolverInterface & model) {
 	  break;
 	}
 
-	const bool mustResolve =
-	  model.isDualObjectiveLimitReached() && !model.isProvenOptimal();
-	double oldlimit = 0;
+        const double parentGap = (cutoff-node.objectiveValue_)*direction + 1.0e-4;
+	assert (parentGap >= 0);
+	const bool smallGap = false; // parentGap / fabs(cutoff) < 0.05;
 
-	if (mustResolve) {
-	  // THINK: Something faster would be better...
-	  model.getDblParam(OsiDualObjectiveLimit, oldlimit);
-	  model.setDblParam(OsiDualObjectiveLimit, 1e100);
-	  model.resolve();
-	}
-	LPresult lpres(model);
-	if (mustResolve) {
-	  lpres.isDualObjectiveLimitReached = true;
-	  model.setDblParam(OsiDualObjectiveLimit, oldlimit);
-	}
-
-	bool canSwitch = node.canSwitchParentWithGrandparent(which, lpres,
-							     originalLower,
-							     originalUpper,
-							     branchingTree);
-	int cnt = 0;
-
-#if defined(DEBUG_DYNAMIC_BRANCHING)
-	if (dyn_debug >= 1) {
-	  branchingTree.checkTree();
-	}
-#endif
-
-#if defined(DEBUG_DYNAMIC_BRANCHING)
-	std::string tree0;
-	if (dyn_debug >= 10) {
-	  if (canSwitch) {
-	    tree0 = getTree(branchingTree);
+	// We are not going to do any switching unless the gap is small
+	if (smallGap) {
+	  // THINK: If goes over the dual obj limit then clp sets dual obj limit
+	  // reached *AND* poven primal infeas. So we need to run it to
+	  // completition to know whether it's really infeas or just over the
+	  // bound. Something faster would be better...
+	  const bool mustResolve =
+	    model.isDualObjectiveLimitReached() && !model.isProvenOptimal();
+	  double oldlimit = 0;
+	  if (mustResolve) {
+	    model.getDblParam(OsiDualObjectiveLimit, oldlimit);
+	    model.setDblParam(OsiDualObjectiveLimit, 1e100);
+	    model.resolve();
 	  }
-	}
-#endif
+	  LPresult lpres(model);
+	  if (mustResolve) {
+	    lpres.isDualObjectiveLimitReached = true;
+	    model.setDblParam(OsiDualObjectiveLimit, oldlimit);
+	  }
+	  bool canSwitch =
+	    node.canSwitchParentWithGrandparent(which, lpres, originalLower,
+						originalUpper, branchingTree);
+	  int cnt = 0;
 
-	while (canSwitch) {
-	  branchingTree.moveNodeUp(which, model, node);
-	  canSwitch = node.canSwitchParentWithGrandparent(which, lpres,
-							  originalLower,
-							  originalUpper,
-							  branchingTree);
 #if defined(DEBUG_DYNAMIC_BRANCHING)
 	  if (dyn_debug >= 1) {
 	    branchingTree.checkTree();
 	  }
 #endif
-	  ++cnt;
-	}
-	if (cnt > 0) {
-	  printf("Before switch: opt: %c   inf: %c   dual_bd: %c\n",
-		 lpres.isProvenOptimal ? 'T' : 'F',
-		 lpres.isProvenPrimalInfeasible ? 'T' : 'F',
-		 lpres.isDualObjectiveLimitReached ? 'T' : 'F');
-	  model.resolve();
-	  // This is horribly looking... Get rid of it when properly
-	  // debugged...
-#if 1
-	  const bool mustResolve =
-	    model.isDualObjectiveLimitReached() && !model.isProvenOptimal();
-	  double oldlimit = 0;
 
-	  if (mustResolve) {
-	    // THINK: Something faster would be better...
-	    model.getDblParam(OsiDualObjectiveLimit, oldlimit);
-	    model.setDblParam(OsiDualObjectiveLimit, 1e100);
-	    model.resolve();
-	  }
-	  LPresult lpres1(model);
-	  if (mustResolve) {
-	    lpres.isDualObjectiveLimitReached = true;
-	    model.setDblParam(OsiDualObjectiveLimit, oldlimit);
-	  }
-	  printf("After resolve: opt: %c   inf: %c   dual_bd: %c\n",
-		 lpres1.isProvenOptimal ? 'T' : 'F',
-		 lpres1.isProvenPrimalInfeasible ? 'T' : 'F',
-		 lpres1.isDualObjectiveLimitReached ? 'T' : 'F');
-	  assert(lpres.isAbandoned == model.isAbandoned());
-	  assert(lpres.isDualObjectiveLimitReached == model.isDualObjectiveLimitReached());
-	  assert(lpres.isDualObjectiveLimitReached ||
-		 (lpres.isProvenOptimal == model.isProvenOptimal()));
-	  assert(lpres.isDualObjectiveLimitReached ||
-		 (lpres.isProvenPrimalInfeasible == model.isProvenPrimalInfeasible()));
-	  assert(!lpres.isProvenOptimal || ! model.isProvenOptimal() ||
-		 (lpres.isProvenOptimal && model.isProvenOptimal() &&
-		  lpres.getObjValue == model.getObjValue()));
-#endif
-	  printf("Finished moving node %d up by %i levels.\n", node.node_id_, cnt);
-	}
-	    
 #if defined(DEBUG_DYNAMIC_BRANCHING)
-	if (dyn_debug >= 10) {
-	  if (cnt > 0) {
-	    std::string tree1 = getTree(branchingTree);
-	    printf("=====================================\n");
-	    printf("It can move node %i up. way_: 0x%x   brvar: %i\n",
-		   node.node_id_, node.way_, node.variable_);
-	    printTree(tree0, cnt+10);
-	    printf("=====================================\n");
-	    printf("Finished moving the node up by %i levels.\n", cnt);
-	    printTree(tree1, cnt+10);
-	    printf("=====================================\n");
+	  std::string tree0;
+	  if (dyn_debug >= 10) {
+	    if (canSwitch) {
+	      tree0 = getTree(branchingTree);
+	    }
 	  }
-	}
 #endif
+
+	  while (canSwitch) {
+	    branchingTree.moveNodeUp(which, model, node);
+	    canSwitch = node.canSwitchParentWithGrandparent(which, lpres,
+							    originalLower,
+							    originalUpper,
+							    branchingTree);
+#if defined(DEBUG_DYNAMIC_BRANCHING)
+	    if (dyn_debug >= 1) {
+	      branchingTree.checkTree();
+	    }
+#endif
+	    ++cnt;
+	  }
+	  if (cnt > 0) {
+	    printf("Before switch: opt: %c   inf: %c   dual_bd: %c\n",
+		   lpres.isProvenOptimal ? 'T' : 'F',
+		   lpres.isProvenPrimalInfeasible ? 'T' : 'F',
+		   lpres.isDualObjectiveLimitReached ? 'T' : 'F');
+	    model.resolve();
+	    // This is horribly looking... Get rid of it when properly
+	    // debugged...
+#if 1
+	    const bool mustResolve =
+	      model.isDualObjectiveLimitReached() && !model.isProvenOptimal();
+	    double oldlimit = 0;
+	    
+	    if (mustResolve) {
+	      // THINK: Something faster would be better...
+	      model.getDblParam(OsiDualObjectiveLimit, oldlimit);
+	      model.setDblParam(OsiDualObjectiveLimit, 1e100);
+	      model.resolve();
+	    }
+	    LPresult lpres1(model);
+	    if (mustResolve) {
+	      lpres.isDualObjectiveLimitReached = true;
+	      model.setDblParam(OsiDualObjectiveLimit, oldlimit);
+	    }
+	    printf("After resolve: opt: %c   inf: %c   dual_bd: %c\n",
+		   lpres1.isProvenOptimal ? 'T' : 'F',
+		   lpres1.isProvenPrimalInfeasible ? 'T' : 'F',
+		   lpres1.isDualObjectiveLimitReached ? 'T' : 'F');
+	    assert(lpres.isAbandoned == model.isAbandoned());
+	    assert(lpres.isDualObjectiveLimitReached == model.isDualObjectiveLimitReached());
+	    assert(lpres.isDualObjectiveLimitReached ||
+		   (lpres.isProvenOptimal == model.isProvenOptimal()));
+	    assert(lpres.isDualObjectiveLimitReached ||
+		   (lpres.isProvenPrimalInfeasible == model.isProvenPrimalInfeasible()));
+	    assert(!lpres.isProvenOptimal || ! model.isProvenOptimal() ||
+		   (lpres.isProvenOptimal && model.isProvenOptimal() &&
+		    lpres.getObjValue == model.getObjValue()));
+#endif
+	    printf("Finished moving node %d up by %i levels.\n", node.node_id_, cnt);
+	  }
+	  
+#if defined(DEBUG_DYNAMIC_BRANCHING)
+	  if (dyn_debug >= 10) {
+	    if (cnt > 0) {
+	      std::string tree1 = getTree(branchingTree);
+	      printf("=====================================\n");
+	      printf("It can move node %i up. way_: 0x%x   brvar: %i\n",
+		     node.node_id_, node.way_, node.variable_);
+	      printTree(tree0, cnt+10);
+	      printf("=====================================\n");
+	      printf("Finished moving the node up by %i levels.\n", cnt);
+	      printTree(tree1, cnt+10);
+	      printf("=====================================\n");
+	    }
+	  }
+#endif
+	}
 	if ((numberNodes%10)==0) 
 	  printf("%d nodes, tree size %d\n",
 		 numberNodes,branchingTree.size());

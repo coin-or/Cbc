@@ -1403,9 +1403,16 @@ void printChain(DBVectorNode& branchingTree, int k)
 void 
 branchAndBound(OsiSolverInterface & model) {
   double time1 = CoinCpuTime();
+
+  OsiClpSolverInterface* clp =
+    dynamic_cast<OsiClpSolverInterface*>(&model);
+  if(clp) {
+    ClpSimplex* modelPtr = clp->getModelPtr();
+    modelPtr->setLogLevel(0);
+  }
+
   // solve LP
   model.initialSolve();
-  model.setLogLevel(0);
 
   if (model.isProvenOptimal()&&!model.isDualObjectiveLimitReached()) {
     // Continuous is feasible - find integers

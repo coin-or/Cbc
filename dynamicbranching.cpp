@@ -46,7 +46,7 @@ changes implied by the branching decisions.
 #define DEBUG_DYNAMIC_BRANCHING
 
 #ifdef DEBUG_DYNAMIC_BRANCHING
-int dyn_debug = 1;
+int dyn_debug = 10;
 #endif
 
 // below needed for pathetic branch and bound code
@@ -1358,15 +1358,19 @@ std::string getTree(DBVectorNode& branchingTree)
 {
   std::string tree;
   char line[1000];
-  for(int k=0; k<branchingTree.size_; k++) {
+  int k_max = branchingTree.size_;
+  for(int k=0; k<k_max; k++) {
     DBNodeSimple& node = branchingTree.nodes_[k];
-    if(node.previous_ >= 0)
+    if(node.lower_ != NULL) {
       sprintf(line, "%d %d %d %d %f %d %d 0x%x %d %d %f\n",
 	      k, node.node_id_, node.parent_, node.variable_,
 	      node.value_, node.lower_[node.variable_],
 	      node.upper_[node.variable_], node.way_,
 	      node.child_down_, node.child_up_, node.objectiveValue_);
-    tree += line;
+      tree += line;
+    }
+    else
+      k_max++;
   }
   return tree;
 }
@@ -1645,10 +1649,11 @@ branchAndBound(OsiSolverInterface & model) {
 	    ++cnt;
 	  }
 	  if (cnt > 0) {
-	    printf("Before switch: opt: %c   inf: %c   dual_bd: %c\n",
+	    printf("Before switch: opt: %c   inf: %c   dual_bd: %c   objVal: %f\n",
 		   lpres.isProvenOptimal ? 'T' : 'F',
 		   lpres.isProvenPrimalInfeasible ? 'T' : 'F',
-		   lpres.isDualObjectiveLimitReached ? 'T' : 'F');
+		   lpres.isDualObjectiveLimitReached ? 'T' : 'F',
+		   lpres.getObjSense * lpres.getObjValue);
 	    model.resolve();
 	    // This is horribly looking... Get rid of it when properly
 	    // debugged...
@@ -1668,10 +1673,11 @@ branchAndBound(OsiSolverInterface & model) {
 	      lpres.isDualObjectiveLimitReached = true;
 	      model.setDblParam(OsiDualObjectiveLimit, oldlimit);
 	    }
-	    printf("After resolve: opt: %c   inf: %c   dual_bd: %c\n",
+	    printf("After resolve: opt: %c   inf: %c   dual_bd: %c   objVal: %f\n",
 		   lpres1.isProvenOptimal ? 'T' : 'F',
 		   lpres1.isProvenPrimalInfeasible ? 'T' : 'F',
-		   lpres1.isDualObjectiveLimitReached ? 'T' : 'F');
+		   lpres1.isDualObjectiveLimitReached ? 'T' : 'F',
+		   lpres.getObjSense * lpres.getObjValue);
 	    assert(lpres.isAbandoned == model.isAbandoned());
 	    assert(lpres.isDualObjectiveLimitReached == model.isDualObjectiveLimitReached());
 	    assert(lpres.isDualObjectiveLimitReached ||

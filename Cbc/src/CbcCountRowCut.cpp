@@ -114,6 +114,8 @@ CbcCountRowCut::canDropCut(const OsiSolverInterface * solver, int iRow) const
   if (effectiveness()<1.0e20) {
     return true;
   } else if (effectiveness()!=COIN_DBL_MAX) {
+    if (iRow>=solver->getNumRows())
+      return true;
     const double * rowActivity = solver->getRowActivity();
     const double * rowLower = solver->getRowLower();
     const double * rowUpper = solver->getRowUpper();

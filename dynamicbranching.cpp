@@ -1224,6 +1224,7 @@ DBVectorNode::moveNodeUp(const int* which,
 
 
   // Now make sure way_ is set properly
+  bool removeGrandparent = false;
   if (down_child_stays_with_parent) {
     if (!parent.bothChildDone()) {
       parent.way_ = DBNodeSimple::WAY_UP_DOWN__BOTH_DONE;
@@ -1240,12 +1241,12 @@ DBVectorNode::moveNodeUp(const int* which,
       if (! child_to_move_is_processed) {
 	// remove grandparent, none of its children is processed now, why
 	// force its branching decision?
-	removeNode(grandparent_id);
+	removeGrandparent = true;
+	// the node is removed further down after changing the parent's bounds
 	parent.child_up_ = -1;
 	parent.way_ = DBNodeSimple::WAY_DOWN_UP__DOWN_DONE;
-	sizeDeferred_--;
-	return; // No bound changes are needed on the GO side as GP is
-		// deleted...
+	// No bound changes are needed on the GO side as GP is
+	// deleted...
       } else {
 	grandparent.way_ = parent_is_down_child ?
 	  DBNodeSimple::WAY_DOWN_UP__DOWN_DONE :
@@ -1266,11 +1267,10 @@ DBVectorNode::moveNodeUp(const int* which,
       }
     } else { // only parent is processed from the two children of grandparent
       if (! child_to_move_is_processed) {
-	removeNode(grandparent_id);
+	removeGrandparent = true;
+	// the node is removed further down after changing the parent's bounds
 	parent.child_down_ = -1;
 	parent.way_ = DBNodeSimple::WAY_UP_DOWN__UP_DONE;
-	sizeDeferred_--;
-	return;
       } else {
 	grandparent.way_ = parent_is_down_child ?
 	  DBNodeSimple::WAY_DOWN_UP__DOWN_DONE :
@@ -1301,14 +1301,20 @@ DBVectorNode::moveNodeUp(const int* which,
     }
   }
 
-  // Now add the branching var bound change of P to GP and all of its
-  // descendant
-  if (down_child_stays_with_parent) {
-    adjustBounds(grandparent_id, parent.variable_,
-		 (int)ceil(parent.value_), parent.upper_[parent.variable_]);
-  } else {
-    adjustBounds(grandparent_id, parent.variable_,
-		 parent.lower_[parent.variable_], (int)floor(parent.value_));
+  if(removeGrandparent) {
+    removeNode(grandparent_id);
+    sizeDeferred_--;
+  }
+  else {
+    // Now add the branching var bound change of P to GP and all of its
+    // descendant
+    if (down_child_stays_with_parent) {
+      adjustBounds(grandparent_id, parent.variable_,
+		   (int)ceil(parent.value_), parent.upper_[parent.variable_]);
+    } else {
+      adjustBounds(grandparent_id, parent.variable_,
+		   parent.lower_[parent.variable_], (int)floor(parent.value_));
+    }
   }
 }
 
@@ -1686,7 +1692,7 @@ branchAndBound(OsiSolverInterface & model) {
 		   (lpres.isProvenPrimalInfeasible == model.isProvenPrimalInfeasible()));
 	    assert(!lpres.isProvenOptimal || ! model.isProvenOptimal() ||
 		   (lpres.isProvenOptimal && model.isProvenOptimal() &&
-		    lpres.getObjValue == model.getObjValue()));
+		    abs(lpres.getObjValue - model.getObjValue()) < 1.0e-8));
 #endif
 	    printf("Finished moving node %d up by %i levels.\n", node.node_id_, cnt);
 	  }

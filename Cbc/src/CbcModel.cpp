@@ -886,6 +886,7 @@ void CbcModel::branchAndBound(int doStatistics)
   strongInfo_[2]=0;
   numberStrongIterations_ = 0;
   CoinThreadRandom randomGenerator(1234567);
+  currentNode_=NULL;
 #ifdef COIN_HAS_CLP
  {
    OsiClpSolverInterface * clpSolver 

@@ -2027,7 +2027,7 @@ void CbcModel::branchAndBound(int doStatistics)
       pthread_cond_init(condition2+i,NULL);
       threadId[i].status=0;
       threadInfo[i].baseModel=this;
-      threadModel[i]=new CbcModel(*this);
+      threadModel[i]=new CbcModel(*this,true);
 #ifdef COIN_HAS_CLP
       // Solver may need to know about model
       CbcModel * thisModel = threadModel[i];
@@ -3390,6 +3390,8 @@ void CbcModel::branchAndBound(int doStatistics)
     pthread_mutex_destroy (&condition_mutex);
     // delete models (here in case some point to others)
     for (i=0;i<numberThreads_;i++) {
+      // make sure handler will be deleted
+      threadModel[i]->defaultHandler_=true;
       delete threadModel[i];
     }
     delete [] mutex2;
@@ -4299,7 +4301,7 @@ CbcModel::assignSolver(OsiSolverInterface *&solver, bool deleteSolver)
 
 // Copy constructor.
 
-CbcModel::CbcModel(const CbcModel & rhs, bool noTree)
+CbcModel::CbcModel(const CbcModel & rhs, bool cloneHandler)
 :
   continuousSolver_(NULL),
   referenceSolver_(NULL),
@@ -4383,7 +4385,7 @@ CbcModel::CbcModel(const CbcModel & rhs, bool noTree)
   strongInfo_[2]=rhs.strongInfo_[2];
   solverCharacteristics_ = NULL;
   if (rhs.emptyWarmStart_) emptyWarmStart_ = rhs.emptyWarmStart_->clone() ;
-  if (defaultHandler_) {
+  if (defaultHandler_||cloneHandler) {
     handler_ = new CoinMessageHandler();
     handler_->setLogLevel(2);
   } else {
@@ -4403,8 +4405,7 @@ CbcModel::CbcModel(const CbcModel & rhs, bool noTree)
     generator_=NULL;
     virginGenerator_=NULL;
   }
-  if (!noTree)
-    globalCuts_ = rhs.globalCuts_;
+  globalCuts_ = rhs.globalCuts_;
   numberHeuristics_ = rhs.numberHeuristics_;
   if (numberHeuristics_) {
     heuristic_ = new CbcHeuristic * [numberHeuristics_];
@@ -4445,10 +4446,7 @@ CbcModel::CbcModel(const CbcModel & rhs, bool noTree)
     referenceSolver_ = rhs.referenceSolver_->clone();
   else
     referenceSolver_=NULL;
-  if (!noTree||!rhs.continuousSolver_)
-    solver_ = rhs.solver_->clone();
-  else
-    solver_ = rhs.continuousSolver_->clone();
+  solver_ = rhs.solver_->clone();
   if (rhs.originalColumns_) {
     int numberColumns = solver_->getNumCols();
     originalColumns_= new int [numberColumns];
@@ -4511,49 +4509,25 @@ CbcModel::CbcModel(const CbcModel & rhs, bool noTree)
     hotstartSolution_ = NULL;
     hotstartPriorities_ =NULL;
   }
-  if (rhs.bestSolution_&&!noTree) {
+  if (rhs.bestSolution_) {
     int numberColumns = solver_->getNumCols();
     bestSolution_ = new double[numberColumns];
     memcpy(bestSolution_,rhs.bestSolution_,numberColumns*sizeof(double));
   } else {
     bestSolution_=NULL;
   }
-  if (!noTree) {
-    int numberColumns = solver_->getNumCols();
-    // Space for current solution
-    currentSolution_ = new double[numberColumns];
-    continuousSolution_ = new double[numberColumns];
-    usedInSolution_ = new int[numberColumns];
-    CoinZeroN(usedInSolution_,numberColumns);
-  } else {
-    currentSolution_=NULL;
-    continuousSolution_=NULL;
-    usedInSolution_=NULL;
-  }
+  int numberColumns = solver_->getNumCols();
+  // Space for current solution
+  currentSolution_ = new double[numberColumns];
+  continuousSolution_ = new double[numberColumns];
+  usedInSolution_ = new int[numberColumns];
+  CoinZeroN(usedInSolution_,numberColumns);
   testSolution_=currentSolution_;
   numberRowsAtContinuous_ = rhs.numberRowsAtContinuous_;
   maximumNumberCuts_=rhs.maximumNumberCuts_;
   phase_ = rhs.phase_;
   currentNumberCuts_=rhs.currentNumberCuts_;
   maximumDepth_= rhs.maximumDepth_;
-  if (noTree) {
-    bestObjective_ = COIN_DBL_MAX;
-    numberSolutions_ =0;
-    stateOfSearch_= 0;
-    numberHeuristicSolutions_=0;
-    numberNodes_=0;
-    numberNodes2_=0;
-    numberIterations_=0;
-    status_=0;
-    subTreeModel_=NULL;
-    numberStoppedSubTrees_=0;
-    continuousObjective_=COIN_DBL_MAX;
-    originalContinuousObjective_=COIN_DBL_MAX;
-    continuousInfeasibilities_=COIN_INT_MAX;
-    maximumNumberCuts_=0;
-    tree_->cleanTree(this,-COIN_DBL_MAX,bestPossibleObjective_);
-    bestPossibleObjective_ = COIN_DBL_MAX;
-  }
   // These are only used as temporary arrays so need not be filled
   if (maximumNumberCuts_) {
     addedCuts_ = new CbcCountRowCut * [maximumNumberCuts_];
@@ -4568,6 +4542,11 @@ CbcModel::CbcModel(const CbcModel & rhs, bool noTree)
   else
     walkback_ = NULL;
   synchronizeModel();
+  if (cloneHandler) {
+    delete handler_;
+    CoinMessageHandler * handler = rhs.handler_->clone();
+    passInMessageHandler(handler);
+  }
 }
   
 // Assignment operator 
@@ -10694,6 +10673,12 @@ CbcModel::passInMessageHandler(CoinMessageHandler * handler)
   }
   defaultHandler_=false;
   handler_=handler;
+  if (solver_)
+    solver_->passInMessageHandler(handler);
+  if (continuousSolver_)
+    continuousSolver_->passInMessageHandler(handler);
+  if (referenceSolver_)
+    referenceSolver_->passInMessageHandler(handler);
 }
 void 
 CbcModel::passInTreeHandler(CbcTree & tree)
@@ -11941,7 +11926,7 @@ void
 CbcModel::setBestSolution(const double * solution,int numberColumns,
 			  double objectiveValue, bool checkSolution)
 {
-  // May be odd discontinuities - so only chaeck if asked
+  // May be odd discontinuities - so only check if asked
   if (checkSolution) {
     assert (numberColumns==solver_->getNumCols());
     double * saveLower = CoinCopyOfArray(solver_->getColLower(),numberColumns);

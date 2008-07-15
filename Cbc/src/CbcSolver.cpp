@@ -6471,6 +6471,19 @@ int
 #endif                
                 const int * originalColumns = preProcess ? process.originalColumns() : NULL;
                 if (solutionIn&&useSolution>=0) {
+		  if (!prioritiesIn) {
+		    int n;
+		    if (preProcess) {
+		      int numberColumns = babModel_->getNumCols();
+		      // extend arrays in case SOS
+		      n = originalColumns[numberColumns-1]+1;
+		    } else {
+		      n = babModel_->getNumCols();
+		    }
+		    prioritiesIn = new int[n];
+		    for (int i=0;i<n;i++)
+		      prioritiesIn[i]=100;
+		  }
                   if (preProcess) {
                     int numberColumns = babModel_->getNumCols();
                     // extend arrays in case SOS
@@ -6496,11 +6509,19 @@ int
                       if (prioritiesIn)
                         prioritiesIn2[i]=prioritiesIn2[iColumn];
                     }
-                    babModel_->setHotstartSolution(solutionIn2,prioritiesIn2);
+		    if (useSolution)
+		      babModel_->setHotstartSolution(solutionIn2,prioritiesIn2);
+		    else
+		      babModel_->setBestSolution(solutionIn2,numberColumns,
+						 COIN_DBL_MAX,true);
                     delete [] solutionIn2;
                     delete [] prioritiesIn2;
                   } else {
-                    babModel_->setHotstartSolution(solutionIn,prioritiesIn);
+		    if (useSolution)
+		      babModel_->setHotstartSolution(solutionIn,prioritiesIn);
+		    else
+		      babModel_->setBestSolution(solutionIn,babModel_->getNumCols(),
+						 COIN_DBL_MAX,true);
                   }
                 }
 		OsiSolverInterface * testOsiSolver= (testOsiOptions>=0) ? babModel_->solver() : NULL;
@@ -7410,7 +7431,7 @@ int
 		  babModel_->addCutGenerator(&storedAmpl,1,"Stored");
 		}
 #endif
-		if (useSolution>0) {
+		if (useSolution>1) {
 		  // use hotstart to try and find solution
 		  CbcHeuristicPartial partial(*babModel_,10000,useSolution);
 		  partial.setHeuristicName("Partial solution given");
@@ -9413,7 +9434,7 @@ clp watson.mps -\nscaling off\nprimalsimplex"
 		    delete [] newMasks[i];
 		  delete [] newMasks;
 		}
-                if (printMode>2) {
+                if (printMode>2&&printMode<5) {
                   for (iRow=0;iRow<numberRows;iRow++) {
                     int type=printMode-3;
                     if (primalRowSolution[iRow]>rowUpper[iRow]+primalTolerance||
@@ -9445,6 +9466,13 @@ clp watson.mps -\nscaling off\nprimalsimplex"
 		double * columnLower = lpSolver->columnLower();
 		double * columnUpper = lpSolver->columnUpper();
                 if (printMode!=2) {
+		  if (printMode==5) {
+		    if (lengthName)
+		      fprintf(fp,"name");
+		    else
+		      fprintf(fp,"number");
+		    fprintf(fp,",solution\n");
+		  }
                   for (iColumn=0;iColumn<numberColumns;iColumn++) {
                     int type=(printMode>3) ? 1 :0;
                     if (primalColumnSolution[iColumn]>columnUpper[iColumn]+primalTolerance||
@@ -9464,13 +9492,30 @@ clp watson.mps -\nscaling off\nprimalsimplex"
 					     columnNames[iColumn]))
                       type =0;
                     if (type) {
-                      fprintf(fp,"%7d ",iColumn);
-                      if (lengthName)
-                        fprintf(fp,format,columnNames[iColumn].c_str());
-                      fprintf(fp,"%15.8g        %15.8g\n",
-                              primalColumnSolution[iColumn],
-                              dualColumnSolution[iColumn]);
-                    }
+		      if (printMode!=5) {
+			fprintf(fp,"%7d ",iColumn);
+			if (lengthName)
+			  fprintf(fp,format,columnNames[iColumn].c_str());
+			fprintf(fp,"%15.8g        %15.8g\n",
+				primalColumnSolution[iColumn],
+				dualColumnSolution[iColumn]);
+		      } else {
+			char temp[100];
+			if (lengthName)
+			  sprintf(temp,format,columnNames[iColumn].c_str());
+			else
+			  sprintf(temp,"%7d ",iColumn);
+			sprintf(temp+strlen(temp),",%15.8g",
+				primalColumnSolution[iColumn]);
+			int n=strlen(temp);
+			int k=0;
+			for (int i=0;i<n+1;i++) {
+			  if (temp[i]!=' ')
+			    temp[k++]=temp[i];
+			}
+			fprintf(fp,"%s\n",temp);
+		      }
+		    }
                   }
                 } else {
                   // special format suitable for OsiRowCutDebugger

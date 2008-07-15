@@ -1841,7 +1841,7 @@ void CbcModel::branchAndBound(int doStatistics)
       pthread_cond_init(condition2+i,NULL);
       threadId[i].status =0;
       threadInfo[i].baseModel=this;
-      threadModel[i]=new CbcModel(*this);
+      threadModel[i]=new CbcModel(*this,true);
 #ifdef COIN_HAS_CLP
       // Solver may need to know about model
       CbcModel * thisModel = threadModel[i];
@@ -2993,6 +2993,8 @@ void CbcModel::branchAndBound(int doStatistics)
     pthread_mutex_destroy (&condition_mutex);
     // delete models (here in case some point to others)
     for (i=0;i<numberThreads_;i++) {
+      // make sure handler will be deleted
+      threadModel[i]->defaultHandler_=true;
       delete threadModel[i];
     }
     delete [] mutex2;
@@ -3851,7 +3853,7 @@ CbcModel::assignSolver(OsiSolverInterface *&solver, bool deleteSolver)
 
 // Copy constructor.
 
-CbcModel::CbcModel(const CbcModel & rhs, bool noTree)
+CbcModel::CbcModel(const CbcModel & rhs, bool cloneHandler)
 :
   continuousSolver_(NULL),
   referenceSolver_(NULL),
@@ -3928,7 +3930,8 @@ CbcModel::CbcModel(const CbcModel & rhs, bool noTree)
   strongInfo_[2]=rhs.strongInfo_[2];
   solverCharacteristics_ = NULL;
   if (rhs.emptyWarmStart_) emptyWarmStart_ = rhs.emptyWarmStart_->clone() ;
-  if (defaultHandler_) {
+  bool noTree=false;
+  if (defaultHandler_||cloneHandler) {
     handler_ = new CoinMessageHandler();
     handler_->setLogLevel(2);
   } else {
@@ -4112,6 +4115,11 @@ CbcModel::CbcModel(const CbcModel & rhs, bool noTree)
   else
     walkback_ = NULL;
   synchronizeModel();
+  if (cloneHandler) {
+    delete handler_;
+    CoinMessageHandler * handler = rhs.handler_->clone();
+    passInMessageHandler(handler);
+  }
 }
   
 // Assignment operator 
@@ -9682,6 +9690,12 @@ CbcModel::passInMessageHandler(CoinMessageHandler * handler)
   }
   defaultHandler_=false;
   handler_=handler;
+  if (solver_)
+    solver_->passInMessageHandler(handler);
+  if (continuousSolver_)
+    continuousSolver_->passInMessageHandler(handler);
+  if (referenceSolver_)
+    referenceSolver_->passInMessageHandler(handler);
 }
 void 
 CbcModel::passInTreeHandler(CbcTree & tree)

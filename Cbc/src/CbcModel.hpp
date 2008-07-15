@@ -1525,9 +1525,9 @@ public:
   inline bool modelOwnsSolver () { return ((ownership_&0x80000000)!=0) ; } 
   
     /** Copy constructor .
-      If noTree is true then tree and cuts are not copied
+      If cloneHandler true - non-default handler cloned
     */  
-    CbcModel(const CbcModel & rhs, bool noTree=false);
+    CbcModel(const CbcModel & rhs, bool cloneHandler=false);
   
     /// Assignment operator 
     CbcModel & operator=(const CbcModel& rhs);

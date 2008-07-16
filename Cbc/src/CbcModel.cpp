@@ -1745,10 +1745,12 @@ void CbcModel::branchAndBound(int doStatistics)
      heuristic.setFeasibilityPumpOptions(1008013);
      // Use numberNodes to say how many are original rows
      heuristic.setNumberNodes(continuousSolver_->getNumRows());
+#ifdef COIN_DEVELOP
      if (continuousSolver_->getNumRows()<
 	 solver_->getNumRows())
        printf("%d rows added ZZZZZ\n",
 	      solver_->getNumRows()-continuousSolver_->getNumRows());
+#endif
      int returnCode= heuristic.smallBranchAndBound(saveSolver,
 						   -1,newSolution,
 						   objectiveValue,
@@ -2313,7 +2315,9 @@ void CbcModel::branchAndBound(int doStatistics)
 	
 	int numberFixed = 0 ;
 	int numberFixed2=0;
+#ifdef COIN_DEVELOP
 	printf("gap %g\n",gap);
+#endif
 	for (int i = 0 ; i < numberIntegers_ ; i++) {
 	  int iColumn = integerVariable_[i] ;
 	  double djValue = direction*reducedCost[iColumn] ;
@@ -2354,7 +2358,7 @@ void CbcModel::branchAndBound(int doStatistics)
       }
       if (tryNewSearch) {
 	// back to solver without cuts?
-#if 1
+#if 0
 	OsiSolverInterface * solver2 = continuousSolver_->clone();
 #else
 	OsiSolverInterface * solver2 = saveSolver->clone();
@@ -2376,6 +2380,14 @@ void CbcModel::branchAndBound(int doStatistics)
 	  heuristic.setInputSolution(bestSolution_,bestObjective_);
 	heuristic.setFractionSmall(0.6);
 	heuristic.setFeasibilityPumpOptions(1008013);
+	// Use numberNodes to say how many are original rows
+	heuristic.setNumberNodes(continuousSolver_->getNumRows());
+#ifdef COIN_DEVELOP
+	if (continuousSolver_->getNumRows()<
+	    solver_->getNumRows())
+	  printf("%d rows added ZZZZZ\n",
+		 solver_->getNumRows()-continuousSolver_->getNumRows());
+#endif
 	int returnCode= heuristic.smallBranchAndBound(saveSolver,
 						      -1,newSolution,
 						      objectiveValue,

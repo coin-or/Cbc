@@ -8446,7 +8446,7 @@ int
                   if (got[0]>=0&&!lpSolver->lengthNames())
                     good=false;
 		  int numberFields=99;
-		  if (good&&(strstr(fileName.c_str(),".mst")||strstr(fileName.c_str(),".MST"))) {
+		  if (good&&(strstr(fileName.c_str(),".mst")||strstr(fileName.c_str(),".MST")||strstr(fileName.c_str(),".csv"))) {
 		    numberFields=0;
                     for (i=2;i<(int) (sizeof(got)/sizeof(int));i++) {
 		      if (got[i]>=0)
@@ -8517,7 +8517,7 @@ int
 		      }
                       while (*pos>=' '&&*pos!='\n') {
                         if (*pos!=' '&&*pos!='\t') {
-                          *put=tolower(*pos);
+                          *put=*pos;
                           put++;
                         }
                         pos++;

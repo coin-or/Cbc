@@ -611,7 +611,7 @@ CbcCutGenerator::generateCuts( OsiCuts & cs , int fullScan, OsiSolverInterface *
 	      normB += value*value;
 	      product += value*element2[columnB[i]];
 	    }
-	    if (product>0.0&&product*product>0.99*norm*normB) {
+	    if (product>0.0&&product*product>0.9999*norm*normB) {
 	      bool parallel=true;
 	      double lbB = thisCut2->lb();
 	      double ubB = thisCut2->ub();

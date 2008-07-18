@@ -1565,10 +1565,12 @@ CbcHeuristicFPump::rounds(OsiSolverInterface * solver,double * solution,
 	    solution[iColumn]=1.0;
 	   else 
 	    solution[iColumn]=0.0;
+#if 0
 	  if (value!=solution[iColumn])
 	    printf("%d sol changed from %g to %g\n",iColumn,value,solution[iColumn]);
 	  if (value>0.5&&solution[iColumn]<0.5)
 	    printf("why!\n");
+#endif
 	}
       }
     }

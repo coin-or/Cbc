@@ -255,7 +255,14 @@ CbcHeuristic::printDistanceToNodes()
 bool
 CbcHeuristic::shouldHeurRun()
 {
-
+  // No longer used for original purpose - so use for ever run at all JJF
+#if 1
+  // Don't run if hot start
+  if (model_&&model_->hotstartSolution())
+    return false;
+  else
+    return true;
+#else
 #if 0
   const CbcNode* currentNode = model_->currentNode();
   if (currentNode == NULL) {
@@ -340,6 +347,7 @@ CbcHeuristic::shouldHeurRun()
   }
   ++numRuns_;
   return true;
+#endif
 }
 
 bool
@@ -384,7 +392,9 @@ CbcHeuristic::shouldHeurRun_randomChoice()
 	if (depth>=3) {
 	  if ((numCouldRun_%howOften_)==0&&
 	      numberSolutionsFound_*howOften_<numCouldRun_) {
+#ifdef COIN_DEVELOP
 	    int old=howOften_;
+#endif
 	    howOften_ = CoinMin(CoinMax((int) (howOften_*1.1),howOften_+1),10000);
 #ifdef COIN_DEVELOP
 	    printf("Howoften changed from %d to %d for %s\n",
@@ -468,7 +478,7 @@ void CbcHeuristic::setModel(CbcModel * model)
 {
   model_ = model;
 }
-#ifdef COIN_DEVELOP
+#ifdef HISTORY_STATISTICS
 extern bool getHistoryStatistics_;
 #endif
 // Do mini branch and bound (return 1 if solution)
@@ -478,7 +488,7 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver,int numberNodes,
                                   double cutoff, std::string name) const
 {
   // size before
-  double before = 2*solver->getNumRows()+solver->getNumCols();
+  double before = 4*solver->getNumRows()+solver->getNumCols();
   // Use this fraction
   double fractionSmall = fractionSmall_;
   if (before>80000.0) {
@@ -502,12 +512,14 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver,int numberNodes,
     }
     // Turn this off if you get problems
     // Used to be automatically set
-    osiclp->setSpecialOptions(osiclp->specialOptions()|(128+64));
+    osiclp->setSpecialOptions(osiclp->specialOptions()|(128+64-128));
     ClpSimplex * lpSolver = osiclp->getModelPtr();
     lpSolver->setSpecialOptions(lpSolver->specialOptions()|0x01000000); // say is Cbc (and in branch and bound)
+    lpSolver->setSpecialOptions(lpSolver->specialOptions()|
+				16384+4096+512+128);
   }
 #endif
-#ifdef COIN_DEVELOP
+#ifdef HISTORY_STATISTICS
   getHistoryStatistics_=false;
 #endif
   int status=0;
@@ -539,7 +551,7 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver,int numberNodes,
       int afterRows = presolvedModel->getNumRows();
       int afterCols = presolvedModel->getNumCols();
       delete presolvedModel;
-      double after = 2*afterRows+afterCols;
+      double after = 4*afterRows+afterCols;
       if (after>fractionSmall*before&&after>300&&numberNodes>=0) {
 	// Need code to try again to compress further using used
 	const int * used =  model_->usedInSolution();
@@ -616,7 +628,7 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver,int numberNodes,
   }
   if (returnCode==-1) {
     delete [] reset;
-#ifdef COIN_DEVELOP
+#ifdef HISTORY_STATISTICS
     getHistoryStatistics_=true;
 #endif
     return returnCode;
@@ -692,7 +704,7 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver,int numberNodes,
 	  CbcStrategyDefaultSubTree strategy(model_,true,5,1,0);
 	  model.setStrategy(strategy);
 	  model.solver()->setIntParam(OsiMaxNumIterationHotStart,10);
-	  model.setMaximumCutPassesAtRoot(CoinMin(20,model_->getMaximumCutPassesAtRoot()));
+	  model.setMaximumCutPassesAtRoot(CoinMin(20,CoinAbs(model_->getMaximumCutPassesAtRoot())));
 	  model.setMaximumCutPasses(CoinMin(10,model_->getMaximumCutPasses()));
 	} else {
 	  model_->messageHandler()->message(CBC_RESTART,model_->messages())
@@ -700,8 +712,18 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver,int numberNodes,
 	    <<CoinMessageEol;
 	  // going for full search and copy across more stuff
 	  model.gutsOfCopy(*model_,2);
-	  for (int i=0;i<model.numberCutGenerators();i++)
+	  for (int i=0;i<model.numberCutGenerators();i++) {
 	    model.cutGenerator(i)->setTiming(true);
+	    // Turn on if was turned on
+	    int iOften = model_->cutGenerator(i)->howOften();
+	    printf("Gen %d often %d %d\n",
+		   i,model.cutGenerator(i)->howOften(),
+		   iOften);
+	    if (iOften>0)
+	      model.cutGenerator(i)->setHowOften(iOften%1000000);
+	    if (model_->cutGenerator(i)->howOftenInSub()==-200)
+	      model.cutGenerator(i)->setHowOften(-100);
+	  }
 	  model.setCutoff(cutoff);
 	  // make sure can't do nested search! but allow heuristics
 	  model.setSpecialOptions((model.specialOptions()&(~(512+2048)))|1024);
@@ -839,9 +861,19 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver,int numberNodes,
 	  model.setNumberBeforeTrust(5);
 	}
 	if (model.getNumCols()) {
-	  if (numberNodes>=0)
+	  if (numberNodes>=0) {
 	    setCutAndHeuristicOptions(model);
+	    // not too many iterations
+	    model.setMaximumNumberIterations(100*(numberNodes+10));
+	    // Not fast stuff
+	    model.setFastNodeDepth(-1);
+	  }
 	  model.branchAndBound();
+#ifdef COIN_DEVELOP
+	  printf("sub branch %d nodes, %d iterations - max %d\n",
+		 model.getNodeCount(),model.getIterationCount(),
+		 100*(numberNodes+10));
+#endif
 	  if (numberNodes<0) {
 	    model_->incrementIterationCount(model.getIterationCount());
 	    model_->incrementNodeCount(model.getNodeCount());
@@ -893,6 +925,18 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver,int numberNodes,
         // no good
 	  returnCode=model.isProvenInfeasible() ? 2 : 0; // so will be infeasible
 	}
+	int totalNumberIterations = model.getIterationCount()+
+	  process.numberIterationsPre()+
+	  process.numberIterationsPost();
+	if (totalNumberIterations>100*(numberNodes+10)) {
+	  // only allow smaller problems
+	  fractionSmall = fractionSmall_;
+	  fractionSmall_ *= 0.9;
+#ifdef CLP_INVESTIGATE
+	  printf("changing fractionSmall from %g to %g for %s as %d iterations\n",
+		 fractionSmall,fractionSmall_,name.c_str(),totalNumberIterations);
+#endif
+	}
 	if (model.status()==5)
 	  returnCode=-2; // stop
 	if (model.isProvenInfeasible())
@@ -912,8 +956,10 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver,int numberNodes,
     }
     delete [] reset;
   }
-#ifdef COIN_DEVELOP
+#ifdef HISTORY_STATISTICS
   getHistoryStatistics_=true;
+#endif
+#ifdef COIN_DEVELOP
   if (returnCode==1||returnCode==2) {
     if (status==1)
       printf("heuristic could add cut because infeasible (%s)\n",heuristicName_.c_str()); 
@@ -2254,6 +2300,11 @@ CbcHeuristicPartial::validate()
         model_->numberObjects())
       setWhen(0);
   }
+}
+bool
+CbcHeuristicPartial::shouldHeurRun()
+{
+  return true;
 }
 
 // Default Constructor

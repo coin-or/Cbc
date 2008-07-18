@@ -611,7 +611,7 @@ CbcCutGenerator::generateCuts( OsiCuts & cs , int fullScan, OsiSolverInterface *
 	      normB += value*value;
 	      product += value*element2[columnB[i]];
 	    }
-	    if (product>0.0&&product*product>0.9999*norm*normB) {
+	    if (product>0.0&&product*product>0.99999*norm*normB) {
 	      bool parallel=true;
 	      double lbB = thisCut2->lb();
 	      double ubB = thisCut2->ub();
@@ -659,7 +659,7 @@ CbcCutGenerator::generateCuts( OsiCuts & cs , int fullScan, OsiSolverInterface *
 	delete [] sort;
 	delete [] which;
 	numberRowCutsAfter = cs.sizeRowCuts() ;
-#ifdef CLP_INVESTIGATE
+#if 0 //def CLP_INVESTIGATE
 	nEls=0;
 	int nCuts2= numberRowCutsAfter-numberRowCutsBefore;
 	for (k = numberRowCutsBefore;k<numberRowCutsAfter;k++) {

@@ -6331,6 +6331,9 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
 	}
       }
 # endif
+      int whenCuts = (continuousSolver_->getNumRows()+continuousSolver_->getNumCols()<=500) ? -1 :0;
+      if (parentModel_)
+	whenCuts=0;
       for (i = 0;i<numberCutGenerators_;i++) {
 	int numberRowCutsBefore = theseCuts.sizeRowCuts() ;
 	int numberColumnCutsBefore = theseCuts.sizeColCuts() ;
@@ -6344,7 +6347,7 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
 	  generate=false;
 	if (generator_[i]->switchedOff())
 	  generate=false;;
-	if (node&&node->depth()>10&&(node->depth()&1)==0&&!fullScan) {
+	if (node&&node->depth()>10&&(node->depth()&1)==whenCuts&&!fullScan) {
 	  // switch off if default
 	  if (generator_[i]->howOften()==1&&generator_[i]->whatDepth()<0)
 	    generate=false;
@@ -8733,7 +8736,7 @@ CbcModel::convertToDynamic()
 }
 // Set numberBeforeTrust in all objects
 void 
-CbcModel::synchronizeNumberBeforeTrust()
+CbcModel::synchronizeNumberBeforeTrust(int type)
 {
   int iObject;
   for (iObject = 0;iObject<numberObjects_;iObject++) {
@@ -8741,7 +8744,14 @@ CbcModel::synchronizeNumberBeforeTrust()
       dynamic_cast <CbcSimpleIntegerDynamicPseudoCost *>(object_[iObject]) ;
     if (obj2) {
       // synchronize trust
-      obj2->setNumberBeforeTrust(numberBeforeTrust_);
+      if (!type) {
+	obj2->setNumberBeforeTrust(numberBeforeTrust_);
+      } else {
+	int value = obj2->numberBeforeTrust();
+	value = (value*11)/10 + 1;
+	value = CoinMax(numberBeforeTrust_,value);
+	obj2->setNumberBeforeTrust(value);
+      }
     }
   }
 }

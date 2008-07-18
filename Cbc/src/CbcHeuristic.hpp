@@ -186,8 +186,9 @@ public:
   /// Set input solution
   void setInputSolution(const double * solution, double objValue);
 
-  /** Check whether the heuristic should run */
-  bool shouldHeurRun();
+  /** Check whether the heuristic should run at all */
+  virtual bool shouldHeurRun();
+  /** Check whether the heuristic should run this time */
   bool shouldHeurRun_randomChoice();
   void debugNodes();
   void printDistanceToNodes();
@@ -210,7 +211,7 @@ protected:
   /// Feasibility pump options (-1 is off)
   int feasibilityPumpOptions_;
   /// Fraction of new(rows+columns)/old(rows+columns) before doing small branch and bound
-  double fractionSmall_;
+  mutable double fractionSmall_;
   /// Thread specific random number generator
   CoinThreadRandom randomNumberGenerator_;
   /// Name for printing
@@ -395,6 +396,9 @@ public:
   /// Set priority level
   void setFixPriority(int value)
   { fixPriority_ = value;}
+
+  /** Check whether the heuristic should run at all */
+  virtual bool shouldHeurRun();
 
 protected:
   // Data

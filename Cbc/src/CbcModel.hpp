@@ -684,6 +684,18 @@ public:
   /** Get the preferred way to branch (default 0) */
   inline int getPreferredWay() const
   { return preferredWay_;}
+  /// Get at which depths to do cuts
+  inline int whenCuts() const
+  { return whenCuts_;}
+  /// Set at which depths to do cuts
+  inline void setWhenCuts(int value)
+  { whenCuts_ = value;}
+  /** Return true if we want to do cuts
+      If allowForTopOfTree zero then just does on multiples of depth
+      if 1 then allows for doing at top of tree
+      if 2 then says if cuts allowed anywhere apart from root
+  */
+  bool doCutsNow(int allowForTopOfTree) const;
   /** Set size of mini - tree.  If > 1 then does total enumeration of
       tree given by this best variables to branch on
   */
@@ -1541,9 +1553,9 @@ public:
   inline bool modelOwnsSolver () { return ((ownership_&0x80000000)!=0) ; } 
   
     /** Copy constructor .
-      If noTree is true then tree and cuts are not copied
+      If cloneHandler is true then message handler is cloned
     */  
-    CbcModel(const CbcModel & rhs, bool noTree=false);
+    CbcModel(const CbcModel & rhs, bool cloneHandler=false);
   
     /// Assignment operator 
     CbcModel & operator=(const CbcModel& rhs);
@@ -1697,7 +1709,7 @@ public:
   */
   void convertToDynamic();
   /// Set numberBeforeTrust in all objects
-  void synchronizeNumberBeforeTrust();
+  void synchronizeNumberBeforeTrust(int type=0);
   /// Zap integer information in problem (may leave object info)
   void zapIntegerInformation(bool leaveObjects=true);
   /// Use cliques for pseudocost information - return nonzero if infeasible
@@ -1772,6 +1784,14 @@ public:
   /// Increment strong info
   void incrementStrongInfo(int numberTimes, int numberIterations,
 			   int numberFixed, bool ifInfeasible);
+  /// Return strong info
+  inline const int * strongInfo() const
+  { return strongInfo_;}
+
+  /// Return mutable strong info
+  inline int * mutableStrongInfo()
+  { return strongInfo_;}
+
   /// Says whether all dynamic integers
   inline bool allDynamic () const { return ((ownership_&0x40000000)!=0) ; } 
   /// Create C++ lines to get to current state
@@ -1881,6 +1901,8 @@ private:
       3 - no solution but many nodes
   */
   int stateOfSearch_;
+  /// At which depths to do cuts
+  int whenCuts_;
   /// Hotstart solution
   double * hotstartSolution_;
   /// Hotstart priorities 
@@ -2160,8 +2182,9 @@ private:
   int searchStrategy_;
   /// Number of iterations in strong branching
   int numberStrongIterations_;
-  /** 0 - number times strong branching done, 1 - number fixed, 2 - number infeasible */
-  int strongInfo_[3];
+  /** 0 - number times strong branching done, 1 - number fixed, 2 - number infeasible 
+      Second group of three is a snapshot at node [6] */
+  int strongInfo_[7];
   /** 
       For advanced applications you may wish to modify the behavior of Cbc
       e.g. if the solver is a NLP solver then you may not have an exact

@@ -25,6 +25,7 @@ CbcHeuristicDive::CbcHeuristicDive()
   upLocks_ = NULL;
   percentageToFix_ = 0.2;
   maxIterations_ = 100;
+  maxSimplexIterations_ = 10000;
   maxTime_ = 600;
 }
 
@@ -45,6 +46,7 @@ CbcHeuristicDive::CbcHeuristicDive(CbcModel & model)
   }
   percentageToFix_ = 0.2;
   maxIterations_ = 100;
+  maxSimplexIterations_ = 10000;
   maxTime_ = 600;
 }
 
@@ -69,6 +71,10 @@ CbcHeuristicDive::generateCpp( FILE * fp, const char * heuristic)
     fprintf(fp,"3  %s.setMaxIterations(%d);\n",heuristic,maxIterations_);
   else
     fprintf(fp,"4  %s.setMaxIterations(%d);\n",heuristic,maxIterations_);
+  if (maxSimplexIterations_!=100)
+    fprintf(fp,"3  %s.setMaxIterations(%d);\n",heuristic,maxSimplexIterations_);
+  else
+    fprintf(fp,"4  %s.setMaxIterations(%d);\n",heuristic,maxSimplexIterations_);
   if (maxTime_!=600)
     fprintf(fp,"3  %s.setMaxTime(%.2f);\n",heuristic,maxTime_);
   else
@@ -83,6 +89,7 @@ CbcHeuristicDive::CbcHeuristicDive(const CbcHeuristicDive & rhs)
   matrixByRow_(rhs.matrixByRow_),
   percentageToFix_(rhs.percentageToFix_),
   maxIterations_(rhs.maxIterations_),
+  maxSimplexIterations_(rhs.maxSimplexIterations_),
   maxTime_(rhs.maxTime_)
 {
   if (rhs.downLocks_) {
@@ -105,6 +112,7 @@ CbcHeuristicDive::operator=( const CbcHeuristicDive& rhs)
     matrixByRow_ = rhs.matrixByRow_;
     percentageToFix_ = rhs.percentageToFix_;
     maxIterations_ = rhs.maxIterations_;
+    maxSimplexIterations_ = rhs.maxSimplexIterations_;
     maxTime_ = rhs.maxTime_;
     delete [] downLocks_;
     delete [] upLocks_;
@@ -197,6 +205,7 @@ CbcHeuristicDive::solution(double & solutionValue,
 #endif
 
   double time1 = CoinCpuTime();
+  int numberSimplexIterations=0;
 
   OsiSolverInterface * solver = model_->solver()->clone();
   const double * lower = solver->getColLower();
@@ -488,6 +497,17 @@ CbcHeuristicDive::solution(double & solutionValue,
 #ifdef DIVE_DEBUG
       reasonToStop = 3;
 #endif
+      break;
+    }
+
+    numberSimplexIterations+=solver->getIterationCount();
+    if(numberSimplexIterations > maxSimplexIterations_) {
+#ifdef DIVE_DEBUG
+      reasonToStop = 4;
+#endif
+      // also switch off
+      printf("switching off diving as too many iterations\n");
+      when_=0;
       break;
     }
 

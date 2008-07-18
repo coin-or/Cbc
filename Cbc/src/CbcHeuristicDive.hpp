@@ -111,8 +111,11 @@ protected:
   // Percentage of integer variables to fix at bounds
   double percentageToFix_;
 
-  // Maximum number of iterations
+  // Maximum number of major iterations
   int maxIterations_;
+
+  // Maximum number of simplex iterations
+  int maxSimplexIterations_;
 
   // Maximum time allowed
   double maxTime_;

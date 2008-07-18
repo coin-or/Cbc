@@ -6016,6 +6016,19 @@ int
 #endif                
                 const int * originalColumns = preProcess ? process.originalColumns() : NULL;
                 if (solutionIn&&useSolution>=0) {
+		  if (!prioritiesIn) {
+		    int n;
+		    if (preProcess) {
+		      int numberColumns = babModel_->getNumCols();
+		      // extend arrays in case SOS
+		      n = originalColumns[numberColumns-1]+1;
+		    } else {
+		      n = babModel_->getNumCols();
+		    }
+		    prioritiesIn = new int[n];
+		    for (int i=0;i<n;i++)
+		      prioritiesIn[i]=100;
+		  }
                   if (preProcess) {
                     int numberColumns = babModel_->getNumCols();
                     // extend arrays in case SOS
@@ -7883,7 +7896,7 @@ int
 		      }
                       while (*pos>=' '&&*pos!='\n') {
                         if (*pos!=' '&&*pos!='\t') {
-                          *put=tolower(*pos);
+                          *put=*pos;
                           put++;
                         }
                         pos++;

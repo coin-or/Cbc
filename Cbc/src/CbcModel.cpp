@@ -1521,6 +1521,17 @@ void CbcModel::branchAndBound(int doStatistics)
   maximumDepth_ = 10 ;
   delete [] walkback_ ;
   walkback_ = new CbcNodeInfo * [maximumDepth_] ;
+#ifdef NODE_LAST
+  lastDepth_=0;
+  delete [] lastNodeInfo_ ;
+  lastNodeInfo_ = new CbcNodeInfo * [maximumDepth_] ;
+  delete [] lastNumberCuts_ ;
+  lastNumberCuts_ = new int [maximumDepth_] ;
+  maximumCuts_ = 100;
+  lastNumberCuts2_=0;
+  delete [] lastCut_;
+  lastCut_ = new const OsiRowCut * [maximumCuts_];
+#endif
 /*
   Used to generate bound edits for CbcPartialNodeInfo.
 */
@@ -3720,6 +3731,14 @@ void CbcModel::branchAndBound(int doStatistics)
   delete [] upperBefore ;
   delete [] walkback_ ;
   walkback_ = NULL ;
+#ifdef NODE_LAST
+  delete [] lastNodeInfo_ ;
+  lastNodeInfo_ = NULL;
+  delete [] lastNumberCuts_ ;
+  lastNumberCuts_ = NULL;
+  delete [] lastCut_;
+  lastCut_ = NULL;
+#endif
   delete [] addedCuts_ ;
   addedCuts_ = NULL ;
   //delete persistentInfo;
@@ -3919,6 +3938,7 @@ CbcModel::CbcModel()
   minimumDrop_(1.0e-4),
   numberSolutions_(0),
   stateOfSearch_(0),
+  whenCuts_(-1),
   hotstartSolution_(NULL),
   hotstartPriorities_(NULL),
   numberHeuristicSolutions_(0),
@@ -3934,6 +3954,14 @@ CbcModel::CbcModel()
   currentNumberCuts_(0),
   maximumDepth_(0),
   walkback_(NULL),
+#ifdef NODE_LAST
+  lastNodeInfo_(NULL),
+  lastCut_(NULL),
+  lastDepth_(0),
+  lastNumberCuts2_(0),
+  maximumCuts_(0),
+  lastNumberCuts_(NULL),
+#endif
   addedCuts_(NULL),
   nextRowCut_(NULL),
   currentNode_(NULL),
@@ -4070,6 +4098,7 @@ CbcModel::CbcModel(const OsiSolverInterface &rhs)
   minimumDrop_(1.0e-4),
   numberSolutions_(0),
   stateOfSearch_(0),
+  whenCuts_(-1),
   hotstartSolution_(NULL),
   hotstartPriorities_(NULL),
   numberHeuristicSolutions_(0),
@@ -4084,6 +4113,14 @@ CbcModel::CbcModel(const OsiSolverInterface &rhs)
   currentNumberCuts_(0),
   maximumDepth_(0),
   walkback_(NULL),
+#ifdef NODE_LAST
+  lastNodeInfo_(NULL),
+  lastCut_(NULL),
+  lastDepth_(0),
+  lastNumberCuts2_(0),
+  maximumCuts_(0),
+  lastNumberCuts_(NULL),
+#endif
   addedCuts_(NULL),
   nextRowCut_(NULL),
   currentNode_(NULL),
@@ -4326,6 +4363,7 @@ CbcModel::CbcModel(const CbcModel & rhs, bool cloneHandler)
   minimumDrop_(rhs.minimumDrop_),
   numberSolutions_(rhs.numberSolutions_),
   stateOfSearch_(rhs.stateOfSearch_),
+  whenCuts_(rhs.whenCuts_),
   numberHeuristicSolutions_(rhs.numberHeuristicSolutions_),
   numberNodes_(rhs.numberNodes_),
   numberNodes2_(rhs.numberNodes2_),
@@ -4549,10 +4587,27 @@ CbcModel::CbcModel(const CbcModel & rhs, bool cloneHandler)
   bestSolutionBasis_ = rhs.bestSolutionBasis_;
   nextRowCut_ = NULL;
   currentNode_ = NULL;
-  if (maximumDepth_)
+  if (maximumDepth_) {
     walkback_ = new CbcNodeInfo * [maximumDepth_];
-  else
+#ifdef NODE_LAST
+    lastNodeInfo_ = new CbcNodeInfo * [maximumDepth_] ;
+    lastNumberCuts_ = new int [maximumDepth_] ;
+#endif
+  } else {
     walkback_ = NULL;
+#ifdef NODE_LAST
+    lastNodeInfo_ = NULL;
+    lastNumberCuts_ = NULL;
+#endif
+  }
+#ifdef NODE_LAST
+  maximumCuts_ = rhs.maximumCuts_;
+  if (maximumCuts_) {
+    lastCut_ = new const OsiRowCut * [maximumCuts_] ;
+  } else {
+    lastCut_ = NULL;
+  }
+#endif
   synchronizeModel();
   if (cloneHandler) {
     delete handler_;
@@ -4632,6 +4687,7 @@ CbcModel::operator=(const CbcModel& rhs)
     minimumDrop_ = rhs.minimumDrop_;
     numberSolutions_=rhs.numberSolutions_;
     stateOfSearch_= rhs.stateOfSearch_;
+    whenCuts_ = rhs.whenCuts_;
     numberHeuristicSolutions_=rhs.numberHeuristicSolutions_;
     numberNodes_ = rhs.numberNodes_;
     numberNodes2_ = rhs.numberNodes2_;
@@ -4832,13 +4888,35 @@ CbcModel::operator=(const CbcModel& rhs)
     } else {
       addedCuts_ = NULL;
     }
+#ifdef NODE_LAST
+    delete [] lastNodeInfo_ ;
+    delete [] lastNumberCuts_ ;
+    delete [] lastCut_;
+#endif
     bestSolutionBasis_ = rhs.bestSolutionBasis_;
     nextRowCut_ = NULL;
     currentNode_ = NULL;
-    if (maximumDepth_)
+    if (maximumDepth_) {
       walkback_ = new CbcNodeInfo * [maximumDepth_];
-    else
+#ifdef NODE_LAST
+      lastNodeInfo_ = new CbcNodeInfo * [maximumDepth_] ;
+      lastNumberCuts_ = new int [maximumDepth_] ;
+#endif
+    } else {
       walkback_ = NULL;
+#ifdef NODE_LAST
+      lastNodeInfo_ = NULL;
+      lastNumberCuts_ = NULL;
+#endif
+    }
+#ifdef NODE_LAST
+    maximumCuts_ = rhs.maximumCuts_;
+    if (maximumCuts_) {
+      lastCut_ = new const OsiRowCut * [maximumCuts_] ;
+    } else {
+      lastCut_ = NULL;
+    }
+#endif
     synchronizeModel();
     cbcColLower_ = NULL;
     cbcColUpper_ = NULL;
@@ -4953,6 +5031,14 @@ CbcModel::resetModel()
   currentNode_ = NULL;
   delete [] walkback_;
   walkback_=NULL;
+#ifdef NODE_LAST
+  delete [] lastNodeInfo_ ;
+  lastNodeInfo_ = NULL;
+  delete [] lastNumberCuts_ ;
+  lastNumberCuts_ = NULL;
+  delete [] lastCut_;
+  lastCut_ = NULL;
+#endif
   delete [] whichGenerator_;
   whichGenerator_ = NULL;
   for (int i=0;i<maximumStatistics_;i++)
@@ -5093,6 +5179,7 @@ CbcModel::gutsOfCopy(const CbcModel & rhs,int mode)
   else
     branchingMethod_=NULL;
   messageHandler()->setLogLevel(rhs.messageHandler()->logLevel());
+  whenCuts_ = rhs.whenCuts_;
   synchronizeModel();
 }
 // Move status, nodes etc etc across
@@ -5334,29 +5421,13 @@ CbcModel::addHeuristic(CbcHeuristic * generator, const char *name,
   Certainly in the contexts where all we need is a list of cuts, there's no
   point in passing in a valid basis --- an empty basis will do just fine.
 */
-void CbcModel::addCuts1 (CbcNode * node, CoinWarmStartBasis *&lastws)
-{ int i;
+bool CbcModel::addCuts1 (CbcNode * node, CoinWarmStartBasis *&lastws)
+{ 
+#if 0
   int nNode=0;
   int numberColumns = getNumCols();
   CbcNodeInfo * nodeInfo = node->nodeInfo();
 
-/*
-  Remove all cuts from the constraint system.
-  (original comment includes ``see note below for later efficiency'', but
-  the reference isn't clear to me).
-*/
-  int currentNumberCuts ;
-  if (numberThreads_<=0) {
-    solver_->restoreBaseModel(numberRowsAtContinuous_);
-  } else {
-    // *** Fix later
-    currentNumberCuts = solver_->getNumRows()-numberRowsAtContinuous_;
-    int *which = new int[currentNumberCuts];
-    for (i = 0 ; i < currentNumberCuts ; i++)
-      which[i] = i+numberRowsAtContinuous_;
-    solver_->deleteRows(currentNumberCuts,which);
-    delete [] which;
-  }
 /*
   Accumulate the path from node to the root in walkback_, and accumulate a
   cut count in currentNumberCuts.
@@ -5364,7 +5435,221 @@ void CbcModel::addCuts1 (CbcNode * node, CoinWarmStartBasis *&lastws)
   original comment: when working then just unwind until where new node joins
   old node (for cuts?)
 */
-  currentNumberCuts = 0;
+  int currentNumberCuts = 0;
+  while (nodeInfo) {
+    //printf("nNode = %d, nodeInfo = %x\n",nNode,nodeInfo);
+    walkback_[nNode++]=nodeInfo;
+    currentNumberCuts += nodeInfo->numberCuts() ;
+    nodeInfo = nodeInfo->parent() ;
+    if (nNode==maximumDepth_) {
+      redoWalkBack();
+    }
+  }
+  currentNumberCuts_=currentNumberCuts;
+  if (currentNumberCuts > maximumNumberCuts_) {
+    maximumNumberCuts_ = currentNumberCuts;
+    delete [] addedCuts_;
+    addedCuts_ = new CbcCountRowCut * [maximumNumberCuts_];
+  }
+/*
+  This last bit of code traverses the path collected in walkback_ from the
+  root back to node. At the end of the loop,
+   * lastws will be an appropriate basis for node;
+   * variable bounds in the constraint system will be set to be correct for
+     node; and
+   * addedCuts_ will be set to a list of cuts that need to be added to the
+     constraint system at node.
+  applyToModel does all the heavy lifting.
+*/
+  //#define CBC_PRINT2
+#ifdef CBC_PRINT2
+  printf("Starting bounds at node %d\n",numberNodes_);
+#endif
+  bool sameProblem=false;
+#ifdef NODE_LAST
+  {
+    {
+      int n1=numberRowsAtContinuous_;
+      for (int i=0;i<lastDepth_;i++)
+	n1 += lastNumberCuts_[i];
+      int n2=numberRowsAtContinuous_;
+      for (int i=0;i<nNode;i++)
+	n2 += walkback_[i]->numberCuts();
+      //printf("ROWS a %d - old thinks %d new %d\n",solver_->getNumRows(),n1,n2);
+    }
+    int nDel=0;
+    int nAdd=0;
+    int n=CoinMin(lastDepth_,nNode);
+    int i;
+    int difference=lastDepth_-nNode;
+    int iZ=lastDepth_;
+    int iN=0;
+    // Last is reversed to minimize copying
+    if (difference>0) {
+      for (i=0;i<difference;i++) {
+	// delete rows 
+	nDel += lastNumberCuts_[--iZ];
+      }
+    } else if (difference<0) {
+      for (i=0;i<-difference;i++) {
+	// add rows
+	nAdd += walkback_[i]->numberCuts();
+      }
+      iN=-difference;
+    }
+    for (i=0;i<n;i++) {
+      iZ--;
+      if (lastNodeInfo_[iZ]==walkback_[iN]) {
+	break;
+      } else {
+	// delete rows 
+	nDel += lastNumberCuts_[iZ];
+	// add rows
+	nAdd += walkback_[iN++]->numberCuts();
+      }
+    }
+    assert (i<n||lastDepth_==0);
+    //printf("lastDepth %d thisDepth %d match at %d, rows+-= %d %d\n",
+    //   lastDepth_,nNode,n-i,nAdd,nDel);
+    sameProblem = (!nAdd)&&(!nDel);
+    if (lastDepth_) {
+      while (iN>=0) {
+	lastNumberCuts_[iZ] = walkback_[iN]->numberCuts();
+	lastNodeInfo_[iZ++]=walkback_[iN--];
+      }
+    } else {
+      lastNumberCuts_[0]=walkback_[0]->numberCuts();
+      lastNodeInfo_[0]=walkback_[0];
+    }
+    lastDepth_=nNode;
+  }
+#endif
+  currentDepth_=nNode;
+/*
+  Remove all cuts from the constraint system.
+  (original comment includes ``see note below for later efficiency'', but
+  the reference isn't clear to me).
+*/
+/*
+  Create an empty basis with sufficient capacity for the constraint system
+  we'll construct: original system plus cuts. Make sure we have capacity to
+  record those cuts in addedCuts_.
+
+  The method of adjusting the basis at a FullNodeInfo object (the root, for
+  example) is to use a copy constructor to duplicate the basis held in the
+  nodeInfo, then resize it and return the new basis object. Guaranteed,
+  lastws will point to a different basis when it returns. We pass in a basis
+  because we need the parameter to return the allocated basis, and it's an
+  easy way to pass in the size. But we take a hit for memory allocation.
+*/
+  lastws->setSize(numberColumns,numberRowsAtContinuous_+currentNumberCuts);
+  currentNumberCuts=0;
+  while (nNode) {
+    --nNode;
+    walkback_[nNode]->applyToModel(this,lastws,
+				   addedCuts_,currentNumberCuts);
+  }
+  if (!lastws->fullBasis()) {
+#ifdef COIN_DEVELOP
+    printf("******* bad basis\n");
+#endif
+    int numberRows = lastws->getNumArtificial();
+    int i;
+    for (i=0;i<numberRows;i++)
+      lastws->setArtifStatus(i,CoinWarmStartBasis::basic);
+    int numberColumns = lastws->getNumStructural();
+    for (i=0;i<numberColumns;i++) {
+      if (lastws->getStructStatus(i)==CoinWarmStartBasis::basic)
+	lastws->setStructStatus(i,CoinWarmStartBasis::atLowerBound);
+    }
+#if 0
+  } else {
+    // OPTION - take off slack cuts
+    // First see if any cuts are slack
+    int numberAdded = currentNumberCuts;
+    if (saveNode<2&&false) {
+      printf("nNode %d cuts %d\n",saveNode,currentNumberCuts);
+      for (int i=0;i<currentNumberCuts;i++)
+	addedCuts_[i]->print();
+    }
+    if (numberAdded&&saveNode<5&&!parentModel_) {
+#if 0
+      currentNumberCuts=0;
+      for (int j=numberRowsAtContinuous_;
+	   j<numberAdded+numberRowsAtContinuous_;j++) {
+	CoinWarmStartBasis::Status status = lastws->getArtifStatus(j);
+        if (status!=CoinWarmStartBasis::basic) {
+	  lastws->setArtifStatus(currentNumberCuts+numberRowsAtContinuous_,
+				 status);
+	  addedCuts_[currentNumberCuts++]=addedCuts_[j-numberRowsAtContinuous_];
+	}
+      }
+      if (currentNumberCuts<numberAdded) {
+	printf("deleting %d rows\n",numberAdded-currentNumberCuts);
+        lastws->resize(currentNumberCuts+numberRowsAtContinuous_,
+		       lastws->getNumStructural());
+	currentNumberCuts_=currentNumberCuts;
+      }
+#else
+      int nDelete=0;
+      for (int j=numberRowsAtContinuous_;
+	   j<numberAdded+numberRowsAtContinuous_;j++) {
+	CoinWarmStartBasis::Status status = lastws->getArtifStatus(j);
+        if (status==CoinWarmStartBasis::basic) 
+	  nDelete++;
+      }
+      if (nDelete)
+	printf("depth %d can delete %d\n",saveNode-1,nDelete);
+#endif
+    }
+#endif
+  }
+  if (0) {
+    int numberDebugValues=18;
+    double * debugValues = new double[numberDebugValues];
+    CoinZeroN(debugValues,numberDebugValues);
+    debugValues[1]=6.0;
+    debugValues[3]=60.0;
+    debugValues[4]=6.0;
+    debugValues[6]=60.0;
+    debugValues[7]=16.0;
+    debugValues[9]=70.0;
+    debugValues[10]=7.0;
+    debugValues[12]=70.0;
+    debugValues[13]=12.0;
+    debugValues[15]=75.0;
+    int nBad=0;
+    for (int j=0;j<numberColumns;j++) {
+      if (integerInfo_[j]) {
+	if(solver_->getColLower()[j]>debugValues[j]||
+	   solver_->getColUpper()[j]<debugValues[j]) {
+	  printf("** (%g) ** ",debugValues[j]);
+	  nBad++;
+	}
+	printf("%d bounds %g %g\n",j,solver_->getColLower()[j],solver_->getColUpper()[j]);
+      }
+    }
+    if (nBad)
+      printf("%d BAD\n",nBad);
+    else
+      printf("OKAY\n");
+    delete [] debugValues;
+  }
+  return sameProblem;
+#else
+  int i;
+  int nNode=0;
+  int numberColumns = getNumCols();
+  CbcNodeInfo * nodeInfo = node->nodeInfo();
+
+/*
+  Accumulate the path from node to the root in walkback_, and accumulate a
+  cut count in currentNumberCuts.
+
+  original comment: when working then just unwind until where new node joins
+  old node (for cuts?)
+*/
+  int currentNumberCuts = 0;
   while (nodeInfo) {
     //printf("nNode = %d, nodeInfo = %x\n",nNode,nodeInfo);
     walkback_[nNode++]=nodeInfo;
@@ -5504,6 +5789,8 @@ void CbcModel::addCuts1 (CbcNode * node, CoinWarmStartBasis *&lastws)
       printf("OKAY\n");
     delete [] debugValues;
   }
+  return false;
+#endif
 }
 
 /*
@@ -5519,7 +5806,10 @@ int CbcModel::addCuts (CbcNode *node, CoinWarmStartBasis *&lastws,bool canFix)
   addCuts1 performs step 1 of restoring the subproblem at this node; see the
   comments there.
 */
-  addCuts1(node,lastws);
+#ifdef NODE_LAST
+  bool sameProblem=
+#endif
+    addCuts1(node,lastws);
   int i;
   int numberColumns = getNumCols();
   if (solver_->getNumRows()>maximumRows_) {
@@ -5635,7 +5925,128 @@ int CbcModel::addCuts (CbcNode *node, CoinWarmStartBasis *&lastws,bool canFix)
       int numberRowsNow=numberRowsAtContinuous_+numberToAdd;
       lastws->compressRows(numberToDrop,cutsToDrop) ;
       lastws->resize(numberRowsNow,numberColumns);
-      solver_->applyRowCuts(numberToAdd,addCuts);
+#ifdef NODE_LAST
+      bool canMissStuff=false;
+      bool redoCuts=true;
+      if (CoinAbs(lastNumberCuts2_-numberToAdd)<5) {
+	int numberToCheck=CoinMin(lastNumberCuts2_,numberToAdd);
+	int i1=0;
+	int i2=0;
+	int nDiff=0;
+	int nSame=0;
+	if (lastNumberCuts2_==numberToAdd) {
+	  for (int i=0;i<numberToCheck;i++) {
+	    if (lastCut_[i1++]!=addCuts[i2++]) {
+	      nDiff++;
+	    } else {
+	      nSame++;
+	    }
+	  }
+	} else if (lastNumberCuts2_>numberToAdd) {
+	  int nDiff2 = lastNumberCuts2_-numberToAdd;
+	  for (int i=0;i<numberToCheck;i++) {
+	    if (lastCut_[i1]!=addCuts[i2]) {
+	      nDiff++;
+	      while (nDiff2) {
+		i1++;
+		nDiff2--;
+		if (lastCut_[i1]==addCuts[i2]) {
+		  nSame++;
+		  break;
+		} else {
+		  nDiff++;
+		}
+	      }
+	    } else {
+	      nSame++;
+	    }
+	  }
+	  nDiff += nDiff2;
+	} else {
+	  int nDiff2 = numberToAdd-lastNumberCuts2_;
+	  for (int i=0;i<numberToCheck;i++) {
+	    if (lastCut_[i1]!=addCuts[i2]) {
+	      nDiff++;
+	      while (nDiff2) {
+		i2++;
+		nDiff2--;
+		if (lastCut_[i1]==addCuts[i2]) {
+		  nSame++;
+		  break;
+		} else {
+		  nDiff++;
+		}
+	      }
+	    } else {
+	      nSame++;
+	    }
+	  }
+	  nDiff += nDiff2;
+	}
+#ifdef COIN_DEVELOP
+	printf("add now %d add last %d - same %d, diff %d %s\n",
+	     numberToAdd,lastNumberCuts2_,nSame,nDiff,
+	     !nDiff ? "YES" : "NO1");
+#endif
+	canMissStuff=!nDiff&&sameProblem;
+	// But only if number of rows looks OK
+	if (numberRowsAtContinuous_+numberToAdd!=solver_->getNumRows())
+	  canMissStuff=false;
+      } else {
+	//printf("add now %d add last %d NO2\n",numberToAdd,lastNumberCuts2_);
+      }
+      assert (lastws->fullBasis()&&
+	      numberRowsAtContinuous_+numberToAdd==numberRowsNow);
+      if (redoCuts) {
+	if (numberToAdd>maximumCuts_) {
+	  delete [] lastCut_;
+	  maximumCuts_ = 2*numberToAdd+10;
+	  lastCut_=new const OsiRowCut * [maximumCuts_];
+	}
+	lastNumberCuts2_=numberToAdd;
+	for (int i=0;i<numberToAdd;i++) 
+	  lastCut_[i]=addCuts[i];
+      }
+#else
+      //solver_->applyRowCuts(numberToAdd,addCuts);
+#endif
+#ifdef NODE_LAST
+      if (!canMissStuff) {
+	//if (canMissStuff)
+	//solver_->writeMps("before");
+	//printf("Not Skipped\n");
+	//int n1=solver_->getNumRows();
+#endif
+	if (numberThreads_<=0) {
+	  solver_->restoreBaseModel(numberRowsAtContinuous_);
+	} else {
+	  // *** Fix later
+	  int numberCuts = solver_->getNumRows()-numberRowsAtContinuous_;
+	  int *which = new int[numberCuts];
+	  for (i = 0 ; i < numberCuts ; i++)
+	    which[i] = i+numberRowsAtContinuous_;
+	  solver_->deleteRows(numberCuts,which);
+	  delete [] which;
+	}
+	//int n2=solver_->getNumRows();
+	//for (int j=0;j<numberToAdd;j++)
+	//addCuts[j]->print();
+	solver_->applyRowCuts(numberToAdd,addCuts);
+	//int n3=solver_->getNumRows();
+	//printf("NBefore %d, after del %d, now %d\n",n1,n2,n3);
+#ifdef NODE_LAST
+      } else {
+#ifdef COIN_HAS_CLP
+#ifdef COIN_DEVELOP
+	OsiClpSolverInterface * clpSolver 
+	  = dynamic_cast<OsiClpSolverInterface *> (solver_);
+	if (clpSolver) {
+	  printf("Skipped - whatschanged %d\n",clpSolver->getModelPtr()->whatsChanged());
+	}
+#endif
+#endif
+      }
+#endif
 #     ifdef CBC_CHECK_BASIS
       printf("addCuts: stripped basis; rows %d + %d\n",
 	     numberRowsAtContinuous_,numberToAdd);
@@ -6331,9 +6742,6 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
 	}
       }
 # endif
-      int whenCuts = (continuousSolver_->getNumRows()+continuousSolver_->getNumCols()<=500) ? -1 :0;
-      if (parentModel_)
-	whenCuts=0;
       for (i = 0;i<numberCutGenerators_;i++) {
 	int numberRowCutsBefore = theseCuts.sizeRowCuts() ;
 	int numberColumnCutsBefore = theseCuts.sizeColCuts() ;
@@ -6347,7 +6755,10 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
 	  generate=false;
 	if (generator_[i]->switchedOff())
 	  generate=false;;
-	if (node&&node->depth()>10&&(node->depth()&1)==whenCuts&&!fullScan) {
+	if (!doCutsNow(1)&&!fullScan) {
+	  //if (node)
+	  //assert (node->depth()+1==currentDepth_);
+	  //if (node&&node->depth()>10&&(node->depth()&1)==whenCuts&&!fullScan) {
 	  // switch off if default
 	  if (generator_[i]->howOften()==1&&generator_[i]->whatDepth()<0)
 	    generate=false;
@@ -7013,9 +7424,19 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
 */
     if (feasible)
     { int cutIterations = solver_->getIterationCount() ;
-      if (numberOldActiveCuts_+numberNewCuts_) {
+      if (numberOldActiveCuts_+numberNewCuts_
+#ifdef NODE_LAST
+	  &&(numberNewCuts_||doCutsNow(1))
+#endif
+	  ) {
         OsiCuts * saveCuts = node ? NULL : &slackCuts;
+#ifdef NODE_LAST
+        int nDel=takeOffCuts(cuts,resolveAfterTakeOffCuts_,saveCuts,numberToAdd,addCuts) ;
+	if (nDel)
+	  lastNumberCuts2_=0;
+#else
         takeOffCuts(cuts,resolveAfterTakeOffCuts_,saveCuts,numberToAdd,addCuts) ;
+#endif
         if (solver_->isDualObjectiveLimitReached()&&resolveAfterTakeOffCuts_)
           { feasible = false ;
 #	ifdef CBC_DEBUG
@@ -7254,6 +7675,110 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
           <<CoinMessageEol ;
       if (thisObjective-startObjective<1.0e-5&&numberElementsAdded>0.2*numberElementsAtStart)
         willBeCutsInTree=-1;
+      int whenC=whenCuts_;
+      if (whenC==999999|whenC==999998) {
+	int size = continuousSolver_->getNumRows()+continuousSolver_->getNumCols();
+	bool small = size<=550;
+	small=false;
+#ifdef CLP_INVESTIGATE
+	int maxPass=maximumCutPasses_;
+#endif
+	if (thisObjective-startObjective<1.0e-5) {
+	  // No change in objective function
+	  if(numberElementsAdded>0.2*numberElementsAtStart) {
+	    if (whenCuts_==999999) {
+	      whenCuts_=5000010;
+	      if (!small)
+		maximumCutPasses_=CoinMax(maximumCutPasses_>>1,1);
+	    } else if (whenCuts_==999998) {
+	      whenCuts_=5000010;
+	      if (!small)
+		maximumCutPasses_=CoinMax(maximumCutPasses_>>1,1);
+	    }
+#if 0
+	  } else if (currentPassNumber_<CoinMin(CoinAbs(maximumCutPassesAtRoot_),8)) {
+	    if (whenCuts_==999999) {
+	      whenCuts_=8000008;
+	      maximumCutPasses_=1;
+	    } else if (whenCuts_==999998) {
+	      whenCuts_=10000008;
+	      maximumCutPasses_=1;
+	    }
+	  } else if (currentPassNumber_<CoinMin(CoinAbs(maximumCutPassesAtRoot_),50)) {
+	    if (whenCuts_==999999) {
+	      whenCuts_=8000008;
+	      maximumCutPasses_=1;
+	    } else if (whenCuts_==999998) {
+	      whenCuts_=10000006;
+	      maximumCutPasses_=1;
+	    }
+	  } else if (currentPassNumber_<CoinAbs(maximumCutPassesAtRoot_)) {
+	    if (whenCuts_==999999) {
+	      whenCuts_=8000008;
+	      maximumCutPasses_=1;
+	    } else if (whenCuts_==999998) {
+	      whenCuts_=10000004;
+	      maximumCutPasses_=1;
+	    }
+#endif
+	  } else {
+	    if (whenCuts_==999999) {
+	      whenCuts_=8000008;
+	      if (!small)
+		maximumCutPasses_=CoinMax(maximumCutPasses_>>1,1);
+	    } else if (whenCuts_==999998) {
+	      whenCuts_=10000004;
+	      if (!small)
+		maximumCutPasses_=CoinMax(maximumCutPasses_>>1,1);
+	    }
+	  }
+	} else {
+	  // Objective changed
+#if 0
+	  if (currentPassNumber_<CoinMin(CoinAbs(maximumCutPassesAtRoot_),8)) {
+	    if (whenCuts_==999999) {
+	      whenCuts_=8000008;
+	      maximumCutPasses_=1;
+	    } else if (whenCuts_==999998) {
+	      whenCuts_=10000008;
+	      maximumCutPasses_=1;
+	    }
+	  } else if (currentPassNumber_<CoinMin(CoinAbs(maximumCutPassesAtRoot_),50)) {
+	    if (whenCuts_==999999) {
+	      whenCuts_=8000008;
+	      maximumCutPasses_=1;
+	    } else if (whenCuts_==999998) {
+	      whenCuts_=10000004;
+	      maximumCutPasses_=1;
+	    }
+	  } else
+#endif
+	  if (currentPassNumber_<CoinAbs(maximumCutPassesAtRoot_)) {
+	    if (whenCuts_==999999) {
+	      whenCuts_=8000008;
+	      if (!small)
+		maximumCutPasses_=CoinMax(maximumCutPasses_>>1,1);
+	    } else if (whenCuts_==999998) {
+	      whenCuts_=10000004;
+	      if (!small)
+		maximumCutPasses_=CoinMax(maximumCutPasses_>>1,1);
+	    }
+	  } else {
+	    if (whenCuts_==999999) {
+	      whenCuts_=10000004;
+	      maximumCutPasses_=CoinMax(maximumCutPasses_,2);
+	    } else if (whenCuts_==999998) {
+	      whenCuts_=11000002;
+	      maximumCutPasses_=CoinMax(maximumCutPasses_,2);
+	    }
+	  }
+	}
+	//// end
+#ifdef CLP_INVESTIGATE
+	printf("changing whenCuts from %d to %d and cutPasses from %d to %d objchange %g\n",
+	       whenC,whenCuts_,maxPass,maximumCutPasses_,thisObjective-startObjective);
+#endif
+      }
     }
     if ((numberRowsAdded>100+0.5*numberRowsAtStart
          ||numberElementsAdded>0.5*numberElementsAtStart)
@@ -7627,12 +8152,13 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
 	to remove the assertions.
 */
 
-void
+int
 CbcModel::takeOffCuts (OsiCuts &newCuts,
 		       bool allowResolve, OsiCuts * saveCuts,
 		       int numberNewCuts, const OsiRowCut ** addedCuts) 
 
 { // int resolveIterations = 0 ;
+  int numberDropped=0;
   int firstOldCut = numberRowsAtContinuous_ ;
   int totalNumberCuts = numberNewCuts_+numberOldActiveCuts_ ;
   int *solverCutIndices = new int[totalNumberCuts] ;
@@ -7751,6 +8277,7 @@ CbcModel::takeOffCuts (OsiCuts &newCuts,
     if (numberTotalToDelete > 0 ) {
       solver_->deleteRows(numberTotalToDelete,
 			    solverCutIndices) ;
+      numberDropped+= numberTotalToDelete;
       numberNewCuts_ -= numberNewToDelete ;
       assert (numberNewCuts_==newCuts.sizeRowCuts());
       numberOldActiveCuts_ -= numberOldToDelete ;
@@ -7784,9 +8311,8 @@ CbcModel::takeOffCuts (OsiCuts &newCuts,
 */
   delete [] solverCutIndices ;
   delete [] newCutIndices ;
+  return numberDropped;
 }
-
-
 
 int
 CbcModel::resolve(CbcNodeInfo * parent, int whereFrom)
@@ -10539,6 +11065,16 @@ CbcModel::integerPresolveThisModel(OsiSolverInterface * originalSolver,
 	maximumDepth_=10;
 	delete [] walkback_;
 	walkback_ = new CbcNodeInfo * [maximumDepth_];
+#ifdef NODE_LAST
+	lastDepth_=0;
+	delete [] lastNodeInfo_ ;
+	lastNodeInfo_ = new CbcNodeInfo * [maximumDepth_] ;
+	delete [] lastNumberCuts_ ;
+	lastNumberCuts_ = new int [maximumDepth_] ;
+	maximumCuts_ = 100;
+	delete [] lastCut_;
+	lastCut_ = new const OsiRowCut * [maximumCuts_];
+#endif
 	
 	OsiCuts cuts;
 	numberOldActiveCuts_=0;
@@ -11138,6 +11674,14 @@ CbcModel::strengthenedModel()
   whichGenerator_ = NULL;
   delete [] walkback_ ;
   walkback_ = NULL ;
+#ifdef NODE_LAST
+  delete [] lastNodeInfo_ ;
+  lastNodeInfo_ = NULL;
+  delete [] lastNumberCuts_ ;
+  lastNumberCuts_ = NULL;
+  delete [] lastCut_;
+  lastCut_ = NULL;
+#endif
   delete [] addedCuts_ ;
   addedCuts_ = NULL ;
   if (continuousSolver_)
@@ -12404,6 +12948,12 @@ CbcModel::doOneNode(CbcModel * baseModel, CbcNode * & node, CbcNode * & newNode)
 #ifndef CBC_DETERMINISTIC_THREAD
   maximumDepth_ = baseModel->maximumDepth_;
   walkback_ = baseModel->walkback_;
+#ifdef NODE_LAST
+  lastNodeInfo_ = baseModel->lastNodeInfo_;
+  lastNumberCuts_ = baseModel->lastNumberCuts_;
+  lastCut_ = baseModel->lastCut_;
+  lastNumberCuts2_ = baseModel->lastNumberCuts2_;
+#endif
 #endif
 #ifndef CBC_DETERMINISTIC_THREAD
   int save2 = maximumDepth_;
@@ -12419,6 +12969,12 @@ CbcModel::doOneNode(CbcModel * baseModel, CbcNode * & node, CbcNode * & newNode)
     // increased
     baseModel->maximumDepth_ = maximumDepth_;
     baseModel->walkback_ = walkback_;
+#ifdef NODE_LAST
+    baseModel->lastNodeInfo_ = lastNodeInfo_;
+    baseModel->lastNumberCuts_ = lastNumberCuts_;
+    baseModel->lastCut_ = lastCut_;
+    baseModel->lastNumberCuts2_ = lastNumberCuts2_;
+#endif
   }
 #endif
   int branchesLeft=0;
@@ -13404,12 +13960,7 @@ CbcModel::splitModel(int numberModels, CbcModel ** model,
       if (!nodeInfo->marked()) {
 	//while (nodeInfo&&!nodeInfo->marked()) {
 	  if (nAffected==maximumDepth_) {
-	    maximumDepth_ *= 2;
-	    CbcNodeInfo ** temp = new CbcNodeInfo * [maximumDepth_];
-	    for (i=0;i<nAffected;i++) 
-	      temp[i] = walkback_[i];
-	    delete [] walkback_;
-	    walkback_ = temp;
+	    redoWalkBack();
 	  }
 	  nodeInfo->mark();
 	  //nodeInfo->incrementCuts(1000000);
@@ -13572,6 +14123,11 @@ CbcModel::moveToModel(CbcModel * baseModel,int mode)
       baseModel->strongInfo_[i] += strongInfo_[i];
 #ifndef CBC_DETERMINISTIC_THREAD
     walkback_ = NULL;
+#ifdef NODE_LAST
+    lastNodeInfo_ = NULL;
+    lastNumberCuts_ = NULL;
+    lastCut_ = NULL;
+#endif
     //addedCuts_ = NULL;
     tree_ = NULL;
 #else
@@ -13603,6 +14159,14 @@ CbcModel::moveToModel(CbcModel * baseModel,int mode)
     //delete [] addedCuts_;
     walkback_ = NULL;
     //addedCuts_ = NULL;
+#ifdef NODE_LAST
+    delete [] lastNodeInfo_ ;
+    lastNodeInfo_ = NULL;
+    delete [] lastNumberCuts_ ;
+    lastNumberCuts_ = NULL;
+    delete [] lastCut_ ;
+    lastCut_ = NULL;
+#endif
     delete tree_;
     tree_ = NULL;
     delete nodeCompare_;
@@ -14120,12 +14684,7 @@ void CbcModel::previousBounds (CbcNode * node, CbcNodeInfo * where,int iColumn,
     walkback_[nNode++]=nodeInfo;
     nodeInfo = nodeInfo->parent() ;
     if (nNode==maximumDepth_) {
-      maximumDepth_ *= 2;
-      CbcNodeInfo ** temp = new CbcNodeInfo * [maximumDepth_];
-      for (i=0;i<nNode;i++) 
-	temp[i] = walkback_[i];
-      delete [] walkback_;
-      walkback_ = temp;
+      redoWalkBack();
     }
     if (nodeInfo==where)
       nWhere = nNode;
@@ -14213,4 +14772,73 @@ CbcModel::fillPseudoCosts(double * downCosts, double * upCosts,
     }
   }
   delete [] back;
+}
+// Redo walkback arrays
+void 
+CbcModel::redoWalkBack()
+{
+  int nNode = maximumDepth_;
+  maximumDepth_ *= 2;
+  CbcNodeInfo ** temp = new CbcNodeInfo * [maximumDepth_];
+#ifdef NODE_LAST
+  CbcNodeInfo ** temp2 = new CbcNodeInfo * [maximumDepth_];
+  int * temp3 = new int [maximumDepth_];
+#endif
+  for (int i=0;i<nNode;i++) { 
+    temp[i] = walkback_[i];
+#ifdef NODE_LAST
+    temp2[i] = lastNodeInfo_[i];
+    temp3[i] = lastNumberCuts_[i];
+#endif
+  }
+  delete [] walkback_;
+  walkback_ = temp;
+#ifdef NODE_LAST
+  delete [] lastNodeInfo_ ;
+  lastNodeInfo_ = temp2;
+  delete [] lastNumberCuts_ ;
+  lastNumberCuts_ = temp3;
+#endif
+}
+/* Return true if we want to do cuts
+   If allowForTopOfTree zero then just does on multiples of depth
+   if 1 then allows for doing at top of tree
+   if 2 then says if cuts allowed anywhere apart from root
+   if 3 then gives smallest valid depth >shallow
+*/
+bool
+CbcModel::doCutsNow(int allowForTopOfTree) const
+{
+  int size = continuousSolver_->getNumRows()+continuousSolver_->getNumCols();
+
+  if (whenCuts_<0||size<=500) {
+    int whenCuts = (size<=500) ? -1 :1;
+    if (parentModel_)
+      whenCuts=1;
+    //int nodeDepth = currentDepth_-1;
+    bool doCuts2 =  !(currentDepth_>11&&(currentDepth_&1)==whenCuts);
+    //printf("when %d node %d depth %d size %d doing cuts %s\n",whenCuts_,
+    //   numberNodes_,currentDepth_,size,doCuts2 ? "yes" : "no");
+    return doCuts2;
+  }
+  //if (!parentModel_&&currentDepth_==7)
+  //printf("q\n");
+  int top=whenCuts_/1000000;
+  int shallow = top ? (top-1) : 9;
+  int when = whenCuts_ -1000000*top;
+  if ((when>15||(top&&top<5))&&currentDepth_>when)
+    when=100000; // off
+  bool doCuts =when ? ((currentDepth_%when)==0)||(when==1) : false;
+  if (allowForTopOfTree==1&&currentDepth_<=shallow) {
+    doCuts=true;
+  } else if (allowForTopOfTree==2&&shallow>=1) {
+    doCuts=true;
+  } else if (allowForTopOfTree==3&&doCuts) {
+    // only if first
+    if(currentDepth_<=shallow||currentDepth_-when>shallow)
+      doCuts=false;
+  }
+  //if (!doCuts&&currentDepth_&&!parentModel_)
+  //printf("zzz\n");
+  return doCuts;
 }

@@ -1657,9 +1657,9 @@ public:
     reoptimisation.
     If saveCuts then slack cuts will be saved
     On input current cuts are cuts and newCuts
-    on exit current cuts will be correct
+    on exit current cuts will be correct.  Returns number dropped
   */
-  void takeOffCuts(OsiCuts &cuts, 
+  int takeOffCuts(OsiCuts &cuts, 
 		   bool allowResolve,OsiCuts * saveCuts,
 		   int numberNewCuts=0, const OsiRowCut ** newCuts=NULL) ;
 
@@ -1687,12 +1687,14 @@ public:
     installed, and an appropriate basis (minus the cuts, but big enough to
     accommodate them) is constructed.
 
+    Returns true if new problem similar to old
+
     \todo addCuts1() is called in contexts where it's known in advance that
 	  all that's desired is to determine a list of cuts and do the
 	  bookkeeping (adjust the reference counts). The work of installing
 	  bounds and building a basis goes to waste.
   */
-  void addCuts1(CbcNode * node, CoinWarmStartBasis *&lastws);
+  bool addCuts1(CbcNode * node, CoinWarmStartBasis *&lastws);
   /** Returns bounds just before where - initially original bounds.
       Also sets downstream nodes (lower if force 1, upper if 2)
   */
@@ -1806,6 +1808,8 @@ public:
   */
   inline void setBestSolutionBasis(const CoinWarmStartBasis & bestSolutionBasis)
   { bestSolutionBasis_ = bestSolutionBasis;}
+  /// Redo walkback arrays
+  void redoWalkBack();
   //@}
 
 //---------------------------------------------------------------------------
@@ -1960,6 +1964,15 @@ private:
     allocated size.
   */
   CbcNodeInfo ** walkback_;
+  //#define NODE_LAST
+#ifdef NODE_LAST
+  CbcNodeInfo ** lastNodeInfo_;
+  const OsiRowCut ** lastCut_;
+  int lastDepth_;
+  int lastNumberCuts2_;
+  int maximumCuts_;
+  int * lastNumberCuts_;
+#endif
 
   /** The list of cuts initially collected for this subproblem
 

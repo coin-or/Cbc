@@ -6320,7 +6320,7 @@ int
                   babModel_->setMaximumCutPassesAtRoot(cutPass);
                 }
                 if (cutPassInTree==-1234567) 
-		  babModel_->setMaximumCutPasses(1);
+		  babModel_->setMaximumCutPasses(2);
 		else
 		  babModel_->setMaximumCutPasses(cutPassInTree);
               }
@@ -6440,6 +6440,25 @@ int
 		  } 
                 }
               }
+	      {
+		int extra1 = parameters_[whichParam(EXTRA1,numberParameters_,parameters_)].intValue();
+		if (extra1!=-1) {
+		  if (extra1<0) {
+		    if (extra1==-7777)
+		      extra1=-1;
+		    babModel_->setWhenCuts(-extra1);
+		  } else if (extra1<19000) {
+		    babModel_->setSearchStrategy(extra1);
+		    printf("XXXXX searchStrategy %d\n",extra1);
+		  } else {
+		    int n=extra1-20000;
+		    if (!n)
+		      n--;
+		    babModel_->setNumberAnalyzeIterations(n);
+		    printf("XXXXX analyze %d\n",extra1);
+		  }
+		}
+	      }
               if (type==BAB) {
 #if NEW_STYLE_SOLVER
 		{
@@ -7426,21 +7445,6 @@ int
 #endif
 		if (denseCode>=lpSolver->numberRows()) {
 		  lpSolver->factorization()->goDense();
-		}
-		{
-		  int extra1 = parameters_[whichParam(EXTRA1,numberParameters_,parameters_)].intValue();
-		  if (extra1!=-1) {
-		    if (extra1<19000) {
-		      babModel_->setSearchStrategy(extra1);
-		      printf("XXXXX searchStrategy %d\n",extra1);
-		    } else {
-		      int n=extra1-20000;
-		      if (!n)
-			n--;
-		      babModel_->setNumberAnalyzeIterations(n);
-		      printf("XXXXX analyze %d\n",extra1);
-		    }
-		  }
 		}
 #ifdef CLIQUE_ANALYSIS
 		if (!storedAmpl.sizeRowCuts()) {

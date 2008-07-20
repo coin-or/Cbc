@@ -211,7 +211,7 @@ CbcCutGenerator::generateCuts( OsiCuts & cs , int fullScan, OsiSolverInterface *
   if (howOften==100)
     doThis=false;
   // Switch off if special setting
-  if (whenCutGeneratorInSub_==-200) {
+  if (whenCutGeneratorInSub_==-200&&model_->parentModel()) {
     fullScan=0;
     doThis=false;
   }

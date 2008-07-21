@@ -2021,7 +2021,7 @@ void CbcModel::branchAndBound(int doStatistics)
       //const int * integerVariable = probingInfo_->integerVariable();
       if (toZero[number01]) {
 	if (probingInfo_->packDown()) {
-#if 1 //def CLP_INVESTIGATE
+#ifdef CLP_INVESTIGATE
 	  printf("%d implications on %d 0-1\n",toZero[number01],number01);
 #endif
 	  CglImplication implication(probingInfo_);

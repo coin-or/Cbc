@@ -4115,7 +4115,7 @@ CbcModel::CbcModel(const CbcModel & rhs, bool cloneHandler)
   else
     walkback_ = NULL;
   synchronizeModel();
-  if (cloneHandler) {
+  if (cloneHandler&&!defaultHandler_) {
     delete handler_;
     CoinMessageHandler * handler = rhs.handler_->clone();
     passInMessageHandler(handler);
@@ -4809,15 +4809,17 @@ void CbcModel::addCuts1 (CbcNode * node, CoinWarmStartBasis *&lastws)
   (original comment includes ``see note below for later efficiency'', but
   the reference isn't clear to me).
 */
-  solver_->restoreBaseModel(numberRowsAtContinuous_);
-#if 0
-  int currentNumberCuts = solver_->getNumRows()-numberRowsAtContinuous_;
-  int *which = new int[currentNumberCuts];
-  for (i = 0 ; i < currentNumberCuts ; i++)
-    which[i] = i+numberRowsAtContinuous_;
-  solver_->deleteRows(currentNumberCuts,which);
-  delete [] which;
-#endif
+  if (numberThreads_<=0) {
+    solver_->restoreBaseModel(numberRowsAtContinuous_);
+  } else {
+    // *** Fix later
+    int numberCuts = solver_->getNumRows()-numberRowsAtContinuous_;
+    int *which = new int[numberCuts];
+    for (i = 0 ; i < numberCuts ; i++)
+      which[i] = i+numberRowsAtContinuous_;
+    solver_->deleteRows(numberCuts,which);
+    delete [] which;
+  }
 /*
   Accumulate the path from node to the root in walkback_, and accumulate a
   cut count in currentNumberCuts.

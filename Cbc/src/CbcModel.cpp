@@ -4852,7 +4852,7 @@ CbcModel::CbcModel(const CbcModel & rhs, bool cloneHandler)
   }
 #endif
   synchronizeModel();
-  if (cloneHandler) {
+  if (cloneHandler&&!defaultHandler_) {
     delete handler_;
     CoinMessageHandler * handler = rhs.handler_->clone();
     passInMessageHandler(handler);

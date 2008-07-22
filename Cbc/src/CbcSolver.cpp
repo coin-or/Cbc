@@ -3347,7 +3347,7 @@ int
   if (useCombine>=type) {
     CbcHeuristicLocal heuristic2(*model);
     heuristic2.setHeuristicName("combine solutions");
-    heuristic2.setFractionSmall(0.6);
+    heuristic2.setFractionSmall(0.5);
     heuristic2.setSearchType(1);
     model->addHeuristic(&heuristic2);
     anyToDo=true;
@@ -3364,7 +3364,7 @@ int
   if (useRENS>=kType) {
     CbcHeuristicRENS heuristic6(*model);
     heuristic6.setHeuristicName("RENS");
-    heuristic6.setFractionSmall(0.5);
+    heuristic6.setFractionSmall(0.4);
     heuristic6.setFeasibilityPumpOptions(1008003);
     int nodes []={-2,0,200,1000,10000};
     heuristic6.setNumberNodes(nodes[useRENS]);
@@ -3374,7 +3374,7 @@ int
   if (useRINS>=kType) {
     CbcHeuristicRINS heuristic5(*model);
     heuristic5.setHeuristicName("RINS");
-    heuristic5.setFractionSmall(0.6);
+    heuristic5.setFractionSmall(0.5);
     if (useRINS==1)
       heuristic5.setDecayFactor(5.0);
     else

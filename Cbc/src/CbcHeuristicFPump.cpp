@@ -1400,6 +1400,10 @@ CbcHeuristicFPump::solution(double & solutionValue,
 	double weights[10]={0.1,0.1,0.2,0.2,0.2,0.3,0.3,0.3,0.4,0.5};
 	cutoff -= weights[CoinMin(numberTries-1,9)]*(cutoff-continuousObjectiveValue);
       }
+      // But round down
+      if (model_->getCutoffIncrement()==0.999||
+	  model_->getCutoffIncrement()==1.0)
+	cutoff = floor(cutoff);
       if (cutoff<continuousObjectiveValue)
 	break;
       sprintf(pumpPrint,"Round again with cutoff of %g",cutoff);

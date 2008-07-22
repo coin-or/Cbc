@@ -488,18 +488,23 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver,int numberNodes,
                                   double cutoff, std::string name) const
 {
   // size before
-  double before = 4*solver->getNumRows()+solver->getNumCols();
+  double before = 2*solver->getNumRows()+solver->getNumCols();
+#ifdef CLP_INVESTIGATE
+  printf("%s has %d rows, %d columns\n",
+	 name.c_str(),solver->getNumRows(),solver->getNumCols());
+#endif
   // Use this fraction
   double fractionSmall = fractionSmall_;
-  if (before>80000.0) {
+  if (before>20000.0) {
     // fairly large - be more conservative
-    double multiplier = (0.7*200000.0)/CoinMin(before,200000.0);
-    if (multiplier<1.0)
+    double multiplier = 1.0 - 0.3*CoinMin(100000.0,before-20000.0)/100000.0;
+    if (multiplier<1.0) {
       fractionSmall *= multiplier;
-#ifdef COIN_DEVELOP
-    printf("changing fractionSmall from %g to %g for %s\n",
-	   fractionSmall_,fractionSmall,name.c_str());
+#ifdef CLP_INVESTIGATE
+      printf("changing fractionSmall from %g to %g for %s\n",
+	     fractionSmall_,fractionSmall,name.c_str());
 #endif
+    }
   }
 #ifdef COIN_HAS_CLP
   OsiClpSolverInterface * osiclp = dynamic_cast< OsiClpSolverInterface*> (solver);
@@ -551,7 +556,7 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver,int numberNodes,
       int afterRows = presolvedModel->getNumRows();
       int afterCols = presolvedModel->getNumCols();
       delete presolvedModel;
-      double after = 4*afterRows+afterCols;
+      double after = 2*afterRows+afterCols;
       if (after>fractionSmall*before&&after>300&&numberNodes>=0) {
 	// Need code to try again to compress further using used
 	const int * used =  model_->usedInSolution();
@@ -668,7 +673,6 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver,int numberNodes,
       returnCode=2; // so will be infeasible
     } else {
       // see if too big
-      //double before = 2*solver->getNumRows()+solver->getNumCols();
       double after = 2*solver2->getNumRows()+solver2->getNumCols();
       if (after>fractionSmall*before&&(after>300||numberNodes<0)) {
 	sprintf(generalPrint,"Full problem %d rows %d columns, reduced to %d rows %d columns - too large",

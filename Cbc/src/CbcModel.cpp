@@ -3294,6 +3294,7 @@ void CbcModel::branchAndBound(int doStatistics)
       if (!node||node->objectiveValue()>cutoff)
 	continue;
 #endif
+      // Do main work of solving node here
       doOneNode(this,node,createdNode);
 #ifdef CBC_DETERMINISTIC_THREAD
 	assert (createdNode);
@@ -3425,6 +3426,7 @@ void CbcModel::branchAndBound(int doStatistics)
 	    }
 	  }
 	  assert (iThread<numberThreads_);
+	  // move information to model
 	  threadModel[iThread]->moveToModel(this,1);
 	  node = threadInfo[iThread].node;
 	  threadInfo[iThread].node=NULL;
@@ -12061,6 +12063,10 @@ CbcModel::resolve(OsiSolverInterface * solver)
     int save = clpSimplex->specialOptions();
     clpSimplex->setSpecialOptions(save|0x11000000); // say is Cbc (and in branch and bound)
     clpSolver->resolve();
+#ifdef CLP_INVESTIGATE
+    if (clpSimplex->numberIterations()>1000)
+      printf("node %d took %d iterations\n",numberNodes_,clpSimplex->numberIterations());
+#endif
     clpSimplex->setSpecialOptions(save);
   } else {
     solver->resolve();
@@ -14560,6 +14566,7 @@ static void * doNodesThread(void * voidInfo)
 	else
 	  printf("xxxx %d\n",nXXXXXX);
 #endif
+	// Do real work of node
 	thisModel->doOneNode(NULL,node,createdNode);
 #if CBC_THREAD_DEBUG
 	//printf("SThread %d node %d\n",stuff->threadNumber,thisModel->getNodeCount());
@@ -14601,6 +14608,7 @@ static void * doNodesThread(void * voidInfo)
 	  delNode[nDeleteNode++]=node;
 	}
       }
+      // end of this sub-tree
       int * usedA = thisModel->usedInSolution();
       for (int i=0;i<numberColumns;i++) {
 	usedA[i] -= used[i];

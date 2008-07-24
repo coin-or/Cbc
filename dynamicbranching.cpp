@@ -44,6 +44,7 @@ changes implied by the branching decisions.
 
 #define FUNNY_BRANCHING 1
 #define DEBUG_DYNAMIC_BRANCHING
+//#define DELETE_NODES
 
 #ifdef DEBUG_DYNAMIC_BRANCHING
 int dyn_debug = 10;
@@ -242,6 +243,12 @@ public:
 				      const int * original_lower,
 				      const int * original_upper,
 				      DBVectorNode & branchingTree);
+  // returns the node_id of the node that can be deleted. If -1, no node can be deleted
+  int nodeToSwitchWithParent(const int* which,
+			     LPresult& lpres,
+			     const int * original_lower,
+			     const int * original_upper,
+			     DBVectorNode & branchingTree);
   inline bool bothChildDone() const {
     return (way_ & WAY_BOTH_DONE) == WAY_BOTH_DONE;
   }
@@ -722,6 +729,9 @@ public:
 		  OsiSolverInterface& model, DBNodeSimple & node);
   // Fix the bounds in the descendants of subroot
   void adjustBounds(int subroot, int brvar, int brlb, int brub);
+  // Delete the node that was selected for deletion
+  void deleteSelectedNode(int node_to_delete_id, const int* which,
+			  OsiSolverInterface& model, DBNodeSimple & node);
 
   // Check that the bounds correspond to the branching decisions...
   void checkTree() const;
@@ -923,6 +933,140 @@ DBVectorNode::pop_back()
   //assert (last_==chosen_);
   removeNode(chosen_);
   chosen_ = -1;
+}
+
+int
+DBNodeSimple::nodeToSwitchWithParent(const int* which,
+				     LPresult& lpres,
+				     const int * original_lower,
+				     const int * original_upper,
+				     DBVectorNode & branchingTree)
+{
+  /*
+    The current node ('this') is really the parent (P) and the solution in the
+    lpres represents the child. The grandparent (GP) is this.parent_. Let's have
+    variable names respecting the truth.
+  */
+#if !defined(FUNNY_BRANCHING)
+  return -1;
+#endif
+
+  const int parent_id = node_id_;
+  const DBNodeSimple& parent = branchingTree.nodes_[parent_id];
+  const int grandparent_id = parent.parent_;
+
+  if (grandparent_id == -1) {
+    // can't flip root higher up...
+    return -1;
+  }
+  //  const DBNodeSimple& grandparent = branchingTree.nodes_[grandparent_id];
+  
+  // THINK: these are not going to happen (hopefully), but if they do, what
+  // should we do???
+  if (lpres.isAbandoned) {
+    printf("WARNING: lpres.isAbandoned true!\n");
+    return -1;
+  }
+  if (lpres.isProvenDualInfeasible) {
+    printf("WARNING: lpres.isProvenDualInfeasible true!\n");
+    return -1;
+  }
+  if (lpres.isPrimalObjectiveLimitReached) {
+    printf("WARNING: lpres.isPrimalObjectiveLimitReached true!\n");
+    return -1;
+  }
+
+  if (parent.strong_branching_fixed_vars_ || parent.reduced_cost_fixed_vars_)
+    return -1;
+
+  if (lpres.isIterationLimitReached) {
+    // THINK: should we do anything?
+    return -1;
+  }
+
+  // make sure that the parent has only one branch
+  if(parent.way_ != DBNodeSimple::WAY_UP_DOWN__UP_DONE &&
+     parent.way_ != DBNodeSimple::WAY_DOWN_UP__DOWN_DONE)
+    return -1;
+  
+  const double direction = lpres.getObjSense;
+
+
+  int node_to_switch_id = -1;
+  int node_to_check_id = grandparent_id;
+  int child_of_node_to_check_id = parent_id;
+
+  while(node_to_check_id != -1) {
+
+    const DBNodeSimple& node_to_check = branchingTree.nodes_[node_to_check_id];
+
+    if (node_to_check.strong_branching_fixed_vars_ ||
+	node_to_check.reduced_cost_fixed_vars_) {
+      return node_to_switch_id;
+    }
+
+    // make sure that the node_to_check has only one branch
+    if(node_to_check.way_ != DBNodeSimple::WAY_UP_DOWN__UP_DONE &&
+       node_to_check.way_ != DBNodeSimple::WAY_DOWN_UP__DOWN_DONE)
+      return node_to_switch_id;
+
+    const int GP_brvar = node_to_check.variable_;
+    const int GP_brvar_fullid = which[GP_brvar];
+    const bool parent_is_down_child = child_of_node_to_check_id == node_to_check.child_down_;
+
+    
+    // At this point the only flags of interest are isProvenOptimal,
+    // isDualObjectiveLimitReached and isProvenPrimalInfeasible.
+    // Note that isDualObjectiveLimitReached can't be true alone (search for
+    // mustResolve).
+
+    
+    if (lpres.isProvenOptimal) {
+      // May or may not be over the dual obj limit. If the obj val of parent is
+      // higher than that of the node_to_check then we allow switching.
+      // NOTE: node_to_check's obj val can;t be 1e100 since then parent would not
+      // exist...
+      if (lpres.getObjValue > node_to_check.objectiveValue_ + 1e-8) {
+	double djValue = lpres.getReducedCost[GP_brvar_fullid]*direction;
+	bool should_switch = false;
+	if (djValue > 1.0e-6) {
+	  // wants to go down
+	  if (parent_is_down_child) {
+	    should_switch = true;
+	  }
+	  else if (lpres.getColLower[GP_brvar_fullid] > std::ceil(node_to_check.value_)) {
+	    should_switch = true;
+	  }
+	} else if (djValue < -1.0e-6) {
+	  // wants to go up
+	  if (! parent_is_down_child) {
+	    should_switch = true;
+	  }
+	  else if (lpres.getColUpper[GP_brvar_fullid] < std::floor(node_to_check.value_)) {
+	    should_switch = true;
+	  }
+	}
+	if(should_switch) {
+	  node_to_switch_id = node_to_check_id;
+	  child_of_node_to_check_id = node_to_check_id;
+	  node_to_check_id = node_to_check.parent_;
+	}
+	else
+	  node_to_check_id = -1;
+      }
+      else
+	node_to_check_id = -1;
+    }
+    else {
+      // Problem is really infeasible and has a dual ray.
+      assert(lpres.isProvenPrimalInfeasible);
+
+      return -1;
+    }
+
+  }
+
+  return node_to_switch_id;
 }
 
 bool
@@ -1319,6 +1463,77 @@ DBVectorNode::moveNodeUp(const int* which,
 }
 
 void
+DBVectorNode::deleteSelectedNode(int node_to_delete_id, const int* which,
+				 OsiSolverInterface& model, DBNodeSimple & node)
+{
+  // loop from the current node up until it finds the node_to_delete
+  int parent_id = node.node_id_;
+  DBNodeSimple& parent = nodes_[parent_id];
+  int grandparent_id = parent.parent_;
+  assert(grandparent_id != -1);
+
+  while(grandparent_id != node_to_delete_id) {
+    parent_id = grandparent_id;
+    grandparent_id = nodes_[parent_id].parent_;
+    assert(grandparent_id != -1);
+  }
+
+  DBNodeSimple& grandparent = nodes_[grandparent_id];
+  const int greatgrandparent_id = grandparent.parent_;
+
+  const bool parent_is_down_child = parent_id == grandparent.child_down_;
+
+  // First hang the nodes where they belong.
+  DBNodeSimple& parent_0 = nodes_[parent_id];
+  parent_0.parent_ = greatgrandparent_id;
+  if (greatgrandparent_id >= 0) {
+    DBNodeSimple& greatgrandparent = nodes_[greatgrandparent_id];
+    if (grandparent_id == greatgrandparent.child_down_) {
+      greatgrandparent.child_down_ = parent_id;
+    } else {
+      greatgrandparent.child_up_ = parent_id;
+    }
+  }
+
+  // Now modify bounds
+
+  // First, get rid of GP's bound change of its branching variable in the
+  // bound list of P. Note: If greatgrandparent_id is < 0 then GP is the root
+  // so its bounds are the original bounds.
+  const int GP_brvar = grandparent.variable_;
+  parent_id = node.node_id_;
+  DBNodeSimple& parent_1 = nodes_[parent_id];
+  if (parent_is_down_child) {
+    const int old_upper = grandparent.upper_[GP_brvar];
+    parent_1.upper_[GP_brvar] = old_upper;
+    if (GP_brvar != parent_1.variable_)
+      model.setColUpper(which[GP_brvar], old_upper);
+  } else {
+    const int old_lower = grandparent.lower_[GP_brvar];
+    parent_1.lower_[GP_brvar] = old_lower;
+    if (GP_brvar != parent_1.variable_)
+      model.setColLower(which[GP_brvar], old_lower);
+  }
+  parent_id = parent_1.parent_;
+  while(parent_id != greatgrandparent_id) {
+    DBNodeSimple& parent_2 = nodes_[parent_id];    
+    if (parent_is_down_child) {
+      const int old_upper = grandparent.upper_[GP_brvar];
+      parent_2.upper_[GP_brvar] = old_upper;
+    } else {
+      const int old_lower = grandparent.lower_[GP_brvar];
+      parent_2.lower_[GP_brvar] = old_lower;
+    }
+    parent_id = parent_2.parent_;
+  }    
+
+  // remove grandparent
+  removeNode(grandparent_id);
+  //  sizeDeferred_--; // this is not needed because the grandparent just had 1 branch
+
+}
+
+void
 DBVectorNode::checkNode(int node) const
 {
   if (node == -1) {
@@ -1621,9 +1836,17 @@ branchAndBound(OsiSolverInterface & model) {
 	    lpres.isDualObjectiveLimitReached = true;
 	    model.setDblParam(OsiDualObjectiveLimit, oldlimit);
 	  }
+#if defined(DELETE_NODES)
+	  int node_to_delete = node.nodeToSwitchWithParent(which, lpres, originalLower,
+							   originalUpper, branchingTree);
+	  bool canSwitch = false;
+	  if(node_to_delete >= 0)
+	    canSwitch = true;
+#else
 	  bool canSwitch =
 	    node.canSwitchParentWithGrandparent(which, lpres, originalLower,
 						originalUpper, branchingTree);
+#endif
 	  int cnt = 0;
 
 #if defined(DEBUG_DYNAMIC_BRANCHING)
@@ -1642,11 +1865,20 @@ branchAndBound(OsiSolverInterface & model) {
 #endif
 
 	  while (canSwitch) {
+#if defined(DELETE_NODES)
+	    branchingTree.deleteSelectedNode(node_to_delete, which, model, node);
+	    node_to_delete = node.nodeToSwitchWithParent(which, lpres, originalLower,
+							 originalUpper, branchingTree);
+	    canSwitch = false;
+	    if(node_to_delete >= 0)
+	      canSwitch = true;
+#else
 	    branchingTree.moveNodeUp(which, model, node);
 	    canSwitch = node.canSwitchParentWithGrandparent(which, lpres,
 							    originalLower,
 							    originalUpper,
 							    branchingTree);
+#endif
 #if defined(DEBUG_DYNAMIC_BRANCHING)
 	    if (dyn_debug >= 1) {
 	      branchingTree.checkTree();

@@ -508,7 +508,6 @@ void CbcSolver::fillParameters()
   parameters_[whichParam(GREEDY,numberParameters_,parameters_)].setCurrentOption("on");
   parameters_[whichParam(COMBINE,numberParameters_,parameters_)].setCurrentOption("on");
   parameters_[whichParam(RINS,numberParameters_,parameters_)].setCurrentOption("off");
-  parameters_[whichParam(DINS,numberParameters_,parameters_)].setCurrentOption("off");
   parameters_[whichParam(RENS,numberParameters_,parameters_)].setCurrentOption("off");
   parameters_[whichParam(LOCALTREE,numberParameters_,parameters_)].setCurrentOption("off");
   parameters_[whichParam(COSTSTRATEGY,numberParameters_,parameters_)].setCurrentOption("off");
@@ -3206,7 +3205,6 @@ void CbcMain0 (CbcModel  & model)
   parameters[whichParam(GREEDY,numberParameters,parameters)].setCurrentOption("on");
   parameters[whichParam(COMBINE,numberParameters,parameters)].setCurrentOption("on");
   parameters[whichParam(RINS,numberParameters,parameters)].setCurrentOption("off");
-  parameters[whichParam(DINS,numberParameters,parameters)].setCurrentOption("off");
   parameters[whichParam(RENS,numberParameters,parameters)].setCurrentOption("off");
   parameters[whichParam(LOCALTREE,numberParameters,parameters)].setCurrentOption("off");
   parameters[whichParam(COSTSTRATEGY,numberParameters,parameters)].setCurrentOption("off");
@@ -3235,7 +3233,6 @@ int
   int useCombine = parameters_[whichParam(COMBINE,numberParameters_,parameters_)].currentOptionAsInteger();
   int useRINS = parameters_[whichParam(RINS,numberParameters_,parameters_)].currentOptionAsInteger();
   int useRENS = parameters_[whichParam(RENS,numberParameters_,parameters_)].currentOptionAsInteger();
-  int useDINS = parameters_[whichParam(DINS,numberParameters_,parameters_)].currentOptionAsInteger();
   int useDIVING2 = parameters_[whichParam(DIVINGS,numberParameters_,parameters_)].currentOptionAsInteger();
   // FPump done first as it only works if no solution
   int kType = (type<3) ? type : 1;
@@ -3380,18 +3377,6 @@ int
     else
       heuristic5.setDecayFactor(1.5);
     model->addHeuristic(&heuristic5) ;
-    anyToDo=true;
-  }
-  if (useDINS>=kType) {
-    CbcHeuristicDINS heuristic5a(*model);
-    heuristic5a.setHeuristicName("DINS");
-    heuristic5a.setFractionSmall(0.6);
-    if (useDINS==1)
-      heuristic5a.setDecayFactor(5.0);
-    else
-      heuristic5a.setDecayFactor(1.5);
-    heuristic5a.setNumberNodes(1000);
-    model->addHeuristic(&heuristic5a) ;
     anyToDo=true;
   }
   int useDIVING=0;
@@ -4694,8 +4679,6 @@ int
               defaultSettings=false; // user knows what she is doing
 	      break;
 	    case RINS:
-	      break;
-	    case DINS:
 	      break;
 	    case RENS:
 	      break;

@@ -8527,7 +8527,8 @@ CbcModel::resolve(CbcNodeInfo * parent, int whereFrom)
 	if ((specialOptions_&1)!=0&&onOptimalPath) {
 	  solver_->writeMpsNative("before-tighten.mps",NULL,NULL,2);
 	}
-	if (clpSolver&&(!currentNode_||(currentNode_->depth()&2)!=0))
+	if (clpSolver&&(!currentNode_||(currentNode_->depth()&2)!=0)&&
+	    !solverCharacteristics_->solutionAddsCuts())
 	  nTightened=clpSolver->tightenBounds();
 	if (nTightened) {
 	  //printf("%d bounds tightened\n",nTightened);

@@ -7094,7 +7094,8 @@ CbcModel::resolve(CbcNodeInfo * parent, int whereFrom)
       {
 	OsiClpSolverInterface * clpSolver 
 	  = dynamic_cast<OsiClpSolverInterface *> (solver_);
-	if (clpSolver&&(!currentNode_||(currentNode_->depth()&2)!=0))
+	if (clpSolver&&(!currentNode_||(currentNode_->depth()&2)!=0)&&
+	    !solverCharacteristics_->solutionAddsCuts())
 	  nTightened=clpSolver->tightenBounds();
 	if (nTightened) {
 	  //printf("%d bounds tightened\n",nTightened);

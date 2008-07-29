@@ -584,7 +584,7 @@ CbcSOS::infeasibility(const OsiBranchingInformation * info,
     // find where to branch
     assert (sum>0.0);
     weight /= sum;
-    if (info->defaultDual_>=0.0&&info->usefulRegion_) {
+    if (info->defaultDual_>=0.0&&info->usefulRegion_&&info->columnStart_) {
       assert (sosType_==1);
       int iWhere;
       for (iWhere=firstNonZero;iWhere<lastNonZero-1;iWhere++) {

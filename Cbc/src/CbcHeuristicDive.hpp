@@ -65,6 +65,14 @@ public:
   void setMaxIterations(int value)
   { maxIterations_ = value; }
 
+  /// Set maximum number of simplex iterations
+  void setMaxSimplexIterations(int value)
+  { maxSimplexIterations_ = value; }
+
+  /// Set maximum number of simplex iterations at root node
+  void setMaxSimplexIterationsAtRoot(int value)
+  { maxSimplexIterationsAtRoot_ = value; }
+
   /// Set maximum time allowed
   void setMaxTime(double value)
   { maxTime_ = value; }
@@ -116,6 +124,9 @@ protected:
 
   // Maximum number of simplex iterations
   int maxSimplexIterations_;
+
+  // Maximum number of simplex iterations at root node
+  int maxSimplexIterationsAtRoot_;
 
   // Maximum time allowed
   double maxTime_;

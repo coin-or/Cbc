@@ -26,6 +26,7 @@ CbcHeuristicDive::CbcHeuristicDive()
   percentageToFix_ = 0.2;
   maxIterations_ = 100;
   maxSimplexIterations_ = 10000;
+  maxSimplexIterationsAtRoot_ = 1000000;
   maxTime_ = 600;
 }
 
@@ -47,6 +48,7 @@ CbcHeuristicDive::CbcHeuristicDive(CbcModel & model)
   percentageToFix_ = 0.2;
   maxIterations_ = 100;
   maxSimplexIterations_ = 10000;
+  maxSimplexIterationsAtRoot_ = 1000000;
   maxTime_ = 600;
 }
 
@@ -90,6 +92,7 @@ CbcHeuristicDive::CbcHeuristicDive(const CbcHeuristicDive & rhs)
   percentageToFix_(rhs.percentageToFix_),
   maxIterations_(rhs.maxIterations_),
   maxSimplexIterations_(rhs.maxSimplexIterations_),
+  maxSimplexIterationsAtRoot_(rhs.maxSimplexIterationsAtRoot_),
   maxTime_(rhs.maxTime_)
 {
   if (rhs.downLocks_) {
@@ -113,6 +116,7 @@ CbcHeuristicDive::operator=( const CbcHeuristicDive& rhs)
     percentageToFix_ = rhs.percentageToFix_;
     maxIterations_ = rhs.maxIterations_;
     maxSimplexIterations_ = rhs.maxSimplexIterations_;
+    maxSimplexIterationsAtRoot_ = rhs.maxSimplexIterationsAtRoot_;
     maxTime_ = rhs.maxTime_;
     delete [] downLocks_;
     delete [] upLocks_;
@@ -206,6 +210,8 @@ CbcHeuristicDive::solution(double & solutionValue,
 
   double time1 = CoinCpuTime();
   int numberSimplexIterations=0;
+  int maxSimplexIterations= (model_->getNodeCount()) ? maxSimplexIterations_
+    : maxSimplexIterationsAtRoot_;
 
   OsiSolverInterface * solver = model_->solver()->clone();
   const double * lower = solver->getColLower();
@@ -501,12 +507,15 @@ CbcHeuristicDive::solution(double & solutionValue,
     }
 
     numberSimplexIterations+=solver->getIterationCount();
-    if(numberSimplexIterations > maxSimplexIterations_) {
+    if(numberSimplexIterations > maxSimplexIterations) {
 #ifdef DIVE_DEBUG
       reasonToStop = 4;
 #endif
       // also switch off
-      printf("switching off diving as too many iterations\n");
+#ifdef CLP_INVESTIGATE
+      printf("switching off diving as too many iterations %d, %d allowed\n",
+	     numberSimplexIterations,maxSimplexIterations);
+#endif
       when_=0;
       break;
     }
@@ -585,6 +594,7 @@ CbcHeuristicDive::solution(double & solutionValue,
 	   <<", nRoundFeasible = "<<nRoundFeasible
 	   <<", returnCode = "<<returnCode
 	   <<", reasonToStop = "<<reasonToStop
+	   <<", simplexIts = "<<numberSimplexIterations
 	   <<", iterations = "<<iteration<<std::endl;
 #endif
 

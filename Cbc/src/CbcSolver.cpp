@@ -3631,6 +3631,7 @@ int
   int iUser;
 #endif
   // Statistics
+  CbcOrClpRead_mode = 1;
   double statistics_seconds=0.0, statistics_obj=0.0;
   double statistics_continuous=0.0, statistics_tighter=0.0;
   double statistics_cut_time=0.0;

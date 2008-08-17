@@ -26,6 +26,7 @@ void semicon1(int& error_count, int& warning_count);
 void semiint1(int& error_count, int& warning_count);
 int main (int argc, const char *argv[])
 {
+   WindowsErrorPopupBlocker();
    // only in CoinUtils/trunk: WindowsErrorPopupBlocker();
    int error_count = 0;
    int warning_count = 0;

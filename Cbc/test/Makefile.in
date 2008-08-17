@@ -282,7 +282,8 @@ LDFLAGS = @LDFLAGS@
 LIBEXT = @LIBEXT@
 LIBOBJS = @LIBOBJS@
 LIBS = `cat $(CBCOBJDIR)/cbc_addlibs.txt` $(ADDLIBS) $(am__append_5) \
-	$(am__append_10) $(am__append_23) $(am__append_26)
+	$(am__append_10) $(am__append_23) $(am__append_26) `cat \
+	$(COINUTILSOBJDIR)/coinutils_addlibs.txt`
 LIBTOOL = @LIBTOOL@
 LIBTOOLM4 = @LIBTOOLM4@
 LN_S = @LN_S@

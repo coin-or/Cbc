@@ -140,6 +140,7 @@ endif
 
 gamsTest_LDADD += $(OSIOBJDIR)/src/libOsi.la \
 	$(COINUTILSOBJDIR)/src/libCoinUtils.la
+LIBS += `cat $(COINUTILSOBJDIR)/coinutils_addlibs.txt`
 
 ########################################################################
 #                          Cleaning stuff                              #

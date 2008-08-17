@@ -51,7 +51,7 @@ gamsTest_LDADD = ../src/libCbcSolver.la ../src/libCbc.la \
 gamsTest_LDFLAGS = -rpath $(libdir)
 LIBS = `cat $(CBCOBJDIR)/cbc_addlibs.txt` $(ADDLIBS)
 
-AM_CPPFLAGS = -I$(srcdir)/../src \
+AM_CPPFLAGS = -I`$(CYGPATH_W) $(srcdir)/../src` \
 	-I`$(CYGPATH_W) $(COINUTILSSRCDIR)/src` \
 	-I`$(CYGPATH_W) $(COINUTILSOBJDIR)/inc` \
 	-I`$(CYGPATH_W) $(OSISRCDIR)/src` \

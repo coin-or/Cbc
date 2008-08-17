@@ -39,8 +39,8 @@ test_cbc_generic: ../src/cbc-generic$(EXEEXT)
 	../src/cbc-generic$(EXEEXT) \
 	    -directory ../../Data/Sample -import p0033.mps -branch
 	    
-gamstests: gamsTest
-	./gamsTest
+gamstests: gamsTest$(EXEEXT)
+	./gamsTest$(EXEEXT)
 
 .PHONY: test
 

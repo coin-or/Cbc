@@ -607,6 +607,8 @@ CbcSOS::infeasibility(const OsiBranchingInformation * info,
       for (iWhere=firstNonZero;iWhere<lastNonZero;iWhere++) {
 	int jColumn = members_[iWhere];
 	double solValue = info->solution_[jColumn];
+	if (!solValue)
+	  continue;
 	objMove -= info->objective_[jColumn]*solValue;
 	for (j=info->columnStart_[jColumn];
 	     j<info->columnStart_[jColumn]+info->columnLength_[jColumn];j++) {

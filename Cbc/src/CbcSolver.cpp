@@ -3620,6 +3620,7 @@ int
   CbcModel & model_ = model;
   CbcModel * babModel_ = NULL;
   int returnMode=1;
+  CbcOrClpRead_mode=1;
   int statusUserFunction_[1];
   int numberUserFunctions_=1; // to allow for ampl
 #else
@@ -6605,8 +6606,15 @@ int
 			  if (iColumn>=0) {
 			    CbcSimpleInteger * obj =
 			      dynamic_cast <CbcSimpleInteger *>(oldObjects[iObj]) ;
-			    assert (obj);
-			    obj->setColumnNumber(iColumn);
+			    if (obj) {
+			      obj->setColumnNumber(iColumn);
+			    } else {
+			      // only other case allowed is lotsizing
+			      CbcLotsize * obj2 =
+				dynamic_cast <CbcLotsize *>(oldObjects[iObj]) ;
+			      assert (obj2);
+			      obj2->setModelSequence(iColumn);
+			    }
 			    oldObjects[n++]=oldObjects[iObj];
 			  } else {
 			    delete oldObjects[iObj];
@@ -7667,10 +7675,84 @@ int
                   n = saveSolver->getNumCols();
                   bestSolution = new double [n];
 		  OsiClpSolverInterface * clpSolver = dynamic_cast< OsiClpSolverInterface*> (babModel_->solver());
+		  // Save bounds on processed model
+		  const int * originalColumns = process.originalColumns();
+		  int numberColumns2 = clpSolver->getNumCols();
+		  double * solution2 = new double[n];
+		  double * lower2 = new double [n];
+		  double * upper2 = new double [n];
+		  for (int i=0;i<n;i++) {
+		    solution2[i]=COIN_DBL_MAX;
+		    lower2[i]=COIN_DBL_MAX;
+		    upper2[i]=-COIN_DBL_MAX;
+		  }
+		  const double *columnLower = clpSolver->getColLower() ;
+		  const double * columnUpper = clpSolver->getColUpper() ;
+		  const double * solution = babModel_->bestSolution();
+		  for (int i=0;i<numberColumns2;i++) {
+		    int jColumn = originalColumns[i];
+		    solution2[jColumn]=solution[i];
+		    lower2[jColumn]=columnLower[i];
+		    upper2[jColumn]=columnUpper[i];
+		  }
 		  ClpSimplex * lpSolver = clpSolver->getModelPtr();
 		  lpSolver->setSpecialOptions(lpSolver->specialOptions()|IN_BRANCH_AND_BOUND); // say is Cbc (and in branch and bound)
                   process.postProcess(*babModel_->solver());
                   // Solution now back in saveSolver
+		  // Double check bounds
+		  columnLower = saveSolver->getColLower() ;
+		  columnUpper = saveSolver->getColUpper() ;
+		  solution = saveSolver->getColSolution();
+		  int numberChanged=0;
+		  for (int i=0;i<n;i++) {
+		    if (lower2[i]!=COIN_DBL_MAX) {
+		      if (lower2[i]!=columnLower[i]||
+			  upper2[i]!=columnUpper[i]) {
+			if (lower2[i]<columnLower[i]||
+			    upper2[i]>columnUpper[i]) {
+#ifdef COIN_DEVELOP
+			  printf("odd bounds tighter");
+			  printf("%d bab bounds %g %g now %g %g\n",
+				 i,lower2[i],upper2[i],columnLower[i],
+				 columnUpper[i]);
+#endif
+			} else {
+#ifdef COIN_DEVELOP
+			  printf("%d bab bounds %g %g now %g %g\n",
+				 i,lower2[i],upper2[i],columnLower[i],
+				 columnUpper[i]);
+#endif
+			  numberChanged++;
+			  saveSolver->setColLower(i,lower2[i]);
+			  saveSolver->setColUpper(i,upper2[i]);
+			}
+		      }
+		    }
+		  }
+		  delete [] solution2;
+		  delete [] lower2;
+		  delete [] upper2;
+		  if (numberChanged) {
+		    sprintf(generalPrint,"%d bounds tightened after postprocessing\n",
+			    numberChanged);
+		    generalMessageHandler->message(CLP_GENERAL,generalMessages)
+		      << generalPrint
+		      <<CoinMessageEol;
+		    saveSolver->resolve();
+		    assert (saveSolver->isProvenOptimal());
+		  }
+#if NEW_STYLE_SOLVER==0
+		  // and original solver
+		  assert (n==originalSolver->getNumCols());
+		  originalSolver->setColLower(saveSolver->getColLower());
+		  originalSolver->setColUpper(saveSolver->getColUpper());
+		  // basis
+		  CoinWarmStartBasis * basis = dynamic_cast<CoinWarmStartBasis *> (babModel_->solver()->getWarmStart());
+		  originalSolver->setBasis(*basis);
+		  delete basis;
+		  originalSolver->resolve();
+		  assert (originalSolver->isProvenOptimal());
+#endif
                   babModel_->assignSolver(saveSolver);
                   memcpy(bestSolution,babModel_->solver()->getColSolution(),n*sizeof(double));
                 } else {
@@ -7703,6 +7785,8 @@ int
 		  CoinWarmStartBasis * basis = dynamic_cast<CoinWarmStartBasis *> (babModel_->solver()->getWarmStart());
 		  originalSolver->setBasis(*basis);
 		  delete basis;
+		  originalSolver->resolve();
+		  assert (originalSolver->isProvenOptimal());
 		}
 #endif
 		checkSOS(babModel_, babModel_->solver());

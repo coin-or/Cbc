@@ -19,6 +19,7 @@
 # This file is distributed under the Common Public License.
 
 # Author:  Andreas Waechter           IBM    2006-04-13
+
 srcdir = @srcdir@
 top_srcdir = @top_srcdir@
 VPATH = @srcdir@
@@ -43,6 +44,66 @@ build_triplet = @build@
 host_triplet = @host@
 @COIN_HAS_CLP_TRUE@am__append_1 = test_cbc
 @CBC_BUILD_CBC_GENERIC_TRUE@am__append_2 = test_cbc_generic
+bin_PROGRAMS = gamsTest$(EXEEXT)
+@COIN_HAS_CLP_TRUE@am__append_3 = -I`$(CYGPATH_W) $(CLPSRCDIR)/src` \
+@COIN_HAS_CLP_TRUE@	-I`$(CYGPATH_W) $(OSISRCDIR)/src/OsiClp` \
+@COIN_HAS_CLP_TRUE@	-I`$(CYGPATH_W) $(CLPOBJDIR)/inc`
+
+@COIN_HAS_CLP_TRUE@am__append_4 = $(OSIOBJDIR)/src/OsiClp/libOsiClp.la \
+@COIN_HAS_CLP_TRUE@	$(CLPOBJDIR)/src/libClp.la
+
+@COIN_HAS_CLP_TRUE@am__append_5 = `cat $(CLPOBJDIR)/clp_addlibs.txt`
+@COIN_HAS_CPX_TRUE@am__append_6 = -I`$(CYGPATH_W) $(CPXINCDIR)` \
+@COIN_HAS_CPX_TRUE@	-I`$(CYGPATH_W) $(OSISRCDIR)/src/OsiCpx`
+
+@COIN_HAS_CPX_TRUE@am__append_7 = $(OSIOBJDIR)/src/OsiCpx/libOsiCpx.la
+@COIN_HAS_DYLP_TRUE@am__append_8 = -I`$(CYGPATH_W) $(DYLPSRCDIR)/src/DylpStdLib` \
+@COIN_HAS_DYLP_TRUE@  -I`$(CYGPATH_W) $(DYLPSRCDIR)/src/Dylp` \
+@COIN_HAS_DYLP_TRUE@  -I`$(CYGPATH_W) $(DYLPOBJDIR)/inc` \
+@COIN_HAS_DYLP_TRUE@	-I`$(CYGPATH_W) $(OSISRCDIR)/src/OsiDylp`
+
+@COIN_HAS_DYLP_TRUE@am__append_9 = $(OSIOBJDIR)/src/OsiDylp/libOsiDylp.la \
+@COIN_HAS_DYLP_TRUE@	$(DYLPOBJDIR)/src/Dylp/libDylp.la
+
+@COIN_HAS_DYLP_TRUE@am__append_10 = `cat $(DYLPOBJDIR)/dylp_addlibs.txt`
+@COIN_HAS_FMP_TRUE@am__append_11 = -I`$(CYGPATH_W) $(OSISRCDIR)/src/OsiFmp`
+@COIN_HAS_FMP_TRUE@am__append_12 = $(OSIOBJDIR)/src/OsiFmp/libOsiFmp.la
+@COIN_HAS_GLPK_TRUE@am__append_13 = -I`$(CYGPATH_W) $(GLPKINCDIR)` \
+@COIN_HAS_GLPK_TRUE@	-I`$(CYGPATH_W) $(OSISRCDIR)/src/OsiGlpk`
+
+@COIN_HAS_GLPK_TRUE@am__append_14 = $(OSIOBJDIR)/src/OsiGlpk/libOsiGlpk.la
+@COIN_HAS_MSK_TRUE@am__append_15 = -I`$(CYGPATH_W) $(MSKINCDIR)` \
+@COIN_HAS_MSK_TRUE@	-I`$(CYGPATH_W) $(OSISRCDIR)/src/OsiMsk`
+
+@COIN_HAS_MSK_TRUE@am__append_16 = $(OSIOBJDIR)/src/OsiMsk/libOsiMsk.la
+@COIN_HAS_OSL_TRUE@am__append_17 = -I`$(CYGPATH_W) $(OSLINCDIR)` \
+@COIN_HAS_OSL_TRUE@	-I`$(CYGPATH_W) $(OSISRCDIR)/src/OsiOsl`
+
+@COIN_HAS_OSL_TRUE@am__append_18 = $(OSIOBJDIR)/src/OsiOsl/libOsiOsl.la
+@COIN_HAS_SPX_TRUE@am__append_19 = -I`$(CYGPATH_W) $(SPXINCDIR)` \
+@COIN_HAS_SPX_TRUE@	-I`$(CYGPATH_W) $(OSISRCDIR)/src/OsiSpx`
+
+@COIN_HAS_SPX_TRUE@am__append_20 = $(OSIOBJDIR)/src/OsiSpx/libOsiSpx.la
+@COIN_HAS_SYMPHONY_TRUE@am__append_21 = -I`$(CYGPATH_W) $(SYMPHONYSRCDIR)/src` \
+@COIN_HAS_SYMPHONY_TRUE@	-I`$(CYGPATH_W) $(OSISRCDIR)/src/OsiSym`
+
+@COIN_HAS_SYMPHONY_TRUE@am__append_22 = $(OSIOBJDIR)/src/OsiSym/libOsiSym.la \
+@COIN_HAS_SYMPHONY_TRUE@	$(SYMPHONYOBJDIR)/src/libSym.la
+
+@COIN_HAS_SYMPHONY_TRUE@am__append_23 = `cat $(SYMPHONYOBJDIR)/sym_addlibs.txt`
+@COIN_HAS_VOL_TRUE@am__append_24 = -I`$(CYGPATH_W) $(VOLSRCDIR)/src` \
+@COIN_HAS_VOL_TRUE@	-I`$(CYGPATH_W) $(OSISRCDIR)/src/OsiVol`
+
+@COIN_HAS_VOL_TRUE@am__append_25 = $(OSIOBJDIR)/src/OsiVol/libOsiVol.la \
+@COIN_HAS_VOL_TRUE@	$(VOLOBJDIR)/src/libVol.la
+
+@COIN_HAS_VOL_TRUE@am__append_26 = `cat $(VOLOBJDIR)/vol_addlibs.txt`
+@COIN_HAS_XPR_TRUE@am__append_27 = -I`$(CYGPATH_W) $(XPRINCDIR)` \
+@COIN_HAS_XPR_TRUE@	-I`$(CYGPATH_W) $(OSISRCDIR)/src/OsiXpr`
+
+@COIN_HAS_XPR_TRUE@am__append_28 = $(OSIOBJDIR)/src/OsiXpr/libOsiXpr.la
+@COIN_HAS_ASL_TRUE@am__append_29 = $(ASL_CPPFLAGS) -DCOIN_HAS_ASL
+@COIN_HAS_ASL_TRUE@am__append_30 = $(ASLLIB)
 subdir = test
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -53,8 +114,63 @@ am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 mkinstalldirs = $(install_sh) -d
 CONFIG_HEADER = $(top_builddir)/inc/config_cbc.h
 CONFIG_CLEAN_FILES =
-SOURCES =
-DIST_SOURCES =
+am__installdirs = "$(DESTDIR)$(bindir)"
+binPROGRAMS_INSTALL = $(INSTALL_PROGRAM)
+PROGRAMS = $(bin_PROGRAMS)
+am_gamsTest_OBJECTS = gamsTest.$(OBJEXT)
+gamsTest_OBJECTS = $(am_gamsTest_OBJECTS)
+@COIN_HAS_CLP_TRUE@am__DEPENDENCIES_1 =  \
+@COIN_HAS_CLP_TRUE@	$(OSIOBJDIR)/src/OsiClp/libOsiClp.la \
+@COIN_HAS_CLP_TRUE@	$(CLPOBJDIR)/src/libClp.la
+@COIN_HAS_CPX_TRUE@am__DEPENDENCIES_2 =  \
+@COIN_HAS_CPX_TRUE@	$(OSIOBJDIR)/src/OsiCpx/libOsiCpx.la
+@COIN_HAS_DYLP_TRUE@am__DEPENDENCIES_3 =  \
+@COIN_HAS_DYLP_TRUE@	$(OSIOBJDIR)/src/OsiDylp/libOsiDylp.la \
+@COIN_HAS_DYLP_TRUE@	$(DYLPOBJDIR)/src/Dylp/libDylp.la
+@COIN_HAS_FMP_TRUE@am__DEPENDENCIES_4 =  \
+@COIN_HAS_FMP_TRUE@	$(OSIOBJDIR)/src/OsiFmp/libOsiFmp.la
+@COIN_HAS_GLPK_TRUE@am__DEPENDENCIES_5 =  \
+@COIN_HAS_GLPK_TRUE@	$(OSIOBJDIR)/src/OsiGlpk/libOsiGlpk.la
+@COIN_HAS_MSK_TRUE@am__DEPENDENCIES_6 =  \
+@COIN_HAS_MSK_TRUE@	$(OSIOBJDIR)/src/OsiMsk/libOsiMsk.la
+@COIN_HAS_OSL_TRUE@am__DEPENDENCIES_7 =  \
+@COIN_HAS_OSL_TRUE@	$(OSIOBJDIR)/src/OsiOsl/libOsiOsl.la
+@COIN_HAS_SPX_TRUE@am__DEPENDENCIES_8 =  \
+@COIN_HAS_SPX_TRUE@	$(OSIOBJDIR)/src/OsiSpx/libOsiSpx.la
+@COIN_HAS_SYMPHONY_TRUE@am__DEPENDENCIES_9 =  \
+@COIN_HAS_SYMPHONY_TRUE@	$(OSIOBJDIR)/src/OsiSym/libOsiSym.la \
+@COIN_HAS_SYMPHONY_TRUE@	$(SYMPHONYOBJDIR)/src/libSym.la
+@COIN_HAS_VOL_TRUE@am__DEPENDENCIES_10 =  \
+@COIN_HAS_VOL_TRUE@	$(OSIOBJDIR)/src/OsiVol/libOsiVol.la \
+@COIN_HAS_VOL_TRUE@	$(VOLOBJDIR)/src/libVol.la
+@COIN_HAS_XPR_TRUE@am__DEPENDENCIES_11 =  \
+@COIN_HAS_XPR_TRUE@	$(OSIOBJDIR)/src/OsiXpr/libOsiXpr.la
+am__DEPENDENCIES_12 =
+@COIN_HAS_ASL_TRUE@am__DEPENDENCIES_13 = $(am__DEPENDENCIES_12)
+gamsTest_DEPENDENCIES = ../src/libCbcSolver.la ../src/libCbc.la \
+	$(CGLOBJDIR)/src/libCgl.la $(am__DEPENDENCIES_1) \
+	$(am__DEPENDENCIES_2) $(am__DEPENDENCIES_3) \
+	$(am__DEPENDENCIES_4) $(am__DEPENDENCIES_5) \
+	$(am__DEPENDENCIES_6) $(am__DEPENDENCIES_7) \
+	$(am__DEPENDENCIES_8) $(am__DEPENDENCIES_9) \
+	$(am__DEPENDENCIES_10) $(am__DEPENDENCIES_11) \
+	$(am__DEPENDENCIES_13) $(OSIOBJDIR)/src/libOsi.la \
+	$(COINUTILSOBJDIR)/src/libCoinUtils.la
+DEFAULT_INCLUDES = -I. -I$(srcdir) -I$(top_builddir)/inc
+depcomp = $(SHELL) $(top_srcdir)/../depcomp
+am__depfiles_maybe = depfiles
+CXXCOMPILE = $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
+	$(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS)
+LTCXXCOMPILE = $(LIBTOOL) --tag=CXX --mode=compile $(CXX) $(DEFS) \
+	$(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) \
+	$(AM_CXXFLAGS) $(CXXFLAGS)
+CXXLD = $(CXX)
+CXXLINK = $(LIBTOOL) --tag=CXX --mode=link $(CXXLD) $(AM_CXXFLAGS) \
+	$(CXXFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
+SOURCES = $(gamsTest_SOURCES)
+DIST_SOURCES = $(gamsTest_SOURCES)
+ETAGS = etags
+CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
 ACLOCAL = @ACLOCAL@
 ADDLIBS = @ADDLIBS@
@@ -165,7 +281,9 @@ INSTALL_STRIP_PROGRAM = @INSTALL_STRIP_PROGRAM@
 LDFLAGS = @LDFLAGS@
 LIBEXT = @LIBEXT@
 LIBOBJS = @LIBOBJS@
-LIBS = @LIBS@
+LIBS = `cat $(CBCOBJDIR)/cbc_addlibs.txt` $(ADDLIBS) $(am__append_5) \
+	$(am__append_10) $(am__append_23) $(am__append_26) `cat \
+	$(COINUTILSOBJDIR)/coinutils_addlibs.txt`
 LIBTOOL = @LIBTOOL@
 LIBTOOLM4 = @LIBTOOLM4@
 LN_S = @LN_S@
@@ -269,7 +387,24 @@ AUTOMAKE_OPTIONS = foreign
 ########################################################################
 #                         unitTest for Cbc                             #
 ########################################################################
-CBC_TEST_TGTS = $(am__append_1) $(am__append_2)
+CBC_TEST_TGTS = gamstests $(am__append_1) $(am__append_2)
+gamsTest_SOURCES = gamsTest.cpp
+gamsTest_LDADD = ../src/libCbcSolver.la ../src/libCbc.la \
+	$(CGLOBJDIR)/src/libCgl.la $(am__append_4) $(am__append_7) \
+	$(am__append_9) $(am__append_12) $(am__append_14) \
+	$(am__append_16) $(am__append_18) $(am__append_20) \
+	$(am__append_22) $(am__append_25) $(am__append_28) \
+	$(am__append_30) $(OSIOBJDIR)/src/libOsi.la \
+	$(COINUTILSOBJDIR)/src/libCoinUtils.la
+gamsTest_LDFLAGS = -rpath $(libdir)
+AM_CPPFLAGS = -I`$(CYGPATH_W) $(srcdir)/../src` -I`$(CYGPATH_W) \
+	$(COINUTILSSRCDIR)/src` -I`$(CYGPATH_W) \
+	$(COINUTILSOBJDIR)/inc` -I`$(CYGPATH_W) $(OSISRCDIR)/src` \
+	-I`$(CYGPATH_W) $(OSIOBJDIR)/inc` $(am__append_3) \
+	$(am__append_6) $(am__append_8) $(am__append_11) \
+	$(am__append_13) $(am__append_15) $(am__append_17) \
+	$(am__append_19) $(am__append_21) $(am__append_24) \
+	$(am__append_27) $(am__append_29)
 
 ########################################################################
 #                          Cleaning stuff                              #
@@ -281,6 +416,7 @@ DISTCLEANFILES = yy.mps xx.mps
 all: all-am
 
 .SUFFIXES:
+.SUFFIXES: .cpp .lo .o .obj
 $(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am  $(am__configure_deps)
 	@for dep in $?; do \
 	  case '$(am__configure_deps)' in \
@@ -310,6 +446,66 @@ $(top_srcdir)/configure: @MAINTAINER_MODE_TRUE@ $(am__configure_deps)
 	cd $(top_builddir) && $(MAKE) $(AM_MAKEFLAGS) am--refresh
 $(ACLOCAL_M4): @MAINTAINER_MODE_TRUE@ $(am__aclocal_m4_deps)
 	cd $(top_builddir) && $(MAKE) $(AM_MAKEFLAGS) am--refresh
+install-binPROGRAMS: $(bin_PROGRAMS)
+	@$(NORMAL_INSTALL)
+	test -z "$(bindir)" || $(mkdir_p) "$(DESTDIR)$(bindir)"
+	@list='$(bin_PROGRAMS)'; for p in $$list; do \
+	  p1=`echo $$p|sed 's/$(EXEEXT)$$//'`; \
+	  if test -f $$p \
+	     || test -f $$p1 \
+	  ; then \
+	    f=`echo "$$p1" | sed 's,^.*/,,;$(transform);s/$$/$(EXEEXT)/'`; \
+	   echo " $(INSTALL_PROGRAM_ENV) $(LIBTOOL) --mode=install $(binPROGRAMS_INSTALL) '$$p' '$(DESTDIR)$(bindir)/$$f'"; \
+	   $(INSTALL_PROGRAM_ENV) $(LIBTOOL) --mode=install $(binPROGRAMS_INSTALL) "$$p" "$(DESTDIR)$(bindir)/$$f" || exit 1; \
+	  else :; fi; \
+	done
+
+uninstall-binPROGRAMS:
+	@$(NORMAL_UNINSTALL)
+	@list='$(bin_PROGRAMS)'; for p in $$list; do \
+	  f=`echo "$$p" | sed 's,^.*/,,;s/$(EXEEXT)$$//;$(transform);s/$$/$(EXEEXT)/'`; \
+	  echo " rm -f '$(DESTDIR)$(bindir)/$$f'"; \
+	  rm -f "$(DESTDIR)$(bindir)/$$f"; \
+	done
+
+clean-binPROGRAMS:
+	@list='$(bin_PROGRAMS)'; for p in $$list; do \
+	  f=`echo $$p|sed 's/$(EXEEXT)$$//'`; \
+	  echo " rm -f $$p $$f"; \
+	  rm -f $$p $$f ; \
+	done
+gamsTest$(EXEEXT): $(gamsTest_OBJECTS) $(gamsTest_DEPENDENCIES) 
+	@rm -f gamsTest$(EXEEXT)
+	$(CXXLINK) $(gamsTest_LDFLAGS) $(gamsTest_OBJECTS) $(gamsTest_LDADD) $(LIBS)
+
+mostlyclean-compile:
+	-rm -f *.$(OBJEXT)
+
+distclean-compile:
+	-rm -f *.tab.c
+
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/gamsTest.Po@am__quote@
+
+.cpp.o:
+@am__fastdepCXX_TRUE@	if $(CXXCOMPILE) -MT $@ -MD -MP -MF "$(DEPDIR)/$*.Tpo" -c -o $@ $<; \
+@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/$*.Tpo" "$(DEPDIR)/$*.Po"; else rm -f "$(DEPDIR)/$*.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXXCOMPILE) -c -o $@ $<
+
+.cpp.obj:
+@am__fastdepCXX_TRUE@	if $(CXXCOMPILE) -MT $@ -MD -MP -MF "$(DEPDIR)/$*.Tpo" -c -o $@ `$(CYGPATH_W) '$<'`; \
+@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/$*.Tpo" "$(DEPDIR)/$*.Po"; else rm -f "$(DEPDIR)/$*.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXXCOMPILE) -c -o $@ `$(CYGPATH_W) '$<'`
+
+.cpp.lo:
+@am__fastdepCXX_TRUE@	if $(LTCXXCOMPILE) -MT $@ -MD -MP -MF "$(DEPDIR)/$*.Tpo" -c -o $@ $<; \
+@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/$*.Tpo" "$(DEPDIR)/$*.Plo"; else rm -f "$(DEPDIR)/$*.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='$<' object='$@' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LTCXXCOMPILE) -c -o $@ $<
 
 mostlyclean-libtool:
 	-rm -f *.lo
@@ -320,12 +516,54 @@ clean-libtool:
 distclean-libtool:
 	-rm -f libtool
 uninstall-info-am:
+
+ID: $(HEADERS) $(SOURCES) $(LISP) $(TAGS_FILES)
+	list='$(SOURCES) $(HEADERS) $(LISP) $(TAGS_FILES)'; \
+	unique=`for i in $$list; do \
+	    if test -f "$$i"; then echo $$i; else echo $(srcdir)/$$i; fi; \
+	  done | \
+	  $(AWK) '    { files[$$0] = 1; } \
+	       END { for (i in files) print i; }'`; \
+	mkid -fID $$unique
 tags: TAGS
-TAGS:
 
+TAGS:  $(HEADERS) $(SOURCES)  $(TAGS_DEPENDENCIES) \
+		$(TAGS_FILES) $(LISP)
+	tags=; \
+	here=`pwd`; \
+	list='$(SOURCES) $(HEADERS)  $(LISP) $(TAGS_FILES)'; \
+	unique=`for i in $$list; do \
+	    if test -f "$$i"; then echo $$i; else echo $(srcdir)/$$i; fi; \
+	  done | \
+	  $(AWK) '    { files[$$0] = 1; } \
+	       END { for (i in files) print i; }'`; \
+	if test -z "$(ETAGS_ARGS)$$tags$$unique"; then :; else \
+	  test -n "$$unique" || unique=$$empty_fix; \
+	  $(ETAGS) $(ETAGSFLAGS) $(AM_ETAGSFLAGS) $(ETAGS_ARGS) \
+	    $$tags $$unique; \
+	fi
 ctags: CTAGS
-CTAGS:
+CTAGS:  $(HEADERS) $(SOURCES)  $(TAGS_DEPENDENCIES) \
+		$(TAGS_FILES) $(LISP)
+	tags=; \
+	here=`pwd`; \
+	list='$(SOURCES) $(HEADERS)  $(LISP) $(TAGS_FILES)'; \
+	unique=`for i in $$list; do \
+	    if test -f "$$i"; then echo $$i; else echo $(srcdir)/$$i; fi; \
+	  done | \
+	  $(AWK) '    { files[$$0] = 1; } \
+	       END { for (i in files) print i; }'`; \
+	test -z "$(CTAGS_ARGS)$$tags$$unique" \
+	  || $(CTAGS) $(CTAGSFLAGS) $(AM_CTAGSFLAGS) $(CTAGS_ARGS) \
+	     $$tags $$unique
 
+GTAGS:
+	here=`$(am__cd) $(top_builddir) && pwd` \
+	  && cd $(top_srcdir) \
+	  && gtags -i $(GTAGS_ARGS) $$here
+
+distclean-tags:
+	-rm -f TAGS ID GTAGS GRTAGS GSYMS GPATH tags
 
 distdir: $(DISTFILES)
 	@srcdirstrip=`echo "$(srcdir)" | sed 's|.|.|g'`; \
@@ -356,8 +594,11 @@ distdir: $(DISTFILES)
 	done
 check-am: all-am
 check: check-am
-all-am: Makefile
+all-am: Makefile $(PROGRAMS)
 installdirs:
+	for dir in "$(DESTDIR)$(bindir)"; do \
+	  test -z "$$dir" || $(mkdir_p) "$$dir"; \
+	done
 install: install-am
 install-exec: install-exec-am
 install-data: install-data-am
@@ -385,11 +626,13 @@ maintainer-clean-generic:
 	@echo "it deletes files that may require special tools to rebuild."
 clean: clean-am
 
-clean-am: clean-generic clean-libtool mostlyclean-am
+clean-am: clean-binPROGRAMS clean-generic clean-libtool mostlyclean-am
 
 distclean: distclean-am
+	-rm -rf ./$(DEPDIR)
 	-rm -f Makefile
-distclean-am: clean-am distclean-generic distclean-libtool
+distclean-am: clean-am distclean-compile distclean-generic \
+	distclean-libtool distclean-tags
 
 dvi: dvi-am
 
@@ -403,7 +646,7 @@ info-am:
 
 install-data-am:
 
-install-exec-am:
+install-exec-am: install-binPROGRAMS
 
 install-info: install-info-am
 
@@ -412,12 +655,14 @@ install-man:
 installcheck-am:
 
 maintainer-clean: maintainer-clean-am
+	-rm -rf ./$(DEPDIR)
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 
 mostlyclean: mostlyclean-am
 
-mostlyclean-am: mostlyclean-generic mostlyclean-libtool
+mostlyclean-am: mostlyclean-compile mostlyclean-generic \
+	mostlyclean-libtool
 
 pdf: pdf-am
 
@@ -427,17 +672,19 @@ ps: ps-am
 
 ps-am:
 
-uninstall-am: uninstall-info-am
+uninstall-am: uninstall-binPROGRAMS uninstall-info-am
 
-.PHONY: all all-am check check-am clean clean-generic clean-libtool \
-	distclean distclean-generic distclean-libtool distdir dvi \
+.PHONY: CTAGS GTAGS all all-am check check-am clean clean-binPROGRAMS \
+	clean-generic clean-libtool ctags distclean distclean-compile \
+	distclean-generic distclean-libtool distclean-tags distdir dvi \
 	dvi-am html html-am info info-am install install-am \
-	install-data install-data-am install-exec install-exec-am \
-	install-info install-info-am install-man install-strip \
-	installcheck installcheck-am installdirs maintainer-clean \
-	maintainer-clean-generic mostlyclean mostlyclean-generic \
-	mostlyclean-libtool pdf pdf-am ps ps-am uninstall uninstall-am \
-	uninstall-info-am
+	install-binPROGRAMS install-data install-data-am install-exec \
+	install-exec-am install-info install-info-am install-man \
+	install-strip installcheck installcheck-am installdirs \
+	maintainer-clean maintainer-clean-generic mostlyclean \
+	mostlyclean-compile mostlyclean-generic mostlyclean-libtool \
+	pdf pdf-am ps ps-am tags uninstall uninstall-am \
+	uninstall-binPROGRAMS uninstall-info-am
 
 
 # We are using the solver executables to do the unit test
@@ -457,6 +704,9 @@ test_cbc_generic: ../src/cbc-generic$(EXEEXT)
 	echo "A minimal test is all that cbc-generic can manage just yet."
 	../src/cbc-generic$(EXEEXT) \
 	    -directory ../../Data/Sample -import p0033.mps -branch
+
+gamstests: gamsTest$(EXEEXT)
+	./gamsTest$(EXEEXT)
 
 .PHONY: test
 # Tell versions [3.59,3.63) of GNU make to not export all variables.

@@ -71,6 +71,7 @@ Cbc/src/ClpAmplObjective.cpp -text
 Cbc/src/ClpAmplObjective.hpp -text
 Cbc/src/ClpAmplStuff.cpp -text
 Cbc/src/ClpConstraintAmpl.hpp -text
+Cbc/test/gamsTest.cpp -text
 /LICENSE -text
 /README -text
 /config.guess -text

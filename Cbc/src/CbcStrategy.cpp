@@ -135,6 +135,13 @@ CbcStrategyDefault::setupCutGenerators(CbcModel & model)
 {
   // Set up some cut generators and defaults
   // Probing first as gets tight bounds on continuous
+  int genFlags=63;
+  //#define CBC_GENERATE_TEST
+#ifdef CBC_GENERATE_TEST
+  int nNodes = model.getMaximumNodes();
+  if (nNodes>=190000&&nNodes<190064)
+    genFlags = nNodes-190000;
+#endif
 
   CglProbing generator1;
   generator1.setUsingObjective(true);
@@ -182,7 +189,7 @@ CbcStrategyDefault::setupCutGenerators(CbcModel & model)
       break;
     }
   }
-  if (!found)
+  if (!found&&(genFlags&1)!=0)
     model.addCutGenerator(&generator1,setting,"Probing");
   found=false;
   for (iGenerator=0;iGenerator<numberGenerators;iGenerator++) {
@@ -193,7 +200,7 @@ CbcStrategyDefault::setupCutGenerators(CbcModel & model)
       break;
     }
   }
-  if (!found)
+  if (!found&&(genFlags&2)!=0)
   model.addCutGenerator(&generator2,setting,"Gomory");
   found=false;
   for (iGenerator=0;iGenerator<numberGenerators;iGenerator++) {
@@ -204,7 +211,7 @@ CbcStrategyDefault::setupCutGenerators(CbcModel & model)
       break;
     }
   }
-  if (!found)
+  if (!found&&(genFlags&4)!=0)
     model.addCutGenerator(&generator3,setting,"Knapsack");
   //model.addCutGenerator(&generator4,setting,"OddHole");
   found=false;
@@ -216,7 +223,7 @@ CbcStrategyDefault::setupCutGenerators(CbcModel & model)
       break;
     }
   }
-  if (!found)
+  if (!found&&(genFlags&8)!=0)
     model.addCutGenerator(&generator5,setting,"Clique");
   found=false;
   for (iGenerator=0;iGenerator<numberGenerators;iGenerator++) {
@@ -227,7 +234,7 @@ CbcStrategyDefault::setupCutGenerators(CbcModel & model)
       break;
     }
   }
-  if (!found)
+  if (!found&&(genFlags&16)!=0)
     model.addCutGenerator(&flowGen,setting,"FlowCover");
   found=false;
   for (iGenerator=0;iGenerator<numberGenerators;iGenerator++) {
@@ -238,7 +245,7 @@ CbcStrategyDefault::setupCutGenerators(CbcModel & model)
       break;
     }
   }
-  if (!found)
+  if (!found&&(genFlags&32)!=0)
     model.addCutGenerator(&mixedGen,setting,"MixedIntegerRounding2");
   // Say we want timings
   int newNumberGenerators = model.numberCutGenerators();

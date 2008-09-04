@@ -84,12 +84,14 @@ CbcTree::addBranchingInformation(const CbcModel * model, const CbcNodeInfo * nod
 	int kColumn = jColumn&(~0x80000000);
 	if (iColumn==kColumn) {
 	  jColumn |= 0x40000000;
+#ifndef NDEBUG
 	  double value = newBounds[i];
 	  if ((jColumn&0x80000000)==0) {
 	    assert (value==up[0]);
 	  } else {
 	    assert (value==down[1]);
 	  }
+#endif
 	}
 	if (numberBranching_==maximumBranching_)
 	  increaseSpace();

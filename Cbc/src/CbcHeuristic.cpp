@@ -471,6 +471,7 @@ CbcHeuristic::generateCpp( FILE * fp, const char * heuristic)
 // Destructor 
 CbcHeuristic::~CbcHeuristic ()
 {
+  delete [] inputSolution_;
 }
 
 // update model
@@ -495,9 +496,9 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver,int numberNodes,
 #endif
   // Use this fraction
   double fractionSmall = fractionSmall_;
-  if (before>20000.0) {
+  if (before>40000.0) {
     // fairly large - be more conservative
-    double multiplier = 1.0 - 0.3*CoinMin(100000.0,before-20000.0)/100000.0;
+    double multiplier = 1.0 - 0.3*CoinMin(100000.0,before-40000.0)/100000.0;
     if (multiplier<1.0) {
       fractionSmall *= multiplier;
 #ifdef CLP_INVESTIGATE
@@ -622,16 +623,16 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver,int numberNodes,
 	      << generalPrint
 	      <<CoinMessageEol;
 	  } else {
-	    returnCode=-1; // infeasible
+	    returnCode=2; // infeasible
 	  }
 	}
       }
     } else {
-      returnCode=-1; // infeasible
+      returnCode=2; // infeasible
     }
     solver->messageHandler()->setLogLevel(saveLogLevel);
   }
-  if (returnCode==-1) {
+  if (returnCode==2) {
     delete [] reset;
 #ifdef HISTORY_STATISTICS
     getHistoryStatistics_=true;
@@ -720,9 +721,11 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver,int numberNodes,
 	    model.cutGenerator(i)->setTiming(true);
 	    // Turn on if was turned on
 	    int iOften = model_->cutGenerator(i)->howOften();
+#ifdef CLP_INVESTIGATE
 	    printf("Gen %d often %d %d\n",
 		   i,model.cutGenerator(i)->howOften(),
 		   iOften);
+#endif
 	    if (iOften>0)
 	      model.cutGenerator(i)->setHowOften(iOften%1000000);
 	    if (model_->cutGenerator(i)->howOftenInSub()==-200)
@@ -813,16 +816,16 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver,int numberNodes,
 		>=1000000 use as accumulate switch
 		>=1000 use index+1 as number of large loops
 		>=100 use 0.05 objvalue as increment
-		>=10 use +0.1 objvalue for cutoff (add)
+		%100 == 10,20 etc for experimentation
 		1 == fix ints at bounds, 2 fix all integral ints, 3 and continuous at bounds
 		4 and static continuous, 5 as 3 but no internal integers
 		6 as 3 but all slack basis!
 	      */
 	      double value = solver2->getObjSense()*solver2->getObjValue();
 	      int w = pumpTune/10;
-	      int c = w % 10;
+	      int ix = w % 10;
 	      w /= 10;
-	      int i = w % 10;
+	      int c = w % 10;
 	      w /= 10;
 	      int r = w;
 	      int accumulate = r/1000;
@@ -844,7 +847,7 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver,int numberNodes,
 		cutoff = CoinMin(cutoff,value + 0.1*fabs(value)*c);
 		heuristic4.setFakeCutoff(cutoff);
 	      }
-	      if (i||r) {
+	      if (r) {
 		// also set increment
 		//double increment = (0.01*i+0.005)*(fabs(value)+1.0e-12);
 		double increment = 0.0;
@@ -855,7 +858,12 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver,int numberNodes,
 	      pumpTune = pumpTune%100;
 	      if (pumpTune==6)
 		pumpTune =13;
-	      heuristic4.setWhen(pumpTune+10);
+	      if (pumpTune!=13)
+		pumpTune = pumpTune%10;
+	      heuristic4.setWhen(pumpTune);
+	      if (ix) {
+		heuristic4.setFeasibilityPumpOptions(ix*10);
+	      }	
 	    }
 	    model.addHeuristic(&heuristic4,"feasibility pump",0);
 	  }

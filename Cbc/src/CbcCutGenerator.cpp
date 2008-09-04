@@ -167,9 +167,9 @@ CbcCutGenerator::refreshModel(CbcModel * model)
 bool
 CbcCutGenerator::generateCuts( OsiCuts & cs , int fullScan, OsiSolverInterface * solver, CbcNode * node)
 {
-#define PROBE1 0
+#define PROBE1 1
 #define PROBE2 0
-#define PROBE3 0
+#define PROBE3 1
   int depth;
   if (node)
     depth=node->depth();
@@ -255,7 +255,7 @@ CbcCutGenerator::generateCuts( OsiCuts & cs , int fullScan, OsiSolverInterface *
       } else if (depth||PROBE2) {
 #if PROBE3
 	if ((numberTimes_==200||(numberTimes_>200&&(numberTimes_%2000)==0))
-	     &&!model_->parentModel()) {
+	     &&!model_->parentModel()&&info.formulation_rows>500) {
 	  // in tree, maxStack, maxProbe
 	  int test[]= {
 	    100123,
@@ -271,6 +271,7 @@ CbcCutGenerator::generateCuts( OsiCuts & cs , int fullScan, OsiSolverInterface *
 	  int n = (int) (sizeof(test)/sizeof(int));
 	  int saveStack = generator->getMaxLook();
 	  int saveNumber = generator->getMaxProbe();
+#undef CLP_INVESTIGATE
 #ifdef CLP_INVESTIGATE
 	  int kr1=0;
 	  int kc1=0;
@@ -314,7 +315,7 @@ CbcCutGenerator::generateCuts( OsiCuts & cs , int fullScan, OsiSolverInterface *
 	    generator->setMaxLook(0);
 #ifdef CLP_INVESTIGATE
 	    printf("RRSwitching off number %d -> %d, stack %d -> %d\n",
-		   saveNumber,saveNumber,saveStack,1);
+		   saveNumber,saveNumber,saveStack,0);
 #endif
 	  }
 	}
@@ -511,6 +512,7 @@ CbcCutGenerator::generateCuts( OsiCuts & cs , int fullScan, OsiSolverInterface *
       int nNull=0;
       const double * solution = solver->getColSolution();
       bool feasible=true;
+      double primalTolerance = 1.0e-7;
       for (k = numberRowCutsAfter-1;k>=numberRowCutsBefore;k--) {
 	const OsiRowCut * thisCut = cs.rowCutPtr(k) ;
 	double sum=0.0;
@@ -528,9 +530,9 @@ CbcCutGenerator::generateCuts( OsiCuts & cs , int fullScan, OsiSolverInterface *
 	    double value = element[i];
 	    sum += value*solution[column[i]];
 	  }
-	  if (sum>thisCut->ub()) {
+	  if (sum>thisCut->ub()+primalTolerance) {
 	    sum= sum-thisCut->ub();
-	  } else if (sum<thisCut->lb()) {
+	  } else if (sum<thisCut->lb()-primalTolerance) {
 	    sum= thisCut->lb()-sum;
 	  } else {
 	    sum=0.0;
@@ -607,6 +609,7 @@ CbcCutGenerator::generateCuts( OsiCuts & cs , int fullScan, OsiSolverInterface *
 	CoinSort_2(sort,sort+nCuts,which);
 	// Now see which ones are too similar
 	int nParallel=0;
+	double testValue = (depth>1) ? 0.99 : 0.999999;
 	for (k = 0;k<nCuts;k++) {
 	  int j=which[k];
 	  const OsiRowCut * thisCut = cs.rowCutPtr(j) ;
@@ -625,7 +628,6 @@ CbcCutGenerator::generateCuts( OsiCuts & cs , int fullScan, OsiSolverInterface *
 	    norm += value*value;
 	  }
 	  int kkk = CoinMin(nCuts,k+5);
-	  double testValue = (depth>1) ? 0.9 : 0.99999;
 	  for (int kk=k+1;kk<kkk;kk++) { 
 	    int jj=which[kk];
 	    const OsiRowCut * thisCut2 = cs.rowCutPtr(jj) ;

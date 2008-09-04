@@ -15,7 +15,7 @@
 #include "CoinPragma.hpp"
 #include "CoinHelperFunctions.hpp"
 // Version
-#define CBCVERSION "2.20.00"
+#define CBCVERSION "2.30.00"
 
 #include "CoinMpsIO.hpp"
 #include "CoinModel.hpp"
@@ -57,7 +57,7 @@ static double malloc_total=0.0;
 static int malloc_amount[]={0,32,128,256,1024,4096,16384,65536,262144,INT_MAX};
 static int malloc_n=10;
 double malloc_counts[10]={0,0,0,0,0,0,0,0,0,0};
-bool malloc_counts_on=false;
+bool malloc_counts_on=true;
 void * operator new (size_t size) throw (std::bad_alloc)
 {
   malloc_times ++;
@@ -1204,15 +1204,18 @@ crunchIt(ClpSimplex * model)
 */
 static OsiClpSolverInterface * fixVubs(CbcModel & model, int skipZero2,
 				       int & doAction, CoinMessageHandler * generalMessageHandler,
-				       const double * lastSolution, double dextra[5])
+				       const double * lastSolution, double dextra[6],
+				       int extra[5])
 {
   if (doAction==11&&!lastSolution)
     lastSolution = model.bestSolution();
-  assert (((doAction>=1&&doAction<=3)&&!lastSolution)||(doAction==11&&lastSolution));
+  assert (((doAction>=0&&doAction<=3)&&!lastSolution)||(doAction==11&&lastSolution));
   double fractionIntFixed = dextra[3];
   double fractionFixed = dextra[4];
   double fixAbove = dextra[2];
+  double fixAboveValue = (dextra[5]>0.0) ? dextra[5] : 1.0;
   double time1 = CoinCpuTime();
+  int leaveIntFree = extra[1];
   OsiSolverInterface * originalSolver = model.solver();
   OsiClpSolverInterface * originalClpSolver = dynamic_cast< OsiClpSolverInterface*> (originalSolver);
   ClpSimplex * originalLpSolver = originalClpSolver->getModelPtr();
@@ -1932,11 +1935,11 @@ static OsiClpSolverInterface * fixVubs(CbcModel & model, int skipZero2,
 	jLayer += 100;
       }
       printf("This fixes %d variables in lower priorities\n",nTotalFixed);
-      if (iLargest<0)
+      if (iLargest<0||numberFree<=leaveIntFree)
 	break;
       double movement;
       int way;
-      if (smallest<=1.0-largest&&smallest<0.2) {
+      if (smallest<=1.0-largest&&smallest<0.2&&largest<fixAboveValue) {
 	columnUpper[iSmallest]=0.0;
 	state[iSmallest]=0;
 	movement=smallest;
@@ -1970,7 +1973,7 @@ static OsiClpSolverInterface * fixVubs(CbcModel & model, int skipZero2,
       crunchIt(lpSolver);
       double moveObj = lpSolver->objectiveValue()-saveObj;
       printf("movement %s was %g costing %g\n",
-	     (smallest<=1.0-largest) ? "down" : "up",movement,moveObj);
+	     (way==-1) ? "down" : "up",movement,moveObj);
       if (way==-1&&(moveObj>=(1.0-movement)*objective[iSmallest]||lpSolver->status())) {
 	// go up
 	columnLower = models[kPass].columnLower();
@@ -3258,17 +3261,17 @@ int
 	>=10000000 for using obj
 	>=1000000 use as accumulate switch
 	>=1000 use index+1 as number of large loops
-	>=100 use 0.05 objvalue as increment
-	>=10 use +0.1 objvalue for cutoff (add)
+	>=100 use dextra1 as cutoff
+	%100 == 10,20 etc for experimentation
 	1 == fix ints at bounds, 2 fix all integral ints, 3 and continuous at bounds
 	4 and static continuous, 5 as 3 but no internal integers
 	6 as 3 but all slack basis!
       */
       double value = model->solver()->getObjSense()*model->solver()->getObjValue();
       int w = pumpTune/10;
-      int c = w % 10;
-      w /= 10;
       int i = w % 10;
+      w /= 10;
+      int c = w % 10;
       w /= 10;
       int r = w;
       int accumulate = r/1000;
@@ -3297,7 +3300,7 @@ int
 	if (logLevel>1)
 	  printf("fake cutoff of %g ",cutoff);
       }
-      if (i||r) {
+      if (r) {
 	// also set increment
 	//double increment = (0.01*i+0.005)*(fabs(value)+1.0e-12);
 	double increment = 0.0;
@@ -3308,19 +3311,21 @@ int
 	heuristic4.setAccumulate(accumulate);
 	heuristic4.setMaximumRetries(r+1);
 	if (logLevel>1) {
-	  if (i) 
-	    printf("increment of %g ",heuristic4.absoluteIncrement());
+	  printf("increment of %g ",heuristic4.absoluteIncrement());
 	  if (accumulate) 
 	    printf("accumulate of %d ",accumulate);
 	  printf("%d retries ",r+2);
 	}
       }
+      if (i) {
+	heuristic4.setFeasibilityPumpOptions(i*10);
+      }	
       pumpTune = pumpTune%100;
       if (logLevel>1)
 	printf("and setting when to %d\n",pumpTune+10);
       if (pumpTune==6)
 	pumpTune =13;
-      heuristic4.setWhen(pumpTune+10);
+      heuristic4.setWhen((pumpTune%10)+10);
     }
     heuristic4.setHeuristicName("feasibility pump");
     //#define ROLF
@@ -3374,11 +3379,13 @@ int
   if (useRINS>=kType) {
     CbcHeuristicRINS heuristic5(*model);
     heuristic5.setHeuristicName("RINS");
-    heuristic5.setFractionSmall(0.5);
-    if (useRINS==1)
+    if (useRINS==1) {
+      heuristic5.setFractionSmall(0.5);
       heuristic5.setDecayFactor(5.0);
-    else
+    } else {
+      heuristic5.setFractionSmall(0.6);
       heuristic5.setDecayFactor(1.5);
+    }
     model->addHeuristic(&heuristic5) ;
     anyToDo=true;
   }
@@ -3396,12 +3403,12 @@ int
   }
   int useDIVING=0;
   {
-    useDIVING |= 1*parameters_[whichParam(DIVINGV,numberParameters_,parameters_)].currentOptionAsInteger();
-    useDIVING |= 2*parameters_[whichParam(DIVINGG,numberParameters_,parameters_)].currentOptionAsInteger();
-    useDIVING |= 4*parameters_[whichParam(DIVINGF,numberParameters_,parameters_)].currentOptionAsInteger();
-    useDIVING |= 8*parameters_[whichParam(DIVINGC,numberParameters_,parameters_)].currentOptionAsInteger();
-    useDIVING |= 16*parameters_[whichParam(DIVINGL,numberParameters_,parameters_)].currentOptionAsInteger();
-    useDIVING |= 32*parameters_[whichParam(DIVINGP,numberParameters_,parameters_)].currentOptionAsInteger();
+    useDIVING |= 1*((parameters_[whichParam(DIVINGV,numberParameters_,parameters_)].currentOptionAsInteger()>=kType) ? 1 : 0);
+    useDIVING |= 2*((parameters_[whichParam(DIVINGG,numberParameters_,parameters_)].currentOptionAsInteger()>=kType) ? 1 : 0);
+    useDIVING |= 4*((parameters_[whichParam(DIVINGF,numberParameters_,parameters_)].currentOptionAsInteger()>=kType) ? 1 : 0);
+    useDIVING |= 8*((parameters_[whichParam(DIVINGC,numberParameters_,parameters_)].currentOptionAsInteger()>=kType) ? 1 : 0);
+    useDIVING |= 16*((parameters_[whichParam(DIVINGL,numberParameters_,parameters_)].currentOptionAsInteger()>=kType) ? 1 : 0);
+    useDIVING |= 32*((parameters_[whichParam(DIVINGP,numberParameters_,parameters_)].currentOptionAsInteger()>=kType) ? 1 : 0);
   }
   if (useDIVING2>=kType) {
     int diveOptions=parameters_[whichParam(DIVEOPT,numberParameters_,parameters_)].intValue();
@@ -3434,7 +3441,7 @@ int
     model->addHeuristic(&heuristicJustOne) ;
   }
   
-  if (useDIVING>=kType) {
+  if (useDIVING>0) {
     int diveOptions=parameters_[whichParam(DIVEOPT,numberParameters_,parameters_)].intValue();
     if (diveOptions<0||diveOptions>10)
       diveOptions=2;
@@ -4092,7 +4099,34 @@ int
     int lengthName = 0;
     std::vector<std::string> rowNames;
     std::vector<std::string> columnNames;
-    
+    // Default strategy stuff
+    {
+      // try changing tolerance at root
+#define MORE_CUTS
+#ifdef MORE_CUTS
+      gomoryGen.setAwayAtRoot(0.005);
+      //gomoryGen.setAway(0.01);
+#else
+      gomoryGen.setAwayAtRoot(0.01);
+#endif
+      int iParam;
+      iParam = whichParam(DIVEOPT,numberParameters_,parameters_);
+      parameters_[iParam].setIntValue(3);
+      iParam = whichParam(FPUMPITS,numberParameters_,parameters_);
+      parameters_[iParam].setIntValue(30);
+      iParam = whichParam(FPUMPTUNE,numberParameters_,parameters_);
+      parameters_[iParam].setIntValue(1005043);
+      iParam = whichParam(PROCESSTUNE,numberParameters_,parameters_);
+      parameters_[iParam].setIntValue(6);
+      tunePreProcess=6;
+      iParam = whichParam(DIVINGC,numberParameters_,parameters_);
+      parameters_[iParam].setCurrentOption("on");
+      iParam = whichParam(RINS,numberParameters_,parameters_);
+      parameters_[iParam].setCurrentOption("on");
+      iParam = whichParam(PROBINGCUTS,numberParameters_,parameters_);
+      parameters_[iParam].setCurrentOption("forceon");
+      probingAction=4;
+    }
     std::string field;
     if (!noPrinting_) {
       sprintf(generalPrint,"Coin Cbc and Clp Solver version %s, build %s",
@@ -4102,12 +4136,17 @@ int
 	<<CoinMessageEol;
       // Print command line
       if (argc>1) {
+	bool foundStrategy=false;
         sprintf(generalPrint,"command line - ");
         for (int i=0;i<argc;i++) {
 	  if (!argv[i])
 	    break;
+	  if (strstr(argv[i],"strat"))
+	    foundStrategy=true;
           sprintf(generalPrint+strlen(generalPrint),"%s ",argv[i]);
 	}
+	if (!foundStrategy)
+          sprintf(generalPrint+strlen(generalPrint),"(default strategy 1)");
 	generalMessageHandler->message(CLP_GENERAL,generalMessages)
 	  << generalPrint
 	  <<CoinMessageEol;
@@ -4474,6 +4513,8 @@ int
 		  parameters_[iParam].setIntValue(3);
 		  iParam = whichParam(FPUMPITS,numberParameters_,parameters_);
 		  parameters_[iParam].setIntValue(30);
+		  iParam = whichParam(FPUMPTUNE,numberParameters_,parameters_);
+		  parameters_[iParam].setIntValue(8043);
 		  iParam = whichParam(PROCESSTUNE,numberParameters_,parameters_);
 		  parameters_[iParam].setIntValue(6);
 		  tunePreProcess=6;
@@ -4481,6 +4522,27 @@ int
 		  parameters_[iParam].setCurrentOption("on");
 		  iParam = whichParam(RINS,numberParameters_,parameters_);
 		  parameters_[iParam].setCurrentOption("on");
+		  iParam = whichParam(PROBINGCUTS,numberParameters_,parameters_);
+		  parameters_[iParam].setCurrentOption("on");
+		  probingAction=1;
+		}
+	      } else if (parameters_[iParam].type()==STRATEGY) {
+		if (value==0) {
+		  gomoryGen.setAwayAtRoot(0.05);
+		  int iParam;
+		  iParam = whichParam(DIVEOPT,numberParameters_,parameters_);
+		  parameters_[iParam].setIntValue(-1);
+		  iParam = whichParam(FPUMPITS,numberParameters_,parameters_);
+		  parameters_[iParam].setIntValue(20);
+		  iParam = whichParam(FPUMPTUNE,numberParameters_,parameters_);
+		  parameters_[iParam].setIntValue(1003);
+		  iParam = whichParam(PROCESSTUNE,numberParameters_,parameters_);
+		  parameters_[iParam].setIntValue(-1);
+		  tunePreProcess=0;
+		  iParam = whichParam(DIVINGC,numberParameters_,parameters_);
+		  parameters_[iParam].setCurrentOption("off");
+		  iParam = whichParam(RINS,numberParameters_,parameters_);
+		  parameters_[iParam].setCurrentOption("off");
 		  iParam = whichParam(PROBINGCUTS,numberParameters_,parameters_);
 		  parameters_[iParam].setCurrentOption("on");
 		  probingAction=1;
@@ -5274,22 +5336,30 @@ int
 	      int vubAction = parameters_[whichParam(VUBTRY,numberParameters_,parameters_)].intValue();
 	      if (vubAction!=-1) {
 		// look at vubs
+		// extra1 is number of ints to leave free
 		// Just ones which affect >= extra3
 		int extra3 = parameters_[whichParam(EXTRA3,numberParameters_,parameters_)].intValue();
 		/* 2 is cost above which to fix if feasible
-		   3 is fraction of integer variables fixed (0.97)
-		   4 is fraction of all variables fixed (0.0)
+		   3 is fraction of integer variables fixed if relaxing (0.97)
+		   4 is fraction of all variables fixed if relaxing (0.0)
 		*/
-		double dextra[5];
+		double dextra[6];
+		int extra[5];
+		extra[1] = parameters_[whichParam(EXTRA1,numberParameters_,parameters_)].intValue();
+		if (parameters_[whichParam(EXPERIMENT,numberParameters_,
+					   parameters_)].intValue()>=1&&
+		    extra[1]==-1)
+		  extra[1]=999998;
 		dextra[1] = parameters_[whichParam(DEXTRA1,numberParameters_,parameters_)].doubleValue();
 		dextra[2] = parameters_[whichParam(DEXTRA2,numberParameters_,parameters_)].doubleValue();
 		dextra[3] = parameters_[whichParam(DEXTRA3,numberParameters_,parameters_)].doubleValue();
 		dextra[4] = parameters_[whichParam(DEXTRA4,numberParameters_,parameters_)].doubleValue();
+		dextra[5] = parameters_[whichParam(DEXTRA5,numberParameters_,parameters_)].doubleValue();
 		if (!dextra[3])
 		  dextra[3] = 0.97;
 		//OsiClpSolverInterface * newSolver = 
 		fixVubs(model_,extra3,vubAction,generalMessageHandler,
-			debugValues,dextra);
+			debugValues,dextra,extra);
 		//assert (!newSolver);
 	      }
 	      // Actually do heuristics
@@ -5382,10 +5452,17 @@ int
 		statistics_ncols=si->getNumCols();
 		statistics_nprocessedrows=si->getNumRows();
 		statistics_nprocessedcols=si->getNumCols();
+		ClpSimplex * lpSolver = si->getModelPtr();
+		if (doVector) {
+		  ClpMatrixBase * matrix = lpSolver->clpMatrix();
+		  if (dynamic_cast< ClpPackedMatrix*>(matrix)) {
+		    ClpPackedMatrix * clpMatrix = dynamic_cast< ClpPackedMatrix*>(matrix);
+		    clpMatrix->makeSpecialColumnCopy();
+		  }
+		}
 		// See if quadratic
 #ifdef COIN_HAS_LINK
 		if (!complicatedInteger) {
-		  ClpSimplex * lpSolver = si->getModelPtr();
 		  ClpQuadraticObjective * obj = (dynamic_cast< ClpQuadraticObjective*>(lpSolver->objectiveAsObject()));
 		  if (obj) {
 		    preProcess=0;
@@ -5651,6 +5728,35 @@ int
 		    << generalPrint
 		    <<CoinMessageEol;
 		}
+		if (false) { 
+		  // See if No objective!
+		  int numberColumns = clpSolver->getNumCols();
+		  const double * obj = clpSolver->getObjCoefficients();
+		  const double * lower = clpSolver->getColLower();
+		  const double * upper = clpSolver->getColUpper();
+		  int nObj=0;
+		  for (int i=0;i<numberColumns;i++) {
+		    if (upper[i]>lower[i]&&obj[i])
+		      nObj++;
+		  }
+		  if (!nObj) {
+		    printf("No objective!!\n");
+		    model_.setMaximumSolutions(1);
+		    // Column copy
+		    CoinPackedMatrix  matrixByCol(*model_.solver()->getMatrixByCol());
+		    //const double * element = matrixByCol.getElements();
+		    //const int * row = matrixByCol.getIndices();
+		    //const CoinBigIndex * columnStart = matrixByCol.getVectorStarts();
+		    const int * columnLength = matrixByCol.getVectorLengths();
+		    for (int i=0;i<numberColumns;i++) {
+		      double value = (CoinDrand48()+0.5)*10000;
+		      value *= columnLength[i];
+		      int iValue = ((int) value)/10;
+		      //iValue=1;
+		      clpSolver->setObjCoeff(i,iValue);
+		    }
+		  }
+		}
 		if (!complicatedInteger&&preProcess==0&&clpSolver->tightenPrimalBounds(0.0,0,true)!=0) {
 #ifndef DISALLOW_PRINTING
 		  std::cout<<"Problem is infeasible - tightenPrimalBounds!"<<std::endl;
@@ -5666,6 +5772,7 @@ int
 		}
 		if (clpSolver->dualBound()==1.0e10) {
 		  ClpSimplex temp=*clpSolver;
+		  temp.setLogLevel(0);
 		  temp.dual(0,7);
 		  // user did not set - so modify
 		  // get largest scaled away from bound
@@ -6199,6 +6306,11 @@ int
 		if (babModel_->numberStrong()==5&&babModel_->numberBeforeTrust()==5) 
 		  babModel_->setNumberBeforeTrust(10);
 	      }
+	      int experimentFlag = parameters_[whichParam(EXPERIMENT,numberParameters_,
+							  parameters_)].intValue();
+	      int strategyFlag = parameters_[whichParam(STRATEGY,numberParameters_,
+							  parameters_)].intValue();
+	      int bothFlags = CoinMax(experimentFlag,strategyFlag);
               // add cut generators if wanted
               int switches[20];
               int numberGenerators=0;
@@ -6308,10 +6420,11 @@ int
               }
               // Could tune more
               if (!miplib) {
-                babModel_->setMinimumDrop(min(5.0e-2,
-                                             fabs(babModel_->getMinimizationObjValue())*1.0e-3+1.0e-4));
+		double minimumDrop = 
+		  fabs(babModel_->solver()->getObjValue())*1.0e-5+1.0e-5;
+                babModel_->setMinimumDrop(CoinMin(5.0e-2,minimumDrop));
                 if (cutPass==-1234567) {
-                  if (babModel_->getNumCols()<500)
+                  if (babModel_->getNumCols()<50000)
                     babModel_->setMaximumCutPassesAtRoot(-100); // always do 100 if possible
                   else if (babModel_->getNumCols()<5000)
                     babModel_->setMaximumCutPassesAtRoot(100); // use minimum drop
@@ -6321,7 +6434,7 @@ int
                   babModel_->setMaximumCutPassesAtRoot(cutPass);
                 }
                 if (cutPassInTree==-1234567) 
-		  babModel_->setMaximumCutPasses(2);
+		  babModel_->setMaximumCutPasses(4);
 		else
 		  babModel_->setMaximumCutPasses(cutPassInTree);
               }
@@ -6355,9 +6468,19 @@ int
               // go faster stripes
               if (osiclp->getNumRows()<300&&osiclp->getNumCols()<500) {
                 osiclp->setupForRepeatedUse(2,parameters_[slog].intValue());
+		if (bothFlags>=1) {
+		  ClpSimplex * lp = osiclp->getModelPtr();
+		  int specialOptions = lp->specialOptions();
+		  lp->setSpecialOptions(specialOptions|(2048+4096));
+		}
               } else {
                 osiclp->setupForRepeatedUse(0,parameters_[slog].intValue());
               }
+	      if (bothFlags>=2) {
+		ClpSimplex * lp = osiclp->getModelPtr();
+		int specialOptions = lp->specialOptions();
+		lp->setSpecialOptions(specialOptions|(2048+4096));
+	      }
               double increment=babModel_->getCutoffIncrement();;
               int * changed = NULL;
               if (!miplib&&increment==normalIncrement)
@@ -6394,12 +6517,10 @@ int
               currentBranchModel = babModel_;
               OsiSolverInterface * strengthenedModel=NULL;
               if (type==BAB||type==MIPLIB) {
-		if (parameters_[whichParam(EXPERIMENT,numberParameters_,
-					   parameters_)].intValue()==2) {
+		if (experimentFlag==2||strategyFlag==1) {
 		  // try reduced model
 		  babModel_->setSpecialOptions(babModel_->specialOptions()|512);
-		} else if (parameters_[whichParam(EXPERIMENT,numberParameters_,
-					   parameters_)].intValue()==3) {
+		} else if (experimentFlag==3||strategyFlag==2) {
 		  // try reduced model at root
 		  babModel_->setSpecialOptions(babModel_->specialOptions()|2048);
 		}
@@ -6458,6 +6579,8 @@ int
 		    babModel_->setNumberAnalyzeIterations(n);
 		    printf("XXXXX analyze %d\n",extra1);
 		  }
+		} else if (bothFlags>=1) {
+		  babModel_->setWhenCuts(999998);
 		}
 	      }
               if (type==BAB) {
@@ -6517,7 +6640,7 @@ int
 		    } else {
 		      n = babModel_->getNumCols();
 		    }
-		    prioritiesIn = new int[n];
+		    prioritiesIn = (int *) malloc(n*sizeof(int));
 		    for (int i=0;i<n;i++)
 		      prioritiesIn[i]=100;
 		  }
@@ -7428,11 +7551,13 @@ int
 #endif
 		  return returnCode;
 		}
-		if (parameters_[whichParam(EXPERIMENT,numberParameters_,parameters_)].intValue()>=1) {
-		  osiclp = dynamic_cast< OsiClpSolverInterface*> (babModel_->solver());
-		  lpSolver = osiclp->getModelPtr();
+		osiclp = dynamic_cast< OsiClpSolverInterface*> (babModel_->solver());
+		lpSolver = osiclp->getModelPtr();
+		if (experimentFlag>=1||strategyFlag>=2) {
 		  if (lpSolver->numberColumns()<200&&lpSolver->numberRows()<40) 
 		    babModel_->setFastNodeDepth(-9);
+		}
+		if (bothFlags>=1) {
 #ifdef CLP_MULTIPLE_FACTORIZATIONS   
 		  int goDense=40;
 		  //double size=lpSolver->numberColumns()*lpSolver->numberRows();
@@ -7513,7 +7638,7 @@ int
 		{ 
 		  int numberColumns = babModel_->getNumCols();
 		  const double * solution = babModel_->bestSolution();
-		  if (solution) {
+		  if (solution&&numberColumns<1000) {
 		    for (int i=0;i<numberColumns;i++) {
 		      if (solution[i])
 			printf("SOL %d %.18g\n",i,solution[i]);
@@ -7591,6 +7716,8 @@ int
 		stuff[6]=parameters_[whichParam(EXTRA3,numberParameters_,parameters_)].intValue();
 		stuff[7]=parameters_[whichParam(EXTRA4,numberParameters_,parameters_)].intValue();
 		stuff[8]=parameters_[whichParam(EXPERIMENT,numberParameters_,parameters_)].intValue();
+		stuff[8]=bothFlags;
+		stuff[9]=doVector;
 		int returnCode=CbcClpUnitTest(model_, dirMiplib, extra1==1,stuff);
 		babModel_=NULL;
 		return returnCode;
@@ -7622,12 +7749,9 @@ int
 		char timing[30];
                 for (iGenerator=0;iGenerator<numberGenerators;iGenerator++) {
                   CbcCutGenerator * generator = babModel_->cutGenerator(iGenerator);
-		  CglStored * stored = dynamic_cast<CglStored*>(generator->generator());
 		  statistics_name_generators[iGenerator]=
 		    generator->cutGeneratorName();
 		  statistics_number_cuts[iGenerator]=generator->numberCutsInTotal();
-		  if (stored&&!generator->numberCutsInTotal())
-		    continue;
 		  sprintf(generalPrint,"%s was tried %d times and created %d cuts of which %d were active after adding rounds of cuts",
 			  generator->cutGeneratorName(),
 			  generator->numberTimesEntered(),
@@ -7639,6 +7763,14 @@ int
 		    strcat(generalPrint,timing);
 		    statistics_cut_time += generator->timeInCutGenerator();
 		  }
+		  CglStored * stored = dynamic_cast<CglStored*>(generator->generator());
+		  if (stored&&!generator->numberCutsInTotal())
+		    continue;
+#ifndef CLP_INVESTIGATE
+		  CglImplication * implication = dynamic_cast<CglImplication*>(generator->generator());
+		  if (implication)
+		    continue;
+#endif
 		  generalMessageHandler->message(CLP_GENERAL,generalMessages)
 		    << generalPrint
 		    <<CoinMessageEol;
@@ -7675,6 +7807,7 @@ int
                   n = saveSolver->getNumCols();
                   bestSolution = new double [n];
 		  OsiClpSolverInterface * clpSolver = dynamic_cast< OsiClpSolverInterface*> (babModel_->solver());
+		  ClpSimplex * lpSolver = clpSolver->getModelPtr();
 		  // Save bounds on processed model
 		  const int * originalColumns = process.originalColumns();
 		  int numberColumns2 = clpSolver->getNumCols();
@@ -7695,7 +7828,6 @@ int
 		    lower2[jColumn]=columnLower[i];
 		    upper2[jColumn]=columnUpper[i];
 		  }
-		  ClpSimplex * lpSolver = clpSolver->getModelPtr();
 		  lpSolver->setSpecialOptions(lpSolver->specialOptions()|IN_BRANCH_AND_BOUND); // say is Cbc (and in branch and bound)
                   process.postProcess(*babModel_->solver());
                   // Solution now back in saveSolver
@@ -9390,6 +9522,7 @@ clp watson.mps -\nscaling off\nprimalsimplex"
 		std::cout<<"Unable to open file "<<fileName<<std::endl;
 	      }
 	    }
+	    break;
 	  case SOLUTION:
 	    if (goodModel) {
 	      // get next field

@@ -164,6 +164,8 @@ public:
       2 finished - no solution
       3 finished - solution
       (could add global cut if finished)
+      -1 returned on size
+      -2 time or user event
   */
   int smallBranchAndBound(OsiSolverInterface * solver,int numberNodes,
                           double * newSolution, double & newSolutionValue,

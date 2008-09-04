@@ -8,6 +8,7 @@
 #include "CoinTime.hpp"
 #include "CbcModel.hpp"
 #include "CbcCutGenerator.hpp"
+#include "CglProbing.hpp"
 #include "OsiClpSolverInterface.hpp"
 #include "ClpFactorization.hpp"
 #include "OsiRowCutDebugger.hpp"
@@ -129,6 +130,7 @@ int CbcClpUnitTest (const CbcModel & saveModel, std::string& dirMiplib,
     //PUSH_MPS("blend2",274,353,7.598985,6.9156751140,7);
     //PUSH_MPS("p2756",755,2756,3124,2688.75,7);
     //PUSH_MPS("seymour_1",4944,1372,410.7637014,404.35152,7);
+    //PUSH_MPS("enigma",21,100,0.0,0.0,7);
 #define HOWMANY 2
 #if HOWMANY
 #if HOWMANY>1
@@ -280,6 +282,14 @@ int CbcClpUnitTest (const CbcModel & saveModel, std::string& dirMiplib,
     assert (si != NULL);
     // get clp itself
     ClpSimplex * modelC = si->getModelPtr();
+    if (stuff[9]) {
+      // vector matrix!
+      ClpMatrixBase * matrix = modelC->clpMatrix();
+      if (dynamic_cast< ClpPackedMatrix*>(matrix)) {
+	ClpPackedMatrix * clpMatrix = dynamic_cast< ClpPackedMatrix*>(matrix);
+	clpMatrix->makeSpecialColumnCopy();
+      }
+    }
     modelC->tightenPrimalBounds(0.0,0,true);
     model->initialSolve();
     if (modelC->dualBound()==1.0e10) {
@@ -358,12 +368,14 @@ int CbcClpUnitTest (const CbcModel & saveModel, std::string& dirMiplib,
     }
     model->setMinimumDrop(min(5.0e-2,
 			      fabs(model->getMinimizationObjValue())*1.0e-3+1.0e-4));
-    if (model->getNumCols()<500) {
-      model->setMaximumCutPassesAtRoot(-100); // always do 100 if possible
-    } else if (model->getNumCols()<5000) {
-      model->setMaximumCutPassesAtRoot(100); // use minimum drop
-    } else {
-      model->setMaximumCutPassesAtRoot(20);
+    if (CoinAbs(model->getMaximumCutPassesAtRoot())<=100) {
+      if (model->getNumCols()<500) {
+	model->setMaximumCutPassesAtRoot(-100); // always do 100 if possible
+      } else if (model->getNumCols()<5000) {
+	model->setMaximumCutPassesAtRoot(100); // use minimum drop
+      } else {
+	model->setMaximumCutPassesAtRoot(20);
+      }
     }
     // If defaults then increase trust for small models
     if (model->numberStrong()==5&&model->numberBeforeTrust()==10) {
@@ -382,6 +394,30 @@ int CbcClpUnitTest (const CbcModel & saveModel, std::string& dirMiplib,
     //}
     if (model->getNumCols()==-2756) {
       // p2756
+      std::string problemName ;
+      model->solver()->getStrParam(OsiProbName,problemName) ;
+      model->solver()->activateRowCutDebugger(problemName.c_str()) ;
+    }
+    if (model->getNumCols()==-160) {
+      // misc03
+      std::string problemName ;
+      model->solver()->getStrParam(OsiProbName,problemName) ;
+      model->solver()->activateRowCutDebugger(problemName.c_str()) ;
+    }
+    if (model->getNumCols()==353) {
+      // blend2
+      std::string problemName ;
+      model->solver()->getStrParam(OsiProbName,problemName) ;
+      model->solver()->activateRowCutDebugger(problemName.c_str()) ;
+    }
+    if (model->getNumCols()==-100&&model->getNumRows()==21) {
+      // enigma
+      std::string problemName ;
+      model->solver()->getStrParam(OsiProbName,problemName) ;
+      model->solver()->activateRowCutDebugger(problemName.c_str()) ;
+    }
+    if (model->getNumCols()==-1541) {
+      // qnet1
       std::string problemName ;
       model->solver()->getStrParam(OsiProbName,problemName) ;
       model->solver()->activateRowCutDebugger(problemName.c_str()) ;
@@ -450,6 +486,11 @@ int CbcClpUnitTest (const CbcModel & saveModel, std::string& dirMiplib,
     int numberGenerators = model->numberCutGenerators();
     for (int iGenerator=0;iGenerator<numberGenerators;iGenerator++) {
       CbcCutGenerator * generator = model->cutGenerator(iGenerator);
+#ifndef CLP_INVESTIGATE
+      CglImplication * implication = dynamic_cast<CglImplication*>(generator->generator());
+      if (implication)
+	continue;
+#endif
       std::cout<<generator->cutGeneratorName()<<" was tried "
 	       <<generator->numberTimesEntered()<<" times and created "
 	       <<generator->numberCutsInTotal()<<" cuts of which "
@@ -460,9 +501,10 @@ int CbcClpUnitTest (const CbcModel & saveModel, std::string& dirMiplib,
 	std::cout<<std::endl;
     }
     if (!model->status()) { 
-      double soln = model->getObjValue();       
-      CoinRelFltEq eq(1.0e-3) ;
-      if (eq(soln,objValue[m])) { 
+      double soln = model->getObjValue();  
+      double tolerance = CoinMax(1.0e-5,1.0e-5*CoinMin(fabs(soln),fabs(objValue[m])));
+      //CoinRelFltEq eq(1.0e-3) ;
+      if (fabs(soln-objValue[m])<tolerance) { 
         std::cout 
           <<"cbc_clp"<<" "
           << soln << " = " << objValue[m] << " ; okay";
@@ -478,10 +520,10 @@ int CbcClpUnitTest (const CbcModel & saveModel, std::string& dirMiplib,
     } else {
       std::cout << "error; too many nodes" ;
     }
+    timeTaken += timeOfSolution;
     std::cout<<" - took " <<timeOfSolution<<" seconds.("<<
       model->getNodeCount()<<" / "<<model->getIterationCount()<<
-      " )"<<std::endl;
-    timeTaken += timeOfSolution;
+      " ) subtotal "<<timeTaken<<std::endl;
     delete model;
   }
   int returnCode=0;

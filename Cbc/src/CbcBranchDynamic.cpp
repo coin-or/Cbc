@@ -709,7 +709,7 @@ CbcSimpleIntegerDynamicPseudoCost::infeasibility(int & preferredWay) const
   if (preferredWay_)
     preferredWay=preferredWay_;
   // weight at 1.0 is max min
-#define WEIGHT_AFTER 0.7
+#define WEIGHT_AFTER 0.8
 #define WEIGHT_BEFORE 0.1
   if (fabs(value-nearest)<=integerTolerance) {
     return 0.0;
@@ -1537,9 +1537,9 @@ CbcBranchDynamicDecision::saveBranchingObject(OsiBranchingObject * object)
   CbcBranchingObject * obj2 =
     dynamic_cast<CbcBranchingObject *>(obj);
   assert (obj2);
+#if COIN_DEVELOP>1
   CbcDynamicPseudoCostBranchingObject * branchingObject =
     dynamic_cast<CbcDynamicPseudoCostBranchingObject *>(obj);
-#if COIN_DEVELOP>1
   if (!branchingObject)
     printf("no dynamic branching object Dynamic Decision\n");
 #endif
@@ -1719,8 +1719,9 @@ CbcBranchDynamicDecision::betterBranch(CbcBranchingObject * thisOne,
     bestNumberUp_=COIN_INT_MAX;
     bestNumberDown_=COIN_INT_MAX;
   }
+  // maybe branch up more if no solution or not many nodes done?
   if (stateOfSearch<=2) {
-    //#define TRY_STUFF 1
+//#define TRY_STUFF 1
 #ifdef TRY_STUFF
     // before solution - choose smallest number 
     // could add in depth as well
@@ -1786,7 +1787,7 @@ CbcBranchDynamicDecision::betterBranch(CbcBranchingObject * thisOne,
     double maxValue = CoinMax(changeDown,changeUp);
     value = WEIGHT_BEFORE*minValue + (1.0-WEIGHT_BEFORE)*maxValue;
     if (value>bestCriterion_+1.0e-8) {
-      if (changeUp<=changeDown) {
+      if (changeUp<=1.5*changeDown) {
         betterWay=1;
       } else {
         betterWay=-1;
@@ -1830,7 +1831,7 @@ CbcBranchDynamicDecision::betterBranch(CbcBranchingObject * thisOne,
     }
 #endif
     if (useValue>useBest+1.0e-8) {
-      if (changeUp<=changeDown) {
+      if (changeUp<=1.5*changeDown) {
         betterWay=1;
       } else {
         betterWay=-1;

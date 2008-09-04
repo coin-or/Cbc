@@ -1964,7 +1964,9 @@ private:
     allocated size.
   */
   CbcNodeInfo ** walkback_;
-  //#define NODE_LAST
+#ifndef CBC_DETERMINISTIC_THREAD
+#define NODE_LAST
+#endif
 #ifdef NODE_LAST
   CbcNodeInfo ** lastNodeInfo_;
   const OsiRowCut ** lastCut_;

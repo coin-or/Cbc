@@ -22,6 +22,7 @@
 #include "CbcHeuristicFPump.hpp"
 #include "CbcStrategy.hpp"
 #include "CglPreProcess.hpp"
+#include "CglProbing.hpp"
 #include "OsiAuxInfo.hpp"
 #include "OsiPresolve.hpp"
 #include "CbcBranchActual.hpp"
@@ -891,13 +892,25 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver,int numberNodes,
 	    model_->incrementNodeCount(model.getNodeCount());
 	    for (int iGenerator=0;iGenerator<model.numberCutGenerators();iGenerator++) {
 	      CbcCutGenerator * generator = model.cutGenerator(iGenerator);
-	      printf("%s was tried %d times and created %d cuts of which %d were active after adding rounds of cuts",
+	      sprintf(generalPrint,
+		      "%s was tried %d times and created %d cuts of which %d were active after adding rounds of cuts (%.3f seconds)",
 		      generator->cutGeneratorName(),
 		      generator->numberTimesEntered(),
 		      generator->numberCutsInTotal()+
 		      generator->numberColumnCuts(),
-		      generator->numberCutsActive());
-	      printf(" (%.3f seconds)\n)",generator->timeInCutGenerator());
+		      generator->numberCutsActive(),
+		      generator->timeInCutGenerator());
+	      CglStored * stored = dynamic_cast<CglStored*>(generator->generator());
+	      if (stored&&!generator->numberCutsInTotal())
+		continue;
+#ifndef CLP_INVESTIGATE
+	      CglImplication * implication = dynamic_cast<CglImplication*>(generator->generator());
+	      if (implication)
+		continue;
+#endif
+	      model_->messageHandler()->message(CBC_FPUMP1,model_->messages())
+		<< generalPrint
+		<<CoinMessageEol;
 	    }
 	  }
 	} else {

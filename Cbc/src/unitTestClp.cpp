@@ -404,7 +404,7 @@ int CbcClpUnitTest (const CbcModel & saveModel, std::string& dirMiplib,
       model->solver()->getStrParam(OsiProbName,problemName) ;
       model->solver()->activateRowCutDebugger(problemName.c_str()) ;
     }
-    if (model->getNumCols()==353) {
+    if (model->getNumCols()==-353) {
       // blend2
       std::string problemName ;
       model->solver()->getStrParam(OsiProbName,problemName) ;

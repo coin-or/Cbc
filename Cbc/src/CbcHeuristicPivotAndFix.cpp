@@ -81,6 +81,7 @@ CbcHeuristicPivotAndFix::solution(double & solutionValue,
 {
 
   numCouldRun_++;
+  printf("entered pivot and fix\n");
   int returnCode = 0;
   return returnCode;
 }

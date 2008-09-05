@@ -156,6 +156,8 @@ bool malloc_counts_on=false;
 #include "CbcModel.hpp"
 #include "CbcHeuristic.hpp"
 #include "CbcHeuristicLocal.hpp"
+#include "CbcHeuristicPivotAndFix.hpp"
+#include "CbcHeuristicRandRound.hpp"
 #include "CbcHeuristicGreedy.hpp"
 #include "CbcHeuristicFPump.hpp"
 #include "CbcHeuristicRINS.hpp"
@@ -507,6 +509,8 @@ void CbcSolver::fillParameters()
   parameters_[whichParam(FPUMP,numberParameters_,parameters_)].setCurrentOption("on");
   parameters_[whichParam(GREEDY,numberParameters_,parameters_)].setCurrentOption("on");
   parameters_[whichParam(COMBINE,numberParameters_,parameters_)].setCurrentOption("on");
+  parameters_[whichParam(PIVOTANDFIX,numberParameters_,parameters_)].setCurrentOption("off");
+  parameters_[whichParam(RANDROUND,numberParameters_,parameters_)].setCurrentOption("off");
   parameters_[whichParam(RINS,numberParameters_,parameters_)].setCurrentOption("off");
   parameters_[whichParam(DINS,numberParameters_,parameters_)].setCurrentOption("off");
   parameters_[whichParam(RENS,numberParameters_,parameters_)].setCurrentOption("off");
@@ -3208,6 +3212,8 @@ void CbcMain0 (CbcModel  & model)
   parameters[whichParam(FPUMP,numberParameters,parameters)].setCurrentOption("on");
   parameters[whichParam(GREEDY,numberParameters,parameters)].setCurrentOption("on");
   parameters[whichParam(COMBINE,numberParameters,parameters)].setCurrentOption("on");
+  parameters[whichParam(PIVOTANDFIX,numberParameters,parameters)].setCurrentOption("off");
+  parameters[whichParam(RANDROUND,numberParameters,parameters)].setCurrentOption("off");
   parameters[whichParam(RINS,numberParameters,parameters)].setCurrentOption("off");
   parameters[whichParam(DINS,numberParameters,parameters)].setCurrentOption("off");
   parameters[whichParam(RENS,numberParameters,parameters)].setCurrentOption("off");
@@ -3236,6 +3242,8 @@ int
   int useRounding = parameters_[whichParam(ROUNDING,numberParameters_,parameters_)].currentOptionAsInteger();
   int useGreedy = parameters_[whichParam(GREEDY,numberParameters_,parameters_)].currentOptionAsInteger();
   int useCombine = parameters_[whichParam(COMBINE,numberParameters_,parameters_)].currentOptionAsInteger();
+  int usePivot = parameters_[whichParam(PIVOTANDFIX,numberParameters_,parameters_)].currentOptionAsInteger();
+  int useRand = parameters_[whichParam(RANDROUND,numberParameters_,parameters_)].currentOptionAsInteger();
   int useRINS = parameters_[whichParam(RINS,numberParameters_,parameters_)].currentOptionAsInteger();
   int useRENS = parameters_[whichParam(RENS,numberParameters_,parameters_)].currentOptionAsInteger();
   int useDINS = parameters_[whichParam(DINS,numberParameters_,parameters_)].currentOptionAsInteger();
@@ -3481,6 +3489,20 @@ int
       heuristicDP.setWhen(diveOptions);
       model->addHeuristic(&heuristicDP) ;
     }
+    anyToDo=true;
+  }
+  if (usePivot>=type) {
+    CbcHeuristicPivotAndFix heuristic(*model);
+    heuristic.setHeuristicName("pivot and fix");
+    heuristic.setFractionSmall(10.0); // normally 0.5
+    model->addHeuristic(&heuristic);
+    anyToDo=true;
+  }
+  if (useRand>=type) {
+    CbcHeuristicRandRound heuristic(*model);
+    heuristic.setHeuristicName("randomized rounding");
+    heuristic.setFractionSmall(10.0); // normally 0.5
+    model->addHeuristic(&heuristic);
     anyToDo=true;
   }
   if (type==2&&anyToDo) {
@@ -4803,6 +4825,8 @@ int
 	    case DIVINGP:
 	    case DIVINGV:
 	    case COMBINE:
+	    case PIVOTANDFIX:
+	    case RANDROUND:
 	    case LOCALTREE:
               defaultSettings=false; // user knows what she is doing
 	      break;

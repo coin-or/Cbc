@@ -65,6 +65,8 @@ Cbc/src/CbcHeuristicPivotAndFix.cpp -text
 Cbc/src/CbcHeuristicPivotAndFix.hpp -text
 Cbc/src/CbcHeuristicRINS.cpp -text
 Cbc/src/CbcHeuristicRINS.hpp -text
+Cbc/src/CbcHeuristicRandRound.cpp -text
+Cbc/src/CbcHeuristicRandRound.hpp -text
 Cbc/src/CbcLinked.cpp -text
 Cbc/src/CbcLinked.hpp -text
 Cbc/src/CbcSolver.cpp -text

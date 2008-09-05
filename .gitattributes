@@ -61,6 +61,8 @@ Cbc/src/CbcHeuristicDivePseudoCost.cpp -text
 Cbc/src/CbcHeuristicDivePseudoCost.hpp -text
 Cbc/src/CbcHeuristicDiveVectorLength.cpp -text
 Cbc/src/CbcHeuristicDiveVectorLength.hpp -text
+Cbc/src/CbcHeuristicPivotAndFix.cpp -text
+Cbc/src/CbcHeuristicPivotAndFix.hpp -text
 Cbc/src/CbcHeuristicRINS.cpp -text
 Cbc/src/CbcHeuristicRINS.hpp -text
 Cbc/src/CbcLinked.cpp -text

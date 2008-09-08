@@ -282,7 +282,7 @@ int CbcClpUnitTest (const CbcModel & saveModel, std::string& dirMiplib,
     assert (si != NULL);
     // get clp itself
     ClpSimplex * modelC = si->getModelPtr();
-    if (stuff[9]) {
+    if (stuff&&stuff[9]) {
       // vector matrix!
       ClpMatrixBase * matrix = modelC->clpMatrix();
       if (dynamic_cast< ClpPackedMatrix*>(matrix)) {

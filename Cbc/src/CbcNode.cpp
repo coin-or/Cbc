@@ -1049,12 +1049,14 @@ CbcNode::createInfo (CbcModel *model,
     lastws->print() ;
 #endif    
     assert (expanded->getNumArtificial()>=lastws->getNumArtificial());
+#ifdef CLP_INVESTIGATE
     if (!expanded->fullBasis()) {
       int iFull = numberRowsAtContinuous+currentNumberCuts+numberNewCuts;
       printf("cont %d old %d new %d current %d full inc %d full %d\n",
 	     numberRowsAtContinuous,numberOldActiveCuts,numberNewCuts,
 	     currentNumberCuts,iFull,iFull-numberNewCuts);
     }
+#endif
     assert (lastws->fullBasis());
 
 /*

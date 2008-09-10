@@ -9430,6 +9430,7 @@ clp watson.mps -\nscaling off\nprimalsimplex"
 	      if (fp) {
 		if (printMode!=5) {
 		  // Write solution header (suggested by Luigi Poderico)
+		  lpSolver->computeObjectiveValue(false);
 		  double objValue = lpSolver->getObjValue()*lpSolver->getObjSense();
 		  int iStat = lpSolver->status();
 		  if (iStat==0) {

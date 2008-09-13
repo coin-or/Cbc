@@ -22370,10 +22370,14 @@ echo "$as_me:$LINENO: result: $ac_cv_lib_rt_clock_gettime" >&5
 echo "${ECHO_T}$ac_cv_lib_rt_clock_gettime" >&6
 if test $ac_cv_lib_rt_clock_gettime = yes; then
   ADDLIBS="-lrt $ADDLIBS"
+
+cat >>confdefs.h <<\_ACEOF
+#define HAVE_CLOCK_GETTIME 1
+_ACEOF
+
 else
-  { { echo "$as_me:$LINENO: error: --enable-cbc-parallel selected, but -lrt unavailable" >&5
-echo "$as_me: error: --enable-cbc-parallel selected, but -lrt unavailable" >&2;}
-   { (exit 1); exit 1; }; }
+  { echo "$as_me:$LINENO: WARNING: --enable-cbc-parallel selected, but -lrt unavailable; using gettimeofday instead of clock_gettime" >&5
+echo "$as_me: WARNING: --enable-cbc-parallel selected, but -lrt unavailable; using gettimeofday instead of clock_gettime" >&2;}
 fi
 
   echo "$as_me:$LINENO: checking for pthread_create in -lpthread" >&5

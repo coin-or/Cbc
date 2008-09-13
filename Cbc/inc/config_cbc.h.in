@@ -61,6 +61,9 @@
 /* Define to 1 if the Xpress package is available */
 #undef COIN_HAS_XPR
 
+/* Define if clock_gettime and rt library is available */
+#undef HAVE_CLOCK_GETTIME
+
 /* Define to 1 if you have the <dlfcn.h> header file. */
 #undef HAVE_DLFCN_H
 

@@ -90,6 +90,23 @@
 #define CBC_NORMAL_THREAD
 #endif
 #include <pthread.h>
+#ifdef HAVE_CLOCK_GETTIME
+inline int my_gettime(struct timespec* tp) {
+	return clock_gettime(CLOCK_REALTIME, tp);
+}
+#else
+//struct timespec {
+//	time_t tv_sec;
+//	long tv_nsec;
+//};
+inline int my_gettime(struct timespec* tp) {
+	struct timeval tv;
+	int ret = gettimeofday(&tv, NULL);
+	tp->tv_sec = tv.tv_sec;
+	tp->tv_nsec = tv.tv_usec*1000;
+	return ret;
+}
+#endif
 //#include "clocktime.hpp"
 //#undef small
 
@@ -2413,7 +2430,7 @@ void CbcModel::branchAndBound(int doStatistics)
 	  while (true) {
 	    pthread_mutex_lock(&condition_mutex);
 	    struct timespec absTime;
-	    clock_gettime(CLOCK_REALTIME,&absTime);
+	    my_gettime(&absTime);
 	    double time = absTime.tv_sec+1.0e-9*absTime.tv_nsec;
 	    absTime.tv_nsec += 1000000; // millisecond
 	    if (absTime.tv_nsec>=1000000000) {
@@ -2421,7 +2438,7 @@ void CbcModel::branchAndBound(int doStatistics)
 	      absTime.tv_sec++;
 	    }
 	    pthread_cond_timedwait(&condition_main,&condition_mutex,&absTime);
-	    clock_gettime(CLOCK_REALTIME,&absTime);
+	    my_gettime(&absTime);
 	    double time2 = absTime.tv_sec+1.0e-9*absTime.tv_nsec;
 	    timeWaiting += time2-time;
 	    pthread_mutex_unlock(&condition_mutex);
@@ -3404,7 +3421,7 @@ void CbcModel::branchAndBound(int doStatistics)
 	  while (!finished) {
 	    pthread_mutex_lock(&condition_mutex);
 	    struct timespec absTime;
-	    clock_gettime(CLOCK_REALTIME,&absTime);
+	    my_gettime(&absTime);
 	    double time = absTime.tv_sec+1.0e-9*absTime.tv_nsec;
 	    absTime.tv_nsec += 1000000; // millisecond
 	    if (absTime.tv_nsec>=1000000000) {
@@ -3412,7 +3429,7 @@ void CbcModel::branchAndBound(int doStatistics)
 	      absTime.tv_sec++;
 	    }
 	    pthread_cond_timedwait(&condition_main,&condition_mutex,&absTime);
-	    clock_gettime(CLOCK_REALTIME,&absTime);
+	    my_gettime(&absTime);
 	    double time2 = absTime.tv_sec+1.0e-9*absTime.tv_nsec;
 	    timeWaiting += time2-time;
 	    pthread_mutex_unlock(&condition_mutex);
@@ -3466,7 +3483,7 @@ void CbcModel::branchAndBound(int doStatistics)
 	  while (!finished) {
 	    pthread_mutex_lock(&condition_mutex);
 	    struct timespec absTime;
-	    clock_gettime(CLOCK_REALTIME,&absTime);
+	    my_gettime(&absTime);
 	    double time = absTime.tv_sec+1.0e-9*absTime.tv_nsec;
 	    absTime.tv_nsec += 1000000; // millisecond
 	    if (absTime.tv_nsec>=1000000000) {
@@ -3474,7 +3491,7 @@ void CbcModel::branchAndBound(int doStatistics)
 	      absTime.tv_sec++;
 	    }
 	    pthread_cond_timedwait(&condition_main,&condition_mutex,&absTime);
-	    clock_gettime(CLOCK_REALTIME,&absTime);
+	    my_gettime(&absTime);
 	    double time2 = absTime.tv_sec+1.0e-9*absTime.tv_nsec;
 	    timeWaiting += time2-time;
 	    pthread_mutex_unlock(&condition_mutex);
@@ -3490,7 +3507,7 @@ void CbcModel::branchAndBound(int doStatistics)
 	while (!finished) {
 	  pthread_mutex_lock(&condition_mutex);
 	  struct timespec absTime;
-	  clock_gettime(CLOCK_REALTIME,&absTime);
+	  my_gettime(&absTime);
 	  double time = absTime.tv_sec+1.0e-9*absTime.tv_nsec;
 	  absTime.tv_nsec += 1000000; // millisecond
 	  if (absTime.tv_nsec>=1000000000) {
@@ -3498,7 +3515,7 @@ void CbcModel::branchAndBound(int doStatistics)
 	    absTime.tv_sec++;
 	  }
 	  pthread_cond_timedwait(&condition_main,&condition_mutex,&absTime);
-	  clock_gettime(CLOCK_REALTIME,&absTime);
+	  my_gettime(&absTime);
 	  double time2 = absTime.tv_sec+1.0e-9*absTime.tv_nsec;
 	  timeWaiting += time2-time;
 	  pthread_mutex_unlock(&condition_mutex);
@@ -3591,14 +3608,14 @@ void CbcModel::branchAndBound(int doStatistics)
 	pthread_cond_signal(threadInfo[i].condition2); // unlock
 	pthread_mutex_lock(&condition_mutex);
 	struct timespec absTime;
-	clock_gettime(CLOCK_REALTIME,&absTime);
+	my_gettime(&absTime);
 	absTime.tv_nsec += 1000000; // millisecond
 	if (absTime.tv_nsec>=1000000000) {
 	  absTime.tv_nsec -= 1000000000;
 	  absTime.tv_sec++;
 	}
 	pthread_cond_timedwait(&condition_main,&condition_mutex,&absTime);
-	clock_gettime(CLOCK_REALTIME,&absTime);
+	my_gettime(&absTime);
 	pthread_mutex_unlock(&condition_mutex);
       }
       pthread_cond_signal(threadInfo[i].condition2); // unlock
@@ -7101,7 +7118,7 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
 	    while (!finished) {
 	      pthread_mutex_lock(&condition_mutex);
 	      struct timespec absTime;
-	      clock_gettime(CLOCK_REALTIME,&absTime);
+	      my_gettime(&absTime);
 	      absTime.tv_nsec += 1000000; // millisecond
 	      if (absTime.tv_nsec>=1000000000) {
 		absTime.tv_nsec -= 1000000000;
@@ -7135,7 +7152,7 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
 	    while (!finished) {
 	      pthread_mutex_lock(&condition_mutex);
 	      struct timespec absTime;
-	      clock_gettime(CLOCK_REALTIME,&absTime);
+	      my_gettime(&absTime);
 	      absTime.tv_nsec += 1000000; // millisecond
 	      if (absTime.tv_nsec>=1000000000) {
 		absTime.tv_nsec -= 1000000000;
@@ -8205,14 +8222,14 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
 	pthread_cond_signal(threadInfo[i].condition2); // unlock
 	pthread_mutex_lock(&condition_mutex);
 	struct timespec absTime;
-	clock_gettime(CLOCK_REALTIME,&absTime);
+	my_gettime(&absTime);
 	absTime.tv_nsec += 1000000; // millisecond
 	if (absTime.tv_nsec>=1000000000) {
 	  absTime.tv_nsec -= 1000000000;
 	  absTime.tv_sec++;
 	}
 	pthread_cond_timedwait(&condition_main,&condition_mutex,&absTime);
-	clock_gettime(CLOCK_REALTIME,&absTime);
+	my_gettime(&absTime);
 	pthread_mutex_unlock(&condition_mutex);
       }
       threadModel[i]->numberThreads_=0; // say exit
@@ -14507,12 +14524,12 @@ static void * doNodesThread(void * voidInfo)
     pthread_mutex_lock (mutex);
     while (stuff->returnCode) {
       struct timespec absTime2;
-      clock_gettime(CLOCK_REALTIME,&absTime2);
+      my_gettime(&absTime2);
       double time2 = absTime2.tv_sec+1.0e-9*absTime2.tv_nsec;
       // timed wait as seems to hang on max nodes at times
       absTime2.tv_sec += 10;
       pthread_cond_timedwait(condition,mutex,&absTime2);
-      clock_gettime(CLOCK_REALTIME,&stuff->absTime);
+      my_gettime(&stuff->absTime);
       double time = stuff->absTime.tv_sec+1.0e-9*stuff->absTime.tv_nsec;
       stuff->timeWaitingToStart+=time-time2;;
       stuff->numberTimesWaitingToStart++;
@@ -14705,11 +14722,11 @@ CbcModel::lockThread()
   if (stuff) {
     if(!stuff->locked) {
       struct timespec absTime2;
-      clock_gettime(CLOCK_REALTIME,&absTime2);
+      my_gettime(&absTime2);
       double time2 = absTime2.tv_sec+1.0e-9*absTime2.tv_nsec;
       pthread_mutex_lock (stuff->mutex);
       stuff->locked=true;
-      clock_gettime(CLOCK_REALTIME,&stuff->absTime);
+      my_gettime(&stuff->absTime);
       double time = stuff->absTime.tv_sec+1.0e-9*stuff->absTime.tv_nsec;
       stuff->timeWaitingToLock+=time-time2;;
       stuff->numberTimesLocked++;
@@ -14781,7 +14798,7 @@ CbcModel::unlockThread()
       stuff->locked=false;
       pthread_mutex_unlock (stuff->mutex);
       struct timespec absTime2;
-      clock_gettime(CLOCK_REALTIME,&absTime2);
+      my_gettime(&absTime2);
       double time2 = absTime2.tv_sec+1.0e-9*absTime2.tv_nsec;
       double time = stuff->absTime.tv_sec+1.0e-9*stuff->absTime.tv_nsec;
       stuff->timeLocked+=time2-time;

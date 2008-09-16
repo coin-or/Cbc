@@ -7831,6 +7831,26 @@ int
                   n = saveSolver->getNumCols();
                   bestSolution = new double [n];
 		  OsiClpSolverInterface * clpSolver = dynamic_cast< OsiClpSolverInterface*> (babModel_->solver());
+		  // Save bounds on processed model
+		  const int * originalColumns = process.originalColumns();
+		  int numberColumns2 = clpSolver->getNumCols();
+		  double * solution2 = new double[n];
+		  double * lower2 = new double [n];
+		  double * upper2 = new double [n];
+		  for (int i=0;i<n;i++) {
+		    solution2[i]=COIN_DBL_MAX;
+		    lower2[i]=COIN_DBL_MAX;
+		    upper2[i]=-COIN_DBL_MAX;
+		  }
+		  const double *columnLower = clpSolver->getColLower() ;
+		  const double * columnUpper = clpSolver->getColUpper() ;
+		  const double * solution = babModel_->bestSolution();
+		  for (int i=0;i<numberColumns2;i++) {
+		    int jColumn = originalColumns[i];
+		    solution2[jColumn]=solution[i];
+		    lower2[jColumn]=columnLower[i];
+		    upper2[jColumn]=columnUpper[i];
+		  }
 		  ClpSimplex * lpSolver = clpSolver->getModelPtr();
 		  // Save bounds on processed model
 		  const int * originalColumns = process.originalColumns();

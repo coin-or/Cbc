@@ -165,10 +165,10 @@ am_libCbc_la_OBJECTS = Cbc_C_Interface.lo CbcBranchActual.lo \
 	CbcHeuristicDiveFractional.lo CbcHeuristicDiveGuided.lo \
 	CbcHeuristicDiveLineSearch.lo CbcHeuristicDivePseudoCost.lo \
 	CbcHeuristicDiveVectorLength.lo CbcHeuristicFPump.lo \
-	CbcHeuristicGreedy.lo CbcHeuristicLocal.lo CbcHeuristicPivotAndFix.lo \
-	CbcHeuristicRandRound.lo CbcHeuristicRINS.lo \
-	CbcMessage.lo CbcModel.lo CbcNode.lo CbcStatistics.lo \
-	CbcStrategy.lo CbcTree.lo CbcTreeLocal.lo
+	CbcHeuristicGreedy.lo CbcHeuristicLocal.lo \
+	CbcHeuristicPivotAndFix.lo CbcHeuristicRandRound.lo \
+	CbcHeuristicRINS.lo CbcMessage.lo CbcModel.lo CbcNode.lo \
+	CbcStatistics.lo CbcStrategy.lo CbcTree.lo CbcTreeLocal.lo
 libCbc_la_OBJECTS = $(am_libCbc_la_OBJECTS)
 libCbcSolver_la_LIBADD =
 am_libCbcSolver_la_OBJECTS = CbcCbcParam.lo Cbc_ampl.lo \
@@ -828,8 +828,8 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcHeuristicGreedy.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcHeuristicLocal.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcHeuristicPivotAndFix.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcHeuristicRandRound.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcHeuristicRINS.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcHeuristicRandRound.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcLinked.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcMessage.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcModel.Plo@am__quote@

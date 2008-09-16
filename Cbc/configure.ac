@@ -147,8 +147,9 @@ if test "$enable_cbc_parallel" = yes; then
   # Define the preprocessor macro
   AC_DEFINE([CBC_THREAD],[1],[Define to 1 if the SMP version of Cbc should be compiled])
   AC_CHECK_LIB([rt],[clock_gettime],
-               [ADDLIBS="-lrt $ADDLIBS"],
-	       [AC_MSG_ERROR([--enable-cbc-parallel selected, but -lrt unavailable])])
+               [ADDLIBS="-lrt $ADDLIBS"
+                AC_DEFINE([HAVE_CLOCK_GETTIME],[1],[Define if clock_gettime and rt library is available])],
+               [AC_MSG_WARN([--enable-cbc-parallel selected, but -lrt unavailable; using gettimeofday instead of clock_gettime])])
   AC_CHECK_LIB([pthread],[pthread_create],
                [ADDLIBS="-lpthread $ADDLIBS"],
 	       [AC_MSG_ERROR([--enable-cbc-parallel selected, but -lpthreads unavailable])])

@@ -330,7 +330,7 @@ void installCutGenerators (CbcGenCtlBlk *ctlBlk, CbcModel *model)
   case we'll drop down to a floor of .0001.
 */
   { double objFrac = fabs(model->getMinimizationObjValue())*.001+.0001 ;
-    double minDrop = min(.05,objFrac) ;
+    double minDrop = CoinMin(.05,objFrac) ;
     model->setMinimumDrop(minDrop) ; }
 /*
   Set the maximum number of rounds of cut generation at the root and at nodes

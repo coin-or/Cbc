@@ -339,10 +339,10 @@ CbcTreeLocal::top() const{
   for (int i=0;i<n;i++) {
     int nn=nodes_[i]->nodeInfo()->nodeNumber();
     double dd = nodes_[i]->objectiveValue();
-    largest=max(largest,nn);
-    smallest=min(smallest,nn);
-    largestD=max(largestD,dd);
-    smallestD=min(smallestD,dd);
+    largest=CoinMax(largest,nn);
+    smallest=CoinMin(smallest,nn);
+    largestD=CoinMax(largestD,dd);
+    smallestD=CoinMin(smallestD,dd);
   }
   if (model_->messageHandler()->logLevel()>0) {
     printf("smallest %d, largest %d, top %d\n",smallest,largest,
@@ -812,7 +812,7 @@ CbcTreeLocal::reverseCut(int state, double bias)
   double smallest=COIN_DBL_MAX;
   CoinPackedVector row = cut_.row();
   for (int k=0; k<row.getNumElements(); k++)
-    smallest = min(smallest,fabs(row.getElements()[k]));
+    smallest = CoinMin(smallest,fabs(row.getElements()[k]));
   if (!typeCuts_&&!refine_) {
     // Reverse cut very very weakly
     if (state>2)

@@ -2877,7 +2877,7 @@ OsiSolverLink::heuristicSolution(int numberPasses,double deltaTolerance,int mode
     clpModel->setLogLevel(saveLogLevel);
     clpModel->dual();  // clean up
     // compute some things using problem size
-    cbcModel->setMinimumDrop(min(5.0e-2,
+    cbcModel->setMinimumDrop(CoinMin(5.0e-2,
 				 fabs(cbcModel->getMinimizationObjValue())*1.0e-3+1.0e-4));
     if (cbcModel->getNumCols()<500)
       cbcModel->setMaximumCutPassesAtRoot(-100); // always do 100 if possible
@@ -3572,7 +3572,7 @@ OsiSolverLink::fathom(bool allFixed)
       clpModel->setLogLevel(saveLogLevel);
       clpModel->dual();  // clean up
       // compute some things using problem size
-      cbcModel->setMinimumDrop(min(5.0e-2,
+      cbcModel->setMinimumDrop(CoinMin(5.0e-2,
 				   fabs(cbcModel->getMinimizationObjValue())*1.0e-3+1.0e-4));
       if (cbcModel->getNumCols()<500)
 	cbcModel->setMaximumCutPassesAtRoot(-100); // always do 100 if possible

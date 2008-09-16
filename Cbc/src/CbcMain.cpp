@@ -820,7 +820,7 @@ int main (int argc, const char *argv[])
 	  std::cout<<"Commands are:"<<std::endl;
 	  for ( iParam=0; iParam<numberParameters; iParam+=4 ) {
 	    int i;
-	    for (i=iParam;i<min(numberParameters,iParam+4);i++) 
+	    for (i=iParam;i<CoinMin(numberParameters,iParam+4);i++) 
 	      std::cout<<parameters[i].matchName()<<"  ";
 	    std::cout<<std::endl;
 	  }
@@ -1275,7 +1275,7 @@ int main (int argc, const char *argv[])
                 generator->setTiming(true);
               }
               // Could tune more
-              model->setMinimumDrop(min(1.0,
+              model->setMinimumDrop(CoinMin(1.0,
                                         fabs(model->getMinimizationObjValue())*1.0e-3+1.0e-4));
               
               if (model->getNumCols()<500)

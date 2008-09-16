@@ -10347,7 +10347,7 @@ static void generateCode(CbcModel * model, const char * fileName,int type,int pr
   if (sizecode) {
     // override some settings
     strcpy(line[numberLines++],"5  // compute some things using problem size");
-    strcpy(line[numberLines++],"5  cbcModel->setMinimumDrop(min(5.0e-2,");
+    strcpy(line[numberLines++],"5  cbcModel->setMinimumDrop(CoinMin(5.0e-2,");
     strcpy(line[numberLines++],"5       fabs(cbcModel->getMinimizationObjValue())*1.0e-3+1.0e-4));");
     strcpy(line[numberLines++],"5  if (cbcModel->getNumCols()<500)");
     strcpy(line[numberLines++],"5    cbcModel->setMaximumCutPassesAtRoot(-100); // always do 100 if possible");

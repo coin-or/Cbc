@@ -146,7 +146,7 @@ CbcBranchUserDecision::bestBranch (CbcBranchingObject ** objects, int numberObje
     case 0:
       // could add in depth as well
       for ( i = 0 ; i < numberObjects ; i++) {
-	int thisNumber = min(numberInfeasibilitiesUp[i],numberInfeasibilitiesDown[i]);
+	int thisNumber = CoinMin(numberInfeasibilitiesUp[i],numberInfeasibilitiesDown[i]);
 	if (thisNumber<=bestNumber) {
 	  int betterWay=0;
 	  if (numberInfeasibilitiesUp[i]<numberInfeasibilitiesDown[i]) {
@@ -169,7 +169,7 @@ CbcBranchUserDecision::bestBranch (CbcBranchingObject ** objects, int numberObje
 	    if (numberInfeasibilitiesUp[i]<bestNumber) {
 	      better=true;
 	    } else if (numberInfeasibilitiesUp[i]==bestNumber) {
-	      if (min(changeUp[i],changeDown[i])<bestCriterion)
+	      if (CoinMin(changeUp[i],changeDown[i])<bestCriterion)
 		better=true;;
 	    }
 	    if (better) {
@@ -181,7 +181,7 @@ CbcBranchUserDecision::bestBranch (CbcBranchingObject ** objects, int numberObje
 	    }
 	  }
 	  if (betterWay) {
-	    bestCriterion = min(changeUp[i],changeDown[i]);
+	    bestCriterion = CoinMin(changeUp[i],changeDown[i]);
 	    bestNumber = thisNumber;
 	    whichObject = i;
 	    bestWay = betterWay;
@@ -200,7 +200,7 @@ CbcBranchUserDecision::bestBranch (CbcBranchingObject ** objects, int numberObje
 	    betterWay=-1;
 	}
 	if (betterWay) {
-	  bestCriterion = min(changeUp[i],changeDown[i]);
+	  bestCriterion = CoinMin(changeUp[i],changeDown[i]);
 	  whichObject = i;
 	  bestWay = betterWay;
 	}
@@ -208,7 +208,7 @@ CbcBranchUserDecision::bestBranch (CbcBranchingObject ** objects, int numberObje
       break;
     case 2:
       for ( i = 0 ; i < numberObjects ; i++) {
-	double change = min(changeUp[i],changeDown[i]);
+	double change = CoinMin(changeUp[i],changeDown[i]);
 	double sum = changeUp[i] + changeDown[i];
 	bool take=false;
 	if (change>1.1*bestCriterion) 
@@ -261,7 +261,7 @@ CbcBranchUserDecision::bestBranch (CbcBranchingObject ** objects, int numberObje
       // first get best number or when going down
       // now choose smallest change up amongst equal number infeas
       for ( i = 0 ; i < numberObjects ; i++) {
-	int thisNumber = min(numberInfeasibilitiesUp[i],numberInfeasibilitiesDown[i]);
+	int thisNumber = CoinMin(numberInfeasibilitiesUp[i],numberInfeasibilitiesDown[i]);
 	if (thisNumber<=bestNumber) {
 	  int betterWay=0;
 	  if (numberInfeasibilitiesUp[i]<numberInfeasibilitiesDown[i]) {
@@ -284,7 +284,7 @@ CbcBranchUserDecision::bestBranch (CbcBranchingObject ** objects, int numberObje
 	    if (numberInfeasibilitiesUp[i]<bestNumber) {
 	      better=true;
 	    } else if (numberInfeasibilitiesUp[i]==bestNumber) {
-	      if (min(changeUp[i],changeDown[i])<bestCriterion)
+	      if (CoinMin(changeUp[i],changeDown[i])<bestCriterion)
 		better=true;;
 	    }
 	    if (better) {
@@ -296,7 +296,7 @@ CbcBranchUserDecision::bestBranch (CbcBranchingObject ** objects, int numberObje
 	    }
 	  }
 	  if (betterWay) {
-	    bestCriterion = min(changeUp[i],changeDown[i]);
+	    bestCriterion = CoinMin(changeUp[i],changeDown[i]);
 	    bestNumber = thisNumber;
 	    whichObject = i;
 	    bestWay = betterWay;

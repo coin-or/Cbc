@@ -687,7 +687,7 @@ CbcHeuristicFPump::solution(double & solutionValue,
 	  double target=-1.0;
 	  double * randomX = new double [numberIntegers];
 	  for (i=0;i<numberIntegers;i++) 
-	    randomX[i] = max(0.0,randomNumberGenerator_.randomDouble()-0.3);
+	    randomX[i] = CoinMax(0.0,randomNumberGenerator_.randomDouble()-0.3);
 	  for (int k=0;k<10;k++) {
 #ifdef COIN_DEVELOP_x
 	    printf("kpass %d\n",k);
@@ -1877,9 +1877,9 @@ CbcHeuristicFPump::rounds(OsiSolverInterface * solver,double * solution,
     solver->getMatrixByCol()->times(solution,rowActivity) ;
     double largestInfeasibility =0.0;
     for (i=0 ; i < numberRows ; i++) {
-      largestInfeasibility = max(largestInfeasibility,
+      largestInfeasibility = CoinMax(largestInfeasibility,
 				 rowLower[i]-rowActivity[i]);
-      largestInfeasibility = max(largestInfeasibility,
+      largestInfeasibility = CoinMax(largestInfeasibility,
 				 rowActivity[i]-rowUpper[i]);
     }
     delete [] rowActivity;
@@ -1955,9 +1955,9 @@ CbcHeuristicFPump::rounds(OsiSolverInterface * solver,double * solution,
   solver->getMatrixByCol()->times(solution,rowActivity) ;
   double largestInfeasibility =0.0;
   for (i=0 ; i < numberRows ; i++) {
-    largestInfeasibility = max(largestInfeasibility,
+    largestInfeasibility = CoinMax(largestInfeasibility,
 			       rowLower[i]-rowActivity[i]);
-    largestInfeasibility = max(largestInfeasibility,
+    largestInfeasibility = CoinMax(largestInfeasibility,
 			       rowActivity[i]-rowUpper[i]);
   }
   delete [] rowActivity;

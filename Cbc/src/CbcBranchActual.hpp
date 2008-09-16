@@ -647,9 +647,9 @@ protected:
   double upDownSeparator_;
   /** Method - 
       0 - normal - return min (up,down)
-      1 - if before any solution return max(up,down)
-      2 - if before branched solution return max(up,down)
-      3 - always return max(up,down)
+      1 - if before any solution return CoinMax(up,down)
+      2 - if before branched solution return CoinMax(up,down)
+      3 - always return CoinMax(up,down)
   */
   int method_;
 };

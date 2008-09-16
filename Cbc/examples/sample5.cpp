@@ -243,7 +243,7 @@ int main (int argc, const char *argv[])
   model.initialSolve();
 
   // Could tune more
-  model.setMinimumDrop(min(1.0,
+  model.setMinimumDrop(CoinMin(1.0,
 			     fabs(model.getMinimizationObjValue())*1.0e-3+1.0e-4));
 
   if (model.getNumCols()<500)

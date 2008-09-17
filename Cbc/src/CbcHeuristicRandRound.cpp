@@ -10,12 +10,18 @@
 #include <cfloat>
 #include <vector>
 
+#include "CoinHelperFunctions.hpp"
 #include "OsiSolverInterface.hpp"
 #include "CbcModel.hpp"
 #include "CbcMessage.hpp"
 #include "CbcHeuristicRandRound.hpp"
 #include "OsiClpSolverInterface.hpp"
 #include  "CoinTime.hpp"
+
+static inline int intRand(const int range)
+{
+  return (int) floor(CoinDrand48() * range);
+}
 
 // Default Constructor
 CbcHeuristicRandRound::CbcHeuristicRandRound() 
@@ -187,7 +193,7 @@ CbcHeuristicRandRound::solution(double & solutionValue,
   for(int i=0; i<numRows; i++)
     {
       int temp = index[i];
-      int randNumTemp = i+(rand()%(numRows-i));
+      int randNumTemp = i+intRand(numRows-i);
       index[i]=index[randNumTemp];
       index[randNumTemp]=temp;
     }
@@ -200,8 +206,7 @@ CbcHeuristicRandRound::solution(double & solutionValue,
       // TODO: that 10,000 could be a param in the member data
       if(solutions.numberSolutions  > 10000)
 	break;
-      randNum = rand()%10 + 1;
-      randNum = (int) fmod(randNum, 2);
+      randNum = intRand(2);
       for(int j=0; j<numCols; j++)
 	{
 	  // for row i and column j vary the coefficient "a bit"
@@ -352,9 +357,8 @@ CbcHeuristicRandRound::solution(double & solutionValue,
     {
       numRandomPoints++;
       //generate the next random point
-      int randomIndex = rand()%numCornerPoints;
-      double random = rand();
-      random = random/RAND_MAX;
+      int randomIndex = intRand(numCornerPoints);
+      double random = CoinDrand48();
       for(int i=0; i<numCols; i++)
 	{
 	  rp[i] = (random * (cornerPoints[randomIndex][i] - rp[i])) + rp[i];

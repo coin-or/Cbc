@@ -3689,7 +3689,9 @@ int
     noPrinting=true;
 #if NEW_STYLE_SOLVER==0
   bool noPrinting_=noPrinting;
-#endif 
+#endif  
+  // Say no resolve after cuts
+  //model_.setResolveAfterTakeOffCuts(false);
   // see if log in list
   for (int i=1;i<argc;i++) {
     if (!strncmp(argv[i],"log",3)) {
@@ -7852,26 +7854,6 @@ int
 		    upper2[jColumn]=columnUpper[i];
 		  }
 		  ClpSimplex * lpSolver = clpSolver->getModelPtr();
-		  // Save bounds on processed model
-		  const int * originalColumns = process.originalColumns();
-		  int numberColumns2 = clpSolver->getNumCols();
-		  double * solution2 = new double[n];
-		  double * lower2 = new double [n];
-		  double * upper2 = new double [n];
-		  for (int i=0;i<n;i++) {
-		    solution2[i]=COIN_DBL_MAX;
-		    lower2[i]=COIN_DBL_MAX;
-		    upper2[i]=-COIN_DBL_MAX;
-		  }
-		  const double *columnLower = clpSolver->getColLower() ;
-		  const double * columnUpper = clpSolver->getColUpper() ;
-		  const double * solution = babModel_->bestSolution();
-		  for (int i=0;i<numberColumns2;i++) {
-		    int jColumn = originalColumns[i];
-		    solution2[jColumn]=solution[i];
-		    lower2[jColumn]=columnLower[i];
-		    upper2[jColumn]=columnUpper[i];
-		  }
 		  lpSolver->setSpecialOptions(lpSolver->specialOptions()|IN_BRANCH_AND_BOUND); // say is Cbc (and in branch and bound)
                   process.postProcess(*babModel_->solver());
                   // Solution now back in saveSolver
@@ -9607,6 +9589,7 @@ clp watson.mps -\nscaling off\nprimalsimplex"
 	      if (fp) {
 		if (printMode!=5) {
 		  // Write solution header (suggested by Luigi Poderico)
+		  lpSolver->computeObjectiveValue(false);
 		  double objValue = lpSolver->getObjValue()*lpSolver->getObjSense();
 		  int iStat = lpSolver->status();
 		  if (iStat==0) {

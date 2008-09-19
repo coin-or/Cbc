@@ -3993,7 +3993,6 @@ int
     bool strongChanged=false;
    
     double djFix=1.0e100;
-    double gapRatio=1.0e100;
     double tightenFactor=0.0;
     const char dirsep =  CoinFindDirSeparator();
     std::string directory;
@@ -4447,9 +4446,6 @@ int
 		    << generalPrint
 		    <<CoinMessageEol;
 		}
-		break;
-	      case GAPRATIO:
-		gapRatio=value;
 		break;
 	      case TIGHTENFACTOR:
 		tightenFactor=value;
@@ -6530,14 +6526,6 @@ int
 		  <<CoinMessageEol;
 	      }
               osiclp->setSpecialOptions(mipOptions);
-              if (gapRatio < 1.0e100) {
-                double value = babModel_->solver()->getObjValue() ;
-                double value2 = gapRatio*(1.0e-5+fabs(value)) ;
-                babModel_->setAllowableGap(value2) ;
-                std::cout << "Continuous " << value
-                          << ", so allowable gap set to "
-                          << value2 << std::endl ;
-              }
               // probably faster to use a basis to get integer solutions
               babModel_->setSpecialOptions(babModel_->specialOptions()|2);
               currentBranchModel = babModel_;

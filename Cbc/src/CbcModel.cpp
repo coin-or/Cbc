@@ -7779,25 +7779,27 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
     double * newSolution = new double [numberColumns] ;
     double heuristicValue = getCutoff() ;
     int found = -1; // no solution found
-    for (int i = 0;i<numberHeuristics_;i++) {
+    if (feasible) {
+      for (int i = 0;i<numberHeuristics_;i++) {
 #if MODEL3
-      // skip if can't run here
-      if (!heuristic_[i]->shouldHeurRun())
-	continue;
+	// skip if can't run here
+	if (!heuristic_[i]->shouldHeurRun())
+	  continue;
 #endif
-      // see if heuristic will do anything
-      double saveValue = heuristicValue ;
-      int ifSol = heuristic_[i]->solution(heuristicValue,
-                                          newSolution);
-      if (ifSol>0) {
-        // better solution found
-	heuristic_[i]->incrementNumberSolutionsFound();
-        found = i ;
-        incrementUsed(newSolution);
-	lastHeuristic_ = heuristic_[found];
-	setBestSolution(CBC_ROUNDING,heuristicValue,newSolution) ;
-      } else {
-        heuristicValue = saveValue ;
+	// see if heuristic will do anything
+	double saveValue = heuristicValue ;
+	int ifSol = heuristic_[i]->solution(heuristicValue,
+					    newSolution);
+	if (ifSol>0) {
+	  // better solution found
+	  heuristic_[i]->incrementNumberSolutionsFound();
+	  found = i ;
+	  incrementUsed(newSolution);
+	  lastHeuristic_ = heuristic_[found];
+	  setBestSolution(CBC_ROUNDING,heuristicValue,newSolution) ;
+	} else {
+	  heuristicValue = saveValue ;
+	}
       }
     }
     currentPassNumber_=savePass;

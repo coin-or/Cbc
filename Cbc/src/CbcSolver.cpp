@@ -4813,6 +4813,8 @@ int
               parameters_[whichParam(COMBINE,numberParameters_,parameters_)].setCurrentOption(action);
               //parameters_[whichParam(LOCALTREE,numberParameters_,parameters_)].setCurrentOption(action);
               parameters_[whichParam(FPUMP,numberParameters_,parameters_)].setCurrentOption(action);
+              parameters_[whichParam(DIVINGC,numberParameters_,parameters_)].setCurrentOption(action);
+              parameters_[whichParam(RINS,numberParameters_,parameters_)].setCurrentOption(action);
               break;
 	    case GREEDY:
 	    case DIVINGS:

@@ -803,7 +803,7 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver,int numberNodes,
 	  bool gotPump=false;
 	  for (int i=0;i<model.numberHeuristics();i++) {
 	    const CbcHeuristicFPump* pump =
-	      dynamic_cast<const CbcHeuristicFPump*>(model_->heuristic(i));
+	      dynamic_cast<const CbcHeuristicFPump*>(model.heuristic(i));
 	    if (pump) 
 	      gotPump=true;
 	  }

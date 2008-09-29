@@ -6036,85 +6036,87 @@ int CbcModel::addCuts (CbcNode *node, CoinWarmStartBasis *&lastws,bool canFix)
       lastws->resize(numberRowsNow,numberColumns);
 #ifdef NODE_LAST
       bool canMissStuff=false;
-      bool redoCuts=true;
-      if (CoinAbs(lastNumberCuts2_-numberToAdd)<5) {
-	int numberToCheck=CoinMin(lastNumberCuts2_,numberToAdd);
-	int i1=0;
-	int i2=0;
-	int nDiff=0;
-	int nSame=0;
-	if (lastNumberCuts2_==numberToAdd) {
-	  for (int i=0;i<numberToCheck;i++) {
-	    if (lastCut_[i1++]!=addCuts[i2++]) {
-	      nDiff++;
-	    } else {
-	      nSame++;
-	    }
-	  }
-	} else if (lastNumberCuts2_>numberToAdd) {
-	  int nDiff2 = lastNumberCuts2_-numberToAdd;
-	  for (int i=0;i<numberToCheck;i++) {
-	    if (lastCut_[i1]!=addCuts[i2]) {
-	      nDiff++;
-	      while (nDiff2) {
-		i1++;
-		nDiff2--;
-		if (lastCut_[i1]==addCuts[i2]) {
-		  nSame++;
-		  break;
-		} else {
-		  nDiff++;
-		}
+      if (numberThreads_<=0) {
+	bool redoCuts=true;
+	if (CoinAbs(lastNumberCuts2_-numberToAdd)<5) {
+	  int numberToCheck=CoinMin(lastNumberCuts2_,numberToAdd);
+	  int i1=0;
+	  int i2=0;
+	  int nDiff=0;
+	  int nSame=0;
+	  if (lastNumberCuts2_==numberToAdd) {
+	    for (int i=0;i<numberToCheck;i++) {
+	      if (lastCut_[i1++]!=addCuts[i2++]) {
+		nDiff++;
+	      } else {
+		nSame++;
 	      }
-	    } else {
-	      nSame++;
 	    }
-	  }
-	  nDiff += nDiff2;
-	} else {
-	  int nDiff2 = numberToAdd-lastNumberCuts2_;
-	  for (int i=0;i<numberToCheck;i++) {
-	    if (lastCut_[i1]!=addCuts[i2]) {
-	      nDiff++;
-	      while (nDiff2) {
-		i2++;
-		nDiff2--;
-		if (lastCut_[i1]==addCuts[i2]) {
-		  nSame++;
-		  break;
-		} else {
-		  nDiff++;
+	  } else if (lastNumberCuts2_>numberToAdd) {
+	    int nDiff2 = lastNumberCuts2_-numberToAdd;
+	    for (int i=0;i<numberToCheck;i++) {
+	      if (lastCut_[i1]!=addCuts[i2]) {
+		nDiff++;
+		while (nDiff2) {
+		  i1++;
+		  nDiff2--;
+		  if (lastCut_[i1]==addCuts[i2]) {
+		    nSame++;
+		    break;
+		  } else {
+		    nDiff++;
+		  }
 		}
+	      } else {
+		nSame++;
 	      }
-	    } else {
-	      nSame++;
 	    }
+	    nDiff += nDiff2;
+	  } else {
+	    int nDiff2 = numberToAdd-lastNumberCuts2_;
+	    for (int i=0;i<numberToCheck;i++) {
+	      if (lastCut_[i1]!=addCuts[i2]) {
+		nDiff++;
+		while (nDiff2) {
+		  i2++;
+		  nDiff2--;
+		  if (lastCut_[i1]==addCuts[i2]) {
+		    nSame++;
+		    break;
+		  } else {
+		    nDiff++;
+		  }
+		}
+	      } else {
+		nSame++;
+	      }
+	    }
+	    nDiff += nDiff2;
 	  }
-	  nDiff += nDiff2;
-	}
 #ifdef COIN_DEVELOP_z
-	printf("add now %d add last %d - same %d, diff %d %s\n",
-	     numberToAdd,lastNumberCuts2_,nSame,nDiff,
-	     !nDiff ? "YES" : "NO1");
+	  printf("add now %d add last %d - same %d, diff %d %s\n",
+		 numberToAdd,lastNumberCuts2_,nSame,nDiff,
+		 !nDiff ? "YES" : "NO1");
 #endif
-	canMissStuff=!nDiff&&sameProblem;
-	// But only if number of rows looks OK
-	if (numberRowsAtContinuous_+numberToAdd!=solver_->getNumRows())
-	  canMissStuff=false;
-      } else {
-	//printf("add now %d add last %d NO2\n",numberToAdd,lastNumberCuts2_);
-      }
-      assert (lastws->fullBasis()&&
-	      numberRowsAtContinuous_+numberToAdd==numberRowsNow);
-      if (redoCuts) {
-	if (numberToAdd>maximumCuts_) {
-	  delete [] lastCut_;
-	  maximumCuts_ = 2*numberToAdd+10;
-	  lastCut_=new const OsiRowCut * [maximumCuts_];
+	  canMissStuff=!nDiff&&sameProblem;
+	  // But only if number of rows looks OK
+	  if (numberRowsAtContinuous_+numberToAdd!=solver_->getNumRows())
+	    canMissStuff=false;
+	} else {
+	  //printf("add now %d add last %d NO2\n",numberToAdd,lastNumberCuts2_);
 	}
-	lastNumberCuts2_=numberToAdd;
-	for (int i=0;i<numberToAdd;i++) 
-	  lastCut_[i]=addCuts[i];
+	assert (lastws->fullBasis()&&
+		numberRowsAtContinuous_+numberToAdd==numberRowsNow);
+	if (redoCuts) {
+	  if (numberToAdd>maximumCuts_) {
+	    delete [] lastCut_;
+	    maximumCuts_ = 2*numberToAdd+10;
+	    lastCut_=new const OsiRowCut * [maximumCuts_];
+	  }
+	  lastNumberCuts2_=numberToAdd;
+	  for (int i=0;i<numberToAdd;i++) 
+	    lastCut_[i]=addCuts[i];
+	}
       }
 #else
       //solver_->applyRowCuts(numberToAdd,addCuts);

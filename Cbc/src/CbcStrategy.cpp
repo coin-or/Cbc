@@ -136,7 +136,7 @@ CbcStrategyDefault::setupCutGenerators(CbcModel & model)
   // Set up some cut generators and defaults
   // Probing first as gets tight bounds on continuous
   int genFlags=63;
-  //#define CBC_GENERATE_TEST
+  //#define CBC_GENERATE_TEST  
 #ifdef CBC_GENERATE_TEST
   int nNodes = model.getMaximumNodes();
   if (nNodes>=190000&&nNodes<190064)

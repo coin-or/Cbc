@@ -327,7 +327,10 @@ public:
 
       returns 1 feasible, 0 infeasible, -1 feasible but skip cuts
     */
-    int resolve(CbcNodeInfo * parent, int whereFrom);
+  int resolve(CbcNodeInfo * parent, int whereFrom,
+	      double * saveSolution=NULL,
+	      double * saveLower=NULL,
+	      double * saveUpper=NULL);
     /// Make given rows (L or G) into global cuts and remove from lp
     void makeGlobalCuts(int numberRows,const int * which); 
     /// Make given cut into a global cut
@@ -1633,7 +1636,7 @@ public:
   /** Encapsulates choosing a variable -
       anyAction -2, infeasible (-1 round again), 0 done
   */
-  int chooseBranch(CbcNode * newNode, int numberPassesLeft,
+  int chooseBranch(CbcNode * & newNode, int numberPassesLeft,
 		   CbcNode * oldNode, OsiCuts & cuts,
 		   bool & resolved, CoinWarmStartBasis *lastws,
 		   const double * lowerBefore,const double * upperBefore,
@@ -1964,6 +1967,7 @@ private:
     allocated size.
   */
   CbcNodeInfo ** walkback_;
+  //#define CBC_DETERMINISTIC_THREAD
 #ifndef CBC_DETERMINISTIC_THREAD
 #define NODE_LAST
 #endif

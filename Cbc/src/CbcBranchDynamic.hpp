@@ -222,6 +222,9 @@ public:
   /// Set number of times before trusted
   inline void setNumberBeforeTrust(int value)
   { numberBeforeTrust_=value;}
+  /// Increment number of times before trusted
+  inline void incrementNumberBeforeTrust()
+  { numberBeforeTrust_++;}
 
   /// Return "up" estimate
   virtual double upEstimate() const;

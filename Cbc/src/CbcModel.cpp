@@ -1691,9 +1691,10 @@ void CbcModel::branchAndBound(int doStatistics)
   if (eventHappened_)
     feasible=false;
   if(fastNodeDepth_>=0&&!parentModel_) {
-    // add in a general depth object
+    // add in a general depth object doClp
+    int type = (fastNodeDepth_ <=100) ? fastNodeDepth_ : -(fastNodeDepth_-100);
     CbcObject * obj = 
-      new CbcGeneralDepth(this,fastNodeDepth_);
+      new CbcGeneralDepth(this,type);
     addObjects(1,&obj);
     // mark as done
     fastNodeDepth_ += 1000000;
@@ -3565,7 +3566,7 @@ void CbcModel::branchAndBound(int doStatistics)
 	    defaultParallelNodes = newNumber;
 	  }
 	}
-	printf("Tree sizes %d %d %d - affected %d\n",saveTreeSize,saveTreeSize2,tree_->size(),nAffected);
+	//printf("Tree sizes %d %d %d - affected %d\n",saveTreeSize,saveTreeSize2,tree_->size(),nAffected);
 	// later remember random may not be thread neutral
 #endif
 #endif
@@ -5813,6 +5814,7 @@ bool CbcModel::addCuts1 (CbcNode * node, CoinWarmStartBasis *&lastws)
     walkback_[nNode]->applyToModel(this,lastws,
 				   addedCuts_,currentNumberCuts);
   }
+#ifndef NDEBUG
   if (!lastws->fullBasis()) {
 #ifdef COIN_DEVELOP
     printf("******* bad basis\n");
@@ -5868,6 +5870,7 @@ bool CbcModel::addCuts1 (CbcNode * node, CoinWarmStartBasis *&lastws)
     }
 #endif
   }
+#endif
   if (0) {
     int numberDebugValues=18;
     double * debugValues = new double[numberDebugValues];
@@ -6031,6 +6034,7 @@ int CbcModel::addCuts (CbcNode *node, CoinWarmStartBasis *&lastws,bool canFix)
 	  cutsToDrop[numberToDrop++] = numberRowsAtContinuous_+i ;
 	}
       }
+      assert (lastws->fullBasis());
       int numberRowsNow=numberRowsAtContinuous_+numberToAdd;
       lastws->compressRows(numberToDrop,cutsToDrop) ;
       lastws->resize(numberRowsNow,numberColumns);
@@ -6118,8 +6122,6 @@ int CbcModel::addCuts (CbcNode *node, CoinWarmStartBasis *&lastws,bool canFix)
 	    lastCut_[i]=addCuts[i];
 	}
       }
-#else
-      //solver_->applyRowCuts(numberToAdd,addCuts);
 #endif
 #ifdef NODE_LAST
       if (!canMissStuff) {
@@ -6148,7 +6150,7 @@ int CbcModel::addCuts (CbcNode *node, CoinWarmStartBasis *&lastws,bool canFix)
 #ifdef NODE_LAST
       } else {
 #ifdef COIN_HAS_CLP
-#ifdef COIN_DEVELOP
+#if 0 //def COIN_DEVELOP
 	OsiClpSolverInterface * clpSolver 
 	  = dynamic_cast<OsiClpSolverInterface *> (solver_);
 	if (clpSolver) {
@@ -8523,7 +8525,10 @@ CbcModel::takeOffCuts (OsiCuts &newCuts,
 }
 
 int
-CbcModel::resolve(CbcNodeInfo * parent, int whereFrom)
+CbcModel::resolve(CbcNodeInfo * parent, int whereFrom,
+		  double * saveSolution,
+		  double * saveLower,
+		  double * saveUpper)
 {
   // We may have deliberately added in violated cuts - check to avoid message
   int iRow;
@@ -8621,6 +8626,22 @@ CbcModel::resolve(CbcNodeInfo * parent, int whereFrom)
 	numberIterations_ += solver_->getIterationCount() ;
 	feasible = (solver_->isProvenOptimal() &&
 		    !solver_->isDualObjectiveLimitReached()) ;
+	if (feasible) {
+	  // double check
+	  double testValue = solver_->getObjSense() *
+	    solver_->getObjValue();
+	  //double cutoff = getCutoff();
+	  if (bestObjective_-getCutoffIncrement()<testValue) {
+#if 1 //def CLP_INVESTIGATE
+	    double value ;
+	    solver_->getDblParam(OsiDualObjectiveLimit,value) ;
+	    printf("Should cutoff as obj %.18g, best %.18g, inc %.18g - solver cutoff %.18g model cutoff %.18g\n",
+		   testValue,bestObjective_,getCutoffIncrement(),
+		   value,getCutoff());
+#endif
+	    feasible=false;
+	  }
+	}
 #ifdef COIN_HAS_CLP
 	OsiClpSolverInterface * clpSolver 
 	  = dynamic_cast<OsiClpSolverInterface *> (solver_);
@@ -8820,6 +8841,16 @@ CbcModel::resolve(CbcNodeInfo * parent, int whereFrom)
   }
 
   setPointers(solver_);
+  if (feasible&&saveSolution) {
+    // called from CbcNode
+    assert (saveLower);
+    assert (saveUpper);
+    int numberColumns = solver_->getNumCols();
+    memcpy(saveSolution,solver_->getColSolution(),numberColumns*sizeof(double));
+    reserveCurrentSolution(saveSolution);
+    memcpy(saveLower,solver_->getColLower(),numberColumns*sizeof(double));
+    memcpy(saveUpper,solver_->getColUpper(),numberColumns*sizeof(double));
+  }
   int returnStatus = feasible ? 1 : 0;
   if (strategy_) {
     // user can play clever tricks here
@@ -10356,6 +10387,8 @@ CbcModel::setBestSolution (CBC_Message how,
 #endif
 	saveObjectiveValue = CoinMax(saveObjectiveValue,bestObjective_-0.0000001*fabs(bestObjective_));
 	cutoff = CoinMin(bestObjective_,saveObjectiveValue)-1.0e-5;
+	if (fabs(cutoff+1.0e-5-floor(cutoff+0.5))<1.0e-8)
+	  cutoff -= 2.0e-5;
       }
       // This is not correct - that way cutoff can go up if maximization
       //double direction = solver_->getObjSense();
@@ -12244,7 +12277,7 @@ CbcModel::getCurrentSeconds() const {
    anyAction -2, infeasible (-1 round again), 0 done
 */
 int 
-CbcModel::chooseBranch(CbcNode * newNode, int numberPassesLeft, 
+CbcModel::chooseBranch(CbcNode * &newNode, int numberPassesLeft, 
 		       CbcNode * oldNode, OsiCuts & cuts,
 		       bool & resolved, CoinWarmStartBasis *lastws,
 		       const double * lowerBefore,const double * upperBefore,
@@ -12303,8 +12336,18 @@ CbcModel::chooseBranch(CbcNode * newNode, int numberPassesLeft,
     //branchingState=1;
     if (!branchingMethod_||!branchingMethod_->chooseMethod()) {
 #ifdef COIN_HAS_CLP
-      if (oldNode&&fastNodeDepth_>=0&&oldNode->depth()>=4&&!parentModel_
-	  &&(oldNode->depth()%2)==0) {
+      bool doClp = oldNode&&(oldNode->depth()%2)==1;
+      if (!doCutsNow(1))
+	doClp=true;
+      doClp = true;
+      int testDepth=10;
+      // Don't do if many iterations per node
+      int totalNodes = numberNodes_+numberExtraNodes_;
+      int totalIterations = numberIterations_ + numberExtraIterations_;
+      if (totalNodes*40<totalIterations)
+	doClp=false;
+      if (oldNode&&fastNodeDepth_>=0&&oldNode->depth()>=testDepth&&!parentModel_
+	  &&doClp&&!cuts.sizeRowCuts()) {
 	OsiClpSolverInterface * clpSolver 
 	  = dynamic_cast<OsiClpSolverInterface *> (solver_);
 	if (clpSolver) {
@@ -12443,8 +12486,77 @@ CbcModel::chooseBranch(CbcNode * newNode, int numberPassesLeft,
       }
 #	      endif
     }
-    newNode->createInfo(this,oldNode,lastws,lowerBefore,upperBefore,
-			  numberOldActiveCuts_,numberNewCuts_) ;
+    {
+      OsiBranchingObject * branchingObject = 
+	newNode->modifiableBranchingObject();
+      CbcGeneralBranchingObject * generalBranch = 
+	dynamic_cast <CbcGeneralBranchingObject *> (branchingObject);
+      if (generalBranch&&false) {
+	int numberProblems = generalBranch->numberSubProblems();
+	for (int i=0;i<numberProblems;i++) {
+	  double objectiveValue;
+	  double sumInfeasibilities;
+	  int numberUnsatisfied;
+	  generalBranch->state(objectiveValue,sumInfeasibilities,
+			       numberUnsatisfied,i);
+	  printf("node %d obj %g sumI %g numI %i rel depth %d\n",
+		 i,objectiveValue,sumInfeasibilities,numberUnsatisfied,
+		 generalBranch->subProblem(i)->depth_);
+	}
+      }
+      if (generalBranch) {
+	int numberProblems = generalBranch->numberSubProblems();
+	newNode->setBranchingObject(NULL);
+	CbcNode * newNode2=NULL;
+	assert (numberProblems);
+	int nProbMinus1 = numberProblems-1;
+	for (int i = 0;i < currentNumberCuts_;i++) {
+	  if (addedCuts_[i])
+	    addedCuts_[i]->increment(nProbMinus1) ;
+	}
+	for (int i=0;i<numberProblems;i++) {
+	  double objectiveValue;
+	  double sumInfeasibilities;
+	  int numberUnsatisfied;
+	  generalBranch->state(objectiveValue,sumInfeasibilities,
+			       numberUnsatisfied,i);
+	  //printf("node %d obj %g sumI %g numI %i rel depth %d\n",
+	  // i,objectiveValue,sumInfeasibilities,numberUnsatisfied,
+	  // generalBranch->subProblem(i)->depth_);
+	  newNode2 = new CbcNode();
+	  newNode2->setDepth(generalBranch->subProblem(i)->depth_+currentDepth_);
+	  generalBranch->subProblem(i)->apply(solver_,8); // basis
+	  newNode2->setNumberUnsatisfied(numberUnsatisfied);
+	  newNode2->setSumInfeasibilities(sumInfeasibilities);
+	  newNode2->setGuessedObjectiveValue(objectiveValue);
+	  newNode2->setObjectiveValue(objectiveValue);
+	  CbcOneGeneralBranchingObject * object = 
+	    new CbcOneGeneralBranchingObject(this,generalBranch,i);
+	  newNode2->setBranchingObject(object);
+	  newNode2->createInfo(this,oldNode,lastws,
+			       lowerBefore,upperBefore,
+			       numberOldActiveCuts_,numberNewCuts_) ;
+	  newNode2->nodeInfo()->setNumberBranchesLeft(1);
+	  //newNode2->nodeInfo()->unsetParentBasedData();
+	  if (i<nProbMinus1) {
+	    //OsiBranchingObject * object = oldNode->modifiableBranchingObject();
+	    CbcNodeInfo * nodeInfo = oldNode->nodeInfo();
+	    //object->incrementNumberBranchesLeft();
+	    nodeInfo->incrementNumberPointingToThis();
+	    newNode2->nodeInfo()->setNodeNumber(numberNodes2_);
+	    //newNode2->nodeInfo()->setNumberBranchesLeft(1);
+	    newNode2->initializeInfo();
+	    numberNodes2_++;
+	    tree_->push(newNode2);
+	  }
+	}
+	delete newNode;
+	newNode = newNode2;
+      } else {
+	newNode->createInfo(this,oldNode,lastws,lowerBefore,upperBefore,
+			    numberOldActiveCuts_,numberNewCuts_) ;
+      }
+    }
     if (newNode->numberUnsatisfied()) {
       maximumDepthActual_ = CoinMax(maximumDepthActual_,newNode->depth());
       // Number of branches is in oldNode!
@@ -13400,6 +13512,8 @@ CbcModel::doOneNode(CbcModel * baseModel, CbcNode * & node, CbcNode * & newNode)
 				numberDownInfeasible,
 				numberUpInfeasible,numberIntegers_);
 	  info->presolveType_=1;
+	  // for reduced costs and duals
+	  info->solverOptions_ |= 7;
 	  delete [] down;
 	  delete [] up;
 	  delete [] numberDown;
@@ -13852,6 +13966,7 @@ CbcModel::doOneNode(CbcModel * baseModel, CbcNode * & node, CbcNode * & newNode)
     }
 #endif
 #endif
+    if (newNode)
       if (newNode&&newNode->active()) {
 	if (newNode->branchingObject() == NULL&&solverCharacteristics_->solverType()==4) {
 	  // need to check if any cuts would do anything
@@ -14078,6 +14193,7 @@ CbcModel::doOneNode(CbcModel * baseModel, CbcNode * & node, CbcNode * & newNode)
     I'm thinking this is redundant --- the call to addCuts that conditions entry
     to this code block also performs this action.
   */
+#if 1
   int numberToDelete = getNumRows()-numberRowsAtContinuous_ ;
   if (numberToDelete) {
     int * delRows = new int[numberToDelete] ;
@@ -14087,6 +14203,7 @@ CbcModel::doOneNode(CbcModel * baseModel, CbcNode * & node, CbcNode * & newNode)
     solver_->deleteRows(numberToDelete,delRows) ;
     delete [] delRows ;
   }
+#endif
   delete lastws ;
   delete [] lowerBefore ;
   delete [] upperBefore ;

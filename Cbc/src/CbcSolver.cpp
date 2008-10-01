@@ -3691,7 +3691,7 @@ int
   bool noPrinting_=noPrinting;
 #endif  
   // Say no resolve after cuts
-  //model_.setResolveAfterTakeOffCuts(false);
+  model_.setResolveAfterTakeOffCuts(false);
   // see if log in list
   for (int i=1;i<argc;i++) {
     if (!strncmp(argv[i],"log",3)) {
@@ -4128,7 +4128,6 @@ int
 #define MORE_CUTS
 #ifdef MORE_CUTS
       gomoryGen.setAwayAtRoot(0.005);
-      //gomoryGen.setAway(0.01);
 #else
       gomoryGen.setAwayAtRoot(0.01);
 #endif
@@ -4527,7 +4526,7 @@ int
 		      <<CoinMessageEol;
 		  }
 		  // try changing tolerance at root
-		  gomoryGen.setAwayAtRoot(0.01);
+		  //gomoryGen.setAwayAtRoot(0.01);
 		  int iParam;
 		  iParam = whichParam(DIVEOPT,numberParameters_,parameters_);
 		  parameters_[iParam].setIntValue(3);
@@ -6370,9 +6369,26 @@ int
 		  gomoryAction=4;
 		  gomoryGen.setLimitAtRoot(numberColumns);
 		  gomoryGen.setLimit(numberColumns);
+		} else if (gomoryAction==6) {
+		  gomoryAction=3;
+		  gomoryGen.setLimitAtRoot(numberColumns);
+		  gomoryGen.setLimit(200);
 		} else if (numberColumns>5000) {
+		  //#define MORE_CUTS2
+#ifdef MORE_CUTS2
+		  // try larger limit
+		  gomoryGen.setLimitAtRoot(numberColumns);
+		  gomoryGen.setLimit(200);
+#else
 		  gomoryGen.setLimitAtRoot(2000);
 		  //gomoryGen.setLimit(200);
+#endif
+		} else {
+#ifdef MORE_CUTS2
+		  // try larger limit
+		  gomoryGen.setLimitAtRoot(numberColumns);
+		  gomoryGen.setLimit(200);
+#endif
 		}
                 babModel_->addCutGenerator(&gomoryGen,translate[gomoryAction],"Gomory");
                 switches[numberGenerators++]=0;
@@ -7573,28 +7589,23 @@ int
 		  if (lpSolver->numberColumns()<200&&lpSolver->numberRows()<40) 
 		    babModel_->setFastNodeDepth(-9);
 		}
-		if (bothFlags>=1) {
 #ifdef CLP_MULTIPLE_FACTORIZATIONS   
-		  int goDense=40;
-		  //double size=lpSolver->numberColumns()*lpSolver->numberRows();
-		  //if (lpSolver->getNumElements()>0.5*size&&
-		  //  lpSolver->numberRows()<150)
-		  //goDense=lpSolver->numberRows()+5;
-		  lpSolver->factorization()->setGoDenseThreshold(goDense);
-		  if (lpSolver->numberRows()<=goDense) 
-		    lpSolver->factorization()->goDense();
-#endif
-		}
 		int denseCode = parameters_[whichParam(DENSE,numberParameters_,parameters_)].intValue();
-		osiclp = dynamic_cast< OsiClpSolverInterface*> (babModel_->solver());
-		lpSolver = osiclp->getModelPtr();
-#ifdef CLP_MULTIPLE_FACTORIZATIONS    
+		int smallCode = parameters_[whichParam(SMALLFACT,numberParameters_,parameters_)].intValue();
+		if (bothFlags>=1) {
+		  if (denseCode<0)
+		    denseCode=40;
+		  if (smallCode<0)
+		    smallCode=40;
+		}
 		if (denseCode>0)
 		  lpSolver->factorization()->setGoDenseThreshold(denseCode);
+		if (smallCode>0)
+		  lpSolver->factorization()->setGoSmallThreshold(smallCode);
+		//if (denseCode>=lpSolver->numberRows()) {
+		//lpSolver->factorization()->goDense();
+		//}
 #endif
-		if (denseCode>=lpSolver->numberRows()) {
-		  lpSolver->factorization()->goDense();
-		}
 #ifdef CLIQUE_ANALYSIS
 		if (!storedAmpl.sizeRowCuts()) {
 		  printf("looking at probing\n");
@@ -7722,7 +7733,7 @@ int
 		   says -miplib
 		*/
 		int extra1 = parameters_[whichParam(EXTRA1,numberParameters_,parameters_)].intValue();
-		double stuff[10];
+		double stuff[11];
 		stuff[0]=parameters_[whichParam(DEXTRA1,numberParameters_,parameters_)].doubleValue();
 		stuff[1]=parameters_[whichParam(DEXTRA2,numberParameters_,parameters_)].doubleValue();
 		stuff[2]=parameters_[whichParam(DEXTRA3,numberParameters_,parameters_)].doubleValue();
@@ -7734,6 +7745,7 @@ int
 		stuff[8]=parameters_[whichParam(EXPERIMENT,numberParameters_,parameters_)].intValue();
 		stuff[8]=bothFlags;
 		stuff[9]=doVector;
+		stuff[10] = parameters_[whichParam(SMALLFACT,numberParameters_,parameters_)].intValue();
 		int returnCode=CbcClpUnitTest(model_, dirMiplib, extra1==1,stuff);
 		babModel_=NULL;
 		return returnCode;

@@ -131,6 +131,8 @@ int CbcClpUnitTest (const CbcModel & saveModel, std::string& dirMiplib,
     //PUSH_MPS("p2756",755,2756,3124,2688.75,7);
     //PUSH_MPS("seymour_1",4944,1372,410.7637014,404.35152,7);
     //PUSH_MPS("enigma",21,100,0.0,0.0,7);
+    //PUSH_MPS("misc03",96,160,3360,1910.,7);
+    //PUSH_MPS("p0201",133,201,7615,6875.0,7);
 #define HOWMANY 2
 #if HOWMANY
 #if HOWMANY>1
@@ -398,6 +400,24 @@ int CbcClpUnitTest (const CbcModel & saveModel, std::string& dirMiplib,
       model->solver()->getStrParam(OsiProbName,problemName) ;
       model->solver()->activateRowCutDebugger(problemName.c_str()) ;
     }
+    if (model->getNumCols()==-201) {
+      // p201
+      std::string problemName ;
+      model->solver()->getStrParam(OsiProbName,problemName) ;
+      model->solver()->activateRowCutDebugger(problemName.c_str()) ;
+    }
+    if (model->getNumCols()==-104) {
+      // bell5
+      std::string problemName ;
+      model->solver()->getStrParam(OsiProbName,problemName) ;
+      model->solver()->activateRowCutDebugger(problemName.c_str()) ;
+    }
+    if (model->getNumCols()==-548&&model->getNumRows()==176) {
+      // p0548
+      std::string problemName ;
+      model->solver()->getStrParam(OsiProbName,problemName) ;
+      model->solver()->activateRowCutDebugger(problemName.c_str()) ;
+    }
     if (model->getNumCols()==-160) {
       // misc03
       std::string problemName ;
@@ -447,6 +467,12 @@ int CbcClpUnitTest (const CbcModel & saveModel, std::string& dirMiplib,
       model->solver()->getStrParam(OsiProbName,problemName) ;
       model->solver()->activateRowCutDebugger(problemName.c_str()) ;
     }
+    if (model->getNumCols()==-240&&model->getNumRows()==136) {
+      // pp08a
+      std::string problemName ;
+      model->solver()->getStrParam(OsiProbName,problemName) ;
+      model->solver()->activateRowCutDebugger(problemName.c_str()) ;
+    }
     if (model->getNumCols()==-1372&&model->getNumRows()==4944) {
       // seymour1
       std::string problemName ;
@@ -454,22 +480,28 @@ int CbcClpUnitTest (const CbcModel & saveModel, std::string& dirMiplib,
       model->solver()->activateRowCutDebugger(problemName.c_str()) ;
     }
     setCutAndHeuristicOptions(*model);
+#ifdef CLP_MULTIPLE_FACTORIZATIONS   
+    int denseCode = stuff ? (int) stuff[4] : -1;
+    int smallCode = stuff ? (int) stuff[10] : -1;
     if (stuff&&stuff[8]>=1) {
-      if (modelC->numberColumns()+modelC->numberRows()<=500) 
-	model->setFastNodeDepth(-9);
-#ifdef CLP_MULTIPLE_FACTORIZATIONS    
-      modelC->factorization()->setGoDenseThreshold(40);
-      if (modelC->numberRows()<=40) 
-	modelC->factorization()->goDense();
-#endif
+      if (denseCode<0)
+	denseCode=40;
+      if (smallCode<0)
+	smallCode=40;
     }
-#ifdef CLP_MULTIPLE_FACTORIZATIONS    
-    if (stuff&&stuff[4]>0) 
-      modelC->factorization()->setGoDenseThreshold((int) stuff[4]);
-#endif
-    if (stuff&&stuff[4]>=modelC->numberRows()) {
+    if (denseCode>0)
+      modelC->factorization()->setGoDenseThreshold(denseCode);
+    if (smallCode>0)
+      modelC->factorization()->setGoSmallThreshold(smallCode);
+    if (denseCode>=modelC->numberRows()) {
       printf("problem going dense\n");
-      modelC->factorization()->goDense();
+      //modelC->factorization()->goDenseOrSmall(modelC->numberRows());
+    }
+#endif
+    if (stuff&&stuff[8]>=1) {
+      if (modelC->numberColumns()+modelC->numberRows()<=500&&
+	  model->fastNodeDepth()==-1) 
+	model->setFastNodeDepth(-9);
     }
     model->branchAndBound();
 #ifdef CLP_FACTORIZATION_INSTRUMENT

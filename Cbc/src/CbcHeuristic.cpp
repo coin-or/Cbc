@@ -275,14 +275,7 @@ CbcHeuristic::shouldHeurRun()
 
   const int depth = currentNode->depth();
 #else
-  int depth = 0;
-  const CbcNode* currentNode = model_->currentNode();
-  if (currentNode != NULL) {
-    depth = currentNode->depth();
-#ifdef PRINT_DEBUG
-    debugNodes();
-#endif
-  }
+  int depth = model_->currentDepth();
 #endif
 
   const int nodeCount = model_->getNodeCount();  // FIXME: check that this is
@@ -356,11 +349,7 @@ CbcHeuristic::shouldHeurRun_randomChoice()
 {
   if (!when_)
     return false;
-  int depth = 0;
-  const CbcNode* currentNode = model_->currentNode();
-  if (currentNode != NULL) {
-    depth = currentNode->depth();
-  }
+  int depth = model_->currentDepth();
   // when_ -999 is special marker to force to run
   if(depth != 0&&when_!=-999) {
     const double numerator = depth * depth;
@@ -1065,7 +1054,7 @@ CbcHeuristicNode::gutsOfConstructor(CbcModel& model)
     CbcBranchingObject* br=NULL; // What should this be?
     for (int i = 1; i < cnt; ++i) {
       if (compare3BranchingObjects(brObj_[numObjects_], brObj_[i]) == 0) {
-	int comp = brObj_[numObjects_]->compareBranchingObject(brObj_[i], &br);
+	int comp = brObj_[numObjects_]->compareBranchingObject(brObj_[i], br);
 	switch (comp) {
 	case CbcRangeSame: // the same range
 	case CbcRangeDisjoint: // disjoint decisions

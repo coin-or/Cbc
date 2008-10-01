@@ -1457,8 +1457,10 @@ CbcDynamicPseudoCostBranchingObject::fillStrongInfo( CbcStrongInfo & info)
     info.finishedDown = false;
     info.numItersDown = 0;
     info.fix =0;
-  if (object_->numberTimesUp()<object_->numberBeforeTrust()||
-      object_->numberTimesDown()<object_->numberBeforeTrust()) {
+  if (object_->numberTimesUp()<object_->numberBeforeTrust()+
+      object_->numberTimesUpInfeasible()||
+      object_->numberTimesDown()<object_->numberBeforeTrust()+
+      object_->numberTimesDownInfeasible()) {
     return 0;
   } else {
     return 1;

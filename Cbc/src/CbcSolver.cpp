@@ -488,7 +488,7 @@ void CbcSolver::fillParameters()
   // Set up likely cut generators and defaults
   parameters_[whichParam(PREPROCESS,numberParameters_,parameters_)].setCurrentOption("sos");
   parameters_[whichParam(MIPOPTIONS,numberParameters_,parameters_)].setIntValue(128|64|1);
-  parameters_[whichParam(MIPOPTIONS,numberParameters_,parameters_)].setIntValue(1);
+  parameters_[whichParam(MIPOPTIONS,numberParameters_,parameters_)].setIntValue(1025);
   parameters_[whichParam(CUTPASSINTREE,numberParameters_,parameters_)].setIntValue(1);
   parameters_[whichParam(MOREMIPOPTIONS,numberParameters_,parameters_)].setIntValue(-1);
   parameters_[whichParam(MAXHOTITS,numberParameters_,parameters_)].setIntValue(100);
@@ -3191,7 +3191,7 @@ void CbcMain0 (CbcModel  & model)
   // Set up likely cut generators and defaults
   parameters[whichParam(PREPROCESS,numberParameters,parameters)].setCurrentOption("sos");
   parameters[whichParam(MIPOPTIONS,numberParameters,parameters)].setIntValue(128|64|1);
-  parameters[whichParam(MIPOPTIONS,numberParameters,parameters)].setIntValue(1);
+  parameters[whichParam(MIPOPTIONS,numberParameters,parameters)].setIntValue(1025);
   parameters[whichParam(CUTPASSINTREE,numberParameters,parameters)].setIntValue(1);
   parameters[whichParam(MOREMIPOPTIONS,numberParameters,parameters)].setIntValue(-1);
   parameters[whichParam(MAXHOTITS,numberParameters,parameters)].setIntValue(100);
@@ -3662,6 +3662,8 @@ int
 #endif
   // Statistics
   double statistics_seconds=0.0, statistics_obj=0.0;
+  double statistics_sys_seconds=0.0, statistics_elapsed_seconds=0.0;
+  CoinWallclockTime();
   double statistics_continuous=0.0, statistics_tighter=0.0;
   double statistics_cut_time=0.0;
   int statistics_nodes=0, statistics_iterations=0;
@@ -5751,7 +5753,7 @@ int
 		    << generalPrint
 		    <<CoinMessageEol;
 		}
-		if (false) { 
+		if (model_.getMaximumNodes()==-987654321) { 
 		  // See if No objective!
 		  int numberColumns = clpSolver->getNumCols();
 		  const double * obj = clpSolver->getObjCoefficients();
@@ -5763,7 +5765,7 @@ int
 		      nObj++;
 		  }
 		  if (!nObj) {
-		    printf("No objective!!\n");
+		    printf("************No objective!!\n");
 		    model_.setMaximumSolutions(1);
 		    // Column copy
 		    CoinPackedMatrix  matrixByCol(*model_.solver()->getMatrixByCol());
@@ -5773,6 +5775,7 @@ int
 		    const int * columnLength = matrixByCol.getVectorLengths();
 		    for (int i=0;i<numberColumns;i++) {
 		      double value = (CoinDrand48()+0.5)*10000;
+		      value = 10;
 		      value *= columnLength[i];
 		      int iValue = ((int) value)/10;
 		      //iValue=1;
@@ -6506,7 +6509,7 @@ int
                     parameters_[whichParam(MAXHOTITS,numberParameters_,parameters_)].intValue());
               OsiClpSolverInterface * osiclp = dynamic_cast< OsiClpSolverInterface*> (babModel_->solver());
               // go faster stripes
-              if (osiclp->getNumRows()<300&&osiclp->getNumCols()<500) {
+              if ((osiclp->getNumRows()<300&&osiclp->getNumCols()<500)) {
                 osiclp->setupForRepeatedUse(2,parameters_[slog].intValue());
 		if (bothFlags>=1) {
 		  ClpSimplex * lp = osiclp->getModelPtr();
@@ -6537,7 +6540,7 @@ int
               // Turn this off if you get problems
               // Used to be automatically set
               int mipOptions = parameters_[whichParam(MIPOPTIONS,numberParameters_,parameters_)].intValue()%10000;
-              if (mipOptions!=(1)) {
+              if (mipOptions!=(1025)) {
                 sprintf(generalPrint,"mip options %d",mipOptions);
 		generalMessageHandler->message(CLP_GENERAL,generalMessages)
 		  << generalPrint
@@ -7600,7 +7603,7 @@ int
 		}
 		if (denseCode>0)
 		  lpSolver->factorization()->setGoDenseThreshold(denseCode);
-		if (smallCode>0)
+		if (smallCode>0&&smallCode>denseCode)
 		  lpSolver->factorization()->setGoSmallThreshold(smallCode);
 		//if (denseCode>=lpSolver->numberRows()) {
 		//lpSolver->factorization()->goDense();
@@ -8020,6 +8023,8 @@ int
                 int iStat = babModel_->status();
                 int iStat2 = babModel_->secondaryStatus();
 		statistics_seconds=time2-time1;
+		statistics_sys_seconds=CoinSysTime();
+		statistics_elapsed_seconds=CoinWallclockTime();
 		statistics_obj=babModel_->getObjValue();
 		statistics_continuous=babModel_->getContinuousObjective();
 		statistics_tighter=babModel_->rootObjectiveAfterCuts();
@@ -9517,7 +9522,7 @@ clp watson.mps -\nscaling off\nprimalsimplex"
 		// can open - lets go for it
 		// first header if needed
 		if (state!=2) {
-		  fprintf(fp,"Name,result,time,objective,continuous,tightened,cut_time,nodes,iterations,rows,columns,processed_rows,processed_columns");
+		  fprintf(fp,"Name,result,time,sys,elapsed,objective,continuous,tightened,cut_time,nodes,iterations,rows,columns,processed_rows,processed_columns");
 		  for (int i=0;i<statistics_number_generators;i++) 
 		    fprintf(fp,",%s",statistics_name_generators[i]);
 		  fprintf(fp,",runtime_options");
@@ -9529,8 +9534,10 @@ clp watson.mps -\nscaling off\nprimalsimplex"
 		  if (buffer[i]=='/'||buffer[i]=='\\')
 		    slash=buffer+i+1;
 		}
-		fprintf(fp,"%s,%s,%.2f,%.16g,%g,%g,%.2f,%d,%d,%d,%d,%d,%d",
-			slash,statistics_result.c_str(),statistics_seconds,statistics_obj,
+		fprintf(fp,"%s,%s,%.2f,%.2f,%.2f,%.16g,%g,%g,%.2f,%d,%d,%d,%d,%d,%d",
+			slash,statistics_result.c_str(),statistics_seconds,
+			statistics_sys_seconds,statistics_elapsed_seconds,
+			statistics_obj,
 			statistics_continuous,statistics_tighter,statistics_cut_time,statistics_nodes,
 			statistics_iterations,statistics_nrows,statistics_ncols,
 			statistics_nprocessedrows,statistics_nprocessedcols);

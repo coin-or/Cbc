@@ -7,6 +7,7 @@
 #include <cassert>
 
 #include "OsiRowCut.hpp"
+#include "CbcModel.hpp"
 #include "CbcCountRowCut.hpp"
 #include "CbcNode.hpp"
 //#define CHECK_CUT_COUNTS

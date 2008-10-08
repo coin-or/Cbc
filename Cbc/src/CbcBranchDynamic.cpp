@@ -712,7 +712,10 @@ CbcSimpleIntegerDynamicPseudoCost::infeasibility(int & preferredWay) const
 #define WEIGHT_AFTER 0.8
 #define WEIGHT_BEFORE 0.1
   if (fabs(value-nearest)<=integerTolerance) {
-    return 0.0;
+    if (priority_!=-999)
+      return 0.0;
+    else
+      return 1.0e-13;
   } else {
 #ifdef CBC_INSTRUMENT
     numberTimesInfeasible_++;
@@ -928,18 +931,25 @@ CbcSimpleIntegerDynamicPseudoCost::createBranch(OsiSolverInterface * solver, con
   value = CoinMax(value, info->lower_[columnNumber_]);
   value = CoinMin(value, info->upper_[columnNumber_]);
   assert (info->upper_[columnNumber_]>info->lower_[columnNumber_]);
-  if (!info->hotstartSolution_) {
+  if (!info->hotstartSolution_&&priority_!=-999) {
 #ifndef NDEBUG
     double nearest = floor(value+0.5);
     assert (fabs(value-nearest)>info->integerTolerance_);
 #endif
-  } else {
+  } else if (info->hotstartSolution_) {
     double targetValue = info->hotstartSolution_[columnNumber_];
     if (way>0)
       value = targetValue-0.1;
     else
       value = targetValue+0.1;
+  } else {
+    if (value<=info->lower_[columnNumber_])
+      value += 0.1;
+    else if (value>=info->upper_[columnNumber_])
+      value -= 0.1;
   }
+  assert (value>=info->lower_[columnNumber_]&&
+	  value<=info->upper_[columnNumber_]);
   CbcDynamicPseudoCostBranchingObject * newObject = 
     new CbcDynamicPseudoCostBranchingObject(model_,columnNumber_,way,
 					    value,this);

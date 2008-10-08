@@ -1489,6 +1489,7 @@ public:
       8 bit (256) - Set to say solution just found, unset by doing cuts
       9 bit (512) - Try reduced model after 100 nodes
       10 bit (1024) - Switch on some heuristics even if seems unlikely
+      11 bit (2048) - Mark as in small branch and bound
   */
   /// Set special options
   inline void setSpecialOptions(int value)
@@ -1737,6 +1738,8 @@ public:
       2 - just delete - don't even use
   */
   void doHeuristicsAtRoot(int deleteHeuristicsAfterwards=0);
+  /// Adjust heuristics based on model
+  void adjustHeuristics();
   /// Get the hotstart solution 
   inline const double * hotstartSolution() const
   { return hotstartSolution_;}

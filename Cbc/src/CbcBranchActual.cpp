@@ -1229,18 +1229,25 @@ CbcSimpleInteger::fillCreateBranch(CbcIntegerBranchingObject * branch, const Osi
   value = CoinMax(value, info->lower_[columnNumber_]);
   value = CoinMin(value, info->upper_[columnNumber_]);
   assert (info->upper_[columnNumber_]>info->lower_[columnNumber_]);
-  if (!info->hotstartSolution_) {
+  if (!info->hotstartSolution_&&priority_!=-999) {
 #ifndef NDEBUG
     double nearest = floor(value+0.5);
     assert (fabs(value-nearest)>info->integerTolerance_);
 #endif
-  } else {
+  } else if (info->hotstartSolution_) {
     double targetValue = info->hotstartSolution_[columnNumber_];
     if (way>0)
       value = targetValue-0.1;
     else
       value = targetValue+0.1;
+  } else {
+    if (value<=info->lower_[columnNumber_])
+      value += 0.1;
+    else if (value>=info->upper_[columnNumber_])
+      value -= 0.1;
   }
+  assert (value>=info->lower_[columnNumber_]&&
+	  value<=info->upper_[columnNumber_]);
   branch->fillPart(columnNumber_,way,value);
 }
 /* Column number if single column object -1 otherwise,

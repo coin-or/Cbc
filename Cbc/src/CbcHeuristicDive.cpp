@@ -450,9 +450,12 @@ CbcHeuristicDive::solution(double & solutionValue,
       break;
     }
     int originalBestRound = bestRound;
+    int saveModelOptions = model_->specialOptions();
     while (1) {
 
+      model_->setSpecialOptions(saveModelOptions|2048);
       solver->resolve();
+      model_->setSpecialOptions(saveModelOptions);
 
       if(!solver->isProvenOptimal()) {
 	if(numberAtBoundFixed > 0) {
@@ -515,6 +518,19 @@ CbcHeuristicDive::solution(double & solutionValue,
 #ifdef CLP_INVESTIGATE
       printf("switching off diving as too many iterations %d, %d allowed\n",
 	     numberSimplexIterations,maxSimplexIterations);
+#endif
+      when_=0;
+      break;
+    }
+
+    if (solver->getIterationCount()>1000&&iteration>3) {
+#ifdef DIVE_DEBUG
+      reasonToStop = 5;
+#endif
+      // also switch off
+#ifdef CLP_INVESTIGATE
+      printf("switching off diving one iteration took %d iterations (total %d)\n",
+	     solver->getIterationCount(),numberSimplexIterations);
 #endif
       when_=0;
       break;

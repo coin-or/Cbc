@@ -526,6 +526,9 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver,int numberNodes,
   int numberColumns = solver->getNumCols();
   char * reset = NULL;
   int returnCode=1;
+  int saveModelOptions = model_->specialOptions();
+  assert ((saveModelOptions&2048)==0);
+  model_->setSpecialOptions(saveModelOptions|2048);
   {
     int saveLogLevel = solver->messageHandler()->logLevel();
     if (saveLogLevel==1)
@@ -543,6 +546,7 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver,int numberNodes,
     OsiSolverInterface * presolvedModel = pinfo->presolvedModel(*solver,1.0e-8,true,2);
     delete pinfo;
     // see if too big
+    
     if (presolvedModel) {
       int afterRows = presolvedModel->getNumRows();
       int afterCols = presolvedModel->getNumCols();
@@ -604,12 +608,15 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver,int numberNodes,
 	      sprintf(generalPrint,"Full problem %d rows %d columns, reduced to %d rows %d columns - %d fixed gives %d, %d - still too large",
 		      solver->getNumRows(),solver->getNumCols(),
 		      afterRows,afterCols,nFix,afterRows2,afterCols2);
+	      // If much too big - give up
+	      if (after>0.75*before)
+		returnCode=-1;
 	    } else {
 	      sprintf(generalPrint,"Full problem %d rows %d columns, reduced to %d rows %d columns - %d fixed gives %d, %d - ok now",
 		      solver->getNumRows(),solver->getNumCols(),
 		      afterRows,afterCols,nFix,afterRows2,afterCols2);
 	    }
-	    model_->messageHandler()->message(CBC_FPUMP1,model_->messages())
+	    model_->messageHandler()->message(CBC_GENERAL,model_->messages())
 	      << generalPrint
 	      <<CoinMessageEol;
 	  } else {
@@ -622,7 +629,8 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver,int numberNodes,
     }
     solver->messageHandler()->setLogLevel(saveLogLevel);
   }
-  if (returnCode==2) {
+  if (returnCode==2||returnCode==-1) {
+    model_->setSpecialOptions(saveModelOptions);
     delete [] reset;
 #ifdef HISTORY_STATISTICS
     getHistoryStatistics_=true;
@@ -686,6 +694,7 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver,int numberNodes,
 	CbcModel model(*solver2);
 	if (numberNodes>=0) {
 	  // normal
+	  model_->setSpecialOptions(saveModelOptions|2048);
 	  if (logLevel<=1)
 	    model.setLogLevel(0);
 	  else
@@ -702,6 +711,7 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver,int numberNodes,
 	  model.setMaximumCutPassesAtRoot(CoinMin(20,CoinAbs(model_->getMaximumCutPassesAtRoot())));
 	  model.setMaximumCutPasses(CoinMin(10,model_->getMaximumCutPasses()));
 	} else {
+	  model_->setSpecialOptions(saveModelOptions);
 	  model_->messageHandler()->message(CBC_RESTART,model_->messages())
 	    <<solver2->getNumRows()<<solver2->getNumCols()
 	    <<CoinMessageEol;
@@ -774,7 +784,7 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver,int numberNodes,
 	    << model.getMaximumNodes()
 	    <<CoinMessageEol;
 	// probably faster to use a basis to get integer solutions
-	model.setSpecialOptions(2);
+	model.setSpecialOptions(model.specialOptions()|2);
 #ifdef CBC_THREAD
 	if (model_->getNumberThreads()>0&&(model_->getThreadMode()&1)!=0) {
 	  // See if at root node
@@ -962,6 +972,7 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver,int numberNodes,
   } else {
     returnCode=2; // infeasible finished
   }
+  model_->setSpecialOptions(saveModelOptions);
   model_->setLogLevel(logLevel);
   if (reset) {
     for (int iColumn=0;iColumn<numberColumns;iColumn++) {

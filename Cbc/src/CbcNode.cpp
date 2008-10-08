@@ -1074,7 +1074,6 @@ CbcNode::createInfo (CbcModel *model,
 	     currentNumberCuts,iFull,iFull-numberNewCuts);
     }
 #endif
-    assert (lastws->fullBasis());
 
 /*
   Now that we have two bases in proper positional correspondence, creating

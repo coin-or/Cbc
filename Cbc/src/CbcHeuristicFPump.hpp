@@ -207,5 +207,63 @@ private:
   */
 };
 
+# ifdef COIN_HAS_CLP
+  
+class CbcDisasterHandler : public OsiClpDisasterHandler {
+public:
+  /**@name Virtual methods that the derived classe should provide.
+  */
+  //@{
+#if 0
+  /// Into simplex
+  virtual void intoSimplex();
+  /// Checks if disaster
+  virtual bool check() const ;
+  /// saves information for next attempt
+  virtual void saveInfo();
+#endif
+  /// Type of disaster 0 can fix, 1 abort
+  virtual int typeOfDisaster();
+  //@}
+  
+  
+  /**@name Constructors, destructor */
+
+  //@{
+  /** Default constructor. */
+  CbcDisasterHandler(CbcModel * model = NULL);
+  /** Destructor */
+  virtual ~CbcDisasterHandler();
+  // Copy
+  CbcDisasterHandler(const CbcDisasterHandler&);
+  // Assignment
+  CbcDisasterHandler& operator=(const CbcDisasterHandler&);
+  /// Clone
+  virtual ClpDisasterHandler * clone() const;
+
+  //@}
+  
+  /**@name Sets/gets */
+
+  //@{
+  /** set model. */
+  void setCbcModel(CbcModel * model);
+  /// Get model
+  inline CbcModel * cbcModel() const
+  { return cbcModel_;}
+  
+  //@}
+  
+  
+protected:
+  /**@name Data members
+     The data members are protected to allow access for derived classes. */
+  //@{
+  /// Pointer to model
+  CbcModel * cbcModel_;
+      
+  //@}
+};
+#endif
 
 #endif

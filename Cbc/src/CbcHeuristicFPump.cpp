@@ -11,6 +11,9 @@
 
 #include "OsiSolverInterface.hpp"
 #include "CbcModel.hpp"
+#ifdef COIN_HAS_CLP
+#include "OsiClpSolverInterface.hpp"
+#endif
 #include "CbcMessage.hpp"
 #include "CbcHeuristicFPump.hpp"
 #include "CbcBranchActual.hpp"
@@ -18,9 +21,6 @@
 #include "CoinWarmStartBasis.hpp"
 #include "CoinTime.hpp"
 #include "CbcEventHandler.hpp"
-#ifdef COIN_HAS_CLP
-#include "OsiClpSolverInterface.hpp"
-#endif
 
 
 // Default Constructor
@@ -228,7 +228,9 @@ CbcHeuristicFPump::solution(double & solutionValue,
   if (iterationRatio_>0.0)
     iterationLimit = (2*model_->solver()->getNumRows()+2*numberColumns)*
       iterationRatio_;
-  double totalNumberIterations=0.0;
+  int totalNumberIterations=0;
+  int numberIterationsPass1=-1;
+  int numberIterationsLastPass=0;
   // 1. initially check 0-1
   int i,j;
   int general=0;
@@ -524,6 +526,13 @@ CbcHeuristicFPump::solution(double & solutionValue,
 	  if (fabs(solution[i]-lastSolution[i])>1.0e-8) 
 	    usedColumn[i]=numberPasses;
 	  lastSolution[i]=solution[i];
+	}
+      }
+      if (numberIterationsPass1>=0) {
+	int n = totalNumberIterations - numberIterationsLastPass;
+	if (n>CoinMax(15000,3*numberIterationsPass1)) {
+	  exitAll=true;
+	  break;
 	}
       }
       if (iterationLimit<0.0) {
@@ -978,6 +987,8 @@ CbcHeuristicFPump::solution(double & solutionValue,
 		saveBasis = * basis;
 		delete basis;
 	      }
+	      delete [] firstPerturbedObjective;
+	      delete [] firstPerturbedSolution;
 	      firstPerturbedObjective = CoinCopyOfArray(solver->getObjCoefficients(),numberColumns);
 	      firstPerturbedSolution = CoinCopyOfArray(solver->getColSolution(),numberColumns);
 	    }
@@ -1602,6 +1613,9 @@ CbcHeuristicFPump::solution(double & solutionValue,
 	for (int i=0;i<numberColumns;i++)
 	  usedColumn[i]=-1;
       }
+      if (!totalNumberPasses)
+	numberIterationsPass1 = totalNumberIterations;
+      numberIterationsLastPass =  totalNumberIterations;
       totalNumberPasses += numberPasses-1;
     }
   }
@@ -1676,11 +1690,11 @@ CbcHeuristicFPump::solution(double & solutionValue,
   {
     double ncol = model_->solver()->getNumCols();
     double nrow = model_->solver()->getNumRows();
-    printf("XXX total iterations %g ratios - %g %g %g\n",
+    printf("XXX total iterations %d ratios - %g %g %g\n",
 	   totalNumberIterations,
-	   totalNumberIterations/nrow,
-	   totalNumberIterations/ncol,
-	   totalNumberIterations/(2*nrow+2*ncol));
+	   ((double) totalNumberIterations)/nrow,
+	   ((double) totalNumberIterations)/ncol,
+	   ((double) totalNumberIterations)/(2*nrow+2*ncol));
   }
 #endif
   return finalReturnCode;
@@ -1971,4 +1985,89 @@ CbcHeuristicFPump::setMaximumTime(double value)
   maximumTime_=value;
 }
 
+# ifdef COIN_HAS_CLP
+  
+//#############################################################################
+// Constructors / Destructor / Assignment
+//#############################################################################
+
+//-------------------------------------------------------------------
+// Default Constructor 
+//-------------------------------------------------------------------
+CbcDisasterHandler::CbcDisasterHandler (CbcModel * model) 
+  : OsiClpDisasterHandler(),
+    cbcModel_(model)
+{
+  if (model) {
+    osiModel_ 
+      = dynamic_cast<OsiClpSolverInterface *> (model->solver());
+    if (osiModel_)
+      setSimplex(osiModel_->getModelPtr());
+  }
+}
+
+//-------------------------------------------------------------------
+// Copy constructor 
+//-------------------------------------------------------------------
+CbcDisasterHandler::CbcDisasterHandler (const CbcDisasterHandler & rhs) 
+  : OsiClpDisasterHandler(rhs),
+    cbcModel_(rhs.cbcModel_)
+{  
+}
+
+
+//-------------------------------------------------------------------
+// Destructor 
+//-------------------------------------------------------------------
+CbcDisasterHandler::~CbcDisasterHandler ()
+{
+}
+
+//----------------------------------------------------------------
+// Assignment operator 
+//-------------------------------------------------------------------
+CbcDisasterHandler &
+CbcDisasterHandler::operator=(const CbcDisasterHandler& rhs)
+{
+  if (this != &rhs) {
+    OsiClpDisasterHandler::operator=(rhs);
+    cbcModel_ = rhs.cbcModel_;
+  }
+  return *this;
+}
+//-------------------------------------------------------------------
+// Clone
+//-------------------------------------------------------------------
+ClpDisasterHandler * CbcDisasterHandler::clone() const
+{
+  return new CbcDisasterHandler(*this);
+}
+// Type of disaster 0 can fix, 1 abort
+int 
+CbcDisasterHandler::typeOfDisaster()
+{
+  if (!cbcModel_->parentModel()&
+      (cbcModel_->specialOptions()&2048)==0) {
+    return 0;
+  } else {
+    if (cbcModel_->parentModel())
+      cbcModel_->setMaximumNodes(0);
+    return 1;
+  }
+}
+/* set model. */
+void 
+CbcDisasterHandler::setCbcModel(CbcModel * model)
+{
+  cbcModel_ = model;
+  if (model) {
+    osiModel_ 
+      = dynamic_cast<OsiClpSolverInterface *> (model->solver());
+    if (osiModel_)
+      setSimplex(osiModel_->getModelPtr());
+    else
+      setSimplex(NULL);
+  }
+}
+#endif
   

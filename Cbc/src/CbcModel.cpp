@@ -8774,7 +8774,7 @@ CbcModel::resolve(CbcNodeInfo * parent, int whereFrom,
 	    solver_->getObjValue();
 	  //double cutoff = getCutoff();
 	  if (bestObjective_-getCutoffIncrement()<testValue) {
-#if 1 //def CLP_INVESTIGATE
+#ifdef CLP_INVESTIGATE
 	    double value ;
 	    solver_->getDblParam(OsiDualObjectiveLimit,value) ;
 	    printf("Should cutoff as obj %.18g, best %.18g, inc %.18g - solver cutoff %.18g model cutoff %.18g\n",

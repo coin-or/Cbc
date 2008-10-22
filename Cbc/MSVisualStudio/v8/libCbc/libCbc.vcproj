@@ -747,6 +747,14 @@
 				</FileConfiguration>
 			</File>
 			<File
+				RelativePath="..\..\..\src\CbcHeuristicPivotAndFix.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\..\src\CbcHeuristicRandRound.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\..\..\Cbc\src\CbcHeuristicRINS.cpp"
 				>
 				<FileConfiguration
@@ -1111,6 +1119,14 @@
 			</File>
 			<File
 				RelativePath="..\..\..\..\Cbc\src\CbcHeuristicLocal.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\..\src\CbcHeuristicPivotAndFix.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\..\src\CbcHeuristicRandRound.hpp"
 				>
 			</File>
 			<File

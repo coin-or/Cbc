@@ -30,10 +30,11 @@ CbcHeuristicRandRound::CbcHeuristicRandRound()
 }
 
 // Constructor with model - assumed before cuts
-
 CbcHeuristicRandRound::CbcHeuristicRandRound(CbcModel & model)
   :CbcHeuristic(model)
 {
+  model_=&model;
+  setWhen(1);
 }
 
 // Destructor 
@@ -47,6 +48,7 @@ CbcHeuristicRandRound::clone() const
 {
   return new CbcHeuristicRandRound(*this);
 }
+
 // Create C++ lines to get to current state
 void 
 CbcHeuristicRandRound::generateCpp( FILE * fp) 
@@ -81,16 +83,30 @@ CbcHeuristicRandRound::resetModel(CbcModel * model)
 {
   //CbcHeuristic::resetModel(model);
 }
+
 /*
   Randomized Rounding Heuristic
-  Returns 1 if solution, 0 if not */
+  Returns 1 if solution, 0 if not 
+*/
 int
 CbcHeuristicRandRound::solution(double & solutionValue,
 			 double * betterSolution)
 {
-  std::cout << "Lucky you! You're in the Randomized Rounding Heuristic" << std::endl;
-  // The struct should be moved to member data
+  // rlh: Todo: Memory Cleanup
 
+  setWhen(1);  // setWhen(1) didn't have the effect I expected (e.g., run once). 
+              
+  // Run only once. 
+  // 
+  //    See if at root node
+  bool atRoot = model_->getNodeCount()==0;
+  int passNumber = model_->getCurrentPassNumber();
+  //    Just do once
+  if (!atRoot||passNumber!=1)
+    return 0;
+
+  std::cout << "Entering the Randomized Rounding Heuristic" << std::endl;
+ 
   typedef struct {
     int numberSolutions;
     int maximumSolutions;
@@ -100,17 +116,19 @@ CbcHeuristicRandRound::solution(double & solutionValue,
   } clpSolution;
 
   double start = CoinCpuTime();
-  numCouldRun_++; // Todo: Ask JJHF what this for. 
+  numCouldRun_++; // 
+		  // Todo: Ask JJHF what "number of times
+		  // the heuristic could run" means.
 
-  OsiClpSolverInterface * clpSolver 
-    = dynamic_cast<OsiClpSolverInterface *> (model_->solver());
+  OsiSolverInterface * solver= model_->solver()->clone();
+  OsiClpSolverInterface * clpSolver = dynamic_cast<OsiClpSolverInterface *> (solver);
   assert (clpSolver);
   ClpSimplex * simplex = clpSolver->getModelPtr();
 
-  // Initialize the structure holding the solutions
+  // Initialize the structure holding the solutions for the Simplex iterations
   clpSolution solutions;
-  // Set typeStruct field of ClpTrustedData struct to one.
-  // This tells Clp it's "Mahdi!" 
+  // Set typeStruct field of ClpTrustedData struct to 1 to indicate
+  // desired behavior for  RandRound heuristic (which is what?)
   ClpTrustedData trustedSolutions;
   trustedSolutions.typeStruct = 1;
   trustedSolutions.data = &solutions;
@@ -119,26 +137,31 @@ CbcHeuristicRandRound::solution(double & solutionValue,
   solutions.numberColumns=simplex->numberColumns();
   solutions.solution=NULL;
   solutions.numberUnsatisfied=NULL;
-  simplex->setTrustedUserPointer(&trustedSolutions); // rlh: old was
-					      // "userPointer"
-   // Solve from all slack to get some points
+  simplex->setTrustedUserPointer(&trustedSolutions);
+
+  // Solve from all slack to get some points
   simplex->allSlackBasis();
+  
+  // Calling primal invalidates pointers to some rim vectors,
+  // like...row sense (!)
   simplex->primal();
 
-  // rlh: Mahdi's code
-  // -------------------------------------------------
-  // Get the problem information
-  
-  // - Get the number of cols and rows
+  // 1. Okay - so a workaround would be to copy the data I want BEFORE
+  // calling primal.  
+  // 2. Another approach is to ask the simplex solvers NOT to mess up my
+  // rims. 
+  // 3. See freeCachedResults() for what is getting
+  // deleted. Everything else points into the structure. 
+  // ...or use collower and colupper rather than rowsense.
+  // ..store address of where one of these 
+
+  // Store the basic problem information
+  // -Get the number of columns, rows and rhs vector
   int numCols = clpSolver->getNumCols();
   int numRows = clpSolver->getNumRows();
 
-  // - Get the right hand side of the rows 
-  const double * rhs = clpSolver->getRightHandSide();
-
-  // Find the integer variables
-  // rlh: consider using columnType 
-  // One if not continuous (i.e., bin or gen int)
+  // Find the integer variables (use columnType(?)) 
+  // One if not continuous, that is binary or general integer)
   bool * varClassInt = new bool[numCols];
   for(int i=0; i<numCols; i++)
     {
@@ -153,13 +176,11 @@ CbcHeuristicRandRound::solution(double & solutionValue,
   rowSense = clpSolver->getRowSense();
 
   // -Get the objective coefficients
-  const double *objCoefficients = clpSolver->getObjCoefficients();
-  double *originalObjCoeff = new double [numCols];
-  for(int i=0; i<numCols;i++)
-    originalObjCoeff[i] = objCoefficients[i];
+  double *originalObjCoeff = CoinCopyOfArray(clpSolver->getObjCoefficients(), numCols);
 
   // -Get the matrix of the problem
-  double ** matrix = new double * [numRows];
+  // rlh: look at using sparse representation 
+ double ** matrix = new double * [numRows];
   for(int i = 0; i < numRows; i++)
     {
       matrix[i] = new double[numCols];
@@ -199,7 +220,7 @@ CbcHeuristicRandRound::solution(double & solutionValue,
     }
   
   // Start finding corner points by iteratively doing the following:
-  // - find randomly tilted objective
+  // - contruct a randomly tilted objective
   // - solve
   for(int i=0; i<numRows; i++)
     {
@@ -211,20 +232,22 @@ CbcHeuristicRandRound::solution(double & solutionValue,
 	{
 	  // for row i and column j vary the coefficient "a bit"
 	  if(randNum == 1)		
-	    // if the element is zero, then round the coefficient down to 0.1
+	    // if the element is zero, then set the new obj
+	    // coefficient to 0.1 (i.e., round up)
 	    if(fabs(matrix[index[i]][j]) < 1e-6)
 	      newObj[j] = 0.1;
 	    else
-	      // if the element is nonzero, then increase it "a bit"
+	      // if the element is nonzero, then increase the new obj
+	      // coefficient "a bit"
 	      newObj[j] = matrix[index[i]][j] * 1.1;
 	  else
 	    // if randnum is 2, then
-	    // if the element is zero, then round the coefficient down
-	    // to NEGATIVE 0.1
+	    // if the element is zero, then set the new obj coeffient
+	    // to NEGATIVE 0.1 (i.e., round down)
 	    if(fabs(matrix[index[i]][j]) < 1e-6)
 	      newObj[j] = -0.1;
 	    else
-	      // if the element is nonzero, then DEcrease it "a bit"
+	      // if the element is nonzero, then DEcrease the new obj coeffienct "a bit"
 	      newObj[j] = matrix[index[i]][j] * 0.9;
 	}
       // Use the new "tilted" objective
@@ -237,7 +260,13 @@ CbcHeuristicRandRound::solution(double & solutionValue,
 	clpSolver->setObjSense(1);
 
       // Solve with primal simplex
-      clpSolver->getModelPtr()->primal(1);
+      simplex->primal(1);
+      // rlh+ll: This was the original code. But we already have the
+      // model pointer (it's in simplex). And, calling getModelPtr()
+      // invalidates the cached data in the OsiClpSolverInterface
+      // object, which means our precious rowsens is lost. So let's
+      // not use the line below...
+      /******* clpSolver->getModelPtr()->primal(1); */
       printf("---------------------------------------------------------------- %d\n", i);
     }
   // Iteratively do this process until...
@@ -259,6 +288,7 @@ CbcHeuristicRandRound::solution(double & solutionValue,
     cornerPoints[j] = solutions.solution[j];
   
   bool feasibility = 1;
+  // rlh: use some COIN max instead of 1e30 (?)
   double bestObj = 1e30;
   std::vector< std::vector <double> > feasibles;
   int numFeasibles = 0;
@@ -266,7 +296,9 @@ CbcHeuristicRandRound::solution(double & solutionValue,
   // Check the feasibility of the corner points
   int numCornerPoints = numberSolutions;
 
-  rhs = clpSolver->getRightHandSide();
+  const double * rhs = clpSolver->getRightHandSide();
+  // rlh: row sense hasn't changed. why a fresh copy? 
+  // Delete next line. 
   rowSense = clpSolver->getRowSense();
   
   for(int i=0; i<numCornerPoints; i++)
@@ -278,6 +310,7 @@ CbcHeuristicRandRound::solution(double & solutionValue,
       
       if(objValue < bestObj)
 	{
+	  // check integer feasibility
 	  feasibility = 1;
 	  for(int j=0; j<numCols; j++)
 	    {
@@ -291,7 +324,8 @@ CbcHeuristicRandRound::solution(double & solutionValue,
 		    }
 		}
 	    }
-	  if(feasibility)
+	  // check all constraints satisfied
+	  if (feasibility)
 	      { 
 		for(int irow = 0; irow < numRows; irow++)
 		  {
@@ -392,10 +426,10 @@ CbcHeuristicRandRound::solution(double & solutionValue,
       
       
       //SOFT ROUNDING
-      // Look at original files for the "how to" on soft rounding 
-      
-      
-      //check the feasibility of the rounded random point
+      // Look at original files for the "how to" on soft rounding;
+      // Soft rounding omitted here.  
+            
+      //Check the feasibility of the rounded random point
       // -Check the feasibility
       // -Get the rows sense
       rowSense = clpSolver->getRowSense();
@@ -459,7 +493,7 @@ CbcHeuristicRandRound::solution(double & solutionValue,
   for (int k = 0; k<numCols; k++){
     betterSolution[k] =  feasibles[numFeasibles-1][k];
   }  
-  std::cout << "See you soon! You're leaving the Randomized Rounding Heuristic" << std::endl;
+  std::cout << "Leaving the Randomized Rounding Heuristic" << std::endl;
   return 1;
 
 }

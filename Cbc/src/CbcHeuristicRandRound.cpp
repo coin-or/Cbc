@@ -94,6 +94,8 @@ CbcHeuristicRandRound::solution(double & solutionValue,
 {
   // rlh: Todo: Memory Cleanup
 
+  //  std::cout << "Entering the Randomized Rounding Heuristic" << std::endl;
+
   setWhen(1);  // setWhen(1) didn't have the effect I expected (e.g., run once). 
               
   // Run only once. 
@@ -102,11 +104,12 @@ CbcHeuristicRandRound::solution(double & solutionValue,
   bool atRoot = model_->getNodeCount()==0;
   int passNumber = model_->getCurrentPassNumber();
   //    Just do once
-  if (!atRoot||passNumber!=1)
+  if (!atRoot||passNumber!=1){
+    // std::cout << "Leaving the Randomized Rounding Heuristic" << std::endl;
     return 0;
-
+  }
+   
   std::cout << "Entering the Randomized Rounding Heuristic" << std::endl;
- 
   typedef struct {
     int numberSolutions;
     int maximumSolutions;
@@ -142,7 +145,7 @@ CbcHeuristicRandRound::solution(double & solutionValue,
   // Solve from all slack to get some points
   simplex->allSlackBasis();
   
-  // Calling primal invalidates pointers to some rim vectors,
+  // Calling primal() invalidates pointers to some rim vectors,
   // like...row sense (!)
   simplex->primal();
 
@@ -162,14 +165,29 @@ CbcHeuristicRandRound::solution(double & solutionValue,
 
   // Find the integer variables (use columnType(?)) 
   // One if not continuous, that is binary or general integer)
+  // columnType() = 0 continuous
+  //              = 1 binary
+  //              = 2 general integer
   bool * varClassInt = new bool[numCols];
+  const char* columnType = clpSolver->columnType();
+  int numGenInt = 0;    
   for(int i=0; i<numCols; i++)
     {
       if(clpSolver->isContinuous(i))
 	varClassInt[i] = 0;
       else
 	varClassInt[i] = 1;
+      if (columnType[i]==2) numGenInt++;
     }
+
+  // Heuristic is for problems with general integer variables.
+  // If there are none, quit.
+  if (numGenInt++<1){
+    delete [] varClassInt ;
+    std::cout << "Leaving the Randomized Rounding Heuristic" << std::endl;
+    return 0; 
+ }
+
 
   // -Get the rows sense
   const char * rowSense;
@@ -468,7 +486,7 @@ CbcHeuristicRandRound::solution(double & solutionValue,
 	    }
 	  if(feasibility)
 	    {
-	      printf("Feasible Found!!\n");
+	      printf("Feasible Found.\n");
 	      printf("%.2f\n", CoinCpuTime()-start);
 	      numFeasibles++;
 	      feasibles.push_back(std::vector <double> (numCols));
@@ -479,6 +497,7 @@ CbcHeuristicRandRound::solution(double & solutionValue,
 		bestObj = objValue;
 	    }
 	}
+      delete [] roundRp;
     }
   printf("Number of Feasible Corners: %d\n", numFeasibleCorners);
   printf("Number of Feasibles Found: %d\n", numFeasibles);
@@ -486,13 +505,36 @@ CbcHeuristicRandRound::solution(double & solutionValue,
     printf("Best Objective: %f\n", bestObj);
   printf("time: %.2f\n",CoinCpuTime()-start);
   
-  if (numFeasibles == 0) return 0; 
+  if (numFeasibles == 0) {
+    // cleanup
+    delete [] varClassInt;
+    for (int i=0; i<numRows; i++)
+      delete matrix[i];
+    delete [] matrix; 
+    delete [] newObj;
+    delete [] index;
+    for (int i=0; i<numberSolutions; i++)
+      delete cornerPoints[i];
+    delete [] cornerPoints; 
+    delete [] rp;
+    return 0; 
+  }
   
   // We found something better
   solutionValue = bestObj;
   for (int k = 0; k<numCols; k++){
     betterSolution[k] =  feasibles[numFeasibles-1][k];
   }  
+  delete [] varClassInt;
+  for (int i=0; i<numRows; i++)
+    delete matrix[i];
+  delete [] matrix; 
+  delete [] newObj;
+  delete [] index;
+  for (int i=0; i<numberSolutions; i++)
+      delete cornerPoints[i];
+    delete [] cornerPoints; 
+  delete [] rp;
   std::cout << "Leaving the Randomized Rounding Heuristic" << std::endl;
   return 1;
 

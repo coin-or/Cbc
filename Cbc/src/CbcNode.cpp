@@ -3086,7 +3086,6 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
         } else {
           solver->markHotStart();
         }
-        assert (auxiliaryInfo->warmStart());
         doneHotStart=true;
         xMark++;
         kPass++;
@@ -3138,7 +3137,6 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
           // Mark hot start
           solver->markHotStart();
           doneHotStart=true;
-          assert (auxiliaryInfo->warmStart());
           xMark++;
           //if (solver->isProvenPrimalInfeasible())
           //printf("**** Hot start says node infeasible\n");
@@ -3152,7 +3150,6 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
       if (!skipAll) {
         // Mark hot start
         doneHotStart=true;
-        assert (auxiliaryInfo->warmStart());
         solver->markHotStart();
         xMark++;
       }
@@ -3457,7 +3454,6 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
           if (!doneHotStart) {
             // Mark hot start
             doneHotStart=true;
-            assert (auxiliaryInfo->warmStart());
             solver->markHotStart();
             xMark++;
           }

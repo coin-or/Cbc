@@ -9771,7 +9771,7 @@ CbcModel::checkSolution (double cutoff, double *solution,
     for (i=0;i<numberObjects_;i++) 
       object_[i]->feasibleRegion(solver_,&usefulInfo);
       // If relaxed then leave bounds on basic variables
-    if (fixVariables==-1) {
+    if (fixVariables==-1&&(specialOptions_&16)==0) {
       CoinWarmStartBasis * basis = dynamic_cast<CoinWarmStartBasis*>(saveSolver->getWarmStart()) ;
       assert(basis != NULL);
       for (i=0;i<numberObjects_;i++) {

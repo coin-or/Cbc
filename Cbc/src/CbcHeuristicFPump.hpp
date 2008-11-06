@@ -4,9 +4,6 @@
 #define CbcHeuristicFeasibilityPump_H
 
 #include "CbcHeuristic.hpp"
-#ifdef COIN_HAS_CLP
-#include "OsiClpSolverInterface.hpp"
-#endif
 
 /** Rounding class
  */

@@ -592,5 +592,272 @@ void CbcHeuristicLocal::setModel(CbcModel * model)
   used_ = new char[numberColumns];
   memset(used_,0,numberColumns);
 }
+// Default Constructor
+CbcHeuristicNaive::CbcHeuristicNaive() 
+  :CbcHeuristic()
+{
+  large_=1.0e6;
+}
+
+// Constructor with model - assumed before cuts
+
+CbcHeuristicNaive::CbcHeuristicNaive(CbcModel & model)
+  :CbcHeuristic(model)
+{
+  large_=1.0e6;
+}
+
+// Destructor 
+CbcHeuristicNaive::~CbcHeuristicNaive ()
+{
+}
+
+// Clone
+CbcHeuristic *
+CbcHeuristicNaive::clone() const
+{
+  return new CbcHeuristicNaive(*this);
+}
+// Create C++ lines to get to current state
+void 
+CbcHeuristicNaive::generateCpp( FILE * fp) 
+{
+  CbcHeuristicNaive other;
+  fprintf(fp,"0#include \"CbcHeuristicNaive.hpp\"\n");
+  fprintf(fp,"3  CbcHeuristicNaive naive(*cbcModel);\n");
+  CbcHeuristic::generateCpp(fp,"naive");
+  if (large_!=other.large_)
+    fprintf(fp,"3  naive.setLarge(%g);\n",large_);
+  else
+    fprintf(fp,"4  naive.setLarge(%g);\n",large_);
+  fprintf(fp,"3  cbcModel->addHeuristic(&naive);\n");
+}
+
+// Copy constructor 
+CbcHeuristicNaive::CbcHeuristicNaive(const CbcHeuristicNaive & rhs)
+:
+  CbcHeuristic(rhs),
+  large_(rhs.large_)
+{
+}
+
+// Assignment operator 
+CbcHeuristicNaive & 
+CbcHeuristicNaive::operator=( const CbcHeuristicNaive& rhs)
+{
+  if (this!=&rhs) {
+    CbcHeuristic::operator=(rhs);
+    large_ = rhs.large_;
+  }
+  return *this;
+}
+
+// Resets stuff if model changes
+void 
+CbcHeuristicNaive::resetModel(CbcModel * model)
+{
+  CbcHeuristic::resetModel(model);
+}
+int
+CbcHeuristicNaive::solution(double & solutionValue,
+			 double * betterSolution)
+{
+  numCouldRun_++;
+  // See if to do
+  bool atRoot = model_->getNodeCount()==0;
+  int passNumber = model_->getCurrentPassNumber();
+  if (!when()||(when()==1&&model_->phase()!=1)||!atRoot||passNumber!=1)
+    return 0; // switched off
+  // Don't do if it was this heuristic which found solution!
+  if (this==model_->lastHeuristic())
+    return 0;
+  numRuns_++;
+  double cutoff;
+  model_->solver()->getDblParam(OsiDualObjectiveLimit,cutoff);
+  double direction = model_->solver()->getObjSense();
+  cutoff *= direction;
+  cutoff = CoinMin(cutoff,solutionValue);
+  OsiSolverInterface * solver = model_->continuousSolver();
+  if (!solver)
+    solver = model_->solver();
+  const double * colLower = solver->getColLower();
+  const double * colUpper = solver->getColUpper();
+  const double * objective = solver->getObjCoefficients();
+
+  int numberColumns = model_->getNumCols();
+  int numberIntegers = model_->numberIntegers();
+  const int * integerVariable = model_->integerVariable();
+  
+  int i;
+  bool solutionFound=false;
+  CoinWarmStartBasis saveBasis;
+  CoinWarmStartBasis * basis =
+    dynamic_cast<CoinWarmStartBasis *>(solver->getWarmStart()) ;
+  if (basis) {
+    saveBasis = * basis;
+    delete basis;
+  }
+  // First just fix all integers as close to zero as possible
+  OsiSolverInterface * newSolver = solver->clone();
+  for (i=0;i<numberIntegers;i++) {
+    int iColumn=integerVariable[i];
+    double lower = colLower[iColumn];
+    double upper = colUpper[iColumn];
+    double value;
+    if (lower>0.0)
+      value=lower;
+    else if (upper<0.0)
+      value=upper;
+    else
+      value=0.0;
+    newSolver->setColLower(iColumn,value);
+    newSolver->setColUpper(iColumn,value);
+  }
+  newSolver->initialSolve();
+  if (newSolver->isProvenOptimal()) {
+    double solValue = newSolver->getObjValue()*direction ;
+    if (solValue<cutoff) {
+      // we have a solution
+      solutionFound=true;
+      solutionValue=solValue;
+      memcpy(betterSolution,newSolver->getColSolution(),
+	     numberColumns*sizeof(double));
+      printf("Naive fixing close to zero gave solution of %g\n",solutionValue);
+      cutoff = solValue - model_->getCutoffIncrement();
+    }
+  }
+  // Now fix all integers as close to zero if zero or large cost
+  int nFix=0;
+  for (i=0;i<numberIntegers;i++) {
+    int iColumn=integerVariable[i];
+    double lower = colLower[iColumn];
+    double upper = colUpper[iColumn];
+    double value;
+    if (fabs(objective[i])>0.0&&fabs(objective[i])<large_) {
+      nFix++;
+      if (lower>0.0)
+	value=lower;
+      else if (upper<0.0)
+	value=upper;
+      else
+	value=0.0;
+      newSolver->setColLower(iColumn,value);
+      newSolver->setColUpper(iColumn,value);
+    }
+  }
+  const double * solution = solver->getColSolution();
+  if (nFix) {
+    newSolver->setWarmStart(&saveBasis);
+    newSolver->setColSolution(solution);
+    newSolver->initialSolve();
+    if (newSolver->isProvenOptimal()) {
+      double solValue = newSolver->getObjValue()*direction ;
+      if (solValue<cutoff) {
+	// try branch and bound
+	double * newSolution = new double [numberColumns];
+	printf("%d fixed after fixing costs\n",nFix);
+	int returnCode = smallBranchAndBound(newSolver,
+					     numberNodes_,newSolution,
+					     solutionValue,
+					     solutionValue,"CbcHeuristicNaive1");
+	if (returnCode<0)
+	  returnCode=0; // returned on size
+	if ((returnCode&2)!=0) {
+	  // could add cut
+	  returnCode &= ~2;
+	}
+	if (returnCode==1) {
+	  // solution
+	  solutionFound=true;
+	  memcpy(betterSolution,newSolution,
+		 numberColumns*sizeof(double));
+	  printf("Naive fixing zeros gave solution of %g\n",solutionValue);
+	  cutoff = solutionValue - model_->getCutoffIncrement();
+	}
+	delete [] newSolution;
+      }
+    }
+  }
+#if 1
+  newSolver->setObjSense(-direction); // maximize
+  newSolver->setWarmStart(&saveBasis);
+  newSolver->setColSolution(solution);
+  for (int iColumn=0;iColumn<numberColumns;iColumn++) {
+    double value = solution[iColumn];
+    double lower = colLower[iColumn];
+    double upper = colUpper[iColumn];
+    double newLower;
+    double newUpper;
+    if (newSolver->isInteger(iColumn)) {
+      newLower = CoinMax(lower,floor(value)-2.0);
+      newUpper = CoinMin(upper,ceil(value)+2.0);
+    } else {
+      newLower = CoinMax(lower,value-1.0e5);
+      newUpper = CoinMin(upper,value+1.0e-5);
+    }
+    newSolver->setColLower(iColumn,newLower);
+    newSolver->setColUpper(iColumn,newUpper);
+  }
+  newSolver->initialSolve();
+  if (newSolver->isProvenOptimal()) {
+    double solValue = newSolver->getObjValue()*direction ;
+    if (solValue<cutoff) {
+      nFix=0;
+      newSolver->setObjSense(direction); // correct direction
+      const double * thisSolution = newSolver->getColSolution();
+      for (int iColumn=0;iColumn<numberColumns;iColumn++) {
+	double value = solution[iColumn];
+	double lower = colLower[iColumn];
+	double upper = colUpper[iColumn];
+	double newLower=lower;
+	double newUpper=upper;
+	if (newSolver->isInteger(iColumn)) {
+	  if (value<lower+1.0e-6) {
+	    nFix++;
+	    newUpper=lower;
+	  } else if (value>upper-1.0e-6) {
+	    nFix++;
+	    newLower=upper;
+	  } else {
+	    newLower = CoinMax(lower,floor(value)-2.0);
+	    newUpper = CoinMin(upper,ceil(value)+2.0);
+	  }
+	}
+	newSolver->setColLower(iColumn,newLower);
+	newSolver->setColUpper(iColumn,newUpper);
+      }
+      // try branch and bound
+      double * newSolution = new double [numberColumns];
+      printf("%d fixed after maximizing\n",nFix);
+      int returnCode = smallBranchAndBound(newSolver,
+					   numberNodes_,newSolution,
+					   solutionValue,
+					   solutionValue,"CbcHeuristicNaive1");
+      if (returnCode<0)
+	returnCode=0; // returned on size
+      if ((returnCode&2)!=0) {
+	// could add cut
+	returnCode &= ~2;
+      }
+      if (returnCode==1) {
+	// solution
+	solutionFound=true;
+	memcpy(betterSolution,newSolution,
+	       numberColumns*sizeof(double));
+	printf("Naive maximizing gave solution of %g\n",solutionValue);
+	cutoff = solutionValue - model_->getCutoffIncrement();
+      }
+      delete [] newSolution;
+    }
+  }
+#endif
+  delete newSolver;
+  return solutionFound ? 1 : 0;
+}
+// update model
+void CbcHeuristicNaive::setModel(CbcModel * model)
+{
+  model_ = model;
+}
 
   

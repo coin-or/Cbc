@@ -80,4 +80,63 @@ protected:
 };
 
 
+/** Naive class
+    a) Fix all ints as close to zero as possible
+    b) Fix all ints with nonzero costs and < large to zero
+    c) Put bounds round continuous and UIs and maximize
+ */
+
+class CbcHeuristicNaive : public CbcHeuristic {
+public:
+
+  // Default Constructor 
+  CbcHeuristicNaive ();
+
+  /* Constructor with model - assumed before cuts
+     Initial version does not do Lps
+  */
+  CbcHeuristicNaive (CbcModel & model);
+  
+  // Copy constructor 
+  CbcHeuristicNaive ( const CbcHeuristicNaive &);
+   
+  // Destructor 
+  ~CbcHeuristicNaive ();
+  
+  /// Clone
+  virtual CbcHeuristic * clone() const;
+
+  /// Assignment operator 
+  CbcHeuristicNaive & operator=(const CbcHeuristicNaive& rhs);
+
+  /// Create C++ lines to get to current state
+  virtual void generateCpp( FILE * fp) ;
+
+  /// Resets stuff if model changes
+  virtual void resetModel(CbcModel * model);
+
+  /// update model (This is needed if cliques update matrix etc)
+  virtual void setModel(CbcModel * model);
+  
+  using CbcHeuristic::solution ;
+  /** returns 0 if no solution, 1 if valid solution.
+      Sets solution values if good, sets objective value (only if good)
+  */
+  virtual int solution(double & objectiveValue,
+		       double * newSolution);
+
+  /// Sets large cost value
+  inline void setLargeValue(double value)
+  { large_=value;}
+  /// Gets large cost value
+  inline double largeValue() const
+  { return large_;}
+
+protected:
+  /// Data
+  /// Large value
+  double large_;
+};
+
+
 #endif

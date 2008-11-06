@@ -464,6 +464,8 @@ CbcModel::analyzeObjective ()
     const int * columnLength = solver_->getMatrixByCol()->getVectorLengths();
     int numberInteger=0;
     int numberIntegerObj=0;
+    int numberGeneralIntegerObj=0;
+    int numberIntegerWeight=0;
     int numberContinuousObj=0;
     double cost=COIN_DBL_MAX;
     for (iColumn=0;iColumn<numberColumns;iColumn++) {
@@ -487,23 +489,40 @@ CbcModel::analyzeObjective ()
 	      cost = objValue;
 	    else if (cost!=objValue)
 	      cost=-COIN_DBL_MAX;
+	    int gap = (int) (upper[iColumn]-lower[iColumn]);
+	    if (gap>1) {
+	      numberGeneralIntegerObj++;
+	      numberIntegerWeight+=gap;
+	    }
 	  }
 	}
       }
     }
     int iType=0;
-    if (!numberContinuousObj&&numberIntegerObj<=5&&
+    if (!numberContinuousObj&&numberIntegerObj<=5&&numberIntegerWeight<=100&&
 	numberIntegerObj*3<numberObjects_&&!parentModel_&&solver_->getNumRows()>100) 
       iType=3;
     else if (!numberContinuousObj&&numberIntegerObj<=100&&
-	numberIntegerObj*5<numberObjects_&&!parentModel_&&
+	numberIntegerObj*5<numberObjects_&&numberIntegerWeight<=100&&
+	     !parentModel_&&
 	     solver_->getNumRows()>100&&cost!=-COIN_DBL_MAX) 
       iType=2;
+    else if (!numberContinuousObj&&numberIntegerObj<=100&&
+	numberIntegerObj*5<numberObjects_&&
+	     !parentModel_&&
+	     solver_->getNumRows()>100&&cost!=-COIN_DBL_MAX) 
+      iType=8;
     //else if (!numberContinuousObj&&
     //numberIntegerObj*20<numberObjects_&&!parentModel_&&
     //     solver_->getNumRows()>100) 
     //iType=8;
     int iTest =getMaximumNodes();
+#if 0
+    // Give priority to costed in probing if few
+    if (!numberContinuousObj&&numberIntegerObj<=100&&
+	numberIntegerObj*5<numberObjects_)
+	specialOptions_ |= 4096;
+#endif
     if (iTest>=987654320&&iTest<987654330&&numberObjects_&&!parentModel_) {
       iType = iTest-987654320;
       printf("Testing %d integer variables out of %d objects (%d integer) have cost of %g - %d continuous\n",
@@ -1820,7 +1839,7 @@ void CbcModel::branchAndBound(int doStatistics)
   // User event
   if (eventHappened_)
     feasible=false;
-  if(fastNodeDepth_>=0&&!parentModel_) {
+  if(fastNodeDepth_>=0&&/*!parentModel_*/(specialOptions_&2048)==0) {
     // add in a general depth object doClp
     int type = (fastNodeDepth_ <=100) ? fastNodeDepth_ : -(fastNodeDepth_-100);
     CbcObject * obj = 
@@ -1831,6 +1850,13 @@ void CbcModel::branchAndBound(int doStatistics)
     delete obj;
     // fake number of objects
     numberObjects_--;
+#ifdef CBC_DETERMINISTIC_THREAD
+    // But make sure position is correct
+    OsiObject * obj2 = object_[numberObjects_];
+    obj = dynamic_cast<CbcObject *> (obj2);
+    assert (obj);
+    obj->setPosition(numberObjects_);
+#endif
   }
 #ifdef COIN_HAS_CLP
 #ifdef NO_CRUNCH
@@ -3669,7 +3695,8 @@ void CbcModel::branchAndBound(int doStatistics)
 	    dynamic_cast <CbcSimpleIntegerDynamicPseudoCost *>(object_[iObject]) ;
 	  CbcSimpleIntegerDynamicPseudoCost * obj2 =
 	    dynamic_cast <CbcSimpleIntegerDynamicPseudoCost *>(saveObjects[iObject]) ;
-	  assert (obj->same(obj2));
+	  if (obj)
+	    assert (obj->same(obj2));
 	}
 #endif
 	int iModel;
@@ -7159,9 +7186,9 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
   offset to the proper starting position in whichGenerator.
 */
 	int numberBefore =
-	  numberRowCutsBefore+numberColumnCutsBefore+lastNumberCuts ;
+	  numberRowCutsBefore+lastNumberCuts ;
 	int numberAfter =
-	  numberRowCutsAfter+numberColumnCutsAfter+lastNumberCuts ;
+	  numberRowCutsAfter+lastNumberCuts ;
 	// possibly extend whichGenerator
 	resizeWhichGenerator(numberBefore, numberAfter);
 	int j ;
@@ -7206,7 +7233,7 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
 	  }
 	}
 	for (j = numberColumnCutsBefore;j<numberColumnCutsAfter;j++) {
-	  whichGenerator_[numberBefore++] = i ;
+	  //whichGenerator_[numberBefore++] = i ;
 	  const OsiColCut * thisCut = theseCuts.colCutPtr(j) ;
 	  if (thisCut->globallyValid()) {
 	    // add to global list
@@ -8162,9 +8189,9 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
       if (generator_[i]->numberCutsInTotal()||generator_[i]->numberColumnCuts())
         numberActiveGenerators++;
 #ifdef JUST_ACTIVE
-      double value = count[i] + 5.0*generator_[i]->numberColumnCuts() ;
+      double value = count[i] ;
 #else
-      double value = generator_[i]->numberCutsInTotal() + 5.0*generator_[i]->numberColumnCuts() ;
+      double value = generator_[i]->numberCutsInTotal() ;
 #endif
 #if MODEL7
       // But cap
@@ -8224,7 +8251,7 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
             else
               howOften = 1000000+SCANCUTS; // wait until next time
 #endif
-          } else if (thisCuts<smallProblem) {
+          } else if (thisCuts+generator_[i]->numberColumnCuts()<smallProblem) {
 	    if (howOften!=1&&!probingWasOnBut) {
 	      if (generator_[i]->whatDepth()<0||howOften!=-1) {
 		int k = (int) sqrt(smallProblem/thisCuts) ;
@@ -8287,7 +8314,8 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
 	  //<<generator_[i]->numberCutsInTotal()<<count[i]
 	  << generator_[i]->numberCutsInTotal()
 	  <<generator_[i]->numberColumnCuts()
-	  <<generator_[i]->numberCutsActive();
+	  <<generator_[i]->numberCutsActive()
+	  +generator_[i]->numberColumnCuts();
         handler_->printing(!numberNodes_&&generator_[i]->timing())
           <<generator_[i]->timeInCutGenerator();
         handler_->message()
@@ -9444,8 +9472,12 @@ void CbcModel::synchronizeModel()
   for (i=0;i<numberObjects_;i++) {
     CbcObject * obj =
       dynamic_cast <CbcObject *>(object_[i]) ;
-    if (obj)
+    if (obj) {
       obj->setModel(this);
+#ifdef CBC_DETERMINISTIC_THREAD
+      obj->setPosition(i);
+#endif
+    }
   }
   for (i=0;i<numberCutGenerators_;i++)
     generator_[i]->refreshModel(this);
@@ -9997,7 +10029,7 @@ CbcModel::checkSolution (double cutoff, double *solution,
     for (i=0;i<numberObjects_;i++) 
       object_[i]->feasibleRegion(solver_,&usefulInfo);
       // If relaxed then leave bounds on basic variables
-    if (fixVariables==-1) {
+    if (fixVariables==-1&&(specialOptions_&16)==0) {
       CoinWarmStartBasis * basis = dynamic_cast<CoinWarmStartBasis*>(saveSolver->getWarmStart()) ;
       assert(basis != NULL);
       for (i=0;i<numberObjects_;i++) {
@@ -12488,7 +12520,7 @@ CbcModel::chooseBranch(CbcNode * &newNode, int numberPassesLeft,
       int totalIterations = numberIterations_ + numberExtraIterations_;
       if (totalNodes*40<totalIterations)
 	doClp=false;
-      if (oldNode&&fastNodeDepth_>=0&&oldNode->depth()>=testDepth&&!parentModel_
+      if (oldNode&&fastNodeDepth_>=0&&oldNode->depth()>=testDepth&&/*!parentModel_*/(specialOptions_&2048)==0
 	  &&doClp&&!cuts.sizeRowCuts()) {
 	OsiClpSolverInterface * clpSolver 
 	  = dynamic_cast<OsiClpSolverInterface *> (solver_);
@@ -14474,16 +14506,6 @@ CbcModel::splitModel(int numberModels, CbcModel ** model,
   }
   double cutoff = getCutoff();
   int nAffected=0;
-  // Pointers back to objects
-  int numberColumns = solver_->getNumCols();
-  int * back = new int[numberColumns];
-  for (i=0;i<numberColumns;i++)
-    back[i]=-1;
-  for (i=0;i<numberObjects_;i++) {
-    int iColumn = object_[i]->columnNumber();
-    assert (iColumn>=0);
-    back[iColumn]=i;
-  }
   while (!tree_->empty()) {
     for (iModel=0;iModel<numberModels;iModel++) {
       if (tree_->empty())
@@ -14508,15 +14530,18 @@ CbcModel::splitModel(int numberModels, CbcModel ** model,
       CbcBranchingObject * cbcobj = dynamic_cast<CbcBranchingObject *> (bobj);
       //assert (cbcobj);
       if (cbcobj) {
+#ifdef CBC_DETERMINISTIC_THREAD
 	CbcObject * object = cbcobj->object();
 	assert (object);
-	// could use variable_??
-	int columnNumber = object->columnNumber();
-	assert (columnNumber>=0);
-	columnNumber = back[columnNumber];
-	assert (columnNumber>=0);
-	CbcObject * objectNew = dynamic_cast<CbcObject *> (otherModel->object_[columnNumber]);
+	int position = object->position();
+	assert (position>=0);
+	assert (object_[position]==object);
+	CbcObject * objectNew = 
+	  dynamic_cast<CbcObject *> (otherModel->object_[position]);
 	cbcobj->setOriginalObject(objectNew);
+#else
+	abort(); // should not be here
+#endif
       }
       otherModel->tree_->push(node);
     }
@@ -14524,7 +14549,6 @@ CbcModel::splitModel(int numberModels, CbcModel ** model,
     if (!numberNodes)
       break;
   }
-  delete [] back;
   return nAffected;
 }
 // Start threads
@@ -14820,10 +14844,30 @@ CbcModel::moveToModel(CbcModel * baseModel,int mode)
     double cutoff = baseModel->getCutoff();
     while (!tree_->empty()) {
       CbcNode * node = tree_->bestNode(COIN_DBL_MAX) ;
-      if (node->objectiveValue()<cutoff) 
+      if (node->objectiveValue()<cutoff) {
+	CbcNodeInfo * nodeInfo = node->nodeInfo();
+	assert (nodeInfo);
+	// Make node join correctly
+	OsiBranchingObject * bobj = node->modifiableBranchingObject();
+	CbcBranchingObject * cbcobj = dynamic_cast<CbcBranchingObject *> (bobj);
+	if (cbcobj) {
+#ifdef CBC_DETERMINISTIC_THREAD
+	  CbcObject * object = cbcobj->object();
+	  assert (object);
+	  int position = object->position();
+	  assert (position>=0);
+	  assert (object_[position]==object);
+	  CbcObject * objectNew = 
+	    dynamic_cast<CbcObject *> (baseModel->object_[position]);
+	  cbcobj->setOriginalObject(objectNew);
+#else
+	  abort(); // should not be here
+#endif
+	}
 	baseModel->tree_->push(node);
-      else
+      } else {
 	delete node;
+      }
     }
     for (i=0;i<stuff->nDeleteNode;i++) {
       //printf("CbcNode %x stuff delete\n",stuff->delNode[i]);

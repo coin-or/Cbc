@@ -1904,7 +1904,7 @@ CbcHeuristicFPump::rounds(OsiSolverInterface * solver,double * solution,
       return 1;
     }
   }
-      
+  //double * saveSolution = CoinCopyOfArray(solution,numberColumns);
   // return rounded solution
   for (i=0;i<numberIntegers;i++) {
     int iColumn = integerVariable[i];
@@ -1967,13 +1967,337 @@ CbcHeuristicFPump::rounds(OsiSolverInterface * solver,double * solution,
   double * rowActivity = new double[numberRows];
   memset(rowActivity,0,numberRows*sizeof(double));
   solver->getMatrixByCol()->times(solution,rowActivity) ;
-  double largestInfeasibility =0.0;
+  double largestInfeasibility =primalTolerance;
+  double sumInfeasibility=0.0;
+  int numberBadRows=0;
   for (i=0 ; i < numberRows ; i++) {
-    largestInfeasibility = CoinMax(largestInfeasibility,
-			       rowLower[i]-rowActivity[i]);
-    largestInfeasibility = CoinMax(largestInfeasibility,
-			       rowActivity[i]-rowUpper[i]);
+    double value;
+    value = rowLower[i]-rowActivity[i];
+    if (value>primalTolerance) {
+      numberBadRows++;
+      largestInfeasibility = CoinMax(largestInfeasibility,value);
+      sumInfeasibility += value;
+    }
+    value = rowActivity[i]-rowUpper[i];
+    if (value>primalTolerance) {
+      numberBadRows++;
+      largestInfeasibility = CoinMax(largestInfeasibility,value);
+      sumInfeasibility += value;
+    }
   }
+#if 0
+  if (largestInfeasibility>primalTolerance&&numberBadRows*10<numberRows) {
+    // Can we improve by flipping
+    for (int iPass=0;iPass<10;iPass++) {
+      int numberColumns = solver->getNumCols();
+      const CoinPackedMatrix * matrixByCol = solver->getMatrixByCol();
+      const double * element = matrixByCol->getElements();
+      const int * row = matrixByCol->getIndices();
+      const CoinBigIndex * columnStart = matrixByCol->getVectorStarts();
+      const int * columnLength = matrixByCol->getVectorLengths();
+      double oldSum = sumInfeasibility;
+      // First improve by moving continuous ones
+      for (int iColumn=0;iColumn<numberColumns;iColumn++) {
+	if (!solver->isInteger(iColumn)) {
+	  double solValue = solution[iColumn];
+	  double thetaUp = columnUpper[iColumn]-solValue;
+	  double improvementUp=0.0;
+	  if (thetaUp>primalTolerance) {
+	    // can go up
+	    for (CoinBigIndex j=columnStart[iColumn];
+		 j<columnStart[iColumn]+columnLength[iColumn];j++) {
+	      int iRow = row[j];
+	      double distanceUp = rowUpper[iRow]-rowActivity[iRow];
+	      double distanceDown = rowLower[iRow]-rowActivity[iRow];
+	      double el = element[j];
+	      if (el>0.0) {
+		// positive element
+		if (distanceUp>0.0) {
+		  if (thetaUp*el>distanceUp)
+		    thetaUp=distanceUp/el;
+		} else {
+		  improvementUp -= el;
+		}
+		if (distanceDown>0.0) {
+		  if (thetaUp*el>distanceDown)
+		    thetaUp=distanceDown/el;
+		  improvementUp += el;
+		}
+	      } else {
+		// negative element
+		if (distanceDown<0.0) {
+		  if (thetaUp*el<distanceDown)
+		    thetaUp=distanceDown/el;
+		} else {
+		  improvementUp += el;
+		}
+		if (distanceUp<0.0) {
+		  if (thetaUp*el<distanceUp)
+		    thetaUp=distanceUp/el;
+		  improvementUp -= el;
+		}
+	      }
+	    }
+	  }
+	  double thetaDown = solValue-columnLower[iColumn];
+	  double improvementDown=0.0;
+	  if (thetaDown>primalTolerance) {
+	    // can go down
+	    for (CoinBigIndex j=columnStart[iColumn];
+		 j<columnStart[iColumn]+columnLength[iColumn];j++) {
+	      int iRow = row[j];
+	      double distanceUp = rowUpper[iRow]-rowActivity[iRow];
+	      double distanceDown = rowLower[iRow]-rowActivity[iRow];
+	      double el = -element[j]; // not change in sign form up
+	      if (el>0.0) {
+		// positive element
+		if (distanceUp>0.0) {
+		  if (thetaDown*el>distanceUp)
+		    thetaDown=distanceUp/el;
+		} else {
+		  improvementDown -= el;
+		}
+		if (distanceDown>0.0) {
+		  if (thetaDown*el>distanceDown)
+		    thetaDown=distanceDown/el;
+		  improvementDown += el;
+		}
+	      } else {
+		// negative element
+		if (distanceDown<0.0) {
+		  if (thetaDown*el<distanceDown)
+		    thetaDown=distanceDown/el;
+		} else {
+		  improvementDown += el;
+		}
+		if (distanceUp<0.0) {
+		  if (thetaDown*el<distanceUp)
+		    thetaDown=distanceUp/el;
+		  improvementDown -= el;
+		}
+	      }
+	    }
+	    if (thetaUp<1.0e-8)
+	      improvementUp=0.0;
+	    if (thetaDown<1.0e-8)
+	      improvementDown=0.0;
+	    double theta;
+	    if (improvementUp>=improvementDown) {
+	      theta=thetaUp;
+	    } else {
+	      improvementUp=improvementDown;
+	      theta=-thetaDown;
+	    }
+	    if (improvementUp>1.0e-8&&fabs(theta)>1.0e-8) {
+	      // Could move
+	      double oldSum=0.0;
+	      double newSum=0.0;
+	      solution[iColumn] += theta;
+	      for (CoinBigIndex j=columnStart[iColumn];
+		   j<columnStart[iColumn]+columnLength[iColumn];j++) {
+		int iRow = row[j];
+		double lower = rowLower[iRow];
+		double upper = rowUpper[iRow];
+		double value = rowActivity[iRow];
+		if (value>upper) 
+		  oldSum += value-upper;
+		else if (value<lower)
+		  oldSum += lower-value;
+		value += theta*element[j];
+		rowActivity[iRow]=value;
+		if (value>upper) 
+		  newSum += value-upper;
+		else if (value<lower)
+		  newSum += lower-value;
+	      }
+	      assert (newSum<=oldSum);
+	      sumInfeasibility += newSum-oldSum;
+	    }
+	  }
+	}
+      }
+      // Now flip some integers?
+#if 0
+      for (i=0;i<numberIntegers;i++) {
+	int iColumn = integerVariable[i];
+	double solValue = solution[iColumn];
+	assert (fabs(solValue-floor(solValue+0.5))<1.0e-8);
+	double improvementUp=0.0;
+	if (columnUpper[iColumn]>=solValue+1.0) {
+	  // can go up
+	  double oldSum=0.0;
+	  double newSum=0.0;
+	  for (CoinBigIndex j=columnStart[iColumn];
+	       j<columnStart[iColumn]+columnLength[iColumn];j++) {
+	    int iRow = row[j];
+	    double lower = rowLower[iRow];
+	    double upper = rowUpper[iRow];
+	    double value = rowActivity[iRow];
+	    if (value>upper) 
+	      oldSum += value-upper;
+	    else if (value<lower)
+	      oldSum += lower-value;
+	    value += element[j];
+	    if (value>upper) 
+	      newSum += value-upper;
+	    else if (value<lower)
+	      newSum += lower-value;
+	  }
+	  improvementUp = oldSum-newSum;
+	}
+	double improvementDown=0.0;
+	if (columnLower[iColumn]<=solValue-1.0) {
+	  // can go down
+	  double oldSum=0.0;
+	  double newSum=0.0;
+	  for (CoinBigIndex j=columnStart[iColumn];
+	       j<columnStart[iColumn]+columnLength[iColumn];j++) {
+	    int iRow = row[j];
+	    double lower = rowLower[iRow];
+	    double upper = rowUpper[iRow];
+	    double value = rowActivity[iRow];
+	    if (value>upper) 
+	      oldSum += value-upper;
+	    else if (value<lower)
+	      oldSum += lower-value;
+	    value -= element[j];
+	    if (value>upper) 
+	      newSum += value-upper;
+	    else if (value<lower)
+	      newSum += lower-value;
+	  }
+	  improvementDown = oldSum-newSum;
+	}
+	double theta;
+	if (improvementUp>=improvementDown) {
+	  theta=1.0;
+	} else {
+	  improvementUp=improvementDown;
+	  theta=-1.0;
+	}
+	if (improvementUp>1.0e-8&&fabs(theta)>1.0e-8) {
+	  // Could move
+	  double oldSum=0.0;
+	  double newSum=0.0;
+	  solution[iColumn] += theta;
+	  for (CoinBigIndex j=columnStart[iColumn];
+	       j<columnStart[iColumn]+columnLength[iColumn];j++) {
+	    int iRow = row[j];
+	    double lower = rowLower[iRow];
+	    double upper = rowUpper[iRow];
+	    double value = rowActivity[iRow];
+	    if (value>upper) 
+	      oldSum += value-upper;
+	    else if (value<lower)
+	      oldSum += lower-value;
+	    value += theta*element[j];
+	    rowActivity[iRow]=value;
+	    if (value>upper) 
+	      newSum += value-upper;
+	    else if (value<lower)
+	      newSum += lower-value;
+	  }
+	  assert (newSum<=oldSum);
+	  sumInfeasibility += newSum-oldSum;
+	}
+      }
+#else
+      int bestColumn=-1;
+      double bestImprovement=primalTolerance;
+      double theta=0.0;
+      for (i=0;i<numberIntegers;i++) {
+	int iColumn = integerVariable[i];
+	double solValue = solution[iColumn];
+	assert (fabs(solValue-floor(solValue+0.5))<1.0e-8);
+	double improvementUp=0.0;
+	if (columnUpper[iColumn]>=solValue+1.0) {
+	  // can go up
+	  double oldSum=0.0;
+	  double newSum=0.0;
+	  for (CoinBigIndex j=columnStart[iColumn];
+	       j<columnStart[iColumn]+columnLength[iColumn];j++) {
+	    int iRow = row[j];
+	    double lower = rowLower[iRow];
+	    double upper = rowUpper[iRow];
+	    double value = rowActivity[iRow];
+	    if (value>upper) 
+	      oldSum += value-upper;
+	    else if (value<lower)
+	      oldSum += lower-value;
+	    value += element[j];
+	    if (value>upper) 
+	      newSum += value-upper;
+	    else if (value<lower)
+	      newSum += lower-value;
+	  }
+	  improvementUp = oldSum-newSum;
+	}
+	double improvementDown=0.0;
+	if (columnLower[iColumn]<=solValue-1.0) {
+	  // can go down
+	  double oldSum=0.0;
+	  double newSum=0.0;
+	  for (CoinBigIndex j=columnStart[iColumn];
+	       j<columnStart[iColumn]+columnLength[iColumn];j++) {
+	    int iRow = row[j];
+	    double lower = rowLower[iRow];
+	    double upper = rowUpper[iRow];
+	    double value = rowActivity[iRow];
+	    if (value>upper) 
+	      oldSum += value-upper;
+	    else if (value<lower)
+	      oldSum += lower-value;
+	    value -= element[j];
+	    if (value>upper) 
+	      newSum += value-upper;
+	    else if (value<lower)
+	      newSum += lower-value;
+	  }
+	  improvementDown = oldSum-newSum;
+	}
+	double improvement = CoinMax(improvementUp,improvementDown);
+	if (improvement>bestImprovement) {
+	  bestImprovement=improvement;
+	  bestColumn = iColumn;
+	  if (improvementUp>improvementDown)
+	    theta=1.0;
+	  else
+	    theta=-1.0;
+	}
+      }
+      if (bestColumn>=0) {
+	// Could move
+	int iColumn = bestColumn;
+	double oldSum=0.0;
+	double newSum=0.0;
+	solution[iColumn] += theta;
+	for (CoinBigIndex j=columnStart[iColumn];
+	     j<columnStart[iColumn]+columnLength[iColumn];j++) {
+	  int iRow = row[j];
+	  double lower = rowLower[iRow];
+	  double upper = rowUpper[iRow];
+	  double value = rowActivity[iRow];
+	  if (value>upper) 
+	    oldSum += value-upper;
+	  else if (value<lower)
+	    oldSum += lower-value;
+	  value += theta*element[j];
+	  rowActivity[iRow]=value;
+	  if (value>upper) 
+	    newSum += value-upper;
+	  else if (value<lower)
+	    newSum += lower-value;
+	}
+	assert (newSum<=oldSum);
+	sumInfeasibility += newSum-oldSum;
+      }
+#endif
+      if(oldSum <= sumInfeasibility + primalTolerance)
+	break; // no good
+    }
+  }
+  //delete [] saveSolution;
+#endif
   delete [] rowActivity;
   return (largestInfeasibility>primalTolerance) ? 0 : 1;
 }

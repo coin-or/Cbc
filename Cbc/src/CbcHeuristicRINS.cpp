@@ -670,8 +670,13 @@ CbcHeuristicDINS::solution(double & solutionValue,
 	  }
 	}
       }
-      printf("%d fixed, %d same as cont/int, %d same as int - %d bounded %d in cut\n",
-	     nFix,nCouldFix,nCouldFix2,nBound,nEl);
+      char generalPrint[200];
+      sprintf(generalPrint,
+	      "%d fixed, %d same as cont/int, %d same as int - %d bounded %d in cut\n",
+	      nFix,nCouldFix,nCouldFix2,nBound,nEl);
+      model_->messageHandler()->message(CBC_FPUMP2,model_->messages())
+	<< generalPrint
+	<<CoinMessageEol;
       if (nFix>numberIntegers/10) {
 #if 0
 	newSolver->initialSolve();

@@ -511,6 +511,7 @@ void CbcSolver::fillParameters()
   parameters_[whichParam(COMBINE,numberParameters_,parameters_)].setCurrentOption("on");
   parameters_[whichParam(PIVOTANDFIX,numberParameters_,parameters_)].setCurrentOption("off");
   parameters_[whichParam(RANDROUND,numberParameters_,parameters_)].setCurrentOption("off");
+  parameters_[whichParam(NAIVE,numberParameters_,parameters_)].setCurrentOption("off");
   parameters_[whichParam(RINS,numberParameters_,parameters_)].setCurrentOption("off");
   parameters_[whichParam(DINS,numberParameters_,parameters_)].setCurrentOption("off");
   parameters_[whichParam(RENS,numberParameters_,parameters_)].setCurrentOption("off");
@@ -3214,6 +3215,7 @@ void CbcMain0 (CbcModel  & model)
   parameters[whichParam(COMBINE,numberParameters,parameters)].setCurrentOption("on");
   parameters[whichParam(PIVOTANDFIX,numberParameters,parameters)].setCurrentOption("off");
   parameters[whichParam(RANDROUND,numberParameters,parameters)].setCurrentOption("off");
+  parameters[whichParam(NAIVE,numberParameters,parameters)].setCurrentOption("off");
   parameters[whichParam(RINS,numberParameters,parameters)].setCurrentOption("off");
   parameters[whichParam(DINS,numberParameters,parameters)].setCurrentOption("off");
   parameters[whichParam(RENS,numberParameters,parameters)].setCurrentOption("off");
@@ -3248,6 +3250,7 @@ int
   int useRENS = parameters_[whichParam(RENS,numberParameters_,parameters_)].currentOptionAsInteger();
   int useDINS = parameters_[whichParam(DINS,numberParameters_,parameters_)].currentOptionAsInteger();
   int useDIVING2 = parameters_[whichParam(DIVINGS,numberParameters_,parameters_)].currentOptionAsInteger();
+  int useNaive = parameters_[whichParam(NAIVE,numberParameters_,parameters_)].currentOptionAsInteger();
   // FPump done first as it only works if no solution
   int kType = (type<3) ? type : 1;
   if (useFpump>=kType) {
@@ -3384,17 +3387,12 @@ int
     model->addHeuristic(&heuristic6) ;
     anyToDo=true;
   }
-  if (useRINS>=kType) {
-    CbcHeuristicRINS heuristic5(*model);
-    heuristic5.setHeuristicName("RINS");
-    if (useRINS==1) {
-      heuristic5.setFractionSmall(0.5);
-      heuristic5.setDecayFactor(5.0);
-    } else {
-      heuristic5.setFractionSmall(0.6);
-      heuristic5.setDecayFactor(1.5);
-    }
-    model->addHeuristic(&heuristic5) ;
+  if (useNaive>=kType) {
+    CbcHeuristicNaive heuristic5b(*model);
+    heuristic5b.setHeuristicName("Naive");
+    heuristic5b.setFractionSmall(0.4);
+    heuristic5b.setNumberNodes(50);
+    model->addHeuristic(&heuristic5b) ;
     anyToDo=true;
   }
   if (useDINS>=kType) {
@@ -3407,6 +3405,19 @@ int
       heuristic5a.setDecayFactor(1.5);
     heuristic5a.setNumberNodes(1000);
     model->addHeuristic(&heuristic5a) ;
+    anyToDo=true;
+  }
+  if (useRINS>=kType) {
+    CbcHeuristicRINS heuristic5(*model);
+    heuristic5.setHeuristicName("RINS");
+    if (useRINS==1) {
+      heuristic5.setFractionSmall(0.5);
+      heuristic5.setDecayFactor(5.0);
+    } else {
+      heuristic5.setFractionSmall(0.6);
+      heuristic5.setDecayFactor(1.5);
+    }
+    model->addHeuristic(&heuristic5) ;
     anyToDo=true;
   }
   int useDIVING=0;
@@ -4829,6 +4840,7 @@ int
 	    case PIVOTANDFIX:
 	    case RANDROUND:
 	    case LOCALTREE:
+	    case NAIVE:
               defaultSettings=false; // user knows what she is doing
 	      break;
 	    case COSTSTRATEGY:

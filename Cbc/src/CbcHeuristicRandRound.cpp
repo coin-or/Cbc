@@ -81,7 +81,7 @@ CbcHeuristicRandRound::operator=( const CbcHeuristicRandRound& rhs)
 void 
 CbcHeuristicRandRound::resetModel(CbcModel * model)
 {
-  //CbcHeuristic::resetModel(model);
+  CbcHeuristic::resetModel(model);
 }
 
 /*
@@ -542,7 +542,7 @@ CbcHeuristicRandRound::solution(double & solutionValue,
 // update model
 void CbcHeuristicRandRound::setModel(CbcModel * model)
 {
-  // probably same as resetModel
+  CbcHeuristic::setModel(model);
 }
 
   

@@ -3842,10 +3842,14 @@ void CbcModel::branchAndBound(int doStatistics)
   have been pushed back onto the tree for further processing, in which case
   it'll be deleted in cleanTree. We need to check.
 */
+    double maxSeconds = getMaximumSeconds();
+    if (parentModel_)
+      maxSeconds=CoinMin(maxSeconds,parentModel_->getMaximumSeconds());
     if (!(numberNodes_ < intParam_[CbcMaxNumNode] &&
-	numberSolutions_ < intParam_[CbcMaxNumSol] &&
-	totalTime < dblParam_[CbcMaximumSeconds] &&
-	!stoppedOnGap_&&!eventHappened_)) {
+	  numberSolutions_ < intParam_[CbcMaxNumSol] &&
+	  totalTime < maxSeconds &&
+	  !stoppedOnGap_&&!eventHappened_&&(maximumNumberIterations_<0||
+					    numberIterations_<maximumNumberIterations_))) {
       if (tree_->size()) {
 	double dummyBest;
 	tree_->cleanTree(this,-COIN_DBL_MAX,dummyBest) ;
@@ -8811,6 +8815,8 @@ CbcModel::resolve(CbcNodeInfo * parent, int whereFrom,
 #endif
 	    feasible=false;
 	  }
+	} else if (solver_->isAbandoned()) {
+	  setMaximumSeconds(-COIN_DBL_MAX);
 	}
 #ifdef COIN_HAS_CLP
 	OsiClpSolverInterface * clpSolver 

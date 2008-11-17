@@ -2744,6 +2744,7 @@ expandKnapsack(CoinModel & model, int * whichColumn, int * knapsackStart,
     return NULL;
   }
 }
+#if NEW_STYLE_SOLVER
 // Fills in original solution (coinModel length)
 static void 
 afterKnapsack(const CoinModel & coinModel2, const int * whichColumn, const int * knapsackStart, 
@@ -2807,6 +2808,7 @@ afterKnapsack(const CoinModel & coinModel2, const int * whichColumn, const int *
   }
 #endif
 }
+#endif
 #endif
 #if 0
 static int outDupRow(OsiSolverInterface * solver) 

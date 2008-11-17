@@ -237,10 +237,10 @@ CbcHeuristicDive::solution(double & solutionValue,
   const CoinBigIndex * columnStart = matrix_.getVectorStarts();
   const int * columnLength = matrix_.getVectorLengths();
   // Row copy
-  const double * elementByRow = matrixByRow_.getElements();
-  const int * column = matrixByRow_.getIndices();
-  const CoinBigIndex * rowStart = matrixByRow_.getVectorStarts();
-  const int * rowLength = matrixByRow_.getVectorLengths();
+  //const double * elementByRow = matrixByRow_.getElements();
+  //const int * column = matrixByRow_.getIndices();
+  //const CoinBigIndex * rowStart = matrixByRow_.getVectorStarts();
+  //const int * rowLength = matrixByRow_.getVectorLengths();
 
   // Get solution array for heuristic solution
   int numberColumns = solver->getNumCols();
@@ -267,7 +267,9 @@ CbcHeuristicDive::solution(double & solutionValue,
     }
   }
 
+#ifdef DIVE_FIX_BINARY_VARIABLES
   const double* reducedCost = solver->getReducedCost();
+#endif
 
   int iteration = 0;
   while(numberFractionalVariables) {
@@ -338,9 +340,11 @@ CbcHeuristicDive::solution(double & solutionValue,
     }
 
     // do reduced cost fixing
-    int numberFixed = reducedCostFix(solver);
 #ifdef DIVE_DEBUG
+    int numberFixed = reducedCostFix(solver);
     std::cout<<"numberReducedCostFixed = "<<numberFixed<<std::endl;
+#else
+    reducedCostFix(solver);
 #endif
       
     int numberAtBoundFixed = 0;

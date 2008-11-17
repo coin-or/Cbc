@@ -90,7 +90,7 @@ CbcHeuristicDiveCoefficient::selectVariableToBranch(OsiSolverInterface* solver,
 	if(allTriviallyRoundableSoFar&&nDownLocks>0 && nUpLocks>0) {
 	  allTriviallyRoundableSoFar = false;
 	  bestFraction = DBL_MAX;
-	  int bestLocks = COIN_INT_MAX;
+	  bestLocks = COIN_INT_MAX;
 	}
 
 	// the variable cannot be rounded

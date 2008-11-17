@@ -804,7 +804,7 @@ CbcHeuristicNaive::solution(double & solutionValue,
     if (solValue<cutoff) {
       nFix=0;
       newSolver->setObjSense(direction); // correct direction
-      const double * thisSolution = newSolver->getColSolution();
+      //const double * thisSolution = newSolver->getColSolution();
       for (int iColumn=0;iColumn<numberColumns;iColumn++) {
 	double value = solution[iColumn];
 	double lower = colLower[iColumn];

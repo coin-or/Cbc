@@ -31,9 +31,11 @@ int decodeBit(char * phrase, char * & nextPhrase, double & coefficient, bool ifF
   if (*pos2=='*') {
     char * pos3 = pos;
     while (pos3!=pos2) {
-      char x = *pos3;
       pos3++;
+#ifndef NDEBUG
+      char x = *(pos3-1);
       assert ((x>='0'&&x<='9')||x=='.'||x=='+'||x=='-'||x=='e');
+#endif
     }
     char saved = *pos2;
     *pos2='\0';
@@ -65,9 +67,11 @@ int decodeBit(char * phrase, char * & nextPhrase, double & coefficient, bool ifF
     if (ifFirst) {
       char * pos3 = pos;
       while (pos3!=pos2) {
-	char x = *pos3;
 	pos3++;
+#ifndef NDEBUG
+	char x = *(pos3-1);
 	assert ((x>='0'&&x<='9')||x=='.'||x=='+'||x=='-'||x=='e');
+#endif
       }
       assert(*pos2=='\0');
       // keep possible -
@@ -276,8 +280,7 @@ void OsiSolverLink::resolve()
     bool takeHint;
     OsiHintStrength strength;
     // Switch off printing if asked to
-    bool gotHint = (getHintParam(OsiDoReducePrint,takeHint,strength));
-    assert (gotHint);
+    getHintParam(OsiDoReducePrint,takeHint,strength);
     if (strength!=OsiHintIgnore&&takeHint) {
       printf("no printing\n");
     } else {
@@ -321,27 +324,6 @@ void OsiSolverLink::resolve()
 	delete [] which;
 	temp->bottomAppendPackedMatrix(*mat);
 	temp->removeGaps(1.0e-14);
-      }
-      if (0) {
-	const CoinPackedMatrix * matrix = modelPtr_->matrix();
-	int numberColumns = matrix->getNumCols();
-	assert (numberColumns==temp->getNumCols());
-	const double * element1 = temp->getMutableElements();
-	const int * row1 = temp->getIndices();
-	const CoinBigIndex * columnStart1 = temp->getVectorStarts();
-	const int * columnLength1 = temp->getVectorLengths();
-	const double * element2 = matrix->getMutableElements();
-	const int * row2 = matrix->getIndices();
-	const CoinBigIndex * columnStart2 = matrix->getVectorStarts();
-	const int * columnLength2 = matrix->getVectorLengths();
-	for (int i=0;i<numberColumns;i++) {
-	  assert (columnLength2[i]==columnLength1[i]);
-	  int offset = columnStart2[i]-columnStart1[i];
-	  for (int j=columnStart1[i];j<columnStart1[i]+columnLength1[i];j++) {
-	    assert (row1[j]==row2[j+offset]);
-	    assert (element1[j]==element2[j+offset]);
-	  }
-	}
       }
       modelPtr_->replaceMatrix(temp,true);
     } else {
@@ -450,8 +432,10 @@ void OsiSolverLink::resolve()
       if (satisfied&&(specialOptions2_&2)!=0) {
 	assert (quadraticModel_);
 	// look at true objective
+#ifndef NDEBUG
 	double direction = modelPtr_->optimizationDirection();
 	assert (direction==1.0);
+#endif
 	double value = - quadraticModel_->objectiveOffset();
 	const double * objective = quadraticModel_->objective();
 	int i;
@@ -607,7 +591,9 @@ void OsiSolverLink::resolve()
 			newLower = CoinMax(lower2[xColumn],newUpper-gap);
 		    }
 		    // see if problem
+#ifndef NDEBUG
 		    double lambda[4];
+#endif
 		    xB[0]=newLower;
 		    xB[1]=newUpper;
 		    xB[2]=value;
@@ -616,8 +602,10 @@ void OsiSolverLink::resolve()
 		    xybar[1]=xB[0]*yB[1];
 		    xybar[2]=xB[1]*yB[0];
 		    xybar[3]=xB[1]*yB[1];
+#ifndef NDEBUG
 		    double infeasibility=obj->computeLambdas(xB,yB,xybar,lambda);
 		    assert (infeasibility<1.0e-9);
+#endif
 		    setColLower(xColumn,newLower);
 		    setColUpper(xColumn,newUpper);
 		  }
@@ -633,15 +621,19 @@ void OsiSolverLink::resolve()
 			newLower = CoinMax(lower2[yColumn],newUpper-gap);
 		    }
 		    // see if problem
+#ifndef NDEBUG
 		    double lambda[4];
+#endif
 		    yB[0]=newLower;
 		    yB[1]=newUpper;
 		    xybar[0]=xB[0]*yB[0];
 		    xybar[1]=xB[0]*yB[1];
 		    xybar[2]=xB[1]*yB[0];
 		    xybar[3]=xB[1]*yB[1];
+#ifndef NDEBUG
 		    double infeasibility=obj->computeLambdas(xB,yB,xybar,lambda);
 		    assert (infeasibility<1.0e-9);
+#endif
 		    setColLower(yColumn,newLower);
 		    setColUpper(yColumn,newUpper);
 		  }
@@ -1606,7 +1598,9 @@ OsiSolverLink::addTighterConstraints()
   for (int iRow=0;iRow<numberRows2;iRow++) {
     for (int iList=0;iList<nList;iList++) {
       int kColumn = list[iList];
+#ifndef NDEBUG
       const double * columnLower = getColLower();
+#endif
       //const double * columnUpper = getColUpper();
       const double * rowLower = getRowLower();
       const double * rowUpper = getRowUpper();
@@ -3278,8 +3272,10 @@ OsiSolverLink::setFixedPriority(int priorityValue)
   for ( i =0;i<numberObjects_;i++) {
     OsiSimpleInteger * obj = dynamic_cast<OsiSimpleInteger *> (object_[i]);
     if (obj) {
+#ifndef NDEBUG
       int iColumn = obj->columnNumber();
       assert (iColumn>=0);
+#endif
       if (obj->priority()<priorityValue)
 	numberFix_++;
     }
@@ -3325,10 +3321,12 @@ CoinPackedMatrix *
 OsiSolverLink::quadraticRow(int rowNumber,double * linearRow) const
 {
   int numberColumns = coinModel_.numberColumns();
-  int numberRows = coinModel_.numberRows();
   CoinZeroN(linearRow,numberColumns);
   int numberElements=0;
+#ifndef NDEBUG
+  int numberRows = coinModel_.numberRows();
   assert (rowNumber>=0&&rowNumber<numberRows);
+#endif
   CoinModelLink triple=coinModel_.firstInRow(rowNumber);
   while (triple.column()>=0) {
     int iColumn = triple.column();
@@ -3424,8 +3422,10 @@ OsiSolverLink::fathom(bool allFixed)
     for (i=0;i<numberFix_;i++ ) {
       int iColumn = fixVariables_[i];
       double lo = lower[iColumn];
+#ifndef NDEBUG
       double up = upper[iColumn];
       assert (lo==up);
+#endif
       //printf("column %d fixed to %g\n",iColumn,lo);
       coinModel_.associateElement(coinModel_.columnName(iColumn),lo);
     }
@@ -6893,7 +6893,9 @@ OsiBiLinearEquality::newGrid(OsiSolverInterface * solver, int type) const
     abort();
   }
   double * element = matrix->getMutableElements();
+#ifndef NDEBUG
   const int * row = matrix->getIndices();
+#endif
   const CoinBigIndex * columnStart = matrix->getVectorStarts();
   //const int * columnLength = matrix->getVectorLengths();
   // get original bounds
@@ -7430,8 +7432,10 @@ CoinModel::expandKnapsack(int knapsackRow, int & numberOutput,double * buildObj,
   triple=firstInRow(knapsackRow);
   while (triple.column()>=0) {
     int iColumn = triple.column();
+#ifndef NDEBUG
     const char *  el = getElementAsString(knapsackRow,iColumn);
     assert (!strcmp("Numeric",el));
+#endif
     whichColumn[iColumn]=numJ;
     numJ++;
     triple=next(triple);
@@ -7715,12 +7719,10 @@ approximateSolution(CoinModel & coinModel,
     int type = model->loadNonLinear(coinModel2.moreInfo(),
 				    numberConstraints,constraints);
     if (type==1||type==3) {
-      int returnCode = model->nonlinearSLP(numberPasses,deltaTolerance);
-      assert (!returnCode);
+      model->nonlinearSLP(numberPasses,deltaTolerance);
     } else if (type==2||type==4) {
-      int returnCode = model->nonlinearSLP(numberConstraints,constraints,
-					   numberPasses,deltaTolerance);
-      assert (!returnCode);
+      model->nonlinearSLP(numberConstraints,constraints,
+			  numberPasses,deltaTolerance);
     } else {
       printf("error or linear - fix %d\n",type);
     }

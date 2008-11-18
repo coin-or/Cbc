@@ -8037,7 +8037,7 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
       if (thisObjective-startObjective<1.0e-5&&numberElementsAdded>0.2*numberElementsAtStart)
         willBeCutsInTree=-1;
       int whenC=whenCuts_;
-      if (whenC==999999|whenC==999998) {
+      if (whenC==999999||whenC==999998) {
 	int size = continuousSolver_->getNumRows()+continuousSolver_->getNumCols();
 	bool smallProblem = size<=550;
 	smallProblem=false;
@@ -10514,9 +10514,6 @@ CbcModel::setBestSolution (CBC_Message how,
 	  printf("Largest infeasibility of %g on column %d - tolerance %g\n",
 		 largestInfeasibility,iInfeas,tolerance);
 #endif
-#if COIN_DEVELOP<2
-	if (largestAway<1.0e-3)
-#endif 
 	if (largestAway>integerTolerance) 
 	  handler_->message(CBC_RELAXED1, messages_)
 	    << objectiveValue2 
@@ -12323,16 +12320,23 @@ void CbcModel::passInEventHandler (const CbcEventHandler *eventHandler)
 int 
 CbcModel::resolve(OsiSolverInterface * solver)
 {
-#ifdef CLIQUE_ANALYSIS
-  if (probingInfo_&&currentDepth_>0) {
-    int nFix=probingInfo_->fixColumns(*solver);
-    if (nFix<0)
-      return 0;
-  }
-#endif
 #ifdef COIN_HAS_CLP
   OsiClpSolverInterface * clpSolver 
     = dynamic_cast<OsiClpSolverInterface *> (solver);
+#endif
+#ifdef CLIQUE_ANALYSIS
+  if (probingInfo_&&currentDepth_>0) {
+    int nFix=probingInfo_->fixColumns(*solver);
+    if (nFix<0) {
+#ifdef COIN_HAS_CLP
+      if (clpSolver) 
+	clpSolver->getModelPtr()->setProblemStatus(1);
+#endif
+      return 0;
+    }
+  }
+#endif
+#ifdef COIN_HAS_CLP
   if (clpSolver) {
     /*bool takeHint;
     OsiHintStrength strength;

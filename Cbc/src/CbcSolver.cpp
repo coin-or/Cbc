@@ -2744,7 +2744,12 @@ expandKnapsack(CoinModel & model, int * whichColumn, int * knapsackStart,
     return NULL;
   }
 }
-#if NEW_STYLE_SOLVER
+#ifdef COIN_HAS_ASL
+#define AFTER_KNAPSACK
+#elif NEW_STYLE_SOLVER
+#define AFTER_KNAPSACK
+#endif
+#ifdef AFTER_KNAPSACK
 // Fills in original solution (coinModel length)
 static void 
 afterKnapsack(const CoinModel & coinModel2, const int * whichColumn, const int * knapsackStart, 

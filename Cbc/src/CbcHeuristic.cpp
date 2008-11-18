@@ -512,7 +512,7 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver,int numberNodes,
     ClpSimplex * lpSolver = osiclp->getModelPtr();
     lpSolver->setSpecialOptions(lpSolver->specialOptions()|0x01000000); // say is Cbc (and in branch and bound)
     lpSolver->setSpecialOptions(lpSolver->specialOptions()|
-				16384+4096+512+128);
+				(16384+4096+512+128));
   }
 #endif
 #ifdef HISTORY_STATISTICS

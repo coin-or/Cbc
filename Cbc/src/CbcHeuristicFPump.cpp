@@ -2370,7 +2370,7 @@ ClpDisasterHandler * CbcDisasterHandler::clone() const
 int 
 CbcDisasterHandler::typeOfDisaster()
 {
-  if (!cbcModel_->parentModel()&
+  if (!cbcModel_->parentModel()&&
       (cbcModel_->specialOptions()&2048)==0) {
     return 0;
   } else {

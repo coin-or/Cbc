@@ -757,7 +757,7 @@ CoinModel::CoinModel( int nonLinear, const char * fileName,const void * info)
     type_(-1),
     links_(0)
 {
-  problemName_ = strdup("");
+  problemName_ = "";
   int status=0;
   if (!strcmp(fileName,"-")||!strcmp(fileName,"stdin")) {
     // stdin
@@ -1267,8 +1267,7 @@ CoinModel::gdb( int nonLinear, const char * fileName,const void * info)
     abort();
   }
   // set problem name
-  free(problemName_);
-  problemName_=strdup("???");
+  problemName_="???";
 
   // Build by row from scratch
   const double * element = matrixByRow.getElements();

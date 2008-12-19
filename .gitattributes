@@ -16,6 +16,13 @@ Cbc/MSVisualStudio/v8/cbcExamplesSample2/cbcExamplesSample2.vcproj -text
 Cbc/MSVisualStudio/v8/cbcGeneric/cbcGeneric.vcproj -text
 Cbc/MSVisualStudio/v8/cbcSolve/cbcSolve.vcproj -text
 Cbc/MSVisualStudio/v8/libCbc/libCbc.vcproj -text
+Cbc/MSVisualStudio/v9/Cbc.sln -text
+Cbc/MSVisualStudio/v9/cbcCInterfaceDll/cbcCInterfaceDll.vcproj -text
+Cbc/MSVisualStudio/v9/cbcCSosDllSample/cbcCSosDllSample.vcproj -text
+Cbc/MSVisualStudio/v9/cbcExamplesSample2/cbcExamplesSample2.vcproj -text
+Cbc/MSVisualStudio/v9/cbcGeneric/cbcGeneric.vcproj -text
+Cbc/MSVisualStudio/v9/cbcSolve/cbcSolve.vcproj -text
+Cbc/MSVisualStudio/v9/libCbc/libCbc.vcproj -text
 Cbc/cbc_addlibs.txt.in -text
 Cbc/configure -text
 Cbc/configure.ac -text

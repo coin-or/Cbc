@@ -217,7 +217,19 @@ int main (int argc, const char *argv[])
   /* Two ways of doing this depending on whether NEW_STYLE_SOLVER defined.
      So we need pointer to model.  Old way could use modelA. rather than model->
    */
+  // Messy code below copied from CbcSolver.cpp
+#ifdef CLP_FAST_CODE
+// force new style solver
 #ifndef NEW_STYLE_SOLVER
+#define NEW_STYLE_SOLVER 1
+#endif
+#else
+// Not new style solver
+#ifndef NEW_STYLE_SOLVER
+#define NEW_STYLE_SOLVER 0
+#endif
+#endif
+#if NEW_STYLE_SOLVER==0
   // Pass to Cbc initialize defaults 
   CbcModel modelA(solver1);
   CbcModel * model = &modelA;
@@ -232,7 +244,7 @@ int main (int argc, const char *argv[])
   if (argc>2) {
     CbcMain1(argc-1,argv+1,modelA,callBack);
   } else {
-    const char * argv2[]={"driver3","-solve","-quit"};
+    const char * argv2[]={"driver4","-solve","-quit"};
     CbcMain1(3,argv2,modelA,callBack);
   }
 #else

@@ -521,7 +521,7 @@ CbcModel::analyzeObjective ()
     // Give priority to costed in probing if few
     if (!numberContinuousObj&&numberIntegerObj<=100&&
 	numberIntegerObj*5<numberObjects_)
-	specialOptions_ |= 4096;
+	specialOptions_ |= xxxx;
 #endif
     if (iTest>=987654320&&iTest<987654330&&numberObjects_&&!parentModel_) {
       iType = iTest-987654320;
@@ -1073,6 +1073,16 @@ void CbcModel::branchAndBound(int doStatistics)
   numberStrongIterations_ = 0;
   currentNode_ = NULL;
   CoinThreadRandom randomGenerator(1234567);
+  // See if should do cuts old way
+#ifdef CBC_DETERMINISTIC_THREAD
+  if (numberThreads_>0||dynamic_cast<CbcTreeLocal *> (tree_))
+    specialOptions_ |= 4096+8192;
+#else
+  if (numberThreads_>0)
+    specialOptions_ |= 4096;
+  if (dynamic_cast<CbcTreeLocal *> (tree_))
+    specialOptions_ |= 4096+8192;
+#endif
 #ifdef COIN_HAS_CLP
  {
    OsiClpSolverInterface * clpSolver 
@@ -5905,7 +5915,7 @@ bool CbcModel::addCuts1 (CbcNode * node, CoinWarmStartBasis *&lastws)
 #endif
   bool sameProblem=false;
 #ifdef NODE_LAST
-  if (numberThreads_<=0) {
+  if ((specialOptions_&4096)==0) {
     {
       int n1=numberRowsAtContinuous_;
       for (int i=0;i<lastDepth_;i++)
@@ -6213,7 +6223,7 @@ int CbcModel::addCuts (CbcNode *node, CoinWarmStartBasis *&lastws,bool canFix)
       lastws->resize(numberRowsNow,numberColumns);
 #ifdef NODE_LAST
       bool canMissStuff=false;
-      if (numberThreads_<=0) {
+      if ((specialOptions_&4096)==0) {
 	bool redoCuts=true;
 	if (CoinAbs(lastNumberCuts2_-numberToAdd)<5) {
 	  int numberToCheck=CoinMin(lastNumberCuts2_,numberToAdd);
@@ -6303,7 +6313,7 @@ int CbcModel::addCuts (CbcNode *node, CoinWarmStartBasis *&lastws,bool canFix)
 	//printf("Not Skipped\n");
 	//int n1=solver_->getNumRows();
 #endif
-	if (numberThreads_<=0) {
+	if ((specialOptions_&4096)==0) {
 	  solver_->restoreBaseModel(numberRowsAtContinuous_);
 	} else {
 	  // *** Fix later
@@ -12742,7 +12752,10 @@ CbcModel::chooseBranch(CbcNode * &newNode, int numberPassesLeft,
 #ifdef CBC_DETERMINISTIC_THREAD
 	  lastws->fixFullBasis();
 #else
-	  assert (lastws->fullBasis());
+	  if ((specialOptions_&8192)==0) 
+	    assert (lastws->fullBasis());
+	  else
+	    lastws->fixFullBasis();
 #endif
 	}
 	newNode->createInfo(this,oldNode,lastws,lowerBefore,upperBefore,

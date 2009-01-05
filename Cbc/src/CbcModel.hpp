@@ -1490,6 +1490,8 @@ public:
       9 bit (512) - Try reduced model after 100 nodes
       10 bit (1024) - Switch on some heuristics even if seems unlikely
       11 bit (2048) - Mark as in small branch and bound
+      12 bit (4096) - Funny cuts so do slow way (in some places)
+      13 bit (8192) - Funny cuts so do slow way (in other places)
   */
   /// Set special options
   inline void setSpecialOptions(int value)

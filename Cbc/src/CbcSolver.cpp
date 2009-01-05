@@ -3310,7 +3310,7 @@ int
       if (c) {
 	double cutoff;
 	model->solver()->getDblParam(OsiDualObjectiveLimit,cutoff);
-	cutoff = CoinMin(cutoff,value + 0.1*fabs(value)*c);
+	cutoff = CoinMin(cutoff,value + 0.05*fabs(value)*c);
 	double dextra1 = parameters_[whichParam(DEXTRA1,numberParameters_,parameters_)].doubleValue();
 	if (dextra1)
 	  cutoff=dextra1;

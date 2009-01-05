@@ -411,7 +411,7 @@ CbcHeuristicFPump::solution(double & solutionValue,
     if (firstCutoff<2.0*solutionValue&&numberTries==1/*&&CoinMin(cutoff,fakeCutoff_)<1.0e20*/) 
       useCutoff=true;
     if (useCutoff) {
-      cutoff = CoinMin(cutoff,fakeCutoff_);
+      double rhs = CoinMin(cutoff,fakeCutoff_);
       const double * objective = solver->getObjCoefficients();
       int numberColumns = solver->getNumCols();
       int * which = new int[numberColumns];
@@ -430,7 +430,7 @@ CbcHeuristicFPump::solution(double & solutionValue,
       if (offset)
 	printf("CbcHeuristicFPump obj offset %g\n",offset);
 #endif
-      solver->addRow(nel,which,els,-COIN_DBL_MAX,cutoff+offset*direction);
+      solver->addRow(nel,which,els,-COIN_DBL_MAX,rhs+offset*direction);
       delete [] which;
       delete [] els;
       bool takeHint;

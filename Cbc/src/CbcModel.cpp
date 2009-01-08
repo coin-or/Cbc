@@ -1784,6 +1784,18 @@ void CbcModel::branchAndBound(int doStatistics)
   doHeuristicsAtRoot();
   if ( intParam_[CbcMaxNumNode] < 0)
     eventHappened_=true; // stop as fast as possible
+  stoppedOnGap_ = false ;
+  // See if can stop on gap
+  bestPossibleObjective_ = solver_->getObjValue()*solver_->getObjSense();
+  double testGap = CoinMax(dblParam_[CbcAllowableGap],
+			   CoinMax(fabs(bestObjective_),fabs(bestPossibleObjective_))
+			   *dblParam_[CbcAllowableFractionGap]);
+  if (bestObjective_-bestPossibleObjective_ < testGap && getCutoffIncrement()>=0.0) {
+    if (bestPossibleObjective_<getCutoff())
+      stoppedOnGap_ = true ;
+    feasible = false;
+    eventHappened_=true; // stop as fast as possible
+  }
   statistics_ = NULL;
   // Do on switch
   if (doStatistics>0&&doStatistics<=100) {
@@ -1836,9 +1848,8 @@ void CbcModel::branchAndBound(int doStatistics)
   }
   currentNumberCuts_ = numberNewCuts_ ;
   // See if can stop on gap
-  stoppedOnGap_ = false ;
   bestPossibleObjective_ = solver_->getObjValue()*solver_->getObjSense();
-  double testGap = CoinMax(dblParam_[CbcAllowableGap],
+  testGap = CoinMax(dblParam_[CbcAllowableGap],
 			   CoinMax(fabs(bestObjective_),fabs(bestPossibleObjective_))
 			   *dblParam_[CbcAllowableFractionGap]);
   if (bestObjective_-bestPossibleObjective_ < testGap && getCutoffIncrement()>=0.0) {

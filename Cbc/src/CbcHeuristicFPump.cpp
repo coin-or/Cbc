@@ -237,7 +237,7 @@ CbcHeuristicFPump::solution(double & solutionValue,
   int * integerVariable = new int[numberIntegers];
   const double * lower = model_->solver()->getColLower();
   const double * upper = model_->solver()->getColUpper();
-  bool doGeneral = (accumulate_&(4+8))!=0;
+  bool doGeneral = (accumulate_&4)!=0;
   j=0;
   for (i=0;i<numberIntegers;i++) {
     int iColumn = integerVariableOrig[i];
@@ -260,7 +260,7 @@ CbcHeuristicFPump::solution(double & solutionValue,
   if (general*3>2*numberIntegers&&!doGeneral) {
     delete [] integerVariable;
     return 0;
-  } else if ((accumulate_&8)==0) {
+  } else if ((accumulate_&4)==0) {
     doGeneral=false;
     j=0;
     for (i=0;i<numberIntegers;i++) {
@@ -331,9 +331,11 @@ CbcHeuristicFPump::solution(double & solutionValue,
     else
       fixContinuous=2;
     when_=1;
-    usedColumn = new int [numberColumns];
-    for (int i=0;i<numberColumns;i++)
-      usedColumn[i]=-1;
+    if ((accumulate_&1)!=0) {
+      usedColumn = new int [numberColumns];
+      for (int i=0;i<numberColumns;i++)
+	usedColumn[i]=-1;
+    }
     lastSolution = CoinCopyOfArray(model_->solver()->getColSolution(),numberColumns);
   }
   int finalReturnCode=0;

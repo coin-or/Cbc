@@ -887,6 +887,7 @@ CbcHeuristicFPump::solution(double & solutionValue,
 	    }
 	  }      
 	}
+	int numberIterations=0;
 	if (!doGeneral) {
 	  // faster to do from all slack!!!!
 	  if (allSlack) {
@@ -1155,6 +1156,7 @@ CbcHeuristicFPump::solution(double & solutionValue,
 	  lower = solver->getColLower();
 	  upper = solver->getColUpper();
 	  solution = solver->getColSolution();
+	  numberIterations = solver->getIterationCount();
 	} else {
 	  int * addStart = new int[2*general+1];
 	  int * addIndex = new int[4*general];
@@ -1229,7 +1231,10 @@ CbcHeuristicFPump::solution(double & solutionValue,
 	  //assert (solver2->isProvenOptimal());
 	  if (nAdd) {
 	    solver->setColSolution(solver2->getColSolution());
+	    numberIterations = solver2->getIterationCount();
 	    delete solver2;
+	  } else {
+	    numberIterations = solver->getIterationCount();
 	  }
 	  lower = solver->getColLower();
 	  upper = solver->getColUpper();
@@ -1260,16 +1265,16 @@ CbcHeuristicFPump::solution(double & solutionValue,
 	    lastMove=1000000; // going up
 	  }
 	}
-	totalNumberIterations += solver->getIterationCount();
+	totalNumberIterations += numberIterations;
 	if (solver->getNumRows()<3000)
 	  sprintf(pumpPrint,"Pass %3d: suminf. %10.5f (%d) obj. %g iterations %d", 
 		  numberPasses+totalNumberPasses,
 		  newSumInfeas,newNumberInfeas,
-		  newTrueSolutionValue,solver->getIterationCount());
+		  newTrueSolutionValue,numberIterations);
 	else
 	  sprintf(pumpPrint,"Pass %3d: (%.2f seconds) suminf. %10.5f (%d) obj. %g iterations %d", numberPasses+totalNumberPasses,
 		  model_->getCurrentSeconds(),newSumInfeas,newNumberInfeas,
-		  newTrueSolutionValue,solver->getIterationCount());
+		  newTrueSolutionValue,numberIterations);
 	model_->messageHandler()->message(CBC_FPUMP1,model_->messages())
 	  << pumpPrint
 	  <<CoinMessageEol;

@@ -432,7 +432,16 @@ CbcHeuristicFPump::solution(double & solutionValue,
       if (offset)
 	printf("CbcHeuristicFPump obj offset %g\n",offset);
 #endif
-      solver->addRow(nel,which,els,-COIN_DBL_MAX,rhs+offset*direction);
+      // Tweak rhs
+      double useRhs = rhs+offset*direction;
+#if 0
+      double tempValue = 60.0*useRhs;
+      if (fabs(tempValue-floor(tempValue+0.5))<1.0e-7&&rhs!=fakeCutoff_) {
+	// add a little
+	useRhs += 1.0e-5;
+      }
+#endif
+      solver->addRow(nel,which,els,-COIN_DBL_MAX,useRhs);
       delete [] which;
       delete [] els;
       bool takeHint;
@@ -532,7 +541,7 @@ CbcHeuristicFPump::solution(double & solutionValue,
       }
       if (numberIterationsPass1>=0) {
 	int n = totalNumberIterations - numberIterationsLastPass;
-	if (n>CoinMax(15000,3*numberIterationsPass1)) {
+	if (n>CoinMax(15000,3*numberIterationsPass1)&&maximumPasses_<200) {
 	  exitAll=true;
 	  break;
 	}

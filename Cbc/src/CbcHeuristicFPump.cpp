@@ -543,25 +543,31 @@ CbcHeuristicFPump::solution(double & solutionValue,
 	int n = totalNumberIterations - numberIterationsLastPass;
 	if (n>CoinMax(15000,3*numberIterationsPass1)&&maximumPasses_<200) {
 	  exitAll=true;
-	  break;
 	}
       }
+      // Exit on exact total number if maximumPasses large
+      if (maximumPasses_>=200&&numberPasses+totalNumberPasses>=
+	  maximumPasses_)
+	exitAll=true;
       if (iterationLimit<0.0) {
 	if (numberPasses>=maximumPasses_) {
 	  // If going well then keep going if maximumPasses_ small
 	  if (lastMove<numberPasses-4||lastMove==1000000)
-	    break;
+	    exitAll=true;
 	  if (maximumPasses_>20||numberPasses>=40)
-	    break;
+	    exitAll=true;
 	}
       } else if (totalNumberIterations>iterationLimit&&numberPasses>15) {
 	  // exiting on iteration count
-	break;
+	exitAll=true;
       } else if (maximumPasses_<30&&numberPasses>100) {
 	// too many passes anyway
-	break;
+	exitAll=true;
       }
-      if (maximumTime_>0.0&&CoinCpuTime()>=startTime_+maximumTime_) break;
+      if (maximumTime_>0.0&&CoinCpuTime()>=startTime_+maximumTime_) 
+	exitAll=true;
+      if (exitAll)
+	break;
       memcpy(newSolution,solution,numberColumns*sizeof(double));
       int flip;
       if (numberPasses==0&&false) {

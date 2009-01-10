@@ -1794,7 +1794,7 @@ void CbcModel::branchAndBound(int doStatistics)
     if (bestPossibleObjective_<getCutoff())
       stoppedOnGap_ = true ;
     feasible = false;
-    eventHappened_=true; // stop as fast as possible
+    //eventHappened_=true; // stop as fast as possible
   }
   statistics_ = NULL;
   // Do on switch

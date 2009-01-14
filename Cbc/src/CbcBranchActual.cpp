@@ -529,7 +529,7 @@ CbcSOS::infeasibility(int & preferredWay) const
     //break;
     // probably best to use pseudo duals
     double value = lastNonZero-firstNonZero+1;
-    value *= 0.5/((double) numberMembers_);
+    value *= 0.5/static_cast<double> (numberMembers_);
     // adjust??
     return value;
   } else {
@@ -723,10 +723,10 @@ CbcSOS::infeasibility(const OsiBranchingInformation * info,
       double upCost = shadowEstimateUp_;
       if (numberTimesDown_) 
 	downCost *= downDynamicPseudoRatio_/
-	  ((double) numberTimesDown_);
+	  static_cast<double> (numberTimesDown_);
       if (numberTimesUp_) 
 	upCost *= upDynamicPseudoRatio_/
-	  ((double) numberTimesUp_);
+	  static_cast<double> (numberTimesUp_);
 #define WEIGHT_AFTER 0.7
 #define WEIGHT_BEFORE 0.1
       int stateOfSearch = model_->stateOfSearch()%10;
@@ -748,7 +748,7 @@ CbcSOS::infeasibility(const OsiBranchingInformation * info,
       return returnValue;
     } else {
       double value = lastNonZero-firstNonZero+1;
-      value *= 0.5/((double) numberMembers_);
+      value *= 0.5/static_cast<double> (numberMembers_);
       return value;
     }
   } else {
@@ -3085,7 +3085,7 @@ CbcBranchDefaultDecision::bestBranch (CbcBranchingObject ** objects, int numberO
 	  
 	  if (numberNext<numberUnsatisfied) {
 	    int numberUp = numberUnsatisfied - numberInfeasibilitiesUp[i];
-	    double perUnsatisfied = changeUp[i]/(double) numberUp;
+	    double perUnsatisfied = changeUp[i]/static_cast<double> (numberUp);
 	    double estimatedObjective = objectiveValue + numberUnsatisfied * perUnsatisfied;
 	    if (estimatedObjective<cutoff) 
 	      method=3;
@@ -3093,7 +3093,7 @@ CbcBranchDefaultDecision::bestBranch (CbcBranchingObject ** objects, int numberO
 	  numberNext = numberInfeasibilitiesDown[i];
 	  if (numberNext<numberUnsatisfied) {
 	    int numberDown = numberUnsatisfied - numberInfeasibilitiesDown[i];
-	    double perUnsatisfied = changeDown[i]/(double) numberDown;
+	    double perUnsatisfied = changeDown[i]/static_cast<double> (numberDown);
 	    double estimatedObjective = objectiveValue + numberUnsatisfied * perUnsatisfied;
 	    if (estimatedObjective<cutoff) 
 	      method=3;
@@ -3210,7 +3210,7 @@ CbcBranchDefaultDecision::bestBranch (CbcBranchingObject ** objects, int numberO
 	
 	if (numberNext<numberUnsatisfied) {
 	  int numberUp = numberUnsatisfied - numberInfeasibilitiesUp[i];
-	  double perUnsatisfied = changeUp[i]/(double) numberUp;
+	  double perUnsatisfied = changeUp[i]/static_cast<double> (numberUp);
 	  double estimatedObjective = objectiveValue + numberUnsatisfied * perUnsatisfied;
 	  if (estimatedObjective<bestEstimate) {
 	    bestEstimate = estimatedObjective;
@@ -3221,7 +3221,7 @@ CbcBranchDefaultDecision::bestBranch (CbcBranchingObject ** objects, int numberO
 	numberNext = numberInfeasibilitiesDown[i];
 	if (numberNext<numberUnsatisfied) {
 	  int numberDown = numberUnsatisfied - numberInfeasibilitiesDown[i];
-	  double perUnsatisfied = changeDown[i]/(double) numberDown;
+	  double perUnsatisfied = changeDown[i]/static_cast<double> (numberDown);
 	  double estimatedObjective = objectiveValue + numberUnsatisfied * perUnsatisfied;
 	  if (estimatedObjective<bestEstimate) {
 	    bestEstimate = estimatedObjective;
@@ -3350,7 +3350,7 @@ CbcFollowOn::CbcFollowOn (CbcModel * model)
 	    good=false;
 	}
 	if (good)
-	  rhs_[i]=(int) value;
+	  rhs_[i]=static_cast<int> (value);
       }
     }
   }
@@ -3441,7 +3441,7 @@ CbcFollowOn::gutsOfFollowOn(int & otherRow, int & preferredWay) const
 	  if (solValue<1.0-integerTolerance&&solValue>integerTolerance)
 	    numberUnsatisfied++;
 	} else {
-	  rhsValue -= (int)(value*floor(solValue+0.5));
+	  rhsValue -= static_cast<int>(value*floor(solValue+0.5));
 	}
       }
       if (numberUnsatisfied>1) {
@@ -4635,9 +4635,14 @@ CbcGeneralDepth::infeasibility(int & preferredWay) const
       const int * integerVariable = model_->integerVariable();
 #endif
       for (int i=0;i<numberIntegers;i++) {
+#ifndef NDEBUG
 	CbcSimpleIntegerDynamicPseudoCost * obj =
 	  dynamic_cast <CbcSimpleIntegerDynamicPseudoCost *>(objects[i]) ;
 	assert (obj&&obj->columnNumber()==integerVariable[i]);
+#else
+	CbcSimpleIntegerDynamicPseudoCost * obj =
+	  static_cast <CbcSimpleIntegerDynamicPseudoCost *>(objects[i]) ;
+#endif
 	if (info->numberUp_[i]>0) {
 	  if (info->downPseudo_[i]>largest)
 	    largest=info->downPseudo_[i];

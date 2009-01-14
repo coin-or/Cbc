@@ -255,7 +255,7 @@ CbcHeuristicDive::solution(double & solutionValue,
   if(binVarIndex_.size())
     candidate = new PseudoReducedCost [binVarIndex_.size()];
 
-  const int maxNumberAtBoundToFix = (int) floor(percentageToFix_ * numberIntegers);
+  const int maxNumberAtBoundToFix = static_cast<int> (floor(percentageToFix_ * numberIntegers));
 
   // count how many fractional variables
   int numberFractionalVariables = 0;
@@ -678,8 +678,8 @@ CbcHeuristicDive::validate()
 	  down++;
       }
     }
-    downLocks_[i] = (unsigned short) down;
-    upLocks_[i] = (unsigned short) up;
+    downLocks_[i] = static_cast<unsigned short> (down);
+    upLocks_[i] = static_cast<unsigned short> (up);
   }
 
 #ifdef DIVE_FIX_BINARY_VARIABLES

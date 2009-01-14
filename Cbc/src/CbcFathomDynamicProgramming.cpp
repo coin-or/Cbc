@@ -197,7 +197,7 @@ CbcFathomDynamicProgramming::checkPossible(int allowableSize)
   double size=1.0;
   double check = COIN_INT_MAX;
   for (i=0;i<numberRows;i++) {
-    int n= (int) floor(rhs[i]+0.5);
+    int n= static_cast<int> (floor(rhs[i]+0.5));
     if (n) {
       n++; // allow for 0,1... n
       if (numberActive!=1) {
@@ -226,7 +226,7 @@ CbcFathomDynamicProgramming::checkPossible(int allowableSize)
   if (size>=check)
     size_=COIN_INT_MAX;
   else
-    size_=(int) size;
+    size_=static_cast<int> (size);
         
   int n01=0;
   int nbadcoeff=0;
@@ -272,7 +272,7 @@ CbcFathomDynamicProgramming::checkPossible(int allowableSize)
     numberActive=0;
     int kBit=0;
     for (i=0;i<numberRows;i++) {
-      int n= (int) floor(rhs[i]+0.5);
+      int n= static_cast<int> (floor(rhs[i]+0.5));
       if (n) {
         lookup_[i]=numberActive;
         rhs_[numberActive]=n;
@@ -393,7 +393,7 @@ CbcFathomDynamicProgramming::checkPossible(int allowableSize)
       for (i=0;i<numberRows;i++) {
         int newRow = lookup_[i];
         if (newRow>=0) {
-          int gap=(int) (rowUpper[i]-CoinMax(0.0,rowLower[i]));
+          int gap=static_cast<int> (rowUpper[i]-CoinMax(0.0,rowLower[i]));
           lower2[newRow]=rhs_[newRow]-gap;
           int numberBits = numberBits_[newRow];
           int startBit = startBit_[newRow];
@@ -483,7 +483,7 @@ CbcFathomDynamicProgramming::fathom(double * & betterSolution)
       assert (lowerValue==floor(lowerValue));
       double cost = direction * objective[i];
       fixedObj += lowerValue*cost;
-      int gap = (int) (upper[i]-lowerValue);
+      int gap = static_cast<int> (upper[i]-lowerValue);
       CoinBigIndex start = columnStart[i];
       tryColumn(columnLength[i],row+start,element+start,cost,gap);
       if (cost_[target_]<bestAtTarget) {
@@ -521,7 +521,7 @@ CbcFathomDynamicProgramming::fathom(double * & betterSolution)
       for (i=0;i<numberRows;i++) {
         int newRow = lookup_[i];
         if (newRow>=0) {
-          int gap=(int) (rowUpper[i]-CoinMax(0.0,rowLower[i]));
+          int gap=static_cast<int> (rowUpper[i]-CoinMax(0.0,rowLower[i]));
           lower[newRow]=rhs_[newRow]-gap;
           int numberBits = numberBits_[newRow];
           int startBit = startBit_[newRow];
@@ -574,7 +574,7 @@ CbcFathomDynamicProgramming::fathom(double * & betterSolution)
                    j<columnStart[i]+columnLength[i];j++) {
                 int iRow=row[j];
                 double value = element[j];
-                int iValue = (int) value;
+                int iValue = static_cast<int> (value);
                 if(iValue!=indices_[iRow]) {
                   good=false;
                   break;
@@ -656,7 +656,7 @@ CbcFathomDynamicProgramming::tryColumn(int numberElements, const int * rows,
     for (int j=0;j<numberElements;j++) {
       int iRow=rows[j];
       double value = coefficients[j];
-      int iValue = (int) value;
+      int iValue = static_cast<int> (value);
       int newRow = lookup_[iRow];
       if (newRow<0||iValue>rhs_[newRow]) {
         n=0;

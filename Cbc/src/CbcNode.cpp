@@ -329,7 +329,7 @@ CbcNodeInfo::incrementParentCuts(CbcModel * model, int change)
 */
 void
 CbcNodeInfo::addCuts (OsiCuts & cuts, int numberToBranchOn,
-		      int * whichGenerator)
+		      int * whichGenerator,int numberPointingToThis)
 {
   int numberCuts = cuts.sizeRowCuts();
   if (numberCuts) {
@@ -344,7 +344,8 @@ CbcNodeInfo::addCuts (OsiCuts & cuts, int numberToBranchOn,
     }
     for (i=0;i<numberCuts;i++) {
       CbcCountRowCut * thisCut = new CbcCountRowCut(*cuts.rowCutPtr(i),
-						    this,numberCuts_);
+						    this,numberCuts_,
+						    -1,numberPointingToThis);
       thisCut->increment(numberToBranchOn); 
       cuts_[numberCuts_++] = thisCut;
 #ifdef CBC_DEBUG
@@ -641,9 +642,9 @@ CbcNodeInfo *
 CbcFullNodeInfo::buildRowBasis(CoinWarmStartBasis & basis ) const 
 {
   const unsigned int * saved = 
-    (const unsigned int *) basis_->getArtificialStatus();
+    reinterpret_cast<const unsigned int *> (basis_->getArtificialStatus());
   unsigned int * now = 
-    (unsigned int *) basis.getArtificialStatus();
+    reinterpret_cast<unsigned int *> (basis.getArtificialStatus());
   int number=basis_->getNumArtificial()>>4;;
   int i;
   for (i=0;i<number;i++) { 
@@ -681,8 +682,8 @@ CbcPartialNodeInfo::CbcPartialNodeInfo (CbcNodeInfo *parent, CbcNode *owner,
   numberChangedBounds_ = numberChangedBounds;
   int size = numberChangedBounds_*(sizeof(double)+sizeof(int));
   char * temp = new char [size];
-  newBounds_ = (double *) temp;
-  variables_ = (int *) (newBounds_+numberChangedBounds_);
+  newBounds_ = reinterpret_cast<double *> (temp);
+  variables_ = reinterpret_cast<int *> (newBounds_+numberChangedBounds_);
 
   int i ;
   for (i=0;i<numberChangedBounds_;i++) {
@@ -703,8 +704,8 @@ CbcPartialNodeInfo::CbcPartialNodeInfo (const CbcPartialNodeInfo & rhs)
   numberChangedBounds_ = rhs.numberChangedBounds_;
   int size = numberChangedBounds_*(sizeof(double)+sizeof(int));
   char * temp = new char [size];
-  newBounds_ = (double *) temp;
-  variables_ = (int *) (newBounds_+numberChangedBounds_);
+  newBounds_ = reinterpret_cast<double *> (temp);
+  variables_ = reinterpret_cast<int *> (newBounds_+numberChangedBounds_);
 
   int i ;
   for (i=0;i<numberChangedBounds_;i++) {
@@ -853,8 +854,8 @@ CbcPartialNodeInfo::applyBounds(int iColumn, double & lower, double & upper,int 
   if (nAdd) { 
     int size = (numberChangedBounds_+nAdd)*(sizeof(double)+sizeof(int));
     char * temp = new char [size];
-    double * newBounds = (double *) temp;
-    int * variables = (int *) (newBounds+numberChangedBounds_+nAdd);
+    double * newBounds = reinterpret_cast<double *> (temp);
+    int * variables = reinterpret_cast<int *> (newBounds+numberChangedBounds_+nAdd);
 
     int i ;
     for (i=0;i<numberChangedBounds_;i++) {
@@ -1735,7 +1736,7 @@ int CbcNode::chooseBranch (CbcModel *model, CbcNode *lastNode,int numberPassesLe
         int * whichRow = new int[3*numberRows];
         int * whichColumn = new int[2*numberColumns];
         int nBound;
-        ClpSimplex * small = ((ClpSimplexOther *) clp)->crunch(rhs,whichRow,whichColumn,nBound,true);
+        ClpSimplex * small = static_cast<ClpSimplexOther *> (clp)->crunch(rhs,whichRow,whichColumn,nBound,true);
         if (!small) {
           anyAction=-2;
           //printf("XXXX Inf by inspection\n");
@@ -1778,7 +1779,7 @@ int CbcNode::chooseBranch (CbcModel *model, CbcNode *lastNode,int numberPassesLe
         for (i=0;i<numberStrong;i++) {
           int iObject = choice[i].objectNumber;
           const OsiObject * object = model->object(iObject);
-          const CbcSimpleInteger * simple = dynamic_cast <const CbcSimpleInteger *> (object);
+          const CbcSimpleInteger * simple = static_cast <const CbcSimpleInteger *> (object);
           int iSequence = simple->columnNumber();
           newLower[i]= ceil(saveSolution[iSequence]);
           newUpper[i]= floor(saveSolution[iSequence]);
@@ -1813,7 +1814,7 @@ int CbcNode::chooseBranch (CbcModel *model, CbcNode *lastNode,int numberPassesLe
           for (i=0;i<numberStrong;i++) {
             int iObject = choice[i].objectNumber;
             const OsiObject * object = model->object(iObject);
-            const CbcSimpleInteger * simple = dynamic_cast <const CbcSimpleInteger *> (object);
+            const CbcSimpleInteger * simple = static_cast <const CbcSimpleInteger *> (object);
             int iSequence = simple->columnNumber();
             which[i]=iSequence;
             double * sol = outputSolution[2*i];
@@ -2411,7 +2412,7 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
     double sumPi=0.0;
     for (int i=0;i<numberRows;i++) 
       sumPi += fabs(pi[i]);
-    sumPi /= ((double) numberRows);
+    sumPi /= static_cast<double> (numberRows);
     // and scale back
     sumPi *= 0.01;
     usefulInfo.defaultDual_ = sumPi; // switch on
@@ -2512,9 +2513,14 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
     int i;
     for ( i=0;i<numberObjects;i++) {
       OsiObject * object = model->modifiableObject(i);
+#ifndef NDEBUG
       CbcSimpleIntegerDynamicPseudoCost * dynamicObject =
 	dynamic_cast <CbcSimpleIntegerDynamicPseudoCost *>(object) ;
       assert(dynamicObject);
+#else
+      CbcSimpleIntegerDynamicPseudoCost * dynamicObject =
+	static_cast <CbcSimpleIntegerDynamicPseudoCost *>(object) ;
+#endif
       int  numberUp2=0;
       int numberDown2=0;
       double up=0.0;
@@ -2536,11 +2542,11 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
 	       dynamicObject->columnNumber(),numberUp2,up,numberDown2,down);
     }
     if (numberUp) 
-      averageUp /= (double) numberUp;
+      averageUp /= static_cast<double> (numberUp);
     else
       averageUp=1.0;
     if (numberDown) 
-      averageDown /= (double) numberDown;
+      averageDown /= static_cast<double> (numberDown);
     else
       averageDown=1.0;
     printf("total - up %d vars average %g, - down %d vars average %g\n",
@@ -2612,11 +2618,11 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
 	}
       }
       if (numberUp) 
-        averageUp /= (double) numberUp;
+        averageUp /= static_cast<double> (numberUp);
       else
         averageUp=1.0;
       if (numberDown) 
-        averageDown /= (double) numberDown;
+        averageDown /= static_cast<double> (numberDown);
       else
         averageDown=1.0;
       for ( i=0;i<numberObjects;i++) {
@@ -3368,7 +3374,7 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
           int iObject = whichObject[j];
           OsiObject * object = model->modifiableObject(iObject);
           CbcSimpleIntegerDynamicPseudoCost * dynamicObject =
-            dynamic_cast <CbcSimpleIntegerDynamicPseudoCost *>(object) ;
+            static_cast <CbcSimpleIntegerDynamicPseudoCost *>(object) ;
           int iSequence=dynamicObject->columnNumber();
           double value = saveSolution[iSequence];
           value -= floor(value);
@@ -3635,7 +3641,7 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
         int iObject = whichObject[iDo];
         OsiObject * object = model->modifiableObject(iObject);
         CbcSimpleIntegerDynamicPseudoCost * dynamicObject =
-          dynamic_cast <CbcSimpleIntegerDynamicPseudoCost *>(object) ;
+          static_cast <CbcSimpleIntegerDynamicPseudoCost *>(object) ;
         int iColumn = dynamicObject ? dynamicObject->columnNumber() : numberColumns+iObject;
         int preferredWay;
 	double infeasibility = object->infeasibility(&usefulInfo,preferredWay);
@@ -4321,7 +4327,8 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
 	  delete choice.possibleBranch;
 	}
       }
-      double averageChange = model->sumChangeObjective()/((double) model->getNodeCount());
+      double averageChange = model->sumChangeObjective()/
+	static_cast<double> (model->getNodeCount());
       if (depth_<10||worstFeasible>0.2*averageChange) 
         solveAll=false;
       if (model->messageHandler()->logLevel()>3||false) { 
@@ -4705,7 +4712,7 @@ int CbcNode::analyze (CbcModel *model, double * results)
     int iObject = whichObject[iDo];
     OsiObject * object = model->modifiableObject(iObject);
     CbcSimpleIntegerDynamicPseudoCost * dynamicObject =
-      dynamic_cast <CbcSimpleIntegerDynamicPseudoCost *>(object) ;
+      static_cast <CbcSimpleIntegerDynamicPseudoCost *>(object) ;
     int iColumn = dynamicObject->columnNumber();
     int preferredWay;
     object->infeasibility(&usefulInfo,preferredWay);

@@ -37,6 +37,7 @@ CbcCutGenerator::CbcCutGenerator ()
     whenInfeasible_(false),
     mustCallAgain_(false),
     switchedOff_(false),
+    globalCutsAtRoot_(false),
     timing_(false),
     timeInCutGenerator_(0.0),
     numberTimes_(0),
@@ -59,6 +60,7 @@ CbcCutGenerator::CbcCutGenerator(CbcModel * model,CglCutGenerator * generator,
     depthCutGeneratorInSub_(whatDepthInSub),
     mustCallAgain_(false),
     switchedOff_(false),
+    globalCutsAtRoot_(false),
     timing_(false),
     timeInCutGenerator_(0.0),
     numberTimes_(0),
@@ -68,6 +70,10 @@ CbcCutGenerator::CbcCutGenerator(CbcModel * model,CglCutGenerator * generator,
     numberCutsAtRoot_(0),
     numberActiveCutsAtRoot_(0)
 {
+  if (howOften<-1000) {
+    globalCutsAtRoot_=true;
+    howOften+=1000;
+  }
   model_ = model;
   generator_=generator->clone();
   generator_->refreshSolver(model_->solver());
@@ -100,6 +106,7 @@ CbcCutGenerator::CbcCutGenerator ( const CbcCutGenerator & rhs)
   whenInfeasible_=rhs.whenInfeasible_;
   mustCallAgain_ = rhs.mustCallAgain_;
   switchedOff_ = rhs.switchedOff_;
+  globalCutsAtRoot_ = rhs.globalCutsAtRoot_;
   timing_ = rhs.timing_;
   timeInCutGenerator_ = rhs.timeInCutGenerator_;
   numberTimes_ = rhs.numberTimes_;
@@ -131,6 +138,7 @@ CbcCutGenerator::operator=( const CbcCutGenerator& rhs)
     whenInfeasible_=rhs.whenInfeasible_;
     mustCallAgain_ = rhs.mustCallAgain_;
     switchedOff_ = rhs.switchedOff_;
+    globalCutsAtRoot_ = rhs.globalCutsAtRoot_;
     timing_ = rhs.timing_;
     timeInCutGenerator_ = rhs.timeInCutGenerator_;
     numberTimes_ = rhs.numberTimes_;
@@ -231,6 +239,7 @@ CbcCutGenerator::generateCuts( OsiCuts & cs , int fullScan, OsiSolverInterface *
     info.formulation_rows = model_->numberRowsAtContinuous();
     info.inTree = node!=NULL;
     info.randomNumberGenerator=randomNumberGenerator;
+    info.options=(globalCutsAtRoot_) ? 8 : 0;
     incrementNumberTimesEntered();
     CglProbing* generator =
       dynamic_cast<CglProbing*>(generator_);
@@ -245,6 +254,7 @@ CbcCutGenerator::generateCuts( OsiCuts & cs , int fullScan, OsiSolverInterface *
       CglTreeProbingInfo * info2 = model_->probingInfo();
       bool doCuts=false;
       if (info2&&!depth) {
+	info2->options=(globalCutsAtRoot_) ? 8 : 0;
 	info2->level = depth;
 	info2->pass = pass;
 	info2->formulation_rows = model_->numberRowsAtContinuous();
@@ -268,7 +278,7 @@ CbcCutGenerator::generateCuts( OsiCuts & cs , int fullScan, OsiSolverInterface *
 	    1099999,
 	    2000123,
 	    2099999};
-	  int n = (int) (sizeof(test)/sizeof(int));
+	  int n = static_cast<int> (sizeof(test)/sizeof(int));
 	  int saveStack = generator->getMaxLook();
 	  int saveNumber = generator->getMaxProbe();
 #undef CLP_INVESTIGATE

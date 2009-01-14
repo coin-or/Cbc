@@ -277,6 +277,7 @@ AM_CPPFLAGS += \
 	-I`$(CYGPATH_W) $(CGLSRCDIR)/src/CglTwomir` \
 	-I`$(CYGPATH_W) $(CGLSRCDIR)/src/CglLandP` \
 	-I`$(CYGPATH_W) $(CGLSRCDIR)/src/CglResidualCapacity` \
+	-I`$(CYGPATH_W) $(CGLSRCDIR)/src/CglZeroHalf` \
 	-I`$(CYGPATH_W) $(COINUTILSSRCDIR)/src` \
 	-I`$(CYGPATH_W) $(COINUTILSOBJDIR)/inc` \
 	-I`$(CYGPATH_W) $(OSISRCDIR)/src` \

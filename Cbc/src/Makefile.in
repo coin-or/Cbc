@@ -575,6 +575,7 @@ AM_CPPFLAGS = $(am__append_2) $(am__append_5) $(am__append_7) \
 	$(CGLSRCDIR)/src/CglTwomir` -I`$(CYGPATH_W) \
 	$(CGLSRCDIR)/src/CglLandP` -I`$(CYGPATH_W) \
 	$(CGLSRCDIR)/src/CglResidualCapacity` -I`$(CYGPATH_W) \
+	$(CGLSRCDIR)/src/CglZeroHalf` -I`$(CYGPATH_W) \
 	$(COINUTILSSRCDIR)/src` -I`$(CYGPATH_W) \
 	$(COINUTILSOBJDIR)/inc` -I`$(CYGPATH_W) $(OSISRCDIR)/src` \
 	-I`$(CYGPATH_W) $(OSIOBJDIR)/inc` -DCOIN_NO_CLP_MESSAGE \

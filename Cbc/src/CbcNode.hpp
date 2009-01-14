@@ -176,7 +176,8 @@ public:
   inline void nullParent()
   { parent_=NULL;}
 
-  void addCuts(OsiCuts & cuts,int numberToBranch, int * whichGenerator);
+  void addCuts(OsiCuts & cuts,int numberToBranch, int * whichGenerator
+	       ,int numberPointingToThis);
   void addCuts(int numberCuts, CbcCountRowCut ** cuts,int numberToBranch);
   /** Delete cuts (decrements counts)
       Slow unless cuts in same order as saved

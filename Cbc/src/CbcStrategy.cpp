@@ -365,7 +365,7 @@ CbcStrategyDefault::setupOther(CbcModel & model)
 	    else
 	      numberInt++;
 	  } else {
-	    int iValue = (int)( 100*(value+0.005));
+	    int iValue = static_cast<int>( 100*(value+0.005));
 	    double value2 = iValue;
 	    if (value2==100.0*value) {
 	      numberInt++;
@@ -387,7 +387,7 @@ CbcStrategyDefault::setupOther(CbcModel & model)
 	    double value1 = element[j];
 	    double value = fabs(value1);
 	    if (value<1.0e7) {
-	      int iValue = (int)( 100*(value+0.005));
+	      int iValue = static_cast<int>( 100*(value+0.005));
 	      double value2 = iValue;
 	      if (value2!=100.0*value) {
 		value2 *= 0.01;

@@ -214,7 +214,6 @@ public:
   inline int id() const
   { return id_;}
   
-#ifdef CBC_DETERMINISTIC_THREAD
   /// Get position in object_ list
   inline int position() const
   { return position_;}
@@ -222,7 +221,6 @@ public:
   /// Set position in object_ list
   inline void setPosition(int position)
   { position_ = position;}
-#endif
   
    /// update model
   inline void setModel(CbcModel * model)
@@ -248,10 +246,8 @@ protected:
   CbcModel * model_;
   /// Identifier (normally column number in matrix)
   int id_;
-#ifdef CBC_DETERMINISTIC_THREAD
   /// Position in object list
   int position_;
-#endif
   /// If -1 down always chosen first, +1 up always, 0 normal
   int preferredWay_;
 

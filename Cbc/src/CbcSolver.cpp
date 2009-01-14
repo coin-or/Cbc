@@ -152,6 +152,9 @@ bool malloc_counts_on=false;
 #include "CglStored.hpp"
 #include "CglLandP.hpp"
 #include "CglResidualCapacity.hpp"
+#ifdef ZERO_HALF_CUTS
+#include "CglZeroHalf.hpp"
+#endif
 
 #include "CbcModel.hpp"
 #include "CbcHeuristic.hpp"
@@ -174,7 +177,7 @@ bool malloc_counts_on=false;
 #include  "CbcOrClpParam.hpp"
 #include  "CbcCutGenerator.hpp"
 #include  "CbcStrategy.hpp"
-#include "CbcBranchLotsize.hpp"
+#include "CbcBranchCut.hpp"
 
 #include "OsiClpSolverInterface.hpp"
 #include "CbcSolver.hpp"
@@ -487,7 +490,6 @@ void CbcSolver::fillParameters()
 #endif
   // Set up likely cut generators and defaults
   parameters_[whichParam(PREPROCESS,numberParameters_,parameters_)].setCurrentOption("sos");
-  parameters_[whichParam(MIPOPTIONS,numberParameters_,parameters_)].setIntValue(128|64|1);
   parameters_[whichParam(MIPOPTIONS,numberParameters_,parameters_)].setIntValue(1025);
   parameters_[whichParam(CUTPASSINTREE,numberParameters_,parameters_)].setIntValue(1);
   parameters_[whichParam(MOREMIPOPTIONS,numberParameters_,parameters_)].setIntValue(-1);
@@ -498,6 +500,7 @@ void CbcSolver::fillParameters()
   parameters_[whichParam(GOMORYCUTS,numberParameters_,parameters_)].setCurrentOption("ifmove");
   parameters_[whichParam(PROBINGCUTS,numberParameters_,parameters_)].setCurrentOption("ifmove");
   parameters_[whichParam(KNAPSACKCUTS,numberParameters_,parameters_)].setCurrentOption("ifmove");
+  parameters_[whichParam(ZEROHALFCUTS,numberParameters_,parameters_)].setCurrentOption("off");
   parameters_[whichParam(REDSPLITCUTS,numberParameters_,parameters_)].setCurrentOption("off");
   parameters_[whichParam(CLIQUECUTS,numberParameters_,parameters_)].setCurrentOption("ifmove");
   parameters_[whichParam(MIXEDCUTS,numberParameters_,parameters_)].setCurrentOption("ifmove");
@@ -1168,13 +1171,13 @@ crunchIt(ClpSimplex * model)
   int * whichRow = new int[3*numberRows];
   int * whichColumn = new int[2*numberColumns];
   int nBound;
-  ClpSimplex * small = ((ClpSimplexOther *) model)->crunch(rhs,whichRow,whichColumn,
+  ClpSimplex * small = static_cast<ClpSimplexOther *> (model)->crunch(rhs,whichRow,whichColumn,
                                                                nBound,false,false);
   if (small) {
     small->dual();
     if (small->problemStatus()==0) {
       model->setProblemStatus(0);
-      ((ClpSimplexOther *) model)->afterCrunch(*small,whichRow,whichColumn,nBound);
+      static_cast<ClpSimplexOther *> (model)->afterCrunch(*small,whichRow,whichColumn,nBound);
     } else if (small->problemStatus()!=3) {
       model->setProblemStatus(1);
     } else {
@@ -1656,7 +1659,7 @@ static OsiClpSolverInterface * fixVubs(CbcModel & model, int skipZero2,
   for (int iPass=0;iPass<2;iPass++) {
     for (int jLayer=0;jLayer<kLayer;jLayer++) {
       int check[]={-1,0,1,2,3,4,5,10,50,100,500,1000,5000,10000,COIN_INT_MAX};
-      int nCheck = (int) (sizeof(check)/sizeof(int));
+      int nCheck = static_cast<int> (sizeof(check)/sizeof(int));
       int countsI[20];
       int countsC[20];
       assert (nCheck<=20);
@@ -1781,8 +1784,8 @@ static OsiClpSolverInterface * fixVubs(CbcModel & model, int skipZero2,
 	    if (columnUpper[iColumn] > columnLower[iColumn]+1.0e-8) {
 	      if (clpSolver->isInteger(iColumn)) {
 		double value = lastSolution[iColumn];
-		int iValue = (int) (value+0.5);
-		assert (fabs(value-((double) iValue))<1.0e-3);
+		int iValue = static_cast<int> (value+0.5);
+		assert (fabs(value-static_cast<double> (iValue))<1.0e-3);
 		assert (iValue>=columnLower[iColumn]&&
 			iValue<=columnUpper[iColumn]);
 		columnLower[iColumn]=iValue;
@@ -1798,8 +1801,8 @@ static OsiClpSolverInterface * fixVubs(CbcModel & model, int skipZero2,
 	  if (columnUpper[iColumn] > columnLower[iColumn]+1.0e-8) {
 	    if (clpSolver->isInteger(iColumn)) {
 	      double value = lastSolution[iColumn];
-	      int iValue = (int) (value+0.5);
-	      assert (fabs(value-((double) iValue))<1.0e-3);
+	      int iValue = static_cast<int> (value+0.5);
+	      assert (fabs(value-static_cast<double> (iValue))<1.0e-3);
 	      assert (iValue>=columnLower[iColumn]&&
 		      iValue<=columnUpper[iColumn]);
 	      if (!fix[iColumn]) {
@@ -2159,7 +2162,7 @@ static OsiClpSolverInterface * fixVubs(CbcModel & model, int skipZero2,
 	}
       }
       printf("This fixes %d variables in lower priorities - total %d (%d integer) - all target %d, int target %d\n",
-	     nTotalFixed,nFixed,nFixedI,(int)(fractionFixed*numberColumns),(int) (fractionIntFixed*numberInteger));
+	     nTotalFixed,nFixed,nFixedI,static_cast<int>(fractionFixed*numberColumns),static_cast<int> (fractionIntFixed*numberInteger));
       int nBad=0;
       int nRelax=0;
       for ( iColumn=0;iColumn<numberColumns;iColumn++) {
@@ -2744,12 +2747,7 @@ expandKnapsack(CoinModel & model, int * whichColumn, int * knapsackStart,
     return NULL;
   }
 }
-#ifdef COIN_HAS_ASL
-#define AFTER_KNAPSACK
-#elif NEW_STYLE_SOLVER
-#define AFTER_KNAPSACK
-#endif
-#ifdef AFTER_KNAPSACK
+#if NEW_STYLE_SOLVER
 // Fills in original solution (coinModel length)
 static void 
 afterKnapsack(const CoinModel & coinModel2, const int * whichColumn, const int * knapsackStart, 
@@ -3198,7 +3196,6 @@ void CbcMain0 (CbcModel  & model)
 #endif
   // Set up likely cut generators and defaults
   parameters[whichParam(PREPROCESS,numberParameters,parameters)].setCurrentOption("sos");
-  parameters[whichParam(MIPOPTIONS,numberParameters,parameters)].setIntValue(128|64|1);
   parameters[whichParam(MIPOPTIONS,numberParameters,parameters)].setIntValue(1025);
   parameters[whichParam(CUTPASSINTREE,numberParameters,parameters)].setIntValue(1);
   parameters[whichParam(MOREMIPOPTIONS,numberParameters,parameters)].setIntValue(-1);
@@ -3209,6 +3206,7 @@ void CbcMain0 (CbcModel  & model)
   parameters[whichParam(GOMORYCUTS,numberParameters,parameters)].setCurrentOption("ifmove");
   parameters[whichParam(PROBINGCUTS,numberParameters,parameters)].setCurrentOption("ifmove");
   parameters[whichParam(KNAPSACKCUTS,numberParameters,parameters)].setCurrentOption("ifmove");
+  parameters[whichParam(ZEROHALFCUTS,numberParameters,parameters)].setCurrentOption("off");
   parameters[whichParam(REDSPLITCUTS,numberParameters,parameters)].setCurrentOption("off");
   parameters[whichParam(CLIQUECUTS,numberParameters,parameters)].setCurrentOption("ifmove");
   parameters[whichParam(MIXEDCUTS,numberParameters,parameters)].setCurrentOption("ifmove");
@@ -3258,9 +3256,10 @@ int
   int useDINS = parameters_[whichParam(DINS,numberParameters_,parameters_)].currentOptionAsInteger();
   int useDIVING2 = parameters_[whichParam(DIVINGS,numberParameters_,parameters_)].currentOptionAsInteger();
   int useNaive = parameters_[whichParam(NAIVE,numberParameters_,parameters_)].currentOptionAsInteger();
+  int kType = (type<10) ? type : 1;
+  assert (kType==1||kType==2);
   // FPump done first as it only works if no solution
-  int kType = (type<3) ? type : 1;
-  if (useFpump>=kType) {
+  if (useFpump>=kType&&useFpump<=kType+1) {
     anyToDo=true;
     CbcHeuristicFPump heuristic4(*model);
     heuristic4.setFractionSmall(0.5);
@@ -3361,13 +3360,13 @@ int
     model->addHeuristic(&heuristic4);
 #endif
   }
-  if (useRounding>=type) {
+  if (useRounding>=type&&useRounding>=kType&&useRounding<=kType+1) {
     CbcRounding heuristic1(*model);
     heuristic1.setHeuristicName("rounding");
     model->addHeuristic(&heuristic1) ;
     anyToDo=true;
   }
-  if (useCombine>=type) {
+  if (useCombine>=type&&useCombine>=kType&&useCombine<=kType+1) {
     CbcHeuristicLocal heuristic2(*model);
     heuristic2.setHeuristicName("combine solutions");
     heuristic2.setFractionSmall(0.5);
@@ -3375,7 +3374,7 @@ int
     model->addHeuristic(&heuristic2);
     anyToDo=true;
   }
-  if (useGreedy>=type) {
+  if (useGreedy>=type&&useGreedy>=kType&&useGreedy<=kType+1) {
     CbcHeuristicGreedyCover heuristic3(*model);
     heuristic3.setHeuristicName("greedy cover");
     CbcHeuristicGreedyEquality heuristic3a(*model);
@@ -3384,17 +3383,17 @@ int
     model->addHeuristic(&heuristic3a);
     anyToDo=true;
   }
-  if (useRENS>=kType) {
+  if (useRENS>=kType&&useRENS<=kType+1) {
     CbcHeuristicRENS heuristic6(*model);
     heuristic6.setHeuristicName("RENS");
     heuristic6.setFractionSmall(0.4);
     heuristic6.setFeasibilityPumpOptions(1008003);
-    int nodes []={-2,0,200,1000,10000};
+    int nodes []={-2,50,50,50,200,1000,10000};
     heuristic6.setNumberNodes(nodes[useRENS]);
     model->addHeuristic(&heuristic6) ;
     anyToDo=true;
   }
-  if (useNaive>=kType) {
+  if (useNaive>=kType&&useNaive<=kType+1) {
     CbcHeuristicNaive heuristic5b(*model);
     heuristic5b.setHeuristicName("Naive");
     heuristic5b.setFractionSmall(0.4);
@@ -3402,41 +3401,23 @@ int
     model->addHeuristic(&heuristic5b) ;
     anyToDo=true;
   }
-  if (useDINS>=kType) {
-    CbcHeuristicDINS heuristic5a(*model);
-    heuristic5a.setHeuristicName("DINS");
-    heuristic5a.setFractionSmall(0.6);
-    if (useDINS==1)
-      heuristic5a.setDecayFactor(5.0);
-    else
-      heuristic5a.setDecayFactor(1.5);
-    heuristic5a.setNumberNodes(1000);
-    model->addHeuristic(&heuristic5a) ;
-    anyToDo=true;
-  }
-  if (useRINS>=kType) {
-    CbcHeuristicRINS heuristic5(*model);
-    heuristic5.setHeuristicName("RINS");
-    if (useRINS==1) {
-      heuristic5.setFractionSmall(0.5);
-      heuristic5.setDecayFactor(5.0);
-    } else {
-      heuristic5.setFractionSmall(0.6);
-      heuristic5.setDecayFactor(1.5);
-    }
-    model->addHeuristic(&heuristic5) ;
-    anyToDo=true;
-  }
   int useDIVING=0;
   {
-    useDIVING |= 1*((parameters_[whichParam(DIVINGV,numberParameters_,parameters_)].currentOptionAsInteger()>=kType) ? 1 : 0);
-    useDIVING |= 2*((parameters_[whichParam(DIVINGG,numberParameters_,parameters_)].currentOptionAsInteger()>=kType) ? 1 : 0);
-    useDIVING |= 4*((parameters_[whichParam(DIVINGF,numberParameters_,parameters_)].currentOptionAsInteger()>=kType) ? 1 : 0);
-    useDIVING |= 8*((parameters_[whichParam(DIVINGC,numberParameters_,parameters_)].currentOptionAsInteger()>=kType) ? 1 : 0);
-    useDIVING |= 16*((parameters_[whichParam(DIVINGL,numberParameters_,parameters_)].currentOptionAsInteger()>=kType) ? 1 : 0);
-    useDIVING |= 32*((parameters_[whichParam(DIVINGP,numberParameters_,parameters_)].currentOptionAsInteger()>=kType) ? 1 : 0);
+    int useD;
+    useD = parameters_[whichParam(DIVINGV,numberParameters_,parameters_)].currentOptionAsInteger();
+    useDIVING |= 1*((useD>=kType) ? 1 : 0);
+    useD = parameters_[whichParam(DIVINGG,numberParameters_,parameters_)].currentOptionAsInteger();
+    useDIVING |= 2*((useD>=kType) ? 1 : 0);
+    useD = parameters_[whichParam(DIVINGF,numberParameters_,parameters_)].currentOptionAsInteger();
+    useDIVING |= 4*((useD>=kType) ? 1 : 0);
+    useD = parameters_[whichParam(DIVINGC,numberParameters_,parameters_)].currentOptionAsInteger();
+    useDIVING |= 8*((useD>=kType) ? 1 : 0);
+    useD = parameters_[whichParam(DIVINGL,numberParameters_,parameters_)].currentOptionAsInteger();
+    useDIVING |= 16*((useD>=kType) ? 1 : 0);
+    useD = parameters_[whichParam(DIVINGP,numberParameters_,parameters_)].currentOptionAsInteger();
+    useDIVING |= 32*((useD>=kType) ? 1 : 0);
   }
-  if (useDIVING2>=kType) {
+  if (useDIVING2>=kType&&useDIVING2<=kType+1) {
     int diveOptions=parameters_[whichParam(DIVEOPT,numberParameters_,parameters_)].intValue();
     if (diveOptions<0||diveOptions>10)
       diveOptions=2;
@@ -3509,19 +3490,51 @@ int
     }
     anyToDo=true;
   }
-  if (usePivot>=type) {
+  if (usePivot>=type&&usePivot<=kType+1) {
     CbcHeuristicPivotAndFix heuristic(*model);
     heuristic.setHeuristicName("pivot and fix");
     heuristic.setFractionSmall(10.0); // normally 0.5
     model->addHeuristic(&heuristic);
     anyToDo=true;
   }
-  if (useRand>=type) {
+  if (useRand>=type&&useRand<=kType+1) {
     CbcHeuristicRandRound heuristic(*model);
     heuristic.setHeuristicName("randomized rounding");
     heuristic.setFractionSmall(10.0); // normally 0.5
     model->addHeuristic(&heuristic);
     anyToDo=true;
+  }
+  if (useDINS>=kType&&useDINS<=kType+1) {
+    CbcHeuristicDINS heuristic5a(*model);
+    heuristic5a.setHeuristicName("DINS");
+    heuristic5a.setFractionSmall(0.6);
+    if (useDINS<4)
+      heuristic5a.setDecayFactor(5.0);
+    else
+      heuristic5a.setDecayFactor(1.5);
+    heuristic5a.setNumberNodes(1000);
+    model->addHeuristic(&heuristic5a) ;
+    anyToDo=true;
+  }
+  if (useRINS>=kType&&useRINS<=kType+1) {
+    CbcHeuristicRINS heuristic5(*model);
+    heuristic5.setHeuristicName("RINS");
+    if (useRINS<4) {
+      heuristic5.setFractionSmall(0.5);
+      heuristic5.setDecayFactor(5.0);
+    } else {
+      heuristic5.setFractionSmall(0.6);
+      heuristic5.setDecayFactor(1.5);
+    }
+    model->addHeuristic(&heuristic5) ;
+    anyToDo=true;
+  }
+  int heurSwitches=parameters_[whichParam(HOPTIONS,numberParameters_,parameters_)].intValue()/10;
+  if (heurSwitches) {
+    for (int iHeur=0;iHeur<model->numberHeuristics();iHeur++) {
+      CbcHeuristic * heuristic = model->heuristic(iHeur);
+      heuristic->setSwitches(heurSwitches);
+    }
   }
   if (type==2&&anyToDo) {
     // Do heuristics
@@ -3540,7 +3553,16 @@ int
     model2.createContinuousSolver();
     bool cleanModel = !model2.numberIntegers()&&!model2.numberObjects();
     model2.findIntegers(false);
-    model2.doHeuristicsAtRoot(1);
+    int heurOptions=parameters_[whichParam(HOPTIONS,numberParameters_,parameters_)].intValue()%10;
+    if (heurOptions==0||heurOptions==2) {
+      model2.doHeuristicsAtRoot(1);
+    } else if (heurOptions==1||heurOptions==3) {
+      model2.setMaximumNodes(-1);
+      CbcStrategyDefault strategy(false,5,5);
+      strategy.setupPreProcessing(1,0);
+      model2.setStrategy(strategy);
+      model2.branchAndBound();
+    }
     if (cleanModel)
       model2.zapIntegerInformation(false);
     if (model2.bestSolution()) {
@@ -3735,9 +3757,9 @@ int
     time0=time1;
     bool goodModel=(originalSolver->getNumCols()) ? true : false;
 
-    CoinSighandler_t saveSignal=SIG_DFL;
     // register signal handler
-    saveSignal = signal(SIGINT,signal_handler);
+    //CoinSighandler_t saveSignal=signal(SIGINT,signal_handler);
+    signal(SIGINT,signal_handler);
     // Set up all non-standard stuff
     int cutPass=-1234567;
     int cutPassInTree=-1234567;
@@ -4120,6 +4142,14 @@ int
     CglResidualCapacity residualCapacityGen;
     // set default action (0=off,1=on,2=root)
     int residualCapacityAction=0;
+
+#ifdef ZERO_HALF_CUTS
+    CglZeroHalf zerohalfGen;
+    //zerohalfGen.switchOnExpensive();
+#endif
+    // set default action (0=off,1=on,2=root)
+    int zerohalfAction=0;
+
     // Stored cuts
     bool storedCuts = false;
 
@@ -4789,6 +4819,10 @@ int
               defaultSettings=false; // user knows what she is doing
 	      residualCapacityAction = action;
 	      break;
+	    case ZEROHALFCUTS:
+              defaultSettings=false; // user knows what she is doing
+	      zerohalfAction = action;
+	      break;
 	    case ROUNDING:
               defaultSettings=false; // user knows what she is doing
 	      break;
@@ -4805,6 +4839,7 @@ int
 	      gomoryAction = action;
 	      probingAction = action;
 	      knapsackAction = action;
+	      zerohalfAction = action;
 	      cliqueAction = action;
 	      flowAction = action;
 	      mixedAction = action;
@@ -4817,6 +4852,7 @@ int
               parameters_[whichParam(FLOWCUTS,numberParameters_,parameters_)].setCurrentOption(action);
               parameters_[whichParam(MIXEDCUTS,numberParameters_,parameters_)].setCurrentOption(action);
               parameters_[whichParam(TWOMIRCUTS,numberParameters_,parameters_)].setCurrentOption(action);
+              parameters_[whichParam(ZEROHALFCUTS,numberParameters_,parameters_)].setCurrentOption(action);
               if (!action) {
                 redsplitAction = action;
                 parameters_[whichParam(REDSPLITCUTS,numberParameters_,parameters_)].setCurrentOption(action);
@@ -4929,7 +4965,7 @@ int
 		  }
 		}
 		if (tryIt) {
-		  model2 = ((ClpSimplexOther *) model2)->dualOfModel(fractionRow,fractionColumn);
+		  model2 = static_cast<ClpSimplexOther *> (model2)->dualOfModel(fractionRow,fractionColumn);
 		  if (model2) {
 		    sprintf(generalPrint,"Dual of model has %d rows and %d columns",
 			    model2->numberRows(),model2->numberColumns());
@@ -5180,7 +5216,7 @@ int
 	      }
 	      basisHasValues=1;
               if (dualize) {
-                int returnCode=((ClpSimplexOther *) lpSolver)->restoreFromDual(model2);
+                int returnCode=static_cast<ClpSimplexOther *> (lpSolver)->restoreFromDual(model2);
 		if (model2->status()==3)
 		  returnCode=0;
                 delete model2;
@@ -5532,7 +5568,7 @@ int
 		    si->setIntegerPriority(1000);
 		    si->setBiLinearPriority(10000);
 		    si->setSpecialOptions2(2+4+8);
-		    CoinModel * model2 = (CoinModel *) coinModel;
+		    CoinModel * model2 = coinModel;
 		    si->load(*model2,true, parameters_[log].intValue());
 		    // redo
 		    solver = model_.solver();
@@ -5796,7 +5832,7 @@ int
 		      double value = (CoinDrand48()+0.5)*10000;
 		      value = 10;
 		      value *= columnLength[i];
-		      int iValue = ((int) value)/10;
+		      int iValue = static_cast<int> (value)/10;
 		      //iValue=1;
 		      clpSolver->setObjCoeff(i,iValue);
 		    }
@@ -6001,7 +6037,7 @@ int
 		    for (int j=0;j<n;j++) {
 		      int k=which[j];
 		      sosIndices[j+base]=k;
-		      sosReference[j+base] = weights ? weights[j] : (double) j;
+		      sosReference[j+base] = weights ? weights[j] : static_cast<double> (j);
 		    }
                   }
 		}
@@ -6056,6 +6092,12 @@ int
                     process.passInProhibited(prohibited,numberColumns);
                     delete [] prohibited;
                   }
+		  if (!model_.numberObjects()&&true) {
+		    /* model may not have created objects
+		       If none then create
+		    */
+		    model_.findIntegers(true);
+		  }
 		  if (model_.numberObjects()) {
 		    OsiObject ** oldObjects = babModel_->objects();
 		    int numberOldObjects = babModel_->numberObjects();
@@ -6063,6 +6105,7 @@ int
                     int numberColumns = saveSolver->getNumCols();
                     char * prohibited = new char[numberColumns];
                     memset(prohibited,0,numberColumns);
+		    int numberProhibited=0;
 		    for (int iObj = 0;iObj<numberOldObjects;iObj++) {
 		      CbcSOS * obj =
 			dynamic_cast <CbcSOS *>(oldObjects[iObj]) ;
@@ -6072,6 +6115,7 @@ int
 			for (int i=0;i<n;i++) {
 			  int iColumn = which[i];
 			  prohibited[iColumn]=1;
+			  numberProhibited++;
 			}
 		      }
 		      CbcLotsize * obj2 =
@@ -6079,9 +6123,11 @@ int
 		      if (obj2) {
 			int iColumn = obj2->columnNumber();
 			prohibited[iColumn]=1;
+			numberProhibited++;
 		      }
                     }
-                    process.passInProhibited(prohibited,numberColumns);
+		    if (numberProhibited) 
+		      process.passInProhibited(prohibited,numberColumns);
                     delete [] prohibited;
 		  }
 		  int numberPasses = 10;
@@ -6112,8 +6158,18 @@ int
 		    osiclp->getModelPtr()->setSpecialOptions(osiclp->getModelPtr()->specialOptions()|256);
 		    osiclp->getModelPtr()->setInfeasibilityCost(1.0e11);
 		  }
-                  solver2 = process.preProcessNonDefault(*saveSolver,translate[preProcess],numberPasses,
+		  {
+		    OsiClpSolverInterface * osiclp = dynamic_cast< OsiClpSolverInterface*> (saveSolver);
+		    int savePerturbation = osiclp->getModelPtr()->perturbation();
+		    //#define CBC_TEMP1
+#ifdef CBC_TEMP1
+		    if (savePerturbation==50)
+		      osiclp->getModelPtr()->setPerturbation(52); // try less
+#endif
+		    solver2 = process.preProcessNonDefault(*saveSolver,translate[preProcess],numberPasses,
 							 tunePreProcess);
+		    osiclp->getModelPtr()->setPerturbation(savePerturbation);
+		  }
 		  integersOK=false; // We need to redo if CbcObjects exist
                   // Tell solver we are not in Branch and Cut
                   saveSolver->setHintParam(OsiDoInBranchAndCut,false,OsiHintDo) ;
@@ -6340,7 +6396,7 @@ int
 		delete [] dsort;
 	      }
 	      // Set up heuristics
-	      doHeuristics(babModel_,(!miplib) ? 1 : 3);
+	      doHeuristics(babModel_,(!miplib) ? 1 : 10);
               if (!miplib) {
 		if(parameters_[whichParam(LOCALTREE,numberParameters_,parameters_)].currentOptionAsInteger()) {
                   CbcTreeLocal localTree(babModel_,NULL,10,0,0,10000,2000);
@@ -6359,15 +6415,15 @@ int
               // add cut generators if wanted
               int switches[20];
               int numberGenerators=0;
-	      int translate[]={-100,-1,-99,-98,1,1,1,1,-1};
+	      int translate[]={-100,-1,-99,-98,1,-1001,-1099,1,1,1,-1};
               if (probingAction) {
 		probingGen.setMaxProbeRoot(CoinMin(2000,babModel_->solver()->getNumCols()));
 		probingGen.setMaxProbeRoot(123);
 		probingGen.setMaxProbe(123);
 		probingGen.setMaxLookRoot(20);
-		if (probingAction==5||probingAction==7)
+		if (probingAction==7||probingAction==9)
 		  probingGen.setRowCuts(-3); // strengthening etc just at root
-		if (probingAction==6||probingAction==7) {
+		if (probingAction==8||probingAction==9) {
 		  // Number of unsatisfied variables to look at
 		  probingGen.setMaxProbeRoot(babModel_->solver()->getNumCols());
 		  probingGen.setMaxProbe(babModel_->solver()->getNumCols());
@@ -6375,23 +6431,27 @@ int
 		  probingGen.setMaxLook(50);
 		  probingGen.setMaxLookRoot(50);
 		}
-		if (probingAction==8) {
+		if (probingAction==10) {
 		  probingGen.setMaxPassRoot(2);
 		  probingGen.setMaxProbeRoot(babModel_->solver()->getNumCols());
 		  probingGen.setMaxLookRoot(100);
 		}
-                babModel_->addCutGenerator(&probingGen,translate[probingAction],"Probing");
+		// If 5 then force on
+		int iAction = translate[probingAction];
+		if (probingAction==5)
+		  iAction=1;
+                babModel_->addCutGenerator(&probingGen,iAction,"Probing");
                 switches[numberGenerators++]=0;
               }
               if (gomoryAction&&(complicatedInteger!=1||
 				 (gomoryAction==1||gomoryAction>=4))) {
 		// try larger limit
 		int numberColumns = babModel_->getNumCols();
-		if (gomoryAction==5) {
+		if (gomoryAction==7) {
 		  gomoryAction=4;
 		  gomoryGen.setLimitAtRoot(numberColumns);
 		  gomoryGen.setLimit(numberColumns);
-		} else if (gomoryAction==6) {
+		} else if (gomoryAction==8) {
 		  gomoryAction=3;
 		  gomoryGen.setLimitAtRoot(numberColumns);
 		  gomoryGen.setLimit(200);
@@ -6445,7 +6505,7 @@ int
 				 (twomirAction==1||twomirAction>=4))) {
 		// try larger limit
 		int numberColumns = babModel_->getNumCols();
-		if (twomirAction==5) {
+		if (twomirAction==7) {
 		  twomirAction=4;
 		  twomirGen.setMaxElements(numberColumns);
 		} else if (numberColumns>5000&&twomirAction==4) {
@@ -6464,6 +6524,16 @@ int
                 babModel_->addCutGenerator(&residualCapacityGen,translate[residualCapacityAction],"ResidualCapacity");
                 switches[numberGenerators++]=1;
               }
+#ifdef ZERO_HALF_CUTS
+              if (zerohalfAction) {
+		if (zerohalfAction>4) {
+		  //zerohalfAction -=4;
+		  zerohalfGen.setFlags(1);
+		}
+                babModel_->addCutGenerator(&zerohalfGen,translate[zerohalfAction],"ZeroHalf");
+                switches[numberGenerators++]=0;
+              }
+#endif
 	      if (storedCuts) 
 		babModel_->setSpecialOptions(babModel_->specialOptions()|64);
               // Say we want timings
@@ -6657,7 +6727,7 @@ int
 		    if (info.priorities_) {
 		      int numberColumns = originalCoinModel_ ? originalCoinModel_->numberColumns() :
 			lpSolver->getNumCols();
-		      prioritiesIn = (int *) malloc(numberColumns*sizeof(int));
+		      prioritiesIn = reinterpret_cast<int *> (malloc(numberColumns*sizeof(int)));
 		      memcpy(prioritiesIn,info.priorities_,numberColumns*sizeof(int));
 		    }
                     sosPriority = info.sosPriority_;
@@ -6694,7 +6764,7 @@ int
 		    } else {
 		      n = babModel_->getNumCols();
 		    }
-		    prioritiesIn = (int *) malloc(n*sizeof(int));
+		    prioritiesIn = reinterpret_cast<int *> (malloc(n*sizeof(int)));
 		    for (int i=0;i<n;i++)
 		      prioritiesIn[i]=100;
 		  }
@@ -7333,7 +7403,7 @@ int
 		      printf("bilinear priority now %d\n",extra1);
 		      int extra2 = parameters_[whichParam(EXTRA2,numberParameters_,parameters_)].intValue();
 		      double saveDefault = solver3->defaultBound();
-		      solver3->setDefaultBound((double) extra2);
+		      solver3->setDefaultBound(static_cast<double> (extra2));
 		      double * solution = solver3->heuristicSolution(slpValue>0 ? slpValue : 40 ,1.0e-5,testOsiOptions-10);
 		      solver3->setDefaultBound(saveDefault);
 		      if (!solution)
@@ -7611,6 +7681,10 @@ int
 		  if (lpSolver->numberColumns()<200&&lpSolver->numberRows()<40) 
 		    babModel_->setFastNodeDepth(-9);
 		}
+		int heurOptions=parameters_[whichParam(HOPTIONS,numberParameters_,parameters_)].intValue();
+		if (heurOptions>1) 
+		  babModel_->setSpecialOptions(babModel_->specialOptions()|8192);
+		
 #ifdef CLP_MULTIPLE_FACTORIZATIONS   
 		int denseCode = parameters_[whichParam(DENSE,numberParameters_,parameters_)].intValue();
 		int smallCode = parameters_[whichParam(SMALLFACT,numberParameters_,parameters_)].intValue();
@@ -7642,6 +7716,10 @@ int
 		}
 		if (logLevel<=1)
 		  babModel_->solver()->setHintParam(OsiDoReducePrint,true,OsiHintTry);
+#ifdef CBC_TEMP1
+		if (osiclp->getModelPtr()->perturbation()==50)
+		  osiclp->getModelPtr()->setPerturbation(52); // try less
+#endif
 #if 0
 		if (osiclp->getNumCols()==29404) {
 		  void restoreSolution(ClpSimplex * lpSolver,
@@ -7887,26 +7965,28 @@ int
 		  solution = saveSolver->getColSolution();
 		  int numberChanged=0;
 		  for (int i=0;i<n;i++) {
-		    if (lower2[i]!=COIN_DBL_MAX) {
-		      if (lower2[i]!=columnLower[i]||
-			  upper2[i]!=columnUpper[i]) {
-			if (lower2[i]<columnLower[i]||
-			    upper2[i]>columnUpper[i]) {
+		    if (saveSolver->isInteger(i)) {
+		      if (lower2[i]!=COIN_DBL_MAX) {
+			if (lower2[i]!=columnLower[i]||
+			    upper2[i]!=columnUpper[i]) {
+			  if (lower2[i]<columnLower[i]||
+			      upper2[i]>columnUpper[i]) {
 #ifdef COIN_DEVELOP
-			  printf("odd bounds tighter");
-			  printf("%d bab bounds %g %g now %g %g\n",
-				 i,lower2[i],upper2[i],columnLower[i],
-				 columnUpper[i]);
+			    printf("odd bounds tighter");
+			    printf("%d bab bounds %g %g now %g %g\n",
+				   i,lower2[i],upper2[i],columnLower[i],
+				   columnUpper[i]);
 #endif
-			} else {
+			  } else {
 #ifdef COIN_DEVELOP
-			  printf("%d bab bounds %g %g now %g %g\n",
-				 i,lower2[i],upper2[i],columnLower[i],
-				 columnUpper[i]);
+			    printf("%d bab bounds %g %g now %g %g\n",
+				   i,lower2[i],upper2[i],columnLower[i],
+				   columnUpper[i]);
 #endif
-			  numberChanged++;
-			  saveSolver->setColLower(i,lower2[i]);
-			  saveSolver->setColUpper(i,upper2[i]);
+			    numberChanged++;
+			    saveSolver->setColLower(i,lower2[i]);
+			    saveSolver->setColUpper(i,upper2[i]);
+			  }
 			}
 		      }
 		    }
@@ -7920,12 +8000,23 @@ int
 		    generalMessageHandler->message(CLP_GENERAL,generalMessages)
 		      << generalPrint
 		      <<CoinMessageEol;
-		    saveSolver->resolve();
-		    assert (saveSolver->isProvenOptimal());
 		  }
+		  saveSolver->resolve();
+		  if (!saveSolver->isProvenOptimal()) {
+                    // try all slack
+                    CoinWarmStartBasis * basis = dynamic_cast<CoinWarmStartBasis *> (babModel_->solver()->getEmptyWarmStart());
+                    saveSolver->setWarmStart(basis);
+                    delete basis;
+                    saveSolver->initialSolve();
+#ifdef COIN_DEVELOP
+		    saveSolver->writeMps("inf2");
+#endif
+		  }
+		  assert (saveSolver->isProvenOptimal());
 #if NEW_STYLE_SOLVER==0
 		  // and original solver
-		  assert (n==originalSolver->getNumCols());
+		  assert (n>=originalSolver->getNumCols());
+		  n=originalSolver->getNumCols();
 		  originalSolver->setColLower(saveSolver->getColLower());
 		  originalSolver->setColUpper(saveSolver->getColUpper());
 		  // basis
@@ -7933,6 +8024,13 @@ int
 		  originalSolver->setBasis(*basis);
 		  delete basis;
 		  originalSolver->resolve();
+		  if (!originalSolver->isProvenOptimal()) {
+                    // try all slack
+                    CoinWarmStartBasis * basis = dynamic_cast<CoinWarmStartBasis *> (babModel_->solver()->getEmptyWarmStart());
+                    originalSolver->setBasis(*basis);
+                    delete basis;
+                    originalSolver->initialSolve();
+                  }
 		  assert (originalSolver->isProvenOptimal());
 #endif
                   babModel_->assignSolver(saveSolver);
@@ -8346,7 +8444,7 @@ int
 		  // Go to canned file if just input file
 		  if (CbcOrClpRead_mode==2&&argc==2) {
 		    // only if ends .mps
-		    char * find = (char *)strstr(fileName.c_str(),".mps");
+		    char * find = reinterpret_cast<char *>(strstr(fileName.c_str(),".mps"));
 		    if (find&&find[4]=='\0') {
 		      find[1]='p'; find[2]='a';find[3]='r';
 		      FILE *fp=fopen(fileName.c_str(),"r");
@@ -8436,7 +8534,7 @@ int
 		si->setDefaultBound(100.0);
 		si->setIntegerPriority(1000);
 		si->setBiLinearPriority(10000);
-		CoinModel * model2 = (CoinModel *) &coinModel;
+		CoinModel * model2 = &coinModel;
 		si->load(*model2);
 		// redo
 		solver = model_.solver();
@@ -8490,7 +8588,7 @@ int
 		bool deleteModel2=false;
 		ClpSimplex * model2 = lpSolver;
 		if (dualize&&dualize<3) {
-		  model2 = ((ClpSimplexOther *) model2)->dualOfModel();
+		  model2 = static_cast<ClpSimplexOther *> (model2)->dualOfModel();
 		  sprintf(generalPrint,"Dual of model has %d rows and %d columns",
 			 model2->numberRows(),model2->numberColumns());
 		  generalMessageHandler->message(CLP_GENERAL,generalMessages)
@@ -8707,7 +8805,7 @@ int
                     char * comma = strchr(pos,',');
                     if (comma)
                       *comma='\0';
-                    for (i=0;i<(int) (sizeof(got)/sizeof(int));i++) {
+                    for (i=0;i<static_cast<int> (sizeof(got)/sizeof(int));i++) {
                       if (headings[i]==pos) {
                         if (got[i]<0) {
                           order[nAcross]=i;
@@ -8719,7 +8817,7 @@ int
                         break;
                       }
                     }
-                    if (i==(int) (sizeof(got)/sizeof(int)))
+                    if (i==static_cast<int> (sizeof(got)/sizeof(int)))
                       good=false;
                     if (comma) {
                       *comma=',';
@@ -8737,7 +8835,7 @@ int
 		  int numberFields=99;
 		  if (good&&(strstr(fileName.c_str(),".mst")||strstr(fileName.c_str(),".MST")||strstr(fileName.c_str(),".csv"))) {
 		    numberFields=0;
-                    for (i=2;i<(int) (sizeof(got)/sizeof(int));i++) {
+                    for (i=2;i<static_cast<int> (sizeof(got)/sizeof(int));i++) {
 		      if (got[i]>=0)
 			numberFields++;
 		    }
@@ -8749,22 +8847,22 @@ int
 		  }
                   if (good) {
                     char ** columnNames = new char * [numberColumns];
-                    pseudoDown= (double *) malloc(numberColumns*sizeof(double));
-                    pseudoUp = (double *) malloc(numberColumns*sizeof(double));
-                    branchDirection = (int *) malloc(numberColumns*sizeof(int));
-                    priorities= (int *) malloc(numberColumns*sizeof(int));
+                    pseudoDown= reinterpret_cast<double *> (malloc(numberColumns*sizeof(double)));
+                    pseudoUp = reinterpret_cast<double *> (malloc(numberColumns*sizeof(double)));
+                    branchDirection = reinterpret_cast<int *> (malloc(numberColumns*sizeof(int)));
+                    priorities= reinterpret_cast<int *> (malloc(numberColumns*sizeof(int)));
                     free(solutionIn);
                     solutionIn=NULL;
                     free(prioritiesIn);
                     prioritiesIn=NULL;
                     int iColumn;
                     if (got[6]>=0) {
-                      solutionIn = (double *) malloc(numberColumns*sizeof(double));
+                      solutionIn = reinterpret_cast<double *> (malloc(numberColumns*sizeof(double)));
                       for (iColumn=0;iColumn<numberColumns;iColumn++) 
                         solutionIn[iColumn]=-COIN_DBL_MAX;
                     }
                     if (got[7]>=0||!numberFields) {
-                      prioritiesIn = (int *) malloc(numberColumns*sizeof(int));
+                      prioritiesIn = reinterpret_cast<int *> (malloc(numberColumns*sizeof(int)));
                       for (iColumn=0;iColumn<numberColumns;iColumn++) 
                         prioritiesIn[iColumn]=10000;
                     }
@@ -9549,7 +9647,7 @@ clp watson.mps -\nscaling off\nprimalsimplex"
 		}
 		strcpy(buffer,argv[1]);
 		char * slash=buffer;
-		for (int i=0;i<(int)strlen(buffer);i++) {
+		for (int i=0;i<static_cast<int>(strlen(buffer));i++) {
 		  if (buffer[i]=='/'||buffer[i]=='\\')
 		    slash=buffer+i+1;
 		}
@@ -9866,7 +9964,7 @@ clp watson.mps -\nscaling off\nprimalsimplex"
                         fprintf(fp,",");
                       if (newLine)
                         fprintf(fp,"\n");
-                      int value = (int) (primalColumnSolution[iColumn]+0.5);
+                      int value = static_cast<int> (primalColumnSolution[iColumn]+0.5);
                       fprintf(fp,"%d. ",value);
                       comma=true;
                       newLine=false;
@@ -10027,7 +10125,7 @@ static void breakdown(const char * name, int numberLook, const double * region)
     1.0,
     1.0e1,1.0e2,1.0e3,1.0e4,1.0e5,1.0e8,1.0e11,1.0e15,
     COIN_DBL_MAX};
-  int nRanges = (int) (sizeof(range)/sizeof(double));
+  int nRanges = static_cast<int> (sizeof(range)/sizeof(double));
   int * number = new int[nRanges];
   memset(number,0,nRanges*sizeof(int));
   int * numberExact = new int[nRanges];
@@ -10206,7 +10304,7 @@ static void statistics(ClpSimplex * originalModel, ClpSimplex * model)
   }
   printf("Column breakdown:\n");
   int k;
-  for (k=0;k<(int) (sizeof(cType)/sizeof(int));k++) {
+  for (k=0;k<static_cast<int> (sizeof(cType)/sizeof(int));k++) {
     printf("%d of type %s ",cType[k],cName[k].c_str());
     if (((k+1)%3)==0)
       printf("\n");
@@ -10214,7 +10312,7 @@ static void statistics(ClpSimplex * originalModel, ClpSimplex * model)
   if ((k%3)!=0)
     printf("\n");
   printf("Row breakdown:\n");
-  for (k=0;k<(int) (sizeof(rType)/sizeof(int));k++) {
+  for (k=0;k<static_cast<int> (sizeof(rType)/sizeof(int));k++) {
     printf("%d of type %s ",rType[k],rName[k].c_str());
     if (((k+1)%3)==0)
       printf("\n");

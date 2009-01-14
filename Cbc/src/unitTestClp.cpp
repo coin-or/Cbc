@@ -8,6 +8,7 @@
 #include "CoinTime.hpp"
 #include "CbcModel.hpp"
 #include "CbcCutGenerator.hpp"
+#include "CbcBranchCut.hpp"
 #include "CglProbing.hpp"
 #include "OsiClpSolverInterface.hpp"
 #include "ClpFactorization.hpp"
@@ -481,8 +482,8 @@ int CbcClpUnitTest (const CbcModel & saveModel, std::string& dirMiplib,
     }
     setCutAndHeuristicOptions(*model);
 #ifdef CLP_MULTIPLE_FACTORIZATIONS   
-    int denseCode = stuff ? (int) stuff[4] : -1;
-    int smallCode = stuff ? (int) stuff[10] : -1;
+    int denseCode = stuff ? static_cast<int> (stuff[4]) : -1;
+    int smallCode = stuff ? static_cast<int> (stuff[10]) : -1;
     if (stuff&&stuff[8]>=1) {
       if (denseCode<0)
 	denseCode=40;
@@ -503,6 +504,9 @@ int CbcClpUnitTest (const CbcModel & saveModel, std::string& dirMiplib,
 	  model->fastNodeDepth()==-1) 
 	model->setFastNodeDepth(-9);
     }
+    //OsiObject * obj = new CbcBranchToFixLots(model,0.3,0.0,3,3000003);
+    //model->addObjects(1,&obj);
+    //delete obj;
     model->branchAndBound();
 #ifdef CLP_FACTORIZATION_INSTRUMENT
     double facTime=factorization_instrument(0);

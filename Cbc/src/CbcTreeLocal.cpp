@@ -373,7 +373,7 @@ CbcTreeLocal::push(CbcNode * x) {
       // stop on first solution
       searchType_=0;
     }
-    startTime_ = (int) CoinCpuTime();
+    startTime_ = static_cast<int> (CoinCpuTime());
     saveNumberSolutions_ = model_->getSolutionCount();
   }
   nodes_.push_back(x);
@@ -441,7 +441,7 @@ CbcTreeLocal::empty()
     printf("local state %d after %d nodes and %d seconds, new solution %g, best solution %g, k was %g\n",
 	   state,
 	   model_->getNodeCount()-startNode_,
-	   (int) CoinCpuTime()-startTime_,
+	   static_cast<int> (CoinCpuTime())-startTime_,
 	   model_->getCutoff()+increment,bestCutoff_+increment,rhs_);
   saveNumberSolutions_ = model_->getSolutionCount();
   bool finished=false;
@@ -648,7 +648,7 @@ CbcTreeLocal::empty()
       }
     }
     // put back node
-    startTime_ = (int) CoinCpuTime();
+    startTime_ = static_cast<int> (CoinCpuTime());
     startNode_=model_->getNodeCount();
     if (localNode_) {
       // save copy of node

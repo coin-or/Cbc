@@ -1197,12 +1197,33 @@ public:
   { return threadMode_;}
   /** Set thread mode
       always use numberThreads for branching
-      1 set then use numberThreads in root mini branch and bound
+      1 set then deterministic
       2 set then use numberThreads for root cuts
+      4 set then use numberThreads in root mini branch and bound
       default is 0
   */
   inline void setThreadMode(int value) 
   { threadMode_=value;}
+  /** Return
+      -2 if deterministic threaded and main thread
+      -1 if deterministic threaded and serial thread
+      0 if serial
+      1 if opportunistic threaded
+  */
+  inline int parallelMode() const
+  { if (!numberThreads_) {
+      if ((threadMode_&1)==0) 
+	return 0;
+      else
+	return -1;
+      return 0;
+    } else {
+      if ((threadMode_&1)==0) 
+	return 1;
+      else
+	return -2;
+    }
+  }
   /// Get number of "iterations" to stop after
   inline int getStopNumberIterations() const
   { return stopNumberIterations_;}
@@ -1633,6 +1654,11 @@ public:
     penalties.  Returns number fixed
   */
   int reducedCostFix() ;
+  /** Makes all handlers same.  If makeDefault 1 then makes top level 
+      default and rest point to that.  If 2 then each is copy
+  */
+  void synchronizeHandlers(int makeDefault);
+     
   /// Encapsulates solver resolve
   int resolve(OsiSolverInterface * solver);
 
@@ -1972,10 +1998,7 @@ private:
     allocated size.
   */
   CbcNodeInfo ** walkback_;
-  //#define CBC_DETERMINISTIC_THREAD
-#ifndef CBC_DETERMINISTIC_THREAD
 #define NODE_LAST
-#endif
 #ifdef NODE_LAST
   CbcNodeInfo ** lastNodeInfo_;
   const OsiRowCut ** lastCut_;
@@ -2238,8 +2261,9 @@ private:
   int numberThreads_;
   /** thread mode
       always use numberThreads for branching
-      1 set then use numberThreads in root mini branch and bound
+      1 set then deterministic
       2 set then use numberThreads for root cuts
+      4 set then use numberThreads in root mini branch and bound
       default is 0
   */
   int threadMode_;

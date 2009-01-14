@@ -22,9 +22,7 @@ CbcObject::CbcObject()
   : OsiObject(),
     model_(NULL),
    id_(-1),
-#ifdef CBC_DETERMINISTIC_THREAD
    position_(-1),
-#endif
    preferredWay_(0)
 {
 }
@@ -34,9 +32,7 @@ CbcObject::CbcObject(CbcModel * model)
   : OsiObject(),
     model_(model),
     id_(-1),
-#ifdef CBC_DETERMINISTIC_THREAD
     position_(-1),
-#endif
     preferredWay_(0)
 {
 }
@@ -53,9 +49,7 @@ CbcObject::CbcObject ( const CbcObject & rhs)
 {
   model_ = rhs.model_;
   id_ = rhs.id_;
-#ifdef CBC_DETERMINISTIC_THREAD
   position_ = rhs.position_;
-#endif
   preferredWay_ = rhs.preferredWay_;
 }
 
@@ -67,9 +61,7 @@ CbcObject::operator=( const CbcObject& rhs)
     OsiObject::operator=(rhs);
     model_ = rhs.model_;
     id_ = rhs.id_;
-#ifdef CBC_DETERMINISTIC_THREAD
     position_ = rhs.position_;
-#endif
     preferredWay_ = rhs.preferredWay_;
   }
   return *this;

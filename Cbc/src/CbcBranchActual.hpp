@@ -34,7 +34,7 @@ public:
   CbcClique & operator=( const CbcClique& rhs);
 
   // Destructor 
-  ~CbcClique ();
+  virtual ~CbcClique ();
   
   using CbcObject::infeasibility ;
   /// Infeasibility - large is 0.5
@@ -123,7 +123,7 @@ public:
   CbcSOS & operator=( const CbcSOS& rhs);
 
   // Destructor 
-  ~CbcSOS ();
+  virtual ~CbcSOS ();
   
   using CbcObject::infeasibility ;
   /// Infeasibility - large is 0.5
@@ -255,7 +255,7 @@ public:
   CbcSimpleInteger & operator=( const CbcSimpleInteger& rhs);
 
   // Destructor 
-  ~CbcSimpleInteger ();
+  virtual ~CbcSimpleInteger ();
   /// Construct an OsiSimpleInteger object
   OsiSimpleInteger * osiObject() const;
   using CbcObject::infeasibility ;
@@ -380,7 +380,7 @@ public:
   CbcNWay & operator=( const CbcNWay& rhs);
 
   /// Destructor 
-  ~CbcNWay ();
+  virtual ~CbcNWay ();
 
   /// Set up a consequence for a single member
   void setConsequence(int iColumn, const CbcConsequence & consequence);
@@ -590,7 +590,7 @@ public:
   CbcSimpleIntegerPseudoCost & operator=( const CbcSimpleIntegerPseudoCost& rhs);
 
   // Destructor 
-  ~CbcSimpleIntegerPseudoCost ();
+  virtual ~CbcSimpleIntegerPseudoCost ();
   
   using CbcObject::infeasibility ;
   /// Infeasibility - large is 0.5

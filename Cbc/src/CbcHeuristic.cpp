@@ -101,6 +101,7 @@ CbcHeuristic::CbcHeuristic() :
   heuristicName_("Unknown"),
   howOften_(1),
   decayFactor_(0.0),
+  switches_(0),
   shallowDepth_(1),
   howOftenShallow_(1),
   numInvocationsInShallow_(0),
@@ -126,6 +127,7 @@ CbcHeuristic::CbcHeuristic(CbcModel & model) :
   heuristicName_("Unknown"),
   howOften_(1),
   decayFactor_(0.0),
+  switches_(0),
   shallowDepth_(1),
   howOftenShallow_(1),
   numInvocationsInShallow_(0),
@@ -151,6 +153,7 @@ CbcHeuristic::gutsOfCopy(const CbcHeuristic & rhs)
   heuristicName_ = rhs.heuristicName_;
   howOften_ = rhs.howOften_;
   decayFactor_ = rhs.howOften_;
+  switches_ = rhs.switches_;
   shallowDepth_= rhs.shallowDepth_;
   howOftenShallow_= rhs.howOftenShallow_;
   numInvocationsInShallow_ = rhs.numInvocationsInShallow_;
@@ -203,8 +206,8 @@ void CbcHeurDebugNodes(CbcModel* model_)
 	int variable = brPrint->variable();
 	int way = brPrint->way();
 	printf("   parentBranch: var %i downBd [%i,%i] upBd [%i,%i] way %i\n",
-	       variable, (int)downBounds[0], (int)downBounds[1],
-	       (int)upBounds[0], (int)upBounds[1], way);
+	       variable, static_cast<int>(downBounds[0]), static_cast<int>(downBounds[1]),
+	       static_cast<int>(upBounds[0]), static_cast<int>(upBounds[1]), way);
       }
     }
     if (! node) {
@@ -226,8 +229,8 @@ void CbcHeurDebugNodes(CbcModel* model_)
 	int variable = brPrint->variable();
 	int way = brPrint->way();
 	printf("        ownerbranch: var %i downBd [%i,%i] upBd [%i,%i] way %i\n",
-	       variable, (int)downBounds[0], (int)downBounds[1],
-	       (int)upBounds[0], (int)upBounds[1], way);
+	       variable, static_cast<int>(downBounds[0]), static_cast<int>(downBounds[1]),
+	       static_cast<int>(upBounds[0]), static_cast<int>(upBounds[1]), way);
       }
     }
     nodeInfo = nodeInfo->parent();
@@ -353,7 +356,7 @@ CbcHeuristic::shouldHeurRun_randomChoice()
   // when_ -999 is special marker to force to run
   if(depth != 0&&when_!=-999) {
     const double numerator = depth * depth;
-    const double denominator = exp(depth * log((double)2));
+    const double denominator = exp(depth * log(2.0));
     double probability = numerator / denominator;
     double randomNumber = randomNumberGenerator_.randomDouble();
     if (when_>2&&when_<8) {
@@ -385,7 +388,7 @@ CbcHeuristic::shouldHeurRun_randomChoice()
 #ifdef COIN_DEVELOP
 	    int old=howOften_;
 #endif
-	    howOften_ = CoinMin(CoinMax((int) (howOften_*1.1),howOften_+1),10000);
+	    howOften_ = CoinMin(CoinMax(static_cast<int> (howOften_*1.1),howOften_+1),10000);
 #ifdef COIN_DEVELOP
 	    printf("Howoften changed from %d to %d for %s\n",
 		   old,howOften_,heuristicName_.c_str());
@@ -469,6 +472,26 @@ void CbcHeuristic::setModel(CbcModel * model)
 {
   model_ = model;
 }
+// Whether to exit at once on gap
+bool 
+CbcHeuristic::exitNow(double bestObjective) const
+{
+  if ((switches_&1)==0)
+    return false;
+  // See if can stop on gap
+  OsiSolverInterface * solver = model_->solver();
+  double bestPossibleObjective = solver->getObjValue()*solver->getObjSense();
+  double testGap = CoinMax(model_->getAllowableGap(),
+			   CoinMax(fabs(bestObjective),
+				   fabs(bestPossibleObjective))
+			   *model_->getAllowableFractionGap());
+  if (bestObjective-bestPossibleObjective < testGap 
+      && model_->getCutoffIncrement()>=0.0) {
+    return true;
+  } else {
+    return false;
+  }
+}
 #ifdef HISTORY_STATISTICS
 extern bool getHistoryStatistics_;
 #endif
@@ -512,7 +535,7 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver,int numberNodes,
     ClpSimplex * lpSolver = osiclp->getModelPtr();
     lpSolver->setSpecialOptions(lpSolver->specialOptions()|0x01000000); // say is Cbc (and in branch and bound)
     lpSolver->setSpecialOptions(lpSolver->specialOptions()|
-				(16384+4096+512+128));
+				(/*16384+*/4096+512+128));
   }
 #endif
 #ifdef HISTORY_STATISTICS
@@ -550,6 +573,13 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver,int numberNodes,
     if (presolvedModel) {
       int afterRows = presolvedModel->getNumRows();
       int afterCols = presolvedModel->getNumCols();
+      //#define COIN_DEVELOP
+#ifdef COIN_DEVELOP_z
+      if (numberNodes<0) {
+	solver->writeMpsNative("before.mps",NULL,NULL,2,1);
+	presolvedModel->writeMpsNative("after1.mps",NULL,NULL,2,1);
+      }
+#endif
       delete presolvedModel;
       double after = 2*afterRows+afterCols;
       if (after>fractionSmall*before&&after>300&&numberNodes>=0) {
@@ -654,7 +684,7 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver,int numberNodes,
       numberPasses = 5;
       // Say some rows cuts
       int numberRows = solver->getNumRows();
-      if (numberNodes_<numberRows) {
+      if (numberNodes_<numberRows&&true /* think */) {
 	char * type = new char[numberRows];
 	memset(type,0,numberNodes_);
 	memset(type+numberNodes_,1,numberRows-numberNodes_);
@@ -671,6 +701,11 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver,int numberNodes,
         printf("Pre-processing says infeasible\n");
       returnCode=2; // so will be infeasible
     } else {
+#ifdef COIN_DEVELOP_z
+      if (numberNodes<0) {
+	solver2->writeMpsNative("after2.mps",NULL,NULL,2,1);
+      }
+#endif
       // see if too big
       double after = 2*solver2->getNumRows()+solver2->getNumCols();
       if (after>fractionSmall*before&&(after>300||numberNodes<0)) {
@@ -786,7 +821,7 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver,int numberNodes,
 	// probably faster to use a basis to get integer solutions
 	model.setSpecialOptions(model.specialOptions()|2);
 #ifdef CBC_THREAD
-	if (model_->getNumberThreads()>0&&(model_->getThreadMode()&1)!=0) {
+	if (model_->getNumberThreads()>0&&(model_->getThreadMode()&4)!=0) {
 	  // See if at root node
 	  bool atRoot = model_->getNodeCount()==0;
 	  int passNumber = model_->getCurrentPassNumber();
@@ -1130,8 +1165,8 @@ CbcHeuristicNode::distance(const CbcHeuristicNode* node) const
     int variable = brPrint0->variable();
     int way = brPrint0->way();
     printf("   br0: var %i downBd [%i,%i] upBd [%i,%i] way %i\n",
-	   variable, (int)downBounds[0], (int)downBounds[1],
-	   (int)upBounds[0], (int)upBounds[1], way);
+	   variable, static_cast<int>(downBounds[0]), static_cast<int>(downBounds[1]),
+	   static_cast<int>(upBounds[0]), static_cast<int>(upBounds[1]), way);
     const CbcIntegerBranchingObject* brPrint1 =
       dynamic_cast<const CbcIntegerBranchingObject*>(br1);
     downBounds = brPrint1->downBounds();
@@ -1139,8 +1174,8 @@ CbcHeuristicNode::distance(const CbcHeuristicNode* node) const
     variable = brPrint1->variable();
     way = brPrint1->way();
     printf("   br1: var %i downBd [%i,%i] upBd [%i,%i] way %i\n",
-	   variable, (int)downBounds[0], (int)downBounds[1],
-	   (int)upBounds[0], (int)upBounds[1], way);
+	   variable, static_cast<int>(downBounds[0]), static_cast<int>(downBounds[1]),
+	   static_cast<int>(upBounds[0]), static_cast<int>(upBounds[1]), way);
 #endif
     const int brComp = compare3BranchingObjects(br0, br1);
     if (brComp < 0) {
@@ -1921,7 +1956,7 @@ CbcRounding::solution(double & solutionValue,
     int iPass;
     int start[2];
     int end[2];
-    int iRandom = (int) (randomNumber*((double) numberIntegers));
+    int iRandom = static_cast<int> (randomNumber*(static_cast<double> (numberIntegers)));
     start[0]=iRandom;
     end[0]=numberIntegers;
     start[1]=0;

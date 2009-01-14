@@ -44,7 +44,7 @@ public:
 
     /// `Copy' constructor using an OsiRowCut and an CbcNodeInfo
     CbcCountRowCut(const OsiRowCut &, CbcNodeInfo *, int whichOne,
-		   int whichGenerator=-1);  
+		   int whichGenerator=-1,int numberPointingToThis=0);  
 
     /** Destructor
 
@@ -108,6 +108,5 @@ private:
   int whichCutGenerator_;
 
 };
-//#define CBC_DETERMINISTIC_THREAD
 
 #endif

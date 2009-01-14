@@ -20,7 +20,7 @@
 
 static inline int intRand(const int range)
 {
-  return (int) floor(CoinDrand48() * range);
+  return static_cast<int> (floor(CoinDrand48() * range));
 }
 
 // Default Constructor

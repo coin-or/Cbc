@@ -302,7 +302,7 @@ CbcCompareDefault::newSolution(CbcModel * model,
   // set to get close to this solution
   double costPerInteger = 
     (model->getObjValue()-objectiveAtContinuous)/
-    ((double) numberInfeasibilitiesAtContinuous);
+    static_cast<double> (numberInfeasibilitiesAtContinuous);
   weight_ = 0.95*costPerInteger;
   saveWeight_ = 0.95*weight_;
   numberSolutions_++;

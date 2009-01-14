@@ -104,7 +104,7 @@ CbcHeuristicDiveVectorLength::selectVariableToBranch(OsiSolverInterface* solver,
 	  objDelta = - fraction * obj;
 	
 	// we want the smaller score
-	double score = objDelta / ((double) columnLength[iColumn] + 1.0);
+	double score = objDelta / (static_cast<double> (columnLength[iColumn]) + 1.0);
 
 	// if variable is not binary, penalize it
 	if(!solver->isBinary(iColumn))

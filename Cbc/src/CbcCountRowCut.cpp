@@ -20,9 +20,6 @@ CbcCountRowCut::CbcCountRowCut ()
   numberPointingToThis_(0),
   whichCutGenerator_(-1)
 {
-#ifdef CBC_DETERMINISTIC_THREAD
-  numberPointingToThis_=10;
-#endif
 #ifdef CHECK_CUT_COUNTS
   printf("CbcCountRowCut default constructor %x\n",this);
 #endif
@@ -36,9 +33,6 @@ CbcCountRowCut::CbcCountRowCut (const OsiRowCut & rhs)
     numberPointingToThis_(0),
     whichCutGenerator_(-1)
 {
-#ifdef CBC_DETERMINISTIC_THREAD
-  numberPointingToThis_=10;
-#endif
 #ifdef CHECK_CUT_COUNTS
   printf("CbcCountRowCut constructor %x from RowCut\n",this);
 #endif
@@ -46,19 +40,19 @@ CbcCountRowCut::CbcCountRowCut (const OsiRowCut & rhs)
 // Copy Constructor 
 CbcCountRowCut::CbcCountRowCut (const OsiRowCut & rhs,
 				CbcNodeInfo * info, int whichOne,
-				int whichGenerator)
+				int whichGenerator,
+				int numberPointingToThis)
   : OsiRowCut(rhs),
     owner_(info),
     ownerCut_(whichOne),
-    numberPointingToThis_(0),
+    numberPointingToThis_(numberPointingToThis),
     whichCutGenerator_(whichGenerator)
 {
-#ifdef CBC_DETERMINISTIC_THREAD
-  numberPointingToThis_=10;
-#endif
 #ifdef CHECK_CUT_COUNTS
-  printf("CbcCountRowCut constructor %x from RowCut and info\n",this);
+  printf("CbcCountRowCut constructor %x from RowCut and info %d\n",
+	 this,numberPointingToThis_);
 #endif
+  assert (!numberPointingToThis||numberPointingToThis==1000000000);
 }
 CbcCountRowCut::~CbcCountRowCut()
 {
@@ -75,9 +69,7 @@ void
 CbcCountRowCut::increment(int change)
 {
   assert(ownerCut_!=-1234567);
-#ifndef CBC_DETERMINISTIC_THREAD
   numberPointingToThis_+=change;
-#endif
 }
 
 // Decrement number of references and return number left
@@ -85,18 +77,17 @@ int
 CbcCountRowCut::decrement(int change)
 {
   assert(ownerCut_!=-1234567);
-#ifndef CBC_DETERMINISTIC_THREAD
-  //assert(numberPointingToThis_>=change);
-  assert(numberPointingToThis_>=0);
-  if(numberPointingToThis_<change) {
-    assert(numberPointingToThis_>0);
-    printf("negative cut count %d - %d\n",numberPointingToThis_, change);
-    change = numberPointingToThis_;
+  // See if plausible number
+  if (change<900000000) {
+    //assert(numberPointingToThis_>=change);
+    assert(numberPointingToThis_>=0);
+    if(numberPointingToThis_<change) {
+      assert(numberPointingToThis_>0);
+      printf("negative cut count %d - %d\n",numberPointingToThis_, change);
+      change = numberPointingToThis_;
+    }
+    numberPointingToThis_-=change;
   }
-  numberPointingToThis_-=change;
-#else
-  assert (numberPointingToThis_==10);
-#endif
   return numberPointingToThis_;
 }
 

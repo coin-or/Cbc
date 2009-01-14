@@ -134,6 +134,22 @@ public:
   /// Gets number of nodes in a subtree (default 200)
   inline int numberNodes() const
   { return numberNodes_;}
+  /** Switches (does not apply equally to all heuristics)
+      1 bit - stop once allowable gap on objective reached
+      2 bit - always do given number of passes
+      4 bit - increase cutoff by 5% every 500 passes?
+  */
+  inline void setSwitches(int value)
+  { switches_ = value;}
+  /** Switches (does not apply equally to all heuristics)
+      1 bit - stop once allowable gap on objective reached
+      2 bit - always do given number of passes
+      4 bit - increase cutoff by 5% every 500 passes?
+  */
+  inline int switches() const
+  { return switches_;}
+  /// Whether to exit at once on gap
+  bool exitNow(double bestObjective) const;
   /// Sets feasibility pump options (-1 is off)
   inline void setFeasibilityPumpOptions(int value)
   { feasibilityPumpOptions_=value;}
@@ -223,6 +239,12 @@ protected:
   int howOften_;
   /// How much to increase how often
   double decayFactor_;
+  /** Switches on input (does not apply equally to all heuristics)
+      1 bit - stop once allowable gap on objective reached
+      2 bit - always do given number of passes
+      4 bit - increase cutoff by 5% every 500 passes?
+  */
+  int switches_;
   /** Upto this depth we call the tree shallow and the heuristic can be called
       multiple times. That is, the test whether the current node is far from
       the others where the jeuristic was invoked will not be done, only the

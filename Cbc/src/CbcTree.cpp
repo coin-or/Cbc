@@ -95,7 +95,7 @@ CbcTree::addBranchingInformation(const CbcModel * model, const CbcNodeInfo * nod
 	}
 	if (numberBranching_==maximumBranching_)
 	  increaseSpace();
-	newBound_[numberBranching_]=(int) newBounds[i];
+	newBound_[numberBranching_]=static_cast<int> (newBounds[i]);
 	branched_[numberBranching_++]=jColumn;
       }
     } else {
@@ -110,9 +110,9 @@ CbcTree::addBranchingInformation(const CbcModel * model, const CbcNodeInfo * nod
 	      newUpper[iColumn]==down[1]);
       int jColumn=iColumn|0x40000000;
       if (newLower[iColumn]==up[0]) {
-	newBound_[numberBranching_]=(int) up[0];
+	newBound_[numberBranching_]=static_cast<int> (up[0]);
       } else {
-	newBound_[numberBranching_]=(int) down[1];
+	newBound_[numberBranching_]=static_cast<int> (down[1]);
 	jColumn|= 0x80000000;
       }
       branched_[numberBranching_++]=jColumn;
@@ -134,7 +134,7 @@ CbcTree::addBranchingInformation(const CbcModel * model, const CbcNodeInfo * nod
 	  if (changed) {
 	    if (numberBranching_==maximumBranching_)
 	      increaseSpace();
-	    newBound_[numberBranching_]=(int) value;
+	    newBound_[numberBranching_]=static_cast<int> (value);
 	    branched_[numberBranching_++]=jColumn;
 	  }
 	}
@@ -326,7 +326,7 @@ CbcTree::bestNode(double cutoff)
 double
 CbcTree::getBestPossibleObjective(){
   double r_val = 1e100;
-  for(int i = 0 ; i < (int) nodes_.size() ; i++){
+  for(int i = 0 ; i < static_cast<int> (nodes_.size()) ; i++){
     if(nodes_[i] && nodes_[i]->objectiveValue() < r_val){
       r_val = nodes_[i]->objectiveValue();
     }

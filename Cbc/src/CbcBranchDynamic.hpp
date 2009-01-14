@@ -44,7 +44,7 @@ public:
   CbcSimpleIntegerDynamicPseudoCost & operator=( const CbcSimpleIntegerDynamicPseudoCost& rhs);
 
   // Destructor 
-  ~CbcSimpleIntegerDynamicPseudoCost ();
+  virtual ~CbcSimpleIntegerDynamicPseudoCost ();
   
   using CbcObject::infeasibility ;
   /// Infeasibility - large is 0.5
@@ -99,15 +99,13 @@ public:
   inline double downDynamicPseudoCost() const
   { return downDynamicPseudoCost_;}
   /// Set down pseudo cost
-  inline void setDownDynamicPseudoCost(double value)
-  { downDynamicPseudoCost_=value;}
+  void setDownDynamicPseudoCost(double value) ;
 
   /// Up pseudo cost
   inline double upDynamicPseudoCost() const
   { return upDynamicPseudoCost_;}
   /// Set up pseudo cost
-  inline void setUpDynamicPseudoCost(double value)
-  { upDynamicPseudoCost_=value;}
+  void setUpDynamicPseudoCost(double value);
 
   /// Up down separator
   inline double upDownSeparator() const

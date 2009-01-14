@@ -3451,7 +3451,7 @@ OsiSolverLink::fathom(bool allFixed)
     int fake[]={5,4,3,2,0,0,0};
     bool onOptimalPath=true;
     for (i=0;i<7;i++) {
-      if ((int) upper[i]!=fake[i])
+      if (static_cast<int> (upper[i])!=fake[i])
 	onOptimalPath=false;
     }
     if (onOptimalPath)
@@ -4145,7 +4145,7 @@ OsiOldLink::infeasibility(const OsiBranchingInformation * info,int & whichWay) c
     assert (sum>0.0);
     weight /= sum;
     valueInfeasibility = lastNonZero-firstNonZero+1;
-    valueInfeasibility *= 0.5/((double) numberMembers_);
+    valueInfeasibility *= 0.5/static_cast<double> (numberMembers_);
     //#define DISTANCE
 #ifdef DISTANCE
     assert (sosType_==1); // code up
@@ -6719,9 +6719,9 @@ OsiBiLinearEquality::OsiBiLinearEquality (OsiSolverInterface * solver, int xColu
     solver->setColLower(xColumn_,xB[0]);
   }
   // See how many points
-  numberPoints_ = (int) ((xB[1]-xB[0]+0.5*xMesh)/xMesh);
+  numberPoints_ = static_cast<int> ((xB[1]-xB[0]+0.5*xMesh)/xMesh);
   // redo exactly
-  xMeshSize_ = (xB[1]-xB[0])/((double) numberPoints_);
+  xMeshSize_ = (xB[1]-xB[0])/static_cast<double> (numberPoints_);
   numberPoints_++;
   //#define KEEPXY
 #ifndef KEEPXY
@@ -6935,11 +6935,11 @@ OsiBiLinearEquality::newGrid(OsiSolverInterface * solver, int type) const
     }
     // new step size
     assert (numberPoints_>2);
-    step = CoinMax((1.5*step)/((double) (numberPoints_-1)),0.5*step);
+    step = CoinMax((1.5*step)/static_cast<double> (numberPoints_-1),0.5*step);
     xB[0] = CoinMax(xB[0],xValue-0.5*step);
     xB[1] = CoinMin(xB[1],xValue+0.5*step);
     // and now divide these
-    mesh = (xB[1]-xB[0])/((double) (numberPoints_-1));
+    mesh = (xB[1]-xB[0])/static_cast<double> (numberPoints_-1);
   } else {
     // back to original
     mesh = xMeshSize_;
@@ -7486,7 +7486,7 @@ CoinModel::expandKnapsack(int knapsackRow, int & numberOutput,double * buildObj,
       gap=1.0e8;
     assert (fabs(floor(gap+0.5)-gap)<1.0e-5);
     whichColumn[numJ]=iColumn;
-    bound[numJ]=(int) gap;
+    bound[numJ]=static_cast<int> (gap);
     size[numJ++]=triple.value();
     offset += triple.value()*lowerColumn;
     triple=next(triple);

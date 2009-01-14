@@ -289,6 +289,8 @@ private:
   bool mustCallAgain_;
   /// Temporary switch off marker
   bool switchedOff_;
+  /// Create global cuts (at root)
+  bool globalCutsAtRoot_;
   /// Whether call generator being timed
   bool timing_;
   /// Time in cut generator

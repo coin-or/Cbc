@@ -219,6 +219,9 @@ CbcCutBranchingObject::branch()
       low += upper[iColumn]*value;
     }
   }
+  // leave as cut
+  //model_->setNextRowCut(*cut);
+  //return 0.0;
   // assume cut was cunningly constructed so we need not worry too much about tolerances
   if (low+1.0e-8>=ub&&canFix_) {
     // fix
@@ -372,6 +375,8 @@ CbcBranchToFixLots::CbcBranchToFixLots (CbcModel * model, double djTolerance,
     int numberColumns = model->getNumCols();
     mark_ = new char[numberColumns];
     memcpy(mark_,mark,numberColumns);
+  } else {
+    mark_ = NULL;
   }
   depth_ = depth;
   assert (model);
@@ -444,7 +449,7 @@ CbcBranchToFixLots::createBranch(int way)
   // make smaller ?
   double tolerance = CoinMin(1.0e-8,integerTolerance);
   // How many fixed are we aiming at
-  int wantedFixed = (int) ((double)numberIntegers*fractionFixed_);
+  int wantedFixed = static_cast<int> (static_cast<double>(numberIntegers)*fractionFixed_);
   int nSort=0;
   int numberFixed=0;
   int numberColumns = solver->getNumCols();
@@ -477,7 +482,7 @@ CbcBranchToFixLots::createBranch(int way)
     // sort
     CoinSort_2(dsort,dsort+nSort,sort);
     nSort= CoinMin(nSort,wantedFixed-numberFixed);
-  } else {
+  } else if (type<10) {
     int i;
     //const double * rowLower = solver->getRowLower();
     const double * rowUpper = solver->getRowUpper();
@@ -534,25 +539,53 @@ CbcBranchToFixLots::createBranch(int way)
     }
     // sort
     CoinSort_2(dsort,dsort+numberColumns,sort);
+  } else {
+    // new way
+    for (i=0;i<numberIntegers;i++) {
+      int iColumn = integerVariable[i];
+      if (upper[iColumn]>lower[iColumn]) {
+	if (!mark_||!mark_[iColumn]) {
+	  double distanceDown=solution[iColumn]-lower[iColumn];
+	  double distanceUp=upper[iColumn]-solution[iColumn];
+	  double distance = CoinMin(distanceDown,distanceUp);
+	  if (distance>0.001&&distance<0.5) {
+	    dsort[nSort]=distance;
+	    sort[nSort++]=iColumn;
+	  }
+	}
+      }
+    }
+    // sort
+    CoinSort_2(dsort,dsort+nSort,sort);
+    int n=0;
+    double sum=0.0;
+    for (int k=0;k<nSort;k++) {
+      sum += dsort[k];
+      if (sum<=djTolerance_)
+	n=k;
+      else
+	break;
+    }
+    nSort = CoinMin(n,numberClean_/1000000);
   }
   OsiRowCut down;
   down.setLb(-COIN_DBL_MAX);
   double rhs=0.0;
   for (i=0;i<nSort;i++) {
     int iColumn = sort[i];
-    if(solution[iColumn]<lower[iColumn]+tolerance) {
+    double distanceDown=solution[iColumn]-lower[iColumn];
+    double distanceUp=upper[iColumn]-solution[iColumn];
+    if(distanceDown<distanceUp) {
       rhs += lower[iColumn];
       dsort[i]=1.0;
-      assert (!lower[iColumn]);
     } else {
-      assert (solution[iColumn]>upper[iColumn]-tolerance);
       rhs -= upper[iColumn];
       dsort[i]=-1.0;
-      //printf("%d at ub of %g\n",iColumn,upper[iColumn]);
     }
   }
   down.setUb(rhs);
   down.setRow(nSort,sort,dsort);
+  down.setEffectiveness(COIN_DBL_MAX); // so will persist
   delete [] sort;
   delete [] dsort;
   // up is same - just with rhs changed
@@ -568,6 +601,7 @@ CbcBranchToFixLots::createBranch(int way)
 }
 /* Does a lot of the work,
    Returns 0 if no good, 1 if dj, 2 if clean, 3 if both
+   10 if branching on ones away from bound
 */
 int 
 CbcBranchToFixLots::shallWe() const
@@ -584,12 +618,46 @@ CbcBranchToFixLots::shallWe() const
   int i;
   int numberIntegers = model_->numberIntegers();
   const int * integerVariable = model_->integerVariable();
+  if (numberClean_>1000000) {
+    int wanted = numberClean_%1000000;
+    int * sort = new int[numberIntegers];
+    double * dsort = new double[numberIntegers];
+    int nSort=0;
+    for (i=0;i<numberIntegers;i++) {
+      int iColumn = integerVariable[i];
+      if (upper[iColumn]>lower[iColumn]) {
+	if (!mark_||!mark_[iColumn]) {
+	  double distanceDown=solution[iColumn]-lower[iColumn];
+	  double distanceUp=upper[iColumn]-solution[iColumn];
+	  double distance = CoinMin(distanceDown,distanceUp);
+	  if (distance>0.001&&distance<0.5) {
+	    dsort[nSort]=distance;
+	    sort[nSort++]=iColumn;
+	  }
+	}
+      }
+    }
+    // sort
+    CoinSort_2(dsort,dsort+nSort,sort);
+    int n=0;
+    double sum=0.0;
+    for (int k=0;k<nSort;k++) {
+      sum += dsort[k];
+      if (sum<=djTolerance_)
+	n=k;
+      else
+	break;
+    }
+    delete [] sort;
+    delete [] dsort;
+    return (n>=wanted) ? 10 : 0;
+  }
   double integerTolerance = 
     model_->getDblParam(CbcModel::CbcIntegerTolerance);
   // make smaller ?
   double tolerance = CoinMin(1.0e-8,integerTolerance);
   // How many fixed are we aiming at
-  int wantedFixed = (int) ((double)numberIntegers*fractionFixed_);
+  int wantedFixed = static_cast<int> (static_cast<double>(numberIntegers)*fractionFixed_);
   if (djTolerance_<1.0e10) {
     int nSort=0;
     int numberFixed=0;

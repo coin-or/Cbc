@@ -514,7 +514,7 @@ CbcHeuristicFPump::solution(double & solutionValue,
 #endif
     }
     if (scaleFactor)
-      scaleFactor = (initialWeight_*sqrt((double) numberIntegers))/sqrt(scaleFactor);
+      scaleFactor = (initialWeight_*sqrt(static_cast<double> (numberIntegers)))/sqrt(scaleFactor);
 #ifdef COIN_DEVELOP
     if (scaleFactor)
       printf("Using %g fraction of original objective - largest %g - %d artificials\n",scaleFactor,
@@ -541,12 +541,14 @@ CbcHeuristicFPump::solution(double & solutionValue,
       }
       if (numberIterationsPass1>=0) {
 	int n = totalNumberIterations - numberIterationsLastPass;
-	if (n>CoinMax(15000,3*numberIterationsPass1)&&maximumPasses_<200) {
+	if (n>CoinMax(15000,3*numberIterationsPass1)
+	    &&(switches_&2)==0&&maximumPasses_<200) {
 	  exitAll=true;
 	}
       }
       // Exit on exact total number if maximumPasses large
-      if (maximumPasses_>=200&&numberPasses+totalNumberPasses>=
+      if ((maximumPasses_>=200||(switches_&2)!=0)
+	  &&numberPasses+totalNumberPasses>=
 	  maximumPasses_)
 	exitAll=true;
       if (iterationLimit<0.0) {
@@ -640,6 +642,8 @@ CbcHeuristicFPump::solution(double & solutionValue,
 	  if (returnCode&&newSolutionValue<saveValue) {
 	    memcpy(betterSolution,newSolution,numberColumns*sizeof(double));
 	    solutionFound=true;
+	    if (exitNow(newSolutionValue))
+	      exitAll=true;
 	    CoinWarmStartBasis * basis =
 	      dynamic_cast<CoinWarmStartBasis *>(solver->getWarmStart()) ;
 	    if (basis) {
@@ -672,6 +676,8 @@ CbcHeuristicFPump::solution(double & solutionValue,
 		<< pumpPrint
 		<<CoinMessageEol;
 	    }
+	    if (exitNow(newSolutionValue))
+	      exitAll=true;
 	  } else {
 	    sprintf(pumpPrint,"Mini branch and bound could not fix general integers");
 	    model_->messageHandler()->message(CBC_FPUMP1,model_->messages())
@@ -873,6 +879,8 @@ CbcHeuristicFPump::solution(double & solutionValue,
 	      CoinWarmStartBasis * basis =
 		dynamic_cast<CoinWarmStartBasis *>(solver->getWarmStart()) ;
 	      solutionFound=true;
+	      if (exitNow(newSolutionValue))
+		exitAll=true;
 	      if (basis) {
 		bestBasis = * basis;
 		delete basis;
@@ -897,6 +905,8 @@ CbcHeuristicFPump::solution(double & solutionValue,
 	      }
 	      solutionValue=newSolutionValue;
 	      solutionFound=true;
+	      if (exitNow(newSolutionValue))
+		exitAll=true;
 	    } else {
 	      returnCode=0;
 	    }
@@ -1029,10 +1039,15 @@ CbcHeuristicFPump::solution(double & solutionValue,
 	    }
 	    newTrueSolutionValue *= direction;
 	    if (newNumberInfeas&&newNumberInfeas<-20) {
-#if 0
+#if 1
 	      roundingObjective=solutionValue;
 	      OsiSolverInterface * saveSolver = model_->swapSolver(solver);
+	      double * currentObjective = 
+		CoinCopyOfArray(solver->getObjCoefficients(),numberColumns);
+	      solver->setObjective(saveObjective);
 	      int ifSol = roundingHeuristic.solution(roundingObjective,roundingSolution);
+	      solver->setObjective(currentObjective);
+	      delete [] currentObjective;
 	      model_->swapSolver(saveSolver);
 	      if (ifSol>0) 
 		abort();
@@ -1148,17 +1163,29 @@ CbcHeuristicFPump::solution(double & solutionValue,
 	  }
 	  if (false) {
 	    OsiSolverInterface * saveSolver = model_->swapSolver(solver);
+	    double * currentObjective = 
+	      CoinCopyOfArray(solver->getObjCoefficients(),numberColumns);
+	    solver->setObjective(saveObjective);
+	    double saveOffset2;
+	    solver->getDblParam(OsiObjOffset,saveOffset2);
+	    //assert (saveOffset==saveOffset2);
+	    solver->setDblParam(OsiObjOffset,saveOffset);
 	    CbcRounding heuristic1(*model_);
 	    heuristic1.setHeuristicName("rounding in feaspump!");
 	    heuristic1.setWhen(1);
-	    roundingObjective = newTrueSolutionValue;
-	    double testObjectiveValue = CoinMin(solutionValue,roundingObjective);
-	    int returnCode = heuristic1.solution(testObjectiveValue,roundingSolution,newTrueSolutionValue) ;
+	    roundingObjective = CoinMin(roundingObjective,solutionValue);
+	    double testSolutionValue=newTrueSolutionValue;
+	    int returnCode = heuristic1.solution(roundingObjective,
+						 roundingSolution,
+						 testSolutionValue) ;
+	    solver->setObjective(currentObjective);
+	    solver->setDblParam(OsiObjOffset,saveOffset2);
+	    delete [] currentObjective;
 	    if (returnCode==1) {
-	      assert(testObjectiveValue < CoinMin(solutionValue,roundingObjective));
-	      roundingObjective = testObjectiveValue;
+	      printf("rounding obj of %g?\n",roundingObjective);
+	      //roundingObjective = newSolutionValue;
 	    } else {
-	      roundingObjective = COIN_DBL_MAX;
+	      //  roundingObjective = COIN_DBL_MAX;
 	    }
 	    model_->swapSolver(saveSolver);
 	  }
@@ -1319,8 +1346,11 @@ CbcHeuristicFPump::solution(double & solutionValue,
 	<< pumpPrint
 	<<CoinMessageEol;
       solutionValue=roundingObjective;
+      newSolutionValue = solutionValue;
       memcpy(betterSolution,roundingSolution,numberColumns*sizeof(double));
       solutionFound=true;
+      if (exitNow(roundingObjective))
+	exitAll=true;
     }
     if (!solutionFound) { 
       sprintf(pumpPrint,"No solution found this major pass");
@@ -1582,6 +1612,8 @@ CbcHeuristicFPump::solution(double & solutionValue,
 	  }
 	  solutionValue=newSolutionValue;
 	  solutionFound=true;
+	  if (exitNow(newSolutionValue))
+	    exitAll=true;
 	  CoinWarmStartBasis * basis =
 	    dynamic_cast<CoinWarmStartBasis *>(newSolver->getWarmStart()) ;
 	  if (basis) {
@@ -1681,6 +1713,8 @@ CbcHeuristicFPump::solution(double & solutionValue,
       //abort();
       solutionValue=newSolutionValue;
       solutionFound=true;
+      if (exitNow(newSolutionValue))
+	exitAll=true;
     }
     delete newSolver;
   }
@@ -1714,9 +1748,9 @@ CbcHeuristicFPump::solution(double & solutionValue,
     double nrow = model_->solver()->getNumRows();
     printf("XXX total iterations %d ratios - %g %g %g\n",
 	   totalNumberIterations,
-	   ((double) totalNumberIterations)/nrow,
-	   ((double) totalNumberIterations)/ncol,
-	   ((double) totalNumberIterations)/(2*nrow+2*ncol));
+	   static_cast<double> (totalNumberIterations)/nrow,
+	   static_cast<double> (totalNumberIterations)/ncol,
+	   static_cast<double> (totalNumberIterations)/(2*nrow+2*ncol));
   }
 #endif
   return finalReturnCode;
@@ -1750,7 +1784,7 @@ CbcHeuristicFPump::rounds(OsiSolverInterface * solver,double * solution,
   int flip_up = 0;
   int flip_down  = 0;
   double  v = randomNumberGenerator_.randomDouble() * 20.0;
-  int nn = 10 + (int) v;
+  int nn = 10 + static_cast<int> (v);
   int nnv = 0;
   int * list = new int [nn];
   double * val = new double [nn];

@@ -2378,8 +2378,8 @@ void CbcModel::branchAndBound(int doStatistics)
   */
   numberLongStrong_=0;
   double totalTime = 0.0;
-#ifdef CBC_THREAD
   CbcNode * createdNode=NULL;
+#ifdef CBC_THREAD
   CbcModel ** threadModel = NULL;
   Coin_pthread_t * threadId = NULL;
   int * threadCount = NULL;
@@ -3038,16 +3038,16 @@ void CbcModel::branchAndBound(int doStatistics)
   represents, and then execute the current arm of the branch to create the
   active subproblem.
 */
-#ifdef CBC_THREAD
     CbcNode * node=NULL;
+#ifdef CBC_THREAD
     if (!parallelMode()||parallelMode()==-1) {
+#endif
       node = tree_->bestNode(cutoff) ;
       // Possible one on tree worse than cutoff
       if (!node||node->objectiveValue()>cutoff) 
 	continue;
       // Do main work of solving node here
       doOneNode(this,node,createdNode);
-#endif
 #ifdef CBC_THREAD
     } else if (parallelMode()>0) {
       node = tree_->bestNode(cutoff) ;

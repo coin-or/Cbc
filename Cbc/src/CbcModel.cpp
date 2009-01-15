@@ -2378,8 +2378,8 @@ void CbcModel::branchAndBound(int doStatistics)
   */
   numberLongStrong_=0;
   double totalTime = 0.0;
-  CbcNode * createdNode=NULL;
 #ifdef CBC_THREAD
+  CbcNode * createdNode=NULL;
   CbcModel ** threadModel = NULL;
   Coin_pthread_t * threadId = NULL;
   int * threadCount = NULL;
@@ -2532,10 +2532,12 @@ void CbcModel::branchAndBound(int doStatistics)
   int lastEvery1000=0;
   int lastPrintEvery=0;
   while (true) {
+#ifdef CBC_THREAD
     if (parallelMode()>0&&!locked) {
       lockThread();
       locked=true;
     }
+#endif
 #ifdef COIN_HAS_CLP
     // Possible change of pivot method
     if(!savePivotMethod&&!parentModel_) {
@@ -2566,6 +2568,7 @@ void CbcModel::branchAndBound(int doStatistics)
     }
 #endif
     if (tree_->empty()) {
+#ifdef CBC_THREAD
       if (parallelMode()>0) {
 #ifdef COIN_DEVELOP
 	printf("empty\n");
@@ -2673,12 +2676,15 @@ void CbcModel::branchAndBound(int doStatistics)
 	unlockThread();
 	locked=false; // not needed as break
       }
+#endif
       break;
     }
+#ifdef CBC_THREAD
     if (parallelMode()>0) {
       unlockThread();
       locked = false;
     }
+#endif
     // If done 100 nodes see if worth trying reduction
     if (numberNodes_==100&&saveSolver) {
       bool tryNewSearch=solverCharacteristics_->reducedCostsAccurate();
@@ -3032,6 +3038,7 @@ void CbcModel::branchAndBound(int doStatistics)
   represents, and then execute the current arm of the branch to create the
   active subproblem.
 */
+#ifdef CBC_THREAD
     CbcNode * node=NULL;
     if (!parallelMode()||parallelMode()==-1) {
       node = tree_->bestNode(cutoff) ;
@@ -3040,6 +3047,8 @@ void CbcModel::branchAndBound(int doStatistics)
 	continue;
       // Do main work of solving node here
       doOneNode(this,node,createdNode);
+#endif
+#ifdef CBC_THREAD
     } else if (parallelMode()>0) {
       node = tree_->bestNode(cutoff) ;
       // Possible one on tree worse than cutoff
@@ -3276,6 +3285,7 @@ void CbcModel::branchAndBound(int doStatistics)
 	  //printf("Tree sizes %d %d %d - affected %d\n",saveTreeSize,saveTreeSize2,tree_->size(),nAffected);
       }
     }
+#endif
   }
   if (nDeleteNode) {
     for (int i=0;i<nDeleteNode;i++) {

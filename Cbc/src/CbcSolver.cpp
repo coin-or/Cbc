@@ -7965,28 +7965,26 @@ int
 		  solution = saveSolver->getColSolution();
 		  int numberChanged=0;
 		  for (int i=0;i<n;i++) {
-		    if (saveSolver->isInteger(i)) {
-		      if (lower2[i]!=COIN_DBL_MAX) {
-			if (lower2[i]!=columnLower[i]||
-			    upper2[i]!=columnUpper[i]) {
-			  if (lower2[i]<columnLower[i]||
-			      upper2[i]>columnUpper[i]) {
+		    if (lower2[i]!=COIN_DBL_MAX) {
+		      if (lower2[i]!=columnLower[i]||
+			  upper2[i]!=columnUpper[i]) {
+			if (lower2[i]<columnLower[i]||
+			    upper2[i]>columnUpper[i]) {
 #ifdef COIN_DEVELOP
-			    printf("odd bounds tighter");
-			    printf("%d bab bounds %g %g now %g %g\n",
-				   i,lower2[i],upper2[i],columnLower[i],
-				   columnUpper[i]);
+			  printf("odd bounds tighter");
+			  printf("%d bab bounds %g %g now %g %g\n",
+				 i,lower2[i],upper2[i],columnLower[i],
+				 columnUpper[i]);
 #endif
-			  } else {
+			} else {
 #ifdef COIN_DEVELOP
-			    printf("%d bab bounds %g %g now %g %g\n",
-				   i,lower2[i],upper2[i],columnLower[i],
-				   columnUpper[i]);
+			  printf("%d bab bounds %g %g now %g %g\n",
+				 i,lower2[i],upper2[i],columnLower[i],
+				 columnUpper[i]);
 #endif
-			    numberChanged++;
-			    saveSolver->setColLower(i,lower2[i]);
-			    saveSolver->setColUpper(i,upper2[i]);
-			  }
+			  numberChanged++;
+			  saveSolver->setColLower(i,lower2[i]);
+			  saveSolver->setColUpper(i,upper2[i]);
 			}
 		      }
 		    }

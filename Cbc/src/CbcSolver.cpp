@@ -8197,6 +8197,7 @@ int
 		}
 #endif
 #ifdef COIN_HAS_ASL
+#if NEW_STYLE_SOLVER
                 if (statusUserFunction_[0]) {
 		  clpSolver = dynamic_cast< OsiClpSolverInterface*> (babModel_->solver());
 		  lpSolver = clpSolver->getModelPtr();
@@ -8267,6 +8268,7 @@ int
                   // put buffer into info
                   strcpy(info.buffer,buf);
                 }
+#endif
 #endif
               } else {
                 std::cout<<"Model strengthened - now has "<<clpSolver->getNumRows()

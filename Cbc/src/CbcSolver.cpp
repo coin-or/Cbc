@@ -8444,7 +8444,7 @@ int
 		  // Go to canned file if just input file
 		  if (CbcOrClpRead_mode==2&&argc==2) {
 		    // only if ends .mps
-		    char * find = reinterpret_cast<char *>(strstr(fileName.c_str(),".mps"));
+		    char * find = const_cast<char *>(strstr(fileName.c_str(),".mps"));
 		    if (find&&find[4]=='\0') {
 		      find[1]='p'; find[2]='a';find[3]='r';
 		      FILE *fp=fopen(fileName.c_str(),"r");

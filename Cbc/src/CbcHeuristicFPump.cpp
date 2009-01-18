@@ -368,7 +368,23 @@ CbcHeuristicFPump::solution(double & solutionValue,
       secondPassOpt=0;
     }
   }
+  // guess exact multiple of objective
+  double exactMultiple = model_->getCutoffIncrement();
+  exactMultiple *= 2520;
+  if (fabs(exactMultiple/0.999-floor(exactMultiple/0.999+0.5))<1.0e-9) 
+    exactMultiple /= 2520.0*0.999;
+  else if (fabs(exactMultiple-floor(exactMultiple+0.5))<1.0e-9) 
+    exactMultiple /= 2520.0;
+  else
+    exactMultiple = 0.0;
+  // check for rounding errors (only for integral case)
+  if (fabs(exactMultiple-floor(exactMultiple+0.5))<1.0e-8)
+    exactMultiple = floor(exactMultiple+0.5);
+  //printf("exact multiple %g\n",exactMultiple);
   while (!exitAll) {
+    // Cutoff rhs
+    double useRhs=COIN_DBL_MAX;
+    double useOffset=0.0;
     int numberPasses=0;
     artificialFactor *= 10.0;
     int lastMove= (!numberTries) ? -10 : 1000000;
@@ -410,7 +426,7 @@ CbcHeuristicFPump::solution(double & solutionValue,
     // if cutoff exists then add constraint 
     bool useCutoff = (fabs(cutoff)<1.0e20&&(fakeCutoff_!=COIN_DBL_MAX||numberTries>1));
     // but there may be a close one
-    if (firstCutoff<2.0*solutionValue&&numberTries==1/*&&CoinMin(cutoff,fakeCutoff_)<1.0e20*/) 
+    if (firstCutoff<2.0*solutionValue&&numberTries==1&&CoinMin(cutoff,fakeCutoff_)<1.0e20) 
       useCutoff=true;
     if (useCutoff) {
       double rhs = CoinMin(cutoff,fakeCutoff_);
@@ -426,14 +442,14 @@ CbcHeuristicFPump::solution(double & solutionValue,
 	  els[nel++] = direction*value;
 	}
       }
-      double offset;
-      solver->getDblParam(OsiObjOffset,offset);
+      solver->getDblParam(OsiObjOffset,useOffset);
 #ifdef COIN_DEVELOP
-      if (offset)
-	printf("CbcHeuristicFPump obj offset %g\n",offset);
+      if (useOffset)
+	printf("CbcHeuristicFPump obj offset %g\n",useOffset);
 #endif
-      // Tweak rhs
-      double useRhs = rhs+offset*direction;
+      useOffset *= direction;
+      // Tweak rhs and save
+      useRhs = rhs;
 #if 0
       double tempValue = 60.0*useRhs;
       if (fabs(tempValue-floor(tempValue+0.5))<1.0e-7&&rhs!=fakeCutoff_) {
@@ -441,7 +457,7 @@ CbcHeuristicFPump::solution(double & solutionValue,
 	useRhs += 1.0e-5;
       }
 #endif
-      solver->addRow(nel,which,els,-COIN_DBL_MAX,useRhs);
+      solver->addRow(nel,which,els,-COIN_DBL_MAX,useRhs+useOffset);
       delete [] which;
       delete [] els;
       bool takeHint;
@@ -520,6 +536,12 @@ CbcHeuristicFPump::solution(double & solutionValue,
       printf("Using %g fraction of original objective - largest %g - %d artificials\n",scaleFactor,
 	     largestCost,nArtificial);
 #endif
+    // This is an array of sums of infeasibilities so can see if "bobbling"
+#define SIZE_BOBBLE 20
+    double saveSumInf[SIZE_BOBBLE];
+    CoinFillN(saveSumInf,SIZE_BOBBLE,COIN_DBL_MAX);
+    // 0 before doing anything
+    int bobbleMode = 0;
     // 5. MAIN WHILE LOOP
     //bool newLineNeeded=false;
     while (!finished) {
@@ -1038,15 +1060,19 @@ CbcHeuristicFPump::solution(double & solutionValue,
 	      newTrueSolutionValue += saveObjective[i]*newSolution[i];
 	    }
 	    newTrueSolutionValue *= direction;
-	    if (newNumberInfeas&&newNumberInfeas<-20) {
-#if 1
+	    if (newNumberInfeas&&newNumberInfeas<15) {
+#if 0
 	      roundingObjective=solutionValue;
 	      OsiSolverInterface * saveSolver = model_->swapSolver(solver);
 	      double * currentObjective = 
 		CoinCopyOfArray(solver->getObjCoefficients(),numberColumns);
 	      solver->setObjective(saveObjective);
+	      double saveOffset2;
+	      solver->getDblParam(OsiObjOffset,saveOffset2);
+	      solver->setDblParam(OsiObjOffset,saveOffset);
 	      int ifSol = roundingHeuristic.solution(roundingObjective,roundingSolution);
 	      solver->setObjective(currentObjective);
+	      solver->setDblParam(OsiObjOffset,saveOffset2);
 	      delete [] currentObjective;
 	      model_->swapSolver(saveSolver);
 	      if (ifSol>0) 
@@ -1130,9 +1156,13 @@ CbcHeuristicFPump::solution(double & solutionValue,
 		    double newObj = newTrueSolutionValue * direction;
 		    newObj += contrib2-contrib;
 		    newObj *= direction;
+#ifdef COIN_DEVELOP
 		    printf("FFFeasible! - obj %g\n",newObj);
-		    if (newObj<roundingObjective) {
+#endif
+		    if (newObj<roundingObjective-1.0e-6) {
+#ifdef COIN_DEVELOP
 		      printf("FBetter\n");
+#endif
 		      roundingObjective = newObj;
 		      memcpy(roundingSolution,newSolution,numberColumns*sizeof(double));
 		      for (int k=0 ; k<n ; k++ ) {
@@ -1161,10 +1191,11 @@ CbcHeuristicFPump::solution(double & solutionValue,
 	      delete [] rowValue;
 	    }
 	  }
-	  if (false) {
+	  if (true) {
 	    OsiSolverInterface * saveSolver = model_->swapSolver(solver);
 	    double * currentObjective = 
 	      CoinCopyOfArray(solver->getObjCoefficients(),numberColumns);
+	    //double * saveSolution = CoinCopyOfArray(solution,numberColumns);
 	    solver->setObjective(saveObjective);
 	    double saveOffset2;
 	    solver->getDblParam(OsiObjOffset,saveOffset2);
@@ -1180,9 +1211,14 @@ CbcHeuristicFPump::solution(double & solutionValue,
 						 testSolutionValue) ;
 	    solver->setObjective(currentObjective);
 	    solver->setDblParam(OsiObjOffset,saveOffset2);
+	    //if ((switches_&16)==0||numberPasses<-10)
+	    //solver->setColSolution(saveSolution);
+	    //delete [] saveSolution;
 	    delete [] currentObjective;
 	    if (returnCode==1) {
+#ifdef COIN_DEVELOP
 	      printf("rounding obj of %g?\n",roundingObjective);
+#endif
 	      //roundingObjective = newSolutionValue;
 	    } else {
 	      //  roundingObjective = COIN_DBL_MAX;
@@ -1332,8 +1368,101 @@ CbcHeuristicFPump::solution(double & solutionValue,
 	  }
 	  closestObjectiveValue = solver->getObjValue();
 	}
-	//newLineNeeded=true;
-	
+	// See if we need to think about changing rhs
+	if ((switches_&12)!=0&&useRhs<1.0e50) {
+	  double oldRhs = useRhs;
+	  bool trying=false;
+	  if ((switches_&4)!=0&&numberPasses&&(numberPasses%50)==0) {
+	    if (solutionValue>1.0e20) {
+	      // only if no genuine solution
+	      double gap = useRhs-continuousObjectiveValue;
+	      useRhs += 0.1*gap;
+	      if (exactMultiple) {
+		useRhs = exactMultiple*ceil(useRhs/exactMultiple);
+		useRhs = CoinMax(useRhs,oldRhs+exactMultiple);
+	      }
+	      trying=true;
+	    }
+	  }
+	  if ((switches_&8)!=0) {
+	    // Put in new suminf and check
+	    double largest=newSumInfeas;
+	    double smallest=newSumInfeas;
+	    for (int i=0;i<SIZE_BOBBLE-1;i++) {
+	      double value = saveSumInf[i+1];
+	      saveSumInf[i]=value;
+	      largest = CoinMax(largest,value);
+	      smallest = CoinMin(smallest,value);
+	    }
+	    saveSumInf[SIZE_BOBBLE-1]=newSumInfeas;
+	    if (smallest*1.5>largest&&smallest>2.0) {
+	      if (bobbleMode==0) {
+		// go closer
+		double gap = oldRhs-continuousObjectiveValue;
+		useRhs -= 0.4*gap;
+		if (exactMultiple) {
+		  double value = floor(useRhs/exactMultiple);
+		  useRhs = CoinMin(value*exactMultiple,oldRhs-exactMultiple);
+		}
+		if (useRhs<continuousObjectiveValue) {
+		  // skip decrease
+		  bobbleMode=1;
+		  useRhs=oldRhs;
+		}
+	      } 
+	      if (bobbleMode) {
+		trying=true;
+		// weaken
+		if (solutionValue<1.0e20) {
+		  double gap = solutionValue-oldRhs;
+		  useRhs += 0.3*gap;
+		} else {
+		  double gap = oldRhs-continuousObjectiveValue;
+		  useRhs += 0.05*gap;
+		}
+		if (exactMultiple) {
+		  double value = ceil(useRhs/exactMultiple);
+		  useRhs = CoinMin(value*exactMultiple,
+				   solutionValue-exactMultiple);
+		}
+	      }
+	      bobbleMode++;
+	      // reset
+	      CoinFillN(saveSumInf,SIZE_BOBBLE,COIN_DBL_MAX);
+	    }
+	  }
+	  if (useRhs!=oldRhs) {
+	    // tidy up
+	    if (exactMultiple) {
+	      double value = floor(useRhs/exactMultiple);
+	      double bestPossible = ceil(continuousObjectiveValue/exactMultiple);
+	      useRhs = CoinMax(value,bestPossible)*exactMultiple;
+	    } else {
+	      useRhs = CoinMax(useRhs,continuousObjectiveValue);
+	    }
+	    int k = solver->getNumRows()-1;
+	    solver->setRowUpper(k,useRhs+useOffset);
+	    bool takeHint;
+	    OsiHintStrength strength;
+	    solver->getHintParam(OsiDoDualInResolve,takeHint,strength);
+	    if (useRhs<oldRhs) {
+	      solver->setHintParam(OsiDoDualInResolve,true);
+	      solver->resolve();
+	    } else if (useRhs>oldRhs) {
+	      solver->setHintParam(OsiDoDualInResolve,false);
+	      solver->resolve();
+	    }
+	    solver->setHintParam(OsiDoDualInResolve,takeHint);
+	    if (!solver->isProvenOptimal()) {
+	      // presumably max time or some such
+	      exitAll=true;
+	      break;
+	    }
+	  } else if (trying) {
+	    // doesn't look good
+	    break;
+	  }
+	}
       }
       // reduce scale factor
       scaleFactor *= weightFactor_;
@@ -1654,9 +1783,8 @@ CbcHeuristicFPump::solution(double & solutionValue,
 	cutoff -= weights[CoinMin(numberTries-1,9)]*(cutoff-continuousObjectiveValue);
       }
       // But round down
-      if (model_->getCutoffIncrement()==0.999||
-	  model_->getCutoffIncrement()==1.0)
-	cutoff = floor(cutoff);
+      if (exactMultiple) 
+	cutoff = exactMultiple*floor(cutoff/exactMultiple);
       if (cutoff<continuousObjectiveValue)
 	break;
       sprintf(pumpPrint,"Round again with cutoff of %g",cutoff);
@@ -1833,6 +1961,7 @@ CbcHeuristicFPump::rounds(OsiSolverInterface * solver,double * solution,
       }
     }
   }
+  int numberColumns = solver->getNumCols();
 #if 0
   // Do set covering variables
   const CoinPackedMatrix * matrixByRow = solver->getMatrixByRow();
@@ -1840,7 +1969,6 @@ CbcHeuristicFPump::rounds(OsiSolverInterface * solver,double * solution,
   const int * column = matrixByRow->getIndices();
   const CoinBigIndex * rowStart = matrixByRow->getVectorStarts();
   const int * rowLength = matrixByRow->getVectorLengths();
-  int numberColumns = solver->getNumCols();
   double * sortTemp = new double[numberColumns];
   int * whichTemp = new int [numberColumns];
   char * rowTemp = new char [numberRows];
@@ -1941,19 +2069,34 @@ CbcHeuristicFPump::rounds(OsiSolverInterface * solver,double * solution,
   }
   if (i==numberIntegers) {
     // may be able to use solution even if 0.99999's
-    // get row activities
-    double * rowActivity = new double[numberRows];
-    memset(rowActivity,0,numberRows*sizeof(double));
-    solver->getMatrixByCol()->times(solution,rowActivity) ;
-    double largestInfeasibility =0.0;
-    for (i=0 ; i < numberRows ; i++) {
-      largestInfeasibility = CoinMax(largestInfeasibility,
-				 rowLower[i]-rowActivity[i]);
-      largestInfeasibility = CoinMax(largestInfeasibility,
-				 rowActivity[i]-rowUpper[i]);
+    double * saveLower = CoinCopyOfArray(columnLower,numberColumns);
+    double * saveUpper = CoinCopyOfArray(columnUpper,numberColumns);
+    double * saveSolution = CoinCopyOfArray(solution,numberColumns);
+    double * tempSolution = CoinCopyOfArray(solution,numberColumns);
+    CoinWarmStartBasis  * saveBasis =
+      dynamic_cast<CoinWarmStartBasis *>(solver->getWarmStart()) ;
+    for (i=0;i<numberIntegers;i++) {
+      int iColumn = integerVariable[i];
+      double value=solution[iColumn];
+      double round = floor(value+0.5);
+      solver->setColLower(iColumn,round);
+      solver->setColUpper(iColumn,round);
+      tempSolution[iColumn] = round;
     }
-    delete [] rowActivity;
-    if (largestInfeasibility<=primalTolerance) {
+    solver->setColSolution(tempSolution);
+    delete [] tempSolution;
+    solver->resolve();
+    solver->setColLower(saveLower);
+    solver->setColUpper(saveUpper);
+    solver->setWarmStart(saveBasis);
+    delete [] saveLower;
+    delete [] saveUpper;
+    delete saveBasis;
+    if (!solver->isProvenOptimal()) {
+      solver->setColSolution(saveSolution);
+    }
+    delete [] saveSolution;
+    if (solver->isProvenOptimal()) {
       // feasible
       delete [] list; 
       delete [] val;

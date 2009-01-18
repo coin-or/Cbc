@@ -3529,7 +3529,7 @@ int
     model->addHeuristic(&heuristic5) ;
     anyToDo=true;
   }
-  int heurSwitches=parameters_[whichParam(HOPTIONS,numberParameters_,parameters_)].intValue()/10;
+  int heurSwitches=parameters_[whichParam(HOPTIONS,numberParameters_,parameters_)].intValue()%100;
   if (heurSwitches) {
     for (int iHeur=0;iHeur<model->numberHeuristics();iHeur++) {
       CbcHeuristic * heuristic = model->heuristic(iHeur);
@@ -3553,7 +3553,7 @@ int
     model2.createContinuousSolver();
     bool cleanModel = !model2.numberIntegers()&&!model2.numberObjects();
     model2.findIntegers(false);
-    int heurOptions=parameters_[whichParam(HOPTIONS,numberParameters_,parameters_)].intValue()%10;
+    int heurOptions=parameters_[whichParam(HOPTIONS,numberParameters_,parameters_)].intValue()/100;
     if (heurOptions==0||heurOptions==2) {
       model2.doHeuristicsAtRoot(1);
     } else if (heurOptions==1||heurOptions==3) {
@@ -7682,7 +7682,7 @@ int
 		    babModel_->setFastNodeDepth(-9);
 		}
 		int heurOptions=parameters_[whichParam(HOPTIONS,numberParameters_,parameters_)].intValue();
-		if (heurOptions>1) 
+		if (heurOptions>100) 
 		  babModel_->setSpecialOptions(babModel_->specialOptions()|8192);
 		
 #ifdef CLP_MULTIPLE_FACTORIZATIONS   

@@ -3929,7 +3929,7 @@ int
 	si->setDefaultBound(100000.0);
 	si->setIntegerPriority(1000);
 	si->setBiLinearPriority(10000);
-	CoinModel * model2 = (CoinModel *) coinModel;
+	CoinModel * model2 = reinterpret_cast<CoinModel *> (coinModel);
 	int logLevel = parameters_[whichParam(LOGLEVEL,numberParameters_,parameters_)].intValue();
 	si->load(*model2,true,logLevel);
 	// redo
@@ -3979,10 +3979,10 @@ int
         unsigned char * statusArray = lpSolver->statusArray();
         int i;
         for (i=0;i<info.numberColumns;i++)
-          statusArray[i]=(char)info.columnStatus[i];
+          statusArray[i]= info.columnStatus[i];
         statusArray+=info.numberColumns;
         for (i=0;i<info.numberRows;i++)
-          statusArray[i]=(char)info.rowStatus[i];
+          statusArray[i]= info.rowStatus[i];
         CoinWarmStartBasis * basis = lpSolver->getBasis();
         solver->setWarmStart(basis);
         delete basis;
@@ -5265,17 +5265,17 @@ int
                         model2->getIterationCount());
                 free(info.primalSolution);
                 int numberColumns=model2->numberColumns();
-                info.primalSolution = (double *) malloc(numberColumns*sizeof(double));
+                info.primalSolution = reinterpret_cast<double *> (malloc(numberColumns*sizeof(double)));
                 CoinCopyN(model2->primalColumnSolution(),numberColumns,info.primalSolution);
                 int numberRows = model2->numberRows();
                 free(info.dualSolution);
-                info.dualSolution = (double *) malloc(numberRows*sizeof(double));
+                info.dualSolution = reinterpret_cast<double *> (malloc(numberRows*sizeof(double)));
                 CoinCopyN(model2->dualRowSolution(),numberRows,info.dualSolution);
                 CoinWarmStartBasis * basis = model2->getBasis();
                 free(info.rowStatus);
-                info.rowStatus = (int *) malloc(numberRows*sizeof(int));
+                info.rowStatus = reinterpret_cast<int *> (malloc(numberRows*sizeof(int)));
                 free(info.columnStatus);
-                info.columnStatus = (int *) malloc(numberColumns*sizeof(int));
+                info.columnStatus = reinterpret_cast<int *> (malloc(numberColumns*sizeof(int)));
                 // Put basis in 
                 int i;
                 // free,basic,ub,lb are 0,1,2,3
@@ -5460,17 +5460,17 @@ int
 		  sprintf(buf+pos,"\n0 iterations");
 		  free(info.primalSolution);
 		  int numberColumns=lpSolver->numberColumns();
-		  info.primalSolution = (double *) malloc(numberColumns*sizeof(double));
+		  info.primalSolution = reinterpret_cast<double *> (malloc(numberColumns*sizeof(double)));
 		  CoinCopyN(model_.bestSolution(),numberColumns,info.primalSolution);
 		  int numberRows = lpSolver->numberRows();
 		  free(info.dualSolution);
-		  info.dualSolution = (double *) malloc(numberRows*sizeof(double));
+		  info.dualSolution = reinterpret_cast<double *> (malloc(numberRows*sizeof(double)));
 		  CoinZeroN(info.dualSolution,numberRows);
 		  CoinWarmStartBasis * basis = lpSolver->getBasis();
 		  free(info.rowStatus);
-		  info.rowStatus = (int *) malloc(numberRows*sizeof(int));
+		  info.rowStatus = reinterpret_cast<int *> (malloc(numberRows*sizeof(int)));
 		  free(info.columnStatus);
-		  info.columnStatus = (int *) malloc(numberColumns*sizeof(int));
+		  info.columnStatus = reinterpret_cast<int *> (malloc(numberColumns*sizeof(int)));
 		  // Put basis in 
 		  int i;
 		  // free,basic,ub,lb are 0,1,2,3
@@ -6618,11 +6618,48 @@ int
               if (!miplib&&increment==normalIncrement)
                 changed=analyze( osiclp,numberChanged,increment,false,generalMessageHandler);
               if (debugValues) {
-                if (numberDebugValues==babModel_->getNumCols()) {
+		int numberColumns = babModel_->solver()->getNumCols();
+                if (numberDebugValues==numberColumns) {
                   // for debug
                   babModel_->solver()->activateRowCutDebugger(debugValues) ;
-                } else {
-                  printf("debug file has incorrect number of columns\n");
+		} else {
+		  int numberOriginalColumns = 
+		    process.originalModel()->getNumCols();
+		  if (numberDebugValues<=numberOriginalColumns) {
+		    const int * originalColumns = process.originalColumns();
+		    double * newValues = new double [numberColumns];
+		    // in case preprocess added columns!
+		    // need to find values
+		    OsiSolverInterface * siCopy = 
+		      babModel_->solver()->clone();
+		    for (int i=0;i<numberColumns;i++) {
+		      int jColumn = originalColumns[i];
+		      if (jColumn<numberDebugValues&&
+			  siCopy->isInteger(i)) {
+			// integer variable
+			double soln=floor(debugValues[jColumn]+0.5);
+			// Set bounds to fix variable to its solution     
+			siCopy->setColUpper(i,soln);
+			siCopy->setColLower(i,soln);
+		      }
+		    }
+		    // All integers have been fixed at optimal value.
+		    // Now solve to get continuous values
+		    siCopy->setHintParam(OsiDoScale,false);
+		    siCopy->initialSolve();
+		    if (siCopy->isProvenOptimal()) {
+		      memcpy(newValues,siCopy->getColSolution(),
+			     numberColumns*sizeof(double));
+		    } else {
+		      printf("BAD debug file\n");
+		    }
+		    delete siCopy;
+		    // for debug
+		    babModel_->solver()->activateRowCutDebugger(newValues) ;
+		    delete [] newValues;
+		  } else {
+		    printf("debug file has incorrect number of columns\n");
+		  }
                 }
               }
               babModel_->setCutoffIncrement(CoinMax(babModel_->getCutoffIncrement(),increment));

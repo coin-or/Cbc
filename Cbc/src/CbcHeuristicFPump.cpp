@@ -381,6 +381,8 @@ CbcHeuristicFPump::solution(double & solutionValue,
   if (fabs(exactMultiple-floor(exactMultiple+0.5))<1.0e-8)
     exactMultiple = floor(exactMultiple+0.5);
   //printf("exact multiple %g\n",exactMultiple);
+  // Clone solver for rounding
+  OsiSolverInterface * clonedSolver = model_->solver()->clone();
   while (!exitAll) {
     // Cutoff rhs
     double useRhs=COIN_DBL_MAX;
@@ -1192,15 +1194,8 @@ CbcHeuristicFPump::solution(double & solutionValue,
 	    }
 	  }
 	  if (true) {
-	    OsiSolverInterface * saveSolver = model_->swapSolver(solver);
-	    double * currentObjective = 
-	      CoinCopyOfArray(solver->getObjCoefficients(),numberColumns);
-	    //double * saveSolution = CoinCopyOfArray(solution,numberColumns);
-	    solver->setObjective(saveObjective);
-	    double saveOffset2;
-	    solver->getDblParam(OsiObjOffset,saveOffset2);
-	    //assert (saveOffset==saveOffset2);
-	    solver->setDblParam(OsiObjOffset,saveOffset);
+	    OsiSolverInterface * saveSolver = model_->swapSolver(clonedSolver);
+	    clonedSolver->setColSolution(solver->getColSolution());
 	    CbcRounding heuristic1(*model_);
 	    heuristic1.setHeuristicName("rounding in feaspump!");
 	    heuristic1.setWhen(1);
@@ -1209,12 +1204,6 @@ CbcHeuristicFPump::solution(double & solutionValue,
 	    int returnCode = heuristic1.solution(roundingObjective,
 						 roundingSolution,
 						 testSolutionValue) ;
-	    solver->setObjective(currentObjective);
-	    solver->setDblParam(OsiObjOffset,saveOffset2);
-	    //if ((switches_&16)==0||numberPasses<-10)
-	    //solver->setColSolution(saveSolution);
-	    //delete [] saveSolution;
-	    delete [] currentObjective;
 	    if (returnCode==1) {
 #ifdef COIN_DEVELOP
 	      printf("rounding obj of %g?\n",roundingObjective);
@@ -1846,6 +1835,7 @@ CbcHeuristicFPump::solution(double & solutionValue,
     }
     delete newSolver;
   }
+  delete clonedSolver;
   delete [] roundingSolution;
   delete [] usedColumn;
   delete [] lastSolution;

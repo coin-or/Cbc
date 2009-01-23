@@ -1451,7 +1451,10 @@ void CbcModel::branchAndBound(int doStatistics)
       //#define NO_CRUNCH
 #ifdef NO_CRUNCH
       printf("TEMP switching off crunch\n");
-      clpSolver->setSpecialOptions(clpSolver->specialOptions()&(~1));
+      int iOpt = clpSolver->specialOptions();
+      iOpt &= ~1;
+      iOpt |= 65536;
+      clpSolver->setSpecialOptions(iOpt);
 #endif
     }
   }
@@ -1869,9 +1872,9 @@ void CbcModel::branchAndBound(int doStatistics)
       obj->setPosition(numberObjects_);
     }
   }
-#ifdef COIN_HAS_CLP
+#ifdef COIN_HAS_CLP 
 #ifdef NO_CRUNCH
- {
+  if (true) {
    OsiClpSolverInterface * clpSolver 
      = dynamic_cast<OsiClpSolverInterface *> (solver_);
    if (clpSolver&&!parentModel_) {
@@ -3244,7 +3247,7 @@ void CbcModel::branchAndBound(int doStatistics)
 	    walkback_[i]->decrementCuts(1000000);
 	  }
 	}
-#ifndef NDEBUG
+#if 0 //ndef NDEBUG
 	for (iObject=0;iObject<numberObjects_;iObject++) {
 	  CbcSimpleIntegerDynamicPseudoCost * obj =
 	    dynamic_cast <CbcSimpleIntegerDynamicPseudoCost *>(object_[iObject]) ;
@@ -6743,8 +6746,10 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
 		const double *lower = getColLower() ;
 		const double *upper = getColUpper() ;
 		int numberColumns = solver_->getNumCols();
-		for (int i=0;i<numberColumns;i++)
-		  printf("%d bounds %g,%g\n",i,lower[i],upper[i]);
+		if (numberColumns<200) {
+		  for (int i=0;i<numberColumns;i++)
+		    printf("%d bounds %g,%g\n",i,lower[i],upper[i]);
+		}
 		abort();
 #endif
 	      }

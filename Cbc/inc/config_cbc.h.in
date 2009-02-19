@@ -1,5 +1,8 @@
 /* inc/config_cbc.h.in.  Generated from configure.ac by autoheader.  */
 
+/* "Version of Cbc" */
+#undef CBCVERSION
+
 /* Define to the name of the default solver to be used in cbc-generic in small
    letters */
 #undef CBC_DEFAULT_SOLVER

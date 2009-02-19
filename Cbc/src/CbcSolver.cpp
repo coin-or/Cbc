@@ -14,8 +14,6 @@
 
 #include "CoinPragma.hpp"
 #include "CoinHelperFunctions.hpp"
-// Version
-#define CBCVERSION "2.30.00"
 
 #include "CoinMpsIO.hpp"
 #include "CoinModel.hpp"
@@ -40,6 +38,10 @@
 #include "OsiRowCutDebugger.hpp"
 #include "OsiChooseVariable.hpp"
 #include "OsiAuxInfo.hpp"
+// Version
+#ifndef CBCVERSION
+#define CBCVERSION "2.30.00"
+#endif
 //#define ORBITAL
 #ifdef ORBITAL
 #include "CbcOrbital.hpp"
@@ -4196,8 +4198,8 @@ int
       iParam = whichParam(RINS,numberParameters_,parameters_);
       parameters_[iParam].setCurrentOption("on");
       iParam = whichParam(PROBINGCUTS,numberParameters_,parameters_);
-      parameters_[iParam].setCurrentOption("forceon");
-      probingAction=4;
+      parameters_[iParam].setCurrentOption("on");
+      probingAction=1;
     }
     std::string field;
     if (!noPrinting_) {

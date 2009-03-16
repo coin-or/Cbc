@@ -7,6 +7,10 @@
 #include "CoinFinite.hpp"
 #include "CoinMessageHandler.hpp"
 #include "OsiClpSolverInterface.hpp"
+#if CBC_OTHER_SOLVER==1
+#include "OsiCpxSolverInterface.hpp"
+//typedef OsiCpxSolverInterface OsiClpSolverInterface;
+#endif
 #include "CbcModel.hpp"
 #include "CbcOrClpParam.hpp"
 class CbcUser;

@@ -40,6 +40,7 @@ CbcCutGenerator::CbcCutGenerator ()
     globalCutsAtRoot_(false),
     timing_(false),
     timeInCutGenerator_(0.0),
+    inaccuracy_(0),
     numberTimes_(0),
     numberCuts_(0),
     numberColumnCuts_(0),
@@ -63,6 +64,7 @@ CbcCutGenerator::CbcCutGenerator(CbcModel * model,CglCutGenerator * generator,
     globalCutsAtRoot_(false),
     timing_(false),
     timeInCutGenerator_(0.0),
+    inaccuracy_(0),
     numberTimes_(0),
     numberCuts_(0),
     numberColumnCuts_(0),
@@ -109,6 +111,7 @@ CbcCutGenerator::CbcCutGenerator ( const CbcCutGenerator & rhs)
   globalCutsAtRoot_ = rhs.globalCutsAtRoot_;
   timing_ = rhs.timing_;
   timeInCutGenerator_ = rhs.timeInCutGenerator_;
+  inaccuracy_ = rhs.inaccuracy_;
   numberTimes_ = rhs.numberTimes_;
   numberCuts_ = rhs.numberCuts_;
   numberColumnCuts_ = rhs.numberColumnCuts_;
@@ -141,6 +144,7 @@ CbcCutGenerator::operator=( const CbcCutGenerator& rhs)
     globalCutsAtRoot_ = rhs.globalCutsAtRoot_;
     timing_ = rhs.timing_;
     timeInCutGenerator_ = rhs.timeInCutGenerator_;
+    inaccuracy_ = rhs.inaccuracy_;
     numberTimes_ = rhs.numberTimes_;
     numberCuts_ = rhs.numberCuts_;
     numberColumnCuts_ = rhs.numberColumnCuts_;
@@ -565,13 +569,38 @@ CbcCutGenerator::generateCuts( OsiCuts & cs , int fullScan, OsiSolverInterface *
       //printf("%s has %d cuts and %d elements\n",generatorName_,
       //     nCuts,nEls);
       int nElsNow = solver->getMatrixByCol()->getNumElements();
-      int nAdd = model_->parentModel() ? 200 : 10000;
       int numberColumns = solver->getNumCols();
-      int nAdd2 = model_->parentModel() ? 2*numberColumns : 5*numberColumns;
+      int numberRows = solver->getNumRows();
+      //double averagePerRow = static_cast<double>(nElsNow)/
+      //static_cast<double>(numberRows);
+      int nAdd;
+      int nAdd2;
+      int nReasonable;
+      if (!model_->parentModel()&&depth<2) {
+	if (inaccuracy_<3) {
+	  nAdd=10000;
+	  if (pass>0&&numberColumns>-500)
+	    nAdd = CoinMin(nAdd,nElsNow+2*numberRows);
+	} else {
+	  nAdd=10000;
+	  if (pass>0)
+	    nAdd = CoinMin(nAdd,nElsNow+2*numberRows);
+	}
+	nAdd2 = 5*numberColumns;
+	nReasonable = CoinMax(nAdd2,nElsNow/8+nAdd);
+      } else {
+	nAdd = 200;
+	nAdd2 = 2*numberColumns;
+	nReasonable = CoinMax(nAdd2,nElsNow/8+nAdd);
+      }
+      //#define UNS_WEIGHT 0.1
+#ifdef UNS_WEIGHT
+      const double * colLower = solver->getColLower();
+      const double * colUpper = solver->getColUpper();
+#endif
       if (/*nEls>CoinMax(nAdd2,nElsNow/8+nAdd)*/nCuts&&feasible) {
 	//printf("need to remove cuts\n");
 	// just add most effective
-	int nReasonable = CoinMax(nAdd2,nElsNow/8+nAdd);
 	int nDelete = nEls - nReasonable;
 	
 	nElsNow = nEls;
@@ -588,12 +617,41 @@ CbcCutGenerator::generateCuts( OsiCuts & cs , int fullScan, OsiSolverInterface *
 	    const int * column = thisCut->row().getIndices();
 	    const double * element = thisCut->row().getElements();
 	    assert (n);
-	    double norm=0.0;
+#ifdef UNS_WEIGHT
+	    double normU=0.0;
+	    double norm=1.0e-3;
+	    int nU=0;
+	    for (int i=0;i<n;i++) {
+	      double value = element[i];
+	      int iColumn = column[i];
+	      double solValue = solution[iColumn];
+	      sum += value*solValue;
+	      value *= value;
+	      norm += value;
+	      if (solValue>colLower[iColumn]+1.0e-6&&
+		  solValue<colUpper[iColumn]-1.0e-6) {
+		normU += value;
+		nU++;
+	      }
+	    }
+#if 0
+	    int nS=n-nU;
+	    if (numberColumns>20000) {
+	      if (nS>50) {
+		double ratio = 50.0/nS;
+		normU /= ratio;
+	      }
+	    }
+#endif
+	    norm += UNS_WEIGHT*(normU-norm);
+#else
+	    double norm=1.0e-3;
 	    for (int i=0;i<n;i++) {
 	      double value = element[i];
 	      sum += value*solution[column[i]];
 	      norm += value*value;
 	    }
+#endif
 	    if (sum>thisCut->ub()) {
 	      sum= sum-thisCut->ub();
 	    } else if (sum<thisCut->lb()) {
@@ -603,7 +661,9 @@ CbcCutGenerator::generateCuts( OsiCuts & cs , int fullScan, OsiSolverInterface *
 	    }
 	    // normalize
 	    sum /= sqrt(norm);
+	    //sum /= pow(norm,0.3);
 	    // adjust for length
+	    //sum /= pow(reinterpret_cast<double>(n),0.2);
 	    //sum /= sqrt((double) n);
 	    // randomize
 	    //double randomNumber = 

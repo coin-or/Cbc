@@ -1513,6 +1513,8 @@ public:
       11 bit (2048) - Mark as in small branch and bound
       12 bit (4096) - Funny cuts so do slow way (in some places)
       13 bit (8192) - Funny cuts so do slow way (in other places)
+      14 bit (16384) - Use Cplex! for fathoming
+      15 bit (32768) - Try reduced model after 0 nodes
   */
   /// Set special options
   inline void setSpecialOptions(int value)
@@ -1817,6 +1819,9 @@ public:
   inline void incrementExtra(int nodes, int iterations)
   { numberExtraNodes_ += nodes; numberExtraIterations_ += iterations;}
 #endif
+  /// Number of extra iterations
+  inline int numberExtraIterations() const
+  { return numberExtraIterations_;}
   /// Increment strong info
   void incrementStrongInfo(int numberTimes, int numberIterations,
 			   int numberFixed, bool ifInfeasible);
@@ -1955,6 +1960,8 @@ private:
   int numberNodes2_;
   /// Cumulative number of iterations
   int numberIterations_;
+  /// Cumulative number of solves
+  int numberSolves_;
   /// Status of problem - 0 finished, 1 stopped, 2 difficulties
   int status_;
   /** Secondary status of problem

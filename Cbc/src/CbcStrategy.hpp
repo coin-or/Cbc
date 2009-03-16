@@ -122,7 +122,7 @@ class CbcStrategyDefault : public CbcStrategy {
 public:
 
   // Default Constructor 
-  CbcStrategyDefault (bool cutsOnlyAtRoot=true,
+  CbcStrategyDefault (int cutsOnlyAtRoot=1,
                       int numberStrong=5,
                       int numberBeforeTrust=0,
                       int printLevel=0);
@@ -159,8 +159,8 @@ public:
 protected:
   // Data
 
-  // Whether to do cuts only at root
-  bool cutsOnlyAtRoot_;
+  // Whether to do cuts only at root (-1 -> switch off totally)
+  int cutsOnlyAtRoot_;
 
   // How much strong branching to do 
   int numberStrong_;
@@ -196,7 +196,7 @@ class CbcStrategyDefaultSubTree : public CbcStrategy {
 public:
 
   // Default Constructor 
-  CbcStrategyDefaultSubTree (CbcModel * parent=NULL,bool cutsOnlyAtRoot=true,
+  CbcStrategyDefaultSubTree (CbcModel * parent=NULL,int cutsOnlyAtRoot=1,
                       int numberStrong=5,
                       int numberBeforeTrust=0,
                       int printLevel=0);
@@ -222,8 +222,8 @@ protected:
   // Data
   // Parent model
   CbcModel * parentModel_;
-  // Whether to do cuts only at root
-  bool cutsOnlyAtRoot_;
+  // Whether to do cuts only at root (-1 -> switch off totally)
+  int cutsOnlyAtRoot_;
 
   // How much strong branching to do 
   int numberStrong_;

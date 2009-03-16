@@ -367,7 +367,7 @@ int mainTest (int argc, const char *argv[])
   {
     // Create vector of solver interfaces
     std::vector<OsiCbcSolverInterface*> vecSi;
-    CbcStrategyDefault strategy(false);
+    CbcStrategyDefault strategy(0);
 #   if COIN_HAS_OSL
     OsiSolverInterface * oslSi = new OsiOslSolverInterface;
     vecSi.push_back(new OsiCbcSolverInterface(oslSi,&strategy));

@@ -88,7 +88,7 @@ CbcStrategy::status(CbcModel * model, CbcNodeInfo * parent,int whereFrom)
 }
 
 // Default Constructor
-CbcStrategyDefault::CbcStrategyDefault(bool cutsOnlyAtRoot,
+CbcStrategyDefault::CbcStrategyDefault(int cutsOnlyAtRoot,
                                        int numberStrong,
                                        int numberBeforeTrust,
                                        int printLevel)
@@ -133,6 +133,8 @@ CbcStrategyDefault::CbcStrategyDefault(const CbcStrategyDefault & rhs)
 void 
 CbcStrategyDefault::setupCutGenerators(CbcModel & model)
 {
+  if (cutsOnlyAtRoot_<0)
+    return; // no cuts wanted
   // Set up some cut generators and defaults
   // Probing first as gets tight bounds on continuous
   int genFlags=63;
@@ -591,7 +593,7 @@ CbcStrategyDefault::generateCpp( FILE * fp)
 {
   fprintf(fp,"0#include \"CbcStrategy.hpp\"\n");
   fprintf(fp,"3  CbcStrategyDefault strategy(%s,%d,%d,%d);\n",
-	  cutsOnlyAtRoot_ ? "true" : "false",
+	  cutsOnlyAtRoot_ ? "1" : "0",
 	  numberStrong_,
 	  numberBeforeTrust_,
 	  printLevel_);
@@ -600,7 +602,7 @@ CbcStrategyDefault::generateCpp( FILE * fp)
 }
 // Default Constructor
 CbcStrategyDefaultSubTree::CbcStrategyDefaultSubTree(CbcModel * parent ,
-                                                     bool cutsOnlyAtRoot,
+                                                     int cutsOnlyAtRoot,
                                        int numberStrong,
                                        int numberBeforeTrust,
                                        int printLevel)
@@ -644,6 +646,8 @@ void
 CbcStrategyDefaultSubTree::setupCutGenerators(CbcModel & model)
 {
   // Set up some cut generators and defaults
+  if (cutsOnlyAtRoot_<0)
+    return; // no cuts wanted
   // Probing first as gets tight bounds on continuous
 
   CglProbing generator1;
@@ -693,7 +697,8 @@ CbcStrategyDefaultSubTree::setupCutGenerators(CbcModel & model)
       break;
     }
   }
-  if (found&&howOften>=0) {
+
+  if (found&&(howOften>=-1||howOften==-98)) {
     found=false;
     for (iGenerator=0;iGenerator<numberGenerators;iGenerator++) {
       CglCutGenerator * generator = model.cutGenerator(iGenerator)->generator();
@@ -703,8 +708,17 @@ CbcStrategyDefaultSubTree::setupCutGenerators(CbcModel & model)
         break;
       }
     }
-    if (!found) 
+    if (!found) {
+      if (howOften==-1)
+	howOften=-98;
+      else if (howOften==-98)
+	howOften=-99;
       model.addCutGenerator(&generator1,setting,"Probing");
+      CbcCutGenerator * generator = 
+	model.cutGenerator(numberGenerators);
+      generator->setHowOften(howOften);
+      numberGenerators++;
+    }
   }
   found=false;
   for (iGenerator=0;iGenerator<numberParentGenerators;iGenerator++) {

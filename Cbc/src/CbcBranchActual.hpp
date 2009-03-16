@@ -1513,7 +1513,8 @@ public:
   /// Creates a branching object
   virtual CbcBranchingObject * createBranch(int way) ;
   /// Return maximum number of nodes
-  int maximumNodes() const;
+  inline int maximumNodes() const
+  { return maximumNodes_;}
   /// Get maximum depth
   inline int maximumDepth() const
   {return maximumDepth_;}
@@ -1534,6 +1535,8 @@ protected:
   /// data
   /// Maximum depth
   int maximumDepth_;
+  /// Maximum nodes
+  int maximumNodes_;
   /// Which node has solution (or -1)
   mutable int whichSolution_;
   /// Number of valid nodes (including whichSolution_)

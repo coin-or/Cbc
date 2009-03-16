@@ -125,6 +125,12 @@ public:
   /// Get the cut generation interval.in sub tree
   inline int howOftenInSub() const
   { return whenCutGeneratorInSub_;}
+  /// Get level of cut inaccuracy (0 means exact e.g. cliques)
+  inline int inaccuracy() const
+  { return inaccuracy_;}
+  /// Set level of cut inaccuracy (0 means exact e.g. cliques)
+  inline void setInaccuracy(int level)
+  { inaccuracy_=level;}
 
   /** Set the cut generation depth
 
@@ -295,7 +301,8 @@ private:
   bool timing_;
   /// Time in cut generator
   double timeInCutGenerator_;
-  
+  /// Level of cut inaccuracy (0 means exact e.g. cliques)
+  int inaccuracy_;
   /// Number times cut generator entered
   int numberTimes_;
   /// Total number of cuts added

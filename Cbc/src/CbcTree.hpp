@@ -143,6 +143,77 @@ protected:
   /// New bound
   int * newBound_;
 };
+/*! \class tree
+    \brief Implementation of live set as a managed array.
+
+    This class is used to hold the set of live nodes in the search tree.
+*/
+
+class CbcTreeArray : public CbcTree {
+
+public:
+
+  // Default Constructor 
+  CbcTreeArray ();
+
+  // Copy constructor 
+  CbcTreeArray ( const CbcTreeArray & rhs);
+  // = operator
+  CbcTreeArray & operator=(const CbcTreeArray & rhs);
+   
+  virtual ~CbcTreeArray();
+
+  /// Clone
+  virtual CbcTree * clone() const;
+  /// Create C++ lines to get to current state
+  virtual void generateCpp( FILE * fp) {}
+
+/*! \name Heap access and maintenance methods */
+//@{
+
+  /// Set comparison function and resort heap
+  void setComparison(CbcCompareBase  &compare);
+
+  /// Add a node to the heap
+  virtual void push(CbcNode * x);
+
+  /// Gets best node and takes off heap
+  virtual CbcNode * bestNode(double cutoff);
+
+//@}
+/*! \name vector methods */
+//@{
+
+  /// Test if empty *** note may be overridden
+  virtual bool empty() ;
+
+//@}
+
+/*! \name Search tree maintenance */
+//@{
+
+/*! \brief Prune the tree using an objective function cutoff
+
+  This routine removes all nodes with objective worst than the
+  specified cutoff value.
+  It also sets bestPossibleObjective to best
+  of all on tree before deleting.
+*/
+
+  void cleanTree(CbcModel * model, double cutoff, double & bestPossibleObjective);
+  /// Get best possible objective function in the tree
+  virtual double getBestPossibleObjective();
+//@}
+protected:
+  /// Returns 
+  /// Last node 
+  CbcNode * lastNode_;
+  /// Last node popped 
+  CbcNode * lastNodePopped_;
+  /// Not used yet
+  int switches_;
+
+};
 
 /// New style
 #include "CoinSearchTree.hpp"

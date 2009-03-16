@@ -4470,6 +4470,7 @@ CbcGeneral::operator=( const CbcGeneral& rhs)
 CbcGeneralDepth::CbcGeneralDepth ()
   : CbcGeneral(),
     maximumDepth_(0),
+    maximumNodes_(0),
     whichSolution_(-1),
     numberNodes_(0),
     nodeInfo_(NULL)
@@ -4480,13 +4481,23 @@ CbcGeneralDepth::CbcGeneralDepth ()
 CbcGeneralDepth::CbcGeneralDepth (CbcModel * model, int maximumDepth)
   : CbcGeneral(model),
     maximumDepth_(maximumDepth),
+    maximumNodes_(0),
     whichSolution_(-1),
     numberNodes_(0),
     nodeInfo_(NULL)
 {
-  int nNodes = maximumNodes();
-  if (nNodes) {
+  assert(maximumDepth_<1000000);
+  if (maximumDepth_>0) 
+    maximumNodes_ = (1<<maximumDepth_)+1+maximumDepth_;
+  else if (maximumDepth_<0)
+    maximumNodes_ = 1+1-maximumDepth_;
+  else
+    maximumNodes_ = 0;
+#define MAX_NODES 100
+  maximumNodes_ = CoinMin(maximumNodes_,1+maximumDepth_+MAX_NODES);
+  if (maximumNodes_) {
     nodeInfo_ = new ClpNodeStuff();
+    nodeInfo_->maximumNodes_=maximumNodes_;
     ClpNodeStuff * info = nodeInfo_;
     // for reduced costs and duals
     info->solverOptions_ |= 7;
@@ -4496,8 +4507,8 @@ CbcGeneralDepth::CbcGeneralDepth (CbcModel * model, int maximumDepth)
       info->nDepth_ = - maximumDepth_;
       info->solverOptions_ |= 32;
     }
-    ClpNode ** nodeInfo = new ClpNode * [nNodes];
-    for (int i=0;i<nNodes;i++) 
+    ClpNode ** nodeInfo = new ClpNode * [maximumNodes_];
+    for (int i=0;i<maximumNodes_;i++) 
       nodeInfo[i]=NULL;
     info->nodeInfo_ = nodeInfo;
   } else {
@@ -4510,12 +4521,13 @@ CbcGeneralDepth::CbcGeneralDepth ( const CbcGeneralDepth & rhs)
   :CbcGeneral(rhs)
 {
   maximumDepth_ = rhs.maximumDepth_;
+  maximumNodes_ = rhs.maximumNodes_;
   whichSolution_ = -1;
   numberNodes_ = 0;
-  int nNodes = maximumNodes();
-  if (nNodes) {
+  if (maximumNodes_) {
     assert (rhs.nodeInfo_);
     nodeInfo_ = new ClpNodeStuff(*rhs.nodeInfo_);
+    nodeInfo_->maximumNodes_=maximumNodes_;
     ClpNodeStuff * info = nodeInfo_;
     if (maximumDepth_>0) {
       info->nDepth_ = maximumDepth_;
@@ -4524,8 +4536,8 @@ CbcGeneralDepth::CbcGeneralDepth ( const CbcGeneralDepth & rhs)
       info->solverOptions_ |= 32;
     }
     if (!info->nodeInfo_) {
-      ClpNode ** nodeInfo = new ClpNode * [nNodes];
-      for (int i=0;i<nNodes;i++) 
+      ClpNode ** nodeInfo = new ClpNode * [maximumNodes_];
+      for (int i=0;i<maximumNodes_;i++) 
 	nodeInfo[i]=NULL;
       info->nodeInfo_ = nodeInfo;
     }
@@ -4549,11 +4561,13 @@ CbcGeneralDepth::operator=( const CbcGeneralDepth& rhs)
     CbcGeneral::operator=(rhs);
     delete nodeInfo_;
     maximumDepth_ = rhs.maximumDepth_;
+    maximumNodes_ = rhs.maximumNodes_;
     whichSolution_ = -1;
     numberNodes_ = 0;
     if (maximumDepth_) {
       assert (rhs.nodeInfo_);
       nodeInfo_ = new ClpNodeStuff(*rhs.nodeInfo_);
+      nodeInfo_->maximumNodes_=maximumNodes_;
     } else {
       nodeInfo_ = NULL;
     }
@@ -4566,20 +4580,6 @@ CbcGeneralDepth::~CbcGeneralDepth ()
 {
   delete nodeInfo_;
 }
-// Return maximum number of nodes
-int 
-CbcGeneralDepth::maximumNodes() const
-{
-  int n;
-  if (maximumDepth_>0) 
-    n = (1<<maximumDepth_)+1+maximumDepth_;
-  else if (maximumDepth_<0)
-    n = 1+1-maximumDepth_;
-  else
-    n = 0;
-  return n;
-}
-
 // Infeasibility - large is 0.5
 double 
 CbcGeneralDepth::infeasibility(int & preferredWay) const
@@ -4625,6 +4625,10 @@ CbcGeneralDepth::infeasibility(int & preferredWay) const
 	simplex->setLogLevel(0);
       clpSolver->setBasis();
       whichSolution_ = simplex->fathomMany(info);
+      //printf("FAT %d nodes, %d iterations\n",
+      //info->numberNodesExplored_,info->numberIterations_);
+      //printf("CbcBranch %d rows, %d columns\n",clpSolver->getNumRows(),
+      //     clpSolver->getNumCols());
       model_->incrementExtra(info->numberNodesExplored_,
 			     info->numberIterations_);
       // update pseudo costs
@@ -4890,6 +4894,8 @@ double
 CbcGeneralBranchingObject::branch()
 {
   double cutoff=model_->getCutoff();
+  //printf("GenB %x whichNode %d numberLeft %d which %d\n",
+  // this,whichNode_,numberBranchesLeft(),branchIndex());
   if (whichNode_<0) {
     assert (node_);
     bool applied=false;
@@ -4931,11 +4937,11 @@ CbcGeneralBranchingObject::branch()
     assert (thisProb->objectiveValue_<cutoff);
     OsiSolverInterface * solver = model_->solver();
     thisProb->apply(solver);
-    OsiClpSolverInterface * clpSolver 
-      = dynamic_cast<OsiClpSolverInterface *> (solver);
-    assert (clpSolver);
+    //OsiClpSolverInterface * clpSolver 
+    //= dynamic_cast<OsiClpSolverInterface *> (solver);
+    //assert (clpSolver);
     // Move status to basis
-    clpSolver->setWarmStart(NULL);
+    //clpSolver->setWarmStart(NULL);
   }
   return 0.0;
 }
@@ -5191,6 +5197,8 @@ CbcSubProblem::CbcSubProblem (const OsiSolverInterface * solver,
   // Do difference
   // Current basis
   status_ = clpSolver->getBasis(status);
+  assert (status_->fullBasis());
+  //status_->print();
 }
 
 // Copy constructor 

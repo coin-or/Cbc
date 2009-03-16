@@ -103,6 +103,16 @@ public:
   { return weight_;}
   inline void setWeight(double weight)
   { weight_ = weight;}
+  /// Cutoff
+  inline double getCutoff() const
+  { return cutoff_;}
+  inline void setCutoff(double cutoff)
+  { cutoff_ = cutoff;}
+  /// Best possible solution
+  inline double getBestPossible() const
+  { return bestPossible_;}
+  inline void setBestPossible(double bestPossible)
+  { bestPossible_ = bestPossible;}
   // Depth above which want to explore first
   inline void setBreadthDepth(int value)
   {  breadthDepth_ = value;}
@@ -111,6 +121,10 @@ protected:
   double weight_;
   // Weight for each infeasibility - computed from solution
   double saveWeight_;
+  /// Cutoff
+  double cutoff_;
+  /// Best possible solution
+  double bestPossible_;
   // Number of solutions
   int numberSolutions_;
   // Tree size (at last check)

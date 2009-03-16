@@ -573,6 +573,17 @@ CbcHeuristicLocal::solution(double & solutionValue,
   delete [] save;
   delete [] mark;
   if (numberSolutions_>1&&swap_==1) {
+    int i;
+    for ( i=0;i<numberColumns;i++) {
+      if (used_[i]>1)
+	break;
+    }
+    if (i==numberColumns) {
+      // modify used_ if just one
+      const int * used = model_->usedInSolution();
+      for (int i=0;i<numberColumns;i++)
+	used_[i]= CoinMin(used[i],255);
+    }
     // try merge
     int returnCode2=solutionFix( solutionValue, betterSolution,NULL);
     if (returnCode2)

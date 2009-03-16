@@ -1782,13 +1782,13 @@ CbcBranchDynamicDecision::betterBranch(CbcBranchingObject * thisOne,
   int betterWay=0;
   double value=0.0;
   if (!bestObject_) {
-    bestCriterion_=-1.0;
+    bestCriterion_=-1.0e30;
     bestNumberUp_=COIN_INT_MAX;
     bestNumberDown_=COIN_INT_MAX;
   }
   // maybe branch up more if no solution or not many nodes done?
   if (stateOfSearch<=2) {
-//#define TRY_STUFF 1
+    //#define TRY_STUFF 1
 #ifdef TRY_STUFF
     // before solution - choose smallest number 
     // could add in depth as well
@@ -1849,6 +1849,18 @@ CbcBranchDynamicDecision::betterBranch(CbcBranchingObject * thisOne,
     //int numberIntegers = model->numberIntegers();
     changeDown += perInf * numInfDown;
     changeUp += perInf * numInfUp;
+#if 0
+    if (numInfDown==1) {
+      if (numInfUp==1) {
+	changeUp += 1.0e6;
+	changeDown += 1.0e6;
+      } else if (changeDown<=1.5*changeUp) {
+	changeUp += 1.0e6;
+      }
+    } else if (numInfUp==1&&changeUp<=1.5*changeDown) {
+      changeDown += 1.0e6;
+    }
+#endif
 #endif
     double minValue = CoinMin(changeDown,changeUp);
     double maxValue = CoinMax(changeDown,changeUp);

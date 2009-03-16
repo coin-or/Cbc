@@ -495,6 +495,43 @@ CbcHeuristic::exitNow(double bestObjective) const
 #ifdef HISTORY_STATISTICS
 extern bool getHistoryStatistics_;
 #endif
+static double sizeRatio(int numberRowsNow,int numberColumnsNow,
+			int numberRowsStart,int numberColumnsStart)
+{
+  double valueNow;
+  if (numberRowsNow*10>numberColumnsNow||numberColumnsNow<200) {
+    valueNow = 2*numberRowsNow+numberColumnsNow;
+  } else {
+    // long and thin - rows are more important
+    if (numberRowsNow*40>numberColumnsNow)
+      valueNow = 10*numberRowsNow+numberColumnsNow;
+    else
+      valueNow = 200*numberRowsNow+numberColumnsNow;
+  }
+  double valueStart;
+  if (numberRowsStart*10>numberColumnsStart||numberColumnsStart<200) {
+    valueStart = 2*numberRowsStart+numberColumnsStart;
+  } else {
+    // long and thin - rows are more important
+    if (numberRowsStart*40>numberColumnsStart)
+      valueStart = 10*numberRowsStart+numberColumnsStart;
+    else
+      valueStart = 200*numberRowsStart+numberColumnsStart;
+  }
+  //printf("sizeProblem Now %g, %d rows, %d columns\nsizeProblem Start %g, %d rows, %d columns\n",
+  // valueNow,numberRowsNow,numberColumnsNow,
+  // valueStart,numberRowsStart,numberColumnsStart);
+  if (10*numberRowsNow<8*numberRowsStart)
+    return valueNow/valueStart;
+  else if (10*numberRowsNow<9*numberRowsStart)
+    return 1.1*(valueNow/valueStart);
+  else if (numberRowsNow<numberRowsStart)
+    return 1.5*(valueNow/valueStart);
+  else 
+    return 2.0*(valueNow/valueStart);
+}
+    
+
 // Do mini branch and bound (return 1 if solution)
 int 
 CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver,int numberNodes,
@@ -502,13 +539,18 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver,int numberNodes,
                                   double cutoff, std::string name) const
 {
   // size before
-  double before = 2*solver->getNumRows()+solver->getNumCols();
+  int shiftRows=0;
+  if (numberNodes<0) 
+    shiftRows = solver->getNumRows()-numberNodes_;
+  int numberRowsStart = solver->getNumRows()-shiftRows;
+  int numberColumnsStart = solver->getNumCols();
 #ifdef CLP_INVESTIGATE
   printf("%s has %d rows, %d columns\n",
 	 name.c_str(),solver->getNumRows(),solver->getNumCols());
 #endif
   // Use this fraction
   double fractionSmall = fractionSmall_;
+  double before = 2*numberRowsStart+numberColumnsStart;
   if (before>40000.0) {
     // fairly large - be more conservative
     double multiplier = 1.0 - 0.3*CoinMin(100000.0,before-40000.0)/100000.0;
@@ -581,8 +623,10 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver,int numberNodes,
       }
 #endif
       delete presolvedModel;
+      double ratio = sizeRatio(afterRows-shiftRows,afterCols,
+				 numberRowsStart,numberColumnsStart);
       double after = 2*afterRows+afterCols;
-      if (after>fractionSmall*before&&after>300&&numberNodes>=0) {
+      if (ratio>fractionSmall&&after>300&&numberNodes>=0) {
 	// Need code to try again to compress further using used
 	const int * used =  model_->usedInSolution();
 	int maxUsed=0;
@@ -633,13 +677,15 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver,int numberNodes,
 	    int afterRows2 = presolvedModel->getNumRows();
 	    int afterCols2 = presolvedModel->getNumCols();
 	    delete presolvedModel;
+	    double ratio = sizeRatio(afterRows2-shiftRows,afterCols2,
+				 numberRowsStart,numberColumnsStart);
 	    double after = 2*afterRows2+afterCols2;
-	    if (after>fractionSmall*before&&(after>300||numberNodes<0)) {
+	    if (ratio>fractionSmall&&(after>300||numberNodes<0)) {
 	      sprintf(generalPrint,"Full problem %d rows %d columns, reduced to %d rows %d columns - %d fixed gives %d, %d - still too large",
 		      solver->getNumRows(),solver->getNumCols(),
 		      afterRows,afterCols,nFix,afterRows2,afterCols2);
 	      // If much too big - give up
-	      if (after>0.75*before)
+	      if (ratio>0.75)
 		returnCode=-1;
 	    } else {
 	      sprintf(generalPrint,"Full problem %d rows %d columns, reduced to %d rows %d columns - %d fixed gives %d, %d - ok now",
@@ -653,6 +699,8 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver,int numberNodes,
 	    returnCode=2; // infeasible
 	  }
 	}
+      } else if (ratio>fractionSmall&&after>300) {
+	returnCode=-1;
       }
     } else {
       returnCode=2; // infeasible
@@ -665,6 +713,7 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver,int numberNodes,
 #ifdef HISTORY_STATISTICS
     getHistoryStatistics_=true;
 #endif
+    //printf("small no good\n");
     return returnCode;
   }
   // Reduce printout
@@ -707,8 +756,10 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver,int numberNodes,
       }
 #endif
       // see if too big
+      double ratio = sizeRatio(solver2->getNumRows()-shiftRows,solver2->getNumCols(),
+				 numberRowsStart,numberColumnsStart);
       double after = 2*solver2->getNumRows()+solver2->getNumCols();
-      if (after>fractionSmall*before&&(after>300||numberNodes<0)) {
+      if (ratio>fractionSmall&&(after>300||numberNodes<0)) {
 	sprintf(generalPrint,"Full problem %d rows %d columns, reduced to %d rows %d columns - too large",
 		solver->getNumRows(),solver->getNumCols(),
 		solver2->getNumRows(),solver2->getNumCols());
@@ -716,6 +767,7 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver,int numberNodes,
 	  << generalPrint
 	  <<CoinMessageEol;
 	returnCode = -1;
+	//printf("small no good2\n");
       } else {
 	sprintf(generalPrint,"Full problem %d rows %d columns, reduced to %d rows %d columns",
 		solver->getNumRows(),solver->getNumCols(),
@@ -740,7 +792,7 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver,int numberNodes,
 	  model.setMaximumNodes(numberNodes);
 	  model.solver()->setHintParam(OsiDoReducePrint,true,OsiHintTry);
 	  // Lightweight
-	  CbcStrategyDefaultSubTree strategy(model_,true,5,1,0);
+	  CbcStrategyDefaultSubTree strategy(model_,1,5,1,0);
 	  model.setStrategy(strategy);
 	  model.solver()->setIntParam(OsiMaxNumIterationHotStart,10);
 	  model.setMaximumCutPassesAtRoot(CoinMin(20,CoinAbs(model_->getMaximumCutPassesAtRoot())));
@@ -774,7 +826,7 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver,int numberNodes,
 	  // Switch off printing if asked to
 	  model_->solver()->getHintParam(OsiDoReducePrint,takeHint,strength);
 	  model.solver()->setHintParam(OsiDoReducePrint,takeHint,strength);
-	  CbcStrategyDefault strategy(true,model_->numberStrong(),
+	  CbcStrategyDefault strategy(1,model_->numberStrong(),
 				      model_->numberBeforeTrust());
 	  // Set up pre-processing - no 
 	  strategy.setupPreProcessing(0); // was (4);
@@ -786,31 +838,6 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver,int numberNodes,
 	    CglStored cuts = process.cuts();
 	    model.addCutGenerator(&cuts,1,"Stored from first");
 	  }
-	}
-	if (inputSolution_) {
-	  // translate and add a serendipity heuristic
-	  int numberColumns = solver2->getNumCols();
-	  const int * which = process.originalColumns();
-	  OsiSolverInterface * solver3 = solver2->clone();
-	  for (int i=0;i<numberColumns;i++) {
-	    if (solver3->isInteger(i)) {
-	      int k=which[i];
-	      double value = inputSolution_[k];
-	      solver3->setColLower(i,value);
-	      solver3->setColUpper(i,value);
-	    }
-	  }
-	  solver3->setDblParam(OsiDualObjectiveLimit,COIN_DBL_MAX);
-	  solver3->resolve();
-	  if (solver3->isProvenOptimal()) {
-	    // good
-	    CbcSerendipity heuristic(model);
-	    double value = solver3->getObjSense()*solver3->getObjValue();
-	    heuristic.setInputSolution(solver3->getColSolution(),value);
-	    model.setCutoff(value+1.0e-7*(1.0+fabs(value)));
-	    model.addHeuristic(&heuristic,"previous solution");
-	  }
-	  delete solver3;
 	}
 	// Do search
 	if (logLevel>1)
@@ -843,7 +870,7 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver,int numberNodes,
 	  }
 	  if (!gotPump) {
 	    CbcHeuristicFPump heuristic4;
-	    heuristic4.setMaximumPasses(30);
+	    heuristic4.setMaximumPasses(10);
 	    int pumpTune=feasibilityPumpOptions_;
 	    if (pumpTune>0) {
 	      /*
@@ -903,6 +930,76 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver,int numberNodes,
 	    model.addHeuristic(&heuristic4,"feasibility pump",0);
 	  }
 	}
+	//printf("sol %x\n",inputSolution_);
+	if (inputSolution_) {
+	  // translate and add a serendipity heuristic
+	  int numberColumns = solver2->getNumCols();
+	  const int * which = process.originalColumns();
+	  OsiSolverInterface * solver3 = solver2->clone();
+	  for (int i=0;i<numberColumns;i++) {
+	    if (solver3->isInteger(i)) {
+	      int k=which[i];
+	      double value = inputSolution_[k];
+	      //if (value)
+	      //printf("orig col %d now %d val %g\n",
+	      //       k,i,value);
+	      solver3->setColLower(i,value);
+	      solver3->setColUpper(i,value);
+	    }
+	  }
+	  solver3->setDblParam(OsiDualObjectiveLimit,COIN_DBL_MAX);
+	  solver3->resolve();
+	  if (!solver3->isProvenOptimal()) {
+	    // Try just setting nonzeros
+	    OsiSolverInterface * solver4 = solver2->clone();
+	    for (int i=0;i<numberColumns;i++) {
+	      if (solver4->isInteger(i)) {
+		int k=which[i];
+		double value = floor(inputSolution_[k]+0.5);
+		if (value) {
+		  solver3->setColLower(i,value);
+		  solver3->setColUpper(i,value);
+		}
+	      }
+	    }
+	    solver4->setDblParam(OsiDualObjectiveLimit,COIN_DBL_MAX);
+	    solver4->resolve();
+	    int nBad=-1;
+	    if (solver4->isProvenOptimal()) {
+	      nBad=0;
+	      const double * solution = solver4->getColSolution();
+	      for (int i=0;i<numberColumns;i++) {
+		if (solver4->isInteger(i)) {
+		  double value = floor(solution[i]+0.5);
+		  if (fabs(value-solution[i])>1.0e-6) 
+		    nBad++;
+		}
+	      }
+	    }
+	    if (nBad) {
+	      delete solver4;
+	    } else {
+	      delete solver3;
+	      solver3=solver4;
+	    }
+	  }
+	  if (solver3->isProvenOptimal()) {
+	    // good
+	    CbcSerendipity heuristic(model);
+	    double value = solver3->getObjSense()*solver3->getObjValue();
+	    heuristic.setInputSolution(solver3->getColSolution(),value);
+	    model.setCutoff(value+1.0e-7*(1.0+fabs(value)));
+	    model.addHeuristic(&heuristic,"Previous solution",0);
+	    //printf("added seren\n");
+	  } else {
+#ifdef CLP_INVESTIGATE
+	    printf("NOT added seren\n");
+#endif
+	    solver3->writeMps("bad_seren");
+	    solver->writeMps("orig_seren");
+	  }
+	  delete solver3;
+	}
 	if (model_->searchStrategy()==2) {
 	  model.setNumberStrong(5);
 	  model.setNumberBeforeTrust(5);
@@ -914,7 +1011,11 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver,int numberNodes,
 	    model.setMaximumNumberIterations(100*(numberNodes+10));
 	    // Not fast stuff
 	    model.setFastNodeDepth(-1);
+	  } else if (model.fastNodeDepth()>=1000000) {
+	    // already set
+	    model.setFastNodeDepth(model.fastNodeDepth()-1000000);
 	  }
+	  model.setWhenCuts(999998);
 	  model.branchAndBound();
 #ifdef COIN_DEVELOP
 	  printf("sub branch %d nodes, %d iterations - max %d\n",
@@ -970,7 +1071,7 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver,int numberNodes,
 	  }
 #endif
 	  process.postProcess(*model.solver());
-	  if (solver->isProvenOptimal()) {
+	  if (solver->isProvenOptimal()&&solver->getObjValue()<cutoff) {
 	    // Solution now back in solver
 	    int numberColumns = solver->getNumCols();
 	    memcpy(newSolution,solver->getColSolution(),

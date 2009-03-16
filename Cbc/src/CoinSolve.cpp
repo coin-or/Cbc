@@ -6,6 +6,12 @@
 #include "CbcModel.hpp"
 #include "CbcOrClpParam.hpp"
 #include "OsiClpSolverInterface.hpp"
+#ifdef CPX_KEEP_RESULTS
+#define CBC_OTHER_SOLVER 1
+#endif
+#if CBC_OTHER_SOLVER==1
+#include "OsiCpxSolverInterface.hpp"
+#endif
 
 #include <cassert>
 #include <cstdio>
@@ -23,6 +29,10 @@
 #ifndef NEW_STYLE_SOLVER
 #define NEW_STYLE_SOLVER 0
 #endif
+#endif
+#ifdef CBC_OTHER_SOLVER
+#undef NEW_STYLE_SOLVER
+#define NEW_STYLE_SOLVER 0
 #endif
 #if NEW_STYLE_SOLVER==0
   // define TEST_MESSAGE_HANDLER to check works on all messages
@@ -205,7 +215,11 @@ void fakeMain2 (ClpSimplex & model,OsiClpSolverInterface & osiSolver,int options
 // void CbcClpUnitTest (const CbcModel & saveModel);
 int main (int argc, const char *argv[])
 {
+#ifndef CBC_OTHER_SOLVER
   OsiClpSolverInterface solver1;
+#elif CBC_OTHER_SOLVER==1
+  OsiCpxSolverInterface solver1;
+#endif
   CbcModel model(solver1);
   // define TEST_MESSAGE_HANDLER at top of file to check works on all messages
 #ifdef TEST_MESSAGE_HANDLER

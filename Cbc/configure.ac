@@ -64,6 +64,7 @@ AC_COIN_HAS_PROJECT(DyLP)
 AC_COIN_HAS_PROJECT(Osi)
 AC_COIN_HAS_PROJECT(Vol)
 AC_COIN_HAS_PROJECT(SYMPHONY)
+AC_COIN_HAS_PROJECT(Cpx)
 
 #############################################################################
 #                            Third party solvers                            #

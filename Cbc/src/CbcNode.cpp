@@ -1374,6 +1374,17 @@ int CbcNode::chooseBranch (CbcModel *model, CbcNode *lastNode,int numberPassesLe
   delete branch_;
   branch_=NULL;
   OsiSolverInterface * solver = model->solver();
+# ifdef COIN_HAS_CLP
+  OsiClpSolverInterface * osiclp = dynamic_cast< OsiClpSolverInterface*> (solver);
+  int saveClpOptions=0;
+  if (osiclp) {
+    // for faster hot start
+    saveClpOptions = osiclp->specialOptions();
+    osiclp->setSpecialOptions(saveClpOptions|8192);
+  }
+# else
+  OsiSolverInterface *osiclp = NULL ;
+# endif
   double saveObjectiveValue = solver->getObjValue();
   double objectiveValue = CoinMax(solver->getObjSense()*saveObjectiveValue,objectiveValue_);
   const double * lower = solver->getColLower();
@@ -1701,7 +1712,6 @@ int CbcNode::chooseBranch (CbcModel *model, CbcNode *lastNode,int numberPassesLe
          outputStuff[2*i+1+numberStrong] is number iterations
        On entry newLower[i] is new lower bound, on exit obj change
       */
-      OsiClpSolverInterface * osiclp = dynamic_cast< OsiClpSolverInterface*> (solver);
       ClpSimplex * clp=NULL;
       double * newLower = NULL;
       double * newUpper = NULL;
@@ -2338,6 +2348,10 @@ int CbcNode::chooseBranch (CbcModel *model, CbcNode *lastNode,int numberPassesLe
   // restore solution
   solver->setColSolution(saveSolution);
   delete [] saveSolution;
+# ifdef COIN_HAS_CLP
+  if (osiclp) 
+    osiclp->setSpecialOptions(saveClpOptions);
+# endif
   return anyAction;
 }
 
@@ -2576,7 +2590,7 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
     osiclp->setSpecialOptions(saveClpOptions|8192);
   }
 # else
-  OsiSolverInterface *osiclp = 0 ;
+  OsiSolverInterface *osiclp = NULL ;
 # endif
   const CglTreeProbingInfo * probingInfo = NULL; //model->probingInfo();
   int saveSearchStrategy2 = model->searchStrategy();

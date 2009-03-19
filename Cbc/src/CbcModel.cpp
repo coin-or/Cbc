@@ -5914,7 +5914,7 @@ int CbcModel::addCuts (CbcNode *node, CoinWarmStartBasis *&lastws,bool canFix)
       int numberRowsNow=numberRowsAtContinuous_+numberToAdd;
       lastws->compressRows(numberToDrop,cutsToDrop) ;
       lastws->resize(numberRowsNow,numberColumns);
-      assert (lastws->fullBasis());
+      // Take out as local search can give bad basisassert (lastws->fullBasis());
 #ifdef NODE_LAST
       bool canMissStuff=false;
       if ((specialOptions_&4096)==0) {
@@ -12274,9 +12274,9 @@ CbcModel::chooseBranch(CbcNode * &newNode, int numberPassesLeft,
       if (totalNodes*40<totalIterations||numberNodes_<1000) {
 	doClp=false;
 	//} else if (oldNode&&fastNodeDepth_>=0&&oldNode->depth()>=testDepth&&(specialOptions_&2048)==0) {
-	//printf("size %d %d - cuts %d - nodes %d its %d\n",solver_->getNumRows(),
+	//printf("size %d %d - cuts %d - nodes %d its %d %c\n",solver_->getNumRows(),
 	//     solver_->getNumCols(),cuts.sizeRowCuts(),
-	//     totalNodes,totalIterations);
+	//     totalNodes,totalIterations,doClp ? 'Y' : 'N');
       }
       if (oldNode&&fastNodeDepth_>=0&&oldNode->depth()>=testDepth&&/*!parentModel_*/(specialOptions_&2048)==0
 	  &&doClp&&!cuts.sizeRowCuts()) {

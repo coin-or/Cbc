@@ -331,6 +331,7 @@ CbcCompareDefault::newSolution(CbcModel * model,
 			       double objectiveAtContinuous,
 			       int numberInfeasibilitiesAtContinuous) 
 {
+  cutoff_ = model->getCutoff();
   if (model->getSolutionCount()==model->getNumberHeuristicSolutions()&&
       model->getSolutionCount()<5&&model->getNodeCount()<500)
     return; // solution was got by rounding
@@ -343,7 +344,6 @@ CbcCompareDefault::newSolution(CbcModel * model,
   numberSolutions_++;
   if (numberSolutions_>5)
     weight_ =0.0; // this searches on objective
-  cutoff_ = model->getCutoff();
 }
 // This allows method to change behavior 
 bool 

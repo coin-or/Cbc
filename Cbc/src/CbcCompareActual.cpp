@@ -287,8 +287,7 @@ CbcCompareDefault::test (CbcNode * x, CbcNode * y)
 	return depthX > depthY;
       }
     }
-    // after solution
-    assert (cutoff_<1.0e40);
+    // after solution ?
 #define THRESH2 0.999
 #define TRY_THIS 0
 #if TRY_THIS==0
@@ -342,8 +341,8 @@ CbcCompareDefault::newSolution(CbcModel * model,
   weight_ = 0.95*costPerInteger;
   saveWeight_ = 0.95*weight_;
   numberSolutions_++;
-  if (numberSolutions_>5)
-    weight_ =0.0; // this searches on objective
+  //if (numberSolutions_>5)
+  //weight_ =0.0; // this searches on objective
 }
 // This allows method to change behavior 
 bool 

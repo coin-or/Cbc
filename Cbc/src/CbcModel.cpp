@@ -11720,6 +11720,19 @@ CbcModel::strengthenedModel()
 */
   synchronizeModel() ;
 
+  if (!solverCharacteristics_) {
+    OsiBabSolver * solverCharacteristics = dynamic_cast<OsiBabSolver *> (solver_->getAuxiliaryInfo());
+    if (solverCharacteristics) {
+      solverCharacteristics_ = solverCharacteristics;
+    } else {
+      // replace in solver
+      OsiBabSolver defaultC;
+      solver_->setAuxiliaryInfo(&defaultC);
+      solverCharacteristics_ = dynamic_cast<OsiBabSolver *> (solver_->getAuxiliaryInfo());
+    }
+  }
+
+  solverCharacteristics_->setSolver(solver_);
   // Set so we can tell we are in initial phase in resolve
   continuousObjective_ = -COIN_DBL_MAX ;
 /*

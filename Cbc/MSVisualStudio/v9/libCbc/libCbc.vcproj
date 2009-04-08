@@ -1224,11 +1224,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\..\..\Cgl\src\CglResidualCapacity"
+				RelativePath="..\..\..\..\Cgl\src\CglResidualCapacity.hpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\..\..\Cgl\src\CglLandP"
+				RelativePath="..\..\..\..\Cgl\src\CglLandP.hpp"
 				>
 			</File>
 			<File

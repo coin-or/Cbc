@@ -35,6 +35,7 @@ Cbc/examples/driver3.cpp -text
 Cbc/examples/driver4.cpp -text
 Cbc/examples/modify.cpp -text
 Cbc/examples/qmip2.cpp -text
+Cbc/examples/simpleBAB.cpp -text
 Cbc/inc/config_cbc.h.in -text
 Cbc/src/CbcCbcParam.cpp -text
 Cbc/src/CbcGenBaB.cpp -text

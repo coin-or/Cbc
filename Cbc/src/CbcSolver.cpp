@@ -6258,6 +6258,8 @@ int
 #endif
 		    solver2 = process.preProcessNonDefault(*saveSolver,translate[preProcess],numberPasses,
 							 tunePreProcess);
+		    /*solver2->writeMps("after");
+		      saveSolver->writeMps("before");*/
 		    osiclp->getModelPtr()->setPerturbation(savePerturbation);
 		  }
 #elif CBC_OTHER_SOLVER==1
@@ -8307,6 +8309,13 @@ int
 		  originalSolver->setBasis(*basis);
 		  delete basis;
 		  originalSolver->resolve();
+		  if (!originalSolver->isProvenOptimal()) {
+                    // try all slack
+                    CoinWarmStartBasis * basis = dynamic_cast<CoinWarmStartBasis *> (babModel_->solver()->getEmptyWarmStart());
+                    originalSolver->setBasis(*basis);
+                    delete basis;
+                    originalSolver->initialSolve();
+                  }
 		  assert (originalSolver->isProvenOptimal());
 		}
 #endif

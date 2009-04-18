@@ -3213,8 +3213,8 @@ void CbcModel::branchAndBound(int doStatistics)
 	threadInfo[iThread].node=node;
 	assert (threadInfo[iThread].returnCode==-1);
 	// say in use
-	threadInfo[iThread].returnCode=0;
 	threadModel[iThread]->moveToModel(this,0);
+	threadInfo[iThread].returnCode=0;
 	pthread_cond_signal(threadInfo[iThread].condition2); // unlock
 	threadCount[iThread]++;
       }

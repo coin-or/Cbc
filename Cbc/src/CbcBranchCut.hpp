@@ -234,10 +234,16 @@ public:
   using CbcObject::infeasibility ;
   /// Infeasibility - large is 0.5
   virtual double infeasibility(int & preferredWay) const;
+  /** \brief Return true if object can take part in normal heuristics
+  */
+  virtual bool canDoHeuristics() const 
+  {return true;}
 
   using CbcObject::createBranch ;
   /// Creates a branching object
   virtual CbcBranchingObject * createBranch(int way);
+  /// Redoes data when sequence numbers change
+  virtual void redoSequenceEtc(CbcModel * model, int numberColumns, const int * originalColumns);
 
 
 protected:

@@ -214,6 +214,17 @@ public:
   inline int id() const
   { return id_;}
   
+  /** Set identifier (normally column number in matrix)
+      but 1000000000 to 1100000000 means optional branching object
+      i.e. code would work without it */
+  inline void setId(int value)
+  { id_ = value;}
+  
+  /** Return true if optional branching object
+      i.e. code would work without it */
+  inline bool optionalObject() const
+  { return (id_ >= 1000000000 && id_ < 1100000000);}
+  
   /// Get position in object_ list
   inline int position() const
   { return position_;}

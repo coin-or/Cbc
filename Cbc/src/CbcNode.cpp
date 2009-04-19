@@ -2409,7 +2409,17 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
     auxiliaryInfo = model->solverCharacteristics();
   }
   int numberObjects = model->numberObjects();
-  bool checkFeasibility = numberObjects>model->numberIntegers();
+  bool checkFeasibility = false;
+  if (numberObjects>model->numberIntegers()) {
+    for (int i=model->numberIntegers();i<numberObjects;i++) {
+      OsiObject * object = model->modifiableObject(i);
+      CbcObject * obj =	dynamic_cast <CbcObject *>(object) ;
+      if (!obj || !obj->optionalObject()) {
+	checkFeasibility=true;
+	break;
+      }
+    }
+  }
   if ((model->specialOptions()&128)!=0)
     checkFeasibility=false; // allow
   // For now return if not simple
@@ -3083,15 +3093,24 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
 	    // see if SOS
 	    CbcSOS * sosObject =
 	      dynamic_cast <CbcSOS *>(object) ;
-	    assert (sosObject);
-	    gotDown=false;
-	    numberThisDown = sosObject->numberTimesDown();
-	    if (numberThisDown>=numberBeforeTrust)
+	    if (sosObject) {
+	      gotDown=false;
+	      numberThisDown = sosObject->numberTimesDown();
+	      if (numberThisDown>=numberBeforeTrust)
+		gotDown=true;
+	      gotUp=false;
+	      numberThisUp = sosObject->numberTimesUp();
+	      if (numberThisUp>=numberBeforeTrust)
+		gotUp=true;
+	    } else {
 	      gotDown=true;
-	    gotUp=false;
-	    numberThisUp = sosObject->numberTimesUp();
-	    if (numberThisUp>=numberBeforeTrust)
+	      numberThisDown=999999;
+	      downGuess=1.0e20;
 	      gotUp=true;
+	      numberThisUp=999999;
+	      upGuess=1.0e20;
+	      numberPassesLeft=0;
+	    }
 	  }
           // Increase estimated degradation to solution
           estimatedDegradation += CoinMin(downGuess,upGuess);
@@ -3291,6 +3310,8 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
     // save limit
     int saveLimit=0;
     solver->getIntParam(OsiMaxNumIterationHotStart,saveLimit);
+    if (!numberPassesLeft)
+      skipAll=1;
     if (!skipAll) {
       ws = solver->getWarmStart();
       int limit=100;

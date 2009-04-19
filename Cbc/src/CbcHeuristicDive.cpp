@@ -635,8 +635,15 @@ CbcHeuristicDive::validate()
   if (model_&&when()<10) {
     if (model_->numberIntegers()!=
         model_->numberObjects()&&(model_->numberObjects()||
-				  (model_->specialOptions()&1024)==0))
-      setWhen(0);
+				  (model_->specialOptions()&1024)==0)) {
+      int numberOdd=0;
+      for (int i=0;i<model_->numberObjects();i++) {
+	if (!model_->object(i)->canDoHeuristics()) 
+	  numberOdd++;
+      }
+      if (numberOdd)
+	setWhen(0);
+    }
   }
 
   int numberIntegers = model_->numberIntegers();

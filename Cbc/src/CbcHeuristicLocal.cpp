@@ -257,7 +257,7 @@ CbcHeuristicLocal::solution(double & solutionValue,
       iway = 1;
     if (value<originalUpper-0.5) 
       iway |= 2;
-    way[i]=iway;
+    way[i]=static_cast<char>(iway);
   }
   // get row activities
   double * rowActivity = new double[numberRows];
@@ -502,7 +502,7 @@ CbcHeuristicLocal::solution(double & solutionValue,
 	  iway = 1;
 	if (value<originalUpper-0.5) 
 	  iway |= 2;
-	way[goodK]=iway;
+	way[goodK]=static_cast<char>(iway);
       }
     }
     if (bestChange+newSolutionValue<solutionValue) {
@@ -582,7 +582,7 @@ CbcHeuristicLocal::solution(double & solutionValue,
       // modify used_ if just one
       const int * used = model_->usedInSolution();
       for (int i=0;i<numberColumns;i++)
-	used_[i]= CoinMin(used[i],255);
+	used_[i]= static_cast<char>(CoinMin(used[i],255));
     }
     // try merge
     int returnCode2=solutionFix( solutionValue, betterSolution,NULL);

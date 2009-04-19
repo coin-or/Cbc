@@ -599,7 +599,7 @@ CbcBranchToFixLots::createBranch(int way)
       if (numberUnsatisfied>=3&&sum<FIX_IF_LESS) {
 	// possible
 	if (numberUnsatisfied>nBest||
-	    numberUnsatisfied==nBest&&sum<bestSum) {
+	    (numberUnsatisfied==nBest&&sum<bestSum)) {
 	  nBest=numberUnsatisfied;
 	  bestSum=sum;
 	  kRow=i;
@@ -858,7 +858,7 @@ CbcBranchToFixLots::infeasibility(int & preferredWay) const
       if (numberUnsatisfied>=3&&sum<FIX_IF_LESS) {
 	// possible
 	if (numberUnsatisfied>nBest||
-	    numberUnsatisfied==nBest&&sum<bestSum) {
+	    (numberUnsatisfied==nBest&&sum<bestSum)) {
 	  nBest=numberUnsatisfied;
 	  bestSum=sum;
 	}

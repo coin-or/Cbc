@@ -57,6 +57,7 @@
 #include "CbcBranchDynamic.hpp"
 #include "CbcHeuristic.hpp"
 #include "CbcHeuristicFPump.hpp"
+#include "CbcHeuristicDive.hpp"
 #include "CbcModel.hpp"
 #include "CbcTreeLocal.hpp"
 #include "CbcStatistics.hpp"
@@ -2533,7 +2534,7 @@ void CbcModel::branchAndBound(int doStatistics)
   bool locked=false;
   int threadStats[6];
   int defaultParallelIterations=400;
-  int defaultParallelNodes=10;
+  int defaultParallelNodes=2;
   memset(threadStats,0,sizeof(threadStats));
   double timeWaiting=0.0;
   // For now just one model
@@ -3214,6 +3215,7 @@ void CbcModel::branchAndBound(int doStatistics)
 	assert (threadInfo[iThread].returnCode==-1);
 	// say in use
 	threadModel[iThread]->moveToModel(this,0);
+	// This has to be AFTER moveToModel
 	threadInfo[iThread].returnCode=0;
 	pthread_cond_signal(threadInfo[iThread].condition2); // unlock
 	threadCount[iThread]++;
@@ -3292,7 +3294,7 @@ void CbcModel::branchAndBound(int doStatistics)
       }
     } else {
       // Deterministic parallel
-      if (tree_->size()<5*numberThreads_&&!goneParallel) {
+      if (tree_->size()<CoinMin(numberThreads_,8)&&!goneParallel) {
 	node = tree_->bestNode(cutoff) ;
 	// Possible one on tree worse than cutoff
 	if (!node||node->objectiveValue()>cutoff)
@@ -3420,13 +3422,17 @@ void CbcModel::branchAndBound(int doStatistics)
 	if (scaleFactor!=1.0) {
 	  int newNumber = static_cast<int> (defaultParallelNodes * scaleFactor+0.5001);
 	  if (newNumber*2<defaultParallelIterations) {
-	    char general[200];
-	    sprintf(general,"Changing tree size from %d to %d",
-		    defaultParallelNodes,newNumber);
-	    messageHandler()->message(CBC_GENERAL,
-				      messages())
-	      << general << CoinMessageEol ;
-	    defaultParallelNodes = newNumber;
+	    if (defaultParallelNodes==1)
+	      newNumber=2;
+	    if (newNumber!=defaultParallelNodes) {
+	      char general[200];
+	      sprintf(general,"Changing tree size from %d to %d",
+		      defaultParallelNodes,newNumber);
+	      messageHandler()->message(CBC_GENERAL,
+					messages())
+		<< general << CoinMessageEol ;
+	      defaultParallelNodes = newNumber;
+	    }
 	  }
 	}
 	  //printf("Tree sizes %d %d %d - affected %d\n",saveTreeSize,saveTreeSize2,tree_->size(),nAffected);
@@ -9389,7 +9395,10 @@ CbcModel::convertToDynamic()
       newObject->setPreferredWay(preferredWay);
       object_[iObject] = newObject;
     } else if (!obj2) {
-      allDynamic=false;
+      CbcObject * obj3 =
+      dynamic_cast <CbcObject *>(object_[iObject]) ;
+      if (!obj3 || !obj3->optionalObject())
+	allDynamic=false;
     } else {
       // synchronize trust
       //obj2->setNumberBeforeTrust(numberBeforeTrust_);
@@ -9438,7 +9447,7 @@ void
 CbcModel::addObjects(int numberObjects, CbcObject ** objects)
 {
  // If integers but not enough objects fudge
-  if (numberIntegers_>numberObjects_)
+  if (numberIntegers_>numberObjects_||!numberObjects_)
     findIntegers(true);
   /* But if incoming objects inherit from simple integer we just want
      to replace */
@@ -13024,7 +13033,7 @@ CbcModel::generateCpp( FILE * fp,int options)
     fprintf(fp,"3  cbcModel->addCutGenerator(&%s,%d,",
 	    name.c_str(),howOften);
     // change name
-    name[0]=toupper(name[0]);
+    name[0]=static_cast<char>(toupper(name[0]));
     fprintf(fp,"\"%s\",%s,%s,%s,%d,%d,%d);\n",
 	    name.c_str(),normal ? "true" : "false",
 	    atSolution ? "true" : "false",
@@ -14321,7 +14330,7 @@ CbcModel::splitModel(int numberModels, CbcModel ** model,
     otherModel->globalCuts_=globalCuts_;
     otherModel->numberSolutions_ = numberSolutions_;
     otherModel->numberHeuristicSolutions_ = numberHeuristicSolutions_;
-    otherModel->numberNodes_ = numberNodes_;
+    otherModel->numberNodes_ = 1; //numberNodes_;
     otherModel->numberIterations_ = numberIterations_;
 #if 0
     if (maximumNumberCuts_>otherModel->maximumNumberCuts_) {
@@ -15306,7 +15315,6 @@ CbcModel::doCutsNow(int allowForTopOfTree) const
   //printf("zzz\n");
   return doCuts;
 }
-#include "CbcHeuristicDive.hpp"
 // Adjust heuristics based on model
 void 
 CbcModel::adjustHeuristics()

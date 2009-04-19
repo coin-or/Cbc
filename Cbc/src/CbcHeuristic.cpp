@@ -994,9 +994,9 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver,int numberNodes,
 	  } else {
 #ifdef CLP_INVESTIGATE
 	    printf("NOT added seren\n");
-#endif
 	    solver3->writeMps("bad_seren");
 	    solver->writeMps("orig_seren");
+#endif
 	  }
 	  delete solver3;
 	}

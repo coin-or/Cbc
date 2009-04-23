@@ -1200,6 +1200,8 @@ public:
       1 set then deterministic
       2 set then use numberThreads for root cuts
       4 set then use numberThreads in root mini branch and bound
+      8 set and numberThreads - do heuristics numberThreads at a time
+      8 set and numberThreads==0 do all heuristics at once
       default is 0
   */
   inline void setThreadMode(int value) 

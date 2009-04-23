@@ -176,7 +176,8 @@ CbcHeuristicRINS::solution(double & solutionValue,
     const int * integerVariable = model_->integerVariable();
   
     const double * currentSolution = solver->getColSolution();
-    OsiSolverInterface * newSolver = model_->continuousSolver()->clone();
+    OsiSolverInterface * newSolver = model_->continuousSolver() ?
+      model_->continuousSolver()->clone() : solver->clone();
     //const double * colLower = newSolver->getColLower();
     //const double * colUpper = newSolver->getColUpper();
 
@@ -307,7 +308,8 @@ CbcHeuristicRENS::solution(double & solutionValue,
   const int * integerVariable = model_->integerVariable();
   
   const double * currentSolution = solver->getColSolution();
-  OsiSolverInterface * newSolver = model_->continuousSolver()->clone();
+  OsiSolverInterface * newSolver = model_->continuousSolver() ?
+    model_->continuousSolver()->clone() : solver->clone();
   const double * colLower = newSolver->getColLower();
   const double * colUpper = newSolver->getColUpper();
 
@@ -559,7 +561,8 @@ CbcHeuristicDINS::solution(double & solutionValue,
     double cutoff = model_->getCutoff();
     while(status) {
       status=0;
-      OsiSolverInterface * newSolver = model_->continuousSolver()->clone();
+      OsiSolverInterface * newSolver = model_->continuousSolver() ?
+	model_->continuousSolver()->clone() : solver->clone();
       const double * colLower = solver->getColLower();
       const double * colUpper = solver->getColUpper();
       

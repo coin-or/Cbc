@@ -143,6 +143,15 @@ public:
   /// Get reduced cost option
   inline int fixOnReducedCosts() const
   { return fixOnReducedCosts_;}
+  /**  Set reduced cost multiplier
+       1.0 as normal
+       <1.0 (x) - pretend gap is x* actual gap - just for fixing
+  */
+  inline void setReducedCostMultiplier(double value)
+  { reducedCostMultiplier_=value;}
+  /// Get reduced cost multiplier
+  inline double reducedCostMultiplier() const
+  { return reducedCostMultiplier_;}
 
 protected:
   // Data
@@ -169,6 +178,11 @@ protected:
   /** If iterationRatio >0 use instead of maximumPasses_
       test is iterations > ratio*(2*nrow+ncol) */
   double iterationRatio_;
+  /**  Reduced cost multiplier
+       1.0 as normal
+       <1.0 (x) - pretend gap is x* actual gap - just for fixing
+  */
+  double reducedCostMultiplier_;
   /// Maximum number of passes
   int maximumPasses_;
   /** Maximum number of retries if we find a solution.

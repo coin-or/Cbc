@@ -36,6 +36,7 @@ CbcHeuristicFPump::CbcHeuristicFPump()
    weightFactor_(0.1),
    artificialCost_(COIN_DBL_MAX),
    iterationRatio_(0.0),
+   reducedCostMultiplier_(1.0),
    maximumPasses_(100),
    maximumRetries_(1),
    accumulate_(0),
@@ -59,6 +60,7 @@ CbcHeuristicFPump::CbcHeuristicFPump(CbcModel & model,
    weightFactor_(0.1),
    artificialCost_(COIN_DBL_MAX),
    iterationRatio_(0.0),
+   reducedCostMultiplier_(1.0),
    maximumPasses_(100),
    maximumRetries_(1),
    accumulate_(0),
@@ -148,6 +150,7 @@ CbcHeuristicFPump::CbcHeuristicFPump(const CbcHeuristicFPump & rhs)
   weightFactor_(rhs.weightFactor_),
   artificialCost_(rhs.artificialCost_),
   iterationRatio_(rhs.iterationRatio_),
+  reducedCostMultiplier_(rhs.reducedCostMultiplier_),
   maximumPasses_(rhs.maximumPasses_),
   maximumRetries_(rhs.maximumRetries_),
   accumulate_(rhs.accumulate_),
@@ -172,6 +175,7 @@ CbcHeuristicFPump::operator=( const CbcHeuristicFPump& rhs)
     weightFactor_ = rhs.weightFactor_;
     artificialCost_ = rhs.artificialCost_;
     iterationRatio_ = rhs.iterationRatio_;
+    reducedCostMultiplier_ = rhs.reducedCostMultiplier_;
     maximumPasses_ = rhs.maximumPasses_;
     maximumRetries_ = rhs.maximumRetries_;
     accumulate_ = rhs.accumulate_;
@@ -368,6 +372,14 @@ CbcHeuristicFPump::solution(double & solutionValue,
       secondPassOpt=0;
     }
   }
+#define RAND_RAND
+#ifdef RAND_RAND
+  double * randomFactor = new double [numberColumns];
+  for (int i=0;i<numberColumns;i++) {
+    double value = floor(1.0e3*randomNumberGenerator_.randomDouble());
+    randomFactor[i] = value*1.0e-3;
+  }
+#endif
   // guess exact multiple of objective
   double exactMultiple = model_->getCutoffIncrement();
   exactMultiple *= 2520;
@@ -415,6 +427,7 @@ CbcHeuristicFPump::solution(double & solutionValue,
       solver->getDblParam(OsiDualTolerance,tolerance) ;
       if (gap>0.0&&(fixOnReducedCosts_==1||(numberTries==1&&fixOnReducedCosts_==2))) {
 	gap += 100.0*tolerance;
+	gap *= reducedCostMultiplier_;
 	int nFix=solver->reducedCostFix(gap);
 	if (nFix) {
 	  sprintf(pumpPrint,"Reduced cost fixing fixed %d variables on major pass %d",nFix,numberTries);
@@ -849,8 +862,12 @@ CbcHeuristicFPump::solution(double & solutionValue,
 	      newValue = -costValue+scaleFactor*saveObjective[iColumn];
 	    }
 	  }
-	  if (newValue!=oldObjective[iColumn])
+#ifdef RAND_RAND
+	  newValue *= randomFactor[iColumn];
+#endif
+	  if (newValue!=oldObjective[iColumn]) {
 	    numberChanged++;
+	  }
 	  solver->setObjCoeff(iColumn,newValue);
 	  offset += costValue*newSolution[iColumn];
 	}
@@ -952,9 +969,9 @@ CbcHeuristicFPump::solution(double & solutionValue,
 	  bool takeHint;
 	  OsiHintStrength strength;
 	  solver->getHintParam(OsiDoDualInResolve,takeHint,strength);
-	  if (dualPass) {
+	  if (dualPass&&numberChanged>2) {
 	    solver->setHintParam(OsiDoDualInResolve,true); // dual may be better
-	    if (dualPass==1) {
+	    if (dualPass==1&&2*numberChanged<numberColumns) {
 	      // but we need to make infeasible
 	      CoinWarmStartBasis * basis =
 		dynamic_cast<CoinWarmStartBasis *>(solver->getWarmStart()) ;
@@ -968,6 +985,10 @@ CbcHeuristicFPump::solution(double & solutionValue,
 		int nChanged=0;
 		for (i=0;i<numberIntegersOrig;i++) {
 		  int iColumn=integerVariableOrig[i];
+#ifdef RAND_RAND
+		  if (nChanged>numberChanged)
+		    break;
+#endif
 		  if (objective[iColumn]>0.0) {
 		    if (basis->getStructStatus(iColumn)==
 			CoinWarmStartBasis::atUpperBound) {
@@ -1793,6 +1814,9 @@ CbcHeuristicFPump::solution(double & solutionValue,
       totalNumberPasses += numberPasses-1;
     }
   }
+#ifdef RAND_RAND
+  delete [] randomFactor;
+#endif
   delete solver; // probably NULL but do anyway
   if (!finalReturnCode&&closestSolution&&closestObjectiveValue <= 10.0&&usedColumn) {
     // try a bit of branch and bound

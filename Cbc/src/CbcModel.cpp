@@ -159,6 +159,7 @@ typedef struct {
 } threadStruct;
 static void * doNodesThread(void * voidInfo);
 static void * doCutsThread(void * voidInfo);
+static void * doHeurThread(void * voidInfo);
 #endif
 /* Various functions local to CbcModel.cpp */
 
@@ -12930,6 +12931,87 @@ CbcModel::doHeuristicsAtRoot(int deleteHeuristicsAfterwards)
     currentPassNumber_ = 1; // so root heuristics will run
     // Modify based on size etc
     adjustHeuristics();
+#ifdef CBC_THREAD
+    if ((threadMode_&8)!=0) {
+      typedef struct
+      {
+	double solutionValue;
+	CbcModel * model;
+	double * solution;
+	int foundSol;
+      } argBundle;
+      int chunk;
+      if (!numberThreads_)
+	chunk=numberHeuristics_;
+      else
+	chunk=numberThreads_;
+      for (int iChunk=0;iChunk<numberHeuristics_;iChunk+=chunk) {
+	Coin_pthread_t * threadId = new Coin_pthread_t [chunk];
+	argBundle * parameters = new argBundle [chunk];
+	for (int i=0;i<chunk;i++) 
+	  parameters[i].model=NULL;
+	for (int i=iChunk;i<CoinMin(numberHeuristics_,iChunk+chunk);i++) {
+#if MODEL3
+	  // skip if can't run here
+	  if (!heuristic_[i]->shouldHeurRun())
+	    continue;
+#endif
+	  parameters[i-iChunk].solutionValue=heuristicValue;
+	  CbcModel * newModel = new CbcModel(*this);
+	  //delete newModel->solver_;
+	  //newModel->solver_ = solver_->clone();
+	  parameters[i-iChunk].model = newModel;
+	  parameters[i-iChunk].solution = new double [numberColumns];;
+	  parameters[i-iChunk].foundSol=0;
+	  //newModel->gutsOfCopy(*this,-1);
+	  for (int j=0;j<numberHeuristics_;j++)
+	  delete newModel->heuristic_[j];
+	  //newModel->heuristic_ = new CbcHeuristic * [1];
+	  newModel->heuristic_[0]=heuristic_[i]->clone();
+	  newModel->heuristic_[0]->setModel(newModel);
+	  newModel->heuristic_[0]->resetModel(newModel);
+	  newModel->numberHeuristics_=1;
+	  pthread_create(&(threadId[i-iChunk].thr),NULL,doHeurThread,
+			 parameters+i-iChunk);
+	}
+	// now wait
+	for (int i=0;i<chunk;i++) {
+	  if (parameters[i].model)
+	    pthread_join(threadId[i].thr,NULL);
+	}
+	double cutoff=heuristicValue;
+	for (int i=0;i<chunk;i++) {
+	  if (parameters[i].model) {
+	    if (parameters[i].foundSol>0&&
+		parameters[i].solutionValue<heuristicValue) {
+	      memcpy(newSolution,parameters[i].solution,
+		     numberColumns*sizeof(double));
+	      lastHeuristic_ = heuristic_[i+iChunk];
+	      double value = parameters[i].solutionValue;
+	      setBestSolution(CBC_ROUNDING,value,newSolution) ;
+	      // Double check valid
+	      if (getCutoff()<cutoff) {
+		cutoff=getCutoff();
+		heuristicValue=value;
+		heuristic_[i+iChunk]->incrementNumberSolutionsFound();
+		incrementUsed(newSolution);
+		// increment number of solutions so other heuristics can test
+		numberSolutions_++;
+		numberHeuristicSolutions_++;
+		found = i+iChunk ;
+		if (heuristic_[i+iChunk]->exitNow(bestObjective_))
+		  break;
+	      }
+	    }
+	    delete parameters[i].solution;
+	    delete parameters[i].model;
+	  }
+	}
+	delete [] threadId;
+	delete [] parameters;
+      }
+    } else {
+#endif
     for (i = 0;i<numberHeuristics_;i++) {
 #if MODEL3
       // skip if can't run here
@@ -12956,6 +13038,9 @@ CbcModel::doHeuristicsAtRoot(int deleteHeuristicsAfterwards)
 	heuristicValue = saveValue ;
       }
     }
+#ifdef CBC_THREAD
+    }
+#endif
     currentPassNumber_ = 0;
     /*
       Did any of the heuristics turn up a new solution? Record it before we free
@@ -14880,6 +14965,21 @@ static void * doNodesThread(void * voidInfo)
     }
   }
   pthread_mutex_unlock(mutex);
+  pthread_exit(NULL);
+  return NULL;
+}
+static void * doHeurThread(void * voidInfo)
+{
+  typedef struct {
+    double solutionValue;
+    CbcModel * model;
+    double * solution;
+    int foundSol;
+  } argBundle;
+  argBundle * stuff = reinterpret_cast<argBundle *> (voidInfo);
+  stuff->foundSol = 
+    stuff->model->heuristic(0)->solution(stuff->solutionValue,
+					  stuff->solution);
   pthread_exit(NULL);
   return NULL;
 }

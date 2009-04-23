@@ -7830,7 +7830,7 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
       if (thisObjective-startObjective<1.0e-5&&numberElementsAdded>0.2*numberElementsAtStart)
         willBeCutsInTree=-1;
       int whenC=whenCuts_;
-      if (whenC==999999|whenC==999998) {
+      if (whenC==999999||whenC==999998) {
 	int size = continuousSolver_->getNumRows()+continuousSolver_->getNumCols();
 	bool small = size<=550;
 	small=false;

@@ -487,10 +487,14 @@ CbcHeuristic::exitNow(double bestObjective) const
   // See if can stop on gap
   OsiSolverInterface * solver = model_->solver();
   double bestPossibleObjective = solver->getObjValue()*solver->getObjSense();
-  double testGap = CoinMax(model_->getAllowableGap(),
+  double absGap = CoinMax(model_->getAllowableGap(),
+			  model_->getHeuristicGap());
+  double fracGap = CoinMax(model_->getAllowableFractionGap(),
+			  model_->getHeuristicFractionGap());
+  double testGap = CoinMax(absGap,fracGap*
 			   CoinMax(fabs(bestObjective),
-				   fabs(bestPossibleObjective))
-			   *model_->getAllowableFractionGap());
+				   fabs(bestPossibleObjective)));
+
   if (bestObjective-bestPossibleObjective < testGap 
       && model_->getCutoffIncrement()>=0.0) {
     return true;

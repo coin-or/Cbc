@@ -154,6 +154,22 @@ enum CbcDblParam {
   /** \brief The time at start of model.
 	     So that other pieces of code can access */
   CbcStartSeconds,
+  /** Stop doing heuristics when the gap between the objective value of the 
+      best known solution and the best bound on the objective of any solution 
+      is less than this.
+  
+    This is an absolute value. Conversion from a percentage is left to the
+    client.
+  */
+  CbcHeuristicGap,
+  /** Stop doing heuristics when the gap between the objective value of the 
+      best known solution and the best bound on the objective of any solution 
+      is less than this fraction of of the absolute value of best known 
+      solution.
+  
+    Code stops if either this test or CbcAllowableGap test succeeds
+  */
+  CbcHeuristicFractionGap,
   /** Just a marker, so that a static sized array can store parameters. */
   CbcLastDblParam
 };
@@ -620,6 +636,31 @@ public:
   */
   inline double getAllowablePercentageGap() const {
     return 100.0*getDblParam(CbcAllowableFractionGap);
+  }
+  /** Set the \link CbcModel::CbcHeuristicGap heuristic gap \endlink
+      between the best known solution and the best possible solution.
+  */
+  inline bool setHeuristicGap( double value) {
+    return setDblParam(CbcHeuristicGap,value);
+  }
+  /** Get the \link CbcModel::CbcHeuristicGap heuristic gap \endlink
+      between the best known solution and the best possible solution.
+  */
+  inline double getHeuristicGap() const {
+    return getDblParam(CbcHeuristicGap);
+  }
+
+  /** Set the \link CbcModel::CbcHeuristicFractionGap fraction heuristic gap \endlink
+      between the best known solution and the best possible solution.
+  */
+  inline bool setHeuristicFractionGap( double value) {
+    return setDblParam(CbcHeuristicFractionGap,value);
+  }
+  /** Get the \link CbcModel::CbcHeuristicFractionGap fraction heuristic gap \endlink
+      between the best known solution and the best possible solution.
+  */
+  inline double getHeuristicFractionGap() const {
+    return getDblParam(CbcHeuristicFractionGap);
   }
   /** Set the
       \link CbcModel::CbcCutoffIncrement  \endlink

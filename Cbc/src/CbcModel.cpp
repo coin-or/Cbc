@@ -1835,7 +1835,7 @@ void CbcModel::branchAndBound(int doStatistics)
 
       if (numberUnsatisfied)   {
 	// User event
-	if (!eventHappened_)
+	if (!eventHappened_&&feasible)
 	  feasible = solveWithCuts(cuts,maximumCutPassesAtRoot_,
 				   NULL);
 	else
@@ -4171,6 +4171,8 @@ CbcModel::CbcModel()
   dblParam_[CbcCutoffIncrement] = 1e-5;
   dblParam_[CbcAllowableGap] = 1.0e-10;
   dblParam_[CbcAllowableFractionGap] = 0.0;
+  dblParam_[CbcHeuristicGap] = 0.0;
+  dblParam_[CbcHeuristicFractionGap] = 0.0;
   dblParam_[CbcMaximumSeconds] = 1.0e100;
   dblParam_[CbcCurrentCutoff] = 1.0e100;
   dblParam_[CbcOptimizationDirection] = 1.0;
@@ -4331,6 +4333,8 @@ CbcModel::CbcModel(const OsiSolverInterface &rhs)
   dblParam_[CbcCutoffIncrement] = 1e-5;
   dblParam_[CbcAllowableGap] = 1.0e-10;
   dblParam_[CbcAllowableFractionGap] = 0.0;
+  dblParam_[CbcHeuristicGap] = 0.0;
+  dblParam_[CbcHeuristicFractionGap] = 0.0;
   dblParam_[CbcMaximumSeconds] = 1.0e100;
   dblParam_[CbcCurrentCutoff] = 1.0e100;
   dblParam_[CbcOptimizationDirection] = 1.0;
@@ -12927,123 +12931,130 @@ CbcModel::doHeuristicsAtRoot(int deleteHeuristicsAfterwards)
     currentPassNumber_ = 1; // so root heuristics will run
     // Modify based on size etc
     adjustHeuristics();
+    // See if already withing allowable gap
+    bool exitNow=false;
+    for (i = 0;i<numberHeuristics_;i++) {
+      if (heuristic_[i]->exitNow(bestObjective_))
+	exitNow=true;
+    }
+    if (!exitNow) {
 #ifdef CBC_THREAD
-    if ((threadMode_&8)!=0) {
-      typedef struct
-      {
-	double solutionValue;
-	CbcModel * model;
-	double * solution;
-	int foundSol;
-      } argBundle;
-      int chunk;
-      if (!numberThreads_)
-	chunk=numberHeuristics_;
-      else
-	chunk=numberThreads_;
-      for (int iChunk=0;iChunk<numberHeuristics_;iChunk+=chunk) {
-	Coin_pthread_t * threadId = new Coin_pthread_t [chunk];
-	argBundle * parameters = new argBundle [chunk];
-	for (int i=0;i<chunk;i++) 
-	  parameters[i].model=NULL;
-	for (int i=iChunk;i<CoinMin(numberHeuristics_,iChunk+chunk);i++) {
+      if ((threadMode_&8)!=0) {
+	typedef struct
+	{
+	  double solutionValue;
+	  CbcModel * model;
+	  double * solution;
+	  int foundSol;
+	} argBundle;
+	int chunk;
+	if (!numberThreads_)
+	  chunk=numberHeuristics_;
+	else
+	  chunk=numberThreads_;
+	for (int iChunk=0;iChunk<numberHeuristics_;iChunk+=chunk) {
+	  Coin_pthread_t * threadId = new Coin_pthread_t [chunk];
+	  argBundle * parameters = new argBundle [chunk];
+	  for (int i=0;i<chunk;i++) 
+	    parameters[i].model=NULL;
+	  for (int i=iChunk;i<CoinMin(numberHeuristics_,iChunk+chunk);i++) {
+#if MODEL3
+	    // skip if can't run here
+	    if (!heuristic_[i]->shouldHeurRun())
+	      continue;
+#endif
+	    parameters[i-iChunk].solutionValue=heuristicValue;
+	    CbcModel * newModel = new CbcModel(*this);
+	    assert (!newModel->continuousSolver_);
+	    if (continuousSolver_)
+	      newModel->continuousSolver_ = continuousSolver_->clone();
+	    else
+	      newModel->continuousSolver_ = solver_->clone();
+	    parameters[i-iChunk].model = newModel;
+	    parameters[i-iChunk].solution = new double [numberColumns];;
+	    parameters[i-iChunk].foundSol=0;
+	    //newModel->gutsOfCopy(*this,-1);
+	    for (int j=0;j<numberHeuristics_;j++)
+	      delete newModel->heuristic_[j];
+	    //newModel->heuristic_ = new CbcHeuristic * [1];
+	    newModel->heuristic_[0]=heuristic_[i]->clone();
+	    newModel->heuristic_[0]->setModel(newModel);
+	    newModel->heuristic_[0]->resetModel(newModel);
+	    newModel->numberHeuristics_=1;
+	    pthread_create(&(threadId[i-iChunk].thr),NULL,doHeurThread,
+			   parameters+i-iChunk);
+	  }
+	  // now wait
+	  for (int i=0;i<chunk;i++) {
+	    if (parameters[i].model)
+	      pthread_join(threadId[i].thr,NULL);
+	  }
+	  double cutoff=heuristicValue;
+	  for (int i=0;i<chunk;i++) {
+	    if (parameters[i].model) {
+	      if (parameters[i].foundSol>0&&
+		  parameters[i].solutionValue<heuristicValue) {
+		memcpy(newSolution,parameters[i].solution,
+		       numberColumns*sizeof(double));
+		lastHeuristic_ = heuristic_[i+iChunk];
+		double value = parameters[i].solutionValue;
+		setBestSolution(CBC_ROUNDING,value,newSolution) ;
+		// Double check valid
+		if (getCutoff()<cutoff) {
+		  cutoff=getCutoff();
+		  heuristicValue=value;
+		  heuristic_[i+iChunk]->incrementNumberSolutionsFound();
+		  incrementUsed(newSolution);
+		  // increment number of solutions so other heuristics can test
+		  numberSolutions_++;
+		  numberHeuristicSolutions_++;
+		  found = i+iChunk ;
+		}
+	      }
+	      if (heuristic_[i+iChunk]->exitNow(bestObjective_)||
+		  (parameters[i].model->heuristic(0)->switches()&2048)!=0)
+		exitNow=true;
+	      delete parameters[i].solution;
+	      delete parameters[i].model;
+	    }
+	  }
+	  delete [] threadId;
+	  delete [] parameters;
+	  if (exitNow)
+	    break;
+	}
+      } else {
+#endif
+	for (i = 0;i<numberHeuristics_;i++) {
 #if MODEL3
 	  // skip if can't run here
 	  if (!heuristic_[i]->shouldHeurRun())
 	    continue;
 #endif
-	  parameters[i-iChunk].solutionValue=heuristicValue;
-	  CbcModel * newModel = new CbcModel(*this);
-	  assert (!newModel->continuousSolver_);
-	  if (continuousSolver_)
-	    newModel->continuousSolver_ = continuousSolver_->clone();
-	  else
-	    newModel->continuousSolver_ = solver_->clone();
-	  parameters[i-iChunk].model = newModel;
-	  parameters[i-iChunk].solution = new double [numberColumns];;
-	  parameters[i-iChunk].foundSol=0;
-	  //newModel->gutsOfCopy(*this,-1);
-	  for (int j=0;j<numberHeuristics_;j++)
-	  delete newModel->heuristic_[j];
-	  //newModel->heuristic_ = new CbcHeuristic * [1];
-	  newModel->heuristic_[0]=heuristic_[i]->clone();
-	  newModel->heuristic_[0]->setModel(newModel);
-	  newModel->heuristic_[0]->resetModel(newModel);
-	  newModel->numberHeuristics_=1;
-	  pthread_create(&(threadId[i-iChunk].thr),NULL,doHeurThread,
-			 parameters+i-iChunk);
-	}
-	// now wait
-	for (int i=0;i<chunk;i++) {
-	  if (parameters[i].model)
-	    pthread_join(threadId[i].thr,NULL);
-	}
-	double cutoff=heuristicValue;
-	bool exitNow=false;
-	for (int i=0;i<chunk;i++) {
-	  if (parameters[i].model) {
-	    if (parameters[i].foundSol>0&&
-		parameters[i].solutionValue<heuristicValue) {
-	      memcpy(newSolution,parameters[i].solution,
-		     numberColumns*sizeof(double));
-	      lastHeuristic_ = heuristic_[i+iChunk];
-	      double value = parameters[i].solutionValue;
-	      setBestSolution(CBC_ROUNDING,value,newSolution) ;
-	      // Double check valid
-	      if (getCutoff()<cutoff) {
-		cutoff=getCutoff();
-		heuristicValue=value;
-		heuristic_[i+iChunk]->incrementNumberSolutionsFound();
-		incrementUsed(newSolution);
-		// increment number of solutions so other heuristics can test
-		numberSolutions_++;
-		numberHeuristicSolutions_++;
-		found = i+iChunk ;
-	      }
-	    }
-	    if (heuristic_[i+iChunk]->exitNow(bestObjective_)||
-		(parameters[i].model->heuristic(0)->switches()&2048)!=0)
-	      exitNow=true;
-	    delete parameters[i].solution;
-	    delete parameters[i].model;
+	  // see if heuristic will do anything
+	  double saveValue = heuristicValue ;
+	  int ifSol = heuristic_[i]->solution(heuristicValue,
+					      newSolution);
+	  if (ifSol>0) {
+	    // better solution found
+	    heuristic_[i]->incrementNumberSolutionsFound();
+	    found = i ;
+	    incrementUsed(newSolution);
+	    // increment number of solutions so other heuristics can test
+	    numberSolutions_++;
+	    numberHeuristicSolutions_++;
+	    lastHeuristic_ = heuristic_[i];
+	    setBestSolution(CBC_ROUNDING,heuristicValue,newSolution) ;
+	    if (heuristic_[i]->exitNow(bestObjective_))
+	      break;
+	  } else {
+	    heuristicValue = saveValue ;
 	  }
 	}
-	delete [] threadId;
-	delete [] parameters;
-	if (exitNow)
-	  break;
-      }
-    } else {
-#endif
-    for (i = 0;i<numberHeuristics_;i++) {
-#if MODEL3
-      // skip if can't run here
-      if (!heuristic_[i]->shouldHeurRun())
-	continue;
-#endif
-      // see if heuristic will do anything
-      double saveValue = heuristicValue ;
-      int ifSol = heuristic_[i]->solution(heuristicValue,
-					  newSolution);
-      if (ifSol>0) {
-	// better solution found
-	heuristic_[i]->incrementNumberSolutionsFound();
-	found = i ;
-	incrementUsed(newSolution);
-	// increment number of solutions so other heuristics can test
-	numberSolutions_++;
-	numberHeuristicSolutions_++;
-	lastHeuristic_ = heuristic_[i];
-	setBestSolution(CBC_ROUNDING,heuristicValue,newSolution) ;
-	if (heuristic_[i]->exitNow(bestObjective_))
-	  break;
-      } else {
-	heuristicValue = saveValue ;
-      }
-    }
 #ifdef CBC_THREAD
-    }
+      }
 #endif
+    }
     currentPassNumber_ = 0;
     /*
       Did any of the heuristics turn up a new solution? Record it before we free

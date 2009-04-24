@@ -699,13 +699,6 @@ public:
       if 2 then says if cuts allowed anywhere apart from root
   */
   bool doCutsNow(int allowForTopOfTree) const;
-  /** Set size of mini - tree.  If > 1 then does total enumeration of
-      tree given by this best variables to branch on
-  */
-  inline void setSizeMiniTree(int value)
-  { sizeMiniTree_=value;}
-  inline int sizeMiniTree() const
-  { return sizeMiniTree_;}
 
   /** Set the number of branches before pseudo costs believed
       in dynamic strong branching.
@@ -2232,8 +2225,6 @@ private:
   int numberOldActiveCuts_;
   /// Number of new cuts
   int numberNewCuts_;
-  /// Size of mini - tree
-  int sizeMiniTree_;
   /// Strategy worked out - mainly at root node
   int searchStrategy_;
   /// Number of iterations in strong branching

@@ -200,6 +200,7 @@ int
 CbcHeuristicFPump::solution(double & solutionValue,
 			 double * betterSolution)
 {
+  startTime_=CoinCpuTime();
   numCouldRun_++;
   double incomingObjective = solutionValue;
 #define LEN_PRINT 200
@@ -606,8 +607,11 @@ CbcHeuristicFPump::solution(double & solutionValue,
 	// too many passes anyway
 	exitAll=true;
       }
-      if (maximumTime_>0.0&&CoinCpuTime()>=startTime_+maximumTime_) 
+      if (maximumTime_>0.0&&CoinCpuTime()>=startTime_+maximumTime_) {
 	exitAll=true;
+	// force exit
+	switches_ |= 2048;
+      }
       if (exitAll||exitThis)
 	break;
       memcpy(newSolution,solution,numberColumns*sizeof(double));
@@ -971,7 +975,8 @@ CbcHeuristicFPump::solution(double & solutionValue,
 	  solver->getHintParam(OsiDoDualInResolve,takeHint,strength);
 	  if (dualPass&&numberChanged>2) {
 	    solver->setHintParam(OsiDoDualInResolve,true); // dual may be better
-	    if (dualPass==1&&2*numberChanged<numberColumns) {
+	    if (dualPass==1&&2*numberChanged<numberColumns&&
+		(numberChanged<5000||6*numberChanged<numberColumns)) {
 	      // but we need to make infeasible
 	      CoinWarmStartBasis * basis =
 		dynamic_cast<CoinWarmStartBasis *>(solver->getWarmStart()) ;
@@ -1938,7 +1943,7 @@ CbcHeuristicFPump::rounds(OsiSolverInterface * solver,double * solution,
   const double * rowLower = solver->getRowLower();
   const double * rowUpper = solver->getRowUpper();
   int numberRows = solver->getNumRows();
-  if ((iter&1)!=0) {
+  if (false&&(iter&1)!=0) {
     // Do set covering variables
     const CoinPackedMatrix * matrixByRow = solver->getMatrixByRow();
     const double * elementByRow = matrixByRow->getElements();

@@ -476,8 +476,14 @@ void CbcHeuristic::setModel(CbcModel * model)
 bool 
 CbcHeuristic::exitNow(double bestObjective) const
 {
-  if ((switches_&1)==0)
+  if ((switches_&2048)!=0) {
+    // exit may be forced - but unset for next time
+    switches_ &= ~2048;
+    if ((switches_&1024)!=0) 
+      return true;
+  } else if ((switches_&1)==0) {
     return false;
+  }
   // See if can stop on gap
   OsiSolverInterface * solver = model_->solver();
   double bestPossibleObjective = solver->getObjValue()*solver->getObjSense();

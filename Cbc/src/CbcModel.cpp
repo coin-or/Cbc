@@ -4149,7 +4149,6 @@ CbcModel::CbcModel()
   numberLongStrong_(0),
   numberOldActiveCuts_(0),
   numberNewCuts_(0),
-  sizeMiniTree_(0),
   searchStrategy_(-1),
   numberStrongIterations_(0),
   resolveAfterTakeOffCuts_(true),
@@ -4310,7 +4309,6 @@ CbcModel::CbcModel(const OsiSolverInterface &rhs)
   numberLongStrong_(0),
   numberOldActiveCuts_(0),
   numberNewCuts_(0),
-  sizeMiniTree_(0),
   searchStrategy_(-1),
   numberStrongIterations_(0),
   resolveAfterTakeOffCuts_(true),
@@ -4549,7 +4547,6 @@ CbcModel::CbcModel(const CbcModel & rhs, bool cloneHandler)
   numberLongStrong_(rhs.numberLongStrong_),
   numberOldActiveCuts_(rhs.numberOldActiveCuts_),
   numberNewCuts_(rhs.numberNewCuts_),
-  sizeMiniTree_(rhs.sizeMiniTree_),
   searchStrategy_(rhs.searchStrategy_),
   numberStrongIterations_(rhs.numberStrongIterations_),
   resolveAfterTakeOffCuts_(rhs.resolveAfterTakeOffCuts_),
@@ -4910,7 +4907,6 @@ CbcModel::operator=(const CbcModel& rhs)
 #endif
     numberThreads_ = rhs.numberThreads_;
     threadMode_ = rhs.threadMode_;
-    sizeMiniTree_ = rhs.sizeMiniTree_;
     searchStrategy_ = rhs.searchStrategy_;
     numberStrongIterations_ = rhs.numberStrongIterations_;
     strongInfo_[0]=rhs.strongInfo_[0];
@@ -12958,8 +12954,11 @@ CbcModel::doHeuristicsAtRoot(int deleteHeuristicsAfterwards)
 #endif
 	  parameters[i-iChunk].solutionValue=heuristicValue;
 	  CbcModel * newModel = new CbcModel(*this);
-	  //delete newModel->solver_;
-	  //newModel->solver_ = solver_->clone();
+	  assert (!newModel->continuousSolver_);
+	  if (continuousSolver_)
+	    newModel->continuousSolver_ = continuousSolver_->clone();
+	  else
+	    newModel->continuousSolver_ = solver_->clone();
 	  parameters[i-iChunk].model = newModel;
 	  parameters[i-iChunk].solution = new double [numberColumns];;
 	  parameters[i-iChunk].foundSol=0;
@@ -12980,6 +12979,7 @@ CbcModel::doHeuristicsAtRoot(int deleteHeuristicsAfterwards)
 	    pthread_join(threadId[i].thr,NULL);
 	}
 	double cutoff=heuristicValue;
+	bool exitNow=false;
 	for (int i=0;i<chunk;i++) {
 	  if (parameters[i].model) {
 	    if (parameters[i].foundSol>0&&
@@ -12999,16 +12999,19 @@ CbcModel::doHeuristicsAtRoot(int deleteHeuristicsAfterwards)
 		numberSolutions_++;
 		numberHeuristicSolutions_++;
 		found = i+iChunk ;
-		if (heuristic_[i+iChunk]->exitNow(bestObjective_))
-		  break;
 	      }
 	    }
+	    if (heuristic_[i+iChunk]->exitNow(bestObjective_)||
+		(parameters[i].model->heuristic(0)->switches()&2048)!=0)
+	      exitNow=true;
 	    delete parameters[i].solution;
 	    delete parameters[i].model;
 	  }
 	}
 	delete [] threadId;
 	delete [] parameters;
+	if (exitNow)
+	  break;
       }
     } else {
 #endif

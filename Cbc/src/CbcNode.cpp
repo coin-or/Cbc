@@ -2509,7 +2509,6 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
   CbcBranchDecision *decision = model->branchingMethod();
   if (!decision)
     decision = new CbcBranchDynamicDecision();
-  int numberMini=0;
   int xPen=0;
   int xMark=0;
   for (i=0;i<numberColumns;i++) {
@@ -3689,13 +3688,6 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
 	  printf("new test %d\n",numberTest);
 	}
       }
-      // See if we want mini tree
-      bool wantMiniTree=false;
-      if (model->sizeMiniTree()&&depth_>7&&saveStateOfSearch>0)
-        wantMiniTree=true;
-      numberMini=0;
-      //if (skipAll&&numberTest==0&&doQuickly)
-      //numberToDo = 1; // trust previous stuff
       bool couldChooseFirst = false ; //(skipAll&&numberTest==0&&doQuickly);
       //skipAll=false;
       int realMaxHotIterations=999999;
@@ -4170,10 +4162,6 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
                 <<choice.possibleBranch->value()
                 <<CoinMessageEol;
             }
-            //if (!stateOfSearch)
-            //choice.numIntInfeasDown=99999; // temp fudge
-            if (wantMiniTree)
-              decision->setBestCriterion(-1.0);
             double bestCriterion = -1.0;
             //double gap = saveUpper[iColumn]-saveLower[iColumn];
             // Give precedence to ones with gap of 1.0 
@@ -4192,16 +4180,6 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
 						     choice.downMovement*factor,
 						     choice.numIntInfeasDown );
 	    }
-            if (wantMiniTree) {
-              double criterion = decision->getBestCriterion();
-              sort[numberMini]=-criterion;
-              whichObject[numberMini++]=whichObject[iDo];
-              assert (betterWay);
-              if (criterion>bestCriterion) 
-                bestCriterion=criterion;
-              else
-                betterWay=0;
-            }
             if (iDo>=changeStrategy) {
               // make less likely
               changeStrategy+=numberStrong;
@@ -4485,7 +4463,6 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
             feasible = solver->isProvenOptimal();
             if (feasible) {
               anyAction=0;
-              numberMini=0;
               // See if candidate still possible
               if (branch_) {
                 const OsiObject * object = model->object(bestChoice);
@@ -4630,33 +4607,6 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
   // Set guessed solution value
   guessedObjectiveValue_ = objectiveValue_+estimatedDegradation;
   
-  // Get collection of branches if mini tree wanted
-  if (anyAction==0&&numberMini&&numberMini>1) {
-    // Sort 
-    CoinSort_2(sort,sort+numberMini,whichObject);
-    delete branch_;
-    branch_=NULL;
-    numberMini = CoinMin(numberMini,model->sizeMiniTree());
-    anyAction=numberMini;
-    branches = new OsiSolverBranch[numberMini];
-    for (int iDo=0;iDo<numberMini;iDo++) {
-      int iObject = whichObject[iDo];
-      OsiObject * object = model->modifiableObject(iObject);
-      CbcSimpleInteger * obj =
-	dynamic_cast <CbcSimpleInteger *>(object) ;
-      OsiSolverBranch * oneBranch;
-      if (obj) {
-	oneBranch = obj->solverBranch(solver,&usefulInfo);
-      } else {
-	CbcObject * obj =
-	  dynamic_cast <CbcObject *>(object) ;
-	assert (obj);
-	oneBranch = obj->solverBranch();
-      }
-      branches[iDo]=*oneBranch;
-      delete oneBranch;
-    }
-  }
 /*
   Cleanup, then we're finished
 */

@@ -13012,7 +13012,8 @@ CbcModel::doHeuristicsAtRoot(int deleteHeuristicsAfterwards)
 		}
 	      }
 	      if (heuristic_[i+iChunk]->exitNow(bestObjective_)||
-		  (parameters[i].model->heuristic(0)->switches()&2048)!=0)
+		  (parameters[i].model->heuristic(0)->switches()&(1024+2048))
+		  ==(1024+2048))
 		exitNow=true;
 	      delete parameters[i].solution;
 	      delete parameters[i].model;

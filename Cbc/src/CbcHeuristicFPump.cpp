@@ -378,7 +378,7 @@ CbcHeuristicFPump::solution(double & solutionValue,
   double * randomFactor = new double [numberColumns];
   for (int i=0;i<numberColumns;i++) {
     double value = floor(1.0e3*randomNumberGenerator_.randomDouble());
-    randomFactor[i] = value*1.0e-3;
+    randomFactor[i] = 1.0+value*1.0e-4;
   }
 #endif
   // guess exact multiple of objective

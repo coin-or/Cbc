@@ -13015,7 +13015,7 @@ CbcModel::doHeuristicsAtRoot(int deleteHeuristicsAfterwards)
 		  (parameters[i].model->heuristic(0)->switches()&(1024+2048))
 		  ==(1024+2048))
 		exitNow=true;
-	      delete parameters[i].solution;
+	      delete [] parameters[i].solution;
 	      delete parameters[i].model;
 	    }
 	  }

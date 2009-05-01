@@ -754,6 +754,10 @@ CbcHeuristicNaive::solution(double & solutionValue,
 	value=0.0;
       newSolver->setColLower(iColumn,value);
       newSolver->setColUpper(iColumn,value);
+    } else {
+      // set back to original
+      newSolver->setColLower(iColumn,lower);
+      newSolver->setColUpper(iColumn,upper);
     }
   }
   const double * solution = solver->getColSolution();

@@ -6670,7 +6670,7 @@ int
 		  fabs(babModel_->solver()->getObjValue())*1.0e-5+1.0e-5;
                 babModel_->setMinimumDrop(CoinMin(5.0e-2,minimumDrop));
                 if (cutPass==-1234567) {
-                  if (babModel_->getNumCols()<50000)
+                  if (babModel_->getNumCols()<500)
                     babModel_->setMaximumCutPassesAtRoot(-100); // always do 100 if possible
                   else if (babModel_->getNumCols()<5000)
                     babModel_->setMaximumCutPassesAtRoot(100); // use minimum drop

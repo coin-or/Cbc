@@ -179,16 +179,13 @@ CbcCutGenerator::refreshModel(CbcModel * model)
 bool
 CbcCutGenerator::generateCuts( OsiCuts & cs , int fullScan, OsiSolverInterface * solver, CbcNode * node)
 {
-#define PROBE1 1
-#define PROBE2 0
-#define PROBE3 1
   int depth;
   if (node)
     depth=node->depth();
   else
     depth=0;
   int howOften = whenCutGenerator_;
-  if (dynamic_cast<CglProbing*>(generator_)&&PROBE1) {
+  if (dynamic_cast<CglProbing*>(generator_)) {
     if (howOften==-100&&model_->doCutsNow(3)) {
       howOften=1; // do anyway
     }
@@ -205,15 +202,6 @@ CbcCutGenerator::generateCuts( OsiCuts & cs , int fullScan, OsiSolverInterface *
   //OsiSolverInterface * solver = model_->solver();
   int pass=model_->getCurrentPassNumber()-1;
   bool doThis=(model_->getNodeCount()%howOften)==0;
-  CoinThreadRandom * randomNumberGenerator=NULL;
-#ifdef COIN_HAS_CLP
-  {
-    OsiClpSolverInterface * clpSolver 
-      = dynamic_cast<OsiClpSolverInterface *> (solver);
-    if (clpSolver) 
-      randomNumberGenerator = clpSolver->getModelPtr()->randomNumberGenerator();
-  }
-#endif
   if (depthCutGenerator_>0) {
     doThis = (depth % depthCutGenerator_) ==0;
     if (depth<depthCutGenerator_)
@@ -228,6 +216,16 @@ CbcCutGenerator::generateCuts( OsiCuts & cs , int fullScan, OsiSolverInterface *
     doThis=false;
   }
   if (fullScan||doThis) {
+    CoinThreadRandom * randomNumberGenerator=NULL;
+#ifdef COIN_HAS_CLP
+    {
+      OsiClpSolverInterface * clpSolver 
+	= dynamic_cast<OsiClpSolverInterface *> (solver);
+      if (clpSolver) 
+	randomNumberGenerator = 
+	  clpSolver->getModelPtr()->randomNumberGenerator();
+    }
+#endif
     double time1=0.0;
     if (timing_)
       time1 = CoinCpuTime();
@@ -266,11 +264,20 @@ CbcCutGenerator::generateCuts( OsiCuts & cs , int fullScan, OsiSolverInterface *
 	info2->randomNumberGenerator=randomNumberGenerator;
 	generator->generateCutsAndModify(*solver,cs,info2);
 	doCuts=true;
-      } else if (depth||PROBE2) {
-#if PROBE3
+      } else if (depth) {
+	/* The idea behind this is that probing may work in a different
+	   way deep in tree.  So every now and then try various
+	   combinations to see what works.
+	*/
+#define TRY_NOW_AND_THEN
+#ifdef TRY_NOW_AND_THEN
 	if ((numberTimes_==200||(numberTimes_>200&&(numberTimes_%2000)==0))
-	     &&!model_->parentModel()&&info.formulation_rows>500) {
-	  // in tree, maxStack, maxProbe
+	     &&!model_->parentModel()&&info.formulation_rows>200) {
+	  /* In tree, every now and then try various combinations
+	     maxStack, maxProbe (last 5 digits)
+	     123 is special and means CglProbing will try and
+	     be intelligent.
+	  */
 	  int test[]= {
 	    100123,
 	    199999,
@@ -285,32 +292,36 @@ CbcCutGenerator::generateCuts( OsiCuts & cs , int fullScan, OsiSolverInterface *
 	  int n = static_cast<int> (sizeof(test)/sizeof(int));
 	  int saveStack = generator->getMaxLook();
 	  int saveNumber = generator->getMaxProbe();
-#undef CLP_INVESTIGATE
-#ifdef CLP_INVESTIGATE
 	  int kr1=0;
 	  int kc1=0;
-#endif
 	  int bestStackTree=-1;
 	  int bestNumberTree=-1;
 	  for (int i=0;i<n;i++) {
-	    OsiCuts cs2 = cs;
+	    //OsiCuts cs2 = cs;
 	    int stack = test[i]/100000;
 	    int number = test[i] - 100000*stack;
 	    generator->setMaxLook(stack);
 	    generator->setMaxProbe(number);
-	    generator_->generateCuts(*solver,cs2,info);
+	    int numberRowCutsBefore = cs.sizeRowCuts() ;
+	    int numberColumnCutsBefore = cs.sizeColCuts() ;
+	    generator_->generateCuts(*solver,cs,info);
+	    int numberRowCuts = cs.sizeRowCuts()-numberRowCutsBefore ;
+	    int numberColumnCuts= cs.sizeColCuts()-numberColumnCutsBefore ;
 #ifdef CLP_INVESTIGATE
-	    int numberRowCuts = cs2.sizeRowCuts()-numberRowCutsBefore ;
-	    int numberColumnCuts= cs2.sizeColCuts()-numberColumnCutsBefore ;
 	    if (numberRowCuts<kr1||numberColumnCuts<kc1)
 	      printf("Odd ");
+#endif
 	    if (numberRowCuts>kr1||numberColumnCuts>kc1) {
+#ifdef CLP_INVESTIGATE
 	      printf("*** ");
+#endif
 	      kr1=numberRowCuts;
 	      kc1=numberColumnCuts;
 	      bestStackTree=stack;
 	      bestNumberTree=number;
+	      doCuts=true;
 	    }
+#ifdef CLP_INVESTIGATE
 	    printf("maxStack %d number %d gives %d row cuts and %d column cuts\n",
 		   stack,number,numberRowCuts,numberColumnCuts);
 #endif
@@ -329,23 +340,24 @@ CbcCutGenerator::generateCuts( OsiCuts & cs , int fullScan, OsiSolverInterface *
 	    generator->setMaxLook(0);
 #ifdef CLP_INVESTIGATE
 	    printf("RRSwitching off number %d -> %d, stack %d -> %d\n",
-		   saveNumber,saveNumber,saveStack,0);
+		   saveNumber,saveNumber,saveStack,1);
 #endif
 	  }
 	}
 #endif
-	if (generator->getMaxLook()>0) {
+	if (generator->getMaxLook()>0&&!doCuts) {
 	  generator->generateCutsAndModify(*solver,cs,&info);
 	  doCuts=true;
 	}
       } else {
 	// at root - don't always do
-	if (!PROBE3||pass<15||(pass&1)==0) {
+	if (pass<15||(pass&1)==0) {
 	  generator->generateCutsAndModify(*solver,cs,&info);
 	  doCuts=true;
 	}
       }
       if (doCuts) {
+	// probing may have tightened bounds - check
 	const double * tightLower = generator->tightLower();
 	const double * lower = solver->getColLower();
 	const double * tightUpper = generator->tightUpper();
@@ -762,19 +774,6 @@ CbcCutGenerator::generateCuts( OsiCuts & cs , int fullScan, OsiSolverInterface *
 	delete [] sort;
 	delete [] which;
 	numberRowCutsAfter = cs.sizeRowCuts() ;
-#if 0 //def CLP_INVESTIGATE
-	nEls=0;
-	int nCuts2= numberRowCutsAfter-numberRowCutsBefore;
-	for (k = numberRowCutsBefore;k<numberRowCutsAfter;k++) {
-	  const OsiRowCut * thisCut = cs.rowCutPtr(k) ;
-	  int n=thisCut->row().getNumElements();
-	  nEls+= n;
-	}
-	if (!model_->parentModel()&&nCuts!=nCuts2)
-	  printf("%s NOW has %d cuts and %d elements( down from %d cuts and %d els) - %d parallel\n",
-		 generatorName_,
-		 nCuts2,nEls,nCuts,nElsNow,nParallel);
-#endif
       }
     }
 #ifdef CBC_DEBUG

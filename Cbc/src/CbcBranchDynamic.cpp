@@ -132,9 +132,6 @@ CbcSimpleIntegerDynamicPseudoCost::CbcSimpleIntegerDynamicPseudoCost ()
     numberTimesProbingTotal_(0),
     method_(0)
 {
-#ifdef CBC_INSTRUMENT
-  numberTimesInfeasible_=0;
-#endif
 }
 
 /** Useful constructor
@@ -169,9 +166,6 @@ CbcSimpleIntegerDynamicPseudoCost::CbcSimpleIntegerDynamicPseudoCost (CbcModel *
     numberTimesProbingTotal_(0),
     method_(0)
 {
-#ifdef CBC_INSTRUMENT
-  numberTimesInfeasible_=0;
-#endif
   const double * cost = model->getObjCoefficients();
   double costValue = CoinMax(1.0e-5,fabs(cost[iColumn]));
   // treat as if will cost what it says up
@@ -237,9 +231,6 @@ CbcSimpleIntegerDynamicPseudoCost::CbcSimpleIntegerDynamicPseudoCost (CbcModel *
     numberTimesProbingTotal_(0),
     method_(0)
 {
-#ifdef CBC_INSTRUMENT
-  numberTimesInfeasible_=0;
-#endif
   downDynamicPseudoCost_ = downDynamicPseudoCost;
   upDynamicPseudoCost_ = upDynamicPseudoCost;
   breakEven_ = upDynamicPseudoCost_/(upDynamicPseudoCost_+downDynamicPseudoCost_);
@@ -311,9 +302,6 @@ CbcSimpleIntegerDynamicPseudoCost::CbcSimpleIntegerDynamicPseudoCost ( const Cbc
    method_(rhs.method_)
 
 {
-#ifdef CBC_INSTRUMENT
-  numberTimesInfeasible_=rhs.numberTimesInfeasible_;
-#endif
 }
 
 // Clone
@@ -354,9 +342,6 @@ CbcSimpleIntegerDynamicPseudoCost::operator=( const CbcSimpleIntegerDynamicPseud
     numberTimesDownTotalFixed_ = rhs.numberTimesDownTotalFixed_;
     numberTimesUpTotalFixed_ = rhs.numberTimesUpTotalFixed_;
     numberTimesProbingTotal_ = rhs.numberTimesProbingTotal_;
-#ifdef CBC_INSTRUMENT
-    numberTimesInfeasible_=rhs.numberTimesInfeasible_;
-#endif
     method_=rhs.method_;
   }
   return *this;
@@ -729,9 +714,6 @@ CbcSimpleIntegerDynamicPseudoCost::infeasibility(int & preferredWay) const
     else
       return 1.0e-13;
   } else {
-#ifdef CBC_INSTRUMENT
-    numberTimesInfeasible_++;
-#endif
     int stateOfSearch = model_->stateOfSearch()%10;
     double returnValue=0.0;
     double minValue = CoinMin(downCost,upCost);
@@ -798,15 +780,6 @@ CbcSimpleIntegerDynamicPseudoCost::infeasibility(int & preferredWay) const
 	CoinMin(down,up);
       returnValue *= 1.0e-3;
     }
-#if 0 //def CBC_INSTRUMENT
-    int nn = numberTimesInfeasible_  - CoinMax(numberTimesUp_,numberTimesDown_);
-    if (nn<0) {
-      // Something to do with parallel synchronization
-      numberTimesInfeasible_  = CoinMax(numberTimesUp_,numberTimesDown_);
-    } else if (nn) {
-      returnValue *= sqrt(static_cast<double> (nn));
-    }
-#endif
 #ifdef COIN_DEVELOP
     History hist;
     hist.where_=where;
@@ -1291,11 +1264,6 @@ CbcSimpleIntegerDynamicPseudoCost::updateAfterMini(int numberDown,int numberDown
 						   double sumDown, int numberUp,
 						   int numberUpInfeasible,double sumUp)
 {
-#ifdef CBC_INSTRUMENT
-  int difference = numberDown-numberTimesDown_;
-  difference += numberUp-numberTimesUp_;
-  numberTimesInfeasible_ += 2*difference;
-#endif
   numberTimesDown_ = numberDown;
   numberTimesDownInfeasible_ = numberDownInfeasible;
   sumDownCost_ = sumDown;
@@ -1345,21 +1313,10 @@ CbcSimpleIntegerDynamicPseudoCost::print(int type,double value) const
       if (devUp>=0.0)
         devUp = sqrt(devUp);
     }
-#if 0
     printf("%d down %d times (%d inf) mean %g (dev %g) up %d times (%d inf) mean %g (dev %g)\n",
            columnNumber_,
            numberTimesDown_,numberTimesDownInfeasible_,meanDown,devDown,
            numberTimesUp_,numberTimesUpInfeasible_,meanUp,devUp);
-#else
-    int n=0;
-#ifdef CBC_INSTRUMENT
-    n=numberTimesInfeasible_;
-#endif
-    printf("%d down %d times (%d inf) mean %g  up %d times (%d inf) mean %g - pseudocosts %g %g - inftimes %d\n",
-           columnNumber_,
-           numberTimesDown_,numberTimesDownInfeasible_,meanDown,
-           numberTimesUp_,numberTimesUpInfeasible_,meanUp,downDynamicPseudoCost_,upDynamicPseudoCost_,n);
-#endif
   } else {
     const double * upper = model_->getCbcColUpper();
     double integerTolerance = 

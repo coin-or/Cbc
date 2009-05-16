@@ -304,10 +304,6 @@ protected:
   /// Number of times probing done 
   int numberTimesProbingTotal_;
   /// Number of times infeasible when tested
-#define CBC_INSTRUMENT
-#ifdef CBC_INSTRUMENT
-  mutable int numberTimesInfeasible_;
-#endif
   /** Method - 
       0 - pseudo costs
       1 - probing

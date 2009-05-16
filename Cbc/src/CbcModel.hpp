@@ -280,15 +280,8 @@ private:
   /// Update size of whichGenerator
   void resizeWhichGenerator(int numberNow, int numberAfter);
 public:
-#ifndef CBC_THREAD
-#define NEW_UPDATE_OBJECT 2
-#else
-#define NEW_UPDATE_OBJECT 2
-#endif
-#if NEW_UPDATE_OBJECT>1
   /// Adds an update information object
   void addUpdateInformation(const CbcObjectUpdateData & data);
-#endif
   /** Do one node - broken out for clarity?
       also for parallel (when baseModel!=this)
       Returns 1 if solution found
@@ -299,14 +292,6 @@ public:
 
   /// Returns true if locked
   bool isLocked() const;
-  /// Main loop (without threads but when subtrees) 1 if finished, 0 if stopped
-#if 0
-  int whileIterating(bool & locked, threadId, threadInfo,condition_mutex,condition_main,
-		     timeWaiting,threadModel,threadStats,totalTime,cutoff,
-		     eventHandler,saveCompare,lastDepth,lastUnsatisfied,createdNode);
-#else
-  int whileIterating(int numberIterations);
-#endif
 #ifdef CBC_THREAD
   /**
      Locks a thread if parallel so that stuff like cut pool
@@ -2041,15 +2026,12 @@ private:
     allocated size.
   */
   CbcNodeInfo ** walkback_;
-#define NODE_LAST
-#ifdef NODE_LAST
   CbcNodeInfo ** lastNodeInfo_;
   const OsiRowCut ** lastCut_;
   int lastDepth_;
   int lastNumberCuts2_;
   int maximumCuts_;
   int * lastNumberCuts_;
-#endif
 
   /** The list of cuts initially collected for this subproblem
 
@@ -2284,14 +2266,12 @@ private:
   bool resolveAfterTakeOffCuts_;
   /// Maximum number of iterations (designed to be used in heuristics)
   int maximumNumberIterations_;
-#if NEW_UPDATE_OBJECT>1
   /// Number of outstanding update information items
   int numberUpdateItems_;
   /// Maximum number of outstanding update information items
   int maximumNumberUpdateItems_;
   /// Update items
   CbcObjectUpdateData * updateItems_;
-#endif
   /**
      Parallel
      0 - off

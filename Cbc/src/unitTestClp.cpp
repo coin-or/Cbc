@@ -362,12 +362,12 @@ int CbcClpUnitTest (const CbcModel & saveModel, std::string& dirMiplib,
 	}
 	std::cout<<"Largest (scaled) away from bound "<<largestScaled
 		 <<" unscaled "<<largest<<std::endl;
-#if 1
+#if 0
 	modelC->setDualBound(CoinMax(1.0001e8,
 				     CoinMin(1000.0*largestScaled,1.00001e10)));
 #else
 	modelC->setDualBound(CoinMax(1.0001e9,
-				     CoinMin(1000.0*largestScaled,1.e10)));
+				     CoinMin(1000.0*largestScaled,1.0001e10)));
 #endif
       }
     }
@@ -454,6 +454,13 @@ int CbcClpUnitTest (const CbcModel & saveModel, std::string& dirMiplib,
     if (model->getNumCols()==-1224) {
       //PUSH_MPS("gesa2",1392,1224,25779856.372,25476489.678,7);
       // gesa2
+      std::string problemName ;
+      model->solver()->getStrParam(OsiProbName,problemName) ;
+      model->solver()->activateRowCutDebugger(problemName.c_str()) ;
+    }
+    if (model->getNumCols()==-1152) {
+      //PUSH_MPS("gesa3",1368,1152,27991042.648,27833632.451,7);
+      // gesa3
       std::string problemName ;
       model->solver()->getStrParam(OsiProbName,problemName) ;
       model->solver()->activateRowCutDebugger(problemName.c_str()) ;

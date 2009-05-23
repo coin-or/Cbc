@@ -196,7 +196,28 @@ public:
       if 3 then also one line per node
     */
      void branchAndBound(int doStatistics=0);
+private:
+    /** \brief Evaluate a subproblem using cutting planes and heuristics
 
+      The method invokes a main loop which generates cuts, applies heuristics,
+      and reoptimises using the solver's native %resolve() method.
+      It returns true if the subproblem remains feasible at the end of the
+      evaluation.
+    */
+  bool solveWithCuts(OsiCuts & cuts, int numberTries,CbcNode * node);
+  /** Input one node output N nodes to put on tree and optional solution update
+      This should be able to operate in parallel so is given a solver and is const(ish)
+      However we will need to keep an array of solver_ and bases and more
+      status is 0 for normal, 1 if solution
+      Calling code should always push nodes back on tree
+  */
+  CbcNode ** solveOneNode(int whichSolver,CbcNode * node, 
+                          int & numberNodesOutput, int & status) ;
+  /// Update size of whichGenerator
+  void resizeWhichGenerator(int numberNow, int numberAfter);
+public:
+#ifdef CBC_KEEP_DEPRECATED
+  // See if anyone is using these any more!!
     /** \brief create a clean model from partially fixed problem
 
       The method creates a new model with given bounds and with no tree.
@@ -260,26 +281,7 @@ public:
   /** Does postprocessing - original solver back.
       User has to delete process */
   void postProcess(CglPreProcess * process);
-private:
-    /** \brief Evaluate a subproblem using cutting planes and heuristics
-
-      The method invokes a main loop which generates cuts, applies heuristics,
-      and reoptimises using the solver's native %resolve() method.
-      It returns true if the subproblem remains feasible at the end of the
-      evaluation.
-    */
-  bool solveWithCuts(OsiCuts & cuts, int numberTries,CbcNode * node);
-  /** Input one node output N nodes to put on tree and optional solution update
-      This should be able to operate in parallel so is given a solver and is const(ish)
-      However we will need to keep an array of solver_ and bases and more
-      status is 0 for normal, 1 if solution
-      Calling code should always push nodes back on tree
-  */
-  CbcNode ** solveOneNode(int whichSolver,CbcNode * node, 
-                          int & numberNodesOutput, int & status) ;
-  /// Update size of whichGenerator
-  void resizeWhichGenerator(int numberNow, int numberAfter);
-public:
+#endif
   /// Adds an update information object
   void addUpdateInformation(const CbcObjectUpdateData & data);
   /** Do one node - broken out for clarity?
@@ -905,7 +907,7 @@ public:
   { return integerVariable_;}
   /// Whether or not integer
   inline char integerType(int i) const
-  { return integerInfo_[i];}
+  { assert (integerInfo_); assert (integerInfo_[i]==0||integerInfo_[i]==1);return integerInfo_[i];}
   /// Whether or not integer
   inline const char * integerType() const
   { return integerInfo_;}

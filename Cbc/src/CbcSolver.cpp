@@ -4125,6 +4125,7 @@ int
     }
     // Set up likely cut generators and defaults
     int nodeStrategy=0;
+    bool dominatedCuts=false;
     int doSOS=1;
     int verbose=0;
     CglGomory gomoryGen;
@@ -4201,7 +4202,7 @@ int
     int zerohalfAction=0;
 
     // Stored cuts
-    bool storedCuts = false;
+    //bool storedCuts = false;
 
     int useCosts=0;
     // don't use input solution
@@ -5433,6 +5434,8 @@ int
 	    }
 	    break;
 	  case OUTDUPROWS:
+	    dominatedCuts=true;
+#if 0
 	    if (goodModel) {
 	      int numberRows = clpSolver->getNumRows();
               //int nOut = outDupRow(clpSolver);
@@ -5449,6 +5452,7 @@ int
 	      std::cout<<"** Current model not valid"<<std::endl;
 #endif
 	    }
+#endif
 	    break;
 	  case NETWORK:
 	    if (goodModel) {
@@ -5575,7 +5579,7 @@ int
   Print elapsed time at the end.
 */
 	  case BAB: // branchAndBound
-          case STRENGTHEN:
+	    // obsolete case STRENGTHEN:
             if (goodModel) {
               bool miplib = type==MIPLIB;
               int logLevel = parameters_[slog].intValue();
@@ -6647,7 +6651,7 @@ int
                 switches[numberGenerators++]=2;
               }
 #endif
-	      if (storedCuts) 
+	      if (dominatedCuts) 
 		babModel_->setSpecialOptions(babModel_->specialOptions()|64);
               // Say we want timings
               numberGenerators = babModel_->numberCutGenerators();
@@ -6797,7 +6801,7 @@ int
               // probably faster to use a basis to get integer solutions
               babModel_->setSpecialOptions(babModel_->specialOptions()|2);
               currentBranchModel = babModel_;
-              OsiSolverInterface * strengthenedModel=NULL;
+              //OsiSolverInterface * strengthenedModel=NULL;
               if (type==BAB||type==MIPLIB) {
 		if (experimentFlag==2||strategyFlag==1) {
 		  // try reduced model
@@ -8051,6 +8055,8 @@ int
 		stuff[8]=bothFlags;
 		stuff[9]=doVector;
 		stuff[10] = parameters_[whichParam(SMALLFACT,numberParameters_,parameters_)].intValue();
+		if ( dominatedCuts)
+		  model_.setSpecialOptions(model_.specialOptions()|64);
 		if (parameters_[whichParam(CPX,numberParameters_,parameters_)].currentOptionAsInteger()) {
 		  model_.setSpecialOptions(model_.specialOptions()|16384);
 		  //if (model_.fastNodeDepth()==-1)
@@ -8084,7 +8090,8 @@ int
 		babModel_=NULL;
 		return returnCode;
               } else {
-                strengthenedModel = babModel_->strengthenedModel();
+		abort(); // can't get here
+                //strengthenedModel = babModel_->strengthenedModel();
               }
               currentBranchModel = NULL;
 #ifndef CBC_OTHER_SOLVER
@@ -8358,8 +8365,8 @@ int
 #endif
               }
 #ifndef CBC_OTHER_SOLVER
-              if (type==STRENGTHEN&&strengthenedModel)
-                clpSolver = dynamic_cast< OsiClpSolverInterface*> (strengthenedModel);
+              //if (type==STRENGTHEN&&strengthenedModel)
+	      //clpSolver = dynamic_cast< OsiClpSolverInterface*> (strengthenedModel);
 #ifdef COIN_HAS_ASL
 	      else if (statusUserFunction_[0]) 
 		clpSolver = dynamic_cast< OsiClpSolverInterface*> (babModel_->solver());

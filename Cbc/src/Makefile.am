@@ -117,7 +117,8 @@ cbc_LDFLAGS = -rpath $(libdir)
 
 AM_CPPFLAGS += -I`$(CYGPATH_W) $(CLPSRCDIR)/src` \
 	-I`$(CYGPATH_W) $(OSISRCDIR)/src/OsiClp` \
-	-I`$(CYGPATH_W) $(CLPOBJDIR)/inc`
+	-I`$(CYGPATH_W) $(CLPOBJDIR)/inc` \
+        -I`$(CYGPATH_W) $(CGLOBJDIR)/inc`	
 LIBS  += `cat $(CLPOBJDIR)/clp_addlibs.txt`
 
 if COIN_HAS_CPX

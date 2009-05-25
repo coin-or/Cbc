@@ -3738,8 +3738,10 @@ void CbcModel::branchAndBound(int doStatistics)
     // Solution now back in originalSolver
     delete solver_;
     solver_=originalSolver;
-    if (bestSolution_)
+    if (bestSolution_) {
+      bestObjective_ = solver_->getObjValue()*solver_->getObjSense();
       memcpy(bestSolution_,solver_->getColSolution(),n*sizeof(double));
+    }
     // put back original objects if there were any
     if (originalObject) {
       int iColumn;

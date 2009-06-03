@@ -2,9 +2,9 @@ BuildTools        https://projects.coin-or.org/svn/BuildTools/stable/0.5
 ThirdParty/ASL    https://projects.coin-or.org/svn/BuildTools/ThirdParty/ASL/stable/1.0
 ThirdParty/Blas   https://projects.coin-or.org/svn/BuildTools/ThirdParty/Blas/stable/1.0
 ThirdParty/Lapack https://projects.coin-or.org/svn/BuildTools/ThirdParty/Lapack/stable/1.0
-ThirdParty/Glpk   https://projects.coin-or.org/svn/BuildTools/ThirdParty/Glpk/stable/1.4
+ThirdParty/Glpk   https://projects.coin-or.org/svn/BuildTools/ThirdParty/Glpk/stable/1.5
 Data/Sample       https://projects.coin-or.org/svn/Data/stable/1.0/Sample
-CoinUtils         https://projects.coin-or.org/svn/CoinUtils/stable/2.6/CoinUtils
+CoinUtils         https://projects.coin-or.org/svn/CoinUtils/stable/2.5/CoinUtils
 Cgl               https://projects.coin-or.org/svn/Cgl/stable/0.54/Cgl
 Clp               https://projects.coin-or.org/svn/Clp/stable/1.10/Clp
 Osi               https://projects.coin-or.org/svn/Osi/stable/0.100/Osi

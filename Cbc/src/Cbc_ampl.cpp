@@ -1,3 +1,4 @@
+/* $Id$ */
 /****************************************************************
 Copyright (C) 1997-2000 Lucent Technologies
 Modifications for Coin -  Copyright (C) 2006, International Business Machines Corporation and others.

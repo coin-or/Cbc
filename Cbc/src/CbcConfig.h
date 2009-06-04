@@ -1,3 +1,4 @@
+/* $Id$ */
 /*
  * Include file for the configuration of Cbc.
  *

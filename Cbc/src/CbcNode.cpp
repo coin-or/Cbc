@@ -1,3 +1,4 @@
+/* $Id$ */
 // Copyright (C) 2002, International Business Machines
 // Corporation and others.  All Rights Reserved.
 #if defined(_MSC_VER)
@@ -3726,7 +3727,7 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
 	    if (!choiceObject) {
 	      choice.possibleBranch=NULL;
 	    } else {
-	      choiceObject = new CbcDynamicPseudoCostBranchingObject(*choiceObject);
+	      //choiceObject = new CbcDynamicPseudoCostBranchingObject(*choiceObject);
 	      choice.possibleBranch=choiceObject;
 	    }
 	    assert(doneHotStart);
@@ -3765,7 +3766,7 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
 	    if (!choiceObject) {
 	      choice.possibleBranch=NULL;
 	    } else {
-	      choiceObject = new CbcDynamicPseudoCostBranchingObject(*choiceObject);
+	      //choiceObject = new CbcDynamicPseudoCostBranchingObject(*choiceObject);
 	      choice.possibleBranch=choiceObject;
 	    }
 	    assert(doneHotStart);

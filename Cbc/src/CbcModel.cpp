@@ -1351,10 +1351,11 @@ void CbcModel::branchAndBound(int doStatistics)
 	clpSimplex->dropNames();
       }
       // no crunch if mostly continuous
-      //int numberColumns = solver_->getNumCols()+1000000; // fake for testing 
-      int numberColumns = solver_->getNumCols();
-      if (numberColumns>1000&&numberIntegers_*4<numberColumns)
-	clpSolver->setSpecialOptions(clpSolver->specialOptions()&(~1));
+      if ((clpSolver->specialOptions()&(1+8))!=(1+8)) {
+	int numberColumns = solver_->getNumCols();
+	if (numberColumns>1000&&numberIntegers_*4<numberColumns)
+	  clpSolver->setSpecialOptions(clpSolver->specialOptions()&(~1));
+      }
       //#define NO_CRUNCH
 #ifdef NO_CRUNCH
       printf("TEMP switching off crunch\n");

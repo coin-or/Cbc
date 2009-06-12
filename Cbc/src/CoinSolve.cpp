@@ -13,6 +13,24 @@
 #if CBC_OTHER_SOLVER==1
 #include "OsiCpxSolverInterface.hpp"
 #endif
+//#define CLP_DEBUG_MALLOC
+#ifdef CLP_DEBUG_MALLOC
+extern "C" void clp_memory(int type);
+extern "C" void * clp_malloc(int length);
+extern "C" void clp_free(void * array);
+#include <malloc.h>
+#include <exception>
+#include <new>
+void * operator new (size_t size) throw (std::bad_alloc)
+{
+  void * p = clp_malloc(size);
+  return p;
+}
+void operator delete (void *p) throw()
+{
+  clp_free(p);
+}
+#endif
 
 #include <cassert>
 #include <cstdio>
@@ -216,67 +234,58 @@ void fakeMain2 (ClpSimplex & model,OsiClpSolverInterface & osiSolver,int options
 // void CbcClpUnitTest (const CbcModel & saveModel);
 int main (int argc, const char *argv[])
 {
+  int returnCode=0;
+#ifdef CLP_DEBUG_MALLOC
+  clp_memory(0);
+#endif
+  {
 #ifndef CBC_OTHER_SOLVER
-  OsiClpSolverInterface solver1;
+    OsiClpSolverInterface solver1;
 #elif CBC_OTHER_SOLVER==1
-  OsiCpxSolverInterface solver1;
+    OsiCpxSolverInterface solver1;
 #endif
-  CbcModel model(solver1);
-  // define TEST_MESSAGE_HANDLER at top of file to check works on all messages
+    CbcModel model(solver1);
+    // define TEST_MESSAGE_HANDLER at top of file to check works on all messages
 #ifdef TEST_MESSAGE_HANDLER
-  MyMessageHandler2 messageHandler(&model);
-  std::cout<<"Testing derived message handler"<<std::endl;
-  model.passInMessageHandler(&messageHandler);
-  OsiClpSolverInterface * clpSolver = dynamic_cast< OsiClpSolverInterface*> (model.solver());
-  // Could use different handlers (if different log levels)
-  clpSolver->passInMessageHandler(&messageHandler);
-  //clpSolver->getModelPtr()->passInMessageHandler(&messageHandler);
+    MyMessageHandler2 messageHandler(&model);
+    std::cout<<"Testing derived message handler"<<std::endl;
+    model.passInMessageHandler(&messageHandler);
+    OsiClpSolverInterface * clpSolver = dynamic_cast< OsiClpSolverInterface*> (model.solver());
+    // Could use different handlers (if different log levels)
+    clpSolver->passInMessageHandler(&messageHandler);
+    //clpSolver->getModelPtr()->passInMessageHandler(&messageHandler);
 #endif
-  // initialize
-  CbcMain0(model);
+    // initialize
+    CbcMain0(model);
 #ifdef TEST_MESSAGE_HANDLER
-  // Set log levels same so can use one message handler
-  clpSolver->messageHandler()->setLogLevel(1) ;
-  model.messageHandler()->setLogLevel(1);
-  // switch off some printing
-  void setCbcOrClpPrinting(bool yesNo);
-  setCbcOrClpPrinting(false);
+    // Set log levels same so can use one message handler
+    clpSolver->messageHandler()->setLogLevel(1) ;
+    model.messageHandler()->setLogLevel(1);
+    // switch off some printing
+    void setCbcOrClpPrinting(bool yesNo);
+    setCbcOrClpPrinting(false);
 #endif
-  int returnCode = CbcMain1 (argc, argv,model);
-#if 0
-  /* The call to CbcClpUnitTest was moved into CbcMain1. To make sure
-     CbcMain1 behaves as it did before for any other call, I have added one more
-     argument to indicate that it was called from here. */
-  if (returnCode!=777) {
-    //const CoinWarmStartBasis* debugws =
-    //dynamic_cast <const CoinWarmStartBasis*>(model.solver()->getWarmStart()) ;
-    //debugws->print() ;
-    //delete debugws ; 
-    return returnCode;
-  } else {
-    // do miplib
-    CbcClpUnitTest(model);
-    return 0;
+    returnCode = CbcMain1 (argc, argv,model);
   }
-#else
+#ifdef CLP_DEBUG_MALLOC
+  clp_memory(1);
+#endif
   if (returnCode!=777) {
     return returnCode;
   } else {
     return 0;
   }
-#endif
 }
 #else
 #include "CbcSolver.hpp"
 void addAmplToCbc(CbcSolver *);
-extern bool malloc_counts_on;
-extern void stolen_from_ekk_memory(void * info,int type);
 int main (int argc, const char *argv[])
 {
   int returnCode;
   // Only active if malloc switched on in CbcSolver.cpp
-  stolen_from_ekk_memory(NULL,0);
-  malloc_counts_on=true;
+#ifdef CLP_DEBUG_MALLOC
+  clp_memory(0);
+#endif
   {
     OsiClpSolverInterface solver1;
     CbcSolver control(solver1);
@@ -287,8 +296,9 @@ int main (int argc, const char *argv[])
 #endif
     returnCode= control.solve (argc, argv, 1);
   }
-  stolen_from_ekk_memory(NULL,1);
-  malloc_counts_on=false; 
+#ifdef CLP_DEBUG_MALLOC
+  clp_memory(1);
+#endif
   return returnCode;
 }
 #endif

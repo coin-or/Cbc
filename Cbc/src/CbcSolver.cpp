@@ -34,6 +34,7 @@
 #include "ClpLinearObjective.hpp"
 #include "ClpPrimalColumnSteepest.hpp"
 #include "ClpPrimalColumnDantzig.hpp"
+
 #include "ClpPresolve.hpp"
 #include "CbcOrClpParam.hpp"
 #include "OsiRowCutDebugger.hpp"
@@ -41,7 +42,7 @@
 #include "OsiAuxInfo.hpp"
 // Version
 #ifndef CBCVERSION
-#define CBCVERSION "2.30.00"
+#define CBCVERSION "2.31.00"
 #endif
 //#define ORBITAL
 #ifdef ORBITAL
@@ -4815,6 +4816,9 @@ int
 	    case PFI:
 	      lpSolver->factorization()->setForrestTomlin(action==0);
 	      break;
+	    case FACTORIZATION:
+	      lpSolver->factorization()->forceOtherFactorization(action);
+	      break;
 	    case CRASH:
 	      doCrash=action;
 	      break;
@@ -8405,9 +8409,11 @@ int
                 delete [] bestSolution;
                 std::string statusName[]={"Finished","Stopped on ","Difficulties",
                                           "","","User ctrl-c"};
-                std::string minor[]={"","","gap","nodes","time","","solutions","user ctrl-c"};
+                std::string minor[]={"","","gap","nodes","time","","solutions","user ctrl-c","proven-infeasible"};
                 int iStat = babModel_->status();
                 int iStat2 = babModel_->secondaryStatus();
+		if (!iStat&&!iStat2&&!bestSolution)
+		  iStat2=8;
 		statistics_seconds=time2-time1;
 		statistics_sys_seconds=CoinSysTime();
 		statistics_elapsed_seconds=CoinWallclockTime();

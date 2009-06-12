@@ -2656,9 +2656,9 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
     choiceObject=new CbcDynamicPseudoCostBranchingObject(model,0,-1,0.5,object);
   }
   choice.possibleBranch=choiceObject;
-  int kkPass=0;
+  numberPassesLeft = CoinMax(numberPassesLeft,2);
   while(!finished) {
-    kkPass++;
+    numberPassesLeft--;
     finished=true;
     decision->initialize(model);
     // Some objects may compute an estimate of best solution from here
@@ -3958,8 +3958,9 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
   delete [] upEstimate;
   delete [] downEstimate;
 # ifdef COIN_HAS_CLP
-  if (osiclp) 
+  if (osiclp) {
     osiclp->setSpecialOptions(saveClpOptions);
+  }
 # endif
   // restore solution
   solver->setColSolution(saveSolution);

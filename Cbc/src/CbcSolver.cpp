@@ -8397,9 +8397,11 @@ int
                 delete [] bestSolution;
                 std::string statusName[]={"Finished","Stopped on ","Difficulties",
                                           "","","User ctrl-c"};
-                std::string minor[]={"","","gap","nodes","time","","solutions","user ctrl-c"};
+                std::string minor[]={"","","gap","nodes","time","","solutions","user ctrl-c","proven-infeasible"};
                 int iStat = babModel_->status();
                 int iStat2 = babModel_->secondaryStatus();
+		if (!iStat&&!iStat2&&!bestSolution)
+		  iStat2=8;
 		statistics_seconds=time2-time1;
 		statistics_sys_seconds=CoinSysTime();
 		statistics_elapsed_seconds=CoinWallclockTime();

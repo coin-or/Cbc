@@ -294,6 +294,7 @@ int CbcClpUnitTest (const CbcModel & saveModel, std::string& dirMiplib,
 	  clpMatrix->makeSpecialColumnCopy();
 	}
       }
+      model->checkModel();
       modelC->tightenPrimalBounds(0.0,0,true);
       model->initialSolve();
       if (modelC->dualBound()==1.0e10) {

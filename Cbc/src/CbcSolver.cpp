@@ -5874,6 +5874,24 @@ int
 #endif
 		  return returnCode;
 		}
+		if (clpSolver->status()>0) {
+		  // and in babModel if exists
+		  if (babModel_) {
+		    babModel_->setProblemStatus(iStatus);
+		    babModel_->setSecondaryStatus(iStatus2);
+		  } 
+		  if (!noPrinting_) {
+		    iStatus = clpSolver->status();
+		    const char * msg[]={"infeasible","unbounded","stopped",
+				      "difficulties","other"};
+		    sprintf(generalPrint,"Problem is %s - %.2f seconds",
+			    msg[iStatus-1],CoinCpuTime()-time1a);
+		    generalMessageHandler->message(CLP_GENERAL,generalMessages)
+		      << generalPrint
+		      <<CoinMessageEol;
+		  }
+		  break;
+		}
 		clpSolver->setSpecialOptions(clpSolver->specialOptions()|IN_BRANCH_AND_BOUND); // say is Cbc (and in branch and bound)
 #elif CBC_OTHER_SOLVER==1
 #endif

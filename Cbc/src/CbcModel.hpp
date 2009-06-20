@@ -1528,6 +1528,8 @@ public:
   /// Now we may not own objects - just point to solver's objects
   inline bool ownObjects() const
   { return ownObjects_;}
+  /// Check original model before it gets messed up
+  void checkModel();
   /// Pointer to a mutex 
   inline void * mutex()
   { return mutex_;}

@@ -938,9 +938,39 @@ CbcModel::analyzeObjective ()
 */
   double maximumCost = 0.0 ;
   trueIncrement=0.0;
-  bool possibleMultiple = continuousMultiplier!=0.0 ;
   int iColumn ;
   int numberColumns = getNumCols() ;
+  double scaleFactor=1.0; // due to rhs etc
+  if ((specialOptions_&65536)==0) {
+    /* be on safe side (later look carefully as may be able to 
+       to get 0.5 say if bounds are multiples of 0.5 */
+    for (iColumn = 0 ; iColumn < numberColumns ; iColumn++) {
+      if (upper[iColumn] > lower[iColumn]+1.0e-8) {
+	double value;
+	value=fabs(lower[iColumn]);
+	if (floor(value+0.5)!=value) {
+	  scaleFactor = CoinMin(scaleFactor,0.5);
+	  if (floor(2.0*value+0.5)!=2.0*value) {
+	    scaleFactor = CoinMin(scaleFactor,0.25);
+	    if (floor(4.0*value+0.5)!=4.0*value) {
+	      scaleFactor=0.0;
+	    }
+	  }
+	}
+	value=fabs(upper[iColumn]);
+	if (floor(value+0.5)!=value) {
+	  scaleFactor = CoinMin(scaleFactor,0.5);
+	  if (floor(2.0*value+0.5)!=2.0*value) {
+	    scaleFactor = CoinMin(scaleFactor,0.25);
+	    if (floor(4.0*value+0.5)!=4.0*value) {
+	      scaleFactor=0.0;
+	    }
+	  }
+	}
+      }
+    } 
+  }
+  bool possibleMultiple = continuousMultiplier!=0.0&&scaleFactor!=0.0 ;
   if (possibleMultiple) {
     for (iColumn = 0 ; iColumn < numberColumns ; iColumn++)
       { if (upper[iColumn] > lower[iColumn]+1.0e-8)
@@ -995,6 +1025,7 @@ CbcModel::analyzeObjective ()
       }
     }
     delete [] coeffMultiplier;
+    increment *= scaleFactor;
 /*
   If the increment beats the current value for objective change, install it.
 */
@@ -3969,6 +4000,8 @@ void
 CbcModel::initialSolve() 
 {
   assert (solver_);
+  // Check if bounds are all integral (as may get messed up later)
+  checkModel();
   assert (!solverCharacteristics_);
   OsiBabSolver * solverCharacteristics = dynamic_cast<OsiBabSolver *> (solver_->getAuxiliaryInfo());
   if (solverCharacteristics) {
@@ -11377,6 +11410,32 @@ CbcModel::originalModel(CbcModel * presolvedModel,bool weak)
   secondaryStatus_ = presolvedModel->secondaryStatus_;
   synchronizeModel();
 } 
+// Check original model before it gets messed up
+void 
+CbcModel::checkModel()
+{
+  int iColumn ;
+  int numberColumns = getNumCols() ;
+  const double *lower = getColLower() ;
+  const double *upper = getColUpper() ;
+  int setFlag=65536;
+  for (iColumn = 0 ; iColumn < numberColumns ; iColumn++) {
+    if (upper[iColumn] > lower[iColumn]+1.0e-8) {
+      double value;
+      value=fabs(lower[iColumn]);
+      if (floor(value+0.5)!=value) {
+	setFlag=0;
+	break;
+      }
+      value=fabs(upper[iColumn]);
+      if (floor(value+0.5)!=value) {
+	setFlag=0;
+	break;
+      }
+    }
+  } 
+  specialOptions_ |= setFlag;
+}
 // Pass in Message handler (not deleted at end)
 void 
 CbcModel::passInMessageHandler(CoinMessageHandler * handler)

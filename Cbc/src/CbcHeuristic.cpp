@@ -792,7 +792,7 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver,int numberNodes,
 	CbcModel model(*solver2);
 	if (numberNodes>=0) {
 	  // normal
-	  model_->setSpecialOptions(saveModelOptions|2048);
+	  model.setSpecialOptions(saveModelOptions|2048);
 	  if (logLevel<=1)
 	    model.setLogLevel(0);
 	  else
@@ -809,7 +809,7 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver,int numberNodes,
 	  model.setMaximumCutPassesAtRoot(CoinMin(20,CoinAbs(model_->getMaximumCutPassesAtRoot())));
 	  model.setMaximumCutPasses(CoinMin(10,model_->getMaximumCutPasses()));
 	} else {
-	  model_->setSpecialOptions(saveModelOptions);
+	  model.setSpecialOptions(saveModelOptions);
 	  model_->messageHandler()->message(CBC_RESTART,model_->messages())
 	    <<solver2->getNumRows()<<solver2->getNumCols()
 	    <<CoinMessageEol;

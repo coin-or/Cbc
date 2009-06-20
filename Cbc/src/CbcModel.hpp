@@ -1539,6 +1539,7 @@ public:
       13 bit (8192) - Funny cuts so do slow way (in other places)
       14 bit (16384) - Use Cplex! for fathoming
       15 bit (32768) - Try reduced model after 0 nodes
+      16 bit (65536) - Original model had integer bounds
   */
   /// Set special options
   inline void setSpecialOptions(int value)
@@ -1552,6 +1553,8 @@ public:
   /// Now we may not own objects - just point to solver's objects
   inline bool ownObjects() const
   { return ownObjects_;}
+  /// Check original model before it gets messed up
+  void checkModel();
   /// Pointer to a mutex 
   inline void * mutex()
   { return mutex_;}

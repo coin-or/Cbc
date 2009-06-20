@@ -749,6 +749,7 @@ CbcModel::analyzeObjective ()
 #endif
       }
     }
+    
     // But try again
     if (continuousMultiplier<1.0) {
       memset(rhs,0,numberRows*sizeof(double));
@@ -805,20 +806,29 @@ CbcModel::analyzeObjective ()
 		  singletonRow=false;
 		else if (rowLower[iRow]==rowUpper[iRow])
 		  equality=true;
-		if (fabs(rhs[iRow])>1.0e20||fabs(rhs[iRow]-floor(rhs[iRow]+0.5))>1.0e-10
+		double rhsValue = rhs[iRow];
+		double lowerValue = rowLower[iRow];
+		double upperValue = rowUpper[iRow];
+		if (rhsValue<1.0e20) {
+		  if(lowerValue>-1.0e20)
+		    lowerValue -= rhsValue;
+		  if(upperValue<1.0e20)
+		    upperValue -= rhsValue;
+		}
+		if (fabs(rhsValue)>1.0e20||fabs(rhsValue-floor(rhsValue+0.5))>1.0e-10
 		    ||fabs(element[j])!=1.0) {
 		  // no good
 		  allGood=false;
 		  break;
 		}
 		if (element[j]>0.0) {
-		  if (rowLower[iRow]>-1.0e20&&fabs(rowLower[iRow]-floor(rowLower[iRow]+0.5))>1.0e-10) {
+		  if (lowerValue>-1.0e20&&fabs(lowerValue-floor(lowerValue+0.5))>1.0e-10) {
 		    // no good
 		    allGood=false;
 		    break;
 		  }
 		} else {
-		  if (rowUpper[iRow]<1.0e20&&fabs(rowUpper[iRow]-floor(rowUpper[iRow]+0.5))>1.0e-10) {
+		  if (upperValue<1.0e20&&fabs(upperValue-floor(upperValue+0.5))>1.0e-10) {
 		    // no good
 		    allGood=false;
 		    break;
@@ -846,20 +856,29 @@ CbcModel::analyzeObjective ()
 		  singletonRow=false;
 		else if (rowLower[iRow]==rowUpper[iRow])
 		  equality=true;
-		if (fabs(rhs[iRow])>1.0e20||fabs(rhs[iRow]-floor(rhs[iRow]+0.5))>1.0e-10
+		double rhsValue = rhs[iRow];
+		double lowerValue = rowLower[iRow];
+		double upperValue = rowUpper[iRow];
+		if (rhsValue<1.0e20) {
+		  if(lowerValue>-1.0e20)
+		    lowerValue -= rhsValue;
+		  if(upperValue<1.0e20)
+		    upperValue -= rhsValue;
+		}
+		if (fabs(rhsValue)>1.0e20||fabs(rhsValue-floor(rhsValue +0.5))>1.0e-10
 		    ||fabs(element[j])!=1.0) {
 		  // no good
 		  allGood=false;
 		  break;
 		}
 		if (element[j]<0.0) {
-		  if (rowLower[iRow]>-1.0e20&&fabs(rowLower[iRow]-floor(rowLower[iRow]+0.5))>1.0e-10) {
+		  if (lowerValue>-1.0e20&&fabs(lowerValue-floor(lowerValue+0.5))>1.0e-10) {
 		    // no good
 		    allGood=false;
 		    break;
 		  }
 		} else {
-		  if (rowUpper[iRow]<1.0e20&&fabs(rowUpper[iRow]-floor(rowUpper[iRow]+0.5))>1.0e-10) {
+		  if (upperValue<1.0e20&&fabs(upperValue-floor(upperValue+0.5))>1.0e-10) {
 		    // no good
 		    allGood=false;
 		    break;
@@ -895,9 +914,39 @@ CbcModel::analyzeObjective ()
 */
   double maximumCost = 0.0 ;
   //double trueIncrement=0.0;
-  bool possibleMultiple = continuousMultiplier!=0.0 ;
   int iColumn ;
   int numberColumns = getNumCols() ;
+  double scaleFactor=1.0; // due to rhs etc
+  if ((specialOptions_&65536)==0) {
+    /* be on safe side (later look carefully as may be able to 
+       to get 0.5 say if bounds are multiples of 0.5 */
+    for (iColumn = 0 ; iColumn < numberColumns ; iColumn++) {
+      if (upper[iColumn] > lower[iColumn]+1.0e-8) {
+	double value;
+	value=fabs(lower[iColumn]);
+	if (floor(value+0.5)!=value) {
+	  scaleFactor = CoinMin(scaleFactor,0.5);
+	  if (floor(2.0*value+0.5)!=2.0*value) {
+	    scaleFactor = CoinMin(scaleFactor,0.25);
+	    if (floor(4.0*value+0.5)!=4.0*value) {
+	      scaleFactor=0.0;
+	    }
+	  }
+	}
+	value=fabs(upper[iColumn]);
+	if (floor(value+0.5)!=value) {
+	  scaleFactor = CoinMin(scaleFactor,0.5);
+	  if (floor(2.0*value+0.5)!=2.0*value) {
+	    scaleFactor = CoinMin(scaleFactor,0.25);
+	    if (floor(4.0*value+0.5)!=4.0*value) {
+	      scaleFactor=0.0;
+	    }
+	  }
+	}
+      }
+    } 
+  }
+  bool possibleMultiple = continuousMultiplier!=0.0&&scaleFactor!=0.0 ;
   if (possibleMultiple) {
     for (iColumn = 0 ; iColumn < numberColumns ; iColumn++)
       { if (upper[iColumn] > lower[iColumn]+1.0e-8)
@@ -952,6 +1001,7 @@ CbcModel::analyzeObjective ()
       }
     }
     delete [] coeffMultiplier;
+    increment *= scaleFactor;
 /*
   If the increment beats the current value for objective change, install it.
 */
@@ -3784,6 +3834,8 @@ void
 CbcModel::initialSolve() 
 {
   assert (solver_);
+  // Check if bounds are all integral (as may get messed up later)
+  checkModel();
   assert (!solverCharacteristics_);
   OsiBabSolver * solverCharacteristics = dynamic_cast<OsiBabSolver *> (solver_->getAuxiliaryInfo());
   if (solverCharacteristics) {
@@ -3798,6 +3850,8 @@ CbcModel::initialSolve()
   solver_->setHintParam(OsiDoInBranchAndCut,true,OsiHintDo,NULL) ;
   solver_->initialSolve();
   solver_->setHintParam(OsiDoInBranchAndCut,false,OsiHintDo,NULL) ;
+  if (!solver_->isProvenOptimal())
+    solver_->resolve();
   // But set up so Jon Lee will be happy
   status_=-1;
   secondaryStatus_ = -1;
@@ -14084,6 +14138,32 @@ CbcModel::originalModel(CbcModel * presolvedModel,bool weak)
   secondaryStatus_ = presolvedModel->secondaryStatus_;
   synchronizeModel();
 } 
+// Check original model before it gets messed up
+void 
+CbcModel::checkModel()
+{
+  int iColumn ;
+  int numberColumns = getNumCols() ;
+  const double *lower = getColLower() ;
+  const double *upper = getColUpper() ;
+  int setFlag=65536;
+  for (iColumn = 0 ; iColumn < numberColumns ; iColumn++) {
+    if (upper[iColumn] > lower[iColumn]+1.0e-8) {
+      double value;
+      value=fabs(lower[iColumn]);
+      if (floor(value+0.5)!=value) {
+	setFlag=0;
+	break;
+      }
+      value=fabs(upper[iColumn]);
+      if (floor(value+0.5)!=value) {
+	setFlag=0;
+	break;
+      }
+    }
+  } 
+  specialOptions_ |= setFlag;
+}
 #ifdef CBC_KEEP_DEPRECATED
 /* preProcess problem - replacing solver
    If makeEquality true then <= cliques converted to ==.

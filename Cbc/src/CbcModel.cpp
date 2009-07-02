@@ -1001,7 +1001,6 @@ CbcModel::analyzeObjective ()
       }
     }
     delete [] coeffMultiplier;
-    increment *= scaleFactor;
 /*
   If the increment beats the current value for objective change, install it.
 */
@@ -1014,6 +1013,7 @@ CbcModel::analyzeObjective ()
 	  value = increment;
 	}
 	value /= multiplier ;
+	value *= scaleFactor;
 	//trueIncrement=CoinMax(cutoff,value);;
 	if (value*0.999 > cutoff)
 	{ messageHandler()->message(CBC_INTEGERINCREMENT,
@@ -8018,6 +8018,10 @@ CbcModel::resolve(CbcNodeInfo * parent, int whereFrom,
 		  double * saveLower,
 		  double * saveUpper)
 {
+#ifdef CBC_STATISTICS
+  void cbc_resolve_check(const OsiSolverInterface * solver);
+  cbc_resolve_check(solver_);
+#endif
   // We may have deliberately added in violated cuts - check to avoid message
   int iRow;
   int numberRows = solver_->getNumRows();
@@ -10799,7 +10803,28 @@ CbcModel::resolve(OsiSolverInterface * solver)
     ClpSimplex * clpSimplex = clpSolver->getModelPtr();
     int save = clpSimplex->specialOptions();
     clpSimplex->setSpecialOptions(save|0x11000000); // say is Cbc (and in branch and bound)
+    int save2=clpSolver->specialOptions();
+    if (false&&(save2&2048)==0) {
+      // see if worthwhile crunching
+      int nFixed=0;
+      const double * columnLower = clpSimplex->columnLower();
+      const double * columnUpper = clpSimplex->columnUpper();
+      for (int i=0;i<numberIntegers_;i++) {
+	int iColumn = integerVariable_[i];
+	if (columnLower[iColumn]==columnUpper[iColumn])
+	  nFixed++;
+      }
+      if (nFixed*20<clpSimplex->numberColumns()) {
+	double d=nFixed;
+	printf("%d fixed out of %d - ratio %g\n",
+	       nFixed,
+	       clpSimplex->numberColumns(),
+	       d/clpSimplex->numberColumns());
+	clpSolver->setSpecialOptions(save2|2048);
+      }
+    }
     clpSolver->resolve();
+    clpSolver->setSpecialOptions(save2);
 #ifdef CLP_INVESTIGATE
     if (clpSimplex->numberIterations()>1000)
       printf("node %d took %d iterations\n",numberNodes_,clpSimplex->numberIterations());
@@ -11960,7 +11985,7 @@ CbcModel::doOneNode(CbcModel * baseModel, CbcNode * & node, CbcNode * & newNode)
       OsiClpSolverInterface * clpSolver 
 	= dynamic_cast<OsiClpSolverInterface *> (solver_);
       if ((clpSolver||(specialOptions_&16384)!=0)&&fastNodeDepth_<-1
-	  &&!parentModel_) {
+	  &&(specialOptions_&2048)==0) {
 #define FATHOM_BIAS -2
 	if (numberNodes_==1) {
 	  int numberNodesBeforeFathom = 500;
@@ -11991,7 +12016,7 @@ CbcModel::doOneNode(CbcModel * baseModel, CbcNode * & node, CbcNode * & newNode)
 	int go_fathom = FATHOM_BIAS+fastNodeDepth1;
 	if((specialOptions_&16384)!=0)
 	  numberNodesBeforeFathom = 0;
-	if (node->depth()>=go_fathom &&!parentModel_
+	if (node->depth()>=go_fathom &&(specialOptions_&2048)==0
 	    //if (node->depth()>=FATHOM_BIAS-fastNodeDepth_&&!parentModel_
 	    &&numberNodes_>=numberNodesBeforeFathom) {
 #ifndef COIN_HAS_CPX
@@ -12031,6 +12056,8 @@ CbcModel::doOneNode(CbcModel * baseModel, CbcNode * & node, CbcNode * & newNode)
 	    feasible = simplex->fathom(info)!=0;
 	    numberExtraNodes_ += info->numberNodesExplored_;
 	    numberExtraIterations_ += info->numberIterations_;
+	    if (info->numberNodesExplored_>10000)
+	      fastNodeDepth_ --;
 	    if (info->nNodes_<0) {
 	      // we gave up
 	      //abort();

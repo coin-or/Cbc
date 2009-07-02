@@ -261,6 +261,9 @@ int CbcClpUnitTest (const CbcModel & saveModel, std::string& dirMiplib,
       std::cout << "ERROR: Cannot find MPS file " << fn << "\n";
       continue;
     }
+    CoinDrand48(true,1234567);
+    //printf("RAND1 %g %g\n",CoinDrand48(true,1234567),model->randomNumberGenerator()->randomDouble());
+    //printf("RAND1 %g\n",CoinDrand48(true,1234567));
     model->solver()->readMps(fn.c_str(),"") ;
     assert(model->getNumRows() == nRows[m]) ;
     assert(model->getNumCols() == nCols[m]) ;
@@ -506,28 +509,30 @@ int CbcClpUnitTest (const CbcModel & saveModel, std::string& dirMiplib,
     }
     setCutAndHeuristicOptions(*model);
     if (si) {
-#ifdef CLP_MULTIPLE_FACTORIZATIONS   
-      int denseCode = stuff ? static_cast<int> (stuff[4]) : -1;
-      int smallCode = stuff ? static_cast<int> (stuff[10]) : -1;
-      if (stuff&&stuff[8]>=1) {
-	if (denseCode<0)
-	  denseCode=40;
-	if (smallCode<0)
-	  smallCode=40;
-      }
-      if (denseCode>0)
-	modelC->factorization()->setGoDenseThreshold(denseCode);
-      if (smallCode>0)
-	modelC->factorization()->setGoSmallThreshold(smallCode);
-      if (denseCode>=modelC->numberRows()) {
-	//printf("problem going dense\n");
-	//modelC->factorization()->goDenseOrSmall(modelC->numberRows());
+#ifdef CLP_MULTIPLE_FACTORIZATIONS
+      if (!modelC->factorization()->isDenseOrSmall()) {
+	int denseCode = stuff ? static_cast<int> (stuff[4]) : -1;
+	int smallCode = stuff ? static_cast<int> (stuff[10]) : -1;
+	if (stuff&&stuff[8]>=1) {
+	  if (denseCode<0)
+	    denseCode=40;
+	  if (smallCode<0)
+	    smallCode=40;
+	}
+	if (denseCode>0)
+	  modelC->factorization()->setGoDenseThreshold(denseCode);
+	if (smallCode>0)
+	  modelC->factorization()->setGoSmallThreshold(smallCode);
+	if (denseCode>=modelC->numberRows()) {
+	  //printf("problem going dense\n");
+	  //modelC->factorization()->goDenseOrSmall(modelC->numberRows());
+	}
       }
 #endif
       if (stuff&&stuff[8]>=1) {
-	if (modelC->numberColumns()+modelC->numberRows()<=500&&
+	if (modelC->numberColumns()+modelC->numberRows()<=100000&&
 	    model->fastNodeDepth()==-1) 
-	  model->setFastNodeDepth(-12);
+	  model->setFastNodeDepth(-7);
       }
     }
     //OsiObject * obj = new CbcBranchToFixLots(model,0.3,0.0,3,3000003);

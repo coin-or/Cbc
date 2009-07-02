@@ -155,32 +155,32 @@ public:
 
   /// Get whether the cut generator should be called in the normal place
   inline bool normal() const
-  { return normal_;}
+  { return (switches_&1)!=0;}
   /// Set whether the cut generator should be called in the normal place
   inline void setNormal(bool value) 
-  { normal_=value;}
+  { switches_&=~1;switches_ |= value ? 1 : 0;}
   /// Get whether the cut generator should be called when a solution is found
   inline bool atSolution() const
-  { return atSolution_;}
+  { return (switches_&2)!=0;}
   /// Set whether the cut generator should be called when a solution is found
   inline void setAtSolution(bool value) 
-  { atSolution_=value;}
+  { switches_&=~2;switches_ |= value ? 2 : 0;}
   /** Get whether the cut generator should be called when the subproblem is
       found to be infeasible.
   */
   inline bool whenInfeasible() const
-  { return whenInfeasible_;}
+  { return (switches_&4)!=0;}
   /** Set whether the cut generator should be called when the subproblem is
       found to be infeasible.
   */
   inline void setWhenInfeasible(bool value) 
-  { whenInfeasible_=value;}
+  { switches_&=~4;switches_ |= value ? 4 : 0;}
   /// Get whether the cut generator is being timed
   inline bool timing() const
-  { return timing_;}
+  { return (switches_&64)!=0;}
   /// Set whether the cut generator is being timed
   inline void setTiming(bool value) 
-  { timing_=value; timeInCutGenerator_=0.0;}
+  { switches_&=~64;switches_ |= value ? 64 : 0; timeInCutGenerator_=0.0;}
   /// Return time taken in cut generator
   inline double timeInCutGenerator() const
   { return timeInCutGenerator_;}
@@ -223,19 +223,22 @@ public:
   { return switchOffIfLessThan_;}
   /// Say if optimal basis needed
   inline bool needsOptimalBasis() const
-  { return generator_->needsOptimalBasis();}
+  { return (switches_&128)!=0;}
+  /// Set if optimal basis needed
+  inline void setNeedsOptimalBasis(bool yesNo)
+  { switches_&=~128;switches_ |= yesNo ? 128 : 0;}
   /// Whether generator MUST be called again if any cuts (i.e. ignore break from loop)
   inline bool mustCallAgain() const
-  { return mustCallAgain_;}
+  { return (switches_&8)!=0;}
   /// Set whether generator MUST be called again if any cuts (i.e. ignore break from loop)
   inline void setMustCallAgain(bool yesNo)
-  { mustCallAgain_=yesNo;}
+  { switches_&=~8;switches_ |= yesNo ? 8 : 0;}
   /// Whether generator switched off for moment
   inline bool switchedOff() const
-  { return switchedOff_;}
+  { return (switches_&16)!=0;}
   /// Set whether generator switched off for moment
   inline void setSwitchedOff(bool yesNo)
-  { switchedOff_=yesNo;}
+  { switches_&=~16;switches_ |= yesNo ? 16 : 0;}
   /// Number of cuts generated at root
   inline int numberCutsAtRoot() const
   { return numberCutsAtRoot_;}
@@ -252,11 +255,31 @@ public:
   //@}
   
 private:
+  /**@name Private gets and sets */
+  //@{
+  /// Whether global cuts at root
+  inline bool globalCutsAtRoot() const
+  { return (switches_&32)!=0;}
+  /// Set whether global cuts at root
+  inline void setGlobalCutsAtRoot(bool yesNo)
+  { switches_&=~32;switches_ |= yesNo ? 32 : 0;}
+  /// Whether global cuts
+  inline bool globalCuts() const
+  { return (switches_&256)!=0;}
+  /// Set whether global cuts
+  inline void setGlobalCuts(bool yesNo)
+  { switches_&=~256;switches_ |= yesNo ? 256 : 0;}
+  //@}
+  /// Time in cut generator
+  double timeInCutGenerator_;
   /// The client model
   CbcModel *model_;
 
   // The CglCutGenerator object
   CglCutGenerator * generator_;
+
+  /// Name of generator
+  char * generatorName_;
 
   /** Number of nodes between calls to the CglCutGenerator::generateCuts
      routine.
@@ -281,27 +304,6 @@ private:
   */
   int depthCutGeneratorInSub_;
 
-  /// Name of generator
-  char * generatorName_;
-
-  /// Whether to call the generator in the normal place
-  bool normal_;
-
-  /// Whether to call the generator when a new solution is found
-  bool atSolution_;
-
-  /// Whether to call generator when a subproblem is found to be infeasible
-  bool whenInfeasible_;
-  /// Whether generator MUST be called again if any cuts (i.e. ignore break from loop)
-  bool mustCallAgain_;
-  /// Temporary switch off marker
-  bool switchedOff_;
-  /// Create global cuts (at root)
-  bool globalCutsAtRoot_;
-  /// Whether call generator being timed
-  bool timing_;
-  /// Time in cut generator
-  double timeInCutGenerator_;
   /// Level of cut inaccuracy (0 means exact e.g. cliques)
   int inaccuracy_;
   /// Number times cut generator entered
@@ -316,6 +318,8 @@ private:
   int numberCutsAtRoot_;
   /// Number of cuts active at root
   int numberActiveCutsAtRoot_;
+  /// Switches - see gets and sets
+  int switches_;
 };
 /** Abstract cut modifier base class
 

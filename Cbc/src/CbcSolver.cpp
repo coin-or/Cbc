@@ -494,7 +494,7 @@ void CbcSolver::fillParameters()
 #endif
   // Set up likely cut generators and defaults
   parameters_[whichParam(PREPROCESS,numberParameters_,parameters_)].setCurrentOption("sos");
-  parameters_[whichParam(MIPOPTIONS,numberParameters_,parameters_)].setIntValue(1025);
+  parameters_[whichParam(MIPOPTIONS,numberParameters_,parameters_)].setIntValue(1057);
   parameters_[whichParam(CUTPASSINTREE,numberParameters_,parameters_)].setIntValue(1);
   parameters_[whichParam(MOREMIPOPTIONS,numberParameters_,parameters_)].setIntValue(-1);
   parameters_[whichParam(MAXHOTITS,numberParameters_,parameters_)].setIntValue(100);
@@ -3225,7 +3225,7 @@ void CbcMain0 (CbcModel  & model)
 #endif
   // Set up likely cut generators and defaults
   parameters[whichParam(PREPROCESS,numberParameters,parameters)].setCurrentOption("sos");
-  parameters[whichParam(MIPOPTIONS,numberParameters,parameters)].setIntValue(1025);
+  parameters[whichParam(MIPOPTIONS,numberParameters,parameters)].setIntValue(1057);
   parameters[whichParam(CUTPASSINTREE,numberParameters,parameters)].setIntValue(1);
   parameters[whichParam(MOREMIPOPTIONS,numberParameters,parameters)].setIntValue(-1);
   parameters[whichParam(MAXHOTITS,numberParameters,parameters)].setIntValue(100);
@@ -6544,7 +6544,7 @@ int
               int switches[20];
               int accuracyFlag[20];
               int numberGenerators=0;
-	      int translate[]={-100,-1,-99,-98,1,-1001,-1099,1,1,1,-1};
+	      int translate[]={-100,-1,-99,-98,1,-1098,-1099,1,1,1,-1};
               if (probingAction) {
 		probingGen.setMaxProbeRoot(CoinMin(2000,babModel_->solver()->getNumCols()));
 		probingGen.setMaxProbeRoot(123);
@@ -6811,7 +6811,7 @@ int
               // Turn this off if you get problems
               // Used to be automatically set
               int mipOptions = parameters_[whichParam(MIPOPTIONS,numberParameters_,parameters_)].intValue()%10000;
-              if (mipOptions!=(1025)) {
+              if (mipOptions!=(1057)) {
                 sprintf(generalPrint,"mip options %d",mipOptions);
 		generalMessageHandler->message(CLP_GENERAL,generalMessages)
 		  << generalPrint
@@ -7870,10 +7870,10 @@ int
 		lpSolver = osiclp->getModelPtr();
 #elif CBC_OTHER_SOLVER==1
 #endif
-		if (experimentFlag>=1||strategyFlag>=2) {
-		  if (babModel_->solver()->getNumCols()<200&&
-		      babModel_->solver()->getNumRows()<40) 
-		    babModel_->setFastNodeDepth(-9);
+		if ((experimentFlag>=1||strategyFlag>=1)&&babModel_->fastNodeDepth()==-1) {
+		  if (babModel_->solver()->getNumCols()+
+		      babModel_->solver()->getNumRows()<500) 
+		    babModel_->setFastNodeDepth(-12);
 		}
 		int heurOptions=parameters_[whichParam(HOPTIONS,numberParameters_,parameters_)].intValue();
 		if (heurOptions>100) 
@@ -7886,7 +7886,7 @@ int
 		if (bothFlags>=1) {
 		  if (denseCode<0)
 		    denseCode=40;
-		  if (smallCode<0)
+		  if (smallCode<0&&!lpSolver->factorization()->isDenseOrSmall())
 		    smallCode=40;
 		}
 		if (denseCode>0) {
@@ -7899,6 +7899,20 @@ int
 		//if (denseCode>=lpSolver->numberRows()) {
 		//lpSolver->factorization()->goDense();
 		//}
+#ifdef CLP_OSL
+		if (lpSolver->factorization()->goOslThreshold()>1000) {
+		  // use osl in gomory (may not if CglGomory decides not to)
+		  int numberGenerators = babModel_->numberCutGenerators();
+		  for (int iGenerator=0;iGenerator<numberGenerators;
+		       iGenerator++) {
+		    CbcCutGenerator * generator = babModel_->cutGenerator(iGenerator);
+		    CglGomory * gomory = dynamic_cast<CglGomory *>
+		      (generator->generator());
+		    if (gomory)
+		      gomory->useAlternativeFactorization();
+		  }
+		}
+#endif
 #endif
 #endif
 #ifdef CLIQUE_ANALYSIS
@@ -8056,6 +8070,20 @@ int
 		  osiclp = dynamic_cast< OsiClpSolverInterface*> (model_.solver());
 		  lpSolver = osiclp->getModelPtr();
 		  lpSolver->setSpecialOptions(lpSolver->specialOptions()|IN_BRANCH_AND_BOUND); // say is Cbc (and in branch and bound)
+#ifdef CLP_OSL
+		  if (lpSolver->factorization()->goOslThreshold()>1000) {
+		    // use osl in gomory (may not if CglGomory decides not to)
+		    int numberGenerators = model_.numberCutGenerators();
+		    for (int iGenerator=0;iGenerator<numberGenerators;
+			 iGenerator++) {
+		      CbcCutGenerator * generator = model_.cutGenerator(iGenerator);
+		      CglGomory * gomory = dynamic_cast<CglGomory *>
+			(generator->generator());
+		      if (gomory)
+			gomory->useAlternativeFactorization();
+		    }
+		  }
+#endif
 		}
 #endif
 		/* LL: this was done in CoinSolve.cpp: main(argc, argv).
@@ -10179,7 +10207,7 @@ clp watson.mps -\nscaling off\nprimalsimplex"
                       fprintf(fp,"%7d ",iRow);
                       if (lengthName)
                         fprintf(fp,format,rowNames[iRow].c_str());
-                      fprintf(fp,"%15.8g        %15.8g\n",primalRowSolution[iRow],
+                      fprintf(fp," %15.8g        %15.8g\n",primalRowSolution[iRow],
                               dualRowSolution[iRow]);
                     }
                   }
@@ -10223,7 +10251,7 @@ clp watson.mps -\nscaling off\nprimalsimplex"
 			fprintf(fp,"%7d ",iColumn);
 			if (lengthName)
 			  fprintf(fp,format,columnNames[iColumn].c_str());
-			fprintf(fp,"%15.8g        %15.8g\n",
+			fprintf(fp," %15.8g        %15.8g\n",
 				primalColumnSolution[iColumn],
 				dualColumnSolution[iColumn]);
 		      } else {
@@ -10231,8 +10259,8 @@ clp watson.mps -\nscaling off\nprimalsimplex"
 			if (lengthName)
 			  sprintf(temp,format,columnNames[iColumn].c_str());
 			else
-			  sprintf(temp,"%7d ",iColumn);
-			sprintf(temp+strlen(temp),",%15.8g",
+			  sprintf(temp,"%7d",iColumn);
+			sprintf(temp+strlen(temp),", %15.8g",
 				primalColumnSolution[iColumn]);
 			int n=strlen(temp);
 			int k=0;

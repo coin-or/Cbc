@@ -232,6 +232,23 @@ void fakeMain2 (ClpSimplex & model,OsiClpSolverInterface & osiSolver,int options
 //  End any fake main program
 //#############################################################################
 // void CbcClpUnitTest (const CbcModel & saveModel);
+#ifdef CBC_STATISTICS
+int osi_crunch=0;
+static int cbc_resolve=0;
+int osi_primal=0;
+int osi_dual=0;
+int osi_hot=0;
+void cbc_resolve_check(const OsiSolverInterface * solver)
+{
+  cbc_resolve++;
+  printf("R %d stats %d %d %d\n",
+	 cbc_resolve,solver->getNumRows(),solver->getNumCols(),
+	 solver->getMatrixByCol()->getNumElements());
+  if ((cbc_resolve%1000)==0)
+    printf("RR %d resolve crunch %d primal %d dual %d hot %d\n",
+	   cbc_resolve,osi_crunch,osi_primal,osi_dual,osi_hot);
+}
+#endif
 int main (int argc, const char *argv[])
 {
   int returnCode=0;
@@ -269,6 +286,8 @@ int main (int argc, const char *argv[])
   }
 #ifdef CLP_DEBUG_MALLOC
   clp_memory(1);
+#endif
+#ifdef CBC_STATISTICS
 #endif
   if (returnCode!=777) {
     return returnCode;

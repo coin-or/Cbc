@@ -25,29 +25,23 @@
 
 // Default Constructor 
 CbcCutGenerator::CbcCutGenerator ()
-  : model_(NULL),
+  : timeInCutGenerator_(0.0),
+    model_(NULL),
     generator_(NULL),
+    generatorName_(NULL),
     whenCutGenerator_(-1),
     whenCutGeneratorInSub_(-100),
     switchOffIfLessThan_(0),
     depthCutGenerator_(-1),
     depthCutGeneratorInSub_(-1),
-    generatorName_(NULL),
-    normal_(true),
-    atSolution_(false),
-    whenInfeasible_(false),
-    mustCallAgain_(false),
-    switchedOff_(false),
-    globalCutsAtRoot_(false),
-    timing_(false),
-    timeInCutGenerator_(0.0),
     inaccuracy_(0),
     numberTimes_(0),
     numberCuts_(0),
     numberColumnCuts_(0),
     numberCutsActive_(0),
     numberCutsAtRoot_(0),
-    numberActiveCutsAtRoot_(0)
+    numberActiveCutsAtRoot_(0),
+    switches_(1)
 {
 }
 // Normal constructor
@@ -58,28 +52,29 @@ CbcCutGenerator::CbcCutGenerator(CbcModel * model,CglCutGenerator * generator,
 				 int whatDepth, int whatDepthInSub,
                                  int switchOffIfLessThan)
   : 
+    timeInCutGenerator_(0.0),
     depthCutGenerator_(whatDepth),
     depthCutGeneratorInSub_(whatDepthInSub),
-    mustCallAgain_(false),
-    switchedOff_(false),
-    globalCutsAtRoot_(false),
-    timing_(false),
-    timeInCutGenerator_(0.0),
     inaccuracy_(0),
     numberTimes_(0),
     numberCuts_(0),
     numberColumnCuts_(0),
     numberCutsActive_(0),
     numberCutsAtRoot_(0),
-    numberActiveCutsAtRoot_(0)
+    numberActiveCutsAtRoot_(0),
+    switches_(1)
 {
-  if (howOften<-1000) {
-    globalCutsAtRoot_=true;
+  if (howOften<-2000) {
+    setGlobalCuts(true);
+    howOften+=2000;
+  } else if (howOften<-1000) {
+    setGlobalCutsAtRoot(true);
     howOften+=1000;
   }
   model_ = model;
   generator_=generator->clone();
   generator_->refreshSolver(model_->solver());
+  setNeedsOptimalBasis(generator_->needsOptimalBasis());
   whenCutGenerator_=howOften;
   whenCutGeneratorInSub_ = howOftenInSub;
   switchOffIfLessThan_=switchOffIfLessThan;
@@ -87,9 +82,9 @@ CbcCutGenerator::CbcCutGenerator(CbcModel * model,CglCutGenerator * generator,
     generatorName_=strdup(name);
   else
     generatorName_ = strdup("Unknown");
-  normal_=normal;
-  atSolution_=atSolution;
-  whenInfeasible_=infeasible;
+  setNormal(normal);
+  setAtSolution(atSolution);
+  setWhenInfeasible(infeasible);
 }
 
 // Copy constructor 
@@ -104,13 +99,7 @@ CbcCutGenerator::CbcCutGenerator ( const CbcCutGenerator & rhs)
   depthCutGenerator_=rhs.depthCutGenerator_;
   depthCutGeneratorInSub_ = rhs.depthCutGeneratorInSub_;
   generatorName_=strdup(rhs.generatorName_);
-  normal_=rhs.normal_;
-  atSolution_=rhs.atSolution_;
-  whenInfeasible_=rhs.whenInfeasible_;
-  mustCallAgain_ = rhs.mustCallAgain_;
-  switchedOff_ = rhs.switchedOff_;
-  globalCutsAtRoot_ = rhs.globalCutsAtRoot_;
-  timing_ = rhs.timing_;
+  switches_ = rhs.switches_;
   timeInCutGenerator_ = rhs.timeInCutGenerator_;
   inaccuracy_ = rhs.inaccuracy_;
   numberTimes_ = rhs.numberTimes_;
@@ -137,13 +126,7 @@ CbcCutGenerator::operator=( const CbcCutGenerator& rhs)
     depthCutGenerator_=rhs.depthCutGenerator_;
     depthCutGeneratorInSub_ = rhs.depthCutGeneratorInSub_;
     generatorName_=strdup(rhs.generatorName_);
-    normal_=rhs.normal_;
-    atSolution_=rhs.atSolution_;
-    whenInfeasible_=rhs.whenInfeasible_;
-    mustCallAgain_ = rhs.mustCallAgain_;
-    switchedOff_ = rhs.switchedOff_;
-    globalCutsAtRoot_ = rhs.globalCutsAtRoot_;
-    timing_ = rhs.timing_;
+    switches_ = rhs.switches_;
     timeInCutGenerator_ = rhs.timeInCutGenerator_;
     inaccuracy_ = rhs.inaccuracy_;
     numberTimes_ = rhs.numberTimes_;
@@ -228,7 +211,7 @@ CbcCutGenerator::generateCuts( OsiCuts & cs , int fullScan, OsiSolverInterface *
     }
 #endif
     double time1=0.0;
-    if (timing_)
+    if (timing())
       time1 = CoinCpuTime();
     //#define CBC_DEBUG
     int numberRowCutsBefore = cs.sizeRowCuts() ;
@@ -242,7 +225,9 @@ CbcCutGenerator::generateCuts( OsiCuts & cs , int fullScan, OsiSolverInterface *
     info.formulation_rows = model_->numberRowsAtContinuous();
     info.inTree = node!=NULL;
     info.randomNumberGenerator=randomNumberGenerator;
-    info.options=(globalCutsAtRoot_) ? 8 : 0;
+    info.options=(globalCutsAtRoot()) ? 8 : 0;
+    if (globalCuts())
+      info.options |=16;
     incrementNumberTimesEntered();
     CglProbing* generator =
       dynamic_cast<CglProbing*>(generator_);
@@ -257,7 +242,7 @@ CbcCutGenerator::generateCuts( OsiCuts & cs , int fullScan, OsiSolverInterface *
       CglTreeProbingInfo * info2 = model_->probingInfo();
       bool doCuts=false;
       if (info2&&!depth) {
-	info2->options=(globalCutsAtRoot_) ? 8 : 0;
+	info2->options=(globalCutsAtRoot()) ? 8 : 0;
 	info2->level = depth;
 	info2->pass = pass;
 	info2->formulation_rows = model_->numberRowsAtContinuous();
@@ -809,7 +794,7 @@ CbcCutGenerator::generateCuts( OsiCuts & cs , int fullScan, OsiSolverInterface *
       }
     }
 #endif
-    if (timing_)
+    if (timing())
       timeInCutGenerator_ += CoinCpuTime()-time1;
 #if 0
     // switch off if first time and no good

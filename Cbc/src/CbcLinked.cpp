@@ -7571,7 +7571,7 @@ CoinModel::expandKnapsack(int knapsackRow, int & numberOutput,double * buildObj,
       bool good=true;
       int nRow=0;
       double obj=objectiveOffset;
-      CoinZeroN(rowActivity,nRow);
+      // nRow is zero? CoinZeroN(rowActivity,nRow);
       for (iColumn=0;iColumn<numJ;iColumn++) {
 	int iValue = stack[iColumn];
 	if (iValue>bound[iColumn]) {

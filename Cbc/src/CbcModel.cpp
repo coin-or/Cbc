@@ -1025,7 +1025,7 @@ CbcModel::analyzeObjective ()
       }
     }
     delete [] coeffMultiplier;
-    increment *= scaleFactor;
+    increment = (int)(increment * scaleFactor);
 /*
   If the increment beats the current value for objective change, install it.
 */

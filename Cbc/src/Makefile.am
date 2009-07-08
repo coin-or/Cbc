@@ -98,6 +98,7 @@ cbc_SOURCES = \
 cbc_LDADD = libCbcSolver.la libCbc.la
 
 if COIN_HAS_CGL_PREINSTALLED
+  LIBS += -L`$(CYGPATH_W) $(CGLINSTDIR)/lib` -lCgl
 else
   cbc_LDADD += $(CGLOBJDIR)/src/libCgl.la
 endif
@@ -181,6 +182,7 @@ cbc_generic_SOURCES = \
 cbc_generic_LDADD = libCbcSolver.la libCbc.la
 
 if COIN_HAS_CGL_PREINSTALLED
+  LIBS += -L`$(CYGPATH_W) $(CGLINSTDIR)/lib` -lCgl
 else
   cbc_generic_LDADD += $(CGLOBJDIR)/src/libCgl.la
 endif
@@ -234,7 +236,7 @@ else
   AM_CPPFLAGS += -I`$(CYGPATH_W) $(DYLPSRCDIR)/src/Dylp` \
 	-I`$(CYGPATH_W) $(DYLPSRCDIR)/src/DylpStdLib` \
 	-I`$(CYGPATH_W) $(DYLPOBJDIR)/inc`
-  cbc_generic_LDADD += $(DYLPOBJDIR)/src/libDylp.la
+  cbc_generic_LDADD += $(DYLPOBJDIR)/src/Dylp/libDylp.la
   LIBS += `cat $(DYLPOBJDIR)/dylp_addlibs.txt`
 endif
 endif
@@ -318,7 +320,7 @@ if COIN_HAS_OSI_PREINSTALLED
   LIBS += -L`$(CYGPATH_W) $(OSIINSTDIR)/lib` -lOsiVol
 else
   AM_CPPFLAGS += -I`$(CYGPATH_W) $(OSISRCDIR)/src/OsiVol`
-  cbc_generic_LDADD += $(OSIOBJDIR)/src/OsiSym/libOsiVol.la
+  cbc_generic_LDADD += $(OSIOBJDIR)/src/OsiVol/libOsiVol.la
 endif
 if COIN_HAS_VOL_PREINSTALLED
   AM_CPPFLAGS += -I`$(CYGPATH_W) $(VOLINSTDIR)/include/coin`

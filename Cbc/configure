@@ -20557,13 +20557,16 @@ fi;
 # Check whether --with-coin-instdir or --without-coin-instdir was given.
 if test "${with_coin_instdir+set}" = set; then
   withval="$with_coin_instdir"
-  coin_has_cbc=installed
-		   if test -d "$withval"; then : ; else
+  if test -d "$withval"; then : ; else
 		     { { echo "$as_me:$LINENO: error: argument for --with-coin-instdir not a directory" >&5
 echo "$as_me: error: argument for --with-coin-instdir not a directory" >&2;}
    { (exit 1); exit 1; }; }
 		   fi
-                   CBCINSTDIR=`cd $withval; pwd`
+		   if test -r $withval/include/coin/CbcModel.hpp; then
+                        coin_has_cbc=installed
+			CBCINSTDIR=`cd $withval; pwd`
+                      fi
+
 fi;
     fi
 
@@ -20626,8 +20629,35 @@ if test $coin_has_cbc = installed; then
   echo "$as_me:$LINENO: result: installed in $CBCINSTDIR" >&5
 echo "${ECHO_T}installed in $CBCINSTDIR" >&6
   # Check for header
+  tmp=$CBCINSTDIR/include/coin
+                  echo "$as_me:$LINENO: checking whether header CbcModel.hpp is available in $tmp" >&5
+echo $ECHO_N "checking whether header CbcModel.hpp is available in $tmp... $ECHO_C" >&6
+                  if test -r $tmp/CbcModel.hpp; then
+		    echo "$as_me:$LINENO: result: yes" >&5
+echo "${ECHO_T}yes" >&6
+		  else
+		    echo "$as_me:$LINENO: result: no" >&5
+echo "${ECHO_T}no" >&6
+		    { { echo "$as_me:$LINENO: error: Header CbcModel.hpp not available in Cbc installation directory" >&5
+echo "$as_me: error: Header CbcModel.hpp not available in Cbc installation directory" >&2;}
+   { (exit 1); exit 1; }; }
+		  fi
 
   # Check for library (this is not qo reliable)
+  tmp=$CBCINSTDIR/lib
+                  echo "$as_me:$LINENO: checking whether library libCbc.* is available in $tmp" >&5
+echo $ECHO_N "checking whether library libCbc.* is available in $tmp... $ECHO_C" >&6
+		  bla=`ls $tmp/libCbc.* 2>/dev/null | head -n 1`
+		  if test x"$bla" = x; then
+		    echo "$as_me:$LINENO: result: no" >&5
+echo "${ECHO_T}no" >&6
+		    { { echo "$as_me:$LINENO: error: Library libCbc.* not available in Cbc installation directory" >&5
+echo "$as_me: error: Library libCbc.* not available in Cbc installation directory" >&2;}
+   { (exit 1); exit 1; }; }
+		  else
+		    echo "$as_me:$LINENO: result: found $bla" >&5
+echo "${ECHO_T}found $bla" >&6
+		  fi
 
 else
   echo "$as_me:$LINENO: result: $coin_has_cbc" >&5
@@ -20722,13 +20752,16 @@ fi;
 # Check whether --with-coin-instdir or --without-coin-instdir was given.
 if test "${with_coin_instdir+set}" = set; then
   withval="$with_coin_instdir"
-  coin_has_cgl=installed
-		   if test -d "$withval"; then : ; else
+  if test -d "$withval"; then : ; else
 		     { { echo "$as_me:$LINENO: error: argument for --with-coin-instdir not a directory" >&5
 echo "$as_me: error: argument for --with-coin-instdir not a directory" >&2;}
    { (exit 1); exit 1; }; }
 		   fi
-                   CGLINSTDIR=`cd $withval; pwd`
+		   if test -r $withval/include/coin/CglCutGenerator.hpp; then
+                        coin_has_cgl=installed
+			CGLINSTDIR=`cd $withval; pwd`
+                      fi
+
 fi;
     fi
 
@@ -20791,8 +20824,35 @@ if test $coin_has_cgl = installed; then
   echo "$as_me:$LINENO: result: installed in $CGLINSTDIR" >&5
 echo "${ECHO_T}installed in $CGLINSTDIR" >&6
   # Check for header
+  tmp=$CGLINSTDIR/include/coin
+                  echo "$as_me:$LINENO: checking whether header CglCutGenerator.hpp is available in $tmp" >&5
+echo $ECHO_N "checking whether header CglCutGenerator.hpp is available in $tmp... $ECHO_C" >&6
+                  if test -r $tmp/CglCutGenerator.hpp; then
+		    echo "$as_me:$LINENO: result: yes" >&5
+echo "${ECHO_T}yes" >&6
+		  else
+		    echo "$as_me:$LINENO: result: no" >&5
+echo "${ECHO_T}no" >&6
+		    { { echo "$as_me:$LINENO: error: Header CglCutGenerator.hpp not available in Cgl installation directory" >&5
+echo "$as_me: error: Header CglCutGenerator.hpp not available in Cgl installation directory" >&2;}
+   { (exit 1); exit 1; }; }
+		  fi
 
   # Check for library (this is not qo reliable)
+  tmp=$CGLINSTDIR/lib
+                  echo "$as_me:$LINENO: checking whether library libCgl.* is available in $tmp" >&5
+echo $ECHO_N "checking whether library libCgl.* is available in $tmp... $ECHO_C" >&6
+		  bla=`ls $tmp/libCgl.* 2>/dev/null | head -n 1`
+		  if test x"$bla" = x; then
+		    echo "$as_me:$LINENO: result: no" >&5
+echo "${ECHO_T}no" >&6
+		    { { echo "$as_me:$LINENO: error: Library libCgl.* not available in Cgl installation directory" >&5
+echo "$as_me: error: Library libCgl.* not available in Cgl installation directory" >&2;}
+   { (exit 1); exit 1; }; }
+		  else
+		    echo "$as_me:$LINENO: result: found $bla" >&5
+echo "${ECHO_T}found $bla" >&6
+		  fi
 
 else
   echo "$as_me:$LINENO: result: $coin_has_cgl" >&5
@@ -20887,13 +20947,16 @@ fi;
 # Check whether --with-coin-instdir or --without-coin-instdir was given.
 if test "${with_coin_instdir+set}" = set; then
   withval="$with_coin_instdir"
-  coin_has_clp=installed
-		   if test -d "$withval"; then : ; else
+  if test -d "$withval"; then : ; else
 		     { { echo "$as_me:$LINENO: error: argument for --with-coin-instdir not a directory" >&5
 echo "$as_me: error: argument for --with-coin-instdir not a directory" >&2;}
    { (exit 1); exit 1; }; }
 		   fi
-                   CLPINSTDIR=`cd $withval; pwd`
+		   if test -r $withval/include/coin/ClpNode.hpp; then
+                        coin_has_clp=installed
+			CLPINSTDIR=`cd $withval; pwd`
+                      fi
+
 fi;
     fi
 
@@ -20956,8 +21019,35 @@ if test $coin_has_clp = installed; then
   echo "$as_me:$LINENO: result: installed in $CLPINSTDIR" >&5
 echo "${ECHO_T}installed in $CLPINSTDIR" >&6
   # Check for header
+  tmp=$CLPINSTDIR/include/coin
+                  echo "$as_me:$LINENO: checking whether header ClpNode.hpp is available in $tmp" >&5
+echo $ECHO_N "checking whether header ClpNode.hpp is available in $tmp... $ECHO_C" >&6
+                  if test -r $tmp/ClpNode.hpp; then
+		    echo "$as_me:$LINENO: result: yes" >&5
+echo "${ECHO_T}yes" >&6
+		  else
+		    echo "$as_me:$LINENO: result: no" >&5
+echo "${ECHO_T}no" >&6
+		    { { echo "$as_me:$LINENO: error: Header ClpNode.hpp not available in Clp installation directory" >&5
+echo "$as_me: error: Header ClpNode.hpp not available in Clp installation directory" >&2;}
+   { (exit 1); exit 1; }; }
+		  fi
 
   # Check for library (this is not qo reliable)
+  tmp=$CLPINSTDIR/lib
+                  echo "$as_me:$LINENO: checking whether library libClp.* is available in $tmp" >&5
+echo $ECHO_N "checking whether library libClp.* is available in $tmp... $ECHO_C" >&6
+		  bla=`ls $tmp/libClp.* 2>/dev/null | head -n 1`
+		  if test x"$bla" = x; then
+		    echo "$as_me:$LINENO: result: no" >&5
+echo "${ECHO_T}no" >&6
+		    { { echo "$as_me:$LINENO: error: Library libClp.* not available in Clp installation directory" >&5
+echo "$as_me: error: Library libClp.* not available in Clp installation directory" >&2;}
+   { (exit 1); exit 1; }; }
+		  else
+		    echo "$as_me:$LINENO: result: found $bla" >&5
+echo "${ECHO_T}found $bla" >&6
+		  fi
 
 else
   echo "$as_me:$LINENO: result: $coin_has_clp" >&5
@@ -21052,13 +21142,16 @@ fi;
 # Check whether --with-coin-instdir or --without-coin-instdir was given.
 if test "${with_coin_instdir+set}" = set; then
   withval="$with_coin_instdir"
-  coin_has_coinutils=installed
-		   if test -d "$withval"; then : ; else
+  if test -d "$withval"; then : ; else
 		     { { echo "$as_me:$LINENO: error: argument for --with-coin-instdir not a directory" >&5
 echo "$as_me: error: argument for --with-coin-instdir not a directory" >&2;}
    { (exit 1); exit 1; }; }
 		   fi
-                   COINUTILSINSTDIR=`cd $withval; pwd`
+		   if test -r $withval/include/coin/CoinTime.hpp; then
+                        coin_has_coinutils=installed
+			COINUTILSINSTDIR=`cd $withval; pwd`
+                      fi
+
 fi;
     fi
 
@@ -21121,8 +21214,35 @@ if test $coin_has_coinutils = installed; then
   echo "$as_me:$LINENO: result: installed in $COINUTILSINSTDIR" >&5
 echo "${ECHO_T}installed in $COINUTILSINSTDIR" >&6
   # Check for header
+  tmp=$COINUTILSINSTDIR/include/coin
+                  echo "$as_me:$LINENO: checking whether header CoinTime.hpp is available in $tmp" >&5
+echo $ECHO_N "checking whether header CoinTime.hpp is available in $tmp... $ECHO_C" >&6
+                  if test -r $tmp/CoinTime.hpp; then
+		    echo "$as_me:$LINENO: result: yes" >&5
+echo "${ECHO_T}yes" >&6
+		  else
+		    echo "$as_me:$LINENO: result: no" >&5
+echo "${ECHO_T}no" >&6
+		    { { echo "$as_me:$LINENO: error: Header CoinTime.hpp not available in CoinUtils installation directory" >&5
+echo "$as_me: error: Header CoinTime.hpp not available in CoinUtils installation directory" >&2;}
+   { (exit 1); exit 1; }; }
+		  fi
 
   # Check for library (this is not qo reliable)
+  tmp=$COINUTILSINSTDIR/lib
+                  echo "$as_me:$LINENO: checking whether library libCoinUtils.* is available in $tmp" >&5
+echo $ECHO_N "checking whether library libCoinUtils.* is available in $tmp... $ECHO_C" >&6
+		  bla=`ls $tmp/libCoinUtils.* 2>/dev/null | head -n 1`
+		  if test x"$bla" = x; then
+		    echo "$as_me:$LINENO: result: no" >&5
+echo "${ECHO_T}no" >&6
+		    { { echo "$as_me:$LINENO: error: Library libCoinUtils.* not available in CoinUtils installation directory" >&5
+echo "$as_me: error: Library libCoinUtils.* not available in CoinUtils installation directory" >&2;}
+   { (exit 1); exit 1; }; }
+		  else
+		    echo "$as_me:$LINENO: result: found $bla" >&5
+echo "${ECHO_T}found $bla" >&6
+		  fi
 
 else
   echo "$as_me:$LINENO: result: $coin_has_coinutils" >&5
@@ -21217,13 +21337,16 @@ fi;
 # Check whether --with-coin-instdir or --without-coin-instdir was given.
 if test "${with_coin_instdir+set}" = set; then
   withval="$with_coin_instdir"
-  coin_has_dylp=installed
-		   if test -d "$withval"; then : ; else
+  if test -d "$withval"; then : ; else
 		     { { echo "$as_me:$LINENO: error: argument for --with-coin-instdir not a directory" >&5
 echo "$as_me: error: argument for --with-coin-instdir not a directory" >&2;}
    { (exit 1); exit 1; }; }
 		   fi
-                   DYLPINSTDIR=`cd $withval; pwd`
+		   if test -r $withval/include/coin/dylp.h; then
+                        coin_has_dylp=installed
+			DYLPINSTDIR=`cd $withval; pwd`
+                      fi
+
 fi;
     fi
 
@@ -21286,8 +21409,35 @@ if test $coin_has_dylp = installed; then
   echo "$as_me:$LINENO: result: installed in $DYLPINSTDIR" >&5
 echo "${ECHO_T}installed in $DYLPINSTDIR" >&6
   # Check for header
+  tmp=$DYLPINSTDIR/include/coin
+                  echo "$as_me:$LINENO: checking whether header dylp.h is available in $tmp" >&5
+echo $ECHO_N "checking whether header dylp.h is available in $tmp... $ECHO_C" >&6
+                  if test -r $tmp/dylp.h; then
+		    echo "$as_me:$LINENO: result: yes" >&5
+echo "${ECHO_T}yes" >&6
+		  else
+		    echo "$as_me:$LINENO: result: no" >&5
+echo "${ECHO_T}no" >&6
+		    { { echo "$as_me:$LINENO: error: Header dylp.h not available in DyLP installation directory" >&5
+echo "$as_me: error: Header dylp.h not available in DyLP installation directory" >&2;}
+   { (exit 1); exit 1; }; }
+		  fi
 
   # Check for library (this is not qo reliable)
+  tmp=$DYLPINSTDIR/lib
+                  echo "$as_me:$LINENO: checking whether library libDylp.* is available in $tmp" >&5
+echo $ECHO_N "checking whether library libDylp.* is available in $tmp... $ECHO_C" >&6
+		  bla=`ls $tmp/libDylp.* 2>/dev/null | head -n 1`
+		  if test x"$bla" = x; then
+		    echo "$as_me:$LINENO: result: no" >&5
+echo "${ECHO_T}no" >&6
+		    { { echo "$as_me:$LINENO: error: Library libDylp.* not available in DyLP installation directory" >&5
+echo "$as_me: error: Library libDylp.* not available in DyLP installation directory" >&2;}
+   { (exit 1); exit 1; }; }
+		  else
+		    echo "$as_me:$LINENO: result: found $bla" >&5
+echo "${ECHO_T}found $bla" >&6
+		  fi
 
 else
   echo "$as_me:$LINENO: result: $coin_has_dylp" >&5
@@ -21382,13 +21532,16 @@ fi;
 # Check whether --with-coin-instdir or --without-coin-instdir was given.
 if test "${with_coin_instdir+set}" = set; then
   withval="$with_coin_instdir"
-  coin_has_osi=installed
-		   if test -d "$withval"; then : ; else
+  if test -d "$withval"; then : ; else
 		     { { echo "$as_me:$LINENO: error: argument for --with-coin-instdir not a directory" >&5
 echo "$as_me: error: argument for --with-coin-instdir not a directory" >&2;}
    { (exit 1); exit 1; }; }
 		   fi
-                   OSIINSTDIR=`cd $withval; pwd`
+		   if test -r $withval/include/coin/OsiSolverInterface.hpp; then
+                        coin_has_osi=installed
+			OSIINSTDIR=`cd $withval; pwd`
+                      fi
+
 fi;
     fi
 
@@ -21451,8 +21604,35 @@ if test $coin_has_osi = installed; then
   echo "$as_me:$LINENO: result: installed in $OSIINSTDIR" >&5
 echo "${ECHO_T}installed in $OSIINSTDIR" >&6
   # Check for header
+  tmp=$OSIINSTDIR/include/coin
+                  echo "$as_me:$LINENO: checking whether header OsiSolverInterface.hpp is available in $tmp" >&5
+echo $ECHO_N "checking whether header OsiSolverInterface.hpp is available in $tmp... $ECHO_C" >&6
+                  if test -r $tmp/OsiSolverInterface.hpp; then
+		    echo "$as_me:$LINENO: result: yes" >&5
+echo "${ECHO_T}yes" >&6
+		  else
+		    echo "$as_me:$LINENO: result: no" >&5
+echo "${ECHO_T}no" >&6
+		    { { echo "$as_me:$LINENO: error: Header OsiSolverInterface.hpp not available in Osi installation directory" >&5
+echo "$as_me: error: Header OsiSolverInterface.hpp not available in Osi installation directory" >&2;}
+   { (exit 1); exit 1; }; }
+		  fi
 
   # Check for library (this is not qo reliable)
+  tmp=$OSIINSTDIR/lib
+                  echo "$as_me:$LINENO: checking whether library libOsi.* is available in $tmp" >&5
+echo $ECHO_N "checking whether library libOsi.* is available in $tmp... $ECHO_C" >&6
+		  bla=`ls $tmp/libOsi.* 2>/dev/null | head -n 1`
+		  if test x"$bla" = x; then
+		    echo "$as_me:$LINENO: result: no" >&5
+echo "${ECHO_T}no" >&6
+		    { { echo "$as_me:$LINENO: error: Library libOsi.* not available in Osi installation directory" >&5
+echo "$as_me: error: Library libOsi.* not available in Osi installation directory" >&2;}
+   { (exit 1); exit 1; }; }
+		  else
+		    echo "$as_me:$LINENO: result: found $bla" >&5
+echo "${ECHO_T}found $bla" >&6
+		  fi
 
 else
   echo "$as_me:$LINENO: result: $coin_has_osi" >&5
@@ -21547,13 +21727,16 @@ fi;
 # Check whether --with-coin-instdir or --without-coin-instdir was given.
 if test "${with_coin_instdir+set}" = set; then
   withval="$with_coin_instdir"
-  coin_has_vol=installed
-		   if test -d "$withval"; then : ; else
+  if test -d "$withval"; then : ; else
 		     { { echo "$as_me:$LINENO: error: argument for --with-coin-instdir not a directory" >&5
 echo "$as_me: error: argument for --with-coin-instdir not a directory" >&2;}
    { (exit 1); exit 1; }; }
 		   fi
-                   VOLINSTDIR=`cd $withval; pwd`
+		   if test -r $withval/include/coin/VolVolume.hpp; then
+                        coin_has_vol=installed
+			VOLINSTDIR=`cd $withval; pwd`
+                      fi
+
 fi;
     fi
 
@@ -21616,8 +21799,35 @@ if test $coin_has_vol = installed; then
   echo "$as_me:$LINENO: result: installed in $VOLINSTDIR" >&5
 echo "${ECHO_T}installed in $VOLINSTDIR" >&6
   # Check for header
+  tmp=$VOLINSTDIR/include/coin
+                  echo "$as_me:$LINENO: checking whether header VolVolume.hpp is available in $tmp" >&5
+echo $ECHO_N "checking whether header VolVolume.hpp is available in $tmp... $ECHO_C" >&6
+                  if test -r $tmp/VolVolume.hpp; then
+		    echo "$as_me:$LINENO: result: yes" >&5
+echo "${ECHO_T}yes" >&6
+		  else
+		    echo "$as_me:$LINENO: result: no" >&5
+echo "${ECHO_T}no" >&6
+		    { { echo "$as_me:$LINENO: error: Header VolVolume.hpp not available in Vol installation directory" >&5
+echo "$as_me: error: Header VolVolume.hpp not available in Vol installation directory" >&2;}
+   { (exit 1); exit 1; }; }
+		  fi
 
   # Check for library (this is not qo reliable)
+  tmp=$VOLINSTDIR/lib
+                  echo "$as_me:$LINENO: checking whether library libVol.* is available in $tmp" >&5
+echo $ECHO_N "checking whether library libVol.* is available in $tmp... $ECHO_C" >&6
+		  bla=`ls $tmp/libVol.* 2>/dev/null | head -n 1`
+		  if test x"$bla" = x; then
+		    echo "$as_me:$LINENO: result: no" >&5
+echo "${ECHO_T}no" >&6
+		    { { echo "$as_me:$LINENO: error: Library libVol.* not available in Vol installation directory" >&5
+echo "$as_me: error: Library libVol.* not available in Vol installation directory" >&2;}
+   { (exit 1); exit 1; }; }
+		  else
+		    echo "$as_me:$LINENO: result: found $bla" >&5
+echo "${ECHO_T}found $bla" >&6
+		  fi
 
 else
   echo "$as_me:$LINENO: result: $coin_has_vol" >&5
@@ -21712,13 +21922,16 @@ fi;
 # Check whether --with-coin-instdir or --without-coin-instdir was given.
 if test "${with_coin_instdir+set}" = set; then
   withval="$with_coin_instdir"
-  coin_has_symphony=installed
-		   if test -d "$withval"; then : ; else
+  if test -d "$withval"; then : ; else
 		     { { echo "$as_me:$LINENO: error: argument for --with-coin-instdir not a directory" >&5
 echo "$as_me: error: argument for --with-coin-instdir not a directory" >&2;}
    { (exit 1); exit 1; }; }
 		   fi
-                   SYMPHONYINSTDIR=`cd $withval; pwd`
+		   if test -r $withval/include/coin/symphony.h; then
+                        coin_has_symphony=installed
+			SYMPHONYINSTDIR=`cd $withval; pwd`
+                      fi
+
 fi;
     fi
 
@@ -21781,8 +21994,35 @@ if test $coin_has_symphony = installed; then
   echo "$as_me:$LINENO: result: installed in $SYMPHONYINSTDIR" >&5
 echo "${ECHO_T}installed in $SYMPHONYINSTDIR" >&6
   # Check for header
+  tmp=$SYMPHONYINSTDIR/include/coin
+                  echo "$as_me:$LINENO: checking whether header symphony.h is available in $tmp" >&5
+echo $ECHO_N "checking whether header symphony.h is available in $tmp... $ECHO_C" >&6
+                  if test -r $tmp/symphony.h; then
+		    echo "$as_me:$LINENO: result: yes" >&5
+echo "${ECHO_T}yes" >&6
+		  else
+		    echo "$as_me:$LINENO: result: no" >&5
+echo "${ECHO_T}no" >&6
+		    { { echo "$as_me:$LINENO: error: Header symphony.h not available in SYMPHONY installation directory" >&5
+echo "$as_me: error: Header symphony.h not available in SYMPHONY installation directory" >&2;}
+   { (exit 1); exit 1; }; }
+		  fi
 
   # Check for library (this is not qo reliable)
+  tmp=$SYMPHONYINSTDIR/lib
+                  echo "$as_me:$LINENO: checking whether library libSym.* is available in $tmp" >&5
+echo $ECHO_N "checking whether library libSym.* is available in $tmp... $ECHO_C" >&6
+		  bla=`ls $tmp/libSym.* 2>/dev/null | head -n 1`
+		  if test x"$bla" = x; then
+		    echo "$as_me:$LINENO: result: no" >&5
+echo "${ECHO_T}no" >&6
+		    { { echo "$as_me:$LINENO: error: Library libSym.* not available in SYMPHONY installation directory" >&5
+echo "$as_me: error: Library libSym.* not available in SYMPHONY installation directory" >&2;}
+   { (exit 1); exit 1; }; }
+		  else
+		    echo "$as_me:$LINENO: result: found $bla" >&5
+echo "${ECHO_T}found $bla" >&6
+		  fi
 
 else
   echo "$as_me:$LINENO: result: $coin_has_symphony" >&5

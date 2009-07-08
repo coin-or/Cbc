@@ -1,6 +1,6 @@
-/* $Id$ */
 // Copyright (C) 2007, International Business Machines
 // Corporation and others.  All Rights Reserved.
+/* $Id$ */
 
 #include "ClpConfig.h"
 #include "CbcConfig.h"
@@ -107,8 +107,7 @@ CbcAmpl::clone() const
 void 
 CbcAmpl::solve(CbcSolver * controlModel, const char * options)
 {
-  CbcModel * model = controlModel->model();
-  assert (model);
+  assert (controlModel->model());
   //OsiClpSolverInterface * clpSolver = dynamic_cast< OsiClpSolverInterface*> (model->solver());
   //ClpSimplex * lpSolver = clpSolver->getModelPtr();
   if (!strcmp(options,"cbc_load")) {
@@ -691,7 +690,10 @@ static bool eval_grad_f(void * amplInfo,int  n, const double * x, bool new_x, do
 static bool eval_g(void * amplInfo,int  n, const double * x, bool new_x, double * g)
 {
   CbcAmplInfo * info = (CbcAmplInfo *) amplInfo;
+#ifndef NDEBUG
   ASL_pfgh* asl = info->asl_;
+#endif
+  // warning: n_var is a macro that assumes we have a variable called asl
   assert(n == n_var);
   
   if (!apply_new_x(info,new_x, n, x)) {
@@ -1153,7 +1155,10 @@ ClpConstraintAmpl::ClpConstraintAmpl (int row, void * amplInfo)
   rowNumber_=row;
   amplInfo_ = amplInfo;
   CbcAmplInfo * info = (CbcAmplInfo *) amplInfo_;
+#ifndef NDEBUG
   ASL_pfgh* asl = info->asl_;
+#endif
+  // warning: nlc is a macro that assumes we have a variable called asl
   assert (rowNumber_<nlc);
   numberCoefficients_ = info->rowStart_[rowNumber_+1]-info->rowStart_[rowNumber_];
   column_ = CoinCopyOfArray(info->column_+info->rowStart_[rowNumber_],numberCoefficients_);
@@ -1231,8 +1236,7 @@ ClpConstraintAmpl::gradient(const ClpSimplex * model,
     if (!lastGradient_)
       lastGradient_ = new double[numberColumns];
     CoinZeroN(lastGradient_,numberColumns);
-    bool scaling=(model&&model->rowScale()&&useScaling);
-    assert (!scaling);
+    assert (!(model&&model->rowScale()&&useScaling));
     int i;
     int start = info->rowStart_[rowNumber_];
     assert (numberCoefficients_==info->rowStart_[rowNumber_+1]-start);

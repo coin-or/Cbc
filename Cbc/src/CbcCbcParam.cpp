@@ -1,2 +1,2 @@
-#  include "../../Clp/src/CbcOrClpParam.cpp"
+#  include "CbcOrClpParam.cpp"
 

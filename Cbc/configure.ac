@@ -56,14 +56,14 @@ AC_COIN_INIT_AUTO_TOOLS
 #                              COIN components                              #
 #############################################################################
 
-AC_COIN_HAS_PROJECT(Cbc, CbcModel.hpp, libCbc)
-AC_COIN_HAS_PROJECT(Cgl, CglCutGenerator.hpp, libCgl)
-AC_COIN_HAS_PROJECT(Clp, ClpNode.hpp, libClp)
-AC_COIN_HAS_PROJECT(CoinUtils, CoinTime.hpp, libCoinUtils)
-AC_COIN_HAS_PROJECT(DyLP, dylp.h, libDylp)
-AC_COIN_HAS_PROJECT(Osi, OsiSolverInterface.hpp, libOsi)
-AC_COIN_HAS_PROJECT(Vol, VolVolume.hpp, libVol)
-AC_COIN_HAS_PROJECT(SYMPHONY, symphony.h, libSym)
+AC_COIN_HAS_PROJECT(Cbc)
+AC_COIN_HAS_PROJECT(Cgl)
+AC_COIN_HAS_PROJECT(Clp)
+AC_COIN_HAS_PROJECT(CoinUtils)
+AC_COIN_HAS_PROJECT(DyLP)
+AC_COIN_HAS_PROJECT(Osi)
+AC_COIN_HAS_PROJECT(Vol)
+AC_COIN_HAS_PROJECT(SYMPHONY)
 
 # AC_COIN_HAS_PROJECT(Cpx)
 # What is this in the line above? 

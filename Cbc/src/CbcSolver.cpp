@@ -3770,7 +3770,9 @@ int
 #endif
 #if NEW_STYLE_SOLVER==0
   bool noPrinting_=noPrinting;
-#endif  
+#endif
+  // Say not in integer
+  int integerStatus=-1;
   // Say no resolve after cuts
   model_.setResolveAfterTakeOffCuts(false);
   // see if log in list
@@ -4991,6 +4993,8 @@ int
 	  case SOLVECONTINUOUS:
 	  case BARRIER:
 	    if (goodModel) {
+	      // Say not in integer
+	      integerStatus=-1;
               double objScale = 
                 parameters_[whichParam(OBJSCALE2,numberParameters_,parameters_)].doubleValue();
               if (objScale!=1.0) {
@@ -7899,7 +7903,6 @@ int
 		//if (denseCode>=lpSolver->numberRows()) {
 		//lpSolver->factorization()->goDense();
 		//}
-#ifdef CLP_OSL
 		if (lpSolver->factorization()->goOslThreshold()>1000) {
 		  // use osl in gomory (may not if CglGomory decides not to)
 		  int numberGenerators = babModel_->numberCutGenerators();
@@ -7912,7 +7915,6 @@ int
 		      gomory->useAlternativeFactorization();
 		  }
 		}
-#endif
 #endif
 #endif
 #ifdef CLIQUE_ANALYSIS
@@ -8070,7 +8072,6 @@ int
 		  osiclp = dynamic_cast< OsiClpSolverInterface*> (model_.solver());
 		  lpSolver = osiclp->getModelPtr();
 		  lpSolver->setSpecialOptions(lpSolver->specialOptions()|IN_BRANCH_AND_BOUND); // say is Cbc (and in branch and bound)
-#ifdef CLP_OSL
 		  if (lpSolver->factorization()->goOslThreshold()>1000) {
 		    // use osl in gomory (may not if CglGomory decides not to)
 		    int numberGenerators = model_.numberCutGenerators();
@@ -8083,7 +8084,6 @@ int
 			gomory->useAlternativeFactorization();
 		    }
 		  }
-#endif
 		}
 #endif
 		/* LL: this was done in CoinSolve.cpp: main(argc, argv).
@@ -8222,6 +8222,18 @@ int
               totalTime += time2-time1;
               // For best solution
               double * bestSolution = NULL;
+	      // Say in integer
+	      if (babModel_->status()) {
+		// treat as stopped
+		integerStatus=3;
+	      } else {
+		if (babModel_->isProvenOptimal()) {
+		  integerStatus=0;
+		} else {
+		  // infeasible
+		  integerStatus=6;
+		}
+	      }
               if (babModel_->getMinimizationObjValue()<1.0e50&&type==BAB) {
                 // post process
 		int n;
@@ -10057,6 +10069,8 @@ clp watson.mps -\nscaling off\nprimalsimplex"
 		  lpSolver->computeObjectiveValue(false);
 		  double objValue = lpSolver->getObjValue()*lpSolver->getObjSense();
 		  int iStat = lpSolver->status();
+		  if (integerStatus>=0) 
+		    iStat = integerStatus;
 		  if (iStat==0) {
 		    fprintf(fp, "Optimal" );
 		  } else if (iStat==1) {
@@ -10071,6 +10085,9 @@ clp watson.mps -\nscaling off\nprimalsimplex"
 		    fprintf(fp, "Stopped on difficulties" );
 		  } else if (iStat==5) {
 		    fprintf(fp, "Stopped on ctrl-c" );
+		  } else if (iStat==6) {
+		    // bab infeasible
+		    fprintf(fp, "Integer infeasible" );
 		  } else {
 		    fprintf(fp, "Status unknown" );
 		  }

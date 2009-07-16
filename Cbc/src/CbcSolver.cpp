@@ -6334,6 +6334,8 @@ int
                   }
 		}
 		if (!solver2) {
+		  // say infeasible for solution
+		  integerStatus=6;
 		  model_.setProblemStatus(0);
 		  model_.setSecondaryStatus(1);
 		  babModel_->setProblemStatus(0);

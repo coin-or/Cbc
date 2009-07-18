@@ -606,6 +606,10 @@ CbcCutGenerator::generateCuts( OsiCuts & cs , int fullScan, OsiSolverInterface *
 	int * which = new int [nCuts];
 	// For parallel cuts
 	double * element2 = new double [numberColumns];
+	//#define USE_OBJECTIVE
+#ifdef USE_OBJECTIVE
+	const double *objective = solver->getObjCoefficients() ;
+#endif
 	CoinZeroN(element2,numberColumns);
 	for (k = numberRowCutsBefore;k<numberRowCutsAfter;k++) {
 	  const OsiRowCut * thisCut = cs.rowCutPtr(k) ;
@@ -644,10 +648,17 @@ CbcCutGenerator::generateCuts( OsiCuts & cs , int fullScan, OsiSolverInterface *
 	    norm += UNS_WEIGHT*(normU-norm);
 #else
 	    double norm=1.0e-3;
+#ifdef USE_OBJECTIVE
+	    double normObj=0.0;
+#endif
 	    for (int i=0;i<n;i++) {
+	      int iColumn = column[i];
 	      double value = element[i];
-	      sum += value*solution[column[i]];
+	      sum += value*solution[iColumn];
 	      norm += value*value;
+#ifdef USE_OBJECTIVE
+	      normObj += value*objective[iColumn];
+#endif
 	    }
 #endif
 	    if (sum>thisCut->ub()) {
@@ -657,6 +668,15 @@ CbcCutGenerator::generateCuts( OsiCuts & cs , int fullScan, OsiSolverInterface *
 	    } else {
 	      sum=0.0;
 	    }
+#ifdef USE_OBJECTIVE
+	    if (sum) {
+	      normObj = CoinMax(1.0e-6,fabs(normObj));
+	      norm=sqrt(normObj*norm);
+	      //sum += fabs(normObj)*invObjNorm;
+	      //printf("sum %g norm %g normobj %g invNorm %g mod %g\n",
+	      //     sum,norm,normObj,invObjNorm,normObj*invObjNorm);
+	    }
+#endif
 	    // normalize
 	    sum /= sqrt(norm);
 	    //sum /= pow(norm,0.3);

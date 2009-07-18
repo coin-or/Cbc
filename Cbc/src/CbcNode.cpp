@@ -4753,7 +4753,7 @@ CbcNode::chooseClpBranch (CbcModel * model,
     double cutoff = model->getCutoff();
     bool goodSolution=true;
     if (simplex->status()) {
-      simplex->writeMps("bad7.mps",2);
+      //simplex->writeMps("bad7.mps",2);
       if (nodeInfo->objectiveValue()>cutoff-1.0e-2)
 	goodSolution=false;
       else

@@ -374,6 +374,16 @@ CbcHeuristicFPump::solution(double & solutionValue,
       secondPassOpt=0;
     }
   }
+  // Number of passes to do
+  int maximumPasses=maximumPasses_;
+#ifdef COIN_HAS_CLP
+  if (maximumPasses==30) {
+    OsiClpSolverInterface * clpSolver 
+      = dynamic_cast<OsiClpSolverInterface *> (model_->solver());
+    if (clpSolver&&clpSolver->fakeObjective())
+      maximumPasses=100; // feasibility problem?
+  }
+#endif
 #define RAND_RAND
 #ifdef RAND_RAND
   double * randomFactor = new double [numberColumns];
@@ -580,23 +590,23 @@ CbcHeuristicFPump::solution(double & solutionValue,
       }
       if (numberIterationsPass1>=0) {
 	int n = totalNumberIterations - numberIterationsLastPass;
-	if (n>CoinMax(15000,3*numberIterationsPass1)
-	    &&(switches_&2)==0&&maximumPasses_<200) {
+	if (n>CoinMax(20000,3*numberIterationsPass1)
+	    &&(switches_&2)==0&&maximumPasses<200) {
 	  exitAll=true;
 	}
       }
       // Exit on exact total number if maximumPasses large
-      if ((maximumPasses_>=200||(switches_&2)!=0)
+      if ((maximumPasses>=200||(switches_&2)!=0)
 	  &&numberPasses+totalNumberPasses>=
-	  maximumPasses_)
+	  maximumPasses)
 	exitAll=true;
       bool exitThis=false;
       if (iterationLimit<0.0) {
-	if (numberPasses>=maximumPasses_) {
-	  // If going well then keep going if maximumPasses_ small
+	if (numberPasses>=maximumPasses) {
+	  // If going well then keep going if maximumPasses small
 	  if (lastMove<numberPasses-4||lastMove==1000000)
 	    exitThis=true;
-	  if (maximumPasses_>20||numberPasses>=40)
+	  if (maximumPasses>20||numberPasses>=40)
 	    exitThis=true;
 	}
       } 
@@ -604,7 +614,7 @@ CbcHeuristicFPump::solution(double & solutionValue,
 	  &&numberPasses>15) {
 	  // exiting on iteration count
 	exitAll=true;
-      } else if (maximumPasses_<30&&numberPasses>100) {
+      } else if (maximumPasses<30&&numberPasses>100) {
 	// too many passes anyway
 	exitAll=true;
       }

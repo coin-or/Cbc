@@ -461,7 +461,13 @@ CbcHeuristicDive::solution(double & solutionValue,
       model_->setSpecialOptions(saveModelOptions|2048);
       solver->resolve();
       model_->setSpecialOptions(saveModelOptions);
-
+      if(!solver->isAbandoned()) {
+	numberSimplexIterations+=solver->getIterationCount();
+      } else {
+	numberSimplexIterations=maxSimplexIterations+1;
+	break;
+      }
+      
       if(!solver->isProvenOptimal()) {
 	if(numberAtBoundFixed > 0) {
 	  // Remove the bound fix for variables that were at bounds
@@ -514,7 +520,6 @@ CbcHeuristicDive::solution(double & solutionValue,
       break;
     }
 
-    numberSimplexIterations+=solver->getIterationCount();
     if(numberSimplexIterations > maxSimplexIterations) {
 #ifdef DIVE_DEBUG
       reasonToStop = 4;

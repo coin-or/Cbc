@@ -17,11 +17,6 @@
 //#define CHECK_NODE_FULL
 //#define NODE_LOG
 //#define GLOBAL_CUTS_JUST_POINTERS
-#ifndef CLP_FAST_CODE
-#ifdef NDEBUG
-#undef NDEBUG
-#endif
-#endif
 #include <cassert>
 #include <cmath>
 #include <cfloat>
@@ -460,12 +455,12 @@ CbcModel::analyzeObjective ()
     int iType=0;
     if (!numberContinuousObj&&numberIntegerObj<=5&&numberIntegerWeight<=100&&
 	numberIntegerObj*3<numberObjects_&&!parentModel_&&solver_->getNumRows()>100) 
-      iType=3;
+      iType=3+4;
     else if (!numberContinuousObj&&numberIntegerObj<=100&&
 	numberIntegerObj*5<numberObjects_&&numberIntegerWeight<=100&&
 	     !parentModel_&&
 	     solver_->getNumRows()>100&&cost!=-COIN_DBL_MAX) 
-      iType=2;
+      iType=2+4;
     else if (!numberContinuousObj&&numberIntegerObj<=100&&
 	numberIntegerObj*5<numberObjects_&&
 	     !parentModel_&&
@@ -548,9 +543,9 @@ CbcModel::analyzeObjective ()
 	  double lowerValue=lower[i];
 	  double upperValue=upper[i];
 	  double value = (randomCost) ? ceil((CoinDrand48()+0.5)*1000)
-	    : i+1;
+	    : i+1+columnLength[i]*1000;
 	  value *= 0.001;
-	  value += columnLength[i];
+	  //value += columnLength[i];
 	  if (lowerValue>-1.0e5||upperValue<1.0e5) {
 	    if (fabs(lowerValue)>fabs(upperValue))
 	      value = - value;
@@ -1925,6 +1920,8 @@ void CbcModel::branchAndBound(int doStatistics)
     feasible=false;
   }
 #endif
+  int saveNumberSolves=numberSolves_;
+  int saveNumberIterations=numberIterations_;
   if(fastNodeDepth_>=0&&/*!parentModel_*/(specialOptions_&2048)==0) {
     // add in a general depth object doClp
     int type = (fastNodeDepth_ <=100) ? fastNodeDepth_ : -(fastNodeDepth_-100);
@@ -2758,129 +2755,156 @@ void CbcModel::branchAndBound(int doStatistics)
     }
 #endif
     // If done 100 nodes see if worth trying reduction
-    if ((numberNodes_==50||numberNodes_==100)&&saveSolver) {
-      bool tryNewSearch=solverCharacteristics_->reducedCostsAccurate()&&
-	(getCutoff()<1.0e20&&getCutoff()<checkCutoffForRestart);
-      int numberColumns = getNumCols();
-      if (tryNewSearch) {
-	checkCutoffForRestart = getCutoff() ;
+    if (numberNodes_==50||numberNodes_==100) {
+#ifdef COIN_HAS_CLP
+      OsiClpSolverInterface * clpSolver 
+	= dynamic_cast<OsiClpSolverInterface *> (solver_);
+      if (clpSolver&&((specialOptions_&131072)==0)&&true) {
+	ClpSimplex * simplex = clpSolver->getModelPtr();
+	int perturbation = simplex->perturbation();
 #ifdef CLP_INVESTIGATE
-	printf("after %d nodes, cutoff %g - looking\n",
-	       numberNodes_,getCutoff());
+	printf("Testing its n,s %d %d solves n,s %d %d - pert %d\n",
+	       numberIterations_,saveNumberIterations,
+	       numberSolves_,saveNumberSolves,perturbation);
 #endif
-	saveSolver->resolve();
-	double direction = saveSolver->getObjSense() ;
-	double gap = checkCutoffForRestart - saveSolver->getObjValue()*direction ;
-	double tolerance;
-	saveSolver->getDblParam(OsiDualTolerance,tolerance) ;
-	if (gap<=0.0)
-	  gap = tolerance; 
-	gap += 100.0*tolerance;
-	double integerTolerance = getDblParam(CbcIntegerTolerance) ;
-	
-	const double *lower = saveSolver->getColLower() ;
-	const double *upper = saveSolver->getColUpper() ;
-	const double *solution = saveSolver->getColSolution() ;
-	const double *reducedCost = saveSolver->getReducedCost() ;
-	
-	int numberFixed = 0 ;
-	int numberFixed2=0;
-#ifdef COIN_DEVELOP
-	printf("gap %g\n",gap);
+	if (perturbation==50&&(numberIterations_-saveNumberIterations)<
+	    8*(numberSolves_-saveNumberSolves)) {
+	  // switch off perturbation
+	  simplex->setPerturbation(100);
+#ifdef PERTURB_IN_FATHOM
+	  // but allow in fathom 
+	  specialOptions_ |= 131072;
 #endif
-	for (int i = 0 ; i < numberIntegers_ ; i++) {
-	  int iColumn = integerVariable_[i] ;
-	  double djValue = direction*reducedCost[iColumn] ;
-	  if (upper[iColumn]-lower[iColumn] > integerTolerance) {
-	    if (solution[iColumn] < lower[iColumn]+integerTolerance && djValue > gap) {
-	      //printf("%d to lb on dj of %g - bounds %g %g\n",
-	      //     iColumn,djValue,lower[iColumn],upper[iColumn]);
-	      saveSolver->setColUpper(iColumn,lower[iColumn]) ;
-	      numberFixed++ ;
-	    } else if (solution[iColumn] > upper[iColumn]-integerTolerance && -djValue > gap) {
-	      //printf("%d to ub on dj of %g - bounds %g %g\n",
-	      //     iColumn,djValue,lower[iColumn],upper[iColumn]);
-	      saveSolver->setColLower(iColumn,upper[iColumn]) ;
-	      numberFixed++ ;
-	    }
-	  } else {
-	    //printf("%d has dj of %g - already fixed to %g\n",
-	    //     iColumn,djValue,lower[iColumn]);
-	    numberFixed2++;
-	  }
+#ifdef CLP_INVESTIGATE
+	  printf("Perturbation switched off\n");
+#endif
 	}
-#ifdef COIN_DEVELOP
-	if ((specialOptions_&1)!=0) {
-	  const OsiRowCutDebugger *debugger = saveSolver->getRowCutDebugger() ;
-	  if (debugger) { 
-	    printf("Contains optimal\n") ;
-	    saveSolver->writeMps("reduced");
-	  } else {
-	    abort();
-	  }
-	}
-	printf("Restart could fix %d integers (%d already fixed)\n",
-	       numberFixed+numberFixed2,numberFixed2);
-#endif
-	numberFixed += numberFixed2;
-	if (numberFixed*10<numberColumns)
-	  tryNewSearch=false;
       }
-      if (tryNewSearch) {
-	// back to solver without cuts?
-	OsiSolverInterface * solver2 = saveSolver->clone();
-	const double *lower = saveSolver->getColLower() ;
-	const double *upper = saveSolver->getColUpper() ;
-	for (int i = 0 ; i < numberIntegers_ ; i++) {
-	  int iColumn = integerVariable_[i] ;
-	  solver2->setColLower(iColumn,lower[iColumn]);
-	  solver2->setColUpper(iColumn,upper[iColumn]);
+#endif
+      if(saveSolver) {
+	bool tryNewSearch=solverCharacteristics_->reducedCostsAccurate()&&
+	  (getCutoff()<1.0e20&&getCutoff()<checkCutoffForRestart);
+	int numberColumns = getNumCols();
+	if (tryNewSearch) {
+	  checkCutoffForRestart = getCutoff() ;
+#ifdef CLP_INVESTIGATE
+	  printf("after %d nodes, cutoff %g - looking\n",
+		 numberNodes_,getCutoff());
+#endif
+	  saveSolver->resolve();
+	  double direction = saveSolver->getObjSense() ;
+	  double gap = checkCutoffForRestart - saveSolver->getObjValue()*direction ;
+	  double tolerance;
+	  saveSolver->getDblParam(OsiDualTolerance,tolerance) ;
+	  if (gap<=0.0)
+	    gap = tolerance; 
+	  gap += 100.0*tolerance;
+	  double integerTolerance = getDblParam(CbcIntegerTolerance) ;
+	  
+	  const double *lower = saveSolver->getColLower() ;
+	  const double *upper = saveSolver->getColUpper() ;
+	  const double *solution = saveSolver->getColSolution() ;
+	  const double *reducedCost = saveSolver->getReducedCost() ;
+	  
+	  int numberFixed = 0 ;
+	  int numberFixed2=0;
+#ifdef COIN_DEVELOP
+	  printf("gap %g\n",gap);
+#endif
+	  for (int i = 0 ; i < numberIntegers_ ; i++) {
+	    int iColumn = integerVariable_[i] ;
+	    double djValue = direction*reducedCost[iColumn] ;
+	    if (upper[iColumn]-lower[iColumn] > integerTolerance) {
+	      if (solution[iColumn] < lower[iColumn]+integerTolerance && djValue > gap) {
+		//printf("%d to lb on dj of %g - bounds %g %g\n",
+		//     iColumn,djValue,lower[iColumn],upper[iColumn]);
+		saveSolver->setColUpper(iColumn,lower[iColumn]) ;
+		numberFixed++ ;
+	      } else if (solution[iColumn] > upper[iColumn]-integerTolerance && -djValue > gap) {
+		//printf("%d to ub on dj of %g - bounds %g %g\n",
+		//     iColumn,djValue,lower[iColumn],upper[iColumn]);
+		saveSolver->setColLower(iColumn,upper[iColumn]) ;
+		numberFixed++ ;
+	      }
+	    } else {
+	      //printf("%d has dj of %g - already fixed to %g\n",
+	      //     iColumn,djValue,lower[iColumn]);
+	      numberFixed2++;
+	    }
+	  }
+#ifdef COIN_DEVELOP
+	  if ((specialOptions_&1)!=0) {
+	    const OsiRowCutDebugger *debugger = saveSolver->getRowCutDebugger() ;
+	    if (debugger) { 
+	      printf("Contains optimal\n") ;
+	      saveSolver->writeMps("reduced");
+	    } else {
+	      abort();
+	    }
+	  }
+	  printf("Restart could fix %d integers (%d already fixed)\n",
+		 numberFixed+numberFixed2,numberFixed2);
+#endif
+	  numberFixed += numberFixed2;
+	  if (numberFixed*10<numberColumns)
+	    tryNewSearch=false;
 	}
-	// swap
+	if (tryNewSearch) {
+	  // back to solver without cuts?
+	  OsiSolverInterface * solver2 = saveSolver->clone();
+	  const double *lower = saveSolver->getColLower() ;
+	  const double *upper = saveSolver->getColUpper() ;
+	  for (int i = 0 ; i < numberIntegers_ ; i++) {
+	    int iColumn = integerVariable_[i] ;
+	    solver2->setColLower(iColumn,lower[iColumn]);
+	    solver2->setColUpper(iColumn,upper[iColumn]);
+	  }
+	  // swap
+	  delete saveSolver;
+	  saveSolver=solver2;
+	  double * newSolution = new double[numberColumns];
+	  double objectiveValue=checkCutoffForRestart;
+	  CbcSerendipity heuristic(*this);
+	  if (bestSolution_)
+	    heuristic.setInputSolution(bestSolution_,bestObjective_);
+	  heuristic.setFractionSmall(0.6);
+	  heuristic.setFeasibilityPumpOptions(1008013);
+	  // Use numberNodes to say how many are original rows
+	  heuristic.setNumberNodes(continuousSolver_->getNumRows());
+#ifdef COIN_DEVELOP
+	  if (continuousSolver_->getNumRows()<
+	      solver_->getNumRows())
+	    printf("%d rows added ZZZZZ\n",
+		   solver_->getNumRows()-continuousSolver_->getNumRows());
+#endif
+	  int returnCode= heuristic.smallBranchAndBound(saveSolver,
+							-1,newSolution,
+							objectiveValue,
+							checkCutoffForRestart,"Reduce");
+	  if (returnCode<0) {
+#ifdef COIN_DEVELOP
+	    printf("Restart - not small enough to do search after fixing\n");
+#endif
+	    delete [] newSolution;
+	  } else {
+	    if ((returnCode&1)!=0) {
+	      // increment number of solutions so other heuristics can test
+	      numberSolutions_++;
+	      numberHeuristicSolutions_++;
+	      lastHeuristic_ = NULL;
+	      setBestSolution(CBC_ROUNDING,objectiveValue,newSolution) ;
+	    }
+	    delete [] newSolution;
+	    if (tree_->size()) {
+	      double dummyBest;
+	      tree_->cleanTree(this,-COIN_DBL_MAX,dummyBest) ;
+	    }
+	    break;
+	  }
+	} 
 	delete saveSolver;
-	saveSolver=solver2;
-	double * newSolution = new double[numberColumns];
-	double objectiveValue=checkCutoffForRestart;
-	CbcSerendipity heuristic(*this);
-	if (bestSolution_)
-	  heuristic.setInputSolution(bestSolution_,bestObjective_);
-	heuristic.setFractionSmall(0.6);
-	heuristic.setFeasibilityPumpOptions(1008013);
-	// Use numberNodes to say how many are original rows
-	heuristic.setNumberNodes(continuousSolver_->getNumRows());
-#ifdef COIN_DEVELOP
-	if (continuousSolver_->getNumRows()<
-	    solver_->getNumRows())
-	  printf("%d rows added ZZZZZ\n",
-		 solver_->getNumRows()-continuousSolver_->getNumRows());
-#endif
-	int returnCode= heuristic.smallBranchAndBound(saveSolver,
-						      -1,newSolution,
-						      objectiveValue,
-						      checkCutoffForRestart,"Reduce");
-	if (returnCode<0) {
-#ifdef COIN_DEVELOP
-	  printf("Restart - not small enough to do search after fixing\n");
-#endif
-	  delete [] newSolution;
-	} else {
-	  if ((returnCode&1)!=0) {
-	    // increment number of solutions so other heuristics can test
-	    numberSolutions_++;
-	    numberHeuristicSolutions_++;
-	    lastHeuristic_ = NULL;
-	    setBestSolution(CBC_ROUNDING,objectiveValue,newSolution) ;
-	  }
-	  delete [] newSolution;
-	  if (tree_->size()) {
-	    double dummyBest;
-	    tree_->cleanTree(this,-COIN_DBL_MAX,dummyBest) ;
-	  }
-	  break;
-	}
-      } 
-      delete saveSolver;
-      saveSolver=NULL;
+	saveSolver=NULL;
+      }
     }
 /*
   Check for abort on limits: node count, solution count, time, integrality gap.
@@ -6571,6 +6595,135 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
 	  }
 	}
       }
+      if (violated >=0&&feasible) {
+#if 0
+	//winnowCuts(theseCuts);
+	// look at all cuts here
+	int nCuts = theseCuts.sizeRowCuts() ;
+	int k ;
+	int nEls=0;
+	const double * solution = solver_->getColSolution();
+	int depth;
+	if (node)
+	  depth=node->depth();
+	else
+	  depth=0;
+	for (k = 0;k<nCuts;k++) {
+	  const OsiRowCut * thisCut = theseCuts.rowCutPtr(k) ;
+	  int n=thisCut->row().getNumElements();
+	  nEls+= n;
+	}
+	//printf("%s has %d cuts and %d elements\n",generatorName_,
+	//     nCuts,nEls);
+	int nElsNow = solver_->getMatrixByCol()->getNumElements();
+	int numberColumns = solver_->getNumCols();
+	int numberRows = solver_->getNumRows();
+	//double averagePerRow = static_cast<double>(nElsNow)/
+	//static_cast<double>(numberRows);
+	int nAdd;
+	int nAdd2;
+	int nReasonable;
+	if (!parentModel_&&depth<2) {
+	  nAdd=10000;
+	  if (currentPassNumber_>1)
+	    nAdd = CoinMin(nAdd,nElsNow+2*numberRows);
+	  nAdd2 = 5*numberColumns;
+	  nReasonable = CoinMax(nAdd2,nElsNow/8+nAdd);
+	} else {
+	  nAdd = 200;
+	  nAdd2 = 2*numberColumns;
+	  nReasonable = CoinMax(nAdd2,nElsNow/8+nAdd);
+	}
+#define SCALE_UP 5
+	nAdd *= SCALE_UP;
+	nReasonable *= SCALE_UP;
+	
+	if (nCuts>nAdd||nEls>nReasonable) {
+	  //printf("need to remove cuts\n");
+	  // just add most effective
+	  int nDelete = nEls - nReasonable;
+	  
+	  nElsNow = nEls;
+	  double * sort = new double [nCuts];
+	  int * which = new int [nCuts];
+	  // For parallel cuts
+	  double * element2 = new double [numberColumns];
+#define USE_OBJECTIVE
+#ifdef USE_OBJECTIVE
+	  const double *objective = solver_->getObjCoefficients() ;
+#endif
+	  CoinZeroN(element2,numberColumns);
+	  for (k = 0;k<nCuts;k++) {
+	    const OsiRowCut * thisCut = theseCuts.rowCutPtr(k) ;
+	    double sum=0.0;
+	    int n=thisCut->row().getNumElements();
+	    const int * column = thisCut->row().getIndices();
+	    const double * element = thisCut->row().getElements();
+	    double norm=1.0e-3;
+#ifdef USE_OBJECTIVE
+	    double normObj=0.0;
+#endif
+	    for (int i=0;i<n;i++) {
+	      int iColumn = column[i];
+	      double value = element[i];
+	      sum += value*solution[iColumn];
+	      norm += value*value;
+#ifdef USE_OBJECTIVE
+	      normObj += value*objective[iColumn];
+#endif
+	    }
+	    if (sum>thisCut->ub()) {
+	      sum= sum-thisCut->ub();
+	    } else if (sum<thisCut->lb()) {
+	      sum= thisCut->lb()-sum;
+	    } else {
+	      sum=0.0;
+	    }
+#ifdef USE_OBJECTIVE
+	    if (sum) {
+	      normObj = CoinMax(1.0e-6,fabs(normObj));
+	      norm=sqrt(normObj*norm);
+	      //sum += fabs(normObj)*invObjNorm;
+	      //printf("sum %g norm %g normobj %g invNorm %g mod %g\n",
+	      //     sum,norm,normObj,invObjNorm,normObj*invObjNorm);
+	    }
+#endif
+	    // normalize
+	    sum /= sqrt(norm);
+	    sort[k]=sum;
+	    which[k]=k;
+	  }
+	  CoinSort_2(sort,sort+nCuts,which);
+	  k=0;
+	  while (nDelete>0) {
+	    int iCut=which[k];
+	    const OsiRowCut * thisCut = theseCuts.rowCutPtr(iCut) ;
+	    int n=thisCut->row().getNumElements();
+	    nDelete-=n; 
+	    k++;
+	    if (k>=nCuts)
+	      break;
+	  }
+	  std::sort(which,which+k);
+	  k--;
+	  for (;k>=0;k--) {
+	    theseCuts.eraseRowCut(which[k]);
+	  }
+	  delete [] sort;
+	  delete [] which;
+	}
+#else
+	// delete null cuts
+	int nCuts = theseCuts.sizeRowCuts() ;
+	int k ;
+	for (k = nCuts-1;k>=0;k--) {
+	  const OsiRowCut * thisCut = theseCuts.rowCutPtr(k) ;
+	  int n=thisCut->row().getNumElements();
+	  if (!n)
+	    theseCuts.eraseRowCut(k);
+	}
+#endif
+      }
       // Add in any violated saved cuts
       if (!theseCuts.sizeRowCuts()&&!theseCuts.sizeColCuts()) {
 	int numberOld = theseCuts.sizeRowCuts()+lastNumberCuts;
@@ -10080,7 +10233,7 @@ CbcModel::feasibleSolution(int & numberIntegerInfeasibilities,
 			int & numberObjectInfeasibilities) const
 {
   int numberUnsatisfied=0;
-  double sumUnsatisfied=0.0;
+  //double sumUnsatisfied=0.0;
   int preferredWay;
   int j;
   // Point to current solution
@@ -10092,14 +10245,32 @@ CbcModel::feasibleSolution(int & numberIntegerInfeasibilities,
   // solver_->getNumCols()*sizeof(double));
   // point to useful information
   OsiBranchingInformation usefulInfo=usefulInformation();
+#define SIMPLE_INTEGER
+#ifdef SIMPLE_INTEGER
+  const double * solution = usefulInfo.solution_;
+  const double * lower = usefulInfo.lower_;
+  const double * upper = usefulInfo.upper_;
+  double tolerance = usefulInfo.integerTolerance_;
+#endif
   for (j=0;j<numberIntegers_;j++) {
+#ifndef SIMPLE_INTEGER
     const OsiObject * object = object_[j];
     double infeasibility = object->infeasibility(&usefulInfo,preferredWay);
     if (infeasibility) {
       assert (infeasibility>0);
       numberUnsatisfied++;
-      sumUnsatisfied += infeasibility;
+      //sumUnsatisfied += infeasibility;
     }
+#else
+    int iColumn=integerVariable_[j];
+    double value=solution[iColumn];
+    value = CoinMax(value, lower[iColumn]);
+    value = CoinMin(value, upper[iColumn]);
+    double nearest = floor(value+0.5);
+    if (fabs(value-nearest)>tolerance) {
+      numberUnsatisfied++;
+    }
+#endif
   }
   numberIntegerInfeasibilities = numberUnsatisfied;
   for (;j<numberObjects_;j++) {
@@ -10108,7 +10279,7 @@ CbcModel::feasibleSolution(int & numberIntegerInfeasibilities,
     if (infeasibility) {
       assert (infeasibility>0);
       numberUnsatisfied++;
-      sumUnsatisfied += infeasibility;
+      //sumUnsatisfied += infeasibility;
     }
   }
   // and restore
@@ -12053,16 +12224,31 @@ CbcModel::doOneNode(CbcModel * baseModel, CbcNode * & node, CbcNode * & newNode)
 	    if (strength!=OsiHintIgnore&&takeHint&&saveLevel==1)
 	      simplex->setLogLevel(0);
 	    clpSolver->setBasis();
+#ifdef PERTURB_IN_FATHOM
+	    int perturbation = simplex->perturbation();
+	    if ((specialOptions_&131072)!=0) {
+	      assert (perturbation==100);
+	      simplex->setPerturbation(50);
+	    }
+#endif
 	    feasible = simplex->fathom(info)!=0;
+#ifdef PERTURB_IN_FATHOM
+	    simplex->setPerturbation(perturbation);
+#endif
 	    numberExtraNodes_ += info->numberNodesExplored_;
 	    numberExtraIterations_ += info->numberIterations_;
-	    if (info->numberNodesExplored_>10000)
+	    if (info->numberNodesExplored_>10000) {
 	      fastNodeDepth_ --;
+#ifdef CLP_INVESTIGATE
+	      printf(">10000 - depth now %d so at depth >= %d\n",
+		     fastNodeDepth_,FATHOM_BIAS-fastNodeDepth_);
+#endif
+	    }
 	    if (info->nNodes_<0) {
 	      // we gave up
 	      //abort();
 	      fastNodeDepth_ -= 2;
-#ifdef COIN_DEVELOP
+#ifdef CLP_INVESTIGATE
 	      printf("fastNodeDepth now %d - so at depth >= %d\n",
 		     fastNodeDepth_,FATHOM_BIAS-fastNodeDepth_);
 #endif

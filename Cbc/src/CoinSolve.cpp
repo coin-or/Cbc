@@ -40,7 +40,7 @@ void operator delete (void *p) throw()
 #include <iostream>
 #ifdef CLP_FAST_CODE
 // force new style solver
-#ifndef NEW_STYLE_SOLVER
+#ifndef NEW_STYLE_SOLVER 
 #define NEW_STYLE_SOLVER 1
 #endif
 #else

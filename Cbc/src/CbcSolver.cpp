@@ -3291,11 +3291,9 @@ int
   if (useFpump>=kType&&useFpump<=kType+1) {
     anyToDo=true;
     CbcHeuristicFPump heuristic4(*model);
-    heuristic4.setFractionSmall(0.5);
-    double dextra3 = parameters_[whichParam(DEXTRA3,numberParameters_,parameters_)].doubleValue();
-    if (dextra3)
-      heuristic4.setFractionSmall(dextra3);
-    double dextra1 = parameters_[whichParam(DEXTRA1,numberParameters_,parameters_)].doubleValue();
+    double dextra3 = parameters_[whichParam(SMALLBAB,numberParameters_,parameters_)].doubleValue();
+    heuristic4.setFractionSmall(dextra3);
+    double dextra1 = parameters_[whichParam(ARTIFICIALCOST,numberParameters_,parameters_)].doubleValue();
     if (dextra1)
       heuristic4.setArtificialCost(dextra1);
     heuristic4.setMaximumPasses(parameters_[whichParam(FPUMPITS,numberParameters_,parameters_)].intValue());
@@ -3339,9 +3337,9 @@ int
 	double cutoff;
 	model->solver()->getDblParam(OsiDualObjectiveLimit,cutoff);
 	cutoff = CoinMin(cutoff,value + 0.05*fabs(value)*c);
-	double dextra1 = parameters_[whichParam(DEXTRA1,numberParameters_,parameters_)].doubleValue();
-	if (dextra1)
-	  cutoff=dextra1;
+	double fakeCutoff = parameters_[whichParam(FAKECUTOFF,numberParameters_,parameters_)].doubleValue();
+	if (fakeCutoff)
+	  cutoff=fakeCutoff;
 	heuristic4.setFakeCutoff(cutoff);
 	if (logLevel>1)
 	  printf("fake cutoff of %g ",cutoff);
@@ -3350,9 +3348,9 @@ int
 	// also set increment
 	//double increment = (0.01*i+0.005)*(fabs(value)+1.0e-12);
 	double increment = 0.0;
-	double dextra2 = parameters_[whichParam(DEXTRA2,numberParameters_,parameters_)].doubleValue();
-	if (dextra2)
-	  increment = dextra2;
+	double fakeIncrement = parameters_[whichParam(FAKEINCREMENT,numberParameters_,parameters_)].doubleValue();
+	if (fakeIncrement)
+	  increment = fakeIncrement;
 	heuristic4.setAbsoluteIncrement(increment);
 	heuristic4.setAccumulate(accumulate);
 	heuristic4.setMaximumRetries(r+1);
@@ -5505,8 +5503,8 @@ int
 					   parameters_)].intValue()>=1&&
 		    extra[1]==-1)
 		  extra[1]=999998;
-		dextra[1] = parameters_[whichParam(DEXTRA1,numberParameters_,parameters_)].doubleValue();
-		dextra[2] = parameters_[whichParam(DEXTRA2,numberParameters_,parameters_)].doubleValue();
+		dextra[1] = parameters_[whichParam(FAKEINCREMENT,numberParameters_,parameters_)].doubleValue();
+		dextra[2] = parameters_[whichParam(FAKECUTOFF,numberParameters_,parameters_)].doubleValue();
 		dextra[3] = parameters_[whichParam(DEXTRA3,numberParameters_,parameters_)].doubleValue();
 		dextra[4] = parameters_[whichParam(DEXTRA4,numberParameters_,parameters_)].doubleValue();
 		dextra[5] = parameters_[whichParam(DEXTRA5,numberParameters_,parameters_)].doubleValue();
@@ -6841,9 +6839,9 @@ int
 		  babModel_->setSpecialOptions(babModel_->specialOptions()|32768);
 		}
 		{
-		  int extra4 = parameters_[whichParam(EXTRA4,numberParameters_,parameters_)].intValue();
-		  if (extra4!=-1) 
-		    babModel_->setFastNodeDepth(extra4);
+		  int depthMiniBab = parameters_[whichParam(DEPTHMINIBAB,numberParameters_,parameters_)].intValue();
+		  if (depthMiniBab!=-1) 
+		    babModel_->setFastNodeDepth(depthMiniBab);
 		}
 		int moreMipOptions = parameters_[whichParam(MOREMIPOPTIONS,numberParameters_,parameters_)].intValue();
                 if (moreMipOptions>=0) {
@@ -7880,6 +7878,8 @@ int
 		  if (babModel_->solver()->getNumCols()+
 		      babModel_->solver()->getNumRows()<500) 
 		    babModel_->setFastNodeDepth(-12);
+		} else if (babModel_->fastNodeDepth()==-999) {
+		    babModel_->setFastNodeDepth(-1);
 		}
 		int heurOptions=parameters_[whichParam(HOPTIONS,numberParameters_,parameters_)].intValue();
 		if (heurOptions>100) 
@@ -8096,14 +8096,14 @@ int
 		*/
 		int extra1 = parameters_[whichParam(EXTRA1,numberParameters_,parameters_)].intValue();
 		double stuff[11];
-		stuff[0]=parameters_[whichParam(DEXTRA1,numberParameters_,parameters_)].doubleValue();
-		stuff[1]=parameters_[whichParam(DEXTRA2,numberParameters_,parameters_)].doubleValue();
+		stuff[0]=parameters_[whichParam(FAKEINCREMENT,numberParameters_,parameters_)].doubleValue();
+		stuff[1]=parameters_[whichParam(FAKECUTOFF,numberParameters_,parameters_)].doubleValue();
 		stuff[2]=parameters_[whichParam(DEXTRA3,numberParameters_,parameters_)].doubleValue();
 		stuff[3]=parameters_[whichParam(DEXTRA4,numberParameters_,parameters_)].doubleValue();
 		stuff[4]=parameters_[whichParam(DENSE,numberParameters_,parameters_)].intValue();
 		stuff[5]=parameters_[whichParam(EXTRA1,numberParameters_,parameters_)].intValue();
 		stuff[6]=parameters_[whichParam(EXTRA3,numberParameters_,parameters_)].intValue();
-		stuff[7]=parameters_[whichParam(EXTRA4,numberParameters_,parameters_)].intValue();
+		stuff[7]=parameters_[whichParam(DEPTHMINIBAB,numberParameters_,parameters_)].intValue();
 		stuff[8]=parameters_[whichParam(EXPERIMENT,numberParameters_,parameters_)].intValue();
 		stuff[8]=bothFlags;
 		stuff[9]=doVector;

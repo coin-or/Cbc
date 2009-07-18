@@ -1540,6 +1540,7 @@ public:
       14 bit (16384) - Use Cplex! for fathoming
       15 bit (32768) - Try reduced model after 0 nodes
       16 bit (65536) - Original model had integer bounds
+      17 bit (131072) - Perturbation switched off
   */
   /// Set special options
   inline void setSpecialOptions(int value)
@@ -1670,7 +1671,7 @@ public:
   void moveInfo(const CbcModel & rhs);
   //@}
 
-  ///@semi-private i.e. users should not use
+  /// semi-private i.e. users should not use
   //@{
     /// Get how many Nodes it took to solve the problem.
     int getNodeCount2() const

@@ -709,6 +709,7 @@ CbcSimpleIntegerDynamicPseudoCost::infeasibility(int & preferredWay) const
   // weight at 1.0 is max min
 #define WEIGHT_AFTER 0.8
 #define WEIGHT_BEFORE 0.1
+#define WEIGHT_PRODUCT
   if (fabs(value-nearest)<=integerTolerance) {
     if (priority_!=-999)
       return 0.0;
@@ -752,7 +753,11 @@ CbcSimpleIntegerDynamicPseudoCost::infeasibility(int & preferredWay) const
     } else {
       // some solution
       where='I';
+#ifndef WEIGHT_PRODUCT
       returnValue = WEIGHT_AFTER*minValue + (1.0-WEIGHT_AFTER)*maxValue;
+#else
+      returnValue = CoinMax(minValue,1.0e-8)*CoinMax(maxValue,1.0e-8);
+#endif
     }
     if (numberTimesUp_<numberBeforeTrust_||
         numberTimesDown_<numberBeforeTrust_) {
@@ -875,7 +880,11 @@ CbcSimpleIntegerDynamicPseudoCost::infeasibility(const OsiSolverInterface * solv
       returnValue = WEIGHT_BEFORE*minValue + (1.0-WEIGHT_BEFORE)*maxValue;
     } else {
       // some solution
+#ifndef WEIGHT_PRODUCT
       returnValue = WEIGHT_AFTER*minValue + (1.0-WEIGHT_AFTER)*maxValue;
+#else
+      returnValue = CoinMax(minValue,1.0e-8)*CoinMax(maxValue,1.0e-8);
+#endif
     }
     if (numberTimesUp_<numberBeforeTrust_||
         numberTimesDown_<numberBeforeTrust_) {
@@ -1832,7 +1841,7 @@ CbcBranchDynamicDecision::betterBranch(CbcBranchingObject * thisOne,
     }
 #endif
   } else {
-    //#define TRY_STUFF 2
+#define TRY_STUFF 2
 #if TRY_STUFF > 1
     // Get current number of infeasibilities, cutoff and current objective
     CbcNode * node = model->currentNode();
@@ -1849,7 +1858,11 @@ CbcBranchDynamicDecision::betterBranch(CbcBranchingObject * thisOne,
 #else
     //maxValue = CoinMin(maxValue,minValue*2.0);
 #endif
+#ifndef WEIGHT_PRODUCT
     value = WEIGHT_AFTER*minValue + (1.0-WEIGHT_AFTER)*maxValue;
+#else
+    value = CoinMax(minValue,1.0e-8)*CoinMax(maxValue,1.0e-8);
+#endif
     double useValue = value;
     double useBest = bestCriterion_;
 #if TRY_STUFF>1
@@ -1861,7 +1874,7 @@ CbcBranchDynamicDecision::betterBranch(CbcBranchingObject * thisOne,
 	useBest+0.1*distance>useValue&&useBest*1.1>useValue) {
       // not much in it - look at unsatisfied
       if (thisNumber<numberUnsatisfied||bestNumber<numberUnsatisfied) {
-	double perInteger = distance/ ((double) numberUnsatisfied);
+	double perInteger = distance/ (static_cast<double> (numberUnsatisfied));
 	useValue += thisNumber*perInteger;
 	useBest += bestNumber*perInteger;
       }

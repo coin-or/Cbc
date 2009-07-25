@@ -34,6 +34,12 @@
 /* Define to 1 if the Cplex package is available */
 #undef COIN_HAS_CPX
 
+/* Define to 1 if the Data/miplib3 package is used */
+#undef COIN_HAS_DATA_MIPLIB3
+
+/* Define to 1 if the Data/Sample package is used */
+#undef COIN_HAS_DATA_SAMPLE
+
 /* Define to 1 if the DyLP package is used */
 #undef COIN_HAS_DYLP
 

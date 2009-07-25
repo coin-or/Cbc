@@ -18,7 +18,26 @@ if COIN_HAS_CLP
   CBC_TEST_TGTS += test_cbc
 endif
 if CBC_BUILD_CBC_GENERIC
+if COIN_HAS_DATA_SAMPLE
   CBC_TEST_TGTS += test_cbc_generic
+endif
+endif
+
+TESTFLAGS =
+if COIN_HAS_DATA_SAMPLE
+if COIN_HAS_DATA_SAMPLE_PREINSTALLED
+  TESTFLAGS += -dirSample $(DATA_SAMPLEDATADIR)
+else
+  TESTFLAGS += -dirSample $(DATA_SAMPLEOBJDIR)
+endif
+endif
+TESTFLAGS += -unitTest
+if COIN_HAS_DATA_MIPLIB3
+if COIN_HAS_DATA_MIPLIB3_PREINSTALLED
+  TESTFLAGS += -dirMiplib $(DATA_MIPLIB3DATADIR) -miplib
+else
+  TESTFLAGS += -dirMiplib $(DATA_MIPLIB3OBJDIR) -miplib
+endif
 endif
 
 # We are using the solver executables to do the unit test
@@ -26,18 +45,25 @@ endif
 test: $(CBC_TEST_TGTS)
 
 test_cbc: ../src/cbc$(EXEEXT)
-	if test x"$(DIRMIPLIB)" != x; then \
-		MIPLIBARG="-dirMiplib $(DIRMIPLIB) -miplib"; \
-	fi; \
-	if test x"$(DIRSAMPLE)" != x; then \
-		SAMPLEARG="-dirSample $(DIRSAMPLE)"; \
-	fi; \
-	../src/cbc$(EXEEXT) $$SAMPLEARG -unitTest $$MIPLIBARG
+	@echo "calling cbc with flags $(TESTFLAGS)"
+	../src/cbc$(EXEEXT) $(TESTFLAGS)
 
+#	if test x"$(DIRMIPLIB)" != x; then \
+#		MIPLIBARG="-dirMiplib $(DIRMIPLIB) -miplib"; \
+#	fi; \
+#	if test x"$(DIRSAMPLE)" != x; then \
+#		SAMPLEARG="-dirSample $(DIRSAMPLE)"; \
+#	fi; 
+
+if COIN_HAS_DATA_SAMPLE_PREINSTALLED
 test_cbc_generic: ../src/cbc-generic$(EXEEXT)
 	echo "A minimal test is all that cbc-generic can manage just yet."
-	../src/cbc-generic$(EXEEXT) \
-	    -directory ../../Data/Sample -import p0033.mps -branch
+	../src/cbc-generic$(EXEEXT) -directory $(DATA_SAMPLEDATADIR) -import p0033.mps -branch
+else
+test_cbc_generic: ../src/cbc-generic$(EXEEXT)
+	echo "A minimal test is all that cbc-generic can manage just yet."
+	../src/cbc-generic$(EXEEXT) -directory $(DATA_SAMPLEOBJDIR) -import p0033.mps -branch
+endif
 
 gamstests: gamsTest$(EXEEXT)
 	./gamsTest$(EXEEXT)

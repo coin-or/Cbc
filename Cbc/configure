@@ -472,7 +472,7 @@ ac_includes_default="\
 # include <unistd.h>
 #endif"
 
-ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS build build_cpu build_vendor build_os ADDLIBS FADDLIBS ALWAYS_FALSE_TRUE ALWAYS_FALSE_FALSE CDEFS ADD_CFLAGS DBG_CFLAGS OPT_CFLAGS sol_cc_compiler CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT MPICC CXXDEFS ADD_CXXFLAGS DBG_CXXFLAGS OPT_CXXFLAGS CXX CXXFLAGS ac_ct_CXX MPICXX EGREP INSTALL_PROGRAM INSTALL_SCRIPT INSTALL_DATA CYGPATH_W PACKAGE VERSION ACLOCAL AUTOCONF AUTOMAKE AUTOHEADER MAKEINFO install_sh STRIP ac_ct_STRIP INSTALL_STRIP_PROGRAM mkdir_p AWK SET_MAKE am__leading_dot AMTAR am__tar am__untar DEPDIR am__include am__quote AMDEP_TRUE AMDEP_FALSE AMDEPBACKSLASH CCDEPMODE am__fastdepCC_TRUE am__fastdepCC_FALSE CXXDEPMODE am__fastdepCXX_TRUE am__fastdepCXX_FALSE MAINTAINER_MODE_TRUE MAINTAINER_MODE_FALSE MAINT LIBTOOLM4 have_autoconf have_automake have_svn BUILDTOOLSDIR AUX_DIR abs_source_dir abs_lib_dir abs_include_dir abs_bin_dir HAVE_EXTERNALS_TRUE HAVE_EXTERNALS_FALSE host host_cpu host_vendor host_os LN_S ECHO AR ac_ct_AR RANLIB ac_ct_RANLIB CPP CXXCPP F77 FFLAGS ac_ct_F77 LIBTOOL ac_c_preproc_warn_flag ac_cxx_preproc_warn_flag RPATH_FLAGS LT_LDFLAGS CBCSRCDIR CBCOBJDIR CBCDOCDIR CBCINSTDIR COIN_HAS_CBC_TRUE COIN_HAS_CBC_FALSE COIN_HAS_CBC_PREINSTALLED_TRUE COIN_HAS_CBC_PREINSTALLED_FALSE CGLSRCDIR CGLOBJDIR CGLDOCDIR CGLINSTDIR COIN_HAS_CGL_TRUE COIN_HAS_CGL_FALSE COIN_HAS_CGL_PREINSTALLED_TRUE COIN_HAS_CGL_PREINSTALLED_FALSE CLPSRCDIR CLPOBJDIR CLPDOCDIR CLPINSTDIR COIN_HAS_CLP_TRUE COIN_HAS_CLP_FALSE COIN_HAS_CLP_PREINSTALLED_TRUE COIN_HAS_CLP_PREINSTALLED_FALSE COINUTILSSRCDIR COINUTILSOBJDIR COINUTILSDOCDIR COINUTILSINSTDIR COIN_HAS_COINUTILS_TRUE COIN_HAS_COINUTILS_FALSE COIN_HAS_COINUTILS_PREINSTALLED_TRUE COIN_HAS_COINUTILS_PREINSTALLED_FALSE DYLPSRCDIR DYLPOBJDIR DYLPDOCDIR DYLPINSTDIR COIN_HAS_DYLP_TRUE COIN_HAS_DYLP_FALSE COIN_HAS_DYLP_PREINSTALLED_TRUE COIN_HAS_DYLP_PREINSTALLED_FALSE OSISRCDIR OSIOBJDIR OSIDOCDIR OSIINSTDIR COIN_HAS_OSI_TRUE COIN_HAS_OSI_FALSE COIN_HAS_OSI_PREINSTALLED_TRUE COIN_HAS_OSI_PREINSTALLED_FALSE VOLSRCDIR VOLOBJDIR VOLDOCDIR VOLINSTDIR COIN_HAS_VOL_TRUE COIN_HAS_VOL_FALSE COIN_HAS_VOL_PREINSTALLED_TRUE COIN_HAS_VOL_PREINSTALLED_FALSE SYMPHONYSRCDIR SYMPHONYOBJDIR SYMPHONYDOCDIR SYMPHONYINSTDIR COIN_HAS_SYMPHONY_TRUE COIN_HAS_SYMPHONY_FALSE COIN_HAS_SYMPHONY_PREINSTALLED_TRUE COIN_HAS_SYMPHONY_PREINSTALLED_FALSE CPXINCDIR CPXLIB COIN_HAS_CPX_TRUE COIN_HAS_CPX_FALSE FMPINCDIR FMPLIB COIN_HAS_FMP_TRUE COIN_HAS_FMP_FALSE MSKINCDIR MSKLIB COIN_HAS_MSK_TRUE COIN_HAS_MSK_FALSE OSLINCDIR OSLLIB COIN_HAS_OSL_TRUE COIN_HAS_OSL_FALSE SPXINCDIR SPXLIB COIN_HAS_SPX_TRUE COIN_HAS_SPX_FALSE XPRINCDIR XPRLIB COIN_HAS_XPR_TRUE COIN_HAS_XPR_FALSE GLPKINCDIR GLPKLIB COIN_HAS_GLPK_TRUE COIN_HAS_GLPK_FALSE COIN_BUILD_GLPK_TRUE COIN_BUILD_GLPK_FALSE ASLLIB ASL_CPPFLAGS COIN_HAS_ASL_TRUE COIN_HAS_ASL_FALSE CBC_BUILD_CBC_GENERIC_TRUE CBC_BUILD_CBC_GENERIC_FALSE LIBEXT VPATH_DISTCLEANFILES LIBOBJS LTLIBOBJS'
+ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS build build_cpu build_vendor build_os ADDLIBS FADDLIBS ALWAYS_FALSE_TRUE ALWAYS_FALSE_FALSE CDEFS ADD_CFLAGS DBG_CFLAGS OPT_CFLAGS sol_cc_compiler CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT MPICC CXXDEFS ADD_CXXFLAGS DBG_CXXFLAGS OPT_CXXFLAGS CXX CXXFLAGS ac_ct_CXX MPICXX EGREP INSTALL_PROGRAM INSTALL_SCRIPT INSTALL_DATA CYGPATH_W PACKAGE VERSION ACLOCAL AUTOCONF AUTOMAKE AUTOHEADER MAKEINFO install_sh STRIP ac_ct_STRIP INSTALL_STRIP_PROGRAM mkdir_p AWK SET_MAKE am__leading_dot AMTAR am__tar am__untar DEPDIR am__include am__quote AMDEP_TRUE AMDEP_FALSE AMDEPBACKSLASH CCDEPMODE am__fastdepCC_TRUE am__fastdepCC_FALSE CXXDEPMODE am__fastdepCXX_TRUE am__fastdepCXX_FALSE MAINTAINER_MODE_TRUE MAINTAINER_MODE_FALSE MAINT LIBTOOLM4 have_autoconf have_automake have_svn BUILDTOOLSDIR AUX_DIR abs_source_dir abs_lib_dir abs_include_dir abs_bin_dir HAVE_EXTERNALS_TRUE HAVE_EXTERNALS_FALSE host host_cpu host_vendor host_os LN_S ECHO AR ac_ct_AR RANLIB ac_ct_RANLIB CPP CXXCPP F77 FFLAGS ac_ct_F77 LIBTOOL ac_c_preproc_warn_flag ac_cxx_preproc_warn_flag RPATH_FLAGS LT_LDFLAGS CBCSRCDIR CBCOBJDIR CBCDOCDIR CBCDATADIR CBCINSTDIR COIN_HAS_CBC_TRUE COIN_HAS_CBC_FALSE COIN_HAS_CBC_PREINSTALLED_TRUE COIN_HAS_CBC_PREINSTALLED_FALSE CGLSRCDIR CGLOBJDIR CGLDOCDIR CGLDATADIR CGLINSTDIR COIN_HAS_CGL_TRUE COIN_HAS_CGL_FALSE COIN_HAS_CGL_PREINSTALLED_TRUE COIN_HAS_CGL_PREINSTALLED_FALSE CLPSRCDIR CLPOBJDIR CLPDOCDIR CLPDATADIR CLPINSTDIR COIN_HAS_CLP_TRUE COIN_HAS_CLP_FALSE COIN_HAS_CLP_PREINSTALLED_TRUE COIN_HAS_CLP_PREINSTALLED_FALSE COINUTILSSRCDIR COINUTILSOBJDIR COINUTILSDOCDIR COINUTILSDATADIR COINUTILSINSTDIR COIN_HAS_COINUTILS_TRUE COIN_HAS_COINUTILS_FALSE COIN_HAS_COINUTILS_PREINSTALLED_TRUE COIN_HAS_COINUTILS_PREINSTALLED_FALSE DYLPSRCDIR DYLPOBJDIR DYLPDOCDIR DYLPDATADIR DYLPINSTDIR COIN_HAS_DYLP_TRUE COIN_HAS_DYLP_FALSE COIN_HAS_DYLP_PREINSTALLED_TRUE COIN_HAS_DYLP_PREINSTALLED_FALSE OSISRCDIR OSIOBJDIR OSIDOCDIR OSIDATADIR OSIINSTDIR COIN_HAS_OSI_TRUE COIN_HAS_OSI_FALSE COIN_HAS_OSI_PREINSTALLED_TRUE COIN_HAS_OSI_PREINSTALLED_FALSE VOLSRCDIR VOLOBJDIR VOLDOCDIR VOLDATADIR VOLINSTDIR COIN_HAS_VOL_TRUE COIN_HAS_VOL_FALSE COIN_HAS_VOL_PREINSTALLED_TRUE COIN_HAS_VOL_PREINSTALLED_FALSE SYMPHONYSRCDIR SYMPHONYOBJDIR SYMPHONYDOCDIR SYMPHONYDATADIR SYMPHONYINSTDIR COIN_HAS_SYMPHONY_TRUE COIN_HAS_SYMPHONY_FALSE COIN_HAS_SYMPHONY_PREINSTALLED_TRUE COIN_HAS_SYMPHONY_PREINSTALLED_FALSE DATA_SAMPLESRCDIR DATA_SAMPLEOBJDIR DATA_SAMPLEDOCDIR DATA_SAMPLEDATADIR DATA_SAMPLEINSTDIR COIN_HAS_DATA_SAMPLE_TRUE COIN_HAS_DATA_SAMPLE_FALSE COIN_HAS_DATA_SAMPLE_PREINSTALLED_TRUE COIN_HAS_DATA_SAMPLE_PREINSTALLED_FALSE DATA_MIPLIB3SRCDIR DATA_MIPLIB3OBJDIR DATA_MIPLIB3DOCDIR DATA_MIPLIB3DATADIR DATA_MIPLIB3INSTDIR COIN_HAS_DATA_MIPLIB3_TRUE COIN_HAS_DATA_MIPLIB3_FALSE COIN_HAS_DATA_MIPLIB3_PREINSTALLED_TRUE COIN_HAS_DATA_MIPLIB3_PREINSTALLED_FALSE CPXINCDIR CPXLIB COIN_HAS_CPX_TRUE COIN_HAS_CPX_FALSE FMPINCDIR FMPLIB COIN_HAS_FMP_TRUE COIN_HAS_FMP_FALSE MSKINCDIR MSKLIB COIN_HAS_MSK_TRUE COIN_HAS_MSK_FALSE OSLINCDIR OSLLIB COIN_HAS_OSL_TRUE COIN_HAS_OSL_FALSE SPXINCDIR SPXLIB COIN_HAS_SPX_TRUE COIN_HAS_SPX_FALSE XPRINCDIR XPRLIB COIN_HAS_XPR_TRUE COIN_HAS_XPR_FALSE GLPKINCDIR GLPKLIB COIN_HAS_GLPK_TRUE COIN_HAS_GLPK_FALSE COIN_BUILD_GLPK_TRUE COIN_BUILD_GLPK_FALSE ASLLIB ASL_CPPFLAGS COIN_HAS_ASL_TRUE COIN_HAS_ASL_FALSE CBC_BUILD_CBC_GENERIC_TRUE CBC_BUILD_CBC_GENERIC_FALSE LIBEXT VPATH_DISTCLEANFILES LIBOBJS LTLIBOBJS'
 ac_subst_files=''
 
 # Initialize some variables set by options.
@@ -1164,6 +1164,24 @@ Optional Packages:
   --with-symphony-srcdir source directory for SYMPHONY package
   --with-symphony-objdir object directory for SYMPHONY package (if different
                           from source directory in VPATH compilation)
+  --with-data_sample-instdir
+                          prefix of installation directory for precompiled
+                          Data/Sample package
+  --with-data_sample-srcdir
+                          source directory for Data/Sample package
+  --with-data_sample-objdir
+                          object directory for Data/Sample package (if
+                          different from source directory in VPATH
+                          compilation)
+  --with-data_miplib3-instdir
+                          prefix of installation directory for precompiled
+                          Data/miplib3 package
+  --with-data_miplib3-srcdir
+                          source directory for Data/miplib3 package
+  --with-data_miplib3-objdir
+                          object directory for Data/miplib3 package (if
+                          different from source directory in VPATH
+                          compilation)
   --with-cplex-incdir specify the header file directory for library Cplex
   --with-cplex-lib specify the flags used to link with the library Cplex
   --with-fortmp-incdir specify the header file directory for library FortMP
@@ -5860,7 +5878,7 @@ ia64-*-hpux*)
   ;;
 *-*-irix6*)
   # Find out which ABI we are using.
-  echo '#line 5863 "configure"' > conftest.$ac_ext
+  echo '#line 5881 "configure"' > conftest.$ac_ext
   if { (eval echo "$as_me:$LINENO: \"$ac_compile\"") >&5
   (eval $ac_compile) 2>&5
   ac_status=$?
@@ -6994,7 +7012,7 @@ fi
 
 
 # Provide some information about the compiler.
-echo "$as_me:6997:" \
+echo "$as_me:7015:" \
      "checking for Fortran 77 compiler version" >&5
 ac_compiler=`set X $ac_compile; echo $2`
 { (eval echo "$as_me:$LINENO: \"$ac_compiler --version </dev/null >&5\"") >&5
@@ -8061,11 +8079,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:8064: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:8082: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:8068: \$? = $ac_status" >&5
+   echo "$as_me:8086: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -8329,11 +8347,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:8332: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:8350: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:8336: \$? = $ac_status" >&5
+   echo "$as_me:8354: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -8433,11 +8451,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:8436: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:8454: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:8440: \$? = $ac_status" >&5
+   echo "$as_me:8458: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -10778,7 +10796,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<EOF
-#line 10781 "configure"
+#line 10799 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -10878,7 +10896,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<EOF
-#line 10881 "configure"
+#line 10899 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -13222,11 +13240,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:13225: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:13243: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:13229: \$? = $ac_status" >&5
+   echo "$as_me:13247: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -13326,11 +13344,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:13329: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:13347: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:13333: \$? = $ac_status" >&5
+   echo "$as_me:13351: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -14896,11 +14914,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:14899: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:14917: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:14903: \$? = $ac_status" >&5
+   echo "$as_me:14921: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -15000,11 +15018,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:15003: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:15021: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:15007: \$? = $ac_status" >&5
+   echo "$as_me:15025: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -17207,11 +17225,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:17210: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:17228: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:17214: \$? = $ac_status" >&5
+   echo "$as_me:17232: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -17475,11 +17493,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:17478: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:17496: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:17482: \$? = $ac_status" >&5
+   echo "$as_me:17500: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -17579,11 +17597,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:17582: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:17600: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:17586: \$? = $ac_status" >&5
+   echo "$as_me:17604: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -20490,6 +20508,9 @@ echo $ECHO_N "checking for COIN project Cbc... $ECHO_C" >&6
 # First check, if the sub-project is actually available (ToDo: allow
 # other locations)
 
+#replace backslashes by underscore
+
+
 coin_has_cbc=notGiven
 if test x"$COIN_SKIP_PROJECTS" != x; then
   for dir in $COIN_SKIP_PROJECTS; do
@@ -20503,9 +20524,11 @@ fi
 
 
 
+
 CBCSRCDIR=This_Variable_Is_Not_Set
 CBCOBJDIR=This_Variable_Is_Not_Set
 CBCDOCDIR=This_Variable_Is_Not_Set
+CBCDATADIR=This_Variable_Is_Not_Set
 CBCINSTDIR=This_Variable_Is_Not_Set
 
 if test $coin_has_cbc != skipping; then
@@ -20513,7 +20536,7 @@ if test $coin_has_cbc != skipping; then
     coin_has_cbc=.
   else
 
-# Check whether --with-m4_tolower(Cbc)-instdir or --without-m4_tolower(Cbc)-instdir was given.
+# Check whether --with-m4_tolower(escape(Cbc))-instdir or --without-m4_tolower(escape(Cbc))-instdir was given.
 if test "${with_cbc_instdir+set}" = set; then
   withval="$with_cbc_instdir"
   coin_has_cbc=installed
@@ -20526,7 +20549,7 @@ echo "$as_me: error: argument for --with-cbc-instdir not a directory" >&2;}
 fi;
 
 
-# Check whether --with-m4_tolower(Cbc)-srcdir or --without-m4_tolower(Cbc)-srcdir was given.
+# Check whether --with-m4_tolower(escape(Cbc))-srcdir or --without-m4_tolower(escape(Cbc))-srcdir was given.
 if test "${with_cbc_srcdir+set}" = set; then
   withval="$with_cbc_srcdir"
   if test "$coin_has_cbc" = installed; then
@@ -20544,7 +20567,7 @@ echo "$as_me: error: argument for --with-cbc-srcdir not a directory" >&2;}
 fi;
 
 
-# Check whether --with-m4_tolower(Cbc)-objdir or --without-m4_tolower(Cbc)-objdir was given.
+# Check whether --with-m4_tolower(escape(Cbc))-objdir or --without-m4_tolower(escape(Cbc))-objdir was given.
 if test "${with_cbc_objdir+set}" = set; then
   withval="$with_cbc_objdir"
   if test "$coin_has_cbc" = installed; then
@@ -20604,15 +20627,18 @@ _ACEOF
 
   if test $coin_has_cbc = installed; then
     CBCDOCDIR=$CBCINSTDIR/share/doc/coin/Cbc
+    CBCDATADIR=$CBCINSTDIR/share/coin/Cbc
   else
     if test "$CBCOBJDIR" = This_Variable_Is_Not_Set; then
       # Set the variables for source and object code location
       CBCSRCDIR=`cd $srcdir/$coin_has_cbc; pwd`
       CBCOBJDIR=`pwd`/$coin_has_cbc
       CBCDOCDIR=$abs_lib_dir/../share/doc/coin/Cbc
+      CBCDATADIR=$CBCOBJDIR
     else
       # This is just a guess:
       CBCDOCDIR=$CBCOBJDIR/../share/doc/coin/Cbc
+      CBCDATADIR=$CBCOBJDIR/../share/coin/Cbc
     fi
   fi
 fi
@@ -20674,6 +20700,9 @@ echo $ECHO_N "checking for COIN project Cgl... $ECHO_C" >&6
 # First check, if the sub-project is actually available (ToDo: allow
 # other locations)
 
+#replace backslashes by underscore
+
+
 coin_has_cgl=notGiven
 if test x"$COIN_SKIP_PROJECTS" != x; then
   for dir in $COIN_SKIP_PROJECTS; do
@@ -20687,9 +20716,11 @@ fi
 
 
 
+
 CGLSRCDIR=This_Variable_Is_Not_Set
 CGLOBJDIR=This_Variable_Is_Not_Set
 CGLDOCDIR=This_Variable_Is_Not_Set
+CGLDATADIR=This_Variable_Is_Not_Set
 CGLINSTDIR=This_Variable_Is_Not_Set
 
 if test $coin_has_cgl != skipping; then
@@ -20697,7 +20728,7 @@ if test $coin_has_cgl != skipping; then
     coin_has_cgl=.
   else
 
-# Check whether --with-m4_tolower(Cgl)-instdir or --without-m4_tolower(Cgl)-instdir was given.
+# Check whether --with-m4_tolower(escape(Cgl))-instdir or --without-m4_tolower(escape(Cgl))-instdir was given.
 if test "${with_cgl_instdir+set}" = set; then
   withval="$with_cgl_instdir"
   coin_has_cgl=installed
@@ -20710,7 +20741,7 @@ echo "$as_me: error: argument for --with-cgl-instdir not a directory" >&2;}
 fi;
 
 
-# Check whether --with-m4_tolower(Cgl)-srcdir or --without-m4_tolower(Cgl)-srcdir was given.
+# Check whether --with-m4_tolower(escape(Cgl))-srcdir or --without-m4_tolower(escape(Cgl))-srcdir was given.
 if test "${with_cgl_srcdir+set}" = set; then
   withval="$with_cgl_srcdir"
   if test "$coin_has_cgl" = installed; then
@@ -20728,7 +20759,7 @@ echo "$as_me: error: argument for --with-cgl-srcdir not a directory" >&2;}
 fi;
 
 
-# Check whether --with-m4_tolower(Cgl)-objdir or --without-m4_tolower(Cgl)-objdir was given.
+# Check whether --with-m4_tolower(escape(Cgl))-objdir or --without-m4_tolower(escape(Cgl))-objdir was given.
 if test "${with_cgl_objdir+set}" = set; then
   withval="$with_cgl_objdir"
   if test "$coin_has_cgl" = installed; then
@@ -20788,15 +20819,18 @@ _ACEOF
 
   if test $coin_has_cgl = installed; then
     CGLDOCDIR=$CGLINSTDIR/share/doc/coin/Cgl
+    CGLDATADIR=$CGLINSTDIR/share/coin/Cgl
   else
     if test "$CGLOBJDIR" = This_Variable_Is_Not_Set; then
       # Set the variables for source and object code location
       CGLSRCDIR=`cd $srcdir/$coin_has_cgl; pwd`
       CGLOBJDIR=`pwd`/$coin_has_cgl
       CGLDOCDIR=$abs_lib_dir/../share/doc/coin/Cgl
+      CGLDATADIR=$CGLOBJDIR
     else
       # This is just a guess:
       CGLDOCDIR=$CGLOBJDIR/../share/doc/coin/Cgl
+      CGLDATADIR=$CGLOBJDIR/../share/coin/Cgl
     fi
   fi
 fi
@@ -20858,6 +20892,9 @@ echo $ECHO_N "checking for COIN project Clp... $ECHO_C" >&6
 # First check, if the sub-project is actually available (ToDo: allow
 # other locations)
 
+#replace backslashes by underscore
+
+
 coin_has_clp=notGiven
 if test x"$COIN_SKIP_PROJECTS" != x; then
   for dir in $COIN_SKIP_PROJECTS; do
@@ -20871,9 +20908,11 @@ fi
 
 
 
+
 CLPSRCDIR=This_Variable_Is_Not_Set
 CLPOBJDIR=This_Variable_Is_Not_Set
 CLPDOCDIR=This_Variable_Is_Not_Set
+CLPDATADIR=This_Variable_Is_Not_Set
 CLPINSTDIR=This_Variable_Is_Not_Set
 
 if test $coin_has_clp != skipping; then
@@ -20881,7 +20920,7 @@ if test $coin_has_clp != skipping; then
     coin_has_clp=.
   else
 
-# Check whether --with-m4_tolower(Clp)-instdir or --without-m4_tolower(Clp)-instdir was given.
+# Check whether --with-m4_tolower(escape(Clp))-instdir or --without-m4_tolower(escape(Clp))-instdir was given.
 if test "${with_clp_instdir+set}" = set; then
   withval="$with_clp_instdir"
   coin_has_clp=installed
@@ -20894,7 +20933,7 @@ echo "$as_me: error: argument for --with-clp-instdir not a directory" >&2;}
 fi;
 
 
-# Check whether --with-m4_tolower(Clp)-srcdir or --without-m4_tolower(Clp)-srcdir was given.
+# Check whether --with-m4_tolower(escape(Clp))-srcdir or --without-m4_tolower(escape(Clp))-srcdir was given.
 if test "${with_clp_srcdir+set}" = set; then
   withval="$with_clp_srcdir"
   if test "$coin_has_clp" = installed; then
@@ -20912,7 +20951,7 @@ echo "$as_me: error: argument for --with-clp-srcdir not a directory" >&2;}
 fi;
 
 
-# Check whether --with-m4_tolower(Clp)-objdir or --without-m4_tolower(Clp)-objdir was given.
+# Check whether --with-m4_tolower(escape(Clp))-objdir or --without-m4_tolower(escape(Clp))-objdir was given.
 if test "${with_clp_objdir+set}" = set; then
   withval="$with_clp_objdir"
   if test "$coin_has_clp" = installed; then
@@ -20972,15 +21011,18 @@ _ACEOF
 
   if test $coin_has_clp = installed; then
     CLPDOCDIR=$CLPINSTDIR/share/doc/coin/Clp
+    CLPDATADIR=$CLPINSTDIR/share/coin/Clp
   else
     if test "$CLPOBJDIR" = This_Variable_Is_Not_Set; then
       # Set the variables for source and object code location
       CLPSRCDIR=`cd $srcdir/$coin_has_clp; pwd`
       CLPOBJDIR=`pwd`/$coin_has_clp
       CLPDOCDIR=$abs_lib_dir/../share/doc/coin/Clp
+      CLPDATADIR=$CLPOBJDIR
     else
       # This is just a guess:
       CLPDOCDIR=$CLPOBJDIR/../share/doc/coin/Clp
+      CLPDATADIR=$CLPOBJDIR/../share/coin/Clp
     fi
   fi
 fi
@@ -21042,6 +21084,9 @@ echo $ECHO_N "checking for COIN project CoinUtils... $ECHO_C" >&6
 # First check, if the sub-project is actually available (ToDo: allow
 # other locations)
 
+#replace backslashes by underscore
+
+
 coin_has_coinutils=notGiven
 if test x"$COIN_SKIP_PROJECTS" != x; then
   for dir in $COIN_SKIP_PROJECTS; do
@@ -21055,9 +21100,11 @@ fi
 
 
 
+
 COINUTILSSRCDIR=This_Variable_Is_Not_Set
 COINUTILSOBJDIR=This_Variable_Is_Not_Set
 COINUTILSDOCDIR=This_Variable_Is_Not_Set
+COINUTILSDATADIR=This_Variable_Is_Not_Set
 COINUTILSINSTDIR=This_Variable_Is_Not_Set
 
 if test $coin_has_coinutils != skipping; then
@@ -21065,7 +21112,7 @@ if test $coin_has_coinutils != skipping; then
     coin_has_coinutils=.
   else
 
-# Check whether --with-m4_tolower(CoinUtils)-instdir or --without-m4_tolower(CoinUtils)-instdir was given.
+# Check whether --with-m4_tolower(escape(CoinUtils))-instdir or --without-m4_tolower(escape(CoinUtils))-instdir was given.
 if test "${with_coinutils_instdir+set}" = set; then
   withval="$with_coinutils_instdir"
   coin_has_coinutils=installed
@@ -21078,7 +21125,7 @@ echo "$as_me: error: argument for --with-coinutils-instdir not a directory" >&2;
 fi;
 
 
-# Check whether --with-m4_tolower(CoinUtils)-srcdir or --without-m4_tolower(CoinUtils)-srcdir was given.
+# Check whether --with-m4_tolower(escape(CoinUtils))-srcdir or --without-m4_tolower(escape(CoinUtils))-srcdir was given.
 if test "${with_coinutils_srcdir+set}" = set; then
   withval="$with_coinutils_srcdir"
   if test "$coin_has_coinutils" = installed; then
@@ -21096,7 +21143,7 @@ echo "$as_me: error: argument for --with-coinutils-srcdir not a directory" >&2;}
 fi;
 
 
-# Check whether --with-m4_tolower(CoinUtils)-objdir or --without-m4_tolower(CoinUtils)-objdir was given.
+# Check whether --with-m4_tolower(escape(CoinUtils))-objdir or --without-m4_tolower(escape(CoinUtils))-objdir was given.
 if test "${with_coinutils_objdir+set}" = set; then
   withval="$with_coinutils_objdir"
   if test "$coin_has_coinutils" = installed; then
@@ -21156,15 +21203,18 @@ _ACEOF
 
   if test $coin_has_coinutils = installed; then
     COINUTILSDOCDIR=$COINUTILSINSTDIR/share/doc/coin/CoinUtils
+    COINUTILSDATADIR=$COINUTILSINSTDIR/share/coin/CoinUtils
   else
     if test "$COINUTILSOBJDIR" = This_Variable_Is_Not_Set; then
       # Set the variables for source and object code location
       COINUTILSSRCDIR=`cd $srcdir/$coin_has_coinutils; pwd`
       COINUTILSOBJDIR=`pwd`/$coin_has_coinutils
       COINUTILSDOCDIR=$abs_lib_dir/../share/doc/coin/CoinUtils
+      COINUTILSDATADIR=$COINUTILSOBJDIR
     else
       # This is just a guess:
       COINUTILSDOCDIR=$COINUTILSOBJDIR/../share/doc/coin/CoinUtils
+      COINUTILSDATADIR=$COINUTILSOBJDIR/../share/coin/CoinUtils
     fi
   fi
 fi
@@ -21226,6 +21276,9 @@ echo $ECHO_N "checking for COIN project DyLP... $ECHO_C" >&6
 # First check, if the sub-project is actually available (ToDo: allow
 # other locations)
 
+#replace backslashes by underscore
+
+
 coin_has_dylp=notGiven
 if test x"$COIN_SKIP_PROJECTS" != x; then
   for dir in $COIN_SKIP_PROJECTS; do
@@ -21239,9 +21292,11 @@ fi
 
 
 
+
 DYLPSRCDIR=This_Variable_Is_Not_Set
 DYLPOBJDIR=This_Variable_Is_Not_Set
 DYLPDOCDIR=This_Variable_Is_Not_Set
+DYLPDATADIR=This_Variable_Is_Not_Set
 DYLPINSTDIR=This_Variable_Is_Not_Set
 
 if test $coin_has_dylp != skipping; then
@@ -21249,7 +21304,7 @@ if test $coin_has_dylp != skipping; then
     coin_has_dylp=.
   else
 
-# Check whether --with-m4_tolower(DyLP)-instdir or --without-m4_tolower(DyLP)-instdir was given.
+# Check whether --with-m4_tolower(escape(DyLP))-instdir or --without-m4_tolower(escape(DyLP))-instdir was given.
 if test "${with_dylp_instdir+set}" = set; then
   withval="$with_dylp_instdir"
   coin_has_dylp=installed
@@ -21262,7 +21317,7 @@ echo "$as_me: error: argument for --with-dylp-instdir not a directory" >&2;}
 fi;
 
 
-# Check whether --with-m4_tolower(DyLP)-srcdir or --without-m4_tolower(DyLP)-srcdir was given.
+# Check whether --with-m4_tolower(escape(DyLP))-srcdir or --without-m4_tolower(escape(DyLP))-srcdir was given.
 if test "${with_dylp_srcdir+set}" = set; then
   withval="$with_dylp_srcdir"
   if test "$coin_has_dylp" = installed; then
@@ -21280,7 +21335,7 @@ echo "$as_me: error: argument for --with-dylp-srcdir not a directory" >&2;}
 fi;
 
 
-# Check whether --with-m4_tolower(DyLP)-objdir or --without-m4_tolower(DyLP)-objdir was given.
+# Check whether --with-m4_tolower(escape(DyLP))-objdir or --without-m4_tolower(escape(DyLP))-objdir was given.
 if test "${with_dylp_objdir+set}" = set; then
   withval="$with_dylp_objdir"
   if test "$coin_has_dylp" = installed; then
@@ -21340,15 +21395,18 @@ _ACEOF
 
   if test $coin_has_dylp = installed; then
     DYLPDOCDIR=$DYLPINSTDIR/share/doc/coin/DyLP
+    DYLPDATADIR=$DYLPINSTDIR/share/coin/DyLP
   else
     if test "$DYLPOBJDIR" = This_Variable_Is_Not_Set; then
       # Set the variables for source and object code location
       DYLPSRCDIR=`cd $srcdir/$coin_has_dylp; pwd`
       DYLPOBJDIR=`pwd`/$coin_has_dylp
       DYLPDOCDIR=$abs_lib_dir/../share/doc/coin/DyLP
+      DYLPDATADIR=$DYLPOBJDIR
     else
       # This is just a guess:
       DYLPDOCDIR=$DYLPOBJDIR/../share/doc/coin/DyLP
+      DYLPDATADIR=$DYLPOBJDIR/../share/coin/DyLP
     fi
   fi
 fi
@@ -21410,6 +21468,9 @@ echo $ECHO_N "checking for COIN project Osi... $ECHO_C" >&6
 # First check, if the sub-project is actually available (ToDo: allow
 # other locations)
 
+#replace backslashes by underscore
+
+
 coin_has_osi=notGiven
 if test x"$COIN_SKIP_PROJECTS" != x; then
   for dir in $COIN_SKIP_PROJECTS; do
@@ -21423,9 +21484,11 @@ fi
 
 
 
+
 OSISRCDIR=This_Variable_Is_Not_Set
 OSIOBJDIR=This_Variable_Is_Not_Set
 OSIDOCDIR=This_Variable_Is_Not_Set
+OSIDATADIR=This_Variable_Is_Not_Set
 OSIINSTDIR=This_Variable_Is_Not_Set
 
 if test $coin_has_osi != skipping; then
@@ -21433,7 +21496,7 @@ if test $coin_has_osi != skipping; then
     coin_has_osi=.
   else
 
-# Check whether --with-m4_tolower(Osi)-instdir or --without-m4_tolower(Osi)-instdir was given.
+# Check whether --with-m4_tolower(escape(Osi))-instdir or --without-m4_tolower(escape(Osi))-instdir was given.
 if test "${with_osi_instdir+set}" = set; then
   withval="$with_osi_instdir"
   coin_has_osi=installed
@@ -21446,7 +21509,7 @@ echo "$as_me: error: argument for --with-osi-instdir not a directory" >&2;}
 fi;
 
 
-# Check whether --with-m4_tolower(Osi)-srcdir or --without-m4_tolower(Osi)-srcdir was given.
+# Check whether --with-m4_tolower(escape(Osi))-srcdir or --without-m4_tolower(escape(Osi))-srcdir was given.
 if test "${with_osi_srcdir+set}" = set; then
   withval="$with_osi_srcdir"
   if test "$coin_has_osi" = installed; then
@@ -21464,7 +21527,7 @@ echo "$as_me: error: argument for --with-osi-srcdir not a directory" >&2;}
 fi;
 
 
-# Check whether --with-m4_tolower(Osi)-objdir or --without-m4_tolower(Osi)-objdir was given.
+# Check whether --with-m4_tolower(escape(Osi))-objdir or --without-m4_tolower(escape(Osi))-objdir was given.
 if test "${with_osi_objdir+set}" = set; then
   withval="$with_osi_objdir"
   if test "$coin_has_osi" = installed; then
@@ -21524,15 +21587,18 @@ _ACEOF
 
   if test $coin_has_osi = installed; then
     OSIDOCDIR=$OSIINSTDIR/share/doc/coin/Osi
+    OSIDATADIR=$OSIINSTDIR/share/coin/Osi
   else
     if test "$OSIOBJDIR" = This_Variable_Is_Not_Set; then
       # Set the variables for source and object code location
       OSISRCDIR=`cd $srcdir/$coin_has_osi; pwd`
       OSIOBJDIR=`pwd`/$coin_has_osi
       OSIDOCDIR=$abs_lib_dir/../share/doc/coin/Osi
+      OSIDATADIR=$OSIOBJDIR
     else
       # This is just a guess:
       OSIDOCDIR=$OSIOBJDIR/../share/doc/coin/Osi
+      OSIDATADIR=$OSIOBJDIR/../share/coin/Osi
     fi
   fi
 fi
@@ -21594,6 +21660,9 @@ echo $ECHO_N "checking for COIN project Vol... $ECHO_C" >&6
 # First check, if the sub-project is actually available (ToDo: allow
 # other locations)
 
+#replace backslashes by underscore
+
+
 coin_has_vol=notGiven
 if test x"$COIN_SKIP_PROJECTS" != x; then
   for dir in $COIN_SKIP_PROJECTS; do
@@ -21607,9 +21676,11 @@ fi
 
 
 
+
 VOLSRCDIR=This_Variable_Is_Not_Set
 VOLOBJDIR=This_Variable_Is_Not_Set
 VOLDOCDIR=This_Variable_Is_Not_Set
+VOLDATADIR=This_Variable_Is_Not_Set
 VOLINSTDIR=This_Variable_Is_Not_Set
 
 if test $coin_has_vol != skipping; then
@@ -21617,7 +21688,7 @@ if test $coin_has_vol != skipping; then
     coin_has_vol=.
   else
 
-# Check whether --with-m4_tolower(Vol)-instdir or --without-m4_tolower(Vol)-instdir was given.
+# Check whether --with-m4_tolower(escape(Vol))-instdir or --without-m4_tolower(escape(Vol))-instdir was given.
 if test "${with_vol_instdir+set}" = set; then
   withval="$with_vol_instdir"
   coin_has_vol=installed
@@ -21630,7 +21701,7 @@ echo "$as_me: error: argument for --with-vol-instdir not a directory" >&2;}
 fi;
 
 
-# Check whether --with-m4_tolower(Vol)-srcdir or --without-m4_tolower(Vol)-srcdir was given.
+# Check whether --with-m4_tolower(escape(Vol))-srcdir or --without-m4_tolower(escape(Vol))-srcdir was given.
 if test "${with_vol_srcdir+set}" = set; then
   withval="$with_vol_srcdir"
   if test "$coin_has_vol" = installed; then
@@ -21648,7 +21719,7 @@ echo "$as_me: error: argument for --with-vol-srcdir not a directory" >&2;}
 fi;
 
 
-# Check whether --with-m4_tolower(Vol)-objdir or --without-m4_tolower(Vol)-objdir was given.
+# Check whether --with-m4_tolower(escape(Vol))-objdir or --without-m4_tolower(escape(Vol))-objdir was given.
 if test "${with_vol_objdir+set}" = set; then
   withval="$with_vol_objdir"
   if test "$coin_has_vol" = installed; then
@@ -21708,15 +21779,18 @@ _ACEOF
 
   if test $coin_has_vol = installed; then
     VOLDOCDIR=$VOLINSTDIR/share/doc/coin/Vol
+    VOLDATADIR=$VOLINSTDIR/share/coin/Vol
   else
     if test "$VOLOBJDIR" = This_Variable_Is_Not_Set; then
       # Set the variables for source and object code location
       VOLSRCDIR=`cd $srcdir/$coin_has_vol; pwd`
       VOLOBJDIR=`pwd`/$coin_has_vol
       VOLDOCDIR=$abs_lib_dir/../share/doc/coin/Vol
+      VOLDATADIR=$VOLOBJDIR
     else
       # This is just a guess:
       VOLDOCDIR=$VOLOBJDIR/../share/doc/coin/Vol
+      VOLDATADIR=$VOLOBJDIR/../share/coin/Vol
     fi
   fi
 fi
@@ -21778,6 +21852,9 @@ echo $ECHO_N "checking for COIN project SYMPHONY... $ECHO_C" >&6
 # First check, if the sub-project is actually available (ToDo: allow
 # other locations)
 
+#replace backslashes by underscore
+
+
 coin_has_symphony=notGiven
 if test x"$COIN_SKIP_PROJECTS" != x; then
   for dir in $COIN_SKIP_PROJECTS; do
@@ -21791,9 +21868,11 @@ fi
 
 
 
+
 SYMPHONYSRCDIR=This_Variable_Is_Not_Set
 SYMPHONYOBJDIR=This_Variable_Is_Not_Set
 SYMPHONYDOCDIR=This_Variable_Is_Not_Set
+SYMPHONYDATADIR=This_Variable_Is_Not_Set
 SYMPHONYINSTDIR=This_Variable_Is_Not_Set
 
 if test $coin_has_symphony != skipping; then
@@ -21801,7 +21880,7 @@ if test $coin_has_symphony != skipping; then
     coin_has_symphony=.
   else
 
-# Check whether --with-m4_tolower(SYMPHONY)-instdir or --without-m4_tolower(SYMPHONY)-instdir was given.
+# Check whether --with-m4_tolower(escape(SYMPHONY))-instdir or --without-m4_tolower(escape(SYMPHONY))-instdir was given.
 if test "${with_symphony_instdir+set}" = set; then
   withval="$with_symphony_instdir"
   coin_has_symphony=installed
@@ -21814,7 +21893,7 @@ echo "$as_me: error: argument for --with-symphony-instdir not a directory" >&2;}
 fi;
 
 
-# Check whether --with-m4_tolower(SYMPHONY)-srcdir or --without-m4_tolower(SYMPHONY)-srcdir was given.
+# Check whether --with-m4_tolower(escape(SYMPHONY))-srcdir or --without-m4_tolower(escape(SYMPHONY))-srcdir was given.
 if test "${with_symphony_srcdir+set}" = set; then
   withval="$with_symphony_srcdir"
   if test "$coin_has_symphony" = installed; then
@@ -21832,7 +21911,7 @@ echo "$as_me: error: argument for --with-symphony-srcdir not a directory" >&2;}
 fi;
 
 
-# Check whether --with-m4_tolower(SYMPHONY)-objdir or --without-m4_tolower(SYMPHONY)-objdir was given.
+# Check whether --with-m4_tolower(escape(SYMPHONY))-objdir or --without-m4_tolower(escape(SYMPHONY))-objdir was given.
 if test "${with_symphony_objdir+set}" = set; then
   withval="$with_symphony_objdir"
   if test "$coin_has_symphony" = installed; then
@@ -21892,15 +21971,18 @@ _ACEOF
 
   if test $coin_has_symphony = installed; then
     SYMPHONYDOCDIR=$SYMPHONYINSTDIR/share/doc/coin/SYMPHONY
+    SYMPHONYDATADIR=$SYMPHONYINSTDIR/share/coin/SYMPHONY
   else
     if test "$SYMPHONYOBJDIR" = This_Variable_Is_Not_Set; then
       # Set the variables for source and object code location
       SYMPHONYSRCDIR=`cd $srcdir/$coin_has_symphony; pwd`
       SYMPHONYOBJDIR=`pwd`/$coin_has_symphony
       SYMPHONYDOCDIR=$abs_lib_dir/../share/doc/coin/SYMPHONY
+      SYMPHONYDATADIR=$SYMPHONYOBJDIR
     else
       # This is just a guess:
       SYMPHONYDOCDIR=$SYMPHONYOBJDIR/../share/doc/coin/SYMPHONY
+      SYMPHONYDATADIR=$SYMPHONYOBJDIR/../share/coin/SYMPHONY
     fi
   fi
 fi
@@ -21954,6 +22036,390 @@ echo "${ECHO_T}$SYMPHONYSRCDIR" >&6
 echo $ECHO_N "checking for object code location of SYMPHONY... $ECHO_C" >&6
     echo "$as_me:$LINENO: result: $SYMPHONYOBJDIR" >&5
 echo "${ECHO_T}$SYMPHONYOBJDIR" >&6
+  fi
+fi
+
+echo "$as_me:$LINENO: checking for COIN project Data/Sample" >&5
+echo $ECHO_N "checking for COIN project Data/Sample... $ECHO_C" >&6
+# First check, if the sub-project is actually available (ToDo: allow
+# other locations)
+
+#replace backslashes by underscore
+
+
+coin_has_data_sample=notGiven
+if test x"$COIN_SKIP_PROJECTS" != x; then
+  for dir in $COIN_SKIP_PROJECTS; do
+    if test $dir = Data/Sample; then
+      coin_has_data_sample=skipping
+    fi
+  done
+fi
+
+
+
+
+
+
+DATA_SAMPLESRCDIR=This_Variable_Is_Not_Set
+DATA_SAMPLEOBJDIR=This_Variable_Is_Not_Set
+DATA_SAMPLEDOCDIR=This_Variable_Is_Not_Set
+DATA_SAMPLEDATADIR=This_Variable_Is_Not_Set
+DATA_SAMPLEINSTDIR=This_Variable_Is_Not_Set
+
+if test $coin_has_data_sample != skipping; then
+  if test $PACKAGE_TARNAME = data_sample; then
+    coin_has_data_sample=.
+  else
+
+# Check whether --with-m4_tolower(escape(Data/Sample))-instdir or --without-m4_tolower(escape(Data/Sample))-instdir was given.
+if test "${with_data_sample_instdir+set}" = set; then
+  withval="$with_data_sample_instdir"
+  coin_has_data_sample=installed
+		 if test -d "$withval"; then : ; else
+		   { { echo "$as_me:$LINENO: error: argument for --with-data_sample-instdir not a directory" >&5
+echo "$as_me: error: argument for --with-data_sample-instdir not a directory" >&2;}
+   { (exit 1); exit 1; }; }
+		 fi
+                 DATA_SAMPLEINSTDIR=`cd $withval; pwd`
+fi;
+
+
+# Check whether --with-m4_tolower(escape(Data/Sample))-srcdir or --without-m4_tolower(escape(Data/Sample))-srcdir was given.
+if test "${with_data_sample_srcdir+set}" = set; then
+  withval="$with_data_sample_srcdir"
+  if test "$coin_has_data_sample" = installed; then
+		   { { echo "$as_me:$LINENO: error: --with-$data_sample-srcdir cannot be given together with --with-data_sample-instdir" >&5
+echo "$as_me: error: --with-$data_sample-srcdir cannot be given together with --with-data_sample-instdir" >&2;}
+   { (exit 1); exit 1; }; }
+		 fi
+		 if test -d "$withval"; then : ; else
+		   { { echo "$as_me:$LINENO: error: argument for --with-data_sample-srcdir not a directory" >&5
+echo "$as_me: error: argument for --with-data_sample-srcdir not a directory" >&2;}
+   { (exit 1); exit 1; }; }
+		 fi
+		 coin_has_data_sample=$withval
+                 DATA_SAMPLESRCDIR=`cd $withval; pwd`
+fi;
+
+
+# Check whether --with-m4_tolower(escape(Data/Sample))-objdir or --without-m4_tolower(escape(Data/Sample))-objdir was given.
+if test "${with_data_sample_objdir+set}" = set; then
+  withval="$with_data_sample_objdir"
+  if test "$coin_has_data_sample" = installed; then
+		   { { echo "$as_me:$LINENO: error: --with-data_sample-objdir cannot be given together with --with-data_sample-instdir" >&5
+echo "$as_me: error: --with-data_sample-objdir cannot be given together with --with-data_sample-instdir" >&2;}
+   { (exit 1); exit 1; }; }
+		 fi
+		 if test "$coin_has_data_sample" = notGiven; then
+		   { { echo "$as_me:$LINENO: error: --with-data_sample-objdir must be accompanied by --with-data_sample-srcdir" >&5
+echo "$as_me: error: --with-data_sample-objdir must be accompanied by --with-data_sample-srcdir" >&2;}
+   { (exit 1); exit 1; }; }
+		 fi
+		 if test -d "$withval"; then : ; else
+		   { { echo "$as_me:$LINENO: error: argument for --with-data_sample-objdir not a directory" >&5
+echo "$as_me: error: argument for --with-data_sample-objdir not a directory" >&2;}
+   { (exit 1); exit 1; }; }
+		 fi
+                 DATA_SAMPLEOBJDIR=`cd $withval; pwd`
+else
+  DATA_SAMPLEOBJDIR="$DATA_SAMPLESRCDIR"
+fi;
+
+    # if we still don't have a location, check for generic flag
+    if test "$coin_has_data_sample" = notGiven; then
+
+# Check whether --with-coin-instdir or --without-coin-instdir was given.
+if test "${with_coin_instdir+set}" = set; then
+  withval="$with_coin_instdir"
+  if test -d "$withval"; then : ; else
+		     { { echo "$as_me:$LINENO: error: argument for --with-coin-instdir not a directory" >&5
+echo "$as_me: error: argument for --with-coin-instdir not a directory" >&2;}
+   { (exit 1); exit 1; }; }
+		   fi
+		   if test -r $withval/share/doc/coin/Data/Sample/README; then
+		     coin_has_data_sample=installed
+		     DATA_SAMPLEINSTDIR=`cd $withval; pwd`
+		   fi
+fi;
+    fi
+
+    if test "$coin_has_data_sample" = notGiven; then
+      if test -d $srcdir/../Data/Sample; then
+        coin_has_data_sample=../Data/Sample
+      fi
+    fi
+  fi
+fi
+
+if test $coin_has_data_sample != notGiven &&
+   test $coin_has_data_sample != skipping; then
+  # Set the #define if the component is available
+
+cat >>confdefs.h <<\_ACEOF
+#define COIN_HAS_DATA_SAMPLE 1
+_ACEOF
+
+
+  if test $coin_has_data_sample = installed; then
+    DATA_SAMPLEDOCDIR=$DATA_SAMPLEINSTDIR/share/doc/coin/Data/Sample
+    DATA_SAMPLEDATADIR=$DATA_SAMPLEINSTDIR/share/coin/Data/Sample
+  else
+    if test "$DATA_SAMPLEOBJDIR" = This_Variable_Is_Not_Set; then
+      # Set the variables for source and object code location
+      DATA_SAMPLESRCDIR=`cd $srcdir/$coin_has_data_sample; pwd`
+      DATA_SAMPLEOBJDIR=`pwd`/$coin_has_data_sample
+      DATA_SAMPLEDOCDIR=$abs_lib_dir/../share/doc/coin/Data/Sample
+      DATA_SAMPLEDATADIR=$DATA_SAMPLEOBJDIR
+    else
+      # This is just a guess:
+      DATA_SAMPLEDOCDIR=$DATA_SAMPLEOBJDIR/../share/doc/coin/Data/Sample
+      DATA_SAMPLEDATADIR=$DATA_SAMPLEOBJDIR/../share/coin/Data/Sample
+    fi
+  fi
+fi
+
+  # Define the Makefile conditional
+
+
+if test $coin_has_data_sample != notGiven &&
+                test $coin_has_data_sample != skipping; then
+  COIN_HAS_DATA_SAMPLE_TRUE=
+  COIN_HAS_DATA_SAMPLE_FALSE='#'
+else
+  COIN_HAS_DATA_SAMPLE_TRUE='#'
+  COIN_HAS_DATA_SAMPLE_FALSE=
+fi
+
+
+
+if test $coin_has_data_sample = installed; then
+  COIN_HAS_DATA_SAMPLE_PREINSTALLED_TRUE=
+  COIN_HAS_DATA_SAMPLE_PREINSTALLED_FALSE='#'
+else
+  COIN_HAS_DATA_SAMPLE_PREINSTALLED_TRUE='#'
+  COIN_HAS_DATA_SAMPLE_PREINSTALLED_FALSE=
+fi
+
+
+if test $coin_has_data_sample = installed; then
+  echo "$as_me:$LINENO: result: installed in $DATA_SAMPLEINSTDIR" >&5
+echo "${ECHO_T}installed in $DATA_SAMPLEINSTDIR" >&6
+  if test -r $DATA_SAMPLEINSTDIR/share/doc/coin/Data/Sample/README; then
+
+  :
+else
+  { { echo "$as_me:$LINENO: error: $DATA_SAMPLEINSTDIR/share/doc/coin/Data/Sample/README should be available if Data/Sample is installed" >&5
+echo "$as_me: error: $DATA_SAMPLEINSTDIR/share/doc/coin/Data/Sample/README should be available if Data/Sample is installed" >&2;}
+   { (exit 1); exit 1; }; }
+  :
+fi
+
+else
+  echo "$as_me:$LINENO: result: $coin_has_data_sample" >&5
+echo "${ECHO_T}$coin_has_data_sample" >&6
+  if test $coin_has_data_sample != notGiven &&
+     test $coin_has_data_sample != skipping; then
+    echo "$as_me:$LINENO: checking for source code location of Data/Sample" >&5
+echo $ECHO_N "checking for source code location of Data/Sample... $ECHO_C" >&6
+    echo "$as_me:$LINENO: result: $DATA_SAMPLESRCDIR" >&5
+echo "${ECHO_T}$DATA_SAMPLESRCDIR" >&6
+    echo "$as_me:$LINENO: checking for object code location of Data/Sample" >&5
+echo $ECHO_N "checking for object code location of Data/Sample... $ECHO_C" >&6
+    echo "$as_me:$LINENO: result: $DATA_SAMPLEOBJDIR" >&5
+echo "${ECHO_T}$DATA_SAMPLEOBJDIR" >&6
+  fi
+fi
+
+echo "$as_me:$LINENO: checking for COIN project Data/miplib3" >&5
+echo $ECHO_N "checking for COIN project Data/miplib3... $ECHO_C" >&6
+# First check, if the sub-project is actually available (ToDo: allow
+# other locations)
+
+#replace backslashes by underscore
+
+
+coin_has_data_miplib3=notGiven
+if test x"$COIN_SKIP_PROJECTS" != x; then
+  for dir in $COIN_SKIP_PROJECTS; do
+    if test $dir = Data/miplib3; then
+      coin_has_data_miplib3=skipping
+    fi
+  done
+fi
+
+
+
+
+
+
+DATA_MIPLIB3SRCDIR=This_Variable_Is_Not_Set
+DATA_MIPLIB3OBJDIR=This_Variable_Is_Not_Set
+DATA_MIPLIB3DOCDIR=This_Variable_Is_Not_Set
+DATA_MIPLIB3DATADIR=This_Variable_Is_Not_Set
+DATA_MIPLIB3INSTDIR=This_Variable_Is_Not_Set
+
+if test $coin_has_data_miplib3 != skipping; then
+  if test $PACKAGE_TARNAME = data_miplib3; then
+    coin_has_data_miplib3=.
+  else
+
+# Check whether --with-m4_tolower(escape(Data/miplib3))-instdir or --without-m4_tolower(escape(Data/miplib3))-instdir was given.
+if test "${with_data_miplib3_instdir+set}" = set; then
+  withval="$with_data_miplib3_instdir"
+  coin_has_data_miplib3=installed
+		 if test -d "$withval"; then : ; else
+		   { { echo "$as_me:$LINENO: error: argument for --with-data_miplib3-instdir not a directory" >&5
+echo "$as_me: error: argument for --with-data_miplib3-instdir not a directory" >&2;}
+   { (exit 1); exit 1; }; }
+		 fi
+                 DATA_MIPLIB3INSTDIR=`cd $withval; pwd`
+fi;
+
+
+# Check whether --with-m4_tolower(escape(Data/miplib3))-srcdir or --without-m4_tolower(escape(Data/miplib3))-srcdir was given.
+if test "${with_data_miplib3_srcdir+set}" = set; then
+  withval="$with_data_miplib3_srcdir"
+  if test "$coin_has_data_miplib3" = installed; then
+		   { { echo "$as_me:$LINENO: error: --with-$data_miplib3-srcdir cannot be given together with --with-data_miplib3-instdir" >&5
+echo "$as_me: error: --with-$data_miplib3-srcdir cannot be given together with --with-data_miplib3-instdir" >&2;}
+   { (exit 1); exit 1; }; }
+		 fi
+		 if test -d "$withval"; then : ; else
+		   { { echo "$as_me:$LINENO: error: argument for --with-data_miplib3-srcdir not a directory" >&5
+echo "$as_me: error: argument for --with-data_miplib3-srcdir not a directory" >&2;}
+   { (exit 1); exit 1; }; }
+		 fi
+		 coin_has_data_miplib3=$withval
+                 DATA_MIPLIB3SRCDIR=`cd $withval; pwd`
+fi;
+
+
+# Check whether --with-m4_tolower(escape(Data/miplib3))-objdir or --without-m4_tolower(escape(Data/miplib3))-objdir was given.
+if test "${with_data_miplib3_objdir+set}" = set; then
+  withval="$with_data_miplib3_objdir"
+  if test "$coin_has_data_miplib3" = installed; then
+		   { { echo "$as_me:$LINENO: error: --with-data_miplib3-objdir cannot be given together with --with-data_miplib3-instdir" >&5
+echo "$as_me: error: --with-data_miplib3-objdir cannot be given together with --with-data_miplib3-instdir" >&2;}
+   { (exit 1); exit 1; }; }
+		 fi
+		 if test "$coin_has_data_miplib3" = notGiven; then
+		   { { echo "$as_me:$LINENO: error: --with-data_miplib3-objdir must be accompanied by --with-data_miplib3-srcdir" >&5
+echo "$as_me: error: --with-data_miplib3-objdir must be accompanied by --with-data_miplib3-srcdir" >&2;}
+   { (exit 1); exit 1; }; }
+		 fi
+		 if test -d "$withval"; then : ; else
+		   { { echo "$as_me:$LINENO: error: argument for --with-data_miplib3-objdir not a directory" >&5
+echo "$as_me: error: argument for --with-data_miplib3-objdir not a directory" >&2;}
+   { (exit 1); exit 1; }; }
+		 fi
+                 DATA_MIPLIB3OBJDIR=`cd $withval; pwd`
+else
+  DATA_MIPLIB3OBJDIR="$DATA_MIPLIB3SRCDIR"
+fi;
+
+    # if we still don't have a location, check for generic flag
+    if test "$coin_has_data_miplib3" = notGiven; then
+
+# Check whether --with-coin-instdir or --without-coin-instdir was given.
+if test "${with_coin_instdir+set}" = set; then
+  withval="$with_coin_instdir"
+  if test -d "$withval"; then : ; else
+		     { { echo "$as_me:$LINENO: error: argument for --with-coin-instdir not a directory" >&5
+echo "$as_me: error: argument for --with-coin-instdir not a directory" >&2;}
+   { (exit 1); exit 1; }; }
+		   fi
+		   if test -r $withval/share/doc/coin/Data/miplib3/README; then
+		     coin_has_data_miplib3=installed
+		     DATA_MIPLIB3INSTDIR=`cd $withval; pwd`
+		   fi
+fi;
+    fi
+
+    if test "$coin_has_data_miplib3" = notGiven; then
+      if test -d $srcdir/../Data/miplib3; then
+        coin_has_data_miplib3=../Data/miplib3
+      fi
+    fi
+  fi
+fi
+
+if test $coin_has_data_miplib3 != notGiven &&
+   test $coin_has_data_miplib3 != skipping; then
+  # Set the #define if the component is available
+
+cat >>confdefs.h <<\_ACEOF
+#define COIN_HAS_DATA_MIPLIB3 1
+_ACEOF
+
+
+  if test $coin_has_data_miplib3 = installed; then
+    DATA_MIPLIB3DOCDIR=$DATA_MIPLIB3INSTDIR/share/doc/coin/Data/miplib3
+    DATA_MIPLIB3DATADIR=$DATA_MIPLIB3INSTDIR/share/coin/Data/miplib3
+  else
+    if test "$DATA_MIPLIB3OBJDIR" = This_Variable_Is_Not_Set; then
+      # Set the variables for source and object code location
+      DATA_MIPLIB3SRCDIR=`cd $srcdir/$coin_has_data_miplib3; pwd`
+      DATA_MIPLIB3OBJDIR=`pwd`/$coin_has_data_miplib3
+      DATA_MIPLIB3DOCDIR=$abs_lib_dir/../share/doc/coin/Data/miplib3
+      DATA_MIPLIB3DATADIR=$DATA_MIPLIB3OBJDIR
+    else
+      # This is just a guess:
+      DATA_MIPLIB3DOCDIR=$DATA_MIPLIB3OBJDIR/../share/doc/coin/Data/miplib3
+      DATA_MIPLIB3DATADIR=$DATA_MIPLIB3OBJDIR/../share/coin/Data/miplib3
+    fi
+  fi
+fi
+
+  # Define the Makefile conditional
+
+
+if test $coin_has_data_miplib3 != notGiven &&
+                test $coin_has_data_miplib3 != skipping; then
+  COIN_HAS_DATA_MIPLIB3_TRUE=
+  COIN_HAS_DATA_MIPLIB3_FALSE='#'
+else
+  COIN_HAS_DATA_MIPLIB3_TRUE='#'
+  COIN_HAS_DATA_MIPLIB3_FALSE=
+fi
+
+
+
+if test $coin_has_data_miplib3 = installed; then
+  COIN_HAS_DATA_MIPLIB3_PREINSTALLED_TRUE=
+  COIN_HAS_DATA_MIPLIB3_PREINSTALLED_FALSE='#'
+else
+  COIN_HAS_DATA_MIPLIB3_PREINSTALLED_TRUE='#'
+  COIN_HAS_DATA_MIPLIB3_PREINSTALLED_FALSE=
+fi
+
+
+if test $coin_has_data_miplib3 = installed; then
+  echo "$as_me:$LINENO: result: installed in $DATA_MIPLIB3INSTDIR" >&5
+echo "${ECHO_T}installed in $DATA_MIPLIB3INSTDIR" >&6
+  if test -r $DATA_MIPLIB3INSTDIR/share/doc/coin/Data/miplib3/README; then
+
+  :
+else
+  { { echo "$as_me:$LINENO: error: $DATA_MIPLIB3INSTDIR/share/doc/coin/Data/miplib3/README should be available if Data/miplib3 is installed" >&5
+echo "$as_me: error: $DATA_MIPLIB3INSTDIR/share/doc/coin/Data/miplib3/README should be available if Data/miplib3 is installed" >&2;}
+   { (exit 1); exit 1; }; }
+  :
+fi
+
+else
+  echo "$as_me:$LINENO: result: $coin_has_data_miplib3" >&5
+echo "${ECHO_T}$coin_has_data_miplib3" >&6
+  if test $coin_has_data_miplib3 != notGiven &&
+     test $coin_has_data_miplib3 != skipping; then
+    echo "$as_me:$LINENO: checking for source code location of Data/miplib3" >&5
+echo $ECHO_N "checking for source code location of Data/miplib3... $ECHO_C" >&6
+    echo "$as_me:$LINENO: result: $DATA_MIPLIB3SRCDIR" >&5
+echo "${ECHO_T}$DATA_MIPLIB3SRCDIR" >&6
+    echo "$as_me:$LINENO: checking for object code location of Data/miplib3" >&5
+echo $ECHO_N "checking for object code location of Data/miplib3... $ECHO_C" >&6
+    echo "$as_me:$LINENO: result: $DATA_MIPLIB3OBJDIR" >&5
+echo "${ECHO_T}$DATA_MIPLIB3OBJDIR" >&6
   fi
 fi
 
@@ -23944,6 +24410,34 @@ echo "$as_me: error: conditional \"COIN_HAS_SYMPHONY_PREINSTALLED\" was never de
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi
+if test -z "${COIN_HAS_DATA_SAMPLE_TRUE}" && test -z "${COIN_HAS_DATA_SAMPLE_FALSE}"; then
+  { { echo "$as_me:$LINENO: error: conditional \"COIN_HAS_DATA_SAMPLE\" was never defined.
+Usually this means the macro was only invoked conditionally." >&5
+echo "$as_me: error: conditional \"COIN_HAS_DATA_SAMPLE\" was never defined.
+Usually this means the macro was only invoked conditionally." >&2;}
+   { (exit 1); exit 1; }; }
+fi
+if test -z "${COIN_HAS_DATA_SAMPLE_PREINSTALLED_TRUE}" && test -z "${COIN_HAS_DATA_SAMPLE_PREINSTALLED_FALSE}"; then
+  { { echo "$as_me:$LINENO: error: conditional \"COIN_HAS_DATA_SAMPLE_PREINSTALLED\" was never defined.
+Usually this means the macro was only invoked conditionally." >&5
+echo "$as_me: error: conditional \"COIN_HAS_DATA_SAMPLE_PREINSTALLED\" was never defined.
+Usually this means the macro was only invoked conditionally." >&2;}
+   { (exit 1); exit 1; }; }
+fi
+if test -z "${COIN_HAS_DATA_MIPLIB3_TRUE}" && test -z "${COIN_HAS_DATA_MIPLIB3_FALSE}"; then
+  { { echo "$as_me:$LINENO: error: conditional \"COIN_HAS_DATA_MIPLIB3\" was never defined.
+Usually this means the macro was only invoked conditionally." >&5
+echo "$as_me: error: conditional \"COIN_HAS_DATA_MIPLIB3\" was never defined.
+Usually this means the macro was only invoked conditionally." >&2;}
+   { (exit 1); exit 1; }; }
+fi
+if test -z "${COIN_HAS_DATA_MIPLIB3_PREINSTALLED_TRUE}" && test -z "${COIN_HAS_DATA_MIPLIB3_PREINSTALLED_FALSE}"; then
+  { { echo "$as_me:$LINENO: error: conditional \"COIN_HAS_DATA_MIPLIB3_PREINSTALLED\" was never defined.
+Usually this means the macro was only invoked conditionally." >&5
+echo "$as_me: error: conditional \"COIN_HAS_DATA_MIPLIB3_PREINSTALLED\" was never defined.
+Usually this means the macro was only invoked conditionally." >&2;}
+   { (exit 1); exit 1; }; }
+fi
 if test -z "${COIN_HAS_CPX_TRUE}" && test -z "${COIN_HAS_CPX_FALSE}"; then
   { { echo "$as_me:$LINENO: error: conditional \"COIN_HAS_CPX\" was never defined.
 Usually this means the macro was only invoked conditionally." >&5
@@ -24659,6 +25153,7 @@ s,@LT_LDFLAGS@,$LT_LDFLAGS,;t t
 s,@CBCSRCDIR@,$CBCSRCDIR,;t t
 s,@CBCOBJDIR@,$CBCOBJDIR,;t t
 s,@CBCDOCDIR@,$CBCDOCDIR,;t t
+s,@CBCDATADIR@,$CBCDATADIR,;t t
 s,@CBCINSTDIR@,$CBCINSTDIR,;t t
 s,@COIN_HAS_CBC_TRUE@,$COIN_HAS_CBC_TRUE,;t t
 s,@COIN_HAS_CBC_FALSE@,$COIN_HAS_CBC_FALSE,;t t
@@ -24667,6 +25162,7 @@ s,@COIN_HAS_CBC_PREINSTALLED_FALSE@,$COIN_HAS_CBC_PREINSTALLED_FALSE,;t t
 s,@CGLSRCDIR@,$CGLSRCDIR,;t t
 s,@CGLOBJDIR@,$CGLOBJDIR,;t t
 s,@CGLDOCDIR@,$CGLDOCDIR,;t t
+s,@CGLDATADIR@,$CGLDATADIR,;t t
 s,@CGLINSTDIR@,$CGLINSTDIR,;t t
 s,@COIN_HAS_CGL_TRUE@,$COIN_HAS_CGL_TRUE,;t t
 s,@COIN_HAS_CGL_FALSE@,$COIN_HAS_CGL_FALSE,;t t
@@ -24675,6 +25171,7 @@ s,@COIN_HAS_CGL_PREINSTALLED_FALSE@,$COIN_HAS_CGL_PREINSTALLED_FALSE,;t t
 s,@CLPSRCDIR@,$CLPSRCDIR,;t t
 s,@CLPOBJDIR@,$CLPOBJDIR,;t t
 s,@CLPDOCDIR@,$CLPDOCDIR,;t t
+s,@CLPDATADIR@,$CLPDATADIR,;t t
 s,@CLPINSTDIR@,$CLPINSTDIR,;t t
 s,@COIN_HAS_CLP_TRUE@,$COIN_HAS_CLP_TRUE,;t t
 s,@COIN_HAS_CLP_FALSE@,$COIN_HAS_CLP_FALSE,;t t
@@ -24683,6 +25180,7 @@ s,@COIN_HAS_CLP_PREINSTALLED_FALSE@,$COIN_HAS_CLP_PREINSTALLED_FALSE,;t t
 s,@COINUTILSSRCDIR@,$COINUTILSSRCDIR,;t t
 s,@COINUTILSOBJDIR@,$COINUTILSOBJDIR,;t t
 s,@COINUTILSDOCDIR@,$COINUTILSDOCDIR,;t t
+s,@COINUTILSDATADIR@,$COINUTILSDATADIR,;t t
 s,@COINUTILSINSTDIR@,$COINUTILSINSTDIR,;t t
 s,@COIN_HAS_COINUTILS_TRUE@,$COIN_HAS_COINUTILS_TRUE,;t t
 s,@COIN_HAS_COINUTILS_FALSE@,$COIN_HAS_COINUTILS_FALSE,;t t
@@ -24691,6 +25189,7 @@ s,@COIN_HAS_COINUTILS_PREINSTALLED_FALSE@,$COIN_HAS_COINUTILS_PREINSTALLED_FALSE
 s,@DYLPSRCDIR@,$DYLPSRCDIR,;t t
 s,@DYLPOBJDIR@,$DYLPOBJDIR,;t t
 s,@DYLPDOCDIR@,$DYLPDOCDIR,;t t
+s,@DYLPDATADIR@,$DYLPDATADIR,;t t
 s,@DYLPINSTDIR@,$DYLPINSTDIR,;t t
 s,@COIN_HAS_DYLP_TRUE@,$COIN_HAS_DYLP_TRUE,;t t
 s,@COIN_HAS_DYLP_FALSE@,$COIN_HAS_DYLP_FALSE,;t t
@@ -24699,6 +25198,7 @@ s,@COIN_HAS_DYLP_PREINSTALLED_FALSE@,$COIN_HAS_DYLP_PREINSTALLED_FALSE,;t t
 s,@OSISRCDIR@,$OSISRCDIR,;t t
 s,@OSIOBJDIR@,$OSIOBJDIR,;t t
 s,@OSIDOCDIR@,$OSIDOCDIR,;t t
+s,@OSIDATADIR@,$OSIDATADIR,;t t
 s,@OSIINSTDIR@,$OSIINSTDIR,;t t
 s,@COIN_HAS_OSI_TRUE@,$COIN_HAS_OSI_TRUE,;t t
 s,@COIN_HAS_OSI_FALSE@,$COIN_HAS_OSI_FALSE,;t t
@@ -24707,6 +25207,7 @@ s,@COIN_HAS_OSI_PREINSTALLED_FALSE@,$COIN_HAS_OSI_PREINSTALLED_FALSE,;t t
 s,@VOLSRCDIR@,$VOLSRCDIR,;t t
 s,@VOLOBJDIR@,$VOLOBJDIR,;t t
 s,@VOLDOCDIR@,$VOLDOCDIR,;t t
+s,@VOLDATADIR@,$VOLDATADIR,;t t
 s,@VOLINSTDIR@,$VOLINSTDIR,;t t
 s,@COIN_HAS_VOL_TRUE@,$COIN_HAS_VOL_TRUE,;t t
 s,@COIN_HAS_VOL_FALSE@,$COIN_HAS_VOL_FALSE,;t t
@@ -24715,11 +25216,30 @@ s,@COIN_HAS_VOL_PREINSTALLED_FALSE@,$COIN_HAS_VOL_PREINSTALLED_FALSE,;t t
 s,@SYMPHONYSRCDIR@,$SYMPHONYSRCDIR,;t t
 s,@SYMPHONYOBJDIR@,$SYMPHONYOBJDIR,;t t
 s,@SYMPHONYDOCDIR@,$SYMPHONYDOCDIR,;t t
+s,@SYMPHONYDATADIR@,$SYMPHONYDATADIR,;t t
 s,@SYMPHONYINSTDIR@,$SYMPHONYINSTDIR,;t t
 s,@COIN_HAS_SYMPHONY_TRUE@,$COIN_HAS_SYMPHONY_TRUE,;t t
 s,@COIN_HAS_SYMPHONY_FALSE@,$COIN_HAS_SYMPHONY_FALSE,;t t
 s,@COIN_HAS_SYMPHONY_PREINSTALLED_TRUE@,$COIN_HAS_SYMPHONY_PREINSTALLED_TRUE,;t t
 s,@COIN_HAS_SYMPHONY_PREINSTALLED_FALSE@,$COIN_HAS_SYMPHONY_PREINSTALLED_FALSE,;t t
+s,@DATA_SAMPLESRCDIR@,$DATA_SAMPLESRCDIR,;t t
+s,@DATA_SAMPLEOBJDIR@,$DATA_SAMPLEOBJDIR,;t t
+s,@DATA_SAMPLEDOCDIR@,$DATA_SAMPLEDOCDIR,;t t
+s,@DATA_SAMPLEDATADIR@,$DATA_SAMPLEDATADIR,;t t
+s,@DATA_SAMPLEINSTDIR@,$DATA_SAMPLEINSTDIR,;t t
+s,@COIN_HAS_DATA_SAMPLE_TRUE@,$COIN_HAS_DATA_SAMPLE_TRUE,;t t
+s,@COIN_HAS_DATA_SAMPLE_FALSE@,$COIN_HAS_DATA_SAMPLE_FALSE,;t t
+s,@COIN_HAS_DATA_SAMPLE_PREINSTALLED_TRUE@,$COIN_HAS_DATA_SAMPLE_PREINSTALLED_TRUE,;t t
+s,@COIN_HAS_DATA_SAMPLE_PREINSTALLED_FALSE@,$COIN_HAS_DATA_SAMPLE_PREINSTALLED_FALSE,;t t
+s,@DATA_MIPLIB3SRCDIR@,$DATA_MIPLIB3SRCDIR,;t t
+s,@DATA_MIPLIB3OBJDIR@,$DATA_MIPLIB3OBJDIR,;t t
+s,@DATA_MIPLIB3DOCDIR@,$DATA_MIPLIB3DOCDIR,;t t
+s,@DATA_MIPLIB3DATADIR@,$DATA_MIPLIB3DATADIR,;t t
+s,@DATA_MIPLIB3INSTDIR@,$DATA_MIPLIB3INSTDIR,;t t
+s,@COIN_HAS_DATA_MIPLIB3_TRUE@,$COIN_HAS_DATA_MIPLIB3_TRUE,;t t
+s,@COIN_HAS_DATA_MIPLIB3_FALSE@,$COIN_HAS_DATA_MIPLIB3_FALSE,;t t
+s,@COIN_HAS_DATA_MIPLIB3_PREINSTALLED_TRUE@,$COIN_HAS_DATA_MIPLIB3_PREINSTALLED_TRUE,;t t
+s,@COIN_HAS_DATA_MIPLIB3_PREINSTALLED_FALSE@,$COIN_HAS_DATA_MIPLIB3_PREINSTALLED_FALSE,;t t
 s,@CPXINCDIR@,$CPXINCDIR,;t t
 s,@CPXLIB@,$CPXLIB,;t t
 s,@COIN_HAS_CPX_TRUE@,$COIN_HAS_CPX_TRUE,;t t

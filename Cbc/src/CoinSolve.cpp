@@ -205,7 +205,7 @@ MyMessageHandler2::setModel(CbcModel * model)
 //#define USER_HAS_FAKE_CLP 
 #ifdef USER_HAS_FAKE_CBC
 #endif
-void fakeMain (ClpSimplex & model,OsiSolverInterface & osiSolver, CbcModel & babSolver)
+void fakeMain (ClpSimplex & model,OsiSolverInterface & /*osiSolver*/, CbcModel & babSolver)
 {
 #ifdef USER_HAS_FAKE_CBC
 #else
@@ -220,7 +220,9 @@ void fakeMain (ClpSimplex & model,OsiSolverInterface & osiSolver, CbcModel & bab
 // Clp stuff
 #ifdef USER_HAS_FAKE_CLP
 #endif
-void fakeMain2 (ClpSimplex & model,OsiClpSolverInterface & osiSolver,int options) {
+void fakeMain2 (ClpSimplex & /*model*/,
+		OsiClpSolverInterface & osiSolver,
+		int /*options*/) {
 #ifdef USER_HAS_FAKE_CLP
 #else
   ClpSimplex * lpSolver = osiSolver.getModelPtr();

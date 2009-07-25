@@ -112,10 +112,10 @@ static void malloc_stats2()
   // print results
 }
 #else
-void stolen_from_ekk_memory(void * dummy,int type)
-{
-}
-bool malloc_counts_on=false;
+//void stolen_from_ekk_memory(void * dummy,int type)
+//{
+//}
+//bool malloc_counts_on=false;
 #endif
 //#define DMALLOC
 #ifdef DMALLOC
@@ -504,7 +504,9 @@ void CbcSolver::fillParameters()
   parameters_[whichParam(GOMORYCUTS,numberParameters_,parameters_)].setCurrentOption("ifmove");
   parameters_[whichParam(PROBINGCUTS,numberParameters_,parameters_)].setCurrentOption("ifmove");
   parameters_[whichParam(KNAPSACKCUTS,numberParameters_,parameters_)].setCurrentOption("ifmove");
+#ifdef ZERO_HALF_CUTS
   parameters_[whichParam(ZEROHALFCUTS,numberParameters_,parameters_)].setCurrentOption("off");
+#endif
   parameters_[whichParam(REDSPLITCUTS,numberParameters_,parameters_)].setCurrentOption("off");
   parameters_[whichParam(CLIQUECUTS,numberParameters_,parameters_)].setCurrentOption("ifmove");
   parameters_[whichParam(MIXEDCUTS,numberParameters_,parameters_)].setCurrentOption("ifmove");
@@ -763,7 +765,7 @@ CbcStopNow::~CbcStopNow()
 {
 }
 // Copy constructor 
-CbcStopNow::CbcStopNow ( const CbcStopNow & rhs)
+CbcStopNow::CbcStopNow ( const CbcStopNow & )
 {
 }
 // Assignment operator 
@@ -827,7 +829,7 @@ void fakeMain2 (ClpSimplex & model,OsiClpSolverInterface & osiSolver,int options
 static CbcModel * currentBranchModel = NULL;
 
 extern "C" {
-   static void signal_handler(int whichSignal)
+  static void signal_handler(int /*whichSignal*/)
    {
      if (currentBranchModel!=NULL) {
        currentBranchModel->setMaximumNodes(0); // stop at next node
@@ -1229,10 +1231,12 @@ crunchIt(ClpSimplex * model)
              -2 cleanup afterwards if using 2
   On output - number fixed
 */
-static OsiClpSolverInterface * fixVubs(CbcModel & model, int skipZero2,
-				       int & doAction, CoinMessageHandler * generalMessageHandler,
-				       const double * lastSolution, double dextra[6],
-				       int extra[5])
+static OsiClpSolverInterface * 
+fixVubs(CbcModel & model, int skipZero2,
+	int & doAction, 
+	CoinMessageHandler * /*generalMessageHandler*/,
+	const double * lastSolution, double dextra[6],
+	int extra[5])
 {
   if (doAction==11&&!lastSolution)
     lastSolution = model.bestSolution();
@@ -2890,7 +2894,11 @@ static int outDupRow(OsiSolverInterface * solver)
   return numberDrop;
 }
 #endif
+#ifdef COIN_DEVELOP
 void checkSOS(CbcModel * babModel, const OsiSolverInterface * solver)
+#else
+void checkSOS(CbcModel * /*babModel*/, const OsiSolverInterface * /*solver*/)
+#endif
 {
 #ifdef COIN_DEVELOP
   if (!babModel->ownObjects())
@@ -3086,7 +3094,7 @@ int callCbc(const std::string input2)
   free(input3);
   return returnCode;
 }
-static int dummyCallBack(CbcModel * model, int whereFrom)
+static int dummyCallBack(CbcModel * /*model*/, int /*whereFrom*/)
 {
   return 0;
 }
@@ -3235,7 +3243,9 @@ void CbcMain0 (CbcModel  & model)
   parameters[whichParam(GOMORYCUTS,numberParameters,parameters)].setCurrentOption("ifmove");
   parameters[whichParam(PROBINGCUTS,numberParameters,parameters)].setCurrentOption("ifmove");
   parameters[whichParam(KNAPSACKCUTS,numberParameters,parameters)].setCurrentOption("ifmove");
+#ifdef ZERO_HALF_CUTS
   parameters[whichParam(ZEROHALFCUTS,numberParameters,parameters)].setCurrentOption("off");
+#endif
   parameters[whichParam(REDSPLITCUTS,numberParameters,parameters)].setCurrentOption("off");
   parameters[whichParam(CLIQUECUTS,numberParameters,parameters)].setCurrentOption("ifmove");
   parameters[whichParam(MIXEDCUTS,numberParameters,parameters)].setCurrentOption("ifmove");
@@ -4199,9 +4209,9 @@ int
 #ifdef ZERO_HALF_CUTS
     CglZeroHalf zerohalfGen;
     //zerohalfGen.switchOnExpensive();
-#endif
     // set default action (0=off,1=on,2=root)
     int zerohalfAction=0;
+#endif
 
     // Stored cuts
     //bool storedCuts = false;
@@ -4367,6 +4377,11 @@ int
 	}
 	if (type==GENERALQUERY) {
 	  bool evenHidden=false;
+	  int printLevel = 
+	    parameters_[whichParam(ALLCOMMANDS,
+				   numberParameters_,parameters_)].currentOptionAsInteger();
+	  int convertP[]={2,1,0};
+	  printLevel=convertP[printLevel];
 	  if ((verbose&8)!=0) {
 	    // even hidden
 	    evenHidden = true;
@@ -4390,7 +4405,7 @@ int
             std::cout<<"         option cbc_options \"cuts=root log=2 feas=on slog=1\""<<std::endl<<std::endl;
             std::cout<<"only maximize, dual, primal, help and quit are recognized without ="<<std::endl;
           }
-	  int maxAcross=5;
+	  int maxAcross=10;
           if ((verbose%4)!=0)
             maxAcross=1;
 	  int limits[]={1,51,101,151,201,251,301,351,401};
@@ -4406,6 +4421,7 @@ int
 	  int iType;
 	  for (iType=0;iType<8;iType++) {
 	    int across=0;
+	    int lengthLine=0;
             if ((verbose%4)!=0)
               std::cout<<std::endl;
 	    std::cout<<types[iType]<<std::endl;
@@ -4413,19 +4429,26 @@ int
               std::cout<<std::endl;
 	    for ( iParam=0; iParam<numberParameters_; iParam++ ) {
 	      int type = parameters_[iParam].type();
-	      if ((parameters_[iParam].displayThis()||evenHidden)&&
+	      //printf("%d type %d limits %d %d display %d\n",iParam,
+	      //     type,limits[iType],limits[iType+1],parameters_[iParam].displayThis());
+	      if ((parameters_[iParam].displayThis()>=printLevel||evenHidden)&&
 		  type>=limits[iType]
 		  &&type<limits[iType+1]) {
                 // but skip if not useful for ampl (and in ampl mode)
                 if (verbose>=4&&(parameters_[iParam].whereUsed()&4)==0)
                   continue;
 		if (!across) {
-                  if ((verbose&2)==0) 
-                    std::cout<<"  ";
-                  else
+                  if ((verbose&2)!=0) 
                     std::cout<<"Command ";
                 }
-                std::cout<<parameters_[iParam].matchName()<<"  ";
+		int length = parameters_[iParam].lengthMatchName()+1;
+		if (lengthLine+length>80) {
+		  std::cout<<std::endl;
+		  across=0;
+		  lengthLine=0;
+		}
+                std::cout<<" "<<parameters_[iParam].matchName();
+		lengthLine += length;
 		across++;
 		if (across==maxAcross) {
 		  across=0;
@@ -4886,10 +4909,12 @@ int
               defaultSettings=false; // user knows what she is doing
 	      residualCapacityAction = action;
 	      break;
+#ifdef ZERO_HALF_CUTS
 	    case ZEROHALFCUTS:
               defaultSettings=false; // user knows what she is doing
 	      zerohalfAction = action;
 	      break;
+#endif
 	    case ROUNDING:
               defaultSettings=false; // user knows what she is doing
 	      break;
@@ -4906,7 +4931,9 @@ int
 	      gomoryAction = action;
 	      probingAction = action;
 	      knapsackAction = action;
+#ifdef ZERO_HALF_CUTS
 	      zerohalfAction = action;
+#endif
 	      cliqueAction = action;
 	      flowAction = action;
 	      mixedAction = action;
@@ -4919,7 +4946,9 @@ int
               parameters_[whichParam(FLOWCUTS,numberParameters_,parameters_)].setCurrentOption(action);
               parameters_[whichParam(MIXEDCUTS,numberParameters_,parameters_)].setCurrentOption(action);
               parameters_[whichParam(TWOMIRCUTS,numberParameters_,parameters_)].setCurrentOption(action);
+#ifdef ZERO_HALF_CUTS
               parameters_[whichParam(ZEROHALFCUTS,numberParameters_,parameters_)].setCurrentOption(action);
+#endif
               if (!action) {
                 redsplitAction = action;
                 parameters_[whichParam(REDSPLITCUTS,numberParameters_,parameters_)].setCurrentOption(action);
@@ -4963,9 +4992,9 @@ int
 	    case PREPROCESS:
 	      preProcess = action;
 	      break;
-	      break;
 	    default:
-	      abort();
+	      //abort();
+	      break;
 	    }
 	  }
 	} else {
@@ -5841,11 +5870,15 @@ int
 		  model_.solver()->setHintParam(OsiDoPresolveInResolve,false,OsiHintTry);
 		}
 		double time1a = CoinCpuTime();
-                model_.initialSolve();
                 OsiSolverInterface * solver = model_.solver();
 #ifndef CBC_OTHER_SOLVER
                 OsiClpSolverInterface * si =
                   dynamic_cast<OsiClpSolverInterface *>(solver) ;
+		if (si)
+		  si->setSpecialOptions(si->specialOptions()|1024);
+#endif
+                model_.initialSolve();
+#ifndef CBC_OTHER_SOLVER
 		ClpSimplex * clpSolver = si->getModelPtr();
 		int iStatus = clpSolver->status();
 		int iStatus2 = clpSolver->secondaryStatus();
@@ -6138,7 +6171,7 @@ int
 		  for ( i=0;i<numberSOS;i++) {
 		    int type = setInfo[i].setType();
 		    int n=setInfo[i].numberEntries();
-		    sosType[i]=type;
+		    sosType[i]=static_cast<char>(type);
 		    nTotal += n;
 		    sosStart[i+1] = nTotal;
 		  }
@@ -6279,6 +6312,7 @@ int
 #ifndef CBC_OTHER_SOLVER
 		  {
 		    OsiClpSolverInterface * osiclp = dynamic_cast< OsiClpSolverInterface*> (saveSolver);
+		    osiclp->setSpecialOptions(osiclp->specialOptions()|1024);
 		    int savePerturbation = osiclp->getModelPtr()->perturbation();
 		    //#define CBC_TEMP1
 #ifdef CBC_TEMP1
@@ -9144,7 +9178,7 @@ int
                   char * put = line;
                   while (*pos>=' '&&*pos!='\n') {
                     if (*pos!=' '&&*pos!='\t') {
-                      *put=tolower(*pos);
+                      *put=static_cast<char>(tolower(*pos));
                       put++;
                     }
                     pos++;
@@ -9437,13 +9471,26 @@ int
                 // can open - lets go for it
                 int numRows;
                 double obj;
-                fread(&numRows,sizeof(int),1,fp);
-                fread(&numberDebugValues,sizeof(int),1,fp);
-                fread(&obj,sizeof(double),1,fp);
+		int nRead;
+                nRead=fread(&numRows,sizeof(int),1,fp);
+		if (nRead!=1)
+		  throw("Error in fread");
+                nRead=fread(&numberDebugValues,sizeof(int),1,fp);
+		if (nRead!=1)
+		  throw("Error in fread");
+                nRead=fread(&obj,sizeof(double),1,fp);
+		if (nRead!=1)
+		  throw("Error in fread");
                 debugValues = new double[numberDebugValues+numRows];
-                fread(debugValues,sizeof(double),numRows,fp);
-                fread(debugValues,sizeof(double),numRows,fp);
-                fread(debugValues,sizeof(double),numberDebugValues,fp);
+                nRead=fread(debugValues,sizeof(double),numRows,fp);
+		if (nRead!=numRows)
+		  throw("Error in fread");
+                nRead=fread(debugValues,sizeof(double),numRows,fp);
+		if (nRead!=numRows)
+		  throw("Error in fread");
+                nRead=fread(debugValues,sizeof(double),numberDebugValues,fp);
+		if (nRead!=numberDebugValues)
+		  throw("Error in fread");
                 printf("%d doubles read into debugValues\n",numberDebugValues);
 		if (numberDebugValues<200) {
 		  for (int i=0;i<numberDebugValues;i++) {
@@ -10803,7 +10850,7 @@ static void clean(char * temp)
     put++;
   *put='\0';
 }
-static void generateCode(CbcModel * model, const char * fileName,int type,int preProcess)
+static void generateCode(CbcModel * /*model*/, const char * fileName,int type,int preProcess)
 {
   // options on code generation
   bool sizecode = (type&4)!=0;

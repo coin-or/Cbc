@@ -270,10 +270,12 @@ private:
   inline void setGlobalCuts(bool yesNo)
   { switches_&=~256;switches_ |= yesNo ? 256 : 0;}
   //@}
+  /// Saved cuts
+  OsiCuts savedCuts_;
   /// Time in cut generator
   double timeInCutGenerator_;
   /// The client model
-  CbcModel *model_;
+  CbcModel *model_; 
 
   // The CglCutGenerator object
   CglCutGenerator * generator_;
@@ -354,7 +356,7 @@ public:
   */
   virtual int modify(const OsiSolverInterface * solver, OsiRowCut & cut) =0;
   /// Create C++ lines to get to current state
-  virtual void generateCpp( FILE * fp) {}
+  virtual void generateCpp( FILE * ) {}
 protected:
   
 };
@@ -398,7 +400,7 @@ public:
   */
   virtual int modify(const OsiSolverInterface * solver, OsiRowCut & cut) ;
   /// Create C++ lines to get to current state
-  virtual void generateCpp( FILE * fp) {}
+  virtual void generateCpp( FILE * ) {}
 protected:
   /// data
   /// First odd variable

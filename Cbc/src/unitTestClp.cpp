@@ -532,7 +532,7 @@ int CbcClpUnitTest (const CbcModel & saveModel, std::string& dirMiplib,
       if (stuff&&stuff[8]>=1) {
 	if (modelC->numberColumns()+modelC->numberRows()<=100000&&
 	    model->fastNodeDepth()==-1) 
-	  model->setFastNodeDepth(-7);
+	  model->setFastNodeDepth(-9);
       }
     }
     //OsiObject * obj = new CbcBranchToFixLots(model,0.3,0.0,3,3000003);

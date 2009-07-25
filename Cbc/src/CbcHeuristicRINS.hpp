@@ -76,6 +76,8 @@ protected:
   int numberSuccesses_;
   /// Number of tries
   int numberTries_;
+  /// Node when last done
+  int lastNode_;
   /// Whether a variable has been in a solution
   char * used_;
 };

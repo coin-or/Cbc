@@ -65,6 +65,7 @@ static Cbc_message us_english[]=
   {CBC_RELAXED2,43,1,"Possible objective of %.18g but variables are up to %g away from bound (within tolerance of %g) - might be able to fudge solution - but do you want to?"},
   {CBC_RESTART,44,1,"Reduced cost fixing - %d rows, %d columns - restarting search"},
   {CBC_GENERAL,45,1,"%s"},
+  {CBC_ROOT_DETAIL,46,2,"Root node pass %d, %d rows, %d total tight cuts  -  objective %g"},
   {CBC_DUMMY_END,999999,0,""}
 };
 /* Constructor */

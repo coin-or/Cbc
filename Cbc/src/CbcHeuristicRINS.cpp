@@ -25,6 +25,7 @@ CbcHeuristicRINS::CbcHeuristicRINS()
   numberSolutions_=0;
   numberSuccesses_=0;
   numberTries_=0;
+  lastNode_=-999999;
   howOften_=100;
   decayFactor_ = 0.5; 
   used_=NULL;
@@ -38,6 +39,7 @@ CbcHeuristicRINS::CbcHeuristicRINS(CbcModel & model)
   numberSolutions_=0;
   numberSuccesses_=0;
   numberTries_=0;
+  lastNode_=-999999;
   howOften_=100;
   decayFactor_ = 0.5; 
   assert(model.solver());
@@ -70,6 +72,7 @@ CbcHeuristicRINS::operator=( const CbcHeuristicRINS& rhs)
     decayFactor_ = rhs.decayFactor_;
     numberSuccesses_ = rhs.numberSuccesses_;
     numberTries_ = rhs.numberTries_;
+    lastNode_=rhs.lastNode_;
     delete [] used_;
     if (model_&&rhs.used_) {
       int numberColumns = model_->solver()->getNumCols();
@@ -105,7 +108,8 @@ CbcHeuristicRINS::CbcHeuristicRINS(const CbcHeuristicRINS & rhs)
   howOften_(rhs.howOften_),
   decayFactor_(rhs.decayFactor_),
   numberSuccesses_(rhs.numberSuccesses_),
-  numberTries_(rhs.numberTries_)
+  numberTries_(rhs.numberTries_),
+  lastNode_(rhs.lastNode_)
 {
   if (model_&&rhs.used_) {
     int numberColumns = model_->solver()->getNumCols();
@@ -117,7 +121,7 @@ CbcHeuristicRINS::CbcHeuristicRINS(const CbcHeuristicRINS & rhs)
 }
 // Resets stuff if model changes
 void 
-CbcHeuristicRINS::resetModel(CbcModel * model)
+CbcHeuristicRINS::resetModel(CbcModel * /*model*/)
 {
   //CbcHeuristic::resetModel(model);
   delete [] used_;
@@ -170,7 +174,17 @@ CbcHeuristicRINS::solution(double & solutionValue,
       }
     }
   } 
-  if ((model_->getNodeCount()%howOften_)==0&&(model_->getCurrentPassNumber()==1||model_->getCurrentPassNumber()==999999)) {
+  int numberNodes=model_->getNodeCount();
+  if (howOften_==100) {
+    if (numberNodes<lastNode_+12)
+      return 0;
+    // Do at 50 and 100
+    if ((numberNodes>40&&numberNodes<=50)||(numberNodes>90&&numberNodes<100))
+      numberNodes=howOften_;
+  }
+  if ((numberNodes%howOften_)==0&&(model_->getCurrentPassNumber()==1||
+				   model_->getCurrentPassNumber()==999999)) {
+    lastNode_=model_->getNodeCount();
     OsiSolverInterface * solver = model_->solver();
 
     int numberIntegers = model_->numberIntegers();
@@ -291,7 +305,7 @@ CbcHeuristicRENS::CbcHeuristicRENS(const CbcHeuristicRENS & rhs)
 }
 // Resets stuff if model changes
 void 
-CbcHeuristicRENS::resetModel(CbcModel * model)
+CbcHeuristicRENS::resetModel(CbcModel * )
 {
 }
 int
@@ -489,7 +503,7 @@ CbcHeuristicDINS::CbcHeuristicDINS(const CbcHeuristicDINS & rhs)
 }
 // Resets stuff if model changes
 void 
-CbcHeuristicDINS::resetModel(CbcModel * model)
+CbcHeuristicDINS::resetModel(CbcModel * )
 {
   //CbcHeuristic::resetModel(model);
   for (int i=0;i<numberKeptSolutions_;i++)

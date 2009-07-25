@@ -112,9 +112,9 @@ public:
       This is called at same time as cut generators - so can add cuts
       Default is do nothing
   */
-  virtual int solution(double & objectiveValue,
-		       double * newSolution,
-		       OsiCuts & cs) {return 0;}
+  virtual int solution(double & /*objectiveValue*/,
+		       double * /*newSolution*/,
+		       OsiCuts & /*cs*/) {return 0;}
 
   /// Validate model i.e. sets when_ to 0 if necessary (may be NULL)
   virtual void validate() {}
@@ -196,7 +196,7 @@ public:
                           double * newSolution, double & newSolutionValue,
                           double cutoff , std::string name) const;
   /// Create C++ lines to get to current state
-  virtual void generateCpp( FILE * fp) {}
+  virtual void generateCpp( FILE * ) {}
   /// Create C++ lines to get to current state - does work for base class
   void generateCpp( FILE * fp,const char * heuristic) ;
   /// Returns true if can deal with "odd" problems e.g. sos type 2
@@ -541,10 +541,10 @@ public:
       returned will not be trivially roundable.
       This is dummy as never called
   */
-  virtual bool selectVariableToBranch(OsiSolverInterface* solver,
-				      const double* newSolution,
-				      int& bestColumn,
-				      int& bestRound) 
+  virtual bool selectVariableToBranch(OsiSolverInterface* /*solver*/,
+				      const double* /*newSolution*/,
+				      int& /*bestColumn*/,
+				      int& /*bestRound*/) 
   { return true;}
   /// Validate model i.e. sets when_ to 0 if necessary (may be NULL)
   virtual void validate();

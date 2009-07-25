@@ -68,7 +68,8 @@ CbcStrategy::fullNodeInfo(CbcModel * model,int numberRowsAtContinuous) const
 }
 // Return a new Partial node information pointer (descendant of CbcPartialNodeInfo)
 CbcNodeInfo * 
-CbcStrategy::partialNodeInfo(CbcModel * model, CbcNodeInfo * parent, CbcNode * owner,
+CbcStrategy::partialNodeInfo(CbcModel * /*model*/, 
+			     CbcNodeInfo * parent, CbcNode * owner,
                              int numberChangedBounds,const int * variables,
                              const double * boundChanges,
                              const CoinWarmStartDiff *basisDiff) const
@@ -83,7 +84,8 @@ CbcStrategy::partialNodeInfo(CbcModel * model, CbcNodeInfo * parent, CbcNode * o
    2 treat as infeasible
 */
 int
-CbcStrategy::status(CbcModel * model, CbcNodeInfo * parent,int whereFrom)
+CbcStrategy::status(CbcModel * /*model*/, CbcNodeInfo * /*parent*/,
+		    int /*whereFrom*/)
 {
   return -1;
 }

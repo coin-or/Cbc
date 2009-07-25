@@ -101,6 +101,7 @@ CbcCutGenerator::CbcCutGenerator ( const CbcCutGenerator & rhs)
   generatorName_=strdup(rhs.generatorName_);
   switches_ = rhs.switches_;
   timeInCutGenerator_ = rhs.timeInCutGenerator_;
+  savedCuts_ = rhs.savedCuts_;
   inaccuracy_ = rhs.inaccuracy_;
   numberTimes_ = rhs.numberTimes_;
   numberCuts_ = rhs.numberCuts_;
@@ -128,6 +129,7 @@ CbcCutGenerator::operator=( const CbcCutGenerator& rhs)
     generatorName_=strdup(rhs.generatorName_);
     switches_ = rhs.switches_;
     timeInCutGenerator_ = rhs.timeInCutGenerator_;
+    savedCuts_ = rhs.savedCuts_;
     inaccuracy_ = rhs.inaccuracy_;
     numberTimes_ = rhs.numberTimes_;
     numberCuts_ = rhs.numberCuts_;
@@ -185,6 +187,9 @@ CbcCutGenerator::generateCuts( OsiCuts & cs , int fullScan, OsiSolverInterface *
   bool returnCode=false;
   //OsiSolverInterface * solver = model_->solver();
   int pass=model_->getCurrentPassNumber()-1;
+  // Reset cuts on first pass
+  if (!pass)
+    savedCuts_ = OsiCuts();
   bool doThis=(model_->getNodeCount()%howOften)==0;
   if (depthCutGenerator_>0) {
     doThis = (depth % depthCutGenerator_) ==0;
@@ -497,6 +502,36 @@ CbcCutGenerator::generateCuts( OsiCuts & cs , int fullScan, OsiSolverInterface *
 	thisCut->mutableRow().setTestForDuplicateIndex(false);
       }
     }
+    // Add in saved cuts if violated
+    if (false&&!depth) {
+      const double * solution = solver->getColSolution();
+      double primalTolerance = 1.0e-7;
+      int numberCuts = savedCuts_.sizeRowCuts() ;
+      for (int k = numberCuts-1;k>=0;k--) {
+	const OsiRowCut * thisCut = savedCuts_.rowCutPtr(k) ;
+	double sum=0.0;
+	int n=thisCut->row().getNumElements();
+	const int * column = thisCut->row().getIndices();
+	const double * element = thisCut->row().getElements();
+	assert (n);
+	for (int i=0;i<n;i++) {
+	  double value = element[i];
+	  sum += value*solution[column[i]];
+	}
+	if (sum>thisCut->ub()+primalTolerance) {
+	  sum= sum-thisCut->ub();
+	} else if (sum<thisCut->lb()-primalTolerance) {
+	  sum= thisCut->lb()-sum;
+	} else {
+	  sum=0.0;
+	}
+	if (sum) {
+	  // add to candidates and take out here
+	  cs.insert(*thisCut);
+	  savedCuts_.eraseRowCut(k);
+	}
+      }
+    }
     {
       int numberRowCutsAfter = cs.sizeRowCuts() ;
       if (numberRowCutsBefore<numberRowCutsAfter) {
@@ -767,6 +802,10 @@ CbcCutGenerator::generateCuts( OsiCuts & cs , int fullScan, OsiSolverInterface *
 	  int iCut=which[k];
 	  const OsiRowCut * thisCut = cs.rowCutPtr(iCut) ;
 	  int n=thisCut->row().getNumElements();
+	  if (n&&sort[k]) {
+	    // add to saved cuts
+	    savedCuts_.insert(*thisCut);
+	  }
 	  nDelete-=n; 
 	  k++;
 	  if (k>=nCuts)
@@ -869,7 +908,7 @@ CbcCutModifier::~CbcCutModifier ()
 }
 
 // Copy constructor 
-CbcCutModifier::CbcCutModifier ( const CbcCutModifier & rhs)
+CbcCutModifier::CbcCutModifier ( const CbcCutModifier & /*rhs*/)
 {
 }
 
@@ -932,7 +971,8 @@ CbcCutSubsetModifier::~CbcCutSubsetModifier ()
    3 deleted
 */
 int 
-CbcCutSubsetModifier::modify(const OsiSolverInterface * solver, OsiRowCut & cut) 
+CbcCutSubsetModifier::modify(const OsiSolverInterface * /*solver*/, 
+			     OsiRowCut & cut) 
 {
   int n=cut.row().getNumElements();
   if (!n)

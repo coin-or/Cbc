@@ -194,7 +194,7 @@ public:
   
     Bounds may be tightened, so it may be good to be able to set this info in object.
    */
-  virtual void resetBounds(const OsiSolverInterface * solver) {}
+  virtual void resetBounds(const OsiSolverInterface * ) {}
   
   /** Returns floor and ceiling i.e. closest valid points
   */
@@ -209,7 +209,7 @@ public:
 							const CbcBranchingObject * branchingObject);
 
   /// Update object by CbcObjectUpdateData
-  virtual void updateInformation(const CbcObjectUpdateData & data) {}
+  virtual void updateInformation(const CbcObjectUpdateData & ) {}
 
   /// Identifier (normally column number in matrix)
   inline int id() const
@@ -249,7 +249,7 @@ public:
   inline void setPreferredWay(int value)
   { preferredWay_=value;}
   /// Redoes data when sequence numbers change
-  virtual void redoSequenceEtc(CbcModel * model, int numberColumns, const int * originalColumns) {}
+  virtual void redoSequenceEtc(CbcModel * , int , const int * ) {}
   
 protected:
   /// data
@@ -309,7 +309,7 @@ public:
       strong branching.  If so they ahve to fill in CbcStrongInfo.
       The object mention in incoming CbcStrongInfo must match.
       Returns nonzero if skip is wanted */
-  virtual int fillStrongInfo( CbcStrongInfo & info) {return 0;}
+  virtual int fillStrongInfo( CbcStrongInfo & ) {return 0;}
   /// Reset number of branches left to original
   inline void resetNumberBranchesLeft()
   { branchIndex_=0;}
@@ -330,13 +330,13 @@ public:
 	     strong branching is also passed.
 	     Returns change in guessed objective on next branch
   */
-  virtual double branch(OsiSolverInterface * solver)
+  virtual double branch(OsiSolverInterface * )
   { return branch();}
   /** Update bounds in solver as in 'branch' and update given bounds.
       branchState is -1 for 'down' +1 for 'up' */
-  virtual void fix(OsiSolverInterface * solver,
-		   double * lower, double * upper,
-		   int branchState) const {}
+  virtual void fix(OsiSolverInterface * ,
+		   double * , double * ,
+		   int ) const {}
 
   /** Reset every information so that the branching object appears to point to
       the previous child. This method does not need to modify anything in any
@@ -511,16 +511,16 @@ public:
 
   /** Saves a clone of current branching object.  Can be used to update
       information on object causing branch - after branch */
-  virtual void saveBranchingObject(OsiBranchingObject * object) {}
+  virtual void saveBranchingObject(OsiBranchingObject * ) {}
   /** Pass in information on branch just done.
       assumes object can get information from solver */
-  virtual void updateInformation(OsiSolverInterface * solver, 
-                                 const CbcNode * node) {}
+  virtual void updateInformation(OsiSolverInterface * , 
+                                 const CbcNode * ) {}
   /** Sets or gets best criterion so far */
-  virtual void setBestCriterion(double value) {}
+  virtual void setBestCriterion(double ) {}
   virtual double getBestCriterion() const {return 0.0;}
   /// Create C++ lines to get to current state
-  virtual void generateCpp( FILE * fp) {}
+  virtual void generateCpp( FILE * ) {}
   /// Model
   inline CbcModel * cbcModel() const
   { return model_;}

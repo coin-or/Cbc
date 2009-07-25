@@ -31,7 +31,7 @@ public:
   CbcHeuristicDive & operator=(const CbcHeuristicDive& rhs);
 
   /// Create C++ lines to get to current state
-  virtual void generateCpp( FILE * fp) {}
+  virtual void generateCpp( FILE * ) {}
 
   /// Create C++ lines to get to current state - does work for base class
   void generateCpp( FILE * fp,const char * heuristic);

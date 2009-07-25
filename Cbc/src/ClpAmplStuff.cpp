@@ -1363,8 +1363,8 @@ ClpSimplex::loadNonLinear(void * amplInfo, int & numberConstraints,
 #include "ClpSimplex.hpp"
 #include "ClpConstraint.hpp"
 int 
-ClpSimplex::loadNonLinear(void * amplInfo, int & numberConstraints, 
-			  ClpConstraint ** & constraints)
+ClpSimplex::loadNonLinear(void * , int & , 
+			  ClpConstraint ** & )
 {
   abort();
   return 0;

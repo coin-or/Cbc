@@ -188,7 +188,7 @@ CbcHeuristicFPump::operator=( const CbcHeuristicFPump& rhs)
 
 // Resets stuff if model changes
 void 
-CbcHeuristicFPump::resetModel(CbcModel * model)
+CbcHeuristicFPump::resetModel(CbcModel * )
 {
 }
 
@@ -631,8 +631,10 @@ CbcHeuristicFPump::solution(double & solutionValue,
 	// always use same seed
 	randomNumberGenerator_.setSeed(987654321);
       }
-      returnCode = rounds(solver, newSolution,saveObjective,numberIntegers,integerVariable,
-			  pumpPrint,numberPasses,roundExpensive_,defaultRounding_,&flip);
+      returnCode = rounds(solver, newSolution,/*saveObjective,*/
+			  numberIntegers,integerVariable,
+			  /*pumpPrint,*/numberPasses,
+			  /*roundExpensive_,*/defaultRounding_,&flip);
       if (numberPasses==0&&false) {
 	// Make sure random will be different
 	for (i=1;i<numberTries;i++)
@@ -919,8 +921,10 @@ CbcHeuristicFPump::solution(double & solutionValue,
 	  }
 	  memcpy(newSolution,solution,numberColumns*sizeof(double));
 	  int flip;
-	  returnCode = rounds(solver, newSolution,saveObjective,numberIntegers,integerVariable,
-			      pumpPrint,numberPasses,roundExpensive_,defaultRounding_,&flip);
+	  returnCode = rounds(solver, newSolution,/*saveObjective,*/
+			      numberIntegers,integerVariable,
+			      /*pumpPrint,*/numberPasses,
+			      /*roundExpensive_,*/defaultRounding_,&flip);
 	  numberPasses++;
 	  if (returnCode) {
 	    // solution - but may not be better
@@ -1930,10 +1934,10 @@ void CbcHeuristicFPump::setModel(CbcModel * model)
 */
 int 
 CbcHeuristicFPump::rounds(OsiSolverInterface * solver,double * solution,
-			  const double * objective,
+			  //const double * objective,
 			  int numberIntegers, const int * integerVariable,
-			  char * pumpPrint, int iter,
-			  bool roundExpensive, double downValue, int *flip)
+			  /*char * pumpPrint,*/ int iter,
+			  /*bool roundExpensive,*/ double downValue, int *flip)
 {
   double integerTolerance = model_->getDblParam(CbcModel::CbcIntegerTolerance);
   double primalTolerance ;

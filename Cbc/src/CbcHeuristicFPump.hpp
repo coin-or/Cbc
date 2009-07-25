@@ -214,10 +214,11 @@ private:
       If roundExpensive then always to more expnsive.
       returns 0 if current is solution
   */
-  int rounds(OsiSolverInterface * solver,double * solution, const double * objective, 
+  int rounds(OsiSolverInterface * solver,double * solution, 
+	     /*const double * objective, */
 	     int numberIntegers, const int * integerVariable,
-	     char * pumpPrint,int passNumber,
-	     bool roundExpensive=false,
+	     /*char * pumpPrint,*/int passNumber,
+	     /*bool roundExpensive=false,*/
 	     double downValue=0.5, int *flip=0);
   /* note for eagle eyed readers.
      when_ can now be exotic -

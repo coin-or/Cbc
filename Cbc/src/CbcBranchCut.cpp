@@ -49,7 +49,7 @@ CbcBranchCut::clone() const
 
 // Assignment operator 
 CbcBranchCut & 
-CbcBranchCut::operator=( const CbcBranchCut& rhs)
+CbcBranchCut::operator=( const CbcBranchCut& /*rhs*/)
 {
   return *this;
 }
@@ -85,7 +85,7 @@ CbcBranchCut::boundBranch() const
 
 // Creates a branching object
 CbcBranchingObject * 
-CbcBranchCut::createBranch(int way) 
+CbcBranchCut::createBranch(int /*way*/) 
 {
   throw CoinError("Use of base class","createBranch","CbcBranchCut");
   return new CbcCutBranchingObject();
@@ -435,10 +435,10 @@ CbcBranchToFixLots::~CbcBranchToFixLots ()
 }
 // Creates a branching object
 CbcBranchingObject * 
-CbcBranchToFixLots::createBranch(int way) 
+CbcBranchToFixLots::createBranch(int /*way*/) 
 {
   // by default way must be -1
-  assert (way==-1);
+  //assert (way==-1);
   OsiSolverInterface * solver = model_->solver();
   const double * solution = model_->testSolution();
   const double * lower = solver->getColLower();
@@ -945,10 +945,10 @@ CbcBranchAllDifferent::~CbcBranchAllDifferent ()
 }
 // Creates a branching object
 CbcBranchingObject * 
-CbcBranchAllDifferent::createBranch(int way) 
+CbcBranchAllDifferent::createBranch(int /*way*/) 
 {
   // by default way must be -1
-  assert (way==-1);
+  //assert (way==-1);
   const double * solution = model_->testSolution();
   double * values = new double[numberInSet_];
   int * which = new int[numberInSet_];

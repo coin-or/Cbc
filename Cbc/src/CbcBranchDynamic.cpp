@@ -20,17 +20,17 @@
 #include "CoinError.hpp"
 #ifdef COIN_DEVELOP
 typedef struct {
-  char where_;
-  char status_;
-  unsigned short sequence_;
+  double sumUp_;
+  double upEst_; // or change in obj in update
+  double sumDown_;
+  double downEst_; // or movement in value in update
+  int sequence_;
   int numberUp_;
   int numberUpInf_;
-  float sumUp_;
-  float upEst_; // or change in obj in update
   int numberDown_;
   int numberDownInf_;
-  float sumDown_;
-  float downEst_; // or movement in value in update
+  char where_;
+  char status_;
 } History;
 History * history=NULL;
 int numberHistory=0;
@@ -266,7 +266,8 @@ CbcSimpleIntegerDynamicPseudoCost::CbcSimpleIntegerDynamicPseudoCost (CbcModel *
   Loads dynamic upper & lower bounds for the specified variable.
 */
 CbcSimpleIntegerDynamicPseudoCost::CbcSimpleIntegerDynamicPseudoCost (CbcModel * model,
-				    int dummy, int iColumn, double downDynamicPseudoCost,
+								      int /*dummy*/, 
+								      int iColumn, double downDynamicPseudoCost,
 							double upDynamicPseudoCost)
 {
   CbcSimpleIntegerDynamicPseudoCost(model,iColumn,downDynamicPseudoCost,upDynamicPseudoCost);
@@ -807,7 +808,8 @@ CbcSimpleIntegerDynamicPseudoCost::infeasibility(int & preferredWay) const
 }
 
 double
-CbcSimpleIntegerDynamicPseudoCost::infeasibility(const OsiSolverInterface * solver, const OsiBranchingInformation * info,
+CbcSimpleIntegerDynamicPseudoCost::infeasibility(const OsiSolverInterface * /*solver*/,
+						 const OsiBranchingInformation * info,
 			 int & preferredWay) const
 {
   double value = info->solution_[columnNumber_];
@@ -918,7 +920,8 @@ CbcSimpleIntegerDynamicPseudoCost::infeasibility(const OsiSolverInterface * solv
 }
 // Creates a branching object
 CbcBranchingObject * 
-CbcSimpleIntegerDynamicPseudoCost::createBranch(OsiSolverInterface * solver, const OsiBranchingInformation * info, int way) 
+CbcSimpleIntegerDynamicPseudoCost::createBranch(OsiSolverInterface * /*solver*/,
+						const OsiBranchingInformation * info, int way) 
 {
   double value = info->solution_[columnNumber_];
   value = CoinMax(value, info->lower_[columnNumber_]);
@@ -1403,7 +1406,7 @@ CbcDynamicPseudoCostBranchingObject::fillPart (int variable,
 CbcDynamicPseudoCostBranchingObject::CbcDynamicPseudoCostBranchingObject (CbcModel * model, 
 						      int variable, int way,
 						      double lowerValue, 
-						      double upperValue)
+									  double /*upperValue*/)
   :CbcIntegerBranchingObject(model,variable,way,lowerValue)
 {
   changeInGuessed_=1.0e100;
@@ -1530,7 +1533,7 @@ CbcBranchDynamicDecision::clone() const
 
 // Initialize i.e. before start of choosing at a node
 void 
-CbcBranchDynamicDecision::initialize(CbcModel * model)
+CbcBranchDynamicDecision::initialize(CbcModel * /*model*/)
 {
   bestCriterion_ = 0.0;
   bestChangeUp_ = 0.0;
@@ -1740,7 +1743,7 @@ CbcBranchDynamicDecision::updateInformation(OsiSolverInterface * solver,
 
 int
 CbcBranchDynamicDecision::betterBranch(CbcBranchingObject * thisOne,
-			    CbcBranchingObject * bestSoFar,
+				       CbcBranchingObject * /*bestSoFar*/,
 			    double changeUp, int numInfUp,
 			    double changeDown, int numInfDown)
 {
@@ -1959,7 +1962,7 @@ void printHistory(const char * file)
     return;
   FILE * fp = fopen(file,"w");
   assert(fp);
-  unsigned short numberIntegers=0;
+  int numberIntegers=0;
   int i;
   for (i=0;i<numberHistory;i++) {
     if (history[i].where_!='C'||history[i].status_!='I') 

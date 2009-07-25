@@ -329,7 +329,7 @@ CbcNodeInfo::incrementParentCuts(CbcModel * model, int change)
 */
 void
 CbcNodeInfo::addCuts (OsiCuts & cuts, int numberToBranchOn,
-		      int * whichGenerator,int numberPointingToThis)
+		      /*int * whichGenerator,*/int numberPointingToThis)
 {
   int numberCuts = cuts.sizeRowCuts();
   if (numberCuts) {
@@ -2389,7 +2389,8 @@ int CbcNode::chooseBranch (CbcModel *model, CbcNode *lastNode,int numberPassesLe
 */
 
 int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
-                                  OsiSolverBranch * & branches,int numberPassesLeft)
+                                  OsiSolverBranch * & /*branches*/,
+				  int numberPassesLeft)
   
 { if (lastNode)
     depth_ = lastNode->depth_+1;
@@ -2688,7 +2689,7 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
       sumInfeasibilities_ = 0.0;
       int bestPriority=COIN_INT_MAX;
       int number01 = 0;
-      const fixEntry * entry = NULL;
+      const cliqueEntry * entry = NULL;
       const int * toZero = NULL;
       const int * toOne = NULL;
       const int * backward = NULL;
@@ -4373,7 +4374,8 @@ int CbcNode::analyze (CbcModel *model, double * results)
 }
 
 
-CbcNode::CbcNode(const CbcNode & rhs) 
+CbcNode::CbcNode(const CbcNode & rhs)
+  : CoinTreeNode(rhs) 
 {  
 #ifdef CHECK_NODE
   printf("CbcNode %x Constructor from rhs %x\n",this,&rhs);

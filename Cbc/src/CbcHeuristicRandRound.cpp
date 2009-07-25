@@ -125,6 +125,8 @@ CbcHeuristicRandRound::solution(double & solutionValue,
 		  // the heuristic could run" means.
 
   OsiSolverInterface * solver= model_->solver()->clone();
+  double primalTolerance ;
+  solver->getDblParam(OsiPrimalTolerance,primalTolerance) ;
   OsiClpSolverInterface * clpSolver = dynamic_cast<OsiClpSolverInterface *> (solver);
   assert (clpSolver);
   ClpSimplex * simplex = clpSolver->getModelPtr();
@@ -253,7 +255,7 @@ CbcHeuristicRandRound::solution(double & solutionValue,
 	  if(randNum == 1)		
 	    // if the element is zero, then set the new obj
 	    // coefficient to 0.1 (i.e., round up)
-	    if(fabs(matrix[index[i]][j]) < 1e-6)
+	    if(fabs(matrix[index[i]][j]) < primalTolerance)
 	      newObj[j] = 0.1;
 	    else
 	      // if the element is nonzero, then increase the new obj
@@ -263,7 +265,7 @@ CbcHeuristicRandRound::solution(double & solutionValue,
 	    // if randnum is 2, then
 	    // if the element is zero, then set the new obj coeffient
 	    // to NEGATIVE 0.1 (i.e., round down)
-	    if(fabs(matrix[index[i]][j]) < 1e-6)
+	    if(fabs(matrix[index[i]][j]) < primalTolerance)
 	      newObj[j] = -0.1;
 	    else
 	      // if the element is nonzero, then DEcrease the new obj coeffienct "a bit"
@@ -336,7 +338,7 @@ CbcHeuristicRandRound::solution(double & solutionValue,
 	      if(varClassInt[j])
 		{
 		  double closest=floor(cornerPoints[i][j]+0.5);
-		  if(fabs(cornerPoints[i][j] - closest)>1e-6)
+		  if(fabs(cornerPoints[i][j] - closest)>primalTolerance)
 		    {
 		      feasibility = 0;
 		      break;
@@ -353,17 +355,17 @@ CbcHeuristicRandRound::solution(double & solutionValue,
 		      {
 			lhs += matrix[irow][j] * cornerPoints[i][j];
 		      }
-		    if(rowSense[irow] == 'L' && lhs > rhs[irow] + 1e-6)
+		    if(rowSense[irow] == 'L' && lhs > rhs[irow] + primalTolerance)
 		      {
 			feasibility = 0;
 			break;
 		      }
-		    if(rowSense[irow] == 'G' && lhs < rhs[irow] - 1e-6)
+		    if(rowSense[irow] == 'G' && lhs < rhs[irow] - primalTolerance)
 		      {
 			feasibility = 0;
 			break;
 		      }
-		    if(rowSense[irow] == 'E' && (lhs - rhs[irow] > 1e-6 || lhs - rhs[irow] < -1e-6)) 
+		    if(rowSense[irow] == 'E' && (lhs - rhs[irow] > primalTolerance || lhs - rhs[irow] < -primalTolerance)) 
 		      {
 			feasibility = 0;
 			break;
@@ -469,17 +471,17 @@ CbcHeuristicRandRound::solution(double & solutionValue,
 		{
 		  lhs += matrix[i][j] * roundRp[j];
 		}
-	      if(rowSense[i] == 'L' && lhs > rhs[i] + 1e-6)
+	      if(rowSense[i] == 'L' && lhs > rhs[i] + primalTolerance)
 		{
 		  feasibility = 0;
 		  break;
 		}
-	      if(rowSense[i] == 'G' && lhs < rhs[i] - 1e-6)
+	      if(rowSense[i] == 'G' && lhs < rhs[i] - primalTolerance)
 		{
 		  feasibility = 0;
 		  break;
 		}
-	      if(rowSense[i] == 'E' && (lhs - rhs[i] > 1e-6 || lhs - rhs[i] < -1e-6)) 
+	      if(rowSense[i] == 'E' && (lhs - rhs[i] > primalTolerance || lhs - rhs[i] < -primalTolerance)) 
 		{
 		  feasibility = 0;
 		  break;

@@ -66,9 +66,9 @@ CbcOsiSolver::CbcOsiSolver ()
 // Clone
 //-------------------------------------------------------------------
 OsiSolverInterface * 
-CbcOsiSolver::clone(bool copyData) const
+CbcOsiSolver::clone(bool /*copyData*/) const
 {
-  assert (copyData);
+  //assert (copyData);
   return new CbcOsiSolver(*this);
 }
 
@@ -78,7 +78,8 @@ CbcOsiSolver::clone(bool copyData) const
 //-------------------------------------------------------------------
 CbcOsiSolver::CbcOsiSolver (
                   const CbcOsiSolver & rhs)
-  : OsiClpSolverInterface(rhs)
+  : OsiSolverInterface(), // Should not be needed but get warning
+  OsiClpSolverInterface(rhs)
 {
   cbcModel_ = rhs.cbcModel_;
 }

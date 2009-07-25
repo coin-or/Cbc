@@ -98,9 +98,10 @@ CbcObject::floorCeiling(double & floorValue, double & ceilingValue, double value
     This is for instant re-use for speed
 */
 double 
-CbcObject::infeasibility(const OsiSolverInterface * solver,int &preferredWay) const 
+CbcObject::infeasibility(const OsiSolverInterface * /*solver*/,
+			 int &preferredWay) const 
 {
-  assert (solver==model_->solver());
+  //assert (solver==model_->solver());
   return infeasibility(preferredWay);
 }
   
@@ -109,9 +110,9 @@ CbcObject::infeasibility(const OsiSolverInterface * solver,int &preferredWay) co
       Returns measure of how much it had to move solution to make feasible
 */
 double 
-CbcObject::feasibleRegion(OsiSolverInterface * solver) const 
+CbcObject::feasibleRegion(OsiSolverInterface * /*solver*/) const 
 {
-  assert (solver==model_->solver());
+  //assert (solver==model_->solver());
   CbcObject * fudge = const_cast<CbcObject *>(this);
   fudge->feasibleRegion();
   return 0.0;
@@ -133,7 +134,7 @@ CbcObject::feasibleRegion(OsiSolverInterface * solver) const
     This is for instant re-use for speed
 */
 double 
-CbcObject::infeasibility(const OsiBranchingInformation * info,
+CbcObject::infeasibility(const OsiBranchingInformation * /*info*/,
 			 int &preferredWay) const 
 {
   return infeasibility(preferredWay);
@@ -144,9 +145,10 @@ CbcObject::infeasibility(const OsiBranchingInformation * info,
       Returns measure of how much it had to move solution to make feasible
 */
 double 
-CbcObject::feasibleRegion(OsiSolverInterface * solver,const OsiBranchingInformation * info) const 
+CbcObject::feasibleRegion(OsiSolverInterface * /*solver*/,
+			  const OsiBranchingInformation * /*info*/) const 
 {
-  assert (solver==model_->solver());
+  //assert (solver==model_->solver());
   CbcObject * fudge = const_cast<CbcObject *>(this);
   fudge->feasibleRegion();
   return 0.0;
@@ -158,9 +160,9 @@ CbcObject::feasibleRegion(OsiSolverInterface * solver,const OsiBranchingInformat
       variables, etc.)
 */
 OsiBranchingObject * 
-CbcObject::createBranch(OsiSolverInterface * solver, int way) const 
+CbcObject::createBranch(OsiSolverInterface * /*solver*/, int way) const 
 {
-  assert (solver==model_->solver());
+  //assert (solver==model_->solver());
   CbcObject * fudge = const_cast<CbcObject *>(this);
   return fudge->createBranch(way);
 }
@@ -170,9 +172,11 @@ CbcObject::createBranch(OsiSolverInterface * solver, int way) const
       variables, etc.)
 */
 OsiBranchingObject * 
-CbcObject::createBranch(OsiSolverInterface * solver,const OsiBranchingInformation * info, int way) const 
+CbcObject::createBranch(OsiSolverInterface * /*solver*/,
+			const OsiBranchingInformation * /*info*/, 
+			int way) const 
 {
-  assert (solver==model_->solver());
+  //assert (solver==model_->solver());
   CbcObject * fudge = const_cast<CbcObject *>(this);
   return fudge->createBranch(way);
 }
@@ -189,9 +193,9 @@ CbcObject::solverBranch() const
    If object does not need data then backward pointer will be NULL.
    Assumes can get information from solver */
 CbcObjectUpdateData 
-CbcObject::createUpdateInformation(const OsiSolverInterface * solver, 
-							const CbcNode * node,
-							const CbcBranchingObject * branchingObject)
+CbcObject::createUpdateInformation(const OsiSolverInterface * /*solver*/, 
+				   const CbcNode * /*node*/,
+				   const CbcBranchingObject * /*branchingObject*/)
 {
   return CbcObjectUpdateData();
 }
@@ -273,10 +277,10 @@ CbcBranchDecision::~CbcBranchDecision()
 
 int
 CbcBranchDecision::bestBranch (CbcBranchingObject ** objects, int numberObjects,
-			       int numberUnsatisfied,
+			       int /*numberUnsatisfied*/,
 			       double * changeUp, int * numberInfeasibilitiesUp,
 			       double * changeDown, int * numberInfeasibilitiesDown,
-			       double objectiveValue) 
+			       double /*objectiveValue*/) 
 {
   int bestWay=0;
   int whichObject = -1;
@@ -321,7 +325,7 @@ CbcConsequence::~CbcConsequence ()
 }
 
 // Copy constructor 
-CbcConsequence::CbcConsequence ( const CbcConsequence & rhs)
+CbcConsequence::CbcConsequence ( const CbcConsequence & /*rhs*/)
 {
 }
 

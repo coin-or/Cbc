@@ -32,7 +32,7 @@ public:
 			      double downDynamicPseudoCost, double upDynamicPseudoCost);
   
   // Useful constructor - passed  model index and pseudo costs
-  CbcSimpleIntegerDynamicPseudoCost (CbcModel * model, int dummy, int iColumn, 
+  CbcSimpleIntegerDynamicPseudoCost (CbcModel * model,int dummy, int iColumn, 
 			      double downDynamicPseudoCost, double upDynamicPseudoCost);
   
   // Copy constructor 

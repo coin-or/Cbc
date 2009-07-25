@@ -1,3 +1,4 @@
+
 /* $Id$ */
 // Copyright (C) 2002, International Business Machines
 // Corporation and others.  All Rights Reserved.
@@ -17,6 +18,9 @@
 //#define CHECK_NODE_FULL
 //#define NODE_LOG
 //#define GLOBAL_CUTS_JUST_POINTERS
+#ifdef CGL_DEBUG_GOMORY
+extern int gomory_try;
+#endif
 #include <cassert>
 #include <cmath>
 #include <cfloat>
@@ -59,6 +63,8 @@
 #include "CbcFathom.hpp"
 // include Probing
 #include "CglProbing.hpp"
+#include "CglGomory.hpp"
+#include "CglTwomir.hpp"
 // include preprocessing
 #include "CglPreProcess.hpp"
 #include "CglDuplicateRow.hpp"
@@ -5843,7 +5849,7 @@ int CbcModel::addCuts (CbcNode *node, CoinWarmStartBasis *&lastws,bool canFix)
    default and rest point to that.  If 2 then each is copy
 */
 void 
-CbcModel::synchronizeHandlers(int makeDefault)
+CbcModel::synchronizeHandlers(int /*makeDefault*/)
 {
   if (!defaultHandler_) {
     // Must have clone
@@ -6368,7 +6374,26 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
     if (solverCharacteristics_->warmStart()&&
         !solver_->optimalBasisIsAvailable()) {
       //printf("XXXXYY no opt basis\n");
+#if 0//def COIN_HAS_CLP
+      //OsiClpSolverInterface * clpSolver 
+      //= dynamic_cast<OsiClpSolverInterface *> (solver_);
+      int save=0;
+      if (clpSolver) { 
+	save=clpSolver->specialOptions();
+	clpSolver->setSpecialOptions(save|2048/*4096*/);
+      }
+#endif
       resolve(node ? node->nodeInfo() : NULL,3);
+#if 0//def COIN_HAS_CLP
+      if (clpSolver) 
+	clpSolver->setSpecialOptions(save);
+#ifdef CLP_INVESTIGATE
+      if(clpSolver->getModelPtr()->numberIterations())
+	printf("ITS %d pass %d\n",
+	       clpSolver->getModelPtr()->numberIterations(),
+	       currentPassNumber_);
+#endif
+#endif
     }
     if (nextRowCut_) {
       // branch was a cut - add it
@@ -6504,7 +6529,6 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
 	}
 	numberRowCutsAfter = theseCuts.sizeRowCuts() ;
 	numberColumnCutsAfter = theseCuts.sizeColCuts() ;
-	
 	if ((specialOptions_&1)!=0) {
 	  if (onOptimalPath) {
 	    int k ;
@@ -6522,6 +6546,10 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
 		  for (int i=0;i<numberColumns;i++)
 		    printf("%d bounds %g,%g\n",i,lower[i],upper[i]);
 		}
+#ifdef CGL_DEBUG_GOMORY
+		printf("Value of gomory_try is %d, recompile with -%d\n",
+		       gomory_try,gomory_try);
+#endif
 		abort();
 	      }
 	      assert(!debugger->invalidCut(thisCut)) ;
@@ -6594,6 +6622,14 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
 	    globalCuts_.insert(newCut) ;
 	  }
 	}
+      }
+      if (!node) {
+	handler_->message(CBC_ROOT_DETAIL,messages_)
+	  <<currentPassNumber_
+	  <<solver_->getNumRows()
+	  <<solver_->getNumRows()-numberRowsAtContinuous_
+	  <<solver_->getObjValue()
+	  <<CoinMessageEol ;
       }
       if (violated >=0&&feasible) {
 #if 0
@@ -7190,7 +7226,9 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
 			  "solveWithCuts","CbcModel") ; }
         delete basis;
       }
+      //solver_->setHintParam(OsiDoDualInResolve,false,OsiHintTry);
       feasible = ( resolve(node ? node->nodeInfo() : NULL,2) != 0) ;
+      //solver_->setHintParam(OsiDoDualInResolve,true,OsiHintTry);
       if ( getCurrentSeconds() > dblParam_[CbcMaximumSeconds] )
         numberTries=0; // exit
 #     ifdef CBC_DEBUG
@@ -7204,7 +7242,7 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
   No cuts. Cut short the cut generation (numberTries) loop.
 */
     else
-    { numberTries = 0 ; }
+      { numberTries = 0 ;}
 /*
   If the problem is still feasible, first, call takeOffCuts() to remove cuts
   that are now slack. takeOffCuts() will call the solver to reoptimise if
@@ -8499,7 +8537,8 @@ CbcModel::resolve(CbcNodeInfo * parent, int whereFrom,
 */
 CbcModel * 
 CbcModel::findCliques(bool makeEquality,
-		      int atLeastThisMany, int lessThanThis, int defaultValue)
+		      int atLeastThisMany, int lessThanThis, 
+		      int /*defaultValue*/)
 {
   // No objects are allowed to exist
   assert(numberObjects_==numberIntegers_||!numberObjects_);
@@ -10995,6 +11034,35 @@ CbcModel::resolve(OsiSolverInterface * solver)
       }
     }
     clpSolver->resolve();
+    if (!numberNodes_) {
+      double error = CoinMax(clpSimplex->largestDualError(),
+			     clpSimplex->largestPrimalError());
+      if (error>1.0e-2||!clpSolver->isProvenOptimal()) {
+#ifdef CLP_INVESTIGATE
+	printf("Problem was %s largest dual error %g largest primal %g - safer cuts\n",
+	       clpSolver->isProvenOptimal() ? "optimal" : "!infeasible",
+	       clpSimplex->largestDualError(),
+	       clpSimplex->largestPrimalError());
+#endif
+	if (!clpSolver->isProvenOptimal()) {
+	  clpSolver->setSpecialOptions(save2|2048);
+	  clpSimplex->allSlackBasis(true);
+	  clpSolver->resolve();
+	}
+	// make cuts safer
+	for (int iCutGenerator = 0;iCutGenerator<numberCutGenerators_;iCutGenerator++) {
+	  CglCutGenerator * generator = generator_[iCutGenerator]->generator();
+	  CglGomory * cgl1 = dynamic_cast<CglGomory *>(generator);
+	  if (cgl1) {
+	    cgl1->setLimitAtRoot(cgl1->getLimit());
+	  }
+	  CglTwomir * cgl2 = dynamic_cast<CglTwomir *>(generator);
+	  if (cgl2) {
+	    generator_[iCutGenerator]->setHowOften(-100);
+	  }
+	}
+      }
+    }
     clpSolver->setSpecialOptions(save2);
 #ifdef CLP_INVESTIGATE
     if (clpSimplex->numberIterations()>1000)
@@ -11407,7 +11475,7 @@ CbcModel::chooseBranch(CbcNode * &newNode, int numberPassesLeft,
 	if (parallelMode()>0)
 	  lockThread();
 	newNode->nodeInfo()->addCuts(cuts,newNode->numberBranches(),
-				     whichGenerator_,
+				     //whichGenerator_,
 				     initialNumber) ;
 	if (parallelMode()>0)
 	  unlockThread();
@@ -11775,7 +11843,7 @@ CbcModel::zapIntegerInformation(bool leaveObjects)
 }
 // Create C++ lines to get to current state
 void 
-CbcModel::generateCpp( FILE * fp,int options)
+CbcModel::generateCpp( FILE * fp,int /*options*/)
 {
   // Do cut generators
   int i;
@@ -13128,14 +13196,14 @@ CbcModel::splitModel(int numberModels, CbcModel ** model,
 }
 // Start threads
 void 
-CbcModel::startSplitModel(int numberIterations)
+CbcModel::startSplitModel(int /*numberIterations*/)
 {
   abort();
 }
 // Merge models
 void 
-CbcModel::mergeModels(int numberModel, CbcModel ** model,
-		      int numberNodes)
+CbcModel::mergeModels(int /*numberModel*/, CbcModel ** /*model*/,
+		      int /*numberNodes*/)
 {
   abort();
 }

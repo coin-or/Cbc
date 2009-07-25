@@ -109,7 +109,7 @@ CbcHeuristicLocal::operator=( const CbcHeuristicLocal& rhs)
 
 // Resets stuff if model changes
 void 
-CbcHeuristicLocal::resetModel(CbcModel * model)
+CbcHeuristicLocal::resetModel(CbcModel * /*model*/)
 {
   //CbcHeuristic::resetModel(model);
   delete [] used_;
@@ -125,7 +125,7 @@ CbcHeuristicLocal::resetModel(CbcModel * model)
 int 
 CbcHeuristicLocal::solutionFix(double & objectiveValue,
 			    double * newSolution,
-			    const int * keep)
+			       const int * /*keep*/)
 {
   numCouldRun_++;
   // See if to do

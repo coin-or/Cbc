@@ -74,7 +74,7 @@ CbcHeuristicPivotAndFix::operator=( const CbcHeuristicPivotAndFix& rhs)
 
 // Resets stuff if model changes
 void 
-CbcHeuristicPivotAndFix::resetModel(CbcModel * model)
+CbcHeuristicPivotAndFix::resetModel(CbcModel * /*model*/)
 {
   //CbcHeuristic::resetModel(model);
 }
@@ -82,8 +82,8 @@ CbcHeuristicPivotAndFix::resetModel(CbcModel * model)
   Comments needed
   Returns 1 if solution, 0 if not */
 int
-CbcHeuristicPivotAndFix::solution(double & solutionValue,
-			 double * betterSolution)
+CbcHeuristicPivotAndFix::solution(double & /*solutionValue*/,
+				  double * /*betterSolution*/)
 {
 
   numCouldRun_++; // Todo: Ask JJHF what this for.
@@ -558,7 +558,7 @@ CbcHeuristicPivotAndFix::solution(double & solutionValue,
 
 
 // update model
-void CbcHeuristicPivotAndFix::setModel(CbcModel * model)
+void CbcHeuristicPivotAndFix::setModel(CbcModel * )
 {
   // probably same as resetModel
 }

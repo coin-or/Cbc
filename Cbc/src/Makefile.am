@@ -152,6 +152,22 @@ if COIN_HAS_ASL
   AM_CPPFLAGS += $(ASL_CPPFLAGS) -DCOIN_HAS_ASL
 endif
 
+if COIN_HAS_THIRDPARTY_BLAS
+if COIN_HAS_THIRDPARTY_BLAS_PREINSTALLED
+  LIBS += -L`$(CYGPATH_W) $(THIRDPARTY_BLASINSTDIR)/lib/ThirdParty` -lcoinblas
+else
+  cbc_LDADD += $(THIRDPARTY_BLASOBJDIR)/libcoinblas.la
+endif
+endif
+
+if COIN_HAS_THIRDPARTY_LAPACK
+if COIN_HAS_THIRDPARTY_LAPACK_PREINSTALLED
+  LIBS += -L`$(CYGPATH_W) $(THIRDPARTY_LAPACKINSTDIR)/lib/ThirdParty` -lcoinlapack
+else
+  cbc_LDADD += $(THIRDPARTY_LAPACKOBJDIR)/libcoinlapack.la
+endif
+endif
+
 endif
 
 
@@ -251,8 +267,14 @@ else
 endif
 endif
 
-if COIN_HAS_GLPK
-  AM_CPPFLAGS += -I`$(CYGPATH_W) $(GLPKINCDIR)`
+if COIN_HAS_THIRDPARTY_GLPK
+if COIN_HAS_THIRDPARTY_GLPK_PREINSTALLED
+  AM_CPPFLAGS += -I`$(CYGPATH_W) $(THIRDPARTY_GLPKINSTDIR)/include/coin/ThirdParty`
+  LIBS += -L`$(CYGPATH_W) $(THIRDPARTY_GLPKINSTDIR)/lib/ThirdParty` -lcoinglpk
+else
+  AM_CPPFLAGS += -I`$(CYGPATH_W) $(THIRDPARTY_GLPKSRCDIR)/glpk/include`
+  cbc_generic_LDADD += $(THIRDPARTY_GLPKOBJDIR)/libcoinglpk.la
+endif
 if COIN_HAS_OSI_PREINSTALLED
   AM_CPPFLAGS += -I`$(CYGPATH_W) $(OSIINSTDIR)/include/coin`
   LIBS += -L`$(CYGPATH_W) $(OSIINSTDIR)/lib` -lOsiGlpk
@@ -362,6 +384,22 @@ if COIN_HAS_COINUTILS_PREINSTALLED
   LIBS += -L`$(CYGPATH_W) $(COINUTILSINSTDIR)/lib` -lCoinUtils
 else
   cbc_generic_LDADD += $(COINUTILSOBJDIR)/src/libCoinUtils.la
+endif
+
+if COIN_HAS_THIRDPARTY_BLAS
+if COIN_HAS_THIRDPARTY_BLAS_PREINSTALLED
+  LIBS += -L`$(CYGPATH_W) $(THIRDPARTY_BLASINSTDIR)/lib/ThirdParty` -lcoinblas
+else
+  cbc_generic_LDADD += $(THIRDPARTY_BLASOBJDIR)/libcoinblas.la
+endif
+endif
+
+if COIN_HAS_THIRDPARTY_LAPACK
+if COIN_HAS_THIRDPARTY_LAPACK_PREINSTALLED
+  LIBS += -L`$(CYGPATH_W) $(THIRDPARTY_LAPACKINSTDIR)/lib/ThirdParty` -lcoinlapack
+else
+  cbc_generic_LDADD += $(THIRDPARTY_LAPACKOBJDIR)/libcoinlapack.la
+endif
 endif
 
 # Finally, the -rpath flag is used by libtool to make sure that the shared

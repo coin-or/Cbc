@@ -46,9 +46,6 @@
 /* Define to 1 if the FortMP package is available */
 #undef COIN_HAS_FMP
 
-/* Define to 1 if Glpk package is available */
-#undef COIN_HAS_GLPK
-
 /* Define to 1 if the Mosek package is available */
 #undef COIN_HAS_MSK
 
@@ -63,6 +60,15 @@
 
 /* Define to 1 if the SYMPHONY package is used */
 #undef COIN_HAS_SYMPHONY
+
+/* Define to 1 if the ThirdParty/Blas package is used */
+#undef COIN_HAS_THIRDPARTY_BLAS
+
+/* Define to 1 if the ThirdParty/Glpk package is used */
+#undef COIN_HAS_THIRDPARTY_GLPK
+
+/* Define to 1 if the ThirdParty/Lapack package is used */
+#undef COIN_HAS_THIRDPARTY_LAPACK
 
 /* Define to 1 if the Vol package is used */
 #undef COIN_HAS_VOL

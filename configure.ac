@@ -43,25 +43,28 @@ AC_COIN_CREATE_LIBTOOL
 #############################################################################
 
 AC_COIN_THIRDPARTY_SUBDIRS([ASL],[ThirdParty/ASL],[solvers/asl.h])
-AC_COIN_THIRDPARTY_SUBDIRS([Blas],[ThirdParty/Blas],[daxpy.f])
-AC_COIN_THIRDPARTY_SUBDIRS([Lapack],[ThirdParty/Lapack],[LAPACK/SRC/dlarf.f])
-AC_COIN_THIRDPARTY_SUBDIRS([Glpk],[ThirdParty/Glpk],[glpk/src/glplpx01.c])
+#AC_COIN_THIRDPARTY_SUBDIRS([Blas],[ThirdParty/Blas],[daxpy.f])
+#AC_COIN_THIRDPARTY_SUBDIRS([Lapack],[ThirdParty/Lapack],[LAPACK/SRC/dlarf.f])
+#AC_COIN_THIRDPARTY_SUBDIRS([Glpk],[ThirdParty/Glpk],[glpk/src/glplpx01.c])
 
 #############################################################################
 #                  Check which subprojects are there                        #
 #############################################################################
 
-AC_COIN_MAIN_SUBDIRS(CoinUtils)
-AC_COIN_MAIN_SUBDIRS(Data/Netlib)
-AC_COIN_MAIN_SUBDIRS(Data/Sample)
-AC_COIN_MAIN_SUBDIRS(Data/miplib3)
-AC_COIN_MAIN_SUBDIRS(Clp)
-AC_COIN_MAIN_SUBDIRS(DyLP)
-AC_COIN_MAIN_SUBDIRS(Vol)
-AC_COIN_MAIN_SUBDIRS(Osi)
-AC_COIN_MAIN_SUBDIRS(Cgl)
-AC_COIN_MAIN_SUBDIRS(Cbc)
-AC_COIN_MAIN_SUBDIRS(SYMPHONY)
+AC_COIN_MAIN_SUBDIR(CoinUtils)
+AC_COIN_MAIN_SUBDIR(Data/Netlib)
+AC_COIN_MAIN_SUBDIR(Data/Sample)
+AC_COIN_MAIN_SUBDIR(Data/miplib3)
+AC_COIN_MAIN_SUBDIR(ThirdParty/Blas,daxpy.f)
+AC_COIN_MAIN_SUBDIR(ThirdParty/Lapack,LAPACK/SRC/dlarf.f)
+AC_COIN_MAIN_SUBDIR(ThirdParty/Glpk,glpk/include/glpk.h)
+AC_COIN_MAIN_SUBDIR(Clp)
+AC_COIN_MAIN_SUBDIR(DyLP)
+AC_COIN_MAIN_SUBDIR(Vol)
+AC_COIN_MAIN_SUBDIR(Osi)
+AC_COIN_MAIN_SUBDIR(Cgl)
+AC_COIN_MAIN_SUBDIR(Cbc)
+AC_COIN_MAIN_SUBDIR(SYMPHONY)
 
 ##############################################################################
 #                   Finishing up by writing all the output                   #

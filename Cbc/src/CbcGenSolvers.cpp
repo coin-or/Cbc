@@ -49,7 +49,7 @@
 # endif
 #endif
 
-#ifdef COIN_HAS_GLPK
+#ifdef COIN_HAS_THIRDPARTY_GLPK
 # include "OsiGlpkSolverInterface.hpp"
 # ifndef CBC_DEFAULT_SOLVER
 #   define CBC_DEFAULT_SOLVER "glpk"
@@ -129,7 +129,7 @@ OsiSolverInterface *setupSolvers ()
 # ifdef COIN_HAS_DYLP
   solvers["dylp"] = new OsiDylpSolverInterface  ;
 # endif
-# ifdef COIN_HAS_GLPK
+# ifdef COIN_HAS_THIRDPARTY_GLPK
   solvers["glpk"] = new OsiGlpkSolverInterface  ;
 # endif
 # ifdef COIN_HAS_MSK

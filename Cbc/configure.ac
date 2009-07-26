@@ -66,6 +66,9 @@ AC_COIN_HAS_PROJECT(Vol)
 AC_COIN_HAS_PROJECT(SYMPHONY)
 AC_COIN_HAS_PROJECT(Data/Sample)
 AC_COIN_HAS_PROJECT(Data/miplib3)
+AC_COIN_HAS_PROJECT(ThirdParty/Blas,daxpy.f)
+AC_COIN_HAS_PROJECT(ThirdParty/Lapack,LAPACK/SRC/dlarf.f)
+AC_COIN_HAS_PROJECT(ThirdParty/Glpk,glpk/include/glpk.h)
 
 # AC_COIN_HAS_PROJECT(Cpx)
 # What is this in the line above? 
@@ -85,7 +88,7 @@ AC_COIN_HAS_USER_LIBRARY([Osl],[OSL],[ekk_c_api.h],[ekk_simplex])
 AC_COIN_HAS_USER_LIBRARY([Soplex],[SPX],[spxsolver.h]) # ToDo
 AC_COIN_HAS_USER_LIBRARY([Xpress],[XPR],[xprs.h],[XPRSsetintcontrol])
 
-AC_COIN_HAS_GLPK(Glpk)
+#AC_COIN_HAS_GLPK(Glpk)
 
 #############################################################################
 #                       Other third party software                          #

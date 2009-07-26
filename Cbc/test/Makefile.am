@@ -146,8 +146,12 @@ else
 endif
 endif
 
-if COIN_HAS_GLPK
-  AM_CPPFLAGS += -I`$(CYGPATH_W) $(GLPKINCDIR)`
+if COIN_HAS_THIRDPARTY_GLPK
+if COIN_HAS_THIRDPARTY_GLPK_PREINSTALLED
+  LIBS += -L`$(CYGPATH_W) $(THIRDPARTY_GLPKINSTDIR)/lib/ThirdParty` -lcoinglpk
+else
+  gamsTest_LDADD += $(THIRDPARTY_GLPKOBJDIR)/libcoinglpk.la
+endif
 if COIN_HAS_OSI_PREINSTALLED
   AM_CPPFLAGS += -I`$(CYGPATH_W) $(OSIINSTDIR)/include/coin`
   LIBS += -L`$(CYGPATH_W) $(OSIINSTDIR)/lib` -lOsiGlpk

@@ -103,6 +103,7 @@ CbcHeuristic::CbcHeuristic() :
   howOften_(1),
   decayFactor_(0.0),
   switches_(0),
+  whereFrom_(255),
   shallowDepth_(1),
   howOftenShallow_(1),
   numInvocationsInShallow_(0),
@@ -129,6 +130,7 @@ CbcHeuristic::CbcHeuristic(CbcModel & model) :
   howOften_(1),
   decayFactor_(0.0),
   switches_(0),
+  whereFrom_(255),
   shallowDepth_(1),
   howOftenShallow_(1),
   numInvocationsInShallow_(0),
@@ -155,6 +157,7 @@ CbcHeuristic::gutsOfCopy(const CbcHeuristic & rhs)
   howOften_ = rhs.howOften_;
   decayFactor_ = rhs.howOften_;
   switches_ = rhs.switches_;
+  whereFrom_ = rhs.whereFrom_;
   shallowDepth_= rhs.shallowDepth_;
   howOftenShallow_= rhs.howOftenShallow_;
   numInvocationsInShallow_ = rhs.numInvocationsInShallow_;
@@ -258,8 +261,11 @@ CbcHeuristic::printDistanceToNodes()
 }
 
 bool
-CbcHeuristic::shouldHeurRun()
+CbcHeuristic::shouldHeurRun(int whereFrom)
 {
+  assert (whereFrom>=0&&whereFrom<8);
+  if ((whereFrom_&(1<<whereFrom))==0)
+    return false;
   // No longer used for original purpose - so use for ever run at all JJF
 #if 1
   // Don't run if hot start
@@ -2481,7 +2487,7 @@ CbcHeuristicPartial::validate()
   }
 }
 bool
-CbcHeuristicPartial::shouldHeurRun()
+CbcHeuristicPartial::shouldHeurRun(int /*whereFrom*/)
 {
   return true;
 }

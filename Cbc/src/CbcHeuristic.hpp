@@ -112,7 +112,7 @@ public:
       This is called at same time as cut generators - so can add cuts
       Default is do nothing
   */
-  virtual int solution(double & /*objectiveValue*/,
+  virtual int solution2(double & /*objectiveValue*/,
 		       double * /*newSolution*/,
 		       OsiCuts & /*cs*/) {return 0;}
 
@@ -213,8 +213,14 @@ public:
   /// Set input solution
   void setInputSolution(const double * solution, double objValue);
 
-  /** Check whether the heuristic should run at all */
-  virtual bool shouldHeurRun();
+  /** Check whether the heuristic should run at all
+      0 - before cuts at root node (or from doHeuristics)
+      1 - before cuts at other nodes
+      2 - after root node cuts
+      3 - after cuts at other nodes
+          4 added if previous heuristic in loop found solution
+  */
+  virtual bool shouldHeurRun(int whereFrom);
   /** Check whether the heuristic should run this time */
   bool shouldHeurRun_randomChoice();
   void debugNodes();
@@ -258,6 +264,14 @@ protected:
       1024 bit - stop all heuristics on max time
   */
   mutable int switches_;
+  /* Runs if bit set
+      0 - before cuts at root node (or from doHeuristics)
+      1 - before cuts at other nodes
+      2 - after root node cuts
+      3 - after cuts at other nodes
+          4 added if previous heuristic in loop found solution
+   */
+  int whereFrom_;
   /** Upto this depth we call the tree shallow and the heuristic can be called
       multiple times. That is, the test whether the current node is far from
       the others where the jeuristic was invoked will not be done, only the
@@ -435,7 +449,7 @@ public:
   { fixPriority_ = value;}
 
   /** Check whether the heuristic should run at all */
-  virtual bool shouldHeurRun();
+  virtual bool shouldHeurRun(int whereFrom);
 
 protected:
   // Data

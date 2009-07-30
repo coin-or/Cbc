@@ -81,30 +81,6 @@ CbcObject::floorCeiling(double & floorValue, double & ceilingValue, double value
   }
   ceilingValue = floorValue+1.0;
 }
-/* Infeasibility of the object
-      
-    This is some measure of the infeasibility of the object. 0.0 
-    indicates that the object is satisfied.
-  
-    The preferred branching direction is returned in way,
-  
-    This is used to prepare for strong branching but should also think of
-    case when no strong branching
-  
-    The object may also compute an estimate of cost of going "up" or "down".
-    This will probably be based on pseudo-cost ideas
-
-    This should also set mutable infeasibility_ and whichWay_
-    This is for instant re-use for speed
-*/
-double 
-CbcObject::infeasibility(const OsiSolverInterface * /*solver*/,
-			 int &preferredWay) const 
-{
-  //assert (solver==model_->solver());
-  return infeasibility(preferredWay);
-}
-  
 /* For the variable(s) referenced by the object,
       look at the current solution and set bounds to match the solution.
       Returns measure of how much it had to move solution to make feasible
@@ -116,28 +92,6 @@ CbcObject::feasibleRegion(OsiSolverInterface * /*solver*/) const
   CbcObject * fudge = const_cast<CbcObject *>(this);
   fudge->feasibleRegion();
   return 0.0;
-}
-/* Infeasibility of the object
-      
-    This is some measure of the infeasibility of the object. 0.0 
-    indicates that the object is satisfied.
-  
-    The preferred branching direction is returned in way,
-  
-    This is used to prepare for strong branching but should also think of
-    case when no strong branching
-  
-    The object may also compute an estimate of cost of going "up" or "down".
-    This will probably be based on pseudo-cost ideas
-
-    This should also set mutable infeasibility_ and whichWay_
-    This is for instant re-use for speed
-*/
-double 
-CbcObject::infeasibility(const OsiBranchingInformation * /*info*/,
-			 int &preferredWay) const 
-{
-  return infeasibility(preferredWay);
 }
   
 /* For the variable(s) referenced by the object,
@@ -153,32 +107,19 @@ CbcObject::feasibleRegion(OsiSolverInterface * /*solver*/,
   fudge->feasibleRegion();
   return 0.0;
 }
-  
 /* Create a branching object and indicate which way to branch first.
       
       The branching object has to know how to create branches (fix
       variables, etc.)
 */
 OsiBranchingObject * 
-CbcObject::createBranch(OsiSolverInterface * /*solver*/, int way) const 
-{
-  //assert (solver==model_->solver());
-  CbcObject * fudge = const_cast<CbcObject *>(this);
-  return fudge->createBranch(way);
-}
-/* Create a branching object and indicate which way to branch first.
-      
-      The branching object has to know how to create branches (fix
-      variables, etc.)
-*/
-OsiBranchingObject * 
-CbcObject::createBranch(OsiSolverInterface * /*solver*/,
-			const OsiBranchingInformation * /*info*/, 
+CbcObject::createOsiBranch(OsiSolverInterface * solver,
+			const OsiBranchingInformation * info, 
 			int way) const 
 {
   //assert (solver==model_->solver());
   CbcObject * fudge = const_cast<CbcObject *>(this);
-  return fudge->createBranch(way);
+  return fudge->createBranch(solver,info,way);
 }
 /* Create an OsiSolverBranch object
    

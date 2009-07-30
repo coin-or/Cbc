@@ -1579,16 +1579,10 @@ int CbcNode::chooseBranch (CbcModel *model, CbcNode *lastNode,int numberPassesLe
             //add to list
             choice[iSmallest].upMovement=infeasibility;
             delete choice[iSmallest].possibleBranch;
-	    CbcSimpleInteger * obj =
-	      dynamic_cast <CbcSimpleInteger *>(object) ;
-	    if (obj) {
-	      choice[iSmallest].possibleBranch=obj->createBranch(solver,&usefulInfo,preferredWay);
-	    } else {
-	      CbcObject * obj =
-		dynamic_cast <CbcObject *>(object) ;
-	      assert (obj);
-	      choice[iSmallest].possibleBranch=obj->createBranch(preferredWay);
-	    }
+	    CbcObject * obj =
+	      dynamic_cast <CbcObject *>(object) ;
+	    assert (obj);
+	    choice[iSmallest].possibleBranch=obj->createCbcBranch(solver,&usefulInfo,preferredWay);
             numberStrong = CoinMax(numberStrong,iSmallest+1);
             // Save which object it was
             choice[iSmallest].objectNumber=i;
@@ -3006,16 +3000,10 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
       OsiObject * object = model->modifiableObject(iObject);
       int preferredWay;
       object->infeasibility(&usefulInfo,preferredWay);
-      CbcSimpleInteger * obj =
-	dynamic_cast <CbcSimpleInteger *>(object) ;
-      if (obj) {
-	branch_=obj->createBranch(solver,&usefulInfo,preferredWay);
-      } else {
-	CbcObject * obj =
-	  dynamic_cast <CbcObject *>(object) ;
-	assert (obj);
-	branch_=obj->createBranch(preferredWay);
-      }
+      CbcObject * obj =
+	dynamic_cast <CbcObject *>(object) ;
+      assert (obj);
+      branch_=obj->createCbcBranch(solver,&usefulInfo,preferredWay);
       {
 	CbcBranchingObject * branchObj =
 	  dynamic_cast <CbcBranchingObject *>(branch_) ;
@@ -3135,12 +3123,12 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
 		number = dynamicObject->numberTimesDown();
 		if (upPenalty>gap) 
 		  problemFeasible=false;
-		CbcBranchingObject * branch = dynamicObject->createBranch(1);
+		CbcBranchingObject * branch = dynamicObject->createCbcBranch(solver,&usefulInfo,1);
 		//branch->fix(solver,saveLower,saveUpper,1);
 		delete branch;
 	      } else {
 		number = dynamicObject->numberTimesUp();
-		CbcBranchingObject * branch = dynamicObject->createBranch(1);
+		CbcBranchingObject * branch = dynamicObject->createCbcBranch(solver,&usefulInfo,1);
 		//branch->fix(solver,saveLower,saveUpper,-1);
 		delete branch;
 	      }
@@ -3309,13 +3297,13 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
 	    obj->fillCreateBranch(choiceObject,&usefulInfo,preferredWay);
 	    choiceObject->setObject(dynamicObject);
 	  } else {
-	    choice.possibleBranch=obj->createBranch(solver,&usefulInfo,preferredWay);
+	    choice.possibleBranch=obj->createCbcBranch(solver,&usefulInfo,preferredWay);
 	  }
 	} else {
 	  CbcObject * obj =
 	    dynamic_cast <CbcObject *>(object) ;
 	  assert (obj);
-	  choice.possibleBranch=obj->createBranch(preferredWay);
+	  choice.possibleBranch=obj->createCbcBranch(solver,&usefulInfo,preferredWay);
 	}
         // Save which object it was
         choice.objectNumber=iObject;
@@ -4123,16 +4111,16 @@ int CbcNode::analyze (CbcModel *model, double * results)
       currentSolution[iColumn]=newValue;
     }
     double upperValue = lowerValue+1.0;
-    CbcSimpleInteger * obj =
-      dynamic_cast <CbcSimpleInteger *>(object) ;
-    if (obj) {
-      choice.possibleBranch=obj->createBranch(solver,&usefulInfo,preferredWay);
-    } else {
+    //CbcSimpleInteger * obj =
+    //dynamic_cast <CbcSimpleInteger *>(object) ;
+    //if (obj) {
+    //choice.possibleBranch=obj->createCbcBranch(solver,&usefulInfo,preferredWay);
+    //} else {
       CbcObject * obj =
 	dynamic_cast <CbcObject *>(object) ;
       assert (obj);
-      choice.possibleBranch=obj->createBranch(preferredWay);
-    }
+      choice.possibleBranch=obj->createCbcBranch(solver,&usefulInfo,preferredWay);
+      //}
     currentSolution[iColumn]=value;
     // Save which object it was
     choice.objectNumber=iObject;
@@ -4815,7 +4803,7 @@ CbcNode::chooseClpBranch (CbcModel * model,
     if (infeasibility==COIN_DBL_MAX) {
       anyAction=-2; // infeasible
     } else {
-      branch_=thisOne->createBranch(preferredWay);
+      branch_=thisOne->createCbcBranch(solver,&usefulInfo,preferredWay);
       // Set to firat one (and change when re-pushing)
       CbcGeneralBranchingObject * branch = 
 	dynamic_cast <CbcGeneralBranchingObject *> (branch_);

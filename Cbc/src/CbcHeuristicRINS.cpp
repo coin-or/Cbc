@@ -29,6 +29,7 @@ CbcHeuristicRINS::CbcHeuristicRINS()
   howOften_=100;
   decayFactor_ = 0.5; 
   used_=NULL;
+  whereFrom_=255-15+1+8;
 }
 
 // Constructor with model - assumed before cuts
@@ -46,6 +47,7 @@ CbcHeuristicRINS::CbcHeuristicRINS(CbcModel & model)
   int numberColumns = model.solver()->getNumCols();
   used_ = new char[numberColumns];
   memset(used_,0,numberColumns);
+  whereFrom_=255-15+1+8;
 }
 
 // Destructor 
@@ -263,6 +265,7 @@ CbcHeuristicRENS::CbcHeuristicRENS()
   :CbcHeuristic()
 {
   numberTries_=0;
+  whereFrom_=16+1;
 }
 
 // Constructor with model - assumed before cuts
@@ -271,6 +274,7 @@ CbcHeuristicRENS::CbcHeuristicRENS(CbcModel & model)
   :CbcHeuristic(model)
 {
   numberTries_=0;
+  whereFrom_=16+1;
 }
 
 // Destructor 
@@ -313,7 +317,8 @@ CbcHeuristicRENS::solution(double & solutionValue,
 			 double * betterSolution)
 {
   int returnCode=0;
-  if (numberTries_)
+  const double * bestSolution = model_->bestSolution();
+  if (numberTries_||(when()<2&&bestSolution))
     return 0; 
   numberTries_++;
   OsiSolverInterface * solver = model_->solver();

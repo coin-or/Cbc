@@ -119,6 +119,7 @@ public:
   /** returns 0 if no solution, 1 if valid solution.
       Sets solution values if good, sets objective value (only if good)
       This does Relaxation Extension Neighborhood Search
+      Does not run if when_<2 and a solution exists
   */
   virtual int solution(double & objectiveValue,
 		       double * newSolution);

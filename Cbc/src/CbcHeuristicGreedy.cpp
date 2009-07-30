@@ -33,6 +33,7 @@ CbcHeuristicGreedyCover::CbcHeuristicGreedyCover(CbcModel & model)
   gutsOfConstructor(&model);
   algorithm_=0;
   numberTimes_=100;
+  whereFrom_=1;
 }
 
 // Destructor 
@@ -427,6 +428,7 @@ CbcHeuristicGreedyEquality::CbcHeuristicGreedyEquality()
   originalNumberRows_=0;
   algorithm_=0;
   numberTimes_=100;
+  whereFrom_=1;
 }
 
 // Constructor from model
@@ -438,6 +440,7 @@ CbcHeuristicGreedyEquality::CbcHeuristicGreedyEquality(CbcModel & model)
   fraction_=1.0; // no branch and bound
   algorithm_=0;
   numberTimes_=100;
+  whereFrom_=1;
 }
 
 // Destructor 

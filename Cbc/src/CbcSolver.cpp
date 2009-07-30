@@ -10153,8 +10153,7 @@ clp watson.mps -\nscaling off\nprimalsimplex"
 		const double * rowUpper = clpSolver->getRowUpper();
 		double primalTolerance ;
 		clpSolver->getDblParam(OsiPrimalTolerance,primalTolerance);
-		char format[6];
-		sprintf(format,"%%-%ds",CoinMax(lengthName,8));
+		int lengthPrint = CoinMax(lengthName,8);
                 bool doMask = (printMask!=""&&lengthName);
 		int * maskStarts=NULL;
 		int maxMasks=0;
@@ -10271,8 +10270,15 @@ clp watson.mps -\nscaling off\nprimalsimplex"
                       type =0;
                     if (type) {
                       fprintf(fp,"%7d ",iRow);
-                      if (lengthName)
-                        fprintf(fp,format,rowNames[iRow].c_str());
+                      if (lengthName) {
+			const char * name = rowNames[iRow].c_str();
+			int n=strlen(name);
+			int i;
+			for (i=0;i<n;i++)
+			  fprintf(fp,"%c",name[i]);
+			for (;i<lengthPrint;i++)
+			  fprintf(fp," ");
+		      }
                       fprintf(fp," %15.8g        %15.8g\n",primalRowSolution[iRow],
                               dualRowSolution[iRow]);
                     }
@@ -10315,17 +10321,28 @@ clp watson.mps -\nscaling off\nprimalsimplex"
                     if (type) {
 		      if (printMode!=5) {
 			fprintf(fp,"%7d ",iColumn);
-			if (lengthName)
-			  fprintf(fp,format,columnNames[iColumn].c_str());
+			if (lengthName) {
+			  const char * name = columnNames[iColumn].c_str();
+			  int n=strlen(name);
+			  int i;
+			  for (i=0;i<n;i++)
+			    fprintf(fp,"%c",name[i]);
+			  for (;i<lengthPrint;i++)
+			    fprintf(fp," ");
+			}
 			fprintf(fp," %15.8g        %15.8g\n",
 				primalColumnSolution[iColumn],
 				dualColumnSolution[iColumn]);
 		      } else {
 			char temp[100];
-			if (lengthName)
-			  sprintf(temp,format,columnNames[iColumn].c_str());
-			else
+			if (lengthName) {
+			  const char * name = columnNames[iColumn].c_str();
+			  for (int i=0;i<lengthName;i++)
+			    temp[i]=name[i];
+			  temp[lengthName]='\0';
+			} else {
 			  sprintf(temp,"%7d",iColumn);
+			}
 			sprintf(temp+strlen(temp),", %15.8g",
 				primalColumnSolution[iColumn]);
 			int n=strlen(temp);

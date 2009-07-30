@@ -7021,27 +7021,33 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
   End of the loop to exercise each generator - try heuristics
   - unless at root node and first pass
 */
-    if (numberNodes_||currentPassNumber_!=1) {
+    if ((numberNodes_||currentPassNumber_!=1)&&false) {
       double * newSolution = new double [numberColumns] ;
       double heuristicValue = getCutoff() ;
       int found = -1; // no solution found
+      int whereFrom = 3;
       for (i = 0;i<numberHeuristics_;i++) {
 	// skip if can't run here
-	if (!heuristic_[i]->shouldHeurRun())
+	if (!heuristic_[i]->shouldHeurRun(whereFrom))
 	  continue;
 	// see if heuristic will do anything
 	double saveValue = heuristicValue ;
 	int ifSol = 
 	  heuristic_[i]->solution(heuristicValue,
-				  newSolution,
-				  theseCuts) ;
+				  newSolution);
+				  //theseCuts) ;
 	if (ifSol>0) {
 	  // better solution found
 	  heuristic_[i]->incrementNumberSolutionsFound();
 	  found = i ;
           incrementUsed(newSolution);
 	  lastHeuristic_ = heuristic_[found];
+#ifdef CLP_INVESTIGATE
+	  printf("HEUR %s where %d A\n",
+		 lastHeuristic_->heuristicName(),whereFrom);
+#endif
 	  setBestSolution(CBC_ROUNDING,heuristicValue,newSolution) ;
+	  whereFrom |= 4; // say solution found
 	} else if (ifSol<0) {
 	  heuristicValue = saveValue ;
 	}
@@ -7463,9 +7469,10 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
     double heuristicValue = getCutoff() ;
     int found = -1; // no solution found
     if (feasible) {
+      int whereFrom = node ? 3 : 2;
       for (int i = 0;i<numberHeuristics_;i++) {
 	// skip if can't run here
-	if (!heuristic_[i]->shouldHeurRun())
+	if (!heuristic_[i]->shouldHeurRun(whereFrom))
 	  continue;
 	// see if heuristic will do anything
 	double saveValue = heuristicValue ;
@@ -7477,7 +7484,12 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
 	  found = i ;
 	  incrementUsed(newSolution);
 	  lastHeuristic_ = heuristic_[found];
+#ifdef CLP_INVESTIGATE
+	  printf("HEUR %s where %d B\n",
+		 lastHeuristic_->heuristicName(),whereFrom);
+#endif
 	  setBestSolution(CBC_ROUNDING,heuristicValue,newSolution) ;
+	  whereFrom |= 4; // say solution found
 	} else {
 	  heuristicValue = saveValue ;
 	}
@@ -7710,7 +7722,6 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
     double smallProblem = (0.2* totalCuts) /
       static_cast<double> (numberActiveGenerators) ;
     for (i = 0;i<numberCutGenerators_;i++) {
-      
       int howOften = generator_[i]->howOften() ;
       /*  Probing can be set to just do column cuts in treee.
 	  But if doing good then leave as on */
@@ -7726,6 +7737,12 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
       }
       if (willBeCutsInTree<0&&howOften==-98)
         howOften =-99;
+      if (!probing&&howOften==-98&&!generator_[i]->numberShortCutsAtRoot()&&
+	  generator_[i]->numberCutsInTotal()) {
+	// switch off as no short cuts generated
+	//printf("Switch off %s?\n",generator_[i]->cutGeneratorName());
+	howOften=-99;
+      }
       if (howOften==-98&&generator_[i]->switchOffIfLessThan()>0) {
         if (thisObjective-startObjective<0.005*fabs(startObjective)+1.0e-5)
           howOften=-99; // switch off
@@ -11691,7 +11708,7 @@ CbcModel::doHeuristicsAtRoot(int deleteHeuristicsAfterwards)
 	    parameters[i].model=NULL;
 	  for (int i=iChunk;i<CoinMin(numberHeuristics_,iChunk+chunk);i++) {
 	    // skip if can't run here
-	    if (!heuristic_[i]->shouldHeurRun())
+	    if (!heuristic_[i]->shouldHeurRun(0))
 	      continue;
 	    parameters[i-iChunk].solutionValue=heuristicValue;
 	    CbcModel * newModel = new CbcModel(*this);
@@ -11756,9 +11773,10 @@ CbcModel::doHeuristicsAtRoot(int deleteHeuristicsAfterwards)
 	}
       } else {
 #endif
+	int whereFrom = 0;
 	for (i = 0;i<numberHeuristics_;i++) {
 	  // skip if can't run here
-	  if (!heuristic_[i]->shouldHeurRun())
+	  if (!heuristic_[i]->shouldHeurRun(whereFrom))
 	    continue;
 	  // see if heuristic will do anything
 	  double saveValue = heuristicValue ;
@@ -11773,7 +11791,12 @@ CbcModel::doHeuristicsAtRoot(int deleteHeuristicsAfterwards)
 	    numberSolutions_++;
 	    numberHeuristicSolutions_++;
 	    lastHeuristic_ = heuristic_[i];
+#ifdef CLP_INVESTIGATE
+	    printf("HEUR %s where %d C\n",
+		   lastHeuristic_->heuristicName(),whereFrom);
+#endif
 	    setBestSolution(CBC_ROUNDING,heuristicValue,newSolution) ;
+	    whereFrom |= 4; // say solution found
 	    if (heuristic_[i]->exitNow(bestObjective_))
 	      break;
 	  } else {
@@ -12876,9 +12899,10 @@ CbcModel::doOneNode(CbcModel * baseModel, CbcNode * & node, CbcNode * & newNode)
 	  double * newSolution = new double [numberColumns] ;
 	  double heurValue = getCutoff() ;
 	  int iHeur ;
+	  int whereFrom = 3;
 	  for (iHeur = 0 ; iHeur < numberHeuristics_ ; iHeur++) {
 	    // skip if can't run here
-	    if (!heuristic_[iHeur]->shouldHeurRun())
+	    if (!heuristic_[iHeur]->shouldHeurRun(whereFrom))
 	      continue;
 	    double saveValue = heurValue ;
 	    int ifSol = heuristic_[iHeur]->solution(heurValue,newSolution) ;
@@ -12890,14 +12914,27 @@ CbcModel::doOneNode(CbcModel * baseModel, CbcNode * & node, CbcNode * & newNode)
 		lockThread();
 		baseModel->incrementUsed(newSolution);
 		unlockThread();
+	      } else {
+		lastHeuristic_ = heuristic_[found];
+#ifdef CLP_INVESTIGATE
+		printf("HEUR %s where %d D\n",
+		       lastHeuristic_->heuristicName(),whereFrom);
+#endif
+		setBestSolution(CBC_ROUNDING,heurValue,newSolution) ;
+		foundSolution=1;
+		whereFrom |= 4; // say solution found
 	      }
 	    } else if (ifSol < 0)	{ // just returning an estimate 
 	      estValue = CoinMin(heurValue,estValue) ;
 	      heurValue = saveValue ;
 	    }
 	  }
-	  if (found >= 0) {
+	  if (found >= 0&&parallelMode()>0) {
 	    lastHeuristic_ = heuristic_[found];
+#ifdef CLP_INVESTIGATE
+	    printf("HEUR %s where %d D\n",
+		   lastHeuristic_->heuristicName(),whereFrom);
+#endif
 	    setBestSolution(CBC_ROUNDING,heurValue,newSolution) ;
 	    foundSolution=1;
 	  }
@@ -14220,9 +14257,10 @@ CbcModel::integerPresolveThisModel(OsiSolverInterface * originalSolver,
 	int iHeuristic;
 	double * newSolution = new double [numberColumns];
 	double heuristicValue=getCutoff();
+	int whereFrom = 0;
 	for (iHeuristic=0;iHeuristic<numberHeuristics_;iHeuristic++) {
 	  // skip if can't run here
-	  if (!heuristic_[iHeuristic]->shouldHeurRun())
+	  if (!heuristic_[iHeuristic]->shouldHeurRun(whereFrom))
 	    continue;
 	  double saveValue=heuristicValue;
 	  int ifSol = heuristic_[iHeuristic]->solution(heuristicValue,
@@ -14232,6 +14270,7 @@ CbcModel::integerPresolveThisModel(OsiSolverInterface * originalSolver,
 	    heuristic_[iHeuristic]->incrementNumberSolutionsFound();
 	    found=iHeuristic;
             incrementUsed(newSolution);
+	    whereFrom |= 4; // say solution found
 	  } else if (ifSol<0) {
 	    heuristicValue = saveValue;
 	  }
@@ -14244,6 +14283,10 @@ CbcModel::integerPresolveThisModel(OsiSolverInterface * originalSolver,
           testSolution_=currentSolution_;
 	  // better solution save
           lastHeuristic_ = heuristic_[found];
+#ifdef CLP_INVESTIGATE
+	  printf("HEUR %s where %d oddE\n",
+		 lastHeuristic_->heuristicName(),whereFrom);
+#endif
 	  setBestSolution(CBC_ROUNDING,heuristicValue,
 			  newSolution);
 	  // update cutoff

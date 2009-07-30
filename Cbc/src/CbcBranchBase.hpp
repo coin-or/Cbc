@@ -44,7 +44,7 @@ enum CbcRangeCompare {
   CbcBranchingObjects.
 
   To create a new type of object you need to provide three methods:
-  #infeasibility(), #feasibleRegion(), and #createBranch(), described below.
+  #infeasibility(), #feasibleRegion(), and #createCbcBranch(), described below.
 
   This base class is primarily virtual to allow for any form of structure.
   Any form of discontinuity is allowed.
@@ -107,10 +107,8 @@ public:
       The object may also compute an estimate of cost of going "up" or "down".
       This will probably be based on pseudo-cost ideas
   */
-  virtual double infeasibility(int &preferredWay) const = 0;
-  /// Dummy one for compatibility
   virtual double infeasibility(const OsiBranchingInformation * info,
-			       int &preferredWay) const;
+			       int &preferredWay) const=0;
 
   /** For the variable(s) referenced by the object,
       look at the current solution and set bounds to match the solution.
@@ -119,31 +117,6 @@ public:
   /// Dummy one for compatibility
   virtual double feasibleRegion(OsiSolverInterface * solver, const OsiBranchingInformation * info) const;
 
-  /** Create a branching object and indicate which way to branch first.
-
-      The branching object has to know how to create branches (fix
-      variables, etc.)
-  */
-  virtual CbcBranchingObject * createBranch(int way) = 0;
-  
-  /** Infeasibility of the object
-      
-    This is some measure of the infeasibility of the object. 0.0 
-    indicates that the object is satisfied.
-  
-    The preferred branching direction is returned in way,
-  
-    This is used to prepare for strong branching but should also think of
-    case when no strong branching
-  
-    The object may also compute an estimate of cost of going "up" or "down".
-    This will probably be based on pseudo-cost ideas
-
-    This should also set mutable infeasibility_ and whichWay_
-    This is for instant re-use for speed
-  */
-  virtual double infeasibility(const OsiSolverInterface * solver,int &preferredWay) const;
-  
   /** For the variable(s) referenced by the object,
       look at the current solution and set bounds to match the solution.
       Returns measure of how much it had to move solution to make feasible
@@ -155,13 +128,13 @@ public:
       The branching object has to know how to create branches (fix
       variables, etc.)
   */
-  virtual OsiBranchingObject * createBranch(OsiSolverInterface * solver, int way) const;
-  /** Create a branching object and indicate which way to branch first.
+  virtual CbcBranchingObject * createCbcBranch(OsiSolverInterface * solver,const OsiBranchingInformation * info, int way) =0;
+  /** Create an Osibranching object and indicate which way to branch first.
       
       The branching object has to know how to create branches (fix
       variables, etc.)
   */
-  virtual OsiBranchingObject * createBranch(OsiSolverInterface * solver,const OsiBranchingInformation * info, int way) const;
+  virtual OsiBranchingObject * createOsiBranch(OsiSolverInterface * solver,const OsiBranchingInformation * info, int way) const;
   /** Create an OsiSolverBranch object
 
       This returns NULL if branch not represented by bound changes

@@ -513,47 +513,6 @@ CbcSimpleIntegerDynamicPseudoCost::same(const CbcSimpleIntegerDynamicPseudoCost 
     okay=false;
   return okay;
 }
-// Creates a branching objecty
-CbcBranchingObject * 
-CbcSimpleIntegerDynamicPseudoCost::createBranch(int way) 
-{
-  const double * solution = model_->testSolution();
-  const double * lower = model_->getCbcColLower();
-  const double * upper = model_->getCbcColUpper();
-  double value = solution[columnNumber_];
-  value = CoinMax(value, lower[columnNumber_]);
-  value = CoinMin(value, upper[columnNumber_]);
-#ifndef NDEBUG
-  double nearest = floor(value+0.5);
-  double integerTolerance = 
-    model_->getDblParam(CbcModel::CbcIntegerTolerance);
-  assert (upper[columnNumber_]>lower[columnNumber_]);
-#endif
-  if (!model_->hotstartSolution()) {
-    assert (fabs(value-nearest)>integerTolerance);
-  } else {
-    const double * hotstartSolution = model_->hotstartSolution();
-    double targetValue = hotstartSolution[columnNumber_];
-    if (way>0)
-      value = targetValue-0.1;
-    else
-      value = targetValue+0.1;
-  }
-  CbcDynamicPseudoCostBranchingObject * newObject = 
-    new CbcDynamicPseudoCostBranchingObject(model_,columnNumber_,way,
-					    value,this);
-  double up =  upDynamicPseudoCost_*(ceil(value)-value);
-  double down =  downDynamicPseudoCost_*(value-floor(value));
-  double changeInGuessed=up-down;
-  if (way>0)
-    changeInGuessed = - changeInGuessed;
-  changeInGuessed=CoinMax(0.0,changeInGuessed);
-  //if (way>0)
-  //changeInGuessed += 1.0e8; // bias to stay up
-  newObject->setChangeInGuessed(changeInGuessed);
-  newObject->setOriginalObject(this);
-  return newObject;
-}
 /* Create an OsiSolverBranch object
    
 This returns NULL if branch not represented by bound changes
@@ -580,9 +539,9 @@ CbcSimpleIntegerDynamicPseudoCost::solverBranch() const
   return branch;
 }
 //#define FUNNY_BRANCHING  
-// Infeasibility - large is 0.5
 double 
-CbcSimpleIntegerDynamicPseudoCost::infeasibility(int & preferredWay) const
+CbcSimpleIntegerDynamicPseudoCost::infeasibility(const OsiBranchingInformation * /*info*/,
+			       int &preferredWay) const
 {
   assert (downDynamicPseudoCost_>1.0e-40&&upDynamicPseudoCost_>1.0e-40);
   const double * solution = model_->testSolution();
@@ -806,121 +765,9 @@ CbcSimpleIntegerDynamicPseudoCost::infeasibility(int & preferredWay) const
     return CoinMax(returnValue,1.0e-15);
   }
 }
-
-double
-CbcSimpleIntegerDynamicPseudoCost::infeasibility(const OsiSolverInterface * /*solver*/,
-						 const OsiBranchingInformation * info,
-			 int & preferredWay) const
-{
-  double value = info->solution_[columnNumber_];
-  value = CoinMax(value, info->lower_[columnNumber_]);
-  value = CoinMin(value, info->upper_[columnNumber_]);
-  if (info->upper_[columnNumber_]==info->lower_[columnNumber_]) {
-    // fixed
-    preferredWay=1;
-    return 0.0;
-  }
-  assert (breakEven_>0.0&&breakEven_<1.0);
-  double nearest = floor(value+0.5);
-  double integerTolerance = info->integerTolerance_; 
-  double below = floor(value+integerTolerance);
-  double above = below+1.0;
-  if (above>info->upper_[columnNumber_]) {
-    above=below;
-    below = above -1;
-  }
-#if INFEAS==1
-  double objectiveValue = info->objectiveValue_;
-  double distanceToCutoff =  info->cutoff_  - objectiveValue;
-  if (distanceToCutoff<1.0e20) 
-    distanceToCutoff *= 10.0;
-  else 
-    distanceToCutoff = 1.0e2 + fabs(objectiveValue);
-#endif
-  distanceToCutoff = CoinMax(distanceToCutoff,1.0e-12*(1.0+fabs(objectiveValue)));
-  double sum;
-  int number;
-  double downCost = CoinMax(value-below,0.0);
-  sum = sumDownCost_;
-  number = numberTimesDown_;
-#if INFEAS==1
-  sum += numberTimesDownInfeasible_*(distanceToCutoff/(downCost+1.0e-12));
-#endif
-  if (number>0)
-    downCost *= sum / static_cast<double> (number);
-  else
-    downCost  *=  downDynamicPseudoCost_;
-  double upCost = CoinMax((above-value),0.0);
-  sum = sumUpCost_;
-  number = numberTimesUp_;
-#if INFEAS==1
-  sum += numberTimesUpInfeasible_*(distanceToCutoff/(upCost+1.0e-12));
-#endif
-  if (number>0)
-    upCost *= sum / static_cast<double> (number);
-  else
-    upCost  *=  upDynamicPseudoCost_;
-  if (downCost>=upCost)
-    preferredWay=1;
-  else
-    preferredWay=-1;
-  // See if up down choice set
-  if (upDownSeparator_>0.0) {
-    preferredWay = (value-below>=upDownSeparator_) ? 1 : -1;
-  }
-  if (preferredWay_)
-    preferredWay=preferredWay_;
-  // weight at 1.0 is max min
-  if (fabs(value-nearest)<=integerTolerance) {
-    return 0.0;
-  } else {
-    double returnValue=0.0;
-    double minValue = CoinMin(downCost,upCost);
-    double maxValue = CoinMax(downCost,upCost);
-    if (!info->numberBranchingSolutions_||info->depth_<=10/* was ||maxValue>0.2*distanceToCutoff*/) {
-      // no solution
-      returnValue = WEIGHT_BEFORE*minValue + (1.0-WEIGHT_BEFORE)*maxValue;
-    } else {
-      // some solution
-#ifndef WEIGHT_PRODUCT
-      returnValue = WEIGHT_AFTER*minValue + (1.0-WEIGHT_AFTER)*maxValue;
-#else
-      returnValue = CoinMax(minValue,1.0e-8)*CoinMax(maxValue,1.0e-8);
-#endif
-    }
-    if (numberTimesUp_<numberBeforeTrust_||
-        numberTimesDown_<numberBeforeTrust_) {
-      //if (returnValue<1.0e10)
-      //returnValue += 1.0e12;
-      //else
-      returnValue *= 1.0e3;
-      if (!numberTimesUp_&&!numberTimesDown_)
-        returnValue=1.0e50;
-    }
-    //if (fabs(value-0.5)<1.0e-5) {
-    //returnValue = 3.0*returnValue + 0.2;
-    //} else if (value>0.9) {
-    //returnValue = 2.0*returnValue + 0.1;
-    //}
-    if (method_==1) {
-      // probing
-      // average 
-      double up=1.0e-15;
-      double down=1.0e-15;
-      if (numberTimesProbingTotal_) {
-	up += numberTimesUpTotalFixed_/static_cast<double> (numberTimesProbingTotal_);
-	down += numberTimesDownTotalFixed_/static_cast<double> (numberTimesProbingTotal_);
-      }
-      returnValue = 1 + 10.0*CoinMin(numberTimesDownLocalFixed_,numberTimesUpLocalFixed_) +
-	CoinMin(down,up);
-      returnValue *= 1.0e-3;
-    }
-    return CoinMax(returnValue,1.0e-15);
-  }
-}
 // Creates a branching object
 CbcBranchingObject * 
-CbcSimpleIntegerDynamicPseudoCost::createBranch(OsiSolverInterface * /*solver*/,
+CbcSimpleIntegerDynamicPseudoCost::createCbcBranch(OsiSolverInterface * /*solver*/,
 						const OsiBranchingInformation * info, int way) 
 {
   double value = info->solution_[columnNumber_];

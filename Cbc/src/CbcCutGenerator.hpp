@@ -249,6 +249,9 @@ public:
   { return numberActiveCutsAtRoot_;}
   inline void setNumberActiveCutsAtRoot(int value)
   { numberActiveCutsAtRoot_ = value;}
+  /// Number of short cuts at root
+  inline int numberShortCutsAtRoot() const
+  { return numberShortCutsAtRoot_;}
   /// Set model
   inline void setModel(CbcModel * model)
   { model_ = model;}
@@ -320,6 +323,8 @@ private:
   int numberCutsAtRoot_;
   /// Number of cuts active at root
   int numberActiveCutsAtRoot_;
+  /// Number of short cuts at root
+  int numberShortCutsAtRoot_;
   /// Switches - see gets and sets
   int switches_;
 };

@@ -15,9 +15,9 @@
 #endif
 //#define CLP_DEBUG_MALLOC
 #ifdef CLP_DEBUG_MALLOC
-extern "C" void clp_memory(int type);
-extern "C" void * clp_malloc(int length);
-extern "C" void clp_free(void * array);
+/*extern "C" */void clp_memory(int type);
+/*extern "C" */void * clp_malloc(int length);
+/*extern "C" */void clp_free(void * array);
 #include <malloc.h>
 #include <exception>
 #include <new>

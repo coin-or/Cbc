@@ -58,10 +58,9 @@ CbcBranchCut::operator=( const CbcBranchCut& /*rhs*/)
 CbcBranchCut::~CbcBranchCut ()
 {
 }
-
-// Infeasibility - large is 0.5
 double 
-CbcBranchCut::infeasibility(int & preferredWay) const
+CbcBranchCut::infeasibility(const OsiBranchingInformation * /*info*/,
+			       int &preferredWay) const
 {
   throw CoinError("Use of base class","infeasibility","CbcBranchCut");
   preferredWay=-1;
@@ -82,12 +81,10 @@ CbcBranchCut::feasibleRegion()
 bool 
 CbcBranchCut::boundBranch() const 
 {return false;}
-
-// Creates a branching object
 CbcBranchingObject * 
-CbcBranchCut::createBranch(int /*way*/) 
+CbcBranchCut::createCbcBranch(OsiSolverInterface * /*solver*/,const OsiBranchingInformation * /*info*/, int /*way*/) 
 {
-  throw CoinError("Use of base class","createBranch","CbcBranchCut");
+  throw CoinError("Use of base class","createCbcBranch","CbcBranchCut");
   return new CbcCutBranchingObject();
 }
 
@@ -433,13 +430,12 @@ CbcBranchToFixLots::~CbcBranchToFixLots ()
 {
   delete [] mark_;
 }
-// Creates a branching object
 CbcBranchingObject * 
-CbcBranchToFixLots::createBranch(int /*way*/) 
+CbcBranchToFixLots::createCbcBranch(OsiSolverInterface * solver,const OsiBranchingInformation * /*info*/, int /*way*/) 
 {
   // by default way must be -1
   //assert (way==-1);
-  OsiSolverInterface * solver = model_->solver();
+  //OsiSolverInterface * solver = model_->solver();
   const double * solution = model_->testSolution();
   const double * lower = solver->getColLower();
   const double * upper = solver->getColUpper();
@@ -811,9 +807,9 @@ CbcBranchToFixLots::shallWe() const
   }
   return returnCode;
 }
-// Infeasibility - large is 0.5
 double 
-CbcBranchToFixLots::infeasibility(int & preferredWay) const
+CbcBranchToFixLots::infeasibility(const OsiBranchingInformation * /*info*/,
+			       int &preferredWay) const
 {
   preferredWay=-1;
   CbcNode * node = model_->currentNode();
@@ -943,9 +939,10 @@ CbcBranchAllDifferent::~CbcBranchAllDifferent ()
 {
   delete [] which_;
 }
-// Creates a branching object
 CbcBranchingObject * 
-CbcBranchAllDifferent::createBranch(int /*way*/) 
+CbcBranchAllDifferent::createCbcBranch(OsiSolverInterface * /*solver*/
+				       ,const OsiBranchingInformation * /*info*/,
+				       int /*way*/) 
 {
   // by default way must be -1
   //assert (way==-1);
@@ -991,9 +988,9 @@ CbcBranchAllDifferent::createBranch(int /*way*/)
     printf("creating cut in CbcBranchCut\n");
   return newObject;
 }
-// Infeasibility - large is 0.5
 double 
-CbcBranchAllDifferent::infeasibility(int & preferredWay) const
+CbcBranchAllDifferent::infeasibility(const OsiBranchingInformation * /*info*/,
+			       int &preferredWay) const
 {
   preferredWay=-1;
   //OsiSolverInterface * solver = model_->solver();

@@ -41,6 +41,7 @@ CbcCutGenerator::CbcCutGenerator ()
     numberCutsActive_(0),
     numberCutsAtRoot_(0),
     numberActiveCutsAtRoot_(0),
+    numberShortCutsAtRoot_(0),
     switches_(1)
 {
 }
@@ -62,6 +63,7 @@ CbcCutGenerator::CbcCutGenerator(CbcModel * model,CglCutGenerator * generator,
     numberCutsActive_(0),
     numberCutsAtRoot_(0),
     numberActiveCutsAtRoot_(0),
+    numberShortCutsAtRoot_(0),
     switches_(1)
 {
   if (howOften<-2000) {
@@ -109,6 +111,7 @@ CbcCutGenerator::CbcCutGenerator ( const CbcCutGenerator & rhs)
   numberCutsActive_ = rhs.numberCutsActive_;
   numberCutsAtRoot_  = rhs.numberCutsAtRoot_;
   numberActiveCutsAtRoot_ = rhs.numberActiveCutsAtRoot_;
+  numberShortCutsAtRoot_ = rhs.numberShortCutsAtRoot_;
 }
 
 // Assignment operator 
@@ -137,6 +140,7 @@ CbcCutGenerator::operator=( const CbcCutGenerator& rhs)
     numberCutsActive_ = rhs.numberCutsActive_;
     numberCutsAtRoot_  = rhs.numberCutsAtRoot_;
     numberActiveCutsAtRoot_ = rhs.numberActiveCutsAtRoot_;
+    numberShortCutsAtRoot_ = rhs.numberShortCutsAtRoot_;
   }
   return *this;
 }
@@ -560,11 +564,14 @@ CbcCutGenerator::generateCuts( OsiCuts & cs , int fullScan, OsiSolverInterface *
       const double * solution = solver->getColSolution();
       bool feasible=true;
       double primalTolerance = 1.0e-7;
+      int shortCut = (depth) ? -1 : generator_->maximumLengthOfCutInTree();
       for (k = numberRowCutsAfter-1;k>=numberRowCutsBefore;k--) {
 	const OsiRowCut * thisCut = cs.rowCutPtr(k) ;
 	double sum=0.0;
 	if (thisCut->lb()<=thisCut->ub()) {
 	  int n=thisCut->row().getNumElements();
+	  if (n<=shortCut)
+	    numberShortCutsAtRoot_++;
 	  const int * column = thisCut->row().getIndices();
 	  const double * element = thisCut->row().getElements();
 	  if (n<=0) {
@@ -621,6 +628,12 @@ CbcCutGenerator::generateCuts( OsiCuts & cs , int fullScan, OsiSolverInterface *
 	}
 	nAdd2 = 5*numberColumns;
 	nReasonable = CoinMax(nAdd2,nElsNow/8+nAdd);
+	if (!depth&&!pass) {
+	  // allow more
+	  nAdd += nElsNow/2;
+	  nAdd2 += nElsNow/2;
+	  nReasonable += nElsNow/2;
+	}
       } else {
 	nAdd = 200;
 	nAdd2 = 2*numberColumns;

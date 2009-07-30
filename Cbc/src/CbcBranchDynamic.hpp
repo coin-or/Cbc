@@ -47,26 +47,14 @@ public:
   // Destructor 
   virtual ~CbcSimpleIntegerDynamicPseudoCost ();
   
-  using CbcObject::infeasibility ;
   /// Infeasibility - large is 0.5
-  virtual double infeasibility(int & preferredWay) const;
+  virtual double infeasibility(const OsiBranchingInformation * info,
+			       int &preferredWay) const;
 
-  using CbcObject::createBranch ;
   /// Creates a branching object
-  virtual CbcBranchingObject * createBranch(int way) ;
-
-  /// Infeasibility - large is 0.5
-  virtual double infeasibility(const OsiSolverInterface * solver, 
-			       const OsiBranchingInformation * info, int & preferredWay) const;
+  virtual CbcBranchingObject * createCbcBranch(OsiSolverInterface * solver,const OsiBranchingInformation * info, int way) ;
 
 
-  /** Create a branching object and indicate which way to branch first.
-      
-      The branching object has to know how to create branches (fix
-      variables, etc.)
-  */
-  virtual CbcBranchingObject * createBranch(OsiSolverInterface * solver,
-					    const OsiBranchingInformation * info, int way) ;
   /// Fills in a created branching object
   void fillCreateBranch(CbcIntegerBranchingObject * branching, const OsiBranchingInformation * info, int way) ;
 

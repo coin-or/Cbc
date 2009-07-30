@@ -420,10 +420,9 @@ CbcLotsize::floorCeiling(double & floorLotsize, double & ceilingLotsize, double 
     ceilingLotsize=bound_[2*range_+2];
   }
 }
-
-// Infeasibility - large is 0.5
 double 
-CbcLotsize::infeasibility(int & preferredWay) const
+CbcLotsize::infeasibility(const OsiBranchingInformation * /*info*/,
+			       int &preferredWay) const
 {
   OsiSolverInterface * solver = model_->solver();
   const double * solution = model_->testSolution();
@@ -524,12 +523,10 @@ CbcLotsize::feasibleRegion()
   assert (fabs(value-nearest)<=(100.0+10.0*fabs(nearest))*integerTolerance);
 #endif
 }
-
-// Creates a branching object
 CbcBranchingObject * 
-CbcLotsize::createBranch(int way) 
+CbcLotsize::createCbcBranch(OsiSolverInterface * solver,const OsiBranchingInformation * /*info*/, int way) 
 {
-  OsiSolverInterface * solver = model_->solver();
+  //OsiSolverInterface * solver = model_->solver();
   const double * solution = model_->testSolution();
   const double * lower = solver->getColLower();
   const double * upper = solver->getColUpper();

@@ -16,8 +16,11 @@
 /* Define to the debug verbosity level (0 is no output) */
 #undef COIN_CBC_VERBOSITY
 
-/* If defined, the Ampl Solver Library is available. */
+/* Define to 1 if the ASL package is used */
 #undef COIN_HAS_ASL
+
+/* Define to 1 if the Blas package is used */
+#undef COIN_HAS_BLAS
 
 /* Define to 1 if the Cbc package is used */
 #undef COIN_HAS_CBC
@@ -34,17 +37,20 @@
 /* Define to 1 if the Cplex package is available */
 #undef COIN_HAS_CPX
 
-/* Define to 1 if the Data/miplib3 package is used */
-#undef COIN_HAS_DATA_MIPLIB3
-
-/* Define to 1 if the Data/Sample package is used */
-#undef COIN_HAS_DATA_SAMPLE
-
 /* Define to 1 if the DyLP package is used */
 #undef COIN_HAS_DYLP
 
 /* Define to 1 if the FortMP package is available */
 #undef COIN_HAS_FMP
+
+/* Define to 1 if the Glpk package is used */
+#undef COIN_HAS_GLPK
+
+/* Define to 1 if the Lapack package is used */
+#undef COIN_HAS_LAPACK
+
+/* Define to 1 if the miplib3 package is used */
+#undef COIN_HAS_MIPLIB3
 
 /* Define to 1 if the Mosek package is available */
 #undef COIN_HAS_MSK
@@ -55,20 +61,14 @@
 /* Define to 1 if the Osl package is available */
 #undef COIN_HAS_OSL
 
+/* Define to 1 if the Sample package is used */
+#undef COIN_HAS_SAMPLE
+
 /* Define to 1 if the Soplex package is available */
 #undef COIN_HAS_SPX
 
 /* Define to 1 if the SYMPHONY package is used */
 #undef COIN_HAS_SYMPHONY
-
-/* Define to 1 if the ThirdParty/Blas package is used */
-#undef COIN_HAS_THIRDPARTY_BLAS
-
-/* Define to 1 if the ThirdParty/Glpk package is used */
-#undef COIN_HAS_THIRDPARTY_GLPK
-
-/* Define to 1 if the ThirdParty/Lapack package is used */
-#undef COIN_HAS_THIRDPARTY_LAPACK
 
 /* Define to 1 if the Vol package is used */
 #undef COIN_HAS_VOL

@@ -148,23 +148,28 @@ endif
 # If we have the Ampl solver library, we need to add additional things
 if COIN_HAS_ASL
 #cbc_SOURCES += Cbc_ampl.cpp Cbc_ampl.h
-  cbc_LDADD += $(ASLLIB)
-  AM_CPPFLAGS += $(ASL_CPPFLAGS) -DCOIN_HAS_ASL
-endif
-
-if COIN_HAS_THIRDPARTY_BLAS
-if COIN_HAS_THIRDPARTY_BLAS_PREINSTALLED
-  LIBS += -L`$(CYGPATH_W) $(THIRDPARTY_BLASINSTDIR)/lib/ThirdParty` -lcoinblas
+if COIN_HAS_ASL_PREINSTALLED
+  cbc_LDADD += $(ASLINSTDIR)/lib/ThirdParty/$(ASLLIB)
+  AM_CPPFLAGS += -I$(ASLINSTDIR)/include/coin/ThirdParty -DCOIN_HAS_ASL
 else
-  cbc_LDADD += $(THIRDPARTY_BLASOBJDIR)/libcoinblas.la
+  cbc_LDADD += $(ASLOBJDIR)/lib/ThirdParty/$(ASLLIB)
+  AM_CPPFLAGS += -I`$(CYGPATH_W) $(ASLOBJDIR)` -I`$(CYGPATH_W) $(ASLSRCDIR)/solvers` -DCOIN_HAS_ASL
 endif
 endif
 
-if COIN_HAS_THIRDPARTY_LAPACK
-if COIN_HAS_THIRDPARTY_LAPACK_PREINSTALLED
-  LIBS += -L`$(CYGPATH_W) $(THIRDPARTY_LAPACKINSTDIR)/lib/ThirdParty` -lcoinlapack
+if COIN_HAS_BLAS
+if COIN_HAS_BLAS_PREINSTALLED
+  LIBS += -L`$(CYGPATH_W) $(BLASINSTDIR)/lib/ThirdParty` -lcoinblas
 else
-  cbc_LDADD += $(THIRDPARTY_LAPACKOBJDIR)/libcoinlapack.la
+  cbc_LDADD += $(BLASOBJDIR)/libcoinblas.la
+endif
+endif
+
+if COIN_HAS_LAPACK
+if COIN_HAS_LAPACK_PREINSTALLED
+  LIBS += -L`$(CYGPATH_W) $(LAPACKINSTDIR)/lib/ThirdParty` -lcoinlapack
+else
+  cbc_LDADD += $(LAPACKOBJDIR)/libcoinlapack.la
 endif
 endif
 
@@ -267,13 +272,13 @@ else
 endif
 endif
 
-if COIN_HAS_THIRDPARTY_GLPK
-if COIN_HAS_THIRDPARTY_GLPK_PREINSTALLED
-  AM_CPPFLAGS += -I`$(CYGPATH_W) $(THIRDPARTY_GLPKINSTDIR)/include/coin/ThirdParty`
-  LIBS += -L`$(CYGPATH_W) $(THIRDPARTY_GLPKINSTDIR)/lib/ThirdParty` -lcoinglpk
+if COIN_HAS_GLPK
+if COIN_HAS_GLPK_PREINSTALLED
+  AM_CPPFLAGS += -I`$(CYGPATH_W) $(GLPKINSTDIR)/include/coin/ThirdParty`
+  LIBS += -L`$(CYGPATH_W) $(GLPKINSTDIR)/lib/ThirdParty` -lcoinglpk
 else
-  AM_CPPFLAGS += -I`$(CYGPATH_W) $(THIRDPARTY_GLPKSRCDIR)/glpk/include`
-  cbc_generic_LDADD += $(THIRDPARTY_GLPKOBJDIR)/libcoinglpk.la
+  AM_CPPFLAGS += -I`$(CYGPATH_W) $(GLPKSRCDIR)/glpk/include`
+  cbc_generic_LDADD += $(GLPKOBJDIR)/libcoinglpk.la
 endif
 if COIN_HAS_OSI_PREINSTALLED
   AM_CPPFLAGS += -I`$(CYGPATH_W) $(OSIINSTDIR)/include/coin`
@@ -367,8 +372,13 @@ endif
 endif
 
 if COIN_HAS_ASL
-  cbc_generic_LDADD += $(ASLLIB)
-  AM_CPPFLAGS += $(ASL_CPPFLAGS) -DCOIN_HAS_ASL
+if COIN_HAS_ASL_PREINSTALLED
+  cbc_generic_LDADD += $(ASLINSTDIR)/lib/ThirdParty/$(ASLLIB)
+#  AM_CPPFLAGS += $(ASLINSTDIR)/include/coin/ThirdParty -DCOIN_HAS_ASL
+else
+  cbc_generic_LDADD += $(ASLOBJDIR)/lib/ThirdParty/$(ASLLIB)
+#  AM_CPPFLAGS += -I`$(CYGPATH_W) $(ASLOBJDIR)` -I`$(CYGPATH_W) $(ASLSRCDIR)/solvers` -DCOIN_HAS_ASL
+endif
 endif
 
 if COIN_HAS_OSI_PREINSTALLED
@@ -386,19 +396,19 @@ else
   cbc_generic_LDADD += $(COINUTILSOBJDIR)/src/libCoinUtils.la
 endif
 
-if COIN_HAS_THIRDPARTY_BLAS
-if COIN_HAS_THIRDPARTY_BLAS_PREINSTALLED
-  LIBS += -L`$(CYGPATH_W) $(THIRDPARTY_BLASINSTDIR)/lib/ThirdParty` -lcoinblas
+if COIN_HAS_BLAS
+if COIN_HAS_BLAS_PREINSTALLED
+  LIBS += -L`$(CYGPATH_W) $(BLASINSTDIR)/lib/ThirdParty` -lcoinblas
 else
-  cbc_generic_LDADD += $(THIRDPARTY_BLASOBJDIR)/libcoinblas.la
+  cbc_generic_LDADD += $(BLASOBJDIR)/libcoinblas.la
 endif
 endif
 
-if COIN_HAS_THIRDPARTY_LAPACK
-if COIN_HAS_THIRDPARTY_LAPACK_PREINSTALLED
-  LIBS += -L`$(CYGPATH_W) $(THIRDPARTY_LAPACKINSTDIR)/lib/ThirdParty` -lcoinlapack
+if COIN_HAS_LAPACK
+if COIN_HAS_LAPACK_PREINSTALLED
+  LIBS += -L`$(CYGPATH_W) $(LAPACKINSTDIR)/lib/ThirdParty` -lcoinlapack
 else
-  cbc_generic_LDADD += $(THIRDPARTY_LAPACKOBJDIR)/libcoinlapack.la
+  cbc_generic_LDADD += $(LAPACKOBJDIR)/libcoinlapack.la
 endif
 endif
 

@@ -18,25 +18,25 @@ if COIN_HAS_CLP
   CBC_TEST_TGTS += test_cbc
 endif
 if CBC_BUILD_CBC_GENERIC
-if COIN_HAS_DATA_SAMPLE
+if COIN_HAS_SAMPLE
   CBC_TEST_TGTS += test_cbc_generic
 endif
 endif
 
 TESTFLAGS =
-if COIN_HAS_DATA_SAMPLE
-if COIN_HAS_DATA_SAMPLE_PREINSTALLED
-  TESTFLAGS += -dirSample $(DATA_SAMPLEDATADIR)
+if COIN_HAS_SAMPLE
+if COIN_HAS_SAMPLE_PREINSTALLED
+  TESTFLAGS += -dirSample $(SAMPLEDATADIR)
 else
-  TESTFLAGS += -dirSample $(DATA_SAMPLEOBJDIR)
+  TESTFLAGS += -dirSample $(SAMPLEOBJDIR)
 endif
 endif
 TESTFLAGS += -unitTest
-if COIN_HAS_DATA_MIPLIB3
-if COIN_HAS_DATA_MIPLIB3_PREINSTALLED
-  TESTFLAGS += -dirMiplib $(DATA_MIPLIB3DATADIR) -miplib
+if COIN_HAS_MIPLIB3
+if COIN_HAS_MIPLIB3_PREINSTALLED
+  TESTFLAGS += -dirMiplib $(MIPLIB3DATADIR) -miplib
 else
-  TESTFLAGS += -dirMiplib $(DATA_MIPLIB3OBJDIR) -miplib
+  TESTFLAGS += -dirMiplib $(MIPLIB3OBJDIR) -miplib
 endif
 endif
 
@@ -55,14 +55,14 @@ test_cbc: ../src/cbc$(EXEEXT)
 #		SAMPLEARG="-dirSample $(DIRSAMPLE)"; \
 #	fi; 
 
-if COIN_HAS_DATA_SAMPLE_PREINSTALLED
+if COIN_HAS_SAMPLE_PREINSTALLED
 test_cbc_generic: ../src/cbc-generic$(EXEEXT)
 	echo "A minimal test is all that cbc-generic can manage just yet."
-	../src/cbc-generic$(EXEEXT) -directory $(DATA_SAMPLEDATADIR) -import p0033.mps -branch
+	../src/cbc-generic$(EXEEXT) -directory $(SAMPLEDATADIR) -import p0033.mps -branch
 else
 test_cbc_generic: ../src/cbc-generic$(EXEEXT)
 	echo "A minimal test is all that cbc-generic can manage just yet."
-	../src/cbc-generic$(EXEEXT) -directory $(DATA_SAMPLEOBJDIR) -import p0033.mps -branch
+	../src/cbc-generic$(EXEEXT) -directory $(SAMPLEOBJDIR) -import p0033.mps -branch
 endif
 
 gamstests: gamsTest$(EXEEXT)
@@ -146,11 +146,11 @@ else
 endif
 endif
 
-if COIN_HAS_THIRDPARTY_GLPK
-if COIN_HAS_THIRDPARTY_GLPK_PREINSTALLED
-  LIBS += -L`$(CYGPATH_W) $(THIRDPARTY_GLPKINSTDIR)/lib/ThirdParty` -lcoinglpk
+if COIN_HAS_GLPK
+if COIN_HAS_GLPK_PREINSTALLED
+  LIBS += -L`$(CYGPATH_W) $(GLPKINSTDIR)/lib/ThirdParty` -lcoinglpk
 else
-  gamsTest_LDADD += $(THIRDPARTY_GLPKOBJDIR)/libcoinglpk.la
+  gamsTest_LDADD += $(GLPKOBJDIR)/libcoinglpk.la
 endif
 if COIN_HAS_OSI_PREINSTALLED
   AM_CPPFLAGS += -I`$(CYGPATH_W) $(OSIINSTDIR)/include/coin`
@@ -244,8 +244,13 @@ endif
 endif
 
 if COIN_HAS_ASL
-  gamsTest_LDADD += $(ASLLIB)
-  AM_CPPFLAGS += $(ASL_CPPFLAGS) -DCOIN_HAS_ASL
+if COIN_HAS_ASL_PREINSTALLED
+  gamsTest_LDADD += $(ASLINSTDIR)/lib/ThirdParty/$(ASLLIB)
+  AM_CPPFLAGS += -I$(ASLINSTDIR)/include/coin/ThirdParty -DCOIN_HAS_ASL
+else
+  gamsTest_LDADD += $(ASLOBJDIR)/$(ASLLIB)
+  AM_CPPFLAGS += -I`$(CYGPATH_W) $(ASLOBJDIR)` -I`$(CYGPATH_W) $(ASLSRCDIR)/solvers` -DCOIN_HAS_ASL
+endif
 endif
 
 if COIN_HAS_OSI_PREINSTALLED

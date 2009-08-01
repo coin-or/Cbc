@@ -64,11 +64,12 @@ AC_COIN_HAS_PROJECT(DyLP)
 AC_COIN_HAS_PROJECT(Osi)
 AC_COIN_HAS_PROJECT(Vol)
 AC_COIN_HAS_PROJECT(SYMPHONY)
-AC_COIN_HAS_PROJECT(Data/Sample)
-AC_COIN_HAS_PROJECT(Data/miplib3)
-AC_COIN_HAS_PROJECT(ThirdParty/Blas,daxpy.f)
-AC_COIN_HAS_PROJECT(ThirdParty/Lapack,LAPACK/SRC/dlarf.f)
-AC_COIN_HAS_PROJECT(ThirdParty/Glpk,glpk/include/glpk.h)
+AC_COIN_HAS_PROJECT(Sample,Data)
+AC_COIN_HAS_PROJECT(miplib3,Data)
+AC_COIN_HAS_PROJECT(ASL,ThirdParty,solvers/asl.h)
+AC_COIN_HAS_PROJECT(Blas,ThirdParty,daxpy.f)
+AC_COIN_HAS_PROJECT(Lapack,ThirdParty,LAPACK/SRC/dlarf.f)
+AC_COIN_HAS_PROJECT(Glpk,ThirdParty,glpk/include/glpk.h)
 
 # AC_COIN_HAS_PROJECT(Cpx)
 # What is this in the line above? 
@@ -95,7 +96,18 @@ AC_COIN_HAS_USER_LIBRARY([Xpress],[XPR],[xprs.h],[XPRSsetintcontrol])
 #############################################################################
 
 # Ampl Solver library
-AC_COIN_HAS_ASL
+#AC_COIN_HAS_ASL
+if test "$coin_has_asl" != notGiven ;
+then
+  # Determine the name of the ASL library
+  case "$CC" in
+    cl* | */cl* | CL* | */CL* | icl* | */icl* | ICL* | */ICL*)
+      ASLLIB=amplsolv.lib ;;
+    *)
+      ASLLIB=amplsolver.a ;;
+  esac
+  AC_SUBST(ASLLIB)
+fi
 
 #############################################################################
 #                       CbcGeneric configuration			    #

@@ -42,7 +42,7 @@ AC_COIN_CREATE_LIBTOOL
 #             Check which ThirdParty sources are available                  #
 #############################################################################
 
-AC_COIN_THIRDPARTY_SUBDIRS([ASL],[ThirdParty/ASL],[solvers/asl.h])
+#AC_COIN_THIRDPARTY_SUBDIRS([ASL],[ThirdParty/ASL],[solvers/asl.h])
 #AC_COIN_THIRDPARTY_SUBDIRS([Blas],[ThirdParty/Blas],[daxpy.f])
 #AC_COIN_THIRDPARTY_SUBDIRS([Lapack],[ThirdParty/Lapack],[LAPACK/SRC/dlarf.f])
 #AC_COIN_THIRDPARTY_SUBDIRS([Glpk],[ThirdParty/Glpk],[glpk/src/glplpx01.c])
@@ -52,12 +52,13 @@ AC_COIN_THIRDPARTY_SUBDIRS([ASL],[ThirdParty/ASL],[solvers/asl.h])
 #############################################################################
 
 AC_COIN_MAIN_SUBDIR(CoinUtils)
-AC_COIN_MAIN_SUBDIR(Data/Netlib)
-AC_COIN_MAIN_SUBDIR(Data/Sample)
-AC_COIN_MAIN_SUBDIR(Data/miplib3)
-AC_COIN_MAIN_SUBDIR(ThirdParty/Blas,daxpy.f)
-AC_COIN_MAIN_SUBDIR(ThirdParty/Lapack,LAPACK/SRC/dlarf.f)
-AC_COIN_MAIN_SUBDIR(ThirdParty/Glpk,glpk/include/glpk.h)
+AC_COIN_MAIN_SUBDIR(Netlib,Data)
+AC_COIN_MAIN_SUBDIR(Sample,Data)
+AC_COIN_MAIN_SUBDIR(miplib3,Data)
+AC_COIN_MAIN_SUBDIR(ASL,ThirdParty,solvers/asl.h)
+AC_COIN_MAIN_SUBDIR(Blas,ThirdParty,daxpy.f)
+AC_COIN_MAIN_SUBDIR(Lapack,ThirdParty,LAPACK/SRC/dlarf.f)
+AC_COIN_MAIN_SUBDIR(Glpk,ThirdParty,glpk/include/glpk.h)
 AC_COIN_MAIN_SUBDIR(Clp)
 AC_COIN_MAIN_SUBDIR(DyLP)
 AC_COIN_MAIN_SUBDIR(Vol)

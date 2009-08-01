@@ -1,5 +1,5 @@
 BuildTools        https://projects.coin-or.org/svn/BuildTools/stable/BSPsplit
-ThirdParty/ASL    https://projects.coin-or.org/svn/BuildTools/ThirdParty/ASL/stable/1.0
+#ThirdParty/ASL    https://projects.coin-or.org/svn/BuildTools/ThirdParty/ASL/stable/1.0
 #ThirdParty/Blas   https://projects.coin-or.org/svn/BuildTools/ThirdParty/Blas/stable/1.0
 #ThirdParty/Lapack https://projects.coin-or.org/svn/BuildTools/ThirdParty/Lapack/stable/1.0
 #ThirdParty/Glpk   https://projects.coin-or.org/svn/BuildTools/ThirdParty/Glpk/stable/1.5

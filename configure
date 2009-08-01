@@ -487,8 +487,7 @@ ac_subdirs_all="$ac_subdirs_all Vol"
 ac_subdirs_all="$ac_subdirs_all Osi"
 ac_subdirs_all="$ac_subdirs_all Cgl"
 ac_subdirs_all="$ac_subdirs_all Cbc"
-ac_subdirs_all="$ac_subdirs_all SYMPHONY"
-ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS build build_cpu build_vendor build_os CDEFS ADD_CFLAGS DBG_CFLAGS OPT_CFLAGS sol_cc_compiler CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT MPICC CXXDEFS ADD_CXXFLAGS DBG_CXXFLAGS OPT_CXXFLAGS CXX CXXFLAGS ac_ct_CXX MPICXX ADD_FFLAGS DBG_FFLAGS OPT_FFLAGS F77 FFLAGS ac_ct_F77 MPIF77 EGREP INSTALL_PROGRAM INSTALL_SCRIPT INSTALL_DATA CYGPATH_W PACKAGE VERSION ACLOCAL AUTOCONF AUTOMAKE AUTOHEADER MAKEINFO install_sh STRIP ac_ct_STRIP INSTALL_STRIP_PROGRAM mkdir_p AWK SET_MAKE am__leading_dot AMTAR am__tar am__untar DEPDIR am__include am__quote AMDEP_TRUE AMDEP_FALSE AMDEPBACKSLASH CCDEPMODE am__fastdepCC_TRUE am__fastdepCC_FALSE CXXDEPMODE am__fastdepCXX_TRUE am__fastdepCXX_FALSE MAINTAINER_MODE_TRUE MAINTAINER_MODE_FALSE MAINT LIBTOOLM4 have_autoconf have_automake have_svn BUILDTOOLSDIR AUX_DIR abs_source_dir abs_lib_dir abs_include_dir abs_bin_dir HAVE_EXTERNALS_TRUE HAVE_EXTERNALS_FALSE host host_cpu host_vendor host_os LN_S ECHO AR ac_ct_AR RANLIB ac_ct_RANLIB CPP CXXCPP LIBTOOL ac_c_preproc_warn_flag ac_cxx_preproc_warn_flag RPATH_FLAGS LT_LDFLAGS COIN_SKIP_PROJECTS COINUTILSSRCDIR COINUTILSOBJDIR COINUTILSDOCDIR COINUTILSDATADIR COINUTILSINSTDIR COIN_HAS_COINUTILS_TRUE COIN_HAS_COINUTILS_FALSE COIN_HAS_COINUTILS_PREINSTALLED_TRUE COIN_HAS_COINUTILS_PREINSTALLED_FALSE subdirs NETLIBSRCDIR NETLIBOBJDIR NETLIBDOCDIR NETLIBDATADIR NETLIBINSTDIR COIN_HAS_NETLIB_TRUE COIN_HAS_NETLIB_FALSE COIN_HAS_NETLIB_PREINSTALLED_TRUE COIN_HAS_NETLIB_PREINSTALLED_FALSE SAMPLESRCDIR SAMPLEOBJDIR SAMPLEDOCDIR SAMPLEDATADIR SAMPLEINSTDIR COIN_HAS_SAMPLE_TRUE COIN_HAS_SAMPLE_FALSE COIN_HAS_SAMPLE_PREINSTALLED_TRUE COIN_HAS_SAMPLE_PREINSTALLED_FALSE MIPLIB3SRCDIR MIPLIB3OBJDIR MIPLIB3DOCDIR MIPLIB3DATADIR MIPLIB3INSTDIR COIN_HAS_MIPLIB3_TRUE COIN_HAS_MIPLIB3_FALSE COIN_HAS_MIPLIB3_PREINSTALLED_TRUE COIN_HAS_MIPLIB3_PREINSTALLED_FALSE ASLSRCDIR ASLOBJDIR ASLDOCDIR ASLDATADIR ASLINSTDIR COIN_HAS_ASL_TRUE COIN_HAS_ASL_FALSE COIN_HAS_ASL_PREINSTALLED_TRUE COIN_HAS_ASL_PREINSTALLED_FALSE BLASSRCDIR BLASOBJDIR BLASDOCDIR BLASDATADIR BLASINSTDIR COIN_HAS_BLAS_TRUE COIN_HAS_BLAS_FALSE COIN_HAS_BLAS_PREINSTALLED_TRUE COIN_HAS_BLAS_PREINSTALLED_FALSE LAPACKSRCDIR LAPACKOBJDIR LAPACKDOCDIR LAPACKDATADIR LAPACKINSTDIR COIN_HAS_LAPACK_TRUE COIN_HAS_LAPACK_FALSE COIN_HAS_LAPACK_PREINSTALLED_TRUE COIN_HAS_LAPACK_PREINSTALLED_FALSE GLPKSRCDIR GLPKOBJDIR GLPKDOCDIR GLPKDATADIR GLPKINSTDIR COIN_HAS_GLPK_TRUE COIN_HAS_GLPK_FALSE COIN_HAS_GLPK_PREINSTALLED_TRUE COIN_HAS_GLPK_PREINSTALLED_FALSE CLPSRCDIR CLPOBJDIR CLPDOCDIR CLPDATADIR CLPINSTDIR COIN_HAS_CLP_TRUE COIN_HAS_CLP_FALSE COIN_HAS_CLP_PREINSTALLED_TRUE COIN_HAS_CLP_PREINSTALLED_FALSE DYLPSRCDIR DYLPOBJDIR DYLPDOCDIR DYLPDATADIR DYLPINSTDIR COIN_HAS_DYLP_TRUE COIN_HAS_DYLP_FALSE COIN_HAS_DYLP_PREINSTALLED_TRUE COIN_HAS_DYLP_PREINSTALLED_FALSE VOLSRCDIR VOLOBJDIR VOLDOCDIR VOLDATADIR VOLINSTDIR COIN_HAS_VOL_TRUE COIN_HAS_VOL_FALSE COIN_HAS_VOL_PREINSTALLED_TRUE COIN_HAS_VOL_PREINSTALLED_FALSE OSISRCDIR OSIOBJDIR OSIDOCDIR OSIDATADIR OSIINSTDIR COIN_HAS_OSI_TRUE COIN_HAS_OSI_FALSE COIN_HAS_OSI_PREINSTALLED_TRUE COIN_HAS_OSI_PREINSTALLED_FALSE CGLSRCDIR CGLOBJDIR CGLDOCDIR CGLDATADIR CGLINSTDIR COIN_HAS_CGL_TRUE COIN_HAS_CGL_FALSE COIN_HAS_CGL_PREINSTALLED_TRUE COIN_HAS_CGL_PREINSTALLED_FALSE CBCSRCDIR CBCOBJDIR CBCDOCDIR CBCDATADIR CBCINSTDIR COIN_HAS_CBC_TRUE COIN_HAS_CBC_FALSE COIN_HAS_CBC_PREINSTALLED_TRUE COIN_HAS_CBC_PREINSTALLED_FALSE SYMPHONYSRCDIR SYMPHONYOBJDIR SYMPHONYDOCDIR SYMPHONYDATADIR SYMPHONYINSTDIR COIN_HAS_SYMPHONY_TRUE COIN_HAS_SYMPHONY_FALSE COIN_HAS_SYMPHONY_PREINSTALLED_TRUE COIN_HAS_SYMPHONY_PREINSTALLED_FALSE LIBEXT VPATH_DISTCLEANFILES LIBOBJS LTLIBOBJS'
+ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS build build_cpu build_vendor build_os CDEFS ADD_CFLAGS DBG_CFLAGS OPT_CFLAGS sol_cc_compiler CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT MPICC CXXDEFS ADD_CXXFLAGS DBG_CXXFLAGS OPT_CXXFLAGS CXX CXXFLAGS ac_ct_CXX MPICXX ADD_FFLAGS DBG_FFLAGS OPT_FFLAGS F77 FFLAGS ac_ct_F77 MPIF77 EGREP INSTALL_PROGRAM INSTALL_SCRIPT INSTALL_DATA CYGPATH_W PACKAGE VERSION ACLOCAL AUTOCONF AUTOMAKE AUTOHEADER MAKEINFO install_sh STRIP ac_ct_STRIP INSTALL_STRIP_PROGRAM mkdir_p AWK SET_MAKE am__leading_dot AMTAR am__tar am__untar DEPDIR am__include am__quote AMDEP_TRUE AMDEP_FALSE AMDEPBACKSLASH CCDEPMODE am__fastdepCC_TRUE am__fastdepCC_FALSE CXXDEPMODE am__fastdepCXX_TRUE am__fastdepCXX_FALSE MAINTAINER_MODE_TRUE MAINTAINER_MODE_FALSE MAINT LIBTOOLM4 have_autoconf have_automake have_svn BUILDTOOLSDIR AUX_DIR abs_source_dir abs_lib_dir abs_include_dir abs_bin_dir HAVE_EXTERNALS_TRUE HAVE_EXTERNALS_FALSE host host_cpu host_vendor host_os LN_S ECHO AR ac_ct_AR RANLIB ac_ct_RANLIB CPP CXXCPP LIBTOOL ac_c_preproc_warn_flag ac_cxx_preproc_warn_flag RPATH_FLAGS LT_LDFLAGS COIN_SKIP_PROJECTS COINUTILSSRCDIR COINUTILSOBJDIR COINUTILSDOCDIR COINUTILSDATADIR COINUTILSINSTDIR COIN_HAS_COINUTILS_TRUE COIN_HAS_COINUTILS_FALSE COIN_HAS_COINUTILS_PREINSTALLED_TRUE COIN_HAS_COINUTILS_PREINSTALLED_FALSE subdirs NETLIBSRCDIR NETLIBOBJDIR NETLIBDOCDIR NETLIBDATADIR NETLIBINSTDIR COIN_HAS_NETLIB_TRUE COIN_HAS_NETLIB_FALSE COIN_HAS_NETLIB_PREINSTALLED_TRUE COIN_HAS_NETLIB_PREINSTALLED_FALSE SAMPLESRCDIR SAMPLEOBJDIR SAMPLEDOCDIR SAMPLEDATADIR SAMPLEINSTDIR COIN_HAS_SAMPLE_TRUE COIN_HAS_SAMPLE_FALSE COIN_HAS_SAMPLE_PREINSTALLED_TRUE COIN_HAS_SAMPLE_PREINSTALLED_FALSE MIPLIB3SRCDIR MIPLIB3OBJDIR MIPLIB3DOCDIR MIPLIB3DATADIR MIPLIB3INSTDIR COIN_HAS_MIPLIB3_TRUE COIN_HAS_MIPLIB3_FALSE COIN_HAS_MIPLIB3_PREINSTALLED_TRUE COIN_HAS_MIPLIB3_PREINSTALLED_FALSE ASLSRCDIR ASLOBJDIR ASLDOCDIR ASLDATADIR ASLINSTDIR COIN_HAS_ASL_TRUE COIN_HAS_ASL_FALSE COIN_HAS_ASL_PREINSTALLED_TRUE COIN_HAS_ASL_PREINSTALLED_FALSE BLASSRCDIR BLASOBJDIR BLASDOCDIR BLASDATADIR BLASINSTDIR COIN_HAS_BLAS_TRUE COIN_HAS_BLAS_FALSE COIN_HAS_BLAS_PREINSTALLED_TRUE COIN_HAS_BLAS_PREINSTALLED_FALSE LAPACKSRCDIR LAPACKOBJDIR LAPACKDOCDIR LAPACKDATADIR LAPACKINSTDIR COIN_HAS_LAPACK_TRUE COIN_HAS_LAPACK_FALSE COIN_HAS_LAPACK_PREINSTALLED_TRUE COIN_HAS_LAPACK_PREINSTALLED_FALSE GLPKSRCDIR GLPKOBJDIR GLPKDOCDIR GLPKDATADIR GLPKINSTDIR COIN_HAS_GLPK_TRUE COIN_HAS_GLPK_FALSE COIN_HAS_GLPK_PREINSTALLED_TRUE COIN_HAS_GLPK_PREINSTALLED_FALSE CLPSRCDIR CLPOBJDIR CLPDOCDIR CLPDATADIR CLPINSTDIR COIN_HAS_CLP_TRUE COIN_HAS_CLP_FALSE COIN_HAS_CLP_PREINSTALLED_TRUE COIN_HAS_CLP_PREINSTALLED_FALSE DYLPSRCDIR DYLPOBJDIR DYLPDOCDIR DYLPDATADIR DYLPINSTDIR COIN_HAS_DYLP_TRUE COIN_HAS_DYLP_FALSE COIN_HAS_DYLP_PREINSTALLED_TRUE COIN_HAS_DYLP_PREINSTALLED_FALSE VOLSRCDIR VOLOBJDIR VOLDOCDIR VOLDATADIR VOLINSTDIR COIN_HAS_VOL_TRUE COIN_HAS_VOL_FALSE COIN_HAS_VOL_PREINSTALLED_TRUE COIN_HAS_VOL_PREINSTALLED_FALSE OSISRCDIR OSIOBJDIR OSIDOCDIR OSIDATADIR OSIINSTDIR COIN_HAS_OSI_TRUE COIN_HAS_OSI_FALSE COIN_HAS_OSI_PREINSTALLED_TRUE COIN_HAS_OSI_PREINSTALLED_FALSE CGLSRCDIR CGLOBJDIR CGLDOCDIR CGLDATADIR CGLINSTDIR COIN_HAS_CGL_TRUE COIN_HAS_CGL_FALSE COIN_HAS_CGL_PREINSTALLED_TRUE COIN_HAS_CGL_PREINSTALLED_FALSE CBCSRCDIR CBCOBJDIR CBCDOCDIR CBCDATADIR CBCINSTDIR COIN_HAS_CBC_TRUE COIN_HAS_CBC_FALSE COIN_HAS_CBC_PREINSTALLED_TRUE COIN_HAS_CBC_PREINSTALLED_FALSE LIBEXT VPATH_DISTCLEANFILES LIBOBJS LTLIBOBJS'
 ac_subst_files=''
 
 # Initialize some variables set by options.
@@ -1209,11 +1208,6 @@ Optional Packages:
   --with-cbc-srcdir source directory for Cbc package
   --with-cbc-objdir object directory for Cbc package (if different from source
                           directory in VPATH compilation)
-  --with-symphony-instdir prefix of installation directory for precompiled
-                          SYMPHONY package
-  --with-symphony-srcdir source directory for SYMPHONY package
-  --with-symphony-objdir object directory for SYMPHONY package (if different
-                          from source directory in VPATH compilation)
 
 Some influential environment variables:
   CDEFS       Additional -D flags to be used when compiling C code.
@@ -4249,7 +4243,7 @@ fi
 
 
 # Provide some information about the compiler.
-echo "$as_me:4252:" \
+echo "$as_me:4246:" \
      "checking for Fortran 77 compiler version" >&5
 ac_compiler=`set X $ac_compile; echo $2`
 { (eval echo "$as_me:$LINENO: \"$ac_compiler --version </dev/null >&5\"") >&5
@@ -6508,7 +6502,7 @@ ia64-*-hpux*)
   ;;
 *-*-irix6*)
   # Find out which ABI we are using.
-  echo '#line 6511 "configure"' > conftest.$ac_ext
+  echo '#line 6505 "configure"' > conftest.$ac_ext
   if { (eval echo "$as_me:$LINENO: \"$ac_compile\"") >&5
   (eval $ac_compile) 2>&5
   ac_status=$?
@@ -8472,11 +8466,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:8475: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:8469: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:8479: \$? = $ac_status" >&5
+   echo "$as_me:8473: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -8740,11 +8734,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:8743: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:8737: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:8747: \$? = $ac_status" >&5
+   echo "$as_me:8741: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -8844,11 +8838,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:8847: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:8841: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:8851: \$? = $ac_status" >&5
+   echo "$as_me:8845: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -11189,7 +11183,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<EOF
-#line 11192 "configure"
+#line 11186 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -11289,7 +11283,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<EOF
-#line 11292 "configure"
+#line 11286 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -13633,11 +13627,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:13636: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:13630: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:13640: \$? = $ac_status" >&5
+   echo "$as_me:13634: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -13737,11 +13731,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:13740: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:13734: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:13744: \$? = $ac_status" >&5
+   echo "$as_me:13738: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -15307,11 +15301,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:15310: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:15304: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:15314: \$? = $ac_status" >&5
+   echo "$as_me:15308: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -15411,11 +15405,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:15414: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:15408: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:15418: \$? = $ac_status" >&5
+   echo "$as_me:15412: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -17618,11 +17612,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:17621: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:17615: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:17625: \$? = $ac_status" >&5
+   echo "$as_me:17619: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -17886,11 +17880,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:17889: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:17883: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:17893: \$? = $ac_status" >&5
+   echo "$as_me:17887: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -17990,11 +17984,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:17993: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:17987: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:17997: \$? = $ac_status" >&5
+   echo "$as_me:17991: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -24353,252 +24347,6 @@ echo "${ECHO_T}no" >&6
 fi
 
 
-
-# AC_COIN_HAS_PROJECT also checks whether  is available in /SYMPHONY, if not it sets coin_has... to notGiven
-echo "$as_me:$LINENO: checking for COIN project SYMPHONY in " >&5
-echo $ECHO_N "checking for COIN project SYMPHONY in ... $ECHO_C" >&6
-# First check, if the sub-project is actually available (ToDo: allow
-# other locations)
-
-#replace backslashes by underscore
-#m4_define([escape], m4_bpatsubsts([SYMPHONY],[/],[_]))
-
-coin_has_symphony=notGiven
-if test x"$COIN_SKIP_PROJECTS" != x; then
-  for dir in $COIN_SKIP_PROJECTS; do
-    if test $dir = SYMPHONY; then
-      coin_has_symphony=skipping
-    fi
-  done
-fi
-
-
-
-
-
-
-SYMPHONYSRCDIR=This_Variable_Is_Not_Set
-SYMPHONYOBJDIR=This_Variable_Is_Not_Set
-SYMPHONYDOCDIR=This_Variable_Is_Not_Set
-SYMPHONYDATADIR=This_Variable_Is_Not_Set
-SYMPHONYINSTDIR=This_Variable_Is_Not_Set
-
-if test $coin_has_symphony != skipping; then
-  if test $PACKAGE_TARNAME = symphony; then
-    coin_has_symphony=.
-  else
-
-# Check whether --with-m4_tolower(SYMPHONY)-instdir or --without-m4_tolower(SYMPHONY)-instdir was given.
-if test "${with_symphony_instdir+set}" = set; then
-  withval="$with_symphony_instdir"
-  coin_has_symphony=installed
-		 if test -d "$withval"; then : ; else
-		   { { echo "$as_me:$LINENO: error: argument for --with-symphony-instdir not a directory" >&5
-echo "$as_me: error: argument for --with-symphony-instdir not a directory" >&2;}
-   { (exit 1); exit 1; }; }
-		 fi
-                 SYMPHONYINSTDIR=`cd $withval; pwd`
-fi;
-
-
-# Check whether --with-m4_tolower(SYMPHONY)-srcdir or --without-m4_tolower(SYMPHONY)-srcdir was given.
-if test "${with_symphony_srcdir+set}" = set; then
-  withval="$with_symphony_srcdir"
-  if test "$coin_has_symphony" = installed; then
-		   { { echo "$as_me:$LINENO: error: --with-$symphony-srcdir cannot be given together with --with-symphony-instdir" >&5
-echo "$as_me: error: --with-$symphony-srcdir cannot be given together with --with-symphony-instdir" >&2;}
-   { (exit 1); exit 1; }; }
-		 fi
-		 if test -d "$withval"; then : ; else
-		   { { echo "$as_me:$LINENO: error: argument for --with-symphony-srcdir not a directory" >&5
-echo "$as_me: error: argument for --with-symphony-srcdir not a directory" >&2;}
-   { (exit 1); exit 1; }; }
-		 fi
-		 coin_has_symphony=$withval
-                 SYMPHONYSRCDIR=`cd $withval; pwd`
-fi;
-
-
-# Check whether --with-m4_tolower(SYMPHONY)-objdir or --without-m4_tolower(SYMPHONY)-objdir was given.
-if test "${with_symphony_objdir+set}" = set; then
-  withval="$with_symphony_objdir"
-  if test "$coin_has_symphony" = installed; then
-		   { { echo "$as_me:$LINENO: error: --with-symphony-objdir cannot be given together with --with-symphony-instdir" >&5
-echo "$as_me: error: --with-symphony-objdir cannot be given together with --with-symphony-instdir" >&2;}
-   { (exit 1); exit 1; }; }
-		 fi
-		 if test "$coin_has_symphony" = notGiven; then
-		   { { echo "$as_me:$LINENO: error: --with-symphony-objdir must be accompanied by --with-symphony-srcdir" >&5
-echo "$as_me: error: --with-symphony-objdir must be accompanied by --with-symphony-srcdir" >&2;}
-   { (exit 1); exit 1; }; }
-		 fi
-		 if test -d "$withval"; then : ; else
-		   { { echo "$as_me:$LINENO: error: argument for --with-symphony-objdir not a directory" >&5
-echo "$as_me: error: argument for --with-symphony-objdir not a directory" >&2;}
-   { (exit 1); exit 1; }; }
-		 fi
-                 SYMPHONYOBJDIR=`cd $withval; pwd`
-else
-  SYMPHONYOBJDIR="$SYMPHONYSRCDIR"
-fi;
-
-    # if we still don't have a location, check for generic flag
-    if test "$coin_has_symphony" = notGiven; then
-
-# Check whether --with-coin-instdir or --without-coin-instdir was given.
-if test "${with_coin_instdir+set}" = set; then
-  withval="$with_coin_instdir"
-  if test -d "$withval"; then : ; else
-		     { { echo "$as_me:$LINENO: error: argument for --with-coin-instdir not a directory" >&5
-echo "$as_me: error: argument for --with-coin-instdir not a directory" >&2;}
-   { (exit 1); exit 1; }; }
-		   fi
-		   if test -r $withval/share/doc/coin/SYMPHONY/README;
-
-                   then
-		     coin_has_symphony=installed
-		     SYMPHONYINSTDIR=`cd $withval; pwd`
-		   fi
-fi;
-    fi
-
-    # check if project can be found in /SYMPHONY
-    # this is for the classic setup when this macro is called from AC_COIN_MAIN_SUBDIR
-    fulldir=SYMPHONY
-
-    if test "$coin_has_symphony" = notGiven; then
-      if test -d $srcdir/$fulldir; then
-         coin_has_symphony=$fulldir
-
-
-      fi
-    fi
-
-    # check if project can be found in ..//SYMPHONY
-    # this is for the classic setup when this macro is called from the project main directory
-    fulldir=../SYMPHONY
-
-    if test "$coin_has_symphony" = notGiven; then
-      if test -d $srcdir/$fulldir; then
-         coin_has_symphony=$fulldir
-
-
-      fi
-    fi
-  fi
-fi
-
-if test $coin_has_symphony != notGiven &&
-   test $coin_has_symphony != skipping; then
-  # Set the #define if the component is available
-
-cat >>confdefs.h <<\_ACEOF
-#define COIN_HAS_SYMPHONY 1
-_ACEOF
-
-
-  if test $coin_has_symphony = installed; then
-    SYMPHONYDOCDIR=$SYMPHONYINSTDIR/share/doc/coin/SYMPHONY
-       SYMPHONYDATADIR=$SYMPHONYINSTDIR/share/coin/SYMPHONY
-
-  else
-    if test "$SYMPHONYOBJDIR" = This_Variable_Is_Not_Set; then
-      # Set the variables for source and object code location
-      SYMPHONYSRCDIR=`cd $srcdir/$coin_has_symphony; pwd`
-      SYMPHONYOBJDIR=`pwd`/$coin_has_symphony
-      SYMPHONYDOCDIR=$abs_lib_dir/../share/doc/coin/SYMPHONY
-
-      SYMPHONYDATADIR=$SYMPHONYOBJDIR
-    else
-      # This is just a guess:
-      SYMPHONYDOCDIR=$SYMPHONYOBJDIR/../share/doc/coin/SYMPHONY
-         SYMPHONYDATADIR=$SYMPHONYOBJDIR/../share/coin/SYMPHONY
-
-    fi
-  fi
-fi
-
-# Define the Makefile conditional
-
-
-if test $coin_has_symphony != notGiven &&
-                test $coin_has_symphony != skipping; then
-  COIN_HAS_SYMPHONY_TRUE=
-  COIN_HAS_SYMPHONY_FALSE='#'
-else
-  COIN_HAS_SYMPHONY_TRUE='#'
-  COIN_HAS_SYMPHONY_FALSE=
-fi
-
-
-
-if test $coin_has_symphony = installed; then
-  COIN_HAS_SYMPHONY_PREINSTALLED_TRUE=
-  COIN_HAS_SYMPHONY_PREINSTALLED_FALSE='#'
-else
-  COIN_HAS_SYMPHONY_PREINSTALLED_TRUE='#'
-  COIN_HAS_SYMPHONY_PREINSTALLED_FALSE=
-fi
-
-
-if test $coin_has_symphony = installed; then
-  echo "$as_me:$LINENO: result: installed in $SYMPHONYINSTDIR" >&5
-echo "${ECHO_T}installed in $SYMPHONYINSTDIR" >&6
-  if test -r $SYMPHONYINSTDIR/share/doc/coin/SYMPHONY/README; then
-
-  :
-else
-  { { echo "$as_me:$LINENO: error: $SYMPHONYINSTDIR/share/doc/coin/SYMPHONY/README should be available if SYMPHONY is installed" >&5
-echo "$as_me: error: $SYMPHONYINSTDIR/share/doc/coin/SYMPHONY/README should be available if SYMPHONY is installed" >&2;}
-   { (exit 1); exit 1; }; }
-  :
-fi
-
-
-
-else
-  echo "$as_me:$LINENO: result: $coin_has_symphony" >&5
-echo "${ECHO_T}$coin_has_symphony" >&6
-  if test $coin_has_symphony != notGiven &&
-     test $coin_has_symphony != skipping; then
-    echo "$as_me:$LINENO: checking for source code location of SYMPHONY" >&5
-echo $ECHO_N "checking for source code location of SYMPHONY... $ECHO_C" >&6
-    echo "$as_me:$LINENO: result: $SYMPHONYSRCDIR" >&5
-echo "${ECHO_T}$SYMPHONYSRCDIR" >&6
-    echo "$as_me:$LINENO: checking for object code location of SYMPHONY" >&5
-echo $ECHO_N "checking for object code location of SYMPHONY... $ECHO_C" >&6
-    echo "$as_me:$LINENO: result: $SYMPHONYOBJDIR" >&5
-echo "${ECHO_T}$SYMPHONYOBJDIR" >&6
-  fi
-fi
-
-echo "$as_me:$LINENO: checking whether project SYMPHONY need to be configured" >&5
-echo $ECHO_N "checking whether project SYMPHONY need to be configured... $ECHO_C" >&6
-if test "$coin_has_symphony" != skipping &&
-   test "$coin_has_symphony" != notGiven &&
-   test "$coin_has_symphony" != installed; then
-
-  projfulldir=SYMPHONY
-
-  if test -r $srcdir/$projfulldir/configure; then
-    coin_subdirs="$coin_subdirs $projfulldir"
-    echo "$as_me:$LINENO: result: yes" >&5
-echo "${ECHO_T}yes" >&6
-
-
-subdirs="$subdirs SYMPHONY"
-
-
-  else
-    echo "$as_me:$LINENO: result: no" >&5
-echo "${ECHO_T}no" >&6
-  fi
-else
-  echo "$as_me:$LINENO: result: no" >&5
-echo "${ECHO_T}no" >&6
-fi
-
-
 ##############################################################################
 #                   Finishing up by writing all the output                   #
 ##############################################################################
@@ -25016,20 +24764,6 @@ if test -z "${COIN_HAS_CBC_PREINSTALLED_TRUE}" && test -z "${COIN_HAS_CBC_PREINS
   { { echo "$as_me:$LINENO: error: conditional \"COIN_HAS_CBC_PREINSTALLED\" was never defined.
 Usually this means the macro was only invoked conditionally." >&5
 echo "$as_me: error: conditional \"COIN_HAS_CBC_PREINSTALLED\" was never defined.
-Usually this means the macro was only invoked conditionally." >&2;}
-   { (exit 1); exit 1; }; }
-fi
-if test -z "${COIN_HAS_SYMPHONY_TRUE}" && test -z "${COIN_HAS_SYMPHONY_FALSE}"; then
-  { { echo "$as_me:$LINENO: error: conditional \"COIN_HAS_SYMPHONY\" was never defined.
-Usually this means the macro was only invoked conditionally." >&5
-echo "$as_me: error: conditional \"COIN_HAS_SYMPHONY\" was never defined.
-Usually this means the macro was only invoked conditionally." >&2;}
-   { (exit 1); exit 1; }; }
-fi
-if test -z "${COIN_HAS_SYMPHONY_PREINSTALLED_TRUE}" && test -z "${COIN_HAS_SYMPHONY_PREINSTALLED_FALSE}"; then
-  { { echo "$as_me:$LINENO: error: conditional \"COIN_HAS_SYMPHONY_PREINSTALLED\" was never defined.
-Usually this means the macro was only invoked conditionally." >&5
-echo "$as_me: error: conditional \"COIN_HAS_SYMPHONY_PREINSTALLED\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi
@@ -25785,15 +25519,6 @@ s,@COIN_HAS_CBC_TRUE@,$COIN_HAS_CBC_TRUE,;t t
 s,@COIN_HAS_CBC_FALSE@,$COIN_HAS_CBC_FALSE,;t t
 s,@COIN_HAS_CBC_PREINSTALLED_TRUE@,$COIN_HAS_CBC_PREINSTALLED_TRUE,;t t
 s,@COIN_HAS_CBC_PREINSTALLED_FALSE@,$COIN_HAS_CBC_PREINSTALLED_FALSE,;t t
-s,@SYMPHONYSRCDIR@,$SYMPHONYSRCDIR,;t t
-s,@SYMPHONYOBJDIR@,$SYMPHONYOBJDIR,;t t
-s,@SYMPHONYDOCDIR@,$SYMPHONYDOCDIR,;t t
-s,@SYMPHONYDATADIR@,$SYMPHONYDATADIR,;t t
-s,@SYMPHONYINSTDIR@,$SYMPHONYINSTDIR,;t t
-s,@COIN_HAS_SYMPHONY_TRUE@,$COIN_HAS_SYMPHONY_TRUE,;t t
-s,@COIN_HAS_SYMPHONY_FALSE@,$COIN_HAS_SYMPHONY_FALSE,;t t
-s,@COIN_HAS_SYMPHONY_PREINSTALLED_TRUE@,$COIN_HAS_SYMPHONY_PREINSTALLED_TRUE,;t t
-s,@COIN_HAS_SYMPHONY_PREINSTALLED_FALSE@,$COIN_HAS_SYMPHONY_PREINSTALLED_FALSE,;t t
 s,@LIBEXT@,$LIBEXT,;t t
 s,@VPATH_DISTCLEANFILES@,$VPATH_DISTCLEANFILES,;t t
 s,@LIBOBJS@,$LIBOBJS,;t t

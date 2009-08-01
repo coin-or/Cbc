@@ -63,19 +63,12 @@ AC_COIN_HAS_PROJECT(CoinUtils)
 AC_COIN_HAS_PROJECT(DyLP)
 AC_COIN_HAS_PROJECT(Osi)
 AC_COIN_HAS_PROJECT(Vol)
-AC_COIN_HAS_PROJECT(SYMPHONY)
 AC_COIN_HAS_PROJECT(Sample,Data)
 AC_COIN_HAS_PROJECT(miplib3,Data)
 AC_COIN_HAS_PROJECT(ASL,ThirdParty,solvers/asl.h)
 AC_COIN_HAS_PROJECT(Blas,ThirdParty,daxpy.f)
 AC_COIN_HAS_PROJECT(Lapack,ThirdParty,LAPACK/SRC/dlarf.f)
 AC_COIN_HAS_PROJECT(Glpk,ThirdParty,glpk/include/glpk.h)
-
-# AC_COIN_HAS_PROJECT(Cpx)
-# What is this in the line above? 
-# This should already be taken care of with
-# AC_COIN_HAS_USER_LIBRARY([Cplex],[CPX],[cplex.h],[CPXgetstat])
-# below
 
 #############################################################################
 #                            Third party solvers                            #

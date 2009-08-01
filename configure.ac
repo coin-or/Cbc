@@ -65,7 +65,6 @@ AC_COIN_MAIN_SUBDIR(Vol)
 AC_COIN_MAIN_SUBDIR(Osi)
 AC_COIN_MAIN_SUBDIR(Cgl)
 AC_COIN_MAIN_SUBDIR(Cbc)
-AC_COIN_MAIN_SUBDIR(SYMPHONY)
 
 ##############################################################################
 #                   Finishing up by writing all the output                   #

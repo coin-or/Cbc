@@ -322,25 +322,6 @@ else
 endif
 endif
 
-if COIN_HAS_SYMPHONY
-if COIN_HAS_OSI_PREINSTALLED
-  AM_CPPFLAGS += -I`$(CYGPATH_W) $(OSIINSTDIR)/include/coin`
-  LIBS += -L`$(CYGPATH_W) $(OSIINSTDIR)/lib` -lOsiSym
-else
-  AM_CPPFLAGS += -I`$(CYGPATH_W) $(OSISRCDIR)/src/OsiSym`
-  cbc_generic_LDADD += $(OSIOBJDIR)/src/OsiSym/libOsiSym.la
-endif
-if COIN_HAS_SYMPHONY_PREINSTALLED
-  AM_CPPFLAGS += -I`$(CYGPATH_W) $(SYMPHONYINSTDIR)/include/coin`
-  LIBS += -L`$(CYGPATH_W) $(SYMPHONYINSTDIR)/lib` -lSym \
-	`cat $(SYMPHONYDOCDIR)/sym_addlibs.txt`
-else
-  AM_CPPFLAGS += -I`$(CYGPATH_W) $(SYMPHONYSRCDIR)/src`
-  cbc_generic_LDADD += $(SYMPHONYOBJDIR)/src/libSym.la
-  LIBS += `cat $(SYMPHONYOBJDIR)/sym_addlibs.txt`
-endif
-endif
-
 if COIN_HAS_VOL
 if COIN_HAS_OSI_PREINSTALLED
   AM_CPPFLAGS += -I`$(CYGPATH_W) $(OSIINSTDIR)/include/coin`

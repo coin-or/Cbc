@@ -21131,7 +21131,7 @@ echo "$as_me:$LINENO: checking whether project CoinUtils need to be configured" 
 echo $ECHO_N "checking whether project CoinUtils need to be configured... $ECHO_C" >&6
 if test "$coin_has_coinutils" != skipping &&
    test "$coin_has_coinutils" != notGiven &&
-   test "$coin_has_$)" != installed; then
+   test "$coin_has_coinutils" != installed; then
 
   projfulldir=CoinUtils
 
@@ -21376,7 +21376,7 @@ echo "$as_me:$LINENO: checking whether project Netlib need to be configured" >&5
 echo $ECHO_N "checking whether project Netlib need to be configured... $ECHO_C" >&6
 if test "$coin_has_netlib" != skipping &&
    test "$coin_has_netlib" != notGiven &&
-   test "$coin_has_$)" != installed; then
+   test "$coin_has_netlib" != installed; then
 
   projfulldir=Data/Netlib
 
@@ -21621,7 +21621,7 @@ echo "$as_me:$LINENO: checking whether project Sample need to be configured" >&5
 echo $ECHO_N "checking whether project Sample need to be configured... $ECHO_C" >&6
 if test "$coin_has_sample" != skipping &&
    test "$coin_has_sample" != notGiven &&
-   test "$coin_has_$)" != installed; then
+   test "$coin_has_sample" != installed; then
 
   projfulldir=Data/Sample
 
@@ -21866,7 +21866,7 @@ echo "$as_me:$LINENO: checking whether project miplib3 need to be configured" >&
 echo $ECHO_N "checking whether project miplib3 need to be configured... $ECHO_C" >&6
 if test "$coin_has_miplib3" != skipping &&
    test "$coin_has_miplib3" != notGiven &&
-   test "$coin_has_$)" != installed; then
+   test "$coin_has_miplib3" != installed; then
 
   projfulldir=Data/miplib3
 
@@ -22113,7 +22113,7 @@ echo "$as_me:$LINENO: checking whether project ASL need to be configured" >&5
 echo $ECHO_N "checking whether project ASL need to be configured... $ECHO_C" >&6
 if test "$coin_has_asl" != skipping &&
    test "$coin_has_asl" != notGiven &&
-   test "$coin_has_$)" != installed; then
+   test "$coin_has_asl" != installed; then
 
   projfulldir=ThirdParty/ASL
 
@@ -22360,7 +22360,7 @@ echo "$as_me:$LINENO: checking whether project Blas need to be configured" >&5
 echo $ECHO_N "checking whether project Blas need to be configured... $ECHO_C" >&6
 if test "$coin_has_blas" != skipping &&
    test "$coin_has_blas" != notGiven &&
-   test "$coin_has_$)" != installed; then
+   test "$coin_has_blas" != installed; then
 
   projfulldir=ThirdParty/Blas
 
@@ -22607,7 +22607,7 @@ echo "$as_me:$LINENO: checking whether project Lapack need to be configured" >&5
 echo $ECHO_N "checking whether project Lapack need to be configured... $ECHO_C" >&6
 if test "$coin_has_lapack" != skipping &&
    test "$coin_has_lapack" != notGiven &&
-   test "$coin_has_$)" != installed; then
+   test "$coin_has_lapack" != installed; then
 
   projfulldir=ThirdParty/Lapack
 
@@ -22854,7 +22854,7 @@ echo "$as_me:$LINENO: checking whether project Glpk need to be configured" >&5
 echo $ECHO_N "checking whether project Glpk need to be configured... $ECHO_C" >&6
 if test "$coin_has_glpk" != skipping &&
    test "$coin_has_glpk" != notGiven &&
-   test "$coin_has_$)" != installed; then
+   test "$coin_has_glpk" != installed; then
 
   projfulldir=ThirdParty/Glpk
 
@@ -23100,7 +23100,7 @@ echo "$as_me:$LINENO: checking whether project Clp need to be configured" >&5
 echo $ECHO_N "checking whether project Clp need to be configured... $ECHO_C" >&6
 if test "$coin_has_clp" != skipping &&
    test "$coin_has_clp" != notGiven &&
-   test "$coin_has_$)" != installed; then
+   test "$coin_has_clp" != installed; then
 
   projfulldir=Clp
 
@@ -23346,7 +23346,7 @@ echo "$as_me:$LINENO: checking whether project DyLP need to be configured" >&5
 echo $ECHO_N "checking whether project DyLP need to be configured... $ECHO_C" >&6
 if test "$coin_has_dylp" != skipping &&
    test "$coin_has_dylp" != notGiven &&
-   test "$coin_has_$)" != installed; then
+   test "$coin_has_dylp" != installed; then
 
   projfulldir=DyLP
 
@@ -23592,7 +23592,7 @@ echo "$as_me:$LINENO: checking whether project Vol need to be configured" >&5
 echo $ECHO_N "checking whether project Vol need to be configured... $ECHO_C" >&6
 if test "$coin_has_vol" != skipping &&
    test "$coin_has_vol" != notGiven &&
-   test "$coin_has_$)" != installed; then
+   test "$coin_has_vol" != installed; then
 
   projfulldir=Vol
 
@@ -23838,7 +23838,7 @@ echo "$as_me:$LINENO: checking whether project Osi need to be configured" >&5
 echo $ECHO_N "checking whether project Osi need to be configured... $ECHO_C" >&6
 if test "$coin_has_osi" != skipping &&
    test "$coin_has_osi" != notGiven &&
-   test "$coin_has_$)" != installed; then
+   test "$coin_has_osi" != installed; then
 
   projfulldir=Osi
 
@@ -24084,7 +24084,7 @@ echo "$as_me:$LINENO: checking whether project Cgl need to be configured" >&5
 echo $ECHO_N "checking whether project Cgl need to be configured... $ECHO_C" >&6
 if test "$coin_has_cgl" != skipping &&
    test "$coin_has_cgl" != notGiven &&
-   test "$coin_has_$)" != installed; then
+   test "$coin_has_cgl" != installed; then
 
   projfulldir=Cgl
 
@@ -24330,7 +24330,7 @@ echo "$as_me:$LINENO: checking whether project Cbc need to be configured" >&5
 echo $ECHO_N "checking whether project Cbc need to be configured... $ECHO_C" >&6
 if test "$coin_has_cbc" != skipping &&
    test "$coin_has_cbc" != notGiven &&
-   test "$coin_has_$)" != installed; then
+   test "$coin_has_cbc" != installed; then
 
   projfulldir=Cbc
 
@@ -24576,7 +24576,7 @@ echo "$as_me:$LINENO: checking whether project SYMPHONY need to be configured" >
 echo $ECHO_N "checking whether project SYMPHONY need to be configured... $ECHO_C" >&6
 if test "$coin_has_symphony" != skipping &&
    test "$coin_has_symphony" != notGiven &&
-   test "$coin_has_$)" != installed; then
+   test "$coin_has_symphony" != installed; then
 
   projfulldir=SYMPHONY
 

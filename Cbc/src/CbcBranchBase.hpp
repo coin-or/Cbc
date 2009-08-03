@@ -107,8 +107,16 @@ public:
       The object may also compute an estimate of cost of going "up" or "down".
       This will probably be based on pseudo-cost ideas
   */
+#ifdef CBC_NEW_STYLE_BRANCH
   virtual double infeasibility(const OsiBranchingInformation * info,
 			       int &preferredWay) const=0;
+#else
+  virtual double infeasibility(const OsiBranchingInformation * /*info*/,
+			       int &preferredWay) const
+  {return infeasibility(preferredWay);}
+  virtual double infeasibility(int &/*preferredWay*/) const
+  {throw CoinError("Need code","infeasibility","CbcBranchBase");}
+#endif
 
   /** For the variable(s) referenced by the object,
       look at the current solution and set bounds to match the solution.
@@ -128,7 +136,15 @@ public:
       The branching object has to know how to create branches (fix
       variables, etc.)
   */
+#ifdef CBC_NEW_STYLE_BRANCH
   virtual CbcBranchingObject * createCbcBranch(OsiSolverInterface * solver,const OsiBranchingInformation * info, int way) =0;
+#else
+  virtual CbcBranchingObject * createCbcBranch(OsiSolverInterface * solver,const OsiBranchingInformation * info, int way) 
+  { return createBranch(solver,info,way);}
+  virtual CbcBranchingObject * createBranch(OsiSolverInterface * /*solver*/,
+					    const OsiBranchingInformation * /*info*/, int /*way*/)
+  {throw CoinError("Need code","createBranch","CbcBranchBase");} 
+#endif
   /** Create an Osibranching object and indicate which way to branch first.
       
       The branching object has to know how to create branches (fix

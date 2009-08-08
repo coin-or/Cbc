@@ -130,6 +130,7 @@ static void malloc_stats2()
 #ifdef TAUCS_BARRIER
 #define FOREIGN_BARRIER
 #endif
+static int initialPumpTune=-1;
 #include "CoinWarmStartBasis.hpp"
 
 #include "OsiSolverInterface.hpp"
@@ -489,6 +490,7 @@ void CbcSolver::fillParameters()
   parameters_[whichParam(INCREMENT,numberParameters_,parameters_)].setDoubleValue(model_.getDblParam(CbcModel::CbcCutoffIncrement));
   parameters_[whichParam(TESTOSI,numberParameters_,parameters_)].setIntValue(testOsiParameters);
   parameters_[whichParam(FPUMPTUNE,numberParameters_,parameters_)].setIntValue(1003);
+  initialPumpTune=1003;
 #ifdef CBC_THREAD
   parameters_[whichParam(THREADS,numberParameters_,parameters_)].setIntValue(0);
 #endif
@@ -3228,6 +3230,7 @@ void CbcMain0 (CbcModel  & model)
   parameters[whichParam(INCREMENT,numberParameters,parameters)].setDoubleValue(model.getDblParam(CbcModel::CbcCutoffIncrement));
   parameters[whichParam(TESTOSI,numberParameters,parameters)].setIntValue(testOsiParameters);
   parameters[whichParam(FPUMPTUNE,numberParameters,parameters)].setIntValue(1003);
+  initialPumpTune=1003;
 #ifdef CBC_THREAD
   parameters[whichParam(THREADS,numberParameters,parameters)].setIntValue(0);
 #endif
@@ -3272,7 +3275,7 @@ void CbcMain0 (CbcModel  & model)
    3 - for miplib test so skip some
 */
 #if NEW_STYLE_SOLVER==0
-static int doHeuristics(CbcModel * model,int type) 
+static int doHeuristics(CbcModel * model,int type)
 #else
 int 
   CbcSolver::doHeuristics(CbcModel * model,int type)
@@ -3281,7 +3284,12 @@ int
 #if NEW_STYLE_SOLVER==0
   CbcOrClpParam * parameters_ = parameters;
   int numberParameters_ = numberParameters;
+  bool noPrinting_ = noPrinting;
 #endif 
+  char generalPrint[10000];
+  CoinMessages generalMessages = model->messages();
+  CoinMessageHandler * generalMessageHandler = model->messageHandler();
+  //generalMessageHandler->setPrefix(false);
   bool anyToDo=false;
   int logLevel = parameters_[whichParam(LOGLEVEL,numberParameters_,parameters_)].intValue();
   int useFpump = parameters_[whichParam(FPUMP,numberParameters_,parameters_)].currentOptionAsInteger();
@@ -3310,7 +3318,15 @@ int
     if (parameters_[whichParam(FPUMPITS,numberParameters_,parameters_)].intValue()==21)
       heuristic4.setIterationRatio(1.0);
     int pumpTune=parameters_[whichParam(FPUMPTUNE,numberParameters_,parameters_)].intValue();
+    int pumpTune2=parameters_[whichParam(FPUMPTUNE2,numberParameters_,parameters_)].intValue();
     if (pumpTune>0) {
+      bool printStuff = (pumpTune!=initialPumpTune||logLevel>1)
+	&&!noPrinting_;
+      if (printStuff) {
+	generalMessageHandler->message(CBC_GENERAL,generalMessages)
+	  << "Options for feasibility pump - "
+	  <<CoinMessageEol;
+      }
       /*
 	>=10000000 for using obj
 	>=1000000 use as accumulate switch
@@ -3335,14 +3351,20 @@ int
 	accumulate -= 10*which;
 	which--;
 	// weights and factors
-	double weight[]={0.1,0.1,0.5,0.5,1.0,1.0,5.0,5.0};
-	double factor[] = {0.1,0.5,0.1,0.5,0.1,0.5,0.1,0.5};
+	double weight[]={0.01,0.01,0.1,0.1,0.5,0.5,1.0,1.0,5.0,5.0};
+	double factor[] = {0.1,0.5,0.1,0.5,0.1,0.5,0.1,0.5,0.1,0.5};
 	heuristic4.setInitialWeight(weight[which]);
 	heuristic4.setWeightFactor(factor[which]);
+	if (printStuff) {
+	  sprintf(generalPrint,"Initial weight for objective %g, decay factor %g",
+		  weight[which],factor[which]);
+	  generalMessageHandler->message(CBC_GENERAL,generalMessages)
+	    << generalPrint
+	    <<CoinMessageEol;
+	}
+	  
       }
       // fake cutoff
-      if (logLevel>1)
-	printf("Setting ");
       if (c) {
 	double cutoff;
 	model->solver()->getDblParam(OsiDualObjectiveLimit,cutoff);
@@ -3351,8 +3373,34 @@ int
 	if (fakeCutoff)
 	  cutoff=fakeCutoff;
 	heuristic4.setFakeCutoff(cutoff);
-	if (logLevel>1)
-	  printf("fake cutoff of %g ",cutoff);
+	if (printStuff) {
+	  sprintf(generalPrint,"Fake cutoff of %g",cutoff);
+	  generalMessageHandler->message(CBC_GENERAL,generalMessages)
+	    << generalPrint
+	    <<CoinMessageEol;
+	}
+      }
+      int offRandomEtc=0;
+      if (pumpTune2) {
+	if ((pumpTune2/100)!=0) {
+	  offRandomEtc=100*(pumpTune2/100);
+	  if (printStuff) {
+	    generalMessageHandler->message(CBC_GENERAL,generalMessages)
+	      << "Not using randomized objective"
+	      <<CoinMessageEol;
+	  }
+	}
+	int maxAllowed=pumpTune2%100;
+	if (maxAllowed) {
+	  offRandomEtc += 1000*maxAllowed;
+	  if (printStuff) {
+	    sprintf(generalPrint,"Fixing if same for %d passes",
+		    maxAllowed);
+	    generalMessageHandler->message(CBC_GENERAL,generalMessages)
+	      << generalPrint
+	      <<CoinMessageEol;
+	  }
+	}
       }
       if (r) {
 	// also set increment
@@ -3364,22 +3412,45 @@ int
 	heuristic4.setAbsoluteIncrement(increment);
 	heuristic4.setAccumulate(accumulate);
 	heuristic4.setMaximumRetries(r+1);
-	if (logLevel>1) {
-	  printf("increment of %g ",heuristic4.absoluteIncrement());
-	  if (accumulate) 
-	    printf("accumulate of %d ",accumulate);
-	  printf("%d retries ",r+2);
+	if (printStuff) {
+	  if (increment) {
+	    sprintf(generalPrint,"Increment of %g",increment);
+	    generalMessageHandler->message(CBC_GENERAL,generalMessages)
+	      << generalPrint
+	      <<CoinMessageEol;
+	  }
+	  if (accumulate) {
+	    sprintf(generalPrint,"Accumulate of %d",accumulate);
+	    generalMessageHandler->message(CBC_GENERAL,generalMessages)
+	      << generalPrint
+	      <<CoinMessageEol;
+	  }
+	  sprintf(generalPrint,"%d retries",r+1);
+	  generalMessageHandler->message(CBC_GENERAL,generalMessages)
+	    << generalPrint
+	    <<CoinMessageEol;
 	}
       }
-      if (i) {
-	heuristic4.setFeasibilityPumpOptions(i*10);
+      if (i+offRandomEtc) {
+	heuristic4.setFeasibilityPumpOptions(i*10+offRandomEtc);
+	if (printStuff) {
+	  sprintf(generalPrint,"Feasibility pump options of %d",
+		  i*10+offRandomEtc);
+	  generalMessageHandler->message(CBC_GENERAL,generalMessages)
+	    << generalPrint
+	    <<CoinMessageEol;
+	}
       }	
       pumpTune = pumpTune%100;
-      if (logLevel>1)
-	printf("and setting when to %d\n",pumpTune+10);
       if (pumpTune==6)
 	pumpTune =13;
       heuristic4.setWhen((pumpTune%10)+10);
+      if (printStuff) {
+	sprintf(generalPrint,"Tuning (fixing) %d",pumpTune%10);
+	generalMessageHandler->message(CBC_GENERAL,generalMessages)
+	  << generalPrint
+	  <<CoinMessageEol;
+      }
     }
     heuristic4.setHeuristicName("feasibility pump");
     //#define ROLF
@@ -4255,6 +4326,7 @@ int
       parameters_[iParam].setIntValue(30);
       iParam = whichParam(FPUMPTUNE,numberParameters_,parameters_);
       parameters_[iParam].setIntValue(1005043);
+      initialPumpTune=1005043;
       iParam = whichParam(PROCESSTUNE,numberParameters_,parameters_);
       parameters_[iParam].setIntValue(6);
       tunePreProcess=6;
@@ -4455,7 +4527,7 @@ int
                   if ((verbose%4)!=0) {
                     // put out description as well
                     if ((verbose&1)!=0) 
-                      std::cout<<parameters_[iParam].shortHelp();
+                      std::cout<<" "<<parameters_[iParam].shortHelp();
                     std::cout<<std::endl;
                     if ((verbose&2)!=0) {
                       std::cout<<"---- description"<<std::endl;
@@ -4671,6 +4743,7 @@ int
 		  parameters_[iParam].setIntValue(30);
 		  iParam = whichParam(FPUMPTUNE,numberParameters_,parameters_);
 		  parameters_[iParam].setIntValue(1005043);
+		  initialPumpTune=1005043;
 		  iParam = whichParam(PROCESSTUNE,numberParameters_,parameters_);
 		  parameters_[iParam].setIntValue(6);
 		  tunePreProcess=6;
@@ -4692,6 +4765,7 @@ int
 		  parameters_[iParam].setIntValue(20);
 		  iParam = whichParam(FPUMPTUNE,numberParameters_,parameters_);
 		  parameters_[iParam].setIntValue(1003);
+		  initialPumpTune=1003;
 		  iParam = whichParam(PROCESSTUNE,numberParameters_,parameters_);
 		  parameters_[iParam].setIntValue(-1);
 		  tunePreProcess=0;
@@ -6156,6 +6230,13 @@ int
 		}
 #endif
 	      }
+	      if (type==BAB) {
+		double limit;
+		clpSolver->getDblParam(OsiDualObjectiveLimit,limit);
+		if (clpSolver->getObjValue()*clpSolver->getObjSense()>=
+		    limit*clpSolver->getObjSense())
+		  preProcess=0;
+	      }
               if (preProcess&&type==BAB) {
 #ifndef CBC_OTHER_SOLVER
 		// See if sos from mps file
@@ -6215,6 +6296,8 @@ int
 		    generator1.setMaxElements(300);
 		    generator1.setMaxProbeRoot(saveSolver->getNumCols());
 		  }
+		  if ((babModel_->specialOptions()&65536)!=0)
+		    process.setOptions(1);
                   // Add in generators
                   process.addCutGenerator(&generator1);
                   int translate[]={9999,0,0,-3,2,3,-2,9999,4,5};
@@ -6414,6 +6497,22 @@ int
                   lpSolver->writeMps("presolved.mps",0,1,lpSolver->optimizationDirection());
                   printf("Preprocessed model (minimization) on presolved.mps\n");
                 }
+		{
+		  // look at new integers
+		  int numberOriginalColumns = 
+		    process.originalModel()->getNumCols();
+		  const int * originalColumns = process.originalColumns();
+		  OsiClpSolverInterface * osiclp2 = dynamic_cast< OsiClpSolverInterface*> (solver2);
+		  int numberColumns = osiclp2->getNumCols();
+		  OsiClpSolverInterface * osiclp = dynamic_cast< OsiClpSolverInterface*> (saveSolver);
+		  for (int i=0;i<numberColumns;i++) {
+		    int iColumn = originalColumns[i];
+		    if (iColumn<numberOriginalColumns) {
+		      if (osiclp2->isInteger(i)&&!osiclp->isInteger(iColumn))
+			osiclp2->setOptionalInteger(i); // say optional
+		    }
+		  }
+		}
                 // we have to keep solver2 so pass clone
                 solver2 = solver2->clone();
                 babModel_->assignSolver(solver2);
@@ -6639,6 +6738,16 @@ int
 		  gomoryGen.setLimitAtRoot(numberColumns);
 		  gomoryGen.setLimit(200);
 #endif
+		}
+		int cutLength=
+		  parameters_[whichParam(CUTLENGTH,numberParameters_,parameters_)].intValue();
+		if (cutLength!=-1) {
+		  gomoryGen.setLimitAtRoot(cutLength);
+		  if (cutLength<10000000) {
+		    gomoryGen.setLimit(cutLength);
+		  } else {
+		    gomoryGen.setLimit(cutLength%10000000);
+		  }
 		}
                 babModel_->addCutGenerator(&gomoryGen,translate[gomoryAction],"Gomory");
 		accuracyFlag[numberGenerators]=3;

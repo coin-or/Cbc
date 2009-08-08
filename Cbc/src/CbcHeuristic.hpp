@@ -232,6 +232,11 @@ public:
   /// How many times the heuristic could run
   inline int numCouldRun() const
   { return numCouldRun_;}
+  /** Clone but ..
+      type 0 clone solver, 1 clone continuous solver
+      Add 2 to say without integer variables which are at low priority
+      Add 4 to say quite likely infeasible so give up easily.*/
+  OsiSolverInterface * cloneBut(int type);
 
 protected:
 

@@ -216,7 +216,7 @@ CbcHeuristicDive::solution(double & solutionValue,
   int maxSimplexIterations= (model_->getNodeCount()) ? maxSimplexIterations_
     : maxSimplexIterationsAtRoot_;
 
-  OsiSolverInterface * solver = model_->solver()->clone();
+  OsiSolverInterface * solver = cloneBut(6); // was model_->solver()->clone();
   const double * lower = solver->getColLower();
   const double * upper = solver->getColUpper();
   const double * rowLower = solver->getRowLower();

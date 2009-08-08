@@ -710,7 +710,7 @@ CbcHeuristicNaive::solution(double & solutionValue,
     delete basis;
   }
   // First just fix all integers as close to zero as possible
-  OsiSolverInterface * newSolver = solver->clone();
+  OsiSolverInterface * newSolver = cloneBut(7); // wassolver->clone();
   for (i=0;i<numberIntegers;i++) {
     int iColumn=integerVariable[i];
     double lower = colLower[iColumn];

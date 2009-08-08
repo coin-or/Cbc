@@ -438,6 +438,8 @@ public:
   /// Get the specified object
   inline OsiObject * modifiableObject(int which) const { return object_[which];}
 
+  void setOptionalInteger(int index);
+
   /// Delete all object information (and just back to integers if true)
   void deleteObjects(bool findIntegers=true);
 
@@ -462,7 +464,7 @@ public:
     one.
     If \p startAgain is true, a new scan is forced, overwriting any existing
     integer variable information.
-    If type > 0 then 1==PseudoCost
+    If type > 0 then 1==PseudoCost, 2 new ones low priority
   */
 
   void findIntegers(bool startAgain,int type=0);
@@ -1787,6 +1789,7 @@ public:
       User must allocate arrays before call
   */
   void fillPseudoCosts(double * downCosts, double * upCosts,
+		       int * priority=NULL,
 		       int * numberDown=NULL, int * numberUp=NULL,
 		       int * numberDownInfeasible=NULL,
 		       int * numberUpInfeasible=NULL) const;
@@ -1844,6 +1847,12 @@ public:
   /// Get depth for fast nodes
   inline int fastNodeDepth() const
   { return fastNodeDepth_;}
+  /// Get anything with priority >= this can be treated as continuous
+  inline int continuousPriority() const
+  { return continuousPriority_;}
+  /// Set anything with priority >= this can be treated as continuous
+  inline void setContinuousPriority(int value)
+  { continuousPriority_=value;}
   inline void incrementExtra(int nodes, int iterations)
   { numberExtraNodes_ += nodes; numberExtraIterations_ += iterations;}
 #endif
@@ -2273,6 +2282,8 @@ private:
   bool resolveAfterTakeOffCuts_;
   /// Maximum number of iterations (designed to be used in heuristics)
   int maximumNumberIterations_;
+  /// Anything with priority >= this can be treated as continuous
+  int continuousPriority_;
   /// Number of outstanding update information items
   int numberUpdateItems_;
   /// Maximum number of outstanding update information items

@@ -239,6 +239,12 @@ public:
   /// Set whether generator switched off for moment
   inline void setSwitchedOff(bool yesNo)
   { switches_&=~16;switches_ |= yesNo ? 16 : 0;}
+  /// Whether last round of cuts did little
+  inline bool ineffectualCuts() const
+  { return (switches_&512)!=0;}
+  /// Set whether last round of cuts did little
+  inline void setIneffectualCuts(bool yesNo)
+  { switches_&=~512;switches_ |= yesNo ? 512 : 0;}
   /// Number of cuts generated at root
   inline int numberCutsAtRoot() const
   { return numberCutsAtRoot_;}

@@ -62,7 +62,7 @@ static Cbc_message us_english[]=
   {CBC_STATUS3,40,1,"%d nodes (+%d), %d on tree, best %g - possible %g depth %d unsat %d its %d (+%d) (%.2f seconds)"},
   {CBC_OTHER_STATS2,41,1,"Maximum depth %d, %g variables fixed on reduced cost (%d nodes in complete fathoming taking %d iterations)"},
   {CBC_RELAXED1,42,1,"Possible objective of %.18g but variable %d is %g from integer value, integer tolerance %g"},
-  {CBC_RELAXED2,43,1,"Possible objective of %.18g but variables are up to %g away from bound (within tolerance of %g) - might be able to fudge solution - but do you want to?"},
+  {CBC_RELAXED2,43,2,"Possible objective of %.18g but had to fudge solution with tolerance of %g - check scaling of problem?"},
   {CBC_RESTART,44,1,"Reduced cost fixing - %d rows, %d columns - restarting search"},
   {CBC_GENERAL,45,1,"%s"},
   {CBC_ROOT_DETAIL,46,2,"Root node pass %d, %d rows, %d total tight cuts  -  objective %g"},

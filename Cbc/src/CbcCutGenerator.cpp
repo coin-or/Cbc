@@ -235,6 +235,8 @@ CbcCutGenerator::generateCuts( OsiCuts & cs , int fullScan, OsiSolverInterface *
     info.inTree = node!=NULL;
     info.randomNumberGenerator=randomNumberGenerator;
     info.options=(globalCutsAtRoot()) ? 8 : 0;
+    if (ineffectualCuts())
+      info.options |= 32;
     if (globalCuts())
       info.options |=16;
     incrementNumberTimesEntered();
@@ -815,7 +817,8 @@ CbcCutGenerator::generateCuts( OsiCuts & cs , int fullScan, OsiSolverInterface *
 	  int iCut=which[k];
 	  const OsiRowCut * thisCut = cs.rowCutPtr(iCut) ;
 	  int n=thisCut->row().getNumElements();
-	  if (n&&sort[k]) {
+	  // may be best, just to save if short
+	  if (false&&n&&sort[k]) {
 	    // add to saved cuts
 	    savedCuts_.insert(*thisCut);
 	  }

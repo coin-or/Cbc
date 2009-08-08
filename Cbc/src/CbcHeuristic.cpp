@@ -479,6 +479,60 @@ void CbcHeuristic::setModel(CbcModel * model)
 {
   model_ = model;
 }
+/* Clone but ..
+   type 0 clone solver, 1 clone continuous solver
+   Add 2 to say without integer variables which are at low priority
+   Add 4 to say quite likely infeasible so give up easily.*/
+OsiSolverInterface * 
+CbcHeuristic::cloneBut(int type)
+{
+  OsiSolverInterface * solver;
+  if ((type&1)==0||!model_->continuousSolver()) 
+    solver = model_->solver()->clone();
+  else
+    solver = model_->continuousSolver()->clone();
+#ifdef COIN_HAS_CLP
+  OsiClpSolverInterface * clpSolver 
+    = dynamic_cast<OsiClpSolverInterface *> (solver);
+#endif
+  if ((type&2)!=0) {
+    int n=model_->numberObjects();
+    int priority = model_->continuousPriority();
+    if (priority<COIN_INT_MAX) {
+      for (int i=0;i<n;i++) {
+	const OsiObject * obj = model_->object(i);
+	const CbcSimpleInteger * thisOne = 
+	  dynamic_cast <const CbcSimpleInteger *> (obj);
+	if (thisOne) {
+	  int iColumn=thisOne->columnNumber();
+	  if (thisOne->priority()>=priority) 
+	    solver->setContinuous(iColumn);
+	}
+      } 
+    }
+#ifdef COIN_HAS_CLP
+    if (clpSolver) {
+      for (int i=0;i<n;i++) {
+	const OsiObject * obj = model_->object(i);
+	const CbcSimpleInteger * thisOne = 
+	  dynamic_cast <const CbcSimpleInteger *> (obj);
+	if (thisOne) {
+	  int iColumn=thisOne->columnNumber();
+	  if (clpSolver->isOptionalInteger(iColumn))
+	    clpSolver->setContinuous(iColumn);
+	}
+      } 
+    }
+#endif
+  }
+#ifdef COIN_HAS_CLP
+  if ((type&4)!=0&&clpSolver) {
+    int options = clpSolver->getModelPtr()->moreSpecialOptions();
+    clpSolver->getModelPtr()->setMoreSpecialOptions(options|64);
+  }
+#endif
+  return solver;
+}
 // Whether to exit at once on gap
 bool 
 CbcHeuristic::exitNow(double bestObjective) const

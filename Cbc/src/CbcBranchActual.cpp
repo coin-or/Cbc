@@ -4528,13 +4528,14 @@ CbcGeneralDepth::infeasibility(const OsiBranchingInformation * /*info*/,
       int numberIntegers = model_->numberIntegers();
       double * down = new double[numberIntegers];
       double * up = new double[numberIntegers];
+      int * priority = new int[numberIntegers];
       int * numberDown = new int[numberIntegers];
       int * numberUp = new int[numberIntegers];
       int * numberDownInfeasible = new int[numberIntegers];
       int * numberUpInfeasible = new int[numberIntegers];
-      model_->fillPseudoCosts(down,up,numberDown,numberUp,
+      model_->fillPseudoCosts(down,up,priority,numberDown,numberUp,
 		      numberDownInfeasible,numberUpInfeasible);
-      info->fillPseudoCosts(down,up,numberDown,numberUp,
+      info->fillPseudoCosts(down,up,priority,numberDown,numberUp,
 			    numberDownInfeasible,
 			    numberUpInfeasible,numberIntegers);
       info->presolveType_= 1; 

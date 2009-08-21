@@ -50,12 +50,13 @@ public:
   ~CbcLink ();
   
   /// Infeasibility - large is 0.5
-  virtual double infeasibility(int & preferredWay) const;
+  virtual double infeasibility(const OsiBranchingInformation * info,
+int & preferredWay) const;
 
   /// This looks at solution and sets bounds to contain solution
   virtual void feasibleRegion();
   /// Creates a branching object
-  virtual CbcBranchingObject * createBranch(int way) ;
+  virtual CbcBranchingObject * createCbcBranch(OsiSolverInterface * solver,const OsiBranchingInformation * info,int way) ;
 
   /// Number of members
   inline int numberMembers() const

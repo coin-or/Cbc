@@ -37,6 +37,7 @@ CbcCutGenerator::CbcCutGenerator ()
     inaccuracy_(0),
     numberTimes_(0),
     numberCuts_(0),
+    numberElements_(0),
     numberColumnCuts_(0),
     numberCutsActive_(0),
     numberCutsAtRoot_(0),
@@ -59,6 +60,7 @@ CbcCutGenerator::CbcCutGenerator(CbcModel * model,CglCutGenerator * generator,
     inaccuracy_(0),
     numberTimes_(0),
     numberCuts_(0),
+    numberElements_(0),
     numberColumnCuts_(0),
     numberCutsActive_(0),
     numberCutsAtRoot_(0),
@@ -107,6 +109,7 @@ CbcCutGenerator::CbcCutGenerator ( const CbcCutGenerator & rhs)
   inaccuracy_ = rhs.inaccuracy_;
   numberTimes_ = rhs.numberTimes_;
   numberCuts_ = rhs.numberCuts_;
+  numberElements_ = rhs.numberElements_;
   numberColumnCuts_ = rhs.numberColumnCuts_;
   numberCutsActive_ = rhs.numberCutsActive_;
   numberCutsAtRoot_  = rhs.numberCutsAtRoot_;
@@ -136,6 +139,7 @@ CbcCutGenerator::operator=( const CbcCutGenerator& rhs)
     inaccuracy_ = rhs.inaccuracy_;
     numberTimes_ = rhs.numberTimes_;
     numberCuts_ = rhs.numberCuts_;
+    numberElements_ = rhs.numberElements_;
     numberColumnCuts_ = rhs.numberColumnCuts_;
     numberCutsActive_ = rhs.numberCutsActive_;
     numberCutsAtRoot_  = rhs.numberCutsAtRoot_;
@@ -353,7 +357,7 @@ CbcCutGenerator::generateCuts( OsiCuts & cs , int fullScan, OsiSolverInterface *
 	  doCuts=true;
 	}
       }
-      if (doCuts) {
+      if (doCuts&&generator->tightLower()) {
 	// probing may have tightened bounds - check
 	const double * tightLower = generator->tightLower();
 	const double * lower = solver->getColLower();
@@ -540,24 +544,6 @@ CbcCutGenerator::generateCuts( OsiCuts & cs , int fullScan, OsiSolverInterface *
     }
     {
       int numberRowCutsAfter = cs.sizeRowCuts() ;
-      if (numberRowCutsBefore<numberRowCutsAfter) {
-#if 0
-	printf("generator %s generated %d row cuts\n",
-	       generatorName_,numberRowCutsAfter-numberRowCutsBefore);
-#endif
-	numberCuts_ += numberRowCutsAfter-numberRowCutsBefore;
-      }
-      int numberColumnCutsAfter = cs.sizeColCuts() ;
-      if (numberColumnCutsBefore<numberColumnCutsAfter) {
-#if 0
-	printf("generator %s generated %d column cuts\n",
-	       generatorName_,numberColumnCutsAfter-numberColumnCutsBefore);
-#endif
-	numberColumnCuts_ += numberColumnCutsAfter-numberColumnCutsBefore;
-      }
-    }
-    {
-      int numberRowCutsAfter = cs.sizeRowCuts() ;
       int k ;
       int nEls=0;
       int nCuts= numberRowCutsAfter-numberRowCutsBefore;
@@ -649,6 +635,7 @@ CbcCutGenerator::generateCuts( OsiCuts & cs , int fullScan, OsiSolverInterface *
       if (/*nEls>CoinMax(nAdd2,nElsNow/8+nAdd)*/nCuts&&feasible) {
 	//printf("need to remove cuts\n");
 	// just add most effective
+#if 1
 	int nDelete = nEls - nReasonable;
 	
 	nElsNow = nEls;
@@ -656,9 +643,19 @@ CbcCutGenerator::generateCuts( OsiCuts & cs , int fullScan, OsiSolverInterface *
 	int * which = new int [nCuts];
 	// For parallel cuts
 	double * element2 = new double [numberColumns];
-	//#define USE_OBJECTIVE
+	//#define USE_OBJECTIVE 2
 #ifdef USE_OBJECTIVE
 	const double *objective = solver->getObjCoefficients() ;
+#if USE_OBJECTIVE>1
+	double objNorm=0.0;
+	for (int i=0;i<numberColumns;i++)
+	  objNorm += objective[i]*objective[i];
+	if (objNorm)
+	  objNorm = 1.0/sqrt(objNorm);
+	else
+	  objNorm=1.0;
+	objNorm *= 0.01; // downgrade
+#endif
 #endif
 	CoinZeroN(element2,numberColumns);
 	for (k = numberRowCutsBefore;k<numberRowCutsAfter;k++) {
@@ -699,7 +696,7 @@ CbcCutGenerator::generateCuts( OsiCuts & cs , int fullScan, OsiSolverInterface *
 #else
 	    double norm=1.0e-3;
 #ifdef USE_OBJECTIVE
-	    double normObj=0.0;
+	    double obj=0.0;
 #endif
 	    for (int i=0;i<n;i++) {
 	      int iColumn = column[i];
@@ -707,7 +704,7 @@ CbcCutGenerator::generateCuts( OsiCuts & cs , int fullScan, OsiSolverInterface *
 	      sum += value*solution[iColumn];
 	      norm += value*value;
 #ifdef USE_OBJECTIVE
-	      normObj += value*objective[iColumn];
+	      obj += value*objective[iColumn];
 #endif
 	    }
 #endif
@@ -720,15 +717,24 @@ CbcCutGenerator::generateCuts( OsiCuts & cs , int fullScan, OsiSolverInterface *
 	    }
 #ifdef USE_OBJECTIVE
 	    if (sum) {
-	      normObj = CoinMax(1.0e-6,fabs(normObj));
-	      norm=sqrt(normObj*norm);
-	      //sum += fabs(normObj)*invObjNorm;
+#if USE_OBJECTIVE==1
+	      obj = CoinMax(1.0e-6,fabs(obj));
+	      norm=sqrt(obj*norm);
+	      //sum += fabs(obj)*invObjNorm;
 	      //printf("sum %g norm %g normobj %g invNorm %g mod %g\n",
-	      //     sum,norm,normObj,invObjNorm,normObj*invObjNorm);
-	    }
+	      //     sum,norm,obj,invObjNorm,obj*invObjNorm);
+	      // normalize
+	      sum /= sqrt(norm);
+#else
+	      // normalize
+	      norm = 1.0/sqrt(norm);
+	      sum = (sum+objNorm*obj)*norm;
 #endif
+	    }
+#else
 	    // normalize
 	    sum /= sqrt(norm);
+#endif
 	    //sum /= pow(norm,0.3);
 	    // adjust for length
 	    //sum /= pow(reinterpret_cast<double>(n),0.2);
@@ -835,6 +841,150 @@ CbcCutGenerator::generateCuts( OsiCuts & cs , int fullScan, OsiSolverInterface *
 	delete [] sort;
 	delete [] which;
 	numberRowCutsAfter = cs.sizeRowCuts() ;
+#else
+	double * norm = new double [nCuts];
+	int * which = new int [2*nCuts];
+	double * score = new double [nCuts];
+	double * ortho = new double [nCuts];
+	int nIn=0;
+	int nOut=nCuts;
+	// For parallel cuts
+	double * element2 = new double [numberColumns];
+	const double *objective = solver->getObjCoefficients() ;
+	double objNorm=0.0;
+	for (int i=0;i<numberColumns;i++)
+	  objNorm += objective[i]*objective[i];
+	if (objNorm)
+	  objNorm = 1.0/sqrt(objNorm);
+	else
+	  objNorm=1.0;
+	objNorm *= 0.1; // weight of 0.1
+	CoinZeroN(element2,numberColumns);
+	int numberRowCuts = numberRowCutsAfter-numberRowCutsBefore;
+	int iBest=-1;
+	double best=0.0;
+	int nPossible=0;
+	double testValue = (depth>1) ? 0.7 : 0.5;
+	for (k = 0;k<numberRowCuts;k++) {
+	  const OsiRowCut * thisCut = cs.rowCutPtr(k+numberRowCutsBefore) ;
+	  double sum=0.0;
+	  if (thisCut->lb()<=thisCut->ub()) {
+	    int n=thisCut->row().getNumElements();
+	    const int * column = thisCut->row().getIndices();
+	    const double * element = thisCut->row().getElements();
+	    assert (n);
+	    double normThis=1.0e-6;
+	    double obj=0.0;
+	    for (int i=0;i<n;i++) {
+	      int iColumn = column[i];
+	      double value = element[i];
+	      sum += value*solution[iColumn];
+	      normThis += value*value;
+	      obj += value*objective[iColumn];
+	    }
+	    if (sum>thisCut->ub()) {
+	      sum= sum-thisCut->ub();
+	    } else if (sum<thisCut->lb()) {
+	      sum= thisCut->lb()-sum;
+	    } else {
+	      sum=0.0;
+	    }
+	    if (sum) {
+	      normThis =1.0/sqrt(normThis);
+	      norm[k]=normThis;
+	      sum *= normThis;
+	      obj *= normThis;
+	      score[k]=sum+obj*objNorm;
+	      ortho[k]=1.0;
+	    }
+	  } else {
+	    // keep and discard others
+	    nIn=1;
+	    which[0]=k;
+	    for (int j = 0;j<numberRowCuts;j++) {
+	      if (j!=k)
+		which[nOut++]=j;
+	    }
+	    iBest=-1;
+	    break;
+	  }
+	  if (sum) {
+	    if (score[k]>best) {
+	      best=score[k];
+	      iBest=nPossible;
+	    }
+	    which[nPossible++]=k;
+	  } else {
+	    which[nOut++]=k;
+	  }
+	}
+	while (iBest>=0) {
+	  int kBest=which[iBest];
+	  int j=which[nIn];
+	  which[iBest]=j;
+	  which[nIn++]=kBest;
+	  const OsiRowCut * thisCut = cs.rowCutPtr(kBest+numberRowCutsBefore) ;
+	  int n=thisCut->row().getNumElements();
+	  nReasonable -= n;
+	  if (nReasonable<=0) {
+	    for (k=nIn;k<nPossible;k++)
+	      which[nOut++]=which[k];
+	    break;
+	  }
+	  // Now see which ones are too similar and choose next
+	  iBest=-1;
+	  best=0.0;
+	  int nOld=nPossible;
+	  nPossible=nIn;
+	  const int * column = thisCut->row().getIndices();
+	  const double * element = thisCut->row().getElements();
+	  assert (n);
+	  double normNew = norm[kBest];
+	  for (int i=0;i<n;i++) {
+	    double value = element[i];
+	    element2[column[i]]=value;
+	  }
+	  for (int j=nIn;j<nOld;j++) {
+	    k = which[j];
+	    const OsiRowCut * thisCut2 = cs.rowCutPtr(k+numberRowCutsBefore) ;
+	    int nB=thisCut2->row().getNumElements();
+	    const int * columnB = thisCut2->row().getIndices();
+	    const double * elementB = thisCut2->row().getElements();
+	    assert (nB);
+	    double normB=norm[k];
+	    double product=0.0;
+	    for (int i=0;i<nB;i++) {
+	      double value = elementB[i];
+	      product += value*element2[columnB[i]];
+	    }
+	    double orthoScore = 1.0-product*normNew*normB;
+	    if (orthoScore>=testValue) {
+	      ortho[k]=CoinMin(orthoScore,ortho[k]);
+	      double test=score[k]+ortho[k];
+	      if (test>best) {
+		best=score[k];
+		iBest=nPossible;
+	      }
+	      which[nPossible++]=k;
+	    } else {
+	      which[nOut++]=k;
+	    }
+	  }
+	  for (int i=0;i<n;i++) {
+	    element2[column[i]]=0.0;
+	  }
+	}
+	delete [] score;
+	delete [] ortho;
+	std::sort(which+nCuts,which+nOut);
+	k=nOut-1;
+	for (;k>=nCuts;k--) {
+	  cs.eraseRowCut(which[k]+numberRowCutsBefore);
+	}
+	delete [] norm;
+	delete [] which;
+	numberRowCutsAfter = cs.sizeRowCuts() ;
+#endif
       }
     }
 #ifdef CBC_DEBUG
@@ -869,6 +1019,29 @@ CbcCutGenerator::generateCuts( OsiCuts & cs , int fullScan, OsiSolverInterface *
       }
     }
 #endif
+    {
+      int numberRowCutsAfter = cs.sizeRowCuts() ;
+      if (numberRowCutsBefore<numberRowCutsAfter) {
+	for (int k = numberRowCutsBefore;k<numberRowCutsAfter;k++) {
+	  OsiRowCut thisCut = cs.rowCut(k) ;
+	  int n=thisCut.row().getNumElements();
+	  numberElements_ += n;
+	}
+#if 0
+	printf("generator %s generated %d row cuts\n",
+	       generatorName_,numberRowCutsAfter-numberRowCutsBefore);
+#endif
+	numberCuts_ += numberRowCutsAfter-numberRowCutsBefore;
+      }
+      int numberColumnCutsAfter = cs.sizeColCuts() ;
+      if (numberColumnCutsBefore<numberColumnCutsAfter) {
+#if 0
+	printf("generator %s generated %d column cuts\n",
+	       generatorName_,numberColumnCutsAfter-numberColumnCutsBefore);
+#endif
+	numberColumnCuts_ += numberColumnCutsAfter-numberColumnCutsBefore;
+      }
+    }
     if (timing())
       timeInCutGenerator_ += CoinCpuTime()-time1;
 #if 0

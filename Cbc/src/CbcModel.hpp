@@ -198,6 +198,7 @@ public:
     */
      void branchAndBound(int doStatistics=0);
 private:
+
     /** \brief Evaluate a subproblem using cutting planes and heuristics
 
       The method invokes a main loop which generates cuts, applies heuristics,
@@ -561,6 +562,9 @@ public:
   }
   /// Current time since start of branchAndbound
   double getCurrentSeconds() const ;
+
+  /// Return true if maximum time reached
+  bool maximumSecondsReached() const ;
 
   /** Set the
     \link CbcModel::CbcIntegerTolerance integrality tolerance \endlink
@@ -1157,6 +1161,18 @@ public:
   /// Set number of solutions (so heuristics will be different)
   inline void setSolutionCount(int value) 
   { numberSolutions_=value;}
+  /// Number of saved solutions (including best)
+  int numberSavedSolutions() const;
+  /// Maximum number of extra saved solutions
+  inline int maximumSavedSolutions() const
+  { return maximumSavedSolutions_;}
+  /// Set maximum number of extra saved solutions
+  void setMaximumSavedSolutions(int value);
+  /// Return a saved solution (0==best) - NULL if off end
+  const double * savedSolution(int which) const;
+  /// Return a saved solution objective (0==best) - COIN_DBL_MAX if off end
+  double savedSolutionObjective(int which) const;
+
   /** Current phase (so heuristics etc etc can find out).
       0 - initial solve
       1 - solve with cuts at root
@@ -1690,7 +1706,12 @@ public:
       default and rest point to that.  If 2 then each is copy
   */
   void synchronizeHandlers(int makeDefault);
-     
+  /// Save a solution to saved list
+  void saveExtraSolution(const double * solution, double objectiveValue);
+  /// Save a solution to best and move current to saved
+  void saveBestSolution(const double * solution, double objectiveValue);
+  /// Delete best and saved solutions
+  void deleteSolutions();
   /// Encapsulates solver resolve
   int resolve(OsiSolverInterface * solver);
 
@@ -1950,6 +1971,8 @@ private:
 
   /// Array holding the incumbent (best) solution.
   double * bestSolution_;
+  /// Arrays holding other solutions.
+  double ** savedSolutions_;
 
   /** Array holding the current solution.
 
@@ -1974,6 +1997,10 @@ private:
   double minimumDrop_;
   /// Number of solutions
   int numberSolutions_;
+  /// Number of saved solutions
+  int numberSavedSolutions_;
+  /// Maximum number of saved solutions
+  int maximumSavedSolutions_;
   /** State of search
       0 - no solution
       1 - only heuristic solutions

@@ -1181,6 +1181,59 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver,int numberNodes,
   }
   model_->setSpecialOptions(saveModelOptions);
   model_->setLogLevel(logLevel);
+  if (returnCode==1||returnCode==2) {
+    OsiSolverInterface * solverC = model_->continuousSolver();
+    if (false&&solverC) {
+      const double * lower = solver->getColLower();
+      const double * upper = solver->getColUpper();
+      const double * lowerC = solverC->getColLower();
+      const double * upperC = solverC->getColUpper();
+      bool good=true;
+      for (int iColumn=0;iColumn<numberColumns;iColumn++) {
+	if (solverC->isInteger(iColumn)) {
+	  if (lower[iColumn]>lowerC[iColumn]&&
+	      upper[iColumn]<upperC[iColumn]) {
+	    good=false;
+	    printf("CUT - can't add\n");
+	    break;
+	  }
+	}
+      }
+      if (good) {
+	double * cut = new double [numberColumns];
+	int * which = new int [numberColumns];
+	double rhs=-1.0;
+	int n=0;
+	for (int iColumn=0;iColumn<numberColumns;iColumn++) {
+	  if (solverC->isInteger(iColumn)) {
+	    if (lower[iColumn]==upperC[iColumn]) {
+	      rhs += lower[iColumn];
+	      cut[n]=1.0;
+	      which[n++]=iColumn;
+	    } else if (upper[iColumn]==lowerC[iColumn]) {
+	      rhs -= upper[iColumn];
+	      cut[n]=-1.0;
+	      which[n++]=iColumn;
+	    }
+	  }
+	}
+	printf("CUT has %d entries\n",n);
+	OsiRowCut newCut;
+	newCut.setLb(-COIN_DBL_MAX);
+	newCut.setUb(rhs);
+	newCut.setRow(n,which,cut,false);
+	model_->makeGlobalCut(newCut);
+	delete [] cut;
+	delete [] which;
+      }
+    }
+#ifdef COIN_DEVELOP
+    if (status==1)
+      printf("heuristic could add cut because infeasible (%s)\n",heuristicName_.c_str()); 
+    else if (status==2)
+      printf("heuristic could add cut because optimal (%s)\n",heuristicName_.c_str());
+#endif
+  } 
   if (reset) {
     for (int iColumn=0;iColumn<numberColumns;iColumn++) {
       if (reset[iColumn])
@@ -1190,14 +1243,6 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver,int numberNodes,
   }
 #ifdef HISTORY_STATISTICS
   getHistoryStatistics_=true;
-#endif
-#ifdef COIN_DEVELOP
-  if (returnCode==1||returnCode==2) {
-    if (status==1)
-      printf("heuristic could add cut because infeasible (%s)\n",heuristicName_.c_str()); 
-    else if (status==2)
-      printf("heuristic could add cut because optimal (%s)\n",heuristicName_.c_str());
-  } 
 #endif
   solver->setHintParam(OsiDoReducePrint,takeHint,strength);
   return returnCode;
@@ -1463,9 +1508,11 @@ CbcRounding::CbcRounding(CbcModel & model)
 {
   // Get a copy of original matrix (and by row for rounding);
   assert(model.solver());
-  matrix_ = *model.solver()->getMatrixByCol();
-  matrixByRow_ = *model.solver()->getMatrixByRow();
-  validate();
+  if (model.solver()->getNumRows()) {
+    matrix_ = *model.solver()->getMatrixByCol();
+    matrixByRow_ = *model.solver()->getMatrixByRow();
+    validate();
+  }
   seed_=1;
 }
 
@@ -2311,10 +2358,12 @@ void CbcRounding::setModel(CbcModel * model)
   model_ = model;
   // Get a copy of original matrix (and by row for rounding);
   assert(model_->solver());
-  matrix_ = *model_->solver()->getMatrixByCol();
-  matrixByRow_ = *model_->solver()->getMatrixByRow();
-  // make sure model okay for heuristic
-  validate();
+  if (model_->solver()->getNumRows()) {
+    matrix_ = *model_->solver()->getMatrixByCol();
+    matrixByRow_ = *model_->solver()->getMatrixByRow();
+    // make sure model okay for heuristic
+    validate();
+  }
 }
 // Validate model i.e. sets when_ to 0 if necessary (may be NULL)
 void 

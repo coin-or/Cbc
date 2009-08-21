@@ -349,7 +349,7 @@ CbcHeuristicFPump::solution(double & solutionValue,
   int numberTries=0;
   CoinWarmStartBasis bestBasis;
   bool exitAll=false;
-  double saveBestObjective = model_->getMinimizationObjValue();
+  //double saveBestObjective = model_->getMinimizationObjValue();
   int numberSolutions=0;
   OsiSolverInterface * solver = NULL;
   double artificialFactor = 0.00001;
@@ -594,7 +594,7 @@ CbcHeuristicFPump::solution(double & solutionValue,
       double newSumInfeas=0.0;
       int newNumberInfeas=0;
       returnCode=0;
-      if (model_->getCurrentSeconds()>model_->getMaximumSeconds()) {
+      if (model_->maximumSecondsReached()) {
 	exitAll=true;
 	break;
       }
@@ -608,7 +608,8 @@ CbcHeuristicFPump::solution(double & solutionValue,
       }
       if (numberIterationsPass1>=0) {
 	int n = totalNumberIterations - numberIterationsLastPass;
-	double perPass = totalNumberIterations/(totalNumberPasses+numberPasses);
+	double perPass = totalNumberIterations/
+	  (totalNumberPasses+numberPasses+1.0e-5);
 	perPass /= (solver->getNumRows()+numberColumns);
 	double test = moreIterations ? 0.3 : 0.0;
 	if (n>CoinMax(20000,3*numberIterationsPass1)
@@ -736,7 +737,7 @@ CbcHeuristicFPump::solution(double & solutionValue,
 		if (saveOldSolution&&saveObjectiveValue<model_->getMinimizationObjValue())
 		  model_->setBestSolution(saveOldSolution,numberColumns,saveObjectiveValue);
 		delete [] saveOldSolution;
-		if (!action||model_->getCurrentSeconds()>model_->getMaximumSeconds()) {
+		if (!action||model_->maximumSecondsReached()) {
 		  exitAll=true; // exit
 		  break;
 		}
@@ -978,7 +979,7 @@ CbcHeuristicFPump::solution(double & solutionValue,
 		  if (saveOldSolution&&saveObjectiveValue<model_->getMinimizationObjValue())
 		    model_->setBestSolution(saveOldSolution,numberColumns,saveObjectiveValue);
 		  delete [] saveOldSolution;
-		  if (!action||model_->getCurrentSeconds()>model_->getMaximumSeconds()) {
+		  if (!action||model_->maximumSecondsReached()) {
 		    exitAll=true; // exit
 		    break;
 		  }
@@ -1864,7 +1865,8 @@ CbcHeuristicFPump::solution(double & solutionValue,
   delete [] randomFactor;
 #endif
   delete solver; // probably NULL but do anyway
-  if (!finalReturnCode&&closestSolution&&closestObjectiveValue <= 10.0&&usedColumn) {
+  if (!finalReturnCode&&closestSolution&&closestObjectiveValue <= 10.0&&
+      usedColumn&&!model_->maximumSecondsReached()) {
     // try a bit of branch and bound
     OsiSolverInterface * newSolver = cloneBut(1); // was model_->continuousSolver()->clone();
     const double * colLower = newSolver->getColLower();
@@ -1928,7 +1930,7 @@ CbcHeuristicFPump::solution(double & solutionValue,
     <<CoinMessageEol;
   if (bestBasis.getNumStructural())
     model_->setBestSolutionBasis(bestBasis);
-  model_->setMinimizationObjValue(saveBestObjective);
+  //model_->setMinimizationObjValue(saveBestObjective);
   if ((accumulate_&1)!=0&&numberSolutions>1&&!model_->getSolutionCount()) {
     model_->setSolutionCount(1); // for local search
     model_->setNumberHeuristicSolutions(1); 

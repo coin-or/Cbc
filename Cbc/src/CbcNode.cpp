@@ -2406,13 +2406,19 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
   int numberObjects = model->numberObjects();
   // If very odd set of objects then use older chooseBranch
   bool useOldWay = false;
+  // point to useful information
+  OsiBranchingInformation usefulInfo = model->usefulInformation();
   if (numberObjects>model->numberIntegers()) {
     for (int i=model->numberIntegers();i<numberObjects;i++) {
       OsiObject * object = model->modifiableObject(i);
       CbcObject * obj =	dynamic_cast <CbcObject *>(object) ;
       if (!obj || !obj->optionalObject()) {
-	useOldWay=true;
-	break;
+        int preferredWay;
+        double infeasibility = object->infeasibility(&usefulInfo,preferredWay);
+	if (infeasibility) {
+	  useOldWay=true;
+	  break;
+	}
       }
     }
   }
@@ -2421,9 +2427,7 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
   // For now return if not simple
   if (useOldWay)
     return -3;
-  // point to useful information
-  OsiBranchingInformation usefulInfo = model->usefulInformation();
-  // and modify
+  // Modify useful info
   usefulInfo.depth_=depth_;
   if ((model->specialOptions()&128)!=0) {
     // SOS - shadow prices

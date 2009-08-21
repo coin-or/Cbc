@@ -223,7 +223,7 @@ public:
                0 - data read in without error
 	       1 - errors
   */
-  virtual int importData(CbcSolver * /*model*/, int & /*argc*/, char * /*argv[]*/) {return -1;}
+  virtual int importData(CbcSolver * /*model*/, int & /*argc*/, char ** /*argv[]*/) {return -1;}
   /// Export 1 OsiClpSolver, 2 CbcModel - add 10 if infeasible from odd situation
   virtual void exportSolution(CbcSolver * /*model*/, 
 			      int /*mode*/,const char * /*message*/=NULL) {}

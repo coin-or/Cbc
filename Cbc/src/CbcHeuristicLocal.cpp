@@ -36,7 +36,9 @@ CbcHeuristicLocal::CbcHeuristicLocal(CbcModel & model)
   swap_=0;
   // Get a copy of original matrix
   assert(model.solver());
-  matrix_ = *model.solver()->getMatrixByCol();
+  if (model.solver()->getNumRows()) {
+    matrix_ = *model.solver()->getMatrixByCol();
+  }
   int numberColumns = model.solver()->getNumCols();
   used_ = new char[numberColumns];
   memset(used_,0,numberColumns);
@@ -598,7 +600,9 @@ void CbcHeuristicLocal::setModel(CbcModel * model)
   model_ = model;
   // Get a copy of original matrix
   assert(model_->solver());
-  matrix_ = *model_->solver()->getMatrixByCol();
+  if (model_->solver()->getNumRows()) {
+    matrix_ = *model_->solver()->getMatrixByCol();
+  }
   delete [] used_;
   int numberColumns = model->solver()->getNumCols();
   used_ = new char[numberColumns];
@@ -635,7 +639,7 @@ void
 CbcHeuristicNaive::generateCpp( FILE * fp) 
 {
   CbcHeuristicNaive other;
-  fprintf(fp,"0#include \"CbcHeuristicNaive.hpp\"\n");
+  fprintf(fp,"0#include \"CbcHeuristicLocal.hpp\"\n");
   fprintf(fp,"3  CbcHeuristicNaive naive(*cbcModel);\n");
   CbcHeuristic::generateCpp(fp,"naive");
   if (large_!=other.large_)
@@ -874,6 +878,168 @@ CbcHeuristicNaive::solution(double & solutionValue,
 void CbcHeuristicNaive::setModel(CbcModel * model)
 {
   model_ = model;
+}
+// Default Constructor
+CbcHeuristicCrossover::CbcHeuristicCrossover() 
+  :CbcHeuristic(),
+   numberSolutions_(0),
+   useNumber_(3)
+{
+  setWhen(1);
+}
+
+// Constructor with model - assumed before cuts
+
+CbcHeuristicCrossover::CbcHeuristicCrossover(CbcModel & model)
+  :CbcHeuristic(model),
+   numberSolutions_(0),
+   useNumber_(3)
+{
+  setWhen(1);
+  for (int i=0;i<10;i++)
+    random_[i]=model.randomNumberGenerator()->randomDouble();
+}
+
+// Destructor 
+CbcHeuristicCrossover::~CbcHeuristicCrossover ()
+{
+}
+
+// Clone
+CbcHeuristic *
+CbcHeuristicCrossover::clone() const
+{
+  return new CbcHeuristicCrossover(*this);
+}
+// Create C++ lines to get to current state
+void 
+CbcHeuristicCrossover::generateCpp( FILE * fp) 
+{
+  CbcHeuristicCrossover other;
+  fprintf(fp,"0#include \"CbcHeuristicLocal.hpp\"\n");
+  fprintf(fp,"3  CbcHeuristicCrossover crossover(*cbcModel);\n");
+  CbcHeuristic::generateCpp(fp,"crossover");
+  if (useNumber_!=other.useNumber_)
+    fprintf(fp,"3  crossover.setNumberSolutions(%d);\n",useNumber_);
+  else
+    fprintf(fp,"4  crossover.setNumberSolutions(%d);\n",useNumber_);
+  fprintf(fp,"3  cbcModel->addHeuristic(&crossover);\n");
+}
+
+// Copy constructor 
+CbcHeuristicCrossover::CbcHeuristicCrossover(const CbcHeuristicCrossover & rhs)
+:
+  CbcHeuristic(rhs),
+  attempts_(rhs.attempts_),
+  numberSolutions_(rhs.numberSolutions_),
+  useNumber_(rhs.useNumber_)
+{
+  memcpy(random_,rhs.random_,10*sizeof(double));
+}
+
+// Assignment operator 
+CbcHeuristicCrossover & 
+CbcHeuristicCrossover::operator=( const CbcHeuristicCrossover& rhs)
+{
+  if (this!=&rhs) {
+    CbcHeuristic::operator=(rhs);
+    useNumber_ = rhs.useNumber_;
+    attempts_ = rhs.attempts_;
+    numberSolutions_ = rhs.numberSolutions_;
+    memcpy(random_,rhs.random_,10*sizeof(double));
+  }
+  return *this;
+}
+
+// Resets stuff if model changes
+void 
+CbcHeuristicCrossover::resetModel(CbcModel * model)
+{
+  CbcHeuristic::resetModel(model);
+}
+int
+CbcHeuristicCrossover::solution(double & solutionValue,
+			 double * betterSolution)
+{
+  if (when_==0)
+    return 0;
+  numCouldRun_++;
+  bool useBest=(numberSolutions_!=model_->getSolutionCount());
+  if (!useBest&&(when_%10)==1)
+    return 0;
+  numberSolutions_=model_->getSolutionCount();
+  OsiSolverInterface * continuousSolver = model_->continuousSolver();
+  int useNumber =CoinMin(model_->numberSavedSolutions(),useNumber_);
+  if (useNumber<2||!continuousSolver)
+    return 0;
+  // Fix later
+  if (!useBest)
+    abort();
+  numRuns_++;
+  double cutoff;
+  model_->solver()->getDblParam(OsiDualObjectiveLimit,cutoff);
+  double direction = model_->solver()->getObjSense();
+  cutoff *= direction;
+  cutoff = CoinMin(cutoff,solutionValue);
+  OsiSolverInterface * solver = cloneBut(2);
+  // But reset bounds
+  solver->setColLower(continuousSolver->getColLower());
+  solver->setColUpper(continuousSolver->getColUpper());
+  int numberColumns = solver->getNumCols();
+  // Fixed
+  double * fixed =new double [numberColumns];
+  for (int i=0;i<numberColumns;i++)
+    fixed[i]=-COIN_DBL_MAX;
+  int whichSolution[10];
+  for (int i=0;i<useNumber;i++)
+    whichSolution[i]=i;
+  for (int i=0;i<useNumber;i++) {
+    int k = whichSolution[i];
+    const double * solution = model_->savedSolution(k);
+    for (int j=0;j<numberColumns;j++) {
+      if (solver->isInteger(j)) {
+	if (fixed[j]==-COIN_DBL_MAX) 
+	  fixed[j]=floor(solution[j]+0.5);
+	else if (fabs(fixed[j]-solution[j])>1.0e-7)
+	  fixed[j]=COIN_DBL_MAX;
+      }
+    }
+  }
+  const double * colLower = solver->getColLower();
+  for (int i=0;i<numberColumns;i++) {
+    if (solver->isInteger(i)) {
+      double value=fixed[i];
+      if (value!=COIN_DBL_MAX) {
+	if (when_<10) {
+	  solver->setColLower(i,value);
+	  solver->setColUpper(i,value);
+	} else if (value==colLower[i]) {
+	  solver->setColUpper(i,value);
+	}
+      }
+    }
+  }
+  int returnCode = smallBranchAndBound(solver,numberNodes_,betterSolution,
+				       solutionValue,
+				       solutionValue,"CbcHeuristicCrossover");
+  if (returnCode<0)
+    returnCode=0; // returned on size
+  if ((returnCode&2)!=0) {
+    // could add cut
+    returnCode &= ~2;
+  }
+
+  delete solver;
+  return returnCode;
+}
+// update model
+void CbcHeuristicCrossover::setModel(CbcModel * model)
+{
+  model_ = model;
+  if (model) {
+    for (int i=0;i<10;i++)
+      random_[i]=model->randomNumberGenerator()->randomDouble();
+  }
 }
 
   

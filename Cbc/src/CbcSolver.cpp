@@ -520,6 +520,7 @@ void CbcSolver::fillParameters()
   parameters_[whichParam(FPUMP,numberParameters_,parameters_)].setCurrentOption("on");
   parameters_[whichParam(GREEDY,numberParameters_,parameters_)].setCurrentOption("on");
   parameters_[whichParam(COMBINE,numberParameters_,parameters_)].setCurrentOption("on");
+  parameters_[whichParam(CROSSOVER2,numberParameters_,parameters_)].setCurrentOption("off");
   parameters_[whichParam(PIVOTANDFIX,numberParameters_,parameters_)].setCurrentOption("off");
   parameters_[whichParam(RANDROUND,numberParameters_,parameters_)].setCurrentOption("off");
   parameters_[whichParam(NAIVE,numberParameters_,parameters_)].setCurrentOption("off");
@@ -866,6 +867,7 @@ static void updateModel(CbcModel & model_,int returnMode)
 #endif
 int CbcOrClpRead_mode=1;
 FILE * CbcOrClpReadCommand=stdin;
+extern int CbcOrClpEnvironmentIndex;
 static bool noPrinting=false;
 #ifndef CBC_OTHER_SOLVER
 #if NEW_STYLE_SOLVER
@@ -3260,6 +3262,7 @@ void CbcMain0 (CbcModel  & model)
   parameters[whichParam(FPUMP,numberParameters,parameters)].setCurrentOption("on");
   parameters[whichParam(GREEDY,numberParameters,parameters)].setCurrentOption("on");
   parameters[whichParam(COMBINE,numberParameters,parameters)].setCurrentOption("on");
+  parameters[whichParam(CROSSOVER2,numberParameters,parameters)].setCurrentOption("off");
   parameters[whichParam(PIVOTANDFIX,numberParameters,parameters)].setCurrentOption("off");
   parameters[whichParam(RANDROUND,numberParameters,parameters)].setCurrentOption("off");
   parameters[whichParam(NAIVE,numberParameters,parameters)].setCurrentOption("off");
@@ -3296,6 +3299,7 @@ int
   int useRounding = parameters_[whichParam(ROUNDING,numberParameters_,parameters_)].currentOptionAsInteger();
   int useGreedy = parameters_[whichParam(GREEDY,numberParameters_,parameters_)].currentOptionAsInteger();
   int useCombine = parameters_[whichParam(COMBINE,numberParameters_,parameters_)].currentOptionAsInteger();
+  int useCrossover = parameters_[whichParam(CROSSOVER2,numberParameters_,parameters_)].currentOptionAsInteger();
   int usePivot = parameters_[whichParam(PIVOTANDFIX,numberParameters_,parameters_)].currentOptionAsInteger();
   int useRand = parameters_[whichParam(RANDROUND,numberParameters_,parameters_)].currentOptionAsInteger();
   int useRINS = parameters_[whichParam(RINS,numberParameters_,parameters_)].currentOptionAsInteger();
@@ -3474,14 +3478,6 @@ int
     model->addHeuristic(&heuristic1) ;
     anyToDo=true;
   }
-  if (useCombine>=type&&useCombine>=kType&&useCombine<=kType+1) {
-    CbcHeuristicLocal heuristic2(*model);
-    heuristic2.setHeuristicName("combine solutions");
-    heuristic2.setFractionSmall(0.5);
-    heuristic2.setSearchType(1);
-    model->addHeuristic(&heuristic2);
-    anyToDo=true;
-  }
   if (useGreedy>=type&&useGreedy>=kType&&useGreedy<=kType+1) {
     CbcHeuristicGreedyCover heuristic3(*model);
     heuristic3.setHeuristicName("greedy cover");
@@ -3637,6 +3633,24 @@ int
     model->addHeuristic(&heuristic5) ;
     anyToDo=true;
   }
+  if (useCombine>=type&&useCombine>=kType&&useCombine<=kType+1) {
+    CbcHeuristicLocal heuristic2(*model);
+    heuristic2.setHeuristicName("combine solutions");
+    heuristic2.setFractionSmall(0.5);
+    heuristic2.setSearchType(1);
+    model->addHeuristic(&heuristic2);
+    anyToDo=true;
+  }
+  if (useCrossover>=kType&&useCrossover<=kType+1) {
+    CbcHeuristicCrossover heuristic2a(*model);
+    heuristic2a.setHeuristicName("crossover");
+    heuristic2a.setFractionSmall(0.3);
+    // just fix at lower
+    heuristic2a.setWhen(11);
+    model->addHeuristic(&heuristic2a);
+    model->setMaximumSavedSolutions(5);
+    anyToDo=true;
+  }
   int heurSwitches=parameters_[whichParam(HOPTIONS,numberParameters_,parameters_)].intValue()%100;
   if (heurSwitches) {
     for (int iHeur=0;iHeur<model->numberHeuristics();iHeur++) {
@@ -3702,7 +3716,7 @@ int
 } 
 
 int CbcClpUnitTest (const CbcModel & saveModel,
-		    std::string& dirMiplib, bool unitTestOnly,
+		    std::string& dirMiplib, int testSwitch,
 		    double * stuff);
 #if NEW_STYLE_SOLVER
 /* This takes a list of commands, does "stuff" and returns 
@@ -6833,6 +6847,9 @@ int
                 int howOften = generator->howOften();
                 if (howOften==-98||howOften==-99) 
                   generator->setSwitchOffIfLessThan(switches[iGenerator]);
+		// Use if any at root as more likely later and fairly cheap
+		//if (switches[iGenerator]==-2)
+		//generator->setWhetherToUse(true);
 		generator->setInaccuracy(accuracyFlag[iGenerator]);
                 generator->setTiming(true);
                 if (cutDepth>=0)
@@ -8237,7 +8254,7 @@ int
 		/* JJF: No need to have 777 flag at all - user
 		   says -miplib
 		*/
-		int extra1 = parameters_[whichParam(EXTRA1,numberParameters_,parameters_)].intValue();
+		int extra2 = parameters_[whichParam(EXTRA2,numberParameters_,parameters_)].intValue();
 		double stuff[11];
 		stuff[0]=parameters_[whichParam(FAKEINCREMENT,numberParameters_,parameters_)].doubleValue();
 		stuff[1]=parameters_[whichParam(FAKECUTOFF,numberParameters_,parameters_)].doubleValue();
@@ -8282,7 +8299,7 @@ int
 		    }
 		  }
 		}
-		int returnCode=CbcClpUnitTest(model_, dirMiplib, extra1==1,stuff);
+		int returnCode=CbcClpUnitTest(model_, dirMiplib, extra2,stuff);
 		babModel_=NULL;
 		return returnCode;
               } else {
@@ -8406,15 +8423,32 @@ int
 		  const double * solution = babModel_->bestSolution();
 		  for (int i=0;i<numberColumns2;i++) {
 		    int jColumn = originalColumns[i];
-		    solution2[jColumn]=solution[i];
-		    lower2[jColumn]=columnLower[i];
-		    upper2[jColumn]=columnUpper[i];
+		    if (jColumn<n) {
+		      solution2[jColumn]=solution[i];
+		      lower2[jColumn]=columnLower[i];
+		      upper2[jColumn]=columnUpper[i];
+		    }
 		  }
 #ifndef CBC_OTHER_SOLVER
 		  ClpSimplex * lpSolver = clpSolver->getModelPtr();
 		  lpSolver->setSpecialOptions(lpSolver->specialOptions()|IN_BRANCH_AND_BOUND); // say is Cbc (and in branch and bound)
 #endif
                   process.postProcess(*babModel_->solver());
+#ifdef COIN_DEVELOP
+		  if (model_.bestSolution()&&fabs(model_.getMinimizationObjValue()-
+						  babModel_->getMinimizationObjValue())<1.0e-8) {
+		    const double * b1 =model_.bestSolution();
+		    const double * b2 = saveSolver->getColSolution();
+		    const double * columnLower = saveSolver->getColLower() ;
+		    const double * columnUpper = saveSolver->getColUpper() ;
+		    for (int i=0;i<n;i++) {
+		      if (fabs(b1[i]-b2[i])>1.0e-7) {
+			printf("%d %g %g %g %g\n",i,b1[i],b2[i],
+			       columnLower[i],columnUpper[i]);
+		      }
+		    }
+		  }
+#endif
                   // Solution now back in saveSolver
 		  // Double check bounds
 		  columnLower = saveSolver->getColLower() ;
@@ -8422,6 +8456,8 @@ int
 		  solution = saveSolver->getColSolution();
 		  int numberChanged=0;
 		  for (int i=0;i<n;i++) {
+		    if (!saveSolver->isInteger(i))
+		      continue;
 		    if (lower2[i]!=COIN_DBL_MAX) {
 		      if (lower2[i]!=columnLower[i]||
 			  upper2[i]!=columnUpper[i]) {
@@ -8442,6 +8478,37 @@ int
 			  numberChanged++;
 			  saveSolver->setColLower(i,lower2[i]);
 			  saveSolver->setColUpper(i,upper2[i]);
+			}
+		      }
+		    }
+		  }
+		  // See if sos so we can fix
+		  OsiClpSolverInterface * osiclp = dynamic_cast< OsiClpSolverInterface*> (saveSolver);
+		  if (osiclp&&osiclp->numberSOS()) {
+		    // SOS
+		    numberSOS = osiclp->numberSOS();
+		    const CoinSet * setInfo = osiclp->setInfo();
+		    int i;
+		    for ( i=0;i<numberSOS;i++) {
+		      int type = setInfo[i].setType();
+		      int n=setInfo[i].numberEntries();
+		      const int * which = setInfo[i].which();
+		      int first=-1;
+		      int last=-1;
+		      for (int j=0;j<n;j++) {
+			int iColumn = which[j];
+			if (fabs(solution[iColumn])>1.0e-7) {
+			  last=j;
+			  if (first<0)
+			    first=j;
+			}
+		      }
+		      assert (last-first<type);
+		      for (int j=0;j<n;j++) {
+			if (j<first||j>last) {
+			  int iColumn = which[j];
+			  saveSolver->setColLower(iColumn,0.0);
+			  saveSolver->setColUpper(iColumn,0.0);
 			}
 		      }
 		    }
@@ -8471,6 +8538,7 @@ int
 #if NEW_STYLE_SOLVER==0
 #ifndef CBC_OTHER_SOLVER
 		  // and original solver
+		  originalSolver->setDblParam(OsiDualObjectiveLimit,COIN_DBL_MAX);
 		  assert (n>=originalSolver->getNumCols());
 		  n=originalSolver->getNumCols();
 		  originalSolver->setColLower(saveSolver->getColLower());
@@ -8498,9 +8566,12 @@ int
                   memcpy(bestSolution,babModel_->solver()->getColSolution(),n*sizeof(double));
                 }
 #if NEW_STYLE_SOLVER==0
-		if (returnMode==1)
+		if (returnMode==1) {
+		  model_.deleteSolutions();
 		  model_.setBestSolution(bestSolution,n,babModel_->getMinimizationObjValue());
+		}
 #endif
+		babModel_->deleteSolutions();
 		babModel_->setBestSolution(bestSolution,n,babModel_->getMinimizationObjValue());
 #if NEW_STYLE_SOLVER==0
 #ifndef CBC_OTHER_SOLVER
@@ -8544,8 +8615,9 @@ int
 		int n = saveSolver->getNumCols();
 		bestSolution = new double [n];
 		// Put solution now back in saveSolver
-		babModel_->assignSolver(saveSolver);
 		saveSolver->setColSolution(model_.bestSolution());
+		babModel_->assignSolver(saveSolver);
+		babModel_->setMinimizationObjValue(model_.getMinimizationObjValue());
 		memcpy(bestSolution,babModel_->solver()->getColSolution(),n*sizeof(double));
 #if NEW_STYLE_SOLVER==0
 #ifndef CBC_OTHER_SOLVER
@@ -9916,7 +9988,7 @@ int
 	    break;
 	  case UNITTEST:
 	    {
-	      CbcClpUnitTest(model_, dirSample, true,NULL);
+	      CbcClpUnitTest(model_, dirSample, -2,NULL);
 	    }
 	    break;
 	  case FAKEBOUND:
@@ -10563,6 +10635,9 @@ clp watson.mps -\nscaling off\nprimalsimplex"
 	    break;
           case DUMMY:
             break;
+	  case ENVIRONMENT:
+	    CbcOrClpEnvironmentIndex=0;
+	    break;
 	  default:
 	    abort();
 	  }

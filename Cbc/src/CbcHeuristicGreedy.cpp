@@ -54,7 +54,9 @@ CbcHeuristicGreedyCover::gutsOfConstructor(CbcModel * model)
   model_=model;
   // Get a copy of original matrix
   assert(model->solver());
-  matrix_ = *model->solver()->getMatrixByCol();
+  if (model->solver()->getNumRows()) {
+    matrix_ = *model->solver()->getMatrixByCol();
+  }
   originalNumberRows_=model->solver()->getNumRows();
 }
 // Create C++ lines to get to current state
@@ -461,7 +463,9 @@ CbcHeuristicGreedyEquality::gutsOfConstructor(CbcModel * model)
   model_=model;
   // Get a copy of original matrix
   assert(model->solver());
-  matrix_ = *model->solver()->getMatrixByCol();
+  if (model->solver()->getNumRows()) {
+    matrix_ = *model->solver()->getMatrixByCol();
+  }
   originalNumberRows_=model->solver()->getNumRows();
 }
 // Create C++ lines to get to current state

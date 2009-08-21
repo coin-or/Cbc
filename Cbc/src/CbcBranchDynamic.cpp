@@ -669,6 +669,7 @@ CbcSimpleIntegerDynamicPseudoCost::infeasibility(const OsiBranchingInformation *
   // weight at 1.0 is max min
 #define WEIGHT_AFTER 0.8
 #define WEIGHT_BEFORE 0.1
+  //Stolen from Constraint Integer Programming book
 #define WEIGHT_PRODUCT
   if (fabs(value-nearest)<=integerTolerance) {
     if (priority_!=-999)

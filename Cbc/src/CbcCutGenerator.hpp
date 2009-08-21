@@ -203,6 +203,13 @@ public:
   { numberCuts_ = value;}
   inline void incrementNumberCutsInTotal(int value=1)
   { numberCuts_ += value;}
+  /// Total number of elements added
+  inline int numberElementsInTotal() const
+  { return numberElements_;}
+  inline void setNumberElementsInTotal(int value)
+  { numberElements_ = value;}
+  inline void incrementNumberElementsInTotal(int value=1)
+  { numberElements_ += value;}
   /// Total number of column cuts
   inline int numberColumnCuts() const
   { return numberColumnCuts_;}
@@ -245,6 +252,12 @@ public:
   /// Set whether last round of cuts did little
   inline void setIneffectualCuts(bool yesNo)
   { switches_&=~512;switches_ |= yesNo ? 512 : 0;}
+  /// Whether to use if nay cuts generated
+  inline bool whetherToUse() const
+  { return (switches_&1024)!=0;}
+  /// Set whether to use if any cuts generated
+  inline void setWhetherToUse(bool yesNo)
+  { switches_&=~1024;switches_ |= yesNo ? 1024 : 0;}
   /// Number of cuts generated at root
   inline int numberCutsAtRoot() const
   { return numberCutsAtRoot_;}
@@ -321,6 +334,8 @@ private:
   int numberTimes_;
   /// Total number of cuts added
   int numberCuts_;
+  /// Total number of elements added
+  int numberElements_;
   /// Total number of column cuts added
   int numberColumnCuts_;
   /// Total number of cuts active after (at end of n cut passes at each node)

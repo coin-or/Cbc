@@ -8449,6 +8449,17 @@ int
 		    }
 		  }
 #endif
+		  bool tightenB=false;
+		  {
+		    int n=babModel_->numberObjects();
+		    for (int i=0;i<n;i++) {
+		      const OsiObject * obj = babModel_->object(i);
+		      if (!dynamic_cast<const CbcSimpleInteger *>(obj)) {
+			tightenB=true;
+			break;
+		      }
+		    }
+		  }
                   // Solution now back in saveSolver
 		  // Double check bounds
 		  columnLower = saveSolver->getColLower() ;
@@ -8456,7 +8467,7 @@ int
 		  solution = saveSolver->getColSolution();
 		  int numberChanged=0;
 		  for (int i=0;i<n;i++) {
-		    if (!saveSolver->isInteger(i))
+		    if (!saveSolver->isInteger(i)&&!tightenB)
 		      continue;
 		    if (lower2[i]!=COIN_DBL_MAX) {
 		      if (lower2[i]!=columnLower[i]||
@@ -8482,6 +8493,7 @@ int
 		      }
 		    }
 		  }
+#if 0
 		  // See if sos so we can fix
 		  OsiClpSolverInterface * osiclp = dynamic_cast< OsiClpSolverInterface*> (saveSolver);
 		  if (osiclp&&osiclp->numberSOS()) {
@@ -8513,6 +8525,7 @@ int
 		      }
 		    }
 		  }
+#endif
 		  delete [] solution2;
 		  delete [] lower2;
 		  delete [] upper2;

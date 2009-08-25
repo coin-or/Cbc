@@ -15130,15 +15130,18 @@ CbcModel::maximumSecondsReached() const
 {
   double totalTime = getCurrentSeconds() ;
   double maxSeconds = getMaximumSeconds();
-  if (totalTime>=maxSeconds)
-    return true;
-  if (!parentModel_) {
-    return false;
-  } else {
+  bool hitMaxTime= (totalTime>=maxSeconds);
+  if (parentModel_&&!hitMaxTime) {
+    // In a sub tree so need to add both times
     totalTime += parentModel_->getCurrentSeconds();
     maxSeconds=parentModel_->getMaximumSeconds();
-    return (totalTime>=maxSeconds);
+    hitMaxTime = (totalTime>=maxSeconds);
   }
+  if (hitMaxTime) {
+    // Set eventHappened_ so will by-pass as much stuff as possible
+    eventHappened_=true;
+  }
+  return hitMaxTime;
 }
 // Check original model before it gets messed up
 void 

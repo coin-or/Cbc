@@ -2284,7 +2284,7 @@ private:
   /// Whether stopping on gap
   bool stoppedOnGap_;
   /// Whether event happened
-  bool eventHappened_;
+  mutable bool eventHappened_;
   /// Number of long strong goes
   int numberLongStrong_;
   /// Number of old active cuts

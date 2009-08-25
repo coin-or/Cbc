@@ -123,6 +123,7 @@ int CbcClpUnitTest (const CbcModel & saveModel, std::string& dirMiplib,
   if (testSwitch==-2) {
     PUSH_MPS("p0033",16,33,3089,2520.57,0);
     PUSH_MPS("p0201",133,201,7615,6875.0,0);
+    testSwitch=0;
   } else {
     if (testSwitch==-1) {
       testSwitch=1;

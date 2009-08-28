@@ -4270,7 +4270,8 @@ int
     // set default action (0=off,1=on,2=root)
     int cliqueAction=3;
 
-    CglMixedIntegerRounding2 mixedGen;
+    // maxaggr,multiply,criterion(1-3)
+    CglMixedIntegerRounding2 mixedGen(1,true,1);
     // set default action (0=off,1=on,2=root)
     int mixedAction=3;
 
@@ -6697,7 +6698,12 @@ int
               int numberGenerators=0;
 	      int translate[]={-100,-1,-99,-98,1,-1098,-1099,1,1,1,-1};
               if (probingAction) {
-		probingGen.setMaxProbeRoot(CoinMin(2000,babModel_->solver()->getNumCols()));
+		int numberColumns=babModel_->solver()->getNumCols();
+		if (probingAction>7) {
+		  probingGen.setMaxElements(numberColumns);
+		  probingGen.setMaxElementsRoot(numberColumns);
+		}
+		probingGen.setMaxProbeRoot(CoinMin(2000,numberColumns));
 		probingGen.setMaxProbeRoot(123);
 		probingGen.setMaxProbe(123);
 		probingGen.setMaxLookRoot(20);
@@ -6705,15 +6711,15 @@ int
 		  probingGen.setRowCuts(-3); // strengthening etc just at root
 		if (probingAction==8||probingAction==9) {
 		  // Number of unsatisfied variables to look at
-		  probingGen.setMaxProbeRoot(babModel_->solver()->getNumCols());
-		  probingGen.setMaxProbe(babModel_->solver()->getNumCols());
+		  probingGen.setMaxProbeRoot(numberColumns);
+		  probingGen.setMaxProbe(numberColumns);
 		  // How far to follow the consequences
 		  probingGen.setMaxLook(50);
 		  probingGen.setMaxLookRoot(50);
 		}
 		if (probingAction==10) {
 		  probingGen.setMaxPassRoot(2);
-		  probingGen.setMaxProbeRoot(babModel_->solver()->getNumCols());
+		  probingGen.setMaxProbeRoot(numberColumns);
 		  probingGen.setMaxLookRoot(100);
 		}
 		// If 5 then force on

@@ -6168,7 +6168,7 @@ int
 		  if ((tunePreProcess&1)!=0) {
 		    // heavy probing
 		    generator1.setMaxPassRoot(2);
-		    generator1.setMaxElements(300);
+		    generator1.setMaxElementsRoot(400);
 		    generator1.setMaxProbeRoot(saveSolver->getNumCols());
 		  }
                   // Add in generators
@@ -6537,7 +6537,12 @@ int
               int numberGenerators=0;
 	      int translate[]={-100,-1,-99,-98,1,-1001,-1099,1,1,1,-1};
               if (probingAction) {
-		probingGen.setMaxProbeRoot(CoinMin(2000,babModel_->solver()->getNumCols()));
+		int numberColumns=babModel_->solver()->getNumCols();
+		if (probingAction>7) {
+		  probingGen.setMaxElements(numberColumns);
+		  probingGen.setMaxElementsRoot(numberColumns);
+		}
+		probingGen.setMaxProbeRoot(CoinMin(2000,numberColumns));
 		probingGen.setMaxProbeRoot(123);
 		probingGen.setMaxProbe(123);
 		probingGen.setMaxLookRoot(20);
@@ -6545,15 +6550,15 @@ int
 		  probingGen.setRowCuts(-3); // strengthening etc just at root
 		if (probingAction==8||probingAction==9) {
 		  // Number of unsatisfied variables to look at
-		  probingGen.setMaxProbeRoot(babModel_->solver()->getNumCols());
-		  probingGen.setMaxProbe(babModel_->solver()->getNumCols());
+		  probingGen.setMaxProbeRoot(numberColumns);
+		  probingGen.setMaxProbe(numberColumns);
 		  // How far to follow the consequences
 		  probingGen.setMaxLook(50);
 		  probingGen.setMaxLookRoot(50);
 		}
 		if (probingAction==10) {
 		  probingGen.setMaxPassRoot(2);
-		  probingGen.setMaxProbeRoot(babModel_->solver()->getNumCols());
+		  probingGen.setMaxProbeRoot(numberColumns);
 		  probingGen.setMaxLookRoot(100);
 		}
 		// If 5 then force on

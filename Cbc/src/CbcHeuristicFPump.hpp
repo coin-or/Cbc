@@ -128,6 +128,8 @@ public:
        1 - do not reuse solves, accumulate integer solutions for local search
        2 - reuse solves, do not accumulate integer solutions for local search
        3 - reuse solves, accumulate integer solutions for local search
+       If we add 4 then use second form of problem (with extra rows and variables for general integers)
+       If we add 8 then can run after initial cuts (if no solution)
   */
   inline void setAccumulate(int value)
   { accumulate_=value;}
@@ -198,6 +200,7 @@ protected:
        If we add 4 then use second form of problem (with extra rows and variables for general integers)
        If we do not accumulate solutions then no mini branch and bounds will be done
        reuse - refers to initial solve after adding in new "cut"
+       If we add 8 then can run after initial cuts (if no solution)
   */
   int accumulate_;
   /**  Set whether to fix variables on known solution

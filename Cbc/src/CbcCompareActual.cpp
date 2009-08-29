@@ -292,7 +292,7 @@ CbcCompareDefault::test (CbcNode * x, CbcNode * y)
 #define THRESH2 0.999
 #define TRY_THIS 0
 #if TRY_THIS==0
-    double weight = CoinMax(weight_,0.0);
+    double weight = CoinMax(weight_,1.0e-9);
     double testX =  x->objectiveValue()+ weight*x->numberUnsatisfied();
     double testY = y->objectiveValue() + weight*y->numberUnsatisfied();
 #elif TRY_THIS==1 

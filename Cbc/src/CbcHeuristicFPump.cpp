@@ -213,10 +213,41 @@ CbcHeuristicFPump::solution(double & solutionValue,
   bool atRoot = model_->getNodeCount()==0;
   int passNumber = model_->getCurrentPassNumber();
   // just do once
-  if (!atRoot||passNumber!=1)
+  if (!atRoot)
     return 0;
-  // probably a good idea
-  //if (model_->getSolutionCount()) return 0;
+  int options = feasibilityPumpOptions_;
+  if ((options%1000000)>0) {
+    int kOption = options/1000000;
+    options = options%1000000;
+    /*
+      Add 10 to do even if solution
+      1 - do after cuts
+      2 - do after cuts (not before)
+      3 - not used do after every cut round (and after cuts)
+      k not used do after every (k-2)th round
+    */
+    if (kOption<10&&model_->getSolutionCount())
+      return 0;
+    if (model_->getSolutionCount())
+    kOption = kOption %10;
+    bool good;
+    if (kOption==1) {
+      good = (passNumber==999999);
+    } else if (kOption==2) {
+      good = (passNumber==999999);
+      passNumber=2; // so won't run before
+      //} else if (kOption==3) {
+      //good = true;
+    } else {
+      //good = (((passNumber-1)%(kOption-2))==0);
+      good = false;
+    }
+    if (passNumber!=1&&!good)
+      return 0;
+  } else {
+    if (passNumber!=1)
+      return 0;
+  }
   // loop round doing repeated pumps
   double cutoff;
   model_->solver()->getDblParam(OsiDualObjectiveLimit,cutoff);
@@ -365,15 +396,15 @@ CbcHeuristicFPump::solution(double & solutionValue,
 #endif
   int maximumAllowed=-1;
   bool moreIterations=false;
-  if (feasibilityPumpOptions_>0) {
-    if (feasibilityPumpOptions_>=1000)
-      maximumAllowed = feasibilityPumpOptions_/1000;
-    int options2 = (feasibilityPumpOptions_%1000)/100;
+  if (options>0) {
+    if (options>=1000)
+      maximumAllowed = options/1000;
+    int options2 = (options%1000)/100;
 #ifdef RAND_RAND
     offRandom=options2&1;
 #endif
     moreIterations = (options2&2)!=0;
-    secondPassOpt = (feasibilityPumpOptions_/10)%10;
+    secondPassOpt = (options/10)%10;
     /* 1 to 7 - re-use solution
        8 use dual and current solution(ish)
        9 use dual and allslack

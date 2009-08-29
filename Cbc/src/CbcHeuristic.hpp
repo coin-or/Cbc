@@ -215,10 +215,11 @@ public:
 
   /** Check whether the heuristic should run at all
       0 - before cuts at root node (or from doHeuristics)
-      1 - before cuts at other nodes
+      1 - during cuts at root 
       2 - after root node cuts
       3 - after cuts at other nodes
-          4 added if previous heuristic in loop found solution
+      4 - during cuts at other nodes
+          8 added if previous heuristic in loop found solution
   */
   virtual bool shouldHeurRun(int whereFrom);
   /** Check whether the heuristic should run this time */
@@ -271,10 +272,11 @@ protected:
   mutable int switches_;
   /* Runs if bit set
       0 - before cuts at root node (or from doHeuristics)
-      1 - before cuts at other nodes
+      1 - during cuts at root 
       2 - after root node cuts
       3 - after cuts at other nodes
-          4 added if previous heuristic in loop found solution
+      4 - during cuts at other nodes
+          8 added if previous heuristic in loop found solution
    */
   int whereFrom_;
   /** Upto this depth we call the tree shallow and the heuristic can be called

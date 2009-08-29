@@ -3324,7 +3324,7 @@ int
     int pumpTune=parameters_[whichParam(FPUMPTUNE,numberParameters_,parameters_)].intValue();
     int pumpTune2=parameters_[whichParam(FPUMPTUNE2,numberParameters_,parameters_)].intValue();
     if (pumpTune>0) {
-      bool printStuff = (pumpTune!=initialPumpTune||logLevel>1)
+      bool printStuff = (pumpTune!=initialPumpTune||logLevel>1||pumpTune2>0)
 	&&!noPrinting_;
       if (printStuff) {
 	generalMessageHandler->message(CBC_GENERAL,generalMessages)
@@ -3332,7 +3332,7 @@ int
 	  <<CoinMessageEol;
       }
       /*
-	>=10000000 for using obj
+	>=10000000 for using obj 
 	>=1000000 use as accumulate switch
 	>=1000 use index+1 as number of large loops
 	>=100 use dextra1 as cutoff
@@ -3386,8 +3386,17 @@ int
       }
       int offRandomEtc=0;
       if (pumpTune2) {
+	if ((pumpTune2/1000)!=0) {
+	  offRandomEtc = 1000000*(pumpTune2/1000);
+	  if (printStuff) {
+	    generalMessageHandler->message(CBC_GENERAL,generalMessages)
+	      << "Feasibility pump may run twice"
+	      <<CoinMessageEol;
+	  }
+	  pumpTune2 = pumpTune2%1000;
+	}
 	if ((pumpTune2/100)!=0) {
-	  offRandomEtc=100*(pumpTune2/100);
+	  offRandomEtc+=100*(pumpTune2/100);
 	  if (printStuff) {
 	    generalMessageHandler->message(CBC_GENERAL,generalMessages)
 	      << "Not using randomized objective"
@@ -4731,6 +4740,7 @@ int
 		       parameters_[iParam].type()==NUMBERBEFORE)
 		strongChanged=true;
 	      else if (parameters_[iParam].type()==FPUMPTUNE||
+		       parameters_[iParam].type()==FPUMPTUNE2||
 		       parameters_[iParam].type()==FPUMPITS)
 		pumpChanged=true;
 	      else if (parameters_[iParam].type()==EXPERIMENT) {

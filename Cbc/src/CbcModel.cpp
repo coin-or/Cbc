@@ -549,6 +549,22 @@ CbcModel::analyzeObjective ()
 	//const int * row = matrixByCol.getIndices();
 	//const CoinBigIndex * columnStart = matrixByCol.getVectorStarts();
 	const int * columnLength = matrixByCol->getVectorLengths();
+	const double * solution = clpSolver->getColSolution();
+#if 0
+	int nAtBound=0;
+	for (int i=0;i<numberColumns;i++) {
+	  double lowerValue=lower[i];
+	  double upperValue=upper[i];
+	  if (clpSolver->isInteger(i)) {
+	    double lowerValue=lower[i];
+	    double upperValue=upper[i];
+	    double value=solution[i];
+	    if (value<lowerValue+1.0e-6||
+		value>upperValue-1.0e-6)
+	      nAtBound++;
+	  }
+	}
+#endif
 	for (int i=0;i<numberColumns;i++) {
 	  double lowerValue=lower[i];
 	  double upperValue=upper[i];
@@ -559,11 +575,17 @@ CbcModel::analyzeObjective ()
 	  if (lowerValue>-1.0e5||upperValue<1.0e5) {
 	    if (fabs(lowerValue)>fabs(upperValue))
 	      value = - value;
+	    if (clpSolver->isInteger(i)) {
+	      double solValue=solution[i];
+	      // Better to add in 0.5 or 1.0??
+	      if (solValue<lowerValue+1.0e-6)
+		value = fabs(value)+0.5; //fabs(value*1.5);
+	      else if (solValue>upperValue-1.0e-6)
+		value = -fabs(value)-0.5; //-fabs(value*1.5);
+	    }
 	  } else {
 	    value=0.0;
 	  }
-	  if (clpSolver->isInteger(i))
-	    value *= 100;
 	  fakeObj[i]=value;
 	}
 	// pass to solver
@@ -2365,6 +2387,21 @@ void CbcModel::branchAndBound(int doStatistics)
        const OsiRowCutDebugger *debugger = saveSolver->getRowCutDebugger() ;
        if (debugger) { 
 	 printf("Contains optimal\n") ;
+	 OsiSolverInterface * temp = saveSolver->clone();
+	 const double * solution = debugger->optimalSolution();
+	 const double *lower = temp->getColLower() ;
+	 const double *upper = temp->getColUpper() ;
+	 int n=temp->getNumCols();
+	 for (int i=0;i<n;i++) {
+	   if (temp->isInteger(i)) {
+	     double value = floor(solution[i]+0.5);
+	     assert (value>=lower[i]&&value<=upper[i]);
+	     temp->setColLower(i,value);
+	     temp->setColUpper(i,value);
+	   }
+	 }
+	 temp->writeMps("reduced_fix");
+	 delete temp;
 	 saveSolver->writeMps("reduced");
        } else {
 	 abort();
@@ -3202,6 +3239,21 @@ void CbcModel::branchAndBound(int doStatistics)
 	    const OsiRowCutDebugger *debugger = saveSolver->getRowCutDebugger() ;
 	    if (debugger) { 
 	      printf("Contains optimal\n") ;
+	      OsiSolverInterface * temp = saveSolver->clone();
+	      const double * solution = debugger->optimalSolution();
+	      const double *lower = temp->getColLower() ;
+	      const double *upper = temp->getColUpper() ;
+	      int n=temp->getNumCols();
+	      for (int i=0;i<n;i++) {
+		if (temp->isInteger(i)) {
+		  double value = floor(solution[i]+0.5);
+		  assert (value>=lower[i]&&value<=upper[i]);
+		  temp->setColLower(i,value);
+		  temp->setColUpper(i,value);
+		}
+	      }
+	      temp->writeMps("reduced_fix");
+	      delete temp;
 	      saveSolver->writeMps("reduced");
 	    } else {
 	      abort();
@@ -7438,11 +7490,11 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
   End of the loop to exercise each generator - try heuristics
   - unless at root node and first pass
 */
-    if ((numberNodes_||currentPassNumber_!=1)&&false) {
+    if ((numberNodes_||currentPassNumber_!=1)&&true) {
       double * newSolution = new double [numberColumns] ;
       double heuristicValue = getCutoff() ;
       int found = -1; // no solution found
-      int whereFrom = 3;
+      int whereFrom = numberNodes_ ? 4 : 1;
       for (i = 0;i<numberHeuristics_;i++) {
 	// skip if can't run here
 	if (!heuristic_[i]->shouldHeurRun(whereFrom))
@@ -7464,7 +7516,7 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
 		 lastHeuristic_->heuristicName(),whereFrom);
 #endif
 	  setBestSolution(CBC_ROUNDING,heuristicValue,newSolution) ;
-	  whereFrom |= 4; // say solution found
+	  whereFrom |= 8; // say solution found
 	} else if (ifSol<0) {
 	  heuristicValue = saveValue ;
 	}
@@ -7926,7 +7978,7 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
 		 lastHeuristic_->heuristicName(),whereFrom);
 #endif
 	  setBestSolution(CBC_ROUNDING,heuristicValue,newSolution) ;
-	  whereFrom |= 4; // say solution found
+	  whereFrom |= 8; // say solution found
 	} else {
 	  heuristicValue = saveValue ;
 	}
@@ -12318,7 +12370,7 @@ CbcModel::doHeuristicsAtRoot(int deleteHeuristicsAfterwards)
 		   lastHeuristic_->heuristicName(),whereFrom);
 #endif
 	    setBestSolution(CBC_ROUNDING,heuristicValue,newSolution) ;
-	    whereFrom |= 4; // say solution found
+	    whereFrom |= 8; // say solution found
 	    if (heuristic_[i]->exitNow(bestObjective_))
 	      break;
 	  } else {
@@ -12351,7 +12403,7 @@ CbcModel::doHeuristicsAtRoot(int deleteHeuristicsAfterwards)
       // delete FPump
       CbcHeuristicFPump * pump 
 	= dynamic_cast<CbcHeuristicFPump *> (heuristic_[i]);
-      if (pump) {
+      if (pump&&pump->feasibilityPumpOptions()<1000000) {
 	delete pump;
 	numberHeuristics_ --;
 	for (int j=i;j<numberHeuristics_;j++)
@@ -13445,7 +13497,7 @@ CbcModel::doOneNode(CbcModel * baseModel, CbcNode * & node, CbcNode * & newNode)
 #endif
 		setBestSolution(CBC_ROUNDING,heurValue,newSolution) ;
 		foundSolution=1;
-		whereFrom |= 4; // say solution found
+		whereFrom |= 8; // say solution found
 	      }
 	    } else if (ifSol < 0)	{ // just returning an estimate 
 	      estValue = CoinMin(heurValue,estValue) ;
@@ -14920,7 +14972,7 @@ CbcModel::integerPresolveThisModel(OsiSolverInterface * originalSolver,
 	    heuristic_[iHeuristic]->incrementNumberSolutionsFound();
 	    found=iHeuristic;
             incrementUsed(newSolution);
-	    whereFrom |= 4; // say solution found
+	    whereFrom |= 8; // say solution found
 	  } else if (ifSol<0) {
 	    heuristicValue = saveValue;
 	  }

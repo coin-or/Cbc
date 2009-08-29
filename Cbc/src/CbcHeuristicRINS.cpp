@@ -29,7 +29,7 @@ CbcHeuristicRINS::CbcHeuristicRINS()
   howOften_=100;
   decayFactor_ = 0.5; 
   used_=NULL;
-  whereFrom_=255-15+1+8;
+  whereFrom_=1+8+255*256;
 }
 
 // Constructor with model - assumed before cuts
@@ -47,7 +47,7 @@ CbcHeuristicRINS::CbcHeuristicRINS(CbcModel & model)
   int numberColumns = model.solver()->getNumCols();
   used_ = new char[numberColumns];
   memset(used_,0,numberColumns);
-  whereFrom_=255-15+1+8;
+  whereFrom_=1+8+255*256;
 }
 
 // Destructor 
@@ -265,7 +265,7 @@ CbcHeuristicRENS::CbcHeuristicRENS()
   :CbcHeuristic()
 {
   numberTries_=0;
-  whereFrom_=16+1;
+  whereFrom_=256+1;
 }
 
 // Constructor with model - assumed before cuts
@@ -274,7 +274,7 @@ CbcHeuristicRENS::CbcHeuristicRENS(CbcModel & model)
   :CbcHeuristic(model)
 {
   numberTries_=0;
-  whereFrom_=16+1;
+  whereFrom_=256+1;
 }
 
 // Destructor 

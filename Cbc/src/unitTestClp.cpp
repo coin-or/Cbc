@@ -506,6 +506,13 @@ int CbcClpUnitTest (const CbcModel & saveModel, std::string& dirMiplib,
 	model->solver()->getStrParam(OsiProbName,problemName) ;
 	model->solver()->activateRowCutDebugger(problemName.c_str()) ;
       }
+      if (model->getNumCols()==-1224&&model->getNumRows()<1380) {
+	//PUSH_MPS("gesa2_o",1248,1224,25779856.372,25476489.678,1);
+	// gesa2_o
+	std::string problemName ;
+	model->solver()->getStrParam(OsiProbName,problemName) ;
+	model->solver()->activateRowCutDebugger(problemName.c_str()) ;
+      }
       if (model->getNumCols()==-1152&&model->getNumRows()==1368) {
 	//PUSH_MPS("gesa3",1368,1152,27991042.648,27833632.451,7);
 	// gesa3

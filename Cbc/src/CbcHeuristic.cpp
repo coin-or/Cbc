@@ -103,7 +103,7 @@ CbcHeuristic::CbcHeuristic() :
   howOften_(1),
   decayFactor_(0.0),
   switches_(0),
-  whereFrom_(255),
+  whereFrom_((255-2-16)*(1+256)),
   shallowDepth_(1),
   howOftenShallow_(1),
   numInvocationsInShallow_(0),
@@ -130,7 +130,7 @@ CbcHeuristic::CbcHeuristic(CbcModel & model) :
   howOften_(1),
   decayFactor_(0.0),
   switches_(0),
-  whereFrom_(255),
+  whereFrom_((255-2-16)*(1+256)),
   shallowDepth_(1),
   howOftenShallow_(1),
   numInvocationsInShallow_(0),
@@ -263,7 +263,9 @@ CbcHeuristic::printDistanceToNodes()
 bool
 CbcHeuristic::shouldHeurRun(int whereFrom)
 {
-  assert (whereFrom>=0&&whereFrom<8);
+  assert (whereFrom>=0&&whereFrom<16);
+  // take off 8 (code - likes new solution)
+  whereFrom &= 7;
   if ((whereFrom_&(1<<whereFrom))==0)
     return false;
   // No longer used for original purpose - so use for ever run at all JJF

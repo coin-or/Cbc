@@ -29,7 +29,7 @@ CbcHeuristicDive::CbcHeuristicDive()
   maxSimplexIterations_ = 10000;
   maxSimplexIterationsAtRoot_ = 1000000;
   maxTime_ = 600;
-  whereFrom_=16+15;
+  whereFrom_=255-2-16+256;
 }
 
 // Constructor from model
@@ -52,7 +52,7 @@ CbcHeuristicDive::CbcHeuristicDive(CbcModel & model)
   maxSimplexIterations_ = 10000;
   maxSimplexIterationsAtRoot_ = 1000000;
   maxTime_ = 600;
-  whereFrom_=16+15;
+  whereFrom_=255-2-16+256;
 }
 
 // Destructor 

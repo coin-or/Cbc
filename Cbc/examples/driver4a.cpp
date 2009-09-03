@@ -1,4 +1,4 @@
-/* $Id$ */
+/* $Id: driver4a.cpp 1173 2009-06-04 09:44:10Z forrest $ */
 // Copyright (C) 2007, International Business Machines
 // Corporation and others.  All Rights Reserved.
 #if defined(_MSC_VER)
@@ -14,6 +14,12 @@
 #include "OsiClpSolverInterface.hpp"
 #include "CbcCompareUser.hpp"
 #include "CbcSolver.hpp"
+#include "CbcStrategy.hpp"
+#include "CbcCutGenerator.hpp"
+#include "CglProbing.hpp"
+#include "CglGomory.hpp"
+#include "CglKnapsackCover.hpp"
+#include "CbcHeuristic.hpp"
 
 #include  "CoinTime.hpp"
 
@@ -27,6 +33,7 @@ while still making major modifications.
 First it reads in an integer model from an mps file
 Then it initializes the integer model with cbc defaults
 Then it calls CbcMain1 passing all parameters apart from first but with callBack to modify stuff
+It also shows how to use CbcStrategy to modify cut generators or heuristics
 Finally it prints solution
 
 ************************************************************************/
@@ -197,6 +204,105 @@ MyEventHandler3::event(CbcEvent whichEvent)
   }
 }
 
+/** Tuning class
+ */
+
+class CbcStrategyTuning : public CbcStrategy {
+public:
+
+  // Default Constructor 
+  CbcStrategyTuning () {}
+
+  // Copy constructor 
+  CbcStrategyTuning ( const CbcStrategyTuning & rhs) : CbcStrategy(rhs) {}
+   
+  // Destructor 
+  virtual ~CbcStrategyTuning () {}
+  
+  /// Clone
+  virtual CbcStrategy * clone() const { return new CbcStrategyTuning(*this);}
+
+  /// Setup cut generators
+  virtual void setupCutGenerators(CbcModel & model);
+  /// Setup heuristics
+  virtual void setupHeuristics(CbcModel & model);
+  /// Do printing stuff
+  virtual void setupPrinting(CbcModel & ,int ) {}
+  /// Other stuff e.g. strong branching
+  virtual void setupOther(CbcModel & ) {}
+
+protected:
+  // Data
+private:
+  /// Illegal Assignment operator 
+  CbcStrategyTuning & operator=(const CbcStrategyTuning& rhs);
+};
+
+
+// Setup cut generators
+void 
+CbcStrategyTuning::setupCutGenerators(CbcModel & model)
+{
+  int numberGenerators = model.numberCutGenerators();
+  int iGenerator;
+  for (iGenerator=0;iGenerator<numberGenerators;iGenerator++) {
+    CbcCutGenerator * generator = model.cutGenerator(iGenerator);
+    CglCutGenerator * cglGenerator = generator->generator();
+    generator->generateTuning(stdout);
+    /* Print options (in slightly garbled format) so user can change.
+       Obviously in real use you would use generateCpp once and then
+       cut and paste to modify what you need to modify.
+
+       The output (which was designed for -cpp) gives the options you will 
+       get if you do not modify the code.  So assuming you did not ask
+       for more aggressive probing you will get a line like
+       
+       3  probing.setMaxElementsRoot(300);
+
+       and you could modify that to 
+
+       int numberColumns = model.getNumCols();
+       probing->setMaxElementsRoot(100+numberColumns/2);
+    */
+    cglGenerator->generateCpp(stdout);
+    CglProbing * probing = dynamic_cast<CglProbing *>(cglGenerator);
+    if (probing) {
+      // Could tune 
+      continue;
+    }
+    CglGomory * gomory = dynamic_cast<CglGomory *>(cglGenerator);
+    if (gomory) {
+      // Could tune
+      continue;
+    }
+    CglKnapsackCover * knapsackCover = dynamic_cast<CglKnapsackCover *>(cglGenerator);
+    if (knapsackCover) {
+      // Could tune
+      continue;
+    }
+  }
+}
+// Setup heuristics
+void 
+CbcStrategyTuning::setupHeuristics(CbcModel & model)
+{
+  int numberHeuristics = model.numberHeuristics();
+  int iHeuristic;
+  for (iHeuristic=0;iHeuristic<numberHeuristics;iHeuristic++) {
+    CbcHeuristic * heuristic = model.heuristic(iHeuristic);
+    /* Print options (in slightly garbled format) so user can change.
+       Obviously in real use you would use generateCpp once and then
+       cut and paste to modify what you need to modify */
+    heuristic->generateCpp(stdout);
+    CbcRounding * rounding = dynamic_cast<CbcRounding *>(heuristic);
+    if (rounding) {
+      // Could tune
+      rounding->setSeed(1234567);
+      continue;
+    }
+  }
+}
+
 int main (int argc, const char *argv[])
 {
 
@@ -229,6 +335,9 @@ int main (int argc, const char *argv[])
   // Event handler
   MyEventHandler3 eventHandler;
   model->passInEventHandler(&eventHandler);
+  // Strategy so that we can tune generators and heuristics
+  CbcStrategyTuning strategy;
+  model->setStrategy(strategy);
   /* Now go into code for standalone solver
      Could copy arguments and add -quit at end to be safe
      but this will do

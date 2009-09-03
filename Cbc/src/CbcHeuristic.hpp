@@ -210,8 +210,37 @@ public:
   { heuristicName_ = name;}
   /// Set random number generator seed
   void setSeed(int value);
+  /// Sets decay factor (for howOften) on failure
+  inline void setDecayFactor(double value)
+  { decayFactor_=value;}
   /// Set input solution
   void setInputSolution(const double * solution, double objValue);
+  /* Runs if bit set
+      0 - before cuts at root node (or from doHeuristics)
+      1 - during cuts at root 
+      2 - after root node cuts
+      3 - after cuts at other nodes
+      4 - during cuts at other nodes
+          8 added if previous heuristic in loop found solution
+   */
+  inline void setWhereFrom(int value)
+  { whereFrom_=value;}
+  /** Upto this depth we call the tree shallow and the heuristic can be called
+      multiple times. That is, the test whether the current node is far from
+      the others where the jeuristic was invoked will not be done, only the
+      frequency will be tested. After that depth the heuristic will can be
+      invoked only once per node, right before branching. That's when it'll be
+      tested whether the heur should run at all. */
+  inline void setShallowDepth(int value)
+  { shallowDepth_=value;}
+  /** How often to invoke the heuristics in the shallow part of the tree */
+  inline void setHowOftenShallow(int value)
+  { howOftenShallow_=value;}
+  /** How "far" should this node be from every other where the heuristic was
+      run in order to allow the heuristic to run in this node, too. Currently
+      this is tested, but we may switch to avgDistanceToRun_ in the future. */
+  inline void setMinDistanceToRun(int value)
+  { minDistanceToRun_=value;}
 
   /** Check whether the heuristic should run at all
       0 - before cuts at root node (or from doHeuristics)
@@ -238,7 +267,6 @@ public:
       Add 2 to say without integer variables which are at low priority
       Add 4 to say quite likely infeasible so give up easily.*/
   OsiSolverInterface * cloneBut(int type);
-
 protected:
 
   /// Model

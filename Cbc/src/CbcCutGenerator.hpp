@@ -104,6 +104,8 @@ public:
   inline const char * cutGeneratorName() const
   { return generatorName_;}
 
+  /// Create C++ lines to show how to tune
+  void generateTuning( FILE * fp);
   /** Set the cut generation interval
 
     Set the number of nodes evaluated between calls to the Cgl object's
@@ -252,7 +254,7 @@ public:
   /// Set whether last round of cuts did little
   inline void setIneffectualCuts(bool yesNo)
   { switches_&=~512;switches_ |= yesNo ? 512 : 0;}
-  /// Whether to use if nay cuts generated
+  /// Whether to use if any cuts generated
   inline bool whetherToUse() const
   { return (switches_&1024)!=0;}
   /// Set whether to use if any cuts generated

@@ -1083,6 +1083,30 @@ CbcCutGenerator::setWhatDepthInSub(int value)
 {
   depthCutGeneratorInSub_ = value;
 }
+// Create C++ lines to get to current state
+void 
+CbcCutGenerator::generateTuning( FILE * fp) 
+{
+  fprintf(fp,"// Cbc tuning for generator %s\n",generatorName_);
+  fprintf(fp,"   generator->setHowOften(%d);\n",whenCutGenerator_);
+  fprintf(fp,"   generator->setSwitchOffIfLessThan(%d);\n",switchOffIfLessThan_);
+  fprintf(fp,"   generator->setWhatDepth(%d);\n",depthCutGenerator_);
+  fprintf(fp,"   generator->setInaccuracy(%d);\n",inaccuracy_);
+  if (timing())
+    fprintf(fp,"   generator->setTiming(true);\n");
+  if (normal())
+    fprintf(fp,"   generator->setNormal(true);\n");
+  if (atSolution())
+    fprintf(fp,"   generator->setAtSolution(true);\n");
+  if (whenInfeasible())
+    fprintf(fp,"   generator->setWhenInfeasible(true);\n");
+  if (needsOptimalBasis())
+    fprintf(fp,"   generator->setNeedsOptimalBasis(true);\n");
+  if (mustCallAgain())
+    fprintf(fp,"   generator->setMustCallAgain(true);\n");
+  if (whetherToUse())
+    fprintf(fp,"   generator->setWhetherToUse(true);\n");
+}
 
 
 // Default Constructor

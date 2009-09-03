@@ -91,7 +91,7 @@ CbcHeuristicNodeList::append(const CbcHeuristicNodeList& nodes)
 }
 
 //==============================================================================
-
+#define DEFAULT_WHERE ((255-2-16)*(1+256))
 // Default Constructor
 CbcHeuristic::CbcHeuristic() :
   model_(NULL),
@@ -103,7 +103,7 @@ CbcHeuristic::CbcHeuristic() :
   howOften_(1),
   decayFactor_(0.0),
   switches_(0),
-  whereFrom_((255-2-16)*(1+256)),
+  whereFrom_(DEFAULT_WHERE),
   shallowDepth_(1),
   howOftenShallow_(1),
   numInvocationsInShallow_(0),
@@ -130,7 +130,7 @@ CbcHeuristic::CbcHeuristic(CbcModel & model) :
   howOften_(1),
   decayFactor_(0.0),
   switches_(0),
-  whereFrom_((255-2-16)*(1+256)),
+  whereFrom_(DEFAULT_WHERE),
   shallowDepth_(1),
   howOftenShallow_(1),
   numInvocationsInShallow_(0),
@@ -155,7 +155,7 @@ CbcHeuristic::gutsOfCopy(const CbcHeuristic & rhs)
   randomNumberGenerator_ = rhs.randomNumberGenerator_;
   heuristicName_ = rhs.heuristicName_;
   howOften_ = rhs.howOften_;
-  decayFactor_ = rhs.howOften_;
+  decayFactor_ = rhs.decayFactor_;
   switches_ = rhs.switches_;
   whereFrom_ = rhs.whereFrom_;
   shallowDepth_= rhs.shallowDepth_;
@@ -459,6 +459,10 @@ CbcHeuristic::generateCpp( FILE * fp, const char * heuristic)
     fprintf(fp,"3  %s.setNumberNodes(%d);\n",heuristic,numberNodes_);
   else
     fprintf(fp,"4  %s.setNumberNodes(%d);\n",heuristic,numberNodes_);
+  if (feasibilityPumpOptions_!=-1)
+    fprintf(fp,"3  %s.setFeasibilityPumpOptions(%d);\n",heuristic,feasibilityPumpOptions_);
+  else
+    fprintf(fp,"4  %s.setFeasibilityPumpOptions(%d);\n",heuristic,feasibilityPumpOptions_);
   if (fractionSmall_!=1.0)
     fprintf(fp,"3  %s.setFractionSmall(%g);\n",heuristic,fractionSmall_);
   else
@@ -469,6 +473,30 @@ CbcHeuristic::generateCpp( FILE * fp, const char * heuristic)
   else
     fprintf(fp,"4  %s.setHeuristicName(\"%s\");\n",
 	    heuristic,heuristicName_.c_str()) ;
+  if (decayFactor_!=0.0)
+    fprintf(fp,"3  %s.setDecayFactor(%g);\n",heuristic,decayFactor_);
+  else
+    fprintf(fp,"4  %s.setDecayFactor(%g);\n",heuristic,decayFactor_);
+  if (switches_!=0)
+    fprintf(fp,"3  %s.setSwitches(%d);\n",heuristic,switches_);
+  else
+    fprintf(fp,"4  %s.setSwitches(%d);\n",heuristic,switches_);
+  if (whereFrom_!=DEFAULT_WHERE)
+    fprintf(fp,"3  %s.setWhereFrom(%d);\n",heuristic,whereFrom_);
+  else
+    fprintf(fp,"4  %s.setWhereFrom(%d);\n",heuristic,whereFrom_);
+  if (shallowDepth_!=1)
+    fprintf(fp,"3  %s.setShallowDepth(%d);\n",heuristic,shallowDepth_);
+  else
+    fprintf(fp,"4  %s.setShallowDepth(%d);\n",heuristic,shallowDepth_);
+  if (howOftenShallow_!=1)
+    fprintf(fp,"3  %s.setHowOftenShallow(%d);\n",heuristic,howOftenShallow_);
+  else
+    fprintf(fp,"4  %s.setHowOftenShallow(%d);\n",heuristic,howOftenShallow_);
+  if (minDistanceToRun_!=1)
+    fprintf(fp,"3  %s.setMinDistanceToRun(%d);\n",heuristic,minDistanceToRun_);
+  else
+    fprintf(fp,"4  %s.setMinDistanceToRun(%d);\n",heuristic,minDistanceToRun_);
 }
 // Destructor 
 CbcHeuristic::~CbcHeuristic ()
@@ -1498,7 +1526,7 @@ CbcRounding::CbcRounding()
   :CbcHeuristic()
 {
   // matrix and row copy will automatically be empty
-  seed_=1;
+  seed_=7654321;
   down_ = NULL;
   up_ = NULL;
   equal_ = NULL;
@@ -1515,7 +1543,7 @@ CbcRounding::CbcRounding(CbcModel & model)
     matrixByRow_ = *model.solver()->getMatrixByRow();
     validate();
   }
-  seed_=1;
+  seed_=7654321;
 }
 
 // Destructor 

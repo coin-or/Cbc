@@ -7,7 +7,7 @@
 #include "CbcHeuristic.hpp"
 #include "OsiClpSolverInterface.hpp"
 
-/** Rounding class
+/** Feasibility Pump class
  */
 
 class CbcHeuristicFPump : public CbcHeuristic {

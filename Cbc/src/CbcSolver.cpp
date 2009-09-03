@@ -785,16 +785,8 @@ CbcStopNow::clone() const
 {
   return new CbcStopNow(*this);
 }
-#ifdef CLP_FAST_CODE
-// force new style solver
-#ifndef NEW_STYLE_SOLVER
-#define NEW_STYLE_SOLVER 1
-#endif
-#else
-// Not new style solver
 #ifndef NEW_STYLE_SOLVER
 #define NEW_STYLE_SOLVER 0
-#endif
 #endif
 #ifdef CPX_KEEP_RESULTS
 #define CBC_OTHER_SOLVER 1
@@ -809,7 +801,6 @@ CbcStopNow::clone() const
 #undef NEW_STYLE_SOLVER
 #define NEW_STYLE_SOLVER 0
 #endif
-//#undef COIN_HAS_ASL
 #ifdef COIN_HAS_ASL
 #include "Cbc_ampl.h"
 #endif

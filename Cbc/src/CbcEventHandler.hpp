@@ -89,7 +89,11 @@ public:
     /*! A solution has been found. */
     solution, 
     /*! A heuristic solution has been found. */
-    heuristicSolution 
+    heuristicSolution, 
+    /*! A solution will be found unless user takes action. */
+    beforeSolution,
+    /*! End of search. */
+    endSearch
   } ;
 
   /*! \brief Action codes returned by the event handler.
@@ -107,7 +111,10 @@ public:
     */
     restart,
     /*! RestartRoot --- undo root node and start branch-and-cut afresh. */
-    restartRoot
+    restartRoot,
+    /*! Pretend solution never happened. */
+    killSolution
+      
   } ;
 
   /*! \brief Data type for event/action pairs */
@@ -134,7 +141,7 @@ public:
 
   /*! \brief Default constructor. */
 
-  CbcEventHandler(const CbcModel *model = NULL) ;
+  CbcEventHandler(CbcModel *model = NULL) ;
 
   /*! \brief Copy constructor. */
 
@@ -192,7 +199,7 @@ protected:
 
   /*! \brief Pointer to associated CbcModel */
 
-  const CbcModel *model_ ;
+  CbcModel *model_ ;
 
   /*! \brief Default action */
 

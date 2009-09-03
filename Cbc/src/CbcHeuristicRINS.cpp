@@ -71,7 +71,6 @@ CbcHeuristicRINS::operator=( const CbcHeuristicRINS& rhs)
     CbcHeuristic::operator=(rhs);
     numberSolutions_ = rhs.numberSolutions_;
     howOften_ = rhs.howOften_;
-    decayFactor_ = rhs.decayFactor_;
     numberSuccesses_ = rhs.numberSuccesses_;
     numberTries_ = rhs.numberTries_;
     lastNode_=rhs.lastNode_;
@@ -108,7 +107,6 @@ CbcHeuristicRINS::CbcHeuristicRINS(const CbcHeuristicRINS & rhs)
   CbcHeuristic(rhs),
   numberSolutions_(rhs.numberSolutions_),
   howOften_(rhs.howOften_),
-  decayFactor_(rhs.decayFactor_),
   numberSuccesses_(rhs.numberSuccesses_),
   numberTries_(rhs.numberTries_),
   lastNode_(rhs.lastNode_)
@@ -446,7 +444,6 @@ CbcHeuristicDINS::operator=( const CbcHeuristicDINS& rhs)
     CbcHeuristic::operator=(rhs);
     numberSolutions_ = rhs.numberSolutions_;
     howOften_ = rhs.howOften_;
-    decayFactor_ = rhs.decayFactor_;
     numberSuccesses_ = rhs.numberSuccesses_;
     numberTries_ = rhs.numberTries_;
     for (int i=0;i<numberKeptSolutions_;i++)
@@ -480,6 +477,10 @@ CbcHeuristicDINS::generateCpp( FILE * fp)
     fprintf(fp,"3  heuristicDINS.setHowOften(%d);\n",howOften_);
   else
     fprintf(fp,"4  heuristicDINS.setHowOften(%d);\n",howOften_);
+  if (maximumKeepSolutions_!=other.maximumKeepSolutions_)
+    fprintf(fp,"3  heuristicDINS.setMaximumKeep(%d);\n",maximumKeepSolutions_);
+  else
+    fprintf(fp,"4  heuristicDINS.setMaximumKeep(%d);\n",maximumKeepSolutions_);
   fprintf(fp,"3  cbcModel->addHeuristic(&heuristicDINS);\n");
 }
 
@@ -489,7 +490,6 @@ CbcHeuristicDINS::CbcHeuristicDINS(const CbcHeuristicDINS & rhs)
   CbcHeuristic(rhs),
   numberSolutions_(rhs.numberSolutions_),
   howOften_(rhs.howOften_),
-  decayFactor_(rhs.decayFactor_),
   numberSuccesses_(rhs.numberSuccesses_),
   numberTries_(rhs.numberTries_),
   maximumKeepSolutions_(rhs.maximumKeepSolutions_),

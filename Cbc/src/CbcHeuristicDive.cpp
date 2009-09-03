@@ -76,10 +76,10 @@ CbcHeuristicDive::generateCpp( FILE * fp, const char * heuristic)
     fprintf(fp,"3  %s.setMaxIterations(%d);\n",heuristic,maxIterations_);
   else
     fprintf(fp,"4  %s.setMaxIterations(%d);\n",heuristic,maxIterations_);
-  if (maxSimplexIterations_!=100)
-    fprintf(fp,"3  %s.setMaxIterations(%d);\n",heuristic,maxSimplexIterations_);
+  if (maxSimplexIterations_!=10000)
+    fprintf(fp,"3  %s.setMaxSimplexIterations(%d);\n",heuristic,maxSimplexIterations_);
   else
-    fprintf(fp,"4  %s.setMaxIterations(%d);\n",heuristic,maxSimplexIterations_);
+    fprintf(fp,"4  %s.setMaxSimplexIterations(%d);\n",heuristic,maxSimplexIterations_);
   if (maxTime_!=600)
     fprintf(fp,"3  %s.setMaxTime(%.2f);\n",heuristic,maxTime_);
   else

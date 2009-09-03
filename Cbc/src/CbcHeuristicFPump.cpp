@@ -126,7 +126,6 @@ CbcHeuristicFPump::generateCpp( FILE * fp)
     fprintf(fp,"3  heuristicFPump.setDefaultRounding(%g);\n",defaultRounding_);
   else
     fprintf(fp,"4  heuristicFPump.setDefaultRounding(%g);\n",defaultRounding_);
-  fprintf(fp,"3  cbcModel->addHeuristic(&heuristicFPump);\n");
   if (initialWeight_!=other.initialWeight_)
     fprintf(fp,"3  heuristicFPump.setInitialWeight(%g);\n",initialWeight_);
   else
@@ -135,6 +134,19 @@ CbcHeuristicFPump::generateCpp( FILE * fp)
     fprintf(fp,"3  heuristicFPump.setWeightFactor(%g);\n",weightFactor_);
   else
     fprintf(fp,"4  heuristicFPump.setWeightFactor(%g);\n",weightFactor_);
+  if (artificialCost_!=other.artificialCost_)
+    fprintf(fp,"3  heuristicFPump.setArtificialCost(%g);\n",artificialCost_);
+  else
+    fprintf(fp,"4  heuristicFPump.setArtificialCost(%g);\n",artificialCost_);
+  if (iterationRatio_!=other.iterationRatio_)
+    fprintf(fp,"3  heuristicFPump.setIterationRatio(%g);\n",iterationRatio_);
+  else
+    fprintf(fp,"4  heuristicFPump.setIterationRatio(%g);\n",iterationRatio_);
+  if (reducedCostMultiplier_!=other.reducedCostMultiplier_)
+    fprintf(fp,"3  heuristicFPump.setReducedCostMultiplier(%g);\n",reducedCostMultiplier_);
+  else
+    fprintf(fp,"4  heuristicFPump.setReducedCostMultiplier(%g);\n",reducedCostMultiplier_);
+  fprintf(fp,"3  cbcModel->addHeuristic(&heuristicFPump);\n");
 }
 
 // Copy constructor 
@@ -759,19 +771,18 @@ CbcHeuristicFPump::solution(double & solutionValue,
 	    if (basis) {
 	      bestBasis = * basis;
 	      delete basis;
-	      CbcEventHandler * handler = model_->getEventHandler();
-	      if (handler) {
+	      int action = model_->dealWithEventHandler(CbcEventHandler::heuristicSolution,newSolutionValue,betterSolution);
+	      if (action==0) {
 		double * saveOldSolution = CoinCopyOfArray(model_->bestSolution(),numberColumns);
 		double saveObjectiveValue = model_->getMinimizationObjValue();
 		model_->setBestSolution(betterSolution,numberColumns,newSolutionValue);
-		int action = handler->event(CbcEventHandler::heuristicSolution);
 		if (saveOldSolution&&saveObjectiveValue<model_->getMinimizationObjValue())
 		  model_->setBestSolution(saveOldSolution,numberColumns,saveObjectiveValue);
 		delete [] saveOldSolution;
-		if (!action||model_->maximumSecondsReached()) {
-		  exitAll=true; // exit
-		  break;
-		}
+	      }
+	      if (action==0||model_->maximumSecondsReached()) {
+		exitAll=true; // exit
+		break;
 	      }
 	    }
 	    if ((accumulate_&1)!=0) {
@@ -1001,19 +1012,18 @@ CbcHeuristicFPump::solution(double & solutionValue,
 	      if (basis) {
 		bestBasis = * basis;
 		delete basis;
-		CbcEventHandler * handler = model_->getEventHandler();
-		if (handler) {
+		int action = model_->dealWithEventHandler(CbcEventHandler::heuristicSolution,newSolutionValue,betterSolution);
+		if (!action) {
 		  double * saveOldSolution = CoinCopyOfArray(model_->bestSolution(),numberColumns);
 		  double saveObjectiveValue = model_->getMinimizationObjValue();
 		  model_->setBestSolution(betterSolution,numberColumns,newSolutionValue);
-		  int action = handler->event(CbcEventHandler::heuristicSolution);
 		  if (saveOldSolution&&saveObjectiveValue<model_->getMinimizationObjValue())
 		    model_->setBestSolution(saveOldSolution,numberColumns,saveObjectiveValue);
 		  delete [] saveOldSolution;
-		  if (!action||model_->maximumSecondsReached()) {
-		    exitAll=true; // exit
-		    break;
-		  }
+		}
+		if (!action||model_->maximumSecondsReached()) {
+		  exitAll=true; // exit
+		  break;
 		}
 	      }
 	      if ((accumulate_&1)!=0) {
@@ -1839,20 +1849,18 @@ CbcHeuristicFPump::solution(double & solutionValue,
 	  if (basis) {
 	    bestBasis = * basis;
 	    delete basis;
-	    CbcEventHandler * handler = model_->getEventHandler();
-	    if (handler) {
+	    int action = model_->dealWithEventHandler(CbcEventHandler::heuristicSolution,newSolutionValue,betterSolution);
+	    if (action==0) {
 	      double * saveOldSolution = CoinCopyOfArray(model_->bestSolution(),numberColumns);
 	      double saveObjectiveValue = model_->getMinimizationObjValue();
 	      model_->setBestSolution(betterSolution,numberColumns,newSolutionValue);
-	      int action = handler->event(CbcEventHandler::heuristicSolution);
-	      //printf("cutoff %g\n",model_->getCutoff());
 	      if (saveOldSolution&&saveObjectiveValue<model_->getMinimizationObjValue())
 		model_->setBestSolution(saveOldSolution,numberColumns,saveObjectiveValue);
 	      delete [] saveOldSolution;
-	      if (!action||model_->getCurrentSeconds()>model_->getMaximumSeconds()) {
-		exitAll=true; // exit
-		break;
-	      }
+	    }
+	    if (!action||model_->getCurrentSeconds()>model_->getMaximumSeconds()) {
+	      exitAll=true; // exit
+	      break;
 	    }
 	  }
 	}

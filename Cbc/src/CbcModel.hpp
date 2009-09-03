@@ -13,6 +13,7 @@
 #include "CoinWarmStartBasis.hpp"
 #include "CbcCompareBase.hpp"
 #include "CbcMessage.hpp"
+#include "CbcEventHandler.hpp"
 
 //class OsiSolverInterface;
 
@@ -1059,6 +1060,10 @@ public:
 		       int fixVariables=0);
   /// Just update objectiveValue
   void setBestObjectiveValue( double objectiveValue);
+  /// Deals with event handler and solution
+  CbcEventHandler::CbcAction dealWithEventHandler(CbcEventHandler::CbcEvent event,
+						   double objValue, 
+						   double * solution);
 
   /** Call this to really test if a valid solution can be feasible
       Solution is number columns in size.

@@ -3921,6 +3921,9 @@ void CbcModel::branchAndBound(int doStatistics)
     status_=1;
   numberNodes_ += numberExtraNodes_;
   numberIterations_ += numberExtraIterations_;
+  if (eventHandler) {
+    eventHandler->event(CbcEventHandler::endSearch);
+  }
   if (!status_) {
     // Set best possible unless stopped on gap
     if(secondaryStatus_ != 2)
@@ -6805,7 +6808,8 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
       resizeWhichGenerator(numberViolated, numberViolated+numberCuts);
       for ( i = 0;i<numberCuts;i++) {
 	OsiRowCut * thisCut = globalCuts_.rowCutPtr(i) ;
-	if (thisCut->violated(cbcColSolution_)>primalTolerance) {
+	if (thisCut->violated(cbcColSolution_)>primalTolerance||
+	    thisCut->effectiveness()==COIN_DBL_MAX) {
 	  //printf("Global cut added - violation %g\n",
 	  // thisCut->violated(cbcColSolution_)) ;
 	  whichGenerator_[numberViolated++]=-1;
@@ -10609,6 +10613,13 @@ CbcModel::setBestSolution (CBC_Message how,
     delete basis ;
     if (objectiveValue>cutoff&&objectiveValue<cutoff+1.0e-8+1.0e-8*fabs(cutoff))
       cutoff = objectiveValue; // relax
+    CbcEventHandler::CbcAction action = 
+      dealWithEventHandler(CbcEventHandler::beforeSolution,
+			   objectiveValue,solution);
+    if (action==CbcEventHandler::killSolution) {
+      // Pretend solution never happened
+      objectiveValue = cutoff+1.0e30;
+    }
     if (objectiveValue > cutoff||objectiveValue>1.0e30) {
       if (objectiveValue>1.0e30)
         handler_->message(CBC_NOTFEAS1, messages_) << CoinMessageEol ;
@@ -10844,7 +10855,28 @@ CbcModel::setBestSolution (CBC_Message how,
   delete [] solution;
   return ;
 }
-
+// Deals with event handler and solution
+CbcEventHandler::CbcAction 
+CbcModel::dealWithEventHandler(CbcEventHandler::CbcEvent event,
+						   double objValue, 
+						   double * solution)
+{
+  CbcEventHandler *eventHandler = getEventHandler() ;
+  if (eventHandler) {
+    // Temporarily put in best
+    double saveObj = bestObjective_;
+    double * saveSol = bestSolution_;
+    bestObjective_ = objValue;
+    bestSolution_ = solution;
+    CbcEventHandler::CbcAction action = 
+      eventHandler->event(event);
+    bestObjective_ = saveObj;
+    bestSolution_ = saveSol;
+    return action;
+  } else {
+    return CbcEventHandler::noAction;
+  }
+}
 
 /* Test the current solution for feasibility.
 
@@ -12358,21 +12390,33 @@ CbcModel::doHeuristicsAtRoot(int deleteHeuristicsAfterwards)
 					      newSolution);
 	  if (ifSol>0) {
 	    // better solution found
-	    heuristic_[i]->incrementNumberSolutionsFound();
-	    found = i ;
-	    incrementUsed(newSolution);
-	    // increment number of solutions so other heuristics can test
-	    numberSolutions_++;
-	    numberHeuristicSolutions_++;
+	    double currentObjective = bestObjective_;
+	    CbcHeuristic * saveHeuristic = lastHeuristic_;
 	    lastHeuristic_ = heuristic_[i];
-#ifdef CLP_INVESTIGATE
-	    printf("HEUR %s where %d C\n",
-		   lastHeuristic_->heuristicName(),whereFrom);
-#endif
 	    setBestSolution(CBC_ROUNDING,heuristicValue,newSolution) ;
-	    whereFrom |= 8; // say solution found
-	    if (heuristic_[i]->exitNow(bestObjective_))
-	      break;
+	    if (bestObjective_<currentObjective) {
+	      heuristic_[i]->incrementNumberSolutionsFound();
+	      found = i ;
+	      incrementUsed(newSolution);
+	      // increment number of solutions so other heuristics can test
+	      numberSolutions_++;
+	      numberHeuristicSolutions_++;
+#ifdef CLP_INVESTIGATE
+	      printf("HEUR %s where %d C\n",
+		     lastHeuristic_->heuristicName(),whereFrom);
+#endif
+	      whereFrom |= 8; // say solution found
+	      if (heuristic_[i]->exitNow(bestObjective_))
+		break;
+	    } else {
+	      // NOT better solution
+#ifdef CLP_INVESTIGATE
+	      printf("HEUR %s where %d REJECTED i==%d\n",
+		     heuristic_[i]->heuristicName(),whereFrom,i);
+#endif
+	      lastHeuristic_ = saveHeuristic;
+	      heuristicValue = saveValue ;
+	    }
 	  } else {
 	    heuristicValue = saveValue ;
 	  }

@@ -141,6 +141,8 @@ protected:
   // returns true if duplicate
   bool sameSolution(double objValue,
 		    const double * solution);
+  // creates cut
+  void createCut(const double * solution);
   // data goes here
   // Best objective found
   double bestSoFar_;
@@ -314,35 +316,42 @@ bool
 MyEventHandler3::sameSolution(double objValue,
 			      const double * solution)
 {
-  if (!solutions_)
-    return false;
   int numberColumns = model_->getNumCols();
   double same=false;
-  OsiSolverInterface * solver=model_->solver();
-  // Optionally check for duplicates
-  for (int j=0;j<maximumSolutions_;j++) {
-    if (solutions_[j]) {
-      double * sol = solutions_[j];
-      if (fabs(sol[numberColumns]-objValue)<1.0e-5) {
-	bool thisSame=true;
-	for (int i=0;i<numberColumns;i++) {
-	  if (fabs(sol[i]-solution[i])>1.0e-6&&
-	      solver->isInteger(i)) {
-	    thisSame=false;
-	    break;
+  if (solutions_) {
+    OsiSolverInterface * solver=model_->solver();
+    // Check for duplicates
+    for (int j=0;j<maximumSolutions_;j++) {
+      if (solutions_[j]) {
+	double * sol = solutions_[j];
+	if (fabs(sol[numberColumns]-objValue)<1.0e-5) {
+	  bool thisSame=true;
+	  for (int i=0;i<numberColumns;i++) {
+	    if (fabs(sol[i]-solution[i])>1.0e-6&&
+		solver->isInteger(i)) {
+	      thisSame=false;
+	      break;
+	    }
+	  }
+	  if (thisSame) {
+	    printf("*** Solutions %d and %d same\n",
+		   numberSolutions_+1,static_cast<int>(sol[numberColumns+1]));
+	    same=true;
 	  }
 	}
-	if (thisSame) {
-	  printf("*** Solutions %d and %d same\n",
-		 numberSolutions_+1,static_cast<int>(sol[numberColumns+1]));
-	  same=true;
-	}
+      }
+    }
+  }
+  if (!same) {
+    printf("value of solution is %g\n",objValue);
+    for (int i=0;i<numberColumns;i++) {
+      if (fabs(solution[i])>1.0e-8) {
+	printf("%d %g\n",i,solution[i]);
       }
     }
   }
   return same;
 }
-
 CbcEventHandler::CbcAction 
 MyEventHandler3::event(CbcEvent whichEvent)
 {
@@ -352,18 +361,10 @@ MyEventHandler3::event(CbcEvent whichEvent)
 #ifdef STOP_EARLY
       return stop; // say finished
 #endif
-      // If preprocessing was done solution will be to processed model
-      int numberColumns = model_->getNumCols();
       const double * bestSolution = model_->bestSolution();
       if (!bestSolution)
 	return noAction;
       double objValue = model_->getObjValue();
-      printf("value of solution is %g\n",objValue);
-      for (int i=0;i<numberColumns;i++) {
-	if (fabs(bestSolution[i])>1.0e-8) {
-	  printf("%d %g\n",i,bestSolution[i]);
-	}
-      }
       /* if KILL_SOLUTION not set then should be as driver4 was
 	 if 1 then all solutions rejected and cuts added
 	 if 2 then accepted and cuts added.  In practice this
@@ -374,10 +375,24 @@ MyEventHandler3::event(CbcEvent whichEvent)
       */
 #define KILL_SOLUTION 2
       //#define FORCE_CUTS
-#ifdef KILL_SOLUTION
-      if (!sameSolution(objValue,bestSolution))
+#ifndef KILL_SOLUTION
+      // If preprocessing was done solution will be to processed model
+      int numberColumns = model_->getNumCols();
+      printf("value of solution is %g\n",objValue);
+      for (int i=0;i<numberColumns;i++) {
+	if (fabs(bestSolution[i])>1.0e-8) {
+	  printf("%d %g\n",i,bestSolution[i]);
+	}
+      }
+#else
+      if (!sameSolution(objValue,bestSolution)) {
 	saveSolution((whichEvent==solution) ? "solution" : "heuristicSolution",
 		       objValue,bestSolution);
+#if KILL_SOLUTION==2
+	// Put in cut if we get here
+	createCut(bestSolution);
+#endif
+      }
       double newCutoff = bestSoFar_+0.1*fabs(bestSoFar_);
       // Set cutoff here as may have been changed
       if (fabs(model_->getCutoff()-newCutoff)>1.0e-3) {
@@ -401,7 +416,6 @@ MyEventHandler3::event(CbcEvent whichEvent)
       assert (bestSolution);
 #if KILL_SOLUTION==1
       // save as won't be done by 'solution'
-      printf("value of solution is %g\n",objValue);
       bool same = sameSolution(objValue,bestSolution);
       if (!same)
 	saveSolution("killSolution",
@@ -418,77 +432,10 @@ MyEventHandler3::event(CbcEvent whichEvent)
       if (same)
 	return noAction;
 #endif
-      // Get information on continuous solver
-      OsiSolverInterface * solver = model_->continuousSolver();
-      if (solver) {
-	/* It is up to the user what sort of cuts to apply
-	   (also see FORCE_CUTS lower down)
-	   The classic one here, which just cuts off solution,
-	   does not do a lot - often the cuts are never applied!
-	*/
-	int numberColumns=solver->getNumCols();
-	const double * lower = solver->getColLower();
-	const double * upper = solver->getColUpper();
-	bool good=true;
-	for (int iColumn=0;iColumn<numberColumns;iColumn++) {
-	  if (solver->isInteger(iColumn)) {
-	    double value=bestSolution[iColumn];
-	    if (value>lower[iColumn]+0.9&&
-		value<upper[iColumn]-0.9) {
-	      good=false;
-	      printf("Can't add cut as general integers\n");
-	      break;
-	    }
-	  }
-	}
-	if (good) {
-	  double * cut = new double [numberColumns];
-	  int * which = new int [numberColumns];
-	  // Could make -2.0 or .....
-	  double rhs=-1.0;
-	  int n=0;
-	  double sum=0.0;
-	  for (int iColumn=0;iColumn<numberColumns;iColumn++) {
-	    if (solver->isInteger(iColumn)) {
-	      if (upper[iColumn]>lower[iColumn]) {
-		double value=bestSolution[iColumn];
-		sum += value;
-		if (upper[iColumn]-value<0.1) {
-		  rhs += upper[iColumn];
-		  cut[n]=1.0;
-		  which[n++]=iColumn;
-		} else {
-		  rhs -= lower[iColumn];
-		  cut[n]=-1.0;
-		  which[n++]=iColumn;
-		}
-	      }
-	    }
-	  }
-	  assert (sum>rhs+0.9);
-	  printf("CUT has %d entries\n",n);
-	  OsiRowCut newCut;
-	  newCut.setLb(-COIN_DBL_MAX);
-	  newCut.setUb(rhs);
-	  newCut.setRow(n,which,cut,false);
-#ifdef FORCE_CUTS
-	  /* The next statement  is very optional as it will
-	     always add cut even if not violated.  If this is not done
-	     you can get duplicates from heuristics and strong branching.
-	     If you don't have it you may get some duplicates but it may be
-	     much faster. On one problem I tried I got over 300 cuts each
-	     of which was fully dense. 
-	     Even if this is done, you can still get duplicates
-	     close together e.g. strong branching then heuristic
-	     before cut generation entered.*/
-	  newCut.setEffectiveness(COIN_DBL_MAX);
-#endif
-	  model_->makeGlobalCut(newCut);
+      createCut(bestSolution);
 #if KILL_SOLUTION==1
-	  return killSolution;
+      return killSolution;
 #endif
-	}
-      }
 #endif
     } else if (whichEvent==endSearch) {
 #ifdef KILL_SOLUTION
@@ -538,6 +485,126 @@ MyEventHandler3::event(CbcEvent whichEvent)
     }
   }
   return noAction; // carry on
+}
+
+// create cut
+void
+MyEventHandler3::createCut(const double * solution)
+{
+  /* TYPE_CUT 0 is off
+     1 is row cut
+     2 is column cut */
+#define TYPE_CUT 1
+#if TYPE_CUT
+  // Get information on continuous solver
+  OsiSolverInterface * solver = model_->continuousSolver();
+  if (solver) {
+    /* It is up to the user what sort of cuts to apply
+       (also see FORCE_CUTS lower down)
+       The classic one here, which just cuts off solution,
+       does not do a lot - often the cuts are never applied!
+    */
+    int numberColumns=solver->getNumCols();
+    const double * lower = solver->getColLower();
+    const double * upper = solver->getColUpper();
+    bool good=true;
+    for (int iColumn=0;iColumn<numberColumns;iColumn++) {
+      if (solver->isInteger(iColumn)) {
+	double value=solution[iColumn];
+	if (value>lower[iColumn]+0.9&&
+	    value<upper[iColumn]-0.9) {
+	  good=false;
+	  printf("Can't add cut as general integers\n");
+	  break;
+	}
+      }
+    }
+    if (good) {
+#if TYPE_CUT==1
+      double * cut = new double [numberColumns];
+      int * which = new int [numberColumns];
+      /* It is up to the user what sort of cuts to apply
+	 The classic row cut here, which just cuts off solution,
+	 does not do a lot - often the cuts are never applied!
+      */
+      // Should be -1.0 for classic cut
+      double rhs=-6.0;
+      int n=0;
+      double sum=0.0;
+      for (int iColumn=0;iColumn<numberColumns;iColumn++) {
+	if (solver->isInteger(iColumn)) {
+	  if (upper[iColumn]>lower[iColumn]) {
+	    double value=solution[iColumn];
+	    sum += value;
+	    if (upper[iColumn]-value<0.1) {
+	      rhs += upper[iColumn];
+	      cut[n]=1.0;
+	      which[n++]=iColumn;
+	    } else {
+	      rhs -= lower[iColumn];
+	      cut[n]=-1.0;
+	      which[n++]=iColumn;
+	    }
+	  }
+	}
+      }
+      assert (sum>rhs+0.9);
+      printf("CUT has %d entries\n",n);
+      OsiRowCut newCut;
+      newCut.setLb(-COIN_DBL_MAX);
+      newCut.setUb(rhs);
+      newCut.setRow(n,which,cut,false);
+      delete [] which;
+      delete [] cut;
+#else
+      // Fix a variable other way
+      int firstAtLb=-1;
+      int firstAtUb=-1;
+      for (int iColumn=0;iColumn<numberColumns;iColumn++) {
+	if (solver->isInteger(iColumn)) {
+	  if (upper[iColumn]>lower[iColumn]) {
+	    double value=solution[iColumn];
+	    if (upper[iColumn]-value<0.1) {
+	      if (firstAtUb<0)
+		firstAtUb=iColumn;
+	    } else {
+	      if (firstAtLb<0)
+		firstAtLb=iColumn;
+	    }
+	  }
+	}
+      }
+      OsiColCut newCut;
+      CoinPackedVector bounds;
+      if (firstAtUb>=0) {
+	// fix to lb
+	bounds.insert(firstAtUb,lower[firstAtUb]);
+	newCut.setUbs(bounds);
+      } else {
+	// fix to ub
+	bounds.insert(firstAtLb,upper[firstAtLb]);
+	newCut.setLbs(bounds);
+      }
+#endif
+#ifdef FORCE_CUTS
+      /* The next statement  is very optional as it will
+	 always add cut even if not violated.  If this is not done
+	 you can get duplicates from heuristics and strong branching.
+	 If you don't have it you may get some duplicates but it may be
+	 much faster. On one problem I tried I got over 300 cuts each
+	 of which was fully dense. 
+	 This does not apply to column cuts, which might as well
+	 always be forced on. 
+	 
+	 Even if this is done, you can still get duplicates
+	 close together e.g. strong branching then heuristic
+	 before cut generation entered.*/
+      newCut.setEffectiveness(COIN_DBL_MAX);
+#endif
+      model_->makeGlobalCut(newCut);
+    }
+  }
+#endif
 }
 
 /** Tuning class

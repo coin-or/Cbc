@@ -6792,9 +6792,13 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
       resizeWhichGenerator(numberViolated, numberViolated+numberCuts);
       for ( i = 0 ; i < numberCuts ; i++)
       { OsiColCut *thisCut = globalCuts_.colCutPtr(i) ;
-	if (thisCut->violated(cbcColSolution_)>primalTolerance) {
-	  printf("Global cut added - violation %g\n",
-		 thisCut->violated(cbcColSolution_)) ;
+	if (thisCut->violated(cbcColSolution_)>primalTolerance||
+	    thisCut->effectiveness()==COIN_DBL_MAX) {
+#ifdef CLP_INVESTIGATE
+	  if (thisCut->violated(cbcColSolution_)>primalTolerance)
+	    printf("Global cut added - violation %g\n",
+		   thisCut->violated(cbcColSolution_)) ;
+#endif
 	  whichGenerator_[numberViolated++]=-1;
 #ifndef GLOBAL_CUTS_JUST_POINTERS
 	  theseCuts.insert(*thisCut) ;
@@ -11463,6 +11467,22 @@ CbcModel::makeGlobalCut(const OsiRowCut & cut)
   OsiRowCut newCut(cut);
   newCut.setGloballyValid(true);
   newCut.mutableRow().setTestForDuplicateIndex(false);
+  globalCuts_.insert(newCut) ;
+}
+// Make given column cut into a global cut
+void 
+CbcModel::makeGlobalCut(const OsiColCut * cut)
+{
+  OsiColCut newCut(*cut);
+  newCut.setGloballyValidAsInteger(2);
+  globalCuts_.insert(newCut) ;
+}
+// Make given column cut into a global cut
+void 
+CbcModel::makeGlobalCut(const OsiColCut & cut) 
+{
+  OsiColCut newCut(cut);
+  newCut.setGloballyValidAsInteger(2);
   globalCuts_.insert(newCut) ;
 }
 void 

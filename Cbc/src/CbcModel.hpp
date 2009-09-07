@@ -343,6 +343,10 @@ public:
     void makeGlobalCut(const OsiRowCut * cut); 
     /// Make given cut into a global cut
     void makeGlobalCut(const OsiRowCut & cut); 
+    /// Make given column cut into a global cut
+    void makeGlobalCut(const OsiColCut * cut); 
+    /// Make given column cut into a global cut
+    void makeGlobalCut(const OsiColCut & cut); 
   //@}
 
   /** \name Presolve methods */

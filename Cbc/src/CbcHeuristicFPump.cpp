@@ -1318,7 +1318,7 @@ CbcHeuristicFPump::solution(double & solutionValue,
 #endif
 	      //roundingObjective = newSolutionValue;
 	    } else {
-	      //  roundingObjective = COIN_DBL_MAX;
+	      roundingObjective = COIN_DBL_MAX;
 	    }
 	    model_->swapSolver(saveSolver);
 	  }

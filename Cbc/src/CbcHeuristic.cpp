@@ -1395,6 +1395,9 @@ CbcRounding::CbcRounding(CbcModel & model)
   matrix_ = *model.solver()->getMatrixByCol();
   matrixByRow_ = *model.solver()->getMatrixByRow();
   validate();
+  down_ = NULL;
+  up_ = NULL;
+  equal_ = NULL;
   seed_=1;
 }
 

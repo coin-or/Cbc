@@ -517,7 +517,7 @@ CbcCutGenerator::generateCuts( OsiCuts & cs , int fullScan, OsiSolverInterface *
 	numberColumnCuts_ += numberColumnCutsAfter-numberColumnCutsBefore;
       }
     }
-    {
+    if (!atSolution()) {
       int numberRowCutsAfter = cs.sizeRowCuts() ;
       int k ;
       int nEls=0;

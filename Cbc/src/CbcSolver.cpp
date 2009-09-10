@@ -3553,8 +3553,18 @@ int
   }
   
   if (useDIVING>0) {
-    int diveOptions=parameters_[whichParam(DIVEOPT,numberParameters_,parameters_)].intValue();
-    if (diveOptions<0||diveOptions>10)
+    int diveOptions2=parameters_[whichParam(DIVEOPT,numberParameters_,parameters_)].intValue();
+    int diveOptions;
+    if (diveOptions2>99) {
+      // switch on various active set stuff
+      diveOptions=diveOptions2%100;
+      diveOptions2 -= diveOptions;
+      diveOptions2 += 100; // so 0 will be marked
+    } else {
+      diveOptions=diveOptions2;
+      diveOptions2=0;
+    }
+    if (diveOptions<0||diveOptions>9)
       diveOptions=2;
     if ((useDIVING&1)!=0) {
       CbcHeuristicDiveVectorLength heuristicDV(*model);
@@ -3589,7 +3599,7 @@ int
     if ((useDIVING&32)!=0) {
       CbcHeuristicDivePseudoCost heuristicDP(*model);
       heuristicDP.setHeuristicName("DivePseudoCost");
-      heuristicDP.setWhen(diveOptions);
+      heuristicDP.setWhen(diveOptions+diveOptions2);
       model->addHeuristic(&heuristicDP) ;
     }
     anyToDo=true;
@@ -7009,6 +7019,15 @@ int
 		  int depthMiniBab = parameters_[whichParam(DEPTHMINIBAB,numberParameters_,parameters_)].intValue();
 		  if (depthMiniBab!=-1) 
 		    babModel_->setFastNodeDepth(depthMiniBab);
+		}
+		int extra4 = parameters_[whichParam(EXTRA4,numberParameters_,parameters_)].intValue();
+		if (extra4>=0) {
+		  int strategy = extra4%10;
+		  extra4 /= 10;
+		  int method = extra4 % 100;
+		  extra4 /=100;
+		  extra4 = strategy + method*8 + extra4*8*32;
+		  babModel_->setMoreSpecialOptions(extra4);
 		}
 		int moreMipOptions = parameters_[whichParam(MOREMIPOPTIONS,numberParameters_,parameters_)].intValue();
                 if (moreMipOptions>=0) {

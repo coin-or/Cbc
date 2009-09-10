@@ -96,6 +96,19 @@ public:
   /// Set up pseudo cost
   void setUpDynamicPseudoCost(double value);
 
+  /// Down pseudo shadow price cost
+  inline double downShadowPrice() const
+  { return downShadowPrice_;}
+  /// Set down pseudo shadow price cost
+  inline void setDownShadowPrice(double value) 
+  { downShadowPrice_ = value;}
+  /// Up pseudo shadow price cost
+  inline double upShadowPrice() const
+  { return upShadowPrice_;}
+  /// Set up pseudo shadow price cost
+  inline void setUpShadowPrice(double value)
+  { upShadowPrice_ = value;}
+
   /// Up down separator
   inline double upDownSeparator() const
   { return upDownSeparator_;}
@@ -111,7 +124,7 @@ public:
   { sumDownCost_=value;}
   /// Add to down sum cost and set last and square
   inline void addToSumDownCost(double value)
-  { sumDownCost_+=value;lastDownCost_=value;sumDownCostSquared_ += value*value;}
+  { sumDownCost_+=value;lastDownCost_=value;}
 
   /// Up sum cost
   inline double sumUpCost() const
@@ -121,7 +134,7 @@ public:
   { sumUpCost_=value;}
   /// Add to up sum cost and set last and square
   inline void addToSumUpCost(double value)
-  { sumUpCost_+=value;lastUpCost_=value;sumUpCostSquared_ += value*value;}
+  { sumUpCost_+=value;lastUpCost_=value;}
 
   /// Down sum change
   inline double sumDownChange() const
@@ -256,10 +269,10 @@ protected:
   double sumDownChange_;
   /// Sum of all changes to x when going up
   double sumUpChange_;
-  /// Sum down cost from strong or actual squared
-  mutable double sumDownCostSquared_;
-  /// Sum up cost from strong or actual squared
-  mutable double sumUpCostSquared_;
+  /// Current pseudo-shadow price estimate down
+  mutable double downShadowPrice_;
+  /// Current pseudo-shadow price estimate up
+  mutable double upShadowPrice_;
   /// Sum down decrease number infeasibilities from strong or actual
   double sumDownDecrease_;
   /// Sum up decrease number infeasibilities from strong or actual

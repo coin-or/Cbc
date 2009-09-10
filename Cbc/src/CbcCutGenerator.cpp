@@ -542,7 +542,7 @@ CbcCutGenerator::generateCuts( OsiCuts & cs , int fullScan, OsiSolverInterface *
 	}
       }
     }
-    {
+    if (!atSolution()) {
       int numberRowCutsAfter = cs.sizeRowCuts() ;
       int k ;
       int nEls=0;

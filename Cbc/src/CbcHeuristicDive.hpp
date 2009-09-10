@@ -81,8 +81,8 @@ public:
   /// Tests if the heuristic can run
   virtual bool canHeuristicRun();
 
-  /// Selects the next variable to branch on
-  /** Returns true if all the fractional variables can be trivially
+  /** Selects the next variable to branch on
+      Returns true if all the fractional variables can be trivially
       rounded. Returns false, if there is at least one fractional variable
       that is not trivially roundable. In this case, the bestColumn
       returned will not be trivially roundable.
@@ -91,6 +91,9 @@ public:
 				      const double* newSolution,
 				      int& bestColumn,
 				      int& bestRound) = 0;
+  /** Initializes any data which is going to be used repeatedly
+      in selectVariableToBranch */
+  virtual void initializeData() {};
 
   /// Perform reduced cost fixing on integer variables
   int reducedCostFix (OsiSolverInterface* solver);
@@ -109,6 +112,12 @@ protected:
 
   // Up locks
   unsigned short * upLocks_;
+
+  /// Extra down array (number Integers long)
+  double * downArray_;
+
+  /// Extra up array (number Integers long)
+  double * upArray_;
 
   // Indexes of binary variables with 0 objective coefficient
   // and in variable bound constraints

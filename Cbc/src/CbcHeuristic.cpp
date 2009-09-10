@@ -368,7 +368,8 @@ CbcHeuristic::shouldHeurRun_randomChoice()
     const double denominator = exp(depth * log(2.0));
     double probability = numerator / denominator;
     double randomNumber = randomNumberGenerator_.randomDouble();
-    if (when_>2&&when_<8) {
+    int when = when_%100;
+    if (when>2&&when<8) {
       /* JJF adjustments
 	 3 only at root and if no solution
 	 4 only at root and if this heuristic has not got solution
@@ -376,7 +377,7 @@ CbcHeuristic::shouldHeurRun_randomChoice()
 	 6 decay
 	 7 run up to 2 times if solution found 4 otherwise
       */
-      switch(when_) {
+      switch(when) {
       case 3:
       default:
 	if (model_->bestSolution())
@@ -1543,6 +1544,9 @@ CbcRounding::CbcRounding(CbcModel & model)
     matrixByRow_ = *model.solver()->getMatrixByRow();
     validate();
   }
+  down_ = NULL;
+  up_ = NULL;
+  equal_ = NULL;
   seed_=7654321;
 }
 
@@ -2399,7 +2403,7 @@ void CbcRounding::setModel(CbcModel * model)
 void 
 CbcRounding::validate() 
 {
-  if (model_&&when()<10) {
+  if (model_&&(when()%100)<10) {
     if (model_->numberIntegers()!=
         model_->numberObjects()&&(model_->numberObjects()||
 				  (model_->specialOptions()&1024)==0)) {
@@ -2613,7 +2617,7 @@ void CbcHeuristicPartial::setModel(CbcModel * model)
 void 
 CbcHeuristicPartial::validate() 
 {
-  if (model_&&when()<10) {
+  if (model_&&(when()%100)<10) {
     if (model_->numberIntegers()!=
         model_->numberObjects())
       setWhen(0);

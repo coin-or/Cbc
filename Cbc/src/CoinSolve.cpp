@@ -38,16 +38,8 @@ void operator delete (void *p) throw()
 #include <cfloat>
 #include <cstring>
 #include <iostream>
-#ifdef CLP_FAST_CODE
-// force new style solver
-#ifndef NEW_STYLE_SOLVER 
-#define NEW_STYLE_SOLVER 1
-#endif
-#else
-// Not new style solver
 #ifndef NEW_STYLE_SOLVER
 #define NEW_STYLE_SOLVER 0
-#endif
 #endif
 #ifdef CBC_OTHER_SOLVER
 #undef NEW_STYLE_SOLVER

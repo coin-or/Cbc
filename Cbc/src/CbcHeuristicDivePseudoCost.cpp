@@ -8,6 +8,7 @@
 
 #include "CbcHeuristicDivePseudoCost.hpp"
 #include "CbcStrategy.hpp"
+#include "CbcBranchDynamic.hpp"
 
 // Default Constructor
 CbcHeuristicDivePseudoCost::CbcHeuristicDivePseudoCost() 
@@ -75,9 +76,8 @@ CbcHeuristicDivePseudoCost::selectVariableToBranch(OsiSolverInterface* solver,
   double * rootNodeLPSol = model_->continuousSolution();
 
   // get pseudo costs
-  double * pseudoCostDown = new double[numberIntegers];
-  double * pseudoCostUp = new double[numberIntegers];
-  model_->fillPseudoCosts(pseudoCostDown, pseudoCostUp);
+  double * pseudoCostDown = downArray_;
+  double * pseudoCostUp = upArray_;
 
   bestColumn = -1;
   bestRound = -1; // -1 rounds down, +1 rounds up
@@ -138,8 +138,43 @@ CbcHeuristicDivePseudoCost::selectVariableToBranch(OsiSolverInterface* solver,
     }
   }
 
-  delete [] pseudoCostDown;
-  delete [] pseudoCostUp;
-
   return allTriviallyRoundableSoFar;
+}
+void
+CbcHeuristicDivePseudoCost::initializeData()
+{
+  int numberIntegers = model_->numberIntegers();
+  if (!downArray_) {
+    downArray_ = new double [numberIntegers];
+    upArray_ = new double [numberIntegers];
+  }
+  // get pseudo costs
+  model_->fillPseudoCosts(downArray_, upArray_);
+  int diveOptions = when_/100;
+  if (diveOptions) {
+    // pseudo shadow prices
+    int k = diveOptions%100;
+    if (diveOptions>=100) 
+      k +=32;
+    model_->pseudoShadow(k-1);
+    int numberInts=CoinMin(model_->numberObjects(),numberIntegers);
+    OsiObject ** objects = model_->objects();
+    for (int i=0;i<numberInts;i++) {
+      CbcSimpleIntegerDynamicPseudoCost * obj1 =
+        dynamic_cast <CbcSimpleIntegerDynamicPseudoCost *>(objects[i]) ;
+      if (obj1) {
+        int iColumn = obj1->columnNumber();
+        double downPseudoCost = obj1->downDynamicPseudoCost();
+	double downShadow = obj1->downShadowPrice();
+        double upPseudoCost = obj1->upDynamicPseudoCost();
+	double upShadow = obj1->upShadowPrice();
+        downPseudoCost = CoinMax(downPseudoCost,downShadow);
+        downPseudoCost = CoinMax(downPseudoCost,0.001*upShadow);
+        downArray_[i]=downPseudoCost;
+        upPseudoCost = CoinMax(upPseudoCost,upShadow);
+        upPseudoCost = CoinMax(upPseudoCost,0.001*downShadow);
+        upArray_[i]=upPseudoCost;
+      }
+    }
+  }
 }

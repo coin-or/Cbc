@@ -1400,6 +1400,8 @@ CbcIntegerBranchingObject::branch()
   double olb,oub ;
   olb = model_->solver()->getColLower()[iColumn] ;
   oub = model_->solver()->getColUpper()[iColumn] ;
+  //#define TIGHTEN_BOUNDS
+#ifndef TIGHTEN_BOUNDS
 #ifdef COIN_DEVELOP
   if (olb!=down_[0]||oub!=up_[1]) {
     if (way_>0)
@@ -1410,6 +1412,7 @@ CbcIntegerBranchingObject::branch()
 	     iColumn,olb,oub,down_[0],down_[1],up_[0],up_[1]) ; 
   }
 #endif
+#endif
   if (way_<0) {
 #ifdef CBC_DEBUG
   { double olb,oub ;
@@ -1418,7 +1421,11 @@ CbcIntegerBranchingObject::branch()
     printf("branching down on var %d: [%g,%g] => [%g,%g]\n",
 	   iColumn,olb,oub,down_[0],down_[1]) ; }
 #endif
+#ifndef TIGHTEN_BOUNDS
     model_->solver()->setColLower(iColumn,down_[0]);
+#else
+    model_->solver()->setColLower(iColumn,CoinMax(down_[0],olb));
+#endif
     model_->solver()->setColUpper(iColumn,down_[1]);
     //#define CBC_PRINT2
 #ifdef CBC_PRINT2
@@ -1463,7 +1470,11 @@ CbcIntegerBranchingObject::branch()
 	   iColumn,olb,oub,up_[0],up_[1]) ; }
 #endif
     model_->solver()->setColLower(iColumn,up_[0]);
+#ifndef TIGHTEN_BOUNDS
     model_->solver()->setColUpper(iColumn,up_[1]);
+#else
+    model_->solver()->setColUpper(iColumn,CoinMin(up_[1],oub));
+#endif
 #ifdef CBC_PRINT2
     printf("%d branching up has bounds %g %g",iColumn,up_[0],up_[1]);
 #endif

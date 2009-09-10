@@ -1569,7 +1569,6 @@ public:
       16 bit (65536) - Original model had integer bounds
       17 bit (131072) - Perturbation switched off
   */
-  /// Set special options
   inline void setSpecialOptions(int value)
   { specialOptions_=value;}
   /// Get special options
@@ -1578,6 +1577,14 @@ public:
   /// Says if normal solver i.e. has well defined CoinPackedMatrix
   inline bool normalSolver() const
   { return (specialOptions_&16)==0;}
+  /** Set more special options
+      at present bottom 3 bits used for shadow price mode
+  */
+  inline void setMoreSpecialOptions(int value)
+  { moreSpecialOptions_=value;}
+  /// Get more special options
+  inline int moreSpecialOptions() const
+  { return moreSpecialOptions_;}
   /// Now we may not own objects - just point to solver's objects
   inline bool ownObjects() const
   { return ownObjects_;}
@@ -1811,7 +1818,7 @@ public:
   /// Use cliques for pseudocost information - return nonzero if infeasible
   int cliquePseudoCosts(int doStatistics);
   /// Fill in useful estimates
-  void pseudoShadow(double * down, double * up);
+  void pseudoShadow(int type);
   /** Return pseudo costs
       If not all integers or not pseudo costs - returns all zero
       Length of arrays are numberIntegers() and entries
@@ -2110,13 +2117,32 @@ private:
   double * continuousSolution_;
   /// Array marked whenever a solution is found if non-zero
   int * usedInSolution_;
-  /**
+  /** 
+      Special options
       0 bit (1) - check if cuts valid (if on debugger list)
       1 bit (2) - use current basis to check integer solution (rather than all slack)
-      2 bit (4) - don't check integer solution
-      3 bit (8) - Strong is doing well - keep on
+      2 bit (4) - don't check integer solution (by solving LP)
+      3 bit (8) - fast analyze
+      4 bit (16) - non-linear model - so no well defined CoinPackedMatrix
+      5 bit (32) - keep names
+      6 bit (64) - try for dominated columns
+      7 bit (128) - SOS type 1 but all declared integer
+      8 bit (256) - Set to say solution just found, unset by doing cuts
+      9 bit (512) - Try reduced model after 100 nodes
+      10 bit (1024) - Switch on some heuristics even if seems unlikely
+      11 bit (2048) - Mark as in small branch and bound
+      12 bit (4096) - Funny cuts so do slow way (in some places)
+      13 bit (8192) - Funny cuts so do slow way (in other places)
+      14 bit (16384) - Use Cplex! for fathoming
+      15 bit (32768) - Try reduced model after 0 nodes
+      16 bit (65536) - Original model had integer bounds
+      17 bit (131072) - Perturbation switched off
   */
   int specialOptions_;
+  /** More special options
+      at present bottom 3 bits used for shadow price mode
+  */
+  int moreSpecialOptions_;
   /// User node comparison function
   CbcCompareBase * nodeCompare_;
   /// User feasibility function (see CbcFeasibleBase.hpp)

@@ -1129,6 +1129,7 @@ void CbcModel::branchAndBound(int doStatistics)
   } else if (parallelMode()>0) {
     specialOptions_ |= 4096;
   }
+  int saveMoreSpecialOptions = moreSpecialOptions_;
   if (dynamic_cast<CbcTreeLocal *> (tree_))
     specialOptions_ |= 4096+8192;
 #ifdef COIN_HAS_CLP
@@ -4271,6 +4272,7 @@ void CbcModel::branchAndBound(int doStatistics)
       clpSolver->setFakeObjective(reinterpret_cast<double *> (NULL));
   }
 #endif
+  moreSpecialOptions_ = saveMoreSpecialOptions;
   return ;
  }
 
@@ -4403,6 +4405,7 @@ CbcModel::CbcModel()
   continuousSolution_(NULL),
   usedInSolution_(NULL),
   specialOptions_(0),
+  moreSpecialOptions_(0),
   subTreeModel_(NULL),
   numberStoppedSubTrees_(0),
   mutex_(NULL),
@@ -4564,6 +4567,7 @@ CbcModel::CbcModel(const OsiSolverInterface &rhs)
   currentNode_(NULL),
   integerInfo_(NULL),
   specialOptions_(0),
+  moreSpecialOptions_(0),
   subTreeModel_(NULL),
   numberStoppedSubTrees_(0),
   mutex_(NULL),
@@ -4816,6 +4820,7 @@ CbcModel::CbcModel(const CbcModel & rhs, bool cloneHandler)
   status_(rhs.status_),
   secondaryStatus_(rhs.secondaryStatus_),
   specialOptions_(rhs.specialOptions_),
+  moreSpecialOptions_(rhs.moreSpecialOptions_),
   subTreeModel_(rhs.subTreeModel_),
   numberStoppedSubTrees_(rhs.numberStoppedSubTrees_),
   mutex_(NULL),
@@ -5155,6 +5160,7 @@ CbcModel::operator=(const CbcModel& rhs)
     status_ = rhs.status_;
     secondaryStatus_ = rhs.secondaryStatus_;
     specialOptions_ = rhs.specialOptions_;
+    moreSpecialOptions_ = rhs.moreSpecialOptions_;
     subTreeModel_ = rhs.subTreeModel_;
     numberStoppedSubTrees_ = rhs.numberStoppedSubTrees_;
     mutex_ = NULL;
@@ -5570,6 +5576,7 @@ CbcModel::gutsOfCopy(const CbcModel & rhs,int mode)
 {
   minimumDrop_ = rhs.minimumDrop_;
   specialOptions_ = rhs.specialOptions_;
+  moreSpecialOptions_ = rhs.moreSpecialOptions_;
   numberStrong_ = rhs.numberStrong_;
   numberBeforeTrust_ = rhs.numberBeforeTrust_;
   numberPenalties_ = rhs.numberPenalties_;
@@ -6572,8 +6579,9 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
   solver solution (cbcColLower_, ...) held by CbcModel.
 */
   double objectiveValue = solver_->getObjValue()*solver_->getObjSense();
-  if (node)
+  if (node) {
     objectiveValue= node->objectiveValue();
+  }
   int returnCode = resolve(node ? node->nodeInfo() : NULL,1);
 #if COIN_DEVELOP>1
   //if (!solver_->getIterationCount()&&solver_->isProvenOptimal())
@@ -6614,6 +6622,56 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
       assert (iObject<numberObjects_);
       update.objectNumber_ = iObject;
       addUpdateInformation(update);
+      //#define TIGHTEN_BOUNDS
+#ifdef TIGHTEN_BOUNDS
+      double cutoff=getCutoff() ;
+      if (feasible&&cutoff<1.0e20) {
+	int way=cbcobj->way();
+	// way is what will be taken next
+	way = -way;
+	double value=cbcobj->value();
+	//const double * lower = solver_->getColLower();
+	//const double * upper = solver_->getColUpper();
+	double objectiveChange = lastObjective-objectiveValue;
+	if (objectiveChange>1.0e-5) {
+	  CbcIntegerBranchingObject * branch = dynamic_cast <CbcIntegerBranchingObject *>(cbcobj) ;
+	  assert (branch);
+	  if (way<0) {
+	    double down = value-floor(value);
+	    double changePer = objectiveChange/(down+1.0e-7);
+	    double distance = (cutoff-objectiveValue)/changePer;
+	    distance += 1.0e-3;
+	    if (distance<5.0) {
+	      double newLower = ceil(value-distance);
+	      const double * downBounds = branch->downBounds();
+	      if (newLower>downBounds[0]) {
+		//printf("%d way %d bounds %g %g value %g\n",
+		//     iColumn,way,lower[iColumn],upper[iColumn],value);
+		//printf("B Could increase lower bound on %d from %g to %g\n",
+		//     iColumn,downBounds[0],newLower);
+		solver_->setColLower(iColumn,newLower);
+	      }
+	    }
+	  } else {
+	    double up = ceil(value)-value;
+	    double changePer = objectiveChange/(up+1.0e-7);
+	    double distance = (cutoff-objectiveValue)/changePer;
+	    distance += 1.0e-3;
+	    if (distance<5.0) {
+	      double newUpper = floor(value+distance);
+	      const double * upBounds = branch->upBounds();
+	      if (newUpper<upBounds[1]) {
+		//printf("%d way %d bounds %g %g value %g\n",
+		//     iColumn,way,lower[iColumn],upper[iColumn],value);
+		//printf("B Could decrease upper bound on %d from %g to %g\n",
+		//     iColumn,upBounds[1],newUpper);
+		solver_->setColUpper(iColumn,newUpper);
+	      }
+	    }
+	  }
+	}
+      }
+#endif
     } else {
       OsiIntegerBranchingObject * obj = dynamic_cast<OsiIntegerBranchingObject *> (bobj);
       if (obj) {
@@ -6628,7 +6686,7 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
 	assert (iObject<numberObjects_);
 	int branch = obj->firstBranch();
 	if (obj->branchIndex()==2)
-	  branch = 1-branch;
+  	  branch = 1-branch;
 	assert (branch==0||branch==1);
 	double originalValue=node->objectiveValue();
 	double objectiveValue = solver_->getObjValue()*solver_->getObjSense();
@@ -6699,6 +6757,7 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
     if (clpSolver) 
     clpSolver->setSpecialOptions(saveClpOptions);
 # endif
+    setPointers(solver_);
     return true;
   }
 /*
@@ -8521,6 +8580,8 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
     mutex_ = saveMutex;
   }
 #endif
+  // make sure pointers are up to date
+  setPointers(solver_);
 
   return feasible ; }
 
@@ -8761,6 +8822,10 @@ CbcModel::resolve(CbcNodeInfo * parent, int whereFrom,
         feasible=false;
     }
   }
+#ifdef COIN_HAS_CLP
+  OsiClpSolverInterface * clpSolver 
+    = dynamic_cast<OsiClpSolverInterface *> (solver_);
+#endif
 /*
   Reoptimize. Consider the possibility that we should fathom on bounds. But be
   careful --- where the objective takes on integral values, we may want to keep
@@ -8780,27 +8845,23 @@ CbcModel::resolve(CbcNodeInfo * parent, int whereFrom,
 #ifdef COIN_HAS_CLP
       // Pierre pointed out that this is not valid for all solvers
       // so just do if Clp
-      {
-	OsiClpSolverInterface * clpSolver 
-	  = dynamic_cast<OsiClpSolverInterface *> (solver_);
+      if ((specialOptions_&1)!=0&&onOptimalPath) {
+	solver_->writeMpsNative("before-tighten.mps",NULL,NULL,2);
+      }
+      if (clpSolver&&(!currentNode_||(currentNode_->depth()&2)!=0)&&
+	  !solverCharacteristics_->solutionAddsCuts())
+	nTightened=clpSolver->tightenBounds();
+      if (nTightened) {
+	//printf("%d bounds tightened\n",nTightened);
 	if ((specialOptions_&1)!=0&&onOptimalPath) {
-	  solver_->writeMpsNative("before-tighten.mps",NULL,NULL,2);
-	}
-	if (clpSolver&&(!currentNode_||(currentNode_->depth()&2)!=0)&&
-	    !solverCharacteristics_->solutionAddsCuts())
-	  nTightened=clpSolver->tightenBounds();
-	if (nTightened) {
-	  //printf("%d bounds tightened\n",nTightened);
-	  if ((specialOptions_&1)!=0&&onOptimalPath) {
-	    const OsiRowCutDebugger *debugger = solver_->getRowCutDebugger() ;
-	    if (!debugger) {
-	      // tighten did something???
-	      solver_->getRowCutDebuggerAlways()->printOptimalSolution(*solver_);
-	      solver_->writeMpsNative("infeas4.mps",NULL,NULL,2);
-	      printf("Not on optimalpath aaaa\n");
-	      //abort();
-	      onOptimalPath=false;
-	    }
+	  const OsiRowCutDebugger *debugger = solver_->getRowCutDebugger() ;
+	  if (!debugger) {
+	    // tighten did something???
+	    solver_->getRowCutDebuggerAlways()->printOptimalSolution(*solver_);
+	    solver_->writeMpsNative("infeas4.mps",NULL,NULL,2);
+	    printf("Not on optimalpath aaaa\n");
+	    //abort();
+	    onOptimalPath=false;
 	  }
 	}
       }
@@ -8829,8 +8890,6 @@ CbcModel::resolve(CbcNodeInfo * parent, int whereFrom,
 	  setMaximumSeconds(-COIN_DBL_MAX);
 	}
 #ifdef COIN_HAS_CLP
-	OsiClpSolverInterface * clpSolver 
-	  = dynamic_cast<OsiClpSolverInterface *> (solver_);
 	if (clpSolver&&feasible&&!numberNodes_&&false) {
 	  double direction = solver_->getObjSense() ;
 	  double tolerance;
@@ -9039,6 +9098,12 @@ CbcModel::resolve(CbcNodeInfo * parent, int whereFrom,
     memcpy(saveLower,solver_->getColLower(),numberColumns*sizeof(double));
     memcpy(saveUpper,solver_->getColUpper(),numberColumns*sizeof(double));
   }
+#ifdef COIN_HAS_CLP
+  if (clpSolver&&!feasible) {
+    // make sure marked infeasible
+    clpSolver->getModelPtr()->setProblemStatus(1);
+  }
+#endif
   int returnStatus = feasible ? 1 : 0;
   if (strategy_) {
     // user can play clever tricks here
@@ -9340,75 +9405,312 @@ CbcModel::findCliques(bool makeEquality,
 }
 // Fill in useful estimates
 void 
-CbcModel::pseudoShadow(double * down, double * up)
+CbcModel::pseudoShadow(int iActive)
 {
+  assert (iActive<2*8*32&&iActive>-3);
+  if (iActive==-1) {
+    if (numberNodes_) {
+      // zero out
+      for (int i=0;i<numberObjects_;i++) {
+	CbcSimpleIntegerDynamicPseudoCost * obj1 =
+	  dynamic_cast <CbcSimpleIntegerDynamicPseudoCost *>(object_[i]) ;
+	if (obj1) {
+	  assert (obj1->downShadowPrice()>0.0);
+#if 0
+	  obj1->setDownShadowPrice(-1.0e-1*obj1->downShadowPrice());
+	  obj1->setUpShadowPrice(-1.0e-1*obj1->upShadowPrice());
+#else
+	  obj1->incrementNumberTimesDown();
+	  obj1->setDownDynamicPseudoCost(1.0e1*obj1->downShadowPrice());
+	  obj1->setDownShadowPrice(0.0);
+	  obj1->incrementNumberTimesUp();
+	  obj1->setUpDynamicPseudoCost(1.0e1*obj1->upShadowPrice());
+	  obj1->setUpShadowPrice(0.0);
+#endif
+	}
+      }
+    }
+    return;
+  }
+  bool doShadow=false;
+  if (!iActive||iActive>=32) {
+    doShadow=true;
+    if (iActive>=32)
+      iActive -= 32;
+  }
+  double * rowWeight =NULL;
+  double * columnWeight =NULL;
+  int numberColumns = solver_->getNumCols() ;
+  int numberRows = solver_->getNumRows() ;
   // Column copy of matrix
   const double * element = solver_->getMatrixByCol()->getElements();
   const int * row = solver_->getMatrixByCol()->getIndices();
   const CoinBigIndex * columnStart = solver_->getMatrixByCol()->getVectorStarts();
   const int * columnLength = solver_->getMatrixByCol()->getVectorLengths();
+  const double * dual = solver_->getRowPrice();
+  const double * solution = solver_->getColSolution();
+  const double * dj = solver_->getReducedCost();
+  bool useMax=false;
+  bool useAlpha=false;
+  if (iActive) {
+    // Use Patel and Chinneck ideas
+    rowWeight =new double [numberRows];
+    columnWeight =new double [numberColumns];
+    // add in active constraints
+    double tolerance = 1.0e-5;
+    const double *rowLower = getRowLower() ;
+    const double *rowUpper = getRowUpper() ;
+    const double *rowActivity = solver_->getRowActivity();
+    const double * lower = getColLower();
+    const double * upper = getColUpper();
+    CoinZeroN(rowWeight,numberRows);
+    /* 1 A weight 1 
+       2 B weight 1/sum alpha
+       3 L weight 1/number integer
+       4 M weight 1/number active integer
+       7 O weight 1/number integer and use alpha
+       8 P weight 1/number active integer and use alpha
+       9 up subtract 8 and use maximum
+    */
+    if (iActive>8) {
+      iActive -=8;
+      useMax=true;
+    }
+    if (iActive>4) {
+      iActive -=4;
+      useAlpha=true;
+    }
+    switch (iActive) {
+      // A
+    case 1:
+      for (int iRow=0;iRow<numberRows;iRow++) {
+	if (rowActivity[iRow]>rowUpper[iRow]-tolerance||
+	    rowActivity[iRow]<rowLower[iRow]+tolerance) {
+	  rowWeight[iRow]=1.0;
+	}
+      }
+      break;
+      // B
+    case 2:
+      for (int iColumn=0;iColumn<numberColumns;iColumn++) {
+	if (upper[iColumn]>lower[iColumn]) {
+	  CoinBigIndex start = columnStart[iColumn];
+	  CoinBigIndex end = start + columnLength[iColumn];
+	  for (CoinBigIndex j=start;j<end;j++) {
+	    int iRow = row[j];
+	    rowWeight[iRow]+= fabs(element[j]);
+	  }
+	}
+      }
+      for (int iRow=0;iRow<numberRows;iRow++) {
+	if (rowWeight[iRow]) 
+	  rowWeight[iRow]=1.0/rowWeight[iRow];
+      }
+      break;
+      // L
+    case 3:
+      for (int jColumn=0;jColumn<numberIntegers_;jColumn++) {
+	int iColumn=integerVariable_[jColumn];
+	if (upper[iColumn]>lower[iColumn]) {
+	  CoinBigIndex start = columnStart[iColumn];
+	  CoinBigIndex end = start + columnLength[iColumn];
+	  for (CoinBigIndex j=start;j<end;j++) {
+	    int iRow = row[j];
+	    rowWeight[iRow]++;
+	  }
+	}
+      }
+      for (int iRow=0;iRow<numberRows;iRow++) {
+	if (rowWeight[iRow]) 
+	  rowWeight[iRow]=1.0/rowWeight[iRow];
+      }
+      break;
+      // M
+    case 4:
+      for (int jColumn=0;jColumn<numberIntegers_;jColumn++) {
+	int iColumn=integerVariable_[jColumn];
+	double value = solution[iColumn];
+	if (fabs(value-floor(value+0.5))>1.0e-5) {
+	  CoinBigIndex start = columnStart[iColumn];
+	  CoinBigIndex end = start + columnLength[iColumn];
+	  for (CoinBigIndex j=start;j<end;j++) {
+	    int iRow = row[j];
+	    rowWeight[iRow]++;
+	  }
+	}
+      }
+      for (int iRow=0;iRow<numberRows;iRow++) {
+	if (rowWeight[iRow]) 
+	  rowWeight[iRow]=1.0/rowWeight[iRow];
+      }
+      break;
+    }
+    if (doShadow) {
+      for (int iRow=0;iRow<numberRows;iRow++) {
+	rowWeight[iRow] *= dual[iRow];
+      }
+    }
+    dual=rowWeight;
+  }
   const double *objective = solver_->getObjCoefficients() ;
-  int numberColumns = solver_->getNumCols() ;
   double direction = solver_->getObjSense();
-  int iColumn;
-  const double * dual = cbcRowPrice_;
-  down = new double[numberColumns];
-  up = new double[numberColumns];
+  double * down = new double[numberColumns];
+  double * up = new double[numberColumns];
   double upSum=1.0e-20;
   double downSum = 1.0e-20;
   int numberIntegers=0;
-  for (iColumn=0;iColumn<numberColumns;iColumn++) {
-    CoinBigIndex start = columnStart[iColumn];
-    CoinBigIndex end = start + columnLength[iColumn];
-    double upValue = 0.0;
-    double downValue = 0.0;
-    double value = direction*objective[iColumn];
-    if (value) {
-      if (value>0.0)
-        upValue += value;
-      else
-        downValue -= value;
-    }
-    for (CoinBigIndex j=start;j<end;j++) {
-      int iRow = row[j];
-      value = -dual[iRow];
-      if (value) {
-        value *= element[j];
-        if (value>0.0)
-          upValue += value;
-        else
-          downValue -= value;
+  if (doShadow) {
+    // shadow prices
+    if (!useMax) {
+      for (int jColumn=0;jColumn<numberIntegers_;jColumn++) {
+	int iColumn=integerVariable_[jColumn];
+	CoinBigIndex start = columnStart[iColumn];
+	CoinBigIndex end = start + columnLength[iColumn];
+	double upValue = 0.0;
+	double downValue = 0.0;
+	double value = direction*objective[iColumn];
+	if (value) {
+	  if (value>0.0)
+	    upValue += value;
+	  else
+	    downValue -= value;
+	}
+	for (CoinBigIndex j=start;j<end;j++) {
+	  int iRow = row[j];
+	  value = -dual[iRow];
+	  assert (fabs(dual[iRow]<1.0e50));
+	  if (value) {
+	    value *= element[j];
+	    if (value>0.0)
+	      upValue += value;
+	    else
+	      downValue -= value;
+	  }
+	}
+	up[iColumn]=upValue;
+	down[iColumn]=downValue;
+	if (solver_->isInteger(iColumn)) {
+	  if (!numberNodes_&&handler_->logLevel()>1)
+	    printf("%d - up %g down %g cost %g\n",
+		   iColumn,upValue,downValue,objective[iColumn]);
+	  upSum += upValue;
+	  downSum += downValue;
+	  numberIntegers++;
+	}
+      }
+    } else {
+      for (int jColumn=0;jColumn<numberIntegers_;jColumn++) {
+	int iColumn=integerVariable_[jColumn];
+	CoinBigIndex start = columnStart[iColumn];
+	CoinBigIndex end = start + columnLength[iColumn];
+	double upValue = 0.0;
+	double downValue = 0.0;
+	double value = direction*objective[iColumn];
+	if (value) {
+	  if (value>0.0)
+	    upValue += value;
+	  else
+	    downValue -= value;
+	}
+	for (CoinBigIndex j=start;j<end;j++) {
+	  int iRow = row[j];
+	  value = -dual[iRow];
+	  if (value) {
+	    value *= element[j];
+	    if (value>0.0)
+	      upValue = CoinMax(upValue,value);
+	    else
+	      downValue = CoinMax(downValue,-value);
+	  }
+	}
+	up[iColumn]=upValue;
+	down[iColumn]=downValue;
+	if (solver_->isInteger(iColumn)) {
+	  if (!numberNodes_&&handler_->logLevel()>1)
+	    printf("%d - up %g down %g cost %g\n",
+		   iColumn,upValue,downValue,objective[iColumn]);
+	  upSum += upValue;
+	  downSum += downValue;
+	  numberIntegers++;
+	}
       }
     }
-    // use dj if bigger
-    double dj = cbcReducedCost_[iColumn];
-    upValue = CoinMax(upValue,dj);
-    downValue = CoinMax(downValue,-dj);
-    up[iColumn]=upValue;
-    down[iColumn]=downValue;
-    if (solver_->isInteger(iColumn)) {
-      if (!numberNodes_&&handler_->logLevel()>1)
-        printf("%d - dj %g up %g down %g cost %g\n",
-               iColumn,dj,upValue,downValue,objective[iColumn]);
-      upSum += upValue;
-      downSum += downValue;
-      numberIntegers++;
+  } else {
+    for (int jColumn=0;jColumn<numberIntegers_;jColumn++) {
+      int iColumn=integerVariable_[jColumn];
+      CoinBigIndex start = columnStart[iColumn];
+      CoinBigIndex end = start + columnLength[iColumn];
+      double upValue = 0.0;
+      double downValue = 0.0;
+      double value = direction*objective[iColumn];
+      if (value) {
+	if (value>0.0)
+	  upValue += value;
+	else
+	  downValue -= value;
+      }
+      double weight = 0.0;
+      for (CoinBigIndex j=start;j<end;j++) {
+	int iRow = row[j];
+	value = -dual[iRow];
+	double thisWeight = rowWeight[iRow];
+	if (useAlpha)
+	  thisWeight *= fabs(element[j]);
+	if (!useMax)
+	  weight += thisWeight;
+	else 
+	  weight = CoinMax(weight,thisWeight);
+	if (value) {
+	  value *= element[j];
+	  if (value>0.0)
+	    upValue += value;
+	  else
+	    downValue -= value;
+	}
+      }
+      columnWeight[iColumn]=weight;
+      // use dj if bigger
+      double djValue = dj[iColumn];
+      upValue = CoinMax(upValue,djValue);
+      downValue = CoinMax(downValue,-djValue);
+      up[iColumn]=upValue;
+      down[iColumn]=downValue;
+      if (solver_->isInteger(iColumn)) {
+	if (!numberNodes_&&handler_->logLevel()>1)
+	  printf("%d - dj %g up %g down %g cost %g\n",
+		 iColumn,djValue,upValue,downValue,objective[iColumn]);
+	upSum += upValue;
+	downSum += downValue;
+	numberIntegers++;
+      }
+    }
+    if (numberIntegers) {
+      double averagePrice=(0.5*(upSum+downSum))/static_cast<double>(numberIntegers);
+      //averagePrice *= 0.1;
+      averagePrice *= 100.0;
+      for (int iColumn=0;iColumn<numberColumns;iColumn++) {
+	double weight = columnWeight[iColumn];
+	up[iColumn] += averagePrice*weight;
+	down[iColumn] += averagePrice*weight;
+      }
     }
   }
+  delete [] rowWeight;
+  delete [] columnWeight;
   if (numberIntegers) {
-    double smallDown = 0.01*(downSum/static_cast<double> (numberIntegers));
-    double smallUp = 0.01*(upSum/static_cast<double> (numberIntegers));
+    double smallDown = 0.0001*(downSum/static_cast<double> (numberIntegers));
+    double smallUp = 0.0001*(upSum/static_cast<double> (numberIntegers));
     for (int i=0;i<numberObjects_;i++) {
       CbcSimpleIntegerDynamicPseudoCost * obj1 =
         dynamic_cast <CbcSimpleIntegerDynamicPseudoCost *>(object_[i]) ;
-      if (obj1) {
-        iColumn = obj1->columnNumber();
+      if (obj1&&obj1->upShadowPrice()>=0.0) {
+        int iColumn = obj1->columnNumber();
         double upPseudoCost = obj1->upDynamicPseudoCost();
         double saveUp = upPseudoCost;
         upPseudoCost = CoinMax(upPseudoCost,smallUp);
         upPseudoCost = CoinMax(upPseudoCost,up[iColumn]);
-        upPseudoCost = CoinMax(upPseudoCost,0.1*down[iColumn]);
-        obj1->setUpDynamicPseudoCost(upPseudoCost);
+        upPseudoCost = CoinMax(upPseudoCost,0.001*down[iColumn]);
+        obj1->setUpShadowPrice(upPseudoCost);
         if (upPseudoCost>saveUp&&!numberNodes_&&handler_->logLevel()>1)
           printf("For %d up went from %g to %g\n",
                  iColumn,saveUp,upPseudoCost);
@@ -9416,8 +9718,8 @@ CbcModel::pseudoShadow(double * down, double * up)
         double saveDown = downPseudoCost;
         downPseudoCost = CoinMax(downPseudoCost,smallDown);
         downPseudoCost = CoinMax(downPseudoCost,down[iColumn]);
-        downPseudoCost = CoinMax(downPseudoCost,0.1*down[iColumn]);
-        obj1->setDownDynamicPseudoCost(downPseudoCost);
+        downPseudoCost = CoinMax(downPseudoCost,0.001*up[iColumn]);
+        obj1->setDownShadowPrice(downPseudoCost);
         if (downPseudoCost>saveDown&&!numberNodes_&&handler_->logLevel()>1)
           printf("For %d down went from %g to %g\n",
                  iColumn,saveDown,downPseudoCost);

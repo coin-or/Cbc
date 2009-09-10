@@ -43,6 +43,10 @@ public:
 				      const double* newSolution,
 				      int& bestColumn,
 				      int& bestRound);
+  /** Initializes any data which is going to be used repeatedly
+      in selectVariableToBranch */
+  virtual void initializeData() ;
+
 
 };
 

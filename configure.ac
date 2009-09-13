@@ -12,7 +12,7 @@
 
 AC_PREREQ(2.59)
 
-AC_INIT([Cbc],[2.3.1],[coin-cbc@lists.coin-or.org])
+AC_INIT([Cbc],[2.3stable],[coin-cbc@lists.coin-or.org])
 
 AC_COPYRIGHT([
 Copyright 2006 International Business Machines and others.

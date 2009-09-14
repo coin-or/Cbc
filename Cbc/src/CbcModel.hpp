@@ -1067,7 +1067,7 @@ public:
   /// Deals with event handler and solution
   CbcEventHandler::CbcAction dealWithEventHandler(CbcEventHandler::CbcEvent event,
 						   double objValue, 
-						   double * solution);
+						   const double * solution);
 
   /** Call this to really test if a valid solution can be feasible
       Solution is number columns in size.
@@ -1145,6 +1145,9 @@ public:
   /// Set best objective function value
   inline void setObjValue(double value) 
   { bestObjective_=value * solver_->getObjSense() ;}
+  /// Get solver objective function value (as minimization)
+  inline double getSolverObjValue() const 
+  { return solver_->getObjValue() * solver_->getObjSense() ;}
   
   /** The best solution to the integer programming problem.
 

@@ -68,10 +68,10 @@ CbcCutGenerator::CbcCutGenerator(CbcModel * model,CglCutGenerator * generator,
     numberShortCutsAtRoot_(0),
     switches_(1)
 {
-  if (howOften<-2000) {
+  if (howOften<-1900) {
     setGlobalCuts(true);
     howOften+=2000;
-  } else if (howOften<-1000) {
+  } else if (howOften<-900) {
     setGlobalCutsAtRoot(true);
     howOften+=1000;
   }
@@ -243,6 +243,8 @@ CbcCutGenerator::generateCuts( OsiCuts & cs , int fullScan, OsiSolverInterface *
       info.options |= 32;
     if (globalCuts())
       info.options |=16;
+    if (fullScan<0)
+      info.options |= 128;
     incrementNumberTimesEntered();
     CglProbing* generator =
       dynamic_cast<CglProbing*>(generator_);

@@ -90,8 +90,10 @@ public:
     solution, 
     /*! A heuristic solution has been found. */
     heuristicSolution, 
-    /*! A solution will be found unless user takes action. */
-    beforeSolution,
+    /*! A solution will be found unless user takes action (first check). */
+    beforeSolution1,
+    /*! A solution will be found unless user takes action (thorough check). */
+    beforeSolution2,
     /*! End of search. */
     endSearch
   } ;
@@ -112,6 +114,8 @@ public:
     restart,
     /*! RestartRoot --- undo root node and start branch-and-cut afresh. */
     restartRoot,
+    /*! Add special cuts. */
+    addCuts,
     /*! Pretend solution never happened. */
     killSolution
       

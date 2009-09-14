@@ -3369,6 +3369,7 @@ void CbcModel::branchAndBound(int doStatistics)
 	if (!eventHandler->event(CbcEventHandler::solution)) {
 	  eventHappened_=true; // exit
 	}
+	newCutoff = getCutoff();
       }
       if (parallelMode()>0)
 	lockThread();
@@ -6844,7 +6845,7 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
     int numberViolated=0;
     if (currentPassNumber_ == 1 && howOftenGlobalScan_ > 0 &&
 	(numberNodes_%howOftenGlobalScan_) == 0&&
-	doCutsNow(1)) {
+	(doCutsNow(1)||true)) {
       int numberCuts = globalCuts_.sizeColCuts() ;
       int i;
       // possibly extend whichGenerator
@@ -10417,6 +10418,12 @@ CbcModel::checkSolution (double cutoff, double *solution,
 #endif
       solver_->setHintParam(OsiDoDualInInitial,true,OsiHintTry);
       solver_->initialSolve();
+#if 0
+      if (solver_->isProvenOptimal()) {
+	solver_->writeMps("feasible");
+	printf("XXXXXXXXXXXX - saving feasible\n");
+      }
+#endif
       if (!solver_->isProvenOptimal())
         { 
 #if COIN_DEVELOP>1
@@ -10920,7 +10927,7 @@ CbcModel::setBestSolution (CBC_Message how,
     if (objectiveValue>cutoff&&objectiveValue<cutoff+1.0e-8+1.0e-8*fabs(cutoff))
       cutoff = objectiveValue; // relax
     CbcEventHandler::CbcAction action = 
-      dealWithEventHandler(CbcEventHandler::beforeSolution,
+      dealWithEventHandler(CbcEventHandler::beforeSolution2,
 			   objectiveValue,solution);
     if (action==CbcEventHandler::killSolution) {
       // Pretend solution never happened
@@ -11165,19 +11172,28 @@ CbcModel::setBestSolution (CBC_Message how,
 CbcEventHandler::CbcAction 
 CbcModel::dealWithEventHandler(CbcEventHandler::CbcEvent event,
 						   double objValue, 
-						   double * solution)
+						   const double * solution)
 {
   CbcEventHandler *eventHandler = getEventHandler() ;
   if (eventHandler) {
     // Temporarily put in best
     double saveObj = bestObjective_;
-    double * saveSol = bestSolution_;
+    int numberColumns = solver_->getNumCols();
+    double * saveSol = CoinCopyOfArray(bestSolution_,numberColumns);
+    if (!saveSol)
+      bestSolution_ = new double [numberColumns];
     bestObjective_ = objValue;
-    bestSolution_ = solution;
+    memcpy(bestSolution_,solution,numberColumns*sizeof(double));
     CbcEventHandler::CbcAction action = 
       eventHandler->event(event);
     bestObjective_ = saveObj;
-    bestSolution_ = saveSol;
+    if (saveSol) {
+      memcpy(bestSolution_,saveSol,numberColumns*sizeof(double));
+      delete [] saveSol;
+    } else {
+      delete [] bestSolution_;
+      bestSolution_ = NULL;
+    }
     return action;
   } else {
     return CbcEventHandler::noAction;
@@ -13791,28 +13807,38 @@ CbcModel::doOneNode(CbcModel * baseModel, CbcNode * & node, CbcNode * & newNode)
     }
     if (newNode)
       if (newNode&&newNode->active()) {
-	if (newNode->branchingObject() == NULL&&solverCharacteristics_->solverType()==4) {
-	  // need to check if any cuts would do anything
-	  OsiCuts theseCuts;
-	  // reset probing info
-	  //if (probingInfo_)
-	  //probingInfo_->initializeFixing(solver_);
-	  for (int i = 0;i<numberCutGenerators_;i++) {
-	    bool generate = generator_[i]->normal();
-	    // skip if not optimal and should be (maybe a cut generator has fixed variables)
-	    if (generator_[i]->needsOptimalBasis()&&!solver_->basisIsAvailable())
-	      generate=false;
-	    if (!generator_[i]->mustCallAgain())
-	      generate=false; // only special cuts
-	    if (generate) {
-	      generator_[i]->generateCuts(theseCuts,1,solver_,NULL) ;
-	      int numberRowCutsAfter = theseCuts.sizeRowCuts() ;
-	      if (numberRowCutsAfter) {
-		// need dummy branch
-		newNode->setBranchingObject(new CbcDummyBranchingObject(this));
-		newNode->nodeInfo()->initializeInfo(1);
-		break;
+	if (newNode->branchingObject() == NULL) {
+	  const double * solution = solver_->getColSolution();
+	  CbcEventHandler::CbcAction action = 
+	    dealWithEventHandler(CbcEventHandler::beforeSolution1,
+				 getSolverObjValue(),solution);
+	  if (action==CbcEventHandler::addCuts||
+	      solverCharacteristics_->solverType()==4) {
+	    // need to check if any cuts would do anything
+	    OsiCuts theseCuts;
+	    // reset probing info
+	    //if (probingInfo_)
+	    //probingInfo_->initializeFixing(solver_);
+	    for (int i = 0;i<numberCutGenerators_;i++) {
+	      bool generate = generator_[i]->normal();
+	      // skip if not optimal and should be (maybe a cut generator has fixed variables)
+	      if (generator_[i]->needsOptimalBasis()&&!solver_->basisIsAvailable())
+		generate=false;
+	      if (!generator_[i]->mustCallAgain())
+		generate=false; // only special cuts
+	      if (generate) {
+		generator_[i]->generateCuts(theseCuts,-1,solver_,NULL) ;
+		int numberRowCutsAfter = theseCuts.sizeRowCuts() ;
+		if (numberRowCutsAfter)
+		  break;
 	      }
+	    }
+	    int numberRowCutsAfter = theseCuts.sizeRowCuts() ;
+	    if (numberRowCutsAfter||
+		action==CbcEventHandler::addCuts) {
+	      // need dummy branch
+	      newNode->setBranchingObject(new CbcDummyBranchingObject(this));
+	      newNode->nodeInfo()->initializeInfo(1);
 	    }
 	  }
 	}
@@ -13927,7 +13953,9 @@ CbcModel::doOneNode(CbcModel * baseModel, CbcNode * & node, CbcNode * & newNode)
 	    incrementUsed(solver_->getColSolution());
 	    setBestSolution(CBC_SOLUTION,objectiveValue,
 			    solver_->getColSolution()) ;
-	    foundSolution=1;
+	    // Check if was found
+	    if (bestObjective_<getCutoff())
+	      foundSolution=1;
 	  }
 	  //assert(nodeInfo->numberPointingToThis() <= 2) ;
 	  if (parallelMode()>=0) {

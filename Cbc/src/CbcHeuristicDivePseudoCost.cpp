@@ -163,7 +163,7 @@ CbcHeuristicDivePseudoCost::initializeData()
       CbcSimpleIntegerDynamicPseudoCost * obj1 =
         dynamic_cast <CbcSimpleIntegerDynamicPseudoCost *>(objects[i]) ;
       if (obj1) {
-        int iColumn = obj1->columnNumber();
+        //int iColumn = obj1->columnNumber();
         double downPseudoCost = obj1->downDynamicPseudoCost();
 	double downShadow = obj1->downShadowPrice();
         double upPseudoCost = obj1->upDynamicPseudoCost();

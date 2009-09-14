@@ -2903,7 +2903,6 @@ void checkSOS(CbcModel * /*babModel*/, const OsiSolverInterface * /*solver*/)
   const double *columnLower = solver->getColLower() ;
   const double * columnUpper = solver->getColUpper() ;
   const double * solution = solver->getColSolution();
-  //int numberColumns = solver->getNumCols() ;
   //int numberRows = solver->getNumRows();
   //double direction = solver->getObjSense();
   //int iRow,iColumn;
@@ -2927,6 +2926,7 @@ void checkSOS(CbcModel * /*babModel*/, const OsiSolverInterface * /*solver*/)
   const double * rowUpper = solver->getRowUpper();
   OsiObject ** objects = babModel->objects();
   int numberObjects = babModel->numberObjects();
+  int numberColumns = solver->getNumCols() ;
   for (int iObj = 0;iObj<numberObjects;iObj++) {
     CbcSOS * objSOS =
       dynamic_cast <CbcSOS *>(objects[iObj]) ;
@@ -2960,25 +2960,28 @@ void checkSOS(CbcModel * /*babModel*/, const OsiSolverInterface * /*solver*/)
 	      iObj,type,n,convex);
       for (int i=0;i<n;i++) {
 	iColumn = which[i];
-	int convex2=-1;
-	for (j=columnStart[iColumn];j<columnStart[iColumn]+columnLength[iColumn];j++) {
-	  int iRow = row[j];
-	  if (iRow==convex) {
-	    double value = element[j];
-	    if (value==1.0) {
-	      convex2=iRow;
+	// Column may have been added
+	if (iColumn<numberColumns) {
+	  int convex2=-1;
+	  for (j=columnStart[iColumn];j<columnStart[iColumn]+columnLength[iColumn];j++) {
+	    int iRow = row[j];
+	    if (iRow==convex) {
+	      double value = element[j];
+	      if (value==1.0) {
+		convex2=iRow;
+	      }
 	    }
 	  }
-	}
-	if (convex2<0&&convex>=0) {
-	  printf("odd convexity row\n");
-	  convex=-2;
-	}
+	  if (convex2<0&&convex>=0) {
+	    printf("odd convexity row\n");
+	    convex=-2;
+	  }
 #if COIN_DEVELOP>2
-	printf("col %d has weight %g and value %g, bounds %g %g\n",
-	       iColumn,weight[i],solution[iColumn],columnLower[iColumn],
-	       columnUpper[iColumn]);
+	  printf("col %d has weight %g and value %g, bounds %g %g\n",
+		 iColumn,weight[i],solution[iColumn],columnLower[iColumn],
+		 columnUpper[iColumn]);
 #endif
+	}
       }
     }
   }
@@ -8633,6 +8636,7 @@ int
 		  CoinWarmStartBasis * basis = dynamic_cast<CoinWarmStartBasis *> (babModel_->solver()->getWarmStart());
 		  originalSolver->setBasis(*basis);
 		  delete basis;
+		  originalSolver->setDblParam(OsiDualObjectiveLimit,COIN_DBL_MAX);
 		  originalSolver->resolve();
 		  if (!originalSolver->isProvenOptimal()) {
                     // try all slack
@@ -8640,6 +8644,17 @@ int
                     originalSolver->setBasis(*basis);
                     delete basis;
                     originalSolver->initialSolve();
+#ifdef CLP_INVESTIGATE
+		    if (!originalSolver->isProvenOptimal()) {
+		      if (saveSolver) {
+			printf("saveSolver and originalSolver matrices saved\n");
+			saveSolver->writeMps("infA");
+		      } else {
+			printf("originalSolver matrix saved\n");
+			originalSolver->writeMps("infB");
+		      }
+		    }
+#endif		    
                   }
 		  assert (originalSolver->isProvenOptimal());
 		}

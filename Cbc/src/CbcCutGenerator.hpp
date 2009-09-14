@@ -55,8 +55,9 @@ public:
     The generated cuts are inserted into and returned in the collection of cuts
     \p cs.
 
-    If \p fullScan is >0, the generator is obliged to call the CGL
+    If \p fullScan is !=0, the generator is obliged to call the CGL
     \c generateCuts routine.  Otherwise, it is free to make a local decision.
+    Negative fullScan says things like at integer solution
     The current implementation uses \c whenCutGenerator_ to decide.
 
     The routine returns true if reoptimisation is needed (because the state of

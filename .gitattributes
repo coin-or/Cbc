@@ -36,6 +36,7 @@ Cbc/examples/driver3.cpp -text
 Cbc/examples/driver4.cpp -text
 Cbc/examples/driver4a.cpp -text
 Cbc/examples/driver4b.cpp -text
+Cbc/examples/driver4c.cpp -text
 Cbc/examples/fpump.cpp -text
 Cbc/examples/modify.cpp -text
 Cbc/examples/qmip2.cpp -text

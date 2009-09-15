@@ -1113,6 +1113,10 @@ void CbcModel::branchAndBound(int doStatistics)
   Capture a time stamp before we start.
 */
   dblParam_[CbcStartSeconds] = CoinCpuTime();
+  dblParam_[CbcSmallestChange]=COIN_DBL_MAX;
+  dblParam_[CbcSumChange]=0.0;
+  dblParam_[CbcLargestChange]=0.0;
+  intParam_[CbcNumberBranches] = 0;
   strongInfo_[0]=0;
   strongInfo_[1]=0;
   strongInfo_[2]=0;
@@ -3518,7 +3522,7 @@ void CbcModel::branchAndBound(int doStatistics)
 	  <<getCurrentSeconds()
 	  << CoinMessageEol ;
       }
-      if (!eventHandler->event(CbcEventHandler::treeStatus)) {
+      if (eventHandler&&!eventHandler->event(CbcEventHandler::treeStatus)) {
 	eventHappened_=true; // exit
       }
     }
@@ -4476,21 +4480,16 @@ CbcModel::CbcModel()
   memset(intParam_,0,sizeof(intParam_));
   intParam_[CbcMaxNumNode] = 2147483647;
   intParam_[CbcMaxNumSol] = 9999999;
-  intParam_[CbcFathomDiscipline] = 0;
 
+  memset(dblParam_,0,sizeof(dblParam_));
   dblParam_[CbcIntegerTolerance] = 1e-6;
-  dblParam_[CbcInfeasibilityWeight] = 0.0;
   dblParam_[CbcCutoffIncrement] = 1e-5;
   dblParam_[CbcAllowableGap] = 1.0e-10;
-  dblParam_[CbcAllowableFractionGap] = 0.0;
-  dblParam_[CbcHeuristicGap] = 0.0;
-  dblParam_[CbcHeuristicFractionGap] = 0.0;
   dblParam_[CbcMaximumSeconds] = 1.0e100;
   dblParam_[CbcCurrentCutoff] = 1.0e100;
   dblParam_[CbcOptimizationDirection] = 1.0;
   dblParam_[CbcCurrentObjectiveValue] = 1.0e100;
   dblParam_[CbcCurrentMinimizationObjectiveValue] = 1.0e100;
-  dblParam_[CbcStartSeconds] = 0.0;
   strongInfo_[0]=0;
   strongInfo_[1]=0;
   strongInfo_[2]=0;
@@ -4518,7 +4517,7 @@ CbcModel::CbcModel()
   handler_ = new CoinMessageHandler();
   handler_->setLogLevel(2);
   messages_ = CbcMessage();
-  eventHandler_ = new CbcEventHandler() ;
+  //eventHandler_ = new CbcEventHandler() ;
 }
 
 /** Constructor from solver.
@@ -4638,21 +4637,16 @@ CbcModel::CbcModel(const OsiSolverInterface &rhs)
   memset(intParam_,0,sizeof(intParam_));
   intParam_[CbcMaxNumNode] = 2147483647;
   intParam_[CbcMaxNumSol] = 9999999;
-  intParam_[CbcFathomDiscipline] = 0;
 
+  memset(dblParam_,0,sizeof(dblParam_));
   dblParam_[CbcIntegerTolerance] = 1e-6;
-  dblParam_[CbcInfeasibilityWeight] = 0.0;
   dblParam_[CbcCutoffIncrement] = 1e-5;
   dblParam_[CbcAllowableGap] = 1.0e-10;
-  dblParam_[CbcAllowableFractionGap] = 0.0;
-  dblParam_[CbcHeuristicGap] = 0.0;
-  dblParam_[CbcHeuristicFractionGap] = 0.0;
   dblParam_[CbcMaximumSeconds] = 1.0e100;
   dblParam_[CbcCurrentCutoff] = 1.0e100;
   dblParam_[CbcOptimizationDirection] = 1.0;
   dblParam_[CbcCurrentObjectiveValue] = 1.0e100;
   dblParam_[CbcCurrentMinimizationObjectiveValue] = 1.0e100;
-  dblParam_[CbcStartSeconds] = 0.0;
   strongInfo_[0]=0;
   strongInfo_[1]=0;
   strongInfo_[2]=0;
@@ -4672,7 +4666,7 @@ CbcModel::CbcModel(const OsiSolverInterface &rhs)
   handler_ = new CoinMessageHandler();
   handler_->setLogLevel(2);
   messages_ = CbcMessage();
-  eventHandler_ = new CbcEventHandler() ;
+  //eventHandler_ = new CbcEventHandler() ;
   solver_ = rhs.clone();
   referenceSolver_ = solver_->clone();
   ownership_ = 0x80000000;
@@ -6742,6 +6736,13 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
     clpSolver->setSpecialOptions(saveClpOptions);
 # endif
     return (false) ;
+  }
+  double change = lastObjective-objectiveValue;
+  if (change>1.0e-10) {
+    dblParam_[CbcSmallestChange]=CoinMin(dblParam_[CbcSmallestChange],change);
+    dblParam_[CbcSumChange] += change;
+    dblParam_[CbcLargestChange]=CoinMax(dblParam_[CbcLargestChange],change);
+    intParam_[CbcNumberBranches]++;
   }
   sumChangeObjective1_ += solver_->getObjValue()*solver_->getObjSense()
     - objectiveValue ;
@@ -9417,15 +9418,22 @@ CbcModel::pseudoShadow(int iActive)
 	  dynamic_cast <CbcSimpleIntegerDynamicPseudoCost *>(object_[i]) ;
 	if (obj1) {
 	  assert (obj1->downShadowPrice()>0.0);
-#if 0
-	  obj1->setDownShadowPrice(-1.0e-1*obj1->downShadowPrice());
-	  obj1->setUpShadowPrice(-1.0e-1*obj1->upShadowPrice());
+#define P_FACTOR 1.0
+#if 1
+	  obj1->setDownShadowPrice(-P_FACTOR*obj1->downShadowPrice());
+	  obj1->setUpShadowPrice(-P_FACTOR*obj1->upShadowPrice());
 #else
-	  obj1->incrementNumberTimesDown();
-	  obj1->setDownDynamicPseudoCost(1.0e1*obj1->downShadowPrice());
+	  double pCost;
+	  double sCost;
+	  pCost = obj1->downDynamicPseudoCost();
+	  sCost = P_FACTOR*obj1->downShadowPrice();
+	  if (!obj1->numberTimesDown()||sCost>pCost)
+	    obj1->updateDownDynamicPseudoCost(sCost);
 	  obj1->setDownShadowPrice(0.0);
-	  obj1->incrementNumberTimesUp();
-	  obj1->setUpDynamicPseudoCost(1.0e1*obj1->upShadowPrice());
+	  pCost = obj1->upDynamicPseudoCost();
+	  sCost = P_FACTOR*obj1->upShadowPrice();
+	  if (!obj1->numberTimesUp()||sCost>pCost)
+	    obj1->updateUpDynamicPseudoCost(sCost);
 	  obj1->setUpShadowPrice(0.0);
 #endif
 	}
@@ -9701,6 +9709,7 @@ CbcModel::pseudoShadow(int iActive)
   if (numberIntegers) {
     double smallDown = 0.0001*(downSum/static_cast<double> (numberIntegers));
     double smallUp = 0.0001*(upSum/static_cast<double> (numberIntegers));
+#define PSEUDO_FACTOR 1.0e-1
     for (int i=0;i<numberObjects_;i++) {
       CbcSimpleIntegerDynamicPseudoCost * obj1 =
         dynamic_cast <CbcSimpleIntegerDynamicPseudoCost *>(object_[i]) ;
@@ -9708,7 +9717,7 @@ CbcModel::pseudoShadow(int iActive)
         int iColumn = obj1->columnNumber();
         double upPseudoCost = obj1->upDynamicPseudoCost();
         double saveUp = upPseudoCost;
-        upPseudoCost = CoinMax(upPseudoCost,smallUp);
+        upPseudoCost = CoinMax(PSEUDO_FACTOR*upPseudoCost,smallUp);
         upPseudoCost = CoinMax(upPseudoCost,up[iColumn]);
         upPseudoCost = CoinMax(upPseudoCost,0.001*down[iColumn]);
         obj1->setUpShadowPrice(upPseudoCost);
@@ -9717,7 +9726,7 @@ CbcModel::pseudoShadow(int iActive)
                  iColumn,saveUp,upPseudoCost);
         double downPseudoCost = obj1->downDynamicPseudoCost();
         double saveDown = downPseudoCost;
-        downPseudoCost = CoinMax(downPseudoCost,smallDown);
+        downPseudoCost = CoinMax(PSEUDO_FACTOR*downPseudoCost,smallDown);
         downPseudoCost = CoinMax(downPseudoCost,down[iColumn]);
         downPseudoCost = CoinMax(downPseudoCost,0.001*up[iColumn]);
         obj1->setDownShadowPrice(downPseudoCost);
@@ -12165,6 +12174,16 @@ CbcModel::chooseBranch(CbcNode * &newNode, int numberPassesLeft,
   branches=NULL;
   bool feasible=true;
   int branchingState=-1;
+  // Compute "small" change in branch
+  int nBranches = intParam_[CbcNumberBranches];
+  if (nBranches) {
+    double average = dblParam_[CbcSumChange]/static_cast<double>(nBranches);
+    dblParam_[CbcSmallChange] = 
+      CoinMax(average*1.0e-5,dblParam_[CbcSmallestChange]);
+    dblParam_[CbcSmallChange] = CoinMax(dblParam_[CbcSmallChange],1.0e-8);
+  } else {
+    dblParam_[CbcSmallChange] = 1.0e-8;
+  }
 #if 0
   // Say not on optimal path
   bool onOptimalPath=false;
@@ -13243,6 +13262,23 @@ CbcModel::doOneNode(CbcModel * baseModel, CbcNode * & node, CbcNode * & newNode)
 	  if ((specialOptions_&16384)==0) {
 	    info->integerTolerance_=getIntegerTolerance();
 	    info->integerIncrement_=getCutoffIncrement();
+	    info->numberBeforeTrust_ = numberBeforeTrust_;
+	    info->stateOfSearch_=1;
+	    if (numberSolutions_>0) {
+	      info->stateOfSearch_ = 3;
+	    } if (numberNodes_>2*numberObjects_+1000) {
+	      info->stateOfSearch_=4;
+	    }
+  // Compute "small" change in branch
+	    int nBranches = intParam_[CbcNumberBranches];
+	    if (nBranches) {
+	      double average = dblParam_[CbcSumChange]/static_cast<double>(nBranches);
+	      info->smallChange_ = 
+		CoinMax(average*1.0e-5,dblParam_[CbcSmallestChange]);
+	      info->smallChange_ = CoinMax(info->smallChange_,1.0e-8);
+	    } else {
+	      info->smallChange_ = 1.0e-8;
+	    }
 	    double * down = new double[numberIntegers_];
 	    double * up = new double[numberIntegers_];
 	    int * priority = new int[numberIntegers_];
@@ -13764,7 +13800,7 @@ CbcModel::doOneNode(CbcModel * baseModel, CbcNode * & node, CbcNode * & newNode)
       * The node was found to be infeasible, in which case it's already been
       deleted, and newNode is null.
     */
-    if (!getEventHandler()->event(CbcEventHandler::node)) {
+    if (eventHandler_&&!eventHandler_->event(CbcEventHandler::node)) {
       eventHappened_=true; // exit
     }
     if (parallelMode()>=0)
@@ -14860,11 +14896,19 @@ CbcModel::fillPseudoCosts(double * downCosts, double * upCosts,
     back[i]=-1;
   for (i=0;i<numberIntegers_;i++) 
     back[integerVariable_[i]]=i;
+#ifdef CLP_INVESTIGATE
+  int numberNot=0;
+#endif
   for ( i=0;i<numberObjects_;i++) {
     CbcSimpleIntegerDynamicPseudoCost * obj =
       dynamic_cast <CbcSimpleIntegerDynamicPseudoCost *>(object_[i]) ;
     if (!obj)
       continue;
+#ifdef CLP_INVESTIGATE
+    if (obj->numberTimesDown()<numberBeforeTrust_||
+	obj->numberTimesUp()<numberBeforeTrust_)
+      numberNot++;
+#endif
     int iColumn = obj->columnNumber();
     iColumn = back[iColumn];
     assert (iColumn>=0);
@@ -14881,6 +14925,10 @@ CbcModel::fillPseudoCosts(double * downCosts, double * upCosts,
       numberUpInfeasible[iColumn]=obj->numberTimesUpInfeasible();
     }
   }
+#ifdef CLP_INVESTIGATE
+  printf("Before fathom %d not trusted out of %d\n",
+	 numberNot,numberIntegers_);
+#endif
   delete [] back;
 }
 // Redo walkback arrays

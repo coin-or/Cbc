@@ -221,6 +221,12 @@ int CbcClpUnitTest (const CbcModel & saveModel, std::string& dirMiplib,
 #endif
   int numberFailures=0;
   int numberAttempts=0;
+  int numberPossibleAttempts=0;
+  for (m = 0 ; m < mpsName.size() ; m++) {
+    int test = testSet[m];
+    if(testSwitch>=test&&loSwitch<=test) 
+      numberPossibleAttempts++;
+  }
   
   /*
     Open the main loop to step through the MPS problems.
@@ -230,7 +236,8 @@ int CbcClpUnitTest (const CbcModel & saveModel, std::string& dirMiplib,
     if(testSwitch>=test&&loSwitch<=test) {
       numberAttempts++;
       std::cout << "  processing mps file: " << mpsName[m] 
-		<< " (" << m+1 << " out of " << mpsName.size() << ")\n";
+		<< " (" << numberAttempts << " out of " 
+		<< numberPossibleAttempts << ")\n";
       /*
 	Stage 1: Read the MPS
 	and make sure the size of the constraint matrix is correct.

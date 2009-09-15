@@ -616,7 +616,8 @@ CbcSimpleIntegerDynamicPseudoCost::infeasibility(const OsiBranchingInformation *
   sum += numberTimesDownInfeasible_*(distanceToCutoff/(downCost+1.0e-12));
 #endif
 #endif
-#if MOD_SHADOW==0
+#define MOD_SHADOW 1
+#if MOD_SHADOW>0
   if (!downShadowPrice_) {
     if (number>0.0)
       downCost *= sum / number;
@@ -656,7 +657,7 @@ CbcSimpleIntegerDynamicPseudoCost::infeasibility(const OsiBranchingInformation *
   sum += numberTimesUpInfeasible_*(distanceToCutoff/(upCost+1.0e-12));
 #endif
 #endif
-#if MOD_SHADOW==0
+#if MOD_SHADOW>0
   if (!upShadowPrice_) {
     if (number>0.0)
       upCost *= sum / number;
@@ -700,7 +701,7 @@ CbcSimpleIntegerDynamicPseudoCost::infeasibility(const OsiBranchingInformation *
   // weight at 1.0 is max min
 #define WEIGHT_AFTER 0.8
 #define WEIGHT_BEFORE 0.1
-  //Stolen from Constraint Integer Programming book
+  //Stolen from Constraint Integer Programming book (with epsilon change)
 #define WEIGHT_PRODUCT
   if (fabs(value-nearest)<=integerTolerance) {
     if (priority_!=-999)
@@ -748,7 +749,9 @@ CbcSimpleIntegerDynamicPseudoCost::infeasibility(const OsiBranchingInformation *
 #ifndef WEIGHT_PRODUCT
       returnValue = WEIGHT_AFTER*minValue + (1.0-WEIGHT_AFTER)*maxValue;
 #else
-      returnValue = CoinMax(minValue,1.0e-8)*CoinMax(maxValue,1.0e-8);
+      double minProductWeight = model_->getDblParam(CbcModel::CbcSmallChange);
+      returnValue = CoinMax(minValue,minProductWeight)*CoinMax(maxValue,minProductWeight);
+      //returnValue += minProductWeight*minValue;
 #endif
     }
     if (numberTimesUp_<numberBeforeTrust_||
@@ -910,6 +913,14 @@ CbcSimpleIntegerDynamicPseudoCost::setDownDynamicPseudoCost(double value)
   }
 #endif
 }
+// Modify down pseudo cost in a slightly different way
+void 
+CbcSimpleIntegerDynamicPseudoCost::updateDownDynamicPseudoCost(double value)
+{
+  sumDownCost_ += value;
+  numberTimesDown_++;
+  downDynamicPseudoCost_=sumDownCost_/static_cast<double>(numberTimesDown_);
+}
 // Set up pseudo cost
 void 
 CbcSimpleIntegerDynamicPseudoCost::setUpDynamicPseudoCost(double value)
@@ -928,6 +939,14 @@ CbcSimpleIntegerDynamicPseudoCost::setUpDynamicPseudoCost(double value)
 	   oldUp,sumUpCost_);
   }
 #endif
+}
+// Modify up pseudo cost in a slightly different way
+void 
+CbcSimpleIntegerDynamicPseudoCost::updateUpDynamicPseudoCost(double value)
+{
+  sumUpCost_ += value;
+  numberTimesUp_++;
+  upDynamicPseudoCost_=sumUpCost_/static_cast<double>(numberTimesUp_);
 }
 /* Pass in information on branch just done and create CbcObjectUpdateData instance.
    If object does not need data then backward pointer will be NULL.
@@ -1750,7 +1769,9 @@ CbcBranchDynamicDecision::betterBranch(CbcBranchingObject * thisOne,
 #ifndef WEIGHT_PRODUCT
     value = WEIGHT_AFTER*minValue + (1.0-WEIGHT_AFTER)*maxValue;
 #else
-    value = CoinMax(minValue,1.0e-8)*CoinMax(maxValue,1.0e-8);
+    double minProductWeight = model->getDblParam(CbcModel::CbcSmallChange);
+    value = CoinMax(minValue,minProductWeight)*CoinMax(maxValue,minProductWeight);
+    //value += minProductWeight*minValue;
 #endif
     double useValue = value;
     double useBest = bestCriterion_;

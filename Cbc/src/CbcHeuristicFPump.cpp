@@ -1775,7 +1775,7 @@ CbcHeuristicFPump::solution(double & solutionValue,
 	      newSolution[iColumn]=value;
 	    }
 	    newSolver->setColSolution(newSolution);
-#define CLP_INVESTIGATE2
+	    //#define CLP_INVESTIGATE2
 #ifdef CLP_INVESTIGATE2
 	    {
 	      // check

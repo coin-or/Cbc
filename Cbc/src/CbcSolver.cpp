@@ -2000,7 +2000,7 @@ fixVubs(CbcModel & model, int skipZero2,
       double moveObj = lpSolver->objectiveValue()-saveObj;
       printf("movement %s was %g costing %g\n",
 	     (way==-1) ? "down" : "up",movement,moveObj);
-      if (way==-1&&(moveObj>=(1.0-movement)*objective[iSmallest]||lpSolver->status())) {
+      if (way==-1&&(moveObj>=maxCostUp||lpSolver->status())) {
 	// go up
 	columnLower = models[kPass].columnLower();
 	columnUpper = models[kPass].columnUpper();
@@ -3562,7 +3562,6 @@ int
       // switch on various active set stuff
       diveOptions=diveOptions2%100;
       diveOptions2 -= diveOptions;
-      diveOptions2 += 100; // so 0 will be marked
     } else {
       diveOptions=diveOptions2;
       diveOptions2=0;

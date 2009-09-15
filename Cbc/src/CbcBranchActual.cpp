@@ -4536,6 +4536,18 @@ CbcGeneralDepth::infeasibility(const OsiBranchingInformation * /*info*/,
       ClpNodeStuff * info = nodeInfo_;
       info->integerTolerance_=model_->getIntegerTolerance();
       info->integerIncrement_=model_->getCutoffIncrement();
+      info->numberBeforeTrust_ = model_->numberBeforeTrust();
+      info->stateOfSearch_=model_->stateOfSearch();
+      // Compute "small" change in branch
+      int nBranches = model_->getIntParam(CbcModel::CbcNumberBranches);
+      if (nBranches) {
+	double average = model_->getDblParam(CbcModel::CbcSumChange)/static_cast<double>(nBranches);
+	info->smallChange_ = 
+	  CoinMax(average*1.0e-5,model_->getDblParam(CbcModel::CbcSmallestChange));
+	info->smallChange_ = CoinMax(info->smallChange_,1.0e-8);
+      } else {
+	info->smallChange_ = 1.0e-8;
+      }
       int numberIntegers = model_->numberIntegers();
       double * down = new double[numberIntegers];
       double * up = new double[numberIntegers];

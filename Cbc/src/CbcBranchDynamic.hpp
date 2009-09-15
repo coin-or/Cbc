@@ -89,12 +89,16 @@ public:
   { return downDynamicPseudoCost_;}
   /// Set down pseudo cost
   void setDownDynamicPseudoCost(double value) ;
+  /// Modify down pseudo cost in a slightly different way
+  void updateDownDynamicPseudoCost(double value);
 
   /// Up pseudo cost
   inline double upDynamicPseudoCost() const
   { return upDynamicPseudoCost_;}
   /// Set up pseudo cost
   void setUpDynamicPseudoCost(double value);
+  /// Modify up pseudo cost in a slightly different way
+  void updateUpDynamicPseudoCost(double value);
 
   /// Down pseudo shadow price cost
   inline double downShadowPrice() const

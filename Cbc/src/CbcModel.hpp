@@ -114,6 +114,9 @@ enum CbcIntParam {
       1 does different node message with number unsatisfied on last branch
   */
   CbcPrinting,
+  /** Number of branches (may be more than number of nodes as may
+      include strong branching) */
+  CbcNumberBranches,
   /** Just a marker, so that a static sized array can store parameters. */
   CbcLastIntParam
 };
@@ -172,6 +175,14 @@ enum CbcDblParam {
     Code stops if either this test or CbcAllowableGap test succeeds
   */
   CbcHeuristicFractionGap,
+  /// Smallest non-zero change on a branch
+  CbcSmallestChange,
+  /// Sum of non-zero changes on a branch
+  CbcSumChange,
+  /// Largest non-zero change on a branch
+  CbcLargestChange,
+  /// Small non-zero change on a branch to be used as guess
+  CbcSmallChange,
   /** Just a marker, so that a static sized array can store parameters. */
   CbcLastDblParam
 };

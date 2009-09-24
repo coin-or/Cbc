@@ -2658,7 +2658,7 @@ void CbcModel::branchAndBound(int doStatistics)
   {
     OsiClpSolverInterface * clpSolver 
       = dynamic_cast<OsiClpSolverInterface *> (solver_);
-    if (clpSolver&&!parentModel_) {
+    if (clpSolver&&!parentModel_&&feasible) {
       clpSolver->computeLargestAway();
     }
   }

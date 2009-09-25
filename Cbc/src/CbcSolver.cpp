@@ -3769,6 +3769,8 @@ int
 #if NEW_STYLE_SOLVER==0
   bool noPrinting_=noPrinting;
 #endif  
+  // Say not in integer
+  int integerStatus=-1;
   // Say no resolve after cuts
   model_.setResolveAfterTakeOffCuts(false);
   // see if log in list
@@ -5315,6 +5317,10 @@ int
                 } else if (iStat==5) {
                   iStat = 3;
                   pos += sprintf(buf+pos,"stopped on ctrl-c,");
+		} else if (iStat==6) {
+		  // bab infeasible
+		  pos += sprintf(buf+pos,"integer infeasible,");
+		  iStat=1;
                 } else {
                   pos += sprintf(buf+pos,"status unknown,");
                   iStat=6;
@@ -6321,6 +6327,8 @@ int
                   }
 		}
 		if (!solver2) {
+		  // say infeasible for solution
+		  integerStatus=6;
 		  model_.setProblemStatus(0);
 		  model_.setSecondaryStatus(1);
 		  babModel_->setProblemStatus(0);
@@ -8187,6 +8195,18 @@ int
               totalTime += time2-time1;
               // For best solution
               double * bestSolution = NULL;
+	      // Say in integer
+	      if (babModel_->status()) {
+		// treat as stopped
+		integerStatus=3;
+	      } else {
+		if (babModel_->isProvenOptimal()) {
+		  integerStatus=0;
+		} else {
+		  // infeasible
+		  integerStatus=6;
+		}
+	      }
               if (babModel_->getMinimizationObjValue()<1.0e50&&type==BAB) {
                 // post process
 		int n;
@@ -8510,6 +8530,10 @@ int
                   } else if (iStat==5) {
                     iStat = 3;
                     pos += sprintf(buf+pos,"stopped on ctrl-c,");
+		  } else if (iStat==6) {
+		    // bab infeasible
+		    pos += sprintf(buf+pos,"integer infeasible,");
+		    iStat=1;
                   } else {
                     pos += sprintf(buf+pos,"status unknown,");
                     iStat=6;
@@ -9849,6 +9873,10 @@ int
 		} else if (iStat==5) {
 		  iStat = 3;
 		  pos += sprintf(buf+pos,"stopped on ctrl-c,");
+		} else if (iStat==6) {
+		  // bab infeasible
+		  pos += sprintf(buf+pos,"integer infeasible,");
+		  iStat=1;
 		} else {
 		  pos += sprintf(buf+pos,"status unknown,");
 		  iStat=6;
@@ -10022,6 +10050,8 @@ clp watson.mps -\nscaling off\nprimalsimplex"
 		  lpSolver->computeObjectiveValue(false);
 		  double objValue = lpSolver->getObjValue()*lpSolver->getObjSense();
 		  int iStat = lpSolver->status();
+		  if (integerStatus>=0) 
+		    iStat = integerStatus;
 		  if (iStat==0) {
 		    fprintf(fp, "Optimal" );
 		  } else if (iStat==1) {
@@ -10036,6 +10066,9 @@ clp watson.mps -\nscaling off\nprimalsimplex"
 		    fprintf(fp, "Stopped on difficulties" );
 		  } else if (iStat==5) {
 		    fprintf(fp, "Stopped on ctrl-c" );
+		  } else if (iStat==6) {
+		    // bab infeasible
+		    fprintf(fp, "Integer infeasible" );
 		  } else {
 		    fprintf(fp, "Status unknown" );
 		  }

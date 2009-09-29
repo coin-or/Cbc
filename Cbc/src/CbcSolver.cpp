@@ -165,6 +165,7 @@ static int initialPumpTune=-1;
 #include "CbcHeuristic.hpp"
 #include "CbcHeuristicLocal.hpp"
 #include "CbcHeuristicPivotAndFix.hpp"
+#include "CbcHeuristicPivotAndComplement.hpp"
 #include "CbcHeuristicRandRound.hpp"
 #include "CbcHeuristicGreedy.hpp"
 #include "CbcHeuristicFPump.hpp"
@@ -521,6 +522,7 @@ void CbcSolver::fillParameters()
   parameters_[whichParam(GREEDY,numberParameters_,parameters_)].setCurrentOption("on");
   parameters_[whichParam(COMBINE,numberParameters_,parameters_)].setCurrentOption("on");
   parameters_[whichParam(CROSSOVER2,numberParameters_,parameters_)].setCurrentOption("off");
+  parameters_[whichParam(PIVOTANDCOMPLEMENT,numberParameters_,parameters_)].setCurrentOption("off");
   parameters_[whichParam(PIVOTANDFIX,numberParameters_,parameters_)].setCurrentOption("off");
   parameters_[whichParam(RANDROUND,numberParameters_,parameters_)].setCurrentOption("off");
   parameters_[whichParam(NAIVE,numberParameters_,parameters_)].setCurrentOption("off");
@@ -3257,6 +3259,7 @@ void CbcMain0 (CbcModel  & model)
   parameters[whichParam(GREEDY,numberParameters,parameters)].setCurrentOption("on");
   parameters[whichParam(COMBINE,numberParameters,parameters)].setCurrentOption("on");
   parameters[whichParam(CROSSOVER2,numberParameters,parameters)].setCurrentOption("off");
+  parameters[whichParam(PIVOTANDCOMPLEMENT,numberParameters,parameters)].setCurrentOption("off");
   parameters[whichParam(PIVOTANDFIX,numberParameters,parameters)].setCurrentOption("off");
   parameters[whichParam(RANDROUND,numberParameters,parameters)].setCurrentOption("off");
   parameters[whichParam(NAIVE,numberParameters,parameters)].setCurrentOption("off");
@@ -3294,7 +3297,8 @@ int
   int useGreedy = parameters_[whichParam(GREEDY,numberParameters_,parameters_)].currentOptionAsInteger();
   int useCombine = parameters_[whichParam(COMBINE,numberParameters_,parameters_)].currentOptionAsInteger();
   int useCrossover = parameters_[whichParam(CROSSOVER2,numberParameters_,parameters_)].currentOptionAsInteger();
-  int usePivot = parameters_[whichParam(PIVOTANDFIX,numberParameters_,parameters_)].currentOptionAsInteger();
+  int usePivotC = parameters_[whichParam(PIVOTANDCOMPLEMENT,numberParameters_,parameters_)].currentOptionAsInteger();
+  int usePivotF = parameters_[whichParam(PIVOTANDFIX,numberParameters_,parameters_)].currentOptionAsInteger();
   int useRand = parameters_[whichParam(RANDROUND,numberParameters_,parameters_)].currentOptionAsInteger();
   int useRINS = parameters_[whichParam(RINS,numberParameters_,parameters_)].currentOptionAsInteger();
   int useRENS = parameters_[whichParam(RENS,numberParameters_,parameters_)].currentOptionAsInteger();
@@ -3606,7 +3610,14 @@ int
     }
     anyToDo=true;
   }
-  if (usePivot>=type&&usePivot<=kType+1) {
+  if (usePivotC>=type&&usePivotC<=kType+1) {
+    CbcHeuristicPivotAndComplement heuristic(*model);
+    heuristic.setHeuristicName("pivot and complement");
+    heuristic.setFractionSmall(10.0); // normally 0.5
+    model->addHeuristic(&heuristic);
+    anyToDo=true;
+  }
+  if (usePivotF>=type&&usePivotF<=kType+1) {
     CbcHeuristicPivotAndFix heuristic(*model);
     heuristic.setHeuristicName("pivot and fix");
     heuristic.setFractionSmall(10.0); // normally 0.5
@@ -5078,6 +5089,7 @@ int
 	    case DIVINGP:
 	    case DIVINGV:
 	    case COMBINE:
+	    case PIVOTANDCOMPLEMENT:
 	    case PIVOTANDFIX:
 	    case RANDROUND:
 	    case LOCALTREE:

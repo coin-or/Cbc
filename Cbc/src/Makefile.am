@@ -45,6 +45,7 @@ libCbc_la_SOURCES = \
 	CbcHeuristicGreedy.cpp CbcHeuristicGreedy.hpp \
 	CbcHeuristicLocal.cpp CbcHeuristicLocal.hpp \
 	CbcHeuristicPivotAndFix.cpp CbcHeuristicPivotAndFix.hpp \
+	CbcHeuristicPivotAndComplement.cpp CbcHeuristicPivotAndComplement.hpp \
 	CbcHeuristicRandRound.cpp CbcHeuristicRandRound.hpp \
 	CbcHeuristicRINS.cpp CbcHeuristicRINS.hpp \
 	CbcMessage.cpp CbcMessage.hpp \
@@ -330,6 +331,7 @@ includecoin_HEADERS = \
 	CbcHeuristicGreedy.hpp \
 	CbcHeuristicLocal.hpp \
 	CbcHeuristicPivotAndFix.hpp \
+	CbcHeuristicPivotAndComplement.hpp \
 	CbcHeuristicRandRound.hpp \
 	CbcHeuristicRINS.hpp \
 	CbcMessage.hpp \

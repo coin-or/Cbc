@@ -6732,8 +6732,10 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
       for ( i = 0 ; i < numberCuts ; i++)
       { OsiColCut *thisCut = globalCuts_.colCutPtr(i) ;
 	if (thisCut->violated(cbcColSolution_)>primalTolerance) {
+#ifdef CLP_INVESTIGATE
 	  printf("Global cut added - violation %g\n",
 		 thisCut->violated(cbcColSolution_)) ;
+#endif
 	  whichGenerator_[numberViolated++]=-1;
 #ifndef GLOBAL_CUTS_JUST_POINTERS
 	  theseCuts.insert(*thisCut) ;

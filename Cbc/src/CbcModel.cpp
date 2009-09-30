@@ -9587,7 +9587,7 @@ CbcModel::pseudoShadow(int iActive)
 	for (CoinBigIndex j=start;j<end;j++) {
 	  int iRow = row[j];
 	  value = -dual[iRow];
-	  assert (fabs(dual[iRow]<1.0e50));
+	  assert (fabs(dual[iRow])<1.0e50);
 	  if (value) {
 	    value *= element[j];
 	    if (value>0.0)

@@ -753,6 +753,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\..\src\CbcHeuristicPivotAndComplement.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\..\src\CbcHeuristicRandRound.cpp"
 				>
 			</File>
@@ -1133,6 +1137,10 @@
 			</File>
 			<File
 				RelativePath="..\..\..\src\CbcHeuristicPivotAndFix.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\..\src\CbcHeuristicPivotAndComplement.hpp"
 				>
 			</File>
 			<File

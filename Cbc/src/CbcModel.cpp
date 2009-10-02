@@ -83,6 +83,7 @@ inline int my_gettime(struct timespec* tp) {
 	return clock_gettime(CLOCK_REALTIME, tp);
 }
 #else
+#ifndef _MSC_VER
 inline int my_gettime(struct timespec* tp) {
 	struct timeval tv;
 	int ret = gettimeofday(&tv, NULL);
@@ -90,6 +91,14 @@ inline int my_gettime(struct timespec* tp) {
 	tp->tv_nsec = tv.tv_usec*1000;
 	return ret;
 }
+#else
+inline int my_gettime(struct timespec* tp) {
+	double t = CoinGetTimeOfDay();
+	tp->tv_sec = (int)floor(t);
+	tp->tv_nsec = (int)((tp->tv_sec - floor(t))/1000000.0);
+	return 0;
+}
+#endif
 #endif
 
 struct Coin_pthread_t {

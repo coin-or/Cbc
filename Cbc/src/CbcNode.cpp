@@ -1405,25 +1405,72 @@ int CbcNode::chooseBranch (CbcModel *model, CbcNode *lastNode,int numberPassesLe
   bool beforeSolution = model->getSolutionCount()==0;
   int numberStrong=model->numberStrong();
   // switch off strong if hotstart
-  if (model->hotstartSolution())
-    numberStrong=0;
-  int numberStrongDone=0;
-  int numberUnfinished=0;
-  int numberStrongInfeasible=0;
-  int numberStrongIterations=0;
-  int saveNumberStrong=numberStrong;
+  const double * hotstartSolution = model->hotstartSolution();
+  const int * hotstartPriorities = model->hotstartPriorities();
   int numberObjects = model->numberObjects();
-  bool checkFeasibility = numberObjects>model->numberIntegers();
-  int maximumStrong = CoinMax(CoinMin(numberStrong,numberObjects),1);
   int numberColumns = model->getNumCols();
   double * saveUpper = new double[numberColumns];
   double * saveLower = new double[numberColumns];
+  for (i=0;i<numberColumns;i++) {
+    saveLower[i] = lower[i];
+    saveUpper[i] = upper[i];
+  }
   
   // Save solution in case heuristics need good solution later
   
   double * saveSolution = new double[numberColumns];
   memcpy(saveSolution,solver->getColSolution(),numberColumns*sizeof(double));
   model->reserveCurrentSolution(saveSolution);
+  if (hotstartSolution) {
+    numberStrong=0;
+    if((model->moreSpecialOptions()&1024)!=0) {
+      int nBad=0;
+      int nUnsat=0;
+      int nDiff=0;
+      for (int i=0;i<numberObjects;i++) {
+	OsiObject * object = model->modifiableObject(i);
+	const CbcSimpleInteger * thisOne = dynamic_cast <const CbcSimpleInteger *> (object);
+	if (thisOne) {
+	  int iColumn = thisOne->columnNumber();
+	  double targetValue = hotstartSolution[iColumn];
+	  double value = saveSolution[iColumn];
+	  if (fabs(value-floor(value+0.5))>1.0e-6) {
+	    nUnsat++;
+#ifdef CLP_INVESTIGATE 
+	    printf("H %d is %g target %g\n",iColumn,value,targetValue);
+#endif
+	  } else if (fabs(targetValue-value)>1.0e-6) {
+	    nDiff++;
+	  }
+	  if (targetValue<saveLower[iColumn]||
+	      targetValue>saveUpper[iColumn]) {
+#ifdef CLP_INVESTIGATE 
+	    printf("%d has target %g and current bounds %g and %g\n",
+		   iColumn,targetValue,saveLower[iColumn],saveUpper[iColumn]);
+#endif
+	    nBad++;
+	  }
+	}
+      }
+#ifdef CLP_INVESTIGATE 
+      printf("Hot %d unsatisfied, %d outside limits, %d different\n",
+	     nUnsat,nBad,nDiff); 
+#endif
+      if (nBad) {
+	// switch off as not possible
+	  hotstartSolution=NULL;
+	  model->setHotstartSolution(NULL,NULL);
+	  usefulInfo.hotstartSolution_=NULL;
+      }
+    }
+  }
+  int numberStrongDone=0;
+  int numberUnfinished=0;
+  int numberStrongInfeasible=0;
+  int numberStrongIterations=0;
+  int saveNumberStrong=numberStrong;
+  bool checkFeasibility = numberObjects>model->numberIntegers();
+  int maximumStrong = CoinMax(CoinMin(numberStrong,numberObjects),1);
   /*
     Get a branching decision object. Use the default decision criteria unless
     the user has loaded a decision method into the model.
@@ -1435,10 +1482,6 @@ int CbcNode::chooseBranch (CbcModel *model, CbcNode *lastNode,int numberPassesLe
     decision = new CbcBranchDefaultDecision();
   decision->initialize(model);
   CbcStrongInfo * choice = new CbcStrongInfo[maximumStrong];
-  for (i=0;i<numberColumns;i++) {
-    saveLower[i] = lower[i];
-    saveUpper[i] = upper[i];
-  }
   // May go round twice if strong branching fixes all local candidates
   bool finished=false;
   double estimatedDegradation=0.0; 
@@ -1460,9 +1503,6 @@ int CbcNode::chooseBranch (CbcModel *model, CbcNode *lastNode,int numberPassesLe
       //model->feasibleSolution(
       //                      numberIntegerInfeasibilities,
       //                      numberObjectInfeasibilities);
-      const double * hotstartSolution = model->hotstartSolution();
-      const int * hotstartPriorities = model->hotstartPriorities();
-      
       // Some objects may compute an estimate of best solution from here
       estimatedDegradation=0.0; 
       numberUnsatisfied_ = 0;
@@ -1516,7 +1556,10 @@ int CbcNode::chooseBranch (CbcModel *model, CbcNode *lastNode,int numberPassesLe
                    choose one near wanted value
                 */
                 if (fabs(value-targetValue)>integerTolerance) {
-                  infeasibility = fabs(value-targetValue);
+		  //if (infeasibility>0.01)
+		  //infeasibility = fabs(1.0e6-fabs(value-targetValue));
+		  //else
+		  infeasibility = fabs(value-targetValue);
                   //if (targetValue==1.0)
 		  //infeasibility += 1.0;
                   if (value>targetValue) {
@@ -1602,9 +1645,23 @@ int CbcNode::chooseBranch (CbcModel *model, CbcNode *lastNode,int numberPassesLe
         // switch off as not possible
         hotstartSolution=NULL;
         model->setHotstartSolution(NULL,NULL);
+	usefulInfo.hotstartSolution_=NULL;
       }
       if (numberUnsatisfied_) {
         // some infeasibilities - go to next steps
+#ifdef CLP_INVESTIGATE
+	if (hotstartSolution) {
+	  int k=choice[0].objectNumber;
+	  OsiObject * object = model->modifiableObject(k);
+	  const CbcSimpleInteger * thisOne = dynamic_cast <const CbcSimpleInteger *> (object);
+	  assert (thisOne);
+	  int iColumn = thisOne->columnNumber();
+	  double targetValue = hotstartSolution[iColumn];
+	  double value = saveSolution[iColumn];
+	  printf("Branch on %d has target %g (value %g) and current bounds %g and %g\n",
+		 iColumn,targetValue,value,saveLower[iColumn],saveUpper[iColumn]);
+	}
+#endif
         break;
       } else if (!iPass) {
         // looks like a solution - get paranoid
@@ -2391,7 +2448,8 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
   else
     depth_ = 0;
   // Go to other choose if hot start
-  if (model->hotstartSolution()) 
+  if (model->hotstartSolution()&&
+      (((model->moreSpecialOptions()&1024)==0)||false))
     return -3;
   delete branch_;
   branch_=NULL;
@@ -2490,6 +2548,52 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
   double * saveSolution = new double[numberColumns];
   memcpy(saveSolution,solver->getColSolution(),numberColumns*sizeof(double));
   model->reserveCurrentSolution(saveSolution);
+  const double * hotstartSolution = model->hotstartSolution();
+  const int * hotstartPriorities = model->hotstartPriorities();
+  double integerTolerance = 
+    model->getDblParam(CbcModel::CbcIntegerTolerance);
+  if (hotstartSolution) {
+    if((model->moreSpecialOptions()&1024)!=0) {
+      int nBad=0;
+      int nUnsat=0;
+      int nDiff=0;
+      for (int i=0;i<numberObjects;i++) {
+	OsiObject * object = model->modifiableObject(i);
+	const CbcSimpleInteger * thisOne = dynamic_cast <const CbcSimpleInteger *> (object);
+	if (thisOne) {
+	  int iColumn = thisOne->columnNumber();
+	  double targetValue = hotstartSolution[iColumn];
+	  double value = saveSolution[iColumn];
+	  if (fabs(value-floor(value+0.5))>1.0e-6) {
+	    nUnsat++;
+#ifdef CLP_INVESTIGATE 
+	    printf("H %d is %g target %g\n",iColumn,value,targetValue);
+#endif
+	  } else if (fabs(targetValue-value)>1.0e-6) {
+	    nDiff++;
+	  }
+	  if (targetValue<saveLower[iColumn]||
+	      targetValue>saveUpper[iColumn]) {
+#ifdef CLP_INVESTIGATE 
+	    printf("%d has target %g and current bounds %g and %g\n",
+		   iColumn,targetValue,saveLower[iColumn],saveUpper[iColumn]);
+#endif
+	    nBad++;
+	  }
+	}
+      }
+#ifdef CLP_INVESTIGATE 
+      printf("Hot %d unsatisfied, %d outside limits, %d different\n",
+	     nUnsat,nBad,nDiff); 
+#endif
+      if (nBad) {
+	// switch off as not possible
+	  hotstartSolution=NULL;
+	  model->setHotstartSolution(NULL,NULL);
+	  usefulInfo.hotstartSolution_=NULL;
+      }
+    }
+  }
   /*
     Get a branching decision object. Use the default dynamic decision criteria unless
     the user has loaded a decision method into the model.
@@ -2581,9 +2685,9 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
   int saveSearchStrategy2 = model->searchStrategy();
 #endif
   // Get average up and down costs
-  double averageUp=0.0;
-  double averageDown=0.0;
   {
+    double averageUp=0.0;
+    double averageDown=0.0;
     int numberUp=0;
     int numberDown=0;
     int i;
@@ -2650,7 +2754,7 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
   } 
   if (useShadow) {
     // pseudo shadow prices
-    model->pseudoShadow(model->moreSpecialOptions()>>3);
+    model->pseudoShadow((model->moreSpecialOptions()>>3)&63);
   }
 #ifdef DEPRECATED_STRATEGY
   { // in for tabbing
@@ -2761,6 +2865,7 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
 	 4 - all +- 1 or all +1 and odd
       */
       int problemType = model->problemType();
+      bool canDoOneHot=false;
       for (i=0;i<numberObjects;i++) {
         OsiObject * object = model->modifiableObject(i);
         CbcSimpleIntegerDynamicPseudoCost * dynamicObject =
@@ -2768,6 +2873,68 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
         int preferredWay;
         double infeasibility = object->infeasibility(&usefulInfo,preferredWay);
         int priorityLevel = object->priority();
+        if (hotstartSolution) {
+          // we are doing hot start
+          const CbcSimpleInteger * thisOne = dynamic_cast <const CbcSimpleInteger *> (object);
+          if (thisOne) {
+            int iColumn = thisOne->columnNumber();
+            bool canDoThisHot=true;
+            double targetValue = hotstartSolution[iColumn];
+            if (saveUpper[iColumn]>saveLower[iColumn]) {
+              double value = saveSolution[iColumn];
+              if (hotstartPriorities)
+                priorityLevel=hotstartPriorities[iColumn]; 
+              //double originalLower = thisOne->originalLower();
+              //double originalUpper = thisOne->originalUpper();
+              // switch off if not possible
+              if (targetValue>=saveLower[iColumn]&&targetValue<=saveUpper[iColumn]) {
+                /* priority outranks rest always if negative
+                   otherwise can be downgraded if at correct level.
+                   Infeasibility may be increased to choose 1.0 values first.
+                   choose one near wanted value
+                */
+                if (fabs(value-targetValue)>integerTolerance) {
+		  //if (infeasibility>0.01)
+		  //infeasibility = fabs(1.0e6-fabs(value-targetValue));
+		  //else
+		  infeasibility = fabs(value-targetValue);
+                  //if (targetValue==1.0)
+		  //infeasibility += 1.0;
+                  if (value>targetValue) {
+                    preferredWay=-1;
+                  } else {
+                    preferredWay=1;
+                  }
+                  priorityLevel = CoinAbs(priorityLevel);
+                } else if (priorityLevel<0) {
+                  priorityLevel = CoinAbs(priorityLevel);
+                  if (targetValue==saveLower[iColumn]) {
+                    infeasibility = integerTolerance+1.0e-12;
+                    preferredWay=-1;
+                  } else if (targetValue==saveUpper[iColumn]) {
+                    infeasibility = integerTolerance+1.0e-12;
+                    preferredWay=1;
+                  } else {
+                    // can't
+                    priorityLevel += 10000000;
+                    canDoThisHot=false;
+                  }
+                } else {
+                  priorityLevel += 10000000;
+                  canDoThisHot=false;
+                }
+              } else {
+                // switch off if not possible
+                canDoThisHot=false;
+              }
+              if (canDoThisHot)
+                canDoOneHot=true;
+            } else if (targetValue<saveLower[iColumn]||targetValue>saveUpper[iColumn]) {
+            }
+          } else {
+            priorityLevel += 10000000;
+          }
+        }
 #define ZERO_ONE 0
 #define ZERO_FAKE 1.0e20;
 #if ZERO_ONE==1
@@ -2919,6 +3086,12 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
 	  printf("nunsat %d, %d probed, %d other 0-1\n",numberUnsatisfied_,
 		 numberUnsatisProbed,numberUnsatisNotProbed);
         // some infeasibilities - go to next steps
+	if (!canDoOneHot&&hotstartSolution) {
+	  // switch off as not possible
+	  hotstartSolution=NULL;
+	  model->setHotstartSolution(NULL,NULL);
+	  usefulInfo.hotstartSolution_=NULL;
+	}
         break;
       } else if (!iPass) {
         // may just need resolve

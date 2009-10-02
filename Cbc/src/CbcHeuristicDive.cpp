@@ -179,11 +179,6 @@ bool CbcHeuristicDive::canHeuristicRun()
   return shouldHeurRun_randomChoice();
 }
 
-struct PseudoReducedCost {
-  int var;
-  double pseudoRedCost;
-};
-
 inline bool compareBinaryVars(const PseudoReducedCost obj1,
 			      const PseudoReducedCost obj2)
 {
@@ -452,6 +447,9 @@ CbcHeuristicDive::solution(double & solutionValue,
     double gap=1.0e30;
 #endif
     if (reducedCost&&true) {
+#if 1
+      cnt=fixOtherVariables(solver,solution,candidate,random);
+#else
 #ifdef GAP
       double cutoff = model_->getCutoff() ; 
       if (cutoff<1.0e20&&false) {
@@ -500,6 +498,7 @@ CbcHeuristicDive::solution(double & solutionValue,
 #ifdef CLP_INVESTIGATE
       printf("cutoff %g obj %g - %d free, %d fixed\n",
 	     model_->getCutoff(),solver->getObjValue(),numberFree,numberFixed);
+#endif
 #endif
 #endif
     } else {
@@ -998,4 +997,80 @@ int CbcHeuristicDive::reducedCostFix (OsiSolverInterface* solver)
     }
   }
   return numberFixed; 
+}
+// Fix other variables at bounds
+int 
+CbcHeuristicDive::fixOtherVariables(OsiSolverInterface * solver,
+				    const double * solution,
+				    PseudoReducedCost * candidate,
+				    const double * random)
+{
+  const double * lower = solver->getColLower();
+  const double * upper = solver->getColUpper();
+  double integerTolerance = model_->getDblParam(CbcModel::CbcIntegerTolerance);
+  double primalTolerance;
+  solver->getDblParam(OsiPrimalTolerance,primalTolerance);
+
+  int numberIntegers = model_->numberIntegers();
+  const int * integerVariable = model_->integerVariable();
+  const double* reducedCost = solver->getReducedCost();
+  // fix other integer variables that are at their bounds
+  int cnt=0;
+#ifdef GAP
+  double direction = solver->getObjSense(); // 1 for min, -1 for max
+  double gap=1.0e30;
+#endif
+#ifdef GAP
+  double cutoff = model_->getCutoff() ; 
+  if (cutoff<1.0e20&&false) {
+    double direction = solver->getObjSense() ;
+    gap = cutoff - solver->getObjValue()*direction ;
+    gap *= 0.1; // Fix more if plausible
+    double tolerance;
+    solver->getDblParam(OsiDualTolerance,tolerance) ;
+    if (gap<=0.0)
+      gap = tolerance;
+    gap += 100.0*tolerance;
+  }
+  int nOverGap=0;
+#endif
+  int numberFree=0;
+  int numberFixedAlready=0;
+  for (int i=0; i<numberIntegers; i++) {
+    int iColumn = integerVariable[i];
+    if (upper[iColumn]>lower[iColumn]) {
+      numberFree++;
+      double value=solution[iColumn];
+      if(fabs(floor(value+0.5)-value)<=integerTolerance) {
+	candidate[cnt].var = iColumn;
+	candidate[cnt++].pseudoRedCost = 
+	  fabs(reducedCost[iColumn]*random[i]);
+#ifdef GAP
+	if (fabs(reducedCost[iColumn])>gap)
+	  nOverGap++;
+#endif
+      }
+    } else {
+      numberFixedAlready++;
+    }
+  }
+#ifdef GAP
+  int nLeft = maxNumberToFix-numberFixedAlready;
+#ifdef CLP_INVESTIGATE
+  printf("cutoff %g obj %g nover %d - %d free, %d fixed\n",
+	 cutoff,solver->getObjValue(),nOverGap,numberFree,
+	 numberFixedAlready);
+#endif
+  if (nOverGap>nLeft&&true) {
+    nOverGap = CoinMin(nOverGap,nLeft+maxNumberToFix/2);
+    maxNumberToFix += nOverGap-nLeft;
+  }
+#else
+#ifdef CLP_INVESTIGATE
+  printf("cutoff %g obj %g - %d free, %d fixed\n",
+	 model_->getCutoff(),solver->getObjValue(),numberFree,
+	 numberFixedAlready);
+#endif
+#endif
+  return cnt;
 }

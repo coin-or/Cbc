@@ -5,6 +5,11 @@
 #define CbcHeuristicDive_H
 
 #include "CbcHeuristic.hpp"
+struct PseudoReducedCost {
+  int var;
+  double pseudoRedCost;
+};
+
 
 /** Dive class
  */
@@ -97,6 +102,11 @@ public:
 
   /// Perform reduced cost fixing on integer variables
   int reducedCostFix (OsiSolverInterface* solver);
+  /// Fix other variables at bounds
+  virtual int fixOtherVariables(OsiSolverInterface * solver,
+				const double * solution,
+				PseudoReducedCost * candidate,
+				const double * random);
 
 protected:
   // Data

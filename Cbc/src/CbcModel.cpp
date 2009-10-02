@@ -604,6 +604,7 @@ CbcModel::analyzeObjective ()
 #endif
     } else if (largestObj<smallestObj*5.0&&!parentModel_&&
 	       !numberContinuousObj&&
+	       !numberGeneralIntegerObj&&
 	       numberIntegerObj*2<numberColumns) {
       // up priorities on costed
       int iPriority=-1;
@@ -1295,12 +1296,15 @@ void CbcModel::branchAndBound(int doStatistics)
         for (iObject=0;iObject<numberOriginalObjects;iObject++) {
           iColumn = originalObject[iObject]->columnNumber();
           if (iColumn<0) {
+	    // already has column numbers changed
             object_[numberObjects_] = originalObject[iObject]->clone();
+#if 0
             // redo ids etc
 	    CbcObject * obj =
               dynamic_cast <CbcObject *>(object_[numberObjects_]) ;
 	    assert (obj);
 	    obj->redoSequenceEtc(this,numberColumns,originalColumns);
+#endif
             numberObjects_++;
           }
         }
@@ -2500,8 +2504,134 @@ void CbcModel::branchAndBound(int doStatistics)
   int numberIterationsAtContinuous = numberIterations_;
   //solverCharacteristics_->setSolver(solver_);
   if (feasible) {
-    //#define HOTSTART 1
-#if HOTSTART
+    //#define HOTSTART -1
+#if HOTSTART<0
+    if (bestSolution_&&!parentModel_&&!hotstartSolution_&&
+	(moreSpecialOptions_&1024)!=0) {
+      // Set priorities so only branch on ones we need to
+      // use djs and see if only few branches needed
+#ifndef NDEBUG
+      double integerTolerance = getIntegerTolerance() ;
+#endif
+      bool possible=true;
+      const double * saveLower = continuousSolver_->getColLower();
+      const double * saveUpper = continuousSolver_->getColUpper();
+      for (int i=0;i<numberObjects_;i++) {
+	const CbcSimpleInteger * thisOne = dynamic_cast <const CbcSimpleInteger *> (object_[i]);
+	if (thisOne) {
+	  int iColumn = thisOne->columnNumber();
+	  if (saveUpper[iColumn]>saveLower[iColumn]+1.5) {
+	    possible=false;
+	    break;
+	  }
+	} else {
+	  possible=false;
+	  break;
+	}
+      }
+      if (possible) {
+	OsiSolverInterface * solver = continuousSolver_->clone();
+	int numberColumns = solver->getNumCols();
+	for (int iColumn = 0 ; iColumn < numberColumns ; iColumn++) {
+	  double value = bestSolution_[iColumn] ;
+	  value = CoinMax(value, saveLower[iColumn]) ;
+	  value = CoinMin(value, saveUpper[iColumn]) ;
+	  value = floor(value+0.5);
+	  if (solver->isInteger(iColumn)) {
+	    solver->setColLower(iColumn,value);
+	    solver->setColUpper(iColumn,value);
+	  }
+	}
+	solver->setHintParam(OsiDoDualInResolve,false,OsiHintTry);
+	// objlim and all slack
+	double direction = solver->getObjSense();
+	solver->setDblParam(OsiDualObjectiveLimit,1.0e50*direction);
+	CoinWarmStartBasis * basis = dynamic_cast<CoinWarmStartBasis *> (solver->getEmptyWarmStart());
+	solver->setWarmStart(basis);
+	delete basis;
+	bool changed=true;
+	hotstartPriorities_ = new int [numberColumns];
+	for (int iColumn=0;iColumn<numberColumns;iColumn++)
+	  hotstartPriorities_[iColumn]=1;
+	while (changed) {
+	  changed=false;
+	  solver->resolve();
+	  if (!solver->isProvenOptimal()) {
+	    possible=false;
+	    break;
+	  }
+	  const double * dj = solver->getReducedCost();
+	  const double * colLower = solver->getColLower();
+	  const double * colUpper = solver->getColUpper();
+	  const double * solution = solver->getColSolution();
+	  int nAtLbNatural=0;
+	  int nAtUbNatural=0;
+	  int nZeroDj=0;
+	  int nForced=0;
+	  for (int iColumn = 0 ; iColumn < numberColumns ; iColumn++) {
+	    double value = solution[iColumn] ;
+	    value = CoinMax(value, saveLower[iColumn]) ;
+	    value = CoinMin(value, saveUpper[iColumn]) ;
+	    if (solver->isInteger(iColumn)) {
+	      assert(fabs(value-solution[iColumn]) <= integerTolerance) ;
+	      if (hotstartPriorities_[iColumn]==1) {
+		if (dj[iColumn]<-1.0e-6) {
+		  // negative dj
+		  if (saveUpper[iColumn]==colUpper[iColumn]) {
+		    nAtUbNatural++;
+		    hotstartPriorities_[iColumn]=2;
+		    solver->setColLower(iColumn,saveLower[iColumn]);
+		    solver->setColUpper(iColumn,saveUpper[iColumn]);
+		  } else {
+		    nForced++;
+		  }
+		} else if (dj[iColumn]>1.0e-6) {
+		  // positive dj
+		  if (saveLower[iColumn]==colLower[iColumn]) {
+		    nAtLbNatural++;
+		    hotstartPriorities_[iColumn]=2;
+		    solver->setColLower(iColumn,saveLower[iColumn]);
+		    solver->setColUpper(iColumn,saveUpper[iColumn]);
+		  } else {
+		    nForced++;
+		  }
+		} else {
+		  // zero dj
+		  nZeroDj++;
+		}
+	      }
+	    }
+	  }
+#ifdef CLP_INVESTIGATE
+	  printf("%d forced, %d naturally at lower, %d at upper - %d zero dj\n",
+		 nForced,nAtLbNatural,nAtUbNatural,nZeroDj);
+#endif
+	  if (nAtLbNatural||nAtUbNatural) {
+	    changed=true;
+	  } else {
+	    if (nForced+nZeroDj>50||
+		(nForced+nZeroDj)*4>numberIntegers_)
+	      possible=false;
+	  }
+	}
+	delete solver;
+      }
+      if (possible) {
+	setHotstartSolution(bestSolution_);
+	if (!saveCompare) {
+	  // create depth first comparison
+	  saveCompare = nodeCompare_;
+	  // depth first
+	  nodeCompare_ = new CbcCompareDepth();
+	  tree_->setComparison(*nodeCompare_) ;
+	}
+      } else {
+	delete [] hotstartPriorities_;
+	hotstartPriorities_=NULL;
+      }
+    }
+#endif
+#if HOTSTART>0
     if (hotstartSolution_&&!hotstartPriorities_) {
       // Set up hot start
       OsiSolverInterface * solver = solver_->clone();
@@ -9426,7 +9556,7 @@ CbcModel::pseudoShadow(int iActive)
 	CbcSimpleIntegerDynamicPseudoCost * obj1 =
 	  dynamic_cast <CbcSimpleIntegerDynamicPseudoCost *>(object_[i]) ;
 	if (obj1) {
-	  assert (obj1->downShadowPrice()>0.0);
+	  //assert (obj1->downShadowPrice()>0.0);
 #define P_FACTOR 1.0
 #if 1
 	  obj1->setDownShadowPrice(-P_FACTOR*obj1->downShadowPrice());
@@ -9718,7 +9848,10 @@ CbcModel::pseudoShadow(int iActive)
   if (numberIntegers) {
     double smallDown = 0.0001*(downSum/static_cast<double> (numberIntegers));
     double smallUp = 0.0001*(upSum/static_cast<double> (numberIntegers));
-#define PSEUDO_FACTOR 1.0e-1
+#define PSEUDO_FACTOR 5.0e-1
+    double pseudoFactor=PSEUDO_FACTOR;
+    //if (!numberNodes_)
+    //pseudoFactor=0.0;
     for (int i=0;i<numberObjects_;i++) {
       CbcSimpleIntegerDynamicPseudoCost * obj1 =
         dynamic_cast <CbcSimpleIntegerDynamicPseudoCost *>(object_[i]) ;
@@ -9726,7 +9859,7 @@ CbcModel::pseudoShadow(int iActive)
         int iColumn = obj1->columnNumber();
         double upPseudoCost = obj1->upDynamicPseudoCost();
         double saveUp = upPseudoCost;
-        upPseudoCost = CoinMax(PSEUDO_FACTOR*upPseudoCost,smallUp);
+        upPseudoCost = CoinMax(pseudoFactor*upPseudoCost,smallUp);
         upPseudoCost = CoinMax(upPseudoCost,up[iColumn]);
         upPseudoCost = CoinMax(upPseudoCost,0.001*down[iColumn]);
         obj1->setUpShadowPrice(upPseudoCost);
@@ -9735,7 +9868,7 @@ CbcModel::pseudoShadow(int iActive)
                  iColumn,saveUp,upPseudoCost);
         double downPseudoCost = obj1->downDynamicPseudoCost();
         double saveDown = downPseudoCost;
-        downPseudoCost = CoinMax(PSEUDO_FACTOR*downPseudoCost,smallDown);
+        downPseudoCost = CoinMax(pseudoFactor*downPseudoCost,smallDown);
         downPseudoCost = CoinMax(downPseudoCost,down[iColumn]);
         downPseudoCost = CoinMax(downPseudoCost,0.001*up[iColumn]);
         obj1->setDownShadowPrice(downPseudoCost);
@@ -10498,7 +10631,6 @@ CbcModel::checkSolution (double cutoff, double *solution,
       cutoff = objectiveValue; // relax
     if ((solver_->isProvenOptimal()||(specialOptions_&4)!=0) && objectiveValue <= cutoff) { 
       memcpy(solution ,solver_->getColSolution(),numberColumns*sizeof(double)) ;
-      
       int iColumn;
 #ifndef NDEBUG
       double integerTolerance = getIntegerTolerance() ;
@@ -13264,7 +13396,7 @@ CbcModel::doOneNode(CbcModel * baseModel, CbcNode * & node, CbcNode * & newNode)
 	  numberNodesBeforeFathom = 0;
 	if (node->depth()>=go_fathom &&(specialOptions_&2048)==0
 	    //if (node->depth()>=FATHOM_BIAS-fastNodeDepth_&&!parentModel_
-	    &&numberNodes_>=numberNodesBeforeFathom) {
+	    &&numberNodes_>=numberNodesBeforeFathom&&!hotstartSolution_) {
 #ifndef COIN_HAS_CPX
 	  specialOptions_ &= ~16384;
 #endif
@@ -13297,6 +13429,26 @@ CbcModel::doOneNode(CbcModel * baseModel, CbcNode * & node, CbcNode * & newNode)
 	    int * numberUpInfeasible = new int[numberIntegers_];
 	    fillPseudoCosts(down,up,priority,numberDown,numberUp,
 			    numberDownInfeasible,numberUpInfeasible);
+	    // See if all priorities same
+	    bool allSame=true;
+	    int kPriority=priority[0];
+	    for (int i=1;i<numberIntegers_;i++) {
+	      if (kPriority!=priority[i]) {
+		allSame=false;
+		break;
+	      }
+	    }
+	    ClpSimplex * simplex = clpSolver->getModelPtr();
+	    if (allSame&&false) {
+	      // change priorities on general
+	      const double * lower = simplex->columnLower();
+	      const double * upper = simplex->columnUpper();
+	      for (int i=0;i<numberIntegers_;i++) {
+		int iColumn = integerVariable_[i];
+		if (upper[iColumn]>lower[iColumn]+1.1)
+		  priority[i]=kPriority+1;
+	      }
+	    }
 	    info->fillPseudoCosts(down,up,priority,numberDown,numberUp,
 				  numberDownInfeasible,
 				  numberUpInfeasible,numberIntegers_);
@@ -13313,7 +13465,6 @@ CbcModel::doOneNode(CbcModel * baseModel, CbcNode * & node, CbcNode * & newNode)
 	    bool takeHint;
 	    OsiHintStrength strength;
 	    solver_->getHintParam(OsiDoReducePrint,takeHint,strength);
-	    ClpSimplex * simplex = clpSolver->getModelPtr();
 	    //printf("mod cutoff %g solver %g offset %g\n",
 	    //   getCutoff(),simplex->dualObjectiveLimit(),simplex->objectiveOffset());
 	    int saveLevel = simplex->logLevel();
@@ -14935,8 +15086,9 @@ CbcModel::fillPseudoCosts(double * downCosts, double * upCosts,
     }
   }
 #ifdef CLP_INVESTIGATE
-  printf("Before fathom %d not trusted out of %d\n",
-	 numberNot,numberIntegers_);
+  if (priority)
+    printf("Before fathom %d not trusted out of %d\n",
+	   numberNot,numberIntegers_);
 #endif
   delete [] back;
 }

@@ -46,7 +46,11 @@ public:
   /** Initializes any data which is going to be used repeatedly
       in selectVariableToBranch */
   virtual void initializeData() ;
-
+  /// Fix other variables at bounds
+  virtual int fixOtherVariables(OsiSolverInterface * solver,
+				const double * solution,
+				PseudoReducedCost * candidate,
+				const double * random);
 
 };
 

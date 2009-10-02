@@ -540,7 +540,7 @@ CbcSimpleIntegerDynamicPseudoCost::solverBranch() const
 }
 //#define FUNNY_BRANCHING  
 double 
-CbcSimpleIntegerDynamicPseudoCost::infeasibility(const OsiBranchingInformation * /*info*/,
+CbcSimpleIntegerDynamicPseudoCost::infeasibility(const OsiBranchingInformation * info,
 			       int &preferredWay) const
 {
   assert (downDynamicPseudoCost_>1.0e-40&&upDynamicPseudoCost_>1.0e-40);
@@ -698,6 +698,13 @@ CbcSimpleIntegerDynamicPseudoCost::infeasibility(const OsiBranchingInformation *
 #endif
   if (preferredWay_)
     preferredWay=preferredWay_;
+  if (info->hotstartSolution_) {
+    double targetValue = info->hotstartSolution_[columnNumber_];
+    if (value>targetValue)
+      preferredWay=-1;
+    else
+      preferredWay=1;
+  }
   // weight at 1.0 is max min
 #define WEIGHT_AFTER 0.8
 #define WEIGHT_BEFORE 0.1

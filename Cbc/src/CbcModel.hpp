@@ -1592,7 +1592,8 @@ public:
   inline bool normalSolver() const
   { return (specialOptions_&16)==0;}
   /** Set more special options
-      at present bottom 3 bits used for shadow price mode
+      at present bottom 6 bits used for shadow price mode
+      1024 for experimental hotstart
   */
   inline void setMoreSpecialOptions(int value)
   { moreSpecialOptions_=value;}

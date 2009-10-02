@@ -3413,6 +3413,17 @@ int
 	  }
 	}
       }
+      if (accumulate) {
+	heuristic4.setAccumulate(accumulate);
+	if (printStuff) {
+	  if (accumulate) {
+	    sprintf(generalPrint,"Accumulate of %d",accumulate);
+	    generalMessageHandler->message(CBC_GENERAL,generalMessages)
+	      << generalPrint
+	      <<CoinMessageEol;
+	  }
+	}
+      }
       if (r) {
 	// also set increment
 	//double increment = (0.01*i+0.005)*(fabs(value)+1.0e-12);
@@ -3421,17 +3432,10 @@ int
 	if (fakeIncrement)
 	  increment = fakeIncrement;
 	heuristic4.setAbsoluteIncrement(increment);
-	heuristic4.setAccumulate(accumulate);
 	heuristic4.setMaximumRetries(r+1);
 	if (printStuff) {
 	  if (increment) {
 	    sprintf(generalPrint,"Increment of %g",increment);
-	    generalMessageHandler->message(CBC_GENERAL,generalMessages)
-	      << generalPrint
-	      <<CoinMessageEol;
-	  }
-	  if (accumulate) {
-	    sprintf(generalPrint,"Accumulate of %d",accumulate);
 	    generalMessageHandler->message(CBC_GENERAL,generalMessages)
 	      << generalPrint
 	      <<CoinMessageEol;
@@ -3495,12 +3499,19 @@ int
     anyToDo=true;
   }
   if (useRENS>=kType&&useRENS<=kType+1) {
+#if 1
     CbcHeuristicRENS heuristic6(*model);
     heuristic6.setHeuristicName("RENS");
     heuristic6.setFractionSmall(0.4);
     heuristic6.setFeasibilityPumpOptions(1008003);
     int nodes []={-2,50,50,50,200,1000,10000};
     heuristic6.setNumberNodes(nodes[useRENS]);
+#else
+    CbcHeuristicVND heuristic6(*model);
+    heuristic6.setHeuristicName("VND");
+    heuristic5.setFractionSmall(0.5);
+    heuristic5.setDecayFactor(5.0);
+#endif
     model->addHeuristic(&heuristic6) ;
     anyToDo=true;
   }
@@ -5466,6 +5477,10 @@ int
                 } else if (iStat==5) {
                   iStat = 3;
                   pos += sprintf(buf+pos,"stopped on ctrl-c,");
+		} else if (iStat==6) {
+		  // bab infeasible
+		  pos += sprintf(buf+pos,"integer infeasible,");
+		  iStat=1;
                 } else {
                   pos += sprintf(buf+pos,"status unknown,");
                   iStat=6;
@@ -8839,6 +8854,10 @@ int
                   } else if (iStat==5) {
                     iStat = 3;
                     pos += sprintf(buf+pos,"stopped on ctrl-c,");
+		  } else if (iStat==6) {
+		    // bab infeasible
+		    pos += sprintf(buf+pos,"integer infeasible,");
+		    iStat=1;
                   } else {
                     pos += sprintf(buf+pos,"status unknown,");
                     iStat=6;
@@ -10191,6 +10210,10 @@ int
 		} else if (iStat==5) {
 		  iStat = 3;
 		  pos += sprintf(buf+pos,"stopped on ctrl-c,");
+		} else if (iStat==6) {
+		  // bab infeasible
+		  pos += sprintf(buf+pos,"integer infeasible,");
+		  iStat=1;
 		} else {
 		  pos += sprintf(buf+pos,"status unknown,");
 		  iStat=6;

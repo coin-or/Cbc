@@ -18,6 +18,7 @@
 #include "CbcMessage.hpp"
 #include "CbcHeuristicFPump.hpp"
 #include "CbcBranchActual.hpp"
+#include "CbcBranchDynamic.hpp"
 #include "CoinHelperFunctions.hpp"
 #include "CoinWarmStartBasis.hpp"
 #include "CoinTime.hpp"
@@ -327,7 +328,7 @@ CbcHeuristicFPump::solution(double & solutionValue,
   // For solution closest to feasible if none found
   int * closestSolution = general ? NULL : new int[numberIntegers];
   double closestObjectiveValue = COIN_DBL_MAX;
-  
+
   int numberIntegersOrig = numberIntegers;
   numberIntegers = j;
   double * newSolution = new double [numberColumns];
@@ -573,7 +574,6 @@ CbcHeuristicFPump::solution(double & solutionValue,
       memcpy(lastSolution,solution,numberColumns*sizeof(double));
     double primalTolerance;
     solver->getDblParam(OsiPrimalTolerance,primalTolerance);
-    
     
     // 2 space for last rounded solutions
 #define NUMBER_OLD 4
@@ -1324,8 +1324,8 @@ CbcHeuristicFPump::solution(double & solutionValue,
 	      printf("rounding obj of %g?\n",roundingObjective);
 #endif
 	      //roundingObjective = newSolutionValue;
-	    } else {
-	      roundingObjective = COIN_DBL_MAX;
+	      //} else {
+	      //roundingObjective = COIN_DBL_MAX;
 	    }
 	    model_->swapSolver(saveSolver);
 	  }
@@ -1939,7 +1939,8 @@ CbcHeuristicFPump::solution(double & solutionValue,
       solutionFound=false;
       if (absoluteIncrement_>0.0||relativeIncrement_>0.0) {
 	double gap = relativeIncrement_*fabs(solutionValue);
-	cutoff -= CoinMax(CoinMax(gap,absoluteIncrement_),model_->getCutoffIncrement());
+	double change = CoinMax(gap,absoluteIncrement_);
+	cutoff = CoinMin(cutoff,solutionValue-change);
       } else {
 	//double weights[10]={0.1,0.1,0.2,0.2,0.2,0.3,0.3,0.3,0.4,0.5};
 	double weights[10]={0.1,0.2,0.3,0.3,0.4,0.4,0.4,0.5,0.5,0.6};

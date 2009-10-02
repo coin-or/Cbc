@@ -310,8 +310,11 @@ CbcCompareDefault::test (CbcNode * x, CbcNode * y)
     // Use estimates
     double testX = x->guessedObjectiveValue();
     double testY = y->guessedObjectiveValue();
-#elif THY_THIS==3
+#elif TRY_THIS==3
 #define THRESH 0.95
+    // Use estimates
+    double testX = x->guessedObjectiveValue();
+    double testY = y->guessedObjectiveValue();
     if (x->objectiveValue()-bestPossible_>THRESH*(cutoff_-bestPossible_))
       testX *= 2.0; // make worse
     if (y->objectiveValue()-bestPossible_>THRESH*(cutoff_-bestPossible_))

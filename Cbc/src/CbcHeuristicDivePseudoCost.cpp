@@ -164,9 +164,9 @@ CbcHeuristicDivePseudoCost::initializeData()
         dynamic_cast <CbcSimpleIntegerDynamicPseudoCost *>(objects[i]) ;
       if (obj1) {
         //int iColumn = obj1->columnNumber();
-        double downPseudoCost = obj1->downDynamicPseudoCost();
+        double downPseudoCost = 1.0e-2*obj1->downDynamicPseudoCost();
 	double downShadow = obj1->downShadowPrice();
-        double upPseudoCost = obj1->upDynamicPseudoCost();
+        double upPseudoCost = 1.0e-2*obj1->upDynamicPseudoCost();
 	double upShadow = obj1->upShadowPrice();
         downPseudoCost = CoinMax(downPseudoCost,downShadow);
         downPseudoCost = CoinMax(downPseudoCost,0.001*upShadow);
@@ -177,4 +177,51 @@ CbcHeuristicDivePseudoCost::initializeData()
       }
     }
   }
+}
+// Fix other variables at bounds
+int 
+CbcHeuristicDivePseudoCost::fixOtherVariables(OsiSolverInterface * solver,
+					      const double * solution,
+					      PseudoReducedCost * candidate,
+					      const double * random)
+{
+  const double * lower = solver->getColLower();
+  const double * upper = solver->getColUpper();
+  double integerTolerance = model_->getDblParam(CbcModel::CbcIntegerTolerance);
+  double primalTolerance;
+  solver->getDblParam(OsiPrimalTolerance,primalTolerance);
+
+  int numberIntegers = model_->numberIntegers();
+  const int * integerVariable = model_->integerVariable();
+  const double* reducedCost = solver->getReducedCost();
+  // fix other integer variables that are at their bounds
+  int cnt=0;
+  int numberFree=0;
+  int numberFixedAlready=0;
+  for (int i=0; i<numberIntegers; i++) {
+    int iColumn = integerVariable[i];
+    if (upper[iColumn]>lower[iColumn]) {
+      numberFree++;
+      double value=solution[iColumn];
+      if(value-lower[iColumn]<=integerTolerance) {
+	candidate[cnt].var = iColumn;
+	candidate[cnt++].pseudoRedCost = CoinMax(1.0e-2*reducedCost[iColumn],
+						 downArray_[i])*random[i];
+      } else if(upper[iColumn]-value<=integerTolerance) {
+	candidate[cnt].var = iColumn;
+	candidate[cnt++].pseudoRedCost = CoinMax(-1.0e-2*reducedCost[iColumn],
+						 downArray_[i])*random[i];
+      }
+    } else {
+      numberFixedAlready++;
+    }
+  }
+#ifdef CLP_INVESTIGATE
+  printf("cutoff %g obj %g - %d free, %d fixed\n",
+	 model_->getCutoff(),solver->getObjValue(),numberFree,
+	 numberFixedAlready);
+#endif
+  return cnt;
+  //return CbcHeuristicDive::fixOtherVariables(solver, solution,
+  //				     candidate, random);
 }

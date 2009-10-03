@@ -1115,6 +1115,7 @@ CbcModel::analyzeObjective ()
 */
 #ifdef COIN_HAS_CPX
 #include "OsiCpxSolverInterface.hpp"
+#include "cplex.h"
 #endif
 void CbcModel::branchAndBound(int doStatistics) 
 

@@ -32,6 +32,7 @@ Cbc/examples/Makefile.in -text
 Cbc/examples/allCuts.cpp -text
 Cbc/examples/barrier.cpp -text
 Cbc/examples/cbc_driverC_sos.c -text
+Cbc/examples/crossover.cpp -text
 Cbc/examples/driver3.cpp -text
 Cbc/examples/driver4.cpp -text
 Cbc/examples/driver4a.cpp -text

@@ -4429,15 +4429,16 @@ CbcModel::initialSolve()
   assert (solver_);
   // Check if bounds are all integral (as may get messed up later)
   checkModel();
-  assert (!solverCharacteristics_);
-  OsiBabSolver * solverCharacteristics = dynamic_cast<OsiBabSolver *> (solver_->getAuxiliaryInfo());
-  if (solverCharacteristics) {
-    solverCharacteristics_ = solverCharacteristics;
-  } else {
-    // replace in solver
-    OsiBabSolver defaultC;
-    solver_->setAuxiliaryInfo(&defaultC);
-    solverCharacteristics_ = dynamic_cast<OsiBabSolver *> (solver_->getAuxiliaryInfo());
+  if (!solverCharacteristics_) {
+    OsiBabSolver * solverCharacteristics = dynamic_cast<OsiBabSolver *> (solver_->getAuxiliaryInfo());
+    if (solverCharacteristics) {
+      solverCharacteristics_ = solverCharacteristics;
+    } else {
+      // replace in solver
+      OsiBabSolver defaultC;
+      solver_->setAuxiliaryInfo(&defaultC);
+      solverCharacteristics_ = dynamic_cast<OsiBabSolver *> (solver_->getAuxiliaryInfo());
+    }
   }
   solverCharacteristics_->setSolver(solver_);
   solver_->setHintParam(OsiDoInBranchAndCut,true,OsiHintDo,NULL) ;

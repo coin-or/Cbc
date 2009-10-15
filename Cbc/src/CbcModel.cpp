@@ -4894,7 +4894,10 @@ CbcModel::assignSolver(OsiSolverInterface *&solver, bool deleteSolver)
   if (solver_)
     solver->messageHandler()->setLogLevel(solver_->messageHandler()->logLevel()) ;
 
-  if (modelOwnsSolver()&&deleteSolver) delete solver_ ;
+  if (modelOwnsSolver()&&deleteSolver) {
+    solverCharacteristics_=NULL;
+    delete solver_ ;
+  }
   solver_ = solver;
   solver = NULL ;
   setModelOwnsSolver(true) ;
@@ -5209,6 +5212,7 @@ CbcModel::operator=(const CbcModel& rhs)
 {
   if (this!=&rhs) {
     if (modelOwnsSolver()) {
+      solverCharacteristics_=NULL;
       delete solver_;
       solver_=NULL;
     }

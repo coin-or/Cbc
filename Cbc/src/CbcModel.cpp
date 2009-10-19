@@ -1187,6 +1187,14 @@ void CbcModel::branchAndBound(int doStatistics)
         OsiRowCutDebugger * debugger = const_cast<OsiRowCutDebugger *> (solver_->getRowCutDebuggerAlways());
         if (debugger) 
 	  debugger->redoSolution(numberColumns,originalColumns);
+	if (bestSolution_) {
+	  // need to redo - in case no better found in BAB
+	  // just get integer part right
+	  for (int i=0;i<numberColumns;i++) {
+	    int jColumn = originalColumns[i];
+	    bestSolution_[i]=bestSolution_[jColumn];
+	  }
+	}
         originalObject = object_;
         // object number or -1
         int * temp = new int[nOrig];

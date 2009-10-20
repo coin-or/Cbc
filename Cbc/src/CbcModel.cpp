@@ -2021,6 +2021,8 @@ void CbcModel::branchAndBound(int doStatistics)
 	    nExtra++;
 	  }
 	}
+      } else {
+	nDel=0;
       } 
       delete copy1;
       copy1=copy2->clone();

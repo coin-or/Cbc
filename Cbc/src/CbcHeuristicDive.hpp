@@ -98,7 +98,7 @@ public:
 				      int& bestRound) = 0;
   /** Initializes any data which is going to be used repeatedly
       in selectVariableToBranch */
-  virtual void initializeData() {};
+  virtual void initializeData() {}
 
   /// Perform reduced cost fixing on integer variables
   int reducedCostFix (OsiSolverInterface* solver);

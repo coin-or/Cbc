@@ -4156,10 +4156,10 @@ int
         unsigned char * statusArray = lpSolver->statusArray();
         int i;
         for (i=0;i<info.numberColumns;i++)
-          statusArray[i]= info.columnStatus[i];
+          statusArray[i]= static_cast<unsigned char>(info.columnStatus[i]);
         statusArray+=info.numberColumns;
         for (i=0;i<info.numberRows;i++)
-          statusArray[i]= info.rowStatus[i];
+          statusArray[i]= static_cast<unsigned char>(info.rowStatus[i]);
         CoinWarmStartBasis * basis = lpSolver->getBasis();
         solver->setWarmStart(basis);
         delete basis;

@@ -10913,7 +10913,6 @@ CbcModel::checkSolution (double cutoff, double *solution,
 		      newCut.setGloballyValid(true);
 		      newCut.mutableRow().setTestForDuplicateIndex(false);
 		      globalCuts_.insert(newCut) ;
-		      generator_[i]->incrementNumberCutsInTotal();
 		    } else {
 		      // obviously wrong
 		      if (handler_->logLevel()>0)
@@ -14799,7 +14798,7 @@ static void * doNodesThread(void * voidInfo)
 	  if (exit1&&nodesNow-nodesThisTime>=10) {
 	    // out of loop
 	    //printf("out of loop\n");
-#ifdef CLP_INVESTIGATE2
+#ifdef CLP_INVESTIGATE3
 	    printf("%x tree %d nodes left, done %d and %d its - time %18.6f\n",thisModel,
 		   thisModel->tree()->size(),nodesNow-nodesThisTime,
 		   iterationsNow-iterationsThisTime,CoinGetTimeOfDay()-1.2348e9);

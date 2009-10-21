@@ -10120,7 +10120,6 @@ CbcModel::checkSolution (double cutoff, double *solution,
 		      newCut.setGloballyValid(true);
 		      newCut.mutableRow().setTestForDuplicateIndex(false);
 		      globalCuts_.insert(newCut) ;
-		      generator_[i]->incrementNumberCutsInTotal();
 		    } else {
 		      // obviously wrong
 		      if (handler_->logLevel()>0)

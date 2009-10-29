@@ -102,4 +102,3 @@ Cbc/test/gamsTest.cpp -text
 doxydoc/doxygen.conf -text
 /install-sh -text
 /missing -text
-/test.txt -text

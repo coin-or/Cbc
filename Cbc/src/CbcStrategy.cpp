@@ -260,10 +260,8 @@ CbcStrategyDefault::setupCutGenerators(CbcModel & model)
   }
   int currentPasses = model.getMaximumCutPassesAtRoot();
   if (currentPasses>=0) {
-    if (model.getNumCols()<500)
-      model.setMaximumCutPassesAtRoot(-CoinMax(100,currentPasses)); // always do 100 if possible
-    else if (model.getNumCols()<5000)
-      model.setMaximumCutPassesAtRoot(CoinMax(100,currentPasses)); // use minimum drop
+    if (model.getNumCols()<5000)
+      model.setMaximumCutPassesAtRoot(CoinMax(50,currentPasses)); // use minimum drop
     else
       model.setMaximumCutPassesAtRoot(CoinMax(20,currentPasses));
   } else {
@@ -846,7 +844,7 @@ CbcStrategyDefaultSubTree::setupCutGenerators(CbcModel & model)
     generator->setTiming(true);
   }
 #endif
-  if (model.getNumCols()<500)
+  if (model.getNumCols()<-500)
     model.setMaximumCutPassesAtRoot(-100); // always do 100 if possible
   else if (model.getNumCols()<5000)
     model.setMaximumCutPassesAtRoot(100); // use minimum drop

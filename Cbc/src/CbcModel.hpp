@@ -1594,6 +1594,9 @@ public:
   /** Set more special options
       at present bottom 6 bits used for shadow price mode
       1024 for experimental hotstart
+      2048,4096 breaking out of cuts
+      8192 slowly increase minimum drop
+      16384 gomory
   */
   inline void setMoreSpecialOptions(int value)
   { moreSpecialOptions_=value;}

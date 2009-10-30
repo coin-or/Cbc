@@ -4363,6 +4363,9 @@ int
       gomoryGen.setAwayAtRoot(0.005);
       twomirGen.setAwayAtRoot(0.005);
       twomirGen.setAway(0.01);
+      //twomirGen.setMirScale(1,1);
+      //twomirGen.setTwomirScale(1,1);
+      //twomirGen.setAMax(2);
 #else
       gomoryGen.setAwayAtRoot(0.01);
       twomirGen.setAwayAtRoot(0.01);
@@ -4772,38 +4775,31 @@ int
 		if (value>=1) {
 		  if (!noPrinting_) {
 		    generalMessageHandler->message(CLP_GENERAL,generalMessages)
-		      <<"switching on dense factorization if small, and maybe fast fathoming"
+		      <<"switching on global root cuts for gomory and knapsack"
 		      <<CoinMessageEol;
 		    generalMessageHandler->message(CLP_GENERAL,generalMessages)
-		      <<"Gomory cuts using tolerance of 0.01 at root"
+		      <<"using OSL factorization"
 		      <<CoinMessageEol;
 		    generalMessageHandler->message(CLP_GENERAL,generalMessages)
-		      <<"Possible restart after 100 nodes if can fix many"
+		      <<"only 10 iterations for strong branching"
 		      <<CoinMessageEol;
 		    generalMessageHandler->message(CLP_GENERAL,generalMessages)
-		      <<"extra options - -diving C -diveopt 3 -rins on -tune 6 -probing on -passf 30!"
+		      <<"extra options - -rens on -extra4 24003 -passc 1000!"
 		      <<CoinMessageEol;
 		  }
-		  // try changing tolerance at root
-		  //gomoryGen.setAwayAtRoot(0.01);
-		  int iParam;
-		  iParam = whichParam(DIVEOPT,numberParameters_,parameters_);
-		  parameters_[iParam].setIntValue(3);
-		  iParam = whichParam(FPUMPITS,numberParameters_,parameters_);
-		  parameters_[iParam].setIntValue(30);
-		  iParam = whichParam(FPUMPTUNE,numberParameters_,parameters_);
-		  parameters_[iParam].setIntValue(1005043);
-		  initialPumpTune=1005043;
-		  iParam = whichParam(PROCESSTUNE,numberParameters_,parameters_);
-		  parameters_[iParam].setIntValue(6);
-		  tunePreProcess=6;
-		  iParam = whichParam(DIVINGC,numberParameters_,parameters_);
-		  parameters_[iParam].setCurrentOption("on");
-		  iParam = whichParam(RINS,numberParameters_,parameters_);
-		  parameters_[iParam].setCurrentOption("on");
-		  iParam = whichParam(PROBINGCUTS,numberParameters_,parameters_);
-		  parameters_[iParam].setCurrentOption("on");
-		  probingAction=1;
+		  parameters[whichParam(PROBINGCUTS,numberParameters,parameters)].setCurrentOption("forceOnStrong");
+		  probingAction=8;
+		  parameters_[whichParam(GOMORYCUTS,numberParameters_,parameters_)].setCurrentOption("onGlobal");
+		  gomoryAction=5;
+		  parameters_[whichParam(KNAPSACKCUTS,numberParameters_,parameters_)].setCurrentOption("onGlobal");
+		  knapsackAction=5;
+		  parameters_[whichParam(FACTORIZATION,numberParameters_,parameters_)].setCurrentOption("osl");
+		  lpSolver->factorization()->forceOtherFactorization(3);
+		  parameters_[whichParam(MAXHOTITS,numberParameters_,parameters_)].setIntValue(10);
+		  parameters[whichParam(CUTPASS,numberParameters,parameters)].setIntValue(1000);
+		  cutPass=1000;
+		  parameters[whichParam(EXTRA4,numberParameters,parameters)].setIntValue(24003);
+		  parameters[whichParam(RENS,numberParameters,parameters)].setCurrentOption("on");
 		}
 	      } else if (parameters_[iParam].type()==STRATEGY) {
 		if (value==0) {
@@ -5658,7 +5654,7 @@ int
 		int extra[5];
 		extra[1] = parameters_[whichParam(EXTRA1,numberParameters_,parameters_)].intValue();
 		if (parameters_[whichParam(EXPERIMENT,numberParameters_,
-					   parameters_)].intValue()>=1&&
+					   parameters_)].intValue()>=2&&
 		    extra[1]==-1)
 		  extra[1]=999998;
 		dextra[1] = parameters_[whichParam(FAKEINCREMENT,numberParameters_,parameters_)].doubleValue();
@@ -6727,8 +6723,8 @@ int
 		if (babModel_->numberStrong()==5&&babModel_->numberBeforeTrust()==5) 
 		  babModel_->setNumberBeforeTrust(10);
 	      }
-	      int experimentFlag = parameters_[whichParam(EXPERIMENT,numberParameters_,
-							  parameters_)].intValue();
+	      int experimentFlag = CoinMax(parameters_[whichParam(EXPERIMENT,numberParameters_,
+								  parameters_)].intValue()-1,0);
 	      int strategyFlag = parameters_[whichParam(STRATEGY,numberParameters_,
 							  parameters_)].intValue();
 	      int bothFlags = CoinMax(experimentFlag,strategyFlag);
@@ -6736,7 +6732,7 @@ int
               int switches[20];
               int accuracyFlag[20];
               int numberGenerators=0;
-	      int translate[]={-100,-1,-99,-98,1,-1098,-1099,1,1,1,-1};
+	      int translate[]={-100,-1,-99,-98,1,-1098,-999,1,1,1,-1};
               if (probingAction) {
 		int numberColumns=babModel_->solver()->getNumCols();
 		if (probingAction>7) {
@@ -6920,7 +6916,9 @@ int
 		  babModel_->setMaximumCutPasses(4);
 		else
 		  babModel_->setMaximumCutPasses(cutPassInTree);
-              }
+              } else if (cutPass!=-1234567) {
+		babModel_->setMaximumCutPassesAtRoot(cutPass);
+	      }
               // Do more strong branching if small
               //if (babModel_->getNumCols()<5000)
               //babModel_->setNumberStrong(20);
@@ -7055,7 +7053,7 @@ int
 		  extra4 /= 10;
 		  int method = extra4 % 100;
 		  extra4 /=100;
-		  extra4 = strategy + method*8 + extra4*8*32;
+		  extra4 = strategy + method*8 + extra4*1024;
 		  babModel_->setMoreSpecialOptions(extra4);
 		}
 		int moreMipOptions = parameters_[whichParam(MOREMIPOPTIONS,numberParameters_,parameters_)].intValue();
@@ -8319,7 +8317,6 @@ int
 		stuff[5]=parameters_[whichParam(EXTRA1,numberParameters_,parameters_)].intValue();
 		stuff[6]=parameters_[whichParam(EXTRA3,numberParameters_,parameters_)].intValue();
 		stuff[7]=parameters_[whichParam(DEPTHMINIBAB,numberParameters_,parameters_)].intValue();
-		stuff[8]=parameters_[whichParam(EXPERIMENT,numberParameters_,parameters_)].intValue();
 		stuff[8]=bothFlags;
 		stuff[9]=doVector;
 		stuff[10] = parameters_[whichParam(SMALLFACT,numberParameters_,parameters_)].intValue();

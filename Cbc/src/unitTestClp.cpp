@@ -219,6 +219,22 @@ int CbcClpUnitTest (const CbcModel & saveModel, std::string& dirMiplib,
 #ifdef CLP_FACTORIZATION_INSTRUMENT
   double timeTakenFac=0.0;
 #endif
+  // Normally do in order
+  int which[100];
+  int nLoop=static_cast<int>(mpsName.size());
+  assert (nLoop<=100);
+  for (int i=0;i<nLoop;i++)
+    which[i]=i;
+  //#define RANDOM_ORDER
+#ifdef RANDOM_ORDER
+  unsigned int iTime = static_cast<unsigned int>(CoinGetTimeOfDay()-1.256e9);
+  printf("Time %d\n",iTime);
+  double sort[100];
+  CoinDrand48(true,iTime);
+  for (int i=0;i<nLoop;i++)
+    sort[i]=CoinDrand48();
+  CoinSort_2(sort,sort+nLoop,which);
+#endif
   int numberFailures=0;
   int numberAttempts=0;
   int numberPossibleAttempts=0;
@@ -231,7 +247,8 @@ int CbcClpUnitTest (const CbcModel & saveModel, std::string& dirMiplib,
   /*
     Open the main loop to step through the MPS problems.
   */
-  for (m = 0 ; m < mpsName.size() ; m++) {
+  for (unsigned int mw = 0 ; mw < mpsName.size() ; mw++) {
+    m=which[mw];
     int test = testSet[m];
     if(testSwitch>=test&&loSwitch<=test) {
       numberAttempts++;

@@ -5392,6 +5392,11 @@ int
 		int iStatus2 = model2->secondaryStatus();
 		if (iStatus==0) {
 		  iStatus2=0;
+		  // set best solution in model
+		  model_.setBestSolution(model2->primalColumnSolution(),
+					 model2->numberColumns(),
+					 model2->getObjValue()*
+					 model2->getObjSense());
 		} else if (iStatus==1) {
 		  iStatus=0;
 		  iStatus2=1; // say infeasible

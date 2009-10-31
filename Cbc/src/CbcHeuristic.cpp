@@ -6,6 +6,9 @@
 #  pragma warning(disable:4786)
 #endif
 
+// Debug trace  (-lh-)
+#define CBCHEUR_DEBUG 0
+
 #include "CbcConfig.h"
 
 #include <cassert>
@@ -640,6 +643,12 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver,int numberNodes,
                                   double * newSolution, double & newSolutionValue,
                                   double cutoff, std::string name) const
 {
+
+# if CBCHEUR_DEBUG > 0
+  std::cout
+    << "CbcHeuristic::smallBAB: entering." << std::endl ;
+# endif
+
   // size before
   int shiftRows=0;
   if (numberNodes<0) 
@@ -664,6 +673,7 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver,int numberNodes,
 #endif
     }
   }
+
 #ifdef COIN_HAS_CLP
   OsiClpSolverInterface * osiclp = dynamic_cast< OsiClpSolverInterface*> (solver);
   if (osiclp&&(osiclp->specialOptions()&65536)==0) {
@@ -710,7 +720,7 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver,int numberNodes,
     // allow transfer of costs
     // presolveActions |= 4;
     pinfo->setPresolveActions(presolveActions);
-    OsiSolverInterface * presolvedModel = pinfo->presolvedModel(*solver,1.0e-8,true,2);
+    OsiSolverInterface * presolvedModel = pinfo->presolvedModel(*solver,1.0e-8,true,2,0,false);
     delete pinfo;
     // see if too big
     
@@ -772,7 +782,7 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver,int numberNodes,
 	  // allow transfer of costs
 	  // presolveActions |= 4;
 	  pinfo->setPresolveActions(presolveActions);
-	  presolvedModel = pinfo->presolvedModel(*solver,1.0e-8,true,2);
+	  presolvedModel = pinfo->presolvedModel(*solver,1.0e-8,true,2,0,false);
 	  delete pinfo;
 	  if(presolvedModel) {
 	    // see if too big
@@ -1212,6 +1222,12 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver,int numberNodes,
   } else {
     returnCode=2; // infeasible finished
   }
+
+# if CBCHEUR_DEBUG > 0
+  std::cout
+    << "CbcHeuristic::smallBAB: resetting bounds." << std::endl ;
+# endif
+
   model_->setSpecialOptions(saveModelOptions);
   model_->setLogLevel(logLevel);
   if (returnCode==1||returnCode==2) {
@@ -1278,6 +1294,12 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver,int numberNodes,
   getHistoryStatistics_=true;
 #endif
   solver->setHintParam(OsiDoReducePrint,takeHint,strength);
+
+# if CBCHEUR_DEBUG > 0
+  std::cout
+    << "CbcHeuristic::smallBAB: finished." << std::endl ;
+# endif
+
   return returnCode;
 }
 // Set input solution

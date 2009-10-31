@@ -23,6 +23,8 @@
 #include "CglProbing.hpp"
 #include "CoinTime.hpp"
 
+#define CBC_DEBUG 1
+
 // Default Constructor 
 CbcCutGenerator::CbcCutGenerator ()
   : timeInCutGenerator_(0.0),
@@ -173,6 +175,16 @@ CbcCutGenerator::refreshModel(CbcModel * model)
 bool
 CbcCutGenerator::generateCuts( OsiCuts & cs , int fullScan, OsiSolverInterface * solver, CbcNode * node)
 {
+
+/*
+  Make some decisions about whether we'll generate cuts. First convert
+  whenCutGenerator_ to a set of canonical values for comparison to the node
+  count.
+
+     0 <	mod 1000000, with a result of 0 forced to 1
+   -99 <= <= 0	convert to 1
+  -100 =	Off, period
+*/
   int depth;
   if (node)
     depth=node->depth();
@@ -195,15 +207,30 @@ CbcCutGenerator::generateCuts( OsiCuts & cs , int fullScan, OsiSolverInterface *
   bool returnCode=false;
   //OsiSolverInterface * solver = model_->solver();
   int pass=model_->getCurrentPassNumber()-1;
+
   // Reset cuts on first pass
   if (!pass)
     savedCuts_ = OsiCuts();
+/*
+  Determine if we should generate cuts based on node count.
+*/
   bool doThis=(model_->getNodeCount()%howOften)==0;
+/*
+  If the user has provided a depth specification, it will override the node
+  count specification.
+*/
   if (depthCutGenerator_>0) {
     doThis = (depth % depthCutGenerator_) ==0;
     if (depth<depthCutGenerator_)
       doThis=true; // and also at top of tree
   }
+/*
+  A few magic numbers ...
+
+  The distinction between -100 and 100 for howOften is that we can override 100
+  with fullScan. -100 means no cuts, period. As does the magic number -200 for
+  whenCutGeneratorInSub_.
+*/
   // But turn off if 100
   if (howOften==100)
     doThis=false;
@@ -998,6 +1025,12 @@ CbcCutGenerator::generateCuts( OsiCuts & cs , int fullScan, OsiSolverInterface *
       }
     }
 #ifdef CBC_DEBUG
+/*
+  Check for bogus cuts --- cut lb > cut ub, or too large for comfort;
+  no coefficients, or too small for comfort. By convention, some cut generators
+  will return a cut with a lower bound of infinity and an upper bound of 0 to
+  indicate infeasibility.
+*/
     {
       int numberRowCutsAfter = cs.sizeRowCuts() ;
       int k ;
@@ -1007,8 +1040,9 @@ CbcCutGenerator::generateCuts( OsiCuts & cs , int fullScan, OsiSolverInterface *
 	if (thisCut.lb()>thisCut.ub()||
 	    thisCut.lb()>1.0e8||
 	    thisCut.ub()<-1.0e8)
-	  printf("cut from %s has bounds %g and %g!\n",
-		 generatorName_,thisCut.lb(),thisCut.ub());
+	{ if (!(thisCut.lb() == COIN_DBL_MAX && thisCut.ub() == 0.0))
+	  { printf("cut from %s has bounds %g and %g!\n",
+		   generatorName_,thisCut.lb(),thisCut.ub()); } }
 	if (thisCut.lb()<=thisCut.ub()) {
 	  /* check size of elements.
 	     We can allow smaller but this helps debug generators as it
@@ -1016,16 +1050,23 @@ CbcCutGenerator::generateCuts( OsiCuts & cs , int fullScan, OsiSolverInterface *
 	  int n=thisCut.row().getNumElements();
 	  const int * column = thisCut.row().getIndices();
 	  const double * element = thisCut.row().getElements();
-	  assert (n);
+	  if (n <= 0) {
+	    printf("Cut generator %s produced a cut with no elements!\n",
+		   generatorName_) ;
+	    nBad++ ;
+	  }
+	  // assert (n);
 	  for (int i=0;i<n;i++) {
 	    double value = element[i];
 	    if (fabs(value)<=1.0e-12||fabs(value)>=1.0e20)
 	      nBad++;
 	  }
 	}
-	if (nBad) 
-	  printf("Cut generator %s produced %d cuts of which %d had tiny or large elements\n",
-		 generatorName_,numberRowCutsAfter-numberRowCutsBefore,nBad);
+      }
+      if (nBad) {
+        printf("Cut generator %s produced %d cuts",
+		 generatorName_,numberRowCutsAfter-numberRowCutsBefore) ;
+	printf(" of which %d had tiny or large elements\n",nBad) ;
       }
     }
 #endif

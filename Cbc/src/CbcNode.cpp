@@ -8,11 +8,15 @@
 
 #include "CbcConfig.h"
 
+// Debug trace  (-lh-)
+#define CBCNODE_DEBUG 0
+
+
 #include <string>
-//#define CBC_DEBUG 1
+// #define CBC_DEBUG 1
+//#define CBC_CHECK_BASIS 1
 //#define CHECK_CUT_COUNTS
 //#define CHECK_NODE
-//#define CBC_CHECK_BASIS
 #include <cassert>
 #include <cfloat>
 #define CUTS
@@ -940,13 +944,14 @@ CbcNode::CbcNode(CbcModel * model,
   nodeNumber_= model->getNodeCount();
 }
 
-#define CBC_NEW_CREATEINFO
-#ifdef CBC_NEW_CREATEINFO
 
 /*
   New createInfo, with basis manipulation hidden inside mergeBasis. Allows
   solvers to override and carry over all information from one basis to
   another.
+
+  (Old version of createInfo is deleted from this file. It occasionally shows
+  up as a conflict. Arguably, I should put it back to track changes.)
 */
 
 void
@@ -1052,12 +1057,12 @@ CbcNode::createInfo (CbcModel *model,
       	      !cut[iFull-numberRowsAtContinuous] ; iFull--)
 	expanded->setArtifStatus(iFull,CoinWarmStartBasis::basic);
     }
-    /*
-      Finally, call mergeBasis to copy over entries from the current basis to
-      the expanded basis. Since we cloned the expanded basis from the active basis
-      and haven't changed the number of variables, only row status entries need
-      to be copied.
-    */
+/*
+  Finally, call mergeBasis to copy over entries from the current basis to
+  the expanded basis. Since we cloned the expanded basis from the active basis
+  and havn't changed the number of variables, only row status entries need
+  to be copied.
+*/
     expanded->mergeBasis(ws,&xferRows,0) ;
     
 #ifdef CBC_CHECK_BASIS
@@ -1156,190 +1161,6 @@ CbcNode::createInfo (CbcModel *model,
   state_ |= 2; // say active
 }
 
-#else	// CBC_NEW_CREATEINFO
-
-/*
-  Original createInfo, with bare manipulation of basis vectors. Fails if solver
-  maintains additional information in basis.
-*/
-
-void
-CbcNode::createInfo (CbcModel *model,
-		     CbcNode *lastNode,
-		     const CoinWarmStartBasis *lastws,
-		     const double *lastLower, const double *lastUpper,
-		     int numberOldActiveCuts,int numberNewCuts)
-{ OsiSolverInterface * solver = model->solver();
-  CbcStrategy * strategy = model->strategy();
-  /*
-    The root --- no parent. Create full basis and bounds information.
-  */
-  if (!lastNode)
-    { 
-      if (!strategy)
-	nodeInfo_=new CbcFullNodeInfo(model,solver->getNumRows());
-      else
-	nodeInfo_ = strategy->fullNodeInfo(model,solver->getNumRows());
-    }
-  /*
-    Not the root. Create an edit from the parent's basis & bound information.
-    This is not quite as straightforward as it seems. We need to reintroduce
-    cuts we may have dropped out of the basis, in the correct position, because
-    this whole process is strictly positional. Start by grabbing the current
-    basis.
-  */
-  else
-    { 
-      bool mustDeleteBasis;
-      const CoinWarmStartBasis* ws =
-	dynamic_cast<const CoinWarmStartBasis*>(solver->getPointerToWarmStart(mustDeleteBasis));
-      assert(ws!=NULL); // make sure not volume
-      //int numberArtificials = lastws->getNumArtificial();
-      int numberColumns = solver->getNumCols();
-      
-      const double * lower = solver->getColLower();
-      const double * upper = solver->getColUpper();
-      
-      int i;
-      /*
-	Create a clone and resize it to hold all the structural constraints, plus
-	all the cuts: old cuts, both active and inactive (currentNumberCuts), and
-	new cuts (numberNewCuts).
-	
-	TODO: You'd think that the set of constraints (logicals) in the expanded
-	basis should match the set represented in lastws. At least, that's
-	what I thought. But at the point I first looked hard at this bit of
-	code, it turned out that lastws was the stripped basis produced at
-	the end of addCuts(), rather than the raw basis handed back by
-	addCuts1(). The expanded basis here is equivalent to the raw basis of
-	addCuts1(). I said ``whoa, that's not good, I must have introduced a
-	bug'' and went back to John's code to see where I'd gone wrong.
-	And discovered the same `error' in his code.
-	
-	After a bit of thought, my conclusion is that correctness is not
-	affected by whether lastws is the stripped or raw basis. The diffs
-	have no semantics --- just a set of changes that need to be made
-	to convert lastws into expanded. I think the only effect is that we
-	store a lot more diffs (everything in expanded that's not covered by
-	the stripped basis). But I need to give this more thought. There
-	may well be some subtle error cases.
-	
-	In the mean time, I've twiddled addCuts() to set lastws to the raw
-	basis. Makes me (Lou) less nervous to compare apples to apples.
-      */
-      CoinWarmStartBasis *expanded = 
-	dynamic_cast<CoinWarmStartBasis *>(ws->clone()) ;
-      int numberRowsAtContinuous = model->numberRowsAtContinuous();
-      int iFull = numberRowsAtContinuous+model->currentNumberCuts()+
-	numberNewCuts;
-      //int numberArtificialsNow = iFull;
-      //int maxBasisLength = ((iFull+15)>>4)+((numberColumns+15)>>4);
-      //printf("l %d full %d\n",maxBasisLength,iFull);
-      if (expanded) 
-	expanded->resize(iFull,numberColumns);
-#ifdef CBC_CHECK_BASIS
-      printf("Before expansion: orig %d, old %d, new %d, current %d\n",
-	     numberRowsAtContinuous,numberOldActiveCuts,numberNewCuts,
-	     model->currentNumberCuts()) ;
-      ws->print();
-#endif
-      /*
-	Now fill in the expanded basis. Any indices beyond nPartial must
-	be cuts created while processing this node --- they can be copied directly
-	into the expanded basis. From nPartial down, pull the status of active cuts
-	from ws, interleaving with a B entry for the deactivated (loose) cuts.
-      */
-      int numberDropped = model->currentNumberCuts()-numberOldActiveCuts;
-      int iCompact=iFull-numberDropped;
-      CbcCountRowCut ** cut = model->addedCuts();
-      int nPartial = model->currentNumberCuts()+numberRowsAtContinuous;
-      iFull--;
-      for (;iFull>=nPartial;iFull--) {
-	CoinWarmStartBasis::Status status = ws->getArtifStatus(--iCompact);
-	//assert (status != CoinWarmStartBasis::basic); // may be permanent cut
-	expanded->setArtifStatus(iFull,status);
-      }
-      for (;iFull>=numberRowsAtContinuous;iFull--) {
-	if (cut[iFull-numberRowsAtContinuous]) {
-	  CoinWarmStartBasis::Status status = ws->getArtifStatus(--iCompact);
-	  // If no cut generator being used then we may have basic variables
-	  //if (model->getMaximumCutPasses()&&
-	  //  status == CoinWarmStartBasis::basic)
-	  //printf("cut basic\n");
-	  expanded->setArtifStatus(iFull,status);
-	} else {
-	  expanded->setArtifStatus(iFull,CoinWarmStartBasis::basic);
-	}
-      }
-#ifdef CBC_CHECK_BASIS
-      printf("Expanded basis\n");
-      expanded->print() ;
-      printf("Diffing against\n") ;
-      lastws->print() ;
-#endif    
-      /*
-	Now that we have two bases in proper positional correspondence, creating
-	the actual diff is dead easy.
-      */
-      
-      CoinWarmStartDiff *basisDiff = expanded->generateDiff(lastws) ;
-      /*
-	Diff the bound vectors. It's assumed the number of structural variables is
-	not changing. Assuming that branching objects all involve integer variables,
-	we should see at least one bound change as a consequence of processing this
-	subproblem. Different types of branching objects could break this assertion.
-	Not true at all - we have not applied current branch - JJF.
-      */
-      double *boundChanges = new double [2*numberColumns] ;
-      int *variables = new int [2*numberColumns] ;
-      int numberChangedBounds=0;
-      for (i=0;i<numberColumns;i++) {
-	if (lower[i]!=lastLower[i]) {
-	  variables[numberChangedBounds]=i;
-	  boundChanges[numberChangedBounds++]=lower[i];
-	}
-	if (upper[i]!=lastUpper[i]) {
-	  variables[numberChangedBounds]=i|0x80000000;
-	  boundChanges[numberChangedBounds++]=upper[i];
-	}
-#ifdef CBC_DEBUG
-	if (lower[i]!=lastLower[i])
-	  printf("lower on %d changed from %g to %g\n",
-		 i,lastLower[i],lower[i]);
-	if (upper[i]!=lastUpper[i])
-	  printf("upper on %d changed from %g to %g\n",
-		 i,lastUpper[i],upper[i]);
-#endif
-      }
-#ifdef CBC_DEBUG
-      printf("%d changed bounds\n",numberChangedBounds) ;
-#endif
-      //if (lastNode->branchingObject()->boundBranch())
-      //assert (numberChangedBounds);
-      /*
-	Hand the lot over to the CbcPartialNodeInfo constructor, then clean up and
-	return.
-      */
-      if (!strategy)
-	nodeInfo_ =
-	  new CbcPartialNodeInfo(lastNode->nodeInfo_,this,numberChangedBounds,
-				 variables,boundChanges,basisDiff) ;
-      else
-	nodeInfo_ = strategy->partialNodeInfo(model, lastNode->nodeInfo_,this,numberChangedBounds,
-					      variables,boundChanges,basisDiff) ;
-      delete basisDiff ;
-      delete [] boundChanges;
-      delete [] variables;
-      delete expanded ;
-      if  (mustDeleteBasis)
-	delete ws;
-    }
-  // Set node number
-  nodeInfo_->setNodeNumber(model->getNodeCount2());
-  state_ |= 2; // say active
-}
-
-#endif	// CBC_NEW_CREATEINFO
 /*
   The routine scans through the object list of the model looking for objects
   that indicate infeasibility. It tests each object using strong branching
@@ -2369,7 +2190,7 @@ int CbcNode::chooseBranch (CbcModel *model, CbcNode *lastNode,int numberPassesLe
         // back to normal
         osiclp->setHintParam(OsiDoInBranchAndCut,true,OsiHintDo,NULL) ;
       }
-#     endif  
+#     endif
     }
     /*
       Simple branching. Probably just one, but we may have got here
@@ -3183,6 +3004,9 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
     // worth trying if too many times
     // Save basis
     CoinWarmStart * ws = NULL;
+#   if CBC_DEBUG > 0
+    std::cout << "chDyBr: declaring null warm start." << std::endl ;
+#   endif
     // save limit
     int saveLimit=0;
     solver->getIntParam(OsiMaxNumIterationHotStart,saveLimit);
@@ -3190,6 +3014,11 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
       skipAll=1;
     if (!skipAll) {
       ws = solver->getWarmStart();
+#     if CBC_DEBUG > 0
+      std::cout
+	<< "chDyBr: Acquired real warm start "
+	<< std::hex << ws << std::dec << "." << std::endl ;
+#     endif
       int limit=100;
       if (!saveStateOfSearch&&saveLimit<limit&&saveLimit==100)
         solver->setIntParam(OsiMaxNumIterationHotStart,limit); 
@@ -3222,6 +3051,11 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
 	branchObj->way(preferredWay);
       }
       delete ws;
+#     if CBC_DEBUG > 0
+      std::cout
+	<< "chDyBr(1): deleting warm start "
+	<< std::hex << ws << std::dec << "." << std::endl ;
+#     endif
       ws=NULL;
       break;
     } else {
@@ -3935,6 +3769,11 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
               whichChoice = iDo;
               if (numberStrong<=1) {
                 delete ws;
+#     if CBC_DEBUG > 0
+      std::cout
+	<< "chDyBr(2): deleting warm start "
+	<< std::hex << ws << std::dec << "." << std::endl ;
+#     endif
                 ws=NULL;
                 break;
               }
@@ -3945,6 +3784,11 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
 	      }
               if (iDo>=2*numberStrong) {
                 delete ws;
+#     if CBC_DEBUG > 0
+      std::cout
+	<< "chDyBr(3): deleting warm start "
+	<< std::hex << ws << std::dec << "." << std::endl ;
+#     endif
                 ws=NULL;
                 break;
               }
@@ -3959,6 +3803,11 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
               } else {
                 if (iDo-whichChoice>=2*numberStrong) {
                   delete ws;
+#     if CBC_DEBUG > 0
+      std::cout
+	<< "chDyBr(4): deleting warm start "
+	<< std::hex << ws << std::dec << "." << std::endl ;
+#     endif
                   ws=NULL;
 		  if (!choiceObject) {
 		    delete choice.possibleBranch;
@@ -4056,6 +3905,11 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
 	      choice.possibleBranch=NULL;
 	    }
             delete ws;
+#     if CBC_DEBUG > 0
+      std::cout
+	<< "chDyBr(9): deleting warm start "
+	<< std::hex << ws << std::dec << "." << std::endl ;
+#     endif
             ws=NULL;
             break;
           }
@@ -4104,6 +3958,11 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
         // back to normal
         solver->setHintParam(OsiDoInBranchAndCut,true,OsiHintDo,NULL) ;
         // restore basis
+#     if CBC_DEBUG > 0
+      std::cout
+	<< "chDyBr: trying to use warm start "
+	<< std::hex << ws << std::dec << "." << std::endl ;
+#     endif
         solver->setWarmStart(ws);
       }
       solver->setIntParam(OsiMaxNumIterationHotStart,saveLimit);
@@ -4149,9 +4008,28 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
       if (!branch_&&anyAction!=-2) {
 	finished=false;
       }
+#     if CBC_DEBUG > 0
+      std::cout
+	<< "chDyBr(10): deleting warm start "
+	<< std::hex << ws << std::dec << "." << std::endl ;
+#     endif
       delete ws;
     }
   }
+# if CBC_DEBUG > 0
+  std::cout << "Finished dynamic branching main loop." << std::endl ;
+# endif
+
+#ifdef CBC_NODE7
+  delete [] weightModifier;
+#endif
+
+# ifdef RANGING
+  if (model->messageHandler()->logLevel()>2) 
+    printf("%d strong, %d iters, %d pen, %d mark, %d fixed, action %d nnott %d nt %d, %d dq %s ns %d\n",
+         numberStrongDone,numberStrongIterations,xPen,xMark,
+           numberToFix,anyAction,numberNotTrusted,px[0],px[1],px[2]>0 ? "y" : "n",px[3]);
+# endif
   // update number of strong iterations etc
   model->incrementStrongInfo(numberStrongDone,numberStrongIterations,
                              anyAction==-2 ? 0:numberToFix,anyAction==-2);
@@ -4324,16 +4202,9 @@ int CbcNode::analyze (CbcModel *model, double * results)
 # else
   bool fastIterations = false ;
 # endif
-  /*
-    Scan for branching objects that indicate infeasibility. Choose candidates
-    using priority as the first criteria, then integer infeasibility.
-    
-    The algorithm is to fill the array with a set of good candidates (by
-    infeasibility) with priority bestPriority.  Finding a candidate with
-    priority better (less) than bestPriority flushes the choice array. (This
-    serves as initialization when the first candidate is found.)
-    
-  */
+/*
+  Scan the objects. We're only interested in simple integers.
+*/
   numberToDo=0;
   for (i=0;i<numberObjects;i++) {
     OsiObject * object = model->modifiableObject(i);
@@ -4367,6 +4238,9 @@ int CbcNode::analyze (CbcModel *model, double * results)
   double objMin = 1.0e50;
   double objMax = -1.0e50;
   bool needResolve=false;
+/*
+  Now calculate the cost forcing the variable up and down.
+*/
   int iDo;
   for (iDo=0;iDo<numberToDo;iDo++) {
     CbcStrongInfo choice;
@@ -4378,6 +4252,9 @@ int CbcNode::analyze (CbcModel *model, double * results)
       continue;
     int iColumn = dynamicObject->columnNumber();
     int preferredWay;
+/*
+  Update the information held in the object.
+*/
     object->infeasibility(&usefulInfo,preferredWay);
     double value = currentSolution[iColumn];
     double nearest = floor(value+0.5);
@@ -4701,6 +4578,8 @@ CbcNode::operator=(const CbcNode & rhs)
   }
   return *this;
 }
+
+
 CbcNode::~CbcNode ()
 {
 #ifdef CHECK_NODE
@@ -4724,7 +4603,7 @@ CbcNode::~CbcNode ()
 	nodeInfo_->nullParent();
       delete nodeInfo_;
     } else {
-      //printf("node %x nodeinfo %x parent %x\n",this,nodeInfo_,nodeInfo_->parent());
+      //printf("node %x nodeinfo %x parent %x\n",this,nodeInfo_,parent);
       // anyway decrement parent
       //if (parent)
       ///parent->decrement(1);
@@ -4819,6 +4698,23 @@ CbcNode::branch(OsiSolverInterface * solver)
    In the simplest instance, coded -1 for the down arm of the branch, +1 for
    the up arm. But see OsiBranchingObject::way() 
    Use nodeInfo--.numberBranchesLeft_ to see how active
+
+   Except that there is no OsiBranchingObject::way(), and this'll fail in any
+   event because we have various OsiXXXBranchingObjects which aren't descended
+   from CbcBranchingObjects. I think branchIndex() is the appropriate
+   equivalent, but could be wrong. (lh, 061220)
+
+   071212: I'm finally getting back to cbc-generic and rescuing a lot of my
+   annotation from branches/devel (which was killed in summer). I'm going to
+   put back an assert(obj) just to see what happens. It's still present as of
+   the most recent change to CbcNode (r833).
+
+   080104: Yep, we can arrive here with an OsiBranchingObject. Removed the
+   assert, it's served its purpose.
+
+   080226: John finally noticed this problem and added a way() method to the
+   OsiBranchingObject hierarchy. Removing my workaround.
+
 */
 int 
 CbcNode::way() const
@@ -4870,6 +4766,12 @@ CbcNode::chooseOsiBranch (CbcModel * model,
 			  OsiBranchingInformation * usefulInfo,
 			  int branchState)
 {
+# if CBCNODE_DEBUG > 0
+  std::cout
+    << "CbcNode::chOsiBr: entering, node " << nodeNumber_
+    << ", parent " << ((lastNode==0)?-1:lastNode->nodeNumber_)
+    << ", branchState " << branchState << "." << std::endl ;
+# endif
   int returnStatus=0;
   if (lastNode)
     depth_ = lastNode->depth_+1;
@@ -4919,6 +4821,11 @@ CbcNode::chooseOsiBranch (CbcModel * model,
     } else {
       // carry on with strong branching or whatever
       int returnCode = choose->chooseVariable(solver, usefulInfo,true);
+#     if CBCNODE_DEBUG > 0
+      std::cout
+	<< "CbcNode::chooseOsiBranch: chooseVariable returns "
+	<< returnCode << "." << std::endl ;
+#     endif
       // update number of strong iterations etc
       model->incrementStrongInfo(choose->numberStrongDone(),choose->numberStrongIterations(),
                                  returnCode==-1 ? 0:choose->numberStrongFixed(),returnCode==-1);
@@ -4968,6 +4875,11 @@ CbcNode::chooseOsiBranch (CbcModel * model,
     model->incrementUsed(choose->goodSolution());
     choose->clearGoodSolution();
   }
+# if CBCNODE_DEBUG > 0
+  std::cout
+    << "CbcNode::chOsiBr: returning " << returnStatus << "." << std::endl ;
+# endif
+
   return returnStatus;
 }
 int 

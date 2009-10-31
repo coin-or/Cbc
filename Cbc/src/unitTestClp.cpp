@@ -2,6 +2,10 @@
 // Copyright (C) 2002, International Business Machines
 // Corporation and others.  All Rights Reserved.
 
+// Debug trace  (-lh-)
+#define CBCCLPUT_DEBUG 0
+
+
 #include <cstdio>
 #include <string>
 #include <iostream>
@@ -255,29 +259,44 @@ int CbcClpUnitTest (const CbcModel & saveModel, std::string& dirMiplib,
       std::cout << "  processing mps file: " << mpsName[m] 
 		<< " (" << numberAttempts << " out of " 
 		<< numberPossibleAttempts << ")\n";
-      /*
-	Stage 1: Read the MPS
-	and make sure the size of the constraint matrix is correct.
-      */
+/*
+  Stage 1: Read the MPS and make sure the size of the constraint matrix is
+	   correct.
+*/
       CbcModel * model = new CbcModel(saveModel);
-      
+
+#     if CBCCLPUT_DEBUG > 0
+      std::cout
+	<< "CbcClpUnitTest: model is " << std::hex << model ;
+      if (model)
+      { std::cout << ", tree is " << model->tree() ; }
+      std::cout << std::dec << "." << std::endl ;
+#     endif
+
       std::string fn = dirMiplib+mpsName[m] ;
+
+#     if CBCCLPUT_DEBUG > 0
+      std::cout << "CbcClpUnitTest: processing " << fn << "." << std::endl ;
+#     endif
+
       if (!CbcTestMpsFile(fn)) {
 	std::cout << "ERROR: Cannot find MPS file " << fn << "\n";
 	continue;
       }
+
       CoinDrand48(true,1234567);
       //printf("RAND1 %g %g\n",CoinDrand48(true,1234567),model->randomNumberGenerator()->randomDouble());
       //printf("RAND1 %g\n",CoinDrand48(true,1234567));
+
       model->solver()->readMps(fn.c_str(),"") ;
       assert(model->getNumRows() == nRows[m]) ;
       assert(model->getNumCols() == nCols[m]) ;
-      
-      /*
-	Stage 2: Call solver to solve the problem.
-	then check the return code and objective.
-      */
-      
+
+/*
+  Stage 2: Call solver to solve the problem.  then check the return code and
+	   objective.
+*/
+
 #ifdef CLP_FACTORIZATION_INSTRUMENT
       extern double factorization_instrument(int type);
       double facTime1=factorization_instrument(0);
@@ -675,7 +694,8 @@ int CbcClpUnitTest (const CbcModel & saveModel, std::string& dirMiplib,
 	       <<" ("<<mpsName[m]<<")"<<std::endl;
       delete model;
     }
-  }
+  }	// end main loop on MPS problem
+
   int returnCode=0;
   std::cout 
     <<"cbc_clp" 

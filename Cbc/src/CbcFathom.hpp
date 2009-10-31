@@ -5,18 +5,28 @@
 #define CbcFathom_H
 #include "CbcConfig.h"
 
+/*
+  This file contains two classes, CbcFathom and CbcOsiSolver. It's unclear why
+  they're in the same file. CbcOsiSolver is a base class for CbcLinked.
+
+  --lh, 071031 --
+*/
+
 class CbcModel;
 
 //#############################################################################
+
 /** Fathom base class.
 
-    The idea is that after some branching the problem will be effectively smaller than
-    the original problem and maybe there will be a more specialized technique which can completely
-    fathom this branch quickly.
+    The idea is that after some branching the problem will be effectively
+    smaller than the original problem and maybe there will be a more
+    specialized technique which can completely fathom this branch quickly.
 
-    One method is to presolve the problem to give a much smaller new problem and then do branch 
-    and cut on that.  Another might be dynamic programming.
+    One method is to presolve the problem to give a much smaller new problem
+    and then do branch and cut on that.  Another might be dynamic
+    programming.
 
+    Added capabilities are the resetModel() and fathom() methods.
  */
 
 class CbcFathom {
@@ -70,8 +80,9 @@ private:
 //#############################################################################
 
 /**
-   
-This is for codes where solver needs to know about CbcModel
+  This is for codes where solver needs to know about CbcModel
+
+  Seems to provide only one value-added feature, a CbcModel object.
 */
 
 class CbcOsiSolver : public OsiClpSolverInterface {

@@ -8,11 +8,17 @@
 
 #include "CbcConfig.h"
 
+// Debug trace  (-lh-)
+#define CBCMODEL_DEBUG 0
+
+
 #include <string>
-//#define CBC_DEBUG 1
-//#define CHECK_CUT_COUNTS
-//#define CHECK_NODE_FULL
-//#define NODE_LOG
+// #define CBC_DEBUG 1
+// #define CHECK_CUT_COUNTS
+// #define CHECK_NODE_FULL
+// #define NODE_LOG
+#define CBC_HEUR_TRACE 0
+#define CBC_CUTGEN_TRACE 0
 //#define GLOBAL_CUTS_JUST_POINTERS
 #ifdef CGL_DEBUG_GOMORY
 extern int gomory_try;
@@ -1122,6 +1128,11 @@ CbcModel::analyzeObjective ()
 void CbcModel::branchAndBound(int doStatistics) 
 
 {
+# if CBCMODEL_DEBUG > 0
+  std::cout
+    << "CbcModel:bAB: Entering." << std::endl ;
+  handler_->setLogLevel(3) ;
+# endif
 /*
   Capture a time stamp before we start.
 */
@@ -1173,6 +1184,15 @@ void CbcModel::branchAndBound(int doStatistics)
   // Save whether there were any objects
   bool noObjects = (numberObjects_==0);
   // Set up strategies
+/*
+  See if the user has supplied a strategy object and deal with it if present.
+  The call to setupOther will set numberStrong_ and numberBeforeTrust_, and
+  perform integer preprocessing, if requested.
+
+  We need to hang on to a pointer to solver_. setupOther will assign a
+  preprocessed solver to model, but will instruct assignSolver not to trash the
+  existing one.
+*/
   if (strategy_) {
     // May do preprocessing
     originalSolver = solver_;
@@ -1404,7 +1424,7 @@ void CbcModel::branchAndBound(int doStatistics)
   std::string problemName ;
   solver_->getStrParam(OsiProbName,problemName) ;
   printf("Problem name - %s\n",problemName.c_str()) ;
-  solver_->setHintParam(OsiDoReducePrint,false,OsiHintDo,0) ;
+  // CBCMODEL_DEBUG solver_->setHintParam(OsiDoReducePrint,false,OsiHintDo,0) ;
 # endif
 /*
   Assume we're done, and see if we're proven wrong.
@@ -1444,7 +1464,7 @@ void CbcModel::branchAndBound(int doStatistics)
     }
   }  
 /*
-  Ensure that objects on the lists of OsiObjects, heuristics, and cut
+  Ensure that objects on the lists of objects, heuristics, and cut
   generators attached to this model all refer to this model.
 */
   synchronizeModel() ;
@@ -1541,13 +1561,40 @@ void CbcModel::branchAndBound(int doStatistics)
     CoinCopyN(solver_->getColSolution(),numberColumns,bestSolution_);
     return ;
   }
+/*
+  See if we're using the Osi side of the branching hierarchy. If so, either
+  convert existing CbcObjects to OsiObjects, or generate them fresh. In the
+  first case, CbcModel owns the objects on the object_ list. In the second
+  case, the solver holds the objects and object_ simply points to the
+  solver's list.
+
+  080417 The conversion code here (the block protected by `if (obj)') cannot
+  possibly be correct. On the Osi side, descent is OsiObject -> OsiObject2 ->
+  all other Osi object classes. On the Cbc side, it's OsiObject -> CbcObject
+  -> all other Cbc object classes. It's structurally impossible for any Osi
+  object to descend from CbcObject. The only thing I can see is that this is
+  really dead code, and object detection is now handled from the Osi side.
+*/
   // Convert to Osi if wanted
   bool useOsiBranching=false;
   //OsiBranchingInformation * persistentInfo = NULL;
   if (branchingMethod_&&branchingMethod_->chooseMethod()) {
+#   if CBCMODEL_DEBUG > 1
+    std::cout << "    Using Osi objects." << std::endl ;
+#   endif
     useOsiBranching=true;
     //persistentInfo = new OsiBranchingInformation(solver_);
     if (numberOriginalObjects) {
+#     if CBCMODEL_DEBUG > 1
+      std::cout
+	<< "    Scanning " << numberOriginalObjects
+	<< " objects for CbcObjects to convert to OsiObjects."
+	<< std::endl
+	<< "    This code is clearly bogus, so I'm going to die now."
+	<< std::endl ;
+      std::cout.flush() ;
+      assert(false) ;
+#     endif
       for (int iObject = 0 ; iObject < numberObjects_ ; iObject++) {
 	CbcObject * obj =
 	  dynamic_cast <CbcObject *>(object_[iObject]) ;
@@ -1589,7 +1636,16 @@ void CbcModel::branchAndBound(int doStatistics)
 	//}
 	//}
     } else {
+/*
+  As of 080104, findIntegersAndSOS is misleading --- the default OSI
+  implementation finds only integers.
+*/
       // do from solver
+#     if CBCMODEL_DEBUG > 1
+      std::cout
+	<< "    Calling Osi routines to identify objects."
+	<< std::endl ;
+#     endif
       deleteObjects(false);
       solver_->findIntegersAndSOS(false);
       numberObjects_=solver_->numberObjects();
@@ -1598,6 +1654,10 @@ void CbcModel::branchAndBound(int doStatistics)
     }
     branchingMethod_->chooseMethod()->setSolver(solver_);
   }
+# if CBCMODEL_DEBUG > 1
+  else
+  { std::cout << "    Using Cbc objects." << std::endl ; }
+# endif
   // take off heuristics if have to
   {
     int numberOdd=0;
@@ -1695,6 +1755,9 @@ void CbcModel::branchAndBound(int doStatistics)
   Create a copy of the solver, thus capturing the original (root node)
   constraint system (aka the continuous system).
 */
+# if CBCMODEL_DEBUG > 1
+  std::cout << "    Cloning continuous solver." << std::endl ;
+# endif
   continuousSolver_ = solver_->clone() ;
 
   numberRowsAtContinuous_ = getNumRows() ;
@@ -1782,21 +1845,16 @@ void CbcModel::branchAndBound(int doStatistics)
   double * lowerBefore = new double [numberColumns] ;
   double * upperBefore = new double [numberColumns] ;
 /*
-  
-  Generate cuts at the root node and reoptimise. solveWithCuts does the heavy
-  lifting. It will iterate a generate/reoptimise loop (including reduced cost
-  fixing) until no cuts are generated, the change in objective falls off,  or
-  the limit on the number of rounds of cut generation is exceeded.
+  Set up to run heuristics and generate cuts at the root node. The heavy
+  lifting is hidden inside the calls to doHeuristicsAtRoot and solveWithCuts.
 
-  At the end of all this, any cuts will be recorded in cuts and also
-  installed in the solver's constraint system. We'll have reoptimised, and
-  removed any slack cuts (numberOldActiveCuts_ and numberNewCuts_ have been
-  adjusted accordingly).
+  To start, tell cut generators they can be a bit more aggressive at the
+  root node.
 
-  Tell cut generators they can be a bit more aggressive at root node
-
-  TODO: Why don't we make a copy of the solution after solveWithCuts?
-  TODO: If numberUnsatisfied == 0, don't we have a solution?
+  QUESTION: phase_ = 0 is documented as `initial solve', phase = 1 as `solve
+	    with cuts at root'. Is phase_ = 1 the correct indication when
+	    doHeurisiticsAtRoot is called to run heuristics outside of the main
+	    cut / heurisitc / reoptimise loop in solveWithCuts?
 */
   phase_=1;
   int iCutGenerator;
@@ -1822,8 +1880,25 @@ void CbcModel::branchAndBound(int doStatistics)
   maximumStatistics_=0;
   maximumDepthActual_=0;
   numberDJFixed_=0.0;
+/*
+  Run heuristics at the root. This is the only opportunity to run FPump; it
+  will be removed from the heuristics list by doHeuristicsAtRoot.
+*/
+# if CBCMODEL_DEBUG > 1
+  std::cout
+    << "bAB: trying heuristics at root." << std::endl ;
+# endif
   // Do heuristics
   doHeuristicsAtRoot();
+# if CBCMODEL_DEBUG > 1
+  std::cout
+    << "bAB: finished heuristics at root." << std::endl ;
+# endif
+/*
+  Grepping through the code, it would appear that this is a command line
+  debugging hook.  There's no obvious place in the code where this is set to
+  a negative value.
+*/
   if ( intParam_[CbcMaxNumNode] < 0)
     eventHappened_=true; // stop as fast as possible
   stoppedOnGap_ = false ;
@@ -1838,6 +1913,12 @@ void CbcModel::branchAndBound(int doStatistics)
     feasible = false;
     //eventHappened_=true; // stop as fast as possible
   }
+/*
+  Set up for statistics collection, if requested. Standard values are
+  documented in CbcModel.hpp. The magic number 100 will trigger a dump of
+  CbcSimpleIntegerDynamicPseudoCost objects (no others). Looks like another
+  command line debugging hook.
+*/
   statistics_ = NULL;
   // Do on switch
   if (doStatistics>0&&doStatistics<=100) {
@@ -2152,6 +2233,21 @@ void CbcModel::branchAndBound(int doStatistics)
     // double check increment
     analyzeObjective();
   }
+/*
+  Do an initial round of cut generation for the root node. Depending on the
+  type of underlying solver, we may want to do this even if the initial query
+  to the objects indicates they're satisfied.
+
+  solveWithCuts does the heavy lifting. It will iterate a generate/reoptimise
+  loop (including reduced cost fixing) until no cuts are generated, the
+  change in objective falls off,  or the limit on the number of rounds of cut
+  generation is exceeded.
+
+  At the end of all this, any cuts will be recorded in cuts and also
+  installed in the solver's constraint system. We'll have reoptimised, and
+  removed any slack cuts (numberOldActiveCuts_ and numberNewCuts_ have been
+  adjusted accordingly).
+*/
   { int iObject ;
     int preferredWay ;
     int numberUnsatisfied = 0 ;
@@ -2997,8 +3093,9 @@ void CbcModel::branchAndBound(int doStatistics)
       printFrequency_ = 100 ;
   }
   /*
-    It is possible that strong branching fixes one variable and then the code goes round
-    again and again.  This can take too long.  So we need to warn user - just once.
+    It is possible that strong branching fixes one variable and then the code
+    goes round again and again.  This can take too long.  So we need to warn
+    user - just once.
   */
   numberLongStrong_=0;
   CbcNode * createdNode=NULL;
@@ -3491,7 +3588,8 @@ void CbcModel::branchAndBound(int doStatistics)
       break;
     }
 #ifdef BONMIN
-    assert(!solverCharacteristics_->solutionAddsCuts() || solverCharacteristics_->mipFeasible());
+    assert(!solverCharacteristics_->solutionAddsCuts() ||
+	   solverCharacteristics_->mipFeasible());
 #endif
     if (cutoff > getCutoff()) {
       double newCutoff = getCutoff();
@@ -4406,6 +4504,10 @@ void CbcModel::branchAndBound(int doStatistics)
   }
 #endif
   moreSpecialOptions_ = saveMoreSpecialOptions;
+# if CBCMODEL_DEBUG > 0
+  std::cout
+    << "CbcModel:bAB: Finished." << std::endl ;
+# endif
   return ;
  }
 
@@ -5973,6 +6075,12 @@ CbcModel::addCutGenerator(CglCutGenerator * generator,
     new CbcCutGenerator(this,generator, howOften, name,
 			normal,atSolution,whenInfeasible,howOftenInSub,
 			whatDepth, whatDepthInSub);
+
+# if CBC_CUTGEN_TRACE > 0
+  std::cout << "Adding generator " << numberCutGenerators_
+	    << " (" << generator_[numberCutGenerators_]->cutGeneratorName()
+	    << ")." << std::endl ;
+# endif
   // and before any changes
   temp = virginGenerator_;
   virginGenerator_ = new CbcCutGenerator * [numberCutGenerators_+1];
@@ -6289,7 +6397,9 @@ int CbcModel::addCuts (CbcNode *node, CoinWarmStartBasis *&lastws,bool canFix)
 	  addCuts[numberToAdd++] = addedCuts_[i];
 	} else {
 #	  ifdef CHECK_CUT_COUNTS
-	  printf("Dropping cut %d %x\n",i,addedCuts_[i]);
+	  printf("Dropping %s cut %d %x\n",
+		 ((status != CoinWarmStartBasis::basic)?"active":"inactive"),
+		 i,addedCuts_[i]);
 #	  endif
 	  addedCuts_[i]=NULL;
 	  cutsToDrop[numberToDrop++] = numberRowsAtContinuous_+i ;
@@ -6594,7 +6704,8 @@ CbcModel::resizeWhichGenerator(int numberNow, int numberAfter)
   Why do I need to resolve the problem? What has been done between the last
   relaxation and calling solveWithCuts?
 
-  If numberTries == 0 then user did not want any cuts.
+  If numberTries == 0 then user did not want any cuts. (But see below; loop is
+  structured to always execute at least once. -- lh, 080103 --)
 */
 
 bool 
@@ -6611,6 +6722,24 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
 			
 
 {
+
+# if CBCMODEL_DEBUG > 0
+  if (handler_->logLevel() < 3)
+  { handler_->setLogLevel(3) ; }
+  std::cout
+    << "CbcModel::sWC: entering." << std::endl ;
+  std::cout
+    << "  Cbc log level " << handler_->logLevel()
+    << ",  solver log level " << solver_->messageHandler()->logLevel()
+    << "." << std::endl ;
+  std::cout
+    << "  Thread mode " << std::hex << threadMode_ << std::dec
+    << "." << std::endl ;
+# endif
+# ifdef NODE_LOG
+  int startIters = getIterationCount() ;
+# endif
+
 #if 0
   if (node&&numberTries>1) {
     if (currentDepth_<5) 
@@ -6623,6 +6752,7 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
   double cut_obj[CUT_HISTORY];
   for (int j=0;j<CUT_HISTORY;j++)
 	 cut_obj[j]=-COIN_DBL_MAX;
+
 # ifdef COIN_HAS_CLP
   OsiClpSolverInterface * clpSolver 
     = dynamic_cast<OsiClpSolverInterface *> (solver_);
@@ -6630,8 +6760,16 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
   if (clpSolver) 
     saveClpOptions = clpSolver->specialOptions();
 # endif
+
   //solver_->writeMps("saved");
+
 #ifdef CBC_THREAD
+/*
+  Thread mode makes a difference here only when it specifies using separate
+  threads to generate cuts at the root (bit 2^1 set in threadMode_). In which
+  case we'll create an array of empty CbcModels (!). Solvers will be cloned
+  later.
+*/
   CbcModel ** threadModel = NULL;
   Coin_pthread_t * threadId = NULL;
   pthread_cond_t condition_main;
@@ -6675,6 +6813,7 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
     threadInfo[numberThreads_].mutex2=&condition_mutex;
   }
 #endif
+
   bool feasible = true ;
   int lastNumberCuts = 0 ;
   int violated = 0 ;
@@ -6698,24 +6837,65 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
     if (debugger) 
       onOptimalPath = (debugger->onOptimalPath(*solver_)) ;
   }
-  OsiCuts slackCuts;
+
 /*
-  Resolve the problem. If we've lost feasibility, might as well bail out right
-  after the debug stuff. The resolve will also refresh cached copies of the
-  solver solution (cbcColLower_, ...) held by CbcModel.
+  As the final action in each round of cut generation (the numberTries loop),
+  we'll call takeOffCuts to remove slack cuts. These are saved into slackCuts
+  and rechecked immediately after the cut generation phase of the loop.
+*/
+  OsiCuts slackCuts;
+
+/*
+  Resolve the problem
+
+  The resolve will also refresh cached copies of the solver solution
+  (cbcColLower_, ...) held by CbcModel.
+
+  This resolve looks like the best point to capture a warm start for use in
+  the case where cut generation proves ineffective and we need to back out
+  a few tight cuts.
+
+  I've always maintained that this resolve is unnecessary. Let's put in a hook
+  to report if it's every nontrivial.
 */
   double objectiveValue = solver_->getObjValue()*solver_->getObjSense();
   if (node) {
     objectiveValue= node->objectiveValue();
   }
   int returnCode = resolve(node ? node->nodeInfo() : NULL,1);
+
 #if COIN_DEVELOP>1
   //if (!solver_->getIterationCount()&&solver_->isProvenOptimal())
   //printf("zero iterations on first solve of branch\n");
 #endif
+
   double lastObjective = solver_->getObjValue()*solver_->getObjSense();
   cut_obj[CUT_HISTORY-1]=lastObjective;
   //double firstObjective = lastObjective+1.0e-8+1.0e-12*fabs(lastObjective);
+
+# if CBCMODEL_DEBUG > 1
+  if (solver_->isProvenOptimal() && solver_->getIterationCount() > 0)
+  { std::cout
+      << "CbcModel::sWC: initial resolve required "
+      << solver_->getIterationCount() << " iterations." << std::endl ; }
+# endif
+
+/*
+  Contemplate the result of the resolve.
+    - CbcModel::resolve() has a hook that calls CbcStrategy::status to look
+      over the solution. The net result is that resolve can return
+      0 (infeasible), 1 (feasible), or -1 (feasible, but do no further work).
+    - CbcFeasbililityBase::feasible() can return 0 (no comment),
+      1 (pretend this is an integer solution), or -1 (pretend this is
+      infeasible). As of 080104, this seems to be a stub to allow overrides,
+      with a default implementation that always returns 0.
+
+  Setting numberTries = 0 for `do no more work' is problematic. The main cut
+  generation loop will still execute once, so we do not observe the `no
+  further work' semantics.
+
+  As best I can see, allBranchesGone is a null function as of 071220.
+*/
   if (node&&node->nodeInfo()&&!node->nodeInfo()->numberBranchesLeft())
     node->nodeInfo()->allBranchesGone(); // can clean up
   feasible = returnCode  != 0 ;
@@ -6724,7 +6904,46 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
   if (problemFeasibility_->feasible(this,0)<0) {
     feasible=false; // pretend infeasible
   }
-  
+/*
+  NEW_UPDATE_OBJECT is defined to 0 when unthreaded (CBC_THREAD undefined), 2
+  when threaded. No sign of 1 as of 071220.
+
+  At present, there are two sets of hierarchies for branching classes. Call
+  them CbcHier and OsiHier. For example, we have OsiBranchingObject, with
+  children CbcBranchingObject and OsiTwoWayBranchingObject. All
+  specialisations descend from one of these two children. Similarly, there is
+  OsiObject, with children CbcObject and OsiObject2.
+
+  In the original setup, there's a single CbcBranchDecision object attached
+  to CbcModel (branchingMethod_). It has a field to hold the current CbcHier
+  branching object, and the updateInformation routine reaches through the
+  branching object to update the underlying CbcHier object.
+
+  NEW_UPDATE_OBJECT = 0 would seem to assume the original setup. But,
+  if we're using the OSI hierarchy for objects and branching, a call to a
+  nontrivial branchingMethod_->updateInformation would have no effect (it
+  would expect a CbcObject to work on) or perhaps crash.  For the
+  default CbcBranchDefaultDecision, updateInformation is a noop (actually
+  defined in the base CbcBranchDecision class).
+
+  NEW_UPDATE_OBJECT = 2 looks like it's prepared to cope with either CbcHier or
+  OsiHier, but it'll be executed only when threads are activated. See the
+  comments below. The setup is scary.
+
+  But ... if the OsiHier update actually reaches right through to the object
+  list in the solver, it should work just fine in unthreaded mode. It would
+  seem that the appropriate thing to do in unthreaded mode would be to choose
+  between the existing code for NEW_UPDATE_OBJECT = 0 and the OsiHier code for
+  NEW_UPDATE_OBJECT = 2. But I'm going to let John hash that out. The worst
+  that can happen is inefficiency because I'm not properly updating an object.
+*/
+# if CBCMODEL_DEBUG > 2
+  std::cout
+    << "CbcModel::sWC: object update type " << NEW_UPDATE_OBJECT
+    << ", node " << std::hex << node
+    << ", branchingMethod_ " << branchingMethod_ 
+    << std::dec << "." << std::endl ;
+# endif
   // Update branching information if wanted
   if(node &&branchingMethod_) {
     OsiBranchingObject * bobj = node->modifiableBranchingObject();
@@ -6835,7 +7054,8 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
 	   solver_->getNumRows()) ; }
   
   else
-  { printf("Infeasible %d rows\n",solver_->getNumRows()) ; }
+  { printf("Infeasible %d rows, return code %d\n",
+  	   solver_->getNumRows(),returnCode) ; }
 #endif
   if ((specialOptions_&1)!=0) {
 /*
@@ -6947,8 +7167,10 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
   // Whether to increase minimum drop
   bool increaseDrop = (moreSpecialOptions_&8192)!=0;
 /*
-  Begin cut generation loop. Cuts generated during each iteration are
-  collected in theseCuts. The loop can be divided into four phases:
+  Begin main cut generation loop (the `numberTries loop').
+  
+  Cuts generated during each iteration are collected in theseCuts. The loop
+  can be divided into four phases:
    1) Prep: Fix variables using reduced cost. In the first iteration only,
       consider scanning globalCuts_ and activating any applicable cuts.
    2) Cut Generation: Call each generator and heuristic registered in the
@@ -6961,6 +7183,11 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
 */
   do
   { currentPassNumber_++ ;
+#   if CBCMODEL_DEBUG > 1
+    std::cout
+      << "CbcModel::sWC: pass " << currentPassNumber_
+      << " of cut generation loop." << std::endl ;
+#   endif
     numberTries-- ;
     if (numberTries<0&&keepGoing) {
       // switch off all normal ones
@@ -6981,6 +7208,12 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
 	(doCutsNow(1)||true)) {
       int numberCuts = globalCuts_.sizeColCuts() ;
       int i;
+#     if CBCMODEL_DEBUG > 1
+      std::cout
+	<< "CbcModel::sWC: scanning global cuts; "
+	<< globalCuts_.sizeRowCuts() << " row, "
+	<< globalCuts_.sizeColCuts() << " col." << std::endl ;
+#     endif
       // possibly extend whichGenerator
       resizeWhichGenerator(numberViolated, numberViolated+numberCuts);
       for ( i = 0 ; i < numberCuts ; i++)
@@ -7030,12 +7263,15 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
   to take full advantage.
 
   The need to resolve here should only happen after a heuristic solution.
-  (Note default OSI implementation of optimalBasisIsAvailable always returns
-  false.)
+
+  optimalBasisIsAvailable resolves to basisIsAvailable, which seems to be part
+  of the old OsiSimplex API. Doc'n says `Returns true if a basis is available
+  and the problem is optimal. Should be used to see if the BinvARow type
+  operations are possible and meaningful.' Which means any solver other the clp
+  is probably doing a lot of unnecessary resolves right here.
 */
     if (solverCharacteristics_->warmStart()&&
         !solver_->optimalBasisIsAvailable()) {
-      //printf("XXXXYY no opt basis\n");
 #if 0//def COIN_HAS_CLP
       //OsiClpSolverInterface * clpSolver 
       //= dynamic_cast<OsiClpSolverInterface *> (solver_);
@@ -7046,6 +7282,13 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
       }
 #endif
       resolve(node ? node->nodeInfo() : NULL,3);
+
+#     if CBC_DEBUG
+      std::cout
+	<< "CbcModel::sWC: XXXXYY resolve iters = "
+	<< solver_->getIterationCount() << "." << std::endl ;
+#     endif
+
 #if 0//def COIN_HAS_CLP
       if (clpSolver) 
 	clpSolver->setSpecialOptions(save);
@@ -7056,6 +7299,7 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
 	       currentPassNumber_);
 #endif
 #endif
+
     }
     if (nextRowCut_) {
       // branch was a cut - add it
@@ -7090,7 +7334,16 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
     //if (probingInfo_)
     //probingInfo_->initializeFixing();
     int i;
+/*
+  threadMode with bit 2^1 set indicates we should use threads for root cut
+  generation.
+*/
     if ((threadMode_&2)==0||numberNodes_) {
+#     if CBCMODEL_DEBUG > 1
+      std::cout
+	<< "CbcModel::sWC: unthreaded cut loop, "
+	<< numberNodes_ << " nodes." << std::endl ;
+#     endif
 # ifdef COIN_HAS_CLP
       if (!node&&!parentModel_&& intParam_[CbcMaxNumNode] == -123456) {
 	OsiClpSolverInterface * clpSolver 
@@ -7133,6 +7386,15 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
 	    generator_[i]->generateCuts(theseCuts,fullScan,solver_,node) ;
 	  generator_[i]->setIneffectualCuts(false);
 	  numberRowCutsAfter = theseCuts.sizeRowCuts() ;
+
+#	  if CBCMODEL_DEBUG > 2
+	  std::cout
+	    << "CbcModel::sWC: ran generator " << i
+	    << " (" << generator_[i]->cutGeneratorName()
+	    << "), " << numberRowCutsAfter-numberRowCutsBefore << " cuts, "
+	    << "mustResolve = " << mustResolve << "." << std::endl ;
+#	  endif
+
 	  if (fullScan&&generator_[i]->howOften()==1000000+SCANCUTS_PROBING) {
 	    CglProbing * probing = 
 	      dynamic_cast<CglProbing*>(generator_[i]->generator());
@@ -7153,27 +7415,40 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
 	    const OsiRowCut * thisCut = theseCuts.rowCutPtr(numberRowCutsAfter-1) ;
 	    if (thisCut->lb()>thisCut->ub()) {
 	      feasible = false; // sub-problem is infeasible
+#	      if CBCMODEL_DEBUG > 2
+	      std::cout
+		<< "CbcModel::sWC: generator reports infeasible."
+		<< std::endl ;
+#	      endif
 	      break;
 	    }
 	  }
 #ifdef CBC_DEBUG
-	  {
-	    int k ;
-	    for (k = numberRowCutsBefore;k<numberRowCutsAfter;k++) {
-	      OsiRowCut thisCut = theseCuts.rowCut(k) ;
-	      /* check size of elements.
-		 We can allow smaller but this helps debug generators as it
-		 is unsafe to have small elements */
-	      int n=thisCut.row().getNumElements();
-	      const int * column = thisCut.row().getIndices();
-	      const double * element = thisCut.row().getElements();
-	      //assert (n);
-	      for (int i=0;i<n;i++) {
-		double value = element[i];
-		assert(fabs(value)>1.0e-12&&fabs(value)<1.0e20);
-	      }
-	    }
-	  }
+          {
+            int k ;
+	    bool badCut = false ;
+            for (k = numberRowCutsBefore;k<numberRowCutsAfter;k++) {
+              OsiRowCut thisCut = theseCuts.rowCut(k) ;
+              /* check size of elements.
+                 We can allow smaller but this helps debug generators as it
+                 is unsafe to have small elements */
+              int n=thisCut.row().getNumElements();
+              const int * column = thisCut.row().getIndices();
+              const double * element = thisCut.row().getElements();
+              //assert (n);
+              for (int i=0;i<n;i++) {
+                double value = element[i];
+		if (fabs(value)<1.0e-12||fabs(value)>1.0e20) {
+		  std::cout
+		    << "Bad coefficient " << value << " in cut "
+		    << k << "." << std::endl ;
+		  thisCut.print() ;
+		  badCut = true ;
+		}
+              }
+            }
+	    assert(badCut == false);
+          }
 #endif
 	  if (mustResolve) {
 	    int returnCode = resolve(node ? node->nodeInfo() : NULL,2);
@@ -7223,10 +7498,10 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
 	  }
 	}
 /*
-  The cut generator has done its thing, and maybe it generated some
-  cuts.  Do a bit of bookkeeping: load
-  whichGenerator[i] with the index of the generator responsible for a cut,
-  and place cuts flagged as global in the global cut pool for the model.
+  The cut generator has done its thing, and maybe it generated some cuts.  Do
+  a bit of bookkeeping: load whichGenerator[i] with the index of the
+  generator responsible for a cut, and place cuts flagged as global in the
+  global cut pool for the model.
 
   lastNumberCuts is the sum of cuts added in previous iterations; it's the
   offset to the proper starting position in whichGenerator.
@@ -7289,6 +7564,15 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
 	  }
 	}
       }
+
+#     if CBCMODEL_DEBUG > 1
+      std::cout
+	<< "CbcModel::sWC: unthreaded cut loop end." << std::endl ;
+#     endif
+/*
+  End of loop to run each cut generator.
+*/
+
       if (!node) {
 	handler_->message(CBC_ROOT_DETAIL,messages_)
 	  <<currentPassNumber_
@@ -7446,6 +7730,11 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
       }
     } else {
       // do cuts independently
+#     if CBCMODEL_DEBUG > 1
+      std::cout
+	<< "CbcModel::sWC: threaded cut loop, "
+	<< numberNodes_ << " nodes." << std::endl ;
+#     endif
       OsiCuts * eachCuts = new OsiCuts [numberCutGenerators_];;
 #ifdef CBC_THREAD
       if (!threadModel) {
@@ -7622,10 +7911,10 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
 	  }
 	}
 /*
-  The cut generator has done its thing, and maybe it generated some
-  cuts.  Do a bit of bookkeeping: load
-  whichGenerator[i] with the index of the generator responsible for a cut,
-  and place cuts flagged as global in the global cut pool for the model.
+  The cut generator has done its thing, and maybe it generated some cuts.  Do
+  a bit of bookkeeping: load whichGenerator[i] with the index of the
+  generator responsible for a cut, and place cuts flagged as global in the
+  global cut pool for the model.
 
   lastNumberCuts is the sum of cuts added in previous iterations; it's the
   offset to the proper starting position in whichGenerator.
@@ -7702,6 +7991,12 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
 	  heuristic_[i]->solution(heuristicValue,
 				  newSolution);
 				  //theseCuts) ;
+#	if CBCMODEL_DEBUG > 2
+	std::cout
+	  << "CbcModel::sWC: ran heuristic "
+	  << i << " (" << heuristic_[i]->heuristicName()
+	  << "). " << std::endl ;
+#	endif
 	if (ifSol>0) {
 	  // better solution found
 	  heuristic_[i]->incrementNumberSolutionsFound();
@@ -8086,6 +8381,14 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
       numberTries = 0 ;
     }
   } while (numberTries>0||keepGoing) ;
+#   if CBCMODEL_DEBUG > 1
+    std::cout
+      << "CbcModel::sWC: end cut generation loop."
+      << std::endl ;
+#   endif
+/*
+  End cut generation loop.
+*/
   {
     // switch on
     for (int i = 0;i<numberCutGenerators_;i++) 
@@ -8099,6 +8402,11 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
 
   if(feasible&&solverCharacteristics_->solutionAddsCuts())  //check integer feasibility
   {
+#   if CBCMODEL_DEBUG > 1
+    std::cout
+      << "CbcModel::sWC: solution adds cuts; verifying."
+      << std::endl ;
+#   endif
     bool integerFeasible = true;
     const double * save = testSolution_;
     testSolution_ = solver_->getColSolution();
@@ -8166,13 +8474,22 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
     }
   }
 /*
-  Reduced cost fix at end. Must also check feasible, in case we've popped out
-  because a generator indicated we're infeasible.
+  End of code block to check for a solution, when cuts may be added as a result
+  of a feasible solution.
+
+  Reduced cost fix at end. Must also check feasible, in case we've popped
+  out because a generator indicated we're infeasible.
 */
   if (feasible && solver_->isProvenOptimal()) 
     reducedCostFix() ;
-  // If at root node do heuristics
+/*
+  If we're at the root, try heuristics.
+*/
   if (!numberNodes_&&!maximumSecondsReached()) {
+#   if CBCMODEL_DEBUG > 1
+    std::cout
+      << "CbcModel::sWC: trying heuristics at root." << std::endl ;
+#   endif
     // First see if any cuts are slack
     int numberRows = solver_->getNumRows();
     int numberAdded = numberRows-numberRowsAtContinuous_;
@@ -8238,33 +8555,78 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
       - objectiveValue ;
   //if ((numberNodes_%100)==0)
   //printf("XXb sum obj changed by %g\n",sumChangeObjective2_);
-/*
-  End of cut generation loop.
 
-  Now, consider if we want to disable or adjust the frequency of use for any
-  of the cut generators. If the client specified a positive number for
-  howOften, it will never change. If the original value was negative, it'll
-  be converted to 1000000+|howOften|, and this value will be adjusted each
-  time fullScan is true. Actual cut generation is performed every
-  howOften%1000000 nodes; the 1000000 offset is just a convenient way to
-  specify that the frequency is adjustable.
+# ifdef NODE_LOG
+/*
+  I've beefed this up a bit so that it once again compiles.  -- lh, 080422 --
+*/
+  { int fatherNum = -1 ;
+    double value = -1 ;
+    std::string wayStr = "" ;
+    const OsiTwoWayBranchingObject *osi2bo = NULL ;
+
+    if (node != NULL)
+    { fatherNum = node->nodeNumber() ;
+      value = node->branchingObject()->value() ;
+      osi2bo = dynamic_cast<const OsiTwoWayBranchingObject *>(node->branchingObject()) ;
+      if (osi2bo != NULL && osi2bo->way() == 1)
+	wayStr = "Up" ;
+      else
+	wayStr = "Down" ; }
+
+    if (solver_->getIterationCount() > 30)
+      std::cout << "*******" << std::endl ;
+
+    std::cout
+      << "Node " << numberNodes_ << ", father " << fatherNum
+      << ", " << wayStr << " branch from x = " << value
+      << ", #iterations " << getIterationCount()-startIters
+      << ", z = " << solver_->getObjValue()
+      << std::endl ;
+  }
+# endif
+
+/*
+  Is this a full scan interval? If so, consider if we want to disable or
+  adjust the frequency of use for any of the cut generators. If the client
+  specified a positive number for howOften, it will never change. If the
+  original value was negative, it'll be converted to 1000000+|howOften|, and
+  this value will be adjusted each time fullScan is true. Actual cut
+  generation is performed every howOften%1000000 nodes; the 1000000 offset is
+  just a convenient way to specify that the frequency is adjustable.
 
   During cut generation, we recorded the number of cuts produced by each
   generator for this node. For all cuts, whichGenerator records the generator
   that produced a cut.
 
   TODO: All this should probably be hidden in a method of the CbcCutGenerator
-  class.
+	class.
 
+  TODO: Can the loop that scans over whichGenerator to accumulate per
+	generator counts be replaced by values in countRowCuts and
+	countColumnCuts?
+
+	<< I think the answer is yes, but not the other way 'round. Row and
+	   column cuts are block interleaved in whichGenerator. >>
+
+  The root is automatically a full scan interval. At the root, decide if
+  we're going to do cuts in the tree, and whether we should keep the cuts we
+  have.
+
+  Codes for willBeCutsInTree:
+    -1: no cuts in tree and currently active cuts seem ineffective; delete
+	them
+     0: no cuts in tree but currently active cuts seem effective; make them
+	into architecturals (faster than treating them as cuts)
+     1: cuts will be generated in the tree; currently active cuts remain as
+	cuts
 */
-#ifdef NODE_LOG
-  int fatherNum = (node == NULL) ? -1 : node->nodeNumber();
-  double value =  (node == NULL) ? -1 : node->branchingObject()->value();
-  string bigOne = (solver_->getIterationCount() > 30) ? "*******" : "";
-  string way = (node == NULL) ? "" : (node->branchingObject()->way())==1 ? "Down" : "Up";
-  std::cout<<"Node "<<numberNodes_<<", father "<<fatherNum<<", #iterations "<<solver_->getIterationCount()<<", sol value : "<<solver_->getObjValue()<<std::endl;
-#endif
   if (fullScan&&numberCutGenerators_) {
+#   if CBCMODEL_DEBUG > 1
+    std::cout
+      << "CbcModel::sWC: adjusting cut generator frequencies."
+      << std::endl ;
+#   endif
     /* If cuts just at root node then it will probably be faster to
        update matrix and leave all in */
     int willBeCutsInTree=0;
@@ -8275,6 +8637,12 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
     double densityOld = static_cast<double> (numberElementsAtStart)/static_cast<double> (numberRowsAtStart);
     double densityNew = numberRowsAdded ? (static_cast<double> (numberElementsAdded))/static_cast<double> (numberRowsAdded)
       : 0.0;
+/*
+  If we're at the root, and we added cuts, and the cuts haven't changed the
+  objective, and the cuts resulted in a significant increase (> 20%) in nonzero
+  coefficients, do no cuts in the tree and ditch the current cuts. They're not
+  cost-effective.
+*/
     if (!numberNodes_) {
       if (numberRowsAdded)
         handler_->message(CBC_CUTS_STATS,messages_)
@@ -8391,6 +8759,9 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
 #endif
       }
     }
+/*
+  Noop block 071219.
+*/
     if ((numberRowsAdded>100+0.5*numberRowsAtStart
          ||numberElementsAdded>0.5*numberElementsAtStart)
         &&(densityNew>200.0&&numberRowsAdded>100&&densityNew>2.0*densityOld)) {
@@ -8400,6 +8771,9 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
       //printf("Cuts will be taken off , %d rows added with density %g\n",
       //     numberRowsAdded,densityNew);
     }
+/*
+  Noop block 071219.
+*/
     if (densityNew>100.0&&numberRowsAdded>2&&densityNew>2.0*densityOld) {
       //if (thisObjective-startObjective<0.1*fabs(startObjective)+1.0e-5)
       //willBeCutsInTree=-2;
@@ -8407,6 +8781,10 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
       //     numberRowsAdded,densityNew);
     }
     // Root node or every so often - see what to turn off
+/*
+  Hmmm ... > -90 for any generator will overrule previous decision to do no
+  cuts in tree and delete existing cuts.
+*/
     int i ;
     for (i = 0;i<numberCutGenerators_;i++) {
       int howOften = generator_[i]->howOften() ;
@@ -8419,6 +8797,13 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
 	<<startObjective<<thisObjective
 	<<currentPassNumber_
 	<<CoinMessageEol ;
+/*
+  Count the number of cuts produced by each cut generator on this call. Not
+  clear to me that the accounting is equivalent here. whichGenerator_ records
+  the generator for column and row cuts. So unless numberNewCuts is row cuts
+  only, we're double counting for JUST_ACTIVE. Note too the multiplier applied
+  to column cuts.
+*/
     if (!numberNodes_) {
       double value = CoinMax(minimumDrop_,0.005*(thisObjective-startObjective)/
 			     static_cast<double> (currentPassNumber_));
@@ -8449,13 +8834,30 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
 #endif
       totalCuts += value;
     }
+/*
+  Open up a loop to step through the cut generators and decide what (if any)
+  adjustment should be made for calling frequency.
+*/
     int iProbing=-1;
     double smallProblem = (0.2* totalCuts) /
       static_cast<double> (numberActiveGenerators) ;
     for (i = 0;i<numberCutGenerators_;i++) {
       int howOften = generator_[i]->howOften() ;
-      /*  Probing can be set to just do column cuts in treee.
-	  But if doing good then leave as on */
+/*
+  Probing can be set to just do column cuts in tree.  But if doing good then
+  leave as on.
+
+  Ok, let me try to explain this. rowCuts = 3 says do disaggregation (1<<0) and
+  coefficient (1<<1) cuts. But if the value is negative, there's code at the
+  entry to generateCuts, and generateCutsAndModify, that temporarily changes
+  the value to 4 (1<<2) if we're in a search tree.
+
+  Which does nothing to explain this next bit. We set a boolean, convert
+  howOften to the code for `generate while objective is improving', and change
+  over to `do everywhere'. Hmmm ... now I write it out, this makes sense in the
+  context of the original comment. If we're doing well (objective improving)
+  we'll keep probing fully active.
+*/
       bool probingWasOnBut=false;
       CglProbing * probing = dynamic_cast<CglProbing*>(generator_[i]->generator());
       if (probing&&!numberNodes_) {
@@ -8471,8 +8873,23 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
 	  probing->setRowCuts(3);
 	}
       }
+/*
+  Convert `as long as objective is improving' into `only at root' if we've
+  decided cuts just aren't worth it.
+*/
       if (willBeCutsInTree<0&&howOften==-98)
         howOften =-99;
+
+/*
+  And check to see if the objective is improving. But don't do the check if
+  the user has specified some minimum number of cuts.
+
+  This exclusion seems bogus, or at least counterintuitive. Why would a user
+  suspect that setting a minimum cut limit would invalidate the objective
+  check? Nor do I see the point in comparing the number of rows and columns
+  in the second test.
+*/
+
       if (!probing&&howOften==-98&&!generator_[i]->numberShortCutsAtRoot()&&
 	  generator_[i]->numberCutsInTotal()) {
 	// switch off as no short cuts generated
@@ -8486,10 +8903,22 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
             &&5*solver_->getNumRows()<solver_->getNumCols())
           howOften=-99; // switch off
       }
+/*
+  Below -99, this generator is switched off. There's no need to consider
+  further. Then again, there was no point in persisting this far!
+*/
       if (howOften<-99)
 	continue ;
+/*
+  Adjust, if howOften is adjustable.
+*/
       if (howOften<0||howOften >= 1000000) {
         if( !numberNodes_) {
+/*
+  If root only, or objective improvement but no cuts generated, switch off. If
+  it's just that the generator found no cuts at the root, give it one more
+  chance.
+*/
           // If small number switch mostly off
 #ifdef JUST_ACTIVE
           double thisCuts = count[i] + 5.0*generator_[i]->numberColumnCuts() ;
@@ -8515,35 +8944,77 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
 		probing->setMaxProbe(123);
 	      }
 	    }
+/*
+  Not productive, but not zero either.
+*/
           } else if ((thisCuts+generator_[i]->numberColumnCuts()<smallProblem)
-		     &&!generator_[i] ->whetherToUse()) {
+		     &&!generator_[i]->whetherToUse()) {
+/*
+  Not unadjustable every node, and not strong probing.
+*/
 	    if (howOften!=1&&!probingWasOnBut) {
+/*
+  No depth spec, or not adjustable every node.
+*/
 	      if (generator_[i]->whatDepth()<0||howOften!=-1) {
 		int k = static_cast<int> (sqrt(smallProblem/thisCuts)) ;
+/*
+  Not objective improvement, set to new frequency, otherwise turn off.
+*/
 		if (howOften!=-98)
 		  howOften = k+1000000 ;
 		else
 		  howOften=-100;
+/*
+  Depth spec, or adjustable every node. Force to unadjustable every node.
+*/
 	      } else {
 		howOften=1;
 	      }
+/*
+  Unadjustable every node, or strong probing. Force unadjustable every node and
+  force not strong probing? I don't understand.
+*/
 	    } else {
 	      howOften=1;
 	      // allow cuts
 	      probingWasOnBut=false;
 	    }
-          } else {
+/*
+  Productive cut generator. Say we'll do it every node, adjustable. But if the
+  objective isn't improving, restrict that to every fifth depth level
+  (whatDepth overrides howOften in generateCuts).
+*/
+	  } else {
             if (thisObjective-startObjective<0.1*fabs(startObjective)+1.0e-5&&generator_[i]->whatDepth()<0)
               generator_[i]->setWhatDepth(5);
             howOften = 1+1000000 ;
           }
         }
+/*
+  End root actions.
+
+  sumChangeObjective2_ is the objective change due to cuts. If we're getting
+  much better results from branching over a large number of nodes, switch off
+  cuts.
+
+  Except it doesn't, really --- it just puts off the decision 'til the
+  next full scan, when it'll put it off again unless cuts look better.
+*/
         // If cuts useless switch off
         if (numberNodes_>=100000&&sumChangeObjective1_>2.0e2*(sumChangeObjective2_+1.0e-12)) {
           howOften = 1000000+SCANCUTS; // wait until next time
           //printf("switch off cut %d due to lack of use\n",i);
         }
       }
+/*
+  Ok, that's the frequency adjustment bit.
+
+  Now, if we're at the root, force probing back on at every node, for column
+  cuts at least, even if it looks useless for row cuts. Notice that if it
+  looked useful, the values set above mean we'll be doing strong probing in
+  the tree subject to objective improvement.
+*/
       if (!numberNodes_) {
 	if (probingWasOnBut&&howOften==-100) {
 	  probing->setRowCuts(-3);
@@ -8555,6 +9026,12 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
 	if (howOften>=0&&generator_[i]->generator()->mayGenerateRowCutsInTree())
 	  willBeCutsInTree=1;
       }
+/*
+  Set the new frequency in the generator. If this is an adjustable frequency,
+  use the value to set whatDepth.
+
+  Hey! Seems like this could override the user's depth setting.
+*/
       generator_[i]->setHowOften(howOften) ;
       if (howOften>=1000000&&howOften<2000000&&0) {
         // Go to depth
@@ -8595,6 +9072,9 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
 	  <<CoinMessageEol ;
       }
     } 
+/*
+  End loop to adjust cut generator frequency of use.
+*/
     delete [] count ;
     if( !numberNodes_) {
       // save statistics
@@ -8602,6 +9082,9 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
 	generator_[i]->setNumberCutsAtRoot(generator_[i]->numberCutsInTotal());
 	generator_[i]->setNumberActiveCutsAtRoot(generator_[i]->numberCutsActive());
       }
+/*
+  Garbage code 071219
+*/
       // decide on pseudo cost strategy
       int howOften = iProbing>=0 ? generator_[iProbing]->howOften() : 0;
       if ((howOften %1000000)!=1) 
@@ -8626,6 +9109,12 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
       }
       if (willBeCutsInTree==-2)
         willBeCutsInTree=0;
+/*
+  End garbage code.
+
+  Now I've reached the problem area. This is a problem only at the root node,
+  so that should simplify the issue of finding a workable basis? Or maybe not.
+*/
       if( willBeCutsInTree<=0) {
         // Take off cuts
         cuts = OsiCuts();
@@ -8712,6 +9201,11 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
 # endif
 #ifdef CBC_THREAD
   if (threadModel) {
+#   if CBCMODEL_DEBUG > 1
+    std::cout
+      << "CbcModel::sWC: stopping " << numberThreads << " threads."
+      << std::endl ;
+#   endif
     // stop threads
     int i;
     for (i=0;i<numberThreads_;i++) {
@@ -8760,7 +9254,14 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
   // make sure pointers are up to date
   setPointers(solver_);
 
+# if CBCMODEL_DEBUG > 0
+  std::cout
+    << "CbcModel::sWC: leaving, feasible = "
+    << feasible << std::endl ;
+# endif
+
   return feasible ; }
+
 
 
 /*
@@ -8936,8 +9437,9 @@ CbcModel::takeOffCuts (OsiCuts &newCuts,
       assert (numberNewCuts_==newCuts.sizeRowCuts());
       numberOldActiveCuts_ -= numberOldToDelete ;
 #     ifdef CBC_DEBUG
-      printf("takeOffCuts: purged %d+%d cuts\n", numberOldToDelete,
-	     numberNewToDelete );
+      printf("takeOffCuts: purged %d+%d cuts; resolve %s.\n",
+	     numberOldToDelete,numberNewToDelete,
+	     ((allowResolve)?"allowed":"forbidden"));
 #     endif
       if (allowResolve)
       { 
@@ -8968,16 +9470,29 @@ CbcModel::takeOffCuts (OsiCuts &newCuts,
   return numberDropped;
 }
 
+/*
+  Return values:
+    1:	feasible
+    0:	infeasible
+   -1:	feasible and finished (do no more work on this subproblem)
+*/
+
 int
 CbcModel::resolve(CbcNodeInfo * parent, int whereFrom,
 		  double * saveSolution,
 		  double * saveLower,
 		  double * saveUpper)
 {
+
+# if CBCMODEL_DEBUG > 2
+  std::cout << "CbcModel::resolve: entering." << std::endl ;
+# endif
+
 #ifdef CBC_STATISTICS
   void cbc_resolve_check(const OsiSolverInterface * solver);
   cbc_resolve_check(solver_);
 #endif
+
   // We may have deliberately added in violated cuts - check to avoid message
   int iRow;
   int numberRows = solver_->getNumRows();
@@ -8988,6 +9503,11 @@ CbcModel::resolve(CbcNodeInfo * parent, int whereFrom,
     if (rowLower[iRow]>rowUpper[iRow]+1.0e-8)
       feasible=false;
   }
+# if CBCMODEL_DEBUG > 2
+  std::cout
+    << "CbcModel::resolve: after row cuts check feas = "
+    << feasible << std::endl ;
+# endif
   // Can't happen if strong branching as would have been found before
   if (!numberStrong_&&numberObjects_>numberIntegers_) {
     int iColumn;
@@ -9157,6 +9677,13 @@ CbcModel::resolve(CbcNodeInfo * parent, int whereFrom,
       } else {
 	feasible=false;
       }
+#     if CBCMODEL_DEBUG > 2
+      std::cout
+        << "CbcModel::resolve: solver says "
+	<< "proven optimal " << solver_->isProvenOptimal()
+	<< ", dual obj limit " << solver_->isDualObjectiveLimitReached()
+	<< ", feasible " << feasible << "." << std::endl ;
+#     endif
     }
   if (0&&feasible) {
     const double * lb = solver_->getColLower();
@@ -9283,6 +9810,13 @@ CbcModel::resolve(CbcNodeInfo * parent, int whereFrom,
 #endif
   int returnStatus = feasible ? 1 : 0;
   if (strategy_) {
+/*
+  Possible returns from status:
+    -1:	no recommendation
+     0: treat as optimal
+     1: treat as optimal and finished (no more resolves, cuts, etc.)
+     2: treat as infeasible.
+*/
     // user can play clever tricks here
     int status = strategy_->status(this,parent,whereFrom);
     if (status>=0) {
@@ -9294,6 +9828,11 @@ CbcModel::resolve(CbcNodeInfo * parent, int whereFrom,
         returnStatus=0;
     }
   }
+# if CBCMODEL_DEBUG > 2
+  std::cout
+    << "CbcModel::resolve: finished, status " << returnStatus
+    << "." << std::endl ;
+# endif
   return returnStatus ;
 }
 
@@ -9355,6 +9894,9 @@ CbcModel::findCliques(bool makeEquality,
   const double * rowLower = getRowLower();
   const double * rowUpper = getRowUpper();
 
+/*
+  Scan the rows, looking for individual rows that are clique constraints.
+*/
   for (iRow=0;iRow<numberRows;iRow++) {
     int numberP1=0, numberM1=0;
     int j;
@@ -9362,6 +9904,11 @@ CbcModel::findCliques(bool makeEquality,
     double lowerValue=rowLower[iRow];
     bool good=true;
     int slack = -1;
+/*
+  Does this row qualify? All variables must be binary and all coefficients
+  +/- 1.0. Variables with positive coefficients are recorded at the low end of
+  which, variables with negative coefficients the high end.
+*/
     for (j=rowStart[iRow];j<rowStart[iRow]+rowLength[iRow];j++) {
       int iColumn = column[j];
       int iInteger=lookup[iColumn];
@@ -9392,6 +9939,15 @@ CbcModel::findCliques(bool makeEquality,
     }
     int iUpper = static_cast<int> (floor(upperValue+1.0e-5));
     int iLower = static_cast<int> (ceil(lowerValue-1.0e-5));
+/*
+  What do we have? If the row upper bound is greater than 1-numberM1, this
+  isn't a clique. If the row upper bound is 1-numberM1, we have the classic
+  clique (an SOS1 on binary variables, if numberM1 = 0). If the upper bound
+  equals numberM1, we can fix all variables. If the upper bound is less than
+  numberM1, we're infeasible.
+  
+  A similar analysis applies using numberP1 against the lower bound.
+*/
     int state=0;
     if (upperValue<1.0e6) {
       if (iUpper==1-numberM1)
@@ -9409,6 +9965,10 @@ CbcModel::findCliques(bool makeEquality,
       else if (-iLower<-numberP1)
 	state=-3;
     }
+/*
+  What to do? If we learned nothing, move on to the next iteration. If we're
+  infeasible, we're outta here. If we decided we can fix variables, do it.
+*/
     if (good&&state) {
       if (abs(state)==3) {
 	// infeasible
@@ -9433,11 +9993,19 @@ CbcModel::findCliques(bool makeEquality,
 				 0.0);
 	}
       } else {
+/*
+  And the final case: we have a clique constraint. If it's within the allowed
+  size range, make a clique object.
+*/
 	int length = numberP1+numberM1;
 	if (length >= atLeastThisMany&&length<lessThanThis) {
 	  // create object
 	  bool addOne=false;
 	  int objectType;
+/*
+  Choose equality (type 1) or inequality (type 0). If we're forcing equalities,
+  add a slack.
+*/
 	  if (iLower==iUpper) {
 	    objectType=1;
 	  } else {
@@ -9450,6 +10018,13 @@ CbcModel::findCliques(bool makeEquality,
 	      objectType=0;
 	    }
 	  }
+/*
+  Record the strong values for the variables. Variables with positive
+  coefficients force all others when set to 1; variables with negative
+  coefficients force when set to 0. If the clique is formed against the row
+  lower bound, convert to the canonical form of a clique against the row
+  upper bound.
+*/
 	  if (state>0) {
 	    totalP1 += numberP1;
 	    totalM1 += numberM1;
@@ -9514,6 +10089,12 @@ CbcModel::findCliques(bool makeEquality,
       printf("%d variables fixed\n",numberFixed);
   }
 #endif
+/*
+  If required, augment the constraint matrix with clique slacks. Seems like we
+  should be able to add the necessary integer objects without a complete
+  rebuild of existing integer objects, but I'd need to look further to confirm
+  that (lh, 071219). Finally, add the clique objects.
+*/
   if (numberCliques>0&&numberSlacks&&makeEquality) {
     printf("adding %d integer slacks\n",numberSlacks);
     // add variables to make equality rows
@@ -9970,7 +10551,7 @@ CbcModel::deleteObjects(bool getIntegers)
 }
 
 /*!
-  Ensure all attached objects (OsiObjects, heuristics, and cut
+  Ensure all attached objects (CbcObjects, heuristics, and cut
   generators) point to this model.
 */
 void CbcModel::synchronizeModel()
@@ -12231,10 +12812,24 @@ CbcModel::resolve(OsiSolverInterface * solver)
 #else
   solver->resolve();
 #endif
+# if CBCMODEL_DEBUG > 0
+  std::cout
+    << "CbcModel::resolve(2): solver says "
+    << solver->isProvenOptimal() << "." << std::endl ;
+# endif
   return solver->isProvenOptimal() ? 1 : 0;
 }
 
 // Set log level
+/*!
+    \todo It'd be really nice if there were an overload for this method that
+	  allowed a separate value for the underlying solver's log level. The
+	  overload could be coded to allow an increase in the log level of the
+	  underlying solver.
+
+	  It's worth contemplating whether OSI should have a setLogLevel method
+	  that's more specific than the hint mechanism.
+*/
 void 
 CbcModel::setLogLevel(int value)
 { 
@@ -12244,6 +12839,13 @@ CbcModel::setLogLevel(int value)
     int oldLevel = solver_->messageHandler()->logLevel();
     if (value<oldLevel)
       solver_->messageHandler()->setLogLevel(value);
+#   if CBCMODEL_DEBUG > 0
+    std::cout
+      << "CbcModel::setLogLevel: solver log level was "
+      << oldLevel << ", attempting " << value
+      << ", result " << solver_->messageHandler()->logLevel()
+      << "." << std::endl ;
+#   endif
 #ifdef COIN_HAS_CLP
     OsiClpSolverInterface * clpSolver 
       = dynamic_cast<OsiClpSolverInterface *> (solver_);
@@ -12326,8 +12928,24 @@ double
 CbcModel::getCurrentSeconds() const {
   return CoinCpuTime()-getDblParam(CbcStartSeconds);
 }
-/* Encapsulates choosing a variable -
-   anyAction -2, infeasible (-1 round again), 0 done
+/* Encapsulates choosing a variable - returns
+   anyAction: -2 infeasible
+	      -1 round again
+	       0 done
+
+   At the point where chooseBranch is called, we've decided that this problem
+   will need to be placed in the live set and we need to choose a branching
+   variable.
+
+   Parameters:
+     newNode:	the node just created for the active subproblem.
+     oldNode:	newNode's parent.
+     lastws:	oldNode's basis
+     lowerBefore, upperBefore: column bound arrays for oldNode
+     cuts:	list of cuts added to newNode.
+
+     resolved:	(o)  set to true if newNode is resolved during processing
+     branches:	(o) will be filled in with ... ? Null on entry
 */
 int 
 CbcModel::chooseBranch(CbcNode * &newNode, int numberPassesLeft, 
@@ -12344,6 +12962,11 @@ CbcModel::chooseBranch(CbcNode * &newNode, int numberPassesLeft,
     3 - a solution reached by branching (could be strong)
     4 - no solution but many nodes
        add 10 if depth >= K
+
+    K is currently hardcoded to 8, a few lines below.
+
+    CBCMODEL_DEBUG: Seems like stateOfSearch_ should be 2 if
+	       numberHeuristicSolutions_ == numberSolutions_.
   */
   stateOfSearch_=1;
   if (numberSolutions_>0) {
@@ -12392,11 +13015,24 @@ CbcModel::chooseBranch(CbcNode * &newNode, int numberPassesLeft,
   }
 #endif
   currentNode_=newNode; // so can be used elsewhere
+/*
+  Enough preparation. Get down to the business of choosing a branching
+  variable.
+*/
   while (anyAction == -1) {
     // Set objective value (not so obvious if NLP etc)
     setObjectiveValue(newNode,oldNode);
     //if (numberPassesLeft<=0)
     //branchingState=1;
+/*
+  Is there a CbcBranchDecision object installed? Does it specify a
+  chooseVariable method? If not, we're using the old (Cbc) side of the branch
+  decision hierarchy.  In quick summary, CbcNode::chooseBranch uses strong
+  branching on any objects, while CbcNode::chooseDynamicBranch uses dynamic
+  branching, but only on simple integers (-3 is the code for punt due to
+  complex objects). Serious bugs remain on the Cbc side, particularly in
+  chooseDynamicBranch.
+*/
     if (!branchingMethod_||!branchingMethod_->chooseMethod()) {
 #ifdef COIN_HAS_CLP
       bool doClp = oldNode&&(oldNode->depth()%2)==1;
@@ -12432,6 +13068,9 @@ CbcModel::chooseBranch(CbcNode * &newNode, int numberPassesLeft,
       if (anyAction==-3) 
 	anyAction = newNode->chooseBranch(this,oldNode,numberPassesLeft) ; // dynamic did nothing
       }
+/*
+  We're on the new (Osi) side of the branching hierarchy.
+*/
     } else {
       OsiBranchingInformation usefulInfo=usefulInformation();
       anyAction = newNode->chooseOsiBranch(this,oldNode,&usefulInfo,branchingState) ;; // Osi method
@@ -12526,15 +13165,25 @@ CbcModel::chooseBranch(CbcNode * &newNode, int numberPassesLeft,
       }
     }
   }
+/*
+  End main loop to choose a branching variable.
+*/
   if (anyAction >= 0) {
     if (resolved) { 
 /*
   Used to be that when the node was not fathomed (branching object present)
   the solution was not needed. But that's no longer the case --- heuristics
-  are applied, and they may want the solution.
+  are applied, and they want the solution.
 */
       // bool needValidSolution = (newNode->branchingObject() == NULL) ;
       bool needValidSolution = true ;
+#     if CBC_DEBUG > 0
+      std::cout
+	<< "CbcModel::chooseBranch: branching object is " << std::hex
+	<< newNode->branchingObject() << std::dec
+	<< " and needValidSolution is " << needValidSolution
+	<< "." << std::endl ;
+#     endif
       takeOffCuts(cuts,needValidSolution ,NULL) ; 
 #	      ifdef CHECK_CUT_COUNTS
       {
@@ -12804,10 +13453,19 @@ CbcModel::setBestSolution(const double * solution,int numberColumns,
   memset(bestSolution_,0,n*sizeof(double));
   memcpy(bestSolution_,solution,numberColumns*sizeof(double));
 }
-/* Do heuristics at root.
+
+/* 
+  Do heuristics at root.
    0 - don't delete
    1 - delete
-      2 - just delete - don't even use
+   2 - just delete - don't even use
+
+  Parameter of 2 means what it says --- the routine will do nothing except
+  delete the existing heuristics. A feasibility pump is always deleted,
+  independent of the parameter value, as it's only useful at the root.
+
+  The routine is called from branchAndBound to process the root node. But it
+  will also be called when we've recursed into branchAndBound via smallBaB.
 */
 void 
 CbcModel::doHeuristicsAtRoot(int deleteHeuristicsAfterwards)
@@ -12816,7 +13474,13 @@ CbcModel::doHeuristicsAtRoot(int deleteHeuristicsAfterwards)
   int numberColumns = getNumCols() ;
   double * newSolution = new double [numberColumns] ;
   int i;
+
   if (deleteHeuristicsAfterwards!=2) {
+/*
+  If mode == 1, we delete and recreate here, then delete at the bottom. The
+  create/delete part makes sense, but why delete the existing array? Seems like
+  it should be preserved and restored.
+*/
     if (deleteHeuristicsAfterwards) {
       delete [] usedInSolution_;
       usedInSolution_ = new int [numberColumns];
@@ -12827,8 +13491,23 @@ CbcModel::doHeuristicsAtRoot(int deleteHeuristicsAfterwards)
     CbcEventHandler *eventHandler = getEventHandler() ;
     if (eventHandler)
       eventHandler->setModel(this);
-    
+/*
+  currentPassNumber_ is described as `cut pass number'. Again, seems a bit
+  cavalier to just change it.
+
+  Whether this has any effect is determined by individual heuristics. Typically
+  there will be a check at the front of the solution() routine that determines
+  whether it will run or simply return. Root heuristics are characterised by
+  node count of 0. In addition, currentPassNumber_ can be checked to to limit
+  execution in terms of passes through cut generation / heuristic execution in
+  solveWithCuts.
+*/
     currentPassNumber_ = 1; // so root heuristics will run
+/*
+  A loop to run the heuristics. incrementUsed will mark entries in
+  usedInSolution corresponding to variables that are nonzero in the solution.
+  CBC_ROUNDING just identifies a message template, not the heuristic.
+*/
     // Modify based on size etc
     adjustHeuristics();
     // See if already withing allowable gap
@@ -12933,6 +13612,12 @@ CbcModel::doHeuristicsAtRoot(int deleteHeuristicsAfterwards)
 	    break;
 	  // see if heuristic will do anything
 	  double saveValue = heuristicValue ;
+#         if CBCMODEL_DEBUG > 1
+	  // 090504 This print needs to be ported into the above threaded code.
+          std::cout
+	    << "doHeuristic: heuristic " << heuristic_[i]->heuristicName()
+	    << std::endl ;
+#         endif
 	  int ifSol = heuristic_[i]->solution(heuristicValue,
 					      newSolution);
 	  if (ifSol>0) {
@@ -12973,10 +13658,13 @@ CbcModel::doHeuristicsAtRoot(int deleteHeuristicsAfterwards)
 #endif
     }
     currentPassNumber_ = 0;
-    /*
-      Did any of the heuristics turn up a new solution? Record it before we free
-      the vector.
-    */
+/*
+  Did any of the heuristics turn up a new solution? Record it before we free
+  the vector. tree_ will not necessarily be a CbcTreeLocal; the main model gets
+  a CbcTree by default. CbcTreeLocal actually implements a k-neighbourhood
+  search heuristic. This initialises it with a solution and creates the
+  k-neighbourhood cut.
+*/
     if (found >= 0) { 
       CbcTreeLocal * tree 
 	= dynamic_cast<CbcTreeLocal *> (tree_);
@@ -12989,6 +13677,12 @@ CbcModel::doHeuristicsAtRoot(int deleteHeuristicsAfterwards)
       }
     }
   }
+/*
+  Cleanup. The feasibility pump heuristic is a root heuristic to look for an
+  initial feasible solution. It's had its chance; remove it.
+
+  For modes 1 and 2, all the heuristics are deleted.
+*/
   if (!deleteHeuristicsAfterwards) {
     for (i = 0;i<numberHeuristics_;i++) {
       // delete FPump

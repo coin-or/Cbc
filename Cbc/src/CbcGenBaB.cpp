@@ -35,6 +35,37 @@ namespace {
   char svnid[] = "$Id$" ;
 
 /*
+  Just for kicks, define a branch decision class that makes it explicit we're
+  working the OSI side of the hierarchy. The point here is that when we're
+  working the OSI side, all the work is performed by the OsiChooseVariable
+  method held in chooseMethod_ in the base class.
+*/
+
+class CbcBranchOsiDecision : public CbcBranchDecision
+{ public:
+
+  CbcBranchOsiDecision () : CbcBranchDecision() {}
+  ~CbcBranchOsiDecision () {}
+
+  CbcBranchOsiDecision (const CbcBranchOsiDecision &rhs)
+    : CbcBranchDecision(rhs)
+  {}
+
+  CbcBranchOsiDecision *clone () const
+  { return new CbcBranchOsiDecision(*this) ; }
+
+  void initialize (CbcModel *model) { assert(false) ; }
+
+  int betterBranch (CbcBranchingObject *thisOne,
+		    CbcBranchingObject *bestSoFar,
+		    double changeUp, int numInfUp,
+		    double changeDn, int numInfDn)
+  { assert(false) ;
+    return (0) ; }
+} ;
+
+
+/*
   A hack to fix variables based on reduced cost prior to branch-and-cut. Note
   that we're *not* looking at the integrality gap here. Given the reduced costs
   of the root relaxation, we're simply placing a bet that variables with really
@@ -493,12 +524,11 @@ int doBaCParam (CoinParam *param)
   Time to consider preprocessing. We'll do a bit of setup before getting to
   the meat of the issue.
 
-  preIppSolver will hold a clone of the unpreprocessed constraint system.
-  We'll need it when we postprocess. ippSolver holds the preprocessed
-  constraint system.  Again, we clone it and give the clone to babModel for
-  B&C. Presumably we need an unmodified copy of the preprocessed system to
-  do postprocessing, but the copy itself is hidden inside the preprocess
-  object.
+  preIppSolver points to the unpreprocessed constraint system.  ippSolver
+  holds the preprocessed constraint system.  We clone it and give the clone
+  to babModel for B&C. We'll need an unmodified copy of the preprocessed
+  system to do postprocessing, but the copy itself is hidden inside (and
+  managed by) the preprocess object.
 */
   OsiSolverInterface *preIppSolver = 0 ;
   CglPreProcess ippObj ;
@@ -511,11 +541,11 @@ int doBaCParam (CoinParam *param)
   if (!(ippAction == CbcGenCtlBlk::IPPOff ||
 	ippAction == CbcGenCtlBlk::IPPStrategy))
   { double timeLeft = babModel.getMaximumSeconds() ;
-    preIppSolver = babSolver->clone() ;
+    preIppSolver = babSolver ;
     OsiSolverInterface *ippSolver ;
 #   if CBC_TRACK_SOLVERS > 0
     std::cout
-      << "doBaCParam: clone made prior to IPP is "
+      << "doBaCParam: solver prior to IPP is "
       << std::hex << preIppSolver << std::dec
       << ", log level " << preIppSolver->messageHandler()->logLevel()
       << "." << std::endl ;
@@ -569,7 +599,6 @@ int doBaCParam (CoinParam *param)
     if (!ippSolver)
     { std::cout
 	<< "Integer preprocess says infeasible or unbounded" << std::endl ;
-      delete preIppSolver ;
       ctlBlk->setBaBStatus(&babModel,CbcGenCtlBlk::BACwIPP) ;
       return (0) ; }
 #   if COIN_CBC_VERBOSITY > 0
@@ -589,9 +618,13 @@ int doBaCParam (CoinParam *param)
       std::cout
 	<< "Integer preprocessed model written to `presolved.mps' "
 	<< "as minimisation problem." << std::endl ; }
-    
+/*
+  Clone the preprocessed solver and give it to the model as the solver to
+  use during branch and cut. The second parameter to assignSolver means that
+  assignSolver will not delete the existing solver (held in preIppSolver).
+*/
     OsiSolverInterface *osiTmp = ippSolver->clone() ;
-    babModel.assignSolver(osiTmp) ;
+    babModel.assignSolver(osiTmp,false) ;
     babSolver = babModel.solver() ;
 #   if CBC_TRACK_SOLVERS > 0
     std::cout
@@ -601,8 +634,7 @@ int doBaCParam (CoinParam *param)
       << "." << std::endl ;
 #   endif
     if (!solveRelaxation(&babModel))
-    { delete preIppSolver ;
-      ctlBlk->setBaBStatus(&babModel,CbcGenCtlBlk::BACwIPPRelax) ;
+    { ctlBlk->setBaBStatus(&babModel,CbcGenCtlBlk::BACwIPPRelax) ;
       return (0) ; }
 #   if COIN_CBC_VERBOSITY > 0
     std::cout
@@ -681,16 +713,25 @@ int doBaCParam (CoinParam *param)
 /*
   Set the branching method. We can't do this until we establish objects,
   because the constructor will set up arrays based on the number of objects,
-  and there's no provision to set this information after creation. Arguably not
-  good --- it'd be nice to set this in the prototype model that's cloned for
-  this routine. In CoinSolve, shadowPriceMode is handled with the TESTOSI
+  and there's no provision to set this information after creation. Arguably
+  not good --- it'd be nice to set this in the prototype model that's cloned
+  for this routine. In CoinSolve, shadowPriceMode is handled with the TESTOSI
   option.
+
+  CbcBranchOsiDecision (defined at the head of the file) is deliberately
+  crafted to emphasise that when we're using the OSI side of the hierarchy
+  there's no use of anything in the CbcBranchDecision classes except for
+  chooseMethod_, which specifies an OsiChooseVariable method that does all
+  the work. We indicate to CbcModel::branchAndBound that we want the Osi side
+  by installing an Osi choose method (OsiChooseStrong in this case) in the
+  CbcBranchDecision object with setChooseMethod, then installing the
+  CbcBranchDecision object in the CbcModel with setBranchingMethod().
 */
   OsiChooseStrong strong(babSolver) ;
   strong.setNumberBeforeTrusted(babModel.numberBeforeTrust()) ;
   strong.setNumberStrong(babModel.numberStrong()) ;
   strong.setShadowPriceMode(ctlBlk->chooseStrong_.shadowPriceMode_) ;
-  CbcBranchDefaultDecision decision ;
+  CbcBranchOsiDecision decision ;
   decision.setChooseMethod(strong) ;
   babModel.setBranchingMethod(decision) ;
 /*
@@ -762,7 +803,12 @@ int doBaCParam (CoinParam *param)
   time2 = CoinCpuTime();
   ctlBlk->totalTime_ += time2-time1;
 /*
-  If we performed integer preprocessing, time to back it out.
+  If we performed integer preprocessing, time to back it out. babSolver will be
+  deleted when preIPPsolver is again assigned to the model.
+  
+  As best I can see, it's not necessary to hold a pointer to the original
+  model given to IPP. The assert is to boost my confidence in this conclusion.
+  -- lh, 080122 --
 */
   if (ippAction != CbcGenCtlBlk::IPPOff)
   { 
@@ -772,6 +818,10 @@ int doBaCParam (CoinParam *param)
       << std::hex << babSolver << std::dec << "." << std::endl ;
 #   endif
     ippObj.postProcess(*babSolver);
+
+    assert(ippObj.originalModel() == preIppSolver) ;
+
+    preIppSolver = ippObj.originalModel() ;
     babModel.assignSolver(preIppSolver) ;
     babSolver = babModel.solver() ;
 #   if CBC_TRACK_SOLVERS > 0

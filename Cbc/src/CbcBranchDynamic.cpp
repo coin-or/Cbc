@@ -9,8 +9,15 @@
 #include <cstdlib>
 #include <cmath>
 #include <cfloat>
+
+
+// Debug trace  (-lh-)
+#define CBCBRDYN_DEBUG 0
+
+
 //#define CBC_DEBUG
 //#define TRACE_ONE 19
+
 #include "OsiSolverInterface.hpp"
 #include "OsiSolverBranch.hpp"
 #include "CbcModel.hpp"
@@ -571,6 +578,13 @@ CbcSimpleIntegerDynamicPseudoCost::infeasibility(const OsiBranchingInformation *
     return 0.0;
   }
   assert (breakEven_>0.0&&breakEven_<1.0);
+/*
+  Find nearest integer, and integers above and below current value.
+
+  Given that we've already forced value within bounds, if
+  (current value)+(integer tolerance) > (upper bound)
+  shouldn't we declare this variable integer?
+*/
   double value = solution[columnNumber_];
   value = CoinMax(value, lower[columnNumber_]);
   value = CoinMin(value, upper[columnNumber_]);
@@ -586,6 +600,11 @@ CbcSimpleIntegerDynamicPseudoCost::infeasibility(const OsiBranchingInformation *
     below = above -1;
   }
 #if INFEAS==1
+/*
+  Why do we inflate the distance to the cutoff by a factor of 10 for
+  values that could be considered reachable? Why do we add 100 for values
+  larger than 1e20?
+*/
   double distanceToCutoff=0.0;
   double objectiveValue = model_->getCurrentMinimizationObjValue();
   distanceToCutoff =  model_->getCutoff()  - objectiveValue;
@@ -1495,10 +1514,26 @@ CbcBranchDynamicDecision::saveBranchingObject(OsiBranchingObject * object)
 }
 /* Pass in information on branch just done.
    assumes object can get information from solver */
+/*
+  The expectation is that this method will be called after the branch has been
+  imposed on the constraint system and resolve() has executed.
+
+  Note that the CbcBranchDecision is a property of the CbcModel. Note also that
+  this method is reaching right through the CbcBranchingObject to update
+  information in the underlying CbcObject. That's why we delete the
+  branchingObject at the end of the method --- the next time we're called,
+  the CbcObject will be different.
+*/
 void 
 CbcBranchDynamicDecision::updateInformation(OsiSolverInterface * solver,
                                             const CbcNode * node)
 {
+# if CBCBRDYN_DEBUG > 0
+  std::cout
+    << "CbcBrDynDec::updateInformation: entering."
+    << " chooseMethod " << std::hex << chooseMethod_ << std::dec
+    << "." << std::endl ;
+# endif
   assert (object_);
   const CbcModel * model = object_->model();
   double originalValue=node->objectiveValue();
@@ -1510,6 +1545,17 @@ CbcBranchDynamicDecision::updateInformation(OsiSolverInterface * solver,
   const double * solution = solver->getColSolution();
   //const double * lower = solver->getColLower();
   //const double * upper = solver->getColUpper();
+/*
+ Gain access to the associated CbcBranchingObject and its underlying
+ CbcObject.
+
+ Seems like we'd want to distinguish between no branching object and a
+ branching object of the wrong type. Just deleting an object of the wrong
+ type hides many sins.
+
+ Hmmm ... if we're using the OSI side of the hierarchy, is this indicated by a
+ null object_? Nah, then we have an assert failure off the top.
+*/
   CbcDynamicPseudoCostBranchingObject * branchingObject =
     dynamic_cast<CbcDynamicPseudoCostBranchingObject *>(object_);
   if (!branchingObject) {
@@ -1518,6 +1564,10 @@ CbcBranchDynamicDecision::updateInformation(OsiSolverInterface * solver,
     return;
   }
   CbcSimpleIntegerDynamicPseudoCost *  object = branchingObject->object();
+/*
+  change is the change in objective due to the branch we've just imposed. It's
+  possible we may have gone infeasible.
+*/
   double change = CoinMax(0.0,objectiveValue-originalValue);
   // probably should also ignore if stopped
   int iStatus;
@@ -1528,7 +1578,9 @@ CbcBranchDynamicDecision::updateInformation(OsiSolverInterface * solver,
     iStatus=2; // unknown 
   else
     iStatus=1; // infeasible
-
+/*
+  If we're feasible according to the solver, evaluate integer feasibility.
+*/
   bool feasible = iStatus!=1;
   if (feasible) {
     double integerTolerance = 
@@ -1542,6 +1594,12 @@ CbcBranchDynamicDecision::updateInformation(OsiSolverInterface * solver,
         unsatisfied++;
     }
   }
+/*
+  Finally, update the object. Defaults (080104) are TYPE2 = 0, INFEAS = 1.
+
+  Pseudocosts are at heart the average of actual costs for a branch. We just
+  need to update the information used to calculate that average.
+*/
   int way = object_->way();
   double value = object_->value();
   //#define TYPE2 1

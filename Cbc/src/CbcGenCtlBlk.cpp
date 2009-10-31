@@ -136,6 +136,7 @@ CbcGenCtlBlk::CbcGenCtlBlk ()
 
   fpump_.action_ = CbcGenCtlBlk::CGOn ;
   fpump_.proto_ = 0 ;
+  fpump_.iters_ = 20 ;
 
   combine_.action_ = CbcGenCtlBlk::CGOn ;
   combine_.proto_ = 0 ;

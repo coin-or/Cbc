@@ -1,7 +1,14 @@
 /* $Id$ */
 // Copyright (C) 2007, International Business Machines
 // Corporation and others.  All Rights Reserved.
-   
+
+/*! \file CbcSolver.cpp
+    \brief Second level routines for the cbc stand-alone solver.
+*/
+
+// Debug trace  (-lh-)
+#define CBCSLV_DEBUG 0
+
 #include "CbcConfig.h"
 #include "CoinPragma.hpp"
 
@@ -534,40 +541,98 @@ void CbcSolver::fillParameters()
   if (createSolver)
     delete clpSolver;
 }
+
+/*
+  Initialise a subset of the parameters prior to processing any input from
+  the user.
+
+  Why this choice of subset?
+*/
+/*!
+  \todo Guard/replace clp-specific code
+*/
 void CbcSolver::fillValuesInSolver()
 {
+  int j,intVal ;
+  double dblVal ;
+
   OsiSolverInterface * solver = model_.solver();
-  OsiClpSolverInterface * clpSolver = dynamic_cast< OsiClpSolverInterface*> (solver);
+
+  OsiClpSolverInterface * clpSolver =
+	dynamic_cast< OsiClpSolverInterface*> (solver);
   assert (clpSolver);
-  noPrinting_ = (clpSolver->getModelPtr()->logLevel()==0);
+  ClpSimplex * lpSolver = clpSolver->getModelPtr();
+
+/*
+  Why are we reaching into the underlying solver(s) for these settings?
+  Shouldn't CbcSolver have its own defaults, which are then imposed on the
+  underlying solver?
+
+  Coming at if from the other side, if CbcSolver had the capability to use
+  multiple solvers then it definitely makes sense to acquire the defaults from
+  the solver (on the assumption that we haven't processed command line
+  parameters yet, which can then override the defaults). But then it's more of
+  a challenge to avoid solver-specific coding here.
+*/
+  noPrinting_ = (lpSolver->logLevel()==0);
   CoinMessageHandler * generalMessageHandler = clpSolver->messageHandler();
   generalMessageHandler->setPrefix(true);
-  ClpSimplex * lpSolver = clpSolver->getModelPtr();
+
   lpSolver->setPerturbation(50);
   lpSolver->messageHandler()->setPrefix(false);
-  parameters_[whichParam(DUALBOUND,numberParameters_,parameters_)].setDoubleValue(lpSolver->dualBound());
-  parameters_[whichParam(DUALTOLERANCE,numberParameters_,parameters_)].setDoubleValue(lpSolver->dualTolerance());
-  int iParam = whichParam(SOLVERLOGLEVEL,numberParameters_,parameters_);
-  int value=parameters_[iParam].intValue();
-  clpSolver->messageHandler()->setLogLevel(value) ;
-  lpSolver->setLogLevel(value);
-  iParam = whichParam(LOGLEVEL,numberParameters_,parameters_);
-  value=parameters_[iParam].intValue();
-  model_.messageHandler()->setLogLevel(value);
-  parameters_[whichParam(LOGLEVEL,numberParameters_,parameters_)].setIntValue(model_.logLevel());
-  parameters_[whichParam(SOLVERLOGLEVEL,numberParameters_,parameters_)].setIntValue(lpSolver->logLevel());
-  parameters_[whichParam(MAXFACTOR,numberParameters_,parameters_)].setIntValue(lpSolver->factorizationFrequency());
-  parameters_[whichParam(MAXITERATION,numberParameters_,parameters_)].setIntValue(lpSolver->maximumIterations());
-  parameters_[whichParam(PERTVALUE,numberParameters_,parameters_)].setIntValue(lpSolver->perturbation());
-  parameters_[whichParam(PRIMALTOLERANCE,numberParameters_,parameters_)].setDoubleValue(lpSolver->primalTolerance());
-  parameters_[whichParam(PRIMALWEIGHT,numberParameters_,parameters_)].setDoubleValue(lpSolver->infeasibilityCost());
-  parameters_[whichParam(NUMBERBEFORE,numberParameters_,parameters_)].setIntValue(model_.numberBeforeTrust());
-  parameters_[whichParam(MAXNODES,numberParameters_,parameters_)].setIntValue(model_.getMaximumNodes());
-  parameters_[whichParam(STRONGBRANCHING,numberParameters_,parameters_)].setIntValue(model_.numberStrong());
-  parameters_[whichParam(INFEASIBILITYWEIGHT,numberParameters_,parameters_)].setDoubleValue(model_.getDblParam(CbcModel::CbcInfeasibilityWeight));
-  parameters_[whichParam(INTEGERTOLERANCE,numberParameters_,parameters_)].setDoubleValue(model_.getDblParam(CbcModel::CbcIntegerTolerance));
-  parameters_[whichParam(INCREMENT,numberParameters_,parameters_)].setDoubleValue(model_.getDblParam(CbcModel::CbcCutoffIncrement));
+
+  j = whichParam(DUALBOUND,numberParameters_,parameters_) ;
+  parameters_[j].setDoubleValue(lpSolver->dualBound());
+  j = whichParam(DUALTOLERANCE,numberParameters_,parameters_) ;
+  parameters_[j].setDoubleValue(lpSolver->dualTolerance());
+/*
+  Why are we doing this? We read the log level from parameters_, set it into
+  the message handlers for cbc and the underlying solver. Then we read the
+  log level back from the handlers and use it to set the values in
+  parameters_!
+*/
+  j = whichParam(SOLVERLOGLEVEL,numberParameters_,parameters_);
+  intVal = parameters_[j].intValue();
+  clpSolver->messageHandler()->setLogLevel(intVal) ;
+  lpSolver->setLogLevel(intVal);	
+  j = whichParam(LOGLEVEL,numberParameters_,parameters_);
+  intVal=parameters_[j].intValue();
+  model_.messageHandler()->setLogLevel(intVal);
+
+  j = whichParam(LOGLEVEL,numberParameters_,parameters_) ;
+  parameters_[j].setIntValue(model_.logLevel());
+  j = whichParam(SOLVERLOGLEVEL,numberParameters_,parameters_) ;
+  parameters_[j].setIntValue(lpSolver->logLevel());
+
+  j = whichParam(MAXFACTOR,numberParameters_,parameters_) ;
+  parameters_[j].setIntValue(lpSolver->factorizationFrequency());
+  j = whichParam(MAXITERATION,numberParameters_,parameters_) ;
+  parameters_[j].setIntValue(lpSolver->maximumIterations());
+  j = whichParam(PERTVALUE,numberParameters_,parameters_) ;
+  parameters_[j].setIntValue(lpSolver->perturbation());
+  j = whichParam(PRIMALTOLERANCE,numberParameters_,parameters_) ;
+  parameters_[j].setDoubleValue(lpSolver->primalTolerance());
+  j = whichParam(PRIMALWEIGHT,numberParameters_,parameters_) ;
+  parameters_[j].setDoubleValue(lpSolver->infeasibilityCost());
+  j = whichParam(NUMBERBEFORE,numberParameters_,parameters_) ;
+  parameters_[j].setIntValue(model_.numberBeforeTrust());
+  j = whichParam(MAXNODES,numberParameters_,parameters_) ;
+  parameters_[j].setIntValue(model_.getMaximumNodes());
+  j = whichParam(STRONGBRANCHING,numberParameters_,parameters_) ;
+  parameters_[j].setIntValue(model_.numberStrong());
+  j = whichParam(INFEASIBILITYWEIGHT,numberParameters_,parameters_) ;
+  dblVal = model_.getDblParam(CbcModel::CbcInfeasibilityWeight);
+  parameters_[j].setDoubleValue(dblVal) ;
+  j = whichParam(INTEGERTOLERANCE,numberParameters_,parameters_) ;
+  dblVal = model_.getDblParam(CbcModel::CbcIntegerTolerance);
+  parameters_[j].setDoubleValue(dblVal) ;
+  j = whichParam(INCREMENT,numberParameters_,parameters_) ;
+  dblVal = model_.getDblParam(CbcModel::CbcCutoffIncrement);
+  parameters_[j].setDoubleValue(dblVal) ;
+
 }
+
+
 // Add user function
 void 
 CbcSolver::addUserFunction(CbcUser * function)
@@ -5747,6 +5812,12 @@ int
 	  case BAB: // branchAndBound
 	    // obsolete case STRENGTHEN:
             if (goodModel) {
+
+#	      if CBCSLV_DEBUG > 0
+	      std::cout
+		<< "CbcSolver:BAB: entering." << std::endl ;
+#	      endif
+
               bool miplib = type==MIPLIB;
               int logLevel = parameters_[slog].intValue();
               // Reduce printout
@@ -5999,8 +6070,16 @@ int
 		  model_.solver()->setHintParam(OsiDoPresolveInInitial,false,OsiHintTry);
 		  model_.solver()->setHintParam(OsiDoPresolveInResolve,false,OsiHintTry);
 		}
+
 		double time1a = CoinCpuTime();
+
+#		if CBCSLV_DEBUG > 0
+		std::cout
+		  << "CbcSolver:BAB: initial solve complete." << std::endl ;
+#		endif
+
                 OsiSolverInterface * solver = model_.solver();
+
 #ifndef CBC_OTHER_SOLVER
                 OsiClpSolverInterface * si =
                   dynamic_cast<OsiClpSolverInterface *>(solver) ;
@@ -6229,6 +6308,12 @@ int
 #endif
 	      }
               // See if we want preprocessing
+
+#	      if CBCSLV_DEBUG > 0
+	      std::cout
+	 	<< "CbcSolver:BAB: at preprocessing prep." << std::endl ;
+#	      endif
+
               OsiSolverInterface * saveSolver=NULL;
               CglPreProcess process;
 	      // Say integers in sync 
@@ -6576,6 +6661,12 @@ int
                 babModel_->initialSolve();
                 babModel_->setMaximumSeconds(timeLeft-(CoinCpuTime()-time1));
               }
+
+#	      if CBCSLV_DEBUG > 0
+	      std::cout
+	 	<< "CbcSolver:BAB: finished preprocessing." << std::endl ;
+#	      endif
+
               // now tighten bounds
               if (!miplib) {
 #ifndef CBC_OTHER_SOLVER
@@ -6716,8 +6807,15 @@ int
 		delete [] sort;
 		delete [] dsort;
 	      }
+
+#	      if CBCSLV_DEBUG > 0
+	      std::cout
+	 	<< "CbcSolver:BAB: preparing for heuristics." << std::endl ;
+#	      endif
+
 	      // Set up heuristics
 	      doHeuristics(babModel_,(!miplib) ? 1 : 10);
+
               if (!miplib) {
 		if(parameters_[whichParam(LOCALTREE,numberParameters_,parameters_)].currentOptionAsInteger()) {
                   CbcTreeLocal localTree(babModel_,NULL,10,0,0,10000,2000);
@@ -8149,6 +8247,12 @@ int
 		  partial.setHeuristicName("Partial solution given");
 		  babModel_->addHeuristic(&partial);
 		}
+
+#		if CBCSLV_DEBUG > 0
+		std::cout
+		  << "CbcSolver:BAB: call branchAndBound." << std::endl ;
+#		endif
+
 		if (logLevel<=1)
 		  babModel_->solver()->setHintParam(OsiDoReducePrint,true,OsiHintTry);
 #ifdef CBC_TEMP1
@@ -8248,6 +8352,7 @@ int
 #endif
 		  return returnCode;
 		}
+
 #ifdef CLP_MALLOC_STATISTICS
 		malloc_stats();
 		malloc_stats2();

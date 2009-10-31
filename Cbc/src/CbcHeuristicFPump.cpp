@@ -5,6 +5,11 @@
 // Turn off compiler warning about long names
 #  pragma warning(disable:4786)
 #endif
+
+#define CBCFPUMP_DEBUG 0
+// #define COIN_DEVELOP
+// #define COIN_DEVELOP_x
+
 #include <cassert>
 #include <cstdlib>
 #include <cmath>
@@ -214,12 +219,34 @@ int
 CbcHeuristicFPump::solution(double & solutionValue,
 			 double * betterSolution)
 {
+
+# if CBCFPUMP_DEBUG > 0
+  std::cout
+    << "CbcFPump::solution: Entering, phase "
+    << model_->phase() << ", z = " << solutionValue
+    << ", " << maximumRetries_ << " retries, " << maximumPasses_
+    << " passes." << std::endl ;
+# endif
+
   startTime_=CoinCpuTime();
   numCouldRun_++;
   double incomingObjective = solutionValue;
 #define LEN_PRINT 200
   char pumpPrint[LEN_PRINT];
   pumpPrint[0]='\0';
+/*
+  Decide if we want to run. Standard values for when are described in
+  CbcHeuristic.hpp. If we're off, or running only at root and this isn't the
+  root, bail out.
+
+  The double test (against phase, then atRoot and passNumber) has a fair bit
+  of redundancy, but the results will differ depending on whether we're
+  actually at the root of the main search tree or at the root of a small tree
+  (recursive call to branchAndBound).
+
+  FPump also supports some exotic values (11 -- 15) for when, described in
+  CbcHeuristicFPump.hpp.
+*/
   if (!when()||(when()==1&&model_->phase()!=1))
     return 0; // switched off
   // See if at root node
@@ -282,6 +309,11 @@ CbcHeuristicFPump::solution(double & solutionValue,
   int averageIterationsPerTry=-1;
   int numberIterationsLastPass=0;
   // 1. initially check 0-1
+/*
+  I'm skeptical of the above comment, but it's likely accurate as the default.
+  Bit 4 or bit 8 needs to be set in order to consider working with general
+  integers.
+*/
   int i,j;
   int general=0;
   int * integerVariable = new int[numberIntegers];
@@ -289,6 +321,13 @@ CbcHeuristicFPump::solution(double & solutionValue,
   const double * upper = model_->solver()->getColUpper();
   bool doGeneral = (accumulate_&4)!=0;
   j=0;
+/*
+  Scan the objects, recording the columns and counting general integers.
+
+  Seems like the NDEBUG tests could be made into an applicability test. If
+  a scan of the objects reveals complex objects, just clean up and return
+  failure.
+*/
   for (i=0;i<numberIntegers;i++) {
     int iColumn = integerVariableOrig[i];
 #ifndef NDEBUG
@@ -307,6 +346,19 @@ CbcHeuristicFPump::solution(double & solutionValue,
       integerVariable[j++]=iColumn;
     }
   }
+/*
+  If 2/3 of integers are general integers, and we're not going to work with
+  them, might as well go home.
+
+  The else case is unclear to me. We reach it if general integers are less than
+  2/3 of the total, or if either of bit 4 or 8 is set. But only bit 8 is used
+  in the decision. (Let manyGen = 1 if more than 2/3 of integers are general
+  integers. Then a k-map on manyGen, bit4, and bit8 shows it clearly.)
+
+  So there's something odd here. In the case where bit4 = 1 and bit8 = 0,
+  we've included general integers in integerVariable, but we're not going to
+  process them.
+*/
   if (general*3>2*numberIntegers&&!doGeneral) {
     delete [] integerVariable;
     return 0;
@@ -325,6 +377,10 @@ CbcHeuristicFPump::solution(double & solutionValue,
   if (doGeneral)
     printf("DOing general with %d out of %d\n",general,numberIntegers);
 #endif
+/*
+  This `closest solution' will satisfy integrality, but violate some other
+  constraints?
+*/
   // For solution closest to feasible if none found
   int * closestSolution = general ? NULL : new int[numberIntegers];
   double closestObjectiveValue = COIN_DBL_MAX;
@@ -344,6 +400,9 @@ CbcHeuristicFPump::solution(double & solutionValue,
     allSlack=true;
   }
   double time1 = CoinCpuTime();
+/*
+  Obtain a relaxed lp solution.
+*/
   model_->solver()->resolve();
   if (!model_->solver()->isProvenOptimal()) {
     // presumably max time or some such
@@ -362,6 +421,10 @@ CbcHeuristicFPump::solution(double & solutionValue,
       printf("dj fixing fixed %d variables\n",nFix);
     }
   }
+/*
+  I have no idea why we're doing this, except perhaps that saveBasis will be
+  automagically deleted on exit from the routine.
+*/
   CoinWarmStartBasis saveBasis;
   CoinWarmStartBasis * basis =
     dynamic_cast<CoinWarmStartBasis *>(model_->solver()->getWarmStart()) ;
@@ -473,6 +536,11 @@ CbcHeuristicFPump::solution(double & solutionValue,
     int lastMove= (!numberTries) ? -10 : 1000000;
     double lastSumInfeas=COIN_DBL_MAX;
     numberTries++;
+#   if CBCFPUMP_DEBUG > 0
+    std::cout
+      << "    major pass " << numberTries
+      << "." << std::endl ;
+#   endif
     // Clone solver - otherwise annoys root node computations
     solver = cloneBut(2); // was model_->solver()->clone();
 #ifdef COIN_HAS_CLP
@@ -629,14 +697,24 @@ CbcHeuristicFPump::solution(double & solutionValue,
 	     scaleFactor,weightFactor_);
 #endif
 #endif
+
     // This is an array of sums of infeasibilities so can see if "bobbling"
 #define SIZE_BOBBLE 20
     double saveSumInf[SIZE_BOBBLE];
     CoinFillN(saveSumInf,SIZE_BOBBLE,COIN_DBL_MAX);
     // 0 before doing anything
     int bobbleMode = 0;
+
+#   if CBCFPUMP_DEBUG > 0
+    std::cout << "CbcFPump::solution: entering main while loop." << std::endl ;
+#   endif
+
     // 5. MAIN WHILE LOOP
     //bool newLineNeeded=false;
+/*
+  finished occurs exactly twice in this routine: immediately above, where it's
+  set to false, and here in the loop condition.
+*/
     while (!finished) {
       double newTrueSolutionValue=0.0;
       double newSumInfeas=0.0;
@@ -644,6 +722,11 @@ CbcHeuristicFPump::solution(double & solutionValue,
       returnCode=0;
       if (model_->maximumSecondsReached()) {
 	exitAll=true;
+#	    if CBCFPUMP_DEBUG > 0
+	    std::cout
+	      << "CbcFPump::solution: (1) breaking main while loop."
+	      << std::endl ;
+#	    endif
 	break;
       }
       // see what changed
@@ -683,6 +766,13 @@ CbcHeuristicFPump::solution(double & solutionValue,
       if (iterationLimit>0.0&&totalNumberIterations>iterationLimit
 	  &&numberPasses>15) {
 	  // exiting on iteration count
+
+#	    if CBCFPUMP_DEBUG > 0
+	    std::cout
+	      << "CbcFPump::solution: (2) breaking main while loop."
+	      << std::endl ;
+#	    endif
+
 	exitAll=true;
       } else if (maximumPasses<30&&numberPasses>100) {
 	// too many passes anyway
@@ -725,6 +815,12 @@ CbcHeuristicFPump::solution(double & solutionValue,
 	  newSolutionValue += saveObjective[i]*newSolution[i];
 	newSolutionValue *= direction;
 	sprintf(pumpPrint,"Solution found of %g",newSolutionValue);
+#	if CBCFPUMP_DEBUG > 1
+	if (strlen(pumpPrint) >= LEN_PRINT)
+	{ std::cout
+	    << "ERROR(1)! string in pumpPrint is "
+	    << strlen(pumpPrint) << " chars." << std::endl ; }
+#	endif
 	model_->messageHandler()->message(CBC_FPUMP1,model_->messages())
 	  << pumpPrint
 	  <<CoinMessageEol;
@@ -787,6 +883,11 @@ CbcHeuristicFPump::solution(double & solutionValue,
 	      }
 	      if (action==0||model_->maximumSecondsReached()) {
 		exitAll=true; // exit
+#	    if CBCFPUMP_DEBUG > 0
+	    std::cout
+	      << "CbcFPump::solution: (5) breaking main while loop."
+	      << std::endl ;
+#	    endif
 		break;
 	      }
 	    }
@@ -798,6 +899,12 @@ CbcHeuristicFPump::solution(double & solutionValue,
 	    solutionFound=true;
 	    if (general&&saveValue!=newSolutionValue) {
 	      sprintf(pumpPrint,"Cleaned solution of %g",solutionValue);
+#	      if CBCFPUMP_DEBUG > 1
+	      if (strlen(pumpPrint) >= LEN_PRINT)
+	      { std::cout
+		  << "ERROR(2)! string in pumpPrint is "
+		  << strlen(pumpPrint) << " chars." << std::endl ; }
+#	      endif
 	      model_->messageHandler()->message(CBC_FPUMP1,model_->messages())
 		<< pumpPrint
 		<<CoinMessageEol;
@@ -806,12 +913,24 @@ CbcHeuristicFPump::solution(double & solutionValue,
 	      exitAll=true;
 	  } else {
 	    sprintf(pumpPrint,"Mini branch and bound could not fix general integers");
+#	    if CBCFPUMP_DEBUG > 1
+	    if (strlen(pumpPrint) >= LEN_PRINT)
+	    { std::cout
+		<< "ERROR(3)! string in pumpPrint is "
+		<< strlen(pumpPrint) << " chars." << std::endl ; }
+#	    endif
 	    model_->messageHandler()->message(CBC_FPUMP1,model_->messages())
 	      << pumpPrint
 	      <<CoinMessageEol;
 	  }
 	} else {
 	  sprintf(pumpPrint,"After further testing solution no better than previous of %g",solutionValue);
+#	  if CBCFPUMP_DEBUG > 1
+	  if (strlen(pumpPrint) >= LEN_PRINT)
+	  { std::cout
+	      << "ERROR(4)! string in pumpPrint is "
+	      << strlen(pumpPrint) << " chars." << std::endl ; }
+#	  endif
 	  model_->messageHandler()->message(CBC_FPUMP1,model_->messages())
 	    << pumpPrint
 	    <<CoinMessageEol;
@@ -838,8 +957,6 @@ CbcHeuristicFPump::solution(double & solutionValue,
 	int numberPerturbed=0;
 	if (matched || numberPasses%100 == 0) {
 	  // perturbation
-	  //sprintf(pumpPrint+strlen(pumpPrint)," perturbation applied");
-	  //newLineNeeded=true;
 	  double factorX[10]={0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0};
 	  double factor=1.0;
 	  double target=-1.0;
@@ -979,6 +1096,11 @@ CbcHeuristicFPump::solution(double & solutionValue,
 	  if (!solver->isProvenOptimal()) {
 	    // presumably max time or some such
 	    exitAll=true;
+#	    if CBCFPUMP_DEBUG > 0
+	    std::cout
+	      << "CbcFPump::solution: (6) breaking main while loop."
+	      << std::endl ;
+#	    endif
 	    break;
 	  }
 	  for (i=0;i<numberIntegers;i++) {
@@ -1007,6 +1129,12 @@ CbcHeuristicFPump::solution(double & solutionValue,
 	    model_->messageHandler()->message(CBC_FPUMP1,model_->messages())
 	      << pumpPrint
 	      <<CoinMessageEol;
+#	    if CBCFPUMP_DEBUG > 1
+	    if (strlen(pumpPrint) >= LEN_PRINT)
+	    { std::cout
+		<< "ERROR(6)! string in pumpPrint is "
+		<< strlen(pumpPrint) << " chars." << std::endl ; }
+#	    endif
 	    if (newSolutionValue<solutionValue) {
 	      memcpy(betterSolution,newSolution,numberColumns*sizeof(double));
 	      CoinWarmStartBasis * basis =
@@ -1028,6 +1156,11 @@ CbcHeuristicFPump::solution(double & solutionValue,
 		}
 		if (!action||model_->maximumSecondsReached()) {
 		  exitAll=true; // exit
+#	    if CBCFPUMP_DEBUG > 0
+	    std::cout
+	      << "CbcFPump::solution: (7) breaking main while loop."
+	      << std::endl ;
+#	    endif
 		  break;
 		}
 	      }
@@ -1142,6 +1275,11 @@ CbcHeuristicFPump::solution(double & solutionValue,
 	  if (!solver->isProvenOptimal()) {
 	    // presumably max time or some such
 	    exitAll=true;
+#	    if CBCFPUMP_DEBUG > 0
+	    std::cout
+	      << "CbcFPump::solution: (8) breaking main while loop."
+	      << std::endl ;
+#	    endif
 	    break;
 	  }
 	  solver->setHintParam(OsiDoDualInResolve,takeHint);
@@ -1332,6 +1470,11 @@ CbcHeuristicFPump::solution(double & solutionValue,
 	  if (!solver->isProvenOptimal()) {
 	    // presumably max time or some such
 	    exitAll=true;
+#	    if CBCFPUMP_DEBUG > 0
+	    std::cout
+	      << "CbcFPump::solution: (9) breaking main while loop."
+	      << std::endl ;
+#	    endif
 	    break;
 	  }
 	  // in case very dubious solver
@@ -1408,6 +1551,11 @@ CbcHeuristicFPump::solution(double & solutionValue,
 	  if (!solver2->isProvenOptimal()) {
 	    // presumably max time or some such
 	    exitAll=true;
+#	    if CBCFPUMP_DEBUG > 0
+	    std::cout
+	      << "CbcFPump::solution: (10) breaking main while loop."
+	      << std::endl ;
+#	    endif
 	    break;
 	  }
 	  //assert (solver2->isProvenOptimal());
@@ -1460,6 +1608,12 @@ CbcHeuristicFPump::solution(double & solutionValue,
 	model_->messageHandler()->message(CBC_FPUMP1,model_->messages())
 	  << pumpPrint
 	  <<CoinMessageEol;
+#	if CBCFPUMP_DEBUG > 1
+	if (strlen(pumpPrint) >= LEN_PRINT)
+	{ std::cout
+	    << "ERROR(7)! string in pumpPrint is "
+	    << strlen(pumpPrint) << " chars." << std::endl ; }
+#	endif
 	if (closestSolution&&solver->getObjValue()<closestObjectiveValue) {
 	  int i;
 	  const double * objective = solver->getObjCoefficients();
@@ -1570,7 +1724,10 @@ CbcHeuristicFPump::solution(double & solutionValue,
       }
       // reduce scale factor
       scaleFactor *= weightFactor_;
-    } // END WHILE
+    } // END WHILE break
+#   if CBCFPUMP_DEBUG > 0
+    std::cout << "CbcFPump::solution: end main while loop." << std::endl ;
+#   endif
     // see if rounding worked!
     if (roundingObjective<solutionValue) {
       if (roundingObjective<solutionValue-1.0e-6*fabs(roundingObjective)) {
@@ -1589,11 +1746,17 @@ CbcHeuristicFPump::solution(double & solutionValue,
     }
     if (!solutionFound) { 
       sprintf(pumpPrint,"No solution found this major pass");
+#     if CBCFPUMP_DEBUG > 1
+      if (strlen(pumpPrint) >= LEN_PRINT)
+      { std::cout
+	  << "ERROR(8)! string in pumpPrint is "
+	  << strlen(pumpPrint) << " chars." << std::endl ; }
+#     endif
       model_->messageHandler()->message(CBC_FPUMP1,model_->messages())
 	<< pumpPrint
 	<<CoinMessageEol;
     }
-    //}
+
     delete solver;
     solver=NULL;
     for ( j=0;j<NUMBER_OLD;j++) 
@@ -1673,10 +1836,16 @@ CbcHeuristicFPump::solution(double & solutionValue,
 	  break;
 	}
 	sprintf(pumpPrint,"Before mini branch and bound, %d integers at bound fixed and %d continuous",
-		nFix,nFixC);
+	       nFix,nFixC);
 	if (nFixC2+nFixI!=0)
 	  sprintf(pumpPrint+strlen(pumpPrint)," of which %d were internal integer and %d internal continuous",
 		  nFixI,nFixC2);
+#	if CBCFPUMP_DEBUG > 1
+	if (strlen(pumpPrint) >= LEN_PRINT)
+	{ std::cout
+	    << "ERROR(9)! string in pumpPrint is "
+	    << strlen(pumpPrint) << " chars." << std::endl ; }
+#	endif
 	model_->messageHandler()->message(CBC_FPUMP1,model_->messages())
 	  << pumpPrint
 	  <<CoinMessageEol;
@@ -1687,8 +1856,7 @@ CbcHeuristicFPump::solution(double & solutionValue,
 	  if (numberTries>1&&!numberBandBsolutions)
 	    fractionSmall_ *= 0.5;
 	  // Give branch and bound a bit more freedom
-	  double cutoff2=newSolutionValue+
-	    CoinMax(model_->getCutoffIncrement(),1.0e-3);
+	  double cutoff2=newSolutionValue-model_->getCutoffIncrement();
 	  int returnCode2 = smallBranchAndBound(newSolver,numberNodes_,newSolution,newSolutionValue,
 						cutoff2,"CbcHeuristicLocalAfterFPump");
 	  fractionSmall_ = saveFraction;
@@ -1697,7 +1865,7 @@ CbcHeuristicFPump::solution(double & solutionValue,
 	      exitAll=true;
 	      returnCode=0;
 	    } else {
-	      returnCode2=0; // returned on size - try changing
+	      returnCode2=0; // returned on size (or event) - could try changing
 	      //#define ROUND_AGAIN
 #ifdef ROUND_AGAIN
 	      if (numberTries==1&&numberPasses>20&&allowedPass<numberPasses-1) {
@@ -1852,6 +2020,12 @@ CbcHeuristicFPump::solution(double & solutionValue,
 		}
 #endif
 		sprintf(pumpPrint,"Freeing continuous variables gives a solution of %g", value);
+#		if CBCFPUMP_DEBUG > 1
+		if (strlen(pumpPrint) >= LEN_PRINT)
+		{ std::cout
+		    << "ERROR(11)! string in pumpPrint is "
+		    << strlen(pumpPrint) << " chars." << std::endl ; }
+#		endif
 		model_->messageHandler()->message(CBC_FPUMP1,model_->messages())
 		  << pumpPrint
 		  <<CoinMessageEol;
@@ -1952,6 +2126,12 @@ CbcHeuristicFPump::solution(double & solutionValue,
       if (cutoff<continuousObjectiveValue)
 	break;
       sprintf(pumpPrint,"Round again with cutoff of %g",cutoff);
+#     if CBCFPUMP_DEBUG > 1
+      if (strlen(pumpPrint) >= LEN_PRINT)
+      { std::cout
+	  << "ERROR(12)! string in pumpPrint is "
+	  << strlen(pumpPrint) << " chars." << std::endl ; }
+#     endif
       model_->messageHandler()->message(CBC_FPUMP1,model_->messages())
 	<< pumpPrint
 	<<CoinMessageEol;
@@ -1964,6 +2144,9 @@ CbcHeuristicFPump::solution(double & solutionValue,
       totalNumberPasses += numberPasses-1;
     }
   }
+/*
+  End of the `exitAll' loop.
+*/
 #ifdef RAND_RAND
   delete [] randomFactor;
 #endif
@@ -2013,6 +2196,12 @@ CbcHeuristicFPump::solution(double & solutionValue,
     }
     delete newSolver;
   }
+
+# if CBCFPUMP_DEBUG > 0
+  std::cout
+    << "CbcFPump::solution: Cleanup." << std::endl ;
+# endif
+
   delete clonedSolver;
   delete [] roundingSolution;
   delete [] usedColumn;
@@ -2038,6 +2227,7 @@ CbcHeuristicFPump::solution(double & solutionValue,
     model_->setSolutionCount(1); // for local search
     model_->setNumberHeuristicSolutions(1); 
   }
+
 #ifdef COIN_DEVELOP
   {
     double ncol = model_->solver()->getNumCols();
@@ -2049,6 +2239,13 @@ CbcHeuristicFPump::solution(double & solutionValue,
 	   static_cast<double> (totalNumberIterations)/(2*nrow+2*ncol));
   }
 #endif
+
+# if CBCFPUMP_DEBUG > 0
+  std::cout
+    << "CbcFPump::solution: Finished, returning "
+    << finalReturnCode << "." << std::endl ;
+# endif
+
   return finalReturnCode;
 }
 
@@ -2070,6 +2267,9 @@ CbcHeuristicFPump::rounds(OsiSolverInterface * solver,double * solution,
 			  /*char * pumpPrint,*/ int iter,
 			  /*bool roundExpensive,*/ double downValue, int *flip)
 {
+# if CBCFPUMP_DEBUG > 0
+  std::cout << "CbcFPump::rounds entering." << std::endl ;
+# endif
   double integerTolerance = model_->getDblParam(CbcModel::CbcIntegerTolerance);
   double primalTolerance ;
   solver->getDblParam(OsiPrimalTolerance,primalTolerance) ;
@@ -2666,6 +2866,12 @@ CbcHeuristicFPump::rounds(OsiSolverInterface * solver,double * solution,
   //delete [] saveSolution;
 #endif
   delete [] rowActivity;
+# if CBCFPUMP_DEBUG > 0
+  std::cout
+    << "CbcFPump::rounds exiting with "
+    << ((largestInfeasibility>primalTolerance)?"no solution":"solution")
+    << "." << std::endl ;
+# endif
   return (largestInfeasibility>primalTolerance) ? 0 : 1;
 }
 // Set maximum Time (default off) - also sets starttime to current

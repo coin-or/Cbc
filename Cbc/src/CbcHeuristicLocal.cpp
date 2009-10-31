@@ -40,8 +40,8 @@ CbcHeuristicLocal::CbcHeuristicLocal(CbcModel & model)
     matrix_ = *model.solver()->getMatrixByCol();
   }
   int numberColumns = model.solver()->getNumCols();
-  used_ = new char[numberColumns];
-  memset(used_,0,numberColumns);
+  used_ = new int[numberColumns];
+  memset(used_,0,numberColumns*sizeof(int));
 }
 
 // Destructor 
@@ -81,8 +81,7 @@ CbcHeuristicLocal::CbcHeuristicLocal(const CbcHeuristicLocal & rhs)
 {
   if (model_&&rhs.used_) {
     int numberColumns = model_->solver()->getNumCols();
-    used_ = new char[numberColumns];
-    memcpy(used_,rhs.used_,numberColumns);
+    used_ = CoinCopyOfArray(rhs.used_,numberColumns);
   } else {
     used_=NULL;
   }
@@ -100,8 +99,7 @@ CbcHeuristicLocal::operator=( const CbcHeuristicLocal& rhs)
     delete [] used_;
     if (model_&&rhs.used_) {
       int numberColumns = model_->solver()->getNumCols();
-      used_ = new char[numberColumns];
-      memcpy(used_,rhs.used_,numberColumns);
+      used_ = CoinCopyOfArray(rhs.used_,numberColumns);
     } else {
       used_=NULL;
     }
@@ -117,8 +115,8 @@ CbcHeuristicLocal::resetModel(CbcModel * /*model*/)
   delete [] used_;
   if (model_&&used_) {
     int numberColumns = model_->solver()->getNumCols();
-    used_ = new char[numberColumns];
-    memset(used_,0,numberColumns);
+    used_ = new int[numberColumns];
+    memset(used_,0,numberColumns*sizeof(int));
   } else {
     used_=NULL;
   }
@@ -158,10 +156,74 @@ CbcHeuristicLocal::solutionFix(double & objectiveValue,
       nFix++;
     }
   }
-  int returnCode = smallBranchAndBound(newSolver,numberNodes_,newSolution,objectiveValue,
-                                         objectiveValue,"CbcHeuristicLocal");
-  if (returnCode<0)
-    returnCode=0; // returned on size
+  int returnCode = 0;
+  if (nFix*10>numberIntegers) {
+    returnCode = smallBranchAndBound(newSolver,numberNodes_,newSolution,objectiveValue,
+				     objectiveValue,"CbcHeuristicLocal");
+    if (returnCode<0) {
+      returnCode=0; // returned on size
+      int numberColumns=newSolver->getNumCols();
+      int numberContinuous = numberColumns-numberIntegers;
+      if (numberContinuous>2*numberIntegers&&
+	  nFix*10<numberColumns) {
+#define LOCAL_FIX_CONTINUOUS
+#ifdef LOCAL_FIX_CONTINUOUS
+	//const double * colUpper = newSolver->getColUpper();
+	const double * colLower = newSolver->getColLower();
+	int nAtLb=0;
+	//double sumDj=0.0;
+	const double * dj = newSolver->getReducedCost();
+	double direction=newSolver->getObjSense();
+	for (int iColumn=0;iColumn<numberColumns;iColumn++) {
+	  if (!newSolver->isInteger(iColumn)) {
+	    if (!used_[iColumn]) {
+	      //double djValue = dj[iColumn]*direction;
+	      nAtLb++;
+	      //sumDj += djValue;
+	    }
+	  }
+	}
+	if (nAtLb) {
+	  // fix some continuous
+	  double * sort = new double[nAtLb];
+	  int * which = new int [nAtLb];
+	  //double threshold = CoinMax((0.01*sumDj)/static_cast<double>(nAtLb),1.0e-6);
+	  int nFix2=0;
+	  for (int iColumn=0;iColumn<numberColumns;iColumn++) {
+	    if (!newSolver->isInteger(iColumn)) {
+	      if (!used_[iColumn]) {
+		double djValue = dj[iColumn]*direction;
+		if (djValue>1.0e-6) {
+		  sort[nFix2]=-djValue;
+		  which[nFix2++]=iColumn;
+		}
+	      }
+	    }
+	  }
+	  CoinSort_2(sort,sort+nFix2,which);
+	  int divisor=2;
+	  nFix2=CoinMin(nFix2,(numberColumns-nFix)/divisor);
+	  for (int i=0;i<nFix2;i++) {
+	    int iColumn = which[i];
+	    newSolver->setColUpper(iColumn,colLower[iColumn]);
+	  }
+	  delete [] sort;
+	  delete [] which;
+#ifdef CLP_INVESTIGATE2
+	  printf("%d integers have zero value, and %d continuous fixed at lb\n",
+		 nFix,nFix2);
+#endif
+	  returnCode = smallBranchAndBound(newSolver,
+					   numberNodes_,newSolution,
+					   objectiveValue,
+					   objectiveValue,"CbcHeuristicLocal");
+	  if (returnCode<0) 
+	    returnCode=0; // returned on size
+	}
+#endif
+      }
+    }
+  }
   if ((returnCode&2)!=0) {
     // could add cut
     returnCode &= ~2;
@@ -218,6 +280,16 @@ CbcHeuristicLocal::solution(double & solutionValue,
   int numberColumns = solver->getNumCols();
   double * newSolution = new double [numberColumns];
   memcpy(newSolution,solution,numberColumns*sizeof(double));
+#ifdef LOCAL_FIX_CONTINUOUS
+  // mark continuous used
+  const double * columnLower = solver->getColLower();
+  for (int iColumn=0;iColumn<numberColumns;iColumn++) {
+    if (!solver->isInteger(iColumn)) {
+      if (solution[iColumn]>columnLower[iColumn]+1.0e-8)
+	used_[iColumn]=numberSolutions_;
+    }
+  }
+#endif
 
   // way is 1 if down possible, 2 if up possible, 3 if both possible
   char * way = new char[numberIntegers];
@@ -251,7 +323,7 @@ CbcHeuristicLocal::solution(double & solutionValue,
     newSolution[iColumn]=nearest;
     // if away from lower bound mark that fact
     if (nearest>originalLower) {
-      used_[iColumn]=1;
+      used_[iColumn]=numberSolutions_;
     }
     cost[i] = direction*objective[iColumn];
     int iway=0;
@@ -549,7 +621,7 @@ CbcHeuristicLocal::solution(double & solutionValue,
           double value=newSolution[iColumn];
           // if away from lower bound mark that fact
           if (value>originalLower) {
-            used_[iColumn]=1;
+            used_[iColumn]=numberSolutions_;
           }
         }
         // new solution
@@ -576,17 +648,6 @@ CbcHeuristicLocal::solution(double & solutionValue,
   delete [] save;
   delete [] mark;
   if (numberSolutions_>1&&swap_==1) {
-    int i;
-    for ( i=0;i<numberColumns;i++) {
-      if (used_[i]>1)
-	break;
-    }
-    if (i==numberColumns) {
-      // modify used_ if just one
-      const int * used = model_->usedInSolution();
-      for (int i=0;i<numberColumns;i++)
-	used_[i]= static_cast<char>(CoinMin(used[i],255));
-    }
     // try merge
     int returnCode2=solutionFix( solutionValue, betterSolution,NULL);
     if (returnCode2)
@@ -605,8 +666,8 @@ void CbcHeuristicLocal::setModel(CbcModel * model)
   }
   delete [] used_;
   int numberColumns = model->solver()->getNumCols();
-  used_ = new char[numberColumns];
-  memset(used_,0,numberColumns);
+  used_ = new int[numberColumns];
+  memset(used_,0,numberColumns*sizeof(int));
 }
 // Default Constructor
 CbcHeuristicNaive::CbcHeuristicNaive() 

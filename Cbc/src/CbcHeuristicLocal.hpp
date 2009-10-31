@@ -63,7 +63,7 @@ public:
   inline void setSearchType(int value)
   { swap_=value;}
   /// Used array so we can set
-  inline char * used() const
+  inline int * used() const
   { return used_;}
 
 protected:
@@ -76,8 +76,8 @@ protected:
   int numberSolutions_;
   // Type of search 0=normal, 1=BAB
   int swap_;
-  /// Whether a variable has been in a solution
-  char * used_;
+  /// Whether a variable has been in a solution (also when)
+  int * used_;
 };
 
 

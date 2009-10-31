@@ -245,6 +245,12 @@ CbcCutGenerator::generateCuts( OsiCuts & cs , int fullScan, OsiSolverInterface *
       info.options |=16;
     if (fullScan<0)
       info.options |= 128;
+    // See if we want alternate set of cuts
+    if ((model_->moreSpecialOptions()&16384)!=0)
+      info.options |=256;
+    if(model_->parentModel()) 
+      info.options |=512;
+    // above had &&!model_->parentModel()&&depth<2) 
     incrementNumberTimesEntered();
     CglProbing* generator =
       dynamic_cast<CglProbing*>(generator_);
@@ -624,6 +630,8 @@ CbcCutGenerator::generateCuts( OsiCuts & cs , int fullScan, OsiSolverInterface *
 	  nAdd2 += nElsNow/2;
 	  nReasonable += nElsNow/2;
 	}
+	//if (!depth&&ineffectualCuts())
+	//nReasonable *= 2;
       } else {
 	nAdd = 200;
 	nAdd2 = 2*numberColumns;

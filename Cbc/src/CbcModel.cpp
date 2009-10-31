@@ -1,4 +1,3 @@
-
 /* $Id$ */
 // Copyright (C) 2002, International Business Machines
 // Corporation and others.  All Rights Reserved.
@@ -6,9 +5,6 @@
 // Turn off compiler warning about long names
 #  pragma warning(disable:4786)
 #endif
-#define MODEL2 0
-#define MODEL4 0
-#define MODEL13 1
 
 #include "CbcConfig.h"
 
@@ -516,12 +512,17 @@ CbcModel::analyzeObjective ()
       bool randomCost=((iType&4)!=0);
       if (iPriority>=0) {
 	char general[200];
-	if (cost==-COIN_DBL_MAX)
+	if (cost==-COIN_DBL_MAX) {
 	  sprintf(general,"%d integer variables out of %d objects (%d integer) have costs - high priority",
 		  numberIntegerObj,numberObjects_,numberInteger);
-	else
+	} else if (cost==COIN_DBL_MAX) {
+	  sprintf(general,"No integer variables out of %d objects (%d integer) have costs",
+		  numberObjects_,numberInteger);
+	  branchOnSatisfied=false;
+	} else {
 	  sprintf(general,"%d integer variables out of %d objects (%d integer) have cost of %g - high priority",
 		  numberIntegerObj,numberObjects_,numberInteger,cost);
+	}
 	messageHandler()->message(CBC_GENERAL,
 				  messages())
 	  << general << CoinMessageEol ;
@@ -574,6 +575,7 @@ CbcModel::analyzeObjective ()
 	  }
 	}
 #endif
+	CoinDrand48(true,1234567);
 	for (int i=0;i<numberColumns;i++) {
 	  double lowerValue=lower[i];
 	  double upperValue=upper[i];
@@ -1137,7 +1139,6 @@ void CbcModel::branchAndBound(int doStatistics)
   strongInfo_[6]=0;
   numberStrongIterations_ = 0;
   currentNode_ = NULL;
-  CoinThreadRandom randomGenerator(1234567);
   // See if should do cuts old way
   if (parallelMode()<0) {
     specialOptions_ |= 4096+8192;
@@ -3590,30 +3591,6 @@ void CbcModel::branchAndBound(int doStatistics)
       // redo tree if wanted
       if (redoTree)
 	tree_->setComparison(*nodeCompare_) ;
-#if MODEL2
-      if (searchStrategy_==2) {
-	// may be time to tweak numberBeforeTrust
-	if (numberStrongIterations_*5<numberIterations_&&numberNodes_<10000) {
-	  int numberDone = strongInfo_[0]-strongInfo_[3];
-	  int numberFixed = strongInfo_[1]-strongInfo_[4];
-	  int numberInfeasible = strongInfo_[2]-strongInfo_[5];
-	  int numberNodes=numberNodes_-strongInfo_[6];
-	  for (int i=0;i<7;i++)
-	    printf("%d ",strongInfo_[i]);
-	  printf("its %d strong %d\n",
-		 numberIterations_,numberStrongIterations_);
-	  printf("done %d fixed %d inf %d in %d nodes\n",
-		 numberDone,numberFixed,numberInfeasible,numberNodes);
-	  if (numberInfeasible*500+numberFixed*10>numberDone) {
-	    synchronizeNumberBeforeTrust(1);
-	    strongInfo_[3]=strongInfo_[0];
-	    strongInfo_[4]=strongInfo_[1];
-	    strongInfo_[5]=strongInfo_[2];
-	    strongInfo_[6]=numberNodes_;
-	  }
-	}
-      }
-#endif
       if (parallelMode()>0)
 	unlockThread();
     }
@@ -3645,7 +3622,8 @@ void CbcModel::branchAndBound(int doStatistics)
 	    !parentModel_)
 	  printf("model cutoff in status %g, best %g, increment %g\n",
 		 getCutoff(),bestObjective_,getCutoffIncrement());
-	assert (getCutoff()<bestObjective_-getCutoffIncrement()+1.0e-6);
+	assert (getCutoff()<bestObjective_-getCutoffIncrement()+
+		1.0e-6+1.0e-10*fabs(bestObjective_));
       }
 #endif
       if (!intParam_[CbcPrinting]) {
@@ -6633,7 +6611,7 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
 			
 
 {
-#if MODEL4
+#if 0
   if (node&&numberTries>1) {
     if (currentDepth_<5) 
       numberTries *= 4; // boost
@@ -6641,12 +6619,10 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
       numberTries *= 2; // boost
   }
 #endif 
-#if MODEL13
 #define CUT_HISTORY 7
   double cut_obj[CUT_HISTORY];
   for (int j=0;j<CUT_HISTORY;j++)
 	 cut_obj[j]=-COIN_DBL_MAX;
-#endif
 # ifdef COIN_HAS_CLP
   OsiClpSolverInterface * clpSolver 
     = dynamic_cast<OsiClpSolverInterface *> (solver_);
@@ -6738,9 +6714,7 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
   //printf("zero iterations on first solve of branch\n");
 #endif
   double lastObjective = solver_->getObjValue()*solver_->getObjSense();
-#if MODEL13
   cut_obj[CUT_HISTORY-1]=lastObjective;
-#endif
   //double firstObjective = lastObjective+1.0e-8+1.0e-12*fabs(lastObjective);
   if (node&&node->nodeInfo()&&!node->nodeInfo()->numberBranchesLeft())
     node->nodeInfo()->allBranchesGone(); // can clean up
@@ -6932,13 +6906,6 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
   double minimumDrop = minimumDrop_ ;
   bool allowZeroIterations = false;
   int maximumBadPasses=0;
-#if MODEL13==0
-  if (numberTries<0)
-  { numberTries = -numberTries ;
-    if (numberTries>100)
-      allowZeroIterations=true;
-    minimumDrop = -1.0 ; }
-#else
   if (numberTries<0) {
     numberTries = -numberTries ;
     minimumDrop *= 1.0e-5 ;
@@ -6946,10 +6913,9 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
       //numberTries=100;
       minimumDrop=-1.0;
     }
-    numberTries=CoinMax(numberTries,100);
+    //numberTries=CoinMax(numberTries,100);
     allowZeroIterations=true;
   }
-#endif
 /*
   Is it time to scan the cuts in order to remove redundant cuts? If so, set
   up to do it.
@@ -6969,6 +6935,17 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
   double primalTolerance = 1.0e-7 ;
   // We may need to keep going on
   bool keepGoing=false;
+  // Say we have not tried one last time
+  int numberLastAttempts=0;
+  /* Get experimental option as to when to stop adding cuts
+     0 - old style
+     1 - new style
+     2 - new style plus don't break if zero cuts first time
+     3 - as 2 but last drop has to be >0.1*min to say OK
+  */
+  int experimentBreak = (moreSpecialOptions_>>11)&3;
+  // Whether to increase minimum drop
+  bool increaseDrop = (moreSpecialOptions_&8192)!=0;
 /*
   Begin cut generation loop. Cuts generated during each iteration are
   collected in theseCuts. The loop can be divided into four phases:
@@ -7149,16 +7126,12 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
 	  }
 	}
 	if (generate) {
-#if MODEL13
 	  if (!node&&cut_obj[CUT_HISTORY-1]!=-COIN_DBL_MAX&&
 	      fabs(cut_obj[CUT_HISTORY-1]-cut_obj[CUT_HISTORY-2])<1.0e-7)
 	    generator_[i]->setIneffectualCuts(true);
-#endif
 	  bool mustResolve = 
 	    generator_[i]->generateCuts(theseCuts,fullScan,solver_,node) ;
-#if MODEL13
 	  generator_[i]->setIneffectualCuts(false);
-#endif
 	  numberRowCutsAfter = theseCuts.sizeRowCuts() ;
 	  if (fullScan&&generator_[i]->howOften()==1000000+SCANCUTS_PROBING) {
 	    CglProbing * probing = 
@@ -7942,7 +7915,7 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
 /*
   No cuts. Cut short the cut generation (numberTries) loop.
 */
-    else
+    else if (numberLastAttempts>2||experimentBreak<2)
       { numberTries = 0 ;}
 /*
   If the problem is still feasible, first, call takeOffCuts() to remove cuts
@@ -7992,26 +7965,69 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
 	numberRowsAtStart = numberOldActiveCuts_+numberRowsAtContinuous_ ;
         lastNumberCuts = numberNewCuts_ ;
 	double thisObj = direction*solver_->getObjValue();
-#if MODEL13
 	bool badObj = (allowZeroIterations) ? thisObj < cut_obj[0]+minimumDrop
 	  : thisObj < cut_obj[CUT_HISTORY-1]+minimumDrop;
+#if 0 // probably not a good idea
+	if (!badObj)
+	  numberLastAttempts=CoinMax(0,numberLastAttempts-1);
+#endif
 	// Compute maximum number of bad passes
 	if (minimumDrop>0.0) {
-	  int nBadPasses=0;
-	  double test = 0.01*minimumDrop;
-	  double goodDrop=COIN_DBL_MAX;
-	  for (int j=CUT_HISTORY-1;j>=0;j--) {
-	    if (thisObj-cut_obj[j]<test) {
-	      nBadPasses++;
-	    } else {
-	      goodDrop=(thisObj-cut_obj[j])/static_cast<double>(nBadPasses+1);
-	      break;
-	    }
+	  if (increaseDrop) {
+	    // slowly increase minimumDrop
+	    if (currentPassNumber_==13)
+	      minimumDrop = CoinMax(1.5*minimumDrop,1.0e-5*fabs(thisObj));
+	    else if (currentPassNumber_>20&&(currentPassNumber_%5)==0)
+	      minimumDrop = CoinMax(1.1*minimumDrop,1.0e-5*fabs(thisObj));
+	    else if (currentPassNumber_>50)
+	      minimumDrop = CoinMax(1.1*minimumDrop,1.0e-5*fabs(thisObj));
 	  }
-	  maximumBadPasses=CoinMax(maximumBadPasses,nBadPasses);
-	  if (nBadPasses<maximumBadPasses&&
-	      goodDrop>minimumDrop)
-	    badObj=false; // carry on
+	  int nBadPasses=0;
+	  if (!experimentBreak) {
+	    double test = 0.01*minimumDrop;
+	    double goodDrop=COIN_DBL_MAX;
+	    for (int j=CUT_HISTORY-1;j>=0;j--) {
+	      if (thisObj-cut_obj[j]<test) {
+		nBadPasses++;
+	      } else {
+		goodDrop=(thisObj-cut_obj[j])/static_cast<double>(nBadPasses+1);
+		break;
+	      }
+	    }
+	    maximumBadPasses=CoinMax(maximumBadPasses,nBadPasses);
+	    if (nBadPasses<maximumBadPasses&&
+		goodDrop>minimumDrop)
+	      badObj=false; // carry on
+	  } else {
+	    //if (currentPassNumber_==13||currentPassNumber_>50)
+	    //minimumDrop = CoinMax(1.5*minimumDrop,1.0e-5*fabs(thisObj));
+	    double test = 0.1*minimumDrop;
+	    double goodDrop=(thisObj-cut_obj[0])/static_cast<double>(CUT_HISTORY);
+	    double objValue = thisObj;
+	    for (int j=CUT_HISTORY-1;j>=0;j--) {
+	      if (objValue-cut_obj[j]<test) {
+		nBadPasses++;
+		objValue = cut_obj[j];
+	      } else {
+		break;
+	      }
+	    }
+#ifdef CLP_INVESTIGATE2
+	    if (!parentModel_&&!numberNodes_)
+	      printf("badObj %s nBad %d maxBad %d goodDrop %g minDrop %g thisDrop %g obj %g\n",
+		     badObj ? "true" : "false",
+		     nBadPasses,maximumBadPasses,goodDrop,minimumDrop,
+		     thisObj-cut_obj[CUT_HISTORY-1],
+		     solver_->getObjValue());
+#endif
+	    maximumBadPasses=CoinMax(maximumBadPasses,nBadPasses);
+	    if (nBadPasses<2||goodDrop>2.0*minimumDrop) {
+	      if (experimentBreak<=2||goodDrop>0.1*minimumDrop)
+		badObj=false; // carry on
+	    }
+	    if (experimentBreak>1&&goodDrop<minimumDrop)
+	      numberLastAttempts++;
+	  }
 	}
 	if (numberTries==1&&currentDepth_&&currentPassNumber_<10) {
 	  if (thisObj-lastObjective>10.0*minimumDrop) {
@@ -8024,9 +8040,6 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
 	for (int j=0;j<CUT_HISTORY-1;j++)
 	  cut_obj[j] = cut_obj[j+1];
 	cut_obj[CUT_HISTORY-1]=thisObj;
-#else
-	bool badObj = thisObj < lastObjective+minimumDrop;
-#endif
 	bool allowEarlyTermination = currentPassNumber_ >= 10;
 	if (currentDepth_>10||(currentDepth_>5&&numberColumns>200))
 	  allowEarlyTermination=true;
@@ -8036,8 +8049,13 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
 	    && !keepGoing)
           { numberTries = 0 ; }
         if (numberRowCuts+numberColumnCuts == 0 || 
-	    (cutIterations == 0 && !allowZeroIterations) )
-          { break ; }
+	    (cutIterations == 0 && !allowZeroIterations) ) {
+	  // maybe give it one more try
+	  if(numberLastAttempts>2||currentDepth_||experimentBreak<2)
+	    break ;
+	  else
+	    numberLastAttempts++;
+	}
         if (numberTries > 0) {
 	  reducedCostFix() ;
 	  lastObjective = direction*solver_->getObjValue() ;
@@ -8480,8 +8498,10 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
 #endif
 	  // Allow on smaller number if <-1
 	  if (generator_[i]->switchOffIfLessThan()<0) {
-	    double multiplier = -generator_[i]->switchOffIfLessThan()+1.0;
-	    thisCuts *= multiplier;
+	    double multiplier[]={2.0,5.0};
+	    int iSwitch=-generator_[i]->switchOffIfLessThan()-1;
+	    assert (iSwitch>=0&&iSwitch<2);
+	    thisCuts *= multiplier[iSwitch];
 	  }
           if (!thisCuts||howOften == -99) {
             if (howOften == -99||howOften == -98) {

@@ -25,6 +25,7 @@ CbcHeuristicRINS::CbcHeuristicRINS()
   numberSolutions_=0;
   numberSuccesses_=0;
   numberTries_=0;
+  stateOfFixing_ =0;
   lastNode_=-999999;
   howOften_=100;
   decayFactor_ = 0.5; 
@@ -40,6 +41,7 @@ CbcHeuristicRINS::CbcHeuristicRINS(CbcModel & model)
   numberSolutions_=0;
   numberSuccesses_=0;
   numberTries_=0;
+  stateOfFixing_ =0;
   lastNode_=-999999;
   howOften_=100;
   decayFactor_ = 0.5; 
@@ -73,6 +75,7 @@ CbcHeuristicRINS::operator=( const CbcHeuristicRINS& rhs)
     howOften_ = rhs.howOften_;
     numberSuccesses_ = rhs.numberSuccesses_;
     numberTries_ = rhs.numberTries_;
+    stateOfFixing_ = rhs.stateOfFixing_;
     lastNode_=rhs.lastNode_;
     delete [] used_;
     if (model_&&rhs.used_) {
@@ -109,6 +112,7 @@ CbcHeuristicRINS::CbcHeuristicRINS(const CbcHeuristicRINS & rhs)
   howOften_(rhs.howOften_),
   numberSuccesses_(rhs.numberSuccesses_),
   numberTries_(rhs.numberTries_),
+  stateOfFixing_(rhs.stateOfFixing_),
   lastNode_(rhs.lastNode_)
 {
   if (model_&&rhs.used_) {
@@ -125,6 +129,7 @@ CbcHeuristicRINS::resetModel(CbcModel * /*model*/)
 {
   //CbcHeuristic::resetModel(model);
   delete [] used_;
+  stateOfFixing_ = 0;
   if (model_&&used_) {
     int numberColumns = model_->solver()->getNumCols();
     used_ = new char[numberColumns];
@@ -192,8 +197,8 @@ CbcHeuristicRINS::solution(double & solutionValue,
   
     const double * currentSolution = solver->getColSolution();
     OsiSolverInterface * newSolver = cloneBut(3); // was model_->continuousSolver()->clone();
-    //const double * colLower = newSolver->getColLower();
-    //const double * colUpper = newSolver->getColUpper();
+    int numberColumns=newSolver->getNumCols();
+    int numberContinuous = numberColumns-numberIntegers;
 
     double primalTolerance;
     solver->getDblParam(OsiPrimalTolerance,primalTolerance);
@@ -220,14 +225,78 @@ CbcHeuristicRINS::solution(double & solutionValue,
 	nFix++;
       }
     }
-    if (nFix>numberIntegers/5) {
+    int divisor=0;
+    if (5*nFix>numberIntegers) {
+      if (numberContinuous>2*numberIntegers&&nFix*10<numberColumns&&
+	  ((!numRuns_&&numberTries_>2)||stateOfFixing_)) {
+#define RINS_FIX_CONTINUOUS
+#ifdef RINS_FIX_CONTINUOUS
+	const double * colLower = newSolver->getColLower();
+	//const double * colUpper = newSolver->getColUpper();
+	int nAtLb=0;
+	//double sumDj=0.0;
+	const double * dj = newSolver->getReducedCost();
+	double direction=newSolver->getObjSense();
+	for (int iColumn=0;iColumn<numberColumns;iColumn++) {
+	  if (!newSolver->isInteger(iColumn)) {
+	    double value=bestSolution[iColumn];
+	    if (value<colLower[iColumn]+1.0e-8) {
+	      //double djValue = dj[iColumn]*direction;
+	      nAtLb++;
+	      //sumDj += djValue;
+	    }
+	  }
+	}
+	if (nAtLb) {
+	  // fix some continuous
+	  double * sort = new double[nAtLb];
+	  int * which = new int [nAtLb];
+	  //double threshold = CoinMax((0.01*sumDj)/static_cast<double>(nAtLb),1.0e-6);
+	  int nFix2=0;
+	  for (int iColumn=0;iColumn<numberColumns;iColumn++) {
+	    if (!newSolver->isInteger(iColumn)) {
+	      double value=bestSolution[iColumn];
+	      if (value<colLower[iColumn]+1.0e-8) {
+		double djValue = dj[iColumn]*direction;
+		if (djValue>1.0e-6) {
+		  sort[nFix2]=-djValue;
+		  which[nFix2++]=iColumn;
+		}
+	      }
+	    }
+	  }
+	  CoinSort_2(sort,sort+nFix2,which);
+	  divisor=4;
+	  if (stateOfFixing_>0)
+	    divisor=stateOfFixing_;
+	  else if (stateOfFixing_<-1)
+	    divisor=(-stateOfFixing_)-1;
+	  nFix2=CoinMin(nFix2,(numberColumns-nFix)/divisor);
+	  for (int i=0;i<nFix2;i++) {
+	    int iColumn = which[i];
+	    newSolver->setColUpper(iColumn,colLower[iColumn]);
+	  }
+	  delete [] sort;
+	  delete [] which;
+#ifdef CLP_INVESTIGATE2
+	  printf("%d integers have same value, and %d continuous fixed at lb\n",
+		 nFix,nFix2);
+#endif
+	}
+#endif
+      }
       //printf("%d integers have same value\n",nFix);
       returnCode = smallBranchAndBound(newSolver,numberNodes_,betterSolution,solutionValue,
                                          model_->getCutoff(),"CbcHeuristicRINS");
-      if (returnCode<0)
+      if (returnCode<0) {
 	returnCode=0; // returned on size
-      else
+	if (divisor)
+	  stateOfFixing_ = - divisor; // say failed
+      } else {
 	numRuns_++;
+	if (divisor)
+	  stateOfFixing_ =  divisor; // say small enough
+      }
       if ((returnCode&1)!=0)
 	numberSuccesses_++;
       //printf("return code %d",returnCode);
@@ -238,11 +307,11 @@ CbcHeuristicRINS::solution(double & solutionValue,
       } else {
 	//printf("\n");
       }
-      numberTries_++;
-      if ((numberTries_%10)==0&&numberSuccesses_*3<numberTries_)
-	howOften_ += static_cast<int> (howOften_*decayFactor_);
     }
 
+    numberTries_++;
+    if ((numberTries_%10)==0&&numberSuccesses_*3<numberTries_)
+      howOften_ += static_cast<int> (howOften_*decayFactor_);
     delete newSolver;
   }
   return returnCode;
@@ -336,6 +405,8 @@ CbcHeuristicRENS::solution(double & solutionValue,
   int numberFixed=0;
   int numberTightened=0;
   int numberAtBound=0;
+  int numberColumns=newSolver->getNumCols();
+  int numberContinuous = numberColumns-numberIntegers;
 
   for (i=0;i<numberIntegers;i++) {
     int iColumn=integerVariable[i];
@@ -344,6 +415,8 @@ CbcHeuristicRENS::solution(double & solutionValue,
     double upper = colUpper[iColumn];
     value = CoinMax(value,lower);
     value = CoinMin(value,upper);
+#define RENS_FIX_ONLY_LOWER
+#ifndef RENS_FIX_ONLY_LOWER
     if (fabs(value-floor(value+0.5))<1.0e-8) {
       value = floor(value+0.5);
       if (value==lower||value==upper)
@@ -356,8 +429,84 @@ CbcHeuristicRENS::solution(double & solutionValue,
       newSolver->setColLower(iColumn,floor(value));
       newSolver->setColUpper(iColumn,ceil(value));
     }
+#else
+    if (fabs(value-floor(value+0.5))<1.0e-8&&
+	floor(value+0.5)==lower) {
+      value = floor(value+0.5);
+      numberAtBound++;
+      newSolver->setColLower(iColumn,value);
+      newSolver->setColUpper(iColumn,value);
+      numberFixed++;
+    } else if (colUpper[iColumn]-colLower[iColumn]>=2.0) {
+      numberTightened++;
+      if (fabs(value-floor(value+0.5))<1.0e-8) {
+	value = floor(value+0.5);
+	if (value<upper) {
+	  newSolver->setColLower(iColumn,CoinMax(value-1.0,lower));
+	  newSolver->setColUpper(iColumn,CoinMin(value+1.0,upper));
+	} else {
+	  newSolver->setColLower(iColumn,upper-1.0);
+	}
+      } else {
+	newSolver->setColLower(iColumn,floor(value));
+	newSolver->setColUpper(iColumn,ceil(value));
+      }
+    }
+#endif
   }
   if (numberFixed>numberIntegers/5) {
+      if (numberContinuous>numberIntegers&&numberFixed<numberColumns/5) {
+#define RENS_FIX_CONTINUOUS
+#ifdef RENS_FIX_CONTINUOUS
+	const double * colLower = newSolver->getColLower();
+	//const double * colUpper = newSolver->getColUpper();
+	int nAtLb=0;
+	double sumDj=0.0;
+	const double * dj = newSolver->getReducedCost();
+	double direction=newSolver->getObjSense();
+	for (int iColumn=0;iColumn<numberColumns;iColumn++) {
+	  if (!newSolver->isInteger(iColumn)) {
+	    double value=currentSolution[iColumn];
+	    if (value<colLower[iColumn]+1.0e-8) {
+	      double djValue = dj[iColumn]*direction;
+	      nAtLb++;
+	      sumDj += djValue;
+	    }
+	  }
+	}
+	if (nAtLb) {
+	  // fix some continuous
+	  double * sort = new double[nAtLb];
+	  int * which = new int [nAtLb];
+	  double threshold = CoinMax((0.01*sumDj)/static_cast<double>(nAtLb),1.0e-6);
+	  int nFix2=0;
+	  for (int iColumn=0;iColumn<numberColumns;iColumn++) {
+	    if (!newSolver->isInteger(iColumn)) {
+	      double value=currentSolution[iColumn];
+	      if (value<colLower[iColumn]+1.0e-8) {
+		double djValue = dj[iColumn]*direction;
+		if (djValue>threshold) {
+		  sort[nFix2]=-djValue;
+		  which[nFix2++]=iColumn;
+		}
+	      }
+	    }
+	  }
+	  CoinSort_2(sort,sort+nFix2,which);
+	  nFix2=CoinMin(nFix2,(numberColumns-numberFixed)/2);
+	  for (int i=0;i<nFix2;i++) {
+	    int iColumn = which[i];
+	    newSolver->setColUpper(iColumn,colLower[iColumn]);
+	  }
+	  delete [] sort;
+	  delete [] which;
+#ifdef CLP_INVESTIGATE2
+	  printf("%d integers fixed (%d tightened) (%d at bound), and %d continuous fixed at lb\n",
+		 numberFixed,numberTightened,numberAtBound,nFix2);
+#endif
+	}
+#endif
+      }
 #ifdef COIN_DEVELOP
     printf("%d integers fixed and %d tightened\n",numberFixed,numberTightened);
 #endif

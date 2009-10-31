@@ -1094,6 +1094,8 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver,int numberNodes,
 	    model.addHeuristic(&heuristic,"Previous solution",0);
 	    //printf("added seren\n");
 	  } else {
+	    double value = model_->getMinimizationObjValue();
+	    model.setCutoff(value+1.0e-7*(1.0+fabs(value)));
 #ifdef CLP_INVESTIGATE
 	    printf("NOT added seren\n");
 	    solver3->writeMps("bad_seren");

@@ -71,6 +71,12 @@ protected:
   int numberSuccesses_;
   /// Number of tries
   int numberTries_;
+  /** State of fixing continuous variables -
+      0 - not tried
+      +n - this divisor makes small enough
+      -n - this divisor still not small enough
+  */
+  int stateOfFixing_;
   /// Node when last done
   int lastNode_;
   /// Whether a variable has been in a solution

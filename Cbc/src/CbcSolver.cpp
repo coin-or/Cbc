@@ -3667,7 +3667,7 @@ int
     model->addHeuristic(&heuristic5) ;
     anyToDo=true;
   }
-  if (useCombine>=type&&useCombine>=kType&&useCombine<=kType+1) {
+  if (useCombine>=kType&&useCombine<=kType+1) {
     CbcHeuristicLocal heuristic2(*model);
     heuristic2.setHeuristicName("combine solutions");
     heuristic2.setFractionSmall(0.5);
@@ -5392,11 +5392,13 @@ int
 		int iStatus2 = model2->secondaryStatus();
 		if (iStatus==0) {
 		  iStatus2=0;
-		  // set best solution in model
-		  model_.setBestSolution(model2->primalColumnSolution(),
-					 model2->numberColumns(),
-					 model2->getObjValue()*
-					 model2->getObjSense());
+		  if(found.type()==BAB) {
+		    // set best solution in model as no integers
+		    model_.setBestSolution(model2->primalColumnSolution(),
+					   model2->numberColumns(),
+					   model2->getObjValue()*
+					   model2->getObjSense());
+		  }
 		} else if (iStatus==1) {
 		  iStatus=0;
 		  iStatus2=1; // say infeasible

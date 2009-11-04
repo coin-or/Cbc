@@ -2592,7 +2592,7 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
 # else
   OsiSolverInterface *osiclp = NULL ;
 # endif
-  const CglTreeProbingInfo * probingInfo = NULL; //model->probingInfo();
+  //const CglTreeProbingInfo * probingInfo = NULL; //model->probingInfo();
   int saveSearchStrategy2 = model->searchStrategy();
 #define NODE_NEW  2
 #ifdef RANGING
@@ -2911,6 +2911,7 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
       // initialize sum of "infeasibilities"
       sumInfeasibilities_ = 0.0;
       int bestPriority=COIN_INT_MAX;
+#if 0
       int number01 = 0;
       const fixEntry * entry = NULL;
       const int * toZero = NULL;
@@ -2929,6 +2930,7 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
 	  probingInfo=NULL;
 	}
       }
+#endif
       /*
         Scan for branching objects that indicate infeasibility. Choose candidates
         using priority as the first criteria, then integer infeasibility.
@@ -3064,6 +3066,7 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
 	      double part =saveSolution[iColumn]-floor(saveSolution[iColumn]);
 	      infeasibility = 0.5-fabs(0.5-part);
 	    }
+#if 0
 	    if (probingInfo) {
 	      int iSeq = backward[iColumn];
 	      assert (iSeq>=0);
@@ -3075,6 +3078,7 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
 		numberUnsatisNotProbed++;
 	      }
 	    }
+#endif
 	    if ((numberNodes%PRINT_STUFF)==0&&PRINT_STUFF>0)
 	      printf("%d down %d %g up %d %g - infeas %g\n",
 		     i,numberThisDown,object->downEstimate(),numberThisUp,object->upEstimate(),
@@ -3151,9 +3155,9 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
         }
       }
       if (numberUnsatisfied_) {
-	if (probingInfo&&false)
-	  printf("nunsat %d, %d probed, %d other 0-1\n",numberUnsatisfied_,
-		 numberUnsatisProbed,numberUnsatisNotProbed);
+	//if (probingInfo&&false)
+	//printf("nunsat %d, %d probed, %d other 0-1\n",numberUnsatisfied_,
+	// numberUnsatisProbed,numberUnsatisNotProbed);
         // some infeasibilities - go to next steps
         break;
       } else if (!iPass) {

@@ -1,3 +1,4 @@
+/* $Id$ */
 // Copyright (C) 2002, International Business Machines
 // Corporation and others.  All Rights Reserved.
 #ifndef CbcMessage_H
@@ -68,6 +69,7 @@ enum CBC_Message
   CBC_RELAXED2,
   CBC_RESTART,
   CBC_GENERAL,
+  CBC_ROOT_DETAIL,
   CBC_DUMMY_END
 };
 

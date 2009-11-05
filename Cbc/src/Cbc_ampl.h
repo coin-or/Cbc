@@ -1,3 +1,4 @@
+/* $Id$ */
 // Copyright (C) 2006, International Business Machines
 // Corporation and others.  All Rights Reserved.
 #ifndef AmplInterface_H

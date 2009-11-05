@@ -1,3 +1,4 @@
+/* $Id: CbcSolver.hpp 1212 2009-08-21 16:19:13Z forrest $ */
 // Copyright (C) 2007, International Business Machines
 // Corporation and others.  All Rights Reserved.
 #ifndef CbcSolver_H
@@ -222,14 +223,15 @@ public:
                0 - data read in without error
 	       1 - errors
   */
-  virtual int importData(CbcSolver * model, int & argc, char * argv[]) {return -1;}
+  virtual int importData(CbcSolver * /*model*/, int & /*argc*/, char ** /*argv[]*/) {return -1;}
   /// Export 1 OsiClpSolver, 2 CbcModel - add 10 if infeasible from odd situation
-  virtual void exportSolution(CbcSolver * model, int mode,const char * message=NULL) {}
+  virtual void exportSolution(CbcSolver * /*model*/, 
+			      int /*mode*/,const char * /*message*/=NULL) {}
   /// Export Data (i.e. at very end)
-  virtual void exportData(CbcSolver * model) {}
+  virtual void exportData(CbcSolver * /*model*/) {}
   /// Get useful stuff
-  virtual void fillInformation(CbcSolver * model,
-			       CbcSolverUsefulData & info) {}
+  virtual void fillInformation(CbcSolver * /*model*/,
+			       CbcSolverUsefulData & /*info*/) {}
 
   //@}
   ///@name usage methods 
@@ -298,7 +300,8 @@ public:
      6 after a user called heuristic phase
      nonzero return code to stop
   */
-  virtual int callBack(CbcModel * currentSolver, int whereFrom) {return 0;}
+  virtual int callBack(CbcModel * /*currentSolver*/,
+		       int /*whereFrom*/) {return 0;}
   //@}
   ///@name Constructors and destructors etc
   //@{

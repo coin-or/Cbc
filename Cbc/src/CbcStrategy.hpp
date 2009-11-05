@@ -1,3 +1,4 @@
+/* $Id$ */
 // Copyright (C) 2005, International Business Machines
 // Corporation and others.  All Rights Reserved.
 #ifndef CbcStrategy_H
@@ -55,7 +56,7 @@ public:
                                         const double * boundChanges,
                                         const CoinWarmStartDiff *basisDiff) const;
   /// Create C++ lines to get to current state
-  virtual void generateCpp( FILE * fp) {}
+  virtual void generateCpp( FILE * ) {}
   /** After a CbcModel::resolve this can return a status
       -1 no effect
       0 treat as optimal
@@ -100,13 +101,13 @@ public:
   virtual CbcStrategy * clone() const { return new CbcStrategyNull(*this);}
 
   /// Setup cut generators
-  virtual void setupCutGenerators(CbcModel & model) {}
+  virtual void setupCutGenerators(CbcModel & ) {}
   /// Setup heuristics
-  virtual void setupHeuristics(CbcModel & model) {}
+  virtual void setupHeuristics(CbcModel & ) {}
   /// Do printing stuff
-  virtual void setupPrinting(CbcModel & model,int modelLogLevel) {}
+  virtual void setupPrinting(CbcModel & ,int ) {}
   /// Other stuff e.g. strong branching
-  virtual void setupOther(CbcModel & model) {}
+  virtual void setupOther(CbcModel & ) {}
 
 protected:
   // Data

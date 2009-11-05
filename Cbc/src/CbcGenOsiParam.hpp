@@ -13,7 +13,7 @@
 */
 
 /*
-  $Id$
+  $Id: CbcGenOsiParam.hpp 1173 2009-06-04 09:44:10Z forrest $
 */
 
 /*! \class CbcOsiParam

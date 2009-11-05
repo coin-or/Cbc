@@ -1,3 +1,4 @@
+/* $Id$ */
 // Copyright (C) 2002, International Business Machines
 // Corporation and others.  All Rights Reserved.
 #ifndef CbcModel_H
@@ -12,6 +13,7 @@
 #include "CoinWarmStartBasis.hpp"
 #include "CbcCompareBase.hpp"
 #include "CbcMessage.hpp"
+#include "CbcEventHandler.hpp"
 
 //class OsiSolverInterface;
 
@@ -112,6 +114,9 @@ enum CbcIntParam {
       1 does different node message with number unsatisfied on last branch
   */
   CbcPrinting,
+  /** Number of branches (may be more than number of nodes as may
+      include strong branching) */
+  CbcNumberBranches,
   /** Just a marker, so that a static sized array can store parameters. */
   CbcLastIntParam
 };
@@ -154,6 +159,30 @@ enum CbcDblParam {
   /** \brief The time at start of model.
 	     So that other pieces of code can access */
   CbcStartSeconds,
+  /** Stop doing heuristics when the gap between the objective value of the 
+      best known solution and the best bound on the objective of any solution 
+      is less than this.
+  
+    This is an absolute value. Conversion from a percentage is left to the
+    client.
+  */
+  CbcHeuristicGap,
+  /** Stop doing heuristics when the gap between the objective value of the 
+      best known solution and the best bound on the objective of any solution 
+      is less than this fraction of of the absolute value of best known 
+      solution.
+  
+    Code stops if either this test or CbcAllowableGap test succeeds
+  */
+  CbcHeuristicFractionGap,
+  /// Smallest non-zero change on a branch
+  CbcSmallestChange,
+  /// Sum of non-zero changes on a branch
+  CbcSumChange,
+  /// Largest non-zero change on a branch
+  CbcLargestChange,
+  /// Small non-zero change on a branch to be used as guess
+  CbcSmallChange,
   /** Just a marker, so that a static sized array can store parameters. */
   CbcLastDblParam
 };
@@ -180,7 +209,29 @@ public:
       if 3 then also one line per node
     */
      void branchAndBound(int doStatistics=0);
+private:
 
+    /** \brief Evaluate a subproblem using cutting planes and heuristics
+
+      The method invokes a main loop which generates cuts, applies heuristics,
+      and reoptimises using the solver's native %resolve() method.
+      It returns true if the subproblem remains feasible at the end of the
+      evaluation.
+    */
+  bool solveWithCuts(OsiCuts & cuts, int numberTries,CbcNode * node);
+  /** Input one node output N nodes to put on tree and optional solution update
+      This should be able to operate in parallel so is given a solver and is const(ish)
+      However we will need to keep an array of solver_ and bases and more
+      status is 0 for normal, 1 if solution
+      Calling code should always push nodes back on tree
+  */
+  CbcNode ** solveOneNode(int whichSolver,CbcNode * node, 
+                          int & numberNodesOutput, int & status) ;
+  /// Update size of whichGenerator
+  void resizeWhichGenerator(int numberNow, int numberAfter);
+public:
+#ifdef CBC_KEEP_DEPRECATED
+  // See if anyone is using these any more!!
     /** \brief create a clean model from partially fixed problem
 
       The method creates a new model with given bounds and with no tree.
@@ -244,35 +295,9 @@ public:
   /** Does postprocessing - original solver back.
       User has to delete process */
   void postProcess(CglPreProcess * process);
-private:
-    /** \brief Evaluate a subproblem using cutting planes and heuristics
-
-      The method invokes a main loop which generates cuts, applies heuristics,
-      and reoptimises using the solver's native %resolve() method.
-      It returns true if the subproblem remains feasible at the end of the
-      evaluation.
-    */
-  bool solveWithCuts(OsiCuts & cuts, int numberTries,CbcNode * node);
-  /** Input one node output N nodes to put on tree and optional solution update
-      This should be able to operate in parallel so is given a solver and is const(ish)
-      However we will need to keep an array of solver_ and bases and more
-      status is 0 for normal, 1 if solution
-      Calling code should always push nodes back on tree
-  */
-  CbcNode ** solveOneNode(int whichSolver,CbcNode * node, 
-                          int & numberNodesOutput, int & status) ;
-  /// Update size of whichGenerator
-  void resizeWhichGenerator(int numberNow, int numberAfter);
-public:
-#ifndef CBC_THREAD
-#define NEW_UPDATE_OBJECT 2
-#else
-#define NEW_UPDATE_OBJECT 2
 #endif
-#if NEW_UPDATE_OBJECT>1
   /// Adds an update information object
   void addUpdateInformation(const CbcObjectUpdateData & data);
-#endif
   /** Do one node - broken out for clarity?
       also for parallel (when baseModel!=this)
       Returns 1 if solution found
@@ -283,14 +308,6 @@ public:
 
   /// Returns true if locked
   bool isLocked() const;
-  /// Main loop (without threads but when subtrees) 1 if finished, 0 if stopped
-#if 0
-  int whileIterating(bool & locked, threadId, threadInfo,condition_mutex,condition_main,
-		     timeWaiting,threadModel,threadStats,totalTime,cutoff,
-		     eventHandler,saveCompare,lastDepth,lastUnsatisfied,createdNode);
-#else
-  int whileIterating(int numberIterations);
-#endif
 #ifdef CBC_THREAD
   /**
      Locks a thread if parallel so that stuff like cut pool
@@ -337,6 +354,10 @@ public:
     void makeGlobalCut(const OsiRowCut * cut); 
     /// Make given cut into a global cut
     void makeGlobalCut(const OsiRowCut & cut); 
+    /// Make given column cut into a global cut
+    void makeGlobalCut(const OsiColCut * cut); 
+    /// Make given column cut into a global cut
+    void makeGlobalCut(const OsiColCut & cut); 
   //@}
 
   /** \name Presolve methods */
@@ -434,6 +455,8 @@ public:
   /// Get the specified object
   inline OsiObject * modifiableObject(int which) const { return object_[which];}
 
+  void setOptionalInteger(int index);
+
   /// Delete all object information (and just back to integers if true)
   void deleteObjects(bool findIntegers=true);
 
@@ -458,7 +481,7 @@ public:
     one.
     If \p startAgain is true, a new scan is forced, overwriting any existing
     integer variable information.
-    If type > 0 then 1==PseudoCost
+    If type > 0 then 1==PseudoCost, 2 new ones low priority
   */
 
   void findIntegers(bool startAgain,int type=0);
@@ -556,6 +579,9 @@ public:
   /// Current time since start of branchAndbound
   double getCurrentSeconds() const ;
 
+  /// Return true if maximum time reached
+  bool maximumSecondsReached() const ;
+
   /** Set the
     \link CbcModel::CbcIntegerTolerance integrality tolerance \endlink
   */
@@ -620,6 +646,31 @@ public:
   */
   inline double getAllowablePercentageGap() const {
     return 100.0*getDblParam(CbcAllowableFractionGap);
+  }
+  /** Set the \link CbcModel::CbcHeuristicGap heuristic gap \endlink
+      between the best known solution and the best possible solution.
+  */
+  inline bool setHeuristicGap( double value) {
+    return setDblParam(CbcHeuristicGap,value);
+  }
+  /** Get the \link CbcModel::CbcHeuristicGap heuristic gap \endlink
+      between the best known solution and the best possible solution.
+  */
+  inline double getHeuristicGap() const {
+    return getDblParam(CbcHeuristicGap);
+  }
+
+  /** Set the \link CbcModel::CbcHeuristicFractionGap fraction heuristic gap \endlink
+      between the best known solution and the best possible solution.
+  */
+  inline bool setHeuristicFractionGap( double value) {
+    return setDblParam(CbcHeuristicFractionGap,value);
+  }
+  /** Get the \link CbcModel::CbcHeuristicFractionGap fraction heuristic gap \endlink
+      between the best known solution and the best possible solution.
+  */
+  inline double getHeuristicFractionGap() const {
+    return getDblParam(CbcHeuristicFractionGap);
   }
   /** Set the
       \link CbcModel::CbcCutoffIncrement  \endlink
@@ -699,13 +750,6 @@ public:
       if 2 then says if cuts allowed anywhere apart from root
   */
   bool doCutsNow(int allowForTopOfTree) const;
-  /** Set size of mini - tree.  If > 1 then does total enumeration of
-      tree given by this best variables to branch on
-  */
-  inline void setSizeMiniTree(int value)
-  { sizeMiniTree_=value;}
-  inline int sizeMiniTree() const
-  { return sizeMiniTree_;}
 
   /** Set the number of branches before pseudo costs believed
       in dynamic strong branching.
@@ -886,7 +930,7 @@ public:
   { return integerVariable_;}
   /// Whether or not integer
   inline char integerType(int i) const
-  { return integerInfo_[i];}
+  { assert (integerInfo_); assert (integerInfo_[i]==0||integerInfo_[i]==1);return integerInfo_[i];}
   /// Whether or not integer
   inline const char * integerType() const
   { return integerInfo_;}
@@ -1031,6 +1075,10 @@ public:
 		       int fixVariables=0);
   /// Just update objectiveValue
   void setBestObjectiveValue( double objectiveValue);
+  /// Deals with event handler and solution
+  CbcEventHandler::CbcAction dealWithEventHandler(CbcEventHandler::CbcEvent event,
+						   double objValue, 
+						   const double * solution);
 
   /** Call this to really test if a valid solution can be feasible
       Solution is number columns in size.
@@ -1108,6 +1156,9 @@ public:
   /// Set best objective function value
   inline void setObjValue(double value) 
   { bestObjective_=value * solver_->getObjSense() ;}
+  /// Get solver objective function value (as minimization)
+  inline double getSolverObjValue() const 
+  { return solver_->getObjValue() * solver_->getObjSense() ;}
   
   /** The best solution to the integer programming problem.
 
@@ -1133,6 +1184,18 @@ public:
   /// Set number of solutions (so heuristics will be different)
   inline void setSolutionCount(int value) 
   { numberSolutions_=value;}
+  /// Number of saved solutions (including best)
+  int numberSavedSolutions() const;
+  /// Maximum number of extra saved solutions
+  inline int maximumSavedSolutions() const
+  { return maximumSavedSolutions_;}
+  /// Set maximum number of extra saved solutions
+  void setMaximumSavedSolutions(int value);
+  /// Return a saved solution (0==best) - NULL if off end
+  const double * savedSolution(int which) const;
+  /// Return a saved solution objective (0==best) - COIN_DBL_MAX if off end
+  double savedSolutionObjective(int which) const;
+
   /** Current phase (so heuristics etc etc can find out).
       0 - initial solve
       1 - solve with cuts at root
@@ -1200,6 +1263,8 @@ public:
       1 set then deterministic
       2 set then use numberThreads for root cuts
       4 set then use numberThreads in root mini branch and bound
+      8 set and numberThreads - do heuristics numberThreads at a time
+      8 set and numberThreads==0 do all heuristics at once
       default is 0
   */
   inline void setThreadMode(int value) 
@@ -1515,8 +1580,9 @@ public:
       13 bit (8192) - Funny cuts so do slow way (in other places)
       14 bit (16384) - Use Cplex! for fathoming
       15 bit (32768) - Try reduced model after 0 nodes
+      16 bit (65536) - Original model had integer bounds
+      17 bit (131072) - Perturbation switched off
   */
-  /// Set special options
   inline void setSpecialOptions(int value)
   { specialOptions_=value;}
   /// Get special options
@@ -1525,6 +1591,18 @@ public:
   /// Says if normal solver i.e. has well defined CoinPackedMatrix
   inline bool normalSolver() const
   { return (specialOptions_&16)==0;}
+  /** Set more special options
+      at present bottom 6 bits used for shadow price mode
+      1024 for experimental hotstart
+      2048,4096 breaking out of cuts
+      8192 slowly increase minimum drop
+      16384 gomory
+  */
+  inline void setMoreSpecialOptions(int value)
+  { moreSpecialOptions_=value;}
+  /// Get more special options
+  inline int moreSpecialOptions() const
+  { return moreSpecialOptions_;}
   /// Now we may not own objects - just point to solver's objects
   inline bool ownObjects() const
   { return ownObjects_;}
@@ -1645,7 +1723,7 @@ public:
   void moveInfo(const CbcModel & rhs);
   //@}
 
-  ///@semi-private i.e. users should not use
+  /// semi-private i.e. users should not use
   //@{
     /// Get how many Nodes it took to solve the problem.
     int getNodeCount2() const
@@ -1662,7 +1740,12 @@ public:
       default and rest point to that.  If 2 then each is copy
   */
   void synchronizeHandlers(int makeDefault);
-     
+  /// Save a solution to saved list
+  void saveExtraSolution(const double * solution, double objectiveValue);
+  /// Save a solution to best and move current to saved
+  void saveBestSolution(const double * solution, double objectiveValue);
+  /// Delete best and saved solutions
+  void deleteSolutions();
   /// Encapsulates solver resolve
   int resolve(OsiSolverInterface * solver);
 
@@ -1753,7 +1836,7 @@ public:
   /// Use cliques for pseudocost information - return nonzero if infeasible
   int cliquePseudoCosts(int doStatistics);
   /// Fill in useful estimates
-  void pseudoShadow(double * down, double * up);
+  void pseudoShadow(int type);
   /** Return pseudo costs
       If not all integers or not pseudo costs - returns all zero
       Length of arrays are numberIntegers() and entries
@@ -1761,6 +1844,7 @@ public:
       User must allocate arrays before call
   */
   void fillPseudoCosts(double * downCosts, double * upCosts,
+		       int * priority=NULL,
 		       int * numberDown=NULL, int * numberUp=NULL,
 		       int * numberDownInfeasible=NULL,
 		       int * numberUpInfeasible=NULL) const;
@@ -1818,6 +1902,12 @@ public:
   /// Get depth for fast nodes
   inline int fastNodeDepth() const
   { return fastNodeDepth_;}
+  /// Get anything with priority >= this can be treated as continuous
+  inline int continuousPriority() const
+  { return continuousPriority_;}
+  /// Set anything with priority >= this can be treated as continuous
+  inline void setContinuousPriority(int value)
+  { continuousPriority_=value;}
   inline void incrementExtra(int nodes, int iterations)
   { numberExtraNodes_ += nodes; numberExtraIterations_ += iterations;}
 #endif
@@ -1915,6 +2005,8 @@ private:
 
   /// Array holding the incumbent (best) solution.
   double * bestSolution_;
+  /// Arrays holding other solutions.
+  double ** savedSolutions_;
 
   /** Array holding the current solution.
 
@@ -1939,6 +2031,10 @@ private:
   double minimumDrop_;
   /// Number of solutions
   int numberSolutions_;
+  /// Number of saved solutions
+  int numberSavedSolutions_;
+  /// Maximum number of saved solutions
+  int maximumSavedSolutions_;
   /** State of search
       0 - no solution
       1 - only heuristic solutions
@@ -2007,15 +2103,12 @@ private:
     allocated size.
   */
   CbcNodeInfo ** walkback_;
-#define NODE_LAST
-#ifdef NODE_LAST
   CbcNodeInfo ** lastNodeInfo_;
   const OsiRowCut ** lastCut_;
   int lastDepth_;
   int lastNumberCuts2_;
   int maximumCuts_;
   int * lastNumberCuts_;
-#endif
 
   /** The list of cuts initially collected for this subproblem
 
@@ -2042,13 +2135,32 @@ private:
   double * continuousSolution_;
   /// Array marked whenever a solution is found if non-zero
   int * usedInSolution_;
-  /**
+  /** 
+      Special options
       0 bit (1) - check if cuts valid (if on debugger list)
       1 bit (2) - use current basis to check integer solution (rather than all slack)
-      2 bit (4) - don't check integer solution
-      3 bit (8) - Strong is doing well - keep on
+      2 bit (4) - don't check integer solution (by solving LP)
+      3 bit (8) - fast analyze
+      4 bit (16) - non-linear model - so no well defined CoinPackedMatrix
+      5 bit (32) - keep names
+      6 bit (64) - try for dominated columns
+      7 bit (128) - SOS type 1 but all declared integer
+      8 bit (256) - Set to say solution just found, unset by doing cuts
+      9 bit (512) - Try reduced model after 100 nodes
+      10 bit (1024) - Switch on some heuristics even if seems unlikely
+      11 bit (2048) - Mark as in small branch and bound
+      12 bit (4096) - Funny cuts so do slow way (in some places)
+      13 bit (8192) - Funny cuts so do slow way (in other places)
+      14 bit (16384) - Use Cplex! for fathoming
+      15 bit (32768) - Try reduced model after 0 nodes
+      16 bit (65536) - Original model had integer bounds
+      17 bit (131072) - Perturbation switched off
   */
   int specialOptions_;
+  /** More special options
+      at present bottom 3 bits used for shadow price mode
+  */
+  int moreSpecialOptions_;
   /// User node comparison function
   CbcCompareBase * nodeCompare_;
   /// User feasibility function (see CbcFeasibleBase.hpp)
@@ -2225,15 +2337,13 @@ private:
   /// Whether stopping on gap
   bool stoppedOnGap_;
   /// Whether event happened
-  bool eventHappened_;
+  mutable bool eventHappened_;
   /// Number of long strong goes
   int numberLongStrong_;
   /// Number of old active cuts
   int numberOldActiveCuts_;
   /// Number of new cuts
   int numberNewCuts_;
-  /// Size of mini - tree
-  int sizeMiniTree_;
   /// Strategy worked out - mainly at root node
   int searchStrategy_;
   /// Number of iterations in strong branching
@@ -2252,14 +2362,14 @@ private:
   bool resolveAfterTakeOffCuts_;
   /// Maximum number of iterations (designed to be used in heuristics)
   int maximumNumberIterations_;
-#if NEW_UPDATE_OBJECT>1
+  /// Anything with priority >= this can be treated as continuous
+  int continuousPriority_;
   /// Number of outstanding update information items
   int numberUpdateItems_;
   /// Maximum number of outstanding update information items
   int maximumNumberUpdateItems_;
   /// Update items
   CbcObjectUpdateData * updateItems_;
-#endif
   /**
      Parallel
      0 - off

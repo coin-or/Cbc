@@ -1,3 +1,4 @@
+/* $Id$ */
 /*
  * Include file for the configuration of Cbc.
  *
@@ -94,5 +95,8 @@
 /* #undef COIN_HAS_XPR */
 
 #endif /* HAVE_CONFIG_H */
+// Always make version 2.4
+#undef CBCVERSION
+#define CBCVERSION "2.4.0"
 
 #endif /*__HAVE_COINUTILS_CONFIG_H__*/

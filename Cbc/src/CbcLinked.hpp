@@ -1,3 +1,4 @@
+/* $Id: CbcLinked.hpp 1200 2009-07-25 08:44:13Z forrest $ */
 // Copyright (C) 2006, International Business Machines
 // Corporation and others.  All Rights Reserved.
 #ifndef CglLinked_H
@@ -319,21 +320,21 @@ public:
   
 private:
   typedef struct {
+    double multiplier; // to use in computation 
+    int affected; // variable or element affected
     /*
       0 - LB of variable affected
       1 - UB of variable affected
       2 - element in position (affected) affected
     */
-    unsigned int affect:2;
-    unsigned int ubUsed:1; // nonzero if UB of this variable is used
+    unsigned char affect;
+    unsigned char ubUsed; // nonzero if UB of this variable is used
     /* 
        0 - use x*multiplier
        1 - use multiplier/x
        2 - if UB use min of current upper and x*multiplier, if LB use max of current lower and x*multiplier
     */
-    unsigned int type:4; // type of computation
-    unsigned int affected:25; // variable or element affected
-    double multiplier; // to use in computation 
+    unsigned char type; // type of computation
   } boundElementAction;
   
   /**@name Private member data */

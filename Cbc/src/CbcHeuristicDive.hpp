@@ -1,9 +1,15 @@
+/* $Id: CbcHeuristicDive.hpp 1252 2009-10-20 09:22:24Z stefan $ */
 // Copyright (C) 2008, International Business Machines
 // Corporation and others.  All Rights Reserved.
 #ifndef CbcHeuristicDive_H
 #define CbcHeuristicDive_H
 
 #include "CbcHeuristic.hpp"
+struct PseudoReducedCost {
+  int var;
+  double pseudoRedCost;
+};
+
 
 /** Dive class
  */
@@ -30,7 +36,7 @@ public:
   CbcHeuristicDive & operator=(const CbcHeuristicDive& rhs);
 
   /// Create C++ lines to get to current state
-  virtual void generateCpp( FILE * fp) {}
+  virtual void generateCpp( FILE * ) {}
 
   /// Create C++ lines to get to current state - does work for base class
   void generateCpp( FILE * fp,const char * heuristic);
@@ -80,8 +86,8 @@ public:
   /// Tests if the heuristic can run
   virtual bool canHeuristicRun();
 
-  /// Selects the next variable to branch on
-  /** Returns true if all the fractional variables can be trivially
+  /** Selects the next variable to branch on
+      Returns true if all the fractional variables can be trivially
       rounded. Returns false, if there is at least one fractional variable
       that is not trivially roundable. In this case, the bestColumn
       returned will not be trivially roundable.
@@ -90,9 +96,17 @@ public:
 				      const double* newSolution,
 				      int& bestColumn,
 				      int& bestRound) = 0;
+  /** Initializes any data which is going to be used repeatedly
+      in selectVariableToBranch */
+  virtual void initializeData() {}
 
   /// Perform reduced cost fixing on integer variables
   int reducedCostFix (OsiSolverInterface* solver);
+  /// Fix other variables at bounds
+  virtual int fixOtherVariables(OsiSolverInterface * solver,
+				const double * solution,
+				PseudoReducedCost * candidate,
+				const double * random);
 
 protected:
   // Data
@@ -108,6 +122,12 @@ protected:
 
   // Up locks
   unsigned short * upLocks_;
+
+  /// Extra down array (number Integers long)
+  double * downArray_;
+
+  /// Extra up array (number Integers long)
+  double * upArray_;
 
   // Indexes of binary variables with 0 objective coefficient
   // and in variable bound constraints

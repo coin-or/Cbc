@@ -1,3 +1,4 @@
+/* $Id$ */
 // Copyright (C) 2004, International Business Machines
 // Corporation and others.  All Rights Reserved.
 #if defined(_MSC_VER)
@@ -291,7 +292,7 @@ CbcCompareDefault::test (CbcNode * x, CbcNode * y)
 #define THRESH2 0.999
 #define TRY_THIS 0
 #if TRY_THIS==0
-    double weight = CoinMax(weight_,0.0);
+    double weight = CoinMax(weight_,1.0e-9);
     double testX =  x->objectiveValue()+ weight*x->numberUnsatisfied();
     double testY = y->objectiveValue() + weight*y->numberUnsatisfied();
 #elif TRY_THIS==1 
@@ -309,8 +310,11 @@ CbcCompareDefault::test (CbcNode * x, CbcNode * y)
     // Use estimates
     double testX = x->guessedObjectiveValue();
     double testY = y->guessedObjectiveValue();
-#elif THY_THIS==3
+#elif TRY_THIS==3
 #define THRESH 0.95
+    // Use estimates
+    double testX = x->guessedObjectiveValue();
+    double testY = y->guessedObjectiveValue();
     if (x->objectiveValue()-bestPossible_>THRESH*(cutoff_-bestPossible_))
       testX *= 2.0; // make worse
     if (y->objectiveValue()-bestPossible_>THRESH*(cutoff_-bestPossible_))

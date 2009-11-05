@@ -1,3 +1,4 @@
+/* $Id$ */
 // Copyright (C) 2004, International Business Machines
 // Corporation and others.  All Rights Reserved.
 #if defined(_MSC_VER)
@@ -48,7 +49,7 @@ CbcBranchCut::clone() const
 
 // Assignment operator 
 CbcBranchCut & 
-CbcBranchCut::operator=( const CbcBranchCut& rhs)
+CbcBranchCut::operator=( const CbcBranchCut& /*rhs*/)
 {
   return *this;
 }
@@ -57,10 +58,9 @@ CbcBranchCut::operator=( const CbcBranchCut& rhs)
 CbcBranchCut::~CbcBranchCut ()
 {
 }
-
-// Infeasibility - large is 0.5
 double 
-CbcBranchCut::infeasibility(int & preferredWay) const
+CbcBranchCut::infeasibility(const OsiBranchingInformation * /*info*/,
+			       int &preferredWay) const
 {
   throw CoinError("Use of base class","infeasibility","CbcBranchCut");
   preferredWay=-1;
@@ -81,12 +81,10 @@ CbcBranchCut::feasibleRegion()
 bool 
 CbcBranchCut::boundBranch() const 
 {return false;}
-
-// Creates a branching object
 CbcBranchingObject * 
-CbcBranchCut::createBranch(int way) 
+CbcBranchCut::createCbcBranch(OsiSolverInterface * /*solver*/,const OsiBranchingInformation * /*info*/, int /*way*/) 
 {
-  throw CoinError("Use of base class","createBranch","CbcBranchCut");
+  throw CoinError("Use of base class","createCbcBranch","CbcBranchCut");
   return new CbcCutBranchingObject();
 }
 
@@ -197,6 +195,8 @@ CbcCutBranchingObject::branch()
     cut = &up_;
     way_=-1;	  // Swap direction
   }
+  printf("CUT %s ",(way_==-1) ? "up" : "down");
+  cut->print();
   // See if cut just fixes variables
   double lb = cut->lb();
   double ub = cut->ub();
@@ -430,13 +430,12 @@ CbcBranchToFixLots::~CbcBranchToFixLots ()
 {
   delete [] mark_;
 }
-// Creates a branching object
 CbcBranchingObject * 
-CbcBranchToFixLots::createBranch(int way) 
+CbcBranchToFixLots::createCbcBranch(OsiSolverInterface * solver,const OsiBranchingInformation * /*info*/, int /*way*/) 
 {
   // by default way must be -1
-  assert (way==-1);
-  OsiSolverInterface * solver = model_->solver();
+  //assert (way==-1);
+  //OsiSolverInterface * solver = model_->solver();
   const double * solution = model_->testSolution();
   const double * lower = solver->getColLower();
   const double * upper = solver->getColUpper();
@@ -455,118 +454,165 @@ CbcBranchToFixLots::createBranch(int way)
   int numberColumns = solver->getNumCols();
   int * sort = new int[numberColumns];
   double * dsort = new double[numberColumns];
-  int type = shallWe();
-  assert (type);
-  // Take clean first
-  if (type==1) {
-    for (i=0;i<numberIntegers;i++) {
-      int iColumn = integerVariable[i];
-      if (upper[iColumn]>lower[iColumn]) {
-	if (!mark_||!mark_[iColumn]) {
-	  if(solution[iColumn]<lower[iColumn]+tolerance) {
-	    if (dj[iColumn]>djTolerance_) {
-	      dsort[nSort]=-dj[iColumn];
-	      sort[nSort++]=iColumn;
+  if (djTolerance_!=-1.234567) {
+    int type = shallWe();
+    assert (type);
+    // Take clean first
+    if (type==1) {
+      for (i=0;i<numberIntegers;i++) {
+	int iColumn = integerVariable[i];
+	if (upper[iColumn]>lower[iColumn]) {
+	  if (!mark_||!mark_[iColumn]) {
+	    if(solution[iColumn]<lower[iColumn]+tolerance) {
+	      if (dj[iColumn]>djTolerance_) {
+		dsort[nSort]=-dj[iColumn];
+		sort[nSort++]=iColumn;
+	      }
+	    } else if (solution[iColumn]>upper[iColumn]-tolerance) {
+	      if (dj[iColumn]<-djTolerance_) {
+		dsort[nSort]=dj[iColumn];
+		sort[nSort++]=iColumn;
+	      }
 	    }
-	  } else if (solution[iColumn]>upper[iColumn]-tolerance) {
-	    if (dj[iColumn]<-djTolerance_) {
-	      dsort[nSort]=dj[iColumn];
+	  }
+	} else {
+	  numberFixed++;
+	}
+      }
+      // sort
+      CoinSort_2(dsort,dsort+nSort,sort);
+      nSort= CoinMin(nSort,wantedFixed-numberFixed);
+    } else if (type<10) {
+      int i;
+      //const double * rowLower = solver->getRowLower();
+      const double * rowUpper = solver->getRowUpper();
+      // Row copy
+      const double * elementByRow = matrixByRow_.getElements();
+      const int * column = matrixByRow_.getIndices();
+      const CoinBigIndex * rowStart = matrixByRow_.getVectorStarts();
+      const int * rowLength = matrixByRow_.getVectorLengths();
+      const double * columnLower = solver->getColLower();
+      const double * columnUpper = solver->getColUpper();
+      const double * solution = solver->getColSolution();
+      int numberColumns = solver->getNumCols();
+      int numberRows = solver->getNumRows();
+      for (i=0;i<numberColumns;i++) {
+	sort[i]=i;
+	if (columnLower[i]!=columnUpper[i]){
+	  dsort[i]=1.0e100;
+	} else {
+	  dsort[i]=1.0e50;
+	  numberFixed++;
+	}
+      }
+      for (i=0;i<numberRows;i++) {
+	double rhsValue = rowUpper[i];
+	bool oneRow=true;
+	// check elements
+	int numberUnsatisfied=0;
+	for (int j=rowStart[i];j<rowStart[i]+rowLength[i];j++) {
+	  int iColumn = column[j];
+	  double value = elementByRow[j];
+	  double solValue = solution[iColumn];
+	  if (columnLower[iColumn]!=columnUpper[iColumn]) {
+	    if (solValue<1.0-integerTolerance&&solValue>integerTolerance)
+	      numberUnsatisfied++;
+	    if (value!=1.0) {
+	      oneRow=false;
+	      break;
+	    }
+	  } else {
+	    rhsValue -= value*floor(solValue+0.5);
+	  }
+	}
+	if (oneRow&&rhsValue<=1.0+tolerance) {
+	  if (!numberUnsatisfied) {
+	    for (int j=rowStart[i];j<rowStart[i]+rowLength[i];j++) {
+	      int iColumn = column[j];
+	      if (dsort[iColumn]>1.0e50){
+		dsort[iColumn]=0;
+		nSort++;
+	      }
+	    }
+	  }
+	}
+      }
+      // sort
+      CoinSort_2(dsort,dsort+numberColumns,sort);
+    } else {
+      // new way
+      for (i=0;i<numberIntegers;i++) {
+	int iColumn = integerVariable[i];
+	if (upper[iColumn]>lower[iColumn]) {
+	  if (!mark_||!mark_[iColumn]) {
+	    double distanceDown=solution[iColumn]-lower[iColumn];
+	    double distanceUp=upper[iColumn]-solution[iColumn];
+	    double distance = CoinMin(distanceDown,distanceUp);
+	    if (distance>0.001&&distance<0.5) {
+	      dsort[nSort]=distance;
 	      sort[nSort++]=iColumn;
 	    }
 	  }
 	}
-      } else {
-	numberFixed++;
       }
+      // sort
+      CoinSort_2(dsort,dsort+nSort,sort);
+      int n=0;
+      double sum=0.0;
+      for (int k=0;k<nSort;k++) {
+	sum += dsort[k];
+	if (sum<=djTolerance_)
+	  n=k;
+	else
+	  break;
+      }
+      nSort = CoinMin(n,numberClean_/1000000);
     }
-    // sort
-    CoinSort_2(dsort,dsort+nSort,sort);
-    nSort= CoinMin(nSort,wantedFixed-numberFixed);
-  } else if (type<10) {
-    int i;
-    //const double * rowLower = solver->getRowLower();
-    const double * rowUpper = solver->getRowUpper();
-    // Row copy
-    const double * elementByRow = matrixByRow_.getElements();
+  } else {
+#define FIX_IF_LESS -0.1
+    // 3 in same row and sum <FIX_IF_LESS?
+    int numberRows = matrixByRow_.getNumRows();
+    const double * solution = model_->testSolution();
     const int * column = matrixByRow_.getIndices();
     const CoinBigIndex * rowStart = matrixByRow_.getVectorStarts();
     const int * rowLength = matrixByRow_.getVectorLengths();
-    const double * columnLower = solver->getColLower();
-    const double * columnUpper = solver->getColUpper();
-    const double * solution = solver->getColSolution();
-    int numberColumns = solver->getNumCols();
-    int numberRows = solver->getNumRows();
-    for (i=0;i<numberColumns;i++) {
-      sort[i]=i;
-      if (columnLower[i]!=columnUpper[i]){
-	dsort[i]=1.0e100;
-      } else {
-	dsort[i]=1.0e50;
-	numberFixed++;
-      }
-    }
-    for (i=0;i<numberRows;i++) {
-      double rhsValue = rowUpper[i];
-      bool oneRow=true;
-      // check elements
+    double bestSum=1.0;
+    int nBest=-1;
+    int kRow=-1;
+    OsiSolverInterface * solver = model_->solver();
+    for (int i=0;i<numberRows;i++) {
       int numberUnsatisfied=0;
+      double sum=0.0;
       for (int j=rowStart[i];j<rowStart[i]+rowLength[i];j++) {
 	int iColumn = column[j];
-	double value = elementByRow[j];
-	double solValue = solution[iColumn];
-	if (columnLower[iColumn]!=columnUpper[iColumn]) {
-	  if (solValue<1.0-integerTolerance&&solValue>integerTolerance)
+	if (solver->isInteger(iColumn)) {
+	  double solValue = solution[iColumn];
+	  if (solValue>1.0e-5&&solValue<FIX_IF_LESS) {
 	    numberUnsatisfied++;
-	  if (value!=1.0) {
-	    oneRow=false;
-	    break;
-	  }
-	} else {
-	  rhsValue -= value*floor(solValue+0.5);
-	}
-      }
-      if (oneRow&&rhsValue<=1.0+tolerance) {
-	if (!numberUnsatisfied) {
-	  for (int j=rowStart[i];j<rowStart[i]+rowLength[i];j++) {
-	    int iColumn = column[j];
-	    if (dsort[iColumn]>1.0e50){
-	      dsort[iColumn]=0;
-	      nSort++;
-	    }
+	    sum += solValue;
 	  }
 	}
       }
-    }
-    // sort
-    CoinSort_2(dsort,dsort+numberColumns,sort);
-  } else {
-    // new way
-    for (i=0;i<numberIntegers;i++) {
-      int iColumn = integerVariable[i];
-      if (upper[iColumn]>lower[iColumn]) {
-	if (!mark_||!mark_[iColumn]) {
-	  double distanceDown=solution[iColumn]-lower[iColumn];
-	  double distanceUp=upper[iColumn]-solution[iColumn];
-	  double distance = CoinMin(distanceDown,distanceUp);
-	  if (distance>0.001&&distance<0.5) {
-	    dsort[nSort]=distance;
-	    sort[nSort++]=iColumn;
-	  }
+      if (numberUnsatisfied>=3&&sum<FIX_IF_LESS) {
+	// possible
+	if (numberUnsatisfied>nBest||
+	    (numberUnsatisfied==nBest&&sum<bestSum)) {
+	  nBest=numberUnsatisfied;
+	  bestSum=sum;
+	  kRow=i;
 	}
       }
     }
-    // sort
-    CoinSort_2(dsort,dsort+nSort,sort);
-    int n=0;
-    double sum=0.0;
-    for (int k=0;k<nSort;k++) {
-      sum += dsort[k];
-      if (sum<=djTolerance_)
-	n=k;
-      else
-	break;
+    assert (nBest>0);
+    for (int j=rowStart[kRow];j<rowStart[kRow]+rowLength[kRow];j++) {
+      int iColumn = column[j];
+      if (solver->isInteger(iColumn)) {
+	double solValue = solution[iColumn];
+	if (solValue>1.0e-5&&solValue<FIX_IF_LESS) {
+	  sort[nSort++]=iColumn;
+	}
+      }
     }
-    nSort = CoinMin(n,numberClean_/1000000);
   }
   OsiRowCut down;
   down.setLb(-COIN_DBL_MAX);
@@ -761,9 +807,9 @@ CbcBranchToFixLots::shallWe() const
   }
   return returnCode;
 }
-// Infeasibility - large is 0.5
 double 
-CbcBranchToFixLots::infeasibility(int & preferredWay) const
+CbcBranchToFixLots::infeasibility(const OsiBranchingInformation * /*info*/,
+			       int &preferredWay) const
 {
   preferredWay=-1;
   CbcNode * node = model_->currentNode();
@@ -778,10 +824,68 @@ CbcBranchToFixLots::infeasibility(int & preferredWay) const
     if ((depth%depth_)!=0)
       return 0.0;
   }
-  if (!shallWe())
-    return 0.0;
-  else
-    return 1.0e20;
+  if (djTolerance_!=-1.234567) {
+    if (!shallWe())
+      return 0.0;
+    else
+      return 1.0e20;
+  } else {
+    // See if 3 in same row and sum <FIX_IF_LESS?
+    int numberRows = matrixByRow_.getNumRows();
+    const double * solution = model_->testSolution();
+    const int * column = matrixByRow_.getIndices();
+    const CoinBigIndex * rowStart = matrixByRow_.getVectorStarts();
+    const int * rowLength = matrixByRow_.getVectorLengths();
+    double bestSum=1.0;
+    int nBest=-1;
+    OsiSolverInterface * solver = model_->solver();
+    for (int i=0;i<numberRows;i++) {
+      int numberUnsatisfied=0;
+      double sum=0.0;
+      for (int j=rowStart[i];j<rowStart[i]+rowLength[i];j++) {
+	int iColumn = column[j];
+	if (solver->isInteger(iColumn)) {
+	  double solValue = solution[iColumn];
+	  if (solValue>1.0e-5&&solValue<FIX_IF_LESS) {
+	    numberUnsatisfied++;
+	    sum += solValue;
+	  }
+	}
+      }
+      if (numberUnsatisfied>=3&&sum<FIX_IF_LESS) {
+	// possible
+	if (numberUnsatisfied>nBest||
+	    (numberUnsatisfied==nBest&&sum<bestSum)) {
+	  nBest=numberUnsatisfied;
+	  bestSum=sum;
+	}
+      }
+    }
+    if (nBest>0)
+      return 1.0e20;
+    else
+      return 0.0;
+  }
+}
+// Redoes data when sequence numbers change
+void 
+CbcBranchToFixLots::redoSequenceEtc(CbcModel * model, int numberColumns, const int * originalColumns)
+{
+  model_=model;
+  if (mark_) {
+    OsiSolverInterface * solver = model_->solver();
+    int numberColumnsNow = solver->getNumCols();
+    char * temp = new char[numberColumnsNow];
+    memset(temp,0,numberColumnsNow);
+    for (int i=0;i<numberColumns;i++) {
+      int j = originalColumns[i];
+      temp[i]=mark_[j];
+    }
+    delete [] mark_;
+    mark_=temp;
+  }
+  OsiSolverInterface * solver = model_->solver();
+  matrixByRow_ = *solver->getMatrixByRow();
 }
 
 /** Default Constructor
@@ -835,12 +939,13 @@ CbcBranchAllDifferent::~CbcBranchAllDifferent ()
 {
   delete [] which_;
 }
-// Creates a branching object
 CbcBranchingObject * 
-CbcBranchAllDifferent::createBranch(int way) 
+CbcBranchAllDifferent::createCbcBranch(OsiSolverInterface * /*solver*/
+				       ,const OsiBranchingInformation * /*info*/,
+				       int /*way*/) 
 {
   // by default way must be -1
-  assert (way==-1);
+  //assert (way==-1);
   const double * solution = model_->testSolution();
   double * values = new double[numberInSet_];
   int * which = new int[numberInSet_];
@@ -883,9 +988,9 @@ CbcBranchAllDifferent::createBranch(int way)
     printf("creating cut in CbcBranchCut\n");
   return newObject;
 }
-// Infeasibility - large is 0.5
 double 
-CbcBranchAllDifferent::infeasibility(int & preferredWay) const
+CbcBranchAllDifferent::infeasibility(const OsiBranchingInformation * /*info*/,
+			       int &preferredWay) const
 {
   preferredWay=-1;
   //OsiSolverInterface * solver = model_->solver();

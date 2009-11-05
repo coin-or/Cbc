@@ -1,3 +1,4 @@
+/* $Id$ */
 // Copyright (C) 2002, International Business Machines
 // Corporation and others.  All Rights Reserved.
 #ifndef CbcHeuristicLocal_H
@@ -62,7 +63,7 @@ public:
   inline void setSearchType(int value)
   { swap_=value;}
   /// Used array so we can set
-  inline char * used() const
+  inline int * used() const
   { return used_;}
 
 protected:
@@ -75,8 +76,8 @@ protected:
   int numberSolutions_;
   // Type of search 0=normal, 1=BAB
   int swap_;
-  /// Whether a variable has been in a solution
-  char * used_;
+  /// Whether a variable has been in a solution (also when)
+  int * used_;
 };
 
 
@@ -138,5 +139,67 @@ protected:
   double large_;
 };
 
+/** Crossover Search class
+ */
+
+class CbcHeuristicCrossover : public CbcHeuristic {
+public:
+
+  // Default Constructor 
+  CbcHeuristicCrossover ();
+
+  /* Constructor with model - assumed before cuts
+     Initial version does not do Lps
+  */
+  CbcHeuristicCrossover (CbcModel & model);
+  
+  // Copy constructor 
+  CbcHeuristicCrossover ( const CbcHeuristicCrossover &);
+   
+  // Destructor 
+  ~CbcHeuristicCrossover ();
+  
+  /// Clone
+  virtual CbcHeuristic * clone() const;
+
+  /// Assignment operator 
+  CbcHeuristicCrossover & operator=(const CbcHeuristicCrossover& rhs);
+
+  /// Create C++ lines to get to current state
+  virtual void generateCpp( FILE * fp) ;
+
+  /// Resets stuff if model changes
+  virtual void resetModel(CbcModel * model);
+
+  /// update model (This is needed if cliques update matrix etc)
+  virtual void setModel(CbcModel * model);
+  
+  using CbcHeuristic::solution ;
+  /** returns 0 if no solution, 1 if valid solution.
+      Fix variables if agree in useNumber_ solutions 
+      when_ 0 off, 1 only at new solutions, 2 also every now and then
+      add 10 to make only if agree at lower bound
+  */
+  virtual int solution(double & objectiveValue,
+		       double * newSolution);
+
+  /// Sets number of solutions to use
+  inline void setNumberSolutions(int value)
+  { 
+    if (value>0&&value<=10)
+      useNumber_=value;
+  }
+
+protected:
+  // Data
+  /// Attempts
+  std::vector <double> attempts_;
+  /// Random numbers to stop same search happening
+  double random_[10];
+  /// Number of solutions so we only do after new solution
+  int numberSolutions_;
+  /// Number of solutions to use
+  int useNumber_;
+};
 
 #endif

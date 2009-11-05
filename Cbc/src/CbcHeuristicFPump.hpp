@@ -1,3 +1,4 @@
+/* $Id$ */
 // Copyright (C) 2004, International Business Machines
 // Corporation and others.  All Rights Reserved.
 #ifndef CbcHeuristicFeasibilityPump_H
@@ -6,7 +7,7 @@
 #include "CbcHeuristic.hpp"
 #include "OsiClpSolverInterface.hpp"
 
-/** Rounding class
+/** Feasibility Pump class
  */
 
 class CbcHeuristicFPump : public CbcHeuristic {
@@ -127,6 +128,8 @@ public:
        1 - do not reuse solves, accumulate integer solutions for local search
        2 - reuse solves, do not accumulate integer solutions for local search
        3 - reuse solves, accumulate integer solutions for local search
+       If we add 4 then use second form of problem (with extra rows and variables for general integers)
+       If we add 8 then can run after initial cuts (if no solution)
   */
   inline void setAccumulate(int value)
   { accumulate_=value;}
@@ -143,6 +146,15 @@ public:
   /// Get reduced cost option
   inline int fixOnReducedCosts() const
   { return fixOnReducedCosts_;}
+  /**  Set reduced cost multiplier
+       1.0 as normal
+       <1.0 (x) - pretend gap is x* actual gap - just for fixing
+  */
+  inline void setReducedCostMultiplier(double value)
+  { reducedCostMultiplier_=value;}
+  /// Get reduced cost multiplier
+  inline double reducedCostMultiplier() const
+  { return reducedCostMultiplier_;}
 
 protected:
   // Data
@@ -169,6 +181,11 @@ protected:
   /** If iterationRatio >0 use instead of maximumPasses_
       test is iterations > ratio*(2*nrow+ncol) */
   double iterationRatio_;
+  /**  Reduced cost multiplier
+       1.0 as normal
+       <1.0 (x) - pretend gap is x* actual gap - just for fixing
+  */
+  double reducedCostMultiplier_;
   /// Maximum number of passes
   int maximumPasses_;
   /** Maximum number of retries if we find a solution.
@@ -183,6 +200,7 @@ protected:
        If we add 4 then use second form of problem (with extra rows and variables for general integers)
        If we do not accumulate solutions then no mini branch and bounds will be done
        reuse - refers to initial solve after adding in new "cut"
+       If we add 8 then can run after initial cuts (if no solution)
   */
   int accumulate_;
   /**  Set whether to fix variables on known solution
@@ -199,10 +217,11 @@ private:
       If roundExpensive then always to more expnsive.
       returns 0 if current is solution
   */
-  int rounds(OsiSolverInterface * solver,double * solution, const double * objective, 
+  int rounds(OsiSolverInterface * solver,double * solution, 
+	     /*const double * objective, */
 	     int numberIntegers, const int * integerVariable,
-	     char * pumpPrint,int passNumber,
-	     bool roundExpensive=false,
+	     /*char * pumpPrint,*/int passNumber,
+	     /*bool roundExpensive=false,*/
 	     double downValue=0.5, int *flip=0);
   /* note for eagle eyed readers.
      when_ can now be exotic -

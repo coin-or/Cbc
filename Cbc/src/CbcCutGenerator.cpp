@@ -1,3 +1,4 @@
+/* $Id$ */
 // Copyright (C) 2003, International Business Machines
 // Corporation and others.  All Rights Reserved.
 #if defined(_MSC_VER)
@@ -24,29 +25,25 @@
 
 // Default Constructor 
 CbcCutGenerator::CbcCutGenerator ()
-  : model_(NULL),
+  : timeInCutGenerator_(0.0),
+    model_(NULL),
     generator_(NULL),
+    generatorName_(NULL),
     whenCutGenerator_(-1),
     whenCutGeneratorInSub_(-100),
     switchOffIfLessThan_(0),
     depthCutGenerator_(-1),
     depthCutGeneratorInSub_(-1),
-    generatorName_(NULL),
-    normal_(true),
-    atSolution_(false),
-    whenInfeasible_(false),
-    mustCallAgain_(false),
-    switchedOff_(false),
-    globalCutsAtRoot_(false),
-    timing_(false),
-    timeInCutGenerator_(0.0),
     inaccuracy_(0),
     numberTimes_(0),
     numberCuts_(0),
+    numberElements_(0),
     numberColumnCuts_(0),
     numberCutsActive_(0),
     numberCutsAtRoot_(0),
-    numberActiveCutsAtRoot_(0)
+    numberActiveCutsAtRoot_(0),
+    numberShortCutsAtRoot_(0),
+    switches_(1)
 {
 }
 // Normal constructor
@@ -57,28 +54,31 @@ CbcCutGenerator::CbcCutGenerator(CbcModel * model,CglCutGenerator * generator,
 				 int whatDepth, int whatDepthInSub,
                                  int switchOffIfLessThan)
   : 
+    timeInCutGenerator_(0.0),
     depthCutGenerator_(whatDepth),
     depthCutGeneratorInSub_(whatDepthInSub),
-    mustCallAgain_(false),
-    switchedOff_(false),
-    globalCutsAtRoot_(false),
-    timing_(false),
-    timeInCutGenerator_(0.0),
     inaccuracy_(0),
     numberTimes_(0),
     numberCuts_(0),
+    numberElements_(0),
     numberColumnCuts_(0),
     numberCutsActive_(0),
     numberCutsAtRoot_(0),
-    numberActiveCutsAtRoot_(0)
+    numberActiveCutsAtRoot_(0),
+    numberShortCutsAtRoot_(0),
+    switches_(1)
 {
-  if (howOften<-1000) {
-    globalCutsAtRoot_=true;
+  if (howOften<-1900) {
+    setGlobalCuts(true);
+    howOften+=2000;
+  } else if (howOften<-900) {
+    setGlobalCutsAtRoot(true);
     howOften+=1000;
   }
   model_ = model;
   generator_=generator->clone();
   generator_->refreshSolver(model_->solver());
+  setNeedsOptimalBasis(generator_->needsOptimalBasis());
   whenCutGenerator_=howOften;
   whenCutGeneratorInSub_ = howOftenInSub;
   switchOffIfLessThan_=switchOffIfLessThan;
@@ -86,9 +86,9 @@ CbcCutGenerator::CbcCutGenerator(CbcModel * model,CglCutGenerator * generator,
     generatorName_=strdup(name);
   else
     generatorName_ = strdup("Unknown");
-  normal_=normal;
-  atSolution_=atSolution;
-  whenInfeasible_=infeasible;
+  setNormal(normal);
+  setAtSolution(atSolution);
+  setWhenInfeasible(infeasible);
 }
 
 // Copy constructor 
@@ -103,21 +103,18 @@ CbcCutGenerator::CbcCutGenerator ( const CbcCutGenerator & rhs)
   depthCutGenerator_=rhs.depthCutGenerator_;
   depthCutGeneratorInSub_ = rhs.depthCutGeneratorInSub_;
   generatorName_=strdup(rhs.generatorName_);
-  normal_=rhs.normal_;
-  atSolution_=rhs.atSolution_;
-  whenInfeasible_=rhs.whenInfeasible_;
-  mustCallAgain_ = rhs.mustCallAgain_;
-  switchedOff_ = rhs.switchedOff_;
-  globalCutsAtRoot_ = rhs.globalCutsAtRoot_;
-  timing_ = rhs.timing_;
+  switches_ = rhs.switches_;
   timeInCutGenerator_ = rhs.timeInCutGenerator_;
+  savedCuts_ = rhs.savedCuts_;
   inaccuracy_ = rhs.inaccuracy_;
   numberTimes_ = rhs.numberTimes_;
   numberCuts_ = rhs.numberCuts_;
+  numberElements_ = rhs.numberElements_;
   numberColumnCuts_ = rhs.numberColumnCuts_;
   numberCutsActive_ = rhs.numberCutsActive_;
   numberCutsAtRoot_  = rhs.numberCutsAtRoot_;
   numberActiveCutsAtRoot_ = rhs.numberActiveCutsAtRoot_;
+  numberShortCutsAtRoot_ = rhs.numberShortCutsAtRoot_;
 }
 
 // Assignment operator 
@@ -136,21 +133,18 @@ CbcCutGenerator::operator=( const CbcCutGenerator& rhs)
     depthCutGenerator_=rhs.depthCutGenerator_;
     depthCutGeneratorInSub_ = rhs.depthCutGeneratorInSub_;
     generatorName_=strdup(rhs.generatorName_);
-    normal_=rhs.normal_;
-    atSolution_=rhs.atSolution_;
-    whenInfeasible_=rhs.whenInfeasible_;
-    mustCallAgain_ = rhs.mustCallAgain_;
-    switchedOff_ = rhs.switchedOff_;
-    globalCutsAtRoot_ = rhs.globalCutsAtRoot_;
-    timing_ = rhs.timing_;
+    switches_ = rhs.switches_;
     timeInCutGenerator_ = rhs.timeInCutGenerator_;
+    savedCuts_ = rhs.savedCuts_;
     inaccuracy_ = rhs.inaccuracy_;
     numberTimes_ = rhs.numberTimes_;
     numberCuts_ = rhs.numberCuts_;
+    numberElements_ = rhs.numberElements_;
     numberColumnCuts_ = rhs.numberColumnCuts_;
     numberCutsActive_ = rhs.numberCutsActive_;
     numberCutsAtRoot_  = rhs.numberCutsAtRoot_;
     numberActiveCutsAtRoot_ = rhs.numberActiveCutsAtRoot_;
+    numberShortCutsAtRoot_ = rhs.numberShortCutsAtRoot_;
   }
   return *this;
 }
@@ -179,16 +173,13 @@ CbcCutGenerator::refreshModel(CbcModel * model)
 bool
 CbcCutGenerator::generateCuts( OsiCuts & cs , int fullScan, OsiSolverInterface * solver, CbcNode * node)
 {
-#define PROBE1 1
-#define PROBE2 0
-#define PROBE3 1
   int depth;
   if (node)
     depth=node->depth();
   else
     depth=0;
   int howOften = whenCutGenerator_;
-  if (dynamic_cast<CglProbing*>(generator_)&&PROBE1) {
+  if (dynamic_cast<CglProbing*>(generator_)) {
     if (howOften==-100&&model_->doCutsNow(3)) {
       howOften=1; // do anyway
     }
@@ -204,16 +195,10 @@ CbcCutGenerator::generateCuts( OsiCuts & cs , int fullScan, OsiSolverInterface *
   bool returnCode=false;
   //OsiSolverInterface * solver = model_->solver();
   int pass=model_->getCurrentPassNumber()-1;
+  // Reset cuts on first pass
+  if (!pass)
+    savedCuts_ = OsiCuts();
   bool doThis=(model_->getNodeCount()%howOften)==0;
-  CoinThreadRandom * randomNumberGenerator=NULL;
-#ifdef COIN_HAS_CLP
-  {
-    OsiClpSolverInterface * clpSolver 
-      = dynamic_cast<OsiClpSolverInterface *> (solver);
-    if (clpSolver) 
-      randomNumberGenerator = clpSolver->getModelPtr()->randomNumberGenerator();
-  }
-#endif
   if (depthCutGenerator_>0) {
     doThis = (depth % depthCutGenerator_) ==0;
     if (depth<depthCutGenerator_)
@@ -228,8 +213,18 @@ CbcCutGenerator::generateCuts( OsiCuts & cs , int fullScan, OsiSolverInterface *
     doThis=false;
   }
   if (fullScan||doThis) {
+    CoinThreadRandom * randomNumberGenerator=NULL;
+#ifdef COIN_HAS_CLP
+    {
+      OsiClpSolverInterface * clpSolver 
+	= dynamic_cast<OsiClpSolverInterface *> (solver);
+      if (clpSolver) 
+	randomNumberGenerator = 
+	  clpSolver->getModelPtr()->randomNumberGenerator();
+    }
+#endif
     double time1=0.0;
-    if (timing_)
+    if (timing())
       time1 = CoinCpuTime();
     //#define CBC_DEBUG
     int numberRowCutsBefore = cs.sizeRowCuts() ;
@@ -243,7 +238,19 @@ CbcCutGenerator::generateCuts( OsiCuts & cs , int fullScan, OsiSolverInterface *
     info.formulation_rows = model_->numberRowsAtContinuous();
     info.inTree = node!=NULL;
     info.randomNumberGenerator=randomNumberGenerator;
-    info.options=(globalCutsAtRoot_) ? 8 : 0;
+    info.options=(globalCutsAtRoot()) ? 8 : 0;
+    if (ineffectualCuts())
+      info.options |= 32;
+    if (globalCuts())
+      info.options |=16;
+    if (fullScan<0)
+      info.options |= 128;
+    // See if we want alternate set of cuts
+    if ((model_->moreSpecialOptions()&16384)!=0)
+      info.options |=256;
+    if(model_->parentModel()) 
+      info.options |=512;
+    // above had &&!model_->parentModel()&&depth<2) 
     incrementNumberTimesEntered();
     CglProbing* generator =
       dynamic_cast<CglProbing*>(generator_);
@@ -258,7 +265,7 @@ CbcCutGenerator::generateCuts( OsiCuts & cs , int fullScan, OsiSolverInterface *
       CglTreeProbingInfo * info2 = model_->probingInfo();
       bool doCuts=false;
       if (info2&&!depth) {
-	info2->options=(globalCutsAtRoot_) ? 8 : 0;
+	info2->options=(globalCutsAtRoot()) ? 8 : 0;
 	info2->level = depth;
 	info2->pass = pass;
 	info2->formulation_rows = model_->numberRowsAtContinuous();
@@ -266,11 +273,20 @@ CbcCutGenerator::generateCuts( OsiCuts & cs , int fullScan, OsiSolverInterface *
 	info2->randomNumberGenerator=randomNumberGenerator;
 	generator->generateCutsAndModify(*solver,cs,info2);
 	doCuts=true;
-      } else if (depth||PROBE2) {
-#if PROBE3
+      } else if (depth) {
+	/* The idea behind this is that probing may work in a different
+	   way deep in tree.  So every now and then try various
+	   combinations to see what works.
+	*/
+#define TRY_NOW_AND_THEN
+#ifdef TRY_NOW_AND_THEN
 	if ((numberTimes_==200||(numberTimes_>200&&(numberTimes_%2000)==0))
-	     &&!model_->parentModel()&&info.formulation_rows>500) {
-	  // in tree, maxStack, maxProbe
+	     &&!model_->parentModel()&&info.formulation_rows>200) {
+	  /* In tree, every now and then try various combinations
+	     maxStack, maxProbe (last 5 digits)
+	     123 is special and means CglProbing will try and
+	     be intelligent.
+	  */
 	  int test[]= {
 	    100123,
 	    199999,
@@ -285,32 +301,36 @@ CbcCutGenerator::generateCuts( OsiCuts & cs , int fullScan, OsiSolverInterface *
 	  int n = static_cast<int> (sizeof(test)/sizeof(int));
 	  int saveStack = generator->getMaxLook();
 	  int saveNumber = generator->getMaxProbe();
-#undef CLP_INVESTIGATE
-#ifdef CLP_INVESTIGATE
 	  int kr1=0;
 	  int kc1=0;
-#endif
 	  int bestStackTree=-1;
 	  int bestNumberTree=-1;
 	  for (int i=0;i<n;i++) {
-	    OsiCuts cs2 = cs;
+	    //OsiCuts cs2 = cs;
 	    int stack = test[i]/100000;
 	    int number = test[i] - 100000*stack;
 	    generator->setMaxLook(stack);
 	    generator->setMaxProbe(number);
-	    generator_->generateCuts(*solver,cs2,info);
+	    int numberRowCutsBefore = cs.sizeRowCuts() ;
+	    int numberColumnCutsBefore = cs.sizeColCuts() ;
+	    generator_->generateCuts(*solver,cs,info);
+	    int numberRowCuts = cs.sizeRowCuts()-numberRowCutsBefore ;
+	    int numberColumnCuts= cs.sizeColCuts()-numberColumnCutsBefore ;
 #ifdef CLP_INVESTIGATE
-	    int numberRowCuts = cs2.sizeRowCuts()-numberRowCutsBefore ;
-	    int numberColumnCuts= cs2.sizeColCuts()-numberColumnCutsBefore ;
 	    if (numberRowCuts<kr1||numberColumnCuts<kc1)
 	      printf("Odd ");
+#endif
 	    if (numberRowCuts>kr1||numberColumnCuts>kc1) {
+#ifdef CLP_INVESTIGATE
 	      printf("*** ");
+#endif
 	      kr1=numberRowCuts;
 	      kc1=numberColumnCuts;
 	      bestStackTree=stack;
 	      bestNumberTree=number;
+	      doCuts=true;
 	    }
+#ifdef CLP_INVESTIGATE
 	    printf("maxStack %d number %d gives %d row cuts and %d column cuts\n",
 		   stack,number,numberRowCuts,numberColumnCuts);
 #endif
@@ -329,23 +349,24 @@ CbcCutGenerator::generateCuts( OsiCuts & cs , int fullScan, OsiSolverInterface *
 	    generator->setMaxLook(0);
 #ifdef CLP_INVESTIGATE
 	    printf("RRSwitching off number %d -> %d, stack %d -> %d\n",
-		   saveNumber,saveNumber,saveStack,0);
+		   saveNumber,saveNumber,saveStack,1);
 #endif
 	  }
 	}
 #endif
-	if (generator->getMaxLook()>0) {
+	if (generator->getMaxLook()>0&&!doCuts) {
 	  generator->generateCutsAndModify(*solver,cs,&info);
 	  doCuts=true;
 	}
       } else {
 	// at root - don't always do
-	if (!PROBE3||pass<15||(pass&1)==0) {
+	if (pass<15||(pass&1)==0) {
 	  generator->generateCutsAndModify(*solver,cs,&info);
 	  doCuts=true;
 	}
       }
-      if (doCuts) {
+      if (doCuts&&generator->tightLower()) {
+	// probing may have tightened bounds - check
 	const double * tightLower = generator->tightLower();
 	const double * lower = solver->getColLower();
 	const double * tightUpper = generator->tightUpper();
@@ -499,22 +520,34 @@ CbcCutGenerator::generateCuts( OsiCuts & cs , int fullScan, OsiSolverInterface *
 	thisCut->mutableRow().setTestForDuplicateIndex(false);
       }
     }
-    {
-      int numberRowCutsAfter = cs.sizeRowCuts() ;
-      if (numberRowCutsBefore<numberRowCutsAfter) {
-#if 0
-	printf("generator %s generated %d row cuts\n",
-	       generatorName_,numberRowCutsAfter-numberRowCutsBefore);
-#endif
-	numberCuts_ += numberRowCutsAfter-numberRowCutsBefore;
-      }
-      int numberColumnCutsAfter = cs.sizeColCuts() ;
-      if (numberColumnCutsBefore<numberColumnCutsAfter) {
-#if 0
-	printf("generator %s generated %d column cuts\n",
-	       generatorName_,numberColumnCutsAfter-numberColumnCutsBefore);
-#endif
-	numberColumnCuts_ += numberColumnCutsAfter-numberColumnCutsBefore;
+    // Add in saved cuts if violated
+    if (false&&!depth) {
+      const double * solution = solver->getColSolution();
+      double primalTolerance = 1.0e-7;
+      int numberCuts = savedCuts_.sizeRowCuts() ;
+      for (int k = numberCuts-1;k>=0;k--) {
+	const OsiRowCut * thisCut = savedCuts_.rowCutPtr(k) ;
+	double sum=0.0;
+	int n=thisCut->row().getNumElements();
+	const int * column = thisCut->row().getIndices();
+	const double * element = thisCut->row().getElements();
+	assert (n);
+	for (int i=0;i<n;i++) {
+	  double value = element[i];
+	  sum += value*solution[column[i]];
+	}
+	if (sum>thisCut->ub()+primalTolerance) {
+	  sum= sum-thisCut->ub();
+	} else if (sum<thisCut->lb()-primalTolerance) {
+	  sum= thisCut->lb()-sum;
+	} else {
+	  sum=0.0;
+	}
+	if (sum) {
+	  // add to candidates and take out here
+	  cs.insert(*thisCut);
+	  savedCuts_.eraseRowCut(k);
+	}
       }
     }
     if (!atSolution()) {
@@ -527,11 +560,14 @@ CbcCutGenerator::generateCuts( OsiCuts & cs , int fullScan, OsiSolverInterface *
       const double * solution = solver->getColSolution();
       bool feasible=true;
       double primalTolerance = 1.0e-7;
+      int shortCut = (depth) ? -1 : generator_->maximumLengthOfCutInTree();
       for (k = numberRowCutsAfter-1;k>=numberRowCutsBefore;k--) {
 	const OsiRowCut * thisCut = cs.rowCutPtr(k) ;
 	double sum=0.0;
 	if (thisCut->lb()<=thisCut->ub()) {
 	  int n=thisCut->row().getNumElements();
+	  if (n<=shortCut)
+	    numberShortCutsAtRoot_++;
 	  const int * column = thisCut->row().getIndices();
 	  const double * element = thisCut->row().getElements();
 	  if (n<=0) {
@@ -588,6 +624,14 @@ CbcCutGenerator::generateCuts( OsiCuts & cs , int fullScan, OsiSolverInterface *
 	}
 	nAdd2 = 5*numberColumns;
 	nReasonable = CoinMax(nAdd2,nElsNow/8+nAdd);
+	if (!depth&&!pass) {
+	  // allow more
+	  nAdd += nElsNow/2;
+	  nAdd2 += nElsNow/2;
+	  nReasonable += nElsNow/2;
+	}
+	//if (!depth&&ineffectualCuts())
+	//nReasonable *= 2;
       } else {
 	nAdd = 200;
 	nAdd2 = 2*numberColumns;
@@ -601,6 +645,7 @@ CbcCutGenerator::generateCuts( OsiCuts & cs , int fullScan, OsiSolverInterface *
       if (/*nEls>CoinMax(nAdd2,nElsNow/8+nAdd)*/nCuts&&feasible) {
 	//printf("need to remove cuts\n");
 	// just add most effective
+#if 1
 	int nDelete = nEls - nReasonable;
 	
 	nElsNow = nEls;
@@ -608,6 +653,20 @@ CbcCutGenerator::generateCuts( OsiCuts & cs , int fullScan, OsiSolverInterface *
 	int * which = new int [nCuts];
 	// For parallel cuts
 	double * element2 = new double [numberColumns];
+	//#define USE_OBJECTIVE 2
+#ifdef USE_OBJECTIVE
+	const double *objective = solver->getObjCoefficients() ;
+#if USE_OBJECTIVE>1
+	double objNorm=0.0;
+	for (int i=0;i<numberColumns;i++)
+	  objNorm += objective[i]*objective[i];
+	if (objNorm)
+	  objNorm = 1.0/sqrt(objNorm);
+	else
+	  objNorm=1.0;
+	objNorm *= 0.01; // downgrade
+#endif
+#endif
 	CoinZeroN(element2,numberColumns);
 	for (k = numberRowCutsBefore;k<numberRowCutsAfter;k++) {
 	  const OsiRowCut * thisCut = cs.rowCutPtr(k) ;
@@ -646,10 +705,17 @@ CbcCutGenerator::generateCuts( OsiCuts & cs , int fullScan, OsiSolverInterface *
 	    norm += UNS_WEIGHT*(normU-norm);
 #else
 	    double norm=1.0e-3;
+#ifdef USE_OBJECTIVE
+	    double obj=0.0;
+#endif
 	    for (int i=0;i<n;i++) {
+	      int iColumn = column[i];
 	      double value = element[i];
-	      sum += value*solution[column[i]];
+	      sum += value*solution[iColumn];
 	      norm += value*value;
+#ifdef USE_OBJECTIVE
+	      obj += value*objective[iColumn];
+#endif
 	    }
 #endif
 	    if (sum>thisCut->ub()) {
@@ -659,8 +725,26 @@ CbcCutGenerator::generateCuts( OsiCuts & cs , int fullScan, OsiSolverInterface *
 	    } else {
 	      sum=0.0;
 	    }
+#ifdef USE_OBJECTIVE
+	    if (sum) {
+#if USE_OBJECTIVE==1
+	      obj = CoinMax(1.0e-6,fabs(obj));
+	      norm=sqrt(obj*norm);
+	      //sum += fabs(obj)*invObjNorm;
+	      //printf("sum %g norm %g normobj %g invNorm %g mod %g\n",
+	      //     sum,norm,obj,invObjNorm,obj*invObjNorm);
+	      // normalize
+	      sum /= sqrt(norm);
+#else
+	      // normalize
+	      norm = 1.0/sqrt(norm);
+	      sum = (sum+objNorm*obj)*norm;
+#endif
+	    }
+#else
 	    // normalize
 	    sum /= sqrt(norm);
+#endif
 	    //sum /= pow(norm,0.3);
 	    // adjust for length
 	    //sum /= pow(reinterpret_cast<double>(n),0.2);
@@ -749,6 +833,11 @@ CbcCutGenerator::generateCuts( OsiCuts & cs , int fullScan, OsiSolverInterface *
 	  int iCut=which[k];
 	  const OsiRowCut * thisCut = cs.rowCutPtr(iCut) ;
 	  int n=thisCut->row().getNumElements();
+	  // may be best, just to save if short
+	  if (false&&n&&sort[k]) {
+	    // add to saved cuts
+	    savedCuts_.insert(*thisCut);
+	  }
 	  nDelete-=n; 
 	  k++;
 	  if (k>=nCuts)
@@ -762,18 +851,149 @@ CbcCutGenerator::generateCuts( OsiCuts & cs , int fullScan, OsiSolverInterface *
 	delete [] sort;
 	delete [] which;
 	numberRowCutsAfter = cs.sizeRowCuts() ;
-#if 0 //def CLP_INVESTIGATE
-	nEls=0;
-	int nCuts2= numberRowCutsAfter-numberRowCutsBefore;
-	for (k = numberRowCutsBefore;k<numberRowCutsAfter;k++) {
-	  const OsiRowCut * thisCut = cs.rowCutPtr(k) ;
-	  int n=thisCut->row().getNumElements();
-	  nEls+= n;
+#else
+	double * norm = new double [nCuts];
+	int * which = new int [2*nCuts];
+	double * score = new double [nCuts];
+	double * ortho = new double [nCuts];
+	int nIn=0;
+	int nOut=nCuts;
+	// For parallel cuts
+	double * element2 = new double [numberColumns];
+	const double *objective = solver->getObjCoefficients() ;
+	double objNorm=0.0;
+	for (int i=0;i<numberColumns;i++)
+	  objNorm += objective[i]*objective[i];
+	if (objNorm)
+	  objNorm = 1.0/sqrt(objNorm);
+	else
+	  objNorm=1.0;
+	objNorm *= 0.1; // weight of 0.1
+	CoinZeroN(element2,numberColumns);
+	int numberRowCuts = numberRowCutsAfter-numberRowCutsBefore;
+	int iBest=-1;
+	double best=0.0;
+	int nPossible=0;
+	double testValue = (depth>1) ? 0.7 : 0.5;
+	for (k = 0;k<numberRowCuts;k++) {
+	  const OsiRowCut * thisCut = cs.rowCutPtr(k+numberRowCutsBefore) ;
+	  double sum=0.0;
+	  if (thisCut->lb()<=thisCut->ub()) {
+	    int n=thisCut->row().getNumElements();
+	    const int * column = thisCut->row().getIndices();
+	    const double * element = thisCut->row().getElements();
+	    assert (n);
+	    double normThis=1.0e-6;
+	    double obj=0.0;
+	    for (int i=0;i<n;i++) {
+	      int iColumn = column[i];
+	      double value = element[i];
+	      sum += value*solution[iColumn];
+	      normThis += value*value;
+	      obj += value*objective[iColumn];
+	    }
+	    if (sum>thisCut->ub()) {
+	      sum= sum-thisCut->ub();
+	    } else if (sum<thisCut->lb()) {
+	      sum= thisCut->lb()-sum;
+	    } else {
+	      sum=0.0;
+	    }
+	    if (sum) {
+	      normThis =1.0/sqrt(normThis);
+	      norm[k]=normThis;
+	      sum *= normThis;
+	      obj *= normThis;
+	      score[k]=sum+obj*objNorm;
+	      ortho[k]=1.0;
+	    }
+	  } else {
+	    // keep and discard others
+	    nIn=1;
+	    which[0]=k;
+	    for (int j = 0;j<numberRowCuts;j++) {
+	      if (j!=k)
+		which[nOut++]=j;
+	    }
+	    iBest=-1;
+	    break;
+	  }
+	  if (sum) {
+	    if (score[k]>best) {
+	      best=score[k];
+	      iBest=nPossible;
+	    }
+	    which[nPossible++]=k;
+	  } else {
+	    which[nOut++]=k;
+	  }
 	}
-	if (!model_->parentModel()&&nCuts!=nCuts2)
-	  printf("%s NOW has %d cuts and %d elements( down from %d cuts and %d els) - %d parallel\n",
-		 generatorName_,
-		 nCuts2,nEls,nCuts,nElsNow,nParallel);
+	while (iBest>=0) {
+	  int kBest=which[iBest];
+	  int j=which[nIn];
+	  which[iBest]=j;
+	  which[nIn++]=kBest;
+	  const OsiRowCut * thisCut = cs.rowCutPtr(kBest+numberRowCutsBefore) ;
+	  int n=thisCut->row().getNumElements();
+	  nReasonable -= n;
+	  if (nReasonable<=0) {
+	    for (k=nIn;k<nPossible;k++)
+	      which[nOut++]=which[k];
+	    break;
+	  }
+	  // Now see which ones are too similar and choose next
+	  iBest=-1;
+	  best=0.0;
+	  int nOld=nPossible;
+	  nPossible=nIn;
+	  const int * column = thisCut->row().getIndices();
+	  const double * element = thisCut->row().getElements();
+	  assert (n);
+	  double normNew = norm[kBest];
+	  for (int i=0;i<n;i++) {
+	    double value = element[i];
+	    element2[column[i]]=value;
+	  }
+	  for (int j=nIn;j<nOld;j++) {
+	    k = which[j];
+	    const OsiRowCut * thisCut2 = cs.rowCutPtr(k+numberRowCutsBefore) ;
+	    int nB=thisCut2->row().getNumElements();
+	    const int * columnB = thisCut2->row().getIndices();
+	    const double * elementB = thisCut2->row().getElements();
+	    assert (nB);
+	    double normB=norm[k];
+	    double product=0.0;
+	    for (int i=0;i<nB;i++) {
+	      double value = elementB[i];
+	      product += value*element2[columnB[i]];
+	    }
+	    double orthoScore = 1.0-product*normNew*normB;
+	    if (orthoScore>=testValue) {
+	      ortho[k]=CoinMin(orthoScore,ortho[k]);
+	      double test=score[k]+ortho[k];
+	      if (test>best) {
+		best=score[k];
+		iBest=nPossible;
+	      }
+	      which[nPossible++]=k;
+	    } else {
+	      which[nOut++]=k;
+	    }
+	  }
+	  for (int i=0;i<n;i++) {
+	    element2[column[i]]=0.0;
+	  }
+	}
+	delete [] score;
+	delete [] ortho;
+	std::sort(which+nCuts,which+nOut);
+	k=nOut-1;
+	for (;k>=nCuts;k--) {
+	  cs.eraseRowCut(which[k]+numberRowCutsBefore);
+	}
+	delete [] norm;
+	delete [] which;
+	numberRowCutsAfter = cs.sizeRowCuts() ;
 #endif
       }
     }
@@ -809,7 +1029,30 @@ CbcCutGenerator::generateCuts( OsiCuts & cs , int fullScan, OsiSolverInterface *
       }
     }
 #endif
-    if (timing_)
+    {
+      int numberRowCutsAfter = cs.sizeRowCuts() ;
+      if (numberRowCutsBefore<numberRowCutsAfter) {
+	for (int k = numberRowCutsBefore;k<numberRowCutsAfter;k++) {
+	  OsiRowCut thisCut = cs.rowCut(k) ;
+	  int n=thisCut.row().getNumElements();
+	  numberElements_ += n;
+	}
+#if 0
+	printf("generator %s generated %d row cuts\n",
+	       generatorName_,numberRowCutsAfter-numberRowCutsBefore);
+#endif
+	numberCuts_ += numberRowCutsAfter-numberRowCutsBefore;
+      }
+      int numberColumnCutsAfter = cs.sizeColCuts() ;
+      if (numberColumnCutsBefore<numberColumnCutsAfter) {
+#if 0
+	printf("generator %s generated %d column cuts\n",
+	       generatorName_,numberColumnCutsAfter-numberColumnCutsBefore);
+#endif
+	numberColumnCuts_ += numberColumnCutsAfter-numberColumnCutsBefore;
+      }
+    }
+    if (timing())
       timeInCutGenerator_ += CoinCpuTime()-time1;
 #if 0
     // switch off if first time and no good
@@ -850,6 +1093,30 @@ CbcCutGenerator::setWhatDepthInSub(int value)
 {
   depthCutGeneratorInSub_ = value;
 }
+// Create C++ lines to get to current state
+void 
+CbcCutGenerator::generateTuning( FILE * fp) 
+{
+  fprintf(fp,"// Cbc tuning for generator %s\n",generatorName_);
+  fprintf(fp,"   generator->setHowOften(%d);\n",whenCutGenerator_);
+  fprintf(fp,"   generator->setSwitchOffIfLessThan(%d);\n",switchOffIfLessThan_);
+  fprintf(fp,"   generator->setWhatDepth(%d);\n",depthCutGenerator_);
+  fprintf(fp,"   generator->setInaccuracy(%d);\n",inaccuracy_);
+  if (timing())
+    fprintf(fp,"   generator->setTiming(true);\n");
+  if (normal())
+    fprintf(fp,"   generator->setNormal(true);\n");
+  if (atSolution())
+    fprintf(fp,"   generator->setAtSolution(true);\n");
+  if (whenInfeasible())
+    fprintf(fp,"   generator->setWhenInfeasible(true);\n");
+  if (needsOptimalBasis())
+    fprintf(fp,"   generator->setNeedsOptimalBasis(true);\n");
+  if (mustCallAgain())
+    fprintf(fp,"   generator->setMustCallAgain(true);\n");
+  if (whetherToUse())
+    fprintf(fp,"   generator->setWhetherToUse(true);\n");
+}
 
 
 // Default Constructor
@@ -864,7 +1131,7 @@ CbcCutModifier::~CbcCutModifier ()
 }
 
 // Copy constructor 
-CbcCutModifier::CbcCutModifier ( const CbcCutModifier & rhs)
+CbcCutModifier::CbcCutModifier ( const CbcCutModifier & /*rhs*/)
 {
 }
 
@@ -927,7 +1194,8 @@ CbcCutSubsetModifier::~CbcCutSubsetModifier ()
    3 deleted
 */
 int 
-CbcCutSubsetModifier::modify(const OsiSolverInterface * solver, OsiRowCut & cut) 
+CbcCutSubsetModifier::modify(const OsiSolverInterface * /*solver*/, 
+			     OsiRowCut & cut) 
 {
   int n=cut.row().getNumElements();
   if (!n)

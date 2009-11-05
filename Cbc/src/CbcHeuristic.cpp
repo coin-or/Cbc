@@ -1,3 +1,4 @@
+/* $Id$ */
 // Copyright (C) 2002, International Business Machines
 // Corporation and others.  All Rights Reserved.
 #if defined(_MSC_VER)
@@ -90,7 +91,7 @@ CbcHeuristicNodeList::append(const CbcHeuristicNodeList& nodes)
 }
 
 //==============================================================================
-
+#define DEFAULT_WHERE ((255-2-16)*(1+256))
 // Default Constructor
 CbcHeuristic::CbcHeuristic() :
   model_(NULL),
@@ -102,6 +103,7 @@ CbcHeuristic::CbcHeuristic() :
   howOften_(1),
   decayFactor_(0.0),
   switches_(0),
+  whereFrom_(DEFAULT_WHERE),
   shallowDepth_(1),
   howOftenShallow_(1),
   numInvocationsInShallow_(0),
@@ -128,6 +130,7 @@ CbcHeuristic::CbcHeuristic(CbcModel & model) :
   howOften_(1),
   decayFactor_(0.0),
   switches_(0),
+  whereFrom_(DEFAULT_WHERE),
   shallowDepth_(1),
   howOftenShallow_(1),
   numInvocationsInShallow_(0),
@@ -152,8 +155,9 @@ CbcHeuristic::gutsOfCopy(const CbcHeuristic & rhs)
   randomNumberGenerator_ = rhs.randomNumberGenerator_;
   heuristicName_ = rhs.heuristicName_;
   howOften_ = rhs.howOften_;
-  decayFactor_ = rhs.howOften_;
+  decayFactor_ = rhs.decayFactor_;
   switches_ = rhs.switches_;
+  whereFrom_ = rhs.whereFrom_;
   shallowDepth_= rhs.shallowDepth_;
   howOftenShallow_= rhs.howOftenShallow_;
   numInvocationsInShallow_ = rhs.numInvocationsInShallow_;
@@ -257,8 +261,13 @@ CbcHeuristic::printDistanceToNodes()
 }
 
 bool
-CbcHeuristic::shouldHeurRun()
+CbcHeuristic::shouldHeurRun(int whereFrom)
 {
+  assert (whereFrom>=0&&whereFrom<16);
+  // take off 8 (code - likes new solution)
+  whereFrom &= 7;
+  if ((whereFrom_&(1<<whereFrom))==0)
+    return false;
   // No longer used for original purpose - so use for ever run at all JJF
 #if 1
   // Don't run if hot start
@@ -359,7 +368,8 @@ CbcHeuristic::shouldHeurRun_randomChoice()
     const double denominator = exp(depth * log(2.0));
     double probability = numerator / denominator;
     double randomNumber = randomNumberGenerator_.randomDouble();
-    if (when_>2&&when_<8) {
+    int when = when_%100;
+    if (when>2&&when<8) {
       /* JJF adjustments
 	 3 only at root and if no solution
 	 4 only at root and if this heuristic has not got solution
@@ -367,7 +377,7 @@ CbcHeuristic::shouldHeurRun_randomChoice()
 	 6 decay
 	 7 run up to 2 times if solution found 4 otherwise
       */
-      switch(when_) {
+      switch(when) {
       case 3:
       default:
 	if (model_->bestSolution())
@@ -450,6 +460,10 @@ CbcHeuristic::generateCpp( FILE * fp, const char * heuristic)
     fprintf(fp,"3  %s.setNumberNodes(%d);\n",heuristic,numberNodes_);
   else
     fprintf(fp,"4  %s.setNumberNodes(%d);\n",heuristic,numberNodes_);
+  if (feasibilityPumpOptions_!=-1)
+    fprintf(fp,"3  %s.setFeasibilityPumpOptions(%d);\n",heuristic,feasibilityPumpOptions_);
+  else
+    fprintf(fp,"4  %s.setFeasibilityPumpOptions(%d);\n",heuristic,feasibilityPumpOptions_);
   if (fractionSmall_!=1.0)
     fprintf(fp,"3  %s.setFractionSmall(%g);\n",heuristic,fractionSmall_);
   else
@@ -460,6 +474,30 @@ CbcHeuristic::generateCpp( FILE * fp, const char * heuristic)
   else
     fprintf(fp,"4  %s.setHeuristicName(\"%s\");\n",
 	    heuristic,heuristicName_.c_str()) ;
+  if (decayFactor_!=0.0)
+    fprintf(fp,"3  %s.setDecayFactor(%g);\n",heuristic,decayFactor_);
+  else
+    fprintf(fp,"4  %s.setDecayFactor(%g);\n",heuristic,decayFactor_);
+  if (switches_!=0)
+    fprintf(fp,"3  %s.setSwitches(%d);\n",heuristic,switches_);
+  else
+    fprintf(fp,"4  %s.setSwitches(%d);\n",heuristic,switches_);
+  if (whereFrom_!=DEFAULT_WHERE)
+    fprintf(fp,"3  %s.setWhereFrom(%d);\n",heuristic,whereFrom_);
+  else
+    fprintf(fp,"4  %s.setWhereFrom(%d);\n",heuristic,whereFrom_);
+  if (shallowDepth_!=1)
+    fprintf(fp,"3  %s.setShallowDepth(%d);\n",heuristic,shallowDepth_);
+  else
+    fprintf(fp,"4  %s.setShallowDepth(%d);\n",heuristic,shallowDepth_);
+  if (howOftenShallow_!=1)
+    fprintf(fp,"3  %s.setHowOftenShallow(%d);\n",heuristic,howOftenShallow_);
+  else
+    fprintf(fp,"4  %s.setHowOftenShallow(%d);\n",heuristic,howOftenShallow_);
+  if (minDistanceToRun_!=1)
+    fprintf(fp,"3  %s.setMinDistanceToRun(%d);\n",heuristic,minDistanceToRun_);
+  else
+    fprintf(fp,"4  %s.setMinDistanceToRun(%d);\n",heuristic,minDistanceToRun_);
 }
 // Destructor 
 CbcHeuristic::~CbcHeuristic ()
@@ -472,19 +510,83 @@ void CbcHeuristic::setModel(CbcModel * model)
 {
   model_ = model;
 }
+/* Clone but ..
+   type 0 clone solver, 1 clone continuous solver
+   Add 2 to say without integer variables which are at low priority
+   Add 4 to say quite likely infeasible so give up easily.*/
+OsiSolverInterface * 
+CbcHeuristic::cloneBut(int type)
+{
+  OsiSolverInterface * solver;
+  if ((type&1)==0||!model_->continuousSolver()) 
+    solver = model_->solver()->clone();
+  else
+    solver = model_->continuousSolver()->clone();
+#ifdef COIN_HAS_CLP
+  OsiClpSolverInterface * clpSolver 
+    = dynamic_cast<OsiClpSolverInterface *> (solver);
+#endif
+  if ((type&2)!=0) {
+    int n=model_->numberObjects();
+    int priority = model_->continuousPriority();
+    if (priority<COIN_INT_MAX) {
+      for (int i=0;i<n;i++) {
+	const OsiObject * obj = model_->object(i);
+	const CbcSimpleInteger * thisOne = 
+	  dynamic_cast <const CbcSimpleInteger *> (obj);
+	if (thisOne) {
+	  int iColumn=thisOne->columnNumber();
+	  if (thisOne->priority()>=priority) 
+	    solver->setContinuous(iColumn);
+	}
+      } 
+    }
+#ifdef COIN_HAS_CLP
+    if (clpSolver) {
+      for (int i=0;i<n;i++) {
+	const OsiObject * obj = model_->object(i);
+	const CbcSimpleInteger * thisOne = 
+	  dynamic_cast <const CbcSimpleInteger *> (obj);
+	if (thisOne) {
+	  int iColumn=thisOne->columnNumber();
+	  if (clpSolver->isOptionalInteger(iColumn))
+	    clpSolver->setContinuous(iColumn);
+	}
+      } 
+    }
+#endif
+  }
+#ifdef COIN_HAS_CLP
+  if ((type&4)!=0&&clpSolver) {
+    int options = clpSolver->getModelPtr()->moreSpecialOptions();
+    clpSolver->getModelPtr()->setMoreSpecialOptions(options|64);
+  }
+#endif
+  return solver;
+}
 // Whether to exit at once on gap
 bool 
 CbcHeuristic::exitNow(double bestObjective) const
 {
-  if ((switches_&1)==0)
+  if ((switches_&2048)!=0) {
+    // exit may be forced - but unset for next time
+    switches_ &= ~2048;
+    if ((switches_&1024)!=0) 
+      return true;
+  } else if ((switches_&1)==0) {
     return false;
+  }
   // See if can stop on gap
   OsiSolverInterface * solver = model_->solver();
   double bestPossibleObjective = solver->getObjValue()*solver->getObjSense();
-  double testGap = CoinMax(model_->getAllowableGap(),
+  double absGap = CoinMax(model_->getAllowableGap(),
+			  model_->getHeuristicGap());
+  double fracGap = CoinMax(model_->getAllowableFractionGap(),
+			  model_->getHeuristicFractionGap());
+  double testGap = CoinMax(absGap,fracGap*
 			   CoinMax(fabs(bestObjective),
-				   fabs(bestPossibleObjective))
-			   *model_->getAllowableFractionGap());
+				   fabs(bestPossibleObjective)));
+
   if (bestObjective-bestPossibleObjective < testGap 
       && model_->getCutoffIncrement()>=0.0) {
     return true;
@@ -781,7 +883,7 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver,int numberNodes,
 	CbcModel model(*solver2);
 	if (numberNodes>=0) {
 	  // normal
-	  model_->setSpecialOptions(saveModelOptions|2048);
+	  model.setSpecialOptions(saveModelOptions|2048);
 	  if (logLevel<=1)
 	    model.setLogLevel(0);
 	  else
@@ -798,7 +900,7 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver,int numberNodes,
 	  model.setMaximumCutPassesAtRoot(CoinMin(20,CoinAbs(model_->getMaximumCutPassesAtRoot())));
 	  model.setMaximumCutPasses(CoinMin(10,model_->getMaximumCutPasses()));
 	} else {
-	  model_->setSpecialOptions(saveModelOptions);
+	  model.setSpecialOptions(saveModelOptions);
 	  model_->messageHandler()->message(CBC_RESTART,model_->messages())
 	    <<solver2->getNumRows()<<solver2->getNumCols()
 	    <<CoinMessageEol;
@@ -992,6 +1094,8 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver,int numberNodes,
 	    model.addHeuristic(&heuristic,"Previous solution",0);
 	    //printf("added seren\n");
 	  } else {
+	    double value = model_->getMinimizationObjValue();
+	    model.setCutoff(value+1.0e-7*(1.0+fabs(value)));
 #ifdef CLP_INVESTIGATE
 	    printf("NOT added seren\n");
 	    solver3->writeMps("bad_seren");
@@ -1110,6 +1214,59 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver,int numberNodes,
   }
   model_->setSpecialOptions(saveModelOptions);
   model_->setLogLevel(logLevel);
+  if (returnCode==1||returnCode==2) {
+    OsiSolverInterface * solverC = model_->continuousSolver();
+    if (false&&solverC) {
+      const double * lower = solver->getColLower();
+      const double * upper = solver->getColUpper();
+      const double * lowerC = solverC->getColLower();
+      const double * upperC = solverC->getColUpper();
+      bool good=true;
+      for (int iColumn=0;iColumn<numberColumns;iColumn++) {
+	if (solverC->isInteger(iColumn)) {
+	  if (lower[iColumn]>lowerC[iColumn]&&
+	      upper[iColumn]<upperC[iColumn]) {
+	    good=false;
+	    printf("CUT - can't add\n");
+	    break;
+	  }
+	}
+      }
+      if (good) {
+	double * cut = new double [numberColumns];
+	int * which = new int [numberColumns];
+	double rhs=-1.0;
+	int n=0;
+	for (int iColumn=0;iColumn<numberColumns;iColumn++) {
+	  if (solverC->isInteger(iColumn)) {
+	    if (lower[iColumn]==upperC[iColumn]) {
+	      rhs += lower[iColumn];
+	      cut[n]=1.0;
+	      which[n++]=iColumn;
+	    } else if (upper[iColumn]==lowerC[iColumn]) {
+	      rhs -= upper[iColumn];
+	      cut[n]=-1.0;
+	      which[n++]=iColumn;
+	    }
+	  }
+	}
+	printf("CUT has %d entries\n",n);
+	OsiRowCut newCut;
+	newCut.setLb(-COIN_DBL_MAX);
+	newCut.setUb(rhs);
+	newCut.setRow(n,which,cut,false);
+	model_->makeGlobalCut(newCut);
+	delete [] cut;
+	delete [] which;
+      }
+    }
+#ifdef COIN_DEVELOP
+    if (status==1)
+      printf("heuristic could add cut because infeasible (%s)\n",heuristicName_.c_str()); 
+    else if (status==2)
+      printf("heuristic could add cut because optimal (%s)\n",heuristicName_.c_str());
+#endif
+  } 
   if (reset) {
     for (int iColumn=0;iColumn<numberColumns;iColumn++) {
       if (reset[iColumn])
@@ -1119,14 +1276,6 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver,int numberNodes,
   }
 #ifdef HISTORY_STATISTICS
   getHistoryStatistics_=true;
-#endif
-#ifdef COIN_DEVELOP
-  if (returnCode==1||returnCode==2) {
-    if (status==1)
-      printf("heuristic could add cut because infeasible (%s)\n",heuristicName_.c_str()); 
-    else if (status==2)
-      printf("heuristic could add cut because optimal (%s)\n",heuristicName_.c_str());
-  } 
 #endif
   solver->setHintParam(OsiDoReducePrint,takeHint,strength);
   return returnCode;
@@ -1380,7 +1529,7 @@ CbcRounding::CbcRounding()
   :CbcHeuristic()
 {
   // matrix and row copy will automatically be empty
-  seed_=1;
+  seed_=7654321;
   down_ = NULL;
   up_ = NULL;
   equal_ = NULL;
@@ -1392,13 +1541,15 @@ CbcRounding::CbcRounding(CbcModel & model)
 {
   // Get a copy of original matrix (and by row for rounding);
   assert(model.solver());
-  matrix_ = *model.solver()->getMatrixByCol();
-  matrixByRow_ = *model.solver()->getMatrixByRow();
-  validate();
+  if (model.solver()->getNumRows()) {
+    matrix_ = *model.solver()->getMatrixByCol();
+    matrixByRow_ = *model.solver()->getMatrixByRow();
+    validate();
+  }
   down_ = NULL;
   up_ = NULL;
   equal_ = NULL;
-  seed_=1;
+  seed_=7654321;
 }
 
 // Destructor 
@@ -2243,20 +2394,29 @@ void CbcRounding::setModel(CbcModel * model)
   model_ = model;
   // Get a copy of original matrix (and by row for rounding);
   assert(model_->solver());
-  matrix_ = *model_->solver()->getMatrixByCol();
-  matrixByRow_ = *model_->solver()->getMatrixByRow();
-  // make sure model okay for heuristic
-  validate();
+  if (model_->solver()->getNumRows()) {
+    matrix_ = *model_->solver()->getMatrixByCol();
+    matrixByRow_ = *model_->solver()->getMatrixByRow();
+    // make sure model okay for heuristic
+    validate();
+  }
 }
 // Validate model i.e. sets when_ to 0 if necessary (may be NULL)
 void 
 CbcRounding::validate() 
 {
-  if (model_&&when()<10) {
+  if (model_&&(when()%100)<10) {
     if (model_->numberIntegers()!=
         model_->numberObjects()&&(model_->numberObjects()||
-				  (model_->specialOptions()&1024)==0))
-      setWhen(0);
+				  (model_->specialOptions()&1024)==0)) {
+      int numberOdd=0;
+      for (int i=0;i<model_->numberObjects();i++) {
+	if (!model_->object(i)->canDoHeuristics()) 
+	  numberOdd++;
+      }
+      if (numberOdd)
+	setWhen(0);
+    }
   }
 #ifdef NEW_ROUNDING
   int numberColumns = matrix_.getNumCols();
@@ -2459,14 +2619,14 @@ void CbcHeuristicPartial::setModel(CbcModel * model)
 void 
 CbcHeuristicPartial::validate() 
 {
-  if (model_&&when()<10) {
+  if (model_&&(when()%100)<10) {
     if (model_->numberIntegers()!=
         model_->numberObjects())
       setWhen(0);
   }
 }
 bool
-CbcHeuristicPartial::shouldHeurRun()
+CbcHeuristicPartial::shouldHeurRun(int /*whereFrom*/)
 {
   return true;
 }

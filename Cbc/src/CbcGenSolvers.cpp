@@ -74,7 +74,7 @@
 
 namespace {
 
-  char svnid[] = "$Id$" ;
+  char svnid[] = "$Id: CbcGenSolvers.cpp 1173 2009-06-04 09:44:10Z forrest $" ;
 
 }
 

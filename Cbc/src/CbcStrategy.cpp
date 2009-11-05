@@ -1,3 +1,4 @@
+/* $Id$ */
 // Copyright (C) 2005, International Business Machines
 // Corporation and others.  All Rights Reserved.
 #if defined(_MSC_VER)
@@ -67,7 +68,8 @@ CbcStrategy::fullNodeInfo(CbcModel * model,int numberRowsAtContinuous) const
 }
 // Return a new Partial node information pointer (descendant of CbcPartialNodeInfo)
 CbcNodeInfo * 
-CbcStrategy::partialNodeInfo(CbcModel * model, CbcNodeInfo * parent, CbcNode * owner,
+CbcStrategy::partialNodeInfo(CbcModel * /*model*/, 
+			     CbcNodeInfo * parent, CbcNode * owner,
                              int numberChangedBounds,const int * variables,
                              const double * boundChanges,
                              const CoinWarmStartDiff *basisDiff) const
@@ -82,7 +84,8 @@ CbcStrategy::partialNodeInfo(CbcModel * model, CbcNodeInfo * parent, CbcNode * o
    2 treat as infeasible
 */
 int
-CbcStrategy::status(CbcModel * model, CbcNodeInfo * parent,int whereFrom)
+CbcStrategy::status(CbcModel * /*model*/, CbcNodeInfo * /*parent*/,
+		    int /*whereFrom*/)
 {
   return -1;
 }
@@ -257,10 +260,8 @@ CbcStrategyDefault::setupCutGenerators(CbcModel & model)
   }
   int currentPasses = model.getMaximumCutPassesAtRoot();
   if (currentPasses>=0) {
-    if (model.getNumCols()<500)
-      model.setMaximumCutPassesAtRoot(-CoinMax(100,currentPasses)); // always do 100 if possible
-    else if (model.getNumCols()<5000)
-      model.setMaximumCutPassesAtRoot(CoinMax(100,currentPasses)); // use minimum drop
+    if (model.getNumCols()<5000)
+      model.setMaximumCutPassesAtRoot(CoinMax(50,currentPasses)); // use minimum drop
     else
       model.setMaximumCutPassesAtRoot(CoinMax(20,currentPasses));
   } else {
@@ -843,7 +844,7 @@ CbcStrategyDefaultSubTree::setupCutGenerators(CbcModel & model)
     generator->setTiming(true);
   }
 #endif
-  if (model.getNumCols()<500)
+  if (model.getNumCols()<-500)
     model.setMaximumCutPassesAtRoot(-100); // always do 100 if possible
   else if (model.getNumCols()<5000)
     model.setMaximumCutPassesAtRoot(100); // use minimum drop

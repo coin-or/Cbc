@@ -1,3 +1,4 @@
+/* $Id$ */
 // Copyright (C) 2002, International Business Machines
 // Corporation and others.  All Rights Reserved.
 #ifndef CbcBranchBase_H
@@ -43,7 +44,7 @@ enum CbcRangeCompare {
   CbcBranchingObjects.
 
   To create a new type of object you need to provide three methods:
-  #infeasibility(), #feasibleRegion(), and #createBranch(), described below.
+  #infeasibility(), #feasibleRegion(), and #createCbcBranch(), described below.
 
   This base class is primarily virtual to allow for any form of structure.
   Any form of discontinuity is allowed.
@@ -106,10 +107,16 @@ public:
       The object may also compute an estimate of cost of going "up" or "down".
       This will probably be based on pseudo-cost ideas
   */
-  virtual double infeasibility(int &preferredWay) const = 0;
-  /// Dummy one for compatibility
+#ifdef CBC_NEW_STYLE_BRANCH
   virtual double infeasibility(const OsiBranchingInformation * info,
-			       int &preferredWay) const;
+			       int &preferredWay) const=0;
+#else
+  virtual double infeasibility(const OsiBranchingInformation * /*info*/,
+			       int &preferredWay) const
+  {return infeasibility(preferredWay);}
+  virtual double infeasibility(int &/*preferredWay*/) const
+  {throw CoinError("Need code","infeasibility","CbcBranchBase");}
+#endif
 
   /** For the variable(s) referenced by the object,
       look at the current solution and set bounds to match the solution.
@@ -118,31 +125,6 @@ public:
   /// Dummy one for compatibility
   virtual double feasibleRegion(OsiSolverInterface * solver, const OsiBranchingInformation * info) const;
 
-  /** Create a branching object and indicate which way to branch first.
-
-      The branching object has to know how to create branches (fix
-      variables, etc.)
-  */
-  virtual CbcBranchingObject * createBranch(int way) = 0;
-  
-  /** Infeasibility of the object
-      
-    This is some measure of the infeasibility of the object. 0.0 
-    indicates that the object is satisfied.
-  
-    The preferred branching direction is returned in way,
-  
-    This is used to prepare for strong branching but should also think of
-    case when no strong branching
-  
-    The object may also compute an estimate of cost of going "up" or "down".
-    This will probably be based on pseudo-cost ideas
-
-    This should also set mutable infeasibility_ and whichWay_
-    This is for instant re-use for speed
-  */
-  virtual double infeasibility(const OsiSolverInterface * solver,int &preferredWay) const;
-  
   /** For the variable(s) referenced by the object,
       look at the current solution and set bounds to match the solution.
       Returns measure of how much it had to move solution to make feasible
@@ -154,13 +136,21 @@ public:
       The branching object has to know how to create branches (fix
       variables, etc.)
   */
-  virtual OsiBranchingObject * createBranch(OsiSolverInterface * solver, int way) const;
-  /** Create a branching object and indicate which way to branch first.
+#ifdef CBC_NEW_STYLE_BRANCH
+  virtual CbcBranchingObject * createCbcBranch(OsiSolverInterface * solver,const OsiBranchingInformation * info, int way) =0;
+#else
+  virtual CbcBranchingObject * createCbcBranch(OsiSolverInterface * solver,const OsiBranchingInformation * info, int way) 
+  { return createBranch(solver,info,way);}
+  virtual CbcBranchingObject * createBranch(OsiSolverInterface * /*solver*/,
+					    const OsiBranchingInformation * /*info*/, int /*way*/)
+  {throw CoinError("Need code","createBranch","CbcBranchBase");} 
+#endif
+  /** Create an Osibranching object and indicate which way to branch first.
       
       The branching object has to know how to create branches (fix
       variables, etc.)
   */
-  virtual OsiBranchingObject * createBranch(OsiSolverInterface * solver,const OsiBranchingInformation * info, int way) const;
+  virtual OsiBranchingObject * createOsiBranch(OsiSolverInterface * solver,const OsiBranchingInformation * info, int way) const;
   /** Create an OsiSolverBranch object
 
       This returns NULL if branch not represented by bound changes
@@ -193,7 +183,7 @@ public:
   
     Bounds may be tightened, so it may be good to be able to set this info in object.
    */
-  virtual void resetBounds(const OsiSolverInterface * solver) {}
+  virtual void resetBounds(const OsiSolverInterface * ) {}
   
   /** Returns floor and ceiling i.e. closest valid points
   */
@@ -208,11 +198,22 @@ public:
 							const CbcBranchingObject * branchingObject);
 
   /// Update object by CbcObjectUpdateData
-  virtual void updateInformation(const CbcObjectUpdateData & data) {}
+  virtual void updateInformation(const CbcObjectUpdateData & ) {}
 
   /// Identifier (normally column number in matrix)
   inline int id() const
   { return id_;}
+  
+  /** Set identifier (normally column number in matrix)
+      but 1000000000 to 1100000000 means optional branching object
+      i.e. code would work without it */
+  inline void setId(int value)
+  { id_ = value;}
+  
+  /** Return true if optional branching object
+      i.e. code would work without it */
+  inline bool optionalObject() const
+  { return (id_ >= 1000000000 && id_ < 1100000000);}
   
   /// Get position in object_ list
   inline int position() const
@@ -237,7 +238,7 @@ public:
   inline void setPreferredWay(int value)
   { preferredWay_=value;}
   /// Redoes data when sequence numbers change
-  virtual void redoSequenceEtc(CbcModel * model, int numberColumns, const int * originalColumns) {}
+  virtual void redoSequenceEtc(CbcModel * , int , const int * ) {}
   
 protected:
   /// data
@@ -297,7 +298,7 @@ public:
       strong branching.  If so they ahve to fill in CbcStrongInfo.
       The object mention in incoming CbcStrongInfo must match.
       Returns nonzero if skip is wanted */
-  virtual int fillStrongInfo( CbcStrongInfo & info) {return 0;}
+  virtual int fillStrongInfo( CbcStrongInfo & ) {return 0;}
   /// Reset number of branches left to original
   inline void resetNumberBranchesLeft()
   { branchIndex_=0;}
@@ -318,13 +319,13 @@ public:
 	     strong branching is also passed.
 	     Returns change in guessed objective on next branch
   */
-  virtual double branch(OsiSolverInterface * solver)
+  virtual double branch(OsiSolverInterface * )
   { return branch();}
   /** Update bounds in solver as in 'branch' and update given bounds.
       branchState is -1 for 'down' +1 for 'up' */
-  virtual void fix(OsiSolverInterface * solver,
-		   double * lower, double * upper,
-		   int branchState) const {}
+  virtual void fix(OsiSolverInterface * ,
+		   double * , double * ,
+		   int ) const {}
 
   /** Reset every information so that the branching object appears to point to
       the previous child. This method does not need to modify anything in any
@@ -499,16 +500,16 @@ public:
 
   /** Saves a clone of current branching object.  Can be used to update
       information on object causing branch - after branch */
-  virtual void saveBranchingObject(OsiBranchingObject * object) {}
+  virtual void saveBranchingObject(OsiBranchingObject * ) {}
   /** Pass in information on branch just done.
       assumes object can get information from solver */
-  virtual void updateInformation(OsiSolverInterface * solver, 
-                                 const CbcNode * node) {}
+  virtual void updateInformation(OsiSolverInterface * , 
+                                 const CbcNode * ) {}
   /** Sets or gets best criterion so far */
-  virtual void setBestCriterion(double value) {}
+  virtual void setBestCriterion(double ) {}
   virtual double getBestCriterion() const {return 0.0;}
   /// Create C++ lines to get to current state
-  virtual void generateCpp( FILE * fp) {}
+  virtual void generateCpp( FILE * ) {}
   /// Model
   inline CbcModel * cbcModel() const
   { return model_;}

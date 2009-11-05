@@ -1,3 +1,4 @@
+/* $Id$ */
 // Copyright (C) 2003, International Business Machines
 // Corporation and others.  All Rights Reserved.
 #ifndef CbcCutGenerator_H
@@ -54,8 +55,9 @@ public:
     The generated cuts are inserted into and returned in the collection of cuts
     \p cs.
 
-    If \p fullScan is >0, the generator is obliged to call the CGL
+    If \p fullScan is !=0, the generator is obliged to call the CGL
     \c generateCuts routine.  Otherwise, it is free to make a local decision.
+    Negative fullScan says things like at integer solution
     The current implementation uses \c whenCutGenerator_ to decide.
 
     The routine returns true if reoptimisation is needed (because the state of
@@ -103,6 +105,8 @@ public:
   inline const char * cutGeneratorName() const
   { return generatorName_;}
 
+  /// Create C++ lines to show how to tune
+  void generateTuning( FILE * fp);
   /** Set the cut generation interval
 
     Set the number of nodes evaluated between calls to the Cgl object's
@@ -154,32 +158,32 @@ public:
 
   /// Get whether the cut generator should be called in the normal place
   inline bool normal() const
-  { return normal_;}
+  { return (switches_&1)!=0;}
   /// Set whether the cut generator should be called in the normal place
   inline void setNormal(bool value) 
-  { normal_=value;}
+  { switches_&=~1;switches_ |= value ? 1 : 0;}
   /// Get whether the cut generator should be called when a solution is found
   inline bool atSolution() const
-  { return atSolution_;}
+  { return (switches_&2)!=0;}
   /// Set whether the cut generator should be called when a solution is found
   inline void setAtSolution(bool value) 
-  { atSolution_=value;}
+  { switches_&=~2;switches_ |= value ? 2 : 0;}
   /** Get whether the cut generator should be called when the subproblem is
       found to be infeasible.
   */
   inline bool whenInfeasible() const
-  { return whenInfeasible_;}
+  { return (switches_&4)!=0;}
   /** Set whether the cut generator should be called when the subproblem is
       found to be infeasible.
   */
   inline void setWhenInfeasible(bool value) 
-  { whenInfeasible_=value;}
+  { switches_&=~4;switches_ |= value ? 4 : 0;}
   /// Get whether the cut generator is being timed
   inline bool timing() const
-  { return timing_;}
+  { return (switches_&64)!=0;}
   /// Set whether the cut generator is being timed
   inline void setTiming(bool value) 
-  { timing_=value; timeInCutGenerator_=0.0;}
+  { switches_&=~64;switches_ |= value ? 64 : 0; timeInCutGenerator_=0.0;}
   /// Return time taken in cut generator
   inline double timeInCutGenerator() const
   { return timeInCutGenerator_;}
@@ -202,6 +206,13 @@ public:
   { numberCuts_ = value;}
   inline void incrementNumberCutsInTotal(int value=1)
   { numberCuts_ += value;}
+  /// Total number of elements added
+  inline int numberElementsInTotal() const
+  { return numberElements_;}
+  inline void setNumberElementsInTotal(int value)
+  { numberElements_ = value;}
+  inline void incrementNumberElementsInTotal(int value=1)
+  { numberElements_ += value;}
   /// Total number of column cuts
   inline int numberColumnCuts() const
   { return numberColumnCuts_;}
@@ -222,19 +233,34 @@ public:
   { return switchOffIfLessThan_;}
   /// Say if optimal basis needed
   inline bool needsOptimalBasis() const
-  { return generator_->needsOptimalBasis();}
+  { return (switches_&128)!=0;}
+  /// Set if optimal basis needed
+  inline void setNeedsOptimalBasis(bool yesNo)
+  { switches_&=~128;switches_ |= yesNo ? 128 : 0;}
   /// Whether generator MUST be called again if any cuts (i.e. ignore break from loop)
   inline bool mustCallAgain() const
-  { return mustCallAgain_;}
+  { return (switches_&8)!=0;}
   /// Set whether generator MUST be called again if any cuts (i.e. ignore break from loop)
   inline void setMustCallAgain(bool yesNo)
-  { mustCallAgain_=yesNo;}
+  { switches_&=~8;switches_ |= yesNo ? 8 : 0;}
   /// Whether generator switched off for moment
   inline bool switchedOff() const
-  { return switchedOff_;}
+  { return (switches_&16)!=0;}
   /// Set whether generator switched off for moment
   inline void setSwitchedOff(bool yesNo)
-  { switchedOff_=yesNo;}
+  { switches_&=~16;switches_ |= yesNo ? 16 : 0;}
+  /// Whether last round of cuts did little
+  inline bool ineffectualCuts() const
+  { return (switches_&512)!=0;}
+  /// Set whether last round of cuts did little
+  inline void setIneffectualCuts(bool yesNo)
+  { switches_&=~512;switches_ |= yesNo ? 512 : 0;}
+  /// Whether to use if any cuts generated
+  inline bool whetherToUse() const
+  { return (switches_&1024)!=0;}
+  /// Set whether to use if any cuts generated
+  inline void setWhetherToUse(bool yesNo)
+  { switches_&=~1024;switches_ |= yesNo ? 1024 : 0;}
   /// Number of cuts generated at root
   inline int numberCutsAtRoot() const
   { return numberCutsAtRoot_;}
@@ -245,17 +271,42 @@ public:
   { return numberActiveCutsAtRoot_;}
   inline void setNumberActiveCutsAtRoot(int value)
   { numberActiveCutsAtRoot_ = value;}
+  /// Number of short cuts at root
+  inline int numberShortCutsAtRoot() const
+  { return numberShortCutsAtRoot_;}
   /// Set model
   inline void setModel(CbcModel * model)
   { model_ = model;}
   //@}
   
 private:
+  /**@name Private gets and sets */
+  //@{
+  /// Whether global cuts at root
+  inline bool globalCutsAtRoot() const
+  { return (switches_&32)!=0;}
+  /// Set whether global cuts at root
+  inline void setGlobalCutsAtRoot(bool yesNo)
+  { switches_&=~32;switches_ |= yesNo ? 32 : 0;}
+  /// Whether global cuts
+  inline bool globalCuts() const
+  { return (switches_&256)!=0;}
+  /// Set whether global cuts
+  inline void setGlobalCuts(bool yesNo)
+  { switches_&=~256;switches_ |= yesNo ? 256 : 0;}
+  //@}
+  /// Saved cuts
+  OsiCuts savedCuts_;
+  /// Time in cut generator
+  double timeInCutGenerator_;
   /// The client model
-  CbcModel *model_;
+  CbcModel *model_; 
 
   // The CglCutGenerator object
   CglCutGenerator * generator_;
+
+  /// Name of generator
+  char * generatorName_;
 
   /** Number of nodes between calls to the CglCutGenerator::generateCuts
      routine.
@@ -280,33 +331,14 @@ private:
   */
   int depthCutGeneratorInSub_;
 
-  /// Name of generator
-  char * generatorName_;
-
-  /// Whether to call the generator in the normal place
-  bool normal_;
-
-  /// Whether to call the generator when a new solution is found
-  bool atSolution_;
-
-  /// Whether to call generator when a subproblem is found to be infeasible
-  bool whenInfeasible_;
-  /// Whether generator MUST be called again if any cuts (i.e. ignore break from loop)
-  bool mustCallAgain_;
-  /// Temporary switch off marker
-  bool switchedOff_;
-  /// Create global cuts (at root)
-  bool globalCutsAtRoot_;
-  /// Whether call generator being timed
-  bool timing_;
-  /// Time in cut generator
-  double timeInCutGenerator_;
   /// Level of cut inaccuracy (0 means exact e.g. cliques)
   int inaccuracy_;
   /// Number times cut generator entered
   int numberTimes_;
   /// Total number of cuts added
   int numberCuts_;
+  /// Total number of elements added
+  int numberElements_;
   /// Total number of column cuts added
   int numberColumnCuts_;
   /// Total number of cuts active after (at end of n cut passes at each node)
@@ -315,6 +347,10 @@ private:
   int numberCutsAtRoot_;
   /// Number of cuts active at root
   int numberActiveCutsAtRoot_;
+  /// Number of short cuts at root
+  int numberShortCutsAtRoot_;
+  /// Switches - see gets and sets
+  int switches_;
 };
 /** Abstract cut modifier base class
 
@@ -349,7 +385,7 @@ public:
   */
   virtual int modify(const OsiSolverInterface * solver, OsiRowCut & cut) =0;
   /// Create C++ lines to get to current state
-  virtual void generateCpp( FILE * fp) {}
+  virtual void generateCpp( FILE * ) {}
 protected:
   
 };
@@ -393,7 +429,7 @@ public:
   */
   virtual int modify(const OsiSolverInterface * solver, OsiRowCut & cut) ;
   /// Create C++ lines to get to current state
-  virtual void generateCpp( FILE * fp) {}
+  virtual void generateCpp( FILE * ) {}
 protected:
   /// data
   /// First odd variable

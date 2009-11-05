@@ -1,3 +1,4 @@
+/* $Id$ */
 // Copyright (C) 2002, International Business Machines
 // Corporation and others.  All Rights Reserved.
 #ifndef CbcBranchActual_H
@@ -36,17 +37,16 @@ public:
   // Destructor 
   virtual ~CbcClique ();
   
-  using CbcObject::infeasibility ;
   /// Infeasibility - large is 0.5
-  virtual double infeasibility(int & preferredWay) const;
+  virtual double infeasibility(const OsiBranchingInformation * info,
+			       int &preferredWay) const;
 
   using CbcObject::feasibleRegion ;
   /// This looks at solution and sets bounds to contain solution
   virtual void feasibleRegion();
 
-  using CbcObject::createBranch ;
   /// Creates a branching object
-  virtual CbcBranchingObject * createBranch(int way) ;
+  virtual CbcBranchingObject * createCbcBranch(OsiSolverInterface * solver,const OsiBranchingInformation * info, int way) ;
   /// Number of members
   inline int numberMembers() const
   {return numberMembers_;}
@@ -125,20 +125,16 @@ public:
   // Destructor 
   virtual ~CbcSOS ();
   
-  using CbcObject::infeasibility ;
   /// Infeasibility - large is 0.5
-  virtual double infeasibility(int & preferredWay) const;
-  /// Infeasibility - large is 0.5
-  virtual double infeasibility(const OsiBranchingInformation * info, 
-			       int & preferredWay) const;
+  virtual double infeasibility(const OsiBranchingInformation * info,
+			       int &preferredWay) const;
 
   using CbcObject::feasibleRegion ;
   /// This looks at solution and sets bounds to contain solution
   virtual void feasibleRegion();
 
-  using CbcObject::createBranch ;
   /// Creates a branching object
-  virtual CbcBranchingObject * createBranch(int way) ;
+  virtual CbcBranchingObject * createCbcBranch(OsiSolverInterface * solver,const OsiBranchingInformation * info, int way) ;
 
 
 
@@ -258,10 +254,9 @@ public:
   virtual ~CbcSimpleInteger ();
   /// Construct an OsiSimpleInteger object
   OsiSimpleInteger * osiObject() const;
-  using CbcObject::infeasibility ;
   /// Infeasibility - large is 0.5
-  virtual double infeasibility(const OsiSolverInterface * solver, 
-			       const OsiBranchingInformation * info, int & preferredWay) const;
+  virtual double infeasibility(const OsiBranchingInformation * info,
+			       int &preferredWay) const;
 
   using CbcObject::feasibleRegion ;
   /** Set bounds to fix the variable at the current (integer) value.
@@ -271,14 +266,12 @@ public:
   */
   virtual double feasibleRegion(OsiSolverInterface * solver, const OsiBranchingInformation * info) const;
 
-  using CbcObject::createBranch ;
   /** Create a branching object and indicate which way to branch first.
       
       The branching object has to know how to create branches (fix
       variables, etc.)
   */
-  virtual CbcBranchingObject * createBranch(OsiSolverInterface * solver,
-					    const OsiBranchingInformation * info, int way) ;
+  virtual CbcBranchingObject * createCbcBranch(OsiSolverInterface * solver,const OsiBranchingInformation * info, int way) ;
   /// Fills in a created branching object
   void fillCreateBranch(CbcIntegerBranchingObject * branching, const OsiBranchingInformation * info, int way) ;
 
@@ -288,8 +281,6 @@ public:
       This returns NULL if branch not represented by bound changes
   */
   virtual OsiSolverBranch * solverBranch(OsiSolverInterface * solver, const OsiBranchingInformation * info) const;
-  /// Infeasibility - large is 0.5
-  virtual double infeasibility(int & preferredWay) const;
 
   /** Set bounds to fix the variable at the current (integer) value.
 
@@ -299,11 +290,6 @@ public:
   */
   virtual void feasibleRegion();
 
-  /** Creates a branching object
-
-    The preferred direction is set by \p way, -1 for down, +1 for up.
-  */
-  virtual CbcBranchingObject * createBranch(int way) ;
   /** Column number if single column object -1 otherwise,
       so returns >= 0
       Used by heuristics
@@ -388,17 +374,16 @@ public:
   /// Applies a consequence for a single member
   void applyConsequence(int iSequence, int state) const;
   
-  using CbcObject::infeasibility ;
   /// Infeasibility - large is 0.5 (and 0.5 will give this)
-  virtual double infeasibility(int & preferredWay) const;
+  virtual double infeasibility(const OsiBranchingInformation * info,
+			       int &preferredWay) const;
 
   using CbcObject::feasibleRegion ;
   /// This looks at solution and sets bounds to contain solution
   virtual void feasibleRegion();
 
-  using CbcObject::createBranch ;
   /// Creates a branching object
-  virtual CbcBranchingObject * createBranch(int way) ;
+  virtual CbcBranchingObject * createCbcBranch(OsiSolverInterface * solver,const OsiBranchingInformation * info, int way) ;
 
   /// Number of members
   inline int numberMembers() const
@@ -592,13 +577,12 @@ public:
   // Destructor 
   virtual ~CbcSimpleIntegerPseudoCost ();
   
-  using CbcObject::infeasibility ;
   /// Infeasibility - large is 0.5
-  virtual double infeasibility(int & preferredWay) const;
+  virtual double infeasibility(const OsiBranchingInformation * info,
+			       int &preferredWay) const;
 
-  using CbcObject::createBranch ;
   /// Creates a branching object
-  virtual CbcBranchingObject * createBranch(int way) ;
+  virtual CbcBranchingObject * createCbcBranch(OsiSolverInterface * solver,const OsiBranchingInformation * info, int way) ;
 
   /// Down pseudo cost
   inline double downPseudoCost() const
@@ -1196,17 +1180,16 @@ public:
   // Destructor 
   ~CbcFollowOn ();
   
-  using CbcObject::infeasibility ;
   /// Infeasibility - large is 0.5
-  virtual double infeasibility(int & preferredWay) const;
+  virtual double infeasibility(const OsiBranchingInformation * info,
+			       int &preferredWay) const;
 
   using CbcObject::feasibleRegion ;
   /// This looks at solution and sets bounds to contain solution
   virtual void feasibleRegion();
 
-  using CbcObject::createBranch ;
   /// Creates a branching object
-  virtual CbcBranchingObject * createBranch(int way) ;
+  virtual CbcBranchingObject * createCbcBranch(OsiSolverInterface * solver,const OsiBranchingInformation * info, int way) ;
   /// As some computation is needed in more than one place - returns row
   virtual int gutsOfFollowOn(int & otherRow, int & preferredWay) const;
 
@@ -1448,17 +1431,16 @@ public:
   // Destructor 
   ~CbcGeneral ();
   
-  using CbcObject::infeasibility ;
   /// Infeasibility - large is 0.5
-  virtual double infeasibility(int & preferredWay) const=0;
+  virtual double infeasibility(const OsiBranchingInformation * info,
+			       int &preferredWay) const;
 
   using CbcObject::feasibleRegion ;
   /// This looks at solution and sets bounds to contain solution
   virtual void feasibleRegion()=0;
 
-  using CbcObject::createBranch ;
   /// Creates a branching object
-  virtual CbcBranchingObject * createBranch(int way)=0 ;
+  virtual CbcBranchingObject * createCbcBranch(OsiSolverInterface * solver,const OsiBranchingInformation * info, int way) ;
 
   /// Redoes data when sequence numbers change
   virtual void redoSequenceEtc(CbcModel * model, int numberColumns, const int * originalColumns)=0;
@@ -1501,17 +1483,16 @@ public:
   // Destructor 
   ~CbcGeneralDepth ();
   
-  using CbcObject::infeasibility ;
   /// Infeasibility - large is 0.5
-  virtual double infeasibility(int & preferredWay) const;
+  virtual double infeasibility(const OsiBranchingInformation * info,
+			       int &preferredWay) const;
 
   using CbcObject::feasibleRegion ;
   /// This looks at solution and sets bounds to contain solution
   virtual void feasibleRegion();
 
-  using CbcObject::createBranch ;
   /// Creates a branching object
-  virtual CbcBranchingObject * createBranch(int way) ;
+  virtual CbcBranchingObject * createCbcBranch(OsiSolverInterface * solver,const OsiBranchingInformation * info, int way) ;
   /// Return maximum number of nodes
   inline int maximumNodes() const
   { return maximumNodes_;}

@@ -103,7 +103,7 @@ Cbc_MessageHandler::Cbc_MessageHandler (const Cbc_MessageHandler & rhs)
 }
 
 Cbc_MessageHandler::Cbc_MessageHandler (const CoinMessageHandler & rhs) 
-  : CoinMessageHandler(),
+  : CoinMessageHandler(rhs),
     model_(NULL),
     callback_(NULL)
 {  
@@ -111,7 +111,7 @@ Cbc_MessageHandler::Cbc_MessageHandler (const CoinMessageHandler & rhs)
 
 // Constructor with pointer to model
 Cbc_MessageHandler::Cbc_MessageHandler(Cbc_Model * model,
-               FILE * userPointer)
+				       FILE * /*userPointer*/)
   : CoinMessageHandler(),
     model_(model),
     callback_(NULL)
@@ -393,7 +393,7 @@ Cbc_copyInIntegerInformation(Cbc_Model * model, const char * information)
 }
 /* Drop integer informations */
 COINLIBAPI void COINLINKAGE 
-Cbc_deleteIntegerInformation(Cbc_Model * model)
+Cbc_deleteIntegerInformation(Cbc_Model * /*model*/)
 {
   const char prefix[] = "Cbc_C_Interface::Cbc_deleteIntegerInformation(): ";
 //  const int  VERBOSE = 1;
@@ -408,7 +408,8 @@ Cbc_deleteIntegerInformation(Cbc_Model * model)
 }
 /* Resizes rim part of model  */
 COINLIBAPI void COINLINKAGE 
-Cbc_resize (Cbc_Model * model, int newNumberRows, int newNumberColumns)
+Cbc_resize (Cbc_Model * /*model*/, int /*newNumberRows*/, 
+	    int /*newNumberColumns*/)
 {
   const char prefix[] = "Cbc_C_Interface::Cbc_resize(): ";
 //  const int  VERBOSE = 1;
@@ -435,10 +436,11 @@ Cbc_deleteRows(Cbc_Model * model, int number, const int * which)
 }
 /* Add rows */
 COINLIBAPI void COINLINKAGE 
-Cbc_addRows(Cbc_Model * model, const int number, const double * rowLower, 
-         const double * rowUpper,
-         const int * rowStarts, const int * columns,
-         const double * elements)
+Cbc_addRows(Cbc_Model * /*model*/, const int /*number*/, 
+	    const double * /*rowLower*/, 
+	    const double * /*rowUpper*/,
+	    const int * /*rowStarts*/, const int * /*columns*/,
+	    const double * /*elements*/)
 {
   const char prefix[] = "Cbc_C_Interface::Cbc_addRows(): ";
 //  const int  VERBOSE = 1;
@@ -466,11 +468,12 @@ Cbc_deleteColumns(Cbc_Model * model, int number, const int * which)
 }
 /* Add columns */
 COINLIBAPI void COINLINKAGE 
-Cbc_addColumns(Cbc_Model * model, int number, const double * columnLower, 
-      const double * columnUpper,
-      const double * objective,
-      const int * columnStarts, const int * rows,
-      const double * elements)
+Cbc_addColumns(Cbc_Model * /*model*/, int /*number*/, 
+	       const double * /*columnLower*/, 
+	       const double * /*columnUpper*/,
+	       const double * /*objective*/,
+	       const int * /*columnStarts*/, const int * /*rows*/,
+	       const double * /*elements*/)
 {
   const char prefix[] = "Cbc_C_Interface::Cbc_addColumns(): ";
 //  const int  VERBOSE = 1;
@@ -485,7 +488,7 @@ Cbc_addColumns(Cbc_Model * model, int number, const double * columnLower,
 }
 /* Drops names - makes lengthnames 0 and names empty */
 COINLIBAPI void COINLINKAGE 
-Cbc_dropNames(Cbc_Model * model)
+Cbc_dropNames(Cbc_Model * /*model*/)
 {
   const char prefix[] = "Cbc_C_Interface::Cbc_dropNames(): ";
 //  const int  VERBOSE = 1;
@@ -499,8 +502,8 @@ Cbc_dropNames(Cbc_Model * model)
 }
 /* Copies in names */
 COINLIBAPI void COINLINKAGE 
-Cbc_copyNames(Cbc_Model * model, const char * const * rowNamesIn,
-        const char * const * columnNamesIn)
+Cbc_copyNames(Cbc_Model * /*model*/, const char * const * /*rowNamesIn*/,
+	      const char * const * /*columnNamesIn*/)
 {
   const char prefix[] = "Cbc_C_Interface::Cbc_copyNames(): ";
 //  const int  VERBOSE = 1;
@@ -659,7 +662,7 @@ Cbc_setDualObjectiveLimit(Cbc_Model * model, double value)
 }
 /* Objective offset */
 COINLIBAPI double COINLINKAGE 
-Cbc_objectiveOffset(Cbc_Model * model)
+Cbc_objectiveOffset(Cbc_Model * /*model*/)
 {
   const char prefix[] = "Cbc_C_Interface::Cbc_objectiveOffset(): ";
 //  const int  VERBOSE = 1;
@@ -674,7 +677,7 @@ Cbc_objectiveOffset(Cbc_Model * model)
   return result;
 }
 COINLIBAPI void COINLINKAGE 
-Cbc_setObjectiveOffset(Cbc_Model * model, double value)
+Cbc_setObjectiveOffset(Cbc_Model * /*model*/, double /*value*/)
 {
   const char prefix[] = "Cbc_C_Interface::Cbc_setObjectiveOffset(): ";
 //  const int  VERBOSE = 1;
@@ -704,7 +707,7 @@ Cbc_problemName(Cbc_Model * model, int maxNumberCharacters, char * array)
 }
 /* Sets problem name.  Must have \0 at end.  */
 COINLIBAPI int COINLINKAGE 
-Cbc_setProblemName(Cbc_Model * model, int maxNumberCharacters, char * array)
+Cbc_setProblemName(Cbc_Model * model, int /*maxNumberCharacters*/, char * array)
 {
   const char prefix[] = "Cbc_C_Interface::Cbc_setProblemName(): ";
 //  const int  VERBOSE = 1;
@@ -731,7 +734,7 @@ Cbc_numberIterations(Cbc_Model * model)
   return result;
 }
 COINLIBAPI void COINLINKAGE 
-Cbc_setNumberIterations(Cbc_Model * model, int numberIterations)
+Cbc_setNumberIterations(Cbc_Model * /*model*/, int /*numberIterations*/)
 {
   const char prefix[] = "Cbc_C_Interface::Cbc_setNumberIterations(): ";
 //  const int  VERBOSE = 1;
@@ -746,7 +749,7 @@ Cbc_setNumberIterations(Cbc_Model * model, int numberIterations)
 }
 /* Maximum number of iterations */
 COINLIBAPI int COINLINKAGE
-Cbc_maximumIterations(Cbc_Model * model)
+Cbc_maximumIterations(Cbc_Model * /*model*/)
 {
   const char prefix[] = "Cbc_C_Interface::Cbc_maximumIterations(): ";
 //  const int  VERBOSE = 1;
@@ -761,7 +764,7 @@ Cbc_maximumIterations(Cbc_Model * model)
   return result;
 }
 COINLIBAPI void COINLINKAGE 
-Cbc_setMaximumIterations(Cbc_Model * model, int value)
+Cbc_setMaximumIterations(Cbc_Model * /*model*/, int /*value*/)
 {
   const char prefix[] = "Cbc_C_Interface::Cbc_setMaximumIterations(): ";
 //  const int  VERBOSE = 1;
@@ -850,7 +853,7 @@ Cbc_setMaximumSeconds(Cbc_Model * model, double value)
 }
 /* Returns true if hit maximum iteratio`ns (or time) */
 COINLIBAPI int COINLINKAGE 
-Cbc_hitMaximumIterations(Cbc_Model * model)
+Cbc_hitMaximumIterations(Cbc_Model * /*model*/)
 {
   const char prefix[] = "Cbc_C_Interface::Cbc_hitMaximumIterations(): ";
 //  const int  VERBOSE = 1;
@@ -886,7 +889,7 @@ Cbc_status(Cbc_Model * model)
 }
 /* Set problem status */
 COINLIBAPI void COINLINKAGE 
-Cbc_setProblemStatus(Cbc_Model * model, int problemStatus)
+Cbc_setProblemStatus(Cbc_Model * /*model*/, int /*problemStatus*/)
 {
   const char prefix[] = "Cbc_C_Interface::Cbc_setProblemStatus(): ";
 //  const int  VERBOSE = 1;
@@ -921,7 +924,7 @@ Cbc_secondaryStatus(Cbc_Model * model)
   return result;
 }
 COINLIBAPI void COINLINKAGE 
-Cbc_setSecondaryStatus(Cbc_Model * model, int status)
+Cbc_setSecondaryStatus(Cbc_Model * /*model*/, int /*status*/)
 {
   const char prefix[] = "Cbc_C_Interface::Cbc_setSecondaryStatus(): ";
 //  const int  VERBOSE = 1;
@@ -961,7 +964,7 @@ Cbc_setOptimizationDirection(Cbc_Model * model, double value)
 }
 /* Primal row solution */
 COINLIBAPI double * COINLINKAGE 
-Cbc_primalRowSolution(Cbc_Model * model)
+Cbc_primalRowSolution(Cbc_Model * /*model*/)
 {
   const char prefix[] = "Cbc_C_Interface::Cbc_primalRowSolution(): ";
 //  const int  VERBOSE = 1;
@@ -979,7 +982,7 @@ Cbc_primalRowSolution(Cbc_Model * model)
 }
 /* Primal column solution */
 COINLIBAPI double * COINLINKAGE 
-Cbc_primalColumnSolution(Cbc_Model * model)
+Cbc_primalColumnSolution(Cbc_Model * /*model*/)
 {
   const char prefix[] = "Cbc_C_Interface::Cbc_primalColumnSolution(): ";
 //  const int  VERBOSE = 1;
@@ -996,7 +999,7 @@ Cbc_primalColumnSolution(Cbc_Model * model)
 }
 /* Dual row solution */
 COINLIBAPI double * COINLINKAGE 
-Cbc_dualRowSolution(Cbc_Model * model)
+Cbc_dualRowSolution(Cbc_Model * /*model*/)
 {
   const char prefix[] = "Cbc_C_Interface::Cbc_dualRowSolution(): ";
 //  const int  VERBOSE = 1;
@@ -1013,7 +1016,7 @@ Cbc_dualRowSolution(Cbc_Model * model)
 }
 /* Reduced costs */
 COINLIBAPI double * COINLINKAGE 
-Cbc_dualColumnSolution(Cbc_Model * model)
+Cbc_dualColumnSolution(Cbc_Model * /*model*/)
 {
   const char prefix[] = "Cbc_C_Interface::Cbc_dualColumnSolution(): ";
 //  const int  VERBOSE = 1;
@@ -1030,7 +1033,7 @@ Cbc_dualColumnSolution(Cbc_Model * model)
 }
 /* Row lower */
 COINLIBAPI double * COINLINKAGE 
-Cbc_rowLower(Cbc_Model * model)
+Cbc_rowLower(Cbc_Model * /*model*/)
 {
   const char prefix[] = "Cbc_C_Interface::Cbc_rowLower(): ";
 //  const int  VERBOSE = 1;
@@ -1047,7 +1050,7 @@ Cbc_rowLower(Cbc_Model * model)
 }
 /* Row upper  */
 COINLIBAPI double * COINLINKAGE 
-Cbc_rowUpper(Cbc_Model * model)
+Cbc_rowUpper(Cbc_Model * /*model*/)
 {
   const char prefix[] = "Cbc_C_Interface::Cbc_rowUpper(): ";
 //  const int  VERBOSE = 1;
@@ -1064,7 +1067,7 @@ Cbc_rowUpper(Cbc_Model * model)
 }
 /* Objective Coefficients */
 COINLIBAPI double * COINLINKAGE 
-Cbc_objective(Cbc_Model * model)
+Cbc_objective(Cbc_Model * /*model*/)
 {
   const char prefix[] = "Cbc_C_Interface::Cbc_objective(): ";
 //  const int  VERBOSE = 1;
@@ -1081,7 +1084,7 @@ Cbc_objective(Cbc_Model * model)
 }
 /* Column Lower */
 COINLIBAPI double * COINLINKAGE 
-Cbc_columnLower(Cbc_Model * model)
+Cbc_columnLower(Cbc_Model * /*model*/)
 {
   const char prefix[] = "Cbc_C_Interface::Cbc_columnLower(): ";
 //  const int  VERBOSE = 1;
@@ -1098,7 +1101,7 @@ Cbc_columnLower(Cbc_Model * model)
 }
 /* Column Upper */
 COINLIBAPI double * COINLINKAGE 
-Cbc_columnUpper(Cbc_Model * model)
+Cbc_columnUpper(Cbc_Model * /*model*/)
 {
   const char prefix[] = "Cbc_C_Interface::Cbc_columnUpper(): ";
 //  const int  VERBOSE = 1;
@@ -1208,7 +1211,7 @@ Cbc_objectiveValue(Cbc_Model * model)
 /* Infeasibility/unbounded ray (NULL returned if none/wrong)
    Up to user to use delete [] on these arrays.  */
 COINLIBAPI double * COINLINKAGE 
-Cbc_infeasibilityRay(Cbc_Model * model)
+Cbc_infeasibilityRay(Cbc_Model * /*model*/)
 {
   const char prefix[] = "Cbc_C_Interface::Cbc_infeasibilityRay(): ";
 //  const int  VERBOSE = 1;
@@ -1225,7 +1228,7 @@ Cbc_infeasibilityRay(Cbc_Model * model)
   return result;
 }
 COINLIBAPI double * COINLINKAGE 
-Cbc_unboundedRay(Cbc_Model * model)
+Cbc_unboundedRay(Cbc_Model * /*model*/)
 {
   const char prefix[] = "Cbc_C_Interface::Cbc_unboundedRay(): ";
 //  const int  VERBOSE = 1;
@@ -1243,7 +1246,7 @@ Cbc_unboundedRay(Cbc_Model * model)
 }
 /* See if status array exists (partly for OsiClp) */
 COINLIBAPI int COINLINKAGE 
-Cbc_statusExists(Cbc_Model * model)
+Cbc_statusExists(Cbc_Model * /*model*/)
 {
   const char prefix[] = "Cbc_C_Interface::Cbc_statusExists(): ";
 //  const int  VERBOSE = 1;
@@ -1258,7 +1261,7 @@ Cbc_statusExists(Cbc_Model * model)
 }
 /* Return address of status array (char[numberRows+numberColumns]) */
 COINLIBAPI void  COINLINKAGE 
-Cbc_getBasisStatus(Cbc_Model * model, int * cstat, int * rstat)
+Cbc_getBasisStatus(Cbc_Model * /*model*/, int * /*cstat*/, int * /*rstat*/)
 {
   const char prefix[] = "Cbc_C_Interface::Cbc_getBasisStatus(): ";
 //  const int  VERBOSE = 1;
@@ -1273,7 +1276,7 @@ Cbc_getBasisStatus(Cbc_Model * model, int * cstat, int * rstat)
 }
 /* Copy in status vector */
 COINLIBAPI void COINLINKAGE 
-Cbc_setBasisStatus(Cbc_Model * model,  int * cstat, int * rstat)
+Cbc_setBasisStatus(Cbc_Model * /*model*/,  int * /*cstat*/, int * /*rstat*/)
 {
   const char prefix[] = "Cbc_C_Interface::Cbc_setBasisStatus(): ";
 //  const int  VERBOSE = 1;
@@ -1287,7 +1290,7 @@ Cbc_setBasisStatus(Cbc_Model * model,  int * cstat, int * rstat)
 
 /* User pointer for whatever reason */
 COINLIBAPI void COINLINKAGE 
-Cbc_setUserPointer (Cbc_Model * model, void * pointer)
+Cbc_setUserPointer (Cbc_Model * /*model*/, void * /*pointer*/)
 {
   const char prefix[] = "Cbc_C_Interface::Cbc_setUserPointer(): ";
 //  const int  VERBOSE = 1;
@@ -1301,7 +1304,7 @@ Cbc_setUserPointer (Cbc_Model * model, void * pointer)
   if (VERBOSE>0) printf("%s return\n",prefix);
 }
 COINLIBAPI void * COINLINKAGE 
-Cbc_getUserPointer (Cbc_Model * model)
+Cbc_getUserPointer (Cbc_Model * /*model*/)
 {
   const char prefix[] = "Cbc_C_Interface::Cbc_getUserPointer(): ";
 //  const int  VERBOSE = 1;
@@ -1385,7 +1388,7 @@ Cbc_logLevel(Cbc_Model * model)
 }
 /* length of names (0 means no names0 */
 COINLIBAPI int COINLINKAGE 
-Cbc_lengthNames(Cbc_Model * model)
+Cbc_lengthNames(Cbc_Model * /*model*/)
 {
   const char prefix[] = "Cbc_C_Interface::Cbc_lengthNames(): ";
 //  const int  VERBOSE = 1;
@@ -1401,7 +1404,7 @@ Cbc_lengthNames(Cbc_Model * model)
 }
 /* Fill in array (at least lengthNames+1 long) with a row name */
 COINLIBAPI void COINLINKAGE 
-Cbc_rowName(Cbc_Model * model, int iRow, char * name)
+Cbc_rowName(Cbc_Model * /*model*/, int iRow, char * name)
 {
   const char prefix[] = "Cbc_C_Interface::Cbc_rowName(): ";
 //  const int  VERBOSE = 1;
@@ -1417,7 +1420,7 @@ Cbc_rowName(Cbc_Model * model, int iRow, char * name)
 /* Fill in array (at least lengthNames+1 long) with a column name */
 // cannot find names in Cbc, Osi, or OsiClp
 COINLIBAPI void COINLINKAGE 
-Cbc_columnName(Cbc_Model * model, int iColumn, char * name)
+Cbc_columnName(Cbc_Model * /*model*/, int iColumn, char * name)
 {
   const char prefix[] = "Cbc_C_Interface::Cbc_columnName(): ";
 //  const int  VERBOSE = 1;
@@ -1487,7 +1490,7 @@ Cbc_scaling(Cbc_Model * model, int mode)
 }
 /* Gets scalingFlag */
 COINLIBAPI int COINLINKAGE 
-Cbc_scalingFlag(Cbc_Model * model)
+Cbc_scalingFlag(Cbc_Model * /*model*/)
 {
   const char prefix[] = "Cbc_C_Interface::Cbc_scalingFlag(): ";
 //  const int  VERBOSE = 1;
@@ -1516,7 +1519,7 @@ Cbc_scalingFlag(Cbc_Model * model)
    2 Mini iterations
 */
 COINLIBAPI int COINLINKAGE 
-Cbc_crash(Cbc_Model * model, double gap,int pivot)
+Cbc_crash(Cbc_Model * /*model*/, double /*gap*/,int /*pivot*/)
 {
   const char prefix[] = "Cbc_C_Interface::Cbc_crash(): ";
 //  const int  VERBOSE = 1;
@@ -1562,7 +1565,7 @@ Cbc_dualFeasible(Cbc_Model * model)
 }
 /* Dual bound */
 COINLIBAPI double COINLINKAGE 
-Cbc_dualBound(Cbc_Model * model)
+Cbc_dualBound(Cbc_Model * /*model*/)
 {
   const char prefix[] = "Cbc_C_Interface::Cbc_dualBound(): ";
 //  const int  VERBOSE = 1;
@@ -1577,7 +1580,7 @@ Cbc_dualBound(Cbc_Model * model)
   return result;
 }
 COINLIBAPI void COINLINKAGE 
-Cbc_setDualBound(Cbc_Model * model, double value)
+Cbc_setDualBound(Cbc_Model * /*model*/, double /*value*/)
 {
   const char prefix[] = "Cbc_C_Interface::Cbc_setDualBound(): ";
 //  const int  VERBOSE = 1;
@@ -1591,7 +1594,7 @@ Cbc_setDualBound(Cbc_Model * model, double value)
 }
 /* Infeasibility cost */
 COINLIBAPI double COINLINKAGE 
-Cbc_infeasibilityCost(Cbc_Model * model)
+Cbc_infeasibilityCost(Cbc_Model * /*model*/)
 {
   const char prefix[] = "Cbc_C_Interface::Cbc_infeasibilityCost(): ";
 //  const int  VERBOSE = 1;
@@ -1606,7 +1609,7 @@ Cbc_infeasibilityCost(Cbc_Model * model)
   return result;
 }
 COINLIBAPI void COINLINKAGE 
-Cbc_setInfeasibilityCost(Cbc_Model * model, double value)
+Cbc_setInfeasibilityCost(Cbc_Model * /*model*/, double /*value*/)
 {
   const char prefix[] = "Cbc_C_Interface::Cbc_setInfeasibilityCost(): ";
 //  const int  VERBOSE = 1;
@@ -1627,7 +1630,7 @@ Cbc_setInfeasibilityCost(Cbc_Model * model, double value)
    others are for playing
 */
 COINLIBAPI int COINLINKAGE 
-Cbc_perturbation(Cbc_Model * model)
+Cbc_perturbation(Cbc_Model * /*model*/)
 {
   const char prefix[] = "Cbc_C_Interface::Cbc_perturbation(): ";
 //  const int  VERBOSE = 1;
@@ -1642,7 +1645,7 @@ Cbc_perturbation(Cbc_Model * model)
   return result;
 }
 COINLIBAPI void COINLINKAGE 
-Cbc_setPerturbation(Cbc_Model * model, int value)
+Cbc_setPerturbation(Cbc_Model * /*model*/, int /*value*/)
 {
   const char prefix[] = "Cbc_C_Interface::Cbc_setPerturbation(): ";
 //  const int  VERBOSE = 1;
@@ -1656,7 +1659,7 @@ Cbc_setPerturbation(Cbc_Model * model, int value)
 }
 /* Current (or last) algorithm */
 COINLIBAPI int COINLINKAGE 
-Cbc_algorithm(Cbc_Model * model)
+Cbc_algorithm(Cbc_Model * /*model*/)
 {
   const char prefix[] = "Cbc_C_Interface::Cbc_setPerturbation(): ";
 //  const int  VERBOSE = 1;
@@ -1672,7 +1675,7 @@ Cbc_algorithm(Cbc_Model * model)
 }
 /* Set algorithm */
 COINLIBAPI void COINLINKAGE 
-Cbc_setAlgorithm(Cbc_Model * model, int value)
+Cbc_setAlgorithm(Cbc_Model * /*model*/, int /*value*/)
 {
   const char prefix[] = "Cbc_C_Interface::Cbc_setAlgorithm(): ";
 //  const int  VERBOSE = 1;
@@ -1686,7 +1689,7 @@ Cbc_setAlgorithm(Cbc_Model * model, int value)
 }
 /* Sum of dual infeasibilities */
 COINLIBAPI double COINLINKAGE 
-Cbc_sumDualInfeasibilities(Cbc_Model * model)
+Cbc_sumDualInfeasibilities(Cbc_Model * /*model*/)
 {
   const char prefix[] = "Cbc_C_Interface::Cbc_sumDualInfeasibilities(): ";
 //  const int  VERBOSE = 1;
@@ -1702,7 +1705,7 @@ Cbc_sumDualInfeasibilities(Cbc_Model * model)
 }
 /* Number of dual infeasibilities */
 COINLIBAPI int COINLINKAGE 
-Cbc_numberDualInfeasibilities(Cbc_Model * model)
+Cbc_numberDualInfeasibilities(Cbc_Model * /*model*/)
 {
   const char prefix[] = "Cbc_C_Interface::Cbc_numberDualInfeasibilities(): ";
 //  const int  VERBOSE = 1;
@@ -1718,7 +1721,7 @@ Cbc_numberDualInfeasibilities(Cbc_Model * model)
 }
 /* Sum of primal infeasibilities */
 COINLIBAPI double COINLINKAGE 
-Cbc_sumPrimalInfeasibilities(Cbc_Model * model)
+Cbc_sumPrimalInfeasibilities(Cbc_Model * /*model*/)
 {
   const char prefix[] = "Cbc_C_Interface::Cbc_sumPrimalInfeasibilities(): ";
 //  const int  VERBOSE = 1;
@@ -1734,7 +1737,7 @@ Cbc_sumPrimalInfeasibilities(Cbc_Model * model)
 }
 /* Number of primal infeasibilities */
 COINLIBAPI int COINLINKAGE 
-Cbc_numberPrimalInfeasibilities(Cbc_Model * model)
+Cbc_numberPrimalInfeasibilities(Cbc_Model * /*model*/)
 {
   const char prefix[] = "Cbc_C_Interface::Cbc_numberPrimalInfeasibilities(): ";
 //  const int  VERBOSE = 1;
@@ -1754,7 +1757,7 @@ Cbc_numberPrimalInfeasibilities(Cbc_Model * model)
    It does not know about all types of virtual functions.
 */
 COINLIBAPI int COINLINKAGE 
-Cbc_saveModel(Cbc_Model * model, const char * fileName)
+Cbc_saveModel(Cbc_Model * /*model*/, const char * /*fileName*/)
 {
   const char prefix[] = "Cbc_C_Interface::Cbc_saveModel(): ";
 //  const int  VERBOSE = 1;
@@ -1771,7 +1774,7 @@ Cbc_saveModel(Cbc_Model * model, const char * fileName)
 /* Restore model from file, returns 0 if success,
    deletes current model */
 COINLIBAPI int COINLINKAGE 
-Cbc_restoreModel(Cbc_Model * model, const char * fileName)
+Cbc_restoreModel(Cbc_Model * /*model*/, const char * /*fileName*/)
 {
   const char prefix[] = "Cbc_C_Interface::Cbc_restoreModel(): ";
 //  const int  VERBOSE = 1;
@@ -1792,7 +1795,7 @@ Cbc_restoreModel(Cbc_Model * model, const char * fileName)
     Returns objective value (worse than cutoff if not feasible)
 */
 COINLIBAPI void COINLINKAGE 
-Cbc_checkSolution(Cbc_Model * model)
+Cbc_checkSolution(Cbc_Model * /*model*/)
 {
   const char prefix[] = "Cbc_C_Interface::Cbc_checkSolution(): ";
 //  const int  VERBOSE = 1;
@@ -2198,7 +2201,7 @@ Cbc_isInteger(Cbc_Model * model, int i)
 }
 
 COINLIBAPI double COINLINKAGE 
-Cbc_cpuTime(Cbc_Model * model)
+Cbc_cpuTime(Cbc_Model * /*model*/)
 {
   const char prefix[] = "Cbc_C_Interface::Cbc_cpuTime(): ";
 //  const int  VERBOSE = 1;
@@ -2517,25 +2520,25 @@ Cbc_printSolution(Cbc_Model * model)
 }
   /** Dual initial solve */
   COINLIBAPI int COINLINKAGE 
-  Cbc_initialDualSolve(Cbc_Model * model)
+  Cbc_initialDualSolve(Cbc_Model * /*model*/)
   {
     return 0;
   }
   /** Primal initial solve */
   COINLIBAPI int COINLINKAGE 
-  Cbc_initialPrimalSolve(Cbc_Model * model)
+  Cbc_initialPrimalSolve(Cbc_Model * /*model*/)
   {
     return 0;
   }
   /** Dual algorithm - see ClpSimplexDual.hpp for method */
   COINLIBAPI int COINLINKAGE 
-  Cbc_dual(Cbc_Model * model, int ifValuesPass)
+  Cbc_dual(Cbc_Model * /*model*/, int /*ifValuesPass*/)
   {
     return 0;
   }
   /** Primal algorithm - see ClpSimplexPrimal.hpp for method */
   COINLIBAPI int COINLINKAGE 
-  Cbc_primal(Cbc_Model * model, int ifValuesPass)
+  Cbc_primal(Cbc_Model * /*model*/, int /*ifValuesPass*/)
   {
     return 0;
   }

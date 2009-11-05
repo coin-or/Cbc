@@ -1,3 +1,4 @@
+/* $Id$ */
 // Copyright (C) 2005, International Business Machines
 // Corporation and others.  All Rights Reserved.
 #ifndef CbcFeasibilityBase_H
@@ -30,16 +31,16 @@ public:
      -1 pretend infeasible
      1 pretend integer solution
   */
-  virtual int feasible(CbcModel * model, int mode) {return 0;}
+  virtual int feasible(CbcModel * , int ) {return 0;}
 
   virtual ~CbcFeasibilityBase() {}
 
   // Copy constructor 
-  CbcFeasibilityBase ( const CbcFeasibilityBase & rhs)
+  CbcFeasibilityBase ( const CbcFeasibilityBase & )
   {}
    
   // Assignment operator 
-  CbcFeasibilityBase & operator=( const CbcFeasibilityBase& rhs)
+  CbcFeasibilityBase & operator=( const CbcFeasibilityBase& )
   {  
     return *this;
   }

@@ -1,3 +1,4 @@
+/* $Id$ */
 // Copyright (C) 2004, International Business Machines
 // Corporation and others.  All Rights Reserved.
 #ifndef CbcBranchCut_H
@@ -33,9 +34,9 @@ public:
   // Destructor 
   ~CbcBranchCut ();
   
-  using CbcObject::infeasibility ;
   /// Infeasibility 
-  virtual double infeasibility(int & preferredWay) const;
+  virtual double infeasibility(const OsiBranchingInformation * info,
+			       int &preferredWay) const;
 
   using CbcObject::feasibleRegion ;
   /** Set bounds to contain the current solution.
@@ -53,9 +54,8 @@ public:
   */
   virtual bool boundBranch() const ;
 
-  using CbcObject::createBranch ;
   /// Creates a branching object
-  virtual CbcBranchingObject * createBranch(int way) ;
+  virtual CbcBranchingObject * createCbcBranch(OsiSolverInterface * solver,const OsiBranchingInformation * info, int way) ;
 
   /** \brief Given a valid solution (with reduced costs, etc.),
       return a branching object which would give a new feasible
@@ -231,13 +231,18 @@ public:
   */
   int shallWe() const;
 
-  using CbcObject::infeasibility ;
   /// Infeasibility - large is 0.5
-  virtual double infeasibility(int & preferredWay) const;
+  virtual double infeasibility(const OsiBranchingInformation * info,
+			       int &preferredWay) const;
+  /** \brief Return true if object can take part in normal heuristics
+  */
+  virtual bool canDoHeuristics() const 
+  {return true;}
 
-  using CbcObject::createBranch ;
   /// Creates a branching object
-  virtual CbcBranchingObject * createBranch(int way);
+  virtual CbcBranchingObject * createCbcBranch(OsiSolverInterface * solver,const OsiBranchingInformation * info, int way) ;
+  /// Redoes data when sequence numbers change
+  virtual void redoSequenceEtc(CbcModel * model, int numberColumns, const int * originalColumns);
 
 
 protected:
@@ -288,13 +293,12 @@ public:
   // Destructor 
   ~CbcBranchAllDifferent ();
 
-  using CbcObject::infeasibility ;
   /// Infeasibility - large is 0.5
-  virtual double infeasibility(int & preferredWay) const;
+  virtual double infeasibility(const OsiBranchingInformation * info,
+			       int &preferredWay) const;
 
-  using CbcObject::createBranch ;
   /// Creates a branching object
-  virtual CbcBranchingObject * createBranch(int way);
+  virtual CbcBranchingObject * createCbcBranch(OsiSolverInterface * solver,const OsiBranchingInformation * info, int way) ;
 
 
 protected:

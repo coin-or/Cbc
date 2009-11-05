@@ -1,3 +1,4 @@
+/* $Id: CbcHeuristicDivePseudoCost.hpp 1240 2009-10-02 18:41:44Z forrest $ */
 // Copyright (C) 2008, International Business Machines
 // Corporation and others.  All Rights Reserved.
 #ifndef CbcHeuristicDivePseudoCost_H
@@ -42,6 +43,14 @@ public:
 				      const double* newSolution,
 				      int& bestColumn,
 				      int& bestRound);
+  /** Initializes any data which is going to be used repeatedly
+      in selectVariableToBranch */
+  virtual void initializeData() ;
+  /// Fix other variables at bounds
+  virtual int fixOtherVariables(OsiSolverInterface * solver,
+				const double * solution,
+				PseudoReducedCost * candidate,
+				const double * random);
 
 };
 

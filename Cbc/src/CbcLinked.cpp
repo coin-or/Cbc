@@ -1,3 +1,4 @@
+/* $Id: CbcLinked.cpp 1200 2009-07-25 08:44:13Z forrest $ */
 // Copyright (C) 2006, International Business Machines
 // Corporation and others.  All Rights Reserved.
 #include "CbcConfig.h"
@@ -3082,9 +3083,9 @@ OsiSolverLink::analyzeObjects()
 // Clone
 //-------------------------------------------------------------------
 OsiSolverInterface * 
-OsiSolverLink::clone(bool copyData) const
+OsiSolverLink::clone(bool /*copyData*/) const
 {
-  assert (copyData);
+  //assert (copyData);
   OsiSolverLink * newModel = new OsiSolverLink(*this);
   return newModel;
 }
@@ -3095,7 +3096,8 @@ OsiSolverLink::clone(bool copyData) const
 //-------------------------------------------------------------------
 OsiSolverLink::OsiSolverLink (
                   const OsiSolverLink & rhs)
-  : CbcOsiSolver(rhs)
+  : OsiSolverInterface(rhs),
+  CbcOsiSolver(rhs)
 {
   gutsOfDestructor(true);
   gutsOfCopy(rhs);
@@ -3828,10 +3830,10 @@ OsiLinkedBound::addBoundModifier(bool upperBoundAffected, bool useUpperBound, in
     affected_ = temp;
   }
   boundElementAction action;
-  action.affect=upperBoundAffected ? 1 : 0;
-  action.ubUsed=useUpperBound ? 1 : 0;
+  action.affect=static_cast<unsigned char>(upperBoundAffected ? 1 : 0);
+  action.ubUsed=static_cast<unsigned char>(useUpperBound ? 1 : 0);
   action.type=2;
-  action.affected=whichVariable;
+  action.affected=static_cast<short int>(whichVariable);
   action.multiplier=multiplier;
   affected_[numberAffected_++]=action;
   
@@ -3990,8 +3992,8 @@ OsiOldLink::OsiOldLink ()
 }
 
 // Useful constructor (which are indices)
-OsiOldLink::OsiOldLink (const OsiSolverInterface * solver,  int numberMembers,
-	   int numberLinks, int first , const double * weights, int identifier)
+OsiOldLink::OsiOldLink (const OsiSolverInterface * /*solver*/,  int numberMembers,
+			int numberLinks, int first , const double * weights, int /*identifier*/)
   : OsiSOS(),
     numberLinks_(numberLinks)
 {
@@ -4023,8 +4025,9 @@ OsiOldLink::OsiOldLink (const OsiSolverInterface * solver,  int numberMembers,
 }
 
 // Useful constructor (which are indices)
-OsiOldLink::OsiOldLink (const OsiSolverInterface * solver,  int numberMembers,
-	   int numberLinks, int sosType, const int * which , const double * weights, int identifier)
+OsiOldLink::OsiOldLink (const OsiSolverInterface * /*solver*/,  int numberMembers,
+			int numberLinks, int /*sosType*/, const int * which , 
+			const double * weights, int /*identifier*/)
   : OsiSOS(),
     numberLinks_(numberLinks)
 {
@@ -6101,7 +6104,7 @@ OsiBiLinear::resetSequenceEtc(int numberColumns, const int * originalColumns)
 
 // Creates a branching object
 OsiBranchingObject * 
-OsiBiLinear::createBranch(OsiSolverInterface * solver, const OsiBranchingInformation * info, int way) const
+OsiBiLinear::createBranch(OsiSolverInterface * solver, const OsiBranchingInformation * /*info*/, int way) const
 {
   // create object
   OsiBranchingObject * branch;
@@ -6588,7 +6591,7 @@ OsiBiLinear::checkInfeasibility(const OsiBranchingInformation * info) const
     return 0.0;
   int way;
   double saveInfeasibility = infeasibility_;
-  int saveWhichWay = whichWay_;
+  short int saveWhichWay = whichWay_;
   double saveXyBranchValue = xyBranchValue_;
   short saveChosen = chosen_;
   double value = infeasibility(info,way);
@@ -6611,7 +6614,7 @@ OsiBiLinearBranchingObject::OsiBiLinearBranchingObject (OsiSolverInterface * sol
 							double separator,
 							int chosen)
   :OsiTwoWayBranchingObject(solver,set,way,separator),
-   chosen_(chosen)
+   chosen_(static_cast<short int>(chosen))
 {
   assert (chosen_>=0&&chosen_<2);
 }
@@ -6667,7 +6670,7 @@ OsiBiLinearBranchingObject::boundBranch() const
 }
 // Print what would happen  
 void
-OsiBiLinearBranchingObject::print(const OsiSolverInterface * solver)
+OsiBiLinearBranchingObject::print(const OsiSolverInterface * /*solver*/)
 {
   const OsiBiLinear * set =
     dynamic_cast <const OsiBiLinear *>(originalObject_) ;
@@ -7115,7 +7118,7 @@ OsiSimpleFixedInteger::infeasibility(const OsiBranchingInformation * info, int &
   }
   if (preferredWay_>=0&&!satisfied)
     whichWay = preferredWay_;
-  whichWay_=whichWay;
+  whichWay_=static_cast<short int>(whichWay);
   return infeasibility_;
 }
 // Creates a branching object
@@ -7158,7 +7161,7 @@ OsiSimpleFixedInteger::createBranch(OsiSolverInterface * solver, const OsiBranch
 //------------------------------------------------------------------- 
 void 
 CglTemporary::generateCuts(const OsiSolverInterface & si, OsiCuts & cs,
-			     const CglTreeInfo info) const
+			   const CglTreeInfo /*info*/) const
 {
   // Get basic problem information
   const double * solution = si.getColSolution();
@@ -7217,7 +7220,7 @@ CglTemporary::operator=(const CglTemporary& rhs)
   }
   return *this;
 }
-void checkQP(ClpSimplex * model)
+void checkQP(ClpSimplex * /*model*/)
 {
 #if 0
   printf("Checking quadratic model %x\n",model);
@@ -7334,9 +7337,9 @@ OsiSolverLinearizedQuadratic::OsiSolverLinearizedQuadratic ( ClpSimplex * quadra
 // Clone
 //-------------------------------------------------------------------
 OsiSolverInterface * 
-OsiSolverLinearizedQuadratic::clone(bool copyData) const
+OsiSolverLinearizedQuadratic::clone(bool /*copyData*/) const
 {
-  assert (copyData);
+  //assert (copyData);
   return new OsiSolverLinearizedQuadratic(*this);
 }
 
@@ -7346,7 +7349,8 @@ OsiSolverLinearizedQuadratic::clone(bool copyData) const
 //-------------------------------------------------------------------
 OsiSolverLinearizedQuadratic::OsiSolverLinearizedQuadratic (
                   const OsiSolverLinearizedQuadratic & rhs)
-  : OsiClpSolverInterface(rhs)
+  : OsiSolverInterface(rhs)
+  , OsiClpSolverInterface(rhs)
 {
   bestObjectiveValue_=rhs.bestObjectiveValue_;
   if (rhs.bestSolution_) {
@@ -7570,7 +7574,7 @@ CoinModel::expandKnapsack(int knapsackRow, int & numberOutput,double * buildObj,
       bool good=true;
       int nRow=0;
       double obj=objectiveOffset;
-      CoinZeroN(rowActivity,nRow);
+      // nRow is zero? CoinZeroN(rowActivity,nRow);
       for (iColumn=0;iColumn<numJ;iColumn++) {
 	int iValue = stack[iColumn];
 	if (iValue>bound[iColumn]) {
@@ -7704,7 +7708,7 @@ CoinModel::expandKnapsack(int knapsackRow, int & numberOutput,double * buildObj,
 ClpSimplex * 
 approximateSolution(CoinModel & coinModel, 
 		    int numberPasses, double deltaTolerance,
-		    int mode)
+		    int /*mode*/)
 {
 #if 1
   //#ifdef COIN_HAS_ASL
@@ -8224,7 +8228,7 @@ OsiUsesBiLinear::infeasibility(const OsiBranchingInformation * info, int & which
   }
   if (preferredWay_>=0&&!satisfied)
     whichWay = preferredWay_;
-  whichWay_=whichWay;
+  whichWay_=static_cast<short int>(whichWay);
   return infeasibility_;
 }
 // Creates a branching object

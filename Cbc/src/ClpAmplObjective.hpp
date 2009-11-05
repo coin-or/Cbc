@@ -1,3 +1,4 @@
+/* $Id: ClpAmplObjective.hpp 1173 2009-06-04 09:44:10Z forrest $ */
 // Copyright (C) 2007, International Business Machines
 // Corporation and others.  All Rights Reserved.
 #ifndef ClpAmplObjective_H

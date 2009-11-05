@@ -1,3 +1,4 @@
+/* $Id$ */
 // Copyright (C) 2002, International Business Machines
 // Corporation and others.  All Rights Reserved.
 #ifndef CbcCompareBase_H
@@ -28,18 +29,18 @@ public:
 
   // This allows any method to change behavior as it is called
   // after each solution
-  virtual void newSolution(CbcModel * model) {}
+  virtual void newSolution(CbcModel * ) {}
 
   // This Also allows any method to change behavior as it is called
   // after each solution
-  virtual void newSolution(CbcModel * model,
-			   double objectiveAtContinuous,
-			   int numberInfeasibilitiesAtContinuous) {}
+  virtual void newSolution(CbcModel * ,
+			   double ,
+			   int ) {}
 
   // This allows any method to change behavior as it is called
   // after every 1000 nodes.
   // Return true if want tree re-sorted
-  virtual bool every1000Nodes(CbcModel * model,int numberNodes) {return false;}
+  virtual bool every1000Nodes(CbcModel * ,int ) {return false;}
 
   /** Returns true if wants code to do scan with alternate criterion
       NOTE - this is temporarily disabled
@@ -48,7 +49,7 @@ public:
 
   virtual ~CbcCompareBase() {}
   /// Create C++ lines to get to current state
-  virtual void generateCpp( FILE * fp) {}
+  virtual void generateCpp( FILE * ) {}
 
   // Copy constructor 
   CbcCompareBase ( const CbcCompareBase & rhs)
@@ -65,7 +66,7 @@ public:
   { abort(); return NULL;}
 
   /// This is test function
-  virtual bool test (CbcNode * x, CbcNode * y) {return true;}
+  virtual bool test (CbcNode * , CbcNode * ) {return true;}
 
   /// This is alternate test function
   virtual bool alternateTest (CbcNode * x, CbcNode * y) {return test(x,y);}

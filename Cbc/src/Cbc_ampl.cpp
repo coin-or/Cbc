@@ -1,3 +1,4 @@
+/* $Id$ */
 /****************************************************************
 Copyright (C) 1997-2000 Lucent Technologies
 Modifications for Coin -  Copyright (C) 2006, International Business Machines Corporation and others.
@@ -1475,24 +1476,24 @@ CoinModel::gdb( int nonLinear, const char * fileName,const void * info)
 #else
 #include "Cbc_ampl.h"
 int
-readAmpl(ampl_info * info, int argc, char **argv, void ** coinModel)
+readAmpl(ampl_info * , int , char **, void ** )
 {
   return 0;
 }
-void freeArrays1(ampl_info * info)
+void freeArrays1(ampl_info *)
 {
 }
-void freeArrays2(ampl_info * info)
+void freeArrays2(ampl_info *)
 {
 }
-void freeArgs(ampl_info * info)
+void freeArgs(ampl_info * )
 {
 }
 int ampl_obj_prec()
 {
   return 0;
 }
-void writeAmpl(ampl_info * info)
+void writeAmpl(ampl_info * )
 {
 }
 #endif

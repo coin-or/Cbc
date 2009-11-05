@@ -1,3 +1,4 @@
+/* $Id$ */
 // Copyright (C) 2002, International Business Machines
 // Corporation and others.  All Rights Reserved.
 #if defined(_MSC_VER)
@@ -29,7 +30,11 @@ static CbcModel * saveModel=NULL;
 #endif
 // Just for debug (CBC_PRINT defined in CbcBranchLotsize.cpp)
 void 
+#if CBC_PRINT
 CbcLotsize::printLotsize(double value,bool condition,int type) const
+#else
+CbcLotsize::printLotsize(double ,bool ,int ) const
+#endif
 {
 #if CBC_PRINT
   if (columnNumber_>=firstPrint&&columnNumber_<=lastPrint) {
@@ -397,7 +402,7 @@ CbcLotsize::findRange(double value) const
  */
 void 
 CbcLotsize::floorCeiling(double & floorLotsize, double & ceilingLotsize, double value,
-			 double tolerance) const
+			 double /*tolerance*/) const
 {
   bool feasible=findRange(value);
   if (rangeType_==1) {
@@ -415,10 +420,9 @@ CbcLotsize::floorCeiling(double & floorLotsize, double & ceilingLotsize, double 
     ceilingLotsize=bound_[2*range_+2];
   }
 }
-
-// Infeasibility - large is 0.5
 double 
-CbcLotsize::infeasibility(int & preferredWay) const
+CbcLotsize::infeasibility(const OsiBranchingInformation * /*info*/,
+			       int &preferredWay) const
 {
   OsiSolverInterface * solver = model_->solver();
   const double * solution = model_->testSolution();
@@ -519,12 +523,10 @@ CbcLotsize::feasibleRegion()
   assert (fabs(value-nearest)<=(100.0+10.0*fabs(nearest))*integerTolerance);
 #endif
 }
-
-// Creates a branching object
 CbcBranchingObject * 
-CbcLotsize::createBranch(int way) 
+CbcLotsize::createCbcBranch(OsiSolverInterface * solver,const OsiBranchingInformation * /*info*/, int way) 
 {
-  OsiSolverInterface * solver = model_->solver();
+  //OsiSolverInterface * solver = model_->solver();
   const double * solution = model_->testSolution();
   const double * lower = solver->getColLower();
   const double * upper = solver->getColUpper();
@@ -642,7 +644,7 @@ CbcLotsize::notPreferredNewFeasible() const
   copy of the original bounds.
  */
 void 
-CbcLotsize::resetBounds(const OsiSolverInterface * solver)
+CbcLotsize::resetBounds(const OsiSolverInterface * /*solver*/)
 {
 }
 

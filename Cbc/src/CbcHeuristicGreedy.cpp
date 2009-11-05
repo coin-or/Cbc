@@ -1,3 +1,4 @@
+/* $Id$ */
 // Copyright (C) 2005, International Business Machines
 // Corporation and others.  All Rights Reserved.
 #if defined(_MSC_VER)
@@ -32,6 +33,7 @@ CbcHeuristicGreedyCover::CbcHeuristicGreedyCover(CbcModel & model)
   gutsOfConstructor(&model);
   algorithm_=0;
   numberTimes_=100;
+  whereFrom_=1;
 }
 
 // Destructor 
@@ -52,7 +54,9 @@ CbcHeuristicGreedyCover::gutsOfConstructor(CbcModel * model)
   model_=model;
   // Get a copy of original matrix
   assert(model->solver());
-  matrix_ = *model->solver()->getMatrixByCol();
+  if (model->solver()->getNumRows()) {
+    matrix_ = *model->solver()->getMatrixByCol();
+  }
   originalNumberRows_=model->solver()->getNumRows();
 }
 // Create C++ lines to get to current state
@@ -374,8 +378,15 @@ CbcHeuristicGreedyCover::validate()
   if (model_&&when()<10) {
     if (model_->numberIntegers()!=
         model_->numberObjects()&&(model_->numberObjects()||
-				  (model_->specialOptions()&1024)==0))
-      setWhen(0);
+				  (model_->specialOptions()&1024)==0)) {
+      int numberOdd=0;
+      for (int i=0;i<model_->numberObjects();i++) {
+	if (!model_->object(i)->canDoHeuristics()) 
+	  numberOdd++;
+      }
+      if (numberOdd)
+	setWhen(0);
+    }
     // Only works if costs positive, coefficients positive and all rows G
     OsiSolverInterface * solver = model_->solver();
     const double * columnLower = solver->getColLower();
@@ -419,6 +430,7 @@ CbcHeuristicGreedyEquality::CbcHeuristicGreedyEquality()
   originalNumberRows_=0;
   algorithm_=0;
   numberTimes_=100;
+  whereFrom_=1;
 }
 
 // Constructor from model
@@ -430,6 +442,7 @@ CbcHeuristicGreedyEquality::CbcHeuristicGreedyEquality(CbcModel & model)
   fraction_=1.0; // no branch and bound
   algorithm_=0;
   numberTimes_=100;
+  whereFrom_=1;
 }
 
 // Destructor 
@@ -450,7 +463,9 @@ CbcHeuristicGreedyEquality::gutsOfConstructor(CbcModel * model)
   model_=model;
   // Get a copy of original matrix
   assert(model->solver());
-  matrix_ = *model->solver()->getMatrixByCol();
+  if (model->solver()->getNumRows()) {
+    matrix_ = *model->solver()->getMatrixByCol();
+  }
   originalNumberRows_=model->solver()->getNumRows();
 }
 // Create C++ lines to get to current state

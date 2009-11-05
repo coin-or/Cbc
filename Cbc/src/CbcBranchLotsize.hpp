@@ -1,3 +1,4 @@
+/* $Id$ */
 // Copyright (C) 2004, International Business Machines
 // Corporation and others.  All Rights Reserved.
 #ifndef CbcBranchLotsize_H
@@ -33,9 +34,9 @@ public:
   // Destructor 
   ~CbcLotsize ();
   
-  using CbcObject::infeasibility ;
   /// Infeasibility - large is 0.5
-  virtual double infeasibility(int & preferredWay) const;
+  virtual double infeasibility(const OsiBranchingInformation * info,
+			       int &preferredWay) const;
 
   using CbcObject::feasibleRegion ;
   /** Set bounds to contain the current solution.
@@ -47,9 +48,8 @@ public:
   */
   virtual void feasibleRegion();
 
-  using CbcObject::createBranch ;
   /// Creates a branching object
-  virtual CbcBranchingObject * createBranch(int way) ;
+  virtual CbcBranchingObject * createCbcBranch(OsiSolverInterface * solver,const OsiBranchingInformation * info, int way) ;
 
   /** \brief Given a valid solution (with reduced costs, etc.),
       return a branching object which would give a new feasible

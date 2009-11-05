@@ -1,3 +1,4 @@
+/* $Id$ */
 // Copyright (C) 2002, International Business Machines
 // Corporation and others.  All Rights Reserved.
 #ifndef CbcHeuristic_H
@@ -111,9 +112,9 @@ public:
       This is called at same time as cut generators - so can add cuts
       Default is do nothing
   */
-  virtual int solution(double & objectiveValue,
-		       double * newSolution,
-		       OsiCuts & cs) {return 0;}
+  virtual int solution2(double & /*objectiveValue*/,
+		       double * /*newSolution*/,
+		       OsiCuts & /*cs*/) {return 0;}
 
   /// Validate model i.e. sets when_ to 0 if necessary (may be NULL)
   virtual void validate() {}
@@ -137,14 +138,22 @@ public:
   /** Switches (does not apply equally to all heuristics)
       1 bit - stop once allowable gap on objective reached
       2 bit - always do given number of passes
-      for other possibilities see switches_
+      4 bit - weaken cutoff by 5% every 50 passes?
+      8 bit - if has cutoff and suminf bobbling for 20 passes then
+              first try halving distance to best possible then
+              try keep halving distance to known cutoff
+      1024 bit - stop all heuristics on max time
   */
   inline void setSwitches(int value)
   { switches_ = value;}
   /** Switches (does not apply equally to all heuristics)
       1 bit - stop once allowable gap on objective reached
       2 bit - always do given number of passes
-      for other possibilities see switches_
+      4 bit - weaken cutoff by 5% every 50 passes?
+      8 bit - if has cutoff and suminf bobbling for 20 passes then
+              first try halving distance to best possible then
+              try keep halving distance to known cutoff
+      1024 bit - stop all heuristics on max time
   */
   inline int switches() const
   { return switches_;}
@@ -187,7 +196,7 @@ public:
                           double * newSolution, double & newSolutionValue,
                           double cutoff , std::string name) const;
   /// Create C++ lines to get to current state
-  virtual void generateCpp( FILE * fp) {}
+  virtual void generateCpp( FILE * ) {}
   /// Create C++ lines to get to current state - does work for base class
   void generateCpp( FILE * fp,const char * heuristic) ;
   /// Returns true if can deal with "odd" problems e.g. sos type 2
@@ -201,11 +210,47 @@ public:
   { heuristicName_ = name;}
   /// Set random number generator seed
   void setSeed(int value);
+  /// Sets decay factor (for howOften) on failure
+  inline void setDecayFactor(double value)
+  { decayFactor_=value;}
   /// Set input solution
   void setInputSolution(const double * solution, double objValue);
+  /* Runs if bit set
+      0 - before cuts at root node (or from doHeuristics)
+      1 - during cuts at root 
+      2 - after root node cuts
+      3 - after cuts at other nodes
+      4 - during cuts at other nodes
+          8 added if previous heuristic in loop found solution
+   */
+  inline void setWhereFrom(int value)
+  { whereFrom_=value;}
+  /** Upto this depth we call the tree shallow and the heuristic can be called
+      multiple times. That is, the test whether the current node is far from
+      the others where the jeuristic was invoked will not be done, only the
+      frequency will be tested. After that depth the heuristic will can be
+      invoked only once per node, right before branching. That's when it'll be
+      tested whether the heur should run at all. */
+  inline void setShallowDepth(int value)
+  { shallowDepth_=value;}
+  /** How often to invoke the heuristics in the shallow part of the tree */
+  inline void setHowOftenShallow(int value)
+  { howOftenShallow_=value;}
+  /** How "far" should this node be from every other where the heuristic was
+      run in order to allow the heuristic to run in this node, too. Currently
+      this is tested, but we may switch to avgDistanceToRun_ in the future. */
+  inline void setMinDistanceToRun(int value)
+  { minDistanceToRun_=value;}
 
-  /** Check whether the heuristic should run at all */
-  virtual bool shouldHeurRun();
+  /** Check whether the heuristic should run at all
+      0 - before cuts at root node (or from doHeuristics)
+      1 - during cuts at root 
+      2 - after root node cuts
+      3 - after cuts at other nodes
+      4 - during cuts at other nodes
+          8 added if previous heuristic in loop found solution
+  */
+  virtual bool shouldHeurRun(int whereFrom);
   /** Check whether the heuristic should run this time */
   bool shouldHeurRun_randomChoice();
   void debugNodes();
@@ -217,7 +262,11 @@ public:
   /// How many times the heuristic could run
   inline int numCouldRun() const
   { return numCouldRun_;}
-
+  /** Clone but ..
+      type 0 clone solver, 1 clone continuous solver
+      Add 2 to say without integer variables which are at low priority
+      Add 4 to say quite likely infeasible so give up easily.*/
+  OsiSolverInterface * cloneBut(int type);
 protected:
 
   /// Model
@@ -245,9 +294,19 @@ protected:
       4 bit - weaken cutoff by 5% every 50 passes?
       8 bit - if has cutoff and suminf bobbling for 20 passes then
               first try halving distance to best possible then
-              try keep halving distance to known cutoff 
+              try keep halving distance to known cutoff
+      1024 bit - stop all heuristics on max time
   */
-  int switches_;
+  mutable int switches_;
+  /* Runs if bit set
+      0 - before cuts at root node (or from doHeuristics)
+      1 - during cuts at root 
+      2 - after root node cuts
+      3 - after cuts at other nodes
+      4 - during cuts at other nodes
+          8 added if previous heuristic in loop found solution
+   */
+  int whereFrom_;
   /** Upto this depth we call the tree shallow and the heuristic can be called
       multiple times. That is, the test whether the current node is far from
       the others where the jeuristic was invoked will not be done, only the
@@ -425,7 +484,7 @@ public:
   { fixPriority_ = value;}
 
   /** Check whether the heuristic should run at all */
-  virtual bool shouldHeurRun();
+  virtual bool shouldHeurRun(int whereFrom);
 
 protected:
   // Data
@@ -531,10 +590,10 @@ public:
       returned will not be trivially roundable.
       This is dummy as never called
   */
-  virtual bool selectVariableToBranch(OsiSolverInterface* solver,
-				      const double* newSolution,
-				      int& bestColumn,
-				      int& bestRound) 
+  virtual bool selectVariableToBranch(OsiSolverInterface* /*solver*/,
+				      const double* /*newSolution*/,
+				      int& /*bestColumn*/,
+				      int& /*bestRound*/) 
   { return true;}
   /// Validate model i.e. sets when_ to 0 if necessary (may be NULL)
   virtual void validate();

@@ -1,3 +1,4 @@
+/* $Id$ */
 // Copyright (C) 2004, International Business Machines
 // Corporation and others.  All Rights Reserved.
 
@@ -16,7 +17,7 @@
 // Default Constructor 
 //-------------------------------------------------------------------
 
-CbcEventHandler::CbcEventHandler (const CbcModel *model)
+CbcEventHandler::CbcEventHandler (CbcModel *model)
   : model_(model),
     dfltAction_(CbcEventHandler::noAction),
     eaMap_(0)

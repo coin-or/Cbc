@@ -1,3 +1,4 @@
+/* $Id$ */
 // Copyright (C) 2002, International Business Machines
 // Corporation and others.  All Rights Reserved.
 #if defined(_MSC_VER)
@@ -121,10 +122,9 @@ CbcClique::~CbcClique ()
   delete [] members_;
   delete [] type_;
 }
-
-// Infeasibility - large is 0.5
 double 
-CbcClique::infeasibility(int & preferredWay) const
+CbcClique::infeasibility(const OsiBranchingInformation * /*info*/,
+			       int &preferredWay) const
 {
   int numberUnsatis=0, numberFree=0;
   int j;
@@ -246,11 +246,8 @@ CbcClique::redoSequenceEtc(CbcModel * model, int numberColumns, const int * orig
     if (!type_[i])
       numberNonSOSMembers_++;
 }
-
-
-// Creates a branching object
 CbcBranchingObject * 
-CbcClique::createBranch(int way) 
+CbcClique::createCbcBranch(OsiSolverInterface * solver,const OsiBranchingInformation * /*info*/, int way) 
 {
   int numberUnsatis=0;
   int j;
@@ -258,7 +255,7 @@ CbcClique::createBranch(int way)
   int nDown=0;
   int numberFree=numberMembers_;
   const int * integer = model_->integerVariable();
-  OsiSolverInterface * solver = model_->solver();
+  //OsiSolverInterface * solver = model_->solver();
   const double * solution = model_->testSolution();
   const double * lower = solver->getColLower();
   const double * upper = solver->getColUpper();
@@ -475,71 +472,9 @@ CbcSOS::~CbcSOS ()
   delete [] members_;
   delete [] weights_;
 }
-
-// Infeasibility - large is 0.5
 double 
-CbcSOS::infeasibility(int & preferredWay) const
-{
-  int j;
-  int firstNonZero=-1;
-  int lastNonZero = -1;
-  OsiSolverInterface * solver = model_->solver();
-  const double * solution = model_->testSolution();
-  //const double * lower = solver->getColLower();
-  const double * upper = solver->getColUpper();
-  //double largestValue=0.0;
-  double integerTolerance = 
-    model_->getDblParam(CbcModel::CbcIntegerTolerance);
-  double weight = 0.0;
-  double sum =0.0;
-
-  // check bounds etc
-  double lastWeight=-1.0e100;
-  for (j=0;j<numberMembers_;j++) {
-    int iColumn = members_[j];
-    if (lastWeight>=weights_[j]-1.0e-7)
-      throw CoinError("Weights too close together in SOS","infeasibility","CbcSOS");
-    double value = CoinMax(0.0,solution[iColumn]);
-    sum += value;
-    if (value>integerTolerance&&upper[iColumn]) {
-      // Possibly due to scaling a fixed variable might slip through
-      if (value>upper[iColumn]) {
-        value=upper[iColumn];
-	// Could change to #ifdef CBC_DEBUG
-#ifndef NDEBUG
-	if (model_->messageHandler()->logLevel()>2)
-	  printf("** Variable %d (%d) has value %g and upper bound of %g\n",
-		 iColumn,j,value,upper[iColumn]);
-#endif
-      } 
-      weight += weights_[j]*value;
-      if (firstNonZero<0)
-        firstNonZero=j;
-      lastNonZero=j;
-    }
-  }
-  preferredWay=1;
-  if (lastNonZero-firstNonZero>=sosType_) {
-    // find where to branch
-    assert (sum>0.0);
-    weight /= sum;
-    //int iWhere;
-    //for (iWhere=firstNonZero;iWhere<lastNonZero;iWhere++) 
-    //if (weight<weights_[iWhere+1])
-    //break;
-    // probably best to use pseudo duals
-    double value = lastNonZero-firstNonZero+1;
-    value *= 0.5/static_cast<double> (numberMembers_);
-    // adjust??
-    return value;
-  } else {
-    return 0.0; // satisfied
-  }
-}
-// Infeasibility - large is 0.5
-double 
-CbcSOS::infeasibility(const OsiBranchingInformation * info, 
-		      int & preferredWay) const
+CbcSOS::infeasibility(const OsiBranchingInformation * info,
+			       int &preferredWay) const
 {
   int j;
   int firstNonZero=-1;
@@ -816,17 +751,14 @@ CbcSOS::redoSequenceEtc(CbcModel * model, int numberColumns, const int * origina
     numberMembers_=n2;
   }
 }
-
-
-// Creates a branching object
 CbcBranchingObject * 
-CbcSOS::createBranch(int way) 
+CbcSOS::createCbcBranch(OsiSolverInterface * solver,const OsiBranchingInformation * /*info*/, int way) 
 {
   int j;
   const double * solution = model_->testSolution();
   double integerTolerance = 
       model_->getDblParam(CbcModel::CbcIntegerTolerance);
-  OsiSolverInterface * solver = model_->solver();
+  //OsiSolverInterface * solver = model_->solver();
   const double * upper = solver->getColUpper();
   int firstNonFixed=-1;
   int lastNonFixed=-1;
@@ -1150,10 +1082,9 @@ CbcSimpleInteger::osiObject() const
   obj->setPriority(priority());
   return obj;
 }
-
-double
-CbcSimpleInteger::infeasibility(const OsiSolverInterface * solver, const OsiBranchingInformation * info,
-			 int & preferredWay) const
+double 
+CbcSimpleInteger::infeasibility(const OsiBranchingInformation * info,
+			       int &preferredWay) const
 {
   double value = info->solution_[columnNumber_];
   value = CoinMax(value, info->lower_[columnNumber_]);
@@ -1198,7 +1129,8 @@ CbcSimpleInteger::feasibleRegion(OsiSolverInterface * solver, const OsiBranching
 This returns NULL if branch not represented by bound changes
 */
 OsiSolverBranch * 
-CbcSimpleInteger::solverBranch(OsiSolverInterface * solver, const OsiBranchingInformation * info) const
+CbcSimpleInteger::solverBranch(OsiSolverInterface * /*solver*/, 
+			       const OsiBranchingInformation * info) const
 {
   double value = info->solution_[columnNumber_];
   value = CoinMax(value, info->lower_[columnNumber_]);
@@ -1214,7 +1146,8 @@ CbcSimpleInteger::solverBranch(OsiSolverInterface * solver, const OsiBranchingIn
 }
 // Creates a branching object
 CbcBranchingObject * 
-CbcSimpleInteger::createBranch(OsiSolverInterface * solver, const OsiBranchingInformation * info, int way) 
+CbcSimpleInteger::createCbcBranch(OsiSolverInterface * /*solver*/, 
+			       const OsiBranchingInformation * info, int way) 
 {
   CbcIntegerBranchingObject * branch = new CbcIntegerBranchingObject(model_,0,-1,0.5);
   fillCreateBranch(branch,info,way);
@@ -1273,9 +1206,10 @@ CbcSimpleInteger::resetBounds(const OsiSolverInterface * solver)
 /*  Change column numbers after preprocessing
  */
 void 
-CbcSimpleInteger::resetSequenceEtc(int numberColumns, const int * originalColumns) 
+CbcSimpleInteger::resetSequenceEtc(int /*numberColumns*/, 
+				   const int * originalColumns) 
 {
-  assert (numberColumns>0);
+  //assert (numberColumns>0);
   int iColumn;
 #if 0
   for (iColumn=0;iColumn<numberColumns;iColumn++) {
@@ -1289,15 +1223,6 @@ CbcSimpleInteger::resetSequenceEtc(int numberColumns, const int * originalColumn
 #endif
   columnNumber_ = iColumn;
 }
-
-// Infeasibility - large is 0.5
-double 
-CbcSimpleInteger::infeasibility(int & preferredWay) const
-{
-  OsiBranchingInformation info(model_->solver(),model_->normalSolver(),false);
-  return infeasibility(model_->solver(),&info,preferredWay);
-}
-
 // This looks at solution and sets bounds to contain solution
 /** More precisely: it first forces the variable within the existing
     bounds, and then tightens the bounds to fix the variable at the
@@ -1307,12 +1232,6 @@ void
 CbcSimpleInteger::feasibleRegion()
 {
   abort();
-}
-CbcBranchingObject * 
-CbcSimpleInteger::createBranch( int way) 
-{
-  abort();
-  return NULL;
 }
 
 //##############################################################################
@@ -1481,6 +1400,8 @@ CbcIntegerBranchingObject::branch()
   double olb,oub ;
   olb = model_->solver()->getColLower()[iColumn] ;
   oub = model_->solver()->getColUpper()[iColumn] ;
+  //#define TIGHTEN_BOUNDS
+#ifndef TIGHTEN_BOUNDS
 #ifdef COIN_DEVELOP
   if (olb!=down_[0]||oub!=up_[1]) {
     if (way_>0)
@@ -1491,6 +1412,7 @@ CbcIntegerBranchingObject::branch()
 	     iColumn,olb,oub,down_[0],down_[1],up_[0],up_[1]) ; 
   }
 #endif
+#endif
   if (way_<0) {
 #ifdef CBC_DEBUG
   { double olb,oub ;
@@ -1499,7 +1421,11 @@ CbcIntegerBranchingObject::branch()
     printf("branching down on var %d: [%g,%g] => [%g,%g]\n",
 	   iColumn,olb,oub,down_[0],down_[1]) ; }
 #endif
+#ifndef TIGHTEN_BOUNDS
     model_->solver()->setColLower(iColumn,down_[0]);
+#else
+    model_->solver()->setColLower(iColumn,CoinMax(down_[0],olb));
+#endif
     model_->solver()->setColUpper(iColumn,down_[1]);
     //#define CBC_PRINT2
 #ifdef CBC_PRINT2
@@ -1544,7 +1470,11 @@ CbcIntegerBranchingObject::branch()
 	   iColumn,olb,oub,up_[0],up_[1]) ; }
 #endif
     model_->solver()->setColLower(iColumn,up_[0]);
+#ifndef TIGHTEN_BOUNDS
     model_->solver()->setColUpper(iColumn,up_[1]);
+#else
+    model_->solver()->setColUpper(iColumn,CoinMin(up_[1],oub));
+#endif
 #ifdef CBC_PRINT2
     printf("%d branching up has bounds %g %g",iColumn,up_[0],up_[1]);
 #endif
@@ -1603,7 +1533,7 @@ CbcIntegerBranchingObject::branch()
 /* Update bounds in solver as in 'branch' and update given bounds.
    branchState is -1 for 'down' +1 for 'up' */
 void 
-CbcIntegerBranchingObject::fix(OsiSolverInterface * solver,
+CbcIntegerBranchingObject::fix(OsiSolverInterface * /*solver*/,
 			       double * lower, double * upper,
 			       int branchState) const 
 {
@@ -1800,7 +1730,9 @@ CbcSimpleIntegerPseudoCost::CbcSimpleIntegerPseudoCost (CbcModel * model,
   method_=0;
 }
 // Useful constructor - passed and model index and pseudo costs
-CbcSimpleIntegerPseudoCost::CbcSimpleIntegerPseudoCost (CbcModel * model, int dummy,int iColumn, 
+CbcSimpleIntegerPseudoCost::CbcSimpleIntegerPseudoCost (CbcModel * model, 
+							int /*dummy*/,
+							int iColumn, 
 							double downPseudoCost, double upPseudoCost)
 {
   *this=CbcSimpleIntegerPseudoCost(model,iColumn,downPseudoCost,upPseudoCost);
@@ -1843,11 +1775,10 @@ CbcSimpleIntegerPseudoCost::operator=( const CbcSimpleIntegerPseudoCost& rhs)
 CbcSimpleIntegerPseudoCost::~CbcSimpleIntegerPseudoCost ()
 {
 }
-// Creates a branching object
 CbcBranchingObject * 
-CbcSimpleIntegerPseudoCost::createBranch(int way) 
+CbcSimpleIntegerPseudoCost::createCbcBranch(OsiSolverInterface * solver,const OsiBranchingInformation * /*info*/, int way) 
 {
-  OsiSolverInterface * solver = model_->solver();
+  //OsiSolverInterface * solver = model_->solver();
   const double * solution = model_->testSolution();
   const double * lower = solver->getColLower();
   const double * upper = solver->getColUpper();
@@ -1885,9 +1816,9 @@ CbcSimpleIntegerPseudoCost::createBranch(int way)
   newObject->setOriginalObject(this);
   return newObject;
 }
-// Infeasibility - large is 0.5
 double 
-CbcSimpleIntegerPseudoCost::infeasibility(int & preferredWay) const
+CbcSimpleIntegerPseudoCost::infeasibility(const OsiBranchingInformation * /*info*/,
+			       int &preferredWay) const
 {
   OsiSolverInterface * solver = model_->solver();
   const double * solution = model_->testSolution();
@@ -2008,7 +1939,7 @@ CbcIntegerPseudoCostBranchingObject::CbcIntegerPseudoCostBranchingObject (CbcMod
 CbcIntegerPseudoCostBranchingObject::CbcIntegerPseudoCostBranchingObject (CbcModel * model, 
 						      int variable, int way,
 						      double lowerValue, 
-						      double upperValue)
+									  double /*upperValue*/)
   :CbcIntegerBranchingObject(model,variable,way,lowerValue)
 {
   changeInGuessed_=1.0e100;
@@ -2305,7 +2236,7 @@ CbcCliqueBranchingObject::compareOriginalObject
 */
 CbcRangeCompare
 CbcCliqueBranchingObject::compareBranchingObject
-(const CbcBranchingObject* brObj, const bool replaceIfOverlap)
+(const CbcBranchingObject* brObj, const bool /*replaceIfOverlap*/)
 {
   const CbcCliqueBranchingObject* br =
     dynamic_cast<const CbcCliqueBranchingObject*>(brObj);
@@ -2556,7 +2487,7 @@ CbcLongCliqueBranchingObject::compareOriginalObject
 */
 CbcRangeCompare
 CbcLongCliqueBranchingObject::compareBranchingObject
-(const CbcBranchingObject* brObj, const bool replaceIfOverlap)
+(const CbcBranchingObject* brObj, const bool /*replaceIfOverlap*/)
 {
   const CbcLongCliqueBranchingObject* br =
     dynamic_cast<const CbcLongCliqueBranchingObject*>(brObj);
@@ -2722,7 +2653,7 @@ CbcSOSBranchingObject::branch()
    branchState is -1 for 'down' +1 for 'up' */
 void 
 CbcSOSBranchingObject::fix(OsiSolverInterface * solver,
-			       double * lower, double * upper,
+			   double * /*lower*/, double * upper,
 			       int branchState) const 
 {
   int numberMembers = set_->numberMembers();
@@ -2954,7 +2885,7 @@ CbcBranchDefaultDecision::initialize(CbcModel * model)
 
 int
 CbcBranchDefaultDecision::betterBranch(CbcBranchingObject * thisOne,
-			    CbcBranchingObject * bestSoFar,
+				       CbcBranchingObject * /*bestSoFar*/,
 			    double changeUp, int numInfUp,
 			    double changeDn, int numInfDn)
 {
@@ -3567,10 +3498,9 @@ CbcFollowOn::gutsOfFollowOn(int & otherRow, int & preferredWay) const
   delete [] isort;
   return whichRow;
 }
-
-// Infeasibility - large is 0.5
 double 
-CbcFollowOn::infeasibility(int & preferredWay) const
+CbcFollowOn::infeasibility(const OsiBranchingInformation * /*info*/,
+			       int &preferredWay) const
 {
   int otherRow=0;
   int whichRow = gutsOfFollowOn(otherRow,preferredWay);
@@ -3586,10 +3516,8 @@ CbcFollowOn::feasibleRegion()
 {
 }
 
-
-// Creates a branching object
 CbcBranchingObject * 
-CbcFollowOn::createBranch(int way) 
+CbcFollowOn::createCbcBranch(OsiSolverInterface * solver,const OsiBranchingInformation * /*info*/, int way) 
 {
   int otherRow=0;
   int preferredWay;
@@ -3608,7 +3536,7 @@ CbcFollowOn::createBranch(int way)
   const int * column = matrixByRow_.getIndices();
   const CoinBigIndex * rowStart = matrixByRow_.getVectorStarts();
   const int * rowLength = matrixByRow_.getVectorLengths();
-  OsiSolverInterface * solver = model_->solver();
+  //OsiSolverInterface * solver = model_->solver();
   const double * columnLower = solver->getColLower();
   const double * columnUpper = solver->getColUpper();
   //const double * solution = solver->getColSolution();
@@ -3777,7 +3705,7 @@ CbcFixingBranchingObject::print()
 */
 int
 CbcFixingBranchingObject::compareOriginalObject
-(const CbcBranchingObject* brObj) const
+(const CbcBranchingObject* /*brObj*/) const
 {
   throw("must implement");
 }
@@ -3792,9 +3720,9 @@ CbcFixingBranchingObject::compareOriginalObject
    */
 CbcRangeCompare
 CbcFixingBranchingObject::compareBranchingObject
-(const CbcBranchingObject* brObj, const bool replaceIfOverlap)
+(const CbcBranchingObject* /*brObj*/, const bool /*replaceIfOverlap*/)
 {
-#ifndef NDEBUG
+#if 0 //ndef NDEBUG
   const CbcFixingBranchingObject* br =
     dynamic_cast<const CbcFixingBranchingObject*>(brObj);
   assert(br);
@@ -3932,10 +3860,9 @@ CbcNWay::applyConsequence(int iSequence, int state) const
       consequence->applyToSolver(model_->solver(),state);
   }
 }
-  
-// Infeasibility - large is 0.5
 double 
-CbcNWay::infeasibility(int & preferredWay) const
+CbcNWay::infeasibility(const OsiBranchingInformation * /*info*/,
+			       int &preferredWay) const
 {
   int numberUnsatis=0;
   int j;
@@ -4016,16 +3943,13 @@ CbcNWay::redoSequenceEtc(CbcModel * model, int numberColumns, const int * origin
     numberMembers_=n2;
   }
 }
-
-
-// Creates a branching object
 CbcBranchingObject * 
-CbcNWay::createBranch(int way) 
+CbcNWay::createCbcBranch(OsiSolverInterface * solver,const OsiBranchingInformation * /*info*/, int /*way*/) 
 {
   int numberFree=0;
   int j;
 
-  OsiSolverInterface * solver = model_->solver();
+  //OsiSolverInterface * solver = model_->solver();
   const double * solution = model_->testSolution();
   const double * lower = solver->getColLower();
   const double * upper = solver->getColUpper();
@@ -4188,7 +4112,7 @@ CbcNWayBranchingObject::print()
 */
 int
 CbcNWayBranchingObject::compareOriginalObject
-(const CbcBranchingObject* brObj) const
+(const CbcBranchingObject* /*brObj*/) const
 {
   throw("must implement");
 }
@@ -4203,7 +4127,7 @@ CbcNWayBranchingObject::compareOriginalObject
 */
 CbcRangeCompare
 CbcNWayBranchingObject::compareBranchingObject
-(const CbcBranchingObject* brObj, const bool replaceIfOverlap)
+(const CbcBranchingObject* /*brObj*/, const bool /*replaceIfOverlap*/)
 {
   throw("must implement");
 }
@@ -4465,6 +4389,20 @@ CbcGeneral::operator=( const CbcGeneral& rhs)
   }
   return *this;
 }
+// Infeasibility - large is 0.5
+double 
+CbcGeneral::infeasibility(const OsiBranchingInformation * /*info*/,
+			  int &/*preferredWay*/) const
+{
+  abort();
+  return 0.0;
+}
+CbcBranchingObject * 
+CbcGeneral::createCbcBranch(OsiSolverInterface * /*solver*/,const OsiBranchingInformation * /*info*/, int /*way*/) 
+{
+  abort();
+  return NULL;
+}
 
 // Default Constructor 
 CbcGeneralDepth::CbcGeneralDepth ()
@@ -4582,7 +4520,8 @@ CbcGeneralDepth::~CbcGeneralDepth ()
 }
 // Infeasibility - large is 0.5
 double 
-CbcGeneralDepth::infeasibility(int & preferredWay) const
+CbcGeneralDepth::infeasibility(const OsiBranchingInformation * /*info*/,
+			       int &/*preferredWay*/) const
 {
   whichSolution_ = -1;
   // should use genuine OsiBranchingInformation usefulInfo = model_->usefulInformation();
@@ -4597,16 +4536,29 @@ CbcGeneralDepth::infeasibility(int & preferredWay) const
       ClpNodeStuff * info = nodeInfo_;
       info->integerTolerance_=model_->getIntegerTolerance();
       info->integerIncrement_=model_->getCutoffIncrement();
+      info->numberBeforeTrust_ = model_->numberBeforeTrust();
+      info->stateOfSearch_=model_->stateOfSearch();
+      // Compute "small" change in branch
+      int nBranches = model_->getIntParam(CbcModel::CbcNumberBranches);
+      if (nBranches) {
+	double average = model_->getDblParam(CbcModel::CbcSumChange)/static_cast<double>(nBranches);
+	info->smallChange_ = 
+	  CoinMax(average*1.0e-5,model_->getDblParam(CbcModel::CbcSmallestChange));
+	info->smallChange_ = CoinMax(info->smallChange_,1.0e-8);
+      } else {
+	info->smallChange_ = 1.0e-8;
+      }
       int numberIntegers = model_->numberIntegers();
       double * down = new double[numberIntegers];
       double * up = new double[numberIntegers];
+      int * priority = new int[numberIntegers];
       int * numberDown = new int[numberIntegers];
       int * numberUp = new int[numberIntegers];
       int * numberDownInfeasible = new int[numberIntegers];
       int * numberUpInfeasible = new int[numberIntegers];
-      model_->fillPseudoCosts(down,up,numberDown,numberUp,
+      model_->fillPseudoCosts(down,up,priority,numberDown,numberUp,
 		      numberDownInfeasible,numberUpInfeasible);
-      info->fillPseudoCosts(down,up,numberDown,numberUp,
+      info->fillPseudoCosts(down,up,priority,numberDown,numberUp,
 			    numberDownInfeasible,
 			    numberUpInfeasible,numberIntegers);
       info->presolveType_= 1; 
@@ -4692,7 +4644,9 @@ CbcGeneralDepth::feasibleRegion()
 }
 // Redoes data when sequence numbers change
 void 
-CbcGeneralDepth::redoSequenceEtc(CbcModel * model, int numberColumns, const int * originalColumns)
+CbcGeneralDepth::redoSequenceEtc(CbcModel * /*model*/, 
+				 int /*numberColumns*/,
+				 const int * /*originalColumns*/)
 {
 }
 
@@ -4702,10 +4656,8 @@ extern const double * debuggerSolution_Z;
 extern int numberColumns_Z;
 extern int gotGoodNode_Z;
 #endif
-
-// Creates a branching object
 CbcBranchingObject * 
-CbcGeneralDepth::createBranch(int way) 
+CbcGeneralDepth::createCbcBranch(OsiSolverInterface * solver,const OsiBranchingInformation * /*info*/, int /*way*/) 
 {
   int numberDo = numberNodes_;
   if (whichSolution_>=0)
@@ -4723,7 +4675,7 @@ CbcGeneralDepth::createBranch(int way)
   branch->subProblems_ = sub;
   branch->numberRows_ = model_->solver()->getNumRows();
   int iNode;
-  OsiSolverInterface * solver = model_->solver();
+  //OsiSolverInterface * solver = model_->solver();
   OsiClpSolverInterface * clpSolver 
     = dynamic_cast<OsiClpSolverInterface *> (solver);
   assert (clpSolver);
@@ -4990,7 +4942,7 @@ CbcGeneralBranchingObject::state(double & objectiveValue,
 */
 int
 CbcGeneralBranchingObject::compareOriginalObject
-(const CbcBranchingObject* brObj) const
+(const CbcBranchingObject* /*brObj*/) const
 {
   throw("must implement");
 }
@@ -5005,7 +4957,7 @@ CbcGeneralBranchingObject::compareOriginalObject
 */
 CbcRangeCompare
 CbcGeneralBranchingObject::compareBranchingObject
-(const CbcBranchingObject* brObj, const bool replaceIfOverlap)
+(const CbcBranchingObject* /*brObj*/, const bool /*replaceIfOverlap*/)
 {
   throw("must implement");
 }
@@ -5083,7 +5035,7 @@ CbcOneGeneralBranchingObject::branch()
 /* Double checks in case node can change its mind!
    Can change objective etc */
 void 
-CbcOneGeneralBranchingObject::checkIsCutoff(double cutoff)
+CbcOneGeneralBranchingObject::checkIsCutoff(double /*cutoff*/)
 {
   assert (numberBranchesLeft());
 }
@@ -5102,7 +5054,7 @@ CbcOneGeneralBranchingObject::print()
 */
 int
 CbcOneGeneralBranchingObject::compareOriginalObject
-(const CbcBranchingObject* brObj) const
+(const CbcBranchingObject* /*brObj*/) const
 {
   throw("must implement");
 }
@@ -5117,7 +5069,7 @@ CbcOneGeneralBranchingObject::compareOriginalObject
 */
 CbcRangeCompare
 CbcOneGeneralBranchingObject::compareBranchingObject
-(const CbcBranchingObject* brObj, const bool replaceIfOverlap)
+(const CbcBranchingObject* /*brObj*/, const bool /*replaceIfOverlap*/)
 {
   throw("must implement");
 }
@@ -5361,7 +5313,7 @@ CbcSubProblem::apply(OsiSolverInterface * solver, int what) const
 */
 int
 CbcDummyBranchingObject::compareOriginalObject
-(const CbcBranchingObject* brObj) const
+(const CbcBranchingObject* /*brObj*/) const
 {
   throw("must implement");
 }
@@ -5376,7 +5328,7 @@ CbcDummyBranchingObject::compareOriginalObject
 */
 CbcRangeCompare
 CbcDummyBranchingObject::compareBranchingObject
-(const CbcBranchingObject* brObj, const bool replaceIfOverlap)
+(const CbcBranchingObject* /*brObj*/, const bool /*replaceIfOverlap*/)
 {
   throw("must implement");
 }

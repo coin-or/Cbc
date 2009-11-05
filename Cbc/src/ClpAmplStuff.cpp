@@ -1,5 +1,6 @@
 // Copyright (C) 2007, International Business Machines
 // Corporation and others.  All Rights Reserved.
+/* $Id: ClpAmplStuff.cpp 1200 2009-07-25 08:44:13Z forrest $ */
 
 #include "ClpConfig.h"
 #include "CbcConfig.h"
@@ -1362,8 +1363,8 @@ ClpSimplex::loadNonLinear(void * amplInfo, int & numberConstraints,
 #include "ClpSimplex.hpp"
 #include "ClpConstraint.hpp"
 int 
-ClpSimplex::loadNonLinear(void * amplInfo, int & numberConstraints, 
-			  ClpConstraint ** & constraints)
+ClpSimplex::loadNonLinear(void * , int & , 
+			  ClpConstraint ** & )
 {
   abort();
   return 0;

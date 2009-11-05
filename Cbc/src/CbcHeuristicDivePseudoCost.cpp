@@ -1,3 +1,4 @@
+/* $Id: CbcHeuristicDivePseudoCost.cpp 1240 2009-10-02 18:41:44Z forrest $ */
 // Copyright (C) 2008, International Business Machines
 // Corporation and others.  All Rights Reserved.
 #if defined(_MSC_VER)
@@ -7,6 +8,7 @@
 
 #include "CbcHeuristicDivePseudoCost.hpp"
 #include "CbcStrategy.hpp"
+#include "CbcBranchDynamic.hpp"
 
 // Default Constructor
 CbcHeuristicDivePseudoCost::CbcHeuristicDivePseudoCost() 
@@ -74,9 +76,8 @@ CbcHeuristicDivePseudoCost::selectVariableToBranch(OsiSolverInterface* solver,
   double * rootNodeLPSol = model_->continuousSolution();
 
   // get pseudo costs
-  double * pseudoCostDown = new double[numberIntegers];
-  double * pseudoCostUp = new double[numberIntegers];
-  model_->fillPseudoCosts(pseudoCostDown, pseudoCostUp);
+  double * pseudoCostDown = downArray_;
+  double * pseudoCostUp = upArray_;
 
   bestColumn = -1;
   bestRound = -1; // -1 rounds down, +1 rounds up
@@ -137,8 +138,90 @@ CbcHeuristicDivePseudoCost::selectVariableToBranch(OsiSolverInterface* solver,
     }
   }
 
-  delete [] pseudoCostDown;
-  delete [] pseudoCostUp;
-
   return allTriviallyRoundableSoFar;
+}
+void
+CbcHeuristicDivePseudoCost::initializeData()
+{
+  int numberIntegers = model_->numberIntegers();
+  if (!downArray_) {
+    downArray_ = new double [numberIntegers];
+    upArray_ = new double [numberIntegers];
+  }
+  // get pseudo costs
+  model_->fillPseudoCosts(downArray_, upArray_);
+  int diveOptions = when_/100;
+  if (diveOptions) {
+    // pseudo shadow prices
+    int k = diveOptions%100;
+    if (diveOptions>=100) 
+      k +=32;
+    model_->pseudoShadow(k-1);
+    int numberInts=CoinMin(model_->numberObjects(),numberIntegers);
+    OsiObject ** objects = model_->objects();
+    for (int i=0;i<numberInts;i++) {
+      CbcSimpleIntegerDynamicPseudoCost * obj1 =
+        dynamic_cast <CbcSimpleIntegerDynamicPseudoCost *>(objects[i]) ;
+      if (obj1) {
+        //int iColumn = obj1->columnNumber();
+        double downPseudoCost = 1.0e-2*obj1->downDynamicPseudoCost();
+	double downShadow = obj1->downShadowPrice();
+        double upPseudoCost = 1.0e-2*obj1->upDynamicPseudoCost();
+	double upShadow = obj1->upShadowPrice();
+        downPseudoCost = CoinMax(downPseudoCost,downShadow);
+        downPseudoCost = CoinMax(downPseudoCost,0.001*upShadow);
+        downArray_[i]=downPseudoCost;
+        upPseudoCost = CoinMax(upPseudoCost,upShadow);
+        upPseudoCost = CoinMax(upPseudoCost,0.001*downShadow);
+        upArray_[i]=upPseudoCost;
+      }
+    }
+  }
+}
+// Fix other variables at bounds
+int 
+CbcHeuristicDivePseudoCost::fixOtherVariables(OsiSolverInterface * solver,
+					      const double * solution,
+					      PseudoReducedCost * candidate,
+					      const double * random)
+{
+  const double * lower = solver->getColLower();
+  const double * upper = solver->getColUpper();
+  double integerTolerance = model_->getDblParam(CbcModel::CbcIntegerTolerance);
+  double primalTolerance;
+  solver->getDblParam(OsiPrimalTolerance,primalTolerance);
+
+  int numberIntegers = model_->numberIntegers();
+  const int * integerVariable = model_->integerVariable();
+  const double* reducedCost = solver->getReducedCost();
+  // fix other integer variables that are at their bounds
+  int cnt=0;
+  int numberFree=0;
+  int numberFixedAlready=0;
+  for (int i=0; i<numberIntegers; i++) {
+    int iColumn = integerVariable[i];
+    if (upper[iColumn]>lower[iColumn]) {
+      numberFree++;
+      double value=solution[iColumn];
+      if(value-lower[iColumn]<=integerTolerance) {
+	candidate[cnt].var = iColumn;
+	candidate[cnt++].pseudoRedCost = CoinMax(1.0e-2*reducedCost[iColumn],
+						 downArray_[i])*random[i];
+      } else if(upper[iColumn]-value<=integerTolerance) {
+	candidate[cnt].var = iColumn;
+	candidate[cnt++].pseudoRedCost = CoinMax(-1.0e-2*reducedCost[iColumn],
+						 downArray_[i])*random[i];
+      }
+    } else {
+      numberFixedAlready++;
+    }
+  }
+#ifdef CLP_INVESTIGATE
+  printf("cutoff %g obj %g - %d free, %d fixed\n",
+	 model_->getCutoff(),solver->getObjValue(),numberFree,
+	 numberFixedAlready);
+#endif
+  return cnt;
+  //return CbcHeuristicDive::fixOtherVariables(solver, solution,
+  //				     candidate, random);
 }

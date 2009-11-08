@@ -48,41 +48,41 @@ void testingMessage( const char * const msg );
 void CbcMiplibTest (const std::vector<OsiCbcSolverInterface*> & vecEmptySiP,
                     const std::string & mpsDir)
 {
-  int i ;
-  unsigned int m ;
-  // See if files exist
-  FILE * fp;
-  bool doTest=false;
-  std::string test1 = mpsDir +"p0033";
-  fp=fopen(test1.c_str(),"r");
-  if (fp) {
-    doTest=true;
-    fclose(fp);
-  }
+    int i ;
+    unsigned int m ;
+    // See if files exist
+    FILE * fp;
+    bool doTest=false;
+    std::string test1 = mpsDir +"p0033";
+    fp=fopen(test1.c_str(),"r");
+    if (fp) {
+        doTest=true;
+        fclose(fp);
+    }
 #ifdef COIN_USE_ZLIB
-  test1 += ".gz";
-  fp=fopen(test1.c_str(),"r");
-  if (fp) {
-    doTest=true;
-    fclose(fp);
-  }
+    test1 += ".gz";
+    fp=fopen(test1.c_str(),"r");
+    if (fp) {
+        doTest=true;
+        fclose(fp);
+    }
 #endif
-  if (!doTest)
-    return;
-  /*
-    Vectors to hold test problem names and characteristics. The objective value
-    after optimization (objValue) must agree to the specified tolerance
-    (objValueTol).
-  */
-  std::vector<std::string> mpsName ;
-  std::vector<int> nRows ;
-  std::vector<int> nCols ;
-  std::vector<double> objValueC ;
-  std::vector<double> objValue ;
-  std::vector<int> strategy ;
-  /*
-    And a macro to make the vector creation marginally readable.
-  */
+    if (!doTest)
+        return;
+    /*
+      Vectors to hold test problem names and characteristics. The objective value
+      after optimization (objValue) must agree to the specified tolerance
+      (objValueTol).
+    */
+    std::vector<std::string> mpsName ;
+    std::vector<int> nRows ;
+    std::vector<int> nCols ;
+    std::vector<double> objValueC ;
+    std::vector<double> objValue ;
+    std::vector<int> strategy ;
+    /*
+      And a macro to make the vector creation marginally readable.
+    */
 #define PUSH_MPS(zz_mpsName_zz,\
 		 zz_nRows_zz,zz_nCols_zz,zz_objValue_zz,zz_objValueC_zz, \
                  zz_strategy_zz) \
@@ -92,13 +92,13 @@ void CbcMiplibTest (const std::vector<OsiCbcSolverInterface*> & vecEmptySiP,
   objValueC.push_back(zz_objValueC_zz) ; \
   strategy.push_back(zz_strategy_zz) ; \
   objValue.push_back(zz_objValue_zz) ;
-  
-  /*
-    Load up the problem vector. Note that the row counts here include the
-    objective function.
- 
-    Set HOWMANY to 0 for no test, 1 for some, 2 for many, 3 for all.
-  */
+
+    /*
+      Load up the problem vector. Note that the row counts here include the
+      objective function.
+
+      Set HOWMANY to 0 for no test, 1 for some, 2 for many, 3 for all.
+    */
 #define HOWMANY 1
 #if HOWMANY
 #if HOWMANY>1
@@ -196,117 +196,117 @@ void CbcMiplibTest (const std::vector<OsiCbcSolverInterface*> & vecEmptySiP,
     PUSH_MPS("vpm2",234,378,13.75,9.8892645972,7)
 #endif
 #undef PUSH_MPS
-    
-  /*
-    Create a vector of solver interfaces that we can use to run the test
-    problems. The strategy is to create a fresh clone of the `empty' solvers
-    from vecEmptySiP for each problem, then proceed in stages: read the MPS
-    file, solve the problem, check the solution. If there are multiple
-    solvers in vecSiP, the results of each solver are compared with its
-    neighbors in the vector.
-  */
-  int numberSolvers=vecEmptySiP.size();
-  std::vector<OsiSolverInterface*> vecSiP(numberSolvers) ;
 
-  // Create vector to store a name for each solver interface
-  // and a count on the number of problems the solver interface solved.
-  std::vector<std::string> siName;
-  std::vector<int> numProbSolved;
-  std::vector<double> timeTaken;
-  for ( i=0; i<numberSolvers; i++ ) {
-    std::string name;
-    vecEmptySiP[i]->getStrParam(OsiSolverName,name);
-    siName.push_back(name);
-    numProbSolved.push_back(0);
-    timeTaken.push_back(0.0);
-  }
-  
-  /*
-    Open the main loops. Outer loop steps through MPS problems, inner loop
-    steps through solvers.
-  */
-  for (m = 0 ; m < mpsName.size() ; m++)
-  { std::cerr << "  processing mps file: " << mpsName[m] 
-	      << " (" << m+1 << " out of " << mpsName.size() << ")"
-	      << std::endl ;
-    for (i = vecSiP.size()-1 ; i >= 0 ; --i) {
-      vecSiP[i] = vecEmptySiP[i]->clone() ;
     /*
-      Stage 1: Read the MPS file into the solver interface.
+      Create a vector of solver interfaces that we can use to run the test
+      problems. The strategy is to create a fresh clone of the `empty' solvers
+      from vecEmptySiP for each problem, then proceed in stages: read the MPS
+      file, solve the problem, check the solution. If there are multiple
+      solvers in vecSiP, the results of each solver are compared with its
+      neighbors in the vector.
+    */
+    int numberSolvers=vecEmptySiP.size();
+    std::vector<OsiSolverInterface*> vecSiP(numberSolvers) ;
 
-      As a basic check, make sure the size of the constraint matrix is correct.
-    */
-      
-      std::string fn = mpsDir+mpsName[m] ;
-      vecSiP[i]->readMps(fn.c_str(),"") ;
-      
-      vecSiP[i]->setObjSense(1.0) ;
-      
-      int nr = vecSiP[i]->getNumRows() ;
-      int nc = vecSiP[i]->getNumCols() ;
-      assert(nr == nRows[m]) ;
-      assert(nc == nCols[m]) ;
-    /*
-      Stage 2: Call the solver to get a solution for the LP relaxation.
-    */
-      double startTime = CoinCpuTime();
-      OsiCbcSolverInterface * integerSolver =
-        dynamic_cast<OsiCbcSolverInterface *>(vecSiP[i]) ;
-      assert(integerSolver);
-      integerSolver->initialSolve();
-    /*
-      Stage 3: Call the solver to perform branch and cut.
-      
-      We call each solver, then check the return code and objective.
-      Limits are 50000 nodes and one hour of time.
-    */
-
-      integerSolver->setMaximumNodes(50000);
-      integerSolver->setMaximumSeconds(60*60);
-      integerSolver->getModelPtr()->messageHandler()->setLogLevel(1) ;
-      integerSolver->branchAndBound();
-      
-      double timeOfSolution = CoinCpuTime()-startTime;
-      if (!integerSolver->status()) { 
-        double soln = integerSolver->getObjValue();       
-        CoinRelFltEq eq(1.0e-3) ;
-        if (eq(soln,objValue[m])) { 
-          std::cerr 
-	    <<siName[i]<<" "
-	    << soln << " = " << objValue[m] << " ; okay";
-          numProbSolved[i]++;
-        } else  { 
-          std::cerr <<siName[i] <<" " <<soln << " != " <<objValue[m] << "; error=" ;
-          std::cerr <<fabs(objValue[m] - soln); 
-        }
-      } else {
-        std::cerr << "error; too many nodes" ;
-      }
-      std::cerr<<" - took " <<timeOfSolution<<" seconds."<<std::endl; 
-      timeTaken[i] += timeOfSolution;
-      delete integerSolver;
+    // Create vector to store a name for each solver interface
+    // and a count on the number of problems the solver interface solved.
+    std::vector<std::string> siName;
+    std::vector<int> numProbSolved;
+    std::vector<double> timeTaken;
+    for ( i=0; i<numberSolvers; i++ ) {
+        std::string name;
+        vecEmptySiP[i]->getStrParam(OsiSolverName,name);
+        siName.push_back(name);
+        numProbSolved.push_back(0);
+        timeTaken.push_back(0.0);
     }
-  }
 
-  const int siName_size = siName.size();
-  for ( i=0; i<siName_size; i++ ) {
-    std::cerr 
-      <<siName[i] 
-      <<" solved " 
-      <<numProbSolved[i]
-      <<" out of "
-      <<objValue.size()
-      <<" and took "
-      <<timeTaken[i]
-      <<" seconds."
-      <<std::endl;
-  } 
+    /*
+      Open the main loops. Outer loop steps through MPS problems, inner loop
+      steps through solvers.
+    */
+    for (m = 0 ; m < mpsName.size() ; m++) {
+        std::cerr << "  processing mps file: " << mpsName[m]
+                  << " (" << m+1 << " out of " << mpsName.size() << ")"
+                  << std::endl ;
+        for (i = vecSiP.size()-1 ; i >= 0 ; --i) {
+            vecSiP[i] = vecEmptySiP[i]->clone() ;
+            /*
+              Stage 1: Read the MPS file into the solver interface.
+
+              As a basic check, make sure the size of the constraint matrix is correct.
+            */
+
+            std::string fn = mpsDir+mpsName[m] ;
+            vecSiP[i]->readMps(fn.c_str(),"") ;
+
+            vecSiP[i]->setObjSense(1.0) ;
+
+            int nr = vecSiP[i]->getNumRows() ;
+            int nc = vecSiP[i]->getNumCols() ;
+            assert(nr == nRows[m]) ;
+            assert(nc == nCols[m]) ;
+            /*
+              Stage 2: Call the solver to get a solution for the LP relaxation.
+            */
+            double startTime = CoinCpuTime();
+            OsiCbcSolverInterface * integerSolver =
+                dynamic_cast<OsiCbcSolverInterface *>(vecSiP[i]) ;
+            assert(integerSolver);
+            integerSolver->initialSolve();
+            /*
+              Stage 3: Call the solver to perform branch and cut.
+
+              We call each solver, then check the return code and objective.
+              Limits are 50000 nodes and one hour of time.
+            */
+
+            integerSolver->setMaximumNodes(50000);
+            integerSolver->setMaximumSeconds(60*60);
+            integerSolver->getModelPtr()->messageHandler()->setLogLevel(1) ;
+            integerSolver->branchAndBound();
+
+            double timeOfSolution = CoinCpuTime()-startTime;
+            if (!integerSolver->status()) {
+                double soln = integerSolver->getObjValue();
+                CoinRelFltEq eq(1.0e-3) ;
+                if (eq(soln,objValue[m])) {
+                    std::cerr
+                        <<siName[i]<<" "
+                        << soln << " = " << objValue[m] << " ; okay";
+                    numProbSolved[i]++;
+                } else  {
+                    std::cerr <<siName[i] <<" " <<soln << " != " <<objValue[m] << "; error=" ;
+                    std::cerr <<fabs(objValue[m] - soln);
+                }
+            } else {
+                std::cerr << "error; too many nodes" ;
+            }
+            std::cerr<<" - took " <<timeOfSolution<<" seconds."<<std::endl;
+            timeTaken[i] += timeOfSolution;
+            delete integerSolver;
+        }
+    }
+
+    const int siName_size = siName.size();
+    for ( i=0; i<siName_size; i++ ) {
+        std::cerr
+            <<siName[i]
+            <<" solved "
+            <<numProbSolved[i]
+            <<" out of "
+            <<objValue.size()
+            <<" and took "
+            <<timeTaken[i]
+            <<" seconds."
+            <<std::endl;
+    }
 }
 #endif	// COIN_HAS_CBC
 
 //----------------------------------------------------------------
 // unitTest  [-miplibDir=V2]
-// 
+//
 // where:
 //   -miplibDir: directory containing miplib files
 //       Default value V2="./examples/miplib3"
@@ -316,105 +316,104 @@ void CbcMiplibTest (const std::vector<OsiCbcSolverInterface*> & vecEmptySiP,
 
 int mainTest (int argc, const char *argv[])
 {
-  int i;
+    int i;
 
 
-  // define valid parameter keywords
-  std::set<std::string> definedKeyWords;
-  definedKeyWords.insert("-miplibDir");
+    // define valid parameter keywords
+    std::set<std::string> definedKeyWords;
+    definedKeyWords.insert("-miplibDir");
 
-  // Create a map of parameter keys and associated data
-  std::map<std::string,std::string> parms;
-  for ( i=1; i<argc; i++ ) {
-    std::string parm(argv[i]);
-    std::string key,value;
-    unsigned int  eqPos = parm.find('=');
+    // Create a map of parameter keys and associated data
+    std::map<std::string,std::string> parms;
+    for ( i=1; i<argc; i++ ) {
+        std::string parm(argv[i]);
+        std::string key,value;
+        unsigned int  eqPos = parm.find('=');
 
-    // Does parm contain and '='
-    if ( eqPos==std::string::npos ) {
-      //Parm does not contain '='
-      key = parm;
+        // Does parm contain and '='
+        if ( eqPos==std::string::npos ) {
+            //Parm does not contain '='
+            key = parm;
+        } else {
+            key=parm.substr(0,eqPos);
+            value=parm.substr(eqPos+1);
+        }
+
+        // Is specifed key valid?
+        if ( definedKeyWords.find(key) == definedKeyWords.end() ) {
+            // invalid key word.
+            // Write help text
+            std::cerr <<"Undefined parameter \"" <<key <<"\".\n";
+            std::cerr <<"Correct usage: \n";
+            std::cerr <<"  unitTest [-miplibDir=V2] \n";
+            std::cerr <<"  where:\n";
+            std::cerr <<"    -miplibDir: directory containing miplib files\n";
+            std::cerr <<"        Default value V2=\"./Data/miplib3\"\n";
+            return 1;
+        }
+        parms[key]=value;
     }
-    else {
-      key=parm.substr(0,eqPos);
-      value=parm.substr(eqPos+1);
-    }
 
-    // Is specifed key valid?
-    if ( definedKeyWords.find(key) == definedKeyWords.end() ) {
-      // invalid key word.
-      // Write help text
-      std::cerr <<"Undefined parameter \"" <<key <<"\".\n";
-      std::cerr <<"Correct usage: \n";
-      std::cerr <<"  unitTest [-miplibDir=V2] \n";
-      std::cerr <<"  where:\n";
-      std::cerr <<"    -miplibDir: directory containing miplib files\n";
-      std::cerr <<"        Default value V2=\"./Data/miplib3\"\n";
-      return 1;
-    }
-    parms[key]=value;
-  }
-  
-  const char dirsep =  CoinFindDirSeparator();
- 
-  // Set directory containing miplib data files.
-  std::string miplibDir;
-  if (parms.find("-miplibDir") != parms.end())
-    miplibDir=parms["-miplibDir"] + dirsep;
-  else 
-    miplibDir = dirsep == '/' ? "./Data/miplib3/" : ".\\Data\\miplib3\\";
+    const char dirsep =  CoinFindDirSeparator();
+
+    // Set directory containing miplib data files.
+    std::string miplibDir;
+    if (parms.find("-miplibDir") != parms.end())
+        miplibDir=parms["-miplibDir"] + dirsep;
+    else
+        miplibDir = dirsep == '/' ? "./Data/miplib3/" : ".\\Data\\miplib3\\";
 #ifdef COIN_HAS_CBC
 
-  {
-    // Create vector of solver interfaces
-    std::vector<OsiCbcSolverInterface*> vecSi;
-    CbcStrategyDefault strategy(0);
+    {
+        // Create vector of solver interfaces
+        std::vector<OsiCbcSolverInterface*> vecSi;
+        CbcStrategyDefault strategy(0);
 #   if COIN_HAS_OSL
-    OsiSolverInterface * oslSi = new OsiOslSolverInterface;
-    vecSi.push_back(new OsiCbcSolverInterface(oslSi,&strategy));
+        OsiSolverInterface * oslSi = new OsiOslSolverInterface;
+        vecSi.push_back(new OsiCbcSolverInterface(oslSi,&strategy));
 #endif
 #   if COIN_HAS_SPX
-    OsiSolverInterface * spxSi = new OsiSpxSolverInterface;
-    vecSi.push_back(new OsiCbcSolverInterface(spxSi,&strategy));
+        OsiSolverInterface * spxSi = new OsiSpxSolverInterface;
+        vecSi.push_back(new OsiCbcSolverInterface(spxSi,&strategy));
 #endif
 #   if COIN_HAS_CLP
-    OsiSolverInterface *clpSi = new OsiClpSolverInterface ;
-    /* Quiet, already! */
-    clpSi->setHintParam(OsiDoReducePrint,true,OsiHintDo) ;
-    vecSi.push_back(new OsiCbcSolverInterface(clpSi,&strategy));
+        OsiSolverInterface *clpSi = new OsiClpSolverInterface ;
+        /* Quiet, already! */
+        clpSi->setHintParam(OsiDoReducePrint,true,OsiHintDo) ;
+        vecSi.push_back(new OsiCbcSolverInterface(clpSi,&strategy));
 #endif
 #   if COIN_HAS_DYLP
-    OsiSolverInterface * dylpSi = new OsiDylpSolverInterface;
-    vecSi.push_back(new OsiCbcSolverInterface(dylpSi,&strategy));
+        OsiSolverInterface * dylpSi = new OsiDylpSolverInterface;
+        vecSi.push_back(new OsiCbcSolverInterface(dylpSi,&strategy));
 #endif
 #   if COIN_HAS_GLPK
-    OsiSolverInterface * glpkSi = new OsiGlpkSolverInterface;
-    vecSi.push_back(new OsiCbcSolverInterface(glpkSi,&strategy));
+        OsiSolverInterface * glpkSi = new OsiGlpkSolverInterface;
+        vecSi.push_back(new OsiCbcSolverInterface(glpkSi,&strategy));
 #endif
 
-    testingMessage( "Testing some miplib stuff\n" );
-    CbcMiplibTest(vecSi,miplibDir);
+        testingMessage( "Testing some miplib stuff\n" );
+        CbcMiplibTest(vecSi,miplibDir);
 
-    unsigned int i;
-    for (i=0; i<vecSi.size(); i++)
-      delete vecSi[i];
-  }
+        unsigned int i;
+        for (i=0; i<vecSi.size(); i++)
+            delete vecSi[i];
+    }
 #else	// COIN_HAS_CBC
-  std::cerr
-    << "cbc has been built without OsiCbc support. To enable the -miplib\n"
-    << "option, you must enable libOsiCbc in Makefile.location, then\n"
-    << "execute the command `make clean cbc' to rebuild the cbc program."
-    << std::endl ;
+    std::cerr
+        << "cbc has been built without OsiCbc support. To enable the -miplib\n"
+        << "option, you must enable libOsiCbc in Makefile.location, then\n"
+        << "execute the command `make clean cbc' to rebuild the cbc program."
+        << std::endl ;
 #endif	// COIN_HAS_CBC
-  testingMessage( "All tests completed successfully\n" );
-  return 0;
+    testingMessage( "All tests completed successfully\n" );
+    return 0;
 }
 
- 
+
 // Display message on stdout and stderr
 void testingMessage( const char * const msg )
 {
-  std::cerr << msg << std::endl ;
-  // std::cout << msg << std::endl ;
+    std::cerr << msg << std::endl ;
+    // std::cout << msg << std::endl ;
 }
 

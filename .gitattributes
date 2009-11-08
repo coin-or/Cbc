@@ -87,6 +87,7 @@ Cbc/src/CbcModel_stro.cpp -text
 Cbc/src/CbcModel_stro.hpp -text
 Cbc/src/CbcModel_stro2.cpp -text
 Cbc/src/CbcModel_stro3.cpp -text
+Cbc/src/CbcModel_stroP.hpp -text
 Cbc/src/CbcNode_ansi.cpp -text
 Cbc/src/CbcNode_ansi.hpp -text
 Cbc/src/CbcNode_ban.cpp -text
@@ -95,6 +96,8 @@ Cbc/src/CbcNode_kr.cpp -text
 Cbc/src/CbcNode_kr.hpp -text
 Cbc/src/CbcNode_stro.cpp -text
 Cbc/src/CbcNode_stro.hpp -text
+Cbc/src/CbcNode_stroP.cpp -text
+Cbc/src/CbcNode_stroP.hpp -text
 Cbc/src/CbcParam_ansi.cpp -text
 Cbc/src/CbcParam_ansi.hpp -text
 Cbc/src/CbcParam_ban.cpp -text
@@ -103,6 +106,8 @@ Cbc/src/CbcParam_kr.cpp -text
 Cbc/src/CbcParam_kr.hpp -text
 Cbc/src/CbcParam_stro.cpp -text
 Cbc/src/CbcParam_stro.hpp -text
+Cbc/src/CbcParam_stroP.cpp -text
+Cbc/src/CbcParam_stroP.hpp -text
 Cbc/src/CbcSolver.cpp -text
 Cbc/src/CbcSolver.hpp -text
 Cbc/src/CbcSolver_ansi.cpp -text
@@ -113,6 +118,8 @@ Cbc/src/CbcSolver_kr.cpp -text
 Cbc/src/CbcSolver_kr.hpp -text
 Cbc/src/CbcSolver_stro.cpp -text
 Cbc/src/CbcSolver_stro.hpp -text
+Cbc/src/CbcSolver_stroP.cpp -text
+Cbc/src/CbcSolver_stroP.hpp -text
 Cbc/src/CbcTree_ansi.cpp -text
 Cbc/src/CbcTree_ansi.hpp -text
 Cbc/src/CbcTree_ban.cpp -text
@@ -121,6 +128,8 @@ Cbc/src/CbcTree_kr.cpp -text
 Cbc/src/CbcTree_kr.hpp -text
 Cbc/src/CbcTree_stro.cpp -text
 Cbc/src/CbcTree_stro.hpp -text
+Cbc/src/CbcTree_stroP.cpp -text
+Cbc/src/CbcTree_stroP.hpp -text
 Cbc/src/ClpAmplObjective.cpp -text
 Cbc/src/ClpAmplObjective.hpp -text
 Cbc/src/ClpAmplStuff.cpp -text

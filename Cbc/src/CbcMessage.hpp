@@ -79,7 +79,7 @@ public:
     /**@name Constructors etc */
     //@{
     /** Constructor */
-    CbcMessage(Language language=us_en);
+    CbcMessage(Language language = us_en);
     //@}
 
 };

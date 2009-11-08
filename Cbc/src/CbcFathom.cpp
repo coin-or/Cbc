@@ -19,7 +19,7 @@
 
 // Default Constructor
 CbcFathom::CbcFathom()
-        :model_(NULL),
+        : model_(NULL),
         possible_(false)
 {
 }
@@ -35,7 +35,7 @@ CbcFathom::CbcFathom(CbcModel & model)
 void
 CbcFathom::resetModel(CbcModel * model)
 {
-    model_=model;
+    model_ = model;
 }
 
 // Destructor
@@ -95,7 +95,7 @@ CbcOsiSolver::~CbcOsiSolver ()
 // Assignment operator
 //-------------------------------------------------------------------
 CbcOsiSolver &
-CbcOsiSolver::operator=(const CbcOsiSolver& rhs)
+CbcOsiSolver::operator=(const CbcOsiSolver & rhs)
 {
     if (this != &rhs) {
         OsiClpSolverInterface::operator=(rhs);

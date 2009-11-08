@@ -22,7 +22,7 @@ CbcCountRowCut::CbcCountRowCut ()
         whichCutGenerator_(-1)
 {
 #ifdef CHECK_CUT_COUNTS
-    printf("CbcCountRowCut default constructor %x\n",this);
+    printf("CbcCountRowCut default constructor %x\n", this);
 #endif
 }
 
@@ -35,7 +35,7 @@ CbcCountRowCut::CbcCountRowCut (const OsiRowCut & rhs)
         whichCutGenerator_(-1)
 {
 #ifdef CHECK_CUT_COUNTS
-    printf("CbcCountRowCut constructor %x from RowCut\n",this);
+    printf("CbcCountRowCut constructor %x from RowCut\n", this);
 #endif
 }
 // Copy Constructor
@@ -51,43 +51,43 @@ CbcCountRowCut::CbcCountRowCut (const OsiRowCut & rhs,
 {
 #ifdef CHECK_CUT_COUNTS
     printf("CbcCountRowCut constructor %x from RowCut and info %d\n",
-           this,numberPointingToThis_);
+           this, numberPointingToThis_);
 #endif
-    assert (!numberPointingToThis||numberPointingToThis==1000000000);
+    assert (!numberPointingToThis || numberPointingToThis == 1000000000);
 }
 CbcCountRowCut::~CbcCountRowCut()
 {
 #ifdef CHECK_CUT_COUNTS
-    printf("CbcCountRowCut destructor %x - references %d\n",this,
+    printf("CbcCountRowCut destructor %x - references %d\n", this,
            numberPointingToThis_);
 #endif
     // Look at owner and delete
     owner_->deleteCut(ownerCut_);
-    ownerCut_=-1234567;
+    ownerCut_ = -1234567;
 }
 // Increment number of references
 void
 CbcCountRowCut::increment(int change)
 {
-    assert(ownerCut_!=-1234567);
-    numberPointingToThis_+=change;
+    assert(ownerCut_ != -1234567);
+    numberPointingToThis_ += change;
 }
 
 // Decrement number of references and return number left
 int
 CbcCountRowCut::decrement(int change)
 {
-    assert(ownerCut_!=-1234567);
+    assert(ownerCut_ != -1234567);
     // See if plausible number
-    if (change<900000000) {
+    if (change < 900000000) {
         //assert(numberPointingToThis_>=change);
-        assert(numberPointingToThis_>=0);
-        if (numberPointingToThis_<change) {
-            assert(numberPointingToThis_>0);
-            printf("negative cut count %d - %d\n",numberPointingToThis_, change);
+        assert(numberPointingToThis_ >= 0);
+        if (numberPointingToThis_ < change) {
+            assert(numberPointingToThis_ > 0);
+            printf("negative cut count %d - %d\n", numberPointingToThis_, change);
             change = numberPointingToThis_;
         }
-        numberPointingToThis_-=change;
+        numberPointingToThis_ -= change;
     }
     return numberPointingToThis_;
 }
@@ -96,27 +96,27 @@ CbcCountRowCut::decrement(int change)
 void
 CbcCountRowCut::setInfo(CbcNodeInfo * info, int whichOne)
 {
-    owner_=info;
-    ownerCut_=whichOne;
+    owner_ = info;
+    ownerCut_ = whichOne;
 }
 // Returns true if can drop cut if slack basic
 bool
 CbcCountRowCut::canDropCut(const OsiSolverInterface * solver, int iRow) const
 {
     // keep if COIN_DBL_MAX otherwise keep if slack zero
-    if (effectiveness()<1.0e20) {
+    if (effectiveness() < 1.0e20) {
         return true;
-    } else if (effectiveness()!=COIN_DBL_MAX) {
-        if (iRow>=solver->getNumRows())
+    } else if (effectiveness() != COIN_DBL_MAX) {
+        if (iRow >= solver->getNumRows())
             return true;
         const double * rowActivity = solver->getRowActivity();
         const double * rowLower = solver->getRowLower();
         const double * rowUpper = solver->getRowUpper();
         double tolerance;
-        solver->getDblParam(OsiPrimalTolerance,tolerance) ;
+        solver->getDblParam(OsiPrimalTolerance, tolerance) ;
         double value = rowActivity[iRow];
-        if (value<rowLower[iRow]+tolerance||
-                value>rowUpper[iRow]-tolerance)
+        if (value < rowLower[iRow] + tolerance ||
+                value > rowUpper[iRow] - tolerance)
             return false;
         else
             return true;

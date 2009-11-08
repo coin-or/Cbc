@@ -94,7 +94,7 @@ public:
                              int numberInfeasibilitiesAtContinuous) ;
     // This allows method to change behavior
     // Return true if want tree re-sorted
-    virtual bool every1000Nodes(CbcModel * model,int numberNodes);
+    virtual bool every1000Nodes(CbcModel * model, int numberNodes);
 
     /* if weight == -1.0 then fewest infeasibilities (before solution)
        if -2.0 then do breadth first just for first 1000 nodes

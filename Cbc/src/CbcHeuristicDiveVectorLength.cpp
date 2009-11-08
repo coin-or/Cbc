@@ -11,13 +11,13 @@
 
 // Default Constructor
 CbcHeuristicDiveVectorLength::CbcHeuristicDiveVectorLength()
-        :CbcHeuristicDive()
+        : CbcHeuristicDive()
 {
 }
 
 // Constructor from model
 CbcHeuristicDiveVectorLength::CbcHeuristicDiveVectorLength(CbcModel & model)
-        :CbcHeuristicDive(model)
+        : CbcHeuristicDive(model)
 {
 }
 
@@ -38,10 +38,10 @@ void
 CbcHeuristicDiveVectorLength::generateCpp( FILE * fp)
 {
     CbcHeuristicDiveVectorLength other;
-    fprintf(fp,"0#include \"CbcHeuristicDiveVectorLength.hpp\"\n");
-    fprintf(fp,"3  CbcHeuristicDiveVectorLength heuristicDiveVectorLength(*cbcModel);\n");
-    CbcHeuristic::generateCpp(fp,"heuristicDiveVectorLength");
-    fprintf(fp,"3  cbcModel->addHeuristic(&heuristicDiveVectorLength);\n");
+    fprintf(fp, "0#include \"CbcHeuristicDiveVectorLength.hpp\"\n");
+    fprintf(fp, "3  CbcHeuristicDiveVectorLength heuristicDiveVectorLength(*cbcModel);\n");
+    CbcHeuristic::generateCpp(fp, "heuristicDiveVectorLength");
+    fprintf(fp, "3  cbcModel->addHeuristic(&heuristicDiveVectorLength);\n");
 }
 
 // Copy constructor
@@ -53,9 +53,9 @@ CbcHeuristicDiveVectorLength::CbcHeuristicDiveVectorLength(const CbcHeuristicDiv
 
 // Assignment operator
 CbcHeuristicDiveVectorLength &
-CbcHeuristicDiveVectorLength::operator=( const CbcHeuristicDiveVectorLength& rhs)
+CbcHeuristicDiveVectorLength::operator=( const CbcHeuristicDiveVectorLength & rhs)
 {
-    if (this!=&rhs) {
+    if (this != &rhs) {
         CbcHeuristicDive::operator=(rhs);
     }
     return *this;
@@ -79,15 +79,15 @@ CbcHeuristicDiveVectorLength::selectVariableToBranch(OsiSolverInterface* solver,
     bestRound = -1; // -1 rounds down, +1 rounds up
     double bestScore = DBL_MAX;
     bool allTriviallyRoundableSoFar = true;
-    for (int i=0; i<numberIntegers; i++) {
+    for (int i = 0; i < numberIntegers; i++) {
         int iColumn = integerVariable[i];
-        double value=newSolution[iColumn];
-        double fraction=value-floor(value);
+        double value = newSolution[iColumn];
+        double fraction = value - floor(value);
         int round = 0;
-        if (fabs(floor(value+0.5)-value)>integerTolerance) {
-            if (allTriviallyRoundableSoFar||(downLocks_[i]>0&&upLocks_[i]>0)) {
+        if (fabs(floor(value + 0.5) - value) > integerTolerance) {
+            if (allTriviallyRoundableSoFar || (downLocks_[i] > 0 && upLocks_[i] > 0)) {
 
-                if (allTriviallyRoundableSoFar&&downLocks_[i]>0&&upLocks_[i]>0) {
+                if (allTriviallyRoundableSoFar && downLocks_[i] > 0 && upLocks_[i] > 0) {
                     allTriviallyRoundableSoFar = false;
                     bestScore = DBL_MAX;
                 }

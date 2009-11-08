@@ -11,13 +11,13 @@
 
 // Default Constructor
 CbcHeuristicDiveGuided::CbcHeuristicDiveGuided()
-        :CbcHeuristicDive()
+        : CbcHeuristicDive()
 {
 }
 
 // Constructor from model
 CbcHeuristicDiveGuided::CbcHeuristicDiveGuided(CbcModel & model)
-        :CbcHeuristicDive(model)
+        : CbcHeuristicDive(model)
 {
 }
 
@@ -38,10 +38,10 @@ void
 CbcHeuristicDiveGuided::generateCpp( FILE * fp)
 {
     CbcHeuristicDiveGuided other;
-    fprintf(fp,"0#include \"CbcHeuristicDiveGuided.hpp\"\n");
-    fprintf(fp,"3  CbcHeuristicDiveGuided heuristicDiveGuided(*cbcModel);\n");
-    CbcHeuristic::generateCpp(fp,"heuristicDiveGuided");
-    fprintf(fp,"3  cbcModel->addHeuristic(&heuristicDiveGuided);\n");
+    fprintf(fp, "0#include \"CbcHeuristicDiveGuided.hpp\"\n");
+    fprintf(fp, "3  CbcHeuristicDiveGuided heuristicDiveGuided(*cbcModel);\n");
+    CbcHeuristic::generateCpp(fp, "heuristicDiveGuided");
+    fprintf(fp, "3  cbcModel->addHeuristic(&heuristicDiveGuided);\n");
 }
 
 // Copy constructor
@@ -53,9 +53,9 @@ CbcHeuristicDiveGuided::CbcHeuristicDiveGuided(const CbcHeuristicDiveGuided & rh
 
 // Assignment operator
 CbcHeuristicDiveGuided &
-CbcHeuristicDiveGuided::operator=( const CbcHeuristicDiveGuided& rhs)
+CbcHeuristicDiveGuided::operator=( const CbcHeuristicDiveGuided & rhs)
 {
-    if (this!=&rhs) {
+    if (this != &rhs) {
         CbcHeuristicDive::operator=(rhs);
     }
     return *this;
@@ -87,15 +87,15 @@ CbcHeuristicDiveGuided::selectVariableToBranch(OsiSolverInterface* solver,
     bestRound = -1; // -1 rounds down, +1 rounds up
     double bestFraction = DBL_MAX;
     bool allTriviallyRoundableSoFar = true;
-    for (int i=0; i<numberIntegers; i++) {
+    for (int i = 0; i < numberIntegers; i++) {
         int iColumn = integerVariable[i];
-        double value=newSolution[iColumn];
-        double fraction=value-floor(value);
+        double value = newSolution[iColumn];
+        double fraction = value - floor(value);
         int round = 0;
-        if (fabs(floor(value+0.5)-value)>integerTolerance) {
-            if (allTriviallyRoundableSoFar||(downLocks_[i]>0&&upLocks_[i]>0)) {
+        if (fabs(floor(value + 0.5) - value) > integerTolerance) {
+            if (allTriviallyRoundableSoFar || (downLocks_[i] > 0 && upLocks_[i] > 0)) {
 
-                if (allTriviallyRoundableSoFar&&downLocks_[i]>0&&upLocks_[i]>0) {
+                if (allTriviallyRoundableSoFar && downLocks_[i] > 0 && upLocks_[i] > 0) {
                     allTriviallyRoundableSoFar = false;
                     bestFraction = DBL_MAX;
                 }

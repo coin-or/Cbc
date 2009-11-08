@@ -55,7 +55,7 @@ public:
     virtual bool boundBranch() const ;
 
     /// Creates a branching object
-    virtual CbcBranchingObject * createCbcBranch(OsiSolverInterface * solver,const OsiBranchingInformation * info, int way) ;
+    virtual CbcBranchingObject * createCbcBranch(OsiSolverInterface * solver, const OsiBranchingInformation * info, int way) ;
 
     /** \brief Given a valid solution (with reduced costs, etc.),
         return a branching object which would give a new feasible
@@ -212,9 +212,9 @@ public:
     */
     CbcBranchToFixLots (CbcModel * model, double djTolerance,
                         double fractionFixed, int depth,
-                        int numberClean=0,
-                        const char * mark=NULL,
-                        bool alwaysCreate=false);
+                        int numberClean = 0,
+                        const char * mark = NULL,
+                        bool alwaysCreate = false);
 
     // Copy constructor
     CbcBranchToFixLots ( const CbcBranchToFixLots &);
@@ -243,7 +243,7 @@ public:
     }
 
     /// Creates a branching object
-    virtual CbcBranchingObject * createCbcBranch(OsiSolverInterface * solver,const OsiBranchingInformation * info, int way) ;
+    virtual CbcBranchingObject * createCbcBranch(OsiSolverInterface * solver, const OsiBranchingInformation * info, int way) ;
     /// Redoes data when sequence numbers change
     virtual void redoSequenceEtc(CbcModel * model, int numberColumns, const int * originalColumns);
 
@@ -282,7 +282,7 @@ public:
 
     /** Useful constructor - passed set of integer variables which must all be different
     */
-    CbcBranchAllDifferent (CbcModel * model, int number,const int * which);
+    CbcBranchAllDifferent (CbcModel * model, int number, const int * which);
 
     // Copy constructor
     CbcBranchAllDifferent ( const CbcBranchAllDifferent &);
@@ -301,7 +301,7 @@ public:
                                  int &preferredWay) const;
 
     /// Creates a branching object
-    virtual CbcBranchingObject * createCbcBranch(OsiSolverInterface * solver,const OsiBranchingInformation * info, int way) ;
+    virtual CbcBranchingObject * createCbcBranch(OsiSolverInterface * solver, const OsiBranchingInformation * info, int way) ;
 
 
 protected:

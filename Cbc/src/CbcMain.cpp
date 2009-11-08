@@ -76,27 +76,27 @@ public:
     int treeSize_;
     // Default Constructor
     CbcCompareUser () : CbcCompareBase(),
-            weight_(-1.0),saveWeight_(0.0),numberSolutions_(0),
+            weight_(-1.0), saveWeight_(0.0), numberSolutions_(0),
             treeSize_(0) {
-        test_=this;
+        test_ = this;
     };
 
     // Copy constructor
     CbcCompareUser ( const CbcCompareUser &rhs)
             : CbcCompareBase(rhs) {
-        weight_=rhs.weight_;
+        weight_ = rhs.weight_;
         saveWeight_ = rhs.saveWeight_;
-        numberSolutions_=rhs.numberSolutions_;
+        numberSolutions_ = rhs.numberSolutions_;
         treeSize_ = rhs.treeSize_;
     };
 
     // Assignment operator
     CbcCompareUser & operator=( const CbcCompareUser& rhs) {
-        if (this!=&rhs) {
+        if (this != &rhs) {
             CbcCompareBase::operator=(rhs);
-            weight_=rhs.weight_;
+            weight_ = rhs.weight_;
             saveWeight_ = rhs.saveWeight_;
-            numberSolutions_=rhs.numberSolutions_;
+            numberSolutions_ = rhs.numberSolutions_;
             treeSize_ = rhs.treeSize_;
         }
         return *this;
@@ -115,7 +115,7 @@ public:
        after solution weighted value of y is less than weighted value of x
     */
     virtual bool test (CbcNode * x, CbcNode * y) {
-        if (weight_==-1.0) {
+        if (weight_ == -1.0) {
             // before solution
             if (x->numberUnsatisfied() > y->numberUnsatisfied())
                 return true;
@@ -125,8 +125,8 @@ public:
                 return x->depth() < y->depth();
         } else {
             // after solution
-            double weight = CoinMax(weight_,0.0);
-            return x->objectiveValue()+ weight*x->numberUnsatisfied() >
+            double weight = CoinMax(weight_, 0.0);
+            return x->objectiveValue() + weight*x->numberUnsatisfied() >
                    y->objectiveValue() + weight*y->numberUnsatisfied();
         }
     }
@@ -135,36 +135,36 @@ public:
     virtual void newSolution(CbcModel * model,
                              double objectiveAtContinuous,
                              int numberInfeasibilitiesAtContinuous) {
-        if (model->getSolutionCount()==model->getNumberHeuristicSolutions())
+        if (model->getSolutionCount() == model->getNumberHeuristicSolutions())
             return; // solution was got by rounding
         // set to get close to this solution
         double costPerInteger =
-            (model->getObjValue()-objectiveAtContinuous)/
+            (model->getObjValue() - objectiveAtContinuous) /
             ((double) numberInfeasibilitiesAtContinuous);
-        weight_ = 0.98*costPerInteger;
-        saveWeight_=weight_;
+        weight_ = 0.98 * costPerInteger;
+        saveWeight_ = weight_;
         numberSolutions_++;
-        if (numberSolutions_>5)
-            weight_ =0.0; // this searches on objective
+        if (numberSolutions_ > 5)
+            weight_ = 0.0; // this searches on objective
     }
     // This allows method to change behavior
     virtual bool every1000Nodes(CbcModel * model, int numberNodes) {
-        if (numberNodes>10000)
-            weight_ =0.0; // this searches on objective
-        else if (numberNodes==1000&&weight_==-2.0)
-            weight_=-1.0; // Go to depth first
+        if (numberNodes > 10000)
+            weight_ = 0.0; // this searches on objective
+        else if (numberNodes == 1000 && weight_ == -2.0)
+            weight_ = -1.0; // Go to depth first
         // get size of tree
         treeSize_ = model->tree()->size();
-        if (treeSize_>10000) {
+        if (treeSize_ > 10000) {
             // set weight to reduce size most of time
-            if (treeSize_>20000)
-                weight_=-1.0;
-            else if ((numberNodes%4000)!=0)
-                weight_=-1.0;
+            if (treeSize_ > 20000)
+                weight_ = -1.0;
+            else if ((numberNodes % 4000) != 0)
+                weight_ = -1.0;
             else
-                weight_=saveWeight_;
+                weight_ = saveWeight_;
         }
-        return numberNodes==11000; // resort if first time
+        return numberNodes == 11000; // resort if first time
     }
 };
 
@@ -181,206 +181,206 @@ void establishParams (int &numberParameters, CbcParam *const parameters)
 {
     numberParameters = 0 ;
 
-    parameters[numberParameters++]=
-        CbcParam("?","For help",GENERALQUERY);
-    parameters[numberParameters++]=
+    parameters[numberParameters++] =
+        CbcParam("?", "For help", GENERALQUERY);
+    parameters[numberParameters++] =
         CbcParam("dualT!olerance",
                  "For an optimal solution no dual infeasibility may "
                  "exceed this value",
-                 1.0e-20,1.0e12,DUALTOLERANCE);
-    parameters[numberParameters++]=
+                 1.0e-20, 1.0e12, DUALTOLERANCE);
+    parameters[numberParameters++] =
         CbcParam("primalT!olerance",
                  "For an optimal solution no primal infeasibility may "
                  " exceed this value",
-                 1.0e-20,1.0e12,PRIMALTOLERANCE);
-    parameters[numberParameters++]=
-        CbcParam("inf!easibilityWeight","Each integer infeasibility is expected \
+                 1.0e-20, 1.0e12, PRIMALTOLERANCE);
+    parameters[numberParameters++] =
+        CbcParam("inf!easibilityWeight", "Each integer infeasibility is expected \
 to cost this much",
-                 0.0,1.0e20,INFEASIBILITYWEIGHT);
-    parameters[numberParameters++]=
-        CbcParam("integerT!olerance","For an optimal solution \
+                 0.0, 1.0e20, INFEASIBILITYWEIGHT);
+    parameters[numberParameters++] =
+        CbcParam("integerT!olerance", "For an optimal solution \
 no integer variable may be this away from an integer value",
-                 1.0e-20,0.5,INTEGERTOLERANCE);
-    parameters[numberParameters++]=
-        CbcParam("inc!rement","A valid solution must be at least this \
+                 1.0e-20, 0.5, INTEGERTOLERANCE);
+    parameters[numberParameters++] =
+        CbcParam("inc!rement", "A valid solution must be at least this \
 much better than last integer solution",
-                 -1.0e20,1.0e20,INCREMENT);
-    parameters[numberParameters++]=
-        CbcParam("allow!ableGap","Stop when gap between best possible and \
+                 -1.0e20, 1.0e20, INCREMENT);
+    parameters[numberParameters++] =
+        CbcParam("allow!ableGap", "Stop when gap between best possible and \
 best less than this",
-                 0.0,1.0e20,ALLOWABLEGAP);
-    parameters[numberParameters++]=
-        CbcParam("ratio!Gap","Stop when gap between best possible and \
+                 0.0, 1.0e20, ALLOWABLEGAP);
+    parameters[numberParameters++] =
+        CbcParam("ratio!Gap", "Stop when gap between best possible and \
 best less than this fraction of larger of two",
-                 0.0,1.0e20,GAPRATIO);
-    parameters[numberParameters++]=
-        CbcParam("fix!OnDj","Try heuristic based on fixing variables with \
+                 0.0, 1.0e20, GAPRATIO);
+    parameters[numberParameters++] =
+        CbcParam("fix!OnDj", "Try heuristic based on fixing variables with \
 reduced costs greater than this",
-                 -1.0e20,1.0e20,DJFIX);
-    parameters[numberParameters++]=
-        CbcParam("tighten!Factor","Tighten bounds using this times largest \
+                 -1.0e20, 1.0e20, DJFIX);
+    parameters[numberParameters++] =
+        CbcParam("tighten!Factor", "Tighten bounds using this times largest \
 activity at continuous solution",
-                 1.0,1.0e20,TIGHTENFACTOR);
-    parameters[numberParameters++]=
-        CbcParam("log!Level","Level of detail in BAB output",
-                 0,63,LOGLEVEL);
-    parameters[numberParameters++]=
-        CbcParam("slog!Level","Level of detail in Solver output",
-                 0,63,SOLVERLOGLEVEL);
-    parameters[numberParameters++]=
-        CbcParam("maxN!odes","Maximum number of nodes to do",
-                 1,999999,MAXNODES);
-    parameters[numberParameters++]=
-        CbcParam("strong!Branching","Number of variables to look at in strong branching",
-                 0,999999,STRONGBRANCHING);
-    parameters[numberParameters++]=
-        CbcParam("direction","Minimize or Maximize",
-                 "min!imize",DIRECTION);
+                 1.0, 1.0e20, TIGHTENFACTOR);
+    parameters[numberParameters++] =
+        CbcParam("log!Level", "Level of detail in BAB output",
+                 0, 63, LOGLEVEL);
+    parameters[numberParameters++] =
+        CbcParam("slog!Level", "Level of detail in Solver output",
+                 0, 63, SOLVERLOGLEVEL);
+    parameters[numberParameters++] =
+        CbcParam("maxN!odes", "Maximum number of nodes to do",
+                 1, 999999, MAXNODES);
+    parameters[numberParameters++] =
+        CbcParam("strong!Branching", "Number of variables to look at in strong branching",
+                 0, 999999, STRONGBRANCHING);
+    parameters[numberParameters++] =
+        CbcParam("direction", "Minimize or Maximize",
+                 "min!imize", DIRECTION);
     parameters[numberParameters-1].append("max!imize");
-    parameters[numberParameters++]=
-        CbcParam("error!sAllowed","Whether to allow import errors",
-                 "off",ERRORSALLOWED);
+    parameters[numberParameters++] =
+        CbcParam("error!sAllowed", "Whether to allow import errors",
+                 "off", ERRORSALLOWED);
     parameters[numberParameters-1].append("on");
-    parameters[numberParameters++]=
-        CbcParam("gomory!Cuts","Whether to use Gomory cuts",
-                 "off",GOMORYCUTS);
-    parameters[numberParameters-1].append("on");
-    parameters[numberParameters-1].append("root");
-    parameters[numberParameters++]=
-        CbcParam("probing!Cuts","Whether to use Probing cuts",
-                 "off",PROBINGCUTS);
+    parameters[numberParameters++] =
+        CbcParam("gomory!Cuts", "Whether to use Gomory cuts",
+                 "off", GOMORYCUTS);
     parameters[numberParameters-1].append("on");
     parameters[numberParameters-1].append("root");
-    parameters[numberParameters++]=
-        CbcParam("knapsack!Cuts","Whether to use Knapsack cuts",
-                 "off",KNAPSACKCUTS);
+    parameters[numberParameters++] =
+        CbcParam("probing!Cuts", "Whether to use Probing cuts",
+                 "off", PROBINGCUTS);
     parameters[numberParameters-1].append("on");
     parameters[numberParameters-1].append("root");
-    parameters[numberParameters++]=
-        CbcParam("oddhole!Cuts","Whether to use Oddhole cuts",
-                 "off",ODDHOLECUTS);
+    parameters[numberParameters++] =
+        CbcParam("knapsack!Cuts", "Whether to use Knapsack cuts",
+                 "off", KNAPSACKCUTS);
     parameters[numberParameters-1].append("on");
     parameters[numberParameters-1].append("root");
-    parameters[numberParameters++]=
-        CbcParam("clique!Cuts","Whether to use Clique cuts",
-                 "off",CLIQUECUTS);
+    parameters[numberParameters++] =
+        CbcParam("oddhole!Cuts", "Whether to use Oddhole cuts",
+                 "off", ODDHOLECUTS);
     parameters[numberParameters-1].append("on");
     parameters[numberParameters-1].append("root");
-    parameters[numberParameters++]=
-        CbcParam("mixed!IntegerRoundingCuts","Whether to use Mixed Integer Rounding cuts",
-                 "off",MIXEDCUTS);
+    parameters[numberParameters++] =
+        CbcParam("clique!Cuts", "Whether to use Clique cuts",
+                 "off", CLIQUECUTS);
     parameters[numberParameters-1].append("on");
     parameters[numberParameters-1].append("root");
-    parameters[numberParameters++]=
-        CbcParam("flow!CoverCuts","Whether to use Flow Cover cuts",
-                 "off",FLOWCUTS);
+    parameters[numberParameters++] =
+        CbcParam("mixed!IntegerRoundingCuts", "Whether to use Mixed Integer Rounding cuts",
+                 "off", MIXEDCUTS);
     parameters[numberParameters-1].append("on");
     parameters[numberParameters-1].append("root");
-    parameters[numberParameters++]=
-        CbcParam("two!MirCuts","Whether to use Two phase Mixed Integer Rounding cuts",
-                 "off",TWOMIRCUTS);
+    parameters[numberParameters++] =
+        CbcParam("flow!CoverCuts", "Whether to use Flow Cover cuts",
+                 "off", FLOWCUTS);
     parameters[numberParameters-1].append("on");
     parameters[numberParameters-1].append("root");
-    parameters[numberParameters++]=
-        CbcParam("round!ingHeuristic","Whether to use Rounding heuristic",
-                 "off",ROUNDING);
+    parameters[numberParameters++] =
+        CbcParam("two!MirCuts", "Whether to use Two phase Mixed Integer Rounding cuts",
+                 "off", TWOMIRCUTS);
     parameters[numberParameters-1].append("on");
-    parameters[numberParameters++]=
-        CbcParam("cost!Strategy","How to use costs",
-                 "off",COSTSTRATEGY);
+    parameters[numberParameters-1].append("root");
+    parameters[numberParameters++] =
+        CbcParam("round!ingHeuristic", "Whether to use Rounding heuristic",
+                 "off", ROUNDING);
+    parameters[numberParameters-1].append("on");
+    parameters[numberParameters++] =
+        CbcParam("cost!Strategy", "How to use costs",
+                 "off", COSTSTRATEGY);
     parameters[numberParameters-1].append("pri!orities");
     parameters[numberParameters-1].append("pseudo!costs(not implemented yet)");
-    parameters[numberParameters++]=
-        CbcParam("keepN!ames","Whether to keep names from import",
-                 "on",KEEPNAMES);
+    parameters[numberParameters++] =
+        CbcParam("keepN!ames", "Whether to keep names from import",
+                 "on", KEEPNAMES);
     parameters[numberParameters-1].append("off");
-    parameters[numberParameters++]=
-        CbcParam("scaling","Whether to do scaling",
-                 "on",SCALING);
+    parameters[numberParameters++] =
+        CbcParam("scaling", "Whether to do scaling",
+                 "on", SCALING);
     parameters[numberParameters-1].append("off");
-    parameters[numberParameters++]=
-        CbcParam("directory","Set Default import directory",
+    parameters[numberParameters++] =
+        CbcParam("directory", "Set Default import directory",
                  DIRECTORY);
-    parameters[numberParameters++]=
-        CbcParam("dirSample","Set directory where the COIN-OR sample problems are.",
+    parameters[numberParameters++] =
+        CbcParam("dirSample", "Set directory where the COIN-OR sample problems are.",
                  DIRSAMPLE);
-    parameters[numberParameters++]=
-        CbcParam("dirNetlib","Set directory where the netlib problems are.",
+    parameters[numberParameters++] =
+        CbcParam("dirNetlib", "Set directory where the netlib problems are.",
                  DIRNETLIB);
-    parameters[numberParameters++]=
-        CbcOrClpParam("dirMiplib","Set directory where the miplib 2003 problems are.",
+    parameters[numberParameters++] =
+        CbcOrClpParam("dirMiplib", "Set directory where the miplib 2003 problems are.",
                       DIRMIPLIB);
-    parameters[numberParameters++]=
-        CbcParam("solver!","Set the solver used by cbc",
+    parameters[numberParameters++] =
+        CbcParam("solver!", "Set the solver used by cbc",
                  SOLVER) ;
-    parameters[numberParameters++]=
-        CbcParam("import","Import model from mps file",
+    parameters[numberParameters++] =
+        CbcParam("import", "Import model from mps file",
                  IMPORT);
-    parameters[numberParameters++]=
-        CbcParam("export","Export model as mps file",
+    parameters[numberParameters++] =
+        CbcParam("export", "Export model as mps file",
                  EXPORT);
-    parameters[numberParameters++]=
-        CbcParam("save!Model","Save model to binary file",
+    parameters[numberParameters++] =
+        CbcParam("save!Model", "Save model to binary file",
                  SAVE);
-    parameters[numberParameters++]=
-        CbcParam("restore!Model","Restore model from binary file",
+    parameters[numberParameters++] =
+        CbcParam("restore!Model", "Restore model from binary file",
                  RESTORE);
-    parameters[numberParameters++]=
-        CbcParam("presolve","Whether to use integer presolve - be careful",
-                 "off",PRESOLVE);
+    parameters[numberParameters++] =
+        CbcParam("presolve", "Whether to use integer presolve - be careful",
+                 "off", PRESOLVE);
     parameters[numberParameters-1].append("on");
-    parameters[numberParameters++]=
-        CbcParam("preprocess","Whether to use integer preprocessing",
-                 "off",PREPROCESS);
+    parameters[numberParameters++] =
+        CbcParam("preprocess", "Whether to use integer preprocessing",
+                 "off", PREPROCESS);
     parameters[numberParameters-1].append("on");
-    parameters[numberParameters++]=
-        CbcParam("initialS!olve","Solve to continuous",
+    parameters[numberParameters++] =
+        CbcParam("initialS!olve", "Solve to continuous",
                  SOLVECONTINUOUS);
-    parameters[numberParameters++]=
-        CbcParam("branch!AndBound","Do Branch and Bound",
+    parameters[numberParameters++] =
+        CbcParam("branch!AndBound", "Do Branch and Bound",
                  BAB);
-    parameters[numberParameters++]=
-        CbcParam("sol!ution","Prints solution to file",
+    parameters[numberParameters++] =
+        CbcParam("sol!ution", "Prints solution to file",
                  SOLUTION);
-    parameters[numberParameters++]=
-        CbcParam("max!imize","Set optimization direction to maximize",
+    parameters[numberParameters++] =
+        CbcParam("max!imize", "Set optimization direction to maximize",
                  MAXIMIZE);
-    parameters[numberParameters++]=
-        CbcParam("min!imize","Set optimization direction to minimize",
+    parameters[numberParameters++] =
+        CbcParam("min!imize", "Set optimization direction to minimize",
                  MINIMIZE);
     parameters[numberParameters++] =
-        CbcParam("time!Limit","Set a time limit for solving this problem",
-                 1.0,(double)(60*60*24*365*10),TIMELIMIT) ;
-    parameters[numberParameters++]=
-        CbcParam("exit","Stops cbc execution",
+        CbcParam("time!Limit", "Set a time limit for solving this problem",
+                 1.0, (double)(60 * 60 * 24 * 365 * 10), TIMELIMIT) ;
+    parameters[numberParameters++] =
+        CbcParam("exit", "Stops cbc execution",
                  EXIT);
-    parameters[numberParameters++]=
-        CbcParam("stop","Stops cbc execution",
+    parameters[numberParameters++] =
+        CbcParam("stop", "Stops cbc execution",
                  EXIT);
-    parameters[numberParameters++]=
-        CbcParam("quit","Stops cbc execution",
+    parameters[numberParameters++] =
+        CbcParam("quit", "Stops cbc execution",
                  EXIT);
-    parameters[numberParameters++]=
-        CbcParam("-","From stdin",
+    parameters[numberParameters++] =
+        CbcParam("-", "From stdin",
                  STDIN);
-    parameters[numberParameters++]=
-        CbcParam("stdin","From stdin",
+    parameters[numberParameters++] =
+        CbcParam("stdin", "From stdin",
                  STDIN);
-    parameters[numberParameters++]=
-        CbcParam("unitTest","Do unit test",
+    parameters[numberParameters++] =
+        CbcParam("unitTest", "Do unit test",
                  UNITTEST);
-    parameters[numberParameters++]=
-        CbcParam("miplib","Do some of miplib test set",
+    parameters[numberParameters++] =
+        CbcParam("miplib", "Do some of miplib test set",
                  MIPLIB);
-    parameters[numberParameters++]=
-        CbcParam("ver!sion","Print out version",
+    parameters[numberParameters++] =
+        CbcParam("ver!sion", "Print out version",
                  PRINTVERSION);
-    parameters[numberParameters++]=
-        CbcParam("alg!orithm","Whether to use dual or primal",
-                 "dual",ALGORITHM);
+    parameters[numberParameters++] =
+        CbcParam("alg!orithm", "Whether to use dual or primal",
+                 "dual", ALGORITHM);
     parameters[numberParameters-1].append("primal");
 
-    assert(numberParameters<MAXPARAMETERS);
+    assert(numberParameters < MAXPARAMETERS);
 
     return ;
 }
@@ -392,9 +392,9 @@ activity at continuous solution",
 
 // Returns next valid field
 
-int read_mode=1;
+int read_mode = 1;
 char line[1000];
-char * where=NULL;
+char * where = NULL;
 
 std::string
 nextField()
@@ -410,18 +410,18 @@ nextField()
         if (where) {
             if ( *where)
                 add_history (where);
-            strcpy(line,where);
+            strcpy(line, where);
         }
 #else
-        fprintf(stdout,"Cbc:");
+        fprintf(stdout, "Cbc:");
         fflush(stdout);
-        where = fgets(line,1000,stdin);
+        where = fgets(line, 1000, stdin);
 #endif
         if (!where)
             return field; // EOF
         where = line;
         // clean image
-        char * lastNonBlank = line-1;
+        char * lastNonBlank = line - 1;
         while ( *where != '\0' ) {
             if ( *where != '\t' && *where < ' ' ) {
                 break;
@@ -430,24 +430,24 @@ nextField()
             }
             where++;
         }
-        where=line;
-        *(lastNonBlank+1)='\0';
+        where = line;
+        *(lastNonBlank + 1) = '\0';
     }
     // munch white space
-    while (*where==' '||*where=='\t')
+    while (*where == ' ' || *where == '\t')
         where++;
     char * saveWhere = where;
-    while (*where!=' '&&*where!='\t'&&*where!='\0')
+    while (*where != ' ' && *where != '\t' && *where != '\0')
         where++;
-    if (where!=saveWhere) {
+    if (where != saveWhere) {
         char save = *where;
-        *where='\0';
+        *where = '\0';
         //convert to string
-        field=saveWhere;
-        *where=save;
+        field = saveWhere;
+        *where = save;
     } else {
-        where=NULL;
-        field="EOL";
+        where = NULL;
+        field = "EOL";
     }
     return field;
 }
@@ -455,39 +455,39 @@ nextField()
 std::string
 getCommand(int argc, const char *argv[])
 {
-    std::string field="EOL";
-    while (field=="EOL") {
-        if (read_mode>0) {
-            if (read_mode<argc) {
+    std::string field = "EOL";
+    while (field == "EOL") {
+        if (read_mode > 0) {
+            if (read_mode < argc) {
                 field = argv[read_mode++];
-                if (field=="-") {
-                    std::cout<<"Switching to line mode"<<std::endl;
-                    read_mode=-1;
-                    field=nextField();
-                } else if (field[0]!='-') {
-                    if (read_mode!=2) {
-                        std::cout<<"skipping non-command "<<field<<std::endl;
-                        field="EOL"; // skip
+                if (field == "-") {
+                    std::cout << "Switching to line mode" << std::endl;
+                    read_mode = -1;
+                    field = nextField();
+                } else if (field[0] != '-') {
+                    if (read_mode != 2) {
+                        std::cout << "skipping non-command " << field << std::endl;
+                        field = "EOL"; // skip
                     } else {
                         // special dispensation - taken as -import name
                         read_mode--;
-                        field="import";
+                        field = "import";
                     }
                 } else {
-                    if (field!="--") {
+                    if (field != "--") {
                         // take off -
                         field = field.substr(1);
                     } else {
                         // special dispensation - taken as -import --
                         read_mode--;
-                        field="import";
+                        field = "import";
                     }
                 }
             } else {
-                field="";
+                field = "";
             }
         } else {
-            field=nextField();
+            field = nextField();
         }
     }
     //std::cout<<field<<std::endl;
@@ -496,19 +496,19 @@ getCommand(int argc, const char *argv[])
 std::string
 getString(int argc, const char *argv[])
 {
-    std::string field="EOL";
-    if (read_mode>0) {
-        if (read_mode<argc) {
-            if (argv[read_mode][0]!='-') {
+    std::string field = "EOL";
+    if (read_mode > 0) {
+        if (read_mode < argc) {
+            if (argv[read_mode][0] != '-') {
                 field = argv[read_mode++];
-            } else if (!strcmp(argv[read_mode],"--")) {
+            } else if (!strcmp(argv[read_mode], "--")) {
                 field = argv[read_mode++];
                 // -- means import from stdin
                 field = "-";
             }
         }
     } else {
-        field=nextField();
+        field = nextField();
     }
     //std::cout<<field<<std::endl;
     return field;
@@ -516,25 +516,25 @@ getString(int argc, const char *argv[])
 
 // valid = 0 okay, 1 bad, 2 not there
 int
-getIntField(int argc, const char *argv[],int * valid)
+getIntField(int argc, const char *argv[], int * valid)
 {
-    std::string field="EOL";
-    if (read_mode>0) {
-        if (read_mode<argc) {
+    std::string field = "EOL";
+    if (read_mode > 0) {
+        if (read_mode < argc) {
             // may be negative value so do not check for -
             field = argv[read_mode++];
         }
     } else {
-        field=nextField();
+        field = nextField();
     }
-    int value=0;
+    int value = 0;
     //std::cout<<field<<std::endl;
-    if (field!="EOL") {
+    if (field != "EOL") {
         // how do I check valid
         value =  atoi(field.c_str());
-        *valid=0;
+        *valid = 0;
     } else {
-        *valid=2;
+        *valid = 2;
     }
     return value;
 }
@@ -542,37 +542,37 @@ getIntField(int argc, const char *argv[],int * valid)
 
 // valid = 0 okay, 1 bad, 2 not there
 double
-getDoubleField(int argc, const char *argv[],int * valid)
+getDoubleField(int argc, const char *argv[], int * valid)
 {
-    std::string field="EOL";
-    if (read_mode>0) {
-        if (read_mode<argc) {
+    std::string field = "EOL";
+    if (read_mode > 0) {
+        if (read_mode < argc) {
             // may be negative value so do not check for -
             field = argv[read_mode++];
         }
     } else {
-        field=nextField();
+        field = nextField();
     }
-    double value=0.0;
+    double value = 0.0;
     //std::cout<<field<<std::endl;
-    if (field!="EOL") {
+    if (field != "EOL") {
         // how do I check valid
         value = atof(field.c_str());
-        *valid=0;
+        *valid = 0;
     } else {
-        *valid=2;
+        *valid = 2;
     }
     return value;
 }
 
 /// For run timing
 
-double totalTime=0.0;
+double totalTime = 0.0;
 
 }	/* end unnamed namespace */
 
-int CbcOrClpRead_mode=1;
-FILE * CbcOrClpReadCommand=stdin;
+int CbcOrClpRead_mode = 1;
+FILE * CbcOrClpReadCommand = stdin;
 
 int main (int argc, const char *argv[])
 {
@@ -592,7 +592,7 @@ int main (int argc, const char *argv[])
                case-sensitive. The solver name given here must contain only lower case
                letters.
         */
-        typedef std::map<std::string,OsiSolverInterface*> solverMap_t ;
+        typedef std::map<std::string, OsiSolverInterface*> solverMap_t ;
         typedef solverMap_t::const_iterator solverMapIter_t ;
 
         solverMap_t solvers ;
@@ -643,13 +643,13 @@ int main (int argc, const char *argv[])
         */
         CbcParam parameters[MAXPARAMETERS];
         int numberParameters ;
-        establishParams(numberParameters,parameters) ;
+        establishParams(numberParameters, parameters) ;
 
         {
             int iSolver = 0 ;
             for ( ; iSolver < numberParameters ; iSolver++) {
                 int match = parameters[iSolver].matches("solver") ;
-                if (match==1) break ;
+                if (match == 1) break ;
             }
             for (solverMapIter_t solverIter = solvers.begin() ;
                     solverIter != solvers.end() ;
@@ -667,7 +667,7 @@ int main (int argc, const char *argv[])
         dflt_solver->messageHandler()->setLogLevel(0) ;
         CbcModel *model = new CbcModel(*dflt_solver) ;
         model->messageHandler()->setLogLevel(1);
-        bool goodModel=false;
+        bool goodModel = false;
 
 // Set up likely cut generators and defaults
 
@@ -675,7 +675,7 @@ int main (int argc, const char *argv[])
         // try larger limit
         gomoryGen.setLimit(300);
         // set default action (0=off,1=on,2=root)
-        int gomoryAction=1;
+        int gomoryAction = 1;
 
         CglProbing probingGen;
         probingGen.setUsingObjective(true);
@@ -691,51 +691,51 @@ int main (int argc, const char *argv[])
         probingGen.setMaxElements(200);
         probingGen.setRowCuts(3);
         // set default action (0=off,1=on,2=root)
-        int probingAction=1;
+        int probingAction = 1;
 
         CglKnapsackCover knapsackGen;
         // set default action (0=off,1=on,2=root)
-        int knapsackAction=1;
+        int knapsackAction = 1;
 
         CglOddHole oddholeGen;
         oddholeGen.setMinimumViolation(0.005);
         oddholeGen.setMinimumViolationPer(0.0002);
         oddholeGen.setMaximumEntries(100);
         // set default action (0=off,1=on,2=root)
-        int oddholeAction=0;
+        int oddholeAction = 0;
 
         CglClique cliqueGen;
         cliqueGen.setStarCliqueReport(false);
         cliqueGen.setRowCliqueReport(false);
         // set default action (0=off,1=on,2=root)
-        int cliqueAction=1;
+        int cliqueAction = 1;
 
         CglMixedIntegerRounding mixedGen;
         // set default action (0=off,1=on,2=root)
-        int mixedAction=1;
+        int mixedAction = 1;
 
         CglFlowCover flowGen;
         // set default action (0=off,1=on,2=root)
-        int flowAction=1;
+        int flowAction = 1;
 
         CglTwomir twomirGen;
         // set default action (0=off,1=on,2=root)
-        int twomirAction=0;
+        int twomirAction = 0;
 
-        bool useRounding=true;
+        bool useRounding = true;
 
-        int allowImportErrors=0;
-        int algorithm=0; // dual
-        int keepImportNames=1;	// not implemented
-        int doScaling=1;
-        int preSolve=0;
-        int preProcess=1;
-        double djFix=1.0e100;
-        double gapRatio=1.0e100;
-        double tightenFactor=0.0;
+        int allowImportErrors = 0;
+        int algorithm = 0; // dual
+        int keepImportNames = 1;	// not implemented
+        int doScaling = 1;
+        int preSolve = 0;
+        int preProcess = 1;
+        double djFix = 1.0e100;
+        double gapRatio = 1.0e100;
+        double tightenFactor = 0.0;
 
         // Set false if user does anything advanced
-        bool defaultSettings=true;
+        bool defaultSettings = true;
 
         const char dirsep =  CoinFindDirSeparator();
         std::string directory;
@@ -758,24 +758,24 @@ int main (int argc, const char *argv[])
           The main command parsing loop.
         */
         // total number of commands read
-        int numberGoodCommands=0;
+        int numberGoodCommands = 0;
 
         while (1) {
             // next command
-            field=getCommand(argc,argv);
+            field = getCommand(argc, argv);
 
             // exit if null or similar
             if (!field.length()) {
-                if (numberGoodCommands==1&&goodModel) {
+                if (numberGoodCommands == 1 && goodModel) {
                     // we just had file name
-                    field="branchAndBound";
+                    field = "branchAndBound";
                 } else if (!numberGoodCommands) {
                     // let's give the sucker a hint
                     std::cout
-                        <<"Cbc takes input from arguments ( - switches to stdin)"
-                        <<std::endl
-                        <<"Enter ? for list of commands or (-)unitTest or -miplib"
-                        <<" for tests"<<std::endl;
+                        << "Cbc takes input from arguments ( - switches to stdin)"
+                        << std::endl
+                        << "Enter ? for list of commands or (-)unitTest or -miplib"
+                        << " for tests" << std::endl;
                     break;
                 } else {
                     break;
@@ -783,87 +783,87 @@ int main (int argc, const char *argv[])
             }
 
             // see if ? at end
-            int numberQuery=0;
-            if (field!="?") {
+            int numberQuery = 0;
+            if (field != "?") {
                 int length = field.length();
                 int i;
-                for (i=length-1; i>0; i--) {
-                    if (field[i]=='?')
+                for (i = length - 1; i > 0; i--) {
+                    if (field[i] == '?')
                         numberQuery++;
                     else
                         break;
                 }
-                field=field.substr(0,length-numberQuery);
+                field = field.substr(0, length - numberQuery);
             }
             // find out if valid command
             int iParam;
-            int numberMatches=0;
-            for ( iParam=0; iParam<numberParameters; iParam++ ) {
+            int numberMatches = 0;
+            for ( iParam = 0; iParam < numberParameters; iParam++ ) {
                 int match = parameters[iParam].matches(field);
-                if (match==1) {
+                if (match == 1) {
                     numberMatches = 1;
                     break;
                 } else {
-                    numberMatches += match>>1;
+                    numberMatches += match >> 1;
                 }
             }
-            if (iParam<numberParameters&&!numberQuery) {
+            if (iParam < numberParameters && !numberQuery) {
                 // found
                 CbcParam found = parameters[iParam];
                 CbcParameterType type = found.type();
                 int valid;
                 numberGoodCommands++;
-                if (type==GENERALQUERY) {
-                    std::cout<<"In argument list keywords have leading - "
-                             ", -stdin or just - switches to stdin"<<std::endl;
-                    std::cout<<"One command per line (and no -)"<<std::endl;
-                    std::cout<<"abcd? gives list of possibilities, if only one + explanation"<<std::endl;
-                    std::cout<<"abcd?? adds explanation, if only one fuller help(LATER)"<<std::endl;
-                    std::cout<<"abcd without value (where expected) gives current value"<<std::endl;
-                    std::cout<<"abcd value or abcd = value sets value"<<std::endl;
-                    std::cout<<"Commands are:"<<std::endl;
-                    for ( iParam=0; iParam<numberParameters; iParam+=4 ) {
+                if (type == GENERALQUERY) {
+                    std::cout << "In argument list keywords have leading - "
+                              ", -stdin or just - switches to stdin" << std::endl;
+                    std::cout << "One command per line (and no -)" << std::endl;
+                    std::cout << "abcd? gives list of possibilities, if only one + explanation" << std::endl;
+                    std::cout << "abcd?? adds explanation, if only one fuller help(LATER)" << std::endl;
+                    std::cout << "abcd without value (where expected) gives current value" << std::endl;
+                    std::cout << "abcd value or abcd = value sets value" << std::endl;
+                    std::cout << "Commands are:" << std::endl;
+                    for ( iParam = 0; iParam < numberParameters; iParam += 4 ) {
                         int i;
-                        for (i=iParam; i<CoinMin(numberParameters,iParam+4); i++)
-                            std::cout<<parameters[i].matchName()<<"  ";
-                        std::cout<<std::endl;
+                        for (i = iParam; i < CoinMin(numberParameters, iParam + 4); i++)
+                            std::cout << parameters[i].matchName() << "  ";
+                        std::cout << std::endl;
                     }
-                } else if (type<81) {
+                } else if (type < 81) {
                     // get next field as double
-                    double value = getDoubleField(argc,argv,&valid);
+                    double value = getDoubleField(argc, argv, &valid);
                     if (!valid) {
-                        parameters[iParam].setDoubleParameter(*model,value);
-                    } else if (valid==1) {
+                        parameters[iParam].setDoubleParameter(*model, value);
+                    } else if (valid == 1) {
                         abort();
                     } else {
-                        std::cout<<parameters[iParam].name()<<" has value "<<
-                                 parameters[iParam].doubleParameter(*model)<<std::endl;
+                        std::cout << parameters[iParam].name() << " has value " <<
+                                  parameters[iParam].doubleParameter(*model) << std::endl;
                     }
-                } else if (type<101) {
+                } else if (type < 101) {
                     // get next field as double for local use
-                    double value = getDoubleField(argc,argv,&valid);
+                    double value = getDoubleField(argc, argv, &valid);
                     if (!valid) {
                         if (!parameters[iParam].checkDoubleParameter(value)) {
                             switch (type) {
                             case DJFIX:
-                                djFix=value;
-                                preSolve=5;
-                                defaultSettings=false; // user knows what she is doing
+                                djFix = value;
+                                preSolve = 5;
+                                defaultSettings = false; // user knows what she is doing
                                 break;
                             case GAPRATIO:
-                                gapRatio=value;
+                                gapRatio = value;
                                 break;
                             case TIGHTENFACTOR:
-                                tightenFactor=value;
-                                defaultSettings=false; // user knows what she is doing
+                                tightenFactor = value;
+                                defaultSettings = false; // user knows what she is doing
                                 break;
                             default:
                                 abort();
                             }
                         }
-                    } else if (valid==1) {
-                        std::cout<<" is illegal for double parameter "<<parameters[iParam].name()<<" value remains "<<
-                                 parameters[iParam].doubleValue()<<std::endl;
+                    } else if (valid == 1) {
+                        std::cout << " is illegal for double parameter " << parameters[iParam].name() << " value remains " <<
+                                  parameters[iParam].doubleValue() << std::endl;
                     } else {
                         switch (type) {
                         case DJFIX:
@@ -881,37 +881,37 @@ int main (int argc, const char *argv[])
                         std::cout << parameters[iParam].name() << " has value " <<
                                   value << std::endl ;
                     }
-                } else if (type<201) {
+                } else if (type < 201) {
                     // get next field as int
-                    int value = getIntField(argc,argv,&valid);
+                    int value = getIntField(argc, argv, &valid);
                     if (!valid) {
-                        parameters[iParam].setIntParameter(*model,value);
-                    } else if (valid==1) {
-                        std::cout<<" is illegal for integer parameter "<<parameters[iParam].name()<<" value remains "<<
-                                 parameters[iParam].intValue()<<std::endl;
+                        parameters[iParam].setIntParameter(*model, value);
+                    } else if (valid == 1) {
+                        std::cout << " is illegal for integer parameter " << parameters[iParam].name() << " value remains " <<
+                                  parameters[iParam].intValue() << std::endl;
                     } else {
-                        std::cout<<parameters[iParam].name()<<" has value "<<
-                                 parameters[iParam].intParameter(*model)<<std::endl;
+                        std::cout << parameters[iParam].name() << " has value " <<
+                                  parameters[iParam].intParameter(*model) << std::endl;
                     }
-                } else if (type<301) {
+                } else if (type < 301) {
                     // one of several strings
-                    std::string value = getString(argc,argv);
+                    std::string value = getString(argc, argv);
                     int action = parameters[iParam].parameterOption(value);
-                    if (action<0) {
-                        if (value!="EOL") {
+                    if (action < 0) {
+                        if (value != "EOL") {
                             // no match
                             parameters[iParam].printOptions();
                         } else {
                             // print current value
-                            std::cout<<parameters[iParam].name()<<" has value "<<
-                                     parameters[iParam].currentOption()<<std::endl;
+                            std::cout << parameters[iParam].name() << " has value " <<
+                                      parameters[iParam].currentOption() << std::endl;
                         }
                     } else {
                         parameters[iParam].setCurrentOption(action);
                         // for now hard wired
                         switch (type) {
                         case DIRECTION:
-                            if (action==0)
+                            if (action == 0)
                                 model->solver()->setObjSense(1);
                             else
                                 model->solver()->setObjSense(-1);
@@ -921,52 +921,52 @@ int main (int argc, const char *argv[])
                             break;
                         case ALGORITHM:
                             algorithm  = action;
-                            defaultSettings=false; // user knows what she is doing
+                            defaultSettings = false; // user knows what she is doing
                             break;
                         case KEEPNAMES:
-                            keepImportNames = 1-action;
+                            keepImportNames = 1 - action;
                             break;
                         case SCALING:
-                            doScaling = 1-action;
+                            doScaling = 1 - action;
                             break;
                         case GOMORYCUTS:
-                            defaultSettings=false; // user knows what she is doing
+                            defaultSettings = false; // user knows what she is doing
                             gomoryAction = action;
                             break;
                         case PROBINGCUTS:
-                            defaultSettings=false; // user knows what she is doing
+                            defaultSettings = false; // user knows what she is doing
                             probingAction = action;
                             break;
                         case KNAPSACKCUTS:
-                            defaultSettings=false; // user knows what she is doing
+                            defaultSettings = false; // user knows what she is doing
                             knapsackAction = action;
                             break;
                         case ODDHOLECUTS:
-                            defaultSettings=false; // user knows what she is doing
+                            defaultSettings = false; // user knows what she is doing
                             oddholeAction = action;
                             break;
                         case CLIQUECUTS:
-                            defaultSettings=false; // user knows what she is doing
+                            defaultSettings = false; // user knows what she is doing
                             cliqueAction = action;
                             break;
                         case FLOWCUTS:
-                            defaultSettings=false; // user knows what she is doing
+                            defaultSettings = false; // user knows what she is doing
                             flowAction = action;
                             break;
                         case MIXEDCUTS:
-                            defaultSettings=false; // user knows what she is doing
+                            defaultSettings = false; // user knows what she is doing
                             mixedAction = action;
                             break;
                         case TWOMIRCUTS:
-                            defaultSettings=false; // user knows what she is doing
+                            defaultSettings = false; // user knows what she is doing
                             twomirAction = action;
                             break;
                         case ROUNDING:
-                            defaultSettings=false; // user knows what she is doing
+                            defaultSettings = false; // user knows what she is doing
                             useRounding = action;
                             break;
                         case COSTSTRATEGY:
-                            if (action!=1) {
+                            if (action != 1) {
                                 printf("Pseudo costs not implemented yet\n");
                             } else {
                                 int numberColumns = model->getNumCols();
@@ -975,33 +975,33 @@ int main (int argc, const char *argv[])
                                 int * priority = new int [numberColumns];
                                 const double * objective = model->getObjCoefficients();
                                 int iColumn;
-                                int n=0;
-                                for (iColumn=0; iColumn<numberColumns; iColumn++) {
+                                int n = 0;
+                                for (iColumn = 0; iColumn < numberColumns; iColumn++) {
                                     if (model->isInteger(iColumn)) {
-                                        sort[n]=n;
-                                        dsort[n++]=-objective[iColumn];
+                                        sort[n] = n;
+                                        dsort[n++] = -objective[iColumn];
                                     }
                                 }
-                                CoinSort_2(dsort,dsort+n,sort);
-                                int level=0;
+                                CoinSort_2(dsort, dsort + n, sort);
+                                int level = 0;
                                 double last = -1.0e100;
-                                for (int i=0; i<n; i++) {
-                                    int iPut=sort[i];
-                                    if (dsort[i]!=last) {
+                                for (int i = 0; i < n; i++) {
+                                    int iPut = sort[i];
+                                    if (dsort[i] != last) {
                                         level++;
-                                        last=dsort[i];
+                                        last = dsort[i];
                                     }
-                                    priority[iPut]=level;
+                                    priority[iPut] = level;
                                 }
-                                model->passInPriorities( priority,false);
+                                model->passInPriorities( priority, false);
                                 delete [] priority;
                                 delete [] sort;
                                 delete [] dsort;
                             }
                             break;
                         case PRESOLVE:
-                            defaultSettings=false; // user knows what she is doing
-                            preSolve = action*5;
+                            defaultSettings = false; // user knows what she is doing
+                            preSolve = action * 5;
                             break;
                         case PREPROCESS:
                             preProcess = action;
@@ -1022,20 +1022,20 @@ int main (int argc, const char *argv[])
                     }
                 } else {
                     // action
-                    if (type==EXIT)
+                    if (type == EXIT)
                         break; // stop all
                     switch (type) {
                     case SOLVECONTINUOUS:
                         if (goodModel) {
                             model->initialSolve();
                             time2 = CoinCpuTime();
-                            totalTime += time2-time1;
-                            std::cout<<"Result "<<model->solver()->getObjValue()<<
-                                     " iterations "<<model->solver()->getIterationCount()<<
-                                     " took "<<time2-time1<<" seconds - total "<<totalTime<<std::endl;
-                            time1=time2;
+                            totalTime += time2 - time1;
+                            std::cout << "Result " << model->solver()->getObjValue() <<
+                                      " iterations " << model->solver()->getIterationCount() <<
+                                      " took " << time2 - time1 << " seconds - total " << totalTime << std::endl;
+                            time1 = time2;
                         } else {
-                            std::cout<<"** Current model not valid"<<std::endl;
+                            std::cout << "** Current model not valid" << std::endl;
                         }
                         break;
                         /*
@@ -1052,36 +1052,36 @@ int main (int argc, const char *argv[])
                                 model->setNodeComparison(compare);
                                 OsiSolverInterface * solver = model->solver();
                                 if (!doScaling)
-                                    solver->setHintParam(OsiDoScale,false,OsiHintTry);
+                                    solver->setHintParam(OsiDoScale, false, OsiHintTry);
 #ifdef COIN_HAS_CLP
                                 OsiClpSolverInterface * si =
                                     dynamic_cast<OsiClpSolverInterface *>(solver) ;
-                                if (preSolve&&si != NULL) {
+                                if (preSolve && si != NULL) {
                                     // get clp itself
                                     ClpSimplex * modelC = si->getModelPtr();
                                     if (si->messageHandler()->logLevel())
                                         si->messageHandler()->setLogLevel(1);
-                                    if (modelC->tightenPrimalBounds()!=0) {
-                                        std::cout<<"Problem is infeasible!"<<std::endl;
+                                    if (modelC->tightenPrimalBounds() != 0) {
+                                        std::cout << "Problem is infeasible!" << std::endl;
                                         break;
                                     }
                                     model->initialSolve();
                                     // bounds based on continuous
                                     if (tightenFactor) {
-                                        if (modelC->tightenPrimalBounds(tightenFactor)!=0) {
-                                            std::cout<<"Problem is infeasible!"<<std::endl;
+                                        if (modelC->tightenPrimalBounds(tightenFactor) != 0) {
+                                            std::cout << "Problem is infeasible!" << std::endl;
                                             break;
                                         }
                                     }
-                                    if (gapRatio<1.0e100) {
+                                    if (gapRatio < 1.0e100) {
                                         double value = si->getObjValue();
-                                        double value2 = gapRatio*(1.0e-5+fabs(value));
+                                        double value2 = gapRatio * (1.0e-5 + fabs(value));
                                         model->setAllowableGap(value2);
                                         model->setAllowableFractionGap(gapRatio);
-                                        std::cout<<"Continuous "<<value
-                                                 <<", so allowable gap set to "<<value2<<std::endl;
+                                        std::cout << "Continuous " << value
+                                                  << ", so allowable gap set to " << value2 << std::endl;
                                     }
-                                    if (djFix<1.0e20) {
+                                    if (djFix < 1.0e20) {
                                         // do some fixing
                                         int numberColumns = modelC->numberColumns();
                                         int i;
@@ -1090,22 +1090,22 @@ int main (int argc, const char *argv[])
                                         double * upper = modelC->columnUpper();
                                         double * solution = modelC->primalColumnSolution();
                                         double * dj = modelC->dualColumnSolution();
-                                        int numberFixed=0;
-                                        for (i=0; i<numberColumns; i++) {
+                                        int numberFixed = 0;
+                                        for (i = 0; i < numberColumns; i++) {
                                             if (type[i]) {
                                                 double value = solution[i];
-                                                if (value<lower[i]+1.0e-5&&dj[i]>djFix) {
-                                                    solution[i]=lower[i];
-                                                    upper[i]=lower[i];
+                                                if (value < lower[i] + 1.0e-5 && dj[i] > djFix) {
+                                                    solution[i] = lower[i];
+                                                    upper[i] = lower[i];
                                                     numberFixed++;
-                                                } else if (value>upper[i]-1.0e-5&&dj[i]<-djFix) {
-                                                    solution[i]=upper[i];
-                                                    lower[i]=upper[i];
+                                                } else if (value > upper[i] - 1.0e-5 && dj[i] < -djFix) {
+                                                    solution[i] = upper[i];
+                                                    lower[i] = upper[i];
                                                     numberFixed++;
                                                 }
                                             }
                                         }
-                                        printf("%d columns fixed\n",numberFixed);
+                                        printf("%d columns fixed\n", numberFixed);
                                     }
                                     {
                                         // integer presolve
@@ -1118,8 +1118,8 @@ int main (int argc, const char *argv[])
                                                 model2->addHeuristic(&heuristic1);
                                             if (algorithm) {
                                                 // user wants primal
-                                                model2->solver()->setHintParam(OsiDoDualInInitial,false,OsiHintTry);
-                                                model2->solver()->setHintParam(OsiDoDualInResolve,false,OsiHintTry);
+                                                model2->solver()->setHintParam(OsiDoDualInInitial, false, OsiHintTry);
+                                                model2->solver()->setHintParam(OsiDoDualInResolve, false, OsiHintTry);
                                             }
                                             try {
                                                 model2->branchAndBound();
@@ -1131,7 +1131,7 @@ int main (int argc, const char *argv[])
                                                 exit (1) ;
                                             }
                                             // get back solution
-                                            model->originalModel(model2,false);
+                                            model->originalModel(model2, false);
                                         } else {
                                             // infeasible
                                             exit(1);
@@ -1145,7 +1145,7 @@ int main (int argc, const char *argv[])
                                     model->initialSolve() ;
                                     if (gapRatio < 1.0e100) {
                                         double value = model->solver()->getObjValue() ;
-                                        double value2 = gapRatio*(1.0e-5+fabs(value)) ;
+                                        double value2 = gapRatio * (1.0e-5 + fabs(value)) ;
                                         model->setAllowableGap(value2) ;
                                         std::cout << "Continuous " << value
                                                   << ", so allowable gap set to "
@@ -1155,38 +1155,38 @@ int main (int argc, const char *argv[])
                                     if (useRounding)
                                         model->addHeuristic(&heuristic1) ;
                                     // add cut generators if wanted
-                                    if (probingAction==1)
-                                        model->addCutGenerator(&probingGen,-1,"Probing");
-                                    else if (probingAction==2)
-                                        model->addCutGenerator(&probingGen,-99,"Probing");
-                                    if (gomoryAction==1)
-                                        model->addCutGenerator(&gomoryGen,-1,"Gomory");
-                                    else if (gomoryAction==2)
-                                        model->addCutGenerator(&gomoryGen,-99,"Gomory");
-                                    if (knapsackAction==1)
-                                        model->addCutGenerator(&knapsackGen,-1,"Knapsack");
-                                    else if (knapsackAction==2)
-                                        model->addCutGenerator(&knapsackGen,-99,"Knapsack");
-                                    if (oddholeAction==1)
-                                        model->addCutGenerator(&oddholeGen,-1,"OddHole");
-                                    else if (oddholeAction==2)
-                                        model->addCutGenerator(&oddholeGen,-99,"OddHole");
-                                    if (cliqueAction==1)
-                                        model->addCutGenerator(&cliqueGen,-1,"Clique");
-                                    else if (cliqueAction==2)
-                                        model->addCutGenerator(&cliqueGen,-99,"Clique");
-                                    if (mixedAction==1)
-                                        model->addCutGenerator(&mixedGen,-1,"MixedintegerRounding");
-                                    else if (mixedAction==2)
-                                        model->addCutGenerator(&mixedGen,-99,"MixedintegerRounding");
-                                    if (flowAction==1)
-                                        model->addCutGenerator(&flowGen,-1,"FlowCover");
-                                    else if (flowAction==2)
-                                        model->addCutGenerator(&flowGen,-99,"FlowCover");
-                                    if (twomirAction==1)
-                                        model->addCutGenerator(&twomirGen,-1,"TwoMirCuts");
-                                    else if (twomirAction==2)
-                                        model->addCutGenerator(&twomirGen,-99,"TwoMirCuts");
+                                    if (probingAction == 1)
+                                        model->addCutGenerator(&probingGen, -1, "Probing");
+                                    else if (probingAction == 2)
+                                        model->addCutGenerator(&probingGen, -99, "Probing");
+                                    if (gomoryAction == 1)
+                                        model->addCutGenerator(&gomoryGen, -1, "Gomory");
+                                    else if (gomoryAction == 2)
+                                        model->addCutGenerator(&gomoryGen, -99, "Gomory");
+                                    if (knapsackAction == 1)
+                                        model->addCutGenerator(&knapsackGen, -1, "Knapsack");
+                                    else if (knapsackAction == 2)
+                                        model->addCutGenerator(&knapsackGen, -99, "Knapsack");
+                                    if (oddholeAction == 1)
+                                        model->addCutGenerator(&oddholeGen, -1, "OddHole");
+                                    else if (oddholeAction == 2)
+                                        model->addCutGenerator(&oddholeGen, -99, "OddHole");
+                                    if (cliqueAction == 1)
+                                        model->addCutGenerator(&cliqueGen, -1, "Clique");
+                                    else if (cliqueAction == 2)
+                                        model->addCutGenerator(&cliqueGen, -99, "Clique");
+                                    if (mixedAction == 1)
+                                        model->addCutGenerator(&mixedGen, -1, "MixedintegerRounding");
+                                    else if (mixedAction == 2)
+                                        model->addCutGenerator(&mixedGen, -99, "MixedintegerRounding");
+                                    if (flowAction == 1)
+                                        model->addCutGenerator(&flowGen, -1, "FlowCover");
+                                    else if (flowAction == 2)
+                                        model->addCutGenerator(&flowGen, -99, "FlowCover");
+                                    if (twomirAction == 1)
+                                        model->addCutGenerator(&twomirGen, -1, "TwoMirCuts");
+                                    else if (twomirAction == 2)
+                                        model->addCutGenerator(&twomirGen, -99, "TwoMirCuts");
                                     try {
                                         model->branchAndBound();
                                     } catch (CoinError err) {
@@ -1205,9 +1205,9 @@ int main (int argc, const char *argv[])
                                 }
 
                                 time2 = CoinCpuTime() ;
-                                totalTime += time2-time1 ;
+                                totalTime += time2 - time1 ;
                                 std::cout << "Result " << model->solver()->getObjValue()
-                                          << " took " << time2-time1 << " seconds - total "
+                                          << " took " << time2 - time1 << " seconds - total "
                                           << totalTime << std::endl ;
                                 time1 = time2 ;
                             } else {
@@ -1215,25 +1215,25 @@ int main (int argc, const char *argv[])
                                   User is willing to accept cbc defaults. Do an initial solve.
                                 */
                                 if (!doScaling)
-                                    model->solver()->setHintParam(OsiDoScale,false,OsiHintTry);
+                                    model->solver()->setHintParam(OsiDoScale, false, OsiHintTry);
                                 model->initialSolve();
                                 /*
                                   Integer preprocessing. For reasons that escape me just yet, the first thing
                                   we'll do is clone the solver for the model.
                                 */
-                                OsiSolverInterface * saveSolver=NULL;
+                                OsiSolverInterface * saveSolver = NULL;
                                 CglPreProcess process;
                                 if (preProcess) {
-                                    saveSolver=model->solver()->clone();
+                                    saveSolver = model->solver()->clone();
                                     /* Do not try and produce equality cliques and
                                        do up to 10 passes */
-                                    OsiSolverInterface * solver2 = process.preProcess(*saveSolver,false,10);
+                                    OsiSolverInterface * solver2 = process.preProcess(*saveSolver, false, 10);
                                     if (!solver2) {
                                         printf("Pre-processing says infeasible\n");
                                         break;
                                     } else {
                                         printf("processed model has %d rows and %d columns\n",
-                                               solver2->getNumRows(),solver2->getNumCols());
+                                               solver2->getNumRows(), solver2->getNumCols());
                                     }
                                     //solver2->resolve();
                                     // we have to keep solver2 so pass clone
@@ -1246,80 +1246,80 @@ int main (int argc, const char *argv[])
                                 if (useRounding)
                                     model->addHeuristic(&heuristic1) ;
                                 // add cut generators if wanted
-                                if (probingAction==1)
-                                    model->addCutGenerator(&probingGen,-1,"Probing");
-                                else if (probingAction==2)
-                                    model->addCutGenerator(&probingGen,-99,"Probing");
-                                if (gomoryAction==1)
-                                    model->addCutGenerator(&gomoryGen,-1,"Gomory");
-                                else if (gomoryAction==2)
-                                    model->addCutGenerator(&gomoryGen,-99,"Gomory");
-                                if (knapsackAction==1)
-                                    model->addCutGenerator(&knapsackGen,-1,"Knapsack");
-                                else if (knapsackAction==2)
-                                    model->addCutGenerator(&knapsackGen,-99,"Knapsack");
-                                if (oddholeAction==1)
-                                    model->addCutGenerator(&oddholeGen,-1,"OddHole");
-                                else if (oddholeAction==2)
-                                    model->addCutGenerator(&oddholeGen,-99,"OddHole");
-                                if (cliqueAction==1)
-                                    model->addCutGenerator(&cliqueGen,-1,"Clique");
-                                else if (cliqueAction==2)
-                                    model->addCutGenerator(&cliqueGen,-99,"Clique");
-                                if (mixedAction==1)
-                                    model->addCutGenerator(&mixedGen,-1,"MixedintegerRounding");
-                                else if (mixedAction==2)
-                                    model->addCutGenerator(&mixedGen,-99,"MixedintegerRounding");
-                                if (flowAction==1)
-                                    model->addCutGenerator(&flowGen,-1,"FlowCover");
-                                else if (flowAction==2)
-                                    model->addCutGenerator(&flowGen,-99,"FlowCover");
-                                if (twomirAction==1)
-                                    model->addCutGenerator(&twomirGen,-1,"TwoMirCuts");
-                                else if (twomirAction==2)
-                                    model->addCutGenerator(&twomirGen,-99,"TwoMirCuts");
+                                if (probingAction == 1)
+                                    model->addCutGenerator(&probingGen, -1, "Probing");
+                                else if (probingAction == 2)
+                                    model->addCutGenerator(&probingGen, -99, "Probing");
+                                if (gomoryAction == 1)
+                                    model->addCutGenerator(&gomoryGen, -1, "Gomory");
+                                else if (gomoryAction == 2)
+                                    model->addCutGenerator(&gomoryGen, -99, "Gomory");
+                                if (knapsackAction == 1)
+                                    model->addCutGenerator(&knapsackGen, -1, "Knapsack");
+                                else if (knapsackAction == 2)
+                                    model->addCutGenerator(&knapsackGen, -99, "Knapsack");
+                                if (oddholeAction == 1)
+                                    model->addCutGenerator(&oddholeGen, -1, "OddHole");
+                                else if (oddholeAction == 2)
+                                    model->addCutGenerator(&oddholeGen, -99, "OddHole");
+                                if (cliqueAction == 1)
+                                    model->addCutGenerator(&cliqueGen, -1, "Clique");
+                                else if (cliqueAction == 2)
+                                    model->addCutGenerator(&cliqueGen, -99, "Clique");
+                                if (mixedAction == 1)
+                                    model->addCutGenerator(&mixedGen, -1, "MixedintegerRounding");
+                                else if (mixedAction == 2)
+                                    model->addCutGenerator(&mixedGen, -99, "MixedintegerRounding");
+                                if (flowAction == 1)
+                                    model->addCutGenerator(&flowGen, -1, "FlowCover");
+                                else if (flowAction == 2)
+                                    model->addCutGenerator(&flowGen, -99, "FlowCover");
+                                if (twomirAction == 1)
+                                    model->addCutGenerator(&twomirGen, -1, "TwoMirCuts");
+                                else if (twomirAction == 2)
+                                    model->addCutGenerator(&twomirGen, -99, "TwoMirCuts");
                                 // Say we want timings
                                 int numberGenerators = model->numberCutGenerators();
                                 int iGenerator;
-                                for (iGenerator=0; iGenerator<numberGenerators; iGenerator++) {
+                                for (iGenerator = 0; iGenerator < numberGenerators; iGenerator++) {
                                     CbcCutGenerator * generator = model->cutGenerator(iGenerator);
                                     generator->setTiming(true);
                                 }
                                 // Could tune more
                                 model->setMinimumDrop(CoinMin(1.0,
-                                                              fabs(model->getMinimizationObjValue())*1.0e-3+1.0e-4));
+                                                              fabs(model->getMinimizationObjValue())*1.0e-3 + 1.0e-4));
 
-                                if (model->getNumCols()<500)
+                                if (model->getNumCols() < 500)
                                     model->setMaximumCutPassesAtRoot(-100); // always do 100 if possible
-                                else if (model->getNumCols()<5000)
+                                else if (model->getNumCols() < 5000)
                                     model->setMaximumCutPassesAtRoot(100); // use minimum drop
                                 else
                                     model->setMaximumCutPassesAtRoot(20);
                                 model->setMaximumCutPasses(2);
 
                                 // Do more strong branching if small
-                                if (model->getNumCols()<5000)
+                                if (model->getNumCols() < 5000)
                                     model->setNumberStrong(20);
                                 // Switch off strong branching if wanted
                                 //if (model->getNumCols()>10*model->getNumRows())
                                 //model->setNumberStrong(0);
-                                if (model->getNumCols()>2000||model->getNumRows()>1500||
-                                        model->messageHandler()->logLevel()>1)
+                                if (model->getNumCols() > 2000 || model->getNumRows() > 1500 ||
+                                        model->messageHandler()->logLevel() > 1)
                                     model->setPrintFrequency(100);
 
-                                model->solver()->setIntParam(OsiMaxNumIterationHotStart,100);
+                                model->solver()->setIntParam(OsiMaxNumIterationHotStart, 100);
 #ifdef COIN_HAS_CLP
                                 OsiClpSolverInterface * osiclp = dynamic_cast< OsiClpSolverInterface*> (model->solver());
                                 if (osiclp) {
                                     // go faster stripes
-                                    if (osiclp->getNumRows()<300&&osiclp->getNumCols()<500) {
-                                        osiclp->setupForRepeatedUse(2,0);
+                                    if (osiclp->getNumRows() < 300 && osiclp->getNumCols() < 500) {
+                                        osiclp->setupForRepeatedUse(2, 0);
                                     }
                                 }
 #endif
                                 if (gapRatio < 1.0e100) {
                                     double value = model->solver()->getObjValue() ;
-                                    double value2 = gapRatio*(1.0e-5+fabs(value)) ;
+                                    double value2 = gapRatio * (1.0e-5 + fabs(value)) ;
                                     model->setAllowableGap(value2) ;
                                     std::cout << "Continuous " << value
                                               << ", so allowable gap set to "
@@ -1335,8 +1335,8 @@ int main (int argc, const char *argv[])
                                     exit (1) ;
                                 }
                                 time2 = CoinCpuTime();
-                                totalTime += time2-time1;
-                                if (model->getMinimizationObjValue()<1.0e50) {
+                                totalTime += time2 - time1;
+                                if (model->getMinimizationObjValue() < 1.0e50) {
                                     // post process
                                     if (preProcess) {
                                         process.postProcess(*model->solver());
@@ -1344,10 +1344,10 @@ int main (int argc, const char *argv[])
                                         model->assignSolver(saveSolver);
                                     }
                                 }
-                                std::cout<<"Result "<<model->getObjValue()<<
-                                         " iterations "<<model->getIterationCount()<<
-                                         " nodes "<<model->getNodeCount()<<
-                                         " took "<<time2-time1<<" seconds - total "<<totalTime<<std::endl;
+                                std::cout << "Result " << model->getObjValue() <<
+                                          " iterations " << model->getIterationCount() <<
+                                          " nodes " << model->getNodeCount() <<
+                                          " took " << time2 - time1 << " seconds - total " << totalTime << std::endl;
                                 time1 = time2;
                             }
                         } else {
@@ -1357,89 +1357,89 @@ int main (int argc, const char *argv[])
                     }
                     case IMPORT: {
                         // get next field
-                        field = getString(argc,argv);
+                        field = getString(argc, argv);
                         std::string fileName;
-                        bool canOpen=false;
-                        if (field=="-") {
+                        bool canOpen = false;
+                        if (field == "-") {
                             // stdin
-                            canOpen=true;
+                            canOpen = true;
                             fileName = "-";
                         } else {
                             bool absolutePath;
-                            if (dirsep=='/') {
+                            if (dirsep == '/') {
                                 // non Windows (or cygwin)
-                                absolutePath=(field[0]=='/');
+                                absolutePath = (field[0] == '/');
                             } else {
                                 //Windows (non cycgwin)
-                                absolutePath=(field[0]=='\\');
+                                absolutePath = (field[0] == '\\');
                                 // but allow for :
-                                if (strchr(field.c_str(),':'))
-                                    absolutePath=true;
+                                if (strchr(field.c_str(), ':'))
+                                    absolutePath = true;
                             }
                             if (absolutePath) {
                                 fileName = field;
-                            } else if (field[0]=='~') {
+                            } else if (field[0] == '~') {
                                 char * environVar = getenv("HOME");
                                 if (environVar) {
                                     std::string home(environVar);
-                                    field=field.erase(0,1);
-                                    fileName = home+field;
+                                    field = field.erase(0, 1);
+                                    fileName = home + field;
                                 } else {
-                                    fileName=field;
+                                    fileName = field;
                                 }
                             } else {
-                                fileName = directory+field;
+                                fileName = directory + field;
                             }
-                            FILE *fp=fopen(fileName.c_str(),"r");
+                            FILE *fp = fopen(fileName.c_str(), "r");
                             if (fp) {
                                 // can open - lets go for it
                                 fclose(fp);
-                                canOpen=true;
+                                canOpen = true;
                             } else {
-                                std::cout<<"Unable to open file "<<fileName<<std::endl;
+                                std::cout << "Unable to open file " << fileName << std::endl;
                             }
                         }
                         if (canOpen) {
                             model->gutsOfDestructor();
-                            int status =model->solver()->readMps(fileName.c_str(),"");
-                            if (!status||(status>0&&allowImportErrors)) {
+                            int status = model->solver()->readMps(fileName.c_str(), "");
+                            if (!status || (status > 0 && allowImportErrors)) {
                                 // I don't think there is any need for this but ..
                                 //OsiWarmStartBasis allSlack;
-                                goodModel=true;
+                                goodModel = true;
                                 //model->setBasis(allSlack);
                                 time2 = CoinCpuTime();
-                                totalTime += time2-time1;
-                                time1=time2;
+                                totalTime += time2 - time1;
+                                time1 = time2;
                             } else {
                                 // errors
-                                std::cout<<"There were "<<status<<
-                                         " errors on input"<<std::endl;
+                                std::cout << "There were " << status <<
+                                          " errors on input" << std::endl;
                             }
                         }
                     }
                     break;
                     case EXPORT: {
                         // get next field
-                        field = getString(argc,argv);
+                        field = getString(argc, argv);
                         std::string fileName;
-                        bool canOpen=false;
-                        if (field[0]=='/'||field[0]=='~')
+                        bool canOpen = false;
+                        if (field[0] == '/' || field[0] == '~')
                             fileName = field;
                         else
-                            fileName = directory+field;
-                        FILE *fp=fopen(fileName.c_str(),"w");
+                            fileName = directory + field;
+                        FILE *fp = fopen(fileName.c_str(), "w");
                         if (fp) {
                             // can open - lets go for it
                             fclose(fp);
-                            canOpen=true;
+                            canOpen = true;
                         } else {
-                            std::cout<<"Unable to open file "<<fileName<<std::endl;
+                            std::cout << "Unable to open file " << fileName << std::endl;
                         }
                         if (canOpen) {
-                            model->solver()->writeMps(fileName.c_str(),"");
+                            model->solver()->writeMps(fileName.c_str(), "");
                             time2 = CoinCpuTime();
-                            totalTime += time2-time1;
-                            time1=time2;
+                            totalTime += time2 - time1;
+                            time1 = time2;
                         }
                     }
                     break;
@@ -1450,41 +1450,41 @@ int main (int argc, const char *argv[])
                         model->solver()->setObjSense(1);
                         break;
                     case DIRECTORY: {
-                        directory = getString(argc,argv);
+                        directory = getString(argc, argv);
                         if (directory[directory.length()-1] != dirsep)
                             directory += dirsep ;
                         break ;
                     }
                     case DIRSAMPLE: {
-                        dirSample = getString(argc,argv);
+                        dirSample = getString(argc, argv);
                         if (dirSample[dirSample.length()-1] != dirsep)
                             dirSample += dirsep ;
                         break ;
                     }
                     case DIRNETLIB: {
-                        dirNetlib = getString(argc,argv);
+                        dirNetlib = getString(argc, argv);
                         if (dirNetlib[dirNetlib.length()-1] != dirsep)
                             dirNetlib += dirsep ;
                         break ;
                     }
                     case DIRMIPLIB: {
-                        dirMiplib = getString(argc,argv);
+                        dirMiplib = getString(argc, argv);
                         if (dirMiplib[dirMiplib.length()-1] != dirsep)
                             dirMiplib += dirsep ;
                         break ;
                     }
                     case STDIN:
-                        read_mode=-1;
+                        read_mode = -1;
                         break;
                     case PRINTVERSION:
-                        std::cout<<"Coin LP version "<<CBCVERSION
-                                 <<", build "<<__DATE__<<std::endl;
+                        std::cout << "Coin LP version " << CBCVERSION
+                                  << ", build " << __DATE__ << std::endl;
                         break;
                     case UNITTEST: {
                         // okay so there is not a real unit test
 
-                        int status =model->solver()->readMps("../../Data/Sample/p0033.mps",
-                                                             "");
+                        int status = model->solver()->readMps("../../Data/Sample/p0033.mps",
+                                                              "");
                         assert(!status);
                         try {
                             model->branchAndBound();
@@ -1496,11 +1496,11 @@ int main (int argc, const char *argv[])
                             exit (1) ;
                         }
                         model->solver()->resolve();
-                        std::cout<<"Optimal solution "<<model->solver()->getObjValue()<<std::endl;
-                        assert(fabs(model->solver()->getObjValue()-3089.0)<1.0e-5);
-                        fprintf(stderr,"Test was okay\n");
-                        status =model->solver()->readMps("../../Data/Sample/p0033.mps",
-                                                         "");
+                        std::cout << "Optimal solution " << model->solver()->getObjValue() << std::endl;
+                        assert(fabs(model->solver()->getObjValue() - 3089.0) < 1.0e-5);
+                        fprintf(stderr, "Test was okay\n");
+                        status = model->solver()->readMps("../../Data/Sample/p0033.mps",
+                                                          "");
                         assert(!status);
                         model->setCutoff(1.0e20);
                         model->setBestObjectiveValue(1.0e20);
@@ -1522,9 +1522,9 @@ int main (int argc, const char *argv[])
                             exit (1) ;
                         }
                         model->solver()->resolve();
-                        std::cout<<"partial solution "<<model->solver()->getObjValue()<<std::endl;
-                        if (model->solver()->getObjValue()<3090.0) {
-                            std::cout<<"Got optimal solution by mistake!"<<std::endl;
+                        std::cout << "partial solution " << model->solver()->getObjValue() << std::endl;
+                        if (model->solver()->getObjValue() < 3090.0) {
+                            std::cout << "Got optimal solution by mistake!" << std::endl;
                         }
                     }
                     break;
@@ -1532,63 +1532,63 @@ int main (int argc, const char *argv[])
                         int mainTest (int argc, const char *argv[]);
                         // create fields for test
                         const char * fields[3];
-                        int nFields=3;
-                        fields[0]="fake main for miplib";
+                        int nFields = 3;
+                        fields[0] = "fake main for miplib";
                         std::string mpsfield = "-dirSample=";
                         mpsfield += dirSample.c_str();
-                        fields[1]=mpsfield.c_str();
+                        fields[1] = mpsfield.c_str();
                         std::string mipfield = "-dirMiplib=";
                         mipfield += dirMiplib.c_str();
-                        fields[2]=mipfield.c_str();
-                        mainTest(nFields,fields);
+                        fields[2] = mipfield.c_str();
+                        mainTest(nFields, fields);
                     }
                     break;
                     case SOLUTION:
                         if (goodModel) {
                             // get next field
-                            field = getString(argc,argv);
+                            field = getString(argc, argv);
                             std::string fileName;
-                            FILE *fp=NULL;
-                            if (field=="-"||field=="EOL") {
+                            FILE *fp = NULL;
+                            if (field == "-" || field == "EOL") {
                                 // stdout
-                                fp=stdout;
+                                fp = stdout;
                             } else {
-                                if (field[0]=='/'||field[0]=='~')
+                                if (field[0] == '/' || field[0] == '~')
                                     fileName = field;
                                 else
-                                    fileName = directory+field;
-                                fp=fopen(fileName.c_str(),"w");
+                                    fileName = directory + field;
+                                fp = fopen(fileName.c_str(), "w");
                             }
                             if (fp) {
                                 // make fancy later on
                                 int iRow;
-                                int numberRows=model->solver()->getNumRows();
+                                int numberRows = model->solver()->getNumRows();
                                 const double * dualRowSolution = model->getRowPrice();
                                 const double * primalRowSolution =  model->getRowActivity();
-                                for (iRow=0; iRow<numberRows; iRow++) {
-                                    fprintf(fp,"%7d ",iRow);
-                                    fprintf(fp,"%15.8g        %15.8g\n",primalRowSolution[iRow],
+                                for (iRow = 0; iRow < numberRows; iRow++) {
+                                    fprintf(fp, "%7d ", iRow);
+                                    fprintf(fp, "%15.8g        %15.8g\n", primalRowSolution[iRow],
                                             dualRowSolution[iRow]);
                                 }
                                 int iColumn;
-                                int numberColumns=model->solver()->getNumCols();
+                                int numberColumns = model->solver()->getNumCols();
                                 const double * dualColumnSolution =
                                     model->getReducedCost();
                                 const double * primalColumnSolution =
                                     model->getColSolution();
-                                for (iColumn=0; iColumn<numberColumns; iColumn++) {
-                                    fprintf(fp,"%7d ",iColumn);
-                                    fprintf(fp,"%15.8g        %15.8g\n",
+                                for (iColumn = 0; iColumn < numberColumns; iColumn++) {
+                                    fprintf(fp, "%7d ", iColumn);
+                                    fprintf(fp, "%15.8g        %15.8g\n",
                                             primalColumnSolution[iColumn],
                                             dualColumnSolution[iColumn]);
                                 }
-                                if (fp!=stdout)
+                                if (fp != stdout)
                                     fclose(fp);
                             } else {
-                                std::cout<<"Unable to open file "<<fileName<<std::endl;
+                                std::cout << "Unable to open file " << fileName << std::endl;
                             }
                         } else {
-                            std::cout<<"** Current model not valid"<<std::endl;
+                            std::cout << "** Current model not valid" << std::endl;
 
                         }
                         break;
@@ -1597,41 +1597,41 @@ int main (int argc, const char *argv[])
                     }
                 }
             } else if (!numberMatches) {
-                std::cout<<"No match for "<<field<<" - ? for list of commands"
-                         <<std::endl;
-            } else if (numberMatches==1) {
+                std::cout << "No match for " << field << " - ? for list of commands"
+                          << std::endl;
+            } else if (numberMatches == 1) {
                 if (!numberQuery) {
-                    std::cout<<"Short match for "<<field<<" possible completion:"
-                             <<std::endl;
-                    for ( iParam=0; iParam<numberParameters; iParam++ ) {
+                    std::cout << "Short match for " << field << " possible completion:"
+                              << std::endl;
+                    for ( iParam = 0; iParam < numberParameters; iParam++ ) {
                         int match = parameters[iParam].matches(field);
                         if (match)
-                            std::cout<<parameters[iParam].matchName()<<std::endl;
+                            std::cout << parameters[iParam].matchName() << std::endl;
                     }
                 } else if (numberQuery) {
-                    std::cout<<"Short match for "<<field<<" completion:"
-                             <<std::endl;
-                    for ( iParam=0; iParam<numberParameters; iParam++ ) {
+                    std::cout << "Short match for " << field << " completion:"
+                              << std::endl;
+                    for ( iParam = 0; iParam < numberParameters; iParam++ ) {
                         int match = parameters[iParam].matches(field);
                         if (match) {
-                            std::cout<<parameters[iParam].matchName()<<" : ";
-                            std::cout<<parameters[iParam].shortHelp()<<std::endl;
+                            std::cout << parameters[iParam].matchName() << " : ";
+                            std::cout << parameters[iParam].shortHelp() << std::endl;
                         }
                     }
                 }
             } else {
                 if (!numberQuery)
-                    std::cout<<"Multiple matches for "<<field<<" - possible completions:"
-                             <<std::endl;
+                    std::cout << "Multiple matches for " << field << " - possible completions:"
+                              << std::endl;
                 else
-                    std::cout<<"Completions of "<<field<<":"<<std::endl;
-                for ( iParam=0; iParam<numberParameters; iParam++ ) {
+                    std::cout << "Completions of " << field << ":" << std::endl;
+                for ( iParam = 0; iParam < numberParameters; iParam++ ) {
                     int match = parameters[iParam].matches(field);
                     if (match) {
-                        std::cout<<parameters[iParam].matchName();
-                        if (numberQuery>=2)
-                            std::cout<<" : "<<parameters[iParam].shortHelp();
-                        std::cout<<std::endl;
+                        std::cout << parameters[iParam].matchName();
+                        if (numberQuery >= 2)
+                            std::cout << " : " << parameters[iParam].shortHelp();
+                        std::cout << std::endl;
                     }
                 }
             }

@@ -55,38 +55,38 @@ int generateMasks (std::string proto, int longestName,
     */
     if (*pMask2 == '"') {
         if (pMask2[lengthMask-1] != '"') {
-            printf("generateMasks: Mismatched \" in mask %s\n",pMask2) ;
+            printf("generateMasks: Mismatched \" in mask %s\n", pMask2) ;
             return (-1) ;
         } else {
-            strcpy(pMask,pMask2+1) ;
-            *strchr(pMask,'"')='\0' ;
+            strcpy(pMask, pMask2 + 1) ;
+            *strchr(pMask, '"') = '\0' ;
         }
-    } else if (*pMask2=='\'') {
-        if (pMask2[lengthMask-1]!='\'') {
-            printf("mismatched ' in mask %s\n",pMask2) ;
+    } else if (*pMask2 == '\'') {
+        if (pMask2[lengthMask-1] != '\'') {
+            printf("mismatched ' in mask %s\n", pMask2) ;
             return (maxMasks) ;
         } else {
-            strcpy(pMask,pMask2+1) ;
-            *strchr(pMask,'\'')='\0' ;
+            strcpy(pMask, pMask2 + 1) ;
+            *strchr(pMask, '\'') = '\0' ;
         }
     } else {
-        strcpy(pMask,pMask2) ;
+        strcpy(pMask, pMask2) ;
     }
     /*
       Mask should not be longer than longest name.
     */
-    if (lengthMask>longestName) {
-        printf("mask %s too long - skipping\n",pMask) ;
+    if (lengthMask > longestName) {
+        printf("mask %s too long - skipping\n", pMask) ;
         return (maxMasks) ;
     }
     /*
       Expand `*' to multiple masks with varying number of `?' characters.
     */
     maxMasks = 1 ;
-    for (iChar=0; iChar<lengthMask; iChar++) {
-        if (pMask[iChar]=='*') {
+    for (iChar = 0; iChar < lengthMask; iChar++) {
+        if (pMask[iChar] == '*') {
             nAst++ ;
-            maxMasks *= (longestName+1) ;
+            maxMasks *= (longestName + 1) ;
         }
     }
     int nEntries = 1 ;
@@ -94,31 +94,31 @@ int generateMasks (std::string proto, int longestName,
     char ** masks = new char * [maxMasks] ;
     char ** newMasks = new char * [maxMasks] ;
     int i ;
-    for (i=0; i<maxMasks; i++) {
+    for (i = 0; i < maxMasks; i++) {
         masks[i] = new char[longestName+1] ;
         newMasks[i] = new char[longestName+1] ;
     }
-    strcpy(masks[0],pMask) ;
-    for (int iAst=0; iAst<nAst; iAst++) {
+    strcpy(masks[0], pMask) ;
+    for (int iAst = 0; iAst < nAst; iAst++) {
         int nOldEntries = nEntries ;
-        nEntries=0 ;
-        for (int iEntry = 0; iEntry<nOldEntries; iEntry++) {
+        nEntries = 0 ;
+        for (int iEntry = 0; iEntry < nOldEntries; iEntry++) {
             char * oldMask = masks[iEntry] ;
-            char * ast = strchr(oldMask,'*') ;
+            char * ast = strchr(oldMask, '*') ;
             assert (ast) ;
-            int length = strlen(oldMask)-1 ;
-            int nBefore = ast-oldMask ;
-            int nAfter = length-nBefore ;
+            int length = strlen(oldMask) - 1 ;
+            int nBefore = ast - oldMask ;
+            int nAfter = length - nBefore ;
             // and add null
             nAfter++ ;
-            for (int i=0; i<=longestName-length; i++) {
+            for (int i = 0; i <= longestName - length; i++) {
                 char * maskOut = newMasks[nEntries] ;
-                memcpy(maskOut,oldMask,nBefore) ;
-                for (int k=0; k<i; k++)
-                    maskOut[k+nBefore]='?' ;
-                memcpy(maskOut+nBefore+i,ast+1,nAfter) ;
+                memcpy(maskOut, oldMask, nBefore) ;
+                for (int k = 0; k < i; k++)
+                    maskOut[k+nBefore] = '?' ;
+                memcpy(maskOut + nBefore + i, ast + 1, nAfter) ;
                 nEntries++ ;
-                assert (nEntries<=maxMasks) ;
+                assert (nEntries <= maxMasks) ;
             }
         }
         char ** temp = masks ;
@@ -129,27 +129,27 @@ int generateMasks (std::string proto, int longestName,
       Trim trailing blanks and record final length.
     */
     int * sort = new int[nEntries] ;
-    for (i=0; i<nEntries; i++) {
+    for (i = 0; i < nEntries; i++) {
         char * maskThis = masks[i] ;
         int length = strlen(maskThis) ;
-        while (maskThis[length-1]==' ')
+        while (maskThis[length-1] == ' ')
             length-- ;
-        maskThis[length]='\0' ;
-        sort[i]=length ;
+        maskThis[length] = '\0' ;
+        sort[i] = length ;
     }
     /*
       Sort by length.
     */
-    CoinSort_2(sort,sort+nEntries,masks) ;
-    int lastLength=-1 ;
-    for (i=0; i<nEntries; i++) {
+    CoinSort_2(sort, sort + nEntries, masks) ;
+    int lastLength = -1 ;
+    for (i = 0; i < nEntries; i++) {
         int length = sort[i] ;
-        while (length>lastLength)
+        while (length > lastLength)
             maskStarts[++lastLength] = i ;
     }
-    maskStarts[++lastLength]=nEntries ;
+    maskStarts[++lastLength] = nEntries ;
     delete [] sort ;
-    for (i=0; i<maxMasks; i++)
+    for (i = 0; i < maxMasks; i++)
         delete [] newMasks[i] ;
     delete [] newMasks ;
 
@@ -167,16 +167,16 @@ bool maskMatches (const int *starts, char **masks, const char *checkC)
 
 {
     int length = strlen(checkC);
-    while (checkC[length-1]==' ')
+    while (checkC[length-1] == ' ')
         length--;
-    for (int i=starts[length]; i<starts[length+1]; i++) {
+    for (int i = starts[length]; i < starts[length+1]; i++) {
         char * thisMask = masks[i];
         int k;
-        for ( k=0; k<length; k++) {
-            if (thisMask[k]!='?'&&thisMask[k]!=checkC[k])
+        for ( k = 0; k < length; k++) {
+            if (thisMask[k] != '?' && thisMask[k] != checkC[k])
                 break;
         }
-        if (k==length)
+        if (k == length)
             return true;
     }
     return (false) ;
@@ -253,12 +253,12 @@ int CbcGenParamUtils::doSolutionParam (CoinParam *param)
                 char *environVar = getenv("HOME") ;
                 if (environVar) {
                     std::string home(environVar) ;
-                    fileName = home+fileName.substr(1) ;
+                    fileName = home + fileName.substr(1) ;
                 }
             }
         }
-        if (!(fileAbsPath(fileName) || fileName.substr(0,2) == "./")) {
-            fileName = ctlBlk->dfltDirectory_+fileName ;
+        if (!(fileAbsPath(fileName) || fileName.substr(0, 2) == "./")) {
+            fileName = ctlBlk->dfltDirectory_ + fileName ;
         }
     }
     /*
@@ -270,13 +270,13 @@ int CbcGenParamUtils::doSolutionParam (CoinParam *param)
     } else if (fileName == "stderr") {
         fp = stderr ;
     } else {
-        fp = fopen(fileName.c_str(),"w") ;
-        fp = fopen(fileName.c_str(),"w") ;
+        fp = fopen(fileName.c_str(), "w") ;
+        fp = fopen(fileName.c_str(), "w") ;
     }
     if (!fp) {
         std::cout
             << "Unable to open file `" << fileName
-            << "', original name '" << genParam->strVal() <<"'." << std::endl ;
+            << "', original name '" << genParam->strVal() << "'." << std::endl ;
         return (retval) ;
     } else {
         std::cout
@@ -296,49 +296,49 @@ int CbcGenParamUtils::doSolutionParam (CoinParam *param)
         int k = 0 ;
         bool newLine = true ;
         bool comma = false ;
-        fprintf(fp,"  int intIndicesV[] = {") ;
+        fprintf(fp, "  int intIndicesV[] = {") ;
         for (iColumn = 0 ; iColumn < n ; iColumn++ ) {
             if (fabs(primalColSolution[iColumn]) > 0.5 && osi->isInteger(iColumn)) {
                 if (newLine) {
-                    fprintf(fp,"\n\t") ;
+                    fprintf(fp, "\n\t") ;
                     newLine = false ;
                 } else {
-                    fprintf(fp,", ") ;
+                    fprintf(fp, ", ") ;
                 }
-                fprintf(fp,"%d",iColumn) ;
+                fprintf(fp, "%d", iColumn) ;
                 if (++k == 10) {
                     k = 0 ;
                     newLine = true ;
                 }
             }
         }
-        fprintf(fp,"\n      } ;\n") ;
+        fprintf(fp, "\n      } ;\n") ;
         k = 0 ;
         newLine = true ;
-        fprintf(fp,"  double intSolnV[] = {") ;
+        fprintf(fp, "  double intSolnV[] = {") ;
         for (iColumn = 0 ; iColumn < n ; iColumn++) {
             double value = primalColSolution[iColumn] ;
             if (fabs(value) > 0.5 && osi->isInteger(iColumn)) {
                 if (newLine) {
-                    fprintf(fp,"\n\t") ;
+                    fprintf(fp, "\n\t") ;
                     newLine = false ;
                 } else {
-                    fprintf(fp,", ") ;
+                    fprintf(fp, ", ") ;
                 }
                 if (value > 0) {
-                    value = floor(value+.5)  ;
+                    value = floor(value + .5)  ;
                 } else {
-                    value = ceil(value-.5) ;
+                    value = ceil(value - .5) ;
                 }
                 int ivalue = static_cast<int>(value) ;
-                fprintf(fp,"%d.0",ivalue) ;
+                fprintf(fp, "%d.0", ivalue) ;
                 if (++k == 10) {
                     k = 0 ;
                     newLine = true ;
                 }
             }
         }
-        fprintf(fp,"\n      } ;\n") ;
+        fprintf(fp, "\n      } ;\n") ;
         return (0) ;
     }
     /*
@@ -349,12 +349,12 @@ int CbcGenParamUtils::doSolutionParam (CoinParam *param)
     int longestName = 0 ;
     for (int j = 0 ; j < n ; j++) {
         int len = osi->getColName(j).length() ;
-        longestName = CoinMax(longestName,len) ;
+        longestName = CoinMax(longestName, len) ;
     }
     if (ctlBlk->printMode_ >= 3) {
         for (int i = 0 ; i < m ; i++) {
             int len = osi->getRowName(i).length() ;
-            longestName = CoinMax(longestName,len) ;
+            longestName = CoinMax(longestName, len) ;
         }
     }
     /*
@@ -365,7 +365,7 @@ int CbcGenParamUtils::doSolutionParam (CoinParam *param)
     int maxMasks = 0 ;
     char **masks = NULL ;
     if (doMask) {
-        maxMasks = generateMasks(ctlBlk->printMask_,longestName,maskStarts,masks) ;
+        maxMasks = generateMasks(ctlBlk->printMask_, longestName, maskStarts, masks) ;
         if (maxMasks < 0) {
             return (retval) ;
         }
@@ -390,7 +390,7 @@ int CbcGenParamUtils::doSolutionParam (CoinParam *param)
       All of this is filtered through printMask, if specified.
     */
     double primalTolerance ;
-    osi->getDblParam(OsiPrimalTolerance,primalTolerance) ;
+    osi->getDblParam(OsiPrimalTolerance, primalTolerance) ;
 
     int iRow ;
     if (ctlBlk->printMode_ >= 3) {
@@ -399,14 +399,14 @@ int CbcGenParamUtils::doSolutionParam (CoinParam *param)
         const double *rowLower = osi->getRowLower() ;
         const double *rowUpper = osi->getRowUpper() ;
 
-        fprintf(fp,"\n   %7s %-*s%15s%15s\n\n",
-                "Index",longestName,"Row","Activity","Dual") ;
+        fprintf(fp, "\n   %7s %-*s%15s%15s\n\n",
+                "Index", longestName, "Row", "Activity", "Dual") ;
 
         for (iRow = 0 ; iRow < m ; iRow++) {
             bool violated = false ;
             bool print = false ;
-            if (primalRowSolution[iRow] > rowUpper[iRow]+primalTolerance ||
-                    primalRowSolution[iRow] < rowLower[iRow]-primalTolerance) {
+            if (primalRowSolution[iRow] > rowUpper[iRow] + primalTolerance ||
+                    primalRowSolution[iRow] < rowLower[iRow] - primalTolerance) {
                 violated = true ;
                 print = true ;
             } else {
@@ -417,20 +417,20 @@ int CbcGenParamUtils::doSolutionParam (CoinParam *param)
                 }
             }
             const char *name = osi->getRowName(iRow).c_str() ;
-            if (doMask && !maskMatches(maskStarts,masks,name)) {
+            if (doMask && !maskMatches(maskStarts, masks, name)) {
                 print = false ;
             }
             if (print) {
                 if (violated) {
-                    fprintf(fp,"** ") ;
+                    fprintf(fp, "** ") ;
                 } else {
-                    fprintf(fp,"%3s"," ") ;
+                    fprintf(fp, "%3s", " ") ;
                 }
-                fprintf(fp,"%7d %-*s%15.8g%15.8g\n",iRow,longestName,name,
-                        primalRowSolution[iRow],dualRowSolution[iRow]) ;
+                fprintf(fp, "%7d %-*s%15.8g%15.8g\n", iRow, longestName, name,
+                        primalRowSolution[iRow], dualRowSolution[iRow]) ;
             }
         }
-        fprintf(fp,"\n") ;
+        fprintf(fp, "\n") ;
     }
     /*
       Now do the columns. This first block handles all modes except 2 (special).
@@ -443,14 +443,14 @@ int CbcGenParamUtils::doSolutionParam (CoinParam *param)
         const double *columnUpper = osi->getColUpper() ;
         const double *dualColSolution = osi->getReducedCost() ;
 
-        fprintf(fp,"\n   %7s %-*s%15s%15s\n\n",
-                "Index",longestName,"Column","Value","Reduced Cost") ;
+        fprintf(fp, "\n   %7s %-*s%15s%15s\n\n",
+                "Index", longestName, "Column", "Value", "Reduced Cost") ;
 
         for (iColumn = 0 ; iColumn < n ; iColumn++) {
             bool violated = false ;
             bool print = false ;
-            if (primalColSolution[iColumn] > columnUpper[iColumn]+primalTolerance ||
-                    primalColSolution[iColumn] < columnLower[iColumn]-primalTolerance) {
+            if (primalColSolution[iColumn] > columnUpper[iColumn] + primalTolerance ||
+                    primalColSolution[iColumn] < columnLower[iColumn] - primalTolerance) {
                 violated = true ;
                 print = true ;
             } else {
@@ -465,17 +465,17 @@ int CbcGenParamUtils::doSolutionParam (CoinParam *param)
                 }
             }
             const char *name = osi->getColName(iColumn).c_str() ;
-            if (doMask && !maskMatches(maskStarts,masks,name)) {
+            if (doMask && !maskMatches(maskStarts, masks, name)) {
                 print = false ;
             }
             if (print) {
                 if (violated) {
-                    fprintf(fp,"** ") ;
+                    fprintf(fp, "** ") ;
                 } else {
-                    fprintf(fp,"%3s"," ") ;
+                    fprintf(fp, "%3s", " ") ;
                 }
-                fprintf(fp,"%7d %-*s%15.8g%15.8g\n",iColumn,longestName,name,
-                        primalColSolution[iColumn],dualColSolution[iColumn]) ;
+                fprintf(fp, "%7d %-*s%15.8g%15.8g\n", iColumn, longestName, name,
+                        primalColSolution[iColumn], dualColSolution[iColumn]) ;
             }
         }
     }
@@ -546,7 +546,7 @@ int CbcGenParamUtils::doPrintMaskParam (CoinParam *param)
                 << "|." << std::endl ;
             return (retval) ;
         } else {
-            maskProto = maskProto.substr(1,maskLen-2) ;
+            maskProto = maskProto.substr(1, maskLen - 2) ;
         }
     }
     /*
@@ -562,12 +562,12 @@ int CbcGenParamUtils::doPrintMaskParam (CoinParam *param)
         int n = osi->getNumCols() ;
         for (int j = 0 ; j < n ; j++) {
             int len = osi->getColName(j).length() ;
-            longestName = CoinMax(longestName,len) ;
+            longestName = CoinMax(longestName, len) ;
         }
         int m = osi->getNumRows() ;
         for (int i = 0 ; i < m ; i++) {
             int len = osi->getRowName(i).length() ;
-            longestName = CoinMax(longestName,len) ;
+            longestName = CoinMax(longestName, len) ;
         }
         if (maskLen > longestName) {
             std::cerr

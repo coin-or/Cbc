@@ -43,7 +43,7 @@ CbcEventHandler::CbcEventHandler (const CbcEventHandler & rhs)
 // Assignment operator
 //-------------------------------------------------------------------
 CbcEventHandler&
-CbcEventHandler::operator=(const CbcEventHandler& rhs)
+CbcEventHandler::operator=(const CbcEventHandler & rhs)
 {
     if (this != &rhs) {
         model_ = rhs.model_ ;

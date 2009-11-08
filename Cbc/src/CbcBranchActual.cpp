@@ -36,20 +36,20 @@ CbcClique::CbcClique ()
 
 // Useful constructor (which are integer indices)
 CbcClique::CbcClique (CbcModel * model, int cliqueType, int numberMembers,
-                      const int * which, const char * type, int identifier,int slack)
+                      const int * which, const char * type, int identifier, int slack)
         : CbcObject(model)
 {
-    id_=identifier;
-    numberMembers_=numberMembers;
+    id_ = identifier;
+    numberMembers_ = numberMembers;
     if (numberMembers_) {
         members_ = new int[numberMembers_];
-        memcpy(members_,which,numberMembers_*sizeof(int));
+        memcpy(members_, which, numberMembers_*sizeof(int));
         type_ = new char[numberMembers_];
         if (type) {
-            memcpy(type_,type,numberMembers_*sizeof(char));
+            memcpy(type_, type, numberMembers_*sizeof(char));
         } else {
-            for (int i=0; i<numberMembers_; i++)
-                type_[i]=1;
+            for (int i = 0; i < numberMembers_; i++)
+                type_[i] = 1;
         }
     } else {
         members_ = NULL;
@@ -57,8 +57,8 @@ CbcClique::CbcClique (CbcModel * model, int cliqueType, int numberMembers,
     }
     // Find out how many non sos
     int i;
-    numberNonSOSMembers_=0;
-    for (i=0; i<numberMembers_; i++)
+    numberNonSOSMembers_ = 0;
+    for (i = 0; i < numberMembers_; i++)
         if (!type_[i])
             numberNonSOSMembers_++;
     cliqueType_ = cliqueType;
@@ -67,15 +67,15 @@ CbcClique::CbcClique (CbcModel * model, int cliqueType, int numberMembers,
 
 // Copy constructor
 CbcClique::CbcClique ( const CbcClique & rhs)
-        :CbcObject(rhs)
+        : CbcObject(rhs)
 {
     numberMembers_ = rhs.numberMembers_;
     numberNonSOSMembers_ = rhs.numberNonSOSMembers_;
     if (numberMembers_) {
         members_ = new int[numberMembers_];
-        memcpy(members_,rhs.members_,numberMembers_*sizeof(int));
+        memcpy(members_, rhs.members_, numberMembers_*sizeof(int));
         type_ = new char[numberMembers_];
-        memcpy(type_,rhs.type_,numberMembers_*sizeof(char));
+        memcpy(type_, rhs.type_, numberMembers_*sizeof(char));
     } else {
         members_ = NULL;
         type_ = NULL;
@@ -93,9 +93,9 @@ CbcClique::clone() const
 
 // Assignment operator
 CbcClique &
-CbcClique::operator=( const CbcClique& rhs)
+CbcClique::operator=( const CbcClique & rhs)
 {
-    if (this!=&rhs) {
+    if (this != &rhs) {
         CbcObject::operator=(rhs);
         delete [] members_;
         delete [] type_;
@@ -103,9 +103,9 @@ CbcClique::operator=( const CbcClique& rhs)
         numberNonSOSMembers_ = rhs.numberNonSOSMembers_;
         if (numberMembers_) {
             members_ = new int[numberMembers_];
-            memcpy(members_,rhs.members_,numberMembers_*sizeof(int));
+            memcpy(members_, rhs.members_, numberMembers_*sizeof(int));
             type_ = new char[numberMembers_];
-            memcpy(type_,rhs.type_,numberMembers_*sizeof(char));
+            memcpy(type_, rhs.type_, numberMembers_*sizeof(char));
         } else {
             members_ = NULL;
             type_ = NULL;
@@ -126,60 +126,60 @@ double
 CbcClique::infeasibility(const OsiBranchingInformation * /*info*/,
                          int &preferredWay) const
 {
-    int numberUnsatis=0, numberFree=0;
+    int numberUnsatis = 0, numberFree = 0;
     int j;
     const int * integer = model_->integerVariable();
     OsiSolverInterface * solver = model_->solver();
     const double * solution = model_->testSolution();
     const double * lower = solver->getColLower();
     const double * upper = solver->getColUpper();
-    double largestValue=0.0;
+    double largestValue = 0.0;
     double integerTolerance =
         model_->getDblParam(CbcModel::CbcIntegerTolerance);
     double * sort = new double[numberMembers_];
 
-    double slackValue=0.0;
-    for (j=0; j<numberMembers_; j++) {
+    double slackValue = 0.0;
+    for (j = 0; j < numberMembers_; j++) {
         int sequence = members_[j];
         int iColumn = integer[sequence];
         double value = solution[iColumn];
         value = CoinMax(value, lower[iColumn]);
         value = CoinMin(value, upper[iColumn]);
-        double nearest = floor(value+0.5);
-        double distance = fabs(value-nearest);
-        if (distance>integerTolerance) {
+        double nearest = floor(value + 0.5);
+        double distance = fabs(value - nearest);
+        if (distance > integerTolerance) {
             if (!type_[j])
-                value = 1.0-value; // non SOS
+                value = 1.0 - value; // non SOS
             // if slack then choose that
-            if (j==slack_&&value>0.05)
+            if (j == slack_ && value > 0.05)
                 slackValue = value;
-            largestValue = CoinMax(value,largestValue);
-            sort[numberUnsatis++]=-value;
-        } else if (upper[iColumn]>lower[iColumn]) {
+            largestValue = CoinMax(value, largestValue);
+            sort[numberUnsatis++] = -value;
+        } else if (upper[iColumn] > lower[iColumn]) {
             numberFree++;
         }
     }
-    preferredWay=1;
+    preferredWay = 1;
     double otherWay = 0.0;
     if (numberUnsatis) {
         // sort
-        std::sort(sort,sort+numberUnsatis);
-        for (j=0; j<numberUnsatis; j++) {
-            if ((j&1)!=0)
+        std::sort(sort, sort + numberUnsatis);
+        for (j = 0; j < numberUnsatis; j++) {
+            if ((j&1) != 0)
                 otherWay += -sort[j];
         }
         // Need to think more
-        double value = 0.2*numberUnsatis+0.01*(numberMembers_-numberFree);
-        if (fabs(largestValue-0.5)<0.1) {
+        double value = 0.2 * numberUnsatis + 0.01 * (numberMembers_ - numberFree);
+        if (fabs(largestValue - 0.5) < 0.1) {
             // close to half
-            value +=0.1;
+            value += 0.1;
         }
         if (slackValue) {
             // branching on slack
             value += slackValue;
         }
         // scale other way
-        otherWay *= value/(1.0-otherWay);
+        otherWay *= value / (1.0 - otherWay);
         delete [] sort;
         return value;
     } else {
@@ -202,58 +202,58 @@ CbcClique::feasibleRegion()
     double integerTolerance =
         model_->getDblParam(CbcModel::CbcIntegerTolerance);
 #endif
-    for (j=0; j<numberMembers_; j++) {
+    for (j = 0; j < numberMembers_; j++) {
         int sequence = members_[j];
         int iColumn = integer[sequence];
         double value = solution[iColumn];
         value = CoinMax(value, lower[iColumn]);
         value = CoinMin(value, upper[iColumn]);
-        double nearest = floor(value+0.5);
+        double nearest = floor(value + 0.5);
 #ifndef NDEBUG
-        double distance = fabs(value-nearest);
-        assert(distance<=integerTolerance);
+        double distance = fabs(value - nearest);
+        assert(distance <= integerTolerance);
 #endif
-        solver->setColLower(iColumn,nearest);
-        solver->setColUpper(iColumn,nearest);
+        solver->setColLower(iColumn, nearest);
+        solver->setColUpper(iColumn, nearest);
     }
 }
 // Redoes data when sequence numbers change
 void
 CbcClique::redoSequenceEtc(CbcModel * model, int numberColumns, const int * originalColumns)
 {
-    model_=model;
-    int n2=0;
-    for (int j=0; j<numberMembers_; j++) {
+    model_ = model;
+    int n2 = 0;
+    for (int j = 0; j < numberMembers_; j++) {
         int iColumn = members_[j];
         int i;
-        for (i=0; i<numberColumns; i++) {
-            if (originalColumns[i]==iColumn)
+        for (i = 0; i < numberColumns; i++) {
+            if (originalColumns[i] == iColumn)
                 break;
         }
-        if (i<numberColumns) {
-            members_[n2]=i;
-            type_[n2++]=type_[j];
+        if (i < numberColumns) {
+            members_[n2] = i;
+            type_[n2++] = type_[j];
         }
     }
-    if (n2<numberMembers_) {
+    if (n2 < numberMembers_) {
         //printf("** SOS number of members reduced from %d to %d!\n",numberMembers_,n2);
-        numberMembers_=n2;
+        numberMembers_ = n2;
     }
     // Find out how many non sos
     int i;
-    numberNonSOSMembers_=0;
-    for (i=0; i<numberMembers_; i++)
+    numberNonSOSMembers_ = 0;
+    for (i = 0; i < numberMembers_; i++)
         if (!type_[i])
             numberNonSOSMembers_++;
 }
 CbcBranchingObject *
-CbcClique::createCbcBranch(OsiSolverInterface * solver,const OsiBranchingInformation * /*info*/, int way)
+CbcClique::createCbcBranch(OsiSolverInterface * solver, const OsiBranchingInformation * /*info*/, int way)
 {
-    int numberUnsatis=0;
+    int numberUnsatis = 0;
     int j;
-    int nUp=0;
-    int nDown=0;
-    int numberFree=numberMembers_;
+    int nUp = 0;
+    int nDown = 0;
+    int numberFree = numberMembers_;
     const int * integer = model_->integerVariable();
     //OsiSolverInterface * solver = model_->solver();
     const double * solution = model_->testSolution();
@@ -265,67 +265,67 @@ CbcClique::createCbcBranch(OsiSolverInterface * solver,const OsiBranchingInforma
     double integerTolerance =
         model_->getDblParam(CbcModel::CbcIntegerTolerance);
 
-    double slackValue=0.0;
-    for (j=0; j<numberMembers_; j++) {
+    double slackValue = 0.0;
+    for (j = 0; j < numberMembers_; j++) {
         int sequence = members_[j];
         int iColumn = integer[sequence];
         double value = solution[iColumn];
         value = CoinMax(value, lower[iColumn]);
         value = CoinMin(value, upper[iColumn]);
-        double nearest = floor(value+0.5);
-        double distance = fabs(value-nearest);
-        if (distance>integerTolerance) {
+        double nearest = floor(value + 0.5);
+        double distance = fabs(value - nearest);
+        if (distance > integerTolerance) {
             if (!type_[j])
-                value = 1.0-value; // non SOS
+                value = 1.0 - value; // non SOS
             // if slack then choose that
-            if (j==slack_&&value>0.05)
+            if (j == slack_ && value > 0.05)
                 slackValue = value;
             value = -value; // for sort
-            upList[numberUnsatis]=j;
-            sort[numberUnsatis++]=value;
-        } else if (upper[iColumn]>lower[iColumn]) {
-            upList[--numberFree]=j;
+            upList[numberUnsatis] = j;
+            sort[numberUnsatis++] = value;
+        } else if (upper[iColumn] > lower[iColumn]) {
+            upList[--numberFree] = j;
         }
     }
     assert (numberUnsatis);
     if (!slackValue) {
         // sort
-        CoinSort_2(sort,sort+numberUnsatis,upList);
+        CoinSort_2(sort, sort + numberUnsatis, upList);
         // put first in up etc
-        int kWay=1;
-        for (j=0; j<numberUnsatis; j++) {
-            if (kWay>0)
-                upList[nUp++]=upList[j];
+        int kWay = 1;
+        for (j = 0; j < numberUnsatis; j++) {
+            if (kWay > 0)
+                upList[nUp++] = upList[j];
             else
-                downList[nDown++]=upList[j];
+                downList[nDown++] = upList[j];
             kWay = -kWay;
         }
-        for (j=numberFree; j<numberMembers_; j++) {
-            if (kWay>0)
-                upList[nUp++]=upList[j];
+        for (j = numberFree; j < numberMembers_; j++) {
+            if (kWay > 0)
+                upList[nUp++] = upList[j];
             else
-                downList[nDown++]=upList[j];
+                downList[nDown++] = upList[j];
             kWay = -kWay;
         }
     } else {
         // put slack to 0 in first way
         nUp = 1;
-        upList[0]=slack_;
-        for (j=0; j<numberUnsatis; j++) {
-            downList[nDown++]=upList[j];
+        upList[0] = slack_;
+        for (j = 0; j < numberUnsatis; j++) {
+            downList[nDown++] = upList[j];
         }
-        for (j=numberFree; j<numberMembers_; j++) {
-            downList[nDown++]=upList[j];
+        for (j = numberFree; j < numberMembers_; j++) {
+            downList[nDown++] = upList[j];
         }
     }
     // create object
     CbcBranchingObject * branch;
-    if (numberMembers_ <=64)
-        branch = new CbcCliqueBranchingObject(model_,this,way,
-                                              nDown,downList,nUp,upList);
+    if (numberMembers_ <= 64)
+        branch = new CbcCliqueBranchingObject(model_, this, way,
+                                              nDown, downList, nUp, upList);
     else
-        branch = new CbcLongCliqueBranchingObject(model_,this,way,
-                nDown,downList,nUp,upList);
+        branch = new CbcLongCliqueBranchingObject(model_, this, way,
+                nDown, downList, nUp, upList);
     delete [] upList;
     delete [] downList;
     delete [] sort;
@@ -353,7 +353,7 @@ CbcSOS::CbcSOS ()
 
 // Useful constructor (which are indices)
 CbcSOS::CbcSOS (CbcModel * model,  int numberMembers,
-                const int * which, const double * weights, int identifier,int type)
+                const int * which, const double * weights, int identifier, int type)
         : CbcObject(model),
         shadowEstimateDown_(1.0),
         shadowEstimateUp_(1.0),
@@ -364,50 +364,50 @@ CbcSOS::CbcSOS (CbcModel * model,  int numberMembers,
         numberMembers_(numberMembers),
         sosType_(type)
 {
-    id_=identifier;
-    integerValued_ = type==1;
+    id_ = identifier;
+    integerValued_ = type == 1;
     if (integerValued_) {
         // check all members integer
         OsiSolverInterface * solver = model->solver();
         if (solver) {
-            for (int i=0; i<numberMembers_; i++) {
+            for (int i = 0; i < numberMembers_; i++) {
                 if (!solver->isInteger(which[i]))
-                    integerValued_=false;
+                    integerValued_ = false;
             }
         } else {
             // can't tell
-            integerValued_=false;
+            integerValued_ = false;
         }
     }
     if (numberMembers_) {
         members_ = new int[numberMembers_];
         weights_ = new double[numberMembers_];
-        memcpy(members_,which,numberMembers_*sizeof(int));
+        memcpy(members_, which, numberMembers_*sizeof(int));
         if (weights) {
-            memcpy(weights_,weights,numberMembers_*sizeof(double));
+            memcpy(weights_, weights, numberMembers_*sizeof(double));
         } else {
-            for (int i=0; i<numberMembers_; i++)
-                weights_[i]=i;
+            for (int i = 0; i < numberMembers_; i++)
+                weights_[i] = i;
         }
         // sort so weights increasing
-        CoinSort_2(weights_,weights_+numberMembers_,members_);
+        CoinSort_2(weights_, weights_ + numberMembers_, members_);
         double last = -COIN_DBL_MAX;
         int i;
-        for (i=0; i<numberMembers_; i++) {
-            double possible = CoinMax(last+1.0e-10,weights_[i]);
+        for (i = 0; i < numberMembers_; i++) {
+            double possible = CoinMax(last + 1.0e-10, weights_[i]);
             weights_[i] = possible;
-            last=possible;
+            last = possible;
         }
     } else {
         members_ = NULL;
         weights_ = NULL;
     }
-    assert (sosType_>0&&sosType_<3);
+    assert (sosType_ > 0 && sosType_ < 3);
 }
 
 // Copy constructor
 CbcSOS::CbcSOS ( const CbcSOS & rhs)
-        :CbcObject(rhs)
+        : CbcObject(rhs)
 {
     shadowEstimateDown_ = rhs.shadowEstimateDown_;
     shadowEstimateUp_ = rhs.shadowEstimateUp_;
@@ -421,8 +421,8 @@ CbcSOS::CbcSOS ( const CbcSOS & rhs)
     if (numberMembers_) {
         members_ = new int[numberMembers_];
         weights_ = new double[numberMembers_];
-        memcpy(members_,rhs.members_,numberMembers_*sizeof(int));
-        memcpy(weights_,rhs.weights_,numberMembers_*sizeof(double));
+        memcpy(members_, rhs.members_, numberMembers_*sizeof(int));
+        memcpy(weights_, rhs.weights_, numberMembers_*sizeof(double));
     } else {
         members_ = NULL;
         weights_ = NULL;
@@ -438,9 +438,9 @@ CbcSOS::clone() const
 
 // Assignment operator
 CbcSOS &
-CbcSOS::operator=( const CbcSOS& rhs)
+CbcSOS::operator=( const CbcSOS & rhs)
 {
-    if (this!=&rhs) {
+    if (this != &rhs) {
         CbcObject::operator=(rhs);
         delete [] members_;
         delete [] weights_;
@@ -456,8 +456,8 @@ CbcSOS::operator=( const CbcSOS& rhs)
         if (numberMembers_) {
             members_ = new int[numberMembers_];
             weights_ = new double[numberMembers_];
-            memcpy(members_,rhs.members_,numberMembers_*sizeof(int));
-            memcpy(weights_,rhs.weights_,numberMembers_*sizeof(double));
+            memcpy(members_, rhs.members_, numberMembers_*sizeof(int));
+            memcpy(weights_, rhs.weights_, numberMembers_*sizeof(double));
         } else {
             members_ = NULL;
             weights_ = NULL;
@@ -477,7 +477,7 @@ CbcSOS::infeasibility(const OsiBranchingInformation * info,
                       int &preferredWay) const
 {
     int j;
-    int firstNonZero=-1;
+    int firstNonZero = -1;
     int lastNonZero = -1;
     OsiSolverInterface * solver = model_->solver();
     const double * solution = model_->testSolution();
@@ -487,77 +487,77 @@ CbcSOS::infeasibility(const OsiBranchingInformation * info,
     double integerTolerance =
         model_->getDblParam(CbcModel::CbcIntegerTolerance);
     double weight = 0.0;
-    double sum =0.0;
+    double sum = 0.0;
 
     // check bounds etc
-    double lastWeight=-1.0e100;
-    for (j=0; j<numberMembers_; j++) {
+    double lastWeight = -1.0e100;
+    for (j = 0; j < numberMembers_; j++) {
         int iColumn = members_[j];
-        if (lastWeight>=weights_[j]-1.0e-7)
-            throw CoinError("Weights too close together in SOS","infeasibility","CbcSOS");
-        double value = CoinMax(0.0,solution[iColumn]);
+        if (lastWeight >= weights_[j] - 1.0e-7)
+            throw CoinError("Weights too close together in SOS", "infeasibility", "CbcSOS");
+        double value = CoinMax(0.0, solution[iColumn]);
         sum += value;
-        if (value>integerTolerance&&upper[iColumn]) {
+        if (value > integerTolerance && upper[iColumn]) {
             // Possibly due to scaling a fixed variable might slip through
-            if (value>upper[iColumn]) {
-                value=upper[iColumn];
+            if (value > upper[iColumn]) {
+                value = upper[iColumn];
                 // Could change to #ifdef CBC_DEBUG
 #ifndef NDEBUG
-                if (model_->messageHandler()->logLevel()>2)
+                if (model_->messageHandler()->logLevel() > 2)
                     printf("** Variable %d (%d) has value %g and upper bound of %g\n",
-                           iColumn,j,value,upper[iColumn]);
+                           iColumn, j, value, upper[iColumn]);
 #endif
             }
-            weight += weights_[j]*value;
-            if (firstNonZero<0)
-                firstNonZero=j;
-            lastNonZero=j;
+            weight += weights_[j] * value;
+            if (firstNonZero < 0)
+                firstNonZero = j;
+            lastNonZero = j;
         }
     }
-    preferredWay=1;
-    if (lastNonZero-firstNonZero>=sosType_) {
+    preferredWay = 1;
+    if (lastNonZero - firstNonZero >= sosType_) {
         // find where to branch
-        assert (sum>0.0);
+        assert (sum > 0.0);
         weight /= sum;
-        if (info->defaultDual_>=0.0&&info->usefulRegion_&&info->columnStart_) {
-            assert (sosType_==1);
+        if (info->defaultDual_ >= 0.0 && info->usefulRegion_ && info->columnStart_) {
+            assert (sosType_ == 1);
             int iWhere;
-            for (iWhere=firstNonZero; iWhere<lastNonZero-1; iWhere++) {
-                if (weight<weights_[iWhere+1]) {
+            for (iWhere = firstNonZero; iWhere < lastNonZero - 1; iWhere++) {
+                if (weight < weights_[iWhere+1]) {
                     break;
                 }
             }
             int jColumnDown = members_[iWhere];
             int jColumnUp = members_[iWhere+1];
-            int n=0;
+            int n = 0;
             CoinBigIndex j;
             double objMove = info->objective_[jColumnDown];
-            for (j=info->columnStart_[jColumnDown];
-                    j<info->columnStart_[jColumnDown]+info->columnLength_[jColumnDown]; j++) {
+            for (j = info->columnStart_[jColumnDown];
+                    j < info->columnStart_[jColumnDown] + info->columnLength_[jColumnDown]; j++) {
                 double value = info->elementByColumn_[j];
                 int iRow = info->row_[j];
-                info->indexRegion_[n++]=iRow;
-                info->usefulRegion_[iRow]=value;
+                info->indexRegion_[n++] = iRow;
+                info->usefulRegion_[iRow] = value;
             }
-            for (iWhere=firstNonZero; iWhere<lastNonZero; iWhere++) {
+            for (iWhere = firstNonZero; iWhere < lastNonZero; iWhere++) {
                 int jColumn = members_[iWhere];
                 double solValue = info->solution_[jColumn];
                 if (!solValue)
                     continue;
-                objMove -= info->objective_[jColumn]*solValue;
-                for (j=info->columnStart_[jColumn];
-                        j<info->columnStart_[jColumn]+info->columnLength_[jColumn]; j++) {
-                    double value = -info->elementByColumn_[j]*solValue;
+                objMove -= info->objective_[jColumn] * solValue;
+                for (j = info->columnStart_[jColumn];
+                        j < info->columnStart_[jColumn] + info->columnLength_[jColumn]; j++) {
+                    double value = -info->elementByColumn_[j] * solValue;
                     int iRow = info->row_[j];
                     double oldValue = info->usefulRegion_[iRow];
                     if (!oldValue) {
-                        info->indexRegion_[n++]=iRow;
+                        info->indexRegion_[n++] = iRow;
                     } else {
                         value += oldValue;
                         if (!value)
                             value = 1.0e-100;
                     }
-                    info->usefulRegion_[iRow]=value;
+                    info->usefulRegion_[iRow] = value;
                 }
             }
             const double * pi = info->pi_;
@@ -566,27 +566,27 @@ CbcSOS::infeasibility(const OsiBranchingInformation * info,
             const double * upper = info->rowUpper_;
             double tolerance = info->primalTolerance_;
             double direction = info->direction_;
-            shadowEstimateDown_ = objMove*direction;
-            bool infeasible=false;
-            for (int k=0; k<n; k++) {
+            shadowEstimateDown_ = objMove * direction;
+            bool infeasible = false;
+            for (int k = 0; k < n; k++) {
                 int iRow = info->indexRegion_[k];
-                double movement=info->usefulRegion_[iRow];
+                double movement = info->usefulRegion_[iRow];
                 // not this time info->usefulRegion_[iRow]=0.0;
-                if (lower[iRow]<-1.0e20)
-                    assert (pi[iRow]<=1.0e-3);
-                if (upper[iRow]>1.0e20)
-                    assert (pi[iRow]>=-1.0e-3);
-                double valueP = pi[iRow]*direction;
+                if (lower[iRow] < -1.0e20)
+                    assert (pi[iRow] <= 1.0e-3);
+                if (upper[iRow] > 1.0e20)
+                    assert (pi[iRow] >= -1.0e-3);
+                double valueP = pi[iRow] * direction;
                 // if move makes infeasible then make at least default
                 double newValue = activity[iRow] + movement;
-                if (newValue>upper[iRow]+tolerance||newValue<lower[iRow]-tolerance) {
-                    shadowEstimateDown_ += fabs(movement)*CoinMax(fabs(valueP),info->defaultDual_);
-                    infeasible=true;
+                if (newValue > upper[iRow] + tolerance || newValue < lower[iRow] - tolerance) {
+                    shadowEstimateDown_ += fabs(movement) * CoinMax(fabs(valueP), info->defaultDual_);
+                    infeasible = true;
                 }
             }
-            if (shadowEstimateDown_<info->integerTolerance_) {
+            if (shadowEstimateDown_ < info->integerTolerance_) {
                 if (!infeasible) {
-                    shadowEstimateDown_=1.0e-10;
+                    shadowEstimateDown_ = 1.0e-10;
 #ifdef COIN_DEVELOP
                     printf("zero pseudoShadowPrice\n");
 #endif
@@ -596,57 +596,57 @@ CbcSOS::infeasibility(const OsiBranchingInformation * info,
             // And other way
             // take off
             objMove -= info->objective_[jColumnDown];
-            for (j=info->columnStart_[jColumnDown];
-                    j<info->columnStart_[jColumnDown]+info->columnLength_[jColumnDown]; j++) {
+            for (j = info->columnStart_[jColumnDown];
+                    j < info->columnStart_[jColumnDown] + info->columnLength_[jColumnDown]; j++) {
                 double value = -info->elementByColumn_[j];
                 int iRow = info->row_[j];
                 double oldValue = info->usefulRegion_[iRow];
                 if (!oldValue) {
-                    info->indexRegion_[n++]=iRow;
+                    info->indexRegion_[n++] = iRow;
                 } else {
                     value += oldValue;
                     if (!value)
                         value = 1.0e-100;
                 }
-                info->usefulRegion_[iRow]=value;
+                info->usefulRegion_[iRow] = value;
             }
             // add on
             objMove += info->objective_[jColumnUp];
-            for (j=info->columnStart_[jColumnUp];
-                    j<info->columnStart_[jColumnUp]+info->columnLength_[jColumnUp]; j++) {
+            for (j = info->columnStart_[jColumnUp];
+                    j < info->columnStart_[jColumnUp] + info->columnLength_[jColumnUp]; j++) {
                 double value = info->elementByColumn_[j];
                 int iRow = info->row_[j];
                 double oldValue = info->usefulRegion_[iRow];
                 if (!oldValue) {
-                    info->indexRegion_[n++]=iRow;
+                    info->indexRegion_[n++] = iRow;
                 } else {
                     value += oldValue;
                     if (!value)
                         value = 1.0e-100;
                 }
-                info->usefulRegion_[iRow]=value;
+                info->usefulRegion_[iRow] = value;
             }
-            shadowEstimateUp_ = objMove*direction;
-            infeasible=false;
-            for (int k=0; k<n; k++) {
+            shadowEstimateUp_ = objMove * direction;
+            infeasible = false;
+            for (int k = 0; k < n; k++) {
                 int iRow = info->indexRegion_[k];
-                double movement=info->usefulRegion_[iRow];
-                info->usefulRegion_[iRow]=0.0;
-                if (lower[iRow]<-1.0e20)
-                    assert (pi[iRow]<=1.0e-3);
-                if (upper[iRow]>1.0e20)
-                    assert (pi[iRow]>=-1.0e-3);
-                double valueP = pi[iRow]*direction;
+                double movement = info->usefulRegion_[iRow];
+                info->usefulRegion_[iRow] = 0.0;
+                if (lower[iRow] < -1.0e20)
+                    assert (pi[iRow] <= 1.0e-3);
+                if (upper[iRow] > 1.0e20)
+                    assert (pi[iRow] >= -1.0e-3);
+                double valueP = pi[iRow] * direction;
                 // if move makes infeasible then make at least default
                 double newValue = activity[iRow] + movement;
-                if (newValue>upper[iRow]+tolerance||newValue<lower[iRow]-tolerance) {
-                    shadowEstimateUp_ += fabs(movement)*CoinMax(fabs(valueP),info->defaultDual_);
-                    infeasible=true;
+                if (newValue > upper[iRow] + tolerance || newValue < lower[iRow] - tolerance) {
+                    shadowEstimateUp_ += fabs(movement) * CoinMax(fabs(valueP), info->defaultDual_);
+                    infeasible = true;
                 }
             }
-            if (shadowEstimateUp_<info->integerTolerance_) {
+            if (shadowEstimateUp_ < info->integerTolerance_) {
                 if (!infeasible) {
-                    shadowEstimateUp_=1.0e-10;
+                    shadowEstimateUp_ = 1.0e-10;
 #ifdef COIN_DEVELOP
                     printf("zero pseudoShadowPrice\n");
 #endif
@@ -657,33 +657,33 @@ CbcSOS::infeasibility(const OsiBranchingInformation * info,
             double downCost = shadowEstimateDown_;
             double upCost = shadowEstimateUp_;
             if (numberTimesDown_)
-                downCost *= downDynamicPseudoRatio_/
+                downCost *= downDynamicPseudoRatio_ /
                             static_cast<double> (numberTimesDown_);
             if (numberTimesUp_)
-                upCost *= upDynamicPseudoRatio_/
+                upCost *= upDynamicPseudoRatio_ /
                           static_cast<double> (numberTimesUp_);
 #define WEIGHT_AFTER 0.7
 #define WEIGHT_BEFORE 0.1
-            int stateOfSearch = model_->stateOfSearch()%10;
-            double returnValue=0.0;
-            double minValue = CoinMin(downCost,upCost);
-            double maxValue = CoinMax(downCost,upCost);
-            if (stateOfSearch<=2) {
+            int stateOfSearch = model_->stateOfSearch() % 10;
+            double returnValue = 0.0;
+            double minValue = CoinMin(downCost, upCost);
+            double maxValue = CoinMax(downCost, upCost);
+            if (stateOfSearch <= 2) {
                 // no branching solution
-                returnValue = WEIGHT_BEFORE*minValue + (1.0-WEIGHT_BEFORE)*maxValue;
+                returnValue = WEIGHT_BEFORE * minValue + (1.0 - WEIGHT_BEFORE) * maxValue;
             } else {
-                returnValue = WEIGHT_AFTER*minValue + (1.0-WEIGHT_AFTER)*maxValue;
+                returnValue = WEIGHT_AFTER * minValue + (1.0 - WEIGHT_AFTER) * maxValue;
             }
 #ifdef PRINT_SHADOW
             printf("%d id - down %d %g up %d %g shadow %g, %g returned %g\n",
-                   id_,numberTimesDown_,downDynamicPseudoRatio_,
-                   numberTimesUp_,upDynamicPseudoRatio_,shadowEstimateDown_,
-                   shadowEstimateUp_,returnValue);
+                   id_, numberTimesDown_, downDynamicPseudoRatio_,
+                   numberTimesUp_, upDynamicPseudoRatio_, shadowEstimateDown_,
+                   shadowEstimateUp_, returnValue);
 #endif
             return returnValue;
         } else {
-            double value = lastNonZero-firstNonZero+1;
-            value *= 0.5/static_cast<double> (numberMembers_);
+            double value = lastNonZero - firstNonZero + 1;
+            value *= 0.5 / static_cast<double> (numberMembers_);
             return value;
         }
     } else {
@@ -696,7 +696,7 @@ void
 CbcSOS::feasibleRegion()
 {
     int j;
-    int firstNonZero=-1;
+    int firstNonZero = -1;
     int lastNonZero = -1;
     OsiSolverInterface * solver = model_->solver();
     const double * solution = model_->testSolution();
@@ -705,54 +705,54 @@ CbcSOS::feasibleRegion()
     double integerTolerance =
         model_->getDblParam(CbcModel::CbcIntegerTolerance);
     double weight = 0.0;
-    double sum =0.0;
+    double sum = 0.0;
 
-    for (j=0; j<numberMembers_; j++) {
+    for (j = 0; j < numberMembers_; j++) {
         int iColumn = members_[j];
-        double value = CoinMax(0.0,solution[iColumn]);
+        double value = CoinMax(0.0, solution[iColumn]);
         sum += value;
-        if (value>integerTolerance&&upper[iColumn]) {
-            weight += weights_[j]*value;
-            if (firstNonZero<0)
-                firstNonZero=j;
-            lastNonZero=j;
+        if (value > integerTolerance && upper[iColumn]) {
+            weight += weights_[j] * value;
+            if (firstNonZero < 0)
+                firstNonZero = j;
+            lastNonZero = j;
         }
     }
-    assert (lastNonZero-firstNonZero<sosType_) ;
-    for (j=0; j<firstNonZero; j++) {
+    assert (lastNonZero - firstNonZero < sosType_) ;
+    for (j = 0; j < firstNonZero; j++) {
         int iColumn = members_[j];
-        solver->setColUpper(iColumn,0.0);
+        solver->setColUpper(iColumn, 0.0);
     }
-    for (j=lastNonZero+1; j<numberMembers_; j++) {
+    for (j = lastNonZero + 1; j < numberMembers_; j++) {
         int iColumn = members_[j];
-        solver->setColUpper(iColumn,0.0);
+        solver->setColUpper(iColumn, 0.0);
     }
 }
 // Redoes data when sequence numbers change
 void
 CbcSOS::redoSequenceEtc(CbcModel * model, int numberColumns, const int * originalColumns)
 {
-    model_=model;
-    int n2=0;
-    for (int j=0; j<numberMembers_; j++) {
+    model_ = model;
+    int n2 = 0;
+    for (int j = 0; j < numberMembers_; j++) {
         int iColumn = members_[j];
         int i;
-        for (i=0; i<numberColumns; i++) {
-            if (originalColumns[i]==iColumn)
+        for (i = 0; i < numberColumns; i++) {
+            if (originalColumns[i] == iColumn)
                 break;
         }
-        if (i<numberColumns) {
-            members_[n2]=i;
-            weights_[n2++]=weights_[j];
+        if (i < numberColumns) {
+            members_[n2] = i;
+            weights_[n2++] = weights_[j];
         }
     }
-    if (n2<numberMembers_) {
+    if (n2 < numberMembers_) {
         //printf("** SOS number of members reduced from %d to %d!\n",numberMembers_,n2);
-        numberMembers_=n2;
+        numberMembers_ = n2;
     }
 }
 CbcBranchingObject *
-CbcSOS::createCbcBranch(OsiSolverInterface * solver,const OsiBranchingInformation * /*info*/, int way)
+CbcSOS::createCbcBranch(OsiSolverInterface * solver, const OsiBranchingInformation * /*info*/, int way)
 {
     int j;
     const double * solution = model_->testSolution();
@@ -760,51 +760,51 @@ CbcSOS::createCbcBranch(OsiSolverInterface * solver,const OsiBranchingInformatio
         model_->getDblParam(CbcModel::CbcIntegerTolerance);
     //OsiSolverInterface * solver = model_->solver();
     const double * upper = solver->getColUpper();
-    int firstNonFixed=-1;
-    int lastNonFixed=-1;
-    int firstNonZero=-1;
+    int firstNonFixed = -1;
+    int lastNonFixed = -1;
+    int firstNonZero = -1;
     int lastNonZero = -1;
     double weight = 0.0;
-    double sum =0.0;
-    for (j=0; j<numberMembers_; j++) {
+    double sum = 0.0;
+    for (j = 0; j < numberMembers_; j++) {
         int iColumn = members_[j];
         if (upper[iColumn]) {
-            double value = CoinMax(0.0,solution[iColumn]);
+            double value = CoinMax(0.0, solution[iColumn]);
             sum += value;
-            if (firstNonFixed<0)
-                firstNonFixed=j;
-            lastNonFixed=j;
-            if (value>integerTolerance) {
-                weight += weights_[j]*value;
-                if (firstNonZero<0)
-                    firstNonZero=j;
-                lastNonZero=j;
+            if (firstNonFixed < 0)
+                firstNonFixed = j;
+            lastNonFixed = j;
+            if (value > integerTolerance) {
+                weight += weights_[j] * value;
+                if (firstNonZero < 0)
+                    firstNonZero = j;
+                lastNonZero = j;
             }
         }
     }
-    assert (lastNonZero-firstNonZero>=sosType_) ;
+    assert (lastNonZero - firstNonZero >= sosType_) ;
     // find where to branch
-    assert (sum>0.0);
+    assert (sum > 0.0);
     weight /= sum;
     int iWhere;
-    double separator=0.0;
-    for (iWhere=firstNonZero; iWhere<lastNonZero; iWhere++)
-        if (weight<weights_[iWhere+1])
+    double separator = 0.0;
+    for (iWhere = firstNonZero; iWhere < lastNonZero; iWhere++)
+        if (weight < weights_[iWhere+1])
             break;
-    if (sosType_==1) {
+    if (sosType_ == 1) {
         // SOS 1
-        separator = 0.5 *(weights_[iWhere]+weights_[iWhere+1]);
+        separator = 0.5 * (weights_[iWhere] + weights_[iWhere+1]);
     } else {
         // SOS 2
-        if (iWhere==firstNonFixed)
+        if (iWhere == firstNonFixed)
             iWhere++;;
-        if (iWhere==lastNonFixed-1)
-            iWhere = lastNonFixed-2;
+        if (iWhere == lastNonFixed - 1)
+            iWhere = lastNonFixed - 2;
         separator = weights_[iWhere+1];
     }
     // create object
     CbcBranchingObject * branch;
-    branch = new CbcSOSBranchingObject(model_,this,way,separator);
+    branch = new CbcSOSBranchingObject(model_, this, way, separator);
     branch->setOriginalObject(this);
     return branch;
 }
@@ -816,36 +816,36 @@ CbcSOS::createUpdateInformation(const OsiSolverInterface * solver,
                                 const CbcNode * node,
                                 const CbcBranchingObject * branchingObject)
 {
-    double originalValue=node->objectiveValue();
+    double originalValue = node->objectiveValue();
     int originalUnsatisfied = node->numberUnsatisfied();
-    double objectiveValue = solver->getObjValue()*solver->getObjSense();
-    int unsatisfied=0;
+    double objectiveValue = solver->getObjValue() * solver->getObjSense();
+    int unsatisfied = 0;
     int i;
     //might be base model - doesn't matter
     int numberIntegers = model_->numberIntegers();;
     const double * solution = solver->getColSolution();
     //const double * lower = solver->getColLower();
     //const double * upper = solver->getColUpper();
-    double change = CoinMax(0.0,objectiveValue-originalValue);
+    double change = CoinMax(0.0, objectiveValue - originalValue);
     int iStatus;
     if (solver->isProvenOptimal())
-        iStatus=0; // optimal
+        iStatus = 0; // optimal
     else if (solver->isIterationLimitReached()
-             &&!solver->isDualObjectiveLimitReached())
-        iStatus=2; // unknown
+             && !solver->isDualObjectiveLimitReached())
+        iStatus = 2; // unknown
     else
-        iStatus=1; // infeasible
+        iStatus = 1; // infeasible
 
-    bool feasible = iStatus!=1;
+    bool feasible = iStatus != 1;
     if (feasible) {
         double integerTolerance =
             model_->getDblParam(CbcModel::CbcIntegerTolerance);
         const int * integerVariable = model_->integerVariable();
-        for (i=0; i<numberIntegers; i++) {
-            int j=integerVariable[i];
+        for (i = 0; i < numberIntegers; i++) {
+            int j = integerVariable[i];
             double value = solution[j];
-            double nearest = floor(value+0.5);
-            if (fabs(value-nearest)>integerTolerance)
+            double nearest = floor(value + 0.5);
+            if (fabs(value - nearest) > integerTolerance)
                 unsatisfied++;
         }
     }
@@ -854,11 +854,11 @@ CbcSOS::createUpdateInformation(const OsiSolverInterface * solver,
     double value = branchingObject->value();
     CbcObjectUpdateData newData (this, way,
                                  change, iStatus,
-                                 originalUnsatisfied-unsatisfied,value);
+                                 originalUnsatisfied - unsatisfied, value);
     newData.originalObjective_ = originalValue;
     // Solvers know about direction
     double direction = solver->getObjSense();
-    solver->getDblParam(OsiDualObjectiveLimit,newData.cutoff_);
+    solver->getDblParam(OsiDualObjectiveLimit, newData.cutoff_);
     newData.cutoff_ *= direction;
     return newData;
 }
@@ -866,59 +866,59 @@ CbcSOS::createUpdateInformation(const OsiSolverInterface * solver,
 void
 CbcSOS::updateInformation(const CbcObjectUpdateData & data)
 {
-    bool feasible = data.status_!=1;
+    bool feasible = data.status_ != 1;
     int way = data.way_;
     //double value = data.branchingValue_;
     double originalValue = data.originalObjective_;
     double change = data.change_;
-    if (way<0) {
+    if (way < 0) {
         // down
         if (!feasible) {
-            double distanceToCutoff=0.0;
+            double distanceToCutoff = 0.0;
             //double objectiveValue = model_->getCurrentMinimizationObjValue();
             distanceToCutoff =  model_->getCutoff()  - originalValue;
-            if (distanceToCutoff<1.0e20)
-                change = distanceToCutoff*2.0;
+            if (distanceToCutoff < 1.0e20)
+                change = distanceToCutoff * 2.0;
             else
-                change = (downDynamicPseudoRatio_*shadowEstimateDown_+1.0e-3)*10.0;
+                change = (downDynamicPseudoRatio_ * shadowEstimateDown_ + 1.0e-3) * 10.0;
         }
-        change = CoinMax(1.0e-12*(1.0+fabs(originalValue)),change);
+        change = CoinMax(1.0e-12 * (1.0 + fabs(originalValue)), change);
 #ifdef PRINT_SHADOW
         if (numberTimesDown_)
             printf("Updating id %d - down change %g (true %g) - ndown %d estimated change %g - raw shadow estimate %g\n",
-                   id_,change,data.change_,numberTimesDown_,shadowEstimateDown_*
-                   (downDynamicPseudoRatio_/((double) numberTimesDown_)),
+                   id_, change, data.change_, numberTimesDown_, shadowEstimateDown_*
+                   (downDynamicPseudoRatio_ / ((double) numberTimesDown_)),
                    shadowEstimateDown_);
         else
             printf("Updating id %d - down change %g (true %g) - shadow estimate %g\n",
-                   id_,change,data.change_,shadowEstimateDown_);
+                   id_, change, data.change_, shadowEstimateDown_);
 #endif
         numberTimesDown_++;
-        downDynamicPseudoRatio_ += change/shadowEstimateDown_;
+        downDynamicPseudoRatio_ += change / shadowEstimateDown_;
     } else {
         // up
         if (!feasible) {
-            double distanceToCutoff=0.0;
+            double distanceToCutoff = 0.0;
             //double objectiveValue = model_->getCurrentMinimizationObjValue();
             distanceToCutoff =  model_->getCutoff()  - originalValue;
-            if (distanceToCutoff<1.0e20)
-                change = distanceToCutoff*2.0;
+            if (distanceToCutoff < 1.0e20)
+                change = distanceToCutoff * 2.0;
             else
-                change = (upDynamicPseudoRatio_*shadowEstimateUp_+1.0e-3)*10.0;
+                change = (upDynamicPseudoRatio_ * shadowEstimateUp_ + 1.0e-3) * 10.0;
         }
-        change = CoinMax(1.0e-12*(1.0+fabs(originalValue)),change);
+        change = CoinMax(1.0e-12 * (1.0 + fabs(originalValue)), change);
 #ifdef PRINT_SHADOW
         if (numberTimesUp_)
             printf("Updating id %d - up change %g (true %g) - nup %d estimated change %g - raw shadow estimate %g\n",
-                   id_,change,data.change_,numberTimesUp_,shadowEstimateUp_*
-                   (upDynamicPseudoRatio_/((double) numberTimesUp_)),
+                   id_, change, data.change_, numberTimesUp_, shadowEstimateUp_*
+                   (upDynamicPseudoRatio_ / ((double) numberTimesUp_)),
                    shadowEstimateUp_);
         else
             printf("Updating id %d - up change %g (true %g) - shadow estimate %g\n",
-                   id_,change,data.change_,shadowEstimateUp_);
+                   id_, change, data.change_, shadowEstimateUp_);
 #endif
         numberTimesUp_++;
-        upDynamicPseudoRatio_ += change/shadowEstimateUp_;
+        upDynamicPseudoRatio_ += change / shadowEstimateUp_;
     }
 }
 
@@ -935,61 +935,61 @@ CbcSOS::solverBranch() const
         model_->getDblParam(CbcModel::CbcIntegerTolerance);
     OsiSolverInterface * solver = model_->solver();
     const double * upper = solver->getColUpper();
-    int firstNonFixed=-1;
-    int lastNonFixed=-1;
-    int firstNonZero=-1;
+    int firstNonFixed = -1;
+    int lastNonFixed = -1;
+    int firstNonZero = -1;
     int lastNonZero = -1;
     double weight = 0.0;
-    double sum =0.0;
+    double sum = 0.0;
     double * fix = new double[numberMembers_];
     int * which = new int[numberMembers_];
-    for (j=0; j<numberMembers_; j++) {
+    for (j = 0; j < numberMembers_; j++) {
         int iColumn = members_[j];
         // fix all on one side or other (even if fixed)
-        fix[j]=0.0;
-        which[j]=iColumn;
+        fix[j] = 0.0;
+        which[j] = iColumn;
         if (upper[iColumn]) {
-            double value = CoinMax(0.0,solution[iColumn]);
+            double value = CoinMax(0.0, solution[iColumn]);
             sum += value;
-            if (firstNonFixed<0)
-                firstNonFixed=j;
-            lastNonFixed=j;
-            if (value>integerTolerance) {
-                weight += weights_[j]*value;
-                if (firstNonZero<0)
-                    firstNonZero=j;
-                lastNonZero=j;
+            if (firstNonFixed < 0)
+                firstNonFixed = j;
+            lastNonFixed = j;
+            if (value > integerTolerance) {
+                weight += weights_[j] * value;
+                if (firstNonZero < 0)
+                    firstNonZero = j;
+                lastNonZero = j;
             }
         }
     }
-    assert (lastNonZero-firstNonZero>=sosType_) ;
+    assert (lastNonZero - firstNonZero >= sosType_) ;
     // find where to branch
-    assert (sum>0.0);
+    assert (sum > 0.0);
     weight /= sum;
     // down branch fixes ones above weight to 0
     int iWhere;
-    int iDownStart=0;
-    int iUpEnd=0;
-    for (iWhere=firstNonZero; iWhere<lastNonZero; iWhere++)
-        if (weight<weights_[iWhere+1])
+    int iDownStart = 0;
+    int iUpEnd = 0;
+    for (iWhere = firstNonZero; iWhere < lastNonZero; iWhere++)
+        if (weight < weights_[iWhere+1])
             break;
-    if (sosType_==1) {
+    if (sosType_ == 1) {
         // SOS 1
-        iUpEnd=iWhere+1;
-        iDownStart=iUpEnd;
+        iUpEnd = iWhere + 1;
+        iDownStart = iUpEnd;
     } else {
         // SOS 2
-        if (iWhere==firstNonFixed)
+        if (iWhere == firstNonFixed)
             iWhere++;;
-        if (iWhere==lastNonFixed-1)
-            iWhere = lastNonFixed-2;
-        iUpEnd=iWhere+1;
-        iDownStart=iUpEnd+1;
+        if (iWhere == lastNonFixed - 1)
+            iWhere = lastNonFixed - 2;
+        iUpEnd = iWhere + 1;
+        iDownStart = iUpEnd + 1;
     }
     //
     OsiSolverBranch * branch = new OsiSolverBranch();
-    branch->addBranch(-1,0,NULL,NULL,numberMembers_-iDownStart,which+iDownStart,fix);
-    branch->addBranch(1,0,NULL,NULL,iUpEnd,which,fix);
+    branch->addBranch(-1, 0, NULL, NULL, numberMembers_ - iDownStart, which + iDownStart, fix);
+    branch->addBranch(1, 0, NULL, NULL, iUpEnd, which, fix);
     delete [] fix;
     delete [] which;
     return branch;
@@ -998,7 +998,7 @@ CbcSOS::solverBranch() const
 OsiSOS *
 CbcSOS::osiObject(const OsiSolverInterface * solver) const
 {
-    OsiSOS * obj = new OsiSOS(solver,numberMembers_,members_,weights_,sosType_);
+    OsiSOS * obj = new OsiSOS(solver, numberMembers_, members_, weights_, sosType_);
     obj->setPriority(priority());
     return obj;
 }
@@ -1030,14 +1030,14 @@ CbcSimpleInteger::CbcSimpleInteger ( CbcModel * model, int iColumn, double break
     originalLower_ = model->solver()->getColLower()[columnNumber_] ;
     originalUpper_ = model->solver()->getColUpper()[columnNumber_] ;
     breakEven_ = breakEven;
-    assert (breakEven_>0.0&&breakEven_<1.0);
+    assert (breakEven_ > 0.0 && breakEven_ < 1.0);
     preferredWay_ = 0;
 }
 
 
 // Copy constructor
 CbcSimpleInteger::CbcSimpleInteger ( const CbcSimpleInteger & rhs)
-        :CbcObject(rhs)
+        : CbcObject(rhs)
 
 {
     columnNumber_ = rhs.columnNumber_;
@@ -1056,9 +1056,9 @@ CbcSimpleInteger::clone() const
 
 // Assignment operator
 CbcSimpleInteger &
-CbcSimpleInteger::operator=( const CbcSimpleInteger& rhs)
+CbcSimpleInteger::operator=( const CbcSimpleInteger & rhs)
 {
-    if (this!=&rhs) {
+    if (this != &rhs) {
         CbcObject::operator=(rhs);
         columnNumber_ = rhs.columnNumber_;
         originalLower_ = rhs.originalLower_;
@@ -1078,7 +1078,7 @@ OsiSimpleInteger *
 CbcSimpleInteger::osiObject() const
 {
     OsiSimpleInteger * obj = new OsiSimpleInteger(columnNumber_,
-            originalLower_,originalUpper_);
+            originalLower_, originalUpper_);
     obj->setPriority(priority());
     return obj;
 }
@@ -1089,21 +1089,21 @@ CbcSimpleInteger::infeasibility(const OsiBranchingInformation * info,
     double value = info->solution_[columnNumber_];
     value = CoinMax(value, info->lower_[columnNumber_]);
     value = CoinMin(value, info->upper_[columnNumber_]);
-    double nearest = floor(value+(1.0-breakEven_));
-    assert (breakEven_>0.0&&breakEven_<1.0);
-    if (nearest>value)
-        preferredWay=1;
+    double nearest = floor(value + (1.0 - breakEven_));
+    assert (breakEven_ > 0.0 && breakEven_ < 1.0);
+    if (nearest > value)
+        preferredWay = 1;
     else
-        preferredWay=-1;
+        preferredWay = -1;
     if (preferredWay_)
-        preferredWay=preferredWay_;
-    double weight = fabs(value-nearest);
+        preferredWay = preferredWay_;
+    double weight = fabs(value - nearest);
     // normalize so weight is 0.5 at break even
-    if (nearest<value)
-        weight = (0.5/breakEven_)*weight;
+    if (nearest < value)
+        weight = (0.5 / breakEven_) * weight;
     else
-        weight = (0.5/(1.0-breakEven_))*weight;
-    if (fabs(value-nearest)<=info->integerTolerance_)
+        weight = (0.5 / (1.0 - breakEven_)) * weight;
+    if (fabs(value - nearest) <= info->integerTolerance_)
         return 0.0;
     else
         return weight;
@@ -1113,15 +1113,15 @@ CbcSimpleInteger::feasibleRegion(OsiSolverInterface * solver, const OsiBranching
 {
     double value = info->solution_[columnNumber_];
 #ifdef COIN_DEVELOP
-    if (fabs(value-floor(value+0.5))>1.0e-5)
-        printf("value for %d away from integer %g\n",columnNumber_,value);
+    if (fabs(value - floor(value + 0.5)) > 1.0e-5)
+        printf("value for %d away from integer %g\n", columnNumber_, value);
 #endif
     double newValue = CoinMax(value, info->lower_[columnNumber_]);
     newValue = CoinMin(newValue, info->upper_[columnNumber_]);
-    newValue = floor(newValue+0.5);
-    solver->setColLower(columnNumber_,newValue);
-    solver->setColUpper(columnNumber_,newValue);
-    return fabs(value-newValue);
+    newValue = floor(newValue + 0.5);
+    solver->setColLower(columnNumber_, newValue);
+    solver->setColUpper(columnNumber_, newValue);
+    return fabs(value - newValue);
 }
 
 /* Create an OsiSolverBranch object
@@ -1135,13 +1135,13 @@ CbcSimpleInteger::solverBranch(OsiSolverInterface * /*solver*/,
     double value = info->solution_[columnNumber_];
     value = CoinMax(value, info->lower_[columnNumber_]);
     value = CoinMin(value, info->upper_[columnNumber_]);
-    assert (info->upper_[columnNumber_]>info->lower_[columnNumber_]);
+    assert (info->upper_[columnNumber_] > info->lower_[columnNumber_]);
 #ifndef NDEBUG
-    double nearest = floor(value+0.5);
-    assert (fabs(value-nearest)>info->integerTolerance_);
+    double nearest = floor(value + 0.5);
+    assert (fabs(value - nearest) > info->integerTolerance_);
 #endif
     OsiSolverBranch * branch = new OsiSolverBranch();
-    branch->addBranch(columnNumber_,value);
+    branch->addBranch(columnNumber_, value);
     return branch;
 }
 // Creates a branching object
@@ -1149,8 +1149,8 @@ CbcBranchingObject *
 CbcSimpleInteger::createCbcBranch(OsiSolverInterface * /*solver*/,
                                   const OsiBranchingInformation * info, int way)
 {
-    CbcIntegerBranchingObject * branch = new CbcIntegerBranchingObject(model_,0,-1,0.5);
-    fillCreateBranch(branch,info,way);
+    CbcIntegerBranchingObject * branch = new CbcIntegerBranchingObject(model_, 0, -1, 0.5);
+    fillCreateBranch(branch, info, way);
     return branch;
 }
 // Fills in a created branching object
@@ -1161,27 +1161,27 @@ CbcSimpleInteger::fillCreateBranch(CbcIntegerBranchingObject * branch, const Osi
     double value = info->solution_[columnNumber_];
     value = CoinMax(value, info->lower_[columnNumber_]);
     value = CoinMin(value, info->upper_[columnNumber_]);
-    assert (info->upper_[columnNumber_]>info->lower_[columnNumber_]);
-    if (!info->hotstartSolution_&&priority_!=-999) {
+    assert (info->upper_[columnNumber_] > info->lower_[columnNumber_]);
+    if (!info->hotstartSolution_ && priority_ != -999) {
 #ifndef NDEBUG
-        double nearest = floor(value+0.5);
-        assert (fabs(value-nearest)>info->integerTolerance_);
+        double nearest = floor(value + 0.5);
+        assert (fabs(value - nearest) > info->integerTolerance_);
 #endif
     } else if (info->hotstartSolution_) {
         double targetValue = info->hotstartSolution_[columnNumber_];
-        if (way>0)
-            value = targetValue-0.1;
+        if (way > 0)
+            value = targetValue - 0.1;
         else
-            value = targetValue+0.1;
+            value = targetValue + 0.1;
     } else {
-        if (value<=info->lower_[columnNumber_])
+        if (value <= info->lower_[columnNumber_])
             value += 0.1;
-        else if (value>=info->upper_[columnNumber_])
+        else if (value >= info->upper_[columnNumber_])
             value -= 0.1;
     }
-    assert (value>=info->lower_[columnNumber_]&&
-            value<=info->upper_[columnNumber_]);
-    branch->fillPart(columnNumber_,way,value);
+    assert (value >= info->lower_[columnNumber_] &&
+            value <= info->upper_[columnNumber_]);
+    branch->fillPart(columnNumber_, way, value);
 }
 /* Column number if single column object -1 otherwise,
    so returns >= 0
@@ -1212,14 +1212,14 @@ CbcSimpleInteger::resetSequenceEtc(int /*numberColumns*/,
     //assert (numberColumns>0);
     int iColumn;
 #if 0
-    for (iColumn=0; iColumn<numberColumns; iColumn++) {
-        if (columnNumber_==originalColumns[iColumn])
+    for (iColumn = 0; iColumn < numberColumns; iColumn++) {
+        if (columnNumber_ == originalColumns[iColumn])
             break;
     }
-    assert (iColumn<numberColumns);
+    assert (iColumn < numberColumns);
 #else
-    iColumn=originalColumns[columnNumber_];
-    assert (iColumn>=0);
+    iColumn = originalColumns[columnNumber_];
+    assert (iColumn >= 0);
 #endif
     columnNumber_ = iColumn;
 }
@@ -1238,7 +1238,7 @@ CbcSimpleInteger::feasibleRegion()
 
 // Default Constructor
 CbcIntegerBranchingObject::CbcIntegerBranchingObject()
-        :CbcBranchingObject()
+        : CbcBranchingObject()
 {
     down_[0] = 0.0;
     down_[1] = 0.0;
@@ -1253,10 +1253,10 @@ CbcIntegerBranchingObject::CbcIntegerBranchingObject()
 // Useful constructor
 CbcIntegerBranchingObject::CbcIntegerBranchingObject (CbcModel * model,
         int variable, int way , double value)
-        :CbcBranchingObject(model,variable,way,value)
+        : CbcBranchingObject(model, variable, way, value)
 {
     int iColumn = variable;
-    assert (model_->solver()->getNumCols()>0);
+    assert (model_->solver()->getNumCols() > 0);
     down_[0] = model_->solver()->getColLower()[iColumn];
     down_[1] = floor(value_);
     up_[0] = ceil(value_);
@@ -1273,13 +1273,13 @@ CbcIntegerBranchingObject::fillPart (int variable,
                                      int way , double value)
 {
     //originalObject_=NULL;
-    branchIndex_=0;
-    value_=value;
-    numberBranches_=2;
+    branchIndex_ = 0;
+    value_ = value;
+    numberBranches_ = 2;
     //model_= model;
     //originalCbcObject_=NULL;
-    variable_=variable;
-    way_=way;
+    variable_ = variable;
+    way_ = way;
     int iColumn = variable;
     down_[0] = model_->solver()->getColLower()[iColumn];
     down_[1] = floor(value_);
@@ -1291,7 +1291,7 @@ CbcIntegerBranchingObject::CbcIntegerBranchingObject (CbcModel * model,
         int variable, int way,
         double lowerValue,
         double upperValue)
-        :CbcBranchingObject(model,variable,way,lowerValue)
+        : CbcBranchingObject(model, variable, way, lowerValue)
 {
     setNumberBranchesLeft(1);
     down_[0] = lowerValue;
@@ -1307,7 +1307,7 @@ CbcIntegerBranchingObject::CbcIntegerBranchingObject (CbcModel * model,
 
 
 // Copy constructor
-CbcIntegerBranchingObject::CbcIntegerBranchingObject ( const CbcIntegerBranchingObject & rhs) :CbcBranchingObject(rhs)
+CbcIntegerBranchingObject::CbcIntegerBranchingObject ( const CbcIntegerBranchingObject & rhs) : CbcBranchingObject(rhs)
 {
     down_[0] = rhs.down_[0];
     down_[1] = rhs.down_[1];
@@ -1315,22 +1315,22 @@ CbcIntegerBranchingObject::CbcIntegerBranchingObject ( const CbcIntegerBranching
     up_[1] = rhs.up_[1];
 #ifdef FUNNY_BRANCHING
     numberExtraChangedBounds_ = rhs.numberExtraChangedBounds_;
-    int size = numberExtraChangedBounds_*(sizeof(double)+sizeof(int));
+    int size = numberExtraChangedBounds_ * (sizeof(double) + sizeof(int));
     char * temp = new char [size];
     newBounds_ = (double *) temp;
-    variables_ = (int *) (newBounds_+numberExtraChangedBounds_);
+    variables_ = (int *) (newBounds_ + numberExtraChangedBounds_);
 
     int i ;
-    for (i=0; i<numberExtraChangedBounds_; i++) {
-        variables_[i]=rhs.variables_[i];
-        newBounds_[i]=rhs.newBounds_[i];
+    for (i = 0; i < numberExtraChangedBounds_; i++) {
+        variables_[i] = rhs.variables_[i];
+        newBounds_[i] = rhs.newBounds_[i];
     }
 #endif
 }
 
 // Assignment operator
 CbcIntegerBranchingObject &
-CbcIntegerBranchingObject::operator=( const CbcIntegerBranchingObject& rhs)
+CbcIntegerBranchingObject::operator=( const CbcIntegerBranchingObject & rhs)
 {
     if (this != &rhs) {
         CbcBranchingObject::operator=(rhs);
@@ -1341,15 +1341,15 @@ CbcIntegerBranchingObject::operator=( const CbcIntegerBranchingObject& rhs)
 #ifdef FUNNY_BRANCHING
         delete [] newBounds_;
         numberExtraChangedBounds_ = rhs.numberExtraChangedBounds_;
-        int size = numberExtraChangedBounds_*(sizeof(double)+sizeof(int));
+        int size = numberExtraChangedBounds_ * (sizeof(double) + sizeof(int));
         char * temp = new char [size];
         newBounds_ = (double *) temp;
-        variables_ = (int *) (newBounds_+numberExtraChangedBounds_);
+        variables_ = (int *) (newBounds_ + numberExtraChangedBounds_);
 
         int i ;
-        for (i=0; i<numberExtraChangedBounds_; i++) {
-            variables_[i]=rhs.variables_[i];
-            newBounds_[i]=rhs.newBounds_[i];
+        for (i = 0; i < numberExtraChangedBounds_; i++) {
+            variables_[i] = rhs.variables_[i];
+            newBounds_[i] = rhs.newBounds_[i];
         }
 #endif
     }
@@ -1366,7 +1366,7 @@ CbcIntegerBranchingObject::clone() const
 CbcIntegerBranchingObject::~CbcIntegerBranchingObject ()
 {
     // for debugging threads
-    way_=-23456789;
+    way_ = -23456789;
 #ifdef FUNNY_BRANCHING
     delete [] newBounds_;
 #endif
@@ -1386,74 +1386,74 @@ double
 CbcIntegerBranchingObject::branch()
 {
     // for debugging threads
-    if (way_<-1||way_>100000) {
+    if (way_ < -1 || way_ > 100000) {
         printf("way %d, left %d, iCol %d, variable %d\n",
-               way_,numberBranchesLeft(),
-               originalCbcObject_->columnNumber(),variable_);
-        assert (way_!=-23456789);
+               way_, numberBranchesLeft(),
+               originalCbcObject_->columnNumber(), variable_);
+        assert (way_ != -23456789);
     }
     decrementNumberBranchesLeft();
-    if (down_[1]==-COIN_DBL_MAX)
+    if (down_[1] == -COIN_DBL_MAX)
         return 0.0;
     int iColumn = originalCbcObject_->columnNumber();
-    assert (variable_==iColumn);
-    double olb,oub ;
+    assert (variable_ == iColumn);
+    double olb, oub ;
     olb = model_->solver()->getColLower()[iColumn] ;
     oub = model_->solver()->getColUpper()[iColumn] ;
     //#define TIGHTEN_BOUNDS
 #ifndef TIGHTEN_BOUNDS
 #ifdef COIN_DEVELOP
-    if (olb!=down_[0]||oub!=up_[1]) {
-        if (way_>0)
+    if (olb != down_[0] || oub != up_[1]) {
+        if (way_ > 0)
             printf("branching up on var %d: [%g,%g] => [%g,%g] - other [%g,%g]\n",
-                   iColumn,olb,oub,up_[0],up_[1],down_[0],down_[1]) ;
+                   iColumn, olb, oub, up_[0], up_[1], down_[0], down_[1]) ;
         else
             printf("branching down on var %d: [%g,%g] => [%g,%g] - other [%g,%g]\n",
-                   iColumn,olb,oub,down_[0],down_[1],up_[0],up_[1]) ;
+                   iColumn, olb, oub, down_[0], down_[1], up_[0], up_[1]) ;
     }
 #endif
 #endif
-    if (way_<0) {
+    if (way_ < 0) {
 #ifdef CBC_DEBUG
-        { double olb,oub ;
+        { double olb, oub ;
             olb = model_->solver()->getColLower()[iColumn] ;
             oub = model_->solver()->getColUpper()[iColumn] ;
             printf("branching down on var %d: [%g,%g] => [%g,%g]\n",
-                   iColumn,olb,oub,down_[0],down_[1]) ;
+                   iColumn, olb, oub, down_[0], down_[1]) ;
         }
 #endif
 #ifndef TIGHTEN_BOUNDS
-        model_->solver()->setColLower(iColumn,down_[0]);
+        model_->solver()->setColLower(iColumn, down_[0]);
 #else
-        model_->solver()->setColLower(iColumn,CoinMax(down_[0],olb));
+        model_->solver()->setColLower(iColumn, CoinMax(down_[0], olb));
 #endif
-        model_->solver()->setColUpper(iColumn,down_[1]);
+        model_->solver()->setColUpper(iColumn, down_[1]);
         //#define CBC_PRINT2
 #ifdef CBC_PRINT2
-        printf("%d branching down has bounds %g %g",iColumn,down_[0],down_[1]);
+        printf("%d branching down has bounds %g %g", iColumn, down_[0], down_[1]);
 #endif
 #ifdef FUNNY_BRANCHING
         // branch - do extra bounds
-        for (int i=0; i<numberExtraChangedBounds_; i++) {
+        for (int i = 0; i < numberExtraChangedBounds_; i++) {
             int variable = variables_[i];
-            if ((variable&0x40000000)!=0) {
+            if ((variable&0x40000000) != 0) {
                 // for going down
-                int k = variable&0x3fffffff;
-                assert (k!=iColumn);
-                if ((variable&0x80000000)==0) {
+                int k = variable & 0x3fffffff;
+                assert (k != iColumn);
+                if ((variable&0x80000000) == 0) {
                     // lower bound changing
 #ifdef CBC_PRINT2
                     printf(" extra for %d changes lower from %g to %g",
-                           k,model_->solver()->getColLower()[k],newBounds_[i]);
+                           k, model_->solver()->getColLower()[k], newBounds_[i]);
 #endif
-                    model_->solver()->setColLower(k,newBounds_[i]);
+                    model_->solver()->setColLower(k, newBounds_[i]);
                 } else {
                     // upper bound changing
 #ifdef CBC_PRINT2
                     printf(" extra for %d changes upper from %g to %g",
-                           k,model_->solver()->getColUpper()[k],newBounds_[i]);
+                           k, model_->solver()->getColUpper()[k], newBounds_[i]);
 #endif
-                    model_->solver()->setColUpper(k,newBounds_[i]);
+                    model_->solver()->setColUpper(k, newBounds_[i]);
                 }
             }
         }
@@ -1461,47 +1461,47 @@ CbcIntegerBranchingObject::branch()
 #ifdef CBC_PRINT2
         printf("\n");
 #endif
-        way_=1;
+        way_ = 1;
     } else {
 #ifdef CBC_DEBUG
-        { double olb,oub ;
+        { double olb, oub ;
             olb = model_->solver()->getColLower()[iColumn] ;
             oub = model_->solver()->getColUpper()[iColumn] ;
             printf("branching up on var %d: [%g,%g] => [%g,%g]\n",
-                   iColumn,olb,oub,up_[0],up_[1]) ;
+                   iColumn, olb, oub, up_[0], up_[1]) ;
         }
 #endif
-        model_->solver()->setColLower(iColumn,up_[0]);
+        model_->solver()->setColLower(iColumn, up_[0]);
 #ifndef TIGHTEN_BOUNDS
-        model_->solver()->setColUpper(iColumn,up_[1]);
+        model_->solver()->setColUpper(iColumn, up_[1]);
 #else
-        model_->solver()->setColUpper(iColumn,CoinMin(up_[1],oub));
+        model_->solver()->setColUpper(iColumn, CoinMin(up_[1], oub));
 #endif
 #ifdef CBC_PRINT2
-        printf("%d branching up has bounds %g %g",iColumn,up_[0],up_[1]);
+        printf("%d branching up has bounds %g %g", iColumn, up_[0], up_[1]);
 #endif
 #ifdef FUNNY_BRANCHING
         // branch - do extra bounds
-        for (int i=0; i<numberExtraChangedBounds_; i++) {
+        for (int i = 0; i < numberExtraChangedBounds_; i++) {
             int variable = variables_[i];
-            if ((variable&0x40000000)==0) {
+            if ((variable&0x40000000) == 0) {
                 // for going up
-                int k = variable&0x3fffffff;
-                assert (k!=iColumn);
-                if ((variable&0x80000000)==0) {
+                int k = variable & 0x3fffffff;
+                assert (k != iColumn);
+                if ((variable&0x80000000) == 0) {
                     // lower bound changing
 #ifdef CBC_PRINT2
                     printf(" extra for %d changes lower from %g to %g",
-                           k,model_->solver()->getColLower()[k],newBounds_[i]);
+                           k, model_->solver()->getColLower()[k], newBounds_[i]);
 #endif
-                    model_->solver()->setColLower(k,newBounds_[i]);
+                    model_->solver()->setColLower(k, newBounds_[i]);
                 } else {
                     // upper bound changing
 #ifdef CBC_PRINT2
                     printf(" extra for %d changes upper from %g to %g",
-                           k,model_->solver()->getColUpper()[k],newBounds_[i]);
+                           k, model_->solver()->getColUpper()[k], newBounds_[i]);
 #endif
-                    model_->solver()->setColUpper(k,newBounds_[i]);
+                    model_->solver()->setColUpper(k, newBounds_[i]);
                 }
             }
         }
@@ -1509,26 +1509,26 @@ CbcIntegerBranchingObject::branch()
 #ifdef CBC_PRINT2
         printf("\n");
 #endif
-        way_=-1;	  // Swap direction
+        way_ = -1;	  // Swap direction
     }
     double nlb = model_->solver()->getColLower()[iColumn];
     double nub = model_->solver()->getColUpper()[iColumn];
-    if (nlb<olb) {
+    if (nlb < olb) {
 #ifndef NDEBUG
-        printf("bad lb change for column %d from %g to %g\n",iColumn,olb,nlb);
+        printf("bad lb change for column %d from %g to %g\n", iColumn, olb, nlb);
 #endif
-        model_->solver()->setColLower(iColumn,CoinMin(olb,nub));
-        nlb=olb;
+        model_->solver()->setColLower(iColumn, CoinMin(olb, nub));
+        nlb = olb;
     }
-    if (nub>oub) {
+    if (nub > oub) {
 #ifndef NDEBUG
-        printf("bad ub change for column %d from %g to %g\n",iColumn,oub,nub);
+        printf("bad ub change for column %d from %g to %g\n", iColumn, oub, nub);
 #endif
-        model_->solver()->setColUpper(iColumn,CoinMax(oub,nlb));
+        model_->solver()->setColUpper(iColumn, CoinMax(oub, nlb));
     }
 #ifndef NDEBUG
-    if (nlb<olb+1.0e-8&&nub>oub-1.0e-8&&false)
-        printf("bad null change for column %d - bounds %g,%g\n",iColumn,olb,oub);
+    if (nlb < olb + 1.0e-8 && nub > oub - 1.0e-8 && false)
+        printf("bad null change for column %d - bounds %g,%g\n", iColumn, olb, oub);
 #endif
     return 0.0;
 }
@@ -1540,17 +1540,17 @@ CbcIntegerBranchingObject::fix(OsiSolverInterface * /*solver*/,
                                int branchState) const
 {
     int iColumn = originalCbcObject_->columnNumber();
-    assert (variable_==iColumn);
-    if (branchState<0) {
-        model_->solver()->setColLower(iColumn,down_[0]);
-        lower[iColumn]=down_[0];
-        model_->solver()->setColUpper(iColumn,down_[1]);
-        upper[iColumn]=down_[1];
+    assert (variable_ == iColumn);
+    if (branchState < 0) {
+        model_->solver()->setColLower(iColumn, down_[0]);
+        lower[iColumn] = down_[0];
+        model_->solver()->setColUpper(iColumn, down_[1]);
+        upper[iColumn] = down_[1];
     } else {
-        model_->solver()->setColLower(iColumn,up_[0]);
-        lower[iColumn]=up_[0];
-        model_->solver()->setColUpper(iColumn,up_[1]);
-        upper[iColumn]=up_[1];
+        model_->solver()->setColLower(iColumn, up_[0]);
+        lower[iColumn] = up_[0];
+        model_->solver()->setColUpper(iColumn, up_[1]);
+        upper[iColumn] = up_[1];
     }
 }
 #ifdef FUNNY_BRANCHING
@@ -1558,7 +1558,7 @@ CbcIntegerBranchingObject::fix(OsiSolverInterface * /*solver*/,
 void
 CbcIntegerBranchingObject::deactivate()
 {
-    down_[1]=-COIN_DBL_MAX;
+    down_[1] = -COIN_DBL_MAX;
 }
 int
 CbcIntegerBranchingObject::applyExtraBounds(int iColumn, double lower, double upper, int way)
@@ -1566,80 +1566,80 @@ CbcIntegerBranchingObject::applyExtraBounds(int iColumn, double lower, double up
     // branch - do bounds
 
     int i;
-    int found=0;
-    if (variable_==iColumn) {
-        printf("odd applyExtra %d\n",iColumn);
-        if (way<0) {
-            down_[0]=CoinMax(lower,down_[0]);
-            down_[1]=CoinMin(upper,down_[1]);
-            assert (down_[0]<=down_[1]);
+    int found = 0;
+    if (variable_ == iColumn) {
+        printf("odd applyExtra %d\n", iColumn);
+        if (way < 0) {
+            down_[0] = CoinMax(lower, down_[0]);
+            down_[1] = CoinMin(upper, down_[1]);
+            assert (down_[0] <= down_[1]);
         } else {
-            up_[0]=CoinMax(lower,up_[0]);
-            up_[1]=CoinMin(upper,up_[1]);
-            assert (up_[0]<=up_[1]);
+            up_[0] = CoinMax(lower, up_[0]);
+            up_[1] = CoinMin(upper, up_[1]);
+            assert (up_[0] <= up_[1]);
         }
         return 0;
     }
-    int check = (way<0) ? 0x40000000 : 0;
-    double newLower=lower;
-    double newUpper=upper;
-    for (i=0; i<numberExtraChangedBounds_; i++) {
+    int check = (way < 0) ? 0x40000000 : 0;
+    double newLower = lower;
+    double newUpper = upper;
+    for (i = 0; i < numberExtraChangedBounds_; i++) {
         int variable = variables_[i];
-        if ((variable&0x40000000)==check) {
-            int k = variable&0x3fffffff;
-            if (k==iColumn) {
-                if ((variable&0x80000000)==0) {
+        if ((variable&0x40000000) == check) {
+            int k = variable & 0x3fffffff;
+            if (k == iColumn) {
+                if ((variable&0x80000000) == 0) {
                     // lower bound changing
                     found |= 1;
-                    newBounds_[i] = CoinMax(lower,newBounds_[i]);
+                    newBounds_[i] = CoinMax(lower, newBounds_[i]);
                     newLower = newBounds_[i];
                 } else {
                     // upper bound changing
                     found |= 2;
-                    newBounds_[i] = CoinMin(upper,newBounds_[i]);
+                    newBounds_[i] = CoinMin(upper, newBounds_[i]);
                     newUpper = newBounds_[i];
                 }
             }
         }
     }
-    int nAdd=0;
-    if ((found&2)==0) {
+    int nAdd = 0;
+    if ((found&2) == 0) {
         // need to add new upper
         nAdd++;
     }
-    if ((found&1)==0) {
+    if ((found&1) == 0) {
         // need to add new lower
         nAdd++;
     }
     if (nAdd) {
-        int size = (numberExtraChangedBounds_+nAdd)*(sizeof(double)+sizeof(int));
+        int size = (numberExtraChangedBounds_ + nAdd) * (sizeof(double) + sizeof(int));
         char * temp = new char [size];
         double * newBounds = (double *) temp;
-        int * variables = (int *) (newBounds+numberExtraChangedBounds_+nAdd);
+        int * variables = (int *) (newBounds + numberExtraChangedBounds_ + nAdd);
 
         int i ;
-        for (i=0; i<numberExtraChangedBounds_; i++) {
-            variables[i]=variables_[i];
-            newBounds[i]=newBounds_[i];
+        for (i = 0; i < numberExtraChangedBounds_; i++) {
+            variables[i] = variables_[i];
+            newBounds[i] = newBounds_[i];
         }
         delete [] newBounds_;
         newBounds_ = newBounds;
         variables_ = variables;
-        if ((found&2)==0) {
+        if ((found&2) == 0) {
             // need to add new upper
             int variable = iColumn | 0x80000000;
-            variables_[numberExtraChangedBounds_]=variable;
-            newBounds_[numberExtraChangedBounds_++]=newUpper;
+            variables_[numberExtraChangedBounds_] = variable;
+            newBounds_[numberExtraChangedBounds_++] = newUpper;
         }
-        if ((found&1)==0) {
+        if ((found&1) == 0) {
             // need to add new lower
             int variable = iColumn;
-            variables_[numberExtraChangedBounds_]=variable;
-            newBounds_[numberExtraChangedBounds_++]=newLower;
+            variables_[numberExtraChangedBounds_] = variable;
+            newBounds_[numberExtraChangedBounds_++] = newLower;
         }
     }
 
-    return (newUpper>=newLower) ? 0 : 1;
+    return (newUpper >= newLower) ? 0 : 1;
 }
 #endif
 // Print what would happen
@@ -1647,22 +1647,22 @@ void
 CbcIntegerBranchingObject::print()
 {
     int iColumn = originalCbcObject_->columnNumber();
-    assert (variable_==iColumn);
-    if (way_<0) {
+    assert (variable_ == iColumn);
+    if (way_ < 0) {
         {
-            double olb,oub ;
+            double olb, oub ;
             olb = model_->solver()->getColLower()[iColumn] ;
             oub = model_->solver()->getColUpper()[iColumn] ;
             printf("CbcInteger would branch down on var %d (int var %d): [%g,%g] => [%g,%g]\n",
-                   iColumn,variable_,olb,oub,down_[0],down_[1]) ;
+                   iColumn, variable_, olb, oub, down_[0], down_[1]) ;
         }
     } else {
         {
-            double olb,oub ;
+            double olb, oub ;
             olb = model_->solver()->getColLower()[iColumn] ;
             oub = model_->solver()->getColUpper()[iColumn] ;
             printf("CbcInteger would branch up on var %d (int var %d): [%g,%g] => [%g,%g]\n",
-                   iColumn,variable_,olb,oub,up_[0],up_[1]) ;
+                   iColumn, variable_, olb, oub, up_[0], up_[1]) ;
         }
     }
 }
@@ -1708,16 +1708,16 @@ CbcSimpleIntegerPseudoCost::CbcSimpleIntegerPseudoCost ()
 */
 CbcSimpleIntegerPseudoCost::CbcSimpleIntegerPseudoCost (CbcModel * model,
         int iColumn, double breakEven)
-        : CbcSimpleInteger(model,iColumn,breakEven)
+        : CbcSimpleInteger(model, iColumn, breakEven)
 {
     const double * cost = model->getObjCoefficients();
-    double costValue = CoinMax(1.0e-5,fabs(cost[iColumn]));
+    double costValue = CoinMax(1.0e-5, fabs(cost[iColumn]));
     // treat as if will cost what it says up
-    upPseudoCost_=costValue;
+    upPseudoCost_ = costValue;
     // and balance at breakeven
-    downPseudoCost_=((1.0-breakEven_)*upPseudoCost_)/breakEven_;
+    downPseudoCost_ = ((1.0 - breakEven_) * upPseudoCost_) / breakEven_;
     upDownSeparator_ = -1.0;
-    method_=0;
+    method_ = 0;
 }
 
 /** Useful constructor
@@ -1727,13 +1727,13 @@ CbcSimpleIntegerPseudoCost::CbcSimpleIntegerPseudoCost (CbcModel * model,
 CbcSimpleIntegerPseudoCost::CbcSimpleIntegerPseudoCost (CbcModel * model,
         int iColumn, double downPseudoCost,
         double upPseudoCost)
-        : CbcSimpleInteger(model,iColumn)
+        : CbcSimpleInteger(model, iColumn)
 {
-    downPseudoCost_ = CoinMax(1.0e-10,downPseudoCost);
-    upPseudoCost_ = CoinMax(1.0e-10,upPseudoCost);
-    breakEven_ = upPseudoCost_/(upPseudoCost_+downPseudoCost_);
+    downPseudoCost_ = CoinMax(1.0e-10, downPseudoCost);
+    upPseudoCost_ = CoinMax(1.0e-10, upPseudoCost);
+    breakEven_ = upPseudoCost_ / (upPseudoCost_ + downPseudoCost_);
     upDownSeparator_ = -1.0;
-    method_=0;
+    method_ = 0;
 }
 // Useful constructor - passed and model index and pseudo costs
 CbcSimpleIntegerPseudoCost::CbcSimpleIntegerPseudoCost (CbcModel * model,
@@ -1741,13 +1741,13 @@ CbcSimpleIntegerPseudoCost::CbcSimpleIntegerPseudoCost (CbcModel * model,
         int iColumn,
         double downPseudoCost, double upPseudoCost)
 {
-    *this=CbcSimpleIntegerPseudoCost(model,iColumn,downPseudoCost,upPseudoCost);
-    columnNumber_=iColumn;
+    *this = CbcSimpleIntegerPseudoCost(model, iColumn, downPseudoCost, upPseudoCost);
+    columnNumber_ = iColumn;
 }
 
 // Copy constructor
 CbcSimpleIntegerPseudoCost::CbcSimpleIntegerPseudoCost ( const CbcSimpleIntegerPseudoCost & rhs)
-        :CbcSimpleInteger(rhs),
+        : CbcSimpleInteger(rhs),
         downPseudoCost_(rhs.downPseudoCost_),
         upPseudoCost_(rhs.upPseudoCost_),
         upDownSeparator_(rhs.upDownSeparator_),
@@ -1765,14 +1765,14 @@ CbcSimpleIntegerPseudoCost::clone() const
 
 // Assignment operator
 CbcSimpleIntegerPseudoCost &
-CbcSimpleIntegerPseudoCost::operator=( const CbcSimpleIntegerPseudoCost& rhs)
+CbcSimpleIntegerPseudoCost::operator=( const CbcSimpleIntegerPseudoCost & rhs)
 {
-    if (this!=&rhs) {
+    if (this != &rhs) {
         CbcSimpleInteger::operator=(rhs);
-        downPseudoCost_=rhs.downPseudoCost_;
-        upPseudoCost_=rhs.upPseudoCost_;
-        upDownSeparator_=rhs.upDownSeparator_;
-        method_=rhs.method_;
+        downPseudoCost_ = rhs.downPseudoCost_;
+        upPseudoCost_ = rhs.upPseudoCost_;
+        upDownSeparator_ = rhs.upDownSeparator_;
+        method_ = rhs.method_;
     }
     return *this;
 }
@@ -1782,7 +1782,7 @@ CbcSimpleIntegerPseudoCost::~CbcSimpleIntegerPseudoCost ()
 {
 }
 CbcBranchingObject *
-CbcSimpleIntegerPseudoCost::createCbcBranch(OsiSolverInterface * solver,const OsiBranchingInformation * /*info*/, int way)
+CbcSimpleIntegerPseudoCost::createCbcBranch(OsiSolverInterface * solver, const OsiBranchingInformation * /*info*/, int way)
 {
     //OsiSolverInterface * solver = model_->solver();
     const double * solution = model_->testSolution();
@@ -1792,30 +1792,30 @@ CbcSimpleIntegerPseudoCost::createCbcBranch(OsiSolverInterface * solver,const Os
     value = CoinMax(value, lower[columnNumber_]);
     value = CoinMin(value, upper[columnNumber_]);
 #ifndef NDEBUG
-    double nearest = floor(value+0.5);
+    double nearest = floor(value + 0.5);
     double integerTolerance =
         model_->getDblParam(CbcModel::CbcIntegerTolerance);
-    assert (upper[columnNumber_]>lower[columnNumber_]);
+    assert (upper[columnNumber_] > lower[columnNumber_]);
 #endif
     if (!model_->hotstartSolution()) {
-        assert (fabs(value-nearest)>integerTolerance);
+        assert (fabs(value - nearest) > integerTolerance);
     } else {
         const double * hotstartSolution = model_->hotstartSolution();
         double targetValue = hotstartSolution[columnNumber_];
-        if (way>0)
-            value = targetValue-0.1;
+        if (way > 0)
+            value = targetValue - 0.1;
         else
-            value = targetValue+0.1;
+            value = targetValue + 0.1;
     }
     CbcIntegerPseudoCostBranchingObject * newObject =
-        new CbcIntegerPseudoCostBranchingObject(model_,columnNumber_,way,
+        new CbcIntegerPseudoCostBranchingObject(model_, columnNumber_, way,
                                                 value);
-    double up =  upPseudoCost_*(ceil(value)-value);
-    double down =  downPseudoCost_*(value-floor(value));
-    double changeInGuessed=up-down;
-    if (way>0)
+    double up =  upPseudoCost_ * (ceil(value) - value);
+    double down =  downPseudoCost_ * (value - floor(value));
+    double changeInGuessed = up - down;
+    if (way > 0)
         changeInGuessed = - changeInGuessed;
-    changeInGuessed=CoinMax(0.0,changeInGuessed);
+    changeInGuessed = CoinMax(0.0, changeInGuessed);
     //if (way>0)
     //changeInGuessed += 1.0e8; // bias to stay up
     newObject->setChangeInGuessed(changeInGuessed);
@@ -1830,9 +1830,9 @@ CbcSimpleIntegerPseudoCost::infeasibility(const OsiBranchingInformation * /*info
     const double * solution = model_->testSolution();
     const double * lower = solver->getColLower();
     const double * upper = solver->getColUpper();
-    if (upper[columnNumber_]==lower[columnNumber_]) {
+    if (upper[columnNumber_] == lower[columnNumber_]) {
         // fixed
-        preferredWay=1;
+        preferredWay = 1;
         return 0.0;
     }
     double value = solution[columnNumber_];
@@ -1840,36 +1840,36 @@ CbcSimpleIntegerPseudoCost::infeasibility(const OsiBranchingInformation * /*info
     value = CoinMin(value, upper[columnNumber_]);
     /*printf("%d %g %g %g %g\n",columnNumber_,value,lower[columnNumber_],
       solution[columnNumber_],upper[columnNumber_]);*/
-    double nearest = floor(value+0.5);
+    double nearest = floor(value + 0.5);
     double integerTolerance =
         model_->getDblParam(CbcModel::CbcIntegerTolerance);
-    double below = floor(value+integerTolerance);
-    double above = below+1.0;
-    if (above>upper[columnNumber_]) {
-        above=below;
-        below = above -1;
+    double below = floor(value + integerTolerance);
+    double above = below + 1.0;
+    if (above > upper[columnNumber_]) {
+        above = below;
+        below = above - 1;
     }
-    double downCost = CoinMax((value-below)*downPseudoCost_,0.0);
-    double upCost = CoinMax((above-value)*upPseudoCost_,0.0);
-    if (downCost>=upCost)
-        preferredWay=1;
+    double downCost = CoinMax((value - below) * downPseudoCost_, 0.0);
+    double upCost = CoinMax((above - value) * upPseudoCost_, 0.0);
+    if (downCost >= upCost)
+        preferredWay = 1;
     else
-        preferredWay=-1;
+        preferredWay = -1;
     // See if up down choice set
-    if (upDownSeparator_>0.0) {
-        preferredWay = (value-below>=upDownSeparator_) ? 1 : -1;
+    if (upDownSeparator_ > 0.0) {
+        preferredWay = (value - below >= upDownSeparator_) ? 1 : -1;
     }
     if (preferredWay_)
-        preferredWay=preferredWay_;
-    if (fabs(value-nearest)<=integerTolerance) {
+        preferredWay = preferredWay_;
+    if (fabs(value - nearest) <= integerTolerance) {
         return 0.0;
     } else {
         // can't get at model so 1,2 don't make sense
-        assert(method_<1||method_>2);
+        assert(method_ < 1 || method_ > 2);
         if (!method_)
-            return CoinMin(downCost,upCost);
+            return CoinMin(downCost, upCost);
         else
-            return CoinMax(downCost,upCost);
+            return CoinMax(downCost, upCost);
     }
 }
 
@@ -1884,19 +1884,19 @@ CbcSimpleIntegerPseudoCost::upEstimate() const
     double value = solution[columnNumber_];
     value = CoinMax(value, lower[columnNumber_]);
     value = CoinMin(value, upper[columnNumber_]);
-    if (upper[columnNumber_]==lower[columnNumber_]) {
+    if (upper[columnNumber_] == lower[columnNumber_]) {
         // fixed
         return 0.0;
     }
     double integerTolerance =
         model_->getDblParam(CbcModel::CbcIntegerTolerance);
-    double below = floor(value+integerTolerance);
-    double above = below+1.0;
-    if (above>upper[columnNumber_]) {
-        above=below;
-        below = above -1;
+    double below = floor(value + integerTolerance);
+    double above = below + 1.0;
+    if (above > upper[columnNumber_]) {
+        above = below;
+        below = above - 1;
     }
-    double upCost = CoinMax((above-value)*upPseudoCost_,0.0);
+    double upCost = CoinMax((above - value) * upPseudoCost_, 0.0);
     return upCost;
 }
 // Return "down" estimate
@@ -1910,19 +1910,19 @@ CbcSimpleIntegerPseudoCost::downEstimate() const
     double value = solution[columnNumber_];
     value = CoinMax(value, lower[columnNumber_]);
     value = CoinMin(value, upper[columnNumber_]);
-    if (upper[columnNumber_]==lower[columnNumber_]) {
+    if (upper[columnNumber_] == lower[columnNumber_]) {
         // fixed
         return 0.0;
     }
     double integerTolerance =
         model_->getDblParam(CbcModel::CbcIntegerTolerance);
-    double below = floor(value+integerTolerance);
-    double above = below+1.0;
-    if (above>upper[columnNumber_]) {
-        above=below;
-        below = above -1;
+    double below = floor(value + integerTolerance);
+    double above = below + 1.0;
+    if (above > upper[columnNumber_]) {
+        above = below;
+        below = above - 1;
     }
-    double downCost = CoinMax((value-below)*downPseudoCost_,0.0);
+    double downCost = CoinMax((value - below) * downPseudoCost_, 0.0);
     return downCost;
 }
 
@@ -1930,15 +1930,15 @@ CbcSimpleIntegerPseudoCost::downEstimate() const
 
 // Default Constructor
 CbcIntegerPseudoCostBranchingObject::CbcIntegerPseudoCostBranchingObject()
-        :CbcIntegerBranchingObject()
+        : CbcIntegerBranchingObject()
 {
-    changeInGuessed_=1.0e-5;
+    changeInGuessed_ = 1.0e-5;
 }
 
 // Useful constructor
 CbcIntegerPseudoCostBranchingObject::CbcIntegerPseudoCostBranchingObject (CbcModel * model,
         int variable, int way , double value)
-        :CbcIntegerBranchingObject(model,variable,way,value)
+        : CbcIntegerBranchingObject(model, variable, way, value)
 {
 }
 // Useful constructor for fixing
@@ -1946,23 +1946,23 @@ CbcIntegerPseudoCostBranchingObject::CbcIntegerPseudoCostBranchingObject (CbcMod
         int variable, int way,
         double lowerValue,
         double /*upperValue*/)
-        :CbcIntegerBranchingObject(model,variable,way,lowerValue)
+        : CbcIntegerBranchingObject(model, variable, way, lowerValue)
 {
-    changeInGuessed_=1.0e100;
+    changeInGuessed_ = 1.0e100;
 }
 
 
 // Copy constructor
 CbcIntegerPseudoCostBranchingObject::CbcIntegerPseudoCostBranchingObject (
     const CbcIntegerPseudoCostBranchingObject & rhs)
-        :CbcIntegerBranchingObject(rhs)
+        : CbcIntegerBranchingObject(rhs)
 {
     changeInGuessed_ = rhs.changeInGuessed_;
 }
 
 // Assignment operator
 CbcIntegerPseudoCostBranchingObject &
-CbcIntegerPseudoCostBranchingObject::operator=( const CbcIntegerPseudoCostBranchingObject& rhs)
+CbcIntegerPseudoCostBranchingObject::operator=( const CbcIntegerPseudoCostBranchingObject & rhs)
 {
     if (this != &rhs) {
         CbcIntegerBranchingObject::operator=(rhs);
@@ -2024,13 +2024,13 @@ CbcIntegerPseudoCostBranchingObject::compareBranchingObject
 
 // Default Constructor
 CbcCliqueBranchingObject::CbcCliqueBranchingObject()
-        :CbcBranchingObject()
+        : CbcBranchingObject()
 {
     clique_ = NULL;
-    downMask_[0]=0;
-    downMask_[1]=0;
-    upMask_[0]=0;
-    upMask_[1]=0;
+    downMask_[0] = 0;
+    downMask_[1] = 0;
+    upMask_[0] = 0;
+    upMask_[1] = 0;
 }
 
 // Useful constructor
@@ -2039,51 +2039,51 @@ CbcCliqueBranchingObject::CbcCliqueBranchingObject (CbcModel * model,
         int way ,
         int numberOnDownSide, const int * down,
         int numberOnUpSide, const int * up)
-        :CbcBranchingObject(model,clique->id(),way,0.5)
+        : CbcBranchingObject(model, clique->id(), way, 0.5)
 {
     clique_ = clique;
-    downMask_[0]=0;
-    downMask_[1]=0;
-    upMask_[0]=0;
-    upMask_[1]=0;
+    downMask_[0] = 0;
+    downMask_[1] = 0;
+    upMask_[0] = 0;
+    upMask_[1] = 0;
     int i;
-    for (i=0; i<numberOnDownSide; i++) {
+    for (i = 0; i < numberOnDownSide; i++) {
         int sequence = down[i];
-        int iWord = sequence>>5;
-        int iBit = sequence - 32*iWord;
-        unsigned int k = 1<<iBit;
+        int iWord = sequence >> 5;
+        int iBit = sequence - 32 * iWord;
+        unsigned int k = 1 << iBit;
         downMask_[iWord] |= k;
     }
-    for (i=0; i<numberOnUpSide; i++) {
+    for (i = 0; i < numberOnUpSide; i++) {
         int sequence = up[i];
-        int iWord = sequence>>5;
-        int iBit = sequence - 32*iWord;
-        unsigned int k = 1<<iBit;
+        int iWord = sequence >> 5;
+        int iBit = sequence - 32 * iWord;
+        unsigned int k = 1 << iBit;
         upMask_[iWord] |= k;
     }
 }
 
 // Copy constructor
-CbcCliqueBranchingObject::CbcCliqueBranchingObject ( const CbcCliqueBranchingObject & rhs) :CbcBranchingObject(rhs)
+CbcCliqueBranchingObject::CbcCliqueBranchingObject ( const CbcCliqueBranchingObject & rhs) : CbcBranchingObject(rhs)
 {
-    clique_=rhs.clique_;
-    downMask_[0]=rhs.downMask_[0];
-    downMask_[1]=rhs.downMask_[1];
-    upMask_[0]=rhs.upMask_[0];
-    upMask_[1]=rhs.upMask_[1];
+    clique_ = rhs.clique_;
+    downMask_[0] = rhs.downMask_[0];
+    downMask_[1] = rhs.downMask_[1];
+    upMask_[0] = rhs.upMask_[0];
+    upMask_[1] = rhs.upMask_[1];
 }
 
 // Assignment operator
 CbcCliqueBranchingObject &
-CbcCliqueBranchingObject::operator=( const CbcCliqueBranchingObject& rhs)
+CbcCliqueBranchingObject::operator=( const CbcCliqueBranchingObject & rhs)
 {
     if (this != &rhs) {
         CbcBranchingObject::operator=(rhs);
-        clique_=rhs.clique_;
-        downMask_[0]=rhs.downMask_[0];
-        downMask_[1]=rhs.downMask_[1];
-        upMask_[0]=rhs.upMask_[0];
-        upMask_[1]=rhs.upMask_[1];
+        clique_ = rhs.clique_;
+        downMask_[0] = rhs.downMask_[0];
+        downMask_[1] = rhs.downMask_[1];
+        upMask_[0] = rhs.upMask_[0];
+        upMask_[1] = rhs.upMask_[1];
     }
     return *this;
 }
@@ -2106,52 +2106,52 @@ CbcCliqueBranchingObject::branch()
     int numberMembers = clique_->numberMembers();
     const int * which = clique_->members();
     const int * integerVariables = model_->integerVariable();
-    int numberWords=(numberMembers+31)>>5;
+    int numberWords = (numberMembers + 31) >> 5;
     // *** for way - up means fix all those in down section
-    if (way_<0) {
+    if (way_ < 0) {
 #ifdef FULL_PRINT
         printf("Down Fix ");
 #endif
-        for (iWord=0; iWord<numberWords; iWord++) {
+        for (iWord = 0; iWord < numberWords; iWord++) {
             int i;
-            for (i=0; i<32; i++) {
-                unsigned int k = 1<<i;
-                if ((upMask_[iWord]&k)!=0) {
+            for (i = 0; i < 32; i++) {
+                unsigned int k = 1 << i;
+                if ((upMask_[iWord]&k) != 0) {
                     int iColumn = which[i+32*iWord];
 #ifdef FULL_PRINT
-                    printf("%d ",i+32*iWord);
+                    printf("%d ", i + 32*iWord);
 #endif
                     // fix weak way
-                    if (clique_->type(i+32*iWord))
-                        model_->solver()->setColUpper(integerVariables[iColumn],0.0);
+                    if (clique_->type(i + 32*iWord))
+                        model_->solver()->setColUpper(integerVariables[iColumn], 0.0);
                     else
-                        model_->solver()->setColLower(integerVariables[iColumn],1.0);
+                        model_->solver()->setColLower(integerVariables[iColumn], 1.0);
                 }
             }
         }
-        way_=1;	  // Swap direction
+        way_ = 1;	  // Swap direction
     } else {
 #ifdef FULL_PRINT
         printf("Up Fix ");
 #endif
-        for (iWord=0; iWord<numberWords; iWord++) {
+        for (iWord = 0; iWord < numberWords; iWord++) {
             int i;
-            for (i=0; i<32; i++) {
-                unsigned int k = 1<<i;
-                if ((downMask_[iWord]&k)!=0) {
+            for (i = 0; i < 32; i++) {
+                unsigned int k = 1 << i;
+                if ((downMask_[iWord]&k) != 0) {
                     int iColumn = which[i+32*iWord];
 #ifdef FULL_PRINT
-                    printf("%d ",i+32*iWord);
+                    printf("%d ", i + 32*iWord);
 #endif
                     // fix weak way
-                    if (clique_->type(i+32*iWord))
-                        model_->solver()->setColUpper(integerVariables[iColumn],0.0);
+                    if (clique_->type(i + 32*iWord))
+                        model_->solver()->setColUpper(integerVariables[iColumn], 0.0);
                     else
-                        model_->solver()->setColLower(integerVariables[iColumn],1.0);
+                        model_->solver()->setColLower(integerVariables[iColumn], 1.0);
                 }
             }
         }
-        way_=-1;	  // Swap direction
+        way_ = -1;	  // Swap direction
     }
 #ifdef FULL_PRINT
     printf("\n");
@@ -2166,29 +2166,29 @@ CbcCliqueBranchingObject::print()
     int numberMembers = clique_->numberMembers();
     const int * which = clique_->members();
     const int * integerVariables = model_->integerVariable();
-    int numberWords=(numberMembers+31)>>5;
+    int numberWords = (numberMembers + 31) >> 5;
     // *** for way - up means fix all those in down section
-    if (way_<0) {
+    if (way_ < 0) {
         printf("Clique - Down Fix ");
-        for (iWord=0; iWord<numberWords; iWord++) {
+        for (iWord = 0; iWord < numberWords; iWord++) {
             int i;
-            for (i=0; i<32; i++) {
-                unsigned int k = 1<<i;
-                if ((upMask_[iWord]&k)!=0) {
+            for (i = 0; i < 32; i++) {
+                unsigned int k = 1 << i;
+                if ((upMask_[iWord]&k) != 0) {
                     int iColumn = which[i+32*iWord];
-                    printf("%d ",integerVariables[iColumn]);
+                    printf("%d ", integerVariables[iColumn]);
                 }
             }
         }
     } else {
         printf("Clique - Up Fix ");
-        for (iWord=0; iWord<numberWords; iWord++) {
+        for (iWord = 0; iWord < numberWords; iWord++) {
             int i;
-            for (i=0; i<32; i++) {
-                unsigned int k = 1<<i;
-                if ((downMask_[iWord]&k)!=0) {
+            for (i = 0; i < 32; i++) {
+                unsigned int k = 1 << i;
+                if ((downMask_[iWord]&k) != 0) {
                     int iColumn = which[i+32*iWord];
-                    printf("%d ",integerVariables[iColumn]);
+                    printf("%d ", integerVariables[iColumn]);
                 }
             }
         }
@@ -2277,11 +2277,11 @@ CbcCliqueBranchingObject::compareBranchingObject
 
 // Default Constructor
 CbcLongCliqueBranchingObject::CbcLongCliqueBranchingObject()
-        :CbcBranchingObject()
+        : CbcBranchingObject()
 {
-    clique_=NULL;
-    downMask_=NULL;
-    upMask_=NULL;
+    clique_ = NULL;
+    downMask_ = NULL;
+    upMask_ = NULL;
 }
 
 // Useful constructor
@@ -2290,68 +2290,68 @@ CbcLongCliqueBranchingObject::CbcLongCliqueBranchingObject (CbcModel * model,
         int way ,
         int numberOnDownSide, const int * down,
         int numberOnUpSide, const int * up)
-        :CbcBranchingObject(model,clique->id(),way,0.5)
+        : CbcBranchingObject(model, clique->id(), way, 0.5)
 {
     clique_ = clique;
     int numberMembers = clique_->numberMembers();
-    int numberWords=(numberMembers+31)>>5;
+    int numberWords = (numberMembers + 31) >> 5;
     downMask_ = new unsigned int [numberWords];
     upMask_ = new unsigned int [numberWords];
-    memset(downMask_,0,numberWords*sizeof(unsigned int));
-    memset(upMask_,0,numberWords*sizeof(unsigned int));
+    memset(downMask_, 0, numberWords*sizeof(unsigned int));
+    memset(upMask_, 0, numberWords*sizeof(unsigned int));
     int i;
-    for (i=0; i<numberOnDownSide; i++) {
+    for (i = 0; i < numberOnDownSide; i++) {
         int sequence = down[i];
-        int iWord = sequence>>5;
-        int iBit = sequence - 32*iWord;
-        unsigned int k = 1<<iBit;
+        int iWord = sequence >> 5;
+        int iBit = sequence - 32 * iWord;
+        unsigned int k = 1 << iBit;
         downMask_[iWord] |= k;
     }
-    for (i=0; i<numberOnUpSide; i++) {
+    for (i = 0; i < numberOnUpSide; i++) {
         int sequence = up[i];
-        int iWord = sequence>>5;
-        int iBit = sequence - 32*iWord;
-        unsigned int k = 1<<iBit;
+        int iWord = sequence >> 5;
+        int iBit = sequence - 32 * iWord;
+        unsigned int k = 1 << iBit;
         upMask_[iWord] |= k;
     }
 }
 
 // Copy constructor
-CbcLongCliqueBranchingObject::CbcLongCliqueBranchingObject ( const CbcLongCliqueBranchingObject & rhs) :CbcBranchingObject(rhs)
+CbcLongCliqueBranchingObject::CbcLongCliqueBranchingObject ( const CbcLongCliqueBranchingObject & rhs) : CbcBranchingObject(rhs)
 {
-    clique_=rhs.clique_;
+    clique_ = rhs.clique_;
     if (rhs.downMask_) {
         int numberMembers = clique_->numberMembers();
-        int numberWords=(numberMembers+31)>>5;
+        int numberWords = (numberMembers + 31) >> 5;
         downMask_ = new unsigned int [numberWords];
-        memcpy(downMask_,rhs.downMask_,numberWords*sizeof(unsigned int));
+        memcpy(downMask_, rhs.downMask_, numberWords*sizeof(unsigned int));
         upMask_ = new unsigned int [numberWords];
-        memcpy(upMask_,rhs.upMask_,numberWords*sizeof(unsigned int));
+        memcpy(upMask_, rhs.upMask_, numberWords*sizeof(unsigned int));
     } else {
-        downMask_=NULL;
-        upMask_=NULL;
+        downMask_ = NULL;
+        upMask_ = NULL;
     }
 }
 
 // Assignment operator
 CbcLongCliqueBranchingObject &
-CbcLongCliqueBranchingObject::operator=( const CbcLongCliqueBranchingObject& rhs)
+CbcLongCliqueBranchingObject::operator=( const CbcLongCliqueBranchingObject & rhs)
 {
     if (this != &rhs) {
         CbcBranchingObject::operator=(rhs);
-        clique_=rhs.clique_;
+        clique_ = rhs.clique_;
         delete [] downMask_;
         delete [] upMask_;
         if (rhs.downMask_) {
             int numberMembers = clique_->numberMembers();
-            int numberWords=(numberMembers+31)>>5;
+            int numberWords = (numberMembers + 31) >> 5;
             downMask_ = new unsigned int [numberWords];
-            memcpy(downMask_,rhs.downMask_,numberWords*sizeof(unsigned int));
+            memcpy(downMask_, rhs.downMask_, numberWords*sizeof(unsigned int));
             upMask_ = new unsigned int [numberWords];
-            memcpy(upMask_,rhs.upMask_,numberWords*sizeof(unsigned int));
+            memcpy(upMask_, rhs.upMask_, numberWords*sizeof(unsigned int));
         } else {
-            downMask_=NULL;
-            upMask_=NULL;
+            downMask_ = NULL;
+            upMask_ = NULL;
         }
     }
     return *this;
@@ -2377,52 +2377,52 @@ CbcLongCliqueBranchingObject::branch()
     int numberMembers = clique_->numberMembers();
     const int * which = clique_->members();
     const int * integerVariables = model_->integerVariable();
-    int numberWords=(numberMembers+31)>>5;
+    int numberWords = (numberMembers + 31) >> 5;
     // *** for way - up means fix all those in down section
-    if (way_<0) {
+    if (way_ < 0) {
 #ifdef FULL_PRINT
         printf("Down Fix ");
 #endif
-        for (iWord=0; iWord<numberWords; iWord++) {
+        for (iWord = 0; iWord < numberWords; iWord++) {
             int i;
-            for (i=0; i<32; i++) {
-                unsigned int k = 1<<i;
-                if ((upMask_[iWord]&k)!=0) {
+            for (i = 0; i < 32; i++) {
+                unsigned int k = 1 << i;
+                if ((upMask_[iWord]&k) != 0) {
                     int iColumn = which[i+32*iWord];
 #ifdef FULL_PRINT
-                    printf("%d ",i+32*iWord);
+                    printf("%d ", i + 32*iWord);
 #endif
                     // fix weak way
-                    if (clique_->type(i+32*iWord))
-                        model_->solver()->setColUpper(integerVariables[iColumn],0.0);
+                    if (clique_->type(i + 32*iWord))
+                        model_->solver()->setColUpper(integerVariables[iColumn], 0.0);
                     else
-                        model_->solver()->setColLower(integerVariables[iColumn],1.0);
+                        model_->solver()->setColLower(integerVariables[iColumn], 1.0);
                 }
             }
         }
-        way_=1;	  // Swap direction
+        way_ = 1;	  // Swap direction
     } else {
 #ifdef FULL_PRINT
         printf("Up Fix ");
 #endif
-        for (iWord=0; iWord<numberWords; iWord++) {
+        for (iWord = 0; iWord < numberWords; iWord++) {
             int i;
-            for (i=0; i<32; i++) {
-                unsigned int k = 1<<i;
-                if ((downMask_[iWord]&k)!=0) {
+            for (i = 0; i < 32; i++) {
+                unsigned int k = 1 << i;
+                if ((downMask_[iWord]&k) != 0) {
                     int iColumn = which[i+32*iWord];
 #ifdef FULL_PRINT
-                    printf("%d ",i+32*iWord);
+                    printf("%d ", i + 32*iWord);
 #endif
                     // fix weak way
-                    if (clique_->type(i+32*iWord))
-                        model_->solver()->setColUpper(integerVariables[iColumn],0.0);
+                    if (clique_->type(i + 32*iWord))
+                        model_->solver()->setColUpper(integerVariables[iColumn], 0.0);
                     else
-                        model_->solver()->setColLower(integerVariables[iColumn],1.0);
+                        model_->solver()->setColLower(integerVariables[iColumn], 1.0);
                 }
             }
         }
-        way_=-1;	  // Swap direction
+        way_ = -1;	  // Swap direction
     }
 #ifdef FULL_PRINT
     printf("\n");
@@ -2436,29 +2436,29 @@ CbcLongCliqueBranchingObject::print()
     int numberMembers = clique_->numberMembers();
     const int * which = clique_->members();
     const int * integerVariables = model_->integerVariable();
-    int numberWords=(numberMembers+31)>>5;
+    int numberWords = (numberMembers + 31) >> 5;
     // *** for way - up means fix all those in down section
-    if (way_<0) {
+    if (way_ < 0) {
         printf("Clique - Down Fix ");
-        for (iWord=0; iWord<numberWords; iWord++) {
+        for (iWord = 0; iWord < numberWords; iWord++) {
             int i;
-            for (i=0; i<32; i++) {
-                unsigned int k = 1<<i;
-                if ((upMask_[iWord]&k)!=0) {
+            for (i = 0; i < 32; i++) {
+                unsigned int k = 1 << i;
+                if ((upMask_[iWord]&k) != 0) {
                     int iColumn = which[i+32*iWord];
-                    printf("%d ",integerVariables[iColumn]);
+                    printf("%d ", integerVariables[iColumn]);
                 }
             }
         }
     } else {
         printf("Clique - Up Fix ");
-        for (iWord=0; iWord<numberWords; iWord++) {
+        for (iWord = 0; iWord < numberWords; iWord++) {
             int i;
-            for (i=0; i<32; i++) {
-                unsigned int k = 1<<i;
-                if ((downMask_[iWord]&k)!=0) {
+            for (i = 0; i < 32; i++) {
+                unsigned int k = 1 << i;
+                if ((downMask_[iWord]&k) != 0) {
                     int iColumn = which[i+32*iWord];
-                    printf("%d ",integerVariables[iColumn]);
+                    printf("%d ", integerVariables[iColumn]);
                 }
             }
         }
@@ -2499,7 +2499,7 @@ CbcLongCliqueBranchingObject::compareBranchingObject
         dynamic_cast<const CbcLongCliqueBranchingObject*>(brObj);
     assert(br);
     const int numberMembers = clique_->numberMembers();
-    const int numberWords=(numberMembers+31)>>5;
+    const int numberWords = (numberMembers + 31) >> 5;
     unsigned int* thisMask = way_ < 0 ? upMask_ : downMask_;
     const unsigned int* otherMask = br->way_ < 0 ? br->upMask_ : br->downMask_;
 
@@ -2509,7 +2509,7 @@ CbcLongCliqueBranchingObject::compareBranchingObject
     bool canBeSuperset = true;
     bool canBeSubset = true;
     int i;
-    for (i = numberWords-1; i >= 0 && (canBeSuperset || canBeSubset); --i) {
+    for (i = numberWords - 1; i >= 0 && (canBeSuperset || canBeSubset); --i) {
         const unsigned int both = (thisMask[i] & otherMask[i]);
         canBeSuperset &= (both == thisMask[i]);
         canBeSubset &= (both == otherMask[i]);
@@ -2521,7 +2521,7 @@ CbcLongCliqueBranchingObject::compareBranchingObject
         return CbcRangeSubset;
     }
 
-    for (i = numberWords-1; i >= 0; --i) {
+    for (i = numberWords - 1; i >= 0; --i) {
         if ((thisMask[i] ^ otherMask[i]) != 0) {
             break;
         }
@@ -2530,7 +2530,7 @@ CbcLongCliqueBranchingObject::compareBranchingObject
         return CbcRangeDisjoint;
     }
     // must be overlap
-    for (i = numberWords-1; i >= 0; --i) {
+    for (i = numberWords - 1; i >= 0; --i) {
         thisMask[i] |= otherMask[i];
     }
     return CbcRangeOverlap;
@@ -2540,12 +2540,12 @@ CbcLongCliqueBranchingObject::compareBranchingObject
 
 // Default Constructor
 CbcSOSBranchingObject::CbcSOSBranchingObject()
-        :CbcBranchingObject(),
+        : CbcBranchingObject(),
         firstNonzero_(-1),
         lastNonzero_(-1)
 {
     set_ = NULL;
-    separator_=0.0;
+    separator_ = 0.0;
 }
 
 // Useful constructor
@@ -2553,7 +2553,7 @@ CbcSOSBranchingObject::CbcSOSBranchingObject (CbcModel * model,
         const CbcSOS * set,
         int way ,
         double separator)
-        :CbcBranchingObject(model,set->id(),way,0.5)
+        : CbcBranchingObject(model, set->id(), way, 0.5)
 {
     set_ = set;
     separator_ = separator;
@@ -2562,21 +2562,21 @@ CbcSOSBranchingObject::CbcSOSBranchingObject (CbcModel * model,
 
 // Copy constructor
 CbcSOSBranchingObject::CbcSOSBranchingObject (const CbcSOSBranchingObject & rhs)
-        :CbcBranchingObject(rhs),
+        : CbcBranchingObject(rhs),
         firstNonzero_(rhs.firstNonzero_),
         lastNonzero_(rhs.lastNonzero_)
 {
-    set_=rhs.set_;
+    set_ = rhs.set_;
     separator_ = rhs.separator_;
 }
 
 // Assignment operator
 CbcSOSBranchingObject &
-CbcSOSBranchingObject::operator=( const CbcSOSBranchingObject& rhs)
+CbcSOSBranchingObject::operator=( const CbcSOSBranchingObject & rhs)
 {
     if (this != &rhs) {
         CbcBranchingObject::operator=(rhs);
-        set_=rhs.set_;
+        set_ = rhs.set_;
         separator_ = rhs.separator_;
         firstNonzero_ = rhs.firstNonzero_;
         lastNonzero_ = rhs.lastNonzero_;
@@ -2602,19 +2602,19 @@ CbcSOSBranchingObject::computeNonzeroRange()
     const double * weights = set_->weights();
     int i = 0;
     if (way_ < 0) {
-        for ( i=0; i<numberMembers; i++) {
+        for ( i = 0; i < numberMembers; i++) {
             if (weights[i] > separator_)
                 break;
         }
-        assert (i<numberMembers);
+        assert (i < numberMembers);
         firstNonzero_ = 0;
         lastNonzero_ = i;
     } else {
-        for ( i=0; i<numberMembers; i++) {
+        for ( i = 0; i < numberMembers; i++) {
             if (weights[i] >= separator_)
                 break;
         }
-        assert (i<numberMembers);
+        assert (i < numberMembers);
         firstNonzero_ = i;
         lastNonzero_ = numberMembers;
     }
@@ -2631,26 +2631,26 @@ CbcSOSBranchingObject::branch()
     //const double * lower = solver->getColLower();
     //const double * upper = solver->getColUpper();
     // *** for way - up means fix all those in down section
-    if (way_<0) {
+    if (way_ < 0) {
         int i;
-        for ( i=0; i<numberMembers; i++) {
+        for ( i = 0; i < numberMembers; i++) {
             if (weights[i] > separator_)
                 break;
         }
-        assert (i<numberMembers);
-        for (; i<numberMembers; i++)
-            solver->setColUpper(which[i],0.0);
-        way_=1;	  // Swap direction
+        assert (i < numberMembers);
+        for (; i < numberMembers; i++)
+            solver->setColUpper(which[i], 0.0);
+        way_ = 1;	  // Swap direction
     } else {
         int i;
-        for ( i=0; i<numberMembers; i++) {
+        for ( i = 0; i < numberMembers; i++) {
             if (weights[i] >= separator_)
                 break;
             else
-                solver->setColUpper(which[i],0.0);
+                solver->setColUpper(which[i], 0.0);
         }
-        assert (i<numberMembers);
-        way_=-1;	  // Swap direction
+        assert (i < numberMembers);
+        way_ = -1;	  // Swap direction
     }
     computeNonzeroRange();
     return 0.0;
@@ -2668,28 +2668,28 @@ CbcSOSBranchingObject::fix(OsiSolverInterface * solver,
     //const double * lower = solver->getColLower();
     //const double * upper = solver->getColUpper();
     // *** for way - up means fix all those in down section
-    if (branchState<0) {
+    if (branchState < 0) {
         int i;
-        for ( i=0; i<numberMembers; i++) {
+        for ( i = 0; i < numberMembers; i++) {
             if (weights[i] > separator_)
                 break;
         }
-        assert (i<numberMembers);
-        for (; i<numberMembers; i++) {
-            solver->setColUpper(which[i],0.0);
-            upper[which[i]]=0.0;
+        assert (i < numberMembers);
+        for (; i < numberMembers; i++) {
+            solver->setColUpper(which[i], 0.0);
+            upper[which[i]] = 0.0;
         }
     } else {
         int i;
-        for ( i=0; i<numberMembers; i++) {
+        for ( i = 0; i < numberMembers; i++) {
             if (weights[i] >= separator_) {
                 break;
             } else {
-                solver->setColUpper(which[i],0.0);
-                upper[which[i]]=0.0;
+                solver->setColUpper(which[i], 0.0);
+                upper[which[i]] = 0.0;
             }
         }
-        assert (i<numberMembers);
+        assert (i < numberMembers);
     }
 }
 // Print what would happen
@@ -2702,52 +2702,52 @@ CbcSOSBranchingObject::print()
     OsiSolverInterface * solver = model_->solver();
     //const double * lower = solver->getColLower();
     const double * upper = solver->getColUpper();
-    int first=numberMembers;
-    int last=-1;
-    int numberFixed=0;
-    int numberOther=0;
+    int first = numberMembers;
+    int last = -1;
+    int numberFixed = 0;
+    int numberOther = 0;
     int i;
-    for ( i=0; i<numberMembers; i++) {
+    for ( i = 0; i < numberMembers; i++) {
         double bound = upper[which[i]];
         if (bound) {
-            first = CoinMin(first,i);
-            last = CoinMax(last,i);
+            first = CoinMin(first, i);
+            last = CoinMax(last, i);
         }
     }
     // *** for way - up means fix all those in down section
-    if (way_<0) {
+    if (way_ < 0) {
         printf("SOS Down");
-        for ( i=0; i<numberMembers; i++) {
+        for ( i = 0; i < numberMembers; i++) {
             double bound = upper[which[i]];
             if (weights[i] > separator_)
                 break;
             else if (bound)
                 numberOther++;
         }
-        assert (i<numberMembers);
-        for (; i<numberMembers; i++) {
+        assert (i < numberMembers);
+        for (; i < numberMembers; i++) {
             double bound = upper[which[i]];
             if (bound)
                 numberFixed++;
         }
     } else {
         printf("SOS Up");
-        for ( i=0; i<numberMembers; i++) {
+        for ( i = 0; i < numberMembers; i++) {
             double bound = upper[which[i]];
             if (weights[i] >= separator_)
                 break;
             else if (bound)
                 numberFixed++;
         }
-        assert (i<numberMembers);
-        for (; i<numberMembers; i++) {
+        assert (i < numberMembers);
+        for (; i < numberMembers; i++) {
             double bound = upper[which[i]];
             if (bound)
                 numberOther++;
         }
     }
     printf(" - at %g, free range %d (%g) => %d (%g), %d would be fixed, %d other way\n",
-           separator_,which[first],weights[first],which[last],weights[last],numberFixed,numberOther);
+           separator_, which[first], weights[first], which[last], weights[last], numberFixed, numberOther);
 }
 
 /** Compare the original object of \c this with the original object of \c
@@ -2833,7 +2833,7 @@ CbcSOSBranchingObject::compareBranchingObject
 
 // Default Constructor
 CbcBranchDefaultDecision::CbcBranchDefaultDecision()
-        :CbcBranchDecision()
+        : CbcBranchDecision()
 {
     bestCriterion_ = 0.0;
     bestChangeUp_ = 0.0;
@@ -2846,7 +2846,7 @@ CbcBranchDefaultDecision::CbcBranchDefaultDecision()
 // Copy constructor
 CbcBranchDefaultDecision::CbcBranchDefaultDecision (
     const CbcBranchDefaultDecision & rhs)
-        :CbcBranchDecision(rhs)
+        : CbcBranchDecision(rhs)
 {
     bestCriterion_ = rhs.bestCriterion_;
     bestChangeUp_ = rhs.bestChangeUp_;
@@ -2895,70 +2895,70 @@ CbcBranchDefaultDecision::betterBranch(CbcBranchingObject * thisOne,
                                        double changeUp, int numInfUp,
                                        double changeDn, int numInfDn)
 {
-    bool beforeSolution = cbcModel()->getSolutionCount()==
+    bool beforeSolution = cbcModel()->getSolutionCount() ==
                           cbcModel()->getNumberHeuristicSolutions();;
-    int betterWay=0;
+    int betterWay = 0;
     if (beforeSolution) {
         if (!bestObject_) {
-            bestNumberUp_=COIN_INT_MAX;
-            bestNumberDown_=COIN_INT_MAX;
+            bestNumberUp_ = COIN_INT_MAX;
+            bestNumberDown_ = COIN_INT_MAX;
         }
         // before solution - choose smallest number
         // could add in depth as well
-        int bestNumber = CoinMin(bestNumberUp_,bestNumberDown_);
-        if (numInfUp<numInfDn) {
-            if (numInfUp<bestNumber) {
+        int bestNumber = CoinMin(bestNumberUp_, bestNumberDown_);
+        if (numInfUp < numInfDn) {
+            if (numInfUp < bestNumber) {
                 betterWay = 1;
-            } else if (numInfUp==bestNumber) {
-                if (changeUp<bestCriterion_)
-                    betterWay=1;
+            } else if (numInfUp == bestNumber) {
+                if (changeUp < bestCriterion_)
+                    betterWay = 1;
             }
-        } else if (numInfUp>numInfDn) {
-            if (numInfDn<bestNumber) {
+        } else if (numInfUp > numInfDn) {
+            if (numInfDn < bestNumber) {
                 betterWay = -1;
-            } else if (numInfDn==bestNumber) {
-                if (changeDn<bestCriterion_)
-                    betterWay=-1;
+            } else if (numInfDn == bestNumber) {
+                if (changeDn < bestCriterion_)
+                    betterWay = -1;
             }
         } else {
             // up and down have same number
-            bool better=false;
-            if (numInfUp<bestNumber) {
-                better=true;
-            } else if (numInfUp==bestNumber) {
-                if (CoinMin(changeUp,changeDn)<bestCriterion_)
-                    better=true;;
+            bool better = false;
+            if (numInfUp < bestNumber) {
+                better = true;
+            } else if (numInfUp == bestNumber) {
+                if (CoinMin(changeUp, changeDn) < bestCriterion_)
+                    better = true;;
             }
             if (better) {
                 // see which way
-                if (changeUp<=changeDn)
-                    betterWay=1;
+                if (changeUp <= changeDn)
+                    betterWay = 1;
                 else
-                    betterWay=-1;
+                    betterWay = -1;
             }
         }
     } else {
         if (!bestObject_) {
-            bestCriterion_=-1.0;
+            bestCriterion_ = -1.0;
         }
         // got a solution
-        if (changeUp<=changeDn) {
-            if (changeUp>bestCriterion_)
-                betterWay=1;
+        if (changeUp <= changeDn) {
+            if (changeUp > bestCriterion_)
+                betterWay = 1;
         } else {
-            if (changeDn>bestCriterion_)
-                betterWay=-1;
+            if (changeDn > bestCriterion_)
+                betterWay = -1;
         }
     }
     if (betterWay) {
-        bestCriterion_ = CoinMin(changeUp,changeDn);
+        bestCriterion_ = CoinMin(changeUp, changeDn);
         bestChangeUp_ = changeUp;
         bestNumberUp_ = numInfUp;
         bestChangeDown_ = changeDn;
         bestNumberDown_ = numInfDn;
-        bestObject_=thisOne;
+        bestObject_ = thisOne;
         // See if user is overriding way
-        if (thisOne->object()&&thisOne->object()->preferredWay())
+        if (thisOne->object() && thisOne->object()->preferredWay())
             betterWay = thisOne->object()->preferredWay();
     }
     return betterWay;
@@ -2989,7 +2989,7 @@ CbcBranchDefaultDecision::bestBranch (CbcBranchingObject ** objects, int numberO
                                       double objectiveValue)
 {
 
-    int bestWay=0;
+    int bestWay = 0;
     int whichObject = -1;
     if (numberObjects) {
         CbcModel * model = cbcModel();
@@ -3008,11 +3008,11 @@ CbcBranchDefaultDecision::bestBranch (CbcBranchingObject ** objects, int numberO
         */
         int numberSolutions = model->getSolutionCount();
         double cutoff = model->getCutoff();
-        int method=0;
+        int method = 0;
         int i;
         if (numberSolutions) {
             int numberHeuristic = model->getNumberHeuristicSolutions();
-            if (numberHeuristic<numberSolutions) {
+            if (numberHeuristic < numberSolutions) {
                 method = 1;
             } else {
                 method = 2;
@@ -3020,24 +3020,24 @@ CbcBranchDefaultDecision::bestBranch (CbcBranchingObject ** objects, int numberO
                 for ( i = 0 ; i < numberObjects ; i++) {
                     int numberNext = numberInfeasibilitiesUp[i];
 
-                    if (numberNext<numberUnsatisfied) {
+                    if (numberNext < numberUnsatisfied) {
                         int numberUp = numberUnsatisfied - numberInfeasibilitiesUp[i];
-                        double perUnsatisfied = changeUp[i]/static_cast<double> (numberUp);
+                        double perUnsatisfied = changeUp[i] / static_cast<double> (numberUp);
                         double estimatedObjective = objectiveValue + numberUnsatisfied * perUnsatisfied;
-                        if (estimatedObjective<cutoff)
-                            method=3;
+                        if (estimatedObjective < cutoff)
+                            method = 3;
                     }
                     numberNext = numberInfeasibilitiesDown[i];
-                    if (numberNext<numberUnsatisfied) {
+                    if (numberNext < numberUnsatisfied) {
                         int numberDown = numberUnsatisfied - numberInfeasibilitiesDown[i];
-                        double perUnsatisfied = changeDown[i]/static_cast<double> (numberDown);
+                        double perUnsatisfied = changeDown[i] / static_cast<double> (numberDown);
                         double estimatedObjective = objectiveValue + numberUnsatisfied * perUnsatisfied;
-                        if (estimatedObjective<cutoff)
-                            method=3;
+                        if (estimatedObjective < cutoff)
+                            method = 3;
                     }
                 }
             }
-            method=2;
+            method = 2;
         } else {
             method = 0;
         }
@@ -3050,50 +3050,50 @@ CbcBranchDefaultDecision::bestBranch (CbcBranchingObject ** objects, int numberO
            3 - predicted best solution
            4 - take cheapest up branch if infeasibilities same
         */
-        int bestNumber=COIN_INT_MAX;
-        double bestCriterion=-1.0e50;
+        int bestNumber = COIN_INT_MAX;
+        double bestCriterion = -1.0e50;
         double alternativeCriterion = -1.0;
         double bestEstimate = 1.0e100;
         switch (method) {
         case 0:
             // could add in depth as well
             for ( i = 0 ; i < numberObjects ; i++) {
-                int thisNumber = CoinMin(numberInfeasibilitiesUp[i],numberInfeasibilitiesDown[i]);
-                if (thisNumber<=bestNumber) {
-                    int betterWay=0;
-                    if (numberInfeasibilitiesUp[i]<numberInfeasibilitiesDown[i]) {
-                        if (numberInfeasibilitiesUp[i]<bestNumber) {
+                int thisNumber = CoinMin(numberInfeasibilitiesUp[i], numberInfeasibilitiesDown[i]);
+                if (thisNumber <= bestNumber) {
+                    int betterWay = 0;
+                    if (numberInfeasibilitiesUp[i] < numberInfeasibilitiesDown[i]) {
+                        if (numberInfeasibilitiesUp[i] < bestNumber) {
                             betterWay = 1;
                         } else {
-                            if (changeUp[i]<bestCriterion)
-                                betterWay=1;
+                            if (changeUp[i] < bestCriterion)
+                                betterWay = 1;
                         }
-                    } else if (numberInfeasibilitiesUp[i]>numberInfeasibilitiesDown[i]) {
-                        if (numberInfeasibilitiesDown[i]<bestNumber) {
+                    } else if (numberInfeasibilitiesUp[i] > numberInfeasibilitiesDown[i]) {
+                        if (numberInfeasibilitiesDown[i] < bestNumber) {
                             betterWay = -1;
                         } else {
-                            if (changeDown[i]<bestCriterion)
-                                betterWay=-1;
+                            if (changeDown[i] < bestCriterion)
+                                betterWay = -1;
                         }
                     } else {
                         // up and down have same number
-                        bool better=false;
-                        if (numberInfeasibilitiesUp[i]<bestNumber) {
-                            better=true;
-                        } else if (numberInfeasibilitiesUp[i]==bestNumber) {
-                            if (CoinMin(changeUp[i],changeDown[i])<bestCriterion)
-                                better=true;;
+                        bool better = false;
+                        if (numberInfeasibilitiesUp[i] < bestNumber) {
+                            better = true;
+                        } else if (numberInfeasibilitiesUp[i] == bestNumber) {
+                            if (CoinMin(changeUp[i], changeDown[i]) < bestCriterion)
+                                better = true;;
                         }
                         if (better) {
                             // see which way
-                            if (changeUp[i]<=changeDown[i])
-                                betterWay=1;
+                            if (changeUp[i] <= changeDown[i])
+                                betterWay = 1;
                             else
-                                betterWay=-1;
+                                betterWay = -1;
                         }
                     }
                     if (betterWay) {
-                        bestCriterion = CoinMin(changeUp[i],changeDown[i]);
+                        bestCriterion = CoinMin(changeUp[i], changeDown[i]);
                         bestNumber = thisNumber;
                         whichObject = i;
                         bestWay = betterWay;
@@ -3103,16 +3103,16 @@ CbcBranchDefaultDecision::bestBranch (CbcBranchingObject ** objects, int numberO
             break;
         case 1:
             for ( i = 0 ; i < numberObjects ; i++) {
-                int betterWay=0;
-                if (changeUp[i]<=changeDown[i]) {
-                    if (changeUp[i]>bestCriterion)
-                        betterWay=1;
+                int betterWay = 0;
+                if (changeUp[i] <= changeDown[i]) {
+                    if (changeUp[i] > bestCriterion)
+                        betterWay = 1;
                 } else {
-                    if (changeDown[i]>bestCriterion)
-                        betterWay=-1;
+                    if (changeDown[i] > bestCriterion)
+                        betterWay = -1;
                 }
                 if (betterWay) {
-                    bestCriterion = CoinMin(changeUp[i],changeDown[i]);
+                    bestCriterion = CoinMin(changeUp[i], changeDown[i]);
                     whichObject = i;
                     bestWay = betterWay;
                 }
@@ -3120,20 +3120,20 @@ CbcBranchDefaultDecision::bestBranch (CbcBranchingObject ** objects, int numberO
             break;
         case 2:
             for ( i = 0 ; i < numberObjects ; i++) {
-                double change = CoinMin(changeUp[i],changeDown[i]);
+                double change = CoinMin(changeUp[i], changeDown[i]);
                 double sum = changeUp[i] + changeDown[i];
-                bool take=false;
-                if (change>1.1*bestCriterion)
-                    take=true;
-                else if (change>0.9*bestCriterion&&sum+change>bestCriterion+alternativeCriterion)
-                    take=true;
+                bool take = false;
+                if (change > 1.1*bestCriterion)
+                    take = true;
+                else if (change > 0.9*bestCriterion && sum + change > bestCriterion + alternativeCriterion)
+                    take = true;
                 if (take) {
-                    if (changeUp[i]<=changeDown[i]) {
-                        if (changeUp[i]>bestCriterion)
-                            bestWay=1;
+                    if (changeUp[i] <= changeDown[i]) {
+                        if (changeUp[i] > bestCriterion)
+                            bestWay = 1;
                     } else {
-                        if (changeDown[i]>bestCriterion)
-                            bestWay=-1;
+                        if (changeDown[i] > bestCriterion)
+                            bestWay = -1;
                     }
                     bestCriterion = change;
                     alternativeCriterion = sum;
@@ -3145,25 +3145,25 @@ CbcBranchDefaultDecision::bestBranch (CbcBranchingObject ** objects, int numberO
             for ( i = 0 ; i < numberObjects ; i++) {
                 int numberNext = numberInfeasibilitiesUp[i];
 
-                if (numberNext<numberUnsatisfied) {
+                if (numberNext < numberUnsatisfied) {
                     int numberUp = numberUnsatisfied - numberInfeasibilitiesUp[i];
-                    double perUnsatisfied = changeUp[i]/static_cast<double> (numberUp);
+                    double perUnsatisfied = changeUp[i] / static_cast<double> (numberUp);
                     double estimatedObjective = objectiveValue + numberUnsatisfied * perUnsatisfied;
-                    if (estimatedObjective<bestEstimate) {
+                    if (estimatedObjective < bestEstimate) {
                         bestEstimate = estimatedObjective;
-                        bestWay=1;
-                        whichObject=i;
+                        bestWay = 1;
+                        whichObject = i;
                     }
                 }
                 numberNext = numberInfeasibilitiesDown[i];
-                if (numberNext<numberUnsatisfied) {
+                if (numberNext < numberUnsatisfied) {
                     int numberDown = numberUnsatisfied - numberInfeasibilitiesDown[i];
-                    double perUnsatisfied = changeDown[i]/static_cast<double> (numberDown);
+                    double perUnsatisfied = changeDown[i] / static_cast<double> (numberDown);
                     double estimatedObjective = objectiveValue + numberUnsatisfied * perUnsatisfied;
-                    if (estimatedObjective<bestEstimate) {
+                    if (estimatedObjective < bestEstimate) {
                         bestEstimate = estimatedObjective;
-                        bestWay=-1;
-                        whichObject=i;
+                        bestWay = -1;
+                        whichObject = i;
                     }
                 }
             }
@@ -3173,53 +3173,53 @@ CbcBranchDefaultDecision::bestBranch (CbcBranchingObject ** objects, int numberO
             // first get best number or when going down
             // now choose smallest change up amongst equal number infeas
             for ( i = 0 ; i < numberObjects ; i++) {
-                int thisNumber = CoinMin(numberInfeasibilitiesUp[i],numberInfeasibilitiesDown[i]);
-                if (thisNumber<=bestNumber) {
-                    int betterWay=0;
-                    if (numberInfeasibilitiesUp[i]<numberInfeasibilitiesDown[i]) {
-                        if (numberInfeasibilitiesUp[i]<bestNumber) {
+                int thisNumber = CoinMin(numberInfeasibilitiesUp[i], numberInfeasibilitiesDown[i]);
+                if (thisNumber <= bestNumber) {
+                    int betterWay = 0;
+                    if (numberInfeasibilitiesUp[i] < numberInfeasibilitiesDown[i]) {
+                        if (numberInfeasibilitiesUp[i] < bestNumber) {
                             betterWay = 1;
                         } else {
-                            if (changeUp[i]<bestCriterion)
-                                betterWay=1;
+                            if (changeUp[i] < bestCriterion)
+                                betterWay = 1;
                         }
-                    } else if (numberInfeasibilitiesUp[i]>numberInfeasibilitiesDown[i]) {
-                        if (numberInfeasibilitiesDown[i]<bestNumber) {
+                    } else if (numberInfeasibilitiesUp[i] > numberInfeasibilitiesDown[i]) {
+                        if (numberInfeasibilitiesDown[i] < bestNumber) {
                             betterWay = -1;
                         } else {
-                            if (changeDown[i]<bestCriterion)
-                                betterWay=-1;
+                            if (changeDown[i] < bestCriterion)
+                                betterWay = -1;
                         }
                     } else {
                         // up and down have same number
-                        bool better=false;
-                        if (numberInfeasibilitiesUp[i]<bestNumber) {
-                            better=true;
-                        } else if (numberInfeasibilitiesUp[i]==bestNumber) {
-                            if (CoinMin(changeUp[i],changeDown[i])<bestCriterion)
-                                better=true;;
+                        bool better = false;
+                        if (numberInfeasibilitiesUp[i] < bestNumber) {
+                            better = true;
+                        } else if (numberInfeasibilitiesUp[i] == bestNumber) {
+                            if (CoinMin(changeUp[i], changeDown[i]) < bestCriterion)
+                                better = true;;
                         }
                         if (better) {
                             // see which way
-                            if (changeUp[i]<=changeDown[i])
-                                betterWay=1;
+                            if (changeUp[i] <= changeDown[i])
+                                betterWay = 1;
                             else
-                                betterWay=-1;
+                                betterWay = -1;
                         }
                     }
                     if (betterWay) {
-                        bestCriterion = CoinMin(changeUp[i],changeDown[i]);
+                        bestCriterion = CoinMin(changeUp[i], changeDown[i]);
                         bestNumber = thisNumber;
                         whichObject = i;
                         bestWay = betterWay;
                     }
                 }
             }
-            bestCriterion=1.0e50;
+            bestCriterion = 1.0e50;
             for ( i = 0 ; i < numberObjects ; i++) {
                 int thisNumber = numberInfeasibilitiesUp[i];
-                if (thisNumber==bestNumber&&changeUp) {
-                    if (changeUp[i]<bestCriterion) {
+                if (thisNumber == bestNumber && changeUp) {
+                    if (changeUp[i] < bestCriterion) {
                         bestCriterion = changeUp[i];
                         whichObject = i;
                         bestWay = 1;
@@ -3229,9 +3229,9 @@ CbcBranchDefaultDecision::bestBranch (CbcBranchingObject ** objects, int numberO
             break;
         }
         // set way in best
-        if (whichObject>=0) {
+        if (whichObject >= 0) {
             CbcBranchingObject * bestObject = objects[whichObject];
-            if (bestObject->object()&&bestObject->object()->preferredWay())
+            if (bestObject->object() && bestObject->object()->preferredWay())
                 bestWay = bestObject->object()->preferredWay();
             bestObject->way(bestWay);
         } else {
@@ -3271,23 +3271,23 @@ CbcFollowOn::CbcFollowOn (CbcModel * model)
     const int * column = matrixByRow_.getIndices();
     const CoinBigIndex * rowStart = matrixByRow_.getVectorStarts();
     const int * rowLength = matrixByRow_.getVectorLengths();
-    for (i=0; i<numberRows; i++) {
-        rhs_[i]=0;
+    for (i = 0; i < numberRows; i++) {
+        rhs_[i] = 0;
         double value = rowLower[i];
-        if (value==rowUpper[i]) {
-            if (floor(value)==value&&value>=1.0&&value<10.0) {
+        if (value == rowUpper[i]) {
+            if (floor(value) == value && value >= 1.0 && value < 10.0) {
                 // check elements
-                bool good=true;
-                for (int j=rowStart[i]; j<rowStart[i]+rowLength[i]; j++) {
+                bool good = true;
+                for (int j = rowStart[i]; j < rowStart[i] + rowLength[i]; j++) {
                     int iColumn = column[j];
                     if (!solver->isBinary(iColumn))
-                        good=false;
+                        good = false;
                     double elValue = elementByRow[j];
-                    if (floor(elValue)!=elValue||value<1.0)
-                        good=false;
+                    if (floor(elValue) != elValue || value < 1.0)
+                        good = false;
                 }
                 if (good)
-                    rhs_[i]=static_cast<int> (value);
+                    rhs_[i] = static_cast<int> (value);
             }
         }
     }
@@ -3295,12 +3295,12 @@ CbcFollowOn::CbcFollowOn (CbcModel * model)
 
 // Copy constructor
 CbcFollowOn::CbcFollowOn ( const CbcFollowOn & rhs)
-        :CbcObject(rhs),
+        : CbcObject(rhs),
         matrix_(rhs.matrix_),
         matrixByRow_(rhs.matrixByRow_)
 {
     int numberRows = matrix_.getNumRows();
-    rhs_= CoinCopyOfArray(rhs.rhs_,numberRows);
+    rhs_ = CoinCopyOfArray(rhs.rhs_, numberRows);
 }
 
 // Clone
@@ -3312,15 +3312,15 @@ CbcFollowOn::clone() const
 
 // Assignment operator
 CbcFollowOn &
-CbcFollowOn::operator=( const CbcFollowOn& rhs)
+CbcFollowOn::operator=( const CbcFollowOn & rhs)
 {
-    if (this!=&rhs) {
+    if (this != &rhs) {
         CbcObject::operator=(rhs);
         delete [] rhs_;
         matrix_ = rhs.matrix_;
         matrixByRow_ = rhs.matrixByRow_;
         int numberRows = matrix_.getNumRows();
-        rhs_= CoinCopyOfArray(rhs.rhs_,numberRows);
+        rhs_ = CoinCopyOfArray(rhs.rhs_, numberRows);
     }
     return *this;
 }
@@ -3334,8 +3334,8 @@ CbcFollowOn::~CbcFollowOn ()
 int
 CbcFollowOn::gutsOfFollowOn(int & otherRow, int & preferredWay) const
 {
-    int whichRow=-1;
-    otherRow=-1;
+    int whichRow = -1;
+    otherRow = -1;
     int numberRows = matrix_.getNumRows();
 
     int i;
@@ -3357,143 +3357,143 @@ CbcFollowOn::gutsOfFollowOn(int & otherRow, int & preferredWay) const
     const double * columnUpper = solver->getColUpper();
     const double * solution = solver->getColSolution();
     double integerTolerance = model_->getDblParam(CbcModel::CbcIntegerTolerance);
-    int nSort=0;
-    for (i=0; i<numberRows; i++) {
+    int nSort = 0;
+    for (i = 0; i < numberRows; i++) {
         if (rhs_[i]) {
             // check elements
-            double smallest=1.0e10;
-            double largest=0.0;
-            int rhsValue=rhs_[i];
-            int number1=0;
-            int numberUnsatisfied=0;
-            for (int j=rowStart[i]; j<rowStart[i]+rowLength[i]; j++) {
+            double smallest = 1.0e10;
+            double largest = 0.0;
+            int rhsValue = rhs_[i];
+            int number1 = 0;
+            int numberUnsatisfied = 0;
+            for (int j = rowStart[i]; j < rowStart[i] + rowLength[i]; j++) {
                 int iColumn = column[j];
                 double value = elementByRow[j];
                 double solValue = solution[iColumn];
-                if (columnLower[iColumn]!=columnUpper[iColumn]) {
-                    smallest = CoinMin(smallest,value);
-                    largest = CoinMax(largest,value);
-                    if (value==1.0)
+                if (columnLower[iColumn] != columnUpper[iColumn]) {
+                    smallest = CoinMin(smallest, value);
+                    largest = CoinMax(largest, value);
+                    if (value == 1.0)
                         number1++;
-                    if (solValue<1.0-integerTolerance&&solValue>integerTolerance)
+                    if (solValue < 1.0 - integerTolerance && solValue > integerTolerance)
                         numberUnsatisfied++;
                 } else {
-                    rhsValue -= static_cast<int>(value*floor(solValue+0.5));
+                    rhsValue -= static_cast<int>(value * floor(solValue + 0.5));
                 }
             }
-            if (numberUnsatisfied>1) {
-                if (smallest<largest) {
+            if (numberUnsatisfied > 1) {
+                if (smallest < largest) {
                     // probably no good but check a few things
-                    assert (largest<=rhsValue);
-                    if (number1==1&&largest==rhsValue)
+                    assert (largest <= rhsValue);
+                    if (number1 == 1 && largest == rhsValue)
                         printf("could fix\n");
-                } else if (largest==rhsValue) {
-                    sort[nSort]=i;
-                    isort[nSort++]=-numberUnsatisfied;
+                } else if (largest == rhsValue) {
+                    sort[nSort] = i;
+                    isort[nSort++] = -numberUnsatisfied;
                 }
             }
         }
     }
-    if (nSort>1) {
-        CoinSort_2(isort,isort+nSort,sort);
-        CoinZeroN(isort,numberRows);
+    if (nSort > 1) {
+        CoinSort_2(isort, isort + nSort, sort);
+        CoinZeroN(isort, numberRows);
         double * other = new double[numberRows];
-        CoinZeroN(other,numberRows);
+        CoinZeroN(other, numberRows);
         int * which = new int[numberRows];
         //#define COUNT
 #ifndef COUNT
-        bool beforeSolution = model_->getSolutionCount()==0;
+        bool beforeSolution = model_->getSolutionCount() == 0;
 #endif
-        for (int k=0; k<nSort-1; k++) {
-            i=sort[k];
+        for (int k = 0; k < nSort - 1; k++) {
+            i = sort[k];
             int numberUnsatisfied = 0;
-            int n=0;
+            int n = 0;
             int j;
-            for (j=rowStart[i]; j<rowStart[i]+rowLength[i]; j++) {
+            for (j = rowStart[i]; j < rowStart[i] + rowLength[i]; j++) {
                 int iColumn = column[j];
-                if (columnLower[iColumn]!=columnUpper[iColumn]) {
-                    double solValue = solution[iColumn]-columnLower[iColumn];
-                    if (solValue<1.0-integerTolerance&&solValue>integerTolerance) {
+                if (columnLower[iColumn] != columnUpper[iColumn]) {
+                    double solValue = solution[iColumn] - columnLower[iColumn];
+                    if (solValue < 1.0 - integerTolerance && solValue > integerTolerance) {
                         numberUnsatisfied++;
-                        for (int jj=columnStart[iColumn]; jj<columnStart[iColumn]+columnLength[iColumn]; jj++) {
+                        for (int jj = columnStart[iColumn]; jj < columnStart[iColumn] + columnLength[iColumn]; jj++) {
                             int iRow = row[jj];
                             if (rhs_[iRow]) {
-                                other[iRow]+=solValue;
+                                other[iRow] += solValue;
                                 if (isort[iRow]) {
                                     isort[iRow]++;
                                 } else {
-                                    isort[iRow]=1;
-                                    which[n++]=iRow;
+                                    isort[iRow] = 1;
+                                    which[n++] = iRow;
                                 }
                             }
                         }
                     }
                 }
             }
-            double total=0.0;
+            double total = 0.0;
             // Take out row
-            double sumThis=other[i];
-            other[i]=0.0;
-            assert (numberUnsatisfied==isort[i]);
+            double sumThis = other[i];
+            other[i] = 0.0;
+            assert (numberUnsatisfied == isort[i]);
             // find one nearest half if solution, one if before solution
-            int iBest=-1;
-            double dtarget=0.5*total;
+            int iBest = -1;
+            double dtarget = 0.5 * total;
 #ifdef COUNT
-            int target = (numberUnsatisfied+1)>>1;
-            int best=numberUnsatisfied;
+            int target = (numberUnsatisfied + 1) >> 1;
+            int best = numberUnsatisfied;
 #else
             double best;
             if (beforeSolution)
-                best=dtarget;
+                best = dtarget;
             else
-                best=1.0e30;
+                best = 1.0e30;
 #endif
-            for (j=0; j<n; j++) {
+            for (j = 0; j < n; j++) {
                 int iRow = which[j];
-                double dvalue=other[iRow];
-                other[iRow]=0.0;
+                double dvalue = other[iRow];
+                other[iRow] = 0.0;
 #ifdef COUNT
                 int value = isort[iRow];
 #endif
-                isort[iRow]=0;
-                if (fabs(dvalue)<1.0e-8||fabs(sumThis-dvalue)<1.0e-8)
+                isort[iRow] = 0;
+                if (fabs(dvalue) < 1.0e-8 || fabs(sumThis - dvalue) < 1.0e-8)
                     continue;
-                if (dvalue<integerTolerance||dvalue>1.0-integerTolerance)
+                if (dvalue < integerTolerance || dvalue > 1.0 - integerTolerance)
                     continue;
 #ifdef COUNT
-                if (abs(value-target)<best&&value!=numberUnsatisfied) {
-                    best=abs(value-target);
-                    iBest=iRow;
-                    if (dvalue<dtarget)
-                        preferredWay=1;
+                if (abs(value - target) < best && value != numberUnsatisfied) {
+                    best = abs(value - target);
+                    iBest = iRow;
+                    if (dvalue < dtarget)
+                        preferredWay = 1;
                     else
-                        preferredWay=-1;
+                        preferredWay = -1;
                 }
 #else
                 if (beforeSolution) {
-                    if (fabs(dvalue-dtarget)>best) {
-                        best = fabs(dvalue-dtarget);
-                        iBest=iRow;
-                        if (dvalue<dtarget)
-                            preferredWay=1;
+                    if (fabs(dvalue - dtarget) > best) {
+                        best = fabs(dvalue - dtarget);
+                        iBest = iRow;
+                        if (dvalue < dtarget)
+                            preferredWay = 1;
                         else
-                            preferredWay=-1;
+                            preferredWay = -1;
                     }
                 } else {
-                    if (fabs(dvalue-dtarget)<best) {
-                        best = fabs(dvalue-dtarget);
-                        iBest=iRow;
-                        if (dvalue<dtarget)
-                            preferredWay=1;
+                    if (fabs(dvalue - dtarget) < best) {
+                        best = fabs(dvalue - dtarget);
+                        iBest = iRow;
+                        if (dvalue < dtarget)
+                            preferredWay = 1;
                         else
-                            preferredWay=-1;
+                            preferredWay = -1;
                     }
                 }
 #endif
             }
-            if (iBest>=0) {
-                whichRow=i;
-                otherRow=iBest;
+            if (iBest >= 0) {
+                whichRow = i;
+                otherRow = iBest;
                 break;
             }
         }
@@ -3508,9 +3508,9 @@ double
 CbcFollowOn::infeasibility(const OsiBranchingInformation * /*info*/,
                            int &preferredWay) const
 {
-    int otherRow=0;
-    int whichRow = gutsOfFollowOn(otherRow,preferredWay);
-    if (whichRow<0)
+    int otherRow = 0;
+    int whichRow = gutsOfFollowOn(otherRow, preferredWay);
+    if (whichRow < 0)
         return 0.0;
     else
         return 2.0* model_->getDblParam(CbcModel::CbcIntegerTolerance);
@@ -3523,13 +3523,13 @@ CbcFollowOn::feasibleRegion()
 }
 
 CbcBranchingObject *
-CbcFollowOn::createCbcBranch(OsiSolverInterface * solver,const OsiBranchingInformation * /*info*/, int way)
+CbcFollowOn::createCbcBranch(OsiSolverInterface * solver, const OsiBranchingInformation * /*info*/, int way)
 {
-    int otherRow=0;
+    int otherRow = 0;
     int preferredWay;
-    int whichRow = gutsOfFollowOn(otherRow,preferredWay);
-    assert(way==preferredWay);
-    assert (whichRow>=0);
+    int whichRow = gutsOfFollowOn(otherRow, preferredWay);
+    assert(way == preferredWay);
+    assert (whichRow >= 0);
     int numberColumns = matrix_.getNumCols();
 
     // Column copy
@@ -3546,34 +3546,34 @@ CbcFollowOn::createCbcBranch(OsiSolverInterface * solver,const OsiBranchingInfor
     const double * columnLower = solver->getColLower();
     const double * columnUpper = solver->getColUpper();
     //const double * solution = solver->getColSolution();
-    int nUp=0;
-    int nDown=0;
+    int nUp = 0;
+    int nDown = 0;
     int * upList = new int[numberColumns];
     int * downList = new int[numberColumns];
     int j;
-    for (j=rowStart[whichRow]; j<rowStart[whichRow]+rowLength[whichRow]; j++) {
+    for (j = rowStart[whichRow]; j < rowStart[whichRow] + rowLength[whichRow]; j++) {
         int iColumn = column[j];
-        if (columnLower[iColumn]!=columnUpper[iColumn]) {
-            bool up=true;
-            for (int jj=columnStart[iColumn]; jj<columnStart[iColumn]+columnLength[iColumn]; jj++) {
+        if (columnLower[iColumn] != columnUpper[iColumn]) {
+            bool up = true;
+            for (int jj = columnStart[iColumn]; jj < columnStart[iColumn] + columnLength[iColumn]; jj++) {
                 int iRow = row[jj];
-                if (iRow==otherRow) {
-                    up=false;
+                if (iRow == otherRow) {
+                    up = false;
                     break;
                 }
             }
             if (up)
-                upList[nUp++]=iColumn;
+                upList[nUp++] = iColumn;
             else
-                downList[nDown++]=iColumn;
+                downList[nDown++] = iColumn;
         }
     }
     //printf("way %d\n",way);
     // create object
     //printf("would fix %d down and %d up\n",nDown,nUp);
     CbcBranchingObject * branch
-    = new CbcFixingBranchingObject(model_,way,
-                                   nDown,downList,nUp,upList);
+    = new CbcFixingBranchingObject(model_, way,
+                                   nDown, downList, nUp, upList);
     delete [] upList;
     delete [] downList;
     return branch;
@@ -3583,12 +3583,12 @@ CbcFollowOn::createCbcBranch(OsiSolverInterface * solver,const OsiBranchingInfor
 
 // Default Constructor
 CbcFixingBranchingObject::CbcFixingBranchingObject()
-        :CbcBranchingObject()
+        : CbcBranchingObject()
 {
-    numberDown_=0;
-    numberUp_=0;
-    downList_=NULL;
-    upList_=NULL;
+    numberDown_ = 0;
+    numberUp_ = 0;
+    downList_ = NULL;
+    upList_ = NULL;
 }
 
 // Useful constructor
@@ -3596,35 +3596,35 @@ CbcFixingBranchingObject::CbcFixingBranchingObject (CbcModel * model,
         int way ,
         int numberOnDownSide, const int * down,
         int numberOnUpSide, const int * up)
-        :CbcBranchingObject(model,0,way,0.5)
+        : CbcBranchingObject(model, 0, way, 0.5)
 {
-    numberDown_=numberOnDownSide;
-    numberUp_=numberOnUpSide;
-    downList_ = CoinCopyOfArray(down,numberDown_);
-    upList_ = CoinCopyOfArray(up,numberUp_);
+    numberDown_ = numberOnDownSide;
+    numberUp_ = numberOnUpSide;
+    downList_ = CoinCopyOfArray(down, numberDown_);
+    upList_ = CoinCopyOfArray(up, numberUp_);
 }
 
 // Copy constructor
-CbcFixingBranchingObject::CbcFixingBranchingObject ( const CbcFixingBranchingObject & rhs) :CbcBranchingObject(rhs)
+CbcFixingBranchingObject::CbcFixingBranchingObject ( const CbcFixingBranchingObject & rhs) : CbcBranchingObject(rhs)
 {
-    numberDown_=rhs.numberDown_;
-    numberUp_=rhs.numberUp_;
-    downList_ = CoinCopyOfArray(rhs.downList_,numberDown_);
-    upList_ = CoinCopyOfArray(rhs.upList_,numberUp_);
+    numberDown_ = rhs.numberDown_;
+    numberUp_ = rhs.numberUp_;
+    downList_ = CoinCopyOfArray(rhs.downList_, numberDown_);
+    upList_ = CoinCopyOfArray(rhs.upList_, numberUp_);
 }
 
 // Assignment operator
 CbcFixingBranchingObject &
-CbcFixingBranchingObject::operator=( const CbcFixingBranchingObject& rhs)
+CbcFixingBranchingObject::operator=( const CbcFixingBranchingObject & rhs)
 {
     if (this != &rhs) {
         CbcBranchingObject::operator=(rhs);
         delete [] downList_;
         delete [] upList_;
-        numberDown_=rhs.numberDown_;
-        numberUp_=rhs.numberUp_;
-        downList_ = CoinCopyOfArray(rhs.downList_,numberDown_);
-        upList_ = CoinCopyOfArray(rhs.upList_,numberUp_);
+        numberDown_ = rhs.numberDown_;
+        numberUp_ = rhs.numberUp_;
+        downList_ = CoinCopyOfArray(rhs.downList_, numberDown_);
+        upList_ = CoinCopyOfArray(rhs.upList_, numberUp_);
     }
     return *this;
 }
@@ -3649,32 +3649,32 @@ CbcFixingBranchingObject::branch()
     const double * columnLower = solver->getColLower();
     int i;
     // *** for way - up means fix all those in up section
-    if (way_<0) {
+    if (way_ < 0) {
 #ifdef FULL_PRINT
         printf("Down Fix ");
 #endif
         //printf("Down Fix %d\n",numberDown_);
-        for (i=0; i<numberDown_; i++) {
+        for (i = 0; i < numberDown_; i++) {
             int iColumn = downList_[i];
-            model_->solver()->setColUpper(iColumn,columnLower[iColumn]);
+            model_->solver()->setColUpper(iColumn, columnLower[iColumn]);
 #ifdef FULL_PRINT
-            printf("Setting bound on %d to lower bound\n",iColumn);
+            printf("Setting bound on %d to lower bound\n", iColumn);
 #endif
         }
-        way_=1;	  // Swap direction
+        way_ = 1;	  // Swap direction
     } else {
 #ifdef FULL_PRINT
         printf("Up Fix ");
 #endif
         //printf("Up Fix %d\n",numberUp_);
-        for (i=0; i<numberUp_; i++) {
+        for (i = 0; i < numberUp_; i++) {
             int iColumn = upList_[i];
-            model_->solver()->setColUpper(iColumn,columnLower[iColumn]);
+            model_->solver()->setColUpper(iColumn, columnLower[iColumn]);
 #ifdef FULL_PRINT
-            printf("Setting bound on %d to lower bound\n",iColumn);
+            printf("Setting bound on %d to lower bound\n", iColumn);
 #endif
         }
-        way_=-1;	  // Swap direction
+        way_ = -1;	  // Swap direction
     }
 #ifdef FULL_PRINT
     printf("\n");
@@ -3686,17 +3686,17 @@ CbcFixingBranchingObject::print()
 {
     int i;
     // *** for way - up means fix all those in up section
-    if (way_<0) {
+    if (way_ < 0) {
         printf("Down Fix ");
-        for (i=0; i<numberDown_; i++) {
+        for (i = 0; i < numberDown_; i++) {
             int iColumn = downList_[i];
-            printf("%d ",iColumn);
+            printf("%d ", iColumn);
         }
     } else {
         printf("Up Fix ");
-        for (i=0; i<numberUp_; i++) {
+        for (i = 0; i < numberUp_; i++) {
             int iColumn = upList_[i];
-            printf("%d ",iColumn);
+            printf("%d ", iColumn);
         }
     }
     printf("\n");
@@ -3754,11 +3754,11 @@ CbcNWay::CbcNWay (CbcModel * model, int numberMembers,
                   const int * which, int identifier)
         : CbcObject(model)
 {
-    id_=identifier;
-    numberMembers_=numberMembers;
+    id_ = identifier;
+    numberMembers_ = numberMembers;
     if (numberMembers_) {
         members_ = new int[numberMembers_];
-        memcpy(members_,which,numberMembers_*sizeof(int));
+        memcpy(members_, which, numberMembers_*sizeof(int));
     } else {
         members_ = NULL;
     }
@@ -3767,20 +3767,20 @@ CbcNWay::CbcNWay (CbcModel * model, int numberMembers,
 
 // Copy constructor
 CbcNWay::CbcNWay ( const CbcNWay & rhs)
-        :CbcObject(rhs)
+        : CbcObject(rhs)
 {
     numberMembers_ = rhs.numberMembers_;
     consequence_ = NULL;
     if (numberMembers_) {
         members_ = new int[numberMembers_];
-        memcpy(members_,rhs.members_,numberMembers_*sizeof(int));
+        memcpy(members_, rhs.members_, numberMembers_*sizeof(int));
         if (rhs.consequence_) {
             consequence_ = new CbcConsequence * [numberMembers_];
-            for (int i=0; i<numberMembers_; i++) {
+            for (int i = 0; i < numberMembers_; i++) {
                 if (rhs.consequence_[i])
-                    consequence_[i]= rhs.consequence_[i]->clone();
+                    consequence_[i] = rhs.consequence_[i]->clone();
                 else
-                    consequence_[i]=NULL;
+                    consequence_[i] = NULL;
             }
         }
     } else {
@@ -3797,31 +3797,31 @@ CbcNWay::clone() const
 
 // Assignment operator
 CbcNWay &
-CbcNWay::operator=( const CbcNWay& rhs)
+CbcNWay::operator=( const CbcNWay & rhs)
 {
-    if (this!=&rhs) {
+    if (this != &rhs) {
         CbcObject::operator=(rhs);
         delete [] members_;
         numberMembers_ = rhs.numberMembers_;
         if (consequence_) {
-            for (int i=0; i<numberMembers_; i++)
+            for (int i = 0; i < numberMembers_; i++)
                 delete consequence_[i];
             delete [] consequence_;
-            consequence_=NULL;
+            consequence_ = NULL;
         }
         if (numberMembers_) {
             members_ = new int[numberMembers_];
-            memcpy(members_,rhs.members_,numberMembers_*sizeof(int));
+            memcpy(members_, rhs.members_, numberMembers_*sizeof(int));
         } else {
             members_ = NULL;
         }
         if (rhs.consequence_) {
             consequence_ = new CbcConsequence * [numberMembers_];
-            for (int i=0; i<numberMembers_; i++) {
+            for (int i = 0; i < numberMembers_; i++) {
                 if (rhs.consequence_[i])
-                    consequence_[i]= rhs.consequence_[i]->clone();
+                    consequence_[i] = rhs.consequence_[i]->clone();
                 else
-                    consequence_[i]=NULL;
+                    consequence_[i] = NULL;
             }
         }
     }
@@ -3833,7 +3833,7 @@ CbcNWay::~CbcNWay ()
 {
     delete [] members_;
     if (consequence_) {
-        for (int i=0; i<numberMembers_; i++)
+        for (int i = 0; i < numberMembers_; i++)
             delete consequence_[i];
         delete [] consequence_;
     }
@@ -3844,12 +3844,12 @@ CbcNWay::setConsequence(int iColumn, const CbcConsequence & consequence)
 {
     if (!consequence_) {
         consequence_ = new CbcConsequence * [numberMembers_];
-        for (int i=0; i<numberMembers_; i++)
-            consequence_[i]=NULL;
+        for (int i = 0; i < numberMembers_; i++)
+            consequence_[i] = NULL;
     }
-    for (int i=0; i<numberMembers_; i++) {
-        if (members_[i]==iColumn) {
-            consequence_[i]=consequence.clone();
+    for (int i = 0; i < numberMembers_; i++) {
+        if (members_[i] == iColumn) {
+            consequence_[i] = consequence.clone();
             break;
         }
     }
@@ -3859,40 +3859,40 @@ CbcNWay::setConsequence(int iColumn, const CbcConsequence & consequence)
 void
 CbcNWay::applyConsequence(int iSequence, int state) const
 {
-    assert (state==-9999||state==9999);
+    assert (state == -9999 || state == 9999);
     if (consequence_) {
         CbcConsequence * consequence = consequence_[iSequence];
         if (consequence)
-            consequence->applyToSolver(model_->solver(),state);
+            consequence->applyToSolver(model_->solver(), state);
     }
 }
 double
 CbcNWay::infeasibility(const OsiBranchingInformation * /*info*/,
                        int &preferredWay) const
 {
-    int numberUnsatis=0;
+    int numberUnsatis = 0;
     int j;
     OsiSolverInterface * solver = model_->solver();
     const double * solution = model_->testSolution();
     const double * lower = solver->getColLower();
     const double * upper = solver->getColUpper();
-    double largestValue=0.0;
+    double largestValue = 0.0;
 
     double integerTolerance =
         model_->getDblParam(CbcModel::CbcIntegerTolerance);
 
-    for (j=0; j<numberMembers_; j++) {
+    for (j = 0; j < numberMembers_; j++) {
         int iColumn = members_[j];
         double value = solution[iColumn];
         value = CoinMax(value, lower[iColumn]);
         value = CoinMin(value, upper[iColumn]);
-        double distance = CoinMin(value-lower[iColumn],upper[iColumn]-value);
-        if (distance>integerTolerance) {
+        double distance = CoinMin(value - lower[iColumn], upper[iColumn] - value);
+        if (distance > integerTolerance) {
             numberUnsatis++;
-            largestValue = CoinMax(distance,largestValue);
+            largestValue = CoinMax(distance, largestValue);
         }
     }
-    preferredWay=1;
+    preferredWay = 1;
     if (numberUnsatis) {
         return largestValue;
     } else {
@@ -3911,16 +3911,16 @@ CbcNWay::feasibleRegion()
     const double * upper = solver->getColUpper();
     double integerTolerance =
         model_->getDblParam(CbcModel::CbcIntegerTolerance);
-    for (j=0; j<numberMembers_; j++) {
+    for (j = 0; j < numberMembers_; j++) {
         int iColumn = members_[j];
         double value = solution[iColumn];
         value = CoinMax(value, lower[iColumn]);
         value = CoinMin(value, upper[iColumn]);
-        if (value>=upper[iColumn]-integerTolerance) {
-            solver->setColLower(iColumn,upper[iColumn]);
+        if (value >= upper[iColumn] - integerTolerance) {
+            solver->setColLower(iColumn, upper[iColumn]);
         } else {
-            assert (value<=lower[iColumn]+integerTolerance);
-            solver->setColUpper(iColumn,lower[iColumn]);
+            assert (value <= lower[iColumn] + integerTolerance);
+            solver->setColUpper(iColumn, lower[iColumn]);
         }
     }
 }
@@ -3928,31 +3928,31 @@ CbcNWay::feasibleRegion()
 void
 CbcNWay::redoSequenceEtc(CbcModel * model, int numberColumns, const int * originalColumns)
 {
-    model_=model;
-    int n2=0;
-    for (int j=0; j<numberMembers_; j++) {
+    model_ = model;
+    int n2 = 0;
+    for (int j = 0; j < numberMembers_; j++) {
         int iColumn = members_[j];
         int i;
-        for (i=0; i<numberColumns; i++) {
-            if (originalColumns[i]==iColumn)
+        for (i = 0; i < numberColumns; i++) {
+            if (originalColumns[i] == iColumn)
                 break;
         }
-        if (i<numberColumns) {
-            members_[n2]=i;
-            consequence_[n2++]=consequence_[j];
+        if (i < numberColumns) {
+            members_[n2] = i;
+            consequence_[n2++] = consequence_[j];
         } else {
             delete consequence_[j];
         }
     }
-    if (n2<numberMembers_) {
-        printf("** NWay number of members reduced from %d to %d!\n",numberMembers_,n2);
-        numberMembers_=n2;
+    if (n2 < numberMembers_) {
+        printf("** NWay number of members reduced from %d to %d!\n", numberMembers_, n2);
+        numberMembers_ = n2;
     }
 }
 CbcBranchingObject *
-CbcNWay::createCbcBranch(OsiSolverInterface * solver,const OsiBranchingInformation * /*info*/, int /*way*/)
+CbcNWay::createCbcBranch(OsiSolverInterface * solver, const OsiBranchingInformation * /*info*/, int /*way*/)
 {
-    int numberFree=0;
+    int numberFree = 0;
     int j;
 
     //OsiSolverInterface * solver = model_->solver();
@@ -3962,23 +3962,23 @@ CbcNWay::createCbcBranch(OsiSolverInterface * solver,const OsiBranchingInformati
     int * list = new int[numberMembers_];
     double * sort = new double[numberMembers_];
 
-    for (j=0; j<numberMembers_; j++) {
+    for (j = 0; j < numberMembers_; j++) {
         int iColumn = members_[j];
         double value = solution[iColumn];
         value = CoinMax(value, lower[iColumn]);
         value = CoinMin(value, upper[iColumn]);
-        if (upper[iColumn]>lower[iColumn]) {
-            double distance = upper[iColumn]-value;
-            list[numberFree]=j;
-            sort[numberFree++]=distance;
+        if (upper[iColumn] > lower[iColumn]) {
+            double distance = upper[iColumn] - value;
+            list[numberFree] = j;
+            sort[numberFree++] = distance;
         }
     }
     assert (numberFree);
     // sort
-    CoinSort_2(sort,sort+numberFree,list);
+    CoinSort_2(sort, sort + numberFree, list);
     // create object
     CbcBranchingObject * branch;
-    branch = new CbcNWayBranchingObject(model_,this,numberFree,list);
+    branch = new CbcNWayBranchingObject(model_, this, numberFree, list);
     branch->setOriginalObject(this);
     delete [] list;
     delete [] sort;
@@ -3989,54 +3989,54 @@ CbcNWay::createCbcBranch(OsiSolverInterface * solver,const OsiBranchingInformati
 
 // Default Constructor
 CbcNWayBranchingObject::CbcNWayBranchingObject()
-        :CbcBranchingObject()
+        : CbcBranchingObject()
 {
-    order_=NULL;
-    object_=NULL;
-    numberInSet_=0;
-    way_=0;
+    order_ = NULL;
+    object_ = NULL;
+    numberInSet_ = 0;
+    way_ = 0;
 }
 
 // Useful constructor
 CbcNWayBranchingObject::CbcNWayBranchingObject (CbcModel * model,
         const CbcNWay * nway,
         int number, const int * order)
-        :CbcBranchingObject(model,nway->id(),-1,0.5)
+        : CbcBranchingObject(model, nway->id(), -1, 0.5)
 {
     numberBranches_ = number;
     order_ = new int [number];
-    object_=nway;
-    numberInSet_=number;
-    memcpy(order_,order,number*sizeof(int));
+    object_ = nway;
+    numberInSet_ = number;
+    memcpy(order_, order, number*sizeof(int));
 }
 
 // Copy constructor
-CbcNWayBranchingObject::CbcNWayBranchingObject ( const CbcNWayBranchingObject & rhs) :CbcBranchingObject(rhs)
+CbcNWayBranchingObject::CbcNWayBranchingObject ( const CbcNWayBranchingObject & rhs) : CbcBranchingObject(rhs)
 {
-    numberInSet_=rhs.numberInSet_;
-    object_=rhs.object_;
+    numberInSet_ = rhs.numberInSet_;
+    object_ = rhs.object_;
     if (numberInSet_) {
         order_ = new int [numberInSet_];
-        memcpy(order_,rhs.order_,numberInSet_*sizeof(int));
+        memcpy(order_, rhs.order_, numberInSet_*sizeof(int));
     } else {
-        order_=NULL;
+        order_ = NULL;
     }
 }
 
 // Assignment operator
 CbcNWayBranchingObject &
-CbcNWayBranchingObject::operator=( const CbcNWayBranchingObject& rhs)
+CbcNWayBranchingObject::operator=( const CbcNWayBranchingObject & rhs)
 {
     if (this != &rhs) {
         CbcBranchingObject::operator=(rhs);
-        object_=rhs.object_;
+        object_ = rhs.object_;
         delete [] order_;
-        numberInSet_=rhs.numberInSet_;
+        numberInSet_ = rhs.numberInSet_;
         if (numberInSet_) {
             order_ = new int [numberInSet_];
-            memcpy(order_,rhs.order_,numberInSet_*sizeof(int));
+            memcpy(order_, rhs.order_, numberInSet_*sizeof(int));
         } else {
-            order_=NULL;
+            order_ = NULL;
         }
     }
     return *this;
@@ -4058,41 +4058,41 @@ CbcNWayBranchingObject::branch()
 {
     int which = branchIndex_;
     branchIndex_++;
-    assert (numberBranchesLeft()>=0);
-    if (which==0) {
+    assert (numberBranchesLeft() >= 0);
+    if (which == 0) {
         // first branch so way_ may mean something
-        assert (way_==-1||way_==1);
-        if (way_==-1)
+        assert (way_ == -1 || way_ == 1);
+        if (way_ == -1)
             which++;
-    } else if (which==1) {
+    } else if (which == 1) {
         // second branch so way_ may mean something
-        assert (way_==-1||way_==1);
-        if (way_==-1)
+        assert (way_ == -1 || way_ == 1);
+        if (way_ == -1)
             which--;
         // switch way off
-        way_=0;
+        way_ = 0;
     }
     const double * lower = model_->solver()->getColLower();
     const double * upper = model_->solver()->getColUpper();
     const int * members = object_->members();
-    for (int j=0; j<numberInSet_; j++) {
+    for (int j = 0; j < numberInSet_; j++) {
         int iSequence = order_[j];
         int iColumn = members[iSequence];
-        if (j!=which) {
-            model_->solver()->setColUpper(iColumn,lower[iColumn]);
+        if (j != which) {
+            model_->solver()->setColUpper(iColumn, lower[iColumn]);
             //model_->solver()->setColLower(iColumn,lower[iColumn]);
-            assert (lower[iColumn]>-1.0e20);
+            assert (lower[iColumn] > -1.0e20);
             // apply any consequences
-            object_->applyConsequence(iSequence,-9999);
+            object_->applyConsequence(iSequence, -9999);
         } else {
-            model_->solver()->setColLower(iColumn,upper[iColumn]);
+            model_->solver()->setColLower(iColumn, upper[iColumn]);
             //model_->solver()->setColUpper(iColumn,upper[iColumn]);
 #ifdef FULL_PRINT
-            printf("Up Fix %d to %g\n",iColumn,upper[iColumn]);
+            printf("Up Fix %d to %g\n", iColumn, upper[iColumn]);
 #endif
-            assert (upper[iColumn]<1.0e20);
+            assert (upper[iColumn] < 1.0e20);
             // apply any consequences
-            object_->applyConsequence(iSequence,9999);
+            object_->applyConsequence(iSequence, 9999);
         }
     }
     return 0.0;
@@ -4102,9 +4102,9 @@ CbcNWayBranchingObject::print()
 {
     printf("NWay - Up Fix ");
     const int * members = object_->members();
-    for (int j=0; j<way_; j++) {
+    for (int j = 0; j < way_; j++) {
         int iColumn = members[order_[j]];
-        printf("%d ",iColumn);
+        printf("%d ", iColumn);
     }
     printf("\n");
 }
@@ -4153,7 +4153,7 @@ CbcFixVariable::CbcFixVariable ()
 }
 
 // One useful Constructor
-CbcFixVariable::CbcFixVariable (int numberStates,const int * states, const int * numberNewLower,
+CbcFixVariable::CbcFixVariable (int numberStates, const int * states, const int * numberNewLower,
                                 const int ** newLowerValue,
                                 const int ** lowerColumn,
                                 const int * numberNewUpper, const int ** newUpperValue,
@@ -4169,40 +4169,40 @@ CbcFixVariable::CbcFixVariable (int numberStates,const int * states, const int *
     numberStates_ = numberStates;
     if (numberStates_) {
         states_ = new int[numberStates_];
-        memcpy(states_,states,numberStates_*sizeof(int));
+        memcpy(states_, states, numberStates_*sizeof(int));
         int i;
-        int n=0;
+        int n = 0;
         startLower_ = new int[numberStates_+1];
         startUpper_ = new int[numberStates_+1];
-        startLower_[0]=0;
+        startLower_[0] = 0;
         //count
-        for (i=0; i<numberStates_; i++) {
+        for (i = 0; i < numberStates_; i++) {
             n += numberNewLower[i];
-            startUpper_[i]=n;
+            startUpper_[i] = n;
             n += numberNewUpper[i];
-            startLower_[i+1]=n;
+            startLower_[i+1] = n;
         }
         newBound_ = new double [n];
         variable_ = new int [n];
-        n=0;
-        for (i=0; i<numberStates_; i++) {
+        n = 0;
+        for (i = 0; i < numberStates_; i++) {
             int j;
             int k;
             const int * bound;
             const int * variable;
-            k=numberNewLower[i];
+            k = numberNewLower[i];
             bound = newLowerValue[i];
             variable = lowerColumn[i];
-            for (j=0; j<k; j++) {
-                newBound_[n]=bound[j];
-                variable_[n++]=variable[j];
+            for (j = 0; j < k; j++) {
+                newBound_[n] = bound[j];
+                variable_[n++] = variable[j];
             }
-            k=numberNewUpper[i];
+            k = numberNewUpper[i];
             bound = newUpperValue[i];
             variable = upperColumn[i];
-            for (j=0; j<k; j++) {
-                newBound_[n]=bound[j];
-                variable_[n++]=variable[j];
+            for (j = 0; j < k; j++) {
+                newBound_[n] = bound[j];
+                variable_[n++] = variable[j];
             }
         }
     }
@@ -4210,7 +4210,7 @@ CbcFixVariable::CbcFixVariable (int numberStates,const int * states, const int *
 
 // Copy constructor
 CbcFixVariable::CbcFixVariable ( const CbcFixVariable & rhs)
-        :CbcConsequence(rhs)
+        : CbcConsequence(rhs)
 {
     numberStates_ = rhs.numberStates_;
     states_ = NULL;
@@ -4219,12 +4219,12 @@ CbcFixVariable::CbcFixVariable ( const CbcFixVariable & rhs)
     newBound_ = NULL;
     variable_ = NULL;
     if (numberStates_) {
-        states_ = CoinCopyOfArray(rhs.states_,numberStates_);
-        startLower_ = CoinCopyOfArray(rhs.startLower_,numberStates_+1);
-        startUpper_ = CoinCopyOfArray(rhs.startUpper_,numberStates_+1);
-        int n=startLower_[numberStates_];
-        newBound_ = CoinCopyOfArray(rhs.newBound_,n);
-        variable_ = CoinCopyOfArray(rhs.variable_,n);
+        states_ = CoinCopyOfArray(rhs.states_, numberStates_);
+        startLower_ = CoinCopyOfArray(rhs.startLower_, numberStates_ + 1);
+        startUpper_ = CoinCopyOfArray(rhs.startUpper_, numberStates_ + 1);
+        int n = startLower_[numberStates_];
+        newBound_ = CoinCopyOfArray(rhs.newBound_, n);
+        variable_ = CoinCopyOfArray(rhs.variable_, n);
     }
 }
 
@@ -4237,9 +4237,9 @@ CbcFixVariable::clone() const
 
 // Assignment operator
 CbcFixVariable &
-CbcFixVariable::operator=( const CbcFixVariable& rhs)
+CbcFixVariable::operator=( const CbcFixVariable & rhs)
 {
-    if (this!=&rhs) {
+    if (this != &rhs) {
         CbcConsequence::operator=(rhs);
         delete [] states_;
         delete [] startLower_;
@@ -4253,12 +4253,12 @@ CbcFixVariable::operator=( const CbcFixVariable& rhs)
         variable_ = NULL;
         numberStates_ = rhs.numberStates_;
         if (numberStates_) {
-            states_ = CoinCopyOfArray(rhs.states_,numberStates_);
-            startLower_ = CoinCopyOfArray(rhs.startLower_,numberStates_+1);
-            startUpper_ = CoinCopyOfArray(rhs.startUpper_,numberStates_+1);
-            int n=startLower_[numberStates_];
-            newBound_ = CoinCopyOfArray(rhs.newBound_,n);
-            variable_ = CoinCopyOfArray(rhs.variable_,n);
+            states_ = CoinCopyOfArray(rhs.states_, numberStates_);
+            startLower_ = CoinCopyOfArray(rhs.startLower_, numberStates_ + 1);
+            startUpper_ = CoinCopyOfArray(rhs.startUpper_, numberStates_ + 1);
+            int n = startLower_[numberStates_];
+            newBound_ = CoinCopyOfArray(rhs.newBound_, n);
+            variable_ = CoinCopyOfArray(rhs.variable_, n);
         }
     }
     return *this;
@@ -4277,31 +4277,31 @@ CbcFixVariable::~CbcFixVariable ()
 void
 CbcFixVariable::applyToSolver(OsiSolverInterface * solver, int state) const
 {
-    assert (state==-9999||state==9999);
+    assert (state == -9999 || state == 9999);
     // Find state
     int find;
-    for (find=0; find<numberStates_; find++)
-        if (states_[find]==state)
+    for (find = 0; find < numberStates_; find++)
+        if (states_[find] == state)
             break;
-    if (find==numberStates_)
+    if (find == numberStates_)
         return;
     int i;
     // Set new lower bounds
-    for (i=startLower_[find]; i<startUpper_[find]; i++) {
+    for (i = startLower_[find]; i < startUpper_[find]; i++) {
         int iColumn = variable_[i];
         double value = newBound_[i];
         double oldValue = solver->getColLower()[iColumn];
         //printf("for %d old lower bound %g, new %g",iColumn,oldValue,value);
-        solver->setColLower(iColumn,CoinMax(value,oldValue));
+        solver->setColLower(iColumn, CoinMax(value, oldValue));
         //printf(" => %g\n",solver->getColLower()[iColumn]);
     }
     // Set new upper bounds
-    for (i=startUpper_[find]; i<startLower_[find+1]; i++) {
+    for (i = startUpper_[find]; i < startLower_[find+1]; i++) {
         int iColumn = variable_[i];
         double value = newBound_[i];
         double oldValue = solver->getColUpper()[iColumn];
         //printf("for %d old upper bound %g, new %g",iColumn,oldValue,value);
-        solver->setColUpper(iColumn,CoinMin(value,oldValue));
+        solver->setColUpper(iColumn, CoinMin(value, oldValue));
         //printf(" => %g\n",solver->getColUpper()[iColumn]);
     }
 }
@@ -4310,20 +4310,20 @@ CbcFixVariable::applyToSolver(OsiSolverInterface * solver, int state) const
 
 // Default Constructor
 CbcDummyBranchingObject::CbcDummyBranchingObject(CbcModel * model)
-        :CbcBranchingObject(model,0,0,0.5)
+        : CbcBranchingObject(model, 0, 0, 0.5)
 {
     setNumberBranchesLeft(1);
 }
 
 
 // Copy constructor
-CbcDummyBranchingObject::CbcDummyBranchingObject ( const CbcDummyBranchingObject & rhs) :CbcBranchingObject(rhs)
+CbcDummyBranchingObject::CbcDummyBranchingObject ( const CbcDummyBranchingObject & rhs) : CbcBranchingObject(rhs)
 {
 }
 
 // Assignment operator
 CbcDummyBranchingObject &
-CbcDummyBranchingObject::operator=( const CbcDummyBranchingObject& rhs)
+CbcDummyBranchingObject::operator=( const CbcDummyBranchingObject & rhs)
 {
     if (this != &rhs) {
         CbcBranchingObject::operator=(rhs);
@@ -4388,9 +4388,9 @@ CbcGeneral::CbcGeneral ( const CbcGeneral & rhs)
 #include "CbcBranchDynamic.hpp"
 // Assignment operator
 CbcGeneral &
-CbcGeneral::operator=( const CbcGeneral& rhs)
+CbcGeneral::operator=( const CbcGeneral & rhs)
 {
-    if (this!=&rhs) {
+    if (this != &rhs) {
         CbcObject::operator=(rhs);
     }
     return *this;
@@ -4404,7 +4404,7 @@ CbcGeneral::infeasibility(const OsiBranchingInformation * /*info*/,
     return 0.0;
 }
 CbcBranchingObject *
-CbcGeneral::createCbcBranch(OsiSolverInterface * /*solver*/,const OsiBranchingInformation * /*info*/, int /*way*/)
+CbcGeneral::createCbcBranch(OsiSolverInterface * /*solver*/, const OsiBranchingInformation * /*info*/, int /*way*/)
 {
     abort();
     return NULL;
@@ -4430,30 +4430,30 @@ CbcGeneralDepth::CbcGeneralDepth (CbcModel * model, int maximumDepth)
         numberNodes_(0),
         nodeInfo_(NULL)
 {
-    assert(maximumDepth_<1000000);
-    if (maximumDepth_>0)
-        maximumNodes_ = (1<<maximumDepth_)+1+maximumDepth_;
-    else if (maximumDepth_<0)
-        maximumNodes_ = 1+1-maximumDepth_;
+    assert(maximumDepth_ < 1000000);
+    if (maximumDepth_ > 0)
+        maximumNodes_ = (1 << maximumDepth_) + 1 + maximumDepth_;
+    else if (maximumDepth_ < 0)
+        maximumNodes_ = 1 + 1 - maximumDepth_;
     else
         maximumNodes_ = 0;
 #define MAX_NODES 100
-    maximumNodes_ = CoinMin(maximumNodes_,1+maximumDepth_+MAX_NODES);
+    maximumNodes_ = CoinMin(maximumNodes_, 1 + maximumDepth_ + MAX_NODES);
     if (maximumNodes_) {
         nodeInfo_ = new ClpNodeStuff();
-        nodeInfo_->maximumNodes_=maximumNodes_;
+        nodeInfo_->maximumNodes_ = maximumNodes_;
         ClpNodeStuff * info = nodeInfo_;
         // for reduced costs and duals
         info->solverOptions_ |= 7;
-        if (maximumDepth_>0) {
+        if (maximumDepth_ > 0) {
             info->nDepth_ = maximumDepth_;
         } else {
             info->nDepth_ = - maximumDepth_;
             info->solverOptions_ |= 32;
         }
         ClpNode ** nodeInfo = new ClpNode * [maximumNodes_];
-        for (int i=0; i<maximumNodes_; i++)
-            nodeInfo[i]=NULL;
+        for (int i = 0; i < maximumNodes_; i++)
+            nodeInfo[i] = NULL;
         info->nodeInfo_ = nodeInfo;
     } else {
         nodeInfo_ = NULL;
@@ -4462,7 +4462,7 @@ CbcGeneralDepth::CbcGeneralDepth (CbcModel * model, int maximumDepth)
 
 // Copy constructor
 CbcGeneralDepth::CbcGeneralDepth ( const CbcGeneralDepth & rhs)
-        :CbcGeneral(rhs)
+        : CbcGeneral(rhs)
 {
     maximumDepth_ = rhs.maximumDepth_;
     maximumNodes_ = rhs.maximumNodes_;
@@ -4471,9 +4471,9 @@ CbcGeneralDepth::CbcGeneralDepth ( const CbcGeneralDepth & rhs)
     if (maximumNodes_) {
         assert (rhs.nodeInfo_);
         nodeInfo_ = new ClpNodeStuff(*rhs.nodeInfo_);
-        nodeInfo_->maximumNodes_=maximumNodes_;
+        nodeInfo_->maximumNodes_ = maximumNodes_;
         ClpNodeStuff * info = nodeInfo_;
-        if (maximumDepth_>0) {
+        if (maximumDepth_ > 0) {
             info->nDepth_ = maximumDepth_;
         } else {
             info->nDepth_ = - maximumDepth_;
@@ -4481,8 +4481,8 @@ CbcGeneralDepth::CbcGeneralDepth ( const CbcGeneralDepth & rhs)
         }
         if (!info->nodeInfo_) {
             ClpNode ** nodeInfo = new ClpNode * [maximumNodes_];
-            for (int i=0; i<maximumNodes_; i++)
-                nodeInfo[i]=NULL;
+            for (int i = 0; i < maximumNodes_; i++)
+                nodeInfo[i] = NULL;
             info->nodeInfo_ = nodeInfo;
         }
     } else {
@@ -4499,9 +4499,9 @@ CbcGeneralDepth::clone() const
 
 // Assignment operator
 CbcGeneralDepth &
-CbcGeneralDepth::operator=( const CbcGeneralDepth& rhs)
+CbcGeneralDepth::operator=( const CbcGeneralDepth & rhs)
 {
-    if (this!=&rhs) {
+    if (this != &rhs) {
         CbcGeneral::operator=(rhs);
         delete nodeInfo_;
         maximumDepth_ = rhs.maximumDepth_;
@@ -4511,7 +4511,7 @@ CbcGeneralDepth::operator=( const CbcGeneralDepth& rhs)
         if (maximumDepth_) {
             assert (rhs.nodeInfo_);
             nodeInfo_ = new ClpNodeStuff(*rhs.nodeInfo_);
-            nodeInfo_->maximumNodes_=maximumNodes_;
+            nodeInfo_->maximumNodes_ = maximumNodes_;
         } else {
             nodeInfo_ = NULL;
         }
@@ -4540,17 +4540,17 @@ CbcGeneralDepth::infeasibility(const OsiBranchingInformation * /*info*/,
         = dynamic_cast<OsiClpSolverInterface *> (solver);
         if (clpSolver) {
             ClpNodeStuff * info = nodeInfo_;
-            info->integerTolerance_=model_->getIntegerTolerance();
-            info->integerIncrement_=model_->getCutoffIncrement();
+            info->integerTolerance_ = model_->getIntegerTolerance();
+            info->integerIncrement_ = model_->getCutoffIncrement();
             info->numberBeforeTrust_ = model_->numberBeforeTrust();
-            info->stateOfSearch_=model_->stateOfSearch();
+            info->stateOfSearch_ = model_->stateOfSearch();
             // Compute "small" change in branch
             int nBranches = model_->getIntParam(CbcModel::CbcNumberBranches);
             if (nBranches) {
-                double average = model_->getDblParam(CbcModel::CbcSumChange)/static_cast<double>(nBranches);
+                double average = model_->getDblParam(CbcModel::CbcSumChange) / static_cast<double>(nBranches);
                 info->smallChange_ =
-                    CoinMax(average*1.0e-5,model_->getDblParam(CbcModel::CbcSmallestChange));
-                info->smallChange_ = CoinMax(info->smallChange_,1.0e-8);
+                    CoinMax(average * 1.0e-5, model_->getDblParam(CbcModel::CbcSmallestChange));
+                info->smallChange_ = CoinMax(info->smallChange_, 1.0e-8);
             } else {
                 info->smallChange_ = 1.0e-8;
             }
@@ -4562,12 +4562,12 @@ CbcGeneralDepth::infeasibility(const OsiBranchingInformation * /*info*/,
             int * numberUp = new int[numberIntegers];
             int * numberDownInfeasible = new int[numberIntegers];
             int * numberUpInfeasible = new int[numberIntegers];
-            model_->fillPseudoCosts(down,up,priority,numberDown,numberUp,
-                                    numberDownInfeasible,numberUpInfeasible);
-            info->fillPseudoCosts(down,up,priority,numberDown,numberUp,
+            model_->fillPseudoCosts(down, up, priority, numberDown, numberUp,
+                                    numberDownInfeasible, numberUpInfeasible);
+            info->fillPseudoCosts(down, up, priority, numberDown, numberUp,
                                   numberDownInfeasible,
-                                  numberUpInfeasible,numberIntegers);
-            info->presolveType_= 1;
+                                  numberUpInfeasible, numberIntegers);
+            info->presolveType_ = 1;
             delete [] down;
             delete [] up;
             delete [] numberDown;
@@ -4576,10 +4576,10 @@ CbcGeneralDepth::infeasibility(const OsiBranchingInformation * /*info*/,
             delete [] numberUpInfeasible;
             bool takeHint;
             OsiHintStrength strength;
-            solver->getHintParam(OsiDoReducePrint,takeHint,strength);
+            solver->getHintParam(OsiDoReducePrint, takeHint, strength);
             ClpSimplex * simplex = clpSolver->getModelPtr();
             int saveLevel = simplex->logLevel();
-            if (strength!=OsiHintIgnore&&takeHint&&saveLevel==1)
+            if (strength != OsiHintIgnore && takeHint && saveLevel == 1)
                 simplex->setLogLevel(0);
             clpSolver->setBasis();
             whichSolution_ = simplex->fathomMany(info);
@@ -4590,30 +4590,30 @@ CbcGeneralDepth::infeasibility(const OsiBranchingInformation * /*info*/,
             model_->incrementExtra(info->numberNodesExplored_,
                                    info->numberIterations_);
             // update pseudo costs
-            double smallest=1.0e50;
-            double largest=-1.0;
+            double smallest = 1.0e50;
+            double largest = -1.0;
             OsiObject ** objects = model_->objects();
 #ifndef NDEBUG
             const int * integerVariable = model_->integerVariable();
 #endif
-            for (int i=0; i<numberIntegers; i++) {
+            for (int i = 0; i < numberIntegers; i++) {
 #ifndef NDEBUG
                 CbcSimpleIntegerDynamicPseudoCost * obj =
                     dynamic_cast <CbcSimpleIntegerDynamicPseudoCost *>(objects[i]) ;
-                assert (obj&&obj->columnNumber()==integerVariable[i]);
+                assert (obj && obj->columnNumber() == integerVariable[i]);
 #else
                 CbcSimpleIntegerDynamicPseudoCost * obj =
                     static_cast <CbcSimpleIntegerDynamicPseudoCost *>(objects[i]) ;
 #endif
-                if (info->numberUp_[i]>0) {
-                    if (info->downPseudo_[i]>largest)
-                        largest=info->downPseudo_[i];
-                    if (info->downPseudo_[i]<smallest)
-                        smallest=info->downPseudo_[i];
-                    if (info->upPseudo_[i]>largest)
-                        largest=info->upPseudo_[i];
-                    if (info->upPseudo_[i]<smallest)
-                        smallest=info->upPseudo_[i];
+                if (info->numberUp_[i] > 0) {
+                    if (info->downPseudo_[i] > largest)
+                        largest = info->downPseudo_[i];
+                    if (info->downPseudo_[i] < smallest)
+                        smallest = info->downPseudo_[i];
+                    if (info->upPseudo_[i] > largest)
+                        largest = info->upPseudo_[i];
+                    if (info->upPseudo_[i] < smallest)
+                        smallest = info->upPseudo_[i];
                     obj->updateAfterMini(info->numberDown_[i],
                                          info->numberDownInfeasible_[i],
                                          info->downPseudo_[i],
@@ -4626,9 +4626,9 @@ CbcGeneralDepth::infeasibility(const OsiBranchingInformation * /*info*/,
             simplex->setLogLevel(saveLevel);
             numberNodes_ = info->nNodes_;
             int numberDo = numberNodes_;
-            if (whichSolution_>=0)
+            if (whichSolution_ >= 0)
                 numberDo--;
-            if (numberDo>0) {
+            if (numberDo > 0) {
                 return 0.5;
             } else {
                 // no solution
@@ -4663,12 +4663,12 @@ extern int numberColumns_Z;
 extern int gotGoodNode_Z;
 #endif
 CbcBranchingObject *
-CbcGeneralDepth::createCbcBranch(OsiSolverInterface * solver,const OsiBranchingInformation * /*info*/, int /*way*/)
+CbcGeneralDepth::createCbcBranch(OsiSolverInterface * solver, const OsiBranchingInformation * /*info*/, int /*way*/)
 {
     int numberDo = numberNodes_;
-    if (whichSolution_>=0)
+    if (whichSolution_ >= 0)
         numberDo--;
-    assert (numberDo>0);
+    assert (numberDo > 0);
     // create object
     CbcGeneralBranchingObject * branch = new CbcGeneralBranchingObject(model_);
     // skip solution
@@ -4677,7 +4677,7 @@ CbcGeneralDepth::createCbcBranch(OsiSolverInterface * solver,const OsiBranchingI
     branch->numberSubLeft_ = numberDo;
     branch->setNumberBranches(numberDo);
     CbcSubProblem * sub = new CbcSubProblem[numberDo];
-    int iProb=0;
+    int iProb = 0;
     branch->subProblems_ = sub;
     branch->numberRows_ = model_->solver()->getNumRows();
     int iNode;
@@ -4687,66 +4687,66 @@ CbcGeneralDepth::createCbcBranch(OsiSolverInterface * solver,const OsiBranchingI
     assert (clpSolver);
     ClpSimplex * simplex = clpSolver->getModelPtr();
     int numberColumns = simplex->numberColumns();
-    double * lowerBefore=CoinCopyOfArray(simplex->getColLower(),
-                                         numberColumns);
-    double * upperBefore=CoinCopyOfArray(simplex->getColUpper(),
-                                         numberColumns);
+    double * lowerBefore = CoinCopyOfArray(simplex->getColLower(),
+                                           numberColumns);
+    double * upperBefore = CoinCopyOfArray(simplex->getColUpper(),
+                                           numberColumns);
     ClpNodeStuff * info = nodeInfo_;
     double * weight = new double[numberNodes_];
     int * whichNode = new int [numberNodes_];
     // Sort
-    for (iNode=0; iNode<numberNodes_; iNode++) {
-        if (iNode!=whichSolution_) {
+    for (iNode = 0; iNode < numberNodes_; iNode++) {
+        if (iNode != whichSolution_) {
             double objectiveValue = info->nodeInfo_[iNode]->objectiveValue();
             double sumInfeasibilities = info->nodeInfo_[iNode]->sumInfeasibilities();
             int numberInfeasibilities = info->nodeInfo_[iNode]->numberInfeasibilities();
             double thisWeight = 0.0;
 #if 1
             // just closest
-            thisWeight = 1.0e9*numberInfeasibilities;
+            thisWeight = 1.0e9 * numberInfeasibilities;
             thisWeight += sumInfeasibilities;
-            thisWeight += 1.0e-7*objectiveValue;
+            thisWeight += 1.0e-7 * objectiveValue;
             // Try estimate
             thisWeight = info->nodeInfo_[iNode]->estimatedSolution();
 #else
-            thisWeight = 1.0e-3*numberInfeasibilities;
-            thisWeight += 1.0e-5*sumInfeasibilities;
+            thisWeight = 1.0e-3 * numberInfeasibilities;
+            thisWeight += 1.0e-5 * sumInfeasibilities;
             thisWeight += objectiveValue;
 #endif
-            whichNode[iProb]=iNode;
-            weight[iProb++]=thisWeight;
+            whichNode[iProb] = iNode;
+            weight[iProb++] = thisWeight;
         }
     }
-    assert (iProb==numberDo);
-    CoinSort_2(weight,weight+numberDo,whichNode);
-    for (iProb=0; iProb<numberDo; iProb++) {
+    assert (iProb == numberDo);
+    CoinSort_2(weight, weight + numberDo, whichNode);
+    for (iProb = 0; iProb < numberDo; iProb++) {
         iNode = whichNode[iProb];
         ClpNode * node = info->nodeInfo_[iNode];
         // move bounds
-        node->applyNode(simplex,3);
+        node->applyNode(simplex, 3);
         // create subproblem
-        sub[iProb]=CbcSubProblem(clpSolver,lowerBefore,upperBefore,
-                                 node->statusArray(),node->depth());
+        sub[iProb] = CbcSubProblem(clpSolver, lowerBefore, upperBefore,
+                                   node->statusArray(), node->depth());
         sub[iProb].objectiveValue_ = node->objectiveValue();
         sub[iProb].sumInfeasibilities_ = node->sumInfeasibilities();
         sub[iProb].numberInfeasibilities_ = node->numberInfeasibilities();
 #ifdef CHECK_PATH
-        if (simplex->numberColumns()==numberColumns_Z) {
-            bool onOptimal=true;
+        if (simplex->numberColumns() == numberColumns_Z) {
+            bool onOptimal = true;
             const double * columnLower = simplex->columnLower();
             const double * columnUpper = simplex->columnUpper();
-            for (int i=0; i<numberColumns_Z; i++) {
-                if (iNode==gotGoodNode_Z)
-                    printf("good %d %d %g %g\n",iNode,i,columnLower[i],columnUpper[i]);
-                if (columnUpper[i]<debuggerSolution_Z[i]||columnLower[i]>debuggerSolution_Z[i]&&simplex->isInteger(i)) {
-                    onOptimal=false;
+            for (int i = 0; i < numberColumns_Z; i++) {
+                if (iNode == gotGoodNode_Z)
+                    printf("good %d %d %g %g\n", iNode, i, columnLower[i], columnUpper[i]);
+                if (columnUpper[i] < debuggerSolution_Z[i] || columnLower[i] > debuggerSolution_Z[i] && simplex->isInteger(i)) {
+                    onOptimal = false;
                     break;
                 }
             }
             if (onOptimal) {
-                printf("adding to node %x as %d - objs\n",this,iProb);
-                for (int j=0; j<=iProb; j++)
-                    printf("%d %g\n",j,sub[j].objectiveValue_);
+                printf("adding to node %x as %d - objs\n", this, iProb);
+                for (int j = 0; j <= iProb; j++)
+                    printf("%d %g\n", j, sub[j].objectiveValue_);
             }
         }
 #endif
@@ -4756,11 +4756,11 @@ CbcGeneralDepth::createCbcBranch(OsiSolverInterface * solver,const OsiBranchingI
     const double * lower = solver->getColLower();
     const double * upper = solver->getColUpper();
     // restore bounds
-    for ( int j=0; j<numberColumns; j++) {
+    for ( int j = 0; j < numberColumns; j++) {
         if (lowerBefore[j] != lower[j])
-            solver->setColLower(j,lowerBefore[j]);
+            solver->setColLower(j, lowerBefore[j]);
         if (upperBefore[j] != upper[j])
-            solver->setColUpper(j,upperBefore[j]);
+            solver->setColUpper(j, upperBefore[j]);
     }
     delete [] upperBefore;
     delete [] lowerBefore;
@@ -4769,7 +4769,7 @@ CbcGeneralDepth::createCbcBranch(OsiSolverInterface * solver,const OsiBranchingI
 
 // Default Constructor
 CbcGeneralBranchingObject::CbcGeneralBranchingObject()
-        :CbcBranchingObject(),
+        : CbcBranchingObject(),
         subProblems_(NULL),
         node_(NULL),
         numberSubProblems_(0),
@@ -4782,7 +4782,7 @@ CbcGeneralBranchingObject::CbcGeneralBranchingObject()
 
 // Useful constructor
 CbcGeneralBranchingObject::CbcGeneralBranchingObject (CbcModel * model)
-        :CbcBranchingObject(model,-1,-1,0.5),
+        : CbcBranchingObject(model, -1, -1, 0.5),
         subProblems_(NULL),
         node_(NULL),
         numberSubProblems_(0),
@@ -4795,7 +4795,7 @@ CbcGeneralBranchingObject::CbcGeneralBranchingObject (CbcModel * model)
 
 // Copy constructor
 CbcGeneralBranchingObject::CbcGeneralBranchingObject ( const CbcGeneralBranchingObject & rhs)
-        :CbcBranchingObject(rhs),
+        : CbcBranchingObject(rhs),
         subProblems_(NULL),
         node_(rhs.node_),
         numberSubProblems_(rhs.numberSubProblems_),
@@ -4806,14 +4806,14 @@ CbcGeneralBranchingObject::CbcGeneralBranchingObject ( const CbcGeneralBranching
     abort();
     if (numberSubProblems_) {
         subProblems_ = new CbcSubProblem[numberSubProblems_];
-        for (int i=0; i<numberSubProblems_; i++)
-            subProblems_[i]=rhs.subProblems_[i];
+        for (int i = 0; i < numberSubProblems_; i++)
+            subProblems_[i] = rhs.subProblems_[i];
     }
 }
 
 // Assignment operator
 CbcGeneralBranchingObject &
-CbcGeneralBranchingObject::operator=( const CbcGeneralBranchingObject& rhs)
+CbcGeneralBranchingObject::operator=( const CbcGeneralBranchingObject & rhs)
 {
     if (this != &rhs) {
         abort();
@@ -4825,8 +4825,8 @@ CbcGeneralBranchingObject::operator=( const CbcGeneralBranchingObject& rhs)
         numberRows_ = rhs.numberRows_;
         if (numberSubProblems_) {
             subProblems_ = new CbcSubProblem[numberSubProblems_];
-            for (int i=0; i<numberSubProblems_; i++)
-                subProblems_[i]=rhs.subProblems_[i];
+            for (int i = 0; i < numberSubProblems_; i++)
+                subProblems_[i] = rhs.subProblems_[i];
         } else {
             subProblems_ = NULL;
         }
@@ -4847,21 +4847,21 @@ CbcGeneralBranchingObject::~CbcGeneralBranchingObject ()
     //printf("CbcGeneral %x destructor\n",this);
     delete [] subProblems_;
 }
-bool doingDoneBranch=false;
+bool doingDoneBranch = false;
 double
 CbcGeneralBranchingObject::branch()
 {
-    double cutoff=model_->getCutoff();
+    double cutoff = model_->getCutoff();
     //printf("GenB %x whichNode %d numberLeft %d which %d\n",
     // this,whichNode_,numberBranchesLeft(),branchIndex());
-    if (whichNode_<0) {
+    if (whichNode_ < 0) {
         assert (node_);
-        bool applied=false;
+        bool applied = false;
         while (numberBranchesLeft()) {
             int which = branchIndex();
             decrementNumberBranchesLeft();
-            CbcSubProblem * thisProb = subProblems_+which;
-            if (thisProb->objectiveValue_<cutoff) {
+            CbcSubProblem * thisProb = subProblems_ + which;
+            if (thisProb->objectiveValue_ < cutoff) {
                 //printf("branch %x (sub %x) which now %d\n",this,
                 //     subProblems_,which);
                 OsiSolverInterface * solver = model_->solver();
@@ -4875,8 +4875,8 @@ CbcGeneralBranchingObject::branch()
                 node_->setObjectiveValue(thisProb->objectiveValue_);
                 node_->setSumInfeasibilities(thisProb->sumInfeasibilities_);
                 node_->setNumberUnsatisfied(thisProb->numberInfeasibilities_);
-                applied=true;
-                doingDoneBranch=true;
+                applied = true;
+                doingDoneBranch = true;
                 break;
             } else if (numberBranchesLeft()) {
                 node_->nodeInfo()->branchedOn() ;
@@ -4884,15 +4884,15 @@ CbcGeneralBranchingObject::branch()
         }
         if (!applied) {
             // no good one
-            node_->setObjectiveValue(cutoff+1.0e20);
+            node_->setObjectiveValue(cutoff + 1.0e20);
             node_->setSumInfeasibilities(1.0);
             node_->setNumberUnsatisfied(1);
-            assert (whichNode_<0);
+            assert (whichNode_ < 0);
         }
     } else {
         decrementNumberBranchesLeft();
-        CbcSubProblem * thisProb = subProblems_+whichNode_;
-        assert (thisProb->objectiveValue_<cutoff);
+        CbcSubProblem * thisProb = subProblems_ + whichNode_;
+        assert (thisProb->objectiveValue_ < cutoff);
         OsiSolverInterface * solver = model_->solver();
         thisProb->apply(solver);
         //OsiClpSolverInterface * clpSolver
@@ -4911,9 +4911,9 @@ CbcGeneralBranchingObject::checkIsCutoff(double cutoff)
     assert (node_);
     int first = branchIndex();
     int last = first + numberBranchesLeft();
-    for (int which=first; which<last; which++) {
-        CbcSubProblem * thisProb = subProblems_+which;
-        if (thisProb->objectiveValue_<cutoff) {
+    for (int which = first; which < last; which++) {
+        CbcSubProblem * thisProb = subProblems_ + which;
+        if (thisProb->objectiveValue_ < cutoff) {
             node_->setObjectiveValue(thisProb->objectiveValue_);
             node_->setSumInfeasibilities(thisProb->sumInfeasibilities_);
             node_->setNumberUnsatisfied(thisProb->numberInfeasibilities_);
@@ -4931,10 +4931,10 @@ CbcGeneralBranchingObject::print()
 void
 CbcGeneralBranchingObject::state(double & objectiveValue,
                                  double & sumInfeasibilities,
-                                 int & numberUnsatisfied,int which) const
+                                 int & numberUnsatisfied, int which) const
 {
-    assert (which>=0&&which<numberSubProblems_);
-    const CbcSubProblem * thisProb = subProblems_+which;
+    assert (which >= 0 && which < numberSubProblems_);
+    const CbcSubProblem * thisProb = subProblems_ + which;
     objectiveValue = thisProb->objectiveValue_;
     sumInfeasibilities = thisProb->sumInfeasibilities_;
     numberUnsatisfied = thisProb->numberInfeasibilities_;
@@ -4970,7 +4970,7 @@ CbcGeneralBranchingObject::compareBranchingObject
 
 // Default Constructor
 CbcOneGeneralBranchingObject::CbcOneGeneralBranchingObject()
-        :CbcBranchingObject(),
+        : CbcBranchingObject(),
         object_(NULL),
         whichOne_(-1)
 {
@@ -4981,18 +4981,18 @@ CbcOneGeneralBranchingObject::CbcOneGeneralBranchingObject()
 CbcOneGeneralBranchingObject::CbcOneGeneralBranchingObject (CbcModel * model,
         CbcGeneralBranchingObject * object,
         int whichOne)
-        :CbcBranchingObject(model,-1,-1,0.5),
+        : CbcBranchingObject(model, -1, -1, 0.5),
         object_(object),
         whichOne_(whichOne)
 {
     //printf("CbcOneGeneral %x useful constructor object %x %d left\n",this,
     //	 object_,object_->numberSubLeft_);
-    numberBranches_=1;
+    numberBranches_ = 1;
 }
 
 // Copy constructor
 CbcOneGeneralBranchingObject::CbcOneGeneralBranchingObject ( const CbcOneGeneralBranchingObject & rhs)
-        :CbcBranchingObject(rhs),
+        : CbcBranchingObject(rhs),
         object_(rhs.object_),
         whichOne_(rhs.whichOne_)
 {
@@ -5000,7 +5000,7 @@ CbcOneGeneralBranchingObject::CbcOneGeneralBranchingObject ( const CbcOneGeneral
 
 // Assignment operator
 CbcOneGeneralBranchingObject &
-CbcOneGeneralBranchingObject::operator=( const CbcOneGeneralBranchingObject& rhs)
+CbcOneGeneralBranchingObject::operator=( const CbcOneGeneralBranchingObject & rhs)
 {
     if (this != &rhs) {
         CbcBranchingObject::operator=(rhs);
@@ -5021,8 +5021,8 @@ CbcOneGeneralBranchingObject::~CbcOneGeneralBranchingObject ()
 {
     //printf("CbcOneGeneral %x destructor object %x %d left\n",this,
     // object_,object_->numberSubLeft_);
-    assert (object_->numberSubLeft_>0&&
-            object_->numberSubLeft_<1000000);
+    assert (object_->numberSubLeft_ > 0 &&
+            object_->numberSubLeft_ < 1000000);
     if (!object_->decrementNumberLeft()) {
         // printf("CbcGeneral %x yy destructor\n",object_);
         delete object_;
@@ -5110,27 +5110,27 @@ CbcSubProblem::CbcSubProblem (const OsiSolverInterface * solver,
     const double * lower = solver->getColLower();
     const double * upper = solver->getColUpper();
 
-    numberChangedBounds_=0;
+    numberChangedBounds_ = 0;
     int numberColumns = solver->getNumCols();
     int i;
-    for (i=0; i<numberColumns; i++) {
-        if (lower[i]!=lastLower[i])
+    for (i = 0; i < numberColumns; i++) {
+        if (lower[i] != lastLower[i])
             numberChangedBounds_++;
-        if (upper[i]!=lastUpper[i])
+        if (upper[i] != lastUpper[i])
             numberChangedBounds_++;
     }
     if (numberChangedBounds_) {
         newBounds_ = new double [numberChangedBounds_] ;
         variables_ = new int [numberChangedBounds_] ;
-        numberChangedBounds_=0;
-        for (i=0; i<numberColumns; i++) {
-            if (lower[i]!=lastLower[i]) {
-                variables_[numberChangedBounds_]=i;
-                newBounds_[numberChangedBounds_++]=lower[i];
+        numberChangedBounds_ = 0;
+        for (i = 0; i < numberColumns; i++) {
+            if (lower[i] != lastLower[i]) {
+                variables_[numberChangedBounds_] = i;
+                newBounds_[numberChangedBounds_++] = lower[i];
             }
-            if (upper[i]!=lastUpper[i]) {
-                variables_[numberChangedBounds_]=i|0x80000000;
-                newBounds_[numberChangedBounds_++]=upper[i];
+            if (upper[i] != lastUpper[i]) {
+                variables_[numberChangedBounds_] = i | 0x80000000;
+                newBounds_[numberChangedBounds_++] = upper[i];
             }
 #ifdef CBC_DEBUG
             if (lower[i] != lastLower[i]) {
@@ -5171,8 +5171,8 @@ CbcSubProblem::CbcSubProblem ( const CbcSubProblem & rhs)
         numberInfeasibilities_(rhs.numberInfeasibilities_)
 {
     if (numberChangedBounds_) {
-        variables_ = CoinCopyOfArray(rhs.variables_,numberChangedBounds_);
-        newBounds_ = CoinCopyOfArray(rhs.newBounds_,numberChangedBounds_);
+        variables_ = CoinCopyOfArray(rhs.variables_, numberChangedBounds_);
+        newBounds_ = CoinCopyOfArray(rhs.newBounds_, numberChangedBounds_);
     }
     if (rhs.status_) {
         status_ = new CoinWarmStartBasis(*rhs.status_);
@@ -5181,7 +5181,7 @@ CbcSubProblem::CbcSubProblem ( const CbcSubProblem & rhs)
 
 // Assignment operator
 CbcSubProblem &
-CbcSubProblem::operator=( const CbcSubProblem& rhs)
+CbcSubProblem::operator=( const CbcSubProblem & rhs)
 {
     if (this != &rhs) {
         delete [] variables_;
@@ -5193,8 +5193,8 @@ CbcSubProblem::operator=( const CbcSubProblem& rhs)
         numberChangedBounds_ = rhs.numberChangedBounds_;
         numberInfeasibilities_ = rhs.numberInfeasibilities_;
         if (numberChangedBounds_) {
-            variables_ = CoinCopyOfArray(rhs.variables_,numberChangedBounds_);
-            newBounds_ = CoinCopyOfArray(rhs.newBounds_,numberChangedBounds_);
+            variables_ = CoinCopyOfArray(rhs.variables_, numberChangedBounds_);
+            newBounds_ = CoinCopyOfArray(rhs.newBounds_, numberChangedBounds_);
         } else {
             variables_ = NULL;
             newBounds_ = NULL;
@@ -5220,75 +5220,75 @@ void
 CbcSubProblem::apply(OsiSolverInterface * solver, int what) const
 {
     int i;
-    if ((what&1)!=0) {
-        int nSame=0;
-        for (i=0; i<numberChangedBounds_; i++) {
+    if ((what&1) != 0) {
+        int nSame = 0;
+        for (i = 0; i < numberChangedBounds_; i++) {
             int variable = variables_[i];
-            int k = variable&0x3fffffff;
-            if ((variable&0x80000000)==0) {
+            int k = variable & 0x3fffffff;
+            if ((variable&0x80000000) == 0) {
                 // lower bound changing
                 //#define CBC_PRINT2
 #ifdef CBC_PRINT2
-                if (solver->getColLower()[k]!=newBounds_[i])
-                    printf("lower change for column %d - from %g to %g\n",k,solver->getColLower()[k],newBounds_[i]);
+                if (solver->getColLower()[k] != newBounds_[i])
+                    printf("lower change for column %d - from %g to %g\n", k, solver->getColLower()[k], newBounds_[i]);
 #endif
 #ifndef NDEBUG
-                if ((variable&0x40000000)==0&&true) {
+                if ((variable&0x40000000) == 0 && true) {
                     double oldValue = solver->getColLower()[k];
-                    assert (newBounds_[i]>oldValue-1.0e-8);
-                    if (newBounds_[i]<oldValue+1.0e-8) {
+                    assert (newBounds_[i] > oldValue - 1.0e-8);
+                    if (newBounds_[i] < oldValue + 1.0e-8) {
 #ifdef CBC_PRINT2
-                        printf("bad null lower change for column %d - bound %g\n",k,oldValue);
+                        printf("bad null lower change for column %d - bound %g\n", k, oldValue);
 #endif
-                        if (newBounds_[i]==oldValue)
+                        if (newBounds_[i] == oldValue)
                             nSame++;
                     }
                 }
 #endif
-                solver->setColLower(k,newBounds_[i]);
+                solver->setColLower(k, newBounds_[i]);
             } else {
                 // upper bound changing
 #ifdef CBC_PRINT2
-                if (solver->getColUpper()[k]!=newBounds_[i])
-                    printf("upper change for column %d - from %g to %g\n",k,solver->getColUpper()[k],newBounds_[i]);
+                if (solver->getColUpper()[k] != newBounds_[i])
+                    printf("upper change for column %d - from %g to %g\n", k, solver->getColUpper()[k], newBounds_[i]);
 #endif
 #ifndef NDEBUG
-                if ((variable&0x40000000)==0&&true) {
+                if ((variable&0x40000000) == 0 && true) {
                     double oldValue = solver->getColUpper()[k];
-                    assert (newBounds_[i]<oldValue+1.0e-8);
-                    if (newBounds_[i]>oldValue-1.0e-8) {
+                    assert (newBounds_[i] < oldValue + 1.0e-8);
+                    if (newBounds_[i] > oldValue - 1.0e-8) {
 #ifdef CBC_PRINT2
-                        printf("bad null upper change for column %d - bound %g\n",k,oldValue);
+                        printf("bad null upper change for column %d - bound %g\n", k, oldValue);
 #endif
-                        if (newBounds_[i]==oldValue)
+                        if (newBounds_[i] == oldValue)
                             nSame++;
                     }
                 }
 #endif
-                solver->setColUpper(k,newBounds_[i]);
+                solver->setColUpper(k, newBounds_[i]);
             }
         }
-        if (nSame&&(nSame<numberChangedBounds_||(what&3)!=3))
+        if (nSame && (nSame < numberChangedBounds_ || (what&3) != 3))
             printf("%d changes out of %d redundant %d\n",
-                   nSame,numberChangedBounds_,what);
-        else if (numberChangedBounds_&&what==7&&!nSame)
+                   nSame, numberChangedBounds_, what);
+        else if (numberChangedBounds_ && what == 7 && !nSame)
             printf("%d good changes %d\n",
-                   numberChangedBounds_,what);
+                   numberChangedBounds_, what);
     }
 #if 0
-    if ((what&2)!=0) {
+    if ((what&2) != 0) {
         OsiClpSolverInterface * clpSolver
         = dynamic_cast<OsiClpSolverInterface *> (solver);
         assert (clpSolver);
         //assert (clpSolver->getNumRows()==numberRows_);
         //clpSolver->setBasis(*status_);
         // Current basis
-        CoinWarmStartBasis * basis=clpSolver->getPointerToWarmStart();
+        CoinWarmStartBasis * basis = clpSolver->getPointerToWarmStart();
         printf("BBBB\n");
         basis->print();
         assert (basis->fullBasis());
         basis->applyDiff(status_);
-        printf("diff applied %x\n",status_);
+        printf("diff applied %x\n", status_);
         printf("CCCC\n");
         basis->print();
         assert (basis->fullBasis());
@@ -5299,13 +5299,13 @@ CbcSubProblem::apply(OsiSolverInterface * solver, int what) const
         clpSolver->setBasis(*basis);
     }
 #endif
-    if ((what&8)!=0) {
+    if ((what&8) != 0) {
         OsiClpSolverInterface * clpSolver
         = dynamic_cast<OsiClpSolverInterface *> (solver);
         assert (clpSolver);
         clpSolver->setBasis(*status_);
         delete status_;
-        status_=NULL;
+        status_ = NULL;
     }
 }
 #endif

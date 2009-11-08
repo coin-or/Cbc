@@ -67,11 +67,11 @@ void reducedCostHack (OsiSolverInterface *osi, double threshold)
     for (i = 0 ; i < numCols ; i++) {
         if (osi->isInteger(i)) {
             double value = solution[i] ;
-            if (value < lower[i]+1.0e-5 && dj[i] > threshold) {
+            if (value < lower[i] + 1.0e-5 && dj[i] > threshold) {
                 chgCols[numFixed] = i ;
                 chgBnds[numFixed] = lower[i] ;
                 numFixed++ ;
-            } else if (value > upper[i]-1.0e-5 && dj[i] < -threshold) {
+            } else if (value > upper[i] - 1.0e-5 && dj[i] < -threshold) {
                 chgCols[numFixed] = i ;
                 chgBnds[numFixed] = upper[i] ;
                 numFixed++ ;
@@ -87,7 +87,7 @@ void reducedCostHack (OsiSolverInterface *osi, double threshold)
           requires a complete solution.
     */
     if (numFixed > 0) {
-        double *newSoln = CoinCopyOfArray(solution,numCols) ;
+        double *newSoln = CoinCopyOfArray(solution, numCols) ;
         double *newBnds = new double [2*numFixed] ;
         double *bndPtr = &newBnds[0] ;
         for (i = 0 ; i < numFixed ; i++) {
@@ -97,7 +97,7 @@ void reducedCostHack (OsiSolverInterface *osi, double threshold)
             *bndPtr++ = val ;
             newSoln[j] = val ;
         }
-        osi->setColSetBounds(&chgCols[0],&chgCols[numFixed],&newBnds[0]) ;
+        osi->setColSetBounds(&chgCols[0], &chgCols[numFixed], &newBnds[0]) ;
         osi->setColSolution(&newSoln[0]) ;
 
         std::cout
@@ -193,7 +193,7 @@ void setupPriorities (CbcModel *model, CbcGenCtlBlk::BPControl how)
     }
 
     if (priorityOK) {
-        CoinSort_2(dsort,dsort+n,sort) ;
+        CoinSort_2(dsort, dsort + n, sort) ;
 
         int level = 0 ;
         double last = -1.0e100 ;
@@ -206,7 +206,7 @@ void setupPriorities (CbcModel *model, CbcGenCtlBlk::BPControl how)
             priority[iPut] = level ;
         }
 
-        model->passInPriorities(priority,false) ;
+        model->passInPriorities(priority, false) ;
     }
 
     delete [] priority ;
@@ -232,31 +232,31 @@ void installHeuristics (CbcGenCtlBlk *ctlBlk, CbcModel *model)
     /*
       FPump goes first because it only works before there's a solution.
     */
-    action = ctlBlk->getFPump(gen,model) ;
+    action = ctlBlk->getFPump(gen, model) ;
     if (action != CbcGenCtlBlk::CGOff) {
-        model->addHeuristic(gen,"FPump") ;
+        model->addHeuristic(gen, "FPump") ;
     }
-    action = ctlBlk->getRounding(gen,model) ;
+    action = ctlBlk->getRounding(gen, model) ;
     if (action != CbcGenCtlBlk::CGOff) {
-        model->addHeuristic(gen,"Rounding") ;
+        model->addHeuristic(gen, "Rounding") ;
     }
-    action = ctlBlk->getCombine(gen,model) ;
+    action = ctlBlk->getCombine(gen, model) ;
     if (action != CbcGenCtlBlk::CGOff) {
-        model->addHeuristic(gen,"Combine") ;
+        model->addHeuristic(gen, "Combine") ;
     }
-    action = ctlBlk->getGreedyCover(gen,model) ;
+    action = ctlBlk->getGreedyCover(gen, model) ;
     if (action != CbcGenCtlBlk::CGOff) {
-        model->addHeuristic(gen,"GCov") ;
+        model->addHeuristic(gen, "GCov") ;
     }
-    action = ctlBlk->getGreedyEquality(gen,model) ;
+    action = ctlBlk->getGreedyEquality(gen, model) ;
     if (action != CbcGenCtlBlk::CGOff) {
-        model->addHeuristic(gen,"GEq") ;
+        model->addHeuristic(gen, "GEq") ;
     }
     /*
       This one's a bit different. We acquire the local tree and install it in the
       model.
     */
-    action = ctlBlk->getTreeLocal(localTree,model) ;
+    action = ctlBlk->getTreeLocal(localTree, model) ;
     if (action != CbcGenCtlBlk::CGOff) {
         model->passInTreeHandler(*localTree) ;
     }
@@ -306,42 +306,42 @@ void installCutGenerators (CbcGenCtlBlk *ctlBlk, CbcModel *model)
             CglProbing *probingGen = dynamic_cast<CglProbing *>(gen) ;
             probingGen->setRowCuts(-3) ;
         }
-        model->addCutGenerator(gen,howOften[action],"Probing") ;
+        model->addCutGenerator(gen, howOften[action], "Probing") ;
         switches[genCnt++] = 0 ;
     }
     action = ctlBlk->getGomory(gen) ;
     if (action != CbcGenCtlBlk::CGOff) {
-        model->addCutGenerator(gen,howOften[action],"Gomory") ;
+        model->addCutGenerator(gen, howOften[action], "Gomory") ;
         switches[genCnt++] = -1 ;
     }
     action = ctlBlk->getKnapsack(gen) ;
     if (action != CbcGenCtlBlk::CGOff) {
-        model->addCutGenerator(gen,howOften[action],"Knapsack") ;
+        model->addCutGenerator(gen, howOften[action], "Knapsack") ;
         switches[genCnt++] = 0 ;
     }
     action = ctlBlk->getRedSplit(gen) ;
     if (action != CbcGenCtlBlk::CGOff) {
-        model->addCutGenerator(gen,howOften[action],"RedSplit") ;
+        model->addCutGenerator(gen, howOften[action], "RedSplit") ;
         switches[genCnt++] = 1 ;
     }
     action = ctlBlk->getClique(gen) ;
     if (action != CbcGenCtlBlk::CGOff) {
-        model->addCutGenerator(gen,howOften[action],"Clique") ;
+        model->addCutGenerator(gen, howOften[action], "Clique") ;
         switches[genCnt++] = 0 ;
     }
     action = ctlBlk->getMir(gen) ;
     if (action != CbcGenCtlBlk::CGOff) {
-        model->addCutGenerator(gen,howOften[action],"MIR2") ;
+        model->addCutGenerator(gen, howOften[action], "MIR2") ;
         switches[genCnt++] = -1 ;
     }
     action = ctlBlk->getFlow(gen) ;
     if (action != CbcGenCtlBlk::CGOff) {
-        model->addCutGenerator(gen,howOften[action],"Flow") ;
+        model->addCutGenerator(gen, howOften[action], "Flow") ;
         switches[genCnt++] = 1 ;
     }
     action = ctlBlk->getTwomir(gen) ;
     if (action != CbcGenCtlBlk::CGOff) {
-        model->addCutGenerator(gen,howOften[action],"2-MIR") ;
+        model->addCutGenerator(gen, howOften[action], "2-MIR") ;
         switches[genCnt++] = 1 ;
     }
     /*
@@ -372,8 +372,8 @@ void installCutGenerators (CbcGenCtlBlk *ctlBlk, CbcModel *model)
       case we'll drop down to a floor of .0001.
     */
     {
-        double objFrac = fabs(model->getMinimizationObjValue())*.001+.0001 ;
-        double minDrop = CoinMin(.05,objFrac) ;
+        double objFrac = fabs(model->getMinimizationObjValue()) * .001 + .0001 ;
+        double minDrop = CoinMin(.05, objFrac) ;
         model->setMinimumDrop(minDrop) ;
     }
     /*
@@ -443,7 +443,7 @@ void setupObjects (OsiSolverInterface *osi,
         int numCols = osi->getNumCols() ;
 
         for (int iObj = 0 ; iObj < numObjs ; iObj++) {
-            oldObjs[iObj]->setPriority(numCols+1) ;
+            oldObjs[iObj]->setPriority(numCols + 1) ;
         }
 
         int numSOS = ippObj->numberSOS() ;
@@ -455,12 +455,12 @@ void setupObjects (OsiSolverInterface *osi,
         int iSOS ;
         for (iSOS = 0 ; iSOS < numSOS ; iSOS++) {
             int iStart = starts[iSOS] ;
-            int sosLen = starts[iSOS+1]-iStart ;
+            int sosLen = starts[iSOS+1] - iStart ;
             sosObjs[iSOS] =
-                new OsiSOS(osi,sosLen,which+iStart,weight+iStart,type[iSOS]) ;
-            sosObjs[iSOS]->setPriority(numCols-sosLen) ;
+                new OsiSOS(osi, sosLen, which + iStart, weight + iStart, type[iSOS]) ;
+            sosObjs[iSOS]->setPriority(numCols - sosLen) ;
         }
-        osi->addObjects(numSOS,sosObjs) ;
+        osi->addObjects(numSOS, sosObjs) ;
 
         for (iSOS = 0 ; iSOS < numSOS ; iSOS++)
             delete sosObjs[iSOS] ;
@@ -498,8 +498,8 @@ int doBaCParam (CoinParam *param)
     } else {
         retval = -1 ;
     }
-    ctlBlk->setBaBStatus(CbcGenCtlBlk::BACAbandon,CbcGenCtlBlk::BACmInvalid,
-                         CbcGenCtlBlk::BACwNotStarted,false,0) ;
+    ctlBlk->setBaBStatus(CbcGenCtlBlk::BACAbandon, CbcGenCtlBlk::BACmInvalid,
+                         CbcGenCtlBlk::BACwNotStarted, false, 0) ;
     /*
       We ain't gonna do squat without a good model.
     */
@@ -530,7 +530,7 @@ int doBaCParam (CoinParam *param)
       Solve the root relaxation. Bail unless it solves to optimality.
     */
     if (!solveRelaxation(&babModel)) {
-        ctlBlk->setBaBStatus(&babModel,CbcGenCtlBlk::BACwBareRoot) ;
+        ctlBlk->setBaBStatus(&babModel, CbcGenCtlBlk::BACwBareRoot) ;
         return (0) ;
     }
 # if COIN_CBC_VERBOSITY > 0
@@ -542,7 +542,7 @@ int doBaCParam (CoinParam *param)
       Are we up for fixing variables based on reduced cost alone?
     */
     if (ctlBlk->djFix_.action_ == true) {
-        reducedCostHack(babSolver,ctlBlk->djFix_.threshold_) ;
+        reducedCostHack(babSolver, ctlBlk->djFix_.threshold_) ;
     }
     /*
       Time to consider preprocessing. We'll do a bit of setup before getting to
@@ -576,7 +576,7 @@ int doBaCParam (CoinParam *param)
             << "." << std::endl ;
 #   endif
 
-        preIppSolver->setHintParam(OsiDoInBranchAndCut,true,OsiHintDo) ;
+        preIppSolver->setHintParam(OsiDoInBranchAndCut, true, OsiHintDo) ;
         ippObj.messageHandler()->setLogLevel(babModel.logLevel()) ;
 
         CglProbing probingGen ;
@@ -604,7 +604,7 @@ int doBaCParam (CoinParam *param)
             convert = 3 ;
         }
 
-        ippSolver = ippObj.preProcessNonDefault(*preIppSolver,convert,10) ;
+        ippSolver = ippObj.preProcessNonDefault(*preIppSolver, convert, 10) ;
 #   if CBC_TRACK_SOLVERS > 0
         std::cout
             << "doBaCParam: solver returned from IPP is "
@@ -624,7 +624,7 @@ int doBaCParam (CoinParam *param)
             std::cout
                 << "Integer preprocess says infeasible or unbounded" << std::endl ;
             delete preIppSolver ;
-            ctlBlk->setBaBStatus(&babModel,CbcGenCtlBlk::BACwIPP) ;
+            ctlBlk->setBaBStatus(&babModel, CbcGenCtlBlk::BACwIPP) ;
             return (0) ;
         }
 #   if COIN_CBC_VERBOSITY > 0
@@ -637,11 +637,11 @@ int doBaCParam (CoinParam *param)
         }
 #   endif
 
-        preIppSolver->setHintParam(OsiDoInBranchAndCut,false,OsiHintDo) ;
-        ippSolver->setHintParam(OsiDoInBranchAndCut,false,OsiHintDo) ;
+        preIppSolver->setHintParam(OsiDoInBranchAndCut, false, OsiHintDo) ;
+        ippSolver->setHintParam(OsiDoInBranchAndCut, false, OsiHintDo) ;
 
         if (ippAction == CbcGenCtlBlk::IPPSave) {
-            ippSolver->writeMps("presolved","mps",1.0) ;
+            ippSolver->writeMps("presolved", "mps", 1.0) ;
             std::cout
                 << "Integer preprocessed model written to `presolved.mps' "
                 << "as minimisation problem." << std::endl ;
@@ -659,7 +659,7 @@ int doBaCParam (CoinParam *param)
 #   endif
         if (!solveRelaxation(&babModel)) {
             delete preIppSolver ;
-            ctlBlk->setBaBStatus(&babModel,CbcGenCtlBlk::BACwIPPRelax) ;
+            ctlBlk->setBaBStatus(&babModel, CbcGenCtlBlk::BACwIPPRelax) ;
             return (0) ;
         }
 #   if COIN_CBC_VERBOSITY > 0
@@ -667,7 +667,7 @@ int doBaCParam (CoinParam *param)
             << "doBaCParam: presolved relaxation z = "
             << babSolver->getObjValue() << "." << std::endl ;
 #   endif
-        babModel.setMaximumSeconds(timeLeft-(CoinCpuTime()-time1)) ;
+        babModel.setMaximumSeconds(timeLeft - (CoinCpuTime() - time1)) ;
         didIPP = true ;
     }
     /*
@@ -679,13 +679,13 @@ int doBaCParam (CoinParam *param)
       them to the babModel.
     */
     if (ctlBlk->priorityAction_ != CbcGenCtlBlk::BPOff) {
-        setupPriorities(&babModel,ctlBlk->priorityAction_) ;
+        setupPriorities(&babModel, ctlBlk->priorityAction_) ;
     }
     /*
       Install heuristics and cutting planes.
     */
-    installHeuristics(ctlBlk,&babModel) ;
-    installCutGenerators(ctlBlk,&babModel) ;
+    installHeuristics(ctlBlk, &babModel) ;
+    installCutGenerators(ctlBlk, &babModel) ;
     /*
       Set up status print frequency for babModel.
     */
@@ -711,7 +711,7 @@ int doBaCParam (CoinParam *param)
     if (ctlBlk->setByUser_[CbcCbcParam::GAPRATIO] == true) {
         double obj = babSolver->getObjValue() ;
         double gapRatio = babModel.getDblParam(CbcModel::CbcAllowableFractionGap) ;
-        double gap = gapRatio*(1.0e-5+fabs(obj)) ;
+        double gap = gapRatio * (1.0e-5 + fabs(obj)) ;
         babModel.setAllowableGap(gap) ;
         std::cout
             << "doBaCParam: Continuous objective = " << obj
@@ -724,7 +724,7 @@ int doBaCParam (CoinParam *param)
       solutions'' makes some sense in this context. Didn't try to track down
       moreMipOptions just yet.
     */
-    babModel.setSpecialOptions(babModel.specialOptions()|2) ;
+    babModel.setSpecialOptions(babModel.specialOptions() | 2) ;
     /*
       { int ndx = whichParam(MOREMIPOPTIONS,numberParameters,parameters) ;
         int moreMipOptions = parameters[ndx].intValue() ;
@@ -740,7 +740,7 @@ int doBaCParam (CoinParam *param)
       entirely likely that none exist to this point (and interesting to note that
       IPP doesn't need to know anything about objects).
     */
-    setupObjects(babSolver,didIPP,&ippObj) ;
+    setupObjects(babSolver, didIPP, &ippObj) ;
     /*
       Set the branching method. We can't do this until we establish objects,
       because the constructor will set up arrays based on the number of objects,
@@ -769,7 +769,7 @@ int doBaCParam (CoinParam *param)
     */
 
     if (ippAction == CbcGenCtlBlk::IPPStrategy) {
-        CbcStrategyDefault strategy(true,5,5) ;
+        CbcStrategyDefault strategy(true, 5, 5) ;
         strategy.setupPreProcessing(1) ;
         babModel.setStrategy(strategy) ;
     }
@@ -800,7 +800,7 @@ int doBaCParam (CoinParam *param)
     */
     if (ctlBlk->debugCreate_ == "createAfterPre" &&
             babModel.bestSolution()) {
-        CbcGenParamUtils::saveSolution(babSolver,"debug.file") ;
+        CbcGenParamUtils::saveSolution(babSolver, "debug.file") ;
     }
     /*
       Print some information about branch-and-cut.
@@ -827,7 +827,7 @@ int doBaCParam (CoinParam *param)
 # endif
 
     time2 = CoinCpuTime();
-    ctlBlk->totalTime_ += time2-time1;
+    ctlBlk->totalTime_ += time2 - time1;
     /*
       If we performed integer preprocessing, time to back it out.
     */
@@ -850,7 +850,7 @@ int doBaCParam (CoinParam *param)
       Write out postprocessed solution to debug file, if requested.
     */
     if (ctlBlk->debugCreate_ == "create" && babModel.bestSolution()) {
-        CbcGenParamUtils::saveSolution(babSolver,"debug.file") ;
+        CbcGenParamUtils::saveSolution(babSolver, "debug.file") ;
     }
     /*
       If we have a good solution, detach the solver with the answer. Fill in the
@@ -863,8 +863,8 @@ int doBaCParam (CoinParam *param)
         keepAnswerSolver = true ;
         answerSolver = babSolver ;
     }
-    ctlBlk->setBaBStatus(&babModel,CbcGenCtlBlk::BACwBAC,
-                         keepAnswerSolver,answerSolver) ;
+    ctlBlk->setBaBStatus(&babModel, CbcGenCtlBlk::BACwBAC,
+                         keepAnswerSolver, answerSolver) ;
     /*
       And one last bit of information & statistics.
     */
@@ -877,7 +877,7 @@ int doBaCParam (CoinParam *param)
     std::cout
         << babModel.getNodeCount() << " nodes and "
         << babModel.getIterationCount() << " iterations - took "
-        << time2-time1 << " seconds" << std::endl ;
+        << time2 - time1 << " seconds" << std::endl ;
 
     return (0) ;
 }

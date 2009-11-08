@@ -22,14 +22,14 @@
 
 // Default Constructor
 CbcHeuristicPivotAndFix::CbcHeuristicPivotAndFix()
-        :CbcHeuristic()
+        : CbcHeuristic()
 {
 }
 
 // Constructor with model - assumed before cuts
 
 CbcHeuristicPivotAndFix::CbcHeuristicPivotAndFix(CbcModel & model)
-        :CbcHeuristic(model)
+        : CbcHeuristic(model)
 {
 }
 
@@ -49,10 +49,10 @@ void
 CbcHeuristicPivotAndFix::generateCpp( FILE * fp)
 {
     CbcHeuristicPivotAndFix other;
-    fprintf(fp,"0#include \"CbcHeuristicPivotAndFix.hpp\"\n");
-    fprintf(fp,"3  CbcHeuristicPivotAndFix heuristicPFX(*cbcModel);\n");
-    CbcHeuristic::generateCpp(fp,"heuristicPFX");
-    fprintf(fp,"3  cbcModel->addHeuristic(&heuristicPFX);\n");
+    fprintf(fp, "0#include \"CbcHeuristicPivotAndFix.hpp\"\n");
+    fprintf(fp, "3  CbcHeuristicPivotAndFix heuristicPFX(*cbcModel);\n");
+    CbcHeuristic::generateCpp(fp, "heuristicPFX");
+    fprintf(fp, "3  cbcModel->addHeuristic(&heuristicPFX);\n");
 }
 
 // Copy constructor
@@ -64,9 +64,9 @@ CbcHeuristicPivotAndFix::CbcHeuristicPivotAndFix(const CbcHeuristicPivotAndFix &
 
 // Assignment operator
 CbcHeuristicPivotAndFix &
-CbcHeuristicPivotAndFix::operator=( const CbcHeuristicPivotAndFix& rhs)
+CbcHeuristicPivotAndFix::operator=( const CbcHeuristicPivotAndFix & rhs)
 {
-    if (this!=&rhs) {
+    if (this != &rhs) {
         CbcHeuristic::operator=(rhs);
     }
     return *this;
@@ -119,11 +119,11 @@ CbcHeuristicPivotAndFix::solution(double & /*solutionValue*/,
     ClpTrustedData trustedSolutions;
     trustedSolutions.typeStruct = 1;
     trustedSolutions.data = &solutions;
-    solutions.numberSolutions=0;
-    solutions.maximumSolutions=0;
-    solutions.numberColumns=simplex->numberColumns();
-    solutions.solution=NULL;
-    solutions.numberUnsatisfied=NULL;
+    solutions.numberSolutions = 0;
+    solutions.maximumSolutions = 0;
+    solutions.numberColumns = simplex->numberColumns();
+    solutions.solution = NULL;
+    solutions.numberUnsatisfied = NULL;
     simplex->setTrustedUserPointer(&trustedSolutions);
 
     // Solve from all slack to get some points
@@ -142,7 +142,7 @@ CbcHeuristicPivotAndFix::solution(double & /*solutionValue*/,
     // - find the integer variables
     bool * varClassInt = new bool[numCols];
     int numInt = 0;
-    for (int i=0; i<numCols; i++) {
+    for (int i = 0; i < numCols; i++) {
         if (clpSolver->isContinuous(i))
             varClassInt[i] = 0;
         else {
@@ -158,7 +158,7 @@ CbcHeuristicPivotAndFix::solution(double & /*solutionValue*/,
     // -Get the objective coefficients
     const double *objCoefficients = clpSolver->getObjCoefficients();
     double *originalObjCoeff = new double [numCols];
-    for (int i=0; i<numCols; i++)
+    for (int i = 0; i < numCols; i++)
         originalObjCoeff[i] = objCoefficients[i];
 
     // -Get the matrix of the problem
@@ -183,7 +183,7 @@ CbcHeuristicPivotAndFix::solution(double & /*solutionValue*/,
     double * newObj = new double [numCols];
 
     // Set the random seed
-    srand ( time(NULL) +1);
+    srand ( time(NULL) + 1);
     int randNum;
 
     // We're going to add a new row to the LP formulation
@@ -193,22 +193,22 @@ CbcHeuristicPivotAndFix::solution(double & /*solutionValue*/,
     // The indicies are the (dense) columns indices stored in addRowIndex.
     // The rhs is the value of the new solution stored in solutionValue.
     int * addRowIndex = new int[numCols];
-    for (int i=0; i<numCols; i++)
-        addRowIndex[i]=i;
+    for (int i = 0; i < numCols; i++)
+        addRowIndex[i] = i;
 
     // The number of feasible solutions found by the PF heuristic.
     // This controls the return code of the solution() method.
-    int numFeasibles =0;
+    int numFeasibles = 0;
 
     // Shuffle the rows
     int * index = new int [numRows];
-    for (int i=0; i<numRows; i++)
-        index[i]=i;
-    for (int i=0; i<numRows; i++) {
+    for (int i = 0; i < numRows; i++)
+        index[i] = i;
+    for (int i = 0; i < numRows; i++) {
         int temp = index[i];
-        int randNumTemp = i+(rand()%(numRows-i));
-        index[i]=index[randNumTemp];
-        index[randNumTemp]=temp;
+        int randNumTemp = i + (rand() % (numRows - i));
+        index[i] = index[randNumTemp];
+        index[randNumTemp] = temp;
     }
 
     // In the clpSolution struct, we store a lot of column solutions.
@@ -242,12 +242,12 @@ CbcHeuristicPivotAndFix::solution(double & /*solutionValue*/,
     */
     // Initialize fixThreshold based on the number of integer
     // variables
-    if (numInt<=100)
-        fixThreshold = .35*numInt;
-    if (numInt>100 && numInt<1000)
-        fixThreshold = .85*numInt;
-    if (numInt>=1000)
-        fixThreshold = .1*numInt;
+    if (numInt <= 100)
+        fixThreshold = .35 * numInt;
+    if (numInt > 100 && numInt < 1000)
+        fixThreshold = .85 * numInt;
+    if (numInt >= 1000)
+        fixThreshold = .1 * numInt;
 
     // Whenever the dynamic system for changing fixThreshold
     // kicks in, it changes the parameter by the
@@ -303,28 +303,28 @@ CbcHeuristicPivotAndFix::solution(double & /*solutionValue*/,
       sumReturnCode[7] ~ the same as sumReturnCode[1] but becomes zero just if the returnCode is not 0
     */
 
-    for (int i=0; i<8; i++)
-        sumReturnCode[i]=0;
+    for (int i = 0; i < 8; i++)
+        sumReturnCode[i] = 0;
     int * colIndex = new int[numCols];
-    for (int i=0; i<numCols; i++)
-        colIndex[i]=i;
+    for (int i = 0; i < numCols; i++)
+        colIndex[i] = i;
     double cutoff = COIN_DBL_MAX;
     bool didMiniBB;
 
     // Main loop
-    for (int i=0; i<numRows; i++) {
+    for (int i = 0; i < numRows; i++) {
         // track the number of mini-bb for the dynamic threshold setting
-        didMiniBB=0;
+        didMiniBB = 0;
 
-        for (int k=startIndex; k<solutions.numberSolutions; k++)
+        for (int k = startIndex; k < solutions.numberSolutions; k++)
             //if the point has 0 unsatisfied variables; make sure it is
             //feasible. Check integer feasiblity and constraints.
             if (solutions.numberUnsatisfied[k] == 0) {
-                double feasibility=1;
+                double feasibility = 1;
                 //check integer feasibility
-                for (int icol=0; icol<numCols; icol++) {
-                    double closest = floor(solutions.solution[k][icol]+0.5);
-                    if (varClassInt[icol]&&(fabs(solutions.solution[k][icol]-closest)>1e-6)) {
+                for (int icol = 0; icol < numCols; icol++) {
+                    double closest = floor(solutions.solution[k][icol] + 0.5);
+                    if (varClassInt[icol] && (fabs(solutions.solution[k][icol] - closest) > 1e-6)) {
                         feasibility = 0;
                         break;
                     }
@@ -332,7 +332,7 @@ CbcHeuristicPivotAndFix::solution(double & /*solutionValue*/,
                 //check if the solution satisfies the constraints
                 for (int irow = 0; irow < numRows; irow++) {
                     double lhs = 0;
-                    for (int j = 0; j <numCols; j++)
+                    for (int j = 0; j < numCols; j++)
                         lhs += matrix[irow][j] * solutions.solution[k][j];
                     if (rowSense[irow] == 'L' && lhs > rhs[irow] + 1e-6) {
                         feasibility = 0;
@@ -353,23 +353,23 @@ CbcHeuristicPivotAndFix::solution(double & /*solutionValue*/,
                 // (and update the best solution found so far for the
                 // return arguments)
                 if (feasibility) {
-                    double objectiveValue=0;
-                    for (int j=0; j<numCols; j++)
-                        objectiveValue+=solutions.solution[k][j]*originalObjCoeff[j];
-                    cutoff=objectiveValue;
-                    clpSolver->addRow(numCols, addRowIndex, originalObjCoeff,-COIN_DBL_MAX, cutoff);
+                    double objectiveValue = 0;
+                    for (int j = 0; j < numCols; j++)
+                        objectiveValue += solutions.solution[k][j] * originalObjCoeff[j];
+                    cutoff = objectiveValue;
+                    clpSolver->addRow(numCols, addRowIndex, originalObjCoeff, -COIN_DBL_MAX, cutoff);
 
                     // Todo: pick up the best solution in the block (not
                     // the last).
                     solutionValue = objectiveValue;
-                    for (int m=0; m<numCols; m++)
+                    for (int m = 0; m < numCols; m++)
                         betterSolution[m] = solutions.solution[k][m];
                     numFeasibles++;
                 }
             }
 
         // Go through the block of solution and decide if to call smallBB
-        for (int k=startIndex; k<solutions.numberSolutions; k++) {
+        for (int k = startIndex; k < solutions.numberSolutions; k++) {
             if (solutions.numberUnsatisfied[k] <= fixThreshold) {
                 // get new copy
                 OsiSolverInterface * newSolver;
@@ -377,19 +377,19 @@ CbcHeuristicPivotAndFix::solution(double & /*solutionValue*/,
                 newSolver->setObjSense(1);
                 newSolver->setObjective(originalObjCoeff);
                 int numberColumns = newSolver->getNumCols();
-                int numFixed=0;
+                int numFixed = 0;
 
                 // Fix the first fixThreshold number of integer vars
                 // that are satisfied
                 for (int iColumn = 0 ; iColumn < numberColumns ; iColumn++) {
                     if (newSolver->isInteger(iColumn)) {
                         double value = solutions.solution[k][iColumn];
-                        double intValue = floor(value+0.5);
-                        if (fabs(value-intValue)<1.0e-5) {
-                            newSolver->setColLower(iColumn,intValue);
-                            newSolver->setColUpper(iColumn,intValue);
+                        double intValue = floor(value + 0.5);
+                        if (fabs(value - intValue) < 1.0e-5) {
+                            newSolver->setColLower(iColumn, intValue);
+                            newSolver->setColUpper(iColumn, intValue);
                             numFixed++;
-                            if (numFixed>numInt-fixThreshold)
+                            if (numFixed > numInt - fixThreshold)
                                 break;
                         }
                     }
@@ -410,28 +410,28 @@ CbcHeuristicPivotAndFix::solution(double & /*solutionValue*/,
                 if (returnCode == 1 || returnCode == 3) {
                     numFeasibles ++;
                     solutionValue = newSolutionValue;
-                    for (int m=0; m<numCols; m++)
+                    for (int m = 0; m < numCols; m++)
                         betterSolution[m] = newSolution[m];
                     printf("cutoff: %f\n", newSolutionValue);
-                    printf("time: %.2lf\n", CoinCpuTime()-start);
+                    printf("time: %.2lf\n", CoinCpuTime() - start);
                 }
-                didMiniBB=1;
+                didMiniBB = 1;
                 printf("returnCode: %d\n", returnCode);
 
                 //Update sumReturnCode array
-                for (int iRC=0; iRC<6; iRC++) {
-                    if (iRC == returnCode+1)
+                for (int iRC = 0; iRC < 6; iRC++) {
+                    if (iRC == returnCode + 1)
                         sumReturnCode[iRC]++;
                     else
-                        sumReturnCode[iRC]=0;
+                        sumReturnCode[iRC] = 0;
                 }
-                if (returnCode!=0)
-                    sumReturnCode[7]=0;
+                if (returnCode != 0)
+                    sumReturnCode[7] = 0;
                 else
                     sumReturnCode[7]++;
-                if (returnCode==1 || returnCode==3) {
+                if (returnCode == 1 || returnCode == 3) {
                     cutoff = newSolutionValue;
-                    clpSolver->addRow(numCols, addRowIndex, originalObjCoeff,-COIN_DBL_MAX, cutoff);
+                    clpSolver->addRow(numCols, addRowIndex, originalObjCoeff, -COIN_DBL_MAX, cutoff);
                     printf("******************\n\n*****************\n");
                 }
                 break;
@@ -440,23 +440,23 @@ CbcHeuristicPivotAndFix::solution(double & /*solutionValue*/,
 
         if (!didMiniBB && solutions.numberSolutions - startIndex > 0) {
             sumReturnCode[5]++;
-            for (int iRC=0; iRC<5; iRC++)
-                sumReturnCode[iRC]=0;
+            for (int iRC = 0; iRC < 5; iRC++)
+                sumReturnCode[iRC] = 0;
         }
 
         //Change "fixThreshold" if needed
         // using the data we've recorded in sumReturnCode
-        if (sumReturnCode[1]>=3)
+        if (sumReturnCode[1] >= 3)
             fixThreshold -= fixThresholdChange;
-        if (sumReturnCode[7]>=3 && changeMaxNode) {
+        if (sumReturnCode[7] >= 3 && changeMaxNode) {
             maxNode *= 5;
-            changeMaxNode=0;
+            changeMaxNode = 0;
         }
-        if (sumReturnCode[3]>=3 && fixThreshold < 0.95 * numInt)
+        if (sumReturnCode[3] >= 3 && fixThreshold < 0.95 * numInt)
             fixThreshold += fixThresholdChange;
-        if (sumReturnCode[5]>=4)
+        if (sumReturnCode[5] >= 4)
             fixThreshold += fixThresholdChange;
-        if (sumReturnCode[0]>3)
+        if (sumReturnCode[0] > 3)
             fixThreshold -= fixThresholdChange;
 
         startIndex = solutions.numberSolutions;
@@ -469,9 +469,9 @@ CbcHeuristicPivotAndFix::solution(double & /*solutionValue*/,
         // The first time in this loop PF solves orig LP.
 
         //Generate the random objective function
-        randNum = rand()%10 + 1;
+        randNum = rand() % 10 + 1;
         randNum = fmod(randNum, 2);
-        for (int j=0; j<numCols; j++) {
+        for (int j = 0; j < numCols; j++) {
             if (randNum == 1)
                 if (fabs(matrix[index[i]][j]) < 1e-6)
                     newObj[j] = 0.1;
@@ -495,20 +495,20 @@ CbcHeuristicPivotAndFix::solution(double & /*solutionValue*/,
         clpSolver->getModelPtr()->primal(1);
         //	  simplex->setMaximumIterations(100000);
         printf("cutoff: %f\n", cutoff);
-        printf("time: %.2f\n", CoinCpuTime()-start);
-        for (int iRC=0; iRC<8; iRC++)
-            printf("%d ",sumReturnCode[iRC]);
+        printf("time: %.2f\n", CoinCpuTime() - start);
+        for (int iRC = 0; iRC < 8; iRC++)
+            printf("%d ", sumReturnCode[iRC]);
         printf("\nfixThreshold: %f\n", fixThreshold);
         printf("numInt: %d\n", numInt);
         printf("\n---------------------------------------------------------------- %d\n", i);
 
         //temp:
-        if (i>3) break;
+        if (i > 3) break;
 
     }
 
     printf("Best Feasible Found: %f\n", cutoff);
-    printf("Total time: %.2f\n", CoinCpuTime()-start);
+    printf("Total time: %.2f\n", CoinCpuTime() - start);
 
     if (numFeasibles == 0) {
         return 0;

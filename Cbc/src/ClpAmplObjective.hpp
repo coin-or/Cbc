@@ -27,8 +27,8 @@ public:
         includeLinear 0 - no, 1 as is, 2 as feasible
     */
     virtual double * gradient(const ClpSimplex * model,
-                              const double * solution, double & offset,bool refresh,
-                              int includeLinear=2);
+                              const double * solution, double & offset, bool refresh,
+                              int includeLinear = 2);
     /// Resize objective
     /** Returns reduced gradient.Returns an offset (to be added to current one).
     */

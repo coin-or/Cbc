@@ -45,7 +45,7 @@ public:
 
     /// `Copy' constructor using an OsiRowCut and an CbcNodeInfo
     CbcCountRowCut(const OsiRowCut &, CbcNodeInfo *, int whichOne,
-                   int whichGenerator=-1,int numberPointingToThis=0);
+                   int whichGenerator = -1, int numberPointingToThis = 0);
 
     /** Destructor
 
@@ -57,10 +57,10 @@ public:
     //@}
 
     /// Increment the number of references
-    void increment(int change=1);
+    void increment(int change = 1);
 
     /// Decrement the number of references and return the number left.
-    int decrement(int change=1);
+    int decrement(int change = 1);
 
     /** \brief Set the information associating this cut with a node
 

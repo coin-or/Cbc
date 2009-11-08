@@ -88,7 +88,7 @@ namespace {
 /*
   Data types for a vector of OsiSolverInterface objects.
 */
-typedef std::map<std::string,OsiSolverInterface*> solverMap_t ;
+typedef std::map<std::string, OsiSolverInterface*> solverMap_t ;
 typedef solverMap_t::const_iterator solverMapIter_t ;
 
 /*

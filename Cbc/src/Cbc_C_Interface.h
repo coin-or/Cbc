@@ -65,11 +65,11 @@ extern "C" {
     ;
     /** Read an mps file from the given filename */
     COINLIBAPI int COINLINKAGE
-    Cbc_readMps(Cbc_Model * model,const char *filename)
+    Cbc_readMps(Cbc_Model * model, const char *filename)
     ;
     /** Write an mps file from the given filename */
     COINLIBAPI void COINLINKAGE
-    Cbc_writeMps(Cbc_Model * model,const char *filename)
+    Cbc_writeMps(Cbc_Model * model, const char *filename)
     ;
     /** Integer information */
     COINLIBAPI char * COINLINKAGE
@@ -77,7 +77,7 @@ extern "C" {
     ;
     /** Copy in integer information */
     COINLIBAPI void COINLINKAGE
-    Cbc_copyInIntegerInformation(Cbc_Model * model,const char * information)
+    Cbc_copyInIntegerInformation(Cbc_Model * model, const char * information)
     ;
     /** Drop integer informations */
     COINLIBAPI void COINLINKAGE
@@ -415,7 +415,7 @@ extern "C" {
          2 Mini iterations
     */
     COINLIBAPI int COINLINKAGE
-    Cbc_crash(Cbc_Model * model, double gap,int pivot)
+    Cbc_crash(Cbc_Model * model, double gap, int pivot)
     ;
     /*@}*/
 

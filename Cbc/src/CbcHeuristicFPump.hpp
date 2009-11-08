@@ -18,7 +18,7 @@ public:
 
     // Constructor with model - assumed before cuts
     CbcHeuristicFPump (CbcModel & model,
-                       double downValue=0.5,bool roundExpensive=false);
+                       double downValue = 0.5, bool roundExpensive = false);
 
     // Copy constructor
     CbcHeuristicFPump ( const CbcHeuristicFPump &);
@@ -130,7 +130,7 @@ public:
     }
     /// Set maximum passes (default 100)
     inline void setMaximumPasses(int value) {
-        maximumPasses_=value;
+        maximumPasses_ = value;
     }
     /// Get maximum passes (default 100)
     inline int maximumPasses() const {
@@ -138,7 +138,7 @@ public:
     }
     /// Set maximum retries (default 1)
     inline void setMaximumRetries(int value) {
-        maximumRetries_=value;
+        maximumRetries_ = value;
     }
     /// Get maximum retries (default 1)
     inline int maximumRetries() const {
@@ -153,7 +153,7 @@ public:
          If we add 8 then can run after initial cuts (if no solution)
     */
     inline void setAccumulate(int value) {
-        accumulate_=value;
+        accumulate_ = value;
     }
     /// Get accumulation option
     inline int accumulate() const {
@@ -165,7 +165,7 @@ public:
          2 - fix integers on reduced costs but only on entry
     */
     inline void setFixOnReducedCosts(int value) {
-        fixOnReducedCosts_=value;
+        fixOnReducedCosts_ = value;
     }
     /// Get reduced cost option
     inline int fixOnReducedCosts() const {
@@ -176,7 +176,7 @@ public:
          <1.0 (x) - pretend gap is x* actual gap - just for fixing
     */
     inline void setReducedCostMultiplier(double value) {
-        reducedCostMultiplier_=value;
+        reducedCostMultiplier_ = value;
     }
     /// Get reduced cost multiplier
     inline double reducedCostMultiplier() const {
@@ -244,12 +244,12 @@ private:
         If roundExpensive then always to more expnsive.
         returns 0 if current is solution
     */
-    int rounds(OsiSolverInterface * solver,double * solution,
+    int rounds(OsiSolverInterface * solver, double * solution,
                /*const double * objective, */
                int numberIntegers, const int * integerVariable,
                /*char * pumpPrint,*/int passNumber,
                /*bool roundExpensive=false,*/
-               double downValue=0.5, int *flip=0);
+               double downValue = 0.5, int *flip = 0);
     /* note for eagle eyed readers.
        when_ can now be exotic -
        <=10 normal

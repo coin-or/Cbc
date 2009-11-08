@@ -61,7 +61,7 @@ public:
 
     /// Sets type of search
     inline void setSearchType(int value) {
-        swap_=value;
+        swap_ = value;
     }
     /// Used array so we can set
     inline int * used() const {
@@ -130,7 +130,7 @@ public:
 
     /// Sets large cost value
     inline void setLargeValue(double value) {
-        large_=value;
+        large_ = value;
     }
     /// Gets large cost value
     inline double largeValue() const {
@@ -189,8 +189,8 @@ public:
 
     /// Sets number of solutions to use
     inline void setNumberSolutions(int value) {
-        if (value>0&&value<=10)
-            useNumber_=value;
+        if (value > 0 && value <= 10)
+            useNumber_ = value;
     }
 
 protected:

@@ -35,7 +35,7 @@ CbcBranchCut::CbcBranchCut (CbcModel * model)
 }
 // Copy constructor
 CbcBranchCut::CbcBranchCut ( const CbcBranchCut & rhs)
-        :CbcObject(rhs)
+        : CbcObject(rhs)
 
 {
 }
@@ -62,8 +62,8 @@ double
 CbcBranchCut::infeasibility(const OsiBranchingInformation * /*info*/,
                             int &preferredWay) const
 {
-    throw CoinError("Use of base class","infeasibility","CbcBranchCut");
-    preferredWay=-1;
+    throw CoinError("Use of base class", "infeasibility", "CbcBranchCut");
+    preferredWay = -1;
     return 0.0;
 }
 
@@ -84,9 +84,9 @@ CbcBranchCut::boundBranch() const
     return false;
 }
 CbcBranchingObject *
-CbcBranchCut::createCbcBranch(OsiSolverInterface * /*solver*/,const OsiBranchingInformation * /*info*/, int /*way*/)
+CbcBranchCut::createCbcBranch(OsiSolverInterface * /*solver*/, const OsiBranchingInformation * /*info*/, int /*way*/)
 {
-    throw CoinError("Use of base class","createCbcBranch","CbcBranchCut");
+    throw CoinError("Use of base class", "createCbcBranch", "CbcBranchCut");
     return new CbcCutBranchingObject();
 }
 
@@ -99,7 +99,7 @@ CbcBranchCut::createCbcBranch(OsiSolverInterface * /*solver*/,const OsiBranching
 CbcBranchingObject *
 CbcBranchCut::preferredNewFeasible() const
 {
-    throw CoinError("Use of base class","preferredNewFeasible","CbcBranchCut");
+    throw CoinError("Use of base class", "preferredNewFeasible", "CbcBranchCut");
     return new CbcCutBranchingObject();
 }
 
@@ -111,7 +111,7 @@ CbcBranchCut::preferredNewFeasible() const
 CbcBranchingObject *
 CbcBranchCut::notPreferredNewFeasible() const
 {
-    throw CoinError("Use of base class","notPreferredNewFeasible","CbcBranchCut");
+    throw CoinError("Use of base class", "notPreferredNewFeasible", "CbcBranchCut");
     return new CbcCutBranchingObject();
 }
 
@@ -127,11 +127,11 @@ CbcBranchCut::resetBounds()
 
 // Default Constructor
 CbcCutBranchingObject::CbcCutBranchingObject()
-        :CbcBranchingObject()
+        : CbcBranchingObject()
 {
-    down_=OsiRowCut();
-    up_=OsiRowCut();
-    canFix_=false;
+    down_ = OsiRowCut();
+    up_ = OsiRowCut();
+    canFix_ = false;
 }
 
 // Useful constructor
@@ -139,7 +139,7 @@ CbcCutBranchingObject::CbcCutBranchingObject (CbcModel * model,
         OsiRowCut & down,
         OsiRowCut &up,
         bool canFix)
-        :CbcBranchingObject(model,0,-1,0.0)
+        : CbcBranchingObject(model, 0, -1, 0.0)
 {
     down_ = down;
     up_ = up;
@@ -147,7 +147,7 @@ CbcCutBranchingObject::CbcCutBranchingObject (CbcModel * model,
 }
 
 // Copy constructor
-CbcCutBranchingObject::CbcCutBranchingObject ( const CbcCutBranchingObject & rhs) :CbcBranchingObject(rhs)
+CbcCutBranchingObject::CbcCutBranchingObject ( const CbcCutBranchingObject & rhs) : CbcBranchingObject(rhs)
 {
     down_ = rhs.down_;
     up_ = rhs.up_;
@@ -156,7 +156,7 @@ CbcCutBranchingObject::CbcCutBranchingObject ( const CbcCutBranchingObject & rhs
 
 // Assignment operator
 CbcCutBranchingObject &
-CbcCutBranchingObject::operator=( const CbcCutBranchingObject& rhs)
+CbcCutBranchingObject::operator=( const CbcCutBranchingObject & rhs)
 {
     if (this != &rhs) {
         CbcBranchingObject::operator=(rhs);
@@ -190,61 +190,61 @@ CbcCutBranchingObject::branch()
 {
     decrementNumberBranchesLeft();
     OsiRowCut * cut;
-    if (way_<0) {
+    if (way_ < 0) {
         cut = &down_;
-        way_=1;
+        way_ = 1;
     } else {
         cut = &up_;
-        way_=-1;	  // Swap direction
+        way_ = -1;	  // Swap direction
     }
-    printf("CUT %s ",(way_==-1) ? "up" : "down");
+    printf("CUT %s ", (way_ == -1) ? "up" : "down");
     cut->print();
     // See if cut just fixes variables
     double lb = cut->lb();
     double ub = cut->ub();
-    int n=cut->row().getNumElements();
+    int n = cut->row().getNumElements();
     const int * column = cut->row().getIndices();
     const double * element = cut->row().getElements();
     OsiSolverInterface * solver = model_->solver();
     const double * upper = solver->getColUpper();
     const double * lower = solver->getColLower();
     double low = 0.0;
-    double high=0.0;
-    for (int i=0; i<n; i++) {
+    double high = 0.0;
+    for (int i = 0; i < n; i++) {
         int iColumn = column[i];
         double value = element[i];
-        if (value>0.0) {
-            high += upper[iColumn]*value;
-            low += lower[iColumn]*value;
+        if (value > 0.0) {
+            high += upper[iColumn] * value;
+            low += lower[iColumn] * value;
         } else {
-            high += lower[iColumn]*value;
-            low += upper[iColumn]*value;
+            high += lower[iColumn] * value;
+            low += upper[iColumn] * value;
         }
     }
     // leave as cut
     //model_->setNextRowCut(*cut);
     //return 0.0;
     // assume cut was cunningly constructed so we need not worry too much about tolerances
-    if (low+1.0e-8>=ub&&canFix_) {
+    if (low + 1.0e-8 >= ub && canFix_) {
         // fix
-        for (int i=0; i<n; i++) {
+        for (int i = 0; i < n; i++) {
             int iColumn = column[i];
             double value = element[i];
-            if (value>0.0) {
-                solver->setColUpper(iColumn,lower[iColumn]);
+            if (value > 0.0) {
+                solver->setColUpper(iColumn, lower[iColumn]);
             } else {
-                solver->setColLower(iColumn,upper[iColumn]);
+                solver->setColLower(iColumn, upper[iColumn]);
             }
         }
-    } else if (high-1.0e-8<=lb&&canFix_) {
+    } else if (high - 1.0e-8 <= lb && canFix_) {
         // fix
-        for (int i=0; i<n; i++) {
+        for (int i = 0; i < n; i++) {
             int iColumn = column[i];
             double value = element[i];
-            if (value>0.0) {
-                solver->setColLower(iColumn,upper[iColumn]);
+            if (value > 0.0) {
+                solver->setColLower(iColumn, upper[iColumn]);
             } else {
-                solver->setColUpper(iColumn,lower[iColumn]);
+                solver->setColUpper(iColumn, lower[iColumn]);
             }
         }
     } else {
@@ -258,7 +258,7 @@ void
 CbcCutBranchingObject::print()
 {
     OsiRowCut * cut;
-    if (way_<0) {
+    if (way_ < 0) {
         cut = &down_;
         printf("CbcCut would branch down");
     } else {
@@ -267,19 +267,19 @@ CbcCutBranchingObject::print()
     }
     double lb = cut->lb();
     double ub = cut->ub();
-    int n=cut->row().getNumElements();
+    int n = cut->row().getNumElements();
     const int * column = cut->row().getIndices();
     const double * element = cut->row().getElements();
-    if (n>5) {
-        printf(" - %d elements, lo=%g, up=%g\n",n,lb,ub);
+    if (n > 5) {
+        printf(" - %d elements, lo=%g, up=%g\n", n, lb, ub);
     } else {
-        printf(" - %g <=",lb);
-        for (int i=0; i<n; i++) {
+        printf(" - %g <=", lb);
+        for (int i = 0; i < n; i++) {
             int iColumn = column[i];
             double value = element[i];
-            printf(" (%d,%g)",iColumn,value);
+            printf(" (%d,%g)", iColumn, value);
         }
-        printf(" <= %g\n",ub);
+        printf(" <= %g\n", ub);
     }
 }
 
@@ -334,7 +334,7 @@ CbcCutBranchingObject::compareBranchingObject
     otherBd[0] = r1.lb();
     otherBd[1] = r1.ub();
     CbcRangeCompare comp = CbcCompareRanges(thisBd, otherBd, replaceIfOverlap);
-    if (comp != CbcRangeOverlap || (comp==CbcRangeOverlap && !replaceIfOverlap)) {
+    if (comp != CbcRangeOverlap || (comp == CbcRangeOverlap && !replaceIfOverlap)) {
         return comp;
     }
     r0.setLb(thisBd[0]);
@@ -376,7 +376,7 @@ CbcBranchToFixLots::CbcBranchToFixLots (CbcModel * model, double djTolerance,
     if (mark) {
         int numberColumns = model->getNumCols();
         mark_ = new char[numberColumns];
-        memcpy(mark_,mark,numberColumns);
+        memcpy(mark_, mark, numberColumns);
     } else {
         mark_ = NULL;
     }
@@ -389,13 +389,13 @@ CbcBranchToFixLots::CbcBranchToFixLots (CbcModel * model, double djTolerance,
 }
 // Copy constructor
 CbcBranchToFixLots::CbcBranchToFixLots ( const CbcBranchToFixLots & rhs)
-        :CbcBranchCut(rhs)
+        : CbcBranchCut(rhs)
 {
     djTolerance_ = rhs.djTolerance_;
     fractionFixed_ = rhs.fractionFixed_;
     int numberColumns = model_->getNumCols();
-    mark_ = CoinCopyOfArray(rhs.mark_,numberColumns);
-    matrixByRow_=rhs.matrixByRow_;
+    mark_ = CoinCopyOfArray(rhs.mark_, numberColumns);
+    matrixByRow_ = rhs.matrixByRow_;
     depth_ = rhs.depth_;
     numberClean_ = rhs.numberClean_;
     alwaysCreate_ = rhs.alwaysCreate_;
@@ -410,16 +410,16 @@ CbcBranchToFixLots::clone() const
 
 // Assignment operator
 CbcBranchToFixLots &
-CbcBranchToFixLots::operator=( const CbcBranchToFixLots& rhs)
+CbcBranchToFixLots::operator=( const CbcBranchToFixLots & rhs)
 {
-    if (this!=&rhs) {
+    if (this != &rhs) {
         CbcBranchCut::operator=(rhs);
         djTolerance_ = rhs.djTolerance_;
         fractionFixed_ = rhs.fractionFixed_;
         int numberColumns = model_->getNumCols();
         delete [] mark_;
-        mark_ = CoinCopyOfArray(rhs.mark_,numberColumns);
-        matrixByRow_=rhs.matrixByRow_;
+        mark_ = CoinCopyOfArray(rhs.mark_, numberColumns);
+        matrixByRow_ = rhs.matrixByRow_;
         depth_ = rhs.depth_;
         numberClean_ = rhs.numberClean_;
         alwaysCreate_ = rhs.alwaysCreate_;
@@ -433,7 +433,7 @@ CbcBranchToFixLots::~CbcBranchToFixLots ()
     delete [] mark_;
 }
 CbcBranchingObject *
-CbcBranchToFixLots::createCbcBranch(OsiSolverInterface * solver,const OsiBranchingInformation * /*info*/, int /*way*/)
+CbcBranchToFixLots::createCbcBranch(OsiSolverInterface * solver, const OsiBranchingInformation * /*info*/, int /*way*/)
 {
     // by default way must be -1
     //assert (way==-1);
@@ -448,32 +448,32 @@ CbcBranchToFixLots::createCbcBranch(OsiSolverInterface * solver,const OsiBranchi
     double integerTolerance =
         model_->getDblParam(CbcModel::CbcIntegerTolerance);
     // make smaller ?
-    double tolerance = CoinMin(1.0e-8,integerTolerance);
+    double tolerance = CoinMin(1.0e-8, integerTolerance);
     // How many fixed are we aiming at
-    int wantedFixed = static_cast<int> (static_cast<double>(numberIntegers)*fractionFixed_);
-    int nSort=0;
-    int numberFixed=0;
+    int wantedFixed = static_cast<int> (static_cast<double>(numberIntegers) * fractionFixed_);
+    int nSort = 0;
+    int numberFixed = 0;
     int numberColumns = solver->getNumCols();
     int * sort = new int[numberColumns];
     double * dsort = new double[numberColumns];
-    if (djTolerance_!=-1.234567) {
+    if (djTolerance_ != -1.234567) {
         int type = shallWe();
         assert (type);
         // Take clean first
-        if (type==1) {
-            for (i=0; i<numberIntegers; i++) {
+        if (type == 1) {
+            for (i = 0; i < numberIntegers; i++) {
                 int iColumn = integerVariable[i];
-                if (upper[iColumn]>lower[iColumn]) {
-                    if (!mark_||!mark_[iColumn]) {
-                        if (solution[iColumn]<lower[iColumn]+tolerance) {
-                            if (dj[iColumn]>djTolerance_) {
-                                dsort[nSort]=-dj[iColumn];
-                                sort[nSort++]=iColumn;
+                if (upper[iColumn] > lower[iColumn]) {
+                    if (!mark_ || !mark_[iColumn]) {
+                        if (solution[iColumn] < lower[iColumn] + tolerance) {
+                            if (dj[iColumn] > djTolerance_) {
+                                dsort[nSort] = -dj[iColumn];
+                                sort[nSort++] = iColumn;
                             }
-                        } else if (solution[iColumn]>upper[iColumn]-tolerance) {
-                            if (dj[iColumn]<-djTolerance_) {
-                                dsort[nSort]=dj[iColumn];
-                                sort[nSort++]=iColumn;
+                        } else if (solution[iColumn] > upper[iColumn] - tolerance) {
+                            if (dj[iColumn] < -djTolerance_) {
+                                dsort[nSort] = dj[iColumn];
+                                sort[nSort++] = iColumn;
                             }
                         }
                     }
@@ -482,9 +482,9 @@ CbcBranchToFixLots::createCbcBranch(OsiSolverInterface * solver,const OsiBranchi
                 }
             }
             // sort
-            CoinSort_2(dsort,dsort+nSort,sort);
-            nSort= CoinMin(nSort,wantedFixed-numberFixed);
-        } else if (type<10) {
+            CoinSort_2(dsort, dsort + nSort, sort);
+            nSort = CoinMin(nSort, wantedFixed - numberFixed);
+        } else if (type < 10) {
             int i;
             //const double * rowLower = solver->getRowLower();
             const double * rowUpper = solver->getRowUpper();
@@ -498,41 +498,41 @@ CbcBranchToFixLots::createCbcBranch(OsiSolverInterface * solver,const OsiBranchi
             const double * solution = solver->getColSolution();
             int numberColumns = solver->getNumCols();
             int numberRows = solver->getNumRows();
-            for (i=0; i<numberColumns; i++) {
-                sort[i]=i;
-                if (columnLower[i]!=columnUpper[i]) {
-                    dsort[i]=1.0e100;
+            for (i = 0; i < numberColumns; i++) {
+                sort[i] = i;
+                if (columnLower[i] != columnUpper[i]) {
+                    dsort[i] = 1.0e100;
                 } else {
-                    dsort[i]=1.0e50;
+                    dsort[i] = 1.0e50;
                     numberFixed++;
                 }
             }
-            for (i=0; i<numberRows; i++) {
+            for (i = 0; i < numberRows; i++) {
                 double rhsValue = rowUpper[i];
-                bool oneRow=true;
+                bool oneRow = true;
                 // check elements
-                int numberUnsatisfied=0;
-                for (int j=rowStart[i]; j<rowStart[i]+rowLength[i]; j++) {
+                int numberUnsatisfied = 0;
+                for (int j = rowStart[i]; j < rowStart[i] + rowLength[i]; j++) {
                     int iColumn = column[j];
                     double value = elementByRow[j];
                     double solValue = solution[iColumn];
-                    if (columnLower[iColumn]!=columnUpper[iColumn]) {
-                        if (solValue<1.0-integerTolerance&&solValue>integerTolerance)
+                    if (columnLower[iColumn] != columnUpper[iColumn]) {
+                        if (solValue < 1.0 - integerTolerance && solValue > integerTolerance)
                             numberUnsatisfied++;
-                        if (value!=1.0) {
-                            oneRow=false;
+                        if (value != 1.0) {
+                            oneRow = false;
                             break;
                         }
                     } else {
-                        rhsValue -= value*floor(solValue+0.5);
+                        rhsValue -= value * floor(solValue + 0.5);
                     }
                 }
-                if (oneRow&&rhsValue<=1.0+tolerance) {
+                if (oneRow && rhsValue <= 1.0 + tolerance) {
                     if (!numberUnsatisfied) {
-                        for (int j=rowStart[i]; j<rowStart[i]+rowLength[i]; j++) {
+                        for (int j = rowStart[i]; j < rowStart[i] + rowLength[i]; j++) {
                             int iColumn = column[j];
-                            if (dsort[iColumn]>1.0e50) {
-                                dsort[iColumn]=0;
+                            if (dsort[iColumn] > 1.0e50) {
+                                dsort[iColumn] = 0;
                                 nSort++;
                             }
                         }
@@ -540,35 +540,35 @@ CbcBranchToFixLots::createCbcBranch(OsiSolverInterface * solver,const OsiBranchi
                 }
             }
             // sort
-            CoinSort_2(dsort,dsort+numberColumns,sort);
+            CoinSort_2(dsort, dsort + numberColumns, sort);
         } else {
             // new way
-            for (i=0; i<numberIntegers; i++) {
+            for (i = 0; i < numberIntegers; i++) {
                 int iColumn = integerVariable[i];
-                if (upper[iColumn]>lower[iColumn]) {
-                    if (!mark_||!mark_[iColumn]) {
-                        double distanceDown=solution[iColumn]-lower[iColumn];
-                        double distanceUp=upper[iColumn]-solution[iColumn];
-                        double distance = CoinMin(distanceDown,distanceUp);
-                        if (distance>0.001&&distance<0.5) {
-                            dsort[nSort]=distance;
-                            sort[nSort++]=iColumn;
+                if (upper[iColumn] > lower[iColumn]) {
+                    if (!mark_ || !mark_[iColumn]) {
+                        double distanceDown = solution[iColumn] - lower[iColumn];
+                        double distanceUp = upper[iColumn] - solution[iColumn];
+                        double distance = CoinMin(distanceDown, distanceUp);
+                        if (distance > 0.001 && distance < 0.5) {
+                            dsort[nSort] = distance;
+                            sort[nSort++] = iColumn;
                         }
                     }
                 }
             }
             // sort
-            CoinSort_2(dsort,dsort+nSort,sort);
-            int n=0;
-            double sum=0.0;
-            for (int k=0; k<nSort; k++) {
+            CoinSort_2(dsort, dsort + nSort, sort);
+            int n = 0;
+            double sum = 0.0;
+            for (int k = 0; k < nSort; k++) {
                 sum += dsort[k];
-                if (sum<=djTolerance_)
-                    n=k;
+                if (sum <= djTolerance_)
+                    n = k;
                 else
                     break;
             }
-            nSort = CoinMin(n,numberClean_/1000000);
+            nSort = CoinMin(n, numberClean_ / 1000000);
         }
     } else {
 #define FIX_IF_LESS -0.1
@@ -578,72 +578,72 @@ CbcBranchToFixLots::createCbcBranch(OsiSolverInterface * solver,const OsiBranchi
         const int * column = matrixByRow_.getIndices();
         const CoinBigIndex * rowStart = matrixByRow_.getVectorStarts();
         const int * rowLength = matrixByRow_.getVectorLengths();
-        double bestSum=1.0;
-        int nBest=-1;
-        int kRow=-1;
+        double bestSum = 1.0;
+        int nBest = -1;
+        int kRow = -1;
         OsiSolverInterface * solver = model_->solver();
-        for (int i=0; i<numberRows; i++) {
-            int numberUnsatisfied=0;
-            double sum=0.0;
-            for (int j=rowStart[i]; j<rowStart[i]+rowLength[i]; j++) {
+        for (int i = 0; i < numberRows; i++) {
+            int numberUnsatisfied = 0;
+            double sum = 0.0;
+            for (int j = rowStart[i]; j < rowStart[i] + rowLength[i]; j++) {
                 int iColumn = column[j];
                 if (solver->isInteger(iColumn)) {
                     double solValue = solution[iColumn];
-                    if (solValue>1.0e-5&&solValue<FIX_IF_LESS) {
+                    if (solValue > 1.0e-5 && solValue < FIX_IF_LESS) {
                         numberUnsatisfied++;
                         sum += solValue;
                     }
                 }
             }
-            if (numberUnsatisfied>=3&&sum<FIX_IF_LESS) {
+            if (numberUnsatisfied >= 3 && sum < FIX_IF_LESS) {
                 // possible
-                if (numberUnsatisfied>nBest||
-                        (numberUnsatisfied==nBest&&sum<bestSum)) {
-                    nBest=numberUnsatisfied;
-                    bestSum=sum;
-                    kRow=i;
+                if (numberUnsatisfied > nBest ||
+                        (numberUnsatisfied == nBest && sum < bestSum)) {
+                    nBest = numberUnsatisfied;
+                    bestSum = sum;
+                    kRow = i;
                 }
             }
         }
-        assert (nBest>0);
-        for (int j=rowStart[kRow]; j<rowStart[kRow]+rowLength[kRow]; j++) {
+        assert (nBest > 0);
+        for (int j = rowStart[kRow]; j < rowStart[kRow] + rowLength[kRow]; j++) {
             int iColumn = column[j];
             if (solver->isInteger(iColumn)) {
                 double solValue = solution[iColumn];
-                if (solValue>1.0e-5&&solValue<FIX_IF_LESS) {
-                    sort[nSort++]=iColumn;
+                if (solValue > 1.0e-5 && solValue < FIX_IF_LESS) {
+                    sort[nSort++] = iColumn;
                 }
             }
         }
     }
     OsiRowCut down;
     down.setLb(-COIN_DBL_MAX);
-    double rhs=0.0;
-    for (i=0; i<nSort; i++) {
+    double rhs = 0.0;
+    for (i = 0; i < nSort; i++) {
         int iColumn = sort[i];
-        double distanceDown=solution[iColumn]-lower[iColumn];
-        double distanceUp=upper[iColumn]-solution[iColumn];
-        if (distanceDown<distanceUp) {
+        double distanceDown = solution[iColumn] - lower[iColumn];
+        double distanceUp = upper[iColumn] - solution[iColumn];
+        if (distanceDown < distanceUp) {
             rhs += lower[iColumn];
-            dsort[i]=1.0;
+            dsort[i] = 1.0;
         } else {
             rhs -= upper[iColumn];
-            dsort[i]=-1.0;
+            dsort[i] = -1.0;
         }
     }
     down.setUb(rhs);
-    down.setRow(nSort,sort,dsort);
+    down.setRow(nSort, sort, dsort);
     down.setEffectiveness(COIN_DBL_MAX); // so will persist
     delete [] sort;
     delete [] dsort;
     // up is same - just with rhs changed
     OsiRowCut up = down;
-    up.setLb(rhs +1.0);
+    up.setLb(rhs + 1.0);
     up.setUb(COIN_DBL_MAX);
     // Say can fix one way
     CbcCutBranchingObject * newObject =
-        new CbcCutBranchingObject(model_,down,up,true);
-    if (model_->messageHandler()->logLevel()>1)
+        new CbcCutBranchingObject(model_, down, up, true);
+    if (model_->messageHandler()->logLevel() > 1)
         printf("creating cut in CbcBranchCut\n");
     return newObject;
 }
@@ -654,7 +654,7 @@ CbcBranchToFixLots::createCbcBranch(OsiSolverInterface * solver,const OsiBranchi
 int
 CbcBranchToFixLots::shallWe() const
 {
-    int returnCode=0;
+    int returnCode = 0;
     OsiSolverInterface * solver = model_->solver();
     int numberRows = matrixByRow_.getNumRows();
     //if (numberRows!=solver->getNumRows())
@@ -666,59 +666,59 @@ CbcBranchToFixLots::shallWe() const
     int i;
     int numberIntegers = model_->numberIntegers();
     const int * integerVariable = model_->integerVariable();
-    if (numberClean_>1000000) {
-        int wanted = numberClean_%1000000;
+    if (numberClean_ > 1000000) {
+        int wanted = numberClean_ % 1000000;
         int * sort = new int[numberIntegers];
         double * dsort = new double[numberIntegers];
-        int nSort=0;
-        for (i=0; i<numberIntegers; i++) {
+        int nSort = 0;
+        for (i = 0; i < numberIntegers; i++) {
             int iColumn = integerVariable[i];
-            if (upper[iColumn]>lower[iColumn]) {
-                if (!mark_||!mark_[iColumn]) {
-                    double distanceDown=solution[iColumn]-lower[iColumn];
-                    double distanceUp=upper[iColumn]-solution[iColumn];
-                    double distance = CoinMin(distanceDown,distanceUp);
-                    if (distance>0.001&&distance<0.5) {
-                        dsort[nSort]=distance;
-                        sort[nSort++]=iColumn;
+            if (upper[iColumn] > lower[iColumn]) {
+                if (!mark_ || !mark_[iColumn]) {
+                    double distanceDown = solution[iColumn] - lower[iColumn];
+                    double distanceUp = upper[iColumn] - solution[iColumn];
+                    double distance = CoinMin(distanceDown, distanceUp);
+                    if (distance > 0.001 && distance < 0.5) {
+                        dsort[nSort] = distance;
+                        sort[nSort++] = iColumn;
                     }
                 }
             }
         }
         // sort
-        CoinSort_2(dsort,dsort+nSort,sort);
-        int n=0;
-        double sum=0.0;
-        for (int k=0; k<nSort; k++) {
+        CoinSort_2(dsort, dsort + nSort, sort);
+        int n = 0;
+        double sum = 0.0;
+        for (int k = 0; k < nSort; k++) {
             sum += dsort[k];
-            if (sum<=djTolerance_)
-                n=k;
+            if (sum <= djTolerance_)
+                n = k;
             else
                 break;
         }
         delete [] sort;
         delete [] dsort;
-        return (n>=wanted) ? 10 : 0;
+        return (n >= wanted) ? 10 : 0;
     }
     double integerTolerance =
         model_->getDblParam(CbcModel::CbcIntegerTolerance);
     // make smaller ?
-    double tolerance = CoinMin(1.0e-8,integerTolerance);
+    double tolerance = CoinMin(1.0e-8, integerTolerance);
     // How many fixed are we aiming at
-    int wantedFixed = static_cast<int> (static_cast<double>(numberIntegers)*fractionFixed_);
-    if (djTolerance_<1.0e10) {
-        int nSort=0;
-        int numberFixed=0;
-        for (i=0; i<numberIntegers; i++) {
+    int wantedFixed = static_cast<int> (static_cast<double>(numberIntegers) * fractionFixed_);
+    if (djTolerance_ < 1.0e10) {
+        int nSort = 0;
+        int numberFixed = 0;
+        for (i = 0; i < numberIntegers; i++) {
             int iColumn = integerVariable[i];
-            if (upper[iColumn]>lower[iColumn]) {
-                if (!mark_||!mark_[iColumn]) {
-                    if (solution[iColumn]<lower[iColumn]+tolerance) {
-                        if (dj[iColumn]>djTolerance_) {
+            if (upper[iColumn] > lower[iColumn]) {
+                if (!mark_ || !mark_[iColumn]) {
+                    if (solution[iColumn] < lower[iColumn] + tolerance) {
+                        if (dj[iColumn] > djTolerance_) {
                             nSort++;
                         }
-                    } else if (solution[iColumn]>upper[iColumn]-tolerance) {
-                        if (dj[iColumn]<-djTolerance_) {
+                    } else if (solution[iColumn] > upper[iColumn] - tolerance) {
+                        if (dj[iColumn] < -djTolerance_) {
                             nSort++;
                         }
                     }
@@ -727,9 +727,9 @@ CbcBranchToFixLots::shallWe() const
                 numberFixed++;
             }
         }
-        if (numberFixed+nSort<wantedFixed&&!alwaysCreate_) {
+        if (numberFixed + nSort < wantedFixed && !alwaysCreate_) {
             returnCode = 0;
-        } else if (numberFixed<wantedFixed) {
+        } else if (numberFixed < wantedFixed) {
             returnCode = 1;
         } else {
             returnCode = 0;
@@ -748,49 +748,49 @@ CbcBranchToFixLots::shallWe() const
         const double * columnLower = solver->getColLower();
         const double * columnUpper = solver->getColUpper();
         const double * solution = solver->getColSolution();
-        int numberClean=0;
-        bool someToDoYet=false;
+        int numberClean = 0;
+        bool someToDoYet = false;
         int numberColumns = solver->getNumCols();
         char * mark = new char[numberColumns];
-        int numberFixed=0;
-        for (i=0; i<numberColumns; i++) {
-            if (columnLower[i]!=columnUpper[i]) {
-                mark[i]=0;
+        int numberFixed = 0;
+        for (i = 0; i < numberColumns; i++) {
+            if (columnLower[i] != columnUpper[i]) {
+                mark[i] = 0;
             } else {
-                mark[i]=1;
+                mark[i] = 1;
                 numberFixed++;
             }
         }
-        int numberNewFixed=0;
-        for (i=0; i<numberRows; i++) {
+        int numberNewFixed = 0;
+        for (i = 0; i < numberRows; i++) {
             double rhsValue = rowUpper[i];
-            bool oneRow=true;
+            bool oneRow = true;
             // check elements
-            int numberUnsatisfied=0;
-            for (int j=rowStart[i]; j<rowStart[i]+rowLength[i]; j++) {
+            int numberUnsatisfied = 0;
+            for (int j = rowStart[i]; j < rowStart[i] + rowLength[i]; j++) {
                 int iColumn = column[j];
                 double value = elementByRow[j];
                 double solValue = solution[iColumn];
-                if (columnLower[iColumn]!=columnUpper[iColumn]) {
-                    if (solValue<1.0-integerTolerance&&solValue>integerTolerance)
+                if (columnLower[iColumn] != columnUpper[iColumn]) {
+                    if (solValue < 1.0 - integerTolerance && solValue > integerTolerance)
                         numberUnsatisfied++;
-                    if (value!=1.0) {
-                        oneRow=false;
+                    if (value != 1.0) {
+                        oneRow = false;
                         break;
                     }
                 } else {
-                    rhsValue -= value*floor(solValue+0.5);
+                    rhsValue -= value * floor(solValue + 0.5);
                 }
             }
-            if (oneRow&&rhsValue<=1.0+tolerance) {
+            if (oneRow && rhsValue <= 1.0 + tolerance) {
                 if (numberUnsatisfied) {
-                    someToDoYet=true;
+                    someToDoYet = true;
                 } else {
                     numberClean++;
-                    for (int j=rowStart[i]; j<rowStart[i]+rowLength[i]; j++) {
+                    for (int j = rowStart[i]; j < rowStart[i] + rowLength[i]; j++) {
                         int iColumn = column[j];
-                        if (columnLower[iColumn]!=columnUpper[iColumn]&&!mark[iColumn]) {
-                            mark[iColumn]=1;
+                        if (columnLower[iColumn] != columnUpper[iColumn] && !mark[iColumn]) {
+                            mark[iColumn] = 1;
                             numberNewFixed++;
                         }
                     }
@@ -800,9 +800,9 @@ CbcBranchToFixLots::shallWe() const
         delete [] mark;
         //printf("%d clean, %d old fixed, %d new fixed\n",
         //   numberClean,numberFixed,numberNewFixed);
-        if (someToDoYet&&numberClean<numberClean_
-                &&numberNewFixed+numberFixed<wantedFixed) {
-        } else if (numberFixed<wantedFixed) {
+        if (someToDoYet && numberClean < numberClean_
+                && numberNewFixed + numberFixed < wantedFixed) {
+        } else if (numberFixed < wantedFixed) {
             returnCode |= 2;
         } else {
         }
@@ -813,20 +813,20 @@ double
 CbcBranchToFixLots::infeasibility(const OsiBranchingInformation * /*info*/,
                                   int &preferredWay) const
 {
-    preferredWay=-1;
+    preferredWay = -1;
     CbcNode * node = model_->currentNode();
     int depth;
     if (node)
-        depth=CoinMax(node->depth(),0);
+        depth = CoinMax(node->depth(), 0);
     else
         return 0.0;
-    if (depth_<0) {
+    if (depth_ < 0) {
         return 0.0;
-    } else if (depth_>0) {
-        if ((depth%depth_)!=0)
+    } else if (depth_ > 0) {
+        if ((depth % depth_) != 0)
             return 0.0;
     }
-    if (djTolerance_!=-1.234567) {
+    if (djTolerance_ != -1.234567) {
         if (!shallWe())
             return 0.0;
         else
@@ -838,32 +838,32 @@ CbcBranchToFixLots::infeasibility(const OsiBranchingInformation * /*info*/,
         const int * column = matrixByRow_.getIndices();
         const CoinBigIndex * rowStart = matrixByRow_.getVectorStarts();
         const int * rowLength = matrixByRow_.getVectorLengths();
-        double bestSum=1.0;
-        int nBest=-1;
+        double bestSum = 1.0;
+        int nBest = -1;
         OsiSolverInterface * solver = model_->solver();
-        for (int i=0; i<numberRows; i++) {
-            int numberUnsatisfied=0;
-            double sum=0.0;
-            for (int j=rowStart[i]; j<rowStart[i]+rowLength[i]; j++) {
+        for (int i = 0; i < numberRows; i++) {
+            int numberUnsatisfied = 0;
+            double sum = 0.0;
+            for (int j = rowStart[i]; j < rowStart[i] + rowLength[i]; j++) {
                 int iColumn = column[j];
                 if (solver->isInteger(iColumn)) {
                     double solValue = solution[iColumn];
-                    if (solValue>1.0e-5&&solValue<FIX_IF_LESS) {
+                    if (solValue > 1.0e-5 && solValue < FIX_IF_LESS) {
                         numberUnsatisfied++;
                         sum += solValue;
                     }
                 }
             }
-            if (numberUnsatisfied>=3&&sum<FIX_IF_LESS) {
+            if (numberUnsatisfied >= 3 && sum < FIX_IF_LESS) {
                 // possible
-                if (numberUnsatisfied>nBest||
-                        (numberUnsatisfied==nBest&&sum<bestSum)) {
-                    nBest=numberUnsatisfied;
-                    bestSum=sum;
+                if (numberUnsatisfied > nBest ||
+                        (numberUnsatisfied == nBest && sum < bestSum)) {
+                    nBest = numberUnsatisfied;
+                    bestSum = sum;
                 }
             }
         }
-        if (nBest>0)
+        if (nBest > 0)
             return 1.0e20;
         else
             return 0.0;
@@ -873,18 +873,18 @@ CbcBranchToFixLots::infeasibility(const OsiBranchingInformation * /*info*/,
 void
 CbcBranchToFixLots::redoSequenceEtc(CbcModel * model, int numberColumns, const int * originalColumns)
 {
-    model_=model;
+    model_ = model;
     if (mark_) {
         OsiSolverInterface * solver = model_->solver();
         int numberColumnsNow = solver->getNumCols();
         char * temp = new char[numberColumnsNow];
-        memset(temp,0,numberColumnsNow);
-        for (int i=0; i<numberColumns; i++) {
+        memset(temp, 0, numberColumnsNow);
+        for (int i = 0; i < numberColumns; i++) {
             int j = originalColumns[i];
-            temp[i]=mark_[j];
+            temp[i] = mark_[j];
         }
         delete [] mark_;
-        mark_=temp;
+        mark_ = temp;
     }
     OsiSolverInterface * solver = model_->solver();
     matrixByRow_ = *solver->getMatrixByRow();
@@ -905,15 +905,15 @@ CbcBranchAllDifferent::CbcBranchAllDifferent (CbcModel * model, int numberInSet,
         const int * members)
         : CbcBranchCut(model)
 {
-    numberInSet_=numberInSet;
-    which_ = CoinCopyOfArray(members,numberInSet_);
+    numberInSet_ = numberInSet;
+    which_ = CoinCopyOfArray(members, numberInSet_);
 }
 // Copy constructor
 CbcBranchAllDifferent::CbcBranchAllDifferent ( const CbcBranchAllDifferent & rhs)
-        :CbcBranchCut(rhs)
+        : CbcBranchCut(rhs)
 {
-    numberInSet_=rhs.numberInSet_;
-    which_ = CoinCopyOfArray(rhs.which_,numberInSet_);
+    numberInSet_ = rhs.numberInSet_;
+    which_ = CoinCopyOfArray(rhs.which_, numberInSet_);
 }
 
 // Clone
@@ -925,13 +925,13 @@ CbcBranchAllDifferent::clone() const
 
 // Assignment operator
 CbcBranchAllDifferent &
-CbcBranchAllDifferent::operator=( const CbcBranchAllDifferent& rhs)
+CbcBranchAllDifferent::operator=( const CbcBranchAllDifferent & rhs)
 {
-    if (this!=&rhs) {
+    if (this != &rhs) {
         CbcBranchCut::operator=(rhs);
         delete [] which_;
-        numberInSet_=rhs.numberInSet_;
-        which_ = CoinCopyOfArray(rhs.which_,numberInSet_);
+        numberInSet_ = rhs.numberInSet_;
+        which_ = CoinCopyOfArray(rhs.which_, numberInSet_);
     }
     return *this;
 }
@@ -943,7 +943,7 @@ CbcBranchAllDifferent::~CbcBranchAllDifferent ()
 }
 CbcBranchingObject *
 CbcBranchAllDifferent::createCbcBranch(OsiSolverInterface * /*solver*/
-                                       ,const OsiBranchingInformation * /*info*/,
+                                       , const OsiBranchingInformation * /*info*/,
                                        int /*way*/)
 {
     // by default way must be -1
@@ -952,41 +952,41 @@ CbcBranchAllDifferent::createCbcBranch(OsiSolverInterface * /*solver*/
     double * values = new double[numberInSet_];
     int * which = new int[numberInSet_];
     int i;
-    for (i=0; i<numberInSet_; i++) {
+    for (i = 0; i < numberInSet_; i++) {
         int iColumn = which_[i];
-        values[i]=solution[iColumn];
-        which[i]=iColumn;
+        values[i] = solution[iColumn];
+        which[i] = iColumn;
     }
-    CoinSort_2(values,values+numberInSet_,which);
+    CoinSort_2(values, values + numberInSet_, which);
     double last = -1.0;
-    double closest=1.0;
-    int worst=-1;
-    for (i=0; i<numberInSet_; i++) {
-        if (values[i]-last<closest) {
-            closest=values[i]-last;
-            worst=i-1;
+    double closest = 1.0;
+    int worst = -1;
+    for (i = 0; i < numberInSet_; i++) {
+        if (values[i] - last < closest) {
+            closest = values[i] - last;
+            worst = i - 1;
         }
-        last=values[i];
+        last = values[i];
     }
-    assert (closest<=0.99999);
+    assert (closest <= 0.99999);
     OsiRowCut down;
     down.setLb(-COIN_DBL_MAX);
     down.setUb(-1.0);
     int pair[2];
-    double elements[]={1.0,-1.0};
-    pair[0]=which[worst];
-    pair[1]=which[worst+1];
+    double elements[] = {1.0, -1.0};
+    pair[0] = which[worst];
+    pair[1] = which[worst+1];
     delete [] values;
     delete [] which;
-    down.setRow(2,pair,elements);
+    down.setRow(2, pair, elements);
     // up is same - just with rhs changed
     OsiRowCut up = down;
     up.setLb(1.0);
     up.setUb(COIN_DBL_MAX);
     // Say is not a fix type branch
     CbcCutBranchingObject * newObject =
-        new CbcCutBranchingObject(model_,down,up,false);
-    if (model_->messageHandler()->logLevel()>1)
+        new CbcCutBranchingObject(model_, down, up, false);
+    if (model_->messageHandler()->logLevel() > 1)
         printf("creating cut in CbcBranchCut\n");
     return newObject;
 }
@@ -994,29 +994,29 @@ double
 CbcBranchAllDifferent::infeasibility(const OsiBranchingInformation * /*info*/,
                                      int &preferredWay) const
 {
-    preferredWay=-1;
+    preferredWay = -1;
     //OsiSolverInterface * solver = model_->solver();
     const double * solution = model_->testSolution();
     //const double * lower = solver->getColLower();
     //const double * upper = solver->getColUpper();
     double * values = new double[numberInSet_];
     int i;
-    for (i=0; i<numberInSet_; i++) {
+    for (i = 0; i < numberInSet_; i++) {
         int iColumn = which_[i];
-        values[i]=solution[iColumn];
+        values[i] = solution[iColumn];
     }
-    std::sort(values,values+numberInSet_);
+    std::sort(values, values + numberInSet_);
     double last = -1.0;
-    double closest=1.0;
-    for (i=0; i<numberInSet_; i++) {
-        if (values[i]-last<closest) {
-            closest=values[i]-last;
+    double closest = 1.0;
+    for (i = 0; i < numberInSet_; i++) {
+        if (values[i] - last < closest) {
+            closest = values[i] - last;
         }
-        last=values[i];
+        last = values[i];
     }
     delete [] values;
-    if (closest>0.99999)
+    if (closest > 0.99999)
         return 0.0;
     else
-        return 0.5*(1.0-closest);
+        return 0.5*(1.0 - closest);
 }

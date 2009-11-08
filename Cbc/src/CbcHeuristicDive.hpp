@@ -39,7 +39,7 @@ public:
     virtual void generateCpp( FILE * ) {}
 
     /// Create C++ lines to get to current state - does work for base class
-    void generateCpp( FILE * fp,const char * heuristic);
+    void generateCpp( FILE * fp, const char * heuristic);
 
     /// Resets stuff if model changes
     virtual void resetModel(CbcModel * model);

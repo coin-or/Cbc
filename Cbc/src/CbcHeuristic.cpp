@@ -59,7 +59,7 @@ CbcHeuristicNodeList::CbcHeuristicNodeList(const CbcHeuristicNodeList& rhs)
 }
 
 CbcHeuristicNodeList& CbcHeuristicNodeList::operator=
-(const CbcHeuristicNodeList& rhs)
+(const CbcHeuristicNodeList & rhs)
 {
     if (this != &rhs) {
         gutsOfDelete();
@@ -158,8 +158,8 @@ CbcHeuristic::gutsOfCopy(const CbcHeuristic & rhs)
     decayFactor_ = rhs.decayFactor_;
     switches_ = rhs.switches_;
     whereFrom_ = rhs.whereFrom_;
-    shallowDepth_= rhs.shallowDepth_;
-    howOftenShallow_= rhs.howOftenShallow_;
+    shallowDepth_ = rhs.shallowDepth_;
+    howOftenShallow_ = rhs.howOftenShallow_;
     numInvocationsInShallow_ = rhs.numInvocationsInShallow_;
     numInvocationsInDeep_ = rhs.numInvocationsInDeep_;
     lastRunDeep_ = rhs.lastRunDeep_;
@@ -170,7 +170,7 @@ CbcHeuristic::gutsOfCopy(const CbcHeuristic & rhs)
     numberSolutionsFound_ = rhs.numberSolutionsFound_;
     if (rhs.inputSolution_) {
         int numberColumns = model_->getNumCols();
-        setInputSolution(rhs.inputSolution_,rhs.inputSolution_[numberColumns]);
+        setInputSolution(rhs.inputSolution_, rhs.inputSolution_[numberColumns]);
     }
 }
 // Copy constructor
@@ -182,9 +182,9 @@ CbcHeuristic::CbcHeuristic(const CbcHeuristic & rhs)
 
 // Assignment operator
 CbcHeuristic &
-CbcHeuristic::operator=( const CbcHeuristic& rhs)
+CbcHeuristic::operator=( const CbcHeuristic & rhs)
 {
-    if (this!=&rhs) {
+    if (this != &rhs) {
         gutsOfDelete();
         gutsOfCopy(rhs);
     }
@@ -263,15 +263,15 @@ CbcHeuristic::printDistanceToNodes()
 bool
 CbcHeuristic::shouldHeurRun(int whereFrom)
 {
-    assert (whereFrom>=0&&whereFrom<16);
+    assert (whereFrom >= 0 && whereFrom < 16);
     // take off 8 (code - likes new solution)
     whereFrom &= 7;
-    if ((whereFrom_&(1<<whereFrom))==0)
+    if ((whereFrom_&(1 << whereFrom)) == 0)
         return false;
     // No longer used for original purpose - so use for ever run at all JJF
 #if 1
     // Don't run if hot start
-    if (model_&&model_->hotstartSolution())
+    if (model_ && model_->hotstartSolution())
         return false;
     else
         return true;
@@ -340,8 +340,8 @@ CbcHeuristic::shouldHeurRun(int whereFrom)
 #endif
 #ifdef PRINT_DEBUG
         double minDistance = nodeDesc->minDistance(runNodes_);
-        std::cout<<"minDistance = "<<minDistance
-                 <<", minDistanceToRun = "<<minDistanceToRun<<std::endl;
+        std::cout << "minDistance = " << minDistance
+                  << ", minDistanceToRun = " << minDistanceToRun << std::endl;
 #endif
         if (nodeDesc->minDistanceIsSmall(runNodes_, minDistanceToRun)) {
             delete nodeDesc;
@@ -363,13 +363,13 @@ CbcHeuristic::shouldHeurRun_randomChoice()
         return false;
     int depth = model_->currentDepth();
     // when_ -999 is special marker to force to run
-    if (depth != 0&&when_!=-999) {
+    if (depth != 0 && when_ != -999) {
         const double numerator = depth * depth;
         const double denominator = exp(depth * log(2.0));
         double probability = numerator / denominator;
         double randomNumber = randomNumberGenerator_.randomDouble();
-        int when = when_%100;
-        if (when>2&&when<8) {
+        int when = when_ % 100;
+        if (when > 2 && when < 8) {
             /* JJF adjustments
             3 only at root and if no solution
             4 only at root and if this heuristic has not got solution
@@ -381,53 +381,53 @@ CbcHeuristic::shouldHeurRun_randomChoice()
             case 3:
             default:
                 if (model_->bestSolution())
-                    probability=-1.0;
+                    probability = -1.0;
                 break;
             case 4:
                 if (numberSolutionsFound_)
-                    probability=-1.0;
+                    probability = -1.0;
                 break;
             case 5:
-                if (depth>=4)
-                    probability=-1.0;
+                if (depth >= 4)
+                    probability = -1.0;
                 break;
             case 6:
-                if (depth>=3) {
-                    if ((numCouldRun_%howOften_)==0&&
-                            numberSolutionsFound_*howOften_<numCouldRun_) {
+                if (depth >= 3) {
+                    if ((numCouldRun_ % howOften_) == 0 &&
+                            numberSolutionsFound_*howOften_ < numCouldRun_) {
 #ifdef COIN_DEVELOP
-                        int old=howOften_;
+                        int old = howOften_;
 #endif
-                        howOften_ = CoinMin(CoinMax(static_cast<int> (howOften_*1.1),howOften_+1),10000);
+                        howOften_ = CoinMin(CoinMax(static_cast<int> (howOften_ * 1.1), howOften_ + 1), 10000);
 #ifdef COIN_DEVELOP
                         printf("Howoften changed from %d to %d for %s\n",
-                               old,howOften_,heuristicName_.c_str());
+                               old, howOften_, heuristicName_.c_str());
 #endif
                     }
-                    probability = 1.0/howOften_;
+                    probability = 1.0 / howOften_;
                     if (model_->bestSolution())
                         probability *= 0.5;
                 }
                 break;
             case 7:
-                if ((model_->bestSolution()&&numRuns_>=2)||numRuns_>=4)
-                    probability=-1.0;
+                if ((model_->bestSolution() && numRuns_ >= 2) || numRuns_ >= 4)
+                    probability = -1.0;
                 break;
             }
         }
-        if (randomNumber>probability)
+        if (randomNumber > probability)
             return false;
 
         if (model_->getCurrentPassNumber() > 1)
             return false;
 #ifdef COIN_DEVELOP
         printf("Running %s, random %g probability %g\n",
-               heuristicName_.c_str(),randomNumber,probability);
+               heuristicName_.c_str(), randomNumber, probability);
 #endif
     } else {
 #ifdef COIN_DEVELOP
         printf("Running %s, depth %d when %d\n",
-               heuristicName_.c_str(),depth,when_);
+               heuristicName_.c_str(), depth, when_);
 #endif
     }
     ++numRuns_;
@@ -438,7 +438,7 @@ CbcHeuristic::shouldHeurRun_randomChoice()
 void
 CbcHeuristic::resetModel(CbcModel * model)
 {
-    model_=model;
+    model_ = model;
 }
 // Set seed
 void
@@ -452,52 +452,52 @@ void
 CbcHeuristic::generateCpp( FILE * fp, const char * heuristic)
 {
     // hard coded as CbcHeuristic virtual
-    if (when_!=2)
-        fprintf(fp,"3  %s.setWhen(%d);\n",heuristic,when_);
+    if (when_ != 2)
+        fprintf(fp, "3  %s.setWhen(%d);\n", heuristic, when_);
     else
-        fprintf(fp,"4  %s.setWhen(%d);\n",heuristic,when_);
-    if (numberNodes_!=200)
-        fprintf(fp,"3  %s.setNumberNodes(%d);\n",heuristic,numberNodes_);
+        fprintf(fp, "4  %s.setWhen(%d);\n", heuristic, when_);
+    if (numberNodes_ != 200)
+        fprintf(fp, "3  %s.setNumberNodes(%d);\n", heuristic, numberNodes_);
     else
-        fprintf(fp,"4  %s.setNumberNodes(%d);\n",heuristic,numberNodes_);
-    if (feasibilityPumpOptions_!=-1)
-        fprintf(fp,"3  %s.setFeasibilityPumpOptions(%d);\n",heuristic,feasibilityPumpOptions_);
+        fprintf(fp, "4  %s.setNumberNodes(%d);\n", heuristic, numberNodes_);
+    if (feasibilityPumpOptions_ != -1)
+        fprintf(fp, "3  %s.setFeasibilityPumpOptions(%d);\n", heuristic, feasibilityPumpOptions_);
     else
-        fprintf(fp,"4  %s.setFeasibilityPumpOptions(%d);\n",heuristic,feasibilityPumpOptions_);
-    if (fractionSmall_!=1.0)
-        fprintf(fp,"3  %s.setFractionSmall(%g);\n",heuristic,fractionSmall_);
+        fprintf(fp, "4  %s.setFeasibilityPumpOptions(%d);\n", heuristic, feasibilityPumpOptions_);
+    if (fractionSmall_ != 1.0)
+        fprintf(fp, "3  %s.setFractionSmall(%g);\n", heuristic, fractionSmall_);
     else
-        fprintf(fp,"4  %s.setFractionSmall(%g);\n",heuristic,fractionSmall_);
+        fprintf(fp, "4  %s.setFractionSmall(%g);\n", heuristic, fractionSmall_);
     if (heuristicName_ != "Unknown")
-        fprintf(fp,"3  %s.setHeuristicName(\"%s\");\n",
-                heuristic,heuristicName_.c_str()) ;
+        fprintf(fp, "3  %s.setHeuristicName(\"%s\");\n",
+                heuristic, heuristicName_.c_str()) ;
     else
-        fprintf(fp,"4  %s.setHeuristicName(\"%s\");\n",
-                heuristic,heuristicName_.c_str()) ;
-    if (decayFactor_!=0.0)
-        fprintf(fp,"3  %s.setDecayFactor(%g);\n",heuristic,decayFactor_);
+        fprintf(fp, "4  %s.setHeuristicName(\"%s\");\n",
+                heuristic, heuristicName_.c_str()) ;
+    if (decayFactor_ != 0.0)
+        fprintf(fp, "3  %s.setDecayFactor(%g);\n", heuristic, decayFactor_);
     else
-        fprintf(fp,"4  %s.setDecayFactor(%g);\n",heuristic,decayFactor_);
-    if (switches_!=0)
-        fprintf(fp,"3  %s.setSwitches(%d);\n",heuristic,switches_);
+        fprintf(fp, "4  %s.setDecayFactor(%g);\n", heuristic, decayFactor_);
+    if (switches_ != 0)
+        fprintf(fp, "3  %s.setSwitches(%d);\n", heuristic, switches_);
     else
-        fprintf(fp,"4  %s.setSwitches(%d);\n",heuristic,switches_);
-    if (whereFrom_!=DEFAULT_WHERE)
-        fprintf(fp,"3  %s.setWhereFrom(%d);\n",heuristic,whereFrom_);
+        fprintf(fp, "4  %s.setSwitches(%d);\n", heuristic, switches_);
+    if (whereFrom_ != DEFAULT_WHERE)
+        fprintf(fp, "3  %s.setWhereFrom(%d);\n", heuristic, whereFrom_);
     else
-        fprintf(fp,"4  %s.setWhereFrom(%d);\n",heuristic,whereFrom_);
-    if (shallowDepth_!=1)
-        fprintf(fp,"3  %s.setShallowDepth(%d);\n",heuristic,shallowDepth_);
+        fprintf(fp, "4  %s.setWhereFrom(%d);\n", heuristic, whereFrom_);
+    if (shallowDepth_ != 1)
+        fprintf(fp, "3  %s.setShallowDepth(%d);\n", heuristic, shallowDepth_);
     else
-        fprintf(fp,"4  %s.setShallowDepth(%d);\n",heuristic,shallowDepth_);
-    if (howOftenShallow_!=1)
-        fprintf(fp,"3  %s.setHowOftenShallow(%d);\n",heuristic,howOftenShallow_);
+        fprintf(fp, "4  %s.setShallowDepth(%d);\n", heuristic, shallowDepth_);
+    if (howOftenShallow_ != 1)
+        fprintf(fp, "3  %s.setHowOftenShallow(%d);\n", heuristic, howOftenShallow_);
     else
-        fprintf(fp,"4  %s.setHowOftenShallow(%d);\n",heuristic,howOftenShallow_);
-    if (minDistanceToRun_!=1)
-        fprintf(fp,"3  %s.setMinDistanceToRun(%d);\n",heuristic,minDistanceToRun_);
+        fprintf(fp, "4  %s.setHowOftenShallow(%d);\n", heuristic, howOftenShallow_);
+    if (minDistanceToRun_ != 1)
+        fprintf(fp, "3  %s.setMinDistanceToRun(%d);\n", heuristic, minDistanceToRun_);
     else
-        fprintf(fp,"4  %s.setMinDistanceToRun(%d);\n",heuristic,minDistanceToRun_);
+        fprintf(fp, "4  %s.setMinDistanceToRun(%d);\n", heuristic, minDistanceToRun_);
 }
 // Destructor
 CbcHeuristic::~CbcHeuristic ()
@@ -518,7 +518,7 @@ OsiSolverInterface *
 CbcHeuristic::cloneBut(int type)
 {
     OsiSolverInterface * solver;
-    if ((type&1)==0||!model_->continuousSolver())
+    if ((type&1) == 0 || !model_->continuousSolver())
         solver = model_->solver()->clone();
     else
         solver = model_->continuousSolver()->clone();
@@ -526,29 +526,29 @@ CbcHeuristic::cloneBut(int type)
     OsiClpSolverInterface * clpSolver
     = dynamic_cast<OsiClpSolverInterface *> (solver);
 #endif
-    if ((type&2)!=0) {
-        int n=model_->numberObjects();
+    if ((type&2) != 0) {
+        int n = model_->numberObjects();
         int priority = model_->continuousPriority();
-        if (priority<COIN_INT_MAX) {
-            for (int i=0; i<n; i++) {
+        if (priority < COIN_INT_MAX) {
+            for (int i = 0; i < n; i++) {
                 const OsiObject * obj = model_->object(i);
                 const CbcSimpleInteger * thisOne =
                     dynamic_cast <const CbcSimpleInteger *> (obj);
                 if (thisOne) {
-                    int iColumn=thisOne->columnNumber();
-                    if (thisOne->priority()>=priority)
+                    int iColumn = thisOne->columnNumber();
+                    if (thisOne->priority() >= priority)
                         solver->setContinuous(iColumn);
                 }
             }
         }
 #ifdef COIN_HAS_CLP
         if (clpSolver) {
-            for (int i=0; i<n; i++) {
+            for (int i = 0; i < n; i++) {
                 const OsiObject * obj = model_->object(i);
                 const CbcSimpleInteger * thisOne =
                     dynamic_cast <const CbcSimpleInteger *> (obj);
                 if (thisOne) {
-                    int iColumn=thisOne->columnNumber();
+                    int iColumn = thisOne->columnNumber();
                     if (clpSolver->isOptionalInteger(iColumn))
                         clpSolver->setContinuous(iColumn);
                 }
@@ -557,9 +557,9 @@ CbcHeuristic::cloneBut(int type)
 #endif
     }
 #ifdef COIN_HAS_CLP
-    if ((type&4)!=0&&clpSolver) {
+    if ((type&4) != 0 && clpSolver) {
         int options = clpSolver->getModelPtr()->moreSpecialOptions();
-        clpSolver->getModelPtr()->setMoreSpecialOptions(options|64);
+        clpSolver->getModelPtr()->setMoreSpecialOptions(options | 64);
     }
 #endif
     return solver;
@@ -568,27 +568,27 @@ CbcHeuristic::cloneBut(int type)
 bool
 CbcHeuristic::exitNow(double bestObjective) const
 {
-    if ((switches_&2048)!=0) {
+    if ((switches_&2048) != 0) {
         // exit may be forced - but unset for next time
         switches_ &= ~2048;
-        if ((switches_&1024)!=0)
+        if ((switches_&1024) != 0)
             return true;
-    } else if ((switches_&1)==0) {
+    } else if ((switches_&1) == 0) {
         return false;
     }
     // See if can stop on gap
     OsiSolverInterface * solver = model_->solver();
-    double bestPossibleObjective = solver->getObjValue()*solver->getObjSense();
+    double bestPossibleObjective = solver->getObjValue() * solver->getObjSense();
     double absGap = CoinMax(model_->getAllowableGap(),
                             model_->getHeuristicGap());
     double fracGap = CoinMax(model_->getAllowableFractionGap(),
                              model_->getHeuristicFractionGap());
-    double testGap = CoinMax(absGap,fracGap*
+    double testGap = CoinMax(absGap, fracGap *
                              CoinMax(fabs(bestObjective),
                                      fabs(bestPossibleObjective)));
 
-    if (bestObjective-bestPossibleObjective < testGap
-            && model_->getCutoffIncrement()>=0.0) {
+    if (bestObjective - bestPossibleObjective < testGap
+            && model_->getCutoffIncrement() >= 0.0) {
         return true;
     } else {
         return false;
@@ -597,120 +597,120 @@ CbcHeuristic::exitNow(double bestObjective) const
 #ifdef HISTORY_STATISTICS
 extern bool getHistoryStatistics_;
 #endif
-static double sizeRatio(int numberRowsNow,int numberColumnsNow,
-                        int numberRowsStart,int numberColumnsStart)
+static double sizeRatio(int numberRowsNow, int numberColumnsNow,
+                        int numberRowsStart, int numberColumnsStart)
 {
     double valueNow;
-    if (numberRowsNow*10>numberColumnsNow||numberColumnsNow<200) {
-        valueNow = 2*numberRowsNow+numberColumnsNow;
+    if (numberRowsNow*10 > numberColumnsNow || numberColumnsNow < 200) {
+        valueNow = 2 * numberRowsNow + numberColumnsNow;
     } else {
         // long and thin - rows are more important
-        if (numberRowsNow*40>numberColumnsNow)
-            valueNow = 10*numberRowsNow+numberColumnsNow;
+        if (numberRowsNow*40 > numberColumnsNow)
+            valueNow = 10 * numberRowsNow + numberColumnsNow;
         else
-            valueNow = 200*numberRowsNow+numberColumnsNow;
+            valueNow = 200 * numberRowsNow + numberColumnsNow;
     }
     double valueStart;
-    if (numberRowsStart*10>numberColumnsStart||numberColumnsStart<200) {
-        valueStart = 2*numberRowsStart+numberColumnsStart;
+    if (numberRowsStart*10 > numberColumnsStart || numberColumnsStart < 200) {
+        valueStart = 2 * numberRowsStart + numberColumnsStart;
     } else {
         // long and thin - rows are more important
-        if (numberRowsStart*40>numberColumnsStart)
-            valueStart = 10*numberRowsStart+numberColumnsStart;
+        if (numberRowsStart*40 > numberColumnsStart)
+            valueStart = 10 * numberRowsStart + numberColumnsStart;
         else
-            valueStart = 200*numberRowsStart+numberColumnsStart;
+            valueStart = 200 * numberRowsStart + numberColumnsStart;
     }
     //printf("sizeProblem Now %g, %d rows, %d columns\nsizeProblem Start %g, %d rows, %d columns\n",
     // valueNow,numberRowsNow,numberColumnsNow,
     // valueStart,numberRowsStart,numberColumnsStart);
-    if (10*numberRowsNow<8*numberRowsStart)
-        return valueNow/valueStart;
-    else if (10*numberRowsNow<9*numberRowsStart)
-        return 1.1*(valueNow/valueStart);
-    else if (numberRowsNow<numberRowsStart)
-        return 1.5*(valueNow/valueStart);
+    if (10*numberRowsNow < 8*numberRowsStart)
+        return valueNow / valueStart;
+    else if (10*numberRowsNow < 9*numberRowsStart)
+        return 1.1*(valueNow / valueStart);
+    else if (numberRowsNow < numberRowsStart)
+        return 1.5*(valueNow / valueStart);
     else
-        return 2.0*(valueNow/valueStart);
+        return 2.0*(valueNow / valueStart);
 }
 
 
 // Do mini branch and bound (return 1 if solution)
 int
-CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver,int numberNodes,
+CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver, int numberNodes,
                                   double * newSolution, double & newSolutionValue,
                                   double cutoff, std::string name) const
 {
     // size before
-    int shiftRows=0;
-    if (numberNodes<0)
-        shiftRows = solver->getNumRows()-numberNodes_;
-    int numberRowsStart = solver->getNumRows()-shiftRows;
+    int shiftRows = 0;
+    if (numberNodes < 0)
+        shiftRows = solver->getNumRows() - numberNodes_;
+    int numberRowsStart = solver->getNumRows() - shiftRows;
     int numberColumnsStart = solver->getNumCols();
 #ifdef CLP_INVESTIGATE
     printf("%s has %d rows, %d columns\n",
-           name.c_str(),solver->getNumRows(),solver->getNumCols());
+           name.c_str(), solver->getNumRows(), solver->getNumCols());
 #endif
     // Use this fraction
     double fractionSmall = fractionSmall_;
-    double before = 2*numberRowsStart+numberColumnsStart;
-    if (before>40000.0) {
+    double before = 2 * numberRowsStart + numberColumnsStart;
+    if (before > 40000.0) {
         // fairly large - be more conservative
-        double multiplier = 1.0 - 0.3*CoinMin(100000.0,before-40000.0)/100000.0;
-        if (multiplier<1.0) {
+        double multiplier = 1.0 - 0.3 * CoinMin(100000.0, before - 40000.0) / 100000.0;
+        if (multiplier < 1.0) {
             fractionSmall *= multiplier;
 #ifdef CLP_INVESTIGATE
             printf("changing fractionSmall from %g to %g for %s\n",
-                   fractionSmall_,fractionSmall,name.c_str());
+                   fractionSmall_, fractionSmall, name.c_str());
 #endif
         }
     }
 #ifdef COIN_HAS_CLP
     OsiClpSolverInterface * osiclp = dynamic_cast< OsiClpSolverInterface*> (solver);
-    if (osiclp&&(osiclp->specialOptions()&65536)==0) {
+    if (osiclp && (osiclp->specialOptions()&65536) == 0) {
         // go faster stripes
-        if (osiclp->getNumRows()<300&&osiclp->getNumCols()<500) {
-            osiclp->setupForRepeatedUse(2,0);
+        if (osiclp->getNumRows() < 300 && osiclp->getNumCols() < 500) {
+            osiclp->setupForRepeatedUse(2, 0);
         } else {
-            osiclp->setupForRepeatedUse(0,0);
+            osiclp->setupForRepeatedUse(0, 0);
         }
         // Turn this off if you get problems
         // Used to be automatically set
-        osiclp->setSpecialOptions(osiclp->specialOptions()|(128+64-128));
+        osiclp->setSpecialOptions(osiclp->specialOptions() | (128 + 64 - 128));
         ClpSimplex * lpSolver = osiclp->getModelPtr();
-        lpSolver->setSpecialOptions(lpSolver->specialOptions()|0x01000000); // say is Cbc (and in branch and bound)
-        lpSolver->setSpecialOptions(lpSolver->specialOptions()|
-                                    (/*16384+*/4096+512+128));
+        lpSolver->setSpecialOptions(lpSolver->specialOptions() | 0x01000000); // say is Cbc (and in branch and bound)
+        lpSolver->setSpecialOptions(lpSolver->specialOptions() |
+                                    (/*16384+*/4096 + 512 + 128));
     }
 #endif
 #ifdef HISTORY_STATISTICS
-    getHistoryStatistics_=false;
+    getHistoryStatistics_ = false;
 #endif
-    int status=0;
+    int status = 0;
     int logLevel = model_->logLevel();
 #define LEN_PRINT 250
     char generalPrint[LEN_PRINT];
     // Do presolve to see if possible
     int numberColumns = solver->getNumCols();
     char * reset = NULL;
-    int returnCode=1;
+    int returnCode = 1;
     int saveModelOptions = model_->specialOptions();
-    assert ((saveModelOptions&2048)==0);
-    model_->setSpecialOptions(saveModelOptions|2048);
+    assert ((saveModelOptions&2048) == 0);
+    model_->setSpecialOptions(saveModelOptions | 2048);
     {
         int saveLogLevel = solver->messageHandler()->logLevel();
-        if (saveLogLevel==1)
+        if (saveLogLevel == 1)
             solver->messageHandler()->setLogLevel(0);
         OsiPresolve * pinfo = new OsiPresolve();
-        int presolveActions=0;
+        int presolveActions = 0;
         // Allow dual stuff on integers
-        presolveActions=1;
+        presolveActions = 1;
         // Do not allow all +1 to be tampered with
         //if (allPlusOnes)
         //presolveActions |= 2;
         // allow transfer of costs
         // presolveActions |= 4;
         pinfo->setPresolveActions(presolveActions);
-        OsiSolverInterface * presolvedModel = pinfo->presolvedModel(*solver,1.0e-8,true,2);
+        OsiSolverInterface * presolvedModel = pinfo->presolvedModel(*solver, 1.0e-8, true, 2);
         delete pinfo;
         // see if too big
 
@@ -719,101 +719,101 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver,int numberNodes,
             int afterCols = presolvedModel->getNumCols();
             //#define COIN_DEVELOP
 #ifdef COIN_DEVELOP_z
-            if (numberNodes<0) {
-                solver->writeMpsNative("before.mps",NULL,NULL,2,1);
-                presolvedModel->writeMpsNative("after1.mps",NULL,NULL,2,1);
+            if (numberNodes < 0) {
+                solver->writeMpsNative("before.mps", NULL, NULL, 2, 1);
+                presolvedModel->writeMpsNative("after1.mps", NULL, NULL, 2, 1);
             }
 #endif
             delete presolvedModel;
-            double ratio = sizeRatio(afterRows-shiftRows,afterCols,
-                                     numberRowsStart,numberColumnsStart);
-            double after = 2*afterRows+afterCols;
-            if (ratio>fractionSmall&&after>300&&numberNodes>=0) {
+            double ratio = sizeRatio(afterRows - shiftRows, afterCols,
+                                     numberRowsStart, numberColumnsStart);
+            double after = 2 * afterRows + afterCols;
+            if (ratio > fractionSmall && after > 300 && numberNodes >= 0) {
                 // Need code to try again to compress further using used
                 const int * used =  model_->usedInSolution();
-                int maxUsed=0;
+                int maxUsed = 0;
                 int iColumn;
                 const double * lower = solver->getColLower();
                 const double * upper = solver->getColUpper();
-                for (iColumn=0; iColumn<numberColumns; iColumn++) {
-                    if (upper[iColumn]>lower[iColumn]) {
+                for (iColumn = 0; iColumn < numberColumns; iColumn++) {
+                    if (upper[iColumn] > lower[iColumn]) {
                         if (solver->isBinary(iColumn))
-                            maxUsed = CoinMax(maxUsed,used[iColumn]);
+                            maxUsed = CoinMax(maxUsed, used[iColumn]);
                     }
                 }
                 if (maxUsed) {
                     reset = new char [numberColumns];
-                    int nFix=0;
-                    for (iColumn=0; iColumn<numberColumns; iColumn++) {
-                        reset[iColumn]=0;
-                        if (upper[iColumn]>lower[iColumn]) {
-                            if (solver->isBinary(iColumn)&&used[iColumn]==maxUsed) {
-                                bool setValue=true;
-                                if (maxUsed==1) {
+                    int nFix = 0;
+                    for (iColumn = 0; iColumn < numberColumns; iColumn++) {
+                        reset[iColumn] = 0;
+                        if (upper[iColumn] > lower[iColumn]) {
+                            if (solver->isBinary(iColumn) && used[iColumn] == maxUsed) {
+                                bool setValue = true;
+                                if (maxUsed == 1) {
                                     double randomNumber = randomNumberGenerator_.randomDouble();
-                                    if (randomNumber>0.3)
-                                        setValue=false;
+                                    if (randomNumber > 0.3)
+                                        setValue = false;
                                 }
                                 if (setValue) {
-                                    reset[iColumn]=1;
-                                    solver->setColLower(iColumn,1.0);
+                                    reset[iColumn] = 1;
+                                    solver->setColLower(iColumn, 1.0);
                                     nFix++;
                                 }
                             }
                         }
                     }
                     pinfo = new OsiPresolve();
-                    presolveActions=0;
+                    presolveActions = 0;
                     // Allow dual stuff on integers
-                    presolveActions=1;
+                    presolveActions = 1;
                     // Do not allow all +1 to be tampered with
                     //if (allPlusOnes)
                     //presolveActions |= 2;
                     // allow transfer of costs
                     // presolveActions |= 4;
                     pinfo->setPresolveActions(presolveActions);
-                    presolvedModel = pinfo->presolvedModel(*solver,1.0e-8,true,2);
+                    presolvedModel = pinfo->presolvedModel(*solver, 1.0e-8, true, 2);
                     delete pinfo;
                     if (presolvedModel) {
                         // see if too big
                         int afterRows2 = presolvedModel->getNumRows();
                         int afterCols2 = presolvedModel->getNumCols();
                         delete presolvedModel;
-                        double ratio = sizeRatio(afterRows2-shiftRows,afterCols2,
-                                                 numberRowsStart,numberColumnsStart);
-                        double after = 2*afterRows2+afterCols2;
-                        if (ratio>fractionSmall&&(after>300||numberNodes<0)) {
-                            sprintf(generalPrint,"Full problem %d rows %d columns, reduced to %d rows %d columns - %d fixed gives %d, %d - still too large",
-                                    solver->getNumRows(),solver->getNumCols(),
-                                    afterRows,afterCols,nFix,afterRows2,afterCols2);
+                        double ratio = sizeRatio(afterRows2 - shiftRows, afterCols2,
+                                                 numberRowsStart, numberColumnsStart);
+                        double after = 2 * afterRows2 + afterCols2;
+                        if (ratio > fractionSmall && (after > 300 || numberNodes < 0)) {
+                            sprintf(generalPrint, "Full problem %d rows %d columns, reduced to %d rows %d columns - %d fixed gives %d, %d - still too large",
+                                    solver->getNumRows(), solver->getNumCols(),
+                                    afterRows, afterCols, nFix, afterRows2, afterCols2);
                             // If much too big - give up
-                            if (ratio>0.75)
-                                returnCode=-1;
+                            if (ratio > 0.75)
+                                returnCode = -1;
                         } else {
-                            sprintf(generalPrint,"Full problem %d rows %d columns, reduced to %d rows %d columns - %d fixed gives %d, %d - ok now",
-                                    solver->getNumRows(),solver->getNumCols(),
-                                    afterRows,afterCols,nFix,afterRows2,afterCols2);
+                            sprintf(generalPrint, "Full problem %d rows %d columns, reduced to %d rows %d columns - %d fixed gives %d, %d - ok now",
+                                    solver->getNumRows(), solver->getNumCols(),
+                                    afterRows, afterCols, nFix, afterRows2, afterCols2);
                         }
-                        model_->messageHandler()->message(CBC_GENERAL,model_->messages())
+                        model_->messageHandler()->message(CBC_GENERAL, model_->messages())
                         << generalPrint
-                        <<CoinMessageEol;
+                        << CoinMessageEol;
                     } else {
-                        returnCode=2; // infeasible
+                        returnCode = 2; // infeasible
                     }
                 }
-            } else if (ratio>fractionSmall&&after>300) {
-                returnCode=-1;
+            } else if (ratio > fractionSmall && after > 300) {
+                returnCode = -1;
             }
         } else {
-            returnCode=2; // infeasible
+            returnCode = 2; // infeasible
         }
         solver->messageHandler()->setLogLevel(saveLogLevel);
     }
-    if (returnCode==2||returnCode==-1) {
+    if (returnCode == 2 || returnCode == -1) {
         model_->setSpecialOptions(saveModelOptions);
         delete [] reset;
 #ifdef HISTORY_STATISTICS
-        getHistoryStatistics_=true;
+        getHistoryStatistics_ = true;
 #endif
         //printf("small no good\n");
         return returnCode;
@@ -821,70 +821,70 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver,int numberNodes,
     // Reduce printout
     bool takeHint;
     OsiHintStrength strength;
-    solver->getHintParam(OsiDoReducePrint,takeHint,strength);
-    solver->setHintParam(OsiDoReducePrint,true,OsiHintTry);
-    solver->setHintParam(OsiDoPresolveInInitial,false,OsiHintTry);
-    solver->setDblParam(OsiDualObjectiveLimit,cutoff*solver->getObjSense());
+    solver->getHintParam(OsiDoReducePrint, takeHint, strength);
+    solver->setHintParam(OsiDoReducePrint, true, OsiHintTry);
+    solver->setHintParam(OsiDoPresolveInInitial, false, OsiHintTry);
+    solver->setDblParam(OsiDualObjectiveLimit, cutoff*solver->getObjSense());
     solver->initialSolve();
     if (solver->isProvenOptimal()) {
         CglPreProcess process;
         /* Do not try and produce equality cliques and
            do up to 2 passes (normally) 5 if restart */
-        int numberPasses= 2;
-        if (numberNodes<0) {
+        int numberPasses = 2;
+        if (numberNodes < 0) {
             numberPasses = 5;
             // Say some rows cuts
             int numberRows = solver->getNumRows();
-            if (numberNodes_<numberRows&&true /* think */) {
+            if (numberNodes_ < numberRows && true /* think */) {
                 char * type = new char[numberRows];
-                memset(type,0,numberNodes_);
-                memset(type+numberNodes_,1,numberRows-numberNodes_);
-                process.passInRowTypes(type,numberRows);
+                memset(type, 0, numberNodes_);
+                memset(type + numberNodes_, 1, numberRows - numberNodes_);
+                process.passInRowTypes(type, numberRows);
                 delete [] type;
             }
         }
-        if (logLevel<=1)
+        if (logLevel <= 1)
             process.messageHandler()->setLogLevel(0);
-        OsiSolverInterface * solver2= process.preProcessNonDefault(*solver,false,
-                                      numberPasses);
+        OsiSolverInterface * solver2 = process.preProcessNonDefault(*solver, false,
+                                       numberPasses);
         if (!solver2) {
-            if (logLevel>1)
+            if (logLevel > 1)
                 printf("Pre-processing says infeasible\n");
-            returnCode=2; // so will be infeasible
+            returnCode = 2; // so will be infeasible
         } else {
 #ifdef COIN_DEVELOP_z
-            if (numberNodes<0) {
-                solver2->writeMpsNative("after2.mps",NULL,NULL,2,1);
+            if (numberNodes < 0) {
+                solver2->writeMpsNative("after2.mps", NULL, NULL, 2, 1);
             }
 #endif
             // see if too big
-            double ratio = sizeRatio(solver2->getNumRows()-shiftRows,solver2->getNumCols(),
-                                     numberRowsStart,numberColumnsStart);
-            double after = 2*solver2->getNumRows()+solver2->getNumCols();
-            if (ratio>fractionSmall&&(after>300||numberNodes<0)) {
-                sprintf(generalPrint,"Full problem %d rows %d columns, reduced to %d rows %d columns - too large",
-                        solver->getNumRows(),solver->getNumCols(),
-                        solver2->getNumRows(),solver2->getNumCols());
-                model_->messageHandler()->message(CBC_FPUMP1,model_->messages())
+            double ratio = sizeRatio(solver2->getNumRows() - shiftRows, solver2->getNumCols(),
+                                     numberRowsStart, numberColumnsStart);
+            double after = 2 * solver2->getNumRows() + solver2->getNumCols();
+            if (ratio > fractionSmall && (after > 300 || numberNodes < 0)) {
+                sprintf(generalPrint, "Full problem %d rows %d columns, reduced to %d rows %d columns - too large",
+                        solver->getNumRows(), solver->getNumCols(),
+                        solver2->getNumRows(), solver2->getNumCols());
+                model_->messageHandler()->message(CBC_FPUMP1, model_->messages())
                 << generalPrint
-                <<CoinMessageEol;
+                << CoinMessageEol;
                 returnCode = -1;
                 //printf("small no good2\n");
             } else {
-                sprintf(generalPrint,"Full problem %d rows %d columns, reduced to %d rows %d columns",
-                        solver->getNumRows(),solver->getNumCols(),
-                        solver2->getNumRows(),solver2->getNumCols());
-                model_->messageHandler()->message(CBC_FPUMP1,model_->messages())
+                sprintf(generalPrint, "Full problem %d rows %d columns, reduced to %d rows %d columns",
+                        solver->getNumRows(), solver->getNumCols(),
+                        solver2->getNumRows(), solver2->getNumCols());
+                model_->messageHandler()->message(CBC_FPUMP1, model_->messages())
                 << generalPrint
-                <<CoinMessageEol;
+                << CoinMessageEol;
             }
-            if (returnCode==1) {
+            if (returnCode == 1) {
                 solver2->resolve();
                 CbcModel model(*solver2);
-                if (numberNodes>=0) {
+                if (numberNodes >= 0) {
                     // normal
-                    model.setSpecialOptions(saveModelOptions|2048);
-                    if (logLevel<=1)
+                    model.setSpecialOptions(saveModelOptions | 2048);
+                    if (logLevel <= 1)
                         model.setLogLevel(0);
                     else
                         model.setLogLevel(logLevel);
@@ -892,43 +892,43 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver,int numberNodes,
                     model.setFastNodeDepth(-1);
                     model.setCutoff(cutoff);
                     model.setMaximumNodes(numberNodes);
-                    model.solver()->setHintParam(OsiDoReducePrint,true,OsiHintTry);
+                    model.solver()->setHintParam(OsiDoReducePrint, true, OsiHintTry);
                     // Lightweight
-                    CbcStrategyDefaultSubTree strategy(model_,1,5,1,0);
+                    CbcStrategyDefaultSubTree strategy(model_, 1, 5, 1, 0);
                     model.setStrategy(strategy);
-                    model.solver()->setIntParam(OsiMaxNumIterationHotStart,10);
-                    model.setMaximumCutPassesAtRoot(CoinMin(20,CoinAbs(model_->getMaximumCutPassesAtRoot())));
-                    model.setMaximumCutPasses(CoinMin(10,model_->getMaximumCutPasses()));
+                    model.solver()->setIntParam(OsiMaxNumIterationHotStart, 10);
+                    model.setMaximumCutPassesAtRoot(CoinMin(20, CoinAbs(model_->getMaximumCutPassesAtRoot())));
+                    model.setMaximumCutPasses(CoinMin(10, model_->getMaximumCutPasses()));
                 } else {
                     model.setSpecialOptions(saveModelOptions);
-                    model_->messageHandler()->message(CBC_RESTART,model_->messages())
-                    <<solver2->getNumRows()<<solver2->getNumCols()
-                    <<CoinMessageEol;
+                    model_->messageHandler()->message(CBC_RESTART, model_->messages())
+                    << solver2->getNumRows() << solver2->getNumCols()
+                    << CoinMessageEol;
                     // going for full search and copy across more stuff
-                    model.gutsOfCopy(*model_,2);
-                    for (int i=0; i<model.numberCutGenerators(); i++) {
+                    model.gutsOfCopy(*model_, 2);
+                    for (int i = 0; i < model.numberCutGenerators(); i++) {
                         model.cutGenerator(i)->setTiming(true);
                         // Turn on if was turned on
                         int iOften = model_->cutGenerator(i)->howOften();
 #ifdef CLP_INVESTIGATE
                         printf("Gen %d often %d %d\n",
-                               i,model.cutGenerator(i)->howOften(),
+                               i, model.cutGenerator(i)->howOften(),
                                iOften);
 #endif
-                        if (iOften>0)
-                            model.cutGenerator(i)->setHowOften(iOften%1000000);
-                        if (model_->cutGenerator(i)->howOftenInSub()==-200)
+                        if (iOften > 0)
+                            model.cutGenerator(i)->setHowOften(iOften % 1000000);
+                        if (model_->cutGenerator(i)->howOftenInSub() == -200)
                             model.cutGenerator(i)->setHowOften(-100);
                     }
                     model.setCutoff(cutoff);
                     // make sure can't do nested search! but allow heuristics
-                    model.setSpecialOptions((model.specialOptions()&(~(512+2048)))|1024);
+                    model.setSpecialOptions((model.specialOptions()&(~(512 + 2048))) | 1024);
                     bool takeHint;
                     OsiHintStrength strength;
                     // Switch off printing if asked to
-                    model_->solver()->getHintParam(OsiDoReducePrint,takeHint,strength);
-                    model.solver()->setHintParam(OsiDoReducePrint,takeHint,strength);
-                    CbcStrategyDefault strategy(1,model_->numberStrong(),
+                    model_->solver()->getHintParam(OsiDoReducePrint, takeHint, strength);
+                    model.solver()->setHintParam(OsiDoReducePrint, takeHint, strength);
+                    CbcStrategyDefault strategy(1, model_->numberStrong(),
                                                 model_->numberBeforeTrust());
                     // Set up pre-processing - no
                     strategy.setupPreProcessing(0); // was (4);
@@ -938,23 +938,23 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver,int numberNodes,
                     if (numberCuts) {
                         // add in cuts
                         CglStored cuts = process.cuts();
-                        model.addCutGenerator(&cuts,1,"Stored from first");
+                        model.addCutGenerator(&cuts, 1, "Stored from first");
                     }
                 }
                 // Do search
-                if (logLevel>1)
-                    model_->messageHandler()->message(CBC_START_SUB,model_->messages())
+                if (logLevel > 1)
+                    model_->messageHandler()->message(CBC_START_SUB, model_->messages())
                     << name
                     << model.getMaximumNodes()
-                    <<CoinMessageEol;
+                    << CoinMessageEol;
                 // probably faster to use a basis to get integer solutions
-                model.setSpecialOptions(model.specialOptions()|2);
+                model.setSpecialOptions(model.specialOptions() | 2);
 #ifdef CBC_THREAD
-                if (model_->getNumberThreads()>0&&(model_->getThreadMode()&4)!=0) {
+                if (model_->getNumberThreads() > 0 && (model_->getThreadMode()&4) != 0) {
                     // See if at root node
-                    bool atRoot = model_->getNodeCount()==0;
+                    bool atRoot = model_->getNodeCount() == 0;
                     int passNumber = model_->getCurrentPassNumber();
-                    if (atRoot&&passNumber==1)
+                    if (atRoot && passNumber == 1)
                         model.setNumberThreads(model_->getNumberThreads());
                 }
 #endif
@@ -962,19 +962,19 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver,int numberNodes,
                 model.setOriginalColumns(process.originalColumns());
                 model.setSearchStrategy(-1);
                 // If no feasibility pump then insert a lightweight one
-                if (feasibilityPumpOptions_>=0) {
-                    bool gotPump=false;
-                    for (int i=0; i<model.numberHeuristics(); i++) {
+                if (feasibilityPumpOptions_ >= 0) {
+                    bool gotPump = false;
+                    for (int i = 0; i < model.numberHeuristics(); i++) {
                         const CbcHeuristicFPump* pump =
                             dynamic_cast<const CbcHeuristicFPump*>(model.heuristic(i));
                         if (pump)
-                            gotPump=true;
+                            gotPump = true;
                     }
                     if (!gotPump) {
                         CbcHeuristicFPump heuristic4;
                         heuristic4.setMaximumPasses(10);
-                        int pumpTune=feasibilityPumpOptions_;
-                        if (pumpTune>0) {
+                        int pumpTune = feasibilityPumpOptions_;
+                        if (pumpTune > 0) {
                             /*
                             >=10000000 for using obj
                             >=1000000 use as accumulate switch
@@ -985,30 +985,30 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver,int numberNodes,
                             4 and static continuous, 5 as 3 but no internal integers
                             6 as 3 but all slack basis!
                             */
-                            double value = solver2->getObjSense()*solver2->getObjValue();
-                            int w = pumpTune/10;
+                            double value = solver2->getObjSense() * solver2->getObjValue();
+                            int w = pumpTune / 10;
                             int ix = w % 10;
                             w /= 10;
                             int c = w % 10;
                             w /= 10;
                             int r = w;
-                            int accumulate = r/1000;
-                            r -= 1000*accumulate;
-                            if (accumulate>=10) {
-                                int which = accumulate/10;
-                                accumulate -= 10*which;
+                            int accumulate = r / 1000;
+                            r -= 1000 * accumulate;
+                            if (accumulate >= 10) {
+                                int which = accumulate / 10;
+                                accumulate -= 10 * which;
                                 which--;
                                 // weights and factors
-                                double weight[]={0.1,0.1,0.5,0.5,1.0,1.0,5.0,5.0};
-                                double factor[] = {0.1,0.5,0.1,0.5,0.1,0.5,0.1,0.5};
+                                double weight[] = {0.1, 0.1, 0.5, 0.5, 1.0, 1.0, 5.0, 5.0};
+                                double factor[] = {0.1, 0.5, 0.1, 0.5, 0.1, 0.5, 0.1, 0.5};
                                 heuristic4.setInitialWeight(weight[which]);
                                 heuristic4.setWeightFactor(factor[which]);
                             }
                             // fake cutoff
                             if (c) {
                                 double cutoff;
-                                solver2->getDblParam(OsiDualObjectiveLimit,cutoff);
-                                cutoff = CoinMin(cutoff,value + 0.1*fabs(value)*c);
+                                solver2->getDblParam(OsiDualObjectiveLimit, cutoff);
+                                cutoff = CoinMin(cutoff, value + 0.1 * fabs(value) * c);
                                 heuristic4.setFakeCutoff(cutoff);
                             }
                             if (r) {
@@ -1017,19 +1017,19 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver,int numberNodes,
                                 double increment = 0.0;
                                 heuristic4.setAbsoluteIncrement(increment);
                                 heuristic4.setAccumulate(accumulate);
-                                heuristic4.setMaximumRetries(r+1);
+                                heuristic4.setMaximumRetries(r + 1);
                             }
-                            pumpTune = pumpTune%100;
-                            if (pumpTune==6)
-                                pumpTune =13;
-                            if (pumpTune!=13)
-                                pumpTune = pumpTune%10;
+                            pumpTune = pumpTune % 100;
+                            if (pumpTune == 6)
+                                pumpTune = 13;
+                            if (pumpTune != 13)
+                                pumpTune = pumpTune % 10;
                             heuristic4.setWhen(pumpTune);
                             if (ix) {
                                 heuristic4.setFeasibilityPumpOptions(ix*10);
                             }
                         }
-                        model.addHeuristic(&heuristic4,"feasibility pump",0);
+                        model.addHeuristic(&heuristic4, "feasibility pump", 0);
                     }
                 }
                 //printf("sol %x\n",inputSolution_);
@@ -1038,42 +1038,42 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver,int numberNodes,
                     int numberColumns = solver2->getNumCols();
                     const int * which = process.originalColumns();
                     OsiSolverInterface * solver3 = solver2->clone();
-                    for (int i=0; i<numberColumns; i++) {
+                    for (int i = 0; i < numberColumns; i++) {
                         if (solver3->isInteger(i)) {
-                            int k=which[i];
+                            int k = which[i];
                             double value = inputSolution_[k];
                             //if (value)
                             //printf("orig col %d now %d val %g\n",
                             //       k,i,value);
-                            solver3->setColLower(i,value);
-                            solver3->setColUpper(i,value);
+                            solver3->setColLower(i, value);
+                            solver3->setColUpper(i, value);
                         }
                     }
-                    solver3->setDblParam(OsiDualObjectiveLimit,COIN_DBL_MAX);
+                    solver3->setDblParam(OsiDualObjectiveLimit, COIN_DBL_MAX);
                     solver3->resolve();
                     if (!solver3->isProvenOptimal()) {
                         // Try just setting nonzeros
                         OsiSolverInterface * solver4 = solver2->clone();
-                        for (int i=0; i<numberColumns; i++) {
+                        for (int i = 0; i < numberColumns; i++) {
                             if (solver4->isInteger(i)) {
-                                int k=which[i];
-                                double value = floor(inputSolution_[k]+0.5);
+                                int k = which[i];
+                                double value = floor(inputSolution_[k] + 0.5);
                                 if (value) {
-                                    solver3->setColLower(i,value);
-                                    solver3->setColUpper(i,value);
+                                    solver3->setColLower(i, value);
+                                    solver3->setColUpper(i, value);
                                 }
                             }
                         }
-                        solver4->setDblParam(OsiDualObjectiveLimit,COIN_DBL_MAX);
+                        solver4->setDblParam(OsiDualObjectiveLimit, COIN_DBL_MAX);
                         solver4->resolve();
-                        int nBad=-1;
+                        int nBad = -1;
                         if (solver4->isProvenOptimal()) {
-                            nBad=0;
+                            nBad = 0;
                             const double * solution = solver4->getColSolution();
-                            for (int i=0; i<numberColumns; i++) {
+                            for (int i = 0; i < numberColumns; i++) {
                                 if (solver4->isInteger(i)) {
-                                    double value = floor(solution[i]+0.5);
-                                    if (fabs(value-solution[i])>1.0e-6)
+                                    double value = floor(solution[i] + 0.5);
+                                    if (fabs(value - solution[i]) > 1.0e-6)
                                         nBad++;
                                 }
                             }
@@ -1082,20 +1082,20 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver,int numberNodes,
                             delete solver4;
                         } else {
                             delete solver3;
-                            solver3=solver4;
+                            solver3 = solver4;
                         }
                     }
                     if (solver3->isProvenOptimal()) {
                         // good
                         CbcSerendipity heuristic(model);
-                        double value = solver3->getObjSense()*solver3->getObjValue();
-                        heuristic.setInputSolution(solver3->getColSolution(),value);
-                        model.setCutoff(value+1.0e-7*(1.0+fabs(value)));
-                        model.addHeuristic(&heuristic,"Previous solution",0);
+                        double value = solver3->getObjSense() * solver3->getObjValue();
+                        heuristic.setInputSolution(solver3->getColSolution(), value);
+                        model.setCutoff(value + 1.0e-7*(1.0 + fabs(value)));
+                        model.addHeuristic(&heuristic, "Previous solution", 0);
                         //printf("added seren\n");
                     } else {
                         double value = model_->getMinimizationObjValue();
-                        model.setCutoff(value+1.0e-7*(1.0+fabs(value)));
+                        model.setCutoff(value + 1.0e-7*(1.0 + fabs(value)));
 #ifdef CLP_INVESTIGATE
                         printf("NOT added seren\n");
                         solver3->writeMps("bad_seren");
@@ -1104,129 +1104,129 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver,int numberNodes,
                     }
                     delete solver3;
                 }
-                if (model_->searchStrategy()==2) {
+                if (model_->searchStrategy() == 2) {
                     model.setNumberStrong(5);
                     model.setNumberBeforeTrust(5);
                 }
                 if (model.getNumCols()) {
-                    if (numberNodes>=0) {
+                    if (numberNodes >= 0) {
                         setCutAndHeuristicOptions(model);
                         // not too many iterations
-                        model.setMaximumNumberIterations(100*(numberNodes+10));
+                        model.setMaximumNumberIterations(100*(numberNodes + 10));
                         // Not fast stuff
                         model.setFastNodeDepth(-1);
-                    } else if (model.fastNodeDepth()>=1000000) {
+                    } else if (model.fastNodeDepth() >= 1000000) {
                         // already set
-                        model.setFastNodeDepth(model.fastNodeDepth()-1000000);
+                        model.setFastNodeDepth(model.fastNodeDepth() - 1000000);
                     }
                     model.setWhenCuts(999998);
                     model.branchAndBound();
 #ifdef COIN_DEVELOP
                     printf("sub branch %d nodes, %d iterations - max %d\n",
-                           model.getNodeCount(),model.getIterationCount(),
-                           100*(numberNodes+10));
+                           model.getNodeCount(), model.getIterationCount(),
+                           100*(numberNodes + 10));
 #endif
-                    if (numberNodes<0) {
+                    if (numberNodes < 0) {
                         model_->incrementIterationCount(model.getIterationCount());
                         model_->incrementNodeCount(model.getNodeCount());
-                        for (int iGenerator=0; iGenerator<model.numberCutGenerators(); iGenerator++) {
+                        for (int iGenerator = 0; iGenerator < model.numberCutGenerators(); iGenerator++) {
                             CbcCutGenerator * generator = model.cutGenerator(iGenerator);
                             sprintf(generalPrint,
                                     "%s was tried %d times and created %d cuts of which %d were active after adding rounds of cuts (%.3f seconds)",
                                     generator->cutGeneratorName(),
                                     generator->numberTimesEntered(),
-                                    generator->numberCutsInTotal()+
+                                    generator->numberCutsInTotal() +
                                     generator->numberColumnCuts(),
                                     generator->numberCutsActive(),
                                     generator->timeInCutGenerator());
                             CglStored * stored = dynamic_cast<CglStored*>(generator->generator());
-                            if (stored&&!generator->numberCutsInTotal())
+                            if (stored && !generator->numberCutsInTotal())
                                 continue;
 #ifndef CLP_INVESTIGATE
                             CglImplication * implication = dynamic_cast<CglImplication*>(generator->generator());
                             if (implication)
                                 continue;
 #endif
-                            model_->messageHandler()->message(CBC_FPUMP1,model_->messages())
+                            model_->messageHandler()->message(CBC_FPUMP1, model_->messages())
                             << generalPrint
-                            <<CoinMessageEol;
+                            << CoinMessageEol;
                         }
                     }
                 } else {
                     // empty model
                     model.setMinimizationObjValue(model.solver()->getObjSense()*model.solver()->getObjValue());
                 }
-                if (logLevel>1)
-                    model_->messageHandler()->message(CBC_END_SUB,model_->messages())
+                if (logLevel > 1)
+                    model_->messageHandler()->message(CBC_END_SUB, model_->messages())
                     << name
-                    <<CoinMessageEol;
-                if (model.getMinimizationObjValue()<CoinMin(cutoff,1.0e30)) {
+                    << CoinMessageEol;
+                if (model.getMinimizationObjValue() < CoinMin(cutoff, 1.0e30)) {
                     // solution
                     if (model.getNumCols())
-                        returnCode=model.isProvenOptimal() ? 3 : 1;
+                        returnCode = model.isProvenOptimal() ? 3 : 1;
                     else
-                        returnCode=3;
+                        returnCode = 3;
                     // post process
 #ifdef COIN_HAS_CLP
                     OsiClpSolverInterface * clpSolver = dynamic_cast< OsiClpSolverInterface*> (model.solver());
                     if (clpSolver) {
                         ClpSimplex * lpSolver = clpSolver->getModelPtr();
-                        lpSolver->setSpecialOptions(lpSolver->specialOptions()|0x01000000); // say is Cbc (and in branch and bound)
+                        lpSolver->setSpecialOptions(lpSolver->specialOptions() | 0x01000000); // say is Cbc (and in branch and bound)
                     }
 #endif
                     process.postProcess(*model.solver());
-                    if (solver->isProvenOptimal()&&solver->getObjValue()<cutoff) {
+                    if (solver->isProvenOptimal() && solver->getObjValue() < cutoff) {
                         // Solution now back in solver
                         int numberColumns = solver->getNumCols();
-                        memcpy(newSolution,solver->getColSolution(),
+                        memcpy(newSolution, solver->getColSolution(),
                                numberColumns*sizeof(double));
                         newSolutionValue = model.getMinimizationObjValue();
                     } else {
                         // odd - but no good
-                        returnCode=0; // so will be infeasible
+                        returnCode = 0; // so will be infeasible
                     }
                 } else {
                     // no good
-                    returnCode=model.isProvenInfeasible() ? 2 : 0; // so will be infeasible
+                    returnCode = model.isProvenInfeasible() ? 2 : 0; // so will be infeasible
                 }
-                int totalNumberIterations = model.getIterationCount()+
-                                            process.numberIterationsPre()+
+                int totalNumberIterations = model.getIterationCount() +
+                                            process.numberIterationsPre() +
                                             process.numberIterationsPost();
-                if (totalNumberIterations>100*(numberNodes+10)) {
+                if (totalNumberIterations > 100*(numberNodes + 10)) {
                     // only allow smaller problems
                     fractionSmall = fractionSmall_;
                     fractionSmall_ *= 0.9;
 #ifdef CLP_INVESTIGATE
                     printf("changing fractionSmall from %g to %g for %s as %d iterations\n",
-                           fractionSmall,fractionSmall_,name.c_str(),totalNumberIterations);
+                           fractionSmall, fractionSmall_, name.c_str(), totalNumberIterations);
 #endif
                 }
-                if (model.status()==5)
-                    returnCode=-2; // stop
+                if (model.status() == 5)
+                    returnCode = -2; // stop
                 if (model.isProvenInfeasible())
-                    status=1;
+                    status = 1;
                 else if (model.isProvenOptimal())
-                    status=2;
+                    status = 2;
             }
         }
     } else {
-        returnCode=2; // infeasible finished
+        returnCode = 2; // infeasible finished
     }
     model_->setSpecialOptions(saveModelOptions);
     model_->setLogLevel(logLevel);
-    if (returnCode==1||returnCode==2) {
+    if (returnCode == 1 || returnCode == 2) {
         OsiSolverInterface * solverC = model_->continuousSolver();
-        if (false&&solverC) {
+        if (false && solverC) {
             const double * lower = solver->getColLower();
             const double * upper = solver->getColUpper();
             const double * lowerC = solverC->getColLower();
             const double * upperC = solverC->getColUpper();
-            bool good=true;
-            for (int iColumn=0; iColumn<numberColumns; iColumn++) {
+            bool good = true;
+            for (int iColumn = 0; iColumn < numberColumns; iColumn++) {
                 if (solverC->isInteger(iColumn)) {
-                    if (lower[iColumn]>lowerC[iColumn]&&
-                            upper[iColumn]<upperC[iColumn]) {
-                        good=false;
+                    if (lower[iColumn] > lowerC[iColumn] &&
+                            upper[iColumn] < upperC[iColumn]) {
+                        good = false;
                         printf("CUT - can't add\n");
                         break;
                     }
@@ -1235,49 +1235,49 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver,int numberNodes,
             if (good) {
                 double * cut = new double [numberColumns];
                 int * which = new int [numberColumns];
-                double rhs=-1.0;
-                int n=0;
-                for (int iColumn=0; iColumn<numberColumns; iColumn++) {
+                double rhs = -1.0;
+                int n = 0;
+                for (int iColumn = 0; iColumn < numberColumns; iColumn++) {
                     if (solverC->isInteger(iColumn)) {
-                        if (lower[iColumn]==upperC[iColumn]) {
+                        if (lower[iColumn] == upperC[iColumn]) {
                             rhs += lower[iColumn];
-                            cut[n]=1.0;
-                            which[n++]=iColumn;
-                        } else if (upper[iColumn]==lowerC[iColumn]) {
+                            cut[n] = 1.0;
+                            which[n++] = iColumn;
+                        } else if (upper[iColumn] == lowerC[iColumn]) {
                             rhs -= upper[iColumn];
-                            cut[n]=-1.0;
-                            which[n++]=iColumn;
+                            cut[n] = -1.0;
+                            which[n++] = iColumn;
                         }
                     }
                 }
-                printf("CUT has %d entries\n",n);
+                printf("CUT has %d entries\n", n);
                 OsiRowCut newCut;
                 newCut.setLb(-COIN_DBL_MAX);
                 newCut.setUb(rhs);
-                newCut.setRow(n,which,cut,false);
+                newCut.setRow(n, which, cut, false);
                 model_->makeGlobalCut(newCut);
                 delete [] cut;
                 delete [] which;
             }
         }
 #ifdef COIN_DEVELOP
-        if (status==1)
-            printf("heuristic could add cut because infeasible (%s)\n",heuristicName_.c_str());
-        else if (status==2)
-            printf("heuristic could add cut because optimal (%s)\n",heuristicName_.c_str());
+        if (status == 1)
+            printf("heuristic could add cut because infeasible (%s)\n", heuristicName_.c_str());
+        else if (status == 2)
+            printf("heuristic could add cut because optimal (%s)\n", heuristicName_.c_str());
 #endif
     }
     if (reset) {
-        for (int iColumn=0; iColumn<numberColumns; iColumn++) {
+        for (int iColumn = 0; iColumn < numberColumns; iColumn++) {
             if (reset[iColumn])
-                solver->setColLower(iColumn,0.0);
+                solver->setColLower(iColumn, 0.0);
         }
         delete [] reset;
     }
 #ifdef HISTORY_STATISTICS
-    getHistoryStatistics_=true;
+    getHistoryStatistics_ = true;
 #endif
-    solver->setHintParam(OsiDoReducePrint,takeHint,strength);
+    solver->setHintParam(OsiDoReducePrint, takeHint, strength);
     return returnCode;
 }
 // Set input solution
@@ -1285,12 +1285,12 @@ void
 CbcHeuristic::setInputSolution(const double * solution, double objValue)
 {
     delete [] inputSolution_;
-    inputSolution_=NULL;
-    if (model_&&solution) {
+    inputSolution_ = NULL;
+    if (model_ && solution) {
         int numberColumns = model_->getNumCols();
         inputSolution_ = new double [numberColumns+1];
-        memcpy(inputSolution_,solution,numberColumns*sizeof(double));
-        inputSolution_[numberColumns]=objValue;
+        memcpy(inputSolution_, solution, numberColumns*sizeof(double));
+        inputSolution_[numberColumns] = objValue;
     }
 }
 
@@ -1342,12 +1342,12 @@ CbcHeuristicNode::gutsOfConstructor(CbcModel& model)
         ++cnt;
         nodeInfo = nodeInfo->parent();
     }
-    std::sort(brObj_, brObj_+cnt, compareBranchingObjects);
+    std::sort(brObj_, brObj_ + cnt, compareBranchingObjects);
     if (cnt <= 1) {
         numObjects_ = cnt;
     } else {
         numObjects_ = 0;
-        CbcBranchingObject* br=NULL; // What should this be?
+        CbcBranchingObject* br = NULL; // What should this be?
         for (int i = 1; i < cnt; ++i) {
             if (compare3BranchingObjects(brObj_[numObjects_], brObj_[i]) == 0) {
                 int comp = brObj_[numObjects_]->compareBranchingObject(brObj_[i], br);
@@ -1517,17 +1517,17 @@ CbcHeuristicNode::avgDistance(const CbcHeuristicNodeList& nodeList) const
     for (int i = nodeList.size() - 1; i >= 0; --i) {
         sumDist += distance(nodeList.node(i));
     }
-    return sumDist/nodeList.size();
+    return sumDist / nodeList.size();
 }
 
 //##############################################################################
 
 // Default Constructor
 CbcRounding::CbcRounding()
-        :CbcHeuristic()
+        : CbcHeuristic()
 {
     // matrix and row copy will automatically be empty
-    seed_=7654321;
+    seed_ = 7654321;
     down_ = NULL;
     up_ = NULL;
     equal_ = NULL;
@@ -1535,7 +1535,7 @@ CbcRounding::CbcRounding()
 
 // Constructor from model
 CbcRounding::CbcRounding(CbcModel & model)
-        :CbcHeuristic(model)
+        : CbcHeuristic(model)
 {
     // Get a copy of original matrix (and by row for rounding);
     assert(model.solver());
@@ -1547,7 +1547,7 @@ CbcRounding::CbcRounding(CbcModel & model)
     down_ = NULL;
     up_ = NULL;
     equal_ = NULL;
-    seed_=7654321;
+    seed_ = 7654321;
 }
 
 // Destructor
@@ -1569,14 +1569,14 @@ void
 CbcRounding::generateCpp( FILE * fp)
 {
     CbcRounding other;
-    fprintf(fp,"0#include \"CbcHeuristic.hpp\"\n");
-    fprintf(fp,"3  CbcRounding rounding(*cbcModel);\n");
-    CbcHeuristic::generateCpp(fp,"rounding");
-    if (seed_!=other.seed_)
-        fprintf(fp,"3  rounding.setSeed(%d);\n",seed_);
+    fprintf(fp, "0#include \"CbcHeuristic.hpp\"\n");
+    fprintf(fp, "3  CbcRounding rounding(*cbcModel);\n");
+    CbcHeuristic::generateCpp(fp, "rounding");
+    if (seed_ != other.seed_)
+        fprintf(fp, "3  rounding.setSeed(%d);\n", seed_);
     else
-        fprintf(fp,"4  rounding.setSeed(%d);\n",seed_);
-    fprintf(fp,"3  cbcModel->addHeuristic(&rounding);\n");
+        fprintf(fp, "4  rounding.setSeed(%d);\n", seed_);
+    fprintf(fp, "3  cbcModel->addHeuristic(&rounding);\n");
 }
 //#define NEW_ROUNDING
 // Copy constructor
@@ -1589,9 +1589,9 @@ CbcRounding::CbcRounding(const CbcRounding & rhs)
 {
 #ifdef NEW_ROUNDING
     int numberColumns = matrix_.getNumCols();
-    down_ = CoinCopyOfArray(rhs.down_,numberColumns);
-    up_ = CoinCopyOfArray(rhs.up_,numberColumns);
-    equal_ = CoinCopyOfArray(rhs.equal_,numberColumns);
+    down_ = CoinCopyOfArray(rhs.down_, numberColumns);
+    up_ = CoinCopyOfArray(rhs.up_, numberColumns);
+    equal_ = CoinCopyOfArray(rhs.equal_, numberColumns);
 #else
     down_ = NULL;
     up_ = NULL;
@@ -1601,9 +1601,9 @@ CbcRounding::CbcRounding(const CbcRounding & rhs)
 
 // Assignment operator
 CbcRounding &
-CbcRounding::operator=( const CbcRounding& rhs)
+CbcRounding::operator=( const CbcRounding & rhs)
 {
-    if (this!=&rhs) {
+    if (this != &rhs) {
         CbcHeuristic::operator=(rhs);
         matrix_ = rhs.matrix_;
         matrixByRow_ = rhs.matrixByRow_;
@@ -1612,9 +1612,9 @@ CbcRounding::operator=( const CbcRounding& rhs)
         delete [] up_;
         delete [] equal_;
         int numberColumns = matrix_.getNumCols();
-        down_ = CoinCopyOfArray(rhs.down_,numberColumns);
-        up_ = CoinCopyOfArray(rhs.up_,numberColumns);
-        equal_ = CoinCopyOfArray(rhs.equal_,numberColumns);
+        down_ = CoinCopyOfArray(rhs.down_, numberColumns);
+        up_ = CoinCopyOfArray(rhs.up_, numberColumns);
+        equal_ = CoinCopyOfArray(rhs.equal_, numberColumns);
 #else
         down_ = NULL;
         up_ = NULL;
@@ -1629,7 +1629,7 @@ CbcRounding::operator=( const CbcRounding& rhs)
 void
 CbcRounding::resetModel(CbcModel * model)
 {
-    model_=model;
+    model_ = model;
     // Get a copy of original matrix (and by row for rounding);
     assert(model_->solver());
     matrix_ = *model_->solver()->getMatrixByCol();
@@ -1649,14 +1649,14 @@ CbcRounding::solution(double & solutionValue,
 
     numCouldRun_++;
     // See if to do
-    if (!when()||(when()%10==1&&model_->phase()!=1)||
-            (when()%10==2&&(model_->phase()!=2&&model_->phase()!=3)))
+    if (!when() || (when() % 10 == 1 && model_->phase() != 1) ||
+            (when() % 10 == 2 && (model_->phase() != 2 && model_->phase() != 3)))
         return 0; // switched off
     numRuns_++;
     OsiSolverInterface * solver = model_->solver();
     double direction = solver->getObjSense();
-    double newSolutionValue = direction*solver->getObjValue();
-    return solution(solutionValue,betterSolution,newSolutionValue);
+    double newSolutionValue = direction * solver->getObjValue();
+    return solution(solutionValue, betterSolution, newSolutionValue);
 }
 // See if rounding will give solution
 // Sets value of solution
@@ -1671,8 +1671,8 @@ CbcRounding::solution(double & solutionValue,
 {
 
     // See if to do
-    if (!when()||(when()%10==1&&model_->phase()!=1)||
-            (when()%10==2&&(model_->phase()!=2&&model_->phase()!=3)))
+    if (!when() || (when() % 10 == 1 && model_->phase() != 1) ||
+            (when() % 10 == 2 && (model_->phase() != 2 && model_->phase() != 3)))
         return 0; // switched off
     OsiSolverInterface * solver = model_->solver();
     const double * lower = solver->getColLower();
@@ -1683,10 +1683,10 @@ CbcRounding::solution(double & solutionValue,
     const double * objective = solver->getObjCoefficients();
     double integerTolerance = model_->getDblParam(CbcModel::CbcIntegerTolerance);
     double primalTolerance;
-    solver->getDblParam(OsiPrimalTolerance,primalTolerance);
+    solver->getDblParam(OsiPrimalTolerance, primalTolerance);
 
     int numberRows = matrix_.getNumRows();
-    assert (numberRows<=solver->getNumRows());
+    assert (numberRows <= solver->getNumRows());
     int numberIntegers = model_->numberIntegers();
     const int * integerVariable = model_->integerVariable();
     int i;
@@ -1707,158 +1707,158 @@ CbcRounding::solution(double & solutionValue,
     // Get solution array for heuristic solution
     int numberColumns = solver->getNumCols();
     double * newSolution = new double [numberColumns];
-    memcpy(newSolution,solution,numberColumns*sizeof(double));
+    memcpy(newSolution, solution, numberColumns*sizeof(double));
 
     double * rowActivity = new double[numberRows];
-    memset(rowActivity,0,numberRows*sizeof(double));
-    for (i=0; i<numberColumns; i++) {
+    memset(rowActivity, 0, numberRows*sizeof(double));
+    for (i = 0; i < numberColumns; i++) {
         int j;
         double value = newSolution[i];
-        if (value<lower[i]) {
-            value=lower[i];
-            newSolution[i]=value;
-        } else if (value>upper[i]) {
-            value=upper[i];
-            newSolution[i]=value;
+        if (value < lower[i]) {
+            value = lower[i];
+            newSolution[i] = value;
+        } else if (value > upper[i]) {
+            value = upper[i];
+            newSolution[i] = value;
         }
         if (value) {
-            for (j=columnStart[i];
-                    j<columnStart[i]+columnLength[i]; j++) {
-                int iRow=row[j];
-                rowActivity[iRow] += value*element[j];
+            for (j = columnStart[i];
+                    j < columnStart[i] + columnLength[i]; j++) {
+                int iRow = row[j];
+                rowActivity[iRow] += value * element[j];
             }
         }
     }
     // check was feasible - if not adjust (cleaning may move)
-    for (i=0; i<numberRows; i++) {
-        if (rowActivity[i]<rowLower[i]) {
+    for (i = 0; i < numberRows; i++) {
+        if (rowActivity[i] < rowLower[i]) {
             //assert (rowActivity[i]>rowLower[i]-1000.0*primalTolerance);
-            rowActivity[i]=rowLower[i];
-        } else if (rowActivity[i]>rowUpper[i]) {
+            rowActivity[i] = rowLower[i];
+        } else if (rowActivity[i] > rowUpper[i]) {
             //assert (rowActivity[i]<rowUpper[i]+1000.0*primalTolerance);
-            rowActivity[i]=rowUpper[i];
+            rowActivity[i] = rowUpper[i];
         }
     }
-    for (i=0; i<numberIntegers; i++) {
+    for (i = 0; i < numberIntegers; i++) {
         int iColumn = integerVariable[i];
-        double value=newSolution[iColumn];
-        if (fabs(floor(value+0.5)-value)>integerTolerance) {
+        double value = newSolution[iColumn];
+        if (fabs(floor(value + 0.5) - value) > integerTolerance) {
             double below = floor(value);
-            double newValue=newSolution[iColumn];
+            double newValue = newSolution[iColumn];
             double cost = direction * objective[iColumn];
             double move;
-            if (cost>0.0) {
+            if (cost > 0.0) {
                 // try up
-                move = 1.0 -(value-below);
-            } else if (cost<0.0) {
+                move = 1.0 - (value - below);
+            } else if (cost < 0.0) {
                 // try down
-                move = below-value;
+                move = below - value;
             } else {
                 // won't be able to move unless we can grab another variable
                 double randomNumber = randomNumberGenerator_.randomDouble();
                 // which way?
-                if (randomNumber<0.5)
-                    move = below-value;
+                if (randomNumber < 0.5)
+                    move = below - value;
                 else
-                    move = 1.0 -(value-below);
+                    move = 1.0 - (value - below);
             }
             newValue += move;
             newSolution[iColumn] = newValue;
-            newSolutionValue += move*cost;
+            newSolutionValue += move * cost;
             int j;
-            for (j=columnStart[iColumn];
-                    j<columnStart[iColumn]+columnLength[iColumn]; j++) {
+            for (j = columnStart[iColumn];
+                    j < columnStart[iColumn] + columnLength[iColumn]; j++) {
                 int iRow = row[j];
-                rowActivity[iRow] += move*element[j];
+                rowActivity[iRow] += move * element[j];
             }
         }
     }
 
-    double penalty=0.0;
+    double penalty = 0.0;
     const char * integerType = model_->integerType();
     // see if feasible - just using singletons
-    for (i=0; i<numberRows; i++) {
+    for (i = 0; i < numberRows; i++) {
         double value = rowActivity[i];
-        double thisInfeasibility=0.0;
-        if (value<rowLower[i]-primalTolerance)
-            thisInfeasibility = value-rowLower[i];
-        else if (value>rowUpper[i]+primalTolerance)
-            thisInfeasibility = value-rowUpper[i];
+        double thisInfeasibility = 0.0;
+        if (value < rowLower[i] - primalTolerance)
+            thisInfeasibility = value - rowLower[i];
+        else if (value > rowUpper[i] + primalTolerance)
+            thisInfeasibility = value - rowUpper[i];
         if (thisInfeasibility) {
             // See if there are any slacks I can use to fix up
             // maybe put in coding for multiple slacks?
             double bestCost = 1.0e50;
             int k;
-            int iBest=-1;
-            double addCost=0.0;
-            double newValue=0.0;
-            double changeRowActivity=0.0;
+            int iBest = -1;
+            double addCost = 0.0;
+            double newValue = 0.0;
+            double changeRowActivity = 0.0;
             double absInfeasibility = fabs(thisInfeasibility);
-            for (k=rowStart[i]; k<rowStart[i]+rowLength[i]; k++) {
+            for (k = rowStart[i]; k < rowStart[i] + rowLength[i]; k++) {
                 int iColumn = column[k];
                 // See if all elements help
-                if (columnLength[iColumn]==1) {
+                if (columnLength[iColumn] == 1) {
                     double currentValue = newSolution[iColumn];
                     double elementValue = elementByRow[k];
                     double lowerValue = lower[iColumn];
                     double upperValue = upper[iColumn];
-                    double gap = rowUpper[i]-rowLower[i];
-                    double absElement=fabs(elementValue);
-                    if (thisInfeasibility*elementValue>0.0) {
+                    double gap = rowUpper[i] - rowLower[i];
+                    double absElement = fabs(elementValue);
+                    if (thisInfeasibility*elementValue > 0.0) {
                         // we want to reduce
-                        if ((currentValue-lowerValue)*absElement>=absInfeasibility) {
+                        if ((currentValue - lowerValue)*absElement >= absInfeasibility) {
                             // possible - check if integer
-                            double distance = absInfeasibility/absElement;
-                            double thisCost = -direction*objective[iColumn]*distance;
+                            double distance = absInfeasibility / absElement;
+                            double thisCost = -direction * objective[iColumn] * distance;
                             if (integerType[iColumn]) {
-                                distance = ceil(distance-primalTolerance);
-                                if (currentValue-distance>=lowerValue-primalTolerance) {
-                                    if (absInfeasibility-distance*absElement< -gap-primalTolerance)
-                                        thisCost=1.0e100; // no good
+                                distance = ceil(distance - primalTolerance);
+                                if (currentValue - distance >= lowerValue - primalTolerance) {
+                                    if (absInfeasibility - distance*absElement < -gap - primalTolerance)
+                                        thisCost = 1.0e100; // no good
                                     else
-                                        thisCost = -direction*objective[iColumn]*distance;
+                                        thisCost = -direction * objective[iColumn] * distance;
                                 } else {
-                                    thisCost=1.0e100; // no good
+                                    thisCost = 1.0e100; // no good
                                 }
                             }
-                            if (thisCost<bestCost) {
-                                bestCost=thisCost;
-                                iBest=iColumn;
+                            if (thisCost < bestCost) {
+                                bestCost = thisCost;
+                                iBest = iColumn;
                                 addCost = thisCost;
-                                newValue = currentValue-distance;
-                                changeRowActivity = -distance*elementValue;
+                                newValue = currentValue - distance;
+                                changeRowActivity = -distance * elementValue;
                             }
                         }
                     } else {
                         // we want to increase
-                        if ((upperValue-currentValue)*absElement>=absInfeasibility) {
+                        if ((upperValue - currentValue)*absElement >= absInfeasibility) {
                             // possible - check if integer
-                            double distance = absInfeasibility/absElement;
-                            double thisCost = direction*objective[iColumn]*distance;
+                            double distance = absInfeasibility / absElement;
+                            double thisCost = direction * objective[iColumn] * distance;
                             if (integerType[iColumn]) {
-                                distance = ceil(distance-1.0e-7);
-                                assert (currentValue-distance<=upperValue+primalTolerance);
-                                if (absInfeasibility-distance*absElement< -gap-primalTolerance)
-                                    thisCost=1.0e100; // no good
+                                distance = ceil(distance - 1.0e-7);
+                                assert (currentValue - distance <= upperValue + primalTolerance);
+                                if (absInfeasibility - distance*absElement < -gap - primalTolerance)
+                                    thisCost = 1.0e100; // no good
                                 else
-                                    thisCost = direction*objective[iColumn]*distance;
+                                    thisCost = direction * objective[iColumn] * distance;
                             }
-                            if (thisCost<bestCost) {
-                                bestCost=thisCost;
-                                iBest=iColumn;
+                            if (thisCost < bestCost) {
+                                bestCost = thisCost;
+                                iBest = iColumn;
                                 addCost = thisCost;
-                                newValue = currentValue+distance;
-                                changeRowActivity = distance*elementValue;
+                                newValue = currentValue + distance;
+                                changeRowActivity = distance * elementValue;
                             }
                         }
                     }
                 }
             }
-            if (iBest>=0) {
+            if (iBest >= 0) {
                 /*printf("Infeasibility of %g on row %d cost %g\n",
                   thisInfeasibility,i,addCost);*/
-                newSolution[iBest]=newValue;
-                thisInfeasibility=0.0;
+                newSolution[iBest] = newValue;
+                thisInfeasibility = 0.0;
                 newSolutionValue += addCost;
                 rowActivity[i] += changeRowActivity;
             }
@@ -1868,46 +1868,46 @@ CbcRounding::solution(double & solutionValue,
     if (penalty) {
         // see if feasible using any
         // first continuous
-        double penaltyChange=0.0;
+        double penaltyChange = 0.0;
         int iColumn;
-        for (iColumn=0; iColumn<numberColumns; iColumn++) {
+        for (iColumn = 0; iColumn < numberColumns; iColumn++) {
             if (integerType[iColumn])
                 continue;
             double currentValue = newSolution[iColumn];
             double lowerValue = lower[iColumn];
             double upperValue = upper[iColumn];
             int j;
-            int anyBadDown=0;
-            int anyBadUp=0;
-            double upImprovement=0.0;
-            double downImprovement=0.0;
-            for (j=columnStart[iColumn];
-                    j<columnStart[iColumn]+columnLength[iColumn]; j++) {
+            int anyBadDown = 0;
+            int anyBadUp = 0;
+            double upImprovement = 0.0;
+            double downImprovement = 0.0;
+            for (j = columnStart[iColumn];
+                    j < columnStart[iColumn] + columnLength[iColumn]; j++) {
                 int iRow = row[j];
-                if (rowUpper[iRow]>rowLower[iRow]) {
+                if (rowUpper[iRow] > rowLower[iRow]) {
                     double value = element[j];
-                    if (rowActivity[iRow]>rowUpper[iRow]+primalTolerance) {
+                    if (rowActivity[iRow] > rowUpper[iRow] + primalTolerance) {
                         // infeasible above
                         downImprovement += value;
                         upImprovement -= value;
-                        if (value>0.0)
+                        if (value > 0.0)
                             anyBadUp++;
                         else
                             anyBadDown++;
-                    } else if (rowActivity[iRow]>rowUpper[iRow]-primalTolerance) {
+                    } else if (rowActivity[iRow] > rowUpper[iRow] - primalTolerance) {
                         // feasible at ub
-                        if (value>0.0) {
+                        if (value > 0.0) {
                             upImprovement -= value;
                             anyBadUp++;
                         } else {
                             downImprovement += value;
                             anyBadDown++;
                         }
-                    } else if (rowActivity[iRow]>rowLower[iRow]+primalTolerance) {
+                    } else if (rowActivity[iRow] > rowLower[iRow] + primalTolerance) {
                         // feasible in interior
-                    } else if (rowActivity[iRow]>rowLower[iRow]-primalTolerance) {
+                    } else if (rowActivity[iRow] > rowLower[iRow] - primalTolerance) {
                         // feasible at lb
-                        if (value<0.0) {
+                        if (value < 0.0) {
                             upImprovement += value;
                             anyBadUp++;
                         } else {
@@ -1918,7 +1918,7 @@ CbcRounding::solution(double & solutionValue,
                         // infeasible below
                         downImprovement -= value;
                         upImprovement += value;
-                        if (value<0.0)
+                        if (value < 0.0)
                             anyBadUp++;
                         else
                             anyBadDown++;
@@ -1926,147 +1926,147 @@ CbcRounding::solution(double & solutionValue,
                 } else {
                     // equality row
                     double value = element[j];
-                    if (rowActivity[iRow]>rowUpper[iRow]+primalTolerance) {
+                    if (rowActivity[iRow] > rowUpper[iRow] + primalTolerance) {
                         // infeasible above
                         downImprovement += value;
                         upImprovement -= value;
-                        if (value>0.0)
+                        if (value > 0.0)
                             anyBadUp++;
                         else
                             anyBadDown++;
-                    } else if (rowActivity[iRow]<rowLower[iRow]-primalTolerance) {
+                    } else if (rowActivity[iRow] < rowLower[iRow] - primalTolerance) {
                         // infeasible below
                         downImprovement -= value;
                         upImprovement += value;
-                        if (value<0.0)
+                        if (value < 0.0)
                             anyBadUp++;
                         else
                             anyBadDown++;
                     } else {
                         // feasible - no good
-                        anyBadUp=-1;
-                        anyBadDown=-1;
+                        anyBadUp = -1;
+                        anyBadDown = -1;
                         break;
                     }
                 }
             }
             // could change tests for anyBad
             if (anyBadUp)
-                upImprovement=0.0;
+                upImprovement = 0.0;
             if (anyBadDown)
-                downImprovement=0.0;
-            double way=0.0;
-            double improvement=0.0;
-            if (downImprovement>0.0&&currentValue>lowerValue) {
-                way=-1.0;
+                downImprovement = 0.0;
+            double way = 0.0;
+            double improvement = 0.0;
+            if (downImprovement > 0.0 && currentValue > lowerValue) {
+                way = -1.0;
                 improvement = downImprovement;
-            } else if (upImprovement>0.0&&currentValue<upperValue) {
-                way=1.0;
+            } else if (upImprovement > 0.0 && currentValue < upperValue) {
+                way = 1.0;
                 improvement = upImprovement;
             }
             if (way) {
                 // can improve
                 double distance;
-                if (way>0.0)
-                    distance = upperValue-currentValue;
+                if (way > 0.0)
+                    distance = upperValue - currentValue;
                 else
-                    distance = currentValue-lowerValue;
-                for (j=columnStart[iColumn];
-                        j<columnStart[iColumn]+columnLength[iColumn]; j++) {
+                    distance = currentValue - lowerValue;
+                for (j = columnStart[iColumn];
+                        j < columnStart[iColumn] + columnLength[iColumn]; j++) {
                     int iRow = row[j];
-                    double value = element[j]*way;
-                    if (rowActivity[iRow]>rowUpper[iRow]+primalTolerance) {
+                    double value = element[j] * way;
+                    if (rowActivity[iRow] > rowUpper[iRow] + primalTolerance) {
                         // infeasible above
-                        assert (value<0.0);
-                        double gap = rowActivity[iRow]-rowUpper[iRow];
-                        if (gap+value*distance<0.0)
-                            distance = -gap/value;
-                    } else if (rowActivity[iRow]<rowLower[iRow]-primalTolerance) {
+                        assert (value < 0.0);
+                        double gap = rowActivity[iRow] - rowUpper[iRow];
+                        if (gap + value*distance < 0.0)
+                            distance = -gap / value;
+                    } else if (rowActivity[iRow] < rowLower[iRow] - primalTolerance) {
                         // infeasible below
-                        assert (value>0.0);
-                        double gap = rowActivity[iRow]-rowLower[iRow];
-                        if (gap+value*distance>0.0)
-                            distance = -gap/value;
+                        assert (value > 0.0);
+                        double gap = rowActivity[iRow] - rowLower[iRow];
+                        if (gap + value*distance > 0.0)
+                            distance = -gap / value;
                     } else {
                         // feasible
-                        if (value>0) {
-                            double gap = rowActivity[iRow]-rowUpper[iRow];
-                            if (gap+value*distance>0.0)
-                                distance = -gap/value;
+                        if (value > 0) {
+                            double gap = rowActivity[iRow] - rowUpper[iRow];
+                            if (gap + value*distance > 0.0)
+                                distance = -gap / value;
                         } else {
-                            double gap = rowActivity[iRow]-rowLower[iRow];
-                            if (gap+value*distance<0.0)
-                                distance = -gap/value;
+                            double gap = rowActivity[iRow] - rowLower[iRow];
+                            if (gap + value*distance < 0.0)
+                                distance = -gap / value;
                         }
                     }
                 }
                 //move
-                penaltyChange += improvement*distance;
+                penaltyChange += improvement * distance;
                 distance *= way;
                 newSolution[iColumn] += distance;
-                newSolutionValue += direction*objective[iColumn]*distance;
-                for (j=columnStart[iColumn];
-                        j<columnStart[iColumn]+columnLength[iColumn]; j++) {
+                newSolutionValue += direction * objective[iColumn] * distance;
+                for (j = columnStart[iColumn];
+                        j < columnStart[iColumn] + columnLength[iColumn]; j++) {
                     int iRow = row[j];
                     double value = element[j];
-                    rowActivity[iRow] += distance*value;
+                    rowActivity[iRow] += distance * value;
                 }
             }
         }
         // and now all if improving
-        double lastChange= penaltyChange ? 1.0 : 0.0;
-        while (lastChange>1.0e-2) {
-            lastChange=0;
-            for (iColumn=0; iColumn<numberColumns; iColumn++) {
-                bool isInteger = (integerType[iColumn]!=0);
+        double lastChange = penaltyChange ? 1.0 : 0.0;
+        while (lastChange > 1.0e-2) {
+            lastChange = 0;
+            for (iColumn = 0; iColumn < numberColumns; iColumn++) {
+                bool isInteger = (integerType[iColumn] != 0);
                 double currentValue = newSolution[iColumn];
                 double lowerValue = lower[iColumn];
                 double upperValue = upper[iColumn];
                 int j;
-                int anyBadDown=0;
-                int anyBadUp=0;
-                double upImprovement=0.0;
-                double downImprovement=0.0;
-                for (j=columnStart[iColumn];
-                        j<columnStart[iColumn]+columnLength[iColumn]; j++) {
+                int anyBadDown = 0;
+                int anyBadUp = 0;
+                double upImprovement = 0.0;
+                double downImprovement = 0.0;
+                for (j = columnStart[iColumn];
+                        j < columnStart[iColumn] + columnLength[iColumn]; j++) {
                     int iRow = row[j];
                     double value = element[j];
                     if (isInteger) {
-                        if (value>0.0) {
-                            if (rowActivity[iRow]+value>rowUpper[iRow]+primalTolerance)
+                        if (value > 0.0) {
+                            if (rowActivity[iRow] + value > rowUpper[iRow] + primalTolerance)
                                 anyBadUp++;
-                            if (rowActivity[iRow]-value<rowLower[iRow]-primalTolerance)
+                            if (rowActivity[iRow] - value < rowLower[iRow] - primalTolerance)
                                 anyBadDown++;
                         } else {
-                            if (rowActivity[iRow]-value>rowUpper[iRow]+primalTolerance)
+                            if (rowActivity[iRow] - value > rowUpper[iRow] + primalTolerance)
                                 anyBadDown++;
-                            if (rowActivity[iRow]+value<rowLower[iRow]-primalTolerance)
+                            if (rowActivity[iRow] + value < rowLower[iRow] - primalTolerance)
                                 anyBadUp++;
                         }
                     }
-                    if (rowUpper[iRow]>rowLower[iRow]) {
-                        if (rowActivity[iRow]>rowUpper[iRow]+primalTolerance) {
+                    if (rowUpper[iRow] > rowLower[iRow]) {
+                        if (rowActivity[iRow] > rowUpper[iRow] + primalTolerance) {
                             // infeasible above
                             downImprovement += value;
                             upImprovement -= value;
-                            if (value>0.0)
+                            if (value > 0.0)
                                 anyBadUp++;
                             else
                                 anyBadDown++;
-                        } else if (rowActivity[iRow]>rowUpper[iRow]-primalTolerance) {
+                        } else if (rowActivity[iRow] > rowUpper[iRow] - primalTolerance) {
                             // feasible at ub
-                            if (value>0.0) {
+                            if (value > 0.0) {
                                 upImprovement -= value;
                                 anyBadUp++;
                             } else {
                                 downImprovement += value;
                                 anyBadDown++;
                             }
-                        } else if (rowActivity[iRow]>rowLower[iRow]+primalTolerance) {
+                        } else if (rowActivity[iRow] > rowLower[iRow] + primalTolerance) {
                             // feasible in interior
-                        } else if (rowActivity[iRow]>rowLower[iRow]-primalTolerance) {
+                        } else if (rowActivity[iRow] > rowLower[iRow] - primalTolerance) {
                             // feasible at lb
-                            if (value<0.0) {
+                            if (value < 0.0) {
                                 upImprovement += value;
                                 anyBadUp++;
                             } else {
@@ -2077,124 +2077,124 @@ CbcRounding::solution(double & solutionValue,
                             // infeasible below
                             downImprovement -= value;
                             upImprovement += value;
-                            if (value<0.0)
+                            if (value < 0.0)
                                 anyBadUp++;
                             else
                                 anyBadDown++;
                         }
                     } else {
                         // equality row
-                        if (rowActivity[iRow]>rowUpper[iRow]+primalTolerance) {
+                        if (rowActivity[iRow] > rowUpper[iRow] + primalTolerance) {
                             // infeasible above
                             downImprovement += value;
                             upImprovement -= value;
-                            if (value>0.0)
+                            if (value > 0.0)
                                 anyBadUp++;
                             else
                                 anyBadDown++;
-                        } else if (rowActivity[iRow]<rowLower[iRow]-primalTolerance) {
+                        } else if (rowActivity[iRow] < rowLower[iRow] - primalTolerance) {
                             // infeasible below
                             downImprovement -= value;
                             upImprovement += value;
-                            if (value<0.0)
+                            if (value < 0.0)
                                 anyBadUp++;
                             else
                                 anyBadDown++;
                         } else {
                             // feasible - no good
-                            anyBadUp=-1;
-                            anyBadDown=-1;
+                            anyBadUp = -1;
+                            anyBadDown = -1;
                             break;
                         }
                     }
                 }
                 // could change tests for anyBad
                 if (anyBadUp)
-                    upImprovement=0.0;
+                    upImprovement = 0.0;
                 if (anyBadDown)
-                    downImprovement=0.0;
-                double way=0.0;
-                double improvement=0.0;
-                if (downImprovement>0.0&&currentValue>lowerValue) {
-                    way=-1.0;
+                    downImprovement = 0.0;
+                double way = 0.0;
+                double improvement = 0.0;
+                if (downImprovement > 0.0 && currentValue > lowerValue) {
+                    way = -1.0;
                     improvement = downImprovement;
-                } else if (upImprovement>0.0&&currentValue<upperValue) {
-                    way=1.0;
+                } else if (upImprovement > 0.0 && currentValue < upperValue) {
+                    way = 1.0;
                     improvement = upImprovement;
                 }
                 if (way) {
                     // can improve
-                    double distance=COIN_DBL_MAX;
-                    for (j=columnStart[iColumn];
-                            j<columnStart[iColumn]+columnLength[iColumn]; j++) {
+                    double distance = COIN_DBL_MAX;
+                    for (j = columnStart[iColumn];
+                            j < columnStart[iColumn] + columnLength[iColumn]; j++) {
                         int iRow = row[j];
-                        double value = element[j]*way;
-                        if (rowActivity[iRow]>rowUpper[iRow]+primalTolerance) {
+                        double value = element[j] * way;
+                        if (rowActivity[iRow] > rowUpper[iRow] + primalTolerance) {
                             // infeasible above
-                            assert (value<0.0);
-                            double gap = rowActivity[iRow]-rowUpper[iRow];
-                            if (gap+value*distance<0.0) {
+                            assert (value < 0.0);
+                            double gap = rowActivity[iRow] - rowUpper[iRow];
+                            if (gap + value*distance < 0.0) {
                                 // If integer then has to move by 1
                                 if (!isInteger)
-                                    distance = -gap/value;
+                                    distance = -gap / value;
                                 else
-                                    distance = CoinMax(-gap/value,1.0);
+                                    distance = CoinMax(-gap / value, 1.0);
                             }
-                        } else if (rowActivity[iRow]<rowLower[iRow]-primalTolerance) {
+                        } else if (rowActivity[iRow] < rowLower[iRow] - primalTolerance) {
                             // infeasible below
-                            assert (value>0.0);
-                            double gap = rowActivity[iRow]-rowLower[iRow];
-                            if (gap+value*distance>0.0) {
+                            assert (value > 0.0);
+                            double gap = rowActivity[iRow] - rowLower[iRow];
+                            if (gap + value*distance > 0.0) {
                                 // If integer then has to move by 1
                                 if (!isInteger)
-                                    distance = -gap/value;
+                                    distance = -gap / value;
                                 else
-                                    distance = CoinMax(-gap/value,1.0);
+                                    distance = CoinMax(-gap / value, 1.0);
                             }
                         } else {
                             // feasible
-                            if (value>0) {
-                                double gap = rowActivity[iRow]-rowUpper[iRow];
-                                if (gap+value*distance>0.0)
-                                    distance = -gap/value;
+                            if (value > 0) {
+                                double gap = rowActivity[iRow] - rowUpper[iRow];
+                                if (gap + value*distance > 0.0)
+                                    distance = -gap / value;
                             } else {
-                                double gap = rowActivity[iRow]-rowLower[iRow];
-                                if (gap+value*distance<0.0)
-                                    distance = -gap/value;
+                                double gap = rowActivity[iRow] - rowLower[iRow];
+                                if (gap + value*distance < 0.0)
+                                    distance = -gap / value;
                             }
                         }
                     }
                     if (isInteger)
-                        distance = floor(distance+1.05e-8);
+                        distance = floor(distance + 1.05e-8);
                     if (!distance) {
                         // should never happen
                         //printf("zero distance in CbcRounding - debug\n");
                     }
                     //move
-                    lastChange += improvement*distance;
+                    lastChange += improvement * distance;
                     distance *= way;
                     newSolution[iColumn] += distance;
-                    newSolutionValue += direction*objective[iColumn]*distance;
-                    for (j=columnStart[iColumn];
-                            j<columnStart[iColumn]+columnLength[iColumn]; j++) {
+                    newSolutionValue += direction * objective[iColumn] * distance;
+                    for (j = columnStart[iColumn];
+                            j < columnStart[iColumn] + columnLength[iColumn]; j++) {
                         int iRow = row[j];
                         double value = element[j];
-                        rowActivity[iRow] += distance*value;
+                        rowActivity[iRow] += distance * value;
                     }
                 }
             }
             penaltyChange += lastChange;
         }
         penalty -= penaltyChange;
-        if (penalty<1.0e-5*fabs(penaltyChange)) {
+        if (penalty < 1.0e-5*fabs(penaltyChange)) {
             // recompute
-            penalty=0.0;
-            for (i=0; i<numberRows; i++) {
+            penalty = 0.0;
+            for (i = 0; i < numberRows; i++) {
                 double value = rowActivity[i];
-                if (value<rowLower[i]-primalTolerance)
-                    penalty += rowLower[i]-value;
-                else if (value>rowUpper[i]+primalTolerance)
-                    penalty += value-rowUpper[i];
+                if (value < rowLower[i] - primalTolerance)
+                    penalty += rowLower[i] - value;
+                else if (value > rowUpper[i] + primalTolerance)
+                    penalty += value - rowUpper[i];
             }
         }
     }
@@ -2209,99 +2209,99 @@ CbcRounding::solution(double & solutionValue,
         int iPass;
         int start[2];
         int end[2];
-        int iRandom = static_cast<int> (randomNumber*(static_cast<double> (numberIntegers)));
-        start[0]=iRandom;
-        end[0]=numberIntegers;
-        start[1]=0;
-        end[1]=iRandom;
-        for (iPass=0; iPass<2; iPass++) {
+        int iRandom = static_cast<int> (randomNumber * (static_cast<double> (numberIntegers)));
+        start[0] = iRandom;
+        end[0] = numberIntegers;
+        start[1] = 0;
+        end[1] = iRandom;
+        for (iPass = 0; iPass < 2; iPass++) {
             int i;
-            for (i=start[iPass]; i<end[iPass]; i++) {
+            for (i = start[iPass]; i < end[iPass]; i++) {
                 int iColumn = integerVariable[i];
 #ifndef NDEBUG
-                double value=newSolution[iColumn];
-                assert (fabs(floor(value+0.5)-value)<integerTolerance);
+                double value = newSolution[iColumn];
+                assert (fabs(floor(value + 0.5) - value) < integerTolerance);
 #endif
                 double cost = direction * objective[iColumn];
-                double move=0.0;
-                if (cost>0.0)
+                double move = 0.0;
+                if (cost > 0.0)
                     move = -1.0;
-                else if (cost<0.0)
-                    move=1.0;
+                else if (cost < 0.0)
+                    move = 1.0;
                 while (move) {
-                    bool good=true;
-                    double newValue=newSolution[iColumn]+move;
-                    if (newValue<lower[iColumn]-primalTolerance||
-                            newValue>upper[iColumn]+primalTolerance) {
-                        move=0.0;
+                    bool good = true;
+                    double newValue = newSolution[iColumn] + move;
+                    if (newValue < lower[iColumn] - primalTolerance ||
+                            newValue > upper[iColumn] + primalTolerance) {
+                        move = 0.0;
                     } else {
                         // see if we can move
                         int j;
-                        for (j=columnStart[iColumn];
-                                j<columnStart[iColumn]+columnLength[iColumn]; j++) {
+                        for (j = columnStart[iColumn];
+                                j < columnStart[iColumn] + columnLength[iColumn]; j++) {
                             int iRow = row[j];
-                            double newActivity = rowActivity[iRow] + move*element[j];
-                            if (newActivity<rowLower[iRow]-primalTolerance||
-                                    newActivity>rowUpper[iRow]+primalTolerance) {
-                                good=false;
+                            double newActivity = rowActivity[iRow] + move * element[j];
+                            if (newActivity < rowLower[iRow] - primalTolerance ||
+                                    newActivity > rowUpper[iRow] + primalTolerance) {
+                                good = false;
                                 break;
                             }
                         }
                         if (good) {
                             newSolution[iColumn] = newValue;
-                            newSolutionValue += move*cost;
+                            newSolutionValue += move * cost;
                             int j;
-                            for (j=columnStart[iColumn];
-                                    j<columnStart[iColumn]+columnLength[iColumn]; j++) {
+                            for (j = columnStart[iColumn];
+                                    j < columnStart[iColumn] + columnLength[iColumn]; j++) {
                                 int iRow = row[j];
-                                rowActivity[iRow] += move*element[j];
+                                rowActivity[iRow] += move * element[j];
                             }
                         } else {
-                            move=0.0;
+                            move = 0.0;
                         }
                     }
                 }
             }
         }
         // Just in case of some stupidity
-        double objOffset=0.0;
-        solver->getDblParam(OsiObjOffset,objOffset);
+        double objOffset = 0.0;
+        solver->getDblParam(OsiObjOffset, objOffset);
         newSolutionValue = -objOffset;
-        for ( i=0 ; i<numberColumns ; i++ )
-            newSolutionValue += objective[i]*newSolution[i];
+        for ( i = 0 ; i < numberColumns ; i++ )
+            newSolutionValue += objective[i] * newSolution[i];
         newSolutionValue *= direction;
         //printf("new solution value %g %g\n",newSolutionValue,solutionValue);
-        if (newSolutionValue<solutionValue) {
+        if (newSolutionValue < solutionValue) {
             // paranoid check
-            memset(rowActivity,0,numberRows*sizeof(double));
-            for (i=0; i<numberColumns; i++) {
+            memset(rowActivity, 0, numberRows*sizeof(double));
+            for (i = 0; i < numberColumns; i++) {
                 int j;
                 double value = newSolution[i];
                 if (value) {
-                    for (j=columnStart[i];
-                            j<columnStart[i]+columnLength[i]; j++) {
-                        int iRow=row[j];
-                        rowActivity[iRow] += value*element[j];
+                    for (j = columnStart[i];
+                            j < columnStart[i] + columnLength[i]; j++) {
+                        int iRow = row[j];
+                        rowActivity[iRow] += value * element[j];
                     }
                 }
             }
             // check was approximately feasible
-            bool feasible=true;
-            for (i=0; i<numberRows; i++) {
-                if (rowActivity[i]<rowLower[i]) {
-                    if (rowActivity[i]<rowLower[i]-1000.0*primalTolerance)
+            bool feasible = true;
+            for (i = 0; i < numberRows; i++) {
+                if (rowActivity[i] < rowLower[i]) {
+                    if (rowActivity[i] < rowLower[i] - 1000.0*primalTolerance)
                         feasible = false;
-                } else if (rowActivity[i]>rowUpper[i]) {
-                    if (rowActivity[i]>rowUpper[i]+1000.0*primalTolerance)
+                } else if (rowActivity[i] > rowUpper[i]) {
+                    if (rowActivity[i] > rowUpper[i] + 1000.0*primalTolerance)
                         feasible = false;
                 }
             }
             if (feasible) {
                 // new solution
-                memcpy(betterSolution,newSolution,numberColumns*sizeof(double));
+                memcpy(betterSolution, newSolution, numberColumns*sizeof(double));
                 solutionValue = newSolutionValue;
                 //printf("** Solution of %g found by rounding\n",newSolutionValue);
-                returnCode=1;
+                returnCode = 1;
             } else {
                 // Can easily happen
                 //printf("Debug CbcRounding giving bad solution\n");
@@ -2312,65 +2312,65 @@ CbcRounding::solution(double & solutionValue,
     if (!returnCode) {
 #if 0
         // back to starting point
-        memcpy(newSolution,solution,numberColumns*sizeof(double));
-        memset(rowActivity,0,numberRows*sizeof(double));
-        for (i=0; i<numberColumns; i++) {
+        memcpy(newSolution, solution, numberColumns*sizeof(double));
+        memset(rowActivity, 0, numberRows*sizeof(double));
+        for (i = 0; i < numberColumns; i++) {
             int j;
             double value = newSolution[i];
-            if (value<lower[i]) {
-                value=lower[i];
-                newSolution[i]=value;
-            } else if (value>upper[i]) {
-                value=upper[i];
-                newSolution[i]=value;
+            if (value < lower[i]) {
+                value = lower[i];
+                newSolution[i] = value;
+            } else if (value > upper[i]) {
+                value = upper[i];
+                newSolution[i] = value;
             }
             if (value) {
-                for (j=columnStart[i];
-                        j<columnStart[i]+columnLength[i]; j++) {
-                    int iRow=row[j];
-                    rowActivity[iRow] += value*element[j];
+                for (j = columnStart[i];
+                        j < columnStart[i] + columnLength[i]; j++) {
+                    int iRow = row[j];
+                    rowActivity[iRow] += value * element[j];
                 }
             }
         }
         // check was feasible - if not adjust (cleaning may move)
-        for (i=0; i<numberRows; i++) {
-            if (rowActivity[i]<rowLower[i]) {
+        for (i = 0; i < numberRows; i++) {
+            if (rowActivity[i] < rowLower[i]) {
                 //assert (rowActivity[i]>rowLower[i]-1000.0*primalTolerance);
-                rowActivity[i]=rowLower[i];
-            } else if (rowActivity[i]>rowUpper[i]) {
+                rowActivity[i] = rowLower[i];
+            } else if (rowActivity[i] > rowUpper[i]) {
                 //assert (rowActivity[i]<rowUpper[i]+1000.0*primalTolerance);
-                rowActivity[i]=rowUpper[i];
+                rowActivity[i] = rowUpper[i];
             }
         }
 #endif
         int * candidate = new int [numberColumns];
-        int nCandidate=0;
-        for (iColumn=0; iColumn<numberColumns; iColumn++) {
-            bool isInteger = (integerType[iColumn]!=0);
+        int nCandidate = 0;
+        for (iColumn = 0; iColumn < numberColumns; iColumn++) {
+            bool isInteger = (integerType[iColumn] != 0);
             if (isInteger) {
                 double currentValue = newSolution[iColumn];
-                if (fabs(currentValue-floor(currentValue+0.5))>1.0e-8)
-                    candidate[nCandidate++]=iColumn;
+                if (fabs(currentValue - floor(currentValue + 0.5)) > 1.0e-8)
+                    candidate[nCandidate++] = iColumn;
             }
         }
         if (true) {
             // Rounding as in Berthold
             while (nCandidate) {
-                double infeasibility =1.0e-7;
-                int iRow=-1;
-                for (i=0; i<numberRows; i++) {
-                    double value=0.0;
-                    if (rowActivity[i]<rowLower[i]) {
-                        value = rowLower[i]-rowActivity[i];
-                    } else if (rowActivity[i]>rowUpper[i]) {
-                        value = rowActivity[i]-rowUpper[i];
+                double infeasibility = 1.0e-7;
+                int iRow = -1;
+                for (i = 0; i < numberRows; i++) {
+                    double value = 0.0;
+                    if (rowActivity[i] < rowLower[i]) {
+                        value = rowLower[i] - rowActivity[i];
+                    } else if (rowActivity[i] > rowUpper[i]) {
+                        value = rowActivity[i] - rowUpper[i];
                     }
-                    if (value>infeasibility) {
+                    if (value > infeasibility) {
                         infeasibility = value;
-                        iRow=i;
+                        iRow = i;
                     }
                 }
-                if (iRow>=0) {
+                if (iRow >= 0) {
                     // infeasible
                 } else {
                     // feasible
@@ -2403,12 +2403,12 @@ void CbcRounding::setModel(CbcModel * model)
 void
 CbcRounding::validate()
 {
-    if (model_&&(when()%100)<10) {
-        if (model_->numberIntegers()!=
-                model_->numberObjects()&&(model_->numberObjects()||
-                                          (model_->specialOptions()&1024)==0)) {
-            int numberOdd=0;
-            for (int i=0; i<model_->numberObjects(); i++) {
+    if (model_ && (when() % 100) < 10) {
+        if (model_->numberIntegers() !=
+                model_->numberObjects() && (model_->numberObjects() ||
+                                            (model_->specialOptions()&1024) == 0)) {
+            int numberOdd = 0;
+            for (int i = 0; i < model_->numberObjects(); i++) {
                 if (!model_->object(i)->canDoHeuristics())
                     numberOdd++;
             }
@@ -2428,26 +2428,26 @@ CbcRounding::validate()
     const int * columnLength = matrix_.getVectorLengths();
     const double * rowLower = model.solver()->getRowLower();
     const double * rowUpper = model.solver()->getRowUpper();
-    for (int i=0; i<numberColumns; i++) {
-        int down=0;
-        int up=0;
-        int equal=0;
-        if (columnLength[i]>65535) {
-            equal[0]=65535;
+    for (int i = 0; i < numberColumns; i++) {
+        int down = 0;
+        int up = 0;
+        int equal = 0;
+        if (columnLength[i] > 65535) {
+            equal[0] = 65535;
             break; // unlikely to work
         }
-        for (CoinBigIndex j=columnStart[i];
-                j<columnStart[i]+columnLength[i]; j++) {
-            int iRow=row[j];
-            if (rowLower[iRow]>-1.0e20&&rowUpper[iRow]<1.0e20) {
+        for (CoinBigIndex j = columnStart[i];
+                j < columnStart[i] + columnLength[i]; j++) {
+            int iRow = row[j];
+            if (rowLower[iRow] > -1.0e20 && rowUpper[iRow] < 1.0e20) {
                 equal++;
-            } else if (element[j]>0.0) {
-                if (rowUpper[iRow]<1.0e20)
+            } else if (element[j] > 0.0) {
+                if (rowUpper[iRow] < 1.0e20)
                     up++;
                 else
                     down--;
             } else {
-                if (rowLower[iRow]>-1.0e20)
+                if (rowLower[iRow] > -1.0e20)
                     up++;
                 else
                     down--;
@@ -2466,14 +2466,14 @@ CbcRounding::validate()
 
 // Default Constructor
 CbcHeuristicPartial::CbcHeuristicPartial()
-        :CbcHeuristic()
+        : CbcHeuristic()
 {
     fixPriority_ = 10000;
 }
 
 // Constructor from model
 CbcHeuristicPartial::CbcHeuristicPartial(CbcModel & model, int fixPriority, int numberNodes)
-        :CbcHeuristic(model)
+        : CbcHeuristic(model)
 {
     fixPriority_ = fixPriority;
     setNumberNodes(numberNodes);
@@ -2496,14 +2496,14 @@ void
 CbcHeuristicPartial::generateCpp( FILE * fp)
 {
     CbcHeuristicPartial other;
-    fprintf(fp,"0#include \"CbcHeuristic.hpp\"\n");
-    fprintf(fp,"3  CbcHeuristicPartial partial(*cbcModel);\n");
-    CbcHeuristic::generateCpp(fp,"partial");
-    if (fixPriority_!=other.fixPriority_)
-        fprintf(fp,"3  partial.setFixPriority(%d);\n",fixPriority_);
+    fprintf(fp, "0#include \"CbcHeuristic.hpp\"\n");
+    fprintf(fp, "3  CbcHeuristicPartial partial(*cbcModel);\n");
+    CbcHeuristic::generateCpp(fp, "partial");
+    if (fixPriority_ != other.fixPriority_)
+        fprintf(fp, "3  partial.setFixPriority(%d);\n", fixPriority_);
     else
-        fprintf(fp,"4  partial.setFixPriority(%d);\n",fixPriority_);
-    fprintf(fp,"3  cbcModel->addHeuristic(&partial);\n");
+        fprintf(fp, "4  partial.setFixPriority(%d);\n", fixPriority_);
+    fprintf(fp, "3  cbcModel->addHeuristic(&partial);\n");
 }
 //#define NEW_PARTIAL
 // Copy constructor
@@ -2516,9 +2516,9 @@ CbcHeuristicPartial::CbcHeuristicPartial(const CbcHeuristicPartial & rhs)
 
 // Assignment operator
 CbcHeuristicPartial &
-CbcHeuristicPartial::operator=( const CbcHeuristicPartial& rhs)
+CbcHeuristicPartial::operator=( const CbcHeuristicPartial & rhs)
 {
-    if (this!=&rhs) {
+    if (this != &rhs) {
         CbcHeuristic::operator=(rhs);
         fixPriority_ = rhs.fixPriority_;
     }
@@ -2529,7 +2529,7 @@ CbcHeuristicPartial::operator=( const CbcHeuristicPartial& rhs)
 void
 CbcHeuristicPartial::resetModel(CbcModel * model)
 {
-    model_=model;
+    model_ = model;
     // Get a copy of original matrix (and by row for partial);
     assert(model_->solver());
     validate();
@@ -2545,7 +2545,7 @@ CbcHeuristicPartial::solution(double & solutionValue,
                               double * betterSolution)
 {
     // Return if already done
-    if (fixPriority_<0)
+    if (fixPriority_ < 0)
         return 0; // switched off
     const double * hotstartSolution = model_->hotstartSolution();
     const int * hotstartPriorities = model_->hotstartPriorities();
@@ -2561,38 +2561,38 @@ CbcHeuristicPartial::solution(double & solutionValue,
     const double * colUpper = newSolver->getColUpper();
 
     double primalTolerance;
-    solver->getDblParam(OsiPrimalTolerance,primalTolerance);
+    solver->getDblParam(OsiPrimalTolerance, primalTolerance);
 
     int i;
-    int numberFixed=0;
-    int returnCode=0;
+    int numberFixed = 0;
+    int returnCode = 0;
 
-    for (i=0; i<numberIntegers; i++) {
-        int iColumn=integerVariable[i];
-        if (abs(hotstartPriorities[iColumn])<=fixPriority_) {
+    for (i = 0; i < numberIntegers; i++) {
+        int iColumn = integerVariable[i];
+        if (abs(hotstartPriorities[iColumn]) <= fixPriority_) {
             double value = hotstartSolution[iColumn];
             double lower = colLower[iColumn];
             double upper = colUpper[iColumn];
-            value = CoinMax(value,lower);
-            value = CoinMin(value,upper);
-            if (fabs(value-floor(value+0.5))<1.0e-8) {
-                value = floor(value+0.5);
-                newSolver->setColLower(iColumn,value);
-                newSolver->setColUpper(iColumn,value);
+            value = CoinMax(value, lower);
+            value = CoinMin(value, upper);
+            if (fabs(value - floor(value + 0.5)) < 1.0e-8) {
+                value = floor(value + 0.5);
+                newSolver->setColLower(iColumn, value);
+                newSolver->setColUpper(iColumn, value);
                 numberFixed++;
             }
         }
     }
-    if (numberFixed>numberIntegers/5-100000000) {
+    if (numberFixed > numberIntegers / 5 - 100000000) {
 #ifdef COIN_DEVELOP
-        printf("%d integers fixed\n",numberFixed);
+        printf("%d integers fixed\n", numberFixed);
 #endif
-        returnCode = smallBranchAndBound(newSolver,numberNodes_,betterSolution,solutionValue,
-                                         model_->getCutoff(),"CbcHeuristicPartial");
-        if (returnCode<0)
-            returnCode=0; // returned on size
+        returnCode = smallBranchAndBound(newSolver, numberNodes_, betterSolution, solutionValue,
+                                         model_->getCutoff(), "CbcHeuristicPartial");
+        if (returnCode < 0)
+            returnCode = 0; // returned on size
         //printf("return code %d",returnCode);
-        if ((returnCode&2)!=0) {
+        if ((returnCode&2) != 0) {
             // could add cut
             returnCode &= ~2;
             //printf("could add cut with %d elements (if all 0-1)\n",nFix);
@@ -2600,7 +2600,7 @@ CbcHeuristicPartial::solution(double & solutionValue,
             //printf("\n");
         }
     }
-    fixPriority_=-1; // switch off
+    fixPriority_ = -1; // switch off
 
     delete newSolver;
     return returnCode;
@@ -2617,8 +2617,8 @@ void CbcHeuristicPartial::setModel(CbcModel * model)
 void
 CbcHeuristicPartial::validate()
 {
-    if (model_&&(when()%100)<10) {
-        if (model_->numberIntegers()!=
+    if (model_ && (when() % 100) < 10) {
+        if (model_->numberIntegers() !=
                 model_->numberObjects())
             setWhen(0);
     }
@@ -2631,13 +2631,13 @@ CbcHeuristicPartial::shouldHeurRun(int /*whereFrom*/)
 
 // Default Constructor
 CbcSerendipity::CbcSerendipity()
-        :CbcHeuristic()
+        : CbcHeuristic()
 {
 }
 
 // Constructor from model
 CbcSerendipity::CbcSerendipity(CbcModel & model)
-        :CbcHeuristic(model)
+        : CbcHeuristic(model)
 {
 }
 
@@ -2656,10 +2656,10 @@ CbcSerendipity::clone() const
 void
 CbcSerendipity::generateCpp( FILE * fp)
 {
-    fprintf(fp,"0#include \"CbcHeuristic.hpp\"\n");
-    fprintf(fp,"3  CbcSerendipity serendipity(*cbcModel);\n");
-    CbcHeuristic::generateCpp(fp,"serendipity");
-    fprintf(fp,"3  cbcModel->addHeuristic(&serendipity);\n");
+    fprintf(fp, "0#include \"CbcHeuristic.hpp\"\n");
+    fprintf(fp, "3  CbcSerendipity serendipity(*cbcModel);\n");
+    CbcHeuristic::generateCpp(fp, "serendipity");
+    fprintf(fp, "3  cbcModel->addHeuristic(&serendipity);\n");
 }
 
 // Copy constructor
@@ -2671,9 +2671,9 @@ CbcSerendipity::CbcSerendipity(const CbcSerendipity & rhs)
 
 // Assignment operator
 CbcSerendipity &
-CbcSerendipity::operator=( const CbcSerendipity& rhs)
+CbcSerendipity::operator=( const CbcSerendipity & rhs)
 {
-    if (this!=&rhs) {
+    if (this != &rhs) {
         CbcHeuristic::operator=(rhs);
     }
     return *this;
@@ -2691,21 +2691,21 @@ CbcSerendipity::solution(double & solutionValue,
         OsiAuxInfo * auxInfo = model_->solver()->getAuxiliaryInfo();
         OsiBabSolver * auxiliaryInfo = dynamic_cast< OsiBabSolver *> (auxInfo);
         if (auxiliaryInfo) {
-            return auxiliaryInfo->solution(solutionValue,betterSolution,model_->solver()->getNumCols());
+            return auxiliaryInfo->solution(solutionValue, betterSolution, model_->solver()->getNumCols());
         } else {
             return 0;
         }
     } else {
         int numberColumns = model_->getNumCols();
-        double value =inputSolution_[numberColumns];
-        int returnCode=0;
-        if (value<solutionValue) {
+        double value = inputSolution_[numberColumns];
+        int returnCode = 0;
+        if (value < solutionValue) {
             solutionValue = value;
-            memcpy(betterSolution,inputSolution_,numberColumns*sizeof(double));
-            returnCode=1;
+            memcpy(betterSolution, inputSolution_, numberColumns*sizeof(double));
+            returnCode = 1;
         }
         delete [] inputSolution_;
-        inputSolution_=NULL;
+        inputSolution_ = NULL;
         model_ = NULL; // switch off
         return returnCode;
     }
@@ -2725,7 +2725,7 @@ CbcSerendipity::resetModel(CbcModel * model)
 
 // Default Constructor
 CbcHeuristicJustOne::CbcHeuristicJustOne()
-        :CbcHeuristic(),
+        : CbcHeuristic(),
         probabilities_(NULL),
         heuristic_(NULL),
         numberHeuristics_(0)
@@ -2734,7 +2734,7 @@ CbcHeuristicJustOne::CbcHeuristicJustOne()
 
 // Constructor from model
 CbcHeuristicJustOne::CbcHeuristicJustOne(CbcModel & model)
-        :CbcHeuristic(model),
+        : CbcHeuristic(model),
         probabilities_(NULL),
         heuristic_(NULL),
         numberHeuristics_(0)
@@ -2744,7 +2744,7 @@ CbcHeuristicJustOne::CbcHeuristicJustOne(CbcModel & model)
 // Destructor
 CbcHeuristicJustOne::~CbcHeuristicJustOne ()
 {
-    for (int i=0; i<numberHeuristics_; i++)
+    for (int i = 0; i < numberHeuristics_; i++)
         delete heuristic_[i];
     delete [] heuristic_;
     delete [] probabilities_;
@@ -2762,10 +2762,10 @@ void
 CbcHeuristicJustOne::generateCpp( FILE * fp)
 {
     CbcHeuristicJustOne other;
-    fprintf(fp,"0#include \"CbcHeuristicJustOne.hpp\"\n");
-    fprintf(fp,"3  CbcHeuristicJustOne heuristicJustOne(*cbcModel);\n");
-    CbcHeuristic::generateCpp(fp,"heuristicJustOne");
-    fprintf(fp,"3  cbcModel->addHeuristic(&heuristicJustOne);\n");
+    fprintf(fp, "0#include \"CbcHeuristicJustOne.hpp\"\n");
+    fprintf(fp, "3  CbcHeuristicJustOne heuristicJustOne(*cbcModel);\n");
+    CbcHeuristic::generateCpp(fp, "heuristicJustOne");
+    fprintf(fp, "3  cbcModel->addHeuristic(&heuristicJustOne);\n");
 }
 
 // Copy constructor
@@ -2777,31 +2777,31 @@ CbcHeuristicJustOne::CbcHeuristicJustOne(const CbcHeuristicJustOne & rhs)
         numberHeuristics_(rhs.numberHeuristics_)
 {
     if (numberHeuristics_) {
-        probabilities_ = CoinCopyOfArray(rhs.probabilities_,numberHeuristics_);
+        probabilities_ = CoinCopyOfArray(rhs.probabilities_, numberHeuristics_);
         heuristic_ = new CbcHeuristic * [numberHeuristics_];
-        for (int i=0; i<numberHeuristics_; i++)
-            heuristic_[i]=rhs.heuristic_[i]->clone();
+        for (int i = 0; i < numberHeuristics_; i++)
+            heuristic_[i] = rhs.heuristic_[i]->clone();
     }
 }
 
 // Assignment operator
 CbcHeuristicJustOne &
-CbcHeuristicJustOne::operator=( const CbcHeuristicJustOne& rhs)
+CbcHeuristicJustOne::operator=( const CbcHeuristicJustOne & rhs)
 {
-    if (this!=&rhs) {
+    if (this != &rhs) {
         CbcHeuristic::operator=(rhs);
-        for (int i=0; i<numberHeuristics_; i++)
+        for (int i = 0; i < numberHeuristics_; i++)
             delete heuristic_[i];
         delete [] heuristic_;
         delete [] probabilities_;
-        probabilities_=NULL;
+        probabilities_ = NULL;
         heuristic_ = NULL;
-        numberHeuristics_=rhs.numberHeuristics_;
+        numberHeuristics_ = rhs.numberHeuristics_;
         if (numberHeuristics_) {
-            probabilities_ = CoinCopyOfArray(rhs.probabilities_,numberHeuristics_);
+            probabilities_ = CoinCopyOfArray(rhs.probabilities_, numberHeuristics_);
             heuristic_ = new CbcHeuristic * [numberHeuristics_];
-            for (int i=0; i<numberHeuristics_; i++)
-                heuristic_[i]=rhs.heuristic_[i]->clone();
+            for (int i = 0; i < numberHeuristics_; i++)
+                heuristic_[i] = rhs.heuristic_[i]->clone();
         }
     }
     return *this;
@@ -2813,27 +2813,27 @@ CbcHeuristicJustOne::solution(double & solutionValue,
                               double * betterSolution)
 {
 #ifdef DIVE_DEBUG
-    std::cout<<"solutionValue = "<<solutionValue<<std::endl;
+    std::cout << "solutionValue = " << solutionValue << std::endl;
 #endif
     ++numCouldRun_;
 
     // test if the heuristic can run
-    if (!shouldHeurRun_randomChoice()||!numberHeuristics_)
+    if (!shouldHeurRun_randomChoice() || !numberHeuristics_)
         return 0;
     double randomNumber = randomNumberGenerator_.randomDouble();
     int i;
-    for (i=0; i<numberHeuristics_; i++) {
-        if (randomNumber<probabilities_[i])
+    for (i = 0; i < numberHeuristics_; i++) {
+        if (randomNumber < probabilities_[i])
             break;
     }
-    assert (i<numberHeuristics_);
+    assert (i < numberHeuristics_);
     int returnCode;
     //model_->unsetDivingHasRun();
 #ifdef COIN_DEVELOP
     printf("JustOne running %s\n",
            heuristic_[i]->heuristicName());
 #endif
-    returnCode = heuristic_[i]->solution(solutionValue,betterSolution);
+    returnCode = heuristic_[i]->solution(solutionValue, betterSolution);
 #ifdef COIN_DEVELOP
     if (returnCode)
         printf("JustOne running %s found solution\n",
@@ -2846,7 +2846,7 @@ void
 CbcHeuristicJustOne::resetModel(CbcModel * model)
 {
     CbcHeuristic::resetModel(model);
-    for (int i=0; i<numberHeuristics_; i++)
+    for (int i = 0; i < numberHeuristics_; i++)
         heuristic_[i]->resetModel(model);
 }
 // update model (This is needed if cliques update matrix etc)
@@ -2854,7 +2854,7 @@ void
 CbcHeuristicJustOne::setModel(CbcModel * model)
 {
     CbcHeuristic::setModel(model);
-    for (int i=0; i<numberHeuristics_; i++)
+    for (int i = 0; i < numberHeuristics_; i++)
         heuristic_[i]->setModel(model);
 }
 // Validate model i.e. sets when_ to 0 if necessary (may be NULL)
@@ -2862,7 +2862,7 @@ void
 CbcHeuristicJustOne::validate()
 {
     CbcHeuristic::validate();
-    for (int i=0; i<numberHeuristics_; i++)
+    for (int i = 0; i < numberHeuristics_; i++)
         heuristic_[i]->validate();
 }
 // Adds an heuristic with probability
@@ -2871,31 +2871,31 @@ CbcHeuristicJustOne::addHeuristic(const CbcHeuristic * heuristic, double probabi
 {
     CbcHeuristic * thisOne = heuristic->clone();
     thisOne->setWhen(-999);
-    CbcHeuristic ** tempH = CoinCopyOfArrayPartial(heuristic_,numberHeuristics_+1,
+    CbcHeuristic ** tempH = CoinCopyOfArrayPartial(heuristic_, numberHeuristics_ + 1,
                             numberHeuristics_);
     delete [] heuristic_;
     heuristic_ = tempH;
-    heuristic_[numberHeuristics_]=thisOne;
-    double * tempP = CoinCopyOfArrayPartial(probabilities_,numberHeuristics_+1,
+    heuristic_[numberHeuristics_] = thisOne;
+    double * tempP = CoinCopyOfArrayPartial(probabilities_, numberHeuristics_ + 1,
                                             numberHeuristics_);
     delete [] probabilities_;
     probabilities_ = tempP;
-    probabilities_[numberHeuristics_]=probability;
+    probabilities_[numberHeuristics_] = probability;
     numberHeuristics_++;
 }
 // Normalize probabilities
 void
 CbcHeuristicJustOne::normalizeProbabilities()
 {
-    double sum=0.0;
-    for (int i=0; i<numberHeuristics_; i++)
+    double sum = 0.0;
+    for (int i = 0; i < numberHeuristics_; i++)
         sum += probabilities_[i];
-    double multiplier = 1.0/sum;
-    sum=0.0;
-    for (int i=0; i<numberHeuristics_; i++) {
+    double multiplier = 1.0 / sum;
+    sum = 0.0;
+    for (int i = 0; i < numberHeuristics_; i++) {
         sum += probabilities_[i];
-        probabilities_[i] = sum*multiplier;
+        probabilities_[i] = sum * multiplier;
     }
-    assert (fabs(probabilities_[numberHeuristics_-1]-1.0)<1.0e-5);
+    assert (fabs(probabilities_[numberHeuristics_-1] - 1.0) < 1.0e-5);
     probabilities_[numberHeuristics_-1] = 1.000001;
 }

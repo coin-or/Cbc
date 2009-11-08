@@ -20,7 +20,7 @@ public:
        Also passed valid values - if range then pairs
     */
     CbcLotsize (CbcModel * model, int iColumn,
-                int numberPoints, const double * points, bool range=false);
+                int numberPoints, const double * points, bool range = false);
 
     // Copy constructor
     CbcLotsize ( const CbcLotsize &);
@@ -49,7 +49,7 @@ public:
     virtual void feasibleRegion();
 
     /// Creates a branching object
-    virtual CbcBranchingObject * createCbcBranch(OsiSolverInterface * solver,const OsiBranchingInformation * info, int way) ;
+    virtual CbcBranchingObject * createCbcBranch(OsiSolverInterface * solver, const OsiBranchingInformation * info, int way) ;
 
     /** \brief Given a valid solution (with reduced costs, etc.),
         return a branching object which would give a new feasible
@@ -133,7 +133,7 @@ public:
 
 private:
     /// Just for debug (CBC_PRINT defined in CbcBranchLotsize.cpp)
-    void printLotsize(double value,bool condition,int type) const;
+    void printLotsize(double value, bool condition, int type) const;
 
 private:
     /// data
@@ -178,7 +178,7 @@ public:
       way = 1 for the up arm.
     */
     CbcLotsizeBranchingObject (CbcModel *model, int variable,
-                               int way , double value,const CbcLotsize * lotsize) ;
+                               int way , double value, const CbcLotsize * lotsize) ;
 
     /** Create a degenerate branch object
 

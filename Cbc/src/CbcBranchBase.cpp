@@ -56,9 +56,9 @@ CbcObject::CbcObject ( const CbcObject & rhs)
 
 // Assignment operator
 CbcObject &
-CbcObject::operator=( const CbcObject& rhs)
+CbcObject::operator=( const CbcObject & rhs)
 {
-    if (this!=&rhs) {
+    if (this != &rhs) {
         OsiObject::operator=(rhs);
         model_ = rhs.model_;
         id_ = rhs.id_;
@@ -74,12 +74,12 @@ void
 CbcObject::floorCeiling(double & floorValue, double & ceilingValue, double value,
                         double tolerance) const
 {
-    if (fabs(floor(value+0.5)-value)>tolerance) {
+    if (fabs(floor(value + 0.5) - value) > tolerance) {
         floorValue = floor(value);
     } else {
-        floorValue = floor(value+0.5);
+        floorValue = floor(value + 0.5);
     }
-    ceilingValue = floorValue+1.0;
+    ceilingValue = floorValue + 1.0;
 }
 /* For the variable(s) referenced by the object,
       look at the current solution and set bounds to match the solution.
@@ -119,7 +119,7 @@ CbcObject::createOsiBranch(OsiSolverInterface * solver,
 {
     //assert (solver==model_->solver());
     CbcObject * fudge = const_cast<CbcObject *>(this);
-    return fudge->createBranch(solver,info,way);
+    return fudge->createBranch(solver, info, way);
 }
 /* Create an OsiSolverBranch object
 
@@ -145,43 +145,43 @@ CbcObject::createUpdateInformation(const OsiSolverInterface * /*solver*/,
 CbcBranchingObject::CbcBranchingObject()
         : OsiBranchingObject()
 {
-    model_=NULL;
-    originalCbcObject_=NULL;
-    variable_=-1;
-    way_=0;
+    model_ = NULL;
+    originalCbcObject_ = NULL;
+    variable_ = -1;
+    way_ = 0;
 }
 
 // Useful constructor
 CbcBranchingObject::CbcBranchingObject (CbcModel * model, int variable, int way , double value)
-        : OsiBranchingObject(model->solver(),value)
+        : OsiBranchingObject(model->solver(), value)
 {
-    model_= model;
-    originalCbcObject_=NULL;
-    variable_=variable;
-    way_=way;
+    model_ = model;
+    originalCbcObject_ = NULL;
+    variable_ = variable;
+    way_ = way;
 }
 
 // Copy constructor
 CbcBranchingObject::CbcBranchingObject ( const CbcBranchingObject & rhs)
         : OsiBranchingObject(rhs)
 {
-    model_=rhs.model_;
-    originalCbcObject_=rhs.originalCbcObject_;
-    variable_=rhs.variable_;
-    way_=rhs.way_;
-    value_=rhs.value_;
+    model_ = rhs.model_;
+    originalCbcObject_ = rhs.originalCbcObject_;
+    variable_ = rhs.variable_;
+    way_ = rhs.way_;
+    value_ = rhs.value_;
 }
 
 // Assignment operator
 CbcBranchingObject &
-CbcBranchingObject::operator=( const CbcBranchingObject& rhs)
+CbcBranchingObject::operator=( const CbcBranchingObject & rhs)
 {
     if (this != &rhs) {
         OsiBranchingObject::operator=(rhs);
-        model_=rhs.model_;
-        originalCbcObject_=rhs.originalCbcObject_;
-        variable_=rhs.variable_;
-        way_=rhs.way_;
+        model_ = rhs.model_;
+        originalCbcObject_ = rhs.originalCbcObject_;
+        variable_ = rhs.variable_;
+        way_ = rhs.way_;
     }
     return *this;
 }
@@ -192,13 +192,13 @@ CbcBranchingObject::~CbcBranchingObject ()
 }
 // Default Constructor
 CbcBranchDecision::CbcBranchDecision ()
-        : object_(NULL),model_(NULL),chooseMethod_(NULL)
+        : object_(NULL), model_(NULL), chooseMethod_(NULL)
 {
 }
 
 // Copy Constructor
 CbcBranchDecision::CbcBranchDecision (const CbcBranchDecision &rhs)
-        : object_(NULL),model_(rhs.model_),chooseMethod_(NULL)
+        : object_(NULL), model_(rhs.model_), chooseMethod_(NULL)
 {
     if (rhs.chooseMethod_)
         chooseMethod_ = rhs.chooseMethod_->clone();
@@ -223,7 +223,7 @@ CbcBranchDecision::bestBranch (CbcBranchingObject ** objects, int numberObjects,
                                double * changeDown, int * numberInfeasibilitiesDown,
                                double /*objectiveValue*/)
 {
-    int bestWay=0;
+    int bestWay = 0;
     int whichObject = -1;
     if (numberObjects) {
         initialize(objects[0]->model());
@@ -238,11 +238,11 @@ CbcBranchDecision::bestBranch (CbcBranchingObject ** objects, int numberObjects,
             if (betterWay) {
                 bestObject = objects[i];
                 bestWay = betterWay;
-                whichObject=i;
+                whichObject = i;
             }
         }
         // set way in best
-        if (whichObject>=0)
+        if (whichObject >= 0)
             objects[whichObject]->way(bestWay);
     }
     return whichObject;
@@ -272,9 +272,9 @@ CbcConsequence::CbcConsequence ( const CbcConsequence & /*rhs*/)
 
 // Assignment operator
 CbcConsequence &
-CbcConsequence::operator=( const CbcConsequence& rhs)
+CbcConsequence::operator=( const CbcConsequence & rhs)
 {
-    if (this!=&rhs) {
+    if (this != &rhs) {
     }
     return *this;
 }
@@ -332,9 +332,9 @@ CbcObjectUpdateData::CbcObjectUpdateData ( const CbcObjectUpdateData & rhs)
 
 // Assignment operator
 CbcObjectUpdateData &
-CbcObjectUpdateData::operator=( const CbcObjectUpdateData& rhs)
+CbcObjectUpdateData::operator=( const CbcObjectUpdateData & rhs)
 {
-    if (this!=&rhs) {
+    if (this != &rhs) {
         object_ = rhs.object_;
         way_ = rhs.way_;
         objectNumber_ = rhs.objectNumber_;

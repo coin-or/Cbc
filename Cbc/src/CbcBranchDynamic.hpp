@@ -25,14 +25,14 @@ public:
     CbcSimpleIntegerDynamicPseudoCost ();
 
     // Useful constructor - passed  model index
-    CbcSimpleIntegerDynamicPseudoCost (CbcModel * model,  int iColumn, double breakEven=0.5);
+    CbcSimpleIntegerDynamicPseudoCost (CbcModel * model,  int iColumn, double breakEven = 0.5);
 
     // Useful constructor - passed  model index and pseudo costs
     CbcSimpleIntegerDynamicPseudoCost (CbcModel * model, int iColumn,
                                        double downDynamicPseudoCost, double upDynamicPseudoCost);
 
     // Useful constructor - passed  model index and pseudo costs
-    CbcSimpleIntegerDynamicPseudoCost (CbcModel * model,int dummy, int iColumn,
+    CbcSimpleIntegerDynamicPseudoCost (CbcModel * model, int dummy, int iColumn,
                                        double downDynamicPseudoCost, double upDynamicPseudoCost);
 
     // Copy constructor
@@ -52,7 +52,7 @@ public:
                                  int &preferredWay) const;
 
     /// Creates a branching object
-    virtual CbcBranchingObject * createCbcBranch(OsiSolverInterface * solver,const OsiBranchingInformation * info, int way) ;
+    virtual CbcBranchingObject * createCbcBranch(OsiSolverInterface * solver, const OsiBranchingInformation * info, int way) ;
 
 
     /// Fills in a created branching object
@@ -74,8 +74,8 @@ public:
     /// Updates stuff like pseudocosts after threads finished
     virtual void updateAfter(const OsiObject * rhs, const OsiObject * baseObject) ;
     /// Updates stuff like pseudocosts after mini branch and bound
-    void updateAfterMini(int numberDown,int numberDownInfeasible,double sumDown,
-                         int numberUp,int numberUpInfeasible,double sumUp);
+    void updateAfterMini(int numberDown, int numberDownInfeasible, double sumDown,
+                         int numberUp, int numberUpInfeasible, double sumUp);
 
     using CbcSimpleInteger::solverBranch ;
     /** Create an OsiSolverBranch object
@@ -125,7 +125,7 @@ public:
     }
     /// Set up down separator
     inline void setUpDownSeparator(double value) {
-        upDownSeparator_=value;
+        upDownSeparator_ = value;
     }
 
     /// Down sum cost
@@ -134,12 +134,12 @@ public:
     }
     /// Set down sum cost
     inline void setSumDownCost(double value) {
-        sumDownCost_=value;
+        sumDownCost_ = value;
     }
     /// Add to down sum cost and set last and square
     inline void addToSumDownCost(double value) {
-        sumDownCost_+=value;
-        lastDownCost_=value;
+        sumDownCost_ += value;
+        lastDownCost_ = value;
     }
 
     /// Up sum cost
@@ -148,12 +148,12 @@ public:
     }
     /// Set up sum cost
     inline void setSumUpCost(double value) {
-        sumUpCost_=value;
+        sumUpCost_ = value;
     }
     /// Add to up sum cost and set last and square
     inline void addToSumUpCost(double value) {
-        sumUpCost_+=value;
-        lastUpCost_=value;
+        sumUpCost_ += value;
+        lastUpCost_ = value;
     }
 
     /// Down sum change
@@ -162,11 +162,11 @@ public:
     }
     /// Set down sum change
     inline void setSumDownChange(double value) {
-        sumDownChange_=value;
+        sumDownChange_ = value;
     }
     /// Add to down sum change
     inline void addToSumDownChange(double value) {
-        sumDownChange_+=value;
+        sumDownChange_ += value;
     }
 
     /// Up sum change
@@ -175,11 +175,11 @@ public:
     }
     /// Set up sum change
     inline void setSumUpChange(double value) {
-        sumUpChange_=value;
+        sumUpChange_ = value;
     }
     /// Add to up sum change and set last and square
     inline void addToSumUpChange(double value) {
-        sumUpChange_+=value;
+        sumUpChange_ += value;
     }
 
     /// Sum down decrease number infeasibilities from strong or actual
@@ -188,11 +188,11 @@ public:
     }
     /// Set sum down decrease number infeasibilities from strong or actual
     inline void setSumDownDecrease(double value) {
-        sumDownDecrease_=value;
+        sumDownDecrease_ = value;
     }
     /// Add to sum down decrease number infeasibilities from strong or actual
     inline void addToSumDownDecrease(double value) {
-        sumDownDecrease_+=value;/*lastDownDecrease_ = (int) value;*/
+        sumDownDecrease_ += value;/*lastDownDecrease_ = (int) value;*/
     }
 
     /// Sum up decrease number infeasibilities from strong or actual
@@ -201,11 +201,11 @@ public:
     }
     /// Set sum up decrease number infeasibilities from strong or actual
     inline void setSumUpDecrease(double value) {
-        sumUpDecrease_=value;
+        sumUpDecrease_ = value;
     }
     /// Add to sum up decrease number infeasibilities from strong or actual
     inline void addToSumUpDecrease(double value) {
-        sumUpDecrease_+=value;/*lastUpDecrease_ = (int) value;*/
+        sumUpDecrease_ += value;/*lastUpDecrease_ = (int) value;*/
     }
 
     /// Down number times
@@ -214,7 +214,7 @@ public:
     }
     /// Set down number times
     inline void setNumberTimesDown(int value) {
-        numberTimesDown_=value;
+        numberTimesDown_ = value;
     }
     /// Increment down number times
     inline void incrementNumberTimesDown() {
@@ -227,7 +227,7 @@ public:
     }
     /// Set up number times
     inline void setNumberTimesUp(int value) {
-        numberTimesUp_=value;
+        numberTimesUp_ = value;
     }
     /// Increment up number times
     inline void incrementNumberTimesUp() {
@@ -240,7 +240,7 @@ public:
     }
     /// Set down number times infeasible
     inline void setNumberTimesDownInfeasible(int value) {
-        numberTimesDownInfeasible_=value;
+        numberTimesDownInfeasible_ = value;
     }
     /// Increment down number times infeasible
     inline void incrementNumberTimesDownInfeasible() {
@@ -253,7 +253,7 @@ public:
     }
     /// Set up number times infeasible
     inline void setNumberTimesUpInfeasible(int value) {
-        numberTimesUpInfeasible_=value;
+        numberTimesUpInfeasible_ = value;
     }
     /// Increment up number times infeasible
     inline void incrementNumberTimesUpInfeasible() {
@@ -266,7 +266,7 @@ public:
     }
     /// Set number of times before trusted
     inline void setNumberBeforeTrust(int value) {
-        numberBeforeTrust_=value;
+        numberBeforeTrust_ = value;
     }
     /// Increment number of times before trusted
     inline void incrementNumberBeforeTrust() {
@@ -284,7 +284,7 @@ public:
     }
     /// Set method
     inline void setMethod(int value) {
-        method_=value;
+        method_ = value;
     }
 
     /// Pass in information on a down branch
@@ -295,7 +295,7 @@ public:
     void setProbingInformation(int fixedDown, int fixedUp);
 
     /// Print - 0 -summary, 1 just before strong
-    void print(int type=0, double value=0.0) const;
+    void print(int type = 0, double value = 0.0) const;
     /// Same - returns true if contents match(ish)
     bool same(const CbcSimpleIntegerDynamicPseudoCost * obj) const;
 protected:
@@ -437,7 +437,7 @@ public:
     }
     /// Set change in guessed
     inline void setChangeInGuessed(double value) {
-        changeInGuessed_=value;
+        changeInGuessed_ = value;
     }
     /// Return object
     inline CbcSimpleIntegerDynamicPseudoCost * object() const {
@@ -445,7 +445,7 @@ public:
     }
     /// Set object
     inline void setObject(CbcSimpleIntegerDynamicPseudoCost * object) {
-        object_=object;
+        object_ = object;
     }
 
     /** Return the type (an integer identifier) of \c this */

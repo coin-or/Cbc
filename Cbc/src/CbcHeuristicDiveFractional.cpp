@@ -11,13 +11,13 @@
 
 // Default Constructor
 CbcHeuristicDiveFractional::CbcHeuristicDiveFractional()
-        :CbcHeuristicDive()
+        : CbcHeuristicDive()
 {
 }
 
 // Constructor from model
 CbcHeuristicDiveFractional::CbcHeuristicDiveFractional(CbcModel & model)
-        :CbcHeuristicDive(model)
+        : CbcHeuristicDive(model)
 {
 }
 
@@ -38,10 +38,10 @@ void
 CbcHeuristicDiveFractional::generateCpp( FILE * fp)
 {
     CbcHeuristicDiveFractional other;
-    fprintf(fp,"0#include \"CbcHeuristicDiveFractional.hpp\"\n");
-    fprintf(fp,"3  CbcHeuristicDiveFractional heuristicDiveFractional(*cbcModel);\n");
-    CbcHeuristic::generateCpp(fp,"heuristicDiveFractional");
-    fprintf(fp,"3  cbcModel->addHeuristic(&heuristicDiveFractional);\n");
+    fprintf(fp, "0#include \"CbcHeuristicDiveFractional.hpp\"\n");
+    fprintf(fp, "3  CbcHeuristicDiveFractional heuristicDiveFractional(*cbcModel);\n");
+    CbcHeuristic::generateCpp(fp, "heuristicDiveFractional");
+    fprintf(fp, "3  cbcModel->addHeuristic(&heuristicDiveFractional);\n");
 }
 
 // Copy constructor
@@ -53,9 +53,9 @@ CbcHeuristicDiveFractional::CbcHeuristicDiveFractional(const CbcHeuristicDiveFra
 
 // Assignment operator
 CbcHeuristicDiveFractional &
-CbcHeuristicDiveFractional::operator=( const CbcHeuristicDiveFractional& rhs)
+CbcHeuristicDiveFractional::operator=( const CbcHeuristicDiveFractional & rhs)
 {
-    if (this!=&rhs) {
+    if (this != &rhs) {
         CbcHeuristicDive::operator=(rhs);
     }
     return *this;
@@ -75,15 +75,15 @@ CbcHeuristicDiveFractional::selectVariableToBranch(OsiSolverInterface* solver,
     bestRound = -1; // -1 rounds down, +1 rounds up
     double bestFraction = DBL_MAX;
     bool allTriviallyRoundableSoFar = true;
-    for (int i=0; i<numberIntegers; i++) {
+    for (int i = 0; i < numberIntegers; i++) {
         int iColumn = integerVariable[i];
-        double value=newSolution[iColumn];
-        double fraction=value-floor(value);
+        double value = newSolution[iColumn];
+        double fraction = value - floor(value);
         int round = 0;
-        if (fabs(floor(value+0.5)-value)>integerTolerance) {
-            if (allTriviallyRoundableSoFar||(downLocks_[i]>0&&upLocks_[i]>0)) {
+        if (fabs(floor(value + 0.5) - value) > integerTolerance) {
+            if (allTriviallyRoundableSoFar || (downLocks_[i] > 0 && upLocks_[i] > 0)) {
 
-                if (allTriviallyRoundableSoFar&&downLocks_[i]>0&&upLocks_[i]>0) {
+                if (allTriviallyRoundableSoFar && downLocks_[i] > 0 && upLocks_[i] > 0) {
                     allTriviallyRoundableSoFar = false;
                     bestFraction = DBL_MAX;
                 }

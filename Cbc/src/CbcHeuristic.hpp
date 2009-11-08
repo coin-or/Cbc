@@ -90,7 +90,7 @@ public:
     virtual ~CbcHeuristic();
 
     /// Clone
-    virtual CbcHeuristic * clone() const=0;
+    virtual CbcHeuristic * clone() const = 0;
 
     /// Assignment operator
     CbcHeuristic & operator=(const CbcHeuristic& rhs);
@@ -99,7 +99,7 @@ public:
     virtual void setModel(CbcModel * model);
 
     /// Resets stuff if model changes
-    virtual void resetModel(CbcModel * model)=0;
+    virtual void resetModel(CbcModel * model) = 0;
 
     /** returns 0 if no solution, 1 if valid solution
         with better objective value than one passed in
@@ -107,7 +107,7 @@ public:
         This is called after cuts have been added - so can not add cuts
     */
     virtual int solution(double & objectiveValue,
-                         double * newSolution)=0;
+                         double * newSolution) = 0;
 
     /** returns 0 if no solution, 1 if valid solution, -1 if just
         returning an estimate of best possible solution
@@ -130,7 +130,7 @@ public:
         as user knows it will be fine
     */
     inline void setWhen(int value) {
-        when_=value;
+        when_ = value;
     }
     /// Gets "when" flag - 0 off, 1 at root, 2 other than root, 3 always
     inline int when() const {
@@ -139,7 +139,7 @@ public:
 
     /// Sets number of nodes in subtree (default 200)
     inline void setNumberNodes(int value) {
-        numberNodes_=value;
+        numberNodes_ = value;
     }
     /// Gets number of nodes in a subtree (default 200)
     inline int numberNodes() const {
@@ -173,7 +173,7 @@ public:
     bool exitNow(double bestObjective) const;
     /// Sets feasibility pump options (-1 is off)
     inline void setFeasibilityPumpOptions(int value) {
-        feasibilityPumpOptions_=value;
+        feasibilityPumpOptions_ = value;
     }
     /// Gets feasibility pump options (-1 is off)
     inline int feasibilityPumpOptions() const {
@@ -187,7 +187,7 @@ public:
 
     /// Sets fraction of new(rows+columns)/old(rows+columns) before doing small branch and bound (default 1.0)
     inline void setFractionSmall(double value) {
-        fractionSmall_=value;
+        fractionSmall_ = value;
     }
     /// Gets fraction of new(rows+columns)/old(rows+columns) before doing small branch and bound (default 1.0)
     inline double fractionSmall() const {
@@ -211,13 +211,13 @@ public:
         -1 returned on size
         -2 time or user event
     */
-    int smallBranchAndBound(OsiSolverInterface * solver,int numberNodes,
+    int smallBranchAndBound(OsiSolverInterface * solver, int numberNodes,
                             double * newSolution, double & newSolutionValue,
                             double cutoff , std::string name) const;
     /// Create C++ lines to get to current state
     virtual void generateCpp( FILE * ) {}
     /// Create C++ lines to get to current state - does work for base class
-    void generateCpp( FILE * fp,const char * heuristic) ;
+    void generateCpp( FILE * fp, const char * heuristic) ;
     /// Returns true if can deal with "odd" problems e.g. sos type 2
     virtual bool canDealWithOdd() const {
         return false;
@@ -234,7 +234,7 @@ public:
     void setSeed(int value);
     /// Sets decay factor (for howOften) on failure
     inline void setDecayFactor(double value) {
-        decayFactor_=value;
+        decayFactor_ = value;
     }
     /// Set input solution
     void setInputSolution(const double * solution, double objValue);
@@ -247,7 +247,7 @@ public:
             8 added if previous heuristic in loop found solution
      */
     inline void setWhereFrom(int value) {
-        whereFrom_=value;
+        whereFrom_ = value;
     }
     /** Upto this depth we call the tree shallow and the heuristic can be called
         multiple times. That is, the test whether the current node is far from
@@ -256,17 +256,17 @@ public:
         invoked only once per node, right before branching. That's when it'll be
         tested whether the heur should run at all. */
     inline void setShallowDepth(int value) {
-        shallowDepth_=value;
+        shallowDepth_ = value;
     }
     /** How often to invoke the heuristics in the shallow part of the tree */
     inline void setHowOftenShallow(int value) {
-        howOftenShallow_=value;
+        howOftenShallow_ = value;
     }
     /** How "far" should this node be from every other where the heuristic was
         run in order to allow the heuristic to run in this node, too. Currently
         this is tested, but we may switch to avgDistanceToRun_ in the future. */
     inline void setMinDistanceToRun(int value) {
-        minDistanceToRun_=value;
+        minDistanceToRun_ = value;
     }
 
     /** Check whether the heuristic should run at all
@@ -475,7 +475,7 @@ public:
         Fixes all variables with priority <= given
         and does given number of nodes
     */
-    CbcHeuristicPartial (CbcModel & model, int fixPriority=10000, int numberNodes=200);
+    CbcHeuristicPartial (CbcModel & model, int fixPriority = 10000, int numberNodes = 200);
 
     // Copy constructor
     CbcHeuristicPartial ( const CbcHeuristicPartial &);

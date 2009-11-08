@@ -65,7 +65,7 @@ public:
 
       If node then can find out depth
     */
-    bool generateCuts( OsiCuts &cs, int fullScan,OsiSolverInterface * solver,
+    bool generateCuts( OsiCuts &cs, int fullScan, OsiSolverInterface * solver,
                        CbcNode * node);
     //@}
 
@@ -76,11 +76,11 @@ public:
     CbcCutGenerator ();
 
     /// Normal constructor
-    CbcCutGenerator(CbcModel * model,CglCutGenerator * generator,
-                    int howOften=1, const char * name=NULL,
-                    bool normal=true, bool atSolution=false,
-                    bool infeasible=false,int howOftenInsub=-100,
-                    int whatDepth=-1, int whatDepthInSub=-1,int switchOffIfLessThan=0);
+    CbcCutGenerator(CbcModel * model, CglCutGenerator * generator,
+                    int howOften = 1, const char * name = NULL,
+                    bool normal = true, bool atSolution = false,
+                    bool infeasible = false, int howOftenInsub = -100,
+                    int whatDepth = -1, int whatDepthInSub = -1, int switchOffIfLessThan = 0);
 
     /// Copy constructor
     CbcCutGenerator (const CbcCutGenerator &);
@@ -138,7 +138,7 @@ public:
     }
     /// Set level of cut inaccuracy (0 means exact e.g. cliques)
     inline void setInaccuracy(int level) {
-        inaccuracy_=level;
+        inaccuracy_ = level;
     }
 
     /** Set the cut generation depth
@@ -165,44 +165,44 @@ public:
 
     /// Get whether the cut generator should be called in the normal place
     inline bool normal() const {
-        return (switches_&1)!=0;
+        return (switches_&1) != 0;
     }
     /// Set whether the cut generator should be called in the normal place
     inline void setNormal(bool value) {
-        switches_&=~1;
+        switches_ &= ~1;
         switches_ |= value ? 1 : 0;
     }
     /// Get whether the cut generator should be called when a solution is found
     inline bool atSolution() const {
-        return (switches_&2)!=0;
+        return (switches_&2) != 0;
     }
     /// Set whether the cut generator should be called when a solution is found
     inline void setAtSolution(bool value) {
-        switches_&=~2;
+        switches_ &= ~2;
         switches_ |= value ? 2 : 0;
     }
     /** Get whether the cut generator should be called when the subproblem is
         found to be infeasible.
     */
     inline bool whenInfeasible() const {
-        return (switches_&4)!=0;
+        return (switches_&4) != 0;
     }
     /** Set whether the cut generator should be called when the subproblem is
         found to be infeasible.
     */
     inline void setWhenInfeasible(bool value) {
-        switches_&=~4;
+        switches_ &= ~4;
         switches_ |= value ? 4 : 0;
     }
     /// Get whether the cut generator is being timed
     inline bool timing() const {
-        return (switches_&64)!=0;
+        return (switches_&64) != 0;
     }
     /// Set whether the cut generator is being timed
     inline void setTiming(bool value) {
-        switches_&=~64;
+        switches_ &= ~64;
         switches_ |= value ? 64 : 0;
-        timeInCutGenerator_=0.0;
+        timeInCutGenerator_ = 0.0;
     }
     /// Return time taken in cut generator
     inline double timeInCutGenerator() const {
@@ -222,7 +222,7 @@ public:
     inline void setNumberTimesEntered(int value) {
         numberTimes_ = value;
     }
-    inline void incrementNumberTimesEntered(int value=1) {
+    inline void incrementNumberTimesEntered(int value = 1) {
         numberTimes_ += value;
     }
     /// Total number of cuts added
@@ -232,7 +232,7 @@ public:
     inline void setNumberCutsInTotal(int value) {
         numberCuts_ = value;
     }
-    inline void incrementNumberCutsInTotal(int value=1) {
+    inline void incrementNumberCutsInTotal(int value = 1) {
         numberCuts_ += value;
     }
     /// Total number of elements added
@@ -242,7 +242,7 @@ public:
     inline void setNumberElementsInTotal(int value) {
         numberElements_ = value;
     }
-    inline void incrementNumberElementsInTotal(int value=1) {
+    inline void incrementNumberElementsInTotal(int value = 1) {
         numberElements_ += value;
     }
     /// Total number of column cuts
@@ -252,7 +252,7 @@ public:
     inline void setNumberColumnCuts(int value) {
         numberColumnCuts_ = value;
     }
-    inline void incrementNumberColumnCuts(int value=1) {
+    inline void incrementNumberColumnCuts(int value = 1) {
         numberColumnCuts_ += value;
     }
     /// Total number of cuts active after (at end of n cut passes at each node)
@@ -262,7 +262,7 @@ public:
     inline void setNumberCutsActive(int value) {
         numberCutsActive_ = value;
     }
-    inline void incrementNumberCutsActive(int value=1) {
+    inline void incrementNumberCutsActive(int value = 1) {
         numberCutsActive_ += value;
     }
     inline void setSwitchOffIfLessThan(int value) {
@@ -273,47 +273,47 @@ public:
     }
     /// Say if optimal basis needed
     inline bool needsOptimalBasis() const {
-        return (switches_&128)!=0;
+        return (switches_&128) != 0;
     }
     /// Set if optimal basis needed
     inline void setNeedsOptimalBasis(bool yesNo) {
-        switches_&=~128;
+        switches_ &= ~128;
         switches_ |= yesNo ? 128 : 0;
     }
     /// Whether generator MUST be called again if any cuts (i.e. ignore break from loop)
     inline bool mustCallAgain() const {
-        return (switches_&8)!=0;
+        return (switches_&8) != 0;
     }
     /// Set whether generator MUST be called again if any cuts (i.e. ignore break from loop)
     inline void setMustCallAgain(bool yesNo) {
-        switches_&=~8;
+        switches_ &= ~8;
         switches_ |= yesNo ? 8 : 0;
     }
     /// Whether generator switched off for moment
     inline bool switchedOff() const {
-        return (switches_&16)!=0;
+        return (switches_&16) != 0;
     }
     /// Set whether generator switched off for moment
     inline void setSwitchedOff(bool yesNo) {
-        switches_&=~16;
+        switches_ &= ~16;
         switches_ |= yesNo ? 16 : 0;
     }
     /// Whether last round of cuts did little
     inline bool ineffectualCuts() const {
-        return (switches_&512)!=0;
+        return (switches_&512) != 0;
     }
     /// Set whether last round of cuts did little
     inline void setIneffectualCuts(bool yesNo) {
-        switches_&=~512;
+        switches_ &= ~512;
         switches_ |= yesNo ? 512 : 0;
     }
     /// Whether to use if any cuts generated
     inline bool whetherToUse() const {
-        return (switches_&1024)!=0;
+        return (switches_&1024) != 0;
     }
     /// Set whether to use if any cuts generated
     inline void setWhetherToUse(bool yesNo) {
-        switches_&=~1024;
+        switches_ &= ~1024;
         switches_ |= yesNo ? 1024 : 0;
     }
     /// Number of cuts generated at root
@@ -345,20 +345,20 @@ private:
     //@{
     /// Whether global cuts at root
     inline bool globalCutsAtRoot() const {
-        return (switches_&32)!=0;
+        return (switches_&32) != 0;
     }
     /// Set whether global cuts at root
     inline void setGlobalCutsAtRoot(bool yesNo) {
-        switches_&=~32;
+        switches_ &= ~32;
         switches_ |= yesNo ? 32 : 0;
     }
     /// Whether global cuts
     inline bool globalCuts() const {
-        return (switches_&256)!=0;
+        return (switches_&256) != 0;
     }
     /// Set whether global cuts
     inline void setGlobalCuts(bool yesNo) {
-        switches_&=~256;
+        switches_ &= ~256;
         switches_ |= yesNo ? 256 : 0;
     }
     //@}
@@ -450,7 +450,7 @@ public:
         2 weakened
         3 deleted
     */
-    virtual int modify(const OsiSolverInterface * solver, OsiRowCut & cut) =0;
+    virtual int modify(const OsiSolverInterface * solver, OsiRowCut & cut) = 0;
     /// Create C++ lines to get to current state
     virtual void generateCpp( FILE * ) {}
 protected:

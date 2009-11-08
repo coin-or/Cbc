@@ -26,8 +26,8 @@ class CbcCompareBase {
 public:
     // Default Constructor
     CbcCompareBase () {
-        test_=NULL;
-        threaded_=false;
+        test_ = NULL;
+        threaded_ = false;
     }
 
     // This allows any method to change behavior as it is called
@@ -43,7 +43,7 @@ public:
     // This allows any method to change behavior as it is called
     // after every 1000 nodes.
     // Return true if want tree re-sorted
-    virtual bool every1000Nodes(CbcModel * ,int ) {
+    virtual bool every1000Nodes(CbcModel * , int ) {
         return false;
     }
 
@@ -60,15 +60,15 @@ public:
 
     // Copy constructor
     CbcCompareBase ( const CbcCompareBase & rhs) {
-        test_=rhs.test_;
-        threaded_=rhs.threaded_;
+        test_ = rhs.test_;
+        threaded_ = rhs.threaded_;
     }
 
     // Assignment operator
     CbcCompareBase & operator=( const CbcCompareBase& rhs) {
-        if (this!=&rhs) {
-            test_=rhs.test_;
-            threaded_=rhs.threaded_;
+        if (this != &rhs) {
+            test_ = rhs.test_;
+            threaded_ = rhs.threaded_;
         }
         return *this;
     }
@@ -86,11 +86,11 @@ public:
 
     /// This is alternate test function
     virtual bool alternateTest (CbcNode * x, CbcNode * y) {
-        return test(x,y);
+        return test(x, y);
     }
 
     bool operator() (CbcNode * x, CbcNode * y) {
-        return test(x,y);
+        return test(x, y);
     }
     /// Further test if everything else equal
     inline bool equalityTest (CbcNode * x, CbcNode * y) const {
@@ -103,11 +103,11 @@ public:
             CbcNodeInfo * infoY = y->nodeInfo();
             assert (infoY);
             int nodeNumberY = infoY->nodeNumber();
-            assert (nodeNumberX!=nodeNumberY);
-            return (nodeNumberX>nodeNumberY);
+            assert (nodeNumberX != nodeNumberY);
+            return (nodeNumberX > nodeNumberY);
         } else {
-            assert (x->nodeNumber()!=y->nodeNumber());
-            return (x->nodeNumber()>y->nodeNumber());
+            assert (x->nodeNumber() != y->nodeNumber());
+            return (x->nodeNumber() > y->nodeNumber());
         }
     }
     /// Say threaded
@@ -124,20 +124,20 @@ public:
     CbcCompareBase * test_;
     // Default Constructor
     CbcCompare () {
-        test_=NULL;
+        test_ = NULL;
     }
 
     virtual ~CbcCompare() {}
 
     bool operator() (CbcNode * x, CbcNode * y) {
-        return test_->test(x,y);
+        return test_->test(x, y);
     }
     bool compareNodes (CbcNode * x, CbcNode * y) {
-        return test_->test(x,y);
+        return test_->test(x, y);
     }
     /// This is alternate test function
     inline bool alternateTest (CbcNode * x, CbcNode * y) {
-        return test_->alternateTest(x,y);
+        return test_->alternateTest(x, y);
     }
 
     /// return comparison object
@@ -161,10 +161,10 @@ public:
         branching then all passed in and ignore movement.
         Returns which one chosen (or -1 if none).  way should be +1
         if branching up, -1 if down */
-    virtual int chosen (const CbcModel * model,int numberToLookAt,
+    virtual int chosen (const CbcModel * model, int numberToLookAt,
                         const int * which, const double * downMovement,
                         const double * upMovement, const double * solution,
-                        int & way, double & value)=0;
+                        int & way, double & value) = 0;
 
 };
 #endif

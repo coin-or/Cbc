@@ -50,7 +50,7 @@ public:
         less than deltaTolerance
         Returns solution array
     */
-    double * nonlinearSLP(int numberPasses,double deltaTolerance);
+    double * nonlinearSLP(int numberPasses, double deltaTolerance);
     /** Solve linearized quadratic objective branch and bound.
         Return cutoff and OA cut
     */
@@ -63,7 +63,7 @@ public:
         1 round and try normal bab
         2 use defaultBound_ to bound integer variables near current solution
     */
-    double * heuristicSolution(int numberPasses,double deltaTolerance,int mode);
+    double * heuristicSolution(int numberPasses, double deltaTolerance, int mode);
 
     /// Do OA cuts
     int doAOCuts(CglTemporary * cutGen, const double * solution, const double * solution2);
@@ -89,9 +89,9 @@ public:
     */
     OsiSolverLink(  CoinModel & modelObject);
     // Other way with existing object
-    void load(  CoinModel & modelObject,bool tightenBounds=false,int logLevel=1);
+    void load(  CoinModel & modelObject, bool tightenBounds = false, int logLevel = 1);
     /// Clone
-    virtual OsiSolverInterface * clone(bool copyData=true) const;
+    virtual OsiSolverInterface * clone(bool copyData = true) const;
 
     /// Copy constructor
     OsiSolverLink (const OsiSolverLink &);
@@ -109,7 +109,7 @@ public:
     //@{
     /// Add a bound modifier
     void addBoundModifier(bool upperBoundAffected, bool useUpperBound, int whichVariable, int whichVariableAffected,
-                          double multiplier=1.0);
+                          double multiplier = 1.0);
     /// Update coefficients - returns number updated if in updating mode
     int updateCoefficients(ClpSimplex * solver, CoinPackedMatrix * matrix);
     /// Analyze constraints to see which are convex (quadratic)
@@ -132,7 +132,7 @@ public:
     void setBestSolution(const double * solution, int numberColumns);
     /// Set special options
     inline void setSpecialOptions2(int value) {
-        specialOptions2_=value;
+        specialOptions2_ = value;
     }
     /// Say convex (should work it out) - if convex false then strictly concave
     void sayConvex(bool convex);
@@ -158,24 +158,24 @@ public:
         return quadraticModel_;
     }
     /// Gets correct form for a quadratic row - user to delete
-    CoinPackedMatrix * quadraticRow(int rowNumber,double * linear) const;
+    CoinPackedMatrix * quadraticRow(int rowNumber, double * linear) const;
     /// Default meshSize
     inline double defaultMeshSize() const {
         return defaultMeshSize_;
     }
     inline void setDefaultMeshSize(double value) {
-        defaultMeshSize_=value;
+        defaultMeshSize_ = value;
     }
     /// Default maximumbound
     inline double defaultBound() const {
         return defaultBound_;
     }
     inline void setDefaultBound(double value) {
-        defaultBound_=value;
+        defaultBound_ = value;
     }
     /// Set integer priority
     inline void setIntegerPriority(int value) {
-        integerPriority_=value;
+        integerPriority_ = value;
     }
     /// Get integer priority
     inline int integerPriority() const {
@@ -187,7 +187,7 @@ public:
     }
     /// Set biLinear priority
     inline void setBiLinearPriority(int value) {
-        biLinearPriority_=value;
+        biLinearPriority_ = value;
     }
     /// Get biLinear priority
     inline int biLinearPriority() const {
@@ -198,7 +198,7 @@ public:
         return &coinModel_;
     }
     /// Set all biLinear priorities on x-x variables
-    void setBiLinearPriorities(int value, double meshSize=1.0);
+    void setBiLinearPriorities(int value, double meshSize = 1.0);
     /** Set options and priority on all or some biLinear variables
         1 - on I-I
         2 - on I-x
@@ -206,8 +206,8 @@ public:
         or combinations.
         -1 means leave (for priority value and strategy value)
     */
-    void setBranchingStrategyOnVariables(int strategyValue, int priorityValue=-1,
-                                         int mode=7);
+    void setBranchingStrategyOnVariables(int strategyValue, int priorityValue = -1,
+                                         int mode = 7);
     /// Set all mesh sizes on x-x variables
     void setMeshSizes(double value);
     /** Two tier integer problem where when set of variables with priority
@@ -226,7 +226,7 @@ protected:
     /// Do real work of initialize
     //void initialize(ClpSimplex * & solver, OsiObject ** & object) const;
     /// Do real work of delete
-    void gutsOfDestructor(bool justNullify=false);
+    void gutsOfDestructor(bool justNullify = false);
     /// Do real work of copy
     void gutsOfCopy(const OsiSolverLink & rhs) ;
     //@}
@@ -334,7 +334,7 @@ public:
     }
     /// Add a bound modifier
     void addBoundModifier(bool upperBoundAffected, bool useUpperBound, int whichVariable,
-                          double multiplier=1.0);
+                          double multiplier = 1.0);
     //@}
 
 private:
@@ -469,7 +469,7 @@ public:
 
     using OsiObject::infeasibility ;
     /// Infeasibility - large is 0.5
-    virtual double infeasibility(const OsiBranchingInformation * info,int & whichWay) const;
+    virtual double infeasibility(const OsiBranchingInformation * info, int & whichWay) const;
 
     using OsiObject::feasibleRegion ;
     /** Set bounds to fix the variable at the current (integer) value.
@@ -544,7 +544,7 @@ public:
     using OsiBranchingObject::print ;
     /** \brief Print something about branch - only if log level high
     */
-    virtual void print(const OsiSolverInterface * solver=NULL);
+    virtual void print(const OsiSolverInterface * solver = NULL);
 private:
     /// data
 };
@@ -622,7 +622,7 @@ public:
 
     using OsiObject::infeasibility ;
     /// Infeasibility - large is 0.5
-    virtual double infeasibility(const OsiBranchingInformation * info,int & whichWay) const;
+    virtual double infeasibility(const OsiBranchingInformation * info, int & whichWay) const;
 
     using OsiObject::feasibleRegion ;
     /** Set bounds to fix the variable at the current (integer) value.
@@ -704,7 +704,7 @@ public:
     using OsiBranchingObject::print ;
     /** \brief Print something about branch - only if log level high
     */
-    virtual void print(const OsiSolverInterface * solver=NULL);
+    virtual void print(const OsiSolverInterface * solver = NULL);
 private:
     /// data
 };
@@ -730,7 +730,7 @@ public:
     OsiBiLinear (OsiSolverInterface * solver, int xColumn,
                  int yColumn, int xyRow, double coefficient,
                  double xMesh, double yMesh,
-                 int numberExistingObjects=0,const OsiObject ** objects=NULL );
+                 int numberExistingObjects = 0, const OsiObject ** objects = NULL );
 
     /** Useful constructor -
         This Adds in rows and variables to construct valid Linked Ordered Set
@@ -740,7 +740,7 @@ public:
     OsiBiLinear (CoinModel * coinModel, int xColumn,
                  int yColumn, int xyRow, double coefficient,
                  double xMesh, double yMesh,
-                 int numberExistingObjects=0,const OsiObject ** objects=NULL );
+                 int numberExistingObjects = 0, const OsiObject ** objects = NULL );
 
     // Copy constructor
     OsiBiLinear ( const OsiBiLinear &);
@@ -756,7 +756,7 @@ public:
 
     using OsiObject::infeasibility ;
     /// Infeasibility - large is 0.5
-    virtual double infeasibility(const OsiBranchingInformation * info,int & whichWay) const;
+    virtual double infeasibility(const OsiBranchingInformation * info, int & whichWay) const;
 
     using OsiObject::feasibleRegion ;
     /** Set bounds to fix the variable at the current (integer) value.
@@ -786,7 +786,7 @@ public:
     /** \brief Return true if branch should only bound variables
     */
     virtual bool boundBranch() const {
-        return (branchingStrategy_&4)!=0;
+        return (branchingStrategy_&4) != 0;
     }
     /// X column
     inline int xColumn() const {
@@ -825,49 +825,49 @@ public:
         return xSatisfied_;
     }
     inline void setXSatisfied(double value) {
-        xSatisfied_=value;
+        xSatisfied_ = value;
     }
     /// Y satisfied if less than this away from mesh
     inline double ySatisfied() const {
         return ySatisfied_;
     }
     inline void setYSatisfied(double value) {
-        ySatisfied_=value;
+        ySatisfied_ = value;
     }
     /// X other satisfied if less than this away from mesh
     inline double xOtherSatisfied() const {
         return xOtherSatisfied_;
     }
     inline void setXOtherSatisfied(double value) {
-        xOtherSatisfied_=value;
+        xOtherSatisfied_ = value;
     }
     /// Y other satisfied if less than this away from mesh
     inline double yOtherSatisfied() const {
         return yOtherSatisfied_;
     }
     inline void setYOtherSatisfied(double value) {
-        yOtherSatisfied_=value;
+        yOtherSatisfied_ = value;
     }
     /// X meshSize
     inline double xMeshSize() const {
         return xMeshSize_;
     }
     inline void setXMeshSize(double value) {
-        xMeshSize_=value;
+        xMeshSize_ = value;
     }
     /// Y meshSize
     inline double yMeshSize() const {
         return yMeshSize_;
     }
     inline void setYMeshSize(double value) {
-        yMeshSize_=value;
+        yMeshSize_ = value;
     }
     /// XY satisfied if two version differ by less than this
     inline double xySatisfied() const {
         return xySatisfied_;
     }
     inline void setXYSatisfied(double value) {
-        xySatisfied_=value;
+        xySatisfied_ = value;
     }
     /// Set sizes and other stuff
     void setMeshSizes(const OsiSolverInterface * solver, double x, double y);
@@ -885,7 +885,7 @@ public:
         return branchingStrategy_;
     }
     inline void setBranchingStrategy(int value) {
-        branchingStrategy_=value;
+        branchingStrategy_ = value;
     }
     /** Simple quadratic bound marker.
         0 no
@@ -908,9 +908,9 @@ public:
     /// Returns true value of single xyRow coefficient
     double xyCoefficient(const double * solution) const;
     /// Get LU coefficients from matrix
-    void getCoefficients(const OsiSolverInterface * solver,double xB[2], double yB[2], double xybar[4]) const;
+    void getCoefficients(const OsiSolverInterface * solver, double xB[2], double yB[2], double xybar[4]) const;
     /// Compute lambdas (third entry in each .B is current value) (nonzero if bad)
-    double computeLambdas(const double xB[3], const double yB[3],const double xybar[4],double lambda[4]) const;
+    double computeLambdas(const double xB[3], const double yB[3], const double xybar[4], double lambda[4]) const;
     /// Adds in data for extra row with variable coefficients
     void addExtraRow(int row, double multiplier);
     /// Sets infeasibility and other when pseudo shadow prices
@@ -920,7 +920,7 @@ public:
 
 protected:
     /// Compute lambdas if coefficients not changing
-    void computeLambdas(const OsiSolverInterface * solver,double lambda[4]) const;
+    void computeLambdas(const OsiSolverInterface * solver, double lambda[4]) const;
     /// data
 
     /// Coefficient
@@ -1017,7 +1017,7 @@ public:
     using OsiBranchingObject::print ;
     /** \brief Print something about branch - only if log level high
     */
-    virtual void print(const OsiSolverInterface * solver=NULL);
+    virtual void print(const OsiSolverInterface * solver = NULL);
     /** \brief Return true if branch should only bound variables
     */
     virtual bool boundBranch() const;
@@ -1331,7 +1331,7 @@ public:
     /// Useful constructor (solution should be good)
     OsiSolverLinearizedQuadratic(  ClpSimplex * quadraticModel);
     /// Clone
-    virtual OsiSolverInterface * clone(bool copyData=true) const;
+    virtual OsiSolverInterface * clone(bool copyData = true) const;
 
     /// Copy constructor
     OsiSolverLinearizedQuadratic (const OsiSolverLinearizedQuadratic &);
@@ -1357,7 +1357,7 @@ public:
     }
     /// Set special options
     inline void setSpecialOptions3(int value) {
-        specialOptions3_=value;
+        specialOptions3_ = value;
     }
     /// Get special options
     inline int specialOptions3() const {
@@ -1399,5 +1399,5 @@ class ClpSimplex;
 */
 ClpSimplex * approximateSolution(CoinModel & coinModel,
                                  int numberPasses, double deltaTolerance,
-                                 int mode=0);
+                                 int mode = 0);
 #endif

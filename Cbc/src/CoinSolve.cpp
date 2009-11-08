@@ -84,7 +84,7 @@ public:
     MyMessageHandler2();
     /// Constructor with pointer to model
     MyMessageHandler2(CbcModel * model,
-                      FILE * userPointer=NULL);
+                      FILE * userPointer = NULL);
     /** Destructor */
     virtual ~MyMessageHandler2();
     //@}
@@ -159,7 +159,7 @@ MyMessageHandler2::~MyMessageHandler2 ()
 // Assignment operator
 //-------------------------------------------------------------------
 MyMessageHandler2 &
-MyMessageHandler2::operator=(const MyMessageHandler2& rhs)
+MyMessageHandler2::operator=(const MyMessageHandler2 & rhs)
 {
     if (this != &rhs) {
         CoinMessageHandler::operator=(rhs);
@@ -178,8 +178,8 @@ int
 MyMessageHandler2::print()
 {
     // Just add ==
-    fprintf(fp_," == ");
-    fprintf(fp_,"%s\n",messageBuffer_);
+    fprintf(fp_, " == ");
+    fprintf(fp_, "%s\n", messageBuffer_);
     return 0;
 }
 const CbcModel *
@@ -199,14 +199,14 @@ MyMessageHandler2::setModel(CbcModel * model)
 //#define USER_HAS_FAKE_CLP
 #ifdef USER_HAS_FAKE_CBC
 #endif
-void fakeMain (ClpSimplex & model,OsiSolverInterface & /*osiSolver*/, CbcModel & babSolver)
+void fakeMain (ClpSimplex & model, OsiSolverInterface & /*osiSolver*/, CbcModel & babSolver)
 {
 #ifdef USER_HAS_FAKE_CBC
 #else
     printf("Dummy user cbc code - model has %d rows and %d columns\n",
-           model.getNumRows(),model.getNumCols());
+           model.getNumRows(), model.getNumCols());
     // Reduce printout
-    babSolver.solver()->setHintParam(OsiDoReducePrint,true,OsiHintTry);
+    babSolver.solver()->setHintParam(OsiDoReducePrint, true, OsiHintTry);
     // Do complete search
     babSolver.branchAndBound();
 #endif
@@ -222,7 +222,7 @@ void fakeMain2 (ClpSimplex & /*model*/,
 #else
     ClpSimplex * lpSolver = osiSolver.getModelPtr();
     printf("Dummy user clp code - model has %d rows and %d columns\n",
-           lpSolver->numberRows(),lpSolver->numberColumns());
+           lpSolver->numberRows(), lpSolver->numberColumns());
     osiSolver.initialSolve();
 #endif
 }
@@ -230,25 +230,25 @@ void fakeMain2 (ClpSimplex & /*model*/,
 //#############################################################################
 // void CbcClpUnitTest (const CbcModel & saveModel);
 #ifdef CBC_STATISTICS
-int osi_crunch=0;
-static int cbc_resolve=0;
-int osi_primal=0;
-int osi_dual=0;
-int osi_hot=0;
+int osi_crunch = 0;
+static int cbc_resolve = 0;
+int osi_primal = 0;
+int osi_dual = 0;
+int osi_hot = 0;
 void cbc_resolve_check(const OsiSolverInterface * solver)
 {
     cbc_resolve++;
     printf("R %d stats %d %d %d\n",
-           cbc_resolve,solver->getNumRows(),solver->getNumCols(),
+           cbc_resolve, solver->getNumRows(), solver->getNumCols(),
            solver->getMatrixByCol()->getNumElements());
-    if ((cbc_resolve%1000)==0)
+    if ((cbc_resolve % 1000) == 0)
         printf("RR %d resolve crunch %d primal %d dual %d hot %d\n",
-               cbc_resolve,osi_crunch,osi_primal,osi_dual,osi_hot);
+               cbc_resolve, osi_crunch, osi_primal, osi_dual, osi_hot);
 }
 #endif
 int main (int argc, const char *argv[])
 {
-    int returnCode=0;
+    int returnCode = 0;
 #ifdef CLP_DEBUG_MALLOC
     clp_memory(0);
 #endif
@@ -262,7 +262,7 @@ int main (int argc, const char *argv[])
         // define TEST_MESSAGE_HANDLER at top of file to check works on all messages
 #ifdef TEST_MESSAGE_HANDLER
         MyMessageHandler2 messageHandler(&model);
-        std::cout<<"Testing derived message handler"<<std::endl;
+        std::cout << "Testing derived message handler" << std::endl;
         model.passInMessageHandler(&messageHandler);
         OsiClpSolverInterface * clpSolver = dynamic_cast< OsiClpSolverInterface*> (model.solver());
         // Could use different handlers (if different log levels)
@@ -279,14 +279,14 @@ int main (int argc, const char *argv[])
         void setCbcOrClpPrinting(bool yesNo);
         setCbcOrClpPrinting(false);
 #endif
-        returnCode = CbcMain1 (argc, argv,model);
+        returnCode = CbcMain1 (argc, argv, model);
     }
 #ifdef CLP_DEBUG_MALLOC
     clp_memory(1);
 #endif
 #ifdef CBC_STATISTICS
 #endif
-    if (returnCode!=777) {
+    if (returnCode != 777) {
         return returnCode;
     } else {
         return 0;
@@ -310,7 +310,7 @@ int main (int argc, const char *argv[])
 #ifdef COIN_HAS_ASL
         addAmplToCbc(&control);
 #endif
-        returnCode= control.solve (argc, argv, 1);
+        returnCode = control.solve (argc, argv, 1);
     }
 #ifdef CLP_DEBUG_MALLOC
     clp_memory(1);

@@ -62,14 +62,14 @@ public:
         return algorithm_;
     }
     inline void setAlgorithm(int value) {
-        algorithm_=value;
+        algorithm_ = value;
     }
     // Only do this many times
     inline int numberTimes() const {
         return numberTimes_;
     }
     inline void setNumberTimes(int value) {
-        numberTimes_=value;
+        numberTimes_ = value;
     }
 
 protected:
@@ -147,7 +147,7 @@ public:
         return algorithm_;
     }
     inline void setAlgorithm(int value) {
-        algorithm_=value;
+        algorithm_ = value;
     }
     // Fraction of rhs to cover before branch and cut
     inline void setFraction(double value) {
@@ -161,7 +161,7 @@ public:
         return numberTimes_;
     }
     inline void setNumberTimes(int value) {
-        numberTimes_=value;
+        numberTimes_ = value;
     }
 protected:
     /// Guts of constructor from a CbcModel

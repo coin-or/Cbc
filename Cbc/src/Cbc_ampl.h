@@ -47,7 +47,7 @@ typedef struct {
 extern "C" {
 #endif
     /* return nonzero if bad */
-    int readAmpl(ampl_info * info,int argc, char ** argv,
+    int readAmpl(ampl_info * info, int argc, char ** argv,
     void ** coinModel);
     /* frees some input arrays */
     void freeArrays1(ampl_info * info);

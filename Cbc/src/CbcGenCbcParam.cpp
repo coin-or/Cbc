@@ -53,7 +53,7 @@ CbcCbcParam::CbcCbcParam (CbcCbcParamCode code,
                           std::string name, std::string help,
                           double lower, double upper, double dflt,
                           bool display)
-        : CoinParam(name,help,lower,upper,dflt,display),
+        : CoinParam(name, help, lower, upper, dflt, display),
         paramCode_(code),
         obj_(0)
 {
@@ -67,7 +67,7 @@ CbcCbcParam::CbcCbcParam (CbcCbcParamCode code,
                           std::string name, std::string help,
                           int lower, int upper, int dflt,
                           bool display)
-        : CoinParam(name,help,lower,upper,dflt,display),
+        : CoinParam(name, help, lower, upper, dflt, display),
         paramCode_(code),
         obj_(0)
 {
@@ -81,7 +81,7 @@ CbcCbcParam::CbcCbcParam (CbcCbcParamCode code,
                           std::string name, std::string help,
                           std::string firstValue, int dflt,
                           bool display)
-        : CoinParam(name,help,firstValue,dflt,display),
+        : CoinParam(name, help, firstValue, dflt, display),
         paramCode_(code),
         obj_(0)
 {
@@ -95,7 +95,7 @@ CbcCbcParam::CbcCbcParam (CbcCbcParamCode code,
                           std::string name, std::string help,
                           std::string dflt,
                           bool display)
-        : CoinParam(name,help,dflt,display),
+        : CoinParam(name, help, dflt, display),
         paramCode_(code),
         obj_(0)
 {
@@ -108,7 +108,7 @@ CbcCbcParam::CbcCbcParam (CbcCbcParamCode code,
 CbcCbcParam::CbcCbcParam (CbcCbcParamCode code,
                           std::string name, std::string help,
                           bool display)
-        : CoinParam(name,help,display),
+        : CoinParam(name, help, display),
         paramCode_(code),
         obj_(0)
 {
@@ -136,7 +136,7 @@ CbcCbcParam *CbcCbcParam::clone ()
     return (new CbcCbcParam(*this)) ;
 }
 
-CbcCbcParam &CbcCbcParam::operator= (const CbcCbcParam &rhs)
+CbcCbcParam &CbcCbcParam::operator= (const CbcCbcParam & rhs)
 {
     if (this != &rhs) {
         CoinParam::operator=(rhs) ;

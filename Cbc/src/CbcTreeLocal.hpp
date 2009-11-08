@@ -55,9 +55,9 @@ public:
        when we fix all 0-1 (in case typeCuts==0 and there are general integer variables)
        if false then no refinement but reverse cuts weaker
     */
-    CbcTreeLocal (CbcModel * model,const double * solution ,int range=10,
-                  int typeCuts=0,int maxDiversification=0,
-                  int timeLimit=1000000, int nodeLimit=1000000,bool refine=true);
+    CbcTreeLocal (CbcModel * model, const double * solution , int range = 10,
+                  int typeCuts = 0, int maxDiversification = 0,
+                  int timeLimit = 1000000, int nodeLimit = 1000000, bool refine = true);
     // Copy constructor
     CbcTreeLocal ( const CbcTreeLocal & rhs);
 
@@ -96,7 +96,7 @@ public:
     /// We may have got an intelligent tree so give it one more chance
     virtual void endSearch() ;
     /// Other side of last cut branch (if bias==rhs_ will be weakest possible)
-    void reverseCut(int state, double bias=0.0);
+    void reverseCut(int state, double bias = 0.0);
     /// Delete last cut branch
     void deleteCut(OsiRowCut & cut);
     /// Pass in solution (so can be used after heuristic)
@@ -221,9 +221,9 @@ public:
        when we fix all 0-1 (in case typeCuts==0 and there are general integer variables)
        if false then no refinement but reverse cuts weaker
     */
-    CbcTreeVariable (CbcModel * model,const double * solution ,int range=10,
-                     int typeCuts=0,int maxDiversification=0,
-                     int timeLimit=1000000, int nodeLimit=1000000,bool refine=true);
+    CbcTreeVariable (CbcModel * model, const double * solution , int range = 10,
+                     int typeCuts = 0, int maxDiversification = 0,
+                     int timeLimit = 1000000, int nodeLimit = 1000000, bool refine = true);
     // Copy constructor
     CbcTreeVariable ( const CbcTreeVariable & rhs);
 
@@ -262,7 +262,7 @@ public:
     /// We may have got an intelligent tree so give it one more chance
     virtual void endSearch() ;
     /// Other side of last cut branch (if bias==rhs_ will be weakest possible)
-    void reverseCut(int state, double bias=0.0);
+    void reverseCut(int state, double bias = 0.0);
     /// Delete last cut branch
     void deleteCut(OsiRowCut & cut);
     /// Pass in solution (so can be used after heuristic)

@@ -52,20 +52,20 @@ void addCbcGenParams (int &numberParameters, CoinParamVec &parameters,
     CbcGenParam *param ;
     std::string empty = "" ;
 
-    param = new CbcGenParam(CbcGenParam::GENERALQUERY,"?",
-                            "Print a list of commands",false) ;
+    param = new CbcGenParam(CbcGenParam::GENERALQUERY, "?",
+                            "Print a list of commands", false) ;
     param->setPushFunc(doHelpParam) ;
     param->setObj(ctlBlk) ;
     parameters.push_back(param) ;
 
-    param = new CbcGenParam(CbcGenParam::FULLGENERALQUERY,"???",
-                            "Print a list with *all* commands, even those hidden with `?'",false) ;
+    param = new CbcGenParam(CbcGenParam::FULLGENERALQUERY, "???",
+                            "Print a list with *all* commands, even those hidden with `?'", false) ;
     param->setPushFunc(doHelpParam) ;
     param->setObj(ctlBlk) ;
     parameters.push_back(param) ;
 
     param = new CbcGenParam(CbcGenParam::PRINTVERSION,
-                            "version","Print version") ;
+                            "version", "Print version") ;
     param->setPushFunc(doVersionParam) ;
     param->setObj(ctlBlk) ;
     parameters.push_back(param) ;
@@ -74,18 +74,18 @@ void addCbcGenParams (int &numberParameters, CoinParamVec &parameters,
       Built into CoinParam parsing. No additional actions required. doNothingParam
       simply prevents them from being reported as unimplemented.
     */
-    param = new CbcGenParam(CbcGenParam::STDIN,"-",
-                            "Switch to interactive command line mode",false) ;
+    param = new CbcGenParam(CbcGenParam::STDIN, "-",
+                            "Switch to interactive command line mode", false) ;
     param->setPushFunc(doNothingParam) ;
     parameters.push_back(param) ;
-    param = new CbcGenParam(CbcGenParam::STDIN,"stdin",
-                            "Switch to interactive command line mode",false) ;
+    param = new CbcGenParam(CbcGenParam::STDIN, "stdin",
+                            "Switch to interactive command line mode", false) ;
     param->setPushFunc(doNothingParam) ;
     param->setObj(ctlBlk) ;
     parameters.push_back(param) ;
 
     param = new CbcGenParam(CbcGenParam::BAB,
-                            "branch!AndCut","Do Branch and Cut") ;
+                            "branch!AndCut", "Do Branch and Cut") ;
     param->setPushFunc(doBaCParam) ;
     param->setObj(ctlBlk) ;
     param->setLongHelp(
@@ -94,7 +94,7 @@ void addCbcGenParams (int &numberParameters, CoinParamVec &parameters,
     parameters.push_back(param) ;
 
     param = new CbcGenParam(CbcGenParam::CPP,
-                            "cpp!Generate","Generates C++ code",-1,50000) ;
+                            "cpp!Generate", "Generates C++ code", -1, 50000) ;
     param->setObj(ctlBlk) ;
     param->setLongHelp(
         "Once you like what the stand-alone solver does then this allows you to generate user_driver.cpp which approximates the code.  0 gives simplest driver, 1 generates saves and restores, 2 generates saves and restores even for variables at default value. 4 bit in cbc generates size dependent code rather than computed values."
@@ -102,7 +102,7 @@ void addCbcGenParams (int &numberParameters, CoinParamVec &parameters,
     parameters.push_back(param) ;
 
     param = new CbcGenParam(CbcGenParam::CLIQUECUTS,
-                            "clique!Cuts","Whether to use clique cuts","off",
+                            "clique!Cuts", "Whether to use clique cuts", "off",
                             ctlBlk->clique_.action_) ;
     param->appendKwd("on") ;
     param->appendKwd("root") ;
@@ -116,8 +116,8 @@ void addCbcGenParams (int &numberParameters, CoinParamVec &parameters,
     parameters.push_back(param) ;
 
     param = new CbcGenParam(CbcGenParam::CUTDEPTH,
-                            "cutD!epth","Depth in tree at which to do cuts",
-                            -1,999999,ctlBlk->cutDepth_) ;
+                            "cutD!epth", "Depth in tree at which to do cuts",
+                            -1, 999999, ctlBlk->cutDepth_) ;
     param->setObj(ctlBlk) ;
     param->setPushFunc(pushCbcGenIntParam) ;
     param->setLongHelp(
@@ -127,7 +127,7 @@ void addCbcGenParams (int &numberParameters, CoinParamVec &parameters,
 
 
     param = new CbcGenParam(CbcGenParam::CUTSTRATEGY,
-                            "cuts!OnOff","Switches all cuts on or off","off",0) ;
+                            "cuts!OnOff", "Switches all cuts on or off", "off", 0) ;
     param->appendKwd("on") ;
     param->appendKwd("root") ;
     param->appendKwd("ifmove") ;
@@ -140,7 +140,7 @@ void addCbcGenParams (int &numberParameters, CoinParamVec &parameters,
 
     param = new CbcGenParam(CbcGenParam::COMBINE,
                             "combine!Solutions",
-                            "Whether to use combine solution heuristic","off",
+                            "Whether to use combine solution heuristic", "off",
                             ctlBlk->combine_.action_) ;
     param->appendKwd("on") ;
     param->setObj(ctlBlk) ;
@@ -150,8 +150,8 @@ void addCbcGenParams (int &numberParameters, CoinParamVec &parameters,
     parameters.push_back(param) ;
 
     param = new CbcGenParam(CbcGenParam::COSTSTRATEGY,
-                            "cost!Strategy","Whether to use costs or column order as priorities",
-                            "off",0) ;
+                            "cost!Strategy", "Whether to use costs or column order as priorities",
+                            "off", 0) ;
     param->appendKwd("pri!orities") ;
     param->appendKwd("column!Order") ;
     param->setObj(ctlBlk) ;
@@ -161,7 +161,7 @@ void addCbcGenParams (int &numberParameters, CoinParamVec &parameters,
     parameters.push_back(param) ;
 
     param = new CbcGenParam(CbcGenParam::DEBUG,
-                            "debug!In","Read/write valid solution from/to file","",false) ;
+                            "debug!In", "Read/write valid solution from/to file", "", false) ;
     param->setObj(ctlBlk) ;
     param->setPushFunc(doDebugParam) ;
     param->setLongHelp(
@@ -170,7 +170,7 @@ void addCbcGenParams (int &numberParameters, CoinParamVec &parameters,
     parameters.push_back(param) ;
 
     param = new CbcGenParam(CbcGenParam::DIRECTORY,
-                            "directory","Set Default directory for import etc.",
+                            "directory", "Set Default directory for import etc.",
                             ctlBlk->dfltDirectory_) ;
     param->setObj(ctlBlk) ;
     param->setLongHelp(
@@ -179,7 +179,7 @@ void addCbcGenParams (int &numberParameters, CoinParamVec &parameters,
     param->setPushFunc(pushCbcGenStrParam) ;
     parameters.push_back(param) ;
 
-    param = new CbcGenParam(CbcGenParam::EXIT,"end","Stops execution") ;
+    param = new CbcGenParam(CbcGenParam::EXIT, "end", "Stops execution") ;
     param->setPushFunc(doExitParam) ;
     param->setObj(ctlBlk) ;
     param->setLongHelp(
@@ -188,7 +188,7 @@ void addCbcGenParams (int &numberParameters, CoinParamVec &parameters,
     parameters.push_back(param) ;
 
     param = new CbcGenParam(CbcGenParam::ERRORSALLOWED,
-                            "error!sAllowed","Whether to allow import errors","off",0) ;
+                            "error!sAllowed", "Whether to allow import errors", "off", 0) ;
     param->appendKwd("on") ;
     param->setObj(ctlBlk) ;
     param->setLongHelp(
@@ -196,7 +196,7 @@ void addCbcGenParams (int &numberParameters, CoinParamVec &parameters,
     ) ;
     parameters.push_back(param) ;
 
-    param = new CbcGenParam(CbcGenParam::EXIT,"exit","Stops execution") ;
+    param = new CbcGenParam(CbcGenParam::EXIT, "exit", "Stops execution") ;
     param->setPushFunc(doExitParam) ;
     param->setObj(ctlBlk) ;
     param->setLongHelp(
@@ -205,7 +205,7 @@ void addCbcGenParams (int &numberParameters, CoinParamVec &parameters,
     parameters.push_back(param) ;
 
     param = new CbcGenParam(CbcGenParam::EXPORT,
-                            "export","Export model as mps file",
+                            "export", "Export model as mps file",
                             std::string("default.mps")) ;
     param->setObj(ctlBlk) ;
     param->setLongHelp(
@@ -213,9 +213,9 @@ void addCbcGenParams (int &numberParameters, CoinParamVec &parameters,
     ) ;
     parameters.push_back(param) ;
 
-    param = new CbcGenParam(CbcGenParam::DJFIX,"fix!OnDj",
+    param = new CbcGenParam(CbcGenParam::DJFIX, "fix!OnDj",
                             "Try heuristic that fixes variables based on reduced costs",
-                            -1.0e20,1.0e20,ctlBlk->djFix_.threshold_) ;
+                            -1.0e20, 1.0e20, ctlBlk->djFix_.threshold_) ;
     param->setPushFunc(pushCbcGenDblParam) ;
     param->setObj(ctlBlk) ;
     param->setLongHelp(
@@ -224,7 +224,7 @@ void addCbcGenParams (int &numberParameters, CoinParamVec &parameters,
     parameters.push_back(param) ;
 
     param = new CbcGenParam(CbcGenParam::FPUMP,
-                            "feas!ibilityPump","Whether to try Feasibility Pump","off",
+                            "feas!ibilityPump", "Whether to try Feasibility Pump", "off",
                             ctlBlk->fpump_.action_) ;
     param->appendKwd("on") ;
     param->setObj(ctlBlk) ;
@@ -234,8 +234,8 @@ void addCbcGenParams (int &numberParameters, CoinParamVec &parameters,
     parameters.push_back(param) ;
 
     param = new CbcGenParam(CbcGenParam::FPUMPITS,
-                            "passF!easibilityPump","How many passes in feasibility pump",
-                            0,10000,ctlBlk->fpump_.iters_) ;
+                            "passF!easibilityPump", "How many passes in feasibility pump",
+                            0, 10000, ctlBlk->fpump_.iters_) ;
     param->setObj(ctlBlk) ;
     param->setLongHelp(
         "This fine tunes the Feasibility Pump heuristic by doing more or fewer passes."
@@ -243,7 +243,7 @@ void addCbcGenParams (int &numberParameters, CoinParamVec &parameters,
     parameters.push_back(param) ;
 
     param = new CbcGenParam(CbcGenParam::FLOWCUTS,
-                            "flow!CoverCuts","Whether to use Flow Cover cuts","off",
+                            "flow!CoverCuts", "Whether to use Flow Cover cuts", "off",
                             ctlBlk->flow_.action_) ;
     param->appendKwd("on") ;
     param->appendKwd("root") ;
@@ -256,8 +256,8 @@ void addCbcGenParams (int &numberParameters, CoinParamVec &parameters,
     ) ;
     parameters.push_back(param) ;
 
-    param = new CbcGenParam(CbcGenParam::GOMORYCUTS,"gomory!Cuts",
-                            "Whether to use Gomory cuts","off",
+    param = new CbcGenParam(CbcGenParam::GOMORYCUTS, "gomory!Cuts",
+                            "Whether to use Gomory cuts", "off",
                             ctlBlk->gomory_.action_) ;
     param->appendKwd("on") ;
     param->appendKwd("root") ;
@@ -271,7 +271,7 @@ void addCbcGenParams (int &numberParameters, CoinParamVec &parameters,
     parameters.push_back(param) ;
 
     param = new CbcGenParam(CbcGenParam::GREEDY,
-                            "greedy!Heuristic","Whether to use a greedy heuristic","off",
+                            "greedy!Heuristic", "Whether to use a greedy heuristic", "off",
                             ctlBlk->greedyCover_.action_) ;
     param->appendKwd("on") ;
     param->appendKwd("root") ;
@@ -282,7 +282,7 @@ void addCbcGenParams (int &numberParameters, CoinParamVec &parameters,
     parameters.push_back(param) ;
 
     param = new CbcGenParam(CbcGenParam::HEURISTICSTRATEGY,
-                            "heur!isticsOnOff","Switches most heuristics on or off","off",0) ;
+                            "heur!isticsOnOff", "Switches most heuristics on or off", "off", 0) ;
     param->appendKwd("on") ;
     param->setObj(ctlBlk) ;
     param->setLongHelp(
@@ -291,7 +291,7 @@ void addCbcGenParams (int &numberParameters, CoinParamVec &parameters,
     parameters.push_back(param) ;
 
     param = new CbcGenParam(CbcGenParam::KNAPSACKCUTS,
-                            "knapsack!Cuts","Whether to use Knapsack cuts","off",
+                            "knapsack!Cuts", "Whether to use Knapsack cuts", "off",
                             ctlBlk->knapsack_.action_) ;
     param->appendKwd("on") ;
     param->appendKwd("root") ;
@@ -320,7 +320,7 @@ void addCbcGenParams (int &numberParameters, CoinParamVec &parameters,
     */
 
     param = new CbcGenParam(CbcGenParam::LOCALTREE,
-                            "local!TreeSearch","Whether to use local tree search","off",
+                            "local!TreeSearch", "Whether to use local tree search", "off",
                             ctlBlk->localTree_.action_) ;
     param->appendKwd("on") ;
     param->setObj(ctlBlk) ;
@@ -330,8 +330,8 @@ void addCbcGenParams (int &numberParameters, CoinParamVec &parameters,
     parameters.push_back(param) ;
 
     param = new CbcGenParam(CbcGenParam::LOGLEVEL,
-                            "log!Level","Level of detail in cbc-generic output.",
-                            -1,999999,ctlBlk->logLvl_) ;
+                            "log!Level", "Level of detail in cbc-generic output.",
+                            -1, 999999, ctlBlk->logLvl_) ;
     param->setObj(ctlBlk) ;
     param->setPushFunc(pushCbcGenIntParam) ;
     param->setLongHelp(
@@ -341,7 +341,7 @@ void addCbcGenParams (int &numberParameters, CoinParamVec &parameters,
 
     param = new CbcGenParam(CbcGenParam::MIXEDCUTS,
                             "mixed!IntegerRoundingCuts",
-                            "Whether to use Mixed Integer Rounding cuts","off",
+                            "Whether to use Mixed Integer Rounding cuts", "off",
                             ctlBlk->mir_.action_) ;
     param->appendKwd("on") ;
     param->appendKwd("root") ;
@@ -356,7 +356,7 @@ void addCbcGenParams (int &numberParameters, CoinParamVec &parameters,
 
     param = new CbcGenParam(CbcGenParam::USESOLUTION,
                             "force!Solution",
-                            "Whether to use given solution as crash for BAB","off",0) ;
+                            "Whether to use given solution as crash for BAB", "off", 0) ;
     param->appendKwd("on") ;
     param->setObj(ctlBlk) ;
     param->setLongHelp(
@@ -364,7 +364,7 @@ void addCbcGenParams (int &numberParameters, CoinParamVec &parameters,
     ) ;
     parameters.push_back(param) ;
 
-    param = new CbcGenParam(CbcGenParam::HELP,"help",
+    param = new CbcGenParam(CbcGenParam::HELP, "help",
                             "Print out version, non-standard options and some help") ;
     param->setPushFunc(doHelpParam) ;
     param->setObj(ctlBlk) ;
@@ -374,7 +374,7 @@ void addCbcGenParams (int &numberParameters, CoinParamVec &parameters,
     parameters.push_back(param) ;
 
     param = new CbcGenParam(CbcGenParam::IMPORT,
-                            "import","Import model from mps file",
+                            "import", "Import model from mps file",
                             ctlBlk->lastMpsIn_) ;
     param->setPushFunc(doImportParam) ;
     param->setObj(ctlBlk) ;
@@ -383,7 +383,7 @@ void addCbcGenParams (int &numberParameters, CoinParamVec &parameters,
     ) ;
     parameters.push_back(param) ;
 
-    param = new CbcGenParam(CbcGenParam::SOLVECONTINUOUS,"initialS!olve",
+    param = new CbcGenParam(CbcGenParam::SOLVECONTINUOUS, "initialS!olve",
                             "Solve to continuous optimum") ;
     param->setObj(ctlBlk) ;
     param->setLongHelp(
@@ -391,8 +391,8 @@ void addCbcGenParams (int &numberParameters, CoinParamVec &parameters,
     ) ;
     parameters.push_back(param) ;
 
-    param = new CbcGenParam(CbcGenParam::MESSAGES,"mess!ages",
-                            "Controls whether standardised message prefix is printed","off",0) ;
+    param = new CbcGenParam(CbcGenParam::MESSAGES, "mess!ages",
+                            "Controls whether standardised message prefix is printed", "off", 0) ;
     param->appendKwd("on") ;
     param->setObj(ctlBlk) ;
     param->setLongHelp(
@@ -401,17 +401,17 @@ void addCbcGenParams (int &numberParameters, CoinParamVec &parameters,
     parameters.push_back(param) ;
 
     param = new CbcGenParam(CbcGenParam::MIPLIB,
-                            "miplib","Do some of miplib test set") ;
+                            "miplib", "Do some of miplib test set") ;
     parameters.push_back(param) ;
 
 
     param = new CbcGenParam(CbcGenParam::OUTDUPROWS,
                             "outDup!licates",
-                            "Takes duplicate rows, etc., out of the integer model",false) ;
+                            "Takes duplicate rows, etc., out of the integer model", false) ;
     parameters.push_back(param) ;
 
     param = new CbcGenParam(CbcGenParam::OUTPUTFORMAT,
-                            "output!Format","Which output format to use",1,6,2) ;
+                            "output!Format", "Which output format to use", 1, 6, 2) ;
     param->setObj(ctlBlk) ;
     param->setLongHelp(
         "Normally export will be done using normal representation for numbers and two values per line.  You may want to do just one per line (for grep or suchlike) and you may wish to save with absolute accuracy using a coded version of the IEEE value. A value of 2 is normal. Otherwise, odd values give one value per line, even values two.  Values of 1 and 2 give normal format, 3 and 4 give greater precision, 5 and 6 give IEEE values.  When exporting a basis, 1 does not save values, 2 saves values, 3 saves with greater accuracy and 4 saves in IEEE format."
@@ -423,7 +423,7 @@ void addCbcGenParams (int &numberParameters, CoinParamVec &parameters,
       must match the order of the enum IPPControl in CbcGenCtlBlk.hpp.
     */
     param = new CbcGenParam(CbcGenParam::PREPROCESS,
-                            "preprocess","Whether to use integer preprocessing","off",
+                            "preprocess", "Whether to use integer preprocessing", "off",
                             ctlBlk->preProcess_) ;
     param->appendKwd("on") ;
     param->appendKwd("save") ;
@@ -440,7 +440,7 @@ void addCbcGenParams (int &numberParameters, CoinParamVec &parameters,
     parameters.push_back(param) ;
 
     param = new CbcGenParam(CbcGenParam::PRINTOPTIONS,
-                            "pO!ptions","Dubious print options",0,COIN_INT_MAX,0,false) ;
+                            "pO!ptions", "Dubious print options", 0, COIN_INT_MAX, 0, false) ;
     param->setObj(ctlBlk) ;
     param->setPushFunc(pushCbcGenIntParam) ;
     param->setLongHelp(
@@ -449,7 +449,7 @@ void addCbcGenParams (int &numberParameters, CoinParamVec &parameters,
     parameters.push_back(param) ;
 
     param = new CbcGenParam(CbcGenParam::PROBINGCUTS,
-                            "probing!Cuts","Whether to use Probing cuts","off",
+                            "probing!Cuts", "Whether to use Probing cuts", "off",
                             ctlBlk->probing_.action_) ;
     param->appendKwd("on") ;
     param->appendKwd("root") ;
@@ -464,7 +464,7 @@ void addCbcGenParams (int &numberParameters, CoinParamVec &parameters,
     parameters.push_back(param) ;
 
     param = new CbcGenParam(CbcGenParam::INTPRINT,
-                            "printi!ngOptions","Print options","normal",0) ;
+                            "printi!ngOptions", "Print options", "normal", 0) ;
     param->appendKwd("integer") ;
     param->appendKwd("special") ;
     param->appendKwd("rows") ;
@@ -478,7 +478,7 @@ void addCbcGenParams (int &numberParameters, CoinParamVec &parameters,
 
     param = new CbcGenParam(CbcGenParam::PRINTMASK,
                             "printM!ask",
-                            "Control printing of solution with a regular expression",empty) ;
+                            "Control printing of solution with a regular expression", empty) ;
     param->setPushFunc(doPrintMaskParam) ;
     param->setObj(ctlBlk) ;
     param->setLongHelp(
@@ -487,7 +487,7 @@ void addCbcGenParams (int &numberParameters, CoinParamVec &parameters,
     parameters.push_back(param) ;
 
     param = new CbcGenParam(CbcGenParam::PRIORITYIN,
-                            "prio!rityIn","Import priorities etc from file",empty) ;
+                            "prio!rityIn", "Import priorities etc from file", empty) ;
     param->setObj(ctlBlk) ;
     param->setLongHelp(
         "This will read a file with priorities from the given file name.  It will use the default directory given by 'directory'.  A name of '$' will use the previous value for the name.  This is initialized to '', i.e. it must be set.  This can not read from compressed files. File is in csv format with allowed headings - name, number, priority, direction, up, down, solution.  Exactly one of name and number must be given."
@@ -496,7 +496,7 @@ void addCbcGenParams (int &numberParameters, CoinParamVec &parameters,
 
     param = new CbcGenParam(CbcGenParam::REDSPLITCUTS,
                             "reduce!AndSplitCuts",
-                            "Whether to use Reduce-and-Split cuts","off",
+                            "Whether to use Reduce-and-Split cuts", "off",
                             ctlBlk->redSplit_.action_) ;
     param->appendKwd("on") ;
     param->appendKwd("root") ;
@@ -510,7 +510,7 @@ void addCbcGenParams (int &numberParameters, CoinParamVec &parameters,
     parameters.push_back(param) ;
 
     param = new CbcGenParam(CbcGenParam::ROUNDING,
-                            "round!ingHeuristic","Whether to use Rounding heuristic","off",
+                            "round!ingHeuristic", "Whether to use Rounding heuristic", "off",
                             ctlBlk->rounding_.action_) ;
     param->appendKwd("on") ;
     param->setObj(ctlBlk) ;
@@ -520,7 +520,7 @@ void addCbcGenParams (int &numberParameters, CoinParamVec &parameters,
     parameters.push_back(param) ;
 
 
-    param = new CbcGenParam(CbcGenParam::EXIT,"quit","Stops execution") ;
+    param = new CbcGenParam(CbcGenParam::EXIT, "quit", "Stops execution") ;
     param->setPushFunc(doExitParam) ;
     param->setObj(ctlBlk) ;
     param->setLongHelp(
@@ -529,7 +529,7 @@ void addCbcGenParams (int &numberParameters, CoinParamVec &parameters,
     parameters.push_back(param) ;
 
     param = new CbcGenParam(CbcGenParam::DUMMY,
-                            "sleep","for debug",0,9999,0,false) ;
+                            "sleep", "for debug", 0, 9999, 0, false) ;
     param->setObj(ctlBlk) ;
     param->setLongHelp(
         "If passed to solver from ampl, then ampl will wait so that you can copy .nl file for debug."
@@ -537,7 +537,7 @@ void addCbcGenParams (int &numberParameters, CoinParamVec &parameters,
     parameters.push_back(param) ;
 
     param = new CbcGenParam(CbcGenParam::SOLUTION,
-                            "solu!tion","Prints solution to file",
+                            "solu!tion", "Prints solution to file",
                             std::string("stdout")) ;
     param->setPushFunc(doSolutionParam) ;
     param->setObj(ctlBlk) ;
@@ -552,7 +552,7 @@ void addCbcGenParams (int &numberParameters, CoinParamVec &parameters,
     parameters.push_back(param) ;
 
     param = new CbcGenParam(CbcGenParam::SOS,
-                            "sos!Options","Whether to use SOS from AMPL","off",0) ;
+                            "sos!Options", "Whether to use SOS from AMPL", "off", 0) ;
     param->appendKwd("on") ;
     param->setObj(ctlBlk) ;
     param->setLongHelp(
@@ -560,7 +560,7 @@ void addCbcGenParams (int &numberParameters, CoinParamVec &parameters,
     ) ;
     parameters.push_back(param) ;
 
-    param = new CbcGenParam(CbcGenParam::EXIT,"stop","Stops execution") ;
+    param = new CbcGenParam(CbcGenParam::EXIT, "stop", "Stops execution") ;
     param->setPushFunc(doExitParam) ;
     param->setObj(ctlBlk) ;
     param->setLongHelp(
@@ -569,16 +569,16 @@ void addCbcGenParams (int &numberParameters, CoinParamVec &parameters,
     parameters.push_back(param) ;
 
     param = new CbcGenParam(CbcGenParam::STRENGTHEN,
-                            "strengthen","Create strengthened problem") ;
+                            "strengthen", "Create strengthened problem") ;
     param->setObj(ctlBlk) ;
     param->setLongHelp(
         "This creates a new problem by applying the root node cuts. All tight constraints will be in resulting problem."
     ) ;
     parameters.push_back(param) ;
 
-    param = new CbcGenParam(CbcGenParam::TIGHTENFACTOR,"tighten!Factor",
+    param = new CbcGenParam(CbcGenParam::TIGHTENFACTOR, "tighten!Factor",
                             "Tighten bounds using value times largest activity at continuous solution",
-                            1.0,1.0e20) ;
+                            1.0, 1.0e20) ;
     param->setObj(ctlBlk) ;
     param->setLongHelp(
         "This sleazy trick can help on some problems."
@@ -587,7 +587,7 @@ void addCbcGenParams (int &numberParameters, CoinParamVec &parameters,
 
     param = new CbcGenParam(CbcGenParam::TWOMIRCUTS,
                             "two!MirCuts",
-                            "Whether to use Two phase Mixed Integer Rounding cuts","off",
+                            "Whether to use Two phase Mixed Integer Rounding cuts", "off",
                             ctlBlk->twomir_.action_) ;
     param->appendKwd("on") ;
     param->appendKwd("root") ;
@@ -600,7 +600,7 @@ void addCbcGenParams (int &numberParameters, CoinParamVec &parameters,
     ) ;
     parameters.push_back(param) ;
 
-    param = new CbcGenParam(CbcGenParam::UNITTEST,"unitTest","Do unit test") ;
+    param = new CbcGenParam(CbcGenParam::UNITTEST, "unitTest", "Do unit test") ;
     param->setObj(ctlBlk) ;
     param->setLongHelp(
         "This exercises the unit test."
@@ -608,7 +608,7 @@ void addCbcGenParams (int &numberParameters, CoinParamVec &parameters,
     parameters.push_back(param) ;
 
     param = new CbcGenParam(CbcGenParam::USERCBC,
-                            "userCbc","Hand coded Cbc stuff",0,COIN_INT_MAX,0,false) ;
+                            "userCbc", "Hand coded Cbc stuff", 0, COIN_INT_MAX, 0, false) ;
     param->setObj(ctlBlk) ;
     param->setLongHelp(
         "There are times (e.g., when using AMPL interface) when you may wish to do something unusual.  Look for USERCBC in main driver and modify sample code."
@@ -616,8 +616,8 @@ void addCbcGenParams (int &numberParameters, CoinParamVec &parameters,
     parameters.push_back(param) ;
 
     param = new CbcGenParam(CbcGenParam::VERBOSE,
-                            "verbose","Switches on longer help on single ?",
-                            0,15,ctlBlk->verbose_,false) ;
+                            "verbose", "Switches on longer help on single ?",
+                            0, 15, ctlBlk->verbose_, false) ;
     param->setPushFunc(pushCbcGenIntParam) ;
     param->setObj(ctlBlk) ;
     param->setLongHelp(
@@ -626,7 +626,7 @@ void addCbcGenParams (int &numberParameters, CoinParamVec &parameters,
     parameters.push_back(param) ;
 
     param = new CbcGenParam(CbcGenParam::SHOWUNIMP,
-                            "unimp!lemented","Report unimplemented commands.",false) ;
+                            "unimp!lemented", "Report unimplemented commands.", false) ;
     param->setPushFunc(doUnimplementedParam) ;
     param->setObj(ctlBlk) ;
     parameters.push_back(param) ;
@@ -682,7 +682,7 @@ int doUnimplementedParam (CoinParam *param)
     for (unsigned i = 0 ; i < paramVec.size() ; i++) {
         CoinParam *param = paramVec[i] ;
         if (param->pushFunc() == 0) {
-            if (unimpCnt%maxAcross == 0) {
+            if (unimpCnt % maxAcross == 0) {
                 std::cout << std::endl ;
             } else {
                 std::cout << " " ;
@@ -691,7 +691,7 @@ int doUnimplementedParam (CoinParam *param)
             unimpCnt++ ;
         }
     }
-    if (unimpCnt%maxAcross != 1) {
+    if (unimpCnt % maxAcross != 1) {
         std::cout << std::endl ;
     }
     std::cout << unimpCnt << " unimplemented parameters." << std::endl ;
@@ -762,9 +762,9 @@ int doHelpParam (CoinParam *param)
     CbcGenParam::CbcGenParamCode code = genParam->paramCode() ;
 
     int verbose = ctlBlk->verbose_ ;
-    bool shortHelp = ((verbose&0x01)?true:false) ;
-    bool longHelp = ((verbose&0x02)?true:false) ;
-    bool hidden = ((verbose&0x08)?true:false) ;
+    bool shortHelp = ((verbose & 0x01) ? true : false) ;
+    bool longHelp = ((verbose & 0x02) ? true : false) ;
+    bool hidden = ((verbose & 0x08) ? true : false) ;
 
     CoinParamVec *paramVec = ctlBlk->paramVec_ ;
     assert (paramVec != 0) ;
@@ -783,8 +783,8 @@ int doHelpParam (CoinParam *param)
 
     std::cout << "\nAvailable commands are:" ;
     std::string pfx("  ") ;
-    CoinParamUtils::printHelp(*paramVec,0,paramVec->size()-1,pfx,
-                              shortHelp,longHelp,hidden) ;
+    CoinParamUtils::printHelp(*paramVec, 0, paramVec->size() - 1, pfx,
+                              shortHelp, longHelp, hidden) ;
 
     return (0) ;
 }
@@ -1241,11 +1241,11 @@ int doImportParam (CoinParam *param)
       (see the doxygen doc'n for details). The file name returned in field wil
       be the one that actually worked.
     */
-    bool canOpen = fileCoinReadable(fileName,ctlBlk->dfltDirectory_) ;
+    bool canOpen = fileCoinReadable(fileName, ctlBlk->dfltDirectory_) ;
     if (canOpen == false) {
         std::cout
             << "Unable to open file `" << fileName
-            << "', original name '" << genParam->strVal() <<"'." << std::endl ;
+            << "', original name '" << genParam->strVal() << "'." << std::endl ;
         return (retval) ;
     }
     /*
@@ -1265,10 +1265,10 @@ int doImportParam (CoinParam *param)
       keepImportNames. Status will be zero for a successful read.
     */
     OsiSolverInterface *lpSolver = ctlBlk->model_->solver() ;
-    int status = lpSolver->readMps(fileName.c_str(),"") ;
+    int status = lpSolver->readMps(fileName.c_str(), "") ;
     if (status) {
         std::cout
-            << "There were "<< status << " errors on input." << std::endl ;
+            << "There were " << status << " errors on input." << std::endl ;
         return (retval) ;
     }
     /*
@@ -1340,11 +1340,11 @@ int doDebugParam (CoinParam *param)
       the one that actually worked. No default prefix --- a debug file is assumed
       to always be in the current directory.
     */
-    bool canOpen = fileCoinReadable(fileName,ctlBlk->dfltDirectory_) ;
+    bool canOpen = fileCoinReadable(fileName, ctlBlk->dfltDirectory_) ;
     if (canOpen == false) {
         std::cout
             << "Unable to open file `" << fileName
-            << "', original name '" << genParam->strVal() <<"'." << std::endl ;
+            << "', original name '" << genParam->strVal() << "'." << std::endl ;
         return (retval) ;
     }
     /*
@@ -1361,12 +1361,12 @@ int doDebugParam (CoinParam *param)
     /*
       Load the primal variable values into the debug solution vector.
     */
-    int intUnused,numCols ;
+    int intUnused, numCols ;
     double dblUnused ;
     double *primals ;
 
     bool readOK = readSolution(fileName,
-                               intUnused,numCols,dblUnused,0,0,&primals,0) ;
+                               intUnused, numCols, dblUnused, 0, 0, &primals, 0) ;
 
     if (readOK) {
         if (ctlBlk->debugSol_.values_) {
@@ -1393,26 +1393,26 @@ int doDebugParam (CoinParam *param)
 void saveSolution (const OsiSolverInterface *osi, std::string fileName)
 
 {
-    FILE *fp = fopen(fileName.c_str(),"wb") ;
+    FILE *fp = fopen(fileName.c_str(), "wb") ;
 
     if (fp) {
         int numberRows = osi->getNumRows() ;
         int numberColumns = osi->getNumCols() ;
         double objectiveValue = osi->getObjValue() ;
 
-        fwrite(&numberRows,sizeof(int),1,fp) ;
-        fwrite(&numberColumns,sizeof(int),1,fp) ;
-        fwrite(&objectiveValue,sizeof(double),1,fp) ;
+        fwrite(&numberRows, sizeof(int), 1, fp) ;
+        fwrite(&numberColumns, sizeof(int), 1, fp) ;
+        fwrite(&objectiveValue, sizeof(double), 1, fp) ;
 
         const double *primalRowSolution = osi->getRowActivity() ;
         const double *dualRowSolution = osi->getRowPrice() ;
         const double *primalColumnSolution = osi->getColSolution() ;
         const double *dualColumnSolution = osi->getReducedCost() ;
 
-        fwrite(primalRowSolution,sizeof(double),numberRows,fp) ;
-        fwrite(dualRowSolution,sizeof(double),numberRows,fp) ;
-        fwrite(primalColumnSolution,sizeof(double),numberColumns,fp) ;
-        fwrite(dualColumnSolution,sizeof(double),numberColumns,fp) ;
+        fwrite(primalRowSolution, sizeof(double), numberRows, fp) ;
+        fwrite(dualRowSolution, sizeof(double), numberRows, fp) ;
+        fwrite(primalColumnSolution, sizeof(double), numberColumns, fp) ;
+        fwrite(dualColumnSolution, sizeof(double), numberColumns, fp) ;
 
         fclose(fp) ;
     } else {
@@ -1438,7 +1438,7 @@ bool readSolution (std::string fileName,
                    double **primalVars, double **reducedCosts)
 
 {
-    FILE *fp = fopen(fileName.c_str(),"rb") ;
+    FILE *fp = fopen(fileName.c_str(), "rb") ;
     bool retval = true ;
 
     numRows = -1 ;
@@ -1450,36 +1450,36 @@ bool readSolution (std::string fileName,
     *reducedCosts = 0 ;
 
     if (fp) {
-        fread(&numRows,sizeof(int),1,fp) ;
-        fread(&numCols,sizeof(int),1,fp) ;
-        fread(&objVal,sizeof(double),1,fp) ;
+        fread(&numRows, sizeof(int), 1, fp) ;
+        fread(&numCols, sizeof(int), 1, fp) ;
+        fread(&objVal, sizeof(double), 1, fp) ;
 
         if (rowActivity != NULL) {
             *rowActivity = new double [numRows] ;
-            fread(*rowActivity,sizeof(double),numRows,fp) ;
+            fread(*rowActivity, sizeof(double), numRows, fp) ;
         } else {
-            fseek(fp,numRows*sizeof(double),SEEK_CUR) ;
+            fseek(fp, numRows*sizeof(double), SEEK_CUR) ;
         }
 
         if (dualVars != NULL) {
             *dualVars = new double [numRows] ;
-            fread(*dualVars,sizeof(double),numRows,fp) ;
+            fread(*dualVars, sizeof(double), numRows, fp) ;
         } else {
-            fseek(fp,numRows*sizeof(double),SEEK_CUR) ;
+            fseek(fp, numRows*sizeof(double), SEEK_CUR) ;
         }
 
         if (primalVars != NULL) {
             *primalVars = new double [numCols] ;
-            fread(*primalVars,sizeof(double),numCols,fp) ;
+            fread(*primalVars, sizeof(double), numCols, fp) ;
         } else {
-            fseek(fp,numCols*sizeof(double),SEEK_CUR) ;
+            fseek(fp, numCols*sizeof(double), SEEK_CUR) ;
         }
 
         if (reducedCosts != NULL) {
             *reducedCosts = new double [numCols] ;
-            fread(*reducedCosts,sizeof(double),numCols,fp) ;
+            fread(*reducedCosts, sizeof(double), numCols, fp) ;
         } else {
-            fseek(fp,numCols*sizeof(double),SEEK_CUR) ;
+            fseek(fp, numCols*sizeof(double), SEEK_CUR) ;
         }
 
         fclose(fp) ;

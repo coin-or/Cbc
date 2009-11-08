@@ -55,7 +55,7 @@ public:
 
     /// Sets how often to do it
     inline void setHowOften(int value) {
-        howOften_=value;
+        howOften_ = value;
     }
     /// Used array so we can set
     inline char * used() const {
@@ -180,15 +180,15 @@ public:
 
     /// Sets how often to do it
     inline void setHowOften(int value) {
-        howOften_=value;
+        howOften_ = value;
     }
     /// Sets maximum number of solutions kept
     inline void setMaximumKeep(int value) {
-        maximumKeepSolutions_=value;
+        maximumKeepSolutions_ = value;
     }
     /// Sets tightness of extra constraint
     inline void setConstraint(int value) {
-        localSpace_=value;
+        localSpace_ = value;
     }
 
 protected:
@@ -264,7 +264,7 @@ public:
 
     /// Sets how often to do it
     inline void setHowOften(int value) {
-        howOften_=value;
+        howOften_ = value;
     }
     /// base solution array so we can set
     inline double * baseSolution() const {

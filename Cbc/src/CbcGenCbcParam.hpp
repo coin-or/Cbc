@@ -37,7 +37,7 @@ public:
       CBCCBC_FIRSTPARAM and CBCCBC_LASTPARAM are markers to allow convenient
       separation of parameter groups.
     */
-    typedef enum { CBCCBC_FIRSTPARAM = CbcGenParam::CBCGEN_LASTPARAM+1,
+    typedef enum { CBCCBC_FIRSTPARAM = CbcGenParam::CBCGEN_LASTPARAM + 1,
 
                    ALLOWABLEGAP, COSTSTRATEGY,
                    CUTDEPTH, CUTOFF, CUTPASS, DIRECTION,

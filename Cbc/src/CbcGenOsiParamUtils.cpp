@@ -57,8 +57,8 @@ void addCbcOsiParams (int &numberParameters, CoinParamVec &parameters,
     double dval ;
 
     param = new CbcOsiParam(CbcOsiParam::KEEPNAMES,
-                            "keepN!ames","Whether to keep row and column names on import.",
-                            "off",1) ;
+                            "keepN!ames", "Whether to keep row and column names on import.",
+                            "off", 1) ;
     param->appendKwd("on") ;
     param->setPushFunc(pushCbcOsiKwd) ;
     param->setObj(osi) ;
@@ -68,10 +68,10 @@ void addCbcOsiParams (int &numberParameters, CoinParamVec &parameters,
     parameters.push_back(param) ;
 
 
-    (void) osi->getIntParam(OsiMaxNumIteration,ival) ;
+    (void) osi->getIntParam(OsiMaxNumIteration, ival) ;
     param = new CbcOsiParam(CbcOsiParam::MAXITERATION,
-                            "maxIt!erations","Iteration limit for OSI solver.",
-                            0,COIN_INT_MAX,ival) ;
+                            "maxIt!erations", "Iteration limit for OSI solver.",
+                            0, COIN_INT_MAX, ival) ;
     param->setPushFunc(pushCbcOsiInt) ;
     param->setObj(osi) ;
     param->setLongHelp(
@@ -80,10 +80,10 @@ void addCbcOsiParams (int &numberParameters, CoinParamVec &parameters,
     parameters.push_back(param) ;
 
 
-    (void) osi->getIntParam(OsiMaxNumIterationHotStart,ival) ;
+    (void) osi->getIntParam(OsiMaxNumIterationHotStart, ival) ;
     param = new CbcOsiParam(CbcOsiParam::MAXHOTITS,
-                            "hot!StartMaxIts","Iteration limit for OSI solver hot start.",
-                            0,COIN_INT_MAX,ival) ;
+                            "hot!StartMaxIts", "Iteration limit for OSI solver hot start.",
+                            0, COIN_INT_MAX, ival) ;
     param->setPushFunc(pushCbcOsiInt) ;
     param->setObj(osi) ;
     param->setLongHelp(
@@ -94,14 +94,14 @@ void addCbcOsiParams (int &numberParameters, CoinParamVec &parameters,
     /*
       Simplified to on/off for OsiSolverInterface, where it goes in as a hint.
     */
-    (void) osi->getHintParam(OsiDoPresolveInInitial,sense,strength) ;
+    (void) osi->getHintParam(OsiDoPresolveInInitial, sense, strength) ;
     if (sense == true) {
         ival = 1 ;
     } else {
         ival = 0 ;
     }
     param = new CbcOsiParam(CbcOsiParam::PRESOLVE,
-                            "presolve","Whether to presolve problem","off",ival) ;
+                            "presolve", "Whether to presolve problem", "off", ival) ;
     param->appendKwd("on") ;
     param->setPushFunc(pushCbcOsiHint) ;
     param->setObj(osi) ;
@@ -114,7 +114,7 @@ void addCbcOsiParams (int &numberParameters, CoinParamVec &parameters,
     param = new CbcOsiParam(CbcOsiParam::PRIMALTOLERANCE,
                             "primalT!olerance",
                             "For an optimal solution no primal infeasibility may exceed this value",
-                            1.0e-20,1.0e12) ;
+                            1.0e-20, 1.0e12) ;
     param->setPushFunc(pushCbcOsiDbl) ;
     param->setObj(osi) ;
     param ->setLongHelp(
@@ -125,14 +125,14 @@ void addCbcOsiParams (int &numberParameters, CoinParamVec &parameters,
     /*
       Simplified for OsiSolverInterface, which just takes a hint.
     */
-    (void) osi->getHintParam(OsiDoScale,sense,strength) ;
+    (void) osi->getHintParam(OsiDoScale, sense, strength) ;
     if (sense == true) {
         ival = 1 ;
     } else {
         ival = 0 ;
     }
     param = new CbcOsiParam(CbcOsiParam::SCALING,
-                            "scal!ing","Whether to scale problem","off",ival) ;
+                            "scal!ing", "Whether to scale problem", "off", ival) ;
     param ->appendKwd("on") ;
     param->setPushFunc(pushCbcOsiHint) ;
     param->setObj(osi) ;
@@ -143,7 +143,7 @@ void addCbcOsiParams (int &numberParameters, CoinParamVec &parameters,
 
     ival = osi->messageHandler()->logLevel() ;
     param = new CbcOsiParam(CbcOsiParam::SOLVERLOGLEVEL,
-                            "slog!Level","Level of detail in Solver output",-1,63,ival) ;
+                            "slog!Level", "Level of detail in Solver output", -1, 63, ival) ;
     param->setPushFunc(pushCbcOsiLogLevel) ;
     param->setObj(osi) ;
     param ->setLongHelp(
@@ -187,29 +187,29 @@ void setOsiSolverInterfaceDefaults (OsiSolverInterface *osi)
       OsiNameDiscipline isn't supported by all solvers, so check to see that it
       worked. If not, fall back to zero.
     */
-    osi->setIntParam(OsiMaxNumIteration,1000000) ;
-    osi->setIntParam(OsiMaxNumIterationHotStart,1000) ;
-    result=osi->setIntParam(OsiNameDiscipline,1) ;
+    osi->setIntParam(OsiMaxNumIteration, 1000000) ;
+    osi->setIntParam(OsiMaxNumIterationHotStart, 1000) ;
+    result = osi->setIntParam(OsiNameDiscipline, 1) ;
     if (!result) {
-        result = osi->setIntParam(OsiNameDiscipline,0) ;
+        result = osi->setIntParam(OsiNameDiscipline, 0) ;
     }
 
     /*
       Primal and dual feasibility tolerances (OsiPrimalTolerance and
       OsiDualTolerance, respectively)  are left to the discretion of the solver.
     */
-    osi->setDblParam(OsiDualObjectiveLimit,1.0e100) ;
-    osi->setDblParam(OsiPrimalObjectiveLimit,1.0e100) ;
-    osi->setDblParam(OsiObjOffset,0.0) ;
+    osi->setDblParam(OsiDualObjectiveLimit, 1.0e100) ;
+    osi->setDblParam(OsiPrimalObjectiveLimit, 1.0e100) ;
+    osi->setDblParam(OsiObjOffset, 0.0) ;
 
-    osi->setHintParam(OsiDoPresolveInInitial,true,OsiHintDo) ;
-    osi->setHintParam(OsiDoDualInInitial,true,OsiHintIgnore) ;
-    osi->setHintParam(OsiDoPresolveInResolve,false,OsiHintTry) ;
-    osi->setHintParam(OsiDoDualInInitial,true,OsiHintTry) ;
-    osi->setHintParam(OsiDoScale,true,OsiHintDo) ;
-    osi->setHintParam(OsiDoCrash,true,OsiHintIgnore) ;
-    osi->setHintParam(OsiDoReducePrint,true,OsiHintDo) ;
-    osi->setHintParam(OsiDoInBranchAndCut,true,OsiHintTry) ;
+    osi->setHintParam(OsiDoPresolveInInitial, true, OsiHintDo) ;
+    osi->setHintParam(OsiDoDualInInitial, true, OsiHintIgnore) ;
+    osi->setHintParam(OsiDoPresolveInResolve, false, OsiHintTry) ;
+    osi->setHintParam(OsiDoDualInInitial, true, OsiHintTry) ;
+    osi->setHintParam(OsiDoScale, true, OsiHintDo) ;
+    osi->setHintParam(OsiDoCrash, true, OsiHintIgnore) ;
+    osi->setHintParam(OsiDoReducePrint, true, OsiHintDo) ;
+    osi->setHintParam(OsiDoInBranchAndCut, true, OsiHintTry) ;
 
     return ;
 }
@@ -265,7 +265,7 @@ int pushCbcOsiInt (CoinParam *param)
     }
     }
 
-    bool setOK = osi->setIntParam(key,val) ;
+    bool setOK = osi->setIntParam(key, val) ;
     if (setOK == false) {
         retval = -1 ;
     }
@@ -326,7 +326,7 @@ int pushCbcOsiDbl (CoinParam *param)
     }
     }
 
-    bool setOK = osi->setDblParam(key,val) ;
+    bool setOK = osi->setDblParam(key, val) ;
     if (setOK == false) {
         retval = -1 ;
     }
@@ -367,7 +367,7 @@ int pushCbcOsiKwd (CoinParam *param)
             } else {
                 discipline = 0 ;
             }
-            bool recog = osi->setIntParam(OsiNameDiscipline,discipline) ;
+            bool recog = osi->setIntParam(OsiNameDiscipline, discipline) ;
             if (recog == false) {
                 std::cerr
                     << "pushCbcOsiKwdParam(KEEPNAMES): underlying solver does not "
@@ -446,7 +446,7 @@ int pushCbcOsiLogLevel (CoinParam *param)
         sense = false ;
     }
 
-    bool setOK = osi->setHintParam(OsiDoReducePrint,sense,strength) ;
+    bool setOK = osi->setHintParam(OsiDoReducePrint, sense, strength) ;
 
     /*
       Recover the message handler and set the log level directly.
@@ -516,7 +516,7 @@ int pushCbcOsiHint (CoinParam *param)
     }
     }
 
-    bool setOK = osi->setHintParam(key,sense,OsiHintDo) ;
+    bool setOK = osi->setHintParam(key, sense, OsiHintDo) ;
 
     if (setOK) {
         return (0) ;

@@ -46,7 +46,7 @@ void addCbcCbcParams (int &numberParameters, CoinParamVec &parameters,
     param = new CbcCbcParam(CbcCbcParam::ALLOWABLEGAP,
                             "allow!ableGap",
                             "Stop when gap between best possible and incumbent is less than this",
-                            0.0,1.0e20) ;
+                            0.0, 1.0e20) ;
     param->setDblVal(0.0) ;
     param->setPushFunc(pushCbcCbcDbl) ;
     param->setObj(model) ;
@@ -56,7 +56,7 @@ void addCbcCbcParams (int &numberParameters, CoinParamVec &parameters,
     parameters.push_back(param) ;
 
     param = new CbcCbcParam(CbcCbcParam::CUTOFF,
-                            "cuto!ff","All solutions must be better than this", -1.0e60,1.0e60) ;
+                            "cuto!ff", "All solutions must be better than this", -1.0e60, 1.0e60) ;
     param->setDblVal(1.0e50) ;
     param->setPushFunc(pushCbcCbcDbl) ;
     param->setObj(model) ;
@@ -66,7 +66,7 @@ void addCbcCbcParams (int &numberParameters, CoinParamVec &parameters,
     parameters.push_back(param) ;
 
     param = new CbcCbcParam(CbcCbcParam::DIRECTION,
-                            "direction","Minimize or maximize","min!imize",0) ;
+                            "direction", "Minimize or maximize", "min!imize", 0) ;
     param->appendKwd("max!imize") ;
     param->appendKwd("zero") ;
     param->setObj(model) ;
@@ -78,7 +78,7 @@ void addCbcCbcParams (int &numberParameters, CoinParamVec &parameters,
     param = new CbcCbcParam(CbcCbcParam::INCREMENT,
                             "inc!rement",
                             "A new solution must be at least this much better than the incumbent",
-                            -1.0e20,1.0e20,model->getDblParam(CbcModel::CbcCutoffIncrement)) ;
+                            -1.0e20, 1.0e20, model->getDblParam(CbcModel::CbcCutoffIncrement)) ;
     param->setPushFunc(pushCbcCbcDbl) ;
     param->setObj(model) ;
     param->setLongHelp(
@@ -89,7 +89,7 @@ void addCbcCbcParams (int &numberParameters, CoinParamVec &parameters,
     param = new CbcCbcParam(CbcCbcParam::INFEASIBILITYWEIGHT,
                             "inf!easibilityWeight",
                             "Each integer infeasibility is expected to cost this much",
-                            0.0,1.0e20,model->getDblParam(CbcModel::CbcInfeasibilityWeight)) ;
+                            0.0, 1.0e20, model->getDblParam(CbcModel::CbcInfeasibilityWeight)) ;
     param->setPushFunc(pushCbcCbcDbl) ;
     param->setObj(model) ;
     param->setLongHelp(
@@ -100,7 +100,7 @@ void addCbcCbcParams (int &numberParameters, CoinParamVec &parameters,
     param = new CbcCbcParam(CbcCbcParam::INTEGERTOLERANCE,
                             "integerT!olerance",
                             "For an optimal solution, no integer variable may be farther than this from an integer value",
-                            1.0e-20,0.5,model->getDblParam(CbcModel::CbcIntegerTolerance)) ;
+                            1.0e-20, 0.5, model->getDblParam(CbcModel::CbcIntegerTolerance)) ;
     param->setPushFunc(pushCbcCbcDbl) ;
     param->setObj(model) ;
     param->setLongHelp(
@@ -109,8 +109,8 @@ void addCbcCbcParams (int &numberParameters, CoinParamVec &parameters,
     parameters.push_back(param) ;
 
     param = new CbcCbcParam(CbcCbcParam::LOGLEVEL,
-                            "bclog!Level","Level of detail in Coin branch and Cut output",
-                            -1,63,model->messageHandler()->logLevel()) ;
+                            "bclog!Level", "Level of detail in Coin branch and Cut output",
+                            -1, 63, model->messageHandler()->logLevel()) ;
     param->setPushFunc(pushCbcCbcInt) ;
     param->setObj(model) ;
     param->setLongHelp(
@@ -119,7 +119,7 @@ void addCbcCbcParams (int &numberParameters, CoinParamVec &parameters,
     parameters.push_back(param) ;
 
     param = new CbcCbcParam(CbcCbcParam::MAXIMIZE,
-                            "max!imize","Set optimization direction to maximize") ;
+                            "max!imize", "Set optimization direction to maximize") ;
     param->setObj(model) ;
     param->setLongHelp(
         "The default is minimize - use 'maximize' for maximization.\n A synonym for 'direction maximize'."
@@ -127,7 +127,7 @@ void addCbcCbcParams (int &numberParameters, CoinParamVec &parameters,
     parameters.push_back(param) ;
 
     param = new CbcCbcParam(CbcCbcParam::MAXNODES,
-                            "maxN!odes","Maximum number of nodes to evaluate",1,2147483647) ;
+                            "maxN!odes", "Maximum number of nodes to evaluate", 1, 2147483647) ;
     param->setObj(model) ;
     param->setLongHelp(
         "This is a repeatable way to limit search.  Normally using time is easier but then the results may not be repeatable."
@@ -135,7 +135,7 @@ void addCbcCbcParams (int &numberParameters, CoinParamVec &parameters,
     parameters.push_back(param) ;
 
     param = new CbcCbcParam(CbcCbcParam::MINIMIZE,
-                            "min!imize","Set optimization direction to minimize") ;
+                            "min!imize", "Set optimization direction to minimize") ;
     param->setObj(model) ;
     param->setLongHelp(
         "The default is minimize - use 'maximize' for maximization.\nThis should only be necessary if you have previously set maximization. A synonym for 'direction minimize'."
@@ -143,15 +143,15 @@ void addCbcCbcParams (int &numberParameters, CoinParamVec &parameters,
     parameters.push_back(param) ;
 
     param = new CbcCbcParam(CbcCbcParam::MIPOPTIONS,
-                            "mipO!ptions","Dubious options for mip",0,COIN_INT_MAX,0,false) ;
+                            "mipO!ptions", "Dubious options for mip", 0, COIN_INT_MAX, 0, false) ;
     parameters.push_back(param) ;
 
     param = new CbcCbcParam(CbcCbcParam::MOREMIPOPTIONS,
-                            "more!MipOptions","More dubious options for mip",-1,COIN_INT_MAX,0,false) ;
+                            "more!MipOptions", "More dubious options for mip", -1, COIN_INT_MAX, 0, false) ;
     parameters.push_back(param) ;
 
     param = new CbcCbcParam(CbcCbcParam::NUMBERMINI,
-                            "miniT!ree","Size of fast mini tree",0,COIN_INT_MAX,0,false) ;
+                            "miniT!ree", "Size of fast mini tree", 0, COIN_INT_MAX, 0, false) ;
     param->setObj(model) ;
     param->setLongHelp(
         "The idea is that I can do a small tree fast. This is a first try and will hopefully become more sophisticated."
@@ -160,7 +160,7 @@ void addCbcCbcParams (int &numberParameters, CoinParamVec &parameters,
 
     param = new CbcCbcParam(CbcCbcParam::NUMBERANALYZE,
                             "numberA!nalyze",
-                            "Number of analysis iterations",-COIN_INT_MAX,COIN_INT_MAX,false) ;
+                            "Number of analysis iterations", -COIN_INT_MAX, COIN_INT_MAX, false) ;
     param->setObj(model) ;
     param->setLongHelp(
         "This says how many iterations to spend at the root node analyzing the problem.  This is a first try and will hopefully become more sophisticated."
@@ -168,8 +168,8 @@ void addCbcCbcParams (int &numberParameters, CoinParamVec &parameters,
     parameters.push_back(param) ;
 
     param = new CbcCbcParam(CbcCbcParam::CUTPASS,
-                            "passC!uts","Number of cut passes at root node",
-                            -999999,999999,model->getMaximumCutPassesAtRoot()) ;
+                            "passC!uts", "Number of cut passes at root node",
+                            -999999, 999999, model->getMaximumCutPassesAtRoot()) ;
     param->setObj(model) ;
     param->setLongHelp(
         "The default is 100 passes if less than 500 columns, 100 passes (but stop if the drop is small) if less than 5000 columns, 20 otherwise."
@@ -179,7 +179,7 @@ void addCbcCbcParams (int &numberParameters, CoinParamVec &parameters,
     param = new CbcCbcParam(CbcCbcParam::GAPRATIO,
                             "ratio!Gap",
                             "Stop when the gap between the best possible solution and the incumbent is less than this fraction of the larger of the two",
-                            0.0,1.0e20,model->getDblParam(CbcModel::CbcAllowableFractionGap)) ;
+                            0.0, 1.0e20, model->getDblParam(CbcModel::CbcAllowableFractionGap)) ;
     param->setPushFunc(pushCbcCbcDbl) ;
     param->setObj(model) ;
     param->setLongHelp(
@@ -188,7 +188,7 @@ void addCbcCbcParams (int &numberParameters, CoinParamVec &parameters,
     parameters.push_back(param) ;
 
     param = new CbcCbcParam(CbcCbcParam::TIMELIMIT_BAB,
-                            "sec!onds","Maximum seconds for branch and cut",-1.0,1.0e12) ;
+                            "sec!onds", "Maximum seconds for branch and cut", -1.0, 1.0e12) ;
     param->setPushFunc(pushCbcCbcDbl) ;
     param->setObj(model) ;
     param->setLongHelp(
@@ -198,7 +198,7 @@ void addCbcCbcParams (int &numberParameters, CoinParamVec &parameters,
 
     param = new CbcCbcParam(CbcCbcParam::STRONGBRANCHING,
                             "strong!Branching",
-                            "Number of variables to look at in strong branching",0,999999,
+                            "Number of variables to look at in strong branching", 0, 999999,
                             model->numberStrong()) ;
     param->setObj(model) ;
     param->setLongHelp(
@@ -207,8 +207,8 @@ void addCbcCbcParams (int &numberParameters, CoinParamVec &parameters,
     parameters.push_back(param) ;
 
     param = new CbcCbcParam(CbcCbcParam::NUMBERBEFORE,
-                            "trust!PseudoCosts","Number of branches before we trust pseudocosts",
-                            -1,2000000,model->numberBeforeTrust()) ;
+                            "trust!PseudoCosts", "Number of branches before we trust pseudocosts",
+                            -1, 2000000, model->numberBeforeTrust()) ;
     param->setObj(model) ;
     param->setPushFunc(pushCbcCbcInt) ;
     param->setLongHelp(
@@ -247,22 +247,22 @@ void loadCbcParamObj (const CoinParamVec paramVec, int first, int last,
 void setCbcModelDefaults (CbcModel *model)
 
 {
-    model->setIntParam(CbcModel::CbcMaxNumNode,(COIN_INT_MAX/2)) ;
-    model->setIntParam(CbcModel::CbcMaxNumSol,999999) ;
-    model->setIntParam(CbcModel::CbcFathomDiscipline,0) ;
+    model->setIntParam(CbcModel::CbcMaxNumNode, (COIN_INT_MAX / 2)) ;
+    model->setIntParam(CbcModel::CbcMaxNumSol, 999999) ;
+    model->setIntParam(CbcModel::CbcFathomDiscipline, 0) ;
 
-    model->setDblParam(CbcModel::CbcIntegerTolerance,1.0e-6) ;
-    model->setDblParam(CbcModel::CbcInfeasibilityWeight,0.0) ;
-    model->setDblParam(CbcModel::CbcCutoffIncrement,1.0e-5) ;
-    model->setDblParam(CbcModel::CbcAllowableGap,1.0e-10) ;
-    model->setDblParam(CbcModel::CbcAllowableFractionGap,0.0) ;
+    model->setDblParam(CbcModel::CbcIntegerTolerance, 1.0e-6) ;
+    model->setDblParam(CbcModel::CbcInfeasibilityWeight, 0.0) ;
+    model->setDblParam(CbcModel::CbcCutoffIncrement, 1.0e-5) ;
+    model->setDblParam(CbcModel::CbcAllowableGap, 1.0e-10) ;
+    model->setDblParam(CbcModel::CbcAllowableFractionGap, 0.0) ;
     // One year is 60x60x24x365 = 31,536,000 seconds.
-    model->setDblParam(CbcModel::CbcMaximumSeconds,3.0e7) ;
-    model->setDblParam(CbcModel::CbcCurrentCutoff,1.0e100) ;
-    model->setDblParam(CbcModel::CbcOptimizationDirection,1.0) ;
-    model->setDblParam(CbcModel::CbcCurrentObjectiveValue,1.0e100) ;
-    model->setDblParam(CbcModel::CbcCurrentMinimizationObjectiveValue,1.0e100) ;
-    model->setDblParam(CbcModel::CbcStartSeconds,0.0) ;
+    model->setDblParam(CbcModel::CbcMaximumSeconds, 3.0e7) ;
+    model->setDblParam(CbcModel::CbcCurrentCutoff, 1.0e100) ;
+    model->setDblParam(CbcModel::CbcOptimizationDirection, 1.0) ;
+    model->setDblParam(CbcModel::CbcCurrentObjectiveValue, 1.0e100) ;
+    model->setDblParam(CbcModel::CbcCurrentMinimizationObjectiveValue, 1.0e100) ;
+    model->setDblParam(CbcModel::CbcStartSeconds, 0.0) ;
 
     model->setNumberBeforeTrust(5) ;
     model->setNumberStrong(5) ;
@@ -332,7 +332,7 @@ int pushCbcCbcDbl (CoinParam *param)
     }
     }
 
-    bool result = model->setDblParam(key,val) ;
+    bool result = model->setDblParam(key, val) ;
     if (result == false) {
         retval = -1 ;
     }
@@ -389,7 +389,7 @@ int pushCbcCbcInt (CoinParam *param)
     }
 
     if (key != CbcModel::CbcLastIntParam) {
-        bool result = model->setIntParam(key,val) ;
+        bool result = model->setIntParam(key, val) ;
         if (result == false) {
             retval = -1 ;
         }

@@ -59,20 +59,20 @@ public:
         return maximumSizeAllowed_;
     }
     inline void setMaximumSize(int value) {
-        maximumSizeAllowed_=value;
+        maximumSizeAllowed_ = value;
     }
     /// Returns type of algorithm and sets up arrays
-    int checkPossible(int allowableSize=0);
+    int checkPossible(int allowableSize = 0);
     // set algorithm
     inline void setAlgorithm(int value) {
-        algorithm_=value;
+        algorithm_ = value;
     }
     /** Tries a column
         returns true if was used in making any changes.
     */
     bool tryColumn(int numberElements, const int * rows,
                    const double * coefficients, double cost,
-                   int upper=COIN_INT_MAX);
+                   int upper = COIN_INT_MAX);
     /// Returns cost array
     inline const double * cost() const {
         return cost_;
@@ -87,7 +87,7 @@ public:
     }
     /// Sets bit pattern for target result
     inline void setTarget(int value) {
-        target_=value;
+        target_ = value;
     }
 private:
     /// Does deleteions

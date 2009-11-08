@@ -23,7 +23,7 @@ public:
     */
     CbcClique (CbcModel * model, int cliqueType, int numberMembers,
                const int * which, const char * type,
-               int identifier,int slack=-1);
+               int identifier, int slack = -1);
 
     // Copy constructor
     CbcClique ( const CbcClique &);
@@ -46,7 +46,7 @@ public:
     virtual void feasibleRegion();
 
     /// Creates a branching object
-    virtual CbcBranchingObject * createCbcBranch(OsiSolverInterface * solver,const OsiBranchingInformation * info, int way) ;
+    virtual CbcBranchingObject * createCbcBranch(OsiSolverInterface * solver, const OsiBranchingInformation * info, int way) ;
     /// Number of members
     inline int numberMembers() const {
         return numberMembers_;
@@ -117,7 +117,7 @@ public:
     */
     CbcSOS (CbcModel * model, int numberMembers,
             const int * which, const double * weights, int identifier,
-            int type=1);
+            int type = 1);
 
     // Copy constructor
     CbcSOS ( const CbcSOS &);
@@ -140,7 +140,7 @@ public:
     virtual void feasibleRegion();
 
     /// Creates a branching object
-    virtual CbcBranchingObject * createCbcBranch(OsiSolverInterface * solver,const OsiBranchingInformation * info, int way) ;
+    virtual CbcBranchingObject * createCbcBranch(OsiSolverInterface * solver, const OsiBranchingInformation * info, int way) ;
 
 
 
@@ -209,11 +209,11 @@ public:
     /** \brief Return true if object can take part in normal heuristics
     */
     virtual bool canDoHeuristics() const {
-        return (sosType_==1&&integerValued_);
+        return (sosType_ == 1 && integerValued_);
     }
     /// Set whether set is integer valued or not
     inline void setIntegerValued(bool yesNo) {
-        integerValued_=yesNo;
+        integerValued_ = yesNo;
     }
 private:
     /// data
@@ -253,7 +253,7 @@ public:
     CbcSimpleInteger ();
 
     // Useful constructor - passed model and index
-    CbcSimpleInteger (CbcModel * model,  int iColumn, double breakEven=0.5);
+    CbcSimpleInteger (CbcModel * model,  int iColumn, double breakEven = 0.5);
 
     // Useful constructor - passed model and Osi object
     CbcSimpleInteger (CbcModel * model,  const OsiSimpleInteger * object);
@@ -288,7 +288,7 @@ public:
         The branching object has to know how to create branches (fix
         variables, etc.)
     */
-    virtual CbcBranchingObject * createCbcBranch(OsiSolverInterface * solver,const OsiBranchingInformation * info, int way) ;
+    virtual CbcBranchingObject * createCbcBranch(OsiSolverInterface * solver, const OsiBranchingInformation * info, int way) ;
     /// Fills in a created branching object
     void fillCreateBranch(CbcIntegerBranchingObject * branching, const OsiBranchingInformation * info, int way) ;
 
@@ -330,13 +330,13 @@ public:
         return originalLower_;
     }
     inline void setOriginalLowerBound(double value) {
-        originalLower_=value;
+        originalLower_ = value;
     }
     inline double originalUpperBound() const {
         return originalUpper_;
     }
     inline void setOriginalUpperBound(double value) {
-        originalUpper_=value;
+        originalUpper_ = value;
     }
     /// Breakeven e.g 0.7 -> >= 0.7 go up first
     inline double breakEven() const {
@@ -344,7 +344,7 @@ public:
     }
     /// Set breakeven e.g 0.7 -> >= 0.7 go up first
     inline void setBreakEven(double value) {
-        breakEven_=value;
+        breakEven_ = value;
     }
 
 
@@ -407,7 +407,7 @@ public:
     virtual void feasibleRegion();
 
     /// Creates a branching object
-    virtual CbcBranchingObject * createCbcBranch(OsiSolverInterface * solver,const OsiBranchingInformation * info, int way) ;
+    virtual CbcBranchingObject * createCbcBranch(OsiSolverInterface * solver, const OsiBranchingInformation * info, int way) ;
 
     /// Number of members
     inline int numberMembers() const {
@@ -518,11 +518,11 @@ public:
     }
     /// Set lower and upper bounds for down branch
     inline void setDownBounds(const double bounds[2]) {
-        memcpy(down_,bounds,2*sizeof(double));
+        memcpy(down_, bounds, 2*sizeof(double));
     }
     /// Set lower and upper bounds for up branch
     inline void setUpBounds(const double bounds[2]) {
-        memcpy(up_,bounds,2*sizeof(double));
+        memcpy(up_, bounds, 2*sizeof(double));
     }
 #ifdef FUNNY_BRANCHING
     /** Which variable (top bit if upper bound changing,
@@ -544,7 +544,7 @@ public:
     void deactivate();
     /// Are active bounds for branching
     inline bool active() const {
-        return (down_[1]!=-COIN_DBL_MAX);
+        return (down_[1] != -COIN_DBL_MAX);
     }
 #endif
 
@@ -592,13 +592,13 @@ public:
     CbcSimpleIntegerPseudoCost ();
 
     // Useful constructor - passed model index
-    CbcSimpleIntegerPseudoCost (CbcModel * model, int iColumn, double breakEven=0.5);
+    CbcSimpleIntegerPseudoCost (CbcModel * model, int iColumn, double breakEven = 0.5);
 
     // Useful constructor - passed and model index and pseudo costs
     CbcSimpleIntegerPseudoCost (CbcModel * model, int iColumn,
                                 double downPseudoCost, double upPseudoCost);
     // Useful constructor - passed and model index and pseudo costs
-    CbcSimpleIntegerPseudoCost (CbcModel * model, int dummy,int iColumn,
+    CbcSimpleIntegerPseudoCost (CbcModel * model, int dummy, int iColumn,
                                 double downPseudoCost, double upPseudoCost);
 
     // Copy constructor
@@ -618,7 +618,7 @@ public:
                                  int &preferredWay) const;
 
     /// Creates a branching object
-    virtual CbcBranchingObject * createCbcBranch(OsiSolverInterface * solver,const OsiBranchingInformation * info, int way) ;
+    virtual CbcBranchingObject * createCbcBranch(OsiSolverInterface * solver, const OsiBranchingInformation * info, int way) ;
 
     /// Down pseudo cost
     inline double downPseudoCost() const {
@@ -626,7 +626,7 @@ public:
     }
     /// Set down pseudo cost
     inline void setDownPseudoCost(double value) {
-        downPseudoCost_=value;
+        downPseudoCost_ = value;
     }
 
     /// Up pseudo cost
@@ -635,7 +635,7 @@ public:
     }
     /// Set up pseudo cost
     inline void setUpPseudoCost(double value) {
-        upPseudoCost_=value;
+        upPseudoCost_ = value;
     }
 
     /// Up down separator
@@ -644,7 +644,7 @@ public:
     }
     /// Set up down separator
     inline void setUpDownSeparator(double value) {
-        upDownSeparator_=value;
+        upDownSeparator_ = value;
     }
 
     /// Return "up" estimate
@@ -658,7 +658,7 @@ public:
     }
     /// Set method
     inline void setMethod(int value) {
-        method_=value;
+        method_ = value;
     }
 
 protected:
@@ -745,7 +745,7 @@ public:
     }
     /// Set change in guessed
     inline void setChangeInGuessed(double value) {
-        changeInGuessed_=value;
+        changeInGuessed_ = value;
     }
 
     /** Return the type (an integer identifier) of \c this */
@@ -1247,7 +1247,7 @@ public:
     virtual void feasibleRegion();
 
     /// Creates a branching object
-    virtual CbcBranchingObject * createCbcBranch(OsiSolverInterface * solver,const OsiBranchingInformation * info, int way) ;
+    virtual CbcBranchingObject * createCbcBranch(OsiSolverInterface * solver, const OsiBranchingInformation * info, int way) ;
     /// As some computation is needed in more than one place - returns row
     virtual int gutsOfFollowOn(int & otherRow, int & preferredWay) const;
 
@@ -1359,7 +1359,7 @@ public:
     CbcFixVariable ();
 
     // One useful Constructor
-    CbcFixVariable (int numberStates,const int * states, const int * numberNewLower, const int ** newLowerValue,
+    CbcFixVariable (int numberStates, const int * states, const int * numberNewLower, const int ** newLowerValue,
                     const int ** lowerColumn,
                     const int * numberNewUpper, const int ** newUpperValue,
                     const int ** upperColumn);
@@ -1405,7 +1405,7 @@ class CbcDummyBranchingObject : public CbcBranchingObject {
 public:
 
     /// Default constructor
-    CbcDummyBranchingObject (CbcModel * model=NULL);
+    CbcDummyBranchingObject (CbcModel * model = NULL);
 
     /// Copy constructor
     CbcDummyBranchingObject ( const CbcDummyBranchingObject &);
@@ -1485,7 +1485,7 @@ public:
     CbcGeneral ( const CbcGeneral &);
 
     /// Clone
-    virtual CbcObject * clone() const=0;
+    virtual CbcObject * clone() const = 0;
 
     // Assignment operator
     CbcGeneral & operator=( const CbcGeneral& rhs);
@@ -1499,13 +1499,13 @@ public:
 
     using CbcObject::feasibleRegion ;
     /// This looks at solution and sets bounds to contain solution
-    virtual void feasibleRegion()=0;
+    virtual void feasibleRegion() = 0;
 
     /// Creates a branching object
-    virtual CbcBranchingObject * createCbcBranch(OsiSolverInterface * solver,const OsiBranchingInformation * info, int way) ;
+    virtual CbcBranchingObject * createCbcBranch(OsiSolverInterface * solver, const OsiBranchingInformation * info, int way) ;
 
     /// Redoes data when sequence numbers change
-    virtual void redoSequenceEtc(CbcModel * model, int numberColumns, const int * originalColumns)=0;
+    virtual void redoSequenceEtc(CbcModel * model, int numberColumns, const int * originalColumns) = 0;
 
 protected:
     /// data
@@ -1554,7 +1554,7 @@ public:
     virtual void feasibleRegion();
 
     /// Creates a branching object
-    virtual CbcBranchingObject * createCbcBranch(OsiSolverInterface * solver,const OsiBranchingInformation * info, int way) ;
+    virtual CbcBranchingObject * createCbcBranch(OsiSolverInterface * solver, const OsiBranchingInformation * info, int way) ;
     /// Return maximum number of nodes
     inline int maximumNodes() const {
         return maximumNodes_;
@@ -1621,7 +1621,7 @@ public:
     virtual ~CbcSubProblem ();
 
     /// Apply subproblem (1=bounds, 2=basis, 3=both)
-    void apply(OsiSolverInterface * model, int what=3) const;
+    void apply(OsiSolverInterface * model, int what = 3) const;
 
 public:
     /// Value of objective
@@ -1681,8 +1681,8 @@ public:
     */
     virtual void print();
     /// Fill in current objective etc
-    void state(double & objectiveValue,double & sumInfeasibilities,
-               int & numberUnsatisfied,int which) const;
+    void state(double & objectiveValue, double & sumInfeasibilities,
+               int & numberUnsatisfied, int which) const;
     /// Set CbcNode
     inline void setNode(CbcNode * node) {
         node_ = node;
@@ -1730,7 +1730,7 @@ public:
     }
     // Sub problem
     const CbcSubProblem * subProblem(int which) const {
-        return subProblems_+which;
+        return subProblems_ + which;
     }
 
 public:

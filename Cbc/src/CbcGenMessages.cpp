@@ -92,10 +92,10 @@ void CbcGenCtlBlk::setMessages (CoinMessages::Language lang)
       Otherwise, we need to do a wholesale rebuild. Create a new object of the
       appropriate size.
     */
-    CoinMessages *msgs = new CoinMessages(sizeof(us_en_defns)/sizeof(MsgDefn)) ;
+    CoinMessages *msgs = new CoinMessages(sizeof(us_en_defns) / sizeof(MsgDefn)) ;
 
     msgs->setLanguage(lang) ;
-    strcpy(msgs->source_,"CbcG");
+    strcpy(msgs->source_, "CbcG");
     /*
       Yes, this is gloriously redundant, but it's set up in anticipation of
       future extensions.
@@ -115,8 +115,8 @@ void CbcGenCtlBlk::setMessages (CoinMessages::Language lang)
       Open a loop to create and load the messages.
     */
     while (msgdefn->inID != CBCGEN_DUMMY_END) {
-        CoinOneMessage msg(msgdefn->exID,msgdefn->lvl,msgdefn->fmt) ;
-        msgs->addMessage(msgdefn->inID,msg) ;
+        CoinOneMessage msg(msgdefn->exID, msgdefn->lvl, msgdefn->fmt) ;
+        msgs->addMessage(msgdefn->inID, msg) ;
         msgdefn++ ;
     }
     /*
@@ -136,7 +136,7 @@ void CbcGenCtlBlk::setMessages (CoinMessages::Language lang)
         }
 
         while (msgdefn->inID != CBCGEN_DUMMY_END) {
-            msgs->replaceMessage(msgdefn->inID,msgdefn->fmt) ;
+            msgs->replaceMessage(msgdefn->inID, msgdefn->fmt) ;
             msgdefn++ ;
         }
     }
@@ -186,7 +186,7 @@ CoinMessageHandler &CbcGenCtlBlk::message (CbcGenMsgCode inID)
     }
     msgHandler_->setLogLevel(logLvl_) ;
 
-    msgHandler_->message(inID,*msgs_) ;
+    msgHandler_->message(inID, *msgs_) ;
 
     return (*msgHandler_) ;
 }

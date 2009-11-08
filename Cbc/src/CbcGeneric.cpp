@@ -123,8 +123,8 @@ int main (int argc, const char *argv[])
           stdio and make stderr and stdout unbuffered.
         */
         std::ios::sync_with_stdio() ;
-        setbuf(stderr,0) ;
-        setbuf(stdout,0) ;
+        setbuf(stderr, 0) ;
+        setbuf(stdout, 0) ;
         /*
           The constructor for ctlBlk establishes the default values for cbc-generic
           parameters. A little more work is required to create the vector of available
@@ -147,8 +147,8 @@ int main (int argc, const char *argv[])
         paramVec.reserve(CbcOsiParam::CBCOSI_LASTPARAM) ;
         ctlBlk.paramVec_ = &paramVec ;
         ctlBlk.genParams_.first_ = numParams ;
-        CbcGenParamUtils::addCbcGenParams(numParams,paramVec,&ctlBlk) ;
-        ctlBlk.genParams_.last_ = numParams-1 ;
+        CbcGenParamUtils::addCbcGenParams(numParams, paramVec, &ctlBlk) ;
+        ctlBlk.genParams_.last_ = numParams - 1 ;
         /*
           Establish a CbcModel object with the default lp solver. Install any defaults
           that are available from ctlBlk.
@@ -167,16 +167,16 @@ int main (int argc, const char *argv[])
           (CbcOsiParam).
         */
         ctlBlk.cbcParams_.first_ = numParams ;
-        CbcCbcParamUtils::addCbcCbcParams(numParams,paramVec,model) ;
-        ctlBlk.cbcParams_.last_ = numParams-1 ;
+        CbcCbcParamUtils::addCbcCbcParams(numParams, paramVec, model) ;
+        ctlBlk.cbcParams_.last_ = numParams - 1 ;
         ctlBlk.osiParams_.first_ = numParams ;
-        CbcOsiParamUtils::addCbcOsiParams(numParams,paramVec,osi) ;
-        ctlBlk.osiParams_.last_ = numParams-1 ;
+        CbcOsiParamUtils::addCbcOsiParams(numParams, paramVec, osi) ;
+        ctlBlk.osiParams_.last_ = numParams - 1 ;
         /*
           Initialise the vector that tracks parameters that have been changed by user
           command.
         */
-        ctlBlk.setByUser_.resize(CbcOsiParam::CBCOSI_LASTPARAM,false) ;
+        ctlBlk.setByUser_.resize(CbcOsiParam::CBCOSI_LASTPARAM, false) ;
         /*
           The main command parsing loop. Call getCommand to get the next parameter.
           (The user will be prompted in interactive mode.) If we find something,
@@ -202,7 +202,7 @@ int main (int argc, const char *argv[])
         std::string prompt = "cbcGen: " ;
         std::string pfx = "" ;
         while (keepParsing) {
-            std::string paramName = CoinParamUtils::getCommand(argc,argv,prompt,&pfx);
+            std::string paramName = CoinParamUtils::getCommand(argc, argv, prompt, &pfx);
             if (paramName.length() == 0) {
                 if (ctlBlk.paramsProcessed_ == 0) {
                     if (CoinParamUtils::isInteractive()) {
@@ -234,7 +234,7 @@ int main (int argc, const char *argv[])
             */
             int matchNdx ;
             if (!CoinParamUtils::isCommandLine() || pfx == "-" || pfx == "--") {
-                matchNdx = CoinParamUtils::lookupParam(paramName,paramVec) ;
+                matchNdx = CoinParamUtils::lookupParam(paramName, paramVec) ;
             } else {
                 matchNdx = -3 ;
             }
@@ -262,7 +262,7 @@ int main (int argc, const char *argv[])
                         if (!forceImport) {
                             forceImportFile = paramName ;
                             paramName = "import" ;
-                            matchNdx = CoinParamUtils::lookupParam(paramName,paramVec) ;
+                            matchNdx = CoinParamUtils::lookupParam(paramName, paramVec) ;
                             forceImport = true ;
                         } else {
                             std::cout << "No commands matched `" << paramName << "'."
@@ -302,14 +302,14 @@ int main (int argc, const char *argv[])
                 break ;
             }
             case CoinParam::coinParamInt: {
-                int ival = CoinParamUtils::getIntField(argc,argv,&valid) ;
+                int ival = CoinParamUtils::getIntField(argc, argv, &valid) ;
                 if (valid == 0) {
                     param->setIntVal(ival) ;
                 }
                 break ;
             }
             case CoinParam::coinParamDbl: {
-                double dval = CoinParamUtils::getDoubleField(argc,argv,&valid) ;
+                double dval = CoinParamUtils::getDoubleField(argc, argv, &valid) ;
                 if (valid == 0) {
                     param->setDblVal(dval) ;
                 }
@@ -320,7 +320,7 @@ int main (int argc, const char *argv[])
                     param->setStrVal(forceImportFile) ;
                 } else {
                     const std::string tmp =
-                        CoinParamUtils::getStringField(argc,argv,&valid) ;
+                        CoinParamUtils::getStringField(argc, argv, &valid) ;
                     if (valid == 0) {
                         param->setStrVal(tmp) ;
                     }
@@ -329,7 +329,7 @@ int main (int argc, const char *argv[])
             }
             case CoinParam::coinParamKwd: {
                 const std::string tmp =
-                    CoinParamUtils::getStringField(argc,argv,&valid) ;
+                    CoinParamUtils::getStringField(argc, argv, &valid) ;
                 if (valid == 0) {
                     param->setKwdVal(tmp) ;
                     if (param->kwdVal() != tmp) {
@@ -390,7 +390,7 @@ int main (int argc, const char *argv[])
                           << "' is not implemented." << std::endl ;
             } else {
                 int retval = (param->pushFunc())(param) ;
-                markAsSetByUser(ctlBlk,param) ;
+                markAsSetByUser(ctlBlk, param) ;
                 if (retval < 0) {
                     keepParsing = false ;
                 }

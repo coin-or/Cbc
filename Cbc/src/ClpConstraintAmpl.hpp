@@ -31,8 +31,8 @@ public:
                          double * gradient,
                          double & functionValue ,
                          double & offset,
-                         bool useScaling=false,
-                         bool refresh=true) const ;
+                         bool useScaling = false,
+                         bool refresh = true) const ;
     /// Resize constraint
     virtual void resize(int newNumberColumns) ;
     /// Delete columns in  constraint

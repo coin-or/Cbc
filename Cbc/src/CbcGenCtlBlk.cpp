@@ -435,9 +435,9 @@ CbcGenCtlBlk::getTreeLocal (CbcTreeLocal *&localTree, CbcModel *model,
             delete localTree_.proto_ ;
         }
         localTree_.proto_ =
-            new CbcTreeLocal(model,localTree_.soln_,localTree_.range_,
-                             localTree_.typeCuts_,localTree_.maxDiverge_,
-                             localTree_.timeLimit_,localTree_.nodeLimit_,
+            new CbcTreeLocal(model, localTree_.soln_, localTree_.range_,
+                             localTree_.typeCuts_, localTree_.maxDiverge_,
+                             localTree_.timeLimit_, localTree_.nodeLimit_,
                              localTree_.refine_) ;
     }
     localTree = localTree_.proto_ ;
@@ -561,7 +561,7 @@ void CbcGenCtlBlk::setBaBStatus (const CbcModel *model, BACWhere where,
         minor = translateMinor(model->secondaryStatus()) ;
     }
 
-    setBaBStatus(major,minor,where,haveAnswer,answerSolver) ;
+    setBaBStatus(major, minor, where, haveAnswer, answerSolver) ;
 
     return ;
 }

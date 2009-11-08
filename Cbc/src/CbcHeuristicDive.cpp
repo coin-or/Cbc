@@ -20,28 +20,28 @@
 
 // Default Constructor
 CbcHeuristicDive::CbcHeuristicDive()
-        :CbcHeuristic()
+        : CbcHeuristic()
 {
     // matrix and row copy will automatically be empty
-    downLocks_ =NULL;
+    downLocks_ = NULL;
     upLocks_ = NULL;
-    downArray_ =NULL;
+    downArray_ = NULL;
     upArray_ = NULL;
     percentageToFix_ = 0.2;
     maxIterations_ = 100;
     maxSimplexIterations_ = 10000;
     maxSimplexIterationsAtRoot_ = 1000000;
     maxTime_ = 600;
-    whereFrom_=255-2-16+256;
+    whereFrom_ = 255 - 2 - 16 + 256;
 }
 
 // Constructor from model
 CbcHeuristicDive::CbcHeuristicDive(CbcModel & model)
-        :CbcHeuristic(model)
+        : CbcHeuristic(model)
 {
-    downLocks_ =NULL;
+    downLocks_ = NULL;
     upLocks_ = NULL;
-    downArray_ =NULL;
+    downArray_ = NULL;
     upArray_ = NULL;
     // Get a copy of original matrix
     assert(model.solver());
@@ -57,7 +57,7 @@ CbcHeuristicDive::CbcHeuristicDive(CbcModel & model)
     maxSimplexIterations_ = 10000;
     maxSimplexIterationsAtRoot_ = 1000000;
     maxTime_ = 600;
-    whereFrom_=255-2-16+256;
+    whereFrom_ = 255 - 2 - 16 + 256;
 }
 
 // Destructor
@@ -73,23 +73,23 @@ void
 CbcHeuristicDive::generateCpp( FILE * fp, const char * heuristic)
 {
     // hard coded as CbcHeuristic virtual
-    CbcHeuristic::generateCpp(fp,heuristic);
-    if (percentageToFix_!=0.2)
-        fprintf(fp,"3  %s.setPercentageToFix(%.f);\n",heuristic,percentageToFix_);
+    CbcHeuristic::generateCpp(fp, heuristic);
+    if (percentageToFix_ != 0.2)
+        fprintf(fp, "3  %s.setPercentageToFix(%.f);\n", heuristic, percentageToFix_);
     else
-        fprintf(fp,"4  %s.setPercentageToFix(%.f);\n",heuristic,percentageToFix_);
-    if (maxIterations_!=100)
-        fprintf(fp,"3  %s.setMaxIterations(%d);\n",heuristic,maxIterations_);
+        fprintf(fp, "4  %s.setPercentageToFix(%.f);\n", heuristic, percentageToFix_);
+    if (maxIterations_ != 100)
+        fprintf(fp, "3  %s.setMaxIterations(%d);\n", heuristic, maxIterations_);
     else
-        fprintf(fp,"4  %s.setMaxIterations(%d);\n",heuristic,maxIterations_);
-    if (maxSimplexIterations_!=10000)
-        fprintf(fp,"3  %s.setMaxSimplexIterations(%d);\n",heuristic,maxSimplexIterations_);
+        fprintf(fp, "4  %s.setMaxIterations(%d);\n", heuristic, maxIterations_);
+    if (maxSimplexIterations_ != 10000)
+        fprintf(fp, "3  %s.setMaxSimplexIterations(%d);\n", heuristic, maxSimplexIterations_);
     else
-        fprintf(fp,"4  %s.setMaxSimplexIterations(%d);\n",heuristic,maxSimplexIterations_);
-    if (maxTime_!=600)
-        fprintf(fp,"3  %s.setMaxTime(%.2f);\n",heuristic,maxTime_);
+        fprintf(fp, "4  %s.setMaxSimplexIterations(%d);\n", heuristic, maxSimplexIterations_);
+    if (maxTime_ != 600)
+        fprintf(fp, "3  %s.setMaxTime(%.2f);\n", heuristic, maxTime_);
     else
-        fprintf(fp,"4  %s.setMaxTime(%.2f);\n",heuristic,maxTime_);
+        fprintf(fp, "4  %s.setMaxTime(%.2f);\n", heuristic, maxTime_);
 }
 
 // Copy constructor
@@ -104,12 +104,12 @@ CbcHeuristicDive::CbcHeuristicDive(const CbcHeuristicDive & rhs)
         maxSimplexIterationsAtRoot_(rhs.maxSimplexIterationsAtRoot_),
         maxTime_(rhs.maxTime_)
 {
-    downArray_ =NULL;
+    downArray_ = NULL;
     upArray_ = NULL;
     if (rhs.downLocks_) {
         int numberIntegers = model_->numberIntegers();
-        downLocks_ = CoinCopyOfArray(rhs.downLocks_,numberIntegers);
-        upLocks_ = CoinCopyOfArray(rhs.upLocks_,numberIntegers);
+        downLocks_ = CoinCopyOfArray(rhs.downLocks_, numberIntegers);
+        upLocks_ = CoinCopyOfArray(rhs.upLocks_, numberIntegers);
     } else {
         downLocks_ = NULL;
         upLocks_ = NULL;
@@ -118,9 +118,9 @@ CbcHeuristicDive::CbcHeuristicDive(const CbcHeuristicDive & rhs)
 
 // Assignment operator
 CbcHeuristicDive &
-CbcHeuristicDive::operator=( const CbcHeuristicDive& rhs)
+CbcHeuristicDive::operator=( const CbcHeuristicDive & rhs)
 {
-    if (this!=&rhs) {
+    if (this != &rhs) {
         CbcHeuristic::operator=(rhs);
         matrix_ = rhs.matrix_;
         matrixByRow_ = rhs.matrixByRow_;
@@ -133,8 +133,8 @@ CbcHeuristicDive::operator=( const CbcHeuristicDive& rhs)
         delete [] upLocks_;
         if (rhs.downLocks_) {
             int numberIntegers = model_->numberIntegers();
-            downLocks_ = CoinCopyOfArray(rhs.downLocks_,numberIntegers);
-            upLocks_ = CoinCopyOfArray(rhs.upLocks_,numberIntegers);
+            downLocks_ = CoinCopyOfArray(rhs.downLocks_, numberIntegers);
+            upLocks_ = CoinCopyOfArray(rhs.upLocks_, numberIntegers);
         } else {
             downLocks_ = NULL;
             upLocks_ = NULL;
@@ -147,7 +147,7 @@ CbcHeuristicDive::operator=( const CbcHeuristicDive& rhs)
 void
 CbcHeuristicDive::resetModel(CbcModel * model)
 {
-    model_=model;
+    model_ = model;
     assert(model_->solver());
     // Get a copy of original matrix
     const CoinPackedMatrix * matrix = model_->solver()->getMatrixByCol();
@@ -193,7 +193,7 @@ CbcHeuristicDive::solution(double & solutionValue,
                            double * betterSolution)
 {
 #ifdef DIVE_DEBUG
-    std::cout<<"solutionValue = "<<solutionValue<<std::endl;
+    std::cout << "solutionValue = " << solutionValue << std::endl;
 #endif
     ++numCouldRun_;
 
@@ -203,8 +203,8 @@ CbcHeuristicDive::solution(double & solutionValue,
 
 #if 0
     // See if to do
-    if (!when()||(when()%10==1&&model_->phase()!=1)||
-            (when()%10==2&&(model_->phase()!=2&&model_->phase()!=3)))
+    if (!when() || (when() % 10 == 1 && model_->phase() != 1) ||
+            (when() % 10 == 2 && (model_->phase() != 2 && model_->phase() != 3)))
         return 0; // switched off
 #endif
 
@@ -215,9 +215,9 @@ CbcHeuristicDive::solution(double & solutionValue,
 #endif
 
     double time1 = CoinCpuTime();
-    int numberSimplexIterations=0;
-    int maxSimplexIterations= (model_->getNodeCount()) ? maxSimplexIterations_
-                              : maxSimplexIterationsAtRoot_;
+    int numberSimplexIterations = 0;
+    int maxSimplexIterations = (model_->getNodeCount()) ? maxSimplexIterations_
+                               : maxSimplexIterationsAtRoot_;
 
     OsiSolverInterface * solver = cloneBut(6); // was model_->solver()->clone();
 # ifdef COIN_HAS_CLP
@@ -226,7 +226,7 @@ CbcHeuristicDive::solution(double & solutionValue,
     if (clpSolver) {
         // say give up easily
         ClpSimplex * clpSimplex = clpSolver->getModelPtr();
-        clpSimplex->setMoreSpecialOptions(clpSimplex->moreSpecialOptions()|64);
+        clpSimplex->setMoreSpecialOptions(clpSimplex->moreSpecialOptions() | 64);
     }
 # endif
     const double * lower = solver->getColLower();
@@ -237,14 +237,14 @@ CbcHeuristicDive::solution(double & solutionValue,
     const double * objective = solver->getObjCoefficients();
     double integerTolerance = model_->getDblParam(CbcModel::CbcIntegerTolerance);
     double primalTolerance;
-    solver->getDblParam(OsiPrimalTolerance,primalTolerance);
+    solver->getDblParam(OsiPrimalTolerance, primalTolerance);
 
     int numberRows = matrix_.getNumRows();
-    assert (numberRows<=solver->getNumRows());
+    assert (numberRows <= solver->getNumRows());
     int numberIntegers = model_->numberIntegers();
     const int * integerVariable = model_->integerVariable();
     double direction = solver->getObjSense(); // 1 for min, -1 for max
-    double newSolutionValue = direction*solver->getObjValue();
+    double newSolutionValue = direction * solver->getObjValue();
     int returnCode = 0;
     // Column copy
     const double * element = matrix_.getElements();
@@ -262,7 +262,7 @@ CbcHeuristicDive::solution(double & solutionValue,
     // Get solution array for heuristic solution
     int numberColumns = solver->getNumCols();
     double * newSolution = new double [numberColumns];
-    memcpy(newSolution,solution,numberColumns*sizeof(double));
+    memcpy(newSolution, solution, numberColumns*sizeof(double));
 
     // vectors to store the latest variables fixed at their bounds
     int* columnFixed = new int [numberIntegers];
@@ -275,11 +275,11 @@ CbcHeuristicDive::solution(double & solutionValue,
 
     // count how many fractional variables
     int numberFractionalVariables = 0;
-    for (int i=0; i<numberIntegers; i++) {
-        random[i]=randomNumberGenerator_.randomDouble()+0.3;
+    for (int i = 0; i < numberIntegers; i++) {
+        random[i] = randomNumberGenerator_.randomDouble() + 0.3;
         int iColumn = integerVariable[i];
-        double value=newSolution[iColumn];
-        if (fabs(floor(value+0.5)-value)>integerTolerance) {
+        double value = newSolution[iColumn];
+        if (fabs(floor(value + 0.5) - value) > integerTolerance) {
             numberFractionalVariables++;
         }
     }
@@ -312,39 +312,39 @@ CbcHeuristicDive::solution(double & solutionValue,
             // we get a solution with an objective value
             // better than the current best integer solution
             double delta = 0.0;
-            for (int i=0; i<numberIntegers; i++) {
+            for (int i = 0; i < numberIntegers; i++) {
                 int iColumn = integerVariable[i];
-                double value=newSolution[iColumn];
-                if (fabs(floor(value+0.5)-value)>integerTolerance) {
-                    assert(downLocks_[i]==0 || upLocks_[i]==0);
+                double value = newSolution[iColumn];
+                if (fabs(floor(value + 0.5) - value) > integerTolerance) {
+                    assert(downLocks_[i] == 0 || upLocks_[i] == 0);
                     double obj = objective[iColumn];
-                    if (downLocks_[i]==0 && upLocks_[i]==0) {
+                    if (downLocks_[i] == 0 && upLocks_[i] == 0) {
                         if (direction * obj >= 0.0)
                             delta += (floor(value) - value) * obj;
                         else
                             delta += (ceil(value) - value) * obj;
-                    } else if (downLocks_[i]==0)
+                    } else if (downLocks_[i] == 0)
                         delta += (floor(value) - value) * obj;
                     else
                         delta += (ceil(value) - value) * obj;
                 }
             }
-            if (direction*(solver->getObjValue()+delta) < solutionValue) {
+            if (direction*(solver->getObjValue() + delta) < solutionValue) {
 #ifdef DIVE_DEBUG
                 nRoundFeasible++;
 #endif
                 // Round all the fractional variables
-                for (int i=0; i<numberIntegers; i++) {
+                for (int i = 0; i < numberIntegers; i++) {
                     int iColumn = integerVariable[i];
-                    double value=newSolution[iColumn];
-                    if (fabs(floor(value+0.5)-value)>integerTolerance) {
-                        assert(downLocks_[i]==0 || upLocks_[i]==0);
-                        if (downLocks_[i]==0 && upLocks_[i]==0) {
+                    double value = newSolution[iColumn];
+                    if (fabs(floor(value + 0.5) - value) > integerTolerance) {
+                        assert(downLocks_[i] == 0 || upLocks_[i] == 0);
+                        if (downLocks_[i] == 0 && upLocks_[i] == 0) {
                             if (direction * objective[iColumn] >= 0.0)
                                 newSolution[iColumn] = floor(value);
                             else
                                 newSolution[iColumn] = ceil(value);
-                        } else if (downLocks_[i]==0)
+                        } else if (downLocks_[i] == 0)
                             newSolution[iColumn] = floor(value);
                         else
                             newSolution[iColumn] = ceil(value);
@@ -361,7 +361,7 @@ CbcHeuristicDive::solution(double & solutionValue,
         // do reduced cost fixing
 #ifdef DIVE_DEBUG
         int numberFixed = reducedCostFix(solver);
-        std::cout<<"numberReducedCostFixed = "<<numberFixed<<std::endl;
+        std::cout << "numberReducedCostFixed = " << numberFixed << std::endl;
 #else
         reducedCostFix(solver);
 #endif
@@ -372,37 +372,37 @@ CbcHeuristicDive::solution(double & solutionValue,
         if (binVarIndex_.size()) {
             int cnt = 0;
             int n = static_cast<int>(binVarIndex_.size());
-            for (int j=0; j<n; j++) {
+            for (int j = 0; j < n; j++) {
                 int iColumn1 = binVarIndex_[j];
                 double value = newSolution[iColumn1];
-                if (fabs(value)<=integerTolerance &&
+                if (fabs(value) <= integerTolerance &&
                         lower[iColumn1] != upper[iColumn1]) {
                     double maxPseudoReducedCost = 0.0;
 #ifdef DIVE_DEBUG
-                    std::cout<<"iColumn1 = "<<iColumn1<<", value = "<<value<<std::endl;
+                    std::cout << "iColumn1 = " << iColumn1 << ", value = " << value << std::endl;
 #endif
                     int iRow = vbRowIndex_[j];
-                    double chosenValue=0.0;
-                    for (int k=rowStart[iRow]; k<rowStart[iRow]+rowLength[iRow]; k++) {
+                    double chosenValue = 0.0;
+                    for (int k = rowStart[iRow]; k < rowStart[iRow] + rowLength[iRow]; k++) {
                         int iColumn2 = column[k];
 #ifdef DIVE_DEBUG
-                        std::cout<<"iColumn2 = "<<iColumn2<<std::endl;
+                        std::cout << "iColumn2 = " << iColumn2 << std::endl;
 #endif
                         if (iColumn1 != iColumn2) {
                             double pseudoReducedCost = fabs(reducedCost[iColumn2] *
                                                             elementByRow[k]);
 #ifdef DIVE_DEBUG
                             int k2;
-                            for (k2=rowStart[iRow]; k2<rowStart[iRow]+rowLength[iRow]; k2++) {
-                                if (column[k2]==iColumn1)
+                            for (k2 = rowStart[iRow]; k2 < rowStart[iRow] + rowLength[iRow]; k2++) {
+                                if (column[k2] == iColumn1)
                                     break;
                             }
-                            std::cout<<"reducedCost["<<iColumn2<<"] = "
-                                     <<reducedCost[iColumn2]
-                                     <<", elementByRow["<<iColumn2<<"] = "<<elementByRow[k]
-                                     <<", elementByRow["<<iColumn1<<"] = "<<elementByRow[k2]
-                                     <<", pseudoRedCost = "<<pseudoReducedCost
-                                     <<std::endl;
+                            std::cout << "reducedCost[" << iColumn2 << "] = "
+                                      << reducedCost[iColumn2]
+                                      << ", elementByRow[" << iColumn2 << "] = " << elementByRow[k]
+                                      << ", elementByRow[" << iColumn1 << "] = " << elementByRow[k2]
+                                      << ", pseudoRedCost = " << pseudoReducedCost
+                                      << std::endl;
 #endif
                             if (pseudoReducedCost > maxPseudoReducedCost)
                                 maxPseudoReducedCost = pseudoReducedCost;
@@ -414,17 +414,17 @@ CbcHeuristicDive::solution(double & solutionValue,
                     assert (chosenValue);
                     maxPseudoReducedCost /= chosenValue;
 #ifdef DIVE_DEBUG
-                    std::cout<<", maxPseudoRedCost = "<<maxPseudoReducedCost<<std::endl;
+                    std::cout << ", maxPseudoRedCost = " << maxPseudoReducedCost << std::endl;
 #endif
                     candidate[cnt].var = iColumn1;
                     candidate[cnt++].pseudoRedCost = maxPseudoReducedCost;
                 }
             }
 #ifdef DIVE_DEBUG
-            std::cout<<"candidates for rounding = "<<cnt<<std::endl;
+            std::cout << "candidates for rounding = " << cnt << std::endl;
 #endif
-            std::sort(candidate, candidate+cnt, compareBinaryVars);
-            for (int i=0; i<cnt; i++) {
+            std::sort(candidate, candidate + cnt, compareBinaryVars);
+            for (int i = 0; i < cnt; i++) {
                 int iColumn = candidate[i].var;
                 if (numberAtBoundFixed < maxNumberAtBoundToFix) {
                     columnFixed[numberAtBoundFixed] = iColumn;
@@ -440,41 +440,41 @@ CbcHeuristicDive::solution(double & solutionValue,
 #endif
 
         // fix other integer variables that are at their bounds
-        int cnt=0;
+        int cnt = 0;
 #ifdef GAP
-        double gap=1.0e30;
+        double gap = 1.0e30;
 #endif
-        if (reducedCost&&true) {
+        if (reducedCost && true) {
 #if 1
-            cnt=fixOtherVariables(solver,solution,candidate,random);
+            cnt = fixOtherVariables(solver, solution, candidate, random);
 #else
 #ifdef GAP
             double cutoff = model_->getCutoff() ;
-            if (cutoff<1.0e20&&false) {
+            if (cutoff < 1.0e20 && false) {
                 double direction = solver->getObjSense() ;
-                gap = cutoff - solver->getObjValue()*direction ;
+                gap = cutoff - solver->getObjValue() * direction ;
                 gap *= 0.1; // Fix more if plausible
                 double tolerance;
-                solver->getDblParam(OsiDualTolerance,tolerance) ;
-                if (gap<=0.0)
+                solver->getDblParam(OsiDualTolerance, tolerance) ;
+                if (gap <= 0.0)
                     gap = tolerance;
-                gap += 100.0*tolerance;
+                gap += 100.0 * tolerance;
             }
-            int nOverGap=0;
+            int nOverGap = 0;
 #endif
-            int numberFree=0;
-            int numberFixed=0;
-            for (int i=0; i<numberIntegers; i++) {
+            int numberFree = 0;
+            int numberFixed = 0;
+            for (int i = 0; i < numberIntegers; i++) {
                 int iColumn = integerVariable[i];
-                if (upper[iColumn]>lower[iColumn]) {
+                if (upper[iColumn] > lower[iColumn]) {
                     numberFree++;
-                    double value=newSolution[iColumn];
-                    if (fabs(floor(value+0.5)-value)<=integerTolerance) {
+                    double value = newSolution[iColumn];
+                    if (fabs(floor(value + 0.5) - value) <= integerTolerance) {
                         candidate[cnt].var = iColumn;
                         candidate[cnt++].pseudoRedCost =
-                            fabs(reducedCost[iColumn]*random[i]);
+                            fabs(reducedCost[iColumn] * random[i]);
 #ifdef GAP
-                        if (fabs(reducedCost[iColumn])>gap)
+                        if (fabs(reducedCost[iColumn]) > gap)
                             nOverGap++;
 #endif
                     }
@@ -483,49 +483,49 @@ CbcHeuristicDive::solution(double & solutionValue,
                 }
             }
 #ifdef GAP
-            int nLeft = maxNumberAtBoundToFix-numberAtBoundFixed;
+            int nLeft = maxNumberAtBoundToFix - numberAtBoundFixed;
 #ifdef CLP_INVESTIGATE
             printf("cutoff %g obj %g nover %d - %d free, %d fixed\n",
-                   cutoff,solver->getObjValue(),nOverGap,numberFree,numberFixed);
+                   cutoff, solver->getObjValue(), nOverGap, numberFree, numberFixed);
 #endif
-            if (nOverGap>nLeft&&true) {
-                nOverGap = CoinMin(nOverGap,nLeft+maxNumberAtBoundToFix/2);
-                maxNumberAtBoundToFix += nOverGap-nLeft;
+            if (nOverGap > nLeft && true) {
+                nOverGap = CoinMin(nOverGap, nLeft + maxNumberAtBoundToFix / 2);
+                maxNumberAtBoundToFix += nOverGap - nLeft;
             }
 #else
 #ifdef CLP_INVESTIGATE
             printf("cutoff %g obj %g - %d free, %d fixed\n",
-                   model_->getCutoff(),solver->getObjValue(),numberFree,numberFixed);
+                   model_->getCutoff(), solver->getObjValue(), numberFree, numberFixed);
 #endif
 #endif
 #endif
         } else {
-            for (int i=0; i<numberIntegers; i++) {
+            for (int i = 0; i < numberIntegers; i++) {
                 int iColumn = integerVariable[i];
-                if (upper[iColumn]>lower[iColumn]) {
-                    double value=newSolution[iColumn];
-                    if (fabs(floor(value+0.5)-value)<=integerTolerance) {
+                if (upper[iColumn] > lower[iColumn]) {
+                    double value = newSolution[iColumn];
+                    if (fabs(floor(value + 0.5) - value) <= integerTolerance) {
                         candidate[cnt].var = iColumn;
-                        candidate[cnt++].pseudoRedCost = numberIntegers-i;
+                        candidate[cnt++].pseudoRedCost = numberIntegers - i;
                     }
                 }
             }
         }
-        std::sort(candidate, candidate+cnt, compareBinaryVars);
-        for (int i=0; i<cnt; i++) {
+        std::sort(candidate, candidate + cnt, compareBinaryVars);
+        for (int i = 0; i < cnt; i++) {
             int iColumn = candidate[i].var;
-            if (upper[iColumn]>lower[iColumn]) {
-                double value=newSolution[iColumn];
-                if (fabs(floor(value+0.5)-value)<=integerTolerance &&
+            if (upper[iColumn] > lower[iColumn]) {
+                double value = newSolution[iColumn];
+                if (fabs(floor(value + 0.5) - value) <= integerTolerance &&
                         numberAtBoundFixed < maxNumberAtBoundToFix) {
                     // fix the variable at one of its bounds
-                    if (fabs(lower[iColumn]-value)<=integerTolerance) {
+                    if (fabs(lower[iColumn] - value) <= integerTolerance) {
                         columnFixed[numberAtBoundFixed] = iColumn;
                         originalBound[numberAtBoundFixed] = upper[iColumn];
                         fixedAtLowerBound[numberAtBoundFixed] = true;
                         solver->setColUpper(iColumn, lower[iColumn]);
                         numberAtBoundFixed++;
-                    } else if (fabs(upper[iColumn]-value)<=integerTolerance) {
+                    } else if (fabs(upper[iColumn] - value) <= integerTolerance) {
                         columnFixed[numberAtBoundFixed] = iColumn;
                         originalBound[numberAtBoundFixed] = lower[iColumn];
                         fixedAtLowerBound[numberAtBoundFixed] = false;
@@ -538,7 +538,7 @@ CbcHeuristicDive::solution(double & solutionValue,
             }
         }
 #ifdef DIVE_DEBUG
-        std::cout<<"numberAtBoundFixed = "<<numberAtBoundFixed<<std::endl;
+        std::cout << "numberAtBoundFixed = " << numberAtBoundFixed << std::endl;
 #endif
 
         double originalBoundBestColumn;
@@ -557,20 +557,20 @@ CbcHeuristicDive::solution(double & solutionValue,
         int saveModelOptions = model_->specialOptions();
         while (1) {
 
-            model_->setSpecialOptions(saveModelOptions|2048);
+            model_->setSpecialOptions(saveModelOptions | 2048);
             solver->resolve();
             model_->setSpecialOptions(saveModelOptions);
             if (!solver->isAbandoned()) {
-                numberSimplexIterations+=solver->getIterationCount();
+                numberSimplexIterations += solver->getIterationCount();
             } else {
-                numberSimplexIterations=maxSimplexIterations+1;
+                numberSimplexIterations = maxSimplexIterations + 1;
                 break;
             }
 
             if (!solver->isProvenOptimal()) {
                 if (numberAtBoundFixed > 0) {
                     // Remove the bound fix for variables that were at bounds
-                    for (int i=0; i<numberAtBoundFixed; i++) {
+                    for (int i = 0; i < numberAtBoundFixed; i++) {
                         int iColFixed = columnFixed[i];
                         if (fixedAtLowerBound[i])
                             solver->setColUpper(iColFixed, originalBound[i]);
@@ -608,7 +608,7 @@ CbcHeuristicDive::solution(double & solutionValue,
             break;
         }
 
-        if (CoinCpuTime()-time1 > maxTime_) {
+        if (CoinCpuTime() - time1 > maxTime_) {
 #ifdef DIVE_DEBUG
             reasonToStop = 3;
 #endif
@@ -622,31 +622,31 @@ CbcHeuristicDive::solution(double & solutionValue,
             // also switch off
 #ifdef CLP_INVESTIGATE
             printf("switching off diving as too many iterations %d, %d allowed\n",
-                   numberSimplexIterations,maxSimplexIterations);
+                   numberSimplexIterations, maxSimplexIterations);
 #endif
-            when_=0;
+            when_ = 0;
             break;
         }
 
-        if (solver->getIterationCount()>1000&&iteration>3) {
+        if (solver->getIterationCount() > 1000 && iteration > 3) {
 #ifdef DIVE_DEBUG
             reasonToStop = 5;
 #endif
             // also switch off
 #ifdef CLP_INVESTIGATE
             printf("switching off diving one iteration took %d iterations (total %d)\n",
-                   solver->getIterationCount(),numberSimplexIterations);
+                   solver->getIterationCount(), numberSimplexIterations);
 #endif
-            when_=0;
+            when_ = 0;
             break;
         }
 
-        memcpy(newSolution,solution,numberColumns*sizeof(double));
+        memcpy(newSolution, solution, numberColumns*sizeof(double));
         numberFractionalVariables = 0;
-        for (int i=0; i<numberIntegers; i++) {
+        for (int i = 0; i < numberIntegers; i++) {
             int iColumn = integerVariable[i];
-            double value=newSolution[iColumn];
-            if (fabs(floor(value+0.5)-value)>integerTolerance) {
+            double value = newSolution[iColumn];
+            if (fabs(floor(value + 0.5) - value) > integerTolerance) {
                 numberFractionalVariables++;
             }
         }
@@ -655,55 +655,55 @@ CbcHeuristicDive::solution(double & solutionValue,
 
 
     double * rowActivity = new double[numberRows];
-    memset(rowActivity,0,numberRows*sizeof(double));
+    memset(rowActivity, 0, numberRows*sizeof(double));
 
     // re-compute new solution value
-    double objOffset=0.0;
-    solver->getDblParam(OsiObjOffset,objOffset);
+    double objOffset = 0.0;
+    solver->getDblParam(OsiObjOffset, objOffset);
     newSolutionValue = -objOffset;
-    for (int i=0 ; i<numberColumns ; i++ )
-        newSolutionValue += objective[i]*newSolution[i];
+    for (int i = 0 ; i < numberColumns ; i++ )
+        newSolutionValue += objective[i] * newSolution[i];
     newSolutionValue *= direction;
     //printf("new solution value %g %g\n",newSolutionValue,solutionValue);
-    if (newSolutionValue<solutionValue) {
+    if (newSolutionValue < solutionValue) {
         // paranoid check
-        memset(rowActivity,0,numberRows*sizeof(double));
-        for (int i=0; i<numberColumns; i++) {
+        memset(rowActivity, 0, numberRows*sizeof(double));
+        for (int i = 0; i < numberColumns; i++) {
             int j;
             double value = newSolution[i];
             if (value) {
-                for (j=columnStart[i];
-                        j<columnStart[i]+columnLength[i]; j++) {
-                    int iRow=row[j];
-                    rowActivity[iRow] += value*element[j];
+                for (j = columnStart[i];
+                        j < columnStart[i] + columnLength[i]; j++) {
+                    int iRow = row[j];
+                    rowActivity[iRow] += value * element[j];
                 }
             }
         }
         // check was approximately feasible
-        bool feasible=true;
-        for (int i=0; i<numberRows; i++) {
-            if (rowActivity[i]<rowLower[i]) {
-                if (rowActivity[i]<rowLower[i]-1000.0*primalTolerance)
+        bool feasible = true;
+        for (int i = 0; i < numberRows; i++) {
+            if (rowActivity[i] < rowLower[i]) {
+                if (rowActivity[i] < rowLower[i] - 1000.0*primalTolerance)
                     feasible = false;
-            } else if (rowActivity[i]>rowUpper[i]) {
-                if (rowActivity[i]>rowUpper[i]+1000.0*primalTolerance)
+            } else if (rowActivity[i] > rowUpper[i]) {
+                if (rowActivity[i] > rowUpper[i] + 1000.0*primalTolerance)
                     feasible = false;
             }
         }
-        for (int i=0; i<numberIntegers; i++) {
+        for (int i = 0; i < numberIntegers; i++) {
             int iColumn = integerVariable[i];
-            double value=newSolution[iColumn];
-            if (fabs(floor(value+0.5)-value)>integerTolerance) {
+            double value = newSolution[iColumn];
+            if (fabs(floor(value + 0.5) - value) > integerTolerance) {
                 feasible = false;
                 break;
             }
         }
         if (feasible) {
             // new solution
-            memcpy(betterSolution,newSolution,numberColumns*sizeof(double));
+            memcpy(betterSolution, newSolution, numberColumns*sizeof(double));
             solutionValue = newSolutionValue;
             //printf("** Solution of %g found by CbcHeuristicDive\n",newSolutionValue);
-            returnCode=1;
+            returnCode = 1;
         } else {
             // Can easily happen
             //printf("Debug CbcHeuristicDive giving bad solution\n");
@@ -711,12 +711,12 @@ CbcHeuristicDive::solution(double & solutionValue,
     }
 
 #ifdef DIVE_DEBUG
-    std::cout<<"nRoundInfeasible = "<<nRoundInfeasible
-             <<", nRoundFeasible = "<<nRoundFeasible
-             <<", returnCode = "<<returnCode
-             <<", reasonToStop = "<<reasonToStop
-             <<", simplexIts = "<<numberSimplexIterations
-             <<", iterations = "<<iteration<<std::endl;
+    std::cout << "nRoundInfeasible = " << nRoundInfeasible
+              << ", nRoundFeasible = " << nRoundFeasible
+              << ", returnCode = " << returnCode
+              << ", reasonToStop = " << reasonToStop
+              << ", simplexIts = " << numberSimplexIterations
+              << ", iterations = " << iteration << std::endl;
 #endif
 
     delete [] newSolution;
@@ -727,9 +727,9 @@ CbcHeuristicDive::solution(double & solutionValue,
     delete [] rowActivity;
     delete [] random;
     delete [] downArray_;
-    downArray_=NULL;
+    downArray_ = NULL;
     delete [] upArray_;
-    upArray_=NULL;
+    upArray_ = NULL;
     delete solver;
     return returnCode;
 }
@@ -738,12 +738,12 @@ CbcHeuristicDive::solution(double & solutionValue,
 void
 CbcHeuristicDive::validate()
 {
-    if (model_&&(when()%100)<10) {
-        if (model_->numberIntegers()!=
-                model_->numberObjects()&&(model_->numberObjects()||
-                                          (model_->specialOptions()&1024)==0)) {
-            int numberOdd=0;
-            for (int i=0; i<model_->numberObjects(); i++) {
+    if (model_ && (when() % 100) < 10) {
+        if (model_->numberIntegers() !=
+                model_->numberObjects() && (model_->numberObjects() ||
+                                            (model_->specialOptions()&1024) == 0)) {
+            int numberOdd = 0;
+            for (int i = 0; i < model_->numberObjects(); i++) {
                 if (!model_->object(i)->canDoHeuristics())
                     numberOdd++;
             }
@@ -765,27 +765,27 @@ CbcHeuristicDive::validate()
     const int * columnLength = matrix_.getVectorLengths();
     const double * rowLower = model_->solver()->getRowLower();
     const double * rowUpper = model_->solver()->getRowUpper();
-    for (int i=0; i<numberIntegers; i++) {
+    for (int i = 0; i < numberIntegers; i++) {
         int iColumn = integerVariable[i];
-        int down=0;
-        int up=0;
-        if (columnLength[iColumn]>65535) {
+        int down = 0;
+        int up = 0;
+        if (columnLength[iColumn] > 65535) {
             setWhen(0);
             break; // unlikely to work
         }
-        for (CoinBigIndex j=columnStart[iColumn];
-                j<columnStart[iColumn]+columnLength[iColumn]; j++) {
-            int iRow=row[j];
-            if (rowLower[iRow]>-1.0e20&&rowUpper[iRow]<1.0e20) {
+        for (CoinBigIndex j = columnStart[iColumn];
+                j < columnStart[iColumn] + columnLength[iColumn]; j++) {
+            int iRow = row[j];
+            if (rowLower[iRow] > -1.0e20 && rowUpper[iRow] < 1.0e20) {
                 up++;
                 down++;
-            } else if (element[j]>0.0) {
-                if (rowUpper[iRow]<1.0e20)
+            } else if (element[j] > 0.0) {
+                if (rowUpper[iRow] < 1.0e20)
                     up++;
                 else
                     down++;
             } else {
-                if (rowLower[iRow]>-1.0e20)
+                if (rowLower[iRow] > -1.0e20)
                     up++;
                 else
                     down++;
@@ -829,12 +829,12 @@ CbcHeuristicDive::selectBinaryVariables()
     int* rowIndexes = new int [numberCols];
     memset(rowIndexes, -1, numberCols*sizeof(int));
 
-    for (int i=0; i<numberRows; i++) {
+    for (int i = 0; i < numberRows; i++) {
         int positiveBinary = -1;
         int negativeBinary = -1;
         int nPositiveOther = 0;
         int nNegativeOther = 0;
-        for (int k=rowStart[i]; k<rowStart[i]+rowLength[i]; k++) {
+        for (int k = rowStart[i]; k < rowStart[i] + rowLength[i]; k++) {
             int iColumn = column[k];
             if (model_->solver()->isInteger(iColumn) &&
                     lower[iColumn] == 0.0 && upper[iColumn] == 1.0 &&
@@ -848,12 +848,12 @@ CbcHeuristicDive::selectBinaryVariables()
                      elementByRow[k] < 0.0 &&
                      negativeBinary < 0)
                 negativeBinary = iColumn;
-            else if ((elementByRow[k]> 0.0 &&
+            else if ((elementByRow[k] > 0.0 &&
                       lower[iColumn] >= 0.0) ||
                      (elementByRow[k] < 0.0 &&
                       upper[iColumn] <= 0.0))
                 nPositiveOther++;
-            else if ((elementByRow[k]> 0.0 &&
+            else if ((elementByRow[k] > 0.0 &&
                       lower[iColumn] <= 0.0) ||
                      (elementByRow[k] < 0.0 &&
                       upper[iColumn] >= 0.0))
@@ -882,7 +882,7 @@ CbcHeuristicDive::selectBinaryVariables()
         }
     }
 
-    for (int j=0; j<numberCols; j++) {
+    for (int j = 0; j < numberCols; j++) {
         if (rowIndexes[j] >= 0) {
             binVarIndex_.push_back(j);
             vbRowIndex_.push_back(rowIndexes[j]);
@@ -890,7 +890,7 @@ CbcHeuristicDive::selectBinaryVariables()
     }
 
 #ifdef DIVE_DEBUG
-    std::cout<<"number vub Binary = "<<binVarIndex_.size()<<std::endl;
+    std::cout << "number vub Binary = " << binVarIndex_.size() << std::endl;
 #endif
 
     delete [] rowIndexes;
@@ -913,19 +913,19 @@ int CbcHeuristicDive::reducedCostFix (OsiSolverInterface* solver)
         return 0; //NLP
 #endif
     double cutoff = model_->getCutoff() ;
-    if (cutoff>1.0e20)
+    if (cutoff > 1.0e20)
         return 0;
 #ifdef DIVE_DEBUG
-    std::cout<<"cutoff = "<<cutoff<<std::endl;
+    std::cout << "cutoff = " << cutoff << std::endl;
 #endif
     double direction = solver->getObjSense() ;
-    double gap = cutoff - solver->getObjValue()*direction ;
+    double gap = cutoff - solver->getObjValue() * direction ;
     gap *= 0.5; // Fix more
     double tolerance;
-    solver->getDblParam(OsiDualTolerance,tolerance) ;
-    if (gap<=0.0)
+    solver->getDblParam(OsiDualTolerance, tolerance) ;
+    if (gap <= 0.0)
         gap = tolerance; //return 0;
-    gap += 100.0*tolerance;
+    gap += 100.0 * tolerance;
     double integerTolerance = model_->getDblParam(CbcModel::CbcIntegerTolerance);
 
     const double *lower = solver->getColLower() ;
@@ -941,49 +941,49 @@ int CbcHeuristicDive::reducedCostFix (OsiSolverInterface* solver)
 # ifdef COIN_HAS_CLP
     OsiClpSolverInterface * clpSolver
     = dynamic_cast<OsiClpSolverInterface *> (solver);
-    ClpSimplex * clpSimplex=NULL;
+    ClpSimplex * clpSimplex = NULL;
     if (clpSolver)
         clpSimplex = clpSolver->getModelPtr();
 # endif
     for (int i = 0 ; i < numberIntegers ; i++) {
         int iColumn = integerVariable[i] ;
-        double djValue = direction*reducedCost[iColumn] ;
-        if (upper[iColumn]-lower[iColumn] > integerTolerance) {
-            if (solution[iColumn] < lower[iColumn]+integerTolerance && djValue > gap) {
+        double djValue = direction * reducedCost[iColumn] ;
+        if (upper[iColumn] - lower[iColumn] > integerTolerance) {
+            if (solution[iColumn] < lower[iColumn] + integerTolerance && djValue > gap) {
 #ifdef COIN_HAS_CLP
                 // may just have been fixed before
                 if (clpSimplex) {
-                    if (clpSimplex->getColumnStatus(iColumn)==ClpSimplex::basic) {
+                    if (clpSimplex->getColumnStatus(iColumn) == ClpSimplex::basic) {
 #ifdef COIN_DEVELOP
                         printf("DJfix %d has status of %d, dj of %g gap %g, bounds %g %g\n",
-                               iColumn,clpSimplex->getColumnStatus(iColumn),
-                               djValue,gap,lower[iColumn],upper[iColumn]);
+                               iColumn, clpSimplex->getColumnStatus(iColumn),
+                               djValue, gap, lower[iColumn], upper[iColumn]);
 #endif
                     } else {
-                        assert(clpSimplex->getColumnStatus(iColumn)==ClpSimplex::atLowerBound||
-                               clpSimplex->getColumnStatus(iColumn)==ClpSimplex::isFixed);
+                        assert(clpSimplex->getColumnStatus(iColumn) == ClpSimplex::atLowerBound ||
+                               clpSimplex->getColumnStatus(iColumn) == ClpSimplex::isFixed);
                     }
                 }
 #endif
-                solver->setColUpper(iColumn,lower[iColumn]) ;
+                solver->setColUpper(iColumn, lower[iColumn]) ;
                 numberFixed++ ;
-            } else if (solution[iColumn] > upper[iColumn]-integerTolerance && -djValue > gap) {
+            } else if (solution[iColumn] > upper[iColumn] - integerTolerance && -djValue > gap) {
 #ifdef COIN_HAS_CLP
                 // may just have been fixed before
                 if (clpSimplex) {
-                    if (clpSimplex->getColumnStatus(iColumn)==ClpSimplex::basic) {
+                    if (clpSimplex->getColumnStatus(iColumn) == ClpSimplex::basic) {
 #ifdef COIN_DEVELOP
                         printf("DJfix %d has status of %d, dj of %g gap %g, bounds %g %g\n",
-                               iColumn,clpSimplex->getColumnStatus(iColumn),
-                               djValue,gap,lower[iColumn],upper[iColumn]);
+                               iColumn, clpSimplex->getColumnStatus(iColumn),
+                               djValue, gap, lower[iColumn], upper[iColumn]);
 #endif
                     } else {
-                        assert(clpSimplex->getColumnStatus(iColumn)==ClpSimplex::atUpperBound||
-                               clpSimplex->getColumnStatus(iColumn)==ClpSimplex::isFixed);
+                        assert(clpSimplex->getColumnStatus(iColumn) == ClpSimplex::atUpperBound ||
+                               clpSimplex->getColumnStatus(iColumn) == ClpSimplex::isFixed);
                     }
                 }
 #endif
-                solver->setColLower(iColumn,upper[iColumn]) ;
+                solver->setColLower(iColumn, upper[iColumn]) ;
                 numberFixed++ ;
             }
         }
@@ -1001,44 +1001,44 @@ CbcHeuristicDive::fixOtherVariables(OsiSolverInterface * solver,
     const double * upper = solver->getColUpper();
     double integerTolerance = model_->getDblParam(CbcModel::CbcIntegerTolerance);
     double primalTolerance;
-    solver->getDblParam(OsiPrimalTolerance,primalTolerance);
+    solver->getDblParam(OsiPrimalTolerance, primalTolerance);
 
     int numberIntegers = model_->numberIntegers();
     const int * integerVariable = model_->integerVariable();
     const double* reducedCost = solver->getReducedCost();
     // fix other integer variables that are at their bounds
-    int cnt=0;
+    int cnt = 0;
 #ifdef GAP
     double direction = solver->getObjSense(); // 1 for min, -1 for max
-    double gap=1.0e30;
+    double gap = 1.0e30;
 #endif
 #ifdef GAP
     double cutoff = model_->getCutoff() ;
-    if (cutoff<1.0e20&&false) {
+    if (cutoff < 1.0e20 && false) {
         double direction = solver->getObjSense() ;
-        gap = cutoff - solver->getObjValue()*direction ;
+        gap = cutoff - solver->getObjValue() * direction ;
         gap *= 0.1; // Fix more if plausible
         double tolerance;
-        solver->getDblParam(OsiDualTolerance,tolerance) ;
-        if (gap<=0.0)
+        solver->getDblParam(OsiDualTolerance, tolerance) ;
+        if (gap <= 0.0)
             gap = tolerance;
-        gap += 100.0*tolerance;
+        gap += 100.0 * tolerance;
     }
-    int nOverGap=0;
+    int nOverGap = 0;
 #endif
-    int numberFree=0;
-    int numberFixedAlready=0;
-    for (int i=0; i<numberIntegers; i++) {
+    int numberFree = 0;
+    int numberFixedAlready = 0;
+    for (int i = 0; i < numberIntegers; i++) {
         int iColumn = integerVariable[i];
-        if (upper[iColumn]>lower[iColumn]) {
+        if (upper[iColumn] > lower[iColumn]) {
             numberFree++;
-            double value=solution[iColumn];
-            if (fabs(floor(value+0.5)-value)<=integerTolerance) {
+            double value = solution[iColumn];
+            if (fabs(floor(value + 0.5) - value) <= integerTolerance) {
                 candidate[cnt].var = iColumn;
                 candidate[cnt++].pseudoRedCost =
-                    fabs(reducedCost[iColumn]*random[i]);
+                    fabs(reducedCost[iColumn] * random[i]);
 #ifdef GAP
-                if (fabs(reducedCost[iColumn])>gap)
+                if (fabs(reducedCost[iColumn]) > gap)
                     nOverGap++;
 #endif
             }
@@ -1047,20 +1047,20 @@ CbcHeuristicDive::fixOtherVariables(OsiSolverInterface * solver,
         }
     }
 #ifdef GAP
-    int nLeft = maxNumberToFix-numberFixedAlready;
+    int nLeft = maxNumberToFix - numberFixedAlready;
 #ifdef CLP_INVESTIGATE
     printf("cutoff %g obj %g nover %d - %d free, %d fixed\n",
-           cutoff,solver->getObjValue(),nOverGap,numberFree,
+           cutoff, solver->getObjValue(), nOverGap, numberFree,
            numberFixedAlready);
 #endif
-    if (nOverGap>nLeft&&true) {
-        nOverGap = CoinMin(nOverGap,nLeft+maxNumberToFix/2);
-        maxNumberToFix += nOverGap-nLeft;
+    if (nOverGap > nLeft && true) {
+        nOverGap = CoinMin(nOverGap, nLeft + maxNumberToFix / 2);
+        maxNumberToFix += nOverGap - nLeft;
     }
 #else
 #ifdef CLP_INVESTIGATE
     printf("cutoff %g obj %g - %d free, %d fixed\n",
-           model_->getCutoff(),solver->getObjValue(),numberFree,
+           model_->getCutoff(), solver->getObjValue(), numberFree,
            numberFixedAlready);
 #endif
 #endif

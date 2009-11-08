@@ -21,19 +21,19 @@ public:
     virtual ~CbcStrategy();
 
     /// Clone
-    virtual CbcStrategy * clone() const=0;
+    virtual CbcStrategy * clone() const = 0;
 
     /// Setup cut generators
-    virtual void setupCutGenerators(CbcModel & model)=0;
+    virtual void setupCutGenerators(CbcModel & model) = 0;
     /// Setup heuristics
-    virtual void setupHeuristics(CbcModel & model)=0;
+    virtual void setupHeuristics(CbcModel & model) = 0;
     /// Do printing stuff
-    virtual void setupPrinting(CbcModel & model,int modelLogLevel)=0;
+    virtual void setupPrinting(CbcModel & model, int modelLogLevel) = 0;
     /// Other stuff e.g. strong branching and preprocessing
-    virtual void setupOther(CbcModel & model)=0;
+    virtual void setupOther(CbcModel & model) = 0;
     /// Set model depth (i.e. how nested)
     inline void setNested(int depth) {
-        depth_=depth;
+        depth_ = depth;
     }
     /// Get model depth (i.e. how nested)
     inline int getNested() const {
@@ -41,7 +41,7 @@ public:
     }
     /// Say preProcessing done
     inline void setPreProcessState(int state) {
-        preProcessState_=state;
+        preProcessState_ = state;
     }
     /// See what sort of preprocessing was done
     inline int preProcessState() const {
@@ -54,10 +54,10 @@ public:
     /// Delete pre-processing object to save memory
     void deletePreProcess();
     /// Return a new Full node information pointer (descendant of CbcFullNodeInfo)
-    virtual CbcNodeInfo * fullNodeInfo(CbcModel * model,int numberRowsAtContinuous) const;
+    virtual CbcNodeInfo * fullNodeInfo(CbcModel * model, int numberRowsAtContinuous) const;
     /// Return a new Partial node information pointer (descendant of CbcPartialNodeInfo)
     virtual CbcNodeInfo * partialNodeInfo(CbcModel * model, CbcNodeInfo * parent, CbcNode * owner,
-                                          int numberChangedBounds,const int * variables,
+                                          int numberChangedBounds, const int * variables,
                                           const double * boundChanges,
                                           const CoinWarmStartDiff *basisDiff) const;
     /// Create C++ lines to get to current state
@@ -112,7 +112,7 @@ public:
     /// Setup heuristics
     virtual void setupHeuristics(CbcModel & ) {}
     /// Do printing stuff
-    virtual void setupPrinting(CbcModel & ,int ) {}
+    virtual void setupPrinting(CbcModel & , int ) {}
     /// Other stuff e.g. strong branching
     virtual void setupOther(CbcModel & ) {}
 
@@ -130,10 +130,10 @@ class CbcStrategyDefault : public CbcStrategy {
 public:
 
     // Default Constructor
-    CbcStrategyDefault (int cutsOnlyAtRoot=1,
-                        int numberStrong=5,
-                        int numberBeforeTrust=0,
-                        int printLevel=0);
+    CbcStrategyDefault (int cutsOnlyAtRoot = 1,
+                        int numberStrong = 5,
+                        int numberBeforeTrust = 0,
+                        int printLevel = 0);
 
     // Copy constructor
     CbcStrategyDefault ( const CbcStrategyDefault &);
@@ -149,13 +149,13 @@ public:
     /// Setup heuristics
     virtual void setupHeuristics(CbcModel & model);
     /// Do printing stuff
-    virtual void setupPrinting(CbcModel & model,int modelLogLevel) ;
+    virtual void setupPrinting(CbcModel & model, int modelLogLevel) ;
     /// Other stuff e.g. strong branching
     virtual void setupOther(CbcModel & model);
     /// Set up preProcessing - see below
-    inline void setupPreProcessing(int desired=1, int passes=10) {
-        desiredPreProcess_=desired;
-        preProcessPasses_=passes;
+    inline void setupPreProcessing(int desired = 1, int passes = 10) {
+        desiredPreProcess_ = desired;
+        preProcessPasses_ = passes;
     }
     /// See what sort of preprocessing wanted
     inline int desiredPreProcess() const {
@@ -208,10 +208,10 @@ class CbcStrategyDefaultSubTree : public CbcStrategy {
 public:
 
     // Default Constructor
-    CbcStrategyDefaultSubTree (CbcModel * parent=NULL,int cutsOnlyAtRoot=1,
-                               int numberStrong=5,
-                               int numberBeforeTrust=0,
-                               int printLevel=0);
+    CbcStrategyDefaultSubTree (CbcModel * parent = NULL, int cutsOnlyAtRoot = 1,
+                               int numberStrong = 5,
+                               int numberBeforeTrust = 0,
+                               int printLevel = 0);
 
     // Copy constructor
     CbcStrategyDefaultSubTree ( const CbcStrategyDefaultSubTree &);
@@ -227,7 +227,7 @@ public:
     /// Setup heuristics
     virtual void setupHeuristics(CbcModel & model);
     /// Do printing stuff
-    virtual void setupPrinting(CbcModel & model,int modelLogLevel) ;
+    virtual void setupPrinting(CbcModel & model, int modelLogLevel) ;
     /// Other stuff e.g. strong branching
     virtual void setupOther(CbcModel & model);
 protected:

@@ -88,7 +88,7 @@ public:
     CbcObject & operator=( const CbcObject& rhs);
 
     /// Clone
-    virtual CbcObject * clone() const=0;
+    virtual CbcObject * clone() const = 0;
 
     /// Destructor
     virtual ~CbcObject ();
@@ -109,14 +109,14 @@ public:
     */
 #ifdef CBC_NEW_STYLE_BRANCH
     virtual double infeasibility(const OsiBranchingInformation * info,
-                                 int &preferredWay) const=0;
+                                 int &preferredWay) const = 0;
 #else
     virtual double infeasibility(const OsiBranchingInformation * /*info*/,
                                  int &preferredWay) const {
         return infeasibility(preferredWay);
     }
     virtual double infeasibility(int &/*preferredWay*/) const {
-        throw CoinError("Need code","infeasibility","CbcBranchBase");
+        throw CoinError("Need code", "infeasibility", "CbcBranchBase");
     }
 #endif
 
@@ -139,14 +139,14 @@ public:
         variables, etc.)
     */
 #ifdef CBC_NEW_STYLE_BRANCH
-    virtual CbcBranchingObject * createCbcBranch(OsiSolverInterface * solver,const OsiBranchingInformation * info, int way) =0;
+    virtual CbcBranchingObject * createCbcBranch(OsiSolverInterface * solver, const OsiBranchingInformation * info, int way) = 0;
 #else
-    virtual CbcBranchingObject * createCbcBranch(OsiSolverInterface * solver,const OsiBranchingInformation * info, int way) {
-        return createBranch(solver,info,way);
+    virtual CbcBranchingObject * createCbcBranch(OsiSolverInterface * solver, const OsiBranchingInformation * info, int way) {
+        return createBranch(solver, info, way);
     }
     virtual CbcBranchingObject * createBranch(OsiSolverInterface * /*solver*/,
             const OsiBranchingInformation * /*info*/, int /*way*/) {
-        throw CoinError("Need code","createBranch","CbcBranchBase");
+        throw CoinError("Need code", "createBranch", "CbcBranchBase");
     }
 #endif
     /** Create an Osibranching object and indicate which way to branch first.
@@ -154,7 +154,7 @@ public:
         The branching object has to know how to create branches (fix
         variables, etc.)
     */
-    virtual OsiBranchingObject * createOsiBranch(OsiSolverInterface * solver,const OsiBranchingInformation * info, int way) const;
+    virtual OsiBranchingObject * createOsiBranch(OsiSolverInterface * solver, const OsiBranchingInformation * info, int way) const;
     /** Create an OsiSolverBranch object
 
         This returns NULL if branch not represented by bound changes
@@ -250,7 +250,7 @@ public:
     }
     /// Set -1 down always chosen first, +1 up always, 0 normal
     inline void setPreferredWay(int value) {
-        preferredWay_=value;
+        preferredWay_ = value;
     }
     /// Redoes data when sequence numbers change
     virtual void redoSequenceEtc(CbcModel * , int , const int * ) {}
@@ -304,7 +304,7 @@ public:
     CbcBranchingObject & operator=( const CbcBranchingObject& rhs);
 
     /// Clone
-    virtual CbcBranchingObject * clone() const=0;
+    virtual CbcBranchingObject * clone() const = 0;
 
     /// Destructor
     virtual ~CbcBranchingObject ();
@@ -318,12 +318,12 @@ public:
     }
     /// Reset number of branches left to original
     inline void resetNumberBranchesLeft() {
-        branchIndex_=0;
+        branchIndex_ = 0;
     }
     /// Set number of branches to do
     inline void setNumberBranches(int value) {
-        branchIndex_=0;
-        numberBranches_=value;
+        branchIndex_ = 0;
+        numberBranches_ = value;
     }
 
     /** \brief Execute the actions required to branch, as specified by the
@@ -332,7 +332,7 @@ public:
            strong branching is also passed.
            Returns change in guessed objective on next branch
     */
-    virtual double branch()=0;
+    virtual double branch() = 0;
     /** \brief Execute the actions required to branch, as specified by the
            current state of the branching object, and advance the object's
            state.  Mainly for diagnostics, whether it is true branch or
@@ -393,7 +393,7 @@ public:
       See #way()
     */
     inline void way(int way) {
-        way_=way;
+        way_ = way;
     }
 
     /// update model
@@ -411,7 +411,7 @@ public:
     }
     /// Set pointer back to object which created
     inline void setOriginalObject(CbcObject * object) {
-        originalCbcObject_=object;
+        originalCbcObject_ = object;
     }
 
     // Methods used in heuristics
@@ -427,7 +427,7 @@ public:
         smaller/same/larger than the argument.
     */
     virtual int compareOriginalObject(const CbcBranchingObject* brObj) const {
-        const CbcBranchingObject* br=dynamic_cast<const CbcBranchingObject*>(brObj);
+        const CbcBranchingObject* br = dynamic_cast<const CbcBranchingObject*>(brObj);
         return variable() - br->variable();
     }
 
@@ -592,14 +592,14 @@ public:
     CbcConsequence & operator=( const CbcConsequence & rhs);
 
     /// Clone
-    virtual CbcConsequence * clone() const=0;
+    virtual CbcConsequence * clone() const = 0;
 
     /// Destructor
     virtual ~CbcConsequence ();
 
     /** Apply to an LP solver.  Action depends on state
      */
-    virtual void applyToSolver(OsiSolverInterface * solver, int state) const=0;
+    virtual void applyToSolver(OsiSolverInterface * solver, int state) const = 0;
 
 protected:
 };

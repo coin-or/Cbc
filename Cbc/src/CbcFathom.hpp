@@ -33,10 +33,10 @@ public:
     virtual void setModel(CbcModel * model);
 
     /// Clone
-    virtual CbcFathom * clone() const=0;
+    virtual CbcFathom * clone() const = 0;
 
     /// Resets stuff if model changes
-    virtual void resetModel(CbcModel * model)=0;
+    virtual void resetModel(CbcModel * model) = 0;
 
     /** returns 0 if no fathoming attempted, 1 fully fathomed,
         2 incomplete search, 3 incomplete search but treat as complete.
@@ -46,7 +46,7 @@ public:
 
         If returns 3 then of course there is no guarantee of global optimum
     */
-    virtual int fathom(double *& newSolution)=0;
+    virtual int fathom(double *& newSolution) = 0;
 
     // Is this method possible
     inline bool possible() const {
@@ -85,7 +85,7 @@ public:
     CbcOsiSolver ();
 
     /// Clone
-    virtual OsiSolverInterface * clone(bool copyData=true) const;
+    virtual OsiSolverInterface * clone(bool copyData = true) const;
 
     /// Copy constructor
     CbcOsiSolver (const CbcOsiSolver &);
@@ -103,7 +103,7 @@ public:
     //@{
     /// Set Cbc Model
     inline void setCbcModel(CbcModel * model) {
-        cbcModel_=model;
+        cbcModel_ = model;
     }
     /// Return Cbc Model
     inline CbcModel * cbcModel() const {

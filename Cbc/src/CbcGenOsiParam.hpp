@@ -38,7 +38,7 @@ public:
       object. CBCOSI_FIRSTPARAM and CBCOSI_LASTPARAM are markers to allow
       convenient separation of parameter groups.
     */
-    typedef enum { CBCOSI_FIRSTPARAM = CbcCbcParam::CBCCBC_LASTPARAM+1,
+    typedef enum { CBCOSI_FIRSTPARAM = CbcCbcParam::CBCCBC_LASTPARAM + 1,
 
                    ALGORITHM, ALLSLACK, AUTOSCALE, BARRIER, BARRIERSCALE,
                    BASISIN, BASISOUT, BIASLU, CHOLESKY, CRASH, CROSSOVER,

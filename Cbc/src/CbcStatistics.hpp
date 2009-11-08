@@ -27,7 +27,7 @@ public:
     // Branch found to be infeasible by chooseBranch
     void sayInfeasible();
     // Just prints
-    void print(const int * sequenceLookup=NULL) const;
+    void print(const int * sequenceLookup = NULL) const;
     // Node number
     inline int node() const {
         return id_;

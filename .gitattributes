@@ -85,6 +85,8 @@ Cbc/src/CbcModel_kr.cpp -text
 Cbc/src/CbcModel_kr.hpp -text
 Cbc/src/CbcModel_stro.cpp -text
 Cbc/src/CbcModel_stro.hpp -text
+Cbc/src/CbcModel_stro2.cpp -text
+Cbc/src/CbcModel_stro3.cpp -text
 Cbc/src/CbcNode_ansi.cpp -text
 Cbc/src/CbcNode_ansi.hpp -text
 Cbc/src/CbcNode_ban.cpp -text

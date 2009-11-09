@@ -74,7 +74,7 @@
 
 namespace {
 
-  char svnid[] = "$Id: CbcGenSolvers.cpp 1173 2009-06-04 09:44:10Z forrest $" ;
+char svnid[] = "$Id: CbcGenSolvers.cpp 1173 2009-06-04 09:44:10Z forrest $" ;
 
 }
 
@@ -88,7 +88,7 @@ namespace {
 /*
   Data types for a vector of OsiSolverInterface objects.
 */
-typedef std::map<std::string,OsiSolverInterface*> solverMap_t ;
+typedef std::map<std::string, OsiSolverInterface*> solverMap_t ;
 typedef solverMap_t::const_iterator solverMapIter_t ;
 
 /*
@@ -117,43 +117,45 @@ namespace CbcGenSolvers {
 OsiSolverInterface *setupSolvers ()
 
 {
-/*
-  Populate the vector of OsiSolverInterface objects.
-*/
+    /*
+      Populate the vector of OsiSolverInterface objects.
+    */
 # ifdef COIN_HAS_CLP
-  solvers["clp"] = new OsiClpSolverInterface ;
+    solvers["clp"] = new OsiClpSolverInterface ;
 # endif
 # ifdef COIN_HAS_CPX
-  solvers["cpx"] = new OsiCpxSolverInterface ;
+    solvers["cpx"] = new OsiCpxSolverInterface ;
 # endif
 # ifdef COIN_HAS_DYLP
-  solvers["dylp"] = new OsiDylpSolverInterface  ;
+    solvers["dylp"] = new OsiDylpSolverInterface  ;
 # endif
 # ifdef COIN_HAS_GLPK
-  solvers["glpk"] = new OsiGlpkSolverInterface  ;
+    solvers["glpk"] = new OsiGlpkSolverInterface  ;
 # endif
 # ifdef COIN_HAS_MSK
-  solvers["msk"] = new OsiMskSolverInterface  ;
+    solvers["msk"] = new OsiMskSolverInterface  ;
 # endif
-/*
-  Set the standard default values in each solver.
-*/
-  for (solverMapIter_t solverIter = solvers.begin() ;
-	 solverIter != solvers.end() ;
-	 solverIter++)
-  { OsiSolverInterface *osi = solverIter->second ;
-    osi->messageHandler()->setLogLevel(0) ;
-    CbcOsiParamUtils::setOsiSolverInterfaceDefaults(osi) ; }
-/*
-  If we don't have a default solver, we're deeply confused.
-*/
-  OsiSolverInterface *dflt_solver = solvers[CBC_DEFAULT_SOLVER] ;
-  if (dflt_solver)
-  { std::cout << "Default solver is " << CBC_DEFAULT_SOLVER << std::endl ; }
-  else
-  { std::cerr << "No solvers!" << std::endl ; }
+    /*
+      Set the standard default values in each solver.
+    */
+    for (solverMapIter_t solverIter = solvers.begin() ;
+            solverIter != solvers.end() ;
+            solverIter++) {
+        OsiSolverInterface *osi = solverIter->second ;
+        osi->messageHandler()->setLogLevel(0) ;
+        CbcOsiParamUtils::setOsiSolverInterfaceDefaults(osi) ;
+    }
+    /*
+      If we don't have a default solver, we're deeply confused.
+    */
+    OsiSolverInterface *dflt_solver = solvers[CBC_DEFAULT_SOLVER] ;
+    if (dflt_solver) {
+        std::cout << "Default solver is " << CBC_DEFAULT_SOLVER << std::endl ;
+    } else {
+        std::cerr << "No solvers!" << std::endl ;
+    }
 
-  return (dflt_solver) ;
+    return (dflt_solver) ;
 }
 
 
@@ -163,10 +165,11 @@ OsiSolverInterface *setupSolvers ()
 
 void deleteSolvers ()
 {
-  for (solverMapIter_t solverIter = solvers.begin() ;
-	 solverIter != solvers.end() ;
-	 solverIter++)
-    { if (solverIter->second) delete solverIter->second ; }
+    for (solverMapIter_t solverIter = solvers.begin() ;
+            solverIter != solvers.end() ;
+            solverIter++) {
+        if (solverIter->second) delete solverIter->second ;
+    }
 }
 
 /*
@@ -178,42 +181,46 @@ void deleteSolvers ()
 
 int changeCbcSolver (CoinParam *param)
 
-{ assert (param != 0) ;
-  CbcGenParam *genParam = dynamic_cast<CbcGenParam *>(param) ;
-  assert (genParam != 0) ;
-  CbcGenCtlBlk *ctlBlk = genParam->obj() ;
-  assert (ctlBlk != 0) ;
-  CoinMessageHandler *msghandler = ctlBlk->messageHandler() ;
-/*
-  Setup to return nonfatal/fatal error (1/-1) by default.
-*/
-  int retval ;
-  if (CoinParamUtils::isInteractive())
-  { retval = 1 ; }
-  else
-  { retval = -1 ; }
-/*
-  Try to locate the solver specified by the user.
-*/
-  const std::string solverName = genParam->kwdVal() ;
-  OsiSolverInterface *protoOsi = solvers[solverName] ;
-  if (protoOsi == 0)
-  { std::cerr
-      << "Can't find solver \"" << solverName
-      << "\" in the solvers vector." << std::endl ;
-    return (retval) ; }
-  ctlBlk->dfltSolver_ = protoOsi ;
-/*
-  We have a solver. 
-*/
-  ctlBlk->message(CBCGEN_NEW_SOLVER)
+{
+    assert (param != 0) ;
+    CbcGenParam *genParam = dynamic_cast<CbcGenParam *>(param) ;
+    assert (genParam != 0) ;
+    CbcGenCtlBlk *ctlBlk = genParam->obj() ;
+    assert (ctlBlk != 0) ;
+    CoinMessageHandler *msghandler = ctlBlk->messageHandler() ;
+    /*
+      Setup to return nonfatal/fatal error (1/-1) by default.
+    */
+    int retval ;
+    if (CoinParamUtils::isInteractive()) {
+        retval = 1 ;
+    } else {
+        retval = -1 ;
+    }
+    /*
+      Try to locate the solver specified by the user.
+    */
+    const std::string solverName = genParam->kwdVal() ;
+    OsiSolverInterface *protoOsi = solvers[solverName] ;
+    if (protoOsi == 0) {
+        std::cerr
+            << "Can't find solver \"" << solverName
+            << "\" in the solvers vector." << std::endl ;
+        return (retval) ;
+    }
+    ctlBlk->dfltSolver_ = protoOsi ;
+    /*
+      We have a solver.
+    */
+    ctlBlk->message(CBCGEN_NEW_SOLVER)
     << solverName << CoinMessageEol ;
-  CbcModel *model = ctlBlk->model_ ;
-  assert (model != 0) ;
-  OsiSolverInterface *newOsi = protoOsi->clone() ;
-  model->assignSolver(newOsi) ;
+    CbcModel *model = ctlBlk->model_ ;
+    assert (model != 0) ;
+    OsiSolverInterface *newOsi = protoOsi->clone() ;
+    model->assignSolver(newOsi) ;
 
-  return (0) ; }
+    return (0) ;
+}
 
 
 /*
@@ -225,29 +232,30 @@ int changeCbcSolver (CoinParam *param)
 void setupSolverParam (CbcGenParam &solverParam)
 
 {
-/*
-  Basic setup: parameter type, name, parameter code.
-*/
-  solverParam.setType(CoinParam::coinParamKwd) ;
-  solverParam.setName("solver") ;
-  solverParam.setParamCode(CbcGenParam::SOLVER) ;
-/*
-  Add the solvers and set the default value.
-*/
-  for (solverMapIter_t solverIter = solvers.begin() ;
-       solverIter != solvers.end() ;
-       solverIter++)
-  { solverParam.appendKwd(solverIter->first) ; }
-  solverParam.setKwdVal(CBC_DEFAULT_SOLVER) ;
-  solverParam.setDisplay(true) ;
-  solverParam.setPushFunc(changeCbcSolver) ;
-/*
-  And add the help strings.
-*/
-  solverParam.setShortHelp("Specify underlying LP solver") ;
-  solverParam.setLongHelp(
-	"Select the underlying LP solver that will be used to solve the continuous relaxations of subproblems."
-	) ;
+    /*
+      Basic setup: parameter type, name, parameter code.
+    */
+    solverParam.setType(CoinParam::coinParamKwd) ;
+    solverParam.setName("solver") ;
+    solverParam.setParamCode(CbcGenParam::SOLVER) ;
+    /*
+      Add the solvers and set the default value.
+    */
+    for (solverMapIter_t solverIter = solvers.begin() ;
+            solverIter != solvers.end() ;
+            solverIter++) {
+        solverParam.appendKwd(solverIter->first) ;
+    }
+    solverParam.setKwdVal(CBC_DEFAULT_SOLVER) ;
+    solverParam.setDisplay(true) ;
+    solverParam.setPushFunc(changeCbcSolver) ;
+    /*
+      And add the help strings.
+    */
+    solverParam.setShortHelp("Specify underlying LP solver") ;
+    solverParam.setLongHelp(
+        "Select the underlying LP solver that will be used to solve the continuous relaxations of subproblems."
+    ) ;
 }
 
 } // end namespace CbcGenSolvers

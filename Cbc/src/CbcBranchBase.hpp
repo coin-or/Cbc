@@ -20,11 +20,11 @@ class CbcObjectUpdateData;
 //#############################################################################
 
 enum CbcRangeCompare {
-  CbcRangeSame,
-  CbcRangeDisjoint,
-  CbcRangeSubset,
-  CbcRangeSuperset,
-  CbcRangeOverlap
+    CbcRangeSame,
+    CbcRangeDisjoint,
+    CbcRangeSubset,
+    CbcRangeSuperset,
+    CbcRangeOverlap
 };
 
 //#############################################################################
@@ -55,7 +55,7 @@ enum CbcRangeCompare {
 	recoding.
  */
 // This can be used if object wants to skip strong branching
-  typedef struct {
+typedef struct {
     CbcBranchingObject * possibleBranch; // what a branch would do
     double upMovement; // cost going up (and initial away from feasible)
     double downMovement; // cost going down
@@ -69,188 +69,203 @@ enum CbcRangeCompare {
     int numItersDown; // number of iterations in solver
     int objectNumber; // Which object it is
     int fix; // 0 if no fix, 1 if we can fix up, -1 if we can fix down
-  } CbcStrongInfo;
+} CbcStrongInfo;
 
 class CbcObject : public OsiObject {
 
 public:
 
-  // Default Constructor 
-  CbcObject ();
+    // Default Constructor
+    CbcObject ();
 
-  // Useful constructor
-  CbcObject (CbcModel * model);
-  
-  // Copy constructor 
-  CbcObject ( const CbcObject &);
-   
-  // Assignment operator 
-  CbcObject & operator=( const CbcObject& rhs);
+    // Useful constructor
+    CbcObject (CbcModel * model);
 
-  /// Clone
-  virtual CbcObject * clone() const=0;
+    // Copy constructor
+    CbcObject ( const CbcObject &);
 
-  /// Destructor 
-  virtual ~CbcObject ();
+    // Assignment operator
+    CbcObject & operator=( const CbcObject& rhs);
 
-  /** Infeasibility of the object
+    /// Clone
+    virtual CbcObject * clone() const = 0;
 
-      This is some measure of the infeasibility of the object. It should be
-      scaled to be in the range [0.0, 0.5], with 0.0 indicating the object
-      is satisfied.
+    /// Destructor
+    virtual ~CbcObject ();
 
-      The preferred branching direction is returned in preferredWay,
+    /** Infeasibility of the object
 
-      This is used to prepare for strong branching but should also think of
-      case when no strong branching
-      
-      The object may also compute an estimate of cost of going "up" or "down".
-      This will probably be based on pseudo-cost ideas
-  */
+        This is some measure of the infeasibility of the object. It should be
+        scaled to be in the range [0.0, 0.5], with 0.0 indicating the object
+        is satisfied.
+
+        The preferred branching direction is returned in preferredWay,
+
+        This is used to prepare for strong branching but should also think of
+        case when no strong branching
+
+        The object may also compute an estimate of cost of going "up" or "down".
+        This will probably be based on pseudo-cost ideas
+    */
 #ifdef CBC_NEW_STYLE_BRANCH
-  virtual double infeasibility(const OsiBranchingInformation * info,
-			       int &preferredWay) const=0;
+    virtual double infeasibility(const OsiBranchingInformation * info,
+                                 int &preferredWay) const = 0;
 #else
-  virtual double infeasibility(const OsiBranchingInformation * /*info*/,
-			       int &preferredWay) const
-  {return infeasibility(preferredWay);}
-  virtual double infeasibility(int &/*preferredWay*/) const
-  {throw CoinError("Need code","infeasibility","CbcBranchBase");}
+    virtual double infeasibility(const OsiBranchingInformation * /*info*/,
+                                 int &preferredWay) const {
+        return infeasibility(preferredWay);
+    }
+    virtual double infeasibility(int &/*preferredWay*/) const {
+        throw CoinError("Need code", "infeasibility", "CbcBranchBase");
+    }
 #endif
 
-  /** For the variable(s) referenced by the object,
-      look at the current solution and set bounds to match the solution.
-  */
-  virtual void feasibleRegion() = 0;
-  /// Dummy one for compatibility
-  virtual double feasibleRegion(OsiSolverInterface * solver, const OsiBranchingInformation * info) const;
+    /** For the variable(s) referenced by the object,
+        look at the current solution and set bounds to match the solution.
+    */
+    virtual void feasibleRegion() = 0;
+    /// Dummy one for compatibility
+    virtual double feasibleRegion(OsiSolverInterface * solver, const OsiBranchingInformation * info) const;
 
-  /** For the variable(s) referenced by the object,
-      look at the current solution and set bounds to match the solution.
-      Returns measure of how much it had to move solution to make feasible
-  */
-  virtual double feasibleRegion(OsiSolverInterface * solver) const ;
-  
-  /** Create a branching object and indicate which way to branch first.
-      
-      The branching object has to know how to create branches (fix
-      variables, etc.)
-  */
+    /** For the variable(s) referenced by the object,
+        look at the current solution and set bounds to match the solution.
+        Returns measure of how much it had to move solution to make feasible
+    */
+    virtual double feasibleRegion(OsiSolverInterface * solver) const ;
+
+    /** Create a branching object and indicate which way to branch first.
+
+        The branching object has to know how to create branches (fix
+        variables, etc.)
+    */
 #ifdef CBC_NEW_STYLE_BRANCH
-  virtual CbcBranchingObject * createCbcBranch(OsiSolverInterface * solver,const OsiBranchingInformation * info, int way) =0;
+    virtual CbcBranchingObject * createCbcBranch(OsiSolverInterface * solver, const OsiBranchingInformation * info, int way) = 0;
 #else
-  virtual CbcBranchingObject * createCbcBranch(OsiSolverInterface * solver,const OsiBranchingInformation * info, int way) 
-  { return createBranch(solver,info,way);}
-  virtual CbcBranchingObject * createBranch(OsiSolverInterface * /*solver*/,
-					    const OsiBranchingInformation * /*info*/, int /*way*/)
-  {throw CoinError("Need code","createBranch","CbcBranchBase");} 
+    virtual CbcBranchingObject * createCbcBranch(OsiSolverInterface * solver, const OsiBranchingInformation * info, int way) {
+        return createBranch(solver, info, way);
+    }
+    virtual CbcBranchingObject * createBranch(OsiSolverInterface * /*solver*/,
+            const OsiBranchingInformation * /*info*/, int /*way*/) {
+        throw CoinError("Need code", "createBranch", "CbcBranchBase");
+    }
 #endif
-  /** Create an Osibranching object and indicate which way to branch first.
-      
-      The branching object has to know how to create branches (fix
-      variables, etc.)
-  */
-  virtual OsiBranchingObject * createOsiBranch(OsiSolverInterface * solver,const OsiBranchingInformation * info, int way) const;
-  /** Create an OsiSolverBranch object
+    /** Create an Osibranching object and indicate which way to branch first.
 
-      This returns NULL if branch not represented by bound changes
-  */
-  virtual OsiSolverBranch * solverBranch() const;
-  
-  /** \brief Given a valid solution (with reduced costs, etc.),
-      return a branching object which would give a new feasible
-      point in a good direction.
+        The branching object has to know how to create branches (fix
+        variables, etc.)
+    */
+    virtual OsiBranchingObject * createOsiBranch(OsiSolverInterface * solver, const OsiBranchingInformation * info, int way) const;
+    /** Create an OsiSolverBranch object
 
-      If the method cannot generate a feasible point (because there aren't
-      any, or because it isn't bright enough to find one), it should
-      return null.
-  */
-  virtual CbcBranchingObject * preferredNewFeasible() const 
-  { return NULL;}
-  
-  /** \brief Given a valid solution (with reduced costs, etc.),
-      return a branching object which would give a new feasible
-      point in a bad direction.
+        This returns NULL if branch not represented by bound changes
+    */
+    virtual OsiSolverBranch * solverBranch() const;
 
-      If the method cannot generate a feasible point (because there aren't
-      any, or because it isn't bright enough to find one), it should
-      return null.
-  */
-  virtual CbcBranchingObject * notPreferredNewFeasible() const 
-  { return NULL;}
+    /** \brief Given a valid solution (with reduced costs, etc.),
+        return a branching object which would give a new feasible
+        point in a good direction.
 
-  /** Reset variable bounds to their original values.
-  
-    Bounds may be tightened, so it may be good to be able to set this info in object.
-   */
-  virtual void resetBounds(const OsiSolverInterface * ) {}
-  
-  /** Returns floor and ceiling i.e. closest valid points
-  */
-  virtual void floorCeiling(double & floorValue, double & ceilingValue, double value,
-			    double tolerance) const;
+        If the method cannot generate a feasible point (because there aren't
+        any, or because it isn't bright enough to find one), it should
+        return null.
+    */
+    virtual CbcBranchingObject * preferredNewFeasible() const {
+        return NULL;
+    }
 
-  /** Pass in information on branch just done and create CbcObjectUpdateData instance.
-      If object does not need data then backward pointer will be NULL.
-      Assumes can get information from solver */
-  virtual CbcObjectUpdateData createUpdateInformation(const OsiSolverInterface * solver, 
-							const CbcNode * node,
-							const CbcBranchingObject * branchingObject);
+    /** \brief Given a valid solution (with reduced costs, etc.),
+        return a branching object which would give a new feasible
+        point in a bad direction.
 
-  /// Update object by CbcObjectUpdateData
-  virtual void updateInformation(const CbcObjectUpdateData & ) {}
+        If the method cannot generate a feasible point (because there aren't
+        any, or because it isn't bright enough to find one), it should
+        return null.
+    */
+    virtual CbcBranchingObject * notPreferredNewFeasible() const {
+        return NULL;
+    }
 
-  /// Identifier (normally column number in matrix)
-  inline int id() const
-  { return id_;}
-  
-  /** Set identifier (normally column number in matrix)
-      but 1000000000 to 1100000000 means optional branching object
-      i.e. code would work without it */
-  inline void setId(int value)
-  { id_ = value;}
-  
-  /** Return true if optional branching object
-      i.e. code would work without it */
-  inline bool optionalObject() const
-  { return (id_ >= 1000000000 && id_ < 1100000000);}
-  
-  /// Get position in object_ list
-  inline int position() const
-  { return position_;}
-  
-  /// Set position in object_ list
-  inline void setPosition(int position)
-  { position_ = position;}
-  
-   /// update model
-  inline void setModel(CbcModel * model)
-  { model_ = model;}
-  
-  /// Return model
-  inline CbcModel * model() const
-  {return  model_;}
+    /** Reset variable bounds to their original values.
 
-  /// If -1 down always chosen first, +1 up always, 0 normal
-  inline int preferredWay() const
-  { return preferredWay_;}
-  /// Set -1 down always chosen first, +1 up always, 0 normal
-  inline void setPreferredWay(int value)
-  { preferredWay_=value;}
-  /// Redoes data when sequence numbers change
-  virtual void redoSequenceEtc(CbcModel * , int , const int * ) {}
-  
+      Bounds may be tightened, so it may be good to be able to set this info in object.
+     */
+    virtual void resetBounds(const OsiSolverInterface * ) {}
+
+    /** Returns floor and ceiling i.e. closest valid points
+    */
+    virtual void floorCeiling(double & floorValue, double & ceilingValue, double value,
+                              double tolerance) const;
+
+    /** Pass in information on branch just done and create CbcObjectUpdateData instance.
+        If object does not need data then backward pointer will be NULL.
+        Assumes can get information from solver */
+    virtual CbcObjectUpdateData createUpdateInformation(const OsiSolverInterface * solver,
+            const CbcNode * node,
+            const CbcBranchingObject * branchingObject);
+
+    /// Update object by CbcObjectUpdateData
+    virtual void updateInformation(const CbcObjectUpdateData & ) {}
+
+    /// Identifier (normally column number in matrix)
+    inline int id() const {
+        return id_;
+    }
+
+    /** Set identifier (normally column number in matrix)
+        but 1000000000 to 1100000000 means optional branching object
+        i.e. code would work without it */
+    inline void setId(int value) {
+        id_ = value;
+    }
+
+    /** Return true if optional branching object
+        i.e. code would work without it */
+    inline bool optionalObject() const {
+        return (id_ >= 1000000000 && id_ < 1100000000);
+    }
+
+    /// Get position in object_ list
+    inline int position() const {
+        return position_;
+    }
+
+    /// Set position in object_ list
+    inline void setPosition(int position) {
+        position_ = position;
+    }
+
+    /// update model
+    inline void setModel(CbcModel * model) {
+        model_ = model;
+    }
+
+    /// Return model
+    inline CbcModel * model() const {
+        return  model_;
+    }
+
+    /// If -1 down always chosen first, +1 up always, 0 normal
+    inline int preferredWay() const {
+        return preferredWay_;
+    }
+    /// Set -1 down always chosen first, +1 up always, 0 normal
+    inline void setPreferredWay(int value) {
+        preferredWay_ = value;
+    }
+    /// Redoes data when sequence numbers change
+    virtual void redoSequenceEtc(CbcModel * , int , const int * ) {}
+
 protected:
-  /// data
+    /// data
 
-  /// Model
-  CbcModel * model_;
-  /// Identifier (normally column number in matrix)
-  int id_;
-  /// Position in object list
-  int position_;
-  /// If -1 down always chosen first, +1 up always, 0 normal
-  int preferredWay_;
+    /// Model
+    CbcModel * model_;
+    /// Identifier (normally column number in matrix)
+    int id_;
+    /// Position in object list
+    int position_;
+    /// If -1 down always chosen first, +1 up always, 0 normal
+    int preferredWay_;
 
 };
 
@@ -276,163 +291,175 @@ class CbcBranchingObject : public OsiBranchingObject {
 
 public:
 
-  /// Default Constructor 
-  CbcBranchingObject ();
+    /// Default Constructor
+    CbcBranchingObject ();
 
-  /// Constructor 
-  CbcBranchingObject (CbcModel * model, int variable, int way , double value);
-  
-  /// Copy constructor 
-  CbcBranchingObject ( const CbcBranchingObject &);
-   
-  /// Assignment operator 
-  CbcBranchingObject & operator=( const CbcBranchingObject& rhs);
+    /// Constructor
+    CbcBranchingObject (CbcModel * model, int variable, int way , double value);
 
-  /// Clone
-  virtual CbcBranchingObject * clone() const=0;
+    /// Copy constructor
+    CbcBranchingObject ( const CbcBranchingObject &);
 
-  /// Destructor 
-  virtual ~CbcBranchingObject ();
+    /// Assignment operator
+    CbcBranchingObject & operator=( const CbcBranchingObject& rhs);
 
-  /** Some branchingObjects may claim to be able to skip
-      strong branching.  If so they ahve to fill in CbcStrongInfo.
-      The object mention in incoming CbcStrongInfo must match.
-      Returns nonzero if skip is wanted */
-  virtual int fillStrongInfo( CbcStrongInfo & ) {return 0;}
-  /// Reset number of branches left to original
-  inline void resetNumberBranchesLeft()
-  { branchIndex_=0;}
-  /// Set number of branches to do
-  inline void setNumberBranches(int value)
-  { branchIndex_=0;numberBranches_=value;}
+    /// Clone
+    virtual CbcBranchingObject * clone() const = 0;
 
-  /** \brief Execute the actions required to branch, as specified by the
-	     current state of the branching object, and advance the object's
-	     state.  Mainly for diagnostics, whether it is true branch or
-	     strong branching is also passed.
-	     Returns change in guessed objective on next branch
-  */
-  virtual double branch()=0;
-  /** \brief Execute the actions required to branch, as specified by the
-	     current state of the branching object, and advance the object's
-	     state.  Mainly for diagnostics, whether it is true branch or
-	     strong branching is also passed.
-	     Returns change in guessed objective on next branch
-  */
-  virtual double branch(OsiSolverInterface * )
-  { return branch();}
-  /** Update bounds in solver as in 'branch' and update given bounds.
-      branchState is -1 for 'down' +1 for 'up' */
-  virtual void fix(OsiSolverInterface * ,
-		   double * , double * ,
-		   int ) const {}
+    /// Destructor
+    virtual ~CbcBranchingObject ();
 
-  /** Reset every information so that the branching object appears to point to
-      the previous child. This method does not need to modify anything in any
-      solver. */
-  virtual void previousBranch() {
-    assert(branchIndex_ > 0);
-    branchIndex_--;
-    way_ = -way_;
-  }
+    /** Some branchingObjects may claim to be able to skip
+        strong branching.  If so they ahve to fill in CbcStrongInfo.
+        The object mention in incoming CbcStrongInfo must match.
+        Returns nonzero if skip is wanted */
+    virtual int fillStrongInfo( CbcStrongInfo & ) {
+        return 0;
+    }
+    /// Reset number of branches left to original
+    inline void resetNumberBranchesLeft() {
+        branchIndex_ = 0;
+    }
+    /// Set number of branches to do
+    inline void setNumberBranches(int value) {
+        branchIndex_ = 0;
+        numberBranches_ = value;
+    }
 
-  using OsiBranchingObject::print ;
-  /** \brief Print something about branch - only if log level high
-  */
-  virtual void print() const {}
+    /** \brief Execute the actions required to branch, as specified by the
+           current state of the branching object, and advance the object's
+           state.  Mainly for diagnostics, whether it is true branch or
+           strong branching is also passed.
+           Returns change in guessed objective on next branch
+    */
+    virtual double branch() = 0;
+    /** \brief Execute the actions required to branch, as specified by the
+           current state of the branching object, and advance the object's
+           state.  Mainly for diagnostics, whether it is true branch or
+           strong branching is also passed.
+           Returns change in guessed objective on next branch
+    */
+    virtual double branch(OsiSolverInterface * ) {
+        return branch();
+    }
+    /** Update bounds in solver as in 'branch' and update given bounds.
+        branchState is -1 for 'down' +1 for 'up' */
+    virtual void fix(OsiSolverInterface * ,
+                     double * , double * ,
+                     int ) const {}
 
-  /** \brief Index identifying the associated CbcObject within its class.
-  
-    The name is misleading, and typically the index will <i>not</i> refer
-    directly to a variable.
-    Rather, it identifies an CbcObject within the class of similar
-    CbcObjects
-    
-    <i>E.g.</i>, for an CbcSimpleInteger, variable() is the index of the
-    integer variable in the set of integer variables (<i>not</i> the index of
-    the variable in the set of all variables).
-  */
-  inline int variable() const
-  {return variable_;}
+    /** Reset every information so that the branching object appears to point to
+        the previous child. This method does not need to modify anything in any
+        solver. */
+    virtual void previousBranch() {
+        assert(branchIndex_ > 0);
+        branchIndex_--;
+        way_ = -way_;
+    }
 
-  /** Get the state of the branching object
-  
-    Returns a code indicating the active arm of the branching object.
-    The precise meaning is defined in the derived class.
+    using OsiBranchingObject::print ;
+    /** \brief Print something about branch - only if log level high
+    */
+    virtual void print() const {}
 
-    \sa #way_
-  */
-  inline int way() const
-  {return way_;}
+    /** \brief Index identifying the associated CbcObject within its class.
 
-  /** Set the state of the branching object.
+      The name is misleading, and typically the index will <i>not</i> refer
+      directly to a variable.
+      Rather, it identifies an CbcObject within the class of similar
+      CbcObjects
 
-    See #way()
-  */
-  inline void way(int way)
-  {way_=way;}
+      <i>E.g.</i>, for an CbcSimpleInteger, variable() is the index of the
+      integer variable in the set of integer variables (<i>not</i> the index of
+      the variable in the set of all variables).
+    */
+    inline int variable() const {
+        return variable_;
+    }
 
-   /// update model
-  inline void setModel(CbcModel * model)
-  { model_ = model;}
-  /// Return model
-  inline CbcModel * model() const
-  {return  model_;}
+    /** Get the state of the branching object
 
-  /// Return pointer back to object which created
-  inline CbcObject * object() const
-  {return  originalCbcObject_;}
-  /// Set pointer back to object which created
-  inline void setOriginalObject(CbcObject * object)
-  {originalCbcObject_=object;}
+      Returns a code indicating the active arm of the branching object.
+      The precise meaning is defined in the derived class.
 
-  // Methods used in heuristics
-  
-  /** Return the type (an integer identifier) of \c this */
-  virtual int type() const = 0;
+      \sa #way_
+    */
+    inline int way() const {
+        return way_;
+    }
 
-  /** Compare the original object of \c this with the original object of \c
-      brObj. Assumes that there is an ordering of the original objects.
-      This method should be invoked only if \c this and brObj are of the same
-      type. 
-      Return negative/0/positive depending on whether \c this is
-      smaller/same/larger than the argument.
-  */
-  virtual int compareOriginalObject(const CbcBranchingObject* brObj) const
-  {
-    const CbcBranchingObject* br=dynamic_cast<const CbcBranchingObject*>(brObj);
-    return variable() - br->variable();
-  }
+    /** Set the state of the branching object.
 
-  /** Compare the \c this with \c brObj. \c this and \c brObj must be os the
-      same type and must have the same original object, but they may have
-      different feasible regions.
-      Return the appropriate CbcRangeCompare value (first argument being the
-      sub/superset if that's the case). In case of overlap (and if \c
-      replaceIfOverlap is true) replace the current branching object with one
-      whose feasible region is the overlap.
-   */
-  virtual CbcRangeCompare compareBranchingObject
-  (const CbcBranchingObject* brObj, const bool replaceIfOverlap = false) = 0;
+      See #way()
+    */
+    inline void way(int way) {
+        way_ = way;
+    }
+
+    /// update model
+    inline void setModel(CbcModel * model) {
+        model_ = model;
+    }
+    /// Return model
+    inline CbcModel * model() const {
+        return  model_;
+    }
+
+    /// Return pointer back to object which created
+    inline CbcObject * object() const {
+        return  originalCbcObject_;
+    }
+    /// Set pointer back to object which created
+    inline void setOriginalObject(CbcObject * object) {
+        originalCbcObject_ = object;
+    }
+
+    // Methods used in heuristics
+
+    /** Return the type (an integer identifier) of \c this */
+    virtual int type() const = 0;
+
+    /** Compare the original object of \c this with the original object of \c
+        brObj. Assumes that there is an ordering of the original objects.
+        This method should be invoked only if \c this and brObj are of the same
+        type.
+        Return negative/0/positive depending on whether \c this is
+        smaller/same/larger than the argument.
+    */
+    virtual int compareOriginalObject(const CbcBranchingObject* brObj) const {
+        const CbcBranchingObject* br = dynamic_cast<const CbcBranchingObject*>(brObj);
+        return variable() - br->variable();
+    }
+
+    /** Compare the \c this with \c brObj. \c this and \c brObj must be os the
+        same type and must have the same original object, but they may have
+        different feasible regions.
+        Return the appropriate CbcRangeCompare value (first argument being the
+        sub/superset if that's the case). In case of overlap (and if \c
+        replaceIfOverlap is true) replace the current branching object with one
+        whose feasible region is the overlap.
+     */
+    virtual CbcRangeCompare compareBranchingObject
+    (const CbcBranchingObject* brObj, const bool replaceIfOverlap = false) = 0;
 
 protected:
 
-  /// The model that owns this branching object
-  CbcModel * model_;
-  /// Pointer back to object which created
-  CbcObject * originalCbcObject_;
+    /// The model that owns this branching object
+    CbcModel * model_;
+    /// Pointer back to object which created
+    CbcObject * originalCbcObject_;
 
-  /// Branching variable (0 is first integer)
-  int variable_;
-  // was - Way to branch - -1 down (first), 1 up, -2 down (second), 2 up (second)
-  /** The state of the branching object.
+    /// Branching variable (0 is first integer)
+    int variable_;
+    // was - Way to branch - -1 down (first), 1 up, -2 down (second), 2 up (second)
+    /** The state of the branching object.
 
-    Specifies the active arm of the branching object. Coded as -1 to take
-    the `down' arm, +1 for the `up' arm. `Down' and `up' are defined based on
-    the natural meaning (floor and ceiling, respectively) for a simple integer.
-    The precise meaning is defined in the derived class.
-  */
-  int way_;
+      Specifies the active arm of the branching object. Coded as -1 to take
+      the `down' arm, +1 for the `up' arm. `Down' and `up' are defined based on
+      the natural meaning (floor and ceiling, respectively) for a simple integer.
+      The precise meaning is defined in the derived class.
+    */
+    int way_;
 
 };
 
@@ -452,89 +479,95 @@ protected:
 
 class CbcBranchDecision {
 public:
-  /// Default Constructor 
-  CbcBranchDecision ();
+    /// Default Constructor
+    CbcBranchDecision ();
 
-  // Copy constructor 
-  CbcBranchDecision ( const CbcBranchDecision &);
-   
-  /// Destructor
-  virtual ~CbcBranchDecision();
+    // Copy constructor
+    CbcBranchDecision ( const CbcBranchDecision &);
 
- /// Clone
-  virtual CbcBranchDecision * clone() const = 0;
+    /// Destructor
+    virtual ~CbcBranchDecision();
 
-  /// Initialize <i>e.g.</i> before starting to choose a branch at a node
-  virtual void initialize(CbcModel * model) = 0;
+/// Clone
+    virtual CbcBranchDecision * clone() const = 0;
 
-  /** \brief Compare two branching objects. Return nonzero if branching
-	     using \p thisOne is better than branching using \p bestSoFar.
-    
-    If \p bestSoFar is NULL, the routine should return a nonzero value.
-    This routine is used only after strong branching.
-    Either this or bestBranch is used depending which user wants.
+    /// Initialize <i>e.g.</i> before starting to choose a branch at a node
+    virtual void initialize(CbcModel * model) = 0;
 
- */
+    /** \brief Compare two branching objects. Return nonzero if branching
+           using \p thisOne is better than branching using \p bestSoFar.
 
-  virtual int
-  betterBranch (CbcBranchingObject * thisOne,
-		CbcBranchingObject * bestSoFar,
-		double changeUp, int numberInfeasibilitiesUp,
-		double changeDown, int numberInfeasibilitiesDown) = 0 ;
+      If \p bestSoFar is NULL, the routine should return a nonzero value.
+      This routine is used only after strong branching.
+      Either this or bestBranch is used depending which user wants.
 
-  /** \brief Compare N branching objects. Return index of best
-      and sets way of branching in chosen object.
-    
-    Either this or betterBranch is used depending which user wants.
-  */
+    */
 
-  virtual int
-  bestBranch (CbcBranchingObject ** objects, int numberObjects, int numberUnsatisfied,
-	      double * changeUp, int * numberInfeasibilitiesUp,
-	      double * changeDown, int * numberInfeasibilitiesDown,
-	      double objectiveValue) ;
+    virtual int
+    betterBranch (CbcBranchingObject * thisOne,
+                  CbcBranchingObject * bestSoFar,
+                  double changeUp, int numberInfeasibilitiesUp,
+                  double changeDown, int numberInfeasibilitiesDown) = 0 ;
 
-  /** Says whether this method can handle both methods -
-      1 better, 2 best, 3 both */
-  virtual int whichMethod() {return 2;}
+    /** \brief Compare N branching objects. Return index of best
+        and sets way of branching in chosen object.
 
-  /** Saves a clone of current branching object.  Can be used to update
-      information on object causing branch - after branch */
-  virtual void saveBranchingObject(OsiBranchingObject * ) {}
-  /** Pass in information on branch just done.
-      assumes object can get information from solver */
-  virtual void updateInformation(OsiSolverInterface * , 
-                                 const CbcNode * ) {}
-  /** Sets or gets best criterion so far */
-  virtual void setBestCriterion(double ) {}
-  virtual double getBestCriterion() const {return 0.0;}
-  /// Create C++ lines to get to current state
-  virtual void generateCpp( FILE * ) {}
-  /// Model
-  inline CbcModel * cbcModel() const
-  { return model_;}
-  /* If chooseMethod_ id non-null then the rest is fairly pointless
-     as choosemethod_ will be doing all work
-  */
-  OsiChooseVariable * chooseMethod() const
-  { return chooseMethod_;}
-  /// Set (clone) chooseMethod
-  void setChooseMethod(const OsiChooseVariable & method);
+      Either this or betterBranch is used depending which user wants.
+    */
+
+    virtual int
+    bestBranch (CbcBranchingObject ** objects, int numberObjects, int numberUnsatisfied,
+                double * changeUp, int * numberInfeasibilitiesUp,
+                double * changeDown, int * numberInfeasibilitiesDown,
+                double objectiveValue) ;
+
+    /** Says whether this method can handle both methods -
+        1 better, 2 best, 3 both */
+    virtual int whichMethod() {
+        return 2;
+    }
+
+    /** Saves a clone of current branching object.  Can be used to update
+        information on object causing branch - after branch */
+    virtual void saveBranchingObject(OsiBranchingObject * ) {}
+    /** Pass in information on branch just done.
+        assumes object can get information from solver */
+    virtual void updateInformation(OsiSolverInterface * ,
+                                   const CbcNode * ) {}
+    /** Sets or gets best criterion so far */
+    virtual void setBestCriterion(double ) {}
+    virtual double getBestCriterion() const {
+        return 0.0;
+    }
+    /// Create C++ lines to get to current state
+    virtual void generateCpp( FILE * ) {}
+    /// Model
+    inline CbcModel * cbcModel() const {
+        return model_;
+    }
+    /* If chooseMethod_ id non-null then the rest is fairly pointless
+       as choosemethod_ will be doing all work
+    */
+    OsiChooseVariable * chooseMethod() const {
+        return chooseMethod_;
+    }
+    /// Set (clone) chooseMethod
+    void setChooseMethod(const OsiChooseVariable & method);
 
 protected:
-  
-  // Clone of branching object
-  CbcBranchingObject * object_;
-  /// Pointer to model
-  CbcModel * model_;
-  /* If chooseMethod_ id non-null then the rest is fairly pointless
-     as choosemethod_ will be doing all work
-  */
-  OsiChooseVariable * chooseMethod_;
+
+    // Clone of branching object
+    CbcBranchingObject * object_;
+    /// Pointer to model
+    CbcModel * model_;
+    /* If chooseMethod_ id non-null then the rest is fairly pointless
+       as choosemethod_ will be doing all work
+    */
+    OsiChooseVariable * chooseMethod_;
 private:
-  /// Assignment is illegal
-  CbcBranchDecision & operator=(const CbcBranchDecision& rhs);
-  
+    /// Assignment is illegal
+    CbcBranchDecision & operator=(const CbcBranchDecision& rhs);
+
 };
 /** Abstract base class for consequent bounds.
     When a variable is branched on it normally interacts with other variables by
@@ -549,25 +582,25 @@ class CbcConsequence {
 
 public:
 
-  // Default Constructor 
-  CbcConsequence ();
+    // Default Constructor
+    CbcConsequence ();
 
-  // Copy constructor 
-  CbcConsequence ( const CbcConsequence & rhs);
-   
-  // Assignment operator 
-  CbcConsequence & operator=( const CbcConsequence & rhs);
+    // Copy constructor
+    CbcConsequence ( const CbcConsequence & rhs);
 
-  /// Clone
-  virtual CbcConsequence * clone() const=0;
+    // Assignment operator
+    CbcConsequence & operator=( const CbcConsequence & rhs);
 
-  /// Destructor 
-  virtual ~CbcConsequence ();
+    /// Clone
+    virtual CbcConsequence * clone() const = 0;
 
-  /** Apply to an LP solver.  Action depends on state
-   */
-  virtual void applyToSolver(OsiSolverInterface * solver, int state) const=0;
-  
+    /// Destructor
+    virtual ~CbcConsequence ();
+
+    /** Apply to an LP solver.  Action depends on state
+     */
+    virtual void applyToSolver(OsiSolverInterface * solver, int state) const = 0;
+
 protected:
 };
 /*  This stores data so an object can be updated
@@ -576,48 +609,48 @@ class CbcObjectUpdateData {
 
 public:
 
-  /// Default Constructor 
-  CbcObjectUpdateData ();
+    /// Default Constructor
+    CbcObjectUpdateData ();
 
-  /// Useful constructor
-  CbcObjectUpdateData (CbcObject * object,
-		       int way,
-		       double change,
-		       int status,
-		       int intDecrease_,
-		       double branchingValue);
-  
-  /// Copy constructor 
-  CbcObjectUpdateData ( const CbcObjectUpdateData &);
-   
-  /// Assignment operator 
-  CbcObjectUpdateData & operator=( const CbcObjectUpdateData& rhs);
+    /// Useful constructor
+    CbcObjectUpdateData (CbcObject * object,
+                         int way,
+                         double change,
+                         int status,
+                         int intDecrease_,
+                         double branchingValue);
 
-  /// Destructor 
-  virtual ~CbcObjectUpdateData ();
+    /// Copy constructor
+    CbcObjectUpdateData ( const CbcObjectUpdateData &);
 
-  
+    /// Assignment operator
+    CbcObjectUpdateData & operator=( const CbcObjectUpdateData& rhs);
+
+    /// Destructor
+    virtual ~CbcObjectUpdateData ();
+
+
 public:
-  /// data
+    /// data
 
-  /// Object
-  CbcObject * object_;
-  /// Branch as defined by instance of CbcObject
-  int way_;
-  /// Object number
-  int objectNumber_;
-  /// Change in objective
-  double change_;
-  /// Status 0 Optimal, 1 infeasible, 2 unknown
-  int status_;
-  /// Decrease in number unsatisfied
-  int intDecrease_;
-  /// Branching value
-  double branchingValue_;
-  /// Objective value before branching
-  double originalObjective_;
-  /// Current cutoff
-  double cutoff_;
+    /// Object
+    CbcObject * object_;
+    /// Branch as defined by instance of CbcObject
+    int way_;
+    /// Object number
+    int objectNumber_;
+    /// Change in objective
+    double change_;
+    /// Status 0 Optimal, 1 infeasible, 2 unknown
+    int status_;
+    /// Decrease in number unsatisfied
+    int intDecrease_;
+    /// Branching value
+    double branchingValue_;
+    /// Objective value before branching
+    double originalObjective_;
+    /// Current cutoff
+    double cutoff_;
 
 };
 
@@ -631,41 +664,41 @@ public:
 */
 static inline CbcRangeCompare
 CbcCompareRanges(double* thisBd, const double* otherBd,
-		 const bool replaceIfOverlap)
+                 const bool replaceIfOverlap)
 {
-  const double lbDiff = thisBd[0] - otherBd[0];
-  if (lbDiff < 0) { // lb of this < lb of other
-    if (thisBd[1] >= otherBd[1]) { // ub of this >= ub of other
-      return CbcRangeSuperset;
-    } else if (thisBd[1] < otherBd[0]) {
-      return CbcRangeDisjoint;
-    } else {
-      // overlap
-      if (replaceIfOverlap) {
-	thisBd[0] = otherBd[0];
-      }
-      return CbcRangeOverlap;
+    const double lbDiff = thisBd[0] - otherBd[0];
+    if (lbDiff < 0) { // lb of this < lb of other
+        if (thisBd[1] >= otherBd[1]) { // ub of this >= ub of other
+            return CbcRangeSuperset;
+        } else if (thisBd[1] < otherBd[0]) {
+            return CbcRangeDisjoint;
+        } else {
+            // overlap
+            if (replaceIfOverlap) {
+                thisBd[0] = otherBd[0];
+            }
+            return CbcRangeOverlap;
+        }
+    } else if (lbDiff > 0) { // lb of this > lb of other
+        if (thisBd[1] <= otherBd[1]) { // ub of this <= ub of other
+            return CbcRangeSubset;
+        } else if (thisBd[0] > otherBd[1]) {
+            return CbcRangeDisjoint;
+        } else {
+            // overlap
+            if (replaceIfOverlap) {
+                thisBd[1] = otherBd[1];
+            }
+            return CbcRangeOverlap;
+        }
+    } else { // lb of this == lb of other
+        if (thisBd[1] == otherBd[1]) {
+            return CbcRangeSame;
+        }
+        return thisBd[1] < otherBd[1] ? CbcRangeSubset : CbcRangeSuperset;
     }
-  } else if (lbDiff > 0) { // lb of this > lb of other
-    if (thisBd[1] <= otherBd[1]) { // ub of this <= ub of other
-      return CbcRangeSubset;
-    } else if (thisBd[0] > otherBd[1]) {
-      return CbcRangeDisjoint;
-    } else {
-      // overlap
-      if (replaceIfOverlap) {
-	thisBd[1] = otherBd[1];
-      }
-      return CbcRangeOverlap;
-    }
-  } else { // lb of this == lb of other
-    if (thisBd[1] == otherBd[1]) {
-      return CbcRangeSame;
-    }
-    return thisBd[1] < otherBd[1] ? CbcRangeSubset : CbcRangeSuperset;
-  }
 
-  return CbcRangeSame; // fake return
+    return CbcRangeSame; // fake return
 
 }
 

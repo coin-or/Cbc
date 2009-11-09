@@ -21,8 +21,7 @@
 //#define CBC_DUBIOUS_HEAP
 #endif
 #ifndef CBC_DUBIOUS_HEAP
-class CbcTree
-{
+class CbcTree {
 
 public:
 
@@ -105,11 +104,11 @@ public:
     virtual double getBestPossibleObjective();
     /// Reset maximum node number
     inline void resetNodeNumbers() {
-        maximumNodeNumber_=0;
+        maximumNodeNumber_ = 0;
     }
     /// Set number of branches
     inline void setNumberBranching(int value) {
-        numberBranching_=value;
+        numberBranching_ = value;
     }
     /// Get number of branches
     inline int getNumberBranching() const {
@@ -117,7 +116,7 @@ public:
     }
     /// Set maximum branches
     inline void setMaximumBranching(int value) {
-        maximumBranching_=value;
+        maximumBranching_ = value;
     }
     /// Get maximum branches
     inline int getMaximumBranching() const {
@@ -132,7 +131,7 @@ public:
         return newBound_;
     }
     /// Adds branching information to complete state
-    void addBranchingInformation(const CbcModel * model,const CbcNodeInfo * nodeInfo,
+    void addBranchingInformation(const CbcModel * model, const CbcNodeInfo * nodeInfo,
                                  const double * currentLower,
                                  const double * currentUpper);
     /// Increase space for data
@@ -161,8 +160,7 @@ protected:
     This class is used to hold the set of live nodes in the search tree.
 */
 
-class CbcTreeArray : public CbcTree
-{
+class CbcTreeArray : public CbcTree {
 
 public:
 
@@ -236,8 +234,7 @@ protected:
     This class is used to hold the set of live nodes in the search tree.
 */
 
-class CbcNewTree : public CbcTree, public CoinSearchTreeManager
-{
+class CbcNewTree : public CbcTree, public CoinSearchTreeManager {
 
 public:
 
@@ -321,8 +318,7 @@ protected:
 
 };
 #else
-class CbcTree
-{
+class CbcTree {
 
 public:
 
@@ -408,7 +404,7 @@ public:
     virtual void endSearch() {}
     /// Reset maximum node number
     inline void resetNodeNumbers() {
-        maximumNodeNumber_=0;
+        maximumNodeNumber_ = 0;
     }
 //@}
 protected:

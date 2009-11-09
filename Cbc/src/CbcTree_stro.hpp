@@ -104,11 +104,11 @@ public:
     virtual double getBestPossibleObjective();
     /// Reset maximum node number
     inline void resetNodeNumbers() {
-        maximumNodeNumber_=0;
+        maximumNodeNumber_ = 0;
     }
     /// Set number of branches
     inline void setNumberBranching(int value) {
-        numberBranching_=value;
+        numberBranching_ = value;
     }
     /// Get number of branches
     inline int getNumberBranching() const {
@@ -116,7 +116,7 @@ public:
     }
     /// Set maximum branches
     inline void setMaximumBranching(int value) {
-        maximumBranching_=value;
+        maximumBranching_ = value;
     }
     /// Get maximum branches
     inline int getMaximumBranching() const {
@@ -131,7 +131,7 @@ public:
         return newBound_;
     }
     /// Adds branching information to complete state
-    void addBranchingInformation(const CbcModel * model,const CbcNodeInfo * nodeInfo,
+    void addBranchingInformation(const CbcModel * model, const CbcNodeInfo * nodeInfo,
                                  const double * currentLower,
                                  const double * currentUpper);
     /// Increase space for data
@@ -404,7 +404,7 @@ public:
     virtual void endSearch() {}
     /// Reset maximum node number
     inline void resetNodeNumbers() {
-        maximumNodeNumber_=0;
+        maximumNodeNumber_ = 0;
     }
 //@}
 protected:

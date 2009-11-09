@@ -33,19 +33,19 @@ class CbcNodeInfo;
 class CbcCountRowCut : public OsiRowCut {
 
 public:
-  
-  /** @name Constructors & destructors */
-  //@{
 
-    /// Default Constructor 
+    /** @name Constructors & destructors */
+    //@{
+
+    /// Default Constructor
     CbcCountRowCut ();
 
     /// `Copy' constructor using an OsiRowCut
-    CbcCountRowCut ( const OsiRowCut &);  
+    CbcCountRowCut ( const OsiRowCut &);
 
     /// `Copy' constructor using an OsiRowCut and an CbcNodeInfo
     CbcCountRowCut(const OsiRowCut &, CbcNodeInfo *, int whichOne,
-		   int whichGenerator=-1,int numberPointingToThis=0);  
+                   int whichGenerator = -1, int numberPointingToThis = 0);
 
     /** Destructor
 
@@ -54,59 +54,61 @@ public:
       \link CbcNodeInfo::cuts_ cuts_ \endlink list.
     */
     virtual ~CbcCountRowCut ();
-  //@}
+    //@}
 
-  /// Increment the number of references
-  void increment(int change=1);
+    /// Increment the number of references
+    void increment(int change = 1);
 
-  /// Decrement the number of references and return the number left.
-  int decrement(int change=1);
+    /// Decrement the number of references and return the number left.
+    int decrement(int change = 1);
 
-  /** \brief Set the information associating this cut with a node
+    /** \brief Set the information associating this cut with a node
 
-    An CbcNodeInfo object and an index in the cut set of the node.
-    For locally valid cuts, the node will be the  search tree node where the
-    cut was generated. For globally valid cuts, it's the node where the cut
-    was activated.
-  */
-  void setInfo(CbcNodeInfo *, int whichOne);
+      An CbcNodeInfo object and an index in the cut set of the node.
+      For locally valid cuts, the node will be the  search tree node where the
+      cut was generated. For globally valid cuts, it's the node where the cut
+      was activated.
+    */
+    void setInfo(CbcNodeInfo *, int whichOne);
 
-  /// Number of other CbcNodeInfo objects pointing to this row cut
-  inline int numberPointingToThis()
-  { return numberPointingToThis_;}
+    /// Number of other CbcNodeInfo objects pointing to this row cut
+    inline int numberPointingToThis() {
+        return numberPointingToThis_;
+    }
 
-  /// Which generator for cuts - as user order
-  inline int whichCutGenerator() const
-  { return whichCutGenerator_;}
-  
-  /// Returns true if can drop cut if slack basic
-  bool canDropCut(const OsiSolverInterface * solver, int row) const;
+    /// Which generator for cuts - as user order
+    inline int whichCutGenerator() const {
+        return whichCutGenerator_;
+    }
+
+    /// Returns true if can drop cut if slack basic
+    bool canDropCut(const OsiSolverInterface * solver, int row) const;
 
 #ifdef CHECK_CUT_COUNTS
-  // Just for printing sanity checks
-  int tempNumber_;
+    // Just for printing sanity checks
+    int tempNumber_;
 #endif
 
 private:
 
-  /// Standard copy is illegal (reference counts would be incorrect)
-  CbcCountRowCut(const CbcCountRowCut &);
-  
-  /// Standard assignment is illegal (reference counts would be incorrect)
-  CbcCountRowCut & operator=(const CbcCountRowCut& rhs);
+    /// Standard copy is illegal (reference counts would be incorrect)
+    CbcCountRowCut(const CbcCountRowCut &);
 
-  /// Backward pointer to owning CbcNodeInfo
-  CbcNodeInfo * owner_;
-  
-  /// Index of cut in owner's cut set
-  /// (\link CbcNodeInfo::cuts_ cuts_ \endlink).
-  int ownerCut_;
-  
-  /// Number of other CbcNodeInfo objects pointing to this cut
-  int numberPointingToThis_;
+    /// Standard assignment is illegal (reference counts would be incorrect)
+    CbcCountRowCut & operator=(const CbcCountRowCut& rhs);
 
-  /// Which generator created this cut
-  int whichCutGenerator_;
+    /// Backward pointer to owning CbcNodeInfo
+    CbcNodeInfo * owner_;
+
+    /// Index of cut in owner's cut set
+    /// (\link CbcNodeInfo::cuts_ cuts_ \endlink).
+    int ownerCut_;
+
+    /// Number of other CbcNodeInfo objects pointing to this cut
+    int numberPointingToThis_;
+
+    /// Which generator created this cut
+    int whichCutGenerator_;
 
 };
 

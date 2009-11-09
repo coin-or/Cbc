@@ -21,8 +21,7 @@
 //#define CBC_DUBIOUS_HEAP
 #endif
 #ifndef CBC_DUBIOUS_HEAP
-class CbcTree
-{
+class CbcTree {
 
 public:
 
@@ -66,19 +65,16 @@ public:
     virtual bool empty() ;
 
     /// Return size
-    virtual int size() const
-    {
+    virtual int size() const {
         return nodes_.size();
     }
     /// [] operator
-    inline CbcNode * operator [] (int i) const
-    {
+    inline CbcNode * operator [] (int i) const {
         return nodes_[i];
     }
 
     /// Return a node pointer
-    inline CbcNode * nodePointer (int i) const
-    {
+    inline CbcNode * nodePointer (int i) const {
         return nodes_[i];
     }
 
@@ -107,42 +103,35 @@ public:
     /// Get best possible objective function in the tree
     virtual double getBestPossibleObjective();
     /// Reset maximum node number
-    inline void resetNodeNumbers()
-    {
-        maximumNodeNumber_=0;
+    inline void resetNodeNumbers() {
+        maximumNodeNumber_ = 0;
     }
     /// Set number of branches
-    inline void setNumberBranching(int value)
-    {
-        numberBranching_=value;
+    inline void setNumberBranching(int value) {
+        numberBranching_ = value;
     }
     /// Get number of branches
-    inline int getNumberBranching() const
-    {
+    inline int getNumberBranching() const {
         return numberBranching_;
     }
     /// Set maximum branches
-    inline void setMaximumBranching(int value)
-    {
-        maximumBranching_=value;
+    inline void setMaximumBranching(int value) {
+        maximumBranching_ = value;
     }
     /// Get maximum branches
-    inline int getMaximumBranching() const
-    {
+    inline int getMaximumBranching() const {
         return maximumBranching_;
     }
     /// Get branched variables
-    inline unsigned int * branched() const
-    {
+    inline unsigned int * branched() const {
         return branched_;
     }
     /// Get bounds
-    inline int * newBounds() const
-    {
+    inline int * newBounds() const {
         return newBound_;
     }
     /// Adds branching information to complete state
-    void addBranchingInformation(const CbcModel * model,const CbcNodeInfo * nodeInfo,
+    void addBranchingInformation(const CbcModel * model, const CbcNodeInfo * nodeInfo,
                                  const double * currentLower,
                                  const double * currentUpper);
     /// Increase space for data
@@ -171,8 +160,7 @@ protected:
     This class is used to hold the set of live nodes in the search tree.
 */
 
-class CbcTreeArray : public CbcTree
-{
+class CbcTreeArray : public CbcTree {
 
 public:
 
@@ -246,8 +234,7 @@ protected:
     This class is used to hold the set of live nodes in the search tree.
 */
 
-class CbcNewTree : public CbcTree, public CoinSearchTreeManager
-{
+class CbcNewTree : public CbcTree, public CoinSearchTreeManager {
 
 public:
 
@@ -291,20 +278,17 @@ public:
     virtual bool empty() ;
 
     /// Return size
-    inline int size() const
-    {
+    inline int size() const {
         return nodes_.size();
     }
 
     /// [] operator
-    inline CbcNode * operator [] (int i) const
-    {
+    inline CbcNode * operator [] (int i) const {
         return nodes_[i];
     }
 
     /// Return a node pointer
-    inline CbcNode * nodePointer (int i) const
-    {
+    inline CbcNode * nodePointer (int i) const {
         return nodes_[i];
     }
 
@@ -334,8 +318,7 @@ protected:
 
 };
 #else
-class CbcTree
-{
+class CbcTree {
 
 public:
 
@@ -379,20 +362,17 @@ public:
     //virtual bool empty() ;
 
     /// Return size
-    inline int size() const
-    {
+    inline int size() const {
         return nodes_.size();
     }
 
     /// [] operator
-    inline CbcNode * operator [] (int i) const
-    {
+    inline CbcNode * operator [] (int i) const {
         return nodes_[i];
     }
 
     /// Return a node pointer
-    inline CbcNode * nodePointer (int i) const
-    {
+    inline CbcNode * nodePointer (int i) const {
         return nodes_[i];
     }
 
@@ -423,9 +403,8 @@ public:
     /// We may have got an intelligent tree so give it one more chance
     virtual void endSearch() {}
     /// Reset maximum node number
-    inline void resetNodeNumbers()
-    {
-        maximumNodeNumber_=0;
+    inline void resetNodeNumbers() {
+        maximumNodeNumber_ = 0;
     }
 //@}
 protected:

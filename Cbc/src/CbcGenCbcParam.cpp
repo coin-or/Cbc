@@ -23,7 +23,7 @@
 
 namespace {
 
-  char svnid[] = "$Id: CbcGenCbcParam.cpp 1173 2009-06-04 09:44:10Z forrest $" ;
+char svnid[] = "$Id: CbcGenCbcParam.cpp 1173 2009-06-04 09:44:10Z forrest $" ;
 
 }
 
@@ -37,12 +37,12 @@ namespace {
 /*
   Default constructor.
 */
-CbcCbcParam::CbcCbcParam () 
-  : CoinParam(),
-    paramCode_(CbcCbcParamCode(0)),
-    obj_(0)
+CbcCbcParam::CbcCbcParam ()
+        : CoinParam(),
+        paramCode_(CbcCbcParamCode(0)),
+        obj_(0)
 {
-  /* Nothing to be done here */
+    /* Nothing to be done here */
 }
 
 
@@ -50,69 +50,69 @@ CbcCbcParam::CbcCbcParam ()
   Constructor for double parameter
 */
 CbcCbcParam::CbcCbcParam (CbcCbcParamCode code,
-			  std::string name, std::string help,
-			  double lower, double upper, double dflt,
-			  bool display)
-  : CoinParam(name,help,lower,upper,dflt,display),
-    paramCode_(code),
-    obj_(0)
+                          std::string name, std::string help,
+                          double lower, double upper, double dflt,
+                          bool display)
+        : CoinParam(name, help, lower, upper, dflt, display),
+        paramCode_(code),
+        obj_(0)
 {
-  /* Nothing to be done here */
+    /* Nothing to be done here */
 }
 
 /*
   Constructor for integer parameter
 */
 CbcCbcParam::CbcCbcParam (CbcCbcParamCode code,
-			  std::string name, std::string help,
-			  int lower, int upper, int dflt,
-			  bool display)
-  : CoinParam(name,help,lower,upper,dflt,display),
-    paramCode_(code),
-    obj_(0)
+                          std::string name, std::string help,
+                          int lower, int upper, int dflt,
+                          bool display)
+        : CoinParam(name, help, lower, upper, dflt, display),
+        paramCode_(code),
+        obj_(0)
 {
-  /* Nothing to be done here */
+    /* Nothing to be done here */
 }
 
 /*
   Constructor for keyword parameter.
 */
 CbcCbcParam::CbcCbcParam (CbcCbcParamCode code,
-			  std::string name, std::string help,
-			  std::string firstValue, int dflt,
-			  bool display)
-  : CoinParam(name,help,firstValue,dflt,display),
-    paramCode_(code),
-    obj_(0)
+                          std::string name, std::string help,
+                          std::string firstValue, int dflt,
+                          bool display)
+        : CoinParam(name, help, firstValue, dflt, display),
+        paramCode_(code),
+        obj_(0)
 {
-  /* Nothing to be done here */
+    /* Nothing to be done here */
 }
 
 /*
   Constructor for string parameter.
 */
 CbcCbcParam::CbcCbcParam (CbcCbcParamCode code,
-			  std::string name, std::string help,
-			  std::string dflt,
-			  bool display)
-  : CoinParam(name,help,dflt,display),
-    paramCode_(code),
-    obj_(0)
+                          std::string name, std::string help,
+                          std::string dflt,
+                          bool display)
+        : CoinParam(name, help, dflt, display),
+        paramCode_(code),
+        obj_(0)
 {
-  /* Nothing to be done here */
+    /* Nothing to be done here */
 }
 
 /*
   Constructor for action parameter.
 */
 CbcCbcParam::CbcCbcParam (CbcCbcParamCode code,
-			  std::string name, std::string help,
-			  bool display)
-  : CoinParam(name,help,display),
-    paramCode_(code),
-    obj_(0)
+                          std::string name, std::string help,
+                          bool display)
+        : CoinParam(name, help, display),
+        paramCode_(code),
+        obj_(0)
 {
-  /* Nothing to be done here */
+    /* Nothing to be done here */
 }
 
 
@@ -120,11 +120,11 @@ CbcCbcParam::CbcCbcParam (CbcCbcParamCode code,
   Copy constructor.
 */
 CbcCbcParam::CbcCbcParam (const CbcCbcParam &orig)
-  : CoinParam(orig),
-    paramCode_(orig.paramCode_),
-    obj_(orig.obj_)
+        : CoinParam(orig),
+        paramCode_(orig.paramCode_),
+        obj_(orig.obj_)
 {
-  /* Nothing to be done here */
+    /* Nothing to be done here */
 }
 
 /*
@@ -133,18 +133,20 @@ CbcCbcParam::CbcCbcParam (const CbcCbcParam &orig)
 
 CbcCbcParam *CbcCbcParam::clone ()
 {
-  return (new CbcCbcParam(*this)) ;
+    return (new CbcCbcParam(*this)) ;
 }
 
-CbcCbcParam &CbcCbcParam::operator= (const CbcCbcParam &rhs)
+CbcCbcParam &CbcCbcParam::operator= (const CbcCbcParam & rhs)
 {
-  if (this != &rhs)
-  { CoinParam::operator=(rhs) ;
-  
-    paramCode_ = rhs.paramCode_ ;
-    obj_ = rhs.obj_ ; }
+    if (this != &rhs) {
+        CoinParam::operator=(rhs) ;
 
-  return *this ; }
+        paramCode_ = rhs.paramCode_ ;
+        obj_ = rhs.obj_ ;
+    }
+
+    return *this ;
+}
 
 /*
   Destructor

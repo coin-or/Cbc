@@ -1,7 +1,7 @@
 /* $Id$ */
 // Copyright (C) 2007, International Business Machines
 // Corporation and others.  All Rights Reserved.
-   
+
 #include "CbcConfig.h"
 #include "CoinPragma.hpp"
 #include "CbcModel.hpp"
@@ -16,19 +16,21 @@
 //#define CLP_DEBUG_MALLOC
 #ifdef CLP_DEBUG_MALLOC
 /*extern "C" */void clp_memory(int type);
-/*extern "C" */void * clp_malloc(int length);
-/*extern "C" */void clp_free(void * array);
+/*extern "C" */
+void * clp_malloc(int length);
+/*extern "C" */
+void clp_free(void * array);
 #include <malloc.h>
 #include <exception>
 #include <new>
 void * operator new (size_t size) throw (std::bad_alloc)
 {
-  void * p = clp_malloc(size);
-  return p;
+    void * p = clp_malloc(size);
+    return p;
 }
 void operator delete (void *p) throw()
 {
-  clp_free(p);
+    clp_free(p);
 }
 #endif
 
@@ -46,7 +48,7 @@ void operator delete (void *p) throw()
 #define NEW_STYLE_SOLVER 0
 #endif
 #if NEW_STYLE_SOLVER==0
-  // define TEST_MESSAGE_HANDLER to check works on all messages
+// define TEST_MESSAGE_HANDLER to check works on all messages
 //#define TEST_MESSAGE_HANDLER
 #ifdef TEST_MESSAGE_HANDLER
 // This driver shows how to trap messages - this is just as in unitTest.cpp
@@ -54,7 +56,7 @@ void operator delete (void *p) throw()
 #include "CoinMessageHandler.hpp"
 
 /** This just adds a model to CoinMessage and a void pointer so
-    user can trap messages and do useful stuff.  
+    user can trap messages and do useful stuff.
     This is used in Clp/Test/unitTest.cpp
 
     The file pointer is just there as an example of user stuff.
@@ -63,50 +65,50 @@ void operator delete (void *p) throw()
 class CbcModel;
 
 class MyMessageHandler2 : public CoinMessageHandler {
-  
+
 public:
-  /**@name Overrides */
-  //@{
-  virtual int print();
-  //@}
-  /**@name set and get */
-  //@{
-  /// Model
-  const CbcModel * model() const;
-  void setModel(CbcModel * model);
-  //@}
+    /**@name Overrides */
+    //@{
+    virtual int print();
+    //@}
+    /**@name set and get */
+    //@{
+    /// Model
+    const CbcModel * model() const;
+    void setModel(CbcModel * model);
+    //@}
 
-  /**@name Constructors, destructor */
-  //@{
-  /** Default constructor. */
-  MyMessageHandler2();
-  /// Constructor with pointer to model
-  MyMessageHandler2(CbcModel * model,
-			   FILE * userPointer=NULL);
-  /** Destructor */
-  virtual ~MyMessageHandler2();
-  //@}
+    /**@name Constructors, destructor */
+    //@{
+    /** Default constructor. */
+    MyMessageHandler2();
+    /// Constructor with pointer to model
+    MyMessageHandler2(CbcModel * model,
+                      FILE * userPointer = NULL);
+    /** Destructor */
+    virtual ~MyMessageHandler2();
+    //@}
 
-  /**@name Copy method */
-  //@{
-  /** The copy constructor. */
-  MyMessageHandler2(const MyMessageHandler2&);
-  /** The copy constructor from an CoinSimplexMessageHandler. */
-  MyMessageHandler2(const CoinMessageHandler&);
-  
-  MyMessageHandler2& operator=(const MyMessageHandler2&);
-  /// Clone
-  virtual CoinMessageHandler * clone() const ;
-  //@}
-   
-    
+    /**@name Copy method */
+    //@{
+    /** The copy constructor. */
+    MyMessageHandler2(const MyMessageHandler2&);
+    /** The copy constructor from an CoinSimplexMessageHandler. */
+    MyMessageHandler2(const CoinMessageHandler&);
+
+    MyMessageHandler2& operator=(const MyMessageHandler2&);
+    /// Clone
+    virtual CoinMessageHandler * clone() const ;
+    //@}
+
+
 protected:
-  /**@name Data members
-     The data members are protected to allow access for derived classes. */
-  //@{
-  /// Pointer back to model
-  CbcModel * model_;
-  //@}
+    /**@name Data members
+       The data members are protected to allow access for derived classes. */
+    //@{
+    /// Pointer back to model
+    CbcModel * model_;
+    //@}
 };
 
 
@@ -115,204 +117,205 @@ protected:
 //#############################################################################
 
 //-------------------------------------------------------------------
-// Default Constructor 
+// Default Constructor
 //-------------------------------------------------------------------
-MyMessageHandler2::MyMessageHandler2 () 
-  : CoinMessageHandler(),
-    model_(NULL)
+MyMessageHandler2::MyMessageHandler2 ()
+        : CoinMessageHandler(),
+        model_(NULL)
 {
 }
 
 //-------------------------------------------------------------------
-// Copy constructor 
+// Copy constructor
 //-------------------------------------------------------------------
-MyMessageHandler2::MyMessageHandler2 (const MyMessageHandler2 & rhs) 
-: CoinMessageHandler(rhs),
-    model_(rhs.model_)
-{  
+MyMessageHandler2::MyMessageHandler2 (const MyMessageHandler2 & rhs)
+        : CoinMessageHandler(rhs),
+        model_(rhs.model_)
+{
 }
 
-MyMessageHandler2::MyMessageHandler2 (const CoinMessageHandler & rhs) 
-  : CoinMessageHandler(),
-    model_(NULL)
-{  
+MyMessageHandler2::MyMessageHandler2 (const CoinMessageHandler & rhs)
+        : CoinMessageHandler(),
+        model_(NULL)
+{
 }
 
 // Constructor with pointer to model
 MyMessageHandler2::MyMessageHandler2(CbcModel * model,
-               FILE * userPointer)
-  : CoinMessageHandler(),
-    model_(model)
+                                     FILE * userPointer)
+        : CoinMessageHandler(),
+        model_(model)
 {
 }
 
 //-------------------------------------------------------------------
-// Destructor 
+// Destructor
 //-------------------------------------------------------------------
 MyMessageHandler2::~MyMessageHandler2 ()
 {
 }
 
 //----------------------------------------------------------------
-// Assignment operator 
+// Assignment operator
 //-------------------------------------------------------------------
 MyMessageHandler2 &
-MyMessageHandler2::operator=(const MyMessageHandler2& rhs)
+MyMessageHandler2::operator=(const MyMessageHandler2 & rhs)
 {
-  if (this != &rhs) {
-    CoinMessageHandler::operator=(rhs);
-    model_ = rhs.model_;
-  }
-  return *this;
+    if (this != &rhs) {
+        CoinMessageHandler::operator=(rhs);
+        model_ = rhs.model_;
+    }
+    return *this;
 }
 //-------------------------------------------------------------------
 // Clone
 //-------------------------------------------------------------------
 CoinMessageHandler * MyMessageHandler2::clone() const
 {
-  return new MyMessageHandler2(*this);
+    return new MyMessageHandler2(*this);
 }
-int 
+int
 MyMessageHandler2::print()
 {
-  // Just add ==
-  fprintf(fp_," == ");
-  fprintf(fp_,"%s\n",messageBuffer_);
-  return 0;
+    // Just add ==
+    fprintf(fp_, " == ");
+    fprintf(fp_, "%s\n", messageBuffer_);
+    return 0;
 }
 const CbcModel *
 MyMessageHandler2::model() const
 {
-  return model_;
+    return model_;
 }
-void 
+void
 MyMessageHandler2::setModel(CbcModel * model)
 {
-  model_ = model;
+    model_ = model;
 }
 #endif
 //#############################################################################
 // To use USERCBC or USERCLP change 0 to 1 in defines and add in your fake main program(s) and any other code
-//#define USER_HAS_FAKE_CBC 
-//#define USER_HAS_FAKE_CLP 
+//#define USER_HAS_FAKE_CBC
+//#define USER_HAS_FAKE_CLP
 #ifdef USER_HAS_FAKE_CBC
 #endif
-void fakeMain (ClpSimplex & model,OsiSolverInterface & /*osiSolver*/, CbcModel & babSolver)
+void fakeMain (ClpSimplex & model, OsiSolverInterface & /*osiSolver*/, CbcModel & babSolver)
 {
 #ifdef USER_HAS_FAKE_CBC
 #else
-  printf("Dummy user cbc code - model has %d rows and %d columns\n",
-	 model.getNumRows(),model.getNumCols());
-  // Reduce printout
-  babSolver.solver()->setHintParam(OsiDoReducePrint,true,OsiHintTry);
-  // Do complete search
-  babSolver.branchAndBound();
+    printf("Dummy user cbc code - model has %d rows and %d columns\n",
+           model.getNumRows(), model.getNumCols());
+    // Reduce printout
+    babSolver.solver()->setHintParam(OsiDoReducePrint, true, OsiHintTry);
+    // Do complete search
+    babSolver.branchAndBound();
 #endif
 }
 // Clp stuff
 #ifdef USER_HAS_FAKE_CLP
 #endif
 void fakeMain2 (ClpSimplex & /*model*/,
-		OsiClpSolverInterface & osiSolver,
-		int /*options*/) {
+                OsiClpSolverInterface & osiSolver,
+                int /*options*/)
+{
 #ifdef USER_HAS_FAKE_CLP
 #else
-  ClpSimplex * lpSolver = osiSolver.getModelPtr();
-  printf("Dummy user clp code - model has %d rows and %d columns\n",
-	 lpSolver->numberRows(),lpSolver->numberColumns());
-  osiSolver.initialSolve();
+    ClpSimplex * lpSolver = osiSolver.getModelPtr();
+    printf("Dummy user clp code - model has %d rows and %d columns\n",
+           lpSolver->numberRows(), lpSolver->numberColumns());
+    osiSolver.initialSolve();
 #endif
 }
 //  End any fake main program
 //#############################################################################
 // void CbcClpUnitTest (const CbcModel & saveModel);
 #ifdef CBC_STATISTICS
-int osi_crunch=0;
-static int cbc_resolve=0;
-int osi_primal=0;
-int osi_dual=0;
-int osi_hot=0;
+int osi_crunch = 0;
+static int cbc_resolve = 0;
+int osi_primal = 0;
+int osi_dual = 0;
+int osi_hot = 0;
 void cbc_resolve_check(const OsiSolverInterface * solver)
 {
-  cbc_resolve++;
-  printf("R %d stats %d %d %d\n",
-	 cbc_resolve,solver->getNumRows(),solver->getNumCols(),
-	 solver->getMatrixByCol()->getNumElements());
-  if ((cbc_resolve%1000)==0)
-    printf("RR %d resolve crunch %d primal %d dual %d hot %d\n",
-	   cbc_resolve,osi_crunch,osi_primal,osi_dual,osi_hot);
+    cbc_resolve++;
+    printf("R %d stats %d %d %d\n",
+           cbc_resolve, solver->getNumRows(), solver->getNumCols(),
+           solver->getMatrixByCol()->getNumElements());
+    if ((cbc_resolve % 1000) == 0)
+        printf("RR %d resolve crunch %d primal %d dual %d hot %d\n",
+               cbc_resolve, osi_crunch, osi_primal, osi_dual, osi_hot);
 }
 #endif
 int main (int argc, const char *argv[])
 {
-  int returnCode=0;
+    int returnCode = 0;
 #ifdef CLP_DEBUG_MALLOC
-  clp_memory(0);
+    clp_memory(0);
 #endif
-  {
+    {
 #ifndef CBC_OTHER_SOLVER
-    OsiClpSolverInterface solver1;
+        OsiClpSolverInterface solver1;
 #elif CBC_OTHER_SOLVER==1
-    OsiCpxSolverInterface solver1;
+        OsiCpxSolverInterface solver1;
 #endif
-    CbcModel model(solver1);
-    // define TEST_MESSAGE_HANDLER at top of file to check works on all messages
+        CbcModel model(solver1);
+        // define TEST_MESSAGE_HANDLER at top of file to check works on all messages
 #ifdef TEST_MESSAGE_HANDLER
-    MyMessageHandler2 messageHandler(&model);
-    std::cout<<"Testing derived message handler"<<std::endl;
-    model.passInMessageHandler(&messageHandler);
-    OsiClpSolverInterface * clpSolver = dynamic_cast< OsiClpSolverInterface*> (model.solver());
-    // Could use different handlers (if different log levels)
-    clpSolver->passInMessageHandler(&messageHandler);
-    //clpSolver->getModelPtr()->passInMessageHandler(&messageHandler);
+        MyMessageHandler2 messageHandler(&model);
+        std::cout << "Testing derived message handler" << std::endl;
+        model.passInMessageHandler(&messageHandler);
+        OsiClpSolverInterface * clpSolver = dynamic_cast< OsiClpSolverInterface*> (model.solver());
+        // Could use different handlers (if different log levels)
+        clpSolver->passInMessageHandler(&messageHandler);
+        //clpSolver->getModelPtr()->passInMessageHandler(&messageHandler);
 #endif
-    // initialize
-    CbcMain0(model);
+        // initialize
+        CbcMain0(model);
 #ifdef TEST_MESSAGE_HANDLER
-    // Set log levels same so can use one message handler
-    clpSolver->messageHandler()->setLogLevel(1) ;
-    model.messageHandler()->setLogLevel(1);
-    // switch off some printing
-    void setCbcOrClpPrinting(bool yesNo);
-    setCbcOrClpPrinting(false);
+        // Set log levels same so can use one message handler
+        clpSolver->messageHandler()->setLogLevel(1) ;
+        model.messageHandler()->setLogLevel(1);
+        // switch off some printing
+        void setCbcOrClpPrinting(bool yesNo);
+        setCbcOrClpPrinting(false);
 #endif
-    returnCode = CbcMain1 (argc, argv,model);
-  }
+        returnCode = CbcMain1 (argc, argv, model);
+    }
 #ifdef CLP_DEBUG_MALLOC
-  clp_memory(1);
+    clp_memory(1);
 #endif
 #ifdef CBC_STATISTICS
 #endif
-  if (returnCode!=777) {
-    return returnCode;
-  } else {
-    return 0;
-  }
+    if (returnCode != 777) {
+        return returnCode;
+    } else {
+        return 0;
+    }
 }
 #else
 #include "CbcSolver.hpp"
 void addAmplToCbc(CbcSolver *);
 int main (int argc, const char *argv[])
 {
-  int returnCode;
-  // Only active if malloc switched on in CbcSolver.cpp
+    int returnCode;
+    // Only active if malloc switched on in CbcSolver.cpp
 #ifdef CLP_DEBUG_MALLOC
-  clp_memory(0);
+    clp_memory(0);
 #endif
-  {
-    OsiClpSolverInterface solver1;
-    CbcSolver control(solver1);
-    // initialize
-    control.fillValuesInSolver();
+    {
+        OsiClpSolverInterface solver1;
+        CbcSolver control(solver1);
+        // initialize
+        control.fillValuesInSolver();
 #ifdef COIN_HAS_ASL
-    addAmplToCbc(&control);
+        addAmplToCbc(&control);
 #endif
-    returnCode= control.solve (argc, argv, 1);
-  }
+        returnCode = control.solve (argc, argv, 1);
+    }
 #ifdef CLP_DEBUG_MALLOC
-  clp_memory(1);
+    clp_memory(1);
 #endif
-  return returnCode;
+    return returnCode;
 }
 #endif
 /*

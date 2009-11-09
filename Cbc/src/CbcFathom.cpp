@@ -18,27 +18,27 @@
 #include "CbcFathom.hpp"
 
 // Default Constructor
-CbcFathom::CbcFathom() 
-  :model_(NULL),
-   possible_(false)
+CbcFathom::CbcFathom()
+        : model_(NULL),
+        possible_(false)
 {
 }
 
 // Constructor from model
 CbcFathom::CbcFathom(CbcModel & model)
-:
-  model_(&model),
-  possible_(false)
+        :
+        model_(&model),
+        possible_(false)
 {
 }
 // Resets stuff if model changes
-void 
+void
 CbcFathom::resetModel(CbcModel * model)
 {
-  model_=model;
+    model_ = model;
 }
 
-// Destructor 
+// Destructor
 CbcFathom::~CbcFathom ()
 {
 }
@@ -46,7 +46,7 @@ CbcFathom::~CbcFathom ()
 // update model
 void CbcFathom::setModel(CbcModel * model)
 {
-  model_ = model;
+    model_ = model;
 }
 #ifdef COIN_HAS_CLP
 
@@ -55,52 +55,52 @@ void CbcFathom::setModel(CbcModel * model)
 //#############################################################################
 
 //-------------------------------------------------------------------
-// Default Constructor 
+// Default Constructor
 //-------------------------------------------------------------------
 CbcOsiSolver::CbcOsiSolver ()
-  : OsiClpSolverInterface()
+        : OsiClpSolverInterface()
 {
-  cbcModel_ = NULL;
+    cbcModel_ = NULL;
 }
 //-------------------------------------------------------------------
 // Clone
 //-------------------------------------------------------------------
-OsiSolverInterface * 
+OsiSolverInterface *
 CbcOsiSolver::clone(bool /*copyData*/) const
 {
-  //assert (copyData);
-  return new CbcOsiSolver(*this);
+    //assert (copyData);
+    return new CbcOsiSolver(*this);
 }
 
 
 //-------------------------------------------------------------------
-// Copy constructor 
+// Copy constructor
 //-------------------------------------------------------------------
 CbcOsiSolver::CbcOsiSolver (
-                  const CbcOsiSolver & rhs)
-  : OsiSolverInterface(), // Should not be needed but get warning
-  OsiClpSolverInterface(rhs)
+    const CbcOsiSolver & rhs)
+        : OsiSolverInterface(), // Should not be needed but get warning
+        OsiClpSolverInterface(rhs)
 {
-  cbcModel_ = rhs.cbcModel_;
+    cbcModel_ = rhs.cbcModel_;
 }
 
 //-------------------------------------------------------------------
-// Destructor 
+// Destructor
 //-------------------------------------------------------------------
 CbcOsiSolver::~CbcOsiSolver ()
 {
 }
 
 //-------------------------------------------------------------------
-// Assignment operator 
+// Assignment operator
 //-------------------------------------------------------------------
 CbcOsiSolver &
-CbcOsiSolver::operator=(const CbcOsiSolver& rhs)
+CbcOsiSolver::operator=(const CbcOsiSolver & rhs)
 {
-  if (this != &rhs) { 
-    OsiClpSolverInterface::operator=(rhs);
-    cbcModel_ = rhs.cbcModel_;
-  }
-  return *this;
+    if (this != &rhs) {
+        OsiClpSolverInterface::operator=(rhs);
+        cbcModel_ = rhs.cbcModel_;
+    }
+    return *this;
 }
 #endif

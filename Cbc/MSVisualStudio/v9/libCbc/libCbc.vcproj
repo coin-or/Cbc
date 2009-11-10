@@ -1044,6 +1044,14 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\..\src\CbcChooseVariable.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\..\src\CbcCompare.hpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\..\..\Cbc\src\CbcCompareActual.hpp"
 				>
 			</File>
@@ -1200,6 +1208,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\..\..\Cgl\src\CglLandP.hpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\..\..\Cgl\src\CglMixedIntegerRounding\CglMixedIntegerRounding.hpp"
 				>
 			</File>
@@ -1220,15 +1232,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\..\..\Cgl\src\CglTwomir\CglTwomir.hpp"
-				>
-			</File>
-			<File
 				RelativePath="..\..\..\..\Cgl\src\CglResidualCapacity.hpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\..\..\Cgl\src\CglLandP.hpp"
+				RelativePath="..\..\..\..\Cgl\src\CglTwomir\CglTwomir.hpp"
 				>
 			</File>
 			<File

@@ -67,7 +67,7 @@ libCbc_la_SOURCES = \
 	CbcNode.cpp CbcNode.hpp \
 	CbcNWay.cpp CbcNWay.hpp \
 	CbcNWayBranchingObject.cpp CbcNWayBranchingObject.hpp \
-	CbcOneGeneralBranchingObject.cpp CbcOneGeneralBranchingObject.hpp
+	CbcOneGeneralBranchingObject.cpp CbcOneGeneralBranchingObject.hpp \
 	CbcSimpleInteger.cpp CbcSimpleInteger.hpp \
 	CbcSimpleIntegerPseudoCost.cpp CbcSimpleIntegerPseudoCost.hpp \
 	CbcSOS.cpp CbcSOS.hpp \

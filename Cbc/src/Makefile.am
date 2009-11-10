@@ -29,7 +29,7 @@ libCbc_la_SOURCES = \
 	CbcCompareActual.hpp \
 	CbcCompareBase.hpp \
 	CbcChooseVariable.hpp \
-	CbcClique.hpp CbcClique.hpp \
+	CbcClique.cpp CbcClique.hpp \
 	CbcCliqueBranchingObject.cpp CbcCliqueBranchingObject.hpp
 	CbcCompare.hpp \
 	CbcCountRowCut.cpp CbcCountRowCut.hpp \

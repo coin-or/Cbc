@@ -162,7 +162,7 @@ LTLIBRARIES = $(lib_LTLIBRARIES)
 libCbc_la_LIBADD =
 am_libCbc_la_OBJECTS = Cbc_C_Interface.lo CbcBranchBase.lo \
 	CbcBranchCut.lo CbcBranchDefaultDecision.lo \
-	CbcBranchDynamic.lo CbcBranchLotsize.lo \
+	CbcBranchDynamic.lo CbcBranchLotsize.lo CbcClique.lo \
 	CbcCliqueBranchingObject.lo
 libCbc_la_OBJECTS = $(am_libCbc_la_OBJECTS)
 libCbcSolver_la_LIBADD =
@@ -506,7 +506,7 @@ libCbc_la_SOURCES = \
 	CbcCompareActual.hpp \
 	CbcCompareBase.hpp \
 	CbcChooseVariable.hpp \
-	CbcClique.hpp CbcClique.hpp \
+	CbcClique.cpp CbcClique.hpp \
 	CbcCliqueBranchingObject.cpp CbcCliqueBranchingObject.hpp
 
 libCbcSolver_la_SOURCES = \
@@ -800,6 +800,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcBranchDynamic.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcBranchLotsize.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcCbcParam.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcClique.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcCliqueBranchingObject.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcGenBaB.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcGenCbcParam.Po@am__quote@

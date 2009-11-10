@@ -60,7 +60,8 @@ libCbc_la_SOURCES = \
 	CbcHeuristicRandRound.cpp CbcHeuristicRandRound.hpp \
 	CbcHeuristicRINS.cpp CbcHeuristicRINS.hpp \
 	CbcIntegerBranchingObject.cpp CbcIntegerBranchingObject.hpp \
-	CbcIntegerPseudoCostBranchingObject.cpp CbcIntegerPseudoCostBranchingObject.hpp \
+	CbcIntegerPseudoCostBranchingObject.cpp \
+	CbcIntegerPseudoCostBranchingObject.hpp \
 	CbcMessage.cpp CbcMessage.hpp \
 	CbcModel.cpp CbcModel.hpp \
 	CbcNode.cpp CbcNode.hpp \

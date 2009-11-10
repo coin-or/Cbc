@@ -160,19 +160,10 @@ am__installdirs = "$(DESTDIR)$(libdir)" "$(DESTDIR)$(bindir)" \
 libLTLIBRARIES_INSTALL = $(INSTALL)
 LTLIBRARIES = $(lib_LTLIBRARIES)
 libCbc_la_LIBADD =
-am_libCbc_la_OBJECTS = Cbc_C_Interface.lo CbcBranchActual.lo \
-	CbcBranchBase.lo CbcBranchCut.lo CbcBranchDynamic.lo \
-	CbcBranchLotsize.lo CbcCompareActual.lo CbcCountRowCut.lo \
-	CbcCutGenerator.lo CbcEventHandler.lo CbcFathom.lo \
-	CbcFathomDynamicProgramming.lo CbcHeuristic.lo \
-	CbcHeuristicDive.lo CbcHeuristicDiveCoefficient.lo \
-	CbcHeuristicDiveFractional.lo CbcHeuristicDiveGuided.lo \
-	CbcHeuristicDiveLineSearch.lo CbcHeuristicDivePseudoCost.lo \
-	CbcHeuristicDiveVectorLength.lo CbcHeuristicFPump.lo \
-	CbcHeuristicGreedy.lo CbcHeuristicLocal.lo \
-	CbcHeuristicPivotAndFix.lo CbcHeuristicRandRound.lo \
-	CbcHeuristicRINS.lo CbcMessage.lo CbcModel.lo CbcNode.lo \
-	CbcStatistics.lo CbcStrategy.lo CbcTree.lo CbcTreeLocal.lo
+am_libCbc_la_OBJECTS = Cbc_C_Interface.lo CbcBranchBase.lo \
+	CbcBranchCut.lo CbcBranchDefaultDecision.lo \
+	CbcBranchDynamic.lo CbcBranchLotsize.lo \
+	CbcCliqueBranchingObject.lo
 libCbc_la_OBJECTS = $(am_libCbc_la_OBJECTS)
 libCbcSolver_la_LIBADD =
 am_libCbcSolver_la_OBJECTS = CbcCbcParam.lo Cbc_ampl.lo \
@@ -506,42 +497,17 @@ lib_LTLIBRARIES = libCbc.la libCbcSolver.la
 libCbc_la_SOURCES = \
 	Cbc_C_Interface.cpp Cbc_C_Interface.h \
 	CbcConfig.h \
-	CbcBranchActual.cpp CbcBranchActual.hpp \
+	CbcBranchActual.hpp \
 	CbcBranchBase.cpp CbcBranchBase.hpp \
 	CbcBranchCut.cpp CbcBranchCut.hpp \
+	CbcBranchDefaultDecision.cpp CbcBranchDefaultDecision.hpp \
 	CbcBranchDynamic.cpp CbcBranchDynamic.hpp \
 	CbcBranchLotsize.cpp CbcBranchLotsize.hpp \
-	CbcCompareActual.cpp CbcCompareActual.hpp \
+	CbcCompareActual.hpp \
 	CbcCompareBase.hpp \
 	CbcChooseVariable.hpp \
-	CbcCompare.hpp \
-	CbcCountRowCut.cpp CbcCountRowCut.hpp \
-	CbcCutGenerator.cpp CbcCutGenerator.hpp \
-	CbcEventHandler.cpp CbcEventHandler.hpp \
-	CbcFathom.cpp CbcFathom.hpp \
-	CbcFathomDynamicProgramming.cpp CbcFathomDynamicProgramming.hpp \
-	CbcFeasibilityBase.hpp \
-	CbcHeuristic.cpp CbcHeuristic.hpp \
-	CbcHeuristicDive.cpp CbcHeuristicDive.hpp \
-	CbcHeuristicDiveCoefficient.cpp CbcHeuristicDiveCoefficient.hpp \
-	CbcHeuristicDiveFractional.cpp CbcHeuristicDiveFractional.hpp \
-	CbcHeuristicDiveGuided.cpp CbcHeuristicDiveGuided.hpp \
-	CbcHeuristicDiveLineSearch.cpp CbcHeuristicDiveLineSearch.hpp \
-	CbcHeuristicDivePseudoCost.cpp CbcHeuristicDivePseudoCost.hpp \
-	CbcHeuristicDiveVectorLength.cpp CbcHeuristicDiveLength.hpp \
-	CbcHeuristicFPump.cpp CbcHeuristicFPump.hpp \
-	CbcHeuristicGreedy.cpp CbcHeuristicGreedy.hpp \
-	CbcHeuristicLocal.cpp CbcHeuristicLocal.hpp \
-	CbcHeuristicPivotAndFix.cpp CbcHeuristicPivotAndFix.hpp \
-	CbcHeuristicRandRound.cpp CbcHeuristicRandRound.hpp \
-	CbcHeuristicRINS.cpp CbcHeuristicRINS.hpp \
-	CbcMessage.cpp CbcMessage.hpp \
-	CbcModel.cpp CbcModel.hpp \
-	CbcNode.cpp CbcNode.hpp \
-	CbcStatistics.cpp CbcStatistics.hpp \
-	CbcStrategy.cpp CbcStrategy.hpp \
-	CbcTree.cpp CbcTree.hpp \
-	CbcTreeLocal.cpp CbcTreeLocal.hpp
+	CbcClique.hpp CbcClique.hpp \
+	CbcCliqueBranchingObject.cpp CbcCliqueBranchingObject.hpp
 
 libCbcSolver_la_SOURCES = \
 	CbcCbcParam.cpp \
@@ -662,14 +628,24 @@ includecoin_HEADERS = \
 	CbcBranchDynamic.hpp \
 	CbcBranchLotsize.hpp \
 	CbcBranchCut.hpp \
+	CbcBranchDefaultDecision.hpp \
 	CbcCompareActual.hpp \
 	CbcCompareBase.hpp \
 	CbcChooseVariable.hpp \
+	CbcClique.hpp \
+	CbcCliqueBranchingObject.hpp \
 	CbcCompare.hpp \
 	CbcCutGenerator.hpp \
+	CbcDummyBranchingObject.hpp \
 	CbcFathom.hpp \
 	CbcEventHandler.hpp \
 	CbcFeasibilityBase.hpp \
+	CbcFixingBranchingObject.hpp \
+	CbcFixVariable.hpp \
+	CbcFollowOn.hpp \
+	CbcGeneral.hpp \
+	CbcGeneralBranchingObject.hpp \
+	CbcGeneralDepth.hpp \
 	CbcHeuristic.hpp \
 	CbcHeuristicDive.hpp \
 	CbcHeuristicDiveCoefficient.hpp \
@@ -684,11 +660,22 @@ includecoin_HEADERS = \
 	CbcHeuristicPivotAndFix.hpp \
 	CbcHeuristicRandRound.hpp \
 	CbcHeuristicRINS.hpp \
+	CbcIntegerBranchingObject.hpp \
+	CbcIntegerPseudoCostBranchingObject.hpp \
+	CbcLongCliqueBranchingObject.hpp \
 	CbcMessage.hpp \
 	CbcModel.hpp \
 	CbcNode.hpp \
+	CbcNWay.hpp \
+	CbcNWayBranchingObject.hpp \
+	CbcOneGeneralBranchingObject.hpp \
+	CbcSimpleInteger.hpp \
+	CbcSimpleIntegerPseudoCost.hpp \
 	CbcStrategy.hpp \
 	CbcSolver.hpp \
+	CbcSOS.hpp \
+	CbcSOSBranchingObject.hpp \
+	CbcSubProblem.hpp \
 	CbcTree.hpp \
 	CbcLinked.hpp \
 	CbcTreeLocal.hpp \
@@ -807,18 +794,13 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcBranchActual.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcBranchBase.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcBranchCut.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcBranchDefaultDecision.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcBranchDynamic.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcBranchLotsize.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcCbcParam.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcCompareActual.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcCountRowCut.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcCutGenerator.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcEventHandler.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcFathom.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcFathomDynamicProgramming.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcCliqueBranchingObject.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcGenBaB.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcGenCbcParam.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcGenCbcParamUtils.Po@am__quote@
@@ -831,29 +813,8 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcGenSolution.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcGenSolvers.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcGeneric.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcHeuristic.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcHeuristicDive.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcHeuristicDiveCoefficient.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcHeuristicDiveFractional.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcHeuristicDiveGuided.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcHeuristicDiveLineSearch.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcHeuristicDivePseudoCost.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcHeuristicDiveVectorLength.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcHeuristicFPump.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcHeuristicGreedy.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcHeuristicLocal.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcHeuristicPivotAndFix.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcHeuristicRINS.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcHeuristicRandRound.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcLinked.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcMessage.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcModel.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcNode.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcSolver.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcStatistics.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcStrategy.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcTree.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcTreeLocal.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Cbc_C_Interface.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Cbc_ampl.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ClpAmplStuff.Plo@am__quote@
@@ -1085,6 +1046,52 @@ uninstall-am: uninstall-binPROGRAMS uninstall-includecoinHEADERS \
 	uninstall-binPROGRAMS uninstall-includecoinHEADERS \
 	uninstall-info-am uninstall-libLTLIBRARIES uninstall-local
 
+	CbcCompare.hpp \
+	CbcCountRowCut.cpp CbcCountRowCut.hpp \
+	CbcCutGenerator.cpp CbcCutGenerator.hpp \
+	CbcDummyBranchingObject.cpp CbcDummyBranchingObject.hpp \
+	CbcEventHandler.cpp CbcEventHandler.hpp \
+	CbcFathom.cpp CbcFathom.hpp \
+	CbcFathomDynamicProgramming.cpp CbcFathomDynamicProgramming.hpp \
+	CbcFeasibilityBase.hpp \
+	CbcFixingBranchingObject.cpp CbcFixingBranchingObject.hpp \
+	CbcFixVariable.cpp CbcFixVariable.hpp \
+	CbcFollowOn.cpp CbcFollowOn.hpp \
+	CbcGeneral.cpp CbcGeneral.hpp \
+	CbcGeneralBranchingObject.cpp CbcGeneralBranchingObject.hpp \
+	CbcGeneralDepth.cpp CbcGeneralDepth.hpp \
+	CbcHeuristic.cpp CbcHeuristic.hpp \
+	CbcHeuristicDive.cpp CbcHeuristicDive.hpp \
+	CbcHeuristicDiveCoefficient.cpp CbcHeuristicDiveCoefficient.hpp \
+	CbcHeuristicDiveFractional.cpp CbcHeuristicDiveFractional.hpp \
+	CbcHeuristicDiveGuided.cpp CbcHeuristicDiveGuided.hpp \
+	CbcHeuristicDiveLineSearch.cpp CbcHeuristicDiveLineSearch.hpp \
+	CbcHeuristicDivePseudoCost.cpp CbcHeuristicDivePseudoCost.hpp \
+	CbcHeuristicDiveVectorLength.cpp CbcHeuristicDiveLength.hpp \
+	CbcHeuristicFPump.cpp CbcHeuristicFPump.hpp \
+	CbcHeuristicGreedy.cpp CbcHeuristicGreedy.hpp \
+	CbcHeuristicLocal.cpp CbcHeuristicLocal.hpp \
+	CbcHeuristicPivotAndFix.cpp CbcHeuristicPivotAndFix.hpp \
+	CbcHeuristicRandRound.cpp CbcHeuristicRandRound.hpp \
+	CbcHeuristicRINS.cpp CbcHeuristicRINS.hpp \
+	CbcIntegerBranchingObject.cpp CbcIntegerBranchingObject.hpp \
+	CbcIntegerPseudoCostBranchingObject.cpp \
+	CbcIntegerPseudoCostBranchingObject.hpp \
+	CbcMessage.cpp CbcMessage.hpp \
+	CbcModel.cpp CbcModel.hpp \
+	CbcNode.cpp CbcNode.hpp \
+	CbcNWay.cpp CbcNWay.hpp \
+	CbcNWayBranchingObject.cpp CbcNWayBranchingObject.hpp \
+	CbcOneGeneralBranchingObject.cpp CbcOneGeneralBranchingObject.hpp
+	CbcSimpleInteger.cpp CbcSimpleInteger.hpp \
+	CbcSimpleIntegerPseudoCost.cpp CbcSimpleIntegerPseudoCost.hpp \
+	CbcSOS.cpp CbcSOS.hpp \
+	CbcSOSBranchingObject.cpp CbcSOSBranchingObject.hpp \
+	CbcStatistics.cpp CbcStatistics.hpp \
+	CbcStrategy.cpp CbcStrategy.hpp \
+	CbcSubProblem.cpp CbcSubProblem.hpp \
+	CbcTree.cpp CbcTree.hpp \
+	CbcTreeLocal.cpp CbcTreeLocal.hpp
 
 install-exec-local:
 	echo "#ifndef HAVE_CONFIG_H" >bla

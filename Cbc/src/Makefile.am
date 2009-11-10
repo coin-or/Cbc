@@ -26,11 +26,12 @@ libCbc_la_SOURCES = \
 	CbcBranchDefaultDecision.cpp CbcBranchDefaultDecision.hpp \
 	CbcBranchDynamic.cpp CbcBranchDynamic.hpp \
 	CbcBranchLotsize.cpp CbcBranchLotsize.hpp \
-	CbcCompareActual.hpp \
+	CbcCompareActual.cpp CbcCompareActual.hpp \
 	CbcCompareBase.hpp \
 	CbcChooseVariable.hpp \
 	CbcClique.cpp CbcClique.hpp \
-	CbcCliqueBranchingObject.cpp CbcCliqueBranchingObject.hpp
+	CbcCliqueBranchingObject.cpp CbcCliqueBranchingObject.hpp \
+	CbcLongCliqueBranchingObject.cpp CbcLongCliqueBranchingObject.hpp \
 	CbcCompare.hpp \
 	CbcCountRowCut.cpp CbcCountRowCut.hpp \
 	CbcCutGenerator.cpp CbcCutGenerator.hpp \

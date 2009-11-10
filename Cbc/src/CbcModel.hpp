@@ -12,6 +12,7 @@
 #include "OsiCuts.hpp"
 #include "CoinWarmStartBasis.hpp"
 #include "CbcCompareBase.hpp"
+#include "CbcCompare.hpp"
 #include "CbcMessage.hpp"
 #include "CbcEventHandler.hpp"
 

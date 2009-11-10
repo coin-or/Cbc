@@ -15,6 +15,8 @@
 */
 #include "CbcNode.hpp"
 #include "CbcCompareBase.hpp"
+#include "CbcCompare.hpp"
+
 class CbcModel;
 // This is default before first solution
 class CbcCompareDepth : public CbcCompareBase {

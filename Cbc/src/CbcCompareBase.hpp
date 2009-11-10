@@ -119,52 +119,5 @@ protected:
     // If not threaded we can use better way to break ties
     bool threaded_;
 };
-class CbcCompare {
-public:
-    CbcCompareBase * test_;
-    // Default Constructor
-    CbcCompare () {
-        test_ = NULL;
-    }
 
-    virtual ~CbcCompare() {}
-
-    bool operator() (CbcNode * x, CbcNode * y) {
-        return test_->test(x, y);
-    }
-    bool compareNodes (CbcNode * x, CbcNode * y) {
-        return test_->test(x, y);
-    }
-    /// This is alternate test function
-    inline bool alternateTest (CbcNode * x, CbcNode * y) {
-        return test_->alternateTest(x, y);
-    }
-
-    /// return comparison object
-    inline CbcCompareBase * comparisonObject() const {
-        return test_;
-    }
-};
-//#############################################################################
-/*  These can be alternative strategies for choosing variables
-    Any descendant can be passed in by setVariableChoice
-*/
-
-class CbcChooseVariable {
-public:
-    // Default Constructor
-    CbcChooseVariable () {}
-
-    virtual ~CbcChooseVariable() {}
-    /** If strong branching, then only those passed in (and movement is that length)
-        .  If not strong
-        branching then all passed in and ignore movement.
-        Returns which one chosen (or -1 if none).  way should be +1
-        if branching up, -1 if down */
-    virtual int chosen (const CbcModel * model, int numberToLookAt,
-                        const int * which, const double * downMovement,
-                        const double * upMovement, const double * solution,
-                        int & way, double & value) = 0;
-
-};
 #endif

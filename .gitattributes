@@ -38,6 +38,8 @@ Cbc/examples/qmip2.cpp -text
 Cbc/examples/simpleBAB.cpp -text
 Cbc/inc/config_cbc.h.in -text
 Cbc/src/CbcCbcParam.cpp -text
+Cbc/src/CbcChooseVariable.hpp -text
+Cbc/src/CbcCompare.hpp -text
 Cbc/src/CbcGenBaB.cpp -text
 Cbc/src/CbcGenCbcParam.cpp -text
 Cbc/src/CbcGenCbcParam.hpp -text

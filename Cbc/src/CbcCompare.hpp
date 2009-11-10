@@ -1,0 +1,37 @@
+/* $Id: CbcCompare.hpp 1286 2009-11-09 23:33:07Z EdwinStraver $ */
+// Copyright (C) 2002, International Business Machines
+// Corporation and others.  All Rights Reserved.
+#ifndef CbcCompare_H
+#define CbcCompare_H
+
+#include "CbcCompareBase.hpp"
+
+class CbcCompare {
+public:
+    CbcCompareBase * test_;
+    // Default Constructor
+    CbcCompare () {
+        test_ = NULL;
+    }
+
+    virtual ~CbcCompare() {}
+
+    bool operator() (CbcNode * x, CbcNode * y) {
+        return test_->test(x, y);
+    }
+    bool compareNodes (CbcNode * x, CbcNode * y) {
+        return test_->test(x, y);
+    }
+    /// This is alternate test function
+    inline bool alternateTest (CbcNode * x, CbcNode * y) {
+        return test_->alternateTest(x, y);
+    }
+
+    /// return comparison object
+    inline CbcCompareBase * comparisonObject() const {
+        return test_;
+    }
+};
+
+#endif
+

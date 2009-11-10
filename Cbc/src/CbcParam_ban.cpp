@@ -32,9 +32,8 @@ CbcParam::CbcParam ()
         shortHelp_(),
         longHelp_(),
         action_(INVALID),
-        currentKeyWord_(-1)
-{
-}
+        currentKeyWord_(-1) {
+    }
 // Other constructors
 CbcParam::CbcParam (std::string name, std::string help,
                     double lower, double upper, CbcParameterType type,
@@ -47,12 +46,11 @@ CbcParam::CbcParam (std::string name, std::string help,
         shortHelp_(help),
         longHelp_(),
         action_(type),
-        currentKeyWord_(-1)
-{
+        currentKeyWord_(-1) {
     lowerDoubleValue_ = lower;
     upperDoubleValue_ = upper;
     gutsOfConstructor();
-}
+    }
 CbcParam::CbcParam (std::string name, std::string help,
                     int lower, int upper, CbcParameterType type,
                     bool display)
@@ -64,16 +62,15 @@ CbcParam::CbcParam (std::string name, std::string help,
         shortHelp_(help),
         longHelp_(),
         action_(type),
-        currentKeyWord_(-1)
-{
+        currentKeyWord_(-1) {
     gutsOfConstructor();
     lowerIntValue_ = lower;
     upperIntValue_ = upper;
-}
+    }
 // Other strings will be added by append
 CbcParam::CbcParam (std::string name, std::string help,
                     std::string firstValue,
-                    CbcParameterType type, int defaultIndex,
+                    CbcParameterType type,int defaultIndex,
                     bool display)
         : type_(type),
         lowerDoubleValue_(0.0),
@@ -85,14 +82,13 @@ CbcParam::CbcParam (std::string name, std::string help,
         shortHelp_(help),
         longHelp_(),
         action_(type),
-        currentKeyWord_(0)
-{
+        currentKeyWord_(0) {
     gutsOfConstructor();
     definedKeyWords_.push_back(firstValue);
-}
+    }
 // Action
 CbcParam::CbcParam (std::string name, std::string help,
-                    CbcParameterType type, int indexNumber,
+                    CbcParameterType type,int indexNumber,
                     bool display)
         : type_(type),
         lowerDoubleValue_(0.0),
@@ -104,16 +100,14 @@ CbcParam::CbcParam (std::string name, std::string help,
         shortHelp_(help),
         longHelp_(),
         action_(type),
-        currentKeyWord_(-1)
-{
+        currentKeyWord_(-1) {
     gutsOfConstructor();
-}
+    }
 
 //-------------------------------------------------------------------
 // Copy constructor
 //-------------------------------------------------------------------
-CbcParam::CbcParam (const CbcParam & rhs)
-{
+CbcParam::CbcParam (const CbcParam & rhs) {
     type_ = rhs.type_;
     lowerDoubleValue_ = rhs.lowerDoubleValue_;
     upperDoubleValue_ = rhs.upperDoubleValue_;
@@ -128,21 +122,19 @@ CbcParam::CbcParam (const CbcParam & rhs)
     action_ = rhs.action_;
     currentKeyWord_ = rhs.currentKeyWord_;
 
-}
+    }
 
 //-------------------------------------------------------------------
 // Destructor
 //-------------------------------------------------------------------
-CbcParam::~CbcParam ()
-{
-}
+CbcParam::~CbcParam () {
+    }
 
 //----------------------------------------------------------------
 // Assignment operator
 //-------------------------------------------------------------------
 CbcParam &
-CbcParam::operator=(const CbcParam & rhs)
-{
+CbcParam::operator=(const CbcParam& rhs) {
     if (this != &rhs) {
         type_ = rhs.type_;
         lowerDoubleValue_ = rhs.lowerDoubleValue_;
@@ -157,346 +149,343 @@ CbcParam::operator=(const CbcParam & rhs)
         longHelp_ = rhs.longHelp_;
         action_ = rhs.action_;
         currentKeyWord_ = rhs.currentKeyWord_;
-    }
+        }
     return *this;
-}
+    }
 void
-CbcParam::gutsOfConstructor()
-{
+CbcParam::gutsOfConstructor() {
     std::string::size_type  shriekPos = name_.find('!');
     lengthName_ = name_.length();
-    if ( shriekPos == std::string::npos ) {
+    if ( shriekPos==std::string::npos ) {
         //does not contain '!'
-        lengthMatch_ = lengthName_;
-    } else {
-        lengthMatch_ = shriekPos;
-        name_ = name_.substr(0, shriekPos) + name_.substr(shriekPos + 1);
+        lengthMatch_= lengthName_;
+        }
+    else {
+        lengthMatch_=shriekPos;
+        name_ = name_.substr(0,shriekPos)+name_.substr(shriekPos+1);
         lengthName_--;
+        }
     }
-}
 // Insert string (only valid for keywords)
 void
-CbcParam::append(std::string keyWord)
-{
+CbcParam::append(std::string keyWord) {
     definedKeyWords_.push_back(keyWord);
-}
+    }
 
 int
-CbcParam::matches (std::string input) const
-{
+CbcParam::matches (std::string input) const {
     // look up strings to do more elegantly
-    if (input.length() > lengthName_) {
+    if (input.length()>lengthName_) {
         return 0;
-    } else {
-        unsigned int i;
-        for (i = 0; i < input.length(); i++) {
-            if (tolower(name_[i]) != tolower(input[i]))
-                break;
         }
-        if (i < input.length()) {
+    else {
+        unsigned int i;
+        for (i=0; i<input.length(); i++) {
+            if (tolower(name_[i])!=tolower(input[i]))
+                break;
+            }
+        if (i<input.length()) {
             return 0;
-        } else if (i >= lengthMatch_) {
+            }
+        else if (i>=lengthMatch_) {
             return 1;
-        } else {
+            }
+        else {
             // matched but too short
             return 2;
+            }
         }
     }
-}
 // Returns name which could match
 std::string
-CbcParam::matchName (  ) const
-{
-    if (lengthMatch_ == lengthName_)
+CbcParam::matchName (  ) const {
+    if (lengthMatch_==lengthName_)
         return name_;
     else
-        return name_.substr(0, lengthMatch_) + "(" + name_.substr(lengthMatch_) + ")";
-}
+        return name_.substr(0,lengthMatch_)+"("+name_.substr(lengthMatch_)+")";
+    }
 
 // Returns parameter option which matches (-1 if none)
 int
-CbcParam::parameterOption ( std::string check ) const
-{
+CbcParam::parameterOption ( std::string check ) const {
     int numberItems = definedKeyWords_.size();
     if (!numberItems) {
         return -1;
-    } else {
-        int whichItem = 0;
+        }
+    else {
+        int whichItem=0;
         unsigned int it;
-        for (it = 0; it < definedKeyWords_.size(); it++) {
+        for (it=0; it<definedKeyWords_.size(); it++) {
             std::string thisOne = definedKeyWords_[it];
             std::string::size_type  shriekPos = thisOne.find('!');
             unsigned int length1 = thisOne.length();
             unsigned int length2 = length1;
-            if ( shriekPos != std::string::npos ) {
+            if ( shriekPos!=std::string::npos ) {
                 //contains '!'
                 length2 = shriekPos;
-                thisOne = thisOne.substr(0, shriekPos) +
-                          thisOne.substr(shriekPos + 1);
+                thisOne = thisOne.substr(0,shriekPos)+
+                          thisOne.substr(shriekPos+1);
                 length1 = thisOne.length();
-            }
-            if (check.length() <= length1) {
+                }
+            if (check.length()<=length1) {
                 unsigned int i;
-                for (i = 0; i < check.length(); i++) {
-                    if (tolower(thisOne[i]) != tolower(check[i]))
+                for (i=0; i<check.length(); i++) {
+                    if (tolower(thisOne[i])!=tolower(check[i]))
                         break;
-                }
-                if (i < check.length()) {
+                    }
+                if (i<check.length()) {
                     whichItem++;
-                } else if (i >= length2) {
+                    }
+                else if (i>=length2) {
                     break;
+                    }
                 }
-            } else {
+            else {
                 whichItem++;
+                }
             }
-        }
-        if (whichItem < numberItems)
+        if (whichItem<numberItems)
             return whichItem;
         else
             return -1;
+        }
     }
-}
 // Prints parameter options
 void
-CbcParam::printOptions (  ) const
-{
-    std::cout << "Possible options for " << name_ << " are:" << std::endl;
+CbcParam::printOptions (  ) const {
+    std::cout<<"Possible options for "<<name_<<" are:"<<std::endl;
     unsigned int it;
-    for (it = 0; it < definedKeyWords_.size(); it++) {
+    for (it=0; it<definedKeyWords_.size(); it++) {
         std::string thisOne = definedKeyWords_[it];
         std::string::size_type  shriekPos = thisOne.find('!');
-        if ( shriekPos != std::string::npos ) {
+        if ( shriekPos!=std::string::npos ) {
             //contains '!'
-            thisOne = thisOne.substr(0, shriekPos) +
-                      "(" + thisOne.substr(shriekPos + 1) + ")";
+            thisOne = thisOne.substr(0,shriekPos)+
+                      "("+thisOne.substr(shriekPos+1)+")";
+            }
+        std::cout<<thisOne<<std::endl;
         }
-        std::cout << thisOne << std::endl;
     }
-}
 int
-CbcParam::setDoubleParameter (OsiSolverInterface * model, double value) const
-{
-    if (value < lowerDoubleValue_ || value > upperDoubleValue_) {
-        std::cout << value << " was provided for " << name_ <<
-                  " - valid range is " << lowerDoubleValue_ << " to " <<
-                  upperDoubleValue_ << std::endl;
+CbcParam::setDoubleParameter (OsiSolverInterface * model,double value) const {
+    if (value<lowerDoubleValue_||value>upperDoubleValue_) {
+        std::cout<<value<<" was provided for "<<name_<<
+                 " - valid range is "<<lowerDoubleValue_<<" to "<<
+                 upperDoubleValue_<<std::endl;
         return 1;
-    } else {
+        }
+    else {
         double oldValue;
         switch (type_) {
-        case DUALTOLERANCE:
-            model->getDblParam(OsiDualTolerance, oldValue);
-            model->setDblParam(OsiDualTolerance, value);
-            break;
-        case PRIMALTOLERANCE:
-            model->getDblParam(OsiPrimalTolerance, oldValue);
-            model->setDblParam(OsiPrimalTolerance, value);
-            break;
-        default:
-            oldValue = 0.0; // to avoid compiler message
-            abort();
+            case DUALTOLERANCE:
+                model->getDblParam(OsiDualTolerance,oldValue);
+                model->setDblParam(OsiDualTolerance,value);
+                break;
+            case PRIMALTOLERANCE:
+                model->getDblParam(OsiPrimalTolerance,oldValue);
+                model->setDblParam(OsiPrimalTolerance,value);
+                break;
+            default:
+                oldValue=0.0; // to avoid compiler message
+                abort();
+            }
+        std::cout<<name_<<" was changed from "<<oldValue<<" to "
+                 <<value<<std::endl;
+        return 0;
         }
-        std::cout << name_ << " was changed from " << oldValue << " to "
-                  << value << std::endl;
-        return 0;
     }
-}
 int
-CbcParam::checkDoubleParameter (double value) const
-{
-    if (value < lowerDoubleValue_ || value > upperDoubleValue_) {
-        std::cout << value << " was provided for " << name_ <<
-                  " - valid range is " << lowerDoubleValue_ << " to " <<
-                  upperDoubleValue_ << std::endl;
+CbcParam::checkDoubleParameter (double value) const {
+    if (value<lowerDoubleValue_||value>upperDoubleValue_) {
+        std::cout<<value<<" was provided for "<<name_<<
+                 " - valid range is "<<lowerDoubleValue_<<" to "<<
+                 upperDoubleValue_<<std::endl;
         return 1;
-    } else {
+        }
+    else {
         return 0;
+        }
     }
-}
 double
-CbcParam::doubleParameter (OsiSolverInterface * model) const
-{
+CbcParam::doubleParameter (OsiSolverInterface * model) const {
     double value;
     bool getDblParamRetValue;
     switch (type_) {
-    case DUALTOLERANCE:
-        getDblParamRetValue = model->getDblParam(OsiDualTolerance, value);
-        assert(getDblParamRetValue);
-        break;
-    case PRIMALTOLERANCE:
-        getDblParamRetValue = model->getDblParam(OsiPrimalTolerance, value);
-        assert(getDblParamRetValue);
-        break;
-    default:
-        abort();
-    }
-    return value;
-}
-int
-CbcParam::setIntParameter (OsiSolverInterface * model, int value) const
-{
-    if (value < lowerIntValue_ || value > upperIntValue_) {
-        std::cout << value << " was provided for " << name_ <<
-                  " - valid range is " << lowerIntValue_ << " to " <<
-                  upperIntValue_ << std::endl;
-        return 1;
-    } else {
-        int oldValue;
-        switch (type_) {
-        case LOGLEVEL:
-            oldValue = model->messageHandler()->logLevel();
-            model->messageHandler()->setLogLevel(value);
+        case DUALTOLERANCE:
+            getDblParamRetValue = model->getDblParam(OsiDualTolerance,value);
+            assert(getDblParamRetValue);
+            break;
+        case PRIMALTOLERANCE:
+            getDblParamRetValue = model->getDblParam(OsiPrimalTolerance,value);
+            assert(getDblParamRetValue);
             break;
         default:
-            oldValue = 0; // to avoid compiler message
             abort();
         }
-        std::cout << name_ << " was changed from " << oldValue << " to "
-                  << value << std::endl;
-        return 0;
-    }
-}
-int
-CbcParam::intParameter (OsiSolverInterface * model) const
-{
-    int value = 0;
-    switch (type_) {
-    case LOGLEVEL:
-        //value=model->logLevel();
-        break;
-    default:
-        abort();
-    }
     return value;
-}
+    }
 int
-CbcParam::setDoubleParameter (CbcModel &model, double value) const
-{
-    if (value < lowerDoubleValue_ || value > upperDoubleValue_) {
-        std::cout << value << " was provided for " << name_ <<
-                  " - valid range is " << lowerDoubleValue_ << " to " <<
-                  upperDoubleValue_ << std::endl;
+CbcParam::setIntParameter (OsiSolverInterface * model,int value) const {
+    if (value<lowerIntValue_||value>upperIntValue_) {
+        std::cout<<value<<" was provided for "<<name_<<
+                 " - valid range is "<<lowerIntValue_<<" to "<<
+                 upperIntValue_<<std::endl;
         return 1;
-    } else {
+        }
+    else {
+        int oldValue;
+        switch (type_) {
+            case LOGLEVEL:
+                oldValue=model->messageHandler()->logLevel();
+                model->messageHandler()->setLogLevel(value);
+                break;
+            default:
+                oldValue=0; // to avoid compiler message
+                abort();
+            }
+        std::cout<<name_<<" was changed from "<<oldValue<<" to "
+                 <<value<<std::endl;
+        return 0;
+        }
+    }
+int
+CbcParam::intParameter (OsiSolverInterface * model) const {
+    int value=0;
+    switch (type_) {
+        case LOGLEVEL:
+            //value=model->logLevel();
+            break;
+        default:
+            abort();
+        }
+    return value;
+    }
+int
+CbcParam::setDoubleParameter (CbcModel &model,double value) const {
+    if (value<lowerDoubleValue_||value>upperDoubleValue_) {
+        std::cout<<value<<" was provided for "<<name_<<
+                 " - valid range is "<<lowerDoubleValue_<<" to "<<
+                 upperDoubleValue_<<std::endl;
+        return 1;
+        }
+    else {
         double oldValue;
         switch (type_) {
-        case INFEASIBILITYWEIGHT:
-            oldValue = model.getDblParam(CbcModel::CbcInfeasibilityWeight);
-            model.setDblParam(CbcModel::CbcInfeasibilityWeight, value);
-            break;
-        case INTEGERTOLERANCE:
-            oldValue = model.getDblParam(CbcModel::CbcIntegerTolerance);
-            model.setDblParam(CbcModel::CbcIntegerTolerance, value);
-            break;
-        case INCREMENT:
-            oldValue = model.getDblParam(CbcModel::CbcCutoffIncrement);
-            model.setDblParam(CbcModel::CbcCutoffIncrement, value);
-        case ALLOWABLEGAP:
-            oldValue = model.getDblParam(CbcModel::CbcAllowableGap);
-            model.setDblParam(CbcModel::CbcAllowableGap, value);
-            break;
-        case TIMELIMIT: {
-            oldValue = model.getDblParam(CbcModel::CbcMaximumSeconds) ;
-            model.setDblParam(CbcModel::CbcMaximumSeconds, value) ;
-            break ;
-        }
-        case DUALTOLERANCE:
-        case PRIMALTOLERANCE:
-            setDoubleParameter(model.solver(), value);
-            return 0; // to avoid message
-        default:
-            oldValue = 0.0; // to avoid compiler message
-            abort();
-        }
-        std::cout << name_ << " was changed from " << oldValue << " to "
-                  << value << std::endl;
+            case INFEASIBILITYWEIGHT:
+                oldValue=model.getDblParam(CbcModel::CbcInfeasibilityWeight);
+                model.setDblParam(CbcModel::CbcInfeasibilityWeight,value);
+                break;
+            case INTEGERTOLERANCE:
+                oldValue=model.getDblParam(CbcModel::CbcIntegerTolerance);
+                model.setDblParam(CbcModel::CbcIntegerTolerance,value);
+                break;
+            case INCREMENT:
+                oldValue=model.getDblParam(CbcModel::CbcCutoffIncrement);
+                model.setDblParam(CbcModel::CbcCutoffIncrement,value);
+            case ALLOWABLEGAP:
+                oldValue=model.getDblParam(CbcModel::CbcAllowableGap);
+                model.setDblParam(CbcModel::CbcAllowableGap,value);
+                break;
+            case TIMELIMIT: {
+                oldValue = model.getDblParam(CbcModel::CbcMaximumSeconds) ;
+                model.setDblParam(CbcModel::CbcMaximumSeconds,value) ;
+                break ;
+                }
+            case DUALTOLERANCE:
+            case PRIMALTOLERANCE:
+                setDoubleParameter(model.solver(),value);
+                return 0; // to avoid message
+            default:
+                oldValue=0.0; // to avoid compiler message
+                abort();
+            }
+        std::cout<<name_<<" was changed from "<<oldValue<<" to "
+                 <<value<<std::endl;
         return 0;
+        }
     }
-}
 double
-CbcParam::doubleParameter (CbcModel &model) const
-{
+CbcParam::doubleParameter (CbcModel &model) const {
     double value;
     switch (type_) {
-    case INFEASIBILITYWEIGHT:
-        value = model.getDblParam(CbcModel::CbcInfeasibilityWeight);
-        break;
-    case INTEGERTOLERANCE:
-        value = model.getDblParam(CbcModel::CbcIntegerTolerance);
-        break;
-    case INCREMENT:
-        value = model.getDblParam(CbcModel::CbcCutoffIncrement);
-    case ALLOWABLEGAP:
-        value = model.getDblParam(CbcModel::CbcAllowableGap);
-        break;
-    case TIMELIMIT: {
-        value = model.getDblParam(CbcModel::CbcMaximumSeconds) ;
-        break ;
-    }
-    case DUALTOLERANCE:
-    case PRIMALTOLERANCE:
-        value = doubleParameter(model.solver());
-        break;
-    default:
-        abort();
-    }
-    return value;
-}
-int
-CbcParam::setIntParameter (CbcModel &model, int value) const
-{
-    if (value < lowerIntValue_ || value > upperIntValue_) {
-        std::cout << value << " was provided for " << name_ <<
-                  " - valid range is " << lowerIntValue_ << " to " <<
-                  upperIntValue_ << std::endl;
-        return 1;
-    } else {
-        int oldValue;
-        switch (type_) {
-        case LOGLEVEL:
-            oldValue = model.messageHandler()->logLevel();
-            model.messageHandler()->setLogLevel(value);
+        case INFEASIBILITYWEIGHT:
+            value=model.getDblParam(CbcModel::CbcInfeasibilityWeight);
             break;
-        case SOLVERLOGLEVEL:
-            oldValue = model.solver()->messageHandler()->logLevel();
-            model.solver()->messageHandler()->setLogLevel(value);
+        case INTEGERTOLERANCE:
+            value=model.getDblParam(CbcModel::CbcIntegerTolerance);
             break;
-        case MAXNODES:
-            oldValue = model.getIntParam(CbcModel::CbcMaxNumNode);
-            model.setIntParam(CbcModel::CbcMaxNumNode, value);
+        case INCREMENT:
+            value=model.getDblParam(CbcModel::CbcCutoffIncrement);
+        case ALLOWABLEGAP:
+            value=model.getDblParam(CbcModel::CbcAllowableGap);
             break;
-        case STRONGBRANCHING:
-            oldValue = model.numberStrong();
-            model.setNumberStrong(value);
+        case TIMELIMIT: {
+            value = model.getDblParam(CbcModel::CbcMaximumSeconds) ;
+            break ;
+            }
+        case DUALTOLERANCE:
+        case PRIMALTOLERANCE:
+            value=doubleParameter(model.solver());
             break;
         default:
-            oldValue = 0; // to avoid compiler message
             abort();
         }
-        std::cout << name_ << " was changed from " << oldValue << " to "
-                  << value << std::endl;
-        return 0;
+    return value;
     }
-}
 int
-CbcParam::intParameter (CbcModel &model) const
-{
+CbcParam::setIntParameter (CbcModel &model,int value) const {
+    if (value<lowerIntValue_||value>upperIntValue_) {
+        std::cout<<value<<" was provided for "<<name_<<
+                 " - valid range is "<<lowerIntValue_<<" to "<<
+                 upperIntValue_<<std::endl;
+        return 1;
+        }
+    else {
+        int oldValue;
+        switch (type_) {
+            case LOGLEVEL:
+                oldValue = model.messageHandler()->logLevel();
+                model.messageHandler()->setLogLevel(value);
+                break;
+            case SOLVERLOGLEVEL:
+                oldValue = model.solver()->messageHandler()->logLevel();
+                model.solver()->messageHandler()->setLogLevel(value);
+                break;
+            case MAXNODES:
+                oldValue=model.getIntParam(CbcModel::CbcMaxNumNode);
+                model.setIntParam(CbcModel::CbcMaxNumNode,value);
+                break;
+            case STRONGBRANCHING:
+                oldValue=model.numberStrong();
+                model.setNumberStrong(value);
+                break;
+            default:
+                oldValue=0; // to avoid compiler message
+                abort();
+            }
+        std::cout<<name_<<" was changed from "<<oldValue<<" to "
+                 <<value<<std::endl;
+        return 0;
+        }
+    }
+int
+CbcParam::intParameter (CbcModel &model) const {
     int value;
     switch (type_) {
-    case LOGLEVEL:
-        value = model.messageHandler()->logLevel();
-        break;
-    case SOLVERLOGLEVEL:
-        value = model.solver()->messageHandler()->logLevel();
-        break;
-    case MAXNODES:
-        value = model.getIntParam(CbcModel::CbcMaxNumNode);
-        break;
-    case STRONGBRANCHING:
-        value = model.numberStrong();
-        break;
-    default:
-        abort();
-    }
+        case LOGLEVEL:
+            value = model.messageHandler()->logLevel();
+            break;
+        case SOLVERLOGLEVEL:
+            value = model.solver()->messageHandler()->logLevel();
+            break;
+        case MAXNODES:
+            value = model.getIntParam(CbcModel::CbcMaxNumNode);
+            break;
+        case STRONGBRANCHING:
+            value=model.numberStrong();
+            break;
+        default:
+            abort();
+        }
     return value;
-}
+    }

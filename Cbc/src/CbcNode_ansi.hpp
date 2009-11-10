@@ -61,7 +61,8 @@ class CbcGeneralBranchingObject;
   differences from the parent.
 */
 
-class CbcNodeInfo {
+class CbcNodeInfo
+{
 
 public:
 
@@ -109,7 +110,7 @@ public:
                                CbcCountRowCut **addCuts,
                                int &currentNumberCuts) const = 0 ;
     /// Just apply bounds to one variable - force means overwrite by lower,upper (1=>infeasible)
-    virtual int applyBounds(int iColumn, double & lower, double & upper, int force) = 0;
+    virtual int applyBounds(int iColumn, double & lower, double & upper,int force) = 0;
 
     /** Builds up row basis backwards (until original model).
         Returns NULL or previous one to apply .
@@ -122,157 +123,182 @@ public:
     virtual void allBranchesGone() {}
 #if 1
     /// Increment number of references
-    inline void increment(int amount = 1) {
-        numberPointingToThis_ += amount;/*printf("CbcNodeInfo %x incremented by %d to %d\n",this,amount,numberPointingToThis_);*/
+    inline void increment(int amount=1)
+    {
+        numberPointingToThis_+=amount;/*printf("CbcNodeInfo %x incremented by %d to %d\n",this,amount,numberPointingToThis_);*/
     }
 
     /// Decrement number of references and return number left
-    inline int decrement(int amount = 1) {
-        numberPointingToThis_ -= amount;/*printf("CbcNodeInfo %x decremented by %d to %d\n",this,amount,numberPointingToThis_);*/
+    inline int decrement(int amount=1)
+    {
+        numberPointingToThis_-=amount;/*printf("CbcNodeInfo %x decremented by %d to %d\n",this,amount,numberPointingToThis_);*/
         return numberPointingToThis_;
     }
 #else
     /// Increment number of references
-    void increment(int amount = 1);
+    void increment(int amount=1);
     /// Decrement number of references and return number left
-    int decrement(int amount = 1);
+    int decrement(int amount=1);
 #endif
     /** Initialize reference counts
 
       Initialize the reference counts used for tree maintenance.
     */
 
-    inline void initializeInfo(int number) {
-        numberPointingToThis_ = number;
-        numberBranchesLeft_ = number;
+    inline void initializeInfo(int number)
+    {
+        numberPointingToThis_=number;
+        numberBranchesLeft_=number;
     }
 
     /// Return number of branches left in object
-    inline int numberBranchesLeft() const {
+    inline int numberBranchesLeft() const
+    {
         return numberBranchesLeft_;
     }
 
     /// Set number of branches left in object
-    inline void setNumberBranchesLeft(int value) {
+    inline void setNumberBranchesLeft(int value)
+    {
         numberBranchesLeft_ = value;
     }
 
     /// Return number of objects pointing to this
-    inline int numberPointingToThis() const {
+    inline int numberPointingToThis() const
+    {
         return numberPointingToThis_;
     }
 
     /// Set number of objects pointing to this
-    inline void setNumberPointingToThis(int number) {
-        numberPointingToThis_ = number;
+    inline void setNumberPointingToThis(int number)
+    {
+        numberPointingToThis_=number;
     }
 
     /// Increment number of objects pointing to this
-    inline void incrementNumberPointingToThis() {
+    inline void incrementNumberPointingToThis()
+    {
         numberPointingToThis_ ++;
     }
 
     /// Say one branch taken
-    inline int branchedOn() {
+    inline int branchedOn()
+    {
         numberPointingToThis_--;
         numberBranchesLeft_--;
         return numberBranchesLeft_;
     }
 
     /// Say thrown away
-    inline void throwAway() {
-        numberPointingToThis_ -= numberBranchesLeft_;
-        numberBranchesLeft_ = 0;
+    inline void throwAway()
+    {
+        numberPointingToThis_-=numberBranchesLeft_;
+        numberBranchesLeft_=0;
     }
 
     /// Parent of this
-    CbcNodeInfo * parent() const {
+    CbcNodeInfo * parent() const
+    {
         return parent_;
     }
     /// Set parent null
-    inline void nullParent() {
-        parent_ = NULL;
+    inline void nullParent()
+    {
+        parent_=NULL;
     }
 
-    void addCuts(OsiCuts & cuts, int numberToBranch, //int * whichGenerator,
+    void addCuts(OsiCuts & cuts,int numberToBranch, //int * whichGenerator,
                  int numberPointingToThis);
-    void addCuts(int numberCuts, CbcCountRowCut ** cuts, int numberToBranch);
+    void addCuts(int numberCuts, CbcCountRowCut ** cuts,int numberToBranch);
     /** Delete cuts (decrements counts)
         Slow unless cuts in same order as saved
     */
-    void deleteCuts(int numberToDelete, CbcCountRowCut ** cuts);
-    void deleteCuts(int numberToDelete, int * which);
+    void deleteCuts(int numberToDelete,CbcCountRowCut ** cuts);
+    void deleteCuts(int numberToDelete,int * which);
 
     /// Really delete a cut
     void deleteCut(int whichOne);
 
     /// Decrement active cut counts
-    void decrementCuts(int change = 1);
+    void decrementCuts(int change=1);
 
     /// Increment active cut counts
-    void incrementCuts(int change = 1);
+    void incrementCuts(int change=1);
 
     /// Decrement all active cut counts in chain starting at parent
-    void decrementParentCuts(CbcModel * model, int change = 1);
+    void decrementParentCuts(CbcModel * model, int change=1);
 
     /// Increment all active cut counts in parent chain
-    void incrementParentCuts(CbcModel * model, int change = 1);
+    void incrementParentCuts(CbcModel * model, int change=1);
 
     /// Array of pointers to cuts
-    inline CbcCountRowCut ** cuts() const {
+    inline CbcCountRowCut ** cuts() const
+    {
         return cuts_;
     }
 
     /// Number of row cuts (this node)
-    inline int numberCuts() const {
+    inline int numberCuts() const
+    {
         return numberCuts_;
     }
-    inline void setNumberCuts(int value) {
-        numberCuts_ = value;
+    inline void setNumberCuts(int value)
+    {
+        numberCuts_=value;
     }
 
     /// Set owner null
-    inline void nullOwner() {
-        owner_ = NULL;
+    inline void nullOwner()
+    {
+        owner_=NULL;
     }
-    const inline CbcNode * owner() const {
+    const inline CbcNode * owner() const
+    {
         return owner_;
     }
-    inline CbcNode * mutableOwner() const {
+    inline CbcNode * mutableOwner() const
+    {
         return owner_;
     }
     /// The node number
-    inline int nodeNumber() const {
+    inline int nodeNumber() const
+    {
         return nodeNumber_;
     }
-    inline void setNodeNumber(int node) {
-        nodeNumber_ = node;
+    inline void setNodeNumber(int node)
+    {
+        nodeNumber_=node;
     }
     /** Deactivate node information.
         1 - bounds
         2 - cuts
         4 - basis!
     */
-    void deactivate(int mode = 3);
+    void deactivate(int mode=3);
     /// Say if normal
-    inline bool allActivated() const {
-        return (active_ == 7);
+    inline bool allActivated() const
+    {
+        return (active_==7);
     }
     /// Say if marked
-    inline bool marked() const {
-        return ((active_&8) != 0);
+    inline bool marked() const
+    {
+        return ((active_&8)!=0);
     }
     /// Mark
-    inline void mark() {
+    inline void mark()
+    {
         active_ |= 8;
     }
     /// Unmark
-    inline void unmark() {
+    inline void unmark()
+    {
         active_ &= ~8;
     }
 
     /// Branching object for the parent
-    inline const OsiBranchingObject * parentBranch() const {
+    inline const OsiBranchingObject * parentBranch() const
+    {
         return parentBranch_;
     }
     /// If we need to take off parent based data
@@ -344,7 +370,8 @@ private:
 	is violated.
 */
 
-class CbcFullNodeInfo : public CbcNodeInfo {
+class CbcFullNodeInfo : public CbcNodeInfo
+{
 
 public:
 
@@ -362,7 +389,7 @@ public:
                                int &currentNumberCuts) const ;
 
     /// Just apply bounds to one variable - force means overwrite by lower,upper (1=>infeasible)
-    virtual int applyBounds(int iColumn, double & lower, double & upper, int force) ;
+    virtual int applyBounds(int iColumn, double & lower, double & upper,int force) ;
 
     /** Builds up row basis backwards (until original model).
         Returns NULL or previous one to apply .
@@ -386,11 +413,13 @@ public:
     /// Clone
     virtual CbcNodeInfo * clone() const;
     /// Lower bounds
-    inline const double * lower() const {
+    inline const double * lower() const
+    {
         return lower_;
     }
     /// Upper bounds
-    inline const double * upper() const {
+    inline const double * upper() const
+    {
         return upper_;
     }
 protected:
@@ -420,7 +449,8 @@ private:
   augmenting the parent subproblem.
 */
 
-class CbcPartialNodeInfo : public CbcNodeInfo {
+class CbcPartialNodeInfo : public CbcNodeInfo
+{
 
 public:
 
@@ -434,7 +464,7 @@ public:
                                int &currentNumberCuts) const ;
 
     /// Just apply bounds to one variable - force means overwrite by lower,upper (1=>infeasible)
-    virtual int applyBounds(int iColumn, double & lower, double & upper, int force) ;
+    virtual int applyBounds(int iColumn, double & lower, double & upper,int force) ;
     /** Builds up row basis backwards (until original model).
         Returns NULL or previous one to apply .
         Depends on Free being 0 and impossible for cuts
@@ -445,7 +475,7 @@ public:
 
     // Constructor from current state
     CbcPartialNodeInfo (CbcNodeInfo * parent, CbcNode * owner,
-                        int numberChangedBounds, const int * variables,
+                        int numberChangedBounds,const int * variables,
                         const double * boundChanges,
                         const CoinWarmStartDiff *basisDiff) ;
 
@@ -458,19 +488,23 @@ public:
     /// Clone
     virtual CbcNodeInfo * clone() const;
     /// Basis diff information
-    inline const CoinWarmStartDiff *basisDiff() const {
+    inline const CoinWarmStartDiff *basisDiff() const
+    {
         return basisDiff_ ;
     }
     /// Which variable (top bit if upper bound changing)
-    inline const int * variables() const {
+    inline const int * variables() const
+    {
         return variables_;
     }
     // New bound
-    inline const double * newBounds() const {
+    inline const double * newBounds() const
+    {
         return newBounds_;
     }
     /// Number of bound changes
-    inline int numberChangedBounds() const {
+    inline int numberChangedBounds() const
+    {
         return numberChangedBounds_;
     }
 protected:
@@ -508,7 +542,8 @@ private:
   node.
 */
 
-class CbcNode : public CoinTreeNode {
+class CbcNode : public CoinTreeNode
+{
 
 public:
 
@@ -547,7 +582,7 @@ public:
                CbcNode * lastNode,
                const CoinWarmStartBasis *lastws,
                const double * lastLower, const double * lastUpper,
-               int numberOldActiveCuts, int numberNewCuts);
+               int numberOldActiveCuts,int numberNewCuts);
 
     /** Create a branching object for the node
 
@@ -648,12 +683,12 @@ public:
     */
     int chooseClpBranch (CbcModel * model,
                          CbcNode * lastNode);
-    int analyze(CbcModel * model, double * results);
+    int analyze(CbcModel * model,double * results);
     /// Decrement active cut counts
-    void decrementCuts(int change = 1);
+    void decrementCuts(int change=1);
 
     /// Decrement all active cut counts in chain starting at parent
-    void decrementParentCuts(CbcModel * model, int change = 1);
+    void decrementParentCuts(CbcModel * model, int change=1);
 
     /// Nulls out node info
     void nullNodeInfo();
@@ -675,19 +710,23 @@ public:
         Can change objective etc */
     double checkIsCutoff(double cutoff);
     // Information to make basis and bounds
-    inline CbcNodeInfo * nodeInfo() const {
+    inline CbcNodeInfo * nodeInfo() const
+    {
         return nodeInfo_;
     }
 
     // Objective value
-    inline double objectiveValue() const {
+    inline double objectiveValue() const
+    {
         return objectiveValue_;
     }
-    inline void setObjectiveValue(double value) {
-        objectiveValue_ = value;
+    inline void setObjectiveValue(double value)
+    {
+        objectiveValue_=value;
     }
     /// Number of arms defined for the attached OsiBranchingObject.
-    inline int numberBranches() const {
+    inline int numberBranches() const
+    {
         if (branch_)
             return (branch_->numberBranches()) ;
         else
@@ -702,78 +741,96 @@ public:
     */
     int way() const;
     /// Depth in branch-and-cut search tree
-    inline int depth() const {
+    inline int depth() const
+    {
         return depth_;
     }
     /// Set depth in branch-and-cut search tree
-    inline void setDepth(int value) {
+    inline void setDepth(int value)
+    {
         depth_ = value;
     }
     /// Get the number of objects unsatisfied at this node.
-    inline int numberUnsatisfied() const {
+    inline int numberUnsatisfied() const
+    {
         return numberUnsatisfied_;
     }
     /// Set the number of objects unsatisfied at this node.
-    inline void setNumberUnsatisfied(int value) {
+    inline void setNumberUnsatisfied(int value)
+    {
         numberUnsatisfied_ = value;
     }
     /// Get sum of "infeasibilities" reported by each object
-    inline double sumInfeasibilities() const {
+    inline double sumInfeasibilities() const
+    {
         return sumInfeasibilities_;
     }
     /// Set sum of "infeasibilities" reported by each object
-    inline void setSumInfeasibilities(double value) {
+    inline void setSumInfeasibilities(double value)
+    {
         sumInfeasibilities_ = value;
     }
     // Guessed objective value (for solution)
-    inline double guessedObjectiveValue() const {
+    inline double guessedObjectiveValue() const
+    {
         return guessedObjectiveValue_;
     }
-    inline void setGuessedObjectiveValue(double value) {
-        guessedObjectiveValue_ = value;
+    inline void setGuessedObjectiveValue(double value)
+    {
+        guessedObjectiveValue_=value;
     }
     /// Branching object for this node
-    inline const OsiBranchingObject * branchingObject() const {
+    inline const OsiBranchingObject * branchingObject() const
+    {
         return branch_;
     }
     /// Modifiable branching object for this node
-    inline OsiBranchingObject * modifiableBranchingObject() const {
+    inline OsiBranchingObject * modifiableBranchingObject() const
+    {
         return branch_;
     }
     /// Set branching object for this node (takes ownership)
-    inline void setBranchingObject(OsiBranchingObject * branchingObject) {
+    inline void setBranchingObject(OsiBranchingObject * branchingObject)
+    {
         branch_ = branchingObject;
     }
     /// The node number
-    inline int nodeNumber() const {
+    inline int nodeNumber() const
+    {
         return nodeNumber_;
     }
-    inline void setNodeNumber(int node) {
-        nodeNumber_ = node;
+    inline void setNodeNumber(int node)
+    {
+        nodeNumber_=node;
     }
     /// Returns true if on tree
-    inline bool onTree() const {
-        return (state_&1) != 0;
+    inline bool onTree() const
+    {
+        return (state_&1)!=0;
     }
     /// Sets true if on tree
-    inline void setOnTree(bool yesNo) {
+    inline void setOnTree(bool yesNo)
+    {
         if (yesNo) state_ |= 1;
         else state_ &= ~1;
     }
     /// Returns true if active
-    inline bool active() const {
-        return (state_&2) != 0;
+    inline bool active() const
+    {
+        return (state_&2)!=0;
     }
     /// Sets true if active
-    inline void setActive(bool yesNo) {
+    inline void setActive(bool yesNo)
+    {
         if (yesNo) state_ |= 2;
         else state_ &= ~2;
     }
     /// Print
     void print() const;
     /// Debug
-    inline void checkInfo() const {
-        assert (nodeInfo_->numberBranchesLeft() ==
+    inline void checkInfo() const
+    {
+        assert (nodeInfo_->numberBranchesLeft()==
                 branch_->numberBranchesLeft());
     }
 

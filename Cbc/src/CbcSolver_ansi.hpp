@@ -29,7 +29,8 @@ class CglCutGenerator;
 
 */
 
-class CbcSolver {
+class CbcSolver
+{
 
 public:
     ///@name Solve method
@@ -104,35 +105,41 @@ public:
     /// Get int value
     int intValue(CbcOrClpParameterType type) const;
     /// Set int value
-    void setIntValue(CbcOrClpParameterType type, int value);
+    void setIntValue(CbcOrClpParameterType type,int value);
     /// Get double value
     double doubleValue(CbcOrClpParameterType type) const;
     /// Set double value
-    void setDoubleValue(CbcOrClpParameterType type, double value);
+    void setDoubleValue(CbcOrClpParameterType type,double value);
     /// User function (NULL if no match)
     CbcUser * userFunction(const char * name) const;
     /// Return original Cbc model
-    inline CbcModel * model() {
+    inline CbcModel * model()
+    {
         return &model_;
     }
     /// Return updated Cbc model
-    inline CbcModel * babModel() {
+    inline CbcModel * babModel()
+    {
         return babModel_;
     }
     /// Number of userFunctions
-    inline int numberUserFunctions() const {
+    inline int numberUserFunctions() const
+    {
         return numberUserFunctions_;
     }
     /// User function array
-    inline CbcUser ** userFunctionArray() const {
+    inline CbcUser ** userFunctionArray() const
+    {
         return userFunction_;
     }
     /// Copy of model on initial load (will contain output solutions)
-    inline OsiClpSolverInterface * originalSolver() const {
+    inline OsiClpSolverInterface * originalSolver() const
+    {
         return originalSolver_;
     }
     /// Copy of model on initial load
-    inline CoinModel * originalCoinModel() const {
+    inline CoinModel * originalCoinModel() const
+    {
         return originalCoinModel_;
     }
     /// Copy of model on initial load (will contain output solutions)
@@ -140,23 +147,28 @@ public:
     /// Copy of model on initial load
     void setOriginalCoinModel(CoinModel * originalCoinModel);
     /// Number of cutgenerators
-    inline int numberCutGenerators() const {
+    inline int numberCutGenerators() const
+    {
         return numberCutGenerators_;
     }
     /// Cut generator array
-    inline CglCutGenerator ** cutGeneratorArray() const {
+    inline CglCutGenerator ** cutGeneratorArray() const
+    {
         return cutGenerator_;
     }
     /// Start time
-    inline double startTime() const {
+    inline double startTime() const
+    {
         return startTime_;
     }
     /// Whether to print to std::cout
-    inline void setPrinting(bool onOff) {
-        noPrinting_ = !onOff;
+    inline void setPrinting(bool onOff)
+    {
+        noPrinting_= !onOff;
     }
     /// Where to start reading commands
-    inline void setReadMode(int value) {
+    inline void setReadMode(int value)
+    {
         readMode_ = value;
     }
     //@}
@@ -207,7 +219,8 @@ private:
 };
 //#############################################################################
 /// Structure to hold useful arrays
-typedef struct {
+typedef struct
+{
     // Priorities
     int * priorities_;
     // SOS priorities
@@ -224,7 +237,8 @@ typedef struct {
 /** This allows the use of an unknown user stuff including modeling languages
  */
 
-class CbcUser {
+class CbcUser
+{
 
 public:
     ///@name import/export methods
@@ -234,12 +248,13 @@ public:
                  0 - data read in without error
              1 - errors
     */
-    virtual int importData(CbcSolver * /*model*/, int & /*argc*/, char ** /*argv[]*/) {
+    virtual int importData(CbcSolver * /*model*/, int & /*argc*/, char ** /*argv[]*/)
+    {
         return -1;
     }
     /// Export 1 OsiClpSolver, 2 CbcModel - add 10 if infeasible from odd situation
     virtual void exportSolution(CbcSolver * /*model*/,
-                                int /*mode*/, const char * /*message*/ = NULL) {}
+                                int /*mode*/,const char * /*message*/=NULL) {}
     /// Export Data (i.e. at very end)
     virtual void exportData(CbcSolver * /*model*/) {}
     /// Get useful stuff
@@ -250,15 +265,18 @@ public:
     ///@name usage methods
     //@{
     /// CoinModel if valid
-    inline CoinModel * coinModel() const {
+    inline CoinModel * coinModel() const
+    {
         return coinModel_;
     }
     /// Other info - needs expanding
-    virtual void * stuff() {
+    virtual void * stuff()
+    {
         return NULL;
     }
     /// Name
-    inline std::string name() const {
+    inline std::string name() const
+    {
         return userName_;
     }
     /// Solve (whatever that means)
@@ -302,7 +320,8 @@ protected:
 /** This allows the use of a call back class to decide whether to stop
  */
 
-class CbcStopNow {
+class CbcStopNow
+{
 
 public:
     ///@name Decision methods
@@ -318,7 +337,8 @@ public:
        nonzero return code to stop
     */
     virtual int callBack(CbcModel * /*currentSolver*/,
-                         int /*whereFrom*/) {
+                         int /*whereFrom*/)
+    {
         return 0;
     }
     //@}

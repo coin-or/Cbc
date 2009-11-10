@@ -109,7 +109,7 @@ public:
                                CbcCountRowCut **addCuts,
                                int &currentNumberCuts) const = 0 ;
     /// Just apply bounds to one variable - force means overwrite by lower,upper (1=>infeasible)
-    virtual int applyBounds(int iColumn, double & lower, double & upper, int force) = 0;
+    virtual int applyBounds(int iColumn, double & lower, double & upper,int force) = 0;
 
     /** Builds up row basis backwards (until original model).
         Returns NULL or previous one to apply .
@@ -122,20 +122,20 @@ public:
     virtual void allBranchesGone() {}
 #if 1
     /// Increment number of references
-    inline void increment(int amount = 1) {
-        numberPointingToThis_ += amount;/*printf("CbcNodeInfo %x incremented by %d to %d\n",this,amount,numberPointingToThis_);*/
+    inline void increment(int amount=1) {
+        numberPointingToThis_+=amount;/*printf("CbcNodeInfo %x incremented by %d to %d\n",this,amount,numberPointingToThis_);*/
     }
 
     /// Decrement number of references and return number left
-    inline int decrement(int amount = 1) {
-        numberPointingToThis_ -= amount;/*printf("CbcNodeInfo %x decremented by %d to %d\n",this,amount,numberPointingToThis_);*/
+    inline int decrement(int amount=1) {
+        numberPointingToThis_-=amount;/*printf("CbcNodeInfo %x decremented by %d to %d\n",this,amount,numberPointingToThis_);*/
         return numberPointingToThis_;
     }
 #else
     /// Increment number of references
-    void increment(int amount = 1);
+    void increment(int amount=1);
     /// Decrement number of references and return number left
-    int decrement(int amount = 1);
+    int decrement(int amount=1);
 #endif
     /** Initialize reference counts
 
@@ -143,8 +143,8 @@ public:
     */
 
     inline void initializeInfo(int number) {
-        numberPointingToThis_ = number;
-        numberBranchesLeft_ = number;
+        numberPointingToThis_=number;
+        numberBranchesLeft_=number;
     }
 
     /// Return number of branches left in object
@@ -164,7 +164,7 @@ public:
 
     /// Set number of objects pointing to this
     inline void setNumberPointingToThis(int number) {
-        numberPointingToThis_ = number;
+        numberPointingToThis_=number;
     }
 
     /// Increment number of objects pointing to this
@@ -181,8 +181,8 @@ public:
 
     /// Say thrown away
     inline void throwAway() {
-        numberPointingToThis_ -= numberBranchesLeft_;
-        numberBranchesLeft_ = 0;
+        numberPointingToThis_-=numberBranchesLeft_;
+        numberBranchesLeft_=0;
     }
 
     /// Parent of this
@@ -191,32 +191,32 @@ public:
     }
     /// Set parent null
     inline void nullParent() {
-        parent_ = NULL;
+        parent_=NULL;
     }
 
-    void addCuts(OsiCuts & cuts, int numberToBranch, //int * whichGenerator,
+    void addCuts(OsiCuts & cuts,int numberToBranch, //int * whichGenerator,
                  int numberPointingToThis);
-    void addCuts(int numberCuts, CbcCountRowCut ** cuts, int numberToBranch);
+    void addCuts(int numberCuts, CbcCountRowCut ** cuts,int numberToBranch);
     /** Delete cuts (decrements counts)
         Slow unless cuts in same order as saved
     */
-    void deleteCuts(int numberToDelete, CbcCountRowCut ** cuts);
-    void deleteCuts(int numberToDelete, int * which);
+    void deleteCuts(int numberToDelete,CbcCountRowCut ** cuts);
+    void deleteCuts(int numberToDelete,int * which);
 
     /// Really delete a cut
     void deleteCut(int whichOne);
 
     /// Decrement active cut counts
-    void decrementCuts(int change = 1);
+    void decrementCuts(int change=1);
 
     /// Increment active cut counts
-    void incrementCuts(int change = 1);
+    void incrementCuts(int change=1);
 
     /// Decrement all active cut counts in chain starting at parent
-    void decrementParentCuts(CbcModel * model, int change = 1);
+    void decrementParentCuts(CbcModel * model, int change=1);
 
     /// Increment all active cut counts in parent chain
-    void incrementParentCuts(CbcModel * model, int change = 1);
+    void incrementParentCuts(CbcModel * model, int change=1);
 
     /// Array of pointers to cuts
     inline CbcCountRowCut ** cuts() const {
@@ -228,12 +228,12 @@ public:
         return numberCuts_;
     }
     inline void setNumberCuts(int value) {
-        numberCuts_ = value;
+        numberCuts_=value;
     }
 
     /// Set owner null
     inline void nullOwner() {
-        owner_ = NULL;
+        owner_=NULL;
     }
     const inline CbcNode * owner() const {
         return owner_;
@@ -246,21 +246,21 @@ public:
         return nodeNumber_;
     }
     inline void setNodeNumber(int node) {
-        nodeNumber_ = node;
+        nodeNumber_=node;
     }
     /** Deactivate node information.
         1 - bounds
         2 - cuts
         4 - basis!
     */
-    void deactivate(int mode = 3);
+    void deactivate(int mode=3);
     /// Say if normal
     inline bool allActivated() const {
-        return (active_ == 7);
+        return (active_==7);
     }
     /// Say if marked
     inline bool marked() const {
-        return ((active_&8) != 0);
+        return ((active_&8)!=0);
     }
     /// Mark
     inline void mark() {
@@ -362,7 +362,7 @@ public:
                                int &currentNumberCuts) const ;
 
     /// Just apply bounds to one variable - force means overwrite by lower,upper (1=>infeasible)
-    virtual int applyBounds(int iColumn, double & lower, double & upper, int force) ;
+    virtual int applyBounds(int iColumn, double & lower, double & upper,int force) ;
 
     /** Builds up row basis backwards (until original model).
         Returns NULL or previous one to apply .
@@ -434,7 +434,7 @@ public:
                                int &currentNumberCuts) const ;
 
     /// Just apply bounds to one variable - force means overwrite by lower,upper (1=>infeasible)
-    virtual int applyBounds(int iColumn, double & lower, double & upper, int force) ;
+    virtual int applyBounds(int iColumn, double & lower, double & upper,int force) ;
     /** Builds up row basis backwards (until original model).
         Returns NULL or previous one to apply .
         Depends on Free being 0 and impossible for cuts
@@ -445,7 +445,7 @@ public:
 
     // Constructor from current state
     CbcPartialNodeInfo (CbcNodeInfo * parent, CbcNode * owner,
-                        int numberChangedBounds, const int * variables,
+                        int numberChangedBounds,const int * variables,
                         const double * boundChanges,
                         const CoinWarmStartDiff *basisDiff) ;
 
@@ -547,7 +547,7 @@ public:
                CbcNode * lastNode,
                const CoinWarmStartBasis *lastws,
                const double * lastLower, const double * lastUpper,
-               int numberOldActiveCuts, int numberNewCuts);
+               int numberOldActiveCuts,int numberNewCuts);
 
     /** Create a branching object for the node
 
@@ -648,12 +648,12 @@ public:
     */
     int chooseClpBranch (CbcModel * model,
                          CbcNode * lastNode);
-    int analyze(CbcModel * model, double * results);
+    int analyze(CbcModel * model,double * results);
     /// Decrement active cut counts
-    void decrementCuts(int change = 1);
+    void decrementCuts(int change=1);
 
     /// Decrement all active cut counts in chain starting at parent
-    void decrementParentCuts(CbcModel * model, int change = 1);
+    void decrementParentCuts(CbcModel * model, int change=1);
 
     /// Nulls out node info
     void nullNodeInfo();
@@ -684,7 +684,7 @@ public:
         return objectiveValue_;
     }
     inline void setObjectiveValue(double value) {
-        objectiveValue_ = value;
+        objectiveValue_=value;
     }
     /// Number of arms defined for the attached OsiBranchingObject.
     inline int numberBranches() const {
@@ -730,7 +730,7 @@ public:
         return guessedObjectiveValue_;
     }
     inline void setGuessedObjectiveValue(double value) {
-        guessedObjectiveValue_ = value;
+        guessedObjectiveValue_=value;
     }
     /// Branching object for this node
     inline const OsiBranchingObject * branchingObject() const {
@@ -749,11 +749,11 @@ public:
         return nodeNumber_;
     }
     inline void setNodeNumber(int node) {
-        nodeNumber_ = node;
+        nodeNumber_=node;
     }
     /// Returns true if on tree
     inline bool onTree() const {
-        return (state_&1) != 0;
+        return (state_&1)!=0;
     }
     /// Sets true if on tree
     inline void setOnTree(bool yesNo) {
@@ -762,7 +762,7 @@ public:
     }
     /// Returns true if active
     inline bool active() const {
-        return (state_&2) != 0;
+        return (state_&2)!=0;
     }
     /// Sets true if active
     inline void setActive(bool yesNo) {
@@ -773,7 +773,7 @@ public:
     void print() const;
     /// Debug
     inline void checkInfo() const {
-        assert (nodeInfo_->numberBranchesLeft() ==
+        assert (nodeInfo_->numberBranchesLeft()==
                 branch_->numberBranchesLeft());
     }
 

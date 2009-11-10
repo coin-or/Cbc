@@ -20,7 +20,7 @@ lib_LTLIBRARIES = libCbc.la libCbcSolver.la
 libCbc_la_SOURCES = \
 	Cbc_C_Interface.cpp Cbc_C_Interface.h \
 	CbcConfig.h \
-	CbcBranchActual.cpp CbcBranchActual.hpp \
+	CbcBranchActual.hpp \
 	CbcBranchBase.cpp CbcBranchBase.hpp \
 	CbcBranchCut.cpp CbcBranchCut.hpp \
 	CbcBranchDefaultDecision.cpp CbcBranchDefaultDecision.hpp \

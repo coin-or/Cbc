@@ -27,6 +27,8 @@ libCbc_la_SOURCES = \
 	CbcBranchLotsize.cpp CbcBranchLotsize.hpp \
 	CbcCompareActual.cpp CbcCompareActual.hpp \
 	CbcCompareBase.hpp \
+	CbcChooseVariable.hpp \
+	CbcCompare.hpp \
 	CbcCountRowCut.cpp CbcCountRowCut.hpp \
 	CbcCutGenerator.cpp CbcCutGenerator.hpp \
 	CbcEventHandler.cpp CbcEventHandler.hpp \
@@ -313,6 +315,8 @@ includecoin_HEADERS = \
 	CbcBranchCut.hpp \
 	CbcCompareActual.hpp \
 	CbcCompareBase.hpp \
+	CbcChooseVariable.hpp \
+	CbcCompare.hpp \
 	CbcCutGenerator.hpp \
 	CbcFathom.hpp \
 	CbcEventHandler.hpp \

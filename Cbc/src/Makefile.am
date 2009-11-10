@@ -23,18 +23,28 @@ libCbc_la_SOURCES = \
 	CbcBranchActual.cpp CbcBranchActual.hpp \
 	CbcBranchBase.cpp CbcBranchBase.hpp \
 	CbcBranchCut.cpp CbcBranchCut.hpp \
+	CbcBranchDefaultDecision.cpp CbcBranchDefaultDecision.hpp \
 	CbcBranchDynamic.cpp CbcBranchDynamic.hpp \
 	CbcBranchLotsize.cpp CbcBranchLotsize.hpp \
-	CbcCompareActual.cpp CbcCompareActual.hpp \
+	CbcCompareActual.hpp \
 	CbcCompareBase.hpp \
 	CbcChooseVariable.hpp \
+	CbcClique.hpp CbcClique.hpp \
+	CbcCliqueBranchingObject.cpp CbcCliqueBranchingObject.hpp
 	CbcCompare.hpp \
 	CbcCountRowCut.cpp CbcCountRowCut.hpp \
 	CbcCutGenerator.cpp CbcCutGenerator.hpp \
+	CbcDummyBranchingObject.cpp CbcDummyBranchingObject.hpp \
 	CbcEventHandler.cpp CbcEventHandler.hpp \
 	CbcFathom.cpp CbcFathom.hpp \
 	CbcFathomDynamicProgramming.cpp CbcFathomDynamicProgramming.hpp \
 	CbcFeasibilityBase.hpp \
+	CbcFixingBranchingObject.cpp CbcFixingBranchingObject.hpp \
+	CbcFixVariable.cpp CbcFixVariable.hpp \
+	CbcFollowOn.cpp CbcFollowOn.hpp \
+	CbcGeneral.cpp CbcGeneral.hpp \
+	CbcGeneralBranchingObject.cpp CbcGeneralBranchingObject.hpp \
+	CbcGeneralDepth.cpp CbcGeneralDepth.hpp \
 	CbcHeuristic.cpp CbcHeuristic.hpp \
 	CbcHeuristicDive.cpp CbcHeuristicDive.hpp \
 	CbcHeuristicDiveCoefficient.cpp CbcHeuristicDiveCoefficient.hpp \
@@ -49,11 +59,21 @@ libCbc_la_SOURCES = \
 	CbcHeuristicPivotAndFix.cpp CbcHeuristicPivotAndFix.hpp \
 	CbcHeuristicRandRound.cpp CbcHeuristicRandRound.hpp \
 	CbcHeuristicRINS.cpp CbcHeuristicRINS.hpp \
+	CbcIntegerBranchingObject.cpp CbcIntegerBranchingObject.hpp \
+	CbcIntegerPseudoCostBranchingObject.cpp CbcIntegerPseudoCostBranchingObject.hpp \
 	CbcMessage.cpp CbcMessage.hpp \
 	CbcModel.cpp CbcModel.hpp \
 	CbcNode.cpp CbcNode.hpp \
+	CbcNWay.cpp CbcNWay.hpp \
+	CbcNWayBranchingObject.cpp CbcNWayBranchingObject.hpp \
+	CbcOneGeneralBranchingObject.cpp CbcOneGeneralBranchingObject.hpp
+	CbcSimpleInteger.cpp CbcSimpleInteger.hpp \
+	CbcSimpleIntegerPseudoCost.cpp CbcSimpleIntegerPseudoCost.hpp \
+	CbcSOS.cpp CbcSOS.hpp \
+	CbcSOSBranchingObject.cpp CbcSOSBranchingObject.hpp \
 	CbcStatistics.cpp CbcStatistics.hpp \
 	CbcStrategy.cpp CbcStrategy.hpp \
+	CbcSubProblem.cpp CbcSubProblem.hpp \
 	CbcTree.cpp CbcTree.hpp \
 	CbcTreeLocal.cpp CbcTreeLocal.hpp
 
@@ -313,14 +333,24 @@ includecoin_HEADERS = \
 	CbcBranchDynamic.hpp \
 	CbcBranchLotsize.hpp \
 	CbcBranchCut.hpp \
+	CbcBranchDefaultDecision.hpp \
 	CbcCompareActual.hpp \
 	CbcCompareBase.hpp \
 	CbcChooseVariable.hpp \
+	CbcClique.hpp \
+	CbcCliqueBranchingObject.hpp \
 	CbcCompare.hpp \
 	CbcCutGenerator.hpp \
+	CbcDummyBranchingObject.hpp \
 	CbcFathom.hpp \
 	CbcEventHandler.hpp \
 	CbcFeasibilityBase.hpp \
+	CbcFixingBranchingObject.hpp \
+	CbcFixVariable.hpp \
+	CbcFollowOn.hpp \
+	CbcGeneral.hpp \
+	CbcGeneralBranchingObject.hpp \
+	CbcGeneralDepth.hpp \
 	CbcHeuristic.hpp \
 	CbcHeuristicDive.hpp \
 	CbcHeuristicDiveCoefficient.hpp \
@@ -335,11 +365,22 @@ includecoin_HEADERS = \
 	CbcHeuristicPivotAndFix.hpp \
 	CbcHeuristicRandRound.hpp \
 	CbcHeuristicRINS.hpp \
+	CbcIntegerBranchingObject.hpp \
+	CbcIntegerPseudoCostBranchingObject.hpp \
+	CbcLongCliqueBranchingObject.hpp \
 	CbcMessage.hpp \
 	CbcModel.hpp \
 	CbcNode.hpp \
+	CbcNWay.hpp \
+	CbcNWayBranchingObject.hpp \
+	CbcOneGeneralBranchingObject.hpp \
+	CbcSimpleInteger.hpp \
+	CbcSimpleIntegerPseudoCost.hpp \
 	CbcStrategy.hpp \
 	CbcSolver.hpp \
+	CbcSOS.hpp \
+	CbcSOSBranchingObject.hpp \
+	CbcSubProblem.hpp \
 	CbcTree.hpp \
 	CbcLinked.hpp \
 	CbcTreeLocal.hpp \

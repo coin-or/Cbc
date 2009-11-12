@@ -21,13 +21,16 @@ libCbc_la_SOURCES = \
 	Cbc_C_Interface.cpp Cbc_C_Interface.h \
 	CbcConfig.h \
 	CbcBranchActual.hpp \
-	CbcBranchBase.cpp CbcBranchBase.hpp \
+	CbcBranchBase.hpp \
 	CbcBranchCut.cpp CbcBranchCut.hpp \
+	CbcBranchDecision.cpp CbcBranchDecision.hpp \
 	CbcBranchDefaultDecision.cpp CbcBranchDefaultDecision.hpp \
 	CbcBranchDynamic.cpp CbcBranchDynamic.hpp \
+	CbcBranchingObject.cpp CbcBranchingObject.hpp \
 	CbcBranchLotsize.cpp CbcBranchLotsize.hpp \
 	CbcCompareActual.cpp CbcCompareActual.hpp \
 	CbcCompareBase.hpp \
+	CbcConsequence.cpp CbcConsequence.hpp \
 	CbcChooseVariable.hpp \
 	CbcClique.cpp CbcClique.hpp \
 	CbcCliqueBranchingObject.cpp CbcCliqueBranchingObject.hpp \
@@ -68,6 +71,8 @@ libCbc_la_SOURCES = \
 	CbcNode.cpp CbcNode.hpp \
 	CbcNWay.cpp CbcNWay.hpp \
 	CbcNWayBranchingObject.cpp CbcNWayBranchingObject.hpp \
+	CbcObject.cpp CbcObject.hpp \
+	CbcObjectUpdateData.cpp CbcObjectUpdateData.hpp \
 	CbcOneGeneralBranchingObject.cpp CbcOneGeneralBranchingObject.hpp \
 	CbcSimpleInteger.cpp CbcSimpleInteger.hpp \
 	CbcSimpleIntegerPseudoCost.cpp CbcSimpleIntegerPseudoCost.hpp \
@@ -335,9 +340,11 @@ includecoin_HEADERS = \
 	CbcBranchDynamic.hpp \
 	CbcBranchLotsize.hpp \
 	CbcBranchCut.hpp \
+        CbcBranchDecision.hpp \
 	CbcBranchDefaultDecision.hpp \
+	CbcBranchingObject.hpp \
 	CbcCompareActual.hpp \
-	CbcCompareBase.hpp \
+	CbcConsequence.hpp \
 	CbcChooseVariable.hpp \
 	CbcClique.hpp \
 	CbcCliqueBranchingObject.hpp \
@@ -375,6 +382,8 @@ includecoin_HEADERS = \
 	CbcNode.hpp \
 	CbcNWay.hpp \
 	CbcNWayBranchingObject.hpp \
+        CbcObject.hpp \
+	CbcObjectUpdateData.hpp \
 	CbcOneGeneralBranchingObject.hpp \
 	CbcSimpleInteger.hpp \
 	CbcSimpleIntegerPseudoCost.hpp \

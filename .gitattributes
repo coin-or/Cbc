@@ -1,5 +1,9 @@
 * text=auto !eol
 /AUTHORS -text
+Cbc/CbcSourceFilesTable.csv -text
+Cbc/CbcSourceFilesTable.xls -text
+Cbc/CbcSourceFilesTable2.csv -text
+Cbc/CbcSourceFilesTable2.xls -text
 Cbc/INSTALL -text
 Cbc/LICENSE -text
 Cbc/MSVisualStudio/v7/Cbc.sln -text

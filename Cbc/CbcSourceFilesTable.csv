@@ -1,0 +1,61 @@
+Filename,Group,Person,Status,Age,CPP Lines,HPP Lines,Total Lines,libCbc,cbcSolve,cbcGeneric,Other Projects,First Object,Other Objects,Comment
+CbcBranchActual.cpp,Branch,Edwin,,8,5340,1823,7163,x,,,,Multiple,"CbcClique, CbcSos, CbcSimpleInteger, CbcIntegerBranchingObject, CbcSimpleIntegerPseudoCost, CbcIntegerPseudoCostBranchingObject, CbcCliqueBranchingObject, CbcLongCliqueBranchingObject, CbcSosBranchingObject, CbcBranchDefaultDecision, CbcFollowOn, CbcFixingBranchingObject, CbcNWay, CbcNWayBranchingObject, CbcFixVariable, CbcDummyBranchingObject, CbcGeneral, CbcGeneralDepth, CbcGeneralBranchingObject, CbcOneGeneralBranchingObject, CbcSubProblem",
+CbcBranchBase.cpp,Branch,Edwin,,10,352,707,1059,x,,,,CbcObject,"CbcBranchingObject, CbcBranchDecision, CbcConsequence, CbcObjectUpdateData",
+CbcBranchCut.cpp,Branch,Edwin,,10,1023,315,1338,x,,,,CbcBranchCut,"CbcCutBranchingObject, CbcBranchToFixLots, CbcBranchAllDifferent",
+CbcBranchDynamic.cpp,Branch,Edwin,,8,1911,557,2468,x,,,,CbcSimpleIntegerDynamicPseudoCost,"CbcDynamicPseudoCostBranchingObject, CbcBranchDynamicDecision",
+CbcBranchLotsize.cpp,Branch,Edwin,,15,809,250,1059,x,,,,CbcLotsize,CbcLotsizeBranchingObject,
+CbcCbcParam.cpp,Solver,Bjarni,,24,1,,1,x,,,,"#include ""CbcOrClpParam.cpp""",,
+CbcCompareActual.cpp,Compare,,,8,463,165,628,x,,,,CbcCompareDepth,"CbcCompareObjective, CbcCompareDefault, CbcCompareEstimate",
+CbcCompareBase.hpp,Compare,,,24,,170,170,x,,,,CbcCompareBase,"CbcCompare, CbcChooseVariable",
+CbcConfig.h,,,,20,,102,102,x,,,,#defines,,
+CbcCountRowCut.cpp,,,,10,126,115,241,x,,,,CbcCountRowCut,,
+CbcCutGenerator.cpp,,,,2,1223,510,1733,x,,,,CbcCutGenerator,"CbcCutModifier, CbcCutSubsetModifier",
+CbcEventHandler.cpp,,,,36,101,221,322,x,,,,CbcEventHandler,,
+CbcFathom.cpp,,,,19,106,126,232,x,,,,CbcFathom,CbcOsiSolver,
+CbcFathomDynamicProgramming.cpp,,,,10,1051,166,1217,x,,,,CbcFathomDynamicProgramming,,
+CbcFeasibilityBase.hpp,,,,24,,53,53,x,,,,CbcFeasibilityBase,,
+CbcGenBaB.cpp,Generic,Lou,,14,886,,886,,,x,,namespace CbcGenParamUtils,namespace,The support functions for the main branch-and-cut action routine.
+CbcGenCbcParam.cpp,Generic,Lou,,24,155,189,344,,,x,,CbcCbcParam,,Constructors and destructors for CbcCbcParam
+CbcGenCbcParamUtils.cpp,Generic,Lou,,18,401,,401,,,x,,namespace CbcCbcParamUtils,,Implementation functions for CbcGenParam parameters.
+CbcGenCtlBlk.cpp,Generic,Lou,,24,681,948,1629,x,,x,,CbcGenCtlBlk,,Constructor for cbc-generic control block.
+CbcGeneric.cpp,Generic,Lou,,24,415,,415,,,x,,namespace CbcGenSolvers,namespace,Unnamed local namespace for cbc-generic support types and functions.
+CbcGenMessages.cpp,Generic,Lou,,24,192,,192,x,,,,CbcGenCtlBlk,,Message definitions.
+CbcGenOsiParam.cpp,Generic,Lou,,24,156,197,353,,,x,,CbcOsiParam,,Constructors and destructors for CbcOsiParam
+CbcGenOsiParamUtils.cpp,Generic,Lou,,18,528,,528,,,x,,namespace CbcOsiParamUtils,,Implementation functions for CbcOsiParam parameters
+CbcGenParam.cpp,Generic,Lou,,24,154,219,373,,,x,,CbcGenParam,,Constructors and destructors for CbcGenParam
+CbcGenParamUtils.cpp,Generic,Lou,,18,1497,,1497,,,x,,namespace CbcGenParamUtils,"namespace CbcGenSolvers, ",Implementation functions for CbcGenParam parameters
+CbcGenSolution.cpp,Generic,Lou,,22,584,,584,,,x,,CbcGenParamUtils,namespace,"Helper routine to generate masks for selecting names to print. Returns true if masks are generated without error, false otherwise."
+CbcGenSolvers.cpp,Generic,Lou,,24,261,,261,,,x,,namespace CbcGenSolvers,namespace,This file contains routines related to handling Osi solvers. The technique is to maintain a map of OsiSolverInterface objects as prototypes of the available solvers.
+CbcHeuristic.cpp,Heuristic,,,10,2901,650,3551,x,,,,CbcHeuristic,"CbcHeuristicNode, CbcHeuristicNodeList, CbcRounding, CbcHeuristicPartial, CbcSerendipity, CbcHeuristicJustOne",
+CbcHeuristicDive.cpp,Heuristic,,,10,1068,160,1228,x,,,,CbcHeuristicDive,,
+CbcHeuristicDiveCoefficient.cpp,Heuristic,,,12,128,49,177,x,,,,CbcHeuristicDiveCoefficient,,
+CbcHeuristicDiveFractional.cpp,Heuristic,,,18,112,49,161,x,,,,CbcHeuristicDiveFractional,,
+CbcHeuristicDiveGuided.cpp,Heuristic,,,18,123,52,175,x,,,,CbcHeuristicDiveGuided,
+CbcHeuristicDiveLineSearch.cpp,Heuristic,,,18,120,49,169,x,,,,CbcHeuristicDiveLineSearch,
+CbcHeuristicDivePseudoCost.cpp,Heuristic,,,18,227,57,284,x,,,,CbcHeuristicDivePseudoCost,
+CbcHeuristicDiveVectorLength.cpp,Heuristic,,,10,123,49,172,x,,,,CbcHeuristicDiveVectorLength,
+CbcHeuristicFPump.cpp,Heuristic,,,8,2764,319,3083,x,,,,CbcHeuristicFPump,CbcDisasterHandler
+CbcHeuristicGreedy.cpp,Heuristic,,,17,861,189,1050,x,,,,CbcHeuristicGreedyCover,CbcHeuristicGreedyEquality
+CbcHeuristicLocal.cpp,Heuristic,,,8,1104,208,1312,x,,,,CbcHeuristicLocal,CbcHeuristicNaive
+CbcHeuristicPivotAndFix.cpp,Heuristic,,,14,537,55,592,x,,,,CbcHeuristicPivotAndFix,
+CbcHeuristicRandRound.cpp,Heuristic,,,10,514,55,569,x,,,,CbcHeuristicRandRound,
+CbcHeuristicRINS.cpp,Heuristic,,,10,1207,296,1503,x,,,,CbcHeuristicRINS,"CbcHeuristicRENS, CbcHeuristicDINS, CbcHeuristicVND"
+CbcLinked.cpp,,,,10,8302,1403,9705,x,,,,OsiSolverLink,"OsiLinkedBound, OsiHeuristicDynamic3, OsiOldLink, OsiBiLinear*, OsiSimpleFixedInteger, Multiple"
+CbcMain.cpp,,,,14,1651,,1651,,,,x,main,"CbcCompareUser, namespace"
+CbcMessage.cpp,,,,13,104,87,191,x,,,,CbcMessage,
+CbcModel.cpp,,,,0,16557,2622,19179,x,,,,CbcModel,
+CbcNode.cpp,,,,0,5135,806,5941,x,,,,CbcNode,"CbcNodeInfo, CbcFullNodeInfo, CbcPartialNodeInfo, "
+CbcParam.cpp,Solver,Bjarni,,24,502,237,739,x,,,,CbcParam,
+CbcSolver.cpp,Solver,Bjarni,,0,11365,,11365,,x,,,CbcSolver,CbcMain
+CbcStatistics.cpp,,,,21,136,98,234,x,,,,CbcStatistics,
+CbcStrategy.cpp,,,,8,940,255,1195,x,,,,CbcStrategy,CbcStrategyDefault*
+CbcTree.cpp,,,,8,1178,419,1597,x,,,,CbcTree,CbcTreeArray
+CbcTreeLocal.cpp,,,,10,1747,369,2116,x,,,,CbcTreeLocal,
+Cbc_ampl.cpp,Ampl,,,4,1504,65,1569,,,,x,global,
+Cbc_C_Interface.cpp,Interface,Bjarni,,4,2554,658,3212,,,,x,global,
+ClpAmplObjective.cpp,Ampl,,,14,750,110,860,,,,x,ClpAmplObjective,
+ClpAmplStuff.cpp,Ampl,,,3,1370,,1370,x,,,,CbcAmpl,"CbcAmpl*, Multiple"
+ClpConstraintAmpl.hpp,Ampl,,,24,,105,105,,,,,,
+CoinSolve.cpp,Solver,,,8,342,,342,,x,,,MyMessageHandler2,main
+unitTest.cpp,Test,,,8,418,,418,,,,x,global,
+unitTestClp.cpp,Test,,,5,714,,714,,x,,,global,

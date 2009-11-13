@@ -166,6 +166,10 @@
 			Filter="cpp;c;cxx;rc;def;r;odl;idl;hpj;bat"
 			>
 			<File
+				RelativePath="..\..\..\src\CbcBranchAllDifferent.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\..\..\Cbc\src\CbcBranchCut.cpp"
 				>
 				<FileConfiguration
@@ -253,6 +257,10 @@
 				</FileConfiguration>
 			</File>
 			<File
+				RelativePath="..\..\..\src\CbcBranchToFixLots.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\..\..\Cbc\src\CbcCbcParam.cpp"
 				>
 				<FileConfiguration
@@ -338,6 +346,10 @@
 						PreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\..\..\src\CbcCutBranchingObject.cpp"
+				>
 			</File>
 			<File
 				RelativePath="..\..\..\..\Cbc\src\CbcCutGenerator.cpp"
@@ -1082,6 +1094,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\..\src\CbcBranchAllDifferent.hpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\..\..\Cbc\src\CbcBranchBase.hpp"
 				>
 			</File>
@@ -1107,6 +1123,10 @@
 			</File>
 			<File
 				RelativePath="..\..\..\..\Cbc\src\CbcBranchLotsize.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\..\src\CbcBranchToFixLots.hpp"
 				>
 			</File>
 			<File
@@ -1143,6 +1163,10 @@
 			</File>
 			<File
 				RelativePath="..\..\..\..\Cbc\src\CbcCountRowCut.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\..\src\CbcCutBranchingObject.hpp"
 				>
 			</File>
 			<File

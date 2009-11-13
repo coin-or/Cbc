@@ -41,10 +41,14 @@ Cbc/examples/modify.cpp -text
 Cbc/examples/qmip2.cpp -text
 Cbc/examples/simpleBAB.cpp -text
 Cbc/inc/config_cbc.h.in -text
+Cbc/src/CbcBranchAllDifferent.cpp -text
+Cbc/src/CbcBranchAllDifferent.hpp -text
 Cbc/src/CbcBranchDecision.cpp -text
 Cbc/src/CbcBranchDecision.hpp -text
 Cbc/src/CbcBranchDefaultDecision.cpp -text
 Cbc/src/CbcBranchDefaultDecision.hpp -text
+Cbc/src/CbcBranchToFixLots.cpp -text
+Cbc/src/CbcBranchToFixLots.hpp -text
 Cbc/src/CbcBranchingObject.cpp -text
 Cbc/src/CbcBranchingObject.hpp -text
 Cbc/src/CbcCbcParam.cpp -text
@@ -56,6 +60,8 @@ Cbc/src/CbcCliqueBranchingObject.hpp -text
 Cbc/src/CbcCompare.hpp -text
 Cbc/src/CbcConsequence.cpp -text
 Cbc/src/CbcConsequence.hpp -text
+Cbc/src/CbcCutBranchingObject.cpp -text
+Cbc/src/CbcCutBranchingObject.hpp -text
 Cbc/src/CbcDummyBranchingObject.cpp -text
 Cbc/src/CbcDummyBranchingObject.hpp -text
 Cbc/src/CbcFixVariable.cpp -text

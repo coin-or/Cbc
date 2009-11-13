@@ -166,7 +166,7 @@
 			Filter="cpp;c;cxx;rc;def;r;odl;idl;hpj;bat"
 			>
 			<File
-				RelativePath="..\..\..\..\Cbc\src\CbcBranchBase.cpp"
+				RelativePath="..\..\..\..\Cbc\src\CbcBranchCut.cpp"
 				>
 				<FileConfiguration
 					Name="Debug|Win32"
@@ -191,29 +191,8 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="..\..\..\..\Cbc\src\CbcBranchCut.cpp"
+				RelativePath="..\..\..\src\CbcBranchDecision.cpp"
 				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="0"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-						BasicRuntimeChecks="3"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="2"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-					/>
-				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="..\..\..\src\CbcBranchDefaultDecision.cpp"
@@ -243,6 +222,10 @@
 						PreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\..\..\src\CbcBranchingObject.cpp"
+				>
 			</File>
 			<File
 				RelativePath="..\..\..\..\Cbc\src\CbcBranchLotsize.cpp"
@@ -326,6 +309,10 @@
 						PreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\..\..\src\CbcConsequence.cpp"
+				>
 			</File>
 			<File
 				RelativePath="..\..\..\..\Cbc\src\CbcCountRowCut.cpp"
@@ -917,6 +904,14 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\..\src\CbcObject.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\..\src\CbcObjectUpdateData.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\..\src\CbcOneGeneralBranchingObject.cpp"
 				>
 			</File>
@@ -1095,6 +1090,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\..\src\CbcBranchDecision.hpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\..\src\CbcBranchDefaultDecision.hpp"
 				>
 			</File>
@@ -1103,7 +1102,15 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\..\src\CbcBranchingObject.hpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\..\..\Cbc\src\CbcBranchLotsize.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\..\src\CbcChooseVariable.hpp"
 				>
 			</File>
 			<File
@@ -1112,10 +1119,6 @@
 			</File>
 			<File
 				RelativePath="..\..\..\src\CbcCliqueBranchingObject.hpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\..\src\CbcChooseVariable.hpp"
 				>
 			</File>
 			<File
@@ -1132,6 +1135,10 @@
 			</File>
 			<File
 				RelativePath="..\..\..\..\Cbc\src\CbcConfig.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\..\src\CbcConsequence.hpp"
 				>
 			</File>
 			<File
@@ -1280,6 +1287,14 @@
 			</File>
 			<File
 				RelativePath="..\..\..\src\CbcNWayBranchingObject.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\..\src\CbcObject.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\..\src\CbcObjectUpdateData.hpp"
 				>
 			</File>
 			<File

@@ -14,22 +14,27 @@ CbcBranchActual.cpp,,Branch,Edwin,,8,5340,1823,7163,x,,,,Multiple,"CbcClique, Cb
 ,CbcFixingBranchingObject,Branch,Edwin,,,,,,,,,,,,
 ,CbcNWay,Branch,Edwin,,,,,,,,,,,,
 ,CbcNWayBranchingObject,Branch,Edwin,,,,,,,,,,,,
-,CbcFixVariable,Branch,Edwin,,,,,,,,,,,
-,CbcDummyBranchingObject,Branch,Edwin,,,,,,,,,,,
-,CbcGeneral,Branch,Edwin,,,,,,,,,,,
-,CbcGeneralDepth,Branch,Edwin,,,,,,,,,,,
-,CbcGeneralBranchingObject,Branch,Edwin,,,,,,,,,,,
-,CbcOneGeneralBranchingObject,Branch,Edwin,,,,,,,,,,,
-,CbcSubProblem,Branch,Edwin,,,,,,,,,,,
-CbcBranchBase.cpp,,Branch,Edwin,,10,352,707,1059,x,,,,CbcObject,"CbcBranchingObject, CbcBranchDecision, CbcConsequence, CbcObjectUpdateData"
-CbcBranchCut.cpp,,Branch,Edwin,,10,1023,315,1338,x,,,,CbcBranchCut,"CbcCutBranchingObject, CbcBranchToFixLots, CbcBranchAllDifferent"
-CbcBranchDynamic.cpp,,Branch,Edwin,,8,1911,557,2468,x,,,,CbcSimpleIntegerDynamicPseudoCost,"CbcDynamicPseudoCostBranchingObject, CbcBranchDynamicDecision"
-CbcBranchLotsize.cpp,,Branch,Edwin,,15,809,250,1059,x,,,,CbcLotsize,CbcLotsizeBranchingObject
-CbcCbcParam.cpp,,Solver,Bjarni,,24,1,,1,x,,,,"#include ""CbcOrClpParam.cpp""",
-CbcCompareActual.cpp,,Compare,,,8,463,165,628,x,,,,CbcCompareDepth,"CbcCompareObjective, CbcCompareDefault, CbcCompareEstimate"
-CbcCompareBase.hpp,,Compare,,,24,,170,170,x,,,,CbcCompareBase,"CbcCompare, CbcChooseVariable"
-,CbcCompare,,,,,,,,,,,,,
-,CbcChooseVariable,,,,,,,,,,,,,
+,CbcFixVariable,Branch,Edwin,,,,,,,,,,,,
+,CbcDummyBranchingObject,Branch,Edwin,,,,,,,,,,,,
+,CbcGeneral,Branch,Edwin,,,,,,,,,,,,
+,CbcGeneralDepth,Branch,Edwin,,,,,,,,,,,,
+,CbcGeneralBranchingObject,Branch,Edwin,,,,,,,,,,,,
+,CbcOneGeneralBranchingObject,Branch,Edwin,,,,,,,,,,,,
+,CbcSubProblem,Branch,Edwin,,,,,,,,,,,,
+CbcBranchBase.cpp,,Branch,Edwin,,10,352,707,1059,x,,,,CbcObject,"CbcBranchingObject, CbcBranchDecision, CbcConsequence, CbcObjectUpdateData",
+,CbcBranchDecision,Branch,Edwin,,,,,,,,,,,,
+,CbcBranchObject,Branch,Edwin,,,,,,,,,,,,
+,CbcConsequence,Branch,Edwin,,,,,,,,,,,,
+,CbcObject,Branch,Edwin,,,,,,,,,,,,
+,CbcObjectUpdateData,Branch,Edwin,,,,,,,,,,,,
+CbcBranchCut.cpp,,Branch,Edwin,,10,1023,315,1338,x,,,,CbcBranchCut,"CbcCutBranchingObject, CbcBranchToFixLots, CbcBranchAllDifferent",
+CbcBranchDynamic.cpp,,Branch,Edwin,,8,1911,557,2468,x,,,,CbcSimpleIntegerDynamicPseudoCost,"CbcDynamicPseudoCostBranchingObject, CbcBranchDynamicDecision",
+CbcBranchLotsize.cpp,,Branch,Edwin,,15,809,250,1059,x,,,,CbcLotsize,CbcLotsizeBranchingObject,
+CbcCbcParam.cpp,,Solver,Bjarni,,24,1,,1,x,,,,"#include ""CbcOrClpParam.cpp""",,
+CbcCompareActual.cpp,,Compare,,,8,463,165,628,x,,,,CbcCompareDepth,"CbcCompareObjective, CbcCompareDefault, CbcCompareEstimate",
+CbcCompareBase.hpp,,Compare,,,24,,170,170,x,,,,CbcCompareBase,"CbcCompare, CbcChooseVariable",
+,CbcCompare,,,,,,,,,,,,,,
+,CbcChooseVariable,,,,,,,,,,,,,,
 CbcConfig.h,,,,,20,,102,102,x,,,,#defines,,
 CbcCountRowCut.cpp,,,,,10,126,115,241,x,,,,CbcCountRowCut,,
 CbcCutGenerator.cpp,,,,,2,1223,510,1733,x,,,,CbcCutGenerator,"CbcCutModifier, CbcCutSubsetModifier",
@@ -62,23 +67,23 @@ CbcHeuristicGreedy.cpp,,Heuristic,,,17,861,189,1050,x,,,,CbcHeuristicGreedyCover
 CbcHeuristicLocal.cpp,,Heuristic,,,8,1104,208,1312,x,,,,CbcHeuristicLocal,CbcHeuristicNaive,
 CbcHeuristicPivotAndFix.cpp,,Heuristic,,,14,537,55,592,x,,,,CbcHeuristicPivotAndFix,,
 CbcHeuristicRandRound.cpp,,Heuristic,,,10,514,55,569,x,,,,CbcHeuristicRandRound,,
-CbcHeuristicRINS.cpp,,Heuristic,,,10,1207,296,1503,x,,,,CbcHeuristicRINS,"CbcHeuristicRENS, CbcHeuristicDINS, CbcHeuristicVND"
-CbcLinked.cpp,,,,,10,8302,1403,9705,x,,,,OsiSolverLink,"OsiLinkedBound, OsiHeuristicDynamic3, OsiOldLink, OsiBiLinear*, OsiSimpleFixedInteger, Multiple"
-CbcMain.cpp,,,,,14,1651,,1651,,,,x,main,"CbcCompareUser, namespace"
-CbcMessage.cpp,,,,,13,104,87,191,x,,,,CbcMessage,
-CbcModel.cpp,,,,,0,16557,2622,19179,x,,,,CbcModel,
-CbcNode.cpp,,,,,0,5135,806,5941,x,,,,CbcNode,"CbcNodeInfo, CbcFullNodeInfo, CbcPartialNodeInfo, "
-CbcParam.cpp,,Solver,Bjarni,,24,502,237,739,x,,,,CbcParam,
-CbcSolver.cpp,,Solver,Bjarni,,0,11365,,11365,,x,,,CbcSolver,CbcMain
-CbcStatistics.cpp,,,,,21,136,98,234,x,,,,CbcStatistics,
-CbcStrategy.cpp,,,,,8,940,255,1195,x,,,,CbcStrategy,CbcStrategyDefault*
-CbcTree.cpp,,,,,8,1178,419,1597,x,,,,CbcTree,CbcTreeArray
-CbcTreeLocal.cpp,,,,,10,1747,369,2116,x,,,,CbcTreeLocal,
-Cbc_ampl.cpp,,Ampl,,,4,1504,65,1569,,,,x,global,
-Cbc_C_Interface.cpp,,Interface,Bjarni,,4,2554,658,3212,,,,x,global,
-ClpAmplObjective.cpp,,Ampl,,,14,750,110,860,,,,x,ClpAmplObjective,
-ClpAmplStuff.cpp,,Ampl,,,3,1370,,1370,x,,,,CbcAmpl,"CbcAmpl*, Multiple"
-ClpConstraintAmpl.hpp,,Ampl,,,24,,105,105,,,,,,
-CoinSolve.cpp,,Solver,,,8,342,,342,,x,,,MyMessageHandler2,main
-unitTest.cpp,,Test,,,8,418,,418,,,,x,global,
-unitTestClp.cpp,,Test,,,5,714,,714,,x,,,global,
+CbcHeuristicRINS.cpp,,Heuristic,,,10,1207,296,1503,x,,,,CbcHeuristicRINS,"CbcHeuristicRENS, CbcHeuristicDINS, CbcHeuristicVND",
+CbcLinked.cpp,,,,,10,8302,1403,9705,x,,,,OsiSolverLink,"OsiLinkedBound, OsiHeuristicDynamic3, OsiOldLink, OsiBiLinear*, OsiSimpleFixedInteger, Multiple",
+CbcMain.cpp,,,,,14,1651,,1651,,,,x,main,"CbcCompareUser, namespace",
+CbcMessage.cpp,,,,,13,104,87,191,x,,,,CbcMessage,,
+CbcModel.cpp,,,,,0,16557,2622,19179,x,,,,CbcModel,,
+CbcNode.cpp,,,,,0,5135,806,5941,x,,,,CbcNode,"CbcNodeInfo, CbcFullNodeInfo, CbcPartialNodeInfo, ",
+CbcParam.cpp,,Solver,Bjarni,,24,502,237,739,x,,,,CbcParam,,
+CbcSolver.cpp,,Solver,Bjarni,,0,11365,,11365,,x,,,CbcSolver,CbcMain,
+CbcStatistics.cpp,,,,,21,136,98,234,x,,,,CbcStatistics,,
+CbcStrategy.cpp,,,,,8,940,255,1195,x,,,,CbcStrategy,CbcStrategyDefault*,
+CbcTree.cpp,,,,,8,1178,419,1597,x,,,,CbcTree,CbcTreeArray,
+CbcTreeLocal.cpp,,,,,10,1747,369,2116,x,,,,CbcTreeLocal,,
+Cbc_ampl.cpp,,Ampl,,,4,1504,65,1569,,,,x,global,,
+Cbc_C_Interface.cpp,,Interface,Bjarni,,4,2554,658,3212,,,,x,global,,
+ClpAmplObjective.cpp,,Ampl,,,14,750,110,860,,,,x,ClpAmplObjective,,
+ClpAmplStuff.cpp,,Ampl,,,3,1370,,1370,x,,,,CbcAmpl,"CbcAmpl*, Multiple",
+ClpConstraintAmpl.hpp,,Ampl,,,24,,105,105,,,,,,,
+CoinSolve.cpp,,Solver,,,8,342,,342,,x,,,MyMessageHandler2,main,
+unitTest.cpp,,Test,,,8,418,,418,,,,x,global,,
+unitTestClp.cpp,,Test,,,5,714,,714,,x,,,global,,

@@ -2497,7 +2497,7 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
 # else
   OsiSolverInterface *osiclp = NULL ;
 # endif
-  const CglTreeProbingInfo * probingInfo = NULL; //model->probingInfo();
+  //const CglTreeProbingInfo * probingInfo = NULL; //model->probingInfo();
   // Old code left in with DEPRECATED_STRATEGY
   assert (model->searchStrategy()==-1||
 	  model->searchStrategy()==1||
@@ -2641,6 +2641,7 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
       // initialize sum of "infeasibilities"
       sumInfeasibilities_ = 0.0;
       int bestPriority=COIN_INT_MAX;
+#if 0
       int number01 = 0;
       const cliqueEntry * entry = NULL;
       const int * toZero = NULL;
@@ -2659,6 +2660,7 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
 	  probingInfo=NULL;
 	}
       }
+#endif
       /*
         Scan for branching objects that indicate infeasibility. Choose candidates
         using priority as the first criteria, then integer infeasibility.
@@ -2797,6 +2799,7 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
 	      double part =saveSolution[iColumn]-floor(saveSolution[iColumn]);
 	      infeasibility = 0.5-fabs(0.5-part);
 	    }
+#if 0
 	    if (probingInfo) {
 	      int iSeq = backward[iColumn];
 	      assert (iSeq>=0);
@@ -2808,6 +2811,7 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
 		numberUnsatisNotProbed++;
 	      }
 	    }
+#endif
 	  } else {
 	    // see if SOS
 	    CbcSOS * sosObject =
@@ -2903,9 +2907,9 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
         }
       }
       if (numberUnsatisfied_) {
-	if (probingInfo&&false)
-	  printf("nunsat %d, %d probed, %d other 0-1\n",numberUnsatisfied_,
-		 numberUnsatisProbed,numberUnsatisNotProbed);
+	//if (probingInfo&&false)
+	//printf("nunsat %d, %d probed, %d other 0-1\n",numberUnsatisfied_,
+	// numberUnsatisProbed,numberUnsatisNotProbed);
         // some infeasibilities - go to next steps
 	if (!canDoOneHot&&hotstartSolution) {
 	  // switch off as not possible

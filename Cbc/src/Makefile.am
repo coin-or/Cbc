@@ -21,6 +21,7 @@ libCbc_la_SOURCES = \
 	Cbc_C_Interface.cpp Cbc_C_Interface.h \
 	CbcConfig.h \
 	CbcBranchActual.hpp \
+	CbcBranchAllDifferent.cpp CbcBranchAllDifferent.hpp \
 	CbcBranchBase.hpp \
 	CbcBranchCut.cpp CbcBranchCut.hpp \
 	CbcBranchDecision.cpp CbcBranchDecision.hpp \
@@ -28,6 +29,7 @@ libCbc_la_SOURCES = \
 	CbcBranchDynamic.cpp CbcBranchDynamic.hpp \
 	CbcBranchingObject.cpp CbcBranchingObject.hpp \
 	CbcBranchLotsize.cpp CbcBranchLotsize.hpp \
+	CbcBranchToFixLots.cpp CbcBranchToFixLots.hpp \
 	CbcCompareActual.cpp CbcCompareActual.hpp \
 	CbcCompareBase.hpp \
 	CbcConsequence.cpp CbcConsequence.hpp \
@@ -37,6 +39,7 @@ libCbc_la_SOURCES = \
 	CbcLongCliqueBranchingObject.cpp CbcLongCliqueBranchingObject.hpp \
 	CbcCompare.hpp \
 	CbcCountRowCut.cpp CbcCountRowCut.hpp \
+	CbcCutBranchingObject.cpp CbcCutBranchingObject.hpp \
 	CbcCutGenerator.cpp CbcCutGenerator.hpp \
 	CbcDummyBranchingObject.cpp CbcDummyBranchingObject.hpp \
 	CbcEventHandler.cpp CbcEventHandler.hpp \
@@ -336,6 +339,7 @@ includecoin_HEADERS = \
 	../inc/config_cbc.h \
 	Cbc_C_Interface.h \
 	CbcBranchActual.hpp \
+	CbcBranchAllDifferent.hpp \
 	CbcBranchBase.hpp \
 	CbcBranchDynamic.hpp \
 	CbcBranchLotsize.hpp \
@@ -343,12 +347,14 @@ includecoin_HEADERS = \
         CbcBranchDecision.hpp \
 	CbcBranchDefaultDecision.hpp \
 	CbcBranchingObject.hpp \
+	CbcBranchToFixLots.hpp \
 	CbcCompareActual.hpp \
 	CbcConsequence.hpp \
 	CbcChooseVariable.hpp \
 	CbcClique.hpp \
 	CbcCliqueBranchingObject.hpp \
 	CbcCompare.hpp \
+	CbcCutBranchingObject.hpp \
 	CbcCutGenerator.hpp \
 	CbcDummyBranchingObject.hpp \
 	CbcFathom.hpp \

@@ -42,6 +42,7 @@ libCbc_la_SOURCES = \
 	CbcCutBranchingObject.cpp CbcCutBranchingObject.hpp \
 	CbcCutGenerator.cpp CbcCutGenerator.hpp \
 	CbcDummyBranchingObject.cpp CbcDummyBranchingObject.hpp \
+	CbcDynamicPseudoCostBranchingObject.cpp CbcDynamicPseudoCostBranchingObject.hpp \
 	CbcEventHandler.cpp CbcEventHandler.hpp \
 	CbcFathom.cpp CbcFathom.hpp \
 	CbcFathomDynamicProgramming.cpp CbcFathomDynamicProgramming.hpp \
@@ -69,6 +70,7 @@ libCbc_la_SOURCES = \
 	CbcIntegerBranchingObject.cpp CbcIntegerBranchingObject.hpp \
 	CbcIntegerPseudoCostBranchingObject.cpp \
 	CbcIntegerPseudoCostBranchingObject.hpp \
+	CbcLotsize.cpp CbcLotsize.hpp \
 	CbcMessage.cpp CbcMessage.hpp \
 	CbcModel.cpp CbcModel.hpp \
 	CbcNode.cpp CbcNode.hpp \
@@ -78,6 +80,7 @@ libCbc_la_SOURCES = \
 	CbcObjectUpdateData.cpp CbcObjectUpdateData.hpp \
 	CbcOneGeneralBranchingObject.cpp CbcOneGeneralBranchingObject.hpp \
 	CbcSimpleInteger.cpp CbcSimpleInteger.hpp \
+	CbcSimpleIntegerDynamicPseudoCost.cpp CbcSimpleIntegerDynamicPseudoCost.hpp \
 	CbcSimpleIntegerPseudoCost.cpp CbcSimpleIntegerPseudoCost.hpp \
 	CbcSOS.cpp CbcSOS.hpp \
 	CbcSOSBranchingObject.cpp CbcSOSBranchingObject.hpp \
@@ -357,6 +360,7 @@ includecoin_HEADERS = \
 	CbcCutBranchingObject.hpp \
 	CbcCutGenerator.hpp \
 	CbcDummyBranchingObject.hpp \
+	CbcDynamicPseudoCostBranchingObject.hpp \
 	CbcFathom.hpp \
 	CbcEventHandler.hpp \
 	CbcFeasibilityBase.hpp \
@@ -383,6 +387,7 @@ includecoin_HEADERS = \
 	CbcIntegerBranchingObject.hpp \
 	CbcIntegerPseudoCostBranchingObject.hpp \
 	CbcLongCliqueBranchingObject.hpp \
+	CbcLotsize.hpp \
 	CbcMessage.hpp \
 	CbcModel.hpp \
 	CbcNode.hpp \
@@ -392,6 +397,7 @@ includecoin_HEADERS = \
 	CbcObjectUpdateData.hpp \
 	CbcOneGeneralBranchingObject.hpp \
 	CbcSimpleInteger.hpp \
+	CbcSimpleIntegerDynamicPseudoCost.hpp \
 	CbcSimpleIntegerPseudoCost.hpp \
 	CbcStrategy.hpp \
 	CbcSolver.hpp \

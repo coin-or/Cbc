@@ -64,6 +64,8 @@ Cbc/src/CbcCutBranchingObject.cpp -text
 Cbc/src/CbcCutBranchingObject.hpp -text
 Cbc/src/CbcDummyBranchingObject.cpp -text
 Cbc/src/CbcDummyBranchingObject.hpp -text
+Cbc/src/CbcDynamicPseudoCostBranchingObject.cpp -text
+Cbc/src/CbcDynamicPseudoCostBranchingObject.hpp -text
 Cbc/src/CbcFixVariable.cpp -text
 Cbc/src/CbcFixVariable.hpp -text
 Cbc/src/CbcFixingBranchingObject.cpp -text
@@ -121,6 +123,8 @@ Cbc/src/CbcLinked.cpp -text
 Cbc/src/CbcLinked.hpp -text
 Cbc/src/CbcLongCliqueBranchingObject.cpp -text
 Cbc/src/CbcLongCliqueBranchingObject.hpp -text
+Cbc/src/CbcLotsize.cpp -text
+Cbc/src/CbcLotsize.hpp -text
 Cbc/src/CbcModel_ansi.cpp -text
 Cbc/src/CbcModel_ansi.hpp -text
 Cbc/src/CbcModel_ban.cpp -text
@@ -169,6 +173,8 @@ Cbc/src/CbcSOSBranchingObject.cpp -text
 Cbc/src/CbcSOSBranchingObject.hpp -text
 Cbc/src/CbcSimpleInteger.cpp -text
 Cbc/src/CbcSimpleInteger.hpp -text
+Cbc/src/CbcSimpleIntegerDynamicPseudoCost.cpp -text
+Cbc/src/CbcSimpleIntegerDynamicPseudoCost.hpp -text
 Cbc/src/CbcSimpleIntegerPseudoCost.cpp -text
 Cbc/src/CbcSimpleIntegerPseudoCost.hpp -text
 Cbc/src/CbcSolver.cpp -text

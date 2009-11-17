@@ -32,6 +32,8 @@ CbcBranchCut.cpp,,Branch,Edwin,,10,1023,315,1338,x,,,,CbcBranchCut,"CbcCutBranch
 ,CbcBranchToFixLots,Branch,Edwin,,,,,,,,,,,,
 ,CbcCutBranchingObject,Branch,Edwin,,,,,,,,,,,,
 CbcBranchDynamic.cpp,,Branch,Edwin,,8,1911,557,2468,x,,,,CbcSimpleIntegerDynamicPseudoCost,"CbcDynamicPseudoCostBranchingObject, CbcBranchDynamicDecision",
+,CbcDynamicPseudoCostBranchingObject,Branch,Edwin,,,,,,,,,,,,
+,CbcSimpleIntegerDynamicPseudoCost,Branch,Edwin,,,,,,,,,,,,
 CbcBranchLotsize.cpp,,Branch,Edwin,,15,809,250,1059,x,,,,CbcLotsize,CbcLotsizeBranchingObject,
 CbcCbcParam.cpp,,Solver,Bjarni,,24,1,,1,x,,,,"#include ""CbcOrClpParam.cpp""",,
 CbcCompareActual.cpp,,Compare,,,8,463,165,628,x,,,,CbcCompareDepth,"CbcCompareObjective, CbcCompareDefault, CbcCompareEstimate",

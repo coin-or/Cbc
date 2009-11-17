@@ -381,6 +381,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\..\src\CbcDynamicPseudoCostBranchingObject.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\..\..\Cbc\src\CbcEventHandler.cpp"
 				>
 				<FileConfiguration
@@ -833,6 +837,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\..\src\CbcLotsize.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\..\..\Cbc\src\CbcMessage.cpp"
 				>
 				<FileConfiguration
@@ -954,6 +962,10 @@
 			</File>
 			<File
 				RelativePath="..\..\..\src\CbcSimpleInteger.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\..\src\CbcSimpleIntegerDynamicPseudoCost.cpp"
 				>
 			</File>
 			<File
@@ -1178,6 +1190,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\..\src\CbcDynamicPseudoCostBranchingObject.hpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\..\..\Cbc\src\CbcEventHandler.hpp"
 				>
 			</File>
@@ -1294,6 +1310,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\..\src\CbcLotsize.hpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\..\..\Cbc\src\CbcMessage.hpp"
 				>
 			</File>
@@ -1335,6 +1355,10 @@
 			</File>
 			<File
 				RelativePath="..\..\..\src\CbcSimpleInteger.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\..\src\CbcSimpleIntegerDynamicPseudoCost.hpp"
 				>
 			</File>
 			<File

@@ -376,6 +376,7 @@ CbcCutGenerator::generateCuts( OsiCuts & cs , int fullScan, OsiSolverInterface *
 	int numberColumns = solver->getNumCols();
 	double primalTolerance = 1.0e-8;
 	const char * tightenBounds = generator->tightenBounds();
+	bool feasible=true;
 	if ((model_->getThreadMode()&2)==0) {
 	  for (j=0;j<numberColumns;j++) {
 	    if (solver->isInteger(j)) {
@@ -410,6 +411,10 @@ CbcCutGenerator::generateCuts( OsiCuts & cs , int fullScan, OsiSolverInterface *
 		    returnCode=true;
 		}
 	      }
+	    }
+	    if(upper[j]<lower[j]-1.0e-3) {
+	      feasible=false;
+	      break;
 	    }
 	  }
 	} else {
@@ -453,6 +458,10 @@ CbcCutGenerator::generateCuts( OsiCuts & cs , int fullScan, OsiSolverInterface *
 		}
 	      }
 	    }
+	    if(upper[j]<lower[j]-1.0e-3) {
+	      feasible=false;
+	      break;
+	    }
 	  }
 	  if (numberChanged) {
 	    OsiColCut cc;
@@ -465,6 +474,13 @@ CbcCutGenerator::generateCuts( OsiCuts & cs , int fullScan, OsiSolverInterface *
 	    }
 	    cs.insert(cc);
 	  }
+	}
+	if (!feasible) {
+	  // not feasible -add infeasible cut
+	  OsiRowCut rc;
+	  rc.setLb(DBL_MAX);
+	  rc.setUb(0.0);   
+	  cs.insert(rc);
 	}
       }
       //if (!solver->basisIsAvailable()) 

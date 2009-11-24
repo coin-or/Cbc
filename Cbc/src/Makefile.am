@@ -49,6 +49,7 @@ libCbc_la_SOURCES = \
 	CbcFeasibilityBase.hpp \
 	CbcFixingBranchingObject.cpp CbcFixingBranchingObject.hpp \
 	CbcFixVariable.cpp CbcFixVariable.hpp \
+	CbcFullNodeInfo.cpp CbcFullNodeInfo.hpp \
 	CbcFollowOn.cpp CbcFollowOn.hpp \
 	CbcGeneral.cpp CbcGeneral.hpp \
 	CbcGeneralBranchingObject.cpp CbcGeneralBranchingObject.hpp \
@@ -74,11 +75,13 @@ libCbc_la_SOURCES = \
 	CbcMessage.cpp CbcMessage.hpp \
 	CbcModel.cpp CbcModel.hpp \
 	CbcNode.cpp CbcNode.hpp \
+	CbcNodeInfo.cpp CbcNodeInfo.hpp \
 	CbcNWay.cpp CbcNWay.hpp \
 	CbcNWayBranchingObject.cpp CbcNWayBranchingObject.hpp \
 	CbcObject.cpp CbcObject.hpp \
 	CbcObjectUpdateData.cpp CbcObjectUpdateData.hpp \
 	CbcOneGeneralBranchingObject.cpp CbcOneGeneralBranchingObject.hpp \
+	CbcPartialNodeInfo.cpp CbcPartialNodeInfo.hpp \
 	CbcSimpleInteger.cpp CbcSimpleInteger.hpp \
 	CbcSimpleIntegerDynamicPseudoCost.cpp CbcSimpleIntegerDynamicPseudoCost.hpp \
 	CbcSimpleIntegerPseudoCost.cpp CbcSimpleIntegerPseudoCost.hpp \
@@ -367,6 +370,7 @@ includecoin_HEADERS = \
 	CbcFixingBranchingObject.hpp \
 	CbcFixVariable.hpp \
 	CbcFollowOn.hpp \
+	CbcFullNodeInfo.hpp \
 	CbcGeneral.hpp \
 	CbcGeneralBranchingObject.hpp \
 	CbcGeneralDepth.hpp \
@@ -391,11 +395,13 @@ includecoin_HEADERS = \
 	CbcMessage.hpp \
 	CbcModel.hpp \
 	CbcNode.hpp \
+	CbcNodeInfo.hpp \
 	CbcNWay.hpp \
 	CbcNWayBranchingObject.hpp \
         CbcObject.hpp \
 	CbcObjectUpdateData.hpp \
 	CbcOneGeneralBranchingObject.hpp \
+	CbcPartialNodeInfo.hpp \
 	CbcSimpleInteger.hpp \
 	CbcSimpleIntegerDynamicPseudoCost.hpp \
 	CbcSimpleIntegerPseudoCost.hpp \

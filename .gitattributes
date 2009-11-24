@@ -72,6 +72,8 @@ Cbc/src/CbcFixingBranchingObject.cpp -text
 Cbc/src/CbcFixingBranchingObject.hpp -text
 Cbc/src/CbcFollowOn.cpp -text
 Cbc/src/CbcFollowOn.hpp -text
+Cbc/src/CbcFullNodeInfo.cpp -text
+Cbc/src/CbcFullNodeInfo.hpp -text
 Cbc/src/CbcGenBaB.cpp -text
 Cbc/src/CbcGenCbcParam.cpp -text
 Cbc/src/CbcGenCbcParam.hpp -text
@@ -141,6 +143,8 @@ Cbc/src/CbcNWay.cpp -text
 Cbc/src/CbcNWay.hpp -text
 Cbc/src/CbcNWayBranchingObject.cpp -text
 Cbc/src/CbcNWayBranchingObject.hpp -text
+Cbc/src/CbcNodeInfo.cpp -text
+Cbc/src/CbcNodeInfo.hpp -text
 Cbc/src/CbcNode_ansi.cpp -text
 Cbc/src/CbcNode_ansi.hpp -text
 Cbc/src/CbcNode_ban.cpp -text
@@ -167,6 +171,8 @@ Cbc/src/CbcParam_stro.cpp -text
 Cbc/src/CbcParam_stro.hpp -text
 Cbc/src/CbcParam_stroP.cpp -text
 Cbc/src/CbcParam_stroP.hpp -text
+Cbc/src/CbcPartialNodeInfo.cpp -text
+Cbc/src/CbcPartialNodeInfo.hpp -text
 Cbc/src/CbcSOS.cpp -text
 Cbc/src/CbcSOS.hpp -text
 Cbc/src/CbcSOSBranchingObject.cpp -text

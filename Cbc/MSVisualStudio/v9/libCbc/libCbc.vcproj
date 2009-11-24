@@ -472,6 +472,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\..\src\CbcFullNodeInfo.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\..\src\CbcGenCtlBlk.cpp"
 				>
 				<FileConfiguration
@@ -916,6 +920,10 @@
 				</FileConfiguration>
 			</File>
 			<File
+				RelativePath="..\..\..\src\CbcNodeInfo.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\..\src\CbcNWay.cpp"
 				>
 			</File>
@@ -959,6 +967,10 @@
 						PreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\..\..\src\CbcPartialNodeInfo.cpp"
+				>
 			</File>
 			<File
 				RelativePath="..\..\..\src\CbcSimpleInteger.cpp"
@@ -1222,6 +1234,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\..\src\CbcFullNodeInfo.hpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\..\src\CbcGenCtlBlk.hpp"
 				>
 			</File>
@@ -1326,6 +1342,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\..\src\CbcNodeInfo.hpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\..\src\CbcNWay.hpp"
 				>
 			</File>
@@ -1351,6 +1371,10 @@
 			</File>
 			<File
 				RelativePath="..\..\..\..\Cbc\src\CbcParam.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\..\src\CbcPartialNodeInfo.hpp"
 				>
 			</File>
 			<File

@@ -294,29 +294,20 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\..\..\Cbc\src\CbcCompareActual.cpp"
+				RelativePath="..\..\..\src\CbcCompareDefault.cpp"
 				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="0"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-						BasicRuntimeChecks="3"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="2"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-					/>
-				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\..\..\src\CbcCompareDepth.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\..\src\CbcCompareEstimate.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\..\src\CbcCompareObjective.cpp"
+				>
 			</File>
 			<File
 				RelativePath="..\..\..\src\CbcConsequence.cpp"
@@ -375,6 +366,14 @@
 						PreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\..\..\src\CbcCutModifier.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\..\src\CbcCutSubsetModifier.cpp"
+				>
 			</File>
 			<File
 				RelativePath="..\..\..\src\CbcDummyBranchingObject.cpp"
@@ -1178,6 +1177,22 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\..\src\CbcCompareDefault.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\..\src\CbcCompareDepth.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\..\src\CbcCompareEstimate.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\..\src\CbcCompareObjective.hpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\..\..\Cbc\src\CbcConfig.h"
 				>
 			</File>
@@ -1195,6 +1210,14 @@
 			</File>
 			<File
 				RelativePath="..\..\..\..\Cbc\src\CbcCutGenerator.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\..\src\CbcCutModifier.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\..\src\CbcCutSubsetModifier.hpp"
 				>
 			</File>
 			<File

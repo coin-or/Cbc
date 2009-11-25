@@ -30,8 +30,12 @@ libCbc_la_SOURCES = \
 	CbcBranchingObject.cpp CbcBranchingObject.hpp \
 	CbcBranchLotsize.cpp CbcBranchLotsize.hpp \
 	CbcBranchToFixLots.cpp CbcBranchToFixLots.hpp \
-	CbcCompareActual.cpp CbcCompareActual.hpp \
+	CbcCompareActual.hpp \
 	CbcCompareBase.hpp \
+	CbcCompareDefault.cpp CbcCompareDefault.hpp \
+	CbcCompareDepth.cpp CbcCompareDepth.hpp \
+	CbcCompareEstimate.cpp CbcCompareEstimate.hpp \
+	CbcCompareObjective.cpp CbcCompareObjective.hpp \
 	CbcConsequence.cpp CbcConsequence.hpp \
 	CbcChooseVariable.hpp \
 	CbcClique.cpp CbcClique.hpp \
@@ -41,6 +45,8 @@ libCbc_la_SOURCES = \
 	CbcCountRowCut.cpp CbcCountRowCut.hpp \
 	CbcCutBranchingObject.cpp CbcCutBranchingObject.hpp \
 	CbcCutGenerator.cpp CbcCutGenerator.hpp \
+	CbcCutModifier.cpp CbcCutModifier.hpp \
+	CbcCutSubsetModifier.cpp CbcCutSubsetModifier.hpp \
 	CbcDummyBranchingObject.cpp CbcDummyBranchingObject.hpp \
 	CbcDynamicPseudoCostBranchingObject.cpp CbcDynamicPseudoCostBranchingObject.hpp \
 	CbcEventHandler.cpp CbcEventHandler.hpp \
@@ -355,6 +361,10 @@ includecoin_HEADERS = \
 	CbcBranchingObject.hpp \
 	CbcBranchToFixLots.hpp \
 	CbcCompareActual.hpp \
+	CbcCompareDefault.hpp \
+	CbcCompareDepth.hpp \
+	CbcCompareEstimate.hpp \
+	CbcCompareObjective.hpp \
 	CbcConsequence.hpp \
 	CbcChooseVariable.hpp \
 	CbcClique.hpp \
@@ -362,6 +372,8 @@ includecoin_HEADERS = \
 	CbcCompare.hpp \
 	CbcCutBranchingObject.hpp \
 	CbcCutGenerator.hpp \
+	CbcCutModifier.hpp \
+	CbcCutSubsetModifier.hpp \
 	CbcDummyBranchingObject.hpp \
 	CbcDynamicPseudoCostBranchingObject.hpp \
 	CbcFathom.hpp \

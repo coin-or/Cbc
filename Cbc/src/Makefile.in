@@ -164,11 +164,12 @@ am_libCbc_la_OBJECTS = Cbc_C_Interface.lo CbcBranchAllDifferent.lo \
 	CbcBranchCut.lo CbcBranchDecision.lo \
 	CbcBranchDefaultDecision.lo CbcBranchDynamic.lo \
 	CbcBranchingObject.lo CbcBranchLotsize.lo \
-	CbcBranchToFixLots.lo CbcCompareActual.lo CbcConsequence.lo \
+	CbcBranchToFixLots.lo CbcCompareDefault.lo CbcCompareDepth.lo \
+	CbcCompareEstimate.lo CbcCompareObjective.lo CbcConsequence.lo \
 	CbcClique.lo CbcCliqueBranchingObject.lo \
 	CbcLongCliqueBranchingObject.lo CbcCountRowCut.lo \
-	CbcCutBranchingObject.lo CbcCutGenerator.lo \
-	CbcDummyBranchingObject.lo \
+	CbcCutBranchingObject.lo CbcCutGenerator.lo CbcCutModifier.lo \
+	CbcCutSubsetModifier.lo CbcDummyBranchingObject.lo \
 	CbcDynamicPseudoCostBranchingObject.lo CbcEventHandler.lo \
 	CbcFathom.lo CbcFathomDynamicProgramming.lo \
 	CbcFixingBranchingObject.lo CbcFixVariable.lo \
@@ -533,8 +534,12 @@ libCbc_la_SOURCES = \
 	CbcBranchingObject.cpp CbcBranchingObject.hpp \
 	CbcBranchLotsize.cpp CbcBranchLotsize.hpp \
 	CbcBranchToFixLots.cpp CbcBranchToFixLots.hpp \
-	CbcCompareActual.cpp CbcCompareActual.hpp \
+	CbcCompareActual.hpp \
 	CbcCompareBase.hpp \
+	CbcCompareDefault.cpp CbcCompareDefault.hpp \
+	CbcCompareDepth.cpp CbcCompareDepth.hpp \
+	CbcCompareEstimate.cpp CbcCompareEstimate.hpp \
+	CbcCompareObjective.cpp CbcCompareObjective.hpp \
 	CbcConsequence.cpp CbcConsequence.hpp \
 	CbcChooseVariable.hpp \
 	CbcClique.cpp CbcClique.hpp \
@@ -544,6 +549,8 @@ libCbc_la_SOURCES = \
 	CbcCountRowCut.cpp CbcCountRowCut.hpp \
 	CbcCutBranchingObject.cpp CbcCutBranchingObject.hpp \
 	CbcCutGenerator.cpp CbcCutGenerator.hpp \
+	CbcCutModifier.cpp CbcCutModifier.hpp \
+	CbcCutSubsetModifier.cpp CbcCutSubsetModifier.hpp \
 	CbcDummyBranchingObject.cpp CbcDummyBranchingObject.hpp \
 	CbcDynamicPseudoCostBranchingObject.cpp CbcDynamicPseudoCostBranchingObject.hpp \
 	CbcEventHandler.cpp CbcEventHandler.hpp \
@@ -721,6 +728,10 @@ includecoin_HEADERS = \
 	CbcBranchingObject.hpp \
 	CbcBranchToFixLots.hpp \
 	CbcCompareActual.hpp \
+	CbcCompareDefault.hpp \
+	CbcCompareDepth.hpp \
+	CbcCompareEstimate.hpp \
+	CbcCompareObjective.hpp \
 	CbcConsequence.hpp \
 	CbcChooseVariable.hpp \
 	CbcClique.hpp \
@@ -728,6 +739,8 @@ includecoin_HEADERS = \
 	CbcCompare.hpp \
 	CbcCutBranchingObject.hpp \
 	CbcCutGenerator.hpp \
+	CbcCutModifier.hpp \
+	CbcCutSubsetModifier.hpp \
 	CbcDummyBranchingObject.hpp \
 	CbcDynamicPseudoCostBranchingObject.hpp \
 	CbcFathom.hpp \
@@ -905,11 +918,16 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcCbcParam.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcClique.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcCliqueBranchingObject.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcCompareActual.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcCompareDefault.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcCompareDepth.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcCompareEstimate.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcCompareObjective.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcConsequence.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcCountRowCut.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcCutBranchingObject.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcCutGenerator.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcCutModifier.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcCutSubsetModifier.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcDummyBranchingObject.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcDynamicPseudoCostBranchingObject.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcEventHandler.Plo@am__quote@

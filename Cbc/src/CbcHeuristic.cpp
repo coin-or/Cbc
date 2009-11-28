@@ -373,7 +373,7 @@ CbcHeuristic::shouldHeurRun_randomChoice()
             /* JJF adjustments
             3 only at root and if no solution
             4 only at root and if this heuristic has not got solution
-            5 only at depth <4
+            5 as 3 but decay more
             6 decay
             7 run up to 2 times if solution found 4 otherwise
             */
@@ -388,8 +388,13 @@ CbcHeuristic::shouldHeurRun_randomChoice()
                     probability = -1.0;
                 break;
             case 5:
-                if (depth >= 4)
+                assert (decayFactor_);
+                if (model_->bestSolution()) {
                     probability = -1.0;
+                } else if (numCouldRun_ > 1000) {
+                    decayFactor_ *= 0.99;
+                    probability *= decayFactor_;
+                }
                 break;
             case 6:
                 if (depth >= 3) {
@@ -398,7 +403,7 @@ CbcHeuristic::shouldHeurRun_randomChoice()
 #ifdef COIN_DEVELOP
                         int old = howOften_;
 #endif
-                        howOften_ = CoinMin(CoinMax(static_cast<int> (howOften_ * 1.1), howOften_ + 1), 10000);
+                        howOften_ = CoinMin(CoinMax(static_cast<int> (howOften_ * 1.1), howOften_ + 1), 1000000);
 #ifdef COIN_DEVELOP
                         printf("Howoften changed from %d to %d for %s\n",
                                old, howOften_, heuristicName_.c_str());
@@ -1531,6 +1536,7 @@ CbcRounding::CbcRounding()
     down_ = NULL;
     up_ = NULL;
     equal_ = NULL;
+    //whereFrom_ |= 16; // allow more often
 }
 
 // Constructor from model
@@ -1548,6 +1554,7 @@ CbcRounding::CbcRounding(CbcModel & model)
     up_ = NULL;
     equal_ = NULL;
     seed_ = 7654321;
+    //whereFrom_ |= 16; // allow more often
 }
 
 // Destructor

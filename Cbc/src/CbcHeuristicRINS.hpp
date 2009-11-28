@@ -61,6 +61,10 @@ public:
     inline char * used() const {
         return used_;
     }
+    /// Resets lastNode
+    inline void setLastNode(int value) {
+        lastNode_ = value;
+    }
 
 protected:
     // Data

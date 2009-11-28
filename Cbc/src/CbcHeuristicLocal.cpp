@@ -157,6 +157,41 @@ CbcHeuristicLocal::solutionFix(double & objectiveValue,
         }
     }
     int returnCode = 0;
+#ifdef CLP_INVESTIGATE2
+    printf("Fixing %d out of %d (%d continuous)\n",
+           nFix, numberIntegers, newSolver->getNumCols() - numberIntegers);
+#endif
+    if (nFix*10 <= numberIntegers) {
+        // see if we can fix more
+        int * which = new int [2*(numberIntegers-nFix)];
+        int * sort = which + (numberIntegers - nFix);
+        int n = 0;
+        for (i = 0; i < numberIntegers; i++) {
+            int iColumn = integerVariable[i];
+            if (used_[iColumn]) {
+                which[n] = iColumn;
+                sort[n++] = used_[iColumn];
+            }
+        }
+        CoinSort_2(sort, sort + n, which);
+        // only half fixed in total
+        n = CoinMin(n, numberIntegers / 2 - nFix);
+        int allow = CoinMax(numberSolutions_ - 2, sort[0]);
+        int nFix2 = 0;
+        for (i = 0; i < n; i++) {
+            int iColumn = integerVariable[i];
+            if (used_[iColumn] <= allow) {
+                newSolver->setColUpper(iColumn, colLower[iColumn]);
+                nFix2++;
+            } else {
+                break;
+            }
+        }
+        delete [] which;
+        nFix += nFix2;
+        printf("Number fixed increased from %d to %d\n",
+               nFix - nFix2, nFix);
+    }
     if (nFix*10 > numberIntegers) {
         returnCode = smallBranchAndBound(newSolver, numberNodes_, newSolution, objectiveValue,
                                          objectiveValue, "CbcHeuristicLocal");

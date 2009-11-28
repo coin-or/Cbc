@@ -8,6 +8,7 @@
 
 #include "CoinTime.hpp"
 #include "CbcModel.hpp"
+#include "CbcHeuristic.hpp"
 #include "CbcCutGenerator.hpp"
 #include "CbcBranchCut.hpp"
 #include "CglProbing.hpp"
@@ -647,6 +648,21 @@ int CbcClpUnitTest (const CbcModel & saveModel, std::string& dirMiplib,
                     std::cout << " ( " << generator->timeInCutGenerator() << " seconds)" << std::endl;
                 else
                     std::cout << std::endl;
+            }
+            printf("%d solutions found by heuristics\n",
+                   model->getNumberHeuristicSolutions());
+            for (int iHeuristic = 0; iHeuristic < model->numberHeuristics(); iHeuristic++) {
+                CbcHeuristic * heuristic = model->heuristic(iHeuristic);
+                if (heuristic->numRuns()) {
+                    // Need to bring others inline
+                    char generalPrint[1000];
+                    sprintf(generalPrint, "%s was tried %d times out of %d and created %d solutions\n",
+                            heuristic->heuristicName(),
+                            heuristic->numRuns(),
+                            heuristic->numCouldRun(),
+                            heuristic->numberSolutionsFound());
+                    std::cout << generalPrint << std::endl;
+                }
             }
             if (!model->status()) {
                 double soln = model->getObjValue();

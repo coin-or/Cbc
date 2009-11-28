@@ -1,4 +1,4 @@
-/* $Id: CbcHeuristicRINS.cpp 1261 2009-10-30 12:45:20Z forrest $ */
+/* $Id: CbcHeuristicRINS.cpp 1240 2009-10-02 18:41:44Z forrest $ */
 // Copyright (C) 2006, International Business Machines
 // Corporation and others.  All Rights Reserved.
 #if defined(_MSC_VER)
@@ -30,6 +30,7 @@ CbcHeuristicRINS::CbcHeuristicRINS()
     howOften_ = 100;
     decayFactor_ = 0.5;
     used_ = NULL;
+    whereFrom_ = 1 + 8 + 16 + 255 * 256;
     whereFrom_ = 1 + 8 + 255 * 256;
 }
 
@@ -49,6 +50,7 @@ CbcHeuristicRINS::CbcHeuristicRINS(CbcModel & model)
     int numberColumns = model.solver()->getNumCols();
     used_ = new char[numberColumns];
     memset(used_, 0, numberColumns);
+    whereFrom_ = 1 + 8 + 16 + 255 * 256;
     whereFrom_ = 1 + 8 + 255 * 256;
 }
 
@@ -187,6 +189,10 @@ CbcHeuristicRINS::solution(double & solutionValue,
         if ((numberNodes > 40 && numberNodes <= 50) || (numberNodes > 90 && numberNodes < 100))
             numberNodes = howOften_;
     }
+    // Allow for infeasible nodes - so do anyway after a bit
+    if (howOften_ >= 100 && numberNodes >= lastNode_ + 2*howOften_) {
+        numberNodes = howOften_;
+    }
     if ((numberNodes % howOften_) == 0 && (model_->getCurrentPassNumber() == 1 ||
                                            model_->getCurrentPassNumber() == 999999)) {
         lastNode_ = model_->getNodeCount();
@@ -227,8 +233,9 @@ CbcHeuristicRINS::solution(double & solutionValue,
         }
         int divisor = 0;
         if (5*nFix > numberIntegers) {
-            if (numberContinuous > 2*numberIntegers && nFix*10 < numberColumns &&
-                    ((!numRuns_ && numberTries_ > 2) || stateOfFixing_)) {
+            if (numberContinuous > 2*numberIntegers && ((nFix*10 < numberColumns &&
+                    !numRuns_ && numberTries_ > 2) ||
+                    stateOfFixing_)) {
 #define RINS_FIX_CONTINUOUS
 #ifdef RINS_FIX_CONTINUOUS
                 const double * colLower = newSolver->getColLower();
@@ -290,8 +297,12 @@ CbcHeuristicRINS::solution(double & solutionValue,
                                              model_->getCutoff(), "CbcHeuristicRINS");
             if (returnCode < 0) {
                 returnCode = 0; // returned on size
-                if (divisor)
+                if (divisor) {
                     stateOfFixing_ = - divisor; // say failed
+                } else if (numberContinuous > 2*numberIntegers &&
+                           !numRuns_ && numberTries_ > 2) {
+                    stateOfFixing_ = -4; //start fixing
+                }
             } else {
                 numRuns_++;
                 if (divisor)
@@ -512,8 +523,62 @@ CbcHeuristicRENS::solution(double & solutionValue,
 #endif
         returnCode = smallBranchAndBound(newSolver, numberNodes_, betterSolution, solutionValue,
                                          model_->getCutoff(), "CbcHeuristicRENS");
-        if (returnCode < 0)
+        if (returnCode < 0) {
             returnCode = 0; // returned on size
+#ifdef RENS_FIX_CONTINUOUS
+            if (numberContinuous > numberIntegers && numberFixed >= numberColumns / 5) {
+                const double * colLower = newSolver->getColLower();
+                //const double * colUpper = newSolver->getColUpper();
+                int nAtLb = 0;
+                double sumDj = 0.0;
+                const double * dj = newSolver->getReducedCost();
+                double direction = newSolver->getObjSense();
+                for (int iColumn = 0; iColumn < numberColumns; iColumn++) {
+                    if (!newSolver->isInteger(iColumn)) {
+                        double value = currentSolution[iColumn];
+                        if (value < colLower[iColumn] + 1.0e-8) {
+                            double djValue = dj[iColumn] * direction;
+                            nAtLb++;
+                            sumDj += djValue;
+                        }
+                    }
+                }
+                if (nAtLb) {
+                    // fix some continuous
+                    double * sort = new double[nAtLb];
+                    int * which = new int [nAtLb];
+                    double threshold = CoinMax((0.01 * sumDj) / static_cast<double>(nAtLb), 1.0e-6);
+                    int nFix2 = 0;
+                    for (int iColumn = 0; iColumn < numberColumns; iColumn++) {
+                        if (!newSolver->isInteger(iColumn)) {
+                            double value = currentSolution[iColumn];
+                            if (value < colLower[iColumn] + 1.0e-8) {
+                                double djValue = dj[iColumn] * direction;
+                                if (djValue > threshold) {
+                                    sort[nFix2] = -djValue;
+                                    which[nFix2++] = iColumn;
+                                }
+                            }
+                        }
+                    }
+                    CoinSort_2(sort, sort + nFix2, which);
+                    nFix2 = CoinMin(nFix2, (numberColumns - numberFixed) / 2);
+                    for (int i = 0; i < nFix2; i++) {
+                        int iColumn = which[i];
+                        newSolver->setColUpper(iColumn, colLower[iColumn]);
+                    }
+                    delete [] sort;
+                    delete [] which;
+#ifdef CLP_INVESTIGATE2
+                    printf("%d integers fixed (%d tightened) (%d at bound), and %d continuous fixed at lb\n",
+                           numberFixed, numberTightened, numberAtBound, nFix2);
+#endif
+                }
+                returnCode = smallBranchAndBound(newSolver, numberNodes_, betterSolution, solutionValue,
+                                                 model_->getCutoff(), "CbcHeuristicRENS");
+#endif
+            }
+        }
         //printf("return code %d",returnCode);
         if ((returnCode&2) != 0) {
             // could add cut

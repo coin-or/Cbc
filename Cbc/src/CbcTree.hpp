@@ -10,6 +10,7 @@
 
 #include "CoinFinite.hpp"
 #include "CoinHelperFunctions.hpp"
+#include "CbcCompare.hpp"
 
 /*! \class tree
     \brief Implementation of live set as a heap.
@@ -105,6 +106,10 @@ public:
     /// Reset maximum node number
     inline void resetNodeNumbers() {
         maximumNodeNumber_ = 0;
+    }
+    /// Get maximum node number
+    inline int maximumNodeNumber() const {
+        return maximumNodeNumber_;
     }
     /// Set number of branches
     inline void setNumberBranching(int value) {

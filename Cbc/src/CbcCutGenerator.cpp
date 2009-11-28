@@ -16,6 +16,10 @@
 #else
 #include "OsiSolverInterface.hpp"
 #endif
+//#define CGL_DEBUG 1
+#ifdef CGL_DEBUG
+#include "OsiRowCutDebugger.hpp"
+#endif
 #include "CbcModel.hpp"
 #include "CbcMessage.hpp"
 #include "CbcCutGenerator.hpp"
@@ -377,6 +381,28 @@ CbcCutGenerator::generateCuts( OsiCuts & cs , int fullScan, OsiSolverInterface *
                 int numberColumns = solver->getNumCols();
                 double primalTolerance = 1.0e-8;
                 const char * tightenBounds = generator->tightenBounds();
+#ifdef CGL_DEBUG
+                const OsiRowCutDebugger * debugger = solver->getRowCutDebugger();
+                if (debugger && debugger->onOptimalPath(*solver)) {
+                    printf("On optimal path CbcCut\n");
+                    int nCols = solver->getNumCols();
+                    int i;
+                    const double * optimal = debugger->optimalSolution();
+                    const double * objective = solver->getObjCoefficients();
+                    double objval1 = 0.0, objval2 = 0.0;
+                    for (i = 0; i < nCols; i++) {
+#if CGL_DEBUG>1
+                        printf("%d %g %g %g %g\n", i, lower[i], solution[i], upper[i], optimal[i]);
+#endif
+                        objval1 += solution[i] * objective[i];
+                        objval2 += optimal[i] * objective[i];
+                        assert(optimal[i] >= lower[i] - 1.0e-5 && optimal[i] <= upper[i] + 1.0e-5);
+                        assert(optimal[i] >= tightLower[i] - 1.0e-5 && optimal[i] <= tightUpper[i] + 1.0e-5);
+                    }
+                    printf("current obj %g, integer %g\n", objval1, objval2);
+                }
+#endif
+                bool feasible = true;
                 if ((model_->getThreadMode()&2) == 0) {
                     for (j = 0; j < numberColumns; j++) {
                         if (solver->isInteger(j)) {
@@ -398,7 +424,9 @@ CbcCutGenerator::generateCuts( OsiCuts & cs , int fullScan, OsiSolverInterface *
                             if (upper[j] > lower[j]) {
                                 if (tightUpper[j] == tightLower[j]) {
                                     // fix
+                                    //if (tightLower[j]!=lower[j])
                                     solver->setColLower(j, tightLower[j]);
+                                    //if (tightUpper[j]!=upper[j])
                                     solver->setColUpper(j, tightUpper[j]);
                                     if (tightLower[j] > solution[j] + primalTolerance ||
                                             tightUpper[j] < solution[j] - primalTolerance)
@@ -411,6 +439,10 @@ CbcCutGenerator::generateCuts( OsiCuts & cs , int fullScan, OsiSolverInterface *
                                         returnCode = true;
                                 }
                             }
+                        }
+                        if (upper[j] < lower[j] - 1.0e-3) {
+                            feasible = false;
+                            break;
                         }
                     }
                 } else {
@@ -454,6 +486,10 @@ CbcCutGenerator::generateCuts( OsiCuts & cs , int fullScan, OsiSolverInterface *
                                 }
                             }
                         }
+                        if (upper[j] < lower[j] - 1.0e-3) {
+                            feasible = false;
+                            break;
+                        }
                     }
                     if (numberChanged) {
                         OsiColCut cc;
@@ -466,6 +502,13 @@ CbcCutGenerator::generateCuts( OsiCuts & cs , int fullScan, OsiSolverInterface *
                         }
                         cs.insert(cc);
                     }
+                }
+                if (!feasible) {
+                    // not feasible -add infeasible cut
+                    OsiRowCut rc;
+                    rc.setLb(DBL_MAX);
+                    rc.setUb(0.0);
+                    cs.insert(rc);
                 }
             }
             //if (!solver->basisIsAvailable())
@@ -516,8 +559,15 @@ CbcCutGenerator::generateCuts( OsiCuts & cs , int fullScan, OsiSolverInterface *
             // make all row cuts without test for duplicate
             int numberRowCutsAfter = cs.sizeRowCuts() ;
             int k ;
+#ifdef CGL_DEBUG
+            const OsiRowCutDebugger * debugger = solver->getRowCutDebugger();
+#endif
             for (k = numberRowCutsBefore; k < numberRowCutsAfter; k++) {
                 OsiRowCut * thisCut = cs.rowCutPtr(k) ;
+#ifdef CGL_DEBUG
+                if (debugger && debugger->onOptimalPath(*solver))
+                    assert(!debugger->invalidCut(*thisCut));
+#endif
                 thisCut->mutableRow().setTestForDuplicateIndex(false);
             }
         }

@@ -1,4 +1,4 @@
-/* $Id: CbcSolver.cpp 1266 2009-11-02 14:07:49Z forrest $ */
+/* $Id: CbcSolver.cpp 1240 2009-10-02 18:41:44Z forrest $ */
 // Copyright (C) 2007, International Business Machines
 // Corporation and others.  All Rights Reserved.
 
@@ -42,7 +42,7 @@
 #include "OsiAuxInfo.hpp"
 // Version
 #ifndef CBCVERSION
-#define CBCVERSION "2.3.1"
+#define CBCVERSION "2.4.01"
 #endif
 //#define ORBITAL
 #ifdef ORBITAL
@@ -3295,7 +3295,7 @@ CbcSolver::doHeuristics(CbcModel * model, int type)
     int useGreedy = parameters_[whichParam(GREEDY, numberParameters_, parameters_)].currentOptionAsInteger();
     int useCombine = parameters_[whichParam(COMBINE, numberParameters_, parameters_)].currentOptionAsInteger();
     int useCrossover = parameters_[whichParam(CROSSOVER2, numberParameters_, parameters_)].currentOptionAsInteger();
-    //int usePivotC = parameters_[whichParam(PIVOTANDCOMPLEMENT,numberParameters_,parameters_)].currentOptionAsInteger();
+    //int usePivotC = parameters_[whichParam(PIVOTANDCOMPLEMENT, numberParameters_, parameters_)].currentOptionAsInteger();
     int usePivotF = parameters_[whichParam(PIVOTANDFIX, numberParameters_, parameters_)].currentOptionAsInteger();
     int useRand = parameters_[whichParam(RANDROUND, numberParameters_, parameters_)].currentOptionAsInteger();
     int useRINS = parameters_[whichParam(RINS, numberParameters_, parameters_)].currentOptionAsInteger();
@@ -4392,6 +4392,8 @@ CbcSolver::solve (int argc, const char *argv[], int returnMode)
             iParam = whichParam(PROBINGCUTS, numberParameters_, parameters_);
             parameters_[iParam].setCurrentOption("on");
             probingAction = 1;
+            parameters_[iParam].setCurrentOption("forceOnStrong");
+            probingAction = 8;
         }
         std::string field;
         if (!noPrinting_) {
@@ -4784,9 +4786,6 @@ CbcSolver::solve (int argc, const char *argv[], int returnMode)
                                         << "using OSL factorization"
                                         << CoinMessageEol;
                                         generalMessageHandler->message(CLP_GENERAL, generalMessages)
-                                        << "only 10 iterations for strong branching"
-                                        << CoinMessageEol;
-                                        generalMessageHandler->message(CLP_GENERAL, generalMessages)
                                         << "extra options - -rens on -extra4 24003 -passc 1000!"
                                         << CoinMessageEol;
                                     }
@@ -4798,7 +4797,7 @@ CbcSolver::solve (int argc, const char *argv[], int returnMode)
                                     knapsackAction = 5;
                                     parameters_[whichParam(FACTORIZATION, numberParameters_, parameters_)].setCurrentOption("osl");
                                     lpSolver->factorization()->forceOtherFactorization(3);
-                                    parameters_[whichParam(MAXHOTITS, numberParameters_, parameters_)].setIntValue(10);
+                                    parameters_[whichParam(MAXHOTITS, numberParameters_, parameters_)].setIntValue(100);
                                     parameters[whichParam(CUTPASS, numberParameters, parameters)].setIntValue(1000);
                                     cutPass = 1000;
                                     parameters[whichParam(EXTRA4, numberParameters, parameters)].setIntValue(24003);
@@ -5663,9 +5662,9 @@ CbcSolver::solve (int argc, const char *argv[], int returnMode)
                                 double dextra[6];
                                 int extra[5];
                                 extra[1] = parameters_[whichParam(EXTRA1, numberParameters_, parameters_)].intValue();
-                                if (parameters_[whichParam(EXPERIMENT, numberParameters_,
-                                                           parameters_)].intValue() >= 2 &&
-                                        extra[1] == -1)
+                                int exp1 = parameters_[whichParam(EXPERIMENT, numberParameters_,
+                                                                  parameters_)].intValue();
+                                if (exp1 == 2 && extra[1] == -1)
                                     extra[1] = 999998;
                                 dextra[1] = parameters_[whichParam(FAKEINCREMENT, numberParameters_, parameters_)].doubleValue();
                                 dextra[2] = parameters_[whichParam(FAKECUTOFF, numberParameters_, parameters_)].doubleValue();
@@ -5946,7 +5945,7 @@ CbcSolver::solve (int argc, const char *argv[], int returnMode)
 #ifdef CBC_THREAD
                                             int numberThreads = parameters_[whichParam(THREADS, numberParameters_, parameters_)].intValue();
                                             cbcModel->setNumberThreads(numberThreads % 100);
-                                            cbcModel->setThreadMode(numberThreads / 100);
+                                            cbcModel->setThreadMode(CoinMin(numberThreads / 100, 7));
 #endif
                                             //setCutAndHeuristicOptions(*cbcModel);
                                             cbcModel->branchAndBound();
@@ -6734,11 +6733,11 @@ CbcSolver::solve (int argc, const char *argv[], int returnMode)
                                 if (babModel_->numberStrong() == 5 && babModel_->numberBeforeTrust() == 5)
                                     babModel_->setNumberBeforeTrust(10);
                             }
-                            int experimentFlag = CoinMax(parameters_[whichParam(EXPERIMENT, numberParameters_,
-                                                         parameters_)].intValue() - 1, 0);
+                            int experimentFlag = parameters_[whichParam(EXPERIMENT, numberParameters_,
+                                                             parameters_)].intValue();
                             int strategyFlag = parameters_[whichParam(STRATEGY, numberParameters_,
                                                            parameters_)].intValue();
-                            int bothFlags = CoinMax(experimentFlag, strategyFlag);
+                            int bothFlags = CoinMax(CoinMin(experimentFlag, 1), strategyFlag);
                             // add cut generators if wanted
                             int switches[20];
                             int accuracyFlag[20];
@@ -7016,6 +7015,8 @@ CbcSolver::solve (int argc, const char *argv[], int returnMode)
                                                    numberColumns*sizeof(double));
                                         } else {
                                             printf("BAD debug file\n");
+                                            siCopy->writeMps("Bad");
+                                            exit(22);
                                         }
                                         delete siCopy;
                                         // for debug
@@ -7045,11 +7046,11 @@ CbcSolver::solve (int argc, const char *argv[], int returnMode)
                             currentBranchModel = babModel_;
                             //OsiSolverInterface * strengthenedModel=NULL;
                             if (type == BAB || type == MIPLIB) {
-                                if (experimentFlag == 2 || strategyFlag == 1) {
+                                if (strategyFlag == 1) {
                                     // try reduced model
                                     babModel_->setSpecialOptions(babModel_->specialOptions() | 512);
                                 }
-                                if (experimentFlag == 3 || strategyFlag == 2) {
+                                if (experimentFlag >= 3 || strategyFlag == 2) {
                                     // try reduced model at root
                                     babModel_->setSpecialOptions(babModel_->specialOptions() | 32768);
                                 }
@@ -8213,6 +8214,61 @@ CbcSolver::solve (int argc, const char *argv[], int returnMode)
                                     if (babModel_->fastNodeDepth() == -1)
                                         babModel_->setFastNodeDepth(-2); // Use Cplex at root
                                 }
+                                if (experimentFlag >= 2) {
+                                    CbcModel donor(*babModel_);
+                                    int options = babModel_->specialOptions();
+                                    donor.setSpecialOptions(options | 262144);
+                                    ClpSimplex * lpSolver2;
+                                    OsiClpSolverInterface * clpSolver2;
+                                    clpSolver2 =
+                                        dynamic_cast<OsiClpSolverInterface *> (donor.solver());
+                                    assert (clpSolver2);
+                                    lpSolver2 = clpSolver2->getModelPtr();
+                                    assert (lpSolver2);
+                                    if (lpSolver->factorization()->isDenseOrSmall()) {
+                                        lpSolver2->factorization()->forceOtherFactorization(0);
+                                        lpSolver2->factorization()->setGoOslThreshold(0);
+                                        lpSolver2->factorization()->setGoDenseThreshold(0);
+                                        lpSolver2->factorization()->setGoSmallThreshold(0);
+                                        lpSolver2->allSlackBasis();
+                                        lpSolver2->initialSolve();
+                                        int numberGenerators = donor.numberCutGenerators();
+                                        for (int iGenerator = 0; iGenerator < numberGenerators;
+                                                iGenerator++) {
+                                            CbcCutGenerator * generator = donor.cutGenerator(iGenerator);
+                                            CglGomory * gomory = dynamic_cast<CglGomory *>
+                                                                 (generator->generator());
+                                            if (gomory)
+                                                gomory->useAlternativeFactorization(false);
+                                        }
+                                    } else {
+                                        printf("code this\n");
+                                        abort();
+                                    }
+                                    babModel_->setSpecialOptions(options | 524288);
+                                    CglStored * stored = new CglStored(donor.getNumCols());
+                                    donor.setStoredRowCuts(stored);
+                                    donor.branchAndBound(0);
+                                    babModel_->setStoredRowCuts(donor.storedRowCuts());
+                                    donor.setStoredRowCuts(NULL);
+                                }
+#if 0
+                                int extra5 = parameters_[whichParam(EXTRA5, numberParameters_, parameters_)].intValue();
+                                if (extra5 > 0) {
+                                    int numberGenerators = babModel_->numberCutGenerators();
+                                    for (int iGenerator = 0; iGenerator < numberGenerators;
+                                            iGenerator++) {
+                                        CbcCutGenerator * generator = babModel_->cutGenerator(iGenerator);
+                                        CglGomory * gomory = dynamic_cast<CglGomory *>
+                                                             (generator->generator());
+                                        if (gomory) {
+                                            CglGomory gomory2(*gomory);
+                                            gomory2.useAlternativeFactorization(!gomory->alternativeFactorization());
+                                            babModel_->addCutGenerator(&gomory2, -99, "Gomory2");
+                                        }
+                                    }
+                                }
+#endif
                                 babModel_->branchAndBound(statistics);
                                 //#define CLP_FACTORIZATION_INSTRUMENT
 #ifdef CLP_FACTORIZATION_INSTRUMENT

@@ -26,7 +26,9 @@ CbcCompareDefault::CbcCompareDefault ()
         bestPossible_(-COIN_DBL_MAX),
         numberSolutions_(0),
         treeSize_(0),
-        breadthDepth_(5)
+        breadthDepth_(5),
+        startNodeNumber_(-1),
+        afterNodeNumber_(-1)
 {
     test_ = this;
 }
@@ -40,7 +42,9 @@ CbcCompareDefault::CbcCompareDefault (double weight)
         bestPossible_(-COIN_DBL_MAX),
         numberSolutions_(0),
         treeSize_(0),
-        breadthDepth_(5)
+        breadthDepth_(5),
+        startNodeNumber_(-1),
+        afterNodeNumber_(-1)
 {
     test_ = this;
 }
@@ -58,6 +62,8 @@ CbcCompareDefault::CbcCompareDefault ( const CbcCompareDefault & rhs)
     numberSolutions_ = rhs.numberSolutions_;
     treeSize_ = rhs.treeSize_;
     breadthDepth_ = rhs.breadthDepth_;
+    startNodeNumber_ = rhs.startNodeNumber_;
+    afterNodeNumber_ = rhs.afterNodeNumber_;
 }
 
 // Clone
@@ -80,6 +86,8 @@ CbcCompareDefault::operator=( const CbcCompareDefault & rhs)
         numberSolutions_ = rhs.numberSolutions_;
         treeSize_ = rhs.treeSize_;
         breadthDepth_ = rhs.breadthDepth_;
+        startNodeNumber_ = rhs.startNodeNumber_;
+        afterNodeNumber_ = rhs.afterNodeNumber_;
     }
     return *this;
 }
@@ -93,45 +101,33 @@ CbcCompareDefault::~CbcCompareDefault ()
 bool
 CbcCompareDefault::test (CbcNode * x, CbcNode * y)
 {
-#if 0
-    // always choose *smallest* depth if one or both <= breadthDepth_
-    int depthX = x->depth();
-    int depthY = y->depth();
-    if (depthX <= breadthDepth_ || depthY <= breadthDepth_) {
-        if (depthX != depthY)
-            return depthX > depthY;
-        else
-            return equalityTest(x, y); // so ties will be broken in consistent manner
-    }
-    if (weight_ == -1.0 || weight_ == -3.0) {
-        int adjust =  (weight_ == -3.0) ? 10000 : 0;
-        // before solution
-        /*printf("x %d %d %g, y %d %d %g\n",
-           x->numberUnsatisfied(),x->depth(),x->objectiveValue(),
-           y->numberUnsatisfied(),y->depth(),y->objectiveValue()); */
-        if (x->numberUnsatisfied() > y->numberUnsatisfied() + adjust) {
+    if (startNodeNumber_ >= 0) {
+        // Diving
+        int nX = x->nodeNumber();
+        int nY = y->nodeNumber();
+        if (nY == startNodeNumber_)
             return true;
-        } else if (x->numberUnsatisfied() < y->numberUnsatisfied() - adjust) {
+        else if (nX == startNodeNumber_)
             return false;
+        if (nX >= afterNodeNumber_ && nY < afterNodeNumber_)
+            return false;
+        else if (nY >= afterNodeNumber_ && nX < afterNodeNumber_)
+            return true;
+        // treat as depth first
+        int depthX = x->depth();
+        int depthY = y->depth();
+        if (depthX != depthY) {
+            return depthX < depthY;
         } else {
-            int depthX = x->depth();
-            int depthY = y->depth();
-            if (depthX != depthY)
-                return depthX < depthY;
+            double weight = CoinMax(weight_, 1.0e-9);
+            double testX =  x->objectiveValue() + weight * x->numberUnsatisfied();
+            double testY = y->objectiveValue() + weight * y->numberUnsatisfied();
+            if (testX != testY)
+                return testX > testY;
             else
                 return equalityTest(x, y); // so ties will be broken in consistent manner
         }
-    } else {
-        // after solution
-        double weight = CoinMax(weight_, 0.0);
-        double testX =  x->objectiveValue() + weight * x->numberUnsatisfied();
-        double testY = y->objectiveValue() + weight * y->numberUnsatisfied();
-        if (testX != testY)
-            return testX > testY;
-        else
-            return equalityTest(x, y); // so ties will be broken in consistent manner
     }
-#else
     //weight_=0.0;
     if ((weight_ == -1.0 && (y->depth() > breadthDepth_ && x->depth() > breadthDepth_)) || weight_ == -3.0 || weight_ == -2.0) {
         int adjust =  (weight_ == -3.0) ? 10000 : 0;
@@ -176,36 +172,35 @@ CbcCompareDefault::test (CbcNode * x, CbcNode * y)
         double testX =  x->objectiveValue() + weight * x->numberUnsatisfied();
         double testY = y->objectiveValue() + weight * y->numberUnsatisfied();
 #elif TRY_THIS==1
-    /* compute what weight would have to be to hit target
-       then reverse sign as large weight good */
-    double target = (1.0 - THRESH2) * bestPossible_ + THRESH2 * cutoff_;
-    double weight;
-    weight = (target - x->objectiveValue()) /
-             static_cast<double>(x->numberUnsatisfied());
-    double testX = - weight;
-    weight = (target - y->objectiveValue()) /
-             static_cast<double>(y->numberUnsatisfied());
-    double testY = - weight;
+        /* compute what weight would have to be to hit target
+           then reverse sign as large weight good */
+        double target = (1.0 - THRESH2) * bestPossible_ + THRESH2 * cutoff_;
+        double weight;
+        weight = (target - x->objectiveValue()) /
+                 static_cast<double>(x->numberUnsatisfied());
+        double testX = - weight;
+        weight = (target - y->objectiveValue()) /
+                 static_cast<double>(y->numberUnsatisfied());
+        double testY = - weight;
 #elif TRY_THIS==2
-    // Use estimates
-    double testX = x->guessedObjectiveValue();
-    double testY = y->guessedObjectiveValue();
+        // Use estimates
+        double testX = x->guessedObjectiveValue();
+        double testY = y->guessedObjectiveValue();
 #elif TRY_THIS==3
 #define THRESH 0.95
-    // Use estimates
-    double testX = x->guessedObjectiveValue();
-    double testY = y->guessedObjectiveValue();
-    if (x->objectiveValue() - bestPossible_ > THRESH*(cutoff_ - bestPossible_))
-        testX *= 2.0; // make worse
-    if (y->objectiveValue() - bestPossible_ > THRESH*(cutoff_ - bestPossible_))
-        testY *= 2.0; // make worse
+        // Use estimates
+        double testX = x->guessedObjectiveValue();
+        double testY = y->guessedObjectiveValue();
+        if (x->objectiveValue() - bestPossible_ > THRESH*(cutoff_ - bestPossible_))
+            testX *= 2.0; // make worse
+        if (y->objectiveValue() - bestPossible_ > THRESH*(cutoff_ - bestPossible_))
+            testY *= 2.0; // make worse
 #endif
         if (testX != testY)
             return testX > testY;
         else
             return equalityTest(x, y); // so ties will be broken in consistent manner
     }
-#endif
 }
 // This allows method to change behavior as it is called
 // after each solution
@@ -268,6 +263,35 @@ CbcCompareDefault::every1000Nodes(CbcModel * model, int numberNodes)
 #endif
     //return numberNodes==11000; // resort if first time
     return (weight_ != saveWeight);
+}
+// Start dive
+void
+CbcCompareDefault::startDive(CbcModel * model)
+{
+    // Get best - using ? criterion
+    double saveWeight = weight_;
+    weight_ = 0.5 * saveWeight_; //0.0;
+    // Switch off to get best
+    startNodeNumber_ = -1;
+    afterNodeNumber_ = -1;
+    CbcNode * best = model->tree()->bestAlternate();
+    startNodeNumber_ = best->nodeNumber();
+    // send signal to setComparison
+    afterNodeNumber_ = -2;
+    // redo tree
+    model->tree()->setComparison(*this);
+    afterNodeNumber_ = model->tree()->maximumNodeNumber();
+    weight_ = saveWeight;
+}
+// Clean up dive
+void
+CbcCompareDefault::cleanDive()
+{
+    if (afterNodeNumber_ != -2) {
+        // switch off
+        startNodeNumber_ = -1;
+        afterNodeNumber_ = -1;
+    }
 }
 
 // Create C++ lines to get to current state

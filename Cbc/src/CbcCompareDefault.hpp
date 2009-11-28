@@ -24,15 +24,15 @@ class CbcModel;
 */
 class CbcCompareDefault  : public CbcCompareBase {
 public:
-    // Default Constructor
+    /// Default Constructor
     CbcCompareDefault () ;
-    // Constructor with weight
+    /// Constructor with weight
     CbcCompareDefault (double weight);
 
-    // Copy constructor
+    /// Copy constructor
     CbcCompareDefault ( const CbcCompareDefault &rhs);
 
-    // Assignment operator
+    /// Assignment operator
     CbcCompareDefault & operator=( const CbcCompareDefault& rhs);
 
     /// Clone
@@ -46,13 +46,13 @@ public:
     virtual bool test (CbcNode * x, CbcNode * y) ;
 
     using CbcCompareBase::newSolution ;
-    // This allows method to change behavior as it is called
-    // after each solution
+    /// This allows method to change behavior as it is called
+    /// after each solution
     virtual void newSolution(CbcModel * model,
                              double objectiveAtContinuous,
                              int numberInfeasibilitiesAtContinuous) ;
-    // This allows method to change behavior
-    // Return true if want tree re-sorted
+    /// This allows method to change behavior
+    /// Return true if want tree re-sorted
     virtual bool every1000Nodes(CbcModel * model, int numberNodes);
 
     /* if weight == -1.0 then fewest infeasibilities (before solution)
@@ -79,25 +79,33 @@ public:
     inline void setBestPossible(double bestPossible) {
         bestPossible_ = bestPossible;
     }
-    // Depth above which want to explore first
+    /// Depth above which want to explore first
     inline void setBreadthDepth(int value) {
         breadthDepth_ = value;
     }
+    /// Start dive
+    void startDive(CbcModel * model);
+    /// Clean up diving (i.e. switch off or prepare)
+    void cleanDive();
 protected:
-    // Weight for each infeasibility
+    /// Weight for each infeasibility
     double weight_;
-    // Weight for each infeasibility - computed from solution
+    /// Weight for each infeasibility - computed from solution
     double saveWeight_;
     /// Cutoff
     double cutoff_;
     /// Best possible solution
     double bestPossible_;
-    // Number of solutions
+    /// Number of solutions
     int numberSolutions_;
-    // Tree size (at last check)
+    /// Tree size (at last check)
     int treeSize_;
-    // Depth above which want to explore first
+    /// Depth above which want to explore first
     int breadthDepth_;
+    /// Chosen node from estimated (-1 is off)
+    int startNodeNumber_;
+    /// Node number when dive started
+    int afterNodeNumber_;
 };
 
 #endif //CbcCompareDefault_H

@@ -33,6 +33,7 @@ CbcHeuristicDive::CbcHeuristicDive()
     maxSimplexIterationsAtRoot_ = 1000000;
     maxTime_ = 600;
     whereFrom_ = 255 - 2 - 16 + 256;
+    decayFactor_ = 1.0;
 }
 
 // Constructor from model
@@ -58,6 +59,7 @@ CbcHeuristicDive::CbcHeuristicDive(CbcModel & model)
     maxSimplexIterationsAtRoot_ = 1000000;
     maxTime_ = 600;
     whereFrom_ = 255 - 2 - 16 + 256;
+    decayFactor_ = 1.0;
 }
 
 // Destructor
@@ -484,7 +486,7 @@ CbcHeuristicDive::solution(double & solutionValue,
             }
 #ifdef GAP
             int nLeft = maxNumberAtBoundToFix - numberAtBoundFixed;
-#ifdef CLP_INVESTIGATE
+#ifdef CLP_INVESTIGATE4
             printf("cutoff %g obj %g nover %d - %d free, %d fixed\n",
                    cutoff, solver->getObjValue(), nOverGap, numberFree, numberFixed);
 #endif
@@ -493,7 +495,7 @@ CbcHeuristicDive::solution(double & solutionValue,
                 maxNumberAtBoundToFix += nOverGap - nLeft;
             }
 #else
-#ifdef CLP_INVESTIGATE
+#ifdef CLP_INVESTIGATE4
             printf("cutoff %g obj %g - %d free, %d fixed\n",
                    model_->getCutoff(), solver->getObjValue(), numberFree, numberFixed);
 #endif
@@ -1048,7 +1050,7 @@ CbcHeuristicDive::fixOtherVariables(OsiSolverInterface * solver,
     }
 #ifdef GAP
     int nLeft = maxNumberToFix - numberFixedAlready;
-#ifdef CLP_INVESTIGATE
+#ifdef CLP_INVESTIGATE4
     printf("cutoff %g obj %g nover %d - %d free, %d fixed\n",
            cutoff, solver->getObjValue(), nOverGap, numberFree,
            numberFixedAlready);
@@ -1058,7 +1060,7 @@ CbcHeuristicDive::fixOtherVariables(OsiSolverInterface * solver,
         maxNumberToFix += nOverGap - nLeft;
     }
 #else
-#ifdef CLP_INVESTIGATE
+#ifdef CLP_INVESTIGATE4
     printf("cutoff %g obj %g - %d free, %d fixed\n",
            model_->getCutoff(), solver->getObjValue(), numberFree,
            numberFixedAlready);

@@ -53,7 +53,7 @@ CbcCountRowCut::CbcCountRowCut (const OsiRowCut & rhs,
     printf("CbcCountRowCut constructor %x from RowCut and info %d\n",
            this, numberPointingToThis_);
 #endif
-    assert (!numberPointingToThis || numberPointingToThis == 1000000000);
+    //assert (!numberPointingToThis||numberPointingToThis==1000000000);
 }
 CbcCountRowCut::~CbcCountRowCut()
 {
@@ -62,7 +62,8 @@ CbcCountRowCut::~CbcCountRowCut()
            numberPointingToThis_);
 #endif
     // Look at owner and delete
-    owner_->deleteCut(ownerCut_);
+    if (owner_)
+        owner_->deleteCut(ownerCut_);
     ownerCut_ = -1234567;
 }
 // Increment number of references

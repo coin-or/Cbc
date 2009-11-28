@@ -176,6 +176,12 @@ void
 CbcTree::setComparison(CbcCompareBase  &compare)
 {
     comparison_.test_ = &compare;
+    CbcCompareDefault * compareD = dynamic_cast<CbcCompareDefault *>
+                                   (&compare);
+    if (compareD) {
+        // clean up diving
+        compareD->cleanDive();
+    }
     std::make_heap(nodes_.begin(), nodes_.end(), comparison_);
 }
 

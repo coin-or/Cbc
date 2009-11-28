@@ -12,7 +12,6 @@
 #include "OsiCuts.hpp"
 #include "CoinWarmStartBasis.hpp"
 #include "CbcCompareBase.hpp"
-#include "CbcCompare.hpp"
 #include "CbcMessage.hpp"
 #include "CbcEventHandler.hpp"
 
@@ -23,6 +22,7 @@ class OsiRowCut;
 class OsiBabSolver;
 class OsiRowCutDebugger;
 class CglCutGenerator;
+class CglStored;
 class CbcCutModifier;
 class CglTreeProbingInfo;
 class CbcHeuristic;
@@ -2125,7 +2125,14 @@ public:
     inline int * mutableStrongInfo() {
         return strongInfo_;
     }
-
+    /// Get stored row cuts for donor/recipient CbcModel
+    CglStored * storedRowCuts() const {
+        return storedRowCuts_;
+    }
+    /// Set stored row cuts for donor/recipient CbcModel
+    void setStoredRowCuts(CglStored * cuts) {
+        storedRowCuts_ = cuts;
+    }
     /// Says whether all dynamic integers
     inline bool allDynamic () const {
         return ((ownership_&0x40000000) != 0) ;
@@ -2359,6 +2366,8 @@ private:
         15 bit (32768) - Try reduced model after 0 nodes
         16 bit (65536) - Original model had integer bounds
         17 bit (131072) - Perturbation switched off
+        18 bit (262144) - donor CbcModel
+        19 bit (524288) - recipient CbcModel
     */
     int specialOptions_;
     /** More special options
@@ -2574,6 +2583,8 @@ private:
     int maximumNumberUpdateItems_;
     /// Update items
     CbcObjectUpdateData * updateItems_;
+    /// Stored row cuts for donor/recipient CbcModel
+    CglStored * storedRowCuts_;
     /**
        Parallel
        0 - off

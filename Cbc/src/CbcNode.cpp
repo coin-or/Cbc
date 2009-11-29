@@ -3357,11 +3357,11 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
             model->setSearchStrategy(2);
         }
     }
-    if (numberUnfinished*10 < numberStrongDone &&
-            numberStrongIterations*20 < model->getIterationCount()) {
-        //printf("increasing trust\n");
-        model->synchronizeNumberBeforeTrust(2);
-    }
+    //if (numberUnfinished*10 < numberStrongDone &&
+    //      numberStrongIterations*20 < model->getIterationCount()) {
+    //printf("increasing trust\n");
+    //  model->synchronizeNumberBeforeTrust(2);
+    //}
 
     // Set guessed solution value
     guessedObjectiveValue_ = objectiveValue_ + estimatedDegradation;

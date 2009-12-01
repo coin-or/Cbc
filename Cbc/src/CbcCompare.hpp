@@ -4,7 +4,7 @@
 #ifndef CbcCompare_H
 #define CbcCompare_H
 
-#include "CbcCompareBase.hpp"
+class CbcCompareBase;
 
 class CbcCompare {
 public:

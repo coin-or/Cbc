@@ -41,17 +41,17 @@ CbcCompareActual.cpp,,NodeStrat,Edwin,,,8,463,165,628,x,,,,CbcCompareDepth,"CbcC
 ,CbcCompareDepth.cpp,NodeStrat,Edwin,,,,,,,,,,,,
 ,CbcCompareEstimate.cpp,NodeStrat,Edwin,,,,,,,,,,,,
 ,CbcCompareObjective.cpp,NodeStrat,Edwin,,,,,,,,,,,,
-CbcCompareBase.hpp,,NodeStrat,,,,24,,170,170,x,,,,CbcCompareBase,"CbcCompare, CbcChooseVariable"
-,CbcCompare,NodeStrat,,,,,,,,,,,,,
-,CbcChooseVariable,NodeStrat,,,,,,,,,,,,,
+CbcCompareBase.hpp,,NodeStrat,Edwin,,,24,,170,170,x,,,,CbcCompareBase,"CbcCompare, CbcChooseVariable"
+,CbcCompare,NodeStrat,Edwin,,,,,,,,,,,,
+,CbcChooseVariable,NodeStrat,Edwin,,,,,,,,,,,,
 CbcConfig.h,,,,,,20,,102,102,x,,,,#defines,
 CbcCountRowCut.cpp,,Cuts,,,,10,126,115,241,x,,,,CbcCountRowCut,
 CbcCutGenerator.cpp,,Cuts,Edwin,,,2,1223,510,1733,x,,,,CbcCutGenerator,"CbcCutModifier, CbcCutSubsetModifier",
 ,CbcCutModifier.cp,Cuts,Edwin,,,,,,,,,,,,,
 ,CbcCutSubsetModifier.cpp,Cuts,Edwin,,,,,,,,,,,,,
 CbcEventHandler.cpp,,API,,,,36,101,221,322,x,,,,CbcEventHandler,,
-CbcFathom.cpp,,NodeStrat,,,,19,106,126,232,x,,,,CbcFathom,CbcOsiSolver,
-CbcFathomDynamicProgramming.cpp,,NodeStrat,,,,10,1051,166,1217,x,,,,CbcFathomDynamicProgramming,,
+CbcFathom.cpp,,NodeStrat,Edwin,,,19,106,126,232,x,,,,CbcFathom,CbcOsiSolver,
+CbcFathomDynamicProgramming.cpp,,NodeStrat,Edwin,,,10,1051,166,1217,x,,,,CbcFathomDynamicProgramming,,
 CbcFeasibilityBase.hpp,,API?,,,,24,,53,53,x,,,,CbcFeasibilityBase,,
 CbcGenBaB.cpp,,Generic,Lou,,,14,886,,886,,,x,,namespace CbcGenParamUtils,namespace,The support functions for the main branch-and-cut action routine.
 CbcGenCbcParam.cpp,,Generic,Lou,,,24,155,189,344,,,x,,CbcCbcParam,,Constructors and destructors for CbcCbcParam
@@ -82,22 +82,22 @@ CbcHeuristicRINS.cpp,,Heuristic,,,,10,1207,296,1503,x,,,,CbcHeuristicRINS,"CbcHe
 CbcLinked.cpp,,Nonlinear/Osi,,,,10,8302,1403,9705,x,,,,OsiSolverLink,"OsiLinkedBound, OsiHeuristicDynamic3, OsiOldLink, OsiBiLinear*, OsiSimpleFixedInteger, Multiple"
 CbcMain.cpp,,API,,,,14,1651,,1651,,,,x,main,"CbcCompareUser, namespace"
 CbcMessage.cpp,,API,,,,13,104,87,191,x,,,,CbcMessage,
-CbcModel.cpp,,Core,,,,0,16557,2622,19179,x,,,,CbcModel,
-CbcNode.cpp,,Core,,,,0,5135,806,5941,x,,,,CbcNode,"CbcNodeInfo, CbcFullNodeInfo, CbcPartialNodeInfo, "
-,CbcFullNodeInfo.cpp,Core,Edwin,,,,,,,,,,,,
-,CbcNodeInfo.cpp,Core,Edwin,,,,,,,,,,,,
-,CbcPartialNodeInfo.cpp,Core,Edwin,,,,,,,,,,,,
+CbcModel.cpp,,Core,Edwin,,,0,16557,2622,19179,x,,,,CbcModel,
+CbcNode.cpp,,Core,Dan,,,0,5135,806,5941,x,,,,CbcNode,"CbcNodeInfo, CbcFullNodeInfo, CbcPartialNodeInfo, "
+,CbcFullNodeInfo.cpp,Core,Dan,,,,,,,,,,,,
+,CbcNodeInfo.cpp,Core,Dan,,,,,,,,,,,,
+,CbcPartialNodeInfo.cpp,Core,Dan,,,,,,,,,,,,
 CbcParam.cpp,,API,Bjarni,,,24,502,237,739,x,,,,CbcParam,
 CbcSolver.cpp,,API,Bjarni,,,0,11365,,11365,,x,,,CbcSolver,CbcMain
 CbcStatistics.cpp,,API,,,,21,136,98,234,x,,,,CbcStatistics,
-CbcStrategy.cpp,,Core,,,,8,940,255,1195,x,,,,CbcStrategy,CbcStrategyDefault*
-CbcTree.cpp,,Core,,,,8,1178,419,1597,x,,,,CbcTree,CbcTreeArray
+CbcStrategy.cpp,,Core,Dan/Edwin,,,8,940,255,1195,x,,,,CbcStrategy,CbcStrategyDefault*
+CbcTree.cpp,,Core,Dan/Edwin,,,8,1178,419,1597,x,,,,CbcTree,CbcTreeArray
 CbcTreeLocal.cpp,,Heuristic,,,,10,1747,369,2116,x,,,,CbcTreeLocal,
 Cbc_ampl.cpp,,Ampl,,,,4,1504,65,1569,,,,x,global,
 Cbc_C_Interface.cpp,,Interface,Bjarni,,,4,2554,658,3212,,,,x,global,
 ClpAmplObjective.cpp,,Ampl,,,,14,750,110,860,,,,x,ClpAmplObjective,
 ClpAmplStuff.cpp,,Ampl,,,,3,1370,,1370,x,,,,CbcAmpl,"CbcAmpl*, Multiple"
 ClpConstraintAmpl.hpp,,Ampl,,,,24,,105,105,,,,,,
-CoinSolve.cpp,,API,,,,8,342,,342,,x,,,MyMessageHandler2,main
+CoinSolve.cpp,,API,Bjarni,,,8,342,,342,,x,,,MyMessageHandler2,main
 unitTest.cpp,,Test,,,,8,418,,418,,,,x,global,
 unitTestClp.cpp,,Test,,,,5,714,,714,,x,,,global,

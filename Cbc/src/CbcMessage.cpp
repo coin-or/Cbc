@@ -87,12 +87,12 @@ CbcMessage::CbcMessage(Language language) :
 
     // now override any language ones
 
-    switch (language) {
+    //switch (language) {
 
-    default:
+    //default:
         message = NULL;
-        break;
-    }
+	//  break;
+	//}
 
     // replace if any found
     if (message) {

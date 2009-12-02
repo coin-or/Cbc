@@ -14,6 +14,7 @@
 #include "CbcCompareBase.hpp"
 #include "CbcMessage.hpp"
 #include "CbcEventHandler.hpp"
+#include "ClpDualRowPivot.hpp"
 
 //class OsiSolverInterface;
 
@@ -441,8 +442,11 @@ public:
     /**
       Save copy of the model.
     */
-      
     void saveModel(OsiSolverInterface * saveSolver, double * checkCutoffForRestart, bool * feasible);
+
+#ifdef COIN_HAS_CLP
+	void possiblePivotMethodChange( ClpDualRowPivot ** savePivotMethod, int lower, int upper);
+#endif
     //@}
 
     /** \name Object manipulation routines

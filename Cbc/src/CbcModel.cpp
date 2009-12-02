@@ -1125,6 +1125,43 @@ CbcModel::analyzeObjective ()
     return ;
 }
 
+#ifdef COIN_HAS_CLP
+/*
+ Change pivot method of required. Called from BranchandBound()
+*/
+void CbcModel::possiblePivotMethodChange( ClpDualRowPivot ** savePivotMethod, int lower, int upper)
+{
+	OsiClpSolverInterface * clpSolver
+        = dynamic_cast<OsiClpSolverInterface *> (solver_);
+    if (clpSolver && numberNodes_ >= lower && numberNodes_ < upper) {
+        if (numberIterations_ < (numberSolves_ + numberNodes_)*10) {
+            //if (numberIterations_<numberNodes_*20) {
+            ClpSimplex * simplex = clpSolver->getModelPtr();
+            ClpDualRowPivot * pivotMethod = simplex->dualRowPivot();
+            ClpDualRowDantzig * pivot =
+                dynamic_cast< ClpDualRowDantzig*>(pivotMethod);
+            if (!pivot) {
+                *savePivotMethod = pivotMethod->clone(true);
+                ClpDualRowDantzig dantzig;
+                simplex->setDualRowPivotAlgorithm(dantzig);
+#ifdef COIN_DEVELOP
+                printf("%d node, %d iterations ->Dantzig\n", numberNodes_,
+                       numberIterations_);
+#endif
+#ifdef CBC_THREAD
+                for (int i = 0; i < numberThreads_; i++) {
+                    threadInfo[i].dantzigState = -1;
+                }
+#endif
+            }
+        }
+    }
+}
+#endif // COIN_HAS_CLP
+
+/*
+saveModel called (carved out of) BranchandBound
+*/
 void CbcModel::saveModel(OsiSolverInterface * saveSolver, double * checkCutoffForRestart, bool * feasible)
 {
     if (saveSolver && (specialOptions_&32768) != 0) {
@@ -3367,31 +3404,7 @@ void CbcModel::branchAndBound(int doStatistics)
 #ifdef COIN_HAS_CLP
         // Possible change of pivot method
         if (!savePivotMethod && !parentModel_) {
-            OsiClpSolverInterface * clpSolver
-            = dynamic_cast<OsiClpSolverInterface *> (solver_);
-            if (clpSolver && numberNodes_ >= 100 && numberNodes_ < 200) {
-                if (numberIterations_ < (numberSolves_ + numberNodes_)*10) {
-                    //if (numberIterations_<numberNodes_*20) {
-                    ClpSimplex * simplex = clpSolver->getModelPtr();
-                    ClpDualRowPivot * pivotMethod = simplex->dualRowPivot();
-                    ClpDualRowDantzig * pivot =
-                        dynamic_cast< ClpDualRowDantzig*>(pivotMethod);
-                    if (!pivot) {
-                        savePivotMethod = pivotMethod->clone(true);
-                        ClpDualRowDantzig dantzig;
-                        simplex->setDualRowPivotAlgorithm(dantzig);
-#ifdef COIN_DEVELOP
-                        printf("%d node, %d iterations ->Dantzig\n", numberNodes_,
-                               numberIterations_);
-#endif
-#ifdef CBC_THREAD
-                        for (int i = 0; i < numberThreads_; i++) {
-                            threadInfo[i].dantzigState = -1;
-                        }
-#endif
-                    }
-                }
-            }
+			possiblePivotMethodChange( &savePivotMethod, 100, 200);        
         }
 #endif
         if (tree_->empty()) {
@@ -3773,30 +3786,7 @@ void CbcModel::branchAndBound(int doStatistics)
 #ifdef COIN_HAS_CLP
             // Possible change of pivot method
             if (!savePivotMethod && !parentModel_) {
-                OsiClpSolverInterface * clpSolver
-                = dynamic_cast<OsiClpSolverInterface *> (solver_);
-                if (clpSolver && numberNodes_ >= 1000 && numberNodes_ < 2000) {
-                    if (numberIterations_ < (numberSolves_ + numberNodes_)*10) {
-                        ClpSimplex * simplex = clpSolver->getModelPtr();
-                        ClpDualRowPivot * pivotMethod = simplex->dualRowPivot();
-                        ClpDualRowDantzig * pivot =
-                            dynamic_cast< ClpDualRowDantzig*>(pivotMethod);
-                        if (!pivot) {
-                            savePivotMethod = pivotMethod->clone(true);
-                            ClpDualRowDantzig dantzig;
-                            simplex->setDualRowPivotAlgorithm(dantzig);
-#ifdef COIN_DEVELOP
-                            printf("%d node, %d iterations ->Dantzig\n", numberNodes_,
-                                   numberIterations_);
-#endif
-#ifdef CBC_THREAD
-                            for (int i = 0; i < numberThreads_; i++) {
-                                threadInfo[i].dantzigState = -1;
-                            }
-#endif
-                        }
-                    }
-                }
+                possiblePivotMethodChange( &savePivotMethod, 1000, 2000); 
             }
 #endif
             lastEvery1000 = numberNodes_ + 1000;

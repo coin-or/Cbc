@@ -433,7 +433,16 @@ public:
     */
     void analyzeObjective();
 
-
+    /**
+      Add additional integers.
+    */
+    void AddIntegers();
+    
+    /**
+      Save copy of the model.
+    */
+      
+    void saveModel(OsiSolverInterface * saveSolver, double * checkCutoffForRestart, bool * feasible);
     //@}
 
     /** \name Object manipulation routines

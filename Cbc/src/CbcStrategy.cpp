@@ -140,7 +140,8 @@ CbcStrategyDefault::setupCutGenerators(CbcModel & model)
         return; // no cuts wanted
     // Set up some cut generators and defaults
     // Probing first as gets tight bounds on continuous
-    int genFlags = 63;
+	// See flags for Probing, Gomory, Knapsack, Clique, FlowCover, MixedIntegerRounding2 below
+    int genFlags = 63;  
     //#define CBC_GENERATE_TEST
 #ifdef CBC_GENERATE_TEST
     int nNodes = model.getMaximumNodes();

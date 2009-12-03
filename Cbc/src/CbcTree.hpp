@@ -165,6 +165,7 @@ protected:
     This class is used to hold the set of live nodes in the search tree.
 */
 
+#if 0 // not used
 class CbcTreeArray : public CbcTree {
 
 public:
@@ -322,6 +323,7 @@ protected:
 
 
 };
+#endif
 #else
 class CbcTree {
 

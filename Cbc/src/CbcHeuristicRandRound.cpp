@@ -218,7 +218,7 @@ CbcHeuristicRandRound::solution(double & solutionValue,
     }
 
     double * newObj = new double [numCols];
-    srand ( time(NULL) + 1);
+    srand ( static_cast<unsigned int>(time(NULL) + 1));
     int randNum;
 
     // Shuffle the rows:
@@ -385,7 +385,7 @@ CbcHeuristicRandRound::solution(double & solutionValue,
     // -check the feasibility of the random point
     //-------------------------------------------
 
-    srand ( time(NULL) + 1);
+    srand ( static_cast<unsigned int>(time(NULL) + 1));
     int numRandomPoints = 0;
     while (numRandomPoints < 50000) {
         numRandomPoints++;

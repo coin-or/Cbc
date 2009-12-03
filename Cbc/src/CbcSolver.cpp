@@ -2990,7 +2990,7 @@ void checkSOS(CbcModel * /*babModel*/, const OsiSolverInterface * /*solver*/)
 #if NEW_STYLE_SOLVER==0
 int callCbc1(const char * input2, CbcModel & model, int callBack(CbcModel * currentSolver, int whereFrom))
 {
-    char * input = strdup(input2);
+    char * input = CoinStrdup(input2);
     int length = strlen(input);
     bool blank = input[0] == '0';
     int n = blank ? 0 : 1;
@@ -3013,7 +3013,7 @@ int callCbc1(const char * input2, CbcModel & model, int callBack(CbcModel * curr
         }
     }
     char ** argv = new char * [n+2];
-    argv[0] = strdup("cbc");
+    argv[0] = CoinStrdup("cbc");
     int i = 0;
     while (input[i] == ' ')
         i++;
@@ -3028,11 +3028,11 @@ int callCbc1(const char * input2, CbcModel & model, int callBack(CbcModel * curr
             }
         }
         input[i] = '\0';
-        argv[j+1] = strdup(input + saveI);
+        argv[j+1] = CoinStrdup(input + saveI);
         while (input[i] == ' ')
             i++;
     }
-    argv[n+1] = strdup("-quit");
+    argv[n+1] = CoinStrdup("-quit");
     free(input);
     totalTime = 0.0;
     currentBranchModel = NULL;
@@ -3047,7 +3047,7 @@ int callCbc1(const char * input2, CbcModel & model, int callBack(CbcModel * curr
 }
 int callCbc1(const std::string input2, CbcModel & babSolver)
 {
-    char * input3 = strdup(input2.c_str());
+    char * input3 = CoinStrdup(input2.c_str());
     int returnCode = callCbc1(input3, babSolver);
     free(input3);
     return returnCode;
@@ -3059,7 +3059,7 @@ int callCbc(const char * input2, CbcModel & babSolver)
 }
 int callCbc(const std::string input2, CbcModel & babSolver)
 {
-    char * input3 = strdup(input2.c_str());
+    char * input3 = CoinStrdup(input2.c_str());
     CbcMain0(babSolver);
     int returnCode = callCbc1(input3, babSolver);
     free(input3);
@@ -3079,14 +3079,14 @@ int callCbc(const char * input2)
 }
 int callCbc(const std::string input2, OsiClpSolverInterface& solver1)
 {
-    char * input3 = strdup(input2.c_str());
+    char * input3 = CoinStrdup(input2.c_str());
     int returnCode = callCbc(input3, solver1);
     free(input3);
     return returnCode;
 }
 int callCbc(const std::string input2)
 {
-    char * input3 = strdup(input2.c_str());
+    char * input3 = CoinStrdup(input2.c_str());
     OsiClpSolverInterface solver1;
     int returnCode = callCbc(input3, solver1);
     free(input3);
@@ -3103,7 +3103,7 @@ int CbcMain1 (int argc, const char *argv[],
 }
 int callCbc1(const std::string input2, CbcModel & babSolver, int callBack(CbcModel * currentSolver, int whereFrom))
 {
-    char * input3 = strdup(input2.c_str());
+    char * input3 = CoinStrdup(input2.c_str());
     int returnCode = callCbc1(input3, babSolver, callBack);
     free(input3);
     return returnCode;
@@ -3762,7 +3762,7 @@ int CbcClpUnitTest (const CbcModel & saveModel,
 int
 CbcSolver::solve(const char * input2, int returnMode)
 {
-    char * input = strdup(input2);
+    char * input = CoinStrdup(input2);
     int length = strlen(input);
     bool blank = input[0] == '0';
     int n = blank ? 0 : 1;
@@ -3785,7 +3785,7 @@ CbcSolver::solve(const char * input2, int returnMode)
         }
     }
     char ** argv = new char * [n+2];
-    argv[0] = strdup("cbc");
+    argv[0] = CoinStrdup("cbc");
     int i = 0;
     while (input[i] == ' ')
         i++;
@@ -3801,12 +3801,12 @@ CbcSolver::solve(const char * input2, int returnMode)
         }
         char save = input[i];
         input[i] = '\0';
-        argv[j+1] = strdup(input + saveI);
+        argv[j+1] = CoinStrdup(input + saveI);
         input[i] = save;
         while (input[i] == ' ')
             i++;
     }
-    argv[n+1] = strdup("-quit");
+    argv[n+1] = CoinStrdup("-quit");
     free(input);
     int returnCode = solve(n + 2, const_cast<const char **>(argv), returnMode);
     for (int k = 0; k < n + 2; k++)
@@ -6613,7 +6613,7 @@ CbcSolver::solve (int argc, const char *argv[], int returnMode)
                                 std::string problemName ;
                                 babModel_->solver()->getStrParam(OsiProbName, problemName) ;
                                 babModel_->solver()->activateRowCutDebugger(problemName.c_str()) ;
-                                twomirGen.probname_ = strdup(problemName.c_str());
+                                twomirGen.probname_ = CoinStrdup(problemName.c_str());
                                 // checking seems odd
                                 //redsplitGen.set_given_optsol(babModel_->solver()->getRowCutDebuggerAlways()->optimalSolution(),
                                 //                         babModel_->getNumCols());
@@ -9364,13 +9364,13 @@ CbcSolver::solve (int argc, const char *argv[], int returnMode)
                                             rowNames = new char * [numberRows];
                                             for (iRow = 0; iRow < numberRows; iRow++) {
                                                 rowNames[iRow] =
-                                                    strdup(model2->rowName(iRow).c_str());
+                                                    CoinStrdup(model2->rowName(iRow).c_str());
                                             }
 
                                             columnNames = new char * [numberColumns];
                                             for (iColumn = 0; iColumn < numberColumns; iColumn++) {
                                                 columnNames[iColumn] =
-                                                    strdup(model2->columnName(iColumn).c_str());
+                                                    CoinStrdup(model2->columnName(iColumn).c_str());
                                             }
                                         }
                                         clpSolver->writeMpsNative(fileName.c_str(), const_cast<const char **> (rowNames), const_cast<const char **> (columnNames),
@@ -9586,7 +9586,7 @@ CbcSolver::solve (int argc, const char *argv[], int returnMode)
                                         }
                                         for (iColumn = 0; iColumn < numberColumns; iColumn++) {
                                             columnNames[iColumn] =
-                                                strdup(lpSolver->columnName(iColumn).c_str());
+                                                CoinStrdup(lpSolver->columnName(iColumn).c_str());
                                             pseudoDown[iColumn] = 0.0;
                                             pseudoUp[iColumn] = 0.0;
                                             branchDirection[iColumn] = 0;

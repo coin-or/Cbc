@@ -167,7 +167,7 @@ Cbc_MessageHandler::print()
         char * vString[200];
         for (i = 0; i < nString; i++) {
             std::string value = stringValue(i);
-            vString[i] = strdup(value.c_str());
+            vString[i] = CoinStrdup(value.c_str());
         }
         callback_(model_, messageNumber,
                   nDouble, vDouble,

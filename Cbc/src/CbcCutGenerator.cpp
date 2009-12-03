@@ -87,9 +87,9 @@ CbcCutGenerator::CbcCutGenerator(CbcModel * model, CglCutGenerator * generator,
     whenCutGeneratorInSub_ = howOftenInSub;
     switchOffIfLessThan_ = switchOffIfLessThan;
     if (name)
-        generatorName_ = strdup(name);
+        generatorName_ = CoinStrdup(name);
     else
-        generatorName_ = strdup("Unknown");
+        generatorName_ = CoinStrdup("Unknown");
     setNormal(normal);
     setAtSolution(atSolution);
     setWhenInfeasible(infeasible);
@@ -106,7 +106,7 @@ CbcCutGenerator::CbcCutGenerator ( const CbcCutGenerator & rhs)
     switchOffIfLessThan_ = rhs.switchOffIfLessThan_;
     depthCutGenerator_ = rhs.depthCutGenerator_;
     depthCutGeneratorInSub_ = rhs.depthCutGeneratorInSub_;
-    generatorName_ = strdup(rhs.generatorName_);
+    generatorName_ = CoinStrdup(rhs.generatorName_);
     switches_ = rhs.switches_;
     timeInCutGenerator_ = rhs.timeInCutGenerator_;
     savedCuts_ = rhs.savedCuts_;
@@ -136,7 +136,7 @@ CbcCutGenerator::operator=( const CbcCutGenerator & rhs)
         switchOffIfLessThan_ = rhs.switchOffIfLessThan_;
         depthCutGenerator_ = rhs.depthCutGenerator_;
         depthCutGeneratorInSub_ = rhs.depthCutGeneratorInSub_;
-        generatorName_ = strdup(rhs.generatorName_);
+        generatorName_ = CoinStrdup(rhs.generatorName_);
         switches_ = rhs.switches_;
         timeInCutGenerator_ = rhs.timeInCutGenerator_;
         savedCuts_ = rhs.savedCuts_;

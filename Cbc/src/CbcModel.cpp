@@ -2231,12 +2231,14 @@ void CbcModel::branchAndBound(int doStatistics)
     if (compareActual) {
         compareActual->setBestPossible(direction*solver_->getObjValue());
         compareActual->setCutoff(getCutoff());
-        if (false && !numberThreads_ && !parentModel_) {
+#if 0
+		if (false && !numberThreads_ && !parentModel_) {
             printf("CbcTreeArray ? threads ? parentArray\n");
             // Setup new style tree
             delete tree_;
             tree_ = new CbcTreeArray();
         }
+#endif
     }
     tree_->setComparison(*nodeCompare_) ;
     /*

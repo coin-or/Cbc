@@ -56,7 +56,6 @@ libCbc_la_SOURCES = \
 	CbcFullNodeInfo.cpp CbcFullNodeInfo.hpp \
 	CbcFollowOn.cpp CbcFollowOn.hpp \
 	CbcGeneral.cpp CbcGeneral.hpp \
-	CbcGeneralBranchingObject.cpp CbcGeneralBranchingObject.hpp \
 	CbcGeneralDepth.cpp CbcGeneralDepth.hpp \
 	CbcHeuristic.cpp CbcHeuristic.hpp \
 	CbcHeuristicDive.cpp CbcHeuristicDive.hpp \
@@ -84,7 +83,6 @@ libCbc_la_SOURCES = \
 	CbcNWayBranchingObject.cpp CbcNWayBranchingObject.hpp \
 	CbcObject.cpp CbcObject.hpp \
 	CbcObjectUpdateData.cpp CbcObjectUpdateData.hpp \
-	CbcOneGeneralBranchingObject.cpp CbcOneGeneralBranchingObject.hpp \
 	CbcPartialNodeInfo.cpp CbcPartialNodeInfo.hpp \
 	CbcSimpleInteger.cpp CbcSimpleInteger.hpp \
 	CbcSimpleIntegerDynamicPseudoCost.cpp CbcSimpleIntegerDynamicPseudoCost.hpp \
@@ -381,7 +379,6 @@ includecoin_HEADERS = \
 	CbcFollowOn.hpp \
 	CbcFullNodeInfo.hpp \
 	CbcGeneral.hpp \
-	CbcGeneralBranchingObject.hpp \
 	CbcGeneralDepth.hpp \
 	CbcHeuristic.hpp \
 	CbcHeuristicDive.hpp \
@@ -408,7 +405,6 @@ includecoin_HEADERS = \
 	CbcNWayBranchingObject.hpp \
         CbcObject.hpp \
 	CbcObjectUpdateData.hpp \
-	CbcOneGeneralBranchingObject.hpp \
 	CbcPartialNodeInfo.hpp \
 	CbcSimpleInteger.hpp \
 	CbcSimpleIntegerDynamicPseudoCost.hpp \

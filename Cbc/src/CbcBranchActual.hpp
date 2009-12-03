@@ -23,6 +23,4 @@
 #include "CbcGeneral.hpp"
 #include "CbcGeneralDepth.hpp" 
 #include "CbcSubProblem.hpp"
-#include "CbcGeneralBranchingObject.hpp"
-#include "CbcOneGeneralBranchingObject.hpp"
 #endif

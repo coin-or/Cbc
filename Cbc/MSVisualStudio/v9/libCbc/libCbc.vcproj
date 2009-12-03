@@ -500,10 +500,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\..\src\CbcGeneralBranchingObject.cpp"
-				>
-			</File>
-			<File
 				RelativePath="..\..\..\src\CbcGeneralDepth.cpp"
 				>
 			</File>
@@ -931,10 +927,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\..\src\CbcOneGeneralBranchingObject.cpp"
-				>
-			</File>
-			<File
 				RelativePath="..\..\..\..\Cbc\src\CbcParam.cpp"
 				>
 				<FileConfiguration
@@ -1257,10 +1249,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\..\src\CbcGeneralBranchingObject.hpp"
-				>
-			</File>
-			<File
 				RelativePath="..\..\..\src\CbcGeneralDepth.hpp"
 				>
 			</File>
@@ -1366,10 +1354,6 @@
 			</File>
 			<File
 				RelativePath="..\..\..\src\CbcObjectUpdateData.hpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\..\src\CbcOneGeneralBranchingObject.hpp"
 				>
 			</File>
 			<File

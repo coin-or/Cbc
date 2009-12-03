@@ -101,8 +101,6 @@ Cbc/src/CbcGenSolution.cpp -text
 Cbc/src/CbcGenSolvers.cpp -text
 Cbc/src/CbcGeneral.cpp -text
 Cbc/src/CbcGeneral.hpp -text
-Cbc/src/CbcGeneralBranchingObject.cpp -text
-Cbc/src/CbcGeneralBranchingObject.hpp -text
 Cbc/src/CbcGeneralDepth.cpp -text
 Cbc/src/CbcGeneralDepth.hpp -text
 Cbc/src/CbcGeneric.cpp -text
@@ -166,8 +164,6 @@ Cbc/src/CbcObject.cpp -text
 Cbc/src/CbcObject.hpp -text
 Cbc/src/CbcObjectUpdateData.cpp -text
 Cbc/src/CbcObjectUpdateData.hpp -text
-Cbc/src/CbcOneGeneralBranchingObject.cpp -text
-Cbc/src/CbcOneGeneralBranchingObject.hpp -text
 Cbc/src/CbcParam_ansi.cpp -text
 Cbc/src/CbcParam_ansi.hpp -text
 Cbc/src/CbcParam_ban.cpp -text

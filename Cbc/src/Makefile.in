@@ -173,8 +173,7 @@ am_libCbc_la_OBJECTS = Cbc_C_Interface.lo CbcBranchAllDifferent.lo \
 	CbcFathom.lo CbcFathomDynamicProgramming.lo \
 	CbcFixingBranchingObject.lo CbcFixVariable.lo \
 	CbcFullNodeInfo.lo CbcFollowOn.lo CbcGeneral.lo \
-	CbcGeneralBranchingObject.lo CbcGeneralDepth.lo \
-	CbcHeuristic.lo CbcHeuristicDive.lo \
+	CbcGeneralDepth.lo CbcHeuristic.lo CbcHeuristicDive.lo \
 	CbcHeuristicDiveCoefficient.lo CbcHeuristicDiveFractional.lo \
 	CbcHeuristicDiveGuided.lo CbcHeuristicDiveLineSearch.lo \
 	CbcHeuristicDivePseudoCost.lo CbcHeuristicDiveVectorLength.lo \
@@ -185,8 +184,8 @@ am_libCbc_la_OBJECTS = Cbc_C_Interface.lo CbcBranchAllDifferent.lo \
 	CbcIntegerPseudoCostBranchingObject.lo CbcLotsize.lo \
 	CbcMessage.lo CbcModel.lo CbcNode.lo CbcNodeInfo.lo CbcNWay.lo \
 	CbcNWayBranchingObject.lo CbcObject.lo CbcObjectUpdateData.lo \
-	CbcOneGeneralBranchingObject.lo CbcPartialNodeInfo.lo \
-	CbcSimpleInteger.lo CbcSimpleIntegerDynamicPseudoCost.lo \
+	CbcPartialNodeInfo.lo CbcSimpleInteger.lo \
+	CbcSimpleIntegerDynamicPseudoCost.lo \
 	CbcSimpleIntegerPseudoCost.lo CbcSOS.lo \
 	CbcSOSBranchingObject.lo CbcStatistics.lo CbcStrategy.lo \
 	CbcSubProblem.lo CbcTree.lo CbcTreeLocal.lo
@@ -559,7 +558,6 @@ libCbc_la_SOURCES = \
 	CbcFullNodeInfo.cpp CbcFullNodeInfo.hpp \
 	CbcFollowOn.cpp CbcFollowOn.hpp \
 	CbcGeneral.cpp CbcGeneral.hpp \
-	CbcGeneralBranchingObject.cpp CbcGeneralBranchingObject.hpp \
 	CbcGeneralDepth.cpp CbcGeneralDepth.hpp \
 	CbcHeuristic.cpp CbcHeuristic.hpp \
 	CbcHeuristicDive.cpp CbcHeuristicDive.hpp \
@@ -587,7 +585,6 @@ libCbc_la_SOURCES = \
 	CbcNWayBranchingObject.cpp CbcNWayBranchingObject.hpp \
 	CbcObject.cpp CbcObject.hpp \
 	CbcObjectUpdateData.cpp CbcObjectUpdateData.hpp \
-	CbcOneGeneralBranchingObject.cpp CbcOneGeneralBranchingObject.hpp \
 	CbcPartialNodeInfo.cpp CbcPartialNodeInfo.hpp \
 	CbcSimpleInteger.cpp CbcSimpleInteger.hpp \
 	CbcSimpleIntegerDynamicPseudoCost.cpp CbcSimpleIntegerDynamicPseudoCost.hpp \
@@ -747,7 +744,6 @@ includecoin_HEADERS = \
 	CbcFollowOn.hpp \
 	CbcFullNodeInfo.hpp \
 	CbcGeneral.hpp \
-	CbcGeneralBranchingObject.hpp \
 	CbcGeneralDepth.hpp \
 	CbcHeuristic.hpp \
 	CbcHeuristicDive.hpp \
@@ -774,7 +770,6 @@ includecoin_HEADERS = \
 	CbcNWayBranchingObject.hpp \
         CbcObject.hpp \
 	CbcObjectUpdateData.hpp \
-	CbcOneGeneralBranchingObject.hpp \
 	CbcPartialNodeInfo.hpp \
 	CbcSimpleInteger.hpp \
 	CbcSimpleIntegerDynamicPseudoCost.hpp \
@@ -943,7 +938,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcGenSolution.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcGenSolvers.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcGeneral.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcGeneralBranchingObject.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcGeneralDepth.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcGeneric.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcHeuristic.Plo@am__quote@
@@ -972,7 +966,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcNodeInfo.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcObject.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcObjectUpdateData.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcOneGeneralBranchingObject.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcPartialNodeInfo.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcSOS.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcSOSBranchingObject.Plo@am__quote@

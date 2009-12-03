@@ -408,9 +408,9 @@ void CbcSolver::fillParameters()
         dirMiplib = "../../Data/miplib3/";
     } else {
         directory = ".\\";
-        dirSample = "..\\..\\Data\\Sample\\";
-        dirNetlib = "..\\..\\Data\\Netlib\\";
-        dirMiplib = "..\\..\\Data\\miplib3\\";
+        dirSample = "..\\..\\..\\..\\Data\\Sample\\";
+        dirNetlib = "..\\..\\..\\..\\Data\\Netlib\\";
+        dirMiplib = "..\\..\\..\\..\\Data\\miplib3\\";
     }
     std::string defaultDirectory = directory;
     std::string importFile = "";
@@ -3155,9 +3155,9 @@ void CbcMain0 (CbcModel  & model)
         dirMiplib = "../../Data/miplib3/";
     } else {
         directory = ".\\";
-        dirSample = "..\\..\\Data\\Sample\\";
-        dirNetlib = "..\\..\\Data\\Netlib\\";
-        dirMiplib = "..\\..\\Data\\miplib3\\";
+        dirSample = "..\\..\\..\\..\\Data\\Sample\\";
+        dirNetlib = "..\\..\\..\\..\\Data\\Netlib\\";
+        dirMiplib = "..\\..\\..\\..\\Data\\miplib3\\";
     }
     std::string defaultDirectory = directory;
     std::string importFile = "";
@@ -4229,9 +4229,9 @@ CbcSolver::solve (int argc, const char *argv[], int returnMode)
             dirMiplib = "../../Data/miplib3/";
         } else {
             directory = ".\\";
-            dirSample = "..\\..\\Data\\Sample\\";
-            dirNetlib = "..\\..\\Data\\Netlib\\";
-            dirMiplib = "..\\..\\Data\\miplib3\\";
+            dirSample = "..\\..\\..\\..\\Data\\Sample\\";
+            dirNetlib = "..\\..\\..\\..\\Data\\Netlib\\";
+            dirMiplib = "..\\..\\..\\..\\Data\\miplib3\\";
         }
         std::string defaultDirectory = directory;
         std::string importFile = "";

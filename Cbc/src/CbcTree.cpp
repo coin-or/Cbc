@@ -461,6 +461,8 @@ CbcTree::bestAlternate()
     }
     return best;
 }
+
+#if 0 // not used, referenced removed in CbcModel.cpp
 CbcTreeArray::CbcTreeArray()
         : CbcTree(),
         lastNode_(NULL),
@@ -834,6 +836,7 @@ CbcTreeArray::cleanTree(CbcModel * model, double cutoff, double & bestPossibleOb
     delete [] nodeArray;
     delete [] depth;
 }
+#endif
 #else
 // Set comparison function and resort heap
 void

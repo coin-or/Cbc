@@ -179,9 +179,7 @@ am_libCbc_la_OBJECTS = Cbc_C_Interface.lo CbcBranchAllDifferent.lo \
 	CbcHeuristicDivePseudoCost.lo CbcHeuristicDiveVectorLength.lo \
 	CbcHeuristicFPump.lo CbcHeuristicGreedy.lo \
 	CbcHeuristicLocal.lo CbcHeuristicPivotAndFix.lo \
-	CbcHeuristicRandRound.lo CbcHeuristicRINS.lo \
-	CbcIntegerBranchingObject.lo \
-	CbcIntegerPseudoCostBranchingObject.lo CbcLotsize.lo \
+	CbcHeuristicRandRound.lo CbcHeuristicRINS.lo CbcLotsize.lo \
 	CbcMessage.lo CbcModel.lo CbcNode.lo CbcNodeInfo.lo CbcNWay.lo \
 	CbcNWayBranchingObject.lo CbcObject.lo CbcObjectUpdateData.lo \
 	CbcPartialNodeInfo.lo CbcSimpleInteger.lo \
@@ -573,9 +571,6 @@ libCbc_la_SOURCES = \
 	CbcHeuristicPivotAndFix.cpp CbcHeuristicPivotAndFix.hpp \
 	CbcHeuristicRandRound.cpp CbcHeuristicRandRound.hpp \
 	CbcHeuristicRINS.cpp CbcHeuristicRINS.hpp \
-	CbcIntegerBranchingObject.cpp CbcIntegerBranchingObject.hpp \
-	CbcIntegerPseudoCostBranchingObject.cpp \
-	CbcIntegerPseudoCostBranchingObject.hpp \
 	CbcLotsize.cpp CbcLotsize.hpp \
 	CbcMessage.cpp CbcMessage.hpp \
 	CbcModel.cpp CbcModel.hpp \
@@ -759,8 +754,6 @@ includecoin_HEADERS = \
 	CbcHeuristicPivotAndFix.hpp \
 	CbcHeuristicRandRound.hpp \
 	CbcHeuristicRINS.hpp \
-	CbcIntegerBranchingObject.hpp \
-	CbcIntegerPseudoCostBranchingObject.hpp \
 	CbcLotsize.hpp \
 	CbcMessage.hpp \
 	CbcModel.hpp \
@@ -954,8 +947,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcHeuristicPivotAndFix.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcHeuristicRINS.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcHeuristicRandRound.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcIntegerBranchingObject.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcIntegerPseudoCostBranchingObject.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcLinked.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcLotsize.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcMessage.Plo@am__quote@

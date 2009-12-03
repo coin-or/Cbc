@@ -124,10 +124,6 @@ Cbc/src/CbcHeuristicRINS.cpp -text
 Cbc/src/CbcHeuristicRINS.hpp -text
 Cbc/src/CbcHeuristicRandRound.cpp -text
 Cbc/src/CbcHeuristicRandRound.hpp -text
-Cbc/src/CbcIntegerBranchingObject.cpp -text
-Cbc/src/CbcIntegerBranchingObject.hpp -text
-Cbc/src/CbcIntegerPseudoCostBranchingObject.cpp -text
-Cbc/src/CbcIntegerPseudoCostBranchingObject.hpp -text
 Cbc/src/CbcLinked.cpp -text
 Cbc/src/CbcLinked.hpp -text
 Cbc/src/CbcLotsize.cpp -text

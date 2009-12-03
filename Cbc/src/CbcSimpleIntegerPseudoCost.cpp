@@ -15,6 +15,7 @@
 #include "CbcModel.hpp"
 #include "CbcMessage.hpp"
 #include "CbcSimpleIntegerPseudoCost.hpp"
+#include "CbcSimpleIntegerDynamicPseudoCost.hpp"
 #include "CbcBranchActual.hpp"
 #include "CoinSort.hpp"
 #include "CoinError.hpp"

@@ -2,8 +2,8 @@
 #ifndef CbcDynamicPseudoCostBranchingObject_H
 #define CbcDynamicPseudoCostBranchingObject_H
 
+//#include "CbcSimpleIntegerDynamicPseudoCost.hpp"
 #include "CbcBranchDynamic.hpp"
-
 /** Simple branching object for an integer variable with pseudo costs
 
   This object can specify a two-way branch on an integer variable. For each

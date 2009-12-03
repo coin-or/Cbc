@@ -4,10 +4,10 @@
 #ifndef CbcBranchDynamic_H
 #define CbcBranchDynamic_H
 
-#include "CbcBranchActual.hpp"
 #include "CoinPackedMatrix.hpp"
 #include "CbcSimpleIntegerDynamicPseudoCost.hpp"
 #include "CbcDynamicPseudoCostBranchingObject.hpp"
+#include "CbcBranchActual.hpp"
 
 /** Branching decision dynamic class
 

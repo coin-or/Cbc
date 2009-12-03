@@ -795,14 +795,6 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="..\..\..\src\CbcIntegerBranchingObject.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\..\src\CbcIntegerPseudoCostBranchingObject.cpp"
-				>
-			</File>
-			<File
 				RelativePath="..\..\..\src\CbcLinked.cpp"
 				>
 				<FileConfiguration
@@ -1306,14 +1298,6 @@
 			</File>
 			<File
 				RelativePath="..\..\..\..\Cbc\src\CbcHeuristicRINS.hpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\..\src\CbcIntegerBranchingObject.hpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\..\src\CbcIntegerPseudoCostBranchingObject.hpp"
 				>
 			</File>
 			<File

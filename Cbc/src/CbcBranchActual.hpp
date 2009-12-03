@@ -13,8 +13,6 @@
 #include "CbcIntegerBranchingObject.hpp"
 #include "CbcSimpleIntegerPseudoCost.hpp"
 #include "CbcIntegerPseudoCostBranchingObject.hpp"
-#include "CbcCliqueBranchingObject.hpp"
-#include "CbcLongCliqueBranchingObject.hpp"
 #include "CbcSOSBranchingObject.hpp"
 #include "CbcNWayBranchingObject.hpp"
 #include "CbcBranchDefaultDecision.hpp"

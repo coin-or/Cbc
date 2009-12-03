@@ -290,10 +290,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\..\src\CbcCliqueBranchingObject.cpp"
-				>
-			</File>
-			<File
 				RelativePath="..\..\..\src\CbcCompareDefault.cpp"
 				>
 			</File>
@@ -836,10 +832,6 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="..\..\..\src\CbcLongCliqueBranchingObject.cpp"
-				>
-			</File>
-			<File
 				RelativePath="..\..\..\src\CbcLotsize.cpp"
 				>
 			</File>
@@ -1161,10 +1153,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\..\src\CbcCliqueBranchingObject.hpp"
-				>
-			</File>
-			<File
 				RelativePath="..\..\..\src\CbcCompare.hpp"
 				>
 			</File>
@@ -1342,10 +1330,6 @@
 			</File>
 			<File
 				RelativePath="..\..\..\src\CbcLinked.hpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\..\src\CbcLongCliqueBranchingObject.hpp"
 				>
 			</File>
 			<File

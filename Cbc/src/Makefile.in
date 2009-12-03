@@ -166,10 +166,9 @@ am_libCbc_la_OBJECTS = Cbc_C_Interface.lo CbcBranchAllDifferent.lo \
 	CbcBranchingObject.lo CbcBranchLotsize.lo \
 	CbcBranchToFixLots.lo CbcCompareDefault.lo CbcCompareDepth.lo \
 	CbcCompareEstimate.lo CbcCompareObjective.lo CbcConsequence.lo \
-	CbcClique.lo CbcCliqueBranchingObject.lo \
-	CbcLongCliqueBranchingObject.lo CbcCountRowCut.lo \
-	CbcCutBranchingObject.lo CbcCutGenerator.lo CbcCutModifier.lo \
-	CbcCutSubsetModifier.lo CbcDummyBranchingObject.lo \
+	CbcClique.lo CbcCountRowCut.lo CbcCutBranchingObject.lo \
+	CbcCutGenerator.lo CbcCutModifier.lo CbcCutSubsetModifier.lo \
+	CbcDummyBranchingObject.lo \
 	CbcDynamicPseudoCostBranchingObject.lo CbcEventHandler.lo \
 	CbcFathom.lo CbcFathomDynamicProgramming.lo \
 	CbcFixingBranchingObject.lo CbcFixVariable.lo \
@@ -543,8 +542,6 @@ libCbc_la_SOURCES = \
 	CbcConsequence.cpp CbcConsequence.hpp \
 	CbcChooseVariable.hpp \
 	CbcClique.cpp CbcClique.hpp \
-	CbcCliqueBranchingObject.cpp CbcCliqueBranchingObject.hpp \
-	CbcLongCliqueBranchingObject.cpp CbcLongCliqueBranchingObject.hpp \
 	CbcCompare.hpp \
 	CbcCountRowCut.cpp CbcCountRowCut.hpp \
 	CbcCutBranchingObject.cpp CbcCutBranchingObject.hpp \
@@ -735,7 +732,6 @@ includecoin_HEADERS = \
 	CbcConsequence.hpp \
 	CbcChooseVariable.hpp \
 	CbcClique.hpp \
-	CbcCliqueBranchingObject.hpp \
 	CbcCompare.hpp \
 	CbcCutBranchingObject.hpp \
 	CbcCutGenerator.hpp \
@@ -769,7 +765,6 @@ includecoin_HEADERS = \
 	CbcHeuristicRINS.hpp \
 	CbcIntegerBranchingObject.hpp \
 	CbcIntegerPseudoCostBranchingObject.hpp \
-	CbcLongCliqueBranchingObject.hpp \
 	CbcLotsize.hpp \
 	CbcMessage.hpp \
 	CbcModel.hpp \
@@ -917,7 +912,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcBranchingObject.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcCbcParam.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcClique.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcCliqueBranchingObject.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcCompareDefault.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcCompareDepth.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcCompareEstimate.Plo@am__quote@
@@ -969,7 +963,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcIntegerBranchingObject.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcIntegerPseudoCostBranchingObject.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcLinked.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcLongCliqueBranchingObject.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcLotsize.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcMessage.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcModel.Plo@am__quote@

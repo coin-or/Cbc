@@ -54,8 +54,6 @@ Cbc/src/CbcCbcParam.cpp -text
 Cbc/src/CbcChooseVariable.hpp -text
 Cbc/src/CbcClique.cpp -text
 Cbc/src/CbcClique.hpp -text
-Cbc/src/CbcCliqueBranchingObject.cpp -text
-Cbc/src/CbcCliqueBranchingObject.hpp -text
 Cbc/src/CbcCompare.hpp -text
 Cbc/src/CbcCompareDefault.cpp -text
 Cbc/src/CbcCompareDefault.hpp -text
@@ -134,8 +132,6 @@ Cbc/src/CbcIntegerPseudoCostBranchingObject.cpp -text
 Cbc/src/CbcIntegerPseudoCostBranchingObject.hpp -text
 Cbc/src/CbcLinked.cpp -text
 Cbc/src/CbcLinked.hpp -text
-Cbc/src/CbcLongCliqueBranchingObject.cpp -text
-Cbc/src/CbcLongCliqueBranchingObject.hpp -text
 Cbc/src/CbcLotsize.cpp -text
 Cbc/src/CbcLotsize.hpp -text
 Cbc/src/CbcModel_ansi.cpp -text

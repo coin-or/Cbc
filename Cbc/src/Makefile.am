@@ -39,8 +39,6 @@ libCbc_la_SOURCES = \
 	CbcConsequence.cpp CbcConsequence.hpp \
 	CbcChooseVariable.hpp \
 	CbcClique.cpp CbcClique.hpp \
-	CbcCliqueBranchingObject.cpp CbcCliqueBranchingObject.hpp \
-	CbcLongCliqueBranchingObject.cpp CbcLongCliqueBranchingObject.hpp \
 	CbcCompare.hpp \
 	CbcCountRowCut.cpp CbcCountRowCut.hpp \
 	CbcCutBranchingObject.cpp CbcCutBranchingObject.hpp \
@@ -368,7 +366,6 @@ includecoin_HEADERS = \
 	CbcConsequence.hpp \
 	CbcChooseVariable.hpp \
 	CbcClique.hpp \
-	CbcCliqueBranchingObject.hpp \
 	CbcCompare.hpp \
 	CbcCutBranchingObject.hpp \
 	CbcCutGenerator.hpp \
@@ -402,7 +399,6 @@ includecoin_HEADERS = \
 	CbcHeuristicRINS.hpp \
 	CbcIntegerBranchingObject.hpp \
 	CbcIntegerPseudoCostBranchingObject.hpp \
-	CbcLongCliqueBranchingObject.hpp \
 	CbcLotsize.hpp \
 	CbcMessage.hpp \
 	CbcModel.hpp \

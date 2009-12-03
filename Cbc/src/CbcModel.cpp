@@ -1149,9 +1149,12 @@ void CbcModel::possiblePivotMethodChange( ClpDualRowPivot ** savePivotMethod, in
                        numberIterations_);
 #endif
 #ifdef CBC_THREAD
+#if 0
+		/* FIXME: threadInfo is out of scope! */
                 for (int i = 0; i < numberThreads_; i++) {
                     threadInfo[i].dantzigState = -1;
                 }
+#endif
 #endif
             }
         }

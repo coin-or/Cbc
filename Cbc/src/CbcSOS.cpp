@@ -79,6 +79,11 @@ CbcSOS::CbcSOS (CbcModel * model,  int numberMembers,
         }
         // sort so weights increasing
         CoinSort_2(weights_, weights_ + numberMembers_, members_);
+/*
+  Force all weights to be distinct; note that the separation enforced here
+  (1.0e-10) is not sufficien to pass the test in infeasibility().
+*/
+
         double last = -COIN_DBL_MAX;
         int i;
         for (i = 0; i < numberMembers_; i++) {
@@ -160,6 +165,14 @@ CbcSOS::~CbcSOS ()
     delete [] members_;
     delete [] weights_;
 }
+/*
+  Routine to calculate standard infeasibility of an SOS set and return a
+  preferred branching direction. This routine looks to have undergone
+  incomplete revision. There is vestigial code. preferredWay is unconditionally
+  set to 1. There used to be a comment `large is 0.5' but John removed it
+  at some point. Have to check to see if it no longer applies or if John
+  thought it provided too much information.
+*/
 double
 CbcSOS::infeasibility(const OsiBranchingInformation * info,
                       int &preferredWay) const
@@ -181,10 +194,22 @@ CbcSOS::infeasibility(const OsiBranchingInformation * info,
     double lastWeight = -1.0e100;
     for (j = 0; j < numberMembers_; j++) {
         int iColumn = members_[j];
+/*
+  The value used here (1.0e-7) is larger than the value enforced in the
+  constructor.
+*/
+
         if (lastWeight >= weights_[j] - 1.0e-7)
             throw CoinError("Weights too close together in SOS", "infeasibility", "CbcSOS");
         double value = CoinMax(0.0, solution[iColumn]);
         sum += value;
+/*
+  If we're not making assumptions about integrality, why check integerTolerance
+  here? Convenient tolerance? Why not just check against the upper bound?
+
+  The calculation of weight looks to be a relic --- in the end, the value isn't
+  used to calculate either the return value or preferredWay.
+*/
         if (value > integerTolerance && upper[iColumn]) {
             // Possibly due to scaling a fixed variable might slip through
             if (value > upper[iColumn]) {

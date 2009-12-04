@@ -1,6 +1,11 @@
 /* $Id: CbcSolver.hpp 1212 2009-08-21 16:19:13Z forrest $ */
 // Copyright (C) 2007, International Business Machines
 // Corporation and others.  All Rights Reserved.
+
+/*! \file CbcSolver.hpp
+    \brief Defines CbcSolver, the top-level class for the new-style cbc solver.
+*/
+
 #ifndef CbcSolver_H
 #define CbcSolver_H
 #include <string>
@@ -20,16 +25,24 @@ class CglCutGenerator;
 
 //#############################################################################
 
-/** This allows the use of the standalone solver in a flexible manner
-    It has an original OsiClpSolverInterface and CbcModel which
-    it can use repeatedly e.g. get a heuristic solution and then start again
+/*! \brief This allows the use of the standalone solver in a flexible manner.
 
-    So I will need a primitive scripting language which can then call solve
-    and manipulate solution value and solution arrays.
+    It has an original OsiClpSolverInterface and CbcModel which it can use
+    repeatedly, e.g., to get a heuristic solution and then start again.
 
+    So I [jjf] will need a primitive scripting language which can then call
+    solve and manipulate solution value and solution arrays.
+
+    Also provides for user callback functions. Currently two ideas in
+    gestation, CbcUser and CbcStopNow. The latter seems limited to deciding
+    whether or not to stop. The former seems completely general, with a notion
+    of importing and exporting, and a `solve', which should be interpreted as
+    `do whatever this user function does'.
+
+    Parameter initialisation is at last centralised in fillParameters().
 */
 
-class CbcSolver  {
+class CbcSolver {
 
 public:
     ///@name Solve method
@@ -71,7 +84,12 @@ public:
     ~CbcSolver ();
     /// Fill with standard parameters
     void fillParameters();
-    /// Set default values in solvers from parameters
+    /*! \brief Set default values in solvers from parameters
+
+      Misleading. The current code actually reads default values from
+      the underlying solvers and installs them as default values for a subset of
+      parameters in #parameters_.
+    */
     void fillValuesInSolver();
     /// Add user function
     void addUserFunction(CbcUser * function);
@@ -206,6 +224,7 @@ private:
     //@}
 };
 //#############################################################################
+
 /// Structure to hold useful arrays
 typedef struct {
     // Priorities
@@ -221,36 +240,50 @@ typedef struct {
     // Up pseudo costs
     double * pseudoUp_;
 } CbcSolverUsefulData;
-/** This allows the use of an unknown user stuff including modeling languages
- */
 
-class CbcUser  {
+
+/*! \brief A class to allow the use of unknown user functionality
+
+    For example, access to a modelling language (CbcAmpl).
+*/
+class CbcUser {
 
 public:
     ///@name import/export methods
     //@{
-    /** Import - gets full command arguments
-        Returns -1 - no action
-                 0 - data read in without error
-             1 - errors
+    /*! \brief Import - gets full command arguments
+
+      \return
+      - -1 - no action
+      -  0 - data read in without error
+      -  1 - errors
     */
     virtual int importData(CbcSolver * /*model*/, int & /*argc*/, char ** /*argv[]*/) {
         return -1;
     }
-    /// Export 1 OsiClpSolver, 2 CbcModel - add 10 if infeasible from odd situation
+
+    /*! \brief Export
+
+      \param mode
+      - 1 OsiClpSolver
+      - 2 CbcModel
+      - add 10 if infeasible from odd situation
+    */
     virtual void exportSolution(CbcSolver * /*model*/,
                                 int /*mode*/, const char * /*message*/ = NULL) {}
+
     /// Export Data (i.e. at very end)
     virtual void exportData(CbcSolver * /*model*/) {}
+
     /// Get useful stuff
     virtual void fillInformation(CbcSolver * /*model*/,
                                  CbcSolverUsefulData & /*info*/) {}
-
     //@}
+
     ///@name usage methods
     //@{
     /// CoinModel if valid
-    inline CoinModel * coinModel() const {
+    inline CoinModel *coinModel() const {
         return coinModel_;
     }
     /// Other info - needs expanding
@@ -266,13 +299,13 @@ public:
     /// Returns true if function knows about option
     virtual bool canDo(const char * options) = 0;
     //@}
+
     ///@name Constructors and destructors etc
     //@{
     /// Default Constructor
     CbcUser();
 
-    /** Copy constructor .
-     */
+    /// Copy constructor
     CbcUser(const CbcUser & rhs);
 
     /// Assignment operator
@@ -299,29 +332,34 @@ protected:
 };
 //#############################################################################
 
-/** This allows the use of a call back class to decide whether to stop
- */
+/*! \brief Support the use of a call back class to decide whether to stop
 
-class CbcStopNow  {
+  Definitely under construction.
+*/
+
+class CbcStopNow {
 
 public:
     ///@name Decision methods
     //@{
-    /// Import - 0 if good
-    /** Meaning of whereFrom:
-       1 after initial solve by dualsimplex etc
-       2 after preprocessing
-       3 just before branchAndBound (so user can override)
-       4 just after branchAndBound (before postprocessing)
-       5 after postprocessing
-       6 after a user called heuristic phase
+    /*! \brief Import
+
+      \param whereFrom
+       - 1 after initial solve by dualsimplex etc
+       - 2 after preprocessing
+       - 3 just before branchAndBound (so user can override)
+       - 4 just after branchAndBound (before postprocessing)
+       - 5 after postprocessing
+       - 6 after a user called heuristic phase
+
+      \return 0 if good
        nonzero return code to stop
     */
-    virtual int callBack(CbcModel * /*currentSolver*/,
-                         int /*whereFrom*/) {
+    virtual int callBack(CbcModel * /*currentSolver*/, int /*whereFrom*/) {
         return 0;
     }
     //@}
+
     ///@name Constructors and destructors etc
     //@{
     /// Default Constructor

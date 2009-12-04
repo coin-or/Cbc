@@ -275,8 +275,8 @@ int CbcClpUnitTest (const CbcModel & saveModel, std::string& dirMiplib,
             assert(model->getNumCols() == nCols[m]) ;
 
             /*
-            Stage 2: Call solver to solve the problem.
-            then check the return code and objective.
+              Stage 2: Call solver to solve the problem.  then check the return code and 
+	          objective.
             */
 
 #ifdef CLP_FACTORIZATION_INSTRUMENT
@@ -691,7 +691,7 @@ int CbcClpUnitTest (const CbcModel & saveModel, std::string& dirMiplib,
                       << " (" << mpsName[m] << ")" << std::endl;
             delete model;
         }
-    }
+    }   // end main loop on MPS problem
     int returnCode = 0;
     std::cout
         << "cbc_clp"

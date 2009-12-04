@@ -2,17 +2,74 @@
 // Copyright (C) 2007, International Business Machines
 // Corporation and others.  All Rights Reserved.
 
+/*! \file CbcSolver.cpp
+    \brief Main routine for the cbc stand-alone solver.
+*/
+
 #include "CbcConfig.h"
 #include "CoinPragma.hpp"
 #include "CbcModel.hpp"
 #include "CbcOrClpParam.hpp"
 #include "OsiClpSolverInterface.hpp"
+
+/*
+  We have the following compile-time symbols.
+
+  NEW_STYLE_SOLVER	CoinSolve.cpp, CbcSolver.cpp
+
+    Unclear what this does just yet. A value of 0 seems to be `old style
+    solver'.
+
+
+  CBC_OTHER_SOLVER	CoinSolve.cpp, CbcSolver.[cpp,hpp], CbcModel.cpp
+
+    Usage in CbcSolver.hpp says `other solver' is Cplex (only).
+
+    Here in CoinSolver, CBC_OTHER_SOLVER dominates NEW_STYLE_SOLVER.
+
+    Usage in CbcModel is a fake; a small bit of code that's now `#if 0'.
+
+
+  CPX_KEEP_RESULTS	CoinSolve.cpp, CbcSolver.cpp
+
+    Unclear what this does just yet. The name seems clear, but how / what is
+    affected is not. Defining this symbol forces CBC_OTHER_SOLVER.
+
+
+  CLP_DEBUG_MALLOC
+
+    This ties in with the functions clp_malloc, clp_free, and clp_memory,
+    which are defined in CoinOslFactorization.cpp. (Right where you'd expect
+    to find them, eh?).  Looks to be a relatively nice debugging wrapper for
+    standard C malloc.  Calls standard C malloc/free directly if
+    CLP_DEBUG_MALLOC is not defined.  Worth consideration for breaking out as
+    a separate utility.  The hooks for new and delete defined here should be
+    incorporated.
+
+    Absolutely not thread safe --- lots of static variables.
+
+    Hmmm ... is it still the case that standard C malloc and C++ new/delete
+    do not play well together? 'Cause the hooks here for new and delete will
+    not escape from this file.
+
+*/
+
+
+/*
+  Allow (force?) use of cplex for something.
+*/
+
 #ifdef CPX_KEEP_RESULTS
 #define CBC_OTHER_SOLVER 1
 #endif
 #if CBC_OTHER_SOLVER==1
 #include "OsiCpxSolverInterface.hpp"
 #endif
+
+/*
+  Hooks for a debugging wrapper for malloc/free. This bit of definition hooks
+  C++ new / delete and diverts them into the debugging wrapper.
+*/
 //#define CLP_DEBUG_MALLOC
 #ifdef CLP_DEBUG_MALLOC
 /*extern "C" */void clp_memory(int type);
@@ -32,7 +89,7 @@ void operator delete (void *p) throw()
 {
     clp_free(p);
 }
-#endif
+#endif		// CLP_DEBUG_MALLOC
 
 #include <cassert>
 #include <cstdio>
@@ -40,16 +97,25 @@ void operator delete (void *p) throw()
 #include <cfloat>
 #include <cstring>
 #include <iostream>
+
+/*
+  The subtleties are unclear, but the gross action is that CBC_OTHER_SOLVER
+  will overrule NEW_STYLE_SOLVER. NEW_STYLE_SOLVER undefined or 0 seems to
+  mean `old style solver'.
+*/
 #ifndef NEW_STYLE_SOLVER
-#define NEW_STYLE_SOLVER 0
+ #define NEW_STYLE_SOLVER 0
 #endif
 #ifdef CBC_OTHER_SOLVER
-#undef NEW_STYLE_SOLVER
-#define NEW_STYLE_SOLVER 0
+ #undef NEW_STYLE_SOLVER
+ #define NEW_STYLE_SOLVER 0
 #endif
-#if NEW_STYLE_SOLVER==0
+
+
+
+#if NEW_STYLE_SOLVER == 0
 // define TEST_MESSAGE_HANDLER to check works on all messages
-//#define TEST_MESSAGE_HANDLER
+// #define TEST_MESSAGE_HANDLER
 #ifdef TEST_MESSAGE_HANDLER
 // This driver shows how to trap messages - this is just as in unitTest.cpp
 // ****** THis code is similar to MyMessageHandler.hpp and MyMessagehandler.cpp
@@ -60,6 +126,11 @@ void operator delete (void *p) throw()
     This is used in Clp/Test/unitTest.cpp
 
     The file pointer is just there as an example of user stuff.
+
+  -- lh 071026 -- An accurate summary. Nothing is actually happening here
+  except that messages will be prefixed with "==", which serves the purpose
+  of demonstrating that this message handler is active. The extra parameters
+  (CbcModel, FILE) are unused.
 
 */
 class CbcModel;
@@ -192,11 +263,14 @@ MyMessageHandler2::setModel(CbcModel * model)
 {
     model_ = model;
 }
-#endif
+#endif /* TEST_MESSAGE_HANDLER */
+
 //#############################################################################
+
 // To use USERCBC or USERCLP change 0 to 1 in defines and add in your fake main program(s) and any other code
 //#define USER_HAS_FAKE_CBC
 //#define USER_HAS_FAKE_CLP
+
 #ifdef USER_HAS_FAKE_CBC
 #endif
 void fakeMain (ClpSimplex & model, OsiSolverInterface & /*osiSolver*/, CbcModel & babSolver)
@@ -211,6 +285,7 @@ void fakeMain (ClpSimplex & model, OsiSolverInterface & /*osiSolver*/, CbcModel 
     babSolver.branchAndBound();
 #endif
 }
+
 // Clp stuff
 #ifdef USER_HAS_FAKE_CLP
 #endif
@@ -227,8 +302,11 @@ void fakeMain2 (ClpSimplex & /*model*/,
 #endif
 }
 //  End any fake main program
+
 //#############################################################################
+
 // void CbcClpUnitTest (const CbcModel & saveModel);
+
 #ifdef CBC_STATISTICS
 int osi_crunch = 0;
 static int cbc_resolve = 0;
@@ -246,6 +324,7 @@ void cbc_resolve_check(const OsiSolverInterface * solver)
                cbc_resolve, osi_crunch, osi_primal, osi_dual, osi_hot);
 }
 #endif
+
 int main (int argc, const char *argv[])
 {
     int returnCode = 0;
@@ -259,6 +338,7 @@ int main (int argc, const char *argv[])
         OsiCpxSolverInterface solver1;
 #endif
         CbcModel model(solver1);
+
         // define TEST_MESSAGE_HANDLER at top of file to check works on all messages
 #ifdef TEST_MESSAGE_HANDLER
         MyMessageHandler2 messageHandler(&model);
@@ -269,8 +349,10 @@ int main (int argc, const char *argv[])
         clpSolver->passInMessageHandler(&messageHandler);
         //clpSolver->getModelPtr()->passInMessageHandler(&messageHandler);
 #endif
+
         // initialize
         CbcMain0(model);
+
 #ifdef TEST_MESSAGE_HANDLER
         // Set log levels same so can use one message handler
         clpSolver->messageHandler()->setLogLevel(1) ;
@@ -279,37 +361,65 @@ int main (int argc, const char *argv[])
         void setCbcOrClpPrinting(bool yesNo);
         setCbcOrClpPrinting(false);
 #endif
+
         returnCode = CbcMain1 (argc, argv, model);
     }
+
 #ifdef CLP_DEBUG_MALLOC
     clp_memory(1);
 #endif
+
 #ifdef CBC_STATISTICS
 #endif
+
     if (returnCode != 777) {
         return returnCode;
     } else {
         return 0;
     }
 }
-#else
+
+
+
+#else	/* NEW_STYLE_SOLVER */
+
+/*
+  As best I can see, this is not yet fully functional. NEW_STYLE_SOLVER is
+  normally undefined or forced to 0. See CbcSolver.hpp for jjf's thoughts on
+  where this is going (a good direction, in my opinion [lh]).
+*/
+
 #include "CbcSolver.hpp"
+
+/*
+  ClpAmplStuff.cpp
+*/
 void addAmplToCbc(CbcSolver *);
+
 int main (int argc, const char *argv[])
 {
     int returnCode;
-    // Only active if malloc switched on in CbcSolver.cpp
+
+    /*
+      // Only active if malloc switched on in CbcSolver.cpp
+
+      Magic value 0 initialises the package. Anything else dumps statistics.
+    */
 #ifdef CLP_DEBUG_MALLOC
     clp_memory(0);
 #endif
+
+    // Open a block to ease memory leak checks.
     {
         OsiClpSolverInterface solver1;
         CbcSolver control(solver1);
         // initialize
         control.fillValuesInSolver();
+
 #ifdef COIN_HAS_ASL
         addAmplToCbc(&control);
 #endif
+
         returnCode = control.solve (argc, argv, 1);
     }
 #ifdef CLP_DEBUG_MALLOC
@@ -317,7 +427,11 @@ int main (int argc, const char *argv[])
 #endif
     return returnCode;
 }
-#endif
+
+#endif	/* NEW_STYLE_SOLVER */
+
+
+
 /*
   Version 1.00.00 November 16 2005.
   This is to stop me (JJF) messing about too much.

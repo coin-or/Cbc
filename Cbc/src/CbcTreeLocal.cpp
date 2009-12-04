@@ -746,6 +746,15 @@ CbcTreeLocal::createCut(const double * solution, OsiRowCut & rowCut)
         for (i = 0; i < numberIntegers; i++) {
             int iColumn = integerVariable[i];
             double value = floor(solution[iColumn] + 0.5);
+            /*
+              typeCuts_ == 0 restricts to binary, 1 allows general integer. But we're
+              still restricted to being up against a bound. Consider: the notion is that
+              the cut restricts us to a k-neighbourhood. For binary variables, this
+              amounts to k variables which change value. For general integer, we could
+              end up with a single variable sucking up all of k (hence mu --- the
+              variable must swing to its other bound to look like a movement of 1).  For
+              variables in the middle of a range, we're talking about fabs(sol<j> - x<j>).
+            */
             if (!typeCuts_ && originalUpper_[i] - originalLower_[i] > 1.0)
                 continue; // skip as not 0-1
             if (originalLower_[i] == originalUpper_[i])

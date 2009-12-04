@@ -23,6 +23,12 @@ IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION,
 ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF
 THIS SOFTWARE.
 ****************************************************************/
+
+/*! \file Cbc_ampl.cpp
+
+  Interface routines for AMPL.
+*/
+
 #ifdef COIN_HAS_ASL
 
 #include "CbcConfig.h"
@@ -344,6 +350,7 @@ stat_map(int *stat, int n, int *map, int mx, const char *what)
                     bad - 1, what);
     }
 }
+
 int
 readAmpl(ampl_info * info, int argc, char **argv, void ** coinModel)
 {

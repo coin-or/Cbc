@@ -2,6 +2,10 @@
 // Copyright (C) 2007, International Business Machines
 // Corporation and others.  All Rights Reserved.
 
+/*! \file CbcSolver.cpp
+    \brief Second level routines for the cbc stand-alone solver.
+*/
+
 #include "CbcConfig.h"
 #include "CoinPragma.hpp"
 
@@ -534,19 +538,50 @@ void CbcSolver::fillParameters()
     if (createSolver)
         delete clpSolver;
 }
+
+/*
+  Initialise a subset of the parameters prior to processing any input from
+  the user.
+
+  Why this choice of subset?
+*/
+/*!
+  \todo Guard/replace clp-specific code
+*/
 void CbcSolver::fillValuesInSolver()
 {
     OsiSolverInterface * solver = model_.solver();
-    OsiClpSolverInterface * clpSolver = dynamic_cast< OsiClpSolverInterface*> (solver);
+    OsiClpSolverInterface * clpSolver = 
+		dynamic_cast< OsiClpSolverInterface*> (solver);
     assert (clpSolver);
-    noPrinting_ = (clpSolver->getModelPtr()->logLevel() == 0);
+	ClpSimplex * lpSolver = clpSolver->getModelPtr();
+
+    /*
+      Why are we reaching into the underlying solver(s) for these settings?
+      Shouldn't CbcSolver have its own defaults, which are then imposed on the
+      underlying solver?
+
+      Coming at if from the other side, if CbcSolver had the capability to use
+      multiple solvers then it definitely makes sense to acquire the defaults from
+      the solver (on the assumption that we haven't processed command line
+      parameters yet, which can then override the defaults). But then it's more of
+      a challenge to avoid solver-specific coding here.
+    */
+    noPrinting_ = (lpSolver->logLevel() == 0);
     CoinMessageHandler * generalMessageHandler = clpSolver->messageHandler();
     generalMessageHandler->setPrefix(true);
-    ClpSimplex * lpSolver = clpSolver->getModelPtr();
-    lpSolver->setPerturbation(50);
+
+	lpSolver->setPerturbation(50);
     lpSolver->messageHandler()->setPrefix(false);
+
     parameters_[whichParam(DUALBOUND, numberParameters_, parameters_)].setDoubleValue(lpSolver->dualBound());
     parameters_[whichParam(DUALTOLERANCE, numberParameters_, parameters_)].setDoubleValue(lpSolver->dualTolerance());
+    /*
+      Why are we doing this? We read the log level from parameters_, set it into
+      the message handlers for cbc and the underlying solver. Then we read the
+      log level back from the handlers and use it to set the values in
+      parameters_!
+    */
     int iParam = whichParam(SOLVERLOGLEVEL, numberParameters_, parameters_);
     int value = parameters_[iParam].intValue();
     clpSolver->messageHandler()->setLogLevel(value) ;

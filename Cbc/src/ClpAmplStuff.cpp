@@ -2,6 +2,10 @@
 // Corporation and others.  All Rights Reserved.
 /* $Id: ClpAmplStuff.cpp 1200 2009-07-25 08:44:13Z forrest $ */
 
+/*! \file ClpAmplStuff.cpp
+    \brief Hooks to Ampl (for the new-style solver?)
+*/
+
 #include "ClpConfig.h"
 #include "CbcConfig.h"
 #ifdef COIN_HAS_ASL
@@ -23,22 +27,46 @@
 #include "CglStored.hpp"
 #include "CoinModel.hpp"
 #include "CbcLinked.hpp"
+
+/*! \brief Extension of CbcUser for Ampl.
+
+  Beyond that, can't say yet what this does. A CbcAmpl object can be installed
+  in a CbcSolver object using CbcSolver::addUserFunction.
+*/
+
 class CbcAmpl  : public CbcUser {
 
 public:
     ///@name usage methods
     //@{
+
     /// Solve (whatever that means)
     virtual void solve(CbcSolver * model, const char * options);
-    /// Returns true if function knows about option
-    virtual bool canDo(const char * options) ;
-    /** Import - gets full command arguments
-        Returns -1 - no action
-                 0 - data read in without error
-             1 - errors
+
+    /*! \brief Returns true if function knows about option
+
+      Currently knows about
+        - cbc_load
+        - cbc_quit
+    */
+    virtual bool canDo(const char * option) ;
+
+    /*! \brief Import - gets full command arguments
+
+      \return
+      - -1 - no action
+      -  0 - data read in without error
+      -  1 - errors
     */
     virtual int importData(CbcSolver * model, int & argc, char ** & argv);
-    /// Export 1 OsiClpSolver, 2 CbcModel - add 10 if infeasible from odd situation
+
+    /*! \brief Export
+
+      \param mode
+      - 1 OsiClpSolver
+      - 2 CbcModel
+      - add 10 if infeasible from odd situation
+    */
     virtual void exportSolution(CbcSolver * model, int mode, const char * message = NULL) ;
     /// Export Data (i.e. at very end)
     virtual void exportData(CbcSolver * model);
@@ -119,9 +147,9 @@ CbcAmpl::solve(CbcSolver * controlModel, const char * options)
 }
 // Returns true if function knows about option
 bool
-CbcAmpl::canDo(const char * options)
+CbcAmpl::canDo(const char * option)
 {
-    return (!strcmp(options, "cbc_load") || !strcmp(options, "cbc_quit"));
+    return (!strcmp(option, "cbc_load") || !strcmp(option, "cbc_quit"));
 }
 /* Import - gets full command arguments
    Returns -1 - no action
@@ -134,11 +162,19 @@ CbcAmpl::importData(CbcSolver * control, int &argc, char ** & argv)
     CbcModel * babModel = control->model();
     assert (babModel);
     CoinMessageHandler * generalMessageHandler = babModel->messageHandler();
-    OsiClpSolverInterface * solver = dynamic_cast< OsiClpSolverInterface*> (control->model()->solver());
+    OsiClpSolverInterface * solver =
+        dynamic_cast< OsiClpSolverInterface*> (control->model()->solver());
     assert (solver);
     CoinMessages generalMessages = solver->getModelPtr()->messages();
     char generalPrint[10000];
     OsiSolverLink * si = NULL;
+    /*
+      Poke through the arguments looking for a log level. If we find it, write it
+      into the info block we'll use to load from AMPL, and set a magic number to
+      indicate the log level is valid.
+
+      This looks brittle, in several different directions.
+    */
     ClpSimplex * lpSolver = solver->getModelPtr();
     if (argc > 2 && !strcmp(argv[2], "-AMPL")) {
         // see if log in list

@@ -140,7 +140,7 @@ CbcStrategyDefault::setupCutGenerators(CbcModel & model)
         return; // no cuts wanted
     // Set up some cut generators and defaults
     // Probing first as gets tight bounds on continuous
-    // See flags for Probing, Gomory, Knapsack, Clique, FlowCover, MixedIntegerRounding2 below
+    // See flags for Probing, Gomory, Knapsack, Clique, FlowCover, MixedIntegerRounding2 below (BK: lou removed this comment, why??)
     int genFlags = 63;
     //#define CBC_GENERATE_TEST
 #ifdef CBC_GENERATE_TEST
@@ -331,6 +331,13 @@ CbcStrategyDefault::setupPrinting(CbcModel & model, int modelLogLevel)
         model.setPrintFrequency(CoinMin(50, model.printFrequency()));
     }
 }
+
+/*
+ Aside from setting CbcModel::numberStrong_ and numberBeforeTrust, the big
+ activity is integer preprocessing. Surely this code to do preprocessing
+ duplicates code to do preprocessing up in the solver main routine. Most of the
+ effort goes into manipulating SOS sets.
+*/
 // Other stuff e.g. strong branching
 void
 CbcStrategyDefault::setupOther(CbcModel & model)
@@ -338,6 +345,12 @@ CbcStrategyDefault::setupOther(CbcModel & model)
     // See if preprocessing wanted
     if (desiredPreProcess_) {
         delete process_;
+        /*
+          Inaccurate as of 080122 --- assignSolver (below) can now be instructed not to
+          delete the existing solver when the preprocessed solver is assigned to the
+          model. 'Course, we do need to hold on to a pointer somewhere, and that must
+          be captured before this call.
+        */
         // solver_ should have been cloned outside
         CglPreProcess * process = new CglPreProcess();
         // Pass in models message handler
@@ -413,6 +426,14 @@ CbcStrategyDefault::setupOther(CbcModel & model)
             char * prohibited = new char[numberColumns];
             memset(prohibited, 0, numberColumns);
             int numberProhibited = 0;
+            /*
+              Create CbcSimpleInteger objects would be more accurate in the general
+              case.  The `false' parameter says we won't delete existing objects.
+
+              Only Clp will produce SOS objects in findIntegers (080122), and that's
+              where a possible conversion can occur. If clp is holding OsiSOS objects,
+              they'll be converted to CbcSOS objects.
+            */
             // convert to Cbc integers
             model.findIntegers(false);
             int numberObjects = model.numberObjects();

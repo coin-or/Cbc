@@ -10,10 +10,10 @@
 // was 1 - but that looks flakey
 #define INFEAS 1
 #define MOD_SHADOW 1
-    // weight at 1.0 is max min
+// weight at 1.0 is max min
 #define WEIGHT_AFTER 0.8
 #define WEIGHT_BEFORE 0.1
-    //Stolen from Constraint Integer Programming book (with epsilon change)
+//Stolen from Constraint Integer Programming book (with epsilon change)
 #define WEIGHT_PRODUCT
 
 

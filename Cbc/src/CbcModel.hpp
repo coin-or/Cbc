@@ -438,7 +438,7 @@ public:
       Add additional integers.
     */
     void AddIntegers();
-    
+
     /**
       Save copy of the model.
     */

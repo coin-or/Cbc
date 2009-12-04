@@ -38,7 +38,7 @@
 #endif
 using namespace std;
 #include "CglCutGenerator.hpp"
-#include "CbcNodeInfo.hpp" 
+#include "CbcNodeInfo.hpp"
 
 // Default Constructor
 CbcNodeInfo::CbcNodeInfo ()

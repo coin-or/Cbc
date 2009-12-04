@@ -14,7 +14,7 @@
 #include "OsiSolverBranch.hpp"
 #include "CbcModel.hpp"
 #include "CbcMessage.hpp"
-#include "CbcGeneralDepth.hpp" 
+#include "CbcGeneralDepth.hpp"
 #include "CbcBranchActual.hpp"
 #include "CoinSort.hpp"
 #include "CoinError.hpp"

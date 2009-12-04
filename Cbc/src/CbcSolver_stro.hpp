@@ -104,11 +104,11 @@ public:
     /// Get int value
     int intValue(CbcOrClpParameterType type) const;
     /// Set int value
-    void setIntValue(CbcOrClpParameterType type,int value);
+    void setIntValue(CbcOrClpParameterType type, int value);
     /// Get double value
     double doubleValue(CbcOrClpParameterType type) const;
     /// Set double value
-    void setDoubleValue(CbcOrClpParameterType type,double value);
+    void setDoubleValue(CbcOrClpParameterType type, double value);
     /// User function (NULL if no match)
     CbcUser * userFunction(const char * name) const;
     /// Return original Cbc model
@@ -153,7 +153,7 @@ public:
     }
     /// Whether to print to std::cout
     inline void setPrinting(bool onOff) {
-        noPrinting_= !onOff;
+        noPrinting_ = !onOff;
     }
     /// Where to start reading commands
     inline void setReadMode(int value) {
@@ -239,7 +239,7 @@ public:
     }
     /// Export 1 OsiClpSolver, 2 CbcModel - add 10 if infeasible from odd situation
     virtual void exportSolution(CbcSolver * /*model*/,
-                                int /*mode*/,const char * /*message*/=NULL) {}
+                                int /*mode*/, const char * /*message*/ = NULL) {}
     /// Export Data (i.e. at very end)
     virtual void exportData(CbcSolver * /*model*/) {}
     /// Get useful stuff

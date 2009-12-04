@@ -29,34 +29,34 @@ class ClpSimplex;
 
 enum CbcParameterType
 
-{ GENERALQUERY = -100,FULLGENERALQUERY,
+{ GENERALQUERY = -100, FULLGENERALQUERY,
 
-  PRIMALTOLERANCE = 1, DUALTOLERANCE,CUTOFF,TIMELIMIT,
+  PRIMALTOLERANCE = 1, DUALTOLERANCE, CUTOFF, TIMELIMIT,
   DUALBOUND, PRIMALWEIGHT,  OBJSCALE, RHSSCALE,
 
-  INFEASIBILITYWEIGHT = 51, INTEGERTOLERANCE,INCREMENT,ALLOWABLEGAP,
+  INFEASIBILITYWEIGHT = 51, INTEGERTOLERANCE, INCREMENT, ALLOWABLEGAP,
 
-  DJFIX = 81, GAPRATIO,TIGHTENFACTOR,
+  DJFIX = 81, GAPRATIO, TIGHTENFACTOR,
 
-  LOGLEVEL = 101, SOLVERLOGLEVEL, MAXNODES,STRONGBRANCHING,
-  MAXFACTOR,PERTVALUE,MAXITERATION,PRESOLVEPASS,IDIOT,SPRINT,
-  OUTPUTFORMAT,SLPVALUE,PRESOLVEOPTIONS,PRINTOPTIONS,SPECIALOPTIONS,
+  LOGLEVEL = 101, SOLVERLOGLEVEL, MAXNODES, STRONGBRANCHING,
+  MAXFACTOR, PERTVALUE, MAXITERATION, PRESOLVEPASS, IDIOT, SPRINT,
+  OUTPUTFORMAT, SLPVALUE, PRESOLVEOPTIONS, PRINTOPTIONS, SPECIALOPTIONS,
 
-  DIRECTION=201,DUALPIVOT,SCALING,ERRORSALLOWED,KEEPNAMES,SPARSEFACTOR,
-  PRIMALPIVOT,PRESOLVE,CRASH,BIASLU,PERTURBATION,MESSAGES,AUTOSCALE,
-  CHOLESKY,KKT,BARRIERSCALE,GAMMA,CROSSOVER,PFI,ALGORITHM,
+  DIRECTION = 201, DUALPIVOT, SCALING, ERRORSALLOWED, KEEPNAMES, SPARSEFACTOR,
+  PRIMALPIVOT, PRESOLVE, CRASH, BIASLU, PERTURBATION, MESSAGES, AUTOSCALE,
+  CHOLESKY, KKT, BARRIERSCALE, GAMMA, CROSSOVER, PFI, ALGORITHM,
 
-  NODESTRATEGY = 251,BRANCHSTRATEGY,ADDCUTSSTRATEGY,
-  GOMORYCUTS,PROBINGCUTS,KNAPSACKCUTS,ODDHOLECUTS,
-  ROUNDING,SOLVER,CLIQUECUTS,COSTSTRATEGY,FLOWCUTS,MIXEDCUTS,
-  TWOMIRCUTS,PREPROCESS,
+  NODESTRATEGY = 251, BRANCHSTRATEGY, ADDCUTSSTRATEGY,
+  GOMORYCUTS, PROBINGCUTS, KNAPSACKCUTS, ODDHOLECUTS,
+  ROUNDING, SOLVER, CLIQUECUTS, COSTSTRATEGY, FLOWCUTS, MIXEDCUTS,
+  TWOMIRCUTS, PREPROCESS,
 
-  DIRECTORY=301,IMPORT,EXPORT,RESTORE,SAVE,DUALSIMPLEX,PRIMALSIMPLEX,
-  MAXIMIZE,MINIMIZE,EXIT,STDIN,UNITTEST,NETLIB_DUAL,NETLIB_PRIMAL,SOLUTION,
-  TIGHTEN,FAKEBOUND,HELP,PLUSMINUS,NETWORK,ALLSLACK,REVERSE,BARRIER,NETLIB_BARRIER,
-  REALLY_SCALE,BASISIN,BASISOUT,SOLVECONTINUOUS,BAB,MIPLIB,CLEARCUTS,PRINTVERSION,
+  DIRECTORY = 301, IMPORT, EXPORT, RESTORE, SAVE, DUALSIMPLEX, PRIMALSIMPLEX,
+  MAXIMIZE, MINIMIZE, EXIT, STDIN, UNITTEST, NETLIB_DUAL, NETLIB_PRIMAL, SOLUTION,
+  TIGHTEN, FAKEBOUND, HELP, PLUSMINUS, NETWORK, ALLSLACK, REVERSE, BARRIER, NETLIB_BARRIER,
+  REALLY_SCALE, BASISIN, BASISOUT, SOLVECONTINUOUS, BAB, MIPLIB, CLEARCUTS, PRINTVERSION,
 
-  OSLSTUFF = 401,CBCSTUFF,
+  OSLSTUFF = 401, CBCSTUFF,
 
   INVALID = 1000
 };
@@ -64,8 +64,7 @@ enum CbcParameterType
 
 /// Very simple class for setting parameters
 
-class CbcParam
-{
+class CbcParam {
 
 public:
 
@@ -74,15 +73,15 @@ public:
     /// Constructors
     CbcParam (  );
     CbcParam (std::string name, std::string help,
-              double lower, double upper, CbcParameterType type,bool display=true);
+              double lower, double upper, CbcParameterType type, bool display = true);
     CbcParam (std::string name, std::string help,
-              int lower, int upper, CbcParameterType type,bool display=true);
+              int lower, int upper, CbcParameterType type, bool display = true);
     // Other strings will be added by insert
     CbcParam (std::string name, std::string help, std::string firstValue,
-              CbcParameterType type,int defaultIndex=0,bool display=true);
+              CbcParameterType type, int defaultIndex = 0, bool display = true);
     // Action
     CbcParam (std::string name, std::string help,
-              CbcParameterType type,int indexNumber=-1,bool display=true);
+              CbcParameterType type, int indexNumber = -1, bool display = true);
     /// Copy constructor.
     CbcParam(const CbcParam &);
     /// Assignment operator. This copies the data
@@ -98,13 +97,11 @@ public:
     /// Adds one help line
     void addHelp(std::string keyWord);
     /// Returns name
-    inline std::string  name(  ) const
-    {
+    inline std::string  name(  ) const {
         return name_;
     };
     /// Returns short help
-    inline std::string  shortHelp(  ) const
-    {
+    inline std::string  shortHelp(  ) const {
         return shortHelp_;
     };
     /// Sets a double parameter (nonzero code if error)
@@ -140,66 +137,54 @@ public:
     /// Prints parameter options
     void printOptions (  ) const;
     /// Returns current parameter option
-    inline std::string currentOption (  ) const
-    {
+    inline std::string currentOption (  ) const {
         return definedKeyWords_[currentKeyWord_];
     }
     /// Sets current parameter option
-    inline void setCurrentOption ( int value )
-    {
-        currentKeyWord_=value;
+    inline void setCurrentOption ( int value ) {
+        currentKeyWord_ = value;
     }
     /// Sets int value
-    inline void setIntValue ( int value )
-    {
-        intValue_=value;
+    inline void setIntValue ( int value ) {
+        intValue_ = value;
     }
-    inline int intValue () const
-    {
+    inline int intValue () const {
         return intValue_;
     }
     /// Sets double value
-    inline void setDoubleValue ( double value )
-    {
-        doubleValue_=value;
+    inline void setDoubleValue ( double value ) {
+        doubleValue_ = value;
     }
-    inline double doubleValue () const
-    {
+    inline double doubleValue () const {
         return doubleValue_;
     }
     /// Sets string value
-    inline void setStringValue ( std::string value )
-    {
-        stringValue_=value;
+    inline void setStringValue ( std::string value ) {
+        stringValue_ = value;
     }
-    inline std::string stringValue () const
-    {
+    inline std::string stringValue () const {
         return stringValue_;
     }
     /// Returns 1 if matches minimum, 2 if matches less, 0 if not matched
     int matches (std::string input) const;
     /// type
-    inline CbcParameterType type() const
-    {
+    inline CbcParameterType type() const {
         return type_;
     }
     /// whether to display
-    inline bool displayThis() const
-    {
+    inline bool displayThis() const {
         return display_;
     }
     /// Set Long help
-    inline void setLonghelp(const std::string help)
-    {
-        longHelp_=help;
+    inline void setLonghelp(const std::string help) {
+        longHelp_ = help;
     }
     /// Print Long help
     void printLongHelp() const;
     /// Print action and string
     void printString() const;
     /// type for classification
-    inline int indexNumber() const
-    {
+    inline int indexNumber() const {
         return indexNumber_;
     }
 private:

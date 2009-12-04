@@ -1651,174 +1651,173 @@ void CbcModel::branchAndBound(int doStatistics)
     // Save whether there were any objects
     bool noObjects = (numberObjects_ == 0);
     // Set up strategies
-    if (strategy_)
-	{
-		// May do preprocessing
-		originalSolver = solver_;
-		strategy_->setupOther(*this);
-		if (strategy_->preProcessState()) {
-			// pre-processing done
-			if (strategy_->preProcessState() < 0) {
-				// infeasible
-				handler_->message(CBC_INFEAS, messages_) << CoinMessageEol ;
-				status_ = 0 ;
-				secondaryStatus_ = 1;
-				originalContinuousObjective_ = COIN_DBL_MAX;
-				return ;
-			} else if (numberObjects_ && object_) {
-				numberOriginalObjects = numberObjects_;
-				// redo sequence
-				numberIntegers_ = 0;
-				int numberColumns = getNumCols();
-				int nOrig = originalSolver->getNumCols();
-				CglPreProcess * process = strategy_->process();
-				assert (process);
-				const int * originalColumns = process->originalColumns();
-				// allow for cliques etc
-				nOrig = CoinMax(nOrig, originalColumns[numberColumns-1] + 1);
-				// try and redo debugger
-				OsiRowCutDebugger * debugger = const_cast<OsiRowCutDebugger *> (solver_->getRowCutDebuggerAlways());
-				if (debugger)
-					debugger->redoSolution(numberColumns, originalColumns);
-				if (bestSolution_) {
-					// need to redo - in case no better found in BAB
-					// just get integer part right
-					for (int i = 0; i < numberColumns; i++) {
-						int jColumn = originalColumns[i];
-						bestSolution_[i] = bestSolution_[jColumn];
-					}
-				}
-				originalObject = object_;
-				// object number or -1
-				int * temp = new int[nOrig];
-				int iColumn;
-				for (iColumn = 0; iColumn < nOrig; iColumn++)
-					temp[iColumn] = -1;
-				int iObject;
-				int nNonInt = 0;
-				for (iObject = 0; iObject < numberOriginalObjects; iObject++) {
-					iColumn = originalObject[iObject]->columnNumber();
-					if (iColumn < 0) {
-						nNonInt++;
-					} else {
-						temp[iColumn] = iObject;
-					}
-				}
-				int numberNewIntegers = 0;
-				int numberOldIntegers = 0;
-				int numberOldOther = 0;
-				for (iColumn = 0; iColumn < numberColumns; iColumn++) {
-					int jColumn = originalColumns[iColumn];
-					if (temp[jColumn] >= 0) {
-						int iObject = temp[jColumn];
-						CbcSimpleInteger * obj =
-							dynamic_cast <CbcSimpleInteger *>(originalObject[iObject]) ;
-						if (obj)
-							numberOldIntegers++;
-						else
-							numberOldOther++;
-					} else if (isInteger(iColumn)) {
-						numberNewIntegers++;
-					}
-				}
-				/*
-				  Allocate an array to hold the indices of the integer variables.
-				  Make a large enough array for all objects
-				*/
-				numberObjects_ = numberNewIntegers + numberOldIntegers + numberOldOther + nNonInt;
-				object_ = new OsiObject * [numberObjects_];
-				delete [] integerVariable_;
-				integerVariable_ = new int [numberNewIntegers+numberOldIntegers];
-				/*
-				  Walk the variables again, filling in the indices and creating objects for
-				  the integer variables. Initially, the objects hold the index and upper &
-				  lower bounds.
-				*/
-				numberIntegers_ = 0;
-				int n = originalColumns[numberColumns-1] + 1;
-				int * backward = new int[n];
-				int i;
-				for ( i = 0; i < n; i++)
-					backward[i] = -1;
-				for (i = 0; i < numberColumns; i++)
-					backward[originalColumns[i]] = i;
-				for (iColumn = 0; iColumn < numberColumns; iColumn++) {
-					int jColumn = originalColumns[iColumn];
-					if (temp[jColumn] >= 0) {
-						int iObject = temp[jColumn];
-						CbcSimpleInteger * obj =
-							dynamic_cast <CbcSimpleInteger *>(originalObject[iObject]) ;
-						if (obj) {
-							object_[numberIntegers_] = originalObject[iObject]->clone();
-							// redo ids etc
-							//object_[numberIntegers_]->resetSequenceEtc(numberColumns,originalColumns);
-							object_[numberIntegers_]->resetSequenceEtc(numberColumns, backward);
-							integerVariable_[numberIntegers_++] = iColumn;
-						}
-					} else if (isInteger(iColumn)) {
-						object_[numberIntegers_] =
-							new CbcSimpleInteger(this, iColumn);
-						integerVariable_[numberIntegers_++] = iColumn;
-					}
-				}
-				delete [] backward;
-				numberObjects_ = numberIntegers_;
-				// Now append other column stuff
-				for (iColumn = 0; iColumn < numberColumns; iColumn++) {
-					int jColumn = originalColumns[iColumn];
-					if (temp[jColumn] >= 0) {
-						int iObject = temp[jColumn];
-						CbcSimpleInteger * obj =
-							dynamic_cast <CbcSimpleInteger *>(originalObject[iObject]) ;
-						if (!obj) {
-							object_[numberObjects_] = originalObject[iObject]->clone();
-							// redo ids etc
-							CbcObject * obj =
-								dynamic_cast <CbcObject *>(object_[numberObjects_]) ;
-							assert (obj);
-							obj->redoSequenceEtc(this, numberColumns, originalColumns);
-							numberObjects_++;
-						}
-					}
-				}
-				// now append non column stuff
-				for (iObject = 0; iObject < numberOriginalObjects; iObject++) {
-					iColumn = originalObject[iObject]->columnNumber();
-					if (iColumn < 0) {
-						// already has column numbers changed
-						object_[numberObjects_] = originalObject[iObject]->clone();
-	#if 0
-						// redo ids etc
-						CbcObject * obj =
-							dynamic_cast <CbcObject *>(object_[numberObjects_]) ;
-						assert (obj);
-						obj->redoSequenceEtc(this, numberColumns, originalColumns);
-	#endif
-						numberObjects_++;
-					}
-				}
-				delete [] temp;
-				if (!numberObjects_)
-					handler_->message(CBC_NOINT, messages_) << CoinMessageEol ;
-			} else {
-				int numberColumns = getNumCols();
-				CglPreProcess * process = strategy_->process();
-				assert (process);
-				const int * originalColumns = process->originalColumns();
-				// try and redo debugger
-				OsiRowCutDebugger * debugger = const_cast<OsiRowCutDebugger *> (solver_->getRowCutDebuggerAlways());
-				if (debugger)
-					debugger->redoSolution(numberColumns, originalColumns);
-			}
-		} else {
-			//no preprocessing
-			originalSolver = NULL;
-		}
-		strategy_->setupCutGenerators(*this);
-		strategy_->setupHeuristics(*this);
-		// Set strategy print level to models
-		strategy_->setupPrinting(*this, handler_->logLevel());
-	}
+    if (strategy_) {
+        // May do preprocessing
+        originalSolver = solver_;
+        strategy_->setupOther(*this);
+        if (strategy_->preProcessState()) {
+            // pre-processing done
+            if (strategy_->preProcessState() < 0) {
+                // infeasible
+                handler_->message(CBC_INFEAS, messages_) << CoinMessageEol ;
+                status_ = 0 ;
+                secondaryStatus_ = 1;
+                originalContinuousObjective_ = COIN_DBL_MAX;
+                return ;
+            } else if (numberObjects_ && object_) {
+                numberOriginalObjects = numberObjects_;
+                // redo sequence
+                numberIntegers_ = 0;
+                int numberColumns = getNumCols();
+                int nOrig = originalSolver->getNumCols();
+                CglPreProcess * process = strategy_->process();
+                assert (process);
+                const int * originalColumns = process->originalColumns();
+                // allow for cliques etc
+                nOrig = CoinMax(nOrig, originalColumns[numberColumns-1] + 1);
+                // try and redo debugger
+                OsiRowCutDebugger * debugger = const_cast<OsiRowCutDebugger *> (solver_->getRowCutDebuggerAlways());
+                if (debugger)
+                    debugger->redoSolution(numberColumns, originalColumns);
+                if (bestSolution_) {
+                    // need to redo - in case no better found in BAB
+                    // just get integer part right
+                    for (int i = 0; i < numberColumns; i++) {
+                        int jColumn = originalColumns[i];
+                        bestSolution_[i] = bestSolution_[jColumn];
+                    }
+                }
+                originalObject = object_;
+                // object number or -1
+                int * temp = new int[nOrig];
+                int iColumn;
+                for (iColumn = 0; iColumn < nOrig; iColumn++)
+                    temp[iColumn] = -1;
+                int iObject;
+                int nNonInt = 0;
+                for (iObject = 0; iObject < numberOriginalObjects; iObject++) {
+                    iColumn = originalObject[iObject]->columnNumber();
+                    if (iColumn < 0) {
+                        nNonInt++;
+                    } else {
+                        temp[iColumn] = iObject;
+                    }
+                }
+                int numberNewIntegers = 0;
+                int numberOldIntegers = 0;
+                int numberOldOther = 0;
+                for (iColumn = 0; iColumn < numberColumns; iColumn++) {
+                    int jColumn = originalColumns[iColumn];
+                    if (temp[jColumn] >= 0) {
+                        int iObject = temp[jColumn];
+                        CbcSimpleInteger * obj =
+                            dynamic_cast <CbcSimpleInteger *>(originalObject[iObject]) ;
+                        if (obj)
+                            numberOldIntegers++;
+                        else
+                            numberOldOther++;
+                    } else if (isInteger(iColumn)) {
+                        numberNewIntegers++;
+                    }
+                }
+                /*
+                  Allocate an array to hold the indices of the integer variables.
+                  Make a large enough array for all objects
+                */
+                numberObjects_ = numberNewIntegers + numberOldIntegers + numberOldOther + nNonInt;
+                object_ = new OsiObject * [numberObjects_];
+                delete [] integerVariable_;
+                integerVariable_ = new int [numberNewIntegers+numberOldIntegers];
+                /*
+                  Walk the variables again, filling in the indices and creating objects for
+                  the integer variables. Initially, the objects hold the index and upper &
+                  lower bounds.
+                */
+                numberIntegers_ = 0;
+                int n = originalColumns[numberColumns-1] + 1;
+                int * backward = new int[n];
+                int i;
+                for ( i = 0; i < n; i++)
+                    backward[i] = -1;
+                for (i = 0; i < numberColumns; i++)
+                    backward[originalColumns[i]] = i;
+                for (iColumn = 0; iColumn < numberColumns; iColumn++) {
+                    int jColumn = originalColumns[iColumn];
+                    if (temp[jColumn] >= 0) {
+                        int iObject = temp[jColumn];
+                        CbcSimpleInteger * obj =
+                            dynamic_cast <CbcSimpleInteger *>(originalObject[iObject]) ;
+                        if (obj) {
+                            object_[numberIntegers_] = originalObject[iObject]->clone();
+                            // redo ids etc
+                            //object_[numberIntegers_]->resetSequenceEtc(numberColumns,originalColumns);
+                            object_[numberIntegers_]->resetSequenceEtc(numberColumns, backward);
+                            integerVariable_[numberIntegers_++] = iColumn;
+                        }
+                    } else if (isInteger(iColumn)) {
+                        object_[numberIntegers_] =
+                            new CbcSimpleInteger(this, iColumn);
+                        integerVariable_[numberIntegers_++] = iColumn;
+                    }
+                }
+                delete [] backward;
+                numberObjects_ = numberIntegers_;
+                // Now append other column stuff
+                for (iColumn = 0; iColumn < numberColumns; iColumn++) {
+                    int jColumn = originalColumns[iColumn];
+                    if (temp[jColumn] >= 0) {
+                        int iObject = temp[jColumn];
+                        CbcSimpleInteger * obj =
+                            dynamic_cast <CbcSimpleInteger *>(originalObject[iObject]) ;
+                        if (!obj) {
+                            object_[numberObjects_] = originalObject[iObject]->clone();
+                            // redo ids etc
+                            CbcObject * obj =
+                                dynamic_cast <CbcObject *>(object_[numberObjects_]) ;
+                            assert (obj);
+                            obj->redoSequenceEtc(this, numberColumns, originalColumns);
+                            numberObjects_++;
+                        }
+                    }
+                }
+                // now append non column stuff
+                for (iObject = 0; iObject < numberOriginalObjects; iObject++) {
+                    iColumn = originalObject[iObject]->columnNumber();
+                    if (iColumn < 0) {
+                        // already has column numbers changed
+                        object_[numberObjects_] = originalObject[iObject]->clone();
+#if 0
+                        // redo ids etc
+                        CbcObject * obj =
+                            dynamic_cast <CbcObject *>(object_[numberObjects_]) ;
+                        assert (obj);
+                        obj->redoSequenceEtc(this, numberColumns, originalColumns);
+#endif
+                        numberObjects_++;
+                    }
+                }
+                delete [] temp;
+                if (!numberObjects_)
+                    handler_->message(CBC_NOINT, messages_) << CoinMessageEol ;
+            } else {
+                int numberColumns = getNumCols();
+                CglPreProcess * process = strategy_->process();
+                assert (process);
+                const int * originalColumns = process->originalColumns();
+                // try and redo debugger
+                OsiRowCutDebugger * debugger = const_cast<OsiRowCutDebugger *> (solver_->getRowCutDebuggerAlways());
+                if (debugger)
+                    debugger->redoSolution(numberColumns, originalColumns);
+            }
+        } else {
+            //no preprocessing
+            originalSolver = NULL;
+        }
+        strategy_->setupCutGenerators(*this);
+        strategy_->setupHeuristics(*this);
+        // Set strategy print level to models
+        strategy_->setupPrinting(*this, handler_->logLevel());
+    }
     eventHappened_ = false;
     CbcEventHandler *eventHandler = getEventHandler() ;
     if (eventHandler)
@@ -2232,7 +2231,7 @@ void CbcModel::branchAndBound(int doStatistics)
         compareActual->setBestPossible(direction*solver_->getObjValue());
         compareActual->setCutoff(getCutoff());
 #if 0
-		if (false && !numberThreads_ && !parentModel_) {
+        if (false && !numberThreads_ && !parentModel_) {
             printf("CbcTreeArray ? threads ? parentArray\n");
             // Setup new style tree
             delete tree_;
@@ -2370,7 +2369,7 @@ void CbcModel::branchAndBound(int doStatistics)
     }
     // See if we can add integers
     if (noObjects && numberIntegers_ < solver_->getNumCols() && (specialOptions_&65536) != 0 && !parentModel_)
-		AddIntegers();
+        AddIntegers();
 
     int iObject ;
     int preferredWay ;
@@ -3372,31 +3371,31 @@ void CbcModel::branchAndBound(int doStatistics)
 #ifdef COIN_HAS_CLP
         // Possible change of pivot method
         if (!savePivotMethod && !parentModel_) {
-			OsiClpSolverInterface * clpSolver
-		        = dynamic_cast<OsiClpSolverInterface *> (solver_);
-			if (clpSolver && numberNodes_ >= 100 && numberNodes_ < 200) {
-				if (numberIterations_ < (numberSolves_ + numberNodes_)*10) {
-					//if (numberIterations_<numberNodes_*20) {
-					ClpSimplex * simplex = clpSolver->getModelPtr();
-					ClpDualRowPivot * pivotMethod = simplex->dualRowPivot();
-					ClpDualRowDantzig * pivot =
-						dynamic_cast< ClpDualRowDantzig*>(pivotMethod);
-					if (!pivot) {
-						savePivotMethod = pivotMethod->clone(true);
-						ClpDualRowDantzig dantzig;
-						simplex->setDualRowPivotAlgorithm(dantzig);
-		#ifdef COIN_DEVELOP
-						printf("%d node, %d iterations ->Dantzig\n", numberNodes_,
-							   numberIterations_);
-		#endif
-		#ifdef CBC_THREAD
-						for (int i = 0; i < numberThreads_; i++) {
-							threadInfo[i].dantzigState = -1;
-						}
-		#endif
-					}
-				}
-			}
+            OsiClpSolverInterface * clpSolver
+            = dynamic_cast<OsiClpSolverInterface *> (solver_);
+            if (clpSolver && numberNodes_ >= 100 && numberNodes_ < 200) {
+                if (numberIterations_ < (numberSolves_ + numberNodes_)*10) {
+                    //if (numberIterations_<numberNodes_*20) {
+                    ClpSimplex * simplex = clpSolver->getModelPtr();
+                    ClpDualRowPivot * pivotMethod = simplex->dualRowPivot();
+                    ClpDualRowDantzig * pivot =
+                        dynamic_cast< ClpDualRowDantzig*>(pivotMethod);
+                    if (!pivot) {
+                        savePivotMethod = pivotMethod->clone(true);
+                        ClpDualRowDantzig dantzig;
+                        simplex->setDualRowPivotAlgorithm(dantzig);
+#ifdef COIN_DEVELOP
+                        printf("%d node, %d iterations ->Dantzig\n", numberNodes_,
+                               numberIterations_);
+#endif
+#ifdef CBC_THREAD
+                        for (int i = 0; i < numberThreads_; i++) {
+                            threadInfo[i].dantzigState = -1;
+                        }
+#endif
+                    }
+                }
+            }
         }
 #endif
         if (tree_->empty()) {
@@ -3778,31 +3777,31 @@ void CbcModel::branchAndBound(int doStatistics)
 #ifdef COIN_HAS_CLP
             // Possible change of pivot method
             if (!savePivotMethod && !parentModel_) {
-				OsiClpSolverInterface * clpSolver
-					= dynamic_cast<OsiClpSolverInterface *> (solver_);
-				if (clpSolver && numberNodes_ >= 1000 && numberNodes_ < 2000) {
-					if (numberIterations_ < (numberSolves_ + numberNodes_)*10) {
-						//if (numberIterations_<numberNodes_*20) {
-						ClpSimplex * simplex = clpSolver->getModelPtr();
-						ClpDualRowPivot * pivotMethod = simplex->dualRowPivot();
-						ClpDualRowDantzig * pivot =
-							dynamic_cast< ClpDualRowDantzig*>(pivotMethod);
-						if (!pivot) {
-							savePivotMethod = pivotMethod->clone(true);
-							ClpDualRowDantzig dantzig;
-							simplex->setDualRowPivotAlgorithm(dantzig);
-			#ifdef COIN_DEVELOP
-							printf("%d node, %d iterations ->Dantzig\n", numberNodes_,
-								   numberIterations_);
-			#endif
-			#ifdef CBC_THREAD
-							for (int i = 0; i < numberThreads_; i++) {
-								threadInfo[i].dantzigState = -1;
-							}
-			#endif
-						}
-					}
-				}
+                OsiClpSolverInterface * clpSolver
+                = dynamic_cast<OsiClpSolverInterface *> (solver_);
+                if (clpSolver && numberNodes_ >= 1000 && numberNodes_ < 2000) {
+                    if (numberIterations_ < (numberSolves_ + numberNodes_)*10) {
+                        //if (numberIterations_<numberNodes_*20) {
+                        ClpSimplex * simplex = clpSolver->getModelPtr();
+                        ClpDualRowPivot * pivotMethod = simplex->dualRowPivot();
+                        ClpDualRowDantzig * pivot =
+                            dynamic_cast< ClpDualRowDantzig*>(pivotMethod);
+                        if (!pivot) {
+                            savePivotMethod = pivotMethod->clone(true);
+                            ClpDualRowDantzig dantzig;
+                            simplex->setDualRowPivotAlgorithm(dantzig);
+#ifdef COIN_DEVELOP
+                            printf("%d node, %d iterations ->Dantzig\n", numberNodes_,
+                                   numberIterations_);
+#endif
+#ifdef CBC_THREAD
+                            for (int i = 0; i < numberThreads_; i++) {
+                                threadInfo[i].dantzigState = -1;
+                            }
+#endif
+                        }
+                    }
+                }
             }
 #endif
             lastEvery1000 = numberNodes_ + 1000;

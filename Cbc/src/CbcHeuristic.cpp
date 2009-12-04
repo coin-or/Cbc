@@ -1355,7 +1355,7 @@ CbcHeuristicNode::gutsOfConstructor(CbcModel& model)
         CbcBranchingObject* br = NULL; // What should this be?
         for (int i = 1; i < cnt; ++i) {
             if (compare3BranchingObjects(brObj_[numObjects_], brObj_[i]) == 0) {
-                int comp = brObj_[numObjects_]->compareBranchingObject(brObj_[i], br!=0);
+                int comp = brObj_[numObjects_]->compareBranchingObject(brObj_[i], br != 0);
                 switch (comp) {
                 case CbcRangeSame: // the same range
                 case CbcRangeDisjoint: // disjoint decisions

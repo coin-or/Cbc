@@ -16,6 +16,6 @@
 #include "CbcFixVariable.hpp"
 #include "CbcDummyBranchingObject.hpp"
 #include "CbcGeneral.hpp"
-#include "CbcGeneralDepth.hpp" 
+#include "CbcGeneralDepth.hpp"
 #include "CbcSubProblem.hpp"
 #endif

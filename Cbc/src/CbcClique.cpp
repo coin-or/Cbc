@@ -139,13 +139,13 @@ CbcClique::infeasibility(const OsiBranchingInformation * /*info*/,
     double integerTolerance =
         model_->getDblParam(CbcModel::CbcIntegerTolerance);
     double * sort = new double[numberMembers_];
-/*
-  Calculate integer infeasibility and fill an array. Pick off the infeasibility
-  of the slack and the max infeasibility while we're at it. You can see here
-  the conversion of `non-SOS' (strong value of 0, negative coefficient) to
-  `SOS' (strong value of 1, positive coefficient). Also count the number of
-  variables that have integral values but are not fixed.
-*/
+    /*
+      Calculate integer infeasibility and fill an array. Pick off the infeasibility
+      of the slack and the max infeasibility while we're at it. You can see here
+      the conversion of `non-SOS' (strong value of 0, negative coefficient) to
+      `SOS' (strong value of 1, positive coefficient). Also count the number of
+      variables that have integral values but are not fixed.
+    */
     double slackValue = 0.0;
     for (j = 0; j < numberMembers_; j++) {
         int sequence = members_[j];
@@ -167,13 +167,13 @@ CbcClique::infeasibility(const OsiBranchingInformation * /*info*/,
             numberFree++;
         }
     }
-/*
-  preferredWay will not change. The calculation of otherWay is an expensive
-  noop --- value is ultimately unused. Same for the sort of sort. It looks like
-  there was some notion of branching by splitting the set using even and odd
-  indices (as opposed to first and second half).
-*/  
-	preferredWay = 1;
+    /*
+      preferredWay will not change. The calculation of otherWay is an expensive
+      noop --- value is ultimately unused. Same for the sort of sort. It looks like
+      there was some notion of branching by splitting the set using even and odd
+      indices (as opposed to first and second half).
+    */
+    preferredWay = 1;
     double otherWay = 0.0;
     if (numberUnsatis) {
         // sort
@@ -183,11 +183,11 @@ CbcClique::infeasibility(const OsiBranchingInformation * /*info*/,
                 otherWay += -sort[j];
         }
         // Need to think more
-/*
-  Here we have the actual infeasibility calculation. Most previous work is
-  discarded, and we calculate a value using various counts, adjusted by the
-  max value and slack value. This is not scaled to [0, .5].
-*/
+        /*
+          Here we have the actual infeasibility calculation. Most previous work is
+          discarded, and we calculate a value using various counts, adjusted by the
+          max value and slack value. This is not scaled to [0, .5].
+        */
 
         double value = 0.2 * numberUnsatis + 0.01 * (numberMembers_ - numberFree);
         if (fabs(largestValue - 0.5) < 0.1) {

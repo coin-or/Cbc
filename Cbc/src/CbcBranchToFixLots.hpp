@@ -6,7 +6,6 @@
 #include "CbcBranchBase.hpp"
 #include "OsiRowCut.hpp"
 #include "CoinPackedMatrix.hpp"
-#include "CbcCutBranchingObject.hpp"
 
 /** Define a branch class that branches so that one way variables are fixed
     while the other way cuts off that solution.

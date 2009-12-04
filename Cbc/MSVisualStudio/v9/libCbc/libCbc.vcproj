@@ -232,29 +232,8 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\..\..\Cbc\src\CbcBranchLotsize.cpp"
+				RelativePath="..\..\..\src\CbcBranchLotsize.cpp"
 				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="0"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-						BasicRuntimeChecks="3"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="2"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-					/>
-				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="..\..\..\src\CbcBranchToFixLots.cpp"
@@ -335,10 +314,6 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="..\..\..\src\CbcCutBranchingObject.cpp"
-				>
-			</File>
-			<File
 				RelativePath="..\..\..\..\Cbc\src\CbcCutGenerator.cpp"
 				>
 				<FileConfiguration
@@ -373,10 +348,6 @@
 			</File>
 			<File
 				RelativePath="..\..\..\src\CbcDummyBranchingObject.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\..\src\CbcDynamicPseudoCostBranchingObject.cpp"
 				>
 			</File>
 			<File
@@ -816,10 +787,6 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="..\..\..\src\CbcLotsize.cpp"
-				>
-			</File>
-			<File
 				RelativePath="..\..\..\..\Cbc\src\CbcMessage.cpp"
 				>
 				<FileConfiguration
@@ -1109,7 +1076,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\..\..\Cbc\src\CbcBranchLotsize.hpp"
+				RelativePath="..\..\..\src\CbcBranchLotsize.hpp"
 				>
 			</File>
 			<File
@@ -1165,10 +1132,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\..\src\CbcCutBranchingObject.hpp"
-				>
-			</File>
-			<File
 				RelativePath="..\..\..\..\Cbc\src\CbcCutGenerator.hpp"
 				>
 			</File>
@@ -1182,10 +1145,6 @@
 			</File>
 			<File
 				RelativePath="..\..\..\src\CbcDummyBranchingObject.hpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\..\src\CbcDynamicPseudoCostBranchingObject.hpp"
 				>
 			</File>
 			<File
@@ -1286,10 +1245,6 @@
 			</File>
 			<File
 				RelativePath="..\..\..\src\CbcLinked.hpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\..\src\CbcLotsize.hpp"
 				>
 			</File>
 			<File

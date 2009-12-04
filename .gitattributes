@@ -66,16 +66,12 @@ Cbc/src/CbcCompareObjective.cpp -text
 Cbc/src/CbcCompareObjective.hpp -text
 Cbc/src/CbcConsequence.cpp -text
 Cbc/src/CbcConsequence.hpp -text
-Cbc/src/CbcCutBranchingObject.cpp -text
-Cbc/src/CbcCutBranchingObject.hpp -text
 Cbc/src/CbcCutModifier.cpp -text
 Cbc/src/CbcCutModifier.hpp -text
 Cbc/src/CbcCutSubsetModifier.cpp -text
 Cbc/src/CbcCutSubsetModifier.hpp -text
 Cbc/src/CbcDummyBranchingObject.cpp -text
 Cbc/src/CbcDummyBranchingObject.hpp -text
-Cbc/src/CbcDynamicPseudoCostBranchingObject.cpp -text
-Cbc/src/CbcDynamicPseudoCostBranchingObject.hpp -text
 Cbc/src/CbcFixVariable.cpp -text
 Cbc/src/CbcFixVariable.hpp -text
 Cbc/src/CbcFollowOn.cpp -text
@@ -125,8 +121,6 @@ Cbc/src/CbcHeuristicRandRound.cpp -text
 Cbc/src/CbcHeuristicRandRound.hpp -text
 Cbc/src/CbcLinked.cpp -text
 Cbc/src/CbcLinked.hpp -text
-Cbc/src/CbcLotsize.cpp -text
-Cbc/src/CbcLotsize.hpp -text
 Cbc/src/CbcModel_ansi.cpp -text
 Cbc/src/CbcModel_ansi.hpp -text
 Cbc/src/CbcModel_ban.cpp -text

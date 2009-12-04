@@ -166,11 +166,10 @@ am_libCbc_la_OBJECTS = Cbc_C_Interface.lo CbcBranchAllDifferent.lo \
 	CbcBranchingObject.lo CbcBranchLotsize.lo \
 	CbcBranchToFixLots.lo CbcCompareDefault.lo CbcCompareDepth.lo \
 	CbcCompareEstimate.lo CbcCompareObjective.lo CbcConsequence.lo \
-	CbcClique.lo CbcCountRowCut.lo CbcCutBranchingObject.lo \
-	CbcCutGenerator.lo CbcCutModifier.lo CbcCutSubsetModifier.lo \
-	CbcDummyBranchingObject.lo \
-	CbcDynamicPseudoCostBranchingObject.lo CbcEventHandler.lo \
-	CbcFathom.lo CbcFathomDynamicProgramming.lo CbcFixVariable.lo \
+	CbcClique.lo CbcCountRowCut.lo CbcCutGenerator.lo \
+	CbcCutModifier.lo CbcCutSubsetModifier.lo \
+	CbcDummyBranchingObject.lo CbcEventHandler.lo CbcFathom.lo \
+	CbcFathomDynamicProgramming.lo CbcFixVariable.lo \
 	CbcFullNodeInfo.lo CbcFollowOn.lo CbcGeneral.lo \
 	CbcGeneralDepth.lo CbcHeuristic.lo CbcHeuristicDive.lo \
 	CbcHeuristicDiveCoefficient.lo CbcHeuristicDiveFractional.lo \
@@ -178,9 +177,9 @@ am_libCbc_la_OBJECTS = Cbc_C_Interface.lo CbcBranchAllDifferent.lo \
 	CbcHeuristicDivePseudoCost.lo CbcHeuristicDiveVectorLength.lo \
 	CbcHeuristicFPump.lo CbcHeuristicGreedy.lo \
 	CbcHeuristicLocal.lo CbcHeuristicPivotAndFix.lo \
-	CbcHeuristicRandRound.lo CbcHeuristicRINS.lo CbcLotsize.lo \
-	CbcMessage.lo CbcModel.lo CbcNode.lo CbcNodeInfo.lo CbcNWay.lo \
-	CbcObject.lo CbcObjectUpdateData.lo CbcPartialNodeInfo.lo \
+	CbcHeuristicRandRound.lo CbcHeuristicRINS.lo CbcMessage.lo \
+	CbcModel.lo CbcNode.lo CbcNodeInfo.lo CbcNWay.lo CbcObject.lo \
+	CbcObjectUpdateData.lo CbcPartialNodeInfo.lo \
 	CbcSimpleInteger.lo CbcSimpleIntegerDynamicPseudoCost.lo \
 	CbcSimpleIntegerPseudoCost.lo CbcSOS.lo CbcStatistics.lo \
 	CbcStrategy.lo CbcSubProblem.lo CbcTree.lo CbcTreeLocal.lo
@@ -538,12 +537,10 @@ libCbc_la_SOURCES = \
 	CbcClique.cpp CbcClique.hpp \
 	CbcCompare.hpp \
 	CbcCountRowCut.cpp CbcCountRowCut.hpp \
-	CbcCutBranchingObject.cpp CbcCutBranchingObject.hpp \
 	CbcCutGenerator.cpp CbcCutGenerator.hpp \
 	CbcCutModifier.cpp CbcCutModifier.hpp \
 	CbcCutSubsetModifier.cpp CbcCutSubsetModifier.hpp \
 	CbcDummyBranchingObject.cpp CbcDummyBranchingObject.hpp \
-	CbcDynamicPseudoCostBranchingObject.cpp CbcDynamicPseudoCostBranchingObject.hpp \
 	CbcEventHandler.cpp CbcEventHandler.hpp \
 	CbcFathom.cpp CbcFathom.hpp \
 	CbcFathomDynamicProgramming.cpp CbcFathomDynamicProgramming.hpp \
@@ -567,7 +564,6 @@ libCbc_la_SOURCES = \
 	CbcHeuristicPivotAndFix.cpp CbcHeuristicPivotAndFix.hpp \
 	CbcHeuristicRandRound.cpp CbcHeuristicRandRound.hpp \
 	CbcHeuristicRINS.cpp CbcHeuristicRINS.hpp \
-	CbcLotsize.cpp CbcLotsize.hpp \
 	CbcMessage.cpp CbcMessage.hpp \
 	CbcModel.cpp CbcModel.hpp \
 	CbcNode.cpp CbcNode.hpp \
@@ -704,11 +700,11 @@ includecoin_HEADERS = \
 	CbcBranchAllDifferent.hpp \
 	CbcBranchBase.hpp \
 	CbcBranchDynamic.hpp \
-	CbcBranchLotsize.hpp \
 	CbcBranchCut.hpp \
         CbcBranchDecision.hpp \
 	CbcBranchDefaultDecision.hpp \
 	CbcBranchingObject.hpp \
+	CbcBranchLotsize.hpp \
 	CbcBranchToFixLots.hpp \
 	CbcCompareActual.hpp \
 	CbcCompareDefault.hpp \
@@ -719,12 +715,10 @@ includecoin_HEADERS = \
 	CbcChooseVariable.hpp \
 	CbcClique.hpp \
 	CbcCompare.hpp \
-	CbcCutBranchingObject.hpp \
 	CbcCutGenerator.hpp \
 	CbcCutModifier.hpp \
 	CbcCutSubsetModifier.hpp \
 	CbcDummyBranchingObject.hpp \
-	CbcDynamicPseudoCostBranchingObject.hpp \
 	CbcFathom.hpp \
 	CbcEventHandler.hpp \
 	CbcFeasibilityBase.hpp \
@@ -747,7 +741,6 @@ includecoin_HEADERS = \
 	CbcHeuristicPivotAndFix.hpp \
 	CbcHeuristicRandRound.hpp \
 	CbcHeuristicRINS.hpp \
-	CbcLotsize.hpp \
 	CbcMessage.hpp \
 	CbcModel.hpp \
 	CbcNode.hpp \
@@ -897,12 +890,10 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcCompareObjective.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcConsequence.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcCountRowCut.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcCutBranchingObject.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcCutGenerator.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcCutModifier.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcCutSubsetModifier.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcDummyBranchingObject.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcDynamicPseudoCostBranchingObject.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcEventHandler.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcFathom.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcFathomDynamicProgramming.Plo@am__quote@
@@ -938,7 +929,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcHeuristicRINS.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcHeuristicRandRound.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcLinked.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcLotsize.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcMessage.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcModel.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcNWay.Plo@am__quote@

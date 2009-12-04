@@ -41,12 +41,10 @@ libCbc_la_SOURCES = \
 	CbcClique.cpp CbcClique.hpp \
 	CbcCompare.hpp \
 	CbcCountRowCut.cpp CbcCountRowCut.hpp \
-	CbcCutBranchingObject.cpp CbcCutBranchingObject.hpp \
 	CbcCutGenerator.cpp CbcCutGenerator.hpp \
 	CbcCutModifier.cpp CbcCutModifier.hpp \
 	CbcCutSubsetModifier.cpp CbcCutSubsetModifier.hpp \
 	CbcDummyBranchingObject.cpp CbcDummyBranchingObject.hpp \
-	CbcDynamicPseudoCostBranchingObject.cpp CbcDynamicPseudoCostBranchingObject.hpp \
 	CbcEventHandler.cpp CbcEventHandler.hpp \
 	CbcFathom.cpp CbcFathom.hpp \
 	CbcFathomDynamicProgramming.cpp CbcFathomDynamicProgramming.hpp \
@@ -70,7 +68,6 @@ libCbc_la_SOURCES = \
 	CbcHeuristicPivotAndFix.cpp CbcHeuristicPivotAndFix.hpp \
 	CbcHeuristicRandRound.cpp CbcHeuristicRandRound.hpp \
 	CbcHeuristicRINS.cpp CbcHeuristicRINS.hpp \
-	CbcLotsize.cpp CbcLotsize.hpp \
 	CbcMessage.cpp CbcMessage.hpp \
 	CbcModel.cpp CbcModel.hpp \
 	CbcNode.cpp CbcNode.hpp \
@@ -344,11 +341,11 @@ includecoin_HEADERS = \
 	CbcBranchAllDifferent.hpp \
 	CbcBranchBase.hpp \
 	CbcBranchDynamic.hpp \
-	CbcBranchLotsize.hpp \
 	CbcBranchCut.hpp \
         CbcBranchDecision.hpp \
 	CbcBranchDefaultDecision.hpp \
 	CbcBranchingObject.hpp \
+	CbcBranchLotsize.hpp \
 	CbcBranchToFixLots.hpp \
 	CbcCompareActual.hpp \
 	CbcCompareDefault.hpp \
@@ -359,12 +356,10 @@ includecoin_HEADERS = \
 	CbcChooseVariable.hpp \
 	CbcClique.hpp \
 	CbcCompare.hpp \
-	CbcCutBranchingObject.hpp \
 	CbcCutGenerator.hpp \
 	CbcCutModifier.hpp \
 	CbcCutSubsetModifier.hpp \
 	CbcDummyBranchingObject.hpp \
-	CbcDynamicPseudoCostBranchingObject.hpp \
 	CbcFathom.hpp \
 	CbcEventHandler.hpp \
 	CbcFeasibilityBase.hpp \
@@ -387,7 +382,6 @@ includecoin_HEADERS = \
 	CbcHeuristicPivotAndFix.hpp \
 	CbcHeuristicRandRound.hpp \
 	CbcHeuristicRINS.hpp \
-	CbcLotsize.hpp \
 	CbcMessage.hpp \
 	CbcModel.hpp \
 	CbcNode.hpp \

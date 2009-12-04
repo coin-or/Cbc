@@ -5,7 +5,7 @@
 #include "CbcBranchBase.hpp"
 #include "OsiRowCut.hpp"
 #include "CoinPackedMatrix.hpp"
-#include "CbcCutBranchingObject.hpp"
+#include "CbcBranchCut.hpp"
 
 /** Define a branch class that branches so that it is only satsified if all
     members have different values

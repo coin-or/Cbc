@@ -78,8 +78,6 @@ Cbc/src/CbcDynamicPseudoCostBranchingObject.cpp -text
 Cbc/src/CbcDynamicPseudoCostBranchingObject.hpp -text
 Cbc/src/CbcFixVariable.cpp -text
 Cbc/src/CbcFixVariable.hpp -text
-Cbc/src/CbcFixingBranchingObject.cpp -text
-Cbc/src/CbcFixingBranchingObject.hpp -text
 Cbc/src/CbcFollowOn.cpp -text
 Cbc/src/CbcFollowOn.hpp -text
 Cbc/src/CbcFullNodeInfo.cpp -text
@@ -143,8 +141,6 @@ Cbc/src/CbcModel_stroP.cpp -text
 Cbc/src/CbcModel_stroP.hpp -text
 Cbc/src/CbcNWay.cpp -text
 Cbc/src/CbcNWay.hpp -text
-Cbc/src/CbcNWayBranchingObject.cpp -text
-Cbc/src/CbcNWayBranchingObject.hpp -text
 Cbc/src/CbcNodeInfo.cpp -text
 Cbc/src/CbcNodeInfo.hpp -text
 Cbc/src/CbcNode_ansi.cpp -text
@@ -175,8 +171,6 @@ Cbc/src/CbcPartialNodeInfo.cpp -text
 Cbc/src/CbcPartialNodeInfo.hpp -text
 Cbc/src/CbcSOS.cpp -text
 Cbc/src/CbcSOS.hpp -text
-Cbc/src/CbcSOSBranchingObject.cpp -text
-Cbc/src/CbcSOSBranchingObject.hpp -text
 Cbc/src/CbcSimpleInteger.cpp -text
 Cbc/src/CbcSimpleInteger.hpp -text
 Cbc/src/CbcSimpleIntegerDynamicPseudoCost.cpp -text

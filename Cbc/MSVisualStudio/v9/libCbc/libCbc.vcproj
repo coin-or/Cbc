@@ -455,10 +455,6 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="..\..\..\src\CbcFixingBranchingObject.cpp"
-				>
-			</File>
-			<File
 				RelativePath="..\..\..\src\CbcFixVariable.cpp"
 				>
 			</File>
@@ -907,10 +903,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\..\src\CbcNWayBranchingObject.cpp"
-				>
-			</File>
-			<File
 				RelativePath="..\..\..\src\CbcObject.cpp"
 				>
 			</File>
@@ -965,10 +957,6 @@
 			</File>
 			<File
 				RelativePath="..\..\..\src\CbcSOS.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\..\src\CbcSOSBranchingObject.cpp"
 				>
 			</File>
 			<File
@@ -1217,10 +1205,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\..\src\CbcFixingBranchingObject.hpp"
-				>
-			</File>
-			<File
 				RelativePath="..\..\..\src\CbcFixVariable.hpp"
 				>
 			</File>
@@ -1329,10 +1313,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\..\src\CbcNWayBranchingObject.hpp"
-				>
-			</File>
-			<File
 				RelativePath="..\..\..\src\CbcObject.hpp"
 				>
 			</File>
@@ -1366,10 +1346,6 @@
 			</File>
 			<File
 				RelativePath="..\..\..\src\CbcSOS.hpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\..\src\CbcSOSBranchingObject.hpp"
 				>
 			</File>
 			<File

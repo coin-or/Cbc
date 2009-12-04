@@ -170,8 +170,7 @@ am_libCbc_la_OBJECTS = Cbc_C_Interface.lo CbcBranchAllDifferent.lo \
 	CbcCutGenerator.lo CbcCutModifier.lo CbcCutSubsetModifier.lo \
 	CbcDummyBranchingObject.lo \
 	CbcDynamicPseudoCostBranchingObject.lo CbcEventHandler.lo \
-	CbcFathom.lo CbcFathomDynamicProgramming.lo \
-	CbcFixingBranchingObject.lo CbcFixVariable.lo \
+	CbcFathom.lo CbcFathomDynamicProgramming.lo CbcFixVariable.lo \
 	CbcFullNodeInfo.lo CbcFollowOn.lo CbcGeneral.lo \
 	CbcGeneralDepth.lo CbcHeuristic.lo CbcHeuristicDive.lo \
 	CbcHeuristicDiveCoefficient.lo CbcHeuristicDiveFractional.lo \
@@ -181,12 +180,10 @@ am_libCbc_la_OBJECTS = Cbc_C_Interface.lo CbcBranchAllDifferent.lo \
 	CbcHeuristicLocal.lo CbcHeuristicPivotAndFix.lo \
 	CbcHeuristicRandRound.lo CbcHeuristicRINS.lo CbcLotsize.lo \
 	CbcMessage.lo CbcModel.lo CbcNode.lo CbcNodeInfo.lo CbcNWay.lo \
-	CbcNWayBranchingObject.lo CbcObject.lo CbcObjectUpdateData.lo \
-	CbcPartialNodeInfo.lo CbcSimpleInteger.lo \
-	CbcSimpleIntegerDynamicPseudoCost.lo \
-	CbcSimpleIntegerPseudoCost.lo CbcSOS.lo \
-	CbcSOSBranchingObject.lo CbcStatistics.lo CbcStrategy.lo \
-	CbcSubProblem.lo CbcTree.lo CbcTreeLocal.lo
+	CbcObject.lo CbcObjectUpdateData.lo CbcPartialNodeInfo.lo \
+	CbcSimpleInteger.lo CbcSimpleIntegerDynamicPseudoCost.lo \
+	CbcSimpleIntegerPseudoCost.lo CbcSOS.lo CbcStatistics.lo \
+	CbcStrategy.lo CbcSubProblem.lo CbcTree.lo CbcTreeLocal.lo
 libCbc_la_OBJECTS = $(am_libCbc_la_OBJECTS)
 libCbcSolver_la_LIBADD =
 am_libCbcSolver_la_OBJECTS = CbcCbcParam.lo Cbc_ampl.lo \
@@ -551,7 +548,6 @@ libCbc_la_SOURCES = \
 	CbcFathom.cpp CbcFathom.hpp \
 	CbcFathomDynamicProgramming.cpp CbcFathomDynamicProgramming.hpp \
 	CbcFeasibilityBase.hpp \
-	CbcFixingBranchingObject.cpp CbcFixingBranchingObject.hpp \
 	CbcFixVariable.cpp CbcFixVariable.hpp \
 	CbcFullNodeInfo.cpp CbcFullNodeInfo.hpp \
 	CbcFollowOn.cpp CbcFollowOn.hpp \
@@ -577,7 +573,6 @@ libCbc_la_SOURCES = \
 	CbcNode.cpp CbcNode.hpp \
 	CbcNodeInfo.cpp CbcNodeInfo.hpp \
 	CbcNWay.cpp CbcNWay.hpp \
-	CbcNWayBranchingObject.cpp CbcNWayBranchingObject.hpp \
 	CbcObject.cpp CbcObject.hpp \
 	CbcObjectUpdateData.cpp CbcObjectUpdateData.hpp \
 	CbcPartialNodeInfo.cpp CbcPartialNodeInfo.hpp \
@@ -585,7 +580,6 @@ libCbc_la_SOURCES = \
 	CbcSimpleIntegerDynamicPseudoCost.cpp CbcSimpleIntegerDynamicPseudoCost.hpp \
 	CbcSimpleIntegerPseudoCost.cpp CbcSimpleIntegerPseudoCost.hpp \
 	CbcSOS.cpp CbcSOS.hpp \
-	CbcSOSBranchingObject.cpp CbcSOSBranchingObject.hpp \
 	CbcStatistics.cpp CbcStatistics.hpp \
 	CbcStrategy.cpp CbcStrategy.hpp \
 	CbcSubProblem.cpp CbcSubProblem.hpp \
@@ -734,7 +728,6 @@ includecoin_HEADERS = \
 	CbcFathom.hpp \
 	CbcEventHandler.hpp \
 	CbcFeasibilityBase.hpp \
-	CbcFixingBranchingObject.hpp \
 	CbcFixVariable.hpp \
 	CbcFollowOn.hpp \
 	CbcFullNodeInfo.hpp \
@@ -760,7 +753,6 @@ includecoin_HEADERS = \
 	CbcNode.hpp \
 	CbcNodeInfo.hpp \
 	CbcNWay.hpp \
-	CbcNWayBranchingObject.hpp \
         CbcObject.hpp \
 	CbcObjectUpdateData.hpp \
 	CbcPartialNodeInfo.hpp \
@@ -770,7 +762,6 @@ includecoin_HEADERS = \
 	CbcStrategy.hpp \
 	CbcSolver.hpp \
 	CbcSOS.hpp \
-	CbcSOSBranchingObject.hpp \
 	CbcSubProblem.hpp \
 	CbcTree.hpp \
 	CbcLinked.hpp \
@@ -916,7 +907,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcFathom.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcFathomDynamicProgramming.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcFixVariable.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcFixingBranchingObject.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcFollowOn.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcFullNodeInfo.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcGenBaB.Po@am__quote@
@@ -952,14 +942,12 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcMessage.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcModel.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcNWay.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcNWayBranchingObject.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcNode.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcNodeInfo.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcObject.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcObjectUpdateData.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcPartialNodeInfo.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcSOS.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcSOSBranchingObject.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcSimpleInteger.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcSimpleIntegerDynamicPseudoCost.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcSimpleIntegerPseudoCost.Plo@am__quote@

@@ -51,7 +51,6 @@ libCbc_la_SOURCES = \
 	CbcFathom.cpp CbcFathom.hpp \
 	CbcFathomDynamicProgramming.cpp CbcFathomDynamicProgramming.hpp \
 	CbcFeasibilityBase.hpp \
-	CbcFixingBranchingObject.cpp CbcFixingBranchingObject.hpp \
 	CbcFixVariable.cpp CbcFixVariable.hpp \
 	CbcFullNodeInfo.cpp CbcFullNodeInfo.hpp \
 	CbcFollowOn.cpp CbcFollowOn.hpp \
@@ -77,7 +76,6 @@ libCbc_la_SOURCES = \
 	CbcNode.cpp CbcNode.hpp \
 	CbcNodeInfo.cpp CbcNodeInfo.hpp \
 	CbcNWay.cpp CbcNWay.hpp \
-	CbcNWayBranchingObject.cpp CbcNWayBranchingObject.hpp \
 	CbcObject.cpp CbcObject.hpp \
 	CbcObjectUpdateData.cpp CbcObjectUpdateData.hpp \
 	CbcPartialNodeInfo.cpp CbcPartialNodeInfo.hpp \
@@ -85,7 +83,6 @@ libCbc_la_SOURCES = \
 	CbcSimpleIntegerDynamicPseudoCost.cpp CbcSimpleIntegerDynamicPseudoCost.hpp \
 	CbcSimpleIntegerPseudoCost.cpp CbcSimpleIntegerPseudoCost.hpp \
 	CbcSOS.cpp CbcSOS.hpp \
-	CbcSOSBranchingObject.cpp CbcSOSBranchingObject.hpp \
 	CbcStatistics.cpp CbcStatistics.hpp \
 	CbcStrategy.cpp CbcStrategy.hpp \
 	CbcSubProblem.cpp CbcSubProblem.hpp \
@@ -371,7 +368,6 @@ includecoin_HEADERS = \
 	CbcFathom.hpp \
 	CbcEventHandler.hpp \
 	CbcFeasibilityBase.hpp \
-	CbcFixingBranchingObject.hpp \
 	CbcFixVariable.hpp \
 	CbcFollowOn.hpp \
 	CbcFullNodeInfo.hpp \
@@ -397,7 +393,6 @@ includecoin_HEADERS = \
 	CbcNode.hpp \
 	CbcNodeInfo.hpp \
 	CbcNWay.hpp \
-	CbcNWayBranchingObject.hpp \
         CbcObject.hpp \
 	CbcObjectUpdateData.hpp \
 	CbcPartialNodeInfo.hpp \
@@ -407,7 +402,6 @@ includecoin_HEADERS = \
 	CbcStrategy.hpp \
 	CbcSolver.hpp \
 	CbcSOS.hpp \
-	CbcSOSBranchingObject.hpp \
 	CbcSubProblem.hpp \
 	CbcTree.hpp \
 	CbcLinked.hpp \

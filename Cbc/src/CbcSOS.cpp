@@ -227,7 +227,14 @@ CbcSOS::infeasibility(const OsiBranchingInformation * info,
             lastNonZero = j;
         }
     }
+	/* ?? */
     preferredWay = 1;
+/*
+  SOS1 allows one nonzero; SOS2 allows two consecutive nonzeros. Infeasibility
+  is calculated as (.5)(range of nonzero values)/(number of members). So if
+  the first and last elements of the set are nonzero, we have maximum
+  infeasibility.
+*/
     if (lastNonZero - firstNonZero >= sosType_) {
         // find where to branch
         assert (sum > 0.0);

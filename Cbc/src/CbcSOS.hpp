@@ -2,12 +2,23 @@
 #ifndef CbcSOS_H
 #define CbcSOS_H
 
-/** Define Special Ordered Sets of type 1 and 2.  These do not have to be
-    integer - so do not appear in lists of integers.
+/** \brief Branching object for Special Ordered Sets of type 1 and 2.
 
-    which_ points directly to columns of matrix
+  SOS1 are an ordered set of variables where at most one variable can be
+  non-zero. SOS1 are commonly defined with binary variables (interpreted as
+  selection between alternatives) but this is not necessary.  An SOS1 with
+  all binary variables is a special case of a clique (setting any one
+  variable to 1 forces all others to 0).
+
+  In theory, the implementation makes no assumptions about integrality in
+  Type 1 sets. In practice, there are places where the code seems to have been
+  written with a binary SOS mindset. Current development of SOS branching
+  objects is proceeding in OsiSOS.
+
+  SOS2 are an ordered set of variables in which at most two consecutive
+  variables can be non-zero and must sum to 1 (interpreted as interpolation
+  between two discrete values). By definition the variables are non-integer.
 */
-
 
 class CbcSOS : public CbcObject {
 
@@ -16,10 +27,16 @@ public:
     // Default Constructor
     CbcSOS ();
 
-    /** Useful constructor - which are indices
-        and  weights are also given.  If null then 0,1,2..
-        type is SOS type
-    */
+	/** \brief Constructor with SOS type and member information
+
+    Type specifies SOS 1 or 2. Identifier is an arbitrary value.
+
+    Which should be an array of variable indices with numberMembers entries.
+    Weights can be used to assign arbitrary weights to variables, in the order
+    they are specified in which. If no weights are provided, a default array of
+    0, 1, 2, ... is generated.
+	*/
+
     CbcSOS (CbcModel * model, int numberMembers,
             const int * which, const double * weights, int identifier,
             int type = 1);
@@ -125,7 +142,18 @@ private:
 
     /// Members (indices in range 0 ... numberColumns-1)
     int * members_;
-    /// Weights
+  /** \brief Weights for individual members
+
+    Arbitrary weights for members. Can be used to attach meaning to variable
+    values independent of objective coefficients. For example, if the SOS set
+    comprises binary variables used to choose a facility of a given size, the
+    weight could be the corresponding facilty size. Fractional values of the
+    SOS variables can then be used to estimate ideal facility size.
+
+    Weights cannot be completely arbitrary. From the code, they must be
+    differ by at least 1.0e-7
+  */
+
     double * weights_;
     /// Current pseudo-shadow price estimate down
     mutable double shadowEstimateDown_;

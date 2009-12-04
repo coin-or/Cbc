@@ -2,6 +2,35 @@
 #ifndef CbcClique_H
 #define CbcClique_H
 
+/** \brief Branching object for cliques
+
+  A clique is defined to be a set of binary variables where fixing any one
+  variable to its `strong' value fixes all other variables. An example is the
+  most common SOS1 construction: a set of binary variables x<j> s.t.  SUM{j}
+  x<j> = 1.  Setting any one variable to 1 forces all other variables to 0.
+  (See comments for CbcSOS below.)
+
+  Other configurations are possible, however: Consider x1-x2+x3 <= 0.
+  Setting x1 (x3) to 1 forces x2 to 1 and x3 (x1) to 0. Setting x2 to 0
+  forces x1 and x3 to 0.
+
+  The proper point of view to take when interpreting CbcClique is
+  `generalisation of SOS1 on binary variables.' To get into the proper frame
+  of mind, here's an example.
+  
+  Consider the following sequence, where x<i> = (1-y<i>):
+     x1 + x2 + x3 <=  1		all strong at 1
+     x1 - y2 + x3 <=  0		y2 strong at 0; x1, x3 strong at 1
+    -y1 - y2 + x3 <= -1		y1, y2 strong at 0, x3 strong at 1
+    -y1 - y2 - y3 <= -2		all strong at 0
+  The first line is a standard SOS1 on binary variables.
+  
+  Variables with +1 coefficients are `SOS-style' and variables with -1
+  coefficients are `non-SOS-style'. So numberNonSOSMembers_ simply tells you
+  how many variables have -1 coefficients. The implicit rhs for a clique is
+  1-numberNonSOSMembers_.
+*/
+
 /// Define a clique class
 
 class CbcClique : public CbcObject {
@@ -11,10 +40,10 @@ public:
     // Default Constructor
     CbcClique ();
 
-    /** Useful constructor (which are integer indices)
-        slack can denote a slack in set.
-        If type == NULL then as if 1
-    */
+  /** Useful constructor (which are integer indices) slack can denote a slack
+  // Useful constructor (which are integer indices)
+      in set.  If type == NULL then as if 1
+  */
     CbcClique (CbcModel * model, int cliqueType, int numberMembers,
                const int * which, const char * type,
                int identifier, int slack = -1);
@@ -45,8 +74,12 @@ public:
     inline int numberMembers() const {
         return numberMembers_;
     }
+	/** \brief Number of variables with -1 coefficient
+	  
+	  Original comment: Number of Non SOS members i.e. fixing to zero is strong.
+	  See comments at head of class, and comments for type_.
+	*/
 
-    /// Number of Non SOS members i.e. fixing to zero is strong
     inline int numberNonSOSMembers() const {
         return numberNonSOSMembers_;
     }
@@ -56,9 +89,16 @@ public:
         return members_;
     }
 
-    /** Type of each member i.e. which way is strong 0=non SOS, 1 =SOS,
-        index is 0 ... numberMembers_-1 */
-    inline char type(int index) const {
+    /** \brief Type of each member, i.e. which way is strong
+  
+    This also specifies whether a variable has a +1 or -1 coefficient.
+      0 => -1 coefficient, 0 is strong value
+      1 -> +1 coefficient, 1 is strong value
+    If unspecified, all coefficients are assumed to be positive.
+    
+    Indexed as 0 .. numberMembers_-1
+    */
+	inline char type(int index) const {
         if (type_) return type_[index];
         else return 1;
     }
@@ -81,13 +121,30 @@ protected:
     /// Members (indices in range 0 ... numberIntegers_-1)
     int * members_;
 
-    /// Type of each member 0=SOS, 1 =clique
+    /** \brief Strong value for each member.
+
+      This also specifies whether a variable has a +1 or -1 coefficient.
+        0 => -1 coefficient, 0 is strong value
+        1 -> +1 coefficient, 1 is strong value
+      If unspecified, all coefficients are assumed to be positive.
+    
+      Indexed as 0 .. numberMembers_-1
+    */
     char * type_;
 
-    /// Clique type - 0 <=, 1 ==
+    /** \brief Clique type
+
+      0 defines a <= relation, 1 an equality. The assumed value of the rhs is
+      numberNonSOSMembers_+1. (See comments for the class.)
+    */
     int cliqueType_;
 
-    /// Which one is slack (if any) sequence within this set
+    /** \brief Slack variable for the clique
+  
+      Identifies the slack variable for the clique (typically added to convert
+      a <= relation to an equality). Value is sequence number within clique
+      menbers.
+    */
     int slack_;
 };
 

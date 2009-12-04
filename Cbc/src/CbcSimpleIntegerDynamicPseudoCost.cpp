@@ -570,6 +570,14 @@ CbcSimpleIntegerDynamicPseudoCost::infeasibility(const OsiBranchingInformation *
         return 0.0;
     }
     assert (breakEven_ > 0.0 && breakEven_ < 1.0);
+	/*
+	  Find nearest integer, and integers above and below current value.
+
+	  Given that we've already forced value within bounds, if
+	  (current value)+(integer tolerance) > (upper bound)
+	  shouldn't we declare this variable integer?
+	*/
+
     double value = solution[columnNumber_];
     value = CoinMax(value, lower[columnNumber_]);
     value = CoinMin(value, upper[columnNumber_]);
@@ -585,6 +593,11 @@ CbcSimpleIntegerDynamicPseudoCost::infeasibility(const OsiBranchingInformation *
         below = above - 1;
     }
 #if INFEAS==1
+/*
+  Why do we inflate the distance to the cutoff by a factor of 10 for
+  values that could be considered reachable? Why do we add 100 for values
+  larger than 1e20?
+*/
     double distanceToCutoff = 0.0;
     double objectiveValue = model_->getCurrentMinimizationObjValue();
     distanceToCutoff =  model_->getCutoff()  - objectiveValue;

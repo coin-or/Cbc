@@ -177,7 +177,16 @@ CbcCutGenerator::refreshModel(CbcModel * model)
 bool
 CbcCutGenerator::generateCuts( OsiCuts & cs , int fullScan, OsiSolverInterface * solver, CbcNode * node)
 {
-    int depth;
+    /*
+	  Make some decisions about whether we'll generate cuts. First convert
+	  whenCutGenerator_ to a set of canonical values for comparison to the node
+	  count.
+
+		 0 <	mod 1000000, with a result of 0 forced to 1
+	   -99 <= <= 0	convert to 1
+	  -100 =	Off, period
+	*/
+	int depth;
     if (node)
         depth = node->depth();
     else
@@ -202,12 +211,27 @@ CbcCutGenerator::generateCuts( OsiCuts & cs , int fullScan, OsiSolverInterface *
     // Reset cuts on first pass
     if (!pass)
         savedCuts_ = OsiCuts();
-    bool doThis = (model_->getNodeCount() % howOften) == 0;
-    if (depthCutGenerator_ > 0) {
+    /*
+	  Determine if we should generate cuts based on node count.
+	*/
+	bool doThis = (model_->getNodeCount() % howOften) == 0;
+    /*
+	  If the user has provided a depth specification, it will override the node
+	  count specification.
+	*/
+	if (depthCutGenerator_ > 0) {
         doThis = (depth % depthCutGenerator_) == 0;
         if (depth < depthCutGenerator_)
             doThis = true; // and also at top of tree
     }
+	/*
+	  A few magic numbers ...
+
+	  The distinction between -100 and 100 for howOften is that we can override 100
+	  with fullScan. -100 means no cuts, period. As does the magic number -200 for
+	  whenCutGeneratorInSub_.
+	*/
+
     // But turn off if 100
     if (howOften == 100)
         doThis = false;

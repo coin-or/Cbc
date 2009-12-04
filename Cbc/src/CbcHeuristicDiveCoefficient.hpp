@@ -12,37 +12,37 @@
 class CbcHeuristicDiveCoefficient : public CbcHeuristicDive {
 public:
 
-  // Default Constructor 
-  CbcHeuristicDiveCoefficient ();
+    // Default Constructor
+    CbcHeuristicDiveCoefficient ();
 
-  // Constructor with model - assumed before cuts
-  CbcHeuristicDiveCoefficient (CbcModel & model);
-  
-  // Copy constructor 
-  CbcHeuristicDiveCoefficient ( const CbcHeuristicDiveCoefficient &);
-   
-  // Destructor 
-  ~CbcHeuristicDiveCoefficient ();
+    // Constructor with model - assumed before cuts
+    CbcHeuristicDiveCoefficient (CbcModel & model);
 
-  /// Clone
-  virtual CbcHeuristicDiveCoefficient * clone() const;
-  
-  /// Assignment operator 
-  CbcHeuristicDiveCoefficient & operator=(const CbcHeuristicDiveCoefficient& rhs);
+    // Copy constructor
+    CbcHeuristicDiveCoefficient ( const CbcHeuristicDiveCoefficient &);
 
-  /// Create C++ lines to get to current state
-  virtual void generateCpp( FILE * fp) ;
+    // Destructor
+    ~CbcHeuristicDiveCoefficient ();
 
-  /// Selects the next variable to branch on
-  /** Returns true if all the fractional variables can be trivially
-      rounded. Returns false, if there is at least one fractional variable
-      that is not trivially roundable. In this case, the bestColumn
-      returned will not be trivially roundable.
-  */
-  virtual bool selectVariableToBranch(OsiSolverInterface* solver,
-				      const double* newSolution,
-				      int& bestColumn,
-				      int& bestRound);
+    /// Clone
+    virtual CbcHeuristicDiveCoefficient * clone() const;
+
+    /// Assignment operator
+    CbcHeuristicDiveCoefficient & operator=(const CbcHeuristicDiveCoefficient& rhs);
+
+    /// Create C++ lines to get to current state
+    virtual void generateCpp( FILE * fp) ;
+
+    /// Selects the next variable to branch on
+    /** Returns true if all the fractional variables can be trivially
+        rounded. Returns false, if there is at least one fractional variable
+        that is not trivially roundable. In this case, the bestColumn
+        returned will not be trivially roundable.
+    */
+    virtual bool selectVariableToBranch(OsiSolverInterface* solver,
+                                        const double* newSolution,
+                                        int& bestColumn,
+                                        int& bestRound);
 
 };
 

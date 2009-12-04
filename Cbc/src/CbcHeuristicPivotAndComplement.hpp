@@ -11,42 +11,42 @@
 class CbcHeuristicPivotAndComplement : public CbcHeuristic {
 public:
 
-  // Default Constructor 
-  CbcHeuristicPivotAndComplement ();
+    // Default Constructor
+    CbcHeuristicPivotAndComplement ();
 
-  /* Constructor with model - assumed before cuts
-     Initial version does not do Lps
-  */
-  CbcHeuristicPivotAndComplement (CbcModel & model);
-  
-  // Copy constructor 
-  CbcHeuristicPivotAndComplement ( const CbcHeuristicPivotAndComplement &);
-   
-  // Destructor 
-  ~CbcHeuristicPivotAndComplement ();
-  
-  /// Clone
-  virtual CbcHeuristic * clone() const;
+    /* Constructor with model - assumed before cuts
+       Initial version does not do Lps
+    */
+    CbcHeuristicPivotAndComplement (CbcModel & model);
 
-  /// Assignment operator 
-  CbcHeuristicPivotAndComplement & operator=(const CbcHeuristicPivotAndComplement& rhs);
+    // Copy constructor
+    CbcHeuristicPivotAndComplement ( const CbcHeuristicPivotAndComplement &);
 
-  /// Create C++ lines to get to current state
-  virtual void generateCpp( FILE * fp) ;
+    // Destructor
+    ~CbcHeuristicPivotAndComplement ();
 
-  /// Resets stuff if model changes
-  virtual void resetModel(CbcModel * model);
+    /// Clone
+    virtual CbcHeuristic * clone() const;
 
-  /// update model (This is needed if cliques update matrix etc)
-  virtual void setModel(CbcModel * model);
-  
-  using CbcHeuristic::solution ;
-  /** returns 0 if no solution, 1 if valid solution.
-      Sets solution values if good, sets objective value (only if good)
-      needs comments
-  */
-  virtual int solution(double & objectiveValue,
-		       double * newSolution);
+    /// Assignment operator
+    CbcHeuristicPivotAndComplement & operator=(const CbcHeuristicPivotAndComplement& rhs);
+
+    /// Create C++ lines to get to current state
+    virtual void generateCpp( FILE * fp) ;
+
+    /// Resets stuff if model changes
+    virtual void resetModel(CbcModel * model);
+
+    /// update model (This is needed if cliques update matrix etc)
+    virtual void setModel(CbcModel * model);
+
+    using CbcHeuristic::solution ;
+    /** returns 0 if no solution, 1 if valid solution.
+        Sets solution values if good, sets objective value (only if good)
+        needs comments
+    */
+    virtual int solution(double & objectiveValue,
+                         double * newSolution);
 
 protected:
 };

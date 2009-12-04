@@ -189,8 +189,10 @@ CbcHeuristicLocal::solutionFix(double & objectiveValue,
         }
         delete [] which;
         nFix += nFix2;
+#ifdef CLP_INVESTIGATE2
         printf("Number fixed increased from %d to %d\n",
                nFix - nFix2, nFix);
+#endif
     }
     if (nFix*10 > numberIntegers) {
         returnCode = smallBranchAndBound(newSolver, numberNodes_, newSolution, objectiveValue,

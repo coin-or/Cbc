@@ -220,6 +220,19 @@ CbcHeuristicFPump::solution(double & solutionValue,
 #define LEN_PRINT 200
     char pumpPrint[LEN_PRINT];
     pumpPrint[0] = '\0';
+/*
+  Decide if we want to run. Standard values for when are described in
+  CbcHeuristic.hpp. If we're off, or running only at root and this isn't the
+  root, bail out.
+
+  The double test (against phase, then atRoot and passNumber) has a fair bit
+  of redundancy, but the results will differ depending on whether we're
+  actually at the root of the main search tree or at the root of a small tree
+  (recursive call to branchAndBound).
+
+  FPump also supports some exotic values (11 -- 15) for when, described in
+  CbcHeuristicFPump.hpp.
+*/
     if (!when() || (when() == 1 && model_->phase() != 1))
         return 0; // switched off
     // See if at root node
@@ -282,6 +295,11 @@ CbcHeuristicFPump::solution(double & solutionValue,
     int averageIterationsPerTry = -1;
     int numberIterationsLastPass = 0;
     // 1. initially check 0-1
+/*
+  I'm skeptical of the above comment, but it's likely accurate as the default.
+  Bit 4 or bit 8 needs to be set in order to consider working with general
+  integers.
+*/
     int i, j;
     int general = 0;
     int * integerVariable = new int[numberIntegers];
@@ -289,6 +307,13 @@ CbcHeuristicFPump::solution(double & solutionValue,
     const double * upper = model_->solver()->getColUpper();
     bool doGeneral = (accumulate_ & 4) != 0;
     j = 0;
+/*
+  Scan the objects, recording the columns and counting general integers.
+
+  Seems like the NDEBUG tests could be made into an applicability test. If
+  a scan of the objects reveals complex objects, just clean up and return
+  failure.
+*/
     for (i = 0; i < numberIntegers; i++) {
         int iColumn = integerVariableOrig[i];
 #ifndef NDEBUG
@@ -307,6 +332,19 @@ CbcHeuristicFPump::solution(double & solutionValue,
             integerVariable[j++] = iColumn;
         }
     }
+/*
+  If 2/3 of integers are general integers, and we're not going to work with
+  them, might as well go home.
+
+  The else case is unclear to me. We reach it if general integers are less than
+  2/3 of the total, or if either of bit 4 or 8 is set. But only bit 8 is used
+  in the decision. (Let manyGen = 1 if more than 2/3 of integers are general
+  integers. Then a k-map on manyGen, bit4, and bit8 shows it clearly.)
+
+  So there's something odd here. In the case where bit4 = 1 and bit8 = 0,
+  we've included general integers in integerVariable, but we're not going to
+  process them.
+*/
     if (general*3 > 2*numberIntegers && !doGeneral) {
         delete [] integerVariable;
         return 0;
@@ -325,6 +363,10 @@ CbcHeuristicFPump::solution(double & solutionValue,
     if (doGeneral)
         printf("DOing general with %d out of %d\n", general, numberIntegers);
 #endif
+/*
+  This `closest solution' will satisfy integrality, but violate some other
+  constraints?
+*/
     // For solution closest to feasible if none found
     int * closestSolution = general ? NULL : new int[numberIntegers];
     double closestObjectiveValue = COIN_DBL_MAX;
@@ -344,6 +386,9 @@ CbcHeuristicFPump::solution(double & solutionValue,
         allSlack = true;
     }
     double time1 = CoinCpuTime();
+/*
+  Obtain a relaxed lp solution.
+*/
     model_->solver()->resolve();
     if (!model_->solver()->isProvenOptimal()) {
         // presumably max time or some such
@@ -362,6 +407,10 @@ CbcHeuristicFPump::solution(double & solutionValue,
             printf("dj fixing fixed %d variables\n", nFix);
         }
     }
+/*
+  I have no idea why we're doing this, except perhaps that saveBasis will be
+  automagically deleted on exit from the routine.
+*/
     CoinWarmStartBasis saveBasis;
     CoinWarmStartBasis * basis =
         dynamic_cast<CoinWarmStartBasis *>(model_->solver()->getWarmStart()) ;
@@ -637,6 +686,10 @@ CbcHeuristicFPump::solution(double & solutionValue,
         int bobbleMode = 0;
         // 5. MAIN WHILE LOOP
         //bool newLineNeeded=false;
+/*
+  finished occurs exactly twice in this routine: immediately above, where it's
+  set to false, and here in the loop condition.
+*/
         while (!finished) {
             double newTrueSolutionValue = 0.0;
             double newSumInfeas = 0.0;
@@ -1964,6 +2017,9 @@ CbcHeuristicFPump::solution(double & solutionValue,
             totalNumberPasses += numberPasses - 1;
         }
     }
+/*
+  End of the `exitAll' loop.
+*/
 #ifdef RAND_RAND
     delete [] randomFactor;
 #endif

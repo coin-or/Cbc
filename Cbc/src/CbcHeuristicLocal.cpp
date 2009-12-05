@@ -121,12 +121,29 @@ CbcHeuristicLocal::resetModel(CbcModel * /*model*/)
         used_ = NULL;
     }
 }
+/*
+  Run a mini-BaB search after fixing all variables not marked as used by
+  solution(). (See comments there for semantics.)
+
+  Return values are:
+    1: smallBranchAndBound found a solution
+    0: everything else
+
+  The degree of overload as return codes from smallBranchAndBound are folded
+  into 0 is such that it's impossible to distinguish return codes that really
+  require attention from a simple `nothing of interest'.
+*/
 // This version fixes stuff and does IP
 int
 CbcHeuristicLocal::solutionFix(double & objectiveValue,
                                double * newSolution,
                                const int * /*keep*/)
 {
+/*
+  If when is set to off (0), or set to root (1) and we're not at the root,
+  return. If this heuristic discovered the current solution, don't continue.
+*/
+
     numCouldRun_++;
     // See if to do
     if (!when() || (when() == 1 && model_->phase() != 1))
@@ -134,12 +151,24 @@ CbcHeuristicLocal::solutionFix(double & objectiveValue,
     // Don't do if it was this heuristic which found solution!
     if (this == model_->lastHeuristic())
         return 0;
+/*
+  Load up a new solver with the solution.
+
+  Why continuousSolver(), as opposed to solver()?
+*/
     OsiSolverInterface * newSolver = model_->continuousSolver()->clone();
     const double * colLower = newSolver->getColLower();
     //const double * colUpper = newSolver->getColUpper();
 
     int numberIntegers = model_->numberIntegers();
     const int * integerVariable = model_->integerVariable();
+/*
+  The net effect here is that anything that hasn't moved from its lower bound
+  will be fixed at lower bound.
+
+  See comments in solution() w.r.t. asymmetric treatment of upper and lower
+  bounds.
+*/
 
     int i;
     int nFix = 0;
@@ -156,6 +185,13 @@ CbcHeuristicLocal::solutionFix(double & objectiveValue,
             nFix++;
         }
     }
+/*
+  Try a `small' branch-and-bound search. The notion here is that we've fixed a
+  lot of variables and reduced the amount of `free' problem to a point where a
+  small BaB search will suffice to fully explore the remaining problem. This
+  routine will execute integer presolve, then call branchAndBound to do the
+  actual search.
+*/
     int returnCode = 0;
 #ifdef CLP_INVESTIGATE2
     printf("Fixing %d out of %d (%d continuous)\n",
@@ -197,7 +233,11 @@ CbcHeuristicLocal::solutionFix(double & objectiveValue,
     if (nFix*10 > numberIntegers) {
         returnCode = smallBranchAndBound(newSolver, numberNodes_, newSolution, objectiveValue,
                                          objectiveValue, "CbcHeuristicLocal");
-        if (returnCode < 0) {
+ /*
+  -2 is return due to user event, and -1 is overloaded with what look to be
+  two contradictory meanings.
+*/
+       if (returnCode < 0) {
             returnCode = 0; // returned on size
             int numberColumns = newSolver->getNumCols();
             int numberContinuous = numberColumns - numberIntegers;
@@ -261,6 +301,11 @@ CbcHeuristicLocal::solutionFix(double & objectiveValue,
             }
         }
     }
+/*
+  If the result is complete exploration with a solution (3) or proven
+  infeasibility (2), we could generate a cut (the AI folks would call it a
+  nogood) to prevent us from going down this route in the future.
+*/
     if ((returnCode&2) != 0) {
         // could add cut
         returnCode &= ~2;
@@ -272,16 +317,53 @@ CbcHeuristicLocal::solutionFix(double & objectiveValue,
 /*
   First tries setting a variable to better value.  If feasible then
   tries setting others.  If not feasible then tries swaps
-  Returns 1 if solution, 0 if not */
+  Returns 1 if solution, 0 if not 
+  The main body of this routine implements an O((q^2)/2) brute force search
+  around the current solution, for q = number of integer variables. Call this
+  the inc/dec heuristic.  For each integer variable x<i>, first decrement the
+  value. Then, for integer variables x<i+1>, ..., x<q-1>, try increment and
+  decrement. If one of these permutations produces a better solution,
+  remember it.  Then repeat, with x<i> incremented. If we find a better
+  solution, update our notion of current solution and continue.
+
+  The net effect is a greedy walk: As each improving pair is found, the
+  current solution is updated and the search continues from this updated
+  solution.
+
+  Way down at the end, we call solutionFix, which will create a drastically
+  restricted problem based on variables marked as used, then do mini-BaC on
+  the restricted problem. This can occur even if we don't try the inc/dec
+  heuristic. This would be more obvious if the inc/dec heuristic were broken
+  out as a separate routine and solutionFix had a name that reflected where
+  it was headed.
+
+  The return code of 0 is grossly overloaded, because it maps to a return
+  code of 0 from solutionFix, which is itself grossly overloaded. See
+  comments in solutionFix and in CbcHeuristic::smallBranchAndBound.
+  */
 int
 CbcHeuristicLocal::solution(double & solutionValue,
                             double * betterSolution)
 {
+/*
+  Execute only if a new solution has been discovered since the last time we
+  were called.
+*/
 
     numCouldRun_++;
     if (numberSolutions_ == model_->getSolutionCount())
         return 0;
     numberSolutions_ = model_->getSolutionCount();
+/*
+  Exclude long (column), thin (row) systems.
+
+  Given the n^2 nature of the search, more than 100,000 columns could get
+  expensive. But I don't yet see the rationale for the second part of the
+  condition (cols > 10*rows). And cost is proportional to number of integer
+  variables --- shouldn't we use that?
+
+  Why wait until we have more than one solution?
+*/
     if ((model_->getNumCols() > 100000 && model_->getNumCols() >
             10*model_->getNumRows()) || numberSolutions_ <= 1)
         return 0; // probably not worth it
@@ -291,6 +373,10 @@ CbcHeuristicLocal::solution(double & solutionValue,
     const double * rowLower = solver->getRowLower();
     const double * rowUpper = solver->getRowUpper();
     const double * solution = model_->bestSolution();
+/*
+  Shouldn't this test be redundant if we've already checked that
+  numberSolutions_ > 1? Stronger: shouldn't this be an assertion?
+*/
     if (!solution)
         return 0; // No solution found yet
     const double * objective = solver->getObjCoefficients();
@@ -337,6 +423,22 @@ CbcHeuristicLocal::solution(double & solutionValue,
     memset(mark, 0, numberRows);
     // space to save values so we don't introduce rounding errors
     double * save = new double[numberRows];
+/*
+  Force variables within their original bounds, then to the nearest integer.
+  Overall, we seem to be prepared to cope with noninteger bounds. Is this
+  necessary? Seems like we'd be better off to force the bounds to integrality
+  as part of preprocessing.  More generally, why do we need to do this? This
+  solution should have been cleaned and checked when it was accepted as a
+  solution!
+
+  Once the value is set, decide whether we can move up or down.
+
+  The only place that used_ is used is in solutionFix; if a variable is not
+  flagged as used, it will be fixed (at lower bound). Why the asymmetric
+  treatment? This makes some sense for binary variables (for which there are
+  only two options). But for general integer variables, why not make a similar
+  test against the original upper bound?
+*/
 
     // clean solution
     for (i = 0; i < numberIntegers; i++) {
@@ -363,6 +465,10 @@ CbcHeuristicLocal::solution(double & solutionValue,
             used_[iColumn] = numberSolutions_;
         }
         cost[i] = direction * objective[iColumn];
+/*
+  Given previous computation we're checking that value is at least 1 away
+  from the original bounds.
+*/
         int iway = 0;
 
         if (value > originalLower + 0.5)
@@ -371,6 +477,9 @@ CbcHeuristicLocal::solution(double & solutionValue,
             iway |= 2;
         way[i] = static_cast<char>(iway);
     }
+/*
+  Calculate lhs of each constraint for groomed solution.
+*/
     // get row activities
     double * rowActivity = new double[numberRows];
     memset(rowActivity, 0, numberRows*sizeof(double));
@@ -386,6 +495,13 @@ CbcHeuristicLocal::solution(double & solutionValue,
             }
         }
     }
+/*
+  Check that constraints are satisfied. For small infeasibility, force the
+  activity within bound. Again, why is this necessary if the current solution
+  was accepted as a valid solution?
+
+  Why are we scanning past the first unacceptable constraint?
+*/
     // check was feasible - if not adjust (cleaning may move)
     // if very infeasible then give up
     bool tryHeuristic = true;
@@ -400,14 +516,32 @@ CbcHeuristicLocal::solution(double & solutionValue,
             rowActivity[i] = rowUpper[i];
         }
     }
+/*
+  This bit of code is not quite totally redundant: it'll bail at 10,000
+  instead of 100,000. Potentially we can do a lot of work to get here, only
+  to abandon it.
+*/
     // Switch off if may take too long
     if (model_->getNumCols() > 10000 && model_->getNumCols() >
             10*model_->getNumRows())
         tryHeuristic = false;
+/*
+  Try the inc/dec heuristic?
+*/
     if (tryHeuristic) {
 
         // best change in objective
         double bestChange = 0.0;
+/*
+  Outer loop to walk integer variables. Call the current variable x<i>. At the
+  end of this loop, bestChange will contain the best (negative) change in the
+  objective for any single pair.
+
+  The trouble is, we're limited to monotonically increasing improvement.
+  Suppose we discover an improvement of 10 for some pair. If, later in the
+  search, we discover an improvement of 9 for some other pair, we will not use
+  it. That seems wasteful.
+*/
 
         for (i = 0; i < numberIntegers; i++) {
             int iColumn = integerVariable[i];
@@ -417,8 +551,16 @@ CbcHeuristicLocal::solution(double & solutionValue,
             int j;
             int goodK = -1;
             int wayK = -1, wayI = -1;
+/*
+  Try decrementing x<i>.
+*/
             if ((way[i]&1) != 0) {
                 int numberInfeasible = 0;
+/*
+  Adjust row activities where x<i> has a nonzero coefficient. Save the old
+  values for restoration. Mark any rows that become infeasible as a result
+  of the decrement.
+*/
                 // save row activities and adjust
                 for (j = columnStart[iColumn];
                         j < columnStart[iColumn] + columnLength[iColumn]; j++) {
@@ -432,7 +574,14 @@ CbcHeuristicLocal::solution(double & solutionValue,
                         numberInfeasible++;
                     }
                 }
-                // try down
+  /*
+  Run through the remaining integer variables. Try increment and decrement on
+  each one. If the potential objective change is better than anything we've
+  seen so far, do a full evaluation of x<k> in that direction.  If we can
+  repair all infeasibilities introduced by pushing x<i> down, we have a
+  winner. Remember the best variable, and the direction for x<i> and x<k>.
+*/
+              // try down
                 for (k = i + 1; k < numberIntegers; k++) {
                     if ((way[k]&1) != 0) {
                         // try down
@@ -493,6 +642,9 @@ CbcHeuristicLocal::solution(double & solutionValue,
                         }
                     }
                 }
+/*
+  Remove effect of decrementing x<i> by restoring original lhs values.
+*/
                 // restore row activities
                 for (j = columnStart[iColumn];
                         j < columnStart[iColumn] + columnLength[iColumn]; j++) {
@@ -501,6 +653,9 @@ CbcHeuristicLocal::solution(double & solutionValue,
                     mark[iRow] = 0;
                 }
             }
+/*
+  Try to increment x<i>. Actions as for decrement.
+*/
             if ((way[i]&2) != 0) {
                 int numberInfeasible = 0;
                 // save row activities and adjust
@@ -585,6 +740,12 @@ CbcHeuristicLocal::solution(double & solutionValue,
                     mark[iRow] = 0;
                 }
             }
+/*
+  We've found a pair x<i> and x<k> which produce a better solution. Update our
+  notion of current solution to match.
+
+  Why does this not update newSolutionValue?
+*/
             if (goodK >= 0) {
                 // we found something - update solution
                 for (j = columnStart[iColumn];
@@ -600,7 +761,11 @@ CbcHeuristicLocal::solution(double & solutionValue,
                     rowActivity[iRow]  += wayK * element[j];
                 }
                 newSolution[kColumn] += wayK;
-                // See if k can go further ?
+/*
+  Adjust motion range for x<k>. We may have banged up against a bound with that
+  last move.
+*/
+               // See if k can go further ?
                 const OsiObject * object = model_->object(goodK);
                 // get original bounds
                 double originalLower;
@@ -617,6 +782,14 @@ CbcHeuristicLocal::solution(double & solutionValue,
                 way[goodK] = static_cast<char>(iway);
             }
         }
+/*
+  End of loop to try increment/decrement of integer variables.
+
+  newSolutionValue does not necessarily match the current newSolution, and
+  bestChange simply reflects the best single change. Still, that's sufficient
+  to indicate that there's been at least one change. Check that we really do
+  have a valid solution.
+*/
         if (bestChange + newSolutionValue < solutionValue) {
             // paranoid check
             memset(rowActivity, 0, numberRows*sizeof(double));
@@ -661,6 +834,13 @@ CbcHeuristicLocal::solution(double & solutionValue,
                         used_[iColumn] = numberSolutions_;
                     }
                 }
+/*
+  Copy the solution to the array returned to the client. Grab a basis from
+  the solver (which, if it exists, is almost certainly infeasible, but it
+  should be ok for a dual start). The value returned as solutionValue is
+  conservative because of handling of newSolutionValue and bestChange, as
+  described above.
+*/
                 // new solution
                 memcpy(betterSolution, newSolution, numberColumns*sizeof(double));
                 CoinWarmStartBasis * basis =
@@ -678,12 +858,21 @@ CbcHeuristicLocal::solution(double & solutionValue,
             }
         }
     }
+/*
+  We're done. Clean up.
+*/
     delete [] newSolution;
     delete [] rowActivity;
     delete [] way;
     delete [] cost;
     delete [] save;
     delete [] mark;
+/*
+  Do we want to try swapping values between solutions?
+  swap_ is set elsewhere; it's not adjusted during heuristic execution.
+
+  Again, redundant test. We shouldn't be here if numberSolutions_ = 1.
+*/
     if (numberSolutions_ > 1 && swap_ == 1) {
         // try merge
         int returnCode2 = solutionFix( solutionValue, betterSolution, NULL);

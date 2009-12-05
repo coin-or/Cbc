@@ -5,6 +5,14 @@
 #define CbcFathom_H
 #include "CbcConfig.h"
 
+/*
+  This file contains two classes, CbcFathom and CbcOsiSolver. It's unclear why
+  they're in the same file. CbcOsiSolver is a base class for CbcLinked.
+
+  --lh, 071031 --
+*/
+
+
 class CbcModel;
 
 //#############################################################################
@@ -73,6 +81,8 @@ private:
 /**
 
 This is for codes where solver needs to know about CbcModel
+  Seems to provide only one value-added feature, a CbcModel object.
+
 */
 
 class CbcOsiSolver : public OsiClpSolverInterface {

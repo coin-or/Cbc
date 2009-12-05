@@ -2,6 +2,14 @@
 // copyright (C) 2002, International Business Machines
 // Corporation and others.  All Rights Reserved.
 
+/*! \file CbcMain.cpp
+    \brief Obsolete main routine for stand-alone cbc.
+
+    Unused since at least 2006. JJF forked off a clp-specific version, which
+    evolved into CoinSolve and CbcSolver. LH changed to a completely different
+    structure for CbcGeneric.
+*/
+
 #include "CbcConfig.h"
 
 #if defined(_MSC_VER)

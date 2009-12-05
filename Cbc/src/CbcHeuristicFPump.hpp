@@ -54,6 +54,11 @@ public:
           13 - also fix all continuous variables staying at same bound throughout
           14 - also fix all continuous variables staying at same internal value throughout
           15 - as 13 but no internal integers
+      And beyond that, it's apparently possible for the range to be between 21
+      and 25, in which case it's reduced on entry to solution() to be between
+      11 and 15 and allSlack is set to true. Then, if we're not processing
+      general integers, we'll use an all-slack basis to solve ... what? Don't
+      see that yet.
     */
     virtual int solution(double & objectiveValue,
                          double * newSolution);
@@ -150,6 +155,19 @@ public:
          2 - reuse solves, do not accumulate integer solutions for local search
          3 - reuse solves, accumulate integer solutions for local search
          If we add 4 then use second form of problem (with extra rows and variables for general integers)
+       At some point (date?), I added
+
+       And then there are a few bit fields:
+       4 - something about general integers
+       So my (lh) guess for 4 was at least in the ballpark, but I'll have to
+       rethink 8 entirely (and it may well not mean the same thing as it did
+       when I added that comment.
+       8 - determines whether we process general integers
+
+       And on 090831, John added
+
+       If we add 4 then use second form of problem (with extra rows and
+       variables for general integers)
          If we add 8 then can run after initial cuts (if no solution)
     */
     inline void setAccumulate(int value) {

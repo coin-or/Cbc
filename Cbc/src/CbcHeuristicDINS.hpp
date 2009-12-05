@@ -1,40 +1,33 @@
-/* $Id: CbcHeuristicRINS.hpp 1261 2009-10-30 12:45:20Z forrest $ */
-// Copyright (C) 2006, International Business Machines
-// Corporation and others.  All Rights Reserved.
-#ifndef CbcHeuristicRINS_H
-#define CbcHeuristicRINS_H
+// edwin 12/5/09 carved out of CbcHeuristicRINS
+#ifndef CbcHeuristicDINS_H
+#define CbcHeuristicDINS_H
 
 #include "CbcHeuristic.hpp"
-// for backward compatibility include 3 other headers
-#include "CbcHeuristicRENS.hpp"
-#include "CbcHeuristicDINS.hpp"
-#include "CbcHeuristicVND.hpp"
-/** LocalSearch class
- */
 
-class CbcHeuristicRINS : public CbcHeuristic {
+
+class CbcHeuristicDINS : public CbcHeuristic {
 public:
 
     // Default Constructor
-    CbcHeuristicRINS ();
+    CbcHeuristicDINS ();
 
     /* Constructor with model - assumed before cuts
        Initial version does not do Lps
     */
-    CbcHeuristicRINS (CbcModel & model);
+    CbcHeuristicDINS (CbcModel & model);
 
     // Copy constructor
-    CbcHeuristicRINS ( const CbcHeuristicRINS &);
+    CbcHeuristicDINS ( const CbcHeuristicDINS &);
 
     // Destructor
-    ~CbcHeuristicRINS ();
+    ~CbcHeuristicDINS ();
 
     /// Clone
     virtual CbcHeuristic * clone() const;
 
 
     /// Assignment operator
-    CbcHeuristicRINS & operator=(const CbcHeuristicRINS& rhs);
+    CbcHeuristicDINS & operator=(const CbcHeuristicDINS& rhs);
 
     /// Create C++ lines to get to current state
     virtual void generateCpp( FILE * fp) ;
@@ -61,13 +54,13 @@ public:
     inline void setHowOften(int value) {
         howOften_ = value;
     }
-    /// Used array so we can set
-    inline char * used() const {
-        return used_;
+    /// Sets maximum number of solutions kept
+    inline void setMaximumKeep(int value) {
+        maximumKeepSolutions_ = value;
     }
-    /// Resets lastNode
-    inline void setLastNode(int value) {
-        lastNode_ = value;
+    /// Sets tightness of extra constraint
+    inline void setConstraint(int value) {
+        localSpace_ = value;
     }
 
 protected:
@@ -81,15 +74,16 @@ protected:
     int numberSuccesses_;
     /// Number of tries
     int numberTries_;
-    /** State of fixing continuous variables -
-        0 - not tried
-        +n - this divisor makes small enough
-        -n - this divisor still not small enough
-    */
-    int stateOfFixing_;
-    /// Node when last done
-    int lastNode_;
-    /// Whether a variable has been in a solution
-    char * used_;
+    /// Maximum number of solutions to keep
+    int maximumKeepSolutions_;
+    /// Number of solutions kept
+    int numberKeptSolutions_;
+    /// Number of integer variables
+    int numberIntegers_;
+    /// Local parameter
+    int localSpace_;
+    /// Values of integer variables
+    int ** values_;
 };
+
 #endif

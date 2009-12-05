@@ -525,6 +525,10 @@
 				</FileConfiguration>
 			</File>
 			<File
+				RelativePath="..\..\..\src\CbcHeuristicDINS.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\..\src\CbcHeuristicDive.cpp"
 				>
 				<FileConfiguration
@@ -741,6 +745,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\..\src\CbcHeuristicRENS.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\..\..\Cbc\src\CbcHeuristicRINS.cpp"
 				>
 				<FileConfiguration
@@ -764,6 +772,10 @@
 						PreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\..\..\src\CbcHeuristicVND.cpp"
+				>
 			</File>
 			<File
 				RelativePath="..\..\..\src\CbcLinked.cpp"
@@ -1196,6 +1208,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\..\src\CbcHeuristicDINS.hpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\..\src\CbcHeuristicDive.hpp"
 				>
 			</File>
@@ -1244,7 +1260,15 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\..\src\CbcHeuristicRENS.hpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\..\..\Cbc\src\CbcHeuristicRINS.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\..\src\CbcHeuristicVND.hpp"
 				>
 			</File>
 			<File

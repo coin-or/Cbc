@@ -171,15 +171,16 @@ am_libCbc_la_OBJECTS = Cbc_C_Interface.lo CbcBranchAllDifferent.lo \
 	CbcDummyBranchingObject.lo CbcEventHandler.lo CbcFathom.lo \
 	CbcFathomDynamicProgramming.lo CbcFixVariable.lo \
 	CbcFullNodeInfo.lo CbcFollowOn.lo CbcGeneral.lo \
-	CbcGeneralDepth.lo CbcHeuristic.lo CbcHeuristicDive.lo \
-	CbcHeuristicDiveCoefficient.lo CbcHeuristicDiveFractional.lo \
-	CbcHeuristicDiveGuided.lo CbcHeuristicDiveLineSearch.lo \
-	CbcHeuristicDivePseudoCost.lo CbcHeuristicDiveVectorLength.lo \
-	CbcHeuristicFPump.lo CbcHeuristicGreedy.lo \
-	CbcHeuristicLocal.lo CbcHeuristicPivotAndFix.lo \
-	CbcHeuristicRandRound.lo CbcHeuristicRINS.lo CbcMessage.lo \
-	CbcModel.lo CbcNode.lo CbcNodeInfo.lo CbcNWay.lo CbcObject.lo \
-	CbcObjectUpdateData.lo CbcPartialNodeInfo.lo \
+	CbcGeneralDepth.lo CbcHeuristic.lo CbcHeuristicDINS.lo \
+	CbcHeuristicDive.lo CbcHeuristicDiveCoefficient.lo \
+	CbcHeuristicDiveFractional.lo CbcHeuristicDiveGuided.lo \
+	CbcHeuristicDiveLineSearch.lo CbcHeuristicDivePseudoCost.lo \
+	CbcHeuristicDiveVectorLength.lo CbcHeuristicFPump.lo \
+	CbcHeuristicGreedy.lo CbcHeuristicLocal.lo \
+	CbcHeuristicPivotAndFix.lo CbcHeuristicRandRound.lo \
+	CbcHeuristicRENS.lo CbcHeuristicRINS.lo CbcHeuristicVND.lo \
+	CbcMessage.lo CbcModel.lo CbcNode.lo CbcNodeInfo.lo CbcNWay.lo \
+	CbcObject.lo CbcObjectUpdateData.lo CbcPartialNodeInfo.lo \
 	CbcSimpleInteger.lo CbcSimpleIntegerDynamicPseudoCost.lo \
 	CbcSimpleIntegerPseudoCost.lo CbcSOS.lo CbcStatistics.lo \
 	CbcStrategy.lo CbcSubProblem.lo CbcTree.lo CbcTreeLocal.lo
@@ -551,6 +552,7 @@ libCbc_la_SOURCES = \
 	CbcGeneral.cpp CbcGeneral.hpp \
 	CbcGeneralDepth.cpp CbcGeneralDepth.hpp \
 	CbcHeuristic.cpp CbcHeuristic.hpp \
+	CbcHeuristicDINS.cpp CbcHeuristicDINS.hpp \
 	CbcHeuristicDive.cpp CbcHeuristicDive.hpp \
 	CbcHeuristicDiveCoefficient.cpp CbcHeuristicDiveCoefficient.hpp \
 	CbcHeuristicDiveFractional.cpp CbcHeuristicDiveFractional.hpp \
@@ -563,7 +565,9 @@ libCbc_la_SOURCES = \
 	CbcHeuristicLocal.cpp CbcHeuristicLocal.hpp \
 	CbcHeuristicPivotAndFix.cpp CbcHeuristicPivotAndFix.hpp \
 	CbcHeuristicRandRound.cpp CbcHeuristicRandRound.hpp \
+	CbcHeuristicRENS.cpp CbcHeuristicRENS.hpp \
 	CbcHeuristicRINS.cpp CbcHeuristicRINS.hpp \
+	CbcHeuristicVND.cpp CbcHeuristicVND.hpp \
 	CbcMessage.cpp CbcMessage.hpp \
 	CbcModel.cpp CbcModel.hpp \
 	CbcNode.cpp CbcNode.hpp \
@@ -728,6 +732,7 @@ includecoin_HEADERS = \
 	CbcGeneral.hpp \
 	CbcGeneralDepth.hpp \
 	CbcHeuristic.hpp \
+	CbcHeuristicDINS.hpp \
 	CbcHeuristicDive.hpp \
 	CbcHeuristicDiveCoefficient.hpp \
 	CbcHeuristicDiveFractional.hpp \
@@ -740,7 +745,9 @@ includecoin_HEADERS = \
 	CbcHeuristicLocal.hpp \
 	CbcHeuristicPivotAndFix.hpp \
 	CbcHeuristicRandRound.hpp \
+	CbcHeuristicRENS.hpp \
 	CbcHeuristicRINS.hpp \
+	CbcHeuristicVND.hpp \
 	CbcMessage.hpp \
 	CbcModel.hpp \
 	CbcNode.hpp \
@@ -915,6 +922,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcGeneralDepth.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcGeneric.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcHeuristic.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcHeuristicDINS.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcHeuristicDive.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcHeuristicDiveCoefficient.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcHeuristicDiveFractional.Plo@am__quote@
@@ -926,8 +934,10 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcHeuristicGreedy.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcHeuristicLocal.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcHeuristicPivotAndFix.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcHeuristicRENS.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcHeuristicRINS.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcHeuristicRandRound.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcHeuristicVND.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcLinked.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcMessage.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcModel.Plo@am__quote@

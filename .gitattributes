@@ -100,6 +100,8 @@ Cbc/src/CbcGeneral.hpp -text
 Cbc/src/CbcGeneralDepth.cpp -text
 Cbc/src/CbcGeneralDepth.hpp -text
 Cbc/src/CbcGeneric.cpp_lou -text
+Cbc/src/CbcHeuristicDINS.cpp -text
+Cbc/src/CbcHeuristicDINS.hpp -text
 Cbc/src/CbcHeuristicDive.cpp -text
 Cbc/src/CbcHeuristicDive.hpp -text
 Cbc/src/CbcHeuristicDiveCoefficient.cpp -text
@@ -116,10 +118,14 @@ Cbc/src/CbcHeuristicDiveVectorLength.cpp -text
 Cbc/src/CbcHeuristicDiveVectorLength.hpp -text
 Cbc/src/CbcHeuristicPivotAndFix.cpp -text
 Cbc/src/CbcHeuristicPivotAndFix.hpp -text
+Cbc/src/CbcHeuristicRENS.cpp -text
+Cbc/src/CbcHeuristicRENS.hpp -text
 Cbc/src/CbcHeuristicRINS.cpp -text
 Cbc/src/CbcHeuristicRINS.hpp -text
 Cbc/src/CbcHeuristicRandRound.cpp -text
 Cbc/src/CbcHeuristicRandRound.hpp -text
+Cbc/src/CbcHeuristicVND.cpp -text
+Cbc/src/CbcHeuristicVND.hpp -text
 Cbc/src/CbcLinked.cpp -text
 Cbc/src/CbcLinked.hpp -text
 Cbc/src/CbcNWay.cpp -text

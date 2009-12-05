@@ -1,40 +1,36 @@
-/* $Id: CbcHeuristicRINS.hpp 1261 2009-10-30 12:45:20Z forrest $ */
-// Copyright (C) 2006, International Business Machines
-// Corporation and others.  All Rights Reserved.
-#ifndef CbcHeuristicRINS_H
-#define CbcHeuristicRINS_H
+// edwin 12/5/09 carved out of CbcHeuristicRINS
+#ifndef CbcHeuristicVND_H
+#define CbcHeuristicVND_H
 
 #include "CbcHeuristic.hpp"
-// for backward compatibility include 3 other headers
-#include "CbcHeuristicRENS.hpp"
-#include "CbcHeuristicDINS.hpp"
-#include "CbcHeuristicVND.hpp"
+
+
 /** LocalSearch class
  */
 
-class CbcHeuristicRINS : public CbcHeuristic {
+class CbcHeuristicVND : public CbcHeuristic {
 public:
 
     // Default Constructor
-    CbcHeuristicRINS ();
+    CbcHeuristicVND ();
 
     /* Constructor with model - assumed before cuts
        Initial version does not do Lps
     */
-    CbcHeuristicRINS (CbcModel & model);
+    CbcHeuristicVND (CbcModel & model);
 
     // Copy constructor
-    CbcHeuristicRINS ( const CbcHeuristicRINS &);
+    CbcHeuristicVND ( const CbcHeuristicVND &);
 
     // Destructor
-    ~CbcHeuristicRINS ();
+    ~CbcHeuristicVND ();
 
     /// Clone
     virtual CbcHeuristic * clone() const;
 
 
     /// Assignment operator
-    CbcHeuristicRINS & operator=(const CbcHeuristicRINS& rhs);
+    CbcHeuristicVND & operator=(const CbcHeuristicVND& rhs);
 
     /// Create C++ lines to get to current state
     virtual void generateCpp( FILE * fp) ;
@@ -61,13 +57,9 @@ public:
     inline void setHowOften(int value) {
         howOften_ = value;
     }
-    /// Used array so we can set
-    inline char * used() const {
-        return used_;
-    }
-    /// Resets lastNode
-    inline void setLastNode(int value) {
-        lastNode_ = value;
+    /// base solution array so we can set
+    inline double * baseSolution() const {
+        return baseSolution_;
     }
 
 protected:
@@ -81,15 +73,15 @@ protected:
     int numberSuccesses_;
     /// Number of tries
     int numberTries_;
-    /** State of fixing continuous variables -
-        0 - not tried
-        +n - this divisor makes small enough
-        -n - this divisor still not small enough
-    */
-    int stateOfFixing_;
     /// Node when last done
     int lastNode_;
-    /// Whether a variable has been in a solution
-    char * used_;
+    /// Step size for decomposition
+    int stepSize_;
+    int k_;
+    int kmax_;
+    int nDifferent_;
+    /// Base solution
+    double * baseSolution_;
 };
+
 #endif

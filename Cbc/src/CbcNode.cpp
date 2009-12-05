@@ -3527,6 +3527,9 @@ int CbcNode::analyze (CbcModel *model, double * results)
     double objMin = 1.0e50;
     double objMax = -1.0e50;
     bool needResolve = false;
+/*
+  Now calculate the cost forcing the variable up and down.
+*/
     int iDo;
     for (iDo = 0; iDo < numberToDo; iDo++) {
         CbcStrongInfo choice;
@@ -3538,6 +3541,9 @@ int CbcNode::analyze (CbcModel *model, double * results)
             continue;
         int iColumn = dynamicObject->columnNumber();
         int preferredWay;
+/*
+  Update the information held in the object.
+*/
         object->infeasibility(&usefulInfo, preferredWay);
         double value = currentSolution[iColumn];
         double nearest = floor(value + 0.5);
@@ -3979,6 +3985,23 @@ CbcNode::branch(OsiSolverInterface * solver)
    In the simplest instance, coded -1 for the down arm of the branch, +1 for
    the up arm. But see OsiBranchingObject::way()
    Use nodeInfo--.numberBranchesLeft_ to see how active
+
+   Except that there is no OsiBranchingObject::way(), and this'll fail in any
+   event because we have various OsiXXXBranchingObjects which aren't descended
+   from CbcBranchingObjects. I think branchIndex() is the appropriate
+   equivalent, but could be wrong. (lh, 061220)
+
+   071212: I'm finally getting back to cbc-generic and rescuing a lot of my
+   annotation from branches/devel (which was killed in summer). I'm going to
+   put back an assert(obj) just to see what happens. It's still present as of
+   the most recent change to CbcNode (r833).
+
+   080104: Yep, we can arrive here with an OsiBranchingObject. Removed the
+   assert, it's served its purpose.
+
+   080226: John finally noticed this problem and added a way() method to the
+   OsiBranchingObject hierarchy. Removing my workaround.
+
 */
 int
 CbcNode::way() const

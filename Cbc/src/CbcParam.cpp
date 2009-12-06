@@ -20,7 +20,7 @@
 // Default Constructor
 //-------------------------------------------------------------------
 CbcParam::CbcParam ()
-        : type_(INVALID),
+        : type_(CBC_PARAM_NOTUSED_INVALID),
         lowerDoubleValue_(0.0),
         upperDoubleValue_(0.0),
         lowerIntValue_(0),
@@ -31,7 +31,7 @@ CbcParam::CbcParam ()
         name_(),
         shortHelp_(),
         longHelp_(),
-        action_(INVALID),
+        action_(CBC_PARAM_NOTUSED_INVALID),
         currentKeyWord_(-1)
 {
 }
@@ -284,11 +284,11 @@ CbcParam::setDoubleParameter (OsiSolverInterface * model, double value) const
     } else {
         double oldValue;
         switch (type_) {
-        case DUALTOLERANCE:
+        case CLP_PARAM_DBL_DUALTOLERANCE:
             model->getDblParam(OsiDualTolerance, oldValue);
             model->setDblParam(OsiDualTolerance, value);
             break;
-        case PRIMALTOLERANCE:
+        case CLP_PARAM_DBL_PRIMALTOLERANCE:
             model->getDblParam(OsiPrimalTolerance, oldValue);
             model->setDblParam(OsiPrimalTolerance, value);
             break;
@@ -319,11 +319,11 @@ CbcParam::doubleParameter (OsiSolverInterface * model) const
     double value;
     bool getDblParamRetValue;
     switch (type_) {
-    case DUALTOLERANCE:
+    case CLP_PARAM_DBL_DUALTOLERANCE:
         getDblParamRetValue = model->getDblParam(OsiDualTolerance, value);
         assert(getDblParamRetValue);
         break;
-    case PRIMALTOLERANCE:
+    case CLP_PARAM_DBL_PRIMALTOLERANCE:
         getDblParamRetValue = model->getDblParam(OsiPrimalTolerance, value);
         assert(getDblParamRetValue);
         break;
@@ -343,7 +343,7 @@ CbcParam::setIntParameter (OsiSolverInterface * model, int value) const
     } else {
         int oldValue;
         switch (type_) {
-        case LOGLEVEL:
+        case CLP_PARAM_INT_LOGLEVEL:
             oldValue = model->messageHandler()->logLevel();
             model->messageHandler()->setLogLevel(value);
             break;
@@ -361,7 +361,7 @@ CbcParam::intParameter (OsiSolverInterface * model) const
 {
     int value = 0;
     switch (type_) {
-    case LOGLEVEL:
+    case CLP_PARAM_INT_LOGLEVEL:
         //value=model->logLevel();
         break;
     default:
@@ -380,28 +380,28 @@ CbcParam::setDoubleParameter (CbcModel &model, double value) const
     } else {
         double oldValue;
         switch (type_) {
-        case INFEASIBILITYWEIGHT:
+        case CBC_PARAM_DBL_INFEASIBILITYWEIGHT:
             oldValue = model.getDblParam(CbcModel::CbcInfeasibilityWeight);
             model.setDblParam(CbcModel::CbcInfeasibilityWeight, value);
             break;
-        case INTEGERTOLERANCE:
+        case CBC_PARAM_DBL_INTEGERTOLERANCE:
             oldValue = model.getDblParam(CbcModel::CbcIntegerTolerance);
             model.setDblParam(CbcModel::CbcIntegerTolerance, value);
             break;
-        case INCREMENT:
+        case CBC_PARAM_DBL_INCREMENT:
             oldValue = model.getDblParam(CbcModel::CbcCutoffIncrement);
             model.setDblParam(CbcModel::CbcCutoffIncrement, value);
-        case ALLOWABLEGAP:
+        case CBC_PARAM_DBL_ALLOWABLEGAP:
             oldValue = model.getDblParam(CbcModel::CbcAllowableGap);
             model.setDblParam(CbcModel::CbcAllowableGap, value);
             break;
-        case TIMELIMIT: {
+        case CLP_PARAM_DBL_TIMELIMIT: {
             oldValue = model.getDblParam(CbcModel::CbcMaximumSeconds) ;
             model.setDblParam(CbcModel::CbcMaximumSeconds, value) ;
             break ;
         }
-        case DUALTOLERANCE:
-        case PRIMALTOLERANCE:
+        case CLP_PARAM_DBL_DUALTOLERANCE:
+        case CLP_PARAM_DBL_PRIMALTOLERANCE:
             setDoubleParameter(model.solver(), value);
             return 0; // to avoid message
         default:
@@ -418,23 +418,23 @@ CbcParam::doubleParameter (CbcModel &model) const
 {
     double value;
     switch (type_) {
-    case INFEASIBILITYWEIGHT:
+    case CBC_PARAM_DBL_INFEASIBILITYWEIGHT:
         value = model.getDblParam(CbcModel::CbcInfeasibilityWeight);
         break;
-    case INTEGERTOLERANCE:
+    case CBC_PARAM_DBL_INTEGERTOLERANCE:
         value = model.getDblParam(CbcModel::CbcIntegerTolerance);
         break;
-    case INCREMENT:
+    case CBC_PARAM_DBL_INCREMENT:
         value = model.getDblParam(CbcModel::CbcCutoffIncrement);
-    case ALLOWABLEGAP:
+    case CBC_PARAM_DBL_ALLOWABLEGAP:
         value = model.getDblParam(CbcModel::CbcAllowableGap);
         break;
-    case TIMELIMIT: {
+    case CLP_PARAM_DBL_TIMELIMIT: {
         value = model.getDblParam(CbcModel::CbcMaximumSeconds) ;
         break ;
     }
-    case DUALTOLERANCE:
-    case PRIMALTOLERANCE:
+    case CLP_PARAM_DBL_DUALTOLERANCE:
+    case CLP_PARAM_DBL_PRIMALTOLERANCE:
         value = doubleParameter(model.solver());
         break;
     default:
@@ -453,19 +453,19 @@ CbcParam::setIntParameter (CbcModel &model, int value) const
     } else {
         int oldValue;
         switch (type_) {
-        case LOGLEVEL:
+        case CLP_PARAM_INT_LOGLEVEL:
             oldValue = model.messageHandler()->logLevel();
             model.messageHandler()->setLogLevel(value);
             break;
-        case SOLVERLOGLEVEL:
+        case CLP_PARAM_INT_SOLVERLOGLEVEL:
             oldValue = model.solver()->messageHandler()->logLevel();
             model.solver()->messageHandler()->setLogLevel(value);
             break;
-        case MAXNODES:
+        case CBC_PARAM_INT_MAXNODES:
             oldValue = model.getIntParam(CbcModel::CbcMaxNumNode);
             model.setIntParam(CbcModel::CbcMaxNumNode, value);
             break;
-        case STRONGBRANCHING:
+        case CBC_PARAM_INT_STRONGBRANCHING:
             oldValue = model.numberStrong();
             model.setNumberStrong(value);
             break;
@@ -483,16 +483,16 @@ CbcParam::intParameter (CbcModel &model) const
 {
     int value;
     switch (type_) {
-    case LOGLEVEL:
+    case CLP_PARAM_INT_LOGLEVEL:
         value = model.messageHandler()->logLevel();
         break;
-    case SOLVERLOGLEVEL:
+    case CLP_PARAM_INT_SOLVERLOGLEVEL:
         value = model.solver()->messageHandler()->logLevel();
         break;
-    case MAXNODES:
+    case CBC_PARAM_INT_MAXNODES:
         value = model.getIntParam(CbcModel::CbcMaxNumNode);
         break;
-    case STRONGBRANCHING:
+    case CBC_PARAM_INT_STRONGBRANCHING:
         value = model.numberStrong();
         break;
     default:

@@ -185,7 +185,7 @@ CbcAmpl::importData(CbcSolver * control, int &argc, char ** & argv)
                 if (equals && atoi(equals + 1) > 0) {
                     printing = true;
                     info_.logLevel = atoi(equals + 1);
-                    control->setIntValue(LOGLEVEL, info_.logLevel);
+                    control->setIntValue(CLP_PARAM_INT_LOGLEVEL, info_.logLevel);
                     // mark so won't be overWritten
                     info_.numberRows = -1234567;
                     break;
@@ -236,20 +236,20 @@ CbcAmpl::importData(CbcSolver * control, int &argc, char ** & argv)
             si->setDefaultMeshSize(0.001);
             // need some relative granularity
             si->setDefaultBound(100.0);
-            double dextra3 = control->doubleValue(DEXTRA3);
+            double dextra3 = control->doubleValue(CBC_PARAM_DBL_DEXTRA3);
             if (dextra3)
                 si->setDefaultMeshSize(dextra3);
             si->setDefaultBound(100000.0);
             si->setIntegerPriority(1000);
             si->setBiLinearPriority(10000);
             CoinModel * model2 = (CoinModel *) coinModel;
-            int logLevel = control->intValue(LOGLEVEL);
+            int logLevel = control->intValue(CLP_PARAM_INT_LOGLEVEL);
             si->load(*model2, true, logLevel);
             // redo
             solver = dynamic_cast< OsiClpSolverInterface*> (control->model()->solver());
             lpSolver = solver->getModelPtr();
             solver->messageHandler()->setLogLevel(0) ;
-            control->setIntValue(TESTOSI, 0);
+            control->setIntValue(CBC_PARAM_INT_TESTOSI, 0);
             if (info_.cut) {
                 printf("Sorry - can't do cuts with LOS as ruins delicate row order\n");
                 abort();

@@ -605,6 +605,11 @@ CbcModel::analyzeObjective ()
                     }
                 }
 #endif
+/*
+  Generate a random objective function for problems where the given objective
+  function is not terribly useful. (Nearly feasible, single integer variable,
+  that sort of thing.
+*/
                 CoinDrand48(true, 1234567);
                 for (int i = 0; i < numberColumns; i++) {
                     double lowerValue = lower[i];
@@ -1012,6 +1017,9 @@ CbcModel::analyzeObjective ()
     int iColumn ;
     int numberColumns = getNumCols() ;
     double scaleFactor = 1.0; // due to rhs etc
+/*
+  Original model did not have integer bounds.
+*/
     if ((specialOptions_&65536) == 0) {
         /* be on safe side (later look carefully as may be able to
            to get 0.5 say if bounds are multiples of 0.5 */
@@ -1174,6 +1182,9 @@ void CbcModel::saveModel(OsiSolverInterface * saveSolver, double * checkCutoffFo
                 }
             }
 #ifdef COIN_DEVELOP
+/*
+  We're debugging. (specialOptions 1)
+*/
             if ((specialOptions_&1) != 0) {
                 const OsiRowCutDebugger *debugger = saveSolver->getRowCutDebugger() ;
                 if (debugger) {

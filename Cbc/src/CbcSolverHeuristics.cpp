@@ -1,4 +1,4 @@
-/* $Id: CbcSolverHeuristics.cpp 1240 2009-10-02 18:41:44Z forrest $ */
+/* $Id$ */
 // Copyright (C) 2007, International Business Machines
 // Corporation and others.  All Rights Reserved.
 
@@ -1133,10 +1133,8 @@ fixVubs(CbcModel & model, int skipZero2,
     return NULL;
 }
 
-
-int doHeuristics(CbcModel * model, int type, 
-						CbcOrClpParam * parameters_, int numberParameters_, 
-						bool noPrinting_, int initialPumpTune)
+int doHeuristics(CbcModel * model, int type, CbcOrClpParam* parameters_,
+		 int numberParameters_,int noPrinting_,int initialPumpTune)
 {
 #if 0 //NEW_STYLE_SOLVER==0
     CbcOrClpParam * parameters_ = parameters;

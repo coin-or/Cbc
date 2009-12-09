@@ -1,4 +1,4 @@
-/* $Id: CbcSolver.hpp 1212 2009-08-21 16:19:13Z forrest $ */
+/* $Id$ */
 // Copyright (C) 2007, International Business Machines
 // Corporation and others.  All Rights Reserved.
 
@@ -37,10 +37,9 @@ fixVubs(CbcModel & model, int skipZero2,
         3 - for miplib test so skip some
         (out model later)
     */
-int doHeuristics(CbcModel * model, int type, 
-						CbcOrClpParam * parameters_, int numberParameters_, 
-						bool noPrinting_, int initialPumpTune);
+int doHeuristics(CbcModel * model, int type, CbcOrClpParam *parameters_,
+		 int numberParameters_,int noPrinting_,int initialPumpTune) ;
 
-        
 
 #endif  //CbcSolverHeuristics_H
+

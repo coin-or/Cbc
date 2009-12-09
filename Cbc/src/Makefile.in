@@ -187,7 +187,8 @@ am_libCbc_la_OBJECTS = Cbc_C_Interface.lo CbcBranchAllDifferent.lo \
 libCbc_la_OBJECTS = $(am_libCbc_la_OBJECTS)
 libCbcSolver_la_LIBADD =
 am_libCbcSolver_la_OBJECTS = CbcCbcParam.lo Cbc_ampl.lo \
-	ClpAmplStuff.lo CbcLinked.lo unitTestClp.lo CbcSolver.lo
+	ClpAmplStuff.lo CbcLinked.lo unitTestClp.lo CbcSolver.lo \
+	CbcSolverHeuristics.lo
 libCbcSolver_la_OBJECTS = $(am_libCbcSolver_la_OBJECTS)
 @COIN_HAS_CLP_TRUE@am__EXEEXT_1 = cbc$(EXEEXT)
 @CBC_BUILD_CBC_GENERIC_TRUE@am__EXEEXT_2 = cbc-generic$(EXEEXT)
@@ -591,7 +592,8 @@ libCbcSolver_la_SOURCES = \
 	Cbc_ampl.cpp Cbc_ampl.h \
 	ClpConstraintAmpl.hpp ClpAmplObjective.hpp ClpAmplStuff.cpp \
 	CbcLinked.cpp CbcLinked.hpp \
-	unitTestClp.cpp CbcSolver.cpp 
+	unitTestClp.cpp CbcSolver.cpp \
+	CbcSolverHeuristics.cpp CbcSolverHeuristics.hpp
 
 
 #Stefan: added unitTestClp.cpp because CbcSolver defines reference to it
@@ -761,6 +763,7 @@ includecoin_HEADERS = \
 	CbcSimpleIntegerPseudoCost.hpp \
 	CbcStrategy.hpp \
 	CbcSolver.hpp \
+	CbcSolverHeuristics.hpp \
 	CbcSOS.hpp \
 	CbcSubProblem.hpp \
 	CbcTree.hpp \
@@ -952,6 +955,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcSimpleIntegerDynamicPseudoCost.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcSimpleIntegerPseudoCost.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcSolver.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcSolverHeuristics.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcStatistics.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcStrategy.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcSubProblem.Plo@am__quote@

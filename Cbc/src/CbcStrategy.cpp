@@ -475,6 +475,7 @@ CbcStrategyDefault::setupOther(CbcModel & model)
         // Tell solver we are in Branch and Cut
         solver->setHintParam(OsiDoInBranchAndCut, true, OsiHintDo) ;
         // Default set of cut generators
+	// Limited set that could reduce problem size (drop rows / fix values)
         CglProbing generator1;
         generator1.setUsingObjective(true);
         generator1.setMaxPass(1);
@@ -526,6 +527,9 @@ CbcStrategyDefault::setupOther(CbcModel & model)
                 /* Note that original solver will be kept (with false)
                    and that final solver will also be kept.
                    This is for post-processing
+
+		   Keep in mind when examining this that linear presolve does not
+		   understand SOS.
                 */
                 OsiSolverInterface * solver3 = solver2->clone();
                 model.assignSolver(solver3, false);

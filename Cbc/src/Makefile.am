@@ -80,8 +80,10 @@ libCbc_la_SOURCES = \
 	CbcObjectUpdateData.cpp CbcObjectUpdateData.hpp \
 	CbcPartialNodeInfo.cpp CbcPartialNodeInfo.hpp \
 	CbcSimpleInteger.cpp CbcSimpleInteger.hpp \
-	CbcSimpleIntegerDynamicPseudoCost.cpp CbcSimpleIntegerDynamicPseudoCost.hpp \
-	CbcSimpleIntegerPseudoCost.cpp CbcSimpleIntegerPseudoCost.hpp \
+	CbcSimpleIntegerDynamicPseudoCost.cpp \
+        CbcSimpleIntegerDynamicPseudoCost.hpp \
+	CbcSimpleIntegerPseudoCost.cpp \
+        CbcSimpleIntegerPseudoCost.hpp \
 	CbcSOS.cpp CbcSOS.hpp \
 	CbcStatistics.cpp CbcStatistics.hpp \
 	CbcStrategy.cpp CbcStrategy.hpp \
@@ -89,11 +91,11 @@ libCbc_la_SOURCES = \
 	CbcTree.cpp CbcTree.hpp \
 	CbcTreeLocal.cpp CbcTreeLocal.hpp
 
+
 libCbcSolver_la_SOURCES = \
 	CbcCbcParam.cpp \
 	Cbc_ampl.cpp Cbc_ampl.h \
-	ClpConstraintAmpl.hpp ClpAmplObjective.hpp ClpAmplStuff.cpp \
-	CbcLinked.cpp CbcLinked.hpp \
+	CbcLinked.cpp CbcLinked.hpp CbcLinkedUtils.cpp \
 	unitTestClp.cpp CbcSolver.cpp \
 	CbcSolverHeuristics.cpp CbcSolverHeuristics.hpp
 

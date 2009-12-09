@@ -186,8 +186,8 @@ am_libCbc_la_OBJECTS = Cbc_C_Interface.lo CbcBranchAllDifferent.lo \
 	CbcStrategy.lo CbcSubProblem.lo CbcTree.lo CbcTreeLocal.lo
 libCbc_la_OBJECTS = $(am_libCbc_la_OBJECTS)
 libCbcSolver_la_LIBADD =
-am_libCbcSolver_la_OBJECTS = CbcCbcParam.lo Cbc_ampl.lo \
-	ClpAmplStuff.lo CbcLinked.lo unitTestClp.lo CbcSolver.lo \
+am_libCbcSolver_la_OBJECTS = CbcCbcParam.lo Cbc_ampl.lo CbcLinked.lo \
+	CbcLinkedUtils.lo unitTestClp.lo CbcSolver.lo \
 	CbcSolverHeuristics.lo
 libCbcSolver_la_OBJECTS = $(am_libCbcSolver_la_OBJECTS)
 @COIN_HAS_CLP_TRUE@am__EXEEXT_1 = cbc$(EXEEXT)
@@ -578,8 +578,10 @@ libCbc_la_SOURCES = \
 	CbcObjectUpdateData.cpp CbcObjectUpdateData.hpp \
 	CbcPartialNodeInfo.cpp CbcPartialNodeInfo.hpp \
 	CbcSimpleInteger.cpp CbcSimpleInteger.hpp \
-	CbcSimpleIntegerDynamicPseudoCost.cpp CbcSimpleIntegerDynamicPseudoCost.hpp \
-	CbcSimpleIntegerPseudoCost.cpp CbcSimpleIntegerPseudoCost.hpp \
+	CbcSimpleIntegerDynamicPseudoCost.cpp \
+        CbcSimpleIntegerDynamicPseudoCost.hpp \
+	CbcSimpleIntegerPseudoCost.cpp \
+        CbcSimpleIntegerPseudoCost.hpp \
 	CbcSOS.cpp CbcSOS.hpp \
 	CbcStatistics.cpp CbcStatistics.hpp \
 	CbcStrategy.cpp CbcStrategy.hpp \
@@ -590,8 +592,7 @@ libCbc_la_SOURCES = \
 libCbcSolver_la_SOURCES = \
 	CbcCbcParam.cpp \
 	Cbc_ampl.cpp Cbc_ampl.h \
-	ClpConstraintAmpl.hpp ClpAmplObjective.hpp ClpAmplStuff.cpp \
-	CbcLinked.cpp CbcLinked.hpp \
+	CbcLinked.cpp CbcLinked.hpp CbcLinkedUtils.cpp \
 	unitTestClp.cpp CbcSolver.cpp \
 	CbcSolverHeuristics.cpp CbcSolverHeuristics.hpp
 
@@ -942,6 +943,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcHeuristicRandRound.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcHeuristicVND.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcLinked.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcLinkedUtils.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcMessage.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcModel.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcNWay.Plo@am__quote@
@@ -963,7 +965,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcTreeLocal.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Cbc_C_Interface.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Cbc_ampl.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ClpAmplStuff.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CoinSolve.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/unitTestClp.Plo@am__quote@
 

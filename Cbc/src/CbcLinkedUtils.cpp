@@ -1,9 +1,19 @@
 // Copyright (C) 2007, International Business Machines
 // Corporation and others.  All Rights Reserved.
-/* $Id: ClpAmplStuff.cpp 1200 2009-07-25 08:44:13Z forrest $ */
+/* $Id$ */
 
-/*! \file ClpAmplStuff.cpp
-    \brief Hooks to Ampl (for the new-style solver?)
+/*! \file CbcAugmentClpSimplex.cpp
+    \brief Hooks to Ampl (for CbcLinked)
+
+    This code is a condensation of ClpAmplStuff.cpp, renamed to better
+    reflect its current place in cbc.
+
+  The code here had ties to NEW_STYLE_SOLVER code. During the 091209 Watson
+  meeting, NEW_STYLE_SOLVER code was eliminated. The code here was condensed
+  from ClpAmplStuff.cpp. The hook into CbcLinked is loadNonLinear. Once you
+  bring that in, all the rest follows. Still, we're down about 400 lines of
+  code. In the process, it appears that ClpAmplObjective.cpp was never needed
+  here; the code was hooked into ClpAmplStuff.cpp.  --lh, 091209 --
 */
 
 #include "ClpConfig.h"
@@ -28,473 +38,27 @@
 #include "CoinModel.hpp"
 #include "CbcLinked.hpp"
 
-/*! \brief Extension of CbcUser for Ampl.
-
-  Beyond that, can't say yet what this does. A CbcAmpl object can be installed
-  in a CbcSolver object using CbcSolver::addUserFunction.
-*/
-
-class CbcAmpl  : public CbcUser {
-
-public:
-    ///@name usage methods
-    //@{
-
-    /// Solve (whatever that means)
-    virtual void solve(CbcSolver * model, const char * options);
-
-    /*! \brief Returns true if function knows about option
-
-      Currently knows about
-        - cbc_load
-        - cbc_quit
-    */
-    virtual bool canDo(const char * option) ;
-
-    /*! \brief Import - gets full command arguments
-
-      \return
-      - -1 - no action
-      -  0 - data read in without error
-      -  1 - errors
-    */
-    virtual int importData(CbcSolver * model, int & argc, char ** & argv);
-
-    /*! \brief Export
-
-      \param mode
-      - 1 OsiClpSolver
-      - 2 CbcModel
-      - add 10 if infeasible from odd situation
-    */
-    virtual void exportSolution(CbcSolver * model, int mode, const char * message = NULL) ;
-    /// Export Data (i.e. at very end)
-    virtual void exportData(CbcSolver * model);
-    /// Get useful stuff
-    virtual void fillInformation(CbcSolver * model,
-                                 CbcSolverUsefulData & info);
-    //@}
-    ///@name Constructors and destructors etc
-    //@{
-    /// Default Constructor
-    CbcAmpl();
-
-    /** Copy constructor .
-     */
-    CbcAmpl(const CbcAmpl & rhs);
-
-    /// Assignment operator
-    CbcAmpl & operator=(const CbcAmpl& rhs);
-
-    /// Clone
-    virtual CbcUser * clone() const;
-
-    /// Destructor
-    virtual ~CbcAmpl ();
-    //@}
-private:
-    ///@name Private member data
-    //@{
-    /// AMPL info
-    ampl_info info_;
-    //@}
-};
-// Mechanicsburg stuff
-CbcAmpl::CbcAmpl()
-        : CbcUser()
-{
-    userName_ = "mech";
-    memset(&info_, 0, sizeof(info_));
-}
-CbcAmpl::~CbcAmpl()
-{
-}
-// Copy constructor
-CbcAmpl::CbcAmpl ( const CbcAmpl & rhs)
-        : CbcUser(rhs)
-{
-    info_ = rhs.info_;
-}
-// Assignment operator
-CbcAmpl &
-CbcAmpl::operator=(const CbcAmpl & rhs)
-{
-    if (this != &rhs) {
-        CbcUser::operator=(rhs);
-        info_ = rhs.info_;
-    }
-    return *this;
-}
-// Clone
-CbcUser *
-CbcAmpl::clone() const
-{
-    return new CbcAmpl(*this);
-}
-// Solve (whatever that means)
-void
-CbcAmpl::solve(CbcSolver * controlModel, const char * options)
-{
-    assert (controlModel->model());
-    //OsiClpSolverInterface * clpSolver = dynamic_cast< OsiClpSolverInterface*> (model->solver());
-    //ClpSimplex * lpSolver = clpSolver->getModelPtr();
-    if (!strcmp(options, "cbc_load")) {
-    } else if (!strcmp(options, "cbc_quit")) {
-    } else {
-        printf("unknown option for CbcAmpl is %s\n", options);
-        abort();
-    }
-}
-// Returns true if function knows about option
-bool
-CbcAmpl::canDo(const char * option)
-{
-    return (!strcmp(option, "cbc_load") || !strcmp(option, "cbc_quit"));
-}
-/* Import - gets full command arguments
-   Returns -1 - no action
-            0 - data read in without error
-	    1 - errors
-*/
-int
-CbcAmpl::importData(CbcSolver * control, int &argc, char ** & argv)
-{
-    CbcModel * babModel = control->model();
-    assert (babModel);
-    CoinMessageHandler * generalMessageHandler = babModel->messageHandler();
-    OsiClpSolverInterface * solver =
-        dynamic_cast< OsiClpSolverInterface*> (control->model()->solver());
-    assert (solver);
-    CoinMessages generalMessages = solver->getModelPtr()->messages();
-    char generalPrint[10000];
-    OsiSolverLink * si = NULL;
-    /*
-      Poke through the arguments looking for a log level. If we find it, write it
-      into the info block we'll use to load from AMPL, and set a magic number to
-      indicate the log level is valid.
-
-      This looks brittle, in several different directions.
-    */
-    ClpSimplex * lpSolver = solver->getModelPtr();
-    if (argc > 2 && !strcmp(argv[2], "-AMPL")) {
-        // see if log in list
-        bool printing = false;
-        for (int i = 1; i < argc; i++) {
-            if (!strncmp(argv[i], "log", 3)) {
-                const char * equals = strchr(argv[i], '=');
-                if (equals && atoi(equals + 1) > 0) {
-                    printing = true;
-                    info_.logLevel = atoi(equals + 1);
-                    control->setIntValue(CLP_PARAM_INT_LOGLEVEL, info_.logLevel);
-                    // mark so won't be overWritten
-                    info_.numberRows = -1234567;
-                    break;
-                }
-            }
-        }
-        union {
-            void * voidModel;
-            CoinModel * model;
-        } coinModelStart;
-        coinModelStart.model = NULL;
-        int returnCode = readAmpl(&info_, argc, argv, & coinModelStart.voidModel);
-        CoinModel * coinModel = coinModelStart.model;
-        if (returnCode)
-            return returnCode;
-        control->setReadMode(3); // so will start with parameters
-        // see if log in list (including environment)
-        for (int i = 1; i < info_.numberArguments; i++) {
-            if (!strcmp(info_.arguments[i], "log")) {
-                if (i < info_.numberArguments - 1 && atoi(info_.arguments[i+1]) > 0)
-                    printing = true;
-                break;
-            }
-        }
-        control->setPrinting(printing);
-        if (printing)
-            printf("%d rows, %d columns and %d elements\n",
-                   info_.numberRows, info_.numberColumns, info_.numberElements);
-        if (!coinModel) {
-            solver->loadProblem(info_.numberColumns, info_.numberRows, info_.starts,
-                                info_.rows, info_.elements,
-                                info_.columnLower, info_.columnUpper, info_.objective,
-                                info_.rowLower, info_.rowUpper);
-            if (info_.numberSos) {
-                // SOS
-                solver->setSOSData(info_.numberSos, info_.sosType, info_.sosStart,
-                                   info_.sosIndices, info_.sosReference);
-            }
-        } else {
-            // save
-            control->setOriginalCoinModel(coinModel);
-            // load from coin model
-            OsiSolverLink solver1;
-            OsiSolverInterface * solver2 = solver1.clone();
-            babModel->assignSolver(solver2, false);
-            si = dynamic_cast<OsiSolverLink *>(babModel->solver()) ;
-            assert (si != NULL);
-            si->setDefaultMeshSize(0.001);
-            // need some relative granularity
-            si->setDefaultBound(100.0);
-            double dextra3 = control->doubleValue(CBC_PARAM_DBL_DEXTRA3);
-            if (dextra3)
-                si->setDefaultMeshSize(dextra3);
-            si->setDefaultBound(100000.0);
-            si->setIntegerPriority(1000);
-            si->setBiLinearPriority(10000);
-            CoinModel * model2 = (CoinModel *) coinModel;
-            int logLevel = control->intValue(CLP_PARAM_INT_LOGLEVEL);
-            si->load(*model2, true, logLevel);
-            // redo
-            solver = dynamic_cast< OsiClpSolverInterface*> (control->model()->solver());
-            lpSolver = solver->getModelPtr();
-            solver->messageHandler()->setLogLevel(0) ;
-            control->setIntValue(CBC_PARAM_INT_TESTOSI, 0);
-            if (info_.cut) {
-                printf("Sorry - can't do cuts with LOS as ruins delicate row order\n");
-                abort();
-            }
-        }
-        if (info_.cut) {
-            int numberRows = info_.numberRows;
-            int * whichRow = new int [numberRows];
-            // Row copy
-            const CoinPackedMatrix * matrixByRow = solver->getMatrixByRow();
-            const double * elementByRow = matrixByRow->getElements();
-            const int * column = matrixByRow->getIndices();
-            const CoinBigIndex * rowStart = matrixByRow->getVectorStarts();
-            const int * rowLength = matrixByRow->getVectorLengths();
-
-            const double * rowLower = solver->getRowLower();
-            const double * rowUpper = solver->getRowUpper();
-            int nDelete = 0;
-            CglStored storedAmpl;
-            for (int iRow = 0; iRow < numberRows; iRow++) {
-                if (info_.cut[iRow]) {
-                    whichRow[nDelete++] = iRow;
-                    int start = rowStart[iRow];
-                    storedAmpl.addCut(rowLower[iRow], rowUpper[iRow],
-                                      rowLength[iRow], column + start, elementByRow + start);
-                }
-            }
-            control->addCutGenerator(&storedAmpl);
-            solver->deleteRows(nDelete, whichRow);
-            // and special matrix
-            si->cleanMatrix()->deleteRows(nDelete, whichRow);
-            delete [] whichRow;
-        }
-        // If we had a solution use it
-        if (info_.primalSolution) {
-            solver->setColSolution(info_.primalSolution);
-        }
-        // status
-        if (info_.rowStatus) {
-            unsigned char * statusArray = lpSolver->statusArray();
-            memset(statusArray, 0, lpSolver->numberColumns() + lpSolver->numberRows());
-            int i;
-            for (i = 0; i < info_.numberColumns; i++)
-                statusArray[i] = (char)info_.columnStatus[i];
-            statusArray += info_.numberColumns;
-            for (i = 0; i < info_.numberRows; i++)
-                statusArray[i] = (char)info_.rowStatus[i];
-            CoinWarmStartBasis * basis = lpSolver->getBasis();
-            solver->setWarmStart(basis);
-            delete basis;
-        }
-        freeArrays1(&info_);
-        // modify objective if necessary
-        solver->setObjSense(info_.direction);
-        solver->setDblParam(OsiObjOffset, info_.offset);
-        if (info_.offset) {
-            sprintf(generalPrint, "Ampl objective offset is %g",
-                    info_.offset);
-            generalMessageHandler->message(CLP_GENERAL, generalMessages)
-            << generalPrint
-            << CoinMessageEol;
-        }
-        // Set integer variables (unless nonlinear when set)
-        if (!info_.nonLinear) {
-            for (int i = info_.numberColumns - info_.numberIntegers;
-                    i < info_.numberColumns; i++)
-                solver->setInteger(i);
-        }
-        // change argc etc
-        argc = info_.numberArguments;
-        argv = info_.arguments;
-        return 0;
-    } else {
-        return -1;
-    }
-    abort();
-    return -1;
-}
-// Export 1 OsiClpSolver, 2 CbcModel - add 10 if infeasible from odd situation
-void
-CbcAmpl::exportSolution(CbcSolver * model, int mode, const char * message)
-{
-    OsiClpSolverInterface * solver = model->originalSolver();
-    if (!solver) {
-        solver = dynamic_cast< OsiClpSolverInterface*> (model->model()->solver());
-        assert (solver);
-    }
-    ClpSimplex * lpSolver = solver->getModelPtr();
-    int numberColumns = lpSolver->numberColumns();
-    int numberRows = lpSolver->numberRows();
-    double totalTime = CoinCpuTime() - model->startTime();
-    if (mode == 1) {
-        double value = lpSolver->getObjValue() * lpSolver->getObjSense();
-        char buf[300];
-        int pos = 0;
-        int iStat = lpSolver->status();
-        if (iStat == 0) {
-            pos += sprintf(buf + pos, "optimal," );
-        } else if (iStat == 1) {
-            // infeasible
-            pos += sprintf(buf + pos, "infeasible,");
-        } else if (iStat == 2) {
-            // unbounded
-            pos += sprintf(buf + pos, "unbounded,");
-        } else if (iStat == 3) {
-            pos += sprintf(buf + pos, "stopped on iterations or time,");
-        } else if (iStat == 4) {
-            iStat = 7;
-            pos += sprintf(buf + pos, "stopped on difficulties,");
-        } else if (iStat == 5) {
-            iStat = 3;
-            pos += sprintf(buf + pos, "stopped on ctrl-c,");
-        } else {
-            pos += sprintf(buf + pos, "status unknown,");
-            iStat = 6;
-        }
-        info_.problemStatus = iStat;
-        info_.objValue = value;
-        pos += sprintf(buf + pos, " objective %.*g", ampl_obj_prec(),
-                       value);
-        sprintf(buf + pos, "\n%d iterations",
-                lpSolver->getIterationCount());
-        free(info_.primalSolution);
-        info_.primalSolution = (double *) malloc(numberColumns * sizeof(double));
-        CoinCopyN(lpSolver->primalColumnSolution(), numberColumns, info_.primalSolution);
-        free(info_.dualSolution);
-        info_.dualSolution = (double *) malloc(numberRows * sizeof(double));
-        CoinCopyN(lpSolver->dualRowSolution(), numberRows, info_.dualSolution);
-        CoinWarmStartBasis * basis = lpSolver->getBasis();
-        free(info_.rowStatus);
-        info_.rowStatus = (int *) malloc(numberRows * sizeof(int));
-        free(info_.columnStatus);
-        info_.columnStatus = (int *) malloc(numberColumns * sizeof(int));
-        // Put basis in
-        int i;
-        // free,basic,ub,lb are 0,1,2,3
-        for (i = 0; i < numberRows; i++) {
-            CoinWarmStartBasis::Status status = basis->getArtifStatus(i);
-            info_.rowStatus[i] = status;
-        }
-        for (i = 0; i < numberColumns; i++) {
-            CoinWarmStartBasis::Status status = basis->getStructStatus(i);
-            info_.columnStatus[i] = status;
-        }
-        // put buffer into info_
-        strcpy(info_.buffer, buf);
-        delete basis;
-    } else if (mode == 2) {
-        CbcModel * babModel = model->model();
-        int iStat = babModel->status();
-        int iStat2 = babModel->secondaryStatus();
-        double value = babModel->getObjValue() * lpSolver->getObjSense();
-        char buf[300];
-        int pos = 0;
-        if (iStat == 0) {
-            if (babModel->getObjValue() < 1.0e40) {
-                pos += sprintf(buf + pos, "optimal," );
-            } else {
-                // infeasible
-                iStat = 1;
-                pos += sprintf(buf + pos, "infeasible,");
-            }
-        } else if (iStat == 1) {
-            if (iStat2 != 6)
-                iStat = 3;
-            else
-                iStat = 4;
-            std::string minor[] = {"", "", "gap", "nodes", "time", "", "solutions", "user ctrl-c"};
-            pos += sprintf(buf + pos, "stopped on %s,", minor[iStat2].c_str());
-        } else if (iStat == 2) {
-            iStat = 7;
-            pos += sprintf(buf + pos, "stopped on difficulties,");
-        } else if (iStat == 5) {
-            iStat = 3;
-            pos += sprintf(buf + pos, "stopped on ctrl-c,");
-        } else {
-            pos += sprintf(buf + pos, "status unknown,");
-            iStat = 6;
-        }
-        info_.problemStatus = iStat;
-        info_.objValue = value;
-        if (babModel->getObjValue() < 1.0e40) {
-            int precision = ampl_obj_prec();
-            if (precision > 0)
-                pos += sprintf(buf + pos, " objective %.*g", precision,
-                               value);
-            else
-                pos += sprintf(buf + pos, " objective %g", value);
-        }
-        sprintf(buf + pos, "\n%d nodes, %d iterations, %g seconds",
-                babModel->getNodeCount(),
-                babModel->getIterationCount(),
-                totalTime);
-        if (babModel->bestSolution()) {
-            free(info_.primalSolution);
-            info_.primalSolution = (double *) malloc(numberColumns * sizeof(double));
-            CoinCopyN(lpSolver->primalColumnSolution(), numberColumns, info_.primalSolution);
-            free(info_.dualSolution);
-            info_.dualSolution = (double *) malloc(numberRows * sizeof(double));
-            CoinCopyN(lpSolver->dualRowSolution(), numberRows, info_.dualSolution);
-        } else {
-            info_.primalSolution = NULL;
-            info_.dualSolution = NULL;
-        }
-        // put buffer into info
-        strcpy(info_.buffer, buf);
-    } else if (mode == 11 || mode == 12) {
-        // infeasible
-        info_.problemStatus = 1;
-        info_.objValue = 1.0e100;
-        sprintf(info_.buffer, "%s", message);
-        info_.primalSolution = NULL;
-        info_.dualSolution = NULL;
-    }
-}
-// Export Data (i.e. at very end)
-void
-CbcAmpl::exportData(CbcSolver * model)
-{
-    writeAmpl(&info_);
-    freeArrays2(&info_);
-    freeArgs(&info_);
-}
-// Get useful stuff
-void
-CbcAmpl::fillInformation(CbcSolver * model,
-                         CbcSolverUsefulData & info)
-{
-    memset(&info, 0, sizeof(info));
-    info.priorities_ = info_.priorities;
-    info.sosPriority_ = info_.sosPriority;
-    info.branchDirection_ = info_.branchDirection;
-    info.primalSolution_ = info_.primalSolution;
-    info.pseudoDown_ = info_.pseudoDown;
-    info.pseudoUp_ = info_.pseudoUp;
-}
-void addAmplToCbc(CbcSolver * control)
-{
-    CbcAmpl ampl;
-    control->addUserFunction(&ampl);
-}
 extern "C" {
     //# include "getstub.h"
 # include "asl_pfgh.h"
 }
+
+// stolen from IPopt with changes
+typedef struct {
+    double obj_sign_;
+    ASL_pfgh * asl_;
+    double * non_const_x_;
+    int * column_; // for jacobian
+    int * rowStart_;
+    double * gradient_;
+    double * constraintValues_;
+    int nz_h_full_; // number of nonzeros in hessian
+    int nerror_;
+    bool objval_called_with_current_x_;
+    bool conval_called_with_current_x_;
+    bool jacval_called_with_current_x_;
+} CbcAmplInfo;
+
 //#############################################################################
 // Constructors / Destructor / Assignment
 //#############################################################################
@@ -511,57 +75,7 @@ ClpAmplObjective::ClpAmplObjective ()
     gradient_ = NULL;
     offset_ = 0.0;
 }
-// stolen from IPopt with changes
-typedef struct {
-    double obj_sign_;
-    ASL_pfgh * asl_;
-    double * non_const_x_;
-    int * column_; // for jacobian
-    int * rowStart_;
-    double * gradient_;
-    double * constraintValues_;
-    int nz_h_full_; // number of nonzeros in hessian
-    int nerror_;
-    bool objval_called_with_current_x_;
-    bool conval_called_with_current_x_;
-    bool jacval_called_with_current_x_;
-} CbcAmplInfo;
-#if 0
-static bool get_nlp_info(void * amplInfo, int & n, int & m, int & nnz_jac_g,
-                         int & nnz_h_lag)
-{
-    CbcAmplInfo * info = (CbcAmplInfo *) amplInfo;
-    ASL_pfgh* asl = info->asl_;
 
-    n = n_var; // # of variables
-    m = n_con; // # of constraints
-    nnz_jac_g = nzc; // # of non-zeros in the jacobian
-    nnz_h_lag = info->nz_h_full_; // # of non-zeros in the hessian
-
-    return true;
-}
-
-static bool get_bounds_info(void * amplInfo, int  n, double * x_l,
-                            double * x_u, int  m, double * g_l, double * g_u)
-{
-    CbcAmplInfo * info = (CbcAmplInfo *) amplInfo;
-    ASL_pfgh* asl = info->asl_;
-    assert(n == n_var);
-    assert(m == n_con);
-    int i;
-    for (i = 0; i < n; i++) {
-        x_l[i] = LUv[2*i];
-        x_u[i] = LUv[2*i+1];
-    }
-
-    for (i = 0; i < m; i++) {
-        g_l[i] = LUrhs[2*i];
-        g_u[i] = LUrhs[2*i+1];
-    }
-    return true;
-}
-
-#endif
 bool get_constraints_linearity(void * amplInfo, int  n,
                                int * const_types)
 {
@@ -581,45 +95,6 @@ bool get_constraints_linearity(void * amplInfo, int  n,
         const_types[i] = 0;
     return true;
 }
-#if 0
-bool get_starting_point(int  n, bool init_x, double * x, bool init_z,
-                        double * z_L, double * z_U, int  m, bool init_lambda, double * lambda)
-{
-    CbcAmplInfo * info = (CbcAmplInfo *) amplInfo;
-    ASL_pfgh* asl = info->asl_;
-    assert(n == n_var);
-    assert(m == n_con);
-    int i;
-
-    if (init_x) {
-        for (i = 0; i < n; i++) {
-            if (havex0[i]) {
-                x[i] = X0[i];
-            } else {
-                x[i] = 0.0;
-            }
-        }
-    }
-
-    if (init_z) {
-        for (i = 0; i < n; i++) {
-            z_L[i] = z_U[i] = 1.0;
-        }
-    }
-
-    if (init_lambda) {
-        for (i = 0; i < m; i++) {
-            if (havepi0[i]) {
-                lambda[i] = pi0[i];
-            } else {
-                lambda[i] = 0.0;
-            }
-        }
-    }
-
-    return true;
-}
-#endif
 static bool internal_objval(CbcAmplInfo * info , double & obj_val)
 {
     ASL_pfgh* asl = info->asl_;
@@ -642,6 +117,7 @@ static bool internal_objval(CbcAmplInfo * info , double & obj_val)
 
     return false;
 }
+
 static bool internal_conval(CbcAmplInfo * info , double * g)
 {
     ASL_pfgh* asl = info->asl_;
@@ -686,6 +162,7 @@ static bool apply_new_x(CbcAmplInfo * info  , bool new_x, int  n, const double *
 
     return true;
 }
+
 static bool eval_f(void * amplInfo, int  n, const double * x, bool new_x, double & obj_value)
 {
     CbcAmplInfo * info = (CbcAmplInfo *) amplInfo;
@@ -723,6 +200,7 @@ static bool eval_grad_f(void * amplInfo, int  n, const double * x, bool new_x, d
     }
     return true;
 }
+
 static bool eval_g(void * amplInfo, int  n, const double * x, bool new_x, double * g)
 {
     CbcAmplInfo * info = (CbcAmplInfo *) amplInfo;
@@ -759,63 +237,6 @@ static bool eval_jac_g(void * amplInfo, int  n, const double * x, bool new_x,
     }
     return false;
 }
-#if 0
-
-static bool eval_h(void * amplInfo, int  n, const double * x, bool new_x,
-                   double  obj_factor, int  m, const double * lambda,
-                   bool new_lambda, int  nele_hess, int * iRow,
-                   int * jCol, double * values)
-{
-    CbcAmplInfo * info = (CbcAmplInfo *) amplInfo;
-    ASL_pfgh* asl = info->asl_;
-    assert(n == n_var);
-    assert(m == n_con);
-    int i;
-
-    if (iRow && jCol && !values) {
-        // setup the structure
-        int k = 0;
-        for (int i = 0; i < n; i++) {
-            for (int j = sputinfo->hcolstarts[i]; j < sputinfo->hcolstarts[i+1]; j++) {
-                //iRow[k] = i + 1;
-                iRow[k] = i;
-                jCol[k] = sputinfo->hrownos[j] + 1;
-                k++;
-            }
-        }
-        assert(k == nele_hess);
-        return true;
-    } else if (!iRow & !jCol && values) {
-        if (!apply_new_x(info, new_x, n, x)) {
-            return false;
-        }
-        if (!info->objval_called_with_current_x_) {
-            double  dummy;
-            internal_objval(info, dummy);
-            internal_conval(info, m, NULL);
-        }
-        if (!info->conval_called_with_current_x_) {
-            internal_conval(info, m, NULL);
-        }
-        // copy lambda to non_const_lambda - note, we do not store a copy like
-        // we do with x since lambda is only used here and not in other calls
-        double * non_const_lambda = new double [m];
-        for (i = 0; i < m; i++) {
-            non_const_lambda[i] = lambda[i];
-        }
-
-        real ow = info->obj_sign_ * obj_factor;
-        sphes(values, -1, &ow, non_const_lambda);
-
-        delete [] non_const_lambda;
-        return true;
-    } else {
-        assert(false && "Invalid combination of iRow, jCol, and values pointers");
-    }
-
-    return false;
-}
-#endif
 //-------------------------------------------------------------------
 // Useful Constructor
 //-------------------------------------------------------------------
@@ -1163,6 +584,7 @@ ClpAmplObjective::newXValues()
     info->objval_called_with_current_x_ = false;
     info->jacval_called_with_current_x_ = false;
 }
+
 //#############################################################################
 // Constructors / Destructor / Assignment
 //#############################################################################
@@ -1354,6 +776,7 @@ ClpConstraintAmpl::newXValues()
     info->objval_called_with_current_x_ = false;
     info->jacval_called_with_current_x_ = false;
 }
+
 /* Load nonlinear part of problem from AMPL info
    Returns 0 if linear
    1 if quadratic objective

@@ -98,22 +98,7 @@ void operator delete (void *p) throw()
 #include <cstring>
 #include <iostream>
 
-/*
-  The subtleties are unclear, but the gross action is that CBC_OTHER_SOLVER
-  will overrule NEW_STYLE_SOLVER. NEW_STYLE_SOLVER undefined or 0 seems to
-  mean `old style solver'.
-*/
-#ifndef NEW_STYLE_SOLVER
- #define NEW_STYLE_SOLVER 0
-#endif
-#ifdef CBC_OTHER_SOLVER
- #undef NEW_STYLE_SOLVER
- #define NEW_STYLE_SOLVER 0
-#endif
 
-
-
-#if NEW_STYLE_SOLVER == 0
 // define TEST_MESSAGE_HANDLER to check works on all messages
 // #define TEST_MESSAGE_HANDLER
 #ifdef TEST_MESSAGE_HANDLER
@@ -379,56 +364,6 @@ int main (int argc, const char *argv[])
     }
 }
 
-
-
-#else	/* NEW_STYLE_SOLVER */
-
-/*
-  As best I can see, this is not yet fully functional. NEW_STYLE_SOLVER is
-  normally undefined or forced to 0. See CbcSolver.hpp for jjf's thoughts on
-  where this is going (a good direction, in my opinion [lh]).
-*/
-
-#include "CbcSolver.hpp"
-
-/*
-  ClpAmplStuff.cpp
-*/
-void addAmplToCbc(CbcSolver *);
-
-int main (int argc, const char *argv[])
-{
-    int returnCode;
-
-    /*
-      // Only active if malloc switched on in CbcSolver.cpp
-
-      Magic value 0 initialises the package. Anything else dumps statistics.
-    */
-#ifdef CLP_DEBUG_MALLOC
-    clp_memory(0);
-#endif
-
-    // Open a block to ease memory leak checks.
-    {
-        OsiClpSolverInterface solver1;
-        CbcSolver control(solver1);
-        // initialize
-        control.fillValuesInSolver();
-
-#ifdef COIN_HAS_ASL
-        addAmplToCbc(&control);
-#endif
-
-        returnCode = control.solve (argc, argv, 1);
-    }
-#ifdef CLP_DEBUG_MALLOC
-    clp_memory(1);
-#endif
-    return returnCode;
-}
-
-#endif	/* NEW_STYLE_SOLVER */
 
 
 

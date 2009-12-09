@@ -128,6 +128,7 @@ Cbc/src/CbcHeuristicVND.cpp -text
 Cbc/src/CbcHeuristicVND.hpp -text
 Cbc/src/CbcLinked.cpp -text
 Cbc/src/CbcLinked.hpp -text
+Cbc/src/CbcLinkedUtils.cpp -text
 Cbc/src/CbcNWay.cpp -text
 Cbc/src/CbcNWay.hpp -text
 Cbc/src/CbcNodeInfo.cpp -text
@@ -152,9 +153,7 @@ Cbc/src/CbcSolverHeuristics.cpp -text
 Cbc/src/CbcSolverHeuristics.hpp -text
 Cbc/src/CbcSubProblem.cpp -text
 Cbc/src/CbcSubProblem.hpp -text
-Cbc/src/ClpAmplObjective.cpp -text
 Cbc/src/ClpAmplObjective.hpp -text
-Cbc/src/ClpAmplStuff.cpp -text
 Cbc/src/ClpConstraintAmpl.hpp -text
 Cbc/test/gamsTest.cpp -text
 /LICENSE -text

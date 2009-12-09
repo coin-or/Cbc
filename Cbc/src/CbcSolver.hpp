@@ -108,7 +108,7 @@ public:
         3 - for miplib test so skip some
         (out model later)
     */
-    int doHeuristics(CbcModel * model, int type);
+    //int doHeuristics(CbcModel * model, int type);
     /** Updates model_ from babModel_ according to returnMode
         returnMode -
         0 model and solver untouched - babModel updated

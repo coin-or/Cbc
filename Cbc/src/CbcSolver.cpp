@@ -737,7 +737,7 @@ CbcSolver::addCutGenerator(CglCutGenerator * generator)
 }
 
 /*
-  The only other solver that's ever been used is cplex, and the use is very
+  The only other solver that's ever been used is cplex, and the use is
   limited -- do the root with clp and all the cbc smarts, then give the
   problem over to cplex to finish. Although the defines can be read in some
   places to allow other options, nothing's been tested and success is
@@ -746,18 +746,12 @@ CbcSolver::addCutGenerator(CglCutGenerator * generator)
   CBC_OTHER_SOLVER == 1 is cplex.
 */
 
-#ifdef CPX_KEEP_RESULTS
-#define CBC_OTHER_SOLVER 1
-#endif
-
-#ifdef COIN_HAS_CPX
-#include "OsiCpxSolverInterface.hpp"
-#endif
-
-#ifdef CBC_OTHER_SOLVER
 #if CBC_OTHER_SOLVER==1
-#include "OsiCpxSolverInterface.hpp"
-#endif
+#  ifndef COIN_HAS_CPX
+#    error "Configuration did not detect cplex installation."
+#  else
+#    include "OsiCpxSolverInterface.hpp"
+#  endif
 #endif
 
 #ifdef COIN_HAS_ASL

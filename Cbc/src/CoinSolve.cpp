@@ -15,25 +15,14 @@
 /*
   We have the following compile-time symbols.
 
-  NEW_STYLE_SOLVER	CoinSolve.cpp, CbcSolver.cpp
-
-    Unclear what this does just yet. A value of 0 seems to be `old style
-    solver'.
-
-
   CBC_OTHER_SOLVER	CoinSolve.cpp, CbcSolver.[cpp,hpp], CbcModel.cpp
 
-    Usage in CbcSolver.hpp says `other solver' is Cplex (only).
-
-    Here in CoinSolver, CBC_OTHER_SOLVER dominates NEW_STYLE_SOLVER.
+    A value of 1 says `cplex'. Other values not defined. The intent with
+    cplex is to apply all of cbc's smarts at the root, then hand the problem
+    over to cplex to finish. Cplex is not used as an alternate lp solver
+    under cbc control.
 
     Usage in CbcModel is a fake; a small bit of code that's now `#if 0'.
-
-
-  CPX_KEEP_RESULTS	CoinSolve.cpp, CbcSolver.cpp
-
-    Unclear what this does just yet. The name seems clear, but how / what is
-    affected is not. Defining this symbol forces CBC_OTHER_SOLVER.
 
 
   CLP_DEBUG_MALLOC
@@ -55,15 +44,12 @@
 */
 
 
-/*
-  Allow (force?) use of cplex for something.
-*/
-
-#ifdef CPX_KEEP_RESULTS
-#define CBC_OTHER_SOLVER 1
-#endif
-#if CBC_OTHER_SOLVER==1
-#include "OsiCpxSolverInterface.hpp"
+#if CBC_OTHER_SOLVER == 1
+#  ifndef COIN_HAS_CPX
+#    error "Configuration did not detect cplex installation."
+#  else
+#    include "OsiCpxSolverInterface.hpp"
+#  endif
 #endif
 
 /*

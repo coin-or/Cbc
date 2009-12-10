@@ -803,6 +803,10 @@
 				</FileConfiguration>
 			</File>
 			<File
+				RelativePath="..\..\..\src\CbcLinkedUtils.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\..\..\Cbc\src\CbcMessage.cpp"
 				>
 				<FileConfiguration
@@ -1049,10 +1053,6 @@
 						PreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
-			</File>
-			<File
-				RelativePath="..\..\..\src\ClpAmplStuff.cpp"
-				>
 			</File>
 		</Filter>
 		<Filter

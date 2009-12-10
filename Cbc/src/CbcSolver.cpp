@@ -795,14 +795,30 @@ extern "C" {
 }
 #endif
 
+/*
+  Global parameters for command processing.
+
+  These will need to be moved into an object of some sort in order to make
+  this set of calls thread-safe.
+*/
+
 int CbcOrClpRead_mode = 1;
 FILE * CbcOrClpReadCommand = stdin;
 extern int CbcOrClpEnvironmentIndex;
 static bool noPrinting = false;
 
 #ifndef CBC_OTHER_SOLVER
-static int * analyze(OsiClpSolverInterface * solverMod, int & numberChanged, double & increment,
-                     bool changeInt,  CoinMessageHandler * generalMessageHandler)
+/*
+  Look to see if a constraint is all-integer (variables & coeffs), or could be
+  all integer. Consider whether one or two continuous variables can be declared
+  integer. John's comment is that integer preprocessing might do a better job,
+  so we should consider whether this routine should stay.
+
+  No hurry to get rid of it, in my opinion  -- lh, 091210 --
+*/
+static int * analyze(OsiClpSolverInterface * solverMod, int & numberChanged,
+		     double & increment, bool changeInt,
+		     CoinMessageHandler * generalMessageHandler)
 {
     bool noPrinting_ = noPrinting;
     OsiSolverInterface * solver = solverMod->clone();
@@ -1107,6 +1123,9 @@ static int * analyze(OsiClpSolverInterface * solverMod, int & numberChanged, dou
 #ifdef COIN_HAS_LINK
 /*  Returns OsiSolverInterface (User should delete)
     On entry numberKnapsack is maximum number of Total entries
+
+    Expanding possibilities of x*y, where x*y are both integers, constructing
+    a knapsack constraint. Results in a tighter model.
 */
 static OsiSolverInterface *
 expandKnapsack(CoinModel & model, int * whichColumn, int * knapsackStart,
@@ -1607,6 +1626,10 @@ expandKnapsack(CoinModel & model, int * whichColumn, int * knapsackStart,
 
 /*
   Debug checks on special ordered sets.
+
+  This is active only for debugging. The entire body of the routine becomes
+  a noop when COIN_DEVELOP is not defined. To avoid compiler warnings, the
+  formal parameters also need to go away.
 */
 #ifdef COIN_DEVELOP
 void checkSOS(CbcModel * babModel, const OsiSolverInterface * solver)
@@ -1711,9 +1734,78 @@ static int dummyCallBack(CbcModel * /*model*/, int /*whereFrom*/)
 {
     return 0;
 }
+/*
+  Wrappers for CbcMain0, CbcMain1. The various forms of callCbc will eventually
+  resolve to a call to CbcMain0 followed by a call to callCbc1.
+*/
+/*
+  Simplest calling form: supply just a string with the command options. The
+  wrapper creates an OsiClpSolverInterface and calls the next wrapper.
+*/
+int callCbc(const std::string input2)
+{
+    char * input3 = CoinStrdup(input2.c_str());
+    OsiClpSolverInterface solver1;
+    int returnCode = callCbc(input3, solver1);
+    free(input3);
+    return returnCode;
+}
+
+int callCbc(const char * input2)
+{
+    {
+        OsiClpSolverInterface solver1;
+        return callCbc(input2, solver1);
+    }
+}
 
 /*
-  Various overloads of callCbc1, in rough order, followed by the main definition.
+  Second calling form: supply the command line and an OsiClpSolverInterface.
+  the wrapper will create a CbcModel and call the next wrapper.
+*/
+
+int callCbc(const std::string input2, OsiClpSolverInterface& solver1)
+{
+    char * input3 = CoinStrdup(input2.c_str());
+    int returnCode = callCbc(input3, solver1);
+    free(input3);
+    return returnCode;
+}
+
+int callCbc(const char * input2, OsiClpSolverInterface& solver1)
+{
+    CbcModel model(solver1);
+    return callCbc(input2, model);
+}
+
+/*
+  Third calling form: supply the command line and a CbcModel. This wrapper will
+  actually call CbcMain0 and then call the next set of wrappers (callCbc1) to
+  handle the call to CbcMain1.
+*/
+int callCbc(const char * input2, CbcModel & babSolver)
+{
+    CbcMain0(babSolver);
+    return callCbc1(input2, babSolver);
+}
+
+int callCbc(const std::string input2, CbcModel & babSolver)
+{
+    char * input3 = CoinStrdup(input2.c_str());
+    CbcMain0(babSolver);
+    int returnCode = callCbc1(input3, babSolver);
+    free(input3);
+    return returnCode;
+}
+
+
+/*
+  Various overloads of callCbc1. The first pair accepts just a CbcModel and
+  supplements it with a dummy callback routine. The second pair allows the
+  user to supply a callback. See CbcMain1 for further explanation of the
+  callback. The various overloads of callCbc1 resolve to the final version,
+  which breaks the string into individual parameter strings (i.e., creates
+  something that looks like a standard argv vector).
 */
 
 int callCbc1(const std::string input2, CbcModel & babSolver)
@@ -1729,7 +1821,8 @@ int callCbc1(const char * input2, CbcModel & model)
     return callCbc1(input2, model, dummyCallBack);
 }
 
-int callCbc1(const std::string input2, CbcModel & babSolver, int callBack(CbcModel * currentSolver, int whereFrom))
+int callCbc1(const std::string input2, CbcModel & babSolver,
+	     int callBack(CbcModel * currentSolver, int whereFrom))
 {
     char * input3 = CoinStrdup(input2.c_str());
     int returnCode = callCbc1(input3, babSolver, callBack);
@@ -1737,7 +1830,8 @@ int callCbc1(const std::string input2, CbcModel & babSolver, int callBack(CbcMod
     return returnCode;
 }
 
-int callCbc1(const char * input2, CbcModel & model, int callBack(CbcModel * currentSolver, int whereFrom))
+int callCbc1(const char * input2, CbcModel & model,
+	     int callBack(CbcModel * currentSolver, int whereFrom))
 {
     char * input = CoinStrdup(input2);
     int length = strlen(input);
@@ -1788,57 +1882,11 @@ int callCbc1(const char * input2, CbcModel & model, int callBack(CbcModel * curr
     CbcOrClpRead_mode = 1;
     CbcOrClpReadCommand = stdin;
     noPrinting = false;
-    int returnCode = CbcMain1(n + 2, const_cast<const char **>(argv), model, callBack);
+    int returnCode = CbcMain1(n + 2, const_cast<const char **>(argv),
+    			      model, callBack);
     for (int k = 0; k < n + 2; k++)
         free(argv[k]);
     delete [] argv;
-    return returnCode;
-}
-
-
-int callCbc(const char * input2, CbcModel & babSolver)
-{
-    CbcMain0(babSolver);
-    return callCbc1(input2, babSolver);
-}
-
-int callCbc(const std::string input2, CbcModel & babSolver)
-{
-    char * input3 = CoinStrdup(input2.c_str());
-    CbcMain0(babSolver);
-    int returnCode = callCbc1(input3, babSolver);
-    free(input3);
-    return returnCode;
-}
-
-int callCbc(const char * input2, OsiClpSolverInterface& solver1)
-{
-    CbcModel model(solver1);
-    return callCbc(input2, model);
-}
-
-int callCbc(const char * input2)
-{
-    {
-        OsiClpSolverInterface solver1;
-        return callCbc(input2, solver1);
-    }
-}
-
-int callCbc(const std::string input2, OsiClpSolverInterface& solver1)
-{
-    char * input3 = CoinStrdup(input2.c_str());
-    int returnCode = callCbc(input3, solver1);
-    free(input3);
-    return returnCode;
-}
-
-int callCbc(const std::string input2)
-{
-    char * input3 = CoinStrdup(input2.c_str());
-    OsiClpSolverInterface solver1;
-    int returnCode = callCbc(input3, solver1);
-    free(input3);
     return returnCode;
 }
 
@@ -1857,13 +1905,14 @@ int CbcMain1 (int argc, const char *argv[],
 }
 
 
-/* Meaning of whereFrom:
-   1 after initial solve by dualsimplex etc
-   2 after preprocessing
-   3 just before branchAndBound (so user can override)
-   4 just after branchAndBound (before postprocessing)
-   5 after postprocessing
-   6 after a user called heuristic phase
+/*
+  Meaning of whereFrom:
+    1 after initial solve by dualsimplex etc
+    2 after preprocessing
+    3 just before branchAndBound (so user can override)
+    4 just after branchAndBound (before postprocessing)
+    5 after postprocessing
+    6 after a user called heuristic phase
 */
 
 int CbcMain1 (int argc, const char *argv[],

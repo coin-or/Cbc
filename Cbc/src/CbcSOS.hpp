@@ -227,8 +227,8 @@ public:
     virtual void print();
 
     /** Return the type (an integer identifier) of \c this */
-    virtual int type() const {
-        return 104;
+    virtual CbcBranchObjType type() const {
+        return SoSBranchObj;
     }
 
     /** Compare the original object of \c this with the original object of \c

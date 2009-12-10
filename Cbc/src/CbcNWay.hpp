@@ -125,8 +125,8 @@ public:
     }
 
     /** Return the type (an integer identifier) of \c this */
-    virtual int type() const {
-        return 105;
+    virtual CbcBranchObjType type() const {
+        return NWayBranchObj;
     }
 
     /** Compare the original object of \c this with the original object of \c

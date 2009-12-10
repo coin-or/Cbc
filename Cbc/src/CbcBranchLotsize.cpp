@@ -19,7 +19,8 @@
 
 /*
   CBC_PRINT 1 just does sanity checks - no printing
-            2
+  Larger values of CBC_PRINT set various printing levels.  Larger
+  values print more.
 */
 //#define CBC_PRINT 1
 // First/last variable to print info on

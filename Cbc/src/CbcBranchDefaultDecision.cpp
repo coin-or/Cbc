@@ -233,6 +233,9 @@ CbcBranchDefaultDecision::bestBranch (CbcBranchingObject ** objects, int numberO
         }
         // Uncomment next to force method 4
         //method=4;
+
+	// FIXME This should be an enum.  It will be easier to
+	// understand in the code than numbers.
         /* Methods :
            0 - fewest infeasibilities
            1 - largest min change in objective

@@ -120,8 +120,8 @@ public:
 #endif
 
     /** Return the type (an integer identifier) of \c this */
-    virtual int type() const {
-        return 100;
+    virtual CbcBranchObjType type() const {
+        return SimpleIntegerBranchObj;
     }
 
     /** Compare the \c this with \c brObj. \c this and \c brObj must be os the

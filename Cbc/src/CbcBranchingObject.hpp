@@ -7,6 +7,25 @@
 #include "CbcBranchBase.hpp"
 #include "OsiBranchingObject.hpp"
 
+
+// The types of objects that will be derived from this class.
+enum CbcBranchObjType
+  {
+    SimpleIntegerBranchObj = 100,
+    SimpleIntegerDynamicPseudoCostBranchObj = 101,
+    CliqueBranchObj = 102,
+    LongCliqueBranchObj = 103,
+    SoSBranchObj = 104,
+    NWayBranchObj = 105,
+    FollowOnBranchObj = 106,
+    DummyBranchObj = 107,
+    GeneralDepthBranchObj = 108,
+    OneGeneralBranchingObj = 110,
+    CutBranchingObj = 200,
+    LotsizeBranchObj = 300,
+    DynamicPseudoCostBranchObj = 400
+  };
+
 /** \brief Abstract branching object base class
     Now just difference with OsiBranchingObject
 
@@ -48,7 +67,7 @@ public:
     virtual ~CbcBranchingObject ();
 
     /** Some branchingObjects may claim to be able to skip
-        strong branching.  If so they ahve to fill in CbcStrongInfo.
+        strong branching.  If so they have to fill in CbcStrongInfo.
         The object mention in incoming CbcStrongInfo must match.
         Returns nonzero if skip is wanted */
     virtual int fillStrongInfo( CbcStrongInfo & ) {
@@ -154,8 +173,11 @@ public:
 
     // Methods used in heuristics
 
-    /** Return the type (an integer identifier) of \c this */
-    virtual int type() const = 0;
+    /** Return the type (an integer identifier) of \c this.
+        See definition of CbcBranchObjType above for possibilities
+    */
+    
+    virtual CbcBranchObjType type() const = 0;
 
     /** Compare the original object of \c this with the original object of \c
         brObj. Assumes that there is an ordering of the original objects.
@@ -169,7 +191,7 @@ public:
         return variable() - br->variable();
     }
 
-    /** Compare the \c this with \c brObj. \c this and \c brObj must be os the
+    /** Compare the \c this with \c brObj. \c this and \c brObj must be of the
         same type and must have the same original object, but they may have
         different feasible regions.
         Return the appropriate CbcRangeCompare value (first argument being the

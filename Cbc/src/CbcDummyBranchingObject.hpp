@@ -47,8 +47,8 @@ public:
     virtual void print();
 
     /** Return the type (an integer identifier) of \c this */
-    virtual int type() const {
-        return 107;
+    virtual CbcBranchObjType type() const {
+        return DummyBranchObj;
     }
 
     /** Compare the original object of \c this with the original object of \c

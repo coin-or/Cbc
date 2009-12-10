@@ -182,8 +182,8 @@ public:
     }
 
     /** Return the type (an integer identifier) of \c this */
-    virtual int type() const {
-        return 400;
+    virtual CbcBranchObjType type() const {
+        return DynamicPseudoCostBranchObj;
     }
 
     // LL: compareOriginalObject and compareBranchingObject are inherited from

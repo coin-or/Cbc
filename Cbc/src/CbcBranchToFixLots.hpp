@@ -47,10 +47,11 @@ public:
 
     /** Does a lot of the work,
         Returns 0 if no good, 1 if dj, 2 if clean, 3 if both
+	FIXME: should use enum or equivalent to make these numbers clearer.
     */
     int shallWe() const;
 
-    /// Infeasibility - large is 0.5
+    /// Infeasibility for an integer variable - large is 0.5, but also can be infinity when known infeasible.
     virtual double infeasibility(const OsiBranchingInformation * info,
                                  int &preferredWay) const;
     /** \brief Return true if object can take part in normal heuristics

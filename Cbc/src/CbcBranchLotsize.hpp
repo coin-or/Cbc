@@ -105,7 +105,7 @@ public:
         Used by heuristics
     */
     virtual int columnNumber() const;
-    /// Original bounds
+    /// Original variable bounds
     inline double originalLowerBound() const {
         return bound_[0];
     }
@@ -205,22 +205,14 @@ public:
     */
     virtual double branch();
 
-#if 0
-    // No need to override. Default works fine.
-    /** Reset every information so that the branching object appears to point to
-        the previous child. This method does not need to modify anything in any
-        solver. */
-    virtual void previousBranch();
-#endif
-
     using CbcBranchingObject::print ;
     /** \brief Print something about branch - only if log level high
     */
     virtual void print();
 
     /** Return the type (an integer identifier) of \c this */
-    virtual int type() const {
-        return 300;
+    virtual CbcBranchObjType type() const {
+        return LotsizeBranchObj;
     }
 
     // LL: compareOriginalObject can be inherited from the CbcBranchingObject

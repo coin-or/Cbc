@@ -8,6 +8,7 @@
     Any descendant can be passed in by setVariableChoice
 */
 
+// FIXME: Do we want to define UP and DOWN constants (1 and -1) for clarity?
 class CbcChooseVariable {
 public:
     // Default Constructor

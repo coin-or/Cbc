@@ -185,22 +185,14 @@ public:
     /// Does next branch and updates state
     virtual double branch();
 
-#if 0
-    // No need to override. Default works fine.
-    /** Reset every information so that the branching object appears to point to
-        the previous child. This method does not need to modify anything in any
-        solver. */
-    virtual void previousBranch();
-#endif
-
     using CbcBranchingObject::print ;
     /** \brief Print something about branch - only if log level high
     */
     virtual void print();
 
     /** Return the type (an integer identifier) of \c this */
-    virtual int type() const {
-        return 102;
+    virtual CbcBranchObjType type() const {
+        return CliqueBranchObj;
     }
 
     /** Compare the original object of \c this with the original object of \c
@@ -212,7 +204,7 @@ public:
     */
     virtual int compareOriginalObject(const CbcBranchingObject* brObj) const;
 
-    /** Compare the \c this with \c brObj. \c this and \c brObj must be os the
+    /** Compare the \c this with \c brObj. \c this and \c brObj must be of the
         same type and must have the same original object, but they may have
         different feasible regions.
         Return the appropriate CbcRangeCompare value (first argument being the
@@ -265,22 +257,14 @@ public:
     /// Does next branch and updates state
     virtual double branch();
 
-#if 0
-    // No need to override. Default works fine.
-    /** Reset every information so that the branching object appears to point to
-        the previous child. This method does not need to modify anything in any
-        solver. */
-    virtual void previousBranch();
-#endif
-
     using CbcBranchingObject::print ;
     /** \brief Print something about branch - only if log level high
     */
     virtual void print();
 
     /** Return the type (an integer identifier) of \c this */
-    virtual int type() const {
-        return 103;
+    virtual CbcBranchObjType type() const {
+        return LongCliqueBranchObj;
     }
 
     /** Compare the original object of \c this with the original object of \c

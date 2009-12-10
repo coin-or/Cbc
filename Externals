@@ -4,6 +4,7 @@ ThirdParty/Blas   https://projects.coin-or.org/svn/BuildTools/ThirdParty/Blas/st
 ThirdParty/Lapack https://projects.coin-or.org/svn/BuildTools/ThirdParty/Lapack/stable/1.0
 ThirdParty/Glpk   https://projects.coin-or.org/svn/BuildTools/ThirdParty/Glpk/stable/1.5
 Data/Sample       https://projects.coin-or.org/svn/Data/stable/1.0/Sample
+Data/miplib3       https://projects.coin-or.org/svn/Data/stable/1.0/miplib3
 CoinUtils         https://projects.coin-or.org/svn/CoinUtils/stable/2.6/CoinUtils
 Cgl               https://projects.coin-or.org/svn/Cgl/branches/sandbox/Cgl
 Clp               https://projects.coin-or.org/svn/Clp/branches/sandbox/Clp

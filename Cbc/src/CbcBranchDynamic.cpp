@@ -18,6 +18,33 @@
 #include "CbcBranchDynamic.hpp"
 #include "CoinSort.hpp"
 #include "CoinError.hpp"
+
+// Removing magic constants.
+
+// This is a very small number, added to something to make sure it's non-zero.
+// Useful, for example in denominators of ratios to avoid any possible division by zero
+# define nonZeroAmount 1.0e-30
+
+// Increasing the size of an array when it grows to the end of its alloted space.
+// In this file, only used for the history of the outcome of a branch.
+// New size is   size_scale_numerator* <old value> / size_scale_denominator + additive_size_increase.
+
+#define size_scale_numerator 3
+#define size_scale_denominator 2
+#define additive_size_increase 100
+
+// Explanation of options used in this file
+
+// TYPE2 defines a strategy for computing pseudocosts
+// 0 means to just use the absolute change in objective
+// 1 means use the relative change in objective
+// 2 means use a convex combination of absolute and relative objective changes
+
+// For option 2 (TYPE2 == 2), the specific combination is controlled by TYPERATIO
+// Includes a TYPERATIO fraction of the absolute change and (1 - TYPERATIO) fraction of
+// the relative change.  So should in general have 0 <= TYPERATIO <= 1.  But for the
+// equality cases, you're better off using the other strategy (TYPE2) options.
+
 #ifdef COIN_DEVELOP
 typedef struct {
     double sumUp_;
@@ -39,7 +66,8 @@ bool getHistoryStatistics_ = true;
 static void increaseHistory()
 {
     if (numberHistory == maxHistory) {
-        maxHistory = 100 + (3 * maxHistory) / 2;
+      // This was originally 3 * maxHistory/2 + 100
+        maxHistory = additive_size_increase + (size_scale_numerator * maxHistory) / size_scale_denominator;
         History * temp = new History [maxHistory];
         memcpy(temp, history, numberHistory*sizeof(History));
         delete [] history;
@@ -243,6 +271,7 @@ CbcBranchDynamicDecision::updateInformation(OsiSolverInterface * solver,
 	*/
 	double change = CoinMax(0.0, objectiveValue - originalValue);
     // probably should also ignore if stopped
+	// FIXME. Could use enum to avoid numbers for iStatus (e.g. optimal, unknown, infeasible)
     int iStatus;
     if (solver->isProvenOptimal())
         iStatus = 0; // optimal
@@ -284,17 +313,17 @@ CbcBranchDynamicDecision::updateInformation(OsiSolverInterface * solver,
             movement = CoinMax(movement, MINIMUM_MOVEMENT);
             //printf("(down change %g value down %g ",change,movement);
             object->incrementNumberTimesDown();
-            object->addToSumDownChange(1.0e-30 + movement);
+            object->addToSumDownChange(nonZeroAmount + movement);
             object->addToSumDownDecrease(originalUnsatisfied - unsatisfied);
 #if TYPE2==0
-            object->addToSumDownCost(change / (1.0e-30 + movement));
+            object->addToSumDownCost(change / (nonZeroAmount + movement));
             object->setDownDynamicPseudoCost(object->sumDownCost() /
                                              static_cast<double> (object->numberTimesDown()));
 #elif TYPE2==1
             object->addToSumDownCost(change);
             object->setDownDynamicPseudoCost(object->sumDownCost() / object->sumDownChange());
 #elif TYPE2==2
-            object->addToSumDownCost(change*TYPERATIO + (1.0 - TYPERATIO)*change / (1.0e-30 + movement));
+            object->addToSumDownCost(change*TYPERATIO + (1.0 - TYPERATIO)*change / (nonZeroAmount + movement));
             object->setDownDynamicPseudoCost(object->sumDownCost()*(TYPERATIO / object->sumDownChange() + (1.0 - TYPERATIO) / (double) object->numberTimesDown()));
 #endif
         } else {
@@ -310,16 +339,16 @@ CbcBranchDynamicDecision::updateInformation(OsiSolverInterface * solver,
             else
                 change = object->downDynamicPseudoCost() * movement * 10.0;
             change = CoinMax(1.0e-12 * (1.0 + fabs(originalValue)), change);
-            object->addToSumDownChange(1.0e-30 + movement);
+            object->addToSumDownChange(nonZeroAmount + movement);
             object->addToSumDownDecrease(originalUnsatisfied - unsatisfied);
 #if TYPE2==0
-            object->addToSumDownCost(change / (1.0e-30 + movement));
+            object->addToSumDownCost(change / (nonZeroAmount + movement));
             object->setDownDynamicPseudoCost(object->sumDownCost() / (double) object->numberTimesDown());
 #elif TYPE2==1
             object->addToSumDownCost(change);
             object->setDownDynamicPseudoCost(object->sumDownCost() / object->sumDownChange());
 #elif TYPE2==2
-            object->addToSumDownCost(change*TYPERATIO + (1.0 - TYPERATIO)*change / (1.0e-30 + movement));
+            object->addToSumDownCost(change*TYPERATIO + (1.0 - TYPERATIO)*change / (nonZeroAmount + movement));
             object->setDownDynamicPseudoCost(object->sumDownCost()*(TYPERATIO / object->sumDownChange() + (1.0 - TYPERATIO) / (double) object->numberTimesDown()));
 #endif
 #endif
@@ -331,17 +360,17 @@ CbcBranchDynamicDecision::updateInformation(OsiSolverInterface * solver,
             movement = CoinMax(movement, MINIMUM_MOVEMENT);
             //printf("(up change %g value down %g ",change,movement);
             object->incrementNumberTimesUp();
-            object->addToSumUpChange(1.0e-30 + movement);
+            object->addToSumUpChange(nonZeroAmount + movement);
             object->addToSumUpDecrease(unsatisfied - originalUnsatisfied);
 #if TYPE2==0
-            object->addToSumUpCost(change / (1.0e-30 + movement));
+            object->addToSumUpCost(change / (nonZeroAmount + movement));
             object->setUpDynamicPseudoCost(object->sumUpCost() /
                                            static_cast<double> (object->numberTimesUp()));
 #elif TYPE2==1
             object->addToSumUpCost(change);
             object->setUpDynamicPseudoCost(object->sumUpCost() / object->sumUpChange());
 #elif TYPE2==2
-            object->addToSumUpCost(change*TYPERATIO + (1.0 - TYPERATIO)*change / (1.0e-30 + movement));
+            object->addToSumUpCost(change*TYPERATIO + (1.0 - TYPERATIO)*change / (nonZeroAmount + movement));
             object->setUpDynamicPseudoCost(object->sumUpCost()*(TYPERATIO / object->sumUpChange() + (1.0 - TYPERATIO) / (double) object->numberTimesUp()));
 #endif
         } else {
@@ -357,16 +386,16 @@ CbcBranchDynamicDecision::updateInformation(OsiSolverInterface * solver,
             else
                 change = object->upDynamicPseudoCost() * movement * 10.0;
             change = CoinMax(1.0e-12 * (1.0 + fabs(originalValue)), change);
-            object->addToSumUpChange(1.0e-30 + movement);
+            object->addToSumUpChange(nonZeroAmount + movement);
             object->addToSumUpDecrease(unsatisfied - originalUnsatisfied);
 #if TYPE2==0
-            object->addToSumUpCost(change / (1.0e-30 + movement));
+            object->addToSumUpCost(change / (nonZeroAmount + movement));
             object->setUpDynamicPseudoCost(object->sumUpCost() / (double) object->numberTimesUp());
 #elif TYPE2==1
             object->addToSumUpCost(change);
             object->setUpDynamicPseudoCost(object->sumUpCost() / object->sumUpChange());
 #elif TYPE2==2
-            object->addToSumUpCost(change*TYPERATIO + (1.0 - TYPERATIO)*change / (1.0e-30 + movement));
+            object->addToSumUpCost(change*TYPERATIO + (1.0 - TYPERATIO)*change / (nonZeroAmount + movement));
             object->setUpDynamicPseudoCost(object->sumUpCost()*(TYPERATIO / object->sumUpChange() + (1.0 - TYPERATIO) / (double) object->numberTimesUp()));
 #endif
 #endif

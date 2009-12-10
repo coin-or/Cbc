@@ -4712,7 +4712,7 @@ int CbcMain1 (int argc, const char *argv[],
                                 delete [] dsort;
                             }
                             // Set up heuristics
-                            doHeuristics(&model_,((!miplib)?1:10),parameters_,
+                            doHeuristics(babModel_,((!miplib)?1:10),parameters_,
 				numberParameters_,noPrinting_,initialPumpTune);
                             if (!miplib) {
                                 if (parameters_[whichParam(CBC_PARAM_STR_LOCALTREE, numberParameters_, parameters_)].currentOptionAsInteger()) {

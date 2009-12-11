@@ -98,7 +98,8 @@ libCbcSolver_la_SOURCES = \
 	CbcLinked.cpp CbcLinked.hpp CbcLinkedUtils.cpp \
 	unitTestClp.cpp CbcSolver.cpp \
 	CbcSolverHeuristics.cpp CbcSolverHeuristics.hpp \
-	CbcSolverAnalyze.cpp CbcSolverAnalyze.hpp
+	CbcSolverAnalyze.cpp CbcSolverAnalyze.hpp \
+	CbcSolverExpandKnapsack.cpp CbcSolverExpandKnapsack.hpp
 
 #Stefan: added unitTestClp.cpp because CbcSolver defines reference to it
 

@@ -188,7 +188,8 @@ libCbc_la_OBJECTS = $(am_libCbc_la_OBJECTS)
 libCbcSolver_la_LIBADD =
 am_libCbcSolver_la_OBJECTS = CbcCbcParam.lo Cbc_ampl.lo CbcLinked.lo \
 	CbcLinkedUtils.lo unitTestClp.lo CbcSolver.lo \
-	CbcSolverHeuristics.lo CbcSolverAnalyze.lo
+	CbcSolverHeuristics.lo CbcSolverAnalyze.lo \
+	CbcSolverExpandKnapsack.lo
 libCbcSolver_la_OBJECTS = $(am_libCbcSolver_la_OBJECTS)
 @COIN_HAS_CLP_TRUE@am__EXEEXT_1 = cbc$(EXEEXT)
 @CBC_BUILD_CBC_GENERIC_TRUE@am__EXEEXT_2 = cbc-generic$(EXEEXT)
@@ -595,7 +596,8 @@ libCbcSolver_la_SOURCES = \
 	CbcLinked.cpp CbcLinked.hpp CbcLinkedUtils.cpp \
 	unitTestClp.cpp CbcSolver.cpp \
 	CbcSolverHeuristics.cpp CbcSolverHeuristics.hpp \
-	CbcSolverAnalyze.cpp CbcSolverAnalyze.hpp
+	CbcSolverAnalyze.cpp CbcSolverAnalyze.hpp \
+	CbcSolverExpandKnapsack.cpp CbcSolverExpandKnapsack.hpp
 
 
 #Stefan: added unitTestClp.cpp because CbcSolver defines reference to it
@@ -958,6 +960,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcSimpleIntegerPseudoCost.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcSolver.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcSolverAnalyze.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcSolverExpandKnapsack.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcSolverHeuristics.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcStatistics.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcStrategy.Plo@am__quote@

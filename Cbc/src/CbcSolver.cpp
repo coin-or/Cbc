@@ -802,11 +802,6 @@ extern "C" {
   this set of calls thread-safe.
 */
 
-int CbcOrClpRead_mode = 1;
-FILE * CbcOrClpReadCommand = stdin;
-extern int CbcOrClpEnvironmentIndex;
-static bool noPrinting = false;
-
 #ifndef CBC_OTHER_SOLVER
 /*
   Look to see if a constraint is all-integer (variables & coeffs), or could be
@@ -818,7 +813,7 @@ static bool noPrinting = false;
 */
 static int * analyze(OsiClpSolverInterface * solverMod, int & numberChanged,
 		     double & increment, bool changeInt,
-		     CoinMessageHandler * generalMessageHandler)
+		     CoinMessageHandler * generalMessageHandler, bool noPrinting)
 {
     bool noPrinting_ = noPrinting;
     OsiSolverInterface * solver = solverMod->clone();
@@ -1119,6 +1114,8 @@ static int * analyze(OsiClpSolverInterface * solverMod, int & numberChanged,
     }
 }
 #endif	// ifndef CBC_OTHER_SOLVER
+
+
 
 #ifdef COIN_HAS_LINK
 /*  Returns OsiSolverInterface (User should delete)
@@ -1624,6 +1621,8 @@ expandKnapsack(CoinModel & model, int * whichColumn, int * knapsackStart,
 }
 #endif	//COIN_HAS_LINK
 
+
+
 /*
   Debug checks on special ordered sets.
 
@@ -1734,6 +1733,15 @@ static int dummyCallBack(CbcModel * /*model*/, int /*whereFrom*/)
 {
     return 0;
 }
+
+
+int CbcOrClpRead_mode = 1;
+FILE * CbcOrClpReadCommand = stdin;
+extern int CbcOrClpEnvironmentIndex;
+static bool noPrinting = false;
+
+
+
 /*
   Wrappers for CbcMain0, CbcMain1. The various forms of callCbc will eventually
   resolve to a call to CbcMain0 followed by a call to callCbc1.
@@ -4967,7 +4975,7 @@ int CbcMain1 (int argc, const char *argv[],
                             double increment = babModel_->getCutoffIncrement();;
                             int * changed = NULL;
                             if (!miplib && increment == normalIncrement)
-                                changed = analyze( osiclp, numberChanged, increment, false, generalMessageHandler);
+                                changed = analyze( osiclp, numberChanged, increment, false, generalMessageHandler, noPrinting);
 #elif CBC_OTHER_SOLVER==1
                             double increment = babModel_->getCutoffIncrement();;
 #endif

@@ -228,7 +228,7 @@ CbcSimpleInteger::resetSequenceEtc(int /*numberColumns*/,
 {
     //assert (numberColumns>0);
     int iColumn;
-#if 0
+#ifdef JJF_ZERO
     for (iColumn = 0; iColumn < numberColumns; iColumn++) {
         if (columnNumber_ == originalColumns[iColumn])
             break;

@@ -506,7 +506,7 @@ CbcRangeCompare
 CbcFixingBranchingObject::compareBranchingObject
 (const CbcBranchingObject* /*brObj*/, const bool /*replaceIfOverlap*/)
 {
-#if 0 //ndef NDEBUG
+#ifdef JJF_ZERO //ndef NDEBUG
     const CbcFixingBranchingObject* br =
         dynamic_cast<const CbcFixingBranchingObject*>(brObj);
     assert(br);

@@ -219,7 +219,7 @@ CbcSubProblem::apply(OsiSolverInterface * solver, int what) const
             printf("%d good changes %d\n",
                    numberChangedBounds_, what);
     }
-#if 0
+#ifdef JJF_ZERO
     if ((what&2) != 0) {
         OsiClpSolverInterface * clpSolver
         = dynamic_cast<OsiClpSolverInterface *> (solver);

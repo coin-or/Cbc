@@ -305,7 +305,7 @@ int CbcClpUnitTest (const CbcModel & saveModel, std::string& dirMiplib,
                     // vector matrix!
                     clpMatrix->makeSpecialColumnCopy();
                 }
-#if 0
+#ifdef JJF_ZERO
                 if (clpMatrix) {
                     int numberRows = clpMatrix->getNumRows();
                     int numberColumns = clpMatrix->getNumCols();
@@ -435,7 +435,7 @@ int CbcClpUnitTest (const CbcModel & saveModel, std::string& dirMiplib,
                     }
                     std::cout << "Largest (scaled) away from bound " << largestScaled
                               << " unscaled " << largest << std::endl;
-#if 0
+#ifdef JJF_ZERO
                     modelC->setDualBound(CoinMax(1.0001e8,
                                                  CoinMin(1000.0*largestScaled, 1.00001e10)));
 #else

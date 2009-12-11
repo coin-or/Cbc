@@ -1765,7 +1765,7 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
     double estimatedDegradation = 0.0;
     int numberNodes = model->getNodeCount();
     int saveLogLevel = model->logLevel();
-#if 0
+#ifdef JJF_ZERO
     if ((numberNodes % 500) == 0) {
         model->setLogLevel(6);
         // Get average up and down costs
@@ -1970,7 +1970,7 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
             // initialize sum of "infeasibilities"
             sumInfeasibilities_ = 0.0;
             int bestPriority = COIN_INT_MAX;
-#if 0
+#ifdef JJF_ZERO
             int number01 = 0;
             const cliqueEntry * entry = NULL;
             const int * toZero = NULL;
@@ -2128,7 +2128,7 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
                             double part = saveSolution[iColumn] - floor(saveSolution[iColumn]);
                             infeasibility = 0.5 - fabs(0.5 - part);
                         }
-#if 0
+#ifdef JJF_ZERO
                         if (probingInfo) {
                             int iSeq = backward[iColumn];
                             assert (iSeq >= 0);

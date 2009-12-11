@@ -587,7 +587,7 @@ CbcHeuristicFPump::solution(double & solutionValue,
             useOffset *= direction;
             // Tweak rhs and save
             useRhs = rhs;
-#if 0
+#ifdef JJF_ZERO
             double tempValue = 60.0 * useRhs;
             if (fabs(tempValue - floor(tempValue + 0.5)) < 1.0e-7 && rhs != fakeCutoff_) {
                 // add a little
@@ -1231,7 +1231,7 @@ CbcHeuristicFPump::solution(double & solutionValue,
                             }
                         }
                         if (newNumberInfeas && newNumberInfeas < 15) {
-#if 0
+#ifdef JJF_ZERO
                             roundingObjective = solutionValue;
                             OsiSolverInterface * saveSolver = model_->swapSolver(solver);
                             double * currentObjective =
@@ -1880,7 +1880,7 @@ CbcHeuristicFPump::solution(double & solutionValue,
                             double value = newSolver->getObjValue() * newSolver->getObjSense();
                             if (value < newSolutionValue) {
                                 //newSolver->writeMps("query","mps");
-#if 0
+#ifdef JJF_ZERO
                                 {
                                     double saveOffset;
                                     newSolver->getDblParam(OsiObjOffset, saveOffset);
@@ -2186,7 +2186,7 @@ CbcHeuristicFPump::rounds(OsiSolverInterface * solver, double * solution,
         }
     }
     int numberColumns = solver->getNumCols();
-#if 0
+#ifdef JJF_ZERO
     // Do set covering variables
     const CoinPackedMatrix * matrixByRow = solver->getMatrixByRow();
     const double * elementByRow = matrixByRow->getElements();
@@ -2334,7 +2334,7 @@ CbcHeuristicFPump::rounds(OsiSolverInterface * solver, double * solution,
         double value = solution[iColumn];
         double round = floor(value + primalTolerance);
         if (value - round > downValue) round += 1.;
-#if 1
+#ifndef JJF_ONE
         if (round < integerTolerance && cost[iColumn] < -1. + integerTolerance) flip_down++;
         if (round > 1. - integerTolerance && cost[iColumn] > 1. - integerTolerance) flip_up++;
 #else
@@ -2409,7 +2409,7 @@ CbcHeuristicFPump::rounds(OsiSolverInterface * solver, double * solution,
             sumInfeasibility += value;
         }
     }
-#if 0
+#ifdef JJF_ZERO
     if (largestInfeasibility > primalTolerance && numberBadRows*10 < numberRows) {
         // Can we improve by flipping
         for (int iPass = 0; iPass < 10; iPass++) {
@@ -2541,7 +2541,7 @@ CbcHeuristicFPump::rounds(OsiSolverInterface * solver, double * solution,
                 }
             }
             // Now flip some integers?
-#if 0
+#ifdef JJF_ZERO
             for (i = 0; i < numberIntegers; i++) {
                 int iColumn = integerVariable[i];
                 double solValue = solution[iColumn];

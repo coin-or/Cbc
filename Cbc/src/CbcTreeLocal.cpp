@@ -9,7 +9,7 @@
 #include "CoinTime.hpp"
 #include "OsiRowCutDebugger.hpp"
 #include <cassert>
-#if 0
+#ifdef JJF_ZERO
 // gdb doesn't always put breakpoints in this virtual function
 // just stick xxxxxx() where you want to start
 static void xxxxxx()

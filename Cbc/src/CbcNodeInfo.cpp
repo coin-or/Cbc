@@ -85,7 +85,7 @@ CbcNodeInfo::unsetParentBasedData()
     }
 }
 
-#if 0
+#ifdef JJF_ZERO
 // Constructor given parent
 CbcNodeInfo::CbcNodeInfo (CbcNodeInfo * parent)
         :
@@ -288,7 +288,7 @@ CbcNodeInfo::decrementParentCuts(CbcModel * model, int change)
         }
     }
 }
-#if 0
+#ifdef JJF_ZERO
 void
 CbcNodeInfo::incrementParentCuts(CbcModel * model, int change)
 {

@@ -227,7 +227,7 @@ CbcCompareDefault::newSolution(CbcModel * model,
 bool
 CbcCompareDefault::every1000Nodes(CbcModel * model, int numberNodes)
 {
-#if 0
+#ifdef JJF_ZERO
     // was
     if (numberNodes > 10000)
         weight_ = 0.0; // this searches on objective

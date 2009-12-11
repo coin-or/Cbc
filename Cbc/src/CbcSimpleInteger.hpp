@@ -66,7 +66,7 @@ public:
                      double * lower, double * upper,
                      int branchState) const ;
 
-#if 0
+#ifdef JJF_ZERO
     // No need to override. Default works fine.
     /** Reset every information so that the branching object appears to point to
         the previous child. This method does not need to modify anything in any

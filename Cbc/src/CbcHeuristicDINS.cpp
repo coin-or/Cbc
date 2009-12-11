@@ -327,7 +327,7 @@ CbcHeuristicDINS::solution(double & solutionValue,
             << generalPrint
             << CoinMessageEol;
             if (nFix > numberIntegers / 10) {
-#if 0
+#ifdef JJF_ZERO
                 newSolver->initialSolve();
                 printf("obj %g\n", newSolver->getObjValue());
                 for (i = 0; i < numberIntegers; i++) {

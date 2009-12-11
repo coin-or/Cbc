@@ -74,7 +74,7 @@ public:
     /// Copy constructor
     CbcNodeInfo ( const CbcNodeInfo &);
 
-#if 0
+#ifdef JJF_ZERO
     /** Construct with parent
 
       Creates a NodeInfo object which knows its parent and assumes it will
@@ -118,7 +118,7 @@ public:
     virtual CbcNodeInfo * clone() const = 0;
     /// Called when number branches left down to zero
     virtual void allBranchesGone() {}
-#if 1
+#ifndef JJF_ONE
     /// Increment number of references
     inline void increment(int amount = 1) {
         numberPointingToThis_ += amount;/*printf("CbcNodeInfo %x incremented by %d to %d\n",this,amount,numberPointingToThis_);*/

@@ -203,7 +203,7 @@ CbcHeuristicDive::solution(double & solutionValue,
     if (!canHeuristicRun())
         return 0;
 
-#if 0
+#ifdef JJF_ZERO
     // See if to do
     if (!when() || (when() % 10 == 1 && model_->phase() != 1) ||
             (when() % 10 == 2 && (model_->phase() != 2 && model_->phase() != 3)))
@@ -447,7 +447,7 @@ CbcHeuristicDive::solution(double & solutionValue,
         double gap = 1.0e30;
 #endif
         if (reducedCost && true) {
-#if 1
+#ifndef JJF_ONE
             cnt = fixOtherVariables(solver, solution, candidate, random);
 #else
 #ifdef GAP
@@ -910,7 +910,7 @@ int CbcHeuristicDive::reducedCostFix (OsiSolverInterface* solver)
 
 {
     //return 0; // temp
-#if 1
+#ifndef JJF_ONE
     if (!model_->solverCharacteristics()->reducedCostsAccurate())
         return 0; //NLP
 #endif

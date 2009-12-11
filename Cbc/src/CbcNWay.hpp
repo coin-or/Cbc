@@ -102,7 +102,7 @@ public:
     /// Does next branch and updates state
     virtual double branch();
 
-#if 0
+#ifdef JJF_ZERO
     // FIXME: what do we need to do here?
     /** Reset every information so that the branching object appears to point to
         the previous child. This method does not need to modify anything in any

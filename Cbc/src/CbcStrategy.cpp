@@ -295,7 +295,7 @@ CbcStrategyDefault::setupHeuristics(CbcModel & model)
     }
     if (!found)
         model.addHeuristic(&heuristic1);
-#if 0
+#ifdef JJF_ZERO
     // Allow join solutions
     CbcHeuristicLocal heuristic2(model);
     heuristic2.setHeuristicName("join solutions");
@@ -862,7 +862,7 @@ CbcStrategyDefaultSubTree::setupCutGenerators(CbcModel & model)
         if (!found)
             model.addCutGenerator(&mixedGen, setting, "MixedIntegerRounding2");
     }
-#if 0
+#ifdef JJF_ZERO
     // Say we want timings
     int newNumberGenerators = model.numberCutGenerators();
     for (iGenerator = numberGenerators; iGenerator < newNumberGenerators; iGenerator++) {
@@ -951,7 +951,7 @@ setCutAndHeuristicOptions(CbcModel & model)
             cglProbing->setMaxElementsRoot(300);
             cglProbing->setRowCuts(3);
         }
-#if 0
+#ifdef JJF_ZERO
         CglGomory * cglGomory = dynamic_cast<CglGomory *>(generator);
         if (cglGomory) {
             // try larger limit

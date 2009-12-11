@@ -281,7 +281,7 @@ public:
     /**@name Virtual methods that the derived classe should provide.
     */
     //@{
-#if 0
+#ifdef JJF_ZERO
     /// Into simplex
     virtual void intoSimplex();
     /// Checks if disaster

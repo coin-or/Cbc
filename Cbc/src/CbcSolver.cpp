@@ -3626,7 +3626,7 @@ int CbcMain1 (int argc, const char *argv[],
                         break;
                     case CLP_PARAM_ACTION_OUTDUPROWS:
                         dominatedCuts = true;
-#if 0
+#ifdef JJF_ZERO
                         if (goodModel) {
                             int numberRows = clpSolver->getNumRows();
                             //int nOut = outDupRow(clpSolver);
@@ -4610,7 +4610,7 @@ int CbcMain1 (int argc, const char *argv[],
                             }
                             int testOsiOptions = parameters_[whichParam(CBC_PARAM_INT_TESTOSI, numberParameters_, parameters_)].intValue();
                             //#ifdef COIN_HAS_ASL
-#if 1
+#ifndef JJF_ONE
                             // If linked then see if expansion wanted
                             {
                                 OsiSolverLink * solver3 = dynamic_cast<OsiSolverLink *> (babModel_->solver());
@@ -5655,7 +5655,7 @@ int CbcMain1 (int argc, const char *argv[],
                                         // up or down
                                         int way = (((nodeStrategy - 1) % 1) == 1) ? -1 : +1;
                                         babModel_->setPreferredWay(way);
-#if 0
+#ifdef JJF_ZERO
                                         OsiObject ** objects = babModel_->objects();
                                         int numberObjects = babModel_->numberObjects();
                                         for (int iObj = 0; iObj < numberObjects; iObj++) {
@@ -6120,7 +6120,7 @@ int CbcMain1 (int argc, const char *argv[],
                                 if (osiclp->getModelPtr()->perturbation() == 50)
                                     osiclp->getModelPtr()->setPerturbation(52); // try less
 #endif
-#if 0
+#ifdef JJF_ZERO
                                 if (osiclp->getNumCols() == 29404) {
                                     void restoreSolution(ClpSimplex * lpSolver,
                                                          std::string fileName, int mode);
@@ -6210,7 +6210,7 @@ int CbcMain1 (int argc, const char *argv[],
                                     babModel_->setStoredRowCuts(donor.storedRowCuts());
                                     donor.setStoredRowCuts(NULL);
                                 }
-#if 0
+#ifdef JJF_ZERO
                                 int extra5 = parameters_[whichParam(EXTRA5, numberParameters_, parameters_)].intValue();
                                 if (extra5 > 0) {
                                     int numberGenerators = babModel_->numberCutGenerators();
@@ -6237,7 +6237,7 @@ int CbcMain1 (int argc, const char *argv[],
 #endif
 #endif
 #ifdef COIN_DEVELOP
-#if 1
+#ifndef JJF_ONE
                                 {
                                     int numberColumns = babModel_->getNumCols();
                                     const double * solution = babModel_->bestSolution();
@@ -6562,7 +6562,7 @@ int CbcMain1 (int argc, const char *argv[],
                                             }
                                         }
                                     }
-#if 0
+#ifdef JJF_ZERO
                                     // See if sos so we can fix
                                     OsiClpSolverInterface * osiclp = dynamic_cast< OsiClpSolverInterface*> (saveSolver);
                                     if (osiclp && osiclp->numberSOS()) {

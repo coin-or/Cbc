@@ -590,7 +590,7 @@ CbcModel::analyzeObjective ()
                 //const CoinBigIndex * columnStart = matrixByCol.getVectorStarts();
                 const int * columnLength = matrixByCol->getVectorLengths();
                 const double * solution = clpSolver->getColSolution();
-#if 0
+#ifdef JJF_ZERO
                 int nAtBound = 0;
                 for (int i = 0; i < numberColumns; i++) {
                     double lowerValue = lower[i];
@@ -1647,7 +1647,7 @@ void CbcModel::branchAndBound(int doStatistics)
             clpSolver->passInDisasterHandler(&handler);
             // Initialise solvers seed
             clpSolver->getModelPtr()->setRandomSeed(1234567);
-#if 0
+#ifdef JJF_ZERO
             // reduce factorization frequency
             int frequency = clpSolver->getModelPtr()->factorizationFrequency();
             clpSolver->getModelPtr()->setFactorizationFrequency(CoinMin(frequency, 120));
@@ -1807,7 +1807,7 @@ void CbcModel::branchAndBound(int doStatistics)
                     if (iColumn < 0) {
                         // already has column numbers changed
                         object_[numberObjects_] = originalObject[iObject]->clone();
-#if 0
+#ifdef JJF_ZERO
                         // redo ids etc
                         CbcObject * obj =
                             dynamic_cast <CbcObject *>(object_[numberObjects_]) ;
@@ -2272,7 +2272,7 @@ void CbcModel::branchAndBound(int doStatistics)
     if (compareActual) {
         compareActual->setBestPossible(direction*solver_->getObjValue());
         compareActual->setCutoff(getCutoff());
-#if 0
+#ifdef JJF_ZERO
         if (false && !numberThreads_ && !parentModel_) {
             printf("CbcTreeArray ? threads ? parentArray\n");
             // Setup new style tree
@@ -2526,7 +2526,7 @@ void CbcModel::branchAndBound(int doStatistics)
                             }
                             doHeuristicsAtRoot();
                         }
-#if 0
+#ifdef JJF_ZERO
                         int nCuts = storedRowCuts_->sizeRowCuts();
                         // add to global list
                         for (int i = 0; i < nCuts; i++) {
@@ -3157,7 +3157,7 @@ void CbcModel::branchAndBound(int doStatistics)
         //const int * integerVariable = probingInfo_->integerVariable();
         if (toZero[number01]) {
             CglTreeProbingInfo info(*probingInfo_);
-#if 0
+#ifdef JJF_ZERO
 /*
   Marginal idea. Further exploration probably good. Build some extra
   cliques from probing info. Not quite worth the effort?
@@ -4019,7 +4019,7 @@ void CbcModel::branchAndBound(int doStatistics)
                 continue;
             // Do main work of solving node here
             doOneNode(this, node, createdNode);
-#if 0
+#ifdef JJF_ZERO
             if (node) {
                 if (createdNode) {
                     printf("Node %d depth %d, created %d depth %d\n",
@@ -6993,7 +6993,7 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
 
 
 {
-#if 0
+#ifdef JJF_ZERO
     if (node && numberTries > 1) {
         if (currentDepth_ < 5)
             numberTries *= 4; // boost
@@ -7510,7 +7510,7 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
         if (solverCharacteristics_->warmStart() &&
                 !solver_->optimalBasisIsAvailable()) {
             //printf("XXXXYY no opt basis\n");
-#if 0//def COIN_HAS_CLP
+#ifdef JJF_ZERO//def COIN_HAS_CLP
             //OsiClpSolverInterface * clpSolver
             //= dynamic_cast<OsiClpSolverInterface *> (solver_);
             int save = 0;
@@ -7520,7 +7520,7 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
             }
 #endif
             resolve(node ? node->nodeInfo() : NULL, 3);
-#if 0//def COIN_HAS_CLP
+#ifdef JJF_ZERO//def COIN_HAS_CLP
             if (clpSolver)
                 clpSolver->setSpecialOptions(save);
 #ifdef CLP_INVESTIGATE
@@ -7787,7 +7787,7 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
                 << CoinMessageEol ;
             }
             if (violated >= 0 && feasible) {
-#if 0
+#ifdef JJF_ZERO
                 //winnowCuts(theseCuts);
                 // look at all cuts here
                 int nCuts = theseCuts.sizeRowCuts() ;
@@ -8224,7 +8224,7 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
             delete [] newSolution ;
         }
 
-#if 0
+#ifdef JJF_ZERO
         // switch on to get all cuts printed
         theseCuts.printCuts() ;
 #endif
@@ -8468,7 +8468,7 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
                 double thisObj = direction * solver_->getObjValue();
                 bool badObj = (allowZeroIterations) ? thisObj < cut_obj[0] + minimumDrop
                               : thisObj < cut_obj[CUT_HISTORY-1] + minimumDrop;
-#if 0 // probably not a good idea
+#ifdef JJF_ZERO // probably not a good idea
                 if (!badObj)
                     numberLastAttempts = CoinMax(0, numberLastAttempts - 1);
 #endif
@@ -8845,7 +8845,7 @@ lh:
                             if (!smallProblem)
                                 maximumCutPasses_ = CoinMax(maximumCutPasses_ >> 1, 1);
                         }
-#if 0
+#ifdef JJF_ZERO
                     } else if (currentPassNumber_ < CoinMin(CoinAbs(maximumCutPassesAtRoot_), 8)) {
                         if (whenCuts_ == 999999) {
                             whenCuts_ = 8000008;
@@ -8884,7 +8884,7 @@ lh:
                     }
                 } else {
                     // Objective changed
-#if 0
+#ifdef JJF_ZERO
                     if (currentPassNumber_ < CoinMin(CoinAbs(maximumCutPassesAtRoot_), 8)) {
                         if (whenCuts_ == 999999) {
                             whenCuts_ = 8000008;
@@ -9858,7 +9858,7 @@ CbcModel::resolve(CbcNodeInfo * parent, int whereFrom,
             //      solver_->writeMps("infeas");
         }
     }
-#if 0
+#ifdef JJF_ZERO
     if (cutModifier_ && feasible && !solverCharacteristics_->solutionAddsCuts()) {
         //double increment = getDblParam(CbcModel::CbcCutoffIncrement) ;
         double cutoff ;
@@ -10316,7 +10316,7 @@ CbcModel::pseudoShadow(int iActive)
                 if (obj1) {
                     //assert (obj1->downShadowPrice()>0.0);
 #define P_FACTOR 1.0
-#if 1
+#ifndef JJF_ONE
                     obj1->setDownShadowPrice(-P_FACTOR*obj1->downShadowPrice());
                     obj1->setUpShadowPrice(-P_FACTOR*obj1->upShadowPrice());
 #else
@@ -11220,7 +11220,7 @@ CbcModel::addObjects(int numberObjects, OsiObject ** objects)
 void CbcModel::setCutoff (double value)
 
 {
-#if 0
+#ifdef JJF_ZERO
     double tol = 0 ;
     int fathomStrict = getIntParam(CbcFathomDiscipline) ;
     if (fathomStrict == 1) {
@@ -11307,7 +11307,7 @@ CbcModel::checkSolution (double cutoff, double *solution,
         if (fixVariables == -1 && (specialOptions_&16) == 0) {
             CoinWarmStartBasis * basis = dynamic_cast<CoinWarmStartBasis*>(saveSolver->getWarmStart()) ;
             assert(basis != NULL);
-#if 0 //ndef CBC_OTHER_SOLVER
+#ifdef JJF_ZERO //ndef CBC_OTHER_SOLVER
             for (i = 0; i < numberObjects_; i++) {
                 CbcSimpleInteger * obj =
                     dynamic_cast <CbcSimpleInteger *>(object_[i]) ;
@@ -11349,7 +11349,7 @@ CbcModel::checkSolution (double cutoff, double *solution,
 #endif
             solver_->setHintParam(OsiDoDualInInitial, true, OsiHintTry);
             solver_->initialSolve();
-#if 0
+#ifdef JJF_ZERO
             if (solver_->isProvenOptimal()) {
                 solver_->writeMps("feasible");
                 printf("XXXXXXXXXXXX - saving feasible\n");
@@ -11501,7 +11501,7 @@ CbcModel::checkSolution (double cutoff, double *solution,
             //printf(" SOL at unknown depth\n");
 #endif
             if ((specialOptions_&16) == 0) {
-#if 0
+#ifdef JJF_ZERO
                 // check without scaling
                 bool saveTakeHint;
                 OsiHintStrength saveStrength;
@@ -11727,7 +11727,7 @@ CbcModel::setBestSolution (CBC_Message how,
 
 {
     double * solution = CoinCopyOfArray(solutionIn, solver_->getNumCols());
-#if 0
+#ifdef JJF_ZERO
     {
         double saveOffset;
         solver_->getDblParam(OsiObjOffset, saveOffset);
@@ -13126,7 +13126,7 @@ CbcModel::chooseBranch(CbcNode * &newNode, int numberPassesLeft,
     } else {
         dblParam_[CbcSmallChange] = 1.0e-8;
     }
-#if 0
+#ifdef JJF_ZERO
     // Say not on optimal path
     bool onOptimalPath = false;
     if ((specialOptions_&1) != 0) {
@@ -13439,7 +13439,7 @@ CbcModel::chooseBranch(CbcNode * &newNode, int numberPassesLeft,
         }
     }
     stateOfSearch_ = 0; // outside chooseBranch
-#if 0
+#ifdef JJF_ZERO
     if (onOptimalPath) {
         const OsiRowCutDebugger *debugger = solver_->getRowCutDebugger() ;
         if (!debugger) {
@@ -14690,7 +14690,7 @@ CbcModel::doOneNode(CbcModel * baseModel, CbcNode * & node, CbcNode * & newNode)
                                     if (djValue > 1.0e-3 || solution[iColumn2] < upper[iColumn2] - 1.0e-5) {
                                         if (canDelete) {
                                             //nRedundantDown++;
-#if 1
+#ifndef JJF_ONE
                                             printf("%d redundant branch down with bounds %g, %g current upper %g solution %g dj %g\n",
                                                    iColumn2, bounds[0], bounds[1], upper[iColumn2], solution[iColumn2], djValue);
 #endif
@@ -14707,7 +14707,7 @@ CbcModel::doOneNode(CbcModel * baseModel, CbcNode * & node, CbcNode * & newNode)
                                                 printf("SKipping\n");
                                             }
                                         } else if (iColumn1 >= 0 && iColumn1 != iColumn2 && (!inBetween || true) && zeroOne1 && zeroOne2 && false) {
-#if 1
+#ifndef JJF_ONE
                                             if (true) {
                                                 // add in bounds
                                                 newLower = bounds1[0];
@@ -14733,7 +14733,7 @@ CbcModel::doOneNode(CbcModel * baseModel, CbcNode * & node, CbcNode * & newNode)
                                     if (djValue < -1.0e-3 || solution[iColumn2] > lower[iColumn2] + 1.0e-5) {
                                         if (canDelete) {
                                             //nRedundantUp++;
-#if 1
+#ifndef JJF_ONE
                                             printf("%d redundant branch up with bounds %g, %g current lower %g solution %g dj %g\n",
                                                    iColumn2, bounds[0], bounds[1], lower[iColumn2], solution[iColumn2], djValue);
 #endif
@@ -14750,7 +14750,7 @@ CbcModel::doOneNode(CbcModel * baseModel, CbcNode * & node, CbcNode * & newNode)
                                                 printf("SKipping\n");
                                             }
                                         } else if (iColumn1 >= 0 && iColumn1 != iColumn2 && (!inBetween || true) && zeroOne1 && zeroOne2 && false) {
-#if 1
+#ifndef JJF_ONE
                                             // add in bounds
                                             newLower = bounds1[0];
                                             newUpper = bounds1[1];
@@ -15138,7 +15138,7 @@ CbcModel::doOneNode(CbcModel * baseModel, CbcNode * & node, CbcNode * & newNode)
       I'm thinking this is redundant --- the call to addCuts that conditions entry
       to this code block also performs this action.
     */
-#if 1
+#ifndef JJF_ONE
     //if (numberThreads_)
     {
         int numberToDelete = getNumRows() - numberRowsAtContinuous_ ;
@@ -15220,7 +15220,7 @@ CbcModel::splitModel(int numberModels, CbcModel ** model,
         otherModel->numberHeuristicSolutions_ = numberHeuristicSolutions_;
         otherModel->numberNodes_ = 1; //numberNodes_;
         otherModel->numberIterations_ = numberIterations_;
-#if 0
+#ifdef JJF_ZERO
         if (maximumNumberCuts_ > otherModel->maximumNumberCuts_) {
             otherModel->maximumNumberCuts_ = maximumNumberCuts_;
             delete [] otherModel->addedCuts_;
@@ -15907,7 +15907,7 @@ void CbcModel::previousBounds (CbcNode * node, CbcNodeInfo * where, int iColumn,
     while (nNode) {
         --nNode;
         walkback_[nNode]->applyBounds(iColumn, lower, upper, force);
-#if 0
+#ifdef JJF_ZERO
         CbcNode * nodeLook = walkback_[nNode]->mutableOwner();
         if (nodeLook) {
             const OsiBranchingObject * obj = nodeLook->branchingObject();
@@ -16612,7 +16612,7 @@ CbcModel::originalModel(CbcModel * presolvedModel, bool weak)
             }
         }
         delete [] back;
-#if 0
+#ifdef JJF_ZERO
         // ** looks as if presolve needs more intelligence
         // do presolve - for now just clp but easy to get osi interface
         OsiClpSolverInterface * clpSolver

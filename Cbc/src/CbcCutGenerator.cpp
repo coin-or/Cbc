@@ -257,7 +257,7 @@ CbcCutGenerator::generateCuts( OsiCuts & cs , int fullScan, OsiSolverInterface *
         //#define CBC_DEBUG
         int numberRowCutsBefore = cs.sizeRowCuts() ;
         int numberColumnCutsBefore = cs.sizeColCuts() ;
-#if 0
+#ifdef JJF_ZERO
         int cutsBefore = cs.sizeCuts();
 #endif
         CglTreeInfo info;
@@ -537,7 +537,7 @@ CbcCutGenerator::generateCuts( OsiCuts & cs , int fullScan, OsiSolverInterface *
             }
             //if (!solver->basisIsAvailable())
             //returnCode=true;
-#if 0
+#ifdef JJF_ZERO
             // Pass across info to pseudocosts
             char * mark = new char[numberColumns];
             memset(mark, 0, numberColumns);
@@ -720,7 +720,7 @@ CbcCutGenerator::generateCuts( OsiCuts & cs , int fullScan, OsiSolverInterface *
             if (/*nEls>CoinMax(nAdd2,nElsNow/8+nAdd)*/nCuts && feasible) {
                 //printf("need to remove cuts\n");
                 // just add most effective
-#if 1
+#ifndef JJF_ONE
                 int nDelete = nEls - nReasonable;
 
                 nElsNow = nEls;
@@ -768,7 +768,7 @@ CbcCutGenerator::generateCuts( OsiCuts & cs , int fullScan, OsiSolverInterface *
                                 nU++;
                             }
                         }
-#if 0
+#ifdef JJF_ZERO
                         int nS = n - nU;
                         if (numberColumns > 20000) {
                             if (nS > 50) {
@@ -1112,7 +1112,7 @@ CbcCutGenerator::generateCuts( OsiCuts & cs , int fullScan, OsiSolverInterface *
                     int n = thisCut.row().getNumElements();
                     numberElements_ += n;
                 }
-#if 0
+#ifdef JJF_ZERO
                 printf("generator %s generated %d row cuts\n",
                        generatorName_, numberRowCutsAfter - numberRowCutsBefore);
 #endif
@@ -1120,7 +1120,7 @@ CbcCutGenerator::generateCuts( OsiCuts & cs , int fullScan, OsiSolverInterface *
             }
             int numberColumnCutsAfter = cs.sizeColCuts() ;
             if (numberColumnCutsBefore < numberColumnCutsAfter) {
-#if 0
+#ifdef JJF_ZERO
                 printf("generator %s generated %d column cuts\n",
                        generatorName_, numberColumnCutsAfter - numberColumnCutsBefore);
 #endif
@@ -1129,7 +1129,7 @@ CbcCutGenerator::generateCuts( OsiCuts & cs , int fullScan, OsiSolverInterface *
         }
         if (timing())
             timeInCutGenerator_ += CoinCpuTime() - time1;
-#if 0
+#ifdef JJF_ZERO
         // switch off if first time and no good
         if (node == NULL && !pass) {
             if (cs.sizeCuts() - cutsBefore < CoinAbs(switchOffIfLessThan_)) {

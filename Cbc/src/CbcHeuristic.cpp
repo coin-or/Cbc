@@ -269,14 +269,14 @@ CbcHeuristic::shouldHeurRun(int whereFrom)
     if ((whereFrom_&(1 << whereFrom)) == 0)
         return false;
     // No longer used for original purpose - so use for ever run at all JJF
-#if 1
+#ifndef JJF_ONE
     // Don't run if hot start
     if (model_ && model_->hotstartSolution())
         return false;
     else
         return true;
 #else
-#if 0
+#ifdef JJF_ZERO
     const CbcNode* currentNode = model_->currentNode();
     if (currentNode == NULL) {
         return false;
@@ -308,7 +308,7 @@ CbcHeuristic::shouldHeurRun(int whereFrom)
         }
         // LL: should we save these nodes in the list of nodes where the heur was
         // LL: run?
-#if 1
+#ifndef JJF_ONE
         if (currentNode != NULL) {
             // Get where we are and create the appropriate CbcHeuristicNode object
             CbcHeuristicNode* nodeDesc = new CbcHeuristicNode(*model_);
@@ -333,7 +333,7 @@ CbcHeuristic::shouldHeurRun(int whereFrom)
         // Get where we are and create the appropriate CbcHeuristicNode object
         CbcHeuristicNode* nodeDesc = new CbcHeuristicNode(*model_);
         //#ifdef PRINT_DEBUG
-#if 1
+#ifndef JJF_ONE
         const double minDistanceToRun = 1.5 * log((double)depth) / log((double)2);
 #else
     const double minDistanceToRun = minDistanceToRun_;
@@ -2317,7 +2317,7 @@ CbcRounding::solution(double & solutionValue,
     }
 #ifdef NEW_ROUNDING
     if (!returnCode) {
-#if 0
+#ifdef JJF_ZERO
         // back to starting point
         memcpy(newSolution, solution, numberColumns*sizeof(double));
         memset(rowActivity, 0, numberRows*sizeof(double));

@@ -238,7 +238,7 @@ CbcTree::bestNode(double cutoff)
             best->checkIsCutoff(cutoff);
         }
         if (!best || best->objectiveValue() >= cutoff) {
-#if 0
+#ifdef JJF_ZERO
             // take off
             std::pop_heap(nodes_.begin(), nodes_.end(), comparison_);
             nodes_.pop_back();
@@ -462,7 +462,7 @@ CbcTree::bestAlternate()
     return best;
 }
 
-#if 0 // not used, referenced removed in CbcModel.cpp
+#ifdef JJF_ZERO // not used, referenced removed in CbcModel.cpp
 CbcTreeArray::CbcTreeArray()
         : CbcTree(),
         lastNode_(NULL),
@@ -868,7 +868,7 @@ CbcTree::push(CbcNode * x)
        x->objectiveValue(),x->nodeInfo()->decrement(0),
        x->nodeInfo()->numberBranchesLeft(),x->nodeInfo()->numberPointingToThis());*/
     assert(x->objectiveValue() != COIN_DBL_MAX && x->nodeInfo());
-#if 0
+#ifdef JJF_ZERO
     nodes_.push_back(x);
     push_heap(nodes_.begin(), nodes_.end(), comparison_);
 #else
@@ -880,7 +880,7 @@ realpush(x);
 void
 CbcTree::pop()
 {
-#if 0
+#ifdef JJF_ZERO
     std::pop_heap(nodes_.begin(), nodes_.end(), comparison_);
     nodes_.pop_back();
 #else
@@ -915,7 +915,7 @@ CbcTree::bestNode(double cutoff)
             best->checkIsCutoff(cutoff);
         }
         if (!best || best->objectiveValue() >= cutoff) {
-#if 0
+#ifdef JJF_ZERO
             // take off
             std::pop_heap(nodes_.begin(), nodes_.end(), comparison_);
             nodes_.pop_back();
@@ -955,7 +955,7 @@ assert (best);
         }
     } else if (best) {
         // take off
-#if 0
+#ifdef JJF_ZERO
         std::pop_heap(nodes_.begin(), nodes_.end(), comparison_);
         nodes_.pop_back();
 #else

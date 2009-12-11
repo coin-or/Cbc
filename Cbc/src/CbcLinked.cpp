@@ -875,7 +875,7 @@ OsiSolverLink::OsiSolverLink ()
 {
     gutsOfDestructor(true);
 }
-#if 0
+#ifdef JJF_ZERO
 /* returns
    sequence of nonlinear or
    -1 numeric
@@ -1680,7 +1680,7 @@ OsiSolverLink::addTighterConstraints()
             }
         }
     }
-#if 0
+#ifdef JJF_ZERO
     // possibly do bounds
     for (int iColumn = 0; iColumn < firstLambda; iColumn++) {
         for (int iList = 0; iList < nList; iList++) {
@@ -1833,7 +1833,7 @@ OsiSolverLink::setMeshSizes(double value)
         OsiBiLinear * obj = dynamic_cast<OsiBiLinear *> (object_[i]);
         if (obj) {
             if (obj->xMeshSize() < 1.0 && obj->yMeshSize() < 1.0) {
-#if 0
+#ifdef JJF_ZERO
                 numberContinuous++;
                 int xColumn = obj->xColumn();
                 double gapX = upper[xColumn] - lower[xColumn];
@@ -2325,7 +2325,7 @@ OsiSolverLink::nonlinearSLP(int numberPasses, double deltaTolerance)
         } else {
             memset(r, 0, numberColumns*sizeof(double));
         }
-#if 0
+#ifdef JJF_ZERO
         for (jNon = 0; jNon < numberNonLinearColumns; jNon++) {
             iColumn = listNonLinearColumn[jNon];
             if (statusCheck[iColumn] == 'L' && r[iColumn] < -1.0e-4) {
@@ -2580,7 +2580,7 @@ OsiSolverLink::linearizedBAB(CglStored * cut)
         cbcModel->addCutGenerator(&twomir, -99, "Twomir", true, false, false, -100, -1, -1);
         cbcModel->cutGenerator(6)->setTiming(true);
         // For now - switch off most heuristics (because CglPreProcess is bad with QP)
-#if 1
+#ifndef JJF_ONE
         CbcHeuristicFPump heuristicFPump(*cbcModel);
         heuristicFPump.setWhen(13);
         heuristicFPump.setMaximumPasses(20);
@@ -3620,7 +3620,7 @@ OsiSolverLink::fathom(bool allFixed)
                 cbcModel->initialSolve();
                 if (zeroObjective) {
                     cbcModel->setMaximumSolutions(1); // just getting a solution
-#if 0
+#ifdef JJF_ZERO
                     OsiClpSolverInterface * osiclpModel = dynamic_cast< OsiClpSolverInterface*> (cbcModel->solver());
                     ClpSimplex * clpModel = osiclpModel->getModelPtr();
                     const double * element = clpModel->matrix()->getMutableElements();
@@ -3860,7 +3860,7 @@ OsiLinkedBound::updateBounds(ClpSimplex * solver)
         }
     }
 }
-#if 0
+#ifdef JJF_ZERO
 // Add an element modifier
 void
 OsiLinkedBound::addCoefficientModifier(bool useUpperBound, int position,
@@ -4418,7 +4418,7 @@ OsiOldLink::resetSequenceEtc(int numberColumns, const int * originalColumns)
     for (int j = 0; j < numberMembers_*numberLinks_; j++) {
         int iColumn = members_[j];
         int i;
-#if 0
+#ifdef JJF_ZERO
         for (i = 0; i < numberColumns; i++) {
             if (originalColumns[i] == iColumn)
                 break;
@@ -5275,7 +5275,7 @@ OsiBiLinear::infeasibility(const OsiBranchingInformation * info, int & whichWay)
     xB[1] = info->upper_[xColumn_];
     yB[0] = info->lower_[yColumn_];
     yB[1] = info->upper_[yColumn_];
-#if 0
+#ifdef JJF_ZERO
     if (info->lower_[1] <= 43.0 && info->upper_[1] >= 43.0) {
         if (info->lower_[4] <= 49.0 && info->upper_[4] >= 49.0) {
             if (info->lower_[2] <= 16.0 && info->upper_[2] >= 16.0) {
@@ -5453,7 +5453,7 @@ OsiBiLinear::infeasibility(const OsiBranchingInformation * info, int & whichWay)
         assert (xyTrue - 1.0e-5 < xB[1]*y + yB[0]*x - xB[1]*yB[0]);
         assert (xyTrue - 1.0e-5 < xB[0]*y + yB[1]*x - xB[0]*yB[1]);
         // see if all convexification constraints OK with lambda version
-#if 1
+#ifndef JJF_ONE
         assert (xyLambda + 1.0e-5 > xB[0]*y + yB[0]*x - xB[0]*yB[0]);
         assert (xyLambda + 1.0e-5 > xB[1]*y + yB[1]*x - xB[1]*yB[1]);
         assert (xyLambda - 1.0e-5 < xB[1]*y + yB[0]*x - xB[1]*yB[0]);
@@ -5618,7 +5618,7 @@ OsiBiLinear::infeasibility(const OsiBranchingInformation * info, int & whichWay)
             */
             if (fabs(xyLambda - xyTrue) < xySatisfied_ || (xB[0] == xB[1] && yB[0] == yB[1])) {
                 // satisfied
-#if 0
+#ifdef JJF_ZERO
                 printf("all satisfied true %g lambda %g\n",
                        xyTrue, xyLambda);
                 printf("x %d (%g,%g,%g) y %d (%g,%g,%g)\n",
@@ -5973,7 +5973,7 @@ OsiBiLinear::feasibleRegion(OsiSolverInterface * solver, const OsiBranchingInfor
     }
     if (yRow_ < 0)
         yLambda = xLambda;
-#if 0
+#ifdef JJF_ZERO
     if (fabs(x - xLambda) > 1.0e-4 ||
             fabs(y - yLambda) > 1.0e-4)
         printf("feasibleregion x %d given %g lambda %g y %d given %g lambda %g\n",
@@ -6081,7 +6081,7 @@ void
 OsiBiLinear::resetSequenceEtc(int numberColumns, const int * originalColumns)
 {
     int i;
-#if 0
+#ifdef JJF_ZERO
     for (i = 0; i < numberColumns; i++) {
         if (originalColumns[i] == firstLambda_)
             break;
@@ -6199,7 +6199,7 @@ OsiBiLinear::newBounds(OsiSolverInterface * solver, int way, short xOrY, double 
         printf("null change on column%s %d - bounds %g,%g\n", nullChange > 0 ? "Lower" : "Upper",
                iColumn, oldLower, oldUpper);
 #endif
-#if 0
+#ifdef JJF_ZERO
     // always free up lambda
     for (int i = firstLambda_; i < firstLambda_ + 4; i++) {
         solver->setColLower(i, 0.0);
@@ -7222,7 +7222,7 @@ CglTemporary::operator=(const CglTemporary & rhs)
 }
 void checkQP(ClpSimplex * /*model*/)
 {
-#if 0
+#ifdef JJF_ZERO
     printf("Checking quadratic model %x\n", model);
     if (model) {
         ClpQuadraticObjective * quadraticObj = (dynamic_cast< ClpQuadraticObjective*>(model->objectiveAsObject()));
@@ -7710,7 +7710,7 @@ approximateSolution(CoinModel & coinModel,
                     int numberPasses, double deltaTolerance,
                     int /*mode*/)
 {
-#if 1
+#ifndef JJF_ONE
     //#ifdef COIN_HAS_ASL
     // matrix etc will be changed
     CoinModel coinModel2 = coinModel;

@@ -373,7 +373,7 @@ protected:
     double * inputSolution_;
 
 
-#if 0
+#ifdef JJF_ZERO
     /// Lower bounds of last node where the heuristic found a solution
     double * lowerBoundLastNode_;
     /// Upper bounds of last node where the heuristic found a solution

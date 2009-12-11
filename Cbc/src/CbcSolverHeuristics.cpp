@@ -44,7 +44,7 @@
 void
 crunchIt(ClpSimplex * model)
 {
-#if 0
+#ifdef JJF_ZERO
     model->dual();
 #else
     int numberColumns = model->numberColumns();
@@ -1136,7 +1136,7 @@ fixVubs(CbcModel & model, int skipZero2,
 int doHeuristics(CbcModel * model, int type, CbcOrClpParam* parameters_,
 		 int numberParameters_,int noPrinting_,int initialPumpTune)
 {
-#if 0 //NEW_STYLE_SOLVER==0
+#ifdef JJF_ZERO //NEW_STYLE_SOLVER==0
     CbcOrClpParam * parameters_ = parameters;
     int numberParameters_ = numberParameters;
     bool noPrinting_ = noPrinting_;
@@ -1354,7 +1354,7 @@ int doHeuristics(CbcModel * model, int type, CbcOrClpParam* parameters_,
         anyToDo = true;
     }
     if (useRENS >= kType && useRENS <= kType + 1) {
-#if 1
+#ifndef JJF_ONE
         CbcHeuristicRENS heuristic6(*model);
         heuristic6.setHeuristicName("RENS");
         heuristic6.setFractionSmall(0.4);
@@ -1476,7 +1476,7 @@ int doHeuristics(CbcModel * model, int type, CbcOrClpParam* parameters_,
         }
         anyToDo = true;
     }
-#if 0
+#ifdef JJF_ZERO
     if (usePivotC >= type && usePivotC <= kType + 1) {
         CbcHeuristicPivotAndComplement heuristic(*model);
         heuristic.setHeuristicName("pivot and complement");
@@ -1551,7 +1551,7 @@ int doHeuristics(CbcModel * model, int type, CbcOrClpParam* parameters_,
     }
     if (type == 2 && anyToDo) {
         // Do heuristics
-#if 1
+#ifndef JJF_ONE
         // clean copy
         CbcModel model2(*model);
         // But get rid of heuristics in model

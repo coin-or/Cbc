@@ -158,7 +158,7 @@ static Option_Info Oinfo = {
 };
 // strdup used to avoid g++ compiler warning
 static SufDecl suftab[] = {
-#if 0
+#ifdef JJF_ZERO
     { const_cast<char*>("current"), 0, ASL_Sufkind_con | ASL_Sufkind_outonly },
     { const_cast<char*>("current"), 0, ASL_Sufkind_var | ASL_Sufkind_outonly },
     { const_cast<char*>("direction"), 0, ASL_Sufkind_var },
@@ -181,7 +181,7 @@ static SufDecl suftab[] = {
     { const_cast<char*>("sstatus"), 0, ASL_Sufkind_var, 0 },
     { const_cast<char*>("sstatus"), 0, ASL_Sufkind_con, 0 },
     { const_cast<char*>("upPseudocost"), 0, ASL_Sufkind_var | ASL_Sufkind_real }
-#if 0
+#ifdef JJF_ZERO
     { const_cast<char*>("unbdd"), 0, ASL_Sufkind_var | ASL_Sufkind_outonly},
     { const_cast<char*>("up"), 0, ASL_Sufkind_con | ASL_Sufkind_outonly },
     { const_cast<char*>("up"), 0, ASL_Sufkind_var | ASL_Sufkind_outonly }
@@ -524,7 +524,7 @@ readAmpl(ampl_info * info, int argc, char **argv, void ** coinModel)
         } else {
             /* all slack basis */
             // leave status for output */
-#if 0
+#ifdef JJF_ZERO
             free(info->rowStatus);
             info->rowStatus = NULL;
             free(info->columnStatus);
@@ -784,7 +784,7 @@ CoinModel::CoinModel( int nonLinear, const char * fileName, const void * info)
         gdb(nonLinear, fileName, info);
     }
 }
-#if 0
+#ifdef JJF_ZERO
 static real
 qterm(ASL *asl, fint *colq, fint *rowq, real *delsq)
 {
@@ -892,7 +892,7 @@ CoinModel::gdb( int nonLinear, const char * fileName, const void * info)
                            &sosbeg, &sosind, &sosref);
             if (nsos) {
                 abort();
-#if 0
+#ifdef JJF_ZERO
                 info->numberSos = nsos;
                 info->sosType = (char *) malloc(nsos);
                 info->sosPriority = (int *) malloc(nsos * sizeof(int));
@@ -975,7 +975,7 @@ CoinModel::gdb( int nonLinear, const char * fileName, const void * info)
         } else {
             /* all slack basis */
             // leave status for output */
-#if 0
+#ifdef JJF_ZERO
             free(rowStatus);
             rowStatus = NULL;
             free(columnStatus);
@@ -1345,7 +1345,7 @@ CoinModel::gdb( int nonLinear, const char * fileName, const void * info)
                     nOdd++;
                     continue;
                 }
-#if 0
+#ifdef JJF_ZERO
                 printf("%d quadratic els\n", nels);
                 for (int j = 0; j < n_var; j++) {
                     for (int k = start[j]; k < start[j+1]; k++)

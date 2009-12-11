@@ -472,7 +472,7 @@ CbcBranchDynamicDecision::betterBranch(CbcBranchingObject * thisOne,
 #else
         // use pseudo shadow prices modified by locks
         // test testosi
-#if 1
+#ifndef JJF_ONE
         double objectiveValue = model->getCurrentMinimizationObjValue();
         double distanceToCutoff =  model->getCutoff()  - objectiveValue;
         if (distanceToCutoff < 1.0e20)
@@ -491,7 +491,7 @@ CbcBranchDynamicDecision::betterBranch(CbcBranchingObject * thisOne,
         //int numberIntegers = model->numberIntegers();
         changeDown += perInf * numInfDown;
         changeUp += perInf * numInfUp;
-#if 0
+#ifdef JJF_ZERO
         if (numInfDown == 1) {
             if (numInfUp == 1) {
                 changeUp += 1.0e6;

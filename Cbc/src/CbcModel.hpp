@@ -2642,3 +2642,4 @@ int CbcMain1 (int argc, const char *argv[], CbcModel & babSolver, int (CbcModel 
 // For uniform setting of cut and heuristic options
 void setCutAndHeuristicOptions(CbcModel & model);
 #endif
+

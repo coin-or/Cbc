@@ -97,7 +97,8 @@ libCbcSolver_la_SOURCES = \
 	Cbc_ampl.cpp Cbc_ampl.h \
 	CbcLinked.cpp CbcLinked.hpp CbcLinkedUtils.cpp \
 	unitTestClp.cpp CbcSolver.cpp \
-	CbcSolverHeuristics.cpp CbcSolverHeuristics.hpp
+	CbcSolverHeuristics.cpp CbcSolverHeuristics.hpp \
+	CbcSolverAnalyze.cpp CbcSolverAnalyze.hpp
 
 #Stefan: added unitTestClp.cpp because CbcSolver defines reference to it
 
@@ -404,7 +405,6 @@ includecoin_HEADERS = \
 	CbcSimpleIntegerPseudoCost.hpp \
 	CbcStrategy.hpp \
 	CbcSolver.hpp \
-	CbcSolverHeuristics.hpp \
 	CbcSOS.hpp \
 	CbcSubProblem.hpp \
 	CbcTree.hpp \

@@ -3,22 +3,32 @@
 // Corporation and others.  All Rights Reserved.
 
 /*! \file CbcSolver.hpp
-    \brief Defines CbcSolver, the top-level class for the new-style cbc solver.
+    \brief Defines CbcSolver, the proposed top-level class for the new-style
+    cbc solver.
+
+    This class is currently an orphan. With the removal of all code flagged
+    with the NEWS_STYLE_SOLVER, this class is never instantiated (and cannot
+    be instantiated). It is available to be coopted as a top-level object
+    wrapping the current CbcMain0 and CbcMain1, should that appear to be a
+    desireable path forward.  -- lh, 091211 --
 */
 
 #ifndef CbcSolver_H
 #define CbcSolver_H
+
 #include <string>
 #include <vector>
 #include "CoinFinite.hpp"
 #include "CoinMessageHandler.hpp"
 #include "OsiClpSolverInterface.hpp"
+
 #if CBC_OTHER_SOLVER==1
 #include "OsiCpxSolverInterface.hpp"
-//typedef OsiCpxSolverInterface OsiClpSolverInterface;
 #endif
+
 #include "CbcModel.hpp"
 #include "CbcOrClpParam.hpp"
+
 class CbcUser;
 class CbcStopNow;
 class CglCutGenerator;

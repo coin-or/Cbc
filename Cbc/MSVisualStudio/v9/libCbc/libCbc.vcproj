@@ -947,6 +947,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\..\src\CbcSolverExpandKnapsack.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\..\src\CbcSolverHeuristics.cpp"
 				>
 			</File>
@@ -1337,6 +1341,10 @@
 			</File>
 			<File
 				RelativePath="..\..\..\src\CbcSolverAnalyze.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\..\src\CbcSolverExpandKnapsack.hpp"
 				>
 			</File>
 			<File

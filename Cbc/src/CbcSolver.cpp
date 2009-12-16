@@ -7459,12 +7459,15 @@ clp watson.mps -\nscaling off\nprimalsimplex"
                                     } else if (iStat == 2) {
                                         // unbounded
                                         fprintf(fp, "Unbounded" );
-                                    } else if (iStat == 3) {
-                                        fprintf(fp, "Stopped on iterations or time" );
-                                    } else if (iStat == 4) {
-                                        fprintf(fp, "Stopped on difficulties" );
-                                    } else if (iStat == 5) {
-                                        fprintf(fp, "Stopped on ctrl-c" );
+				    } else if (iStat >= 3&&iStat <= 5) {
+				        if (iStat==3)
+					    fprintf(fp, "Stopped on iterations or time" );
+				      else if (iStat == 4) 
+					fprintf(fp, "Stopped on difficulties" );
+				      else  
+					fprintf(fp, "Stopped on ctrl-c" );
+				      if (babModel_&&!babModel_->bestSolution())
+					fprintf(fp," (no integer solution - continuous used)");
                                     } else if (iStat == 6) {
                                         // bab infeasible
                                         fprintf(fp, "Integer infeasible" );

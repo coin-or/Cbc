@@ -157,6 +157,8 @@ Cbc/src/CbcSolverHeuristics.cpp -text
 Cbc/src/CbcSolverHeuristics.hpp -text
 Cbc/src/CbcSubProblem.cpp -text
 Cbc/src/CbcSubProblem.hpp -text
+Cbc/src/CbcThread.cpp -text
+Cbc/src/CbcThread.hpp -text
 Cbc/src/ClpAmplObjective.hpp -text
 Cbc/src/ClpConstraintAmpl.hpp -text
 Cbc/test/gamsTest.cpp -text

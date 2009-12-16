@@ -183,7 +183,8 @@ am_libCbc_la_OBJECTS = Cbc_C_Interface.lo CbcBranchAllDifferent.lo \
 	CbcObject.lo CbcObjectUpdateData.lo CbcPartialNodeInfo.lo \
 	CbcSimpleInteger.lo CbcSimpleIntegerDynamicPseudoCost.lo \
 	CbcSimpleIntegerPseudoCost.lo CbcSOS.lo CbcStatistics.lo \
-	CbcStrategy.lo CbcSubProblem.lo CbcTree.lo CbcTreeLocal.lo
+	CbcStrategy.lo CbcSubProblem.lo CbcThread.lo CbcTree.lo \
+	CbcTreeLocal.lo
 libCbc_la_OBJECTS = $(am_libCbc_la_OBJECTS)
 libCbcSolver_la_LIBADD =
 am_libCbcSolver_la_OBJECTS = CbcCbcParam.lo Cbc_ampl.lo CbcLinked.lo \
@@ -587,6 +588,7 @@ libCbc_la_SOURCES = \
 	CbcStatistics.cpp CbcStatistics.hpp \
 	CbcStrategy.cpp CbcStrategy.hpp \
 	CbcSubProblem.cpp CbcSubProblem.hpp \
+	CbcThread.cpp CbcThread.hpp \
 	CbcTree.cpp CbcTree.hpp \
 	CbcTreeLocal.cpp CbcTreeLocal.hpp
 
@@ -965,6 +967,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcStatistics.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcStrategy.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcSubProblem.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcThread.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcTree.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcTreeLocal.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Cbc_C_Interface.Plo@am__quote@

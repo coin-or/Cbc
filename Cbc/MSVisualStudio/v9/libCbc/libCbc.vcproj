@@ -1013,6 +1013,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\..\src\CbcThread.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\..\..\Cbc\src\CbcTree.cpp"
 				>
 				<FileConfiguration
@@ -1365,6 +1369,10 @@
 			</File>
 			<File
 				RelativePath="..\..\..\src\CbcSubProblem.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\..\src\CbcThread.hpp"
 				>
 			</File>
 			<File

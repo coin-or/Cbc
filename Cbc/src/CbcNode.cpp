@@ -3138,6 +3138,7 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
                         numberToFix++;
                         choice.possibleBranch->fix(solver, saveLower, saveUpper, 1);
                         if (!choiceObject) {
+                            delete choice.possibleBranch;
                             choice.possibleBranch = NULL;
                         } else {
                             //choiceObject = new CbcDynamicPseudoCostBranchingObject(*choiceObject);
@@ -3179,6 +3180,7 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
                         numberToFix++;
                         choice.possibleBranch->fix(solver, saveLower, saveUpper, -1);
                         if (!choiceObject) {
+                            delete choice.possibleBranch;
                             choice.possibleBranch = NULL;
                         } else {
                             //choiceObject = new CbcDynamicPseudoCostBranchingObject(*choiceObject);

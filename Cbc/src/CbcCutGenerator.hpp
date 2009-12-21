@@ -339,11 +339,6 @@ public:
     inline void setModel(CbcModel * model) {
         model_ = model;
     }
-    //@}
-
-private:
-    /**@name Private gets and sets */
-    //@{
     /// Whether global cuts at root
     inline bool globalCutsAtRoot() const {
         return (switches_&32) != 0;
@@ -362,6 +357,11 @@ private:
         switches_ &= ~256;
         switches_ |= yesNo ? 256 : 0;
     }
+    //@}
+
+private:
+    /**@name Private gets and sets */
+    //@{
     //@}
     /// Saved cuts
     OsiCuts savedCuts_;

@@ -2801,6 +2801,7 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
                                     needHotStartUpdate = true;
                                     solver->unmarkHotStart();
                                 }
+                                model->setLogLevel(saveLogLevel);
                                 model->setBestSolution(CBC_STRONGSOL,
                                                        newObjectiveValue,
                                                        solver->getColSolution()) ;
@@ -2856,6 +2857,7 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
                             break;
 #endif
                             double objValue = solver->getObjValue();
+                            model->setLogLevel(saveLogLevel);
                             model->setBestSolution(CBC_STRONGSOL,
                                                    objValue,
                                                    solver->getColSolution()) ;
@@ -2949,6 +2951,7 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
                                     needHotStartUpdate = true;
                                     solver->unmarkHotStart();
                                 }
+                                model->setLogLevel(saveLogLevel);
                                 model->setBestSolution(CBC_STRONGSOL,
                                                        newObjectiveValue,
                                                        solver->getColSolution()) ;
@@ -2998,6 +3001,7 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
                                     numberIntegerInfeasibilities,
                                     numberObjectInfeasibilities)) {
                             double objValue = solver->getObjValue();
+                            model->setLogLevel(saveLogLevel);
                             model->setBestSolution(CBC_STRONGSOL,
                                                    objValue,
                                                    solver->getColSolution()) ;
@@ -3529,9 +3533,9 @@ int CbcNode::analyze (CbcModel *model, double * results)
     double objMin = 1.0e50;
     double objMax = -1.0e50;
     bool needResolve = false;
-/*
-  Now calculate the cost forcing the variable up and down.
-*/
+    /*
+      Now calculate the cost forcing the variable up and down.
+    */
     int iDo;
     for (iDo = 0; iDo < numberToDo; iDo++) {
         CbcStrongInfo choice;
@@ -3543,9 +3547,9 @@ int CbcNode::analyze (CbcModel *model, double * results)
             continue;
         int iColumn = dynamicObject->columnNumber();
         int preferredWay;
-/*
-  Update the information held in the object.
-*/
+        /*
+          Update the information held in the object.
+        */
         object->infeasibility(&usefulInfo, preferredWay);
         double value = currentSolution[iColumn];
         double nearest = floor(value + 0.5);

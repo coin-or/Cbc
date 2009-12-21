@@ -73,71 +73,8 @@ extern int gomory_try;
 
 #include "CbcCompareActual.hpp"
 #include "CbcTree.hpp"
-#ifdef CBC_THREAD
-#include <pthread.h>
-#ifdef HAVE_CLOCK_GETTIME
-inline int my_gettime(struct timespec* tp)
-{
-    return clock_gettime(CLOCK_REALTIME, tp);
-}
-#else
-#ifndef _MSC_VER
-inline int my_gettime(struct timespec* tp)
-{
-    struct timeval tv;
-    int ret = gettimeofday(&tv, NULL);
-    tp->tv_sec = tv.tv_sec;
-    tp->tv_nsec = tv.tv_usec * 1000;
-    return ret;
-}
-#else
-inline int my_gettime(struct timespec* tp)
-{
-    double t = CoinGetTimeOfDay();
-    tp->tv_sec = (int)floor(t);
-    tp->tv_nsec = (int)((tp->tv_sec - floor(t)) / 1000000.0);
-    return 0;
-}
-#endif
-#endif
-
-struct Coin_pthread_t {
-    pthread_t	thr;
-    long		status;
-};
-
-// To Pass across to doOneNode
-typedef struct {
-    CbcModel * baseModel;
-    CbcModel * thisModel;
-    CbcNode * node; // filled in every time
-    CbcNode * createdNode; // filled in every time on return
-    Coin_pthread_t threadIdOfBase;
-    pthread_mutex_t * mutex; // for locking data
-    pthread_mutex_t * mutex2; // for waking up threads
-    pthread_cond_t * condition2; // for waking up thread
-    int returnCode; // -1 available, 0 busy, 1 finished , 2??
-    double timeLocked;
-    double timeWaitingToLock;
-    double timeWaitingToStart;
-    double timeInThread;
-    int numberTimesLocked;
-    int numberTimesUnlocked;
-    int numberTimesWaitingToStart;
-    int saveStuff[2];
-    int dantzigState; // 0 unset, -1 waiting to be set, 1 set
-    struct timespec absTime;
-    bool locked;
-    int nDeleteNode;
-    CbcNode ** delNode;
-    int maxDeleteNode;
-    int nodesThisTime;
-    int iterationsThisTime;
-} threadStruct;
-static void * doNodesThread(void * voidInfo);
-static void * doCutsThread(void * voidInfo);
-static void * doHeurThread(void * voidInfo);
-#endif
+// This may be dummy
+#include "CbcThread.hpp"
 /* Various functions local to CbcModel.cpp */
 
 namespace {
@@ -605,11 +542,11 @@ CbcModel::analyzeObjective ()
                     }
                 }
 #endif
-/*
-  Generate a random objective function for problems where the given objective
-  function is not terribly useful. (Nearly feasible, single integer variable,
-  that sort of thing.
-*/
+                /*
+                  Generate a random objective function for problems where the given objective
+                  function is not terribly useful. (Nearly feasible, single integer variable,
+                  that sort of thing.
+                */
                 CoinDrand48(true, 1234567);
                 for (int i = 0; i < numberColumns; i++) {
                     double lowerValue = lower[i];
@@ -1017,9 +954,9 @@ CbcModel::analyzeObjective ()
     int iColumn ;
     int numberColumns = getNumCols() ;
     double scaleFactor = 1.0; // due to rhs etc
-/*
-  Original model did not have integer bounds.
-*/
+    /*
+      Original model did not have integer bounds.
+    */
     if ((specialOptions_&65536) == 0) {
         /* be on safe side (later look carefully as may be able to
            to get 0.5 say if bounds are multiples of 0.5 */
@@ -1182,9 +1119,9 @@ void CbcModel::saveModel(OsiSolverInterface * saveSolver, double * checkCutoffFo
                 }
             }
 #ifdef COIN_DEVELOP
-/*
-  We're debugging. (specialOptions 1)
-*/
+            /*
+              We're debugging. (specialOptions 1)
+            */
             if ((specialOptions_&1) != 0) {
                 const OsiRowCutDebugger *debugger = saveSolver->getRowCutDebugger() ;
                 if (debugger) {
@@ -1662,15 +1599,15 @@ void CbcModel::branchAndBound(int doStatistics)
     // Save whether there were any objects
     bool noObjects = (numberObjects_ == 0);
     // Set up strategies
-/*
-  See if the user has supplied a strategy object and deal with it if present.
-  The call to setupOther will set numberStrong_ and numberBeforeTrust_, and
-  perform integer preprocessing, if requested.
+    /*
+      See if the user has supplied a strategy object and deal with it if present.
+      The call to setupOther will set numberStrong_ and numberBeforeTrust_, and
+      perform integer preprocessing, if requested.
 
-  We need to hang on to a pointer to solver_. setupOther will assign a
-  preprocessed solver to model, but will instruct assignSolver not to trash the
-  existing one.
-*/
+      We need to hang on to a pointer to solver_. setupOther will assign a
+      preprocessed solver to model, but will instruct assignSolver not to trash the
+      existing one.
+    */
     if (strategy_) {
         // May do preprocessing
         originalSolver = solver_;
@@ -1699,7 +1636,7 @@ void CbcModel::branchAndBound(int doStatistics)
                 OsiRowCutDebugger * debugger = const_cast<OsiRowCutDebugger *> (solver_->getRowCutDebuggerAlways());
                 if (debugger)
                     debugger->redoSolution(numberColumns, originalColumns);
-	        // User-provided solution might have been best. Synchronise.
+                // User-provided solution might have been best. Synchronise.
                 if (bestSolution_) {
                     // need to redo - in case no better found in BAB
                     // just get integer part right
@@ -2042,20 +1979,20 @@ void CbcModel::branchAndBound(int doStatistics)
         CoinCopyN(solver_->getColSolution(), numberColumns, bestSolution_);
         return ;
     }
-/*
-  See if we're using the Osi side of the branching hierarchy. If so, either
-  convert existing CbcObjects to OsiObjects, or generate them fresh. In the
-  first case, CbcModel owns the objects on the object_ list. In the second
-  case, the solver holds the objects and object_ simply points to the
-  solver's list.
+    /*
+      See if we're using the Osi side of the branching hierarchy. If so, either
+      convert existing CbcObjects to OsiObjects, or generate them fresh. In the
+      first case, CbcModel owns the objects on the object_ list. In the second
+      case, the solver holds the objects and object_ simply points to the
+      solver's list.
 
-  080417 The conversion code here (the block protected by `if (obj)') cannot
-  possibly be correct. On the Osi side, descent is OsiObject -> OsiObject2 ->
-  all other Osi object classes. On the Cbc side, it's OsiObject -> CbcObject
-  -> all other Cbc object classes. It's structurally impossible for any Osi
-  object to descend from CbcObject. The only thing I can see is that this is
-  really dead code, and object detection is now handled from the Osi side.
-*/
+      080417 The conversion code here (the block protected by `if (obj)') cannot
+      possibly be correct. On the Osi side, descent is OsiObject -> OsiObject2 ->
+      all other Osi object classes. On the Cbc side, it's OsiObject -> CbcObject
+      -> all other Cbc object classes. It's structurally impossible for any Osi
+      object to descend from CbcObject. The only thing I can see is that this is
+      really dead code, and object detection is now handled from the Osi side.
+    */
     // Convert to Osi if wanted
     bool useOsiBranching = false;
     //OsiBranchingInformation * persistentInfo = NULL;
@@ -2104,10 +2041,10 @@ void CbcModel::branchAndBound(int doStatistics)
             //}
             //}
         } else {
-/*
-  As of 080104, findIntegersAndSOS is misleading --- the default OSI
-  implementation finds only integers.
-*/
+            /*
+              As of 080104, findIntegersAndSOS is misleading --- the default OSI
+              implementation finds only integers.
+            */
             // do from solver
             deleteObjects(false);
             solver_->findIntegersAndSOS(false);
@@ -2304,16 +2241,16 @@ void CbcModel::branchAndBound(int doStatistics)
     double * lowerBefore = new double [numberColumns] ;
     double * upperBefore = new double [numberColumns] ;
     /*
-  Set up to run heuristics and generate cuts at the root node. The heavy
-  lifting is hidden inside the calls to doHeuristicsAtRoot and solveWithCuts.
+    Set up to run heuristics and generate cuts at the root node. The heavy
+    lifting is hidden inside the calls to doHeuristicsAtRoot and solveWithCuts.
 
-  To start, tell cut generators they can be a bit more aggressive at the
-  root node.
+    To start, tell cut generators they can be a bit more aggressive at the
+    root node.
 
-  QUESTION: phase_ = 0 is documented as `initial solve', phase = 1 as `solve
-	    with cuts at root'. Is phase_ = 1 the correct indication when
-	    doHeurisiticsAtRoot is called to run heuristics outside of the main
-	    cut / heurisitc / reoptimise loop in solveWithCuts?
+    QUESTION: phase_ = 0 is documented as `initial solve', phase = 1 as `solve
+        with cuts at root'. Is phase_ = 1 the correct indication when
+        doHeurisiticsAtRoot is called to run heuristics outside of the main
+        cut / heurisitc / reoptimise loop in solveWithCuts?
 
       Generate cuts at the root node and reoptimise. solveWithCuts does the heavy
       lifting. It will iterate a generate/reoptimise loop (including reduced cost
@@ -2333,6 +2270,11 @@ void CbcModel::branchAndBound(int doStatistics)
     phase_ = 1;
     int iCutGenerator;
     for (iCutGenerator = 0; iCutGenerator < numberCutGenerators_; iCutGenerator++) {
+        // If parallel switch off global cuts
+        if (numberThreads_) {
+            generator_[iCutGenerator]->setGlobalCuts(false);
+            generator_[iCutGenerator]->setGlobalCutsAtRoot(false);
+        }
         CglCutGenerator * generator = generator_[iCutGenerator]->generator();
         generator->setAggressiveness(generator->getAggressiveness() + 100);
     }
@@ -2361,10 +2303,10 @@ void CbcModel::branchAndBound(int doStatistics)
         } else if ((specialOptions_&524288) != 0 && storedRowCuts_) {
             // tighten and set best solution
             // A) tight bounds on integer variables
-	    /*
-  	      storedRowCuts_ are coming in from outside, probably for nonlinear.
-	      John was unsure about origin.
-	    */
+            /*
+                storedRowCuts_ are coming in from outside, probably for nonlinear.
+              John was unsure about origin.
+            */
             const double * lower = solver_->getColLower();
             const double * upper = solver_->getColUpper();
             const double * tightLower = storedRowCuts_->tightLower();
@@ -2400,19 +2342,19 @@ void CbcModel::branchAndBound(int doStatistics)
             }
         }
     }
-/*
-  Run heuristics at the root. This is the only opportunity to run FPump; it
-  will be removed from the heuristics list by doHeuristicsAtRoot.
-*/
+    /*
+      Run heuristics at the root. This is the only opportunity to run FPump; it
+      will be removed from the heuristics list by doHeuristicsAtRoot.
+    */
     // Do heuristics
     doHeuristicsAtRoot();
-/*
-  Grepping through the code, it would appear that this is a command line
-  debugging hook.  There's no obvious place in the code where this is set to
-  a negative value.
+    /*
+      Grepping through the code, it would appear that this is a command line
+      debugging hook.  There's no obvious place in the code where this is set to
+      a negative value.
 
-  User hook, says John.
-*/
+      User hook, says John.
+    */
     if ( intParam_[CbcMaxNumNode] < 0)
         eventHappened_ = true; // stop as fast as possible
     stoppedOnGap_ = false ;
@@ -2427,12 +2369,12 @@ void CbcModel::branchAndBound(int doStatistics)
         feasible = false;
         //eventHappened_=true; // stop as fast as possible
     }
-/*
-  Set up for statistics collection, if requested. Standard values are
-  documented in CbcModel.hpp. The magic number 100 will trigger a dump of
-  CbcSimpleIntegerDynamicPseudoCost objects (no others). Looks like another
-  command line debugging hook.
-*/
+    /*
+      Set up for statistics collection, if requested. Standard values are
+      documented in CbcModel.hpp. The magic number 100 will trigger a dump of
+      CbcSimpleIntegerDynamicPseudoCost objects (no others). Looks like another
+      command line debugging hook.
+    */
     statistics_ = NULL;
     // Do on switch
     if (doStatistics > 0 && doStatistics <= 100) {
@@ -2443,21 +2385,21 @@ void CbcModel::branchAndBound(int doStatistics)
     // See if we can add integers
     if (noObjects && numberIntegers_ < solver_->getNumCols() && (specialOptions_&65536) != 0 && !parentModel_)
         AddIntegers();
-/*
-  Do an initial round of cut generation for the root node. Depending on the
-  type of underlying solver, we may want to do this even if the initial query
-  to the objects indicates they're satisfied.
+    /*
+      Do an initial round of cut generation for the root node. Depending on the
+      type of underlying solver, we may want to do this even if the initial query
+      to the objects indicates they're satisfied.
 
-  solveWithCuts does the heavy lifting. It will iterate a generate/reoptimise
-  loop (including reduced cost fixing) until no cuts are generated, the
-  change in objective falls off,  or the limit on the number of rounds of cut
-  generation is exceeded.
+      solveWithCuts does the heavy lifting. It will iterate a generate/reoptimise
+      loop (including reduced cost fixing) until no cuts are generated, the
+      change in objective falls off,  or the limit on the number of rounds of cut
+      generation is exceeded.
 
-  At the end of all this, any cuts will be recorded in cuts and also
-  installed in the solver's constraint system. We'll have reoptimised, and
-  removed any slack cuts (numberOldActiveCuts_ and numberNewCuts_ have been
-  adjusted accordingly).
-*/
+      At the end of all this, any cuts will be recorded in cuts and also
+      installed in the solver's constraint system. We'll have reoptimised, and
+      removed any slack cuts (numberOldActiveCuts_ and numberNewCuts_ have been
+      adjusted accordingly).
+    */
     int iObject ;
     int preferredWay ;
     int numberUnsatisfied = 0 ;
@@ -2596,10 +2538,10 @@ void CbcModel::branchAndBound(int doStatistics)
     if (eventHappened_)
         feasible = false;
 #if defined(COIN_HAS_CLP)&&defined(COIN_HAS_CPX)
-/*
-  This is the notion of using Cbc stuff to get going, then calling cplex to
-  finish off.
-*/
+    /*
+      This is the notion of using Cbc stuff to get going, then calling cplex to
+      finish off.
+    */
     if (feasible && (specialOptions_&16384) != 0 && fastNodeDepth_ == -2 && !parentModel_) {
         // Use Cplex to do search!
         double time1 = CoinCpuTime();
@@ -2713,9 +2655,9 @@ void CbcModel::branchAndBound(int doStatistics)
         feasible = false;
     }
 #endif
-/*
-  A hook to use clp to quickly explore some part of the tree.
-*/
+    /*
+      A hook to use clp to quickly explore some part of the tree.
+    */
     if (fastNodeDepth_ == 1000 &&/*!parentModel_*/(specialOptions_&2048) == 0) {
         fastNodeDepth_ = -1;
         CbcObject * obj =
@@ -3158,10 +3100,10 @@ void CbcModel::branchAndBound(int doStatistics)
         if (toZero[number01]) {
             CglTreeProbingInfo info(*probingInfo_);
 #ifdef JJF_ZERO
-/*
-  Marginal idea. Further exploration probably good. Build some extra
-  cliques from probing info. Not quite worth the effort?
-*/
+            /*
+              Marginal idea. Further exploration probably good. Build some extra
+              cliques from probing info. Not quite worth the effort?
+            */
             OsiSolverInterface * fake = info.analyze(*solver_, 1);
             if (fake) {
                 fake->writeMps("fake");
@@ -3177,7 +3119,7 @@ void CbcModel::branchAndBound(int doStatistics)
 #ifdef CLP_INVESTIGATE
                 printf("%d implications on %d 0-1\n", toZero[number01], number01);
 #endif
-		// Create a cut generator that remembers implications discovered at root.
+                // Create a cut generator that remembers implications discovered at root.
                 CglImplication implication(probingInfo_);
                 addCutGenerator(&implication, 1, "ImplicationCuts", true, false, false, -200);
             } else {
@@ -3305,100 +3247,13 @@ void CbcModel::branchAndBound(int doStatistics)
     numberLongStrong_ = 0;
     CbcNode * createdNode = NULL;
 #ifdef CBC_THREAD
-    CbcModel ** threadModel = NULL;
-    Coin_pthread_t * threadId = NULL;
-    int * threadCount = NULL;
-    pthread_mutex_t mutex;
-    pthread_cond_t condition_main;
-    pthread_mutex_t condition_mutex;
-    pthread_mutex_t * mutex2 = NULL;
-    pthread_cond_t * condition2 = NULL;
-    threadStruct * threadInfo = NULL;
-    bool locked = false;
-    int threadStats[6];
-    int defaultParallelIterations = 400;
-    int defaultParallelNodes = 2;
-    memset(threadStats, 0, sizeof(threadStats));
-    double timeWaiting = 0.0;
-    // For now just one model
-    if (numberThreads_) {
+    if ((specialOptions_&2048) != 0)
+        numberThreads_ = 0;
+    if (numberThreads_ ) {
         nodeCompare_->sayThreaded(); // need to use addresses
-        threadId = new Coin_pthread_t [numberThreads_];
-        threadCount = new int [numberThreads_];
-        CoinZeroN(threadCount, numberThreads_);
-        pthread_mutex_init(&mutex, NULL);
-        pthread_cond_init(&condition_main, NULL);
-        pthread_mutex_init(&condition_mutex, NULL);
-        threadModel = new CbcModel * [numberThreads_+1];
-        threadInfo = new threadStruct [numberThreads_+1];
-        mutex2 = new pthread_mutex_t [numberThreads_];
-        condition2 = new pthread_cond_t [numberThreads_];
-        if (parallelMode() < -1) {
-            // May need for deterministic
-            saveObjects = new OsiObject * [numberObjects_];
-            for (int i = 0; i < numberObjects_; i++) {
-                saveObjects[i] = object_[i]->clone();
-            }
-        }
-        // we don't want a strategy object
-        CbcStrategy * saveStrategy = strategy_;
-        strategy_ = NULL;
-        for (int i = 0; i < numberThreads_; i++) {
-            pthread_mutex_init(mutex2 + i, NULL);
-            pthread_cond_init(condition2 + i, NULL);
-            threadId[i].status = 0;
-            threadInfo[i].baseModel = this;
-            threadModel[i] = new CbcModel(*this, true);
-            threadModel[i]->synchronizeHandlers(1);
-#ifdef COIN_HAS_CLP
-            // Solver may need to know about model
-            CbcModel * thisModel = threadModel[i];
-            CbcOsiSolver * solver =
-                dynamic_cast<CbcOsiSolver *>(thisModel->solver()) ;
-            if (solver)
-                solver->setCbcModel(thisModel);
-#endif
-            mutex_ = reinterpret_cast<void *> (threadInfo + i);
-            threadModel[i]->moveToModel(this, -1);
-            threadInfo[i].thisModel = threadModel[i];
-            threadInfo[i].node = NULL;
-            threadInfo[i].createdNode = NULL;
-            threadInfo[i].threadIdOfBase.thr = pthread_self();
-            threadInfo[i].mutex = &mutex;
-            threadInfo[i].mutex2 = mutex2 + i;
-            threadInfo[i].condition2 = condition2 + i;
-            threadInfo[i].returnCode = -1;
-            threadInfo[i].timeLocked = 0.0;
-            threadInfo[i].timeWaitingToLock = 0.0;
-            threadInfo[i].timeWaitingToStart = 0.0;
-            threadInfo[i].timeInThread = 0.0;
-            threadInfo[i].numberTimesLocked = 0;
-            threadInfo[i].numberTimesUnlocked = 0;
-            threadInfo[i].numberTimesWaitingToStart = 0;
-            threadInfo[i].dantzigState = 0; // 0 unset, -1 waiting to be set, 1 set
-            threadInfo[i].locked = false;
-            threadInfo[i].delNode = NULL;
-            threadInfo[i].maxDeleteNode = 0;
-            threadInfo[i].nDeleteNode = 0;
-            threadInfo[i].nodesThisTime = 0;
-            threadInfo[i].iterationsThisTime = 0;
-            pthread_create(&(threadId[i].thr), NULL, doNodesThread, threadInfo + i);
-            threadId[i].status = 1;
-        }
-        strategy_ = saveStrategy;
-        // Do a partial one for base model
-        threadInfo[numberThreads_].baseModel = this;
-        threadModel[numberThreads_] = this;
-        mutex_ = reinterpret_cast<void *> (threadInfo + numberThreads_);
-        threadInfo[numberThreads_].node = NULL;
-        threadInfo[numberThreads_].mutex = &mutex;
-        threadInfo[numberThreads_].condition2 = &condition_main;
-        threadInfo[numberThreads_].mutex2 = &condition_mutex;
-        threadInfo[numberThreads_].timeLocked = 0.0;
-        threadInfo[numberThreads_].timeWaitingToLock = 0.0;
-        threadInfo[numberThreads_].numberTimesLocked = 0;
-        threadInfo[numberThreads_].numberTimesUnlocked = 0;
-        threadInfo[numberThreads_].locked = false;
+        master_ = new CbcBaseModel(*this,
+                                   (parallelMode() < -1) ? 1 : 0);
+        masterThread_ = master_->masterThread();
     }
 #endif
 #ifdef COIN_HAS_CLP
@@ -3461,160 +3316,26 @@ void CbcModel::branchAndBound(int doStatistics)
     int lastPrintEvery = 0;
     int numberConsecutiveInfeasible = 0;
     while (true) {
-#ifdef CBC_THREAD
-        if (parallelMode() > 0 && !locked) {
-            lockThread();
-            locked = true;
-        }
-#endif
+        lockThread();
 #ifdef COIN_HAS_CLP
-        // Possible change of pivot method
-        if (!savePivotMethod && !parentModel_) {
-            OsiClpSolverInterface * clpSolver
-            = dynamic_cast<OsiClpSolverInterface *> (solver_);
-            if (clpSolver && numberNodes_ >= 100 && numberNodes_ < 200) {
-                if (numberIterations_ < (numberSolves_ + numberNodes_)*10) {
-                    //if (numberIterations_<numberNodes_*20) {
-                    ClpSimplex * simplex = clpSolver->getModelPtr();
-                    ClpDualRowPivot * pivotMethod = simplex->dualRowPivot();
-                    ClpDualRowDantzig * pivot =
-                        dynamic_cast< ClpDualRowDantzig*>(pivotMethod);
-                    if (!pivot) {
-                        savePivotMethod = pivotMethod->clone(true);
-                        ClpDualRowDantzig dantzig;
-                        simplex->setDualRowPivotAlgorithm(dantzig);
-#ifdef COIN_DEVELOP
-                        printf("%d node, %d iterations ->Dantzig\n", numberNodes_,
-                               numberIterations_);
-#endif
-#ifdef CBC_THREAD
-                        for (int i = 0; i < numberThreads_; i++) {
-                            threadInfo[i].dantzigState = -1;
-                        }
-#endif
-                    }
-                }
-            }
-        }
+        // See if we want dantzig row choice
+        goToDantzig(100, savePivotMethod);
 #endif
         if (tree_->empty()) {
 #ifdef CBC_THREAD
             if (parallelMode() > 0) {
-#ifdef COIN_DEVELOP
-                printf("empty\n");
-#endif
-                // may still be outstanding nodes
-                int iThread;
-                for (iThread = 0; iThread < numberThreads_; iThread++) {
-                    if (threadId[iThread].status) {
-                        if (threadInfo[iThread].returnCode == 0)
-                            break;
-                    }
-                }
-                if (iThread < numberThreads_) {
-#ifdef COIN_DEVELOP
-                    printf("waiting for thread %d code 0\n", iThread);
-#endif
-                    if (parallelMode() > 0) {
-                        unlockThread();
-                        locked = false;
-                    }
-                    pthread_cond_signal(threadInfo[iThread].condition2); // unlock in case
-                    while (true) {
-                        pthread_mutex_lock(&condition_mutex);
-                        struct timespec absTime;
-                        my_gettime(&absTime);
-                        double time = absTime.tv_sec + 1.0e-9 * absTime.tv_nsec;
-                        absTime.tv_nsec += 1000000; // millisecond
-                        if (absTime.tv_nsec >= 1000000000) {
-                            absTime.tv_nsec -= 1000000000;
-                            absTime.tv_sec++;
-                        }
-                        pthread_cond_timedwait(&condition_main, &condition_mutex, &absTime);
-                        my_gettime(&absTime);
-                        double time2 = absTime.tv_sec + 1.0e-9 * absTime.tv_nsec;
-                        timeWaiting += time2 - time;
-                        pthread_mutex_unlock(&condition_mutex);
-                        if (threadInfo[iThread].returnCode != 0)
-                            break;
-                        pthread_cond_signal(threadInfo[iThread].condition2); // unlock
-                    }
-                    threadModel[iThread]->moveToModel(this, 1);
-                    assert (threadInfo[iThread].returnCode == 1);
-                    if (threadInfo[iThread].dantzigState == -1) {
-                        // 0 unset, -1 waiting to be set, 1 set
-                        threadInfo[iThread].dantzigState = 1;
-                        CbcModel * model = threadInfo[iThread].thisModel;
-                        OsiClpSolverInterface * clpSolver2
-                        = dynamic_cast<OsiClpSolverInterface *> (model->solver());
-                        assert (clpSolver2);
-                        ClpSimplex * simplex2 = clpSolver2->getModelPtr();
-                        ClpDualRowDantzig dantzig;
-                        simplex2->setDualRowPivotAlgorithm(dantzig);
-                    }
-                    // say available
-                    threadInfo[iThread].returnCode = -1;
-                    threadStats[4]++;
-#ifdef COIN_DEVELOP
-                    printf("thread %d code now -1\n", iThread);
-#endif
-                    continue;
-                } else {
-#ifdef COIN_DEVELOP
-                    printf("no threads at code 0 \n");
-#endif
-                    // now check if any have just finished
-                    for (iThread = 0; iThread < numberThreads_; iThread++) {
-                        if (threadId[iThread].status) {
-                            if (threadInfo[iThread].returnCode == 1)
-                                break;
-                        }
-                    }
-                    if (iThread < numberThreads_) {
-                        if (parallelMode() > 0) {
-                            unlockThread();
-                            locked = false;
-                        }
-                        threadModel[iThread]->moveToModel(this, 1);
-                        assert (threadInfo[iThread].returnCode == 1);
-                        // say available
-                        threadInfo[iThread].returnCode = -1;
-                        threadStats[4]++;
-#ifdef COIN_DEVELOP
-                        printf("thread %d code now -1\n", iThread);
-#endif
-                        continue;
-                    }
-                }
-                if (!tree_->empty()) {
-#ifdef COIN_DEVELOP
-                    printf("tree not empty!!!!!!\n");
-#endif
-                    continue;
-                }
-                for (iThread = 0; iThread < numberThreads_; iThread++) {
-                    if (threadId[iThread].status) {
-                        if (threadInfo[iThread].returnCode != -1) {
-                            printf("bad end of tree\n");
-                            abort();
-                        }
-                    }
-                }
-#ifdef COIN_DEVELOP
-                printf("finished ************\n");
-#endif
-                unlockThread();
-                locked = false; // not needed as break
+                int anyLeft = master_->waitForThreadsInTree(0);
+                if (!anyLeft)
+                    break;
+            } else {
+                break;
             }
-#endif
+#else
             break;
-        }
-#ifdef CBC_THREAD
-        if (parallelMode() > 0) {
-            unlockThread();
-            locked = false;
-        }
 #endif
+        } else {
+            unlockThread();
+        }
         // If done 100 nodes see if worth trying reduction
         if (numberNodes_ == 50 || numberNodes_ == 100) {
 #ifdef COIN_HAS_CLP
@@ -3642,9 +3363,9 @@ void CbcModel::branchAndBound(int doStatistics)
                 }
             }
 #endif
-/*
-  Decide if we want to do a restart.
-*/
+            /*
+              Decide if we want to do a restart.
+            */
             if (saveSolver) {
                 bool tryNewSearch = solverCharacteristics_->reducedCostsAccurate() &&
                                     (getCutoff() < 1.0e20 && getCutoff() < checkCutoffForRestart);
@@ -3743,13 +3464,13 @@ void CbcModel::branchAndBound(int doStatistics)
                     saveSolver = solver2;
                     double * newSolution = new double[numberColumns];
                     double objectiveValue = checkCutoffForRestart;
-		    // Save the best solution so far.
+                    // Save the best solution so far.
                     CbcSerendipity heuristic(*this);
                     if (bestSolution_)
                         heuristic.setInputSolution(bestSolution_, bestObjective_);
-		    // Magic number
+                    // Magic number
                     heuristic.setFractionSmall(0.8);
-		    // `pumpTune' to stand-alone solver for explanations.
+                    // `pumpTune' to stand-alone solver for explanations.
                     heuristic.setFeasibilityPumpOptions(1008013);
                     // Use numberNodes to say how many are original rows
                     heuristic.setNumberNodes(continuousSolver_->getNumRows());
@@ -3769,7 +3490,7 @@ void CbcModel::branchAndBound(int doStatistics)
 #endif
                         delete [] newSolution;
                     } else {
-			// 1 for sol'n, 2 for finished, 3 for both
+                        // 1 for sol'n, 2 for finished, 3 for both
                         if ((returnCode&1) != 0) {
                             // increment number of solutions so other heuristics can test
                             numberSolutions_++;
@@ -3814,7 +3535,7 @@ void CbcModel::branchAndBound(int doStatistics)
                 if (kNode == DIVE_WHEN + 1 || numberConsecutiveInfeasible > 1) {
                     CbcCompareDefault * compare = dynamic_cast<CbcCompareDefault *>
                                                   (nodeCompare_);
-		    // Don't interfere if user has replaced the compare function.
+                    // Don't interfere if user has replaced the compare function.
                     if (compare) {
                         //printf("Redoing tree\n");
                         compare->startDive(this);
@@ -3823,7 +3544,7 @@ void CbcModel::branchAndBound(int doStatistics)
                 }
             }
         }
-	// replace current cutoff?
+        // replace current cutoff?
         if (cutoff > getCutoff()) {
             double newCutoff = getCutoff();
             if (analyzeResults_) {
@@ -3857,24 +3578,18 @@ void CbcModel::branchAndBound(int doStatistics)
                 }
                 newCutoff = getCutoff();
             }
-            if (parallelMode() > 0)
-                lockThread();
+            lockThread();
             // Do from deepest (clean tree w.r.t. new solution)
             tree_->cleanTree(this, newCutoff, bestPossibleObjective_) ;
             nodeCompare_->newSolution(this) ;
             nodeCompare_->newSolution(this, continuousObjective_,
                                       continuousInfeasibilities_) ;
-	    // side effect: redo heap
+            // side effect: redo heap
             tree_->setComparison(*nodeCompare_) ;
             if (tree_->empty()) {
-                if (parallelMode() > 0)
-                    unlockThread();
-                // For threads we need to check further
-                //break; // finished
                 continue;
             }
-            if (parallelMode() > 0)
-                unlockThread();
+            unlockThread();
         }
         cutoff = getCutoff() ;
         /*
@@ -3884,37 +3599,10 @@ void CbcModel::branchAndBound(int doStatistics)
             + print a summary line to let the user know we're working
         */
         if (numberNodes_ >= lastEvery1000) {
-            if (parallelMode() > 0)
-                lockThread();
+            lockThread();
 #ifdef COIN_HAS_CLP
-            // Possible change of pivot method
-            if (!savePivotMethod && !parentModel_) {
-                OsiClpSolverInterface * clpSolver
-                = dynamic_cast<OsiClpSolverInterface *> (solver_);
-                if (clpSolver && numberNodes_ >= 1000 && numberNodes_ < 2000) {
-                    if (numberIterations_ < (numberSolves_ + numberNodes_)*10) {
-                        //if (numberIterations_<numberNodes_*20) {
-                        ClpSimplex * simplex = clpSolver->getModelPtr();
-                        ClpDualRowPivot * pivotMethod = simplex->dualRowPivot();
-                        ClpDualRowDantzig * pivot =
-                            dynamic_cast< ClpDualRowDantzig*>(pivotMethod);
-                        if (!pivot) {
-                            savePivotMethod = pivotMethod->clone(true);
-                            ClpDualRowDantzig dantzig;
-                            simplex->setDualRowPivotAlgorithm(dantzig);
-#ifdef COIN_DEVELOP
-                            printf("%d node, %d iterations ->Dantzig\n", numberNodes_,
-                                   numberIterations_);
-#endif
-#ifdef CBC_THREAD
-                            for (int i = 0; i < numberThreads_; i++) {
-                                threadInfo[i].dantzigState = -1;
-                            }
-#endif
-                        }
-                    }
-                }
-            }
+            // See if we want dantzig row choice
+            goToDantzig(1000, savePivotMethod);
 #endif
             lastEvery1000 = numberNodes_ + 1000;
             bool redoTree = nodeCompare_->every1000Nodes(this, numberNodes_) ;
@@ -3924,32 +3612,27 @@ void CbcModel::branchAndBound(int doStatistics)
             // redo tree if requested
             if (redoTree)
                 tree_->setComparison(*nodeCompare_) ;
-            if (parallelMode() > 0)
-                unlockThread();
+            unlockThread();
         }
-	// Had hotstart before, now switched off
+        // Had hotstart before, now switched off
         if (saveCompare && !hotstartSolution_) {
             // hotstart switched off
             delete nodeCompare_; // off depth first
             nodeCompare_ = saveCompare;
             saveCompare = NULL;
             // redo tree
-            if (parallelMode() > 0)
-                lockThread();
+            lockThread();
             tree_->setComparison(*nodeCompare_) ;
-            if (parallelMode() > 0)
-                unlockThread();
+            unlockThread();
         }
         if (numberNodes_ >= lastPrintEvery) {
             lastPrintEvery = numberNodes_ + printFrequency_;
-            if (parallelMode() > 0)
-                lockThread();
+            lockThread();
             int nNodes = tree_->size() ;
 
             //MODIF PIERRE
             bestPossibleObjective_ = tree_->getBestPossibleObjective();
-            if (parallelMode() > 0)
-                unlockThread();
+            unlockThread();
 #ifdef CLP_INVESTIGATE
             if (getCutoff() < 1.0e20) {
                 if (fabs(getCutoff() - (bestObjective_ - getCutoffIncrement())) > 1.0e-6 &&
@@ -4014,7 +3697,7 @@ void CbcModel::branchAndBound(int doStatistics)
 #endif
             node = tree_->bestNode(cutoff) ;
             // Possible one on tree worse than cutoff
-	    // Wierd comparison function can leave ineligible nodes on tree
+            // Wierd comparison function can leave ineligible nodes on tree
             if (!node || node->objectiveValue() > cutoff)
                 continue;
             // Do main work of solving node here
@@ -4043,103 +3726,13 @@ void CbcModel::branchAndBound(int doStatistics)
             //numberConsecutiveInfeasible++;
 #ifdef CBC_THREAD
         } else if (parallelMode() > 0) {
-            node = tree_->bestNode(cutoff) ;
-            // Possible one on tree worse than cutoff
-            if (!node || node->objectiveValue() > cutoff)
+            int anyLeft = master_->waitForThreadsInTree(1);
+            // may need to go round again
+            if (anyLeft)
                 continue;
-            threadStats[0]++;
-            //need to think
-            int iThread;
-            // Start one off if any available
-            for (iThread = 0; iThread < numberThreads_; iThread++) {
-                if (threadInfo[iThread].returnCode == -1)
-                    break;
-            }
-            if (iThread < numberThreads_) {
-                threadInfo[iThread].node = node;
-                assert (threadInfo[iThread].returnCode == -1);
-                // say in use
-                threadModel[iThread]->moveToModel(this, 0);
-                // This has to be AFTER moveToModel
-                threadInfo[iThread].returnCode = 0;
-                pthread_cond_signal(threadInfo[iThread].condition2); // unlock
-                threadCount[iThread]++;
-            }
-            lockThread();
-            locked = true;
-            // see if any finished
-            for (iThread = 0; iThread < numberThreads_; iThread++) {
-                if (threadInfo[iThread].returnCode > 0)
-                    break;
-            }
-            unlockThread();
-            locked = false;
-            if (iThread < numberThreads_) {
-                threadModel[iThread]->moveToModel(this, 1);
-                assert (threadInfo[iThread].returnCode == 1);
-                // say available
-                threadInfo[iThread].returnCode = -1;
-                // carry on
-                threadStats[3]++;
-            } else {
-                // Start one off if any available
-                for (iThread = 0; iThread < numberThreads_; iThread++) {
-                    if (threadInfo[iThread].returnCode == -1)
-                        break;
-                }
-                if (iThread < numberThreads_) {
-                    lockThread();
-                    locked = true;
-                    // If any on tree get
-                    if (!tree_->empty()) {
-                        //node = tree_->bestNode(cutoff) ;
-                        //assert (node);
-                        threadStats[1]++;
-                        continue; // ** get another node
-                    }
-                    unlockThread();
-                    locked = false;
-                }
-                // wait (for debug could sleep and use test)
-                bool finished = false;
-                while (!finished) {
-                    pthread_mutex_lock(&condition_mutex);
-                    struct timespec absTime;
-                    my_gettime(&absTime);
-                    double time = absTime.tv_sec + 1.0e-9 * absTime.tv_nsec;
-                    absTime.tv_nsec += 1000000; // millisecond
-                    if (absTime.tv_nsec >= 1000000000) {
-                        absTime.tv_nsec -= 1000000000;
-                        absTime.tv_sec++;
-                    }
-                    pthread_cond_timedwait(&condition_main, &condition_mutex, &absTime);
-                    my_gettime(&absTime);
-                    double time2 = absTime.tv_sec + 1.0e-9 * absTime.tv_nsec;
-                    timeWaiting += time2 - time;
-                    pthread_mutex_unlock(&condition_mutex);
-                    for (iThread = 0; iThread < numberThreads_; iThread++) {
-                        if (threadInfo[iThread].returnCode > 0) {
-                            finished = true;
-                            break;
-                        } else if (threadInfo[iThread].returnCode == 0) {
-                            pthread_cond_signal(threadInfo[iThread].condition2); // unlock
-                        }
-                    }
-                }
-                assert (iThread < numberThreads_);
-                // move information to model
-                threadModel[iThread]->moveToModel(this, 1);
-                node = threadInfo[iThread].node;
-                threadInfo[iThread].node = NULL;
-                assert (threadInfo[iThread].returnCode == 1);
-                // say available
-                threadInfo[iThread].returnCode = -1;
-                // carry on
-                threadStats[2]++;
-            }
         } else {
             // Deterministic parallel
-            if (tree_->size() < CoinMin(numberThreads_, 8) && !goneParallel) {
+            if (tree_->size() < CoinMax(numberThreads_, 8) && !goneParallel) {
                 node = tree_->bestNode(cutoff) ;
                 // Possible one on tree worse than cutoff
                 if (!node || node->objectiveValue() > cutoff)
@@ -4181,86 +3774,9 @@ void CbcModel::branchAndBound(int doStatistics)
                     nDeleteNode = 0;
                 }
             } else {
-                // Split
-                int saveTreeSize = tree_->size();
+                // Split and solve
+                master_->deterministicParallel();
                 goneParallel = true;
-                int nAffected = splitModel(numberThreads_, threadModel, defaultParallelNodes);
-                int iThread;
-                // do all until finished
-                for (iThread = 0; iThread < numberThreads_; iThread++) {
-                    // obviously tune
-                    threadInfo[iThread].nDeleteNode = defaultParallelIterations;
-                }
-                // Save current state
-                int iObject;
-                for (iObject = 0; iObject < numberObjects_; iObject++) {
-                    saveObjects[iObject]->updateBefore(object_[iObject]);
-                }
-                for (iThread = 0; iThread < numberThreads_; iThread++) {
-                    threadInfo[iThread].returnCode = 0;
-                    pthread_cond_signal(threadInfo[iThread].condition2); // unlock
-                }
-                // wait
-                bool finished = false;
-                while (!finished) {
-                    pthread_mutex_lock(&condition_mutex);
-                    struct timespec absTime;
-                    my_gettime(&absTime);
-                    double time = absTime.tv_sec + 1.0e-9 * absTime.tv_nsec;
-                    absTime.tv_nsec += 1000000; // millisecond
-                    if (absTime.tv_nsec >= 1000000000) {
-                        absTime.tv_nsec -= 1000000000;
-                        absTime.tv_sec++;
-                    }
-                    pthread_cond_timedwait(&condition_main, &condition_mutex, &absTime);
-                    my_gettime(&absTime);
-                    double time2 = absTime.tv_sec + 1.0e-9 * absTime.tv_nsec;
-                    timeWaiting += time2 - time;
-                    pthread_mutex_unlock(&condition_mutex);
-                    finished = true;
-                    for (iThread = 0; iThread < numberThreads_; iThread++) {
-                        if (threadInfo[iThread].returnCode <= 0) {
-                            finished = false;
-                        }
-                    }
-                }
-                // Unmark marked
-                for (int i = 0; i < nAffected; i++) {
-                    walkback_[i]->unmark();
-                }
-                int iModel;
-                double scaleFactor = 1.0;
-                for (iModel = 0; iModel < numberThreads_; iModel++) {
-                    //printf("model %d tree size %d\n",iModel,threadModel[iModel]->tree_->size());
-                    if (saveTreeSize > 4*numberThreads_*defaultParallelNodes) {
-                        if (!threadModel[iModel]->tree_->size()) {
-                            scaleFactor *= 1.05;
-                        }
-                    }
-                    threadModel[iModel]->moveToModel(this, 11);
-                    // Update base model
-                    OsiObject ** threadObject = threadModel[iModel]->object_;
-                    for (iObject = 0; iObject < numberObjects_; iObject++) {
-                        object_[iObject]->updateAfter(threadObject[iObject], saveObjects[iObject]);
-                    }
-                }
-                if (scaleFactor != 1.0) {
-                    int newNumber = static_cast<int> (defaultParallelNodes * scaleFactor + 0.5001);
-                    if (newNumber*2 < defaultParallelIterations) {
-                        if (defaultParallelNodes == 1)
-                            newNumber = 2;
-                        if (newNumber != defaultParallelNodes) {
-                            char general[200];
-                            sprintf(general, "Changing tree size from %d to %d",
-                                    defaultParallelNodes, newNumber);
-                            messageHandler()->message(CBC_GENERAL,
-                                                      messages())
-                            << general << CoinMessageEol ;
-                            defaultParallelNodes = newNumber;
-                        }
-                    }
-                }
-                //printf("Tree sizes %d %d %d - affected %d\n",saveTreeSize,saveTreeSize2,tree_->size(),nAffected);
             }
         }
 #endif
@@ -4273,82 +3789,10 @@ void CbcModel::branchAndBound(int doStatistics)
     }
 #ifdef CBC_THREAD
     if (numberThreads_) {
-        int i;
-        // Seems to be bug in CoinCpu on Linux - does threads as well despite documentation
-        double time = 0.0;
-        for (i = 0; i < numberThreads_; i++)
-            time += threadInfo[i].timeInThread;
-        bool goodTimer = time < (getCurrentSeconds());
-        for (i = 0; i < numberThreads_; i++) {
-            while (threadInfo[i].returnCode == 0) {
-                pthread_cond_signal(threadInfo[i].condition2); // unlock
-                pthread_mutex_lock(&condition_mutex);
-                struct timespec absTime;
-                my_gettime(&absTime);
-                absTime.tv_nsec += 1000000; // millisecond
-                if (absTime.tv_nsec >= 1000000000) {
-                    absTime.tv_nsec -= 1000000000;
-                    absTime.tv_sec++;
-                }
-                pthread_cond_timedwait(&condition_main, &condition_mutex, &absTime);
-                my_gettime(&absTime);
-                pthread_mutex_unlock(&condition_mutex);
-            }
-            pthread_cond_signal(threadInfo[i].condition2); // unlock
-            pthread_mutex_lock(&condition_mutex); // not sure necessary but have had one hang on interrupt
-            threadModel[i]->numberThreads_ = 0; // say exit
-            if (parallelMode() < 0)
-                delete [] threadInfo[i].delNode;
-            threadInfo[i].returnCode = 0;
-            pthread_mutex_unlock(&condition_mutex);
-            pthread_cond_signal(threadInfo[i].condition2); // unlock
-            //if (!stopped)
-            //pthread_join(threadId[i],NULL);
-            int returnCode;
-            returnCode = pthread_join(threadId[i].thr, NULL);
-            threadId[i].status = 0;
-            assert (!returnCode);
-            //else
-            //pthread_kill(threadId[i]); // kill rather than try and synchronize
-            threadModel[i]->moveToModel(this, 2);
-            pthread_mutex_destroy (threadInfo[i].mutex2);
-            pthread_cond_destroy (threadInfo[i].condition2);
-            assert (threadInfo[i].numberTimesLocked == threadInfo[i].numberTimesUnlocked);
-            handler_->message(CBC_THREAD_STATS, messages_)
-            << "Thread";
-            handler_->printing(true)
-            << i << threadCount[i] << threadInfo[i].timeWaitingToStart;
-            handler_->printing(goodTimer) << threadInfo[i].timeInThread;
-            handler_->printing(false) << 0.0;
-            handler_->printing(true) << threadInfo[i].numberTimesLocked
-            << threadInfo[i].timeLocked << threadInfo[i].timeWaitingToLock
-            << CoinMessageEol;
-        }
-        assert (threadInfo[numberThreads_].numberTimesLocked == threadInfo[numberThreads_].numberTimesUnlocked);
-        handler_->message(CBC_THREAD_STATS, messages_)
-        << "Main thread";
-        handler_->printing(false) << 0 << 0 << 0.0;
-        handler_->printing(false) << 0.0;
-        handler_->printing(true) << timeWaiting;
-        handler_->printing(true) << threadInfo[numberThreads_].numberTimesLocked
-        << threadInfo[numberThreads_].timeLocked << threadInfo[numberThreads_].timeWaitingToLock
-        << CoinMessageEol;
-        pthread_mutex_destroy (&mutex);
-        pthread_cond_destroy (&condition_main);
-        pthread_mutex_destroy (&condition_mutex);
-        // delete models (here in case some point to others)
-        for (i = 0; i < numberThreads_; i++) {
-            // make sure handler will be deleted
-            threadModel[i]->defaultHandler_ = true;
-            delete threadModel[i];
-        }
-        delete [] mutex2;
-        delete [] condition2;
-        delete [] threadId;
-        delete [] threadInfo;
-        delete [] threadModel;
-        delete [] threadCount;
-        mutex_ = NULL;
+        master_->waitForThreadsInTree(2);
+        delete master_;
+        master_ = NULL;
+        masterThread_ = NULL;
         // adjust time to allow for children on some systems
         dblParam_[CbcStartSeconds] -= CoinCpuTimeJustChildren();
     }
@@ -4908,7 +4352,6 @@ CbcModel::CbcModel()
         moreSpecialOptions_(0),
         subTreeModel_(NULL),
         numberStoppedSubTrees_(0),
-        mutex_(NULL),
         presolve_(0),
         numberStrong_(5),
         numberBeforeTrust_(10),
@@ -4971,7 +4414,9 @@ CbcModel::CbcModel()
         updateItems_(NULL),
         storedRowCuts_(NULL),
         numberThreads_(0),
-        threadMode_(0)
+        threadMode_(0),
+        master_(NULL),
+        masterThread_(NULL)
 {
     memset(intParam_, 0, sizeof(intParam_));
     intParam_[CbcMaxNumNode] = 2147483647;
@@ -5066,7 +4511,6 @@ CbcModel::CbcModel(const OsiSolverInterface &rhs)
         moreSpecialOptions_(0),
         subTreeModel_(NULL),
         numberStoppedSubTrees_(0),
-        mutex_(NULL),
         presolve_(0),
         numberStrong_(5),
         numberBeforeTrust_(10),
@@ -5129,7 +4573,9 @@ CbcModel::CbcModel(const OsiSolverInterface &rhs)
         updateItems_(NULL),
         storedRowCuts_(NULL),
         numberThreads_(0),
-        threadMode_(0)
+        threadMode_(0),
+        master_(NULL),
+        masterThread_(NULL)
 {
     memset(intParam_, 0, sizeof(intParam_));
     intParam_[CbcMaxNumNode] = 2147483647;
@@ -5319,7 +4765,6 @@ CbcModel::CbcModel(const CbcModel & rhs, bool cloneHandler)
         moreSpecialOptions_(rhs.moreSpecialOptions_),
         subTreeModel_(rhs.subTreeModel_),
         numberStoppedSubTrees_(rhs.numberStoppedSubTrees_),
-        mutex_(NULL),
         presolve_(rhs.presolve_),
         numberStrong_(rhs.numberStrong_),
         numberBeforeTrust_(rhs.numberBeforeTrust_),
@@ -5371,7 +4816,9 @@ CbcModel::CbcModel(const CbcModel & rhs, bool cloneHandler)
         updateItems_(NULL),
         storedRowCuts_(NULL),
         numberThreads_(rhs.numberThreads_),
-        threadMode_(rhs.threadMode_)
+        threadMode_(rhs.threadMode_),
+        master_(NULL),
+        masterThread_(NULL)
 {
     memcpy(intParam_, rhs.intParam_, sizeof(intParam_));
     memcpy(dblParam_, rhs.dblParam_, sizeof(dblParam_));
@@ -5487,7 +4934,7 @@ CbcModel::CbcModel(const CbcModel & rhs, bool cloneHandler)
     parentModel_ = rhs.parentModel_;
     appData_ = rhs.appData_;
     messages_ = rhs.messages_;
-    ownership_ = 0x80000000;
+    ownership_ = rhs.ownership_ | 0x80000000;
     messageHandler()->setLogLevel(rhs.messageHandler()->logLevel());
     numberIntegers_ = rhs.numberIntegers_;
     randomNumberGenerator_ = rhs.randomNumberGenerator_;
@@ -5668,7 +5115,6 @@ CbcModel::operator=(const CbcModel & rhs)
         moreSpecialOptions_ = rhs.moreSpecialOptions_;
         subTreeModel_ = rhs.subTreeModel_;
         numberStoppedSubTrees_ = rhs.numberStoppedSubTrees_;
-        mutex_ = NULL;
         presolve_ = rhs.presolve_;
         numberStrong_ = rhs.numberStrong_;
         numberBeforeTrust_ = rhs.numberBeforeTrust_;
@@ -5741,6 +5187,9 @@ CbcModel::operator=(const CbcModel & rhs)
         }
         numberThreads_ = rhs.numberThreads_;
         threadMode_ = rhs.threadMode_;
+        delete master_;
+        master_ = NULL;
+        masterThread_ = NULL;
         searchStrategy_ = rhs.searchStrategy_;
         numberStrongIterations_ = rhs.numberStrongIterations_;
         strongInfo_[0] = rhs.strongInfo_[0];
@@ -6107,6 +5556,9 @@ CbcModel::gutsOfCopy(const CbcModel & rhs, int mode)
     continuousPriority_ = rhs.continuousPriority_;
     numberThreads_ = rhs.numberThreads_;
     threadMode_ = rhs.threadMode_;
+    delete master_;
+    master_ = NULL;
+    masterThread_ = NULL;
     memcpy(intParam_, rhs.intParam_, sizeof(intParam_));
     memcpy(dblParam_, rhs.dblParam_, sizeof(dblParam_));
     int i;
@@ -6807,8 +6259,7 @@ int CbcModel::addCuts (CbcNode *node, CoinWarmStartBasis *&lastws, bool canFix)
     else {
         int i;
         if (currentNumberCuts) {
-            if (parallelMode() > 0)
-                lockThread();
+            lockThread();
             int numberLeft = nodeInfo->numberBranchesLeft();
             for (i = 0 ; i < currentNumberCuts ; i++) {
                 if (addedCuts_[i]) {
@@ -6818,8 +6269,7 @@ int CbcModel::addCuts (CbcNode *node, CoinWarmStartBasis *&lastws, bool canFix)
                     }
                 }
             }
-            if (parallelMode() > 0)
-                unlockThread();
+            unlockThread();
         }
         return 1 ;
     }
@@ -7014,55 +6464,17 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
 # endif
     //solver_->writeMps("saved");
 #ifdef CBC_THREAD
-/*
-  Thread mode makes a difference here only when it specifies using separate
-  threads to generate cuts at the root (bit 2^1 set in threadMode_). In which
-  case we'll create an array of empty CbcModels (!). Solvers will be cloned
-  later.
+    /*
+      Thread mode makes a difference here only when it specifies using separate
+      threads to generate cuts at the root (bit 2^1 set in threadMode_). In which
+      case we'll create an array of empty CbcModels (!). Solvers will be cloned
+      later.
 
-  Don't start up threads here if we're already threaded.
-*/
-    CbcModel ** threadModel = NULL;
-    Coin_pthread_t * threadId = NULL;
-    pthread_cond_t condition_main;
-    pthread_mutex_t condition_mutex;
-    pthread_mutex_t * mutex2 = NULL;
-    pthread_cond_t * condition2 = NULL;
-    threadStruct * threadInfo = NULL;
-    void * saveMutex = NULL;
+      Don't start up threads here if we're already threaded.
+    */
+    CbcBaseModel * master = NULL;
     if (numberThreads_ && (threadMode_&2) != 0 && !numberNodes_) {
-        threadId = new Coin_pthread_t [numberThreads_];
-        pthread_cond_init(&condition_main, NULL);
-        pthread_mutex_init(&condition_mutex, NULL);
-        threadModel = new CbcModel * [numberThreads_];
-        threadInfo = new threadStruct [numberThreads_+1];
-        mutex2 = new pthread_mutex_t [numberThreads_];
-        condition2 = new pthread_cond_t [numberThreads_];
-        saveMutex = mutex_;
-        for (int i = 0; i < numberThreads_; i++) {
-            pthread_mutex_init(mutex2 + i, NULL);
-            pthread_cond_init(condition2 + i, NULL);
-            threadId[i].status = 0;
-            threadModel[i] = new CbcModel;
-            threadModel[i]->generator_ = new CbcCutGenerator * [1];
-            delete threadModel[i]->solver_;
-            threadModel[i]->solver_ = NULL;
-            threadModel[i]->numberThreads_ = numberThreads_;
-            mutex_ = reinterpret_cast<void *> (threadInfo + i);
-            threadInfo[i].thisModel = threadModel[i];
-            threadInfo[i].baseModel = this;
-            threadInfo[i].threadIdOfBase.thr = pthread_self();
-            threadInfo[i].mutex2 = mutex2 + i;
-            threadInfo[i].condition2 = condition2 + i;
-            threadInfo[i].returnCode = -1;
-            pthread_create(&(threadId[i].thr), NULL, doCutsThread, threadInfo + i);
-            threadId[i].status = 1;
-        }
-        // Do a partial one for base model
-        threadInfo[numberThreads_].baseModel = this;
-        mutex_ = reinterpret_cast<void *> (threadInfo + numberThreads_);
-        threadInfo[numberThreads_].condition2 = &condition_main;
-        threadInfo[numberThreads_].mutex2 = &condition_mutex;
+        master = new CbcBaseModel(*this, -1);
     }
 #endif
     bool feasible = true ;
@@ -7088,25 +6500,25 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
         if (debugger)
             onOptimalPath = (debugger->onOptimalPath(*solver_)) ;
     }
-/*
-  As the final action in each round of cut generation (the numberTries loop),
-  we'll call takeOffCuts to remove slack cuts. These are saved into slackCuts
-  and rechecked immediately after the cut generation phase of the loop.
-*/
+    /*
+      As the final action in each round of cut generation (the numberTries loop),
+      we'll call takeOffCuts to remove slack cuts. These are saved into slackCuts
+      and rechecked immediately after the cut generation phase of the loop.
+    */
     OsiCuts slackCuts;
     /*
     lh:
-	  Resolve the problem
+      Resolve the problem
 
-  The resolve will also refresh cached copies of the solver solution
-  (cbcColLower_, ...) held by CbcModel.
-  This resolve looks like the best point to capture a warm start for use in
-  the case where cut generation proves ineffective and we need to back out
-  a few tight cuts.
-  I've always maintained that this resolve is unnecessary. Let's put in a hook
-  to report if it's every nontrivial. -lh
+    The resolve will also refresh cached copies of the solver solution
+    (cbcColLower_, ...) held by CbcModel.
+    This resolve looks like the best point to capture a warm start for use in
+    the case where cut generation proves ineffective and we need to back out
+    a few tight cuts.
+    I've always maintained that this resolve is unnecessary. Let's put in a hook
+    to report if it's every nontrivial. -lh
 
-	Resolve the problem. If we've lost feasibility, might as well bail out right
+    Resolve the problem. If we've lost feasibility, might as well bail out right
       after the debug stuff. The resolve will also refresh cached copies of the
       solver solution (cbcColLower_, ...) held by CbcModel.
     */
@@ -7122,22 +6534,22 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
     double lastObjective = solver_->getObjValue() * solver_->getObjSense();
     cut_obj[CUT_HISTORY-1] = lastObjective;
     //double firstObjective = lastObjective+1.0e-8+1.0e-12*fabs(lastObjective);
-/*
-  Contemplate the result of the resolve.
-    - CbcModel::resolve() has a hook that calls CbcStrategy::status to look
-      over the solution. The net result is that resolve can return
-      0 (infeasible), 1 (feasible), or -1 (feasible, but do no further work).
-    - CbcFeasbililityBase::feasible() can return 0 (no comment),
-      1 (pretend this is an integer solution), or -1 (pretend this is
-      infeasible). As of 080104, this seems to be a stub to allow overrides,
-      with a default implementation that always returns 0.
+    /*
+      Contemplate the result of the resolve.
+        - CbcModel::resolve() has a hook that calls CbcStrategy::status to look
+          over the solution. The net result is that resolve can return
+          0 (infeasible), 1 (feasible), or -1 (feasible, but do no further work).
+        - CbcFeasbililityBase::feasible() can return 0 (no comment),
+          1 (pretend this is an integer solution), or -1 (pretend this is
+          infeasible). As of 080104, this seems to be a stub to allow overrides,
+          with a default implementation that always returns 0.
 
-  Setting numberTries = 0 for `do no more work' is problematic. The main cut
-  generation loop will still execute once, so we do not observe the `no
-  further work' semantics.
+      Setting numberTries = 0 for `do no more work' is problematic. The main cut
+      generation loop will still execute once, so we do not observe the `no
+      further work' semantics.
 
-  As best I can see, allBranchesGone is a null function as of 071220.
-*/
+      As best I can see, allBranchesGone is a null function as of 071220.
+    */
     if (node && node->nodeInfo() && !node->nodeInfo()->numberBranchesLeft())
         node->nodeInfo()->allBranchesGone(); // can clean up
     feasible = returnCode  != 0 ;
@@ -7146,39 +6558,39 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
     if (problemFeasibility_->feasible(this, 0) < 0) {
         feasible = false; // pretend infeasible
     }
-/*
-  NEW_UPDATE_OBJECT is defined to 0 when unthreaded (CBC_THREAD undefined), 2
-  when threaded. No sign of 1 as of 071220.
+    /*
+      NEW_UPDATE_OBJECT is defined to 0 when unthreaded (CBC_THREAD undefined), 2
+      when threaded. No sign of 1 as of 071220.
 
-  At present, there are two sets of hierarchies for branching classes. Call
-  them CbcHier and OsiHier. For example, we have OsiBranchingObject, with
-  children CbcBranchingObject and OsiTwoWayBranchingObject. All
-  specialisations descend from one of these two children. Similarly, there is
-  OsiObject, with children CbcObject and OsiObject2.
+      At present, there are two sets of hierarchies for branching classes. Call
+      them CbcHier and OsiHier. For example, we have OsiBranchingObject, with
+      children CbcBranchingObject and OsiTwoWayBranchingObject. All
+      specialisations descend from one of these two children. Similarly, there is
+      OsiObject, with children CbcObject and OsiObject2.
 
-  In the original setup, there's a single CbcBranchDecision object attached
-  to CbcModel (branchingMethod_). It has a field to hold the current CbcHier
-  branching object, and the updateInformation routine reaches through the
-  branching object to update the underlying CbcHier object.
+      In the original setup, there's a single CbcBranchDecision object attached
+      to CbcModel (branchingMethod_). It has a field to hold the current CbcHier
+      branching object, and the updateInformation routine reaches through the
+      branching object to update the underlying CbcHier object.
 
-  NEW_UPDATE_OBJECT = 0 would seem to assume the original setup. But,
-  if we're using the OSI hierarchy for objects and branching, a call to a
-  nontrivial branchingMethod_->updateInformation would have no effect (it
-  would expect a CbcObject to work on) or perhaps crash.  For the
-  default CbcBranchDefaultDecision, updateInformation is a noop (actually
-  defined in the base CbcBranchDecision class).
+      NEW_UPDATE_OBJECT = 0 would seem to assume the original setup. But,
+      if we're using the OSI hierarchy for objects and branching, a call to a
+      nontrivial branchingMethod_->updateInformation would have no effect (it
+      would expect a CbcObject to work on) or perhaps crash.  For the
+      default CbcBranchDefaultDecision, updateInformation is a noop (actually
+      defined in the base CbcBranchDecision class).
 
-  NEW_UPDATE_OBJECT = 2 looks like it's prepared to cope with either CbcHier or
-  OsiHier, but it'll be executed only when threads are activated. See the
-  comments below. The setup is scary.
+      NEW_UPDATE_OBJECT = 2 looks like it's prepared to cope with either CbcHier or
+      OsiHier, but it'll be executed only when threads are activated. See the
+      comments below. The setup is scary.
 
-  But ... if the OsiHier update actually reaches right through to the object
-  list in the solver, it should work just fine in unthreaded mode. It would
-  seem that the appropriate thing to do in unthreaded mode would be to choose
-  between the existing code for NEW_UPDATE_OBJECT = 0 and the OsiHier code for
-  NEW_UPDATE_OBJECT = 2. But I'm going to let John hash that out. The worst
-  that can happen is inefficiency because I'm not properly updating an object.
-*/
+      But ... if the OsiHier update actually reaches right through to the object
+      list in the solver, it should work just fine in unthreaded mode. It would
+      seem that the appropriate thing to do in unthreaded mode would be to choose
+      between the existing code for NEW_UPDATE_OBJECT = 0 and the OsiHier code for
+      NEW_UPDATE_OBJECT = 2. But I'm going to let John hash that out. The worst
+      that can happen is inefficiency because I'm not properly updating an object.
+    */
 
     // Update branching information if wanted
     if (node && branchingMethod_) {
@@ -7207,7 +6619,7 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
 #endif
 #endif
             update.objectNumber_ = iObject;
-	    // Care! We must be careful not to update the same variable in parallel threads.
+            // Care! We must be careful not to update the same variable in parallel threads.
             addUpdateInformation(update);
             //#define TIGHTEN_BOUNDS
 #ifdef TIGHTEN_BOUNDS
@@ -7375,8 +6787,8 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
         numberTries = -numberTries ;
         // minimumDrop *= 1.0e-5 ;
         // if (numberTries >= -1000000) {
-            //numberTries=100;
-            minimumDrop = -1.0;
+        //numberTries=100;
+        minimumDrop = -1.0;
         // }
         //numberTries=CoinMax(numberTries,100);
         allowZeroIterations = true;
@@ -7431,8 +6843,8 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
         numberTries-- ;
         if (numberTries < 0 && keepGoing) {
             // switch off all normal generators (by the generator's opinion of normal)
-	    // Intended for situations where the primal problem really isn't complete,
-	    // and there are `not normal' cut generators that will augment.
+            // Intended for situations where the primal problem really isn't complete,
+            // and there are `not normal' cut generators that will augment.
             for (int i = 0; i < numberCutGenerators_; i++) {
                 if (!generator_[i]->mustCallAgain())
                     generator_[i]->setSwitchedOff(true);
@@ -7499,11 +6911,11 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
           to take full advantage.
 
           The need to resolve here should only happen after a heuristic solution.
-  optimalBasisIsAvailable resolves to basisIsAvailable, which seems to be part
-  of the old OsiSimplex API. Doc'n says `Returns true if a basis is available
-  and the problem is optimal. Should be used to see if the BinvARow type
-  operations are possible and meaningful.' Which means any solver other the clp
-  is probably doing a lot of unnecessary resolves right here.
+        optimalBasisIsAvailable resolves to basisIsAvailable, which seems to be part
+        of the old OsiSimplex API. Doc'n says `Returns true if a basis is available
+        and the problem is optimal. Should be used to see if the BinvARow type
+        operations are possible and meaningful.' Which means any solver other the clp
+        is probably doing a lot of unnecessary resolves right here.
           (Note default OSI implementation of optimalBasisIsAvailable always returns
           false.)
         */
@@ -7564,614 +6976,43 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
         //if (probingInfo_)
         //probingInfo_->initializeFixing();
         int i;
-/*
-  threadMode with bit 2^1 set indicates we should use threads for root cut
-  generation.
-*/
-        if ((threadMode_&2) == 0 || numberNodes_) {
-# ifdef COIN_HAS_CLP
-            if (!node && !parentModel_ && intParam_[CbcMaxNumNode] == -123456) {
-                OsiClpSolverInterface * clpSolver
-                = dynamic_cast<OsiClpSolverInterface *> (solver_);
-                if (clpSolver) {
-                    clpSolver->lexSolve();
-                }
-            }
-# endif
-            int switchOff = (!doCutsNow(1) && !fullScan) ? 1 : 0;
-            //if (2*solver_->getNumRows()+solver_->getNumCols()>1000)
-            //switchOff *= 2;
-            for (i = 0; i < numberCutGenerators_; i++) {
-                int numberRowCutsBefore = theseCuts.sizeRowCuts() ;
-                int numberColumnCutsBefore = theseCuts.sizeColCuts() ;
-                int numberRowCutsAfter = numberRowCutsBefore;
-                int numberColumnCutsAfter = numberColumnCutsBefore;
-                bool generate = generator_[i]->normal();
-                // skip if not optimal and should be (maybe a cut generator has fixed variables)
-                if (generator_[i]->howOften() == -100 ||
-                        (generator_[i]->needsOptimalBasis() && !solver_->basisIsAvailable())
-                        || generator_[i]->switchedOff())
-                    generate = false;
-                if (switchOff) {
-                    // switch off if default
-                    if (generator_[i]->howOften() == 1 && generator_[i]->whatDepth() < 0) {
-                        /*if (generate)
-                          printf("Gg %d %d %d\n",i,
-                          generator_[i]->howOften(),generator_[i]->whatDepth());*/
-                        generate = false;
-                    } else if (currentDepth_ > -10 && switchOff == 2) {
-                        generate = false;
-                    }
-                }
-                if (generate) {
-                    if (!node && cut_obj[CUT_HISTORY-1] != -COIN_DBL_MAX &&
+        // If necessary make cut generators work harder
+        bool strongCuts =  (!node && cut_obj[CUT_HISTORY-1] != -COIN_DBL_MAX &&
                             fabs(cut_obj[CUT_HISTORY-1] - cut_obj[CUT_HISTORY-2]) < 1.0e-7 +
-                            1.0e-6*fabs(cut_obj[CUT_HISTORY-1]))
-                        generator_[i]->setIneffectualCuts(true);
-                    bool mustResolve =
-                        generator_[i]->generateCuts(theseCuts, fullScan, solver_, node) ;
-                    generator_[i]->setIneffectualCuts(false);
-                    numberRowCutsAfter = theseCuts.sizeRowCuts() ;
-                    if (fullScan && generator_[i]->howOften() == 1000000 + SCANCUTS_PROBING) {
-                        CglProbing * probing =
-                            dynamic_cast<CglProbing*>(generator_[i]->generator());
-                        if (probing && (numberRowCutsBefore < numberRowCutsAfter ||
-                                        numberColumnCutsBefore < theseCuts.sizeColCuts())) {
-                            // switch on
-#ifdef COIN_DEVELOP
-                            printf("Switching on probing\n");
-#endif
-                            generator_[i]->setHowOften(1);
-                        }
-                    }
-                    if (numberRowCutsBefore < numberRowCutsAfter &&
-                            generator_[i]->mustCallAgain())
-                        keepGoing = true; // say must go round
-                    // Check last cut to see if infeasible
-		    /*
-		      The convention is that if the generator proves infeasibility, it should
-		      return as its last cut something with lb > ub.
-		    */
-                    if (numberRowCutsBefore < numberRowCutsAfter) {
-                        const OsiRowCut * thisCut = theseCuts.rowCutPtr(numberRowCutsAfter - 1) ;
-                        if (thisCut->lb() > thisCut->ub()) {
-                            feasible = false; // sub-problem is infeasible
-                            break;
-                        }
-                    }
-#ifdef CBC_DEBUG
-                    {
-                        int k ;
-                        for (k = numberRowCutsBefore; k < numberRowCutsAfter; k++) {
-                            OsiRowCut thisCut = theseCuts.rowCut(k) ;
-                            /* check size of elements.
-                            We can allow smaller but this helps debug generators as it
-                            is unsafe to have small elements */
-                            int n = thisCut.row().getNumElements();
-                            const int * column = thisCut.row().getIndices();
-                            const double * element = thisCut.row().getElements();
-                            //assert (n);
-                            for (int i = 0; i < n; i++) {
-                                double value = element[i];
-                                assert(fabs(value) > 1.0e-12 && fabs(value) < 1.0e20);
-                            }
-                        }
-                    }
-#endif
-                    if (mustResolve) {
-                        int returnCode = resolve(node ? node->nodeInfo() : NULL, 2);
-                        feasible = (returnCode  != 0) ;
-                        if (returnCode < 0)
-                            numberTries = 0;
-                        if ((specialOptions_&1) != 0) {
-                            debugger = solver_->getRowCutDebugger() ;
-                            if (debugger)
-                                onOptimalPath = (debugger->onOptimalPath(*solver_)) ;
-                            else
-                                onOptimalPath = false;
-                            if (onOptimalPath && !solver_->isDualObjectiveLimitReached())
-                                assert(feasible) ;
-                        }
-                        if (!feasible)
-                            break ;
-                    }
-                }
-                numberRowCutsAfter = theseCuts.sizeRowCuts() ;
-                numberColumnCutsAfter = theseCuts.sizeColCuts() ;
-                if ((specialOptions_&1) != 0) {
-                    if (onOptimalPath) {
-                        int k ;
-                        for (k = numberRowCutsBefore; k < numberRowCutsAfter; k++) {
-                            OsiRowCut thisCut = theseCuts.rowCut(k) ;
-                            if (debugger->invalidCut(thisCut)) {
-                                solver_->getRowCutDebuggerAlways()->printOptimalSolution(*solver_);
-                                solver_->writeMpsNative("badCut.mps", NULL, NULL, 2);
-                                printf("Cut generator %d (%s) produced invalid cut (%dth in this go)\n",
-                                       i, generator_[i]->cutGeneratorName(), k - numberRowCutsBefore);
-                                const double *lower = getColLower() ;
-                                const double *upper = getColUpper() ;
-                                int numberColumns = solver_->getNumCols();
-                                if (numberColumns < 200) {
-                                    for (int i = 0; i < numberColumns; i++)
-                                        printf("%d bounds %g,%g\n", i, lower[i], upper[i]);
-                                }
-#ifdef CGL_DEBUG_GOMORY
-                                printf("Value of gomory_try is %d, recompile with -%d\n",
-                                       gomory_try, gomory_try);
-#endif
-                                abort();
-                            }
-                            assert(!debugger->invalidCut(thisCut)) ;
-                        }
-                    }
-                }
-                /*
-                  The cut generator has done its thing, and maybe it generated some
-                  cuts.  Do a bit of bookkeeping: load
-                  whichGenerator[i] with the index of the generator responsible for a cut,
-                  and place cuts flagged as global in the global cut pool for the model.
-
-                  lastNumberCuts is the sum of cuts added in previous iterations; it's the
-                  offset to the proper starting position in whichGenerator.
-                */
-                int numberBefore =
-                    numberRowCutsBefore + lastNumberCuts ;
-                int numberAfter =
-                    numberRowCutsAfter + lastNumberCuts ;
-                // possibly extend whichGenerator
-                resizeWhichGenerator(numberBefore, numberAfter);
-                int j ;
-
-		/*
-		  Look for numerically unacceptable cuts.
-		*/
-                bool dodgyCuts = false;
-                for (j = numberRowCutsBefore; j < numberRowCutsAfter; j++) {
-                    const OsiRowCut * thisCut = theseCuts.rowCutPtr(j) ;
-                    if (thisCut->lb() > 1.0e10 || thisCut->ub() < -1.0e10) {
-                        dodgyCuts = true;
-                        break;
-                    }
-                    whichGenerator_[numberBefore++] = i ;
-                    if (thisCut->lb() > thisCut->ub())
-                        violated = -2; // sub-problem is infeasible
-                    if (thisCut->globallyValid()) {
-                        // add to global list
-                        OsiRowCut newCut(*thisCut);
-                        newCut.setGloballyValid(true);
-                        newCut.mutableRow().setTestForDuplicateIndex(false);
-                        globalCuts_.insert(newCut) ;
-                    }
-                }
-                if (dodgyCuts) {
-                    for (int k = numberRowCutsAfter - 1; k >= j; k--) {
-                        const OsiRowCut * thisCut = theseCuts.rowCutPtr(k) ;
-                        if (thisCut->lb() > thisCut->ub())
-                            violated = -2; // sub-problem is infeasible
-                        if (thisCut->lb() > 1.0e10 || thisCut->ub() < -1.0e10)
-                            theseCuts.eraseRowCut(k);
-                    }
-                    numberRowCutsAfter = theseCuts.sizeRowCuts() ;
-                    for (; j < numberRowCutsAfter; j++) {
-                        const OsiRowCut * thisCut = theseCuts.rowCutPtr(j) ;
-                        whichGenerator_[numberBefore++] = i ;
-                        if (thisCut->globallyValid()) {
-                            // add to global list
-                            OsiRowCut newCut(*thisCut);
-                            newCut.setGloballyValid(true);
-                            newCut.mutableRow().setTestForDuplicateIndex(false);
-                            globalCuts_.insert(newCut) ;
-                        }
-                    }
-                }
-                for (j = numberColumnCutsBefore; j < numberColumnCutsAfter; j++) {
-                    //whichGenerator_[numberBefore++] = i ;
-                    const OsiColCut * thisCut = theseCuts.colCutPtr(j) ;
-                    if (thisCut->globallyValid()) {
-                        // add to global list
-                        OsiColCut newCut(*thisCut);
-                        newCut.setGloballyValid(true);
-                        globalCuts_.insert(newCut) ;
-                    }
-                }
-            }
-/*
-  End of loop to run each cut generator.
-*/
-            if (!node) {
-                handler_->message(CBC_ROOT_DETAIL, messages_)
-                << currentPassNumber_
-                << solver_->getNumRows()
-                << solver_->getNumRows() - numberRowsAtContinuous_
-                << solver_->getObjValue()
-                << CoinMessageEol ;
-            }
-            if (violated >= 0 && feasible) {
-#ifdef JJF_ZERO
-                //winnowCuts(theseCuts);
-                // look at all cuts here
-                int nCuts = theseCuts.sizeRowCuts() ;
-                int k ;
-                int nEls = 0;
-                const double * solution = solver_->getColSolution();
-                int depth;
-                if (node)
-                    depth = node->depth();
-                else
-                    depth = 0;
-                for (k = 0; k < nCuts; k++) {
-                    const OsiRowCut * thisCut = theseCuts.rowCutPtr(k) ;
-                    int n = thisCut->row().getNumElements();
-                    nEls += n;
-                }
-                //printf("%s has %d cuts and %d elements\n",generatorName_,
-                //     nCuts,nEls);
-                int nElsNow = solver_->getMatrixByCol()->getNumElements();
-                int numberColumns = solver_->getNumCols();
-                int numberRows = solver_->getNumRows();
-                //double averagePerRow = static_cast<double>(nElsNow)/
-                //static_cast<double>(numberRows);
-
-		// Check in CbcCutGenerator for similar code.
-                int nAdd;
-                int nAdd2;
-                int nReasonable;
-                if (!parentModel_ && depth < 2) {
-                    nAdd = 10000;
-                    if (currentPassNumber_ > 1)
-                        nAdd = CoinMin(nAdd, nElsNow + 2 * numberRows);
-                    nAdd2 = 5 * numberColumns;
-                    nReasonable = CoinMax(nAdd2, nElsNow / 8 + nAdd);
-                } else {
-                    nAdd = 200;
-                    nAdd2 = 2 * numberColumns;
-                    nReasonable = CoinMax(nAdd2, nElsNow / 8 + nAdd);
-                }
-#define SCALE_UP 5
-                nAdd *= SCALE_UP;
-                nReasonable *= SCALE_UP;
-
-                if (nCuts > nAdd || nEls > nReasonable) {
-                    //printf("need to remove cuts\n");
-                    // just add most effective
-                    int nDelete = nEls - nReasonable;
-
-                    nElsNow = nEls;
-                    double * sort = new double [nCuts];
-                    int * which = new int [nCuts];
-                    // For parallel cuts
-                    double * element2 = new double [numberColumns];
-#define USE_OBJECTIVE
-#ifdef USE_OBJECTIVE
-                    const double *objective = solver_->getObjCoefficients() ;
-#endif
-                    CoinZeroN(element2, numberColumns);
-                    for (k = 0; k < nCuts; k++) {
-                        const OsiRowCut * thisCut = theseCuts.rowCutPtr(k) ;
-                        double sum = 0.0;
-                        int n = thisCut->row().getNumElements();
-                        const int * column = thisCut->row().getIndices();
-                        const double * element = thisCut->row().getElements();
-                        double norm = 1.0e-3;
-#ifdef USE_OBJECTIVE
-                        double normObj = 0.0;
-#endif
-                        for (int i = 0; i < n; i++) {
-                            int iColumn = column[i];
-                            double value = element[i];
-                            sum += value * solution[iColumn];
-                            norm += value * value;
-#ifdef USE_OBJECTIVE
-                            normObj += value * objective[iColumn];
-#endif
-                        }
-                        if (sum > thisCut->ub()) {
-                            sum = sum - thisCut->ub();
-                        } else if (sum < thisCut->lb()) {
-                            sum = thisCut->lb() - sum;
-                        } else {
-                            sum = 0.0;
-                        }
-#ifdef USE_OBJECTIVE
-                        if (sum) {
-                            normObj = CoinMax(1.0e-6, fabs(normObj));
-                            norm = sqrt(normObj * norm);
-                            //sum += fabs(normObj)*invObjNorm;
-                            //printf("sum %g norm %g normobj %g invNorm %g mod %g\n",
-                            //     sum,norm,normObj,invObjNorm,normObj*invObjNorm);
-                        }
-#endif
-                        // normalize
-                        sum /= sqrt(norm);
-                        sort[k] = sum;
-                        which[k] = k;
-                    }
-                    CoinSort_2(sort, sort + nCuts, which);
-                    k = 0;
-                    while (nDelete > 0) {
-                        int iCut = which[k];
-                        const OsiRowCut * thisCut = theseCuts.rowCutPtr(iCut) ;
-                        int n = thisCut->row().getNumElements();
-                        nDelete -= n;
-                        k++;
-                        if (k >= nCuts)
-                            break;
-                    }
-                    std::sort(which, which + k);
-                    k--;
-                    for (; k >= 0; k--) {
-                        theseCuts.eraseRowCut(which[k]);
-                    }
-                    delete [] sort;
-                    delete [] which;
-                }
-#else
-                // delete null cuts
-                int nCuts = theseCuts.sizeRowCuts() ;
-                int k ;
-                for (k = nCuts - 1; k >= 0; k--) {
-                    const OsiRowCut * thisCut = theseCuts.rowCutPtr(k) ;
-                    int n = thisCut->row().getNumElements();
-                    if (!n)
-                        theseCuts.eraseRowCut(k);
-                }
-#endif
-            }
-            // Add in any violated saved cuts
-            if (!theseCuts.sizeRowCuts() && !theseCuts.sizeColCuts()) {
-                int numberOld = theseCuts.sizeRowCuts() + lastNumberCuts;
-                int numberCuts = slackCuts.sizeRowCuts() ;
-                int i;
-                // possibly extend whichGenerator
-                resizeWhichGenerator(numberOld, numberOld + numberCuts);
-                for ( i = 0; i < numberCuts; i++) {
-                    const OsiRowCut * thisCut = slackCuts.rowCutPtr(i) ;
-                    if (thisCut->violated(cbcColSolution_) > 100.0*primalTolerance) {
-                        if (messageHandler()->logLevel() > 2)
-                            printf("Old cut added - violation %g\n",
-                                   thisCut->violated(cbcColSolution_)) ;
-                        whichGenerator_[numberOld++] = -1;
-                        theseCuts.insert(*thisCut) ;
-                    }
-                }
-            }
+                            1.0e-6 * fabs(cut_obj[CUT_HISTORY-1]));
+        for (i = 0; i < numberCutGenerators_; i++)
+            generator_[i]->setIneffectualCuts(strongCuts);
+        // Print details
+        if (!node) {
+            handler_->message(CBC_ROOT_DETAIL, messages_)
+            << currentPassNumber_
+            << solver_->getNumRows()
+            << solver_->getNumRows() - numberRowsAtContinuous_
+            << solver_->getObjValue()
+            << CoinMessageEol ;
+        }
+        // Status for single pass of cut generation
+        int status = 0;
+        /*
+          threadMode with bit 2^1 set indicates we should use threads for root cut
+          generation.
+        */
+        if ((threadMode_&2) == 0 || numberNodes_) {
+            status = serialCuts(theseCuts, node, slackCuts, lastNumberCuts);
         } else {
             // do cuts independently
-            OsiCuts * eachCuts = new OsiCuts [numberCutGenerators_];;
 #ifdef CBC_THREAD
-            if (!threadModel) {
+            status = parallelCuts(master, theseCuts, node, slackCuts, lastNumberCuts);
 #endif
-                // generate cuts
-                for (i = 0; i < numberCutGenerators_; i++) {
-                    bool generate = generator_[i]->normal();
-                    // skip if not optimal and should be (maybe a cut generator has fixed variables)
-                    if (generator_[i]->needsOptimalBasis() && !solver_->basisIsAvailable())
-                        generate = false;
-                    if (generator_[i]->switchedOff())
-                        generate = false;;
-                    if (generate)
-                        generator_[i]->generateCuts(eachCuts[i], fullScan, solver_, node) ;
-                }
-#ifdef CBC_THREAD
-            } else {
-                for (i = 0; i < numberThreads_; i++) {
-                    // set solver here after cloning
-                    threadModel[i]->solver_ = solver_->clone();
-                    threadModel[i]->numberNodes_ = (fullScan) ? 1 : 0;
-                }
-                // generate cuts
-                for (i = 0; i < numberCutGenerators_; i++) {
-                    bool generate = generator_[i]->normal();
-                    // skip if not optimal and should be (maybe a cut generator has fixed variables)
-                    if (generator_[i]->needsOptimalBasis() && !solver_->basisIsAvailable())
-                        generate = false;
-                    if (generator_[i]->switchedOff())
-                        generate = false;;
-                    if (generate) {
-                        bool finished = false;
-                        int iThread = -1;
-                        // see if any available
-                        for (iThread = 0; iThread < numberThreads_; iThread++) {
-                            if (threadInfo[iThread].returnCode) {
-                                finished = true;
-                                break;
-                            } else if (threadInfo[iThread].returnCode == 0) {
-                                pthread_cond_signal(threadInfo[iThread].condition2); // unlock
-                            }
-                        }
-                        while (!finished) {
-                            pthread_mutex_lock(&condition_mutex);
-                            struct timespec absTime;
-                            my_gettime(&absTime);
-                            absTime.tv_nsec += 1000000; // millisecond
-                            if (absTime.tv_nsec >= 1000000000) {
-                                absTime.tv_nsec -= 1000000000;
-                                absTime.tv_sec++;
-                            }
-                            pthread_cond_timedwait(&condition_main, &condition_mutex, &absTime);
-                            pthread_mutex_unlock(&condition_mutex);
-                            for (iThread = 0; iThread < numberThreads_; iThread++) {
-                                if (threadInfo[iThread].returnCode > 0) {
-                                    finished = true;
-                                    break;
-                                } else if (threadInfo[iThread].returnCode == 0) {
-                                    pthread_cond_signal(threadInfo[iThread].condition2); // unlock
-                                }
-                            }
-                        }
-                        assert (iThread < numberThreads_);
-                        assert (threadInfo[iThread].returnCode);
-                        threadModel[iThread]->generator_[0] = generator_[i];
-                        threadModel[iThread]->object_ = reinterpret_cast<OsiObject **> (eachCuts + i);
-                        // allow to start
-                        threadInfo[iThread].returnCode = 0;
-                        pthread_cond_signal(threadInfo[iThread].condition2); // unlock
-                    }
-                }
-                // wait
-                for (int iThread = 0; iThread < numberThreads_; iThread++) {
-                    if (threadInfo[iThread].returnCode == 0) {
-                        bool finished = false;
-                        pthread_cond_signal(threadInfo[iThread].condition2); // unlock
-                        while (!finished) {
-                            pthread_mutex_lock(&condition_mutex);
-                            struct timespec absTime;
-                            my_gettime(&absTime);
-                            absTime.tv_nsec += 1000000; // millisecond
-                            if (absTime.tv_nsec >= 1000000000) {
-                                absTime.tv_nsec -= 1000000000;
-                                absTime.tv_sec++;
-                            }
-                            pthread_cond_timedwait(&condition_main, &condition_mutex, &absTime);
-                            pthread_mutex_unlock(&condition_mutex);
-                            if (threadInfo[iThread].returnCode > 0) {
-                                finished = true;
-                                break;
-                            } else if (threadInfo[iThread].returnCode == 0) {
-                                pthread_cond_signal(threadInfo[iThread].condition2); // unlock
-                            }
-                        }
-                    }
-                    assert (threadInfo[iThread].returnCode);
-                    // say available
-                    threadInfo[iThread].returnCode = -1;
-                    delete threadModel[iThread]->solver_;
-                    threadModel[iThread]->solver_ = NULL;
-                }
-            }
-#endif
-            // Now put together
-            for (i = 0; i < numberCutGenerators_; i++) {
-                // add column cuts
-                int numberColumnCutsBefore = theseCuts.sizeColCuts() ;
-                int numberColumnCuts = eachCuts[i].sizeColCuts();
-                int numberColumnCutsAfter = numberColumnCutsBefore
-                                            + numberColumnCuts;
-                int j;
-                for (j = 0; j < numberColumnCuts; j++) {
-                    theseCuts.insert(eachCuts[i].colCut(j));
-                }
-                int numberRowCutsBefore = theseCuts.sizeRowCuts() ;
-                int numberRowCuts = eachCuts[i].sizeRowCuts();
-                int numberRowCutsAfter = numberRowCutsBefore
-                                         + numberRowCuts;
-                if (numberRowCuts) {
-                    for (j = 0; j < numberRowCuts; j++) {
-                        const OsiRowCut * thisCut = eachCuts[i].rowCutPtr(j) ;
-                        if (thisCut->lb() <= 1.0e10 && thisCut->ub() >= -1.0e10)
-                            theseCuts.insert(eachCuts[i].rowCut(j));
-                    }
-                    if (generator_[i]->mustCallAgain())
-                        keepGoing = true; // say must go round
-                    // Check last cut to see if infeasible
-                    const OsiRowCut * thisCut = theseCuts.rowCutPtr(numberRowCutsAfter - 1) ;
-                    if (thisCut->lb() > thisCut->ub()) {
-                        feasible = false; // sub-problem is infeasible
-                        break;
-                    }
-                }
-#ifdef CBC_DEBUG
-                {
-                    int k ;
-                    for (k = numberRowCutsBefore; k < numberRowCutsAfter; k++) {
-                        OsiRowCut thisCut = theseCuts.rowCut(k) ;
-                        /* check size of elements.
-                           We can allow smaller but this helps debug generators as it
-                           is unsafe to have small elements */
-                        int n = thisCut.row().getNumElements();
-                        const int * column = thisCut.row().getIndices();
-                        const double * element = thisCut.row().getElements();
-                        //assert (n);
-                        for (int i = 0; i < n; i++) {
-                            double value = element[i];
-                            assert(fabs(value) > 1.0e-12 && fabs(value) < 1.0e20);
-                        }
-                    }
-                }
-#endif
-                if ((specialOptions_&1) != 0) {
-                    if (onOptimalPath) {
-                        int k ;
-                        for (k = numberRowCutsBefore; k < numberRowCutsAfter; k++) {
-                            OsiRowCut thisCut = theseCuts.rowCut(k) ;
-                            if (debugger->invalidCut(thisCut)) {
-                                solver_->getRowCutDebuggerAlways()->printOptimalSolution(*solver_);
-                                solver_->writeMpsNative("badCut.mps", NULL, NULL, 2);
-#ifdef NDEBUG
-                                printf("Cut generator %d (%s) produced invalid cut (%dth in this go)\n",
-                                       i, generator_[i]->cutGeneratorName(), k - numberRowCutsBefore);
-                                const double *lower = getColLower() ;
-                                const double *upper = getColUpper() ;
-                                int numberColumns = solver_->getNumCols();
-                                for (int i = 0; i < numberColumns; i++)
-                                    printf("%d bounds %g,%g\n", i, lower[i], upper[i]);
-                                abort();
-#endif
-                            }
-                            assert(!debugger->invalidCut(thisCut)) ;
-                        }
-                    }
-                }
-                /*
-                  The cut generator has done its thing, and maybe it generated some
-                  cuts.  Do a bit of bookkeeping: load
-                  whichGenerator[i] with the index of the generator responsible for a cut,
-                  and place cuts flagged as global in the global cut pool for the model.
-
-                  lastNumberCuts is the sum of cuts added in previous iterations; it's the
-                  offset to the proper starting position in whichGenerator.
-                */
-                int numberBefore =
-                    numberRowCutsBefore + numberColumnCutsBefore + lastNumberCuts ;
-                int numberAfter =
-                    numberRowCutsAfter + numberColumnCutsAfter + lastNumberCuts ;
-                // possibly extend whichGenerator
-                resizeWhichGenerator(numberBefore, numberAfter);
-
-                for (j = numberRowCutsBefore; j < numberRowCutsAfter; j++) {
-                    whichGenerator_[numberBefore++] = i ;
-                    const OsiRowCut * thisCut = theseCuts.rowCutPtr(j) ;
-                    if (thisCut->lb() > thisCut->ub())
-                        violated = -2; // sub-problem is infeasible
-                    if (thisCut->globallyValid()) {
-                        // add to global list
-                        OsiRowCut newCut(*thisCut);
-                        newCut.setGloballyValid(true);
-                        newCut.mutableRow().setTestForDuplicateIndex(false);
-                        globalCuts_.insert(newCut) ;
-                    }
-                }
-                for (j = numberColumnCutsBefore; j < numberColumnCutsAfter; j++) {
-                    //whichGenerator_[numberBefore++] = i ;
-                    const OsiColCut * thisCut = theseCuts.colCutPtr(j) ;
-                    if (thisCut->globallyValid()) {
-                        // add to global list
-                        OsiColCut newCut(*thisCut);
-                        newCut.setGloballyValid(true);
-                        globalCuts_.insert(newCut) ;
-                    }
-                }
-            }
-            // Add in any violated saved cuts
-            if (!theseCuts.sizeRowCuts() && !theseCuts.sizeColCuts()) {
-                int numberOld = theseCuts.sizeRowCuts() + lastNumberCuts;
-                int numberCuts = slackCuts.sizeRowCuts() ;
-                int i;
-                // possibly extend whichGenerator
-                resizeWhichGenerator(numberOld, numberOld + numberCuts);
-                for ( i = 0; i < numberCuts; i++) {
-                    const OsiRowCut * thisCut = slackCuts.rowCutPtr(i) ;
-                    if (thisCut->violated(cbcColSolution_) > 100.0*primalTolerance) {
-                        if (messageHandler()->logLevel() > 2)
-                            printf("Old cut added - violation %g\n",
-                                   thisCut->violated(cbcColSolution_)) ;
-                        whichGenerator_[numberOld++] = -1;
-                        theseCuts.insert(*thisCut) ;
-                    }
-                }
-            }
-            delete [] eachCuts;
         }
+        // Do we need feasible and violated?
+        feasible = (status >= 0);
+        if (status == 1)
+            keepGoing = true;
+        else if (status == 2)
+            numberTries = 0;
+        if (!feasible)
+            violated = -2;
         //if (!feasible)
         //break;
         /*
@@ -8203,7 +7044,7 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
                     printf("HEUR %s where %d A\n",
                            lastHeuristic_->heuristicName(), whereFrom);
 #endif
-		    // CBC_ROUNDING is symbolic; just says found by heuristic
+                    // CBC_ROUNDING is symbolic; just says found by heuristic
                     setBestSolution(CBC_ROUNDING, heuristicValue, newSolution) ;
                     whereFrom |= 8; // say solution found
                 } else if (ifSol < 0) {
@@ -8484,7 +7325,7 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
                             minimumDrop = CoinMax(1.1 * minimumDrop, 1.0e-5 * fabs(thisObj));
                     }
                     int nBadPasses = 0;
-		    // The standard way of determining escape
+                    // The standard way of determining escape
                     if (!experimentBreak) {
                         double test = 0.01 * minimumDrop;
                         double goodDrop = COIN_DBL_MAX;
@@ -8501,7 +7342,7 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
                                 goodDrop > minimumDrop)
                             badObj = false; // carry on
                     } else {
-		        // Experimental escape calculations
+                        // Experimental escape calculations
                         //if (currentPassNumber_==13||currentPassNumber_>50)
                         //minimumDrop = CoinMax(1.5*minimumDrop,1.0e-5*fabs(thisObj));
                         double test = 0.1 * minimumDrop;
@@ -8532,8 +7373,8 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
                             numberLastAttempts++;
                     }
                 }
-		// magic numbers, they seemed reasonable; there's a possibility here of going more than
-		// nominal number of passes if we're doing really well.
+                // magic numbers, they seemed reasonable; there's a possibility here of going more than
+                // nominal number of passes if we're doing really well.
                 if (numberTries == 1 && currentDepth_ < 12 && currentPassNumber_ < 10) {
                     double drop[12] = {1.0, 2.0, 3.0, 10.0, 10.0, 10.0, 10.0, 20.0, 100.0, 100.0, 1000.0, 1000.0};
                     if (thisObj - lastObjective > drop[currentDepth_]*minimumDrop) {
@@ -8579,8 +7420,7 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
         if (!feasible) {
             int i ;
             if (currentNumberCuts_) {
-                if (parallelMode() > 0)
-                    lockThread();
+                lockThread();
                 for (i = 0; i < currentNumberCuts_; i++) {
                     // take off node
                     if (addedCuts_[i]) {
@@ -8593,9 +7433,9 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
             numberTries = 0 ;
         }
     } while (numberTries > 0 || keepGoing) ;
-/*
-  End cut generation loop.
-*/
+    /*
+      End cut generation loop.
+    */
     {
         // switch on
         for (int i = 0; i < numberCutGenerators_; i++)
@@ -8620,8 +7460,8 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
                 integerFeasible = false;
         }
         testSolution_ = save;
-	// Consider the possibility that some alternatives here only make sense in context
-	// of bonmin.
+        // Consider the possibility that some alternatives here only make sense in context
+        // of bonmin.
         if (integerFeasible) { //update
             double objValue = solver_->getObjValue();
             int numberGlobalBefore = globalCuts_.sizeRowCuts();
@@ -8671,8 +7511,8 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
         }
     }
     /*
-  End of code block to check for a solution, when cuts may be added as a result
-  of a feasible solution.
+    End of code block to check for a solution, when cuts may be added as a result
+    of a feasible solution.
 
       Reduced cost fix at end. Must also check feasible, in case we've popped out
       because a generator indicated we're infeasible.
@@ -8747,15 +7587,15 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
     //if ((numberNodes_%100)==0)
     //printf("XXb sum obj changed by %g\n",sumChangeObjective2_);
     /*
-	lh:
-	  Is this a full scan interval? If so, consider if we want to disable or
-  adjust the frequency of use for any of the cut generators. If the client
-  specified a positive number for howOften, it will never change. If the
-  original value was negative, it'll be converted to 1000000+|howOften|, and
-  this value will be adjusted each time fullScan is true. Actual cut
-  generation is performed every howOften%1000000 nodes; the 1000000 offset is
-  just a convenient way to specify that the frequency is adjustable.
--lh
+    lh:
+      Is this a full scan interval? If so, consider if we want to disable or
+    adjust the frequency of use for any of the cut generators. If the client
+    specified a positive number for howOften, it will never change. If the
+    original value was negative, it'll be converted to 1000000+|howOften|, and
+    this value will be adjusted each time fullScan is true. Actual cut
+    generation is performed every howOften%1000000 nodes; the 1000000 offset is
+    just a convenient way to specify that the frequency is adjustable.
+    -lh
       End of cut generation loop.
 
       Now, consider if we want to disable or adjust the frequency of use for any
@@ -8772,26 +7612,26 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
 
       TODO: All this should probably be hidden in a method of the CbcCutGenerator
       class.
-lh:
-  TODO: Can the loop that scans over whichGenerator to accumulate per
-	generator counts be replaced by values in countRowCuts and
-	countColumnCuts?
+    lh:
+    TODO: Can the loop that scans over whichGenerator to accumulate per
+    generator counts be replaced by values in countRowCuts and
+    countColumnCuts?
 
-	<< I think the answer is yes, but not the other way 'round. Row and
-	   column cuts are block interleaved in whichGenerator. >>
+    << I think the answer is yes, but not the other way 'round. Row and
+       column cuts are block interleaved in whichGenerator. >>
 
-  The root is automatically a full scan interval. At the root, decide if
-  we're going to do cuts in the tree, and whether we should keep the cuts we
-  have.
+    The root is automatically a full scan interval. At the root, decide if
+    we're going to do cuts in the tree, and whether we should keep the cuts we
+    have.
 
-  Codes for willBeCutsInTree:
+    Codes for willBeCutsInTree:
     -1: no cuts in tree and currently active cuts seem ineffective; delete
-	them
+    them
      0: no cuts in tree but currently active cuts seem effective; make them
-	into architecturals (faster than treating them as cuts)
+    into architecturals (faster than treating them as cuts)
      1: cuts will be generated in the tree; currently active cuts remain as
-	cuts
--lh
+    cuts
+    -lh
     */
 #ifdef NODE_LOG
     int fatherNum = (node == NULL) ? -1 : node->nodeNumber();
@@ -8811,12 +7651,12 @@ lh:
         double densityOld = static_cast<double> (numberElementsAtStart) / static_cast<double> (numberRowsAtStart);
         double densityNew = numberRowsAdded ? (static_cast<double> (numberElementsAdded)) / static_cast<double> (numberRowsAdded)
                             : 0.0;
-/*
-  If we're at the root, and we added cuts, and the cuts haven't changed the
-  objective, and the cuts resulted in a significant increase (> 20%) in nonzero
-  coefficients, do no cuts in the tree and ditch the current cuts. They're not
-  cost-effective.
-*/
+        /*
+          If we're at the root, and we added cuts, and the cuts haven't changed the
+          objective, and the cuts resulted in a significant increase (> 20%) in nonzero
+          coefficients, do no cuts in the tree and ditch the current cuts. They're not
+          cost-effective.
+        */
         if (!numberNodes_) {
             if (numberRowsAdded)
                 handler_->message(CBC_CUTS_STATS, messages_)
@@ -8933,9 +7773,9 @@ lh:
 #endif
             }
         }
-/*
-  Noop block 071219.
-*/
+        /*
+          Noop block 071219.
+        */
         if ((numberRowsAdded > 100 + 0.5*numberRowsAtStart
                 || numberElementsAdded > 0.5*numberElementsAtStart)
                 && (densityNew > 200.0 && numberRowsAdded > 100 && densityNew > 2.0*densityOld)) {
@@ -8945,9 +7785,9 @@ lh:
             //printf("Cuts will be taken off , %d rows added with density %g\n",
             //     numberRowsAdded,densityNew);
         }
-/*
-  Noop block 071219.
-*/
+        /*
+          Noop block 071219.
+        */
         if (densityNew > 100.0 && numberRowsAdded > 2 && densityNew > 2.0*densityOld) {
             //if (thisObjective-startObjective<0.1*fabs(startObjective)+1.0e-5)
             //willBeCutsInTree=-2;
@@ -8955,10 +7795,10 @@ lh:
             //     numberRowsAdded,densityNew);
         }
         // Root node or every so often - see what to turn off
-/*
-  Hmmm ... > -90 for any generator will overrule previous decision to do no
-  cuts in tree and delete existing cuts.
-*/
+        /*
+          Hmmm ... > -90 for any generator will overrule previous decision to do no
+          cuts in tree and delete existing cuts.
+        */
         int i ;
         for (i = 0; i < numberCutGenerators_; i++) {
             int howOften = generator_[i]->howOften() ;
@@ -8971,13 +7811,13 @@ lh:
             << startObjective << thisObjective
             << currentPassNumber_
             << CoinMessageEol ;
-/*
-  Count the number of cuts produced by each cut generator on this call. Not
-  clear to me that the accounting is equivalent here. whichGenerator_ records
-  the generator for column and row cuts. So unless numberNewCuts is row cuts
-  only, we're double counting for JUST_ACTIVE. Note too the multiplier applied
-  to column cuts.
-*/
+        /*
+          Count the number of cuts produced by each cut generator on this call. Not
+          clear to me that the accounting is equivalent here. whichGenerator_ records
+          the generator for column and row cuts. So unless numberNewCuts is row cuts
+          only, we're double counting for JUST_ACTIVE. Note too the multiplier applied
+          to column cuts.
+        */
         if (!numberNodes_) {
             double value = CoinMax(minimumDrop_, 0.005 * (thisObjective - startObjective) /
                                    static_cast<double> (currentPassNumber_));
@@ -9008,10 +7848,10 @@ lh:
 #endif
             totalCuts += value;
         }
-/*
-  Open up a loop to step through the cut generators and decide what (if any)
-  adjustment should be made for calling frequency.
-*/
+        /*
+          Open up a loop to step through the cut generators and decide what (if any)
+          adjustment should be made for calling frequency.
+        */
         int iProbing = -1;
         double smallProblem = (0.2 * totalCuts) /
                               static_cast<double> (numberActiveGenerators) ;
@@ -9019,18 +7859,18 @@ lh:
             int howOften = generator_[i]->howOften() ;
             /*  Probing can be set to just do column cuts in treee.
             But if doing good then leave as on
-  Ok, let me try to explain this. rowCuts = 3 says do disaggregation (1<<0) and
-  coefficient (1<<1) cuts. But if the value is negative, there's code at the
-  entry to generateCuts, and generateCutsAndModify, that temporarily changes
-  the value to 4 (1<<2) if we're in a search tree.
+            Ok, let me try to explain this. rowCuts = 3 says do disaggregation (1<<0) and
+            coefficient (1<<1) cuts. But if the value is negative, there's code at the
+            entry to generateCuts, and generateCutsAndModify, that temporarily changes
+            the value to 4 (1<<2) if we're in a search tree.
 
-  Which does nothing to explain this next bit. We set a boolean, convert
-  howOften to the code for `generate while objective is improving', and change
-  over to `do everywhere'. Hmmm ... now I write it out, this makes sense in the
-  context of the original comment. If we're doing well (objective improving)
-  we'll keep probing fully active.
-			
-			*/
+            Which does nothing to explain this next bit. We set a boolean, convert
+            howOften to the code for `generate while objective is improving', and change
+            over to `do everywhere'. Hmmm ... now I write it out, this makes sense in the
+            context of the original comment. If we're doing well (objective improving)
+            we'll keep probing fully active.
+
+            */
             bool probingWasOnBut = false;
             CglProbing * probing = dynamic_cast<CglProbing*>(generator_[i]->generator());
             if (probing && !numberNodes_) {
@@ -9046,21 +7886,21 @@ lh:
                     probing->setRowCuts(3);
                 }
             }
-/*
-  Convert `as long as objective is improving' into `only at root' if we've
-  decided cuts just aren't worth it.
-*/
+            /*
+              Convert `as long as objective is improving' into `only at root' if we've
+              decided cuts just aren't worth it.
+            */
             if (willBeCutsInTree < 0 && howOften == -98)
                 howOften = -99;
-/*
-  And check to see if the objective is improving. But don't do the check if
-  the user has specified some minimum number of cuts.
+            /*
+              And check to see if the objective is improving. But don't do the check if
+              the user has specified some minimum number of cuts.
 
-  This exclusion seems bogus, or at least counterintuitive. Why would a user
-  suspect that setting a minimum cut limit would invalidate the objective
-  check? Nor do I see the point in comparing the number of rows and columns
-  in the second test.
-*/
+              This exclusion seems bogus, or at least counterintuitive. Why would a user
+              suspect that setting a minimum cut limit would invalidate the objective
+              check? Nor do I see the point in comparing the number of rows and columns
+              in the second test.
+            */
             if (!probing && howOften == -98 && !generator_[i]->numberShortCutsAtRoot() &&
                     generator_[i]->numberCutsInTotal()) {
                 // switch off as no short cuts generated
@@ -9074,22 +7914,22 @@ lh:
                         && 5*solver_->getNumRows() < solver_->getNumCols())
                     howOften = -99; // switch off
             }
-/*
-  Below -99, this generator is switched off. There's no need to consider
-  further. Then again, there was no point in persisting this far!
-*/
+            /*
+              Below -99, this generator is switched off. There's no need to consider
+              further. Then again, there was no point in persisting this far!
+            */
             if (howOften < -99)
                 continue ;
-/*
-  Adjust, if howOften is adjustable.
-*/
+            /*
+              Adjust, if howOften is adjustable.
+            */
             if (howOften < 0 || howOften >= 1000000) {
                 if ( !numberNodes_) {
-/*
-  If root only, or objective improvement but no cuts generated, switch off. If
-  it's just that the generator found no cuts at the root, give it one more
-  chance.
-*/
+                    /*
+                      If root only, or objective improvement but no cuts generated, switch off. If
+                      it's just that the generator found no cuts at the root, give it one more
+                      chance.
+                    */
                     // If small number switch mostly off
 #ifdef JUST_ACTIVE
                     double thisCuts = count[i] + 5.0 * generator_[i]->numberColumnCuts() ;
@@ -9115,77 +7955,77 @@ lh:
                                 probing->setMaxProbe(123);
                             }
                         }
-/*
-  Not productive, but not zero either.
-*/
+                        /*
+                          Not productive, but not zero either.
+                        */
                     } else if ((thisCuts + generator_[i]->numberColumnCuts() < smallProblem)
                                && !generator_[i] ->whetherToUse()) {
-/*
-  Not unadjustable every node, and not strong probing.
-*/
+                        /*
+                          Not unadjustable every node, and not strong probing.
+                        */
                         if (howOften != 1 && !probingWasOnBut) {
-/*
-  No depth spec, or not adjustable every node.
-*/
+                            /*
+                              No depth spec, or not adjustable every node.
+                            */
                             if (generator_[i]->whatDepth() < 0 || howOften != -1) {
                                 int k = static_cast<int> (sqrt(smallProblem / thisCuts)) ;
-/*
-  Not objective improvement, set to new frequency, otherwise turn off.
-*/
+                                /*
+                                  Not objective improvement, set to new frequency, otherwise turn off.
+                                */
                                 if (howOften != -98)
                                     howOften = k + 1000000 ;
                                 else
                                     howOften = -100;
-/*
-  Depth spec, or adjustable every node. Force to unadjustable every node.
-*/
+                                /*
+                                  Depth spec, or adjustable every node. Force to unadjustable every node.
+                                */
                             } else {
                                 howOften = 1;
                             }
-/*
-  Unadjustable every node, or strong probing. Force unadjustable every node and
-  force not strong probing? I don't understand.
-*/
+                            /*
+                              Unadjustable every node, or strong probing. Force unadjustable every node and
+                              force not strong probing? I don't understand.
+                            */
                         } else {
                             howOften = 1;
                             // allow cuts
                             probingWasOnBut = false;
                         }
-/*
-  Productive cut generator. Say we'll do it every node, adjustable. But if the
-  objective isn't improving, restrict that to every fifth depth level
-  (whatDepth overrides howOften in generateCuts).
-*/
+                        /*
+                          Productive cut generator. Say we'll do it every node, adjustable. But if the
+                          objective isn't improving, restrict that to every fifth depth level
+                          (whatDepth overrides howOften in generateCuts).
+                        */
                     } else {
                         if (thisObjective - startObjective < 0.1*fabs(startObjective) + 1.0e-5 && generator_[i]->whatDepth() < 0)
                             generator_[i]->setWhatDepth(5);
                         howOften = 1 + 1000000 ;
                     }
                 }
-/*
-  End root actions.
+                /*
+                  End root actions.
 
-  sumChangeObjective2_ is the objective change due to cuts. If we're getting
-  much better results from branching over a large number of nodes, switch off
-  cuts.
+                  sumChangeObjective2_ is the objective change due to cuts. If we're getting
+                  much better results from branching over a large number of nodes, switch off
+                  cuts.
 
-  Except it doesn't, really --- it just puts off the decision 'til the
-  next full scan, when it'll put it off again unless cuts look better.
-*/
+                  Except it doesn't, really --- it just puts off the decision 'til the
+                  next full scan, when it'll put it off again unless cuts look better.
+                */
                 // If cuts useless switch off
                 if (numberNodes_ >= 100000 && sumChangeObjective1_ > 2.0e2*(sumChangeObjective2_ + 1.0e-12)) {
                     howOften = 1000000 + SCANCUTS; // wait until next time
                     //printf("switch off cut %d due to lack of use\n",i);
                 }
             }
-/*
-  Ok, that's the frequency adjustment bit.
+            /*
+              Ok, that's the frequency adjustment bit.
 
-  Now, if we're at the root, force probing back on at every node, for column
-  cuts at least, even if it looks useless for row cuts. Notice that if it
-  looked useful, the values set above mean we'll be doing strong probing in
-  the tree subject to objective improvement.
-*/
+              Now, if we're at the root, force probing back on at every node, for column
+              cuts at least, even if it looks useless for row cuts. Notice that if it
+              looked useful, the values set above mean we'll be doing strong probing in
+              the tree subject to objective improvement.
+            */
             if (!numberNodes_) {
                 if (probingWasOnBut && howOften == -100) {
                     probing->setRowCuts(-3);
@@ -9197,12 +8037,12 @@ lh:
                 if (howOften >= 0 && generator_[i]->generator()->mayGenerateRowCutsInTree())
                     willBeCutsInTree = 1;
             }
-/*
-  Set the new frequency in the generator. If this is an adjustable frequency,
-  use the value to set whatDepth.
+            /*
+              Set the new frequency in the generator. If this is an adjustable frequency,
+              use the value to set whatDepth.
 
-  Hey! Seems like this could override the user's depth setting.
-*/
+              Hey! Seems like this could override the user's depth setting.
+            */
             generator_[i]->setHowOften(howOften) ;
             if (howOften >= 1000000 && howOften < 2000000 && 0) {
                 // Go to depth
@@ -9243,9 +8083,9 @@ lh:
                 << CoinMessageEol ;
             }
         }
-/*
-  End loop to adjust cut generator frequency of use.
-*/
+        /*
+          End loop to adjust cut generator frequency of use.
+        */
         delete [] count ;
         if ( !numberNodes_) {
             // save statistics
@@ -9253,9 +8093,9 @@ lh:
                 generator_[i]->setNumberCutsAtRoot(generator_[i]->numberCutsInTotal());
                 generator_[i]->setNumberActiveCutsAtRoot(generator_[i]->numberCutsActive());
             }
-/*
-  Garbage code 071219
-*/
+            /*
+              Garbage code 071219
+            */
             // decide on pseudo cost strategy
             int howOften = iProbing >= 0 ? generator_[iProbing]->howOften() : 0;
             if ((howOften % 1000000) != 1)
@@ -9280,12 +8120,12 @@ lh:
             }
             if (willBeCutsInTree == -2)
                 willBeCutsInTree = 0;
-/*
-  End garbage code.
+            /*
+              End garbage code.
 
-  Now I've reached the problem area. This is a problem only at the root node,
-  so that should simplify the issue of finding a workable basis? Or maybe not.
-*/
+              Now I've reached the problem area. This is a problem only at the root node,
+              so that should simplify the issue of finding a workable basis? Or maybe not.
+            */
             if ( willBeCutsInTree <= 0) {
                 // Take off cuts
                 cuts = OsiCuts();
@@ -9372,50 +8212,10 @@ lh:
         clpSolver->setSpecialOptions(saveClpOptions);
 # endif
 #ifdef CBC_THREAD
-    if (threadModel) {
-        // stop threads
-        int i;
-        for (i = 0; i < numberThreads_; i++) {
-            while (threadInfo[i].returnCode == 0) {
-                pthread_cond_signal(threadInfo[i].condition2); // unlock
-                pthread_mutex_lock(&condition_mutex);
-                struct timespec absTime;
-                my_gettime(&absTime);
-                absTime.tv_nsec += 1000000; // millisecond
-                if (absTime.tv_nsec >= 1000000000) {
-                    absTime.tv_nsec -= 1000000000;
-                    absTime.tv_sec++;
-                }
-                pthread_cond_timedwait(&condition_main, &condition_mutex, &absTime);
-                my_gettime(&absTime);
-                pthread_mutex_unlock(&condition_mutex);
-            }
-            threadModel[i]->numberThreads_ = 0; // say exit
-            threadInfo[i].returnCode = 0;
-            pthread_cond_signal(threadInfo[i].condition2); // unlock
-            pthread_join(threadId[i].thr, NULL);
-            threadId[i].status = 0;
-            pthread_mutex_destroy (threadInfo[i].mutex2);
-            pthread_cond_destroy (threadInfo[i].condition2);
-            threadModel[i]->generator_[0] = NULL;
-            delete [] threadModel[i]->generator_;
-            threadModel[i]->generator_ = NULL;
-            threadModel[i]->object_ = NULL;
-        }
-        pthread_cond_destroy (&condition_main);
-        pthread_mutex_destroy (&condition_mutex);
-        // delete models and solvers
-        for (i = 0; i < numberThreads_; i++) {
-            // make sure message handler will be deleted
-            threadModel[i]->defaultHandler_ = true;
-            delete threadModel[i];
-        }
-        delete [] mutex2;
-        delete [] condition2;
-        delete [] threadId;
-        delete [] threadInfo;
-        delete [] threadModel;
-        mutex_ = saveMutex;
+    // Get rid of all threaded stuff
+    if (master) {
+        master->stopThreads();
+        delete master;
     }
 #endif
     // make sure pointers are up to date
@@ -9424,6 +8224,251 @@ lh:
     return feasible ;
 }
 
+// Generate one round of cuts - serial mode
+int
+CbcModel::serialCuts(OsiCuts & theseCuts, CbcNode * node, OsiCuts & slackCuts, int lastNumberCuts)
+{
+    /*
+      Is it time to scan the cuts in order to remove redundant cuts? If so, set
+      up to do it.
+    */
+    int fullScan = 0 ;
+    if ((numberNodes_ % SCANCUTS) == 0 || (specialOptions_&256) != 0) {
+        fullScan = 1 ;
+        if (!numberNodes_ || (specialOptions_&256) != 0)
+            fullScan = 2;
+        specialOptions_ &= ~256; // mark as full scan done
+    }
+# ifdef COIN_HAS_CLP
+    if (!node && !parentModel_ && intParam_[CbcMaxNumNode] == -123456) {
+        OsiClpSolverInterface * clpSolver
+        = dynamic_cast<OsiClpSolverInterface *> (solver_);
+        if (clpSolver) {
+            clpSolver->lexSolve();
+        }
+    }
+# endif
+    int switchOff = (!doCutsNow(1) && !fullScan) ? 1 : 0;
+    int status = 0;
+    int i;
+    for (i = 0; i < numberCutGenerators_; i++) {
+        int numberRowCutsBefore = theseCuts.sizeRowCuts() ;
+        int numberColumnCutsBefore = theseCuts.sizeColCuts() ;
+        int numberRowCutsAfter = numberRowCutsBefore;
+        int numberColumnCutsAfter = numberColumnCutsBefore;
+        bool generate = generator_[i]->normal();
+        // skip if not optimal and should be (maybe a cut generator has fixed variables)
+        if (generator_[i]->howOften() == -100 ||
+                (generator_[i]->needsOptimalBasis() && !solver_->basisIsAvailable())
+                || generator_[i]->switchedOff())
+            generate = false;
+        if (switchOff) {
+            // switch off if default
+            if (generator_[i]->howOften() == 1 && generator_[i]->whatDepth() < 0) {
+                generate = false;
+            } else if (currentDepth_ > -10 && switchOff == 2) {
+                generate = false;
+            }
+        }
+        const OsiRowCutDebugger * debugger = NULL;
+        bool onOptimalPath = false;
+        if (generate) {
+            bool mustResolve =
+                generator_[i]->generateCuts(theseCuts, fullScan, solver_, node) ;
+            numberRowCutsAfter = theseCuts.sizeRowCuts() ;
+            if (fullScan && generator_[i]->howOften() == 1000000 + SCANCUTS_PROBING) {
+                CglProbing * probing =
+                    dynamic_cast<CglProbing*>(generator_[i]->generator());
+                if (probing && (numberRowCutsBefore < numberRowCutsAfter ||
+                                numberColumnCutsBefore < theseCuts.sizeColCuts())) {
+                    // switch on
+                    generator_[i]->setHowOften(1);
+                }
+            }
+            if (numberRowCutsBefore < numberRowCutsAfter &&
+                    generator_[i]->mustCallAgain() && status >= 0)
+                status = 1 ; // say must go round
+            // Check last cut to see if infeasible
+            /*
+            The convention is that if the generator proves infeasibility, it should
+            return as its last cut something with lb > ub.
+            */
+            if (numberRowCutsBefore < numberRowCutsAfter) {
+                const OsiRowCut * thisCut = theseCuts.rowCutPtr(numberRowCutsAfter - 1) ;
+                if (thisCut->lb() > thisCut->ub()) {
+                    status = -1; // sub-problem is infeasible
+                    break;
+                }
+            }
+#ifdef CBC_DEBUG
+            {
+                int k ;
+                for (k = numberRowCutsBefore; k < numberRowCutsAfter; k++) {
+                    OsiRowCut thisCut = theseCuts.rowCut(k) ;
+                    /* check size of elements.
+                       We can allow smaller but this helps debug generators as it
+                       is unsafe to have small elements */
+                    int n = thisCut.row().getNumElements();
+                    const int * column = thisCut.row().getIndices();
+                    const double * element = thisCut.row().getElements();
+                    //assert (n);
+                    for (int i = 0; i < n; i++) {
+                        double value = element[i];
+                        assert(fabs(value) > 1.0e-12 && fabs(value) < 1.0e20);
+                    }
+                }
+            }
+#endif
+            if (mustResolve) {
+                int returnCode = resolve(node ? node->nodeInfo() : NULL, 2);
+                if (returnCode  == 0)
+                    status = -1;
+                if (returnCode < 0 && !status)
+                    status = 2;
+                if ((specialOptions_&1) != 0) {
+                    debugger = solver_->getRowCutDebugger() ;
+                    if (debugger)
+                        onOptimalPath = (debugger->onOptimalPath(*solver_)) ;
+                    else
+                        onOptimalPath = false;
+                    if (onOptimalPath && !solver_->isDualObjectiveLimitReached())
+                        assert(status >= 0) ;
+                }
+                if (status < 0)
+                    break ;
+            }
+        }
+        numberRowCutsAfter = theseCuts.sizeRowCuts() ;
+        numberColumnCutsAfter = theseCuts.sizeColCuts() ;
+        if ((specialOptions_&1) != 0) {
+            if (onOptimalPath) {
+                int k ;
+                for (k = numberRowCutsBefore; k < numberRowCutsAfter; k++) {
+                    OsiRowCut thisCut = theseCuts.rowCut(k) ;
+                    if (debugger->invalidCut(thisCut)) {
+                        solver_->getRowCutDebuggerAlways()->printOptimalSolution(*solver_);
+                        solver_->writeMpsNative("badCut.mps", NULL, NULL, 2);
+                        printf("Cut generator %d (%s) produced invalid cut (%dth in this go)\n",
+                               i, generator_[i]->cutGeneratorName(), k - numberRowCutsBefore);
+                        const double *lower = getColLower() ;
+                        const double *upper = getColUpper() ;
+                        int numberColumns = solver_->getNumCols();
+                        if (numberColumns < 200) {
+                            for (int i = 0; i < numberColumns; i++)
+                                printf("%d bounds %g,%g\n", i, lower[i], upper[i]);
+                        }
+                        abort();
+                    }
+                    assert(!debugger->invalidCut(thisCut)) ;
+                }
+            }
+        }
+        /*
+          The cut generator has done its thing, and maybe it generated some
+          cuts.  Do a bit of bookkeeping: load
+          whichGenerator[i] with the index of the generator responsible for a cut,
+          and place cuts flagged as global in the global cut pool for the model.
+
+          lastNumberCuts is the sum of cuts added in previous iterations; it's the
+          offset to the proper starting position in whichGenerator.
+        */
+        int numberBefore =
+            numberRowCutsBefore + lastNumberCuts ;
+        int numberAfter =
+            numberRowCutsAfter + lastNumberCuts ;
+        // possibly extend whichGenerator
+        resizeWhichGenerator(numberBefore, numberAfter);
+        int j ;
+
+        /*
+          Look for numerically unacceptable cuts.
+        */
+        bool dodgyCuts = false;
+        for (j = numberRowCutsBefore; j < numberRowCutsAfter; j++) {
+            const OsiRowCut * thisCut = theseCuts.rowCutPtr(j) ;
+            if (thisCut->lb() > 1.0e10 || thisCut->ub() < -1.0e10) {
+                dodgyCuts = true;
+                break;
+            }
+            whichGenerator_[numberBefore++] = i ;
+            if (thisCut->lb() > thisCut->ub())
+                status = -1; // sub-problem is infeasible
+            if (thisCut->globallyValid()) {
+                // add to global list
+                OsiRowCut newCut(*thisCut);
+                newCut.setGloballyValid(true);
+                newCut.mutableRow().setTestForDuplicateIndex(false);
+                globalCuts_.insert(newCut) ;
+            }
+        }
+        if (dodgyCuts) {
+            for (int k = numberRowCutsAfter - 1; k >= j; k--) {
+                const OsiRowCut * thisCut = theseCuts.rowCutPtr(k) ;
+                if (thisCut->lb() > thisCut->ub())
+                    status = -1; // sub-problem is infeasible
+                if (thisCut->lb() > 1.0e10 || thisCut->ub() < -1.0e10)
+                    theseCuts.eraseRowCut(k);
+            }
+            numberRowCutsAfter = theseCuts.sizeRowCuts() ;
+            for (; j < numberRowCutsAfter; j++) {
+                const OsiRowCut * thisCut = theseCuts.rowCutPtr(j) ;
+                whichGenerator_[numberBefore++] = i ;
+                if (thisCut->globallyValid()) {
+                    // add to global list
+                    OsiRowCut newCut(*thisCut);
+                    newCut.setGloballyValid(true);
+                    newCut.mutableRow().setTestForDuplicateIndex(false);
+                    globalCuts_.insert(newCut) ;
+                }
+            }
+        }
+        for (j = numberColumnCutsBefore; j < numberColumnCutsAfter; j++) {
+            //whichGenerator_[numberBefore++] = i ;
+            const OsiColCut * thisCut = theseCuts.colCutPtr(j) ;
+            if (thisCut->globallyValid()) {
+                // add to global list
+                OsiColCut newCut(*thisCut);
+                newCut.setGloballyValid(true);
+                globalCuts_.insert(newCut) ;
+            }
+        }
+    }
+    /*
+      End of loop to run each cut generator.
+    */
+    if (status >= 0) {
+        // delete null cuts
+        int nCuts = theseCuts.sizeRowCuts() ;
+        int k ;
+        for (k = nCuts - 1; k >= 0; k--) {
+            const OsiRowCut * thisCut = theseCuts.rowCutPtr(k) ;
+            int n = thisCut->row().getNumElements();
+            if (!n)
+                theseCuts.eraseRowCut(k);
+        }
+    }
+    // Add in any violated saved cuts
+    if (!theseCuts.sizeRowCuts() && !theseCuts.sizeColCuts()) {
+        int numberOld = theseCuts.sizeRowCuts() + lastNumberCuts;
+        int numberCuts = slackCuts.sizeRowCuts() ;
+        int i;
+        // possibly extend whichGenerator
+        resizeWhichGenerator(numberOld, numberOld + numberCuts);
+        double primalTolerance;
+        solver_->getDblParam(OsiPrimalTolerance, primalTolerance) ;
+        for ( i = 0; i < numberCuts; i++) {
+            const OsiRowCut * thisCut = slackCuts.rowCutPtr(i) ;
+            if (thisCut->violated(cbcColSolution_) > 100.0*primalTolerance) {
+                if (messageHandler()->logLevel() > 2)
+                    printf("Old cut added - violation %g\n",
+                           thisCut->violated(cbcColSolution_)) ;
+                whichGenerator_[numberOld++] = -1;
+                theseCuts.insert(*thisCut) ;
+            }
+        }
+    }
+    return status;
+}
 
 /*
   Remove slack cuts. We obtain a basis and scan it. Cuts with basic slacks
@@ -9501,8 +8546,7 @@ CbcModel::takeOffCuts (OsiCuts &newCuts,
         */
         int oldCutIndex = 0 ;
         if (numberOldActiveCuts_) {
-            if (parallelMode() > 0)
-                lockThread();
+            lockThread();
             for (i = 0 ; i < numberOldActiveCuts_ ; i++) {
                 status = ws->getArtifStatus(i + firstOldCut) ;
                 while (!addedCuts_[oldCutIndex]) oldCutIndex++ ;
@@ -9528,8 +8572,7 @@ CbcModel::takeOffCuts (OsiCuts &newCuts,
                     oldCutIndex++ ;
                 }
             }
-            if (parallelMode() > 0)
-                unlockThread();
+            unlockThread();
         }
         /*
           Scan the basis entries of the new cuts generated with this round of cut
@@ -9956,13 +8999,13 @@ CbcModel::resolve(CbcNodeInfo * parent, int whereFrom,
 #endif
     int returnStatus = feasible ? 1 : 0;
     if (strategy_) {
-/*
-  Possible returns from status:
-    -1:	no recommendation
-     0: treat as optimal
-     1: treat as optimal and finished (no more resolves, cuts, etc.)
-     2: treat as infeasible.
-*/
+        /*
+          Possible returns from status:
+            -1:	no recommendation
+             0: treat as optimal
+             1: treat as optimal and finished (no more resolves, cuts, etc.)
+             2: treat as infeasible.
+        */
         // user can play clever tricks here
         int status = strategy_->status(this, parent, whereFrom);
         if (status >= 0) {
@@ -10034,9 +9077,9 @@ CbcModel::findCliques(bool makeEquality,
     const double * upper = getColUpper();
     const double * rowLower = getRowLower();
     const double * rowUpper = getRowUpper();
-/*
-  Scan the rows, looking for individual rows that are clique constraints.
-*/
+    /*
+      Scan the rows, looking for individual rows that are clique constraints.
+    */
 
     for (iRow = 0; iRow < numberRows; iRow++) {
         int numberP1 = 0, numberM1 = 0;
@@ -10045,11 +9088,11 @@ CbcModel::findCliques(bool makeEquality,
         double lowerValue = rowLower[iRow];
         bool good = true;
         int slack = -1;
-/*
-  Does this row qualify? All variables must be binary and all coefficients
-  +/- 1.0. Variables with positive coefficients are recorded at the low end of
-  which, variables with negative coefficients the high end.
-*/
+        /*
+          Does this row qualify? All variables must be binary and all coefficients
+          +/- 1.0. Variables with positive coefficients are recorded at the low end of
+          which, variables with negative coefficients the high end.
+        */
         for (j = rowStart[iRow]; j < rowStart[iRow] + rowLength[iRow]; j++) {
             int iColumn = column[j];
             int iInteger = lookup[iColumn];
@@ -10080,15 +9123,15 @@ CbcModel::findCliques(bool makeEquality,
         }
         int iUpper = static_cast<int> (floor(upperValue + 1.0e-5));
         int iLower = static_cast<int> (ceil(lowerValue - 1.0e-5));
-/*
-  What do we have? If the row upper bound is greater than 1-numberM1, this
-  isn't a clique. If the row upper bound is 1-numberM1, we have the classic
-  clique (an SOS1 on binary variables, if numberM1 = 0). If the upper bound
-  equals numberM1, we can fix all variables. If the upper bound is less than
-  numberM1, we're infeasible.
-  
-  A similar analysis applies using numberP1 against the lower bound.
-*/
+        /*
+          What do we have? If the row upper bound is greater than 1-numberM1, this
+          isn't a clique. If the row upper bound is 1-numberM1, we have the classic
+          clique (an SOS1 on binary variables, if numberM1 = 0). If the upper bound
+          equals numberM1, we can fix all variables. If the upper bound is less than
+          numberM1, we're infeasible.
+
+          A similar analysis applies using numberP1 against the lower bound.
+        */
         int state = 0;
         if (upperValue < 1.0e6) {
             if (iUpper == 1 - numberM1)
@@ -10106,11 +9149,11 @@ CbcModel::findCliques(bool makeEquality,
             else if (-iLower < -numberP1)
                 state = -3;
         }
-  /*
-  What to do? If we learned nothing, move on to the next iteration. If we're
-  infeasible, we're outta here. If we decided we can fix variables, do it.
-*/
-      if (good && state) {
+        /*
+        What to do? If we learned nothing, move on to the next iteration. If we're
+        infeasible, we're outta here. If we decided we can fix variables, do it.
+        */
+        if (good && state) {
             if (abs(state) == 3) {
                 // infeasible
                 numberObjects_ = -1;
@@ -10134,19 +9177,19 @@ CbcModel::findCliques(bool makeEquality,
                                              0.0);
                 }
             } else {
-/*
-  And the final case: we have a clique constraint. If it's within the allowed
-  size range, make a clique object.
-*/
+                /*
+                  And the final case: we have a clique constraint. If it's within the allowed
+                  size range, make a clique object.
+                */
                 int length = numberP1 + numberM1;
                 if (length >= atLeastThisMany && length < lessThanThis) {
                     // create object
                     bool addOne = false;
                     int objectType;
-/*
-  Choose equality (type 1) or inequality (type 0). If we're forcing equalities,
-  add a slack.
-*/
+                    /*
+                      Choose equality (type 1) or inequality (type 0). If we're forcing equalities,
+                      add a slack.
+                    */
                     if (iLower == iUpper) {
                         objectType = 1;
                     } else {
@@ -10159,13 +9202,13 @@ CbcModel::findCliques(bool makeEquality,
                             objectType = 0;
                         }
                     }
-/*
-  Record the strong values for the variables. Variables with positive
-  coefficients force all others when set to 1; variables with negative
-  coefficients force when set to 0. If the clique is formed against the row
-  lower bound, convert to the canonical form of a clique against the row
-  upper bound.
-*/
+                    /*
+                      Record the strong values for the variables. Variables with positive
+                      coefficients force all others when set to 1; variables with negative
+                      coefficients force when set to 0. If the clique is formed against the row
+                      lower bound, convert to the canonical form of a clique against the row
+                      upper bound.
+                    */
                     if (state > 0) {
                         totalP1 += numberP1;
                         totalM1 += numberM1;
@@ -10230,12 +9273,12 @@ CbcModel::findCliques(bool makeEquality,
             printf("%d variables fixed\n", numberFixed);
     }
 #endif
-/*
-  If required, augment the constraint matrix with clique slacks. Seems like we
-  should be able to add the necessary integer objects without a complete
-  rebuild of existing integer objects, but I'd need to look further to confirm
-  that (lh, 071219). Finally, add the clique objects.
-*/
+    /*
+      If required, augment the constraint matrix with clique slacks. Seems like we
+      should be able to add the necessary integer objects without a complete
+      rebuild of existing integer objects, but I'd need to look further to confirm
+      that (lh, 071219). Finally, add the clique objects.
+    */
     if (numberCliques > 0 && numberSlacks && makeEquality) {
         printf("adding %d integer slacks\n", numberSlacks);
         // add variables to make equality rows
@@ -10914,6 +9957,7 @@ CbcModel::convertToDynamic()
                 new CbcSimpleIntegerDynamicPseudoCost(this, iColumn, 1.0e0*downCost, 1.0e0*upCost);
             //newObject->setNumberBeforeTrust(numberBeforeTrust_);
             newObject->setPriority(priority);
+            newObject->setPosition(iObject);
             newObject->setPreferredWay(preferredWay);
             object_[iObject] = newObject;
         } else if (!obj2) {
@@ -13090,7 +12134,7 @@ CbcModel::chooseBranch(CbcNode * &newNode, int numberPassesLeft,
     K is currently hardcoded to 8, a few lines below.
 
     CBCMODEL_DEBUG: Seems like stateOfSearch_ should be 2 if
-	       numberHeuristicSolutions_ == numberSolutions_.
+           numberHeuristicSolutions_ == numberSolutions_.
 
     */
     stateOfSearch_ = 1;
@@ -13144,24 +12188,24 @@ CbcModel::chooseBranch(CbcNode * &newNode, int numberPassesLeft,
     }
 #endif
     currentNode_ = newNode; // so can be used elsewhere
-/*
-  Enough preparation. Get down to the business of choosing a branching
-  variable.
-*/
+    /*
+      Enough preparation. Get down to the business of choosing a branching
+      variable.
+    */
     while (anyAction == -1) {
         // Set objective value (not so obvious if NLP etc)
         setObjectiveValue(newNode, oldNode);
         //if (numberPassesLeft<=0)
         //branchingState=1;
-/*
-  Is there a CbcBranchDecision object installed? Does it specify a
-  chooseVariable method? If not, we're using the old (Cbc) side of the branch
-  decision hierarchy.  In quick summary, CbcNode::chooseBranch uses strong
-  branching on any objects, while CbcNode::chooseDynamicBranch uses dynamic
-  branching, but only on simple integers (-3 is the code for punt due to
-  complex objects). Serious bugs remain on the Cbc side, particularly in
-  chooseDynamicBranch.
-*/
+        /*
+          Is there a CbcBranchDecision object installed? Does it specify a
+          chooseVariable method? If not, we're using the old (Cbc) side of the branch
+          decision hierarchy.  In quick summary, CbcNode::chooseBranch uses strong
+          branching on any objects, while CbcNode::chooseDynamicBranch uses dynamic
+          branching, but only on simple integers (-3 is the code for punt due to
+          complex objects). Serious bugs remain on the Cbc side, particularly in
+          chooseDynamicBranch.
+        */
         if (!branchingMethod_ || !branchingMethod_->chooseMethod()) {
 #ifdef COIN_HAS_CLP
             bool doClp = oldNode && (oldNode->depth() % 2) == 1;
@@ -13197,9 +12241,9 @@ CbcModel::chooseBranch(CbcNode * &newNode, int numberPassesLeft,
                 if (anyAction == -3)
                     anyAction = newNode->chooseBranch(this, oldNode, numberPassesLeft) ; // dynamic did nothing
             }
-/*
-  We're on the new (Osi) side of the branching hierarchy.
-*/
+            /*
+              We're on the new (Osi) side of the branching hierarchy.
+            */
         } else {
             OsiBranchingInformation usefulInfo = usefulInformation();
             anyAction = newNode->chooseOsiBranch(this, oldNode, &usefulInfo, branchingState) ;; // Osi method
@@ -13294,9 +12338,9 @@ CbcModel::chooseBranch(CbcNode * &newNode, int numberPassesLeft,
             }
         }
     }
-/*
-  End main loop to choose a branching variable.
-*/
+    /*
+      End main loop to choose a branching variable.
+    */
     if (anyAction >= 0) {
         if (resolved) {
             /*
@@ -13409,13 +12453,11 @@ CbcModel::chooseBranch(CbcNode * &newNode, int numberPassesLeft,
             newNode->initializeInfo() ;
             if (cuts.sizeRowCuts()) {
                 int initialNumber = ((threadMode_ & 1) == 0) ? 0 : 1000000000;
-                if (parallelMode() > 0)
-                    lockThread();
+                lockThread();
                 newNode->nodeInfo()->addCuts(cuts, newNode->numberBranches(),
                                              //whichGenerator_,
                                              initialNumber) ;
-                if (parallelMode() > 0)
-                    unlockThread();
+                unlockThread();
             }
         }
     } else {
@@ -13594,11 +12636,11 @@ CbcModel::doHeuristicsAtRoot(int deleteHeuristicsAfterwards)
     double * newSolution = new double [numberColumns] ;
     int i;
     if (deleteHeuristicsAfterwards != 2) {
-/*
-  If mode == 1, we delete and recreate here, then delete at the bottom. The
-  create/delete part makes sense, but why delete the existing array? Seems like
-  it should be preserved and restored.
-*/
+        /*
+          If mode == 1, we delete and recreate here, then delete at the bottom. The
+          create/delete part makes sense, but why delete the existing array? Seems like
+          it should be preserved and restored.
+        */
         if (deleteHeuristicsAfterwards) {
             delete [] usedInSolution_;
             usedInSolution_ = new int [numberColumns];
@@ -13609,24 +12651,24 @@ CbcModel::doHeuristicsAtRoot(int deleteHeuristicsAfterwards)
         CbcEventHandler *eventHandler = getEventHandler() ;
         if (eventHandler)
             eventHandler->setModel(this);
-/*
-  currentPassNumber_ is described as `cut pass number'. Again, seems a bit
-  cavalier to just change it.
+        /*
+          currentPassNumber_ is described as `cut pass number'. Again, seems a bit
+          cavalier to just change it.
 
-  Whether this has any effect is determined by individual heuristics. Typically
-  there will be a check at the front of the solution() routine that determines
-  whether it will run or simply return. Root heuristics are characterised by
-  node count of 0. In addition, currentPassNumber_ can be checked to to limit
-  execution in terms of passes through cut generation / heuristic execution in
-  solveWithCuts.
-*/
+          Whether this has any effect is determined by individual heuristics. Typically
+          there will be a check at the front of the solution() routine that determines
+          whether it will run or simply return. Root heuristics are characterised by
+          node count of 0. In addition, currentPassNumber_ can be checked to to limit
+          execution in terms of passes through cut generation / heuristic execution in
+          solveWithCuts.
+        */
 
         currentPassNumber_ = 1; // so root heuristics will run
-/*
-  A loop to run the heuristics. incrementUsed will mark entries in
-  usedInSolution corresponding to variables that are nonzero in the solution.
-  CBC_ROUNDING just identifies a message template, not the heuristic.
-*/
+        /*
+          A loop to run the heuristics. incrementUsed will mark entries in
+          usedInSolution corresponding to variables that are nonzero in the solution.
+          CBC_ROUNDING just identifies a message template, not the heuristic.
+        */
         // Modify based on size etc
         adjustHeuristics();
         // See if already withing allowable gap
@@ -13637,7 +12679,7 @@ CbcModel::doHeuristicsAtRoot(int deleteHeuristicsAfterwards)
         }
         if (!exitNow) {
 #ifdef CBC_THREAD
-            if ((threadMode_&8) != 0) {
+            if ((threadMode_&4) != 0) {
                 typedef struct {
                     double solutionValue;
                     CbcModel * model;
@@ -13650,11 +12692,11 @@ CbcModel::doHeuristicsAtRoot(int deleteHeuristicsAfterwards)
                 else
                     chunk = numberThreads_;
                 for (int iChunk = 0; iChunk < numberHeuristics_; iChunk += chunk) {
-                    Coin_pthread_t * threadId = new Coin_pthread_t [chunk];
                     argBundle * parameters = new argBundle [chunk];
                     for (int i = 0; i < chunk; i++)
                         parameters[i].model = NULL;
-                    for (int i = iChunk; i < CoinMin(numberHeuristics_, iChunk + chunk); i++) {
+                    int nThisTime = CoinMin(numberHeuristics_ - iChunk, chunk);
+                    for (int i = iChunk; i < iChunk + nThisTime; i++) {
                         // skip if can't run here
                         if (!heuristic_[i]->shouldHeurRun(0))
                             continue;
@@ -13676,14 +12718,8 @@ CbcModel::doHeuristicsAtRoot(int deleteHeuristicsAfterwards)
                         newModel->heuristic_[0]->setModel(newModel);
                         newModel->heuristic_[0]->resetModel(newModel);
                         newModel->numberHeuristics_ = 1;
-                        pthread_create(&(threadId[i-iChunk].thr), NULL, doHeurThread,
-                                       parameters + i - iChunk);
                     }
-                    // now wait
-                    for (int i = 0; i < chunk; i++) {
-                        if (parameters[i].model)
-                            pthread_join(threadId[i].thr, NULL);
-                    }
+                    CbcSimpleThread(nThisTime, 0, static_cast<int>(sizeof(argBundle)), parameters);
                     double cutoff = heuristicValue;
                     for (int i = 0; i < chunk; i++) {
                         if (parameters[i].model) {
@@ -13714,7 +12750,6 @@ CbcModel::doHeuristicsAtRoot(int deleteHeuristicsAfterwards)
                             delete parameters[i].model;
                         }
                     }
-                    delete [] threadId;
                     delete [] parameters;
                     if (exitNow)
                         break;
@@ -13772,10 +12807,10 @@ CbcModel::doHeuristicsAtRoot(int deleteHeuristicsAfterwards)
         currentPassNumber_ = 0;
         /*
           Did any of the heuristics turn up a new solution? Record it before we free
-  the vector. tree_ will not necessarily be a CbcTreeLocal; the main model gets
-  a CbcTree by default. CbcTreeLocal actually implements a k-neighbourhood
-  search heuristic. This initialises it with a solution and creates the
-  k-neighbourhood cut.
+        the vector. tree_ will not necessarily be a CbcTreeLocal; the main model gets
+        a CbcTree by default. CbcTreeLocal actually implements a k-neighbourhood
+        search heuristic. This initialises it with a solution and creates the
+        k-neighbourhood cut.
         */
         if (found >= 0) {
             CbcTreeLocal * tree
@@ -13789,12 +12824,12 @@ CbcModel::doHeuristicsAtRoot(int deleteHeuristicsAfterwards)
             }
         }
     }
-/*
-  Cleanup. The feasibility pump heuristic is a root heuristic to look for an
-  initial feasible solution. It's had its chance; remove it.
+    /*
+      Cleanup. The feasibility pump heuristic is a root heuristic to look for an
+      initial feasible solution. It's had its chance; remove it.
 
-  For modes 1 and 2, all the heuristics are deleted.
-*/
+      For modes 1 and 2, all the heuristics are deleted.
+    */
     if (!deleteHeuristicsAfterwards) {
         for (i = 0; i < numberHeuristics_; i++) {
             // delete FPump
@@ -14074,8 +13109,7 @@ CbcModel::doOneNode(CbcModel * baseModel, CbcNode * & node, CbcNode * & newNode)
         newNode = new CbcNode();
     bool feasible = true;
     CoinWarmStartBasis *lastws = new CoinWarmStartBasis();
-    if (parallelMode() > 0)
-        lockThread();
+    lockThread();
     // point to genuine ones
     //int save1 = maximumNumberCuts_;
     //maximumNumberCuts_ = baseModel->maximumNumberCuts_;
@@ -14106,8 +13140,7 @@ CbcModel::doOneNode(CbcModel * baseModel, CbcNode * & node, CbcNode * & newNode)
     }
     int branchesLeft = 0;
     if (!retCode) {
-        if (parallelMode() > 0)
-            unlockThread();
+        unlockThread();
         int i ;
         const double * lower = getColLower() ;
         const double * upper = getColUpper() ;
@@ -14119,8 +13152,7 @@ CbcModel::doOneNode(CbcModel * baseModel, CbcNode * & node, CbcNode * & newNode)
             solverCharacteristics_->setBeforeLower(lowerBefore);
             solverCharacteristics_->setBeforeUpper(upperBefore);
         }
-        if (parallelMode() > 0)
-            lockThread();
+        lockThread();
         assert (node->objectiveValue() < 1.0e200);
         if (messageHandler()->logLevel() > 2)
             node->modifiableBranchingObject()->print();
@@ -14142,7 +13174,7 @@ CbcModel::doOneNode(CbcModel * baseModel, CbcNode * & node, CbcNode * & newNode)
         }
         assert (branchesLeft == node->nodeInfo()->numberBranchesLeft());
         if (parallelMode() > 0) {
-            assert(mutex_);
+            assert(masterThread_);
             assert (node->nodeInfo());
             node->nodeInfo()->increment() ;
             unlockThread();
@@ -14802,11 +13834,10 @@ CbcModel::doOneNode(CbcModel * baseModel, CbcNode * & node, CbcNode * & newNode)
             If we are feasible, then we'll be placing this node into the live set, so
             increment the reference count in the current (parent) nodeInfo.
             */
-            if (parallelMode() > 0)
-                lockThread();
+            lockThread();
             if (anyAction == -2) {
                 if (parallelMode() > 0) {
-                    assert (mutex_);
+                    assert (masterThread_);
                     assert (node->nodeInfo());
                     node->nodeInfo()->decrement() ;
                     delete newNode ;
@@ -14841,8 +13872,7 @@ CbcModel::doOneNode(CbcModel * baseModel, CbcNode * & node, CbcNode * & newNode)
                     setSpecialOptions(specialOptions_&~8);
                 }
             }
-            if (parallelMode() > 0)
-                unlockThread();
+            unlockThread();
         }
         /*
           At this point, there are three possibilities:
@@ -14873,8 +13903,7 @@ CbcModel::doOneNode(CbcModel * baseModel, CbcNode * & node, CbcNode * & newNode)
             else
                 statistics_[numberNodes2_-1]->sayInfeasible();
         }
-        if (parallelMode() > 0)
-            lockThread();
+        lockThread();
         if (parallelMode() <= 0) {
             if (numberUpdateItems_) {
                 for (i = 0; i < numberUpdateItems_; i++) {
@@ -14951,8 +13980,7 @@ CbcModel::doOneNode(CbcModel * baseModel, CbcNode * & node, CbcNode * & newNode)
                             addedCuts_[i]->increment(numberLeft - 1) ;
                         }
                     }
-                    if (parallelMode() > 0)
-                        unlockThread();
+                    unlockThread();
 
                     double estValue = newNode->guessedObjectiveValue() ;
                     int found = -1 ;
@@ -15000,10 +14028,9 @@ CbcModel::doOneNode(CbcModel * baseModel, CbcNode * & node, CbcNode * & newNode)
                     }
                     delete [] newSolution ;
                     newNode->setGuessedObjectiveValue(estValue) ;
-                    if (parallelMode() > 0)
-                        lockThread();
+                    lockThread();
                     if (parallelMode() >= 0) {
-                        if (!mutex_) // only if serial
+                        if (!masterThread_) // only if serial
                             tree_->push(newNode) ;
                     }
                     if (statistics_) {
@@ -15067,7 +14094,7 @@ CbcModel::doOneNode(CbcModel * baseModel, CbcNode * & node, CbcNode * & newNode)
             if (node->nodeInfo())
                 node->nodeInfo()->setNodeNumber(numberNodes2_);
             if (parallelMode() >= 0) {
-                if (!mutex_) // only if serial
+                if (!masterThread_) // only if serial
                     tree_->push(node) ;
             }
             if (statistics_) {
@@ -15100,7 +14127,7 @@ CbcModel::doOneNode(CbcModel * baseModel, CbcNode * & node, CbcNode * & newNode)
               set.
             */
             if (parallelMode() > 0) {
-                assert (mutex_) ;
+                assert (masterThread_) ;
                 assert (node->nodeInfo());
                 node->nodeInfo()->decrement() ;
             }
@@ -15114,8 +14141,7 @@ CbcModel::doOneNode(CbcModel * baseModel, CbcNode * & node, CbcNode * & newNode)
                 node->setActive(false);
             }
         }
-        if (parallelMode() > 0)
-            unlockThread();
+        unlockThread();
     } else {
         // add cuts found to be infeasible (on bound)!
         printf("found to be infeas! - branches left %d - cutoff %g\n", node->nodeInfo()->numberBranchesLeft(),
@@ -15191,672 +14217,6 @@ CbcModel::addUpdateInformation(const CbcObjectUpdateData & data)
         updateItems_ = temp;
     }
     updateItems_[numberUpdateItems_++] = data;
-}
-#ifdef CBC_THREAD
-// Split up nodes - returns number of CbcNodeInfo's affected
-int
-CbcModel::splitModel(int numberModels, CbcModel ** model,
-                     int numberNodes)
-{
-    int iModel;
-    int i;
-    for (iModel = 0; iModel < numberModels; iModel++) {
-        CbcModel * otherModel = model[iModel];
-        otherModel->moveToModel(this, 10);
-        assert (!otherModel->tree()->size());
-        otherModel->tree()->resetNodeNumbers();
-        otherModel->bestPossibleObjective_ = bestPossibleObjective_;
-        otherModel->sumChangeObjective1_ = sumChangeObjective1_;
-        otherModel->sumChangeObjective2_ = sumChangeObjective2_;
-        int numberColumns = solver_->getNumCols();
-        if (otherModel->bestSolution_) {
-            assert (bestSolution_);
-            memcpy(otherModel->bestSolution_, bestSolution_, numberColumns*sizeof(double));
-        } else if (bestSolution_) {
-            otherModel->bestSolution_ = CoinCopyOfArray(bestSolution_, numberColumns);
-        }
-        otherModel->globalCuts_ = globalCuts_;
-        otherModel->numberSolutions_ = numberSolutions_;
-        otherModel->numberHeuristicSolutions_ = numberHeuristicSolutions_;
-        otherModel->numberNodes_ = 1; //numberNodes_;
-        otherModel->numberIterations_ = numberIterations_;
-#ifdef JJF_ZERO
-        if (maximumNumberCuts_ > otherModel->maximumNumberCuts_) {
-            otherModel->maximumNumberCuts_ = maximumNumberCuts_;
-            delete [] otherModel->addedCuts_;
-            otherModel->addedCuts_ = new CbcCountRowCut * [maximumNumberCuts_];
-        }
-        if (maximumDepth_ > otherModel->maximumDepth_) {
-            otherModel->maximumDepth_ = maximumDepth_;
-            delete [] otherModel->walkback_;
-            otherModel->walkback_ = new CbcNodeInfo * [maximumDepth_];
-        }
-#endif
-        otherModel->currentNumberCuts_ = currentNumberCuts_;
-        if (otherModel->usedInSolution_) {
-            assert (usedInSolution_);
-            memcpy(otherModel->usedInSolution_, usedInSolution_, numberColumns*sizeof(int));
-        } else if (usedInSolution_) {
-            otherModel->usedInSolution_ = CoinCopyOfArray(usedInSolution_, numberColumns);
-        }
-        /// ??? tree_;
-        // Need flag (stopNumberIterations_>0?) which says don't update cut etc counts
-        for (i = 0; i < numberObjects_; i++) {
-            otherModel->object_[i]->updateBefore(object_[i]);
-        }
-        otherModel->maximumDepthActual_ = maximumDepthActual_;
-        // Real cuts are in node info
-        otherModel->numberOldActiveCuts_ = numberOldActiveCuts_;
-        otherModel->numberNewCuts_ = numberNewCuts_;
-        otherModel->numberStrongIterations_ = numberStrongIterations_;
-    }
-    double cutoff = getCutoff();
-    int nAffected = 0;
-    while (!tree_->empty()) {
-        for (iModel = 0; iModel < numberModels; iModel++) {
-            if (tree_->empty())
-                break;
-            CbcModel * otherModel = model[iModel];
-            CbcNode * node = tree_->bestNode(cutoff) ;
-            CbcNodeInfo * nodeInfo = node->nodeInfo();
-            assert (nodeInfo);
-            if (!nodeInfo->marked()) {
-                //while (nodeInfo&&!nodeInfo->marked()) {
-                if (nAffected == maximumDepth_) {
-                    redoWalkBack();
-                }
-                nodeInfo->mark();
-                //nodeInfo->incrementCuts(1000000);
-                walkback_[nAffected++] = nodeInfo;
-                //nodeInfo = nodeInfo->parent() ;
-                //}
-            }
-            // Make node join otherModel
-            OsiBranchingObject * bobj = node->modifiableBranchingObject();
-            CbcBranchingObject * cbcobj = dynamic_cast<CbcBranchingObject *> (bobj);
-            //assert (cbcobj);
-            if (cbcobj) {
-                CbcObject * object = cbcobj->object();
-                assert (object);
-                int position = object->position();
-                assert (position >= 0);
-                assert (object_[position] == object);
-                CbcObject * objectNew =
-                    dynamic_cast<CbcObject *> (otherModel->object_[position]);
-                cbcobj->setOriginalObject(objectNew);
-            }
-            otherModel->tree_->push(node);
-        }
-        numberNodes--;
-        if (!numberNodes)
-            break;
-    }
-    return nAffected;
-}
-// Start threads
-void
-CbcModel::startSplitModel(int /*numberIterations*/)
-{
-    abort();
-}
-// Merge models
-void
-CbcModel::mergeModels(int /*numberModel*/, CbcModel ** /*model*/,
-                      int /*numberNodes*/)
-{
-    abort();
-}
-/* Move/copy information from one model to another
-   -1 - initial setup
-   0 - from base model
-   1 - to base model (and reset)
-   2 - add in final statistics etc (and reset so can do clean destruction)
-   10 - from base model (deterministic)
-   11 - to base model (deterministic)
-*/
-void
-CbcModel::moveToModel(CbcModel * baseModel, int mode)
-{
-    if (mode == 0) {
-        setCutoff(baseModel->getCutoff());
-        bestObjective_ = baseModel->bestObjective_;
-        assert (!baseModel->globalCuts_.sizeRowCuts());
-        numberSolutions_ = baseModel->numberSolutions_;
-        stateOfSearch_ = baseModel->stateOfSearch_;
-        numberNodes_ = baseModel->numberNodes_;
-        numberIterations_ = baseModel->numberIterations_;
-        numberFixedAtRoot_ = numberIterations_; // for statistics
-        numberSolves_ = 0;
-        phase_ = baseModel->phase_;
-        assert (!nextRowCut_);
-        nodeCompare_ = baseModel->nodeCompare_;
-        tree_ = baseModel->tree_;
-        assert (!subTreeModel_);
-        //branchingMethod_ = NULL; // need something but what
-        numberOldActiveCuts_ = baseModel->numberOldActiveCuts_;
-        cutModifier_ = NULL;
-        assert (!analyzeResults_);
-        threadStruct * stuff = reinterpret_cast<threadStruct *> (mutex_);
-        assert (stuff);
-        //if (stuff)
-        stuff->createdNode = NULL;
-        // ?? searchStrategy_;
-        searchStrategy_ = baseModel->searchStrategy_;
-        stuff->saveStuff[0] = searchStrategy_;
-        stateOfSearch_ = baseModel->stateOfSearch_;
-        stuff->saveStuff[1] = stateOfSearch_;
-        for (int iObject = 0 ; iObject < numberObjects_ ; iObject++) {
-            CbcSimpleIntegerDynamicPseudoCost * dynamicObject =
-                dynamic_cast <CbcSimpleIntegerDynamicPseudoCost *>(object_[iObject]) ;
-            if (dynamicObject) {
-                CbcSimpleIntegerDynamicPseudoCost * baseObject =
-                    dynamic_cast <CbcSimpleIntegerDynamicPseudoCost *>(baseModel->object_[iObject]) ;
-                assert (baseObject);
-                dynamicObject->copySome(baseObject);
-            }
-        }
-    } else if (mode == 1) {
-        lockThread();
-        threadStruct * stuff = reinterpret_cast<threadStruct *> (mutex_);
-        assert (stuff);
-        //stateOfSearch_
-        if (stuff->saveStuff[0] != searchStrategy_) {
-#ifdef COIN_DEVELOP
-            printf("changing searchStrategy from %d to %d\n",
-                   baseModel->searchStrategy_, searchStrategy_);
-#endif
-            baseModel->searchStrategy_ = searchStrategy_;
-        }
-        if (stuff->saveStuff[1] != stateOfSearch_) {
-#ifdef COIN_DEVELOP
-            printf("changing stateOfSearch from %d to %d\n",
-                   baseModel->stateOfSearch_, stateOfSearch_);
-#endif
-            baseModel->stateOfSearch_ = stateOfSearch_;
-        }
-        if (numberUpdateItems_) {
-            for (int i = 0; i < numberUpdateItems_; i++) {
-                CbcObjectUpdateData * update = updateItems_ + i;
-                int objectNumber = update->objectNumber_;
-                CbcObject * object = dynamic_cast<CbcObject *> (baseModel->object_[objectNumber]);
-                if (object)
-                    object->updateInformation(*update);
-            }
-            numberUpdateItems_ = 0;
-        }
-        if (eventHappened_)
-            baseModel->eventHappened_ = true;
-        baseModel->numberNodes_++;
-        baseModel->numberIterations_ +=
-            numberIterations_ - numberFixedAtRoot_;
-        baseModel->numberSolves_ += numberSolves_;
-        if (stuff->node)
-            baseModel->tree_->push(stuff->node);
-        if (stuff->createdNode)
-            baseModel->tree_->push(stuff->createdNode);
-        unlockThread();
-    } else if (mode == 2) {
-        baseModel->sumChangeObjective1_ += sumChangeObjective1_;
-        baseModel->sumChangeObjective2_ += sumChangeObjective2_;
-        //baseModel->numberIterations_ += numberIterations_;
-        for (int iGenerator = 0; iGenerator < numberCutGenerators_; iGenerator++) {
-            CbcCutGenerator * generator = baseModel->generator_[iGenerator];
-            CbcCutGenerator * generator2 = generator_[iGenerator];
-            generator->incrementNumberTimesEntered(generator2->numberTimesEntered());
-            generator->incrementNumberCutsInTotal(generator2->numberCutsInTotal());
-            generator->incrementNumberCutsActive(generator2->numberCutsActive());
-            generator->incrementTimeInCutGenerator(generator2->timeInCutGenerator());
-        }
-        if (parallelMode() >= 0)
-            nodeCompare_ = NULL;
-        baseModel->maximumDepthActual_ = CoinMax(baseModel->maximumDepthActual_, maximumDepthActual_);
-        baseModel->numberDJFixed_ += numberDJFixed_;
-        baseModel->numberStrongIterations_ += numberStrongIterations_;
-        int i;
-        for (i = 0; i < 3; i++)
-            baseModel->strongInfo_[i] += strongInfo_[i];
-        if (parallelMode() >= 0) {
-            walkback_ = NULL;
-            lastNodeInfo_ = NULL;
-            lastNumberCuts_ = NULL;
-            lastCut_ = NULL;
-            //addedCuts_ = NULL;
-            tree_ = NULL;
-        }
-        eventHandler_ = NULL;
-        delete solverCharacteristics_;
-        solverCharacteristics_ = NULL;
-        bool newMethod = (baseModel->branchingMethod_ && baseModel->branchingMethod_->chooseMethod());
-        if (newMethod) {
-            // new method - we were using base models
-            numberObjects_ = 0;
-            object_ = NULL;
-        }
-    } else if (mode == -1) {
-        delete eventHandler_;
-        eventHandler_ = baseModel->eventHandler_;
-        assert (!statistics_);
-        assert(baseModel->solverCharacteristics_);
-        solverCharacteristics_ = new OsiBabSolver (*baseModel->solverCharacteristics_);
-        solverCharacteristics_->setSolver(solver_);
-        setMaximumNodes(COIN_INT_MAX);
-        if (parallelMode() >= 0) {
-            delete [] walkback_;
-            //delete [] addedCuts_;
-            walkback_ = NULL;
-            //addedCuts_ = NULL;
-            delete [] lastNodeInfo_ ;
-            lastNodeInfo_ = NULL;
-            delete [] lastNumberCuts_ ;
-            lastNumberCuts_ = NULL;
-            delete [] lastCut_ ;
-            lastCut_ = NULL;
-            delete tree_;
-            tree_ = NULL;
-            delete nodeCompare_;
-            nodeCompare_ = NULL;
-        } else {
-            delete tree_;
-            tree_ = new CbcTree();
-            tree_->setComparison(*nodeCompare_) ;
-        }
-        continuousSolver_ = baseModel->continuousSolver_->clone();
-        bool newMethod = (baseModel->branchingMethod_ && baseModel->branchingMethod_->chooseMethod());
-        if (newMethod) {
-            // new method uses solver - but point to base model
-            // We may update an object in wrong order - shouldn't matter?
-            numberObjects_ = baseModel->numberObjects_;
-            if (parallelMode() >= 0) {
-                object_ = baseModel->object_;
-            } else {
-                printf("*****WARNING - fix testosi option\n");
-                object_ = baseModel->object_;
-            }
-        }
-        mutex_ = baseModel->mutex_;
-        int i;
-        for (i = 0; i < numberHeuristics_; i++) {
-            delete heuristic_[i];
-            heuristic_[i] = baseModel->heuristic_[i]->clone();
-            heuristic_[i]->setModelOnly(this);
-        }
-        for (i = 0; i < numberCutGenerators_; i++) {
-            delete generator_[i];
-            generator_[i] = new CbcCutGenerator(*baseModel->generator_[i]);
-            // refreshModel was overkill as thought too many rows
-            generator_[i]->setModel(this);
-        }
-    } else if (mode == 10) {
-        setCutoff(baseModel->getCutoff());
-        bestObjective_ = baseModel->bestObjective_;
-        assert (!baseModel->globalCuts_.sizeRowCuts());
-        numberSolutions_ = baseModel->numberSolutions_;
-        assert (usedInSolution_);
-        assert (baseModel->usedInSolution_);
-        memcpy(usedInSolution_, baseModel->usedInSolution_, solver_->getNumCols()*sizeof(int));
-        stateOfSearch_ = baseModel->stateOfSearch_;
-        //numberNodes_ = baseModel->numberNodes_;
-        //numberIterations_ = baseModel->numberIterations_;
-        //numberFixedAtRoot_ = numberIterations_; // for statistics
-        phase_ = baseModel->phase_;
-        assert (!nextRowCut_);
-        delete nodeCompare_;
-        nodeCompare_ = baseModel->nodeCompare_->clone();
-        tree_->setComparison(*nodeCompare_) ;
-        assert (!subTreeModel_);
-        //branchingMethod_ = NULL; // need something but what
-        numberOldActiveCuts_ = baseModel->numberOldActiveCuts_;
-        cutModifier_ = NULL;
-        assert (!analyzeResults_);
-        threadStruct * stuff = reinterpret_cast<threadStruct *> (mutex_);
-        assert (stuff);
-        //if (stuff)
-        stuff->createdNode = NULL;
-        // ?? searchStrategy_;
-        searchStrategy_ = baseModel->searchStrategy_;
-        stuff->saveStuff[0] = searchStrategy_;
-        stateOfSearch_ = baseModel->stateOfSearch_;
-        stuff->saveStuff[1] = stateOfSearch_;
-        OsiObject ** baseObject = baseModel->object_;
-        for (int iObject = 0 ; iObject < numberObjects_ ; iObject++) {
-            object_[iObject]->updateBefore(baseObject[iObject]);
-        }
-        //delete [] stuff->nodeCount;
-        //stuff->nodeCount = new int [baseModel->maximumDepth_+1];
-    } else if (mode == 11) {
-        if (parallelMode() < 0) {
-            // from deterministic
-            threadStruct * stuff = reinterpret_cast<threadStruct *> (mutex_);
-            assert (stuff);
-            // Move solution etc
-            // might as well mark all including continuous
-            int numberColumns = solver_->getNumCols();
-            for (int i = 0; i < numberColumns; i++) {
-                baseModel->usedInSolution_[i] += usedInSolution_[i];
-                //usedInSolution_[i]=0;
-            }
-            baseModel->numberSolutions_ += numberSolutions_;
-            if (bestObjective_ < baseModel->bestObjective_ && bestObjective_ < baseModel->getCutoff()) {
-                baseModel->bestObjective_ = bestObjective_ ;
-                int numberColumns = solver_->getNumCols();
-                if (!baseModel->bestSolution_)
-                    baseModel->bestSolution_ = new double[numberColumns];
-                CoinCopyN(bestSolution_, numberColumns, baseModel->bestSolution_);
-                baseModel->setCutoff(getCutoff());
-            }
-            //stateOfSearch_
-            if (stuff->saveStuff[0] != searchStrategy_) {
-#ifdef COIN_DEVELOP
-                printf("changing searchStrategy from %d to %d\n",
-                       baseModel->searchStrategy_, searchStrategy_);
-#endif
-                baseModel->searchStrategy_ = searchStrategy_;
-            }
-            if (stuff->saveStuff[1] != stateOfSearch_) {
-#ifdef COIN_DEVELOP
-                printf("changing stateOfSearch from %d to %d\n",
-                       baseModel->stateOfSearch_, stateOfSearch_);
-#endif
-                baseModel->stateOfSearch_ = stateOfSearch_;
-            }
-            int i;
-            if (eventHappened_)
-                baseModel->eventHappened_ = true;
-            baseModel->numberNodes_ += stuff->nodesThisTime;
-            baseModel->numberIterations_ += stuff->iterationsThisTime;
-            double cutoff = baseModel->getCutoff();
-            while (!tree_->empty()) {
-                CbcNode * node = tree_->bestNode(COIN_DBL_MAX) ;
-                if (node->objectiveValue() < cutoff) {
-                    assert(node->nodeInfo());
-                    // Make node join correctly
-                    OsiBranchingObject * bobj = node->modifiableBranchingObject();
-                    CbcBranchingObject * cbcobj = dynamic_cast<CbcBranchingObject *> (bobj);
-                    if (cbcobj) {
-                        CbcObject * object = cbcobj->object();
-                        assert (object);
-                        int position = object->position();
-                        assert (position >= 0);
-                        assert (object_[position] == object);
-                        CbcObject * objectNew =
-                            dynamic_cast<CbcObject *> (baseModel->object_[position]);
-                        cbcobj->setOriginalObject(objectNew);
-                    }
-                    baseModel->tree_->push(node);
-                } else {
-                    delete node;
-                }
-            }
-            for (i = 0; i < stuff->nDeleteNode; i++) {
-                //printf("CbcNode %x stuff delete\n",stuff->delNode[i]);
-                delete stuff->delNode[i];
-            }
-        }
-    } else {
-        abort();
-    }
-}
-#ifdef CBC_THREAD
-static void * doNodesThread(void * voidInfo)
-{
-    threadStruct * stuff = reinterpret_cast<threadStruct *> (voidInfo);
-    pthread_mutex_t * mutex = stuff->mutex2;
-    pthread_cond_t * condition = stuff->condition2;
-    CbcModel * thisModel = stuff->thisModel;
-    CbcModel * baseModel = stuff->baseModel;
-    while (true) {
-        pthread_mutex_lock (mutex);
-        while (stuff->returnCode) {
-            struct timespec absTime2;
-            my_gettime(&absTime2);
-            double time2 = absTime2.tv_sec + 1.0e-9 * absTime2.tv_nsec;
-            // timed wait as seems to hang on max nodes at times
-            absTime2.tv_sec += 10;
-            pthread_cond_timedwait(condition, mutex, &absTime2);
-            my_gettime(&stuff->absTime);
-            double time = stuff->absTime.tv_sec + 1.0e-9 * stuff->absTime.tv_nsec;
-            stuff->timeWaitingToStart += time - time2;;
-            stuff->numberTimesWaitingToStart++;
-        }
-        //printf("start node %x\n",stuff->node);
-        int mode = thisModel->getNumberThreads();
-        if (mode) {
-            // normal
-            double time2 = CoinCpuTime();
-            assert (stuff->returnCode == 0);
-            if (thisModel->parallelMode() >= 0) {
-                assert (stuff->node->nodeInfo());
-                thisModel->doOneNode(baseModel, stuff->node, stuff->createdNode);
-                stuff->returnCode = 1;
-            } else {
-                assert (!stuff->node);
-                assert (!stuff->createdNode);
-                int numberIterations = stuff->nDeleteNode;
-                int nDeleteNode = 0;
-                int maxDeleteNode = stuff->maxDeleteNode;
-                CbcNode ** delNode = stuff->delNode;
-                int returnCode = 1;
-                // this should be updated by heuristics strong branching etc etc
-                assert (numberIterations > 0);
-                thisModel->setNumberThreads(0);
-                int nodesThisTime = thisModel->getNodeCount();
-                int iterationsThisTime = thisModel->getIterationCount();
-                int strongThisTime = thisModel->numberStrongIterations();
-                thisModel->setStopNumberIterations(thisModel->getIterationCount() + numberIterations);
-                int numberColumns = thisModel->getNumCols();
-                int * used = CoinCopyOfArray(thisModel->usedInSolution(), numberColumns);
-                int numberSolutions = thisModel->getSolutionCount();
-                while (true) {
-                    if (thisModel->tree()->empty()) {
-                        returnCode = 1 + 1;
-#ifdef CLP_INVESTIGATE_2
-                        printf("%x tree empty - time %18.6f\n", thisModel, CoinGetTimeOfDay() - 1.2348e9);
-#endif
-                        break;
-                    }
-#define NODE_ITERATIONS 2
-                    int nodesNow = thisModel->getNodeCount();
-                    int iterationsNow = thisModel->getIterationCount();
-                    int strongNow = thisModel->numberStrongIterations();
-                    bool exit1 = (NODE_ITERATIONS * ((nodesNow - nodesThisTime) +
-                                                     ((strongNow - strongThisTime) >> 1)) +
-                                  (iterationsNow - iterationsThisTime) > numberIterations);
-                    //bool exit2 =(thisModel->getIterationCount()>thisModel->getStopNumberIterations()) ;
-                    //assert (exit1==exit2);
-                    if (exit1 && nodesNow - nodesThisTime >= 10) {
-                        // out of loop
-                        //printf("out of loop\n");
-#ifdef CLP_INVESTIGATE3
-                        printf("%x tree %d nodes left, done %d and %d its - time %18.6f\n", thisModel,
-                               thisModel->tree()->size(), nodesNow - nodesThisTime,
-                               iterationsNow - iterationsThisTime, CoinGetTimeOfDay() - 1.2348e9);
-#endif
-                        break;
-                    }
-                    double cutoff = thisModel->getCutoff() ;
-                    CbcNode *node = thisModel->tree()->bestNode(cutoff) ;
-                    // Possible one on tree worse than cutoff
-                    if (!node)
-                        continue;
-                    CbcNode * createdNode = NULL;
-                    // Do real work of node
-                    thisModel->doOneNode(NULL, node, createdNode);
-                    assert (createdNode);
-                    if (!createdNode->active()) {
-                        delete createdNode;
-                    } else {
-                        // Say one more pointing to this **** postpone if marked
-                        node->nodeInfo()->increment() ;
-                        thisModel->tree()->push(createdNode) ;
-                    }
-                    if (node->active()) {
-                        assert (node->nodeInfo());
-                        if (node->nodeInfo()->numberBranchesLeft()) {
-                            thisModel->tree()->push(node) ;
-                        } else {
-                            node->setActive(false);
-                        }
-                    } else {
-                        if (node->nodeInfo()) {
-                            if (!node->nodeInfo()->numberBranchesLeft())
-                                node->nodeInfo()->allBranchesGone(); // can clean up
-                            // So will delete underlying stuff
-                            node->setActive(true);
-                        }
-                        if (nDeleteNode == maxDeleteNode) {
-                            maxDeleteNode = (3 * maxDeleteNode) / 2 + 10;
-                            stuff->maxDeleteNode = maxDeleteNode;
-                            stuff->delNode = new CbcNode * [maxDeleteNode];
-                            for (int i = 0; i < nDeleteNode; i++)
-                                stuff->delNode[i] = delNode[i];
-                            delete [] delNode;
-                            delNode = stuff->delNode;
-                        }
-                        delNode[nDeleteNode++] = node;
-                    }
-                }
-                // end of this sub-tree
-                int * usedA = thisModel->usedInSolution();
-                for (int i = 0; i < numberColumns; i++) {
-                    usedA[i] -= used[i];
-                }
-                delete [] used;
-                thisModel->setSolutionCount(thisModel->getSolutionCount() - numberSolutions);
-                stuff->nodesThisTime = thisModel->getNodeCount() - nodesThisTime;
-                stuff->iterationsThisTime = thisModel->getIterationCount() - iterationsThisTime;
-                stuff->nDeleteNode = nDeleteNode;
-                stuff->returnCode = returnCode;
-                thisModel->setNumberThreads(mode);
-            }
-            //printf("end node %x\n",stuff->node);
-            threadStruct * stuffMain = reinterpret_cast<threadStruct *> (baseModel->mutex());
-            //pthread_mutex_t * condition_mutex = stuffMain->mutex2;
-            pthread_cond_t * condition_main = stuffMain->condition2;
-            pthread_cond_signal(condition_main); // unlock
-            pthread_mutex_unlock(mutex);
-            stuff->timeInThread += CoinCpuTime() - time2;
-        } else {
-            // exit
-            break;
-        }
-    }
-    pthread_mutex_unlock(mutex);
-    pthread_exit(NULL);
-    return NULL;
-}
-static void * doHeurThread(void * voidInfo)
-{
-    typedef struct {
-        double solutionValue;
-        CbcModel * model;
-        double * solution;
-        int foundSol;
-    } argBundle;
-    argBundle * stuff = reinterpret_cast<argBundle *> (voidInfo);
-    stuff->foundSol =
-        stuff->model->heuristic(0)->solution(stuff->solutionValue,
-                                             stuff->solution);
-    pthread_exit(NULL);
-    return NULL;
-}
-static void * doCutsThread(void * voidInfo)
-{
-    threadStruct * stuff = reinterpret_cast<threadStruct *> (voidInfo);
-    pthread_mutex_t * mutex = stuff->mutex2;
-    pthread_cond_t * condition = stuff->condition2;
-    CbcModel * thisModel =  stuff->thisModel;
-    CbcModel * baseModel = stuff->baseModel;
-    while (true) {
-        pthread_mutex_lock(mutex);
-        while (stuff->returnCode) {
-            pthread_cond_wait(condition, mutex);
-        }
-        //printf("start node %x\n",stuff->node);
-        int mode = thisModel->getNumberThreads();
-        if (mode) {
-            // normal
-            assert (stuff->returnCode == 0);
-            int fullScan = thisModel->getNodeCount() == 0 ? 1 : 0; //? was >0
-            CbcCutGenerator * generator = thisModel->cutGenerator(0);
-            OsiCuts * cuts = reinterpret_cast<OsiCuts *> (thisModel->objects());
-            OsiSolverInterface * thisSolver = thisModel->solver();
-            generator->generateCuts(*cuts, fullScan, thisSolver, NULL);
-            stuff->returnCode = 1;
-            //printf("end node %x\n",stuff->node);
-            threadStruct * stuffMain = reinterpret_cast<threadStruct *> (baseModel->mutex());
-            //pthread_mutex_t * condition_mutex = stuffMain->mutex2;
-            pthread_cond_t * condition_main = stuffMain->condition2;
-            pthread_cond_signal(condition_main); // unlock
-            pthread_mutex_unlock(mutex);
-        } else {
-            // exit
-            break;
-        }
-    }
-    pthread_mutex_unlock(mutex);
-    pthread_exit(NULL);
-    return NULL;
-}
-#endif
-#endif
-#ifdef CBC_THREAD
-/*
-  Locks a thread if parallel so that stuff like cut pool
-  can be updated and/or used.
-*/
-void
-CbcModel::lockThread()
-{
-    threadStruct * stuff = reinterpret_cast<threadStruct *> (mutex_);
-    if (stuff) {
-        if (!stuff->locked) {
-            struct timespec absTime2;
-            my_gettime(&absTime2);
-            double time2 = absTime2.tv_sec + 1.0e-9 * absTime2.tv_nsec;
-            pthread_mutex_lock (stuff->mutex);
-            stuff->locked = true;
-            my_gettime(&stuff->absTime);
-            double time = stuff->absTime.tv_sec + 1.0e-9 * stuff->absTime.tv_nsec;
-            stuff->timeWaitingToLock += time - time2;;
-            stuff->numberTimesLocked++;
-        }
-    }
-}
-/*
-  Unlocks a thread if parallel
-*/
-void
-CbcModel::unlockThread()
-{
-    threadStruct * stuff = reinterpret_cast<threadStruct *> (mutex_);
-    if (stuff) {
-        if (stuff->locked) {
-            stuff->locked = false;
-            pthread_mutex_unlock (stuff->mutex);
-            struct timespec absTime2;
-            my_gettime(&absTime2);
-            double time2 = absTime2.tv_sec + 1.0e-9 * absTime2.tv_nsec;
-            double time = stuff->absTime.tv_sec + 1.0e-9 * stuff->absTime.tv_nsec;
-            stuff->timeLocked += time2 - time;
-            stuff->numberTimesUnlocked++;
-        }
-    }
-}
-#endif
-// Returns true if locked
-bool
-CbcModel::isLocked() const
-{
-#ifdef CBC_THREAD
-    threadStruct * stuff = reinterpret_cast<threadStruct *> (mutex_);
-    if (stuff) {
-        return (stuff->locked);
-    } else {
-        return true;
-    }
-#else
-    return true;
-#endif
 }
 // Returns bounds just before where - initially original bounds - also sets bounds
 void CbcModel::previousBounds (CbcNode * node, CbcNodeInfo * where, int iColumn,
@@ -16213,6 +14573,39 @@ CbcModel::deleteSolutions()
         savedSolutions_[i] = NULL;
     }
 }
+#ifdef COIN_HAS_CLP
+void
+CbcModel::goToDantzig(int numberNodes, ClpDualRowPivot *& savePivotMethod)
+{
+    // Possible change of pivot method
+    if (!savePivotMethod && !parentModel_) {
+        OsiClpSolverInterface * clpSolver
+        = dynamic_cast<OsiClpSolverInterface *> (solver_);
+        if (clpSolver && numberNodes_ >= numberNodes && numberNodes_ < 2*numberNodes) {
+            if (numberIterations_ < (numberSolves_ + numberNodes_)*10) {
+                //if (numberIterations_<numberNodes_*20) {
+                ClpSimplex * simplex = clpSolver->getModelPtr();
+                ClpDualRowPivot * pivotMethod = simplex->dualRowPivot();
+                ClpDualRowDantzig * pivot =
+                    dynamic_cast< ClpDualRowDantzig*>(pivotMethod);
+                if (!pivot) {
+                    savePivotMethod = pivotMethod->clone(true);
+                    ClpDualRowDantzig dantzig;
+                    simplex->setDualRowPivotAlgorithm(dantzig);
+#ifdef COIN_DEVELOP
+                    printf("%d node, %d iterations ->Dantzig\n", numberNodes_,
+                           numberIterations_);
+#endif
+#ifdef CBC_THREAD
+                    if (master_)
+                        master_->setDantzigState();
+#endif
+                }
+            }
+        }
+    }
+}
+#endif
 // Below this is deprecated or at least fairly deprecated
 /*
    Do Integer Presolve. Returns new model.

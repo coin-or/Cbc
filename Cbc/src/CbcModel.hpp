@@ -19,6 +19,7 @@
 //class OsiSolverInterface;
 
 class CbcCutGenerator;
+class CbcBaseModel;
 class OsiRowCut;
 class OsiBabSolver;
 class OsiRowCutDebugger;
@@ -28,6 +29,7 @@ class CbcCutModifier;
 class CglTreeProbingInfo;
 class CbcHeuristic;
 class OsiObject;
+class CbcThread;
 class CbcTree;
 class CbcStrategy;
 class CbcFeasibilityBase;
@@ -221,6 +223,22 @@ private:
       evaluation.
     */
     bool solveWithCuts(OsiCuts & cuts, int numberTries, CbcNode * node);
+    /** Generate one round of cuts - serial mode
+      returns -
+      0 - normal
+      1 - must keep going
+      2 - set numberTries to zero
+      -1 - infeasible
+    */
+    int serialCuts(OsiCuts & cuts, CbcNode * node, OsiCuts & slackCuts, int lastNumberCuts);
+    /** Generate one round of cuts - parallel mode
+        returns -
+        0 - normal
+        1 - must keep going
+        2 - set numberTries to zero
+        -1 - infeasible
+    */
+    int parallelCuts(CbcBaseModel * master, OsiCuts & cuts, CbcNode * node, OsiCuts & slackCuts, int lastNumberCuts);
     /** Input one node output N nodes to put on tree and optional solution update
         This should be able to operate in parallel so is given a solver and is const(ish)
         However we will need to keep an array of solver_ and bases and more
@@ -308,30 +326,6 @@ public:
     */
     int doOneNode(CbcModel * baseModel, CbcNode * & node, CbcNode * & newNode);
 
-    /// Returns true if locked
-    bool isLocked() const;
-#ifdef CBC_THREAD
-    /**
-       Locks a thread if parallel so that stuff like cut pool
-       can be updated and/or used.
-    */
-    void lockThread();
-    /**
-       Unlocks a thread if parallel to say cut pool stuff not needed
-    */
-    void unlockThread();
-#else
-    inline void lockThread() {}
-    inline void unlockThread() {}
-#endif
-private:
-    /** Move/copy information from one model to another
-        -1 - initialization
-        0 - from base model
-        1 - to base model (and reset)
-        2 - add in final statistics etc (and reset so can do clean destruction)
-    */
-    void moveToModel(CbcModel * baseModel, int mode);
 public:
     /** \brief Reoptimise an LP relaxation
 
@@ -1377,50 +1371,6 @@ public:
     inline CoinWarmStartBasis & workingBasis() {
         return workingBasis_;
     }
-    /// Get number of threads
-    inline int getNumberThreads() const {
-        return numberThreads_;
-    }
-    /// Set number of threads
-    inline void setNumberThreads(int value) {
-        numberThreads_ = value;
-    }
-    /// Get thread mode
-    inline int getThreadMode() const {
-        return threadMode_;
-    }
-    /** Set thread mode
-        always use numberThreads for branching
-        1 set then deterministic
-        2 set then use numberThreads for root cuts
-        4 set then use numberThreads in root mini branch and bound
-        8 set and numberThreads - do heuristics numberThreads at a time
-        8 set and numberThreads==0 do all heuristics at once
-        default is 0
-    */
-    inline void setThreadMode(int value) {
-        threadMode_ = value;
-    }
-    /** Return
-        -2 if deterministic threaded and main thread
-        -1 if deterministic threaded and serial thread
-        0 if serial
-        1 if opportunistic threaded
-    */
-    inline int parallelMode() const {
-        if (!numberThreads_) {
-            if ((threadMode_&1) == 0)
-                return 0;
-            else
-                return -1;
-            return 0;
-        } else {
-            if ((threadMode_&1) == 0)
-                return 1;
-            else
-                return -2;
-        }
-    }
     /// Get number of "iterations" to stop after
     inline int getStopNumberIterations() const {
         return stopNumberIterations_;
@@ -1592,6 +1542,10 @@ public:
     }
     /// Set the strategy. Clones
     void setStrategy(CbcStrategy & strategy);
+    /// Set the strategy. assigns
+    inline void setStrategy(CbcStrategy * strategy) {
+        strategy_ = strategy;
+    }
     /// Get the current parent model
     inline CbcModel * parentModel() const {
         return parentModel_;
@@ -1700,7 +1654,7 @@ public:
 
     //---------------------------------------------------------------------------
 
-    /**@name Message handling */
+    /**@name Message handling etc */
     //@{
     /// Pass in Message handler (not deleted at end)
     void passInMessageHandler(CoinMessageHandler * handler);
@@ -1726,6 +1680,14 @@ public:
     /// Get log level
     inline int logLevel() const {
         return handler_->logLevel();
+    }
+    /** Set flag to say if handler_ is the default handler.
+
+      The default handler is deleted when the model is deleted. Other
+      handlers (supplied by the client) will not be deleted.
+    */
+    inline void setDefaultHandler(bool yesNo) {
+        defaultHandler_ = yesNo;
     }
     //@}
     //---------------------------------------------------------------------------
@@ -1778,24 +1740,16 @@ public:
     inline int moreSpecialOptions() const {
         return moreSpecialOptions_;
     }
+    /// Go to dantzig pivot selection if easy problem (clp only)
+#ifdef COIN_HAS_CLP
+    void goToDantzig(int numberNodes, ClpDualRowPivot *& savePivotMethod);
+#endif
     /// Now we may not own objects - just point to solver's objects
     inline bool ownObjects() const {
         return ownObjects_;
     }
     /// Check original model before it gets messed up
     void checkModel();
-    /// Pointer to a mutex
-    inline void * mutex() {
-        return mutex_;
-    }
-    /// Split up nodes
-    int splitModel(int numberModels, CbcModel ** model,
-                   int numberNodes);
-    /// Start threads
-    void startSplitModel(int numberIterations);
-    /// Merge models
-    void mergeModels(int numberModel, CbcModel ** model,
-                     int numberNodes);
     //@}
     //---------------------------------------------------------------------------
 
@@ -1910,6 +1864,102 @@ public:
     void gutsOfCopy(const CbcModel & rhs, int mode = 0);
     /// Move status, nodes etc etc across
     void moveInfo(const CbcModel & rhs);
+    //@}
+
+    /// To do with threads
+    //@{
+    /// Get pointer to masterthread
+    CbcThread * masterThread() const {
+        return masterThread_;
+    }
+    /// Get pointer to walkback
+    CbcNodeInfo ** walkback() const {
+        return walkback_;
+    }
+    /// Get number of threads
+    inline int getNumberThreads() const {
+        return numberThreads_;
+    }
+    /// Set number of threads
+    inline void setNumberThreads(int value) {
+        numberThreads_ = value;
+    }
+    /// Get thread mode
+    inline int getThreadMode() const {
+        return threadMode_;
+    }
+    /** Set thread mode
+        always use numberThreads for branching
+        1 set then deterministic
+        2 set then use numberThreads for root cuts
+        4 set then use numberThreads in root mini branch and bound
+        8 set and numberThreads - do heuristics numberThreads at a time
+        8 set and numberThreads==0 do all heuristics at once
+        default is 0
+    */
+    inline void setThreadMode(int value) {
+        threadMode_ = value;
+    }
+    /** Return
+        -2 if deterministic threaded and main thread
+        -1 if deterministic threaded and serial thread
+        0 if serial
+        1 if opportunistic threaded
+    */
+    inline int parallelMode() const {
+        if (!numberThreads_) {
+            if ((threadMode_&1) == 0)
+                return 0;
+            else
+                return -1;
+            return 0;
+        } else {
+            if ((threadMode_&1) == 0)
+                return 1;
+            else
+                return -2;
+        }
+    }
+    /// From here to end of section - code in CbcThread.cpp until class changed
+    /// Returns true if locked
+    bool isLocked() const;
+#ifdef CBC_THREAD
+    /**
+       Locks a thread if parallel so that stuff like cut pool
+       can be updated and/or used.
+    */
+    void lockThread();
+    /**
+       Unlocks a thread if parallel to say cut pool stuff not needed
+    */
+    void unlockThread();
+#else
+    inline void lockThread() {}
+    inline void unlockThread() {}
+#endif
+    /** Set information in a child
+        -3 pass pointer to child thread info
+        -2 just stop
+        -1 delete simple child stuff
+        0 delete opportunistic child stuff
+        1 delete deterministic child stuff
+    */
+    void setInfoInChild(int type, CbcThread * info);
+    /** Move/copy information from one model to another
+        -1 - initialization
+        0 - from base model
+        1 - to base model (and reset)
+        2 - add in final statistics etc (and reset so can do clean destruction)
+    */
+    void moveToModel(CbcModel * baseModel, int mode);
+    /// Split up nodes
+    int splitModel(int numberModels, CbcModel ** model,
+                   int numberNodes);
+    /// Start threads
+    void startSplitModel(int numberIterations);
+    /// Merge models
+    void mergeModels(int numberModel, CbcModel ** model,
+                     int numberNodes);
     //@}
 
     /// semi-private i.e. users should not use
@@ -2425,8 +2475,6 @@ private:
     const double * cbcRowActivity_;
     /// Pointer to user-defined data structure
     void * appData_;
-    /// Pointer to a mutex
-    void * mutex_;
     /// Presolve for CbcTreeLocal
     int presolve_;
     /** Maximum number of candidates to consider for strong branching.
@@ -2611,6 +2659,10 @@ private:
         default is 0
     */
     int threadMode_;
+    /// Thread stuff for master
+    CbcBaseModel * master_;
+    /// Pointer to masterthread
+    CbcThread * masterThread_;
 //@}
 };
 /// So we can use osiObject or CbcObject during transition

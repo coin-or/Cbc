@@ -10192,6 +10192,7 @@ CbcModel::convertToDynamic()
         new CbcSimpleIntegerDynamicPseudoCost(this,iColumn,1.0e0*downCost,1.0e0*upCost);
       //newObject->setNumberBeforeTrust(numberBeforeTrust_);
       newObject->setPriority(priority);
+      newObject->setPosition(iObject);
       newObject->setPreferredWay(preferredWay);
       object_[iObject] = newObject;
     } else if (!obj2) {

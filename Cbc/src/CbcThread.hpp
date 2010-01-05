@@ -9,56 +9,38 @@
 class OsiObject;
 class OsiCuts;
 #ifdef CBC_THREAD
-// Threads
+class CbcThread;
+// Use pthreads
+#define CBC_PTHREAD
+#ifdef CBC_PTHREAD
 #include <pthread.h>
 typedef struct {
     pthread_t	thr;
     long		status;
 } Coin_pthread_t;
-
-#ifdef HAVE_CLOCK_GETTIME
-inline int my_gettime(struct timespec* tp)
-{
-    return clock_gettime(CLOCK_REALTIME, tp);
-}
-#else
-#ifndef _MSC_VER
-inline int my_gettime(struct timespec* tp)
-{
-    struct timeval tv;
-    int ret = gettimeofday(&tv, NULL);
-    tp->tv_sec = tv.tv_sec;
-    tp->tv_nsec = tv.tv_usec * 1000;
-    return ret;
-}
-#else
-inline int my_gettime(struct timespec* tp)
-{
-    double t = CoinGetTimeOfDay();
-    tp->tv_sec = (int)floor(t);
-    tp->tv_nsec = (int)((tp->tv_sec - floor(t)) / 1000000.0);
-    return 0;
-}
 #endif
-#endif
-/** A class to encapsulate phread stuff */
+//#define THREAD_DEBUG 1
+/** A class to encapsulate specific thread stuff
+    To use another api with same style - you just need to implement
+    these methods.
+
+    At present just pthreads
+ */
 
 
-class CbcPthread {
+class CbcSpecificThread {
 public:
     // Default Constructor
-    CbcPthread ();
+    CbcSpecificThread ();
 
-    // Constructor with base model
-    CbcPthread (CbcModel & model, int deterministic, CbcModel * baseModel);
+    // Useful Constructor
+    CbcSpecificThread (CbcSpecificThread * master, pthread_mutex_t * masterMutex);
 
-    // Copy constructor
-    CbcPthread ( const CbcPthread &);
+    virtual ~CbcSpecificThread();
 
-    virtual ~CbcPthread();
-
-    /// Assignment operator
-    CbcPthread & operator=(const CbcPthread& rhs);
+    // Useful stuff
+    void setUsefulStuff (CbcSpecificThread * master,
+                         void *& masterMutex);
     /**
        Locks a thread if parallel so that stuff like cut pool
        can be updated and/or used.
@@ -68,20 +50,37 @@ public:
        Unlocks a thread if parallel to say cut pool stuff not needed
     */
     void unlockThread();
+    ///  Locks a thread for testing whether to start etc
+    void lockThread2(bool doAnyway = false);
+    ///  Unlocks a thread for testing whether to start etc
+    void unlockThread2(bool doAnyway = false);
+    /// Signal
+    void signal();
+    /// Timed wait in nanoseconds - if negative then seconds
+    void timedWait(int time);
+    /// Actually starts a thread
+    void startThread(void * (*routine ) (void *), CbcThread * thread);
+    /// Exits thread (called from master) - return code should be zero
+    int exit();
+    /// Exits thread
+    void exitThread();
+    /// Get status
+    int status() const;
+    /// Set status
+    void setStatus(int value);
+    //}
 
-    /// Returns true if locked
-    inline bool isLocked() const {
-        return locked_;
-    }
 
-public:
-    CbcPthread * basePointer_; // for getting main mutex and threadid of base
-    pthread_mutex_t mutex_; // for waking up threads
-    pthread_cond_t condition_; // for waking up thread
+public: // private:
+    CbcSpecificThread * basePointer_; // for getting main mutex and threadid of base
+#ifdef CBC_PTHREAD
+    pthread_mutex_t *masterMutex_; // for synchronizing
+    pthread_mutex_t mutex2_; // for waking up threads
+    pthread_cond_t condition2_; // for waking up thread
     Coin_pthread_t threadId_;
-    bool locked_;
+#endif
+    bool locked_; // For mutex2
 };
-
 /** A class to encapsulate thread stuff */
 
 
@@ -94,16 +93,13 @@ public:
     // Default Constructor
     CbcThread ();
 
-    // Constructor with base model
-    CbcThread (CbcModel & model, int deterministic, CbcModel * baseModel);
-
-    // Copy constructor
-    CbcThread ( const CbcThread &);
-
     virtual ~CbcThread();
 
-    /// Assignment operator
-    CbcThread & operator=(const CbcThread& rhs);
+    /// Fills in useful stuff
+    void setUsefulStuff (CbcModel * model, int deterministic,
+                         CbcModel * baseModel,
+                         CbcThread * master,
+                         void *& masterMutex);
     /**
        Locks a thread if parallel so that stuff like cut pool
        can be updated and/or used.
@@ -118,28 +114,197 @@ public:
     inline bool isLocked() const {
         return locked_;
     }
+    /** Wait for child to have return code NOT == to currentCode
+        type - 0 timed wait
+               1 wait
+           returns true if return code changed */
+    bool wait(int type, int currentCode);
+    /// Just wait for so many nanoseconds
+    void waitNano(int time);
+    /// Signal child to carry on
+    void signal();
+    /// Lock from master with mutex2 and signal before lock
+    void lockFromMaster();
+    /// Unlock from master with mutex2 and signal after unlock
+    void unlockFromMaster();
+    /// Lock from thread with mutex2 and signal before lock
+    void lockFromThread();
+    /// Unlock from thread with mutex2 and signal after unlock
+    void unlockFromThread();
+    /// Exits thread (called from master) - return code should be zero
+    int exit();
+    /// Exits thread
+    void exitThread();
+    /// Waits until returnCode_ goes to zero
+    void waitThread();
+    /// Get status
+    inline int status() const {
+        return threadStuff_.status();
+    }
+    /// Set status
+    inline void setStatus(int value) {
+        threadStuff_.setStatus( value);
+    }
+    /// Get return code
+    inline int returnCode() const {
+        return returnCode_;
+    }
+    /// Set return code
+    inline void setReturnCode(int value) {
+        returnCode_ = value;
+    }
+    /// Get base model
+    inline CbcModel * baseModel() const {
+        return baseModel_;
+    }
+    /// Get this model
+    inline CbcModel * thisModel() const {
+        return thisModel_;
+    }
+    /// Get node
+    inline CbcNode * node() const {
+        return node_;
+    }
+    /// Set node
+    inline void setNode(CbcNode * node) {
+        node_ = node;
+    }
+    /// Get created node
+    inline CbcNode * createdNode() const {
+        return createdNode_;
+    }
+    /// Set created node
+    inline void setCreatedNode(CbcNode * node) {
+        createdNode_ = node;
+    }
+    /// Get dantzig state
+    inline int dantzigState() const {
+        return dantzigState_;
+    }
+    /// Set dantzig state
+    inline void setDantzigState(int value) {
+        dantzigState_ = value;
+    }
+    /// Get time in thread
+    inline double timeInThread() const {
+        return timeInThread_;
+    }
+    /// Increment time in thread
+    inline void incrementTimeInThread(double value) {
+        timeInThread_ += value;
+    }
+    /// Get time waiting to start
+    inline double timeWaitingToStart() const {
+        return timeWaitingToStart_;
+    }
+    /// Increment time waiting to start
+    inline void incrementTimeWaitingToStart(double value) {
+        timeWaitingToStart_ += value;
+    }
+    /// Get time locked
+    inline double timeLocked() const {
+        return timeLocked_;
+    }
+    /// Increment time locked
+    inline void incrementTimeLocked(double value) {
+        timeLocked_ += value;
+    }
+    /// Get time waiting to lock
+    inline double timeWaitingToLock() const {
+        return timeWaitingToLock_;
+    }
+    /// Increment time waiting to lock
+    inline void incrementTimeWaitingToLock(double value) {
+        timeWaitingToLock_ += value;
+    }
+    /// Get if deterministic
+    inline int deterministic() const {
+        return deterministic_;
+    }
+    /// Get maxDeleteNode
+    inline int maxDeleteNode() const {
+        return maxDeleteNode_;
+    }
+    /// Set maxDeleteNode
+    inline void setMaxDeleteNode(int value) {
+        maxDeleteNode_ = value;
+    }
+    /// Get nDeleteNode (may be fake i.e. defaultParallelIterations_)
+    inline int nDeleteNode() const {
+        return nDeleteNode_;
+    }
+    /// Set nDeleteNode (may be fake i.e. defaultParallelIterations_)
+    inline void setNDeleteNode(int value) {
+        nDeleteNode_ = value;
+    }
+    /// Clear delNode
+    inline void clearDelNode() {
+        delete delNode_;
+        delNode_ = NULL;
+    }
+    /// Set fake delNode to pass across OsiCuts
+    inline void fakeDelNode(CbcNode ** delNode) {
+        delNode_ = delNode;
+    }
+    /// Get delNode
+    inline CbcNode ** delNode() const {
+        return delNode_;
+    }
+    /// Set delNode
+    inline void setDelNode(CbcNode ** delNode) {
+        delNode_ = delNode;
+    }
+    /// Get number times locked
+    inline int numberTimesLocked() const {
+        return numberTimesLocked_;
+    }
+    /// Get number times unlocked
+    inline int numberTimesUnlocked() const {
+        return numberTimesUnlocked_;
+    }
+    /// Get number of nodes this time
+    inline int nodesThisTime() const {
+        return nodesThisTime_;
+    }
+    /// Set number of nodes this time
+    inline void setNodesThisTime(int value) {
+        nodesThisTime_ = value;
+    }
+    /// Get number of iterations this time
+    inline int iterationsThisTime() const {
+        return iterationsThisTime_;
+    }
+    /// Set number of iterations this time
+    inline void setIterationsThisTime(int value) {
+        iterationsThisTime_ = value;
+    }
+    /// Get save stuff array
+    inline int * saveStuff() {
+        return saveStuff_;
+    }
+    /// Say if locked
+    inline bool locked() const {
+        return locked_;
+    }
 
-public:
+public: // private:
+    CbcSpecificThread threadStuff_;
     CbcModel * baseModel_;
     CbcModel * thisModel_;
     CbcNode * node_; // filled in every time
     CbcNode * createdNode_; // filled in every time on return
-    Coin_pthread_t threadIdOfBase_;
-    pthread_mutex_t * mutex_; // for locking data
-    pthread_mutex_t * mutex2_; // for waking up threads
     CbcThread * master_; // points back to master thread
-    pthread_cond_t * condition2_; // for waking up thread
     int returnCode_; // -1 available, 0 busy, 1 finished , 2??
     double timeLocked_;
     double timeWaitingToLock_;
     double timeWaitingToStart_;
     double timeInThread_;
+    double timeWhenLocked_; // time when thread got lock (in seconds)
     int numberTimesLocked_;
     int numberTimesUnlocked_;
     int numberTimesWaitingToStart_;
     int saveStuff_[2];
     int dantzigState_; // 0 unset, -1 waiting to be set, 1 set
-    struct timespec absTime_;
     bool locked_;
     int nDeleteNode_;
     CbcNode ** delNode_;
@@ -147,6 +312,11 @@ public:
     int nodesThisTime_;
     int iterationsThisTime_;
     int deterministic_;
+#ifdef THREAD_DEBUG
+public:
+    int threadNumber_;
+    int lockCount_;
+#endif
 };
 /** Base model */
 
@@ -160,25 +330,19 @@ public:
         type -1 cuts
               0 opportunistic
               1 deterministic */
-    // CbcBaseModel (CbcModel & model, int numberThreads,
-    //	void *(* function) (void *),
-    //	int type);
     /** Constructor with model
         type -1 cuts
               0 opportunistic
               1 deterministic */
     CbcBaseModel (CbcModel & model, int type);
 
-    // Copy constructor
-    CbcBaseModel ( const CbcBaseModel &);
-
     virtual ~CbcBaseModel();
 
-    /// Assignment operator
-    CbcBaseModel & operator=(const CbcBaseModel& rhs);
-
-    /// Stop all threads
-    void stopThreads();
+    /** Stop all threads
+        -1 just check all in good state
+        0 actually stop
+    */
+    void stopThreads(int type);
 
     /** Wait for threads in tree
         type 0 - tree looks empty - see if any nodes outstanding
@@ -212,13 +376,11 @@ public:
 
     /// Returns true if locked
     inline bool isLocked() const {
-        return children_[numberThreads_].locked_;
+        return children_[numberThreads_].locked();
     }
 
     /// Returns pointer to master thread
-    inline CbcThread * masterThread() const {
-        return children_ + numberThreads_;
-    }
+    CbcThread * masterThread() const;
 
     /// Returns pointer to a thread model
     inline CbcModel * model(int i) const {
@@ -238,48 +400,13 @@ private:
               0 opportunistic
               1 deterministic */
     int type_;
-    pthread_mutex_t mutex_main_;
-    pthread_cond_t condition_main_;
-    pthread_mutex_t condition_mutex_;
-    Coin_pthread_t * threadId_;
     int * threadCount_;
     CbcModel ** threadModel_;
-    pthread_mutex_t * mutex2_;
-    pthread_cond_t * condition2_;
     int numberObjects_;
     OsiObject ** saveObjects_;
     int threadStats_[6];
     int defaultParallelIterations_;
     int defaultParallelNodes_;
-};
-
-/** Simple general method - just passed n bundles of data and a function */
-
-
-class CbcSimpleThread {
-public:
-    // Default Constructor
-    CbcSimpleThread ();
-
-    // Constructor with stuff
-    CbcSimpleThread (int numberThreads,
-                     void *(* function) (void *),
-                     int sizeOfData,
-                     void * data);
-    // Constructor with stuff (type 0 -> doHeurThread)
-    CbcSimpleThread (int numberThreads,
-                     int type,
-                     int sizeOfData,
-                     void * data);
-
-    virtual ~CbcSimpleThread();
-
-protected:
-
-    /// Number of children
-    int numberThreads_;
-    /// data
-    void * argBundle_;
 };
 #else
 // Dummy threads

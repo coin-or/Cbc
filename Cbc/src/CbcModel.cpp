@@ -11,6 +11,7 @@
 #include <string>
 //#define CBC_DEBUG 1
 //#define CHECK_CUT_COUNTS
+//#define CHECK_NODE
 //#define CHECK_NODE_FULL
 //#define NODE_LOG
 //#define GLOBAL_CUTS_JUST_POINTERS
@@ -1201,6 +1202,23 @@ void CbcModel::saveModel(OsiSolverInterface * saveSolver, double * checkCutoffFo
                 delete [] newSolution;
                 *feasible = false; // stop search
             }
+#if 0 // probably not needed def CBC_THREAD
+            if (master_) {
+                lockThread();
+                if (parallelMode() > 0) {
+                    while (master_->waitForThreadsInTree(0)) {
+                        lockThread();
+                        double dummyBest;
+                        tree_->cleanTree(this, -COIN_DBL_MAX, dummyBest) ;
+                        //unlockThread();
+                    }
+                }
+                master_->waitForThreadsInTree(2);
+                delete master_;
+                master_ = NULL;
+                masterThread_ = NULL;
+            }
+#endif
         }
     }
 }
@@ -3323,10 +3341,12 @@ void CbcModel::branchAndBound(int doStatistics)
 #endif
         if (tree_->empty()) {
 #ifdef CBC_THREAD
-            if (parallelMode() > 0) {
+            if (parallelMode() > 0 && master_) {
                 int anyLeft = master_->waitForThreadsInTree(0);
-                if (!anyLeft)
+                if (!anyLeft) {
+                    master_->stopThreads(-1);
                     break;
+                }
             } else {
                 break;
             }
@@ -3499,6 +3519,26 @@ void CbcModel::branchAndBound(int doStatistics)
                             setBestSolution(CBC_ROUNDING, objectiveValue, newSolution) ;
                         }
                         delete [] newSolution;
+#ifdef CBC_THREAD
+                        if (master_) {
+                            lockThread();
+                            if (parallelMode() > 0) {
+                                while (master_->waitForThreadsInTree(0)) {
+                                    lockThread();
+                                    double dummyBest;
+                                    tree_->cleanTree(this, -COIN_DBL_MAX, dummyBest) ;
+                                    //unlockThread();
+                                }
+                            } else {
+                                double dummyBest;
+                                tree_->cleanTree(this, -COIN_DBL_MAX, dummyBest) ;
+			    }
+                            master_->waitForThreadsInTree(2);
+                            delete master_;
+                            master_ = NULL;
+                            masterThread_ = NULL;
+                        }
+#endif
                         if (tree_->size()) {
                             double dummyBest;
                             tree_->cleanTree(this, -COIN_DBL_MAX, dummyBest) ;
@@ -3726,10 +3766,22 @@ void CbcModel::branchAndBound(int doStatistics)
             //numberConsecutiveInfeasible++;
 #ifdef CBC_THREAD
         } else if (parallelMode() > 0) {
-            int anyLeft = master_->waitForThreadsInTree(1);
-            // may need to go round again
-            if (anyLeft)
-                continue;
+            //lockThread();
+            //node = tree_->bestNode(cutoff) ;
+            // Possible one on tree worse than cutoff
+            if (true || !node || node->objectiveValue() > cutoff) {
+                assert (master_);
+                if (master_) {
+                    int anyLeft = master_->waitForThreadsInTree(1);
+                    // may need to go round again
+                    if (anyLeft) {
+                        continue;
+                    } else {
+                        master_->stopThreads(-1);
+                    }
+                }
+            }
+            //unlockThread();
         } else {
             // Deterministic parallel
             if (tree_->size() < CoinMax(numberThreads_, 8) && !goneParallel) {
@@ -3788,7 +3840,8 @@ void CbcModel::branchAndBound(int doStatistics)
         nDeleteNode = 0;
     }
 #ifdef CBC_THREAD
-    if (numberThreads_) {
+    if (master_) {
+        master_->stopThreads(-1);
         master_->waitForThreadsInTree(2);
         delete master_;
         master_ = NULL;
@@ -5360,6 +5413,10 @@ CbcModel::~CbcModel ()
     gutsOfDestructor();
     delete eventHandler_ ;
     eventHandler_ = NULL ;
+#ifdef CBC_THREAD
+    // Get rid of all threaded stuff
+    delete master_;
+#endif
 }
 // Clears out as much as possible (except solver)
 void
@@ -7429,6 +7486,7 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
                         addedCuts_[i] = NULL ;
                     }
                 }
+                unlockThread();
             }
             numberTries = 0 ;
         }
@@ -8214,7 +8272,7 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
 #ifdef CBC_THREAD
     // Get rid of all threaded stuff
     if (master) {
-        master->stopThreads();
+        master->stopThreads(0);
         delete master;
     }
 #endif
@@ -12701,7 +12759,11 @@ CbcModel::doHeuristicsAtRoot(int deleteHeuristicsAfterwards)
                         if (!heuristic_[i]->shouldHeurRun(0))
                             continue;
                         parameters[i-iChunk].solutionValue = heuristicValue;
+                        // Don't want a strategy object
+                        CbcStrategy * saveStrategy = strategy_;
+                        strategy_ = NULL;
                         CbcModel * newModel = new CbcModel(*this);
+                        strategy_ = saveStrategy;
                         assert (!newModel->continuousSolver_);
                         if (continuousSolver_)
                             newModel->continuousSolver_ = continuousSolver_->clone();
@@ -12719,7 +12781,13 @@ CbcModel::doHeuristicsAtRoot(int deleteHeuristicsAfterwards)
                         newModel->heuristic_[0]->resetModel(newModel);
                         newModel->numberHeuristics_ = 1;
                     }
-                    CbcSimpleThread(nThisTime, 0, static_cast<int>(sizeof(argBundle)), parameters);
+                    void
+                    parallelHeuristics (int numberThreads,
+                                        int sizeOfData,
+                                        void * argBundle);
+                    parallelHeuristics(nThisTime,
+                                       static_cast<int>(sizeof(argBundle)),
+                                       parameters);
                     double cutoff = heuristicValue;
                     for (int i = 0; i < chunk; i++) {
                         if (parameters[i].model) {
@@ -13080,10 +13148,10 @@ CbcModel::doOneNode(CbcModel * baseModel, CbcNode * & node, CbcNode * & newNode)
     printf("Node %x popped from tree - %d left, %d count\n", node,
            node->nodeInfo()->numberBranchesLeft(),
            node->nodeInfo()->numberPointingToThis()) ;
-    printf("\tdepth = %d, z =  %g, unsat = %d, var = %d.\n",
+    printf("\tdepth = %d, z =  %g, unsat = %d\n", //var = %d.\n",
            node->depth(), node->objectiveValue(),
-           node->numberUnsatisfied(),
-           node->columnNumber()) ;
+           node->numberUnsatisfied());
+    //node->columnNumber()) ;
 #   endif
 
     /*
@@ -13904,6 +13972,7 @@ CbcModel::doOneNode(CbcModel * baseModel, CbcNode * & node, CbcNode * & newNode)
                 statistics_[numberNodes2_-1]->sayInfeasible();
         }
         lockThread();
+        bool locked = true;
         if (parallelMode() <= 0) {
             if (numberUpdateItems_) {
                 for (i = 0; i < numberUpdateItems_; i++) {
@@ -13981,7 +14050,7 @@ CbcModel::doOneNode(CbcModel * baseModel, CbcNode * & node, CbcNode * & newNode)
                         }
                     }
                     unlockThread();
-
+                    locked = false;
                     double estValue = newNode->guessedObjectiveValue() ;
                     int found = -1 ;
                     double * newSolution = new double [numberColumns] ;
@@ -14028,7 +14097,6 @@ CbcModel::doOneNode(CbcModel * baseModel, CbcNode * & node, CbcNode * & newNode)
                     }
                     delete [] newSolution ;
                     newNode->setGuessedObjectiveValue(estValue) ;
-                    lockThread();
                     if (parallelMode() >= 0) {
                         if (!masterThread_) // only if serial
                             tree_->push(newNode) ;
@@ -14141,7 +14209,8 @@ CbcModel::doOneNode(CbcModel * baseModel, CbcNode * & node, CbcNode * & newNode)
                 node->setActive(false);
             }
         }
-        unlockThread();
+        if (locked)
+            unlockThread();
     } else {
         // add cuts found to be infeasible (on bound)!
         printf("found to be infeas! - branches left %d - cutoff %g\n", node->nodeInfo()->numberBranchesLeft(),

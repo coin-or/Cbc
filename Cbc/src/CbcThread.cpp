@@ -8,6 +8,7 @@
 
 #include "CbcConfig.h"
 
+//#define THREAD_DEBUG
 #include <string>
 #include <cassert>
 #include <cmath>
@@ -29,6 +30,250 @@
 
 #include "CoinTime.hpp"
 #ifdef CBC_THREAD
+/// Thread functions
+static void * doNodesThread(void * voidInfo);
+static void * doCutsThread(void * voidInfo);
+static void * doHeurThread(void * voidInfo);
+// Default Constructor
+CbcSpecificThread::CbcSpecificThread ()
+        : basePointer_(NULL),
+        masterMutex_(NULL),
+        locked_(false)
+{
+#ifdef CBC_PTHREAD
+    pthread_mutex_init(&mutex2_, NULL);
+    pthread_cond_init(&condition2_, NULL);
+    threadId_.status = 0;
+#else
+#endif
+}
+// Useful Constructor
+CbcSpecificThread::CbcSpecificThread (CbcSpecificThread * master, pthread_mutex_t * masterMutex)
+        : basePointer_(master),
+        masterMutex_(masterMutex),
+        locked_(false)
+
+{
+#ifdef CBC_PTHREAD
+    pthread_mutex_init(&mutex2_, NULL);
+    pthread_cond_init(&condition2_, NULL);
+    threadId_.status = 0;
+#else
+#endif
+
+}
+// Useful stuff
+void
+CbcSpecificThread::setUsefulStuff (CbcSpecificThread * master, void *& masterMutex)
+
+{
+#ifdef CBC_PTHREAD
+    basePointer_ = master;
+    if (masterMutex) {
+        masterMutex_ = reinterpret_cast<pthread_mutex_t *>(masterMutex);
+    } else {
+        // create master mutex
+        masterMutex_ = new pthread_mutex_t;
+        pthread_mutex_init(masterMutex_, NULL);
+        masterMutex = reinterpret_cast<void *>(masterMutex_);
+    }
+#else
+#endif
+}
+
+CbcSpecificThread::~CbcSpecificThread()
+{
+#ifdef CBC_PTHREAD
+    pthread_mutex_destroy (&mutex2_);
+    if (basePointer_ == this) {
+        pthread_mutex_destroy (masterMutex_);
+        delete masterMutex_;
+    }
+#else
+#endif
+}
+/*
+  Locks a thread if parallel so that stuff like cut pool
+  can be updated and/or used.
+*/
+void
+CbcSpecificThread::lockThread()
+{
+#ifdef CBC_PTHREAD
+    // Use master mutex
+    assert (basePointer_->masterMutex_ == masterMutex_);
+    pthread_mutex_lock (masterMutex_);
+#else
+#endif
+}
+/*
+  Unlocks a thread if parallel to say cut pool stuff not needed
+*/
+void
+CbcSpecificThread::unlockThread()
+{
+#ifdef CBC_PTHREAD
+    // Use master mutex
+    pthread_mutex_unlock (masterMutex_);
+#else
+#endif
+}
+//  Locks a thread for testing whether to start etc
+void
+CbcSpecificThread::lockThread2(bool doAnyway)
+{
+    if (!locked_ || doAnyway) {
+#ifdef CBC_PTHREAD
+        pthread_mutex_lock (&mutex2_);
+#else
+#endif
+        locked_ = true;
+    }
+}
+//  Unlocks a thread for testing whether to start etc
+void
+CbcSpecificThread::unlockThread2(bool doAnyway)
+{
+    if (locked_ || doAnyway) {
+#ifdef CBC_PTHREAD
+        pthread_mutex_unlock (&mutex2_);
+#else
+#endif
+        locked_ = false;
+    }
+}
+#ifdef HAVE_CLOCK_GETTIME
+inline int my_gettime(struct timespec* tp)
+{
+    return clock_gettime(CLOCK_REALTIME, tp);
+}
+#else
+#ifndef _MSC_VER
+inline int my_gettime(struct timespec* tp)
+{
+    struct timeval tv;
+    int ret = gettimeofday(&tv, NULL);
+    tp->tv_sec = tv.tv_sec;
+    tp->tv_nsec = tv.tv_usec * 1000;
+    return ret;
+}
+#else
+inline int my_gettime(struct timespec* tp)
+{
+    double t = CoinGetTimeOfDay();
+    tp->tv_sec = (int)floor(t);
+    tp->tv_nsec = (int)((tp->tv_sec - floor(t)) / 1000000.0);
+    return 0;
+}
+#endif
+#endif
+// Get time
+static double getTime()
+{
+    struct timespec absTime2;
+    my_gettime(&absTime2);
+    double time2 = absTime2.tv_sec + 1.0e-9 * absTime2.tv_nsec;
+    return time2;
+}
+// Timed wait in nanoseconds - if negative then seconds
+void
+CbcSpecificThread::timedWait(int time)
+{
+
+#ifdef CBC_PTHREAD
+    struct timespec absTime;
+    my_gettime(&absTime);
+    if (time > 0) {
+        absTime.tv_nsec += time;
+        if (absTime.tv_nsec >= 1000000000) {
+            absTime.tv_nsec -= 1000000000;
+            absTime.tv_sec++;
+        }
+    } else {
+        absTime.tv_sec -= time;
+    }
+    pthread_cond_timedwait(&condition2_, &mutex2_, &absTime);
+#else
+#endif
+}
+// Signal
+void
+CbcSpecificThread::signal()
+{
+#ifdef CBC_PTHREAD
+    pthread_cond_signal(&condition2_);
+#else
+#endif
+}
+// Actually starts a thread
+void
+CbcSpecificThread::startThread(void * (*routine ) (void *), CbcThread * thread)
+{
+#ifdef CBC_PTHREAD
+    pthread_create(&(threadId_.thr), NULL, routine, thread);
+    threadId_.status = 1;
+#else
+#endif
+}
+// Exits thread (from master)
+int
+CbcSpecificThread::exit()
+{
+#ifdef CBC_PTHREAD
+    pthread_cond_signal(&condition2_); // unlock
+    return pthread_join(threadId_.thr, NULL);
+#else
+#endif
+}
+// Exits thread
+void
+CbcSpecificThread::exitThread()
+{
+#ifdef CBC_PTHREAD
+    pthread_mutex_unlock(&mutex2_);
+    pthread_exit(NULL);
+#else
+#endif
+
+}
+// Get status
+int
+CbcSpecificThread::status() const
+{
+#ifdef CBC_PTHREAD
+    return threadId_.status;
+#else
+#endif
+}
+// Set status
+void
+CbcSpecificThread::setStatus(int value)
+{
+#ifdef CBC_PTHREAD
+    threadId_.status = value;
+#else
+#endif
+}
+// Parallel heuristics
+void
+parallelHeuristics (int numberThreads,
+                    int sizeOfData,
+                    void * argBundle)
+{
+    Coin_pthread_t * threadId = new Coin_pthread_t [numberThreads];
+    char * args = reinterpret_cast<char *>(argBundle);
+    for (int i = 0; i < numberThreads; i++) {
+        pthread_create(&(threadId[i].thr), NULL, doHeurThread,
+                       args + i*sizeOfData);
+    }
+    // now wait
+    for (int i = 0; i < numberThreads; i++) {
+        pthread_join(threadId[i].thr, NULL);
+    }
+    delete [] threadId;
+}
+// End of specific thread stuff
+
 /// Default constructor
 CbcThread::CbcThread()
         :
@@ -36,8 +281,6 @@ CbcThread::CbcThread()
         thisModel_(NULL),
         node_(NULL), // filled in every time
         createdNode_(NULL), // filled in every time on return
-        mutex2_(NULL), // for waking up threads
-        condition2_(NULL), // for waking up thread
         returnCode_(-1), // -1 available, 0 busy, 1 finished , 2??
         timeLocked_(0.0),
         timeWaitingToLock_(0.0),
@@ -56,33 +299,6 @@ CbcThread::CbcThread()
         deterministic_(0)
 {
 }
-// Constructor with base model
-CbcThread::CbcThread (CbcModel & model, int deterministic, CbcModel * baseModel)
-        :
-        baseModel_(baseModel),
-        thisModel_(&model),
-        node_(NULL), // filled in every time
-        createdNode_(NULL), // filled in every time on return
-        mutex2_(NULL), // for waking up threads
-        condition2_(NULL), // for waking up thread
-        returnCode_(-1), // -1 available, 0 busy, 1 finished , 2??
-        timeLocked_(0.0),
-        timeWaitingToLock_(0.0),
-        timeWaitingToStart_(0.0),
-        timeInThread_(0.0),
-        numberTimesLocked_(0),
-        numberTimesUnlocked_(0),
-        numberTimesWaitingToStart_(0),
-        dantzigState_(0), // 0 unset, -1 waiting to be set, 1 set
-        locked_(false),
-        nDeleteNode_(0),
-        delNode_(NULL),
-        maxDeleteNode_(0),
-        nodesThisTime_(0),
-        iterationsThisTime_(0),
-        deterministic_(deterministic)
-{
-}
 void
 CbcThread::gutsOfDelete()
 {
@@ -90,48 +306,50 @@ CbcThread::gutsOfDelete()
     thisModel_ = NULL;
     node_ = NULL;
     createdNode_ = NULL;
-    mutex2_ = NULL;
-    condition2_ = NULL;
     delNode_ = NULL;
-}
-void CbcThread::gutsOfCopy(const CbcThread & rhs)
-{
-    baseModel_ = rhs.baseModel_;
-    thisModel_ = rhs.thisModel_;
-    node_ = rhs.node_;
-    createdNode_ = rhs.createdNode_;
-    mutex2_ = rhs.mutex2_;
-    condition2_ = rhs.condition2_;
-    returnCode_ = rhs.returnCode_;
-    timeLocked_ = rhs.timeLocked_;
-    timeWaitingToLock_ = rhs.timeWaitingToLock_;
-    timeWaitingToStart_ = rhs.timeWaitingToStart_;
-    timeInThread_ = rhs.timeInThread_;
-    numberTimesLocked_ = rhs.numberTimesLocked_;
-    numberTimesUnlocked_ = rhs.numberTimesUnlocked_;
-    numberTimesWaitingToStart_ = rhs.numberTimesWaitingToStart_;
-    dantzigState_ = rhs.dantzigState_;
-    locked_ = rhs.locked_;
-    nDeleteNode_ = rhs.nDeleteNode_;
-    delNode_ = rhs.delNode_;
-    maxDeleteNode_ = rhs.maxDeleteNode_;
-    nodesThisTime_ = rhs.nodesThisTime_;
-    iterationsThisTime_ = rhs.iterationsThisTime_;
-    deterministic_ = rhs.deterministic_;
 }
 // Destructor
 CbcThread::~CbcThread()
 {
 }
-// Assignment operator
-CbcThread &
-CbcThread::operator=(const CbcThread & rhs)
+// Fills in useful stuff
+void
+CbcThread::setUsefulStuff (CbcModel * model, int deterministic, CbcModel * baseModel,
+                           CbcThread * master,
+                           void *& masterMutex)
 {
-    if (this != &rhs) {
-        gutsOfDelete();
-        gutsOfCopy(rhs);
+    baseModel_ = baseModel;
+    thisModel_ = model;
+    deterministic_ = deterministic;
+    threadStuff_.setUsefulStuff(&master->threadStuff_, masterMutex);
+    node_ = NULL;
+    createdNode_ = NULL;
+    master_ = master;
+    returnCode_ = -1;
+    timeLocked_ = 0.0;
+    timeWaitingToLock_ = 0.0;
+    timeWaitingToStart_ = 0.0;
+    timeInThread_ = 0.0;
+    numberTimesLocked_ = 0;
+    numberTimesUnlocked_ = 0;
+    numberTimesWaitingToStart_ = 0;
+    dantzigState_ = 0; // 0 unset, -1 waiting to be set, 1 set
+    locked_ = false;
+    delNode_ = NULL;
+    maxDeleteNode_ = 0;
+    nDeleteNode_ = 0;
+    nodesThisTime_ = 0;
+    iterationsThisTime_ = 0;
+    if (model != baseModel) {
+        // thread
+        thisModel_->setInfoInChild(-3, this);
+        if (deterministic_ >= 0)
+            thisModel_->moveToModel(baseModel, -1);
+        if (deterministic == -1)
+            threadStuff_.startThread( doCutsThread, this);
+        else
+            threadStuff_.startThread( doNodesThread, this);
     }
-    return *this;
 }
 /*
   Locks a thread if parallel so that stuff like cut pool
@@ -141,15 +359,26 @@ void
 CbcThread::lockThread()
 {
     if (!locked_) {
-        struct timespec absTime2;
-        my_gettime(&absTime2);
-        double time2 = absTime2.tv_sec + 1.0e-9 * absTime2.tv_nsec;
-        pthread_mutex_lock (mutex_);
+        double time2 = getTime();
+        threadStuff_.lockThread();
         locked_ = true;
-        my_gettime(&absTime_);
-        double time = absTime_.tv_sec + 1.0e-9 * absTime_.tv_nsec;
-        timeWaitingToLock_ += time - time2;;
+        timeWhenLocked_ = getTime();
+        timeWaitingToLock_ += timeWhenLocked_ - time2;;
         numberTimesLocked_++;
+#ifdef THREAD_DEBUG
+        lockCount_ ++;
+#if THREAD_DEBUG>1
+        if (threadNumber_ == -1)
+            printf("locking master %d\n", lockCount_);
+        else
+            printf("locking thread %d %d\n", threadNumber_, lockCount_);
+#endif
+    } else {
+        if (threadNumber_ == -1)
+            printf("master already locked %d\n", lockCount_);
+        else
+            printf("thread already locked %d %d\n", threadNumber_, lockCount_);
+#endif
     }
 }
 /*
@@ -160,16 +389,130 @@ CbcThread::unlockThread()
 {
     if (locked_) {
         locked_ = false;
-        pthread_mutex_unlock (mutex_);
-        struct timespec absTime2;
-        my_gettime(&absTime2);
-        double time2 = absTime2.tv_sec + 1.0e-9 * absTime2.tv_nsec;
-        double time = absTime_.tv_sec + 1.0e-9 * absTime_.tv_nsec;
-        timeLocked_ += time2 - time;
+        threadStuff_.unlockThread();
+        double time2 = getTime();
+        timeLocked_ += time2 - timeWhenLocked_;
         numberTimesUnlocked_++;
+#ifdef THREAD_DEBUG
+#if THREAD_DEBUG>1
+        if (threadNumber_ == -1)
+            printf("unlocking master %d\n", lockCount_);
+        else
+            printf("unlocking thread %d %d\n", threadNumber_, lockCount_);
+#endif
     } else {
-        printf("already unlocked\n");
+        if (threadNumber_ == -1)
+            printf("master already unlocked %d\n", lockCount_);
+        else
+            printf("thread already unlocked %d %d\n", threadNumber_, lockCount_);
+#endif
     }
+}
+/* Wait for child to have return code NOT == to currentCode
+   type - 0 timed wait
+   1 wait
+   returns true if return code changed */
+bool
+CbcThread::wait(int type, int currentCode)
+{
+    if (!type) {
+        // just timed wait
+        master_->threadStuff_.lockThread2();
+        master_->threadStuff_.timedWait(1000000);
+        master_->threadStuff_.unlockThread2();
+    } else {
+        // wait until return code changes
+        while (returnCode_ == currentCode) {
+            threadStuff_.signal();
+            master_->threadStuff_.lockThread2();
+            master_->threadStuff_.timedWait(1000000);
+            master_->threadStuff_.unlockThread2();
+        }
+    }
+    return (returnCode_ != currentCode);
+}
+#if 0
+pthread_cond_signal(&condition2_);
+-
+if (!locked_)
+{
+    pthread_mutex_lock (&mutex2_);
+    locked_ = true;
+}
+-
+pthread_cond_timedwait(&condition2_, &mutex2_, &absTime);
+-
+if (locked_)
+{
+    pthread_mutex_unlock (&mutex2_);
+    locked_ = false;
+}
+#endif
+// Waits until returnCode_ goes to zero
+void
+CbcThread::waitThread()
+{
+    double time = getTime();
+    threadStuff_.lockThread2();
+    while (returnCode_) {
+        threadStuff_.timedWait(-10); // 10 seconds
+    }
+    timeWaitingToStart_ += getTime() - time;
+    numberTimesWaitingToStart_++;
+}
+// Just wait for so many nanoseconds
+void
+CbcThread::waitNano(int time)
+{
+    threadStuff_.lockThread2();
+    threadStuff_.timedWait(time);
+    threadStuff_.unlockThread2();
+}
+// Signal child to carry on
+void
+CbcThread::signal()
+{
+    threadStuff_.signal();
+}
+// Lock from master with mutex2 and signal before lock
+void
+CbcThread::lockFromMaster()
+{
+    threadStuff_.signal();
+    master_->threadStuff_.lockThread2(true);
+}
+// Unlock from master with mutex2 and signal after unlock
+void
+CbcThread::unlockFromMaster()
+{
+    master_->threadStuff_.unlockThread2(true); // unlock anyway
+    threadStuff_.signal();
+}
+// Lock from thread with mutex2 and signal before lock
+void
+CbcThread::lockFromThread()
+{
+    master_->threadStuff_.signal();
+    threadStuff_.lockThread2();
+}
+// Unlock from thread with mutex2 and signal after unlock
+void
+CbcThread::unlockFromThread()
+{
+    master_->threadStuff_.signal();
+    threadStuff_.unlockThread2();
+}
+// Exits thread (from master)
+int
+CbcThread::exit()
+{
+    return threadStuff_.exit();
+}
+// Exits thread
+void
+CbcThread::exitThread()
+{
+    threadStuff_.exitThread();
 }
 // Default constructor
 CbcBaseModel::CbcBaseModel()
@@ -177,31 +520,21 @@ CbcBaseModel::CbcBaseModel()
         numberThreads_(0),
         children_(NULL),
         type_(0),
-        threadId_(NULL),
         threadCount_(NULL),
         threadModel_(NULL),
-        mutex2_(NULL),
-        condition2_(NULL),
         numberObjects_(0),
         saveObjects_(NULL),
         defaultParallelIterations_(400),
         defaultParallelNodes_(2)
 {
 }
-/// Thread functions
-static void * doNodesThread(void * voidInfo);
-static void * doCutsThread(void * voidInfo);
-static void * doHeurThread(void * voidInfo);
 // Constructor with model
 CbcBaseModel::CbcBaseModel (CbcModel & model,  int type)
         :
         children_(NULL),
         type_(type),
-        threadId_(NULL),
         threadCount_(NULL),
         threadModel_(NULL),
-        mutex2_(NULL),
-        condition2_(NULL),
         numberObjects_(0),
         saveObjects_(NULL),
         defaultParallelIterations_(400),
@@ -209,16 +542,18 @@ CbcBaseModel::CbcBaseModel (CbcModel & model,  int type)
 {
     numberThreads_ = model.getNumberThreads();
     if (numberThreads_) {
-        threadId_ = new Coin_pthread_t [numberThreads_];
+        children_ = new CbcThread [numberThreads_+1];
+        // Do a partial one for base model
+        void * mutex_main = NULL;
+        children_[numberThreads_].setUsefulStuff(&model, type_, &model,
+                children_ + numberThreads_, mutex_main);
+#ifdef THREAD_DEBUG
+        children_[numberThreads_].threadNumber_ = -1;
+        children_[numberThreads_].lockCount_ = 0;
+#endif
         threadCount_ = new int [numberThreads_];
         CoinZeroN(threadCount_, numberThreads_);
-        children_ = new CbcThread [numberThreads_+1];
-        pthread_mutex_init(&mutex_main_, NULL);
-        pthread_cond_init(&condition_main_, NULL);
-        pthread_mutex_init(&condition_mutex_, NULL);
         threadModel_ = new CbcModel * [numberThreads_+1];
-        mutex2_ = new pthread_mutex_t [numberThreads_];
-        condition2_ = new pthread_cond_t [numberThreads_];
         memset(threadStats_, 0, sizeof(threadStats_));
         if (type_ > 0) {
             // May need for deterministic
@@ -232,12 +567,7 @@ CbcBaseModel::CbcBaseModel (CbcModel & model,  int type)
         CbcStrategy * saveStrategy = model.strategy();
         model.setStrategy(NULL);
         for (int i = 0; i < numberThreads_; i++) {
-            pthread_mutex_init(mutex2_ + i, NULL);
-            pthread_cond_init(condition2_ + i, NULL);
-            threadId_[i].status = 0;
             threadModel_[i] = new CbcModel(model, true);
-            //threadModel_[i]->setMasterThread(children_+i);
-            children_[i] = CbcThread(*threadModel_[i], type_, &model);
             threadModel_[i]->synchronizeHandlers(1);
 #ifdef COIN_HAS_CLP
             // Solver may need to know about model
@@ -247,99 +577,44 @@ CbcBaseModel::CbcBaseModel (CbcModel & model,  int type)
             if (solver)
                 solver->setCbcModel(thisModel);
 #endif
-            threadModel_[i]->setInfoInChild(-3, children_ + i);
-            if (type_ >= 0)
-                threadModel_[i]->moveToModel(&model, -1);
-            children_[i].thisModel_ = threadModel_[i];
-            children_[i].node_ = NULL;
-            children_[i].createdNode_ = NULL;
-            children_[i].threadIdOfBase_.thr = pthread_self();
-            children_[i].mutex_ = &mutex_main_;
-            children_[i].master_ = children_ + numberThreads_;
-            children_[i].mutex2_ = mutex2_ + i;
-            children_[i].condition2_ = condition2_ + i;
-            children_[i].returnCode_ = -1;
-            children_[i].timeLocked_ = 0.0;
-            children_[i].timeWaitingToLock_ = 0.0;
-            children_[i].timeWaitingToStart_ = 0.0;
-            children_[i].timeInThread_ = 0.0;
-            children_[i].numberTimesLocked_ = 0;
-            children_[i].numberTimesUnlocked_ = 0;
-            children_[i].numberTimesWaitingToStart_ = 0;
-            children_[i].dantzigState_ = 0; // 0 unset, -1 waiting to be set, 1 set
-            children_[i].locked_ = false;
-            children_[i].delNode_ = NULL;
-            children_[i].maxDeleteNode_ = 0;
-            children_[i].nDeleteNode_ = 0;
-            children_[i].nodesThisTime_ = 0;
-            children_[i].iterationsThisTime_ = 0;
-            if (type == -1)
-                pthread_create(&(threadId_[i].thr), NULL, doCutsThread, children_ + i);
-            else
-                pthread_create(&(threadId_[i].thr), NULL, doNodesThread, children_ + i);
-            threadId_[i].status = 1;
+            children_[i].setUsefulStuff(threadModel_[i], type_, &model,
+                                        children_ + numberThreads_, mutex_main);
+#ifdef THREAD_DEBUG
+            children_[i].threadNumber_ = i;
+            children_[i].lockCount_ = 0;
+#endif
         }
         model.setStrategy(saveStrategy);
-        // Do a partial one for base model
-        children_[numberThreads_].baseModel_ = &model;
-        //model.setMasterThread(children_+numberThreads_);
-        threadModel_[numberThreads_] = &model;
-        children_[numberThreads_].node_ = NULL;
-        children_[numberThreads_].mutex_ = &mutex_main_;
-        children_[numberThreads_].condition2_ = &condition_main_;
-        children_[numberThreads_].mutex2_ = &condition_mutex_;
-        children_[numberThreads_].timeLocked_ = 0.0;
-        children_[numberThreads_].timeWaitingToLock_ = 0.0;
-        children_[numberThreads_].numberTimesLocked_ = 0;
-        children_[numberThreads_].numberTimesUnlocked_ = 0;
-        children_[numberThreads_].locked_ = false;
     }
 }
 // Stop threads
 void
-CbcBaseModel::stopThreads()
+CbcBaseModel::stopThreads(int type)
 {
-    for (int i = 0; i < numberThreads_; i++) {
-        while (children_[i].returnCode_ == 0) {
-            pthread_cond_signal(children_[i].condition2_); // unlock
-            pthread_mutex_lock(children_[numberThreads_].mutex2_);
-            struct timespec absTime;
-            my_gettime(&absTime);
-            absTime.tv_nsec += 1000000; // millisecond
-            if (absTime.tv_nsec >= 1000000000) {
-                absTime.tv_nsec -= 1000000000;
-                absTime.tv_sec++;
-            }
-            pthread_cond_timedwait(children_[numberThreads_].condition2_, children_[numberThreads_].mutex2_, &absTime);
-            my_gettime(&absTime);
-            pthread_mutex_unlock(children_[numberThreads_].mutex2_);
+    if (type < 0) {
+        for (int i = 0; i < numberThreads_; i++) {
+            assert (children_[i].returnCode() == -1);
         }
-        threadModel_[i]->setInfoInChild(-2, NULL);
-        children_[i].returnCode_ = 0;
-        pthread_cond_signal(children_[i].condition2_); // unlock
-        pthread_join(threadId_[i].thr, NULL);
-        threadId_[i].status = 0;
-        pthread_mutex_destroy (children_[i].mutex2_);
-        pthread_cond_destroy (children_[i].condition2_);
+        return;
     }
-    pthread_cond_destroy (children_[numberThreads_].condition2_);
-    pthread_mutex_destroy (children_[numberThreads_].mutex2_);
+    for (int i = 0; i < numberThreads_; i++) {
+        children_[i].wait(1, 0);
+        assert (children_[i].returnCode() == -1);
+        threadModel_[i]->setInfoInChild(-2, NULL);
+        children_[i].setReturnCode( 0);
+        children_[i].exit();
+        children_[i].setStatus( 0);
+    }
     // delete models and solvers
     for (int i = 0; i < numberThreads_; i++) {
         threadModel_[i]->setInfoInChild(type_, NULL);
         delete threadModel_[i];
     }
-    delete [] mutex2_;
-    delete [] condition2_;
-    delete [] threadId_;
     delete [] children_;
     delete [] threadModel_;
     for (int i = 0; i < numberObjects_; i++)
         delete saveObjects_[i];
     delete [] saveObjects_;
-    mutex2_ = NULL;
-    condition2_ = NULL;
-    threadId_ = NULL;
     children_ = NULL;
     threadModel_ = NULL;
     saveObjects_ = NULL;
@@ -350,11 +625,12 @@ CbcBaseModel::stopThreads()
 int
 CbcBaseModel::waitForThreadsInTree(int type)
 {
-    CbcModel * baseModel = children_[0].baseModel_;
+    CbcModel * baseModel = children_[0].baseModel();
     int anyLeft = 0;
     // May be able to combine parts later
 
     if (type == 0) {
+        bool locked = true;
 #ifdef COIN_DEVELOP
         printf("empty\n");
 #endif
@@ -362,8 +638,8 @@ CbcBaseModel::waitForThreadsInTree(int type)
         while (true) {
             int iThread;
             for (iThread = 0; iThread < numberThreads_; iThread++) {
-                if (threadId_[iThread].status) {
-                    if (children_[iThread].returnCode_ == 0)
+                if (children_[iThread].status()) {
+                    if (children_[iThread].returnCode() == 0)
                         break;
                 }
             }
@@ -372,33 +648,20 @@ CbcBaseModel::waitForThreadsInTree(int type)
                 printf("waiting for thread %d code 0\n", iThread);
 #endif
                 unlockThread();
-                pthread_cond_signal(children_[iThread].condition2_); // unlock in case
-                while (true) {
-                    pthread_mutex_lock(children_[numberThreads_].mutex2_);
-                    struct timespec absTime;
-                    my_gettime(&absTime);
-                    double time = absTime.tv_sec + 1.0e-9 * absTime.tv_nsec;
-                    absTime.tv_nsec += 1000000; // millisecond
-                    if (absTime.tv_nsec >= 1000000000) {
-                        absTime.tv_nsec -= 1000000000;
-                        absTime.tv_sec++;
-                    }
-                    pthread_cond_timedwait(children_[numberThreads_].condition2_, children_[numberThreads_].mutex2_, &absTime);
-                    my_gettime(&absTime);
-                    double time2 = absTime.tv_sec + 1.0e-9 * absTime.tv_nsec;
-                    children_[numberThreads_].timeInThread_ += time2 - time;
-                    pthread_mutex_unlock(children_[numberThreads_].mutex2_);
-                    if (children_[iThread].returnCode_ != 0)
-                        break;
-                    pthread_cond_signal(children_[iThread].condition2_); // unlock
-                }
+                locked = false;
+                children_[iThread].wait(1, 0);
+                assert(children_[iThread].returnCode() == 1);
                 threadModel_[iThread]->moveToModel(baseModel, 1);
+#ifdef THREAD_PRINT
+                printf("off thread2 %d node %x\n", iThread, children_[iThread].node());
+#endif
+                children_[iThread].setNode(NULL);
                 anyLeft = 1;
-                assert (children_[iThread].returnCode_ == 1);
-                if (children_[iThread].dantzigState_ == -1) {
+                assert (children_[iThread].returnCode() == 1);
+                if (children_[iThread].dantzigState() == -1) {
                     // 0 unset, -1 waiting to be set, 1 set
-                    children_[iThread].dantzigState_ = 1;
-                    CbcModel * model = children_[iThread].thisModel_;
+                    children_[iThread].setDantzigState(1);
+                    CbcModel * model = children_[iThread].thisModel();
                     OsiClpSolverInterface * clpSolver2
                     = dynamic_cast<OsiClpSolverInterface *> (model->solver());
                     assert (clpSolver2);
@@ -407,7 +670,7 @@ CbcBaseModel::waitForThreadsInTree(int type)
                     simplex2->setDualRowPivotAlgorithm(dantzig);
                 }
                 // say available
-                children_[iThread].returnCode_ = -1;
+                children_[iThread].setReturnCode( -1);
                 threadStats_[4]++;
 #ifdef COIN_DEVELOP
                 printf("thread %d code now -1\n", iThread);
@@ -419,18 +682,23 @@ CbcBaseModel::waitForThreadsInTree(int type)
 #endif
                 // now check if any have just finished
                 for (iThread = 0; iThread < numberThreads_; iThread++) {
-                    if (threadId_[iThread].status) {
-                        if (children_[iThread].returnCode_ == 1)
+                    if (children_[iThread].status()) {
+                        if (children_[iThread].returnCode() == 1)
                             break;
                     }
                 }
                 if (iThread < numberThreads_) {
                     unlockThread();
+                    locked = false;
                     threadModel_[iThread]->moveToModel(baseModel, 1);
+#ifdef THREAD_PRINT
+                    printf("off thread3 %d node %x\n", iThread, children_[iThread].node());
+#endif
+                    children_[iThread].setNode(NULL);
                     anyLeft = 1;
-                    assert (children_[iThread].returnCode_ == 1);
+                    assert (children_[iThread].returnCode() == 1);
                     // say available
-                    children_[iThread].returnCode_ = -1;
+                    children_[iThread].setReturnCode( -1);
                     threadStats_[4]++;
 #ifdef COIN_DEVELOP
                     printf("thread %d code now -1\n", iThread);
@@ -442,12 +710,14 @@ CbcBaseModel::waitForThreadsInTree(int type)
 #ifdef COIN_DEVELOP
                 printf("tree not empty!!!!!!\n");
 #endif
+                if (locked)
+                    unlockThread();
                 return 1;
                 break;
             }
             for (iThread = 0; iThread < numberThreads_; iThread++) {
-                if (threadId_[iThread].status) {
-                    if (children_[iThread].returnCode_ != -1) {
+                if (children_[iThread].status()) {
+                    if (children_[iThread].returnCode() != -1) {
                         printf("bad end of tree\n");
                         abort();
                     }
@@ -458,7 +728,7 @@ CbcBaseModel::waitForThreadsInTree(int type)
 #ifdef COIN_DEVELOP
         printf("finished ************\n");
 #endif
-        if (!anyLeft)
+        if (locked)
             unlockThread();
         return anyLeft;
     } else if (type == 1) {
@@ -473,39 +743,45 @@ CbcBaseModel::waitForThreadsInTree(int type)
         int iThread;
         // Start one off if any available
         for (iThread = 0; iThread < numberThreads_; iThread++) {
-            if (children_[iThread].returnCode_ == -1)
+            if (children_[iThread].returnCode() == -1)
                 break;
         }
         if (iThread < numberThreads_) {
-            children_[iThread].node_ = node;
-            //printf("empty thread %d node %x\n",iThread,children_[iThread].node_);
-            assert (children_[iThread].returnCode_ == -1);
+            children_[iThread].setNode(node);
+#ifdef THREAD_PRINT
+            printf("empty thread %d node %x\n", iThread, children_[iThread].node());
+#endif
+            assert (children_[iThread].returnCode() == -1);
             // say in use
             threadModel_[iThread]->moveToModel(baseModel, 0);
             // This has to be AFTER moveToModel
-            children_[iThread].returnCode_ = 0;
-            pthread_cond_signal(children_[iThread].condition2_); // unlock
+            children_[iThread].setReturnCode( 0);
+            children_[iThread].signal();
             threadCount_[iThread]++;
         }
         lockThread();
         // see if any finished
         for (iThread = 0; iThread < numberThreads_; iThread++) {
-            if (children_[iThread].returnCode_ > 0)
+            if (children_[iThread].returnCode() > 0)
                 break;
         }
         unlockThread();
         if (iThread < numberThreads_) {
             threadModel_[iThread]->moveToModel(baseModel, 1);
+#ifdef THREAD_PRINT
+            printf("off thread4 %d node %x\n", iThread, children_[iThread].node());
+#endif
+            children_[iThread].setNode(NULL);
             anyLeft = 1;
-            assert (children_[iThread].returnCode_ == 1);
+            assert (children_[iThread].returnCode() == 1);
             // say available
-            children_[iThread].returnCode_ = -1;
+            children_[iThread].setReturnCode( -1);
             // carry on
             threadStats_[3]++;
         } else {
             // Start one off if any available
             for (iThread = 0; iThread < numberThreads_; iThread++) {
-                if (children_[iThread].returnCode_ == -1)
+                if (children_[iThread].returnCode() == -1)
                     break;
             }
             if (iThread < numberThreads_) {
@@ -520,26 +796,15 @@ CbcBaseModel::waitForThreadsInTree(int type)
             // wait (for debug could sleep and use test)
             bool finished = false;
             while (!finished) {
-                pthread_mutex_lock(children_[numberThreads_].mutex2_);
-                struct timespec absTime;
-                my_gettime(&absTime);
-                double time = absTime.tv_sec + 1.0e-9 * absTime.tv_nsec;
-                absTime.tv_nsec += 1000000; // millisecond
-                if (absTime.tv_nsec >= 1000000000) {
-                    absTime.tv_nsec -= 1000000000;
-                    absTime.tv_sec++;
-                }
-                pthread_cond_timedwait(children_[numberThreads_].condition2_, children_[numberThreads_].mutex2_, &absTime);
-                my_gettime(&absTime);
-                double time2 = absTime.tv_sec + 1.0e-9 * absTime.tv_nsec;
-                children_[numberThreads_].timeInThread_ += time2 - time;
-                pthread_mutex_unlock(children_[numberThreads_].mutex2_);
+                double time = getTime();
+                children_[numberThreads_].wait(0, 0);
+                children_[numberThreads_].incrementTimeInThread(getTime() - time);
                 for (iThread = 0; iThread < numberThreads_; iThread++) {
-                    if (children_[iThread].returnCode_ > 0) {
+                    if (children_[iThread].returnCode() > 0) {
                         finished = true;
                         break;
-                    } else if (children_[iThread].returnCode_ == 0) {
-                        pthread_cond_signal(children_[iThread].condition2_); // unlock
+                    } else if (children_[iThread].returnCode() == 0) {
+                        children_[iThread].signal(); // unlock
                     }
                 }
             }
@@ -547,18 +812,19 @@ CbcBaseModel::waitForThreadsInTree(int type)
             // move information to model
             threadModel_[iThread]->moveToModel(baseModel, 1);
             anyLeft = 1;
-            node = children_[iThread].node_;
-            //printf("off thread %d node %x\n",iThread,children_[iThread].node_);
-            children_[iThread].node_ = NULL;
-            assert (children_[iThread].returnCode_ == 1);
+#ifdef THREAD_PRINT
+            printf("off thread %d node %x\n", iThread, children_[iThread].node());
+#endif
+            children_[iThread].setNode(NULL);
+            assert (children_[iThread].returnCode() == 1);
             // say available
-            children_[iThread].returnCode_ = -1;
+            children_[iThread].setReturnCode( -1);
         }
         // carry on
         threadStats_[2]++;
         for (int iThread = 0; iThread < numberThreads_; iThread++) {
-            if (threadId_[iThread].status) {
-                if (children_[iThread].returnCode_ != -1) {
+            if (children_[iThread].status()) {
+                if (children_[iThread].returnCode() != -1) {
                     anyLeft = 1;
                     break;
                 }
@@ -566,70 +832,55 @@ CbcBaseModel::waitForThreadsInTree(int type)
         }
         return anyLeft;
     } else if (type == 2) {
-        // do statistics
+        assert (baseModel->tree()->empty());
         int i;
+        for (i = 0; i < numberThreads_; i++)
+            assert (children_[i].returnCode() == -1);
+        // do statistics
         // Seems to be bug in CoinCpu on Linux - does threads as well despite documentation
         double time = 0.0;
         for (i = 0; i < numberThreads_; i++)
-            time += children_[i].timeInThread_;
+            time += children_[i].timeInThread();
         bool goodTimer = time < (baseModel->getCurrentSeconds());
         for (i = 0; i < numberThreads_; i++) {
-            while (children_[i].returnCode_ == 0) {
-                pthread_cond_signal(children_[i].condition2_); // unlock
-                pthread_mutex_lock(children_[numberThreads_].mutex2_);
-                struct timespec absTime;
-                my_gettime(&absTime);
-                absTime.tv_nsec += 1000000; // millisecond
-                if (absTime.tv_nsec >= 1000000000) {
-                    absTime.tv_nsec -= 1000000000;
-                    absTime.tv_sec++;
-                }
-                pthread_cond_timedwait(children_[numberThreads_].condition2_, children_[numberThreads_].mutex2_, &absTime);
-                my_gettime(&absTime);
-                pthread_mutex_unlock(children_[numberThreads_].mutex2_);
+            while (children_[i].returnCode() == 0) {
+                children_[i].signal();
+                double time = getTime();
+                children_[numberThreads_].wait(0, 0);
+                children_[numberThreads_].incrementTimeInThread(getTime() - time);
             }
-            pthread_cond_signal(children_[i].condition2_); // unlock
-            pthread_mutex_lock(children_[numberThreads_].mutex2_); // not sure necessary but have had one hang on interrupt
+            children_[i].lockFromMaster();
             threadModel_[i]->setNumberThreads(0); // say exit
-            if (children_[i].deterministic_ > 0)
-                delete [] children_[i].delNode_;
-            children_[i].returnCode_ = 0;
-            pthread_mutex_unlock(children_[numberThreads_].mutex2_);
-            pthread_cond_signal(children_[i].condition2_); // unlock
-            //if (!stopped)
-            //pthread_join(threadId[i],NULL);
+            if (children_[i].deterministic() > 0)
+                delete [] children_[i].delNode();
+            children_[i].setReturnCode( 0);
+            children_[i].unlockFromMaster();
             int returnCode;
-            returnCode = pthread_join(threadId_[i].thr, NULL);
-            threadId_[i].status = 0;
+            returnCode = children_[i].exit();
+            children_[i].setStatus( 0);
             assert (!returnCode);
             //else
-            //pthread_kill(threadId[i]); // kill rather than try and synchronize
             threadModel_[i]->moveToModel(baseModel, 2);
-            pthread_mutex_destroy (children_[i].mutex2_);
-            pthread_cond_destroy (children_[i].condition2_);
-            assert (children_[i].numberTimesLocked_ == children_[i].numberTimesUnlocked_);
+            assert (children_[i].numberTimesLocked() == children_[i].numberTimesUnlocked());
             baseModel->messageHandler()->message(CBC_THREAD_STATS, baseModel->messages())
             << "Thread";
             baseModel->messageHandler()->printing(true)
-            << i << threadCount_[i] << children_[i].timeWaitingToStart_;
-            baseModel->messageHandler()->printing(goodTimer) << children_[i].timeInThread_;
+            << i << threadCount_[i] << children_[i].timeWaitingToStart();
+            baseModel->messageHandler()->printing(goodTimer) << children_[i].timeInThread();
             baseModel->messageHandler()->printing(false) << 0.0;
-            baseModel->messageHandler()->printing(true) << children_[i].numberTimesLocked_
-            << children_[i].timeLocked_ << children_[i].timeWaitingToLock_
+            baseModel->messageHandler()->printing(true) << children_[i].numberTimesLocked()
+            << children_[i].timeLocked() << children_[i].timeWaitingToLock()
             << CoinMessageEol;
         }
-        assert (children_[numberThreads_].numberTimesLocked_ == children_[numberThreads_].numberTimesUnlocked_);
+        assert (children_[numberThreads_].numberTimesLocked() == children_[numberThreads_].numberTimesUnlocked());
         baseModel->messageHandler()->message(CBC_THREAD_STATS, baseModel->messages())
         << "Main thread";
         baseModel->messageHandler()->printing(false) << 0 << 0 << 0.0;
         baseModel->messageHandler()->printing(false) << 0.0;
-        baseModel->messageHandler()->printing(true) << children_[numberThreads_].timeInThread_;
-        baseModel->messageHandler()->printing(true) << children_[numberThreads_].numberTimesLocked_
-        << children_[numberThreads_].timeLocked_ << children_[numberThreads_].timeWaitingToLock_
+        baseModel->messageHandler()->printing(true) << children_[numberThreads_].timeInThread();
+        baseModel->messageHandler()->printing(true) << children_[numberThreads_].numberTimesLocked()
+        << children_[numberThreads_].timeLocked() << children_[numberThreads_].timeWaitingToLock()
         << CoinMessageEol;
-        //pthread_mutex_destroy (&mutex_main_);
-        //pthread_cond_destroy (children_[numberThreads_].condition2_);
-        //pthread_mutex_destroy (children_[numberThreads_].mutex2_);
         // delete models (here in case some point to others)
         for (i = 0; i < numberThreads_; i++) {
             // make sure handler will be deleted
@@ -651,70 +902,53 @@ CbcBaseModel::waitForThreadsInCuts(int type, OsiCuts * eachCuts,
         int iThread = -1;
         // see if any available
         for (iThread = 0; iThread < numberThreads_; iThread++) {
-            if (children_[iThread].returnCode_) {
+            if (children_[iThread].returnCode()) {
                 finished = true;
                 break;
-            } else if (children_[iThread].returnCode_ == 0) {
-                pthread_cond_signal(children_[iThread].condition2_); // unlock
+            } else if (children_[iThread].returnCode() == 0) {
+                children_[iThread].signal();
             }
         }
         while (!finished) {
-            pthread_mutex_lock(children_[numberThreads_].mutex2_);
-            struct timespec absTime;
-            my_gettime(&absTime);
-            absTime.tv_nsec += 1000000; // millisecond
-            if (absTime.tv_nsec >= 1000000000) {
-                absTime.tv_nsec -= 1000000000;
-                absTime.tv_sec++;
-            }
-            pthread_cond_timedwait(children_[numberThreads_].condition2_, children_[numberThreads_].mutex2_, &absTime);
-            pthread_mutex_unlock(children_[numberThreads_].mutex2_);
+            children_[numberThreads_].waitNano(1000000);
             for (iThread = 0; iThread < numberThreads_; iThread++) {
-                if (children_[iThread].returnCode_ > 0) {
+                if (children_[iThread].returnCode() > 0) {
                     finished = true;
                     break;
-                } else if (children_[iThread].returnCode_ == 0) {
-                    pthread_cond_signal(children_[iThread].condition2_); // unlock
+                } else if (children_[iThread].returnCode() == 0) {
+                    children_[iThread].signal();
                 }
             }
         }
         assert (iThread < numberThreads_);
-        assert (children_[iThread].returnCode_);
+        assert (children_[iThread].returnCode());
         // Use dantzigState to signal which generator
-        children_[iThread].dantzigState_ = whichGenerator;
+        children_[iThread].setDantzigState(whichGenerator);
         // and delNode for eachCuts
-        children_[iThread].delNode_ = reinterpret_cast<CbcNode **> (eachCuts);
+        children_[iThread].fakeDelNode(reinterpret_cast<CbcNode **> (eachCuts));
         // allow to start
-        children_[iThread].returnCode_ = 0;
-        pthread_cond_signal(children_[iThread].condition2_); // unlock
+        children_[iThread].setReturnCode( 0);
+        children_[iThread].signal();
     } else if (type == 1) {
         // cuts - finish up
         for (int iThread = 0; iThread < numberThreads_; iThread++) {
-            if (children_[iThread].returnCode_ == 0) {
+            if (children_[iThread].returnCode() == 0) {
                 bool finished = false;
-                pthread_cond_signal(children_[iThread].condition2_); // unlock
                 while (!finished) {
-                    pthread_mutex_lock(children_[numberThreads_].mutex2_);
-                    struct timespec absTime;
-                    my_gettime(&absTime);
-                    absTime.tv_nsec += 1000000; // millisecond
-                    if (absTime.tv_nsec >= 1000000000) {
-                        absTime.tv_nsec -= 1000000000;
-                        absTime.tv_sec++;
-                    }
-                    pthread_cond_timedwait(children_[numberThreads_].condition2_, children_[numberThreads_].mutex2_, &absTime);
-                    pthread_mutex_unlock(children_[numberThreads_].mutex2_);
-                    if (children_[iThread].returnCode_ > 0) {
+                    children_[numberThreads_].wait(0, 0);
+                    if (children_[iThread].returnCode() > 0) {
                         finished = true;
                         break;
-                    } else if (children_[iThread].returnCode_ == 0) {
-                        pthread_cond_signal(children_[iThread].condition2_); // unlock
+                        //#ifndef NEW_STYLE_PTHREAD
+                        //} else if (children_[iThread].returnCode_ == 0) {
+                        //pthread_cond_signal(&children_[iThread].threadStuff_.condition2_); // unlock
+                        //#endif
                     }
                 }
             }
-            assert (children_[iThread].returnCode_);
+            assert (children_[iThread].returnCode());
             // say available
-            children_[iThread].returnCode_ = -1;
+            children_[iThread].setReturnCode( -1);
             //delete threadModel_[iThread]->solver();
             //threadModel_[iThread]->setSolver(NULL);
         }
@@ -722,11 +956,18 @@ CbcBaseModel::waitForThreadsInCuts(int type, OsiCuts * eachCuts,
         abort();
     }
 }
+// Returns pointer to master thread
+CbcThread *
+CbcBaseModel::masterThread() const
+{
+    return children_ + numberThreads_;
+}
+
 // Split model and do work in deterministic parallel
 void
 CbcBaseModel::deterministicParallel()
 {
-    CbcModel * baseModel = children_[0].baseModel_;
+    CbcModel * baseModel = children_[0].baseModel();
     for (int i = 0; i < numberThreads_; i++)
         threadCount_[i]++;
     int saveTreeSize = baseModel->tree()->size();
@@ -734,13 +975,13 @@ CbcBaseModel::deterministicParallel()
     CbcModel ** threadModel = new CbcModel * [numberThreads_];
     int iThread;
     for (iThread = 0; iThread < numberThreads_; iThread++)
-        threadModel[iThread] = children_[iThread].thisModel_;
+        threadModel[iThread] = children_[iThread].thisModel();
 
     int nAffected = baseModel->splitModel(numberThreads_, threadModel, defaultParallelNodes_);
     // do all until finished
     for (iThread = 0; iThread < numberThreads_; iThread++) {
         // obviously tune
-        children_[iThread].nDeleteNode_ = defaultParallelIterations_;
+        children_[iThread].setNDeleteNode(defaultParallelIterations_);
     }
     // Save current state
     int iObject;
@@ -749,34 +990,24 @@ CbcBaseModel::deterministicParallel()
         saveObjects_[iObject]->updateBefore(object[iObject]);
     }
     for (iThread = 0; iThread < numberThreads_; iThread++) {
-        children_[iThread].returnCode_ = 0;
-        pthread_cond_signal(children_[iThread].condition2_); // unlock
+        children_[iThread].setReturnCode( 0);
+        children_[iThread].signal();
     }
     // wait
     bool finished = false;
+    double time = getTime();
     while (!finished) {
-        pthread_mutex_lock(children_[numberThreads_].mutex2_);
-        struct timespec absTime;
-        my_gettime(&absTime);
-        double time = absTime.tv_sec + 1.0e-9 * absTime.tv_nsec;
-        absTime.tv_nsec += 1000000; // millisecond
-        if (absTime.tv_nsec >= 1000000000) {
-            absTime.tv_nsec -= 1000000000;
-            absTime.tv_sec++;
-        }
-        pthread_cond_timedwait(children_[numberThreads_].condition2_,
-                               children_[numberThreads_].mutex2_, &absTime);
-        my_gettime(&absTime);
-        double time2 = absTime.tv_sec + 1.0e-9 * absTime.tv_nsec;
-        children_[numberThreads_].timeInThread_ += time2 - time;
-        pthread_mutex_unlock(children_[numberThreads_].mutex2_);
+        children_[numberThreads_].waitNano( 1000000); // millisecond
         finished = true;
         for (iThread = 0; iThread < numberThreads_; iThread++) {
-            if (children_[iThread].returnCode_ <= 0) {
+            if (children_[iThread].returnCode() <= 0) {
                 finished = false;
             }
         }
     }
+    for (iThread = 0; iThread < numberThreads_; iThread++)
+        children_[iThread].setReturnCode(-1);
+    children_[numberThreads_].incrementTimeInThread(getTime() - time);
     // Unmark marked
     for (int i = 0; i < nAffected; i++) {
         baseModel->walkback()[i]->unmark();
@@ -820,13 +1051,10 @@ CbcBaseModel::~CbcBaseModel()
 {
     delete [] threadCount_;
 #if 1
-    delete [] threadId_;
     for (int i = 0; i < numberThreads_; i++)
         delete threadModel_[i];
     delete [] threadModel_;
     delete [] children_;
-    delete [] mutex2_;
-    delete [] condition2_;
 #endif
     for (int i = 0; i < numberObjects_; i++)
         delete saveObjects_[i];
@@ -837,101 +1065,37 @@ void
 CbcBaseModel::setDantzigState()
 {
     for (int i = 0; i < numberThreads_; i++) {
-        children_[i].dantzigState_ = -1;
+        children_[i].setDantzigState(-1);
     }
-}
-// Default constructor
-CbcSimpleThread::CbcSimpleThread()
-        :
-        numberThreads_(0),
-        argBundle_(NULL)
-{
-}
-// Constructor with model
-CbcSimpleThread::CbcSimpleThread (int numberThreads,
-                                  void *(* function) (void *),
-                                  int sizeOfData,
-                                  void * data)
-        :
-        numberThreads_(numberThreads),
-        argBundle_(data)
-{
-    Coin_pthread_t * threadId = new Coin_pthread_t [numberThreads_];
-    char * args = reinterpret_cast<char *>(argBundle_);
-    for (int i = 0; i < numberThreads_; i++) {
-        pthread_create(&(threadId[i].thr), NULL, function,
-                       args + i*sizeOfData);
-    }
-    // now wait
-    for (int i = 0; i < numberThreads_; i++) {
-        pthread_join(threadId[i].thr, NULL);
-    }
-    delete [] threadId;
-}
-// Constructor with stuff
-CbcSimpleThread::CbcSimpleThread (int numberThreads,
-                                  int type,
-                                  int sizeOfData,
-                                  void * data)
-        :
-        numberThreads_(numberThreads),
-        argBundle_(data)
-{
-    assert (type == 0); // heuristics
-    Coin_pthread_t * threadId = new Coin_pthread_t [numberThreads_];
-    char * args = reinterpret_cast<char *>(argBundle_);
-    for (int i = 0; i < numberThreads_; i++) {
-        pthread_create(&(threadId[i].thr), NULL, doHeurThread,
-                       args + i*sizeOfData);
-    }
-    // now wait
-    for (int i = 0; i < numberThreads_; i++) {
-        pthread_join(threadId[i].thr, NULL);
-    }
-    delete [] threadId;
-}
-// Destructor
-CbcSimpleThread::~CbcSimpleThread()
-{
 }
 static void * doNodesThread(void * voidInfo)
 {
     CbcThread * stuff = reinterpret_cast<CbcThread *> (voidInfo);
-    pthread_mutex_t * mutex = stuff->mutex2_;
-    pthread_cond_t * condition = stuff->condition2_;
-    CbcModel * thisModel = stuff->thisModel_;
-    CbcModel * baseModel = stuff->baseModel_;
+    CbcModel * thisModel = stuff->thisModel();
+    CbcModel * baseModel = stuff->baseModel();
     while (true) {
-        pthread_mutex_lock (mutex);
-        while (stuff->returnCode_) {
-            struct timespec absTime2;
-            my_gettime(&absTime2);
-            double time2 = absTime2.tv_sec + 1.0e-9 * absTime2.tv_nsec;
-            // timed wait as seems to hang on max nodes at times
-            absTime2.tv_sec += 10;
-            pthread_cond_timedwait(condition, mutex, &absTime2);
-            my_gettime(&stuff->absTime_);
-            double time = stuff->absTime_.tv_sec + 1.0e-9 * stuff->absTime_.tv_nsec;
-            stuff->timeWaitingToStart_ += time - time2;;
-            stuff->numberTimesWaitingToStart_++;
-        }
+        stuff->waitThread();
         //printf("start node %x\n",stuff->node);
         int mode = thisModel->getNumberThreads();
         if (mode) {
             // normal
             double time2 = CoinCpuTime();
-            assert (stuff->returnCode_ == 0);
+            assert (stuff->returnCode() == 0);
             if (thisModel->parallelMode() >= 0) {
-                assert (stuff->node_->nodeInfo());
-                thisModel->doOneNode(baseModel, stuff->node_, stuff->createdNode_);
-                stuff->returnCode_ = 1;
+                CbcNode * node = stuff->node();
+                assert (node->nodeInfo());
+                CbcNode * createdNode = stuff->createdNode();
+                thisModel->doOneNode(baseModel, node, createdNode);
+                stuff->setNode(node);
+                stuff->setCreatedNode(createdNode);
+                stuff->setReturnCode( 1);
             } else {
-                assert (!stuff->node_);
-                assert (!stuff->createdNode_);
-                int numberIterations = stuff->nDeleteNode_;
+                assert (!stuff->node());
+                assert (!stuff->createdNode());
+                int numberIterations = stuff->nDeleteNode();
                 int nDeleteNode = 0;
-                int maxDeleteNode = stuff->maxDeleteNode_;
-                CbcNode ** delNode = stuff->delNode_;
+                int maxDeleteNode = stuff->maxDeleteNode();
+                CbcNode ** delNode = stuff->delNode();
                 int returnCode = 1;
                 // this should be updated by heuristics strong branching etc etc
                 assert (numberIterations > 0);
@@ -1002,12 +1166,12 @@ static void * doNodesThread(void * voidInfo)
                         }
                         if (nDeleteNode == maxDeleteNode) {
                             maxDeleteNode = (3 * maxDeleteNode) / 2 + 10;
-                            stuff->maxDeleteNode_ = maxDeleteNode;
-                            stuff->delNode_ = new CbcNode * [maxDeleteNode];
+                            stuff->setMaxDeleteNode(maxDeleteNode);
+                            stuff->setDelNode(new CbcNode * [maxDeleteNode]);
                             for (int i = 0; i < nDeleteNode; i++)
-                                stuff->delNode_[i] = delNode[i];
+                                stuff->delNode()[i] = delNode[i];
                             delete [] delNode;
-                            delNode = stuff->delNode_;
+                            delNode = stuff->delNode();
                         }
                         delNode[nDeleteNode++] = node;
                     }
@@ -1019,26 +1183,22 @@ static void * doNodesThread(void * voidInfo)
                 }
                 delete [] used;
                 thisModel->setSolutionCount(thisModel->getSolutionCount() - numberSolutions);
-                stuff->nodesThisTime_ = thisModel->getNodeCount() - nodesThisTime;
-                stuff->iterationsThisTime_ = thisModel->getIterationCount() - iterationsThisTime;
-                stuff->nDeleteNode_ = nDeleteNode;
-                stuff->returnCode_ = returnCode;
+                stuff->setNodesThisTime(thisModel->getNodeCount() - nodesThisTime);
+                stuff->setIterationsThisTime(thisModel->getIterationCount() - iterationsThisTime);
+                stuff->setNDeleteNode(nDeleteNode);
+                stuff->setReturnCode( returnCode);
                 thisModel->setNumberThreads(mode);
             }
             //printf("end node %x\n",stuff->node);
-            CbcThread * stuffMain = reinterpret_cast<CbcThread *> (baseModel->masterThread());
-            //pthread_mutex_t * condition_mutex = stuffMain->mutex2;
-            pthread_cond_t * condition_main = stuffMain->condition2_;
-            pthread_cond_signal(condition_main); // unlock
-            pthread_mutex_unlock(mutex);
-            stuff->timeInThread_ += CoinCpuTime() - time2;
+            stuff->unlockFromThread();
+            stuff->incrementTimeInThread(CoinCpuTime() - time2);
         } else {
             // exit
             break;
         }
     }
-    pthread_mutex_unlock(mutex);
-    pthread_exit(NULL);
+    //printf("THREAD exiting\n");
+    stuff->exitThread();
     return NULL;
 }
 static void * doHeurThread(void * voidInfo)
@@ -1053,45 +1213,33 @@ static void * doHeurThread(void * voidInfo)
     stuff->foundSol =
         stuff->model->heuristic(0)->solution(stuff->solutionValue,
                                              stuff->solution);
-    pthread_exit(NULL);
     return NULL;
 }
 static void * doCutsThread(void * voidInfo)
 {
     CbcThread * stuff = reinterpret_cast<CbcThread *> (voidInfo);
-    pthread_mutex_t * mutex = stuff->mutex2_;
-    pthread_cond_t * condition = stuff->condition2_;
-    CbcModel * thisModel =  stuff->thisModel_;
+    CbcModel * thisModel =  stuff->thisModel();
     while (true) {
-        pthread_mutex_lock(mutex);
-        while (stuff->returnCode_) {
-            pthread_cond_wait(condition, mutex);
-        }
+        stuff->waitThread();
         //printf("start node %x\n",stuff->node);
         int mode = thisModel->getNumberThreads();
         if (mode) {
             // normal
-            assert (stuff->returnCode_ == 0);
+            assert (stuff->returnCode() == 0);
             int fullScan = thisModel->getNodeCount() == 0 ? 1 : 0; //? was >0
-            CbcCutGenerator * generator = thisModel->cutGenerator(stuff->dantzigState_);
+            CbcCutGenerator * generator = thisModel->cutGenerator(stuff->dantzigState());
             generator->refreshModel(thisModel);
-            OsiCuts * cuts = reinterpret_cast<OsiCuts *> (stuff->delNode_);
+            OsiCuts * cuts = reinterpret_cast<OsiCuts *> (stuff->delNode());
             OsiSolverInterface * thisSolver = thisModel->solver();
             generator->generateCuts(*cuts, fullScan, thisSolver, NULL);
-            stuff->returnCode_ = 1;
-            //printf("end node %x\n",stuff->node);
-            CbcThread * stuffMain = stuff->master_;
-            //pthread_mutex_t * condition_mutex = stuffMain->mutex2;
-            pthread_cond_t * condition_main = stuffMain->condition2_;
-            pthread_cond_signal(condition_main); // unlock
-            pthread_mutex_unlock(mutex);
+            stuff->setReturnCode( 1);
+            stuff->unlockFromThread();
         } else {
             // exit
             break;
         }
     }
-    pthread_mutex_unlock(mutex);
-    pthread_exit(NULL);
+    stuff->exitThread();
     return NULL;
 }
 // Split up nodes - returns number of CbcNodeInfo's affected
@@ -1240,12 +1388,12 @@ CbcModel::moveToModel(CbcModel * baseModel, int mode)
         CbcThread * stuff = reinterpret_cast<CbcThread *> (masterThread_);
         assert (stuff);
         //if (stuff)
-        stuff->createdNode_ = NULL;
+        stuff->setCreatedNode(NULL);
         // ?? searchStrategy_;
         searchStrategy_ = baseModel->searchStrategy_;
-        stuff->saveStuff_[0] = searchStrategy_;
+        stuff->saveStuff()[0] = searchStrategy_;
         stateOfSearch_ = baseModel->stateOfSearch_;
-        stuff->saveStuff_[1] = stateOfSearch_;
+        stuff->saveStuff()[1] = stateOfSearch_;
         for (int iObject = 0 ; iObject < numberObjects_ ; iObject++) {
             CbcSimpleIntegerDynamicPseudoCost * dynamicObject =
                 dynamic_cast <CbcSimpleIntegerDynamicPseudoCost *>(object_[iObject]) ;
@@ -1261,14 +1409,14 @@ CbcModel::moveToModel(CbcModel * baseModel, int mode)
         CbcThread * stuff = reinterpret_cast<CbcThread *> (masterThread_);
         assert (stuff);
         //stateOfSearch_
-        if (stuff->saveStuff_[0] != searchStrategy_) {
+        if (stuff->saveStuff()[0] != searchStrategy_) {
 #ifdef COIN_DEVELOP
             printf("changing searchStrategy from %d to %d\n",
                    baseModel->searchStrategy_, searchStrategy_);
 #endif
             baseModel->searchStrategy_ = searchStrategy_;
         }
-        if (stuff->saveStuff_[1] != stateOfSearch_) {
+        if (stuff->saveStuff()[1] != stateOfSearch_) {
 #ifdef COIN_DEVELOP
             printf("changing stateOfSearch from %d to %d\n",
                    baseModel->stateOfSearch_, stateOfSearch_);
@@ -1291,10 +1439,10 @@ CbcModel::moveToModel(CbcModel * baseModel, int mode)
         baseModel->numberIterations_ +=
             numberIterations_ - numberFixedAtRoot_;
         baseModel->numberSolves_ += numberSolves_;
-        if (stuff->node_)
-            baseModel->tree_->push(stuff->node_);
-        if (stuff->createdNode_)
-            baseModel->tree_->push(stuff->createdNode_);
+        if (stuff->node())
+            baseModel->tree_->push(stuff->node());
+        if (stuff->createdNode())
+            baseModel->tree_->push(stuff->createdNode());
         unlockThread();
     } else if (mode == 2) {
         baseModel->sumChangeObjective1_ += sumChangeObjective1_;
@@ -1411,12 +1559,12 @@ CbcModel::moveToModel(CbcModel * baseModel, int mode)
         CbcThread * stuff = reinterpret_cast<CbcThread *> (masterThread_);
         assert (stuff);
         //if (stuff)
-        stuff->createdNode_ = NULL;
+        stuff->setCreatedNode(NULL);
         // ?? searchStrategy_;
         searchStrategy_ = baseModel->searchStrategy_;
-        stuff->saveStuff_[0] = searchStrategy_;
+        stuff->saveStuff()[0] = searchStrategy_;
         stateOfSearch_ = baseModel->stateOfSearch_;
-        stuff->saveStuff_[1] = stateOfSearch_;
+        stuff->saveStuff()[1] = stateOfSearch_;
         OsiObject ** baseObject = baseModel->object_;
         for (int iObject = 0 ; iObject < numberObjects_ ; iObject++) {
             object_[iObject]->updateBefore(baseObject[iObject]);
@@ -1445,14 +1593,14 @@ CbcModel::moveToModel(CbcModel * baseModel, int mode)
                 baseModel->setCutoff(getCutoff());
             }
             //stateOfSearch_
-            if (stuff->saveStuff_[0] != searchStrategy_) {
+            if (stuff->saveStuff()[0] != searchStrategy_) {
 #ifdef COIN_DEVELOP
                 printf("changing searchStrategy from %d to %d\n",
                        baseModel->searchStrategy_, searchStrategy_);
 #endif
                 baseModel->searchStrategy_ = searchStrategy_;
             }
-            if (stuff->saveStuff_[1] != stateOfSearch_) {
+            if (stuff->saveStuff()[1] != stateOfSearch_) {
 #ifdef COIN_DEVELOP
                 printf("changing stateOfSearch from %d to %d\n",
                        baseModel->stateOfSearch_, stateOfSearch_);
@@ -1462,8 +1610,8 @@ CbcModel::moveToModel(CbcModel * baseModel, int mode)
             int i;
             if (eventHappened_)
                 baseModel->eventHappened_ = true;
-            baseModel->numberNodes_ += stuff->nodesThisTime_;
-            baseModel->numberIterations_ += stuff->iterationsThisTime_;
+            baseModel->numberNodes_ += stuff->nodesThisTime();
+            baseModel->numberIterations_ += stuff->iterationsThisTime();
             double cutoff = baseModel->getCutoff();
             while (!tree_->empty()) {
                 CbcNode * node = tree_->bestNode(COIN_DBL_MAX) ;
@@ -1487,9 +1635,9 @@ CbcModel::moveToModel(CbcModel * baseModel, int mode)
                     delete node;
                 }
             }
-            for (i = 0; i < stuff->nDeleteNode_; i++) {
+            for (i = 0; i < stuff->nDeleteNode(); i++) {
                 //printf("CbcNode %x stuff delete\n",stuff->delNode[i]);
-                delete stuff->delNode_[i];
+                delete stuff->delNode()[i];
             }
         }
     } else {
@@ -1551,16 +1699,23 @@ CbcModel::parallelCuts(CbcBaseModel * master, OsiCuts & theseCuts,
         }
         int numberRowCutsBefore = theseCuts.sizeRowCuts() ;
         int numberRowCuts = eachCuts[i].sizeRowCuts();
-        int numberRowCutsAfter = numberRowCutsBefore
-                                 + numberRowCuts;
+        // insert good cuts
         if (numberRowCuts) {
-            for (j = 0; j < numberRowCuts; j++) {
+            int n = numberRowCuts;
+            numberRowCuts = 0;
+            for (j = 0; j < n; j++) {
                 const OsiRowCut * thisCut = eachCuts[i].rowCutPtr(j) ;
-                if (thisCut->lb() <= 1.0e10 && thisCut->ub() >= -1.0e10)
+                if (thisCut->lb() <= 1.0e10 && thisCut->ub() >= -1.0e10) {
                     theseCuts.insert(eachCuts[i].rowCut(j));
+                    numberRowCuts++;
+                }
             }
             if (generator_[i]->mustCallAgain() && status >= 0)
                 status = 1; // say must go round
+        }
+        int numberRowCutsAfter = numberRowCutsBefore
+                                 + numberRowCuts;
+        if (numberRowCuts) {
             // Check last cut to see if infeasible
             const OsiRowCut * thisCut = theseCuts.rowCutPtr(numberRowCutsAfter - 1) ;
             if (thisCut->lb() > thisCut->ub()) {
@@ -1697,7 +1852,7 @@ bool
 CbcModel::isLocked() const
 {
     if (masterThread_) {
-        return (masterThread_->locked_);
+        return (masterThread_->locked());
     } else {
         return true;
     }

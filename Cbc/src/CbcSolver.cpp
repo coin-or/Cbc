@@ -636,10 +636,10 @@ void CbcSolver::fillParameters()
 void CbcSolver::fillValuesInSolver()
 {
     OsiSolverInterface * solver = model_.solver();
-    OsiClpSolverInterface * clpSolver = 
-		dynamic_cast< OsiClpSolverInterface*> (solver);
+    OsiClpSolverInterface * clpSolver =
+        dynamic_cast< OsiClpSolverInterface*> (solver);
     assert (clpSolver);
-	ClpSimplex * lpSolver = clpSolver->getModelPtr();
+    ClpSimplex * lpSolver = clpSolver->getModelPtr();
 
     /*
       Why are we reaching into the underlying solver(s) for these settings?
@@ -656,7 +656,7 @@ void CbcSolver::fillValuesInSolver()
     CoinMessageHandler * generalMessageHandler = clpSolver->messageHandler();
     generalMessageHandler->setPrefix(true);
 
-	lpSolver->setPerturbation(50);
+    lpSolver->setPerturbation(50);
     lpSolver->messageHandler()->setPrefix(false);
 
     parameters_[whichParam(CLP_PARAM_DBL_DUALBOUND, numberParameters_, parameters_)].setDoubleValue(lpSolver->dualBound());
@@ -1013,7 +1013,7 @@ int callCbc1(const char * input2, CbcModel & model)
 }
 
 int callCbc1(const std::string input2, CbcModel & babSolver,
-	     int callBack(CbcModel * currentSolver, int whereFrom))
+             int callBack(CbcModel * currentSolver, int whereFrom))
 {
     char * input3 = CoinStrdup(input2.c_str());
     int returnCode = callCbc1(input3, babSolver, callBack);
@@ -1022,7 +1022,7 @@ int callCbc1(const std::string input2, CbcModel & babSolver,
 }
 
 int callCbc1(const char * input2, CbcModel & model,
-	     int callBack(CbcModel * currentSolver, int whereFrom))
+             int callBack(CbcModel * currentSolver, int whereFrom))
 {
     char * input = CoinStrdup(input2);
     int length = strlen(input);
@@ -1074,7 +1074,7 @@ int callCbc1(const char * input2, CbcModel & model,
     CbcOrClpReadCommand = stdin;
     noPrinting = false;
     int returnCode = CbcMain1(n + 2, const_cast<const char **>(argv),
-    			      model, callBack);
+                              model, callBack);
     for (int k = 0; k < n + 2; k++)
         free(argv[k]);
     delete [] argv;
@@ -2462,8 +2462,8 @@ int CbcMain1 (int argc, const char *argv[],
                                 presolveType = ClpSolve::presolveOff;
                             }
                             solveOptions.setPresolveType(presolveType, preSolve);
-                            if (type == CLP_PARAM_ACTION_DUALSIMPLEX || 
-								type == CLP_PARAM_ACTION_SOLVECONTINUOUS) {
+                            if (type == CLP_PARAM_ACTION_DUALSIMPLEX ||
+                                    type == CLP_PARAM_ACTION_SOLVECONTINUOUS) {
                                 method = ClpSolve::useDual;
                             } else if (type == CLP_PARAM_ACTION_PRIMALSIMPLEX) {
                                 method = ClpSolve::usePrimalorSprint;
@@ -2891,8 +2891,8 @@ int CbcMain1 (int argc, const char *argv[],
                                 //assert (!newSolver);
                             }
                             // Actually do heuristics
-                            doHeuristics(&model_,2,parameters_,
-				numberParameters_,noPrinting_,initialPumpTune);
+                            doHeuristics(&model_, 2, parameters_,
+                                         numberParameters_, noPrinting_, initialPumpTune);
                             if (model_.bestSolution()) {
                                 model_.setProblemStatus(1);
                                 model_.setSecondaryStatus(6);
@@ -3903,8 +3903,8 @@ int CbcMain1 (int argc, const char *argv[],
                                 delete [] dsort;
                             }
                             // Set up heuristics
-                            doHeuristics(babModel_,((!miplib)?1:10),parameters_,
-				numberParameters_,noPrinting_,initialPumpTune);
+                            doHeuristics(babModel_, ((!miplib) ? 1 : 10), parameters_,
+                                         numberParameters_, noPrinting_, initialPumpTune);
                             if (!miplib) {
                                 if (parameters_[whichParam(CBC_PARAM_STR_LOCALTREE, numberParameters_, parameters_)].currentOptionAsInteger()) {
                                     CbcTreeLocal localTree(babModel_, NULL, 10, 0, 0, 10000, 2000);
@@ -4227,8 +4227,8 @@ int CbcMain1 (int argc, const char *argv[],
                             babModel_->setSpecialOptions(babModel_->specialOptions() | 2);
                             currentBranchModel = babModel_;
                             //OsiSolverInterface * strengthenedModel=NULL;
-                            if (type == CBC_PARAM_ACTION_BAB || 
-								type == CBC_PARAM_ACTION_MIPLIB) {
+                            if (type == CBC_PARAM_ACTION_BAB ||
+                                    type == CBC_PARAM_ACTION_MIPLIB) {
                                 if (strategyFlag == 1) {
                                     // try reduced model
                                     babModel_->setSpecialOptions(babModel_->specialOptions() | 512);
@@ -7426,7 +7426,18 @@ clp watson.mps -\nscaling off\nprimalsimplex"
                                 // stderr
                                 fp = stderr;
                             } else {
-                                if (field[0] == '/' || field[0] == '\\') {
+                                bool absolutePath;
+                                if (dirsep == '/') {
+                                    // non Windows (or cygwin)
+                                    absolutePath = (field[0] == '/');
+                                } else {
+                                    //Windows (non cycgwin)
+                                    absolutePath = (field[0] == '\\');
+                                    // but allow for :
+                                    if (strchr(field.c_str(), ':'))
+                                        absolutePath = true;
+                                }
+                                if (absolutePath) {
                                     fileName = field;
                                 } else if (field[0] == '~') {
                                     char * environVar = getenv("HOME");
@@ -7459,15 +7470,15 @@ clp watson.mps -\nscaling off\nprimalsimplex"
                                     } else if (iStat == 2) {
                                         // unbounded
                                         fprintf(fp, "Unbounded" );
-				    } else if (iStat >= 3&&iStat <= 5) {
-				        if (iStat==3)
-					    fprintf(fp, "Stopped on iterations or time" );
-				      else if (iStat == 4) 
-					fprintf(fp, "Stopped on difficulties" );
-				      else  
-					fprintf(fp, "Stopped on ctrl-c" );
-				      if (babModel_&&!babModel_->bestSolution())
-					fprintf(fp," (no integer solution - continuous used)");
+                                    } else if (iStat >= 3 && iStat <= 5) {
+                                        if (iStat == 3)
+                                            fprintf(fp, "Stopped on iterations or time" );
+                                        else if (iStat == 4)
+                                            fprintf(fp, "Stopped on difficulties" );
+                                        else
+                                            fprintf(fp, "Stopped on ctrl-c" );
+                                        if (babModel_ && !babModel_->bestSolution())
+                                            fprintf(fp, " (no integer solution - continuous used)");
                                     } else if (iStat == 6) {
                                         // bab infeasible
                                         fprintf(fp, "Integer infeasible" );

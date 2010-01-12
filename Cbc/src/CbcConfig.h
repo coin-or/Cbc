@@ -95,8 +95,8 @@
 /* #undef COIN_HAS_XPR */
 
 #endif /* HAVE_CONFIG_H */
-// Always make version 2.4
-#undef CBCVERSION
-#define CBCVERSION "2.4.0"
+#ifndef CBCVERSION
+#define CBCVERSION "2.4"
+#endif
 
 #endif /*__HAVE_COINUTILS_CONFIG_H__*/

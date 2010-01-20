@@ -3189,10 +3189,6 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
 	      }
 	      anyAction=0;
 	      break;
-	      delete [] saveLower;
-	      delete [] saveUpper;
-	      delete [] saveSolution;
-	      return 0;
 	    }
 	  }
 	}

@@ -10204,6 +10204,9 @@ CbcModel::convertToDynamic()
       // synchronize trust
       //obj2->setNumberBeforeTrust(numberBeforeTrust_);
     }
+    obj1 = dynamic_cast <CbcSimpleInteger *>(object_[iObject]) ;
+    if (obj1)
+      obj1->setPosition(iObject);
   }
   if (branchingMethod_) {
     if ((branchingMethod_->whichMethod()&1)==0&&!branchingMethod_->chooseMethod()) {

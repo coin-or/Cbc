@@ -10368,7 +10368,18 @@ clp watson.mps -\nscaling off\nprimalsimplex"
 		// stderr
 		fp=stderr;
 	      } else {
-		if (field[0]=='/'||field[0]=='\\') {
+                bool absolutePath;
+                if (dirsep=='/') {
+                  // non Windows (or cygwin)
+                  absolutePath=(field[0]=='/');
+                } else {
+                  //Windows (non cycgwin)
+                  absolutePath=(field[0]=='\\');
+                  // but allow for :
+                  if (strchr(field.c_str(),':'))
+                    absolutePath=true;
+                }
+		if (absolutePath) {
 		  fileName = field;
 		} else if (field[0]=='~') {
 		  char * environVar = getenv("HOME");

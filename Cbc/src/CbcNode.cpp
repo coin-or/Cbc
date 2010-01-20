@@ -2257,6 +2257,91 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
                     anyAction = -2;
                     break;
                 }
+                // Double check looks OK - just look at rows with all integers
+                if (model->allDynamic()) {
+                    double * solution = CoinCopyOfArray(saveSolution, numberColumns);
+                    for (int i = 0; i < numberColumns; i++) {
+                        if (model->isInteger(i))
+                            solution[i] = floor(solution[i] + 0.5);
+                    }
+                    int numberRows = solver->getNumRows();
+                    double * rowActivity = new double [numberRows];
+                    CoinZeroN(rowActivity, numberRows);
+                    solver->getMatrixByCol()->times(solution, rowActivity);
+                    //const double * element = model->solver()->getMatrixByCol()->getElements();
+                    const int * row = model->solver()->getMatrixByCol()->getIndices();
+                    const CoinBigIndex * columnStart = model->solver()->getMatrixByCol()->getVectorStarts();
+                    const int * columnLength = model->solver()->getMatrixByCol()->getVectorLengths();
+                    int nFree = 0;
+                    int nFreeNon = 0;
+                    int nFixedNon = 0;
+                    double mostAway = 0.0;
+                    int whichAway = -1;
+                    const double * columnLower = solver->getColLower();
+                    const double * columnUpper = solver->getColUpper();
+                    for (int i = 0; i < numberColumns; i++) {
+                        if (!model->isInteger(i)) {
+                            // mark rows as flexible
+                            CoinBigIndex start = columnStart[i];
+                            CoinBigIndex end = start + columnLength[i];
+                            for (CoinBigIndex j = start; j < end; j++) {
+                                int iRow = row[j];
+                                rowActivity[iRow] = COIN_DBL_MAX;
+                            }
+                        } else if (columnLower[i] < columnUpper[i]) {
+                            if (solution[i] != saveSolution[i]) {
+                                nFreeNon++;
+                                if (fabs(solution[i] - saveSolution[i]) > mostAway) {
+                                    mostAway = fabs(solution[i] - saveSolution[i]);
+                                    whichAway = i;
+                                }
+                            } else {
+                                nFree++;
+                            }
+                        } else if (solution[i] != saveSolution[i]) {
+                            nFixedNon++;
+                        }
+                    }
+                    const double * lower = solver->getRowLower();
+                    const double * upper = solver->getRowUpper();
+                    bool satisfied = true;
+                    for (int i = 0; i < numberRows; i++) {
+                        double value = rowActivity[i];
+                        if (value != COIN_DBL_MAX) {
+                            if (value > upper[i] + 1.0e-5 || value < lower[i] - 1.0e-5) {
+                                satisfied = false;
+                            }
+                        }
+                    }
+                    delete [] rowActivity;
+                    delete [] solution;
+                    if (!satisfied) {
+#ifdef CLP_INVESTIGATE
+                        printf("%d free ok %d free off target %d fixed off target\n",
+                               nFree, nFreeNon, nFixedNon);
+#endif
+                        if (nFreeNon) {
+                            // try branching on these
+                            delete branch_;
+                            for (int i = 0; i < numberObjects; i++) {
+                                OsiObject * object = model->modifiableObject(i);
+                                CbcSimpleIntegerDynamicPseudoCost * obj =
+                                    dynamic_cast <CbcSimpleIntegerDynamicPseudoCost *>(object) ;
+                                assert (obj);
+                                int iColumn = obj->columnNumber();
+                                if (iColumn == whichAway) {
+                                    int preferredWay = (saveSolution[iColumn] > solution[iColumn])
+                                                       ? -1 : +1;
+                                    usefulInfo.integerTolerance_ = 0.0;
+                                    branch_ = obj->createCbcBranch(solver, &usefulInfo, preferredWay);
+                                    break;
+                                }
+                            }
+                            anyAction = 0;
+                            break;
+                        }
+                    }
+                }
             } else if (iPass == 1) {
                 // looks like a solution - get paranoid
                 bool roundAgain = false;
@@ -3363,11 +3448,11 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
             model->setSearchStrategy(2);
         }
     }
-    //if (numberUnfinished*10 < numberStrongDone &&
-    //      numberStrongIterations*20 < model->getIterationCount()) {
-    //printf("increasing trust\n");
-    //  model->synchronizeNumberBeforeTrust(2);
-    //}
+    if (numberUnfinished*10 < numberStrongDone &&
+            numberStrongIterations*20 < model->getIterationCount()) {
+        //printf("increasing trust\n");
+        model->synchronizeNumberBeforeTrust(2);
+    }
 
     // Set guessed solution value
     guessedObjectiveValue_ = objectiveValue_ + estimatedDegradation;

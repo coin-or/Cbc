@@ -1014,6 +1014,10 @@
 				RelativePath="..\..\..\src\ClpAmplStuff.cpp"
 				>
 			</File>
+			<File
+				RelativePath="..\..\..\src\unitTestClp.cpp"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="Header Files"

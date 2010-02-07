@@ -1509,3 +1509,4 @@ void writeAmpl(ampl_info * )
 {
 }
 #endif
+

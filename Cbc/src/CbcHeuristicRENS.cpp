@@ -278,3 +278,4 @@ void CbcHeuristicRENS::setModel(CbcModel * model)
 {
     model_ = model;
 }
+

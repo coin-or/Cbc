@@ -433,3 +433,4 @@ CbcBranchDefaultDecision::bestBranch (CbcBranchingObject ** objects, int numberO
     }
     return whichObject;
 }
+

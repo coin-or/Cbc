@@ -98,3 +98,4 @@ CbcCutSubsetModifier::modify(const OsiSolverInterface * /*solver*/,
     //return 3;
     return returnCode;
 }
+

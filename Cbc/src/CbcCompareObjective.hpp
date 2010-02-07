@@ -40,3 +40,4 @@ public:
 };
 
 #endif //CbcCompareObjective_H
+

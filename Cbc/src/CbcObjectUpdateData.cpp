@@ -85,3 +85,4 @@ CbcObjectUpdateData::operator=( const CbcObjectUpdateData & rhs)
     }
     return *this;
 }
+

@@ -252,3 +252,4 @@ CbcSubProblem::apply(OsiSolverInterface * solver, int what) const
         status_ = NULL;
     }
 }
+

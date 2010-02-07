@@ -826,3 +826,4 @@ ClpSimplex::loadNonLinear(void * , int & ,
     return 0;
 }
 #endif
+

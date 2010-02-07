@@ -456,3 +456,4 @@ protected:
     double changeInGuessed_;
 };
 #endif
+

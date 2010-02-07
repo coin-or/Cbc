@@ -118,3 +118,4 @@ CbcHeuristicDiveLineSearch::selectVariableToBranch(OsiSolverInterface* solver,
     }
     return allTriviallyRoundableSoFar;
 }
+

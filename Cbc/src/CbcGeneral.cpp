@@ -71,3 +71,4 @@ CbcGeneral::createCbcBranch(OsiSolverInterface * /*solver*/, const OsiBranchingI
     return NULL;
 }
 #endif
+

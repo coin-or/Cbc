@@ -258,3 +258,4 @@ CbcSimpleIntegerPseudoCost::downEstimate() const
     double downCost = CoinMax((value - below) * downPseudoCost_, 0.0);
     return downCost;
 }
+

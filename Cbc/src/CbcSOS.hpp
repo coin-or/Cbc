@@ -268,3 +268,4 @@ private:
     int lastNonzero_;
 };
 #endif
+

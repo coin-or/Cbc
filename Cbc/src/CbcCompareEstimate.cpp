@@ -73,3 +73,4 @@ CbcCompareEstimate::generateCpp( FILE * fp)
     fprintf(fp, "3  CbcCompareEstimate compare;\n");
     fprintf(fp, "3  cbcModel->setNodeComparison(compare);\n");
 }
+

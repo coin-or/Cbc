@@ -417,3 +417,4 @@ CbcNWayBranchingObject::compareBranchingObject
 {
     throw("must implement");
 }
+

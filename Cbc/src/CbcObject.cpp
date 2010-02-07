@@ -138,3 +138,4 @@ CbcObject::createUpdateInformation(const OsiSolverInterface * /*solver*/,
 {
     return CbcObjectUpdateData();
 }
+

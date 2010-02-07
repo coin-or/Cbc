@@ -1068,3 +1068,4 @@ CbcHeuristicDive::fixOtherVariables(OsiSolverInterface * solver,
 #endif
     return cnt;
 }
+

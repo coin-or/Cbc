@@ -501,3 +501,4 @@ CbcNodeInfo::deactivate(int mode)
 {
     active_ &= (~mode);
 }
+

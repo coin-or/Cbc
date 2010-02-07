@@ -517,3 +517,4 @@ CbcFixingBranchingObject::compareBranchingObject
 }
 
 //##############################################################################
+

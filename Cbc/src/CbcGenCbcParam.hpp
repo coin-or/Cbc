@@ -187,3 +187,4 @@ int pushCbcCbcInt(CoinParam *param) ;
 }
 
 #endif
+

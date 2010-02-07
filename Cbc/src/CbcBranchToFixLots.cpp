@@ -562,3 +562,4 @@ CbcBranchToFixLots::redoSequenceEtc(CbcModel * model, int numberColumns, const i
     OsiSolverInterface * solver = model_->solver();
     matrixByRow_ = *solver->getMatrixByRow();
 }
+

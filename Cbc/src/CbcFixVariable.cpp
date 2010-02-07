@@ -187,3 +187,4 @@ CbcFixVariable::applyToSolver(OsiSolverInterface * solver, int state) const
         //printf(" => %g\n",solver->getColUpper()[iColumn]);
     }
 }
+

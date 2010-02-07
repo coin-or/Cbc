@@ -34,3 +34,4 @@ CbcConsequence::operator=( const CbcConsequence & rhs)
     }
     return *this;
 }
+

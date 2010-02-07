@@ -340,3 +340,4 @@ CbcCutBranchingObject::compareBranchingObject
     r0.setUb(thisBd[1]);
     return comp;
 }
+

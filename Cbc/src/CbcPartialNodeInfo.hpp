@@ -101,3 +101,4 @@ private:
 };
 
 #endif //CbcPartialNodeInfo_H
+

@@ -18,3 +18,4 @@ expandKnapsack(CoinModel & model, int * whichColumn, int * knapsackStart,
                int fixedPriority, int SOSPriority, CoinModel & tightenedModel);
 
 #endif
+

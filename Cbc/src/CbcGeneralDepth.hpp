@@ -266,3 +266,4 @@ public:
 };
 #endif //COIN_HAS_CLP
 #endif
+

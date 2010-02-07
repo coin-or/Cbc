@@ -8300,3 +8300,4 @@ OsiUsesBiLinear::addBiLinearObjects(OsiSolverLink * solver)
         objects_ = NULL;
     }
 }
+

@@ -102,3 +102,4 @@ CbcMessage::CbcMessage(Language language) :
         }
     }
 }
+

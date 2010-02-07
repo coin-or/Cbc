@@ -1897,3 +1897,4 @@ CbcModel::setInfoInChild(int type, CbcThread * info)
 // Default constructor
 CbcBaseModel::CbcBaseModel() {}
 #endif
+

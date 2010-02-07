@@ -110,3 +110,4 @@ CbcHeuristicDiveFractional::selectVariableToBranch(OsiSolverInterface* solver,
     }
     return allTriviallyRoundableSoFar;
 }
+

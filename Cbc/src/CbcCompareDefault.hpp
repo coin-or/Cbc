@@ -109,3 +109,4 @@ protected:
 };
 
 #endif //CbcCompareDefault_H
+

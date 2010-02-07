@@ -121,3 +121,4 @@ CbcHeuristicDiveVectorLength::selectVariableToBranch(OsiSolverInterface* solver,
     }
     return allTriviallyRoundableSoFar;
 }
+

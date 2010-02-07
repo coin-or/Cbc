@@ -404,3 +404,4 @@ void CbcHeuristicDINS::setModel(CbcModel * model)
     numberSolutions_ = 0;
     values_ = NULL;
 }
+

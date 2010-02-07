@@ -4397,3 +4397,4 @@ CbcNode::checkIsCutoff(double cutoff)
     branch_->checkIsCutoff(cutoff);
     return objectiveValue_;
 }
+

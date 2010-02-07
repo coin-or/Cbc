@@ -807,3 +807,4 @@ CbcLotsizeBranchingObject::compareBranchingObject
     const double* otherBd = br->way_ == -1 ? br->down_ : br->up_;
     return CbcCompareRanges(thisBd, otherBd, replaceIfOverlap);
 }
+

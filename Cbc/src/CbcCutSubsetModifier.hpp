@@ -57,3 +57,4 @@ protected:
 };
 
 #endif //CbcCutSubsetModifier_H
+

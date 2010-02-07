@@ -703,3 +703,4 @@ CbcIntegerBranchingObject::compareBranchingObject
     const double* otherBd = br->way_ < 0 ? br->down_ : br->up_;
     return CbcCompareRanges(thisBd, otherBd, replaceIfOverlap);
 }
+

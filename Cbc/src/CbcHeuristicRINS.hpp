@@ -93,3 +93,4 @@ protected:
     char * used_;
 };
 #endif
+

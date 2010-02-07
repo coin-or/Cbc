@@ -1013,3 +1013,4 @@ CbcSOSBranchingObject::compareBranchingObject
     }
     return CbcRangeSame; // fake return
 }
+

@@ -147,3 +147,4 @@ CbcBranchAllDifferent::infeasibility(const OsiBranchingInformation * /*info*/,
     else
         return 0.5*(1.0 - closest);
 }
+

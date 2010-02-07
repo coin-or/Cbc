@@ -191,3 +191,4 @@ CbcFullNodeInfo::buildRowBasis(CoinWarmStartBasis & basis ) const
     }
     return NULL;
 }
+

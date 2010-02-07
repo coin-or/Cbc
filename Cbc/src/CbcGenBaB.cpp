@@ -883,3 +883,4 @@ int doBaCParam (CoinParam *param)
 }
 
 } // end namespace CbcGenParamutils
+

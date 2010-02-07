@@ -195,3 +195,4 @@ int pushCbcOsiHint(CoinParam *param) ;
 
 
 #endif
+

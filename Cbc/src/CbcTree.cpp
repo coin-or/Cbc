@@ -1185,3 +1185,4 @@ CbcTree::realpush(CbcNode * node)
     candidates[pos] = node;
 }
 #endif
+

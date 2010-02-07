@@ -500,3 +500,4 @@ CbcParam::intParameter (CbcModel &model) const
     }
     return value;
 }
+

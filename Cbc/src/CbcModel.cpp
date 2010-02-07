@@ -15807,3 +15807,4 @@ CbcModel::subBranchAndBound(const double * lower, const double * upper,
     return status;
 }
 #endif
+

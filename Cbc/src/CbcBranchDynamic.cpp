@@ -788,3 +788,4 @@ CbcDynamicPseudoCostBranchingObject::fillStrongInfo( CbcStrongInfo & info)
         return 1;
     }
 }
+

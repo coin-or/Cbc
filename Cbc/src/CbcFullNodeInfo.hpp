@@ -138,3 +138,4 @@ private:
     CbcFullNodeInfo & operator=(const CbcFullNodeInfo& rhs);
 };
 #endif //CbcFullNodeInfo_H
+

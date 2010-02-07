@@ -320,3 +320,4 @@ private:
     //@}
 };
 #endif	/* CbcParam_H */
+

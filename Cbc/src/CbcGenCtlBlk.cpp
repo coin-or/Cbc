@@ -679,3 +679,4 @@ void CbcGenCtlBlk::printBaBStatus ()
 
     std::cout << "." << std::endl ;
 }
+

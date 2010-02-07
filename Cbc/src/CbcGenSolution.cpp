@@ -582,3 +582,4 @@ int CbcGenParamUtils::doPrintMaskParam (CoinParam *param)
 
     return (0) ;
 }
+

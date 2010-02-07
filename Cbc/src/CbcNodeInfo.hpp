@@ -332,3 +332,4 @@ private:
 };
 
 #endif // CbcNodeInfo_H
+

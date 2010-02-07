@@ -728,3 +728,4 @@ int CbcClpUnitTest (const CbcModel & saveModel, std::string& dirMiplib,
 #endif
     return returnCode;
 }
+

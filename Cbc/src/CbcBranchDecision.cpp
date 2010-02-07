@@ -80,3 +80,4 @@ CbcBranchDecision::setChooseMethod(const OsiChooseVariable & method)
     delete chooseMethod_;
     chooseMethod_ = method.clone();
 }
+

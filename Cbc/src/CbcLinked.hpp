@@ -1401,3 +1401,4 @@ ClpSimplex * approximateSolution(CoinModel & coinModel,
                                  int numberPasses, double deltaTolerance,
                                  int mode = 0);
 #endif
+

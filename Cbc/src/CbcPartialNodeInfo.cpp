@@ -281,3 +281,4 @@ CbcPartialNodeInfo::buildRowBasis(CoinWarmStartBasis & basis ) const
 
     return parent_ ;
 }
+

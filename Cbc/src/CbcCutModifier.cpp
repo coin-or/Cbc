@@ -46,3 +46,4 @@ CbcCutModifier::operator=( const CbcCutModifier & rhs)
     }
     return *this;
 }
+

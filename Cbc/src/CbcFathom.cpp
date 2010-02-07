@@ -104,3 +104,4 @@ CbcOsiSolver::operator=(const CbcOsiSolver & rhs)
     return *this;
 }
 #endif
+

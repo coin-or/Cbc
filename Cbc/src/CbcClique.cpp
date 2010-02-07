@@ -865,3 +865,4 @@ CbcLongCliqueBranchingObject::compareBranchingObject
     }
     return CbcRangeOverlap;
 }
+

@@ -694,3 +694,4 @@ CbcOneGeneralBranchingObject::compareBranchingObject
     throw("must implement");
 }
 #endif
+

@@ -65,3 +65,4 @@ CbcBranchingObject::operator=( const CbcBranchingObject & rhs)
 CbcBranchingObject::~CbcBranchingObject ()
 {
 }
+

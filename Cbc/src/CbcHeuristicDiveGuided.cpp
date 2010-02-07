@@ -121,3 +121,4 @@ CbcHeuristicDiveGuided::selectVariableToBranch(OsiSolverInterface* solver,
     }
     return allTriviallyRoundableSoFar;
 }
+

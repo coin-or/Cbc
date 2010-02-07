@@ -72,3 +72,4 @@ CbcCompareDepth::generateCpp( FILE * fp)
     fprintf(fp, "3  CbcCompareDepth compare;\n");
     fprintf(fp, "3  cbcModel->setNodeComparison(compare);\n");
 }
+

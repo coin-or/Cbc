@@ -297,3 +297,4 @@ void CbcHeuristicVND::setModel(CbcModel * model)
     baseSolution_ = new double [numberColumns];
     memset(baseSolution_, 0, numberColumns*sizeof(double));
 }
+

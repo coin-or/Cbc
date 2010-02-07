@@ -225,3 +225,4 @@ CbcHeuristicDivePseudoCost::fixOtherVariables(OsiSolverInterface * solver,
     //return CbcHeuristicDive::fixOtherVariables(solver, solution,
     //				     candidate, random);
 }
+

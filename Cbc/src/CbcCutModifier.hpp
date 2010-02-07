@@ -48,3 +48,4 @@ protected:
 };
 
 #endif //CbcCutModifier_H
+

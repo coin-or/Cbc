@@ -375,3 +375,4 @@ int main (int argc, const char *argv[])
   Added first try at Ampl interface
   Made dummy program so real main can be called from other programs
 */
+

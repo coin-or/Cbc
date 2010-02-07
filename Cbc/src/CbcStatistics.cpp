@@ -134,3 +134,4 @@ CbcStatistics::print(const int * sequenceLookup) const
     else
         printf("cutoff\n");
 }
+

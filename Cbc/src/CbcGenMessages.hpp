@@ -38,3 +38,4 @@ typedef enum {
 } CbcGenMsgCode ;
 
 #endif
+

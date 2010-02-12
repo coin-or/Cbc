@@ -49,7 +49,7 @@
 
 // Version
 #ifndef CBCVERSION
-#define CBCVERSION "2.4.01"
+#define CBCVERSION "2.5devel"
 #endif
 //#define USER_HAS_FAKE_CLP
 //#define USER_HAS_FAKE_CBC

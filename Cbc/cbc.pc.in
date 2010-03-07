@@ -1,0 +1,11 @@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@/coin
+includedir=@includedir@/coin
+
+Name: CBC
+Description: COIN-OR Branch and Cut
+Version: @PACKAGE_VERSION@
+Libs: -L${libdir} -lCbcSolver -lCbc @ADDLIBS@
+Cflags: -I${includedir}
+Requires: @REQUIREDPACKAGES@

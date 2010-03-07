@@ -12,7 +12,7 @@
 
 AC_PREREQ(2.59)
 
-AC_INIT([Cbc],[2.5devel],[coin-cbc@list.coin-or.org])
+AC_INIT([Cbc],[split],[cbc@list.coin-or.org])
 
 AC_COPYRIGHT([
 Copyright 2006 International Business Machines and others.
@@ -56,36 +56,35 @@ AC_COIN_INIT_AUTO_TOOLS
 #                              COIN components                              #
 #############################################################################
 
-AC_COIN_HAS_PROJECT(Cbc)
-AC_COIN_HAS_PROJECT(Cgl)
-AC_COIN_HAS_PROJECT(Clp)
-AC_COIN_HAS_PROJECT(CoinUtils)
-AC_COIN_HAS_PROJECT(DyLP)
-AC_COIN_HAS_PROJECT(Osi)
-AC_COIN_HAS_PROJECT(Vol)
-AC_COIN_HAS_PROJECT(SYMPHONY)
-AC_COIN_HAS_PROJECT(Cpx)
+AC_COIN_HAS_MODULE(CoinDepend, [coinutils = split osi cgl])
+AC_COIN_HAS_MODULE(Clp,        [osi-clp])
+AC_COIN_HAS_MODULE(DyLP,       [osi-dylp])
+AC_COIN_HAS_MODULE(Vol,        [osi-vol])
+AC_COIN_HAS_MODULE(OsiTests,   [osi-unittests],   [required=0])
+AC_COIN_HAS_MODULE(Sample,     [coindatasample],  [required=0])
+AC_COIN_HAS_MODULE(Netlib,     [coindatanetlib],  [required=0])
+AC_COIN_HAS_MODULE(Miplib3,    [coindatamiplib3], [required=0])
+
+#TODO! fallbacks!
 
 #############################################################################
 #                            Third party solvers                            #
 #############################################################################
 
-# Check which third party solvers are available ToDo!
-AC_COIN_HAS_USER_LIBRARY([Cplex],[CPX],[cplex.h],[CPXgetstat])
-AC_COIN_HAS_USER_LIBRARY([FortMP],[FMP])  #ToDo! is Fortran?
-AC_COIN_HAS_USER_LIBRARY([Mosek],[MSK],[mosek.h],[MSK_openmosek])
-AC_COIN_HAS_USER_LIBRARY([Osl],[OSL],[ekk_c_api.h],[ekk_simplex])
-AC_COIN_HAS_USER_LIBRARY([Soplex],[SPX],[spxsolver.h]) # ToDo
-AC_COIN_HAS_USER_LIBRARY([Xpress],[XPR],[xprs.h],[XPRSsetintcontrol])
-
-AC_COIN_HAS_GLPK(Glpk)
+# Check which third party solvers are available
+AC_COIN_HAS_MODULE(Cpx,      [osi-cplex])
+AC_COIN_HAS_MODULE(Glpk,     [osi-glpk])
+#AC_COIN_HAS_MODULE(Grb,     [osi-gurobi])
+AC_COIN_HAS_MODULE(Msk,      [osi-mosek])
+#AC_COIN_HAS_MODULE(Spx,     [osi-soplex])
+AC_COIN_HAS_MODULE(Xpr,      [osi-xpress])
 
 #############################################################################
 #                       Other third party software                          #
 #############################################################################
 
 # Ampl Solver library
-AC_COIN_HAS_ASL
+AC_COIN_HAS_MODULE(ASL, [coinasl], [required=0])
 
 #############################################################################
 #                       CbcGeneric configuration			    #
@@ -178,7 +177,8 @@ AC_CONFIG_FILES([Makefile
                  examples/Makefile
                  src/Makefile
                  test/Makefile
-		 cbc_addlibs.txt])
+		 cbc_addlibs.txt
+		 cbc.pc cbc-uninstalled.pc])
 
 # Here put the location and name of the configuration header file
 AC_CONFIG_HEADER([inc/config_cbc.h])

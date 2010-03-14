@@ -63,8 +63,9 @@ DIST_COMMON = README $(am__configure_deps) \
 	$(srcdir)/../ltmain.sh $(srcdir)/../missing \
 	$(srcdir)/Makefile.am $(srcdir)/Makefile.in \
 	$(srcdir)/cbc-uninstalled.pc.in $(srcdir)/cbc.pc.in \
-	$(srcdir)/cbc_addlibs.txt.in $(top_srcdir)/configure \
-	$(top_srcdir)/examples/Makefile.in \
+	$(srcdir)/cbc_addlibs.txt.in \
+	$(srcdir)/osi-cbc-uninstalled.pc.in $(srcdir)/osi-cbc.pc.in \
+	$(top_srcdir)/configure $(top_srcdir)/examples/Makefile.in \
 	$(top_srcdir)/inc/config_cbc.h.in AUTHORS INSTALL
 @HAVE_EXTERNALS_TRUE@am__append_2 = Externals
 @HAVE_EXTERNALS_TRUE@am__append_3 = .Externals-stamp
@@ -79,7 +80,7 @@ am__CONFIG_DISTCLEAN_FILES = config.status config.cache config.log \
 mkinstalldirs = $(install_sh) -d
 CONFIG_HEADER = $(top_builddir)/inc/config_cbc.h
 CONFIG_CLEAN_FILES = examples/Makefile cbc_addlibs.txt cbc.pc \
-	cbc-uninstalled.pc
+	cbc-uninstalled.pc osi-cbc.pc osi-cbc-uninstalled.pc
 SOURCES =
 DIST_SOURCES =
 RECURSIVE_TARGETS = all-recursive check-recursive dvi-recursive \
@@ -170,6 +171,8 @@ COIN_HAS_DYLP_FALSE = @COIN_HAS_DYLP_FALSE@
 COIN_HAS_DYLP_TRUE = @COIN_HAS_DYLP_TRUE@
 COIN_HAS_GLPK_FALSE = @COIN_HAS_GLPK_FALSE@
 COIN_HAS_GLPK_TRUE = @COIN_HAS_GLPK_TRUE@
+COIN_HAS_GRB_FALSE = @COIN_HAS_GRB_FALSE@
+COIN_HAS_GRB_TRUE = @COIN_HAS_GRB_TRUE@
 COIN_HAS_MIPLIB3_FALSE = @COIN_HAS_MIPLIB3_FALSE@
 COIN_HAS_MIPLIB3_TRUE = @COIN_HAS_MIPLIB3_TRUE@
 COIN_HAS_MSK_FALSE = @COIN_HAS_MSK_FALSE@
@@ -216,6 +219,9 @@ FFLAGS = @FFLAGS@
 GLPK_CFLAGS = @GLPK_CFLAGS@
 GLPK_DATA = @GLPK_DATA@
 GLPK_LIBS = @GLPK_LIBS@
+GRB_CFLAGS = @GRB_CFLAGS@
+GRB_DATA = @GRB_DATA@
+GRB_LIBS = @GRB_LIBS@
 HAVE_EXTERNALS_FALSE = @HAVE_EXTERNALS_FALSE@
 HAVE_EXTERNALS_TRUE = @HAVE_EXTERNALS_TRUE@
 INSTALL_DATA = @INSTALL_DATA@
@@ -249,6 +255,24 @@ NETLIB_LIBS = @NETLIB_LIBS@
 OBJEXT = @OBJEXT@
 OPT_CFLAGS = @OPT_CFLAGS@
 OPT_CXXFLAGS = @OPT_CXXFLAGS@
+OSICBC_DFLT_SOLVER_CLP_FALSE = @OSICBC_DFLT_SOLVER_CLP_FALSE@
+OSICBC_DFLT_SOLVER_CLP_TRUE = @OSICBC_DFLT_SOLVER_CLP_TRUE@
+OSICBC_DFLT_SOLVER_CPX_FALSE = @OSICBC_DFLT_SOLVER_CPX_FALSE@
+OSICBC_DFLT_SOLVER_CPX_TRUE = @OSICBC_DFLT_SOLVER_CPX_TRUE@
+OSICBC_DFLT_SOLVER_DYLP_FALSE = @OSICBC_DFLT_SOLVER_DYLP_FALSE@
+OSICBC_DFLT_SOLVER_DYLP_TRUE = @OSICBC_DFLT_SOLVER_DYLP_TRUE@
+OSICBC_DFLT_SOLVER_GLPK_FALSE = @OSICBC_DFLT_SOLVER_GLPK_FALSE@
+OSICBC_DFLT_SOLVER_GLPK_TRUE = @OSICBC_DFLT_SOLVER_GLPK_TRUE@
+OSICBC_DFLT_SOLVER_GRB_FALSE = @OSICBC_DFLT_SOLVER_GRB_FALSE@
+OSICBC_DFLT_SOLVER_GRB_TRUE = @OSICBC_DFLT_SOLVER_GRB_TRUE@
+OSICBC_DFLT_SOLVER_MSK_FALSE = @OSICBC_DFLT_SOLVER_MSK_FALSE@
+OSICBC_DFLT_SOLVER_MSK_TRUE = @OSICBC_DFLT_SOLVER_MSK_TRUE@
+OSICBC_DFLT_SOLVER_SYM_FALSE = @OSICBC_DFLT_SOLVER_SYM_FALSE@
+OSICBC_DFLT_SOLVER_SYM_TRUE = @OSICBC_DFLT_SOLVER_SYM_TRUE@
+OSICBC_DFLT_SOLVER_VOL_FALSE = @OSICBC_DFLT_SOLVER_VOL_FALSE@
+OSICBC_DFLT_SOLVER_VOL_TRUE = @OSICBC_DFLT_SOLVER_VOL_TRUE@
+OSICBC_DFLT_SOLVER_XPR_FALSE = @OSICBC_DFLT_SOLVER_XPR_FALSE@
+OSICBC_DFLT_SOLVER_XPR_TRUE = @OSICBC_DFLT_SOLVER_XPR_TRUE@
 OSIDOCDIR = @OSIDOCDIR@
 OSIOBJDIR = @OSIOBJDIR@
 OSISRCDIR = @OSISRCDIR@
@@ -378,7 +402,7 @@ EXTRA_DIST = doc/authors.xml doc/cbcexe.xml doc/cbcmodelclass.xml \
 addlibsdir = $(datadir)/coin/doc/Cbc
 addlibs_DATA = cbc_addlibs.txt
 pkgconfiglibdir = $(libdir)/pkgconfig
-pkgconfiglib_DATA = cbc.pc
+pkgconfiglib_DATA = cbc.pc osi-cbc.pc
 
 ########################################################################
 #                         Maintainer Stuff                             #
@@ -448,6 +472,10 @@ cbc_addlibs.txt: $(top_builddir)/config.status $(srcdir)/cbc_addlibs.txt.in
 cbc.pc: $(top_builddir)/config.status $(srcdir)/cbc.pc.in
 	cd $(top_builddir) && $(SHELL) ./config.status $@
 cbc-uninstalled.pc: $(top_builddir)/config.status $(srcdir)/cbc-uninstalled.pc.in
+	cd $(top_builddir) && $(SHELL) ./config.status $@
+osi-cbc.pc: $(top_builddir)/config.status $(srcdir)/osi-cbc.pc.in
+	cd $(top_builddir) && $(SHELL) ./config.status $@
+osi-cbc-uninstalled.pc: $(top_builddir)/config.status $(srcdir)/osi-cbc-uninstalled.pc.in
 	cd $(top_builddir) && $(SHELL) ./config.status $@
 
 mostlyclean-libtool:

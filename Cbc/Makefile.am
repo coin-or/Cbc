@@ -120,7 +120,7 @@ addlibsdir = $(datadir)/coin/doc/Cbc
 addlibs_DATA = cbc_addlibs.txt
 
 pkgconfiglibdir = $(libdir)/pkgconfig
-pkgconfiglib_DATA = cbc.pc
+pkgconfiglib_DATA = cbc.pc osi-cbc.pc
 
 ########################################################################
 #                         Maintainer Stuff                             #

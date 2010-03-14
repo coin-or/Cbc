@@ -115,7 +115,7 @@ fi
 # Check which third party solvers are available
 AC_COIN_HAS_MODULE(Cpx,      [osi-cplex])
 AC_COIN_HAS_MODULE(Glpk,     [osi-glpk])
-#AC_COIN_HAS_MODULE(Grb,     [osi-gurobi])
+AC_COIN_HAS_MODULE(Grb,      [osi-gurobi])
 AC_COIN_HAS_MODULE(Msk,      [osi-mosek])
 #AC_COIN_HAS_MODULE(Spx,     [osi-soplex])
 AC_COIN_HAS_MODULE(Xpr,      [osi-xpress])
@@ -198,6 +198,133 @@ if test "$enable_cbc_parallel" = yes; then
 fi
 
 ##############################################################################
+#                            OsiCbc configuration                            #
+##############################################################################
+
+# Handles configuration of the underlying default solver in OsiCbc. The issue
+# is that OsiCbc defines a default solver, used when the client does not     
+# specify a solver in the constructor. The default solver must, therefore,   
+# be present in the build. This macro checks that this is true, and sets the 
+# compile-time symbols OSICBC_DFLT_SOLVER, OSICBC_CLP_DFLT_SOLVER, and
+# OSICBC_DFLT_SOLVER_HPP that control the build. The parameter default_solver
+# should normally be clp, unless you're working on some other solver.
+
+# Ideally, this macro would not require enumeration of solvers, but the
+# effort required to avoid it is just not justified at present. One enumeration
+# is hidden in AC_OSI_CANONICAL. The other is visible, the AM_CONDITIONAL
+# list at the end.                                                             
+
+# In an ideal world this macro would do absolutely nothing if Cbc is not
+# present, but autotools is not an ideal world and we have to satisfy its
+# requirements. In particular, the AM_CONDITIONAL macros need to execute or
+# automake will complain. Really the only thing we need to suppress is the 
+# check that the default solver exists. All the rest is irrelevant when Cbc
+# isn't present (hence OsiCbc will be configured but not actually compiled).
+
+# Process the with-osicbc-default-solver option.
+
+AC_ARG_WITH([osicbc-default-solver],
+  AS_HELP_STRING([--with-osicbc-default-solver],
+     [specify underlying solver for OsiCbc (default clp)]),
+     [osicbc_with_solver=$withval],
+     [osicbc_with_solver=clp])
+
+case "${osicbc_with_solver}" in
+  @<:@Cc@:>@@<:@Ll@:>@@<:@Pp@:>@*)
+    osi_lc_solver=clp ;           
+    osi_mc_solver=Clp ;           
+    osi_uc_solver=CLP ;           
+    osi_exists_solver=${coin_has_clp-"unavailable"}
+    ;;                                             
+  @<:@Dd@:>@@<:@Yy@:>@@<:@Ll@:>@@<:@Pp@:>@*)       
+    osi_lc_solver=dylp ;                           
+    osi_mc_solver=Dylp                             
+    osi_uc_solver=DYLP                             
+    osi_exists_solver=${coin_has_dylp-"unavailable"}
+    ;;                                              
+  @<:@Cc@:>@@<:@Pp@:>@@<:@Xx@:>@*)                  
+    osi_lc_solver=cpx ;                             
+    osi_mc_solver=Cpx                               
+    osi_uc_solver=CPX                               
+    osi_exists_solver=${coin_has_cpx-"unavailable"} 
+    ;;
+  @<:@Gg@:>@@<:@Ll@:>@@<:@Pp@:>@@<:@Kk@:>@*)        
+    osi_lc_solver=glpk ;                            
+    osi_mc_solver=Glpk                              
+    osi_uc_solver=GLPK                              
+    osi_exists_solver=${coin_has_glpk-"unavailable"}
+    ;;
+  @<:@Gg@:>@@<:@Rr@:>@@<:@Bb@:>@*)
+    osi_lc_solver=grb ;
+    osi_mc_solver=Grb ;           
+    osi_uc_solver=GRB ;           
+    osi_exists_solver=${coin_has_grb-"unavailable"}
+    ;;                                             
+  @<:@Mm@:>@@<:@Ss@:>@@<:@Kk@:>@*)
+    osi_lc_solver=msk ;
+    osi_mc_solver=Msk
+    osi_uc_solver=MSK
+    osi_exists_solver=${coin_has_msk-"unavailable"}
+    ;;
+  @<:@Ss@:>@@<:@Yy@:>@@<:@Mm@:>@*)
+    osi_lc_solver=sym ;
+    osi_mc_solver=Sym
+    osi_uc_solver=SYM
+    osi_exists_solver=${coin_has_sym-"unavailable"}
+    ;;
+  @<:@Vv@:>@@<:@Oo@:>@@<:@Ll@:>@*)
+    osi_lc_solver=vol ;
+    osi_mc_solver=Vol
+    osi_uc_solver=VOL
+    osi_exists_solver=${coin_has_vol-"unavailable"}
+    ;;
+  @<:@Xx@:>@@<:@Pp@:>@@<:@Rr@:>@*)
+    osi_lc_solver=xpr ;
+    osi_mc_solver=Xpr
+    osi_uc_solver=XPR
+    osi_exists_solver=${coin_has_xpr-"unavailable"}
+    ;;
+  *)
+    osi_lc_solver=clp ;
+    osi_mc_solver=Clp ;
+    osi_uc_solver=CLP ;
+    osi_exists_solver=${coin_has_clp-"unavailable"}
+    AC_MSG_WARN([Unrecognised solver $1; defaulting to $osi_lc_solver.])
+    ;;
+esac
+
+# Check that the requested solver is available.
+if test $osi_exists_solver = no; then
+  AC_MSG_ERROR([selected default solver $osicbc_with_solver is unavailable.
+  Please select an available solver using the --with-osicbc-default-solver option.])
+fi
+
+# State the result.
+AC_MSG_NOTICE([OsiCbc default solver is $osi_lc_solver])
+
+# And set the configuration variables.
+AC_DEFINE_UNQUOTED([OSICBC_DFLT_SOLVER],
+  [Osi${osi_mc_solver}SolverInterface],
+  [define to the name of the default solver interface class, e.g., OsiClpSolverInterface])
+AC_DEFINE_UNQUOTED([OSICBC_DFLT_SOLVER_HPP],
+  ["Osi${osi_mc_solver}SolverInterface.hpp"],
+  [define to the name of the .hpp file for the default solver interface class, e.g., "OsiClpSolverInterface.hpp" (include quotes)])
+if test $osi_mc_solver = "Clp"; then
+  AC_DEFINE([OSICBC_DFLT_SOLVER_CLP],[1],[define this symbol if clp is the default solver])
+fi
+
+# Last but not least, we need automake conditionals.
+AM_CONDITIONAL([OSICBC_DFLT_SOLVER_CLP],[test $osi_mc_solver = Clp])
+AM_CONDITIONAL([OSICBC_DFLT_SOLVER_CPX],[test $osi_mc_solver = Cpx])
+AM_CONDITIONAL([OSICBC_DFLT_SOLVER_DYLP],[test $osi_mc_solver = Dylp])
+AM_CONDITIONAL([OSICBC_DFLT_SOLVER_GLPK],[test $osi_mc_solver = Glpk])
+AM_CONDITIONAL([OSICBC_DFLT_SOLVER_GRB],[test $osi_mc_solver = Grb])
+AM_CONDITIONAL([OSICBC_DFLT_SOLVER_MSK],[test $osi_mc_solver = Msk])
+AM_CONDITIONAL([OSICBC_DFLT_SOLVER_SYM],[test $osi_mc_solver = Sym])
+AM_CONDITIONAL([OSICBC_DFLT_SOLVER_VOL],[test $osi_mc_solver = Vol])
+AM_CONDITIONAL([OSICBC_DFLT_SOLVER_XPR],[test $osi_mc_solver = Xpr])
+
+##############################################################################
 #                   VPATH links for example input files                      #
 ##############################################################################
 
@@ -217,9 +344,11 @@ AC_COIN_VPATH_LINK(examples/quad2.mps)
 AC_CONFIG_FILES([Makefile
                  examples/Makefile
                  src/Makefile
+                 src/OsiCbc/Makefile
                  test/Makefile
 		 cbc_addlibs.txt
-		 cbc.pc cbc-uninstalled.pc])
+		 cbc.pc cbc-uninstalled.pc
+		 osi-cbc.pc osi-cbc-uninstalled.pc])
 
 # Here put the location and name of the configuration header file
 AC_CONFIG_HEADER([inc/config_cbc.h])

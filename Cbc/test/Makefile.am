@@ -12,7 +12,7 @@ AUTOMAKE_OPTIONS = foreign
 #                         unitTest for Cbc                             #
 ########################################################################
 
-CBC_TEST_TGTS = gamstests
+CBC_TEST_TGTS = gamstests ositests
 
 if COIN_HAS_CLP
   CBC_TEST_TGTS += test_cbc
@@ -24,12 +24,17 @@ endif
 endif
 
 cbcflags =
+ositestsflags =
 if COIN_HAS_SAMPLE
   cbcflags += -dirSample `$(CYGPATH_W) $(SAMPLE_DATA)`
+  ositestsflags += -mpsDir=`$(CYGPATH_W) $(SAMPLE_DATA)`
 endif
 cbcflags += -unitTest
 if COIN_HAS_MIPLIB3
   cbcflags += -dirMiplib `$(CYGPATH_W) $(MIPLIB3_DATA)` -miplib
+endif
+if COIN_HAS_NETLIB
+  ositestsflags += -netlibDir=`$(CYGPATH_W) $(NETLIB_DATA)` -testOsiSolverInterface
 endif
 
 # We are using the solver executables to do the unit test
@@ -51,7 +56,8 @@ gamstests: gamsTest$(EXEEXT)
 
 .PHONY: test
 
-bin_PROGRAMS = gamsTest
+bin_PROGRAMS = gamsTest osiUnitTest
+
 gamsTest_SOURCES = gamsTest.cpp
 gamsTest_LDADD = ../src/libCbcSolver.la ../src/libCbc.la $(COINDEPEND_LIBS) $(ADDLIBS)
 gamsTest_LDFLAGS = -rpath $(libdir)
@@ -102,6 +108,20 @@ if COIN_HAS_ASL
   AM_CPPFLAGS += $(ASL_CFLAGS)
   gamsTest_LDADD += $(ASL_LIBS)
 endif
+
+########################################################################
+#                         unitTest for OsiCbc                          #
+########################################################################
+
+osiUnitTest_SOURCES = osiUnitTest.cpp OsiCbcSolverInterfaceTest.cpp
+
+osiUnitTest_LDADD = ../src/libCbc.la ../src/OsiCbc/libOsiCbc.la $(COINDEPEND_LIBS) $(OSITESTS_LIBS) $(ADDLIBS)
+
+AM_CPPFLAGS += $(OSITESTS_CFLAGS) \
+        -I`$(CYGPATH_W) $(srcdir)/../src/OsiCbc`
+
+ositests: osiUnitTest$(EXEEXT)
+	./osiUnitTest$(EXEEXT) $(ositestsflags)
 
 ########################################################################
 #                          Cleaning stuff                              #

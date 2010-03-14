@@ -44,6 +44,8 @@ Cbc/examples/modify.cpp -text
 Cbc/examples/qmip2.cpp -text
 Cbc/examples/simpleBAB.cpp -text
 Cbc/inc/config_cbc.h.in -text
+Cbc/osi-cbc-uninstalled.pc.in -text
+Cbc/osi-cbc.pc.in -text
 Cbc/src/CbcBranchAllDifferent.cpp -text
 Cbc/src/CbcBranchAllDifferent.hpp -text
 Cbc/src/CbcBranchDecision.cpp -text
@@ -163,7 +165,13 @@ Cbc/src/CbcThread.cpp -text
 Cbc/src/CbcThread.hpp -text
 Cbc/src/ClpAmplObjective.hpp -text
 Cbc/src/ClpConstraintAmpl.hpp -text
+Cbc/src/OsiCbc/Makefile.am -text
+Cbc/src/OsiCbc/Makefile.in -text
+Cbc/src/OsiCbc/OsiCbcSolverInterface.cpp -text
+Cbc/src/OsiCbc/OsiCbcSolverInterface.hpp -text
+Cbc/test/OsiCbcSolverInterfaceTest.cpp -text
 Cbc/test/gamsTest.cpp -text
+Cbc/test/osiUnitTest.cpp -text
 /LICENSE -text
 /README -text
 /config.guess -text

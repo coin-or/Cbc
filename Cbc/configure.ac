@@ -53,60 +53,57 @@ AC_COIN_PROG_CXX
 AC_COIN_INIT_AUTO_TOOLS
 
 #############################################################################
-#                              COIN components                              #
+#                            COIN-OR components                             #
 #############################################################################
 
 AC_COIN_HAS_MODULE(CoinDepend, [coinutils = split osi cgl])
-AC_COIN_HAS_MODULE(Clp,        [osi-clp])
+if test $coin_has_coindepend != yes ; then
+  #if we have to use the fallback routines, then obviously it will not find CoinUtils dependencies
+  #thus, we check whether ThirdParty/Blas, ThirdParty/Lapack, and ThirdParty/Glpk have been setup and
+  #assume that if present then they are dependencies of CoinUtils
+  AC_COIN_HAS_MODULE_FALLBACK(Blas,      [coinblas],   [../ThirdParty/Blas],   [required=0 dodefine=0 doconditional=0])
+  AC_COIN_HAS_MODULE_FALLBACK(Lapack,    [coinlapack], [../ThirdParty/Lapack], [required=0 dodefine=0 doconditional=0])
+  AC_COIN_HAS_MODULE_FALLBACK(Glpk,      [coinglpk],   [../ThirdParty/Glpk],   [required=0 dodefine=0 doconditional=0])
+  AC_COIN_HAS_MODULE_FALLBACK(CoinUtils, [coinutils],  [../CoinUtils],         [dodefine=0 doconditional=0])
+  AC_COIN_HAS_MODULE_FALLBACK(Osi,       [osi],        [../Osi],               [dodefine=0 doconditional=0])
+  AC_COIN_HAS_MODULE_FALLBACK(Cgl,       [cgl],        [../Cgl],               [dodefine=0 doconditional=0])
+  COINDEPEND_LIBS="$COINUTILS_LIBS $BLAS_LIBS $LAPACK_LIBS $GLPK_LIBS $OSI_LIBS $CGL_LIBS"
+  COINDEPEND_CFLAGS="$COINUTILS_CFLAGS $GLPK_CFLAGS $OSI_CFLAGS $CGL_CFLAGS"
+  if test "${coin_has_coinutils}${coin_has_osi}${coin_has_cgl}" = yesyesyes ; then
+    coin_has_coindepend=yes
+    AC_DEFINE(m4_toupper(COIN_HAS_COINDEPEND),[1],[Define to 1 if the COINDEPEND module is available])
+    AM_CONDITIONAL(COIN_HAS_COINDEPEND, [test $coin_has_coindepend = yes])
+  fi
+fi
+if test $coin_has_coindepend != yes ; then
+  AC_MSG_ERROR([Required package CoinUtils, Osi, or Cgl not available.])
+fi
+
+AC_COIN_HAS_MODULE(Clp, [osi-clp])
+# OsiClp depends on Clp, which the fallback for OsiClp
+# so if Clp is there, then we assume that also OsiClp will be there and add the corresponding flags to the Clp flags
+AC_COIN_HAS_MODULE_FALLBACK(Clp, [clp], [../Clp])
+if test $coin_has_clp = yes ; then
+  AC_COIN_HAS_MODULE_FALLBACK(OsiClp, [osi-clp], [../Clp], [dodefine=0 doconditional=0])
+  CLP_CFLAGS="$CLP_CFLAGS $OSICLP_CFLAGS"
+  CLP_LIBS="$CLP_LIBS $OSICLP_LIBS"
+else
+  AC_MSG_ERROR("Required package Clp unavailable.")
+fi
+
+# we skip fallbacks for the following three
 AC_COIN_HAS_MODULE(DyLP,       [osi-dylp])
 AC_COIN_HAS_MODULE(Vol,        [osi-vol])
 AC_COIN_HAS_MODULE(OsiTests,   [osi-unittests],   [required=0])
-AC_COIN_HAS_MODULE(Sample,     [coindatasample],  [required=0])
-AC_COIN_HAS_MODULE(Netlib,     [coindatanetlib],  [required=0])
-AC_COIN_HAS_MODULE(Miplib3,    [coindatamiplib3], [required=0])
 
-# fallbacks for CoinDepend and Clp if no pkg-config is available
-if test "$coin_has_coindepend" != yes ; then
-  AC_COIN_HAS_PROJECT(CoinUtils)
-  AC_COIN_HAS_PROJECT(Osi)
-  AC_COIN_HAS_PROJECT(Cgl)
-  if test $coin_has_coinutils != notGiven && test $coin_has_coinutils != skipping ; then
-    COINDEPEND_CFLAGS="-I`${CYGPATH_W} ${COINUTILSSRCDIR}/src` -I`${CYGPATH_W} ${COINUTILSOBJDIR}/inc`"
-    COINDEPEND_LIBS="${COINUTILSOBJDIR}/src/libCoinUtils.la `cat ${COINUTILSOBJDIR}/coinutils_addlibs.txt`"
-  else
-    AC_MSG_ERROR("Required package CoinUtils unavailable.")
-  fi
-  if test $coin_has_osi != notGiven && test $coin_has_osi != skipping ; then
-    COINDEPEND_CFLAGS="${COINDEPEND_CFLAGS} -I`${CYGPATH_W} ${OSISRCDIR}/src` -I`${CYGPATH_W} ${OSIOBJDIR}/inc`"
-    COINDEPEND_LIBS="${COINDEPEND_LIBS} ${OSIOBJDIR}/src/libOsi.la `cat ${OSIOBJDIR}/osi_addlibs.txt`"
-  else
-    AC_MSG_ERROR("Required package Osi unavailable.")
-  fi
-  if test $coin_has_cgl != notGiven && test $coin_has_cgl != skipping ; then
-    COINDEPEND_CFLAGS="${COINDEPEND_CFLAGS} -I`${CYGPATH_W} ${CGLSRCDIR}/src` -I`${CYGPATH_W} ${CGLOBJDIR}/inc` -I`${CYGPATH_W} ${CGLSRCDIR}/src/CglAllDifferent` -I`${CYGPATH_W} ${CGLSRCDIR}/src/CglClique` -I`${CYGPATH_W} ${CGLSRCDIR}/src/CglDuplicateRow` -I`${CYGPATH_W} ${CGLSRCDIR}/src/CglFlowCover` -I`${CYGPATH_W} ${CGLSRCDIR}/src/CglGomory` -I`${CYGPATH_W} ${CGLSRCDIR}/src/CglKnapsackCover` -I`${CYGPATH_W} ${CGLSRCDIR}/src/CglLandP` -I`${CYGPATH_W} ${CGLSRCDIR}/src/CglLiftAndProject` -I`${CYGPATH_W} ${CGLSRCDIR}/src/CglMixedIntegerRounding` -I`${CYGPATH_W} ${CGLSRCDIR}/src/CglMixedIntegerRounding2` -I`${CYGPATH_W} ${CGLSRCDIR}/src/CglOddHole` -I`${CYGPATH_W} ${CGLSRCDIR}/src/CglPreProcess` -I`${CYGPATH_W} ${CGLSRCDIR}/src/CglProbing` -I`${CYGPATH_W} ${CGLSRCDIR}/src/CglRedSplit` -I`${CYGPATH_W} ${CGLSRCDIR}/src/CglResidualCapacity` -I`${CYGPATH_W} ${CGLSRCDIR}/src/CglSimpleRounding` -I`${CYGPATH_W} ${CGLSRCDIR}/src/CglTwomir`"
-    COINDEPEND_LIBS="${COINDEPEND_LIBS} ${CGLOBJDIR}/src/libCgl.la `cat ${CGLOBJDIR}/cgl_addlibs.txt`"
-  else
-    AC_MSG_ERROR("Required package Cgl unavailable.")
-  fi
-  coin_has_coindepend=yes
-  AC_DEFINE(COIN_HAS_COINDEPEND,[1],[Define to 1 if the CoinDepend module is available])
-else
-  # to please configure
-  AM_CONDITIONAL(COIN_HAS_COINUTILS, [test 0 = 1])
-  AM_CONDITIONAL(COIN_HAS_OSI,       [test 0 = 1])
-  AM_CONDITIONAL(COIN_HAS_CGL,       [test 0 = 1])
-fi
+AC_COIN_HAS_MODULE(Sample,          [coindatasample],                   [required=0])
+AC_COIN_HAS_MODULE_FALLBACK(Sample, [coindatasample], [../Data/Sample], [required=0])
 
-if test "$coin_has_clp" != yes ; then
-  AC_COIN_HAS_PROJECT(Clp)
-  if test $coin_has_clp != notGiven && test $coin_has_clp != skipping ; then
-    CLP_CFLAGS="-I`${CYGPATH_W} ${CLPSRCDIR}/src` -I`${CYGPATH_W} ${CLPSRCDIR}/src/OsiClp` -I`${CYGPATH_W} ${CLPOBJDIR}/inc`"
-    CLP_LIBS="${CLPOBJDIR}/src/libClp.la ${CLPOBJDIR}/src/OsiClp/libOsiClp.la `cat ${CLPOBJDIR}/clp_addlibs.txt`"
-    AC_DEFINE(COIN_HAS_CLP,[1],[Define to 1 if the Clp module is available])
-  else
-    AC_MSG_ERROR("Required package Clp unavailable.")
-  fi
-fi
+AC_COIN_HAS_MODULE(Netlib,          [coindatanetlib],                   [required=0])
+AC_COIN_HAS_MODULE_FALLBACK(Netlib, [coindatanetlib], [../Data/Netlib], [required=0])
+
+AC_COIN_HAS_MODULE(Miplib3,          [coindatamiplib3],                    [required=0])
+AC_COIN_HAS_MODULE_FALLBACK(Miplib3, [coindatamiplib3], [../Data/Miplib3], [required=0])
 
 #############################################################################
 #                            Third party solvers                            #

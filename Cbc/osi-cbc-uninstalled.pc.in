@@ -1,10 +1,8 @@
 prefix=@prefix@
-libdir=@ABSBUILDDIR@/src/OsiCbc
-includedir=@abs_source_dir@/src/OsiCbc
 
 Name: OsiCbc
 Description: COIN-OR Open Solver Interface for CBC
 Version: @PACKAGE_VERSION@
-Libs: -L${libdir} -lOsiCbc
-Cflags: -I${includedir}
+Libs: -L@ABSBUILDDIR@/src/OsiCbc -lOsiCbc
+Cflags: -I@abs_source_dir@/src/OsiCbc
 Requires: cbc

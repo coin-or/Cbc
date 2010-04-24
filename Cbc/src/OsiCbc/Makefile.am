@@ -35,7 +35,7 @@ AM_CPPFLAGS = $(COINDEPEND_CFLAGS) \
 # Plus the appropriate include directories for the default solver.
 
 if OSICBC_DFLT_SOLVER_CLP
-  AM_CPPFLAGS += ${CLP_FLAGS}
+  AM_CPPFLAGS += ${CLP_CFLAGS}
 endif
 
 if OSICBC_DFLT_SOLVER_CPX

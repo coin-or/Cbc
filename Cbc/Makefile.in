@@ -63,7 +63,6 @@ DIST_COMMON = README $(am__configure_deps) \
 	$(srcdir)/../ltmain.sh $(srcdir)/../missing \
 	$(srcdir)/Makefile.am $(srcdir)/Makefile.in \
 	$(srcdir)/cbc-uninstalled.pc.in $(srcdir)/cbc.pc.in \
-	$(srcdir)/cbc_addlibs.txt.in \
 	$(srcdir)/osi-cbc-uninstalled.pc.in $(srcdir)/osi-cbc.pc.in \
 	$(top_srcdir)/configure $(top_srcdir)/examples/Makefile.in \
 	$(top_srcdir)/inc/config_cbc.h.in AUTHORS INSTALL
@@ -79,8 +78,8 @@ am__CONFIG_DISTCLEAN_FILES = config.status config.cache config.log \
  configure.lineno configure.status.lineno
 mkinstalldirs = $(install_sh) -d
 CONFIG_HEADER = $(top_builddir)/inc/config_cbc.h
-CONFIG_CLEAN_FILES = examples/Makefile cbc_addlibs.txt cbc.pc \
-	cbc-uninstalled.pc osi-cbc.pc osi-cbc-uninstalled.pc
+CONFIG_CLEAN_FILES = examples/Makefile cbc.pc cbc-uninstalled.pc \
+	osi-cbc.pc osi-cbc-uninstalled.pc
 SOURCES =
 DIST_SOURCES =
 RECURSIVE_TARGETS = all-recursive check-recursive dvi-recursive \
@@ -168,12 +167,15 @@ COIN_HAS_NETLIB_FALSE = @COIN_HAS_NETLIB_FALSE@
 COIN_HAS_NETLIB_TRUE = @COIN_HAS_NETLIB_TRUE@
 COIN_HAS_OSITESTS_FALSE = @COIN_HAS_OSITESTS_FALSE@
 COIN_HAS_OSITESTS_TRUE = @COIN_HAS_OSITESTS_TRUE@
+COIN_HAS_PKGCONFIG_FALSE = @COIN_HAS_PKGCONFIG_FALSE@
+COIN_HAS_PKGCONFIG_TRUE = @COIN_HAS_PKGCONFIG_TRUE@
 COIN_HAS_SAMPLE_FALSE = @COIN_HAS_SAMPLE_FALSE@
 COIN_HAS_SAMPLE_TRUE = @COIN_HAS_SAMPLE_TRUE@
 COIN_HAS_VOL_FALSE = @COIN_HAS_VOL_FALSE@
 COIN_HAS_VOL_TRUE = @COIN_HAS_VOL_TRUE@
 COIN_HAS_XPR_FALSE = @COIN_HAS_XPR_FALSE@
 COIN_HAS_XPR_TRUE = @COIN_HAS_XPR_TRUE@
+COIN_PKG_CONFIG_PATH = @COIN_PKG_CONFIG_PATH@
 CPP = @CPP@
 CPPFLAGS = @CPPFLAGS@
 CPX_CFLAGS = @CPX_CFLAGS@
@@ -381,14 +383,15 @@ EXTRA_DIST = doc/authors.xml doc/cbcexe.xml doc/cbcmodelclass.xml \
 ########################################################################
 #                  Installation of the addlibs file                    #
 ########################################################################
-addlibsdir = $(datadir)/coin/doc/Cbc
-addlibs_DATA = cbc_addlibs.txt
+@COIN_HAS_PKGCONFIG_TRUE@addlibsdir = $(datadir)/coin/doc/Cbc
+@COIN_HAS_PKGCONFIG_TRUE@addlibs_DATA = cbc_addlibs.txt
 pkgconfiglibdir = $(libdir)/pkgconfig
 pkgconfiglib_DATA = cbc.pc osi-cbc.pc
 
 ########################################################################
 #                         Maintainer Stuff                             #
 ########################################################################
+CLEANFILES = cbc_addlibs.txt
 
 # Files that are generated and should be cleaned with make distclean
 DISTCLEANFILES = $(am__append_3) $(VPATH_DISTCLEANFILES)
@@ -448,8 +451,6 @@ $(top_srcdir)/inc/config_cbc.h.in: @MAINTAINER_MODE_TRUE@ $(am__configure_deps)
 distclean-hdr:
 	-rm -f inc/config_cbc.h inc/stamp-h1
 examples/Makefile: $(top_builddir)/config.status $(top_srcdir)/examples/Makefile.in
-	cd $(top_builddir) && $(SHELL) ./config.status $@
-cbc_addlibs.txt: $(top_builddir)/config.status $(srcdir)/cbc_addlibs.txt.in
 	cd $(top_builddir) && $(SHELL) ./config.status $@
 cbc.pc: $(top_builddir)/config.status $(srcdir)/cbc.pc.in
 	cd $(top_builddir) && $(SHELL) ./config.status $@
@@ -803,6 +804,7 @@ install-strip:
 mostlyclean-generic:
 
 clean-generic:
+	-test -z "$(CLEANFILES)" || rm -f $(CLEANFILES)
 
 distclean-generic:
 	-test -z "$(CONFIG_CLEAN_FILES)" || rm -f $(CONFIG_CLEAN_FILES)
@@ -903,6 +905,9 @@ install-exec-local: install-doc
 uninstall-local: uninstall-doc
 
 .PHONY: test unitTest
+
+@COIN_HAS_PKGCONFIG_TRUE@cbc_addlibs.txt : cbc.pc
+@COIN_HAS_PKGCONFIG_TRUE@	PKG_CONFIG_PATH=.:@COIN_PKG_CONFIG_PATH@ $(PKG_CONFIG) --libs cbc > cbc_addlibs.txt
 
 install-doc: $(DocFiles)
 	test -z "$(DocInstallDir)" || $(mkdir_p) "$(DESTDIR)$(DocInstallDir)"

@@ -116,8 +116,13 @@ uninstall-local: uninstall-doc
 #                  Installation of the addlibs file                    #
 ########################################################################
 
+if COIN_HAS_PKGCONFIG
 addlibsdir = $(datadir)/coin/doc/Cbc
 addlibs_DATA = cbc_addlibs.txt
+
+cbc_addlibs.txt : cbc.pc
+	PKG_CONFIG_PATH=.:@COIN_PKG_CONFIG_PATH@ $(PKG_CONFIG) --libs cbc > cbc_addlibs.txt
+endif
 
 pkgconfiglibdir = $(libdir)/pkgconfig
 pkgconfiglib_DATA = cbc.pc osi-cbc.pc
@@ -125,6 +130,8 @@ pkgconfiglib_DATA = cbc.pc osi-cbc.pc
 ########################################################################
 #                         Maintainer Stuff                             #
 ########################################################################
+
+CLEANFILES = cbc_addlibs.txt
 
 # Files that are generated and should be cleaned with make distclean
 DISTCLEANFILES =

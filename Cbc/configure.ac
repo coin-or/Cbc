@@ -80,49 +80,47 @@ if test $coin_has_coindepend != yes ; then
 fi
 
 AC_COIN_HAS_MODULE(Clp, [osi-clp])
-# OsiClp depends on Clp, which the fallback for OsiClp
-# so if Clp is there, then we assume that also OsiClp will be there and add the corresponding flags to the Clp flags
-AC_COIN_HAS_MODULE_FALLBACK(Clp, [clp], [../Clp])
-if test $coin_has_clp = yes ; then
-  AC_COIN_HAS_MODULE_FALLBACK(OsiClp, [osi-clp], [../Clp], [dodefine=0 doconditional=0])
-  CLP_CFLAGS="$CLP_CFLAGS $OSICLP_CFLAGS"
-  CLP_LIBS="$CLP_LIBS $OSICLP_LIBS"
-else
+if test $coin_has_clp != yes ; then
+  # OsiClp depends on Clp
+  # so if Clp is there, then we assume that also OsiClp will be there and add the corresponding flags to the Clp flags
+  AC_COIN_HAS_MODULE_FALLBACK(Clp, [clp], [../Clp])
+  if test $coin_has_clp = yes ; then
+    AC_COIN_HAS_MODULE_FALLBACK(OsiClp, [osi-clp], [../Clp], [dodefine=0 doconditional=0])
+    CLP_CFLAGS="$CLP_CFLAGS $OSICLP_CFLAGS"
+    CLP_LIBS="$CLP_LIBS $OSICLP_LIBS"
+  fi
+fi
+if test $coin_has_clp != yes ; then
   AC_MSG_ERROR("Required package Clp unavailable.")
 fi
 
-# we skip fallbacks for the following three
-AC_COIN_HAS_MODULE(DyLP,       [osi-dylp])
-AC_COIN_HAS_MODULE(Vol,        [osi-vol])
-AC_COIN_HAS_MODULE(OsiTests,   [osi-unittests],   [required=0])
+# we skip fallbacks for the following two
+AC_COIN_HAS_MODULE(DyLP,     [osi-dylp])
+AC_COIN_HAS_MODULE(Vol,      [osi-vol])
+AC_COIN_HAS_MODULE(OsiTests, [osi-unittests], [required=0], [../Osi])
 
-AC_COIN_HAS_MODULE(Sample,          [coindatasample],                   [required=0])
-AC_COIN_HAS_MODULE_FALLBACK(Sample, [coindatasample], [../Data/Sample], [required=0])
-
-AC_COIN_HAS_MODULE(Netlib,          [coindatanetlib],                   [required=0])
-AC_COIN_HAS_MODULE_FALLBACK(Netlib, [coindatanetlib], [../Data/Netlib], [required=0])
-
-AC_COIN_HAS_MODULE(Miplib3,          [coindatamiplib3],                    [required=0])
-AC_COIN_HAS_MODULE_FALLBACK(Miplib3, [coindatamiplib3], [../Data/Miplib3], [required=0])
+AC_COIN_HAS_MODULE(Sample,  [coindatasample],  [required=0], [../Data/Sample])
+AC_COIN_HAS_MODULE(Netlib,  [coindatanetlib],  [required=0], [../Data/Netlib])
+AC_COIN_HAS_MODULE(Miplib3, [coindatamiplib3], [required=0], [../Data/Miplib3])
 
 #############################################################################
 #                            Third party solvers                            #
 #############################################################################
 
 # Check which third party solvers are available
-AC_COIN_HAS_MODULE(Cpx,      [osi-cplex])
-AC_COIN_HAS_MODULE(Glpk,     [osi-glpk])
-AC_COIN_HAS_MODULE(Grb,      [osi-gurobi])
-AC_COIN_HAS_MODULE(Msk,      [osi-mosek])
-#AC_COIN_HAS_MODULE(Spx,     [osi-soplex])
-AC_COIN_HAS_MODULE(Xpr,      [osi-xpress])
+AC_COIN_HAS_MODULE(Cpx,  [osi-cplex])
+AC_COIN_HAS_MODULE(Glpk, [osi-glpk])
+AC_COIN_HAS_MODULE(Grb,  [osi-gurobi])
+AC_COIN_HAS_MODULE(Msk,  [osi-mosek])
+#AC_COIN_HAS_MODULE(Spx,  [osi-soplex])
+AC_COIN_HAS_MODULE(Xpr,  [osi-xpress])
 
 #############################################################################
 #                       Other third party software                          #
 #############################################################################
 
 # Ampl Solver library
-AC_COIN_HAS_MODULE(ASL, [coinasl], [required=0])
+AC_COIN_HAS_MODULE(ASL, [coinasl], [required=0], [../ThirdParty/ASL])
 
 #############################################################################
 #                       CbcGeneric configuration			    #
@@ -343,7 +341,6 @@ AC_CONFIG_FILES([Makefile
                  src/Makefile
                  src/OsiCbc/Makefile
                  test/Makefile
-		 cbc_addlibs.txt
 		 cbc.pc cbc-uninstalled.pc
 		 osi-cbc.pc osi-cbc-uninstalled.pc])
 

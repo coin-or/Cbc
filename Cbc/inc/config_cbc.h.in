@@ -7,8 +7,14 @@
    letters */
 #undef CBC_DEFAULT_SOLVER
 
+/* SVN revision number of project */
+#undef CBC_SVN_REV
+
 /* Define to 1 if the SMP version of Cbc should be compiled */
 #undef CBC_THREAD
+
+/* Version number of project */
+#undef CBC_VERSION
 
 /* Define to the debug sanity check level (0 is no test) */
 #undef COIN_CBC_CHECKLEVEL

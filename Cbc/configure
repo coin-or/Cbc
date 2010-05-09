@@ -20772,9 +20772,9 @@ if test $coin_has_coindepend = notGiven; then
 
 
 if test -n "$PKG_CONFIG" ; then
-  if $PKG_CONFIG --exists "coinutils = split osi cgl"; then
-    COINDEPEND_VERSIONS="`$PKG_CONFIG --modversion coinutils = split osi cgl 2>/dev/null`"
-     cflags=`$PKG_CONFIG --cflags "coinutils = split osi cgl" 2>/dev/null`
+  if $PKG_CONFIG --exists "coinutils = trunk osi cgl"; then
+    COINDEPEND_VERSIONS="`$PKG_CONFIG --modversion coinutils = trunk osi cgl 2>/dev/null`"
+     cflags=`$PKG_CONFIG --cflags "coinutils = trunk osi cgl" 2>/dev/null`
     # pkg-config cannot handle spaces, so CYGPATH_W cannot be put into .pc files
 	# thus, we modify the cflags extracted from pkg-config by putting CYGPATH_W behind -I's
 	# but only do this if is not trivial
@@ -20783,16 +20783,16 @@ if test -n "$PKG_CONFIG" ; then
 	  cflags=`echo $cflags | sed -e 's/-I\([^ ]*\)/-I\`${CYGPATH_W} \1\`/g'`
 	fi
     COINDEPEND_CFLAGS="$cflags"
-    COINDEPEND_LIBS=`$PKG_CONFIG --libs "coinutils = split osi cgl" 2>/dev/null`
-    COINDEPEND_DATA=`$PKG_CONFIG --variable=datadir "coinutils = split osi cgl" 2>/dev/null`
+    COINDEPEND_LIBS=`$PKG_CONFIG --libs "coinutils = trunk osi cgl" 2>/dev/null`
+    COINDEPEND_DATA=`$PKG_CONFIG --variable=datadir "coinutils = trunk osi cgl" 2>/dev/null`
      coin_has_coindepend=yes
         echo "$as_me:$LINENO: result: yes: $COINDEPEND_VERSIONS" >&5
 echo "${ECHO_T}yes: $COINDEPEND_VERSIONS" >&6
-        REQUIREDPACKAGES="$REQUIREDPACKAGES coinutils = split osi cgl"
+        REQUIREDPACKAGES="$REQUIREDPACKAGES coinutils = trunk osi cgl"
 
 
   else
-    COINDEPEND_PKG_ERRORS=`$PKG_CONFIG $pkg_short_errors --errors-to-stdout --print-errors coinutils = split osi cgl`
+    COINDEPEND_PKG_ERRORS=`$PKG_CONFIG $pkg_short_errors --errors-to-stdout --print-errors coinutils = trunk osi cgl`
       coin_has_coindepend=notGiven
         echo "$as_me:$LINENO: result: not given: $COINDEPEND_PKG_ERRORS" >&5
 echo "${ECHO_T}not given: $COINDEPEND_PKG_ERRORS" >&6
@@ -20810,7 +20810,7 @@ fi
     # reset PKG_CONFIG_PATH variable
     PKG_CONFIG_PATH="$coin_save_PKG_CONFIG_PATH"
   else
-    #if 4th argument is given, try fallback - whereby we take the first word from coinutils = split osi cgl as basename for the .pc file
+    #if 4th argument is given, try fallback - whereby we take the first word from coinutils = trunk osi cgl as basename for the .pc file
     echo "$as_me:$LINENO: result: skipped check via pkg-config" >&5
 echo "${ECHO_T}skipped check via pkg-config" >&6
 

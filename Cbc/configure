@@ -20692,13 +20692,17 @@ fi;
   # but it is likely to be either .. (if we are a usual coin project) or ../.. (if we are a unusual coin project like ThirdParty or Data)
   if test -e ../coin_subdirs.txt ; then
     for i in `cat ../coin_subdirs.txt` ; do
-      COIN_PKG_CONFIG_PATH="`cd ../$i; pwd`:${COIN_PKG_CONFIG_PATH}"
+      if test -d ../$i ; then
+        COIN_PKG_CONFIG_PATH="`cd ../$i; pwd`:${COIN_PKG_CONFIG_PATH}"
+      fi
     done
   fi
 
   if test -e ../../coin_subdirs.txt ; then
     for i in `cat ../../coin_subdirs.txt` ; do
-      COIN_PKG_CONFIG_PATH="`cd ../../$i; pwd`:${COIN_PKG_CONFIG_PATH}"
+      if test -d ../../$i ; then
+        COIN_PKG_CONFIG_PATH="`cd ../../$i; pwd`:${COIN_PKG_CONFIG_PATH}"
+      fi
     done
   fi
 

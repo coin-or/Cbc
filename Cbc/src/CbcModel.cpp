@@ -7114,7 +7114,7 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
 	    (generator_[i]->needsOptimalBasis()&&!solver_->basisIsAvailable())
 	    ||generator_[i]->switchedOff())
 	  generate=false;
-	if (switchOff) {
+	if (switchOff&&!generator_[i]->mustCallAgain()) {
 	  // switch off if default
 	  if (generator_[i]->howOften()==1&&generator_[i]->whatDepth()<0) {
 	    /*if (generate)
@@ -8084,6 +8084,7 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
 	}
       }
       numberTries = 0 ;
+      keepGoing=false;
     }
   } while (numberTries>0||keepGoing) ;
   {
@@ -12469,6 +12470,7 @@ CbcModel::chooseBranch(CbcNode * &newNode, int numberPassesLeft,
       // again
       //std::cout<<solver_<<std::endl;
       resolve(solver_);
+      int saveNumberRows=solver_->getNumRows();
       double objval = solver_->getObjValue();
       lastHeuristic_ = NULL;
       setBestSolution(CBC_SOLUTION, objval,
@@ -12487,10 +12489,20 @@ CbcModel::chooseBranch(CbcNode * &newNode, int numberPassesLeft,
       if (problemFeasibility_->feasible(this,0)<0) {
 	feasible=false; // pretend infeasible
       }
-      if(feasible)
+      if( saveNumberRows<solver_->getNumRows()) {
+	// delete rows - but leave solution
+	int n = solver_->getNumRows();
+	int * del = new int [n-saveNumberRows];
+	for (int i=saveNumberRows;i<n;i++)
+	  del[i-saveNumberRows]=i;
+	solver_->deleteRows(n-saveNumberRows,del);
+	delete [] del;
+      }
+      if(feasible) {
 	anyAction = -1;
-      else
+      } else {
 	anyAction = -2;
+      }
     }
     /*
       Yep, false positives for sure. And no easy way to distinguish honest

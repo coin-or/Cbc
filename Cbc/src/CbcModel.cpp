@@ -7489,6 +7489,7 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
                 unlockThread();
             }
             numberTries = 0 ;
+	    keepGoing=false;
         }
     } while (numberTries > 0 || keepGoing) ;
     /*
@@ -8320,7 +8321,7 @@ CbcModel::serialCuts(OsiCuts & theseCuts, CbcNode * node, OsiCuts & slackCuts, i
                 (generator_[i]->needsOptimalBasis() && !solver_->basisIsAvailable())
                 || generator_[i]->switchedOff())
             generate = false;
-        if (switchOff) {
+        if (switchOff&&!generator_[i]->mustCallAgain()) {
             // switch off if default
             if (generator_[i]->howOften() == 1 && generator_[i]->whatDepth() < 0) {
                 generate = false;
@@ -12339,6 +12340,7 @@ CbcModel::chooseBranch(CbcNode * &newNode, int numberPassesLeft,
             //std::cout<<solver_<<std::endl;
             resolve(solver_);
             double objval = solver_->getObjValue();
+	    int saveNumberRows=solver_->getNumRows();
             lastHeuristic_ = NULL;
             setBestSolution(CBC_SOLUTION, objval,
                             solver_->getColSolution()) ;
@@ -12356,6 +12358,15 @@ CbcModel::chooseBranch(CbcNode * &newNode, int numberPassesLeft,
             if (problemFeasibility_->feasible(this, 0) < 0) {
                 feasible = false; // pretend infeasible
             }
+	    if( saveNumberRows<solver_->getNumRows()) {
+	        // delete rows - but leave solution
+	        int n = solver_->getNumRows();
+	        int * del = new int [n-saveNumberRows];
+	        for (int i=saveNumberRows;i<n;i++)
+		    del[i-saveNumberRows]=i;
+	        solver_->deleteRows(n-saveNumberRows,del);
+	        delete [] del;
+	    }
             if (feasible)
                 anyAction = -1;
             else

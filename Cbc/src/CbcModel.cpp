@@ -7101,174 +7101,163 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
       }
 # endif
       int switchOff = (!doCutsNow(1)&&!fullScan) ? 1 : 0;
-      //if (2*solver_->getNumRows()+solver_->getNumCols()>1000)
-      //switchOff *= 2;
-      for (i = 0;i<numberCutGenerators_;i++) {
-	int numberRowCutsBefore = theseCuts.sizeRowCuts() ;
-	int numberColumnCutsBefore = theseCuts.sizeColCuts() ;
-	int numberRowCutsAfter = numberRowCutsBefore;
-	int numberColumnCutsAfter = numberColumnCutsBefore;
-	bool generate = generator_[i]->normal();
-	// skip if not optimal and should be (maybe a cut generator has fixed variables)
-	if (generator_[i]->howOften()==-100||
-	    (generator_[i]->needsOptimalBasis()&&!solver_->basisIsAvailable())
-	    ||generator_[i]->switchedOff())
-	  generate=false;
-	if (switchOff&&!generator_[i]->mustCallAgain()) {
-	  // switch off if default
-	  if (generator_[i]->howOften()==1&&generator_[i]->whatDepth()<0) {
-	    /*if (generate)
-	      printf("Gg %d %d %d\n",i,
-	      generator_[i]->howOften(),generator_[i]->whatDepth());*/
-	    generate=false;
-	  } else if (currentDepth_>-10&&switchOff==2) {
-	    generate=false;
-	  }
-	}
-	if (generate) {
-	  if (!node&&cut_obj[CUT_HISTORY-1]!=-COIN_DBL_MAX&&
-	      fabs(cut_obj[CUT_HISTORY-1]-cut_obj[CUT_HISTORY-2])<1.0e-7)
-	    generator_[i]->setIneffectualCuts(true);
-	  bool mustResolve = 
-	    generator_[i]->generateCuts(theseCuts,fullScan,solver_,node) ;
-	  generator_[i]->setIneffectualCuts(false);
-	  numberRowCutsAfter = theseCuts.sizeRowCuts() ;
-	  if (fullScan&&generator_[i]->howOften()==1000000+SCANCUTS_PROBING) {
-	    CglProbing * probing = 
-	      dynamic_cast<CglProbing*>(generator_[i]->generator());
-	    if (probing&&(numberRowCutsBefore < numberRowCutsAfter||
-			  numberColumnCutsBefore<theseCuts.sizeColCuts())) {
-	      // switch on
-#ifdef COIN_DEVELOP
-	      printf("Switching on probing\n");
-#endif
-	      generator_[i]->setHowOften(1);
-	    }
-	  }
-	  if(numberRowCutsBefore < numberRowCutsAfter &&
-	     generator_[i]->mustCallAgain())
+      // Skip cuts if bonmin type code and global cuts did something
+      if (solverCharacteristics_->solutionAddsCuts()&&numberViolated) {
+	for (i = 0;i<numberCutGenerators_;i++) {
+	  if (generator_[i]->mustCallAgain()) {
 	    keepGoing=true; // say must go round
-	  // Check last cut to see if infeasible
-	  if(numberRowCutsBefore < numberRowCutsAfter) {
-	    const OsiRowCut * thisCut = theseCuts.rowCutPtr(numberRowCutsAfter-1) ;
-	    if (thisCut->lb()>thisCut->ub()) {
-	      feasible = false; // sub-problem is infeasible
-	      break;
-	    }
-	  }
-#ifdef CBC_DEBUG
-	  {
-	    int k ;
-	    for (k = numberRowCutsBefore;k<numberRowCutsAfter;k++) {
-	      OsiRowCut thisCut = theseCuts.rowCut(k) ;
-	      /* check size of elements.
-		 We can allow smaller but this helps debug generators as it
-		 is unsafe to have small elements */
-	      int n=thisCut.row().getNumElements();
-	      const int * column = thisCut.row().getIndices();
-	      const double * element = thisCut.row().getElements();
-	      //assert (n);
-	      for (int i=0;i<n;i++) {
-		double value = element[i];
-		assert(fabs(value)>1.0e-12&&fabs(value)<1.0e20);
-	      }
-	    }
-	  }
-#endif
-	  if (mustResolve) {
-	    int returnCode = resolve(node ? node->nodeInfo() : NULL,2);
-	    feasible = (returnCode  != 0) ;
-	    if (returnCode<0)
-	      numberTries=0;
-	    if ((specialOptions_&1)!=0) {
-	      debugger = solver_->getRowCutDebugger() ;
-	      if (debugger) 
-		onOptimalPath = (debugger->onOptimalPath(*solver_)) ;
-	      else
-		onOptimalPath=false;
-	      if (onOptimalPath && !solver_->isDualObjectiveLimitReached())
-		assert(feasible) ;
-	    }
-	    if (!feasible)
-	      break ;
-	  }
-	}
-	numberRowCutsAfter = theseCuts.sizeRowCuts() ;
-	numberColumnCutsAfter = theseCuts.sizeColCuts() ;
-	if ((specialOptions_&1)!=0) {
-	  if (onOptimalPath) {
-	    int k ;
-	    for (k = numberRowCutsBefore;k<numberRowCutsAfter;k++) {
-	      OsiRowCut thisCut = theseCuts.rowCut(k) ;
-	      if(debugger->invalidCut(thisCut)) {	
-		solver_->getRowCutDebuggerAlways()->printOptimalSolution(*solver_);
-		solver_->writeMpsNative("badCut.mps",NULL,NULL,2);
-		printf("Cut generator %d (%s) produced invalid cut (%dth in this go)\n",
-		       i,generator_[i]->cutGeneratorName(),k-numberRowCutsBefore);
-		const double *lower = getColLower() ;
-		const double *upper = getColUpper() ;
-		int numberColumns = solver_->getNumCols();
-		if (numberColumns<200) {
-		  for (int i=0;i<numberColumns;i++)
-		    printf("%d bounds %g,%g\n",i,lower[i],upper[i]);
-		}
-#ifdef CGL_DEBUG_GOMORY
-		printf("Value of gomory_try is %d, recompile with -%d\n",
-		       gomory_try,gomory_try);
-#endif
-		abort();
-	      }
-	      assert(!debugger->invalidCut(thisCut)) ;
-	    }
-	  }
-	}
-/*
-  The cut generator has done its thing, and maybe it generated some
-  cuts.  Do a bit of bookkeeping: load
-  whichGenerator[i] with the index of the generator responsible for a cut,
-  and place cuts flagged as global in the global cut pool for the model.
-
-  lastNumberCuts is the sum of cuts added in previous iterations; it's the
-  offset to the proper starting position in whichGenerator.
-*/
-	int numberBefore =
-	  numberRowCutsBefore+lastNumberCuts ;
-	int numberAfter =
-	  numberRowCutsAfter+lastNumberCuts ;
-	// possibly extend whichGenerator
-	resizeWhichGenerator(numberBefore, numberAfter);
-	int j ;
-	
-	bool dodgyCuts=false;
-	for (j = numberRowCutsBefore;j<numberRowCutsAfter;j++) {
-	  const OsiRowCut * thisCut = theseCuts.rowCutPtr(j) ;
-	  if (thisCut->lb()>1.0e10||thisCut->ub()<-1.0e10) {
-	    dodgyCuts=true;
 	    break;
 	  }
-	  whichGenerator_[numberBefore++] = i ;
-	  if (thisCut->lb()>thisCut->ub())
-	    violated=-2; // sub-problem is infeasible
-	  if (thisCut->globallyValid()) {
-	    // add to global list
-	    OsiRowCut newCut(*thisCut);
-	    newCut.setGloballyValid(true);
-	    newCut.mutableRow().setTestForDuplicateIndex(false);
-	    globalCuts_.insert(newCut) ;
-	  }
 	}
-	if (dodgyCuts) {
-	  for (int k=numberRowCutsAfter-1;k>=j;k--) {
-	    const OsiRowCut * thisCut = theseCuts.rowCutPtr(k) ;
-	    if (thisCut->lb()>thisCut->ub())
-	      violated=-2; // sub-problem is infeasible
-	    if (thisCut->lb()>1.0e10||thisCut->ub()<-1.0e10) 
-	      theseCuts.eraseRowCut(k);
+      }
+      if (!keepGoing) {
+	// do cuts
+	for (i = 0;i<numberCutGenerators_;i++) {
+	  int numberRowCutsBefore = theseCuts.sizeRowCuts() ;
+	  int numberColumnCutsBefore = theseCuts.sizeColCuts() ;
+	  int numberRowCutsAfter = numberRowCutsBefore;
+	  int numberColumnCutsAfter = numberColumnCutsBefore;
+	  bool generate = generator_[i]->normal();
+	  // skip if not optimal and should be (maybe a cut generator has fixed variables)
+	  if (generator_[i]->howOften()==-100||
+	      (generator_[i]->needsOptimalBasis()&&!solver_->basisIsAvailable())
+	      ||generator_[i]->switchedOff())
+	    generate=false;
+	  if (switchOff&&!generator_[i]->mustCallAgain()) {
+	    // switch off if default
+	    if (generator_[i]->howOften()==1&&generator_[i]->whatDepth()<0) {
+	      /*if (generate)
+		printf("Gg %d %d %d\n",i,
+		generator_[i]->howOften(),generator_[i]->whatDepth());*/
+	      generate=false;
+	    } else if (currentDepth_>-10&&switchOff==2) {
+	      generate=false;
+	    }
+	  }
+	  if (generate) {
+	    if (!node&&cut_obj[CUT_HISTORY-1]!=-COIN_DBL_MAX&&
+		fabs(cut_obj[CUT_HISTORY-1]-cut_obj[CUT_HISTORY-2])<1.0e-7)
+	      generator_[i]->setIneffectualCuts(true);
+	    bool mustResolve = 
+	      generator_[i]->generateCuts(theseCuts,fullScan,solver_,node) ;
+	    generator_[i]->setIneffectualCuts(false);
+	    numberRowCutsAfter = theseCuts.sizeRowCuts() ;
+	    if (fullScan&&generator_[i]->howOften()==1000000+SCANCUTS_PROBING) {
+	      CglProbing * probing = 
+		dynamic_cast<CglProbing*>(generator_[i]->generator());
+	      if (probing&&(numberRowCutsBefore < numberRowCutsAfter||
+			    numberColumnCutsBefore<theseCuts.sizeColCuts())) {
+		// switch on
+#ifdef COIN_DEVELOP
+		printf("Switching on probing\n");
+#endif
+		generator_[i]->setHowOften(1);
+	      }
+	    }
+	    if(numberRowCutsBefore < numberRowCutsAfter &&
+	       generator_[i]->mustCallAgain())
+	      keepGoing=true; // say must go round
+	    // Check last cut to see if infeasible
+	    if(numberRowCutsBefore < numberRowCutsAfter) {
+	      const OsiRowCut * thisCut = theseCuts.rowCutPtr(numberRowCutsAfter-1) ;
+	      if (thisCut->lb()>thisCut->ub()) {
+		feasible = false; // sub-problem is infeasible
+		break;
+	      }
+	    }
+#ifdef CBC_DEBUG
+	    {
+	      int k ;
+	      for (k = numberRowCutsBefore;k<numberRowCutsAfter;k++) {
+		OsiRowCut thisCut = theseCuts.rowCut(k) ;
+		/* check size of elements.
+		   We can allow smaller but this helps debug generators as it
+		   is unsafe to have small elements */
+		int n=thisCut.row().getNumElements();
+		const int * column = thisCut.row().getIndices();
+		const double * element = thisCut.row().getElements();
+		//assert (n);
+		for (int i=0;i<n;i++) {
+		  double value = element[i];
+		  assert(fabs(value)>1.0e-12&&fabs(value)<1.0e20);
+		}
+	      }
+	    }
+#endif
+	    if (mustResolve) {
+	      int returnCode = resolve(node ? node->nodeInfo() : NULL,2);
+	      feasible = (returnCode  != 0) ;
+	      if (returnCode<0)
+		numberTries=0;
+	      if ((specialOptions_&1)!=0) {
+		debugger = solver_->getRowCutDebugger() ;
+		if (debugger) 
+		  onOptimalPath = (debugger->onOptimalPath(*solver_)) ;
+		else
+		  onOptimalPath=false;
+		if (onOptimalPath && !solver_->isDualObjectiveLimitReached())
+		  assert(feasible) ;
+	      }
+	      if (!feasible)
+		break ;
+	    }
 	  }
 	  numberRowCutsAfter = theseCuts.sizeRowCuts() ;
-	  for (;j<numberRowCutsAfter;j++) {
+	  numberColumnCutsAfter = theseCuts.sizeColCuts() ;
+	  if ((specialOptions_&1)!=0) {
+	    if (onOptimalPath) {
+	      int k ;
+	      for (k = numberRowCutsBefore;k<numberRowCutsAfter;k++) {
+		OsiRowCut thisCut = theseCuts.rowCut(k) ;
+		if(debugger->invalidCut(thisCut)) {	
+		  solver_->getRowCutDebuggerAlways()->printOptimalSolution(*solver_);
+		  solver_->writeMpsNative("badCut.mps",NULL,NULL,2);
+		  printf("Cut generator %d (%s) produced invalid cut (%dth in this go)\n",
+			 i,generator_[i]->cutGeneratorName(),k-numberRowCutsBefore);
+		  const double *lower = getColLower() ;
+		  const double *upper = getColUpper() ;
+		  int numberColumns = solver_->getNumCols();
+		  if (numberColumns<200) {
+		    for (int i=0;i<numberColumns;i++)
+		      printf("%d bounds %g,%g\n",i,lower[i],upper[i]);
+		  }
+#ifdef CGL_DEBUG_GOMORY
+		  printf("Value of gomory_try is %d, recompile with -%d\n",
+			 gomory_try,gomory_try);
+#endif
+		  abort();
+		}
+		assert(!debugger->invalidCut(thisCut)) ;
+	      }
+	    }
+	  }
+	  /*
+	    The cut generator has done its thing, and maybe it generated some
+	    cuts.  Do a bit of bookkeeping: load
+	    whichGenerator[i] with the index of the generator responsible for a cut,
+	    and place cuts flagged as global in the global cut pool for the model.
+	    
+	    lastNumberCuts is the sum of cuts added in previous iterations; it's the
+	    offset to the proper starting position in whichGenerator.
+	  */
+	  int numberBefore =
+	    numberRowCutsBefore+lastNumberCuts ;
+	  int numberAfter =
+	    numberRowCutsAfter+lastNumberCuts ;
+	  // possibly extend whichGenerator
+	  resizeWhichGenerator(numberBefore, numberAfter);
+	  int j ;
+	  
+	  bool dodgyCuts=false;
+	  for (j = numberRowCutsBefore;j<numberRowCutsAfter;j++) {
 	    const OsiRowCut * thisCut = theseCuts.rowCutPtr(j) ;
+	    if (thisCut->lb()>1.0e10||thisCut->ub()<-1.0e10) {
+	      dodgyCuts=true;
+	      break;
+	    }
 	    whichGenerator_[numberBefore++] = i ;
+	    if (thisCut->lb()>thisCut->ub())
+	      violated=-2; // sub-problem is infeasible
 	    if (thisCut->globallyValid()) {
 	      // add to global list
 	      OsiRowCut newCut(*thisCut);
@@ -7277,15 +7266,36 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
 	      globalCuts_.insert(newCut) ;
 	    }
 	  }
-	}
-	for (j = numberColumnCutsBefore;j<numberColumnCutsAfter;j++) {
-	  //whichGenerator_[numberBefore++] = i ;
-	  const OsiColCut * thisCut = theseCuts.colCutPtr(j) ;
-	  if (thisCut->globallyValid()) {
-	    // add to global list
-	    OsiColCut newCut(*thisCut);
-	    newCut.setGloballyValid(true);
-	    globalCuts_.insert(newCut) ;
+	  if (dodgyCuts) {
+	    for (int k=numberRowCutsAfter-1;k>=j;k--) {
+	      const OsiRowCut * thisCut = theseCuts.rowCutPtr(k) ;
+	      if (thisCut->lb()>thisCut->ub())
+		violated=-2; // sub-problem is infeasible
+	      if (thisCut->lb()>1.0e10||thisCut->ub()<-1.0e10) 
+		theseCuts.eraseRowCut(k);
+	    }
+	    numberRowCutsAfter = theseCuts.sizeRowCuts() ;
+	    for (;j<numberRowCutsAfter;j++) {
+	      const OsiRowCut * thisCut = theseCuts.rowCutPtr(j) ;
+	      whichGenerator_[numberBefore++] = i ;
+	      if (thisCut->globallyValid()) {
+		// add to global list
+		OsiRowCut newCut(*thisCut);
+		newCut.setGloballyValid(true);
+		newCut.mutableRow().setTestForDuplicateIndex(false);
+		globalCuts_.insert(newCut) ;
+	      }
+	    }
+	  }
+	  for (j = numberColumnCutsBefore;j<numberColumnCutsAfter;j++) {
+	    //whichGenerator_[numberBefore++] = i ;
+	    const OsiColCut * thisCut = theseCuts.colCutPtr(j) ;
+	    if (thisCut->globallyValid()) {
+	      // add to global list
+	      OsiColCut newCut(*thisCut);
+	      newCut.setGloballyValid(true);
+	      globalCuts_.insert(newCut) ;
+	    }
 	  }
 	}
       }
@@ -10974,6 +10984,7 @@ CbcModel::checkSolution (double cutoff, double *solution,
           }
         delete [] saveLower;
         delete [] saveUpper;
+	resolve(solver_);
       }
     //If the variables were fixed the cutting plane procedure may have believed that the node could be fathomed
     //re-establish truth.- should do no harm for non nlp

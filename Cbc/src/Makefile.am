@@ -357,6 +357,7 @@ includecoin_HEADERS = \
 	CbcBranchLotsize.hpp \
 	CbcBranchToFixLots.hpp \
 	CbcCompareActual.hpp \
+	CbcCompareBase.hpp \
 	CbcCompareDefault.hpp \
 	CbcCompareDepth.hpp \
 	CbcCompareEstimate.hpp \

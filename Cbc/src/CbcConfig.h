@@ -94,7 +94,7 @@
 /* Define to 1 if the Xpress package is used */
 /* #undef COIN_HAS_XPR */
 
-#define CBC_VERSION "2.5"
+#define CBC_VERSION "trunk"
 
 #endif /* HAVE_CONFIG_H */
 

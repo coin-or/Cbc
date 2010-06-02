@@ -47,10 +47,6 @@
 
 #include "CbcSolverHeuristics.hpp"
 
-// Version
-#ifndef CBCVERSION
-#define CBCVERSION "2.5devel"
-#endif
 //#define USER_HAS_FAKE_CLP
 //#define USER_HAS_FAKE_CBC
 
@@ -1624,7 +1620,7 @@ int CbcMain1 (int argc, const char *argv[],
         std::string field;
         if (!noPrinting_) {
             sprintf(generalPrint, "Coin Cbc and Clp Solver version %s, build %s",
-                    CBCVERSION, __DATE__);
+                    CBC_VERSION, __DATE__);
             generalMessageHandler->message(CLP_GENERAL, generalMessages)
             << generalPrint
             << CoinMessageEol;
@@ -7309,7 +7305,7 @@ int CbcMain1 (int argc, const char *argv[],
 #endif
                         break;
                     case CLP_PARAM_ACTION_HELP:
-                        std::cout << "Coin Solver version " << CBCVERSION
+                        std::cout << "Coin Solver version " << CBC_VERSION
                                   << ", build " << __DATE__ << std::endl;
                         std::cout << "Non default values:-" << std::endl;
                         std::cout << "Perturbation " << lpSolver->perturbation() << " (default 100)"

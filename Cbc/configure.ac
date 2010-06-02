@@ -132,7 +132,7 @@ case $cbc_default_solver in
 esac
 AC_DEFINE_UNQUOTED([CBC_DEFAULT_SOLVER],"$cbc_default_solver",
   [Define to the name of the default solver to be used in cbc-generic in small letters])
-AC_DEFINE_UNQUOTED(CBCVERSION, "$PACKAGE_VERSION", "Version of Cbc")
+AC_DEFINE_UNQUOTED(CBC_VERSION, "$PACKAGE_VERSION", "Version of Cbc")
 
 
 #############################################################################

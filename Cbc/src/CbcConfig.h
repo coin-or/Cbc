@@ -94,9 +94,8 @@
 /* Define to 1 if the Xpress package is used */
 /* #undef COIN_HAS_XPR */
 
-#endif /* HAVE_CONFIG_H */
-// Always make version 2.4
-#undef CBCVERSION
-#define CBCVERSION "2.5devel"
+#define CBCVERSION "trunk"
 
-#endif /*__HAVE_COINUTILS_CONFIG_H__*/
+#endif /* HAVE_CONFIG_H */
+
+#endif /* __CBCCONFIG_H__ */

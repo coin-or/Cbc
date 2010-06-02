@@ -162,6 +162,7 @@ Cbc/src/CbcThread.hpp -text
 Cbc/src/ClpAmplObjective.hpp -text
 Cbc/src/ClpConstraintAmpl.hpp -text
 Cbc/test/gamsTest.cpp -text
+/Dependencies -text
 /LICENSE -text
 /README -text
 /config.guess -text

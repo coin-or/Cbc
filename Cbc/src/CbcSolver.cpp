@@ -1619,7 +1619,7 @@ int CbcMain1 (int argc, const char *argv[],
         }
         std::string field;
         if (!noPrinting_) {
-            sprintf(generalPrint, "Coin Cbc and Clp Solver version %s, build %s",
+            sprintf(generalPrint, "Cbc version %s, build %s",
                     CBC_VERSION, __DATE__);
             generalMessageHandler->message(CLP_GENERAL, generalMessages)
             << generalPrint
@@ -7305,7 +7305,7 @@ int CbcMain1 (int argc, const char *argv[],
 #endif
                         break;
                     case CLP_PARAM_ACTION_HELP:
-                        std::cout << "Coin Solver version " << CBC_VERSION
+                        std::cout << "Cbc version " << CBC_VERSION
                                   << ", build " << __DATE__ << std::endl;
                         std::cout << "Non default values:-" << std::endl;
                         std::cout << "Perturbation " << lpSolver->perturbation() << " (default 100)"

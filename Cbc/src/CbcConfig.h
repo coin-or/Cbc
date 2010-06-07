@@ -94,6 +94,28 @@
 /* Define to 1 if the Xpress package is used */
 /* #undef COIN_HAS_XPR */
 
+/*
+  For additional information about how to set OSICBC_DFLT_SOLVER,
+  OSICBC_DFLT_SOLVER_CLP, and OSICBC_DFLT_SOLVER_HPP, please see comments at
+  the beginning of OsiCbcSolverInterface.cpp. Unless you know what you're
+  doing, you should use clp with OsiCbc. Just uncomment the next three
+  defines.
+*/
+/*
+  Define to the name of the default solver interface class, e.g.,
+  OsiClpSolverInterface.
+*/
+/* #define OSICBC_DFLT_SOLVER OsiClpSolverInterface */
+
+/* Define this symbol if clp is the default solver. */
+/* #define OSICBC_DFLT_SOLVER_CLP 1 */
+
+/*
+  Define to the name of the .hpp file for the default solver interface class,
+  e.g., "OsiClpSolverInterface.hpp" (include quotes)
+*/
+/* #define OSICBC_DFLT_SOLVER_HPP "OsiClpSolverInterface.hpp" */
+
 #endif /* HAVE_CONFIG_H */
 #ifndef CBCVERSION
 #define CBCVERSION "unknown version"

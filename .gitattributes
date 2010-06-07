@@ -30,7 +30,6 @@ Cbc/MSVisualStudio/v9/cbcSolve/cbcSolve.vcproj -text
 Cbc/MSVisualStudio/v9/libCbc/libCbc.vcproj -text
 Cbc/cbc-uninstalled.pc.in -text
 Cbc/cbc.pc.in -text
-Cbc/cbc_addlibs.txt.in -text
 Cbc/configure -text
 Cbc/configure.ac -text
 Cbc/doc/doxygen.conf -text

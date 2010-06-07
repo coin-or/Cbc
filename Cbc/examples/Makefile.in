@@ -48,7 +48,10 @@ VPATH = @srcdir@
 CXX = @CXX@
 
 # C++ Compiler options
-CXXFLAGS = @CXXFLAGS@
+CXXFLAGS = @CXXFLAGS@ -DSAMPLEDIR=\"@SAMPLE_DATA@\" -DMIPLIB3DIR=\"@MIPLIB3_DATA@\"
+
+# C Compiler options
+CFLAGS = @CFLAGS@ -DSAMPLEDIR=\"@SAMPLE_DATA@\"
 
 # additional C++ Compiler options for linking
 CXXLINKFLAGS = @RPATH_FLAGS@
@@ -57,19 +60,14 @@ CXXLINKFLAGS = @RPATH_FLAGS@
 COININCDIR = @abs_include_dir@/coin
 
 # Directory with COIN libraries
-COINLIBDIR = @abs_lib_dir@
+COINLIBDIR = @abs_lib_dir@/coin
 
-# Libraries necessary to link with Clp
-LIBS = -L$(COINLIBDIR) -lCbcSolver -lCbc -lCgl -lOsiClp -lOsiCbc -lOsi -lClp -lCoinUtils \
-	@ADDLIBS@ \
-	`cat @CGLDOCDIR@/cgl_addlibs.txt` \
-	`cat @OSIDOCDIR@/osi_addlibs.txt` \
-	`cat @CLPDOCDIR@/clp_addlibs.txt` \
-	`cat @COINUTILSDOCDIR@/coinutils_addlibs.txt`
+# Libraries necessary to link with Cbc
+LIBS = @COINDEPEND_LIBS@ @CLP_LIBS@ -L$(COINLIBDIR) -lCbcSolver -lCbc -lOsiCbc @ADDLIBS@
 
 # Necessary Include dirs (we use the CYGPATH_W variables to allow
 # compilation with Windows compilers)
-INCL =  -I`$(CYGPATH_W) $(COININCDIR)` $(ADDINCFLAGS)
+INCL = @COINDEPEND_CFLAGS@ @CLP_CFLAGS@ -I`$(CYGPATH_W) $(COININCDIR)` $(ADDINCFLAGS)
 
 # The following is necessary under cygwin, if native compilers are used
 CYGPATH_W = @CYGPATH_W@

@@ -8,13 +8,16 @@
 
 AUTOMAKE_OPTIONS = foreign
 
+SUBDIRS = OsiCbc
+
 ########################################################################
 #                               libCbc                                 #
 ########################################################################
 
 # Name of the library compiled in this directory.  We want it to be installed
 # in the 'lib' directory
-lib_LTLIBRARIES = libCbc.la libCbcSolver.la
+coinlibdir = ${libdir}/coin
+coinlib_LTLIBRARIES = libCbc.la libCbcSolver.la
 
 # List all source files for this library, including headers
 libCbc_la_SOURCES = \
@@ -102,14 +105,6 @@ libCbcSolver_la_SOURCES = \
 	CbcSolverAnalyze.cpp CbcSolverAnalyze.hpp \
 	CbcSolverExpandKnapsack.cpp CbcSolverExpandKnapsack.hpp
 
-#Stefan: added unitTestClp.cpp because CbcSolver defines reference to it
-
-## If we have the Ampl solver library, we need to add additional things
-## also see lower down
-## new idea is to add in source code anyway
-##libCbc_la_SOURCES += Cbc_ampl.cpp Cbc_ampl.h
-
-
 # This is for libtool (on Windows)
 
 libCbc_la_LDFLAGS = $(LT_LDFLAGS)
@@ -118,12 +113,7 @@ libCbcSolver_la_LDFLAGS = $(LT_LDFLAGS)
 # Some common setup for cbc and cbc-generic.
 
 bin_PROGRAMS =
-AM_CPPFLAGS = 
-
-LIBS += `cat $(CGLOBJDIR)/cgl_addlibs.txt` \
-	`cat $(OSIOBJDIR)/osi_addlibs.txt` \
-	`cat $(COINUTILSOBJDIR)/coinutils_addlibs.txt` $(ADDLIBS)
-
+AM_CPPFLAGS = $(COINDEPEND_CFLAGS)
 
 ########################################################################
 #                            cbc program                               #
@@ -136,17 +126,10 @@ if COIN_HAS_CLP
 bin_PROGRAMS += cbc
 
 # List all source files for this executable, including headers
-cbc_SOURCES = \
-	CoinSolve.cpp
+cbc_SOURCES = CoinSolve.cpp
 
 # Additional COIN libraries
-cbc_LDADD = libCbcSolver.la \
-	libCbc.la \
-	$(CGLOBJDIR)/src/libCgl.la \
-	$(OSIOBJDIR)/src/OsiClp/libOsiClp.la \
-	$(OSIOBJDIR)/src/libOsi.la \
-	$(CLPOBJDIR)/src/libClp.la \
-	$(COINUTILSOBJDIR)/src/libCoinUtils.la
+cbc_LDADD = libCbcSolver.la libCbc.la $(COINDEPEND_LIBS) $(ADDLIBS)
 
 # Finally, the -rpath flag is used by libtool to make sure that the shared
 # library is found (in the lib install directory) when we are using dynamic
@@ -155,22 +138,19 @@ cbc_LDFLAGS = -rpath $(libdir)
 
 # Add locations of include files.
 
-AM_CPPFLAGS += -I`$(CYGPATH_W) $(CLPSRCDIR)/src` \
-	-I`$(CYGPATH_W) $(OSISRCDIR)/src/OsiClp` \
-	-I`$(CYGPATH_W) $(CLPOBJDIR)/inc`
-LIBS  += `cat $(CLPOBJDIR)/clp_addlibs.txt`
-
-if COIN_HAS_CPX
-  AM_CPPFLAGS += -I`$(CYGPATH_W) $(CPXINCDIR)` \
-	-I`$(CYGPATH_W) $(OSISRCDIR)/src/OsiCpx`
-  cbc_LDADD += $(OSIOBJDIR)/src/OsiCpx/libOsiCpx.la
+if COIN_HAS_CLP
+  AM_CPPFLAGS += $(CLP_CFLAGS)
+  cbc_LDADD += $(CLP_LIBS)
 endif
 
-# If we have the Ampl solver library, we need to add additional things
+if COIN_HAS_CPX
+  AM_CPPFLAGS += $(CPX_CFLAGS)
+  cbc_LDADD += $(CPX_LIBS)
+endif
+
 if COIN_HAS_ASL
-#cbc_SOURCES += Cbc_ampl.cpp Cbc_ampl.h
-cbc_LDADD += $(ASLLIB)
-AM_CPPFLAGS += $(ASL_CPPFLAGS) -DCOIN_HAS_ASL
+  AM_CPPFLAGS += $(ASL_CFLAGS)
+  cbc_LDADD += $(ASL_LIBS)
 endif
 
 endif
@@ -200,96 +180,54 @@ cbc_generic_SOURCES = \
 	CbcGenSolution.cpp \
 	CbcGenSolvers.cpp
 
-cbc_generic_LDADD = libCbcSolver.la \
-	libCbc.la \
-	$(CGLOBJDIR)/src/libCgl.la
+cbc_generic_LDADD = libCbcSolver.la libCbc.la $(COINDEPEND_LIBS) $(ADDLIBS)
 
 # List all additionally required solver and Osi libraries
 
 if COIN_HAS_CLP
-  AM_CPPFLAGS += -I`$(CYGPATH_W) $(CLPSRCDIR)/src` \
-	-I`$(CYGPATH_W) $(OSISRCDIR)/src/OsiClp` \
-	-I`$(CYGPATH_W) $(CLPOBJDIR)/inc`
-  cbc_generic_LDADD += $(OSIOBJDIR)/src/OsiClp/libOsiClp.la \
-	$(CLPOBJDIR)/src/libClp.la
-  LIBS  += `cat $(CLPOBJDIR)/clp_addlibs.txt`
+  AM_CPPFLAGS += $(CLP_CFLAGS)
+  cbc_generic_LDADD += $(CLP_LIBS)
 endif
 
 if COIN_HAS_CPX
-  AM_CPPFLAGS += -I`$(CYGPATH_W) $(CPXINCDIR)` \
-	-I`$(CYGPATH_W) $(OSISRCDIR)/src/OsiCpx`
-  cbc_generic_LDADD += $(OSIOBJDIR)/src/OsiCpx/libOsiCpx.la 
+  AM_CPPFLAGS += $(CPX_CFLAGS)
+  cbc_generic_LDADD += $(CPX_LIBS)
 endif
 
 if COIN_HAS_DYLP
-  AM_CPPFLAGS += -I`$(CYGPATH_W) $(DYLPSRCDIR)/src/DylpStdLib` \
-        -I`$(CYGPATH_W) $(DYLPSRCDIR)/src/Dylp` \
-        -I`$(CYGPATH_W) $(DYLPOBJDIR)/inc` \
-	-I`$(CYGPATH_W) $(OSISRCDIR)/src/OsiDylp`
-  cbc_generic_LDADD += $(OSIOBJDIR)/src/OsiDylp/libOsiDylp.la \
-	$(DYLPOBJDIR)/src/Dylp/libDylp.la
-  LIBS += `cat $(DYLPOBJDIR)/dylp_addlibs.txt`
-endif
-
-if COIN_HAS_FMP
-  AM_CPPFLAGS += -I`$(CYGPATH_W) $(OSISRCDIR)/src/OsiFmp`
-  cbc_generic_LDADD += $(OSIOBJDIR)/src/OsiFmp/libOsiFmp.la
+  AM_CPPFLAGS += $(DYLP_CFLAGS)
+  cbc_generic_LDADD += $(DYLP_LIBS)
 endif
 
 if COIN_HAS_GLPK
-  AM_CPPFLAGS += -I`$(CYGPATH_W) $(GLPKINCDIR)` \
-	-I`$(CYGPATH_W) $(OSISRCDIR)/src/OsiGlpk`
-  cbc_generic_LDADD += $(OSIOBJDIR)/src/OsiGlpk/libOsiGlpk.la
+  AM_CPPFLAGS += $(GLPK_CFLAGS)
+  cbc_generic_LDADD += $(GLPK_LIBS)
 endif
 
 if COIN_HAS_MSK
-  AM_CPPFLAGS += -I`$(CYGPATH_W) $(MSKINCDIR)` \
-	-I`$(CYGPATH_W) $(OSISRCDIR)/src/OsiMsk`
-  cbc_generic_LDADD += $(OSIOBJDIR)/src/OsiMsk/libOsiMsk.la
+  AM_CPPFLAGS += $(MSK_CFLAGS)
+  cbc_generic_LDADD += $(MSK_LIBS)
 endif
 
-if COIN_HAS_OSL
-  AM_CPPFLAGS += -I`$(CYGPATH_W) $(OSLINCDIR)` \
-	-I`$(CYGPATH_W) $(OSISRCDIR)/src/OsiOsl`
-  cbc_generic_LDADD += $(OSIOBJDIR)/src/OsiOsl/libOsiOsl.la
-endif
-
-if COIN_HAS_SPX
-  AM_CPPFLAGS += -I`$(CYGPATH_W) $(SPXINCDIR)` \
-	-I`$(CYGPATH_W) $(OSISRCDIR)/src/OsiSpx`
-  cbc_generic_LDADD += $(OSIOBJDIR)/src/OsiSpx/libOsiSpx.la
-endif
-
-if COIN_HAS_SYMPHONY
-  AM_CPPFLAGS += -I`$(CYGPATH_W) $(SYMPHONYSRCDIR)/src` \
-	-I`$(CYGPATH_W) $(OSISRCDIR)/src/OsiSym`
-  cbc_generic_LDADD += $(OSIOBJDIR)/src/OsiSym/libOsiSym.la \
-	$(SYMPHONYOBJDIR)/src/libSym.la
-  LIBS += `cat $(SYMPHONYOBJDIR)/sym_addlibs.txt`
-endif
+# if COIN_HAS_SPX
+#   AM_CPPFLAGS += $(SPX_CFLAGS)
+#   cbc_generic_LDADD += $(SPX_LIBS)
+# endif
 
 if COIN_HAS_VOL
-  AM_CPPFLAGS += -I`$(CYGPATH_W) $(VOLSRCDIR)/src` \
-	-I`$(CYGPATH_W) $(OSISRCDIR)/src/OsiVol`
-  cbc_generic_LDADD += $(OSIOBJDIR)/src/OsiVol/libOsiVol.la \
-	$(VOLOBJDIR)/src/libVol.la
-  LIBS += `cat $(VOLOBJDIR)/vol_addlibs.txt`
+  AM_CPPFLAGS += $(VOL_CFLAGS)
+  cbc_generic_LDADD += $(VOL_LIBS)
 endif
 
 if COIN_HAS_XPR
-  AM_CPPFLAGS += -I`$(CYGPATH_W) $(XPRINCDIR)` \
-	-I`$(CYGPATH_W) $(OSISRCDIR)/src/OsiXpr`
-  cbc_generic_LDADD += $(OSIOBJDIR)/src/OsiXpr/libOsiXpr.la
+  AM_CPPFLAGS += $(XPR_CFLAGS)
+  cbc_generic_LDADD += $(XPR_LIBS)
 endif
 
 if COIN_HAS_ASL
-  cbc_generic_LDADD += $(ASLLIB)
-  AM_CPPFLAGS += $(ASL_CPPFLAGS) -DCOIN_HAS_ASL
+  AM_CPPFLAGS += $(ASL_CFLAGS)
+  cbc_generic_LDADD += $(ASL_LIBS)
 endif
-
-# Finally the Osi Coin library (many of the above need it)
-cbc_generic_LDADD += $(OSIOBJDIR)/src/libOsi.la \
-	$(COINUTILSOBJDIR)/src/libCoinUtils.la
 
 # Finally, the -rpath flag is used by libtool to make sure that the shared
 # library is found (in the lib install directory) when we are using dynamic
@@ -302,32 +240,6 @@ endif
 ########################################################################
 #                            Additional flags                          #
 ########################################################################
-
-# Here list all include flags, relative to this "srcdir" directory.  This
-# "cygpath" stuff is necessary to compile with native compilers on Windows.
-# "top_srcdir" refers to the basic directory for the main package that is
-# being compiled.
-AM_CPPFLAGS += \
-	-I`$(CYGPATH_W) $(CGLSRCDIR)/src` \
-	-I`$(CYGPATH_W) $(CGLSRCDIR)/src/CglClique` \
-	-I`$(CYGPATH_W) $(CGLSRCDIR)/src/CglDuplicateRow` \
-	-I`$(CYGPATH_W) $(CGLSRCDIR)/src/CglFlowCover` \
-	-I`$(CYGPATH_W) $(CGLSRCDIR)/src/CglGomory` \
-	-I`$(CYGPATH_W) $(CGLSRCDIR)/src/CglKnapsackCover` \
-	-I`$(CYGPATH_W) $(CGLSRCDIR)/src/CglMixedIntegerRounding` \
-	-I`$(CYGPATH_W) $(CGLSRCDIR)/src/CglMixedIntegerRounding2` \
-	-I`$(CYGPATH_W) $(CGLSRCDIR)/src/CglOddHole` \
-	-I`$(CYGPATH_W) $(CGLSRCDIR)/src/CglPreProcess` \
-	-I`$(CYGPATH_W) $(CGLSRCDIR)/src/CglProbing` \
-	-I`$(CYGPATH_W) $(CGLSRCDIR)/src/CglRedSplit` \
-	-I`$(CYGPATH_W) $(CGLSRCDIR)/src/CglTwomir` \
-	-I`$(CYGPATH_W) $(CGLSRCDIR)/src/CglLandP` \
-	-I`$(CYGPATH_W) $(CGLSRCDIR)/src/CglResidualCapacity` \
-	-I`$(CYGPATH_W) $(CGLSRCDIR)/src/CglZeroHalf` \
-	-I`$(CYGPATH_W) $(COINUTILSSRCDIR)/src` \
-	-I`$(CYGPATH_W) $(COINUTILSOBJDIR)/inc` \
-	-I`$(CYGPATH_W) $(OSISRCDIR)/src` \
-	-I`$(CYGPATH_W) $(OSIOBJDIR)/inc`
 
 # List additional defines
 AM_CPPFLAGS += -DCOIN_NO_CLP_MESSAGE -DUSE_CBCCONFIG

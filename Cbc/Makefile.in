@@ -29,6 +29,7 @@
 ########################################################################
 #                    Documentation installation                        #
 ########################################################################
+
 srcdir = @srcdir@
 top_srcdir = @top_srcdir@
 VPATH = @srcdir@
@@ -61,8 +62,9 @@ DIST_COMMON = README $(am__configure_deps) \
 	$(srcdir)/../config.sub $(srcdir)/../install-sh \
 	$(srcdir)/../ltmain.sh $(srcdir)/../missing \
 	$(srcdir)/Makefile.am $(srcdir)/Makefile.in \
-	$(srcdir)/cbc_addlibs.txt.in $(top_srcdir)/configure \
-	$(top_srcdir)/examples/Makefile.in \
+	$(srcdir)/cbc-uninstalled.pc.in $(srcdir)/cbc.pc.in \
+	$(srcdir)/osi-cbc-uninstalled.pc.in $(srcdir)/osi-cbc.pc.in \
+	$(top_srcdir)/configure $(top_srcdir)/examples/Makefile.in \
 	$(top_srcdir)/inc/config_cbc.h.in AUTHORS INSTALL
 @HAVE_EXTERNALS_TRUE@am__append_2 = Externals
 @HAVE_EXTERNALS_TRUE@am__append_3 = .Externals-stamp
@@ -76,7 +78,8 @@ am__CONFIG_DISTCLEAN_FILES = config.status config.cache config.log \
  configure.lineno configure.status.lineno
 mkinstalldirs = $(install_sh) -d
 CONFIG_HEADER = $(top_builddir)/inc/config_cbc.h
-CONFIG_CLEAN_FILES = examples/Makefile cbc_addlibs.txt
+CONFIG_CLEAN_FILES = examples/Makefile cbc.pc cbc-uninstalled.pc \
+	osi-cbc.pc osi-cbc-uninstalled.pc
 SOURCES =
 DIST_SOURCES =
 RECURSIVE_TARGETS = all-recursive check-recursive dvi-recursive \
@@ -85,6 +88,17 @@ RECURSIVE_TARGETS = all-recursive check-recursive dvi-recursive \
 	install-recursive installcheck-recursive installdirs-recursive \
 	pdf-recursive ps-recursive uninstall-info-recursive \
 	uninstall-recursive
+am__vpath_adj_setup = srcdirstrip=`echo "$(srcdir)" | sed 's|.|.|g'`;
+am__vpath_adj = case $$p in \
+    $(srcdir)/*) f=`echo "$$p" | sed "s|^$$srcdirstrip/||"`;; \
+    *) f=$$p;; \
+  esac;
+am__strip_dir = `echo $$p | sed -e 's|^.*/||'`;
+am__installdirs = "$(DESTDIR)$(addlibsdir)" \
+	"$(DESTDIR)$(pkgconfiglibdir)"
+addlibsDATA_INSTALL = $(INSTALL_DATA)
+pkgconfiglibDATA_INSTALL = $(INSTALL_DATA)
+DATA = $(addlibs_DATA) $(pkgconfiglib_DATA)
 ETAGS = etags
 CTAGS = ctags
 DIST_SUBDIRS = src test
@@ -99,6 +113,7 @@ DIST_ARCHIVES = $(distdir).tar.gz
 GZIP_ENV = --best
 distuninstallcheck_listfiles = find . -type f -print
 distcleancheck_listfiles = find . -type f -print
+ABSBUILDDIR = @ABSBUILDDIR@
 ACLOCAL = @ACLOCAL@
 ADDLIBS = @ADDLIBS@
 ADD_CFLAGS = @ADD_CFLAGS@
@@ -109,73 +124,64 @@ AMDEP_FALSE = @AMDEP_FALSE@
 AMDEP_TRUE = @AMDEP_TRUE@
 AMTAR = @AMTAR@
 AR = @AR@
-ASLLIB = @ASLLIB@
-ASL_CPPFLAGS = @ASL_CPPFLAGS@
+ASL_CFLAGS = @ASL_CFLAGS@
+ASL_DATA = @ASL_DATA@
+ASL_LIBS = @ASL_LIBS@
 AUTOCONF = @AUTOCONF@
 AUTOHEADER = @AUTOHEADER@
 AUTOMAKE = @AUTOMAKE@
 AUX_DIR = @AUX_DIR@
 AWK = @AWK@
 BUILDTOOLSDIR = @BUILDTOOLSDIR@
-CBCDOCDIR = @CBCDOCDIR@
-CBCOBJDIR = @CBCOBJDIR@
-CBCSRCDIR = @CBCSRCDIR@
 CBC_BUILD_CBC_GENERIC_FALSE = @CBC_BUILD_CBC_GENERIC_FALSE@
 CBC_BUILD_CBC_GENERIC_TRUE = @CBC_BUILD_CBC_GENERIC_TRUE@
+CBC_SVN_REV = @CBC_SVN_REV@
 CC = @CC@
 CCDEPMODE = @CCDEPMODE@
 CDEFS = @CDEFS@
 CFLAGS = @CFLAGS@
-CGLDOCDIR = @CGLDOCDIR@
-CGLOBJDIR = @CGLOBJDIR@
-CGLSRCDIR = @CGLSRCDIR@
-CLPDOCDIR = @CLPDOCDIR@
-CLPOBJDIR = @CLPOBJDIR@
-CLPSRCDIR = @CLPSRCDIR@
-COINUTILSDOCDIR = @COINUTILSDOCDIR@
-COINUTILSOBJDIR = @COINUTILSOBJDIR@
-COINUTILSSRCDIR = @COINUTILSSRCDIR@
-COIN_BUILD_GLPK_FALSE = @COIN_BUILD_GLPK_FALSE@
-COIN_BUILD_GLPK_TRUE = @COIN_BUILD_GLPK_TRUE@
+CLP_CFLAGS = @CLP_CFLAGS@
+CLP_DATA = @CLP_DATA@
+CLP_LIBS = @CLP_LIBS@
+COINDEPEND_CFLAGS = @COINDEPEND_CFLAGS@
+COINDEPEND_DATA = @COINDEPEND_DATA@
+COINDEPEND_LIBS = @COINDEPEND_LIBS@
 COIN_HAS_ASL_FALSE = @COIN_HAS_ASL_FALSE@
 COIN_HAS_ASL_TRUE = @COIN_HAS_ASL_TRUE@
-COIN_HAS_CBC_FALSE = @COIN_HAS_CBC_FALSE@
-COIN_HAS_CBC_TRUE = @COIN_HAS_CBC_TRUE@
-COIN_HAS_CGL_FALSE = @COIN_HAS_CGL_FALSE@
-COIN_HAS_CGL_TRUE = @COIN_HAS_CGL_TRUE@
 COIN_HAS_CLP_FALSE = @COIN_HAS_CLP_FALSE@
 COIN_HAS_CLP_TRUE = @COIN_HAS_CLP_TRUE@
-COIN_HAS_COINUTILS_FALSE = @COIN_HAS_COINUTILS_FALSE@
-COIN_HAS_COINUTILS_TRUE = @COIN_HAS_COINUTILS_TRUE@
+COIN_HAS_COINDEPEND_FALSE = @COIN_HAS_COINDEPEND_FALSE@
+COIN_HAS_COINDEPEND_TRUE = @COIN_HAS_COINDEPEND_TRUE@
 COIN_HAS_CPX_FALSE = @COIN_HAS_CPX_FALSE@
 COIN_HAS_CPX_TRUE = @COIN_HAS_CPX_TRUE@
 COIN_HAS_DYLP_FALSE = @COIN_HAS_DYLP_FALSE@
 COIN_HAS_DYLP_TRUE = @COIN_HAS_DYLP_TRUE@
-COIN_HAS_FMP_FALSE = @COIN_HAS_FMP_FALSE@
-COIN_HAS_FMP_TRUE = @COIN_HAS_FMP_TRUE@
 COIN_HAS_GLPK_FALSE = @COIN_HAS_GLPK_FALSE@
 COIN_HAS_GLPK_TRUE = @COIN_HAS_GLPK_TRUE@
+COIN_HAS_GRB_FALSE = @COIN_HAS_GRB_FALSE@
+COIN_HAS_GRB_TRUE = @COIN_HAS_GRB_TRUE@
+COIN_HAS_MIPLIB3_FALSE = @COIN_HAS_MIPLIB3_FALSE@
+COIN_HAS_MIPLIB3_TRUE = @COIN_HAS_MIPLIB3_TRUE@
 COIN_HAS_MSK_FALSE = @COIN_HAS_MSK_FALSE@
 COIN_HAS_MSK_TRUE = @COIN_HAS_MSK_TRUE@
-COIN_HAS_OSI_FALSE = @COIN_HAS_OSI_FALSE@
-COIN_HAS_OSI_TRUE = @COIN_HAS_OSI_TRUE@
-COIN_HAS_OSL_FALSE = @COIN_HAS_OSL_FALSE@
-COIN_HAS_OSL_TRUE = @COIN_HAS_OSL_TRUE@
-COIN_HAS_SPX_FALSE = @COIN_HAS_SPX_FALSE@
-COIN_HAS_SPX_TRUE = @COIN_HAS_SPX_TRUE@
-COIN_HAS_SYMPHONY_FALSE = @COIN_HAS_SYMPHONY_FALSE@
-COIN_HAS_SYMPHONY_TRUE = @COIN_HAS_SYMPHONY_TRUE@
+COIN_HAS_NETLIB_FALSE = @COIN_HAS_NETLIB_FALSE@
+COIN_HAS_NETLIB_TRUE = @COIN_HAS_NETLIB_TRUE@
+COIN_HAS_OSITESTS_FALSE = @COIN_HAS_OSITESTS_FALSE@
+COIN_HAS_OSITESTS_TRUE = @COIN_HAS_OSITESTS_TRUE@
+COIN_HAS_PKGCONFIG_FALSE = @COIN_HAS_PKGCONFIG_FALSE@
+COIN_HAS_PKGCONFIG_TRUE = @COIN_HAS_PKGCONFIG_TRUE@
+COIN_HAS_SAMPLE_FALSE = @COIN_HAS_SAMPLE_FALSE@
+COIN_HAS_SAMPLE_TRUE = @COIN_HAS_SAMPLE_TRUE@
 COIN_HAS_VOL_FALSE = @COIN_HAS_VOL_FALSE@
 COIN_HAS_VOL_TRUE = @COIN_HAS_VOL_TRUE@
 COIN_HAS_XPR_FALSE = @COIN_HAS_XPR_FALSE@
 COIN_HAS_XPR_TRUE = @COIN_HAS_XPR_TRUE@
+COIN_PKG_CONFIG_PATH = @COIN_PKG_CONFIG_PATH@
 CPP = @CPP@
 CPPFLAGS = @CPPFLAGS@
-CPXDOCDIR = @CPXDOCDIR@
-CPXINCDIR = @CPXINCDIR@
-CPXLIB = @CPXLIB@
-CPXOBJDIR = @CPXOBJDIR@
-CPXSRCDIR = @CPXSRCDIR@
+CPX_CFLAGS = @CPX_CFLAGS@
+CPX_DATA = @CPX_DATA@
+CPX_LIBS = @CPX_LIBS@
 CXX = @CXX@
 CXXCPP = @CXXCPP@
 CXXDEFS = @CXXDEFS@
@@ -186,9 +192,9 @@ DBG_CFLAGS = @DBG_CFLAGS@
 DBG_CXXFLAGS = @DBG_CXXFLAGS@
 DEFS = @DEFS@
 DEPDIR = @DEPDIR@
-DYLPDOCDIR = @DYLPDOCDIR@
-DYLPOBJDIR = @DYLPOBJDIR@
-DYLPSRCDIR = @DYLPSRCDIR@
+DYLP_CFLAGS = @DYLP_CFLAGS@
+DYLP_DATA = @DYLP_DATA@
+DYLP_LIBS = @DYLP_LIBS@
 ECHO = @ECHO@
 ECHO_C = @ECHO_C@
 ECHO_N = @ECHO_N@
@@ -198,11 +204,12 @@ EXEEXT = @EXEEXT@
 F77 = @F77@
 FADDLIBS = @FADDLIBS@
 FFLAGS = @FFLAGS@
-FMPINCDIR = @FMPINCDIR@
-FMPLIB = @FMPLIB@
-GLPKINCDIR = @GLPKINCDIR@
-GLPKLIB = @GLPKLIB@
-GLPKOBJDIR = @GLPKOBJDIR@
+GLPK_CFLAGS = @GLPK_CFLAGS@
+GLPK_DATA = @GLPK_DATA@
+GLPK_LIBS = @GLPK_LIBS@
+GRB_CFLAGS = @GRB_CFLAGS@
+GRB_DATA = @GRB_DATA@
+GRB_LIBS = @GRB_LIBS@
 HAVE_EXTERNALS_FALSE = @HAVE_EXTERNALS_FALSE@
 HAVE_EXTERNALS_TRUE = @HAVE_EXTERNALS_TRUE@
 INSTALL_DATA = @INSTALL_DATA@
@@ -222,18 +229,41 @@ MAINT = @MAINT@
 MAINTAINER_MODE_FALSE = @MAINTAINER_MODE_FALSE@
 MAINTAINER_MODE_TRUE = @MAINTAINER_MODE_TRUE@
 MAKEINFO = @MAKEINFO@
+MIPLIB3_CFLAGS = @MIPLIB3_CFLAGS@
+MIPLIB3_DATA = @MIPLIB3_DATA@
+MIPLIB3_LIBS = @MIPLIB3_LIBS@
 MPICC = @MPICC@
 MPICXX = @MPICXX@
-MSKINCDIR = @MSKINCDIR@
-MSKLIB = @MSKLIB@
+MSK_CFLAGS = @MSK_CFLAGS@
+MSK_DATA = @MSK_DATA@
+MSK_LIBS = @MSK_LIBS@
+NETLIB_CFLAGS = @NETLIB_CFLAGS@
+NETLIB_DATA = @NETLIB_DATA@
+NETLIB_LIBS = @NETLIB_LIBS@
 OBJEXT = @OBJEXT@
 OPT_CFLAGS = @OPT_CFLAGS@
 OPT_CXXFLAGS = @OPT_CXXFLAGS@
-OSIDOCDIR = @OSIDOCDIR@
-OSIOBJDIR = @OSIOBJDIR@
-OSISRCDIR = @OSISRCDIR@
-OSLINCDIR = @OSLINCDIR@
-OSLLIB = @OSLLIB@
+OSICBC_DFLT_SOLVER_CLP_FALSE = @OSICBC_DFLT_SOLVER_CLP_FALSE@
+OSICBC_DFLT_SOLVER_CLP_TRUE = @OSICBC_DFLT_SOLVER_CLP_TRUE@
+OSICBC_DFLT_SOLVER_CPX_FALSE = @OSICBC_DFLT_SOLVER_CPX_FALSE@
+OSICBC_DFLT_SOLVER_CPX_TRUE = @OSICBC_DFLT_SOLVER_CPX_TRUE@
+OSICBC_DFLT_SOLVER_DYLP_FALSE = @OSICBC_DFLT_SOLVER_DYLP_FALSE@
+OSICBC_DFLT_SOLVER_DYLP_TRUE = @OSICBC_DFLT_SOLVER_DYLP_TRUE@
+OSICBC_DFLT_SOLVER_GLPK_FALSE = @OSICBC_DFLT_SOLVER_GLPK_FALSE@
+OSICBC_DFLT_SOLVER_GLPK_TRUE = @OSICBC_DFLT_SOLVER_GLPK_TRUE@
+OSICBC_DFLT_SOLVER_GRB_FALSE = @OSICBC_DFLT_SOLVER_GRB_FALSE@
+OSICBC_DFLT_SOLVER_GRB_TRUE = @OSICBC_DFLT_SOLVER_GRB_TRUE@
+OSICBC_DFLT_SOLVER_MSK_FALSE = @OSICBC_DFLT_SOLVER_MSK_FALSE@
+OSICBC_DFLT_SOLVER_MSK_TRUE = @OSICBC_DFLT_SOLVER_MSK_TRUE@
+OSICBC_DFLT_SOLVER_SYM_FALSE = @OSICBC_DFLT_SOLVER_SYM_FALSE@
+OSICBC_DFLT_SOLVER_SYM_TRUE = @OSICBC_DFLT_SOLVER_SYM_TRUE@
+OSICBC_DFLT_SOLVER_VOL_FALSE = @OSICBC_DFLT_SOLVER_VOL_FALSE@
+OSICBC_DFLT_SOLVER_VOL_TRUE = @OSICBC_DFLT_SOLVER_VOL_TRUE@
+OSICBC_DFLT_SOLVER_XPR_FALSE = @OSICBC_DFLT_SOLVER_XPR_FALSE@
+OSICBC_DFLT_SOLVER_XPR_TRUE = @OSICBC_DFLT_SOLVER_XPR_TRUE@
+OSITESTS_CFLAGS = @OSITESTS_CFLAGS@
+OSITESTS_DATA = @OSITESTS_DATA@
+OSITESTS_LIBS = @OSITESTS_LIBS@
 PACKAGE = @PACKAGE@
 PACKAGE_BUGREPORT = @PACKAGE_BUGREPORT@
 PACKAGE_NAME = @PACKAGE_NAME@
@@ -241,23 +271,24 @@ PACKAGE_STRING = @PACKAGE_STRING@
 PACKAGE_TARNAME = @PACKAGE_TARNAME@
 PACKAGE_VERSION = @PACKAGE_VERSION@
 PATH_SEPARATOR = @PATH_SEPARATOR@
+PKG_CONFIG = @PKG_CONFIG@
 RANLIB = @RANLIB@
+REQUIREDPACKAGES = @REQUIREDPACKAGES@
 RPATH_FLAGS = @RPATH_FLAGS@
+SAMPLE_CFLAGS = @SAMPLE_CFLAGS@
+SAMPLE_DATA = @SAMPLE_DATA@
+SAMPLE_LIBS = @SAMPLE_LIBS@
 SET_MAKE = @SET_MAKE@
 SHELL = @SHELL@
-SPXINCDIR = @SPXINCDIR@
-SPXLIB = @SPXLIB@
 STRIP = @STRIP@
-SYMPHONYDOCDIR = @SYMPHONYDOCDIR@
-SYMPHONYOBJDIR = @SYMPHONYOBJDIR@
-SYMPHONYSRCDIR = @SYMPHONYSRCDIR@
 VERSION = @VERSION@
-VOLDOCDIR = @VOLDOCDIR@
-VOLOBJDIR = @VOLOBJDIR@
-VOLSRCDIR = @VOLSRCDIR@
+VOL_CFLAGS = @VOL_CFLAGS@
+VOL_DATA = @VOL_DATA@
+VOL_LIBS = @VOL_LIBS@
 VPATH_DISTCLEANFILES = @VPATH_DISTCLEANFILES@
-XPRINCDIR = @XPRINCDIR@
-XPRLIB = @XPRLIB@
+XPR_CFLAGS = @XPR_CFLAGS@
+XPR_DATA = @XPR_DATA@
+XPR_LIBS = @XPR_LIBS@
 abs_bin_dir = @abs_bin_dir@
 abs_include_dir = @abs_include_dir@
 abs_lib_dir = @abs_lib_dir@
@@ -270,6 +301,7 @@ ac_ct_F77 = @ac_ct_F77@
 ac_ct_RANLIB = @ac_ct_RANLIB@
 ac_ct_STRIP = @ac_ct_STRIP@
 ac_cxx_preproc_warn_flag = @ac_cxx_preproc_warn_flag@
+ac_pt_PKG_CONFIG = @ac_pt_PKG_CONFIG@
 am__fastdepCC_FALSE = @am__fastdepCC_FALSE@
 am__fastdepCC_TRUE = @am__fastdepCC_TRUE@
 am__fastdepCXX_FALSE = @am__fastdepCXX_FALSE@
@@ -290,6 +322,7 @@ exec_prefix = @exec_prefix@
 have_autoconf = @have_autoconf@
 have_automake = @have_automake@
 have_svn = @have_svn@
+have_svnversion = @have_svnversion@
 host = @host@
 host_alias = @host_alias@
 host_cpu = @host_cpu@
@@ -352,17 +385,20 @@ EXTRA_DIST = doc/authors.xml doc/cbcexe.xml doc/cbcmodelclass.xml \
 ########################################################################
 #                  Installation of the addlibs file                    #
 ########################################################################
-addlibsfile = cbc_addlibs.txt
-addlibsdir = $(prefix)/share/doc/coin/$(PACKAGE_NAME)/
+@COIN_HAS_PKGCONFIG_TRUE@addlibsdir = $(datadir)/coin/doc/Cbc
+@COIN_HAS_PKGCONFIG_TRUE@addlibs_DATA = cbc_addlibs.txt
+pkgconfiglibdir = $(libdir)/pkgconfig
+pkgconfiglib_DATA = cbc.pc osi-cbc.pc
 
 ########################################################################
 #                         Maintainer Stuff                             #
 ########################################################################
+CLEANFILES = cbc_addlibs.txt
 
 # Files that are generated and should be cleaned with make distclean
 DISTCLEANFILES = $(am__append_3) $(VPATH_DISTCLEANFILES)
 DocFiles = README AUTHORS LICENSE
-DocInstallDir = $(prefix)/share/doc/coin/$(PACKAGE_NAME)
+DocInstallDir = $(datadir)/coin/doc/$(PACKAGE_NAME)
 all: all-recursive
 
 .SUFFIXES:
@@ -418,7 +454,13 @@ distclean-hdr:
 	-rm -f inc/config_cbc.h inc/stamp-h1
 examples/Makefile: $(top_builddir)/config.status $(top_srcdir)/examples/Makefile.in
 	cd $(top_builddir) && $(SHELL) ./config.status $@
-cbc_addlibs.txt: $(top_builddir)/config.status $(srcdir)/cbc_addlibs.txt.in
+cbc.pc: $(top_builddir)/config.status $(srcdir)/cbc.pc.in
+	cd $(top_builddir) && $(SHELL) ./config.status $@
+cbc-uninstalled.pc: $(top_builddir)/config.status $(srcdir)/cbc-uninstalled.pc.in
+	cd $(top_builddir) && $(SHELL) ./config.status $@
+osi-cbc.pc: $(top_builddir)/config.status $(srcdir)/osi-cbc.pc.in
+	cd $(top_builddir) && $(SHELL) ./config.status $@
+osi-cbc-uninstalled.pc: $(top_builddir)/config.status $(srcdir)/osi-cbc-uninstalled.pc.in
 	cd $(top_builddir) && $(SHELL) ./config.status $@
 
 mostlyclean-libtool:
@@ -430,6 +472,40 @@ clean-libtool:
 distclean-libtool:
 	-rm -f libtool
 uninstall-info-am:
+install-addlibsDATA: $(addlibs_DATA)
+	@$(NORMAL_INSTALL)
+	test -z "$(addlibsdir)" || $(mkdir_p) "$(DESTDIR)$(addlibsdir)"
+	@list='$(addlibs_DATA)'; for p in $$list; do \
+	  if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
+	  f=$(am__strip_dir) \
+	  echo " $(addlibsDATA_INSTALL) '$$d$$p' '$(DESTDIR)$(addlibsdir)/$$f'"; \
+	  $(addlibsDATA_INSTALL) "$$d$$p" "$(DESTDIR)$(addlibsdir)/$$f"; \
+	done
+
+uninstall-addlibsDATA:
+	@$(NORMAL_UNINSTALL)
+	@list='$(addlibs_DATA)'; for p in $$list; do \
+	  f=$(am__strip_dir) \
+	  echo " rm -f '$(DESTDIR)$(addlibsdir)/$$f'"; \
+	  rm -f "$(DESTDIR)$(addlibsdir)/$$f"; \
+	done
+install-pkgconfiglibDATA: $(pkgconfiglib_DATA)
+	@$(NORMAL_INSTALL)
+	test -z "$(pkgconfiglibdir)" || $(mkdir_p) "$(DESTDIR)$(pkgconfiglibdir)"
+	@list='$(pkgconfiglib_DATA)'; for p in $$list; do \
+	  if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
+	  f=$(am__strip_dir) \
+	  echo " $(pkgconfiglibDATA_INSTALL) '$$d$$p' '$(DESTDIR)$(pkgconfiglibdir)/$$f'"; \
+	  $(pkgconfiglibDATA_INSTALL) "$$d$$p" "$(DESTDIR)$(pkgconfiglibdir)/$$f"; \
+	done
+
+uninstall-pkgconfiglibDATA:
+	@$(NORMAL_UNINSTALL)
+	@list='$(pkgconfiglib_DATA)'; for p in $$list; do \
+	  f=$(am__strip_dir) \
+	  echo " rm -f '$(DESTDIR)$(pkgconfiglibdir)/$$f'"; \
+	  rm -f "$(DESTDIR)$(pkgconfiglibdir)/$$f"; \
+	done
 
 # This directory's subdirectories are mostly independent; you can cd
 # into them and run `make' without going through this Makefile.
@@ -707,9 +783,12 @@ distcleancheck: distclean
 	       exit 1; } >&2
 check-am: all-am
 check: check-recursive
-all-am: Makefile
+all-am: Makefile $(DATA)
 installdirs: installdirs-recursive
 installdirs-am:
+	for dir in "$(DESTDIR)$(addlibsdir)" "$(DESTDIR)$(pkgconfiglibdir)"; do \
+	  test -z "$$dir" || $(mkdir_p) "$$dir"; \
+	done
 install: install-recursive
 install-exec: install-exec-recursive
 install-data: install-data-recursive
@@ -727,6 +806,7 @@ install-strip:
 mostlyclean-generic:
 
 clean-generic:
+	-test -z "$(CLEANFILES)" || rm -f $(CLEANFILES)
 
 distclean-generic:
 	-test -z "$(CONFIG_CLEAN_FILES)" || rm -f $(CONFIG_CLEAN_FILES)
@@ -755,7 +835,7 @@ info: info-recursive
 
 info-am:
 
-install-data-am:
+install-data-am: install-addlibsDATA install-pkgconfiglibDATA
 
 install-exec-am: install-exec-local
 
@@ -783,7 +863,8 @@ ps: ps-recursive
 
 ps-am:
 
-uninstall-am: uninstall-info-am uninstall-local
+uninstall-am: uninstall-addlibsDATA uninstall-info-am uninstall-local \
+	uninstall-pkgconfiglibDATA
 
 uninstall-info: uninstall-info-recursive
 
@@ -794,15 +875,16 @@ uninstall-info: uninstall-info-recursive
 	distclean-generic distclean-hdr distclean-libtool \
 	distclean-local distclean-recursive distclean-tags \
 	distcleancheck distdir distuninstallcheck dvi dvi-am html \
-	html-am info info-am install install-am install-data \
-	install-data-am install-exec install-exec-am \
+	html-am info info-am install install-addlibsDATA install-am \
+	install-data install-data-am install-exec install-exec-am \
 	install-exec-local install-info install-info-am install-man \
-	install-strip installcheck installcheck-am installdirs \
-	installdirs-am maintainer-clean maintainer-clean-generic \
-	maintainer-clean-recursive mostlyclean mostlyclean-generic \
-	mostlyclean-libtool mostlyclean-recursive pdf pdf-am ps ps-am \
-	tags tags-recursive uninstall uninstall-am uninstall-info-am \
-	uninstall-local
+	install-pkgconfiglibDATA install-strip installcheck \
+	installcheck-am installdirs installdirs-am maintainer-clean \
+	maintainer-clean-generic maintainer-clean-recursive \
+	mostlyclean mostlyclean-generic mostlyclean-libtool \
+	mostlyclean-recursive pdf pdf-am ps ps-am tags tags-recursive \
+	uninstall uninstall-addlibsDATA uninstall-am uninstall-info-am \
+	uninstall-local uninstall-pkgconfiglibDATA
 
 
 ########################################################################
@@ -820,13 +902,14 @@ clean-local:
 distclean-local:
 	if test -r test/Makefile; then cd test; $(MAKE) distclean; fi
 
-.PHONY: test unitTest
-
 install-exec-local: install-doc
-	$(install_sh_DATA) $(addlibsfile) $(DESTDIR)$(addlibsdir)/$(addlibsfile)
 
 uninstall-local: uninstall-doc
-	rm -f $(DESTDIR)$(addlibsdir)/$(addlibsfile)
+
+.PHONY: test unitTest
+
+@COIN_HAS_PKGCONFIG_TRUE@cbc_addlibs.txt : cbc.pc
+@COIN_HAS_PKGCONFIG_TRUE@	PKG_CONFIG_PATH=.:@COIN_PKG_CONFIG_PATH@ $(PKG_CONFIG) --libs cbc > cbc_addlibs.txt
 
 install-doc: $(DocFiles)
 	test -z "$(DocInstallDir)" || $(mkdir_p) "$(DESTDIR)$(DocInstallDir)"

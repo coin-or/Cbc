@@ -76,7 +76,7 @@ int main (int argc, const char *argv[])
 
   // Read in model using argv[1]
   // and assert that it is a clean model
-  std::string mpsFileName = "../../Data/Sample/p0033.mps";
+  std::string mpsFileName;
   if (argc>=2) mpsFileName = argv[1];
   int numMpsReadErrors = solver1.readMps(mpsFileName.c_str(),"");
   assert(numMpsReadErrors==0);

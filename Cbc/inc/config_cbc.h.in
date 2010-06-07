@@ -4,6 +4,9 @@
    letters */
 #undef CBC_DEFAULT_SOLVER
 
+/* SVN revision number of project */
+#undef CBC_SVN_REV
+
 /* Define to 1 if the SMP version of Cbc should be compiled */
 #undef CBC_THREAD
 
@@ -16,52 +19,46 @@
 /* Define to the debug verbosity level (0 is no output) */
 #undef COIN_CBC_VERBOSITY
 
-/* If defined, the Ampl Solver Library is available. */
+/* Define to 1 if the ASL module is available */
 #undef COIN_HAS_ASL
 
-/* Define to 1 if the Cbc package is used */
-#undef COIN_HAS_CBC
-
-/* Define to 1 if the Cgl package is used */
-#undef COIN_HAS_CGL
-
-/* Define to 1 if the Clp package is used */
+/* Define to 1 if the Clp module is available */
 #undef COIN_HAS_CLP
 
-/* Define to 1 if the CoinUtils package is used */
-#undef COIN_HAS_COINUTILS
+/* Define to 1 if the COINDEPEND module is available */
+#undef COIN_HAS_COINDEPEND
 
-/* Define to 1 if the Cplex package is available */
+/* Define to 1 if the Cpx module is available */
 #undef COIN_HAS_CPX
 
-/* Define to 1 if the DyLP package is used */
+/* Define to 1 if the DyLP module is available */
 #undef COIN_HAS_DYLP
 
-/* Define to 1 if the FortMP package is available */
-#undef COIN_HAS_FMP
-
-/* Define to 1 if Glpk package is available */
+/* Define to 1 if the Glpk module is available */
 #undef COIN_HAS_GLPK
 
-/* Define to 1 if the Mosek package is available */
+/* Define to 1 if the Grb module is available */
+#undef COIN_HAS_GRB
+
+/* Define to 1 if the Miplib3 module is available */
+#undef COIN_HAS_MIPLIB3
+
+/* Define to 1 if the Msk module is available */
 #undef COIN_HAS_MSK
 
-/* Define to 1 if the Osi package is used */
-#undef COIN_HAS_OSI
+/* Define to 1 if the Netlib module is available */
+#undef COIN_HAS_NETLIB
 
-/* Define to 1 if the Osl package is available */
-#undef COIN_HAS_OSL
+/* Define to 1 if the OsiTests module is available */
+#undef COIN_HAS_OSITESTS
 
-/* Define to 1 if the Soplex package is available */
-#undef COIN_HAS_SPX
+/* Define to 1 if the Sample module is available */
+#undef COIN_HAS_SAMPLE
 
-/* Define to 1 if the SYMPHONY package is used */
-#undef COIN_HAS_SYMPHONY
-
-/* Define to 1 if the Vol package is used */
+/* Define to 1 if the Vol module is available */
 #undef COIN_HAS_VOL
 
-/* Define to 1 if the Xpress package is available */
+/* Define to 1 if the Xpr module is available */
 #undef COIN_HAS_XPR
 
 /* Define if clock_gettime and rt library is available */
@@ -96,6 +93,17 @@
 
 /* Define to 1 if you have the <unistd.h> header file. */
 #undef HAVE_UNISTD_H
+
+/* define to the name of the default solver interface class, e.g.,
+   OsiClpSolverInterface */
+#undef OSICBC_DFLT_SOLVER
+
+/* define this symbol if clp is the default solver */
+#undef OSICBC_DFLT_SOLVER_CLP
+
+/* define to the name of the .hpp file for the default solver interface class,
+   e.g., "OsiClpSolverInterface.hpp" (include quotes) */
+#undef OSICBC_DFLT_SOLVER_HPP
 
 /* Name of package */
 #undef PACKAGE

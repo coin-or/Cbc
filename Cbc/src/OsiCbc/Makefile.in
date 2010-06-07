@@ -20,13 +20,14 @@
 
 # Author:  Andreas Waechter           IBM    2006-04-13
 
+
 srcdir = @srcdir@
 top_srcdir = @top_srcdir@
 VPATH = @srcdir@
 pkgdatadir = $(datadir)/@PACKAGE@
 pkglibdir = $(libdir)/@PACKAGE@
 pkgincludedir = $(includedir)/@PACKAGE@
-top_builddir = ..
+top_builddir = ../..
 am__cd = CDPATH="$${ZSH_VERSION+.}$(PATH_SEPARATOR)" && cd
 INSTALL = @INSTALL@
 install_sh_DATA = $(install_sh) -c -m 644
@@ -42,36 +43,19 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
-@COIN_HAS_CLP_TRUE@am__append_1 = test_cbc
-@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_SAMPLE_TRUE@am__append_2 = test_cbc_generic
-@COIN_HAS_SAMPLE_TRUE@am__append_3 = -dirSample `$(CYGPATH_W) $(SAMPLE_DATA)`
-@COIN_HAS_SAMPLE_TRUE@am__append_4 = -mpsDir=`$(CYGPATH_W) $(SAMPLE_DATA)`
-@COIN_HAS_MIPLIB3_TRUE@am__append_5 = -dirMiplib `$(CYGPATH_W) $(MIPLIB3_DATA)` -miplib
-@COIN_HAS_NETLIB_TRUE@am__append_6 = -netlibDir=`$(CYGPATH_W) $(NETLIB_DATA)` -testOsiSolverInterface
-bin_PROGRAMS = gamsTest$(EXEEXT) osiUnitTest$(EXEEXT)
-@COIN_HAS_CLP_TRUE@am__append_7 = $(CLP_CFLAGS)
-@COIN_HAS_CLP_TRUE@am__append_8 = $(CLP_LIBS)
-@COIN_HAS_CPX_TRUE@am__append_9 = $(CPX_CFLAGS)
-@COIN_HAS_CPX_TRUE@am__append_10 = $(CPX_LIBS)
-@COIN_HAS_DYLP_TRUE@am__append_11 = $(DYLP_CFLAGS)
-@COIN_HAS_DYLP_TRUE@am__append_12 = $(DYLP_LIBS)
-@COIN_HAS_GLPK_TRUE@am__append_13 = $(GLPK_CFLAGS)
-@COIN_HAS_GLPK_TRUE@am__append_14 = $(GLPK_LIBS)
-@COIN_HAS_MSK_TRUE@am__append_15 = $(MSK_CFLAGS)
-@COIN_HAS_MSK_TRUE@am__append_16 = $(MSK_LIBS)
 
-# if COIN_HAS_SPX
-#   AM_CPPFLAGS += $(SPX_CFLAGS)
-#   gamsTest_LDADD += $(SPX_LIBS)
-# endif
-@COIN_HAS_VOL_TRUE@am__append_17 = $(VOL_CFLAGS)
-@COIN_HAS_VOL_TRUE@am__append_18 = $(VOL_LIBS)
-@COIN_HAS_XPR_TRUE@am__append_19 = $(XPR_CFLAGS)
-@COIN_HAS_XPR_TRUE@am__append_20 = $(XPR_LIBS)
-@COIN_HAS_ASL_TRUE@am__append_21 = $(ASL_CFLAGS)
-@COIN_HAS_ASL_TRUE@am__append_22 = $(ASL_LIBS)
-subdir = test
-DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
+# Plus the appropriate include directories for the default solver.
+@OSICBC_DFLT_SOLVER_CLP_TRUE@am__append_1 = ${CLP_CFLAGS}
+@OSICBC_DFLT_SOLVER_CPX_TRUE@am__append_2 = ${CPX_CFLAGS}
+@OSICBC_DFLT_SOLVER_DYLP_TRUE@am__append_3 = ${DYLP_CFLAGS}
+@OSICBC_DFLT_SOLVER_GLPK_TRUE@am__append_4 = ${GLPK_CFLAGS}
+@OSICBC_DFLT_SOLVER_GRB_TRUE@am__append_5 = ${GRB_CFLAGS}
+@OSICBC_DFLT_SOLVER_MSK_TRUE@am__append_6 = ${MSK_CFLAGS}
+@OSICBC_DFLT_SOLVER_SYM_TRUE@am__append_7 = ${SYM_CFLAGS}
+@OSICBC_DFLT_SOLVER_XPR_TRUE@am__append_8 = ${XPR_CFLAGS}
+subdir = src/OsiCbc
+DIST_COMMON = $(includecoin_HEADERS) $(srcdir)/Makefile.am \
+	$(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/acinclude.m4 \
 	$(top_srcdir)/configure.ac
@@ -80,33 +64,19 @@ am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 mkinstalldirs = $(install_sh) -d
 CONFIG_HEADER = $(top_builddir)/inc/config_cbc.h
 CONFIG_CLEAN_FILES =
-am__installdirs = "$(DESTDIR)$(bindir)"
-binPROGRAMS_INSTALL = $(INSTALL_PROGRAM)
-PROGRAMS = $(bin_PROGRAMS)
-am_gamsTest_OBJECTS = gamsTest.$(OBJEXT)
-gamsTest_OBJECTS = $(am_gamsTest_OBJECTS)
-am__DEPENDENCIES_1 =
-@COIN_HAS_CLP_TRUE@am__DEPENDENCIES_2 = $(am__DEPENDENCIES_1)
-@COIN_HAS_CPX_TRUE@am__DEPENDENCIES_3 = $(am__DEPENDENCIES_1)
-@COIN_HAS_DYLP_TRUE@am__DEPENDENCIES_4 = $(am__DEPENDENCIES_1)
-@COIN_HAS_GLPK_TRUE@am__DEPENDENCIES_5 = $(am__DEPENDENCIES_1)
-@COIN_HAS_MSK_TRUE@am__DEPENDENCIES_6 = $(am__DEPENDENCIES_1)
-@COIN_HAS_VOL_TRUE@am__DEPENDENCIES_7 = $(am__DEPENDENCIES_1)
-@COIN_HAS_XPR_TRUE@am__DEPENDENCIES_8 = $(am__DEPENDENCIES_1)
-@COIN_HAS_ASL_TRUE@am__DEPENDENCIES_9 = $(am__DEPENDENCIES_1)
-gamsTest_DEPENDENCIES = ../src/libCbcSolver.la ../src/libCbc.la \
-	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
-	$(am__DEPENDENCIES_2) $(am__DEPENDENCIES_3) \
-	$(am__DEPENDENCIES_4) $(am__DEPENDENCIES_5) \
-	$(am__DEPENDENCIES_6) $(am__DEPENDENCIES_7) \
-	$(am__DEPENDENCIES_8) $(am__DEPENDENCIES_9)
-am_osiUnitTest_OBJECTS = osiUnitTest.$(OBJEXT) \
-	OsiCbcSolverInterfaceTest.$(OBJEXT)
-osiUnitTest_OBJECTS = $(am_osiUnitTest_OBJECTS)
-osiUnitTest_DEPENDENCIES = ../src/libCbc.la ../src/OsiCbc/libOsiCbc.la \
-	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
-	$(am__DEPENDENCIES_1)
-DEFAULT_INCLUDES = -I. -I$(srcdir) -I$(top_builddir)/inc
+am__vpath_adj_setup = srcdirstrip=`echo "$(srcdir)" | sed 's|.|.|g'`;
+am__vpath_adj = case $$p in \
+    $(srcdir)/*) f=`echo "$$p" | sed "s|^$$srcdirstrip/||"`;; \
+    *) f=$$p;; \
+  esac;
+am__strip_dir = `echo $$p | sed -e 's|^.*/||'`;
+am__installdirs = "$(DESTDIR)$(coinlibdir)" \
+	"$(DESTDIR)$(includecoindir)"
+coinlibLTLIBRARIES_INSTALL = $(INSTALL)
+LTLIBRARIES = $(coinlib_LTLIBRARIES)
+libOsiCbc_la_LIBADD =
+am_libOsiCbc_la_OBJECTS = OsiCbcSolverInterface.lo
+libOsiCbc_la_OBJECTS = $(am_libOsiCbc_la_OBJECTS)
 depcomp = $(SHELL) $(top_srcdir)/../depcomp
 am__depfiles_maybe = depfiles
 CXXCOMPILE = $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
@@ -117,8 +87,18 @@ LTCXXCOMPILE = $(LIBTOOL) --tag=CXX --mode=compile $(CXX) $(DEFS) \
 CXXLD = $(CXX)
 CXXLINK = $(LIBTOOL) --tag=CXX --mode=link $(CXXLD) $(AM_CXXFLAGS) \
 	$(CXXFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
-SOURCES = $(gamsTest_SOURCES) $(osiUnitTest_SOURCES)
-DIST_SOURCES = $(gamsTest_SOURCES) $(osiUnitTest_SOURCES)
+COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
+	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
+LTCOMPILE = $(LIBTOOL) --tag=CC --mode=compile $(CC) $(DEFS) \
+	$(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) \
+	$(AM_CFLAGS) $(CFLAGS)
+CCLD = $(CC)
+LINK = $(LIBTOOL) --tag=CC --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
+	$(AM_LDFLAGS) $(LDFLAGS) -o $@
+SOURCES = $(libOsiCbc_la_SOURCES)
+DIST_SOURCES = $(libOsiCbc_la_SOURCES)
+includecoinHEADERS_INSTALL = $(INSTALL_HEADER)
+HEADERS = $(includecoin_HEADERS)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -356,36 +336,42 @@ target_alias = @target_alias@
 AUTOMAKE_OPTIONS = foreign
 
 ########################################################################
-#                         unitTest for Cbc                             #
-########################################################################
-CBC_TEST_TGTS = gamstests ositests $(am__append_1) $(am__append_2)
-cbcflags = $(am__append_3) -unitTest $(am__append_5)
-ositestsflags = $(am__append_4) $(am__append_6)
-gamsTest_SOURCES = gamsTest.cpp
-gamsTest_LDADD = ../src/libCbcSolver.la ../src/libCbc.la \
-	$(COINDEPEND_LIBS) $(ADDLIBS) $(am__append_8) $(am__append_10) \
-	$(am__append_12) $(am__append_14) $(am__append_16) \
-	$(am__append_18) $(am__append_20) $(am__append_22)
-gamsTest_LDFLAGS = -rpath $(libdir)
-AM_CPPFLAGS = -I`$(CYGPATH_W) $(srcdir)/../src` $(COINDEPEND_CFLAGS) \
-	$(am__append_7) $(am__append_9) $(am__append_11) \
-	$(am__append_13) $(am__append_15) $(am__append_17) \
-	$(am__append_19) $(am__append_21) $(OSITESTS_CFLAGS) \
-	-I`$(CYGPATH_W) $(srcdir)/../src/OsiCbc`
-
-########################################################################
-#                         unitTest for OsiCbc                          #
-########################################################################
-osiUnitTest_SOURCES = osiUnitTest.cpp OsiCbcSolverInterfaceTest.cpp
-osiUnitTest_LDADD = ../src/libCbc.la ../src/OsiCbc/libOsiCbc.la $(COINDEPEND_LIBS) $(OSITESTS_LIBS) $(ADDLIBS)
-
-########################################################################
-#                          Cleaning stuff                              #
+#                             libOsiCbc                                #
 ########################################################################
 
-# Here we list everything that is not generated by the compiler, e.g.,
-# output files of a program
-DISTCLEANFILES = yy.mps xx.mps
+# Name of the library compiled in this directory.
+coinlibdir = ${libdir}/coin
+coinlib_LTLIBRARIES = libOsiCbc.la
+
+# List all source files for this library, including headers
+libOsiCbc_la_SOURCES = OsiCbcSolverInterface.cpp OsiCbcSolverInterface.hpp
+
+# This is for libtool (on Windows)
+libOsiCbc_la_LDFLAGS = $(LT_LDFLAGS)
+
+# Here list all include flags, relative to this "srcdir" directory.  This
+# "cygpath" stuff is necessary to compile with native compilers on Windows.
+# "top_srcdir" refers to the basic directory for the main package that is
+# being compiled.
+
+# Needed by any OsiCbc configuration.
+AM_CPPFLAGS = $(COINDEPEND_CFLAGS) -I`$(CYGPATH_W) $(srcdir)/..` \
+	$(am__append_1) $(am__append_2) $(am__append_3) \
+	$(am__append_4) $(am__append_5) $(am__append_6) \
+	$(am__append_7) $(am__append_8)
+
+# This line is necessary to allow VPATH compilation with MS compilers
+# on Cygwin
+DEFAULT_INCLUDES = -I. -I`$(CYGPATH_W) $(srcdir)` -I$(top_builddir)/inc
+
+########################################################################
+#                Headers that need to be installed                     #
+########################################################################
+
+# Here list all the header files that are required by a user of the library,
+# and that therefore should be installed in 'include/coin'
+includecoindir = $(includedir)/coin
+includecoin_HEADERS = OsiCbcSolverInterface.hpp
 all: all-am
 
 .SUFFIXES:
@@ -399,9 +385,9 @@ $(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am  $(am__confi
 	      exit 1;; \
 	  esac; \
 	done; \
-	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign  test/Makefile'; \
+	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign  src/OsiCbc/Makefile'; \
 	cd $(top_srcdir) && \
-	  $(AUTOMAKE) --foreign  test/Makefile
+	  $(AUTOMAKE) --foreign  src/OsiCbc/Makefile
 .PRECIOUS: Makefile
 Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	@case '$?' in \
@@ -419,40 +405,35 @@ $(top_srcdir)/configure: @MAINTAINER_MODE_TRUE@ $(am__configure_deps)
 	cd $(top_builddir) && $(MAKE) $(AM_MAKEFLAGS) am--refresh
 $(ACLOCAL_M4): @MAINTAINER_MODE_TRUE@ $(am__aclocal_m4_deps)
 	cd $(top_builddir) && $(MAKE) $(AM_MAKEFLAGS) am--refresh
-install-binPROGRAMS: $(bin_PROGRAMS)
+install-coinlibLTLIBRARIES: $(coinlib_LTLIBRARIES)
 	@$(NORMAL_INSTALL)
-	test -z "$(bindir)" || $(mkdir_p) "$(DESTDIR)$(bindir)"
-	@list='$(bin_PROGRAMS)'; for p in $$list; do \
-	  p1=`echo $$p|sed 's/$(EXEEXT)$$//'`; \
-	  if test -f $$p \
-	     || test -f $$p1 \
-	  ; then \
-	    f=`echo "$$p1" | sed 's,^.*/,,;$(transform);s/$$/$(EXEEXT)/'`; \
-	   echo " $(INSTALL_PROGRAM_ENV) $(LIBTOOL) --mode=install $(binPROGRAMS_INSTALL) '$$p' '$(DESTDIR)$(bindir)/$$f'"; \
-	   $(INSTALL_PROGRAM_ENV) $(LIBTOOL) --mode=install $(binPROGRAMS_INSTALL) "$$p" "$(DESTDIR)$(bindir)/$$f" || exit 1; \
+	test -z "$(coinlibdir)" || $(mkdir_p) "$(DESTDIR)$(coinlibdir)"
+	@list='$(coinlib_LTLIBRARIES)'; for p in $$list; do \
+	  if test -f $$p; then \
+	    f=$(am__strip_dir) \
+	    echo " $(LIBTOOL) --mode=install $(coinlibLTLIBRARIES_INSTALL) $(INSTALL_STRIP_FLAG) '$$p' '$(DESTDIR)$(coinlibdir)/$$f'"; \
+	    $(LIBTOOL) --mode=install $(coinlibLTLIBRARIES_INSTALL) $(INSTALL_STRIP_FLAG) "$$p" "$(DESTDIR)$(coinlibdir)/$$f"; \
 	  else :; fi; \
 	done
 
-uninstall-binPROGRAMS:
+uninstall-coinlibLTLIBRARIES:
 	@$(NORMAL_UNINSTALL)
-	@list='$(bin_PROGRAMS)'; for p in $$list; do \
-	  f=`echo "$$p" | sed 's,^.*/,,;s/$(EXEEXT)$$//;$(transform);s/$$/$(EXEEXT)/'`; \
-	  echo " rm -f '$(DESTDIR)$(bindir)/$$f'"; \
-	  rm -f "$(DESTDIR)$(bindir)/$$f"; \
+	@set -x; list='$(coinlib_LTLIBRARIES)'; for p in $$list; do \
+	  p=$(am__strip_dir) \
+	  echo " $(LIBTOOL) --mode=uninstall rm -f '$(DESTDIR)$(coinlibdir)/$$p'"; \
+	  $(LIBTOOL) --mode=uninstall rm -f "$(DESTDIR)$(coinlibdir)/$$p"; \
 	done
 
-clean-binPROGRAMS:
-	@list='$(bin_PROGRAMS)'; for p in $$list; do \
-	  f=`echo $$p|sed 's/$(EXEEXT)$$//'`; \
-	  echo " rm -f $$p $$f"; \
-	  rm -f $$p $$f ; \
+clean-coinlibLTLIBRARIES:
+	-test -z "$(coinlib_LTLIBRARIES)" || rm -f $(coinlib_LTLIBRARIES)
+	@list='$(coinlib_LTLIBRARIES)'; for p in $$list; do \
+	  dir="`echo $$p | sed -e 's|/[^/]*$$||'`"; \
+	  test "$$dir" != "$$p" || dir=.; \
+	  echo "rm -f \"$${dir}/so_locations\""; \
+	  rm -f "$${dir}/so_locations"; \
 	done
-gamsTest$(EXEEXT): $(gamsTest_OBJECTS) $(gamsTest_DEPENDENCIES) 
-	@rm -f gamsTest$(EXEEXT)
-	$(CXXLINK) $(gamsTest_LDFLAGS) $(gamsTest_OBJECTS) $(gamsTest_LDADD) $(LIBS)
-osiUnitTest$(EXEEXT): $(osiUnitTest_OBJECTS) $(osiUnitTest_DEPENDENCIES) 
-	@rm -f osiUnitTest$(EXEEXT)
-	$(CXXLINK) $(osiUnitTest_LDFLAGS) $(osiUnitTest_OBJECTS) $(osiUnitTest_LDADD) $(LIBS)
+libOsiCbc.la: $(libOsiCbc_la_OBJECTS) $(libOsiCbc_la_DEPENDENCIES) 
+	$(CXXLINK) -rpath $(coinlibdir) $(libOsiCbc_la_LDFLAGS) $(libOsiCbc_la_OBJECTS) $(libOsiCbc_la_LIBADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -460,9 +441,7 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/OsiCbcSolverInterfaceTest.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/gamsTest.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/osiUnitTest.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/OsiCbcSolverInterface.Plo@am__quote@
 
 .cpp.o:
 @am__fastdepCXX_TRUE@	if $(CXXCOMPILE) -MT $@ -MD -MP -MF "$(DEPDIR)/$*.Tpo" -c -o $@ $<; \
@@ -494,6 +473,23 @@ clean-libtool:
 distclean-libtool:
 	-rm -f libtool
 uninstall-info-am:
+install-includecoinHEADERS: $(includecoin_HEADERS)
+	@$(NORMAL_INSTALL)
+	test -z "$(includecoindir)" || $(mkdir_p) "$(DESTDIR)$(includecoindir)"
+	@list='$(includecoin_HEADERS)'; for p in $$list; do \
+	  if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
+	  f=$(am__strip_dir) \
+	  echo " $(includecoinHEADERS_INSTALL) '$$d$$p' '$(DESTDIR)$(includecoindir)/$$f'"; \
+	  $(includecoinHEADERS_INSTALL) "$$d$$p" "$(DESTDIR)$(includecoindir)/$$f"; \
+	done
+
+uninstall-includecoinHEADERS:
+	@$(NORMAL_UNINSTALL)
+	@list='$(includecoin_HEADERS)'; for p in $$list; do \
+	  f=$(am__strip_dir) \
+	  echo " rm -f '$(DESTDIR)$(includecoindir)/$$f'"; \
+	  rm -f "$(DESTDIR)$(includecoindir)/$$f"; \
+	done
 
 ID: $(HEADERS) $(SOURCES) $(LISP) $(TAGS_FILES)
 	list='$(SOURCES) $(HEADERS) $(LISP) $(TAGS_FILES)'; \
@@ -572,9 +568,9 @@ distdir: $(DISTFILES)
 	done
 check-am: all-am
 check: check-am
-all-am: Makefile $(PROGRAMS)
+all-am: Makefile $(LTLIBRARIES) $(HEADERS)
 installdirs:
-	for dir in "$(DESTDIR)$(bindir)"; do \
+	for dir in "$(DESTDIR)$(coinlibdir)" "$(DESTDIR)$(includecoindir)"; do \
 	  test -z "$$dir" || $(mkdir_p) "$$dir"; \
 	done
 install: install-am
@@ -597,14 +593,14 @@ clean-generic:
 
 distclean-generic:
 	-test -z "$(CONFIG_CLEAN_FILES)" || rm -f $(CONFIG_CLEAN_FILES)
-	-test -z "$(DISTCLEANFILES)" || rm -f $(DISTCLEANFILES)
 
 maintainer-clean-generic:
 	@echo "This command is intended for maintainers to use"
 	@echo "it deletes files that may require special tools to rebuild."
 clean: clean-am
 
-clean-am: clean-binPROGRAMS clean-generic clean-libtool mostlyclean-am
+clean-am: clean-coinlibLTLIBRARIES clean-generic clean-libtool \
+	mostlyclean-am
 
 distclean: distclean-am
 	-rm -rf ./$(DEPDIR)
@@ -622,9 +618,9 @@ info: info-am
 
 info-am:
 
-install-data-am:
+install-data-am: install-coinlibLTLIBRARIES install-includecoinHEADERS
 
-install-exec-am: install-binPROGRAMS
+install-exec-am:
 
 install-info: install-info-am
 
@@ -650,40 +646,23 @@ ps: ps-am
 
 ps-am:
 
-uninstall-am: uninstall-binPROGRAMS uninstall-info-am
+uninstall-am: uninstall-coinlibLTLIBRARIES \
+	uninstall-includecoinHEADERS uninstall-info-am
 
-.PHONY: CTAGS GTAGS all all-am check check-am clean clean-binPROGRAMS \
-	clean-generic clean-libtool ctags distclean distclean-compile \
-	distclean-generic distclean-libtool distclean-tags distdir dvi \
-	dvi-am html html-am info info-am install install-am \
-	install-binPROGRAMS install-data install-data-am install-exec \
-	install-exec-am install-info install-info-am install-man \
-	install-strip installcheck installcheck-am installdirs \
-	maintainer-clean maintainer-clean-generic mostlyclean \
-	mostlyclean-compile mostlyclean-generic mostlyclean-libtool \
-	pdf pdf-am ps ps-am tags uninstall uninstall-am \
-	uninstall-binPROGRAMS uninstall-info-am
+.PHONY: CTAGS GTAGS all all-am check check-am clean \
+	clean-coinlibLTLIBRARIES clean-generic clean-libtool ctags \
+	distclean distclean-compile distclean-generic \
+	distclean-libtool distclean-tags distdir dvi dvi-am html \
+	html-am info info-am install install-am \
+	install-coinlibLTLIBRARIES install-data install-data-am \
+	install-exec install-exec-am install-includecoinHEADERS \
+	install-info install-info-am install-man install-strip \
+	installcheck installcheck-am installdirs maintainer-clean \
+	maintainer-clean-generic mostlyclean mostlyclean-compile \
+	mostlyclean-generic mostlyclean-libtool pdf pdf-am ps ps-am \
+	tags uninstall uninstall-am uninstall-coinlibLTLIBRARIES \
+	uninstall-includecoinHEADERS uninstall-info-am
 
-
-# We are using the solver executables to do the unit test
-
-test: $(CBC_TEST_TGTS)
-
-test_cbc: ../src/cbc$(EXEEXT)
-	../src/cbc$(EXEEXT) $(cbcflags)
-
-@COIN_HAS_SAMPLE_TRUE@test_cbc_generic: ../src/cbc-generic$(EXEEXT)
-@COIN_HAS_SAMPLE_TRUE@	echo "A minimal test is all that cbc-generic can manage just yet."
-@COIN_HAS_SAMPLE_TRUE@	../src/cbc-generic$(EXEEXT) \
-@COIN_HAS_SAMPLE_TRUE@	    -directory `$(CYGPATH_W) $(SAMPLE_DATA)` -import p0033.mps -branch
-
-gamstests: gamsTest$(EXEEXT)
-	./gamsTest$(EXEEXT)
-
-.PHONY: test
-
-ositests: osiUnitTest$(EXEEXT)
-	./osiUnitTest$(EXEEXT) $(ositestsflags)
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
 .NOEXPORT:

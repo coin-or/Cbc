@@ -123,8 +123,8 @@ public:
   */
   virtual void print();
   /** Return the type (an integer identifier) of \c this */
-  virtual int type() const 
-  { return -1;}
+  virtual CbcBranchObjType type() const 
+  { return CbcBranchObjType(0);} /*FIXME what type() should be returned here? */
 
   /** Compare the \c this with \c brObj. \c this and \c brObj must be os the
       same type and must have the same original object, but they may have

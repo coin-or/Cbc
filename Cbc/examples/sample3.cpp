@@ -67,7 +67,7 @@ bool option(int argc, const char *argv[],const char * check, int & value)
 {
   value=-123456;
   for (int i=1;i<argc;i++) {
-    if (char * x = strstr(argv[i],check)) {
+    if (const char * x = strstr(argv[i],check)) {
       // see if at beginning
       if (x==argv[i]||(x==argv[i]+1&&argv[i][0]=='-')) {
 	// see if =

@@ -18,6 +18,7 @@
 #include "CbcCutGenerator.hpp"
 #include "CbcCompareUser.hpp"
 #include "CbcCompareActual.hpp"
+#include "CbcCompareObjective.hpp"
 // Cuts
 
 #include "CglGomory.hpp"

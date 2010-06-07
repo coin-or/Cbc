@@ -28,6 +28,8 @@ Cbc/MSVisualStudio/v9/cbcExamplesSample2/cbcExamplesSample2.vcproj -text
 Cbc/MSVisualStudio/v9/cbcGeneric/cbcGeneric.vcproj -text
 Cbc/MSVisualStudio/v9/cbcSolve/cbcSolve.vcproj -text
 Cbc/MSVisualStudio/v9/libCbc/libCbc.vcproj -text
+Cbc/cbc-uninstalled.pc.in -text
+Cbc/cbc.pc.in -text
 Cbc/cbc_addlibs.txt.in -text
 Cbc/configure -text
 Cbc/configure.ac -text
@@ -42,6 +44,8 @@ Cbc/examples/modify.cpp -text
 Cbc/examples/qmip2.cpp -text
 Cbc/examples/simpleBAB.cpp -text
 Cbc/inc/config_cbc.h.in -text
+Cbc/osi-cbc-uninstalled.pc.in -text
+Cbc/osi-cbc.pc.in -text
 Cbc/src/CbcBranchAllDifferent.cpp -text
 Cbc/src/CbcBranchAllDifferent.hpp -text
 Cbc/src/CbcBranchDecision.cpp -text
@@ -161,7 +165,13 @@ Cbc/src/CbcThread.cpp -text
 Cbc/src/CbcThread.hpp -text
 Cbc/src/ClpAmplObjective.hpp -text
 Cbc/src/ClpConstraintAmpl.hpp -text
+Cbc/src/OsiCbc/Makefile.am -text
+Cbc/src/OsiCbc/Makefile.in -text
+Cbc/src/OsiCbc/OsiCbcSolverInterface.cpp -text
+Cbc/src/OsiCbc/OsiCbcSolverInterface.hpp -text
+Cbc/test/OsiCbcSolverInterfaceTest.cpp -text
 Cbc/test/gamsTest.cpp -text
+Cbc/test/osiUnitTest.cpp -text
 /Dependencies -text
 /LICENSE -text
 /README -text

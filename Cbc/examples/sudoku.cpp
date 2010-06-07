@@ -16,6 +16,7 @@
 // For all different
 #include "CbcBranchCut.hpp"
 #include "CbcBranchActual.hpp"
+#include "CbcBranchAllDifferent.hpp"
 #include "CbcCutGenerator.hpp"
 #include "CglAllDifferent.hpp"
 #include "OsiClpSolverInterface.hpp"

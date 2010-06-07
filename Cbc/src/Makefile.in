@@ -55,20 +55,11 @@ bin_PROGRAMS = $(am__EXEEXT_1) $(am__EXEEXT_2)
 @COIN_HAS_CLP_TRUE@am__append_1 = cbc
 
 # Add locations of include files.
-@COIN_HAS_CLP_TRUE@am__append_2 = -I`$(CYGPATH_W) $(CLPSRCDIR)/src` \
-@COIN_HAS_CLP_TRUE@	-I`$(CYGPATH_W) $(OSISRCDIR)/src/OsiClp` \
-@COIN_HAS_CLP_TRUE@	-I`$(CYGPATH_W) $(CLPOBJDIR)/inc`
-
-@COIN_HAS_CLP_TRUE@am__append_3 = `cat $(CLPOBJDIR)/clp_addlibs.txt`
-@COIN_HAS_CLP_TRUE@@COIN_HAS_CPX_TRUE@am__append_4 = -I`$(CYGPATH_W) $(CPXINCDIR)` \
-@COIN_HAS_CLP_TRUE@@COIN_HAS_CPX_TRUE@	-I`$(CYGPATH_W) $(OSISRCDIR)/src/OsiCpx`
-
-@COIN_HAS_CLP_TRUE@@COIN_HAS_CPX_TRUE@am__append_5 = $(OSIOBJDIR)/src/OsiCpx/libOsiCpx.la
-
-# If we have the Ampl solver library, we need to add additional things
-#cbc_SOURCES += Cbc_ampl.cpp Cbc_ampl.h
-@COIN_HAS_ASL_TRUE@@COIN_HAS_CLP_TRUE@am__append_6 = $(ASLLIB)
-@COIN_HAS_ASL_TRUE@@COIN_HAS_CLP_TRUE@am__append_7 = $(ASL_CPPFLAGS) -DCOIN_HAS_ASL
+@COIN_HAS_CLP_TRUE@am__append_2 = $(CLP_CFLAGS)
+@COIN_HAS_CLP_TRUE@@COIN_HAS_CPX_TRUE@am__append_3 = $(CPX_CFLAGS)
+@COIN_HAS_CLP_TRUE@@COIN_HAS_CPX_TRUE@am__append_4 = $(CPX_LIBS)
+@COIN_HAS_ASL_TRUE@@COIN_HAS_CLP_TRUE@am__append_5 = $(ASL_CFLAGS)
+@COIN_HAS_ASL_TRUE@@COIN_HAS_CLP_TRUE@am__append_6 = $(ASL_LIBS)
 
 ########################################################################
 #                        cbc-generic program                           #
@@ -76,68 +67,30 @@ bin_PROGRAMS = $(am__EXEEXT_1) $(am__EXEEXT_2)
 
 # Name of the executable compiled in this directory.  We want it to be
 # installed in the 'bin' directory
-@CBC_BUILD_CBC_GENERIC_TRUE@am__append_8 = cbc-generic
+@CBC_BUILD_CBC_GENERIC_TRUE@am__append_7 = cbc-generic
 
 # List all additionally required solver and Osi libraries
-@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_CLP_TRUE@am__append_9 = -I`$(CYGPATH_W) $(CLPSRCDIR)/src` \
-@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_CLP_TRUE@	-I`$(CYGPATH_W) $(OSISRCDIR)/src/OsiClp` \
-@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_CLP_TRUE@	-I`$(CYGPATH_W) $(CLPOBJDIR)/inc`
+@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_CLP_TRUE@am__append_8 = $(CLP_CFLAGS)
+@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_CLP_TRUE@am__append_9 = $(CLP_LIBS)
+@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_CPX_TRUE@am__append_10 = $(CPX_CFLAGS)
+@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_CPX_TRUE@am__append_11 = $(CPX_LIBS)
+@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_DYLP_TRUE@am__append_12 = $(DYLP_CFLAGS)
+@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_DYLP_TRUE@am__append_13 = $(DYLP_LIBS)
+@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_GLPK_TRUE@am__append_14 = $(GLPK_CFLAGS)
+@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_GLPK_TRUE@am__append_15 = $(GLPK_LIBS)
+@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_MSK_TRUE@am__append_16 = $(MSK_CFLAGS)
+@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_MSK_TRUE@am__append_17 = $(MSK_LIBS)
 
-@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_CLP_TRUE@am__append_10 = $(OSIOBJDIR)/src/OsiClp/libOsiClp.la \
-@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_CLP_TRUE@	$(CLPOBJDIR)/src/libClp.la
-
-@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_CLP_TRUE@am__append_11 = `cat $(CLPOBJDIR)/clp_addlibs.txt`
-@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_CPX_TRUE@am__append_12 = -I`$(CYGPATH_W) $(CPXINCDIR)` \
-@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_CPX_TRUE@	-I`$(CYGPATH_W) $(OSISRCDIR)/src/OsiCpx`
-
-@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_CPX_TRUE@am__append_13 = $(OSIOBJDIR)/src/OsiCpx/libOsiCpx.la 
-@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_DYLP_TRUE@am__append_14 = -I`$(CYGPATH_W) $(DYLPSRCDIR)/src/DylpStdLib` \
-@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_DYLP_TRUE@        -I`$(CYGPATH_W) $(DYLPSRCDIR)/src/Dylp` \
-@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_DYLP_TRUE@        -I`$(CYGPATH_W) $(DYLPOBJDIR)/inc` \
-@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_DYLP_TRUE@	-I`$(CYGPATH_W) $(OSISRCDIR)/src/OsiDylp`
-
-@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_DYLP_TRUE@am__append_15 = $(OSIOBJDIR)/src/OsiDylp/libOsiDylp.la \
-@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_DYLP_TRUE@	$(DYLPOBJDIR)/src/Dylp/libDylp.la
-
-@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_DYLP_TRUE@am__append_16 = `cat $(DYLPOBJDIR)/dylp_addlibs.txt`
-@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_FMP_TRUE@am__append_17 = -I`$(CYGPATH_W) $(OSISRCDIR)/src/OsiFmp`
-@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_FMP_TRUE@am__append_18 = $(OSIOBJDIR)/src/OsiFmp/libOsiFmp.la
-@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_GLPK_TRUE@am__append_19 = -I`$(CYGPATH_W) $(GLPKINCDIR)` \
-@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_GLPK_TRUE@	-I`$(CYGPATH_W) $(OSISRCDIR)/src/OsiGlpk`
-
-@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_GLPK_TRUE@am__append_20 = $(OSIOBJDIR)/src/OsiGlpk/libOsiGlpk.la
-@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_MSK_TRUE@am__append_21 = -I`$(CYGPATH_W) $(MSKINCDIR)` \
-@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_MSK_TRUE@	-I`$(CYGPATH_W) $(OSISRCDIR)/src/OsiMsk`
-
-@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_MSK_TRUE@am__append_22 = $(OSIOBJDIR)/src/OsiMsk/libOsiMsk.la
-@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_OSL_TRUE@am__append_23 = -I`$(CYGPATH_W) $(OSLINCDIR)` \
-@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_OSL_TRUE@	-I`$(CYGPATH_W) $(OSISRCDIR)/src/OsiOsl`
-
-@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_OSL_TRUE@am__append_24 = $(OSIOBJDIR)/src/OsiOsl/libOsiOsl.la
-@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_SPX_TRUE@am__append_25 = -I`$(CYGPATH_W) $(SPXINCDIR)` \
-@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_SPX_TRUE@	-I`$(CYGPATH_W) $(OSISRCDIR)/src/OsiSpx`
-
-@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_SPX_TRUE@am__append_26 = $(OSIOBJDIR)/src/OsiSpx/libOsiSpx.la
-@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_SYMPHONY_TRUE@am__append_27 = -I`$(CYGPATH_W) $(SYMPHONYSRCDIR)/src` \
-@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_SYMPHONY_TRUE@	-I`$(CYGPATH_W) $(OSISRCDIR)/src/OsiSym`
-
-@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_SYMPHONY_TRUE@am__append_28 = $(OSIOBJDIR)/src/OsiSym/libOsiSym.la \
-@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_SYMPHONY_TRUE@	$(SYMPHONYOBJDIR)/src/libSym.la
-
-@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_SYMPHONY_TRUE@am__append_29 = `cat $(SYMPHONYOBJDIR)/sym_addlibs.txt`
-@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_VOL_TRUE@am__append_30 = -I`$(CYGPATH_W) $(VOLSRCDIR)/src` \
-@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_VOL_TRUE@	-I`$(CYGPATH_W) $(OSISRCDIR)/src/OsiVol`
-
-@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_VOL_TRUE@am__append_31 = $(OSIOBJDIR)/src/OsiVol/libOsiVol.la \
-@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_VOL_TRUE@	$(VOLOBJDIR)/src/libVol.la
-
-@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_VOL_TRUE@am__append_32 = `cat $(VOLOBJDIR)/vol_addlibs.txt`
-@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_XPR_TRUE@am__append_33 = -I`$(CYGPATH_W) $(XPRINCDIR)` \
-@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_XPR_TRUE@	-I`$(CYGPATH_W) $(OSISRCDIR)/src/OsiXpr`
-
-@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_XPR_TRUE@am__append_34 = $(OSIOBJDIR)/src/OsiXpr/libOsiXpr.la
-@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_ASL_TRUE@am__append_35 = $(ASLLIB)
-@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_ASL_TRUE@am__append_36 = $(ASL_CPPFLAGS) -DCOIN_HAS_ASL
+# if COIN_HAS_SPX
+#   AM_CPPFLAGS += $(SPX_CFLAGS)
+#   cbc_generic_LDADD += $(SPX_LIBS)
+# endif
+@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_VOL_TRUE@am__append_18 = $(VOL_CFLAGS)
+@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_VOL_TRUE@am__append_19 = $(VOL_LIBS)
+@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_XPR_TRUE@am__append_20 = $(XPR_CFLAGS)
+@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_XPR_TRUE@am__append_21 = $(XPR_LIBS)
+@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_ASL_TRUE@am__append_22 = $(ASL_CFLAGS)
+@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_ASL_TRUE@am__append_23 = $(ASL_LIBS)
 subdir = src
 DIST_COMMON = $(includecoin_HEADERS) $(srcdir)/Makefile.am \
 	$(srcdir)/Makefile.in
@@ -155,10 +108,10 @@ am__vpath_adj = case $$p in \
     *) f=$$p;; \
   esac;
 am__strip_dir = `echo $$p | sed -e 's|^.*/||'`;
-am__installdirs = "$(DESTDIR)$(libdir)" "$(DESTDIR)$(bindir)" \
+am__installdirs = "$(DESTDIR)$(coinlibdir)" "$(DESTDIR)$(bindir)" \
 	"$(DESTDIR)$(includecoindir)"
-libLTLIBRARIES_INSTALL = $(INSTALL)
-LTLIBRARIES = $(lib_LTLIBRARIES)
+coinlibLTLIBRARIES_INSTALL = $(INSTALL)
+LTLIBRARIES = $(coinlib_LTLIBRARIES)
 libCbc_la_LIBADD =
 am_libCbc_la_OBJECTS = Cbc_C_Interface.lo CbcBranchAllDifferent.lo \
 	CbcBranchCut.lo CbcBranchDecision.lo \
@@ -199,17 +152,15 @@ PROGRAMS = $(bin_PROGRAMS)
 am__cbc_SOURCES_DIST = CoinSolve.cpp
 @COIN_HAS_CLP_TRUE@am_cbc_OBJECTS = CoinSolve.$(OBJEXT)
 cbc_OBJECTS = $(am_cbc_OBJECTS)
-@COIN_HAS_CLP_TRUE@@COIN_HAS_CPX_TRUE@am__DEPENDENCIES_1 = $(OSIOBJDIR)/src/OsiCpx/libOsiCpx.la
-am__DEPENDENCIES_2 =
+am__DEPENDENCIES_1 =
+@COIN_HAS_CLP_TRUE@@COIN_HAS_CPX_TRUE@am__DEPENDENCIES_2 =  \
+@COIN_HAS_CLP_TRUE@@COIN_HAS_CPX_TRUE@	$(am__DEPENDENCIES_1)
 @COIN_HAS_ASL_TRUE@@COIN_HAS_CLP_TRUE@am__DEPENDENCIES_3 =  \
-@COIN_HAS_ASL_TRUE@@COIN_HAS_CLP_TRUE@	$(am__DEPENDENCIES_2)
+@COIN_HAS_ASL_TRUE@@COIN_HAS_CLP_TRUE@	$(am__DEPENDENCIES_1)
 @COIN_HAS_CLP_TRUE@cbc_DEPENDENCIES = libCbcSolver.la libCbc.la \
-@COIN_HAS_CLP_TRUE@	$(CGLOBJDIR)/src/libCgl.la \
-@COIN_HAS_CLP_TRUE@	$(OSIOBJDIR)/src/OsiClp/libOsiClp.la \
-@COIN_HAS_CLP_TRUE@	$(OSIOBJDIR)/src/libOsi.la \
-@COIN_HAS_CLP_TRUE@	$(CLPOBJDIR)/src/libClp.la \
-@COIN_HAS_CLP_TRUE@	$(COINUTILSOBJDIR)/src/libCoinUtils.la \
-@COIN_HAS_CLP_TRUE@	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_3)
+@COIN_HAS_CLP_TRUE@	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
+@COIN_HAS_CLP_TRUE@	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_2) \
+@COIN_HAS_CLP_TRUE@	$(am__DEPENDENCIES_3)
 am__cbc_generic_SOURCES_DIST = CbcGenBaB.cpp CbcGenCbcParam.cpp \
 	CbcGenCbcParam.hpp CbcGenCbcParamUtils.cpp CbcGenCtlBlk.cpp \
 	CbcGenCtlBlk.hpp CbcGeneric.cpp CbcGenMessages.cpp \
@@ -230,25 +181,18 @@ am__cbc_generic_SOURCES_DIST = CbcGenBaB.cpp CbcGenCbcParam.cpp \
 @CBC_BUILD_CBC_GENERIC_TRUE@	CbcGenSolution.$(OBJEXT) \
 @CBC_BUILD_CBC_GENERIC_TRUE@	CbcGenSolvers.$(OBJEXT)
 cbc_generic_OBJECTS = $(am_cbc_generic_OBJECTS)
-@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_CLP_TRUE@am__DEPENDENCIES_4 = $(OSIOBJDIR)/src/OsiClp/libOsiClp.la \
-@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_CLP_TRUE@	$(CLPOBJDIR)/src/libClp.la
-@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_CPX_TRUE@am__DEPENDENCIES_5 = $(OSIOBJDIR)/src/OsiCpx/libOsiCpx.la
-@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_DYLP_TRUE@am__DEPENDENCIES_6 = $(OSIOBJDIR)/src/OsiDylp/libOsiDylp.la \
-@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_DYLP_TRUE@	$(DYLPOBJDIR)/src/Dylp/libDylp.la
-@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_FMP_TRUE@am__DEPENDENCIES_7 = $(OSIOBJDIR)/src/OsiFmp/libOsiFmp.la
-@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_GLPK_TRUE@am__DEPENDENCIES_8 = $(OSIOBJDIR)/src/OsiGlpk/libOsiGlpk.la
-@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_MSK_TRUE@am__DEPENDENCIES_9 = $(OSIOBJDIR)/src/OsiMsk/libOsiMsk.la
-@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_OSL_TRUE@am__DEPENDENCIES_10 = $(OSIOBJDIR)/src/OsiOsl/libOsiOsl.la
-@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_SPX_TRUE@am__DEPENDENCIES_11 = $(OSIOBJDIR)/src/OsiSpx/libOsiSpx.la
-@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_SYMPHONY_TRUE@am__DEPENDENCIES_12 = $(OSIOBJDIR)/src/OsiSym/libOsiSym.la \
-@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_SYMPHONY_TRUE@	$(SYMPHONYOBJDIR)/src/libSym.la
-@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_VOL_TRUE@am__DEPENDENCIES_13 = $(OSIOBJDIR)/src/OsiVol/libOsiVol.la \
-@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_VOL_TRUE@	$(VOLOBJDIR)/src/libVol.la
-@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_XPR_TRUE@am__DEPENDENCIES_14 = $(OSIOBJDIR)/src/OsiXpr/libOsiXpr.la
-@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_ASL_TRUE@am__DEPENDENCIES_15 = $(am__DEPENDENCIES_2)
+@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_CLP_TRUE@am__DEPENDENCIES_4 = $(am__DEPENDENCIES_1)
+@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_CPX_TRUE@am__DEPENDENCIES_5 = $(am__DEPENDENCIES_1)
+@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_DYLP_TRUE@am__DEPENDENCIES_6 = $(am__DEPENDENCIES_1)
+@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_GLPK_TRUE@am__DEPENDENCIES_7 = $(am__DEPENDENCIES_1)
+@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_MSK_TRUE@am__DEPENDENCIES_8 = $(am__DEPENDENCIES_1)
+@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_VOL_TRUE@am__DEPENDENCIES_9 = $(am__DEPENDENCIES_1)
+@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_XPR_TRUE@am__DEPENDENCIES_10 = $(am__DEPENDENCIES_1)
+@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_ASL_TRUE@am__DEPENDENCIES_11 = $(am__DEPENDENCIES_1)
 @CBC_BUILD_CBC_GENERIC_TRUE@cbc_generic_DEPENDENCIES =  \
 @CBC_BUILD_CBC_GENERIC_TRUE@	libCbcSolver.la libCbc.la \
-@CBC_BUILD_CBC_GENERIC_TRUE@	$(CGLOBJDIR)/src/libCgl.la \
+@CBC_BUILD_CBC_GENERIC_TRUE@	$(am__DEPENDENCIES_1) \
+@CBC_BUILD_CBC_GENERIC_TRUE@	$(am__DEPENDENCIES_1) \
 @CBC_BUILD_CBC_GENERIC_TRUE@	$(am__DEPENDENCIES_4) \
 @CBC_BUILD_CBC_GENERIC_TRUE@	$(am__DEPENDENCIES_5) \
 @CBC_BUILD_CBC_GENERIC_TRUE@	$(am__DEPENDENCIES_6) \
@@ -256,13 +200,7 @@ cbc_generic_OBJECTS = $(am_cbc_generic_OBJECTS)
 @CBC_BUILD_CBC_GENERIC_TRUE@	$(am__DEPENDENCIES_8) \
 @CBC_BUILD_CBC_GENERIC_TRUE@	$(am__DEPENDENCIES_9) \
 @CBC_BUILD_CBC_GENERIC_TRUE@	$(am__DEPENDENCIES_10) \
-@CBC_BUILD_CBC_GENERIC_TRUE@	$(am__DEPENDENCIES_11) \
-@CBC_BUILD_CBC_GENERIC_TRUE@	$(am__DEPENDENCIES_12) \
-@CBC_BUILD_CBC_GENERIC_TRUE@	$(am__DEPENDENCIES_13) \
-@CBC_BUILD_CBC_GENERIC_TRUE@	$(am__DEPENDENCIES_14) \
-@CBC_BUILD_CBC_GENERIC_TRUE@	$(am__DEPENDENCIES_15) \
-@CBC_BUILD_CBC_GENERIC_TRUE@	$(OSIOBJDIR)/src/libOsi.la \
-@CBC_BUILD_CBC_GENERIC_TRUE@	$(COINUTILSOBJDIR)/src/libCoinUtils.la
+@CBC_BUILD_CBC_GENERIC_TRUE@	$(am__DEPENDENCIES_11)
 depcomp = $(SHELL) $(top_srcdir)/../depcomp
 am__depfiles_maybe = depfiles
 CXXCOMPILE = $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
@@ -285,11 +223,19 @@ SOURCES = $(libCbc_la_SOURCES) $(libCbcSolver_la_SOURCES) \
 	$(cbc_SOURCES) $(cbc_generic_SOURCES)
 DIST_SOURCES = $(libCbc_la_SOURCES) $(libCbcSolver_la_SOURCES) \
 	$(am__cbc_SOURCES_DIST) $(am__cbc_generic_SOURCES_DIST)
+RECURSIVE_TARGETS = all-recursive check-recursive dvi-recursive \
+	html-recursive info-recursive install-data-recursive \
+	install-exec-recursive install-info-recursive \
+	install-recursive installcheck-recursive installdirs-recursive \
+	pdf-recursive ps-recursive uninstall-info-recursive \
+	uninstall-recursive
 includecoinHEADERS_INSTALL = $(INSTALL_HEADER)
 HEADERS = $(includecoin_HEADERS)
 ETAGS = etags
 CTAGS = ctags
+DIST_SUBDIRS = $(SUBDIRS)
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
+ABSBUILDDIR = @ABSBUILDDIR@
 ACLOCAL = @ACLOCAL@
 ADDLIBS = @ADDLIBS@
 ADD_CFLAGS = @ADD_CFLAGS@
@@ -300,73 +246,64 @@ AMDEP_FALSE = @AMDEP_FALSE@
 AMDEP_TRUE = @AMDEP_TRUE@
 AMTAR = @AMTAR@
 AR = @AR@
-ASLLIB = @ASLLIB@
-ASL_CPPFLAGS = @ASL_CPPFLAGS@
+ASL_CFLAGS = @ASL_CFLAGS@
+ASL_DATA = @ASL_DATA@
+ASL_LIBS = @ASL_LIBS@
 AUTOCONF = @AUTOCONF@
 AUTOHEADER = @AUTOHEADER@
 AUTOMAKE = @AUTOMAKE@
 AUX_DIR = @AUX_DIR@
 AWK = @AWK@
 BUILDTOOLSDIR = @BUILDTOOLSDIR@
-CBCDOCDIR = @CBCDOCDIR@
-CBCOBJDIR = @CBCOBJDIR@
-CBCSRCDIR = @CBCSRCDIR@
 CBC_BUILD_CBC_GENERIC_FALSE = @CBC_BUILD_CBC_GENERIC_FALSE@
 CBC_BUILD_CBC_GENERIC_TRUE = @CBC_BUILD_CBC_GENERIC_TRUE@
+CBC_SVN_REV = @CBC_SVN_REV@
 CC = @CC@
 CCDEPMODE = @CCDEPMODE@
 CDEFS = @CDEFS@
 CFLAGS = @CFLAGS@
-CGLDOCDIR = @CGLDOCDIR@
-CGLOBJDIR = @CGLOBJDIR@
-CGLSRCDIR = @CGLSRCDIR@
-CLPDOCDIR = @CLPDOCDIR@
-CLPOBJDIR = @CLPOBJDIR@
-CLPSRCDIR = @CLPSRCDIR@
-COINUTILSDOCDIR = @COINUTILSDOCDIR@
-COINUTILSOBJDIR = @COINUTILSOBJDIR@
-COINUTILSSRCDIR = @COINUTILSSRCDIR@
-COIN_BUILD_GLPK_FALSE = @COIN_BUILD_GLPK_FALSE@
-COIN_BUILD_GLPK_TRUE = @COIN_BUILD_GLPK_TRUE@
+CLP_CFLAGS = @CLP_CFLAGS@
+CLP_DATA = @CLP_DATA@
+CLP_LIBS = @CLP_LIBS@
+COINDEPEND_CFLAGS = @COINDEPEND_CFLAGS@
+COINDEPEND_DATA = @COINDEPEND_DATA@
+COINDEPEND_LIBS = @COINDEPEND_LIBS@
 COIN_HAS_ASL_FALSE = @COIN_HAS_ASL_FALSE@
 COIN_HAS_ASL_TRUE = @COIN_HAS_ASL_TRUE@
-COIN_HAS_CBC_FALSE = @COIN_HAS_CBC_FALSE@
-COIN_HAS_CBC_TRUE = @COIN_HAS_CBC_TRUE@
-COIN_HAS_CGL_FALSE = @COIN_HAS_CGL_FALSE@
-COIN_HAS_CGL_TRUE = @COIN_HAS_CGL_TRUE@
 COIN_HAS_CLP_FALSE = @COIN_HAS_CLP_FALSE@
 COIN_HAS_CLP_TRUE = @COIN_HAS_CLP_TRUE@
-COIN_HAS_COINUTILS_FALSE = @COIN_HAS_COINUTILS_FALSE@
-COIN_HAS_COINUTILS_TRUE = @COIN_HAS_COINUTILS_TRUE@
+COIN_HAS_COINDEPEND_FALSE = @COIN_HAS_COINDEPEND_FALSE@
+COIN_HAS_COINDEPEND_TRUE = @COIN_HAS_COINDEPEND_TRUE@
 COIN_HAS_CPX_FALSE = @COIN_HAS_CPX_FALSE@
 COIN_HAS_CPX_TRUE = @COIN_HAS_CPX_TRUE@
 COIN_HAS_DYLP_FALSE = @COIN_HAS_DYLP_FALSE@
 COIN_HAS_DYLP_TRUE = @COIN_HAS_DYLP_TRUE@
-COIN_HAS_FMP_FALSE = @COIN_HAS_FMP_FALSE@
-COIN_HAS_FMP_TRUE = @COIN_HAS_FMP_TRUE@
 COIN_HAS_GLPK_FALSE = @COIN_HAS_GLPK_FALSE@
 COIN_HAS_GLPK_TRUE = @COIN_HAS_GLPK_TRUE@
+COIN_HAS_GRB_FALSE = @COIN_HAS_GRB_FALSE@
+COIN_HAS_GRB_TRUE = @COIN_HAS_GRB_TRUE@
+COIN_HAS_MIPLIB3_FALSE = @COIN_HAS_MIPLIB3_FALSE@
+COIN_HAS_MIPLIB3_TRUE = @COIN_HAS_MIPLIB3_TRUE@
 COIN_HAS_MSK_FALSE = @COIN_HAS_MSK_FALSE@
 COIN_HAS_MSK_TRUE = @COIN_HAS_MSK_TRUE@
-COIN_HAS_OSI_FALSE = @COIN_HAS_OSI_FALSE@
-COIN_HAS_OSI_TRUE = @COIN_HAS_OSI_TRUE@
-COIN_HAS_OSL_FALSE = @COIN_HAS_OSL_FALSE@
-COIN_HAS_OSL_TRUE = @COIN_HAS_OSL_TRUE@
-COIN_HAS_SPX_FALSE = @COIN_HAS_SPX_FALSE@
-COIN_HAS_SPX_TRUE = @COIN_HAS_SPX_TRUE@
-COIN_HAS_SYMPHONY_FALSE = @COIN_HAS_SYMPHONY_FALSE@
-COIN_HAS_SYMPHONY_TRUE = @COIN_HAS_SYMPHONY_TRUE@
+COIN_HAS_NETLIB_FALSE = @COIN_HAS_NETLIB_FALSE@
+COIN_HAS_NETLIB_TRUE = @COIN_HAS_NETLIB_TRUE@
+COIN_HAS_OSITESTS_FALSE = @COIN_HAS_OSITESTS_FALSE@
+COIN_HAS_OSITESTS_TRUE = @COIN_HAS_OSITESTS_TRUE@
+COIN_HAS_PKGCONFIG_FALSE = @COIN_HAS_PKGCONFIG_FALSE@
+COIN_HAS_PKGCONFIG_TRUE = @COIN_HAS_PKGCONFIG_TRUE@
+COIN_HAS_SAMPLE_FALSE = @COIN_HAS_SAMPLE_FALSE@
+COIN_HAS_SAMPLE_TRUE = @COIN_HAS_SAMPLE_TRUE@
 COIN_HAS_VOL_FALSE = @COIN_HAS_VOL_FALSE@
 COIN_HAS_VOL_TRUE = @COIN_HAS_VOL_TRUE@
 COIN_HAS_XPR_FALSE = @COIN_HAS_XPR_FALSE@
 COIN_HAS_XPR_TRUE = @COIN_HAS_XPR_TRUE@
+COIN_PKG_CONFIG_PATH = @COIN_PKG_CONFIG_PATH@
 CPP = @CPP@
 CPPFLAGS = @CPPFLAGS@
-CPXDOCDIR = @CPXDOCDIR@
-CPXINCDIR = @CPXINCDIR@
-CPXLIB = @CPXLIB@
-CPXOBJDIR = @CPXOBJDIR@
-CPXSRCDIR = @CPXSRCDIR@
+CPX_CFLAGS = @CPX_CFLAGS@
+CPX_DATA = @CPX_DATA@
+CPX_LIBS = @CPX_LIBS@
 CXX = @CXX@
 CXXCPP = @CXXCPP@
 CXXDEFS = @CXXDEFS@
@@ -377,9 +314,9 @@ DBG_CFLAGS = @DBG_CFLAGS@
 DBG_CXXFLAGS = @DBG_CXXFLAGS@
 DEFS = @DEFS@
 DEPDIR = @DEPDIR@
-DYLPDOCDIR = @DYLPDOCDIR@
-DYLPOBJDIR = @DYLPOBJDIR@
-DYLPSRCDIR = @DYLPSRCDIR@
+DYLP_CFLAGS = @DYLP_CFLAGS@
+DYLP_DATA = @DYLP_DATA@
+DYLP_LIBS = @DYLP_LIBS@
 ECHO = @ECHO@
 ECHO_C = @ECHO_C@
 ECHO_N = @ECHO_N@
@@ -389,11 +326,12 @@ EXEEXT = @EXEEXT@
 F77 = @F77@
 FADDLIBS = @FADDLIBS@
 FFLAGS = @FFLAGS@
-FMPINCDIR = @FMPINCDIR@
-FMPLIB = @FMPLIB@
-GLPKINCDIR = @GLPKINCDIR@
-GLPKLIB = @GLPKLIB@
-GLPKOBJDIR = @GLPKOBJDIR@
+GLPK_CFLAGS = @GLPK_CFLAGS@
+GLPK_DATA = @GLPK_DATA@
+GLPK_LIBS = @GLPK_LIBS@
+GRB_CFLAGS = @GRB_CFLAGS@
+GRB_DATA = @GRB_DATA@
+GRB_LIBS = @GRB_LIBS@
 HAVE_EXTERNALS_FALSE = @HAVE_EXTERNALS_FALSE@
 HAVE_EXTERNALS_TRUE = @HAVE_EXTERNALS_TRUE@
 INSTALL_DATA = @INSTALL_DATA@
@@ -403,11 +341,7 @@ INSTALL_STRIP_PROGRAM = @INSTALL_STRIP_PROGRAM@
 LDFLAGS = @LDFLAGS@
 LIBEXT = @LIBEXT@
 LIBOBJS = @LIBOBJS@
-LIBS = @LIBS@ `cat $(CGLOBJDIR)/cgl_addlibs.txt` `cat \
-	$(OSIOBJDIR)/osi_addlibs.txt` `cat \
-	$(COINUTILSOBJDIR)/coinutils_addlibs.txt` $(ADDLIBS) \
-	$(am__append_3) $(am__append_11) $(am__append_16) \
-	$(am__append_29) $(am__append_32)
+LIBS = @LIBS@
 LIBTOOL = @LIBTOOL@
 LIBTOOLM4 = @LIBTOOLM4@
 LN_S = @LN_S@
@@ -417,18 +351,41 @@ MAINT = @MAINT@
 MAINTAINER_MODE_FALSE = @MAINTAINER_MODE_FALSE@
 MAINTAINER_MODE_TRUE = @MAINTAINER_MODE_TRUE@
 MAKEINFO = @MAKEINFO@
+MIPLIB3_CFLAGS = @MIPLIB3_CFLAGS@
+MIPLIB3_DATA = @MIPLIB3_DATA@
+MIPLIB3_LIBS = @MIPLIB3_LIBS@
 MPICC = @MPICC@
 MPICXX = @MPICXX@
-MSKINCDIR = @MSKINCDIR@
-MSKLIB = @MSKLIB@
+MSK_CFLAGS = @MSK_CFLAGS@
+MSK_DATA = @MSK_DATA@
+MSK_LIBS = @MSK_LIBS@
+NETLIB_CFLAGS = @NETLIB_CFLAGS@
+NETLIB_DATA = @NETLIB_DATA@
+NETLIB_LIBS = @NETLIB_LIBS@
 OBJEXT = @OBJEXT@
 OPT_CFLAGS = @OPT_CFLAGS@
 OPT_CXXFLAGS = @OPT_CXXFLAGS@
-OSIDOCDIR = @OSIDOCDIR@
-OSIOBJDIR = @OSIOBJDIR@
-OSISRCDIR = @OSISRCDIR@
-OSLINCDIR = @OSLINCDIR@
-OSLLIB = @OSLLIB@
+OSICBC_DFLT_SOLVER_CLP_FALSE = @OSICBC_DFLT_SOLVER_CLP_FALSE@
+OSICBC_DFLT_SOLVER_CLP_TRUE = @OSICBC_DFLT_SOLVER_CLP_TRUE@
+OSICBC_DFLT_SOLVER_CPX_FALSE = @OSICBC_DFLT_SOLVER_CPX_FALSE@
+OSICBC_DFLT_SOLVER_CPX_TRUE = @OSICBC_DFLT_SOLVER_CPX_TRUE@
+OSICBC_DFLT_SOLVER_DYLP_FALSE = @OSICBC_DFLT_SOLVER_DYLP_FALSE@
+OSICBC_DFLT_SOLVER_DYLP_TRUE = @OSICBC_DFLT_SOLVER_DYLP_TRUE@
+OSICBC_DFLT_SOLVER_GLPK_FALSE = @OSICBC_DFLT_SOLVER_GLPK_FALSE@
+OSICBC_DFLT_SOLVER_GLPK_TRUE = @OSICBC_DFLT_SOLVER_GLPK_TRUE@
+OSICBC_DFLT_SOLVER_GRB_FALSE = @OSICBC_DFLT_SOLVER_GRB_FALSE@
+OSICBC_DFLT_SOLVER_GRB_TRUE = @OSICBC_DFLT_SOLVER_GRB_TRUE@
+OSICBC_DFLT_SOLVER_MSK_FALSE = @OSICBC_DFLT_SOLVER_MSK_FALSE@
+OSICBC_DFLT_SOLVER_MSK_TRUE = @OSICBC_DFLT_SOLVER_MSK_TRUE@
+OSICBC_DFLT_SOLVER_SYM_FALSE = @OSICBC_DFLT_SOLVER_SYM_FALSE@
+OSICBC_DFLT_SOLVER_SYM_TRUE = @OSICBC_DFLT_SOLVER_SYM_TRUE@
+OSICBC_DFLT_SOLVER_VOL_FALSE = @OSICBC_DFLT_SOLVER_VOL_FALSE@
+OSICBC_DFLT_SOLVER_VOL_TRUE = @OSICBC_DFLT_SOLVER_VOL_TRUE@
+OSICBC_DFLT_SOLVER_XPR_FALSE = @OSICBC_DFLT_SOLVER_XPR_FALSE@
+OSICBC_DFLT_SOLVER_XPR_TRUE = @OSICBC_DFLT_SOLVER_XPR_TRUE@
+OSITESTS_CFLAGS = @OSITESTS_CFLAGS@
+OSITESTS_DATA = @OSITESTS_DATA@
+OSITESTS_LIBS = @OSITESTS_LIBS@
 PACKAGE = @PACKAGE@
 PACKAGE_BUGREPORT = @PACKAGE_BUGREPORT@
 PACKAGE_NAME = @PACKAGE_NAME@
@@ -436,23 +393,24 @@ PACKAGE_STRING = @PACKAGE_STRING@
 PACKAGE_TARNAME = @PACKAGE_TARNAME@
 PACKAGE_VERSION = @PACKAGE_VERSION@
 PATH_SEPARATOR = @PATH_SEPARATOR@
+PKG_CONFIG = @PKG_CONFIG@
 RANLIB = @RANLIB@
+REQUIREDPACKAGES = @REQUIREDPACKAGES@
 RPATH_FLAGS = @RPATH_FLAGS@
+SAMPLE_CFLAGS = @SAMPLE_CFLAGS@
+SAMPLE_DATA = @SAMPLE_DATA@
+SAMPLE_LIBS = @SAMPLE_LIBS@
 SET_MAKE = @SET_MAKE@
 SHELL = @SHELL@
-SPXINCDIR = @SPXINCDIR@
-SPXLIB = @SPXLIB@
 STRIP = @STRIP@
-SYMPHONYDOCDIR = @SYMPHONYDOCDIR@
-SYMPHONYOBJDIR = @SYMPHONYOBJDIR@
-SYMPHONYSRCDIR = @SYMPHONYSRCDIR@
 VERSION = @VERSION@
-VOLDOCDIR = @VOLDOCDIR@
-VOLOBJDIR = @VOLOBJDIR@
-VOLSRCDIR = @VOLSRCDIR@
+VOL_CFLAGS = @VOL_CFLAGS@
+VOL_DATA = @VOL_DATA@
+VOL_LIBS = @VOL_LIBS@
 VPATH_DISTCLEANFILES = @VPATH_DISTCLEANFILES@
-XPRINCDIR = @XPRINCDIR@
-XPRLIB = @XPRLIB@
+XPR_CFLAGS = @XPR_CFLAGS@
+XPR_DATA = @XPR_DATA@
+XPR_LIBS = @XPR_LIBS@
 abs_bin_dir = @abs_bin_dir@
 abs_include_dir = @abs_include_dir@
 abs_lib_dir = @abs_lib_dir@
@@ -465,6 +423,7 @@ ac_ct_F77 = @ac_ct_F77@
 ac_ct_RANLIB = @ac_ct_RANLIB@
 ac_ct_STRIP = @ac_ct_STRIP@
 ac_cxx_preproc_warn_flag = @ac_cxx_preproc_warn_flag@
+ac_pt_PKG_CONFIG = @ac_pt_PKG_CONFIG@
 am__fastdepCC_FALSE = @am__fastdepCC_FALSE@
 am__fastdepCC_TRUE = @am__fastdepCC_TRUE@
 am__fastdepCXX_FALSE = @am__fastdepCXX_FALSE@
@@ -485,6 +444,7 @@ exec_prefix = @exec_prefix@
 have_autoconf = @have_autoconf@
 have_automake = @have_automake@
 have_svn = @have_svn@
+have_svnversion = @have_svnversion@
 host = @host@
 host_alias = @host_alias@
 host_cpu = @host_cpu@
@@ -507,6 +467,7 @@ sol_cc_compiler = @sol_cc_compiler@
 sysconfdir = @sysconfdir@
 target_alias = @target_alias@
 AUTOMAKE_OPTIONS = foreign
+SUBDIRS = OsiCbc
 
 ########################################################################
 #                               libCbc                                 #
@@ -514,7 +475,8 @@ AUTOMAKE_OPTIONS = foreign
 
 # Name of the library compiled in this directory.  We want it to be installed
 # in the 'lib' directory
-lib_LTLIBRARIES = libCbc.la libCbcSolver.la
+coinlibdir = ${libdir}/coin
+coinlib_LTLIBRARIES = libCbc.la libCbcSolver.la
 
 # List all source files for this library, including headers
 libCbc_la_SOURCES = \
@@ -602,8 +564,6 @@ libCbcSolver_la_SOURCES = \
 	CbcSolverExpandKnapsack.cpp CbcSolverExpandKnapsack.hpp
 
 
-#Stefan: added unitTestClp.cpp because CbcSolver defines reference to it
-
 # This is for libtool (on Windows)
 libCbc_la_LDFLAGS = $(LT_LDFLAGS)
 libCbcSolver_la_LDFLAGS = $(LT_LDFLAGS)
@@ -612,51 +572,20 @@ libCbcSolver_la_LDFLAGS = $(LT_LDFLAGS)
 #                            Additional flags                          #
 ########################################################################
 
-# Here list all include flags, relative to this "srcdir" directory.  This
-# "cygpath" stuff is necessary to compile with native compilers on Windows.
-# "top_srcdir" refers to the basic directory for the main package that is
-# being compiled.
-
 # List additional defines
-AM_CPPFLAGS = $(am__append_2) $(am__append_4) $(am__append_7) \
-	$(am__append_9) $(am__append_12) $(am__append_14) \
-	$(am__append_17) $(am__append_19) $(am__append_21) \
-	$(am__append_23) $(am__append_25) $(am__append_27) \
-	$(am__append_30) $(am__append_33) $(am__append_36) \
-	-I`$(CYGPATH_W) $(CGLSRCDIR)/src` -I`$(CYGPATH_W) \
-	$(CGLSRCDIR)/src/CglClique` -I`$(CYGPATH_W) \
-	$(CGLSRCDIR)/src/CglDuplicateRow` -I`$(CYGPATH_W) \
-	$(CGLSRCDIR)/src/CglFlowCover` -I`$(CYGPATH_W) \
-	$(CGLSRCDIR)/src/CglGomory` -I`$(CYGPATH_W) \
-	$(CGLSRCDIR)/src/CglKnapsackCover` -I`$(CYGPATH_W) \
-	$(CGLSRCDIR)/src/CglMixedIntegerRounding` -I`$(CYGPATH_W) \
-	$(CGLSRCDIR)/src/CglMixedIntegerRounding2` -I`$(CYGPATH_W) \
-	$(CGLSRCDIR)/src/CglOddHole` -I`$(CYGPATH_W) \
-	$(CGLSRCDIR)/src/CglPreProcess` -I`$(CYGPATH_W) \
-	$(CGLSRCDIR)/src/CglProbing` -I`$(CYGPATH_W) \
-	$(CGLSRCDIR)/src/CglRedSplit` -I`$(CYGPATH_W) \
-	$(CGLSRCDIR)/src/CglTwomir` -I`$(CYGPATH_W) \
-	$(CGLSRCDIR)/src/CglLandP` -I`$(CYGPATH_W) \
-	$(CGLSRCDIR)/src/CglResidualCapacity` -I`$(CYGPATH_W) \
-	$(CGLSRCDIR)/src/CglZeroHalf` -I`$(CYGPATH_W) \
-	$(COINUTILSSRCDIR)/src` -I`$(CYGPATH_W) \
-	$(COINUTILSOBJDIR)/inc` -I`$(CYGPATH_W) $(OSISRCDIR)/src` \
-	-I`$(CYGPATH_W) $(OSIOBJDIR)/inc` -DCOIN_NO_CLP_MESSAGE \
-	-DUSE_CBCCONFIG
+AM_CPPFLAGS = $(COINDEPEND_CFLAGS) $(am__append_2) $(am__append_3) \
+	$(am__append_5) $(am__append_8) $(am__append_10) \
+	$(am__append_12) $(am__append_14) $(am__append_16) \
+	$(am__append_18) $(am__append_20) $(am__append_22) \
+	-DCOIN_NO_CLP_MESSAGE -DUSE_CBCCONFIG
 
 # List all source files for this executable, including headers
-@COIN_HAS_CLP_TRUE@cbc_SOURCES = \
-@COIN_HAS_CLP_TRUE@	CoinSolve.cpp
-
+@COIN_HAS_CLP_TRUE@cbc_SOURCES = CoinSolve.cpp
 
 # Additional COIN libraries
 @COIN_HAS_CLP_TRUE@cbc_LDADD = libCbcSolver.la libCbc.la \
-@COIN_HAS_CLP_TRUE@	$(CGLOBJDIR)/src/libCgl.la \
-@COIN_HAS_CLP_TRUE@	$(OSIOBJDIR)/src/OsiClp/libOsiClp.la \
-@COIN_HAS_CLP_TRUE@	$(OSIOBJDIR)/src/libOsi.la \
-@COIN_HAS_CLP_TRUE@	$(CLPOBJDIR)/src/libClp.la \
-@COIN_HAS_CLP_TRUE@	$(COINUTILSOBJDIR)/src/libCoinUtils.la \
-@COIN_HAS_CLP_TRUE@	$(am__append_5) $(am__append_6)
+@COIN_HAS_CLP_TRUE@	$(COINDEPEND_LIBS) $(ADDLIBS) $(CLP_LIBS) \
+@COIN_HAS_CLP_TRUE@	$(am__append_4) $(am__append_6)
 
 # Finally, the -rpath flag is used by libtool to make sure that the shared
 # library is found (in the lib install directory) when we are using dynamic
@@ -675,19 +604,13 @@ AM_CPPFLAGS = $(am__append_2) $(am__append_4) $(am__append_7) \
 @CBC_BUILD_CBC_GENERIC_TRUE@	CbcGenSolution.cpp \
 @CBC_BUILD_CBC_GENERIC_TRUE@	CbcGenSolvers.cpp
 
-
-# Finally the Osi Coin library (many of the above need it)
 @CBC_BUILD_CBC_GENERIC_TRUE@cbc_generic_LDADD = libCbcSolver.la \
-@CBC_BUILD_CBC_GENERIC_TRUE@	libCbc.la \
-@CBC_BUILD_CBC_GENERIC_TRUE@	$(CGLOBJDIR)/src/libCgl.la \
-@CBC_BUILD_CBC_GENERIC_TRUE@	$(am__append_10) $(am__append_13) \
-@CBC_BUILD_CBC_GENERIC_TRUE@	$(am__append_15) $(am__append_18) \
-@CBC_BUILD_CBC_GENERIC_TRUE@	$(am__append_20) $(am__append_22) \
-@CBC_BUILD_CBC_GENERIC_TRUE@	$(am__append_24) $(am__append_26) \
-@CBC_BUILD_CBC_GENERIC_TRUE@	$(am__append_28) $(am__append_31) \
-@CBC_BUILD_CBC_GENERIC_TRUE@	$(am__append_34) $(am__append_35) \
-@CBC_BUILD_CBC_GENERIC_TRUE@	$(OSIOBJDIR)/src/libOsi.la \
-@CBC_BUILD_CBC_GENERIC_TRUE@	$(COINUTILSOBJDIR)/src/libCoinUtils.la
+@CBC_BUILD_CBC_GENERIC_TRUE@	libCbc.la $(COINDEPEND_LIBS) \
+@CBC_BUILD_CBC_GENERIC_TRUE@	$(ADDLIBS) $(am__append_9) \
+@CBC_BUILD_CBC_GENERIC_TRUE@	$(am__append_11) $(am__append_13) \
+@CBC_BUILD_CBC_GENERIC_TRUE@	$(am__append_15) $(am__append_17) \
+@CBC_BUILD_CBC_GENERIC_TRUE@	$(am__append_19) $(am__append_21) \
+@CBC_BUILD_CBC_GENERIC_TRUE@	$(am__append_23)
 
 # Finally, the -rpath flag is used by libtool to make sure that the shared
 # library is found (in the lib install directory) when we are using dynamic
@@ -785,7 +708,7 @@ includecoin_HEADERS = \
 
 # You only need to adapt the following line
 ConfigHeader = CbcConfig.h
-all: all-am
+all: all-recursive
 
 .SUFFIXES:
 .SUFFIXES: .cpp .lo .o .obj
@@ -818,37 +741,37 @@ $(top_srcdir)/configure: @MAINTAINER_MODE_TRUE@ $(am__configure_deps)
 	cd $(top_builddir) && $(MAKE) $(AM_MAKEFLAGS) am--refresh
 $(ACLOCAL_M4): @MAINTAINER_MODE_TRUE@ $(am__aclocal_m4_deps)
 	cd $(top_builddir) && $(MAKE) $(AM_MAKEFLAGS) am--refresh
-install-libLTLIBRARIES: $(lib_LTLIBRARIES)
+install-coinlibLTLIBRARIES: $(coinlib_LTLIBRARIES)
 	@$(NORMAL_INSTALL)
-	test -z "$(libdir)" || $(mkdir_p) "$(DESTDIR)$(libdir)"
-	@list='$(lib_LTLIBRARIES)'; for p in $$list; do \
+	test -z "$(coinlibdir)" || $(mkdir_p) "$(DESTDIR)$(coinlibdir)"
+	@list='$(coinlib_LTLIBRARIES)'; for p in $$list; do \
 	  if test -f $$p; then \
 	    f=$(am__strip_dir) \
-	    echo " $(LIBTOOL) --mode=install $(libLTLIBRARIES_INSTALL) $(INSTALL_STRIP_FLAG) '$$p' '$(DESTDIR)$(libdir)/$$f'"; \
-	    $(LIBTOOL) --mode=install $(libLTLIBRARIES_INSTALL) $(INSTALL_STRIP_FLAG) "$$p" "$(DESTDIR)$(libdir)/$$f"; \
+	    echo " $(LIBTOOL) --mode=install $(coinlibLTLIBRARIES_INSTALL) $(INSTALL_STRIP_FLAG) '$$p' '$(DESTDIR)$(coinlibdir)/$$f'"; \
+	    $(LIBTOOL) --mode=install $(coinlibLTLIBRARIES_INSTALL) $(INSTALL_STRIP_FLAG) "$$p" "$(DESTDIR)$(coinlibdir)/$$f"; \
 	  else :; fi; \
 	done
 
-uninstall-libLTLIBRARIES:
+uninstall-coinlibLTLIBRARIES:
 	@$(NORMAL_UNINSTALL)
-	@set -x; list='$(lib_LTLIBRARIES)'; for p in $$list; do \
+	@set -x; list='$(coinlib_LTLIBRARIES)'; for p in $$list; do \
 	  p=$(am__strip_dir) \
-	  echo " $(LIBTOOL) --mode=uninstall rm -f '$(DESTDIR)$(libdir)/$$p'"; \
-	  $(LIBTOOL) --mode=uninstall rm -f "$(DESTDIR)$(libdir)/$$p"; \
+	  echo " $(LIBTOOL) --mode=uninstall rm -f '$(DESTDIR)$(coinlibdir)/$$p'"; \
+	  $(LIBTOOL) --mode=uninstall rm -f "$(DESTDIR)$(coinlibdir)/$$p"; \
 	done
 
-clean-libLTLIBRARIES:
-	-test -z "$(lib_LTLIBRARIES)" || rm -f $(lib_LTLIBRARIES)
-	@list='$(lib_LTLIBRARIES)'; for p in $$list; do \
+clean-coinlibLTLIBRARIES:
+	-test -z "$(coinlib_LTLIBRARIES)" || rm -f $(coinlib_LTLIBRARIES)
+	@list='$(coinlib_LTLIBRARIES)'; for p in $$list; do \
 	  dir="`echo $$p | sed -e 's|/[^/]*$$||'`"; \
 	  test "$$dir" != "$$p" || dir=.; \
 	  echo "rm -f \"$${dir}/so_locations\""; \
 	  rm -f "$${dir}/so_locations"; \
 	done
 libCbc.la: $(libCbc_la_OBJECTS) $(libCbc_la_DEPENDENCIES) 
-	$(CXXLINK) -rpath $(libdir) $(libCbc_la_LDFLAGS) $(libCbc_la_OBJECTS) $(libCbc_la_LIBADD) $(LIBS)
+	$(CXXLINK) -rpath $(coinlibdir) $(libCbc_la_LDFLAGS) $(libCbc_la_OBJECTS) $(libCbc_la_LIBADD) $(LIBS)
 libCbcSolver.la: $(libCbcSolver_la_OBJECTS) $(libCbcSolver_la_DEPENDENCIES) 
-	$(CXXLINK) -rpath $(libdir) $(libCbcSolver_la_LDFLAGS) $(libCbcSolver_la_OBJECTS) $(libCbcSolver_la_LIBADD) $(LIBS)
+	$(CXXLINK) -rpath $(coinlibdir) $(libCbcSolver_la_LDFLAGS) $(libCbcSolver_la_OBJECTS) $(libCbcSolver_la_LIBADD) $(LIBS)
 install-binPROGRAMS: $(bin_PROGRAMS)
 	@$(NORMAL_INSTALL)
 	test -z "$(bindir)" || $(mkdir_p) "$(DESTDIR)$(bindir)"
@@ -1024,6 +947,77 @@ uninstall-includecoinHEADERS:
 	  rm -f "$(DESTDIR)$(includecoindir)/$$f"; \
 	done
 
+# This directory's subdirectories are mostly independent; you can cd
+# into them and run `make' without going through this Makefile.
+# To change the values of `make' variables: instead of editing Makefiles,
+# (1) if the variable is set in `config.status', edit `config.status'
+#     (which will cause the Makefiles to be regenerated when you run `make');
+# (2) otherwise, pass the desired values on the `make' command line.
+$(RECURSIVE_TARGETS):
+	@failcom='exit 1'; \
+	for f in x $$MAKEFLAGS; do \
+	  case $$f in \
+	    *=* | --[!k]*);; \
+	    *k*) failcom='fail=yes';; \
+	  esac; \
+	done; \
+	dot_seen=no; \
+	target=`echo $@ | sed s/-recursive//`; \
+	list='$(SUBDIRS)'; for subdir in $$list; do \
+	  echo "Making $$target in $$subdir"; \
+	  if test "$$subdir" = "."; then \
+	    dot_seen=yes; \
+	    local_target="$$target-am"; \
+	  else \
+	    local_target="$$target"; \
+	  fi; \
+	  (cd $$subdir && $(MAKE) $(AM_MAKEFLAGS) $$local_target) \
+	  || eval $$failcom; \
+	done; \
+	if test "$$dot_seen" = "no"; then \
+	  $(MAKE) $(AM_MAKEFLAGS) "$$target-am" || exit 1; \
+	fi; test -z "$$fail"
+
+mostlyclean-recursive clean-recursive distclean-recursive \
+maintainer-clean-recursive:
+	@failcom='exit 1'; \
+	for f in x $$MAKEFLAGS; do \
+	  case $$f in \
+	    *=* | --[!k]*);; \
+	    *k*) failcom='fail=yes';; \
+	  esac; \
+	done; \
+	dot_seen=no; \
+	case "$@" in \
+	  distclean-* | maintainer-clean-*) list='$(DIST_SUBDIRS)' ;; \
+	  *) list='$(SUBDIRS)' ;; \
+	esac; \
+	rev=''; for subdir in $$list; do \
+	  if test "$$subdir" = "."; then :; else \
+	    rev="$$subdir $$rev"; \
+	  fi; \
+	done; \
+	rev="$$rev ."; \
+	target=`echo $@ | sed s/-recursive//`; \
+	for subdir in $$rev; do \
+	  echo "Making $$target in $$subdir"; \
+	  if test "$$subdir" = "."; then \
+	    local_target="$$target-am"; \
+	  else \
+	    local_target="$$target"; \
+	  fi; \
+	  (cd $$subdir && $(MAKE) $(AM_MAKEFLAGS) $$local_target) \
+	  || eval $$failcom; \
+	done && test -z "$$fail"
+tags-recursive:
+	list='$(SUBDIRS)'; for subdir in $$list; do \
+	  test "$$subdir" = . || (cd $$subdir && $(MAKE) $(AM_MAKEFLAGS) tags); \
+	done
+ctags-recursive:
+	list='$(SUBDIRS)'; for subdir in $$list; do \
+	  test "$$subdir" = . || (cd $$subdir && $(MAKE) $(AM_MAKEFLAGS) ctags); \
+	done
+
 ID: $(HEADERS) $(SOURCES) $(LISP) $(TAGS_FILES)
 	list='$(SOURCES) $(HEADERS) $(LISP) $(TAGS_FILES)'; \
 	unique=`for i in $$list; do \
@@ -1034,10 +1028,23 @@ ID: $(HEADERS) $(SOURCES) $(LISP) $(TAGS_FILES)
 	mkid -fID $$unique
 tags: TAGS
 
-TAGS:  $(HEADERS) $(SOURCES)  $(TAGS_DEPENDENCIES) \
+TAGS: tags-recursive $(HEADERS) $(SOURCES)  $(TAGS_DEPENDENCIES) \
 		$(TAGS_FILES) $(LISP)
 	tags=; \
 	here=`pwd`; \
+	if ($(ETAGS) --etags-include --version) >/dev/null 2>&1; then \
+	  include_option=--etags-include; \
+	  empty_fix=.; \
+	else \
+	  include_option=--include; \
+	  empty_fix=; \
+	fi; \
+	list='$(SUBDIRS)'; for subdir in $$list; do \
+	  if test "$$subdir" = .; then :; else \
+	    test ! -f $$subdir/TAGS || \
+	      tags="$$tags $$include_option=$$here/$$subdir/TAGS"; \
+	  fi; \
+	done; \
 	list='$(SOURCES) $(HEADERS)  $(LISP) $(TAGS_FILES)'; \
 	unique=`for i in $$list; do \
 	    if test -f "$$i"; then echo $$i; else echo $(srcdir)/$$i; fi; \
@@ -1050,7 +1057,7 @@ TAGS:  $(HEADERS) $(SOURCES)  $(TAGS_DEPENDENCIES) \
 	    $$tags $$unique; \
 	fi
 ctags: CTAGS
-CTAGS:  $(HEADERS) $(SOURCES)  $(TAGS_DEPENDENCIES) \
+CTAGS: ctags-recursive $(HEADERS) $(SOURCES)  $(TAGS_DEPENDENCIES) \
 		$(TAGS_FILES) $(LISP)
 	tags=; \
 	here=`pwd`; \
@@ -1100,24 +1107,38 @@ distdir: $(DISTFILES)
 	    || exit 1; \
 	  fi; \
 	done
+	list='$(DIST_SUBDIRS)'; for subdir in $$list; do \
+	  if test "$$subdir" = .; then :; else \
+	    test -d "$(distdir)/$$subdir" \
+	    || $(mkdir_p) "$(distdir)/$$subdir" \
+	    || exit 1; \
+	    distdir=`$(am__cd) $(distdir) && pwd`; \
+	    top_distdir=`$(am__cd) $(top_distdir) && pwd`; \
+	    (cd $$subdir && \
+	      $(MAKE) $(AM_MAKEFLAGS) \
+	        top_distdir="$$top_distdir" \
+	        distdir="$$distdir/$$subdir" \
+	        distdir) \
+	      || exit 1; \
+	  fi; \
+	done
 check-am: all-am
-check: check-am
+check: check-recursive
 all-am: Makefile $(LTLIBRARIES) $(PROGRAMS) $(HEADERS)
-install-binPROGRAMS: install-libLTLIBRARIES
-
-installdirs:
-	for dir in "$(DESTDIR)$(libdir)" "$(DESTDIR)$(bindir)" "$(DESTDIR)$(includecoindir)"; do \
+installdirs: installdirs-recursive
+installdirs-am:
+	for dir in "$(DESTDIR)$(coinlibdir)" "$(DESTDIR)$(bindir)" "$(DESTDIR)$(includecoindir)"; do \
 	  test -z "$$dir" || $(mkdir_p) "$$dir"; \
 	done
-install: install-am
-install-exec: install-exec-am
-install-data: install-data-am
-uninstall: uninstall-am
+install: install-recursive
+install-exec: install-exec-recursive
+install-data: install-data-recursive
+uninstall: uninstall-recursive
 
 install-am: all-am
 	@$(MAKE) $(AM_MAKEFLAGS) install-exec-am install-data-am
 
-installcheck: installcheck-am
+installcheck: installcheck-recursive
 install-strip:
 	$(MAKE) $(AM_MAKEFLAGS) INSTALL_PROGRAM="$(INSTALL_STRIP_PROGRAM)" \
 	  install_sh_PROGRAM="$(INSTALL_STRIP_PROGRAM)" INSTALL_STRIP_FLAG=-s \
@@ -1133,73 +1154,77 @@ distclean-generic:
 maintainer-clean-generic:
 	@echo "This command is intended for maintainers to use"
 	@echo "it deletes files that may require special tools to rebuild."
-clean: clean-am
+clean: clean-recursive
 
-clean-am: clean-binPROGRAMS clean-generic clean-libLTLIBRARIES \
+clean-am: clean-binPROGRAMS clean-coinlibLTLIBRARIES clean-generic \
 	clean-libtool mostlyclean-am
 
-distclean: distclean-am
+distclean: distclean-recursive
 	-rm -rf ./$(DEPDIR)
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
 	distclean-libtool distclean-tags
 
-dvi: dvi-am
+dvi: dvi-recursive
 
 dvi-am:
 
-html: html-am
+html: html-recursive
 
-info: info-am
+info: info-recursive
 
 info-am:
 
-install-data-am: install-includecoinHEADERS
+install-data-am: install-coinlibLTLIBRARIES install-includecoinHEADERS
 
-install-exec-am: install-binPROGRAMS install-exec-local \
-	install-libLTLIBRARIES
+install-exec-am: install-binPROGRAMS install-exec-local
 
-install-info: install-info-am
+install-info: install-info-recursive
 
 install-man:
 
 installcheck-am:
 
-maintainer-clean: maintainer-clean-am
+maintainer-clean: maintainer-clean-recursive
 	-rm -rf ./$(DEPDIR)
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 
-mostlyclean: mostlyclean-am
+mostlyclean: mostlyclean-recursive
 
 mostlyclean-am: mostlyclean-compile mostlyclean-generic \
 	mostlyclean-libtool
 
-pdf: pdf-am
+pdf: pdf-recursive
 
 pdf-am:
 
-ps: ps-am
+ps: ps-recursive
 
 ps-am:
 
-uninstall-am: uninstall-binPROGRAMS uninstall-includecoinHEADERS \
-	uninstall-info-am uninstall-libLTLIBRARIES uninstall-local
+uninstall-am: uninstall-binPROGRAMS uninstall-coinlibLTLIBRARIES \
+	uninstall-includecoinHEADERS uninstall-info-am uninstall-local
 
-.PHONY: CTAGS GTAGS all all-am check check-am clean clean-binPROGRAMS \
-	clean-generic clean-libLTLIBRARIES clean-libtool ctags \
-	distclean distclean-compile distclean-generic \
-	distclean-libtool distclean-tags distdir dvi dvi-am html \
+uninstall-info: uninstall-info-recursive
+
+.PHONY: $(RECURSIVE_TARGETS) CTAGS GTAGS all all-am check check-am \
+	clean clean-binPROGRAMS clean-coinlibLTLIBRARIES clean-generic \
+	clean-libtool clean-recursive ctags ctags-recursive distclean \
+	distclean-compile distclean-generic distclean-libtool \
+	distclean-recursive distclean-tags distdir dvi dvi-am html \
 	html-am info info-am install install-am install-binPROGRAMS \
-	install-data install-data-am install-exec install-exec-am \
-	install-exec-local install-includecoinHEADERS install-info \
-	install-info-am install-libLTLIBRARIES install-man \
-	install-strip installcheck installcheck-am installdirs \
-	maintainer-clean maintainer-clean-generic mostlyclean \
-	mostlyclean-compile mostlyclean-generic mostlyclean-libtool \
-	pdf pdf-am ps ps-am tags uninstall uninstall-am \
-	uninstall-binPROGRAMS uninstall-includecoinHEADERS \
-	uninstall-info-am uninstall-libLTLIBRARIES uninstall-local
+	install-coinlibLTLIBRARIES install-data install-data-am \
+	install-exec install-exec-am install-exec-local \
+	install-includecoinHEADERS install-info install-info-am \
+	install-man install-strip installcheck installcheck-am \
+	installdirs installdirs-am maintainer-clean \
+	maintainer-clean-generic maintainer-clean-recursive \
+	mostlyclean mostlyclean-compile mostlyclean-generic \
+	mostlyclean-libtool mostlyclean-recursive pdf pdf-am ps ps-am \
+	tags tags-recursive uninstall uninstall-am \
+	uninstall-binPROGRAMS uninstall-coinlibLTLIBRARIES \
+	uninstall-includecoinHEADERS uninstall-info-am uninstall-local
 
 
 install-exec-local:

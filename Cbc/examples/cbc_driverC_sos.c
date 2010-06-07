@@ -3,19 +3,20 @@ Corporation and others.  All Rights Reserved. */
 
 /* This example shows the use of the "C" interface for CBC. */
 
+#include "CbcConfig.h"
 #include "Cbc_C_Interface.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
 
-// prototypes
+/* prototypes */
 void printSolution(Cbc_Model *cbc_model);
 Cbc_Model * getDefaultModel(int argc, const char *argv[]);
 
 
 /* Call back function - just says whenever it gets Clp0005 or Coin0002 */
-// TODO: It seems that Cbc gives callbacks but not Coin
+/* TODO: It seems that Cbc gives callbacks but not Coin */
 static void callBack(Cbc_Model * model, int messageNumber,
                      int nDouble, const double * vDouble,
                      int nInt, const int * vInt,
@@ -65,12 +66,17 @@ Cbc_Model * getDefaultModel(int argc, const char *argv[])
   */
   Cbc_setLogLevel(model, 1);
   if (VERBOSE>0) printf("%s Log Level %i\n", prefix, Cbc_logLevel(model));
-  // register callback 
+  /* register callback */
   Cbc_registerCallBack(model,callBack);
-  // Keep names when reading an mps file 
-  if (argc<2)
-    // status=Cbc_readMps(model,"../../../../../Data/Sample/ltw.mps");
-    status=Cbc_readMps(model,"../../../../../Data/Sample/p0033.mps");
+  /* Keep names when reading an mps file */
+  if (argc<2) {
+#if defined(COIN_HAS_SAMPLE) && defined(SAMPLEDIR)
+    status=Cbc_readMps(model, SAMPLEDIR "/p0033.mps");
+#else
+    fprintf(stderr, "Do not know where to find sample MPS files.\n");
+    exit(1);
+#endif
+  }
   else
     status=Cbc_readMps(model,argv[1]);
 
@@ -82,25 +88,25 @@ Cbc_Model * getDefaultModel(int argc, const char *argv[])
   Cbc_setOptimizationDirection(model, 1);
   if (1) Cbc_setIntegerTolerance(model,  1.0e-5);
 
-  /// Solve initial LP relaxation 
+  /* Solve initial LP relaxation */
   Cbc_initialSolve(model);
 
   if (VERBOSE>0) printf("%s return\n",prefix);
   return model;
-} //  getDefaultModel()
+} /* getDefaultModel() */
 
 void printSolution(Cbc_Model *cbc_model) {
-  //
-  //  Now to print out solution.  The methods used return modifiable
-  //  arrays while the alternative names return const pointers -
-  //  which is of course much more virtuous.
-  //  
-  //  This version just does non-zero column and row values.
-  //
-  //
+  
+  /*  Now to print out solution.  The methods used return modifiable
+      arrays while the alternative names return const pointers -
+      which is of course much more virtuous.
+     
+      This version just does non-zero column and row values.
+  */
 
-  // If we have not kept names (parameter to readMps) this will be 0 
-  //   assert(Cbc_lengthNames(cbc_model));
+  /* If we have not kept names (parameter to readMps) this will be 0 
+      assert(Cbc_lengthNames(cbc_model));
+  */
   {
     int  name_length = 256;
     char model_name[256];
@@ -117,7 +123,7 @@ void printSolution(Cbc_Model *cbc_model) {
   printf("Is Primal Objective Limit Reached = %i\n",Cbc_isPrimalObjectiveLimitReached(cbc_model));
   printf("Is Dual Objective Limit Reached = %i\n",Cbc_isDualObjectiveLimitReached(cbc_model));
   printf("Is Iteration Limit Reached = %i\n",Cbc_isIterationLimitReached(cbc_model));
-  printf("Objective Sense = %g\n",Cbc_getObjSense(cbc_model));  // (1 - minimize, -1 - maximize, 0 - ignore)
+  printf("Objective Sense = %g\n",Cbc_getObjSense(cbc_model));  /* (1 - minimize, -1 - maximize, 0 - ignore) */
   printf("Primal Feasible = %i\n",Cbc_primalFeasible(cbc_model));
   printf("Dual Feasible = %i\n",Cbc_dualFeasible(cbc_model));
   printf("Dual Bound = %g\n",Cbc_dualBound(cbc_model));
@@ -131,7 +137,7 @@ void printSolution(Cbc_Model *cbc_model) {
   printf("  (1 - minimize, -1 - maximize, 0 - ignore)\n");
   printf("--------------------------------------\n");
 
-  //  Rows 
+  /*  Rows */
   {
     int numberRows = Cbc_numberRows(cbc_model);
     int iRow;
@@ -163,7 +169,7 @@ void printSolution(Cbc_Model *cbc_model) {
     }
   }
   printf("--------------------------------------\n");
-  // Columns 
+  /* Columns */
   {
     int numberColumns = Cbc_numberColumns(cbc_model);
     int iColumn;
@@ -187,7 +193,7 @@ void printSolution(Cbc_Model *cbc_model) {
       if (value>1.0e-8||value<-1.0e-8) {
         char name[20];
         sprintf(name," Col%-4i",iColumn);
-        //    	Cbc_columnName(cbc_model,iColumn,name);
+        /*    	Cbc_columnName(cbc_model,iColumn,name); */
         printf("%6d %8s",iColumn,name);
         printf(" %13g",columnPrimal[iColumn]);
         printf(" %13g",columnDual[iColumn]);
@@ -199,7 +205,7 @@ void printSolution(Cbc_Model *cbc_model) {
     }
   }
   printf("--------------------------------------\n");
-} //  printSolution()
+} /*  printSolution() */
 
 int main (int argc, const char *argv[])
 {
@@ -214,11 +220,11 @@ int main (int argc, const char *argv[])
   if (VERBOSE>0) printf("%s begin\n",prefix);
   if (VERBOSE>0) printf("%s Version %g\n",prefix,Cbc_getVersion());
 
-  // set model using the local routine for reading an MPS file
+  /* set model using the local routine for reading an MPS file */
   model = getDefaultModel(argc, argv);
-  model2 = NULL;  // used to keep model around
+  model2 = NULL;  /* used to keep model around */
 
-  // This clause ought to set the initial basis, but does not yet work.
+  /* This clause ought to set the initial basis, but does not yet work. */
   {
     int i;
     int row_length = Cbc_getNumRows(model);
@@ -226,9 +232,8 @@ int main (int argc, const char *argv[])
     int rim_length = row_length + col_length;
     int elem_length = Cbc_getNumElements(model);
 
-    int * cbc_rowStatus    = NULL; //(int *) malloc(row_length*sizeof(int)); 
-    int * cbc_columnStatus = NULL; //(int *) malloc(col_length*sizeof(int)); 
-    //    Cbc_getBasisStatus(model, cbc_columnStatus, cbc_rowStatus);
+    int * cbc_rowStatus    = NULL;
+    int * cbc_columnStatus = NULL;
 
     if (0) {
       fprintf(stdout,"%s row_length = %i\n", prefix, row_length);
@@ -237,7 +242,7 @@ int main (int argc, const char *argv[])
       fprintf(stdout,"%s elem_length = %i\n", prefix, elem_length);
       fflush(stdout);
     }
-    // print solution status variables
+    /* print solution status variables */
     if (0) {
       if (cbc_rowStatus) {
         for (i = 0; i < row_length; i++) {
@@ -245,7 +250,7 @@ int main (int argc, const char *argv[])
           fflush(stdout);
         }
       } else {
-        fprintf(stdout,"%s cbc_rowStatus = %p\n", prefix, cbc_rowStatus);
+        fprintf(stdout,"%s cbc_rowStatus = %p\n", prefix, (void*)cbc_rowStatus);
         fflush(stdout);
       }
       if (cbc_columnStatus) {
@@ -254,19 +259,17 @@ int main (int argc, const char *argv[])
           fflush(stdout);
         }
       } else {
-        fprintf(stdout,"%s cbc_columnStatus = %p\n", prefix, cbc_columnStatus);
+        fprintf(stdout,"%s cbc_columnStatus = %p\n", prefix, (void*)cbc_columnStatus);
         fflush(stdout);
       }
     }
-    //    free( cbc_rowStatus );
-    //    free( cbc_columnStatus );
   }
 
-  // Save model as a clone (does not work as of 2004).
+  /* Save model as a clone (does not work as of 2004). */
   model2 = Cbc_clone(model);
 
-  // Store which variables are integer as defined in the MPS file.
-  // They will be set to Continuous before adding the SOS constraints.
+  /* Store which variables are integer as defined in the MPS file.
+     They will be set to Continuous before adding the SOS constraints. */
 
   {
     int i;
@@ -283,14 +286,14 @@ int main (int argc, const char *argv[])
   }
   Cbc_problemName(model,80,modelName);
 
-  // Solve the MPS version of the problem
+  /* Solve the MPS version of the problem */
   if (1) {  
     if (VERBOSE>1) {
       printf("%s Solve MPS version of the problem\n",prefix);
       printf("%s Optimization Direction = %g (1 - minimize, -1 - maximize, 0 - ignore)\n",
         prefix, Cbc_optimizationDirection(model)); 
     }
-    //    Cbc_setLogLevel(model, VERBOSE); // 4 is verbose
+    /*    Cbc_setLogLevel(model, VERBOSE); // 4 is verbose */
     time1 = Cbc_cpuTime(model) ;
     Cbc_branchAndBound(model);
     if (VERBOSE>1) printf("Model %s has %d rows and %d columns\n",
@@ -303,39 +306,38 @@ int main (int argc, const char *argv[])
     if (VERBOSE>2) printSolution(model);
   }
   {
-    //
-    // SOS specification data
-    // specify numberSets, numPoints, and whichRanges explicitly
-    // NOTE: These need to be commented according to the MPS file.
-    //   Example_1_1: Cbc0004I MPS reads 1081 only columns out of 1085
-    //                Then the 4th range goes out of bounds
-    //   Example_2: Cbc0006I The LP relaxation is infeasible or too expensive
-    //   Mod_RT_1: Cbc0006I The LP relaxation is infeasible or too expensive
-    //
+    
+    /* SOS specification data
+       specify numberSets, numPoints, and whichRanges explicitly
+       NOTE: These need to be commented according to the MPS file.
+         Example_1_1: Cbc0004I MPS reads 1081 only columns out of 1085
+                      Then the 4th range goes out of bounds
+         Example_2: Cbc0006I The LP relaxation is infeasible or too expensive
+         Mod_RT_1: Cbc0006I The LP relaxation is infeasible or too expensive
+    */
     const int numberSets = 
-      1; // dummy
+      1; /* dummy
     //    4; // Example_1_1
     //    2;  // Example_2
     //    2;  // Mod_RT_1
-    //    2;  // SITH
+    //    2;  // SITH */
     const int numPoints = 
-      1; // dummy
+      1; /* dummy
     //    257; // Example_1_1
     //    256;  // Example_2
     //    257;  // Mod_RT_1
-    //    257;  // SITH
+    //    257;  // SITH */
 
-    //const int whichRanges[numberSets][2]
-    const int whichRanges[1][2] = { // counting from zero?
-      {0,0} // dummy
-      //    {56,312}, {313, 569}, {572, 828}, {829, 1085} // Example_1_1
-      //    {48, 303}, {304, 559} // Example_2
-      //    {45, 301}, {302, 558} // Mod_RT_1
-      //    {45, 301}, {302, 558} // SITH
+    const int whichRanges[1][2] = { /* counting from zero? */
+      {0,0} /* dummy */
+      /*   {56,312}, {313, 569}, {572, 828}, {829, 1085} // Example_1_1
+           {48, 303}, {304, 559} // Example_2
+           {45, 301}, {302, 558} // Mod_RT_1
+           {45, 301}, {302, 558} // SITH
+      */
     };
-    // the rest is determined parametrically
+    /* the rest is determined parametrically */
     int *len = malloc(numberSets* sizeof(int[1]));
-    //int **which = new int * [numberSets];
     int **which = malloc(numberSets* sizeof(int[1]));
     int setNum, pointNum;
     double *weights;
@@ -349,47 +351,47 @@ int main (int argc, const char *argv[])
       }
       which[setNum] = malloc(numPoints*sizeof(int[1]));
       for (j = 0; j < len[setNum]; j++)
-        //      which[setNum][j] = whichRanges[setNum][0] + j - 6; // hack for missing columns in example 1_1
-        which[setNum][j] = whichRanges[setNum][0] + j; // Example_2
+        which[setNum][j] = whichRanges[setNum][0] + j; /* Example_2 */
     }
     weights = malloc(numPoints*sizeof(double[1]));  
     for (pointNum = 0; pointNum < numPoints; pointNum++) weights[pointNum] = pointNum+1;
 
-    // Now use SOS2
-    // NOTE: Only enable this if known good SOS Specification (above)
+    /* Now use SOS2
+       NOTE: Only enable this if known good SOS Specification (above)
+    */
     if (1) {  
       if (VERBOSE>1) printf("%s Use SOS2\n",prefix);
 
-      // Restore model
+      /* Restore model */
       Cbc_deleteModel(model);
       if (0) {
         model = Cbc_clone(model2);
       } else {
         model = getDefaultModel(argc, argv); 
       }
-      //    Cbc_setLogLevel(model, 4); // 4 is verbose
+      /*    Cbc_setLogLevel(model, 4); // 4 is verbose */
       if (VERBOSE>1) printf("%s Model %s has %d rows and %d columns\n",
         prefix, modelName,Cbc_numberRows(model),Cbc_numberColumns(model));
 
-      // make SOS cuts
+      /* make SOS cuts */
       for (i=0;i<numberIntegers;i++) {
         int iColumn = integerVariable[i];
-        // Stop being integer
+        /* Stop being integer */
         Cbc_setContinuous(model, iColumn);
       }
-      // add cut (0 - use dense, 1 - use sparse (TODO: test this))
+      /* add cut (0 - use dense, 1 - use sparse (TODO: test this)) */
       if (0) for (i=0;i<numberSets;i++) {
         printf(
           "%s calling Cbc_addSOS(), len[%i] = %i, which[%i][0] = %i, which[%i][%i] = %i,\n  weights[0] = %g, weights[%i] = %g\n",
           prefix, i, len[i], i, which[i][0], i, len[i]-1, which[i][len[i]-1], weights[0], len[i]-1, weights[len[i]-1]);
-        //      Cbc_addSOS_Sparse(model,len[i],which[i],weights,i,2);
+        /*      Cbc_addSOS_Sparse(model,len[i],which[i],weights,i,2); */
       } else {
-        int numObjects = numberSets; // cannot pass const int
+        int numObjects = numberSets; /* cannot pass const int */
         Cbc_addSOS_Dense(model, numObjects, len, (const int**)which, (const double*)weights, 2);
       }
     }
 
-    Cbc_setOptimizationDirection(model, 1); // 1 minimize
+    Cbc_setOptimizationDirection(model, 1); /* 1 minimize */
     if (VERBOSE>1) {
       printf("%s Solve MPS version of the problem\n",prefix);
       printf("%s Optimization Direction = %g (1 - minimize, -1 - maximize, 0 - ignore)\n",
@@ -413,4 +415,4 @@ int main (int argc, const char *argv[])
   if (VERBOSE>1) printf("%s Log Level %i\n", prefix, Cbc_logLevel(model));
   if (VERBOSE>0) printf("%s return 0\n",prefix);
   return 0;
-} //  main()
+} /*  main() */

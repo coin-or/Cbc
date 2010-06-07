@@ -12,13 +12,29 @@ AUTOMAKE_OPTIONS = foreign
 #                         unitTest for Cbc                             #
 ########################################################################
 
-CBC_TEST_TGTS = gamstests
+CBC_TEST_TGTS = gamstests ositests
 
 if COIN_HAS_CLP
   CBC_TEST_TGTS += test_cbc
 endif
 if CBC_BUILD_CBC_GENERIC
+if COIN_HAS_SAMPLE
   CBC_TEST_TGTS += test_cbc_generic
+endif
+endif
+
+cbcflags =
+ositestsflags =
+if COIN_HAS_SAMPLE
+  cbcflags += -dirSample `$(CYGPATH_W) $(SAMPLE_DATA)`
+  ositestsflags += -mpsDir=`$(CYGPATH_W) $(SAMPLE_DATA)`
+endif
+cbcflags += -unitTest
+if COIN_HAS_MIPLIB3
+  cbcflags += -dirMiplib `$(CYGPATH_W) $(MIPLIB3_DATA)` -miplib
+endif
+if COIN_HAS_NETLIB
+  ositestsflags += -netlibDir=`$(CYGPATH_W) $(NETLIB_DATA)` -testOsiSolverInterface
 endif
 
 # We are using the solver executables to do the unit test
@@ -26,121 +42,86 @@ endif
 test: $(CBC_TEST_TGTS)
 
 test_cbc: ../src/cbc$(EXEEXT)
-	if test x"$(DIRMIPLIB)" != x; then \
-		MIPLIBARG="-dirMiplib $(DIRMIPLIB) -miplib"; \
-	fi; \
-	if test x"$(DIRSAMPLE)" != x; then \
-		SAMPLEARG="-dirSample $(DIRSAMPLE)"; \
-	fi; \
-	../src/cbc$(EXEEXT) $$SAMPLEARG -unitTest $$MIPLIBARG
+	../src/cbc$(EXEEXT) $(cbcflags)
 
+if COIN_HAS_SAMPLE
 test_cbc_generic: ../src/cbc-generic$(EXEEXT)
 	echo "A minimal test is all that cbc-generic can manage just yet."
 	../src/cbc-generic$(EXEEXT) \
-	    -directory ../../Data/Sample -import p0033.mps -branch
-	    
+	    -directory `$(CYGPATH_W) $(SAMPLE_DATA)` -import p0033.mps -branch
+endif
+
 gamstests: gamsTest$(EXEEXT)
 	./gamsTest$(EXEEXT)
 
 .PHONY: test
 
-bin_PROGRAMS = gamsTest
-gamsTest_SOURCES = gamsTest.cpp
-gamsTest_LDADD = ../src/libCbcSolver.la ../src/libCbc.la \
-  $(CGLOBJDIR)/src/libCgl.la
-gamsTest_LDFLAGS = -rpath $(libdir)
-LIBS = `cat $(CBCOBJDIR)/cbc_addlibs.txt` $(ADDLIBS)
+bin_PROGRAMS = gamsTest osiUnitTest
 
-AM_CPPFLAGS = -I`$(CYGPATH_W) $(srcdir)/../src` \
-	-I`$(CYGPATH_W) $(COINUTILSSRCDIR)/src` \
-	-I`$(CYGPATH_W) $(COINUTILSOBJDIR)/inc` \
-	-I`$(CYGPATH_W) $(OSISRCDIR)/src` \
-	-I`$(CYGPATH_W) $(OSIOBJDIR)/inc`
+gamsTest_SOURCES = gamsTest.cpp
+gamsTest_LDADD = ../src/libCbcSolver.la ../src/libCbc.la $(COINDEPEND_LIBS) $(ADDLIBS)
+gamsTest_LDFLAGS = -rpath $(libdir)
+
+AM_CPPFLAGS = -I`$(CYGPATH_W) $(srcdir)/../src` $(COINDEPEND_CFLAGS)
 
 if COIN_HAS_CLP
-  AM_CPPFLAGS += -I`$(CYGPATH_W) $(CLPSRCDIR)/src` \
-	-I`$(CYGPATH_W) $(OSISRCDIR)/src/OsiClp` \
-	-I`$(CYGPATH_W) $(CLPOBJDIR)/inc`
-  gamsTest_LDADD += $(OSIOBJDIR)/src/OsiClp/libOsiClp.la \
-	$(CLPOBJDIR)/src/libClp.la
-  LIBS  += `cat $(CLPOBJDIR)/clp_addlibs.txt`
+  AM_CPPFLAGS += $(CLP_CFLAGS)
+  gamsTest_LDADD += $(CLP_LIBS)
 endif
 
 if COIN_HAS_CPX
-  AM_CPPFLAGS += -I`$(CYGPATH_W) $(CPXINCDIR)` \
-	-I`$(CYGPATH_W) $(OSISRCDIR)/src/OsiCpx`
-  gamsTest_LDADD += $(OSIOBJDIR)/src/OsiCpx/libOsiCpx.la
+  AM_CPPFLAGS += $(CPX_CFLAGS)
+  gamsTest_LDADD += $(CPX_LIBS)
 endif
 
 if COIN_HAS_DYLP
-  AM_CPPFLAGS += -I`$(CYGPATH_W) $(DYLPSRCDIR)/src/DylpStdLib` \
-  -I`$(CYGPATH_W) $(DYLPSRCDIR)/src/Dylp` \
-  -I`$(CYGPATH_W) $(DYLPOBJDIR)/inc` \
-	-I`$(CYGPATH_W) $(OSISRCDIR)/src/OsiDylp`
-  gamsTest_LDADD += $(OSIOBJDIR)/src/OsiDylp/libOsiDylp.la \
-	$(DYLPOBJDIR)/src/Dylp/libDylp.la
-  LIBS += `cat $(DYLPOBJDIR)/dylp_addlibs.txt`
-endif
-
-if COIN_HAS_FMP
-  AM_CPPFLAGS += -I`$(CYGPATH_W) $(OSISRCDIR)/src/OsiFmp`
-  gamsTest_LDADD += $(OSIOBJDIR)/src/OsiFmp/libOsiFmp.la
+  AM_CPPFLAGS += $(DYLP_CFLAGS)
+  gamsTest_LDADD += $(DYLP_LIBS)
 endif
 
 if COIN_HAS_GLPK
-  AM_CPPFLAGS += -I`$(CYGPATH_W) $(GLPKINCDIR)` \
-	-I`$(CYGPATH_W) $(OSISRCDIR)/src/OsiGlpk`
-  gamsTest_LDADD += $(OSIOBJDIR)/src/OsiGlpk/libOsiGlpk.la
+  AM_CPPFLAGS += $(GLPK_CFLAGS)
+  gamsTest_LDADD += $(GLPK_LIBS)
 endif
 
 if COIN_HAS_MSK
-  AM_CPPFLAGS += -I`$(CYGPATH_W) $(MSKINCDIR)` \
-	-I`$(CYGPATH_W) $(OSISRCDIR)/src/OsiMsk`
-  gamsTest_LDADD += $(OSIOBJDIR)/src/OsiMsk/libOsiMsk.la
+  AM_CPPFLAGS += $(MSK_CFLAGS)
+  gamsTest_LDADD += $(MSK_LIBS)
 endif
 
-if COIN_HAS_OSL
-  AM_CPPFLAGS += -I`$(CYGPATH_W) $(OSLINCDIR)` \
-	-I`$(CYGPATH_W) $(OSISRCDIR)/src/OsiOsl`
-  gamsTest_LDADD += $(OSIOBJDIR)/src/OsiOsl/libOsiOsl.la
-endif
-
-if COIN_HAS_SPX
-  AM_CPPFLAGS += -I`$(CYGPATH_W) $(SPXINCDIR)` \
-	-I`$(CYGPATH_W) $(OSISRCDIR)/src/OsiSpx`
-  gamsTest_LDADD += $(OSIOBJDIR)/src/OsiSpx/libOsiSpx.la
-endif
-
-if COIN_HAS_SYMPHONY
-  AM_CPPFLAGS += -I`$(CYGPATH_W) $(SYMPHONYSRCDIR)/src` \
-	-I`$(CYGPATH_W) $(OSISRCDIR)/src/OsiSym`
-  gamsTest_LDADD += $(OSIOBJDIR)/src/OsiSym/libOsiSym.la \
-	$(SYMPHONYOBJDIR)/src/libSym.la
-  LIBS += `cat $(SYMPHONYOBJDIR)/sym_addlibs.txt`
-endif
+# if COIN_HAS_SPX
+#   AM_CPPFLAGS += $(SPX_CFLAGS)
+#   gamsTest_LDADD += $(SPX_LIBS)
+# endif
 
 if COIN_HAS_VOL
-  AM_CPPFLAGS += -I`$(CYGPATH_W) $(VOLSRCDIR)/src` \
-	-I`$(CYGPATH_W) $(OSISRCDIR)/src/OsiVol`
-  gamsTest_LDADD += $(OSIOBJDIR)/src/OsiVol/libOsiVol.la \
-	$(VOLOBJDIR)/src/libVol.la
-  LIBS += `cat $(VOLOBJDIR)/vol_addlibs.txt`
+  AM_CPPFLAGS += $(VOL_CFLAGS)
+  gamsTest_LDADD += $(VOL_LIBS)
 endif
 
 if COIN_HAS_XPR
-  AM_CPPFLAGS += -I`$(CYGPATH_W) $(XPRINCDIR)` \
-	-I`$(CYGPATH_W) $(OSISRCDIR)/src/OsiXpr`
-  gamsTest_LDADD += $(OSIOBJDIR)/src/OsiXpr/libOsiXpr.la
+  AM_CPPFLAGS += $(XPR_CFLAGS)
+  gamsTest_LDADD += $(XPR_LIBS)
 endif
 
 if COIN_HAS_ASL
-  AM_CPPFLAGS += $(ASL_CPPFLAGS) -DCOIN_HAS_ASL
-  gamsTest_LDADD += $(ASLLIB)
+  AM_CPPFLAGS += $(ASL_CFLAGS)
+  gamsTest_LDADD += $(ASL_LIBS)
 endif
 
-gamsTest_LDADD += $(OSIOBJDIR)/src/libOsi.la \
-	$(COINUTILSOBJDIR)/src/libCoinUtils.la
-LIBS += `cat $(COINUTILSOBJDIR)/coinutils_addlibs.txt`
+########################################################################
+#                         unitTest for OsiCbc                          #
+########################################################################
+
+osiUnitTest_SOURCES = osiUnitTest.cpp OsiCbcSolverInterfaceTest.cpp
+
+osiUnitTest_LDADD = ../src/libCbc.la ../src/OsiCbc/libOsiCbc.la $(COINDEPEND_LIBS) $(OSITESTS_LIBS) $(ADDLIBS)
+
+AM_CPPFLAGS += $(OSITESTS_CFLAGS) \
+        -I`$(CYGPATH_W) $(srcdir)/../src/OsiCbc`
+
+ositests: osiUnitTest$(EXEEXT)
+	./osiUnitTest$(EXEEXT) $(ositestsflags)
 
 ########################################################################
 #                          Cleaning stuff                              #

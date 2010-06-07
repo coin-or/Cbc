@@ -1,6 +1,7 @@
 // Copyright (C) 2005, International Business Machines
 // Corporation and others.  All Rights Reserved.
 
+#include "CbcConfig.h"
 #include "CbcModel.hpp"
 
 // Using as solver
@@ -11,8 +12,13 @@ int main (int argc, const char *argv[])
   OsiClpSolverInterface solver1;
   // Read in example model
   // and assert that it is a clean model
-  int numMpsReadErrors = solver1.readMps("../../Data/Sample/p0033.mps","");
+#if defined(COIN_HAS_SAMPLE) && defined(SAMPLEDIR)
+  int numMpsReadErrors = solver1.readMps(SAMPLEDIR "/p0033.mps","");
   assert(numMpsReadErrors==0);
+#else
+  fprintf(stderr, "Do not know where to find sample MPS files.\n");
+  exit(1);
+#endif
 
   // Pass data and solver to CbcModel 
   CbcModel model(solver1);

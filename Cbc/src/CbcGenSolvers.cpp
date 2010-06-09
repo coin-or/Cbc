@@ -63,6 +63,13 @@
 # endif
 #endif
 
+#ifdef COIN_HAS_SPX
+# include "OsiSpxSolverInterface.hpp"
+# ifndef CBC_DEFAULT_SOLVER
+#   define CBC_DEFAULT_SOLVER "spx"
+# endif
+#endif
+
 #include "CoinParam.hpp"
 
 #include "CbcModel.hpp"
@@ -134,6 +141,9 @@ OsiSolverInterface *setupSolvers ()
 # endif
 # ifdef COIN_HAS_MSK
     solvers["msk"] = new OsiMskSolverInterface  ;
+# endif
+# ifdef COIN_HAS_SPX
+    solvers["spx"] = new OsiSpxSolverInterface  ;
 # endif
     /*
       Set the standard default values in each solver.

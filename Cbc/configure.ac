@@ -67,7 +67,7 @@ if test $coin_has_coindepend != yes ; then
   AC_COIN_HAS_MODULE_FALLBACK(CoinUtils, [coinutils],  [../CoinUtils],         [dodefine=0 doconditional=0])
   AC_COIN_HAS_MODULE_FALLBACK(Osi,       [osi],        [../Osi],               [dodefine=0 doconditional=0])
   AC_COIN_HAS_MODULE_FALLBACK(Cgl,       [cgl],        [../Cgl],               [dodefine=0 doconditional=0])
-  COINDEPEND_LIBS="$COINUTILS_LIBS $BLAS_LIBS $LAPACK_LIBS $GLPK_LIBS $OSI_LIBS $CGL_LIBS"
+  COINDEPEND_LIBS="$CGL_LIBS $OSI_LIBS $COINUTILS_LIBS $LAPACK_LIBS $BLAS_LIBS $GLPK_LIBS"
   COINDEPEND_CFLAGS="$COINUTILS_CFLAGS $GLPK_CFLAGS $OSI_CFLAGS $CGL_CFLAGS"
   if test "${coin_has_coinutils}${coin_has_osi}${coin_has_cgl}" = yesyesyes ; then
     coin_has_coindepend=yes
@@ -112,7 +112,7 @@ AC_COIN_HAS_MODULE(Cpx,  [osi-cplex])
 AC_COIN_HAS_MODULE(Glpk, [osi-glpk])
 AC_COIN_HAS_MODULE(Grb,  [osi-gurobi])
 AC_COIN_HAS_MODULE(Msk,  [osi-mosek])
-#AC_COIN_HAS_MODULE(Spx,  [osi-soplex])
+AC_COIN_HAS_MODULE(Spx,  [osi-soplex])
 AC_COIN_HAS_MODULE(Xpr,  [osi-xpress])
 
 #############################################################################
@@ -155,15 +155,17 @@ AC_ARG_WITH([cbc-generic-solver],
 AC_MSG_RESULT($cbc_default_solver)
 
 case $cbc_default_solver in
-   clp)
-    ;;
-  dylp)
-    ;;
-  glpk)
-    ;;
-     *)
-    AC_MSG_WARN([Unrecognised solver $cbc_default_solver chosen as cbc-generic default solver.])
-    ;;
+    clp)
+      ;;
+   dylp)
+      ;;
+   glpk)
+      ;;
+ soplex)
+      ;;
+      *)
+      AC_MSG_WARN([Unrecognised solver $cbc_default_solver chosen as cbc-generic default solver.])
+      ;;
 esac
 AC_DEFINE_UNQUOTED([CBC_DEFAULT_SOLVER],"$cbc_default_solver",
   [Define to the name of the default solver to be used in cbc-generic in small letters])
@@ -261,6 +263,12 @@ case "${osicbc_with_solver}" in
     osi_uc_solver=MSK
     osi_exists_solver=${coin_has_msk-"unavailable"}
     ;;
+  @<:@Ss@:>@@<:@Pp@:>@@<:@Xx@:>@*)
+    osi_lc_solver=spx ;
+    osi_mc_solver=Spx
+    osi_uc_solver=SPX
+    osi_exists_solver=${coin_has_spx-"unavailable"}
+    ;;
   @<:@Ss@:>@@<:@Yy@:>@@<:@Mm@:>@*)
     osi_lc_solver=sym ;
     osi_mc_solver=Sym
@@ -315,6 +323,7 @@ AM_CONDITIONAL([OSICBC_DFLT_SOLVER_DYLP],[test $osi_mc_solver = Dylp])
 AM_CONDITIONAL([OSICBC_DFLT_SOLVER_GLPK],[test $osi_mc_solver = Glpk])
 AM_CONDITIONAL([OSICBC_DFLT_SOLVER_GRB],[test $osi_mc_solver = Grb])
 AM_CONDITIONAL([OSICBC_DFLT_SOLVER_MSK],[test $osi_mc_solver = Msk])
+AM_CONDITIONAL([OSICBC_DFLT_SOLVER_SPX],[test $osi_mc_solver = Spx])
 AM_CONDITIONAL([OSICBC_DFLT_SOLVER_SYM],[test $osi_mc_solver = Sym])
 AM_CONDITIONAL([OSICBC_DFLT_SOLVER_VOL],[test $osi_mc_solver = Vol])
 AM_CONDITIONAL([OSICBC_DFLT_SOLVER_XPR],[test $osi_mc_solver = Xpr])

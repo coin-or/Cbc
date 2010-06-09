@@ -209,10 +209,10 @@ if COIN_HAS_MSK
   cbc_generic_LDADD += $(MSK_LIBS)
 endif
 
-# if COIN_HAS_SPX
-#   AM_CPPFLAGS += $(SPX_CFLAGS)
-#   cbc_generic_LDADD += $(SPX_LIBS)
-# endif
+if COIN_HAS_SPX
+  AM_CPPFLAGS += $(SPX_CFLAGS)
+  cbc_generic_LDADD += $(SPX_LIBS)
+endif
 
 if COIN_HAS_VOL
   AM_CPPFLAGS += $(VOL_CFLAGS)

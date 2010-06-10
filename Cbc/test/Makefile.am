@@ -115,7 +115,8 @@ endif
 
 osiUnitTest_SOURCES = osiUnitTest.cpp OsiCbcSolverInterfaceTest.cpp
 
-osiUnitTest_LDADD = ../src/libCbc.la ../src/OsiCbc/libOsiCbc.la $(COINDEPEND_LIBS) $(OSITESTS_LIBS) $(ADDLIBS)
+osiUnitTest_LDADD = ../src/OsiCbc/libOsiCbc.la ../src/libCbc.la \
+    $(COINDEPEND_LIBS) $(OSITESTS_LIBS) $(ADDLIBS)
 
 AM_CPPFLAGS += $(OSITESTS_CFLAGS) \
         -I`$(CYGPATH_W) $(srcdir)/../src/OsiCbc`

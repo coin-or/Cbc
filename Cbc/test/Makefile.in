@@ -103,7 +103,7 @@ gamsTest_DEPENDENCIES = ../src/libCbcSolver.la ../src/libCbc.la \
 am_osiUnitTest_OBJECTS = osiUnitTest.$(OBJEXT) \
 	OsiCbcSolverInterfaceTest.$(OBJEXT)
 osiUnitTest_OBJECTS = $(am_osiUnitTest_OBJECTS)
-osiUnitTest_DEPENDENCIES = ../src/libCbc.la ../src/OsiCbc/libOsiCbc.la \
+osiUnitTest_DEPENDENCIES = ../src/OsiCbc/libOsiCbc.la ../src/libCbc.la \
 	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
 	$(am__DEPENDENCIES_1)
 DEFAULT_INCLUDES = -I. -I$(srcdir) -I$(top_builddir)/inc
@@ -384,7 +384,9 @@ AM_CPPFLAGS = -I`$(CYGPATH_W) $(srcdir)/../src` $(COINDEPEND_CFLAGS) \
 #                         unitTest for OsiCbc                          #
 ########################################################################
 osiUnitTest_SOURCES = osiUnitTest.cpp OsiCbcSolverInterfaceTest.cpp
-osiUnitTest_LDADD = ../src/libCbc.la ../src/OsiCbc/libOsiCbc.la $(COINDEPEND_LIBS) $(OSITESTS_LIBS) $(ADDLIBS)
+osiUnitTest_LDADD = ../src/OsiCbc/libOsiCbc.la ../src/libCbc.la \
+    $(COINDEPEND_LIBS) $(OSITESTS_LIBS) $(ADDLIBS)
+
 
 ########################################################################
 #                          Cleaning stuff                              #

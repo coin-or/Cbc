@@ -3,7 +3,6 @@ Corporation and others.  All Rights Reserved. */
 
 /* This example shows the use of the "C" interface for CBC. */
 
-#include "CbcConfig.h"
 #include "Cbc_C_Interface.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -70,7 +69,7 @@ Cbc_Model * getDefaultModel(int argc, const char *argv[])
   Cbc_registerCallBack(model,callBack);
   /* Keep names when reading an mps file */
   if (argc<2) {
-#if defined(COIN_HAS_SAMPLE) && defined(SAMPLEDIR)
+#if defined(SAMPLEDIR)
     status=Cbc_readMps(model, SAMPLEDIR "/p0033.mps");
 #else
     fprintf(stderr, "Do not know where to find sample MPS files.\n");

@@ -9,7 +9,6 @@
 #include <iomanip>
 
 
-#include "CbcConfig.h"
 // For Branch and bound
 #include "CbcModel.hpp"
 #include "CbcBranchLotsize.hpp"
@@ -37,7 +36,7 @@ int main (int argc, const char *argv[])
   // Read in model using argv[1]
   // and assert that it is a clean model
   std::string mpsFileName;
-#if defined(COIN_HAS_MIPLIB3) && defined(MIPLIB3DIR)
+#if defined(MIPLIB3DIR)
   mpsFileName = MIPLIB3DIR "/10teams";
 #else
   if (argc < 2) {

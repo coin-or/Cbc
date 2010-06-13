@@ -240,7 +240,7 @@ int main (int argc, const char *argv[])
   // Read in model using argv[1]
   // and assert that it is a clean model
   std::string mpsFileName;
-#if defined(COIN_HAS_SAMPLE) && defined(SAMPLEDIR)
+#if defined(SAMPLEDIR)
   mpsFileName = SAMPLEDIR "/p0033.mps";
 #else
   if (argc < 2) {

@@ -200,7 +200,7 @@ cbc_generic_OBJECTS = $(am_cbc_generic_OBJECTS)
 @CBC_BUILD_CBC_GENERIC_TRUE@	$(am__DEPENDENCIES_10) \
 @CBC_BUILD_CBC_GENERIC_TRUE@	$(am__DEPENDENCIES_11) \
 @CBC_BUILD_CBC_GENERIC_TRUE@	$(am__DEPENDENCIES_12)
-depcomp = $(SHELL) $(top_srcdir)/../depcomp
+depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__depfiles_maybe = depfiles
 CXXCOMPILE = $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
 	$(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS)

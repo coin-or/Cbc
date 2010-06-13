@@ -77,7 +77,7 @@ LTLIBRARIES = $(coinlib_LTLIBRARIES)
 libOsiCbc_la_LIBADD =
 am_libOsiCbc_la_OBJECTS = OsiCbcSolverInterface.lo
 libOsiCbc_la_OBJECTS = $(am_libOsiCbc_la_OBJECTS)
-depcomp = $(SHELL) $(top_srcdir)/../depcomp
+depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__depfiles_maybe = depfiles
 CXXCOMPILE = $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
 	$(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS)

@@ -30,8 +30,11 @@ Cbc/MSVisualStudio/v9/cbcSolve/cbcSolve.vcproj -text
 Cbc/MSVisualStudio/v9/libCbc/libCbc.vcproj -text
 Cbc/cbc-uninstalled.pc.in -text
 Cbc/cbc.pc.in -text
+Cbc/config.guess -text
+Cbc/config.sub -text
 Cbc/configure -text
 Cbc/configure.ac -text
+Cbc/depcomp -text
 Cbc/doc/doxygen.conf -text
 Cbc/examples/Makefile.in -text
 Cbc/examples/allCuts.cpp -text
@@ -43,6 +46,9 @@ Cbc/examples/modify.cpp -text
 Cbc/examples/qmip2.cpp -text
 Cbc/examples/simpleBAB.cpp -text
 Cbc/inc/config_cbc.h.in -text
+Cbc/install-sh -text
+Cbc/ltmain.sh -text
+Cbc/missing -text
 Cbc/osi-cbc-uninstalled.pc.in -text
 Cbc/osi-cbc.pc.in -text
 Cbc/src/CbcBranchAllDifferent.cpp -text

@@ -70,7 +70,9 @@ LIBS = @COINDEPEND_LIBS@ @CLP_LIBS@ -L$(COINLIBDIR) -lCbcSolver -lCbc -lOsiCbc @
 
 # Necessary Include dirs (we use the CYGPATH_W variables to allow
 # compilation with Windows compilers)
-INCL = @COINDEPEND_CFLAGS@ @CLP_CFLAGS@ -I`$(CYGPATH_W) $(COININCDIR)` $(ADDINCFLAGS)
+# COININCDIR should come first, so that the include directory of the Cbc installation is checked first
+# for header files; this is necessary if the installed header files differ from their source header files (esp., XxxConfig.h)
+INCL = -I`$(CYGPATH_W) $(COININCDIR)` @COINDEPEND_CFLAGS@ @CLP_CFLAGS@ $(ADDINCFLAGS)
 
 # The following is necessary under cygwin, if native compilers are used
 CYGPATH_W = @CYGPATH_W@

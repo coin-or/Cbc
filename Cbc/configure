@@ -22442,12 +22442,6 @@ cat >>confdefs.h <<_ACEOF
 _ACEOF
 
 
-cat >>confdefs.h <<_ACEOF
-#define CBC_VERSION "$PACKAGE_VERSION"
-_ACEOF
-
-
-
 #############################################################################
 #                       Cbc parallel configuration			    #
 #############################################################################

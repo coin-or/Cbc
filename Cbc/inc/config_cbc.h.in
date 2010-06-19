@@ -10,7 +10,7 @@
 /* Define to 1 if the SMP version of Cbc should be compiled */
 #undef CBC_THREAD
 
-/* "Version of Cbc" */
+/* Version number of project */
 #undef CBC_VERSION
 
 /* Define to the debug sanity check level (0 is no test) */

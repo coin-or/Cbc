@@ -95,7 +95,7 @@
 /* #undef COIN_HAS_XPR */
 
 /* Cbc version */
-#define CBC_VERSION "2.5"
+#define CBC_VERSION "2.5.0"
 
 #endif /* HAVE_CONFIG_H */
 

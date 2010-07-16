@@ -1080,6 +1080,7 @@ int callCbc1(const char * input2, CbcModel & model,
 #define CBCMAXPARAMETERS 200
 static CbcOrClpParam parameters[CBCMAXPARAMETERS];
 static int numberParameters = 0 ;
+CglPreProcess * cbcPreProcessPointer=NULL;
 
 int CbcClpUnitTest (const CbcModel & saveModel,
                     std::string& dirMiplib, int testSwitch,
@@ -3429,6 +3430,7 @@ int CbcMain1 (int argc, const char *argv[],
                             // See if we want preprocessing
                             OsiSolverInterface * saveSolver = NULL;
                             CglPreProcess process;
+			    cbcPreProcessPointer = & process;
                             // Say integers in sync
                             bool integersOK = true;
                             delete babModel_;
@@ -5436,8 +5438,8 @@ int CbcMain1 (int argc, const char *argv[],
                                     }
                                 }
 #endif
-                                void printHistory(const char * file);
-                                printHistory("branch.log");
+                                void printHistory(const char * file/*,CbcModel * model*/);
+                                printHistory("branch.log"/*,babModel_*/);
 #endif
                                 returnCode = callBack(babModel_, 4);
                                 if (returnCode) {

@@ -3750,7 +3750,7 @@ int
     return 0;
   }
 } 
-
+CglPreProcess * cbcPreProcessPointer=NULL;
 int CbcClpUnitTest (const CbcModel & saveModel,
 		    std::string& dirMiplib, int testSwitch,
 		    double * stuff);
@@ -6235,6 +6235,7 @@ int
               // See if we want preprocessing
               OsiSolverInterface * saveSolver=NULL;
               CglPreProcess process;
+	      cbcPreProcessPointer = & process;
 	      // Say integers in sync 
 	      bool integersOK=true;
               delete babModel_;

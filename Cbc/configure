@@ -20745,7 +20745,7 @@ if test "${with_coindepend_lib+set}" = set; then
   withval="$with_coindepend_lib"
   coin_has_coindepend=yes
        COINDEPEND_LIBS="$withval"
-       ADDLIBS="$ADDLIBS $withval"
+       ADDLIBS="$withval $ADDLIBS"
 
 fi;
 
@@ -21097,7 +21097,7 @@ if test $coin_has_coinutils != "skipping" ; then
     fi
     COINUTILS_DATA=`sed -n -e 's/datadir=//gp' ../CoinUtils/coinutils-uninstalled.pc`
 
-    ADDLIBS="$ADDLIBS $COINUTILS_LIBS"
+    ADDLIBS="$COINUTILS_LIBS $ADDLIBS"
        REQUIREDPACKAGES="coinutils $REQUIREDPACKAGES"
 
 
@@ -21161,7 +21161,7 @@ if test $coin_has_osi != "skipping" ; then
     fi
     OSI_DATA=`sed -n -e 's/datadir=//gp' ../Osi/osi-uninstalled.pc`
 
-    ADDLIBS="$ADDLIBS $OSI_LIBS"
+    ADDLIBS="$OSI_LIBS $ADDLIBS"
        REQUIREDPACKAGES="osi $REQUIREDPACKAGES"
 
 
@@ -21225,7 +21225,7 @@ if test $coin_has_cgl != "skipping" ; then
     fi
     CGL_DATA=`sed -n -e 's/datadir=//gp' ../Cgl/cgl-uninstalled.pc`
 
-    ADDLIBS="$ADDLIBS $CGL_LIBS"
+    ADDLIBS="$CGL_LIBS $ADDLIBS"
        REQUIREDPACKAGES="cgl $REQUIREDPACKAGES"
 
 
@@ -21306,7 +21306,7 @@ if test "${with_clp_lib+set}" = set; then
   withval="$with_clp_lib"
   coin_has_clp=yes
        CLP_LIBS="$withval"
-       ADDLIBS="$ADDLIBS $withval"
+       ADDLIBS="$withval $ADDLIBS"
 
 fi;
 
@@ -21471,7 +21471,7 @@ if test $coin_has_clp != "skipping" ; then
     fi
     CLP_DATA=`sed -n -e 's/datadir=//gp' ../Clp/clp-uninstalled.pc`
 
-    ADDLIBS="$ADDLIBS $CLP_LIBS"
+    ADDLIBS="$CLP_LIBS $ADDLIBS"
        REQUIREDPACKAGES="clp $REQUIREDPACKAGES"
 
 
@@ -21552,7 +21552,7 @@ if test $coin_has_osiclp != "skipping" ; then
     fi
     OSICLP_DATA=`sed -n -e 's/datadir=//gp' ../Clp/osi-clp-uninstalled.pc`
 
-    ADDLIBS="$ADDLIBS $OSICLP_LIBS"
+    ADDLIBS="$OSICLP_LIBS $ADDLIBS"
        REQUIREDPACKAGES="osi-clp $REQUIREDPACKAGES"
 
 
@@ -21617,7 +21617,7 @@ if test "${with_dylp_lib+set}" = set; then
   withval="$with_dylp_lib"
   coin_has_dylp=yes
        DYLP_LIBS="$withval"
-       ADDLIBS="$ADDLIBS $withval"
+       ADDLIBS="$withval $ADDLIBS"
 
 fi;
 
@@ -21769,7 +21769,7 @@ if test "${with_vol_lib+set}" = set; then
   withval="$with_vol_lib"
   coin_has_vol=yes
        VOL_LIBS="$withval"
-       ADDLIBS="$ADDLIBS $withval"
+       ADDLIBS="$withval $ADDLIBS"
 
 fi;
 
@@ -22836,7 +22836,7 @@ if test "${with_cpx_lib+set}" = set; then
   withval="$with_cpx_lib"
   coin_has_cpx=yes
        CPX_LIBS="$withval"
-       ADDLIBS="$ADDLIBS $withval"
+       ADDLIBS="$withval $ADDLIBS"
 
 fi;
 
@@ -22988,7 +22988,7 @@ if test "${with_glpk_lib+set}" = set; then
   withval="$with_glpk_lib"
   coin_has_glpk=yes
        GLPK_LIBS="$withval"
-       ADDLIBS="$ADDLIBS $withval"
+       ADDLIBS="$withval $ADDLIBS"
 
 fi;
 
@@ -23140,7 +23140,7 @@ if test "${with_grb_lib+set}" = set; then
   withval="$with_grb_lib"
   coin_has_grb=yes
        GRB_LIBS="$withval"
-       ADDLIBS="$ADDLIBS $withval"
+       ADDLIBS="$withval $ADDLIBS"
 
 fi;
 
@@ -23292,7 +23292,7 @@ if test "${with_msk_lib+set}" = set; then
   withval="$with_msk_lib"
   coin_has_msk=yes
        MSK_LIBS="$withval"
-       ADDLIBS="$ADDLIBS $withval"
+       ADDLIBS="$withval $ADDLIBS"
 
 fi;
 
@@ -23444,7 +23444,7 @@ if test "${with_spx_lib+set}" = set; then
   withval="$with_spx_lib"
   coin_has_spx=yes
        SPX_LIBS="$withval"
-       ADDLIBS="$ADDLIBS $withval"
+       ADDLIBS="$withval $ADDLIBS"
 
 fi;
 
@@ -23596,7 +23596,7 @@ if test "${with_xpr_lib+set}" = set; then
   withval="$with_xpr_lib"
   coin_has_xpr=yes
        XPR_LIBS="$withval"
-       ADDLIBS="$ADDLIBS $withval"
+       ADDLIBS="$withval $ADDLIBS"
 
 fi;
 

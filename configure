@@ -1143,9 +1143,11 @@ Optional Packages:
   --with-blas-lib linker flags for using project Blas
   --with-blas-incdir directory with header files for using project Blas
   --with-blas-datadir directory with data files for using project Blas
+  --with-blas             specify BLAS library (or BUILD for compilation)
   --with-lapack-lib linker flags for using project Lapack
   --with-lapack-incdir directory with header files for using project Lapack
   --with-lapack-datadir directory with data files for using project Lapack
+  --with-lapack           specify LAPACK library (or BUILD for compilation)
   --with-sample-lib linker flags for using project Sample
   --with-sample-incdir directory with header files for using project Sample
   --with-sample-datadir directory with data files for using project Sample
@@ -2698,7 +2700,7 @@ if test x"$CFLAGS" = x; then
       icc* | */icc*)
         ;;
       *)
-        coin_opt_cflags="-O3 -fomit-frame-pointer"
+        coin_opt_cflags="-O3"
         coin_add_cflags="-pipe"
         coin_dbg_cflags="-g"
         coin_warn_cflags="-Wimplicit -Wparentheses -Wsequence-point -Wreturn-type -Wcast-qual -Wall -Wno-unknown-pragmas"
@@ -3612,7 +3614,7 @@ if test x"$CXXFLAGS" = x; then
         ;;
       *)
 # ToDo decide about unroll-loops
-        coin_opt_cxxflags="-O3 -fomit-frame-pointer"
+        coin_opt_cxxflags="-O3"
         coin_add_cxxflags="-pipe"
         coin_dbg_cxxflags="-g"
         coin_warn_cxxflags="-Wimplicit -Wparentheses -Wreturn-type -Wcast-qual -Wall -Wpointer-arith -Wwrite-strings -Wconversion -Wno-unknown-pragmas"
@@ -4215,7 +4217,7 @@ fi
 
 
 # Provide some information about the compiler.
-echo "$as_me:4218:" \
+echo "$as_me:4220:" \
      "checking for Fortran 77 compiler version" >&5
 ac_compiler=`set X $ac_compile; echo $2`
 { (eval echo "$as_me:$LINENO: \"$ac_compiler --version </dev/null >&5\"") >&5
@@ -4381,7 +4383,7 @@ if test "$F77" != "unavailable" && test x"$FFLAGS" = x ; then
   coin_warn_fflags=
 
   if test "$G77" = "yes"; then
-    coin_opt_fflags="-O3 -fomit-frame-pointer"
+    coin_opt_fflags="-O3"
     coin_add_fflags="-pipe"
     coin_dbg_fflags="-g"
     case $enable_doscompile in
@@ -6474,7 +6476,7 @@ ia64-*-hpux*)
   ;;
 *-*-irix6*)
   # Find out which ABI we are using.
-  echo '#line 6477 "configure"' > conftest.$ac_ext
+  echo '#line 6479 "configure"' > conftest.$ac_ext
   if { (eval echo "$as_me:$LINENO: \"$ac_compile\"") >&5
   (eval $ac_compile) 2>&5
   ac_status=$?
@@ -8438,11 +8440,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:8441: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:8443: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:8445: \$? = $ac_status" >&5
+   echo "$as_me:8447: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -8706,11 +8708,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:8709: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:8711: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:8713: \$? = $ac_status" >&5
+   echo "$as_me:8715: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -8810,11 +8812,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:8813: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:8815: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:8817: \$? = $ac_status" >&5
+   echo "$as_me:8819: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -11155,7 +11157,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<EOF
-#line 11158 "configure"
+#line 11160 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -11255,7 +11257,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<EOF
-#line 11258 "configure"
+#line 11260 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -13599,11 +13601,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:13602: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:13604: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:13606: \$? = $ac_status" >&5
+   echo "$as_me:13608: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -13703,11 +13705,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:13706: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:13708: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:13710: \$? = $ac_status" >&5
+   echo "$as_me:13712: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -15273,11 +15275,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:15276: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:15278: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:15280: \$? = $ac_status" >&5
+   echo "$as_me:15282: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -15377,11 +15379,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:15380: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:15382: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:15384: \$? = $ac_status" >&5
+   echo "$as_me:15386: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -17584,11 +17586,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:17587: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:17589: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:17591: \$? = $ac_status" >&5
+   echo "$as_me:17593: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -17852,11 +17854,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:17855: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:17857: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:17859: \$? = $ac_status" >&5
+   echo "$as_me:17861: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -17956,11 +17958,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:17959: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:17961: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:17963: \$? = $ac_status" >&5
+   echo "$as_me:17965: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -20755,7 +20757,7 @@ if test $enable_shared = yes; then
     *-linux-*)
       if test "$GXX" = "yes"; then
         RPATH_FLAGS=
-        for dir in $abs_lib_dir; do
+        for dir in $abs_lib_dir/coin $abs_lib_dir/coin/ThirdParty; do
           RPATH_FLAGS="$RPATH_FLAGS -Wl,--rpath -Wl,$dir"
         done
       fi ;;
@@ -20772,7 +20774,7 @@ if test $enable_shared = yes; then
         RPATH_FLAGS=nothing ;;
     *-*-solaris*)
         RPATH_FLAGS=
-        for dir in $abs_lib_dir; do
+        for dir in $abs_lib_dir/coin $abs_lib_dir/coin/ThirdParty; do
           RPATH_FLAGS="$RPATH_FLAGS -R$dir"
         done
   esac
@@ -21093,6 +21095,22 @@ if test "${with_blas_datadir+set}" = set; then
   withval="$with_blas_datadir"
   coin_has_blas=installed
 fi;
+
+
+    #--with-blas can overwrite --with-blas-lib, and can be set to BUILD to enforce building blas
+
+# Check whether --with-blas or --without-blas was given.
+if test "${with_blas+set}" = set; then
+  withval="$with_blas"
+  if test x$withval = "xBUILD" ; then
+           coin_has_blas=notGiven
+         else
+           coin_has_blas=installed
+         fi
+fi;
+
+
+
 fi
 
 if test $coin_has_blas = notGiven; then
@@ -21145,6 +21163,9 @@ fi
 # if not found yet, check if project is available in present directory
 if test "$coin_has_blas" = notGiven; then
   if test -d $srcdir/ThirdParty/Blas; then
+    # If a third argument is given, then we have to check if one one the files given in that third argument is present.
+    # If none of the files in the third argument is available, then we consider the project directory as non-existing.
+    # However, if no third argument is given, then this means that there should be no check, and existence of the directory is sufficient.
     for i in $srcdir/ThirdParty/Blas/daxpy.f; do
          if test -r $i; then
            coin_have_project_dir=yes
@@ -21227,6 +21248,22 @@ if test "${with_lapack_datadir+set}" = set; then
   withval="$with_lapack_datadir"
   coin_has_lapack=installed
 fi;
+
+
+
+
+    #--with-lapack can overwrite --with-lapack-lib, and can be set to BUILD to enforce building lapack
+
+# Check whether --with-lapack or --without-lapack was given.
+if test "${with_lapack+set}" = set; then
+  withval="$with_lapack"
+  if test x$withval = "xBUILD" ; then
+           coin_has_lapack=notGiven
+         else
+           coin_has_lapack=installed
+         fi
+fi;
+
 fi
 
 if test $coin_has_lapack = notGiven; then
@@ -21279,6 +21316,9 @@ fi
 # if not found yet, check if project is available in present directory
 if test "$coin_has_lapack" = notGiven; then
   if test -d $srcdir/ThirdParty/Lapack; then
+    # If a third argument is given, then we have to check if one one the files given in that third argument is present.
+    # If none of the files in the third argument is available, then we consider the project directory as non-existing.
+    # However, if no third argument is given, then this means that there should be no check, and existence of the directory is sufficient.
     for i in $srcdir/ThirdParty/Lapack/LAPACK/SRC/dlarf.f; do
          if test -r $i; then
            coin_have_project_dir=yes
@@ -21361,6 +21401,11 @@ if test "${with_sample_datadir+set}" = set; then
   withval="$with_sample_datadir"
   coin_has_sample=installed
 fi;
+
+
+
+
+
 fi
 
 if test $coin_has_sample = notGiven; then
@@ -21413,6 +21458,9 @@ fi
 # if not found yet, check if project is available in present directory
 if test "$coin_has_sample" = notGiven; then
   if test -d $srcdir/Data/Sample; then
+    # If a third argument is given, then we have to check if one one the files given in that third argument is present.
+    # If none of the files in the third argument is available, then we consider the project directory as non-existing.
+    # However, if no third argument is given, then this means that there should be no check, and existence of the directory is sufficient.
      coin_have_project_dir=yes
 
     if test $coin_have_project_dir = yes; then
@@ -21491,6 +21539,11 @@ if test "${with_netlib_datadir+set}" = set; then
   withval="$with_netlib_datadir"
   coin_has_netlib=installed
 fi;
+
+
+
+
+
 fi
 
 if test $coin_has_netlib = notGiven; then
@@ -21543,6 +21596,9 @@ fi
 # if not found yet, check if project is available in present directory
 if test "$coin_has_netlib" = notGiven; then
   if test -d $srcdir/Data/Netlib; then
+    # If a third argument is given, then we have to check if one one the files given in that third argument is present.
+    # If none of the files in the third argument is available, then we consider the project directory as non-existing.
+    # However, if no third argument is given, then this means that there should be no check, and existence of the directory is sufficient.
      coin_have_project_dir=yes
 
     if test $coin_have_project_dir = yes; then
@@ -21621,6 +21677,11 @@ if test "${with_miblib3_datadir+set}" = set; then
   withval="$with_miblib3_datadir"
   coin_has_miblib3=installed
 fi;
+
+
+
+
+
 fi
 
 if test $coin_has_miblib3 = notGiven; then
@@ -21673,6 +21734,9 @@ fi
 # if not found yet, check if project is available in present directory
 if test "$coin_has_miblib3" = notGiven; then
   if test -d $srcdir/Data/miblib3; then
+    # If a third argument is given, then we have to check if one one the files given in that third argument is present.
+    # If none of the files in the third argument is available, then we consider the project directory as non-existing.
+    # However, if no third argument is given, then this means that there should be no check, and existence of the directory is sufficient.
      coin_have_project_dir=yes
 
     if test $coin_have_project_dir = yes; then
@@ -21751,6 +21815,11 @@ if test "${with_coinutils_datadir+set}" = set; then
   withval="$with_coinutils_datadir"
   coin_has_coinutils=installed
 fi;
+
+
+
+
+
 fi
 
 if test $coin_has_coinutils = notGiven; then
@@ -21803,10 +21872,13 @@ fi
 # if not found yet, check if project is available in present directory
 if test "$coin_has_coinutils" = notGiven; then
   if test -d $srcdir//CoinUtils; then
+    # If a third argument is given, then we have to check if one one the files given in that third argument is present.
+    # If none of the files in the third argument is available, then we consider the project directory as non-existing.
+    # However, if no third argument is given, then this means that there should be no check, and existence of the directory is sufficient.
      coin_have_project_dir=yes
 
     if test $coin_have_project_dir = yes; then
-      coin_has_coinutils=/CoinUtils
+      coin_has_coinutils=CoinUtils
     fi
   fi
 fi
@@ -21818,7 +21890,7 @@ echo "$as_me:$LINENO: checking whether project CoinUtils need to be configured" 
 echo $ECHO_N "checking whether project CoinUtils need to be configured... $ECHO_C" >&6
 if test "$coin_have_project_dir" = yes ; then
 
-  if test -r $srcdir//CoinUtils/configure; then
+  if test -r $srcdir/CoinUtils/configure; then
     coin_subdirs="$coin_subdirs CoinUtils"
     echo "$as_me:$LINENO: result: yes" >&5
 echo "${ECHO_T}yes" >&6
@@ -21881,6 +21953,11 @@ if test "${with_osi_datadir+set}" = set; then
   withval="$with_osi_datadir"
   coin_has_osi=installed
 fi;
+
+
+
+
+
 fi
 
 if test $coin_has_osi = notGiven; then
@@ -21933,10 +22010,13 @@ fi
 # if not found yet, check if project is available in present directory
 if test "$coin_has_osi" = notGiven; then
   if test -d $srcdir//Osi; then
+    # If a third argument is given, then we have to check if one one the files given in that third argument is present.
+    # If none of the files in the third argument is available, then we consider the project directory as non-existing.
+    # However, if no third argument is given, then this means that there should be no check, and existence of the directory is sufficient.
      coin_have_project_dir=yes
 
     if test $coin_have_project_dir = yes; then
-      coin_has_osi=/Osi
+      coin_has_osi=Osi
     fi
   fi
 fi
@@ -21948,7 +22028,7 @@ echo "$as_me:$LINENO: checking whether project Osi need to be configured" >&5
 echo $ECHO_N "checking whether project Osi need to be configured... $ECHO_C" >&6
 if test "$coin_have_project_dir" = yes ; then
 
-  if test -r $srcdir//Osi/configure; then
+  if test -r $srcdir/Osi/configure; then
     coin_subdirs="$coin_subdirs Osi"
     echo "$as_me:$LINENO: result: yes" >&5
 echo "${ECHO_T}yes" >&6
@@ -22011,6 +22091,11 @@ if test "${with_clp_datadir+set}" = set; then
   withval="$with_clp_datadir"
   coin_has_clp=installed
 fi;
+
+
+
+
+
 fi
 
 if test $coin_has_clp = notGiven; then
@@ -22063,10 +22148,13 @@ fi
 # if not found yet, check if project is available in present directory
 if test "$coin_has_clp" = notGiven; then
   if test -d $srcdir//Clp; then
+    # If a third argument is given, then we have to check if one one the files given in that third argument is present.
+    # If none of the files in the third argument is available, then we consider the project directory as non-existing.
+    # However, if no third argument is given, then this means that there should be no check, and existence of the directory is sufficient.
      coin_have_project_dir=yes
 
     if test $coin_have_project_dir = yes; then
-      coin_has_clp=/Clp
+      coin_has_clp=Clp
     fi
   fi
 fi
@@ -22078,7 +22166,7 @@ echo "$as_me:$LINENO: checking whether project Clp need to be configured" >&5
 echo $ECHO_N "checking whether project Clp need to be configured... $ECHO_C" >&6
 if test "$coin_have_project_dir" = yes ; then
 
-  if test -r $srcdir//Clp/configure; then
+  if test -r $srcdir/Clp/configure; then
     coin_subdirs="$coin_subdirs Clp"
     echo "$as_me:$LINENO: result: yes" >&5
 echo "${ECHO_T}yes" >&6
@@ -22141,6 +22229,11 @@ if test "${with_dylp_datadir+set}" = set; then
   withval="$with_dylp_datadir"
   coin_has_dylp=installed
 fi;
+
+
+
+
+
 fi
 
 if test $coin_has_dylp = notGiven; then
@@ -22193,10 +22286,13 @@ fi
 # if not found yet, check if project is available in present directory
 if test "$coin_has_dylp" = notGiven; then
   if test -d $srcdir//DyLP; then
+    # If a third argument is given, then we have to check if one one the files given in that third argument is present.
+    # If none of the files in the third argument is available, then we consider the project directory as non-existing.
+    # However, if no third argument is given, then this means that there should be no check, and existence of the directory is sufficient.
      coin_have_project_dir=yes
 
     if test $coin_have_project_dir = yes; then
-      coin_has_dylp=/DyLP
+      coin_has_dylp=DyLP
     fi
   fi
 fi
@@ -22208,7 +22304,7 @@ echo "$as_me:$LINENO: checking whether project DyLP need to be configured" >&5
 echo $ECHO_N "checking whether project DyLP need to be configured... $ECHO_C" >&6
 if test "$coin_have_project_dir" = yes ; then
 
-  if test -r $srcdir//DyLP/configure; then
+  if test -r $srcdir/DyLP/configure; then
     coin_subdirs="$coin_subdirs DyLP"
     echo "$as_me:$LINENO: result: yes" >&5
 echo "${ECHO_T}yes" >&6
@@ -22271,6 +22367,11 @@ if test "${with_vol_datadir+set}" = set; then
   withval="$with_vol_datadir"
   coin_has_vol=installed
 fi;
+
+
+
+
+
 fi
 
 if test $coin_has_vol = notGiven; then
@@ -22323,10 +22424,13 @@ fi
 # if not found yet, check if project is available in present directory
 if test "$coin_has_vol" = notGiven; then
   if test -d $srcdir//Vol; then
+    # If a third argument is given, then we have to check if one one the files given in that third argument is present.
+    # If none of the files in the third argument is available, then we consider the project directory as non-existing.
+    # However, if no third argument is given, then this means that there should be no check, and existence of the directory is sufficient.
      coin_have_project_dir=yes
 
     if test $coin_have_project_dir = yes; then
-      coin_has_vol=/Vol
+      coin_has_vol=Vol
     fi
   fi
 fi
@@ -22338,7 +22442,7 @@ echo "$as_me:$LINENO: checking whether project Vol need to be configured" >&5
 echo $ECHO_N "checking whether project Vol need to be configured... $ECHO_C" >&6
 if test "$coin_have_project_dir" = yes ; then
 
-  if test -r $srcdir//Vol/configure; then
+  if test -r $srcdir/Vol/configure; then
     coin_subdirs="$coin_subdirs Vol"
     echo "$as_me:$LINENO: result: yes" >&5
 echo "${ECHO_T}yes" >&6
@@ -22401,6 +22505,11 @@ if test "${with_cgl_datadir+set}" = set; then
   withval="$with_cgl_datadir"
   coin_has_cgl=installed
 fi;
+
+
+
+
+
 fi
 
 if test $coin_has_cgl = notGiven; then
@@ -22453,10 +22562,13 @@ fi
 # if not found yet, check if project is available in present directory
 if test "$coin_has_cgl" = notGiven; then
   if test -d $srcdir//Cgl; then
+    # If a third argument is given, then we have to check if one one the files given in that third argument is present.
+    # If none of the files in the third argument is available, then we consider the project directory as non-existing.
+    # However, if no third argument is given, then this means that there should be no check, and existence of the directory is sufficient.
      coin_have_project_dir=yes
 
     if test $coin_have_project_dir = yes; then
-      coin_has_cgl=/Cgl
+      coin_has_cgl=Cgl
     fi
   fi
 fi
@@ -22468,7 +22580,7 @@ echo "$as_me:$LINENO: checking whether project Cgl need to be configured" >&5
 echo $ECHO_N "checking whether project Cgl need to be configured... $ECHO_C" >&6
 if test "$coin_have_project_dir" = yes ; then
 
-  if test -r $srcdir//Cgl/configure; then
+  if test -r $srcdir/Cgl/configure; then
     coin_subdirs="$coin_subdirs Cgl"
     echo "$as_me:$LINENO: result: yes" >&5
 echo "${ECHO_T}yes" >&6
@@ -22531,6 +22643,11 @@ if test "${with_cbc_datadir+set}" = set; then
   withval="$with_cbc_datadir"
   coin_has_cbc=installed
 fi;
+
+
+
+
+
 fi
 
 if test $coin_has_cbc = notGiven; then
@@ -22583,10 +22700,13 @@ fi
 # if not found yet, check if project is available in present directory
 if test "$coin_has_cbc" = notGiven; then
   if test -d $srcdir//Cbc; then
+    # If a third argument is given, then we have to check if one one the files given in that third argument is present.
+    # If none of the files in the third argument is available, then we consider the project directory as non-existing.
+    # However, if no third argument is given, then this means that there should be no check, and existence of the directory is sufficient.
      coin_have_project_dir=yes
 
     if test $coin_have_project_dir = yes; then
-      coin_has_cbc=/Cbc
+      coin_has_cbc=Cbc
     fi
   fi
 fi
@@ -22598,7 +22718,7 @@ echo "$as_me:$LINENO: checking whether project Cbc need to be configured" >&5
 echo $ECHO_N "checking whether project Cbc need to be configured... $ECHO_C" >&6
 if test "$coin_have_project_dir" = yes ; then
 
-  if test -r $srcdir//Cbc/configure; then
+  if test -r $srcdir/Cbc/configure; then
     coin_subdirs="$coin_subdirs Cbc"
     echo "$as_me:$LINENO: result: yes" >&5
 echo "${ECHO_T}yes" >&6

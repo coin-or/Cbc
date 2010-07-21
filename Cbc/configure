@@ -20671,31 +20671,31 @@ fi
 
 
 
-# assemble search path for pkg-config, if we are in a project setup
-if test x$coin_projectdir = xyes ; then
-  COIN_PKG_CONFIG_PATH="$PKG_CONFIG_PATH"
+# assemble search path for pkg-config
+COIN_PKG_CONFIG_PATH="$PKG_CONFIG_PATH"
 
-  # let's assume that when installing into $prefix, then the user may have installed some other coin projects there before, so it's worth to have a look into there
-  # best would actually to use ${libdir}, since .pc files get installed into ${libdir}/pkgconfig,
-  # unfortunately, ${libdir} expands to ${exec_prefix}/lib and ${exec_prefix} to ${prefix}...
-  if test -d "${prefix}"; then
-    COIN_PKG_CONFIG_PATH="${prefix}/lib/pkgconfig:${COIN_PKG_CONFIG_PATH}"
-  fi
+# let's assume that when installing into $prefix, then the user may have installed some other coin projects there before, so it's worth to have a look into there
+# best would actually to use ${libdir}, since .pc files get installed into ${libdir}/pkgconfig,
+# unfortunately, ${libdir} expands to ${exec_prefix}/lib and ${exec_prefix} to ${prefix}...
+if test -d "${prefix}"; then
+  COIN_PKG_CONFIG_PATH="${prefix}/lib/pkgconfig:${COIN_PKG_CONFIG_PATH}"
+fi
 
 
 # Check whether --with-coin-instdir or --without-coin-instdir was given.
 if test "${with_coin_instdir+set}" = set; then
   withval="$with_coin_instdir"
   if test -d "$withval"; then : ; else
-       { { echo "$as_me:$LINENO: error: argument for --with-coin-instdir not a directory" >&5
+     { { echo "$as_me:$LINENO: error: argument for --with-coin-instdir not a directory" >&5
 echo "$as_me: error: argument for --with-coin-instdir not a directory" >&2;}
    { (exit 1); exit 1; }; }
-     fi
-     COIN_PKG_CONFIG_PATH="$withval/lib/pkgconfig:${COIN_PKG_CONFIG_PATH}"
+   fi
+   COIN_PKG_CONFIG_PATH="$withval/lib/pkgconfig:${COIN_PKG_CONFIG_PATH}"
 
 fi;
 
-  # in a classic setup, we want to find uninstalled projects
+if test x$coin_projectdir = xyes ; then
+  # if we are in a project setup, then in a classic setup, we want to find uninstalled projects
   # their (relative) location is written to coin_subdirs.txt by the configure in the project base directory
   # unfortunately, if the user set prefix, then we do not know where the project base directory is located
   # but it is likely to be either .. (if we are a usual coin project) or ../.. (if we are a unusual coin project like ThirdParty or Data)
@@ -20715,8 +20715,8 @@ fi;
     done
   fi
 
-
 fi
+
 
 
 
@@ -24448,17 +24448,20 @@ echo "${ECHO_T}$coin_vpath_config" >&6
 
 
 if test $coin_vpath_config = yes; then
-  coin_vpath_link_files="$coin_vpath_link_files examples/sudoku_sample.csv"
+  # echo converts newlines in parameter to spaces
+  coin_vpath_link_files="$coin_vpath_link_files `echo examples/sudoku_sample.csv`"
 fi
 
 
 if test $coin_vpath_config = yes; then
-  coin_vpath_link_files="$coin_vpath_link_files examples/quad.mps"
+  # echo converts newlines in parameter to spaces
+  coin_vpath_link_files="$coin_vpath_link_files `echo examples/quad.mps`"
 fi
 
 
 if test $coin_vpath_config = yes; then
-  coin_vpath_link_files="$coin_vpath_link_files examples/quad2.mps"
+  # echo converts newlines in parameter to spaces
+  coin_vpath_link_files="$coin_vpath_link_files `echo examples/quad2.mps`"
 fi
 
 

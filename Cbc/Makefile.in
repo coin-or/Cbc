@@ -93,11 +93,9 @@ am__vpath_adj = case $$p in \
     *) f=$$p;; \
   esac;
 am__strip_dir = `echo $$p | sed -e 's|^.*/||'`;
-am__installdirs = "$(DESTDIR)$(addlibsdir)" \
-	"$(DESTDIR)$(pkgconfiglibdir)"
-addlibsDATA_INSTALL = $(INSTALL_DATA)
+am__installdirs = "$(DESTDIR)$(pkgconfiglibdir)"
 pkgconfiglibDATA_INSTALL = $(INSTALL_DATA)
-DATA = $(addlibs_DATA) $(pkgconfiglib_DATA)
+DATA = $(pkgconfiglib_DATA)
 ETAGS = etags
 CTAGS = ctags
 DIST_SUBDIRS = src test
@@ -178,6 +176,7 @@ COIN_HAS_VOL_TRUE = @COIN_HAS_VOL_TRUE@
 COIN_HAS_XPR_FALSE = @COIN_HAS_XPR_FALSE@
 COIN_HAS_XPR_TRUE = @COIN_HAS_XPR_TRUE@
 COIN_PKG_CONFIG_PATH = @COIN_PKG_CONFIG_PATH@
+COIN_PKG_CONFIG_PATH_UNINSTALLED = @COIN_PKG_CONFIG_PATH_UNINSTALLED@
 CPP = @CPP@
 CPPFLAGS = @CPPFLAGS@
 CPX_CFLAGS = @CPX_CFLAGS@
@@ -392,10 +391,9 @@ EXTRA_DIST = doc/authors.xml doc/cbcexe.xml doc/cbcmodelclass.xml \
 ########################################################################
 #                  Installation of the addlibs file                    #
 ########################################################################
-@COIN_HAS_PKGCONFIG_TRUE@addlibsdir = $(datadir)/coin/doc/Cbc
-@COIN_HAS_PKGCONFIG_TRUE@addlibs_DATA = cbc_addlibs.txt
 pkgconfiglibdir = $(libdir)/pkgconfig
 pkgconfiglib_DATA = cbc.pc osi-cbc.pc
+@COIN_HAS_PKGCONFIG_TRUE@addlibsdir = $(DESTDIR)$(datadir)/coin/doc/Cbc
 
 ########################################################################
 #                         Maintainer Stuff                             #
@@ -479,23 +477,6 @@ clean-libtool:
 distclean-libtool:
 	-rm -f libtool
 uninstall-info-am:
-install-addlibsDATA: $(addlibs_DATA)
-	@$(NORMAL_INSTALL)
-	test -z "$(addlibsdir)" || $(mkdir_p) "$(DESTDIR)$(addlibsdir)"
-	@list='$(addlibs_DATA)'; for p in $$list; do \
-	  if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
-	  f=$(am__strip_dir) \
-	  echo " $(addlibsDATA_INSTALL) '$$d$$p' '$(DESTDIR)$(addlibsdir)/$$f'"; \
-	  $(addlibsDATA_INSTALL) "$$d$$p" "$(DESTDIR)$(addlibsdir)/$$f"; \
-	done
-
-uninstall-addlibsDATA:
-	@$(NORMAL_UNINSTALL)
-	@list='$(addlibs_DATA)'; for p in $$list; do \
-	  f=$(am__strip_dir) \
-	  echo " rm -f '$(DESTDIR)$(addlibsdir)/$$f'"; \
-	  rm -f "$(DESTDIR)$(addlibsdir)/$$f"; \
-	done
 install-pkgconfiglibDATA: $(pkgconfiglib_DATA)
 	@$(NORMAL_INSTALL)
 	test -z "$(pkgconfiglibdir)" || $(mkdir_p) "$(DESTDIR)$(pkgconfiglibdir)"
@@ -793,7 +774,7 @@ check: check-recursive
 all-am: Makefile $(DATA)
 installdirs: installdirs-recursive
 installdirs-am:
-	for dir in "$(DESTDIR)$(addlibsdir)" "$(DESTDIR)$(pkgconfiglibdir)"; do \
+	for dir in "$(DESTDIR)$(pkgconfiglibdir)"; do \
 	  test -z "$$dir" || $(mkdir_p) "$$dir"; \
 	done
 install: install-recursive
@@ -822,6 +803,7 @@ distclean-generic:
 maintainer-clean-generic:
 	@echo "This command is intended for maintainers to use"
 	@echo "it deletes files that may require special tools to rebuild."
+@COIN_HAS_PKGCONFIG_FALSE@install-data-hook:
 clean: clean-recursive
 
 clean-am: clean-generic clean-libtool clean-local mostlyclean-am
@@ -842,7 +824,9 @@ info: info-recursive
 
 info-am:
 
-install-data-am: install-addlibsDATA install-pkgconfiglibDATA
+install-data-am: install-pkgconfiglibDATA
+	@$(NORMAL_INSTALL)
+	$(MAKE) $(AM_MAKEFLAGS) install-data-hook
 
 install-exec-am: install-exec-local
 
@@ -870,7 +854,7 @@ ps: ps-recursive
 
 ps-am:
 
-uninstall-am: uninstall-addlibsDATA uninstall-info-am uninstall-local \
+uninstall-am: uninstall-info-am uninstall-local \
 	uninstall-pkgconfiglibDATA
 
 uninstall-info: uninstall-info-recursive
@@ -882,16 +866,16 @@ uninstall-info: uninstall-info-recursive
 	distclean-generic distclean-hdr distclean-libtool \
 	distclean-local distclean-recursive distclean-tags \
 	distcleancheck distdir distuninstallcheck dvi dvi-am html \
-	html-am info info-am install install-addlibsDATA install-am \
-	install-data install-data-am install-exec install-exec-am \
+	html-am info info-am install install-am install-data \
+	install-data-am install-data-hook install-exec install-exec-am \
 	install-exec-local install-info install-info-am install-man \
 	install-pkgconfiglibDATA install-strip installcheck \
 	installcheck-am installdirs installdirs-am maintainer-clean \
 	maintainer-clean-generic maintainer-clean-recursive \
 	mostlyclean mostlyclean-generic mostlyclean-libtool \
 	mostlyclean-recursive pdf pdf-am ps ps-am tags tags-recursive \
-	uninstall uninstall-addlibsDATA uninstall-am uninstall-info-am \
-	uninstall-local uninstall-pkgconfiglibDATA
+	uninstall uninstall-am uninstall-info-am uninstall-local \
+	uninstall-pkgconfiglibDATA
 
 
 ########################################################################
@@ -915,8 +899,10 @@ uninstall-local: uninstall-doc
 
 .PHONY: test unitTest
 
-@COIN_HAS_PKGCONFIG_TRUE@cbc_addlibs.txt : cbc.pc
-@COIN_HAS_PKGCONFIG_TRUE@	PKG_CONFIG_PATH=.:@COIN_PKG_CONFIG_PATH@ $(PKG_CONFIG) --libs cbc > cbc_addlibs.txt
+@COIN_HAS_PKGCONFIG_TRUE@install-data-hook:
+@COIN_HAS_PKGCONFIG_TRUE@	@$(mkdir_p) "$(addlibsdir)"
+@COIN_HAS_PKGCONFIG_TRUE@	PKG_CONFIG_PATH=@COIN_PKG_CONFIG_PATH@ PKG_CONFIG_DISABLE_UNINSTALLED= \
+@COIN_HAS_PKGCONFIG_TRUE@	$(PKG_CONFIG) --libs cbc > $(addlibsdir)/cbc_addlibs.txt
 
 install-doc: $(DocFiles)
 	test -z "$(DocInstallDir)" || $(mkdir_p) "$(DESTDIR)$(DocInstallDir)"

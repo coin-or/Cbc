@@ -25,7 +25,7 @@
 /* Define to 1 if the Clp module is available */
 #undef COIN_HAS_CLP
 
-/* Define to 1 if the COINDEPEND module is available */
+/* Define to 1 if the CoinDepend module is available */
 #undef COIN_HAS_COINDEPEND
 
 /* Define to 1 if the Cpx module is available */

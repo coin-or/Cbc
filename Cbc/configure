@@ -472,7 +472,7 @@ ac_includes_default="\
 # include <unistd.h>
 #endif"
 
-ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS build build_cpu build_vendor build_os ADDLIBS PCADDLIBS FADDLIBS ALWAYS_FALSE_TRUE ALWAYS_FALSE_FALSE have_svnversion CBC_SVN_REV CDEFS ADD_CFLAGS DBG_CFLAGS OPT_CFLAGS sol_cc_compiler CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT MPICC CXXDEFS ADD_CXXFLAGS DBG_CXXFLAGS OPT_CXXFLAGS CXX CXXFLAGS ac_ct_CXX MPICXX EGREP INSTALL_PROGRAM INSTALL_SCRIPT INSTALL_DATA CYGPATH_W PACKAGE VERSION ACLOCAL AUTOCONF AUTOMAKE AUTOHEADER MAKEINFO install_sh STRIP ac_ct_STRIP INSTALL_STRIP_PROGRAM mkdir_p AWK SET_MAKE am__leading_dot AMTAR am__tar am__untar DEPDIR am__include am__quote AMDEP_TRUE AMDEP_FALSE AMDEPBACKSLASH CCDEPMODE am__fastdepCC_TRUE am__fastdepCC_FALSE CXXDEPMODE am__fastdepCXX_TRUE am__fastdepCXX_FALSE MAINTAINER_MODE_TRUE MAINTAINER_MODE_FALSE MAINT LIBTOOLM4 have_autoconf have_automake have_svn BUILDTOOLSDIR AUX_DIR abs_source_dir abs_lib_dir abs_include_dir abs_bin_dir HAVE_EXTERNALS_TRUE HAVE_EXTERNALS_FALSE host host_cpu host_vendor host_os LN_S ECHO AR ac_ct_AR RANLIB ac_ct_RANLIB CPP CXXCPP F77 FFLAGS ac_ct_F77 LIBTOOL ac_c_preproc_warn_flag ac_cxx_preproc_warn_flag RPATH_FLAGS LT_LDFLAGS PKG_CONFIG ac_pt_PKG_CONFIG COIN_HAS_PKGCONFIG_TRUE COIN_HAS_PKGCONFIG_FALSE COIN_PKG_CONFIG_PATH COIN_PKG_CONFIG_PATH_UNINSTALLED COINDEPEND_LIBS COINDEPEND_CFLAGS COINDEPEND_DATA REQUIREDPACKAGES COIN_HAS_COINDEPEND_TRUE COIN_HAS_COINDEPEND_FALSE CLP_LIBS CLP_CFLAGS CLP_DATA COIN_HAS_CLP_TRUE COIN_HAS_CLP_FALSE DYLP_LIBS DYLP_CFLAGS DYLP_DATA COIN_HAS_DYLP_TRUE COIN_HAS_DYLP_FALSE VOL_LIBS VOL_CFLAGS VOL_DATA COIN_HAS_VOL_TRUE COIN_HAS_VOL_FALSE OSITESTS_LIBS OSITESTS_CFLAGS OSITESTS_DATA COIN_HAS_OSITESTS_TRUE COIN_HAS_OSITESTS_FALSE SAMPLE_LIBS SAMPLE_CFLAGS SAMPLE_DATA COIN_HAS_SAMPLE_TRUE COIN_HAS_SAMPLE_FALSE NETLIB_LIBS NETLIB_CFLAGS NETLIB_DATA COIN_HAS_NETLIB_TRUE COIN_HAS_NETLIB_FALSE MIPLIB3_LIBS MIPLIB3_CFLAGS MIPLIB3_DATA COIN_HAS_MIPLIB3_TRUE COIN_HAS_MIPLIB3_FALSE CPX_LIBS CPX_CFLAGS CPX_DATA COIN_HAS_CPX_TRUE COIN_HAS_CPX_FALSE GLPK_LIBS GLPK_CFLAGS GLPK_DATA COIN_HAS_GLPK_TRUE COIN_HAS_GLPK_FALSE GRB_LIBS GRB_CFLAGS GRB_DATA COIN_HAS_GRB_TRUE COIN_HAS_GRB_FALSE MSK_LIBS MSK_CFLAGS MSK_DATA COIN_HAS_MSK_TRUE COIN_HAS_MSK_FALSE SPX_LIBS SPX_CFLAGS SPX_DATA COIN_HAS_SPX_TRUE COIN_HAS_SPX_FALSE XPR_LIBS XPR_CFLAGS XPR_DATA COIN_HAS_XPR_TRUE COIN_HAS_XPR_FALSE ASL_LIBS ASL_CFLAGS ASL_DATA COIN_HAS_ASL_TRUE COIN_HAS_ASL_FALSE CBC_BUILD_CBC_GENERIC_TRUE CBC_BUILD_CBC_GENERIC_FALSE OSICBC_DFLT_SOLVER_CLP_TRUE OSICBC_DFLT_SOLVER_CLP_FALSE OSICBC_DFLT_SOLVER_CPX_TRUE OSICBC_DFLT_SOLVER_CPX_FALSE OSICBC_DFLT_SOLVER_DYLP_TRUE OSICBC_DFLT_SOLVER_DYLP_FALSE OSICBC_DFLT_SOLVER_GLPK_TRUE OSICBC_DFLT_SOLVER_GLPK_FALSE OSICBC_DFLT_SOLVER_GRB_TRUE OSICBC_DFLT_SOLVER_GRB_FALSE OSICBC_DFLT_SOLVER_MSK_TRUE OSICBC_DFLT_SOLVER_MSK_FALSE OSICBC_DFLT_SOLVER_SPX_TRUE OSICBC_DFLT_SOLVER_SPX_FALSE OSICBC_DFLT_SOLVER_SYM_TRUE OSICBC_DFLT_SOLVER_SYM_FALSE OSICBC_DFLT_SOLVER_VOL_TRUE OSICBC_DFLT_SOLVER_VOL_FALSE OSICBC_DFLT_SOLVER_XPR_TRUE OSICBC_DFLT_SOLVER_XPR_FALSE LIBEXT VPATH_DISTCLEANFILES ABSBUILDDIR LIBOBJS LTLIBOBJS'
+ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS build build_cpu build_vendor build_os ADDLIBS PCADDLIBS FADDLIBS ALWAYS_FALSE_TRUE ALWAYS_FALSE_FALSE have_svnversion CBC_SVN_REV CDEFS ADD_CFLAGS DBG_CFLAGS OPT_CFLAGS sol_cc_compiler CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT MPICC CXXDEFS ADD_CXXFLAGS DBG_CXXFLAGS OPT_CXXFLAGS CXX CXXFLAGS ac_ct_CXX MPICXX EGREP INSTALL_PROGRAM INSTALL_SCRIPT INSTALL_DATA CYGPATH_W PACKAGE VERSION ACLOCAL AUTOCONF AUTOMAKE AUTOHEADER MAKEINFO install_sh STRIP ac_ct_STRIP INSTALL_STRIP_PROGRAM mkdir_p AWK SET_MAKE am__leading_dot AMTAR am__tar am__untar DEPDIR am__include am__quote AMDEP_TRUE AMDEP_FALSE AMDEPBACKSLASH CCDEPMODE am__fastdepCC_TRUE am__fastdepCC_FALSE CXXDEPMODE am__fastdepCXX_TRUE am__fastdepCXX_FALSE MAINTAINER_MODE_TRUE MAINTAINER_MODE_FALSE MAINT LIBTOOLM4 have_autoconf have_automake have_svn BUILDTOOLSDIR AUX_DIR abs_source_dir abs_lib_dir abs_include_dir abs_bin_dir HAVE_EXTERNALS_TRUE HAVE_EXTERNALS_FALSE host host_cpu host_vendor host_os LN_S ECHO AR ac_ct_AR RANLIB ac_ct_RANLIB CPP CXXCPP F77 FFLAGS ac_ct_F77 LIBTOOL ac_c_preproc_warn_flag ac_cxx_preproc_warn_flag RPATH_FLAGS LT_LDFLAGS PKG_CONFIG ac_pt_PKG_CONFIG COIN_HAS_PKGCONFIG_TRUE COIN_HAS_PKGCONFIG_FALSE COIN_PKG_CONFIG_PATH COIN_PKG_CONFIG_PATH_UNINSTALLED COINDEPEND_LIBS COINDEPEND_CFLAGS COINDEPEND_DATA REQUIREDPACKAGES COIN_HAS_COINDEPEND_TRUE COIN_HAS_COINDEPEND_FALSE CLP_LIBS CLP_CFLAGS CLP_DATA COIN_HAS_CLP_TRUE COIN_HAS_CLP_FALSE OSITESTS_LIBS OSITESTS_CFLAGS OSITESTS_DATA COIN_HAS_OSITESTS_TRUE COIN_HAS_OSITESTS_FALSE SAMPLE_LIBS SAMPLE_CFLAGS SAMPLE_DATA COIN_HAS_SAMPLE_TRUE COIN_HAS_SAMPLE_FALSE NETLIB_LIBS NETLIB_CFLAGS NETLIB_DATA COIN_HAS_NETLIB_TRUE COIN_HAS_NETLIB_FALSE MIPLIB3_LIBS MIPLIB3_CFLAGS MIPLIB3_DATA COIN_HAS_MIPLIB3_TRUE COIN_HAS_MIPLIB3_FALSE DYLP_LIBS DYLP_CFLAGS DYLP_DATA COIN_HAS_DYLP_TRUE COIN_HAS_DYLP_FALSE VOL_LIBS VOL_CFLAGS VOL_DATA COIN_HAS_VOL_TRUE COIN_HAS_VOL_FALSE CPX_LIBS CPX_CFLAGS CPX_DATA COIN_HAS_CPX_TRUE COIN_HAS_CPX_FALSE GLPK_LIBS GLPK_CFLAGS GLPK_DATA COIN_HAS_GLPK_TRUE COIN_HAS_GLPK_FALSE GRB_LIBS GRB_CFLAGS GRB_DATA COIN_HAS_GRB_TRUE COIN_HAS_GRB_FALSE MSK_LIBS MSK_CFLAGS MSK_DATA COIN_HAS_MSK_TRUE COIN_HAS_MSK_FALSE SPX_LIBS SPX_CFLAGS SPX_DATA COIN_HAS_SPX_TRUE COIN_HAS_SPX_FALSE XPR_LIBS XPR_CFLAGS XPR_DATA COIN_HAS_XPR_TRUE COIN_HAS_XPR_FALSE ASL_LIBS ASL_CFLAGS ASL_DATA COIN_HAS_ASL_TRUE COIN_HAS_ASL_FALSE CBC_BUILD_CBC_GENERIC_TRUE CBC_BUILD_CBC_GENERIC_FALSE OSICBC_DFLT_SOLVER_CLP_TRUE OSICBC_DFLT_SOLVER_CLP_FALSE OSICBC_DFLT_SOLVER_CPX_TRUE OSICBC_DFLT_SOLVER_CPX_FALSE OSICBC_DFLT_SOLVER_DYLP_TRUE OSICBC_DFLT_SOLVER_DYLP_FALSE OSICBC_DFLT_SOLVER_GLPK_TRUE OSICBC_DFLT_SOLVER_GLPK_FALSE OSICBC_DFLT_SOLVER_GRB_TRUE OSICBC_DFLT_SOLVER_GRB_FALSE OSICBC_DFLT_SOLVER_MSK_TRUE OSICBC_DFLT_SOLVER_MSK_FALSE OSICBC_DFLT_SOLVER_SPX_TRUE OSICBC_DFLT_SOLVER_SPX_FALSE OSICBC_DFLT_SOLVER_SYM_TRUE OSICBC_DFLT_SOLVER_SYM_FALSE OSICBC_DFLT_SOLVER_VOL_TRUE OSICBC_DFLT_SOLVER_VOL_FALSE OSICBC_DFLT_SOLVER_XPR_TRUE OSICBC_DFLT_SOLVER_XPR_FALSE LIBEXT VPATH_DISTCLEANFILES ABSBUILDDIR LIBOBJS LTLIBOBJS'
 ac_subst_files=''
 
 # Initialize some variables set by options.
@@ -1121,12 +1121,6 @@ Optional Packages:
   --with-clp-lib linker flags for using module Clp
   --with-clp-incdir directory with header files for using module Clp
   --with-clp-datadir directory with data files for using module Clp
-  --with-dylp-lib linker flags for using module DyLP
-  --with-dylp-incdir directory with header files for using module DyLP
-  --with-dylp-datadir directory with data files for using module DyLP
-  --with-vol-lib linker flags for using module Vol
-  --with-vol-incdir directory with header files for using module Vol
-  --with-vol-datadir directory with data files for using module Vol
   --with-ositests-lib linker flags for using module OsiTests
   --with-ositests-incdir directory with header files for using module OsiTests
   --with-ositests-datadir directory with data files for using module OsiTests
@@ -1139,6 +1133,12 @@ Optional Packages:
   --with-miplib3-lib linker flags for using module Miplib3
   --with-miplib3-incdir directory with header files for using module Miplib3
   --with-miplib3-datadir directory with data files for using module Miplib3
+  --with-dylp-lib linker flags for using module DyLP
+  --with-dylp-incdir directory with header files for using module DyLP
+  --with-dylp-datadir directory with data files for using module DyLP
+  --with-vol-lib linker flags for using module Vol
+  --with-vol-incdir directory with header files for using module Vol
+  --with-vol-datadir directory with data files for using module Vol
   --with-cpx-lib linker flags for using module Cpx
   --with-cpx-incdir directory with header files for using module Cpx
   --with-cpx-datadir directory with data files for using module Cpx
@@ -20828,9 +20828,132 @@ fi
     PKG_CONFIG_PATH="$coin_save_PKG_CONFIG_PATH"
     export PKG_CONFIG_PATH
   else
-    #if 4th argument is given, try fallback - whereby we take the first word from coinutils = trunk osi cgl as basename for the .pc file
-    echo "$as_me:$LINENO: result: skipped check via pkg-config" >&5
-echo "${ECHO_T}skipped check via pkg-config" >&6
+    echo "$as_me:$LINENO: result: skipped check via pkg-config, redirect to fallback" >&5
+echo "${ECHO_T}skipped check via pkg-config, redirect to fallback" >&6
+
+echo "$as_me:$LINENO: checking for COIN-OR module CoinDepend (fallback)" >&5
+echo $ECHO_N "checking for COIN-OR module CoinDepend (fallback)... $ECHO_C" >&6
+
+coin_has_coindepend=notGiven
+COINDEPEND_LIBS=
+COINDEPEND_CFLAGS=
+COINDEPEND_DATA=
+
+
+# initial list of dependencies is "coinutils = trunk osi cgl", but we need to filter out version number specifications (= x, <= x, >= x)
+projtoprocess="coinutils  osi cgl"
+projprocessed=""
+
+while test $coin_has_coindepend = notGiven ; do
+  # setup list of projects that need to be processed in the next round
+  nextprojtoprocess=""
+
+  for proj in $projtoprocess ; do
+    # if $proj has been processed already, skip this round
+    if test "x$projprocessed" != x ; then
+      for projdone in $projprocessed ; do
+        if test $projdone = $proj ; then
+	  continue 2
+	fi
+      done
+    fi
+
+    # if $proj is available and configured, then a project-uninstalled.pc file should have been created, so search for it
+    pcfile=""
+    save_IFS="$IFS"
+    IFS=":"
+    for dir in $COIN_PKG_CONFIG_PATH_UNINSTALLED ; do
+      # the base directory configure should have setup coin_subdirs.txt in a way that it does not contain projects that should be skipped, so we do not need to test this here again
+      if test -r "$dir/$proj-uninstalled.pc" ; then
+        pcfile="$dir/$proj-uninstalled.pc"
+        pcfiledir="$dir"
+        break
+      fi
+    done
+    IFS="$save_IFS"
+
+    if test "x$pcfile" != x ; then
+      # read CFLAGS from $pcfile and add CYGPATH_W cludge into include flags
+      projcflags=`sed -n -e 's/Cflags://' -e 's/-I\([^ ]*\)/-I\`${CYGPATH_W} \1\`/gp' "$pcfile"`
+      COINDEPEND_CFLAGS="$projcflags $COINDEPEND_CFLAGS"
+
+      # read LIBS from $pcfile and replace -L${libdir} by absolute path to build directory in linker flags
+      # we assume that the build directory is $pcfiledir/src if this directory exists, otherwise we assume that it is $pcfiledir
+      projlibs=`sed -n -e 's/Libs://' -e 's/-L\${libdir}//p' "$pcfile"`
+      if test "x$projlibs" != x ; then
+        if test -d "${pcfiledir}/src" ; then
+          projlibs="-L`cd "${pcfiledir}/src"; pwd` $projlibs"
+        else
+          projlibs="-L`cd "$pcfiledir"; pwd` $projlibs"
+        fi
+      else
+        projlibs=`sed -n -e 's/Libs://p' "$pcfile"`
+      fi
+      COINDEPEND_LIBS="$projlibs $COINDEPEND_LIBS"
+
+      # read DATA from $pcfile, if this is the first .pc file we are processing (so assume that its the main one)
+      if test "x$projprocessed" = x ; then
+        COINDEPEND_DATA=`sed -n -e 's/datadir=//gp' "$pcfile"`
+      fi
+
+      # read dependencies from $pcfile, filter it, and add to list of projects that need to be processed next
+      projrequires=`sed -n -e 's/Requires://gp' "$pcfile" | sed -e 's/<\?>\?=[ 	]*[^ 	]\+//g'`
+      nextprojtoprocess="$nextprojtoprocess $projrequires"
+
+      # remember that we have processed $proj
+      projprocessed="$projprocessed $proj"
+
+    else
+      echo "$as_me:$LINENO: result: no, dependency $proj not available" >&5
+echo "${ECHO_T}no, dependency $proj not available" >&6
+      break 2
+    fi
+
+  done
+
+  projtoprocess="$nextprojtoprocess"
+
+  if test "x$projtoprocess" = x ; then
+    coin_has_coindepend=yes
+    echo "$as_me:$LINENO: result: yes, dependencies are$projprocessed" >&5
+echo "${ECHO_T}yes, dependencies are$projprocessed" >&6
+
+    REQUIREDPACKAGES="coinutils = trunk osi cgl $REQUIREDPACKAGES"
+
+cat >>confdefs.h <<\_ACEOF
+#define COIN_HAS_COINDEPEND 1
+_ACEOF
+
+
+    if test 1 = 0 ; then  #change this test to enable a bit of debugging output
+    if test -n "$COINDEPEND_CFLAGS" ; then
+      { echo "$as_me:$LINENO: CoinDepend CFLAGS are $COINDEPEND_CFLAGS" >&5
+echo "$as_me: CoinDepend CFLAGS are $COINDEPEND_CFLAGS" >&6;}
+    fi
+    if test -n "$COINDEPEND_LIBS" ; then
+      { echo "$as_me:$LINENO: CoinDepend LIBS   are $COINDEPEND_LIBS" >&5
+echo "$as_me: CoinDepend LIBS   are $COINDEPEND_LIBS" >&6;}
+    fi
+    if test -n "$COINDEPEND_DATA" ; then
+      { echo "$as_me:$LINENO: CoinDepend DATA   is  $COINDEPEND_DATA" >&5
+echo "$as_me: CoinDepend DATA   is  $COINDEPEND_DATA" >&6;}
+    fi
+    fi
+  fi
+done
+
+
+
+if test $coin_has_coindepend != notGiven &&
+                test $coin_has_coindepend != skipping; then
+  COIN_HAS_COINDEPEND_TRUE=
+  COIN_HAS_COINDEPEND_FALSE='#'
+else
+  COIN_HAS_COINDEPEND_TRUE='#'
+  COIN_HAS_COINDEPEND_FALSE=
+fi
+
+
 
   fi
 
@@ -20876,406 +20999,6 @@ fi
 
 
 
-if test $coin_has_coindepend != yes ; then
-  #if we have to use the fallback routines, then obviously it will not find CoinUtils dependencies
-  #thus, we check whether ThirdParty/Blas, ThirdParty/Lapack, and ThirdParty/Glpk have been setup and
-  #assume that if present then they are dependencies of CoinUtils
-
-if test x$coin_has_blas != "xyes" ; then
-
-echo "$as_me:$LINENO: checking for COIN-OR module Blas (fallback)" >&5
-echo $ECHO_N "checking for COIN-OR module Blas (fallback)... $ECHO_C" >&6
-
-coin_has_blas=notGiven
-
-# check if user wants to skip module in any case
-if test x"$COIN_SKIP_PROJECTS" != x; then
-  for dir in $COIN_SKIP_PROJECTS; do
-    if test $dir = "Blas"; then
-      coin_has_blas=skipping
-    fi
-  done
-fi
-
-BLAS_LIBS=
-BLAS_CFLAGS=
-BLAS_DATA=
-
-
-if test $coin_has_blas != "skipping" ; then
-  # if the project is available and configured, then a project-uninstalled.pc file should have been created
-  if test -r ../ThirdParty/Blas/coinblas-uninstalled.pc ; then
-    # read CFLAGS and LIBS from coinblas-uninstalled.pc file
-    # add CYGPATH_W cludge into include flags
-    # replace -L${libdir} by absolute path to build directory in linker flags
-    # we assume that the build directory is ../ThirdParty/Blas/src if this directory exists, otherwise we assume that it is ../ThirdParty/Blas
-    BLAS_CFLAGS=`sed -n -e 's/Cflags://' -e 's/-I\([^ ]*\)/-I\`${CYGPATH_W} \1\`/gp' ../ThirdParty/Blas/coinblas-uninstalled.pc`
-    projectlibs=`sed -n -e 's/Libs://' -e 's/-L\${libdir}//p' ../ThirdParty/Blas/coinblas-uninstalled.pc`
-    if test "x$projectlibs" != x ; then
-      if test -d ../ThirdParty/Blas/src ; then
-        BLAS_LIBS="-L`cd ../ThirdParty/Blas/src; pwd` $projectlibs"
-      else
-        BLAS_LIBS="-L`cd ../ThirdParty/Blas; pwd` $projectlibs"
-      fi
-    else
-      BLAS_LIBS=`sed -n -e 's/Libs://p' ../ThirdParty/Blas/coinblas-uninstalled.pc`
-    fi
-    BLAS_DATA=`sed -n -e 's/datadir=//gp' ../ThirdParty/Blas/coinblas-uninstalled.pc`
-
-
-
-
-
-    coin_has_blas=yes
-    echo "$as_me:$LINENO: result: ../ThirdParty/Blas" >&5
-echo "${ECHO_T}../ThirdParty/Blas" >&6
-  else
-    echo "$as_me:$LINENO: result: $coin_has_blas" >&5
-echo "${ECHO_T}$coin_has_blas" >&6
-  fi
-else
-  echo "$as_me:$LINENO: result: skipping" >&5
-echo "${ECHO_T}skipping" >&6
-fi
-
-#if user did not disable setting of makefile conditional, do it
-
-fi
-
-
-if test x$coin_has_lapack != "xyes" ; then
-
-echo "$as_me:$LINENO: checking for COIN-OR module Lapack (fallback)" >&5
-echo $ECHO_N "checking for COIN-OR module Lapack (fallback)... $ECHO_C" >&6
-
-coin_has_lapack=notGiven
-
-# check if user wants to skip module in any case
-if test x"$COIN_SKIP_PROJECTS" != x; then
-  for dir in $COIN_SKIP_PROJECTS; do
-    if test $dir = "Lapack"; then
-      coin_has_lapack=skipping
-    fi
-  done
-fi
-
-LAPACK_LIBS=
-LAPACK_CFLAGS=
-LAPACK_DATA=
-
-
-if test $coin_has_lapack != "skipping" ; then
-  # if the project is available and configured, then a project-uninstalled.pc file should have been created
-  if test -r ../ThirdParty/Lapack/coinlapack-uninstalled.pc ; then
-    # read CFLAGS and LIBS from coinlapack-uninstalled.pc file
-    # add CYGPATH_W cludge into include flags
-    # replace -L${libdir} by absolute path to build directory in linker flags
-    # we assume that the build directory is ../ThirdParty/Lapack/src if this directory exists, otherwise we assume that it is ../ThirdParty/Lapack
-    LAPACK_CFLAGS=`sed -n -e 's/Cflags://' -e 's/-I\([^ ]*\)/-I\`${CYGPATH_W} \1\`/gp' ../ThirdParty/Lapack/coinlapack-uninstalled.pc`
-    projectlibs=`sed -n -e 's/Libs://' -e 's/-L\${libdir}//p' ../ThirdParty/Lapack/coinlapack-uninstalled.pc`
-    if test "x$projectlibs" != x ; then
-      if test -d ../ThirdParty/Lapack/src ; then
-        LAPACK_LIBS="-L`cd ../ThirdParty/Lapack/src; pwd` $projectlibs"
-      else
-        LAPACK_LIBS="-L`cd ../ThirdParty/Lapack; pwd` $projectlibs"
-      fi
-    else
-      LAPACK_LIBS=`sed -n -e 's/Libs://p' ../ThirdParty/Lapack/coinlapack-uninstalled.pc`
-    fi
-    LAPACK_DATA=`sed -n -e 's/datadir=//gp' ../ThirdParty/Lapack/coinlapack-uninstalled.pc`
-
-
-
-
-
-    coin_has_lapack=yes
-    echo "$as_me:$LINENO: result: ../ThirdParty/Lapack" >&5
-echo "${ECHO_T}../ThirdParty/Lapack" >&6
-  else
-    echo "$as_me:$LINENO: result: $coin_has_lapack" >&5
-echo "${ECHO_T}$coin_has_lapack" >&6
-  fi
-else
-  echo "$as_me:$LINENO: result: skipping" >&5
-echo "${ECHO_T}skipping" >&6
-fi
-
-#if user did not disable setting of makefile conditional, do it
-
-fi
-
-
-if test x$coin_has_glpk != "xyes" ; then
-
-echo "$as_me:$LINENO: checking for COIN-OR module Glpk (fallback)" >&5
-echo $ECHO_N "checking for COIN-OR module Glpk (fallback)... $ECHO_C" >&6
-
-coin_has_glpk=notGiven
-
-# check if user wants to skip module in any case
-if test x"$COIN_SKIP_PROJECTS" != x; then
-  for dir in $COIN_SKIP_PROJECTS; do
-    if test $dir = "Glpk"; then
-      coin_has_glpk=skipping
-    fi
-  done
-fi
-
-GLPK_LIBS=
-GLPK_CFLAGS=
-GLPK_DATA=
-
-
-if test $coin_has_glpk != "skipping" ; then
-  # if the project is available and configured, then a project-uninstalled.pc file should have been created
-  if test -r ../ThirdParty/Glpk/coinglpk-uninstalled.pc ; then
-    # read CFLAGS and LIBS from coinglpk-uninstalled.pc file
-    # add CYGPATH_W cludge into include flags
-    # replace -L${libdir} by absolute path to build directory in linker flags
-    # we assume that the build directory is ../ThirdParty/Glpk/src if this directory exists, otherwise we assume that it is ../ThirdParty/Glpk
-    GLPK_CFLAGS=`sed -n -e 's/Cflags://' -e 's/-I\([^ ]*\)/-I\`${CYGPATH_W} \1\`/gp' ../ThirdParty/Glpk/coinglpk-uninstalled.pc`
-    projectlibs=`sed -n -e 's/Libs://' -e 's/-L\${libdir}//p' ../ThirdParty/Glpk/coinglpk-uninstalled.pc`
-    if test "x$projectlibs" != x ; then
-      if test -d ../ThirdParty/Glpk/src ; then
-        GLPK_LIBS="-L`cd ../ThirdParty/Glpk/src; pwd` $projectlibs"
-      else
-        GLPK_LIBS="-L`cd ../ThirdParty/Glpk; pwd` $projectlibs"
-      fi
-    else
-      GLPK_LIBS=`sed -n -e 's/Libs://p' ../ThirdParty/Glpk/coinglpk-uninstalled.pc`
-    fi
-    GLPK_DATA=`sed -n -e 's/datadir=//gp' ../ThirdParty/Glpk/coinglpk-uninstalled.pc`
-
-
-
-
-
-    coin_has_glpk=yes
-    echo "$as_me:$LINENO: result: ../ThirdParty/Glpk" >&5
-echo "${ECHO_T}../ThirdParty/Glpk" >&6
-  else
-    echo "$as_me:$LINENO: result: $coin_has_glpk" >&5
-echo "${ECHO_T}$coin_has_glpk" >&6
-  fi
-else
-  echo "$as_me:$LINENO: result: skipping" >&5
-echo "${ECHO_T}skipping" >&6
-fi
-
-#if user did not disable setting of makefile conditional, do it
-
-fi
-
-
-if test x$coin_has_coinutils != "xyes" ; then
-
-echo "$as_me:$LINENO: checking for COIN-OR module CoinUtils (fallback)" >&5
-echo $ECHO_N "checking for COIN-OR module CoinUtils (fallback)... $ECHO_C" >&6
-
-coin_has_coinutils=notGiven
-
-# check if user wants to skip module in any case
-if test x"$COIN_SKIP_PROJECTS" != x; then
-  for dir in $COIN_SKIP_PROJECTS; do
-    if test $dir = "CoinUtils"; then
-      coin_has_coinutils=skipping
-    fi
-  done
-fi
-
-COINUTILS_LIBS=
-COINUTILS_CFLAGS=
-COINUTILS_DATA=
-
-
-if test $coin_has_coinutils != "skipping" ; then
-  # if the project is available and configured, then a project-uninstalled.pc file should have been created
-  if test -r ../CoinUtils/coinutils-uninstalled.pc ; then
-    # read CFLAGS and LIBS from coinutils-uninstalled.pc file
-    # add CYGPATH_W cludge into include flags
-    # replace -L${libdir} by absolute path to build directory in linker flags
-    # we assume that the build directory is ../CoinUtils/src if this directory exists, otherwise we assume that it is ../CoinUtils
-    COINUTILS_CFLAGS=`sed -n -e 's/Cflags://' -e 's/-I\([^ ]*\)/-I\`${CYGPATH_W} \1\`/gp' ../CoinUtils/coinutils-uninstalled.pc`
-    projectlibs=`sed -n -e 's/Libs://' -e 's/-L\${libdir}//p' ../CoinUtils/coinutils-uninstalled.pc`
-    if test "x$projectlibs" != x ; then
-      if test -d ../CoinUtils/src ; then
-        COINUTILS_LIBS="-L`cd ../CoinUtils/src; pwd` $projectlibs"
-      else
-        COINUTILS_LIBS="-L`cd ../CoinUtils; pwd` $projectlibs"
-      fi
-    else
-      COINUTILS_LIBS=`sed -n -e 's/Libs://p' ../CoinUtils/coinutils-uninstalled.pc`
-    fi
-    COINUTILS_DATA=`sed -n -e 's/datadir=//gp' ../CoinUtils/coinutils-uninstalled.pc`
-
-    REQUIREDPACKAGES="coinutils $REQUIREDPACKAGES"
-
-
-
-
-    coin_has_coinutils=yes
-    echo "$as_me:$LINENO: result: ../CoinUtils" >&5
-echo "${ECHO_T}../CoinUtils" >&6
-  else
-    echo "$as_me:$LINENO: result: $coin_has_coinutils" >&5
-echo "${ECHO_T}$coin_has_coinutils" >&6
-  fi
-else
-  echo "$as_me:$LINENO: result: skipping" >&5
-echo "${ECHO_T}skipping" >&6
-fi
-
-#if user did not disable setting of makefile conditional, do it
-
-fi
-
-
-if test x$coin_has_osi != "xyes" ; then
-
-echo "$as_me:$LINENO: checking for COIN-OR module Osi (fallback)" >&5
-echo $ECHO_N "checking for COIN-OR module Osi (fallback)... $ECHO_C" >&6
-
-coin_has_osi=notGiven
-
-# check if user wants to skip module in any case
-if test x"$COIN_SKIP_PROJECTS" != x; then
-  for dir in $COIN_SKIP_PROJECTS; do
-    if test $dir = "Osi"; then
-      coin_has_osi=skipping
-    fi
-  done
-fi
-
-OSI_LIBS=
-OSI_CFLAGS=
-OSI_DATA=
-
-
-if test $coin_has_osi != "skipping" ; then
-  # if the project is available and configured, then a project-uninstalled.pc file should have been created
-  if test -r ../Osi/osi-uninstalled.pc ; then
-    # read CFLAGS and LIBS from osi-uninstalled.pc file
-    # add CYGPATH_W cludge into include flags
-    # replace -L${libdir} by absolute path to build directory in linker flags
-    # we assume that the build directory is ../Osi/src if this directory exists, otherwise we assume that it is ../Osi
-    OSI_CFLAGS=`sed -n -e 's/Cflags://' -e 's/-I\([^ ]*\)/-I\`${CYGPATH_W} \1\`/gp' ../Osi/osi-uninstalled.pc`
-    projectlibs=`sed -n -e 's/Libs://' -e 's/-L\${libdir}//p' ../Osi/osi-uninstalled.pc`
-    if test "x$projectlibs" != x ; then
-      if test -d ../Osi/src ; then
-        OSI_LIBS="-L`cd ../Osi/src; pwd` $projectlibs"
-      else
-        OSI_LIBS="-L`cd ../Osi; pwd` $projectlibs"
-      fi
-    else
-      OSI_LIBS=`sed -n -e 's/Libs://p' ../Osi/osi-uninstalled.pc`
-    fi
-    OSI_DATA=`sed -n -e 's/datadir=//gp' ../Osi/osi-uninstalled.pc`
-
-    REQUIREDPACKAGES="osi $REQUIREDPACKAGES"
-
-
-
-
-    coin_has_osi=yes
-    echo "$as_me:$LINENO: result: ../Osi" >&5
-echo "${ECHO_T}../Osi" >&6
-  else
-    echo "$as_me:$LINENO: result: $coin_has_osi" >&5
-echo "${ECHO_T}$coin_has_osi" >&6
-  fi
-else
-  echo "$as_me:$LINENO: result: skipping" >&5
-echo "${ECHO_T}skipping" >&6
-fi
-
-#if user did not disable setting of makefile conditional, do it
-
-fi
-
-
-if test x$coin_has_cgl != "xyes" ; then
-
-echo "$as_me:$LINENO: checking for COIN-OR module Cgl (fallback)" >&5
-echo $ECHO_N "checking for COIN-OR module Cgl (fallback)... $ECHO_C" >&6
-
-coin_has_cgl=notGiven
-
-# check if user wants to skip module in any case
-if test x"$COIN_SKIP_PROJECTS" != x; then
-  for dir in $COIN_SKIP_PROJECTS; do
-    if test $dir = "Cgl"; then
-      coin_has_cgl=skipping
-    fi
-  done
-fi
-
-CGL_LIBS=
-CGL_CFLAGS=
-CGL_DATA=
-
-
-if test $coin_has_cgl != "skipping" ; then
-  # if the project is available and configured, then a project-uninstalled.pc file should have been created
-  if test -r ../Cgl/cgl-uninstalled.pc ; then
-    # read CFLAGS and LIBS from cgl-uninstalled.pc file
-    # add CYGPATH_W cludge into include flags
-    # replace -L${libdir} by absolute path to build directory in linker flags
-    # we assume that the build directory is ../Cgl/src if this directory exists, otherwise we assume that it is ../Cgl
-    CGL_CFLAGS=`sed -n -e 's/Cflags://' -e 's/-I\([^ ]*\)/-I\`${CYGPATH_W} \1\`/gp' ../Cgl/cgl-uninstalled.pc`
-    projectlibs=`sed -n -e 's/Libs://' -e 's/-L\${libdir}//p' ../Cgl/cgl-uninstalled.pc`
-    if test "x$projectlibs" != x ; then
-      if test -d ../Cgl/src ; then
-        CGL_LIBS="-L`cd ../Cgl/src; pwd` $projectlibs"
-      else
-        CGL_LIBS="-L`cd ../Cgl; pwd` $projectlibs"
-      fi
-    else
-      CGL_LIBS=`sed -n -e 's/Libs://p' ../Cgl/cgl-uninstalled.pc`
-    fi
-    CGL_DATA=`sed -n -e 's/datadir=//gp' ../Cgl/cgl-uninstalled.pc`
-
-    REQUIREDPACKAGES="cgl $REQUIREDPACKAGES"
-
-
-
-
-    coin_has_cgl=yes
-    echo "$as_me:$LINENO: result: ../Cgl" >&5
-echo "${ECHO_T}../Cgl" >&6
-  else
-    echo "$as_me:$LINENO: result: $coin_has_cgl" >&5
-echo "${ECHO_T}$coin_has_cgl" >&6
-  fi
-else
-  echo "$as_me:$LINENO: result: skipping" >&5
-echo "${ECHO_T}skipping" >&6
-fi
-
-#if user did not disable setting of makefile conditional, do it
-
-fi
-
-  COINDEPEND_LIBS="$CGL_LIBS $OSI_LIBS $COINUTILS_LIBS $LAPACK_LIBS $BLAS_LIBS $GLPK_LIBS"
-  COINDEPEND_CFLAGS="$COINUTILS_CFLAGS $GLPK_CFLAGS $OSI_CFLAGS $CGL_CFLAGS"
-  if test "${coin_has_coinutils}${coin_has_osi}${coin_has_cgl}" = yesyesyes ; then
-    coin_has_coindepend=yes
-
-cat >>confdefs.h <<\_ACEOF
-#define COIN_HAS_COINDEPEND 1
-_ACEOF
-
-
-
-if test $coin_has_coindepend = yes; then
-  COIN_HAS_COINDEPEND_TRUE=
-  COIN_HAS_COINDEPEND_FALSE='#'
-else
-  COIN_HAS_COINDEPEND_TRUE='#'
-  COIN_HAS_COINDEPEND_FALSE=
-fi
-
-  fi
-fi
 if test $coin_has_coindepend != yes ; then
   { { echo "$as_me:$LINENO: error: Required package CoinUtils, Osi, or Cgl not available." >&5
 echo "$as_me: error: Required package CoinUtils, Osi, or Cgl not available." >&2;}
@@ -21387,9 +21110,132 @@ fi
     PKG_CONFIG_PATH="$coin_save_PKG_CONFIG_PATH"
     export PKG_CONFIG_PATH
   else
-    #if 4th argument is given, try fallback - whereby we take the first word from osi-clp as basename for the .pc file
-    echo "$as_me:$LINENO: result: skipped check via pkg-config" >&5
-echo "${ECHO_T}skipped check via pkg-config" >&6
+    echo "$as_me:$LINENO: result: skipped check via pkg-config, redirect to fallback" >&5
+echo "${ECHO_T}skipped check via pkg-config, redirect to fallback" >&6
+
+echo "$as_me:$LINENO: checking for COIN-OR module Clp (fallback)" >&5
+echo $ECHO_N "checking for COIN-OR module Clp (fallback)... $ECHO_C" >&6
+
+coin_has_clp=notGiven
+CLP_LIBS=
+CLP_CFLAGS=
+CLP_DATA=
+
+
+# initial list of dependencies is "osi-clp", but we need to filter out version number specifications (= x, <= x, >= x)
+projtoprocess="osi-clp"
+projprocessed=""
+
+while test $coin_has_clp = notGiven ; do
+  # setup list of projects that need to be processed in the next round
+  nextprojtoprocess=""
+
+  for proj in $projtoprocess ; do
+    # if $proj has been processed already, skip this round
+    if test "x$projprocessed" != x ; then
+      for projdone in $projprocessed ; do
+        if test $projdone = $proj ; then
+	  continue 2
+	fi
+      done
+    fi
+
+    # if $proj is available and configured, then a project-uninstalled.pc file should have been created, so search for it
+    pcfile=""
+    save_IFS="$IFS"
+    IFS=":"
+    for dir in $COIN_PKG_CONFIG_PATH_UNINSTALLED ; do
+      # the base directory configure should have setup coin_subdirs.txt in a way that it does not contain projects that should be skipped, so we do not need to test this here again
+      if test -r "$dir/$proj-uninstalled.pc" ; then
+        pcfile="$dir/$proj-uninstalled.pc"
+        pcfiledir="$dir"
+        break
+      fi
+    done
+    IFS="$save_IFS"
+
+    if test "x$pcfile" != x ; then
+      # read CFLAGS from $pcfile and add CYGPATH_W cludge into include flags
+      projcflags=`sed -n -e 's/Cflags://' -e 's/-I\([^ ]*\)/-I\`${CYGPATH_W} \1\`/gp' "$pcfile"`
+      CLP_CFLAGS="$projcflags $CLP_CFLAGS"
+
+      # read LIBS from $pcfile and replace -L${libdir} by absolute path to build directory in linker flags
+      # we assume that the build directory is $pcfiledir/src if this directory exists, otherwise we assume that it is $pcfiledir
+      projlibs=`sed -n -e 's/Libs://' -e 's/-L\${libdir}//p' "$pcfile"`
+      if test "x$projlibs" != x ; then
+        if test -d "${pcfiledir}/src" ; then
+          projlibs="-L`cd "${pcfiledir}/src"; pwd` $projlibs"
+        else
+          projlibs="-L`cd "$pcfiledir"; pwd` $projlibs"
+        fi
+      else
+        projlibs=`sed -n -e 's/Libs://p' "$pcfile"`
+      fi
+      CLP_LIBS="$projlibs $CLP_LIBS"
+
+      # read DATA from $pcfile, if this is the first .pc file we are processing (so assume that its the main one)
+      if test "x$projprocessed" = x ; then
+        CLP_DATA=`sed -n -e 's/datadir=//gp' "$pcfile"`
+      fi
+
+      # read dependencies from $pcfile, filter it, and add to list of projects that need to be processed next
+      projrequires=`sed -n -e 's/Requires://gp' "$pcfile" | sed -e 's/<\?>\?=[ 	]*[^ 	]\+//g'`
+      nextprojtoprocess="$nextprojtoprocess $projrequires"
+
+      # remember that we have processed $proj
+      projprocessed="$projprocessed $proj"
+
+    else
+      echo "$as_me:$LINENO: result: no, dependency $proj not available" >&5
+echo "${ECHO_T}no, dependency $proj not available" >&6
+      break 2
+    fi
+
+  done
+
+  projtoprocess="$nextprojtoprocess"
+
+  if test "x$projtoprocess" = x ; then
+    coin_has_clp=yes
+    echo "$as_me:$LINENO: result: yes, dependencies are$projprocessed" >&5
+echo "${ECHO_T}yes, dependencies are$projprocessed" >&6
+
+    REQUIREDPACKAGES="osi-clp $REQUIREDPACKAGES"
+
+cat >>confdefs.h <<\_ACEOF
+#define COIN_HAS_CLP 1
+_ACEOF
+
+
+    if test 1 = 0 ; then  #change this test to enable a bit of debugging output
+    if test -n "$CLP_CFLAGS" ; then
+      { echo "$as_me:$LINENO: Clp CFLAGS are $CLP_CFLAGS" >&5
+echo "$as_me: Clp CFLAGS are $CLP_CFLAGS" >&6;}
+    fi
+    if test -n "$CLP_LIBS" ; then
+      { echo "$as_me:$LINENO: Clp LIBS   are $CLP_LIBS" >&5
+echo "$as_me: Clp LIBS   are $CLP_LIBS" >&6;}
+    fi
+    if test -n "$CLP_DATA" ; then
+      { echo "$as_me:$LINENO: Clp DATA   is  $CLP_DATA" >&5
+echo "$as_me: Clp DATA   is  $CLP_DATA" >&6;}
+    fi
+    fi
+  fi
+done
+
+
+
+if test $coin_has_clp != notGiven &&
+                test $coin_has_clp != skipping; then
+  COIN_HAS_CLP_TRUE=
+  COIN_HAS_CLP_FALSE='#'
+else
+  COIN_HAS_CLP_TRUE='#'
+  COIN_HAS_CLP_FALSE=
+fi
+
+
 
   fi
 
@@ -21436,467 +21282,10 @@ fi
 
 
 if test $coin_has_clp != yes ; then
-  # OsiClp depends on Clp
-  # so if Clp is there, then we assume that also OsiClp will be there and add the corresponding flags to the Clp flags
-
-if test x$coin_has_clp != "xyes" ; then
-
-echo "$as_me:$LINENO: checking for COIN-OR module Clp (fallback)" >&5
-echo $ECHO_N "checking for COIN-OR module Clp (fallback)... $ECHO_C" >&6
-
-coin_has_clp=notGiven
-
-# check if user wants to skip module in any case
-if test x"$COIN_SKIP_PROJECTS" != x; then
-  for dir in $COIN_SKIP_PROJECTS; do
-    if test $dir = "Clp"; then
-      coin_has_clp=skipping
-    fi
-  done
-fi
-
-CLP_LIBS=
-CLP_CFLAGS=
-CLP_DATA=
-
-
-if test $coin_has_clp != "skipping" ; then
-  # if the project is available and configured, then a project-uninstalled.pc file should have been created
-  if test -r ../Clp/clp-uninstalled.pc ; then
-    # read CFLAGS and LIBS from clp-uninstalled.pc file
-    # add CYGPATH_W cludge into include flags
-    # replace -L${libdir} by absolute path to build directory in linker flags
-    # we assume that the build directory is ../Clp/src if this directory exists, otherwise we assume that it is ../Clp
-    CLP_CFLAGS=`sed -n -e 's/Cflags://' -e 's/-I\([^ ]*\)/-I\`${CYGPATH_W} \1\`/gp' ../Clp/clp-uninstalled.pc`
-    projectlibs=`sed -n -e 's/Libs://' -e 's/-L\${libdir}//p' ../Clp/clp-uninstalled.pc`
-    if test "x$projectlibs" != x ; then
-      if test -d ../Clp/src ; then
-        CLP_LIBS="-L`cd ../Clp/src; pwd` $projectlibs"
-      else
-        CLP_LIBS="-L`cd ../Clp; pwd` $projectlibs"
-      fi
-    else
-      CLP_LIBS=`sed -n -e 's/Libs://p' ../Clp/clp-uninstalled.pc`
-    fi
-    CLP_DATA=`sed -n -e 's/datadir=//gp' ../Clp/clp-uninstalled.pc`
-
-    REQUIREDPACKAGES="clp $REQUIREDPACKAGES"
-
-
-
-cat >>confdefs.h <<\_ACEOF
-#define COIN_HAS_CLP 1
-_ACEOF
-
-
-
-    coin_has_clp=yes
-    echo "$as_me:$LINENO: result: ../Clp" >&5
-echo "${ECHO_T}../Clp" >&6
-  else
-    echo "$as_me:$LINENO: result: $coin_has_clp" >&5
-echo "${ECHO_T}$coin_has_clp" >&6
-  fi
-else
-  echo "$as_me:$LINENO: result: skipping" >&5
-echo "${ECHO_T}skipping" >&6
-fi
-
-#if user did not disable setting of makefile conditional, do it
-
-
-if test $coin_has_clp != notGiven &&
-                test $coin_has_clp != skipping; then
-  COIN_HAS_CLP_TRUE=
-  COIN_HAS_CLP_FALSE='#'
-else
-  COIN_HAS_CLP_TRUE='#'
-  COIN_HAS_CLP_FALSE=
-fi
-
-
-fi
-
-  if test $coin_has_clp = yes ; then
-
-if test x$coin_has_osiclp != "xyes" ; then
-
-echo "$as_me:$LINENO: checking for COIN-OR module OsiClp (fallback)" >&5
-echo $ECHO_N "checking for COIN-OR module OsiClp (fallback)... $ECHO_C" >&6
-
-coin_has_osiclp=notGiven
-
-# check if user wants to skip module in any case
-if test x"$COIN_SKIP_PROJECTS" != x; then
-  for dir in $COIN_SKIP_PROJECTS; do
-    if test $dir = "OsiClp"; then
-      coin_has_osiclp=skipping
-    fi
-  done
-fi
-
-OSICLP_LIBS=
-OSICLP_CFLAGS=
-OSICLP_DATA=
-
-
-if test $coin_has_osiclp != "skipping" ; then
-  # if the project is available and configured, then a project-uninstalled.pc file should have been created
-  if test -r ../Clp/osi-clp-uninstalled.pc ; then
-    # read CFLAGS and LIBS from osi-clp-uninstalled.pc file
-    # add CYGPATH_W cludge into include flags
-    # replace -L${libdir} by absolute path to build directory in linker flags
-    # we assume that the build directory is ../Clp/src if this directory exists, otherwise we assume that it is ../Clp
-    OSICLP_CFLAGS=`sed -n -e 's/Cflags://' -e 's/-I\([^ ]*\)/-I\`${CYGPATH_W} \1\`/gp' ../Clp/osi-clp-uninstalled.pc`
-    projectlibs=`sed -n -e 's/Libs://' -e 's/-L\${libdir}//p' ../Clp/osi-clp-uninstalled.pc`
-    if test "x$projectlibs" != x ; then
-      if test -d ../Clp/src ; then
-        OSICLP_LIBS="-L`cd ../Clp/src; pwd` $projectlibs"
-      else
-        OSICLP_LIBS="-L`cd ../Clp; pwd` $projectlibs"
-      fi
-    else
-      OSICLP_LIBS=`sed -n -e 's/Libs://p' ../Clp/osi-clp-uninstalled.pc`
-    fi
-    OSICLP_DATA=`sed -n -e 's/datadir=//gp' ../Clp/osi-clp-uninstalled.pc`
-
-    REQUIREDPACKAGES="osi-clp $REQUIREDPACKAGES"
-
-
-
-
-    coin_has_osiclp=yes
-    echo "$as_me:$LINENO: result: ../Clp" >&5
-echo "${ECHO_T}../Clp" >&6
-  else
-    echo "$as_me:$LINENO: result: $coin_has_osiclp" >&5
-echo "${ECHO_T}$coin_has_osiclp" >&6
-  fi
-else
-  echo "$as_me:$LINENO: result: skipping" >&5
-echo "${ECHO_T}skipping" >&6
-fi
-
-#if user did not disable setting of makefile conditional, do it
-
-fi
-
-    CLP_CFLAGS="$CLP_CFLAGS $OSICLP_CFLAGS"
-    CLP_LIBS="$CLP_LIBS $OSICLP_LIBS"
-  fi
-fi
-if test $coin_has_clp != yes ; then
   { { echo "$as_me:$LINENO: error: \"Required package Clp unavailable.\"" >&5
 echo "$as_me: error: \"Required package Clp unavailable.\"" >&2;}
    { (exit 1); exit 1; }; }
 fi
-
-# we skip fallbacks for the following two
-
-echo "$as_me:$LINENO: checking for COIN-OR module DyLP" >&5
-echo $ECHO_N "checking for COIN-OR module DyLP... $ECHO_C" >&6
-
-coin_has_dylp=notGiven
-
-# check if user wants to skip module in any case
-if test x"$COIN_SKIP_PROJECTS" != x; then
-  for dir in $COIN_SKIP_PROJECTS; do
-    if test $dir = "DyLP"; then
-      coin_has_dylp=skipping
-    fi
-  done
-fi
-
-DYLP_LIBS=
-DYLP_CFLAGS=
-DYLP_DATA=
-
-
-
-
-
-#check if user provided LIBS, CFLAGS, or DATA for module
-if test $coin_has_dylp != skipping; then
-
-
-# Check whether --with-m4_tolower(DyLP)-lib or --without-m4_tolower(DyLP)-lib was given.
-if test "${with_dylp_lib+set}" = set; then
-  withval="$with_dylp_lib"
-  coin_has_dylp=yes
-       DYLP_LIBS="$withval"
-       PCADDLIBS="$withval $PCADDLIBS"
-
-fi;
-
-
-# Check whether --with-m4_tolower(DyLP)-incdir or --without-m4_tolower(DyLP)-incdir was given.
-if test "${with_dylp_incdir+set}" = set; then
-  withval="$with_dylp_incdir"
-  coin_has_dylp=yes
-     DYLP_CFLAGS="-I`${CYGPATH_W} $withval`"
-fi;
-
-
-# Check whether --with-m4_tolower(DyLP)-datadir or --without-m4_tolower(DyLP)-datadir was given.
-if test "${with_dylp_datadir+set}" = set; then
-  withval="$with_dylp_datadir"
-  coin_has_dylp=yes
-     DYLP_DATA="$withval"
-fi;
-fi
-
-if test $coin_has_dylp = notGiven; then
-  if test -n "$PKG_CONFIG" ; then
-    # set search path for pkg-config
-    # need to export variable to be sure that the following pkg-config gets these values
-    coin_save_PKG_CONFIG_PATH="$PKG_CONFIG_PATH"
-    PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH:$COIN_PKG_CONFIG_PATH_UNINSTALLED"
-    export PKG_CONFIG_PATH
-
-    # let pkg-config do it's magic
-
-
-
-if test -n "$PKG_CONFIG" ; then
-  if $PKG_CONFIG --exists "osi-dylp"; then
-    DYLP_VERSIONS="`$PKG_CONFIG --modversion osi-dylp 2>/dev/null`"
-     cflags=`$PKG_CONFIG --cflags "osi-dylp" 2>/dev/null`
-    # pkg-config cannot handle spaces, so CYGPATH_W cannot be put into .pc files
-	# thus, we modify the cflags extracted from pkg-config by putting CYGPATH_W behind -I's
-	# but only do this if is not trivial
-    if test "$CYGPATH_W" != "echo" ; then
-      # need to put into brackets since otherwise autoconf replaces the brackets in the sed command
-	  cflags=`echo $cflags | sed -e 's/-I\([^ ]*\)/-I\`${CYGPATH_W} \1\`/g'`
-	fi
-    DYLP_CFLAGS="$cflags"
-    DYLP_LIBS=`$PKG_CONFIG --libs "osi-dylp" 2>/dev/null`
-    DYLP_DATA=`$PKG_CONFIG --variable=datadir "osi-dylp" 2>/dev/null`
-     coin_has_dylp=yes
-        echo "$as_me:$LINENO: result: yes: $DYLP_VERSIONS" >&5
-echo "${ECHO_T}yes: $DYLP_VERSIONS" >&6
-        REQUIREDPACKAGES="osi-dylp $REQUIREDPACKAGES"
-
-
-  else
-    DYLP_PKG_ERRORS=`$PKG_CONFIG $pkg_short_errors --errors-to-stdout --print-errors osi-dylp`
-      coin_has_dylp=notGiven
-        echo "$as_me:$LINENO: result: not given: $DYLP_PKG_ERRORS" >&5
-echo "${ECHO_T}not given: $DYLP_PKG_ERRORS" >&6
-
-  fi
-else
-  { { echo "$as_me:$LINENO: error: \"Cannot check for existance of module DyLP without pkg-config\"" >&5
-echo "$as_me: error: \"Cannot check for existance of module DyLP without pkg-config\"" >&2;}
-   { (exit 1); exit 1; }; }
-fi
-
-
-
-
-    # reset PKG_CONFIG_PATH variable
-    PKG_CONFIG_PATH="$coin_save_PKG_CONFIG_PATH"
-    export PKG_CONFIG_PATH
-  else
-    #if 4th argument is given, try fallback - whereby we take the first word from osi-dylp as basename for the .pc file
-    echo "$as_me:$LINENO: result: skipped check via pkg-config" >&5
-echo "${ECHO_T}skipped check via pkg-config" >&6
-
-  fi
-
-else
-  echo "$as_me:$LINENO: result: $coin_has_dylp" >&5
-echo "${ECHO_T}$coin_has_dylp" >&6
-fi
-
-if test $coin_has_dylp != skipping &&
-   test $coin_has_dylp != notGiven ; then
-  if test 0 = 1 ; then  #change this test to enable a bit of debugging output
-  if test -n "$DYLP_CFLAGS" ; then
-    { echo "$as_me:$LINENO: DyLP CFLAGS are $DYLP_CFLAGS" >&5
-echo "$as_me: DyLP CFLAGS are $DYLP_CFLAGS" >&6;}
-  fi
-  if test -n "$DYLP_LIBS" ; then
-    { echo "$as_me:$LINENO: DyLP LIBS   are $DYLP_LIBS" >&5
-echo "$as_me: DyLP LIBS   are $DYLP_LIBS" >&6;}
-  fi
-  if test -n "$DYLP_DATA" ; then
-    { echo "$as_me:$LINENO: DyLP DATA   is  $DYLP_DATA" >&5
-echo "$as_me: DyLP DATA   is  $DYLP_DATA" >&6;}
-  fi
-  fi
-
-cat >>confdefs.h <<\_ACEOF
-#define COIN_HAS_DYLP 1
-_ACEOF
-
-fi
-
-# Define the Makefile conditional
-
-
-if test $coin_has_dylp != notGiven &&
-                test $coin_has_dylp != skipping; then
-  COIN_HAS_DYLP_TRUE=
-  COIN_HAS_DYLP_FALSE='#'
-else
-  COIN_HAS_DYLP_TRUE='#'
-  COIN_HAS_DYLP_FALSE=
-fi
-
-
-
-
-echo "$as_me:$LINENO: checking for COIN-OR module Vol" >&5
-echo $ECHO_N "checking for COIN-OR module Vol... $ECHO_C" >&6
-
-coin_has_vol=notGiven
-
-# check if user wants to skip module in any case
-if test x"$COIN_SKIP_PROJECTS" != x; then
-  for dir in $COIN_SKIP_PROJECTS; do
-    if test $dir = "Vol"; then
-      coin_has_vol=skipping
-    fi
-  done
-fi
-
-VOL_LIBS=
-VOL_CFLAGS=
-VOL_DATA=
-
-
-
-
-
-#check if user provided LIBS, CFLAGS, or DATA for module
-if test $coin_has_vol != skipping; then
-
-
-# Check whether --with-m4_tolower(Vol)-lib or --without-m4_tolower(Vol)-lib was given.
-if test "${with_vol_lib+set}" = set; then
-  withval="$with_vol_lib"
-  coin_has_vol=yes
-       VOL_LIBS="$withval"
-       PCADDLIBS="$withval $PCADDLIBS"
-
-fi;
-
-
-# Check whether --with-m4_tolower(Vol)-incdir or --without-m4_tolower(Vol)-incdir was given.
-if test "${with_vol_incdir+set}" = set; then
-  withval="$with_vol_incdir"
-  coin_has_vol=yes
-     VOL_CFLAGS="-I`${CYGPATH_W} $withval`"
-fi;
-
-
-# Check whether --with-m4_tolower(Vol)-datadir or --without-m4_tolower(Vol)-datadir was given.
-if test "${with_vol_datadir+set}" = set; then
-  withval="$with_vol_datadir"
-  coin_has_vol=yes
-     VOL_DATA="$withval"
-fi;
-fi
-
-if test $coin_has_vol = notGiven; then
-  if test -n "$PKG_CONFIG" ; then
-    # set search path for pkg-config
-    # need to export variable to be sure that the following pkg-config gets these values
-    coin_save_PKG_CONFIG_PATH="$PKG_CONFIG_PATH"
-    PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH:$COIN_PKG_CONFIG_PATH_UNINSTALLED"
-    export PKG_CONFIG_PATH
-
-    # let pkg-config do it's magic
-
-
-
-if test -n "$PKG_CONFIG" ; then
-  if $PKG_CONFIG --exists "osi-vol"; then
-    VOL_VERSIONS="`$PKG_CONFIG --modversion osi-vol 2>/dev/null`"
-     cflags=`$PKG_CONFIG --cflags "osi-vol" 2>/dev/null`
-    # pkg-config cannot handle spaces, so CYGPATH_W cannot be put into .pc files
-	# thus, we modify the cflags extracted from pkg-config by putting CYGPATH_W behind -I's
-	# but only do this if is not trivial
-    if test "$CYGPATH_W" != "echo" ; then
-      # need to put into brackets since otherwise autoconf replaces the brackets in the sed command
-	  cflags=`echo $cflags | sed -e 's/-I\([^ ]*\)/-I\`${CYGPATH_W} \1\`/g'`
-	fi
-    VOL_CFLAGS="$cflags"
-    VOL_LIBS=`$PKG_CONFIG --libs "osi-vol" 2>/dev/null`
-    VOL_DATA=`$PKG_CONFIG --variable=datadir "osi-vol" 2>/dev/null`
-     coin_has_vol=yes
-        echo "$as_me:$LINENO: result: yes: $VOL_VERSIONS" >&5
-echo "${ECHO_T}yes: $VOL_VERSIONS" >&6
-        REQUIREDPACKAGES="osi-vol $REQUIREDPACKAGES"
-
-
-  else
-    VOL_PKG_ERRORS=`$PKG_CONFIG $pkg_short_errors --errors-to-stdout --print-errors osi-vol`
-      coin_has_vol=notGiven
-        echo "$as_me:$LINENO: result: not given: $VOL_PKG_ERRORS" >&5
-echo "${ECHO_T}not given: $VOL_PKG_ERRORS" >&6
-
-  fi
-else
-  { { echo "$as_me:$LINENO: error: \"Cannot check for existance of module Vol without pkg-config\"" >&5
-echo "$as_me: error: \"Cannot check for existance of module Vol without pkg-config\"" >&2;}
-   { (exit 1); exit 1; }; }
-fi
-
-
-
-
-    # reset PKG_CONFIG_PATH variable
-    PKG_CONFIG_PATH="$coin_save_PKG_CONFIG_PATH"
-    export PKG_CONFIG_PATH
-  else
-    #if 4th argument is given, try fallback - whereby we take the first word from osi-vol as basename for the .pc file
-    echo "$as_me:$LINENO: result: skipped check via pkg-config" >&5
-echo "${ECHO_T}skipped check via pkg-config" >&6
-
-  fi
-
-else
-  echo "$as_me:$LINENO: result: $coin_has_vol" >&5
-echo "${ECHO_T}$coin_has_vol" >&6
-fi
-
-if test $coin_has_vol != skipping &&
-   test $coin_has_vol != notGiven ; then
-  if test 0 = 1 ; then  #change this test to enable a bit of debugging output
-  if test -n "$VOL_CFLAGS" ; then
-    { echo "$as_me:$LINENO: Vol CFLAGS are $VOL_CFLAGS" >&5
-echo "$as_me: Vol CFLAGS are $VOL_CFLAGS" >&6;}
-  fi
-  if test -n "$VOL_LIBS" ; then
-    { echo "$as_me:$LINENO: Vol LIBS   are $VOL_LIBS" >&5
-echo "$as_me: Vol LIBS   are $VOL_LIBS" >&6;}
-  fi
-  if test -n "$VOL_DATA" ; then
-    { echo "$as_me:$LINENO: Vol DATA   is  $VOL_DATA" >&5
-echo "$as_me: Vol DATA   is  $VOL_DATA" >&6;}
-  fi
-  fi
-
-cat >>confdefs.h <<\_ACEOF
-#define COIN_HAS_VOL 1
-_ACEOF
-
-fi
-
-# Define the Makefile conditional
-
-
-if test $coin_has_vol != notGiven &&
-                test $coin_has_vol != skipping; then
-  COIN_HAS_VOL_TRUE=
-  COIN_HAS_VOL_FALSE='#'
-else
-  COIN_HAS_VOL_TRUE='#'
-  COIN_HAS_VOL_FALSE=
-fi
-
-
 
 
 echo "$as_me:$LINENO: checking for COIN-OR module OsiTests" >&5
@@ -22003,48 +21392,95 @@ fi
     PKG_CONFIG_PATH="$coin_save_PKG_CONFIG_PATH"
     export PKG_CONFIG_PATH
   else
-    #if 4th argument is given, try fallback - whereby we take the first word from osi-unittests as basename for the .pc file
+    echo "$as_me:$LINENO: result: skipped check via pkg-config, redirect to fallback" >&5
+echo "${ECHO_T}skipped check via pkg-config, redirect to fallback" >&6
 
-if test x$coin_has_ositests != "xyes" ; then
-
-
+echo "$as_me:$LINENO: checking for COIN-OR module OsiTests (fallback)" >&5
+echo $ECHO_N "checking for COIN-OR module OsiTests (fallback)... $ECHO_C" >&6
 
 coin_has_ositests=notGiven
-
-# check if user wants to skip module in any case
-if test x"$COIN_SKIP_PROJECTS" != x; then
-  for dir in $COIN_SKIP_PROJECTS; do
-    if test $dir = "OsiTests"; then
-      coin_has_ositests=skipping
-    fi
-  done
-fi
-
 OSITESTS_LIBS=
 OSITESTS_CFLAGS=
 OSITESTS_DATA=
 
 
-if test $coin_has_ositests != "skipping" ; then
-  # if the project is available and configured, then a project-uninstalled.pc file should have been created
-  if test -r ../Osi/osi-unittests-uninstalled.pc ; then
-    # read CFLAGS and LIBS from m4_bpatsubst(osi-unittests, [ .*], [])-uninstalled.pc file
-    # add CYGPATH_W cludge into include flags
-    # replace -L${libdir} by absolute path to build directory in linker flags
-    # we assume that the build directory is ../Osi/src if this directory exists, otherwise we assume that it is ../Osi
-    OSITESTS_CFLAGS=`sed -n -e 's/Cflags://' -e 's/-I\([^ ]*\)/-I\`${CYGPATH_W} \1\`/gp' ../Osi/osi-unittests-uninstalled.pc`
-    projectlibs=`sed -n -e 's/Libs://' -e 's/-L\${libdir}//p' ../Osi/osi-unittests-uninstalled.pc`
-    if test "x$projectlibs" != x ; then
-      if test -d ../Osi/src ; then
-        OSITESTS_LIBS="-L`cd ../Osi/src; pwd` $projectlibs"
-      else
-        OSITESTS_LIBS="-L`cd ../Osi; pwd` $projectlibs"
-      fi
-    else
-      OSITESTS_LIBS=`sed -n -e 's/Libs://p' ../Osi/osi-unittests-uninstalled.pc`
-    fi
-    OSITESTS_DATA=`sed -n -e 's/datadir=//gp' ../Osi/osi-unittests-uninstalled.pc`
+# initial list of dependencies is "osi-unittests", but we need to filter out version number specifications (= x, <= x, >= x)
+projtoprocess="osi-unittests"
+projprocessed=""
 
+while test $coin_has_ositests = notGiven ; do
+  # setup list of projects that need to be processed in the next round
+  nextprojtoprocess=""
+
+  for proj in $projtoprocess ; do
+    # if $proj has been processed already, skip this round
+    if test "x$projprocessed" != x ; then
+      for projdone in $projprocessed ; do
+        if test $projdone = $proj ; then
+	  continue 2
+	fi
+      done
+    fi
+
+    # if $proj is available and configured, then a project-uninstalled.pc file should have been created, so search for it
+    pcfile=""
+    save_IFS="$IFS"
+    IFS=":"
+    for dir in $COIN_PKG_CONFIG_PATH_UNINSTALLED ; do
+      # the base directory configure should have setup coin_subdirs.txt in a way that it does not contain projects that should be skipped, so we do not need to test this here again
+      if test -r "$dir/$proj-uninstalled.pc" ; then
+        pcfile="$dir/$proj-uninstalled.pc"
+        pcfiledir="$dir"
+        break
+      fi
+    done
+    IFS="$save_IFS"
+
+    if test "x$pcfile" != x ; then
+      # read CFLAGS from $pcfile and add CYGPATH_W cludge into include flags
+      projcflags=`sed -n -e 's/Cflags://' -e 's/-I\([^ ]*\)/-I\`${CYGPATH_W} \1\`/gp' "$pcfile"`
+      OSITESTS_CFLAGS="$projcflags $OSITESTS_CFLAGS"
+
+      # read LIBS from $pcfile and replace -L${libdir} by absolute path to build directory in linker flags
+      # we assume that the build directory is $pcfiledir/src if this directory exists, otherwise we assume that it is $pcfiledir
+      projlibs=`sed -n -e 's/Libs://' -e 's/-L\${libdir}//p' "$pcfile"`
+      if test "x$projlibs" != x ; then
+        if test -d "${pcfiledir}/src" ; then
+          projlibs="-L`cd "${pcfiledir}/src"; pwd` $projlibs"
+        else
+          projlibs="-L`cd "$pcfiledir"; pwd` $projlibs"
+        fi
+      else
+        projlibs=`sed -n -e 's/Libs://p' "$pcfile"`
+      fi
+      OSITESTS_LIBS="$projlibs $OSITESTS_LIBS"
+
+      # read DATA from $pcfile, if this is the first .pc file we are processing (so assume that its the main one)
+      if test "x$projprocessed" = x ; then
+        OSITESTS_DATA=`sed -n -e 's/datadir=//gp' "$pcfile"`
+      fi
+
+      # read dependencies from $pcfile, filter it, and add to list of projects that need to be processed next
+      projrequires=`sed -n -e 's/Requires://gp' "$pcfile" | sed -e 's/<\?>\?=[ 	]*[^ 	]\+//g'`
+      nextprojtoprocess="$nextprojtoprocess $projrequires"
+
+      # remember that we have processed $proj
+      projprocessed="$projprocessed $proj"
+
+    else
+      echo "$as_me:$LINENO: result: no, dependency $proj not available" >&5
+echo "${ECHO_T}no, dependency $proj not available" >&6
+      break 2
+    fi
+
+  done
+
+  projtoprocess="$nextprojtoprocess"
+
+  if test "x$projtoprocess" = x ; then
+    coin_has_ositests=yes
+    echo "$as_me:$LINENO: result: yes, dependencies are$projprocessed" >&5
+echo "${ECHO_T}yes, dependencies are$projprocessed" >&6
 
 
 
@@ -22053,20 +21489,23 @@ cat >>confdefs.h <<\_ACEOF
 _ACEOF
 
 
-
-    coin_has_ositests=yes
-    echo "$as_me:$LINENO: result: ../Osi" >&5
-echo "${ECHO_T}../Osi" >&6
-  else
-    echo "$as_me:$LINENO: result: $coin_has_ositests" >&5
-echo "${ECHO_T}$coin_has_ositests" >&6
+    if test 1 = 0 ; then  #change this test to enable a bit of debugging output
+    if test -n "$OSITESTS_CFLAGS" ; then
+      { echo "$as_me:$LINENO: OsiTests CFLAGS are $OSITESTS_CFLAGS" >&5
+echo "$as_me: OsiTests CFLAGS are $OSITESTS_CFLAGS" >&6;}
+    fi
+    if test -n "$OSITESTS_LIBS" ; then
+      { echo "$as_me:$LINENO: OsiTests LIBS   are $OSITESTS_LIBS" >&5
+echo "$as_me: OsiTests LIBS   are $OSITESTS_LIBS" >&6;}
+    fi
+    if test -n "$OSITESTS_DATA" ; then
+      { echo "$as_me:$LINENO: OsiTests DATA   is  $OSITESTS_DATA" >&5
+echo "$as_me: OsiTests DATA   is  $OSITESTS_DATA" >&6;}
+    fi
+    fi
   fi
-else
-  echo "$as_me:$LINENO: result: skipping" >&5
-echo "${ECHO_T}skipping" >&6
-fi
+done
 
-#if user did not disable setting of makefile conditional, do it
 
 
 if test $coin_has_ositests != notGiven &&
@@ -22078,8 +21517,6 @@ else
   COIN_HAS_OSITESTS_FALSE=
 fi
 
-
-fi
 
 
   fi
@@ -22232,48 +21669,95 @@ fi
     PKG_CONFIG_PATH="$coin_save_PKG_CONFIG_PATH"
     export PKG_CONFIG_PATH
   else
-    #if 4th argument is given, try fallback - whereby we take the first word from coindatasample as basename for the .pc file
+    echo "$as_me:$LINENO: result: skipped check via pkg-config, redirect to fallback" >&5
+echo "${ECHO_T}skipped check via pkg-config, redirect to fallback" >&6
 
-if test x$coin_has_sample != "xyes" ; then
-
-
+echo "$as_me:$LINENO: checking for COIN-OR module Sample (fallback)" >&5
+echo $ECHO_N "checking for COIN-OR module Sample (fallback)... $ECHO_C" >&6
 
 coin_has_sample=notGiven
-
-# check if user wants to skip module in any case
-if test x"$COIN_SKIP_PROJECTS" != x; then
-  for dir in $COIN_SKIP_PROJECTS; do
-    if test $dir = "Sample"; then
-      coin_has_sample=skipping
-    fi
-  done
-fi
-
 SAMPLE_LIBS=
 SAMPLE_CFLAGS=
 SAMPLE_DATA=
 
 
-if test $coin_has_sample != "skipping" ; then
-  # if the project is available and configured, then a project-uninstalled.pc file should have been created
-  if test -r ../Data/Sample/coindatasample-uninstalled.pc ; then
-    # read CFLAGS and LIBS from m4_bpatsubst(coindatasample, [ .*], [])-uninstalled.pc file
-    # add CYGPATH_W cludge into include flags
-    # replace -L${libdir} by absolute path to build directory in linker flags
-    # we assume that the build directory is ../Data/Sample/src if this directory exists, otherwise we assume that it is ../Data/Sample
-    SAMPLE_CFLAGS=`sed -n -e 's/Cflags://' -e 's/-I\([^ ]*\)/-I\`${CYGPATH_W} \1\`/gp' ../Data/Sample/coindatasample-uninstalled.pc`
-    projectlibs=`sed -n -e 's/Libs://' -e 's/-L\${libdir}//p' ../Data/Sample/coindatasample-uninstalled.pc`
-    if test "x$projectlibs" != x ; then
-      if test -d ../Data/Sample/src ; then
-        SAMPLE_LIBS="-L`cd ../Data/Sample/src; pwd` $projectlibs"
-      else
-        SAMPLE_LIBS="-L`cd ../Data/Sample; pwd` $projectlibs"
-      fi
-    else
-      SAMPLE_LIBS=`sed -n -e 's/Libs://p' ../Data/Sample/coindatasample-uninstalled.pc`
-    fi
-    SAMPLE_DATA=`sed -n -e 's/datadir=//gp' ../Data/Sample/coindatasample-uninstalled.pc`
+# initial list of dependencies is "coindatasample", but we need to filter out version number specifications (= x, <= x, >= x)
+projtoprocess="coindatasample"
+projprocessed=""
 
+while test $coin_has_sample = notGiven ; do
+  # setup list of projects that need to be processed in the next round
+  nextprojtoprocess=""
+
+  for proj in $projtoprocess ; do
+    # if $proj has been processed already, skip this round
+    if test "x$projprocessed" != x ; then
+      for projdone in $projprocessed ; do
+        if test $projdone = $proj ; then
+	  continue 2
+	fi
+      done
+    fi
+
+    # if $proj is available and configured, then a project-uninstalled.pc file should have been created, so search for it
+    pcfile=""
+    save_IFS="$IFS"
+    IFS=":"
+    for dir in $COIN_PKG_CONFIG_PATH_UNINSTALLED ; do
+      # the base directory configure should have setup coin_subdirs.txt in a way that it does not contain projects that should be skipped, so we do not need to test this here again
+      if test -r "$dir/$proj-uninstalled.pc" ; then
+        pcfile="$dir/$proj-uninstalled.pc"
+        pcfiledir="$dir"
+        break
+      fi
+    done
+    IFS="$save_IFS"
+
+    if test "x$pcfile" != x ; then
+      # read CFLAGS from $pcfile and add CYGPATH_W cludge into include flags
+      projcflags=`sed -n -e 's/Cflags://' -e 's/-I\([^ ]*\)/-I\`${CYGPATH_W} \1\`/gp' "$pcfile"`
+      SAMPLE_CFLAGS="$projcflags $SAMPLE_CFLAGS"
+
+      # read LIBS from $pcfile and replace -L${libdir} by absolute path to build directory in linker flags
+      # we assume that the build directory is $pcfiledir/src if this directory exists, otherwise we assume that it is $pcfiledir
+      projlibs=`sed -n -e 's/Libs://' -e 's/-L\${libdir}//p' "$pcfile"`
+      if test "x$projlibs" != x ; then
+        if test -d "${pcfiledir}/src" ; then
+          projlibs="-L`cd "${pcfiledir}/src"; pwd` $projlibs"
+        else
+          projlibs="-L`cd "$pcfiledir"; pwd` $projlibs"
+        fi
+      else
+        projlibs=`sed -n -e 's/Libs://p' "$pcfile"`
+      fi
+      SAMPLE_LIBS="$projlibs $SAMPLE_LIBS"
+
+      # read DATA from $pcfile, if this is the first .pc file we are processing (so assume that its the main one)
+      if test "x$projprocessed" = x ; then
+        SAMPLE_DATA=`sed -n -e 's/datadir=//gp' "$pcfile"`
+      fi
+
+      # read dependencies from $pcfile, filter it, and add to list of projects that need to be processed next
+      projrequires=`sed -n -e 's/Requires://gp' "$pcfile" | sed -e 's/<\?>\?=[ 	]*[^ 	]\+//g'`
+      nextprojtoprocess="$nextprojtoprocess $projrequires"
+
+      # remember that we have processed $proj
+      projprocessed="$projprocessed $proj"
+
+    else
+      echo "$as_me:$LINENO: result: no, dependency $proj not available" >&5
+echo "${ECHO_T}no, dependency $proj not available" >&6
+      break 2
+    fi
+
+  done
+
+  projtoprocess="$nextprojtoprocess"
+
+  if test "x$projtoprocess" = x ; then
+    coin_has_sample=yes
+    echo "$as_me:$LINENO: result: yes, dependencies are$projprocessed" >&5
+echo "${ECHO_T}yes, dependencies are$projprocessed" >&6
 
 
 
@@ -22282,20 +21766,23 @@ cat >>confdefs.h <<\_ACEOF
 _ACEOF
 
 
-
-    coin_has_sample=yes
-    echo "$as_me:$LINENO: result: ../Data/Sample" >&5
-echo "${ECHO_T}../Data/Sample" >&6
-  else
-    echo "$as_me:$LINENO: result: $coin_has_sample" >&5
-echo "${ECHO_T}$coin_has_sample" >&6
+    if test 1 = 0 ; then  #change this test to enable a bit of debugging output
+    if test -n "$SAMPLE_CFLAGS" ; then
+      { echo "$as_me:$LINENO: Sample CFLAGS are $SAMPLE_CFLAGS" >&5
+echo "$as_me: Sample CFLAGS are $SAMPLE_CFLAGS" >&6;}
+    fi
+    if test -n "$SAMPLE_LIBS" ; then
+      { echo "$as_me:$LINENO: Sample LIBS   are $SAMPLE_LIBS" >&5
+echo "$as_me: Sample LIBS   are $SAMPLE_LIBS" >&6;}
+    fi
+    if test -n "$SAMPLE_DATA" ; then
+      { echo "$as_me:$LINENO: Sample DATA   is  $SAMPLE_DATA" >&5
+echo "$as_me: Sample DATA   is  $SAMPLE_DATA" >&6;}
+    fi
+    fi
   fi
-else
-  echo "$as_me:$LINENO: result: skipping" >&5
-echo "${ECHO_T}skipping" >&6
-fi
+done
 
-#if user did not disable setting of makefile conditional, do it
 
 
 if test $coin_has_sample != notGiven &&
@@ -22307,8 +21794,6 @@ else
   COIN_HAS_SAMPLE_FALSE=
 fi
 
-
-fi
 
 
   fi
@@ -22460,48 +21945,95 @@ fi
     PKG_CONFIG_PATH="$coin_save_PKG_CONFIG_PATH"
     export PKG_CONFIG_PATH
   else
-    #if 4th argument is given, try fallback - whereby we take the first word from coindatanetlib as basename for the .pc file
+    echo "$as_me:$LINENO: result: skipped check via pkg-config, redirect to fallback" >&5
+echo "${ECHO_T}skipped check via pkg-config, redirect to fallback" >&6
 
-if test x$coin_has_netlib != "xyes" ; then
-
-
+echo "$as_me:$LINENO: checking for COIN-OR module Netlib (fallback)" >&5
+echo $ECHO_N "checking for COIN-OR module Netlib (fallback)... $ECHO_C" >&6
 
 coin_has_netlib=notGiven
-
-# check if user wants to skip module in any case
-if test x"$COIN_SKIP_PROJECTS" != x; then
-  for dir in $COIN_SKIP_PROJECTS; do
-    if test $dir = "Netlib"; then
-      coin_has_netlib=skipping
-    fi
-  done
-fi
-
 NETLIB_LIBS=
 NETLIB_CFLAGS=
 NETLIB_DATA=
 
 
-if test $coin_has_netlib != "skipping" ; then
-  # if the project is available and configured, then a project-uninstalled.pc file should have been created
-  if test -r ../Data/Netlib/coindatanetlib-uninstalled.pc ; then
-    # read CFLAGS and LIBS from m4_bpatsubst(coindatanetlib, [ .*], [])-uninstalled.pc file
-    # add CYGPATH_W cludge into include flags
-    # replace -L${libdir} by absolute path to build directory in linker flags
-    # we assume that the build directory is ../Data/Netlib/src if this directory exists, otherwise we assume that it is ../Data/Netlib
-    NETLIB_CFLAGS=`sed -n -e 's/Cflags://' -e 's/-I\([^ ]*\)/-I\`${CYGPATH_W} \1\`/gp' ../Data/Netlib/coindatanetlib-uninstalled.pc`
-    projectlibs=`sed -n -e 's/Libs://' -e 's/-L\${libdir}//p' ../Data/Netlib/coindatanetlib-uninstalled.pc`
-    if test "x$projectlibs" != x ; then
-      if test -d ../Data/Netlib/src ; then
-        NETLIB_LIBS="-L`cd ../Data/Netlib/src; pwd` $projectlibs"
-      else
-        NETLIB_LIBS="-L`cd ../Data/Netlib; pwd` $projectlibs"
-      fi
-    else
-      NETLIB_LIBS=`sed -n -e 's/Libs://p' ../Data/Netlib/coindatanetlib-uninstalled.pc`
-    fi
-    NETLIB_DATA=`sed -n -e 's/datadir=//gp' ../Data/Netlib/coindatanetlib-uninstalled.pc`
+# initial list of dependencies is "coindatanetlib", but we need to filter out version number specifications (= x, <= x, >= x)
+projtoprocess="coindatanetlib"
+projprocessed=""
 
+while test $coin_has_netlib = notGiven ; do
+  # setup list of projects that need to be processed in the next round
+  nextprojtoprocess=""
+
+  for proj in $projtoprocess ; do
+    # if $proj has been processed already, skip this round
+    if test "x$projprocessed" != x ; then
+      for projdone in $projprocessed ; do
+        if test $projdone = $proj ; then
+	  continue 2
+	fi
+      done
+    fi
+
+    # if $proj is available and configured, then a project-uninstalled.pc file should have been created, so search for it
+    pcfile=""
+    save_IFS="$IFS"
+    IFS=":"
+    for dir in $COIN_PKG_CONFIG_PATH_UNINSTALLED ; do
+      # the base directory configure should have setup coin_subdirs.txt in a way that it does not contain projects that should be skipped, so we do not need to test this here again
+      if test -r "$dir/$proj-uninstalled.pc" ; then
+        pcfile="$dir/$proj-uninstalled.pc"
+        pcfiledir="$dir"
+        break
+      fi
+    done
+    IFS="$save_IFS"
+
+    if test "x$pcfile" != x ; then
+      # read CFLAGS from $pcfile and add CYGPATH_W cludge into include flags
+      projcflags=`sed -n -e 's/Cflags://' -e 's/-I\([^ ]*\)/-I\`${CYGPATH_W} \1\`/gp' "$pcfile"`
+      NETLIB_CFLAGS="$projcflags $NETLIB_CFLAGS"
+
+      # read LIBS from $pcfile and replace -L${libdir} by absolute path to build directory in linker flags
+      # we assume that the build directory is $pcfiledir/src if this directory exists, otherwise we assume that it is $pcfiledir
+      projlibs=`sed -n -e 's/Libs://' -e 's/-L\${libdir}//p' "$pcfile"`
+      if test "x$projlibs" != x ; then
+        if test -d "${pcfiledir}/src" ; then
+          projlibs="-L`cd "${pcfiledir}/src"; pwd` $projlibs"
+        else
+          projlibs="-L`cd "$pcfiledir"; pwd` $projlibs"
+        fi
+      else
+        projlibs=`sed -n -e 's/Libs://p' "$pcfile"`
+      fi
+      NETLIB_LIBS="$projlibs $NETLIB_LIBS"
+
+      # read DATA from $pcfile, if this is the first .pc file we are processing (so assume that its the main one)
+      if test "x$projprocessed" = x ; then
+        NETLIB_DATA=`sed -n -e 's/datadir=//gp' "$pcfile"`
+      fi
+
+      # read dependencies from $pcfile, filter it, and add to list of projects that need to be processed next
+      projrequires=`sed -n -e 's/Requires://gp' "$pcfile" | sed -e 's/<\?>\?=[ 	]*[^ 	]\+//g'`
+      nextprojtoprocess="$nextprojtoprocess $projrequires"
+
+      # remember that we have processed $proj
+      projprocessed="$projprocessed $proj"
+
+    else
+      echo "$as_me:$LINENO: result: no, dependency $proj not available" >&5
+echo "${ECHO_T}no, dependency $proj not available" >&6
+      break 2
+    fi
+
+  done
+
+  projtoprocess="$nextprojtoprocess"
+
+  if test "x$projtoprocess" = x ; then
+    coin_has_netlib=yes
+    echo "$as_me:$LINENO: result: yes, dependencies are$projprocessed" >&5
+echo "${ECHO_T}yes, dependencies are$projprocessed" >&6
 
 
 
@@ -22510,20 +22042,23 @@ cat >>confdefs.h <<\_ACEOF
 _ACEOF
 
 
-
-    coin_has_netlib=yes
-    echo "$as_me:$LINENO: result: ../Data/Netlib" >&5
-echo "${ECHO_T}../Data/Netlib" >&6
-  else
-    echo "$as_me:$LINENO: result: $coin_has_netlib" >&5
-echo "${ECHO_T}$coin_has_netlib" >&6
+    if test 1 = 0 ; then  #change this test to enable a bit of debugging output
+    if test -n "$NETLIB_CFLAGS" ; then
+      { echo "$as_me:$LINENO: Netlib CFLAGS are $NETLIB_CFLAGS" >&5
+echo "$as_me: Netlib CFLAGS are $NETLIB_CFLAGS" >&6;}
+    fi
+    if test -n "$NETLIB_LIBS" ; then
+      { echo "$as_me:$LINENO: Netlib LIBS   are $NETLIB_LIBS" >&5
+echo "$as_me: Netlib LIBS   are $NETLIB_LIBS" >&6;}
+    fi
+    if test -n "$NETLIB_DATA" ; then
+      { echo "$as_me:$LINENO: Netlib DATA   is  $NETLIB_DATA" >&5
+echo "$as_me: Netlib DATA   is  $NETLIB_DATA" >&6;}
+    fi
+    fi
   fi
-else
-  echo "$as_me:$LINENO: result: skipping" >&5
-echo "${ECHO_T}skipping" >&6
-fi
+done
 
-#if user did not disable setting of makefile conditional, do it
 
 
 if test $coin_has_netlib != notGiven &&
@@ -22535,8 +22070,6 @@ else
   COIN_HAS_NETLIB_FALSE=
 fi
 
-
-fi
 
 
   fi
@@ -22688,48 +22221,95 @@ fi
     PKG_CONFIG_PATH="$coin_save_PKG_CONFIG_PATH"
     export PKG_CONFIG_PATH
   else
-    #if 4th argument is given, try fallback - whereby we take the first word from coindatamiplib3 as basename for the .pc file
+    echo "$as_me:$LINENO: result: skipped check via pkg-config, redirect to fallback" >&5
+echo "${ECHO_T}skipped check via pkg-config, redirect to fallback" >&6
 
-if test x$coin_has_miplib3 != "xyes" ; then
-
-
+echo "$as_me:$LINENO: checking for COIN-OR module Miplib3 (fallback)" >&5
+echo $ECHO_N "checking for COIN-OR module Miplib3 (fallback)... $ECHO_C" >&6
 
 coin_has_miplib3=notGiven
-
-# check if user wants to skip module in any case
-if test x"$COIN_SKIP_PROJECTS" != x; then
-  for dir in $COIN_SKIP_PROJECTS; do
-    if test $dir = "Miplib3"; then
-      coin_has_miplib3=skipping
-    fi
-  done
-fi
-
 MIPLIB3_LIBS=
 MIPLIB3_CFLAGS=
 MIPLIB3_DATA=
 
 
-if test $coin_has_miplib3 != "skipping" ; then
-  # if the project is available and configured, then a project-uninstalled.pc file should have been created
-  if test -r ../Data/Miplib3/coindatamiplib3-uninstalled.pc ; then
-    # read CFLAGS and LIBS from m4_bpatsubst(coindatamiplib3, [ .*], [])-uninstalled.pc file
-    # add CYGPATH_W cludge into include flags
-    # replace -L${libdir} by absolute path to build directory in linker flags
-    # we assume that the build directory is ../Data/Miplib3/src if this directory exists, otherwise we assume that it is ../Data/Miplib3
-    MIPLIB3_CFLAGS=`sed -n -e 's/Cflags://' -e 's/-I\([^ ]*\)/-I\`${CYGPATH_W} \1\`/gp' ../Data/Miplib3/coindatamiplib3-uninstalled.pc`
-    projectlibs=`sed -n -e 's/Libs://' -e 's/-L\${libdir}//p' ../Data/Miplib3/coindatamiplib3-uninstalled.pc`
-    if test "x$projectlibs" != x ; then
-      if test -d ../Data/Miplib3/src ; then
-        MIPLIB3_LIBS="-L`cd ../Data/Miplib3/src; pwd` $projectlibs"
-      else
-        MIPLIB3_LIBS="-L`cd ../Data/Miplib3; pwd` $projectlibs"
-      fi
-    else
-      MIPLIB3_LIBS=`sed -n -e 's/Libs://p' ../Data/Miplib3/coindatamiplib3-uninstalled.pc`
-    fi
-    MIPLIB3_DATA=`sed -n -e 's/datadir=//gp' ../Data/Miplib3/coindatamiplib3-uninstalled.pc`
+# initial list of dependencies is "coindatamiplib3", but we need to filter out version number specifications (= x, <= x, >= x)
+projtoprocess="coindatamiplib3"
+projprocessed=""
 
+while test $coin_has_miplib3 = notGiven ; do
+  # setup list of projects that need to be processed in the next round
+  nextprojtoprocess=""
+
+  for proj in $projtoprocess ; do
+    # if $proj has been processed already, skip this round
+    if test "x$projprocessed" != x ; then
+      for projdone in $projprocessed ; do
+        if test $projdone = $proj ; then
+	  continue 2
+	fi
+      done
+    fi
+
+    # if $proj is available and configured, then a project-uninstalled.pc file should have been created, so search for it
+    pcfile=""
+    save_IFS="$IFS"
+    IFS=":"
+    for dir in $COIN_PKG_CONFIG_PATH_UNINSTALLED ; do
+      # the base directory configure should have setup coin_subdirs.txt in a way that it does not contain projects that should be skipped, so we do not need to test this here again
+      if test -r "$dir/$proj-uninstalled.pc" ; then
+        pcfile="$dir/$proj-uninstalled.pc"
+        pcfiledir="$dir"
+        break
+      fi
+    done
+    IFS="$save_IFS"
+
+    if test "x$pcfile" != x ; then
+      # read CFLAGS from $pcfile and add CYGPATH_W cludge into include flags
+      projcflags=`sed -n -e 's/Cflags://' -e 's/-I\([^ ]*\)/-I\`${CYGPATH_W} \1\`/gp' "$pcfile"`
+      MIPLIB3_CFLAGS="$projcflags $MIPLIB3_CFLAGS"
+
+      # read LIBS from $pcfile and replace -L${libdir} by absolute path to build directory in linker flags
+      # we assume that the build directory is $pcfiledir/src if this directory exists, otherwise we assume that it is $pcfiledir
+      projlibs=`sed -n -e 's/Libs://' -e 's/-L\${libdir}//p' "$pcfile"`
+      if test "x$projlibs" != x ; then
+        if test -d "${pcfiledir}/src" ; then
+          projlibs="-L`cd "${pcfiledir}/src"; pwd` $projlibs"
+        else
+          projlibs="-L`cd "$pcfiledir"; pwd` $projlibs"
+        fi
+      else
+        projlibs=`sed -n -e 's/Libs://p' "$pcfile"`
+      fi
+      MIPLIB3_LIBS="$projlibs $MIPLIB3_LIBS"
+
+      # read DATA from $pcfile, if this is the first .pc file we are processing (so assume that its the main one)
+      if test "x$projprocessed" = x ; then
+        MIPLIB3_DATA=`sed -n -e 's/datadir=//gp' "$pcfile"`
+      fi
+
+      # read dependencies from $pcfile, filter it, and add to list of projects that need to be processed next
+      projrequires=`sed -n -e 's/Requires://gp' "$pcfile" | sed -e 's/<\?>\?=[ 	]*[^ 	]\+//g'`
+      nextprojtoprocess="$nextprojtoprocess $projrequires"
+
+      # remember that we have processed $proj
+      projprocessed="$projprocessed $proj"
+
+    else
+      echo "$as_me:$LINENO: result: no, dependency $proj not available" >&5
+echo "${ECHO_T}no, dependency $proj not available" >&6
+      break 2
+    fi
+
+  done
+
+  projtoprocess="$nextprojtoprocess"
+
+  if test "x$projtoprocess" = x ; then
+    coin_has_miplib3=yes
+    echo "$as_me:$LINENO: result: yes, dependencies are$projprocessed" >&5
+echo "${ECHO_T}yes, dependencies are$projprocessed" >&6
 
 
 
@@ -22738,20 +22318,23 @@ cat >>confdefs.h <<\_ACEOF
 _ACEOF
 
 
-
-    coin_has_miplib3=yes
-    echo "$as_me:$LINENO: result: ../Data/Miplib3" >&5
-echo "${ECHO_T}../Data/Miplib3" >&6
-  else
-    echo "$as_me:$LINENO: result: $coin_has_miplib3" >&5
-echo "${ECHO_T}$coin_has_miplib3" >&6
+    if test 1 = 0 ; then  #change this test to enable a bit of debugging output
+    if test -n "$MIPLIB3_CFLAGS" ; then
+      { echo "$as_me:$LINENO: Miplib3 CFLAGS are $MIPLIB3_CFLAGS" >&5
+echo "$as_me: Miplib3 CFLAGS are $MIPLIB3_CFLAGS" >&6;}
+    fi
+    if test -n "$MIPLIB3_LIBS" ; then
+      { echo "$as_me:$LINENO: Miplib3 LIBS   are $MIPLIB3_LIBS" >&5
+echo "$as_me: Miplib3 LIBS   are $MIPLIB3_LIBS" >&6;}
+    fi
+    if test -n "$MIPLIB3_DATA" ; then
+      { echo "$as_me:$LINENO: Miplib3 DATA   is  $MIPLIB3_DATA" >&5
+echo "$as_me: Miplib3 DATA   is  $MIPLIB3_DATA" >&6;}
+    fi
+    fi
   fi
-else
-  echo "$as_me:$LINENO: result: skipping" >&5
-echo "${ECHO_T}skipping" >&6
-fi
+done
 
-#if user did not disable setting of makefile conditional, do it
 
 
 if test $coin_has_miplib3 != notGiven &&
@@ -22763,8 +22346,6 @@ else
   COIN_HAS_MIPLIB3_FALSE=
 fi
 
-
-fi
 
 
   fi
@@ -22813,10 +22394,562 @@ fi
 
 
 #############################################################################
-#                            Third party solvers                            #
+#                    LP solvers other than CLP                              #
 #############################################################################
 
-# Check which third party solvers are available
+# Check which other LP solvers are available
+
+echo "$as_me:$LINENO: checking for COIN-OR module DyLP" >&5
+echo $ECHO_N "checking for COIN-OR module DyLP... $ECHO_C" >&6
+
+coin_has_dylp=notGiven
+
+# check if user wants to skip module in any case
+if test x"$COIN_SKIP_PROJECTS" != x; then
+  for dir in $COIN_SKIP_PROJECTS; do
+    if test $dir = "DyLP"; then
+      coin_has_dylp=skipping
+    fi
+  done
+fi
+
+DYLP_LIBS=
+DYLP_CFLAGS=
+DYLP_DATA=
+
+
+
+
+
+#check if user provided LIBS, CFLAGS, or DATA for module
+if test $coin_has_dylp != skipping; then
+
+
+# Check whether --with-m4_tolower(DyLP)-lib or --without-m4_tolower(DyLP)-lib was given.
+if test "${with_dylp_lib+set}" = set; then
+  withval="$with_dylp_lib"
+  coin_has_dylp=yes
+       DYLP_LIBS="$withval"
+       PCADDLIBS="$withval $PCADDLIBS"
+
+fi;
+
+
+# Check whether --with-m4_tolower(DyLP)-incdir or --without-m4_tolower(DyLP)-incdir was given.
+if test "${with_dylp_incdir+set}" = set; then
+  withval="$with_dylp_incdir"
+  coin_has_dylp=yes
+     DYLP_CFLAGS="-I`${CYGPATH_W} $withval`"
+fi;
+
+
+# Check whether --with-m4_tolower(DyLP)-datadir or --without-m4_tolower(DyLP)-datadir was given.
+if test "${with_dylp_datadir+set}" = set; then
+  withval="$with_dylp_datadir"
+  coin_has_dylp=yes
+     DYLP_DATA="$withval"
+fi;
+fi
+
+if test $coin_has_dylp = notGiven; then
+  if test -n "$PKG_CONFIG" ; then
+    # set search path for pkg-config
+    # need to export variable to be sure that the following pkg-config gets these values
+    coin_save_PKG_CONFIG_PATH="$PKG_CONFIG_PATH"
+    PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH:$COIN_PKG_CONFIG_PATH_UNINSTALLED"
+    export PKG_CONFIG_PATH
+
+    # let pkg-config do it's magic
+
+
+
+if test -n "$PKG_CONFIG" ; then
+  if $PKG_CONFIG --exists "osi-dylp"; then
+    DYLP_VERSIONS="`$PKG_CONFIG --modversion osi-dylp 2>/dev/null`"
+     cflags=`$PKG_CONFIG --cflags "osi-dylp" 2>/dev/null`
+    # pkg-config cannot handle spaces, so CYGPATH_W cannot be put into .pc files
+	# thus, we modify the cflags extracted from pkg-config by putting CYGPATH_W behind -I's
+	# but only do this if is not trivial
+    if test "$CYGPATH_W" != "echo" ; then
+      # need to put into brackets since otherwise autoconf replaces the brackets in the sed command
+	  cflags=`echo $cflags | sed -e 's/-I\([^ ]*\)/-I\`${CYGPATH_W} \1\`/g'`
+	fi
+    DYLP_CFLAGS="$cflags"
+    DYLP_LIBS=`$PKG_CONFIG --libs "osi-dylp" 2>/dev/null`
+    DYLP_DATA=`$PKG_CONFIG --variable=datadir "osi-dylp" 2>/dev/null`
+     coin_has_dylp=yes
+        echo "$as_me:$LINENO: result: yes: $DYLP_VERSIONS" >&5
+echo "${ECHO_T}yes: $DYLP_VERSIONS" >&6
+        REQUIREDPACKAGES="osi-dylp $REQUIREDPACKAGES"
+
+
+  else
+    DYLP_PKG_ERRORS=`$PKG_CONFIG $pkg_short_errors --errors-to-stdout --print-errors osi-dylp`
+      coin_has_dylp=notGiven
+        echo "$as_me:$LINENO: result: not given: $DYLP_PKG_ERRORS" >&5
+echo "${ECHO_T}not given: $DYLP_PKG_ERRORS" >&6
+
+  fi
+else
+  { { echo "$as_me:$LINENO: error: \"Cannot check for existance of module DyLP without pkg-config\"" >&5
+echo "$as_me: error: \"Cannot check for existance of module DyLP without pkg-config\"" >&2;}
+   { (exit 1); exit 1; }; }
+fi
+
+
+
+
+    # reset PKG_CONFIG_PATH variable
+    PKG_CONFIG_PATH="$coin_save_PKG_CONFIG_PATH"
+    export PKG_CONFIG_PATH
+  else
+    echo "$as_me:$LINENO: result: skipped check via pkg-config, redirect to fallback" >&5
+echo "${ECHO_T}skipped check via pkg-config, redirect to fallback" >&6
+
+echo "$as_me:$LINENO: checking for COIN-OR module DyLP (fallback)" >&5
+echo $ECHO_N "checking for COIN-OR module DyLP (fallback)... $ECHO_C" >&6
+
+coin_has_dylp=notGiven
+DYLP_LIBS=
+DYLP_CFLAGS=
+DYLP_DATA=
+
+
+# initial list of dependencies is "osi-dylp", but we need to filter out version number specifications (= x, <= x, >= x)
+projtoprocess="osi-dylp"
+projprocessed=""
+
+while test $coin_has_dylp = notGiven ; do
+  # setup list of projects that need to be processed in the next round
+  nextprojtoprocess=""
+
+  for proj in $projtoprocess ; do
+    # if $proj has been processed already, skip this round
+    if test "x$projprocessed" != x ; then
+      for projdone in $projprocessed ; do
+        if test $projdone = $proj ; then
+	  continue 2
+	fi
+      done
+    fi
+
+    # if $proj is available and configured, then a project-uninstalled.pc file should have been created, so search for it
+    pcfile=""
+    save_IFS="$IFS"
+    IFS=":"
+    for dir in $COIN_PKG_CONFIG_PATH_UNINSTALLED ; do
+      # the base directory configure should have setup coin_subdirs.txt in a way that it does not contain projects that should be skipped, so we do not need to test this here again
+      if test -r "$dir/$proj-uninstalled.pc" ; then
+        pcfile="$dir/$proj-uninstalled.pc"
+        pcfiledir="$dir"
+        break
+      fi
+    done
+    IFS="$save_IFS"
+
+    if test "x$pcfile" != x ; then
+      # read CFLAGS from $pcfile and add CYGPATH_W cludge into include flags
+      projcflags=`sed -n -e 's/Cflags://' -e 's/-I\([^ ]*\)/-I\`${CYGPATH_W} \1\`/gp' "$pcfile"`
+      DYLP_CFLAGS="$projcflags $DYLP_CFLAGS"
+
+      # read LIBS from $pcfile and replace -L${libdir} by absolute path to build directory in linker flags
+      # we assume that the build directory is $pcfiledir/src if this directory exists, otherwise we assume that it is $pcfiledir
+      projlibs=`sed -n -e 's/Libs://' -e 's/-L\${libdir}//p' "$pcfile"`
+      if test "x$projlibs" != x ; then
+        if test -d "${pcfiledir}/src" ; then
+          projlibs="-L`cd "${pcfiledir}/src"; pwd` $projlibs"
+        else
+          projlibs="-L`cd "$pcfiledir"; pwd` $projlibs"
+        fi
+      else
+        projlibs=`sed -n -e 's/Libs://p' "$pcfile"`
+      fi
+      DYLP_LIBS="$projlibs $DYLP_LIBS"
+
+      # read DATA from $pcfile, if this is the first .pc file we are processing (so assume that its the main one)
+      if test "x$projprocessed" = x ; then
+        DYLP_DATA=`sed -n -e 's/datadir=//gp' "$pcfile"`
+      fi
+
+      # read dependencies from $pcfile, filter it, and add to list of projects that need to be processed next
+      projrequires=`sed -n -e 's/Requires://gp' "$pcfile" | sed -e 's/<\?>\?=[ 	]*[^ 	]\+//g'`
+      nextprojtoprocess="$nextprojtoprocess $projrequires"
+
+      # remember that we have processed $proj
+      projprocessed="$projprocessed $proj"
+
+    else
+      echo "$as_me:$LINENO: result: no, dependency $proj not available" >&5
+echo "${ECHO_T}no, dependency $proj not available" >&6
+      break 2
+    fi
+
+  done
+
+  projtoprocess="$nextprojtoprocess"
+
+  if test "x$projtoprocess" = x ; then
+    coin_has_dylp=yes
+    echo "$as_me:$LINENO: result: yes, dependencies are$projprocessed" >&5
+echo "${ECHO_T}yes, dependencies are$projprocessed" >&6
+
+    REQUIREDPACKAGES="osi-dylp $REQUIREDPACKAGES"
+
+cat >>confdefs.h <<\_ACEOF
+#define COIN_HAS_DYLP 1
+_ACEOF
+
+
+    if test 1 = 0 ; then  #change this test to enable a bit of debugging output
+    if test -n "$DYLP_CFLAGS" ; then
+      { echo "$as_me:$LINENO: DyLP CFLAGS are $DYLP_CFLAGS" >&5
+echo "$as_me: DyLP CFLAGS are $DYLP_CFLAGS" >&6;}
+    fi
+    if test -n "$DYLP_LIBS" ; then
+      { echo "$as_me:$LINENO: DyLP LIBS   are $DYLP_LIBS" >&5
+echo "$as_me: DyLP LIBS   are $DYLP_LIBS" >&6;}
+    fi
+    if test -n "$DYLP_DATA" ; then
+      { echo "$as_me:$LINENO: DyLP DATA   is  $DYLP_DATA" >&5
+echo "$as_me: DyLP DATA   is  $DYLP_DATA" >&6;}
+    fi
+    fi
+  fi
+done
+
+
+
+if test $coin_has_dylp != notGiven &&
+                test $coin_has_dylp != skipping; then
+  COIN_HAS_DYLP_TRUE=
+  COIN_HAS_DYLP_FALSE='#'
+else
+  COIN_HAS_DYLP_TRUE='#'
+  COIN_HAS_DYLP_FALSE=
+fi
+
+
+
+  fi
+
+else
+  echo "$as_me:$LINENO: result: $coin_has_dylp" >&5
+echo "${ECHO_T}$coin_has_dylp" >&6
+fi
+
+if test $coin_has_dylp != skipping &&
+   test $coin_has_dylp != notGiven ; then
+  if test 0 = 1 ; then  #change this test to enable a bit of debugging output
+  if test -n "$DYLP_CFLAGS" ; then
+    { echo "$as_me:$LINENO: DyLP CFLAGS are $DYLP_CFLAGS" >&5
+echo "$as_me: DyLP CFLAGS are $DYLP_CFLAGS" >&6;}
+  fi
+  if test -n "$DYLP_LIBS" ; then
+    { echo "$as_me:$LINENO: DyLP LIBS   are $DYLP_LIBS" >&5
+echo "$as_me: DyLP LIBS   are $DYLP_LIBS" >&6;}
+  fi
+  if test -n "$DYLP_DATA" ; then
+    { echo "$as_me:$LINENO: DyLP DATA   is  $DYLP_DATA" >&5
+echo "$as_me: DyLP DATA   is  $DYLP_DATA" >&6;}
+  fi
+  fi
+
+cat >>confdefs.h <<\_ACEOF
+#define COIN_HAS_DYLP 1
+_ACEOF
+
+fi
+
+# Define the Makefile conditional
+
+
+if test $coin_has_dylp != notGiven &&
+                test $coin_has_dylp != skipping; then
+  COIN_HAS_DYLP_TRUE=
+  COIN_HAS_DYLP_FALSE='#'
+else
+  COIN_HAS_DYLP_TRUE='#'
+  COIN_HAS_DYLP_FALSE=
+fi
+
+
+
+
+echo "$as_me:$LINENO: checking for COIN-OR module Vol" >&5
+echo $ECHO_N "checking for COIN-OR module Vol... $ECHO_C" >&6
+
+coin_has_vol=notGiven
+
+# check if user wants to skip module in any case
+if test x"$COIN_SKIP_PROJECTS" != x; then
+  for dir in $COIN_SKIP_PROJECTS; do
+    if test $dir = "Vol"; then
+      coin_has_vol=skipping
+    fi
+  done
+fi
+
+VOL_LIBS=
+VOL_CFLAGS=
+VOL_DATA=
+
+
+
+
+
+#check if user provided LIBS, CFLAGS, or DATA for module
+if test $coin_has_vol != skipping; then
+
+
+# Check whether --with-m4_tolower(Vol)-lib or --without-m4_tolower(Vol)-lib was given.
+if test "${with_vol_lib+set}" = set; then
+  withval="$with_vol_lib"
+  coin_has_vol=yes
+       VOL_LIBS="$withval"
+       PCADDLIBS="$withval $PCADDLIBS"
+
+fi;
+
+
+# Check whether --with-m4_tolower(Vol)-incdir or --without-m4_tolower(Vol)-incdir was given.
+if test "${with_vol_incdir+set}" = set; then
+  withval="$with_vol_incdir"
+  coin_has_vol=yes
+     VOL_CFLAGS="-I`${CYGPATH_W} $withval`"
+fi;
+
+
+# Check whether --with-m4_tolower(Vol)-datadir or --without-m4_tolower(Vol)-datadir was given.
+if test "${with_vol_datadir+set}" = set; then
+  withval="$with_vol_datadir"
+  coin_has_vol=yes
+     VOL_DATA="$withval"
+fi;
+fi
+
+if test $coin_has_vol = notGiven; then
+  if test -n "$PKG_CONFIG" ; then
+    # set search path for pkg-config
+    # need to export variable to be sure that the following pkg-config gets these values
+    coin_save_PKG_CONFIG_PATH="$PKG_CONFIG_PATH"
+    PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH:$COIN_PKG_CONFIG_PATH_UNINSTALLED"
+    export PKG_CONFIG_PATH
+
+    # let pkg-config do it's magic
+
+
+
+if test -n "$PKG_CONFIG" ; then
+  if $PKG_CONFIG --exists "osi-vol"; then
+    VOL_VERSIONS="`$PKG_CONFIG --modversion osi-vol 2>/dev/null`"
+     cflags=`$PKG_CONFIG --cflags "osi-vol" 2>/dev/null`
+    # pkg-config cannot handle spaces, so CYGPATH_W cannot be put into .pc files
+	# thus, we modify the cflags extracted from pkg-config by putting CYGPATH_W behind -I's
+	# but only do this if is not trivial
+    if test "$CYGPATH_W" != "echo" ; then
+      # need to put into brackets since otherwise autoconf replaces the brackets in the sed command
+	  cflags=`echo $cflags | sed -e 's/-I\([^ ]*\)/-I\`${CYGPATH_W} \1\`/g'`
+	fi
+    VOL_CFLAGS="$cflags"
+    VOL_LIBS=`$PKG_CONFIG --libs "osi-vol" 2>/dev/null`
+    VOL_DATA=`$PKG_CONFIG --variable=datadir "osi-vol" 2>/dev/null`
+     coin_has_vol=yes
+        echo "$as_me:$LINENO: result: yes: $VOL_VERSIONS" >&5
+echo "${ECHO_T}yes: $VOL_VERSIONS" >&6
+        REQUIREDPACKAGES="osi-vol $REQUIREDPACKAGES"
+
+
+  else
+    VOL_PKG_ERRORS=`$PKG_CONFIG $pkg_short_errors --errors-to-stdout --print-errors osi-vol`
+      coin_has_vol=notGiven
+        echo "$as_me:$LINENO: result: not given: $VOL_PKG_ERRORS" >&5
+echo "${ECHO_T}not given: $VOL_PKG_ERRORS" >&6
+
+  fi
+else
+  { { echo "$as_me:$LINENO: error: \"Cannot check for existance of module Vol without pkg-config\"" >&5
+echo "$as_me: error: \"Cannot check for existance of module Vol without pkg-config\"" >&2;}
+   { (exit 1); exit 1; }; }
+fi
+
+
+
+
+    # reset PKG_CONFIG_PATH variable
+    PKG_CONFIG_PATH="$coin_save_PKG_CONFIG_PATH"
+    export PKG_CONFIG_PATH
+  else
+    echo "$as_me:$LINENO: result: skipped check via pkg-config, redirect to fallback" >&5
+echo "${ECHO_T}skipped check via pkg-config, redirect to fallback" >&6
+
+echo "$as_me:$LINENO: checking for COIN-OR module Vol (fallback)" >&5
+echo $ECHO_N "checking for COIN-OR module Vol (fallback)... $ECHO_C" >&6
+
+coin_has_vol=notGiven
+VOL_LIBS=
+VOL_CFLAGS=
+VOL_DATA=
+
+
+# initial list of dependencies is "osi-vol", but we need to filter out version number specifications (= x, <= x, >= x)
+projtoprocess="osi-vol"
+projprocessed=""
+
+while test $coin_has_vol = notGiven ; do
+  # setup list of projects that need to be processed in the next round
+  nextprojtoprocess=""
+
+  for proj in $projtoprocess ; do
+    # if $proj has been processed already, skip this round
+    if test "x$projprocessed" != x ; then
+      for projdone in $projprocessed ; do
+        if test $projdone = $proj ; then
+	  continue 2
+	fi
+      done
+    fi
+
+    # if $proj is available and configured, then a project-uninstalled.pc file should have been created, so search for it
+    pcfile=""
+    save_IFS="$IFS"
+    IFS=":"
+    for dir in $COIN_PKG_CONFIG_PATH_UNINSTALLED ; do
+      # the base directory configure should have setup coin_subdirs.txt in a way that it does not contain projects that should be skipped, so we do not need to test this here again
+      if test -r "$dir/$proj-uninstalled.pc" ; then
+        pcfile="$dir/$proj-uninstalled.pc"
+        pcfiledir="$dir"
+        break
+      fi
+    done
+    IFS="$save_IFS"
+
+    if test "x$pcfile" != x ; then
+      # read CFLAGS from $pcfile and add CYGPATH_W cludge into include flags
+      projcflags=`sed -n -e 's/Cflags://' -e 's/-I\([^ ]*\)/-I\`${CYGPATH_W} \1\`/gp' "$pcfile"`
+      VOL_CFLAGS="$projcflags $VOL_CFLAGS"
+
+      # read LIBS from $pcfile and replace -L${libdir} by absolute path to build directory in linker flags
+      # we assume that the build directory is $pcfiledir/src if this directory exists, otherwise we assume that it is $pcfiledir
+      projlibs=`sed -n -e 's/Libs://' -e 's/-L\${libdir}//p' "$pcfile"`
+      if test "x$projlibs" != x ; then
+        if test -d "${pcfiledir}/src" ; then
+          projlibs="-L`cd "${pcfiledir}/src"; pwd` $projlibs"
+        else
+          projlibs="-L`cd "$pcfiledir"; pwd` $projlibs"
+        fi
+      else
+        projlibs=`sed -n -e 's/Libs://p' "$pcfile"`
+      fi
+      VOL_LIBS="$projlibs $VOL_LIBS"
+
+      # read DATA from $pcfile, if this is the first .pc file we are processing (so assume that its the main one)
+      if test "x$projprocessed" = x ; then
+        VOL_DATA=`sed -n -e 's/datadir=//gp' "$pcfile"`
+      fi
+
+      # read dependencies from $pcfile, filter it, and add to list of projects that need to be processed next
+      projrequires=`sed -n -e 's/Requires://gp' "$pcfile" | sed -e 's/<\?>\?=[ 	]*[^ 	]\+//g'`
+      nextprojtoprocess="$nextprojtoprocess $projrequires"
+
+      # remember that we have processed $proj
+      projprocessed="$projprocessed $proj"
+
+    else
+      echo "$as_me:$LINENO: result: no, dependency $proj not available" >&5
+echo "${ECHO_T}no, dependency $proj not available" >&6
+      break 2
+    fi
+
+  done
+
+  projtoprocess="$nextprojtoprocess"
+
+  if test "x$projtoprocess" = x ; then
+    coin_has_vol=yes
+    echo "$as_me:$LINENO: result: yes, dependencies are$projprocessed" >&5
+echo "${ECHO_T}yes, dependencies are$projprocessed" >&6
+
+    REQUIREDPACKAGES="osi-vol $REQUIREDPACKAGES"
+
+cat >>confdefs.h <<\_ACEOF
+#define COIN_HAS_VOL 1
+_ACEOF
+
+
+    if test 1 = 0 ; then  #change this test to enable a bit of debugging output
+    if test -n "$VOL_CFLAGS" ; then
+      { echo "$as_me:$LINENO: Vol CFLAGS are $VOL_CFLAGS" >&5
+echo "$as_me: Vol CFLAGS are $VOL_CFLAGS" >&6;}
+    fi
+    if test -n "$VOL_LIBS" ; then
+      { echo "$as_me:$LINENO: Vol LIBS   are $VOL_LIBS" >&5
+echo "$as_me: Vol LIBS   are $VOL_LIBS" >&6;}
+    fi
+    if test -n "$VOL_DATA" ; then
+      { echo "$as_me:$LINENO: Vol DATA   is  $VOL_DATA" >&5
+echo "$as_me: Vol DATA   is  $VOL_DATA" >&6;}
+    fi
+    fi
+  fi
+done
+
+
+
+if test $coin_has_vol != notGiven &&
+                test $coin_has_vol != skipping; then
+  COIN_HAS_VOL_TRUE=
+  COIN_HAS_VOL_FALSE='#'
+else
+  COIN_HAS_VOL_TRUE='#'
+  COIN_HAS_VOL_FALSE=
+fi
+
+
+
+  fi
+
+else
+  echo "$as_me:$LINENO: result: $coin_has_vol" >&5
+echo "${ECHO_T}$coin_has_vol" >&6
+fi
+
+if test $coin_has_vol != skipping &&
+   test $coin_has_vol != notGiven ; then
+  if test 0 = 1 ; then  #change this test to enable a bit of debugging output
+  if test -n "$VOL_CFLAGS" ; then
+    { echo "$as_me:$LINENO: Vol CFLAGS are $VOL_CFLAGS" >&5
+echo "$as_me: Vol CFLAGS are $VOL_CFLAGS" >&6;}
+  fi
+  if test -n "$VOL_LIBS" ; then
+    { echo "$as_me:$LINENO: Vol LIBS   are $VOL_LIBS" >&5
+echo "$as_me: Vol LIBS   are $VOL_LIBS" >&6;}
+  fi
+  if test -n "$VOL_DATA" ; then
+    { echo "$as_me:$LINENO: Vol DATA   is  $VOL_DATA" >&5
+echo "$as_me: Vol DATA   is  $VOL_DATA" >&6;}
+  fi
+  fi
+
+cat >>confdefs.h <<\_ACEOF
+#define COIN_HAS_VOL 1
+_ACEOF
+
+fi
+
+# Define the Makefile conditional
+
+
+if test $coin_has_vol != notGiven &&
+                test $coin_has_vol != skipping; then
+  COIN_HAS_VOL_TRUE=
+  COIN_HAS_VOL_FALSE='#'
+else
+  COIN_HAS_VOL_TRUE='#'
+  COIN_HAS_VOL_FALSE=
+fi
+
+
+
 
 echo "$as_me:$LINENO: checking for COIN-OR module Cpx" >&5
 echo $ECHO_N "checking for COIN-OR module Cpx... $ECHO_C" >&6
@@ -22922,9 +23055,132 @@ fi
     PKG_CONFIG_PATH="$coin_save_PKG_CONFIG_PATH"
     export PKG_CONFIG_PATH
   else
-    #if 4th argument is given, try fallback - whereby we take the first word from osi-cplex as basename for the .pc file
-    echo "$as_me:$LINENO: result: skipped check via pkg-config" >&5
-echo "${ECHO_T}skipped check via pkg-config" >&6
+    echo "$as_me:$LINENO: result: skipped check via pkg-config, redirect to fallback" >&5
+echo "${ECHO_T}skipped check via pkg-config, redirect to fallback" >&6
+
+echo "$as_me:$LINENO: checking for COIN-OR module Cpx (fallback)" >&5
+echo $ECHO_N "checking for COIN-OR module Cpx (fallback)... $ECHO_C" >&6
+
+coin_has_cpx=notGiven
+CPX_LIBS=
+CPX_CFLAGS=
+CPX_DATA=
+
+
+# initial list of dependencies is "osi-cplex", but we need to filter out version number specifications (= x, <= x, >= x)
+projtoprocess="osi-cplex"
+projprocessed=""
+
+while test $coin_has_cpx = notGiven ; do
+  # setup list of projects that need to be processed in the next round
+  nextprojtoprocess=""
+
+  for proj in $projtoprocess ; do
+    # if $proj has been processed already, skip this round
+    if test "x$projprocessed" != x ; then
+      for projdone in $projprocessed ; do
+        if test $projdone = $proj ; then
+	  continue 2
+	fi
+      done
+    fi
+
+    # if $proj is available and configured, then a project-uninstalled.pc file should have been created, so search for it
+    pcfile=""
+    save_IFS="$IFS"
+    IFS=":"
+    for dir in $COIN_PKG_CONFIG_PATH_UNINSTALLED ; do
+      # the base directory configure should have setup coin_subdirs.txt in a way that it does not contain projects that should be skipped, so we do not need to test this here again
+      if test -r "$dir/$proj-uninstalled.pc" ; then
+        pcfile="$dir/$proj-uninstalled.pc"
+        pcfiledir="$dir"
+        break
+      fi
+    done
+    IFS="$save_IFS"
+
+    if test "x$pcfile" != x ; then
+      # read CFLAGS from $pcfile and add CYGPATH_W cludge into include flags
+      projcflags=`sed -n -e 's/Cflags://' -e 's/-I\([^ ]*\)/-I\`${CYGPATH_W} \1\`/gp' "$pcfile"`
+      CPX_CFLAGS="$projcflags $CPX_CFLAGS"
+
+      # read LIBS from $pcfile and replace -L${libdir} by absolute path to build directory in linker flags
+      # we assume that the build directory is $pcfiledir/src if this directory exists, otherwise we assume that it is $pcfiledir
+      projlibs=`sed -n -e 's/Libs://' -e 's/-L\${libdir}//p' "$pcfile"`
+      if test "x$projlibs" != x ; then
+        if test -d "${pcfiledir}/src" ; then
+          projlibs="-L`cd "${pcfiledir}/src"; pwd` $projlibs"
+        else
+          projlibs="-L`cd "$pcfiledir"; pwd` $projlibs"
+        fi
+      else
+        projlibs=`sed -n -e 's/Libs://p' "$pcfile"`
+      fi
+      CPX_LIBS="$projlibs $CPX_LIBS"
+
+      # read DATA from $pcfile, if this is the first .pc file we are processing (so assume that its the main one)
+      if test "x$projprocessed" = x ; then
+        CPX_DATA=`sed -n -e 's/datadir=//gp' "$pcfile"`
+      fi
+
+      # read dependencies from $pcfile, filter it, and add to list of projects that need to be processed next
+      projrequires=`sed -n -e 's/Requires://gp' "$pcfile" | sed -e 's/<\?>\?=[ 	]*[^ 	]\+//g'`
+      nextprojtoprocess="$nextprojtoprocess $projrequires"
+
+      # remember that we have processed $proj
+      projprocessed="$projprocessed $proj"
+
+    else
+      echo "$as_me:$LINENO: result: no, dependency $proj not available" >&5
+echo "${ECHO_T}no, dependency $proj not available" >&6
+      break 2
+    fi
+
+  done
+
+  projtoprocess="$nextprojtoprocess"
+
+  if test "x$projtoprocess" = x ; then
+    coin_has_cpx=yes
+    echo "$as_me:$LINENO: result: yes, dependencies are$projprocessed" >&5
+echo "${ECHO_T}yes, dependencies are$projprocessed" >&6
+
+    REQUIREDPACKAGES="osi-cplex $REQUIREDPACKAGES"
+
+cat >>confdefs.h <<\_ACEOF
+#define COIN_HAS_CPX 1
+_ACEOF
+
+
+    if test 1 = 0 ; then  #change this test to enable a bit of debugging output
+    if test -n "$CPX_CFLAGS" ; then
+      { echo "$as_me:$LINENO: Cpx CFLAGS are $CPX_CFLAGS" >&5
+echo "$as_me: Cpx CFLAGS are $CPX_CFLAGS" >&6;}
+    fi
+    if test -n "$CPX_LIBS" ; then
+      { echo "$as_me:$LINENO: Cpx LIBS   are $CPX_LIBS" >&5
+echo "$as_me: Cpx LIBS   are $CPX_LIBS" >&6;}
+    fi
+    if test -n "$CPX_DATA" ; then
+      { echo "$as_me:$LINENO: Cpx DATA   is  $CPX_DATA" >&5
+echo "$as_me: Cpx DATA   is  $CPX_DATA" >&6;}
+    fi
+    fi
+  fi
+done
+
+
+
+if test $coin_has_cpx != notGiven &&
+                test $coin_has_cpx != skipping; then
+  COIN_HAS_CPX_TRUE=
+  COIN_HAS_CPX_FALSE='#'
+else
+  COIN_HAS_CPX_TRUE='#'
+  COIN_HAS_CPX_FALSE=
+fi
+
+
 
   fi
 
@@ -23075,9 +23331,132 @@ fi
     PKG_CONFIG_PATH="$coin_save_PKG_CONFIG_PATH"
     export PKG_CONFIG_PATH
   else
-    #if 4th argument is given, try fallback - whereby we take the first word from osi-glpk as basename for the .pc file
-    echo "$as_me:$LINENO: result: skipped check via pkg-config" >&5
-echo "${ECHO_T}skipped check via pkg-config" >&6
+    echo "$as_me:$LINENO: result: skipped check via pkg-config, redirect to fallback" >&5
+echo "${ECHO_T}skipped check via pkg-config, redirect to fallback" >&6
+
+echo "$as_me:$LINENO: checking for COIN-OR module Glpk (fallback)" >&5
+echo $ECHO_N "checking for COIN-OR module Glpk (fallback)... $ECHO_C" >&6
+
+coin_has_glpk=notGiven
+GLPK_LIBS=
+GLPK_CFLAGS=
+GLPK_DATA=
+
+
+# initial list of dependencies is "osi-glpk", but we need to filter out version number specifications (= x, <= x, >= x)
+projtoprocess="osi-glpk"
+projprocessed=""
+
+while test $coin_has_glpk = notGiven ; do
+  # setup list of projects that need to be processed in the next round
+  nextprojtoprocess=""
+
+  for proj in $projtoprocess ; do
+    # if $proj has been processed already, skip this round
+    if test "x$projprocessed" != x ; then
+      for projdone in $projprocessed ; do
+        if test $projdone = $proj ; then
+	  continue 2
+	fi
+      done
+    fi
+
+    # if $proj is available and configured, then a project-uninstalled.pc file should have been created, so search for it
+    pcfile=""
+    save_IFS="$IFS"
+    IFS=":"
+    for dir in $COIN_PKG_CONFIG_PATH_UNINSTALLED ; do
+      # the base directory configure should have setup coin_subdirs.txt in a way that it does not contain projects that should be skipped, so we do not need to test this here again
+      if test -r "$dir/$proj-uninstalled.pc" ; then
+        pcfile="$dir/$proj-uninstalled.pc"
+        pcfiledir="$dir"
+        break
+      fi
+    done
+    IFS="$save_IFS"
+
+    if test "x$pcfile" != x ; then
+      # read CFLAGS from $pcfile and add CYGPATH_W cludge into include flags
+      projcflags=`sed -n -e 's/Cflags://' -e 's/-I\([^ ]*\)/-I\`${CYGPATH_W} \1\`/gp' "$pcfile"`
+      GLPK_CFLAGS="$projcflags $GLPK_CFLAGS"
+
+      # read LIBS from $pcfile and replace -L${libdir} by absolute path to build directory in linker flags
+      # we assume that the build directory is $pcfiledir/src if this directory exists, otherwise we assume that it is $pcfiledir
+      projlibs=`sed -n -e 's/Libs://' -e 's/-L\${libdir}//p' "$pcfile"`
+      if test "x$projlibs" != x ; then
+        if test -d "${pcfiledir}/src" ; then
+          projlibs="-L`cd "${pcfiledir}/src"; pwd` $projlibs"
+        else
+          projlibs="-L`cd "$pcfiledir"; pwd` $projlibs"
+        fi
+      else
+        projlibs=`sed -n -e 's/Libs://p' "$pcfile"`
+      fi
+      GLPK_LIBS="$projlibs $GLPK_LIBS"
+
+      # read DATA from $pcfile, if this is the first .pc file we are processing (so assume that its the main one)
+      if test "x$projprocessed" = x ; then
+        GLPK_DATA=`sed -n -e 's/datadir=//gp' "$pcfile"`
+      fi
+
+      # read dependencies from $pcfile, filter it, and add to list of projects that need to be processed next
+      projrequires=`sed -n -e 's/Requires://gp' "$pcfile" | sed -e 's/<\?>\?=[ 	]*[^ 	]\+//g'`
+      nextprojtoprocess="$nextprojtoprocess $projrequires"
+
+      # remember that we have processed $proj
+      projprocessed="$projprocessed $proj"
+
+    else
+      echo "$as_me:$LINENO: result: no, dependency $proj not available" >&5
+echo "${ECHO_T}no, dependency $proj not available" >&6
+      break 2
+    fi
+
+  done
+
+  projtoprocess="$nextprojtoprocess"
+
+  if test "x$projtoprocess" = x ; then
+    coin_has_glpk=yes
+    echo "$as_me:$LINENO: result: yes, dependencies are$projprocessed" >&5
+echo "${ECHO_T}yes, dependencies are$projprocessed" >&6
+
+    REQUIREDPACKAGES="osi-glpk $REQUIREDPACKAGES"
+
+cat >>confdefs.h <<\_ACEOF
+#define COIN_HAS_GLPK 1
+_ACEOF
+
+
+    if test 1 = 0 ; then  #change this test to enable a bit of debugging output
+    if test -n "$GLPK_CFLAGS" ; then
+      { echo "$as_me:$LINENO: Glpk CFLAGS are $GLPK_CFLAGS" >&5
+echo "$as_me: Glpk CFLAGS are $GLPK_CFLAGS" >&6;}
+    fi
+    if test -n "$GLPK_LIBS" ; then
+      { echo "$as_me:$LINENO: Glpk LIBS   are $GLPK_LIBS" >&5
+echo "$as_me: Glpk LIBS   are $GLPK_LIBS" >&6;}
+    fi
+    if test -n "$GLPK_DATA" ; then
+      { echo "$as_me:$LINENO: Glpk DATA   is  $GLPK_DATA" >&5
+echo "$as_me: Glpk DATA   is  $GLPK_DATA" >&6;}
+    fi
+    fi
+  fi
+done
+
+
+
+if test $coin_has_glpk != notGiven &&
+                test $coin_has_glpk != skipping; then
+  COIN_HAS_GLPK_TRUE=
+  COIN_HAS_GLPK_FALSE='#'
+else
+  COIN_HAS_GLPK_TRUE='#'
+  COIN_HAS_GLPK_FALSE=
+fi
+
+
 
   fi
 
@@ -23228,9 +23607,132 @@ fi
     PKG_CONFIG_PATH="$coin_save_PKG_CONFIG_PATH"
     export PKG_CONFIG_PATH
   else
-    #if 4th argument is given, try fallback - whereby we take the first word from osi-gurobi as basename for the .pc file
-    echo "$as_me:$LINENO: result: skipped check via pkg-config" >&5
-echo "${ECHO_T}skipped check via pkg-config" >&6
+    echo "$as_me:$LINENO: result: skipped check via pkg-config, redirect to fallback" >&5
+echo "${ECHO_T}skipped check via pkg-config, redirect to fallback" >&6
+
+echo "$as_me:$LINENO: checking for COIN-OR module Grb (fallback)" >&5
+echo $ECHO_N "checking for COIN-OR module Grb (fallback)... $ECHO_C" >&6
+
+coin_has_grb=notGiven
+GRB_LIBS=
+GRB_CFLAGS=
+GRB_DATA=
+
+
+# initial list of dependencies is "osi-gurobi", but we need to filter out version number specifications (= x, <= x, >= x)
+projtoprocess="osi-gurobi"
+projprocessed=""
+
+while test $coin_has_grb = notGiven ; do
+  # setup list of projects that need to be processed in the next round
+  nextprojtoprocess=""
+
+  for proj in $projtoprocess ; do
+    # if $proj has been processed already, skip this round
+    if test "x$projprocessed" != x ; then
+      for projdone in $projprocessed ; do
+        if test $projdone = $proj ; then
+	  continue 2
+	fi
+      done
+    fi
+
+    # if $proj is available and configured, then a project-uninstalled.pc file should have been created, so search for it
+    pcfile=""
+    save_IFS="$IFS"
+    IFS=":"
+    for dir in $COIN_PKG_CONFIG_PATH_UNINSTALLED ; do
+      # the base directory configure should have setup coin_subdirs.txt in a way that it does not contain projects that should be skipped, so we do not need to test this here again
+      if test -r "$dir/$proj-uninstalled.pc" ; then
+        pcfile="$dir/$proj-uninstalled.pc"
+        pcfiledir="$dir"
+        break
+      fi
+    done
+    IFS="$save_IFS"
+
+    if test "x$pcfile" != x ; then
+      # read CFLAGS from $pcfile and add CYGPATH_W cludge into include flags
+      projcflags=`sed -n -e 's/Cflags://' -e 's/-I\([^ ]*\)/-I\`${CYGPATH_W} \1\`/gp' "$pcfile"`
+      GRB_CFLAGS="$projcflags $GRB_CFLAGS"
+
+      # read LIBS from $pcfile and replace -L${libdir} by absolute path to build directory in linker flags
+      # we assume that the build directory is $pcfiledir/src if this directory exists, otherwise we assume that it is $pcfiledir
+      projlibs=`sed -n -e 's/Libs://' -e 's/-L\${libdir}//p' "$pcfile"`
+      if test "x$projlibs" != x ; then
+        if test -d "${pcfiledir}/src" ; then
+          projlibs="-L`cd "${pcfiledir}/src"; pwd` $projlibs"
+        else
+          projlibs="-L`cd "$pcfiledir"; pwd` $projlibs"
+        fi
+      else
+        projlibs=`sed -n -e 's/Libs://p' "$pcfile"`
+      fi
+      GRB_LIBS="$projlibs $GRB_LIBS"
+
+      # read DATA from $pcfile, if this is the first .pc file we are processing (so assume that its the main one)
+      if test "x$projprocessed" = x ; then
+        GRB_DATA=`sed -n -e 's/datadir=//gp' "$pcfile"`
+      fi
+
+      # read dependencies from $pcfile, filter it, and add to list of projects that need to be processed next
+      projrequires=`sed -n -e 's/Requires://gp' "$pcfile" | sed -e 's/<\?>\?=[ 	]*[^ 	]\+//g'`
+      nextprojtoprocess="$nextprojtoprocess $projrequires"
+
+      # remember that we have processed $proj
+      projprocessed="$projprocessed $proj"
+
+    else
+      echo "$as_me:$LINENO: result: no, dependency $proj not available" >&5
+echo "${ECHO_T}no, dependency $proj not available" >&6
+      break 2
+    fi
+
+  done
+
+  projtoprocess="$nextprojtoprocess"
+
+  if test "x$projtoprocess" = x ; then
+    coin_has_grb=yes
+    echo "$as_me:$LINENO: result: yes, dependencies are$projprocessed" >&5
+echo "${ECHO_T}yes, dependencies are$projprocessed" >&6
+
+    REQUIREDPACKAGES="osi-gurobi $REQUIREDPACKAGES"
+
+cat >>confdefs.h <<\_ACEOF
+#define COIN_HAS_GRB 1
+_ACEOF
+
+
+    if test 1 = 0 ; then  #change this test to enable a bit of debugging output
+    if test -n "$GRB_CFLAGS" ; then
+      { echo "$as_me:$LINENO: Grb CFLAGS are $GRB_CFLAGS" >&5
+echo "$as_me: Grb CFLAGS are $GRB_CFLAGS" >&6;}
+    fi
+    if test -n "$GRB_LIBS" ; then
+      { echo "$as_me:$LINENO: Grb LIBS   are $GRB_LIBS" >&5
+echo "$as_me: Grb LIBS   are $GRB_LIBS" >&6;}
+    fi
+    if test -n "$GRB_DATA" ; then
+      { echo "$as_me:$LINENO: Grb DATA   is  $GRB_DATA" >&5
+echo "$as_me: Grb DATA   is  $GRB_DATA" >&6;}
+    fi
+    fi
+  fi
+done
+
+
+
+if test $coin_has_grb != notGiven &&
+                test $coin_has_grb != skipping; then
+  COIN_HAS_GRB_TRUE=
+  COIN_HAS_GRB_FALSE='#'
+else
+  COIN_HAS_GRB_TRUE='#'
+  COIN_HAS_GRB_FALSE=
+fi
+
+
 
   fi
 
@@ -23381,9 +23883,132 @@ fi
     PKG_CONFIG_PATH="$coin_save_PKG_CONFIG_PATH"
     export PKG_CONFIG_PATH
   else
-    #if 4th argument is given, try fallback - whereby we take the first word from osi-mosek as basename for the .pc file
-    echo "$as_me:$LINENO: result: skipped check via pkg-config" >&5
-echo "${ECHO_T}skipped check via pkg-config" >&6
+    echo "$as_me:$LINENO: result: skipped check via pkg-config, redirect to fallback" >&5
+echo "${ECHO_T}skipped check via pkg-config, redirect to fallback" >&6
+
+echo "$as_me:$LINENO: checking for COIN-OR module Msk (fallback)" >&5
+echo $ECHO_N "checking for COIN-OR module Msk (fallback)... $ECHO_C" >&6
+
+coin_has_msk=notGiven
+MSK_LIBS=
+MSK_CFLAGS=
+MSK_DATA=
+
+
+# initial list of dependencies is "osi-mosek", but we need to filter out version number specifications (= x, <= x, >= x)
+projtoprocess="osi-mosek"
+projprocessed=""
+
+while test $coin_has_msk = notGiven ; do
+  # setup list of projects that need to be processed in the next round
+  nextprojtoprocess=""
+
+  for proj in $projtoprocess ; do
+    # if $proj has been processed already, skip this round
+    if test "x$projprocessed" != x ; then
+      for projdone in $projprocessed ; do
+        if test $projdone = $proj ; then
+	  continue 2
+	fi
+      done
+    fi
+
+    # if $proj is available and configured, then a project-uninstalled.pc file should have been created, so search for it
+    pcfile=""
+    save_IFS="$IFS"
+    IFS=":"
+    for dir in $COIN_PKG_CONFIG_PATH_UNINSTALLED ; do
+      # the base directory configure should have setup coin_subdirs.txt in a way that it does not contain projects that should be skipped, so we do not need to test this here again
+      if test -r "$dir/$proj-uninstalled.pc" ; then
+        pcfile="$dir/$proj-uninstalled.pc"
+        pcfiledir="$dir"
+        break
+      fi
+    done
+    IFS="$save_IFS"
+
+    if test "x$pcfile" != x ; then
+      # read CFLAGS from $pcfile and add CYGPATH_W cludge into include flags
+      projcflags=`sed -n -e 's/Cflags://' -e 's/-I\([^ ]*\)/-I\`${CYGPATH_W} \1\`/gp' "$pcfile"`
+      MSK_CFLAGS="$projcflags $MSK_CFLAGS"
+
+      # read LIBS from $pcfile and replace -L${libdir} by absolute path to build directory in linker flags
+      # we assume that the build directory is $pcfiledir/src if this directory exists, otherwise we assume that it is $pcfiledir
+      projlibs=`sed -n -e 's/Libs://' -e 's/-L\${libdir}//p' "$pcfile"`
+      if test "x$projlibs" != x ; then
+        if test -d "${pcfiledir}/src" ; then
+          projlibs="-L`cd "${pcfiledir}/src"; pwd` $projlibs"
+        else
+          projlibs="-L`cd "$pcfiledir"; pwd` $projlibs"
+        fi
+      else
+        projlibs=`sed -n -e 's/Libs://p' "$pcfile"`
+      fi
+      MSK_LIBS="$projlibs $MSK_LIBS"
+
+      # read DATA from $pcfile, if this is the first .pc file we are processing (so assume that its the main one)
+      if test "x$projprocessed" = x ; then
+        MSK_DATA=`sed -n -e 's/datadir=//gp' "$pcfile"`
+      fi
+
+      # read dependencies from $pcfile, filter it, and add to list of projects that need to be processed next
+      projrequires=`sed -n -e 's/Requires://gp' "$pcfile" | sed -e 's/<\?>\?=[ 	]*[^ 	]\+//g'`
+      nextprojtoprocess="$nextprojtoprocess $projrequires"
+
+      # remember that we have processed $proj
+      projprocessed="$projprocessed $proj"
+
+    else
+      echo "$as_me:$LINENO: result: no, dependency $proj not available" >&5
+echo "${ECHO_T}no, dependency $proj not available" >&6
+      break 2
+    fi
+
+  done
+
+  projtoprocess="$nextprojtoprocess"
+
+  if test "x$projtoprocess" = x ; then
+    coin_has_msk=yes
+    echo "$as_me:$LINENO: result: yes, dependencies are$projprocessed" >&5
+echo "${ECHO_T}yes, dependencies are$projprocessed" >&6
+
+    REQUIREDPACKAGES="osi-mosek $REQUIREDPACKAGES"
+
+cat >>confdefs.h <<\_ACEOF
+#define COIN_HAS_MSK 1
+_ACEOF
+
+
+    if test 1 = 0 ; then  #change this test to enable a bit of debugging output
+    if test -n "$MSK_CFLAGS" ; then
+      { echo "$as_me:$LINENO: Msk CFLAGS are $MSK_CFLAGS" >&5
+echo "$as_me: Msk CFLAGS are $MSK_CFLAGS" >&6;}
+    fi
+    if test -n "$MSK_LIBS" ; then
+      { echo "$as_me:$LINENO: Msk LIBS   are $MSK_LIBS" >&5
+echo "$as_me: Msk LIBS   are $MSK_LIBS" >&6;}
+    fi
+    if test -n "$MSK_DATA" ; then
+      { echo "$as_me:$LINENO: Msk DATA   is  $MSK_DATA" >&5
+echo "$as_me: Msk DATA   is  $MSK_DATA" >&6;}
+    fi
+    fi
+  fi
+done
+
+
+
+if test $coin_has_msk != notGiven &&
+                test $coin_has_msk != skipping; then
+  COIN_HAS_MSK_TRUE=
+  COIN_HAS_MSK_FALSE='#'
+else
+  COIN_HAS_MSK_TRUE='#'
+  COIN_HAS_MSK_FALSE=
+fi
+
+
 
   fi
 
@@ -23534,9 +24159,132 @@ fi
     PKG_CONFIG_PATH="$coin_save_PKG_CONFIG_PATH"
     export PKG_CONFIG_PATH
   else
-    #if 4th argument is given, try fallback - whereby we take the first word from osi-soplex as basename for the .pc file
-    echo "$as_me:$LINENO: result: skipped check via pkg-config" >&5
-echo "${ECHO_T}skipped check via pkg-config" >&6
+    echo "$as_me:$LINENO: result: skipped check via pkg-config, redirect to fallback" >&5
+echo "${ECHO_T}skipped check via pkg-config, redirect to fallback" >&6
+
+echo "$as_me:$LINENO: checking for COIN-OR module Spx (fallback)" >&5
+echo $ECHO_N "checking for COIN-OR module Spx (fallback)... $ECHO_C" >&6
+
+coin_has_spx=notGiven
+SPX_LIBS=
+SPX_CFLAGS=
+SPX_DATA=
+
+
+# initial list of dependencies is "osi-soplex", but we need to filter out version number specifications (= x, <= x, >= x)
+projtoprocess="osi-soplex"
+projprocessed=""
+
+while test $coin_has_spx = notGiven ; do
+  # setup list of projects that need to be processed in the next round
+  nextprojtoprocess=""
+
+  for proj in $projtoprocess ; do
+    # if $proj has been processed already, skip this round
+    if test "x$projprocessed" != x ; then
+      for projdone in $projprocessed ; do
+        if test $projdone = $proj ; then
+	  continue 2
+	fi
+      done
+    fi
+
+    # if $proj is available and configured, then a project-uninstalled.pc file should have been created, so search for it
+    pcfile=""
+    save_IFS="$IFS"
+    IFS=":"
+    for dir in $COIN_PKG_CONFIG_PATH_UNINSTALLED ; do
+      # the base directory configure should have setup coin_subdirs.txt in a way that it does not contain projects that should be skipped, so we do not need to test this here again
+      if test -r "$dir/$proj-uninstalled.pc" ; then
+        pcfile="$dir/$proj-uninstalled.pc"
+        pcfiledir="$dir"
+        break
+      fi
+    done
+    IFS="$save_IFS"
+
+    if test "x$pcfile" != x ; then
+      # read CFLAGS from $pcfile and add CYGPATH_W cludge into include flags
+      projcflags=`sed -n -e 's/Cflags://' -e 's/-I\([^ ]*\)/-I\`${CYGPATH_W} \1\`/gp' "$pcfile"`
+      SPX_CFLAGS="$projcflags $SPX_CFLAGS"
+
+      # read LIBS from $pcfile and replace -L${libdir} by absolute path to build directory in linker flags
+      # we assume that the build directory is $pcfiledir/src if this directory exists, otherwise we assume that it is $pcfiledir
+      projlibs=`sed -n -e 's/Libs://' -e 's/-L\${libdir}//p' "$pcfile"`
+      if test "x$projlibs" != x ; then
+        if test -d "${pcfiledir}/src" ; then
+          projlibs="-L`cd "${pcfiledir}/src"; pwd` $projlibs"
+        else
+          projlibs="-L`cd "$pcfiledir"; pwd` $projlibs"
+        fi
+      else
+        projlibs=`sed -n -e 's/Libs://p' "$pcfile"`
+      fi
+      SPX_LIBS="$projlibs $SPX_LIBS"
+
+      # read DATA from $pcfile, if this is the first .pc file we are processing (so assume that its the main one)
+      if test "x$projprocessed" = x ; then
+        SPX_DATA=`sed -n -e 's/datadir=//gp' "$pcfile"`
+      fi
+
+      # read dependencies from $pcfile, filter it, and add to list of projects that need to be processed next
+      projrequires=`sed -n -e 's/Requires://gp' "$pcfile" | sed -e 's/<\?>\?=[ 	]*[^ 	]\+//g'`
+      nextprojtoprocess="$nextprojtoprocess $projrequires"
+
+      # remember that we have processed $proj
+      projprocessed="$projprocessed $proj"
+
+    else
+      echo "$as_me:$LINENO: result: no, dependency $proj not available" >&5
+echo "${ECHO_T}no, dependency $proj not available" >&6
+      break 2
+    fi
+
+  done
+
+  projtoprocess="$nextprojtoprocess"
+
+  if test "x$projtoprocess" = x ; then
+    coin_has_spx=yes
+    echo "$as_me:$LINENO: result: yes, dependencies are$projprocessed" >&5
+echo "${ECHO_T}yes, dependencies are$projprocessed" >&6
+
+    REQUIREDPACKAGES="osi-soplex $REQUIREDPACKAGES"
+
+cat >>confdefs.h <<\_ACEOF
+#define COIN_HAS_SPX 1
+_ACEOF
+
+
+    if test 1 = 0 ; then  #change this test to enable a bit of debugging output
+    if test -n "$SPX_CFLAGS" ; then
+      { echo "$as_me:$LINENO: Spx CFLAGS are $SPX_CFLAGS" >&5
+echo "$as_me: Spx CFLAGS are $SPX_CFLAGS" >&6;}
+    fi
+    if test -n "$SPX_LIBS" ; then
+      { echo "$as_me:$LINENO: Spx LIBS   are $SPX_LIBS" >&5
+echo "$as_me: Spx LIBS   are $SPX_LIBS" >&6;}
+    fi
+    if test -n "$SPX_DATA" ; then
+      { echo "$as_me:$LINENO: Spx DATA   is  $SPX_DATA" >&5
+echo "$as_me: Spx DATA   is  $SPX_DATA" >&6;}
+    fi
+    fi
+  fi
+done
+
+
+
+if test $coin_has_spx != notGiven &&
+                test $coin_has_spx != skipping; then
+  COIN_HAS_SPX_TRUE=
+  COIN_HAS_SPX_FALSE='#'
+else
+  COIN_HAS_SPX_TRUE='#'
+  COIN_HAS_SPX_FALSE=
+fi
+
+
 
   fi
 
@@ -23687,9 +24435,132 @@ fi
     PKG_CONFIG_PATH="$coin_save_PKG_CONFIG_PATH"
     export PKG_CONFIG_PATH
   else
-    #if 4th argument is given, try fallback - whereby we take the first word from osi-xpress as basename for the .pc file
-    echo "$as_me:$LINENO: result: skipped check via pkg-config" >&5
-echo "${ECHO_T}skipped check via pkg-config" >&6
+    echo "$as_me:$LINENO: result: skipped check via pkg-config, redirect to fallback" >&5
+echo "${ECHO_T}skipped check via pkg-config, redirect to fallback" >&6
+
+echo "$as_me:$LINENO: checking for COIN-OR module Xpr (fallback)" >&5
+echo $ECHO_N "checking for COIN-OR module Xpr (fallback)... $ECHO_C" >&6
+
+coin_has_xpr=notGiven
+XPR_LIBS=
+XPR_CFLAGS=
+XPR_DATA=
+
+
+# initial list of dependencies is "osi-xpress", but we need to filter out version number specifications (= x, <= x, >= x)
+projtoprocess="osi-xpress"
+projprocessed=""
+
+while test $coin_has_xpr = notGiven ; do
+  # setup list of projects that need to be processed in the next round
+  nextprojtoprocess=""
+
+  for proj in $projtoprocess ; do
+    # if $proj has been processed already, skip this round
+    if test "x$projprocessed" != x ; then
+      for projdone in $projprocessed ; do
+        if test $projdone = $proj ; then
+	  continue 2
+	fi
+      done
+    fi
+
+    # if $proj is available and configured, then a project-uninstalled.pc file should have been created, so search for it
+    pcfile=""
+    save_IFS="$IFS"
+    IFS=":"
+    for dir in $COIN_PKG_CONFIG_PATH_UNINSTALLED ; do
+      # the base directory configure should have setup coin_subdirs.txt in a way that it does not contain projects that should be skipped, so we do not need to test this here again
+      if test -r "$dir/$proj-uninstalled.pc" ; then
+        pcfile="$dir/$proj-uninstalled.pc"
+        pcfiledir="$dir"
+        break
+      fi
+    done
+    IFS="$save_IFS"
+
+    if test "x$pcfile" != x ; then
+      # read CFLAGS from $pcfile and add CYGPATH_W cludge into include flags
+      projcflags=`sed -n -e 's/Cflags://' -e 's/-I\([^ ]*\)/-I\`${CYGPATH_W} \1\`/gp' "$pcfile"`
+      XPR_CFLAGS="$projcflags $XPR_CFLAGS"
+
+      # read LIBS from $pcfile and replace -L${libdir} by absolute path to build directory in linker flags
+      # we assume that the build directory is $pcfiledir/src if this directory exists, otherwise we assume that it is $pcfiledir
+      projlibs=`sed -n -e 's/Libs://' -e 's/-L\${libdir}//p' "$pcfile"`
+      if test "x$projlibs" != x ; then
+        if test -d "${pcfiledir}/src" ; then
+          projlibs="-L`cd "${pcfiledir}/src"; pwd` $projlibs"
+        else
+          projlibs="-L`cd "$pcfiledir"; pwd` $projlibs"
+        fi
+      else
+        projlibs=`sed -n -e 's/Libs://p' "$pcfile"`
+      fi
+      XPR_LIBS="$projlibs $XPR_LIBS"
+
+      # read DATA from $pcfile, if this is the first .pc file we are processing (so assume that its the main one)
+      if test "x$projprocessed" = x ; then
+        XPR_DATA=`sed -n -e 's/datadir=//gp' "$pcfile"`
+      fi
+
+      # read dependencies from $pcfile, filter it, and add to list of projects that need to be processed next
+      projrequires=`sed -n -e 's/Requires://gp' "$pcfile" | sed -e 's/<\?>\?=[ 	]*[^ 	]\+//g'`
+      nextprojtoprocess="$nextprojtoprocess $projrequires"
+
+      # remember that we have processed $proj
+      projprocessed="$projprocessed $proj"
+
+    else
+      echo "$as_me:$LINENO: result: no, dependency $proj not available" >&5
+echo "${ECHO_T}no, dependency $proj not available" >&6
+      break 2
+    fi
+
+  done
+
+  projtoprocess="$nextprojtoprocess"
+
+  if test "x$projtoprocess" = x ; then
+    coin_has_xpr=yes
+    echo "$as_me:$LINENO: result: yes, dependencies are$projprocessed" >&5
+echo "${ECHO_T}yes, dependencies are$projprocessed" >&6
+
+    REQUIREDPACKAGES="osi-xpress $REQUIREDPACKAGES"
+
+cat >>confdefs.h <<\_ACEOF
+#define COIN_HAS_XPR 1
+_ACEOF
+
+
+    if test 1 = 0 ; then  #change this test to enable a bit of debugging output
+    if test -n "$XPR_CFLAGS" ; then
+      { echo "$as_me:$LINENO: Xpr CFLAGS are $XPR_CFLAGS" >&5
+echo "$as_me: Xpr CFLAGS are $XPR_CFLAGS" >&6;}
+    fi
+    if test -n "$XPR_LIBS" ; then
+      { echo "$as_me:$LINENO: Xpr LIBS   are $XPR_LIBS" >&5
+echo "$as_me: Xpr LIBS   are $XPR_LIBS" >&6;}
+    fi
+    if test -n "$XPR_DATA" ; then
+      { echo "$as_me:$LINENO: Xpr DATA   is  $XPR_DATA" >&5
+echo "$as_me: Xpr DATA   is  $XPR_DATA" >&6;}
+    fi
+    fi
+  fi
+done
+
+
+
+if test $coin_has_xpr != notGiven &&
+                test $coin_has_xpr != skipping; then
+  COIN_HAS_XPR_TRUE=
+  COIN_HAS_XPR_FALSE='#'
+else
+  COIN_HAS_XPR_TRUE='#'
+  COIN_HAS_XPR_FALSE=
+fi
+
+
 
   fi
 
@@ -23846,48 +24717,95 @@ fi
     PKG_CONFIG_PATH="$coin_save_PKG_CONFIG_PATH"
     export PKG_CONFIG_PATH
   else
-    #if 4th argument is given, try fallback - whereby we take the first word from coinasl as basename for the .pc file
+    echo "$as_me:$LINENO: result: skipped check via pkg-config, redirect to fallback" >&5
+echo "${ECHO_T}skipped check via pkg-config, redirect to fallback" >&6
 
-if test x$coin_has_asl != "xyes" ; then
-
-
+echo "$as_me:$LINENO: checking for COIN-OR module ASL (fallback)" >&5
+echo $ECHO_N "checking for COIN-OR module ASL (fallback)... $ECHO_C" >&6
 
 coin_has_asl=notGiven
-
-# check if user wants to skip module in any case
-if test x"$COIN_SKIP_PROJECTS" != x; then
-  for dir in $COIN_SKIP_PROJECTS; do
-    if test $dir = "ASL"; then
-      coin_has_asl=skipping
-    fi
-  done
-fi
-
 ASL_LIBS=
 ASL_CFLAGS=
 ASL_DATA=
 
 
-if test $coin_has_asl != "skipping" ; then
-  # if the project is available and configured, then a project-uninstalled.pc file should have been created
-  if test -r ../ThirdParty/ASL/coinasl-uninstalled.pc ; then
-    # read CFLAGS and LIBS from m4_bpatsubst(coinasl, [ .*], [])-uninstalled.pc file
-    # add CYGPATH_W cludge into include flags
-    # replace -L${libdir} by absolute path to build directory in linker flags
-    # we assume that the build directory is ../ThirdParty/ASL/src if this directory exists, otherwise we assume that it is ../ThirdParty/ASL
-    ASL_CFLAGS=`sed -n -e 's/Cflags://' -e 's/-I\([^ ]*\)/-I\`${CYGPATH_W} \1\`/gp' ../ThirdParty/ASL/coinasl-uninstalled.pc`
-    projectlibs=`sed -n -e 's/Libs://' -e 's/-L\${libdir}//p' ../ThirdParty/ASL/coinasl-uninstalled.pc`
-    if test "x$projectlibs" != x ; then
-      if test -d ../ThirdParty/ASL/src ; then
-        ASL_LIBS="-L`cd ../ThirdParty/ASL/src; pwd` $projectlibs"
-      else
-        ASL_LIBS="-L`cd ../ThirdParty/ASL; pwd` $projectlibs"
-      fi
-    else
-      ASL_LIBS=`sed -n -e 's/Libs://p' ../ThirdParty/ASL/coinasl-uninstalled.pc`
-    fi
-    ASL_DATA=`sed -n -e 's/datadir=//gp' ../ThirdParty/ASL/coinasl-uninstalled.pc`
+# initial list of dependencies is "coinasl", but we need to filter out version number specifications (= x, <= x, >= x)
+projtoprocess="coinasl"
+projprocessed=""
 
+while test $coin_has_asl = notGiven ; do
+  # setup list of projects that need to be processed in the next round
+  nextprojtoprocess=""
+
+  for proj in $projtoprocess ; do
+    # if $proj has been processed already, skip this round
+    if test "x$projprocessed" != x ; then
+      for projdone in $projprocessed ; do
+        if test $projdone = $proj ; then
+	  continue 2
+	fi
+      done
+    fi
+
+    # if $proj is available and configured, then a project-uninstalled.pc file should have been created, so search for it
+    pcfile=""
+    save_IFS="$IFS"
+    IFS=":"
+    for dir in $COIN_PKG_CONFIG_PATH_UNINSTALLED ; do
+      # the base directory configure should have setup coin_subdirs.txt in a way that it does not contain projects that should be skipped, so we do not need to test this here again
+      if test -r "$dir/$proj-uninstalled.pc" ; then
+        pcfile="$dir/$proj-uninstalled.pc"
+        pcfiledir="$dir"
+        break
+      fi
+    done
+    IFS="$save_IFS"
+
+    if test "x$pcfile" != x ; then
+      # read CFLAGS from $pcfile and add CYGPATH_W cludge into include flags
+      projcflags=`sed -n -e 's/Cflags://' -e 's/-I\([^ ]*\)/-I\`${CYGPATH_W} \1\`/gp' "$pcfile"`
+      ASL_CFLAGS="$projcflags $ASL_CFLAGS"
+
+      # read LIBS from $pcfile and replace -L${libdir} by absolute path to build directory in linker flags
+      # we assume that the build directory is $pcfiledir/src if this directory exists, otherwise we assume that it is $pcfiledir
+      projlibs=`sed -n -e 's/Libs://' -e 's/-L\${libdir}//p' "$pcfile"`
+      if test "x$projlibs" != x ; then
+        if test -d "${pcfiledir}/src" ; then
+          projlibs="-L`cd "${pcfiledir}/src"; pwd` $projlibs"
+        else
+          projlibs="-L`cd "$pcfiledir"; pwd` $projlibs"
+        fi
+      else
+        projlibs=`sed -n -e 's/Libs://p' "$pcfile"`
+      fi
+      ASL_LIBS="$projlibs $ASL_LIBS"
+
+      # read DATA from $pcfile, if this is the first .pc file we are processing (so assume that its the main one)
+      if test "x$projprocessed" = x ; then
+        ASL_DATA=`sed -n -e 's/datadir=//gp' "$pcfile"`
+      fi
+
+      # read dependencies from $pcfile, filter it, and add to list of projects that need to be processed next
+      projrequires=`sed -n -e 's/Requires://gp' "$pcfile" | sed -e 's/<\?>\?=[ 	]*[^ 	]\+//g'`
+      nextprojtoprocess="$nextprojtoprocess $projrequires"
+
+      # remember that we have processed $proj
+      projprocessed="$projprocessed $proj"
+
+    else
+      echo "$as_me:$LINENO: result: no, dependency $proj not available" >&5
+echo "${ECHO_T}no, dependency $proj not available" >&6
+      break 2
+    fi
+
+  done
+
+  projtoprocess="$nextprojtoprocess"
+
+  if test "x$projtoprocess" = x ; then
+    coin_has_asl=yes
+    echo "$as_me:$LINENO: result: yes, dependencies are$projprocessed" >&5
+echo "${ECHO_T}yes, dependencies are$projprocessed" >&6
 
 
 
@@ -23896,20 +24814,23 @@ cat >>confdefs.h <<\_ACEOF
 _ACEOF
 
 
-
-    coin_has_asl=yes
-    echo "$as_me:$LINENO: result: ../ThirdParty/ASL" >&5
-echo "${ECHO_T}../ThirdParty/ASL" >&6
-  else
-    echo "$as_me:$LINENO: result: $coin_has_asl" >&5
-echo "${ECHO_T}$coin_has_asl" >&6
+    if test 1 = 0 ; then  #change this test to enable a bit of debugging output
+    if test -n "$ASL_CFLAGS" ; then
+      { echo "$as_me:$LINENO: ASL CFLAGS are $ASL_CFLAGS" >&5
+echo "$as_me: ASL CFLAGS are $ASL_CFLAGS" >&6;}
+    fi
+    if test -n "$ASL_LIBS" ; then
+      { echo "$as_me:$LINENO: ASL LIBS   are $ASL_LIBS" >&5
+echo "$as_me: ASL LIBS   are $ASL_LIBS" >&6;}
+    fi
+    if test -n "$ASL_DATA" ; then
+      { echo "$as_me:$LINENO: ASL DATA   is  $ASL_DATA" >&5
+echo "$as_me: ASL DATA   is  $ASL_DATA" >&6;}
+    fi
+    fi
   fi
-else
-  echo "$as_me:$LINENO: result: skipping" >&5
-echo "${ECHO_T}skipping" >&6
-fi
+done
 
-#if user did not disable setting of makefile conditional, do it
 
 
 if test $coin_has_asl != notGiven &&
@@ -23921,8 +24842,6 @@ else
   COIN_HAS_ASL_FALSE=
 fi
 
-
-fi
 
 
   fi
@@ -24734,6 +25653,69 @@ echo "$as_me: error: conditional \"COIN_HAS_CLP\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi
+if test -z "${COIN_HAS_OSITESTS_TRUE}" && test -z "${COIN_HAS_OSITESTS_FALSE}"; then
+  { { echo "$as_me:$LINENO: error: conditional \"COIN_HAS_OSITESTS\" was never defined.
+Usually this means the macro was only invoked conditionally." >&5
+echo "$as_me: error: conditional \"COIN_HAS_OSITESTS\" was never defined.
+Usually this means the macro was only invoked conditionally." >&2;}
+   { (exit 1); exit 1; }; }
+fi
+if test -z "${COIN_HAS_OSITESTS_TRUE}" && test -z "${COIN_HAS_OSITESTS_FALSE}"; then
+  { { echo "$as_me:$LINENO: error: conditional \"COIN_HAS_OSITESTS\" was never defined.
+Usually this means the macro was only invoked conditionally." >&5
+echo "$as_me: error: conditional \"COIN_HAS_OSITESTS\" was never defined.
+Usually this means the macro was only invoked conditionally." >&2;}
+   { (exit 1); exit 1; }; }
+fi
+if test -z "${COIN_HAS_SAMPLE_TRUE}" && test -z "${COIN_HAS_SAMPLE_FALSE}"; then
+  { { echo "$as_me:$LINENO: error: conditional \"COIN_HAS_SAMPLE\" was never defined.
+Usually this means the macro was only invoked conditionally." >&5
+echo "$as_me: error: conditional \"COIN_HAS_SAMPLE\" was never defined.
+Usually this means the macro was only invoked conditionally." >&2;}
+   { (exit 1); exit 1; }; }
+fi
+if test -z "${COIN_HAS_SAMPLE_TRUE}" && test -z "${COIN_HAS_SAMPLE_FALSE}"; then
+  { { echo "$as_me:$LINENO: error: conditional \"COIN_HAS_SAMPLE\" was never defined.
+Usually this means the macro was only invoked conditionally." >&5
+echo "$as_me: error: conditional \"COIN_HAS_SAMPLE\" was never defined.
+Usually this means the macro was only invoked conditionally." >&2;}
+   { (exit 1); exit 1; }; }
+fi
+if test -z "${COIN_HAS_NETLIB_TRUE}" && test -z "${COIN_HAS_NETLIB_FALSE}"; then
+  { { echo "$as_me:$LINENO: error: conditional \"COIN_HAS_NETLIB\" was never defined.
+Usually this means the macro was only invoked conditionally." >&5
+echo "$as_me: error: conditional \"COIN_HAS_NETLIB\" was never defined.
+Usually this means the macro was only invoked conditionally." >&2;}
+   { (exit 1); exit 1; }; }
+fi
+if test -z "${COIN_HAS_NETLIB_TRUE}" && test -z "${COIN_HAS_NETLIB_FALSE}"; then
+  { { echo "$as_me:$LINENO: error: conditional \"COIN_HAS_NETLIB\" was never defined.
+Usually this means the macro was only invoked conditionally." >&5
+echo "$as_me: error: conditional \"COIN_HAS_NETLIB\" was never defined.
+Usually this means the macro was only invoked conditionally." >&2;}
+   { (exit 1); exit 1; }; }
+fi
+if test -z "${COIN_HAS_MIPLIB3_TRUE}" && test -z "${COIN_HAS_MIPLIB3_FALSE}"; then
+  { { echo "$as_me:$LINENO: error: conditional \"COIN_HAS_MIPLIB3\" was never defined.
+Usually this means the macro was only invoked conditionally." >&5
+echo "$as_me: error: conditional \"COIN_HAS_MIPLIB3\" was never defined.
+Usually this means the macro was only invoked conditionally." >&2;}
+   { (exit 1); exit 1; }; }
+fi
+if test -z "${COIN_HAS_MIPLIB3_TRUE}" && test -z "${COIN_HAS_MIPLIB3_FALSE}"; then
+  { { echo "$as_me:$LINENO: error: conditional \"COIN_HAS_MIPLIB3\" was never defined.
+Usually this means the macro was only invoked conditionally." >&5
+echo "$as_me: error: conditional \"COIN_HAS_MIPLIB3\" was never defined.
+Usually this means the macro was only invoked conditionally." >&2;}
+   { (exit 1); exit 1; }; }
+fi
+if test -z "${COIN_HAS_DYLP_TRUE}" && test -z "${COIN_HAS_DYLP_FALSE}"; then
+  { { echo "$as_me:$LINENO: error: conditional \"COIN_HAS_DYLP\" was never defined.
+Usually this means the macro was only invoked conditionally." >&5
+echo "$as_me: error: conditional \"COIN_HAS_DYLP\" was never defined.
+Usually this means the macro was only invoked conditionally." >&2;}
+   { (exit 1); exit 1; }; }
+fi
 if test -z "${COIN_HAS_DYLP_TRUE}" && test -z "${COIN_HAS_DYLP_FALSE}"; then
   { { echo "$as_me:$LINENO: error: conditional \"COIN_HAS_DYLP\" was never defined.
 Usually this means the macro was only invoked conditionally." >&5
@@ -24748,59 +25730,17 @@ echo "$as_me: error: conditional \"COIN_HAS_VOL\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi
-if test -z "${COIN_HAS_OSITESTS_TRUE}" && test -z "${COIN_HAS_OSITESTS_FALSE}"; then
-  { { echo "$as_me:$LINENO: error: conditional \"COIN_HAS_OSITESTS\" was never defined.
+if test -z "${COIN_HAS_VOL_TRUE}" && test -z "${COIN_HAS_VOL_FALSE}"; then
+  { { echo "$as_me:$LINENO: error: conditional \"COIN_HAS_VOL\" was never defined.
 Usually this means the macro was only invoked conditionally." >&5
-echo "$as_me: error: conditional \"COIN_HAS_OSITESTS\" was never defined.
+echo "$as_me: error: conditional \"COIN_HAS_VOL\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi
-if test -z "${COIN_HAS_OSITESTS_TRUE}" && test -z "${COIN_HAS_OSITESTS_FALSE}"; then
-  { { echo "$as_me:$LINENO: error: conditional \"COIN_HAS_OSITESTS\" was never defined.
+if test -z "${COIN_HAS_CPX_TRUE}" && test -z "${COIN_HAS_CPX_FALSE}"; then
+  { { echo "$as_me:$LINENO: error: conditional \"COIN_HAS_CPX\" was never defined.
 Usually this means the macro was only invoked conditionally." >&5
-echo "$as_me: error: conditional \"COIN_HAS_OSITESTS\" was never defined.
-Usually this means the macro was only invoked conditionally." >&2;}
-   { (exit 1); exit 1; }; }
-fi
-if test -z "${COIN_HAS_SAMPLE_TRUE}" && test -z "${COIN_HAS_SAMPLE_FALSE}"; then
-  { { echo "$as_me:$LINENO: error: conditional \"COIN_HAS_SAMPLE\" was never defined.
-Usually this means the macro was only invoked conditionally." >&5
-echo "$as_me: error: conditional \"COIN_HAS_SAMPLE\" was never defined.
-Usually this means the macro was only invoked conditionally." >&2;}
-   { (exit 1); exit 1; }; }
-fi
-if test -z "${COIN_HAS_SAMPLE_TRUE}" && test -z "${COIN_HAS_SAMPLE_FALSE}"; then
-  { { echo "$as_me:$LINENO: error: conditional \"COIN_HAS_SAMPLE\" was never defined.
-Usually this means the macro was only invoked conditionally." >&5
-echo "$as_me: error: conditional \"COIN_HAS_SAMPLE\" was never defined.
-Usually this means the macro was only invoked conditionally." >&2;}
-   { (exit 1); exit 1; }; }
-fi
-if test -z "${COIN_HAS_NETLIB_TRUE}" && test -z "${COIN_HAS_NETLIB_FALSE}"; then
-  { { echo "$as_me:$LINENO: error: conditional \"COIN_HAS_NETLIB\" was never defined.
-Usually this means the macro was only invoked conditionally." >&5
-echo "$as_me: error: conditional \"COIN_HAS_NETLIB\" was never defined.
-Usually this means the macro was only invoked conditionally." >&2;}
-   { (exit 1); exit 1; }; }
-fi
-if test -z "${COIN_HAS_NETLIB_TRUE}" && test -z "${COIN_HAS_NETLIB_FALSE}"; then
-  { { echo "$as_me:$LINENO: error: conditional \"COIN_HAS_NETLIB\" was never defined.
-Usually this means the macro was only invoked conditionally." >&5
-echo "$as_me: error: conditional \"COIN_HAS_NETLIB\" was never defined.
-Usually this means the macro was only invoked conditionally." >&2;}
-   { (exit 1); exit 1; }; }
-fi
-if test -z "${COIN_HAS_MIPLIB3_TRUE}" && test -z "${COIN_HAS_MIPLIB3_FALSE}"; then
-  { { echo "$as_me:$LINENO: error: conditional \"COIN_HAS_MIPLIB3\" was never defined.
-Usually this means the macro was only invoked conditionally." >&5
-echo "$as_me: error: conditional \"COIN_HAS_MIPLIB3\" was never defined.
-Usually this means the macro was only invoked conditionally." >&2;}
-   { (exit 1); exit 1; }; }
-fi
-if test -z "${COIN_HAS_MIPLIB3_TRUE}" && test -z "${COIN_HAS_MIPLIB3_FALSE}"; then
-  { { echo "$as_me:$LINENO: error: conditional \"COIN_HAS_MIPLIB3\" was never defined.
-Usually this means the macro was only invoked conditionally." >&5
-echo "$as_me: error: conditional \"COIN_HAS_MIPLIB3\" was never defined.
+echo "$as_me: error: conditional \"COIN_HAS_CPX\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi
@@ -24818,6 +25758,20 @@ echo "$as_me: error: conditional \"COIN_HAS_GLPK\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi
+if test -z "${COIN_HAS_GLPK_TRUE}" && test -z "${COIN_HAS_GLPK_FALSE}"; then
+  { { echo "$as_me:$LINENO: error: conditional \"COIN_HAS_GLPK\" was never defined.
+Usually this means the macro was only invoked conditionally." >&5
+echo "$as_me: error: conditional \"COIN_HAS_GLPK\" was never defined.
+Usually this means the macro was only invoked conditionally." >&2;}
+   { (exit 1); exit 1; }; }
+fi
+if test -z "${COIN_HAS_GRB_TRUE}" && test -z "${COIN_HAS_GRB_FALSE}"; then
+  { { echo "$as_me:$LINENO: error: conditional \"COIN_HAS_GRB\" was never defined.
+Usually this means the macro was only invoked conditionally." >&5
+echo "$as_me: error: conditional \"COIN_HAS_GRB\" was never defined.
+Usually this means the macro was only invoked conditionally." >&2;}
+   { (exit 1); exit 1; }; }
+fi
 if test -z "${COIN_HAS_GRB_TRUE}" && test -z "${COIN_HAS_GRB_FALSE}"; then
   { { echo "$as_me:$LINENO: error: conditional \"COIN_HAS_GRB\" was never defined.
 Usually this means the macro was only invoked conditionally." >&5
@@ -24832,10 +25786,31 @@ echo "$as_me: error: conditional \"COIN_HAS_MSK\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi
+if test -z "${COIN_HAS_MSK_TRUE}" && test -z "${COIN_HAS_MSK_FALSE}"; then
+  { { echo "$as_me:$LINENO: error: conditional \"COIN_HAS_MSK\" was never defined.
+Usually this means the macro was only invoked conditionally." >&5
+echo "$as_me: error: conditional \"COIN_HAS_MSK\" was never defined.
+Usually this means the macro was only invoked conditionally." >&2;}
+   { (exit 1); exit 1; }; }
+fi
 if test -z "${COIN_HAS_SPX_TRUE}" && test -z "${COIN_HAS_SPX_FALSE}"; then
   { { echo "$as_me:$LINENO: error: conditional \"COIN_HAS_SPX\" was never defined.
 Usually this means the macro was only invoked conditionally." >&5
 echo "$as_me: error: conditional \"COIN_HAS_SPX\" was never defined.
+Usually this means the macro was only invoked conditionally." >&2;}
+   { (exit 1); exit 1; }; }
+fi
+if test -z "${COIN_HAS_SPX_TRUE}" && test -z "${COIN_HAS_SPX_FALSE}"; then
+  { { echo "$as_me:$LINENO: error: conditional \"COIN_HAS_SPX\" was never defined.
+Usually this means the macro was only invoked conditionally." >&5
+echo "$as_me: error: conditional \"COIN_HAS_SPX\" was never defined.
+Usually this means the macro was only invoked conditionally." >&2;}
+   { (exit 1); exit 1; }; }
+fi
+if test -z "${COIN_HAS_XPR_TRUE}" && test -z "${COIN_HAS_XPR_FALSE}"; then
+  { { echo "$as_me:$LINENO: error: conditional \"COIN_HAS_XPR\" was never defined.
+Usually this means the macro was only invoked conditionally." >&5
+echo "$as_me: error: conditional \"COIN_HAS_XPR\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi
@@ -25596,16 +26571,6 @@ s,@CLP_CFLAGS@,$CLP_CFLAGS,;t t
 s,@CLP_DATA@,$CLP_DATA,;t t
 s,@COIN_HAS_CLP_TRUE@,$COIN_HAS_CLP_TRUE,;t t
 s,@COIN_HAS_CLP_FALSE@,$COIN_HAS_CLP_FALSE,;t t
-s,@DYLP_LIBS@,$DYLP_LIBS,;t t
-s,@DYLP_CFLAGS@,$DYLP_CFLAGS,;t t
-s,@DYLP_DATA@,$DYLP_DATA,;t t
-s,@COIN_HAS_DYLP_TRUE@,$COIN_HAS_DYLP_TRUE,;t t
-s,@COIN_HAS_DYLP_FALSE@,$COIN_HAS_DYLP_FALSE,;t t
-s,@VOL_LIBS@,$VOL_LIBS,;t t
-s,@VOL_CFLAGS@,$VOL_CFLAGS,;t t
-s,@VOL_DATA@,$VOL_DATA,;t t
-s,@COIN_HAS_VOL_TRUE@,$COIN_HAS_VOL_TRUE,;t t
-s,@COIN_HAS_VOL_FALSE@,$COIN_HAS_VOL_FALSE,;t t
 s,@OSITESTS_LIBS@,$OSITESTS_LIBS,;t t
 s,@OSITESTS_CFLAGS@,$OSITESTS_CFLAGS,;t t
 s,@OSITESTS_DATA@,$OSITESTS_DATA,;t t
@@ -25626,6 +26591,16 @@ s,@MIPLIB3_CFLAGS@,$MIPLIB3_CFLAGS,;t t
 s,@MIPLIB3_DATA@,$MIPLIB3_DATA,;t t
 s,@COIN_HAS_MIPLIB3_TRUE@,$COIN_HAS_MIPLIB3_TRUE,;t t
 s,@COIN_HAS_MIPLIB3_FALSE@,$COIN_HAS_MIPLIB3_FALSE,;t t
+s,@DYLP_LIBS@,$DYLP_LIBS,;t t
+s,@DYLP_CFLAGS@,$DYLP_CFLAGS,;t t
+s,@DYLP_DATA@,$DYLP_DATA,;t t
+s,@COIN_HAS_DYLP_TRUE@,$COIN_HAS_DYLP_TRUE,;t t
+s,@COIN_HAS_DYLP_FALSE@,$COIN_HAS_DYLP_FALSE,;t t
+s,@VOL_LIBS@,$VOL_LIBS,;t t
+s,@VOL_CFLAGS@,$VOL_CFLAGS,;t t
+s,@VOL_DATA@,$VOL_DATA,;t t
+s,@COIN_HAS_VOL_TRUE@,$COIN_HAS_VOL_TRUE,;t t
+s,@COIN_HAS_VOL_FALSE@,$COIN_HAS_VOL_FALSE,;t t
 s,@CPX_LIBS@,$CPX_LIBS,;t t
 s,@CPX_CFLAGS@,$CPX_CFLAGS,;t t
 s,@CPX_DATA@,$CPX_DATA,;t t

@@ -55,6 +55,12 @@ AC_COIN_MAIN_PACKAGEDIR(Vol)
 AC_COIN_MAIN_PACKAGEDIR(Cgl)
 AC_COIN_MAIN_PACKAGEDIR(Cbc)
 
+#############################################################################
+#                  Check for doxygen                                        #
+#############################################################################
+
+AC_COIN_DOXYGEN(CoinUtils Osi Clp DyLP Cgl)
+
 ##############################################################################
 #                   Finishing up by writing all the output                   #
 ##############################################################################
@@ -62,6 +68,7 @@ AC_COIN_MAIN_PACKAGEDIR(Cbc)
 # Here list all the files that configure should create (except for the
 # configuration header file)
 AC_CONFIG_FILES([Makefile])
+AC_CONFIG_FILES([doxydoc/doxygen.conf])
 
 # Finally, we let configure write all the output...
 AC_COIN_FINALIZE

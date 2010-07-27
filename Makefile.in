@@ -53,7 +53,8 @@ build_triplet = @build@
 host_triplet = @host@
 DIST_COMMON = README $(am__configure_deps) \
 	$(srcdir)/BuildTools/Makemain.inc $(srcdir)/Makefile.am \
-	$(srcdir)/Makefile.in $(top_srcdir)/configure AUTHORS INSTALL \
+	$(srcdir)/Makefile.in $(top_srcdir)/configure \
+	$(top_srcdir)/doxydoc/doxygen.conf.in AUTHORS INSTALL \
 	config.guess config.sub depcomp install-sh ltmain.sh missing
 @HAVE_EXTERNALS_TRUE@am__append_1 = Externals
 @HAVE_EXTERNALS_TRUE@am__append_2 = .Externals-stamp
@@ -66,7 +67,7 @@ am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 am__CONFIG_DISTCLEAN_FILES = config.status config.cache config.log \
  configure.lineno configure.status.lineno
 mkinstalldirs = $(install_sh) -d
-CONFIG_CLEAN_FILES =
+CONFIG_CLEAN_FILES = doxydoc/doxygen.conf
 SOURCES =
 DIST_SOURCES =
 RECURSIVE_TARGETS = all-recursive check-recursive dvi-recursive \
@@ -111,6 +112,7 @@ CFLAGS = @CFLAGS@
 COIN_HAS_PKGCONFIG_FALSE = @COIN_HAS_PKGCONFIG_FALSE@
 COIN_HAS_PKGCONFIG_TRUE = @COIN_HAS_PKGCONFIG_TRUE@
 COIN_PKG_CONFIG_PATH = @COIN_PKG_CONFIG_PATH@
+COIN_PKG_CONFIG_PATH_UNINSTALLED = @COIN_PKG_CONFIG_PATH_UNINSTALLED@
 COIN_SKIP_PROJECTS = @COIN_SKIP_PROJECTS@
 CPP = @CPP@
 CPPFLAGS = @CPPFLAGS@
@@ -202,6 +204,12 @@ build_alias = @build_alias@
 build_cpu = @build_cpu@
 build_os = @build_os@
 build_vendor = @build_vendor@
+coin_doxy_excludes = @coin_doxy_excludes@
+coin_doxy_logname = @coin_doxy_logname@
+coin_doxy_tagfiles = @coin_doxy_tagfiles@
+coin_doxy_tagname = @coin_doxy_tagname@
+coin_doxy_usedot = @coin_doxy_usedot@
+coin_have_doxygen = @coin_have_doxygen@
 datadir = @datadir@
 exec_prefix = @exec_prefix@
 have_autoconf = @have_autoconf@
@@ -285,6 +293,8 @@ $(top_srcdir)/configure: @MAINTAINER_MODE_TRUE@ $(am__configure_deps)
 	cd $(srcdir) && $(AUTOCONF)
 $(ACLOCAL_M4): @MAINTAINER_MODE_TRUE@ $(am__aclocal_m4_deps)
 	cd $(srcdir) && $(ACLOCAL) $(ACLOCAL_AMFLAGS)
+doxydoc/doxygen.conf: $(top_builddir)/config.status $(top_srcdir)/doxydoc/doxygen.conf.in
+	cd $(top_builddir) && $(SHELL) ./config.status $@
 
 mostlyclean-libtool:
 	-rm -f *.lo
@@ -602,7 +612,7 @@ maintainer-clean-generic:
 	@echo "it deletes files that may require special tools to rebuild."
 clean: clean-recursive
 
-clean-am: clean-generic clean-libtool mostlyclean-am
+clean-am: clean-generic clean-libtool clean-local mostlyclean-am
 
 distclean: distclean-recursive
 	-rm -f $(am__CONFIG_DISTCLEAN_FILES)
@@ -620,7 +630,7 @@ info: info-recursive
 
 info-am:
 
-install-data-am:
+install-data-am: install-data-local
 
 install-exec-am:
 
@@ -648,24 +658,25 @@ ps: ps-recursive
 
 ps-am:
 
-uninstall-am: uninstall-info-am
+uninstall-am: uninstall-info-am uninstall-local
 
 uninstall-info: uninstall-info-recursive
 
 .PHONY: $(RECURSIVE_TARGETS) CTAGS GTAGS all all-am am--refresh check \
-	check-am clean clean-generic clean-libtool clean-recursive \
-	ctags ctags-recursive dist dist-all dist-bzip2 dist-gzip \
-	dist-shar dist-tarZ dist-zip distcheck distclean \
+	check-am clean clean-generic clean-libtool clean-local \
+	clean-recursive ctags ctags-recursive dist dist-all dist-bzip2 \
+	dist-gzip dist-shar dist-tarZ dist-zip distcheck distclean \
 	distclean-generic distclean-libtool distclean-recursive \
 	distclean-tags distcleancheck distdir distuninstallcheck dvi \
 	dvi-am html html-am info info-am install install-am \
-	install-data install-data-am install-exec install-exec-am \
-	install-info install-info-am install-man install-strip \
-	installcheck installcheck-am installdirs installdirs-am \
-	maintainer-clean maintainer-clean-generic \
+	install-data install-data-am install-data-local install-exec \
+	install-exec-am install-info install-info-am install-man \
+	install-strip installcheck installcheck-am installdirs \
+	installdirs-am maintainer-clean maintainer-clean-generic \
 	maintainer-clean-recursive mostlyclean mostlyclean-generic \
 	mostlyclean-libtool mostlyclean-recursive pdf pdf-am ps ps-am \
-	tags tags-recursive uninstall uninstall-am uninstall-info-am
+	tags tags-recursive uninstall uninstall-am uninstall-info-am \
+	uninstall-local
 
 
 ########################################################################
@@ -686,8 +697,38 @@ tests: all
 
 unitTests: tests
 
+# Generate doxygen doc'n in subdirectories (except @PACKAGE_NAME@) if a doxydoc
+# directory is present, then do the base, if present.
+
 doxydoc:
-	cd $(srcdir); doxygen doxydoc/doxygen.conf
+	for dir in $(subdirs) ; do \
+	  if test $$dir != @PACKAGE_NAME@ && test -r $$dir/doxydoc ; then \
+	    (cd $$dir ; $(MAKE) doxydoc) \
+	  fi ; \
+	done ; \
+	if test -r doxydoc/doxygen.conf ; then \
+	  doxygen doxydoc/doxygen.conf ; \
+	fi
+
+clean-doxydoc:
+	( cd doxydoc ; rm -rf html *.log *.tag )
+
+# DocInstallDir is defined in Makemain.inc and is specific to the package.
+# For the short term, adopt the notion that we install only the package
+# doxydoc.
+
+install-doxydoc: doxydoc
+	if test -r doxydoc/doxygen.conf ; then \
+	  $(mkdir_p) $(DocInstallDir) ; \
+	  cp -R doxydoc $(DocInstallDir) ; \
+	fi
+
+uninstall-doxydoc:
+	rm -rf $(DocInstallDir)/doxydoc
+
+clean-local: clean-doxydoc
+install-data-local: install-doxydoc
+uninstall-local: uninstall-doxydoc
 
 .PHONY: test unitTest tests unitTests doxydoc
 

@@ -61,11 +61,17 @@ if test $coin_has_coindepend != yes ; then
   AC_MSG_ERROR([Required package CoinUtils, Osi, or Cgl not available.])
 fi
 
-AC_COIN_HAS_MODULE(Clp, [osi-clp])
+# Clp and OsiClp are inseparable here.
+
+AC_COIN_HAS_MODULE(Clp,[osi-clp])
 if test $coin_has_clp != yes ; then
   AC_MSG_ERROR("Required package Clp unavailable.")
 fi
 
+# The rest are not so critical, so we don't put in quite so much effort.
+
+AC_COIN_HAS_MODULE(DyLP,[osi-dylp])
+AC_COIN_HAS_MODULE(Vol, [osi-vol])
 AC_COIN_HAS_MODULE(OsiTests, [osi-unittests], [required=0])
 
 AC_COIN_HAS_MODULE(Sample,  [coindatasample],  [required=0])
@@ -309,6 +315,12 @@ AC_COIN_VPATH_LINK(examples/sudoku_sample.csv)
 AC_COIN_VPATH_LINK(examples/quad.mps)
 AC_COIN_VPATH_LINK(examples/quad2.mps)
 
+#############################################################################
+#                  Check for doxygen                                        #
+#############################################################################
+
+AC_COIN_DOXYGEN(CoinUtils Osi Clp DyLP Cgl)
+
 ##############################################################################
 #                   Finishing up by writing all the output                   #
 ##############################################################################
@@ -322,6 +334,7 @@ AC_CONFIG_FILES([Makefile
                  test/Makefile
 		 cbc.pc cbc-uninstalled.pc
 		 osi-cbc.pc osi-cbc-uninstalled.pc])
+AC_CONFIG_FILES([doxydoc/doxygen.conf])
 
 # Here put the location and name of the configuration header file
 AC_CONFIG_HEADER([inc/config_cbc.h])

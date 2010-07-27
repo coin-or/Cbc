@@ -472,7 +472,7 @@ ac_includes_default="\
 # include <unistd.h>
 #endif"
 
-ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS build build_cpu build_vendor build_os ADDLIBS PCADDLIBS FADDLIBS ALWAYS_FALSE_TRUE ALWAYS_FALSE_FALSE have_svnversion CBC_SVN_REV CDEFS ADD_CFLAGS DBG_CFLAGS OPT_CFLAGS sol_cc_compiler CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT MPICC CXXDEFS ADD_CXXFLAGS DBG_CXXFLAGS OPT_CXXFLAGS CXX CXXFLAGS ac_ct_CXX MPICXX EGREP INSTALL_PROGRAM INSTALL_SCRIPT INSTALL_DATA CYGPATH_W PACKAGE VERSION ACLOCAL AUTOCONF AUTOMAKE AUTOHEADER MAKEINFO install_sh STRIP ac_ct_STRIP INSTALL_STRIP_PROGRAM mkdir_p AWK SET_MAKE am__leading_dot AMTAR am__tar am__untar DEPDIR am__include am__quote AMDEP_TRUE AMDEP_FALSE AMDEPBACKSLASH CCDEPMODE am__fastdepCC_TRUE am__fastdepCC_FALSE CXXDEPMODE am__fastdepCXX_TRUE am__fastdepCXX_FALSE MAINTAINER_MODE_TRUE MAINTAINER_MODE_FALSE MAINT LIBTOOLM4 have_autoconf have_automake have_svn BUILDTOOLSDIR AUX_DIR abs_source_dir abs_lib_dir abs_include_dir abs_bin_dir HAVE_EXTERNALS_TRUE HAVE_EXTERNALS_FALSE host host_cpu host_vendor host_os LN_S ECHO AR ac_ct_AR RANLIB ac_ct_RANLIB CPP CXXCPP F77 FFLAGS ac_ct_F77 LIBTOOL ac_c_preproc_warn_flag ac_cxx_preproc_warn_flag RPATH_FLAGS LT_LDFLAGS PKG_CONFIG ac_pt_PKG_CONFIG COIN_HAS_PKGCONFIG_TRUE COIN_HAS_PKGCONFIG_FALSE COIN_PKG_CONFIG_PATH COIN_PKG_CONFIG_PATH_UNINSTALLED COINDEPEND_LIBS COINDEPEND_CFLAGS COINDEPEND_DATA REQUIREDPACKAGES COIN_HAS_COINDEPEND_TRUE COIN_HAS_COINDEPEND_FALSE CLP_LIBS CLP_CFLAGS CLP_DATA COIN_HAS_CLP_TRUE COIN_HAS_CLP_FALSE OSITESTS_LIBS OSITESTS_CFLAGS OSITESTS_DATA COIN_HAS_OSITESTS_TRUE COIN_HAS_OSITESTS_FALSE SAMPLE_LIBS SAMPLE_CFLAGS SAMPLE_DATA COIN_HAS_SAMPLE_TRUE COIN_HAS_SAMPLE_FALSE NETLIB_LIBS NETLIB_CFLAGS NETLIB_DATA COIN_HAS_NETLIB_TRUE COIN_HAS_NETLIB_FALSE MIPLIB3_LIBS MIPLIB3_CFLAGS MIPLIB3_DATA COIN_HAS_MIPLIB3_TRUE COIN_HAS_MIPLIB3_FALSE DYLP_LIBS DYLP_CFLAGS DYLP_DATA COIN_HAS_DYLP_TRUE COIN_HAS_DYLP_FALSE VOL_LIBS VOL_CFLAGS VOL_DATA COIN_HAS_VOL_TRUE COIN_HAS_VOL_FALSE CPX_LIBS CPX_CFLAGS CPX_DATA COIN_HAS_CPX_TRUE COIN_HAS_CPX_FALSE GLPK_LIBS GLPK_CFLAGS GLPK_DATA COIN_HAS_GLPK_TRUE COIN_HAS_GLPK_FALSE GRB_LIBS GRB_CFLAGS GRB_DATA COIN_HAS_GRB_TRUE COIN_HAS_GRB_FALSE MSK_LIBS MSK_CFLAGS MSK_DATA COIN_HAS_MSK_TRUE COIN_HAS_MSK_FALSE SPX_LIBS SPX_CFLAGS SPX_DATA COIN_HAS_SPX_TRUE COIN_HAS_SPX_FALSE XPR_LIBS XPR_CFLAGS XPR_DATA COIN_HAS_XPR_TRUE COIN_HAS_XPR_FALSE ASL_LIBS ASL_CFLAGS ASL_DATA COIN_HAS_ASL_TRUE COIN_HAS_ASL_FALSE CBC_BUILD_CBC_GENERIC_TRUE CBC_BUILD_CBC_GENERIC_FALSE OSICBC_DFLT_SOLVER_CLP_TRUE OSICBC_DFLT_SOLVER_CLP_FALSE OSICBC_DFLT_SOLVER_CPX_TRUE OSICBC_DFLT_SOLVER_CPX_FALSE OSICBC_DFLT_SOLVER_DYLP_TRUE OSICBC_DFLT_SOLVER_DYLP_FALSE OSICBC_DFLT_SOLVER_GLPK_TRUE OSICBC_DFLT_SOLVER_GLPK_FALSE OSICBC_DFLT_SOLVER_GRB_TRUE OSICBC_DFLT_SOLVER_GRB_FALSE OSICBC_DFLT_SOLVER_MSK_TRUE OSICBC_DFLT_SOLVER_MSK_FALSE OSICBC_DFLT_SOLVER_SPX_TRUE OSICBC_DFLT_SOLVER_SPX_FALSE OSICBC_DFLT_SOLVER_SYM_TRUE OSICBC_DFLT_SOLVER_SYM_FALSE OSICBC_DFLT_SOLVER_VOL_TRUE OSICBC_DFLT_SOLVER_VOL_FALSE OSICBC_DFLT_SOLVER_XPR_TRUE OSICBC_DFLT_SOLVER_XPR_FALSE LIBEXT VPATH_DISTCLEANFILES ABSBUILDDIR LIBOBJS LTLIBOBJS'
+ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS build build_cpu build_vendor build_os ADDLIBS PCADDLIBS FADDLIBS ALWAYS_FALSE_TRUE ALWAYS_FALSE_FALSE have_svnversion CBC_SVN_REV CDEFS ADD_CFLAGS DBG_CFLAGS OPT_CFLAGS sol_cc_compiler CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT MPICC CXXDEFS ADD_CXXFLAGS DBG_CXXFLAGS OPT_CXXFLAGS CXX CXXFLAGS ac_ct_CXX MPICXX EGREP INSTALL_PROGRAM INSTALL_SCRIPT INSTALL_DATA CYGPATH_W PACKAGE VERSION ACLOCAL AUTOCONF AUTOMAKE AUTOHEADER MAKEINFO install_sh STRIP ac_ct_STRIP INSTALL_STRIP_PROGRAM mkdir_p AWK SET_MAKE am__leading_dot AMTAR am__tar am__untar DEPDIR am__include am__quote AMDEP_TRUE AMDEP_FALSE AMDEPBACKSLASH CCDEPMODE am__fastdepCC_TRUE am__fastdepCC_FALSE CXXDEPMODE am__fastdepCXX_TRUE am__fastdepCXX_FALSE MAINTAINER_MODE_TRUE MAINTAINER_MODE_FALSE MAINT LIBTOOLM4 have_autoconf have_automake have_svn BUILDTOOLSDIR AUX_DIR abs_source_dir abs_lib_dir abs_include_dir abs_bin_dir HAVE_EXTERNALS_TRUE HAVE_EXTERNALS_FALSE host host_cpu host_vendor host_os LN_S ECHO AR ac_ct_AR RANLIB ac_ct_RANLIB CPP CXXCPP F77 FFLAGS ac_ct_F77 LIBTOOL ac_c_preproc_warn_flag ac_cxx_preproc_warn_flag RPATH_FLAGS LT_LDFLAGS PKG_CONFIG ac_pt_PKG_CONFIG COIN_HAS_PKGCONFIG_TRUE COIN_HAS_PKGCONFIG_FALSE COIN_PKG_CONFIG_PATH COIN_PKG_CONFIG_PATH_UNINSTALLED COINDEPEND_LIBS COINDEPEND_CFLAGS COINDEPEND_DATA REQUIREDPACKAGES COIN_HAS_COINDEPEND_TRUE COIN_HAS_COINDEPEND_FALSE CLP_LIBS CLP_CFLAGS CLP_DATA COIN_HAS_CLP_TRUE COIN_HAS_CLP_FALSE DYLP_LIBS DYLP_CFLAGS DYLP_DATA COIN_HAS_DYLP_TRUE COIN_HAS_DYLP_FALSE VOL_LIBS VOL_CFLAGS VOL_DATA COIN_HAS_VOL_TRUE COIN_HAS_VOL_FALSE OSITESTS_LIBS OSITESTS_CFLAGS OSITESTS_DATA COIN_HAS_OSITESTS_TRUE COIN_HAS_OSITESTS_FALSE SAMPLE_LIBS SAMPLE_CFLAGS SAMPLE_DATA COIN_HAS_SAMPLE_TRUE COIN_HAS_SAMPLE_FALSE NETLIB_LIBS NETLIB_CFLAGS NETLIB_DATA COIN_HAS_NETLIB_TRUE COIN_HAS_NETLIB_FALSE MIPLIB3_LIBS MIPLIB3_CFLAGS MIPLIB3_DATA COIN_HAS_MIPLIB3_TRUE COIN_HAS_MIPLIB3_FALSE CPX_LIBS CPX_CFLAGS CPX_DATA COIN_HAS_CPX_TRUE COIN_HAS_CPX_FALSE GLPK_LIBS GLPK_CFLAGS GLPK_DATA COIN_HAS_GLPK_TRUE COIN_HAS_GLPK_FALSE GRB_LIBS GRB_CFLAGS GRB_DATA COIN_HAS_GRB_TRUE COIN_HAS_GRB_FALSE MSK_LIBS MSK_CFLAGS MSK_DATA COIN_HAS_MSK_TRUE COIN_HAS_MSK_FALSE SPX_LIBS SPX_CFLAGS SPX_DATA COIN_HAS_SPX_TRUE COIN_HAS_SPX_FALSE XPR_LIBS XPR_CFLAGS XPR_DATA COIN_HAS_XPR_TRUE COIN_HAS_XPR_FALSE ASL_LIBS ASL_CFLAGS ASL_DATA COIN_HAS_ASL_TRUE COIN_HAS_ASL_FALSE CBC_BUILD_CBC_GENERIC_TRUE CBC_BUILD_CBC_GENERIC_FALSE OSICBC_DFLT_SOLVER_CLP_TRUE OSICBC_DFLT_SOLVER_CLP_FALSE OSICBC_DFLT_SOLVER_CPX_TRUE OSICBC_DFLT_SOLVER_CPX_FALSE OSICBC_DFLT_SOLVER_DYLP_TRUE OSICBC_DFLT_SOLVER_DYLP_FALSE OSICBC_DFLT_SOLVER_GLPK_TRUE OSICBC_DFLT_SOLVER_GLPK_FALSE OSICBC_DFLT_SOLVER_GRB_TRUE OSICBC_DFLT_SOLVER_GRB_FALSE OSICBC_DFLT_SOLVER_MSK_TRUE OSICBC_DFLT_SOLVER_MSK_FALSE OSICBC_DFLT_SOLVER_SPX_TRUE OSICBC_DFLT_SOLVER_SPX_FALSE OSICBC_DFLT_SOLVER_SYM_TRUE OSICBC_DFLT_SOLVER_SYM_FALSE OSICBC_DFLT_SOLVER_VOL_TRUE OSICBC_DFLT_SOLVER_VOL_FALSE OSICBC_DFLT_SOLVER_XPR_TRUE OSICBC_DFLT_SOLVER_XPR_FALSE coin_have_doxygen coin_doxy_usedot coin_doxy_tagname coin_doxy_logname coin_doxy_tagfiles coin_doxy_excludes LIBEXT VPATH_DISTCLEANFILES ABSBUILDDIR LIBOBJS LTLIBOBJS'
 ac_subst_files=''
 
 # Initialize some variables set by options.
@@ -1121,6 +1121,12 @@ Optional Packages:
   --with-clp-lib linker flags for using module Clp
   --with-clp-incdir directory with header files for using module Clp
   --with-clp-datadir directory with data files for using module Clp
+  --with-dylp-lib linker flags for using module DyLP
+  --with-dylp-incdir directory with header files for using module DyLP
+  --with-dylp-datadir directory with data files for using module DyLP
+  --with-vol-lib linker flags for using module Vol
+  --with-vol-incdir directory with header files for using module Vol
+  --with-vol-datadir directory with data files for using module Vol
   --with-ositests-lib linker flags for using module OsiTests
   --with-ositests-incdir directory with header files for using module OsiTests
   --with-ositests-datadir directory with data files for using module OsiTests
@@ -1133,12 +1139,6 @@ Optional Packages:
   --with-miplib3-lib linker flags for using module Miplib3
   --with-miplib3-incdir directory with header files for using module Miplib3
   --with-miplib3-datadir directory with data files for using module Miplib3
-  --with-dylp-lib linker flags for using module DyLP
-  --with-dylp-incdir directory with header files for using module DyLP
-  --with-dylp-datadir directory with data files for using module DyLP
-  --with-vol-lib linker flags for using module Vol
-  --with-vol-incdir directory with header files for using module Vol
-  --with-vol-datadir directory with data files for using module Vol
   --with-cpx-lib linker flags for using module Cpx
   --with-cpx-incdir directory with header files for using module Cpx
   --with-cpx-datadir directory with data files for using module Cpx
@@ -1166,6 +1166,8 @@ Optional Packages:
                           letters (if not given, clp is assumed)
   --with-osicbc-default-solver
                           specify underlying solver for OsiCbc (default clp)
+  --with-dot              use dot (from graphviz) when creating documentation
+                          with doxygen if available; --without-dot to disable
 
 Some influential environment variables:
   CDEFS       Additional -D flags to be used when compiling C code.
@@ -5911,7 +5913,7 @@ ia64-*-hpux*)
   ;;
 *-*-irix6*)
   # Find out which ABI we are using.
-  echo '#line 5914 "configure"' > conftest.$ac_ext
+  echo '#line 5916 "configure"' > conftest.$ac_ext
   if { (eval echo "$as_me:$LINENO: \"$ac_compile\"") >&5
   (eval $ac_compile) 2>&5
   ac_status=$?
@@ -7045,7 +7047,7 @@ fi
 
 
 # Provide some information about the compiler.
-echo "$as_me:7048:" \
+echo "$as_me:7050:" \
      "checking for Fortran 77 compiler version" >&5
 ac_compiler=`set X $ac_compile; echo $2`
 { (eval echo "$as_me:$LINENO: \"$ac_compiler --version </dev/null >&5\"") >&5
@@ -8112,11 +8114,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:8115: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:8117: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:8119: \$? = $ac_status" >&5
+   echo "$as_me:8121: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -8380,11 +8382,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:8383: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:8385: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:8387: \$? = $ac_status" >&5
+   echo "$as_me:8389: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -8484,11 +8486,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:8487: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:8489: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:8491: \$? = $ac_status" >&5
+   echo "$as_me:8493: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -10829,7 +10831,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<EOF
-#line 10832 "configure"
+#line 10834 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -10929,7 +10931,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<EOF
-#line 10932 "configure"
+#line 10934 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -13273,11 +13275,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:13276: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:13278: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:13280: \$? = $ac_status" >&5
+   echo "$as_me:13282: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -13377,11 +13379,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:13380: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:13382: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:13384: \$? = $ac_status" >&5
+   echo "$as_me:13386: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -14947,11 +14949,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:14950: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:14952: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:14954: \$? = $ac_status" >&5
+   echo "$as_me:14956: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -15051,11 +15053,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:15054: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:15056: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:15058: \$? = $ac_status" >&5
+   echo "$as_me:15060: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -17258,11 +17260,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:17261: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:17263: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:17265: \$? = $ac_status" >&5
+   echo "$as_me:17267: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -17526,11 +17528,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:17529: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:17531: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:17533: \$? = $ac_status" >&5
+   echo "$as_me:17535: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -17630,11 +17632,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:17633: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:17635: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:17637: \$? = $ac_status" >&5
+   echo "$as_me:17639: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -21005,6 +21007,8 @@ echo "$as_me: error: Required package CoinUtils, Osi, or Cgl not available." >&2
    { (exit 1); exit 1; }; }
 fi
 
+# Clp and OsiClp are inseparable here.
+
 
 echo "$as_me:$LINENO: checking for COIN-OR module Clp" >&5
 echo $ECHO_N "checking for COIN-OR module Clp... $ECHO_C" >&6
@@ -21286,6 +21290,560 @@ if test $coin_has_clp != yes ; then
 echo "$as_me: error: \"Required package Clp unavailable.\"" >&2;}
    { (exit 1); exit 1; }; }
 fi
+
+# The rest are not so critical, so we don't put in quite so much effort.
+
+
+echo "$as_me:$LINENO: checking for COIN-OR module DyLP" >&5
+echo $ECHO_N "checking for COIN-OR module DyLP... $ECHO_C" >&6
+
+coin_has_dylp=notGiven
+
+# check if user wants to skip module in any case
+if test x"$COIN_SKIP_PROJECTS" != x; then
+  for dir in $COIN_SKIP_PROJECTS; do
+    if test $dir = "DyLP"; then
+      coin_has_dylp=skipping
+    fi
+  done
+fi
+
+DYLP_LIBS=
+DYLP_CFLAGS=
+DYLP_DATA=
+
+
+
+
+
+#check if user provided LIBS, CFLAGS, or DATA for module
+if test $coin_has_dylp != skipping; then
+
+
+# Check whether --with-m4_tolower(DyLP)-lib or --without-m4_tolower(DyLP)-lib was given.
+if test "${with_dylp_lib+set}" = set; then
+  withval="$with_dylp_lib"
+  coin_has_dylp=yes
+       DYLP_LIBS="$withval"
+       PCADDLIBS="$withval $PCADDLIBS"
+
+fi;
+
+
+# Check whether --with-m4_tolower(DyLP)-incdir or --without-m4_tolower(DyLP)-incdir was given.
+if test "${with_dylp_incdir+set}" = set; then
+  withval="$with_dylp_incdir"
+  coin_has_dylp=yes
+     DYLP_CFLAGS="-I`${CYGPATH_W} $withval`"
+fi;
+
+
+# Check whether --with-m4_tolower(DyLP)-datadir or --without-m4_tolower(DyLP)-datadir was given.
+if test "${with_dylp_datadir+set}" = set; then
+  withval="$with_dylp_datadir"
+  coin_has_dylp=yes
+     DYLP_DATA="$withval"
+fi;
+fi
+
+if test $coin_has_dylp = notGiven; then
+  if test -n "$PKG_CONFIG" ; then
+    # set search path for pkg-config
+    # need to export variable to be sure that the following pkg-config gets these values
+    coin_save_PKG_CONFIG_PATH="$PKG_CONFIG_PATH"
+    PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH:$COIN_PKG_CONFIG_PATH_UNINSTALLED"
+    export PKG_CONFIG_PATH
+
+    # let pkg-config do it's magic
+
+
+
+if test -n "$PKG_CONFIG" ; then
+  if $PKG_CONFIG --exists "osi-dylp"; then
+    DYLP_VERSIONS="`$PKG_CONFIG --modversion osi-dylp 2>/dev/null`"
+     cflags=`$PKG_CONFIG --cflags "osi-dylp" 2>/dev/null`
+    # pkg-config cannot handle spaces, so CYGPATH_W cannot be put into .pc files
+	# thus, we modify the cflags extracted from pkg-config by putting CYGPATH_W behind -I's
+	# but only do this if is not trivial
+    if test "$CYGPATH_W" != "echo" ; then
+      # need to put into brackets since otherwise autoconf replaces the brackets in the sed command
+	  cflags=`echo $cflags | sed -e 's/-I\([^ ]*\)/-I\`${CYGPATH_W} \1\`/g'`
+	fi
+    DYLP_CFLAGS="$cflags"
+    DYLP_LIBS=`$PKG_CONFIG --libs "osi-dylp" 2>/dev/null`
+    DYLP_DATA=`$PKG_CONFIG --variable=datadir "osi-dylp" 2>/dev/null`
+     coin_has_dylp=yes
+        echo "$as_me:$LINENO: result: yes: $DYLP_VERSIONS" >&5
+echo "${ECHO_T}yes: $DYLP_VERSIONS" >&6
+        REQUIREDPACKAGES="osi-dylp $REQUIREDPACKAGES"
+
+
+  else
+    DYLP_PKG_ERRORS=`$PKG_CONFIG $pkg_short_errors --errors-to-stdout --print-errors osi-dylp`
+      coin_has_dylp=notGiven
+        echo "$as_me:$LINENO: result: not given: $DYLP_PKG_ERRORS" >&5
+echo "${ECHO_T}not given: $DYLP_PKG_ERRORS" >&6
+
+  fi
+else
+  { { echo "$as_me:$LINENO: error: \"Cannot check for existance of module DyLP without pkg-config\"" >&5
+echo "$as_me: error: \"Cannot check for existance of module DyLP without pkg-config\"" >&2;}
+   { (exit 1); exit 1; }; }
+fi
+
+
+
+
+    # reset PKG_CONFIG_PATH variable
+    PKG_CONFIG_PATH="$coin_save_PKG_CONFIG_PATH"
+    export PKG_CONFIG_PATH
+  else
+    echo "$as_me:$LINENO: result: skipped check via pkg-config, redirect to fallback" >&5
+echo "${ECHO_T}skipped check via pkg-config, redirect to fallback" >&6
+
+echo "$as_me:$LINENO: checking for COIN-OR module DyLP (fallback)" >&5
+echo $ECHO_N "checking for COIN-OR module DyLP (fallback)... $ECHO_C" >&6
+
+coin_has_dylp=notGiven
+DYLP_LIBS=
+DYLP_CFLAGS=
+DYLP_DATA=
+
+
+# initial list of dependencies is "osi-dylp", but we need to filter out version number specifications (= x, <= x, >= x)
+projtoprocess="osi-dylp"
+projprocessed=""
+
+while test $coin_has_dylp = notGiven ; do
+  # setup list of projects that need to be processed in the next round
+  nextprojtoprocess=""
+
+  for proj in $projtoprocess ; do
+    # if $proj has been processed already, skip this round
+    if test "x$projprocessed" != x ; then
+      for projdone in $projprocessed ; do
+        if test $projdone = $proj ; then
+	  continue 2
+	fi
+      done
+    fi
+
+    # if $proj is available and configured, then a project-uninstalled.pc file should have been created, so search for it
+    pcfile=""
+    save_IFS="$IFS"
+    IFS=":"
+    for dir in $COIN_PKG_CONFIG_PATH_UNINSTALLED ; do
+      # the base directory configure should have setup coin_subdirs.txt in a way that it does not contain projects that should be skipped, so we do not need to test this here again
+      if test -r "$dir/$proj-uninstalled.pc" ; then
+        pcfile="$dir/$proj-uninstalled.pc"
+        pcfiledir="$dir"
+        break
+      fi
+    done
+    IFS="$save_IFS"
+
+    if test "x$pcfile" != x ; then
+      # read CFLAGS from $pcfile and add CYGPATH_W cludge into include flags
+      projcflags=`sed -n -e 's/Cflags://' -e 's/-I\([^ ]*\)/-I\`${CYGPATH_W} \1\`/gp' "$pcfile"`
+      DYLP_CFLAGS="$projcflags $DYLP_CFLAGS"
+
+      # read LIBS from $pcfile and replace -L${libdir} by absolute path to build directory in linker flags
+      # we assume that the build directory is $pcfiledir/src if this directory exists, otherwise we assume that it is $pcfiledir
+      projlibs=`sed -n -e 's/Libs://' -e 's/-L\${libdir}//p' "$pcfile"`
+      if test "x$projlibs" != x ; then
+        if test -d "${pcfiledir}/src" ; then
+          projlibs="-L`cd "${pcfiledir}/src"; pwd` $projlibs"
+        else
+          projlibs="-L`cd "$pcfiledir"; pwd` $projlibs"
+        fi
+      else
+        projlibs=`sed -n -e 's/Libs://p' "$pcfile"`
+      fi
+      DYLP_LIBS="$projlibs $DYLP_LIBS"
+
+      # read DATA from $pcfile, if this is the first .pc file we are processing (so assume that its the main one)
+      if test "x$projprocessed" = x ; then
+        DYLP_DATA=`sed -n -e 's/datadir=//gp' "$pcfile"`
+      fi
+
+      # read dependencies from $pcfile, filter it, and add to list of projects that need to be processed next
+      projrequires=`sed -n -e 's/Requires://gp' "$pcfile" | sed -e 's/<\?>\?=[ 	]*[^ 	]\+//g'`
+      nextprojtoprocess="$nextprojtoprocess $projrequires"
+
+      # remember that we have processed $proj
+      projprocessed="$projprocessed $proj"
+
+    else
+      echo "$as_me:$LINENO: result: no, dependency $proj not available" >&5
+echo "${ECHO_T}no, dependency $proj not available" >&6
+      break 2
+    fi
+
+  done
+
+  projtoprocess="$nextprojtoprocess"
+
+  if test "x$projtoprocess" = x ; then
+    coin_has_dylp=yes
+    echo "$as_me:$LINENO: result: yes, dependencies are$projprocessed" >&5
+echo "${ECHO_T}yes, dependencies are$projprocessed" >&6
+
+    REQUIREDPACKAGES="osi-dylp $REQUIREDPACKAGES"
+
+cat >>confdefs.h <<\_ACEOF
+#define COIN_HAS_DYLP 1
+_ACEOF
+
+
+    if test 1 = 0 ; then  #change this test to enable a bit of debugging output
+    if test -n "$DYLP_CFLAGS" ; then
+      { echo "$as_me:$LINENO: DyLP CFLAGS are $DYLP_CFLAGS" >&5
+echo "$as_me: DyLP CFLAGS are $DYLP_CFLAGS" >&6;}
+    fi
+    if test -n "$DYLP_LIBS" ; then
+      { echo "$as_me:$LINENO: DyLP LIBS   are $DYLP_LIBS" >&5
+echo "$as_me: DyLP LIBS   are $DYLP_LIBS" >&6;}
+    fi
+    if test -n "$DYLP_DATA" ; then
+      { echo "$as_me:$LINENO: DyLP DATA   is  $DYLP_DATA" >&5
+echo "$as_me: DyLP DATA   is  $DYLP_DATA" >&6;}
+    fi
+    fi
+  fi
+done
+
+
+
+if test $coin_has_dylp != notGiven &&
+                test $coin_has_dylp != skipping; then
+  COIN_HAS_DYLP_TRUE=
+  COIN_HAS_DYLP_FALSE='#'
+else
+  COIN_HAS_DYLP_TRUE='#'
+  COIN_HAS_DYLP_FALSE=
+fi
+
+
+
+  fi
+
+else
+  echo "$as_me:$LINENO: result: $coin_has_dylp" >&5
+echo "${ECHO_T}$coin_has_dylp" >&6
+fi
+
+if test $coin_has_dylp != skipping &&
+   test $coin_has_dylp != notGiven ; then
+  if test 0 = 1 ; then  #change this test to enable a bit of debugging output
+  if test -n "$DYLP_CFLAGS" ; then
+    { echo "$as_me:$LINENO: DyLP CFLAGS are $DYLP_CFLAGS" >&5
+echo "$as_me: DyLP CFLAGS are $DYLP_CFLAGS" >&6;}
+  fi
+  if test -n "$DYLP_LIBS" ; then
+    { echo "$as_me:$LINENO: DyLP LIBS   are $DYLP_LIBS" >&5
+echo "$as_me: DyLP LIBS   are $DYLP_LIBS" >&6;}
+  fi
+  if test -n "$DYLP_DATA" ; then
+    { echo "$as_me:$LINENO: DyLP DATA   is  $DYLP_DATA" >&5
+echo "$as_me: DyLP DATA   is  $DYLP_DATA" >&6;}
+  fi
+  fi
+
+cat >>confdefs.h <<\_ACEOF
+#define COIN_HAS_DYLP 1
+_ACEOF
+
+fi
+
+# Define the Makefile conditional
+
+
+if test $coin_has_dylp != notGiven &&
+                test $coin_has_dylp != skipping; then
+  COIN_HAS_DYLP_TRUE=
+  COIN_HAS_DYLP_FALSE='#'
+else
+  COIN_HAS_DYLP_TRUE='#'
+  COIN_HAS_DYLP_FALSE=
+fi
+
+
+
+
+echo "$as_me:$LINENO: checking for COIN-OR module Vol" >&5
+echo $ECHO_N "checking for COIN-OR module Vol... $ECHO_C" >&6
+
+coin_has_vol=notGiven
+
+# check if user wants to skip module in any case
+if test x"$COIN_SKIP_PROJECTS" != x; then
+  for dir in $COIN_SKIP_PROJECTS; do
+    if test $dir = "Vol"; then
+      coin_has_vol=skipping
+    fi
+  done
+fi
+
+VOL_LIBS=
+VOL_CFLAGS=
+VOL_DATA=
+
+
+
+
+
+#check if user provided LIBS, CFLAGS, or DATA for module
+if test $coin_has_vol != skipping; then
+
+
+# Check whether --with-m4_tolower(Vol)-lib or --without-m4_tolower(Vol)-lib was given.
+if test "${with_vol_lib+set}" = set; then
+  withval="$with_vol_lib"
+  coin_has_vol=yes
+       VOL_LIBS="$withval"
+       PCADDLIBS="$withval $PCADDLIBS"
+
+fi;
+
+
+# Check whether --with-m4_tolower(Vol)-incdir or --without-m4_tolower(Vol)-incdir was given.
+if test "${with_vol_incdir+set}" = set; then
+  withval="$with_vol_incdir"
+  coin_has_vol=yes
+     VOL_CFLAGS="-I`${CYGPATH_W} $withval`"
+fi;
+
+
+# Check whether --with-m4_tolower(Vol)-datadir or --without-m4_tolower(Vol)-datadir was given.
+if test "${with_vol_datadir+set}" = set; then
+  withval="$with_vol_datadir"
+  coin_has_vol=yes
+     VOL_DATA="$withval"
+fi;
+fi
+
+if test $coin_has_vol = notGiven; then
+  if test -n "$PKG_CONFIG" ; then
+    # set search path for pkg-config
+    # need to export variable to be sure that the following pkg-config gets these values
+    coin_save_PKG_CONFIG_PATH="$PKG_CONFIG_PATH"
+    PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH:$COIN_PKG_CONFIG_PATH_UNINSTALLED"
+    export PKG_CONFIG_PATH
+
+    # let pkg-config do it's magic
+
+
+
+if test -n "$PKG_CONFIG" ; then
+  if $PKG_CONFIG --exists "osi-vol"; then
+    VOL_VERSIONS="`$PKG_CONFIG --modversion osi-vol 2>/dev/null`"
+     cflags=`$PKG_CONFIG --cflags "osi-vol" 2>/dev/null`
+    # pkg-config cannot handle spaces, so CYGPATH_W cannot be put into .pc files
+	# thus, we modify the cflags extracted from pkg-config by putting CYGPATH_W behind -I's
+	# but only do this if is not trivial
+    if test "$CYGPATH_W" != "echo" ; then
+      # need to put into brackets since otherwise autoconf replaces the brackets in the sed command
+	  cflags=`echo $cflags | sed -e 's/-I\([^ ]*\)/-I\`${CYGPATH_W} \1\`/g'`
+	fi
+    VOL_CFLAGS="$cflags"
+    VOL_LIBS=`$PKG_CONFIG --libs "osi-vol" 2>/dev/null`
+    VOL_DATA=`$PKG_CONFIG --variable=datadir "osi-vol" 2>/dev/null`
+     coin_has_vol=yes
+        echo "$as_me:$LINENO: result: yes: $VOL_VERSIONS" >&5
+echo "${ECHO_T}yes: $VOL_VERSIONS" >&6
+        REQUIREDPACKAGES="osi-vol $REQUIREDPACKAGES"
+
+
+  else
+    VOL_PKG_ERRORS=`$PKG_CONFIG $pkg_short_errors --errors-to-stdout --print-errors osi-vol`
+      coin_has_vol=notGiven
+        echo "$as_me:$LINENO: result: not given: $VOL_PKG_ERRORS" >&5
+echo "${ECHO_T}not given: $VOL_PKG_ERRORS" >&6
+
+  fi
+else
+  { { echo "$as_me:$LINENO: error: \"Cannot check for existance of module Vol without pkg-config\"" >&5
+echo "$as_me: error: \"Cannot check for existance of module Vol without pkg-config\"" >&2;}
+   { (exit 1); exit 1; }; }
+fi
+
+
+
+
+    # reset PKG_CONFIG_PATH variable
+    PKG_CONFIG_PATH="$coin_save_PKG_CONFIG_PATH"
+    export PKG_CONFIG_PATH
+  else
+    echo "$as_me:$LINENO: result: skipped check via pkg-config, redirect to fallback" >&5
+echo "${ECHO_T}skipped check via pkg-config, redirect to fallback" >&6
+
+echo "$as_me:$LINENO: checking for COIN-OR module Vol (fallback)" >&5
+echo $ECHO_N "checking for COIN-OR module Vol (fallback)... $ECHO_C" >&6
+
+coin_has_vol=notGiven
+VOL_LIBS=
+VOL_CFLAGS=
+VOL_DATA=
+
+
+# initial list of dependencies is "osi-vol", but we need to filter out version number specifications (= x, <= x, >= x)
+projtoprocess="osi-vol"
+projprocessed=""
+
+while test $coin_has_vol = notGiven ; do
+  # setup list of projects that need to be processed in the next round
+  nextprojtoprocess=""
+
+  for proj in $projtoprocess ; do
+    # if $proj has been processed already, skip this round
+    if test "x$projprocessed" != x ; then
+      for projdone in $projprocessed ; do
+        if test $projdone = $proj ; then
+	  continue 2
+	fi
+      done
+    fi
+
+    # if $proj is available and configured, then a project-uninstalled.pc file should have been created, so search for it
+    pcfile=""
+    save_IFS="$IFS"
+    IFS=":"
+    for dir in $COIN_PKG_CONFIG_PATH_UNINSTALLED ; do
+      # the base directory configure should have setup coin_subdirs.txt in a way that it does not contain projects that should be skipped, so we do not need to test this here again
+      if test -r "$dir/$proj-uninstalled.pc" ; then
+        pcfile="$dir/$proj-uninstalled.pc"
+        pcfiledir="$dir"
+        break
+      fi
+    done
+    IFS="$save_IFS"
+
+    if test "x$pcfile" != x ; then
+      # read CFLAGS from $pcfile and add CYGPATH_W cludge into include flags
+      projcflags=`sed -n -e 's/Cflags://' -e 's/-I\([^ ]*\)/-I\`${CYGPATH_W} \1\`/gp' "$pcfile"`
+      VOL_CFLAGS="$projcflags $VOL_CFLAGS"
+
+      # read LIBS from $pcfile and replace -L${libdir} by absolute path to build directory in linker flags
+      # we assume that the build directory is $pcfiledir/src if this directory exists, otherwise we assume that it is $pcfiledir
+      projlibs=`sed -n -e 's/Libs://' -e 's/-L\${libdir}//p' "$pcfile"`
+      if test "x$projlibs" != x ; then
+        if test -d "${pcfiledir}/src" ; then
+          projlibs="-L`cd "${pcfiledir}/src"; pwd` $projlibs"
+        else
+          projlibs="-L`cd "$pcfiledir"; pwd` $projlibs"
+        fi
+      else
+        projlibs=`sed -n -e 's/Libs://p' "$pcfile"`
+      fi
+      VOL_LIBS="$projlibs $VOL_LIBS"
+
+      # read DATA from $pcfile, if this is the first .pc file we are processing (so assume that its the main one)
+      if test "x$projprocessed" = x ; then
+        VOL_DATA=`sed -n -e 's/datadir=//gp' "$pcfile"`
+      fi
+
+      # read dependencies from $pcfile, filter it, and add to list of projects that need to be processed next
+      projrequires=`sed -n -e 's/Requires://gp' "$pcfile" | sed -e 's/<\?>\?=[ 	]*[^ 	]\+//g'`
+      nextprojtoprocess="$nextprojtoprocess $projrequires"
+
+      # remember that we have processed $proj
+      projprocessed="$projprocessed $proj"
+
+    else
+      echo "$as_me:$LINENO: result: no, dependency $proj not available" >&5
+echo "${ECHO_T}no, dependency $proj not available" >&6
+      break 2
+    fi
+
+  done
+
+  projtoprocess="$nextprojtoprocess"
+
+  if test "x$projtoprocess" = x ; then
+    coin_has_vol=yes
+    echo "$as_me:$LINENO: result: yes, dependencies are$projprocessed" >&5
+echo "${ECHO_T}yes, dependencies are$projprocessed" >&6
+
+    REQUIREDPACKAGES="osi-vol $REQUIREDPACKAGES"
+
+cat >>confdefs.h <<\_ACEOF
+#define COIN_HAS_VOL 1
+_ACEOF
+
+
+    if test 1 = 0 ; then  #change this test to enable a bit of debugging output
+    if test -n "$VOL_CFLAGS" ; then
+      { echo "$as_me:$LINENO: Vol CFLAGS are $VOL_CFLAGS" >&5
+echo "$as_me: Vol CFLAGS are $VOL_CFLAGS" >&6;}
+    fi
+    if test -n "$VOL_LIBS" ; then
+      { echo "$as_me:$LINENO: Vol LIBS   are $VOL_LIBS" >&5
+echo "$as_me: Vol LIBS   are $VOL_LIBS" >&6;}
+    fi
+    if test -n "$VOL_DATA" ; then
+      { echo "$as_me:$LINENO: Vol DATA   is  $VOL_DATA" >&5
+echo "$as_me: Vol DATA   is  $VOL_DATA" >&6;}
+    fi
+    fi
+  fi
+done
+
+
+
+if test $coin_has_vol != notGiven &&
+                test $coin_has_vol != skipping; then
+  COIN_HAS_VOL_TRUE=
+  COIN_HAS_VOL_FALSE='#'
+else
+  COIN_HAS_VOL_TRUE='#'
+  COIN_HAS_VOL_FALSE=
+fi
+
+
+
+  fi
+
+else
+  echo "$as_me:$LINENO: result: $coin_has_vol" >&5
+echo "${ECHO_T}$coin_has_vol" >&6
+fi
+
+if test $coin_has_vol != skipping &&
+   test $coin_has_vol != notGiven ; then
+  if test 0 = 1 ; then  #change this test to enable a bit of debugging output
+  if test -n "$VOL_CFLAGS" ; then
+    { echo "$as_me:$LINENO: Vol CFLAGS are $VOL_CFLAGS" >&5
+echo "$as_me: Vol CFLAGS are $VOL_CFLAGS" >&6;}
+  fi
+  if test -n "$VOL_LIBS" ; then
+    { echo "$as_me:$LINENO: Vol LIBS   are $VOL_LIBS" >&5
+echo "$as_me: Vol LIBS   are $VOL_LIBS" >&6;}
+  fi
+  if test -n "$VOL_DATA" ; then
+    { echo "$as_me:$LINENO: Vol DATA   is  $VOL_DATA" >&5
+echo "$as_me: Vol DATA   is  $VOL_DATA" >&6;}
+  fi
+  fi
+
+cat >>confdefs.h <<\_ACEOF
+#define COIN_HAS_VOL 1
+_ACEOF
+
+fi
+
+# Define the Makefile conditional
+
+
+if test $coin_has_vol != notGiven &&
+                test $coin_has_vol != skipping; then
+  COIN_HAS_VOL_TRUE=
+  COIN_HAS_VOL_FALSE='#'
+else
+  COIN_HAS_VOL_TRUE='#'
+  COIN_HAS_VOL_FALSE=
+fi
+
+
 
 
 echo "$as_me:$LINENO: checking for COIN-OR module OsiTests" >&5
@@ -25374,6 +25932,7 @@ fi
 # In case this is a VPATH configuration we need to make sure that the
 # input files for the examples are available in the VPATH directory.
 
+
 echo "$as_me:$LINENO: checking whether this is a VPATH configuration" >&5
 echo $ECHO_N "checking whether this is a VPATH configuration... $ECHO_C" >&6
 if test `cd $srcdir; pwd` != `pwd`; then
@@ -25385,22 +25944,213 @@ echo "$as_me:$LINENO: result: $coin_vpath_config" >&5
 echo "${ECHO_T}$coin_vpath_config" >&6
 
 
+
+# Allow for newlines in the parameter
 if test $coin_vpath_config = yes; then
-  # echo converts newlines in parameter to spaces
-  coin_vpath_link_files="$coin_vpath_link_files `echo examples/sudoku_sample.csv`"
+  cvl_tmp="examples/sudoku_sample.csv"
+  coin_vpath_link_files=
+  for file in $cvl_tmp ; do
+    coin_vpath_link_files="$coin_vpath_link_files $file"
+  done
 fi
 
 
+
+# Allow for newlines in the parameter
 if test $coin_vpath_config = yes; then
-  # echo converts newlines in parameter to spaces
-  coin_vpath_link_files="$coin_vpath_link_files `echo examples/quad.mps`"
+  cvl_tmp="examples/quad.mps"
+  coin_vpath_link_files=
+  for file in $cvl_tmp ; do
+    coin_vpath_link_files="$coin_vpath_link_files $file"
+  done
 fi
 
 
+
+# Allow for newlines in the parameter
 if test $coin_vpath_config = yes; then
-  # echo converts newlines in parameter to spaces
-  coin_vpath_link_files="$coin_vpath_link_files `echo examples/quad2.mps`"
+  cvl_tmp="examples/quad2.mps"
+  coin_vpath_link_files=
+  for file in $cvl_tmp ; do
+    coin_vpath_link_files="$coin_vpath_link_files $file"
+  done
 fi
+
+
+#############################################################################
+#                  Check for doxygen                                        #
+#############################################################################
+
+
+
+{ echo "$as_me:$LINENO: configuring doxygen documentation options" >&5
+echo "$as_me: configuring doxygen documentation options" >&6;}
+
+# Check to see if doxygen is available.
+
+# Extract the first word of "doxygen", so it can be a program name with args.
+set dummy doxygen; ac_word=$2
+echo "$as_me:$LINENO: checking for $ac_word" >&5
+echo $ECHO_N "checking for $ac_word... $ECHO_C" >&6
+if test "${ac_cv_prog_coin_have_doxygen+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  if test -n "$coin_have_doxygen"; then
+  ac_cv_prog_coin_have_doxygen="$coin_have_doxygen" # Let the user override the test.
+else
+as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+  for ac_exec_ext in '' $ac_executable_extensions; do
+  if $as_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
+    ac_cv_prog_coin_have_doxygen="yes"
+    echo "$as_me:$LINENO: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+done
+
+  test -z "$ac_cv_prog_coin_have_doxygen" && ac_cv_prog_coin_have_doxygen="no"
+fi
+fi
+coin_have_doxygen=$ac_cv_prog_coin_have_doxygen
+if test -n "$coin_have_doxygen"; then
+  echo "$as_me:$LINENO: result: $coin_have_doxygen" >&5
+echo "${ECHO_T}$coin_have_doxygen" >&6
+else
+  echo "$as_me:$LINENO: result: no" >&5
+echo "${ECHO_T}no" >&6
+fi
+
+
+# Look for the dot tool from the graphviz package, unless the user has
+# disabled it.
+
+
+# Check whether --with-dot or --without-dot was given.
+if test "${with_dot+set}" = set; then
+  withval="$with_dot"
+
+else
+  withval=yes
+fi;
+if test x$withval = xno ; then
+  coin_doxy_usedot=NO
+  echo "$as_me:$LINENO: checking for dot " >&5
+echo $ECHO_N "checking for dot ... $ECHO_C" >&6
+  echo "$as_me:$LINENO: result: disabled" >&5
+echo "${ECHO_T}disabled" >&6
+else
+  # Extract the first word of "dot", so it can be a program name with args.
+set dummy dot; ac_word=$2
+echo "$as_me:$LINENO: checking for $ac_word" >&5
+echo $ECHO_N "checking for $ac_word... $ECHO_C" >&6
+if test "${ac_cv_prog_coin_doxy_usedot+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  if test -n "$coin_doxy_usedot"; then
+  ac_cv_prog_coin_doxy_usedot="$coin_doxy_usedot" # Let the user override the test.
+else
+as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+  for ac_exec_ext in '' $ac_executable_extensions; do
+  if $as_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
+    ac_cv_prog_coin_doxy_usedot="YES"
+    echo "$as_me:$LINENO: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+done
+
+  test -z "$ac_cv_prog_coin_doxy_usedot" && ac_cv_prog_coin_doxy_usedot="NO"
+fi
+fi
+coin_doxy_usedot=$ac_cv_prog_coin_doxy_usedot
+if test -n "$coin_doxy_usedot"; then
+  echo "$as_me:$LINENO: result: $coin_doxy_usedot" >&5
+echo "${ECHO_T}$coin_doxy_usedot" >&6
+else
+  echo "$as_me:$LINENO: result: no" >&5
+echo "${ECHO_T}no" >&6
+fi
+
+fi
+
+# Generate a tag file name and a log file name
+
+coin_doxy_tagname=doxydoc/${PACKAGE}_doxy.tag
+
+coin_doxy_logname=doxydoc/${PACKAGE}_doxy.log
+
+
+# Process the list of project names and massage them into possible doxygen
+# doc'n directories. Prefer 1) classic external, source processed using
+# a project-specific doxygen.conf, we use the tag file; 2) classic
+# external, source processed using package doxygen.conf; 3) installed
+# doxydoc. Alternatives 1) and 2) are only possible if the directory will be
+# configured, which we can't know unless this is the package base configure,
+# since coin_subdirs is only set there. Hence it's sufficient to check for
+# membership. If we use a tag file from a classic external, exclude the
+# source from doxygen processing when doxygen runs in the base directory.
+
+coin_doxy_tagfiles=
+coin_doxy_excludes=
+tmp="CoinUtils Osi Clp DyLP Cgl"
+for proj in $tmp ; do
+  lc_proj=`echo $proj | tr [A-Z] [a-z]`
+  echo "$as_me:$LINENO: checking for doxygen doc'n for $proj " >&5
+echo $ECHO_N "checking for doxygen doc'n for $proj ... $ECHO_C" >&6
+  doxytag=${lc_proj}_doxy.tag
+  doxyfound=no
+  for chkProj in $coin_subdirs ; do
+    if test "$chkProj" = "$proj" ; then
+      # proj will be configured, hence doxydoc present in build tree
+      doxysrcdir="${srcdir}/${proj}"
+      { echo "$as_me:$LINENO: Considering $doxysrcdir (base)" >&5
+echo "$as_me: Considering $doxysrcdir (base)" >&6;}
+      if test -d "$doxysrcdir" ; then
+	# with a doxydoc directory?
+	doxydir="$doxysrcdir/doxydoc"
+	{ echo "$as_me:$LINENO: Considering $doxydir (base)" >&5
+echo "$as_me: Considering $doxydir (base)" >&6;}
+	{ echo "$as_me:$LINENO: Subdirs: $coin_subdirs)" >&5
+echo "$as_me: Subdirs: $coin_subdirs)" >&6;}
+	if test -d "$doxydir" ; then
+	  # use tag file; don't process source
+	  eval doxydir="`pwd`/${proj}/doxydoc"
+	  coin_doxy_tagfiles="$coin_doxy_tagfiles $doxydir/$doxytag=$doxydir/html"
+	  echo "$as_me:$LINENO: result: $doxydir (tag)" >&5
+echo "${ECHO_T}$doxydir (tag)" >&6
+	  coin_doxy_excludes="$coin_doxy_excludes */${proj}*"
+	else
+	  # will process the source -- nothing further to be done here
+	  echo "$as_me:$LINENO: result: $doxysrcdir (src)" >&5
+echo "${ECHO_T}$doxysrcdir (src)" >&6
+	fi
+	doxyfound=yes
+      fi
+    fi
+  done
+  # Not built, fall back to installed tag file
+  if test $doxyfound = no ; then
+    eval doxydir="${datadir}/coin/doc/${proj}/doxydoc"
+    { echo "$as_me:$LINENO: Considering $doxydir (install)" >&5
+echo "$as_me: Considering $doxydir (install)" >&6;}
+    { echo "$as_me:$LINENO: Subdirs: $coin_subdirs)" >&5
+echo "$as_me: Subdirs: $coin_subdirs)" >&6;}
+    coin_doxy_tagfiles="$coin_doxy_tagfiles $doxydir/$doxytag=$doxydir/html"
+    echo "$as_me:$LINENO: result: $doxydir (tag)" >&5
+echo "${ECHO_T}$doxydir (tag)" >&6
+  fi
+done
+
+
+
 
 
 ##############################################################################
@@ -25410,6 +26160,8 @@ fi
 # Here list all the files that configure should create (except for the
 # configuration header file)
                                                                                           ac_config_files="$ac_config_files Makefile examples/Makefile src/Makefile src/OsiCbc/Makefile test/Makefile cbc.pc cbc-uninstalled.pc osi-cbc.pc osi-cbc-uninstalled.pc"
+
+          ac_config_files="$ac_config_files doxydoc/doxygen.conf"
 
 
 # Here put the location and name of the configuration header file
@@ -25650,6 +26402,34 @@ if test -z "${COIN_HAS_CLP_TRUE}" && test -z "${COIN_HAS_CLP_FALSE}"; then
   { { echo "$as_me:$LINENO: error: conditional \"COIN_HAS_CLP\" was never defined.
 Usually this means the macro was only invoked conditionally." >&5
 echo "$as_me: error: conditional \"COIN_HAS_CLP\" was never defined.
+Usually this means the macro was only invoked conditionally." >&2;}
+   { (exit 1); exit 1; }; }
+fi
+if test -z "${COIN_HAS_DYLP_TRUE}" && test -z "${COIN_HAS_DYLP_FALSE}"; then
+  { { echo "$as_me:$LINENO: error: conditional \"COIN_HAS_DYLP\" was never defined.
+Usually this means the macro was only invoked conditionally." >&5
+echo "$as_me: error: conditional \"COIN_HAS_DYLP\" was never defined.
+Usually this means the macro was only invoked conditionally." >&2;}
+   { (exit 1); exit 1; }; }
+fi
+if test -z "${COIN_HAS_DYLP_TRUE}" && test -z "${COIN_HAS_DYLP_FALSE}"; then
+  { { echo "$as_me:$LINENO: error: conditional \"COIN_HAS_DYLP\" was never defined.
+Usually this means the macro was only invoked conditionally." >&5
+echo "$as_me: error: conditional \"COIN_HAS_DYLP\" was never defined.
+Usually this means the macro was only invoked conditionally." >&2;}
+   { (exit 1); exit 1; }; }
+fi
+if test -z "${COIN_HAS_VOL_TRUE}" && test -z "${COIN_HAS_VOL_FALSE}"; then
+  { { echo "$as_me:$LINENO: error: conditional \"COIN_HAS_VOL\" was never defined.
+Usually this means the macro was only invoked conditionally." >&5
+echo "$as_me: error: conditional \"COIN_HAS_VOL\" was never defined.
+Usually this means the macro was only invoked conditionally." >&2;}
+   { (exit 1); exit 1; }; }
+fi
+if test -z "${COIN_HAS_VOL_TRUE}" && test -z "${COIN_HAS_VOL_FALSE}"; then
+  { { echo "$as_me:$LINENO: error: conditional \"COIN_HAS_VOL\" was never defined.
+Usually this means the macro was only invoked conditionally." >&5
+echo "$as_me: error: conditional \"COIN_HAS_VOL\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi
@@ -26365,6 +27145,7 @@ do
   "cbc-uninstalled.pc" ) CONFIG_FILES="$CONFIG_FILES cbc-uninstalled.pc" ;;
   "osi-cbc.pc" ) CONFIG_FILES="$CONFIG_FILES osi-cbc.pc" ;;
   "osi-cbc-uninstalled.pc" ) CONFIG_FILES="$CONFIG_FILES osi-cbc-uninstalled.pc" ;;
+  "doxydoc/doxygen.conf" ) CONFIG_FILES="$CONFIG_FILES doxydoc/doxygen.conf" ;;
   "depfiles" ) CONFIG_COMMANDS="$CONFIG_COMMANDS depfiles" ;;
   "inc/config_cbc.h" ) CONFIG_HEADERS="$CONFIG_HEADERS inc/config_cbc.h" ;;
   *) { { echo "$as_me:$LINENO: error: invalid argument: $ac_config_target" >&5
@@ -26571,6 +27352,16 @@ s,@CLP_CFLAGS@,$CLP_CFLAGS,;t t
 s,@CLP_DATA@,$CLP_DATA,;t t
 s,@COIN_HAS_CLP_TRUE@,$COIN_HAS_CLP_TRUE,;t t
 s,@COIN_HAS_CLP_FALSE@,$COIN_HAS_CLP_FALSE,;t t
+s,@DYLP_LIBS@,$DYLP_LIBS,;t t
+s,@DYLP_CFLAGS@,$DYLP_CFLAGS,;t t
+s,@DYLP_DATA@,$DYLP_DATA,;t t
+s,@COIN_HAS_DYLP_TRUE@,$COIN_HAS_DYLP_TRUE,;t t
+s,@COIN_HAS_DYLP_FALSE@,$COIN_HAS_DYLP_FALSE,;t t
+s,@VOL_LIBS@,$VOL_LIBS,;t t
+s,@VOL_CFLAGS@,$VOL_CFLAGS,;t t
+s,@VOL_DATA@,$VOL_DATA,;t t
+s,@COIN_HAS_VOL_TRUE@,$COIN_HAS_VOL_TRUE,;t t
+s,@COIN_HAS_VOL_FALSE@,$COIN_HAS_VOL_FALSE,;t t
 s,@OSITESTS_LIBS@,$OSITESTS_LIBS,;t t
 s,@OSITESTS_CFLAGS@,$OSITESTS_CFLAGS,;t t
 s,@OSITESTS_DATA@,$OSITESTS_DATA,;t t
@@ -26591,16 +27382,6 @@ s,@MIPLIB3_CFLAGS@,$MIPLIB3_CFLAGS,;t t
 s,@MIPLIB3_DATA@,$MIPLIB3_DATA,;t t
 s,@COIN_HAS_MIPLIB3_TRUE@,$COIN_HAS_MIPLIB3_TRUE,;t t
 s,@COIN_HAS_MIPLIB3_FALSE@,$COIN_HAS_MIPLIB3_FALSE,;t t
-s,@DYLP_LIBS@,$DYLP_LIBS,;t t
-s,@DYLP_CFLAGS@,$DYLP_CFLAGS,;t t
-s,@DYLP_DATA@,$DYLP_DATA,;t t
-s,@COIN_HAS_DYLP_TRUE@,$COIN_HAS_DYLP_TRUE,;t t
-s,@COIN_HAS_DYLP_FALSE@,$COIN_HAS_DYLP_FALSE,;t t
-s,@VOL_LIBS@,$VOL_LIBS,;t t
-s,@VOL_CFLAGS@,$VOL_CFLAGS,;t t
-s,@VOL_DATA@,$VOL_DATA,;t t
-s,@COIN_HAS_VOL_TRUE@,$COIN_HAS_VOL_TRUE,;t t
-s,@COIN_HAS_VOL_FALSE@,$COIN_HAS_VOL_FALSE,;t t
 s,@CPX_LIBS@,$CPX_LIBS,;t t
 s,@CPX_CFLAGS@,$CPX_CFLAGS,;t t
 s,@CPX_DATA@,$CPX_DATA,;t t
@@ -26658,6 +27439,12 @@ s,@OSICBC_DFLT_SOLVER_VOL_TRUE@,$OSICBC_DFLT_SOLVER_VOL_TRUE,;t t
 s,@OSICBC_DFLT_SOLVER_VOL_FALSE@,$OSICBC_DFLT_SOLVER_VOL_FALSE,;t t
 s,@OSICBC_DFLT_SOLVER_XPR_TRUE@,$OSICBC_DFLT_SOLVER_XPR_TRUE,;t t
 s,@OSICBC_DFLT_SOLVER_XPR_FALSE@,$OSICBC_DFLT_SOLVER_XPR_FALSE,;t t
+s,@coin_have_doxygen@,$coin_have_doxygen,;t t
+s,@coin_doxy_usedot@,$coin_doxy_usedot,;t t
+s,@coin_doxy_tagname@,$coin_doxy_tagname,;t t
+s,@coin_doxy_logname@,$coin_doxy_logname,;t t
+s,@coin_doxy_tagfiles@,$coin_doxy_tagfiles,;t t
+s,@coin_doxy_excludes@,$coin_doxy_excludes,;t t
 s,@LIBEXT@,$LIBEXT,;t t
 s,@VPATH_DISTCLEANFILES@,$VPATH_DISTCLEANFILES,;t t
 s,@ABSBUILDDIR@,$ABSBUILDDIR,;t t

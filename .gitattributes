@@ -35,7 +35,7 @@ Cbc/config.sub -text
 Cbc/configure -text
 Cbc/configure.ac -text
 Cbc/depcomp -text
-Cbc/doc/doxygen.conf -text
+Cbc/doxydoc/doxygen.conf.in -text
 Cbc/examples/Makefile.in -text
 Cbc/examples/allCuts.cpp -text
 Cbc/examples/barrier.cpp -text
@@ -185,6 +185,6 @@ Cbc/test/osiUnitTest.cpp -text
 /configure -text
 /configure.ac -text
 /depcomp -text
-doxydoc/doxygen.conf -text
+doxydoc/doxygen.conf.in -text
 /install-sh -text
 /missing -text

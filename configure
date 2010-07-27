@@ -485,7 +485,7 @@ ac_subdirs_all="$ac_subdirs_all DyLP"
 ac_subdirs_all="$ac_subdirs_all Vol"
 ac_subdirs_all="$ac_subdirs_all Cgl"
 ac_subdirs_all="$ac_subdirs_all Cbc"
-ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS build build_cpu build_vendor build_os CDEFS ADD_CFLAGS DBG_CFLAGS OPT_CFLAGS sol_cc_compiler CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT MPICC CXXDEFS ADD_CXXFLAGS DBG_CXXFLAGS OPT_CXXFLAGS CXX CXXFLAGS ac_ct_CXX MPICXX ADD_FFLAGS DBG_FFLAGS OPT_FFLAGS F77 FFLAGS ac_ct_F77 MPIF77 EGREP INSTALL_PROGRAM INSTALL_SCRIPT INSTALL_DATA CYGPATH_W PACKAGE VERSION ACLOCAL AUTOCONF AUTOMAKE AUTOHEADER MAKEINFO install_sh STRIP ac_ct_STRIP INSTALL_STRIP_PROGRAM mkdir_p AWK SET_MAKE am__leading_dot AMTAR am__tar am__untar DEPDIR am__include am__quote AMDEP_TRUE AMDEP_FALSE AMDEPBACKSLASH CCDEPMODE am__fastdepCC_TRUE am__fastdepCC_FALSE CXXDEPMODE am__fastdepCXX_TRUE am__fastdepCXX_FALSE MAINTAINER_MODE_TRUE MAINTAINER_MODE_FALSE MAINT LIBTOOLM4 have_autoconf have_automake have_svn BUILDTOOLSDIR AUX_DIR abs_source_dir abs_lib_dir abs_include_dir abs_bin_dir HAVE_EXTERNALS_TRUE HAVE_EXTERNALS_FALSE host host_cpu host_vendor host_os LN_S ECHO AR ac_ct_AR RANLIB ac_ct_RANLIB CPP CXXCPP LIBTOOL ac_c_preproc_warn_flag ac_cxx_preproc_warn_flag RPATH_FLAGS LT_LDFLAGS PKG_CONFIG ac_pt_PKG_CONFIG COIN_HAS_PKGCONFIG_TRUE COIN_HAS_PKGCONFIG_FALSE COIN_PKG_CONFIG_PATH COIN_SKIP_PROJECTS subdirs LIBEXT VPATH_DISTCLEANFILES ABSBUILDDIR LIBOBJS LTLIBOBJS'
+ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS build build_cpu build_vendor build_os CDEFS ADD_CFLAGS DBG_CFLAGS OPT_CFLAGS sol_cc_compiler CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT MPICC CXXDEFS ADD_CXXFLAGS DBG_CXXFLAGS OPT_CXXFLAGS CXX CXXFLAGS ac_ct_CXX MPICXX ADD_FFLAGS DBG_FFLAGS OPT_FFLAGS F77 FFLAGS ac_ct_F77 MPIF77 EGREP INSTALL_PROGRAM INSTALL_SCRIPT INSTALL_DATA CYGPATH_W PACKAGE VERSION ACLOCAL AUTOCONF AUTOMAKE AUTOHEADER MAKEINFO install_sh STRIP ac_ct_STRIP INSTALL_STRIP_PROGRAM mkdir_p AWK SET_MAKE am__leading_dot AMTAR am__tar am__untar DEPDIR am__include am__quote AMDEP_TRUE AMDEP_FALSE AMDEPBACKSLASH CCDEPMODE am__fastdepCC_TRUE am__fastdepCC_FALSE CXXDEPMODE am__fastdepCXX_TRUE am__fastdepCXX_FALSE MAINTAINER_MODE_TRUE MAINTAINER_MODE_FALSE MAINT LIBTOOLM4 have_autoconf have_automake have_svn BUILDTOOLSDIR AUX_DIR abs_source_dir abs_lib_dir abs_include_dir abs_bin_dir HAVE_EXTERNALS_TRUE HAVE_EXTERNALS_FALSE host host_cpu host_vendor host_os LN_S ECHO AR ac_ct_AR RANLIB ac_ct_RANLIB CPP CXXCPP LIBTOOL ac_c_preproc_warn_flag ac_cxx_preproc_warn_flag RPATH_FLAGS LT_LDFLAGS PKG_CONFIG ac_pt_PKG_CONFIG COIN_HAS_PKGCONFIG_TRUE COIN_HAS_PKGCONFIG_FALSE COIN_PKG_CONFIG_PATH COIN_PKG_CONFIG_PATH_UNINSTALLED COIN_SKIP_PROJECTS subdirs coin_have_doxygen coin_doxy_usedot coin_doxy_tagname coin_doxy_logname coin_doxy_tagfiles coin_doxy_excludes LIBEXT VPATH_DISTCLEANFILES ABSBUILDDIR LIBOBJS LTLIBOBJS'
 ac_subst_files=''
 
 # Initialize some variables set by options.
@@ -1181,6 +1181,8 @@ Optional Packages:
   --with-cbc-lib linker flags for using project Cbc
   --with-cbc-incdir directory with header files for using project Cbc
   --with-cbc-datadir directory with data files for using project Cbc
+  --with-dot              use dot (from graphviz) when creating documentation
+                          with doxygen if available; --without-dot to disable
 
 Some influential environment variables:
   CDEFS       Additional -D flags to be used when compiling C code.
@@ -4217,7 +4219,7 @@ fi
 
 
 # Provide some information about the compiler.
-echo "$as_me:4220:" \
+echo "$as_me:4222:" \
      "checking for Fortran 77 compiler version" >&5
 ac_compiler=`set X $ac_compile; echo $2`
 { (eval echo "$as_me:$LINENO: \"$ac_compiler --version </dev/null >&5\"") >&5
@@ -6476,7 +6478,7 @@ ia64-*-hpux*)
   ;;
 *-*-irix6*)
   # Find out which ABI we are using.
-  echo '#line 6479 "configure"' > conftest.$ac_ext
+  echo '#line 6481 "configure"' > conftest.$ac_ext
   if { (eval echo "$as_me:$LINENO: \"$ac_compile\"") >&5
   (eval $ac_compile) 2>&5
   ac_status=$?
@@ -8440,11 +8442,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:8443: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:8445: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:8447: \$? = $ac_status" >&5
+   echo "$as_me:8449: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -8708,11 +8710,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:8711: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:8713: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:8715: \$? = $ac_status" >&5
+   echo "$as_me:8717: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -8812,11 +8814,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:8815: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:8817: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:8819: \$? = $ac_status" >&5
+   echo "$as_me:8821: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -11157,7 +11159,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<EOF
-#line 11160 "configure"
+#line 11162 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -11257,7 +11259,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<EOF
-#line 11260 "configure"
+#line 11262 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -13601,11 +13603,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:13604: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:13606: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:13608: \$? = $ac_status" >&5
+   echo "$as_me:13610: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -13705,11 +13707,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:13708: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:13710: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:13712: \$? = $ac_status" >&5
+   echo "$as_me:13714: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -15275,11 +15277,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:15278: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:15280: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:15282: \$? = $ac_status" >&5
+   echo "$as_me:15284: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -15379,11 +15381,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:15382: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:15384: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:15386: \$? = $ac_status" >&5
+   echo "$as_me:15388: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -17586,11 +17588,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:17589: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:17591: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:17593: \$? = $ac_status" >&5
+   echo "$as_me:17595: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -17854,11 +17856,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:17857: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:17859: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:17861: \$? = $ac_status" >&5
+   echo "$as_me:17863: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -17958,11 +17960,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:17961: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:17963: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:17965: \$? = $ac_status" >&5
+   echo "$as_me:17967: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -21001,38 +21003,42 @@ fi
 
 
 
-# assemble search path for pkg-config, if we are in a project setup
-if test x$coin_projectdir = xyes ; then
-  COIN_PKG_CONFIG_PATH="$PKG_CONFIG_PATH"
+# assemble pkg-config search path for installed projects
+COIN_PKG_CONFIG_PATH="$PKG_CONFIG_PATH"
 
-  # let's assume that when installing into $prefix, then the user may have installed some other coin projects there before, so it's worth to have a look into there
-  # best would actually to use ${libdir}, since .pc files get installed into ${libdir}/pkgconfig,
-  # unfortunately, ${libdir} expands to ${exec_prefix}/lib and ${exec_prefix} to ${prefix}...
-  if test -d "${prefix}"; then
-    COIN_PKG_CONFIG_PATH="${prefix}/lib/pkgconfig:${COIN_PKG_CONFIG_PATH}"
-  fi
+# let's assume that when installing into $prefix, then the user may have installed some other coin projects there before, so it's worth to have a look into there
+# best would actually to use ${libdir}, since .pc files get installed into ${libdir}/pkgconfig,
+# unfortunately, ${libdir} expands to ${exec_prefix}/lib and ${exec_prefix} to ${prefix}...
+if test -d "${prefix}"; then
+  COIN_PKG_CONFIG_PATH="${prefix}/lib/pkgconfig:${COIN_PKG_CONFIG_PATH}"
+fi
 
 
 # Check whether --with-coin-instdir or --without-coin-instdir was given.
 if test "${with_coin_instdir+set}" = set; then
   withval="$with_coin_instdir"
   if test -d "$withval"; then : ; else
-       { { echo "$as_me:$LINENO: error: argument for --with-coin-instdir not a directory" >&5
+     { { echo "$as_me:$LINENO: error: argument for --with-coin-instdir not a directory" >&5
 echo "$as_me: error: argument for --with-coin-instdir not a directory" >&2;}
    { (exit 1); exit 1; }; }
-     fi
-     COIN_PKG_CONFIG_PATH="$withval/lib/pkgconfig:${COIN_PKG_CONFIG_PATH}"
+   fi
+   COIN_PKG_CONFIG_PATH="$withval/lib/pkgconfig:${COIN_PKG_CONFIG_PATH}"
 
 fi;
 
-  # in a classic setup, we want to find uninstalled projects
+
+
+# assemble additional pkg-config search paths for uninstalled projects
+if test x$coin_projectdir = xyes ; then
+  # if we are in a project setup, then in a classic setup, we want to find uninstalled projects
   # their (relative) location is written to coin_subdirs.txt by the configure in the project base directory
   # unfortunately, if the user set prefix, then we do not know where the project base directory is located
   # but it is likely to be either .. (if we are a usual coin project) or ../.. (if we are a unusual coin project like ThirdParty or Data)
+  COIN_PKG_CONFIG_PATH_UNINSTALLED=
   if test -e ../coin_subdirs.txt ; then
     for i in `cat ../coin_subdirs.txt` ; do
       if test -d ../$i ; then
-        COIN_PKG_CONFIG_PATH="`cd ../$i; pwd`:${COIN_PKG_CONFIG_PATH}"
+        COIN_PKG_CONFIG_PATH_UNINSTALLED="`cd ../$i; pwd`:${COIN_PKG_CONFIG_PATH_UNINSTALLED}"
       fi
     done
   fi
@@ -21040,7 +21046,7 @@ fi;
   if test -e ../../coin_subdirs.txt ; then
     for i in `cat ../../coin_subdirs.txt` ; do
       if test -d ../../$i ; then
-        COIN_PKG_CONFIG_PATH="`cd ../../$i; pwd`:${COIN_PKG_CONFIG_PATH}"
+        COIN_PKG_CONFIG_PATH_UNINSTALLED="`cd ../../$i; pwd`:${COIN_PKG_CONFIG_PATH_UNINSTALLED}"
       fi
     done
   fi
@@ -21114,32 +21120,11 @@ fi;
 fi
 
 if test $coin_has_blas = notGiven; then
-  #only if pkg-config is available:
-  #see if user gives directory where project might be installed: assemble search path for pkg-config
+  #check for project by using pkg-config, if pkg-config is available
+  #we are only interested in installed packages here, so we do not search in $COIN_PKG_CONFIG_PATH_UNINSTALLED
   if test -n "$PKG_CONFIG" ; then
     coin_save_PKG_CONFIG_PATH="$PKG_CONFIG_PATH"
-
-    # let's assume that when installing into $prefix, then the user may have installed some other coin projects there before, so it's worth to have a look into there
-    if test -d "$prefix"; then
-      PKG_CONFIG_PATH="$prefix/lib/pkgconfig:$PKG_CONFIG_PATH"
-    fi
-
-
-# Check whether --with-coin-instdir or --without-coin-instdir was given.
-if test "${with_coin_instdir+set}" = set; then
-  withval="$with_coin_instdir"
-  if test -d "$withval"; then : ; else
-         { { echo "$as_me:$LINENO: error: argument for --with-coin-instdir not a directory" >&5
-echo "$as_me: error: argument for --with-coin-instdir not a directory" >&2;}
-   { (exit 1); exit 1; }; }
-       fi
-       PKG_CONFIG_PATH="$withval/lib/pkgconfig:$PKG_CONFIG_PATH"
-
-fi;
-
-    # let pkgconfig check if the project is already installed somewhere
-    # need to export variable to be sure that the following pkg-config call gets these values
-    export PKG_CONFIG_PATH
+    PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" ; export PKG_CONFIG_PATH
 
 if test -n "$PKG_CONFIG" ; then
   if $PKG_CONFIG --exists "coinblas"; then
@@ -21155,8 +21140,8 @@ echo "$as_me: error: \"Cannot check for existance of module coinblas without pkg
    { (exit 1); exit 1; }; }
 fi
 
-
     PKG_CONFIG_PATH="$coin_save_PKG_CONFIG_PATH"
+    export PKG_CONFIG_PATH
   fi
 fi
 
@@ -21267,32 +21252,11 @@ fi;
 fi
 
 if test $coin_has_lapack = notGiven; then
-  #only if pkg-config is available:
-  #see if user gives directory where project might be installed: assemble search path for pkg-config
+  #check for project by using pkg-config, if pkg-config is available
+  #we are only interested in installed packages here, so we do not search in $COIN_PKG_CONFIG_PATH_UNINSTALLED
   if test -n "$PKG_CONFIG" ; then
     coin_save_PKG_CONFIG_PATH="$PKG_CONFIG_PATH"
-
-    # let's assume that when installing into $prefix, then the user may have installed some other coin projects there before, so it's worth to have a look into there
-    if test -d "$prefix"; then
-      PKG_CONFIG_PATH="$prefix/lib/pkgconfig:$PKG_CONFIG_PATH"
-    fi
-
-
-# Check whether --with-coin-instdir or --without-coin-instdir was given.
-if test "${with_coin_instdir+set}" = set; then
-  withval="$with_coin_instdir"
-  if test -d "$withval"; then : ; else
-         { { echo "$as_me:$LINENO: error: argument for --with-coin-instdir not a directory" >&5
-echo "$as_me: error: argument for --with-coin-instdir not a directory" >&2;}
-   { (exit 1); exit 1; }; }
-       fi
-       PKG_CONFIG_PATH="$withval/lib/pkgconfig:$PKG_CONFIG_PATH"
-
-fi;
-
-    # let pkgconfig check if the project is already installed somewhere
-    # need to export variable to be sure that the following pkg-config call gets these values
-    export PKG_CONFIG_PATH
+    PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" ; export PKG_CONFIG_PATH
 
 if test -n "$PKG_CONFIG" ; then
   if $PKG_CONFIG --exists "coinlapack"; then
@@ -21308,8 +21272,8 @@ echo "$as_me: error: \"Cannot check for existance of module coinlapack without p
    { (exit 1); exit 1; }; }
 fi
 
-
     PKG_CONFIG_PATH="$coin_save_PKG_CONFIG_PATH"
+    export PKG_CONFIG_PATH
   fi
 fi
 
@@ -21409,32 +21373,11 @@ fi;
 fi
 
 if test $coin_has_sample = notGiven; then
-  #only if pkg-config is available:
-  #see if user gives directory where project might be installed: assemble search path for pkg-config
+  #check for project by using pkg-config, if pkg-config is available
+  #we are only interested in installed packages here, so we do not search in $COIN_PKG_CONFIG_PATH_UNINSTALLED
   if test -n "$PKG_CONFIG" ; then
     coin_save_PKG_CONFIG_PATH="$PKG_CONFIG_PATH"
-
-    # let's assume that when installing into $prefix, then the user may have installed some other coin projects there before, so it's worth to have a look into there
-    if test -d "$prefix"; then
-      PKG_CONFIG_PATH="$prefix/lib/pkgconfig:$PKG_CONFIG_PATH"
-    fi
-
-
-# Check whether --with-coin-instdir or --without-coin-instdir was given.
-if test "${with_coin_instdir+set}" = set; then
-  withval="$with_coin_instdir"
-  if test -d "$withval"; then : ; else
-         { { echo "$as_me:$LINENO: error: argument for --with-coin-instdir not a directory" >&5
-echo "$as_me: error: argument for --with-coin-instdir not a directory" >&2;}
-   { (exit 1); exit 1; }; }
-       fi
-       PKG_CONFIG_PATH="$withval/lib/pkgconfig:$PKG_CONFIG_PATH"
-
-fi;
-
-    # let pkgconfig check if the project is already installed somewhere
-    # need to export variable to be sure that the following pkg-config call gets these values
-    export PKG_CONFIG_PATH
+    PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" ; export PKG_CONFIG_PATH
 
 if test -n "$PKG_CONFIG" ; then
   if $PKG_CONFIG --exists "coindatasample"; then
@@ -21450,8 +21393,8 @@ echo "$as_me: error: \"Cannot check for existance of module coindatasample witho
    { (exit 1); exit 1; }; }
 fi
 
-
     PKG_CONFIG_PATH="$coin_save_PKG_CONFIG_PATH"
+    export PKG_CONFIG_PATH
   fi
 fi
 
@@ -21547,32 +21490,11 @@ fi;
 fi
 
 if test $coin_has_netlib = notGiven; then
-  #only if pkg-config is available:
-  #see if user gives directory where project might be installed: assemble search path for pkg-config
+  #check for project by using pkg-config, if pkg-config is available
+  #we are only interested in installed packages here, so we do not search in $COIN_PKG_CONFIG_PATH_UNINSTALLED
   if test -n "$PKG_CONFIG" ; then
     coin_save_PKG_CONFIG_PATH="$PKG_CONFIG_PATH"
-
-    # let's assume that when installing into $prefix, then the user may have installed some other coin projects there before, so it's worth to have a look into there
-    if test -d "$prefix"; then
-      PKG_CONFIG_PATH="$prefix/lib/pkgconfig:$PKG_CONFIG_PATH"
-    fi
-
-
-# Check whether --with-coin-instdir or --without-coin-instdir was given.
-if test "${with_coin_instdir+set}" = set; then
-  withval="$with_coin_instdir"
-  if test -d "$withval"; then : ; else
-         { { echo "$as_me:$LINENO: error: argument for --with-coin-instdir not a directory" >&5
-echo "$as_me: error: argument for --with-coin-instdir not a directory" >&2;}
-   { (exit 1); exit 1; }; }
-       fi
-       PKG_CONFIG_PATH="$withval/lib/pkgconfig:$PKG_CONFIG_PATH"
-
-fi;
-
-    # let pkgconfig check if the project is already installed somewhere
-    # need to export variable to be sure that the following pkg-config call gets these values
-    export PKG_CONFIG_PATH
+    PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" ; export PKG_CONFIG_PATH
 
 if test -n "$PKG_CONFIG" ; then
   if $PKG_CONFIG --exists "coindatanetlib"; then
@@ -21588,8 +21510,8 @@ echo "$as_me: error: \"Cannot check for existance of module coindatanetlib witho
    { (exit 1); exit 1; }; }
 fi
 
-
     PKG_CONFIG_PATH="$coin_save_PKG_CONFIG_PATH"
+    export PKG_CONFIG_PATH
   fi
 fi
 
@@ -21685,32 +21607,11 @@ fi;
 fi
 
 if test $coin_has_miblib3 = notGiven; then
-  #only if pkg-config is available:
-  #see if user gives directory where project might be installed: assemble search path for pkg-config
+  #check for project by using pkg-config, if pkg-config is available
+  #we are only interested in installed packages here, so we do not search in $COIN_PKG_CONFIG_PATH_UNINSTALLED
   if test -n "$PKG_CONFIG" ; then
     coin_save_PKG_CONFIG_PATH="$PKG_CONFIG_PATH"
-
-    # let's assume that when installing into $prefix, then the user may have installed some other coin projects there before, so it's worth to have a look into there
-    if test -d "$prefix"; then
-      PKG_CONFIG_PATH="$prefix/lib/pkgconfig:$PKG_CONFIG_PATH"
-    fi
-
-
-# Check whether --with-coin-instdir or --without-coin-instdir was given.
-if test "${with_coin_instdir+set}" = set; then
-  withval="$with_coin_instdir"
-  if test -d "$withval"; then : ; else
-         { { echo "$as_me:$LINENO: error: argument for --with-coin-instdir not a directory" >&5
-echo "$as_me: error: argument for --with-coin-instdir not a directory" >&2;}
-   { (exit 1); exit 1; }; }
-       fi
-       PKG_CONFIG_PATH="$withval/lib/pkgconfig:$PKG_CONFIG_PATH"
-
-fi;
-
-    # let pkgconfig check if the project is already installed somewhere
-    # need to export variable to be sure that the following pkg-config call gets these values
-    export PKG_CONFIG_PATH
+    PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" ; export PKG_CONFIG_PATH
 
 if test -n "$PKG_CONFIG" ; then
   if $PKG_CONFIG --exists "coindatamiplib3"; then
@@ -21726,8 +21627,8 @@ echo "$as_me: error: \"Cannot check for existance of module coindatamiplib3 with
    { (exit 1); exit 1; }; }
 fi
 
-
     PKG_CONFIG_PATH="$coin_save_PKG_CONFIG_PATH"
+    export PKG_CONFIG_PATH
   fi
 fi
 
@@ -21823,32 +21724,11 @@ fi;
 fi
 
 if test $coin_has_coinutils = notGiven; then
-  #only if pkg-config is available:
-  #see if user gives directory where project might be installed: assemble search path for pkg-config
+  #check for project by using pkg-config, if pkg-config is available
+  #we are only interested in installed packages here, so we do not search in $COIN_PKG_CONFIG_PATH_UNINSTALLED
   if test -n "$PKG_CONFIG" ; then
     coin_save_PKG_CONFIG_PATH="$PKG_CONFIG_PATH"
-
-    # let's assume that when installing into $prefix, then the user may have installed some other coin projects there before, so it's worth to have a look into there
-    if test -d "$prefix"; then
-      PKG_CONFIG_PATH="$prefix/lib/pkgconfig:$PKG_CONFIG_PATH"
-    fi
-
-
-# Check whether --with-coin-instdir or --without-coin-instdir was given.
-if test "${with_coin_instdir+set}" = set; then
-  withval="$with_coin_instdir"
-  if test -d "$withval"; then : ; else
-         { { echo "$as_me:$LINENO: error: argument for --with-coin-instdir not a directory" >&5
-echo "$as_me: error: argument for --with-coin-instdir not a directory" >&2;}
-   { (exit 1); exit 1; }; }
-       fi
-       PKG_CONFIG_PATH="$withval/lib/pkgconfig:$PKG_CONFIG_PATH"
-
-fi;
-
-    # let pkgconfig check if the project is already installed somewhere
-    # need to export variable to be sure that the following pkg-config call gets these values
-    export PKG_CONFIG_PATH
+    PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" ; export PKG_CONFIG_PATH
 
 if test -n "$PKG_CONFIG" ; then
   if $PKG_CONFIG --exists "coinutils"; then
@@ -21864,8 +21744,8 @@ echo "$as_me: error: \"Cannot check for existance of module CoinUtils without pk
    { (exit 1); exit 1; }; }
 fi
 
-
     PKG_CONFIG_PATH="$coin_save_PKG_CONFIG_PATH"
+    export PKG_CONFIG_PATH
   fi
 fi
 
@@ -21961,32 +21841,11 @@ fi;
 fi
 
 if test $coin_has_osi = notGiven; then
-  #only if pkg-config is available:
-  #see if user gives directory where project might be installed: assemble search path for pkg-config
+  #check for project by using pkg-config, if pkg-config is available
+  #we are only interested in installed packages here, so we do not search in $COIN_PKG_CONFIG_PATH_UNINSTALLED
   if test -n "$PKG_CONFIG" ; then
     coin_save_PKG_CONFIG_PATH="$PKG_CONFIG_PATH"
-
-    # let's assume that when installing into $prefix, then the user may have installed some other coin projects there before, so it's worth to have a look into there
-    if test -d "$prefix"; then
-      PKG_CONFIG_PATH="$prefix/lib/pkgconfig:$PKG_CONFIG_PATH"
-    fi
-
-
-# Check whether --with-coin-instdir or --without-coin-instdir was given.
-if test "${with_coin_instdir+set}" = set; then
-  withval="$with_coin_instdir"
-  if test -d "$withval"; then : ; else
-         { { echo "$as_me:$LINENO: error: argument for --with-coin-instdir not a directory" >&5
-echo "$as_me: error: argument for --with-coin-instdir not a directory" >&2;}
-   { (exit 1); exit 1; }; }
-       fi
-       PKG_CONFIG_PATH="$withval/lib/pkgconfig:$PKG_CONFIG_PATH"
-
-fi;
-
-    # let pkgconfig check if the project is already installed somewhere
-    # need to export variable to be sure that the following pkg-config call gets these values
-    export PKG_CONFIG_PATH
+    PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" ; export PKG_CONFIG_PATH
 
 if test -n "$PKG_CONFIG" ; then
   if $PKG_CONFIG --exists "osi"; then
@@ -22002,8 +21861,8 @@ echo "$as_me: error: \"Cannot check for existance of module Osi without pkg-conf
    { (exit 1); exit 1; }; }
 fi
 
-
     PKG_CONFIG_PATH="$coin_save_PKG_CONFIG_PATH"
+    export PKG_CONFIG_PATH
   fi
 fi
 
@@ -22099,32 +21958,11 @@ fi;
 fi
 
 if test $coin_has_clp = notGiven; then
-  #only if pkg-config is available:
-  #see if user gives directory where project might be installed: assemble search path for pkg-config
+  #check for project by using pkg-config, if pkg-config is available
+  #we are only interested in installed packages here, so we do not search in $COIN_PKG_CONFIG_PATH_UNINSTALLED
   if test -n "$PKG_CONFIG" ; then
     coin_save_PKG_CONFIG_PATH="$PKG_CONFIG_PATH"
-
-    # let's assume that when installing into $prefix, then the user may have installed some other coin projects there before, so it's worth to have a look into there
-    if test -d "$prefix"; then
-      PKG_CONFIG_PATH="$prefix/lib/pkgconfig:$PKG_CONFIG_PATH"
-    fi
-
-
-# Check whether --with-coin-instdir or --without-coin-instdir was given.
-if test "${with_coin_instdir+set}" = set; then
-  withval="$with_coin_instdir"
-  if test -d "$withval"; then : ; else
-         { { echo "$as_me:$LINENO: error: argument for --with-coin-instdir not a directory" >&5
-echo "$as_me: error: argument for --with-coin-instdir not a directory" >&2;}
-   { (exit 1); exit 1; }; }
-       fi
-       PKG_CONFIG_PATH="$withval/lib/pkgconfig:$PKG_CONFIG_PATH"
-
-fi;
-
-    # let pkgconfig check if the project is already installed somewhere
-    # need to export variable to be sure that the following pkg-config call gets these values
-    export PKG_CONFIG_PATH
+    PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" ; export PKG_CONFIG_PATH
 
 if test -n "$PKG_CONFIG" ; then
   if $PKG_CONFIG --exists "clp"; then
@@ -22140,8 +21978,8 @@ echo "$as_me: error: \"Cannot check for existance of module Clp without pkg-conf
    { (exit 1); exit 1; }; }
 fi
 
-
     PKG_CONFIG_PATH="$coin_save_PKG_CONFIG_PATH"
+    export PKG_CONFIG_PATH
   fi
 fi
 
@@ -22237,32 +22075,11 @@ fi;
 fi
 
 if test $coin_has_dylp = notGiven; then
-  #only if pkg-config is available:
-  #see if user gives directory where project might be installed: assemble search path for pkg-config
+  #check for project by using pkg-config, if pkg-config is available
+  #we are only interested in installed packages here, so we do not search in $COIN_PKG_CONFIG_PATH_UNINSTALLED
   if test -n "$PKG_CONFIG" ; then
     coin_save_PKG_CONFIG_PATH="$PKG_CONFIG_PATH"
-
-    # let's assume that when installing into $prefix, then the user may have installed some other coin projects there before, so it's worth to have a look into there
-    if test -d "$prefix"; then
-      PKG_CONFIG_PATH="$prefix/lib/pkgconfig:$PKG_CONFIG_PATH"
-    fi
-
-
-# Check whether --with-coin-instdir or --without-coin-instdir was given.
-if test "${with_coin_instdir+set}" = set; then
-  withval="$with_coin_instdir"
-  if test -d "$withval"; then : ; else
-         { { echo "$as_me:$LINENO: error: argument for --with-coin-instdir not a directory" >&5
-echo "$as_me: error: argument for --with-coin-instdir not a directory" >&2;}
-   { (exit 1); exit 1; }; }
-       fi
-       PKG_CONFIG_PATH="$withval/lib/pkgconfig:$PKG_CONFIG_PATH"
-
-fi;
-
-    # let pkgconfig check if the project is already installed somewhere
-    # need to export variable to be sure that the following pkg-config call gets these values
-    export PKG_CONFIG_PATH
+    PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" ; export PKG_CONFIG_PATH
 
 if test -n "$PKG_CONFIG" ; then
   if $PKG_CONFIG --exists "dylp"; then
@@ -22278,8 +22095,8 @@ echo "$as_me: error: \"Cannot check for existance of module DyLP without pkg-con
    { (exit 1); exit 1; }; }
 fi
 
-
     PKG_CONFIG_PATH="$coin_save_PKG_CONFIG_PATH"
+    export PKG_CONFIG_PATH
   fi
 fi
 
@@ -22375,32 +22192,11 @@ fi;
 fi
 
 if test $coin_has_vol = notGiven; then
-  #only if pkg-config is available:
-  #see if user gives directory where project might be installed: assemble search path for pkg-config
+  #check for project by using pkg-config, if pkg-config is available
+  #we are only interested in installed packages here, so we do not search in $COIN_PKG_CONFIG_PATH_UNINSTALLED
   if test -n "$PKG_CONFIG" ; then
     coin_save_PKG_CONFIG_PATH="$PKG_CONFIG_PATH"
-
-    # let's assume that when installing into $prefix, then the user may have installed some other coin projects there before, so it's worth to have a look into there
-    if test -d "$prefix"; then
-      PKG_CONFIG_PATH="$prefix/lib/pkgconfig:$PKG_CONFIG_PATH"
-    fi
-
-
-# Check whether --with-coin-instdir or --without-coin-instdir was given.
-if test "${with_coin_instdir+set}" = set; then
-  withval="$with_coin_instdir"
-  if test -d "$withval"; then : ; else
-         { { echo "$as_me:$LINENO: error: argument for --with-coin-instdir not a directory" >&5
-echo "$as_me: error: argument for --with-coin-instdir not a directory" >&2;}
-   { (exit 1); exit 1; }; }
-       fi
-       PKG_CONFIG_PATH="$withval/lib/pkgconfig:$PKG_CONFIG_PATH"
-
-fi;
-
-    # let pkgconfig check if the project is already installed somewhere
-    # need to export variable to be sure that the following pkg-config call gets these values
-    export PKG_CONFIG_PATH
+    PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" ; export PKG_CONFIG_PATH
 
 if test -n "$PKG_CONFIG" ; then
   if $PKG_CONFIG --exists "vol"; then
@@ -22416,8 +22212,8 @@ echo "$as_me: error: \"Cannot check for existance of module Vol without pkg-conf
    { (exit 1); exit 1; }; }
 fi
 
-
     PKG_CONFIG_PATH="$coin_save_PKG_CONFIG_PATH"
+    export PKG_CONFIG_PATH
   fi
 fi
 
@@ -22513,32 +22309,11 @@ fi;
 fi
 
 if test $coin_has_cgl = notGiven; then
-  #only if pkg-config is available:
-  #see if user gives directory where project might be installed: assemble search path for pkg-config
+  #check for project by using pkg-config, if pkg-config is available
+  #we are only interested in installed packages here, so we do not search in $COIN_PKG_CONFIG_PATH_UNINSTALLED
   if test -n "$PKG_CONFIG" ; then
     coin_save_PKG_CONFIG_PATH="$PKG_CONFIG_PATH"
-
-    # let's assume that when installing into $prefix, then the user may have installed some other coin projects there before, so it's worth to have a look into there
-    if test -d "$prefix"; then
-      PKG_CONFIG_PATH="$prefix/lib/pkgconfig:$PKG_CONFIG_PATH"
-    fi
-
-
-# Check whether --with-coin-instdir or --without-coin-instdir was given.
-if test "${with_coin_instdir+set}" = set; then
-  withval="$with_coin_instdir"
-  if test -d "$withval"; then : ; else
-         { { echo "$as_me:$LINENO: error: argument for --with-coin-instdir not a directory" >&5
-echo "$as_me: error: argument for --with-coin-instdir not a directory" >&2;}
-   { (exit 1); exit 1; }; }
-       fi
-       PKG_CONFIG_PATH="$withval/lib/pkgconfig:$PKG_CONFIG_PATH"
-
-fi;
-
-    # let pkgconfig check if the project is already installed somewhere
-    # need to export variable to be sure that the following pkg-config call gets these values
-    export PKG_CONFIG_PATH
+    PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" ; export PKG_CONFIG_PATH
 
 if test -n "$PKG_CONFIG" ; then
   if $PKG_CONFIG --exists "cgl"; then
@@ -22554,8 +22329,8 @@ echo "$as_me: error: \"Cannot check for existance of module Cgl without pkg-conf
    { (exit 1); exit 1; }; }
 fi
 
-
     PKG_CONFIG_PATH="$coin_save_PKG_CONFIG_PATH"
+    export PKG_CONFIG_PATH
   fi
 fi
 
@@ -22651,32 +22426,11 @@ fi;
 fi
 
 if test $coin_has_cbc = notGiven; then
-  #only if pkg-config is available:
-  #see if user gives directory where project might be installed: assemble search path for pkg-config
+  #check for project by using pkg-config, if pkg-config is available
+  #we are only interested in installed packages here, so we do not search in $COIN_PKG_CONFIG_PATH_UNINSTALLED
   if test -n "$PKG_CONFIG" ; then
     coin_save_PKG_CONFIG_PATH="$PKG_CONFIG_PATH"
-
-    # let's assume that when installing into $prefix, then the user may have installed some other coin projects there before, so it's worth to have a look into there
-    if test -d "$prefix"; then
-      PKG_CONFIG_PATH="$prefix/lib/pkgconfig:$PKG_CONFIG_PATH"
-    fi
-
-
-# Check whether --with-coin-instdir or --without-coin-instdir was given.
-if test "${with_coin_instdir+set}" = set; then
-  withval="$with_coin_instdir"
-  if test -d "$withval"; then : ; else
-         { { echo "$as_me:$LINENO: error: argument for --with-coin-instdir not a directory" >&5
-echo "$as_me: error: argument for --with-coin-instdir not a directory" >&2;}
-   { (exit 1); exit 1; }; }
-       fi
-       PKG_CONFIG_PATH="$withval/lib/pkgconfig:$PKG_CONFIG_PATH"
-
-fi;
-
-    # let pkgconfig check if the project is already installed somewhere
-    # need to export variable to be sure that the following pkg-config call gets these values
-    export PKG_CONFIG_PATH
+    PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" ; export PKG_CONFIG_PATH
 
 if test -n "$PKG_CONFIG" ; then
   if $PKG_CONFIG --exists "cbc"; then
@@ -22692,8 +22446,8 @@ echo "$as_me: error: \"Cannot check for existance of module Cbc without pkg-conf
    { (exit 1); exit 1; }; }
 fi
 
-
     PKG_CONFIG_PATH="$coin_save_PKG_CONFIG_PATH"
+    export PKG_CONFIG_PATH
   fi
 fi
 
@@ -22736,6 +22490,182 @@ echo "${ECHO_T}no" >&6
 fi
 
 
+#############################################################################
+#                  Check for doxygen                                        #
+#############################################################################
+
+
+
+{ echo "$as_me:$LINENO: configuring doxygen documentation options" >&5
+echo "$as_me: configuring doxygen documentation options" >&6;}
+
+# Check to see if doxygen is available.
+
+# Extract the first word of "doxygen", so it can be a program name with args.
+set dummy doxygen; ac_word=$2
+echo "$as_me:$LINENO: checking for $ac_word" >&5
+echo $ECHO_N "checking for $ac_word... $ECHO_C" >&6
+if test "${ac_cv_prog_coin_have_doxygen+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  if test -n "$coin_have_doxygen"; then
+  ac_cv_prog_coin_have_doxygen="$coin_have_doxygen" # Let the user override the test.
+else
+as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+  for ac_exec_ext in '' $ac_executable_extensions; do
+  if $as_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
+    ac_cv_prog_coin_have_doxygen="yes"
+    echo "$as_me:$LINENO: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+done
+
+  test -z "$ac_cv_prog_coin_have_doxygen" && ac_cv_prog_coin_have_doxygen="no"
+fi
+fi
+coin_have_doxygen=$ac_cv_prog_coin_have_doxygen
+if test -n "$coin_have_doxygen"; then
+  echo "$as_me:$LINENO: result: $coin_have_doxygen" >&5
+echo "${ECHO_T}$coin_have_doxygen" >&6
+else
+  echo "$as_me:$LINENO: result: no" >&5
+echo "${ECHO_T}no" >&6
+fi
+
+
+# Look for the dot tool from the graphviz package, unless the user has
+# disabled it.
+
+
+# Check whether --with-dot or --without-dot was given.
+if test "${with_dot+set}" = set; then
+  withval="$with_dot"
+
+else
+  withval=yes
+fi;
+if test x$withval = xno ; then
+  coin_doxy_usedot=NO
+  echo "$as_me:$LINENO: checking for dot " >&5
+echo $ECHO_N "checking for dot ... $ECHO_C" >&6
+  echo "$as_me:$LINENO: result: disabled" >&5
+echo "${ECHO_T}disabled" >&6
+else
+  # Extract the first word of "dot", so it can be a program name with args.
+set dummy dot; ac_word=$2
+echo "$as_me:$LINENO: checking for $ac_word" >&5
+echo $ECHO_N "checking for $ac_word... $ECHO_C" >&6
+if test "${ac_cv_prog_coin_doxy_usedot+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  if test -n "$coin_doxy_usedot"; then
+  ac_cv_prog_coin_doxy_usedot="$coin_doxy_usedot" # Let the user override the test.
+else
+as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+  for ac_exec_ext in '' $ac_executable_extensions; do
+  if $as_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
+    ac_cv_prog_coin_doxy_usedot="YES"
+    echo "$as_me:$LINENO: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+done
+
+  test -z "$ac_cv_prog_coin_doxy_usedot" && ac_cv_prog_coin_doxy_usedot="NO"
+fi
+fi
+coin_doxy_usedot=$ac_cv_prog_coin_doxy_usedot
+if test -n "$coin_doxy_usedot"; then
+  echo "$as_me:$LINENO: result: $coin_doxy_usedot" >&5
+echo "${ECHO_T}$coin_doxy_usedot" >&6
+else
+  echo "$as_me:$LINENO: result: no" >&5
+echo "${ECHO_T}no" >&6
+fi
+
+fi
+
+# Generate a tag file name and a log file name
+
+coin_doxy_tagname=doxydoc/${PACKAGE}_doxy.tag
+
+coin_doxy_logname=doxydoc/${PACKAGE}_doxy.log
+
+
+# Process the list of project names and massage them into possible doxygen
+# doc'n directories. Prefer 1) classic external, source processed using
+# a project-specific doxygen.conf, we use the tag file; 2) classic
+# external, source processed using package doxygen.conf; 3) installed
+# doxydoc. Alternatives 1) and 2) are only possible if the directory will be
+# configured, which we can't know unless this is the package base configure,
+# since coin_subdirs is only set there. Hence it's sufficient to check for
+# membership. If we use a tag file from a classic external, exclude the
+# source from doxygen processing when doxygen runs in the base directory.
+
+coin_doxy_tagfiles=
+coin_doxy_excludes=
+tmp="CoinUtils Osi Clp DyLP Cgl"
+for proj in $tmp ; do
+  lc_proj=`echo $proj | tr [A-Z] [a-z]`
+  echo "$as_me:$LINENO: checking for doxygen doc'n for $proj " >&5
+echo $ECHO_N "checking for doxygen doc'n for $proj ... $ECHO_C" >&6
+  doxytag=${lc_proj}_doxy.tag
+  doxyfound=no
+  for chkProj in $coin_subdirs ; do
+    if test "$chkProj" = "$proj" ; then
+      # proj will be configured, hence doxydoc present in build tree
+      doxysrcdir="${srcdir}/${proj}"
+      { echo "$as_me:$LINENO: Considering $doxysrcdir (base)" >&5
+echo "$as_me: Considering $doxysrcdir (base)" >&6;}
+      if test -d "$doxysrcdir" ; then
+	# with a doxydoc directory?
+	doxydir="$doxysrcdir/doxydoc"
+	{ echo "$as_me:$LINENO: Considering $doxydir (base)" >&5
+echo "$as_me: Considering $doxydir (base)" >&6;}
+	{ echo "$as_me:$LINENO: Subdirs: $coin_subdirs)" >&5
+echo "$as_me: Subdirs: $coin_subdirs)" >&6;}
+	if test -d "$doxydir" ; then
+	  # use tag file; don't process source
+	  eval doxydir="`pwd`/${proj}/doxydoc"
+	  coin_doxy_tagfiles="$coin_doxy_tagfiles $doxydir/$doxytag=$doxydir/html"
+	  echo "$as_me:$LINENO: result: $doxydir (tag)" >&5
+echo "${ECHO_T}$doxydir (tag)" >&6
+	  coin_doxy_excludes="$coin_doxy_excludes */${proj}*"
+	else
+	  # will process the source -- nothing further to be done here
+	  echo "$as_me:$LINENO: result: $doxysrcdir (src)" >&5
+echo "${ECHO_T}$doxysrcdir (src)" >&6
+	fi
+	doxyfound=yes
+      fi
+    fi
+  done
+  # Not built, fall back to installed tag file
+  if test $doxyfound = no ; then
+    eval doxydir="${datadir}/coin/doc/${proj}/doxydoc"
+    { echo "$as_me:$LINENO: Considering $doxydir (install)" >&5
+echo "$as_me: Considering $doxydir (install)" >&6;}
+    { echo "$as_me:$LINENO: Subdirs: $coin_subdirs)" >&5
+echo "$as_me: Subdirs: $coin_subdirs)" >&6;}
+    coin_doxy_tagfiles="$coin_doxy_tagfiles $doxydir/$doxytag=$doxydir/html"
+    echo "$as_me:$LINENO: result: $doxydir (tag)" >&5
+echo "${ECHO_T}$doxydir (tag)" >&6
+  fi
+done
+
+
+
+
+
 ##############################################################################
 #                   Finishing up by writing all the output                   #
 ##############################################################################
@@ -22743,6 +22673,8 @@ fi
 # Here list all the files that configure should create (except for the
 # configuration header file)
           ac_config_files="$ac_config_files Makefile"
+
+          ac_config_files="$ac_config_files doxydoc/doxygen.conf"
 
 
 # Finally, we let configure write all the output...
@@ -22771,6 +22703,7 @@ if test x$coin_skip_ac_output != xyes; then
   if test x"$coin_need_flibs" = xyes; then
     ADDLIBS="$ADDLIBS $FLIBS"
   fi
+  PCADDLIBS="$PCADDLIBS $ADDLIBS"
 
   # library extension
 
@@ -23417,6 +23350,7 @@ do
   case "$ac_config_target" in
   # Handling of arguments.
   "Makefile" ) CONFIG_FILES="$CONFIG_FILES Makefile" ;;
+  "doxydoc/doxygen.conf" ) CONFIG_FILES="$CONFIG_FILES doxydoc/doxygen.conf" ;;
   "depfiles" ) CONFIG_COMMANDS="$CONFIG_COMMANDS depfiles" ;;
   *) { { echo "$as_me:$LINENO: error: invalid argument: $ac_config_target" >&5
 echo "$as_me: error: invalid argument: $ac_config_target" >&2;}
@@ -23606,8 +23540,15 @@ s,@ac_pt_PKG_CONFIG@,$ac_pt_PKG_CONFIG,;t t
 s,@COIN_HAS_PKGCONFIG_TRUE@,$COIN_HAS_PKGCONFIG_TRUE,;t t
 s,@COIN_HAS_PKGCONFIG_FALSE@,$COIN_HAS_PKGCONFIG_FALSE,;t t
 s,@COIN_PKG_CONFIG_PATH@,$COIN_PKG_CONFIG_PATH,;t t
+s,@COIN_PKG_CONFIG_PATH_UNINSTALLED@,$COIN_PKG_CONFIG_PATH_UNINSTALLED,;t t
 s,@COIN_SKIP_PROJECTS@,$COIN_SKIP_PROJECTS,;t t
 s,@subdirs@,$subdirs,;t t
+s,@coin_have_doxygen@,$coin_have_doxygen,;t t
+s,@coin_doxy_usedot@,$coin_doxy_usedot,;t t
+s,@coin_doxy_tagname@,$coin_doxy_tagname,;t t
+s,@coin_doxy_logname@,$coin_doxy_logname,;t t
+s,@coin_doxy_tagfiles@,$coin_doxy_tagfiles,;t t
+s,@coin_doxy_excludes@,$coin_doxy_excludes,;t t
 s,@LIBEXT@,$LIBEXT,;t t
 s,@VPATH_DISTCLEANFILES@,$VPATH_DISTCLEANFILES,;t t
 s,@ABSBUILDDIR@,$ABSBUILDDIR,;t t

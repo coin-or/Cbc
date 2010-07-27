@@ -62,6 +62,7 @@ DIST_COMMON = README $(am__configure_deps) \
 	$(srcdir)/Makefile.in $(srcdir)/cbc-uninstalled.pc.in \
 	$(srcdir)/cbc.pc.in $(srcdir)/osi-cbc-uninstalled.pc.in \
 	$(srcdir)/osi-cbc.pc.in $(top_srcdir)/configure \
+	$(top_srcdir)/doxydoc/doxygen.conf.in \
 	$(top_srcdir)/examples/Makefile.in \
 	$(top_srcdir)/inc/config_cbc.h.in AUTHORS INSTALL config.guess \
 	config.sub depcomp install-sh ltmain.sh missing
@@ -78,7 +79,7 @@ am__CONFIG_DISTCLEAN_FILES = config.status config.cache config.log \
 mkinstalldirs = $(install_sh) -d
 CONFIG_HEADER = $(top_builddir)/inc/config_cbc.h
 CONFIG_CLEAN_FILES = examples/Makefile cbc.pc cbc-uninstalled.pc \
-	osi-cbc.pc osi-cbc-uninstalled.pc
+	osi-cbc.pc osi-cbc-uninstalled.pc doxydoc/doxygen.conf
 SOURCES =
 DIST_SOURCES =
 RECURSIVE_TARGETS = all-recursive check-recursive dvi-recursive \
@@ -323,6 +324,12 @@ build_alias = @build_alias@
 build_cpu = @build_cpu@
 build_os = @build_os@
 build_vendor = @build_vendor@
+coin_doxy_excludes = @coin_doxy_excludes@
+coin_doxy_logname = @coin_doxy_logname@
+coin_doxy_tagfiles = @coin_doxy_tagfiles@
+coin_doxy_tagname = @coin_doxy_tagname@
+coin_doxy_usedot = @coin_doxy_usedot@
+coin_have_doxygen = @coin_have_doxygen@
 datadir = @datadir@
 exec_prefix = @exec_prefix@
 have_autoconf = @have_autoconf@
@@ -466,6 +473,8 @@ cbc-uninstalled.pc: $(top_builddir)/config.status $(srcdir)/cbc-uninstalled.pc.i
 osi-cbc.pc: $(top_builddir)/config.status $(srcdir)/osi-cbc.pc.in
 	cd $(top_builddir) && $(SHELL) ./config.status $@
 osi-cbc-uninstalled.pc: $(top_builddir)/config.status $(srcdir)/osi-cbc-uninstalled.pc.in
+	cd $(top_builddir) && $(SHELL) ./config.status $@
+doxydoc/doxygen.conf: $(top_builddir)/config.status $(top_srcdir)/doxydoc/doxygen.conf.in
 	cd $(top_builddir) && $(SHELL) ./config.status $@
 
 mostlyclean-libtool:
@@ -630,7 +639,7 @@ distclean-tags:
 distdir: $(DISTFILES)
 	$(am__remove_distdir)
 	mkdir $(distdir)
-	$(mkdir_p) $(distdir)/. $(distdir)/BuildTools $(distdir)/doc $(distdir)/examples $(distdir)/inc
+	$(mkdir_p) $(distdir)/. $(distdir)/BuildTools $(distdir)/doc $(distdir)/doxydoc $(distdir)/examples $(distdir)/inc
 	@srcdirstrip=`echo "$(srcdir)" | sed 's|.|.|g'`; \
 	topsrcdirstrip=`echo "$(top_srcdir)" | sed 's|.|.|g'`; \
 	list='$(DISTFILES)'; for file in $$list; do \
@@ -890,7 +899,15 @@ test: all
 
 unitTest: test
 
-clean-local:
+# Doxygen documentation
+
+doxydoc:
+	doxygen doxydoc/doxygen.conf
+
+clean-doxydoc:
+	( cd doxydoc ; rm -rf html *.log *.tag )
+
+clean-local: clean-doxydoc
 	if test -r test/Makefile; then cd test; $(MAKE) clean; fi
 
 distclean-local:

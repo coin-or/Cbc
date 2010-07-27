@@ -36,8 +36,38 @@ tests: all
 
 unitTests: tests
 
+# Generate doxygen doc'n in subdirectories (except @PACKAGE_NAME@) if a doxydoc
+# directory is present, then do the base, if present.
+
 doxydoc:
-	cd $(srcdir); doxygen doxydoc/doxygen.conf
+	for dir in $(subdirs) ; do \
+	  if test $$dir != @PACKAGE_NAME@ && test -r $$dir/doxydoc ; then \
+	    (cd $$dir ; $(MAKE) doxydoc) \
+	  fi ; \
+	done ; \
+	if test -r doxydoc/doxygen.conf ; then \
+	  doxygen doxydoc/doxygen.conf ; \
+	fi
+
+clean-doxydoc:
+	( cd doxydoc ; rm -rf html *.log *.tag )
+
+# DocInstallDir is defined in Makemain.inc and is specific to the package.
+# For the short term, adopt the notion that we install only the package
+# doxydoc.
+
+install-doxydoc: doxydoc
+	if test -r doxydoc/doxygen.conf ; then \
+	  $(mkdir_p) $(DocInstallDir) ; \
+	  cp -R doxydoc $(DocInstallDir) ; \
+	fi
+
+uninstall-doxydoc:
+	rm -rf $(DocInstallDir)/doxydoc
+
+clean-local: clean-doxydoc
+install-data-local: install-doxydoc
+uninstall-local: uninstall-doxydoc
 
 .PHONY: test unitTest tests unitTests doxydoc
 

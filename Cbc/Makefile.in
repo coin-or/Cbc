@@ -917,7 +917,7 @@ install-exec-local: install-doc
 
 uninstall-local: uninstall-doc
 
-.PHONY: test unitTest
+.PHONY: test unitTest doxydoc
 
 @COIN_HAS_PKGCONFIG_TRUE@install-data-hook:
 @COIN_HAS_PKGCONFIG_TRUE@	@$(mkdir_p) "$(addlibsdir)"

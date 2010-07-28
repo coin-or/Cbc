@@ -119,7 +119,7 @@ install-exec-local: install-doc
 
 uninstall-local: uninstall-doc
 
-.PHONY: test unitTest
+.PHONY: test unitTest doxydoc
 
 ########################################################################
 #                  Installation of the addlibs file                    #

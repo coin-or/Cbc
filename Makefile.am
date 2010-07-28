@@ -66,7 +66,7 @@ uninstall-doxydoc:
 	rm -rf $(DocInstallDir)/doxydoc
 
 clean-local: clean-doxydoc
-install-data-local: install-doxydoc
+# install-data-local: install-doxydoc
 uninstall-local: uninstall-doxydoc
 
 .PHONY: test unitTest tests unitTests doxydoc

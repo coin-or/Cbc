@@ -630,7 +630,7 @@ info: info-recursive
 
 info-am:
 
-install-data-am: install-data-local
+install-data-am:
 
 install-exec-am:
 
@@ -669,10 +669,10 @@ uninstall-info: uninstall-info-recursive
 	distclean-generic distclean-libtool distclean-recursive \
 	distclean-tags distcleancheck distdir distuninstallcheck dvi \
 	dvi-am html html-am info info-am install install-am \
-	install-data install-data-am install-data-local install-exec \
-	install-exec-am install-info install-info-am install-man \
-	install-strip installcheck installcheck-am installdirs \
-	installdirs-am maintainer-clean maintainer-clean-generic \
+	install-data install-data-am install-exec install-exec-am \
+	install-info install-info-am install-man install-strip \
+	installcheck installcheck-am installdirs installdirs-am \
+	maintainer-clean maintainer-clean-generic \
 	maintainer-clean-recursive mostlyclean mostlyclean-generic \
 	mostlyclean-libtool mostlyclean-recursive pdf pdf-am ps ps-am \
 	tags tags-recursive uninstall uninstall-am uninstall-info-am \
@@ -727,7 +727,7 @@ uninstall-doxydoc:
 	rm -rf $(DocInstallDir)/doxydoc
 
 clean-local: clean-doxydoc
-install-data-local: install-doxydoc
+# install-data-local: install-doxydoc
 uninstall-local: uninstall-doxydoc
 
 .PHONY: test unitTest tests unitTests doxydoc

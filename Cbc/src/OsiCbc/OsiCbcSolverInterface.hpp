@@ -255,7 +255,13 @@ public:
   
   /** Get as many dual rays as the solver can provide. (In case of proven
       primal infeasibility there should be at least one.)
-      
+
+      The first getNumRows() ray components will always be associated with
+      the row duals (as returned by getRowPrice()). If \c fullRay is true,
+      the final getNumCols() entries will correspond to the ray components
+      associated with the nonbasic variables. If the full ray is requested
+      and the method cannot provide it, it will throw an exception.
+
       <strong>NOTE for implementers of solver interfaces:</strong> <br>
       The double pointers in the vector should point to arrays of length
       getNumRows() and they should be allocated via new[]. <br>
@@ -264,7 +270,8 @@ public:
       It is the user's responsibility to free the double pointers in the
       vector using delete[].
   */
-  virtual std::vector<double*> getDualRays(int maxNumRays) const;
+  virtual std::vector<double*> getDualRays(int maxNumRays,
+					   bool fullRay = false) const;
   /** Get as many primal rays as the solver can provide. (In case of proven
       dual infeasibility there should be at least one.)
       

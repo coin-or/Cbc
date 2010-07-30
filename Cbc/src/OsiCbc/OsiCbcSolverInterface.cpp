@@ -232,9 +232,10 @@ const CoinPackedMatrix * OsiCbcSolverInterface::getMatrixByCol() const
 }
 
 //------------------------------------------------------------------
-std::vector<double*> OsiCbcSolverInterface::getDualRays(int maxNumRays) const
+std::vector<double*> OsiCbcSolverInterface::getDualRays(int maxNumRays,
+							bool fullRay) const
 {
-  return modelPtr_->solver()->getDualRays(maxNumRays);
+  return modelPtr_->solver()->getDualRays(maxNumRays,fullRay);
 }
 //------------------------------------------------------------------
 std::vector<double*> OsiCbcSolverInterface::getPrimalRays(int maxNumRays) const

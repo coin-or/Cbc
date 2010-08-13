@@ -21108,7 +21108,7 @@ fi;
 # Check whether --with-blas or --without-blas was given.
 if test "${with_blas+set}" = set; then
   withval="$with_blas"
-  if test x$withval = "xBUILD" ; then
+  if test x"$withval" = "xBUILD" ; then
            coin_has_blas=notGiven
          else
            coin_has_blas=installed
@@ -21242,7 +21242,7 @@ fi;
 # Check whether --with-lapack or --without-lapack was given.
 if test "${with_lapack+set}" = set; then
   withval="$with_lapack"
-  if test x$withval = "xBUILD" ; then
+  if test x"$withval" = "xBUILD" ; then
            coin_has_lapack=notGiven
          else
            coin_has_lapack=installed
@@ -22549,7 +22549,7 @@ if test "${with_dot+set}" = set; then
 else
   withval=yes
 fi;
-if test x$withval = xno ; then
+if test x"$withval" = xno ; then
   coin_doxy_usedot=NO
   echo "$as_me:$LINENO: checking for dot " >&5
 echo $ECHO_N "checking for dot ... $ECHO_C" >&6
@@ -22624,15 +22624,12 @@ echo $ECHO_N "checking for doxygen doc'n for $proj ... $ECHO_C" >&6
     if test "$chkProj" = "$proj" ; then
       # proj will be configured, hence doxydoc present in build tree
       doxysrcdir="${srcdir}/${proj}"
-      { echo "$as_me:$LINENO: Considering $doxysrcdir (base)" >&5
-echo "$as_me: Considering $doxysrcdir (base)" >&6;}
+      # AC_MSG_NOTICE([Considering $doxysrcdir (base)])
       if test -d "$doxysrcdir" ; then
 	# with a doxydoc directory?
 	doxydir="$doxysrcdir/doxydoc"
-	{ echo "$as_me:$LINENO: Considering $doxydir (base)" >&5
-echo "$as_me: Considering $doxydir (base)" >&6;}
-	{ echo "$as_me:$LINENO: Subdirs: $coin_subdirs)" >&5
-echo "$as_me: Subdirs: $coin_subdirs)" >&6;}
+	# AC_MSG_NOTICE([Considering $doxydir (base)])
+	# AC_MSG_NOTICE([Subdirs: $coin_subdirs)])
 	if test -d "$doxydir" ; then
 	  # use tag file; don't process source
 	  eval doxydir="`pwd`/${proj}/doxydoc"
@@ -22652,10 +22649,8 @@ echo "${ECHO_T}$doxysrcdir (src)" >&6
   # Not built, fall back to installed tag file
   if test $doxyfound = no ; then
     eval doxydir="${datadir}/coin/doc/${proj}/doxydoc"
-    { echo "$as_me:$LINENO: Considering $doxydir (install)" >&5
-echo "$as_me: Considering $doxydir (install)" >&6;}
-    { echo "$as_me:$LINENO: Subdirs: $coin_subdirs)" >&5
-echo "$as_me: Subdirs: $coin_subdirs)" >&6;}
+    # AC_MSG_NOTICE([Considering $doxydir (install)])
+    # AC_MSG_NOTICE([Subdirs: $coin_subdirs)])
     coin_doxy_tagfiles="$coin_doxy_tagfiles $doxydir/$doxytag=$doxydir/html"
     echo "$as_me:$LINENO: result: $doxydir (tag)" >&5
 echo "${ECHO_T}$doxydir (tag)" >&6

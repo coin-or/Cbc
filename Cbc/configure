@@ -20874,7 +20874,8 @@ while test $coin_has_coindepend = notGiven ; do
 
     if test "x$pcfile" != x ; then
       # read CFLAGS from $pcfile and add CYGPATH_W cludge into include flags
-      projcflags=`sed -n -e 's/Cflags://' -e 's/-I\([^ ]*\)/-I\`${CYGPATH_W} \1\`/gp' "$pcfile"`
+      projcflags=`sed -n -e 's/Cflags://p' "$pcfile"`
+      projcflags=`echo "$projcflags" | sed -e 's/-I\([^ ]*\)/-I\`${CYGPATH_W} \1\`/g'`
       COINDEPEND_CFLAGS="$projcflags $COINDEPEND_CFLAGS"
 
       # read LIBS from $pcfile and replace -L${libdir} by absolute path to build directory in linker flags
@@ -20889,7 +20890,7 @@ while test $coin_has_coindepend = notGiven ; do
       else
         projlibs=`sed -n -e 's/Libs://p' "$pcfile"`
       fi
-      COINDEPEND_LIBS="$projlibs $COINDEPEND_LIBS"
+      COINDEPEND_LIBS="$COINDEPEND_LIBS $projlibs"
 
       # read DATA from $pcfile, if this is the first .pc file we are processing (so assume that its the main one)
       if test "x$projprocessed" = x ; then
@@ -21158,7 +21159,8 @@ while test $coin_has_clp = notGiven ; do
 
     if test "x$pcfile" != x ; then
       # read CFLAGS from $pcfile and add CYGPATH_W cludge into include flags
-      projcflags=`sed -n -e 's/Cflags://' -e 's/-I\([^ ]*\)/-I\`${CYGPATH_W} \1\`/gp' "$pcfile"`
+      projcflags=`sed -n -e 's/Cflags://p' "$pcfile"`
+      projcflags=`echo "$projcflags" | sed -e 's/-I\([^ ]*\)/-I\`${CYGPATH_W} \1\`/g'`
       CLP_CFLAGS="$projcflags $CLP_CFLAGS"
 
       # read LIBS from $pcfile and replace -L${libdir} by absolute path to build directory in linker flags
@@ -21173,7 +21175,7 @@ while test $coin_has_clp = notGiven ; do
       else
         projlibs=`sed -n -e 's/Libs://p' "$pcfile"`
       fi
-      CLP_LIBS="$projlibs $CLP_LIBS"
+      CLP_LIBS="$CLP_LIBS $projlibs"
 
       # read DATA from $pcfile, if this is the first .pc file we are processing (so assume that its the main one)
       if test "x$projprocessed" = x ; then
@@ -21442,7 +21444,8 @@ while test $coin_has_dylp = notGiven ; do
 
     if test "x$pcfile" != x ; then
       # read CFLAGS from $pcfile and add CYGPATH_W cludge into include flags
-      projcflags=`sed -n -e 's/Cflags://' -e 's/-I\([^ ]*\)/-I\`${CYGPATH_W} \1\`/gp' "$pcfile"`
+      projcflags=`sed -n -e 's/Cflags://p' "$pcfile"`
+      projcflags=`echo "$projcflags" | sed -e 's/-I\([^ ]*\)/-I\`${CYGPATH_W} \1\`/g'`
       DYLP_CFLAGS="$projcflags $DYLP_CFLAGS"
 
       # read LIBS from $pcfile and replace -L${libdir} by absolute path to build directory in linker flags
@@ -21457,7 +21460,7 @@ while test $coin_has_dylp = notGiven ; do
       else
         projlibs=`sed -n -e 's/Libs://p' "$pcfile"`
       fi
-      DYLP_LIBS="$projlibs $DYLP_LIBS"
+      DYLP_LIBS="$DYLP_LIBS $projlibs"
 
       # read DATA from $pcfile, if this is the first .pc file we are processing (so assume that its the main one)
       if test "x$projprocessed" = x ; then
@@ -21718,7 +21721,8 @@ while test $coin_has_vol = notGiven ; do
 
     if test "x$pcfile" != x ; then
       # read CFLAGS from $pcfile and add CYGPATH_W cludge into include flags
-      projcflags=`sed -n -e 's/Cflags://' -e 's/-I\([^ ]*\)/-I\`${CYGPATH_W} \1\`/gp' "$pcfile"`
+      projcflags=`sed -n -e 's/Cflags://p' "$pcfile"`
+      projcflags=`echo "$projcflags" | sed -e 's/-I\([^ ]*\)/-I\`${CYGPATH_W} \1\`/g'`
       VOL_CFLAGS="$projcflags $VOL_CFLAGS"
 
       # read LIBS from $pcfile and replace -L${libdir} by absolute path to build directory in linker flags
@@ -21733,7 +21737,7 @@ while test $coin_has_vol = notGiven ; do
       else
         projlibs=`sed -n -e 's/Libs://p' "$pcfile"`
       fi
-      VOL_LIBS="$projlibs $VOL_LIBS"
+      VOL_LIBS="$VOL_LIBS $projlibs"
 
       # read DATA from $pcfile, if this is the first .pc file we are processing (so assume that its the main one)
       if test "x$projprocessed" = x ; then
@@ -21994,7 +21998,8 @@ while test $coin_has_ositests = notGiven ; do
 
     if test "x$pcfile" != x ; then
       # read CFLAGS from $pcfile and add CYGPATH_W cludge into include flags
-      projcflags=`sed -n -e 's/Cflags://' -e 's/-I\([^ ]*\)/-I\`${CYGPATH_W} \1\`/gp' "$pcfile"`
+      projcflags=`sed -n -e 's/Cflags://p' "$pcfile"`
+      projcflags=`echo "$projcflags" | sed -e 's/-I\([^ ]*\)/-I\`${CYGPATH_W} \1\`/g'`
       OSITESTS_CFLAGS="$projcflags $OSITESTS_CFLAGS"
 
       # read LIBS from $pcfile and replace -L${libdir} by absolute path to build directory in linker flags
@@ -22009,7 +22014,7 @@ while test $coin_has_ositests = notGiven ; do
       else
         projlibs=`sed -n -e 's/Libs://p' "$pcfile"`
       fi
-      OSITESTS_LIBS="$projlibs $OSITESTS_LIBS"
+      OSITESTS_LIBS="$OSITESTS_LIBS $projlibs"
 
       # read DATA from $pcfile, if this is the first .pc file we are processing (so assume that its the main one)
       if test "x$projprocessed" = x ; then
@@ -22271,7 +22276,8 @@ while test $coin_has_sample = notGiven ; do
 
     if test "x$pcfile" != x ; then
       # read CFLAGS from $pcfile and add CYGPATH_W cludge into include flags
-      projcflags=`sed -n -e 's/Cflags://' -e 's/-I\([^ ]*\)/-I\`${CYGPATH_W} \1\`/gp' "$pcfile"`
+      projcflags=`sed -n -e 's/Cflags://p' "$pcfile"`
+      projcflags=`echo "$projcflags" | sed -e 's/-I\([^ ]*\)/-I\`${CYGPATH_W} \1\`/g'`
       SAMPLE_CFLAGS="$projcflags $SAMPLE_CFLAGS"
 
       # read LIBS from $pcfile and replace -L${libdir} by absolute path to build directory in linker flags
@@ -22286,7 +22292,7 @@ while test $coin_has_sample = notGiven ; do
       else
         projlibs=`sed -n -e 's/Libs://p' "$pcfile"`
       fi
-      SAMPLE_LIBS="$projlibs $SAMPLE_LIBS"
+      SAMPLE_LIBS="$SAMPLE_LIBS $projlibs"
 
       # read DATA from $pcfile, if this is the first .pc file we are processing (so assume that its the main one)
       if test "x$projprocessed" = x ; then
@@ -22547,7 +22553,8 @@ while test $coin_has_netlib = notGiven ; do
 
     if test "x$pcfile" != x ; then
       # read CFLAGS from $pcfile and add CYGPATH_W cludge into include flags
-      projcflags=`sed -n -e 's/Cflags://' -e 's/-I\([^ ]*\)/-I\`${CYGPATH_W} \1\`/gp' "$pcfile"`
+      projcflags=`sed -n -e 's/Cflags://p' "$pcfile"`
+      projcflags=`echo "$projcflags" | sed -e 's/-I\([^ ]*\)/-I\`${CYGPATH_W} \1\`/g'`
       NETLIB_CFLAGS="$projcflags $NETLIB_CFLAGS"
 
       # read LIBS from $pcfile and replace -L${libdir} by absolute path to build directory in linker flags
@@ -22562,7 +22569,7 @@ while test $coin_has_netlib = notGiven ; do
       else
         projlibs=`sed -n -e 's/Libs://p' "$pcfile"`
       fi
-      NETLIB_LIBS="$projlibs $NETLIB_LIBS"
+      NETLIB_LIBS="$NETLIB_LIBS $projlibs"
 
       # read DATA from $pcfile, if this is the first .pc file we are processing (so assume that its the main one)
       if test "x$projprocessed" = x ; then
@@ -22823,7 +22830,8 @@ while test $coin_has_miplib3 = notGiven ; do
 
     if test "x$pcfile" != x ; then
       # read CFLAGS from $pcfile and add CYGPATH_W cludge into include flags
-      projcflags=`sed -n -e 's/Cflags://' -e 's/-I\([^ ]*\)/-I\`${CYGPATH_W} \1\`/gp' "$pcfile"`
+      projcflags=`sed -n -e 's/Cflags://p' "$pcfile"`
+      projcflags=`echo "$projcflags" | sed -e 's/-I\([^ ]*\)/-I\`${CYGPATH_W} \1\`/g'`
       MIPLIB3_CFLAGS="$projcflags $MIPLIB3_CFLAGS"
 
       # read LIBS from $pcfile and replace -L${libdir} by absolute path to build directory in linker flags
@@ -22838,7 +22846,7 @@ while test $coin_has_miplib3 = notGiven ; do
       else
         projlibs=`sed -n -e 's/Libs://p' "$pcfile"`
       fi
-      MIPLIB3_LIBS="$projlibs $MIPLIB3_LIBS"
+      MIPLIB3_LIBS="$MIPLIB3_LIBS $projlibs"
 
       # read DATA from $pcfile, if this is the first .pc file we are processing (so assume that its the main one)
       if test "x$projprocessed" = x ; then
@@ -23105,7 +23113,8 @@ while test $coin_has_dylp = notGiven ; do
 
     if test "x$pcfile" != x ; then
       # read CFLAGS from $pcfile and add CYGPATH_W cludge into include flags
-      projcflags=`sed -n -e 's/Cflags://' -e 's/-I\([^ ]*\)/-I\`${CYGPATH_W} \1\`/gp' "$pcfile"`
+      projcflags=`sed -n -e 's/Cflags://p' "$pcfile"`
+      projcflags=`echo "$projcflags" | sed -e 's/-I\([^ ]*\)/-I\`${CYGPATH_W} \1\`/g'`
       DYLP_CFLAGS="$projcflags $DYLP_CFLAGS"
 
       # read LIBS from $pcfile and replace -L${libdir} by absolute path to build directory in linker flags
@@ -23120,7 +23129,7 @@ while test $coin_has_dylp = notGiven ; do
       else
         projlibs=`sed -n -e 's/Libs://p' "$pcfile"`
       fi
-      DYLP_LIBS="$projlibs $DYLP_LIBS"
+      DYLP_LIBS="$DYLP_LIBS $projlibs"
 
       # read DATA from $pcfile, if this is the first .pc file we are processing (so assume that its the main one)
       if test "x$projprocessed" = x ; then
@@ -23381,7 +23390,8 @@ while test $coin_has_vol = notGiven ; do
 
     if test "x$pcfile" != x ; then
       # read CFLAGS from $pcfile and add CYGPATH_W cludge into include flags
-      projcflags=`sed -n -e 's/Cflags://' -e 's/-I\([^ ]*\)/-I\`${CYGPATH_W} \1\`/gp' "$pcfile"`
+      projcflags=`sed -n -e 's/Cflags://p' "$pcfile"`
+      projcflags=`echo "$projcflags" | sed -e 's/-I\([^ ]*\)/-I\`${CYGPATH_W} \1\`/g'`
       VOL_CFLAGS="$projcflags $VOL_CFLAGS"
 
       # read LIBS from $pcfile and replace -L${libdir} by absolute path to build directory in linker flags
@@ -23396,7 +23406,7 @@ while test $coin_has_vol = notGiven ; do
       else
         projlibs=`sed -n -e 's/Libs://p' "$pcfile"`
       fi
-      VOL_LIBS="$projlibs $VOL_LIBS"
+      VOL_LIBS="$VOL_LIBS $projlibs"
 
       # read DATA from $pcfile, if this is the first .pc file we are processing (so assume that its the main one)
       if test "x$projprocessed" = x ; then
@@ -23657,7 +23667,8 @@ while test $coin_has_cpx = notGiven ; do
 
     if test "x$pcfile" != x ; then
       # read CFLAGS from $pcfile and add CYGPATH_W cludge into include flags
-      projcflags=`sed -n -e 's/Cflags://' -e 's/-I\([^ ]*\)/-I\`${CYGPATH_W} \1\`/gp' "$pcfile"`
+      projcflags=`sed -n -e 's/Cflags://p' "$pcfile"`
+      projcflags=`echo "$projcflags" | sed -e 's/-I\([^ ]*\)/-I\`${CYGPATH_W} \1\`/g'`
       CPX_CFLAGS="$projcflags $CPX_CFLAGS"
 
       # read LIBS from $pcfile and replace -L${libdir} by absolute path to build directory in linker flags
@@ -23672,7 +23683,7 @@ while test $coin_has_cpx = notGiven ; do
       else
         projlibs=`sed -n -e 's/Libs://p' "$pcfile"`
       fi
-      CPX_LIBS="$projlibs $CPX_LIBS"
+      CPX_LIBS="$CPX_LIBS $projlibs"
 
       # read DATA from $pcfile, if this is the first .pc file we are processing (so assume that its the main one)
       if test "x$projprocessed" = x ; then
@@ -23933,7 +23944,8 @@ while test $coin_has_glpk = notGiven ; do
 
     if test "x$pcfile" != x ; then
       # read CFLAGS from $pcfile and add CYGPATH_W cludge into include flags
-      projcflags=`sed -n -e 's/Cflags://' -e 's/-I\([^ ]*\)/-I\`${CYGPATH_W} \1\`/gp' "$pcfile"`
+      projcflags=`sed -n -e 's/Cflags://p' "$pcfile"`
+      projcflags=`echo "$projcflags" | sed -e 's/-I\([^ ]*\)/-I\`${CYGPATH_W} \1\`/g'`
       GLPK_CFLAGS="$projcflags $GLPK_CFLAGS"
 
       # read LIBS from $pcfile and replace -L${libdir} by absolute path to build directory in linker flags
@@ -23948,7 +23960,7 @@ while test $coin_has_glpk = notGiven ; do
       else
         projlibs=`sed -n -e 's/Libs://p' "$pcfile"`
       fi
-      GLPK_LIBS="$projlibs $GLPK_LIBS"
+      GLPK_LIBS="$GLPK_LIBS $projlibs"
 
       # read DATA from $pcfile, if this is the first .pc file we are processing (so assume that its the main one)
       if test "x$projprocessed" = x ; then
@@ -24209,7 +24221,8 @@ while test $coin_has_grb = notGiven ; do
 
     if test "x$pcfile" != x ; then
       # read CFLAGS from $pcfile and add CYGPATH_W cludge into include flags
-      projcflags=`sed -n -e 's/Cflags://' -e 's/-I\([^ ]*\)/-I\`${CYGPATH_W} \1\`/gp' "$pcfile"`
+      projcflags=`sed -n -e 's/Cflags://p' "$pcfile"`
+      projcflags=`echo "$projcflags" | sed -e 's/-I\([^ ]*\)/-I\`${CYGPATH_W} \1\`/g'`
       GRB_CFLAGS="$projcflags $GRB_CFLAGS"
 
       # read LIBS from $pcfile and replace -L${libdir} by absolute path to build directory in linker flags
@@ -24224,7 +24237,7 @@ while test $coin_has_grb = notGiven ; do
       else
         projlibs=`sed -n -e 's/Libs://p' "$pcfile"`
       fi
-      GRB_LIBS="$projlibs $GRB_LIBS"
+      GRB_LIBS="$GRB_LIBS $projlibs"
 
       # read DATA from $pcfile, if this is the first .pc file we are processing (so assume that its the main one)
       if test "x$projprocessed" = x ; then
@@ -24485,7 +24498,8 @@ while test $coin_has_msk = notGiven ; do
 
     if test "x$pcfile" != x ; then
       # read CFLAGS from $pcfile and add CYGPATH_W cludge into include flags
-      projcflags=`sed -n -e 's/Cflags://' -e 's/-I\([^ ]*\)/-I\`${CYGPATH_W} \1\`/gp' "$pcfile"`
+      projcflags=`sed -n -e 's/Cflags://p' "$pcfile"`
+      projcflags=`echo "$projcflags" | sed -e 's/-I\([^ ]*\)/-I\`${CYGPATH_W} \1\`/g'`
       MSK_CFLAGS="$projcflags $MSK_CFLAGS"
 
       # read LIBS from $pcfile and replace -L${libdir} by absolute path to build directory in linker flags
@@ -24500,7 +24514,7 @@ while test $coin_has_msk = notGiven ; do
       else
         projlibs=`sed -n -e 's/Libs://p' "$pcfile"`
       fi
-      MSK_LIBS="$projlibs $MSK_LIBS"
+      MSK_LIBS="$MSK_LIBS $projlibs"
 
       # read DATA from $pcfile, if this is the first .pc file we are processing (so assume that its the main one)
       if test "x$projprocessed" = x ; then
@@ -24761,7 +24775,8 @@ while test $coin_has_spx = notGiven ; do
 
     if test "x$pcfile" != x ; then
       # read CFLAGS from $pcfile and add CYGPATH_W cludge into include flags
-      projcflags=`sed -n -e 's/Cflags://' -e 's/-I\([^ ]*\)/-I\`${CYGPATH_W} \1\`/gp' "$pcfile"`
+      projcflags=`sed -n -e 's/Cflags://p' "$pcfile"`
+      projcflags=`echo "$projcflags" | sed -e 's/-I\([^ ]*\)/-I\`${CYGPATH_W} \1\`/g'`
       SPX_CFLAGS="$projcflags $SPX_CFLAGS"
 
       # read LIBS from $pcfile and replace -L${libdir} by absolute path to build directory in linker flags
@@ -24776,7 +24791,7 @@ while test $coin_has_spx = notGiven ; do
       else
         projlibs=`sed -n -e 's/Libs://p' "$pcfile"`
       fi
-      SPX_LIBS="$projlibs $SPX_LIBS"
+      SPX_LIBS="$SPX_LIBS $projlibs"
 
       # read DATA from $pcfile, if this is the first .pc file we are processing (so assume that its the main one)
       if test "x$projprocessed" = x ; then
@@ -25037,7 +25052,8 @@ while test $coin_has_xpr = notGiven ; do
 
     if test "x$pcfile" != x ; then
       # read CFLAGS from $pcfile and add CYGPATH_W cludge into include flags
-      projcflags=`sed -n -e 's/Cflags://' -e 's/-I\([^ ]*\)/-I\`${CYGPATH_W} \1\`/gp' "$pcfile"`
+      projcflags=`sed -n -e 's/Cflags://p' "$pcfile"`
+      projcflags=`echo "$projcflags" | sed -e 's/-I\([^ ]*\)/-I\`${CYGPATH_W} \1\`/g'`
       XPR_CFLAGS="$projcflags $XPR_CFLAGS"
 
       # read LIBS from $pcfile and replace -L${libdir} by absolute path to build directory in linker flags
@@ -25052,7 +25068,7 @@ while test $coin_has_xpr = notGiven ; do
       else
         projlibs=`sed -n -e 's/Libs://p' "$pcfile"`
       fi
-      XPR_LIBS="$projlibs $XPR_LIBS"
+      XPR_LIBS="$XPR_LIBS $projlibs"
 
       # read DATA from $pcfile, if this is the first .pc file we are processing (so assume that its the main one)
       if test "x$projprocessed" = x ; then
@@ -25319,7 +25335,8 @@ while test $coin_has_asl = notGiven ; do
 
     if test "x$pcfile" != x ; then
       # read CFLAGS from $pcfile and add CYGPATH_W cludge into include flags
-      projcflags=`sed -n -e 's/Cflags://' -e 's/-I\([^ ]*\)/-I\`${CYGPATH_W} \1\`/gp' "$pcfile"`
+      projcflags=`sed -n -e 's/Cflags://p' "$pcfile"`
+      projcflags=`echo "$projcflags" | sed -e 's/-I\([^ ]*\)/-I\`${CYGPATH_W} \1\`/g'`
       ASL_CFLAGS="$projcflags $ASL_CFLAGS"
 
       # read LIBS from $pcfile and replace -L${libdir} by absolute path to build directory in linker flags
@@ -25334,7 +25351,7 @@ while test $coin_has_asl = notGiven ; do
       else
         projlibs=`sed -n -e 's/Libs://p' "$pcfile"`
       fi
-      ASL_LIBS="$projlibs $ASL_LIBS"
+      ASL_LIBS="$ASL_LIBS $projlibs"
 
       # read DATA from $pcfile, if this is the first .pc file we are processing (so assume that its the main one)
       if test "x$projprocessed" = x ; then

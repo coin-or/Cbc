@@ -1787,8 +1787,7 @@ CbcBranchDynamicDecision::betterBranch(CbcBranchingObject * thisOne,
     int bestNumber = CoinMin(bestNumberUp_,bestNumberDown_);
     double distance = cutoff-objectiveValue;
     if (distance < 0.0){
-       std::cout << "Warning: cutoff is bigger than objectiveValue";
-       std::cout << std::endl;
+       *model->messageHandler() << "Warning: cutoff is bigger than objectiveValue" << CoinMessageEol;
     } 
     //assert (distance>=0.0);
     if (useValue+0.1*distance>useBest&&useValue*1.1>useBest&&

@@ -1353,6 +1353,26 @@ int doHeuristics(CbcModel * model, int type, CbcOrClpParam* parameters_,
         model->addHeuristic(&heuristic3a);
         anyToDo = true;
     }
+    if ((useRENS==7 && kType==1) || (useRENS==8 && kType==2)) {
+        useRENS=1+2*(useRENS-7);
+        CbcHeuristicRENS heuristic6a(*model);
+        heuristic6a.setHeuristicName("RENSdj");
+        heuristic6a.setFractionSmall(0.6/*3.4*/);
+        heuristic6a.setFeasibilityPumpOptions(3);
+        heuristic6a.setNumberNodes(10);
+	heuristic6a.setWhereFrom(4*256+4*1);
+	heuristic6a.setWhen(2);
+	heuristic6a.setRensType(1+16);
+        model->addHeuristic(&heuristic6a) ;
+        heuristic6a.setHeuristicName("RENSub");
+        heuristic6a.setFractionSmall(0.4);
+        heuristic6a.setFeasibilityPumpOptions(1008003);
+        heuristic6a.setNumberNodes(50);
+	heuristic6a.setWhereFrom(4*256+4*1);
+	heuristic6a.setWhen(2);
+	heuristic6a.setRensType(2+16);
+        model->addHeuristic(&heuristic6a) ;
+    }
     if (useRENS >= kType && useRENS <= kType + 1) {
 #ifndef JJF_ONE
         CbcHeuristicRENS heuristic6(*model);

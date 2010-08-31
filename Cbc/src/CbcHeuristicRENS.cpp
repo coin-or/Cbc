@@ -12,6 +12,7 @@
 #include "CbcModel.hpp"
 #include "CbcMessage.hpp"
 #include "CbcHeuristicRENS.hpp"
+#include "CoinWarmStartBasis.hpp"
 #include "CbcBranchActual.hpp"
 #include "CbcStrategy.hpp"
 #include "CglPreProcess.hpp"
@@ -21,6 +22,7 @@ CbcHeuristicRENS::CbcHeuristicRENS()
         : CbcHeuristic()
 {
     numberTries_ = 0;
+    rensType_ = 0;
     whereFrom_ = 256 + 1;
 }
 
@@ -30,6 +32,7 @@ CbcHeuristicRENS::CbcHeuristicRENS(CbcModel & model)
         : CbcHeuristic(model)
 {
     numberTries_ = 0;
+    rensType_ = 0;
     whereFrom_ = 256 + 1;
 }
 
@@ -52,6 +55,7 @@ CbcHeuristicRENS::operator=( const CbcHeuristicRENS & rhs)
     if (this != &rhs) {
         CbcHeuristic::operator=(rhs);
         numberTries_ = rhs.numberTries_;
+	rensType_ = rhs.rensType_;
     }
     return *this;
 }
@@ -60,7 +64,8 @@ CbcHeuristicRENS::operator=( const CbcHeuristicRENS & rhs)
 CbcHeuristicRENS::CbcHeuristicRENS(const CbcHeuristicRENS & rhs)
         :
         CbcHeuristic(rhs),
-        numberTries_(rhs.numberTries_)
+        numberTries_(rhs.numberTries_),
+	rensType_(rhs.rensType_)
 {
 }
 // Resets stuff if model changes
@@ -74,7 +79,7 @@ CbcHeuristicRENS::solution(double & solutionValue,
 {
     int returnCode = 0;
     const double * bestSolution = model_->bestSolution();
-    if (numberTries_ || (when() < 2 && bestSolution))
+    if ((numberTries_&&(rensType_&16)==0) || numberTries_>1 || (when() < 2 && bestSolution))
         return 0;
     numberTries_++;
     OsiSolverInterface * solver = model_->solver();
@@ -83,9 +88,33 @@ CbcHeuristicRENS::solution(double & solutionValue,
     const int * integerVariable = model_->integerVariable();
 
     const double * currentSolution = solver->getColSolution();
+    const double * dj = solver->getReducedCost();
     OsiSolverInterface * newSolver = cloneBut(3); // was model_->continuousSolver()->clone();
+    int numberColumns = newSolver->getNumCols();
+    double direction = newSolver->getObjSense();
+    int type = rensType_&15;
+    double djTolerance = (type!=1) ? -1.0e30 : 1.0e-4;
     const double * colLower = newSolver->getColLower();
     const double * colUpper = newSolver->getColUpper();
+    if ((type&3)==3) {
+        double total=0.0;
+        int n=0;
+	CoinWarmStartBasis * basis =
+	  dynamic_cast<CoinWarmStartBasis *>(solver->getWarmStart()) ;
+	if (basis) {
+	    for (int iColumn = 0; iColumn < numberColumns; iColumn++) {
+	      if (colUpper[iColumn]>colLower[iColumn]&&
+		  basis->getStructStatus(iColumn) !=
+		  CoinWarmStartBasis::basic) {
+		  n++;
+		  total += fabs(dj[iColumn]);
+	      }
+	    }
+	    if (n)
+	        djTolerance = (0.01*total)/static_cast<double>(n);
+	    delete basis;
+	}
+    }
 
     double primalTolerance;
     solver->getDblParam(OsiPrimalTolerance, primalTolerance);
@@ -94,7 +123,6 @@ CbcHeuristicRENS::solution(double & solutionValue,
     int numberFixed = 0;
     int numberTightened = 0;
     int numberAtBound = 0;
-    int numberColumns = newSolver->getNumCols();
     int numberContinuous = numberColumns - numberIntegers;
 
     for (i = 0; i < numberIntegers; i++) {
@@ -104,6 +132,7 @@ CbcHeuristicRENS::solution(double & solutionValue,
         double upper = colUpper[iColumn];
         value = CoinMax(value, lower);
         value = CoinMin(value, upper);
+	double djValue=dj[iColumn]*direction;
 #define RENS_FIX_ONLY_LOWER
 #ifndef RENS_FIX_ONLY_LOWER
         if (fabs(value - floor(value + 0.5)) < 1.0e-8) {
@@ -120,13 +149,23 @@ CbcHeuristicRENS::solution(double & solutionValue,
         }
 #else
         if (fabs(value - floor(value + 0.5)) < 1.0e-8 &&
-                floor(value + 0.5) == lower) {
-            value = floor(value + 0.5);
-            numberAtBound++;
-            newSolver->setColLower(iColumn, value);
-            newSolver->setColUpper(iColumn, value);
-            numberFixed++;
-        } else if (colUpper[iColumn] - colLower[iColumn] >= 2.0) {
+                floor(value + 0.5) == lower &&
+	    djValue > djTolerance ) {
+	  value = floor(value + 0.5);
+	  numberAtBound++;
+	  newSolver->setColLower(iColumn, value);
+	  newSolver->setColUpper(iColumn, value);
+	  numberFixed++;
+        } else if (fabs(value - floor(value + 0.5)) < 1.0e-8 &&
+                floor(value + 0.5) == upper &&
+		   -djValue > djTolerance && (djTolerance > 0.0||type==2)) {
+	  value = floor(value + 0.5);
+	  numberAtBound++;
+	  newSolver->setColLower(iColumn, value);
+	  newSolver->setColUpper(iColumn, value);
+	  numberFixed++;
+        } else if (colUpper[iColumn] - colLower[iColumn] >= 2.0 &&
+		   djTolerance <0.0) {
             numberTightened++;
             if (fabs(value - floor(value + 0.5)) < 1.0e-8) {
                 value = floor(value + 0.5);
@@ -144,7 +183,7 @@ CbcHeuristicRENS::solution(double & solutionValue,
 #endif
     }
     if (numberFixed > numberIntegers / 5) {
-        if (numberContinuous > numberIntegers && numberFixed < numberColumns / 5) {
+        if ( numberFixed < numberColumns / 5) {
 #define RENS_FIX_CONTINUOUS
 #ifdef RENS_FIX_CONTINUOUS
             const double * colLower = newSolver->getColLower();
@@ -152,7 +191,6 @@ CbcHeuristicRENS::solution(double & solutionValue,
             int nAtLb = 0;
             double sumDj = 0.0;
             const double * dj = newSolver->getReducedCost();
-            double direction = newSolver->getObjSense();
             for (int iColumn = 0; iColumn < numberColumns; iColumn++) {
                 if (!newSolver->isInteger(iColumn)) {
                     double value = currentSolution[iColumn];

@@ -3995,9 +3995,33 @@ int CbcMain1 (int argc, const char *argv[],
                                         gomoryGen.setLimit(cutLength % 10000000);
                                     }
                                 }
-                                babModel_->addCutGenerator(&gomoryGen, translate[gomoryAction], "Gomory");
+                                int extra3 = parameters_[whichParam(CBC_PARAM_INT_EXTRA3, numberParameters_, parameters_)].intValue();
+				if (extra3>=100) {
+				  // replace
+				  gomoryGen.passInOriginalSolver(babModel_->solver());
+				  gomoryGen.setGomoryType(2);
+				  extra3 = -1;
+				  parameters_[whichParam(CBC_PARAM_INT_EXTRA3, numberParameters_, parameters_)].setIntValue(extra3);
+				  babModel_->addCutGenerator(&gomoryGen, translate[gomoryAction], "GomoryL");
+				} else {
+				  babModel_->addCutGenerator(&gomoryGen, translate[gomoryAction], "Gomory");
+				}
                                 accuracyFlag[numberGenerators] = 3;
                                 switches[numberGenerators++] = 0;
+				if (extra3>=10) {
+				  // just root if 10
+				  int itype=-99;
+				  if (extra3>=20) {
+    				    extra3-=10;
+				    itype = translate[gomoryAction];
+				  }
+				  gomoryGen.passInOriginalSolver(babModel_->solver());
+				  babModel_->addCutGenerator(&gomoryGen, itype, "GomoryL2");
+				  accuracyFlag[numberGenerators] = 3;
+				  switches[numberGenerators++] = 0;
+				  extra3 -= 10;
+				  parameters_[whichParam(CBC_PARAM_INT_EXTRA3, numberParameters_, parameters_)].setIntValue(extra3);
+				}
                             }
 #ifdef CLIQUE_ANALYSIS
                             if (miplib && !storedAmpl.sizeRowCuts()) {
@@ -5280,13 +5304,24 @@ int CbcMain1 (int argc, const char *argv[],
                                 if (lpSolver->factorization()->goOslThreshold() > 1000) {
                                     // use osl in gomory (may not if CglGomory decides not to)
                                     int numberGenerators = babModel_->numberCutGenerators();
+				    int nGomory=0;
                                     for (int iGenerator = 0; iGenerator < numberGenerators;
                                             iGenerator++) {
                                         CbcCutGenerator * generator = babModel_->cutGenerator(iGenerator);
                                         CglGomory * gomory = dynamic_cast<CglGomory *>
                                                              (generator->generator());
-                                        if (gomory)
+                                        if (gomory) {
+					  if (nGomory<2) {
                                             gomory->useAlternativeFactorization();
+					  } else if (gomory->originalSolver()) {
+					    OsiClpSolverInterface * clpSolver = dynamic_cast<OsiClpSolverInterface *>(gomory->originalSolver());
+					    if (clpSolver) {
+					      ClpSimplex * simplex = clpSolver->getModelPtr();
+					      simplex->factorization()->setGoOslThreshold(0);
+					    }
+					  }
+					    nGomory++;
+					}
                                     }
                                 }
 #endif

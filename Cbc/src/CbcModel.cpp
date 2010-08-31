@@ -12045,6 +12045,8 @@ CbcModel::resolve(OsiSolverInterface * solver)
             printf("node %d took %d iterations\n", numberNodes_, clpSimplex->numberIterations());
 #endif
         clpSimplex->setSpecialOptions(save);
+	if (clpSimplex->status()==4)
+	    clpSimplex->setProblemStatus(1);
     } else {
         solver->resolve();
     }

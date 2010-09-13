@@ -56,48 +56,45 @@ AC_COIN_INIT_AUTO_TOOLS
 #                            COIN-OR components                             #
 #############################################################################
 
-AC_COIN_HAS_MODULE(CoinDepend, [coinutils = trunk osi cgl])
+AC_COIN_HAS_PACKAGE(CoinDepend, [cgl osi coinutils = trunk], [CbcLib CbcGeneric])
 if test $coin_has_coindepend != yes ; then
   AC_MSG_ERROR([Required package CoinUtils, Osi, or Cgl not available.])
 fi
 
 # Clp and OsiClp are inseparable here.
 
-AC_COIN_HAS_MODULE(Clp,[osi-clp])
+AC_COIN_HAS_PACKAGE(Clp, [osi-clp], [CbcLib CbcGeneric])
 if test $coin_has_clp != yes ; then
   AC_MSG_ERROR("Required package Clp unavailable.")
 fi
 
-# The rest are not so critical, so we don't put in quite so much effort.
+# The rest are not required for linking against Cbc
 
-AC_COIN_HAS_MODULE(DyLP,[osi-dylp])
-AC_COIN_HAS_MODULE(Vol, [osi-vol])
-AC_COIN_HAS_MODULE(OsiTests, [osi-unittests], [required=0])
-
-AC_COIN_HAS_MODULE(Sample,  [coindatasample],  [required=0])
-AC_COIN_HAS_MODULE(Netlib,  [coindatanetlib],  [required=0])
-AC_COIN_HAS_MODULE(Miplib3, [coindatamiplib3], [required=0])
+AC_COIN_HAS_PACKAGE(OsiTests, [osi-unittests])
+AC_COIN_HAS_PACKAGE(Sample,   [coindatasample])
+AC_COIN_HAS_PACKAGE(Netlib,   [coindatanetlib])
+AC_COIN_HAS_PACKAGE(Miplib3,  [coindatamiplib3])
 
 #############################################################################
 #                    LP solvers other than CLP                              #
 #############################################################################
 
-# Check which other LP solvers are available
-AC_COIN_HAS_MODULE(DyLP, [osi-dylp])
-AC_COIN_HAS_MODULE(Vol,  [osi-vol])
-AC_COIN_HAS_MODULE(Cpx,  [osi-cplex])
-AC_COIN_HAS_MODULE(Glpk, [osi-glpk])
-AC_COIN_HAS_MODULE(Grb,  [osi-gurobi])
-AC_COIN_HAS_MODULE(Msk,  [osi-mosek])
-AC_COIN_HAS_MODULE(Spx,  [osi-soplex])
-AC_COIN_HAS_MODULE(Xpr,  [osi-xpress])
+# Check which other LP solvers are available, some of them become a dependency of CbcGeneric
+AC_COIN_HAS_PACKAGE(DyLP, [osi-dylp],   [CbcGeneric])
+AC_COIN_HAS_PACKAGE(Vol,  [osi-vol])
+AC_COIN_HAS_PACKAGE(Cpx,  [osi-cplex],  [CbcGeneric])
+AC_COIN_HAS_PACKAGE(Glpk, [osi-glpk],   [CbcGeneric])
+AC_COIN_HAS_PACKAGE(Grb,  [osi-gurobi])
+AC_COIN_HAS_PACKAGE(Msk,  [osi-mosek],  [CbcGeneric])
+AC_COIN_HAS_PACKAGE(Spx,  [osi-soplex], [CbcGeneric])
+AC_COIN_HAS_PACKAGE(Xpr,  [osi-xpress])
 
 #############################################################################
 #                       Other third party software                          #
 #############################################################################
 
 # Ampl Solver library
-AC_COIN_HAS_MODULE(ASL, [coinasl], [required=0])
+AC_COIN_HAS_PACKAGE(ASL, [coinasl])
 
 #############################################################################
 #                       CbcGeneric configuration			    #
@@ -131,6 +128,7 @@ AC_ARG_WITH([cbc-generic-solver],
             [cbc_default_solver=clp])
 AC_MSG_RESULT($cbc_default_solver)
 
+# FIXME what about cplex and mosek here?
 case $cbc_default_solver in
     clp)
       ;;
@@ -162,11 +160,15 @@ if test "$enable_cbc_parallel" = yes; then
   # Define the preprocessor macro
   AC_DEFINE([CBC_THREAD],[1],[Define to 1 if the SMP version of Cbc should be compiled])
   AC_CHECK_LIB([rt],[clock_gettime],
-               [ADDLIBS="-lrt $ADDLIBS"
-                AC_DEFINE([HAVE_CLOCK_GETTIME],[1],[Define if clock_gettime and rt library is available])],
+               [CBCLIB_LIBS="-lrt $CBCLIB_LIBS"
+                CBCLIB_PCLIBS="-lrt $CBCLIB_PCLIBS"
+                AC_DEFINE([HAVE_CLOCK_GETTIME],[1],[Define if clock_gettime and rt library is available])
+               ],
                [AC_MSG_WARN([--enable-cbc-parallel selected, but -lrt unavailable; using gettimeofday instead of clock_gettime])])
   AC_CHECK_LIB([pthread],[pthread_create],
-               [ADDLIBS="-lpthread $ADDLIBS"],
+               [CBCLIB_LIBS="-lpthread $CBCLIB_LIBS"
+                CBCLIB_PCLIBS="-lpthread $CBCLIB_PCLIBS"
+               ],
 	       [AC_MSG_ERROR([--enable-cbc-parallel selected, but -lpthreads unavailable])])
 fi
 

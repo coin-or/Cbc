@@ -59,34 +59,34 @@ gamstests: gamsTest$(EXEEXT)
 bin_PROGRAMS = gamsTest osiUnitTest
 
 gamsTest_SOURCES = gamsTest.cpp
-gamsTest_LDADD = ../src/libCbcSolver.la ../src/libCbc.la $(COINDEPEND_LIBS) $(ADDLIBS)
+gamsTest_LDADD = ../src/libCbcSolver.la ../src/libCbc.la $(CBCLIB_LIBS)
 gamsTest_LDFLAGS = -rpath $(libdir)
 
 AM_CPPFLAGS = -I`$(CYGPATH_W) $(srcdir)/../src` $(COINDEPEND_CFLAGS)
 
 if COIN_HAS_CLP
   AM_CPPFLAGS += $(CLP_CFLAGS)
-  gamsTest_LDADD += $(CLP_LIBS)
+#  gamsTest_LDADD += $(CLP_LIBS)
 endif
 
 if COIN_HAS_CPX
   AM_CPPFLAGS += $(CPX_CFLAGS)
-  gamsTest_LDADD += $(CPX_LIBS)
+#  gamsTest_LDADD += $(CPX_LIBS)
 endif
 
 if COIN_HAS_DYLP
   AM_CPPFLAGS += $(DYLP_CFLAGS)
-  gamsTest_LDADD += $(DYLP_LIBS)
+#  gamsTest_LDADD += $(DYLP_LIBS)
 endif
 
 if COIN_HAS_GLPK
   AM_CPPFLAGS += $(GLPK_CFLAGS)
-  gamsTest_LDADD += $(GLPK_LIBS)
+#  gamsTest_LDADD += $(GLPK_LIBS)
 endif
 
 if COIN_HAS_MSK
   AM_CPPFLAGS += $(MSK_CFLAGS)
-  gamsTest_LDADD += $(MSK_LIBS)
+#  gamsTest_LDADD += $(MSK_LIBS)
 endif
 
 # if COIN_HAS_SPX
@@ -96,17 +96,12 @@ endif
 
 if COIN_HAS_VOL
   AM_CPPFLAGS += $(VOL_CFLAGS)
-  gamsTest_LDADD += $(VOL_LIBS)
+#  gamsTest_LDADD += $(VOL_LIBS)
 endif
 
 if COIN_HAS_XPR
   AM_CPPFLAGS += $(XPR_CFLAGS)
-  gamsTest_LDADD += $(XPR_LIBS)
-endif
-
-if COIN_HAS_ASL
-  AM_CPPFLAGS += $(ASL_CFLAGS)
-  gamsTest_LDADD += $(ASL_LIBS)
+#  gamsTest_LDADD += $(XPR_LIBS)
 endif
 
 ########################################################################
@@ -116,7 +111,7 @@ endif
 osiUnitTest_SOURCES = osiUnitTest.cpp OsiCbcSolverInterfaceTest.cpp
 
 osiUnitTest_LDADD = ../src/OsiCbc/libOsiCbc.la ../src/libCbc.la \
-    $(COINDEPEND_LIBS) $(OSITESTS_LIBS) $(ADDLIBS)
+    $(CBCLIB_LIBS) $(OSITESTS_LIBS)
 
 AM_CPPFLAGS += $(OSITESTS_CFLAGS) \
         -I`$(CYGPATH_W) $(srcdir)/../src/OsiCbc`

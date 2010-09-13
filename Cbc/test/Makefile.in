@@ -50,26 +50,23 @@ host_triplet = @host@
 @COIN_HAS_NETLIB_TRUE@am__append_6 = -netlibDir=`$(CYGPATH_W) $(NETLIB_DATA)` -testOsiSolverInterface
 bin_PROGRAMS = gamsTest$(EXEEXT) osiUnitTest$(EXEEXT)
 @COIN_HAS_CLP_TRUE@am__append_7 = $(CLP_CFLAGS)
-@COIN_HAS_CLP_TRUE@am__append_8 = $(CLP_LIBS)
-@COIN_HAS_CPX_TRUE@am__append_9 = $(CPX_CFLAGS)
-@COIN_HAS_CPX_TRUE@am__append_10 = $(CPX_LIBS)
-@COIN_HAS_DYLP_TRUE@am__append_11 = $(DYLP_CFLAGS)
-@COIN_HAS_DYLP_TRUE@am__append_12 = $(DYLP_LIBS)
-@COIN_HAS_GLPK_TRUE@am__append_13 = $(GLPK_CFLAGS)
-@COIN_HAS_GLPK_TRUE@am__append_14 = $(GLPK_LIBS)
-@COIN_HAS_MSK_TRUE@am__append_15 = $(MSK_CFLAGS)
-@COIN_HAS_MSK_TRUE@am__append_16 = $(MSK_LIBS)
+#  gamsTest_LDADD += $(CLP_LIBS)
+@COIN_HAS_CPX_TRUE@am__append_8 = $(CPX_CFLAGS)
+#  gamsTest_LDADD += $(CPX_LIBS)
+@COIN_HAS_DYLP_TRUE@am__append_9 = $(DYLP_CFLAGS)
+#  gamsTest_LDADD += $(DYLP_LIBS)
+@COIN_HAS_GLPK_TRUE@am__append_10 = $(GLPK_CFLAGS)
+#  gamsTest_LDADD += $(GLPK_LIBS)
+@COIN_HAS_MSK_TRUE@am__append_11 = $(MSK_CFLAGS)
+#  gamsTest_LDADD += $(MSK_LIBS)
 
 # if COIN_HAS_SPX
 #   AM_CPPFLAGS += $(SPX_CFLAGS)
 #   gamsTest_LDADD += $(SPX_LIBS)
 # endif
-@COIN_HAS_VOL_TRUE@am__append_17 = $(VOL_CFLAGS)
-@COIN_HAS_VOL_TRUE@am__append_18 = $(VOL_LIBS)
-@COIN_HAS_XPR_TRUE@am__append_19 = $(XPR_CFLAGS)
-@COIN_HAS_XPR_TRUE@am__append_20 = $(XPR_LIBS)
-@COIN_HAS_ASL_TRUE@am__append_21 = $(ASL_CFLAGS)
-@COIN_HAS_ASL_TRUE@am__append_22 = $(ASL_LIBS)
+@COIN_HAS_VOL_TRUE@am__append_12 = $(VOL_CFLAGS)
+#  gamsTest_LDADD += $(VOL_LIBS)
+@COIN_HAS_XPR_TRUE@am__append_13 = $(XPR_CFLAGS)
 subdir = test
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -86,26 +83,13 @@ PROGRAMS = $(bin_PROGRAMS)
 am_gamsTest_OBJECTS = gamsTest.$(OBJEXT)
 gamsTest_OBJECTS = $(am_gamsTest_OBJECTS)
 am__DEPENDENCIES_1 =
-@COIN_HAS_CLP_TRUE@am__DEPENDENCIES_2 = $(am__DEPENDENCIES_1)
-@COIN_HAS_CPX_TRUE@am__DEPENDENCIES_3 = $(am__DEPENDENCIES_1)
-@COIN_HAS_DYLP_TRUE@am__DEPENDENCIES_4 = $(am__DEPENDENCIES_1)
-@COIN_HAS_GLPK_TRUE@am__DEPENDENCIES_5 = $(am__DEPENDENCIES_1)
-@COIN_HAS_MSK_TRUE@am__DEPENDENCIES_6 = $(am__DEPENDENCIES_1)
-@COIN_HAS_VOL_TRUE@am__DEPENDENCIES_7 = $(am__DEPENDENCIES_1)
-@COIN_HAS_XPR_TRUE@am__DEPENDENCIES_8 = $(am__DEPENDENCIES_1)
-@COIN_HAS_ASL_TRUE@am__DEPENDENCIES_9 = $(am__DEPENDENCIES_1)
 gamsTest_DEPENDENCIES = ../src/libCbcSolver.la ../src/libCbc.la \
-	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
-	$(am__DEPENDENCIES_2) $(am__DEPENDENCIES_3) \
-	$(am__DEPENDENCIES_4) $(am__DEPENDENCIES_5) \
-	$(am__DEPENDENCIES_6) $(am__DEPENDENCIES_7) \
-	$(am__DEPENDENCIES_8) $(am__DEPENDENCIES_9)
+	$(am__DEPENDENCIES_1)
 am_osiUnitTest_OBJECTS = osiUnitTest.$(OBJEXT) \
 	OsiCbcSolverInterfaceTest.$(OBJEXT)
 osiUnitTest_OBJECTS = $(am_osiUnitTest_OBJECTS)
 osiUnitTest_DEPENDENCIES = ../src/OsiCbc/libOsiCbc.la ../src/libCbc.la \
-	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
-	$(am__DEPENDENCIES_1)
+	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
 DEFAULT_INCLUDES = -I. -I$(srcdir) -I$(top_builddir)/inc
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__depfiles_maybe = depfiles
@@ -142,6 +126,12 @@ AUTOMAKE = @AUTOMAKE@
 AUX_DIR = @AUX_DIR@
 AWK = @AWK@
 BUILDTOOLSDIR = @BUILDTOOLSDIR@
+CBCGENERIC_LIBS = @CBCGENERIC_LIBS@
+CBCGENERIC_PCLIBS = @CBCGENERIC_PCLIBS@
+CBCGENERIC_PCREQUIRES = @CBCGENERIC_PCREQUIRES@
+CBCLIB_LIBS = @CBCLIB_LIBS@
+CBCLIB_PCLIBS = @CBCLIB_PCLIBS@
+CBCLIB_PCREQUIRES = @CBCLIB_PCREQUIRES@
 CBC_BUILD_CBC_GENERIC_FALSE = @CBC_BUILD_CBC_GENERIC_FALSE@
 CBC_BUILD_CBC_GENERIC_TRUE = @CBC_BUILD_CBC_GENERIC_TRUE@
 CBC_SVN_REV = @CBC_SVN_REV@
@@ -288,7 +278,6 @@ PATH_SEPARATOR = @PATH_SEPARATOR@
 PCADDLIBS = @PCADDLIBS@
 PKG_CONFIG = @PKG_CONFIG@
 RANLIB = @RANLIB@
-REQUIREDPACKAGES = @REQUIREDPACKAGES@
 RPATH_FLAGS = @RPATH_FLAGS@
 SAMPLE_CFLAGS = @SAMPLE_CFLAGS@
 SAMPLE_DATA = @SAMPLE_DATA@
@@ -377,23 +366,21 @@ CBC_TEST_TGTS = gamstests ositests $(am__append_1) $(am__append_2)
 cbcflags = $(am__append_3) -unitTest $(am__append_5)
 ositestsflags = $(am__append_4) $(am__append_6)
 gamsTest_SOURCES = gamsTest.cpp
-gamsTest_LDADD = ../src/libCbcSolver.la ../src/libCbc.la \
-	$(COINDEPEND_LIBS) $(ADDLIBS) $(am__append_8) $(am__append_10) \
-	$(am__append_12) $(am__append_14) $(am__append_16) \
-	$(am__append_18) $(am__append_20) $(am__append_22)
+gamsTest_LDADD = ../src/libCbcSolver.la ../src/libCbc.la $(CBCLIB_LIBS)
 gamsTest_LDFLAGS = -rpath $(libdir)
 AM_CPPFLAGS = -I`$(CYGPATH_W) $(srcdir)/../src` $(COINDEPEND_CFLAGS) \
-	$(am__append_7) $(am__append_9) $(am__append_11) \
-	$(am__append_13) $(am__append_15) $(am__append_17) \
-	$(am__append_19) $(am__append_21) $(OSITESTS_CFLAGS) \
-	-I`$(CYGPATH_W) $(srcdir)/../src/OsiCbc`
+	$(am__append_7) $(am__append_8) $(am__append_9) \
+	$(am__append_10) $(am__append_11) $(am__append_12) \
+	$(am__append_13) $(OSITESTS_CFLAGS) -I`$(CYGPATH_W) \
+	$(srcdir)/../src/OsiCbc`
+#  gamsTest_LDADD += $(XPR_LIBS)
 
 ########################################################################
 #                         unitTest for OsiCbc                          #
 ########################################################################
 osiUnitTest_SOURCES = osiUnitTest.cpp OsiCbcSolverInterfaceTest.cpp
 osiUnitTest_LDADD = ../src/OsiCbc/libOsiCbc.la ../src/libCbc.la \
-    $(COINDEPEND_LIBS) $(OSITESTS_LIBS) $(ADDLIBS)
+    $(CBCLIB_LIBS) $(OSITESTS_LIBS)
 
 
 ########################################################################

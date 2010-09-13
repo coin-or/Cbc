@@ -55,11 +55,8 @@ bin_PROGRAMS = $(am__EXEEXT_1) $(am__EXEEXT_2)
 @COIN_HAS_CLP_TRUE@am__append_1 = cbc
 
 # Add locations of include files.
-@COIN_HAS_CLP_TRUE@am__append_2 = $(CLP_CFLAGS)
-@COIN_HAS_CLP_TRUE@@COIN_HAS_CPX_TRUE@am__append_3 = $(CPX_CFLAGS)
-@COIN_HAS_CLP_TRUE@@COIN_HAS_CPX_TRUE@am__append_4 = $(CPX_LIBS)
-@COIN_HAS_ASL_TRUE@@COIN_HAS_CLP_TRUE@am__append_5 = $(ASL_CFLAGS)
-@COIN_HAS_ASL_TRUE@@COIN_HAS_CLP_TRUE@am__append_6 = $(ASL_LIBS)
+@COIN_HAS_ASL_TRUE@@COIN_HAS_CLP_TRUE@am__append_2 = $(ASL_CFLAGS)
+@COIN_HAS_ASL_TRUE@@COIN_HAS_CLP_TRUE@am__append_3 = $(ASL_LIBS)
 
 ########################################################################
 #                        cbc-generic program                           #
@@ -67,27 +64,14 @@ bin_PROGRAMS = $(am__EXEEXT_1) $(am__EXEEXT_2)
 
 # Name of the executable compiled in this directory.  We want it to be
 # installed in the 'bin' directory
-@CBC_BUILD_CBC_GENERIC_TRUE@am__append_7 = cbc-generic
+@CBC_BUILD_CBC_GENERIC_TRUE@am__append_4 = cbc-generic
 
 # List all additionally required solver and Osi libraries
-@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_CLP_TRUE@am__append_8 = $(CLP_CFLAGS)
-@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_CLP_TRUE@am__append_9 = $(CLP_LIBS)
-@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_CPX_TRUE@am__append_10 = $(CPX_CFLAGS)
-@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_CPX_TRUE@am__append_11 = $(CPX_LIBS)
-@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_DYLP_TRUE@am__append_12 = $(DYLP_CFLAGS)
-@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_DYLP_TRUE@am__append_13 = $(DYLP_LIBS)
-@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_GLPK_TRUE@am__append_14 = $(GLPK_CFLAGS)
-@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_GLPK_TRUE@am__append_15 = $(GLPK_LIBS)
-@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_MSK_TRUE@am__append_16 = $(MSK_CFLAGS)
-@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_MSK_TRUE@am__append_17 = $(MSK_LIBS)
-@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_SPX_TRUE@am__append_18 = $(SPX_CFLAGS)
-@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_SPX_TRUE@am__append_19 = $(SPX_LIBS)
-@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_VOL_TRUE@am__append_20 = $(VOL_CFLAGS)
-@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_VOL_TRUE@am__append_21 = $(VOL_LIBS)
-@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_XPR_TRUE@am__append_22 = $(XPR_CFLAGS)
-@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_XPR_TRUE@am__append_23 = $(XPR_LIBS)
-@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_ASL_TRUE@am__append_24 = $(ASL_CFLAGS)
-@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_ASL_TRUE@am__append_25 = $(ASL_LIBS)
+# the linker flags for all available LP solvers should already be included in $CBCGENERIC_LIBS,
+# so just add compiler flags here (all we can think of)
+@CBC_BUILD_CBC_GENERIC_TRUE@am__append_5 = $(CLP_CFLAGS) $(CPX_CFLAGS) $(DYLP_CFLAGS) $(GLPK_CFLAGS) $(MSK_CFLAGS) $(SPX_CFLAGS) $(VOL_CFLAGS) $(XPR_CFLAGS)
+@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_ASL_TRUE@am__append_6 = $(ASL_CFLAGS)
+@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_ASL_TRUE@am__append_7 = $(ASL_LIBS)
 subdir = src
 DIST_COMMON = $(includecoin_HEADERS) $(srcdir)/Makefile.am \
 	$(srcdir)/Makefile.in
@@ -150,14 +134,10 @@ am__cbc_SOURCES_DIST = CoinSolve.cpp
 @COIN_HAS_CLP_TRUE@am_cbc_OBJECTS = CoinSolve.$(OBJEXT)
 cbc_OBJECTS = $(am_cbc_OBJECTS)
 am__DEPENDENCIES_1 =
-@COIN_HAS_CLP_TRUE@@COIN_HAS_CPX_TRUE@am__DEPENDENCIES_2 =  \
-@COIN_HAS_CLP_TRUE@@COIN_HAS_CPX_TRUE@	$(am__DEPENDENCIES_1)
-@COIN_HAS_ASL_TRUE@@COIN_HAS_CLP_TRUE@am__DEPENDENCIES_3 =  \
+@COIN_HAS_ASL_TRUE@@COIN_HAS_CLP_TRUE@am__DEPENDENCIES_2 =  \
 @COIN_HAS_ASL_TRUE@@COIN_HAS_CLP_TRUE@	$(am__DEPENDENCIES_1)
 @COIN_HAS_CLP_TRUE@cbc_DEPENDENCIES = libCbcSolver.la libCbc.la \
-@COIN_HAS_CLP_TRUE@	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
-@COIN_HAS_CLP_TRUE@	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_2) \
-@COIN_HAS_CLP_TRUE@	$(am__DEPENDENCIES_3)
+@COIN_HAS_CLP_TRUE@	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_2)
 am__cbc_generic_SOURCES_DIST = CbcGenBaB.cpp CbcGenCbcParam.cpp \
 	CbcGenCbcParam.hpp CbcGenCbcParamUtils.cpp CbcGenCtlBlk.cpp \
 	CbcGenCtlBlk.hpp CbcGeneric.cpp CbcGenMessages.cpp \
@@ -178,28 +158,11 @@ am__cbc_generic_SOURCES_DIST = CbcGenBaB.cpp CbcGenCbcParam.cpp \
 @CBC_BUILD_CBC_GENERIC_TRUE@	CbcGenSolution.$(OBJEXT) \
 @CBC_BUILD_CBC_GENERIC_TRUE@	CbcGenSolvers.$(OBJEXT)
 cbc_generic_OBJECTS = $(am_cbc_generic_OBJECTS)
-@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_CLP_TRUE@am__DEPENDENCIES_4 = $(am__DEPENDENCIES_1)
-@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_CPX_TRUE@am__DEPENDENCIES_5 = $(am__DEPENDENCIES_1)
-@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_DYLP_TRUE@am__DEPENDENCIES_6 = $(am__DEPENDENCIES_1)
-@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_GLPK_TRUE@am__DEPENDENCIES_7 = $(am__DEPENDENCIES_1)
-@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_MSK_TRUE@am__DEPENDENCIES_8 = $(am__DEPENDENCIES_1)
-@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_SPX_TRUE@am__DEPENDENCIES_9 = $(am__DEPENDENCIES_1)
-@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_VOL_TRUE@am__DEPENDENCIES_10 = $(am__DEPENDENCIES_1)
-@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_XPR_TRUE@am__DEPENDENCIES_11 = $(am__DEPENDENCIES_1)
-@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_ASL_TRUE@am__DEPENDENCIES_12 = $(am__DEPENDENCIES_1)
+@CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_ASL_TRUE@am__DEPENDENCIES_3 = $(am__DEPENDENCIES_1)
 @CBC_BUILD_CBC_GENERIC_TRUE@cbc_generic_DEPENDENCIES =  \
 @CBC_BUILD_CBC_GENERIC_TRUE@	libCbcSolver.la libCbc.la \
 @CBC_BUILD_CBC_GENERIC_TRUE@	$(am__DEPENDENCIES_1) \
-@CBC_BUILD_CBC_GENERIC_TRUE@	$(am__DEPENDENCIES_1) \
-@CBC_BUILD_CBC_GENERIC_TRUE@	$(am__DEPENDENCIES_4) \
-@CBC_BUILD_CBC_GENERIC_TRUE@	$(am__DEPENDENCIES_5) \
-@CBC_BUILD_CBC_GENERIC_TRUE@	$(am__DEPENDENCIES_6) \
-@CBC_BUILD_CBC_GENERIC_TRUE@	$(am__DEPENDENCIES_7) \
-@CBC_BUILD_CBC_GENERIC_TRUE@	$(am__DEPENDENCIES_8) \
-@CBC_BUILD_CBC_GENERIC_TRUE@	$(am__DEPENDENCIES_9) \
-@CBC_BUILD_CBC_GENERIC_TRUE@	$(am__DEPENDENCIES_10) \
-@CBC_BUILD_CBC_GENERIC_TRUE@	$(am__DEPENDENCIES_11) \
-@CBC_BUILD_CBC_GENERIC_TRUE@	$(am__DEPENDENCIES_12)
+@CBC_BUILD_CBC_GENERIC_TRUE@	$(am__DEPENDENCIES_3)
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__depfiles_maybe = depfiles
 CXXCOMPILE = $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
@@ -254,6 +217,12 @@ AUTOMAKE = @AUTOMAKE@
 AUX_DIR = @AUX_DIR@
 AWK = @AWK@
 BUILDTOOLSDIR = @BUILDTOOLSDIR@
+CBCGENERIC_LIBS = @CBCGENERIC_LIBS@
+CBCGENERIC_PCLIBS = @CBCGENERIC_PCLIBS@
+CBCGENERIC_PCREQUIRES = @CBCGENERIC_PCREQUIRES@
+CBCLIB_LIBS = @CBCLIB_LIBS@
+CBCLIB_PCLIBS = @CBCLIB_PCLIBS@
+CBCLIB_PCREQUIRES = @CBCLIB_PCREQUIRES@
 CBC_BUILD_CBC_GENERIC_FALSE = @CBC_BUILD_CBC_GENERIC_FALSE@
 CBC_BUILD_CBC_GENERIC_TRUE = @CBC_BUILD_CBC_GENERIC_TRUE@
 CBC_SVN_REV = @CBC_SVN_REV@
@@ -400,7 +369,6 @@ PATH_SEPARATOR = @PATH_SEPARATOR@
 PCADDLIBS = @PCADDLIBS@
 PKG_CONFIG = @PKG_CONFIG@
 RANLIB = @RANLIB@
-REQUIREDPACKAGES = @REQUIREDPACKAGES@
 RPATH_FLAGS = @RPATH_FLAGS@
 SAMPLE_CFLAGS = @SAMPLE_CFLAGS@
 SAMPLE_DATA = @SAMPLE_DATA@
@@ -587,19 +555,16 @@ libCbcSolver_la_LDFLAGS = $(LT_LDFLAGS)
 ########################################################################
 
 # List additional defines
-AM_CPPFLAGS = $(COINDEPEND_CFLAGS) $(am__append_2) $(am__append_3) \
-	$(am__append_5) $(am__append_8) $(am__append_10) \
-	$(am__append_12) $(am__append_14) $(am__append_16) \
-	$(am__append_18) $(am__append_20) $(am__append_22) \
-	$(am__append_24) -DCOIN_NO_CLP_MESSAGE -DUSE_CBCCONFIG
+AM_CPPFLAGS = $(COINDEPEND_CFLAGS) $(CLP_CFLAGS) $(CPX_LIBS) \
+	$(am__append_2) $(am__append_5) $(am__append_6) \
+	-DCOIN_NO_CLP_MESSAGE -DUSE_CBCCONFIG
 
 # List all source files for this executable, including headers
 @COIN_HAS_CLP_TRUE@cbc_SOURCES = CoinSolve.cpp
 
 # Additional COIN libraries
 @COIN_HAS_CLP_TRUE@cbc_LDADD = libCbcSolver.la libCbc.la \
-@COIN_HAS_CLP_TRUE@	$(COINDEPEND_LIBS) $(ADDLIBS) $(CLP_LIBS) \
-@COIN_HAS_CLP_TRUE@	$(am__append_4) $(am__append_6)
+@COIN_HAS_CLP_TRUE@	$(CBCLIB_LIBS) $(am__append_3)
 
 # Finally, the -rpath flag is used by libtool to make sure that the shared
 # library is found (in the lib install directory) when we are using dynamic
@@ -619,12 +584,8 @@ AM_CPPFLAGS = $(COINDEPEND_CFLAGS) $(am__append_2) $(am__append_3) \
 @CBC_BUILD_CBC_GENERIC_TRUE@	CbcGenSolvers.cpp
 
 @CBC_BUILD_CBC_GENERIC_TRUE@cbc_generic_LDADD = libCbcSolver.la \
-@CBC_BUILD_CBC_GENERIC_TRUE@	libCbc.la $(COINDEPEND_LIBS) \
-@CBC_BUILD_CBC_GENERIC_TRUE@	$(ADDLIBS) $(am__append_9) \
-@CBC_BUILD_CBC_GENERIC_TRUE@	$(am__append_11) $(am__append_13) \
-@CBC_BUILD_CBC_GENERIC_TRUE@	$(am__append_15) $(am__append_17) \
-@CBC_BUILD_CBC_GENERIC_TRUE@	$(am__append_19) $(am__append_21) \
-@CBC_BUILD_CBC_GENERIC_TRUE@	$(am__append_23) $(am__append_25)
+@CBC_BUILD_CBC_GENERIC_TRUE@	libCbc.la $(CBCGENERIC_LIBS) \
+@CBC_BUILD_CBC_GENERIC_TRUE@	$(am__append_7)
 
 # Finally, the -rpath flag is used by libtool to make sure that the shared
 # library is found (in the lib install directory) when we are using dynamic

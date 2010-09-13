@@ -111,9 +111,10 @@ libCbc_la_LDFLAGS = $(LT_LDFLAGS)
 libCbcSolver_la_LDFLAGS = $(LT_LDFLAGS)
 
 # Some common setup for cbc and cbc-generic.
+#   ($(CPX_LIBS) should resolve in an empty string if there is no cplex)
 
 bin_PROGRAMS =
-AM_CPPFLAGS = $(COINDEPEND_CFLAGS)
+AM_CPPFLAGS = $(COINDEPEND_CFLAGS) $(CLP_CFLAGS) $(CPX_LIBS)
 
 ########################################################################
 #                            cbc program                               #
@@ -129,7 +130,7 @@ bin_PROGRAMS += cbc
 cbc_SOURCES = CoinSolve.cpp
 
 # Additional COIN libraries
-cbc_LDADD = libCbcSolver.la libCbc.la $(COINDEPEND_LIBS) $(ADDLIBS)
+cbc_LDADD = libCbcSolver.la libCbc.la $(CBCLIB_LIBS)
 
 # Finally, the -rpath flag is used by libtool to make sure that the shared
 # library is found (in the lib install directory) when we are using dynamic
@@ -137,16 +138,6 @@ cbc_LDADD = libCbcSolver.la libCbc.la $(COINDEPEND_LIBS) $(ADDLIBS)
 cbc_LDFLAGS = -rpath $(libdir)
 
 # Add locations of include files.
-
-if COIN_HAS_CLP
-  AM_CPPFLAGS += $(CLP_CFLAGS)
-  cbc_LDADD += $(CLP_LIBS)
-endif
-
-if COIN_HAS_CPX
-  AM_CPPFLAGS += $(CPX_CFLAGS)
-  cbc_LDADD += $(CPX_LIBS)
-endif
 
 if COIN_HAS_ASL
   AM_CPPFLAGS += $(ASL_CFLAGS)
@@ -180,49 +171,13 @@ cbc_generic_SOURCES = \
 	CbcGenSolution.cpp \
 	CbcGenSolvers.cpp
 
-cbc_generic_LDADD = libCbcSolver.la libCbc.la $(COINDEPEND_LIBS) $(ADDLIBS)
+cbc_generic_LDADD = libCbcSolver.la libCbc.la $(CBCGENERIC_LIBS)
 
 # List all additionally required solver and Osi libraries
+# the linker flags for all available LP solvers should already be included in $CBCGENERIC_LIBS,
+# so just add compiler flags here (all we can think of)
 
-if COIN_HAS_CLP
-  AM_CPPFLAGS += $(CLP_CFLAGS)
-  cbc_generic_LDADD += $(CLP_LIBS)
-endif
-
-if COIN_HAS_CPX
-  AM_CPPFLAGS += $(CPX_CFLAGS)
-  cbc_generic_LDADD += $(CPX_LIBS)
-endif
-
-if COIN_HAS_DYLP
-  AM_CPPFLAGS += $(DYLP_CFLAGS)
-  cbc_generic_LDADD += $(DYLP_LIBS)
-endif
-
-if COIN_HAS_GLPK
-  AM_CPPFLAGS += $(GLPK_CFLAGS)
-  cbc_generic_LDADD += $(GLPK_LIBS)
-endif
-
-if COIN_HAS_MSK
-  AM_CPPFLAGS += $(MSK_CFLAGS)
-  cbc_generic_LDADD += $(MSK_LIBS)
-endif
-
-if COIN_HAS_SPX
-  AM_CPPFLAGS += $(SPX_CFLAGS)
-  cbc_generic_LDADD += $(SPX_LIBS)
-endif
-
-if COIN_HAS_VOL
-  AM_CPPFLAGS += $(VOL_CFLAGS)
-  cbc_generic_LDADD += $(VOL_LIBS)
-endif
-
-if COIN_HAS_XPR
-  AM_CPPFLAGS += $(XPR_CFLAGS)
-  cbc_generic_LDADD += $(XPR_LIBS)
-endif
+AM_CPPFLAGS += $(CLP_CFLAGS) $(CPX_CFLAGS) $(DYLP_CFLAGS) $(GLPK_CFLAGS) $(MSK_CFLAGS) $(SPX_CFLAGS) $(VOL_CFLAGS) $(XPR_CFLAGS)
 
 if COIN_HAS_ASL
   AM_CPPFLAGS += $(ASL_CFLAGS)

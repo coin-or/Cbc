@@ -472,7 +472,7 @@ ac_includes_default="\
 # include <unistd.h>
 #endif"
 
-ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS build build_cpu build_vendor build_os ADDLIBS PCADDLIBS FADDLIBS ALWAYS_FALSE_TRUE ALWAYS_FALSE_FALSE have_svnversion CBC_SVN_REV CDEFS ADD_CFLAGS DBG_CFLAGS OPT_CFLAGS sol_cc_compiler CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT MPICC CXXDEFS ADD_CXXFLAGS DBG_CXXFLAGS OPT_CXXFLAGS CXX CXXFLAGS ac_ct_CXX MPICXX EGREP INSTALL_PROGRAM INSTALL_SCRIPT INSTALL_DATA CYGPATH_W PACKAGE VERSION ACLOCAL AUTOCONF AUTOMAKE AUTOHEADER MAKEINFO install_sh STRIP ac_ct_STRIP INSTALL_STRIP_PROGRAM mkdir_p AWK SET_MAKE am__leading_dot AMTAR am__tar am__untar DEPDIR am__include am__quote AMDEP_TRUE AMDEP_FALSE AMDEPBACKSLASH CCDEPMODE am__fastdepCC_TRUE am__fastdepCC_FALSE CXXDEPMODE am__fastdepCXX_TRUE am__fastdepCXX_FALSE MAINTAINER_MODE_TRUE MAINTAINER_MODE_FALSE MAINT LIBTOOLM4 have_autoconf have_automake have_svn BUILDTOOLSDIR AUX_DIR abs_source_dir abs_lib_dir abs_include_dir abs_bin_dir HAVE_EXTERNALS_TRUE HAVE_EXTERNALS_FALSE host host_cpu host_vendor host_os LN_S ECHO AR ac_ct_AR RANLIB ac_ct_RANLIB CPP CXXCPP F77 FFLAGS ac_ct_F77 LIBTOOL ac_c_preproc_warn_flag ac_cxx_preproc_warn_flag RPATH_FLAGS LT_LDFLAGS PKG_CONFIG ac_pt_PKG_CONFIG COIN_HAS_PKGCONFIG_TRUE COIN_HAS_PKGCONFIG_FALSE COIN_PKG_CONFIG_PATH COIN_PKG_CONFIG_PATH_UNINSTALLED COINDEPEND_LIBS COINDEPEND_CFLAGS COINDEPEND_DATA REQUIREDPACKAGES COIN_HAS_COINDEPEND_TRUE COIN_HAS_COINDEPEND_FALSE CLP_LIBS CLP_CFLAGS CLP_DATA COIN_HAS_CLP_TRUE COIN_HAS_CLP_FALSE DYLP_LIBS DYLP_CFLAGS DYLP_DATA COIN_HAS_DYLP_TRUE COIN_HAS_DYLP_FALSE VOL_LIBS VOL_CFLAGS VOL_DATA COIN_HAS_VOL_TRUE COIN_HAS_VOL_FALSE OSITESTS_LIBS OSITESTS_CFLAGS OSITESTS_DATA COIN_HAS_OSITESTS_TRUE COIN_HAS_OSITESTS_FALSE SAMPLE_LIBS SAMPLE_CFLAGS SAMPLE_DATA COIN_HAS_SAMPLE_TRUE COIN_HAS_SAMPLE_FALSE NETLIB_LIBS NETLIB_CFLAGS NETLIB_DATA COIN_HAS_NETLIB_TRUE COIN_HAS_NETLIB_FALSE MIPLIB3_LIBS MIPLIB3_CFLAGS MIPLIB3_DATA COIN_HAS_MIPLIB3_TRUE COIN_HAS_MIPLIB3_FALSE CPX_LIBS CPX_CFLAGS CPX_DATA COIN_HAS_CPX_TRUE COIN_HAS_CPX_FALSE GLPK_LIBS GLPK_CFLAGS GLPK_DATA COIN_HAS_GLPK_TRUE COIN_HAS_GLPK_FALSE GRB_LIBS GRB_CFLAGS GRB_DATA COIN_HAS_GRB_TRUE COIN_HAS_GRB_FALSE MSK_LIBS MSK_CFLAGS MSK_DATA COIN_HAS_MSK_TRUE COIN_HAS_MSK_FALSE SPX_LIBS SPX_CFLAGS SPX_DATA COIN_HAS_SPX_TRUE COIN_HAS_SPX_FALSE XPR_LIBS XPR_CFLAGS XPR_DATA COIN_HAS_XPR_TRUE COIN_HAS_XPR_FALSE ASL_LIBS ASL_CFLAGS ASL_DATA COIN_HAS_ASL_TRUE COIN_HAS_ASL_FALSE CBC_BUILD_CBC_GENERIC_TRUE CBC_BUILD_CBC_GENERIC_FALSE OSICBC_DFLT_SOLVER_CLP_TRUE OSICBC_DFLT_SOLVER_CLP_FALSE OSICBC_DFLT_SOLVER_CPX_TRUE OSICBC_DFLT_SOLVER_CPX_FALSE OSICBC_DFLT_SOLVER_DYLP_TRUE OSICBC_DFLT_SOLVER_DYLP_FALSE OSICBC_DFLT_SOLVER_GLPK_TRUE OSICBC_DFLT_SOLVER_GLPK_FALSE OSICBC_DFLT_SOLVER_GRB_TRUE OSICBC_DFLT_SOLVER_GRB_FALSE OSICBC_DFLT_SOLVER_MSK_TRUE OSICBC_DFLT_SOLVER_MSK_FALSE OSICBC_DFLT_SOLVER_SPX_TRUE OSICBC_DFLT_SOLVER_SPX_FALSE OSICBC_DFLT_SOLVER_SYM_TRUE OSICBC_DFLT_SOLVER_SYM_FALSE OSICBC_DFLT_SOLVER_VOL_TRUE OSICBC_DFLT_SOLVER_VOL_FALSE OSICBC_DFLT_SOLVER_XPR_TRUE OSICBC_DFLT_SOLVER_XPR_FALSE coin_have_doxygen coin_doxy_usedot coin_doxy_tagname coin_doxy_logname coin_doxy_tagfiles coin_doxy_excludes LIBEXT VPATH_DISTCLEANFILES ABSBUILDDIR LIBOBJS LTLIBOBJS'
+ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS build build_cpu build_vendor build_os ADDLIBS PCADDLIBS FADDLIBS ALWAYS_FALSE_TRUE ALWAYS_FALSE_FALSE have_svnversion CBC_SVN_REV CDEFS ADD_CFLAGS DBG_CFLAGS OPT_CFLAGS sol_cc_compiler CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT MPICC CXXDEFS ADD_CXXFLAGS DBG_CXXFLAGS OPT_CXXFLAGS CXX CXXFLAGS ac_ct_CXX MPICXX EGREP INSTALL_PROGRAM INSTALL_SCRIPT INSTALL_DATA CYGPATH_W PACKAGE VERSION ACLOCAL AUTOCONF AUTOMAKE AUTOHEADER MAKEINFO install_sh STRIP ac_ct_STRIP INSTALL_STRIP_PROGRAM mkdir_p AWK SET_MAKE am__leading_dot AMTAR am__tar am__untar DEPDIR am__include am__quote AMDEP_TRUE AMDEP_FALSE AMDEPBACKSLASH CCDEPMODE am__fastdepCC_TRUE am__fastdepCC_FALSE CXXDEPMODE am__fastdepCXX_TRUE am__fastdepCXX_FALSE MAINTAINER_MODE_TRUE MAINTAINER_MODE_FALSE MAINT LIBTOOLM4 have_autoconf have_automake have_svn BUILDTOOLSDIR AUX_DIR abs_source_dir abs_lib_dir abs_include_dir abs_bin_dir HAVE_EXTERNALS_TRUE HAVE_EXTERNALS_FALSE host host_cpu host_vendor host_os LN_S ECHO AR ac_ct_AR RANLIB ac_ct_RANLIB CPP CXXCPP F77 FFLAGS ac_ct_F77 LIBTOOL ac_c_preproc_warn_flag ac_cxx_preproc_warn_flag RPATH_FLAGS LT_LDFLAGS PKG_CONFIG ac_pt_PKG_CONFIG COIN_HAS_PKGCONFIG_TRUE COIN_HAS_PKGCONFIG_FALSE COIN_PKG_CONFIG_PATH COIN_PKG_CONFIG_PATH_UNINSTALLED COINDEPEND_LIBS COINDEPEND_CFLAGS COINDEPEND_DATA CBCLIB_LIBS CBCLIB_PCLIBS CBCLIB_PCREQUIRES CBCGENERIC_LIBS CBCGENERIC_PCLIBS CBCGENERIC_PCREQUIRES COIN_HAS_COINDEPEND_TRUE COIN_HAS_COINDEPEND_FALSE CLP_LIBS CLP_CFLAGS CLP_DATA COIN_HAS_CLP_TRUE COIN_HAS_CLP_FALSE OSITESTS_LIBS OSITESTS_CFLAGS OSITESTS_DATA COIN_HAS_OSITESTS_TRUE COIN_HAS_OSITESTS_FALSE SAMPLE_LIBS SAMPLE_CFLAGS SAMPLE_DATA COIN_HAS_SAMPLE_TRUE COIN_HAS_SAMPLE_FALSE NETLIB_LIBS NETLIB_CFLAGS NETLIB_DATA COIN_HAS_NETLIB_TRUE COIN_HAS_NETLIB_FALSE MIPLIB3_LIBS MIPLIB3_CFLAGS MIPLIB3_DATA COIN_HAS_MIPLIB3_TRUE COIN_HAS_MIPLIB3_FALSE DYLP_LIBS DYLP_CFLAGS DYLP_DATA COIN_HAS_DYLP_TRUE COIN_HAS_DYLP_FALSE VOL_LIBS VOL_CFLAGS VOL_DATA COIN_HAS_VOL_TRUE COIN_HAS_VOL_FALSE CPX_LIBS CPX_CFLAGS CPX_DATA COIN_HAS_CPX_TRUE COIN_HAS_CPX_FALSE GLPK_LIBS GLPK_CFLAGS GLPK_DATA COIN_HAS_GLPK_TRUE COIN_HAS_GLPK_FALSE GRB_LIBS GRB_CFLAGS GRB_DATA COIN_HAS_GRB_TRUE COIN_HAS_GRB_FALSE MSK_LIBS MSK_CFLAGS MSK_DATA COIN_HAS_MSK_TRUE COIN_HAS_MSK_FALSE SPX_LIBS SPX_CFLAGS SPX_DATA COIN_HAS_SPX_TRUE COIN_HAS_SPX_FALSE XPR_LIBS XPR_CFLAGS XPR_DATA COIN_HAS_XPR_TRUE COIN_HAS_XPR_FALSE ASL_LIBS ASL_CFLAGS ASL_DATA COIN_HAS_ASL_TRUE COIN_HAS_ASL_FALSE CBC_BUILD_CBC_GENERIC_TRUE CBC_BUILD_CBC_GENERIC_FALSE OSICBC_DFLT_SOLVER_CLP_TRUE OSICBC_DFLT_SOLVER_CLP_FALSE OSICBC_DFLT_SOLVER_CPX_TRUE OSICBC_DFLT_SOLVER_CPX_FALSE OSICBC_DFLT_SOLVER_DYLP_TRUE OSICBC_DFLT_SOLVER_DYLP_FALSE OSICBC_DFLT_SOLVER_GLPK_TRUE OSICBC_DFLT_SOLVER_GLPK_FALSE OSICBC_DFLT_SOLVER_GRB_TRUE OSICBC_DFLT_SOLVER_GRB_FALSE OSICBC_DFLT_SOLVER_MSK_TRUE OSICBC_DFLT_SOLVER_MSK_FALSE OSICBC_DFLT_SOLVER_SPX_TRUE OSICBC_DFLT_SOLVER_SPX_FALSE OSICBC_DFLT_SOLVER_SYM_TRUE OSICBC_DFLT_SOLVER_SYM_FALSE OSICBC_DFLT_SOLVER_VOL_TRUE OSICBC_DFLT_SOLVER_VOL_FALSE OSICBC_DFLT_SOLVER_XPR_TRUE OSICBC_DFLT_SOLVER_XPR_FALSE coin_have_doxygen coin_doxy_usedot coin_doxy_tagname coin_doxy_logname coin_doxy_tagfiles coin_doxy_excludes LIBEXT VPATH_DISTCLEANFILES ABSBUILDDIR LIBOBJS LTLIBOBJS'
 ac_subst_files=''
 
 # Initialize some variables set by options.
@@ -1111,55 +1111,56 @@ Optional Packages:
                           include additional configurations [automatic]
   --with-coin-instdir     prefix of installation directory for precompiled
                           COIN packages
-  --with-coindepend-lib linker flags for using module CoinDepend
+  --with-coindepend-lib linker flags for using package CoinDepend
   --with-coindepend-incdir
-                          directory with header files for using module
+                          directory with header files for using package
                           CoinDepend
   --with-coindepend-datadir
-                          directory with data files for using module
+                          directory with data files for using package
                           CoinDepend
-  --with-clp-lib linker flags for using module Clp
-  --with-clp-incdir directory with header files for using module Clp
-  --with-clp-datadir directory with data files for using module Clp
-  --with-dylp-lib linker flags for using module DyLP
-  --with-dylp-incdir directory with header files for using module DyLP
-  --with-dylp-datadir directory with data files for using module DyLP
-  --with-vol-lib linker flags for using module Vol
-  --with-vol-incdir directory with header files for using module Vol
-  --with-vol-datadir directory with data files for using module Vol
-  --with-ositests-lib linker flags for using module OsiTests
-  --with-ositests-incdir directory with header files for using module OsiTests
-  --with-ositests-datadir directory with data files for using module OsiTests
-  --with-sample-lib linker flags for using module Sample
-  --with-sample-incdir directory with header files for using module Sample
-  --with-sample-datadir directory with data files for using module Sample
-  --with-netlib-lib linker flags for using module Netlib
-  --with-netlib-incdir directory with header files for using module Netlib
-  --with-netlib-datadir directory with data files for using module Netlib
-  --with-miplib3-lib linker flags for using module Miplib3
-  --with-miplib3-incdir directory with header files for using module Miplib3
-  --with-miplib3-datadir directory with data files for using module Miplib3
-  --with-cpx-lib linker flags for using module Cpx
-  --with-cpx-incdir directory with header files for using module Cpx
-  --with-cpx-datadir directory with data files for using module Cpx
-  --with-glpk-lib linker flags for using module Glpk
-  --with-glpk-incdir directory with header files for using module Glpk
-  --with-glpk-datadir directory with data files for using module Glpk
-  --with-grb-lib linker flags for using module Grb
-  --with-grb-incdir directory with header files for using module Grb
-  --with-grb-datadir directory with data files for using module Grb
-  --with-msk-lib linker flags for using module Msk
-  --with-msk-incdir directory with header files for using module Msk
-  --with-msk-datadir directory with data files for using module Msk
-  --with-spx-lib linker flags for using module Spx
-  --with-spx-incdir directory with header files for using module Spx
-  --with-spx-datadir directory with data files for using module Spx
-  --with-xpr-lib linker flags for using module Xpr
-  --with-xpr-incdir directory with header files for using module Xpr
-  --with-xpr-datadir directory with data files for using module Xpr
-  --with-asl-lib linker flags for using module ASL
-  --with-asl-incdir directory with header files for using module ASL
-  --with-asl-datadir directory with data files for using module ASL
+  --with-clp-lib linker flags for using package Clp
+  --with-clp-incdir directory with header files for using package Clp
+  --with-clp-datadir directory with data files for using package Clp
+  --with-ositests-lib linker flags for using package OsiTests
+  --with-ositests-incdir directory with header files for using package
+                          OsiTests
+  --with-ositests-datadir directory with data files for using package OsiTests
+  --with-sample-lib linker flags for using package Sample
+  --with-sample-incdir directory with header files for using package Sample
+  --with-sample-datadir directory with data files for using package Sample
+  --with-netlib-lib linker flags for using package Netlib
+  --with-netlib-incdir directory with header files for using package Netlib
+  --with-netlib-datadir directory with data files for using package Netlib
+  --with-miplib3-lib linker flags for using package Miplib3
+  --with-miplib3-incdir directory with header files for using package Miplib3
+  --with-miplib3-datadir directory with data files for using package Miplib3
+  --with-dylp-lib linker flags for using package DyLP
+  --with-dylp-incdir directory with header files for using package DyLP
+  --with-dylp-datadir directory with data files for using package DyLP
+  --with-vol-lib linker flags for using package Vol
+  --with-vol-incdir directory with header files for using package Vol
+  --with-vol-datadir directory with data files for using package Vol
+  --with-cpx-lib linker flags for using package Cpx
+  --with-cpx-incdir directory with header files for using package Cpx
+  --with-cpx-datadir directory with data files for using package Cpx
+  --with-glpk-lib linker flags for using package Glpk
+  --with-glpk-incdir directory with header files for using package Glpk
+  --with-glpk-datadir directory with data files for using package Glpk
+  --with-grb-lib linker flags for using package Grb
+  --with-grb-incdir directory with header files for using package Grb
+  --with-grb-datadir directory with data files for using package Grb
+  --with-msk-lib linker flags for using package Msk
+  --with-msk-incdir directory with header files for using package Msk
+  --with-msk-datadir directory with data files for using package Msk
+  --with-spx-lib linker flags for using package Spx
+  --with-spx-incdir directory with header files for using package Spx
+  --with-spx-datadir directory with data files for using package Spx
+  --with-xpr-lib linker flags for using package Xpr
+  --with-xpr-incdir directory with header files for using package Xpr
+  --with-xpr-datadir directory with data files for using package Xpr
+  --with-asl-lib linker flags for using package ASL
+  --with-asl-incdir directory with header files for using package ASL
+  --with-asl-datadir directory with data files for using package ASL
   --with-cbc-generic      specify whether to build cbc-generic (default: no)
   --with-cbc-generic-solver
                           specify default solver for cbc-generic in lower case
@@ -1776,7 +1777,9 @@ _ACEOF
 
 fi
 
-# Set the project's SVN revision number
+# Set the project's SVN revision number. The complicated sed expression
+# (made worse by quadrigraphs) ensures that things like 4123:4168MS end up
+# as a single number.
 # Extract the first word of "svnversion", so it can be a program name with args.
 set dummy svnversion; ac_word=$2
 echo "$as_me:$LINENO: checking for $ac_word" >&5
@@ -1815,11 +1818,12 @@ fi
 
 if test "x$have_svnversion" = xyes && test "xCbc" != x; then
 
-  CBC_SVN_REV=`cd $srcdir/$coin_has_cbc ; svnversion`
+  svn_rev_tmp=`cd $srcdir/$coin_has_cbc ; svnversion`
+  CBC_SVN_REV=`echo $svn_rev_tmp | sed -n -e 's/^[0-9]*://' -e 's/\([0-9]\)[^0-9]*$/\1/p'`
   if test $CBC_SVN_REV != exported; then
 
 cat >>confdefs.h <<_ACEOF
-#define CBC_SVN_REV "$CBC_SVN_REV"
+#define CBC_SVN_REV $CBC_SVN_REV
 _ACEOF
 
   fi
@@ -5913,7 +5917,7 @@ ia64-*-hpux*)
   ;;
 *-*-irix6*)
   # Find out which ABI we are using.
-  echo '#line 5916 "configure"' > conftest.$ac_ext
+  echo '#line 5920 "configure"' > conftest.$ac_ext
   if { (eval echo "$as_me:$LINENO: \"$ac_compile\"") >&5
   (eval $ac_compile) 2>&5
   ac_status=$?
@@ -7047,7 +7051,7 @@ fi
 
 
 # Provide some information about the compiler.
-echo "$as_me:7050:" \
+echo "$as_me:7054:" \
      "checking for Fortran 77 compiler version" >&5
 ac_compiler=`set X $ac_compile; echo $2`
 { (eval echo "$as_me:$LINENO: \"$ac_compiler --version </dev/null >&5\"") >&5
@@ -8114,11 +8118,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:8117: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:8121: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:8121: \$? = $ac_status" >&5
+   echo "$as_me:8125: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -8382,11 +8386,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:8385: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:8389: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:8389: \$? = $ac_status" >&5
+   echo "$as_me:8393: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -8486,11 +8490,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:8489: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:8493: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:8493: \$? = $ac_status" >&5
+   echo "$as_me:8497: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -10831,7 +10835,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<EOF
-#line 10834 "configure"
+#line 10838 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -10931,7 +10935,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<EOF
-#line 10934 "configure"
+#line 10938 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -13275,11 +13279,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:13278: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:13282: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:13282: \$? = $ac_status" >&5
+   echo "$as_me:13286: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -13379,11 +13383,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:13382: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:13386: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:13386: \$? = $ac_status" >&5
+   echo "$as_me:13390: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -14949,11 +14953,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:14952: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:14956: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:14956: \$? = $ac_status" >&5
+   echo "$as_me:14960: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -15053,11 +15057,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:15056: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:15060: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:15060: \$? = $ac_status" >&5
+   echo "$as_me:15064: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -17260,11 +17264,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:17263: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:17267: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:17267: \$? = $ac_status" >&5
+   echo "$as_me:17271: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -17528,11 +17532,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:17531: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:17535: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:17535: \$? = $ac_status" >&5
+   echo "$as_me:17539: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -17632,11 +17636,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:17635: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:17639: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:17639: \$? = $ac_status" >&5
+   echo "$as_me:17643: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -20724,12 +20728,12 @@ fi
 
 
 
-echo "$as_me:$LINENO: checking for COIN-OR module CoinDepend" >&5
-echo $ECHO_N "checking for COIN-OR module CoinDepend... $ECHO_C" >&6
+echo "$as_me:$LINENO: checking for COIN-OR package CoinDepend" >&5
+echo $ECHO_N "checking for COIN-OR package CoinDepend... $ECHO_C" >&6
 
 coin_has_coindepend=notGiven
 
-# check if user wants to skip module in any case
+# check if user wants to skip package in any case
 if test x"$COIN_SKIP_PROJECTS" != x; then
   for dir in $COIN_SKIP_PROJECTS; do
     if test $dir = "CoinDepend"; then
@@ -20746,6 +20750,14 @@ COINDEPEND_DATA=
 
 
 
+
+
+
+
+
+
+
+
 #check if user provided LIBS, CFLAGS, or DATA for module
 if test $coin_has_coindepend != skipping; then
 
@@ -20755,7 +20767,13 @@ if test "${with_coindepend_lib+set}" = set; then
   withval="$with_coindepend_lib"
   coin_has_coindepend=yes
        COINDEPEND_LIBS="$withval"
-       PCADDLIBS="$withval $PCADDLIBS"
+
+         CBCLIB_PCLIBS="$withval $CBCLIB_PCLIBS"
+         CBCLIB_LIBS="$withval $CBCLIB_LIBS"
+
+         CBCGENERIC_PCLIBS="$withval $CBCGENERIC_PCLIBS"
+         CBCGENERIC_LIBS="$withval $CBCGENERIC_LIBS"
+
 
 fi;
 
@@ -20765,6 +20783,10 @@ if test "${with_coindepend_incdir+set}" = set; then
   withval="$with_coindepend_incdir"
   coin_has_coindepend=yes
      COINDEPEND_CFLAGS="-I`${CYGPATH_W} $withval`"
+     CBCLIB_CFLAGS="$withval $CBCLIB_CFLAGS"
+     CBCGENERIC_CFLAGS="$withval $CBCGENERIC_CFLAGS"
+
+
 fi;
 
 
@@ -20789,9 +20811,9 @@ if test $coin_has_coindepend = notGiven; then
 
 
 if test -n "$PKG_CONFIG" ; then
-  if $PKG_CONFIG --exists "coinutils = trunk osi cgl"; then
-    COINDEPEND_VERSIONS="`$PKG_CONFIG --modversion coinutils = trunk osi cgl 2>/dev/null`"
-     cflags=`$PKG_CONFIG --cflags "coinutils = trunk osi cgl" 2>/dev/null`
+  if $PKG_CONFIG --exists "cgl osi coinutils = trunk"; then
+    COINDEPEND_VERSIONS="`$PKG_CONFIG --modversion cgl osi coinutils = trunk 2>/dev/null`"
+     cflags=`$PKG_CONFIG --cflags "cgl osi coinutils = trunk" 2>/dev/null`
     # pkg-config cannot handle spaces, so CYGPATH_W cannot be put into .pc files
 	# thus, we modify the cflags extracted from pkg-config by putting CYGPATH_W behind -I's
 	# but only do this if is not trivial
@@ -20800,16 +20822,18 @@ if test -n "$PKG_CONFIG" ; then
 	  cflags=`echo $cflags | sed -e 's/-I\([^ ]*\)/-I\`${CYGPATH_W} \1\`/g'`
 	fi
     COINDEPEND_CFLAGS="$cflags"
-    COINDEPEND_LIBS=`$PKG_CONFIG --libs "coinutils = trunk osi cgl" 2>/dev/null`
-    COINDEPEND_DATA=`$PKG_CONFIG --variable=datadir "coinutils = trunk osi cgl" 2>/dev/null`
+    COINDEPEND_LIBS=`$PKG_CONFIG --libs "cgl osi coinutils = trunk" 2>/dev/null`
+    COINDEPEND_DATA=`$PKG_CONFIG --variable=datadir "cgl osi coinutils = trunk" 2>/dev/null`
      coin_has_coindepend=yes
         echo "$as_me:$LINENO: result: yes: $COINDEPEND_VERSIONS" >&5
 echo "${ECHO_T}yes: $COINDEPEND_VERSIONS" >&6
-        REQUIREDPACKAGES="coinutils = trunk osi cgl $REQUIREDPACKAGES"
+        CBCLIB_PCREQUIRES="cgl osi coinutils = trunk $CBCLIB_PCREQUIRES"
+        CBCGENERIC_PCREQUIRES="cgl osi coinutils = trunk $CBCGENERIC_PCREQUIRES"
+
 
 
   else
-    COINDEPEND_PKG_ERRORS=`$PKG_CONFIG $pkg_short_errors --errors-to-stdout --print-errors coinutils = trunk osi cgl`
+    COINDEPEND_PKG_ERRORS=`$PKG_CONFIG $pkg_short_errors --errors-to-stdout --print-errors cgl osi coinutils = trunk`
       coin_has_coindepend=notGiven
         echo "$as_me:$LINENO: result: not given: $COINDEPEND_PKG_ERRORS" >&5
 echo "${ECHO_T}not given: $COINDEPEND_PKG_ERRORS" >&6
@@ -20827,21 +20851,29 @@ fi
     # reset PKG_CONFIG_PATH variable
     PKG_CONFIG_PATH="$coin_save_PKG_CONFIG_PATH"
     export PKG_CONFIG_PATH
+
+    # augment X_CFLAGS and X_LIBS for each build target X in CbcLib CbcGeneric
+
+      CBCLIB_CFLAGS="$COINDEPEND_CFLAGS $CBCLIB_CFLAGS"
+      CBCLIB_LIBS="$COINDEPEND_LIBS $CBCLIB_LIBS"
+
+      CBCGENERIC_CFLAGS="$COINDEPEND_CFLAGS $CBCGENERIC_CFLAGS"
+      CBCGENERIC_LIBS="$COINDEPEND_LIBS $CBCGENERIC_LIBS"
+
   else
     echo "$as_me:$LINENO: result: skipped check via pkg-config, redirect to fallback" >&5
 echo "${ECHO_T}skipped check via pkg-config, redirect to fallback" >&6
 
-echo "$as_me:$LINENO: checking for COIN-OR module CoinDepend (fallback)" >&5
-echo $ECHO_N "checking for COIN-OR module CoinDepend (fallback)... $ECHO_C" >&6
+echo "$as_me:$LINENO: checking for COIN-OR package CoinDepend (fallback)" >&5
+echo $ECHO_N "checking for COIN-OR package CoinDepend (fallback)... $ECHO_C" >&6
 
 coin_has_coindepend=notGiven
 COINDEPEND_LIBS=
 COINDEPEND_CFLAGS=
 COINDEPEND_DATA=
 
-
-# initial list of dependencies is "coinutils = trunk osi cgl", but we need to filter out version number specifications (= x, <= x, >= x)
-projtoprocess="coinutils  osi cgl"
+# initial list of dependencies is "cgl osi coinutils = trunk", but we need to filter out version number specifications (= x, <= x, >= x)
+projtoprocess="cgl osi coinutils "
 projprocessed=""
 
 while test $coin_has_coindepend = notGiven ; do
@@ -20914,31 +20946,51 @@ echo "${ECHO_T}no, dependency $proj not available" >&6
 
   projtoprocess="$nextprojtoprocess"
 
+  # if there are no more projects to search for, finish up
   if test "x$projtoprocess" = x ; then
     coin_has_coindepend=yes
     echo "$as_me:$LINENO: result: yes, dependencies are$projprocessed" >&5
 echo "${ECHO_T}yes, dependencies are$projprocessed" >&6
-
-    REQUIREDPACKAGES="coinutils = trunk osi cgl $REQUIREDPACKAGES"
 
 cat >>confdefs.h <<\_ACEOF
 #define COIN_HAS_COINDEPEND 1
 _ACEOF
 
 
+
+      CBCLIB_PCREQUIRES="cgl osi coinutils = trunk $CBCLIB_PCREQUIRES"
+      CBCLIB_CFLAGS="$COINDEPEND_CFLAGS $CBCLIB_CFLAGS"
+      CBCLIB_LIBS="$COINDEPEND_LIBS $CBCLIB_LIBS"
+
+      CBCGENERIC_PCREQUIRES="cgl osi coinutils = trunk $CBCGENERIC_PCREQUIRES"
+      CBCGENERIC_CFLAGS="$COINDEPEND_CFLAGS $CBCGENERIC_CFLAGS"
+      CBCGENERIC_LIBS="$COINDEPEND_LIBS $CBCGENERIC_LIBS"
+
+
     if test 1 = 0 ; then  #change this test to enable a bit of debugging output
-    if test -n "$COINDEPEND_CFLAGS" ; then
-      { echo "$as_me:$LINENO: CoinDepend CFLAGS are $COINDEPEND_CFLAGS" >&5
+      if test -n "$COINDEPEND_CFLAGS" ; then
+        { echo "$as_me:$LINENO: CoinDepend CFLAGS are $COINDEPEND_CFLAGS" >&5
 echo "$as_me: CoinDepend CFLAGS are $COINDEPEND_CFLAGS" >&6;}
-    fi
-    if test -n "$COINDEPEND_LIBS" ; then
-      { echo "$as_me:$LINENO: CoinDepend LIBS   are $COINDEPEND_LIBS" >&5
+      fi
+      if test -n "$COINDEPEND_LIBS" ; then
+        { echo "$as_me:$LINENO: CoinDepend LIBS   are $COINDEPEND_LIBS" >&5
 echo "$as_me: CoinDepend LIBS   are $COINDEPEND_LIBS" >&6;}
-    fi
-    if test -n "$COINDEPEND_DATA" ; then
-      { echo "$as_me:$LINENO: CoinDepend DATA   is  $COINDEPEND_DATA" >&5
+      fi
+      if test -n "$COINDEPEND_DATA" ; then
+        { echo "$as_me:$LINENO: CoinDepend DATA   is  $COINDEPEND_DATA" >&5
 echo "$as_me: CoinDepend DATA   is  $COINDEPEND_DATA" >&6;}
-    fi
+      fi
+
+        { echo "$as_me:$LINENO: CbcLib CFLAGS are $CBCLIB_CFLAGS" >&5
+echo "$as_me: CbcLib CFLAGS are $CBCLIB_CFLAGS" >&6;}
+        { echo "$as_me:$LINENO: CbcLib LIBS   are $CBCLIB_LIBS" >&5
+echo "$as_me: CbcLib LIBS   are $CBCLIB_LIBS" >&6;}
+
+        { echo "$as_me:$LINENO: CbcGeneric CFLAGS are $CBCGENERIC_CFLAGS" >&5
+echo "$as_me: CbcGeneric CFLAGS are $CBCGENERIC_CFLAGS" >&6;}
+        { echo "$as_me:$LINENO: CbcGeneric LIBS   are $CBCGENERIC_LIBS" >&5
+echo "$as_me: CbcGeneric LIBS   are $CBCGENERIC_LIBS" >&6;}
+
     fi
   fi
 done
@@ -20965,25 +21017,41 @@ fi
 
 if test $coin_has_coindepend != skipping &&
    test $coin_has_coindepend != notGiven ; then
-  if test 0 = 1 ; then  #change this test to enable a bit of debugging output
-  if test -n "$COINDEPEND_CFLAGS" ; then
-    { echo "$as_me:$LINENO: CoinDepend CFLAGS are $COINDEPEND_CFLAGS" >&5
-echo "$as_me: CoinDepend CFLAGS are $COINDEPEND_CFLAGS" >&6;}
-  fi
-  if test -n "$COINDEPEND_LIBS" ; then
-    { echo "$as_me:$LINENO: CoinDepend LIBS   are $COINDEPEND_LIBS" >&5
-echo "$as_me: CoinDepend LIBS   are $COINDEPEND_LIBS" >&6;}
-  fi
-  if test -n "$COINDEPEND_DATA" ; then
-    { echo "$as_me:$LINENO: CoinDepend DATA   is  $COINDEPEND_DATA" >&5
-echo "$as_me: CoinDepend DATA   is  $COINDEPEND_DATA" >&6;}
-  fi
-  fi
 
 cat >>confdefs.h <<\_ACEOF
 #define COIN_HAS_COINDEPEND 1
 _ACEOF
 
+
+  if test 1 = 0 ; then  #change this test to enable a bit of debugging output
+    if test -n "$COINDEPEND_CFLAGS" ; then
+      { echo "$as_me:$LINENO: CoinDepend CFLAGS are $COINDEPEND_CFLAGS" >&5
+echo "$as_me: CoinDepend CFLAGS are $COINDEPEND_CFLAGS" >&6;}
+    fi
+    if test -n "$COINDEPEND_LIBS" ; then
+      { echo "$as_me:$LINENO: CoinDepend LIBS   are $COINDEPEND_LIBS" >&5
+echo "$as_me: CoinDepend LIBS   are $COINDEPEND_LIBS" >&6;}
+    fi
+    if test -n "$COINDEPEND_DATA" ; then
+      { echo "$as_me:$LINENO: CoinDepend DATA   is  $COINDEPEND_DATA" >&5
+echo "$as_me: CoinDepend DATA   is  $COINDEPEND_DATA" >&6;}
+    fi
+    if test -n "$COINDEPEND_CFLAGS" ; then
+      { echo "$as_me:$LINENO: CoinDepend CFLAGS are $COINDEPEND_CFLAGS" >&5
+echo "$as_me: CoinDepend CFLAGS are $COINDEPEND_CFLAGS" >&6;}
+    fi
+
+      { echo "$as_me:$LINENO: CbcLib CFLAGS are $CBCLIB_CFLAGS" >&5
+echo "$as_me: CbcLib CFLAGS are $CBCLIB_CFLAGS" >&6;}
+      { echo "$as_me:$LINENO: CbcLib LIBS   are $CBCLIB_LIBS" >&5
+echo "$as_me: CbcLib LIBS   are $CBCLIB_LIBS" >&6;}
+
+      { echo "$as_me:$LINENO: CbcGeneric CFLAGS are $CBCGENERIC_CFLAGS" >&5
+echo "$as_me: CbcGeneric CFLAGS are $CBCGENERIC_CFLAGS" >&6;}
+      { echo "$as_me:$LINENO: CbcGeneric LIBS   are $CBCGENERIC_LIBS" >&5
+echo "$as_me: CbcGeneric LIBS   are $CBCGENERIC_LIBS" >&6;}
+
+  fi
 fi
 
 # Define the Makefile conditional
@@ -21009,12 +21077,12 @@ fi
 # Clp and OsiClp are inseparable here.
 
 
-echo "$as_me:$LINENO: checking for COIN-OR module Clp" >&5
-echo $ECHO_N "checking for COIN-OR module Clp... $ECHO_C" >&6
+echo "$as_me:$LINENO: checking for COIN-OR package Clp" >&5
+echo $ECHO_N "checking for COIN-OR package Clp... $ECHO_C" >&6
 
 coin_has_clp=notGiven
 
-# check if user wants to skip module in any case
+# check if user wants to skip package in any case
 if test x"$COIN_SKIP_PROJECTS" != x; then
   for dir in $COIN_SKIP_PROJECTS; do
     if test $dir = "Clp"; then
@@ -21031,6 +21099,14 @@ CLP_DATA=
 
 
 
+
+
+
+
+
+
+
+
 #check if user provided LIBS, CFLAGS, or DATA for module
 if test $coin_has_clp != skipping; then
 
@@ -21040,7 +21116,13 @@ if test "${with_clp_lib+set}" = set; then
   withval="$with_clp_lib"
   coin_has_clp=yes
        CLP_LIBS="$withval"
-       PCADDLIBS="$withval $PCADDLIBS"
+
+         CBCLIB_PCLIBS="$withval $CBCLIB_PCLIBS"
+         CBCLIB_LIBS="$withval $CBCLIB_LIBS"
+
+         CBCGENERIC_PCLIBS="$withval $CBCGENERIC_PCLIBS"
+         CBCGENERIC_LIBS="$withval $CBCGENERIC_LIBS"
+
 
 fi;
 
@@ -21050,6 +21132,10 @@ if test "${with_clp_incdir+set}" = set; then
   withval="$with_clp_incdir"
   coin_has_clp=yes
      CLP_CFLAGS="-I`${CYGPATH_W} $withval`"
+     CBCLIB_CFLAGS="$withval $CBCLIB_CFLAGS"
+     CBCGENERIC_CFLAGS="$withval $CBCGENERIC_CFLAGS"
+
+
 fi;
 
 
@@ -21090,7 +21176,9 @@ if test -n "$PKG_CONFIG" ; then
      coin_has_clp=yes
         echo "$as_me:$LINENO: result: yes: $CLP_VERSIONS" >&5
 echo "${ECHO_T}yes: $CLP_VERSIONS" >&6
-        REQUIREDPACKAGES="osi-clp $REQUIREDPACKAGES"
+        CBCLIB_PCREQUIRES="osi-clp $CBCLIB_PCREQUIRES"
+        CBCGENERIC_PCREQUIRES="osi-clp $CBCGENERIC_PCREQUIRES"
+
 
 
   else
@@ -21112,18 +21200,26 @@ fi
     # reset PKG_CONFIG_PATH variable
     PKG_CONFIG_PATH="$coin_save_PKG_CONFIG_PATH"
     export PKG_CONFIG_PATH
+
+    # augment X_CFLAGS and X_LIBS for each build target X in CbcLib CbcGeneric
+
+      CBCLIB_CFLAGS="$CLP_CFLAGS $CBCLIB_CFLAGS"
+      CBCLIB_LIBS="$CLP_LIBS $CBCLIB_LIBS"
+
+      CBCGENERIC_CFLAGS="$CLP_CFLAGS $CBCGENERIC_CFLAGS"
+      CBCGENERIC_LIBS="$CLP_LIBS $CBCGENERIC_LIBS"
+
   else
     echo "$as_me:$LINENO: result: skipped check via pkg-config, redirect to fallback" >&5
 echo "${ECHO_T}skipped check via pkg-config, redirect to fallback" >&6
 
-echo "$as_me:$LINENO: checking for COIN-OR module Clp (fallback)" >&5
-echo $ECHO_N "checking for COIN-OR module Clp (fallback)... $ECHO_C" >&6
+echo "$as_me:$LINENO: checking for COIN-OR package Clp (fallback)" >&5
+echo $ECHO_N "checking for COIN-OR package Clp (fallback)... $ECHO_C" >&6
 
 coin_has_clp=notGiven
 CLP_LIBS=
 CLP_CFLAGS=
 CLP_DATA=
-
 
 # initial list of dependencies is "osi-clp", but we need to filter out version number specifications (= x, <= x, >= x)
 projtoprocess="osi-clp"
@@ -21199,31 +21295,51 @@ echo "${ECHO_T}no, dependency $proj not available" >&6
 
   projtoprocess="$nextprojtoprocess"
 
+  # if there are no more projects to search for, finish up
   if test "x$projtoprocess" = x ; then
     coin_has_clp=yes
     echo "$as_me:$LINENO: result: yes, dependencies are$projprocessed" >&5
 echo "${ECHO_T}yes, dependencies are$projprocessed" >&6
-
-    REQUIREDPACKAGES="osi-clp $REQUIREDPACKAGES"
 
 cat >>confdefs.h <<\_ACEOF
 #define COIN_HAS_CLP 1
 _ACEOF
 
 
+
+      CBCLIB_PCREQUIRES="osi-clp $CBCLIB_PCREQUIRES"
+      CBCLIB_CFLAGS="$CLP_CFLAGS $CBCLIB_CFLAGS"
+      CBCLIB_LIBS="$CLP_LIBS $CBCLIB_LIBS"
+
+      CBCGENERIC_PCREQUIRES="osi-clp $CBCGENERIC_PCREQUIRES"
+      CBCGENERIC_CFLAGS="$CLP_CFLAGS $CBCGENERIC_CFLAGS"
+      CBCGENERIC_LIBS="$CLP_LIBS $CBCGENERIC_LIBS"
+
+
     if test 1 = 0 ; then  #change this test to enable a bit of debugging output
-    if test -n "$CLP_CFLAGS" ; then
-      { echo "$as_me:$LINENO: Clp CFLAGS are $CLP_CFLAGS" >&5
+      if test -n "$CLP_CFLAGS" ; then
+        { echo "$as_me:$LINENO: Clp CFLAGS are $CLP_CFLAGS" >&5
 echo "$as_me: Clp CFLAGS are $CLP_CFLAGS" >&6;}
-    fi
-    if test -n "$CLP_LIBS" ; then
-      { echo "$as_me:$LINENO: Clp LIBS   are $CLP_LIBS" >&5
+      fi
+      if test -n "$CLP_LIBS" ; then
+        { echo "$as_me:$LINENO: Clp LIBS   are $CLP_LIBS" >&5
 echo "$as_me: Clp LIBS   are $CLP_LIBS" >&6;}
-    fi
-    if test -n "$CLP_DATA" ; then
-      { echo "$as_me:$LINENO: Clp DATA   is  $CLP_DATA" >&5
+      fi
+      if test -n "$CLP_DATA" ; then
+        { echo "$as_me:$LINENO: Clp DATA   is  $CLP_DATA" >&5
 echo "$as_me: Clp DATA   is  $CLP_DATA" >&6;}
-    fi
+      fi
+
+        { echo "$as_me:$LINENO: CbcLib CFLAGS are $CBCLIB_CFLAGS" >&5
+echo "$as_me: CbcLib CFLAGS are $CBCLIB_CFLAGS" >&6;}
+        { echo "$as_me:$LINENO: CbcLib LIBS   are $CBCLIB_LIBS" >&5
+echo "$as_me: CbcLib LIBS   are $CBCLIB_LIBS" >&6;}
+
+        { echo "$as_me:$LINENO: CbcGeneric CFLAGS are $CBCGENERIC_CFLAGS" >&5
+echo "$as_me: CbcGeneric CFLAGS are $CBCGENERIC_CFLAGS" >&6;}
+        { echo "$as_me:$LINENO: CbcGeneric LIBS   are $CBCGENERIC_LIBS" >&5
+echo "$as_me: CbcGeneric LIBS   are $CBCGENERIC_LIBS" >&6;}
+
     fi
   fi
 done
@@ -21250,25 +21366,41 @@ fi
 
 if test $coin_has_clp != skipping &&
    test $coin_has_clp != notGiven ; then
-  if test 0 = 1 ; then  #change this test to enable a bit of debugging output
-  if test -n "$CLP_CFLAGS" ; then
-    { echo "$as_me:$LINENO: Clp CFLAGS are $CLP_CFLAGS" >&5
-echo "$as_me: Clp CFLAGS are $CLP_CFLAGS" >&6;}
-  fi
-  if test -n "$CLP_LIBS" ; then
-    { echo "$as_me:$LINENO: Clp LIBS   are $CLP_LIBS" >&5
-echo "$as_me: Clp LIBS   are $CLP_LIBS" >&6;}
-  fi
-  if test -n "$CLP_DATA" ; then
-    { echo "$as_me:$LINENO: Clp DATA   is  $CLP_DATA" >&5
-echo "$as_me: Clp DATA   is  $CLP_DATA" >&6;}
-  fi
-  fi
 
 cat >>confdefs.h <<\_ACEOF
 #define COIN_HAS_CLP 1
 _ACEOF
 
+
+  if test 1 = 0 ; then  #change this test to enable a bit of debugging output
+    if test -n "$CLP_CFLAGS" ; then
+      { echo "$as_me:$LINENO: Clp CFLAGS are $CLP_CFLAGS" >&5
+echo "$as_me: Clp CFLAGS are $CLP_CFLAGS" >&6;}
+    fi
+    if test -n "$CLP_LIBS" ; then
+      { echo "$as_me:$LINENO: Clp LIBS   are $CLP_LIBS" >&5
+echo "$as_me: Clp LIBS   are $CLP_LIBS" >&6;}
+    fi
+    if test -n "$CLP_DATA" ; then
+      { echo "$as_me:$LINENO: Clp DATA   is  $CLP_DATA" >&5
+echo "$as_me: Clp DATA   is  $CLP_DATA" >&6;}
+    fi
+    if test -n "$CLP_CFLAGS" ; then
+      { echo "$as_me:$LINENO: Clp CFLAGS are $CLP_CFLAGS" >&5
+echo "$as_me: Clp CFLAGS are $CLP_CFLAGS" >&6;}
+    fi
+
+      { echo "$as_me:$LINENO: CbcLib CFLAGS are $CBCLIB_CFLAGS" >&5
+echo "$as_me: CbcLib CFLAGS are $CBCLIB_CFLAGS" >&6;}
+      { echo "$as_me:$LINENO: CbcLib LIBS   are $CBCLIB_LIBS" >&5
+echo "$as_me: CbcLib LIBS   are $CBCLIB_LIBS" >&6;}
+
+      { echo "$as_me:$LINENO: CbcGeneric CFLAGS are $CBCGENERIC_CFLAGS" >&5
+echo "$as_me: CbcGeneric CFLAGS are $CBCGENERIC_CFLAGS" >&6;}
+      { echo "$as_me:$LINENO: CbcGeneric LIBS   are $CBCGENERIC_LIBS" >&5
+echo "$as_me: CbcGeneric LIBS   are $CBCGENERIC_LIBS" >&6;}
+
+  fi
 fi
 
 # Define the Makefile conditional
@@ -21291,569 +21423,15 @@ echo "$as_me: error: \"Required package Clp unavailable.\"" >&2;}
    { (exit 1); exit 1; }; }
 fi
 
-# The rest are not so critical, so we don't put in quite so much effort.
+# The rest are not required for linking against Cbc
 
 
-echo "$as_me:$LINENO: checking for COIN-OR module DyLP" >&5
-echo $ECHO_N "checking for COIN-OR module DyLP... $ECHO_C" >&6
-
-coin_has_dylp=notGiven
-
-# check if user wants to skip module in any case
-if test x"$COIN_SKIP_PROJECTS" != x; then
-  for dir in $COIN_SKIP_PROJECTS; do
-    if test $dir = "DyLP"; then
-      coin_has_dylp=skipping
-    fi
-  done
-fi
-
-DYLP_LIBS=
-DYLP_CFLAGS=
-DYLP_DATA=
-
-
-
-
-
-#check if user provided LIBS, CFLAGS, or DATA for module
-if test $coin_has_dylp != skipping; then
-
-
-# Check whether --with-m4_tolower(DyLP)-lib or --without-m4_tolower(DyLP)-lib was given.
-if test "${with_dylp_lib+set}" = set; then
-  withval="$with_dylp_lib"
-  coin_has_dylp=yes
-       DYLP_LIBS="$withval"
-       PCADDLIBS="$withval $PCADDLIBS"
-
-fi;
-
-
-# Check whether --with-m4_tolower(DyLP)-incdir or --without-m4_tolower(DyLP)-incdir was given.
-if test "${with_dylp_incdir+set}" = set; then
-  withval="$with_dylp_incdir"
-  coin_has_dylp=yes
-     DYLP_CFLAGS="-I`${CYGPATH_W} $withval`"
-fi;
-
-
-# Check whether --with-m4_tolower(DyLP)-datadir or --without-m4_tolower(DyLP)-datadir was given.
-if test "${with_dylp_datadir+set}" = set; then
-  withval="$with_dylp_datadir"
-  coin_has_dylp=yes
-     DYLP_DATA="$withval"
-fi;
-fi
-
-if test $coin_has_dylp = notGiven; then
-  if test -n "$PKG_CONFIG" ; then
-    # set search path for pkg-config
-    # need to export variable to be sure that the following pkg-config gets these values
-    coin_save_PKG_CONFIG_PATH="$PKG_CONFIG_PATH"
-    PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH:$COIN_PKG_CONFIG_PATH_UNINSTALLED"
-    export PKG_CONFIG_PATH
-
-    # let pkg-config do it's magic
-
-
-
-if test -n "$PKG_CONFIG" ; then
-  if $PKG_CONFIG --exists "osi-dylp"; then
-    DYLP_VERSIONS="`$PKG_CONFIG --modversion osi-dylp 2>/dev/null`"
-     cflags=`$PKG_CONFIG --cflags "osi-dylp" 2>/dev/null`
-    # pkg-config cannot handle spaces, so CYGPATH_W cannot be put into .pc files
-	# thus, we modify the cflags extracted from pkg-config by putting CYGPATH_W behind -I's
-	# but only do this if is not trivial
-    if test "$CYGPATH_W" != "echo" ; then
-      # need to put into brackets since otherwise autoconf replaces the brackets in the sed command
-	  cflags=`echo $cflags | sed -e 's/-I\([^ ]*\)/-I\`${CYGPATH_W} \1\`/g'`
-	fi
-    DYLP_CFLAGS="$cflags"
-    DYLP_LIBS=`$PKG_CONFIG --libs "osi-dylp" 2>/dev/null`
-    DYLP_DATA=`$PKG_CONFIG --variable=datadir "osi-dylp" 2>/dev/null`
-     coin_has_dylp=yes
-        echo "$as_me:$LINENO: result: yes: $DYLP_VERSIONS" >&5
-echo "${ECHO_T}yes: $DYLP_VERSIONS" >&6
-        REQUIREDPACKAGES="osi-dylp $REQUIREDPACKAGES"
-
-
-  else
-    DYLP_PKG_ERRORS=`$PKG_CONFIG $pkg_short_errors --errors-to-stdout --print-errors osi-dylp`
-      coin_has_dylp=notGiven
-        echo "$as_me:$LINENO: result: not given: $DYLP_PKG_ERRORS" >&5
-echo "${ECHO_T}not given: $DYLP_PKG_ERRORS" >&6
-
-  fi
-else
-  { { echo "$as_me:$LINENO: error: \"Cannot check for existance of module DyLP without pkg-config\"" >&5
-echo "$as_me: error: \"Cannot check for existance of module DyLP without pkg-config\"" >&2;}
-   { (exit 1); exit 1; }; }
-fi
-
-
-
-
-    # reset PKG_CONFIG_PATH variable
-    PKG_CONFIG_PATH="$coin_save_PKG_CONFIG_PATH"
-    export PKG_CONFIG_PATH
-  else
-    echo "$as_me:$LINENO: result: skipped check via pkg-config, redirect to fallback" >&5
-echo "${ECHO_T}skipped check via pkg-config, redirect to fallback" >&6
-
-echo "$as_me:$LINENO: checking for COIN-OR module DyLP (fallback)" >&5
-echo $ECHO_N "checking for COIN-OR module DyLP (fallback)... $ECHO_C" >&6
-
-coin_has_dylp=notGiven
-DYLP_LIBS=
-DYLP_CFLAGS=
-DYLP_DATA=
-
-
-# initial list of dependencies is "osi-dylp", but we need to filter out version number specifications (= x, <= x, >= x)
-projtoprocess="osi-dylp"
-projprocessed=""
-
-while test $coin_has_dylp = notGiven ; do
-  # setup list of projects that need to be processed in the next round
-  nextprojtoprocess=""
-
-  for proj in $projtoprocess ; do
-    # if $proj has been processed already, skip this round
-    if test "x$projprocessed" != x ; then
-      for projdone in $projprocessed ; do
-        if test $projdone = $proj ; then
-	  continue 2
-	fi
-      done
-    fi
-
-    # if $proj is available and configured, then a project-uninstalled.pc file should have been created, so search for it
-    pcfile=""
-    save_IFS="$IFS"
-    IFS=":"
-    for dir in $COIN_PKG_CONFIG_PATH_UNINSTALLED ; do
-      # the base directory configure should have setup coin_subdirs.txt in a way that it does not contain projects that should be skipped, so we do not need to test this here again
-      if test -r "$dir/$proj-uninstalled.pc" ; then
-        pcfile="$dir/$proj-uninstalled.pc"
-        pcfiledir="$dir"
-        break
-      fi
-    done
-    IFS="$save_IFS"
-
-    if test "x$pcfile" != x ; then
-      # read CFLAGS from $pcfile and add CYGPATH_W cludge into include flags
-      projcflags=`sed -n -e 's/Cflags://p' "$pcfile"`
-      projcflags=`echo "$projcflags" | sed -e 's/-I\([^ ]*\)/-I\`${CYGPATH_W} \1\`/g'`
-      DYLP_CFLAGS="$projcflags $DYLP_CFLAGS"
-
-      # read LIBS from $pcfile and replace -L${libdir} by absolute path to build directory in linker flags
-      # we assume that the build directory is $pcfiledir/src if this directory exists, otherwise we assume that it is $pcfiledir
-      projlibs=`sed -n -e 's/Libs://' -e 's/-L\${libdir}//p' "$pcfile"`
-      if test "x$projlibs" != x ; then
-        if test -d "${pcfiledir}/src" ; then
-          projlibs="-L`cd "${pcfiledir}/src"; pwd` $projlibs"
-        else
-          projlibs="-L`cd "$pcfiledir"; pwd` $projlibs"
-        fi
-      else
-        projlibs=`sed -n -e 's/Libs://p' "$pcfile"`
-      fi
-      DYLP_LIBS="$DYLP_LIBS $projlibs"
-
-      # read DATA from $pcfile, if this is the first .pc file we are processing (so assume that its the main one)
-      if test "x$projprocessed" = x ; then
-        DYLP_DATA=`sed -n -e 's/datadir=//gp' "$pcfile"`
-      fi
-
-      # read dependencies from $pcfile, filter it, and add to list of projects that need to be processed next
-      projrequires=`sed -n -e 's/Requires://gp' "$pcfile" | sed -e 's/<\?>\?=[ 	]*[^ 	]\+//g'`
-      nextprojtoprocess="$nextprojtoprocess $projrequires"
-
-      # remember that we have processed $proj
-      projprocessed="$projprocessed $proj"
-
-    else
-      echo "$as_me:$LINENO: result: no, dependency $proj not available" >&5
-echo "${ECHO_T}no, dependency $proj not available" >&6
-      break 2
-    fi
-
-  done
-
-  projtoprocess="$nextprojtoprocess"
-
-  if test "x$projtoprocess" = x ; then
-    coin_has_dylp=yes
-    echo "$as_me:$LINENO: result: yes, dependencies are$projprocessed" >&5
-echo "${ECHO_T}yes, dependencies are$projprocessed" >&6
-
-    REQUIREDPACKAGES="osi-dylp $REQUIREDPACKAGES"
-
-cat >>confdefs.h <<\_ACEOF
-#define COIN_HAS_DYLP 1
-_ACEOF
-
-
-    if test 1 = 0 ; then  #change this test to enable a bit of debugging output
-    if test -n "$DYLP_CFLAGS" ; then
-      { echo "$as_me:$LINENO: DyLP CFLAGS are $DYLP_CFLAGS" >&5
-echo "$as_me: DyLP CFLAGS are $DYLP_CFLAGS" >&6;}
-    fi
-    if test -n "$DYLP_LIBS" ; then
-      { echo "$as_me:$LINENO: DyLP LIBS   are $DYLP_LIBS" >&5
-echo "$as_me: DyLP LIBS   are $DYLP_LIBS" >&6;}
-    fi
-    if test -n "$DYLP_DATA" ; then
-      { echo "$as_me:$LINENO: DyLP DATA   is  $DYLP_DATA" >&5
-echo "$as_me: DyLP DATA   is  $DYLP_DATA" >&6;}
-    fi
-    fi
-  fi
-done
-
-
-
-if test $coin_has_dylp != notGiven &&
-                test $coin_has_dylp != skipping; then
-  COIN_HAS_DYLP_TRUE=
-  COIN_HAS_DYLP_FALSE='#'
-else
-  COIN_HAS_DYLP_TRUE='#'
-  COIN_HAS_DYLP_FALSE=
-fi
-
-
-
-  fi
-
-else
-  echo "$as_me:$LINENO: result: $coin_has_dylp" >&5
-echo "${ECHO_T}$coin_has_dylp" >&6
-fi
-
-if test $coin_has_dylp != skipping &&
-   test $coin_has_dylp != notGiven ; then
-  if test 0 = 1 ; then  #change this test to enable a bit of debugging output
-  if test -n "$DYLP_CFLAGS" ; then
-    { echo "$as_me:$LINENO: DyLP CFLAGS are $DYLP_CFLAGS" >&5
-echo "$as_me: DyLP CFLAGS are $DYLP_CFLAGS" >&6;}
-  fi
-  if test -n "$DYLP_LIBS" ; then
-    { echo "$as_me:$LINENO: DyLP LIBS   are $DYLP_LIBS" >&5
-echo "$as_me: DyLP LIBS   are $DYLP_LIBS" >&6;}
-  fi
-  if test -n "$DYLP_DATA" ; then
-    { echo "$as_me:$LINENO: DyLP DATA   is  $DYLP_DATA" >&5
-echo "$as_me: DyLP DATA   is  $DYLP_DATA" >&6;}
-  fi
-  fi
-
-cat >>confdefs.h <<\_ACEOF
-#define COIN_HAS_DYLP 1
-_ACEOF
-
-fi
-
-# Define the Makefile conditional
-
-
-if test $coin_has_dylp != notGiven &&
-                test $coin_has_dylp != skipping; then
-  COIN_HAS_DYLP_TRUE=
-  COIN_HAS_DYLP_FALSE='#'
-else
-  COIN_HAS_DYLP_TRUE='#'
-  COIN_HAS_DYLP_FALSE=
-fi
-
-
-
-
-echo "$as_me:$LINENO: checking for COIN-OR module Vol" >&5
-echo $ECHO_N "checking for COIN-OR module Vol... $ECHO_C" >&6
-
-coin_has_vol=notGiven
-
-# check if user wants to skip module in any case
-if test x"$COIN_SKIP_PROJECTS" != x; then
-  for dir in $COIN_SKIP_PROJECTS; do
-    if test $dir = "Vol"; then
-      coin_has_vol=skipping
-    fi
-  done
-fi
-
-VOL_LIBS=
-VOL_CFLAGS=
-VOL_DATA=
-
-
-
-
-
-#check if user provided LIBS, CFLAGS, or DATA for module
-if test $coin_has_vol != skipping; then
-
-
-# Check whether --with-m4_tolower(Vol)-lib or --without-m4_tolower(Vol)-lib was given.
-if test "${with_vol_lib+set}" = set; then
-  withval="$with_vol_lib"
-  coin_has_vol=yes
-       VOL_LIBS="$withval"
-       PCADDLIBS="$withval $PCADDLIBS"
-
-fi;
-
-
-# Check whether --with-m4_tolower(Vol)-incdir or --without-m4_tolower(Vol)-incdir was given.
-if test "${with_vol_incdir+set}" = set; then
-  withval="$with_vol_incdir"
-  coin_has_vol=yes
-     VOL_CFLAGS="-I`${CYGPATH_W} $withval`"
-fi;
-
-
-# Check whether --with-m4_tolower(Vol)-datadir or --without-m4_tolower(Vol)-datadir was given.
-if test "${with_vol_datadir+set}" = set; then
-  withval="$with_vol_datadir"
-  coin_has_vol=yes
-     VOL_DATA="$withval"
-fi;
-fi
-
-if test $coin_has_vol = notGiven; then
-  if test -n "$PKG_CONFIG" ; then
-    # set search path for pkg-config
-    # need to export variable to be sure that the following pkg-config gets these values
-    coin_save_PKG_CONFIG_PATH="$PKG_CONFIG_PATH"
-    PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH:$COIN_PKG_CONFIG_PATH_UNINSTALLED"
-    export PKG_CONFIG_PATH
-
-    # let pkg-config do it's magic
-
-
-
-if test -n "$PKG_CONFIG" ; then
-  if $PKG_CONFIG --exists "osi-vol"; then
-    VOL_VERSIONS="`$PKG_CONFIG --modversion osi-vol 2>/dev/null`"
-     cflags=`$PKG_CONFIG --cflags "osi-vol" 2>/dev/null`
-    # pkg-config cannot handle spaces, so CYGPATH_W cannot be put into .pc files
-	# thus, we modify the cflags extracted from pkg-config by putting CYGPATH_W behind -I's
-	# but only do this if is not trivial
-    if test "$CYGPATH_W" != "echo" ; then
-      # need to put into brackets since otherwise autoconf replaces the brackets in the sed command
-	  cflags=`echo $cflags | sed -e 's/-I\([^ ]*\)/-I\`${CYGPATH_W} \1\`/g'`
-	fi
-    VOL_CFLAGS="$cflags"
-    VOL_LIBS=`$PKG_CONFIG --libs "osi-vol" 2>/dev/null`
-    VOL_DATA=`$PKG_CONFIG --variable=datadir "osi-vol" 2>/dev/null`
-     coin_has_vol=yes
-        echo "$as_me:$LINENO: result: yes: $VOL_VERSIONS" >&5
-echo "${ECHO_T}yes: $VOL_VERSIONS" >&6
-        REQUIREDPACKAGES="osi-vol $REQUIREDPACKAGES"
-
-
-  else
-    VOL_PKG_ERRORS=`$PKG_CONFIG $pkg_short_errors --errors-to-stdout --print-errors osi-vol`
-      coin_has_vol=notGiven
-        echo "$as_me:$LINENO: result: not given: $VOL_PKG_ERRORS" >&5
-echo "${ECHO_T}not given: $VOL_PKG_ERRORS" >&6
-
-  fi
-else
-  { { echo "$as_me:$LINENO: error: \"Cannot check for existance of module Vol without pkg-config\"" >&5
-echo "$as_me: error: \"Cannot check for existance of module Vol without pkg-config\"" >&2;}
-   { (exit 1); exit 1; }; }
-fi
-
-
-
-
-    # reset PKG_CONFIG_PATH variable
-    PKG_CONFIG_PATH="$coin_save_PKG_CONFIG_PATH"
-    export PKG_CONFIG_PATH
-  else
-    echo "$as_me:$LINENO: result: skipped check via pkg-config, redirect to fallback" >&5
-echo "${ECHO_T}skipped check via pkg-config, redirect to fallback" >&6
-
-echo "$as_me:$LINENO: checking for COIN-OR module Vol (fallback)" >&5
-echo $ECHO_N "checking for COIN-OR module Vol (fallback)... $ECHO_C" >&6
-
-coin_has_vol=notGiven
-VOL_LIBS=
-VOL_CFLAGS=
-VOL_DATA=
-
-
-# initial list of dependencies is "osi-vol", but we need to filter out version number specifications (= x, <= x, >= x)
-projtoprocess="osi-vol"
-projprocessed=""
-
-while test $coin_has_vol = notGiven ; do
-  # setup list of projects that need to be processed in the next round
-  nextprojtoprocess=""
-
-  for proj in $projtoprocess ; do
-    # if $proj has been processed already, skip this round
-    if test "x$projprocessed" != x ; then
-      for projdone in $projprocessed ; do
-        if test $projdone = $proj ; then
-	  continue 2
-	fi
-      done
-    fi
-
-    # if $proj is available and configured, then a project-uninstalled.pc file should have been created, so search for it
-    pcfile=""
-    save_IFS="$IFS"
-    IFS=":"
-    for dir in $COIN_PKG_CONFIG_PATH_UNINSTALLED ; do
-      # the base directory configure should have setup coin_subdirs.txt in a way that it does not contain projects that should be skipped, so we do not need to test this here again
-      if test -r "$dir/$proj-uninstalled.pc" ; then
-        pcfile="$dir/$proj-uninstalled.pc"
-        pcfiledir="$dir"
-        break
-      fi
-    done
-    IFS="$save_IFS"
-
-    if test "x$pcfile" != x ; then
-      # read CFLAGS from $pcfile and add CYGPATH_W cludge into include flags
-      projcflags=`sed -n -e 's/Cflags://p' "$pcfile"`
-      projcflags=`echo "$projcflags" | sed -e 's/-I\([^ ]*\)/-I\`${CYGPATH_W} \1\`/g'`
-      VOL_CFLAGS="$projcflags $VOL_CFLAGS"
-
-      # read LIBS from $pcfile and replace -L${libdir} by absolute path to build directory in linker flags
-      # we assume that the build directory is $pcfiledir/src if this directory exists, otherwise we assume that it is $pcfiledir
-      projlibs=`sed -n -e 's/Libs://' -e 's/-L\${libdir}//p' "$pcfile"`
-      if test "x$projlibs" != x ; then
-        if test -d "${pcfiledir}/src" ; then
-          projlibs="-L`cd "${pcfiledir}/src"; pwd` $projlibs"
-        else
-          projlibs="-L`cd "$pcfiledir"; pwd` $projlibs"
-        fi
-      else
-        projlibs=`sed -n -e 's/Libs://p' "$pcfile"`
-      fi
-      VOL_LIBS="$VOL_LIBS $projlibs"
-
-      # read DATA from $pcfile, if this is the first .pc file we are processing (so assume that its the main one)
-      if test "x$projprocessed" = x ; then
-        VOL_DATA=`sed -n -e 's/datadir=//gp' "$pcfile"`
-      fi
-
-      # read dependencies from $pcfile, filter it, and add to list of projects that need to be processed next
-      projrequires=`sed -n -e 's/Requires://gp' "$pcfile" | sed -e 's/<\?>\?=[ 	]*[^ 	]\+//g'`
-      nextprojtoprocess="$nextprojtoprocess $projrequires"
-
-      # remember that we have processed $proj
-      projprocessed="$projprocessed $proj"
-
-    else
-      echo "$as_me:$LINENO: result: no, dependency $proj not available" >&5
-echo "${ECHO_T}no, dependency $proj not available" >&6
-      break 2
-    fi
-
-  done
-
-  projtoprocess="$nextprojtoprocess"
-
-  if test "x$projtoprocess" = x ; then
-    coin_has_vol=yes
-    echo "$as_me:$LINENO: result: yes, dependencies are$projprocessed" >&5
-echo "${ECHO_T}yes, dependencies are$projprocessed" >&6
-
-    REQUIREDPACKAGES="osi-vol $REQUIREDPACKAGES"
-
-cat >>confdefs.h <<\_ACEOF
-#define COIN_HAS_VOL 1
-_ACEOF
-
-
-    if test 1 = 0 ; then  #change this test to enable a bit of debugging output
-    if test -n "$VOL_CFLAGS" ; then
-      { echo "$as_me:$LINENO: Vol CFLAGS are $VOL_CFLAGS" >&5
-echo "$as_me: Vol CFLAGS are $VOL_CFLAGS" >&6;}
-    fi
-    if test -n "$VOL_LIBS" ; then
-      { echo "$as_me:$LINENO: Vol LIBS   are $VOL_LIBS" >&5
-echo "$as_me: Vol LIBS   are $VOL_LIBS" >&6;}
-    fi
-    if test -n "$VOL_DATA" ; then
-      { echo "$as_me:$LINENO: Vol DATA   is  $VOL_DATA" >&5
-echo "$as_me: Vol DATA   is  $VOL_DATA" >&6;}
-    fi
-    fi
-  fi
-done
-
-
-
-if test $coin_has_vol != notGiven &&
-                test $coin_has_vol != skipping; then
-  COIN_HAS_VOL_TRUE=
-  COIN_HAS_VOL_FALSE='#'
-else
-  COIN_HAS_VOL_TRUE='#'
-  COIN_HAS_VOL_FALSE=
-fi
-
-
-
-  fi
-
-else
-  echo "$as_me:$LINENO: result: $coin_has_vol" >&5
-echo "${ECHO_T}$coin_has_vol" >&6
-fi
-
-if test $coin_has_vol != skipping &&
-   test $coin_has_vol != notGiven ; then
-  if test 0 = 1 ; then  #change this test to enable a bit of debugging output
-  if test -n "$VOL_CFLAGS" ; then
-    { echo "$as_me:$LINENO: Vol CFLAGS are $VOL_CFLAGS" >&5
-echo "$as_me: Vol CFLAGS are $VOL_CFLAGS" >&6;}
-  fi
-  if test -n "$VOL_LIBS" ; then
-    { echo "$as_me:$LINENO: Vol LIBS   are $VOL_LIBS" >&5
-echo "$as_me: Vol LIBS   are $VOL_LIBS" >&6;}
-  fi
-  if test -n "$VOL_DATA" ; then
-    { echo "$as_me:$LINENO: Vol DATA   is  $VOL_DATA" >&5
-echo "$as_me: Vol DATA   is  $VOL_DATA" >&6;}
-  fi
-  fi
-
-cat >>confdefs.h <<\_ACEOF
-#define COIN_HAS_VOL 1
-_ACEOF
-
-fi
-
-# Define the Makefile conditional
-
-
-if test $coin_has_vol != notGiven &&
-                test $coin_has_vol != skipping; then
-  COIN_HAS_VOL_TRUE=
-  COIN_HAS_VOL_FALSE='#'
-else
-  COIN_HAS_VOL_TRUE='#'
-  COIN_HAS_VOL_FALSE=
-fi
-
-
-
-
-echo "$as_me:$LINENO: checking for COIN-OR module OsiTests" >&5
-echo $ECHO_N "checking for COIN-OR module OsiTests... $ECHO_C" >&6
+echo "$as_me:$LINENO: checking for COIN-OR package OsiTests" >&5
+echo $ECHO_N "checking for COIN-OR package OsiTests... $ECHO_C" >&6
 
 coin_has_ositests=notGiven
 
-# check if user wants to skip module in any case
+# check if user wants to skip package in any case
 if test x"$COIN_SKIP_PROJECTS" != x; then
   for dir in $COIN_SKIP_PROJECTS; do
     if test $dir = "OsiTests"; then
@@ -21889,6 +21467,8 @@ if test "${with_ositests_incdir+set}" = set; then
   withval="$with_ositests_incdir"
   coin_has_ositests=yes
      OSITESTS_CFLAGS="-I`${CYGPATH_W} $withval`"
+
+
 fi;
 
 
@@ -21951,18 +21531,20 @@ fi
     # reset PKG_CONFIG_PATH variable
     PKG_CONFIG_PATH="$coin_save_PKG_CONFIG_PATH"
     export PKG_CONFIG_PATH
+
+    # augment X_CFLAGS and X_LIBS for each build target X in
+
   else
     echo "$as_me:$LINENO: result: skipped check via pkg-config, redirect to fallback" >&5
 echo "${ECHO_T}skipped check via pkg-config, redirect to fallback" >&6
 
-echo "$as_me:$LINENO: checking for COIN-OR module OsiTests (fallback)" >&5
-echo $ECHO_N "checking for COIN-OR module OsiTests (fallback)... $ECHO_C" >&6
+echo "$as_me:$LINENO: checking for COIN-OR package OsiTests (fallback)" >&5
+echo $ECHO_N "checking for COIN-OR package OsiTests (fallback)... $ECHO_C" >&6
 
 coin_has_ositests=notGiven
 OSITESTS_LIBS=
 OSITESTS_CFLAGS=
 OSITESTS_DATA=
-
 
 # initial list of dependencies is "osi-unittests", but we need to filter out version number specifications (= x, <= x, >= x)
 projtoprocess="osi-unittests"
@@ -22038,31 +21620,33 @@ echo "${ECHO_T}no, dependency $proj not available" >&6
 
   projtoprocess="$nextprojtoprocess"
 
+  # if there are no more projects to search for, finish up
   if test "x$projtoprocess" = x ; then
     coin_has_ositests=yes
     echo "$as_me:$LINENO: result: yes, dependencies are$projprocessed" >&5
 echo "${ECHO_T}yes, dependencies are$projprocessed" >&6
-
-
 
 cat >>confdefs.h <<\_ACEOF
 #define COIN_HAS_OSITESTS 1
 _ACEOF
 
 
+
+
     if test 1 = 0 ; then  #change this test to enable a bit of debugging output
-    if test -n "$OSITESTS_CFLAGS" ; then
-      { echo "$as_me:$LINENO: OsiTests CFLAGS are $OSITESTS_CFLAGS" >&5
+      if test -n "$OSITESTS_CFLAGS" ; then
+        { echo "$as_me:$LINENO: OsiTests CFLAGS are $OSITESTS_CFLAGS" >&5
 echo "$as_me: OsiTests CFLAGS are $OSITESTS_CFLAGS" >&6;}
-    fi
-    if test -n "$OSITESTS_LIBS" ; then
-      { echo "$as_me:$LINENO: OsiTests LIBS   are $OSITESTS_LIBS" >&5
+      fi
+      if test -n "$OSITESTS_LIBS" ; then
+        { echo "$as_me:$LINENO: OsiTests LIBS   are $OSITESTS_LIBS" >&5
 echo "$as_me: OsiTests LIBS   are $OSITESTS_LIBS" >&6;}
-    fi
-    if test -n "$OSITESTS_DATA" ; then
-      { echo "$as_me:$LINENO: OsiTests DATA   is  $OSITESTS_DATA" >&5
+      fi
+      if test -n "$OSITESTS_DATA" ; then
+        { echo "$as_me:$LINENO: OsiTests DATA   is  $OSITESTS_DATA" >&5
 echo "$as_me: OsiTests DATA   is  $OSITESTS_DATA" >&6;}
-    fi
+      fi
+
     fi
   fi
 done
@@ -22089,25 +21673,31 @@ fi
 
 if test $coin_has_ositests != skipping &&
    test $coin_has_ositests != notGiven ; then
-  if test 0 = 1 ; then  #change this test to enable a bit of debugging output
-  if test -n "$OSITESTS_CFLAGS" ; then
-    { echo "$as_me:$LINENO: OsiTests CFLAGS are $OSITESTS_CFLAGS" >&5
-echo "$as_me: OsiTests CFLAGS are $OSITESTS_CFLAGS" >&6;}
-  fi
-  if test -n "$OSITESTS_LIBS" ; then
-    { echo "$as_me:$LINENO: OsiTests LIBS   are $OSITESTS_LIBS" >&5
-echo "$as_me: OsiTests LIBS   are $OSITESTS_LIBS" >&6;}
-  fi
-  if test -n "$OSITESTS_DATA" ; then
-    { echo "$as_me:$LINENO: OsiTests DATA   is  $OSITESTS_DATA" >&5
-echo "$as_me: OsiTests DATA   is  $OSITESTS_DATA" >&6;}
-  fi
-  fi
 
 cat >>confdefs.h <<\_ACEOF
 #define COIN_HAS_OSITESTS 1
 _ACEOF
 
+
+  if test 1 = 0 ; then  #change this test to enable a bit of debugging output
+    if test -n "$OSITESTS_CFLAGS" ; then
+      { echo "$as_me:$LINENO: OsiTests CFLAGS are $OSITESTS_CFLAGS" >&5
+echo "$as_me: OsiTests CFLAGS are $OSITESTS_CFLAGS" >&6;}
+    fi
+    if test -n "$OSITESTS_LIBS" ; then
+      { echo "$as_me:$LINENO: OsiTests LIBS   are $OSITESTS_LIBS" >&5
+echo "$as_me: OsiTests LIBS   are $OSITESTS_LIBS" >&6;}
+    fi
+    if test -n "$OSITESTS_DATA" ; then
+      { echo "$as_me:$LINENO: OsiTests DATA   is  $OSITESTS_DATA" >&5
+echo "$as_me: OsiTests DATA   is  $OSITESTS_DATA" >&6;}
+    fi
+    if test -n "$OSITESTS_CFLAGS" ; then
+      { echo "$as_me:$LINENO: OsiTests CFLAGS are $OSITESTS_CFLAGS" >&5
+echo "$as_me: OsiTests CFLAGS are $OSITESTS_CFLAGS" >&6;}
+    fi
+
+  fi
 fi
 
 # Define the Makefile conditional
@@ -22125,13 +21715,12 @@ fi
 
 
 
-
-echo "$as_me:$LINENO: checking for COIN-OR module Sample" >&5
-echo $ECHO_N "checking for COIN-OR module Sample... $ECHO_C" >&6
+echo "$as_me:$LINENO: checking for COIN-OR package Sample" >&5
+echo $ECHO_N "checking for COIN-OR package Sample... $ECHO_C" >&6
 
 coin_has_sample=notGiven
 
-# check if user wants to skip module in any case
+# check if user wants to skip package in any case
 if test x"$COIN_SKIP_PROJECTS" != x; then
   for dir in $COIN_SKIP_PROJECTS; do
     if test $dir = "Sample"; then
@@ -22167,6 +21756,8 @@ if test "${with_sample_incdir+set}" = set; then
   withval="$with_sample_incdir"
   coin_has_sample=yes
      SAMPLE_CFLAGS="-I`${CYGPATH_W} $withval`"
+
+
 fi;
 
 
@@ -22229,18 +21820,20 @@ fi
     # reset PKG_CONFIG_PATH variable
     PKG_CONFIG_PATH="$coin_save_PKG_CONFIG_PATH"
     export PKG_CONFIG_PATH
+
+    # augment X_CFLAGS and X_LIBS for each build target X in
+
   else
     echo "$as_me:$LINENO: result: skipped check via pkg-config, redirect to fallback" >&5
 echo "${ECHO_T}skipped check via pkg-config, redirect to fallback" >&6
 
-echo "$as_me:$LINENO: checking for COIN-OR module Sample (fallback)" >&5
-echo $ECHO_N "checking for COIN-OR module Sample (fallback)... $ECHO_C" >&6
+echo "$as_me:$LINENO: checking for COIN-OR package Sample (fallback)" >&5
+echo $ECHO_N "checking for COIN-OR package Sample (fallback)... $ECHO_C" >&6
 
 coin_has_sample=notGiven
 SAMPLE_LIBS=
 SAMPLE_CFLAGS=
 SAMPLE_DATA=
-
 
 # initial list of dependencies is "coindatasample", but we need to filter out version number specifications (= x, <= x, >= x)
 projtoprocess="coindatasample"
@@ -22316,31 +21909,33 @@ echo "${ECHO_T}no, dependency $proj not available" >&6
 
   projtoprocess="$nextprojtoprocess"
 
+  # if there are no more projects to search for, finish up
   if test "x$projtoprocess" = x ; then
     coin_has_sample=yes
     echo "$as_me:$LINENO: result: yes, dependencies are$projprocessed" >&5
 echo "${ECHO_T}yes, dependencies are$projprocessed" >&6
-
-
 
 cat >>confdefs.h <<\_ACEOF
 #define COIN_HAS_SAMPLE 1
 _ACEOF
 
 
+
+
     if test 1 = 0 ; then  #change this test to enable a bit of debugging output
-    if test -n "$SAMPLE_CFLAGS" ; then
-      { echo "$as_me:$LINENO: Sample CFLAGS are $SAMPLE_CFLAGS" >&5
+      if test -n "$SAMPLE_CFLAGS" ; then
+        { echo "$as_me:$LINENO: Sample CFLAGS are $SAMPLE_CFLAGS" >&5
 echo "$as_me: Sample CFLAGS are $SAMPLE_CFLAGS" >&6;}
-    fi
-    if test -n "$SAMPLE_LIBS" ; then
-      { echo "$as_me:$LINENO: Sample LIBS   are $SAMPLE_LIBS" >&5
+      fi
+      if test -n "$SAMPLE_LIBS" ; then
+        { echo "$as_me:$LINENO: Sample LIBS   are $SAMPLE_LIBS" >&5
 echo "$as_me: Sample LIBS   are $SAMPLE_LIBS" >&6;}
-    fi
-    if test -n "$SAMPLE_DATA" ; then
-      { echo "$as_me:$LINENO: Sample DATA   is  $SAMPLE_DATA" >&5
+      fi
+      if test -n "$SAMPLE_DATA" ; then
+        { echo "$as_me:$LINENO: Sample DATA   is  $SAMPLE_DATA" >&5
 echo "$as_me: Sample DATA   is  $SAMPLE_DATA" >&6;}
-    fi
+      fi
+
     fi
   fi
 done
@@ -22367,25 +21962,31 @@ fi
 
 if test $coin_has_sample != skipping &&
    test $coin_has_sample != notGiven ; then
-  if test 0 = 1 ; then  #change this test to enable a bit of debugging output
-  if test -n "$SAMPLE_CFLAGS" ; then
-    { echo "$as_me:$LINENO: Sample CFLAGS are $SAMPLE_CFLAGS" >&5
-echo "$as_me: Sample CFLAGS are $SAMPLE_CFLAGS" >&6;}
-  fi
-  if test -n "$SAMPLE_LIBS" ; then
-    { echo "$as_me:$LINENO: Sample LIBS   are $SAMPLE_LIBS" >&5
-echo "$as_me: Sample LIBS   are $SAMPLE_LIBS" >&6;}
-  fi
-  if test -n "$SAMPLE_DATA" ; then
-    { echo "$as_me:$LINENO: Sample DATA   is  $SAMPLE_DATA" >&5
-echo "$as_me: Sample DATA   is  $SAMPLE_DATA" >&6;}
-  fi
-  fi
 
 cat >>confdefs.h <<\_ACEOF
 #define COIN_HAS_SAMPLE 1
 _ACEOF
 
+
+  if test 1 = 0 ; then  #change this test to enable a bit of debugging output
+    if test -n "$SAMPLE_CFLAGS" ; then
+      { echo "$as_me:$LINENO: Sample CFLAGS are $SAMPLE_CFLAGS" >&5
+echo "$as_me: Sample CFLAGS are $SAMPLE_CFLAGS" >&6;}
+    fi
+    if test -n "$SAMPLE_LIBS" ; then
+      { echo "$as_me:$LINENO: Sample LIBS   are $SAMPLE_LIBS" >&5
+echo "$as_me: Sample LIBS   are $SAMPLE_LIBS" >&6;}
+    fi
+    if test -n "$SAMPLE_DATA" ; then
+      { echo "$as_me:$LINENO: Sample DATA   is  $SAMPLE_DATA" >&5
+echo "$as_me: Sample DATA   is  $SAMPLE_DATA" >&6;}
+    fi
+    if test -n "$SAMPLE_CFLAGS" ; then
+      { echo "$as_me:$LINENO: Sample CFLAGS are $SAMPLE_CFLAGS" >&5
+echo "$as_me: Sample CFLAGS are $SAMPLE_CFLAGS" >&6;}
+    fi
+
+  fi
 fi
 
 # Define the Makefile conditional
@@ -22403,12 +22004,12 @@ fi
 
 
 
-echo "$as_me:$LINENO: checking for COIN-OR module Netlib" >&5
-echo $ECHO_N "checking for COIN-OR module Netlib... $ECHO_C" >&6
+echo "$as_me:$LINENO: checking for COIN-OR package Netlib" >&5
+echo $ECHO_N "checking for COIN-OR package Netlib... $ECHO_C" >&6
 
 coin_has_netlib=notGiven
 
-# check if user wants to skip module in any case
+# check if user wants to skip package in any case
 if test x"$COIN_SKIP_PROJECTS" != x; then
   for dir in $COIN_SKIP_PROJECTS; do
     if test $dir = "Netlib"; then
@@ -22444,6 +22045,8 @@ if test "${with_netlib_incdir+set}" = set; then
   withval="$with_netlib_incdir"
   coin_has_netlib=yes
      NETLIB_CFLAGS="-I`${CYGPATH_W} $withval`"
+
+
 fi;
 
 
@@ -22506,18 +22109,20 @@ fi
     # reset PKG_CONFIG_PATH variable
     PKG_CONFIG_PATH="$coin_save_PKG_CONFIG_PATH"
     export PKG_CONFIG_PATH
+
+    # augment X_CFLAGS and X_LIBS for each build target X in
+
   else
     echo "$as_me:$LINENO: result: skipped check via pkg-config, redirect to fallback" >&5
 echo "${ECHO_T}skipped check via pkg-config, redirect to fallback" >&6
 
-echo "$as_me:$LINENO: checking for COIN-OR module Netlib (fallback)" >&5
-echo $ECHO_N "checking for COIN-OR module Netlib (fallback)... $ECHO_C" >&6
+echo "$as_me:$LINENO: checking for COIN-OR package Netlib (fallback)" >&5
+echo $ECHO_N "checking for COIN-OR package Netlib (fallback)... $ECHO_C" >&6
 
 coin_has_netlib=notGiven
 NETLIB_LIBS=
 NETLIB_CFLAGS=
 NETLIB_DATA=
-
 
 # initial list of dependencies is "coindatanetlib", but we need to filter out version number specifications (= x, <= x, >= x)
 projtoprocess="coindatanetlib"
@@ -22593,31 +22198,33 @@ echo "${ECHO_T}no, dependency $proj not available" >&6
 
   projtoprocess="$nextprojtoprocess"
 
+  # if there are no more projects to search for, finish up
   if test "x$projtoprocess" = x ; then
     coin_has_netlib=yes
     echo "$as_me:$LINENO: result: yes, dependencies are$projprocessed" >&5
 echo "${ECHO_T}yes, dependencies are$projprocessed" >&6
-
-
 
 cat >>confdefs.h <<\_ACEOF
 #define COIN_HAS_NETLIB 1
 _ACEOF
 
 
+
+
     if test 1 = 0 ; then  #change this test to enable a bit of debugging output
-    if test -n "$NETLIB_CFLAGS" ; then
-      { echo "$as_me:$LINENO: Netlib CFLAGS are $NETLIB_CFLAGS" >&5
+      if test -n "$NETLIB_CFLAGS" ; then
+        { echo "$as_me:$LINENO: Netlib CFLAGS are $NETLIB_CFLAGS" >&5
 echo "$as_me: Netlib CFLAGS are $NETLIB_CFLAGS" >&6;}
-    fi
-    if test -n "$NETLIB_LIBS" ; then
-      { echo "$as_me:$LINENO: Netlib LIBS   are $NETLIB_LIBS" >&5
+      fi
+      if test -n "$NETLIB_LIBS" ; then
+        { echo "$as_me:$LINENO: Netlib LIBS   are $NETLIB_LIBS" >&5
 echo "$as_me: Netlib LIBS   are $NETLIB_LIBS" >&6;}
-    fi
-    if test -n "$NETLIB_DATA" ; then
-      { echo "$as_me:$LINENO: Netlib DATA   is  $NETLIB_DATA" >&5
+      fi
+      if test -n "$NETLIB_DATA" ; then
+        { echo "$as_me:$LINENO: Netlib DATA   is  $NETLIB_DATA" >&5
 echo "$as_me: Netlib DATA   is  $NETLIB_DATA" >&6;}
-    fi
+      fi
+
     fi
   fi
 done
@@ -22644,25 +22251,31 @@ fi
 
 if test $coin_has_netlib != skipping &&
    test $coin_has_netlib != notGiven ; then
-  if test 0 = 1 ; then  #change this test to enable a bit of debugging output
-  if test -n "$NETLIB_CFLAGS" ; then
-    { echo "$as_me:$LINENO: Netlib CFLAGS are $NETLIB_CFLAGS" >&5
-echo "$as_me: Netlib CFLAGS are $NETLIB_CFLAGS" >&6;}
-  fi
-  if test -n "$NETLIB_LIBS" ; then
-    { echo "$as_me:$LINENO: Netlib LIBS   are $NETLIB_LIBS" >&5
-echo "$as_me: Netlib LIBS   are $NETLIB_LIBS" >&6;}
-  fi
-  if test -n "$NETLIB_DATA" ; then
-    { echo "$as_me:$LINENO: Netlib DATA   is  $NETLIB_DATA" >&5
-echo "$as_me: Netlib DATA   is  $NETLIB_DATA" >&6;}
-  fi
-  fi
 
 cat >>confdefs.h <<\_ACEOF
 #define COIN_HAS_NETLIB 1
 _ACEOF
 
+
+  if test 1 = 0 ; then  #change this test to enable a bit of debugging output
+    if test -n "$NETLIB_CFLAGS" ; then
+      { echo "$as_me:$LINENO: Netlib CFLAGS are $NETLIB_CFLAGS" >&5
+echo "$as_me: Netlib CFLAGS are $NETLIB_CFLAGS" >&6;}
+    fi
+    if test -n "$NETLIB_LIBS" ; then
+      { echo "$as_me:$LINENO: Netlib LIBS   are $NETLIB_LIBS" >&5
+echo "$as_me: Netlib LIBS   are $NETLIB_LIBS" >&6;}
+    fi
+    if test -n "$NETLIB_DATA" ; then
+      { echo "$as_me:$LINENO: Netlib DATA   is  $NETLIB_DATA" >&5
+echo "$as_me: Netlib DATA   is  $NETLIB_DATA" >&6;}
+    fi
+    if test -n "$NETLIB_CFLAGS" ; then
+      { echo "$as_me:$LINENO: Netlib CFLAGS are $NETLIB_CFLAGS" >&5
+echo "$as_me: Netlib CFLAGS are $NETLIB_CFLAGS" >&6;}
+    fi
+
+  fi
 fi
 
 # Define the Makefile conditional
@@ -22680,12 +22293,12 @@ fi
 
 
 
-echo "$as_me:$LINENO: checking for COIN-OR module Miplib3" >&5
-echo $ECHO_N "checking for COIN-OR module Miplib3... $ECHO_C" >&6
+echo "$as_me:$LINENO: checking for COIN-OR package Miplib3" >&5
+echo $ECHO_N "checking for COIN-OR package Miplib3... $ECHO_C" >&6
 
 coin_has_miplib3=notGiven
 
-# check if user wants to skip module in any case
+# check if user wants to skip package in any case
 if test x"$COIN_SKIP_PROJECTS" != x; then
   for dir in $COIN_SKIP_PROJECTS; do
     if test $dir = "Miplib3"; then
@@ -22721,6 +22334,8 @@ if test "${with_miplib3_incdir+set}" = set; then
   withval="$with_miplib3_incdir"
   coin_has_miplib3=yes
      MIPLIB3_CFLAGS="-I`${CYGPATH_W} $withval`"
+
+
 fi;
 
 
@@ -22783,18 +22398,20 @@ fi
     # reset PKG_CONFIG_PATH variable
     PKG_CONFIG_PATH="$coin_save_PKG_CONFIG_PATH"
     export PKG_CONFIG_PATH
+
+    # augment X_CFLAGS and X_LIBS for each build target X in
+
   else
     echo "$as_me:$LINENO: result: skipped check via pkg-config, redirect to fallback" >&5
 echo "${ECHO_T}skipped check via pkg-config, redirect to fallback" >&6
 
-echo "$as_me:$LINENO: checking for COIN-OR module Miplib3 (fallback)" >&5
-echo $ECHO_N "checking for COIN-OR module Miplib3 (fallback)... $ECHO_C" >&6
+echo "$as_me:$LINENO: checking for COIN-OR package Miplib3 (fallback)" >&5
+echo $ECHO_N "checking for COIN-OR package Miplib3 (fallback)... $ECHO_C" >&6
 
 coin_has_miplib3=notGiven
 MIPLIB3_LIBS=
 MIPLIB3_CFLAGS=
 MIPLIB3_DATA=
-
 
 # initial list of dependencies is "coindatamiplib3", but we need to filter out version number specifications (= x, <= x, >= x)
 projtoprocess="coindatamiplib3"
@@ -22870,31 +22487,33 @@ echo "${ECHO_T}no, dependency $proj not available" >&6
 
   projtoprocess="$nextprojtoprocess"
 
+  # if there are no more projects to search for, finish up
   if test "x$projtoprocess" = x ; then
     coin_has_miplib3=yes
     echo "$as_me:$LINENO: result: yes, dependencies are$projprocessed" >&5
 echo "${ECHO_T}yes, dependencies are$projprocessed" >&6
-
-
 
 cat >>confdefs.h <<\_ACEOF
 #define COIN_HAS_MIPLIB3 1
 _ACEOF
 
 
+
+
     if test 1 = 0 ; then  #change this test to enable a bit of debugging output
-    if test -n "$MIPLIB3_CFLAGS" ; then
-      { echo "$as_me:$LINENO: Miplib3 CFLAGS are $MIPLIB3_CFLAGS" >&5
+      if test -n "$MIPLIB3_CFLAGS" ; then
+        { echo "$as_me:$LINENO: Miplib3 CFLAGS are $MIPLIB3_CFLAGS" >&5
 echo "$as_me: Miplib3 CFLAGS are $MIPLIB3_CFLAGS" >&6;}
-    fi
-    if test -n "$MIPLIB3_LIBS" ; then
-      { echo "$as_me:$LINENO: Miplib3 LIBS   are $MIPLIB3_LIBS" >&5
+      fi
+      if test -n "$MIPLIB3_LIBS" ; then
+        { echo "$as_me:$LINENO: Miplib3 LIBS   are $MIPLIB3_LIBS" >&5
 echo "$as_me: Miplib3 LIBS   are $MIPLIB3_LIBS" >&6;}
-    fi
-    if test -n "$MIPLIB3_DATA" ; then
-      { echo "$as_me:$LINENO: Miplib3 DATA   is  $MIPLIB3_DATA" >&5
+      fi
+      if test -n "$MIPLIB3_DATA" ; then
+        { echo "$as_me:$LINENO: Miplib3 DATA   is  $MIPLIB3_DATA" >&5
 echo "$as_me: Miplib3 DATA   is  $MIPLIB3_DATA" >&6;}
-    fi
+      fi
+
     fi
   fi
 done
@@ -22921,25 +22540,31 @@ fi
 
 if test $coin_has_miplib3 != skipping &&
    test $coin_has_miplib3 != notGiven ; then
-  if test 0 = 1 ; then  #change this test to enable a bit of debugging output
-  if test -n "$MIPLIB3_CFLAGS" ; then
-    { echo "$as_me:$LINENO: Miplib3 CFLAGS are $MIPLIB3_CFLAGS" >&5
-echo "$as_me: Miplib3 CFLAGS are $MIPLIB3_CFLAGS" >&6;}
-  fi
-  if test -n "$MIPLIB3_LIBS" ; then
-    { echo "$as_me:$LINENO: Miplib3 LIBS   are $MIPLIB3_LIBS" >&5
-echo "$as_me: Miplib3 LIBS   are $MIPLIB3_LIBS" >&6;}
-  fi
-  if test -n "$MIPLIB3_DATA" ; then
-    { echo "$as_me:$LINENO: Miplib3 DATA   is  $MIPLIB3_DATA" >&5
-echo "$as_me: Miplib3 DATA   is  $MIPLIB3_DATA" >&6;}
-  fi
-  fi
 
 cat >>confdefs.h <<\_ACEOF
 #define COIN_HAS_MIPLIB3 1
 _ACEOF
 
+
+  if test 1 = 0 ; then  #change this test to enable a bit of debugging output
+    if test -n "$MIPLIB3_CFLAGS" ; then
+      { echo "$as_me:$LINENO: Miplib3 CFLAGS are $MIPLIB3_CFLAGS" >&5
+echo "$as_me: Miplib3 CFLAGS are $MIPLIB3_CFLAGS" >&6;}
+    fi
+    if test -n "$MIPLIB3_LIBS" ; then
+      { echo "$as_me:$LINENO: Miplib3 LIBS   are $MIPLIB3_LIBS" >&5
+echo "$as_me: Miplib3 LIBS   are $MIPLIB3_LIBS" >&6;}
+    fi
+    if test -n "$MIPLIB3_DATA" ; then
+      { echo "$as_me:$LINENO: Miplib3 DATA   is  $MIPLIB3_DATA" >&5
+echo "$as_me: Miplib3 DATA   is  $MIPLIB3_DATA" >&6;}
+    fi
+    if test -n "$MIPLIB3_CFLAGS" ; then
+      { echo "$as_me:$LINENO: Miplib3 CFLAGS are $MIPLIB3_CFLAGS" >&5
+echo "$as_me: Miplib3 CFLAGS are $MIPLIB3_CFLAGS" >&6;}
+    fi
+
+  fi
 fi
 
 # Define the Makefile conditional
@@ -22961,14 +22586,14 @@ fi
 #                    LP solvers other than CLP                              #
 #############################################################################
 
-# Check which other LP solvers are available
+# Check which other LP solvers are available, some of them become a dependency of CbcGeneric
 
-echo "$as_me:$LINENO: checking for COIN-OR module DyLP" >&5
-echo $ECHO_N "checking for COIN-OR module DyLP... $ECHO_C" >&6
+echo "$as_me:$LINENO: checking for COIN-OR package DyLP" >&5
+echo $ECHO_N "checking for COIN-OR package DyLP... $ECHO_C" >&6
 
 coin_has_dylp=notGiven
 
-# check if user wants to skip module in any case
+# check if user wants to skip package in any case
 if test x"$COIN_SKIP_PROJECTS" != x; then
   for dir in $COIN_SKIP_PROJECTS; do
     if test $dir = "DyLP"; then
@@ -22985,6 +22610,10 @@ DYLP_DATA=
 
 
 
+
+
+
+
 #check if user provided LIBS, CFLAGS, or DATA for module
 if test $coin_has_dylp != skipping; then
 
@@ -22994,7 +22623,10 @@ if test "${with_dylp_lib+set}" = set; then
   withval="$with_dylp_lib"
   coin_has_dylp=yes
        DYLP_LIBS="$withval"
-       PCADDLIBS="$withval $PCADDLIBS"
+
+         CBCGENERIC_PCLIBS="$withval $CBCGENERIC_PCLIBS"
+         CBCGENERIC_LIBS="$withval $CBCGENERIC_LIBS"
+
 
 fi;
 
@@ -23004,6 +22636,9 @@ if test "${with_dylp_incdir+set}" = set; then
   withval="$with_dylp_incdir"
   coin_has_dylp=yes
      DYLP_CFLAGS="-I`${CYGPATH_W} $withval`"
+     CBCGENERIC_CFLAGS="$withval $CBCGENERIC_CFLAGS"
+
+
 fi;
 
 
@@ -23044,7 +22679,8 @@ if test -n "$PKG_CONFIG" ; then
      coin_has_dylp=yes
         echo "$as_me:$LINENO: result: yes: $DYLP_VERSIONS" >&5
 echo "${ECHO_T}yes: $DYLP_VERSIONS" >&6
-        REQUIREDPACKAGES="osi-dylp $REQUIREDPACKAGES"
+        CBCGENERIC_PCREQUIRES="osi-dylp $CBCGENERIC_PCREQUIRES"
+
 
 
   else
@@ -23066,18 +22702,23 @@ fi
     # reset PKG_CONFIG_PATH variable
     PKG_CONFIG_PATH="$coin_save_PKG_CONFIG_PATH"
     export PKG_CONFIG_PATH
+
+    # augment X_CFLAGS and X_LIBS for each build target X in CbcGeneric
+
+      CBCGENERIC_CFLAGS="$DYLP_CFLAGS $CBCGENERIC_CFLAGS"
+      CBCGENERIC_LIBS="$DYLP_LIBS $CBCGENERIC_LIBS"
+
   else
     echo "$as_me:$LINENO: result: skipped check via pkg-config, redirect to fallback" >&5
 echo "${ECHO_T}skipped check via pkg-config, redirect to fallback" >&6
 
-echo "$as_me:$LINENO: checking for COIN-OR module DyLP (fallback)" >&5
-echo $ECHO_N "checking for COIN-OR module DyLP (fallback)... $ECHO_C" >&6
+echo "$as_me:$LINENO: checking for COIN-OR package DyLP (fallback)" >&5
+echo $ECHO_N "checking for COIN-OR package DyLP (fallback)... $ECHO_C" >&6
 
 coin_has_dylp=notGiven
 DYLP_LIBS=
 DYLP_CFLAGS=
 DYLP_DATA=
-
 
 # initial list of dependencies is "osi-dylp", but we need to filter out version number specifications (= x, <= x, >= x)
 projtoprocess="osi-dylp"
@@ -23153,31 +22794,42 @@ echo "${ECHO_T}no, dependency $proj not available" >&6
 
   projtoprocess="$nextprojtoprocess"
 
+  # if there are no more projects to search for, finish up
   if test "x$projtoprocess" = x ; then
     coin_has_dylp=yes
     echo "$as_me:$LINENO: result: yes, dependencies are$projprocessed" >&5
 echo "${ECHO_T}yes, dependencies are$projprocessed" >&6
-
-    REQUIREDPACKAGES="osi-dylp $REQUIREDPACKAGES"
 
 cat >>confdefs.h <<\_ACEOF
 #define COIN_HAS_DYLP 1
 _ACEOF
 
 
+
+      CBCGENERIC_PCREQUIRES="osi-dylp $CBCGENERIC_PCREQUIRES"
+      CBCGENERIC_CFLAGS="$DYLP_CFLAGS $CBCGENERIC_CFLAGS"
+      CBCGENERIC_LIBS="$DYLP_LIBS $CBCGENERIC_LIBS"
+
+
     if test 1 = 0 ; then  #change this test to enable a bit of debugging output
-    if test -n "$DYLP_CFLAGS" ; then
-      { echo "$as_me:$LINENO: DyLP CFLAGS are $DYLP_CFLAGS" >&5
+      if test -n "$DYLP_CFLAGS" ; then
+        { echo "$as_me:$LINENO: DyLP CFLAGS are $DYLP_CFLAGS" >&5
 echo "$as_me: DyLP CFLAGS are $DYLP_CFLAGS" >&6;}
-    fi
-    if test -n "$DYLP_LIBS" ; then
-      { echo "$as_me:$LINENO: DyLP LIBS   are $DYLP_LIBS" >&5
+      fi
+      if test -n "$DYLP_LIBS" ; then
+        { echo "$as_me:$LINENO: DyLP LIBS   are $DYLP_LIBS" >&5
 echo "$as_me: DyLP LIBS   are $DYLP_LIBS" >&6;}
-    fi
-    if test -n "$DYLP_DATA" ; then
-      { echo "$as_me:$LINENO: DyLP DATA   is  $DYLP_DATA" >&5
+      fi
+      if test -n "$DYLP_DATA" ; then
+        { echo "$as_me:$LINENO: DyLP DATA   is  $DYLP_DATA" >&5
 echo "$as_me: DyLP DATA   is  $DYLP_DATA" >&6;}
-    fi
+      fi
+
+        { echo "$as_me:$LINENO: CbcGeneric CFLAGS are $CBCGENERIC_CFLAGS" >&5
+echo "$as_me: CbcGeneric CFLAGS are $CBCGENERIC_CFLAGS" >&6;}
+        { echo "$as_me:$LINENO: CbcGeneric LIBS   are $CBCGENERIC_LIBS" >&5
+echo "$as_me: CbcGeneric LIBS   are $CBCGENERIC_LIBS" >&6;}
+
     fi
   fi
 done
@@ -23204,25 +22856,36 @@ fi
 
 if test $coin_has_dylp != skipping &&
    test $coin_has_dylp != notGiven ; then
-  if test 0 = 1 ; then  #change this test to enable a bit of debugging output
-  if test -n "$DYLP_CFLAGS" ; then
-    { echo "$as_me:$LINENO: DyLP CFLAGS are $DYLP_CFLAGS" >&5
-echo "$as_me: DyLP CFLAGS are $DYLP_CFLAGS" >&6;}
-  fi
-  if test -n "$DYLP_LIBS" ; then
-    { echo "$as_me:$LINENO: DyLP LIBS   are $DYLP_LIBS" >&5
-echo "$as_me: DyLP LIBS   are $DYLP_LIBS" >&6;}
-  fi
-  if test -n "$DYLP_DATA" ; then
-    { echo "$as_me:$LINENO: DyLP DATA   is  $DYLP_DATA" >&5
-echo "$as_me: DyLP DATA   is  $DYLP_DATA" >&6;}
-  fi
-  fi
 
 cat >>confdefs.h <<\_ACEOF
 #define COIN_HAS_DYLP 1
 _ACEOF
 
+
+  if test 1 = 0 ; then  #change this test to enable a bit of debugging output
+    if test -n "$DYLP_CFLAGS" ; then
+      { echo "$as_me:$LINENO: DyLP CFLAGS are $DYLP_CFLAGS" >&5
+echo "$as_me: DyLP CFLAGS are $DYLP_CFLAGS" >&6;}
+    fi
+    if test -n "$DYLP_LIBS" ; then
+      { echo "$as_me:$LINENO: DyLP LIBS   are $DYLP_LIBS" >&5
+echo "$as_me: DyLP LIBS   are $DYLP_LIBS" >&6;}
+    fi
+    if test -n "$DYLP_DATA" ; then
+      { echo "$as_me:$LINENO: DyLP DATA   is  $DYLP_DATA" >&5
+echo "$as_me: DyLP DATA   is  $DYLP_DATA" >&6;}
+    fi
+    if test -n "$DYLP_CFLAGS" ; then
+      { echo "$as_me:$LINENO: DyLP CFLAGS are $DYLP_CFLAGS" >&5
+echo "$as_me: DyLP CFLAGS are $DYLP_CFLAGS" >&6;}
+    fi
+
+      { echo "$as_me:$LINENO: CbcGeneric CFLAGS are $CBCGENERIC_CFLAGS" >&5
+echo "$as_me: CbcGeneric CFLAGS are $CBCGENERIC_CFLAGS" >&6;}
+      { echo "$as_me:$LINENO: CbcGeneric LIBS   are $CBCGENERIC_LIBS" >&5
+echo "$as_me: CbcGeneric LIBS   are $CBCGENERIC_LIBS" >&6;}
+
+  fi
 fi
 
 # Define the Makefile conditional
@@ -23240,12 +22903,12 @@ fi
 
 
 
-echo "$as_me:$LINENO: checking for COIN-OR module Vol" >&5
-echo $ECHO_N "checking for COIN-OR module Vol... $ECHO_C" >&6
+echo "$as_me:$LINENO: checking for COIN-OR package Vol" >&5
+echo $ECHO_N "checking for COIN-OR package Vol... $ECHO_C" >&6
 
 coin_has_vol=notGiven
 
-# check if user wants to skip module in any case
+# check if user wants to skip package in any case
 if test x"$COIN_SKIP_PROJECTS" != x; then
   for dir in $COIN_SKIP_PROJECTS; do
     if test $dir = "Vol"; then
@@ -23271,7 +22934,7 @@ if test "${with_vol_lib+set}" = set; then
   withval="$with_vol_lib"
   coin_has_vol=yes
        VOL_LIBS="$withval"
-       PCADDLIBS="$withval $PCADDLIBS"
+
 
 fi;
 
@@ -23281,6 +22944,8 @@ if test "${with_vol_incdir+set}" = set; then
   withval="$with_vol_incdir"
   coin_has_vol=yes
      VOL_CFLAGS="-I`${CYGPATH_W} $withval`"
+
+
 fi;
 
 
@@ -23321,7 +22986,7 @@ if test -n "$PKG_CONFIG" ; then
      coin_has_vol=yes
         echo "$as_me:$LINENO: result: yes: $VOL_VERSIONS" >&5
 echo "${ECHO_T}yes: $VOL_VERSIONS" >&6
-        REQUIREDPACKAGES="osi-vol $REQUIREDPACKAGES"
+
 
 
   else
@@ -23343,18 +23008,20 @@ fi
     # reset PKG_CONFIG_PATH variable
     PKG_CONFIG_PATH="$coin_save_PKG_CONFIG_PATH"
     export PKG_CONFIG_PATH
+
+    # augment X_CFLAGS and X_LIBS for each build target X in
+
   else
     echo "$as_me:$LINENO: result: skipped check via pkg-config, redirect to fallback" >&5
 echo "${ECHO_T}skipped check via pkg-config, redirect to fallback" >&6
 
-echo "$as_me:$LINENO: checking for COIN-OR module Vol (fallback)" >&5
-echo $ECHO_N "checking for COIN-OR module Vol (fallback)... $ECHO_C" >&6
+echo "$as_me:$LINENO: checking for COIN-OR package Vol (fallback)" >&5
+echo $ECHO_N "checking for COIN-OR package Vol (fallback)... $ECHO_C" >&6
 
 coin_has_vol=notGiven
 VOL_LIBS=
 VOL_CFLAGS=
 VOL_DATA=
-
 
 # initial list of dependencies is "osi-vol", but we need to filter out version number specifications (= x, <= x, >= x)
 projtoprocess="osi-vol"
@@ -23430,31 +23097,33 @@ echo "${ECHO_T}no, dependency $proj not available" >&6
 
   projtoprocess="$nextprojtoprocess"
 
+  # if there are no more projects to search for, finish up
   if test "x$projtoprocess" = x ; then
     coin_has_vol=yes
     echo "$as_me:$LINENO: result: yes, dependencies are$projprocessed" >&5
 echo "${ECHO_T}yes, dependencies are$projprocessed" >&6
-
-    REQUIREDPACKAGES="osi-vol $REQUIREDPACKAGES"
 
 cat >>confdefs.h <<\_ACEOF
 #define COIN_HAS_VOL 1
 _ACEOF
 
 
+
+
     if test 1 = 0 ; then  #change this test to enable a bit of debugging output
-    if test -n "$VOL_CFLAGS" ; then
-      { echo "$as_me:$LINENO: Vol CFLAGS are $VOL_CFLAGS" >&5
+      if test -n "$VOL_CFLAGS" ; then
+        { echo "$as_me:$LINENO: Vol CFLAGS are $VOL_CFLAGS" >&5
 echo "$as_me: Vol CFLAGS are $VOL_CFLAGS" >&6;}
-    fi
-    if test -n "$VOL_LIBS" ; then
-      { echo "$as_me:$LINENO: Vol LIBS   are $VOL_LIBS" >&5
+      fi
+      if test -n "$VOL_LIBS" ; then
+        { echo "$as_me:$LINENO: Vol LIBS   are $VOL_LIBS" >&5
 echo "$as_me: Vol LIBS   are $VOL_LIBS" >&6;}
-    fi
-    if test -n "$VOL_DATA" ; then
-      { echo "$as_me:$LINENO: Vol DATA   is  $VOL_DATA" >&5
+      fi
+      if test -n "$VOL_DATA" ; then
+        { echo "$as_me:$LINENO: Vol DATA   is  $VOL_DATA" >&5
 echo "$as_me: Vol DATA   is  $VOL_DATA" >&6;}
-    fi
+      fi
+
     fi
   fi
 done
@@ -23481,25 +23150,31 @@ fi
 
 if test $coin_has_vol != skipping &&
    test $coin_has_vol != notGiven ; then
-  if test 0 = 1 ; then  #change this test to enable a bit of debugging output
-  if test -n "$VOL_CFLAGS" ; then
-    { echo "$as_me:$LINENO: Vol CFLAGS are $VOL_CFLAGS" >&5
-echo "$as_me: Vol CFLAGS are $VOL_CFLAGS" >&6;}
-  fi
-  if test -n "$VOL_LIBS" ; then
-    { echo "$as_me:$LINENO: Vol LIBS   are $VOL_LIBS" >&5
-echo "$as_me: Vol LIBS   are $VOL_LIBS" >&6;}
-  fi
-  if test -n "$VOL_DATA" ; then
-    { echo "$as_me:$LINENO: Vol DATA   is  $VOL_DATA" >&5
-echo "$as_me: Vol DATA   is  $VOL_DATA" >&6;}
-  fi
-  fi
 
 cat >>confdefs.h <<\_ACEOF
 #define COIN_HAS_VOL 1
 _ACEOF
 
+
+  if test 1 = 0 ; then  #change this test to enable a bit of debugging output
+    if test -n "$VOL_CFLAGS" ; then
+      { echo "$as_me:$LINENO: Vol CFLAGS are $VOL_CFLAGS" >&5
+echo "$as_me: Vol CFLAGS are $VOL_CFLAGS" >&6;}
+    fi
+    if test -n "$VOL_LIBS" ; then
+      { echo "$as_me:$LINENO: Vol LIBS   are $VOL_LIBS" >&5
+echo "$as_me: Vol LIBS   are $VOL_LIBS" >&6;}
+    fi
+    if test -n "$VOL_DATA" ; then
+      { echo "$as_me:$LINENO: Vol DATA   is  $VOL_DATA" >&5
+echo "$as_me: Vol DATA   is  $VOL_DATA" >&6;}
+    fi
+    if test -n "$VOL_CFLAGS" ; then
+      { echo "$as_me:$LINENO: Vol CFLAGS are $VOL_CFLAGS" >&5
+echo "$as_me: Vol CFLAGS are $VOL_CFLAGS" >&6;}
+    fi
+
+  fi
 fi
 
 # Define the Makefile conditional
@@ -23517,12 +23192,12 @@ fi
 
 
 
-echo "$as_me:$LINENO: checking for COIN-OR module Cpx" >&5
-echo $ECHO_N "checking for COIN-OR module Cpx... $ECHO_C" >&6
+echo "$as_me:$LINENO: checking for COIN-OR package Cpx" >&5
+echo $ECHO_N "checking for COIN-OR package Cpx... $ECHO_C" >&6
 
 coin_has_cpx=notGiven
 
-# check if user wants to skip module in any case
+# check if user wants to skip package in any case
 if test x"$COIN_SKIP_PROJECTS" != x; then
   for dir in $COIN_SKIP_PROJECTS; do
     if test $dir = "Cpx"; then
@@ -23539,6 +23214,10 @@ CPX_DATA=
 
 
 
+
+
+
+
 #check if user provided LIBS, CFLAGS, or DATA for module
 if test $coin_has_cpx != skipping; then
 
@@ -23548,7 +23227,10 @@ if test "${with_cpx_lib+set}" = set; then
   withval="$with_cpx_lib"
   coin_has_cpx=yes
        CPX_LIBS="$withval"
-       PCADDLIBS="$withval $PCADDLIBS"
+
+         CBCGENERIC_PCLIBS="$withval $CBCGENERIC_PCLIBS"
+         CBCGENERIC_LIBS="$withval $CBCGENERIC_LIBS"
+
 
 fi;
 
@@ -23558,6 +23240,9 @@ if test "${with_cpx_incdir+set}" = set; then
   withval="$with_cpx_incdir"
   coin_has_cpx=yes
      CPX_CFLAGS="-I`${CYGPATH_W} $withval`"
+     CBCGENERIC_CFLAGS="$withval $CBCGENERIC_CFLAGS"
+
+
 fi;
 
 
@@ -23598,7 +23283,8 @@ if test -n "$PKG_CONFIG" ; then
      coin_has_cpx=yes
         echo "$as_me:$LINENO: result: yes: $CPX_VERSIONS" >&5
 echo "${ECHO_T}yes: $CPX_VERSIONS" >&6
-        REQUIREDPACKAGES="osi-cplex $REQUIREDPACKAGES"
+        CBCGENERIC_PCREQUIRES="osi-cplex $CBCGENERIC_PCREQUIRES"
+
 
 
   else
@@ -23620,18 +23306,23 @@ fi
     # reset PKG_CONFIG_PATH variable
     PKG_CONFIG_PATH="$coin_save_PKG_CONFIG_PATH"
     export PKG_CONFIG_PATH
+
+    # augment X_CFLAGS and X_LIBS for each build target X in CbcGeneric
+
+      CBCGENERIC_CFLAGS="$CPX_CFLAGS $CBCGENERIC_CFLAGS"
+      CBCGENERIC_LIBS="$CPX_LIBS $CBCGENERIC_LIBS"
+
   else
     echo "$as_me:$LINENO: result: skipped check via pkg-config, redirect to fallback" >&5
 echo "${ECHO_T}skipped check via pkg-config, redirect to fallback" >&6
 
-echo "$as_me:$LINENO: checking for COIN-OR module Cpx (fallback)" >&5
-echo $ECHO_N "checking for COIN-OR module Cpx (fallback)... $ECHO_C" >&6
+echo "$as_me:$LINENO: checking for COIN-OR package Cpx (fallback)" >&5
+echo $ECHO_N "checking for COIN-OR package Cpx (fallback)... $ECHO_C" >&6
 
 coin_has_cpx=notGiven
 CPX_LIBS=
 CPX_CFLAGS=
 CPX_DATA=
-
 
 # initial list of dependencies is "osi-cplex", but we need to filter out version number specifications (= x, <= x, >= x)
 projtoprocess="osi-cplex"
@@ -23707,31 +23398,42 @@ echo "${ECHO_T}no, dependency $proj not available" >&6
 
   projtoprocess="$nextprojtoprocess"
 
+  # if there are no more projects to search for, finish up
   if test "x$projtoprocess" = x ; then
     coin_has_cpx=yes
     echo "$as_me:$LINENO: result: yes, dependencies are$projprocessed" >&5
 echo "${ECHO_T}yes, dependencies are$projprocessed" >&6
-
-    REQUIREDPACKAGES="osi-cplex $REQUIREDPACKAGES"
 
 cat >>confdefs.h <<\_ACEOF
 #define COIN_HAS_CPX 1
 _ACEOF
 
 
+
+      CBCGENERIC_PCREQUIRES="osi-cplex $CBCGENERIC_PCREQUIRES"
+      CBCGENERIC_CFLAGS="$CPX_CFLAGS $CBCGENERIC_CFLAGS"
+      CBCGENERIC_LIBS="$CPX_LIBS $CBCGENERIC_LIBS"
+
+
     if test 1 = 0 ; then  #change this test to enable a bit of debugging output
-    if test -n "$CPX_CFLAGS" ; then
-      { echo "$as_me:$LINENO: Cpx CFLAGS are $CPX_CFLAGS" >&5
+      if test -n "$CPX_CFLAGS" ; then
+        { echo "$as_me:$LINENO: Cpx CFLAGS are $CPX_CFLAGS" >&5
 echo "$as_me: Cpx CFLAGS are $CPX_CFLAGS" >&6;}
-    fi
-    if test -n "$CPX_LIBS" ; then
-      { echo "$as_me:$LINENO: Cpx LIBS   are $CPX_LIBS" >&5
+      fi
+      if test -n "$CPX_LIBS" ; then
+        { echo "$as_me:$LINENO: Cpx LIBS   are $CPX_LIBS" >&5
 echo "$as_me: Cpx LIBS   are $CPX_LIBS" >&6;}
-    fi
-    if test -n "$CPX_DATA" ; then
-      { echo "$as_me:$LINENO: Cpx DATA   is  $CPX_DATA" >&5
+      fi
+      if test -n "$CPX_DATA" ; then
+        { echo "$as_me:$LINENO: Cpx DATA   is  $CPX_DATA" >&5
 echo "$as_me: Cpx DATA   is  $CPX_DATA" >&6;}
-    fi
+      fi
+
+        { echo "$as_me:$LINENO: CbcGeneric CFLAGS are $CBCGENERIC_CFLAGS" >&5
+echo "$as_me: CbcGeneric CFLAGS are $CBCGENERIC_CFLAGS" >&6;}
+        { echo "$as_me:$LINENO: CbcGeneric LIBS   are $CBCGENERIC_LIBS" >&5
+echo "$as_me: CbcGeneric LIBS   are $CBCGENERIC_LIBS" >&6;}
+
     fi
   fi
 done
@@ -23758,25 +23460,36 @@ fi
 
 if test $coin_has_cpx != skipping &&
    test $coin_has_cpx != notGiven ; then
-  if test 0 = 1 ; then  #change this test to enable a bit of debugging output
-  if test -n "$CPX_CFLAGS" ; then
-    { echo "$as_me:$LINENO: Cpx CFLAGS are $CPX_CFLAGS" >&5
-echo "$as_me: Cpx CFLAGS are $CPX_CFLAGS" >&6;}
-  fi
-  if test -n "$CPX_LIBS" ; then
-    { echo "$as_me:$LINENO: Cpx LIBS   are $CPX_LIBS" >&5
-echo "$as_me: Cpx LIBS   are $CPX_LIBS" >&6;}
-  fi
-  if test -n "$CPX_DATA" ; then
-    { echo "$as_me:$LINENO: Cpx DATA   is  $CPX_DATA" >&5
-echo "$as_me: Cpx DATA   is  $CPX_DATA" >&6;}
-  fi
-  fi
 
 cat >>confdefs.h <<\_ACEOF
 #define COIN_HAS_CPX 1
 _ACEOF
 
+
+  if test 1 = 0 ; then  #change this test to enable a bit of debugging output
+    if test -n "$CPX_CFLAGS" ; then
+      { echo "$as_me:$LINENO: Cpx CFLAGS are $CPX_CFLAGS" >&5
+echo "$as_me: Cpx CFLAGS are $CPX_CFLAGS" >&6;}
+    fi
+    if test -n "$CPX_LIBS" ; then
+      { echo "$as_me:$LINENO: Cpx LIBS   are $CPX_LIBS" >&5
+echo "$as_me: Cpx LIBS   are $CPX_LIBS" >&6;}
+    fi
+    if test -n "$CPX_DATA" ; then
+      { echo "$as_me:$LINENO: Cpx DATA   is  $CPX_DATA" >&5
+echo "$as_me: Cpx DATA   is  $CPX_DATA" >&6;}
+    fi
+    if test -n "$CPX_CFLAGS" ; then
+      { echo "$as_me:$LINENO: Cpx CFLAGS are $CPX_CFLAGS" >&5
+echo "$as_me: Cpx CFLAGS are $CPX_CFLAGS" >&6;}
+    fi
+
+      { echo "$as_me:$LINENO: CbcGeneric CFLAGS are $CBCGENERIC_CFLAGS" >&5
+echo "$as_me: CbcGeneric CFLAGS are $CBCGENERIC_CFLAGS" >&6;}
+      { echo "$as_me:$LINENO: CbcGeneric LIBS   are $CBCGENERIC_LIBS" >&5
+echo "$as_me: CbcGeneric LIBS   are $CBCGENERIC_LIBS" >&6;}
+
+  fi
 fi
 
 # Define the Makefile conditional
@@ -23794,12 +23507,12 @@ fi
 
 
 
-echo "$as_me:$LINENO: checking for COIN-OR module Glpk" >&5
-echo $ECHO_N "checking for COIN-OR module Glpk... $ECHO_C" >&6
+echo "$as_me:$LINENO: checking for COIN-OR package Glpk" >&5
+echo $ECHO_N "checking for COIN-OR package Glpk... $ECHO_C" >&6
 
 coin_has_glpk=notGiven
 
-# check if user wants to skip module in any case
+# check if user wants to skip package in any case
 if test x"$COIN_SKIP_PROJECTS" != x; then
   for dir in $COIN_SKIP_PROJECTS; do
     if test $dir = "Glpk"; then
@@ -23816,6 +23529,10 @@ GLPK_DATA=
 
 
 
+
+
+
+
 #check if user provided LIBS, CFLAGS, or DATA for module
 if test $coin_has_glpk != skipping; then
 
@@ -23825,7 +23542,10 @@ if test "${with_glpk_lib+set}" = set; then
   withval="$with_glpk_lib"
   coin_has_glpk=yes
        GLPK_LIBS="$withval"
-       PCADDLIBS="$withval $PCADDLIBS"
+
+         CBCGENERIC_PCLIBS="$withval $CBCGENERIC_PCLIBS"
+         CBCGENERIC_LIBS="$withval $CBCGENERIC_LIBS"
+
 
 fi;
 
@@ -23835,6 +23555,9 @@ if test "${with_glpk_incdir+set}" = set; then
   withval="$with_glpk_incdir"
   coin_has_glpk=yes
      GLPK_CFLAGS="-I`${CYGPATH_W} $withval`"
+     CBCGENERIC_CFLAGS="$withval $CBCGENERIC_CFLAGS"
+
+
 fi;
 
 
@@ -23875,7 +23598,8 @@ if test -n "$PKG_CONFIG" ; then
      coin_has_glpk=yes
         echo "$as_me:$LINENO: result: yes: $GLPK_VERSIONS" >&5
 echo "${ECHO_T}yes: $GLPK_VERSIONS" >&6
-        REQUIREDPACKAGES="osi-glpk $REQUIREDPACKAGES"
+        CBCGENERIC_PCREQUIRES="osi-glpk $CBCGENERIC_PCREQUIRES"
+
 
 
   else
@@ -23897,18 +23621,23 @@ fi
     # reset PKG_CONFIG_PATH variable
     PKG_CONFIG_PATH="$coin_save_PKG_CONFIG_PATH"
     export PKG_CONFIG_PATH
+
+    # augment X_CFLAGS and X_LIBS for each build target X in CbcGeneric
+
+      CBCGENERIC_CFLAGS="$GLPK_CFLAGS $CBCGENERIC_CFLAGS"
+      CBCGENERIC_LIBS="$GLPK_LIBS $CBCGENERIC_LIBS"
+
   else
     echo "$as_me:$LINENO: result: skipped check via pkg-config, redirect to fallback" >&5
 echo "${ECHO_T}skipped check via pkg-config, redirect to fallback" >&6
 
-echo "$as_me:$LINENO: checking for COIN-OR module Glpk (fallback)" >&5
-echo $ECHO_N "checking for COIN-OR module Glpk (fallback)... $ECHO_C" >&6
+echo "$as_me:$LINENO: checking for COIN-OR package Glpk (fallback)" >&5
+echo $ECHO_N "checking for COIN-OR package Glpk (fallback)... $ECHO_C" >&6
 
 coin_has_glpk=notGiven
 GLPK_LIBS=
 GLPK_CFLAGS=
 GLPK_DATA=
-
 
 # initial list of dependencies is "osi-glpk", but we need to filter out version number specifications (= x, <= x, >= x)
 projtoprocess="osi-glpk"
@@ -23984,31 +23713,42 @@ echo "${ECHO_T}no, dependency $proj not available" >&6
 
   projtoprocess="$nextprojtoprocess"
 
+  # if there are no more projects to search for, finish up
   if test "x$projtoprocess" = x ; then
     coin_has_glpk=yes
     echo "$as_me:$LINENO: result: yes, dependencies are$projprocessed" >&5
 echo "${ECHO_T}yes, dependencies are$projprocessed" >&6
-
-    REQUIREDPACKAGES="osi-glpk $REQUIREDPACKAGES"
 
 cat >>confdefs.h <<\_ACEOF
 #define COIN_HAS_GLPK 1
 _ACEOF
 
 
+
+      CBCGENERIC_PCREQUIRES="osi-glpk $CBCGENERIC_PCREQUIRES"
+      CBCGENERIC_CFLAGS="$GLPK_CFLAGS $CBCGENERIC_CFLAGS"
+      CBCGENERIC_LIBS="$GLPK_LIBS $CBCGENERIC_LIBS"
+
+
     if test 1 = 0 ; then  #change this test to enable a bit of debugging output
-    if test -n "$GLPK_CFLAGS" ; then
-      { echo "$as_me:$LINENO: Glpk CFLAGS are $GLPK_CFLAGS" >&5
+      if test -n "$GLPK_CFLAGS" ; then
+        { echo "$as_me:$LINENO: Glpk CFLAGS are $GLPK_CFLAGS" >&5
 echo "$as_me: Glpk CFLAGS are $GLPK_CFLAGS" >&6;}
-    fi
-    if test -n "$GLPK_LIBS" ; then
-      { echo "$as_me:$LINENO: Glpk LIBS   are $GLPK_LIBS" >&5
+      fi
+      if test -n "$GLPK_LIBS" ; then
+        { echo "$as_me:$LINENO: Glpk LIBS   are $GLPK_LIBS" >&5
 echo "$as_me: Glpk LIBS   are $GLPK_LIBS" >&6;}
-    fi
-    if test -n "$GLPK_DATA" ; then
-      { echo "$as_me:$LINENO: Glpk DATA   is  $GLPK_DATA" >&5
+      fi
+      if test -n "$GLPK_DATA" ; then
+        { echo "$as_me:$LINENO: Glpk DATA   is  $GLPK_DATA" >&5
 echo "$as_me: Glpk DATA   is  $GLPK_DATA" >&6;}
-    fi
+      fi
+
+        { echo "$as_me:$LINENO: CbcGeneric CFLAGS are $CBCGENERIC_CFLAGS" >&5
+echo "$as_me: CbcGeneric CFLAGS are $CBCGENERIC_CFLAGS" >&6;}
+        { echo "$as_me:$LINENO: CbcGeneric LIBS   are $CBCGENERIC_LIBS" >&5
+echo "$as_me: CbcGeneric LIBS   are $CBCGENERIC_LIBS" >&6;}
+
     fi
   fi
 done
@@ -24035,25 +23775,36 @@ fi
 
 if test $coin_has_glpk != skipping &&
    test $coin_has_glpk != notGiven ; then
-  if test 0 = 1 ; then  #change this test to enable a bit of debugging output
-  if test -n "$GLPK_CFLAGS" ; then
-    { echo "$as_me:$LINENO: Glpk CFLAGS are $GLPK_CFLAGS" >&5
-echo "$as_me: Glpk CFLAGS are $GLPK_CFLAGS" >&6;}
-  fi
-  if test -n "$GLPK_LIBS" ; then
-    { echo "$as_me:$LINENO: Glpk LIBS   are $GLPK_LIBS" >&5
-echo "$as_me: Glpk LIBS   are $GLPK_LIBS" >&6;}
-  fi
-  if test -n "$GLPK_DATA" ; then
-    { echo "$as_me:$LINENO: Glpk DATA   is  $GLPK_DATA" >&5
-echo "$as_me: Glpk DATA   is  $GLPK_DATA" >&6;}
-  fi
-  fi
 
 cat >>confdefs.h <<\_ACEOF
 #define COIN_HAS_GLPK 1
 _ACEOF
 
+
+  if test 1 = 0 ; then  #change this test to enable a bit of debugging output
+    if test -n "$GLPK_CFLAGS" ; then
+      { echo "$as_me:$LINENO: Glpk CFLAGS are $GLPK_CFLAGS" >&5
+echo "$as_me: Glpk CFLAGS are $GLPK_CFLAGS" >&6;}
+    fi
+    if test -n "$GLPK_LIBS" ; then
+      { echo "$as_me:$LINENO: Glpk LIBS   are $GLPK_LIBS" >&5
+echo "$as_me: Glpk LIBS   are $GLPK_LIBS" >&6;}
+    fi
+    if test -n "$GLPK_DATA" ; then
+      { echo "$as_me:$LINENO: Glpk DATA   is  $GLPK_DATA" >&5
+echo "$as_me: Glpk DATA   is  $GLPK_DATA" >&6;}
+    fi
+    if test -n "$GLPK_CFLAGS" ; then
+      { echo "$as_me:$LINENO: Glpk CFLAGS are $GLPK_CFLAGS" >&5
+echo "$as_me: Glpk CFLAGS are $GLPK_CFLAGS" >&6;}
+    fi
+
+      { echo "$as_me:$LINENO: CbcGeneric CFLAGS are $CBCGENERIC_CFLAGS" >&5
+echo "$as_me: CbcGeneric CFLAGS are $CBCGENERIC_CFLAGS" >&6;}
+      { echo "$as_me:$LINENO: CbcGeneric LIBS   are $CBCGENERIC_LIBS" >&5
+echo "$as_me: CbcGeneric LIBS   are $CBCGENERIC_LIBS" >&6;}
+
+  fi
 fi
 
 # Define the Makefile conditional
@@ -24071,12 +23822,12 @@ fi
 
 
 
-echo "$as_me:$LINENO: checking for COIN-OR module Grb" >&5
-echo $ECHO_N "checking for COIN-OR module Grb... $ECHO_C" >&6
+echo "$as_me:$LINENO: checking for COIN-OR package Grb" >&5
+echo $ECHO_N "checking for COIN-OR package Grb... $ECHO_C" >&6
 
 coin_has_grb=notGiven
 
-# check if user wants to skip module in any case
+# check if user wants to skip package in any case
 if test x"$COIN_SKIP_PROJECTS" != x; then
   for dir in $COIN_SKIP_PROJECTS; do
     if test $dir = "Grb"; then
@@ -24102,7 +23853,7 @@ if test "${with_grb_lib+set}" = set; then
   withval="$with_grb_lib"
   coin_has_grb=yes
        GRB_LIBS="$withval"
-       PCADDLIBS="$withval $PCADDLIBS"
+
 
 fi;
 
@@ -24112,6 +23863,8 @@ if test "${with_grb_incdir+set}" = set; then
   withval="$with_grb_incdir"
   coin_has_grb=yes
      GRB_CFLAGS="-I`${CYGPATH_W} $withval`"
+
+
 fi;
 
 
@@ -24152,7 +23905,7 @@ if test -n "$PKG_CONFIG" ; then
      coin_has_grb=yes
         echo "$as_me:$LINENO: result: yes: $GRB_VERSIONS" >&5
 echo "${ECHO_T}yes: $GRB_VERSIONS" >&6
-        REQUIREDPACKAGES="osi-gurobi $REQUIREDPACKAGES"
+
 
 
   else
@@ -24174,18 +23927,20 @@ fi
     # reset PKG_CONFIG_PATH variable
     PKG_CONFIG_PATH="$coin_save_PKG_CONFIG_PATH"
     export PKG_CONFIG_PATH
+
+    # augment X_CFLAGS and X_LIBS for each build target X in
+
   else
     echo "$as_me:$LINENO: result: skipped check via pkg-config, redirect to fallback" >&5
 echo "${ECHO_T}skipped check via pkg-config, redirect to fallback" >&6
 
-echo "$as_me:$LINENO: checking for COIN-OR module Grb (fallback)" >&5
-echo $ECHO_N "checking for COIN-OR module Grb (fallback)... $ECHO_C" >&6
+echo "$as_me:$LINENO: checking for COIN-OR package Grb (fallback)" >&5
+echo $ECHO_N "checking for COIN-OR package Grb (fallback)... $ECHO_C" >&6
 
 coin_has_grb=notGiven
 GRB_LIBS=
 GRB_CFLAGS=
 GRB_DATA=
-
 
 # initial list of dependencies is "osi-gurobi", but we need to filter out version number specifications (= x, <= x, >= x)
 projtoprocess="osi-gurobi"
@@ -24261,31 +24016,33 @@ echo "${ECHO_T}no, dependency $proj not available" >&6
 
   projtoprocess="$nextprojtoprocess"
 
+  # if there are no more projects to search for, finish up
   if test "x$projtoprocess" = x ; then
     coin_has_grb=yes
     echo "$as_me:$LINENO: result: yes, dependencies are$projprocessed" >&5
 echo "${ECHO_T}yes, dependencies are$projprocessed" >&6
-
-    REQUIREDPACKAGES="osi-gurobi $REQUIREDPACKAGES"
 
 cat >>confdefs.h <<\_ACEOF
 #define COIN_HAS_GRB 1
 _ACEOF
 
 
+
+
     if test 1 = 0 ; then  #change this test to enable a bit of debugging output
-    if test -n "$GRB_CFLAGS" ; then
-      { echo "$as_me:$LINENO: Grb CFLAGS are $GRB_CFLAGS" >&5
+      if test -n "$GRB_CFLAGS" ; then
+        { echo "$as_me:$LINENO: Grb CFLAGS are $GRB_CFLAGS" >&5
 echo "$as_me: Grb CFLAGS are $GRB_CFLAGS" >&6;}
-    fi
-    if test -n "$GRB_LIBS" ; then
-      { echo "$as_me:$LINENO: Grb LIBS   are $GRB_LIBS" >&5
+      fi
+      if test -n "$GRB_LIBS" ; then
+        { echo "$as_me:$LINENO: Grb LIBS   are $GRB_LIBS" >&5
 echo "$as_me: Grb LIBS   are $GRB_LIBS" >&6;}
-    fi
-    if test -n "$GRB_DATA" ; then
-      { echo "$as_me:$LINENO: Grb DATA   is  $GRB_DATA" >&5
+      fi
+      if test -n "$GRB_DATA" ; then
+        { echo "$as_me:$LINENO: Grb DATA   is  $GRB_DATA" >&5
 echo "$as_me: Grb DATA   is  $GRB_DATA" >&6;}
-    fi
+      fi
+
     fi
   fi
 done
@@ -24312,25 +24069,31 @@ fi
 
 if test $coin_has_grb != skipping &&
    test $coin_has_grb != notGiven ; then
-  if test 0 = 1 ; then  #change this test to enable a bit of debugging output
-  if test -n "$GRB_CFLAGS" ; then
-    { echo "$as_me:$LINENO: Grb CFLAGS are $GRB_CFLAGS" >&5
-echo "$as_me: Grb CFLAGS are $GRB_CFLAGS" >&6;}
-  fi
-  if test -n "$GRB_LIBS" ; then
-    { echo "$as_me:$LINENO: Grb LIBS   are $GRB_LIBS" >&5
-echo "$as_me: Grb LIBS   are $GRB_LIBS" >&6;}
-  fi
-  if test -n "$GRB_DATA" ; then
-    { echo "$as_me:$LINENO: Grb DATA   is  $GRB_DATA" >&5
-echo "$as_me: Grb DATA   is  $GRB_DATA" >&6;}
-  fi
-  fi
 
 cat >>confdefs.h <<\_ACEOF
 #define COIN_HAS_GRB 1
 _ACEOF
 
+
+  if test 1 = 0 ; then  #change this test to enable a bit of debugging output
+    if test -n "$GRB_CFLAGS" ; then
+      { echo "$as_me:$LINENO: Grb CFLAGS are $GRB_CFLAGS" >&5
+echo "$as_me: Grb CFLAGS are $GRB_CFLAGS" >&6;}
+    fi
+    if test -n "$GRB_LIBS" ; then
+      { echo "$as_me:$LINENO: Grb LIBS   are $GRB_LIBS" >&5
+echo "$as_me: Grb LIBS   are $GRB_LIBS" >&6;}
+    fi
+    if test -n "$GRB_DATA" ; then
+      { echo "$as_me:$LINENO: Grb DATA   is  $GRB_DATA" >&5
+echo "$as_me: Grb DATA   is  $GRB_DATA" >&6;}
+    fi
+    if test -n "$GRB_CFLAGS" ; then
+      { echo "$as_me:$LINENO: Grb CFLAGS are $GRB_CFLAGS" >&5
+echo "$as_me: Grb CFLAGS are $GRB_CFLAGS" >&6;}
+    fi
+
+  fi
 fi
 
 # Define the Makefile conditional
@@ -24348,12 +24111,12 @@ fi
 
 
 
-echo "$as_me:$LINENO: checking for COIN-OR module Msk" >&5
-echo $ECHO_N "checking for COIN-OR module Msk... $ECHO_C" >&6
+echo "$as_me:$LINENO: checking for COIN-OR package Msk" >&5
+echo $ECHO_N "checking for COIN-OR package Msk... $ECHO_C" >&6
 
 coin_has_msk=notGiven
 
-# check if user wants to skip module in any case
+# check if user wants to skip package in any case
 if test x"$COIN_SKIP_PROJECTS" != x; then
   for dir in $COIN_SKIP_PROJECTS; do
     if test $dir = "Msk"; then
@@ -24370,6 +24133,10 @@ MSK_DATA=
 
 
 
+
+
+
+
 #check if user provided LIBS, CFLAGS, or DATA for module
 if test $coin_has_msk != skipping; then
 
@@ -24379,7 +24146,10 @@ if test "${with_msk_lib+set}" = set; then
   withval="$with_msk_lib"
   coin_has_msk=yes
        MSK_LIBS="$withval"
-       PCADDLIBS="$withval $PCADDLIBS"
+
+         CBCGENERIC_PCLIBS="$withval $CBCGENERIC_PCLIBS"
+         CBCGENERIC_LIBS="$withval $CBCGENERIC_LIBS"
+
 
 fi;
 
@@ -24389,6 +24159,9 @@ if test "${with_msk_incdir+set}" = set; then
   withval="$with_msk_incdir"
   coin_has_msk=yes
      MSK_CFLAGS="-I`${CYGPATH_W} $withval`"
+     CBCGENERIC_CFLAGS="$withval $CBCGENERIC_CFLAGS"
+
+
 fi;
 
 
@@ -24429,7 +24202,8 @@ if test -n "$PKG_CONFIG" ; then
      coin_has_msk=yes
         echo "$as_me:$LINENO: result: yes: $MSK_VERSIONS" >&5
 echo "${ECHO_T}yes: $MSK_VERSIONS" >&6
-        REQUIREDPACKAGES="osi-mosek $REQUIREDPACKAGES"
+        CBCGENERIC_PCREQUIRES="osi-mosek $CBCGENERIC_PCREQUIRES"
+
 
 
   else
@@ -24451,18 +24225,23 @@ fi
     # reset PKG_CONFIG_PATH variable
     PKG_CONFIG_PATH="$coin_save_PKG_CONFIG_PATH"
     export PKG_CONFIG_PATH
+
+    # augment X_CFLAGS and X_LIBS for each build target X in CbcGeneric
+
+      CBCGENERIC_CFLAGS="$MSK_CFLAGS $CBCGENERIC_CFLAGS"
+      CBCGENERIC_LIBS="$MSK_LIBS $CBCGENERIC_LIBS"
+
   else
     echo "$as_me:$LINENO: result: skipped check via pkg-config, redirect to fallback" >&5
 echo "${ECHO_T}skipped check via pkg-config, redirect to fallback" >&6
 
-echo "$as_me:$LINENO: checking for COIN-OR module Msk (fallback)" >&5
-echo $ECHO_N "checking for COIN-OR module Msk (fallback)... $ECHO_C" >&6
+echo "$as_me:$LINENO: checking for COIN-OR package Msk (fallback)" >&5
+echo $ECHO_N "checking for COIN-OR package Msk (fallback)... $ECHO_C" >&6
 
 coin_has_msk=notGiven
 MSK_LIBS=
 MSK_CFLAGS=
 MSK_DATA=
-
 
 # initial list of dependencies is "osi-mosek", but we need to filter out version number specifications (= x, <= x, >= x)
 projtoprocess="osi-mosek"
@@ -24538,31 +24317,42 @@ echo "${ECHO_T}no, dependency $proj not available" >&6
 
   projtoprocess="$nextprojtoprocess"
 
+  # if there are no more projects to search for, finish up
   if test "x$projtoprocess" = x ; then
     coin_has_msk=yes
     echo "$as_me:$LINENO: result: yes, dependencies are$projprocessed" >&5
 echo "${ECHO_T}yes, dependencies are$projprocessed" >&6
-
-    REQUIREDPACKAGES="osi-mosek $REQUIREDPACKAGES"
 
 cat >>confdefs.h <<\_ACEOF
 #define COIN_HAS_MSK 1
 _ACEOF
 
 
+
+      CBCGENERIC_PCREQUIRES="osi-mosek $CBCGENERIC_PCREQUIRES"
+      CBCGENERIC_CFLAGS="$MSK_CFLAGS $CBCGENERIC_CFLAGS"
+      CBCGENERIC_LIBS="$MSK_LIBS $CBCGENERIC_LIBS"
+
+
     if test 1 = 0 ; then  #change this test to enable a bit of debugging output
-    if test -n "$MSK_CFLAGS" ; then
-      { echo "$as_me:$LINENO: Msk CFLAGS are $MSK_CFLAGS" >&5
+      if test -n "$MSK_CFLAGS" ; then
+        { echo "$as_me:$LINENO: Msk CFLAGS are $MSK_CFLAGS" >&5
 echo "$as_me: Msk CFLAGS are $MSK_CFLAGS" >&6;}
-    fi
-    if test -n "$MSK_LIBS" ; then
-      { echo "$as_me:$LINENO: Msk LIBS   are $MSK_LIBS" >&5
+      fi
+      if test -n "$MSK_LIBS" ; then
+        { echo "$as_me:$LINENO: Msk LIBS   are $MSK_LIBS" >&5
 echo "$as_me: Msk LIBS   are $MSK_LIBS" >&6;}
-    fi
-    if test -n "$MSK_DATA" ; then
-      { echo "$as_me:$LINENO: Msk DATA   is  $MSK_DATA" >&5
+      fi
+      if test -n "$MSK_DATA" ; then
+        { echo "$as_me:$LINENO: Msk DATA   is  $MSK_DATA" >&5
 echo "$as_me: Msk DATA   is  $MSK_DATA" >&6;}
-    fi
+      fi
+
+        { echo "$as_me:$LINENO: CbcGeneric CFLAGS are $CBCGENERIC_CFLAGS" >&5
+echo "$as_me: CbcGeneric CFLAGS are $CBCGENERIC_CFLAGS" >&6;}
+        { echo "$as_me:$LINENO: CbcGeneric LIBS   are $CBCGENERIC_LIBS" >&5
+echo "$as_me: CbcGeneric LIBS   are $CBCGENERIC_LIBS" >&6;}
+
     fi
   fi
 done
@@ -24589,25 +24379,36 @@ fi
 
 if test $coin_has_msk != skipping &&
    test $coin_has_msk != notGiven ; then
-  if test 0 = 1 ; then  #change this test to enable a bit of debugging output
-  if test -n "$MSK_CFLAGS" ; then
-    { echo "$as_me:$LINENO: Msk CFLAGS are $MSK_CFLAGS" >&5
-echo "$as_me: Msk CFLAGS are $MSK_CFLAGS" >&6;}
-  fi
-  if test -n "$MSK_LIBS" ; then
-    { echo "$as_me:$LINENO: Msk LIBS   are $MSK_LIBS" >&5
-echo "$as_me: Msk LIBS   are $MSK_LIBS" >&6;}
-  fi
-  if test -n "$MSK_DATA" ; then
-    { echo "$as_me:$LINENO: Msk DATA   is  $MSK_DATA" >&5
-echo "$as_me: Msk DATA   is  $MSK_DATA" >&6;}
-  fi
-  fi
 
 cat >>confdefs.h <<\_ACEOF
 #define COIN_HAS_MSK 1
 _ACEOF
 
+
+  if test 1 = 0 ; then  #change this test to enable a bit of debugging output
+    if test -n "$MSK_CFLAGS" ; then
+      { echo "$as_me:$LINENO: Msk CFLAGS are $MSK_CFLAGS" >&5
+echo "$as_me: Msk CFLAGS are $MSK_CFLAGS" >&6;}
+    fi
+    if test -n "$MSK_LIBS" ; then
+      { echo "$as_me:$LINENO: Msk LIBS   are $MSK_LIBS" >&5
+echo "$as_me: Msk LIBS   are $MSK_LIBS" >&6;}
+    fi
+    if test -n "$MSK_DATA" ; then
+      { echo "$as_me:$LINENO: Msk DATA   is  $MSK_DATA" >&5
+echo "$as_me: Msk DATA   is  $MSK_DATA" >&6;}
+    fi
+    if test -n "$MSK_CFLAGS" ; then
+      { echo "$as_me:$LINENO: Msk CFLAGS are $MSK_CFLAGS" >&5
+echo "$as_me: Msk CFLAGS are $MSK_CFLAGS" >&6;}
+    fi
+
+      { echo "$as_me:$LINENO: CbcGeneric CFLAGS are $CBCGENERIC_CFLAGS" >&5
+echo "$as_me: CbcGeneric CFLAGS are $CBCGENERIC_CFLAGS" >&6;}
+      { echo "$as_me:$LINENO: CbcGeneric LIBS   are $CBCGENERIC_LIBS" >&5
+echo "$as_me: CbcGeneric LIBS   are $CBCGENERIC_LIBS" >&6;}
+
+  fi
 fi
 
 # Define the Makefile conditional
@@ -24625,12 +24426,12 @@ fi
 
 
 
-echo "$as_me:$LINENO: checking for COIN-OR module Spx" >&5
-echo $ECHO_N "checking for COIN-OR module Spx... $ECHO_C" >&6
+echo "$as_me:$LINENO: checking for COIN-OR package Spx" >&5
+echo $ECHO_N "checking for COIN-OR package Spx... $ECHO_C" >&6
 
 coin_has_spx=notGiven
 
-# check if user wants to skip module in any case
+# check if user wants to skip package in any case
 if test x"$COIN_SKIP_PROJECTS" != x; then
   for dir in $COIN_SKIP_PROJECTS; do
     if test $dir = "Spx"; then
@@ -24647,6 +24448,10 @@ SPX_DATA=
 
 
 
+
+
+
+
 #check if user provided LIBS, CFLAGS, or DATA for module
 if test $coin_has_spx != skipping; then
 
@@ -24656,7 +24461,10 @@ if test "${with_spx_lib+set}" = set; then
   withval="$with_spx_lib"
   coin_has_spx=yes
        SPX_LIBS="$withval"
-       PCADDLIBS="$withval $PCADDLIBS"
+
+         CBCGENERIC_PCLIBS="$withval $CBCGENERIC_PCLIBS"
+         CBCGENERIC_LIBS="$withval $CBCGENERIC_LIBS"
+
 
 fi;
 
@@ -24666,6 +24474,9 @@ if test "${with_spx_incdir+set}" = set; then
   withval="$with_spx_incdir"
   coin_has_spx=yes
      SPX_CFLAGS="-I`${CYGPATH_W} $withval`"
+     CBCGENERIC_CFLAGS="$withval $CBCGENERIC_CFLAGS"
+
+
 fi;
 
 
@@ -24706,7 +24517,8 @@ if test -n "$PKG_CONFIG" ; then
      coin_has_spx=yes
         echo "$as_me:$LINENO: result: yes: $SPX_VERSIONS" >&5
 echo "${ECHO_T}yes: $SPX_VERSIONS" >&6
-        REQUIREDPACKAGES="osi-soplex $REQUIREDPACKAGES"
+        CBCGENERIC_PCREQUIRES="osi-soplex $CBCGENERIC_PCREQUIRES"
+
 
 
   else
@@ -24728,18 +24540,23 @@ fi
     # reset PKG_CONFIG_PATH variable
     PKG_CONFIG_PATH="$coin_save_PKG_CONFIG_PATH"
     export PKG_CONFIG_PATH
+
+    # augment X_CFLAGS and X_LIBS for each build target X in CbcGeneric
+
+      CBCGENERIC_CFLAGS="$SPX_CFLAGS $CBCGENERIC_CFLAGS"
+      CBCGENERIC_LIBS="$SPX_LIBS $CBCGENERIC_LIBS"
+
   else
     echo "$as_me:$LINENO: result: skipped check via pkg-config, redirect to fallback" >&5
 echo "${ECHO_T}skipped check via pkg-config, redirect to fallback" >&6
 
-echo "$as_me:$LINENO: checking for COIN-OR module Spx (fallback)" >&5
-echo $ECHO_N "checking for COIN-OR module Spx (fallback)... $ECHO_C" >&6
+echo "$as_me:$LINENO: checking for COIN-OR package Spx (fallback)" >&5
+echo $ECHO_N "checking for COIN-OR package Spx (fallback)... $ECHO_C" >&6
 
 coin_has_spx=notGiven
 SPX_LIBS=
 SPX_CFLAGS=
 SPX_DATA=
-
 
 # initial list of dependencies is "osi-soplex", but we need to filter out version number specifications (= x, <= x, >= x)
 projtoprocess="osi-soplex"
@@ -24815,31 +24632,42 @@ echo "${ECHO_T}no, dependency $proj not available" >&6
 
   projtoprocess="$nextprojtoprocess"
 
+  # if there are no more projects to search for, finish up
   if test "x$projtoprocess" = x ; then
     coin_has_spx=yes
     echo "$as_me:$LINENO: result: yes, dependencies are$projprocessed" >&5
 echo "${ECHO_T}yes, dependencies are$projprocessed" >&6
-
-    REQUIREDPACKAGES="osi-soplex $REQUIREDPACKAGES"
 
 cat >>confdefs.h <<\_ACEOF
 #define COIN_HAS_SPX 1
 _ACEOF
 
 
+
+      CBCGENERIC_PCREQUIRES="osi-soplex $CBCGENERIC_PCREQUIRES"
+      CBCGENERIC_CFLAGS="$SPX_CFLAGS $CBCGENERIC_CFLAGS"
+      CBCGENERIC_LIBS="$SPX_LIBS $CBCGENERIC_LIBS"
+
+
     if test 1 = 0 ; then  #change this test to enable a bit of debugging output
-    if test -n "$SPX_CFLAGS" ; then
-      { echo "$as_me:$LINENO: Spx CFLAGS are $SPX_CFLAGS" >&5
+      if test -n "$SPX_CFLAGS" ; then
+        { echo "$as_me:$LINENO: Spx CFLAGS are $SPX_CFLAGS" >&5
 echo "$as_me: Spx CFLAGS are $SPX_CFLAGS" >&6;}
-    fi
-    if test -n "$SPX_LIBS" ; then
-      { echo "$as_me:$LINENO: Spx LIBS   are $SPX_LIBS" >&5
+      fi
+      if test -n "$SPX_LIBS" ; then
+        { echo "$as_me:$LINENO: Spx LIBS   are $SPX_LIBS" >&5
 echo "$as_me: Spx LIBS   are $SPX_LIBS" >&6;}
-    fi
-    if test -n "$SPX_DATA" ; then
-      { echo "$as_me:$LINENO: Spx DATA   is  $SPX_DATA" >&5
+      fi
+      if test -n "$SPX_DATA" ; then
+        { echo "$as_me:$LINENO: Spx DATA   is  $SPX_DATA" >&5
 echo "$as_me: Spx DATA   is  $SPX_DATA" >&6;}
-    fi
+      fi
+
+        { echo "$as_me:$LINENO: CbcGeneric CFLAGS are $CBCGENERIC_CFLAGS" >&5
+echo "$as_me: CbcGeneric CFLAGS are $CBCGENERIC_CFLAGS" >&6;}
+        { echo "$as_me:$LINENO: CbcGeneric LIBS   are $CBCGENERIC_LIBS" >&5
+echo "$as_me: CbcGeneric LIBS   are $CBCGENERIC_LIBS" >&6;}
+
     fi
   fi
 done
@@ -24866,25 +24694,36 @@ fi
 
 if test $coin_has_spx != skipping &&
    test $coin_has_spx != notGiven ; then
-  if test 0 = 1 ; then  #change this test to enable a bit of debugging output
-  if test -n "$SPX_CFLAGS" ; then
-    { echo "$as_me:$LINENO: Spx CFLAGS are $SPX_CFLAGS" >&5
-echo "$as_me: Spx CFLAGS are $SPX_CFLAGS" >&6;}
-  fi
-  if test -n "$SPX_LIBS" ; then
-    { echo "$as_me:$LINENO: Spx LIBS   are $SPX_LIBS" >&5
-echo "$as_me: Spx LIBS   are $SPX_LIBS" >&6;}
-  fi
-  if test -n "$SPX_DATA" ; then
-    { echo "$as_me:$LINENO: Spx DATA   is  $SPX_DATA" >&5
-echo "$as_me: Spx DATA   is  $SPX_DATA" >&6;}
-  fi
-  fi
 
 cat >>confdefs.h <<\_ACEOF
 #define COIN_HAS_SPX 1
 _ACEOF
 
+
+  if test 1 = 0 ; then  #change this test to enable a bit of debugging output
+    if test -n "$SPX_CFLAGS" ; then
+      { echo "$as_me:$LINENO: Spx CFLAGS are $SPX_CFLAGS" >&5
+echo "$as_me: Spx CFLAGS are $SPX_CFLAGS" >&6;}
+    fi
+    if test -n "$SPX_LIBS" ; then
+      { echo "$as_me:$LINENO: Spx LIBS   are $SPX_LIBS" >&5
+echo "$as_me: Spx LIBS   are $SPX_LIBS" >&6;}
+    fi
+    if test -n "$SPX_DATA" ; then
+      { echo "$as_me:$LINENO: Spx DATA   is  $SPX_DATA" >&5
+echo "$as_me: Spx DATA   is  $SPX_DATA" >&6;}
+    fi
+    if test -n "$SPX_CFLAGS" ; then
+      { echo "$as_me:$LINENO: Spx CFLAGS are $SPX_CFLAGS" >&5
+echo "$as_me: Spx CFLAGS are $SPX_CFLAGS" >&6;}
+    fi
+
+      { echo "$as_me:$LINENO: CbcGeneric CFLAGS are $CBCGENERIC_CFLAGS" >&5
+echo "$as_me: CbcGeneric CFLAGS are $CBCGENERIC_CFLAGS" >&6;}
+      { echo "$as_me:$LINENO: CbcGeneric LIBS   are $CBCGENERIC_LIBS" >&5
+echo "$as_me: CbcGeneric LIBS   are $CBCGENERIC_LIBS" >&6;}
+
+  fi
 fi
 
 # Define the Makefile conditional
@@ -24902,12 +24741,12 @@ fi
 
 
 
-echo "$as_me:$LINENO: checking for COIN-OR module Xpr" >&5
-echo $ECHO_N "checking for COIN-OR module Xpr... $ECHO_C" >&6
+echo "$as_me:$LINENO: checking for COIN-OR package Xpr" >&5
+echo $ECHO_N "checking for COIN-OR package Xpr... $ECHO_C" >&6
 
 coin_has_xpr=notGiven
 
-# check if user wants to skip module in any case
+# check if user wants to skip package in any case
 if test x"$COIN_SKIP_PROJECTS" != x; then
   for dir in $COIN_SKIP_PROJECTS; do
     if test $dir = "Xpr"; then
@@ -24933,7 +24772,7 @@ if test "${with_xpr_lib+set}" = set; then
   withval="$with_xpr_lib"
   coin_has_xpr=yes
        XPR_LIBS="$withval"
-       PCADDLIBS="$withval $PCADDLIBS"
+
 
 fi;
 
@@ -24943,6 +24782,8 @@ if test "${with_xpr_incdir+set}" = set; then
   withval="$with_xpr_incdir"
   coin_has_xpr=yes
      XPR_CFLAGS="-I`${CYGPATH_W} $withval`"
+
+
 fi;
 
 
@@ -24983,7 +24824,7 @@ if test -n "$PKG_CONFIG" ; then
      coin_has_xpr=yes
         echo "$as_me:$LINENO: result: yes: $XPR_VERSIONS" >&5
 echo "${ECHO_T}yes: $XPR_VERSIONS" >&6
-        REQUIREDPACKAGES="osi-xpress $REQUIREDPACKAGES"
+
 
 
   else
@@ -25005,18 +24846,20 @@ fi
     # reset PKG_CONFIG_PATH variable
     PKG_CONFIG_PATH="$coin_save_PKG_CONFIG_PATH"
     export PKG_CONFIG_PATH
+
+    # augment X_CFLAGS and X_LIBS for each build target X in
+
   else
     echo "$as_me:$LINENO: result: skipped check via pkg-config, redirect to fallback" >&5
 echo "${ECHO_T}skipped check via pkg-config, redirect to fallback" >&6
 
-echo "$as_me:$LINENO: checking for COIN-OR module Xpr (fallback)" >&5
-echo $ECHO_N "checking for COIN-OR module Xpr (fallback)... $ECHO_C" >&6
+echo "$as_me:$LINENO: checking for COIN-OR package Xpr (fallback)" >&5
+echo $ECHO_N "checking for COIN-OR package Xpr (fallback)... $ECHO_C" >&6
 
 coin_has_xpr=notGiven
 XPR_LIBS=
 XPR_CFLAGS=
 XPR_DATA=
-
 
 # initial list of dependencies is "osi-xpress", but we need to filter out version number specifications (= x, <= x, >= x)
 projtoprocess="osi-xpress"
@@ -25092,31 +24935,33 @@ echo "${ECHO_T}no, dependency $proj not available" >&6
 
   projtoprocess="$nextprojtoprocess"
 
+  # if there are no more projects to search for, finish up
   if test "x$projtoprocess" = x ; then
     coin_has_xpr=yes
     echo "$as_me:$LINENO: result: yes, dependencies are$projprocessed" >&5
 echo "${ECHO_T}yes, dependencies are$projprocessed" >&6
-
-    REQUIREDPACKAGES="osi-xpress $REQUIREDPACKAGES"
 
 cat >>confdefs.h <<\_ACEOF
 #define COIN_HAS_XPR 1
 _ACEOF
 
 
+
+
     if test 1 = 0 ; then  #change this test to enable a bit of debugging output
-    if test -n "$XPR_CFLAGS" ; then
-      { echo "$as_me:$LINENO: Xpr CFLAGS are $XPR_CFLAGS" >&5
+      if test -n "$XPR_CFLAGS" ; then
+        { echo "$as_me:$LINENO: Xpr CFLAGS are $XPR_CFLAGS" >&5
 echo "$as_me: Xpr CFLAGS are $XPR_CFLAGS" >&6;}
-    fi
-    if test -n "$XPR_LIBS" ; then
-      { echo "$as_me:$LINENO: Xpr LIBS   are $XPR_LIBS" >&5
+      fi
+      if test -n "$XPR_LIBS" ; then
+        { echo "$as_me:$LINENO: Xpr LIBS   are $XPR_LIBS" >&5
 echo "$as_me: Xpr LIBS   are $XPR_LIBS" >&6;}
-    fi
-    if test -n "$XPR_DATA" ; then
-      { echo "$as_me:$LINENO: Xpr DATA   is  $XPR_DATA" >&5
+      fi
+      if test -n "$XPR_DATA" ; then
+        { echo "$as_me:$LINENO: Xpr DATA   is  $XPR_DATA" >&5
 echo "$as_me: Xpr DATA   is  $XPR_DATA" >&6;}
-    fi
+      fi
+
     fi
   fi
 done
@@ -25143,25 +24988,31 @@ fi
 
 if test $coin_has_xpr != skipping &&
    test $coin_has_xpr != notGiven ; then
-  if test 0 = 1 ; then  #change this test to enable a bit of debugging output
-  if test -n "$XPR_CFLAGS" ; then
-    { echo "$as_me:$LINENO: Xpr CFLAGS are $XPR_CFLAGS" >&5
-echo "$as_me: Xpr CFLAGS are $XPR_CFLAGS" >&6;}
-  fi
-  if test -n "$XPR_LIBS" ; then
-    { echo "$as_me:$LINENO: Xpr LIBS   are $XPR_LIBS" >&5
-echo "$as_me: Xpr LIBS   are $XPR_LIBS" >&6;}
-  fi
-  if test -n "$XPR_DATA" ; then
-    { echo "$as_me:$LINENO: Xpr DATA   is  $XPR_DATA" >&5
-echo "$as_me: Xpr DATA   is  $XPR_DATA" >&6;}
-  fi
-  fi
 
 cat >>confdefs.h <<\_ACEOF
 #define COIN_HAS_XPR 1
 _ACEOF
 
+
+  if test 1 = 0 ; then  #change this test to enable a bit of debugging output
+    if test -n "$XPR_CFLAGS" ; then
+      { echo "$as_me:$LINENO: Xpr CFLAGS are $XPR_CFLAGS" >&5
+echo "$as_me: Xpr CFLAGS are $XPR_CFLAGS" >&6;}
+    fi
+    if test -n "$XPR_LIBS" ; then
+      { echo "$as_me:$LINENO: Xpr LIBS   are $XPR_LIBS" >&5
+echo "$as_me: Xpr LIBS   are $XPR_LIBS" >&6;}
+    fi
+    if test -n "$XPR_DATA" ; then
+      { echo "$as_me:$LINENO: Xpr DATA   is  $XPR_DATA" >&5
+echo "$as_me: Xpr DATA   is  $XPR_DATA" >&6;}
+    fi
+    if test -n "$XPR_CFLAGS" ; then
+      { echo "$as_me:$LINENO: Xpr CFLAGS are $XPR_CFLAGS" >&5
+echo "$as_me: Xpr CFLAGS are $XPR_CFLAGS" >&6;}
+    fi
+
+  fi
 fi
 
 # Define the Makefile conditional
@@ -25185,12 +25036,12 @@ fi
 
 # Ampl Solver library
 
-echo "$as_me:$LINENO: checking for COIN-OR module ASL" >&5
-echo $ECHO_N "checking for COIN-OR module ASL... $ECHO_C" >&6
+echo "$as_me:$LINENO: checking for COIN-OR package ASL" >&5
+echo $ECHO_N "checking for COIN-OR package ASL... $ECHO_C" >&6
 
 coin_has_asl=notGiven
 
-# check if user wants to skip module in any case
+# check if user wants to skip package in any case
 if test x"$COIN_SKIP_PROJECTS" != x; then
   for dir in $COIN_SKIP_PROJECTS; do
     if test $dir = "ASL"; then
@@ -25226,6 +25077,8 @@ if test "${with_asl_incdir+set}" = set; then
   withval="$with_asl_incdir"
   coin_has_asl=yes
      ASL_CFLAGS="-I`${CYGPATH_W} $withval`"
+
+
 fi;
 
 
@@ -25288,18 +25141,20 @@ fi
     # reset PKG_CONFIG_PATH variable
     PKG_CONFIG_PATH="$coin_save_PKG_CONFIG_PATH"
     export PKG_CONFIG_PATH
+
+    # augment X_CFLAGS and X_LIBS for each build target X in
+
   else
     echo "$as_me:$LINENO: result: skipped check via pkg-config, redirect to fallback" >&5
 echo "${ECHO_T}skipped check via pkg-config, redirect to fallback" >&6
 
-echo "$as_me:$LINENO: checking for COIN-OR module ASL (fallback)" >&5
-echo $ECHO_N "checking for COIN-OR module ASL (fallback)... $ECHO_C" >&6
+echo "$as_me:$LINENO: checking for COIN-OR package ASL (fallback)" >&5
+echo $ECHO_N "checking for COIN-OR package ASL (fallback)... $ECHO_C" >&6
 
 coin_has_asl=notGiven
 ASL_LIBS=
 ASL_CFLAGS=
 ASL_DATA=
-
 
 # initial list of dependencies is "coinasl", but we need to filter out version number specifications (= x, <= x, >= x)
 projtoprocess="coinasl"
@@ -25375,31 +25230,33 @@ echo "${ECHO_T}no, dependency $proj not available" >&6
 
   projtoprocess="$nextprojtoprocess"
 
+  # if there are no more projects to search for, finish up
   if test "x$projtoprocess" = x ; then
     coin_has_asl=yes
     echo "$as_me:$LINENO: result: yes, dependencies are$projprocessed" >&5
 echo "${ECHO_T}yes, dependencies are$projprocessed" >&6
-
-
 
 cat >>confdefs.h <<\_ACEOF
 #define COIN_HAS_ASL 1
 _ACEOF
 
 
+
+
     if test 1 = 0 ; then  #change this test to enable a bit of debugging output
-    if test -n "$ASL_CFLAGS" ; then
-      { echo "$as_me:$LINENO: ASL CFLAGS are $ASL_CFLAGS" >&5
+      if test -n "$ASL_CFLAGS" ; then
+        { echo "$as_me:$LINENO: ASL CFLAGS are $ASL_CFLAGS" >&5
 echo "$as_me: ASL CFLAGS are $ASL_CFLAGS" >&6;}
-    fi
-    if test -n "$ASL_LIBS" ; then
-      { echo "$as_me:$LINENO: ASL LIBS   are $ASL_LIBS" >&5
+      fi
+      if test -n "$ASL_LIBS" ; then
+        { echo "$as_me:$LINENO: ASL LIBS   are $ASL_LIBS" >&5
 echo "$as_me: ASL LIBS   are $ASL_LIBS" >&6;}
-    fi
-    if test -n "$ASL_DATA" ; then
-      { echo "$as_me:$LINENO: ASL DATA   is  $ASL_DATA" >&5
+      fi
+      if test -n "$ASL_DATA" ; then
+        { echo "$as_me:$LINENO: ASL DATA   is  $ASL_DATA" >&5
 echo "$as_me: ASL DATA   is  $ASL_DATA" >&6;}
-    fi
+      fi
+
     fi
   fi
 done
@@ -25426,25 +25283,31 @@ fi
 
 if test $coin_has_asl != skipping &&
    test $coin_has_asl != notGiven ; then
-  if test 0 = 1 ; then  #change this test to enable a bit of debugging output
-  if test -n "$ASL_CFLAGS" ; then
-    { echo "$as_me:$LINENO: ASL CFLAGS are $ASL_CFLAGS" >&5
-echo "$as_me: ASL CFLAGS are $ASL_CFLAGS" >&6;}
-  fi
-  if test -n "$ASL_LIBS" ; then
-    { echo "$as_me:$LINENO: ASL LIBS   are $ASL_LIBS" >&5
-echo "$as_me: ASL LIBS   are $ASL_LIBS" >&6;}
-  fi
-  if test -n "$ASL_DATA" ; then
-    { echo "$as_me:$LINENO: ASL DATA   is  $ASL_DATA" >&5
-echo "$as_me: ASL DATA   is  $ASL_DATA" >&6;}
-  fi
-  fi
 
 cat >>confdefs.h <<\_ACEOF
 #define COIN_HAS_ASL 1
 _ACEOF
 
+
+  if test 1 = 0 ; then  #change this test to enable a bit of debugging output
+    if test -n "$ASL_CFLAGS" ; then
+      { echo "$as_me:$LINENO: ASL CFLAGS are $ASL_CFLAGS" >&5
+echo "$as_me: ASL CFLAGS are $ASL_CFLAGS" >&6;}
+    fi
+    if test -n "$ASL_LIBS" ; then
+      { echo "$as_me:$LINENO: ASL LIBS   are $ASL_LIBS" >&5
+echo "$as_me: ASL LIBS   are $ASL_LIBS" >&6;}
+    fi
+    if test -n "$ASL_DATA" ; then
+      { echo "$as_me:$LINENO: ASL DATA   is  $ASL_DATA" >&5
+echo "$as_me: ASL DATA   is  $ASL_DATA" >&6;}
+    fi
+    if test -n "$ASL_CFLAGS" ; then
+      { echo "$as_me:$LINENO: ASL CFLAGS are $ASL_CFLAGS" >&5
+echo "$as_me: ASL CFLAGS are $ASL_CFLAGS" >&6;}
+    fi
+
+  fi
 fi
 
 # Define the Makefile conditional
@@ -25510,6 +25373,7 @@ fi;
 echo "$as_me:$LINENO: result: $cbc_default_solver" >&5
 echo "${ECHO_T}$cbc_default_solver" >&6
 
+# FIXME what about cplex and mosek here?
 case $cbc_default_solver in
     clp)
       ;;
@@ -25615,11 +25479,13 @@ fi
 echo "$as_me:$LINENO: result: $ac_cv_lib_rt_clock_gettime" >&5
 echo "${ECHO_T}$ac_cv_lib_rt_clock_gettime" >&6
 if test $ac_cv_lib_rt_clock_gettime = yes; then
-  ADDLIBS="-lrt $ADDLIBS"
+  CBCLIB_LIBS="-lrt $CBCLIB_LIBS"
+                CBCLIB_PCLIBS="-lrt $CBCLIB_PCLIBS"
 
 cat >>confdefs.h <<\_ACEOF
 #define HAVE_CLOCK_GETTIME 1
 _ACEOF
+
 
 else
   { echo "$as_me:$LINENO: WARNING: --enable-cbc-parallel selected, but -lrt unavailable; using gettimeofday instead of clock_gettime" >&5
@@ -25691,7 +25557,9 @@ fi
 echo "$as_me:$LINENO: result: $ac_cv_lib_pthread_pthread_create" >&5
 echo "${ECHO_T}$ac_cv_lib_pthread_pthread_create" >&6
 if test $ac_cv_lib_pthread_pthread_create = yes; then
-  ADDLIBS="-lpthread $ADDLIBS"
+  CBCLIB_LIBS="-lpthread $CBCLIB_LIBS"
+                CBCLIB_PCLIBS="-lpthread $CBCLIB_PCLIBS"
+
 else
   { { echo "$as_me:$LINENO: error: --enable-cbc-parallel selected, but -lpthreads unavailable" >&5
 echo "$as_me: error: --enable-cbc-parallel selected, but -lpthreads unavailable" >&2;}
@@ -26409,34 +26277,6 @@ if test -z "${COIN_HAS_CLP_TRUE}" && test -z "${COIN_HAS_CLP_FALSE}"; then
   { { echo "$as_me:$LINENO: error: conditional \"COIN_HAS_CLP\" was never defined.
 Usually this means the macro was only invoked conditionally." >&5
 echo "$as_me: error: conditional \"COIN_HAS_CLP\" was never defined.
-Usually this means the macro was only invoked conditionally." >&2;}
-   { (exit 1); exit 1; }; }
-fi
-if test -z "${COIN_HAS_DYLP_TRUE}" && test -z "${COIN_HAS_DYLP_FALSE}"; then
-  { { echo "$as_me:$LINENO: error: conditional \"COIN_HAS_DYLP\" was never defined.
-Usually this means the macro was only invoked conditionally." >&5
-echo "$as_me: error: conditional \"COIN_HAS_DYLP\" was never defined.
-Usually this means the macro was only invoked conditionally." >&2;}
-   { (exit 1); exit 1; }; }
-fi
-if test -z "${COIN_HAS_DYLP_TRUE}" && test -z "${COIN_HAS_DYLP_FALSE}"; then
-  { { echo "$as_me:$LINENO: error: conditional \"COIN_HAS_DYLP\" was never defined.
-Usually this means the macro was only invoked conditionally." >&5
-echo "$as_me: error: conditional \"COIN_HAS_DYLP\" was never defined.
-Usually this means the macro was only invoked conditionally." >&2;}
-   { (exit 1); exit 1; }; }
-fi
-if test -z "${COIN_HAS_VOL_TRUE}" && test -z "${COIN_HAS_VOL_FALSE}"; then
-  { { echo "$as_me:$LINENO: error: conditional \"COIN_HAS_VOL\" was never defined.
-Usually this means the macro was only invoked conditionally." >&5
-echo "$as_me: error: conditional \"COIN_HAS_VOL\" was never defined.
-Usually this means the macro was only invoked conditionally." >&2;}
-   { (exit 1); exit 1; }; }
-fi
-if test -z "${COIN_HAS_VOL_TRUE}" && test -z "${COIN_HAS_VOL_FALSE}"; then
-  { { echo "$as_me:$LINENO: error: conditional \"COIN_HAS_VOL\" was never defined.
-Usually this means the macro was only invoked conditionally." >&5
-echo "$as_me: error: conditional \"COIN_HAS_VOL\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi
@@ -27351,7 +27191,12 @@ s,@COIN_PKG_CONFIG_PATH_UNINSTALLED@,$COIN_PKG_CONFIG_PATH_UNINSTALLED,;t t
 s,@COINDEPEND_LIBS@,$COINDEPEND_LIBS,;t t
 s,@COINDEPEND_CFLAGS@,$COINDEPEND_CFLAGS,;t t
 s,@COINDEPEND_DATA@,$COINDEPEND_DATA,;t t
-s,@REQUIREDPACKAGES@,$REQUIREDPACKAGES,;t t
+s,@CBCLIB_LIBS@,$CBCLIB_LIBS,;t t
+s,@CBCLIB_PCLIBS@,$CBCLIB_PCLIBS,;t t
+s,@CBCLIB_PCREQUIRES@,$CBCLIB_PCREQUIRES,;t t
+s,@CBCGENERIC_LIBS@,$CBCGENERIC_LIBS,;t t
+s,@CBCGENERIC_PCLIBS@,$CBCGENERIC_PCLIBS,;t t
+s,@CBCGENERIC_PCREQUIRES@,$CBCGENERIC_PCREQUIRES,;t t
 s,@COIN_HAS_COINDEPEND_TRUE@,$COIN_HAS_COINDEPEND_TRUE,;t t
 s,@COIN_HAS_COINDEPEND_FALSE@,$COIN_HAS_COINDEPEND_FALSE,;t t
 s,@CLP_LIBS@,$CLP_LIBS,;t t
@@ -27359,16 +27204,6 @@ s,@CLP_CFLAGS@,$CLP_CFLAGS,;t t
 s,@CLP_DATA@,$CLP_DATA,;t t
 s,@COIN_HAS_CLP_TRUE@,$COIN_HAS_CLP_TRUE,;t t
 s,@COIN_HAS_CLP_FALSE@,$COIN_HAS_CLP_FALSE,;t t
-s,@DYLP_LIBS@,$DYLP_LIBS,;t t
-s,@DYLP_CFLAGS@,$DYLP_CFLAGS,;t t
-s,@DYLP_DATA@,$DYLP_DATA,;t t
-s,@COIN_HAS_DYLP_TRUE@,$COIN_HAS_DYLP_TRUE,;t t
-s,@COIN_HAS_DYLP_FALSE@,$COIN_HAS_DYLP_FALSE,;t t
-s,@VOL_LIBS@,$VOL_LIBS,;t t
-s,@VOL_CFLAGS@,$VOL_CFLAGS,;t t
-s,@VOL_DATA@,$VOL_DATA,;t t
-s,@COIN_HAS_VOL_TRUE@,$COIN_HAS_VOL_TRUE,;t t
-s,@COIN_HAS_VOL_FALSE@,$COIN_HAS_VOL_FALSE,;t t
 s,@OSITESTS_LIBS@,$OSITESTS_LIBS,;t t
 s,@OSITESTS_CFLAGS@,$OSITESTS_CFLAGS,;t t
 s,@OSITESTS_DATA@,$OSITESTS_DATA,;t t
@@ -27389,6 +27224,16 @@ s,@MIPLIB3_CFLAGS@,$MIPLIB3_CFLAGS,;t t
 s,@MIPLIB3_DATA@,$MIPLIB3_DATA,;t t
 s,@COIN_HAS_MIPLIB3_TRUE@,$COIN_HAS_MIPLIB3_TRUE,;t t
 s,@COIN_HAS_MIPLIB3_FALSE@,$COIN_HAS_MIPLIB3_FALSE,;t t
+s,@DYLP_LIBS@,$DYLP_LIBS,;t t
+s,@DYLP_CFLAGS@,$DYLP_CFLAGS,;t t
+s,@DYLP_DATA@,$DYLP_DATA,;t t
+s,@COIN_HAS_DYLP_TRUE@,$COIN_HAS_DYLP_TRUE,;t t
+s,@COIN_HAS_DYLP_FALSE@,$COIN_HAS_DYLP_FALSE,;t t
+s,@VOL_LIBS@,$VOL_LIBS,;t t
+s,@VOL_CFLAGS@,$VOL_CFLAGS,;t t
+s,@VOL_DATA@,$VOL_DATA,;t t
+s,@COIN_HAS_VOL_TRUE@,$COIN_HAS_VOL_TRUE,;t t
+s,@COIN_HAS_VOL_FALSE@,$COIN_HAS_VOL_FALSE,;t t
 s,@CPX_LIBS@,$CPX_LIBS,;t t
 s,@CPX_CFLAGS@,$CPX_CFLAGS,;t t
 s,@CPX_DATA@,$CPX_DATA,;t t

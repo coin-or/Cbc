@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="Windows-1252"?>
+<VisualStudioPropertySheet
+	ProjectType="Visual C++"
+	Version="8.00"
+	Name="cbcsolver"
+	InheritedPropertySheets="$(COIN_ROOT)\BuildTools\MSVisualStudio\v9alt\coin.vsprops;.\cbc.vsprops"
+	>
+	<Tool
+		Name="VCCLCompilerTool"
+		AdditionalIncludeDirectories=""
+	/>
+	<Tool
+		Name="VCLinkerTool"
+		AdditionalDependencies="libCbcSolver.lib"
+		AdditionalLibraryDirectories=""
+	/>
+	<UserMacro
+		Name="CbcIncludeDir"
+		Value="$(CoinRoot)\Cbc\Cbc\src"
+	/>
+</VisualStudioPropertySheet>

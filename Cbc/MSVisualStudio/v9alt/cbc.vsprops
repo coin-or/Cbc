@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="Windows-1252"?>
+<VisualStudioPropertySheet
+	ProjectType="Visual C++"
+	Version="8.00"
+	Name="cbc"
+	InheritedPropertySheets="$(COIN_ROOT)\BuildTools\MSVisualStudio\v9alt\coin.vsprops;$(CoinRoot)\Cgl\Cgl\MSVisualStudio\v9alt\cgl.vsprops;$(CoinRoot)\Clp\Clp\MSVisualStudio\v9alt\osiclp.vsprops"
+	>
+	<Tool
+		Name="VCCLCompilerTool"
+		AdditionalIncludeDirectories="$(CbcIncludeDir)"
+	/>
+	<Tool
+		Name="VCLinkerTool"
+		AdditionalDependencies="libCbc.lib"
+		AdditionalLibraryDirectories=""
+	/>
+	<UserMacro
+		Name="CbcIncludeDir"
+		Value="$(CoinRoot)\Cbc\Cbc\src"
+	/>
+</VisualStudioPropertySheet>

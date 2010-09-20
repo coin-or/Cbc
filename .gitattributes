@@ -30,10 +30,13 @@ Cbc/MSVisualStudio/v9/cbcSolve/cbcSolve.vcproj -text
 Cbc/MSVisualStudio/v9/libCbc/libCbc.vcproj -text
 Cbc/MSVisualStudio/v9alt/Cbc.sln -text
 Cbc/MSVisualStudio/v9alt/Cbc.vcproj -text
+Cbc/MSVisualStudio/v9alt/OsiCbcUnitTest.vcproj -text
 Cbc/MSVisualStudio/v9alt/cbc.vsprops -text
 Cbc/MSVisualStudio/v9alt/cbcsolver.vsprops -text
 Cbc/MSVisualStudio/v9alt/libCbc.vcproj -text
 Cbc/MSVisualStudio/v9alt/libCbcSolver.vcproj -text
+Cbc/MSVisualStudio/v9alt/libOsiCbc.vcproj -text
+Cbc/MSVisualStudio/v9alt/osicbc.vsprops -text
 Cbc/cbc-uninstalled.pc.in -text
 Cbc/cbc.pc.in -text
 Cbc/config.guess -text

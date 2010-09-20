@@ -2,9 +2,9 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="9.00"
-	Name="libCbcSolver"
-	ProjectGUID="{B4B52AE3-E01F-4B47-9462-331729A5AEBC}"
-	RootNamespace="libCbc"
+	Name="libOsiCbc"
+	ProjectGUID="{9E6C19F9-5F66-40AF-98E3-45A954AAF78F}"
+	RootNamespace="libOsiCbc"
 	Keyword="ManagedCProj"
 	TargetFrameworkVersion="196613"
 	>
@@ -23,7 +23,7 @@
 			Name="Debug|Win32"
 			OutputDirectory="$(CoinLibDir)"
 			ConfigurationType="4"
-			InheritedPropertySheets="$(COIN_ROOT)\BuildTools\MSVisualStudio\v9alt\coin.vsprops;$(CoinRoot)\Cgl\Cgl\MSVisualStudio\v9alt\cgl.vsprops;$(CoinRoot)\Clp\Clp\MSVisualStudio\v9alt\osiclp.vsprops"
+			InheritedPropertySheets=".\cbc.vsprops"
 			CharacterSet="1"
 			ManagedExtensions="1"
 			>
@@ -45,7 +45,6 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories=""
 				PreprocessorDefinitions="WIN32;_DEBUG"
 				RuntimeLibrary="3"
 				WarningLevel="3"
@@ -62,7 +61,6 @@
 			/>
 			<Tool
 				Name="VCLibrarianTool"
-				AdditionalLibraryDirectories=""
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -84,7 +82,7 @@
 			Name="Debug|x64"
 			OutputDirectory="$(CoinLibDir)"
 			ConfigurationType="4"
-			InheritedPropertySheets="$(COIN_ROOT)\BuildTools\MSVisualStudio\v9alt\coin.vsprops;$(CoinRoot)\Cgl\Cgl\MSVisualStudio\v9alt\cgl.vsprops;$(CoinRoot)\Clp\Clp\MSVisualStudio\v9alt\osiclp.vsprops"
+			InheritedPropertySheets=".\cbc.vsprops"
 			CharacterSet="1"
 			ManagedExtensions="1"
 			>
@@ -107,7 +105,6 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories=""
 				PreprocessorDefinitions="WIN32;_DEBUG"
 				RuntimeLibrary="3"
 				WarningLevel="3"
@@ -124,7 +121,6 @@
 			/>
 			<Tool
 				Name="VCLibrarianTool"
-				AdditionalLibraryDirectories=""
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -146,7 +142,7 @@
 			Name="Release|Win32"
 			OutputDirectory="$(CoinLibDir)"
 			ConfigurationType="4"
-			InheritedPropertySheets="$(COIN_ROOT)\BuildTools\MSVisualStudio\v9alt\coin.vsprops;$(CoinRoot)\Cgl\Cgl\MSVisualStudio\v9alt\cgl.vsprops;$(CoinRoot)\Clp\Clp\MSVisualStudio\v9alt\osiclp.vsprops"
+			InheritedPropertySheets=".\cbc.vsprops"
 			CharacterSet="1"
 			ManagedExtensions="1"
 			WholeProgramOptimization="1"
@@ -168,7 +164,6 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
-				AdditionalIncludeDirectories=""
 				PreprocessorDefinitions="WIN32;NDEBUG"
 				RuntimeLibrary="2"
 				WarningLevel="3"
@@ -185,7 +180,6 @@
 			/>
 			<Tool
 				Name="VCLibrarianTool"
-				AdditionalLibraryDirectories=""
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -207,7 +201,7 @@
 			Name="Release|x64"
 			OutputDirectory="$(CoinLibDir)"
 			ConfigurationType="4"
-			InheritedPropertySheets="$(COIN_ROOT)\BuildTools\MSVisualStudio\v9alt\coin.vsprops;$(CoinRoot)\Cgl\Cgl\MSVisualStudio\v9alt\cgl.vsprops;$(CoinRoot)\Clp\Clp\MSVisualStudio\v9alt\osiclp.vsprops"
+			InheritedPropertySheets=".\cbc.vsprops"
 			CharacterSet="1"
 			ManagedExtensions="1"
 			WholeProgramOptimization="1"
@@ -230,7 +224,6 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
-				AdditionalIncludeDirectories=""
 				PreprocessorDefinitions="WIN32;NDEBUG"
 				RuntimeLibrary="2"
 				WarningLevel="3"
@@ -247,7 +240,6 @@
 			/>
 			<Tool
 				Name="VCLibrarianTool"
-				AdditionalLibraryDirectories=""
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -290,39 +282,7 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
-				RelativePath="..\..\src\Cbc_ampl.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\src\CbcCbcParam.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\src\CbcLinked.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\src\CbcLinkedUtils.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\src\CbcSolver.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\src\CbcSolverAnalyze.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\src\CbcSolverExpandKnapsack.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\src\CbcSolverHeuristics.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\src\unitTestClp.cpp"
+				RelativePath="..\..\src\OsiCbc\OsiCbcSolverInterface.cpp"
 				>
 			</File>
 		</Filter>
@@ -332,27 +292,7 @@
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
 			<File
-				RelativePath="..\..\src\Cbc_ampl.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\src\CbcLinked.hpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\src\CbcSolver.hpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\src\CbcSolverAnalyze.hpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\src\CbcSolverExpandKnapsack.hpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\src\CbcSolverHeuristics.hpp"
+				RelativePath="..\..\src\OsiCbc\OsiCbcSolverInterface.hpp"
 				>
 			</File>
 		</Filter>
@@ -363,7 +303,7 @@
 			>
 		</Filter>
 		<File
-			RelativePath=".\cbcsolver.vsprops"
+			RelativePath=".\osicbc.vsprops"
 			>
 		</File>
 	</Files>

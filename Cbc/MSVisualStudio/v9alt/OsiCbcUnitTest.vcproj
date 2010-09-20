@@ -2,9 +2,9 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="9.00"
-	Name="libCbcSolver"
-	ProjectGUID="{B4B52AE3-E01F-4B47-9462-331729A5AEBC}"
-	RootNamespace="libCbc"
+	Name="OsiCbcUnitTest"
+	ProjectGUID="{C765CD15-336B-49D9-A1D4-564D7CDB5130}"
+	RootNamespace="OsiCbcUnitTest"
 	Keyword="ManagedCProj"
 	TargetFrameworkVersion="196613"
 	>
@@ -21,9 +21,10 @@
 	<Configurations>
 		<Configuration
 			Name="Debug|Win32"
-			OutputDirectory="$(CoinLibDir)"
-			ConfigurationType="4"
-			InheritedPropertySheets="$(COIN_ROOT)\BuildTools\MSVisualStudio\v9alt\coin.vsprops;$(CoinRoot)\Cgl\Cgl\MSVisualStudio\v9alt\cgl.vsprops;$(CoinRoot)\Clp\Clp\MSVisualStudio\v9alt\osiclp.vsprops"
+			OutputDirectory="$(CoinBinDir)"
+			IntermediateDirectory="$(ConfigurationName)"
+			ConfigurationType="1"
+			InheritedPropertySheets=".\osicbc.vsprops"
 			CharacterSet="1"
 			ManagedExtensions="1"
 			>
@@ -45,7 +46,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories=""
+				AdditionalIncludeDirectories="&quot;$(OsiCommonTestIncludeDir)&quot;"
 				PreprocessorDefinitions="WIN32;_DEBUG"
 				RuntimeLibrary="3"
 				WarningLevel="3"
@@ -61,11 +62,18 @@
 				Name="VCPreLinkEventTool"
 			/>
 			<Tool
-				Name="VCLibrarianTool"
-				AdditionalLibraryDirectories=""
+				Name="VCLinkerTool"
+				AdditionalDependencies="libOsiCommonTest.lib"
+				LinkIncremental="2"
+				GenerateDebugInformation="true"
+				AssemblyDebug="1"
+				TargetMachine="1"
 			/>
 			<Tool
 				Name="VCALinkTool"
+			/>
+			<Tool
+				Name="VCManifestTool"
 			/>
 			<Tool
 				Name="VCXDCMakeTool"
@@ -75,6 +83,9 @@
 			/>
 			<Tool
 				Name="VCFxCopTool"
+			/>
+			<Tool
+				Name="VCAppVerifierTool"
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
@@ -82,9 +93,10 @@
 		</Configuration>
 		<Configuration
 			Name="Debug|x64"
-			OutputDirectory="$(CoinLibDir)"
-			ConfigurationType="4"
-			InheritedPropertySheets="$(COIN_ROOT)\BuildTools\MSVisualStudio\v9alt\coin.vsprops;$(CoinRoot)\Cgl\Cgl\MSVisualStudio\v9alt\cgl.vsprops;$(CoinRoot)\Clp\Clp\MSVisualStudio\v9alt\osiclp.vsprops"
+			OutputDirectory="$(CoinBinDir)"
+			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
+			ConfigurationType="1"
+			InheritedPropertySheets=".\osicbc.vsprops"
 			CharacterSet="1"
 			ManagedExtensions="1"
 			>
@@ -107,7 +119,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories=""
+				AdditionalIncludeDirectories="&quot;$(OsiCommonTestIncludeDir)&quot;"
 				PreprocessorDefinitions="WIN32;_DEBUG"
 				RuntimeLibrary="3"
 				WarningLevel="3"
@@ -123,11 +135,18 @@
 				Name="VCPreLinkEventTool"
 			/>
 			<Tool
-				Name="VCLibrarianTool"
-				AdditionalLibraryDirectories=""
+				Name="VCLinkerTool"
+				AdditionalDependencies="libOsiCommonTest.lib"
+				LinkIncremental="2"
+				GenerateDebugInformation="true"
+				AssemblyDebug="1"
+				TargetMachine="17"
 			/>
 			<Tool
 				Name="VCALinkTool"
+			/>
+			<Tool
+				Name="VCManifestTool"
 			/>
 			<Tool
 				Name="VCXDCMakeTool"
@@ -139,14 +158,18 @@
 				Name="VCFxCopTool"
 			/>
 			<Tool
+				Name="VCAppVerifierTool"
+			/>
+			<Tool
 				Name="VCPostBuildEventTool"
 			/>
 		</Configuration>
 		<Configuration
 			Name="Release|Win32"
-			OutputDirectory="$(CoinLibDir)"
-			ConfigurationType="4"
-			InheritedPropertySheets="$(COIN_ROOT)\BuildTools\MSVisualStudio\v9alt\coin.vsprops;$(CoinRoot)\Cgl\Cgl\MSVisualStudio\v9alt\cgl.vsprops;$(CoinRoot)\Clp\Clp\MSVisualStudio\v9alt\osiclp.vsprops"
+			OutputDirectory="$(CoinBinDir)"
+			IntermediateDirectory="$(ConfigurationName)"
+			ConfigurationType="1"
+			InheritedPropertySheets=".\osicbc.vsprops"
 			CharacterSet="1"
 			ManagedExtensions="1"
 			WholeProgramOptimization="1"
@@ -168,7 +191,7 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
-				AdditionalIncludeDirectories=""
+				AdditionalIncludeDirectories="&quot;$(OsiCommonTestIncludeDir)&quot;"
 				PreprocessorDefinitions="WIN32;NDEBUG"
 				RuntimeLibrary="2"
 				WarningLevel="3"
@@ -184,11 +207,17 @@
 				Name="VCPreLinkEventTool"
 			/>
 			<Tool
-				Name="VCLibrarianTool"
-				AdditionalLibraryDirectories=""
+				Name="VCLinkerTool"
+				AdditionalDependencies="libOsiCommonTest.lib"
+				LinkIncremental="1"
+				GenerateDebugInformation="true"
+				TargetMachine="1"
 			/>
 			<Tool
 				Name="VCALinkTool"
+			/>
+			<Tool
+				Name="VCManifestTool"
 			/>
 			<Tool
 				Name="VCXDCMakeTool"
@@ -200,14 +229,18 @@
 				Name="VCFxCopTool"
 			/>
 			<Tool
+				Name="VCAppVerifierTool"
+			/>
+			<Tool
 				Name="VCPostBuildEventTool"
 			/>
 		</Configuration>
 		<Configuration
 			Name="Release|x64"
-			OutputDirectory="$(CoinLibDir)"
-			ConfigurationType="4"
-			InheritedPropertySheets="$(COIN_ROOT)\BuildTools\MSVisualStudio\v9alt\coin.vsprops;$(CoinRoot)\Cgl\Cgl\MSVisualStudio\v9alt\cgl.vsprops;$(CoinRoot)\Clp\Clp\MSVisualStudio\v9alt\osiclp.vsprops"
+			OutputDirectory="$(CoinBinDir)"
+			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
+			ConfigurationType="1"
+			InheritedPropertySheets=".\osicbc.vsprops"
 			CharacterSet="1"
 			ManagedExtensions="1"
 			WholeProgramOptimization="1"
@@ -230,7 +263,7 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
-				AdditionalIncludeDirectories=""
+				AdditionalIncludeDirectories="&quot;$(OsiCommonTestIncludeDir)&quot;"
 				PreprocessorDefinitions="WIN32;NDEBUG"
 				RuntimeLibrary="2"
 				WarningLevel="3"
@@ -246,11 +279,17 @@
 				Name="VCPreLinkEventTool"
 			/>
 			<Tool
-				Name="VCLibrarianTool"
-				AdditionalLibraryDirectories=""
+				Name="VCLinkerTool"
+				AdditionalDependencies="libOsiCommonTest.lib"
+				LinkIncremental="1"
+				GenerateDebugInformation="true"
+				TargetMachine="17"
 			/>
 			<Tool
 				Name="VCALinkTool"
+			/>
+			<Tool
+				Name="VCManifestTool"
 			/>
 			<Tool
 				Name="VCXDCMakeTool"
@@ -260,6 +299,9 @@
 			/>
 			<Tool
 				Name="VCFxCopTool"
+			/>
+			<Tool
+				Name="VCAppVerifierTool"
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
@@ -290,39 +332,11 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
-				RelativePath="..\..\src\Cbc_ampl.cpp"
+				RelativePath="..\..\test\OsiCbcSolverInterfaceTest.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\src\CbcCbcParam.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\src\CbcLinked.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\src\CbcLinkedUtils.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\src\CbcSolver.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\src\CbcSolverAnalyze.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\src\CbcSolverExpandKnapsack.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\src\CbcSolverHeuristics.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\src\unitTestClp.cpp"
+				RelativePath="..\..\test\osiUnitTest.cpp"
 				>
 			</File>
 		</Filter>
@@ -331,30 +345,6 @@
 			Filter="h;hpp;hxx;hm;inl;inc;xsd"
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
-			<File
-				RelativePath="..\..\src\Cbc_ampl.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\src\CbcLinked.hpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\src\CbcSolver.hpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\src\CbcSolverAnalyze.hpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\src\CbcSolverExpandKnapsack.hpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\src\CbcSolverHeuristics.hpp"
-				>
-			</File>
 		</Filter>
 		<Filter
 			Name="Resource Files"
@@ -362,10 +352,6 @@
 			UniqueIdentifier="{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}"
 			>
 		</Filter>
-		<File
-			RelativePath=".\cbcsolver.vsprops"
-			>
-		</File>
 	</Files>
 	<Globals>
 	</Globals>

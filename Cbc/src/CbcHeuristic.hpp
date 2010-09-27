@@ -21,7 +21,7 @@ class CbcHeuristicNodeList;
 class CbcBranchingObject;
 
 /** A class describing the branching decisions that were made to get
-    to the node where a heuristics was invoked from */
+    to the node where a heuristic was invoked from */
 
 class CbcHeuristicNode {
 private:
@@ -65,7 +65,7 @@ public:
         return nodes_[i];
     }
     inline int size() const {
-        return nodes_.size();
+        return static_cast<int>(nodes_.size());
     }
 };
 

@@ -43,7 +43,7 @@ CbcHeuristicNode::CbcHeuristicNode(const CbcHeuristicNode& rhs)
 void
 CbcHeuristicNodeList::gutsOfDelete()
 {
-    for (int i = nodes_.size() - 1; i >= 0; --i) {
+    for (size_t i = nodes_.size() - 1; i >= 0; --i) {
         delete nodes_[i];
     }
 }

@@ -28,7 +28,8 @@ CbcCompareDefault::CbcCompareDefault ()
         treeSize_(0),
         breadthDepth_(5),
         startNodeNumber_(-1),
-        afterNodeNumber_(-1)
+        afterNodeNumber_(-1),
+        setupForDiving_(false)
 {
     test_ = this;
 }
@@ -44,7 +45,8 @@ CbcCompareDefault::CbcCompareDefault (double weight)
         treeSize_(0),
         breadthDepth_(5),
         startNodeNumber_(-1),
-        afterNodeNumber_(-1)
+        afterNodeNumber_(-1),
+        setupForDiving_(false)
 {
     test_ = this;
 }
@@ -64,6 +66,7 @@ CbcCompareDefault::CbcCompareDefault ( const CbcCompareDefault & rhs)
     breadthDepth_ = rhs.breadthDepth_;
     startNodeNumber_ = rhs.startNodeNumber_;
     afterNodeNumber_ = rhs.afterNodeNumber_;
+    setupForDiving_ = rhs.setupForDiving_ ;
 }
 
 // Clone
@@ -88,6 +91,7 @@ CbcCompareDefault::operator=( const CbcCompareDefault & rhs)
         breadthDepth_ = rhs.breadthDepth_;
         startNodeNumber_ = rhs.startNodeNumber_;
         afterNodeNumber_ = rhs.afterNodeNumber_;
+        setupForDiving_ = rhs.setupForDiving_ ;
     }
     return *this;
 }
@@ -202,9 +206,11 @@ CbcCompareDefault::test (CbcNode * x, CbcNode * y)
             return equalityTest(x, y); // so ties will be broken in consistent manner
     }
 }
-// This allows method to change behavior as it is called
-// after each solution
-void
+/*
+  Change the weight attached to unsatisfied integer variables, unless it's
+  fairly early on in the search and all solutions to date are heuristic.
+*/
+bool
 CbcCompareDefault::newSolution(CbcModel * model,
                                double objectiveAtContinuous,
                                int numberInfeasibilitiesAtContinuous)
@@ -212,7 +218,7 @@ CbcCompareDefault::newSolution(CbcModel * model,
     cutoff_ = model->getCutoff();
     if (model->getSolutionCount() == model->getNumberHeuristicSolutions() &&
             model->getSolutionCount() < 5 && model->getNodeCount() < 500)
-        return; // solution was got by rounding
+        return (false) ; // solution was got by rounding
     // set to get close to this solution
     double costPerInteger =
         (model->getObjValue() - objectiveAtContinuous) /
@@ -222,6 +228,7 @@ CbcCompareDefault::newSolution(CbcModel * model,
     numberSolutions_++;
     //if (numberSolutions_>5)
     //weight_ =0.0; // this searches on objective
+    return (true) ;
 }
 // This allows method to change behavior
 bool
@@ -277,17 +284,35 @@ CbcCompareDefault::startDive(CbcModel * model)
     CbcNode * best = model->tree()->bestAlternate();
     startNodeNumber_ = best->nodeNumber();
     // send signal to setComparison
-    afterNodeNumber_ = -2;
+    setupForDiving_ = true ;
+    /*
+      TODO (review when fixing cleanDive and setComparison)
+      Both afterNodeNumber_ and weight_ must not change
+      after setComparison is invoked, as that will change
+      the behaviour of test(). I replaced the overload on
+      afterNodeNumber_ (magic number -2) with a boolean. Weight_
+      is more problematic. Either it's correct before calling
+      setComparison, or it needs to be cut from the tie-breaking
+      part of test() during a dive, or there needs to be a new
+      attribute to save and restore it around the dive. Otherwise
+      heap checks fail in debug builds with Visual Studio.
+      
+      Given that weight_ was restored immediately after the call
+      to setComparison, there should be no change in behaviour
+      in terms of calls to test().
+      -- lh, 100921 --
+    */
+    afterNodeNumber_ = model->tree()->maximumNodeNumber();
+    weight_ = saveWeight ;
     // redo tree
     model->tree()->setComparison(*this);
-    afterNodeNumber_ = model->tree()->maximumNodeNumber();
-    weight_ = saveWeight;
+    setupForDiving_ = false ;
 }
 // Clean up dive
 void
 CbcCompareDefault::cleanDive()
 {
-    if (afterNodeNumber_ != -2) {
+    if (setupForDiving_ == false) {
         // switch off
         startNodeNumber_ = -1;
         afterNodeNumber_ = -1;

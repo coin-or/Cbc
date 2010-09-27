@@ -30,15 +30,31 @@ public:
         threaded_ = false;
     }
 
-    // This allows any method to change behavior as it is called
-    // after each solution
-    virtual void newSolution(CbcModel * ) {}
+    /*! \brief Reconsider behaviour after discovering a new solution.
+    
+      This allows any method to change its behaviour. It is called
+      after each solution.
 
-    // This Also allows any method to change behavior as it is called
-    // after each solution
-    virtual void newSolution(CbcModel * ,
+      The method should return true if changes are made which will
+      alter the evaluation criteria applied to a node. (So that in
+      cases where the search tree is sorted, it can be properly
+      rebuilt.)
+    */
+    virtual bool newSolution(CbcModel * ) { return (false) ; }
+
+    /*! \brief Reconsider behaviour after discovering a new solution.
+    
+      This allows any method to change its behaviour. It is called
+      after each solution.
+
+      The method should return true if changes are made which will
+      alter the evaluation criteria applied to a node. (So that in
+      cases where the search tree is sorted, it can be properly
+      rebuilt.)
+    */
+    virtual bool newSolution(CbcModel * ,
                              double ,
-                             int ) {}
+                             int ) { return (false) ; }
 
     // This allows any method to change behavior as it is called
     // after every 1000 nodes.

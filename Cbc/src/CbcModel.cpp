@@ -3619,13 +3619,17 @@ void CbcModel::branchAndBound(int doStatistics)
                 newCutoff = getCutoff();
             }
             lockThread();
-            // Do from deepest (clean tree w.r.t. new solution)
-            tree_->cleanTree(this, newCutoff, bestPossibleObjective_) ;
-            nodeCompare_->newSolution(this) ;
-            nodeCompare_->newSolution(this, continuousObjective_,
-                                      continuousInfeasibilities_) ;
-            // side effect: redo heap
-            tree_->setComparison(*nodeCompare_) ;
+            /*
+              Clean the tree to reflect the new solution, then see if the
+              node comparison predicate wants to make any changes. If so,
+              call setComparison for the side effect of rebuilding the heap.
+            */
+            tree_->cleanTree(this,newCutoff,bestPossibleObjective_) ;
+            if (nodeCompare_->newSolution(this) ||
+                nodeCompare_->newSolution(this,continuousObjective_,
+                                          continuousInfeasibilities_)) {
+              tree_->setComparison(*nodeCompare_) ;
+            }
             if (tree_->empty()) {
                 continue;
             }

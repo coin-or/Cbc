@@ -8197,7 +8197,7 @@ int
 		  compare.setBreadthDepth(hOp1%10);
 		  babModel_->setNodeComparison(compare);
 		}
-#if defined(CBC_OTHER_SOLVER)||defined(COIN_HAS_CPX)
+#if CBC_OTHER_SOLVER==1
 		if (dynamic_cast<OsiCpxSolverInterface *> (babModel_->solver()))
 		  babModel_->solver()->messageHandler()->setLogLevel(0);
 #endif

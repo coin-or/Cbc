@@ -11136,12 +11136,15 @@ CbcModel::setBestSolution (CBC_Message how,
         }
 
         if (objectiveValue > cutoff) {
-            if (!solverCharacteristics_->solutionAddsCuts()) {
-                if (objectiveValue > 1.0e30)
-                    handler_->message(CBC_NOTFEAS1, messages_) << CoinMessageEol ;
-                else
-                    handler_->message(CBC_NOTFEAS2, messages_)
-                    << objectiveValue << cutoff << CoinMessageEol ;
+	    // message only for solution
+	    if (how == CBC_SOLUTION) {
+                if (!solverCharacteristics_->solutionAddsCuts()) {
+                    if (objectiveValue > 1.0e30)
+                        handler_->message(CBC_NOTFEAS1, messages_) << CoinMessageEol ;
+                    else
+                        handler_->message(CBC_NOTFEAS2, messages_)
+                        << objectiveValue << cutoff << CoinMessageEol ;
+		}
             }
         } else {
             /*

@@ -12030,7 +12030,15 @@ CbcModel::resolve(OsiSolverInterface * solver)
                 if (!clpSolver->isProvenOptimal()) {
                     clpSolver->setSpecialOptions(save2 | 2048);
                     clpSimplex->allSlackBasis(true);
-                    clpSolver->resolve();
+		    clpSolver->resolve();
+		    if (!clpSolver->isProvenOptimal()) {
+		         bool takeHint;
+			 OsiHintStrength strength;
+			 clpSolver->getHintParam(OsiDoDualInResolve, takeHint, strength);
+			 clpSolver->setHintParam(OsiDoDualInResolve, false, OsiHintDo);
+			 clpSolver->resolve();
+			 clpSolver->setHintParam(OsiDoDualInResolve, takeHint, strength);
+		    }
                 }
                 // make cuts safer
                 for (int iCutGenerator = 0; iCutGenerator < numberCutGenerators_; iCutGenerator++) {

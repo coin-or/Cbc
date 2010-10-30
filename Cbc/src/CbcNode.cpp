@@ -2829,11 +2829,12 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
                     */
                     if (solver->isProvenOptimal())
                         iStatus = 0; // optimal
-                    else if (solver->isIterationLimitReached()
-                             && !solver->isDualObjectiveLimitReached())
+                    else if (solver->isIterationLimitReached() 
+                             && !solver->isDualObjectiveLimitReached()) {
                         iStatus = 2; // unknown
-                    else
+                    } else {
                         iStatus = 1; // infeasible
+		    }
                     if (iStatus != 2 && solver->getIterationCount() >
                             realMaxHotIterations)
                         numberUnfinished++;
@@ -2976,10 +2977,11 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
                     if (solver->isProvenOptimal())
                         iStatus = 0; // optimal
                     else if (solver->isIterationLimitReached()
-                             && !solver->isDualObjectiveLimitReached())
+                             && !solver->isDualObjectiveLimitReached()) {
                         iStatus = 2; // unknown
-                    else
+                    } else {
                         iStatus = 1; // infeasible
+		    }
                     if (iStatus != 2 && solver->getIterationCount() >
                             realMaxHotIterations)
                         numberUnfinished++;
@@ -3040,6 +3042,16 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
                                 model->setBestSolution(CBC_STRONGSOL,
                                                        newObjectiveValue,
                                                        solver->getColSolution()) ;
+				if (choice.finishedDown) {
+				  double cutoff = model->getCutoff();
+				  double downObj = objectiveValue_
+				    + choice.downMovement ;
+				  if (downObj >= cutoff) {	
+                                    choice.downMovement = 1.0e100 ;
+                                    numberStrongInfeasible++;
+                                }
+
+				}
                                 if (needHotStartUpdate) {
                                     model->resolve(NULL, 11, saveSolution, saveLower, saveUpper);
                                     newObjectiveValue = solver->getObjSense() * solver->getObjValue();

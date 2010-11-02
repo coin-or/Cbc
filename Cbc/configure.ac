@@ -56,45 +56,45 @@ AC_COIN_INIT_AUTO_TOOLS
 #                            COIN-OR components                             #
 #############################################################################
 
-AC_COIN_HAS_PACKAGE(CoinDepend, [cgl osi coinutils = trunk], [CbcLib CbcGeneric])
+AC_COIN_CHECK_PACKAGE(CoinDepend, [cgl osi coinutils = trunk], [CbcLib CbcGeneric])
 if test $coin_has_coindepend != yes ; then
   AC_MSG_ERROR([Required package CoinUtils, Osi, or Cgl not available.])
 fi
 
 # Clp and OsiClp are inseparable here.
 
-AC_COIN_HAS_PACKAGE(Clp, [osi-clp], [CbcLib CbcGeneric])
+AC_COIN_CHECK_PACKAGE(Clp, [osi-clp], [CbcLib CbcGeneric])
 if test $coin_has_clp != yes ; then
   AC_MSG_ERROR("Required package Clp unavailable.")
 fi
 
 # The rest are not required for linking against Cbc
 
-AC_COIN_HAS_PACKAGE(OsiTests, [osi-unittests])
-AC_COIN_HAS_PACKAGE(Sample,   [coindatasample])
-AC_COIN_HAS_PACKAGE(Netlib,   [coindatanetlib])
-AC_COIN_HAS_PACKAGE(Miplib3,  [coindatamiplib3])
+AC_COIN_CHECK_PACKAGE(OsiTests, [osi-unittests])
+AC_COIN_CHECK_PACKAGE(Sample,   [coindatasample])
+AC_COIN_CHECK_PACKAGE(Netlib,   [coindatanetlib])
+AC_COIN_CHECK_PACKAGE(Miplib3,  [coindatamiplib3])
 
 #############################################################################
 #                    LP solvers other than CLP                              #
 #############################################################################
 
 # Check which other LP solvers are available, some of them become a dependency of CbcGeneric
-AC_COIN_HAS_PACKAGE(DyLP, [osi-dylp],   [CbcGeneric])
-AC_COIN_HAS_PACKAGE(Vol,  [osi-vol])
-AC_COIN_HAS_PACKAGE(Cpx,  [osi-cplex],  [CbcGeneric])
-AC_COIN_HAS_PACKAGE(Glpk, [osi-glpk],   [CbcGeneric])
-AC_COIN_HAS_PACKAGE(Grb,  [osi-gurobi])
-AC_COIN_HAS_PACKAGE(Msk,  [osi-mosek],  [CbcGeneric])
-AC_COIN_HAS_PACKAGE(Spx,  [osi-soplex], [CbcGeneric])
-AC_COIN_HAS_PACKAGE(Xpr,  [osi-xpress])
+AC_COIN_CHECK_PACKAGE(DyLP, [osi-dylp],   [CbcGeneric])
+AC_COIN_CHECK_PACKAGE(Vol,  [osi-vol])
+AC_COIN_CHECK_PACKAGE(Cpx,  [osi-cplex],  [CbcGeneric])
+AC_COIN_CHECK_PACKAGE(Glpk, [osi-glpk],   [CbcGeneric])
+AC_COIN_CHECK_PACKAGE(Grb,  [osi-gurobi])
+AC_COIN_CHECK_PACKAGE(Msk,  [osi-mosek],  [CbcGeneric])
+AC_COIN_CHECK_PACKAGE(Spx,  [osi-soplex], [CbcGeneric])
+AC_COIN_CHECK_PACKAGE(Xpr,  [osi-xpress])
 
 #############################################################################
 #                       Other third party software                          #
 #############################################################################
 
 # Ampl Solver library
-AC_COIN_HAS_PACKAGE(ASL, [coinasl])
+AC_COIN_CHECK_PACKAGE(ASL, [coinasl])
 
 #############################################################################
 #                       CbcGeneric configuration			    #

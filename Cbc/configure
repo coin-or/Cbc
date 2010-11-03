@@ -20817,9 +20817,9 @@ if test $coin_has_coindepend = notGiven; then
 
 
 if test -n "$PKG_CONFIG" ; then
-  if $PKG_CONFIG --exists "cgl osi coinutils = trunk"; then
-    COINDEPEND_VERSIONS="`$PKG_CONFIG --modversion "cgl osi coinutils = trunk" 2>/dev/null`"
-     cflags=`$PKG_CONFIG --cflags "cgl osi coinutils = trunk" 2>/dev/null`
+  if $PKG_CONFIG --exists "cgl osi coinutils"; then
+    COINDEPEND_VERSIONS="`$PKG_CONFIG --modversion "cgl osi coinutils" 2>/dev/null`"
+     cflags=`$PKG_CONFIG --cflags "cgl osi coinutils" 2>/dev/null`
     # pkg-config cannot handle spaces, so CYGPATH_W cannot be put into .pc files
 	# thus, we modify the cflags extracted from pkg-config by putting CYGPATH_W behind -I's
 	# but only do this if is not trivial
@@ -20828,18 +20828,18 @@ if test -n "$PKG_CONFIG" ; then
 	  cflags=`echo $cflags | sed -e 's/-I\([^ ]*\)/-I\`${CYGPATH_W} \1\`/g'`
 	fi
     COINDEPEND_CFLAGS="$cflags"
-    COINDEPEND_LIBS=`$PKG_CONFIG --libs "cgl osi coinutils = trunk" 2>/dev/null`
-    COINDEPEND_DATA=`$PKG_CONFIG --variable=datadir "cgl osi coinutils = trunk" 2>/dev/null`
+    COINDEPEND_LIBS=`$PKG_CONFIG --libs "cgl osi coinutils" 2>/dev/null`
+    COINDEPEND_DATA=`$PKG_CONFIG --variable=datadir "cgl osi coinutils" 2>/dev/null`
      coin_has_coindepend=yes
         echo "$as_me:$LINENO: result: yes: $COINDEPEND_VERSIONS" >&5
 echo "${ECHO_T}yes: $COINDEPEND_VERSIONS" >&6
-        CBCLIB_PCREQUIRES="cgl osi coinutils = trunk $CBCLIB_PCREQUIRES"
-        CBCGENERIC_PCREQUIRES="cgl osi coinutils = trunk $CBCGENERIC_PCREQUIRES"
+        CBCLIB_PCREQUIRES="cgl osi coinutils $CBCLIB_PCREQUIRES"
+        CBCGENERIC_PCREQUIRES="cgl osi coinutils $CBCGENERIC_PCREQUIRES"
 
 
 
   else
-    COINDEPEND_PKG_ERRORS=`$PKG_CONFIG $pkg_short_errors --errors-to-stdout --print-errors cgl osi coinutils = trunk`
+    COINDEPEND_PKG_ERRORS=`$PKG_CONFIG $pkg_short_errors --errors-to-stdout --print-errors cgl osi coinutils`
       coin_has_coindepend=notGiven
         echo "$as_me:$LINENO: result: not given: $COINDEPEND_PKG_ERRORS" >&5
 echo "${ECHO_T}not given: $COINDEPEND_PKG_ERRORS" >&6
@@ -20878,8 +20878,8 @@ COINDEPEND_LIBS=
 COINDEPEND_CFLAGS=
 COINDEPEND_DATA=
 
-# initial list of dependencies is "cgl osi coinutils = trunk", but we need to filter out version number specifications (= x, <= x, >= x)
-projtoprocess="cgl osi coinutils "
+# initial list of dependencies is "cgl osi coinutils", but we need to filter out version number specifications (= x, <= x, >= x)
+projtoprocess="cgl osi coinutils"
 projprocessed=""
 
 while test $coin_has_coindepend = notGiven ; do
@@ -20964,11 +20964,11 @@ _ACEOF
 
 
 
-      CBCLIB_PCREQUIRES="cgl osi coinutils = trunk $CBCLIB_PCREQUIRES"
+      CBCLIB_PCREQUIRES="cgl osi coinutils $CBCLIB_PCREQUIRES"
       CBCLIB_CFLAGS="$COINDEPEND_CFLAGS $CBCLIB_CFLAGS"
       CBCLIB_LIBS="$COINDEPEND_LIBS $CBCLIB_LIBS"
 
-      CBCGENERIC_PCREQUIRES="cgl osi coinutils = trunk $CBCGENERIC_PCREQUIRES"
+      CBCGENERIC_PCREQUIRES="cgl osi coinutils $CBCGENERIC_PCREQUIRES"
       CBCGENERIC_CFLAGS="$COINDEPEND_CFLAGS $CBCGENERIC_CFLAGS"
       CBCGENERIC_LIBS="$COINDEPEND_LIBS $CBCGENERIC_LIBS"
 
@@ -21075,8 +21075,8 @@ fi
 
 
 if test $coin_has_coindepend != yes ; then
-  { { echo "$as_me:$LINENO: error: Required package CoinUtils, Osi, or Cgl not available." >&5
-echo "$as_me: error: Required package CoinUtils, Osi, or Cgl not available." >&2;}
+  { { echo "$as_me:$LINENO: error: One or more required packages CoinUtils, Osi, and Cgl are not available." >&5
+echo "$as_me: error: One or more required packages CoinUtils, Osi, and Cgl are not available." >&2;}
    { (exit 1); exit 1; }; }
 fi
 

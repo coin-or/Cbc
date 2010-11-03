@@ -56,9 +56,9 @@ AC_COIN_INIT_AUTO_TOOLS
 #                            COIN-OR components                             #
 #############################################################################
 
-AC_COIN_CHECK_PACKAGE(CoinDepend, [cgl osi coinutils = trunk], [CbcLib CbcGeneric])
+AC_COIN_CHECK_PACKAGE(CoinDepend, [cgl osi coinutils], [CbcLib CbcGeneric])
 if test $coin_has_coindepend != yes ; then
-  AC_MSG_ERROR([Required package CoinUtils, Osi, or Cgl not available.])
+  AC_MSG_ERROR([One or more required packages CoinUtils, Osi, and Cgl are not available.])
 fi
 
 # Clp and OsiClp are inseparable here.

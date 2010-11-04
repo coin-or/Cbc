@@ -35,7 +35,7 @@ public:
   virtual bool alternateTest (CbcNode * x, CbcNode * y);
   // This allows method to change behavior as it is called
   // after each solution
-  virtual void newSolution(CbcModel * model,
+  virtual bool newSolution(CbcModel * model,
 			   double objectiveAtContinuous,
 			   int numberInfeasibilitiesAtContinuous) ;
   /// Returns true if wants code to do scan with alternate criterion

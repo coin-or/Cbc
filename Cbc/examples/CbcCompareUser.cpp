@@ -132,6 +132,7 @@ CbcCompareUser::newSolution(CbcModel * model,
   numberSolutions_++;
   if (numberSolutions_>5)
     weight_ =0.0; // this searches on objective
+  return (true) ;
 }
 // This allows method to change behavior 
 bool 
@@ -215,14 +216,14 @@ CbcCompareUser::test (CbcNode * x, CbcNode * y)
 }
 // This allows method to change behavior as it is called
 // after each solution
-void 
+bool 
 CbcCompareUser::newSolution(CbcModel * model,
 			       double objectiveAtContinuous,
 			       int numberInfeasibilitiesAtContinuous) 
 {
   if (model->getSolutionCount()==model->getNumberHeuristicSolutions()&&
       model->getSolutionCount()<5&&model->getNodeCount()<500)
-    return; // solution was got by rounding
+    return (false) ; // solution was got by rounding
   // set to get close to this solution
   double costPerInteger = 
     (model->getObjValue()-objectiveAtContinuous)/
@@ -232,6 +233,7 @@ CbcCompareUser::newSolution(CbcModel * model,
   numberSolutions_++;
   if (numberSolutions_>5)
     weight_ =0.0; // this searches on objective
+  return (true) ;
 }
 // This allows method to change behavior 
 bool 

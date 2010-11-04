@@ -66,7 +66,7 @@ COININCDIR = @abs_include_dir@/coin
 COINLIBDIR = @abs_lib_dir@/coin
 
 # Libraries necessary to link with Cbc
-LIBS = @CBCLIB_LIBS@ -L$(COINLIBDIR) -L$(COINLIBDIR)/ThirdParty -lCbcSolver -lCbc -lOsiCbc
+LIBS = -lCbcSolver -lCbc -lOsiCbc @CBCLIB_LIBS@ -L$(COINLIBDIR) -L$(COINLIBDIR)/ThirdParty 
 
 # Necessary Include dirs (we use the CYGPATH_W variables to allow
 # compilation with Windows compilers)

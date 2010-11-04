@@ -40,7 +40,6 @@
     Hmmm ... is it still the case that standard C malloc and C++ new/delete
     do not play well together? 'Cause the hooks here for new and delete will
     not escape from this file.
-
 */
 
 
@@ -338,9 +337,6 @@ int main (int argc, const char *argv[])
 
 #ifdef CLP_DEBUG_MALLOC
     clp_memory(1);
-#endif
-
-#ifdef CBC_STATISTICS
 #endif
 
     if (returnCode != 777) {

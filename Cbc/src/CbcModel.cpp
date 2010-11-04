@@ -7650,15 +7650,6 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
     //if ((numberNodes_%100)==0)
     //printf("XXb sum obj changed by %g\n",sumChangeObjective2_);
     /*
-    lh:
-      Is this a full scan interval? If so, consider if we want to disable or
-    adjust the frequency of use for any of the cut generators. If the client
-    specified a positive number for howOften, it will never change. If the
-    original value was negative, it'll be converted to 1000000+|howOften|, and
-    this value will be adjusted each time fullScan is true. Actual cut
-    generation is performed every howOften%1000000 nodes; the 1000000 offset is
-    just a convenient way to specify that the frequency is adjustable.
-    -lh
       End of cut generation loop.
 
       Now, consider if we want to disable or adjust the frequency of use for any

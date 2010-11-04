@@ -63,10 +63,10 @@ CXXLINKFLAGS = @RPATH_FLAGS@
 COININCDIR = @abs_include_dir@/coin
 
 # Directory with COIN libraries
-COINLIBDIR = @abs_lib_dir@/coin
+COINLIBDIR = @abs_lib_dir@
 
 # Libraries necessary to link with Cbc
-LIBS = -lCbcSolver -lCbc -lOsiCbc @CBCLIB_LIBS@ -L$(COINLIBDIR) -L$(COINLIBDIR)/ThirdParty 
+LIBS = -L$(COINLIBDIR) -lCbcSolver -lCbc -lOsiCbc @CBCLIB_LIBS@
 
 # Necessary Include dirs (we use the CYGPATH_W variables to allow
 # compilation with Windows compilers)

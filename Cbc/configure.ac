@@ -82,7 +82,7 @@ AC_COIN_CHECK_PACKAGE(Miplib3,  [coindatamiplib3])
 # Check which other LP solvers are available, some of them become a dependency of CbcGeneric
 AC_COIN_CHECK_PACKAGE(DyLP, [osi-dylp],   [CbcGeneric])
 AC_COIN_CHECK_PACKAGE(Vol,  [osi-vol])
-AC_COIN_CHECK_PACKAGE(Cpx,  [osi-cplex],  [CbcGeneric])
+AC_COIN_CHECK_PACKAGE(Cpx,  [osi-cplex],  [CbcLib CbcGeneric])
 AC_COIN_CHECK_PACKAGE(Glpk, [osi-glpk],   [CbcGeneric])
 AC_COIN_CHECK_PACKAGE(Grb,  [osi-gurobi])
 AC_COIN_CHECK_PACKAGE(Msk,  [osi-mosek],  [CbcGeneric])

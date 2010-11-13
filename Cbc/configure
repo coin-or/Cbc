@@ -20839,7 +20839,7 @@ echo "${ECHO_T}yes: $COINDEPEND_VERSIONS" >&6
 
 
   else
-    COINDEPEND_PKG_ERRORS=`$PKG_CONFIG $pkg_short_errors --errors-to-stdout --print-errors cgl osi coinutils`
+    COINDEPEND_PKG_ERRORS=`$PKG_CONFIG $pkg_short_errors --errors-to-stdout --print-errors "cgl osi coinutils"`
       coin_has_coindepend=notGiven
         echo "$as_me:$LINENO: result: not given: $COINDEPEND_PKG_ERRORS" >&5
 echo "${ECHO_T}not given: $COINDEPEND_PKG_ERRORS" >&6
@@ -21190,7 +21190,7 @@ echo "${ECHO_T}yes: $CLP_VERSIONS" >&6
 
 
   else
-    CLP_PKG_ERRORS=`$PKG_CONFIG $pkg_short_errors --errors-to-stdout --print-errors osi-clp`
+    CLP_PKG_ERRORS=`$PKG_CONFIG $pkg_short_errors --errors-to-stdout --print-errors "osi-clp"`
       coin_has_clp=notGiven
         echo "$as_me:$LINENO: result: not given: $CLP_PKG_ERRORS" >&5
 echo "${ECHO_T}not given: $CLP_PKG_ERRORS" >&6
@@ -21521,7 +21521,7 @@ echo "${ECHO_T}yes: $OSITESTS_VERSIONS" >&6
 
 
   else
-    OSITESTS_PKG_ERRORS=`$PKG_CONFIG $pkg_short_errors --errors-to-stdout --print-errors osi-unittests`
+    OSITESTS_PKG_ERRORS=`$PKG_CONFIG $pkg_short_errors --errors-to-stdout --print-errors "osi-unittests"`
       coin_has_ositests=notGiven
         echo "$as_me:$LINENO: result: not given: $OSITESTS_PKG_ERRORS" >&5
 echo "${ECHO_T}not given: $OSITESTS_PKG_ERRORS" >&6
@@ -21810,7 +21810,7 @@ echo "${ECHO_T}yes: $SAMPLE_VERSIONS" >&6
 
 
   else
-    SAMPLE_PKG_ERRORS=`$PKG_CONFIG $pkg_short_errors --errors-to-stdout --print-errors coindatasample`
+    SAMPLE_PKG_ERRORS=`$PKG_CONFIG $pkg_short_errors --errors-to-stdout --print-errors "coindatasample"`
       coin_has_sample=notGiven
         echo "$as_me:$LINENO: result: not given: $SAMPLE_PKG_ERRORS" >&5
 echo "${ECHO_T}not given: $SAMPLE_PKG_ERRORS" >&6
@@ -22099,7 +22099,7 @@ echo "${ECHO_T}yes: $NETLIB_VERSIONS" >&6
 
 
   else
-    NETLIB_PKG_ERRORS=`$PKG_CONFIG $pkg_short_errors --errors-to-stdout --print-errors coindatanetlib`
+    NETLIB_PKG_ERRORS=`$PKG_CONFIG $pkg_short_errors --errors-to-stdout --print-errors "coindatanetlib"`
       coin_has_netlib=notGiven
         echo "$as_me:$LINENO: result: not given: $NETLIB_PKG_ERRORS" >&5
 echo "${ECHO_T}not given: $NETLIB_PKG_ERRORS" >&6
@@ -22388,7 +22388,7 @@ echo "${ECHO_T}yes: $MIPLIB3_VERSIONS" >&6
 
 
   else
-    MIPLIB3_PKG_ERRORS=`$PKG_CONFIG $pkg_short_errors --errors-to-stdout --print-errors coindatamiplib3`
+    MIPLIB3_PKG_ERRORS=`$PKG_CONFIG $pkg_short_errors --errors-to-stdout --print-errors "coindatamiplib3"`
       coin_has_miplib3=notGiven
         echo "$as_me:$LINENO: result: not given: $MIPLIB3_PKG_ERRORS" >&5
 echo "${ECHO_T}not given: $MIPLIB3_PKG_ERRORS" >&6
@@ -22693,7 +22693,7 @@ echo "${ECHO_T}yes: $DYLP_VERSIONS" >&6
 
 
   else
-    DYLP_PKG_ERRORS=`$PKG_CONFIG $pkg_short_errors --errors-to-stdout --print-errors osi-dylp`
+    DYLP_PKG_ERRORS=`$PKG_CONFIG $pkg_short_errors --errors-to-stdout --print-errors "osi-dylp"`
       coin_has_dylp=notGiven
         echo "$as_me:$LINENO: result: not given: $DYLP_PKG_ERRORS" >&5
 echo "${ECHO_T}not given: $DYLP_PKG_ERRORS" >&6
@@ -22999,7 +22999,7 @@ echo "${ECHO_T}yes: $VOL_VERSIONS" >&6
 
 
   else
-    VOL_PKG_ERRORS=`$PKG_CONFIG $pkg_short_errors --errors-to-stdout --print-errors osi-vol`
+    VOL_PKG_ERRORS=`$PKG_CONFIG $pkg_short_errors --errors-to-stdout --print-errors "osi-vol"`
       coin_has_vol=notGiven
         echo "$as_me:$LINENO: result: not given: $VOL_PKG_ERRORS" >&5
 echo "${ECHO_T}not given: $VOL_PKG_ERRORS" >&6
@@ -23228,6 +23228,11 @@ CPX_DATA=
 
 
 
+
+
+
+
+
 #check if user provided LIBS, CFLAGS, or DATA for module
 if test $coin_has_cpx != skipping; then
 
@@ -23237,6 +23242,9 @@ if test "${with_cpx_lib+set}" = set; then
   withval="$with_cpx_lib"
   coin_has_cpx=yes
        CPX_LIBS="$withval"
+
+         CBCLIB_PCLIBS="$withval $CBCLIB_PCLIBS"
+         CBCLIB_LIBS="$withval $CBCLIB_LIBS"
 
          CBCGENERIC_PCLIBS="$withval $CBCGENERIC_PCLIBS"
          CBCGENERIC_LIBS="$withval $CBCGENERIC_LIBS"
@@ -23250,6 +23258,7 @@ if test "${with_cpx_incdir+set}" = set; then
   withval="$with_cpx_incdir"
   coin_has_cpx=yes
      CPX_CFLAGS="-I`${CYGPATH_W} $withval`"
+     CBCLIB_CFLAGS="$withval $CBCLIB_CFLAGS"
      CBCGENERIC_CFLAGS="$withval $CBCGENERIC_CFLAGS"
 
 
@@ -23293,12 +23302,13 @@ if test -n "$PKG_CONFIG" ; then
      coin_has_cpx=yes
         echo "$as_me:$LINENO: result: yes: $CPX_VERSIONS" >&5
 echo "${ECHO_T}yes: $CPX_VERSIONS" >&6
+        CBCLIB_PCREQUIRES="osi-cplex $CBCLIB_PCREQUIRES"
         CBCGENERIC_PCREQUIRES="osi-cplex $CBCGENERIC_PCREQUIRES"
 
 
 
   else
-    CPX_PKG_ERRORS=`$PKG_CONFIG $pkg_short_errors --errors-to-stdout --print-errors osi-cplex`
+    CPX_PKG_ERRORS=`$PKG_CONFIG $pkg_short_errors --errors-to-stdout --print-errors "osi-cplex"`
       coin_has_cpx=notGiven
         echo "$as_me:$LINENO: result: not given: $CPX_PKG_ERRORS" >&5
 echo "${ECHO_T}not given: $CPX_PKG_ERRORS" >&6
@@ -23317,7 +23327,10 @@ fi
     PKG_CONFIG_PATH="$coin_save_PKG_CONFIG_PATH"
     export PKG_CONFIG_PATH
 
-    # augment X_CFLAGS and X_LIBS for each build target X in CbcGeneric
+    # augment X_CFLAGS and X_LIBS for each build target X in CbcLib CbcGeneric
+
+      CBCLIB_CFLAGS="$CPX_CFLAGS $CBCLIB_CFLAGS"
+      CBCLIB_LIBS="$CPX_LIBS $CBCLIB_LIBS"
 
       CBCGENERIC_CFLAGS="$CPX_CFLAGS $CBCGENERIC_CFLAGS"
       CBCGENERIC_LIBS="$CPX_LIBS $CBCGENERIC_LIBS"
@@ -23420,6 +23433,10 @@ _ACEOF
 
 
 
+      CBCLIB_PCREQUIRES="osi-cplex $CBCLIB_PCREQUIRES"
+      CBCLIB_CFLAGS="$CPX_CFLAGS $CBCLIB_CFLAGS"
+      CBCLIB_LIBS="$CPX_LIBS $CBCLIB_LIBS"
+
       CBCGENERIC_PCREQUIRES="osi-cplex $CBCGENERIC_PCREQUIRES"
       CBCGENERIC_CFLAGS="$CPX_CFLAGS $CBCGENERIC_CFLAGS"
       CBCGENERIC_LIBS="$CPX_LIBS $CBCGENERIC_LIBS"
@@ -23438,6 +23455,11 @@ echo "$as_me: Cpx LIBS   are $CPX_LIBS" >&6;}
         { echo "$as_me:$LINENO: Cpx DATA   is  $CPX_DATA" >&5
 echo "$as_me: Cpx DATA   is  $CPX_DATA" >&6;}
       fi
+
+        { echo "$as_me:$LINENO: CbcLib CFLAGS are $CBCLIB_CFLAGS" >&5
+echo "$as_me: CbcLib CFLAGS are $CBCLIB_CFLAGS" >&6;}
+        { echo "$as_me:$LINENO: CbcLib LIBS   are $CBCLIB_LIBS" >&5
+echo "$as_me: CbcLib LIBS   are $CBCLIB_LIBS" >&6;}
 
         { echo "$as_me:$LINENO: CbcGeneric CFLAGS are $CBCGENERIC_CFLAGS" >&5
 echo "$as_me: CbcGeneric CFLAGS are $CBCGENERIC_CFLAGS" >&6;}
@@ -23493,6 +23515,11 @@ echo "$as_me: Cpx DATA   is  $CPX_DATA" >&6;}
       { echo "$as_me:$LINENO: Cpx CFLAGS are $CPX_CFLAGS" >&5
 echo "$as_me: Cpx CFLAGS are $CPX_CFLAGS" >&6;}
     fi
+
+      { echo "$as_me:$LINENO: CbcLib CFLAGS are $CBCLIB_CFLAGS" >&5
+echo "$as_me: CbcLib CFLAGS are $CBCLIB_CFLAGS" >&6;}
+      { echo "$as_me:$LINENO: CbcLib LIBS   are $CBCLIB_LIBS" >&5
+echo "$as_me: CbcLib LIBS   are $CBCLIB_LIBS" >&6;}
 
       { echo "$as_me:$LINENO: CbcGeneric CFLAGS are $CBCGENERIC_CFLAGS" >&5
 echo "$as_me: CbcGeneric CFLAGS are $CBCGENERIC_CFLAGS" >&6;}
@@ -23614,7 +23641,7 @@ echo "${ECHO_T}yes: $GLPK_VERSIONS" >&6
 
 
   else
-    GLPK_PKG_ERRORS=`$PKG_CONFIG $pkg_short_errors --errors-to-stdout --print-errors osi-glpk`
+    GLPK_PKG_ERRORS=`$PKG_CONFIG $pkg_short_errors --errors-to-stdout --print-errors "osi-glpk"`
       coin_has_glpk=notGiven
         echo "$as_me:$LINENO: result: not given: $GLPK_PKG_ERRORS" >&5
 echo "${ECHO_T}not given: $GLPK_PKG_ERRORS" >&6
@@ -23920,7 +23947,7 @@ echo "${ECHO_T}yes: $GRB_VERSIONS" >&6
 
 
   else
-    GRB_PKG_ERRORS=`$PKG_CONFIG $pkg_short_errors --errors-to-stdout --print-errors osi-gurobi`
+    GRB_PKG_ERRORS=`$PKG_CONFIG $pkg_short_errors --errors-to-stdout --print-errors "osi-gurobi"`
       coin_has_grb=notGiven
         echo "$as_me:$LINENO: result: not given: $GRB_PKG_ERRORS" >&5
 echo "${ECHO_T}not given: $GRB_PKG_ERRORS" >&6
@@ -24219,7 +24246,7 @@ echo "${ECHO_T}yes: $MSK_VERSIONS" >&6
 
 
   else
-    MSK_PKG_ERRORS=`$PKG_CONFIG $pkg_short_errors --errors-to-stdout --print-errors osi-mosek`
+    MSK_PKG_ERRORS=`$PKG_CONFIG $pkg_short_errors --errors-to-stdout --print-errors "osi-mosek"`
       coin_has_msk=notGiven
         echo "$as_me:$LINENO: result: not given: $MSK_PKG_ERRORS" >&5
 echo "${ECHO_T}not given: $MSK_PKG_ERRORS" >&6
@@ -24535,7 +24562,7 @@ echo "${ECHO_T}yes: $SPX_VERSIONS" >&6
 
 
   else
-    SPX_PKG_ERRORS=`$PKG_CONFIG $pkg_short_errors --errors-to-stdout --print-errors osi-soplex`
+    SPX_PKG_ERRORS=`$PKG_CONFIG $pkg_short_errors --errors-to-stdout --print-errors "osi-soplex"`
       coin_has_spx=notGiven
         echo "$as_me:$LINENO: result: not given: $SPX_PKG_ERRORS" >&5
 echo "${ECHO_T}not given: $SPX_PKG_ERRORS" >&6
@@ -24841,7 +24868,7 @@ echo "${ECHO_T}yes: $XPR_VERSIONS" >&6
 
 
   else
-    XPR_PKG_ERRORS=`$PKG_CONFIG $pkg_short_errors --errors-to-stdout --print-errors osi-xpress`
+    XPR_PKG_ERRORS=`$PKG_CONFIG $pkg_short_errors --errors-to-stdout --print-errors "osi-xpress"`
       coin_has_xpr=notGiven
         echo "$as_me:$LINENO: result: not given: $XPR_PKG_ERRORS" >&5
 echo "${ECHO_T}not given: $XPR_PKG_ERRORS" >&6
@@ -25136,7 +25163,7 @@ echo "${ECHO_T}yes: $ASL_VERSIONS" >&6
 
 
   else
-    ASL_PKG_ERRORS=`$PKG_CONFIG $pkg_short_errors --errors-to-stdout --print-errors coinasl`
+    ASL_PKG_ERRORS=`$PKG_CONFIG $pkg_short_errors --errors-to-stdout --print-errors "coinasl"`
       coin_has_asl=notGiven
         echo "$as_me:$LINENO: result: not given: $ASL_PKG_ERRORS" >&5
 echo "${ECHO_T}not given: $ASL_PKG_ERRORS" >&6

@@ -557,7 +557,7 @@ libCbcSolver_la_LDFLAGS = $(LT_LDFLAGS)
 ########################################################################
 
 # List additional defines
-AM_CPPFLAGS = $(COINDEPEND_CFLAGS) $(CLP_CFLAGS) $(CPX_LIBS) \
+AM_CPPFLAGS = $(COINDEPEND_CFLAGS) $(CLP_CFLAGS) $(CPX_CFLAGS) \
 	$(am__append_2) $(am__append_5) $(am__append_6) \
 	-DCOIN_NO_CLP_MESSAGE -DUSE_CBCCONFIG
 

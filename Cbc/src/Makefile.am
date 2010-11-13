@@ -95,7 +95,6 @@ libCbc_la_SOURCES = \
 	CbcTree.cpp CbcTree.hpp \
 	CbcTreeLocal.cpp CbcTreeLocal.hpp
 
-
 libCbcSolver_la_SOURCES = \
 	CbcCbcParam.cpp \
 	Cbc_ampl.cpp Cbc_ampl.h \
@@ -114,7 +113,7 @@ libCbcSolver_la_LDFLAGS = $(LT_LDFLAGS)
 #   ($(CPX_LIBS) should resolve in an empty string if there is no cplex)
 
 bin_PROGRAMS =
-AM_CPPFLAGS = $(COINDEPEND_CFLAGS) $(CLP_CFLAGS) $(CPX_LIBS)
+AM_CPPFLAGS = $(COINDEPEND_CFLAGS) $(CLP_CFLAGS) $(CPX_CFLAGS)
 
 ########################################################################
 #                            cbc program                               #

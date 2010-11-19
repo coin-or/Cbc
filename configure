@@ -473,8 +473,10 @@ ac_includes_default="\
 # include <unistd.h>
 #endif"
 
+ac_subdirs_all="$ac_subdirs_all ThirdParty/ASL"
 ac_subdirs_all="$ac_subdirs_all ThirdParty/Blas"
 ac_subdirs_all="$ac_subdirs_all ThirdParty/Lapack"
+ac_subdirs_all="$ac_subdirs_all ThirdParty/Glpk"
 ac_subdirs_all="$ac_subdirs_all Data/Sample"
 ac_subdirs_all="$ac_subdirs_all Data/Netlib"
 ac_subdirs_all="$ac_subdirs_all Data/miblib3"
@@ -1140,6 +1142,9 @@ Optional Packages:
                           include additional configurations [automatic]
   --with-coin-instdir     prefix of installation directory for precompiled
                           COIN packages
+  --with-asl-lib linker flags for using project ASL
+  --with-asl-incdir directory with header files for using project ASL
+  --with-asl-datadir directory with data files for using project ASL
   --with-blas-lib linker flags for using project Blas
   --with-blas-incdir directory with header files for using project Blas
   --with-blas-datadir directory with data files for using project Blas
@@ -1148,6 +1153,9 @@ Optional Packages:
   --with-lapack-incdir directory with header files for using project Lapack
   --with-lapack-datadir directory with data files for using project Lapack
   --with-lapack           specify LAPACK library (or BUILD for compilation)
+  --with-glpk-lib linker flags for using project Glpk
+  --with-glpk-incdir directory with header files for using project Glpk
+  --with-glpk-datadir directory with data files for using project Glpk
   --with-sample-lib linker flags for using project Sample
   --with-sample-incdir directory with header files for using project Sample
   --with-sample-datadir directory with data files for using project Sample
@@ -4219,7 +4227,7 @@ fi
 
 
 # Provide some information about the compiler.
-echo "$as_me:4222:" \
+echo "$as_me:4230:" \
      "checking for Fortran 77 compiler version" >&5
 ac_compiler=`set X $ac_compile; echo $2`
 { (eval echo "$as_me:$LINENO: \"$ac_compiler --version </dev/null >&5\"") >&5
@@ -6478,7 +6486,7 @@ ia64-*-hpux*)
   ;;
 *-*-irix6*)
   # Find out which ABI we are using.
-  echo '#line 6481 "configure"' > conftest.$ac_ext
+  echo '#line 6489 "configure"' > conftest.$ac_ext
   if { (eval echo "$as_me:$LINENO: \"$ac_compile\"") >&5
   (eval $ac_compile) 2>&5
   ac_status=$?
@@ -8442,11 +8450,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:8445: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:8453: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:8449: \$? = $ac_status" >&5
+   echo "$as_me:8457: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -8710,11 +8718,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:8713: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:8721: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:8717: \$? = $ac_status" >&5
+   echo "$as_me:8725: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -8814,11 +8822,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:8817: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:8825: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:8821: \$? = $ac_status" >&5
+   echo "$as_me:8829: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -11159,7 +11167,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<EOF
-#line 11162 "configure"
+#line 11170 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -11259,7 +11267,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<EOF
-#line 11262 "configure"
+#line 11270 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -13603,11 +13611,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:13606: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:13614: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:13610: \$? = $ac_status" >&5
+   echo "$as_me:13618: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -13707,11 +13715,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:13710: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:13718: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:13714: \$? = $ac_status" >&5
+   echo "$as_me:13722: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -15277,11 +15285,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:15280: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:15288: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:15284: \$? = $ac_status" >&5
+   echo "$as_me:15292: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -15381,11 +15389,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:15384: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:15392: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:15388: \$? = $ac_status" >&5
+   echo "$as_me:15396: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -17588,11 +17596,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:17591: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:17599: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:17595: \$? = $ac_status" >&5
+   echo "$as_me:17603: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -17856,11 +17864,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:17859: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:17867: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:17863: \$? = $ac_status" >&5
+   echo "$as_me:17871: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -17960,11 +17968,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:17963: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:17971: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:17967: \$? = $ac_status" >&5
+   echo "$as_me:17975: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -21058,6 +21066,127 @@ fi
 
 
 
+echo "$as_me:$LINENO: checking whether project ASL is available" >&5
+echo $ECHO_N "checking whether project ASL is available... $ECHO_C" >&6
+
+coin_has_asl=notGiven
+coin_have_project_dir=no
+
+# check if user wants to skip project in any case
+
+if test x"$COIN_SKIP_PROJECTS" != x; then
+  for dir in $COIN_SKIP_PROJECTS; do
+    if test $dir = "ASL"; then
+      coin_has_asl=skipping
+    fi
+    if test $dir = "ThirdParty/ASL"; then
+      coin_has_asl=skipping
+    fi
+  done
+fi
+
+if test $coin_has_asl != skipping; then
+  if test $PACKAGE_TARNAME = asl; then
+    coin_has_asl=.
+    coin_have_project_dir=yes
+  fi
+
+
+# Check whether --with-m4_tolower(ASL)-lib or --without-m4_tolower(ASL)-lib was given.
+if test "${with_asl_lib+set}" = set; then
+  withval="$with_asl_lib"
+  coin_has_asl=installed
+fi;
+
+
+# Check whether --with-m4_tolower(ASL)-incdir or --without-m4_tolower(ASL)-incdir was given.
+if test "${with_asl_incdir+set}" = set; then
+  withval="$with_asl_incdir"
+  coin_has_asl=installed
+fi;
+
+
+# Check whether --with-m4_tolower(ASL)-datadir or --without-m4_tolower(ASL)-datadir was given.
+if test "${with_asl_datadir+set}" = set; then
+  withval="$with_asl_datadir"
+  coin_has_asl=installed
+fi;
+
+
+
+
+
+fi
+
+# check if project is available in present directory
+if test "$coin_has_asl" = notGiven; then
+  if test -d $srcdir/ThirdParty/ASL; then
+    # If a third argument is given, then we have to check if one one the files given in that third argument is present.
+    # If none of the files in the third argument is available, then we consider the project directory as non-existing.
+    # However, if no third argument is given, then this means that there should be no check, and existence of the directory is sufficient.
+    for i in $srcdir/ThirdParty/ASL/solvers/asl.h; do
+         if test -r $i; then
+           coin_have_project_dir=yes
+         fi
+       done
+
+    if test $coin_have_project_dir = yes; then
+      coin_has_asl=ThirdParty/ASL
+    fi
+  fi
+fi
+
+# check for project by using pkg-config, if pkg-config is available
+if test $coin_has_asl = notGiven; then
+  #we are only interested in installed packages here, so we do not search in $COIN_PKG_CONFIG_PATH_UNINSTALLED
+  if test -n "$PKG_CONFIG" ; then
+    coin_save_PKG_CONFIG_PATH="$PKG_CONFIG_PATH"
+    PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" ; export PKG_CONFIG_PATH
+
+if test -n "$PKG_CONFIG" ; then
+  if $PKG_CONFIG --exists "coinasl"; then
+    COINASL_VERSION=`$PKG_CONFIG --modversion "coinasl" 2>/dev/null`
+    coin_has_asl="$COINASL_VERSION"
+  else
+    COINASL_PKG_ERRORS=`$PKG_CONFIG $pkg_short_errors --errors-to-stdout --print-errors "coinasl"`
+
+  fi
+else
+  { { echo "$as_me:$LINENO: error: \"Cannot check for existance of module coinasl without pkg-config\"" >&5
+echo "$as_me: error: \"Cannot check for existance of module coinasl without pkg-config\"" >&2;}
+   { (exit 1); exit 1; }; }
+fi
+
+    PKG_CONFIG_PATH="$coin_save_PKG_CONFIG_PATH"
+    export PKG_CONFIG_PATH
+  fi
+fi
+
+echo "$as_me:$LINENO: result: $coin_has_asl" >&5
+echo "${ECHO_T}$coin_has_asl" >&6
+
+echo "$as_me:$LINENO: checking whether project ASL needs to be configured" >&5
+echo $ECHO_N "checking whether project ASL needs to be configured... $ECHO_C" >&6
+if test "$coin_have_project_dir" = yes ; then
+
+  if test -r $srcdir/ThirdParty/ASL/configure; then
+    coin_subdirs="$coin_subdirs ThirdParty/ASL"
+    echo "$as_me:$LINENO: result: yes" >&5
+echo "${ECHO_T}yes" >&6
+
+
+subdirs="$subdirs ThirdParty/ASL"
+
+  else
+    echo "$as_me:$LINENO: result: no" >&5
+echo "${ECHO_T}no" >&6
+  fi
+else
+  echo "$as_me:$LINENO: result: no" >&5
+echo "${ECHO_T}no" >&6
+fi
+
+
 echo "$as_me:$LINENO: checking whether project Blas is available" >&5
 echo $ECHO_N "checking whether project Blas is available... $ECHO_C" >&6
 
@@ -21121,8 +21250,26 @@ fi;
 
 fi
 
+# check if project is available in present directory
+if test "$coin_has_blas" = notGiven; then
+  if test -d $srcdir/ThirdParty/Blas; then
+    # If a third argument is given, then we have to check if one one the files given in that third argument is present.
+    # If none of the files in the third argument is available, then we consider the project directory as non-existing.
+    # However, if no third argument is given, then this means that there should be no check, and existence of the directory is sufficient.
+    for i in $srcdir/ThirdParty/Blas/daxpy.f; do
+         if test -r $i; then
+           coin_have_project_dir=yes
+         fi
+       done
+
+    if test $coin_have_project_dir = yes; then
+      coin_has_blas=ThirdParty/Blas
+    fi
+  fi
+fi
+
+# check for project by using pkg-config, if pkg-config is available
 if test $coin_has_blas = notGiven; then
-  #check for project by using pkg-config, if pkg-config is available
   #we are only interested in installed packages here, so we do not search in $COIN_PKG_CONFIG_PATH_UNINSTALLED
   if test -n "$PKG_CONFIG" ; then
     coin_save_PKG_CONFIG_PATH="$PKG_CONFIG_PATH"
@@ -21147,29 +21294,11 @@ fi
   fi
 fi
 
-# if not found yet, check if project is available in present directory
-if test "$coin_has_blas" = notGiven; then
-  if test -d $srcdir/ThirdParty/Blas; then
-    # If a third argument is given, then we have to check if one one the files given in that third argument is present.
-    # If none of the files in the third argument is available, then we consider the project directory as non-existing.
-    # However, if no third argument is given, then this means that there should be no check, and existence of the directory is sufficient.
-    for i in $srcdir/ThirdParty/Blas/daxpy.f; do
-         if test -r $i; then
-           coin_have_project_dir=yes
-         fi
-       done
-
-    if test $coin_have_project_dir = yes; then
-      coin_has_blas=ThirdParty/Blas
-    fi
-  fi
-fi
-
 echo "$as_me:$LINENO: result: $coin_has_blas" >&5
 echo "${ECHO_T}$coin_has_blas" >&6
 
-echo "$as_me:$LINENO: checking whether project Blas need to be configured" >&5
-echo $ECHO_N "checking whether project Blas need to be configured... $ECHO_C" >&6
+echo "$as_me:$LINENO: checking whether project Blas needs to be configured" >&5
+echo $ECHO_N "checking whether project Blas needs to be configured... $ECHO_C" >&6
 if test "$coin_have_project_dir" = yes ; then
 
   if test -r $srcdir/ThirdParty/Blas/configure; then
@@ -21253,8 +21382,26 @@ fi;
 
 fi
 
+# check if project is available in present directory
+if test "$coin_has_lapack" = notGiven; then
+  if test -d $srcdir/ThirdParty/Lapack; then
+    # If a third argument is given, then we have to check if one one the files given in that third argument is present.
+    # If none of the files in the third argument is available, then we consider the project directory as non-existing.
+    # However, if no third argument is given, then this means that there should be no check, and existence of the directory is sufficient.
+    for i in $srcdir/ThirdParty/Lapack/LAPACK/SRC/dlarf.f; do
+         if test -r $i; then
+           coin_have_project_dir=yes
+         fi
+       done
+
+    if test $coin_have_project_dir = yes; then
+      coin_has_lapack=ThirdParty/Lapack
+    fi
+  fi
+fi
+
+# check for project by using pkg-config, if pkg-config is available
 if test $coin_has_lapack = notGiven; then
-  #check for project by using pkg-config, if pkg-config is available
   #we are only interested in installed packages here, so we do not search in $COIN_PKG_CONFIG_PATH_UNINSTALLED
   if test -n "$PKG_CONFIG" ; then
     coin_save_PKG_CONFIG_PATH="$PKG_CONFIG_PATH"
@@ -21279,29 +21426,11 @@ fi
   fi
 fi
 
-# if not found yet, check if project is available in present directory
-if test "$coin_has_lapack" = notGiven; then
-  if test -d $srcdir/ThirdParty/Lapack; then
-    # If a third argument is given, then we have to check if one one the files given in that third argument is present.
-    # If none of the files in the third argument is available, then we consider the project directory as non-existing.
-    # However, if no third argument is given, then this means that there should be no check, and existence of the directory is sufficient.
-    for i in $srcdir/ThirdParty/Lapack/LAPACK/SRC/dlarf.f; do
-         if test -r $i; then
-           coin_have_project_dir=yes
-         fi
-       done
-
-    if test $coin_have_project_dir = yes; then
-      coin_has_lapack=ThirdParty/Lapack
-    fi
-  fi
-fi
-
 echo "$as_me:$LINENO: result: $coin_has_lapack" >&5
 echo "${ECHO_T}$coin_has_lapack" >&6
 
-echo "$as_me:$LINENO: checking whether project Lapack need to be configured" >&5
-echo $ECHO_N "checking whether project Lapack need to be configured... $ECHO_C" >&6
+echo "$as_me:$LINENO: checking whether project Lapack needs to be configured" >&5
+echo $ECHO_N "checking whether project Lapack needs to be configured... $ECHO_C" >&6
 if test "$coin_have_project_dir" = yes ; then
 
   if test -r $srcdir/ThirdParty/Lapack/configure; then
@@ -21311,6 +21440,127 @@ echo "${ECHO_T}yes" >&6
 
 
 subdirs="$subdirs ThirdParty/Lapack"
+
+  else
+    echo "$as_me:$LINENO: result: no" >&5
+echo "${ECHO_T}no" >&6
+  fi
+else
+  echo "$as_me:$LINENO: result: no" >&5
+echo "${ECHO_T}no" >&6
+fi
+
+
+echo "$as_me:$LINENO: checking whether project Glpk is available" >&5
+echo $ECHO_N "checking whether project Glpk is available... $ECHO_C" >&6
+
+coin_has_glpk=notGiven
+coin_have_project_dir=no
+
+# check if user wants to skip project in any case
+
+if test x"$COIN_SKIP_PROJECTS" != x; then
+  for dir in $COIN_SKIP_PROJECTS; do
+    if test $dir = "Glpk"; then
+      coin_has_glpk=skipping
+    fi
+    if test $dir = "ThirdParty/Glpk"; then
+      coin_has_glpk=skipping
+    fi
+  done
+fi
+
+if test $coin_has_glpk != skipping; then
+  if test $PACKAGE_TARNAME = glpk; then
+    coin_has_glpk=.
+    coin_have_project_dir=yes
+  fi
+
+
+# Check whether --with-m4_tolower(Glpk)-lib or --without-m4_tolower(Glpk)-lib was given.
+if test "${with_glpk_lib+set}" = set; then
+  withval="$with_glpk_lib"
+  coin_has_glpk=installed
+fi;
+
+
+# Check whether --with-m4_tolower(Glpk)-incdir or --without-m4_tolower(Glpk)-incdir was given.
+if test "${with_glpk_incdir+set}" = set; then
+  withval="$with_glpk_incdir"
+  coin_has_glpk=installed
+fi;
+
+
+# Check whether --with-m4_tolower(Glpk)-datadir or --without-m4_tolower(Glpk)-datadir was given.
+if test "${with_glpk_datadir+set}" = set; then
+  withval="$with_glpk_datadir"
+  coin_has_glpk=installed
+fi;
+
+
+
+
+
+fi
+
+# check if project is available in present directory
+if test "$coin_has_glpk" = notGiven; then
+  if test -d $srcdir/ThirdParty/Glpk; then
+    # If a third argument is given, then we have to check if one one the files given in that third argument is present.
+    # If none of the files in the third argument is available, then we consider the project directory as non-existing.
+    # However, if no third argument is given, then this means that there should be no check, and existence of the directory is sufficient.
+    for i in $srcdir/ThirdParty/Glpk/glpk/include/glpk.h; do
+         if test -r $i; then
+           coin_have_project_dir=yes
+         fi
+       done
+
+    if test $coin_have_project_dir = yes; then
+      coin_has_glpk=ThirdParty/Glpk
+    fi
+  fi
+fi
+
+# check for project by using pkg-config, if pkg-config is available
+if test $coin_has_glpk = notGiven; then
+  #we are only interested in installed packages here, so we do not search in $COIN_PKG_CONFIG_PATH_UNINSTALLED
+  if test -n "$PKG_CONFIG" ; then
+    coin_save_PKG_CONFIG_PATH="$PKG_CONFIG_PATH"
+    PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH" ; export PKG_CONFIG_PATH
+
+if test -n "$PKG_CONFIG" ; then
+  if $PKG_CONFIG --exists "coinglpk"; then
+    COINGLPK_VERSION=`$PKG_CONFIG --modversion "coinglpk" 2>/dev/null`
+    coin_has_glpk="$COINGLPK_VERSION"
+  else
+    COINGLPK_PKG_ERRORS=`$PKG_CONFIG $pkg_short_errors --errors-to-stdout --print-errors "coinglpk"`
+
+  fi
+else
+  { { echo "$as_me:$LINENO: error: \"Cannot check for existance of module coinglpk without pkg-config\"" >&5
+echo "$as_me: error: \"Cannot check for existance of module coinglpk without pkg-config\"" >&2;}
+   { (exit 1); exit 1; }; }
+fi
+
+    PKG_CONFIG_PATH="$coin_save_PKG_CONFIG_PATH"
+    export PKG_CONFIG_PATH
+  fi
+fi
+
+echo "$as_me:$LINENO: result: $coin_has_glpk" >&5
+echo "${ECHO_T}$coin_has_glpk" >&6
+
+echo "$as_me:$LINENO: checking whether project Glpk needs to be configured" >&5
+echo $ECHO_N "checking whether project Glpk needs to be configured... $ECHO_C" >&6
+if test "$coin_have_project_dir" = yes ; then
+
+  if test -r $srcdir/ThirdParty/Glpk/configure; then
+    coin_subdirs="$coin_subdirs ThirdParty/Glpk"
+    echo "$as_me:$LINENO: result: yes" >&5
+echo "${ECHO_T}yes" >&6
+
+
+subdirs="$subdirs ThirdParty/Glpk"
 
   else
     echo "$as_me:$LINENO: result: no" >&5
@@ -21374,8 +21624,22 @@ fi;
 
 fi
 
+# check if project is available in present directory
+if test "$coin_has_sample" = notGiven; then
+  if test -d $srcdir/Data/Sample; then
+    # If a third argument is given, then we have to check if one one the files given in that third argument is present.
+    # If none of the files in the third argument is available, then we consider the project directory as non-existing.
+    # However, if no third argument is given, then this means that there should be no check, and existence of the directory is sufficient.
+     coin_have_project_dir=yes
+
+    if test $coin_have_project_dir = yes; then
+      coin_has_sample=Data/Sample
+    fi
+  fi
+fi
+
+# check for project by using pkg-config, if pkg-config is available
 if test $coin_has_sample = notGiven; then
-  #check for project by using pkg-config, if pkg-config is available
   #we are only interested in installed packages here, so we do not search in $COIN_PKG_CONFIG_PATH_UNINSTALLED
   if test -n "$PKG_CONFIG" ; then
     coin_save_PKG_CONFIG_PATH="$PKG_CONFIG_PATH"
@@ -21400,25 +21664,11 @@ fi
   fi
 fi
 
-# if not found yet, check if project is available in present directory
-if test "$coin_has_sample" = notGiven; then
-  if test -d $srcdir/Data/Sample; then
-    # If a third argument is given, then we have to check if one one the files given in that third argument is present.
-    # If none of the files in the third argument is available, then we consider the project directory as non-existing.
-    # However, if no third argument is given, then this means that there should be no check, and existence of the directory is sufficient.
-     coin_have_project_dir=yes
-
-    if test $coin_have_project_dir = yes; then
-      coin_has_sample=Data/Sample
-    fi
-  fi
-fi
-
 echo "$as_me:$LINENO: result: $coin_has_sample" >&5
 echo "${ECHO_T}$coin_has_sample" >&6
 
-echo "$as_me:$LINENO: checking whether project Sample need to be configured" >&5
-echo $ECHO_N "checking whether project Sample need to be configured... $ECHO_C" >&6
+echo "$as_me:$LINENO: checking whether project Sample needs to be configured" >&5
+echo $ECHO_N "checking whether project Sample needs to be configured... $ECHO_C" >&6
 if test "$coin_have_project_dir" = yes ; then
 
   if test -r $srcdir/Data/Sample/configure; then
@@ -21491,8 +21741,22 @@ fi;
 
 fi
 
+# check if project is available in present directory
+if test "$coin_has_netlib" = notGiven; then
+  if test -d $srcdir/Data/Netlib; then
+    # If a third argument is given, then we have to check if one one the files given in that third argument is present.
+    # If none of the files in the third argument is available, then we consider the project directory as non-existing.
+    # However, if no third argument is given, then this means that there should be no check, and existence of the directory is sufficient.
+     coin_have_project_dir=yes
+
+    if test $coin_have_project_dir = yes; then
+      coin_has_netlib=Data/Netlib
+    fi
+  fi
+fi
+
+# check for project by using pkg-config, if pkg-config is available
 if test $coin_has_netlib = notGiven; then
-  #check for project by using pkg-config, if pkg-config is available
   #we are only interested in installed packages here, so we do not search in $COIN_PKG_CONFIG_PATH_UNINSTALLED
   if test -n "$PKG_CONFIG" ; then
     coin_save_PKG_CONFIG_PATH="$PKG_CONFIG_PATH"
@@ -21517,25 +21781,11 @@ fi
   fi
 fi
 
-# if not found yet, check if project is available in present directory
-if test "$coin_has_netlib" = notGiven; then
-  if test -d $srcdir/Data/Netlib; then
-    # If a third argument is given, then we have to check if one one the files given in that third argument is present.
-    # If none of the files in the third argument is available, then we consider the project directory as non-existing.
-    # However, if no third argument is given, then this means that there should be no check, and existence of the directory is sufficient.
-     coin_have_project_dir=yes
-
-    if test $coin_have_project_dir = yes; then
-      coin_has_netlib=Data/Netlib
-    fi
-  fi
-fi
-
 echo "$as_me:$LINENO: result: $coin_has_netlib" >&5
 echo "${ECHO_T}$coin_has_netlib" >&6
 
-echo "$as_me:$LINENO: checking whether project Netlib need to be configured" >&5
-echo $ECHO_N "checking whether project Netlib need to be configured... $ECHO_C" >&6
+echo "$as_me:$LINENO: checking whether project Netlib needs to be configured" >&5
+echo $ECHO_N "checking whether project Netlib needs to be configured... $ECHO_C" >&6
 if test "$coin_have_project_dir" = yes ; then
 
   if test -r $srcdir/Data/Netlib/configure; then
@@ -21608,8 +21858,22 @@ fi;
 
 fi
 
+# check if project is available in present directory
+if test "$coin_has_miblib3" = notGiven; then
+  if test -d $srcdir/Data/miblib3; then
+    # If a third argument is given, then we have to check if one one the files given in that third argument is present.
+    # If none of the files in the third argument is available, then we consider the project directory as non-existing.
+    # However, if no third argument is given, then this means that there should be no check, and existence of the directory is sufficient.
+     coin_have_project_dir=yes
+
+    if test $coin_have_project_dir = yes; then
+      coin_has_miblib3=Data/miblib3
+    fi
+  fi
+fi
+
+# check for project by using pkg-config, if pkg-config is available
 if test $coin_has_miblib3 = notGiven; then
-  #check for project by using pkg-config, if pkg-config is available
   #we are only interested in installed packages here, so we do not search in $COIN_PKG_CONFIG_PATH_UNINSTALLED
   if test -n "$PKG_CONFIG" ; then
     coin_save_PKG_CONFIG_PATH="$PKG_CONFIG_PATH"
@@ -21634,25 +21898,11 @@ fi
   fi
 fi
 
-# if not found yet, check if project is available in present directory
-if test "$coin_has_miblib3" = notGiven; then
-  if test -d $srcdir/Data/miblib3; then
-    # If a third argument is given, then we have to check if one one the files given in that third argument is present.
-    # If none of the files in the third argument is available, then we consider the project directory as non-existing.
-    # However, if no third argument is given, then this means that there should be no check, and existence of the directory is sufficient.
-     coin_have_project_dir=yes
-
-    if test $coin_have_project_dir = yes; then
-      coin_has_miblib3=Data/miblib3
-    fi
-  fi
-fi
-
 echo "$as_me:$LINENO: result: $coin_has_miblib3" >&5
 echo "${ECHO_T}$coin_has_miblib3" >&6
 
-echo "$as_me:$LINENO: checking whether project miblib3 need to be configured" >&5
-echo $ECHO_N "checking whether project miblib3 need to be configured... $ECHO_C" >&6
+echo "$as_me:$LINENO: checking whether project miblib3 needs to be configured" >&5
+echo $ECHO_N "checking whether project miblib3 needs to be configured... $ECHO_C" >&6
 if test "$coin_have_project_dir" = yes ; then
 
   if test -r $srcdir/Data/miblib3/configure; then
@@ -21725,8 +21975,22 @@ fi;
 
 fi
 
+# check if project is available in present directory
+if test "$coin_has_coinutils" = notGiven; then
+  if test -d $srcdir//CoinUtils; then
+    # If a third argument is given, then we have to check if one one the files given in that third argument is present.
+    # If none of the files in the third argument is available, then we consider the project directory as non-existing.
+    # However, if no third argument is given, then this means that there should be no check, and existence of the directory is sufficient.
+     coin_have_project_dir=yes
+
+    if test $coin_have_project_dir = yes; then
+      coin_has_coinutils=CoinUtils
+    fi
+  fi
+fi
+
+# check for project by using pkg-config, if pkg-config is available
 if test $coin_has_coinutils = notGiven; then
-  #check for project by using pkg-config, if pkg-config is available
   #we are only interested in installed packages here, so we do not search in $COIN_PKG_CONFIG_PATH_UNINSTALLED
   if test -n "$PKG_CONFIG" ; then
     coin_save_PKG_CONFIG_PATH="$PKG_CONFIG_PATH"
@@ -21751,25 +22015,11 @@ fi
   fi
 fi
 
-# if not found yet, check if project is available in present directory
-if test "$coin_has_coinutils" = notGiven; then
-  if test -d $srcdir//CoinUtils; then
-    # If a third argument is given, then we have to check if one one the files given in that third argument is present.
-    # If none of the files in the third argument is available, then we consider the project directory as non-existing.
-    # However, if no third argument is given, then this means that there should be no check, and existence of the directory is sufficient.
-     coin_have_project_dir=yes
-
-    if test $coin_have_project_dir = yes; then
-      coin_has_coinutils=CoinUtils
-    fi
-  fi
-fi
-
 echo "$as_me:$LINENO: result: $coin_has_coinutils" >&5
 echo "${ECHO_T}$coin_has_coinutils" >&6
 
-echo "$as_me:$LINENO: checking whether project CoinUtils need to be configured" >&5
-echo $ECHO_N "checking whether project CoinUtils need to be configured... $ECHO_C" >&6
+echo "$as_me:$LINENO: checking whether project CoinUtils needs to be configured" >&5
+echo $ECHO_N "checking whether project CoinUtils needs to be configured... $ECHO_C" >&6
 if test "$coin_have_project_dir" = yes ; then
 
   if test -r $srcdir/CoinUtils/configure; then
@@ -21842,8 +22092,22 @@ fi;
 
 fi
 
+# check if project is available in present directory
+if test "$coin_has_osi" = notGiven; then
+  if test -d $srcdir//Osi; then
+    # If a third argument is given, then we have to check if one one the files given in that third argument is present.
+    # If none of the files in the third argument is available, then we consider the project directory as non-existing.
+    # However, if no third argument is given, then this means that there should be no check, and existence of the directory is sufficient.
+     coin_have_project_dir=yes
+
+    if test $coin_have_project_dir = yes; then
+      coin_has_osi=Osi
+    fi
+  fi
+fi
+
+# check for project by using pkg-config, if pkg-config is available
 if test $coin_has_osi = notGiven; then
-  #check for project by using pkg-config, if pkg-config is available
   #we are only interested in installed packages here, so we do not search in $COIN_PKG_CONFIG_PATH_UNINSTALLED
   if test -n "$PKG_CONFIG" ; then
     coin_save_PKG_CONFIG_PATH="$PKG_CONFIG_PATH"
@@ -21868,25 +22132,11 @@ fi
   fi
 fi
 
-# if not found yet, check if project is available in present directory
-if test "$coin_has_osi" = notGiven; then
-  if test -d $srcdir//Osi; then
-    # If a third argument is given, then we have to check if one one the files given in that third argument is present.
-    # If none of the files in the third argument is available, then we consider the project directory as non-existing.
-    # However, if no third argument is given, then this means that there should be no check, and existence of the directory is sufficient.
-     coin_have_project_dir=yes
-
-    if test $coin_have_project_dir = yes; then
-      coin_has_osi=Osi
-    fi
-  fi
-fi
-
 echo "$as_me:$LINENO: result: $coin_has_osi" >&5
 echo "${ECHO_T}$coin_has_osi" >&6
 
-echo "$as_me:$LINENO: checking whether project Osi need to be configured" >&5
-echo $ECHO_N "checking whether project Osi need to be configured... $ECHO_C" >&6
+echo "$as_me:$LINENO: checking whether project Osi needs to be configured" >&5
+echo $ECHO_N "checking whether project Osi needs to be configured... $ECHO_C" >&6
 if test "$coin_have_project_dir" = yes ; then
 
   if test -r $srcdir/Osi/configure; then
@@ -21959,8 +22209,22 @@ fi;
 
 fi
 
+# check if project is available in present directory
+if test "$coin_has_clp" = notGiven; then
+  if test -d $srcdir//Clp; then
+    # If a third argument is given, then we have to check if one one the files given in that third argument is present.
+    # If none of the files in the third argument is available, then we consider the project directory as non-existing.
+    # However, if no third argument is given, then this means that there should be no check, and existence of the directory is sufficient.
+     coin_have_project_dir=yes
+
+    if test $coin_have_project_dir = yes; then
+      coin_has_clp=Clp
+    fi
+  fi
+fi
+
+# check for project by using pkg-config, if pkg-config is available
 if test $coin_has_clp = notGiven; then
-  #check for project by using pkg-config, if pkg-config is available
   #we are only interested in installed packages here, so we do not search in $COIN_PKG_CONFIG_PATH_UNINSTALLED
   if test -n "$PKG_CONFIG" ; then
     coin_save_PKG_CONFIG_PATH="$PKG_CONFIG_PATH"
@@ -21985,25 +22249,11 @@ fi
   fi
 fi
 
-# if not found yet, check if project is available in present directory
-if test "$coin_has_clp" = notGiven; then
-  if test -d $srcdir//Clp; then
-    # If a third argument is given, then we have to check if one one the files given in that third argument is present.
-    # If none of the files in the third argument is available, then we consider the project directory as non-existing.
-    # However, if no third argument is given, then this means that there should be no check, and existence of the directory is sufficient.
-     coin_have_project_dir=yes
-
-    if test $coin_have_project_dir = yes; then
-      coin_has_clp=Clp
-    fi
-  fi
-fi
-
 echo "$as_me:$LINENO: result: $coin_has_clp" >&5
 echo "${ECHO_T}$coin_has_clp" >&6
 
-echo "$as_me:$LINENO: checking whether project Clp need to be configured" >&5
-echo $ECHO_N "checking whether project Clp need to be configured... $ECHO_C" >&6
+echo "$as_me:$LINENO: checking whether project Clp needs to be configured" >&5
+echo $ECHO_N "checking whether project Clp needs to be configured... $ECHO_C" >&6
 if test "$coin_have_project_dir" = yes ; then
 
   if test -r $srcdir/Clp/configure; then
@@ -22076,8 +22326,22 @@ fi;
 
 fi
 
+# check if project is available in present directory
+if test "$coin_has_dylp" = notGiven; then
+  if test -d $srcdir//DyLP; then
+    # If a third argument is given, then we have to check if one one the files given in that third argument is present.
+    # If none of the files in the third argument is available, then we consider the project directory as non-existing.
+    # However, if no third argument is given, then this means that there should be no check, and existence of the directory is sufficient.
+     coin_have_project_dir=yes
+
+    if test $coin_have_project_dir = yes; then
+      coin_has_dylp=DyLP
+    fi
+  fi
+fi
+
+# check for project by using pkg-config, if pkg-config is available
 if test $coin_has_dylp = notGiven; then
-  #check for project by using pkg-config, if pkg-config is available
   #we are only interested in installed packages here, so we do not search in $COIN_PKG_CONFIG_PATH_UNINSTALLED
   if test -n "$PKG_CONFIG" ; then
     coin_save_PKG_CONFIG_PATH="$PKG_CONFIG_PATH"
@@ -22102,25 +22366,11 @@ fi
   fi
 fi
 
-# if not found yet, check if project is available in present directory
-if test "$coin_has_dylp" = notGiven; then
-  if test -d $srcdir//DyLP; then
-    # If a third argument is given, then we have to check if one one the files given in that third argument is present.
-    # If none of the files in the third argument is available, then we consider the project directory as non-existing.
-    # However, if no third argument is given, then this means that there should be no check, and existence of the directory is sufficient.
-     coin_have_project_dir=yes
-
-    if test $coin_have_project_dir = yes; then
-      coin_has_dylp=DyLP
-    fi
-  fi
-fi
-
 echo "$as_me:$LINENO: result: $coin_has_dylp" >&5
 echo "${ECHO_T}$coin_has_dylp" >&6
 
-echo "$as_me:$LINENO: checking whether project DyLP need to be configured" >&5
-echo $ECHO_N "checking whether project DyLP need to be configured... $ECHO_C" >&6
+echo "$as_me:$LINENO: checking whether project DyLP needs to be configured" >&5
+echo $ECHO_N "checking whether project DyLP needs to be configured... $ECHO_C" >&6
 if test "$coin_have_project_dir" = yes ; then
 
   if test -r $srcdir/DyLP/configure; then
@@ -22193,8 +22443,22 @@ fi;
 
 fi
 
+# check if project is available in present directory
+if test "$coin_has_vol" = notGiven; then
+  if test -d $srcdir//Vol; then
+    # If a third argument is given, then we have to check if one one the files given in that third argument is present.
+    # If none of the files in the third argument is available, then we consider the project directory as non-existing.
+    # However, if no third argument is given, then this means that there should be no check, and existence of the directory is sufficient.
+     coin_have_project_dir=yes
+
+    if test $coin_have_project_dir = yes; then
+      coin_has_vol=Vol
+    fi
+  fi
+fi
+
+# check for project by using pkg-config, if pkg-config is available
 if test $coin_has_vol = notGiven; then
-  #check for project by using pkg-config, if pkg-config is available
   #we are only interested in installed packages here, so we do not search in $COIN_PKG_CONFIG_PATH_UNINSTALLED
   if test -n "$PKG_CONFIG" ; then
     coin_save_PKG_CONFIG_PATH="$PKG_CONFIG_PATH"
@@ -22219,25 +22483,11 @@ fi
   fi
 fi
 
-# if not found yet, check if project is available in present directory
-if test "$coin_has_vol" = notGiven; then
-  if test -d $srcdir//Vol; then
-    # If a third argument is given, then we have to check if one one the files given in that third argument is present.
-    # If none of the files in the third argument is available, then we consider the project directory as non-existing.
-    # However, if no third argument is given, then this means that there should be no check, and existence of the directory is sufficient.
-     coin_have_project_dir=yes
-
-    if test $coin_have_project_dir = yes; then
-      coin_has_vol=Vol
-    fi
-  fi
-fi
-
 echo "$as_me:$LINENO: result: $coin_has_vol" >&5
 echo "${ECHO_T}$coin_has_vol" >&6
 
-echo "$as_me:$LINENO: checking whether project Vol need to be configured" >&5
-echo $ECHO_N "checking whether project Vol need to be configured... $ECHO_C" >&6
+echo "$as_me:$LINENO: checking whether project Vol needs to be configured" >&5
+echo $ECHO_N "checking whether project Vol needs to be configured... $ECHO_C" >&6
 if test "$coin_have_project_dir" = yes ; then
 
   if test -r $srcdir/Vol/configure; then
@@ -22310,8 +22560,22 @@ fi;
 
 fi
 
+# check if project is available in present directory
+if test "$coin_has_cgl" = notGiven; then
+  if test -d $srcdir//Cgl; then
+    # If a third argument is given, then we have to check if one one the files given in that third argument is present.
+    # If none of the files in the third argument is available, then we consider the project directory as non-existing.
+    # However, if no third argument is given, then this means that there should be no check, and existence of the directory is sufficient.
+     coin_have_project_dir=yes
+
+    if test $coin_have_project_dir = yes; then
+      coin_has_cgl=Cgl
+    fi
+  fi
+fi
+
+# check for project by using pkg-config, if pkg-config is available
 if test $coin_has_cgl = notGiven; then
-  #check for project by using pkg-config, if pkg-config is available
   #we are only interested in installed packages here, so we do not search in $COIN_PKG_CONFIG_PATH_UNINSTALLED
   if test -n "$PKG_CONFIG" ; then
     coin_save_PKG_CONFIG_PATH="$PKG_CONFIG_PATH"
@@ -22336,25 +22600,11 @@ fi
   fi
 fi
 
-# if not found yet, check if project is available in present directory
-if test "$coin_has_cgl" = notGiven; then
-  if test -d $srcdir//Cgl; then
-    # If a third argument is given, then we have to check if one one the files given in that third argument is present.
-    # If none of the files in the third argument is available, then we consider the project directory as non-existing.
-    # However, if no third argument is given, then this means that there should be no check, and existence of the directory is sufficient.
-     coin_have_project_dir=yes
-
-    if test $coin_have_project_dir = yes; then
-      coin_has_cgl=Cgl
-    fi
-  fi
-fi
-
 echo "$as_me:$LINENO: result: $coin_has_cgl" >&5
 echo "${ECHO_T}$coin_has_cgl" >&6
 
-echo "$as_me:$LINENO: checking whether project Cgl need to be configured" >&5
-echo $ECHO_N "checking whether project Cgl need to be configured... $ECHO_C" >&6
+echo "$as_me:$LINENO: checking whether project Cgl needs to be configured" >&5
+echo $ECHO_N "checking whether project Cgl needs to be configured... $ECHO_C" >&6
 if test "$coin_have_project_dir" = yes ; then
 
   if test -r $srcdir/Cgl/configure; then
@@ -22427,8 +22677,22 @@ fi;
 
 fi
 
+# check if project is available in present directory
+if test "$coin_has_cbc" = notGiven; then
+  if test -d $srcdir//Cbc; then
+    # If a third argument is given, then we have to check if one one the files given in that third argument is present.
+    # If none of the files in the third argument is available, then we consider the project directory as non-existing.
+    # However, if no third argument is given, then this means that there should be no check, and existence of the directory is sufficient.
+     coin_have_project_dir=yes
+
+    if test $coin_have_project_dir = yes; then
+      coin_has_cbc=Cbc
+    fi
+  fi
+fi
+
+# check for project by using pkg-config, if pkg-config is available
 if test $coin_has_cbc = notGiven; then
-  #check for project by using pkg-config, if pkg-config is available
   #we are only interested in installed packages here, so we do not search in $COIN_PKG_CONFIG_PATH_UNINSTALLED
   if test -n "$PKG_CONFIG" ; then
     coin_save_PKG_CONFIG_PATH="$PKG_CONFIG_PATH"
@@ -22453,25 +22717,11 @@ fi
   fi
 fi
 
-# if not found yet, check if project is available in present directory
-if test "$coin_has_cbc" = notGiven; then
-  if test -d $srcdir//Cbc; then
-    # If a third argument is given, then we have to check if one one the files given in that third argument is present.
-    # If none of the files in the third argument is available, then we consider the project directory as non-existing.
-    # However, if no third argument is given, then this means that there should be no check, and existence of the directory is sufficient.
-     coin_have_project_dir=yes
-
-    if test $coin_have_project_dir = yes; then
-      coin_has_cbc=Cbc
-    fi
-  fi
-fi
-
 echo "$as_me:$LINENO: result: $coin_has_cbc" >&5
 echo "${ECHO_T}$coin_has_cbc" >&6
 
-echo "$as_me:$LINENO: checking whether project Cbc need to be configured" >&5
-echo $ECHO_N "checking whether project Cbc need to be configured... $ECHO_C" >&6
+echo "$as_me:$LINENO: checking whether project Cbc needs to be configured" >&5
+echo $ECHO_N "checking whether project Cbc needs to be configured... $ECHO_C" >&6
 if test "$coin_have_project_dir" = yes ; then
 
   if test -r $srcdir/Cbc/configure; then

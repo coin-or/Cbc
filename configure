@@ -479,7 +479,7 @@ ac_subdirs_all="$ac_subdirs_all ThirdParty/Lapack"
 ac_subdirs_all="$ac_subdirs_all ThirdParty/Glpk"
 ac_subdirs_all="$ac_subdirs_all Data/Sample"
 ac_subdirs_all="$ac_subdirs_all Data/Netlib"
-ac_subdirs_all="$ac_subdirs_all Data/miblib3"
+ac_subdirs_all="$ac_subdirs_all Data/miplib3"
 ac_subdirs_all="$ac_subdirs_all CoinUtils"
 ac_subdirs_all="$ac_subdirs_all Osi"
 ac_subdirs_all="$ac_subdirs_all Clp"
@@ -1162,9 +1162,9 @@ Optional Packages:
   --with-netlib-lib linker flags for using project Netlib
   --with-netlib-incdir directory with header files for using project Netlib
   --with-netlib-datadir directory with data files for using project Netlib
-  --with-miblib3-lib linker flags for using project miblib3
-  --with-miblib3-incdir directory with header files for using project miblib3
-  --with-miblib3-datadir directory with data files for using project miblib3
+  --with-miplib3-lib linker flags for using project miplib3
+  --with-miplib3-incdir directory with header files for using project miplib3
+  --with-miplib3-datadir directory with data files for using project miplib3
   --with-coinutils-lib linker flags for using project CoinUtils
   --with-coinutils-incdir directory with header files for using project
                           CoinUtils
@@ -21806,50 +21806,50 @@ echo "${ECHO_T}no" >&6
 fi
 
 
-echo "$as_me:$LINENO: checking whether project miblib3 is available" >&5
-echo $ECHO_N "checking whether project miblib3 is available... $ECHO_C" >&6
+echo "$as_me:$LINENO: checking whether project miplib3 is available" >&5
+echo $ECHO_N "checking whether project miplib3 is available... $ECHO_C" >&6
 
-coin_has_miblib3=notGiven
+coin_has_miplib3=notGiven
 coin_have_project_dir=no
 
 # check if user wants to skip project in any case
 
 if test x"$COIN_SKIP_PROJECTS" != x; then
   for dir in $COIN_SKIP_PROJECTS; do
-    if test $dir = "miblib3"; then
-      coin_has_miblib3=skipping
+    if test $dir = "miplib3"; then
+      coin_has_miplib3=skipping
     fi
-    if test $dir = "Data/miblib3"; then
-      coin_has_miblib3=skipping
+    if test $dir = "Data/miplib3"; then
+      coin_has_miplib3=skipping
     fi
   done
 fi
 
-if test $coin_has_miblib3 != skipping; then
-  if test $PACKAGE_TARNAME = miblib3; then
-    coin_has_miblib3=.
+if test $coin_has_miplib3 != skipping; then
+  if test $PACKAGE_TARNAME = miplib3; then
+    coin_has_miplib3=.
     coin_have_project_dir=yes
   fi
 
 
-# Check whether --with-m4_tolower(miblib3)-lib or --without-m4_tolower(miblib3)-lib was given.
-if test "${with_miblib3_lib+set}" = set; then
-  withval="$with_miblib3_lib"
-  coin_has_miblib3=installed
+# Check whether --with-m4_tolower(miplib3)-lib or --without-m4_tolower(miplib3)-lib was given.
+if test "${with_miplib3_lib+set}" = set; then
+  withval="$with_miplib3_lib"
+  coin_has_miplib3=installed
 fi;
 
 
-# Check whether --with-m4_tolower(miblib3)-incdir or --without-m4_tolower(miblib3)-incdir was given.
-if test "${with_miblib3_incdir+set}" = set; then
-  withval="$with_miblib3_incdir"
-  coin_has_miblib3=installed
+# Check whether --with-m4_tolower(miplib3)-incdir or --without-m4_tolower(miplib3)-incdir was given.
+if test "${with_miplib3_incdir+set}" = set; then
+  withval="$with_miplib3_incdir"
+  coin_has_miplib3=installed
 fi;
 
 
-# Check whether --with-m4_tolower(miblib3)-datadir or --without-m4_tolower(miblib3)-datadir was given.
-if test "${with_miblib3_datadir+set}" = set; then
-  withval="$with_miblib3_datadir"
-  coin_has_miblib3=installed
+# Check whether --with-m4_tolower(miplib3)-datadir or --without-m4_tolower(miplib3)-datadir was given.
+if test "${with_miplib3_datadir+set}" = set; then
+  withval="$with_miplib3_datadir"
+  coin_has_miplib3=installed
 fi;
 
 
@@ -21859,21 +21859,21 @@ fi;
 fi
 
 # check if project is available in present directory
-if test "$coin_has_miblib3" = notGiven; then
-  if test -d $srcdir/Data/miblib3; then
+if test "$coin_has_miplib3" = notGiven; then
+  if test -d $srcdir/Data/miplib3; then
     # If a third argument is given, then we have to check if one one the files given in that third argument is present.
     # If none of the files in the third argument is available, then we consider the project directory as non-existing.
     # However, if no third argument is given, then this means that there should be no check, and existence of the directory is sufficient.
      coin_have_project_dir=yes
 
     if test $coin_have_project_dir = yes; then
-      coin_has_miblib3=Data/miblib3
+      coin_has_miplib3=Data/miplib3
     fi
   fi
 fi
 
 # check for project by using pkg-config, if pkg-config is available
-if test $coin_has_miblib3 = notGiven; then
+if test $coin_has_miplib3 = notGiven; then
   #we are only interested in installed packages here, so we do not search in $COIN_PKG_CONFIG_PATH_UNINSTALLED
   if test -n "$PKG_CONFIG" ; then
     coin_save_PKG_CONFIG_PATH="$PKG_CONFIG_PATH"
@@ -21882,7 +21882,7 @@ if test $coin_has_miblib3 = notGiven; then
 if test -n "$PKG_CONFIG" ; then
   if $PKG_CONFIG --exists "coindatamiplib3"; then
     COINDATAMIPLIB3_VERSION=`$PKG_CONFIG --modversion "coindatamiplib3" 2>/dev/null`
-    coin_has_miblib3="$COINDATAMIPLIB3_VERSION"
+    coin_has_miplib3="$COINDATAMIPLIB3_VERSION"
   else
     COINDATAMIPLIB3_PKG_ERRORS=`$PKG_CONFIG $pkg_short_errors --errors-to-stdout --print-errors "coindatamiplib3"`
 
@@ -21898,20 +21898,20 @@ fi
   fi
 fi
 
-echo "$as_me:$LINENO: result: $coin_has_miblib3" >&5
-echo "${ECHO_T}$coin_has_miblib3" >&6
+echo "$as_me:$LINENO: result: $coin_has_miplib3" >&5
+echo "${ECHO_T}$coin_has_miplib3" >&6
 
-echo "$as_me:$LINENO: checking whether project miblib3 needs to be configured" >&5
-echo $ECHO_N "checking whether project miblib3 needs to be configured... $ECHO_C" >&6
+echo "$as_me:$LINENO: checking whether project miplib3 needs to be configured" >&5
+echo $ECHO_N "checking whether project miplib3 needs to be configured... $ECHO_C" >&6
 if test "$coin_have_project_dir" = yes ; then
 
-  if test -r $srcdir/Data/miblib3/configure; then
-    coin_subdirs="$coin_subdirs Data/miblib3"
+  if test -r $srcdir/Data/miplib3/configure; then
+    coin_subdirs="$coin_subdirs Data/miplib3"
     echo "$as_me:$LINENO: result: yes" >&5
 echo "${ECHO_T}yes" >&6
 
 
-subdirs="$subdirs Data/miblib3"
+subdirs="$subdirs Data/miplib3"
 
   else
     echo "$as_me:$LINENO: result: no" >&5

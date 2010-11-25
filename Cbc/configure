@@ -20880,22 +20880,15 @@ COINDEPEND_DATA=
 
 # initial list of dependencies is "cgl osi coinutils", but we need to filter out version number specifications (= x, <= x, >= x)
 projtoprocess="cgl osi coinutils"
-projprocessed=""
 
-while test $coin_has_coindepend = notGiven ; do
-  # setup list of projects that need to be processed in the next round
-  nextprojtoprocess=""
+# we first expand the list of projects to process by adding all dependencies just behind the project which depends on it
+# further, we collect the list of corresponding .pc files, but do this in reverse order, because we need this order afterwards
+# also, we setup the DATA variable
+allproj=""
+allpcfiles=""
+while test "x$projtoprocess" != x ; do
 
   for proj in $projtoprocess ; do
-    # if $proj has been processed already, skip this round
-    if test "x$projprocessed" != x ; then
-      for projdone in $projprocessed ; do
-        if test $projdone = $proj ; then
-	  continue 2
-	fi
-      done
-    fi
-
     # if $proj is available and configured, then a project-uninstalled.pc file should have been created, so search for it
     pcfile=""
     save_IFS="$IFS"
@@ -20904,59 +20897,94 @@ while test $coin_has_coindepend = notGiven ; do
       # the base directory configure should have setup coin_subdirs.txt in a way that it does not contain projects that should be skipped, so we do not need to test this here again
       if test -r "$dir/$proj-uninstalled.pc" ; then
         pcfile="$dir/$proj-uninstalled.pc"
-        pcfiledir="$dir"
         break
       fi
     done
     IFS="$save_IFS"
 
     if test "x$pcfile" != x ; then
-      # read CFLAGS from $pcfile and add CYGPATH_W cludge into include flags
-      projcflags=`sed -n -e 's/Cflags://p' "$pcfile"`
-      projcflags=`echo "$projcflags" | sed -e 's/-I\([^ ]*\)/-I\`${CYGPATH_W} \1\`/g'`
-      COINDEPEND_CFLAGS="$projcflags $COINDEPEND_CFLAGS"
+      # read dependencies from $pcfile and filter it
+      projrequires=`sed -n -e 's/Requires://gp' "$pcfile" | sed -e 's/<\{0,1\}>\{0,1\}=[ 	]\{0,\}[^ 	]\{1,\}//g'`
 
-      # read LIBS from $pcfile and replace -L${libdir} by absolute path to build directory in linker flags
-      # we assume that the build directory is $pcfiledir/src if this directory exists, otherwise we assume that it is $pcfiledir
-      projlibs=`sed -n -e 's/Libs://' -e 's/-L\${libdir}//p' "$pcfile"`
-      if test "x$projlibs" != x ; then
-        if test -d "${pcfiledir}/src" ; then
-          projlibs="-L`cd "${pcfiledir}/src"; pwd` $projlibs"
-        else
-          projlibs="-L`cd "$pcfiledir"; pwd` $projlibs"
-        fi
-      else
-        projlibs=`sed -n -e 's/Libs://p' "$pcfile"`
-      fi
-      COINDEPEND_LIBS="$COINDEPEND_LIBS $projlibs"
+      # add projrequires to the front of the list of projects that have to be processed next
+      # at the same time, remove $proj from this list
+      projtoprocess=${projtoprocess/$proj/$projrequires}
 
       # read DATA from $pcfile, if this is the first .pc file we are processing (so assume that its the main one)
-      if test "x$projprocessed" = x ; then
+      if test "x$allproj" = x ; then
         COINDEPEND_DATA=`sed -n -e 's/datadir=//gp' "$pcfile"`
       fi
 
-      # read dependencies from $pcfile, filter it, and add to list of projects that need to be processed next
-      projrequires=`sed -n -e 's/Requires://gp' "$pcfile" | sed -e 's/<\?>\?=[ 	]*[^ 	]\+//g'`
-      nextprojtoprocess="$nextprojtoprocess $projrequires"
-
-      # remember that we have processed $proj
-      projprocessed="$projprocessed $proj"
+      allproj="$allproj $proj"
+      allpcfiles="$pcfile:$allpcfiles"
 
     else
       echo "$as_me:$LINENO: result: no, dependency $proj not available" >&5
 echo "${ECHO_T}no, dependency $proj not available" >&6
+      allproj=fail
       break 2
     fi
 
+    break
   done
 
-  projtoprocess="$nextprojtoprocess"
+  # remove spaces on begin of $projtoprocess
+  projtoprocess=`echo $projtoprocess | sed -e 's/^ *//'`
 
-  # if there are no more projects to search for, finish up
-  if test "x$projtoprocess" = x ; then
-    coin_has_coindepend=yes
-    echo "$as_me:$LINENO: result: yes, dependencies are$projprocessed" >&5
-echo "${ECHO_T}yes, dependencies are$projprocessed" >&6
+done
+
+if test "$allproj" != fail ; then
+
+  # now go through the list of .pc files and assemble compiler and linker flags
+  # important is here to obey the reverse order that has been setup before,
+  # since then libraries that are required by several others should be after these other libraries
+  pcfilesprocessed=""
+
+  save_IFS="$IFS"
+  IFS=":"
+  for pcfile in $allpcfiles ; do
+
+    # if $pcfile has been processed already, skip this round
+    if test "x$pcfilesprocessed" != x ; then
+      for pcfiledone in $pcfilesprocessed ; do
+        if test "$pcfiledone" = "$pcfile" ; then
+          continue 2
+        fi
+      done
+    fi
+
+    # reconstruct the directory where the .pc file is located
+    pcfiledir=`echo $pcfile | sed -e 's/\/[^\/]*$//'`
+
+    # read CFLAGS from $pcfile and add CYGPATH_W cludge into include flags
+    projcflags=`sed -n -e 's/Cflags://p' "$pcfile"`
+    projcflags=`echo "$projcflags" | sed -e 's/-I\([^ ]*\)/-I\`${CYGPATH_W} \1\`/g'`
+    COINDEPEND_CFLAGS="$projcflags $COINDEPEND_CFLAGS"
+
+    # read LIBS from $pcfile and replace -L${libdir} by absolute path to build directory in linker flags
+    # we assume that the build directory is $pcfiledir/src if this directory exists, otherwise we assume that it is $pcfiledir
+    projlibs=`sed -n -e 's/Libs://' -e 's/-L\${libdir}//p' "$pcfile"`
+    if test "x$projlibs" != x ; then
+      if test -d "${pcfiledir}/src" ; then
+        projlibs="-L`cd "${pcfiledir}/src"; pwd` $projlibs"
+      else
+        projlibs="-L`cd "$pcfiledir"; pwd` $projlibs"
+      fi
+    else
+      projlibs=`sed -n -e 's/Libs://p' "$pcfile"`
+    fi
+    COINDEPEND_LIBS="$projlibs $COINDEPEND_LIBS"
+
+    # remember that we have processed $pcfile
+    pcfilesprocessed="$pcfilesprocessed:$pcfile"
+
+  done
+  IFS="$save_IFS"
+
+  # finish up
+  coin_has_coindepend=yes
+  echo "$as_me:$LINENO: result: yes" >&5
+echo "${ECHO_T}yes" >&6
 
 cat >>confdefs.h <<\_ACEOF
 #define COIN_HAS_COINDEPEND 1
@@ -20964,42 +20992,42 @@ _ACEOF
 
 
 
-      CBCLIB_PCREQUIRES="cgl osi coinutils $CBCLIB_PCREQUIRES"
-      CBCLIB_CFLAGS="$COINDEPEND_CFLAGS $CBCLIB_CFLAGS"
-      CBCLIB_LIBS="$COINDEPEND_LIBS $CBCLIB_LIBS"
+    CBCLIB_PCREQUIRES="cgl osi coinutils $CBCLIB_PCREQUIRES"
+    CBCLIB_CFLAGS="$COINDEPEND_CFLAGS $CBCLIB_CFLAGS"
+    CBCLIB_LIBS="$COINDEPEND_LIBS $CBCLIB_LIBS"
 
-      CBCGENERIC_PCREQUIRES="cgl osi coinutils $CBCGENERIC_PCREQUIRES"
-      CBCGENERIC_CFLAGS="$COINDEPEND_CFLAGS $CBCGENERIC_CFLAGS"
-      CBCGENERIC_LIBS="$COINDEPEND_LIBS $CBCGENERIC_LIBS"
+    CBCGENERIC_PCREQUIRES="cgl osi coinutils $CBCGENERIC_PCREQUIRES"
+    CBCGENERIC_CFLAGS="$COINDEPEND_CFLAGS $CBCGENERIC_CFLAGS"
+    CBCGENERIC_LIBS="$COINDEPEND_LIBS $CBCGENERIC_LIBS"
 
 
-    if test 1 = 0 ; then  #change this test to enable a bit of debugging output
-      if test -n "$COINDEPEND_CFLAGS" ; then
-        { echo "$as_me:$LINENO: CoinDepend CFLAGS are $COINDEPEND_CFLAGS" >&5
+  if test 1 = 0 ; then  #change this test to enable a bit of debugging output
+    if test -n "$COINDEPEND_CFLAGS" ; then
+      { echo "$as_me:$LINENO: CoinDepend CFLAGS are $COINDEPEND_CFLAGS" >&5
 echo "$as_me: CoinDepend CFLAGS are $COINDEPEND_CFLAGS" >&6;}
-      fi
-      if test -n "$COINDEPEND_LIBS" ; then
-        { echo "$as_me:$LINENO: CoinDepend LIBS   are $COINDEPEND_LIBS" >&5
+    fi
+    if test -n "$COINDEPEND_LIBS" ; then
+      { echo "$as_me:$LINENO: CoinDepend LIBS   are $COINDEPEND_LIBS" >&5
 echo "$as_me: CoinDepend LIBS   are $COINDEPEND_LIBS" >&6;}
-      fi
-      if test -n "$COINDEPEND_DATA" ; then
-        { echo "$as_me:$LINENO: CoinDepend DATA   is  $COINDEPEND_DATA" >&5
+    fi
+    if test -n "$COINDEPEND_DATA" ; then
+      { echo "$as_me:$LINENO: CoinDepend DATA   is  $COINDEPEND_DATA" >&5
 echo "$as_me: CoinDepend DATA   is  $COINDEPEND_DATA" >&6;}
-      fi
+    fi
 
-        { echo "$as_me:$LINENO: CbcLib CFLAGS are $CBCLIB_CFLAGS" >&5
+      { echo "$as_me:$LINENO: CbcLib CFLAGS are $CBCLIB_CFLAGS" >&5
 echo "$as_me: CbcLib CFLAGS are $CBCLIB_CFLAGS" >&6;}
-        { echo "$as_me:$LINENO: CbcLib LIBS   are $CBCLIB_LIBS" >&5
+      { echo "$as_me:$LINENO: CbcLib LIBS   are $CBCLIB_LIBS" >&5
 echo "$as_me: CbcLib LIBS   are $CBCLIB_LIBS" >&6;}
 
-        { echo "$as_me:$LINENO: CbcGeneric CFLAGS are $CBCGENERIC_CFLAGS" >&5
+      { echo "$as_me:$LINENO: CbcGeneric CFLAGS are $CBCGENERIC_CFLAGS" >&5
 echo "$as_me: CbcGeneric CFLAGS are $CBCGENERIC_CFLAGS" >&6;}
-        { echo "$as_me:$LINENO: CbcGeneric LIBS   are $CBCGENERIC_LIBS" >&5
+      { echo "$as_me:$LINENO: CbcGeneric LIBS   are $CBCGENERIC_LIBS" >&5
 echo "$as_me: CbcGeneric LIBS   are $CBCGENERIC_LIBS" >&6;}
 
-    fi
   fi
-done
+
+fi
 
 
 
@@ -21231,22 +21259,15 @@ CLP_DATA=
 
 # initial list of dependencies is "osi-clp", but we need to filter out version number specifications (= x, <= x, >= x)
 projtoprocess="osi-clp"
-projprocessed=""
 
-while test $coin_has_clp = notGiven ; do
-  # setup list of projects that need to be processed in the next round
-  nextprojtoprocess=""
+# we first expand the list of projects to process by adding all dependencies just behind the project which depends on it
+# further, we collect the list of corresponding .pc files, but do this in reverse order, because we need this order afterwards
+# also, we setup the DATA variable
+allproj=""
+allpcfiles=""
+while test "x$projtoprocess" != x ; do
 
   for proj in $projtoprocess ; do
-    # if $proj has been processed already, skip this round
-    if test "x$projprocessed" != x ; then
-      for projdone in $projprocessed ; do
-        if test $projdone = $proj ; then
-	  continue 2
-	fi
-      done
-    fi
-
     # if $proj is available and configured, then a project-uninstalled.pc file should have been created, so search for it
     pcfile=""
     save_IFS="$IFS"
@@ -21255,59 +21276,94 @@ while test $coin_has_clp = notGiven ; do
       # the base directory configure should have setup coin_subdirs.txt in a way that it does not contain projects that should be skipped, so we do not need to test this here again
       if test -r "$dir/$proj-uninstalled.pc" ; then
         pcfile="$dir/$proj-uninstalled.pc"
-        pcfiledir="$dir"
         break
       fi
     done
     IFS="$save_IFS"
 
     if test "x$pcfile" != x ; then
-      # read CFLAGS from $pcfile and add CYGPATH_W cludge into include flags
-      projcflags=`sed -n -e 's/Cflags://p' "$pcfile"`
-      projcflags=`echo "$projcflags" | sed -e 's/-I\([^ ]*\)/-I\`${CYGPATH_W} \1\`/g'`
-      CLP_CFLAGS="$projcflags $CLP_CFLAGS"
+      # read dependencies from $pcfile and filter it
+      projrequires=`sed -n -e 's/Requires://gp' "$pcfile" | sed -e 's/<\{0,1\}>\{0,1\}=[ 	]\{0,\}[^ 	]\{1,\}//g'`
 
-      # read LIBS from $pcfile and replace -L${libdir} by absolute path to build directory in linker flags
-      # we assume that the build directory is $pcfiledir/src if this directory exists, otherwise we assume that it is $pcfiledir
-      projlibs=`sed -n -e 's/Libs://' -e 's/-L\${libdir}//p' "$pcfile"`
-      if test "x$projlibs" != x ; then
-        if test -d "${pcfiledir}/src" ; then
-          projlibs="-L`cd "${pcfiledir}/src"; pwd` $projlibs"
-        else
-          projlibs="-L`cd "$pcfiledir"; pwd` $projlibs"
-        fi
-      else
-        projlibs=`sed -n -e 's/Libs://p' "$pcfile"`
-      fi
-      CLP_LIBS="$CLP_LIBS $projlibs"
+      # add projrequires to the front of the list of projects that have to be processed next
+      # at the same time, remove $proj from this list
+      projtoprocess=${projtoprocess/$proj/$projrequires}
 
       # read DATA from $pcfile, if this is the first .pc file we are processing (so assume that its the main one)
-      if test "x$projprocessed" = x ; then
+      if test "x$allproj" = x ; then
         CLP_DATA=`sed -n -e 's/datadir=//gp' "$pcfile"`
       fi
 
-      # read dependencies from $pcfile, filter it, and add to list of projects that need to be processed next
-      projrequires=`sed -n -e 's/Requires://gp' "$pcfile" | sed -e 's/<\?>\?=[ 	]*[^ 	]\+//g'`
-      nextprojtoprocess="$nextprojtoprocess $projrequires"
-
-      # remember that we have processed $proj
-      projprocessed="$projprocessed $proj"
+      allproj="$allproj $proj"
+      allpcfiles="$pcfile:$allpcfiles"
 
     else
       echo "$as_me:$LINENO: result: no, dependency $proj not available" >&5
 echo "${ECHO_T}no, dependency $proj not available" >&6
+      allproj=fail
       break 2
     fi
 
+    break
   done
 
-  projtoprocess="$nextprojtoprocess"
+  # remove spaces on begin of $projtoprocess
+  projtoprocess=`echo $projtoprocess | sed -e 's/^ *//'`
 
-  # if there are no more projects to search for, finish up
-  if test "x$projtoprocess" = x ; then
-    coin_has_clp=yes
-    echo "$as_me:$LINENO: result: yes, dependencies are$projprocessed" >&5
-echo "${ECHO_T}yes, dependencies are$projprocessed" >&6
+done
+
+if test "$allproj" != fail ; then
+
+  # now go through the list of .pc files and assemble compiler and linker flags
+  # important is here to obey the reverse order that has been setup before,
+  # since then libraries that are required by several others should be after these other libraries
+  pcfilesprocessed=""
+
+  save_IFS="$IFS"
+  IFS=":"
+  for pcfile in $allpcfiles ; do
+
+    # if $pcfile has been processed already, skip this round
+    if test "x$pcfilesprocessed" != x ; then
+      for pcfiledone in $pcfilesprocessed ; do
+        if test "$pcfiledone" = "$pcfile" ; then
+          continue 2
+        fi
+      done
+    fi
+
+    # reconstruct the directory where the .pc file is located
+    pcfiledir=`echo $pcfile | sed -e 's/\/[^\/]*$//'`
+
+    # read CFLAGS from $pcfile and add CYGPATH_W cludge into include flags
+    projcflags=`sed -n -e 's/Cflags://p' "$pcfile"`
+    projcflags=`echo "$projcflags" | sed -e 's/-I\([^ ]*\)/-I\`${CYGPATH_W} \1\`/g'`
+    CLP_CFLAGS="$projcflags $CLP_CFLAGS"
+
+    # read LIBS from $pcfile and replace -L${libdir} by absolute path to build directory in linker flags
+    # we assume that the build directory is $pcfiledir/src if this directory exists, otherwise we assume that it is $pcfiledir
+    projlibs=`sed -n -e 's/Libs://' -e 's/-L\${libdir}//p' "$pcfile"`
+    if test "x$projlibs" != x ; then
+      if test -d "${pcfiledir}/src" ; then
+        projlibs="-L`cd "${pcfiledir}/src"; pwd` $projlibs"
+      else
+        projlibs="-L`cd "$pcfiledir"; pwd` $projlibs"
+      fi
+    else
+      projlibs=`sed -n -e 's/Libs://p' "$pcfile"`
+    fi
+    CLP_LIBS="$projlibs $CLP_LIBS"
+
+    # remember that we have processed $pcfile
+    pcfilesprocessed="$pcfilesprocessed:$pcfile"
+
+  done
+  IFS="$save_IFS"
+
+  # finish up
+  coin_has_clp=yes
+  echo "$as_me:$LINENO: result: yes" >&5
+echo "${ECHO_T}yes" >&6
 
 cat >>confdefs.h <<\_ACEOF
 #define COIN_HAS_CLP 1
@@ -21315,42 +21371,42 @@ _ACEOF
 
 
 
-      CBCLIB_PCREQUIRES="osi-clp $CBCLIB_PCREQUIRES"
-      CBCLIB_CFLAGS="$CLP_CFLAGS $CBCLIB_CFLAGS"
-      CBCLIB_LIBS="$CLP_LIBS $CBCLIB_LIBS"
+    CBCLIB_PCREQUIRES="osi-clp $CBCLIB_PCREQUIRES"
+    CBCLIB_CFLAGS="$CLP_CFLAGS $CBCLIB_CFLAGS"
+    CBCLIB_LIBS="$CLP_LIBS $CBCLIB_LIBS"
 
-      CBCGENERIC_PCREQUIRES="osi-clp $CBCGENERIC_PCREQUIRES"
-      CBCGENERIC_CFLAGS="$CLP_CFLAGS $CBCGENERIC_CFLAGS"
-      CBCGENERIC_LIBS="$CLP_LIBS $CBCGENERIC_LIBS"
+    CBCGENERIC_PCREQUIRES="osi-clp $CBCGENERIC_PCREQUIRES"
+    CBCGENERIC_CFLAGS="$CLP_CFLAGS $CBCGENERIC_CFLAGS"
+    CBCGENERIC_LIBS="$CLP_LIBS $CBCGENERIC_LIBS"
 
 
-    if test 1 = 0 ; then  #change this test to enable a bit of debugging output
-      if test -n "$CLP_CFLAGS" ; then
-        { echo "$as_me:$LINENO: Clp CFLAGS are $CLP_CFLAGS" >&5
+  if test 1 = 0 ; then  #change this test to enable a bit of debugging output
+    if test -n "$CLP_CFLAGS" ; then
+      { echo "$as_me:$LINENO: Clp CFLAGS are $CLP_CFLAGS" >&5
 echo "$as_me: Clp CFLAGS are $CLP_CFLAGS" >&6;}
-      fi
-      if test -n "$CLP_LIBS" ; then
-        { echo "$as_me:$LINENO: Clp LIBS   are $CLP_LIBS" >&5
+    fi
+    if test -n "$CLP_LIBS" ; then
+      { echo "$as_me:$LINENO: Clp LIBS   are $CLP_LIBS" >&5
 echo "$as_me: Clp LIBS   are $CLP_LIBS" >&6;}
-      fi
-      if test -n "$CLP_DATA" ; then
-        { echo "$as_me:$LINENO: Clp DATA   is  $CLP_DATA" >&5
+    fi
+    if test -n "$CLP_DATA" ; then
+      { echo "$as_me:$LINENO: Clp DATA   is  $CLP_DATA" >&5
 echo "$as_me: Clp DATA   is  $CLP_DATA" >&6;}
-      fi
+    fi
 
-        { echo "$as_me:$LINENO: CbcLib CFLAGS are $CBCLIB_CFLAGS" >&5
+      { echo "$as_me:$LINENO: CbcLib CFLAGS are $CBCLIB_CFLAGS" >&5
 echo "$as_me: CbcLib CFLAGS are $CBCLIB_CFLAGS" >&6;}
-        { echo "$as_me:$LINENO: CbcLib LIBS   are $CBCLIB_LIBS" >&5
+      { echo "$as_me:$LINENO: CbcLib LIBS   are $CBCLIB_LIBS" >&5
 echo "$as_me: CbcLib LIBS   are $CBCLIB_LIBS" >&6;}
 
-        { echo "$as_me:$LINENO: CbcGeneric CFLAGS are $CBCGENERIC_CFLAGS" >&5
+      { echo "$as_me:$LINENO: CbcGeneric CFLAGS are $CBCGENERIC_CFLAGS" >&5
 echo "$as_me: CbcGeneric CFLAGS are $CBCGENERIC_CFLAGS" >&6;}
-        { echo "$as_me:$LINENO: CbcGeneric LIBS   are $CBCGENERIC_LIBS" >&5
+      { echo "$as_me:$LINENO: CbcGeneric LIBS   are $CBCGENERIC_LIBS" >&5
 echo "$as_me: CbcGeneric LIBS   are $CBCGENERIC_LIBS" >&6;}
 
-    fi
   fi
-done
+
+fi
 
 
 
@@ -21556,22 +21612,15 @@ OSITESTS_DATA=
 
 # initial list of dependencies is "osi-unittests", but we need to filter out version number specifications (= x, <= x, >= x)
 projtoprocess="osi-unittests"
-projprocessed=""
 
-while test $coin_has_ositests = notGiven ; do
-  # setup list of projects that need to be processed in the next round
-  nextprojtoprocess=""
+# we first expand the list of projects to process by adding all dependencies just behind the project which depends on it
+# further, we collect the list of corresponding .pc files, but do this in reverse order, because we need this order afterwards
+# also, we setup the DATA variable
+allproj=""
+allpcfiles=""
+while test "x$projtoprocess" != x ; do
 
   for proj in $projtoprocess ; do
-    # if $proj has been processed already, skip this round
-    if test "x$projprocessed" != x ; then
-      for projdone in $projprocessed ; do
-        if test $projdone = $proj ; then
-	  continue 2
-	fi
-      done
-    fi
-
     # if $proj is available and configured, then a project-uninstalled.pc file should have been created, so search for it
     pcfile=""
     save_IFS="$IFS"
@@ -21580,59 +21629,94 @@ while test $coin_has_ositests = notGiven ; do
       # the base directory configure should have setup coin_subdirs.txt in a way that it does not contain projects that should be skipped, so we do not need to test this here again
       if test -r "$dir/$proj-uninstalled.pc" ; then
         pcfile="$dir/$proj-uninstalled.pc"
-        pcfiledir="$dir"
         break
       fi
     done
     IFS="$save_IFS"
 
     if test "x$pcfile" != x ; then
-      # read CFLAGS from $pcfile and add CYGPATH_W cludge into include flags
-      projcflags=`sed -n -e 's/Cflags://p' "$pcfile"`
-      projcflags=`echo "$projcflags" | sed -e 's/-I\([^ ]*\)/-I\`${CYGPATH_W} \1\`/g'`
-      OSITESTS_CFLAGS="$projcflags $OSITESTS_CFLAGS"
+      # read dependencies from $pcfile and filter it
+      projrequires=`sed -n -e 's/Requires://gp' "$pcfile" | sed -e 's/<\{0,1\}>\{0,1\}=[ 	]\{0,\}[^ 	]\{1,\}//g'`
 
-      # read LIBS from $pcfile and replace -L${libdir} by absolute path to build directory in linker flags
-      # we assume that the build directory is $pcfiledir/src if this directory exists, otherwise we assume that it is $pcfiledir
-      projlibs=`sed -n -e 's/Libs://' -e 's/-L\${libdir}//p' "$pcfile"`
-      if test "x$projlibs" != x ; then
-        if test -d "${pcfiledir}/src" ; then
-          projlibs="-L`cd "${pcfiledir}/src"; pwd` $projlibs"
-        else
-          projlibs="-L`cd "$pcfiledir"; pwd` $projlibs"
-        fi
-      else
-        projlibs=`sed -n -e 's/Libs://p' "$pcfile"`
-      fi
-      OSITESTS_LIBS="$OSITESTS_LIBS $projlibs"
+      # add projrequires to the front of the list of projects that have to be processed next
+      # at the same time, remove $proj from this list
+      projtoprocess=${projtoprocess/$proj/$projrequires}
 
       # read DATA from $pcfile, if this is the first .pc file we are processing (so assume that its the main one)
-      if test "x$projprocessed" = x ; then
+      if test "x$allproj" = x ; then
         OSITESTS_DATA=`sed -n -e 's/datadir=//gp' "$pcfile"`
       fi
 
-      # read dependencies from $pcfile, filter it, and add to list of projects that need to be processed next
-      projrequires=`sed -n -e 's/Requires://gp' "$pcfile" | sed -e 's/<\?>\?=[ 	]*[^ 	]\+//g'`
-      nextprojtoprocess="$nextprojtoprocess $projrequires"
-
-      # remember that we have processed $proj
-      projprocessed="$projprocessed $proj"
+      allproj="$allproj $proj"
+      allpcfiles="$pcfile:$allpcfiles"
 
     else
       echo "$as_me:$LINENO: result: no, dependency $proj not available" >&5
 echo "${ECHO_T}no, dependency $proj not available" >&6
+      allproj=fail
       break 2
     fi
 
+    break
   done
 
-  projtoprocess="$nextprojtoprocess"
+  # remove spaces on begin of $projtoprocess
+  projtoprocess=`echo $projtoprocess | sed -e 's/^ *//'`
 
-  # if there are no more projects to search for, finish up
-  if test "x$projtoprocess" = x ; then
-    coin_has_ositests=yes
-    echo "$as_me:$LINENO: result: yes, dependencies are$projprocessed" >&5
-echo "${ECHO_T}yes, dependencies are$projprocessed" >&6
+done
+
+if test "$allproj" != fail ; then
+
+  # now go through the list of .pc files and assemble compiler and linker flags
+  # important is here to obey the reverse order that has been setup before,
+  # since then libraries that are required by several others should be after these other libraries
+  pcfilesprocessed=""
+
+  save_IFS="$IFS"
+  IFS=":"
+  for pcfile in $allpcfiles ; do
+
+    # if $pcfile has been processed already, skip this round
+    if test "x$pcfilesprocessed" != x ; then
+      for pcfiledone in $pcfilesprocessed ; do
+        if test "$pcfiledone" = "$pcfile" ; then
+          continue 2
+        fi
+      done
+    fi
+
+    # reconstruct the directory where the .pc file is located
+    pcfiledir=`echo $pcfile | sed -e 's/\/[^\/]*$//'`
+
+    # read CFLAGS from $pcfile and add CYGPATH_W cludge into include flags
+    projcflags=`sed -n -e 's/Cflags://p' "$pcfile"`
+    projcflags=`echo "$projcflags" | sed -e 's/-I\([^ ]*\)/-I\`${CYGPATH_W} \1\`/g'`
+    OSITESTS_CFLAGS="$projcflags $OSITESTS_CFLAGS"
+
+    # read LIBS from $pcfile and replace -L${libdir} by absolute path to build directory in linker flags
+    # we assume that the build directory is $pcfiledir/src if this directory exists, otherwise we assume that it is $pcfiledir
+    projlibs=`sed -n -e 's/Libs://' -e 's/-L\${libdir}//p' "$pcfile"`
+    if test "x$projlibs" != x ; then
+      if test -d "${pcfiledir}/src" ; then
+        projlibs="-L`cd "${pcfiledir}/src"; pwd` $projlibs"
+      else
+        projlibs="-L`cd "$pcfiledir"; pwd` $projlibs"
+      fi
+    else
+      projlibs=`sed -n -e 's/Libs://p' "$pcfile"`
+    fi
+    OSITESTS_LIBS="$projlibs $OSITESTS_LIBS"
+
+    # remember that we have processed $pcfile
+    pcfilesprocessed="$pcfilesprocessed:$pcfile"
+
+  done
+  IFS="$save_IFS"
+
+  # finish up
+  coin_has_ositests=yes
+  echo "$as_me:$LINENO: result: yes" >&5
+echo "${ECHO_T}yes" >&6
 
 cat >>confdefs.h <<\_ACEOF
 #define COIN_HAS_OSITESTS 1
@@ -21641,23 +21725,23 @@ _ACEOF
 
 
 
-    if test 1 = 0 ; then  #change this test to enable a bit of debugging output
-      if test -n "$OSITESTS_CFLAGS" ; then
-        { echo "$as_me:$LINENO: OsiTests CFLAGS are $OSITESTS_CFLAGS" >&5
+  if test 1 = 0 ; then  #change this test to enable a bit of debugging output
+    if test -n "$OSITESTS_CFLAGS" ; then
+      { echo "$as_me:$LINENO: OsiTests CFLAGS are $OSITESTS_CFLAGS" >&5
 echo "$as_me: OsiTests CFLAGS are $OSITESTS_CFLAGS" >&6;}
-      fi
-      if test -n "$OSITESTS_LIBS" ; then
-        { echo "$as_me:$LINENO: OsiTests LIBS   are $OSITESTS_LIBS" >&5
-echo "$as_me: OsiTests LIBS   are $OSITESTS_LIBS" >&6;}
-      fi
-      if test -n "$OSITESTS_DATA" ; then
-        { echo "$as_me:$LINENO: OsiTests DATA   is  $OSITESTS_DATA" >&5
-echo "$as_me: OsiTests DATA   is  $OSITESTS_DATA" >&6;}
-      fi
-
     fi
+    if test -n "$OSITESTS_LIBS" ; then
+      { echo "$as_me:$LINENO: OsiTests LIBS   are $OSITESTS_LIBS" >&5
+echo "$as_me: OsiTests LIBS   are $OSITESTS_LIBS" >&6;}
+    fi
+    if test -n "$OSITESTS_DATA" ; then
+      { echo "$as_me:$LINENO: OsiTests DATA   is  $OSITESTS_DATA" >&5
+echo "$as_me: OsiTests DATA   is  $OSITESTS_DATA" >&6;}
+    fi
+
   fi
-done
+
+fi
 
 
 
@@ -21845,22 +21929,15 @@ SAMPLE_DATA=
 
 # initial list of dependencies is "coindatasample", but we need to filter out version number specifications (= x, <= x, >= x)
 projtoprocess="coindatasample"
-projprocessed=""
 
-while test $coin_has_sample = notGiven ; do
-  # setup list of projects that need to be processed in the next round
-  nextprojtoprocess=""
+# we first expand the list of projects to process by adding all dependencies just behind the project which depends on it
+# further, we collect the list of corresponding .pc files, but do this in reverse order, because we need this order afterwards
+# also, we setup the DATA variable
+allproj=""
+allpcfiles=""
+while test "x$projtoprocess" != x ; do
 
   for proj in $projtoprocess ; do
-    # if $proj has been processed already, skip this round
-    if test "x$projprocessed" != x ; then
-      for projdone in $projprocessed ; do
-        if test $projdone = $proj ; then
-	  continue 2
-	fi
-      done
-    fi
-
     # if $proj is available and configured, then a project-uninstalled.pc file should have been created, so search for it
     pcfile=""
     save_IFS="$IFS"
@@ -21869,59 +21946,94 @@ while test $coin_has_sample = notGiven ; do
       # the base directory configure should have setup coin_subdirs.txt in a way that it does not contain projects that should be skipped, so we do not need to test this here again
       if test -r "$dir/$proj-uninstalled.pc" ; then
         pcfile="$dir/$proj-uninstalled.pc"
-        pcfiledir="$dir"
         break
       fi
     done
     IFS="$save_IFS"
 
     if test "x$pcfile" != x ; then
-      # read CFLAGS from $pcfile and add CYGPATH_W cludge into include flags
-      projcflags=`sed -n -e 's/Cflags://p' "$pcfile"`
-      projcflags=`echo "$projcflags" | sed -e 's/-I\([^ ]*\)/-I\`${CYGPATH_W} \1\`/g'`
-      SAMPLE_CFLAGS="$projcflags $SAMPLE_CFLAGS"
+      # read dependencies from $pcfile and filter it
+      projrequires=`sed -n -e 's/Requires://gp' "$pcfile" | sed -e 's/<\{0,1\}>\{0,1\}=[ 	]\{0,\}[^ 	]\{1,\}//g'`
 
-      # read LIBS from $pcfile and replace -L${libdir} by absolute path to build directory in linker flags
-      # we assume that the build directory is $pcfiledir/src if this directory exists, otherwise we assume that it is $pcfiledir
-      projlibs=`sed -n -e 's/Libs://' -e 's/-L\${libdir}//p' "$pcfile"`
-      if test "x$projlibs" != x ; then
-        if test -d "${pcfiledir}/src" ; then
-          projlibs="-L`cd "${pcfiledir}/src"; pwd` $projlibs"
-        else
-          projlibs="-L`cd "$pcfiledir"; pwd` $projlibs"
-        fi
-      else
-        projlibs=`sed -n -e 's/Libs://p' "$pcfile"`
-      fi
-      SAMPLE_LIBS="$SAMPLE_LIBS $projlibs"
+      # add projrequires to the front of the list of projects that have to be processed next
+      # at the same time, remove $proj from this list
+      projtoprocess=${projtoprocess/$proj/$projrequires}
 
       # read DATA from $pcfile, if this is the first .pc file we are processing (so assume that its the main one)
-      if test "x$projprocessed" = x ; then
+      if test "x$allproj" = x ; then
         SAMPLE_DATA=`sed -n -e 's/datadir=//gp' "$pcfile"`
       fi
 
-      # read dependencies from $pcfile, filter it, and add to list of projects that need to be processed next
-      projrequires=`sed -n -e 's/Requires://gp' "$pcfile" | sed -e 's/<\?>\?=[ 	]*[^ 	]\+//g'`
-      nextprojtoprocess="$nextprojtoprocess $projrequires"
-
-      # remember that we have processed $proj
-      projprocessed="$projprocessed $proj"
+      allproj="$allproj $proj"
+      allpcfiles="$pcfile:$allpcfiles"
 
     else
       echo "$as_me:$LINENO: result: no, dependency $proj not available" >&5
 echo "${ECHO_T}no, dependency $proj not available" >&6
+      allproj=fail
       break 2
     fi
 
+    break
   done
 
-  projtoprocess="$nextprojtoprocess"
+  # remove spaces on begin of $projtoprocess
+  projtoprocess=`echo $projtoprocess | sed -e 's/^ *//'`
 
-  # if there are no more projects to search for, finish up
-  if test "x$projtoprocess" = x ; then
-    coin_has_sample=yes
-    echo "$as_me:$LINENO: result: yes, dependencies are$projprocessed" >&5
-echo "${ECHO_T}yes, dependencies are$projprocessed" >&6
+done
+
+if test "$allproj" != fail ; then
+
+  # now go through the list of .pc files and assemble compiler and linker flags
+  # important is here to obey the reverse order that has been setup before,
+  # since then libraries that are required by several others should be after these other libraries
+  pcfilesprocessed=""
+
+  save_IFS="$IFS"
+  IFS=":"
+  for pcfile in $allpcfiles ; do
+
+    # if $pcfile has been processed already, skip this round
+    if test "x$pcfilesprocessed" != x ; then
+      for pcfiledone in $pcfilesprocessed ; do
+        if test "$pcfiledone" = "$pcfile" ; then
+          continue 2
+        fi
+      done
+    fi
+
+    # reconstruct the directory where the .pc file is located
+    pcfiledir=`echo $pcfile | sed -e 's/\/[^\/]*$//'`
+
+    # read CFLAGS from $pcfile and add CYGPATH_W cludge into include flags
+    projcflags=`sed -n -e 's/Cflags://p' "$pcfile"`
+    projcflags=`echo "$projcflags" | sed -e 's/-I\([^ ]*\)/-I\`${CYGPATH_W} \1\`/g'`
+    SAMPLE_CFLAGS="$projcflags $SAMPLE_CFLAGS"
+
+    # read LIBS from $pcfile and replace -L${libdir} by absolute path to build directory in linker flags
+    # we assume that the build directory is $pcfiledir/src if this directory exists, otherwise we assume that it is $pcfiledir
+    projlibs=`sed -n -e 's/Libs://' -e 's/-L\${libdir}//p' "$pcfile"`
+    if test "x$projlibs" != x ; then
+      if test -d "${pcfiledir}/src" ; then
+        projlibs="-L`cd "${pcfiledir}/src"; pwd` $projlibs"
+      else
+        projlibs="-L`cd "$pcfiledir"; pwd` $projlibs"
+      fi
+    else
+      projlibs=`sed -n -e 's/Libs://p' "$pcfile"`
+    fi
+    SAMPLE_LIBS="$projlibs $SAMPLE_LIBS"
+
+    # remember that we have processed $pcfile
+    pcfilesprocessed="$pcfilesprocessed:$pcfile"
+
+  done
+  IFS="$save_IFS"
+
+  # finish up
+  coin_has_sample=yes
+  echo "$as_me:$LINENO: result: yes" >&5
+echo "${ECHO_T}yes" >&6
 
 cat >>confdefs.h <<\_ACEOF
 #define COIN_HAS_SAMPLE 1
@@ -21930,23 +22042,23 @@ _ACEOF
 
 
 
-    if test 1 = 0 ; then  #change this test to enable a bit of debugging output
-      if test -n "$SAMPLE_CFLAGS" ; then
-        { echo "$as_me:$LINENO: Sample CFLAGS are $SAMPLE_CFLAGS" >&5
+  if test 1 = 0 ; then  #change this test to enable a bit of debugging output
+    if test -n "$SAMPLE_CFLAGS" ; then
+      { echo "$as_me:$LINENO: Sample CFLAGS are $SAMPLE_CFLAGS" >&5
 echo "$as_me: Sample CFLAGS are $SAMPLE_CFLAGS" >&6;}
-      fi
-      if test -n "$SAMPLE_LIBS" ; then
-        { echo "$as_me:$LINENO: Sample LIBS   are $SAMPLE_LIBS" >&5
-echo "$as_me: Sample LIBS   are $SAMPLE_LIBS" >&6;}
-      fi
-      if test -n "$SAMPLE_DATA" ; then
-        { echo "$as_me:$LINENO: Sample DATA   is  $SAMPLE_DATA" >&5
-echo "$as_me: Sample DATA   is  $SAMPLE_DATA" >&6;}
-      fi
-
     fi
+    if test -n "$SAMPLE_LIBS" ; then
+      { echo "$as_me:$LINENO: Sample LIBS   are $SAMPLE_LIBS" >&5
+echo "$as_me: Sample LIBS   are $SAMPLE_LIBS" >&6;}
+    fi
+    if test -n "$SAMPLE_DATA" ; then
+      { echo "$as_me:$LINENO: Sample DATA   is  $SAMPLE_DATA" >&5
+echo "$as_me: Sample DATA   is  $SAMPLE_DATA" >&6;}
+    fi
+
   fi
-done
+
+fi
 
 
 
@@ -22134,22 +22246,15 @@ NETLIB_DATA=
 
 # initial list of dependencies is "coindatanetlib", but we need to filter out version number specifications (= x, <= x, >= x)
 projtoprocess="coindatanetlib"
-projprocessed=""
 
-while test $coin_has_netlib = notGiven ; do
-  # setup list of projects that need to be processed in the next round
-  nextprojtoprocess=""
+# we first expand the list of projects to process by adding all dependencies just behind the project which depends on it
+# further, we collect the list of corresponding .pc files, but do this in reverse order, because we need this order afterwards
+# also, we setup the DATA variable
+allproj=""
+allpcfiles=""
+while test "x$projtoprocess" != x ; do
 
   for proj in $projtoprocess ; do
-    # if $proj has been processed already, skip this round
-    if test "x$projprocessed" != x ; then
-      for projdone in $projprocessed ; do
-        if test $projdone = $proj ; then
-	  continue 2
-	fi
-      done
-    fi
-
     # if $proj is available and configured, then a project-uninstalled.pc file should have been created, so search for it
     pcfile=""
     save_IFS="$IFS"
@@ -22158,59 +22263,94 @@ while test $coin_has_netlib = notGiven ; do
       # the base directory configure should have setup coin_subdirs.txt in a way that it does not contain projects that should be skipped, so we do not need to test this here again
       if test -r "$dir/$proj-uninstalled.pc" ; then
         pcfile="$dir/$proj-uninstalled.pc"
-        pcfiledir="$dir"
         break
       fi
     done
     IFS="$save_IFS"
 
     if test "x$pcfile" != x ; then
-      # read CFLAGS from $pcfile and add CYGPATH_W cludge into include flags
-      projcflags=`sed -n -e 's/Cflags://p' "$pcfile"`
-      projcflags=`echo "$projcflags" | sed -e 's/-I\([^ ]*\)/-I\`${CYGPATH_W} \1\`/g'`
-      NETLIB_CFLAGS="$projcflags $NETLIB_CFLAGS"
+      # read dependencies from $pcfile and filter it
+      projrequires=`sed -n -e 's/Requires://gp' "$pcfile" | sed -e 's/<\{0,1\}>\{0,1\}=[ 	]\{0,\}[^ 	]\{1,\}//g'`
 
-      # read LIBS from $pcfile and replace -L${libdir} by absolute path to build directory in linker flags
-      # we assume that the build directory is $pcfiledir/src if this directory exists, otherwise we assume that it is $pcfiledir
-      projlibs=`sed -n -e 's/Libs://' -e 's/-L\${libdir}//p' "$pcfile"`
-      if test "x$projlibs" != x ; then
-        if test -d "${pcfiledir}/src" ; then
-          projlibs="-L`cd "${pcfiledir}/src"; pwd` $projlibs"
-        else
-          projlibs="-L`cd "$pcfiledir"; pwd` $projlibs"
-        fi
-      else
-        projlibs=`sed -n -e 's/Libs://p' "$pcfile"`
-      fi
-      NETLIB_LIBS="$NETLIB_LIBS $projlibs"
+      # add projrequires to the front of the list of projects that have to be processed next
+      # at the same time, remove $proj from this list
+      projtoprocess=${projtoprocess/$proj/$projrequires}
 
       # read DATA from $pcfile, if this is the first .pc file we are processing (so assume that its the main one)
-      if test "x$projprocessed" = x ; then
+      if test "x$allproj" = x ; then
         NETLIB_DATA=`sed -n -e 's/datadir=//gp' "$pcfile"`
       fi
 
-      # read dependencies from $pcfile, filter it, and add to list of projects that need to be processed next
-      projrequires=`sed -n -e 's/Requires://gp' "$pcfile" | sed -e 's/<\?>\?=[ 	]*[^ 	]\+//g'`
-      nextprojtoprocess="$nextprojtoprocess $projrequires"
-
-      # remember that we have processed $proj
-      projprocessed="$projprocessed $proj"
+      allproj="$allproj $proj"
+      allpcfiles="$pcfile:$allpcfiles"
 
     else
       echo "$as_me:$LINENO: result: no, dependency $proj not available" >&5
 echo "${ECHO_T}no, dependency $proj not available" >&6
+      allproj=fail
       break 2
     fi
 
+    break
   done
 
-  projtoprocess="$nextprojtoprocess"
+  # remove spaces on begin of $projtoprocess
+  projtoprocess=`echo $projtoprocess | sed -e 's/^ *//'`
 
-  # if there are no more projects to search for, finish up
-  if test "x$projtoprocess" = x ; then
-    coin_has_netlib=yes
-    echo "$as_me:$LINENO: result: yes, dependencies are$projprocessed" >&5
-echo "${ECHO_T}yes, dependencies are$projprocessed" >&6
+done
+
+if test "$allproj" != fail ; then
+
+  # now go through the list of .pc files and assemble compiler and linker flags
+  # important is here to obey the reverse order that has been setup before,
+  # since then libraries that are required by several others should be after these other libraries
+  pcfilesprocessed=""
+
+  save_IFS="$IFS"
+  IFS=":"
+  for pcfile in $allpcfiles ; do
+
+    # if $pcfile has been processed already, skip this round
+    if test "x$pcfilesprocessed" != x ; then
+      for pcfiledone in $pcfilesprocessed ; do
+        if test "$pcfiledone" = "$pcfile" ; then
+          continue 2
+        fi
+      done
+    fi
+
+    # reconstruct the directory where the .pc file is located
+    pcfiledir=`echo $pcfile | sed -e 's/\/[^\/]*$//'`
+
+    # read CFLAGS from $pcfile and add CYGPATH_W cludge into include flags
+    projcflags=`sed -n -e 's/Cflags://p' "$pcfile"`
+    projcflags=`echo "$projcflags" | sed -e 's/-I\([^ ]*\)/-I\`${CYGPATH_W} \1\`/g'`
+    NETLIB_CFLAGS="$projcflags $NETLIB_CFLAGS"
+
+    # read LIBS from $pcfile and replace -L${libdir} by absolute path to build directory in linker flags
+    # we assume that the build directory is $pcfiledir/src if this directory exists, otherwise we assume that it is $pcfiledir
+    projlibs=`sed -n -e 's/Libs://' -e 's/-L\${libdir}//p' "$pcfile"`
+    if test "x$projlibs" != x ; then
+      if test -d "${pcfiledir}/src" ; then
+        projlibs="-L`cd "${pcfiledir}/src"; pwd` $projlibs"
+      else
+        projlibs="-L`cd "$pcfiledir"; pwd` $projlibs"
+      fi
+    else
+      projlibs=`sed -n -e 's/Libs://p' "$pcfile"`
+    fi
+    NETLIB_LIBS="$projlibs $NETLIB_LIBS"
+
+    # remember that we have processed $pcfile
+    pcfilesprocessed="$pcfilesprocessed:$pcfile"
+
+  done
+  IFS="$save_IFS"
+
+  # finish up
+  coin_has_netlib=yes
+  echo "$as_me:$LINENO: result: yes" >&5
+echo "${ECHO_T}yes" >&6
 
 cat >>confdefs.h <<\_ACEOF
 #define COIN_HAS_NETLIB 1
@@ -22219,23 +22359,23 @@ _ACEOF
 
 
 
-    if test 1 = 0 ; then  #change this test to enable a bit of debugging output
-      if test -n "$NETLIB_CFLAGS" ; then
-        { echo "$as_me:$LINENO: Netlib CFLAGS are $NETLIB_CFLAGS" >&5
+  if test 1 = 0 ; then  #change this test to enable a bit of debugging output
+    if test -n "$NETLIB_CFLAGS" ; then
+      { echo "$as_me:$LINENO: Netlib CFLAGS are $NETLIB_CFLAGS" >&5
 echo "$as_me: Netlib CFLAGS are $NETLIB_CFLAGS" >&6;}
-      fi
-      if test -n "$NETLIB_LIBS" ; then
-        { echo "$as_me:$LINENO: Netlib LIBS   are $NETLIB_LIBS" >&5
-echo "$as_me: Netlib LIBS   are $NETLIB_LIBS" >&6;}
-      fi
-      if test -n "$NETLIB_DATA" ; then
-        { echo "$as_me:$LINENO: Netlib DATA   is  $NETLIB_DATA" >&5
-echo "$as_me: Netlib DATA   is  $NETLIB_DATA" >&6;}
-      fi
-
     fi
+    if test -n "$NETLIB_LIBS" ; then
+      { echo "$as_me:$LINENO: Netlib LIBS   are $NETLIB_LIBS" >&5
+echo "$as_me: Netlib LIBS   are $NETLIB_LIBS" >&6;}
+    fi
+    if test -n "$NETLIB_DATA" ; then
+      { echo "$as_me:$LINENO: Netlib DATA   is  $NETLIB_DATA" >&5
+echo "$as_me: Netlib DATA   is  $NETLIB_DATA" >&6;}
+    fi
+
   fi
-done
+
+fi
 
 
 
@@ -22423,22 +22563,15 @@ MIPLIB3_DATA=
 
 # initial list of dependencies is "coindatamiplib3", but we need to filter out version number specifications (= x, <= x, >= x)
 projtoprocess="coindatamiplib3"
-projprocessed=""
 
-while test $coin_has_miplib3 = notGiven ; do
-  # setup list of projects that need to be processed in the next round
-  nextprojtoprocess=""
+# we first expand the list of projects to process by adding all dependencies just behind the project which depends on it
+# further, we collect the list of corresponding .pc files, but do this in reverse order, because we need this order afterwards
+# also, we setup the DATA variable
+allproj=""
+allpcfiles=""
+while test "x$projtoprocess" != x ; do
 
   for proj in $projtoprocess ; do
-    # if $proj has been processed already, skip this round
-    if test "x$projprocessed" != x ; then
-      for projdone in $projprocessed ; do
-        if test $projdone = $proj ; then
-	  continue 2
-	fi
-      done
-    fi
-
     # if $proj is available and configured, then a project-uninstalled.pc file should have been created, so search for it
     pcfile=""
     save_IFS="$IFS"
@@ -22447,59 +22580,94 @@ while test $coin_has_miplib3 = notGiven ; do
       # the base directory configure should have setup coin_subdirs.txt in a way that it does not contain projects that should be skipped, so we do not need to test this here again
       if test -r "$dir/$proj-uninstalled.pc" ; then
         pcfile="$dir/$proj-uninstalled.pc"
-        pcfiledir="$dir"
         break
       fi
     done
     IFS="$save_IFS"
 
     if test "x$pcfile" != x ; then
-      # read CFLAGS from $pcfile and add CYGPATH_W cludge into include flags
-      projcflags=`sed -n -e 's/Cflags://p' "$pcfile"`
-      projcflags=`echo "$projcflags" | sed -e 's/-I\([^ ]*\)/-I\`${CYGPATH_W} \1\`/g'`
-      MIPLIB3_CFLAGS="$projcflags $MIPLIB3_CFLAGS"
+      # read dependencies from $pcfile and filter it
+      projrequires=`sed -n -e 's/Requires://gp' "$pcfile" | sed -e 's/<\{0,1\}>\{0,1\}=[ 	]\{0,\}[^ 	]\{1,\}//g'`
 
-      # read LIBS from $pcfile and replace -L${libdir} by absolute path to build directory in linker flags
-      # we assume that the build directory is $pcfiledir/src if this directory exists, otherwise we assume that it is $pcfiledir
-      projlibs=`sed -n -e 's/Libs://' -e 's/-L\${libdir}//p' "$pcfile"`
-      if test "x$projlibs" != x ; then
-        if test -d "${pcfiledir}/src" ; then
-          projlibs="-L`cd "${pcfiledir}/src"; pwd` $projlibs"
-        else
-          projlibs="-L`cd "$pcfiledir"; pwd` $projlibs"
-        fi
-      else
-        projlibs=`sed -n -e 's/Libs://p' "$pcfile"`
-      fi
-      MIPLIB3_LIBS="$MIPLIB3_LIBS $projlibs"
+      # add projrequires to the front of the list of projects that have to be processed next
+      # at the same time, remove $proj from this list
+      projtoprocess=${projtoprocess/$proj/$projrequires}
 
       # read DATA from $pcfile, if this is the first .pc file we are processing (so assume that its the main one)
-      if test "x$projprocessed" = x ; then
+      if test "x$allproj" = x ; then
         MIPLIB3_DATA=`sed -n -e 's/datadir=//gp' "$pcfile"`
       fi
 
-      # read dependencies from $pcfile, filter it, and add to list of projects that need to be processed next
-      projrequires=`sed -n -e 's/Requires://gp' "$pcfile" | sed -e 's/<\?>\?=[ 	]*[^ 	]\+//g'`
-      nextprojtoprocess="$nextprojtoprocess $projrequires"
-
-      # remember that we have processed $proj
-      projprocessed="$projprocessed $proj"
+      allproj="$allproj $proj"
+      allpcfiles="$pcfile:$allpcfiles"
 
     else
       echo "$as_me:$LINENO: result: no, dependency $proj not available" >&5
 echo "${ECHO_T}no, dependency $proj not available" >&6
+      allproj=fail
       break 2
     fi
 
+    break
   done
 
-  projtoprocess="$nextprojtoprocess"
+  # remove spaces on begin of $projtoprocess
+  projtoprocess=`echo $projtoprocess | sed -e 's/^ *//'`
 
-  # if there are no more projects to search for, finish up
-  if test "x$projtoprocess" = x ; then
-    coin_has_miplib3=yes
-    echo "$as_me:$LINENO: result: yes, dependencies are$projprocessed" >&5
-echo "${ECHO_T}yes, dependencies are$projprocessed" >&6
+done
+
+if test "$allproj" != fail ; then
+
+  # now go through the list of .pc files and assemble compiler and linker flags
+  # important is here to obey the reverse order that has been setup before,
+  # since then libraries that are required by several others should be after these other libraries
+  pcfilesprocessed=""
+
+  save_IFS="$IFS"
+  IFS=":"
+  for pcfile in $allpcfiles ; do
+
+    # if $pcfile has been processed already, skip this round
+    if test "x$pcfilesprocessed" != x ; then
+      for pcfiledone in $pcfilesprocessed ; do
+        if test "$pcfiledone" = "$pcfile" ; then
+          continue 2
+        fi
+      done
+    fi
+
+    # reconstruct the directory where the .pc file is located
+    pcfiledir=`echo $pcfile | sed -e 's/\/[^\/]*$//'`
+
+    # read CFLAGS from $pcfile and add CYGPATH_W cludge into include flags
+    projcflags=`sed -n -e 's/Cflags://p' "$pcfile"`
+    projcflags=`echo "$projcflags" | sed -e 's/-I\([^ ]*\)/-I\`${CYGPATH_W} \1\`/g'`
+    MIPLIB3_CFLAGS="$projcflags $MIPLIB3_CFLAGS"
+
+    # read LIBS from $pcfile and replace -L${libdir} by absolute path to build directory in linker flags
+    # we assume that the build directory is $pcfiledir/src if this directory exists, otherwise we assume that it is $pcfiledir
+    projlibs=`sed -n -e 's/Libs://' -e 's/-L\${libdir}//p' "$pcfile"`
+    if test "x$projlibs" != x ; then
+      if test -d "${pcfiledir}/src" ; then
+        projlibs="-L`cd "${pcfiledir}/src"; pwd` $projlibs"
+      else
+        projlibs="-L`cd "$pcfiledir"; pwd` $projlibs"
+      fi
+    else
+      projlibs=`sed -n -e 's/Libs://p' "$pcfile"`
+    fi
+    MIPLIB3_LIBS="$projlibs $MIPLIB3_LIBS"
+
+    # remember that we have processed $pcfile
+    pcfilesprocessed="$pcfilesprocessed:$pcfile"
+
+  done
+  IFS="$save_IFS"
+
+  # finish up
+  coin_has_miplib3=yes
+  echo "$as_me:$LINENO: result: yes" >&5
+echo "${ECHO_T}yes" >&6
 
 cat >>confdefs.h <<\_ACEOF
 #define COIN_HAS_MIPLIB3 1
@@ -22508,23 +22676,23 @@ _ACEOF
 
 
 
-    if test 1 = 0 ; then  #change this test to enable a bit of debugging output
-      if test -n "$MIPLIB3_CFLAGS" ; then
-        { echo "$as_me:$LINENO: Miplib3 CFLAGS are $MIPLIB3_CFLAGS" >&5
+  if test 1 = 0 ; then  #change this test to enable a bit of debugging output
+    if test -n "$MIPLIB3_CFLAGS" ; then
+      { echo "$as_me:$LINENO: Miplib3 CFLAGS are $MIPLIB3_CFLAGS" >&5
 echo "$as_me: Miplib3 CFLAGS are $MIPLIB3_CFLAGS" >&6;}
-      fi
-      if test -n "$MIPLIB3_LIBS" ; then
-        { echo "$as_me:$LINENO: Miplib3 LIBS   are $MIPLIB3_LIBS" >&5
-echo "$as_me: Miplib3 LIBS   are $MIPLIB3_LIBS" >&6;}
-      fi
-      if test -n "$MIPLIB3_DATA" ; then
-        { echo "$as_me:$LINENO: Miplib3 DATA   is  $MIPLIB3_DATA" >&5
-echo "$as_me: Miplib3 DATA   is  $MIPLIB3_DATA" >&6;}
-      fi
-
     fi
+    if test -n "$MIPLIB3_LIBS" ; then
+      { echo "$as_me:$LINENO: Miplib3 LIBS   are $MIPLIB3_LIBS" >&5
+echo "$as_me: Miplib3 LIBS   are $MIPLIB3_LIBS" >&6;}
+    fi
+    if test -n "$MIPLIB3_DATA" ; then
+      { echo "$as_me:$LINENO: Miplib3 DATA   is  $MIPLIB3_DATA" >&5
+echo "$as_me: Miplib3 DATA   is  $MIPLIB3_DATA" >&6;}
+    fi
+
   fi
-done
+
+fi
 
 
 
@@ -22731,22 +22899,15 @@ DYLP_DATA=
 
 # initial list of dependencies is "osi-dylp", but we need to filter out version number specifications (= x, <= x, >= x)
 projtoprocess="osi-dylp"
-projprocessed=""
 
-while test $coin_has_dylp = notGiven ; do
-  # setup list of projects that need to be processed in the next round
-  nextprojtoprocess=""
+# we first expand the list of projects to process by adding all dependencies just behind the project which depends on it
+# further, we collect the list of corresponding .pc files, but do this in reverse order, because we need this order afterwards
+# also, we setup the DATA variable
+allproj=""
+allpcfiles=""
+while test "x$projtoprocess" != x ; do
 
   for proj in $projtoprocess ; do
-    # if $proj has been processed already, skip this round
-    if test "x$projprocessed" != x ; then
-      for projdone in $projprocessed ; do
-        if test $projdone = $proj ; then
-	  continue 2
-	fi
-      done
-    fi
-
     # if $proj is available and configured, then a project-uninstalled.pc file should have been created, so search for it
     pcfile=""
     save_IFS="$IFS"
@@ -22755,59 +22916,94 @@ while test $coin_has_dylp = notGiven ; do
       # the base directory configure should have setup coin_subdirs.txt in a way that it does not contain projects that should be skipped, so we do not need to test this here again
       if test -r "$dir/$proj-uninstalled.pc" ; then
         pcfile="$dir/$proj-uninstalled.pc"
-        pcfiledir="$dir"
         break
       fi
     done
     IFS="$save_IFS"
 
     if test "x$pcfile" != x ; then
-      # read CFLAGS from $pcfile and add CYGPATH_W cludge into include flags
-      projcflags=`sed -n -e 's/Cflags://p' "$pcfile"`
-      projcflags=`echo "$projcflags" | sed -e 's/-I\([^ ]*\)/-I\`${CYGPATH_W} \1\`/g'`
-      DYLP_CFLAGS="$projcflags $DYLP_CFLAGS"
+      # read dependencies from $pcfile and filter it
+      projrequires=`sed -n -e 's/Requires://gp' "$pcfile" | sed -e 's/<\{0,1\}>\{0,1\}=[ 	]\{0,\}[^ 	]\{1,\}//g'`
 
-      # read LIBS from $pcfile and replace -L${libdir} by absolute path to build directory in linker flags
-      # we assume that the build directory is $pcfiledir/src if this directory exists, otherwise we assume that it is $pcfiledir
-      projlibs=`sed -n -e 's/Libs://' -e 's/-L\${libdir}//p' "$pcfile"`
-      if test "x$projlibs" != x ; then
-        if test -d "${pcfiledir}/src" ; then
-          projlibs="-L`cd "${pcfiledir}/src"; pwd` $projlibs"
-        else
-          projlibs="-L`cd "$pcfiledir"; pwd` $projlibs"
-        fi
-      else
-        projlibs=`sed -n -e 's/Libs://p' "$pcfile"`
-      fi
-      DYLP_LIBS="$DYLP_LIBS $projlibs"
+      # add projrequires to the front of the list of projects that have to be processed next
+      # at the same time, remove $proj from this list
+      projtoprocess=${projtoprocess/$proj/$projrequires}
 
       # read DATA from $pcfile, if this is the first .pc file we are processing (so assume that its the main one)
-      if test "x$projprocessed" = x ; then
+      if test "x$allproj" = x ; then
         DYLP_DATA=`sed -n -e 's/datadir=//gp' "$pcfile"`
       fi
 
-      # read dependencies from $pcfile, filter it, and add to list of projects that need to be processed next
-      projrequires=`sed -n -e 's/Requires://gp' "$pcfile" | sed -e 's/<\?>\?=[ 	]*[^ 	]\+//g'`
-      nextprojtoprocess="$nextprojtoprocess $projrequires"
-
-      # remember that we have processed $proj
-      projprocessed="$projprocessed $proj"
+      allproj="$allproj $proj"
+      allpcfiles="$pcfile:$allpcfiles"
 
     else
       echo "$as_me:$LINENO: result: no, dependency $proj not available" >&5
 echo "${ECHO_T}no, dependency $proj not available" >&6
+      allproj=fail
       break 2
     fi
 
+    break
   done
 
-  projtoprocess="$nextprojtoprocess"
+  # remove spaces on begin of $projtoprocess
+  projtoprocess=`echo $projtoprocess | sed -e 's/^ *//'`
 
-  # if there are no more projects to search for, finish up
-  if test "x$projtoprocess" = x ; then
-    coin_has_dylp=yes
-    echo "$as_me:$LINENO: result: yes, dependencies are$projprocessed" >&5
-echo "${ECHO_T}yes, dependencies are$projprocessed" >&6
+done
+
+if test "$allproj" != fail ; then
+
+  # now go through the list of .pc files and assemble compiler and linker flags
+  # important is here to obey the reverse order that has been setup before,
+  # since then libraries that are required by several others should be after these other libraries
+  pcfilesprocessed=""
+
+  save_IFS="$IFS"
+  IFS=":"
+  for pcfile in $allpcfiles ; do
+
+    # if $pcfile has been processed already, skip this round
+    if test "x$pcfilesprocessed" != x ; then
+      for pcfiledone in $pcfilesprocessed ; do
+        if test "$pcfiledone" = "$pcfile" ; then
+          continue 2
+        fi
+      done
+    fi
+
+    # reconstruct the directory where the .pc file is located
+    pcfiledir=`echo $pcfile | sed -e 's/\/[^\/]*$//'`
+
+    # read CFLAGS from $pcfile and add CYGPATH_W cludge into include flags
+    projcflags=`sed -n -e 's/Cflags://p' "$pcfile"`
+    projcflags=`echo "$projcflags" | sed -e 's/-I\([^ ]*\)/-I\`${CYGPATH_W} \1\`/g'`
+    DYLP_CFLAGS="$projcflags $DYLP_CFLAGS"
+
+    # read LIBS from $pcfile and replace -L${libdir} by absolute path to build directory in linker flags
+    # we assume that the build directory is $pcfiledir/src if this directory exists, otherwise we assume that it is $pcfiledir
+    projlibs=`sed -n -e 's/Libs://' -e 's/-L\${libdir}//p' "$pcfile"`
+    if test "x$projlibs" != x ; then
+      if test -d "${pcfiledir}/src" ; then
+        projlibs="-L`cd "${pcfiledir}/src"; pwd` $projlibs"
+      else
+        projlibs="-L`cd "$pcfiledir"; pwd` $projlibs"
+      fi
+    else
+      projlibs=`sed -n -e 's/Libs://p' "$pcfile"`
+    fi
+    DYLP_LIBS="$projlibs $DYLP_LIBS"
+
+    # remember that we have processed $pcfile
+    pcfilesprocessed="$pcfilesprocessed:$pcfile"
+
+  done
+  IFS="$save_IFS"
+
+  # finish up
+  coin_has_dylp=yes
+  echo "$as_me:$LINENO: result: yes" >&5
+echo "${ECHO_T}yes" >&6
 
 cat >>confdefs.h <<\_ACEOF
 #define COIN_HAS_DYLP 1
@@ -22815,33 +23011,33 @@ _ACEOF
 
 
 
-      CBCGENERIC_PCREQUIRES="osi-dylp $CBCGENERIC_PCREQUIRES"
-      CBCGENERIC_CFLAGS="$DYLP_CFLAGS $CBCGENERIC_CFLAGS"
-      CBCGENERIC_LIBS="$DYLP_LIBS $CBCGENERIC_LIBS"
+    CBCGENERIC_PCREQUIRES="osi-dylp $CBCGENERIC_PCREQUIRES"
+    CBCGENERIC_CFLAGS="$DYLP_CFLAGS $CBCGENERIC_CFLAGS"
+    CBCGENERIC_LIBS="$DYLP_LIBS $CBCGENERIC_LIBS"
 
 
-    if test 1 = 0 ; then  #change this test to enable a bit of debugging output
-      if test -n "$DYLP_CFLAGS" ; then
-        { echo "$as_me:$LINENO: DyLP CFLAGS are $DYLP_CFLAGS" >&5
+  if test 1 = 0 ; then  #change this test to enable a bit of debugging output
+    if test -n "$DYLP_CFLAGS" ; then
+      { echo "$as_me:$LINENO: DyLP CFLAGS are $DYLP_CFLAGS" >&5
 echo "$as_me: DyLP CFLAGS are $DYLP_CFLAGS" >&6;}
-      fi
-      if test -n "$DYLP_LIBS" ; then
-        { echo "$as_me:$LINENO: DyLP LIBS   are $DYLP_LIBS" >&5
+    fi
+    if test -n "$DYLP_LIBS" ; then
+      { echo "$as_me:$LINENO: DyLP LIBS   are $DYLP_LIBS" >&5
 echo "$as_me: DyLP LIBS   are $DYLP_LIBS" >&6;}
-      fi
-      if test -n "$DYLP_DATA" ; then
-        { echo "$as_me:$LINENO: DyLP DATA   is  $DYLP_DATA" >&5
+    fi
+    if test -n "$DYLP_DATA" ; then
+      { echo "$as_me:$LINENO: DyLP DATA   is  $DYLP_DATA" >&5
 echo "$as_me: DyLP DATA   is  $DYLP_DATA" >&6;}
-      fi
+    fi
 
-        { echo "$as_me:$LINENO: CbcGeneric CFLAGS are $CBCGENERIC_CFLAGS" >&5
+      { echo "$as_me:$LINENO: CbcGeneric CFLAGS are $CBCGENERIC_CFLAGS" >&5
 echo "$as_me: CbcGeneric CFLAGS are $CBCGENERIC_CFLAGS" >&6;}
-        { echo "$as_me:$LINENO: CbcGeneric LIBS   are $CBCGENERIC_LIBS" >&5
+      { echo "$as_me:$LINENO: CbcGeneric LIBS   are $CBCGENERIC_LIBS" >&5
 echo "$as_me: CbcGeneric LIBS   are $CBCGENERIC_LIBS" >&6;}
 
-    fi
   fi
-done
+
+fi
 
 
 
@@ -23034,22 +23230,15 @@ VOL_DATA=
 
 # initial list of dependencies is "osi-vol", but we need to filter out version number specifications (= x, <= x, >= x)
 projtoprocess="osi-vol"
-projprocessed=""
 
-while test $coin_has_vol = notGiven ; do
-  # setup list of projects that need to be processed in the next round
-  nextprojtoprocess=""
+# we first expand the list of projects to process by adding all dependencies just behind the project which depends on it
+# further, we collect the list of corresponding .pc files, but do this in reverse order, because we need this order afterwards
+# also, we setup the DATA variable
+allproj=""
+allpcfiles=""
+while test "x$projtoprocess" != x ; do
 
   for proj in $projtoprocess ; do
-    # if $proj has been processed already, skip this round
-    if test "x$projprocessed" != x ; then
-      for projdone in $projprocessed ; do
-        if test $projdone = $proj ; then
-	  continue 2
-	fi
-      done
-    fi
-
     # if $proj is available and configured, then a project-uninstalled.pc file should have been created, so search for it
     pcfile=""
     save_IFS="$IFS"
@@ -23058,59 +23247,94 @@ while test $coin_has_vol = notGiven ; do
       # the base directory configure should have setup coin_subdirs.txt in a way that it does not contain projects that should be skipped, so we do not need to test this here again
       if test -r "$dir/$proj-uninstalled.pc" ; then
         pcfile="$dir/$proj-uninstalled.pc"
-        pcfiledir="$dir"
         break
       fi
     done
     IFS="$save_IFS"
 
     if test "x$pcfile" != x ; then
-      # read CFLAGS from $pcfile and add CYGPATH_W cludge into include flags
-      projcflags=`sed -n -e 's/Cflags://p' "$pcfile"`
-      projcflags=`echo "$projcflags" | sed -e 's/-I\([^ ]*\)/-I\`${CYGPATH_W} \1\`/g'`
-      VOL_CFLAGS="$projcflags $VOL_CFLAGS"
+      # read dependencies from $pcfile and filter it
+      projrequires=`sed -n -e 's/Requires://gp' "$pcfile" | sed -e 's/<\{0,1\}>\{0,1\}=[ 	]\{0,\}[^ 	]\{1,\}//g'`
 
-      # read LIBS from $pcfile and replace -L${libdir} by absolute path to build directory in linker flags
-      # we assume that the build directory is $pcfiledir/src if this directory exists, otherwise we assume that it is $pcfiledir
-      projlibs=`sed -n -e 's/Libs://' -e 's/-L\${libdir}//p' "$pcfile"`
-      if test "x$projlibs" != x ; then
-        if test -d "${pcfiledir}/src" ; then
-          projlibs="-L`cd "${pcfiledir}/src"; pwd` $projlibs"
-        else
-          projlibs="-L`cd "$pcfiledir"; pwd` $projlibs"
-        fi
-      else
-        projlibs=`sed -n -e 's/Libs://p' "$pcfile"`
-      fi
-      VOL_LIBS="$VOL_LIBS $projlibs"
+      # add projrequires to the front of the list of projects that have to be processed next
+      # at the same time, remove $proj from this list
+      projtoprocess=${projtoprocess/$proj/$projrequires}
 
       # read DATA from $pcfile, if this is the first .pc file we are processing (so assume that its the main one)
-      if test "x$projprocessed" = x ; then
+      if test "x$allproj" = x ; then
         VOL_DATA=`sed -n -e 's/datadir=//gp' "$pcfile"`
       fi
 
-      # read dependencies from $pcfile, filter it, and add to list of projects that need to be processed next
-      projrequires=`sed -n -e 's/Requires://gp' "$pcfile" | sed -e 's/<\?>\?=[ 	]*[^ 	]\+//g'`
-      nextprojtoprocess="$nextprojtoprocess $projrequires"
-
-      # remember that we have processed $proj
-      projprocessed="$projprocessed $proj"
+      allproj="$allproj $proj"
+      allpcfiles="$pcfile:$allpcfiles"
 
     else
       echo "$as_me:$LINENO: result: no, dependency $proj not available" >&5
 echo "${ECHO_T}no, dependency $proj not available" >&6
+      allproj=fail
       break 2
     fi
 
+    break
   done
 
-  projtoprocess="$nextprojtoprocess"
+  # remove spaces on begin of $projtoprocess
+  projtoprocess=`echo $projtoprocess | sed -e 's/^ *//'`
 
-  # if there are no more projects to search for, finish up
-  if test "x$projtoprocess" = x ; then
-    coin_has_vol=yes
-    echo "$as_me:$LINENO: result: yes, dependencies are$projprocessed" >&5
-echo "${ECHO_T}yes, dependencies are$projprocessed" >&6
+done
+
+if test "$allproj" != fail ; then
+
+  # now go through the list of .pc files and assemble compiler and linker flags
+  # important is here to obey the reverse order that has been setup before,
+  # since then libraries that are required by several others should be after these other libraries
+  pcfilesprocessed=""
+
+  save_IFS="$IFS"
+  IFS=":"
+  for pcfile in $allpcfiles ; do
+
+    # if $pcfile has been processed already, skip this round
+    if test "x$pcfilesprocessed" != x ; then
+      for pcfiledone in $pcfilesprocessed ; do
+        if test "$pcfiledone" = "$pcfile" ; then
+          continue 2
+        fi
+      done
+    fi
+
+    # reconstruct the directory where the .pc file is located
+    pcfiledir=`echo $pcfile | sed -e 's/\/[^\/]*$//'`
+
+    # read CFLAGS from $pcfile and add CYGPATH_W cludge into include flags
+    projcflags=`sed -n -e 's/Cflags://p' "$pcfile"`
+    projcflags=`echo "$projcflags" | sed -e 's/-I\([^ ]*\)/-I\`${CYGPATH_W} \1\`/g'`
+    VOL_CFLAGS="$projcflags $VOL_CFLAGS"
+
+    # read LIBS from $pcfile and replace -L${libdir} by absolute path to build directory in linker flags
+    # we assume that the build directory is $pcfiledir/src if this directory exists, otherwise we assume that it is $pcfiledir
+    projlibs=`sed -n -e 's/Libs://' -e 's/-L\${libdir}//p' "$pcfile"`
+    if test "x$projlibs" != x ; then
+      if test -d "${pcfiledir}/src" ; then
+        projlibs="-L`cd "${pcfiledir}/src"; pwd` $projlibs"
+      else
+        projlibs="-L`cd "$pcfiledir"; pwd` $projlibs"
+      fi
+    else
+      projlibs=`sed -n -e 's/Libs://p' "$pcfile"`
+    fi
+    VOL_LIBS="$projlibs $VOL_LIBS"
+
+    # remember that we have processed $pcfile
+    pcfilesprocessed="$pcfilesprocessed:$pcfile"
+
+  done
+  IFS="$save_IFS"
+
+  # finish up
+  coin_has_vol=yes
+  echo "$as_me:$LINENO: result: yes" >&5
+echo "${ECHO_T}yes" >&6
 
 cat >>confdefs.h <<\_ACEOF
 #define COIN_HAS_VOL 1
@@ -23119,23 +23343,23 @@ _ACEOF
 
 
 
-    if test 1 = 0 ; then  #change this test to enable a bit of debugging output
-      if test -n "$VOL_CFLAGS" ; then
-        { echo "$as_me:$LINENO: Vol CFLAGS are $VOL_CFLAGS" >&5
+  if test 1 = 0 ; then  #change this test to enable a bit of debugging output
+    if test -n "$VOL_CFLAGS" ; then
+      { echo "$as_me:$LINENO: Vol CFLAGS are $VOL_CFLAGS" >&5
 echo "$as_me: Vol CFLAGS are $VOL_CFLAGS" >&6;}
-      fi
-      if test -n "$VOL_LIBS" ; then
-        { echo "$as_me:$LINENO: Vol LIBS   are $VOL_LIBS" >&5
-echo "$as_me: Vol LIBS   are $VOL_LIBS" >&6;}
-      fi
-      if test -n "$VOL_DATA" ; then
-        { echo "$as_me:$LINENO: Vol DATA   is  $VOL_DATA" >&5
-echo "$as_me: Vol DATA   is  $VOL_DATA" >&6;}
-      fi
-
     fi
+    if test -n "$VOL_LIBS" ; then
+      { echo "$as_me:$LINENO: Vol LIBS   are $VOL_LIBS" >&5
+echo "$as_me: Vol LIBS   are $VOL_LIBS" >&6;}
+    fi
+    if test -n "$VOL_DATA" ; then
+      { echo "$as_me:$LINENO: Vol DATA   is  $VOL_DATA" >&5
+echo "$as_me: Vol DATA   is  $VOL_DATA" >&6;}
+    fi
+
   fi
-done
+
+fi
 
 
 
@@ -23349,22 +23573,15 @@ CPX_DATA=
 
 # initial list of dependencies is "osi-cplex", but we need to filter out version number specifications (= x, <= x, >= x)
 projtoprocess="osi-cplex"
-projprocessed=""
 
-while test $coin_has_cpx = notGiven ; do
-  # setup list of projects that need to be processed in the next round
-  nextprojtoprocess=""
+# we first expand the list of projects to process by adding all dependencies just behind the project which depends on it
+# further, we collect the list of corresponding .pc files, but do this in reverse order, because we need this order afterwards
+# also, we setup the DATA variable
+allproj=""
+allpcfiles=""
+while test "x$projtoprocess" != x ; do
 
   for proj in $projtoprocess ; do
-    # if $proj has been processed already, skip this round
-    if test "x$projprocessed" != x ; then
-      for projdone in $projprocessed ; do
-        if test $projdone = $proj ; then
-	  continue 2
-	fi
-      done
-    fi
-
     # if $proj is available and configured, then a project-uninstalled.pc file should have been created, so search for it
     pcfile=""
     save_IFS="$IFS"
@@ -23373,59 +23590,94 @@ while test $coin_has_cpx = notGiven ; do
       # the base directory configure should have setup coin_subdirs.txt in a way that it does not contain projects that should be skipped, so we do not need to test this here again
       if test -r "$dir/$proj-uninstalled.pc" ; then
         pcfile="$dir/$proj-uninstalled.pc"
-        pcfiledir="$dir"
         break
       fi
     done
     IFS="$save_IFS"
 
     if test "x$pcfile" != x ; then
-      # read CFLAGS from $pcfile and add CYGPATH_W cludge into include flags
-      projcflags=`sed -n -e 's/Cflags://p' "$pcfile"`
-      projcflags=`echo "$projcflags" | sed -e 's/-I\([^ ]*\)/-I\`${CYGPATH_W} \1\`/g'`
-      CPX_CFLAGS="$projcflags $CPX_CFLAGS"
+      # read dependencies from $pcfile and filter it
+      projrequires=`sed -n -e 's/Requires://gp' "$pcfile" | sed -e 's/<\{0,1\}>\{0,1\}=[ 	]\{0,\}[^ 	]\{1,\}//g'`
 
-      # read LIBS from $pcfile and replace -L${libdir} by absolute path to build directory in linker flags
-      # we assume that the build directory is $pcfiledir/src if this directory exists, otherwise we assume that it is $pcfiledir
-      projlibs=`sed -n -e 's/Libs://' -e 's/-L\${libdir}//p' "$pcfile"`
-      if test "x$projlibs" != x ; then
-        if test -d "${pcfiledir}/src" ; then
-          projlibs="-L`cd "${pcfiledir}/src"; pwd` $projlibs"
-        else
-          projlibs="-L`cd "$pcfiledir"; pwd` $projlibs"
-        fi
-      else
-        projlibs=`sed -n -e 's/Libs://p' "$pcfile"`
-      fi
-      CPX_LIBS="$CPX_LIBS $projlibs"
+      # add projrequires to the front of the list of projects that have to be processed next
+      # at the same time, remove $proj from this list
+      projtoprocess=${projtoprocess/$proj/$projrequires}
 
       # read DATA from $pcfile, if this is the first .pc file we are processing (so assume that its the main one)
-      if test "x$projprocessed" = x ; then
+      if test "x$allproj" = x ; then
         CPX_DATA=`sed -n -e 's/datadir=//gp' "$pcfile"`
       fi
 
-      # read dependencies from $pcfile, filter it, and add to list of projects that need to be processed next
-      projrequires=`sed -n -e 's/Requires://gp' "$pcfile" | sed -e 's/<\?>\?=[ 	]*[^ 	]\+//g'`
-      nextprojtoprocess="$nextprojtoprocess $projrequires"
-
-      # remember that we have processed $proj
-      projprocessed="$projprocessed $proj"
+      allproj="$allproj $proj"
+      allpcfiles="$pcfile:$allpcfiles"
 
     else
       echo "$as_me:$LINENO: result: no, dependency $proj not available" >&5
 echo "${ECHO_T}no, dependency $proj not available" >&6
+      allproj=fail
       break 2
     fi
 
+    break
   done
 
-  projtoprocess="$nextprojtoprocess"
+  # remove spaces on begin of $projtoprocess
+  projtoprocess=`echo $projtoprocess | sed -e 's/^ *//'`
 
-  # if there are no more projects to search for, finish up
-  if test "x$projtoprocess" = x ; then
-    coin_has_cpx=yes
-    echo "$as_me:$LINENO: result: yes, dependencies are$projprocessed" >&5
-echo "${ECHO_T}yes, dependencies are$projprocessed" >&6
+done
+
+if test "$allproj" != fail ; then
+
+  # now go through the list of .pc files and assemble compiler and linker flags
+  # important is here to obey the reverse order that has been setup before,
+  # since then libraries that are required by several others should be after these other libraries
+  pcfilesprocessed=""
+
+  save_IFS="$IFS"
+  IFS=":"
+  for pcfile in $allpcfiles ; do
+
+    # if $pcfile has been processed already, skip this round
+    if test "x$pcfilesprocessed" != x ; then
+      for pcfiledone in $pcfilesprocessed ; do
+        if test "$pcfiledone" = "$pcfile" ; then
+          continue 2
+        fi
+      done
+    fi
+
+    # reconstruct the directory where the .pc file is located
+    pcfiledir=`echo $pcfile | sed -e 's/\/[^\/]*$//'`
+
+    # read CFLAGS from $pcfile and add CYGPATH_W cludge into include flags
+    projcflags=`sed -n -e 's/Cflags://p' "$pcfile"`
+    projcflags=`echo "$projcflags" | sed -e 's/-I\([^ ]*\)/-I\`${CYGPATH_W} \1\`/g'`
+    CPX_CFLAGS="$projcflags $CPX_CFLAGS"
+
+    # read LIBS from $pcfile and replace -L${libdir} by absolute path to build directory in linker flags
+    # we assume that the build directory is $pcfiledir/src if this directory exists, otherwise we assume that it is $pcfiledir
+    projlibs=`sed -n -e 's/Libs://' -e 's/-L\${libdir}//p' "$pcfile"`
+    if test "x$projlibs" != x ; then
+      if test -d "${pcfiledir}/src" ; then
+        projlibs="-L`cd "${pcfiledir}/src"; pwd` $projlibs"
+      else
+        projlibs="-L`cd "$pcfiledir"; pwd` $projlibs"
+      fi
+    else
+      projlibs=`sed -n -e 's/Libs://p' "$pcfile"`
+    fi
+    CPX_LIBS="$projlibs $CPX_LIBS"
+
+    # remember that we have processed $pcfile
+    pcfilesprocessed="$pcfilesprocessed:$pcfile"
+
+  done
+  IFS="$save_IFS"
+
+  # finish up
+  coin_has_cpx=yes
+  echo "$as_me:$LINENO: result: yes" >&5
+echo "${ECHO_T}yes" >&6
 
 cat >>confdefs.h <<\_ACEOF
 #define COIN_HAS_CPX 1
@@ -23433,42 +23685,42 @@ _ACEOF
 
 
 
-      CBCLIB_PCREQUIRES="osi-cplex $CBCLIB_PCREQUIRES"
-      CBCLIB_CFLAGS="$CPX_CFLAGS $CBCLIB_CFLAGS"
-      CBCLIB_LIBS="$CPX_LIBS $CBCLIB_LIBS"
+    CBCLIB_PCREQUIRES="osi-cplex $CBCLIB_PCREQUIRES"
+    CBCLIB_CFLAGS="$CPX_CFLAGS $CBCLIB_CFLAGS"
+    CBCLIB_LIBS="$CPX_LIBS $CBCLIB_LIBS"
 
-      CBCGENERIC_PCREQUIRES="osi-cplex $CBCGENERIC_PCREQUIRES"
-      CBCGENERIC_CFLAGS="$CPX_CFLAGS $CBCGENERIC_CFLAGS"
-      CBCGENERIC_LIBS="$CPX_LIBS $CBCGENERIC_LIBS"
+    CBCGENERIC_PCREQUIRES="osi-cplex $CBCGENERIC_PCREQUIRES"
+    CBCGENERIC_CFLAGS="$CPX_CFLAGS $CBCGENERIC_CFLAGS"
+    CBCGENERIC_LIBS="$CPX_LIBS $CBCGENERIC_LIBS"
 
 
-    if test 1 = 0 ; then  #change this test to enable a bit of debugging output
-      if test -n "$CPX_CFLAGS" ; then
-        { echo "$as_me:$LINENO: Cpx CFLAGS are $CPX_CFLAGS" >&5
+  if test 1 = 0 ; then  #change this test to enable a bit of debugging output
+    if test -n "$CPX_CFLAGS" ; then
+      { echo "$as_me:$LINENO: Cpx CFLAGS are $CPX_CFLAGS" >&5
 echo "$as_me: Cpx CFLAGS are $CPX_CFLAGS" >&6;}
-      fi
-      if test -n "$CPX_LIBS" ; then
-        { echo "$as_me:$LINENO: Cpx LIBS   are $CPX_LIBS" >&5
+    fi
+    if test -n "$CPX_LIBS" ; then
+      { echo "$as_me:$LINENO: Cpx LIBS   are $CPX_LIBS" >&5
 echo "$as_me: Cpx LIBS   are $CPX_LIBS" >&6;}
-      fi
-      if test -n "$CPX_DATA" ; then
-        { echo "$as_me:$LINENO: Cpx DATA   is  $CPX_DATA" >&5
+    fi
+    if test -n "$CPX_DATA" ; then
+      { echo "$as_me:$LINENO: Cpx DATA   is  $CPX_DATA" >&5
 echo "$as_me: Cpx DATA   is  $CPX_DATA" >&6;}
-      fi
+    fi
 
-        { echo "$as_me:$LINENO: CbcLib CFLAGS are $CBCLIB_CFLAGS" >&5
+      { echo "$as_me:$LINENO: CbcLib CFLAGS are $CBCLIB_CFLAGS" >&5
 echo "$as_me: CbcLib CFLAGS are $CBCLIB_CFLAGS" >&6;}
-        { echo "$as_me:$LINENO: CbcLib LIBS   are $CBCLIB_LIBS" >&5
+      { echo "$as_me:$LINENO: CbcLib LIBS   are $CBCLIB_LIBS" >&5
 echo "$as_me: CbcLib LIBS   are $CBCLIB_LIBS" >&6;}
 
-        { echo "$as_me:$LINENO: CbcGeneric CFLAGS are $CBCGENERIC_CFLAGS" >&5
+      { echo "$as_me:$LINENO: CbcGeneric CFLAGS are $CBCGENERIC_CFLAGS" >&5
 echo "$as_me: CbcGeneric CFLAGS are $CBCGENERIC_CFLAGS" >&6;}
-        { echo "$as_me:$LINENO: CbcGeneric LIBS   are $CBCGENERIC_LIBS" >&5
+      { echo "$as_me:$LINENO: CbcGeneric LIBS   are $CBCGENERIC_LIBS" >&5
 echo "$as_me: CbcGeneric LIBS   are $CBCGENERIC_LIBS" >&6;}
 
-    fi
   fi
-done
+
+fi
 
 
 
@@ -23679,22 +23931,15 @@ GLPK_DATA=
 
 # initial list of dependencies is "osi-glpk", but we need to filter out version number specifications (= x, <= x, >= x)
 projtoprocess="osi-glpk"
-projprocessed=""
 
-while test $coin_has_glpk = notGiven ; do
-  # setup list of projects that need to be processed in the next round
-  nextprojtoprocess=""
+# we first expand the list of projects to process by adding all dependencies just behind the project which depends on it
+# further, we collect the list of corresponding .pc files, but do this in reverse order, because we need this order afterwards
+# also, we setup the DATA variable
+allproj=""
+allpcfiles=""
+while test "x$projtoprocess" != x ; do
 
   for proj in $projtoprocess ; do
-    # if $proj has been processed already, skip this round
-    if test "x$projprocessed" != x ; then
-      for projdone in $projprocessed ; do
-        if test $projdone = $proj ; then
-	  continue 2
-	fi
-      done
-    fi
-
     # if $proj is available and configured, then a project-uninstalled.pc file should have been created, so search for it
     pcfile=""
     save_IFS="$IFS"
@@ -23703,59 +23948,94 @@ while test $coin_has_glpk = notGiven ; do
       # the base directory configure should have setup coin_subdirs.txt in a way that it does not contain projects that should be skipped, so we do not need to test this here again
       if test -r "$dir/$proj-uninstalled.pc" ; then
         pcfile="$dir/$proj-uninstalled.pc"
-        pcfiledir="$dir"
         break
       fi
     done
     IFS="$save_IFS"
 
     if test "x$pcfile" != x ; then
-      # read CFLAGS from $pcfile and add CYGPATH_W cludge into include flags
-      projcflags=`sed -n -e 's/Cflags://p' "$pcfile"`
-      projcflags=`echo "$projcflags" | sed -e 's/-I\([^ ]*\)/-I\`${CYGPATH_W} \1\`/g'`
-      GLPK_CFLAGS="$projcflags $GLPK_CFLAGS"
+      # read dependencies from $pcfile and filter it
+      projrequires=`sed -n -e 's/Requires://gp' "$pcfile" | sed -e 's/<\{0,1\}>\{0,1\}=[ 	]\{0,\}[^ 	]\{1,\}//g'`
 
-      # read LIBS from $pcfile and replace -L${libdir} by absolute path to build directory in linker flags
-      # we assume that the build directory is $pcfiledir/src if this directory exists, otherwise we assume that it is $pcfiledir
-      projlibs=`sed -n -e 's/Libs://' -e 's/-L\${libdir}//p' "$pcfile"`
-      if test "x$projlibs" != x ; then
-        if test -d "${pcfiledir}/src" ; then
-          projlibs="-L`cd "${pcfiledir}/src"; pwd` $projlibs"
-        else
-          projlibs="-L`cd "$pcfiledir"; pwd` $projlibs"
-        fi
-      else
-        projlibs=`sed -n -e 's/Libs://p' "$pcfile"`
-      fi
-      GLPK_LIBS="$GLPK_LIBS $projlibs"
+      # add projrequires to the front of the list of projects that have to be processed next
+      # at the same time, remove $proj from this list
+      projtoprocess=${projtoprocess/$proj/$projrequires}
 
       # read DATA from $pcfile, if this is the first .pc file we are processing (so assume that its the main one)
-      if test "x$projprocessed" = x ; then
+      if test "x$allproj" = x ; then
         GLPK_DATA=`sed -n -e 's/datadir=//gp' "$pcfile"`
       fi
 
-      # read dependencies from $pcfile, filter it, and add to list of projects that need to be processed next
-      projrequires=`sed -n -e 's/Requires://gp' "$pcfile" | sed -e 's/<\?>\?=[ 	]*[^ 	]\+//g'`
-      nextprojtoprocess="$nextprojtoprocess $projrequires"
-
-      # remember that we have processed $proj
-      projprocessed="$projprocessed $proj"
+      allproj="$allproj $proj"
+      allpcfiles="$pcfile:$allpcfiles"
 
     else
       echo "$as_me:$LINENO: result: no, dependency $proj not available" >&5
 echo "${ECHO_T}no, dependency $proj not available" >&6
+      allproj=fail
       break 2
     fi
 
+    break
   done
 
-  projtoprocess="$nextprojtoprocess"
+  # remove spaces on begin of $projtoprocess
+  projtoprocess=`echo $projtoprocess | sed -e 's/^ *//'`
 
-  # if there are no more projects to search for, finish up
-  if test "x$projtoprocess" = x ; then
-    coin_has_glpk=yes
-    echo "$as_me:$LINENO: result: yes, dependencies are$projprocessed" >&5
-echo "${ECHO_T}yes, dependencies are$projprocessed" >&6
+done
+
+if test "$allproj" != fail ; then
+
+  # now go through the list of .pc files and assemble compiler and linker flags
+  # important is here to obey the reverse order that has been setup before,
+  # since then libraries that are required by several others should be after these other libraries
+  pcfilesprocessed=""
+
+  save_IFS="$IFS"
+  IFS=":"
+  for pcfile in $allpcfiles ; do
+
+    # if $pcfile has been processed already, skip this round
+    if test "x$pcfilesprocessed" != x ; then
+      for pcfiledone in $pcfilesprocessed ; do
+        if test "$pcfiledone" = "$pcfile" ; then
+          continue 2
+        fi
+      done
+    fi
+
+    # reconstruct the directory where the .pc file is located
+    pcfiledir=`echo $pcfile | sed -e 's/\/[^\/]*$//'`
+
+    # read CFLAGS from $pcfile and add CYGPATH_W cludge into include flags
+    projcflags=`sed -n -e 's/Cflags://p' "$pcfile"`
+    projcflags=`echo "$projcflags" | sed -e 's/-I\([^ ]*\)/-I\`${CYGPATH_W} \1\`/g'`
+    GLPK_CFLAGS="$projcflags $GLPK_CFLAGS"
+
+    # read LIBS from $pcfile and replace -L${libdir} by absolute path to build directory in linker flags
+    # we assume that the build directory is $pcfiledir/src if this directory exists, otherwise we assume that it is $pcfiledir
+    projlibs=`sed -n -e 's/Libs://' -e 's/-L\${libdir}//p' "$pcfile"`
+    if test "x$projlibs" != x ; then
+      if test -d "${pcfiledir}/src" ; then
+        projlibs="-L`cd "${pcfiledir}/src"; pwd` $projlibs"
+      else
+        projlibs="-L`cd "$pcfiledir"; pwd` $projlibs"
+      fi
+    else
+      projlibs=`sed -n -e 's/Libs://p' "$pcfile"`
+    fi
+    GLPK_LIBS="$projlibs $GLPK_LIBS"
+
+    # remember that we have processed $pcfile
+    pcfilesprocessed="$pcfilesprocessed:$pcfile"
+
+  done
+  IFS="$save_IFS"
+
+  # finish up
+  coin_has_glpk=yes
+  echo "$as_me:$LINENO: result: yes" >&5
+echo "${ECHO_T}yes" >&6
 
 cat >>confdefs.h <<\_ACEOF
 #define COIN_HAS_GLPK 1
@@ -23763,33 +24043,33 @@ _ACEOF
 
 
 
-      CBCGENERIC_PCREQUIRES="osi-glpk $CBCGENERIC_PCREQUIRES"
-      CBCGENERIC_CFLAGS="$GLPK_CFLAGS $CBCGENERIC_CFLAGS"
-      CBCGENERIC_LIBS="$GLPK_LIBS $CBCGENERIC_LIBS"
+    CBCGENERIC_PCREQUIRES="osi-glpk $CBCGENERIC_PCREQUIRES"
+    CBCGENERIC_CFLAGS="$GLPK_CFLAGS $CBCGENERIC_CFLAGS"
+    CBCGENERIC_LIBS="$GLPK_LIBS $CBCGENERIC_LIBS"
 
 
-    if test 1 = 0 ; then  #change this test to enable a bit of debugging output
-      if test -n "$GLPK_CFLAGS" ; then
-        { echo "$as_me:$LINENO: Glpk CFLAGS are $GLPK_CFLAGS" >&5
+  if test 1 = 0 ; then  #change this test to enable a bit of debugging output
+    if test -n "$GLPK_CFLAGS" ; then
+      { echo "$as_me:$LINENO: Glpk CFLAGS are $GLPK_CFLAGS" >&5
 echo "$as_me: Glpk CFLAGS are $GLPK_CFLAGS" >&6;}
-      fi
-      if test -n "$GLPK_LIBS" ; then
-        { echo "$as_me:$LINENO: Glpk LIBS   are $GLPK_LIBS" >&5
+    fi
+    if test -n "$GLPK_LIBS" ; then
+      { echo "$as_me:$LINENO: Glpk LIBS   are $GLPK_LIBS" >&5
 echo "$as_me: Glpk LIBS   are $GLPK_LIBS" >&6;}
-      fi
-      if test -n "$GLPK_DATA" ; then
-        { echo "$as_me:$LINENO: Glpk DATA   is  $GLPK_DATA" >&5
+    fi
+    if test -n "$GLPK_DATA" ; then
+      { echo "$as_me:$LINENO: Glpk DATA   is  $GLPK_DATA" >&5
 echo "$as_me: Glpk DATA   is  $GLPK_DATA" >&6;}
-      fi
+    fi
 
-        { echo "$as_me:$LINENO: CbcGeneric CFLAGS are $CBCGENERIC_CFLAGS" >&5
+      { echo "$as_me:$LINENO: CbcGeneric CFLAGS are $CBCGENERIC_CFLAGS" >&5
 echo "$as_me: CbcGeneric CFLAGS are $CBCGENERIC_CFLAGS" >&6;}
-        { echo "$as_me:$LINENO: CbcGeneric LIBS   are $CBCGENERIC_LIBS" >&5
+      { echo "$as_me:$LINENO: CbcGeneric LIBS   are $CBCGENERIC_LIBS" >&5
 echo "$as_me: CbcGeneric LIBS   are $CBCGENERIC_LIBS" >&6;}
 
-    fi
   fi
-done
+
+fi
 
 
 
@@ -23982,22 +24262,15 @@ GRB_DATA=
 
 # initial list of dependencies is "osi-gurobi", but we need to filter out version number specifications (= x, <= x, >= x)
 projtoprocess="osi-gurobi"
-projprocessed=""
 
-while test $coin_has_grb = notGiven ; do
-  # setup list of projects that need to be processed in the next round
-  nextprojtoprocess=""
+# we first expand the list of projects to process by adding all dependencies just behind the project which depends on it
+# further, we collect the list of corresponding .pc files, but do this in reverse order, because we need this order afterwards
+# also, we setup the DATA variable
+allproj=""
+allpcfiles=""
+while test "x$projtoprocess" != x ; do
 
   for proj in $projtoprocess ; do
-    # if $proj has been processed already, skip this round
-    if test "x$projprocessed" != x ; then
-      for projdone in $projprocessed ; do
-        if test $projdone = $proj ; then
-	  continue 2
-	fi
-      done
-    fi
-
     # if $proj is available and configured, then a project-uninstalled.pc file should have been created, so search for it
     pcfile=""
     save_IFS="$IFS"
@@ -24006,59 +24279,94 @@ while test $coin_has_grb = notGiven ; do
       # the base directory configure should have setup coin_subdirs.txt in a way that it does not contain projects that should be skipped, so we do not need to test this here again
       if test -r "$dir/$proj-uninstalled.pc" ; then
         pcfile="$dir/$proj-uninstalled.pc"
-        pcfiledir="$dir"
         break
       fi
     done
     IFS="$save_IFS"
 
     if test "x$pcfile" != x ; then
-      # read CFLAGS from $pcfile and add CYGPATH_W cludge into include flags
-      projcflags=`sed -n -e 's/Cflags://p' "$pcfile"`
-      projcflags=`echo "$projcflags" | sed -e 's/-I\([^ ]*\)/-I\`${CYGPATH_W} \1\`/g'`
-      GRB_CFLAGS="$projcflags $GRB_CFLAGS"
+      # read dependencies from $pcfile and filter it
+      projrequires=`sed -n -e 's/Requires://gp' "$pcfile" | sed -e 's/<\{0,1\}>\{0,1\}=[ 	]\{0,\}[^ 	]\{1,\}//g'`
 
-      # read LIBS from $pcfile and replace -L${libdir} by absolute path to build directory in linker flags
-      # we assume that the build directory is $pcfiledir/src if this directory exists, otherwise we assume that it is $pcfiledir
-      projlibs=`sed -n -e 's/Libs://' -e 's/-L\${libdir}//p' "$pcfile"`
-      if test "x$projlibs" != x ; then
-        if test -d "${pcfiledir}/src" ; then
-          projlibs="-L`cd "${pcfiledir}/src"; pwd` $projlibs"
-        else
-          projlibs="-L`cd "$pcfiledir"; pwd` $projlibs"
-        fi
-      else
-        projlibs=`sed -n -e 's/Libs://p' "$pcfile"`
-      fi
-      GRB_LIBS="$GRB_LIBS $projlibs"
+      # add projrequires to the front of the list of projects that have to be processed next
+      # at the same time, remove $proj from this list
+      projtoprocess=${projtoprocess/$proj/$projrequires}
 
       # read DATA from $pcfile, if this is the first .pc file we are processing (so assume that its the main one)
-      if test "x$projprocessed" = x ; then
+      if test "x$allproj" = x ; then
         GRB_DATA=`sed -n -e 's/datadir=//gp' "$pcfile"`
       fi
 
-      # read dependencies from $pcfile, filter it, and add to list of projects that need to be processed next
-      projrequires=`sed -n -e 's/Requires://gp' "$pcfile" | sed -e 's/<\?>\?=[ 	]*[^ 	]\+//g'`
-      nextprojtoprocess="$nextprojtoprocess $projrequires"
-
-      # remember that we have processed $proj
-      projprocessed="$projprocessed $proj"
+      allproj="$allproj $proj"
+      allpcfiles="$pcfile:$allpcfiles"
 
     else
       echo "$as_me:$LINENO: result: no, dependency $proj not available" >&5
 echo "${ECHO_T}no, dependency $proj not available" >&6
+      allproj=fail
       break 2
     fi
 
+    break
   done
 
-  projtoprocess="$nextprojtoprocess"
+  # remove spaces on begin of $projtoprocess
+  projtoprocess=`echo $projtoprocess | sed -e 's/^ *//'`
 
-  # if there are no more projects to search for, finish up
-  if test "x$projtoprocess" = x ; then
-    coin_has_grb=yes
-    echo "$as_me:$LINENO: result: yes, dependencies are$projprocessed" >&5
-echo "${ECHO_T}yes, dependencies are$projprocessed" >&6
+done
+
+if test "$allproj" != fail ; then
+
+  # now go through the list of .pc files and assemble compiler and linker flags
+  # important is here to obey the reverse order that has been setup before,
+  # since then libraries that are required by several others should be after these other libraries
+  pcfilesprocessed=""
+
+  save_IFS="$IFS"
+  IFS=":"
+  for pcfile in $allpcfiles ; do
+
+    # if $pcfile has been processed already, skip this round
+    if test "x$pcfilesprocessed" != x ; then
+      for pcfiledone in $pcfilesprocessed ; do
+        if test "$pcfiledone" = "$pcfile" ; then
+          continue 2
+        fi
+      done
+    fi
+
+    # reconstruct the directory where the .pc file is located
+    pcfiledir=`echo $pcfile | sed -e 's/\/[^\/]*$//'`
+
+    # read CFLAGS from $pcfile and add CYGPATH_W cludge into include flags
+    projcflags=`sed -n -e 's/Cflags://p' "$pcfile"`
+    projcflags=`echo "$projcflags" | sed -e 's/-I\([^ ]*\)/-I\`${CYGPATH_W} \1\`/g'`
+    GRB_CFLAGS="$projcflags $GRB_CFLAGS"
+
+    # read LIBS from $pcfile and replace -L${libdir} by absolute path to build directory in linker flags
+    # we assume that the build directory is $pcfiledir/src if this directory exists, otherwise we assume that it is $pcfiledir
+    projlibs=`sed -n -e 's/Libs://' -e 's/-L\${libdir}//p' "$pcfile"`
+    if test "x$projlibs" != x ; then
+      if test -d "${pcfiledir}/src" ; then
+        projlibs="-L`cd "${pcfiledir}/src"; pwd` $projlibs"
+      else
+        projlibs="-L`cd "$pcfiledir"; pwd` $projlibs"
+      fi
+    else
+      projlibs=`sed -n -e 's/Libs://p' "$pcfile"`
+    fi
+    GRB_LIBS="$projlibs $GRB_LIBS"
+
+    # remember that we have processed $pcfile
+    pcfilesprocessed="$pcfilesprocessed:$pcfile"
+
+  done
+  IFS="$save_IFS"
+
+  # finish up
+  coin_has_grb=yes
+  echo "$as_me:$LINENO: result: yes" >&5
+echo "${ECHO_T}yes" >&6
 
 cat >>confdefs.h <<\_ACEOF
 #define COIN_HAS_GRB 1
@@ -24067,23 +24375,23 @@ _ACEOF
 
 
 
-    if test 1 = 0 ; then  #change this test to enable a bit of debugging output
-      if test -n "$GRB_CFLAGS" ; then
-        { echo "$as_me:$LINENO: Grb CFLAGS are $GRB_CFLAGS" >&5
+  if test 1 = 0 ; then  #change this test to enable a bit of debugging output
+    if test -n "$GRB_CFLAGS" ; then
+      { echo "$as_me:$LINENO: Grb CFLAGS are $GRB_CFLAGS" >&5
 echo "$as_me: Grb CFLAGS are $GRB_CFLAGS" >&6;}
-      fi
-      if test -n "$GRB_LIBS" ; then
-        { echo "$as_me:$LINENO: Grb LIBS   are $GRB_LIBS" >&5
-echo "$as_me: Grb LIBS   are $GRB_LIBS" >&6;}
-      fi
-      if test -n "$GRB_DATA" ; then
-        { echo "$as_me:$LINENO: Grb DATA   is  $GRB_DATA" >&5
-echo "$as_me: Grb DATA   is  $GRB_DATA" >&6;}
-      fi
-
     fi
+    if test -n "$GRB_LIBS" ; then
+      { echo "$as_me:$LINENO: Grb LIBS   are $GRB_LIBS" >&5
+echo "$as_me: Grb LIBS   are $GRB_LIBS" >&6;}
+    fi
+    if test -n "$GRB_DATA" ; then
+      { echo "$as_me:$LINENO: Grb DATA   is  $GRB_DATA" >&5
+echo "$as_me: Grb DATA   is  $GRB_DATA" >&6;}
+    fi
+
   fi
-done
+
+fi
 
 
 
@@ -24284,22 +24592,15 @@ MSK_DATA=
 
 # initial list of dependencies is "osi-mosek", but we need to filter out version number specifications (= x, <= x, >= x)
 projtoprocess="osi-mosek"
-projprocessed=""
 
-while test $coin_has_msk = notGiven ; do
-  # setup list of projects that need to be processed in the next round
-  nextprojtoprocess=""
+# we first expand the list of projects to process by adding all dependencies just behind the project which depends on it
+# further, we collect the list of corresponding .pc files, but do this in reverse order, because we need this order afterwards
+# also, we setup the DATA variable
+allproj=""
+allpcfiles=""
+while test "x$projtoprocess" != x ; do
 
   for proj in $projtoprocess ; do
-    # if $proj has been processed already, skip this round
-    if test "x$projprocessed" != x ; then
-      for projdone in $projprocessed ; do
-        if test $projdone = $proj ; then
-	  continue 2
-	fi
-      done
-    fi
-
     # if $proj is available and configured, then a project-uninstalled.pc file should have been created, so search for it
     pcfile=""
     save_IFS="$IFS"
@@ -24308,59 +24609,94 @@ while test $coin_has_msk = notGiven ; do
       # the base directory configure should have setup coin_subdirs.txt in a way that it does not contain projects that should be skipped, so we do not need to test this here again
       if test -r "$dir/$proj-uninstalled.pc" ; then
         pcfile="$dir/$proj-uninstalled.pc"
-        pcfiledir="$dir"
         break
       fi
     done
     IFS="$save_IFS"
 
     if test "x$pcfile" != x ; then
-      # read CFLAGS from $pcfile and add CYGPATH_W cludge into include flags
-      projcflags=`sed -n -e 's/Cflags://p' "$pcfile"`
-      projcflags=`echo "$projcflags" | sed -e 's/-I\([^ ]*\)/-I\`${CYGPATH_W} \1\`/g'`
-      MSK_CFLAGS="$projcflags $MSK_CFLAGS"
+      # read dependencies from $pcfile and filter it
+      projrequires=`sed -n -e 's/Requires://gp' "$pcfile" | sed -e 's/<\{0,1\}>\{0,1\}=[ 	]\{0,\}[^ 	]\{1,\}//g'`
 
-      # read LIBS from $pcfile and replace -L${libdir} by absolute path to build directory in linker flags
-      # we assume that the build directory is $pcfiledir/src if this directory exists, otherwise we assume that it is $pcfiledir
-      projlibs=`sed -n -e 's/Libs://' -e 's/-L\${libdir}//p' "$pcfile"`
-      if test "x$projlibs" != x ; then
-        if test -d "${pcfiledir}/src" ; then
-          projlibs="-L`cd "${pcfiledir}/src"; pwd` $projlibs"
-        else
-          projlibs="-L`cd "$pcfiledir"; pwd` $projlibs"
-        fi
-      else
-        projlibs=`sed -n -e 's/Libs://p' "$pcfile"`
-      fi
-      MSK_LIBS="$MSK_LIBS $projlibs"
+      # add projrequires to the front of the list of projects that have to be processed next
+      # at the same time, remove $proj from this list
+      projtoprocess=${projtoprocess/$proj/$projrequires}
 
       # read DATA from $pcfile, if this is the first .pc file we are processing (so assume that its the main one)
-      if test "x$projprocessed" = x ; then
+      if test "x$allproj" = x ; then
         MSK_DATA=`sed -n -e 's/datadir=//gp' "$pcfile"`
       fi
 
-      # read dependencies from $pcfile, filter it, and add to list of projects that need to be processed next
-      projrequires=`sed -n -e 's/Requires://gp' "$pcfile" | sed -e 's/<\?>\?=[ 	]*[^ 	]\+//g'`
-      nextprojtoprocess="$nextprojtoprocess $projrequires"
-
-      # remember that we have processed $proj
-      projprocessed="$projprocessed $proj"
+      allproj="$allproj $proj"
+      allpcfiles="$pcfile:$allpcfiles"
 
     else
       echo "$as_me:$LINENO: result: no, dependency $proj not available" >&5
 echo "${ECHO_T}no, dependency $proj not available" >&6
+      allproj=fail
       break 2
     fi
 
+    break
   done
 
-  projtoprocess="$nextprojtoprocess"
+  # remove spaces on begin of $projtoprocess
+  projtoprocess=`echo $projtoprocess | sed -e 's/^ *//'`
 
-  # if there are no more projects to search for, finish up
-  if test "x$projtoprocess" = x ; then
-    coin_has_msk=yes
-    echo "$as_me:$LINENO: result: yes, dependencies are$projprocessed" >&5
-echo "${ECHO_T}yes, dependencies are$projprocessed" >&6
+done
+
+if test "$allproj" != fail ; then
+
+  # now go through the list of .pc files and assemble compiler and linker flags
+  # important is here to obey the reverse order that has been setup before,
+  # since then libraries that are required by several others should be after these other libraries
+  pcfilesprocessed=""
+
+  save_IFS="$IFS"
+  IFS=":"
+  for pcfile in $allpcfiles ; do
+
+    # if $pcfile has been processed already, skip this round
+    if test "x$pcfilesprocessed" != x ; then
+      for pcfiledone in $pcfilesprocessed ; do
+        if test "$pcfiledone" = "$pcfile" ; then
+          continue 2
+        fi
+      done
+    fi
+
+    # reconstruct the directory where the .pc file is located
+    pcfiledir=`echo $pcfile | sed -e 's/\/[^\/]*$//'`
+
+    # read CFLAGS from $pcfile and add CYGPATH_W cludge into include flags
+    projcflags=`sed -n -e 's/Cflags://p' "$pcfile"`
+    projcflags=`echo "$projcflags" | sed -e 's/-I\([^ ]*\)/-I\`${CYGPATH_W} \1\`/g'`
+    MSK_CFLAGS="$projcflags $MSK_CFLAGS"
+
+    # read LIBS from $pcfile and replace -L${libdir} by absolute path to build directory in linker flags
+    # we assume that the build directory is $pcfiledir/src if this directory exists, otherwise we assume that it is $pcfiledir
+    projlibs=`sed -n -e 's/Libs://' -e 's/-L\${libdir}//p' "$pcfile"`
+    if test "x$projlibs" != x ; then
+      if test -d "${pcfiledir}/src" ; then
+        projlibs="-L`cd "${pcfiledir}/src"; pwd` $projlibs"
+      else
+        projlibs="-L`cd "$pcfiledir"; pwd` $projlibs"
+      fi
+    else
+      projlibs=`sed -n -e 's/Libs://p' "$pcfile"`
+    fi
+    MSK_LIBS="$projlibs $MSK_LIBS"
+
+    # remember that we have processed $pcfile
+    pcfilesprocessed="$pcfilesprocessed:$pcfile"
+
+  done
+  IFS="$save_IFS"
+
+  # finish up
+  coin_has_msk=yes
+  echo "$as_me:$LINENO: result: yes" >&5
+echo "${ECHO_T}yes" >&6
 
 cat >>confdefs.h <<\_ACEOF
 #define COIN_HAS_MSK 1
@@ -24368,33 +24704,33 @@ _ACEOF
 
 
 
-      CBCGENERIC_PCREQUIRES="osi-mosek $CBCGENERIC_PCREQUIRES"
-      CBCGENERIC_CFLAGS="$MSK_CFLAGS $CBCGENERIC_CFLAGS"
-      CBCGENERIC_LIBS="$MSK_LIBS $CBCGENERIC_LIBS"
+    CBCGENERIC_PCREQUIRES="osi-mosek $CBCGENERIC_PCREQUIRES"
+    CBCGENERIC_CFLAGS="$MSK_CFLAGS $CBCGENERIC_CFLAGS"
+    CBCGENERIC_LIBS="$MSK_LIBS $CBCGENERIC_LIBS"
 
 
-    if test 1 = 0 ; then  #change this test to enable a bit of debugging output
-      if test -n "$MSK_CFLAGS" ; then
-        { echo "$as_me:$LINENO: Msk CFLAGS are $MSK_CFLAGS" >&5
+  if test 1 = 0 ; then  #change this test to enable a bit of debugging output
+    if test -n "$MSK_CFLAGS" ; then
+      { echo "$as_me:$LINENO: Msk CFLAGS are $MSK_CFLAGS" >&5
 echo "$as_me: Msk CFLAGS are $MSK_CFLAGS" >&6;}
-      fi
-      if test -n "$MSK_LIBS" ; then
-        { echo "$as_me:$LINENO: Msk LIBS   are $MSK_LIBS" >&5
+    fi
+    if test -n "$MSK_LIBS" ; then
+      { echo "$as_me:$LINENO: Msk LIBS   are $MSK_LIBS" >&5
 echo "$as_me: Msk LIBS   are $MSK_LIBS" >&6;}
-      fi
-      if test -n "$MSK_DATA" ; then
-        { echo "$as_me:$LINENO: Msk DATA   is  $MSK_DATA" >&5
+    fi
+    if test -n "$MSK_DATA" ; then
+      { echo "$as_me:$LINENO: Msk DATA   is  $MSK_DATA" >&5
 echo "$as_me: Msk DATA   is  $MSK_DATA" >&6;}
-      fi
+    fi
 
-        { echo "$as_me:$LINENO: CbcGeneric CFLAGS are $CBCGENERIC_CFLAGS" >&5
+      { echo "$as_me:$LINENO: CbcGeneric CFLAGS are $CBCGENERIC_CFLAGS" >&5
 echo "$as_me: CbcGeneric CFLAGS are $CBCGENERIC_CFLAGS" >&6;}
-        { echo "$as_me:$LINENO: CbcGeneric LIBS   are $CBCGENERIC_LIBS" >&5
+      { echo "$as_me:$LINENO: CbcGeneric LIBS   are $CBCGENERIC_LIBS" >&5
 echo "$as_me: CbcGeneric LIBS   are $CBCGENERIC_LIBS" >&6;}
 
-    fi
   fi
-done
+
+fi
 
 
 
@@ -24600,22 +24936,15 @@ SPX_DATA=
 
 # initial list of dependencies is "osi-soplex", but we need to filter out version number specifications (= x, <= x, >= x)
 projtoprocess="osi-soplex"
-projprocessed=""
 
-while test $coin_has_spx = notGiven ; do
-  # setup list of projects that need to be processed in the next round
-  nextprojtoprocess=""
+# we first expand the list of projects to process by adding all dependencies just behind the project which depends on it
+# further, we collect the list of corresponding .pc files, but do this in reverse order, because we need this order afterwards
+# also, we setup the DATA variable
+allproj=""
+allpcfiles=""
+while test "x$projtoprocess" != x ; do
 
   for proj in $projtoprocess ; do
-    # if $proj has been processed already, skip this round
-    if test "x$projprocessed" != x ; then
-      for projdone in $projprocessed ; do
-        if test $projdone = $proj ; then
-	  continue 2
-	fi
-      done
-    fi
-
     # if $proj is available and configured, then a project-uninstalled.pc file should have been created, so search for it
     pcfile=""
     save_IFS="$IFS"
@@ -24624,59 +24953,94 @@ while test $coin_has_spx = notGiven ; do
       # the base directory configure should have setup coin_subdirs.txt in a way that it does not contain projects that should be skipped, so we do not need to test this here again
       if test -r "$dir/$proj-uninstalled.pc" ; then
         pcfile="$dir/$proj-uninstalled.pc"
-        pcfiledir="$dir"
         break
       fi
     done
     IFS="$save_IFS"
 
     if test "x$pcfile" != x ; then
-      # read CFLAGS from $pcfile and add CYGPATH_W cludge into include flags
-      projcflags=`sed -n -e 's/Cflags://p' "$pcfile"`
-      projcflags=`echo "$projcflags" | sed -e 's/-I\([^ ]*\)/-I\`${CYGPATH_W} \1\`/g'`
-      SPX_CFLAGS="$projcflags $SPX_CFLAGS"
+      # read dependencies from $pcfile and filter it
+      projrequires=`sed -n -e 's/Requires://gp' "$pcfile" | sed -e 's/<\{0,1\}>\{0,1\}=[ 	]\{0,\}[^ 	]\{1,\}//g'`
 
-      # read LIBS from $pcfile and replace -L${libdir} by absolute path to build directory in linker flags
-      # we assume that the build directory is $pcfiledir/src if this directory exists, otherwise we assume that it is $pcfiledir
-      projlibs=`sed -n -e 's/Libs://' -e 's/-L\${libdir}//p' "$pcfile"`
-      if test "x$projlibs" != x ; then
-        if test -d "${pcfiledir}/src" ; then
-          projlibs="-L`cd "${pcfiledir}/src"; pwd` $projlibs"
-        else
-          projlibs="-L`cd "$pcfiledir"; pwd` $projlibs"
-        fi
-      else
-        projlibs=`sed -n -e 's/Libs://p' "$pcfile"`
-      fi
-      SPX_LIBS="$SPX_LIBS $projlibs"
+      # add projrequires to the front of the list of projects that have to be processed next
+      # at the same time, remove $proj from this list
+      projtoprocess=${projtoprocess/$proj/$projrequires}
 
       # read DATA from $pcfile, if this is the first .pc file we are processing (so assume that its the main one)
-      if test "x$projprocessed" = x ; then
+      if test "x$allproj" = x ; then
         SPX_DATA=`sed -n -e 's/datadir=//gp' "$pcfile"`
       fi
 
-      # read dependencies from $pcfile, filter it, and add to list of projects that need to be processed next
-      projrequires=`sed -n -e 's/Requires://gp' "$pcfile" | sed -e 's/<\?>\?=[ 	]*[^ 	]\+//g'`
-      nextprojtoprocess="$nextprojtoprocess $projrequires"
-
-      # remember that we have processed $proj
-      projprocessed="$projprocessed $proj"
+      allproj="$allproj $proj"
+      allpcfiles="$pcfile:$allpcfiles"
 
     else
       echo "$as_me:$LINENO: result: no, dependency $proj not available" >&5
 echo "${ECHO_T}no, dependency $proj not available" >&6
+      allproj=fail
       break 2
     fi
 
+    break
   done
 
-  projtoprocess="$nextprojtoprocess"
+  # remove spaces on begin of $projtoprocess
+  projtoprocess=`echo $projtoprocess | sed -e 's/^ *//'`
 
-  # if there are no more projects to search for, finish up
-  if test "x$projtoprocess" = x ; then
-    coin_has_spx=yes
-    echo "$as_me:$LINENO: result: yes, dependencies are$projprocessed" >&5
-echo "${ECHO_T}yes, dependencies are$projprocessed" >&6
+done
+
+if test "$allproj" != fail ; then
+
+  # now go through the list of .pc files and assemble compiler and linker flags
+  # important is here to obey the reverse order that has been setup before,
+  # since then libraries that are required by several others should be after these other libraries
+  pcfilesprocessed=""
+
+  save_IFS="$IFS"
+  IFS=":"
+  for pcfile in $allpcfiles ; do
+
+    # if $pcfile has been processed already, skip this round
+    if test "x$pcfilesprocessed" != x ; then
+      for pcfiledone in $pcfilesprocessed ; do
+        if test "$pcfiledone" = "$pcfile" ; then
+          continue 2
+        fi
+      done
+    fi
+
+    # reconstruct the directory where the .pc file is located
+    pcfiledir=`echo $pcfile | sed -e 's/\/[^\/]*$//'`
+
+    # read CFLAGS from $pcfile and add CYGPATH_W cludge into include flags
+    projcflags=`sed -n -e 's/Cflags://p' "$pcfile"`
+    projcflags=`echo "$projcflags" | sed -e 's/-I\([^ ]*\)/-I\`${CYGPATH_W} \1\`/g'`
+    SPX_CFLAGS="$projcflags $SPX_CFLAGS"
+
+    # read LIBS from $pcfile and replace -L${libdir} by absolute path to build directory in linker flags
+    # we assume that the build directory is $pcfiledir/src if this directory exists, otherwise we assume that it is $pcfiledir
+    projlibs=`sed -n -e 's/Libs://' -e 's/-L\${libdir}//p' "$pcfile"`
+    if test "x$projlibs" != x ; then
+      if test -d "${pcfiledir}/src" ; then
+        projlibs="-L`cd "${pcfiledir}/src"; pwd` $projlibs"
+      else
+        projlibs="-L`cd "$pcfiledir"; pwd` $projlibs"
+      fi
+    else
+      projlibs=`sed -n -e 's/Libs://p' "$pcfile"`
+    fi
+    SPX_LIBS="$projlibs $SPX_LIBS"
+
+    # remember that we have processed $pcfile
+    pcfilesprocessed="$pcfilesprocessed:$pcfile"
+
+  done
+  IFS="$save_IFS"
+
+  # finish up
+  coin_has_spx=yes
+  echo "$as_me:$LINENO: result: yes" >&5
+echo "${ECHO_T}yes" >&6
 
 cat >>confdefs.h <<\_ACEOF
 #define COIN_HAS_SPX 1
@@ -24684,33 +25048,33 @@ _ACEOF
 
 
 
-      CBCGENERIC_PCREQUIRES="osi-soplex $CBCGENERIC_PCREQUIRES"
-      CBCGENERIC_CFLAGS="$SPX_CFLAGS $CBCGENERIC_CFLAGS"
-      CBCGENERIC_LIBS="$SPX_LIBS $CBCGENERIC_LIBS"
+    CBCGENERIC_PCREQUIRES="osi-soplex $CBCGENERIC_PCREQUIRES"
+    CBCGENERIC_CFLAGS="$SPX_CFLAGS $CBCGENERIC_CFLAGS"
+    CBCGENERIC_LIBS="$SPX_LIBS $CBCGENERIC_LIBS"
 
 
-    if test 1 = 0 ; then  #change this test to enable a bit of debugging output
-      if test -n "$SPX_CFLAGS" ; then
-        { echo "$as_me:$LINENO: Spx CFLAGS are $SPX_CFLAGS" >&5
+  if test 1 = 0 ; then  #change this test to enable a bit of debugging output
+    if test -n "$SPX_CFLAGS" ; then
+      { echo "$as_me:$LINENO: Spx CFLAGS are $SPX_CFLAGS" >&5
 echo "$as_me: Spx CFLAGS are $SPX_CFLAGS" >&6;}
-      fi
-      if test -n "$SPX_LIBS" ; then
-        { echo "$as_me:$LINENO: Spx LIBS   are $SPX_LIBS" >&5
+    fi
+    if test -n "$SPX_LIBS" ; then
+      { echo "$as_me:$LINENO: Spx LIBS   are $SPX_LIBS" >&5
 echo "$as_me: Spx LIBS   are $SPX_LIBS" >&6;}
-      fi
-      if test -n "$SPX_DATA" ; then
-        { echo "$as_me:$LINENO: Spx DATA   is  $SPX_DATA" >&5
+    fi
+    if test -n "$SPX_DATA" ; then
+      { echo "$as_me:$LINENO: Spx DATA   is  $SPX_DATA" >&5
 echo "$as_me: Spx DATA   is  $SPX_DATA" >&6;}
-      fi
+    fi
 
-        { echo "$as_me:$LINENO: CbcGeneric CFLAGS are $CBCGENERIC_CFLAGS" >&5
+      { echo "$as_me:$LINENO: CbcGeneric CFLAGS are $CBCGENERIC_CFLAGS" >&5
 echo "$as_me: CbcGeneric CFLAGS are $CBCGENERIC_CFLAGS" >&6;}
-        { echo "$as_me:$LINENO: CbcGeneric LIBS   are $CBCGENERIC_LIBS" >&5
+      { echo "$as_me:$LINENO: CbcGeneric LIBS   are $CBCGENERIC_LIBS" >&5
 echo "$as_me: CbcGeneric LIBS   are $CBCGENERIC_LIBS" >&6;}
 
-    fi
   fi
-done
+
+fi
 
 
 
@@ -24903,22 +25267,15 @@ XPR_DATA=
 
 # initial list of dependencies is "osi-xpress", but we need to filter out version number specifications (= x, <= x, >= x)
 projtoprocess="osi-xpress"
-projprocessed=""
 
-while test $coin_has_xpr = notGiven ; do
-  # setup list of projects that need to be processed in the next round
-  nextprojtoprocess=""
+# we first expand the list of projects to process by adding all dependencies just behind the project which depends on it
+# further, we collect the list of corresponding .pc files, but do this in reverse order, because we need this order afterwards
+# also, we setup the DATA variable
+allproj=""
+allpcfiles=""
+while test "x$projtoprocess" != x ; do
 
   for proj in $projtoprocess ; do
-    # if $proj has been processed already, skip this round
-    if test "x$projprocessed" != x ; then
-      for projdone in $projprocessed ; do
-        if test $projdone = $proj ; then
-	  continue 2
-	fi
-      done
-    fi
-
     # if $proj is available and configured, then a project-uninstalled.pc file should have been created, so search for it
     pcfile=""
     save_IFS="$IFS"
@@ -24927,59 +25284,94 @@ while test $coin_has_xpr = notGiven ; do
       # the base directory configure should have setup coin_subdirs.txt in a way that it does not contain projects that should be skipped, so we do not need to test this here again
       if test -r "$dir/$proj-uninstalled.pc" ; then
         pcfile="$dir/$proj-uninstalled.pc"
-        pcfiledir="$dir"
         break
       fi
     done
     IFS="$save_IFS"
 
     if test "x$pcfile" != x ; then
-      # read CFLAGS from $pcfile and add CYGPATH_W cludge into include flags
-      projcflags=`sed -n -e 's/Cflags://p' "$pcfile"`
-      projcflags=`echo "$projcflags" | sed -e 's/-I\([^ ]*\)/-I\`${CYGPATH_W} \1\`/g'`
-      XPR_CFLAGS="$projcflags $XPR_CFLAGS"
+      # read dependencies from $pcfile and filter it
+      projrequires=`sed -n -e 's/Requires://gp' "$pcfile" | sed -e 's/<\{0,1\}>\{0,1\}=[ 	]\{0,\}[^ 	]\{1,\}//g'`
 
-      # read LIBS from $pcfile and replace -L${libdir} by absolute path to build directory in linker flags
-      # we assume that the build directory is $pcfiledir/src if this directory exists, otherwise we assume that it is $pcfiledir
-      projlibs=`sed -n -e 's/Libs://' -e 's/-L\${libdir}//p' "$pcfile"`
-      if test "x$projlibs" != x ; then
-        if test -d "${pcfiledir}/src" ; then
-          projlibs="-L`cd "${pcfiledir}/src"; pwd` $projlibs"
-        else
-          projlibs="-L`cd "$pcfiledir"; pwd` $projlibs"
-        fi
-      else
-        projlibs=`sed -n -e 's/Libs://p' "$pcfile"`
-      fi
-      XPR_LIBS="$XPR_LIBS $projlibs"
+      # add projrequires to the front of the list of projects that have to be processed next
+      # at the same time, remove $proj from this list
+      projtoprocess=${projtoprocess/$proj/$projrequires}
 
       # read DATA from $pcfile, if this is the first .pc file we are processing (so assume that its the main one)
-      if test "x$projprocessed" = x ; then
+      if test "x$allproj" = x ; then
         XPR_DATA=`sed -n -e 's/datadir=//gp' "$pcfile"`
       fi
 
-      # read dependencies from $pcfile, filter it, and add to list of projects that need to be processed next
-      projrequires=`sed -n -e 's/Requires://gp' "$pcfile" | sed -e 's/<\?>\?=[ 	]*[^ 	]\+//g'`
-      nextprojtoprocess="$nextprojtoprocess $projrequires"
-
-      # remember that we have processed $proj
-      projprocessed="$projprocessed $proj"
+      allproj="$allproj $proj"
+      allpcfiles="$pcfile:$allpcfiles"
 
     else
       echo "$as_me:$LINENO: result: no, dependency $proj not available" >&5
 echo "${ECHO_T}no, dependency $proj not available" >&6
+      allproj=fail
       break 2
     fi
 
+    break
   done
 
-  projtoprocess="$nextprojtoprocess"
+  # remove spaces on begin of $projtoprocess
+  projtoprocess=`echo $projtoprocess | sed -e 's/^ *//'`
 
-  # if there are no more projects to search for, finish up
-  if test "x$projtoprocess" = x ; then
-    coin_has_xpr=yes
-    echo "$as_me:$LINENO: result: yes, dependencies are$projprocessed" >&5
-echo "${ECHO_T}yes, dependencies are$projprocessed" >&6
+done
+
+if test "$allproj" != fail ; then
+
+  # now go through the list of .pc files and assemble compiler and linker flags
+  # important is here to obey the reverse order that has been setup before,
+  # since then libraries that are required by several others should be after these other libraries
+  pcfilesprocessed=""
+
+  save_IFS="$IFS"
+  IFS=":"
+  for pcfile in $allpcfiles ; do
+
+    # if $pcfile has been processed already, skip this round
+    if test "x$pcfilesprocessed" != x ; then
+      for pcfiledone in $pcfilesprocessed ; do
+        if test "$pcfiledone" = "$pcfile" ; then
+          continue 2
+        fi
+      done
+    fi
+
+    # reconstruct the directory where the .pc file is located
+    pcfiledir=`echo $pcfile | sed -e 's/\/[^\/]*$//'`
+
+    # read CFLAGS from $pcfile and add CYGPATH_W cludge into include flags
+    projcflags=`sed -n -e 's/Cflags://p' "$pcfile"`
+    projcflags=`echo "$projcflags" | sed -e 's/-I\([^ ]*\)/-I\`${CYGPATH_W} \1\`/g'`
+    XPR_CFLAGS="$projcflags $XPR_CFLAGS"
+
+    # read LIBS from $pcfile and replace -L${libdir} by absolute path to build directory in linker flags
+    # we assume that the build directory is $pcfiledir/src if this directory exists, otherwise we assume that it is $pcfiledir
+    projlibs=`sed -n -e 's/Libs://' -e 's/-L\${libdir}//p' "$pcfile"`
+    if test "x$projlibs" != x ; then
+      if test -d "${pcfiledir}/src" ; then
+        projlibs="-L`cd "${pcfiledir}/src"; pwd` $projlibs"
+      else
+        projlibs="-L`cd "$pcfiledir"; pwd` $projlibs"
+      fi
+    else
+      projlibs=`sed -n -e 's/Libs://p' "$pcfile"`
+    fi
+    XPR_LIBS="$projlibs $XPR_LIBS"
+
+    # remember that we have processed $pcfile
+    pcfilesprocessed="$pcfilesprocessed:$pcfile"
+
+  done
+  IFS="$save_IFS"
+
+  # finish up
+  coin_has_xpr=yes
+  echo "$as_me:$LINENO: result: yes" >&5
+echo "${ECHO_T}yes" >&6
 
 cat >>confdefs.h <<\_ACEOF
 #define COIN_HAS_XPR 1
@@ -24988,23 +25380,23 @@ _ACEOF
 
 
 
-    if test 1 = 0 ; then  #change this test to enable a bit of debugging output
-      if test -n "$XPR_CFLAGS" ; then
-        { echo "$as_me:$LINENO: Xpr CFLAGS are $XPR_CFLAGS" >&5
+  if test 1 = 0 ; then  #change this test to enable a bit of debugging output
+    if test -n "$XPR_CFLAGS" ; then
+      { echo "$as_me:$LINENO: Xpr CFLAGS are $XPR_CFLAGS" >&5
 echo "$as_me: Xpr CFLAGS are $XPR_CFLAGS" >&6;}
-      fi
-      if test -n "$XPR_LIBS" ; then
-        { echo "$as_me:$LINENO: Xpr LIBS   are $XPR_LIBS" >&5
-echo "$as_me: Xpr LIBS   are $XPR_LIBS" >&6;}
-      fi
-      if test -n "$XPR_DATA" ; then
-        { echo "$as_me:$LINENO: Xpr DATA   is  $XPR_DATA" >&5
-echo "$as_me: Xpr DATA   is  $XPR_DATA" >&6;}
-      fi
-
     fi
+    if test -n "$XPR_LIBS" ; then
+      { echo "$as_me:$LINENO: Xpr LIBS   are $XPR_LIBS" >&5
+echo "$as_me: Xpr LIBS   are $XPR_LIBS" >&6;}
+    fi
+    if test -n "$XPR_DATA" ; then
+      { echo "$as_me:$LINENO: Xpr DATA   is  $XPR_DATA" >&5
+echo "$as_me: Xpr DATA   is  $XPR_DATA" >&6;}
+    fi
+
   fi
-done
+
+fi
 
 
 
@@ -25198,22 +25590,15 @@ ASL_DATA=
 
 # initial list of dependencies is "coinasl", but we need to filter out version number specifications (= x, <= x, >= x)
 projtoprocess="coinasl"
-projprocessed=""
 
-while test $coin_has_asl = notGiven ; do
-  # setup list of projects that need to be processed in the next round
-  nextprojtoprocess=""
+# we first expand the list of projects to process by adding all dependencies just behind the project which depends on it
+# further, we collect the list of corresponding .pc files, but do this in reverse order, because we need this order afterwards
+# also, we setup the DATA variable
+allproj=""
+allpcfiles=""
+while test "x$projtoprocess" != x ; do
 
   for proj in $projtoprocess ; do
-    # if $proj has been processed already, skip this round
-    if test "x$projprocessed" != x ; then
-      for projdone in $projprocessed ; do
-        if test $projdone = $proj ; then
-	  continue 2
-	fi
-      done
-    fi
-
     # if $proj is available and configured, then a project-uninstalled.pc file should have been created, so search for it
     pcfile=""
     save_IFS="$IFS"
@@ -25222,59 +25607,94 @@ while test $coin_has_asl = notGiven ; do
       # the base directory configure should have setup coin_subdirs.txt in a way that it does not contain projects that should be skipped, so we do not need to test this here again
       if test -r "$dir/$proj-uninstalled.pc" ; then
         pcfile="$dir/$proj-uninstalled.pc"
-        pcfiledir="$dir"
         break
       fi
     done
     IFS="$save_IFS"
 
     if test "x$pcfile" != x ; then
-      # read CFLAGS from $pcfile and add CYGPATH_W cludge into include flags
-      projcflags=`sed -n -e 's/Cflags://p' "$pcfile"`
-      projcflags=`echo "$projcflags" | sed -e 's/-I\([^ ]*\)/-I\`${CYGPATH_W} \1\`/g'`
-      ASL_CFLAGS="$projcflags $ASL_CFLAGS"
+      # read dependencies from $pcfile and filter it
+      projrequires=`sed -n -e 's/Requires://gp' "$pcfile" | sed -e 's/<\{0,1\}>\{0,1\}=[ 	]\{0,\}[^ 	]\{1,\}//g'`
 
-      # read LIBS from $pcfile and replace -L${libdir} by absolute path to build directory in linker flags
-      # we assume that the build directory is $pcfiledir/src if this directory exists, otherwise we assume that it is $pcfiledir
-      projlibs=`sed -n -e 's/Libs://' -e 's/-L\${libdir}//p' "$pcfile"`
-      if test "x$projlibs" != x ; then
-        if test -d "${pcfiledir}/src" ; then
-          projlibs="-L`cd "${pcfiledir}/src"; pwd` $projlibs"
-        else
-          projlibs="-L`cd "$pcfiledir"; pwd` $projlibs"
-        fi
-      else
-        projlibs=`sed -n -e 's/Libs://p' "$pcfile"`
-      fi
-      ASL_LIBS="$ASL_LIBS $projlibs"
+      # add projrequires to the front of the list of projects that have to be processed next
+      # at the same time, remove $proj from this list
+      projtoprocess=${projtoprocess/$proj/$projrequires}
 
       # read DATA from $pcfile, if this is the first .pc file we are processing (so assume that its the main one)
-      if test "x$projprocessed" = x ; then
+      if test "x$allproj" = x ; then
         ASL_DATA=`sed -n -e 's/datadir=//gp' "$pcfile"`
       fi
 
-      # read dependencies from $pcfile, filter it, and add to list of projects that need to be processed next
-      projrequires=`sed -n -e 's/Requires://gp' "$pcfile" | sed -e 's/<\?>\?=[ 	]*[^ 	]\+//g'`
-      nextprojtoprocess="$nextprojtoprocess $projrequires"
-
-      # remember that we have processed $proj
-      projprocessed="$projprocessed $proj"
+      allproj="$allproj $proj"
+      allpcfiles="$pcfile:$allpcfiles"
 
     else
       echo "$as_me:$LINENO: result: no, dependency $proj not available" >&5
 echo "${ECHO_T}no, dependency $proj not available" >&6
+      allproj=fail
       break 2
     fi
 
+    break
   done
 
-  projtoprocess="$nextprojtoprocess"
+  # remove spaces on begin of $projtoprocess
+  projtoprocess=`echo $projtoprocess | sed -e 's/^ *//'`
 
-  # if there are no more projects to search for, finish up
-  if test "x$projtoprocess" = x ; then
-    coin_has_asl=yes
-    echo "$as_me:$LINENO: result: yes, dependencies are$projprocessed" >&5
-echo "${ECHO_T}yes, dependencies are$projprocessed" >&6
+done
+
+if test "$allproj" != fail ; then
+
+  # now go through the list of .pc files and assemble compiler and linker flags
+  # important is here to obey the reverse order that has been setup before,
+  # since then libraries that are required by several others should be after these other libraries
+  pcfilesprocessed=""
+
+  save_IFS="$IFS"
+  IFS=":"
+  for pcfile in $allpcfiles ; do
+
+    # if $pcfile has been processed already, skip this round
+    if test "x$pcfilesprocessed" != x ; then
+      for pcfiledone in $pcfilesprocessed ; do
+        if test "$pcfiledone" = "$pcfile" ; then
+          continue 2
+        fi
+      done
+    fi
+
+    # reconstruct the directory where the .pc file is located
+    pcfiledir=`echo $pcfile | sed -e 's/\/[^\/]*$//'`
+
+    # read CFLAGS from $pcfile and add CYGPATH_W cludge into include flags
+    projcflags=`sed -n -e 's/Cflags://p' "$pcfile"`
+    projcflags=`echo "$projcflags" | sed -e 's/-I\([^ ]*\)/-I\`${CYGPATH_W} \1\`/g'`
+    ASL_CFLAGS="$projcflags $ASL_CFLAGS"
+
+    # read LIBS from $pcfile and replace -L${libdir} by absolute path to build directory in linker flags
+    # we assume that the build directory is $pcfiledir/src if this directory exists, otherwise we assume that it is $pcfiledir
+    projlibs=`sed -n -e 's/Libs://' -e 's/-L\${libdir}//p' "$pcfile"`
+    if test "x$projlibs" != x ; then
+      if test -d "${pcfiledir}/src" ; then
+        projlibs="-L`cd "${pcfiledir}/src"; pwd` $projlibs"
+      else
+        projlibs="-L`cd "$pcfiledir"; pwd` $projlibs"
+      fi
+    else
+      projlibs=`sed -n -e 's/Libs://p' "$pcfile"`
+    fi
+    ASL_LIBS="$projlibs $ASL_LIBS"
+
+    # remember that we have processed $pcfile
+    pcfilesprocessed="$pcfilesprocessed:$pcfile"
+
+  done
+  IFS="$save_IFS"
+
+  # finish up
+  coin_has_asl=yes
+  echo "$as_me:$LINENO: result: yes" >&5
+echo "${ECHO_T}yes" >&6
 
 cat >>confdefs.h <<\_ACEOF
 #define COIN_HAS_ASL 1
@@ -25283,23 +25703,23 @@ _ACEOF
 
 
 
-    if test 1 = 0 ; then  #change this test to enable a bit of debugging output
-      if test -n "$ASL_CFLAGS" ; then
-        { echo "$as_me:$LINENO: ASL CFLAGS are $ASL_CFLAGS" >&5
+  if test 1 = 0 ; then  #change this test to enable a bit of debugging output
+    if test -n "$ASL_CFLAGS" ; then
+      { echo "$as_me:$LINENO: ASL CFLAGS are $ASL_CFLAGS" >&5
 echo "$as_me: ASL CFLAGS are $ASL_CFLAGS" >&6;}
-      fi
-      if test -n "$ASL_LIBS" ; then
-        { echo "$as_me:$LINENO: ASL LIBS   are $ASL_LIBS" >&5
-echo "$as_me: ASL LIBS   are $ASL_LIBS" >&6;}
-      fi
-      if test -n "$ASL_DATA" ; then
-        { echo "$as_me:$LINENO: ASL DATA   is  $ASL_DATA" >&5
-echo "$as_me: ASL DATA   is  $ASL_DATA" >&6;}
-      fi
-
     fi
+    if test -n "$ASL_LIBS" ; then
+      { echo "$as_me:$LINENO: ASL LIBS   are $ASL_LIBS" >&5
+echo "$as_me: ASL LIBS   are $ASL_LIBS" >&6;}
+    fi
+    if test -n "$ASL_DATA" ; then
+      { echo "$as_me:$LINENO: ASL DATA   is  $ASL_DATA" >&5
+echo "$as_me: ASL DATA   is  $ASL_DATA" >&6;}
+    fi
+
   fi
-done
+
+fi
 
 
 

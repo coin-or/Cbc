@@ -60,6 +60,12 @@ Cbc/ltmain.sh -text
 Cbc/missing -text
 Cbc/osi-cbc-uninstalled.pc.in -text
 Cbc/osi-cbc.pc.in -text
+Cbc/scripts/get.miplib2010 -text
+Cbc/scripts/parse.awk -text
+Cbc/scripts/parse_cbc.awk -text
+Cbc/scripts/parse_cbc_sol.awk -text
+Cbc/scripts/run.sh -text
+Cbc/scripts/run_cbc.sh -text
 Cbc/src/CbcBranchAllDifferent.cpp -text
 Cbc/src/CbcBranchAllDifferent.hpp -text
 Cbc/src/CbcBranchDecision.cpp -text

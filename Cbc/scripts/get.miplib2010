@@ -1,0 +1,13 @@
+#!/bin/bash
+
+for file in `cat miplib2010-candidates.test` 
+do 
+  if test -f $file 
+  then 
+    echo $file exists
+  else 
+    cd miplib2010-candidates/
+    wget http://miplib.zib.de/miplib2010/$file
+    cd .. 
+  fi 
+done

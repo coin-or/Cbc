@@ -1620,8 +1620,21 @@ int CbcMain1 (int argc, const char *argv[],
         }
         std::string field;
         if (!noPrinting_) {
-            sprintf(generalPrint, "Cbc version %s, build %s",
-                    CBC_VERSION, __DATE__);
+	   sprintf(generalPrint,
+		   "Welcome to the CBC MILP Solver \n");
+	    if (strcmp(CBC_VERSION, "trunk")){
+	       sprintf(generalPrint + strlen(generalPrint),
+		       "Version: %s \n", CBC_VERSION);
+	    }else{
+	       sprintf(generalPrint + strlen(generalPrint),
+		       "Version: Trunk (unstable) \n");
+	    }
+	    sprintf(generalPrint + strlen(generalPrint),
+		    "Build Date: %s \n", __DATE__);
+#ifdef CBC_SVN_REV
+	    sprintf(generalPrint + strlen(generalPrint),
+		    "Revision Number: %d \n", CBC_SVN_REV);
+#endif
             generalMessageHandler->message(CLP_GENERAL, generalMessages)
             << generalPrint
             << CoinMessageEol;
@@ -2643,7 +2656,25 @@ int CbcMain1 (int argc, const char *argv[],
                                 }
                                 model_.setProblemStatus(iStatus);
                                 model_.setSecondaryStatus(iStatus2);
-                                //assert (lpSolver==clpSolver->getModelPtr());
+				if ((iStatus == 2 || iStatus2 > 0) &&
+				    !noPrinting_) {
+				   std::string statusName[] = {"", "Stopped on ", "Run abandoned", "", "", "User ctrl-c"};
+				   std::string minor[] = {"Optimal solution found", "Linear relaxation infeasible", "Optimal solution found (within gap tolerance)", "node limit", "time limit", "user ctrl-c", "solution limit", "Linear relaxation unbounded", "Problem proven infeasible"};
+				   sprintf(generalPrint, "\nResult - %s%s\n\n", 
+					   statusName[iStatus].c_str(), 
+					   minor[iStatus2].c_str());
+				   sprintf(generalPrint + strlen(generalPrint),
+					   "Enumerated nodes: 0\n");
+				   sprintf(generalPrint + strlen(generalPrint), 
+					   "Total iterations: 0\n"); 
+				   sprintf(generalPrint + strlen(generalPrint),
+					   "Time (seconds):   %.2f\n", 
+					   CoinCpuTime() - time0);
+				   generalMessageHandler->message(CLP_GENERAL, generalMessages)
+				      << generalPrint
+				      << CoinMessageEol;
+				}
+				//assert (lpSolver==clpSolver->getModelPtr());
                                 assert (clpSolver == model_.solver());
                                 clpSolver->setWarmStart(NULL);
                                 // and in babModel if exists
@@ -5992,10 +6023,8 @@ int CbcMain1 (int argc, const char *argv[],
                                 }
 #endif
                                 delete [] bestSolution;
-                                std::string statusName[] = {"Finished", "Stopped on ", "Difficulties",
-                                                            "", "", "User ctrl-c"
-                                                           };
-                                std::string minor[] = {"", "", "gap", "nodes", "time", "", "solutions", "user ctrl-c", "proven-infeasible"};
+				std::string statusName[] = {"", "Stopped on ", "Run abandoned", "", "", "User ctrl-c"};
+				std::string minor[] = {"Optimal solution found", "Linear relaxation infeasible", "Optimal solution found (within gap tolerance)", "node limit", "time limit", "user ctrl-c", "solution limit", "Linear relaxation unbounded", "Problem proven infeasible"};
                                 int iStat = babModel_->status();
                                 int iStat2 = babModel_->secondaryStatus();
                                 if (!iStat && !iStat2 && !bestSolution)
@@ -6010,13 +6039,38 @@ int CbcMain1 (int argc, const char *argv[],
                                 statistics_iterations = babModel_->getIterationCount();;
                                 statistics_result = statusName[iStat];;
                                 if (!noPrinting_) {
-                                    sprintf(generalPrint, "Result - %s%s objective %.16g after %d nodes and %d iterations - took %.2f seconds (total time %.2f)",
-                                            statusName[iStat].c_str(), minor[iStat2].c_str(),
-                                            babModel_->getObjValue(), babModel_->getNodeCount(),
-                                            babModel_->getIterationCount(), time2 - time1, time2 - time0);
-                                    generalMessageHandler->message(CLP_GENERAL, generalMessages)
-                                    << generalPrint
-                                    << CoinMessageEol;
+				    sprintf(generalPrint, "\nResult - %s%s\n", 
+					    statusName[iStat].c_str(), 
+					    minor[iStat2].c_str());
+				    generalMessageHandler->message(CLP_GENERAL, generalMessages)
+				       << generalPrint
+				       << CoinMessageEol;
+				    sprintf(generalPrint, 
+					    "Objective value:  %.3f\n", 
+					    babModel_->getObjValue());
+				    if (iStat2 >= 2 && iStat2 <=6){
+				       sprintf(generalPrint + strlen(generalPrint), 
+					       "Lower bound:      %.3f\n", 
+					       babModel_->getBestPossibleObjValue());
+				       sprintf(generalPrint + strlen(generalPrint), 
+					       "Gap:              %.2f\n", 
+					       (babModel_->getObjValue()-babModel_->getBestPossibleObjValue())/babModel_->getBestPossibleObjValue());
+				    }
+				    sprintf(generalPrint + strlen(generalPrint), 
+					    "Enumerated nodes: %d\n", 
+					    babModel_->getNodeCount());
+				    sprintf(generalPrint + strlen(generalPrint), 
+					    "Total iterations: %d\n", 
+					    babModel_->getIterationCount());
+				    sprintf(generalPrint + strlen(generalPrint), 
+					    "Time (seconds):   %.2f\n",
+					    time2 - time1);
+				    sprintf(generalPrint + strlen(generalPrint),
+					    "Total time:       %.2f\n", 
+					    time2 - time0);
+				    generalMessageHandler->message(CLP_GENERAL, generalMessages)
+				       << generalPrint
+				       << CoinMessageEol;
                                 }
                                 int returnCode = callBack(babModel_, 5);
                                 if (returnCode) {
@@ -7493,10 +7547,16 @@ clp watson.mps -\nscaling off\nprimalsimplex"
                                     lpSolver->computeObjectiveValue(false);
                                     double objValue = lpSolver->getObjValue() * lpSolver->getObjSense();
                                     int iStat = lpSolver->status();
-                                    if (integerStatus >= 0)
+				    int iStat2 = -1;
+                                    if (integerStatus >= 0){
                                         iStat = integerStatus;
+					iStat2 = babModel_->secondaryStatus();
+				    }
                                     if (iStat == 0) {
                                         fprintf(fp, "Optimal" );
+					if (iStat2 == 2){
+					   fprintf(fp, " (within gap tolerance)" );
+					}
                                     } else if (iStat == 1) {
                                         // infeasible
                                         fprintf(fp, "Infeasible" );
@@ -7504,19 +7564,24 @@ clp watson.mps -\nscaling off\nprimalsimplex"
                                         // unbounded
                                         fprintf(fp, "Unbounded" );
                                     } else if (iStat >= 3 && iStat <= 5) {
-                                        if (iStat == 3)
-                                            fprintf(fp, "Stopped on iterations or time" );
-                                        else if (iStat == 4)
-                                            fprintf(fp, "Stopped on difficulties" );
-                                        else
-                                            fprintf(fp, "Stopped on ctrl-c" );
+				        if (iStat == 3) {
+					    if (iStat2 == 4){
+					        fprintf(fp, "Stopped on time" );
+					    }else{
+					        fprintf(fp, "Stopped on iterations" );
+					    }
+					} else if (iStat == 4){
+					    fprintf(fp, "Stopped on difficulties" );
+					} else {
+					    fprintf(fp, "Stopped on ctrl-c" );
+					}
                                         if (babModel_ && !babModel_->bestSolution())
                                             fprintf(fp, " (no integer solution - continuous used)");
                                     } else if (iStat == 6) {
-                                        // bab infeasible
-                                        fprintf(fp, "Integer infeasible" );
+				         // bab infeasible
+				         fprintf(fp, "Integer infeasible" );
                                     } else {
-                                        fprintf(fp, "Status unknown" );
+				         fprintf(fp, "Status unknown" );
                                     }
                                     fprintf(fp, " - objective value %15.8g\n", objValue);
                                 }
@@ -7905,10 +7970,10 @@ clp watson.mps -\nscaling off\nprimalsimplex"
 #endif
     babModel_ = NULL;
     model_.solver()->setWarmStart(NULL);
-    sprintf(generalPrint, "Total time %.2f", CoinCpuTime() - time0);
-    generalMessageHandler->message(CLP_GENERAL, generalMessages)
-    << generalPrint
-    << CoinMessageEol;
+    //sprintf(generalPrint, "Total time %.2f", CoinCpuTime() - time0);
+    //generalMessageHandler->message(CLP_GENERAL, generalMessages)
+    //<< generalPrint
+    //<< CoinMessageEol;
     return 0;
 }
 

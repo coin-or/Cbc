@@ -472,7 +472,7 @@ ac_includes_default="\
 # include <unistd.h>
 #endif"
 
-ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS build build_cpu build_vendor build_os ADDLIBS PCADDLIBS FADDLIBS ALWAYS_FALSE_TRUE ALWAYS_FALSE_FALSE have_svnversion CBC_SVN_REV COIN_CC_IS_CL_TRUE COIN_CC_IS_CL_FALSE CDEFS ADD_CFLAGS DBG_CFLAGS OPT_CFLAGS sol_cc_compiler CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT MPICC CXXDEFS ADD_CXXFLAGS DBG_CXXFLAGS OPT_CXXFLAGS CXX CXXFLAGS ac_ct_CXX COIN_CXX_IS_CL_TRUE COIN_CXX_IS_CL_FALSE MPICXX EGREP INSTALL_PROGRAM INSTALL_SCRIPT INSTALL_DATA CYGPATH_W PACKAGE VERSION ACLOCAL AUTOCONF AUTOMAKE AUTOHEADER MAKEINFO install_sh STRIP ac_ct_STRIP INSTALL_STRIP_PROGRAM mkdir_p AWK SET_MAKE am__leading_dot AMTAR am__tar am__untar DEPDIR am__include am__quote AMDEP_TRUE AMDEP_FALSE AMDEPBACKSLASH CCDEPMODE am__fastdepCC_TRUE am__fastdepCC_FALSE CXXDEPMODE am__fastdepCXX_TRUE am__fastdepCXX_FALSE MAINTAINER_MODE_TRUE MAINTAINER_MODE_FALSE MAINT LIBTOOLM4 have_autoconf have_automake have_svn BUILDTOOLSDIR AUX_DIR abs_source_dir abs_lib_dir abs_include_dir abs_bin_dir HAVE_EXTERNALS_TRUE HAVE_EXTERNALS_FALSE host host_cpu host_vendor host_os LN_S ECHO AR ac_ct_AR RANLIB ac_ct_RANLIB CPP CXXCPP F77 FFLAGS ac_ct_F77 LIBTOOL ac_c_preproc_warn_flag ac_cxx_preproc_warn_flag RPATH_FLAGS LT_LDFLAGS PKG_CONFIG ac_pt_PKG_CONFIG COIN_HAS_PKGCONFIG_TRUE COIN_HAS_PKGCONFIG_FALSE COIN_PKG_CONFIG_PATH COIN_PKG_CONFIG_PATH_UNINSTALLED COINDEPEND_LIBS COINDEPEND_CFLAGS COINDEPEND_DATA CBCLIB_CFLAGS CBCLIB_LIBS CBCLIB_PCLIBS CBCLIB_PCREQUIRES CBCGENERIC_CFLAGS CBCGENERIC_LIBS CBCGENERIC_PCLIBS CBCGENERIC_PCREQUIRES CBCLIB_CFLAGS_INSTALLED CBCLIB_LIBS_INSTALLED CBCGENERIC_CFLAGS_INSTALLED CBCGENERIC_LIBS_INSTALLED COINDEPEND_DATA_INSTALLED COIN_HAS_COINDEPEND_TRUE COIN_HAS_COINDEPEND_FALSE CLP_LIBS CLP_CFLAGS CLP_DATA CLP_DATA_INSTALLED COIN_HAS_CLP_TRUE COIN_HAS_CLP_FALSE OSITESTS_LIBS OSITESTS_CFLAGS OSITESTS_DATA OSITESTS_DATA_INSTALLED COIN_HAS_OSITESTS_TRUE COIN_HAS_OSITESTS_FALSE SAMPLE_LIBS SAMPLE_CFLAGS SAMPLE_DATA SAMPLE_DATA_INSTALLED COIN_HAS_SAMPLE_TRUE COIN_HAS_SAMPLE_FALSE NETLIB_LIBS NETLIB_CFLAGS NETLIB_DATA NETLIB_DATA_INSTALLED COIN_HAS_NETLIB_TRUE COIN_HAS_NETLIB_FALSE MIPLIB3_LIBS MIPLIB3_CFLAGS MIPLIB3_DATA MIPLIB3_DATA_INSTALLED COIN_HAS_MIPLIB3_TRUE COIN_HAS_MIPLIB3_FALSE DYLP_LIBS DYLP_CFLAGS DYLP_DATA DYLP_DATA_INSTALLED COIN_HAS_DYLP_TRUE COIN_HAS_DYLP_FALSE VOL_LIBS VOL_CFLAGS VOL_DATA VOL_DATA_INSTALLED COIN_HAS_VOL_TRUE COIN_HAS_VOL_FALSE CPX_LIBS CPX_CFLAGS CPX_DATA CPX_DATA_INSTALLED COIN_HAS_CPX_TRUE COIN_HAS_CPX_FALSE GLPK_LIBS GLPK_CFLAGS GLPK_DATA GLPK_DATA_INSTALLED COIN_HAS_GLPK_TRUE COIN_HAS_GLPK_FALSE GRB_LIBS GRB_CFLAGS GRB_DATA GRB_DATA_INSTALLED COIN_HAS_GRB_TRUE COIN_HAS_GRB_FALSE MSK_LIBS MSK_CFLAGS MSK_DATA MSK_DATA_INSTALLED COIN_HAS_MSK_TRUE COIN_HAS_MSK_FALSE SPX_LIBS SPX_CFLAGS SPX_DATA SPX_DATA_INSTALLED COIN_HAS_SPX_TRUE COIN_HAS_SPX_FALSE XPR_LIBS XPR_CFLAGS XPR_DATA XPR_DATA_INSTALLED COIN_HAS_XPR_TRUE COIN_HAS_XPR_FALSE ASL_LIBS ASL_CFLAGS ASL_DATA ASL_DATA_INSTALLED COIN_HAS_ASL_TRUE COIN_HAS_ASL_FALSE CBC_BUILD_CBC_GENERIC_TRUE CBC_BUILD_CBC_GENERIC_FALSE OSICBC_DFLT_SOLVER_CLP_TRUE OSICBC_DFLT_SOLVER_CLP_FALSE OSICBC_DFLT_SOLVER_CPX_TRUE OSICBC_DFLT_SOLVER_CPX_FALSE OSICBC_DFLT_SOLVER_DYLP_TRUE OSICBC_DFLT_SOLVER_DYLP_FALSE OSICBC_DFLT_SOLVER_GLPK_TRUE OSICBC_DFLT_SOLVER_GLPK_FALSE OSICBC_DFLT_SOLVER_GRB_TRUE OSICBC_DFLT_SOLVER_GRB_FALSE OSICBC_DFLT_SOLVER_MSK_TRUE OSICBC_DFLT_SOLVER_MSK_FALSE OSICBC_DFLT_SOLVER_SPX_TRUE OSICBC_DFLT_SOLVER_SPX_FALSE OSICBC_DFLT_SOLVER_SYM_TRUE OSICBC_DFLT_SOLVER_SYM_FALSE OSICBC_DFLT_SOLVER_VOL_TRUE OSICBC_DFLT_SOLVER_VOL_FALSE OSICBC_DFLT_SOLVER_XPR_TRUE OSICBC_DFLT_SOLVER_XPR_FALSE coin_have_doxygen coin_doxy_usedot coin_doxy_tagname coin_doxy_logname coin_doxy_tagfiles coin_doxy_excludes LIBEXT VPATH_DISTCLEANFILES ABSBUILDDIR LIBOBJS LTLIBOBJS'
+ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS build build_cpu build_vendor build_os ADDLIBS PCADDLIBS FADDLIBS ALWAYS_FALSE_TRUE ALWAYS_FALSE_FALSE have_svnversion CBC_SVN_REV COIN_CC_IS_CL_TRUE COIN_CC_IS_CL_FALSE CDEFS ADD_CFLAGS DBG_CFLAGS OPT_CFLAGS sol_cc_compiler CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT MPICC CXXDEFS ADD_CXXFLAGS DBG_CXXFLAGS OPT_CXXFLAGS CXX CXXFLAGS ac_ct_CXX COIN_CXX_IS_CL_TRUE COIN_CXX_IS_CL_FALSE MPICXX EGREP INSTALL_PROGRAM INSTALL_SCRIPT INSTALL_DATA CYGPATH_W PACKAGE VERSION ACLOCAL AUTOCONF AUTOMAKE AUTOHEADER MAKEINFO install_sh STRIP ac_ct_STRIP INSTALL_STRIP_PROGRAM mkdir_p AWK SET_MAKE am__leading_dot AMTAR am__tar am__untar DEPDIR am__include am__quote AMDEP_TRUE AMDEP_FALSE AMDEPBACKSLASH CCDEPMODE am__fastdepCC_TRUE am__fastdepCC_FALSE CXXDEPMODE am__fastdepCXX_TRUE am__fastdepCXX_FALSE MAINTAINER_MODE_TRUE MAINTAINER_MODE_FALSE MAINT LIBTOOLM4 have_autoconf have_automake have_svn BUILDTOOLSDIR AUX_DIR abs_source_dir abs_lib_dir abs_include_dir abs_bin_dir HAVE_EXTERNALS_TRUE HAVE_EXTERNALS_FALSE host host_cpu host_vendor host_os LN_S ECHO AR ac_ct_AR RANLIB ac_ct_RANLIB CPP CXXCPP F77 FFLAGS ac_ct_F77 LIBTOOL ac_c_preproc_warn_flag ac_cxx_preproc_warn_flag RPATH_FLAGS LT_LDFLAGS PKG_CONFIG ac_pt_PKG_CONFIG COIN_HAS_PKGCONFIG_TRUE COIN_HAS_PKGCONFIG_FALSE COIN_PKG_CONFIG_PATH COIN_PKG_CONFIG_PATH_UNINSTALLED COINDEPEND_LIBS COINDEPEND_CFLAGS COINDEPEND_DATA COINDEPEND_DEPENDENCIES COINDEPEND_LIBS_INSTALLED COINDEPEND_CFLAGS_INSTALLED COINDEPEND_DATA_INSTALLED CBCLIB_CFLAGS CBCLIB_LIBS CBCLIB_PCLIBS CBCLIB_PCREQUIRES CBCLIB_DEPENDENCIES CBCLIB_CFLAGS_INSTALLED CBCLIB_LIBS_INSTALLED CBCGENERIC_CFLAGS CBCGENERIC_LIBS CBCGENERIC_PCLIBS CBCGENERIC_PCREQUIRES CBCGENERIC_DEPENDENCIES CBCGENERIC_CFLAGS_INSTALLED CBCGENERIC_LIBS_INSTALLED COIN_HAS_COINDEPEND_TRUE COIN_HAS_COINDEPEND_FALSE CLP_LIBS CLP_CFLAGS CLP_DATA CLP_DEPENDENCIES CLP_LIBS_INSTALLED CLP_CFLAGS_INSTALLED CLP_DATA_INSTALLED COIN_HAS_CLP_TRUE COIN_HAS_CLP_FALSE OSITESTS_LIBS OSITESTS_CFLAGS OSITESTS_DATA OSITESTS_DEPENDENCIES OSITESTS_LIBS_INSTALLED OSITESTS_CFLAGS_INSTALLED OSITESTS_DATA_INSTALLED COIN_HAS_OSITESTS_TRUE COIN_HAS_OSITESTS_FALSE SAMPLE_LIBS SAMPLE_CFLAGS SAMPLE_DATA SAMPLE_DEPENDENCIES SAMPLE_LIBS_INSTALLED SAMPLE_CFLAGS_INSTALLED SAMPLE_DATA_INSTALLED COIN_HAS_SAMPLE_TRUE COIN_HAS_SAMPLE_FALSE NETLIB_LIBS NETLIB_CFLAGS NETLIB_DATA NETLIB_DEPENDENCIES NETLIB_LIBS_INSTALLED NETLIB_CFLAGS_INSTALLED NETLIB_DATA_INSTALLED COIN_HAS_NETLIB_TRUE COIN_HAS_NETLIB_FALSE MIPLIB3_LIBS MIPLIB3_CFLAGS MIPLIB3_DATA MIPLIB3_DEPENDENCIES MIPLIB3_LIBS_INSTALLED MIPLIB3_CFLAGS_INSTALLED MIPLIB3_DATA_INSTALLED COIN_HAS_MIPLIB3_TRUE COIN_HAS_MIPLIB3_FALSE DYLP_LIBS DYLP_CFLAGS DYLP_DATA DYLP_DEPENDENCIES DYLP_LIBS_INSTALLED DYLP_CFLAGS_INSTALLED DYLP_DATA_INSTALLED COIN_HAS_DYLP_TRUE COIN_HAS_DYLP_FALSE VOL_LIBS VOL_CFLAGS VOL_DATA VOL_DEPENDENCIES VOL_LIBS_INSTALLED VOL_CFLAGS_INSTALLED VOL_DATA_INSTALLED COIN_HAS_VOL_TRUE COIN_HAS_VOL_FALSE CPX_LIBS CPX_CFLAGS CPX_DATA CPX_DEPENDENCIES CPX_LIBS_INSTALLED CPX_CFLAGS_INSTALLED CPX_DATA_INSTALLED COIN_HAS_CPX_TRUE COIN_HAS_CPX_FALSE GLPK_LIBS GLPK_CFLAGS GLPK_DATA GLPK_DEPENDENCIES GLPK_LIBS_INSTALLED GLPK_CFLAGS_INSTALLED GLPK_DATA_INSTALLED COIN_HAS_GLPK_TRUE COIN_HAS_GLPK_FALSE GRB_LIBS GRB_CFLAGS GRB_DATA GRB_DEPENDENCIES GRB_LIBS_INSTALLED GRB_CFLAGS_INSTALLED GRB_DATA_INSTALLED COIN_HAS_GRB_TRUE COIN_HAS_GRB_FALSE MSK_LIBS MSK_CFLAGS MSK_DATA MSK_DEPENDENCIES MSK_LIBS_INSTALLED MSK_CFLAGS_INSTALLED MSK_DATA_INSTALLED COIN_HAS_MSK_TRUE COIN_HAS_MSK_FALSE SPX_LIBS SPX_CFLAGS SPX_DATA SPX_DEPENDENCIES SPX_LIBS_INSTALLED SPX_CFLAGS_INSTALLED SPX_DATA_INSTALLED COIN_HAS_SPX_TRUE COIN_HAS_SPX_FALSE XPR_LIBS XPR_CFLAGS XPR_DATA XPR_DEPENDENCIES XPR_LIBS_INSTALLED XPR_CFLAGS_INSTALLED XPR_DATA_INSTALLED COIN_HAS_XPR_TRUE COIN_HAS_XPR_FALSE ASL_LIBS ASL_CFLAGS ASL_DATA ASL_DEPENDENCIES ASL_LIBS_INSTALLED ASL_CFLAGS_INSTALLED ASL_DATA_INSTALLED COIN_HAS_ASL_TRUE COIN_HAS_ASL_FALSE CBC_BUILD_CBC_GENERIC_TRUE CBC_BUILD_CBC_GENERIC_FALSE OSICBC_DFLT_SOLVER_CLP_TRUE OSICBC_DFLT_SOLVER_CLP_FALSE OSICBC_DFLT_SOLVER_CPX_TRUE OSICBC_DFLT_SOLVER_CPX_FALSE OSICBC_DFLT_SOLVER_DYLP_TRUE OSICBC_DFLT_SOLVER_DYLP_FALSE OSICBC_DFLT_SOLVER_GLPK_TRUE OSICBC_DFLT_SOLVER_GLPK_FALSE OSICBC_DFLT_SOLVER_GRB_TRUE OSICBC_DFLT_SOLVER_GRB_FALSE OSICBC_DFLT_SOLVER_MSK_TRUE OSICBC_DFLT_SOLVER_MSK_FALSE OSICBC_DFLT_SOLVER_SPX_TRUE OSICBC_DFLT_SOLVER_SPX_FALSE OSICBC_DFLT_SOLVER_SYM_TRUE OSICBC_DFLT_SOLVER_SYM_FALSE OSICBC_DFLT_SOLVER_VOL_TRUE OSICBC_DFLT_SOLVER_VOL_FALSE OSICBC_DFLT_SOLVER_XPR_TRUE OSICBC_DFLT_SOLVER_XPR_FALSE coin_have_doxygen coin_doxy_usedot coin_doxy_tagname coin_doxy_logname coin_doxy_tagfiles coin_doxy_excludes LIBEXT VPATH_DISTCLEANFILES ABSBUILDDIR LIBOBJS LTLIBOBJS'
 ac_subst_files=''
 
 # Initialize some variables set by options.
@@ -20798,6 +20798,16 @@ COINDEPEND_DATA=
 
 
 
+
+
+
+
+
+
+
+
+
+
 #check if user provided LIBS, CFLAGS, or DATA for module
 if test $coin_has_coindepend != skipping; then
 
@@ -21096,67 +21106,12 @@ _ACEOF
     CBCLIB_CFLAGS_INSTALLED="$COINDEPEND_CFLAGS_INSTALLED $CBCLIB_CFLAGS_INSTALLED"
     CBCLIB_LIBS_INSTALLED="$COINDEPEND_LIBS_INSTALLED $CBCLIB_LIBS_INSTALLED"
 
-
-
     CBCGENERIC_PCREQUIRES="cgl osi coinutils $CBCGENERIC_PCREQUIRES"
     CBCGENERIC_CFLAGS="$COINDEPEND_CFLAGS $CBCGENERIC_CFLAGS"
     CBCGENERIC_LIBS="$COINDEPEND_LIBS $CBCGENERIC_LIBS"
     CBCGENERIC_CFLAGS_INSTALLED="$COINDEPEND_CFLAGS_INSTALLED $CBCGENERIC_CFLAGS_INSTALLED"
     CBCGENERIC_LIBS_INSTALLED="$COINDEPEND_LIBS_INSTALLED $CBCGENERIC_LIBS_INSTALLED"
 
-
-
-
-
-  if test 1 = 0 ; then  #change this test to enable a bit of debugging output
-    if test -n "$COINDEPEND_CFLAGS" ; then
-      { echo "$as_me:$LINENO: CoinDepend CFLAGS are $COINDEPEND_CFLAGS" >&5
-echo "$as_me: CoinDepend CFLAGS are $COINDEPEND_CFLAGS" >&6;}
-    fi
-    if test -n "$COINDEPEND_LIBS" ; then
-      { echo "$as_me:$LINENO: CoinDepend LIBS   are $COINDEPEND_LIBS" >&5
-echo "$as_me: CoinDepend LIBS   are $COINDEPEND_LIBS" >&6;}
-    fi
-    if test -n "$COINDEPEND_DATA" ; then
-      { echo "$as_me:$LINENO: CoinDepend DATA   is  $COINDEPEND_DATA" >&5
-echo "$as_me: CoinDepend DATA   is  $COINDEPEND_DATA" >&6;}
-    fi
-    if test -n "$COINDEPEND_CFLAGS_INSTALLED" ; then
-      { echo "$as_me:$LINENO: CoinDepend CFLAGS_INSTALLED are $COINDEPEND_CFLAGS_INSTALLED" >&5
-echo "$as_me: CoinDepend CFLAGS_INSTALLED are $COINDEPEND_CFLAGS_INSTALLED" >&6;}
-    fi
-    if test -n "$COINDEPEND_LIBS_INSTALLED" ; then
-      { echo "$as_me:$LINENO: CoinDepend LIBS_INSTALLED   are $COINDEPEND_LIBS_INSTALLED" >&5
-echo "$as_me: CoinDepend LIBS_INSTALLED   are $COINDEPEND_LIBS_INSTALLED" >&6;}
-    fi
-    if test -n "$COINDEPEND_DATA_INSTALLED" ; then
-      { echo "$as_me:$LINENO: CoinDepend DATA_INSTALLED   is  $COINDEPEND_DATA_INSTALLED" >&5
-echo "$as_me: CoinDepend DATA_INSTALLED   is  $COINDEPEND_DATA_INSTALLED" >&6;}
-    fi
-
-      { echo "$as_me:$LINENO: " >&5
-echo "$as_me: " >&6;}
-      { echo "$as_me:$LINENO: CbcLib CFLAGS are $CBCLIB_CFLAGS" >&5
-echo "$as_me: CbcLib CFLAGS are $CBCLIB_CFLAGS" >&6;}
-      { echo "$as_me:$LINENO: CbcLib LIBS   are $CBCLIB_LIBS" >&5
-echo "$as_me: CbcLib LIBS   are $CBCLIB_LIBS" >&6;}
-      { echo "$as_me:$LINENO: CbcLib CFLAGS_INSTALLED are $CBCLIB_CFLAGS_INSTALLED" >&5
-echo "$as_me: CbcLib CFLAGS_INSTALLED are $CBCLIB_CFLAGS_INSTALLED" >&6;}
-      { echo "$as_me:$LINENO: CbcLib LIBS_INSTALLED   are $CBCLIB_LIBS_INSTALLED" >&5
-echo "$as_me: CbcLib LIBS_INSTALLED   are $CBCLIB_LIBS_INSTALLED" >&6;}
-
-      { echo "$as_me:$LINENO: " >&5
-echo "$as_me: " >&6;}
-      { echo "$as_me:$LINENO: CbcGeneric CFLAGS are $CBCGENERIC_CFLAGS" >&5
-echo "$as_me: CbcGeneric CFLAGS are $CBCGENERIC_CFLAGS" >&6;}
-      { echo "$as_me:$LINENO: CbcGeneric LIBS   are $CBCGENERIC_LIBS" >&5
-echo "$as_me: CbcGeneric LIBS   are $CBCGENERIC_LIBS" >&6;}
-      { echo "$as_me:$LINENO: CbcGeneric CFLAGS_INSTALLED are $CBCGENERIC_CFLAGS_INSTALLED" >&5
-echo "$as_me: CbcGeneric CFLAGS_INSTALLED are $CBCGENERIC_CFLAGS_INSTALLED" >&6;}
-      { echo "$as_me:$LINENO: CbcGeneric LIBS_INSTALLED   are $CBCGENERIC_LIBS_INSTALLED" >&5
-echo "$as_me: CbcGeneric LIBS_INSTALLED   are $CBCGENERIC_LIBS_INSTALLED" >&6;}
-
-  fi
 
 fi
 
@@ -21188,6 +21143,15 @@ cat >>confdefs.h <<\_ACEOF
 _ACEOF
 
 
+  # construct dependencies variables from LIBS variables
+  # we add an extra space in LIBS so we can substitute out everything starting with " -"
+  COINDEPEND_DEPENDENCIES=`echo " $COINDEPEND_LIBS" | sed -e 's/ -[^ ]*//g'`
+
+    CBCLIB_DEPENDENCIES=`echo " $CBCLIB_LIBS" | sed -e 's/ -[^ ]*//g'`
+
+    CBCGENERIC_DEPENDENCIES=`echo " $CBCGENERIC_LIBS" | sed -e 's/ -[^ ]*//g'`
+
+
   if test 1 = 0 ; then  #change this test to enable a bit of debugging output
     if test -n "$COINDEPEND_CFLAGS" ; then
       { echo "$as_me:$LINENO: CoinDepend CFLAGS are $COINDEPEND_CFLAGS" >&5
@@ -21196,6 +21160,10 @@ echo "$as_me: CoinDepend CFLAGS are $COINDEPEND_CFLAGS" >&6;}
     if test -n "$COINDEPEND_LIBS" ; then
       { echo "$as_me:$LINENO: CoinDepend LIBS   are $COINDEPEND_LIBS" >&5
 echo "$as_me: CoinDepend LIBS   are $COINDEPEND_LIBS" >&6;}
+    fi
+    if test -n "$COINDEPEND_DEPENDENCIES" ; then
+      { echo "$as_me:$LINENO: CoinDepend DEPENDENCIES are $COINDEPEND_DEPENDENCIES" >&5
+echo "$as_me: CoinDepend DEPENDENCIES are $COINDEPEND_DEPENDENCIES" >&6;}
     fi
     if test -n "$COINDEPEND_DATA" ; then
       { echo "$as_me:$LINENO: CoinDepend DATA   is  $COINDEPEND_DATA" >&5
@@ -21210,11 +21178,15 @@ echo "$as_me: CoinDepend CFLAGS are $COINDEPEND_CFLAGS" >&6;}
 echo "$as_me: CbcLib CFLAGS are $CBCLIB_CFLAGS" >&6;}
       { echo "$as_me:$LINENO: CbcLib LIBS   are $CBCLIB_LIBS" >&5
 echo "$as_me: CbcLib LIBS   are $CBCLIB_LIBS" >&6;}
+      { echo "$as_me:$LINENO: CbcLib DEPENDENCIES are $CBCLIB_DEPENDENCIES" >&5
+echo "$as_me: CbcLib DEPENDENCIES are $CBCLIB_DEPENDENCIES" >&6;}
 
       { echo "$as_me:$LINENO: CbcGeneric CFLAGS are $CBCGENERIC_CFLAGS" >&5
 echo "$as_me: CbcGeneric CFLAGS are $CBCGENERIC_CFLAGS" >&6;}
       { echo "$as_me:$LINENO: CbcGeneric LIBS   are $CBCGENERIC_LIBS" >&5
 echo "$as_me: CbcGeneric LIBS   are $CBCGENERIC_LIBS" >&6;}
+      { echo "$as_me:$LINENO: CbcGeneric DEPENDENCIES are $CBCGENERIC_DEPENDENCIES" >&5
+echo "$as_me: CbcGeneric DEPENDENCIES are $CBCGENERIC_DEPENDENCIES" >&6;}
 
   fi
 fi
@@ -21259,6 +21231,16 @@ fi
 CLP_LIBS=
 CLP_CFLAGS=
 CLP_DATA=
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -21572,67 +21554,12 @@ _ACEOF
     CBCLIB_CFLAGS_INSTALLED="$CLP_CFLAGS_INSTALLED $CBCLIB_CFLAGS_INSTALLED"
     CBCLIB_LIBS_INSTALLED="$CLP_LIBS_INSTALLED $CBCLIB_LIBS_INSTALLED"
 
-
-
     CBCGENERIC_PCREQUIRES="osi-clp $CBCGENERIC_PCREQUIRES"
     CBCGENERIC_CFLAGS="$CLP_CFLAGS $CBCGENERIC_CFLAGS"
     CBCGENERIC_LIBS="$CLP_LIBS $CBCGENERIC_LIBS"
     CBCGENERIC_CFLAGS_INSTALLED="$CLP_CFLAGS_INSTALLED $CBCGENERIC_CFLAGS_INSTALLED"
     CBCGENERIC_LIBS_INSTALLED="$CLP_LIBS_INSTALLED $CBCGENERIC_LIBS_INSTALLED"
 
-
-
-
-
-  if test 1 = 0 ; then  #change this test to enable a bit of debugging output
-    if test -n "$CLP_CFLAGS" ; then
-      { echo "$as_me:$LINENO: Clp CFLAGS are $CLP_CFLAGS" >&5
-echo "$as_me: Clp CFLAGS are $CLP_CFLAGS" >&6;}
-    fi
-    if test -n "$CLP_LIBS" ; then
-      { echo "$as_me:$LINENO: Clp LIBS   are $CLP_LIBS" >&5
-echo "$as_me: Clp LIBS   are $CLP_LIBS" >&6;}
-    fi
-    if test -n "$CLP_DATA" ; then
-      { echo "$as_me:$LINENO: Clp DATA   is  $CLP_DATA" >&5
-echo "$as_me: Clp DATA   is  $CLP_DATA" >&6;}
-    fi
-    if test -n "$CLP_CFLAGS_INSTALLED" ; then
-      { echo "$as_me:$LINENO: Clp CFLAGS_INSTALLED are $CLP_CFLAGS_INSTALLED" >&5
-echo "$as_me: Clp CFLAGS_INSTALLED are $CLP_CFLAGS_INSTALLED" >&6;}
-    fi
-    if test -n "$CLP_LIBS_INSTALLED" ; then
-      { echo "$as_me:$LINENO: Clp LIBS_INSTALLED   are $CLP_LIBS_INSTALLED" >&5
-echo "$as_me: Clp LIBS_INSTALLED   are $CLP_LIBS_INSTALLED" >&6;}
-    fi
-    if test -n "$CLP_DATA_INSTALLED" ; then
-      { echo "$as_me:$LINENO: Clp DATA_INSTALLED   is  $CLP_DATA_INSTALLED" >&5
-echo "$as_me: Clp DATA_INSTALLED   is  $CLP_DATA_INSTALLED" >&6;}
-    fi
-
-      { echo "$as_me:$LINENO: " >&5
-echo "$as_me: " >&6;}
-      { echo "$as_me:$LINENO: CbcLib CFLAGS are $CBCLIB_CFLAGS" >&5
-echo "$as_me: CbcLib CFLAGS are $CBCLIB_CFLAGS" >&6;}
-      { echo "$as_me:$LINENO: CbcLib LIBS   are $CBCLIB_LIBS" >&5
-echo "$as_me: CbcLib LIBS   are $CBCLIB_LIBS" >&6;}
-      { echo "$as_me:$LINENO: CbcLib CFLAGS_INSTALLED are $CBCLIB_CFLAGS_INSTALLED" >&5
-echo "$as_me: CbcLib CFLAGS_INSTALLED are $CBCLIB_CFLAGS_INSTALLED" >&6;}
-      { echo "$as_me:$LINENO: CbcLib LIBS_INSTALLED   are $CBCLIB_LIBS_INSTALLED" >&5
-echo "$as_me: CbcLib LIBS_INSTALLED   are $CBCLIB_LIBS_INSTALLED" >&6;}
-
-      { echo "$as_me:$LINENO: " >&5
-echo "$as_me: " >&6;}
-      { echo "$as_me:$LINENO: CbcGeneric CFLAGS are $CBCGENERIC_CFLAGS" >&5
-echo "$as_me: CbcGeneric CFLAGS are $CBCGENERIC_CFLAGS" >&6;}
-      { echo "$as_me:$LINENO: CbcGeneric LIBS   are $CBCGENERIC_LIBS" >&5
-echo "$as_me: CbcGeneric LIBS   are $CBCGENERIC_LIBS" >&6;}
-      { echo "$as_me:$LINENO: CbcGeneric CFLAGS_INSTALLED are $CBCGENERIC_CFLAGS_INSTALLED" >&5
-echo "$as_me: CbcGeneric CFLAGS_INSTALLED are $CBCGENERIC_CFLAGS_INSTALLED" >&6;}
-      { echo "$as_me:$LINENO: CbcGeneric LIBS_INSTALLED   are $CBCGENERIC_LIBS_INSTALLED" >&5
-echo "$as_me: CbcGeneric LIBS_INSTALLED   are $CBCGENERIC_LIBS_INSTALLED" >&6;}
-
-  fi
 
 fi
 
@@ -21664,6 +21591,15 @@ cat >>confdefs.h <<\_ACEOF
 _ACEOF
 
 
+  # construct dependencies variables from LIBS variables
+  # we add an extra space in LIBS so we can substitute out everything starting with " -"
+  CLP_DEPENDENCIES=`echo " $CLP_LIBS" | sed -e 's/ -[^ ]*//g'`
+
+    CBCLIB_DEPENDENCIES=`echo " $CBCLIB_LIBS" | sed -e 's/ -[^ ]*//g'`
+
+    CBCGENERIC_DEPENDENCIES=`echo " $CBCGENERIC_LIBS" | sed -e 's/ -[^ ]*//g'`
+
+
   if test 1 = 0 ; then  #change this test to enable a bit of debugging output
     if test -n "$CLP_CFLAGS" ; then
       { echo "$as_me:$LINENO: Clp CFLAGS are $CLP_CFLAGS" >&5
@@ -21672,6 +21608,10 @@ echo "$as_me: Clp CFLAGS are $CLP_CFLAGS" >&6;}
     if test -n "$CLP_LIBS" ; then
       { echo "$as_me:$LINENO: Clp LIBS   are $CLP_LIBS" >&5
 echo "$as_me: Clp LIBS   are $CLP_LIBS" >&6;}
+    fi
+    if test -n "$CLP_DEPENDENCIES" ; then
+      { echo "$as_me:$LINENO: Clp DEPENDENCIES are $CLP_DEPENDENCIES" >&5
+echo "$as_me: Clp DEPENDENCIES are $CLP_DEPENDENCIES" >&6;}
     fi
     if test -n "$CLP_DATA" ; then
       { echo "$as_me:$LINENO: Clp DATA   is  $CLP_DATA" >&5
@@ -21686,11 +21626,15 @@ echo "$as_me: Clp CFLAGS are $CLP_CFLAGS" >&6;}
 echo "$as_me: CbcLib CFLAGS are $CBCLIB_CFLAGS" >&6;}
       { echo "$as_me:$LINENO: CbcLib LIBS   are $CBCLIB_LIBS" >&5
 echo "$as_me: CbcLib LIBS   are $CBCLIB_LIBS" >&6;}
+      { echo "$as_me:$LINENO: CbcLib DEPENDENCIES are $CBCLIB_DEPENDENCIES" >&5
+echo "$as_me: CbcLib DEPENDENCIES are $CBCLIB_DEPENDENCIES" >&6;}
 
       { echo "$as_me:$LINENO: CbcGeneric CFLAGS are $CBCGENERIC_CFLAGS" >&5
 echo "$as_me: CbcGeneric CFLAGS are $CBCGENERIC_CFLAGS" >&6;}
       { echo "$as_me:$LINENO: CbcGeneric LIBS   are $CBCGENERIC_LIBS" >&5
 echo "$as_me: CbcGeneric LIBS   are $CBCGENERIC_LIBS" >&6;}
+      { echo "$as_me:$LINENO: CbcGeneric DEPENDENCIES are $CBCGENERIC_DEPENDENCIES" >&5
+echo "$as_me: CbcGeneric DEPENDENCIES are $CBCGENERIC_DEPENDENCIES" >&6;}
 
   fi
 fi
@@ -21735,6 +21679,10 @@ fi
 OSITESTS_LIBS=
 OSITESTS_CFLAGS=
 OSITESTS_DATA=
+
+
+
+
 
 
 
@@ -22017,35 +21965,6 @@ _ACEOF
 
 
 
-
-  if test 1 = 0 ; then  #change this test to enable a bit of debugging output
-    if test -n "$OSITESTS_CFLAGS" ; then
-      { echo "$as_me:$LINENO: OsiTests CFLAGS are $OSITESTS_CFLAGS" >&5
-echo "$as_me: OsiTests CFLAGS are $OSITESTS_CFLAGS" >&6;}
-    fi
-    if test -n "$OSITESTS_LIBS" ; then
-      { echo "$as_me:$LINENO: OsiTests LIBS   are $OSITESTS_LIBS" >&5
-echo "$as_me: OsiTests LIBS   are $OSITESTS_LIBS" >&6;}
-    fi
-    if test -n "$OSITESTS_DATA" ; then
-      { echo "$as_me:$LINENO: OsiTests DATA   is  $OSITESTS_DATA" >&5
-echo "$as_me: OsiTests DATA   is  $OSITESTS_DATA" >&6;}
-    fi
-    if test -n "$OSITESTS_CFLAGS_INSTALLED" ; then
-      { echo "$as_me:$LINENO: OsiTests CFLAGS_INSTALLED are $OSITESTS_CFLAGS_INSTALLED" >&5
-echo "$as_me: OsiTests CFLAGS_INSTALLED are $OSITESTS_CFLAGS_INSTALLED" >&6;}
-    fi
-    if test -n "$OSITESTS_LIBS_INSTALLED" ; then
-      { echo "$as_me:$LINENO: OsiTests LIBS_INSTALLED   are $OSITESTS_LIBS_INSTALLED" >&5
-echo "$as_me: OsiTests LIBS_INSTALLED   are $OSITESTS_LIBS_INSTALLED" >&6;}
-    fi
-    if test -n "$OSITESTS_DATA_INSTALLED" ; then
-      { echo "$as_me:$LINENO: OsiTests DATA_INSTALLED   is  $OSITESTS_DATA_INSTALLED" >&5
-echo "$as_me: OsiTests DATA_INSTALLED   is  $OSITESTS_DATA_INSTALLED" >&6;}
-    fi
-
-  fi
-
 fi
 
 
@@ -22076,6 +21995,11 @@ cat >>confdefs.h <<\_ACEOF
 _ACEOF
 
 
+  # construct dependencies variables from LIBS variables
+  # we add an extra space in LIBS so we can substitute out everything starting with " -"
+  OSITESTS_DEPENDENCIES=`echo " $OSITESTS_LIBS" | sed -e 's/ -[^ ]*//g'`
+
+
   if test 1 = 0 ; then  #change this test to enable a bit of debugging output
     if test -n "$OSITESTS_CFLAGS" ; then
       { echo "$as_me:$LINENO: OsiTests CFLAGS are $OSITESTS_CFLAGS" >&5
@@ -22084,6 +22008,10 @@ echo "$as_me: OsiTests CFLAGS are $OSITESTS_CFLAGS" >&6;}
     if test -n "$OSITESTS_LIBS" ; then
       { echo "$as_me:$LINENO: OsiTests LIBS   are $OSITESTS_LIBS" >&5
 echo "$as_me: OsiTests LIBS   are $OSITESTS_LIBS" >&6;}
+    fi
+    if test -n "$OSITESTS_DEPENDENCIES" ; then
+      { echo "$as_me:$LINENO: OsiTests DEPENDENCIES are $OSITESTS_DEPENDENCIES" >&5
+echo "$as_me: OsiTests DEPENDENCIES are $OSITESTS_DEPENDENCIES" >&6;}
     fi
     if test -n "$OSITESTS_DATA" ; then
       { echo "$as_me:$LINENO: OsiTests DATA   is  $OSITESTS_DATA" >&5
@@ -22129,6 +22057,10 @@ fi
 SAMPLE_LIBS=
 SAMPLE_CFLAGS=
 SAMPLE_DATA=
+
+
+
+
 
 
 
@@ -22411,35 +22343,6 @@ _ACEOF
 
 
 
-
-  if test 1 = 0 ; then  #change this test to enable a bit of debugging output
-    if test -n "$SAMPLE_CFLAGS" ; then
-      { echo "$as_me:$LINENO: Sample CFLAGS are $SAMPLE_CFLAGS" >&5
-echo "$as_me: Sample CFLAGS are $SAMPLE_CFLAGS" >&6;}
-    fi
-    if test -n "$SAMPLE_LIBS" ; then
-      { echo "$as_me:$LINENO: Sample LIBS   are $SAMPLE_LIBS" >&5
-echo "$as_me: Sample LIBS   are $SAMPLE_LIBS" >&6;}
-    fi
-    if test -n "$SAMPLE_DATA" ; then
-      { echo "$as_me:$LINENO: Sample DATA   is  $SAMPLE_DATA" >&5
-echo "$as_me: Sample DATA   is  $SAMPLE_DATA" >&6;}
-    fi
-    if test -n "$SAMPLE_CFLAGS_INSTALLED" ; then
-      { echo "$as_me:$LINENO: Sample CFLAGS_INSTALLED are $SAMPLE_CFLAGS_INSTALLED" >&5
-echo "$as_me: Sample CFLAGS_INSTALLED are $SAMPLE_CFLAGS_INSTALLED" >&6;}
-    fi
-    if test -n "$SAMPLE_LIBS_INSTALLED" ; then
-      { echo "$as_me:$LINENO: Sample LIBS_INSTALLED   are $SAMPLE_LIBS_INSTALLED" >&5
-echo "$as_me: Sample LIBS_INSTALLED   are $SAMPLE_LIBS_INSTALLED" >&6;}
-    fi
-    if test -n "$SAMPLE_DATA_INSTALLED" ; then
-      { echo "$as_me:$LINENO: Sample DATA_INSTALLED   is  $SAMPLE_DATA_INSTALLED" >&5
-echo "$as_me: Sample DATA_INSTALLED   is  $SAMPLE_DATA_INSTALLED" >&6;}
-    fi
-
-  fi
-
 fi
 
 
@@ -22470,6 +22373,11 @@ cat >>confdefs.h <<\_ACEOF
 _ACEOF
 
 
+  # construct dependencies variables from LIBS variables
+  # we add an extra space in LIBS so we can substitute out everything starting with " -"
+  SAMPLE_DEPENDENCIES=`echo " $SAMPLE_LIBS" | sed -e 's/ -[^ ]*//g'`
+
+
   if test 1 = 0 ; then  #change this test to enable a bit of debugging output
     if test -n "$SAMPLE_CFLAGS" ; then
       { echo "$as_me:$LINENO: Sample CFLAGS are $SAMPLE_CFLAGS" >&5
@@ -22478,6 +22386,10 @@ echo "$as_me: Sample CFLAGS are $SAMPLE_CFLAGS" >&6;}
     if test -n "$SAMPLE_LIBS" ; then
       { echo "$as_me:$LINENO: Sample LIBS   are $SAMPLE_LIBS" >&5
 echo "$as_me: Sample LIBS   are $SAMPLE_LIBS" >&6;}
+    fi
+    if test -n "$SAMPLE_DEPENDENCIES" ; then
+      { echo "$as_me:$LINENO: Sample DEPENDENCIES are $SAMPLE_DEPENDENCIES" >&5
+echo "$as_me: Sample DEPENDENCIES are $SAMPLE_DEPENDENCIES" >&6;}
     fi
     if test -n "$SAMPLE_DATA" ; then
       { echo "$as_me:$LINENO: Sample DATA   is  $SAMPLE_DATA" >&5
@@ -22523,6 +22435,10 @@ fi
 NETLIB_LIBS=
 NETLIB_CFLAGS=
 NETLIB_DATA=
+
+
+
+
 
 
 
@@ -22805,35 +22721,6 @@ _ACEOF
 
 
 
-
-  if test 1 = 0 ; then  #change this test to enable a bit of debugging output
-    if test -n "$NETLIB_CFLAGS" ; then
-      { echo "$as_me:$LINENO: Netlib CFLAGS are $NETLIB_CFLAGS" >&5
-echo "$as_me: Netlib CFLAGS are $NETLIB_CFLAGS" >&6;}
-    fi
-    if test -n "$NETLIB_LIBS" ; then
-      { echo "$as_me:$LINENO: Netlib LIBS   are $NETLIB_LIBS" >&5
-echo "$as_me: Netlib LIBS   are $NETLIB_LIBS" >&6;}
-    fi
-    if test -n "$NETLIB_DATA" ; then
-      { echo "$as_me:$LINENO: Netlib DATA   is  $NETLIB_DATA" >&5
-echo "$as_me: Netlib DATA   is  $NETLIB_DATA" >&6;}
-    fi
-    if test -n "$NETLIB_CFLAGS_INSTALLED" ; then
-      { echo "$as_me:$LINENO: Netlib CFLAGS_INSTALLED are $NETLIB_CFLAGS_INSTALLED" >&5
-echo "$as_me: Netlib CFLAGS_INSTALLED are $NETLIB_CFLAGS_INSTALLED" >&6;}
-    fi
-    if test -n "$NETLIB_LIBS_INSTALLED" ; then
-      { echo "$as_me:$LINENO: Netlib LIBS_INSTALLED   are $NETLIB_LIBS_INSTALLED" >&5
-echo "$as_me: Netlib LIBS_INSTALLED   are $NETLIB_LIBS_INSTALLED" >&6;}
-    fi
-    if test -n "$NETLIB_DATA_INSTALLED" ; then
-      { echo "$as_me:$LINENO: Netlib DATA_INSTALLED   is  $NETLIB_DATA_INSTALLED" >&5
-echo "$as_me: Netlib DATA_INSTALLED   is  $NETLIB_DATA_INSTALLED" >&6;}
-    fi
-
-  fi
-
 fi
 
 
@@ -22864,6 +22751,11 @@ cat >>confdefs.h <<\_ACEOF
 _ACEOF
 
 
+  # construct dependencies variables from LIBS variables
+  # we add an extra space in LIBS so we can substitute out everything starting with " -"
+  NETLIB_DEPENDENCIES=`echo " $NETLIB_LIBS" | sed -e 's/ -[^ ]*//g'`
+
+
   if test 1 = 0 ; then  #change this test to enable a bit of debugging output
     if test -n "$NETLIB_CFLAGS" ; then
       { echo "$as_me:$LINENO: Netlib CFLAGS are $NETLIB_CFLAGS" >&5
@@ -22872,6 +22764,10 @@ echo "$as_me: Netlib CFLAGS are $NETLIB_CFLAGS" >&6;}
     if test -n "$NETLIB_LIBS" ; then
       { echo "$as_me:$LINENO: Netlib LIBS   are $NETLIB_LIBS" >&5
 echo "$as_me: Netlib LIBS   are $NETLIB_LIBS" >&6;}
+    fi
+    if test -n "$NETLIB_DEPENDENCIES" ; then
+      { echo "$as_me:$LINENO: Netlib DEPENDENCIES are $NETLIB_DEPENDENCIES" >&5
+echo "$as_me: Netlib DEPENDENCIES are $NETLIB_DEPENDENCIES" >&6;}
     fi
     if test -n "$NETLIB_DATA" ; then
       { echo "$as_me:$LINENO: Netlib DATA   is  $NETLIB_DATA" >&5
@@ -22917,6 +22813,10 @@ fi
 MIPLIB3_LIBS=
 MIPLIB3_CFLAGS=
 MIPLIB3_DATA=
+
+
+
+
 
 
 
@@ -23199,35 +23099,6 @@ _ACEOF
 
 
 
-
-  if test 1 = 0 ; then  #change this test to enable a bit of debugging output
-    if test -n "$MIPLIB3_CFLAGS" ; then
-      { echo "$as_me:$LINENO: Miplib3 CFLAGS are $MIPLIB3_CFLAGS" >&5
-echo "$as_me: Miplib3 CFLAGS are $MIPLIB3_CFLAGS" >&6;}
-    fi
-    if test -n "$MIPLIB3_LIBS" ; then
-      { echo "$as_me:$LINENO: Miplib3 LIBS   are $MIPLIB3_LIBS" >&5
-echo "$as_me: Miplib3 LIBS   are $MIPLIB3_LIBS" >&6;}
-    fi
-    if test -n "$MIPLIB3_DATA" ; then
-      { echo "$as_me:$LINENO: Miplib3 DATA   is  $MIPLIB3_DATA" >&5
-echo "$as_me: Miplib3 DATA   is  $MIPLIB3_DATA" >&6;}
-    fi
-    if test -n "$MIPLIB3_CFLAGS_INSTALLED" ; then
-      { echo "$as_me:$LINENO: Miplib3 CFLAGS_INSTALLED are $MIPLIB3_CFLAGS_INSTALLED" >&5
-echo "$as_me: Miplib3 CFLAGS_INSTALLED are $MIPLIB3_CFLAGS_INSTALLED" >&6;}
-    fi
-    if test -n "$MIPLIB3_LIBS_INSTALLED" ; then
-      { echo "$as_me:$LINENO: Miplib3 LIBS_INSTALLED   are $MIPLIB3_LIBS_INSTALLED" >&5
-echo "$as_me: Miplib3 LIBS_INSTALLED   are $MIPLIB3_LIBS_INSTALLED" >&6;}
-    fi
-    if test -n "$MIPLIB3_DATA_INSTALLED" ; then
-      { echo "$as_me:$LINENO: Miplib3 DATA_INSTALLED   is  $MIPLIB3_DATA_INSTALLED" >&5
-echo "$as_me: Miplib3 DATA_INSTALLED   is  $MIPLIB3_DATA_INSTALLED" >&6;}
-    fi
-
-  fi
-
 fi
 
 
@@ -23258,6 +23129,11 @@ cat >>confdefs.h <<\_ACEOF
 _ACEOF
 
 
+  # construct dependencies variables from LIBS variables
+  # we add an extra space in LIBS so we can substitute out everything starting with " -"
+  MIPLIB3_DEPENDENCIES=`echo " $MIPLIB3_LIBS" | sed -e 's/ -[^ ]*//g'`
+
+
   if test 1 = 0 ; then  #change this test to enable a bit of debugging output
     if test -n "$MIPLIB3_CFLAGS" ; then
       { echo "$as_me:$LINENO: Miplib3 CFLAGS are $MIPLIB3_CFLAGS" >&5
@@ -23266,6 +23142,10 @@ echo "$as_me: Miplib3 CFLAGS are $MIPLIB3_CFLAGS" >&6;}
     if test -n "$MIPLIB3_LIBS" ; then
       { echo "$as_me:$LINENO: Miplib3 LIBS   are $MIPLIB3_LIBS" >&5
 echo "$as_me: Miplib3 LIBS   are $MIPLIB3_LIBS" >&6;}
+    fi
+    if test -n "$MIPLIB3_DEPENDENCIES" ; then
+      { echo "$as_me:$LINENO: Miplib3 DEPENDENCIES are $MIPLIB3_DEPENDENCIES" >&5
+echo "$as_me: Miplib3 DEPENDENCIES are $MIPLIB3_DEPENDENCIES" >&6;}
     fi
     if test -n "$MIPLIB3_DATA" ; then
       { echo "$as_me:$LINENO: Miplib3 DATA   is  $MIPLIB3_DATA" >&5
@@ -23317,6 +23197,13 @@ fi
 DYLP_LIBS=
 DYLP_CFLAGS=
 DYLP_DATA=
+
+
+
+
+
+
+
 
 
 
@@ -23618,48 +23505,6 @@ _ACEOF
     CBCGENERIC_LIBS_INSTALLED="$DYLP_LIBS_INSTALLED $CBCGENERIC_LIBS_INSTALLED"
 
 
-
-
-
-  if test 1 = 0 ; then  #change this test to enable a bit of debugging output
-    if test -n "$DYLP_CFLAGS" ; then
-      { echo "$as_me:$LINENO: DyLP CFLAGS are $DYLP_CFLAGS" >&5
-echo "$as_me: DyLP CFLAGS are $DYLP_CFLAGS" >&6;}
-    fi
-    if test -n "$DYLP_LIBS" ; then
-      { echo "$as_me:$LINENO: DyLP LIBS   are $DYLP_LIBS" >&5
-echo "$as_me: DyLP LIBS   are $DYLP_LIBS" >&6;}
-    fi
-    if test -n "$DYLP_DATA" ; then
-      { echo "$as_me:$LINENO: DyLP DATA   is  $DYLP_DATA" >&5
-echo "$as_me: DyLP DATA   is  $DYLP_DATA" >&6;}
-    fi
-    if test -n "$DYLP_CFLAGS_INSTALLED" ; then
-      { echo "$as_me:$LINENO: DyLP CFLAGS_INSTALLED are $DYLP_CFLAGS_INSTALLED" >&5
-echo "$as_me: DyLP CFLAGS_INSTALLED are $DYLP_CFLAGS_INSTALLED" >&6;}
-    fi
-    if test -n "$DYLP_LIBS_INSTALLED" ; then
-      { echo "$as_me:$LINENO: DyLP LIBS_INSTALLED   are $DYLP_LIBS_INSTALLED" >&5
-echo "$as_me: DyLP LIBS_INSTALLED   are $DYLP_LIBS_INSTALLED" >&6;}
-    fi
-    if test -n "$DYLP_DATA_INSTALLED" ; then
-      { echo "$as_me:$LINENO: DyLP DATA_INSTALLED   is  $DYLP_DATA_INSTALLED" >&5
-echo "$as_me: DyLP DATA_INSTALLED   is  $DYLP_DATA_INSTALLED" >&6;}
-    fi
-
-      { echo "$as_me:$LINENO: " >&5
-echo "$as_me: " >&6;}
-      { echo "$as_me:$LINENO: CbcGeneric CFLAGS are $CBCGENERIC_CFLAGS" >&5
-echo "$as_me: CbcGeneric CFLAGS are $CBCGENERIC_CFLAGS" >&6;}
-      { echo "$as_me:$LINENO: CbcGeneric LIBS   are $CBCGENERIC_LIBS" >&5
-echo "$as_me: CbcGeneric LIBS   are $CBCGENERIC_LIBS" >&6;}
-      { echo "$as_me:$LINENO: CbcGeneric CFLAGS_INSTALLED are $CBCGENERIC_CFLAGS_INSTALLED" >&5
-echo "$as_me: CbcGeneric CFLAGS_INSTALLED are $CBCGENERIC_CFLAGS_INSTALLED" >&6;}
-      { echo "$as_me:$LINENO: CbcGeneric LIBS_INSTALLED   are $CBCGENERIC_LIBS_INSTALLED" >&5
-echo "$as_me: CbcGeneric LIBS_INSTALLED   are $CBCGENERIC_LIBS_INSTALLED" >&6;}
-
-  fi
-
 fi
 
 
@@ -23690,6 +23535,13 @@ cat >>confdefs.h <<\_ACEOF
 _ACEOF
 
 
+  # construct dependencies variables from LIBS variables
+  # we add an extra space in LIBS so we can substitute out everything starting with " -"
+  DYLP_DEPENDENCIES=`echo " $DYLP_LIBS" | sed -e 's/ -[^ ]*//g'`
+
+    CBCGENERIC_DEPENDENCIES=`echo " $CBCGENERIC_LIBS" | sed -e 's/ -[^ ]*//g'`
+
+
   if test 1 = 0 ; then  #change this test to enable a bit of debugging output
     if test -n "$DYLP_CFLAGS" ; then
       { echo "$as_me:$LINENO: DyLP CFLAGS are $DYLP_CFLAGS" >&5
@@ -23698,6 +23550,10 @@ echo "$as_me: DyLP CFLAGS are $DYLP_CFLAGS" >&6;}
     if test -n "$DYLP_LIBS" ; then
       { echo "$as_me:$LINENO: DyLP LIBS   are $DYLP_LIBS" >&5
 echo "$as_me: DyLP LIBS   are $DYLP_LIBS" >&6;}
+    fi
+    if test -n "$DYLP_DEPENDENCIES" ; then
+      { echo "$as_me:$LINENO: DyLP DEPENDENCIES are $DYLP_DEPENDENCIES" >&5
+echo "$as_me: DyLP DEPENDENCIES are $DYLP_DEPENDENCIES" >&6;}
     fi
     if test -n "$DYLP_DATA" ; then
       { echo "$as_me:$LINENO: DyLP DATA   is  $DYLP_DATA" >&5
@@ -23712,6 +23568,8 @@ echo "$as_me: DyLP CFLAGS are $DYLP_CFLAGS" >&6;}
 echo "$as_me: CbcGeneric CFLAGS are $CBCGENERIC_CFLAGS" >&6;}
       { echo "$as_me:$LINENO: CbcGeneric LIBS   are $CBCGENERIC_LIBS" >&5
 echo "$as_me: CbcGeneric LIBS   are $CBCGENERIC_LIBS" >&6;}
+      { echo "$as_me:$LINENO: CbcGeneric DEPENDENCIES are $CBCGENERIC_DEPENDENCIES" >&5
+echo "$as_me: CbcGeneric DEPENDENCIES are $CBCGENERIC_DEPENDENCIES" >&6;}
 
   fi
 fi
@@ -23748,6 +23606,10 @@ fi
 VOL_LIBS=
 VOL_CFLAGS=
 VOL_DATA=
+
+
+
+
 
 
 
@@ -24030,35 +23892,6 @@ _ACEOF
 
 
 
-
-  if test 1 = 0 ; then  #change this test to enable a bit of debugging output
-    if test -n "$VOL_CFLAGS" ; then
-      { echo "$as_me:$LINENO: Vol CFLAGS are $VOL_CFLAGS" >&5
-echo "$as_me: Vol CFLAGS are $VOL_CFLAGS" >&6;}
-    fi
-    if test -n "$VOL_LIBS" ; then
-      { echo "$as_me:$LINENO: Vol LIBS   are $VOL_LIBS" >&5
-echo "$as_me: Vol LIBS   are $VOL_LIBS" >&6;}
-    fi
-    if test -n "$VOL_DATA" ; then
-      { echo "$as_me:$LINENO: Vol DATA   is  $VOL_DATA" >&5
-echo "$as_me: Vol DATA   is  $VOL_DATA" >&6;}
-    fi
-    if test -n "$VOL_CFLAGS_INSTALLED" ; then
-      { echo "$as_me:$LINENO: Vol CFLAGS_INSTALLED are $VOL_CFLAGS_INSTALLED" >&5
-echo "$as_me: Vol CFLAGS_INSTALLED are $VOL_CFLAGS_INSTALLED" >&6;}
-    fi
-    if test -n "$VOL_LIBS_INSTALLED" ; then
-      { echo "$as_me:$LINENO: Vol LIBS_INSTALLED   are $VOL_LIBS_INSTALLED" >&5
-echo "$as_me: Vol LIBS_INSTALLED   are $VOL_LIBS_INSTALLED" >&6;}
-    fi
-    if test -n "$VOL_DATA_INSTALLED" ; then
-      { echo "$as_me:$LINENO: Vol DATA_INSTALLED   is  $VOL_DATA_INSTALLED" >&5
-echo "$as_me: Vol DATA_INSTALLED   is  $VOL_DATA_INSTALLED" >&6;}
-    fi
-
-  fi
-
 fi
 
 
@@ -24089,6 +23922,11 @@ cat >>confdefs.h <<\_ACEOF
 _ACEOF
 
 
+  # construct dependencies variables from LIBS variables
+  # we add an extra space in LIBS so we can substitute out everything starting with " -"
+  VOL_DEPENDENCIES=`echo " $VOL_LIBS" | sed -e 's/ -[^ ]*//g'`
+
+
   if test 1 = 0 ; then  #change this test to enable a bit of debugging output
     if test -n "$VOL_CFLAGS" ; then
       { echo "$as_me:$LINENO: Vol CFLAGS are $VOL_CFLAGS" >&5
@@ -24097,6 +23935,10 @@ echo "$as_me: Vol CFLAGS are $VOL_CFLAGS" >&6;}
     if test -n "$VOL_LIBS" ; then
       { echo "$as_me:$LINENO: Vol LIBS   are $VOL_LIBS" >&5
 echo "$as_me: Vol LIBS   are $VOL_LIBS" >&6;}
+    fi
+    if test -n "$VOL_DEPENDENCIES" ; then
+      { echo "$as_me:$LINENO: Vol DEPENDENCIES are $VOL_DEPENDENCIES" >&5
+echo "$as_me: Vol DEPENDENCIES are $VOL_DEPENDENCIES" >&6;}
     fi
     if test -n "$VOL_DATA" ; then
       { echo "$as_me:$LINENO: Vol DATA   is  $VOL_DATA" >&5
@@ -24142,6 +23984,16 @@ fi
 CPX_LIBS=
 CPX_CFLAGS=
 CPX_DATA=
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -24455,67 +24307,12 @@ _ACEOF
     CBCLIB_CFLAGS_INSTALLED="$CPX_CFLAGS_INSTALLED $CBCLIB_CFLAGS_INSTALLED"
     CBCLIB_LIBS_INSTALLED="$CPX_LIBS_INSTALLED $CBCLIB_LIBS_INSTALLED"
 
-
-
     CBCGENERIC_PCREQUIRES="osi-cplex $CBCGENERIC_PCREQUIRES"
     CBCGENERIC_CFLAGS="$CPX_CFLAGS $CBCGENERIC_CFLAGS"
     CBCGENERIC_LIBS="$CPX_LIBS $CBCGENERIC_LIBS"
     CBCGENERIC_CFLAGS_INSTALLED="$CPX_CFLAGS_INSTALLED $CBCGENERIC_CFLAGS_INSTALLED"
     CBCGENERIC_LIBS_INSTALLED="$CPX_LIBS_INSTALLED $CBCGENERIC_LIBS_INSTALLED"
 
-
-
-
-
-  if test 1 = 0 ; then  #change this test to enable a bit of debugging output
-    if test -n "$CPX_CFLAGS" ; then
-      { echo "$as_me:$LINENO: Cpx CFLAGS are $CPX_CFLAGS" >&5
-echo "$as_me: Cpx CFLAGS are $CPX_CFLAGS" >&6;}
-    fi
-    if test -n "$CPX_LIBS" ; then
-      { echo "$as_me:$LINENO: Cpx LIBS   are $CPX_LIBS" >&5
-echo "$as_me: Cpx LIBS   are $CPX_LIBS" >&6;}
-    fi
-    if test -n "$CPX_DATA" ; then
-      { echo "$as_me:$LINENO: Cpx DATA   is  $CPX_DATA" >&5
-echo "$as_me: Cpx DATA   is  $CPX_DATA" >&6;}
-    fi
-    if test -n "$CPX_CFLAGS_INSTALLED" ; then
-      { echo "$as_me:$LINENO: Cpx CFLAGS_INSTALLED are $CPX_CFLAGS_INSTALLED" >&5
-echo "$as_me: Cpx CFLAGS_INSTALLED are $CPX_CFLAGS_INSTALLED" >&6;}
-    fi
-    if test -n "$CPX_LIBS_INSTALLED" ; then
-      { echo "$as_me:$LINENO: Cpx LIBS_INSTALLED   are $CPX_LIBS_INSTALLED" >&5
-echo "$as_me: Cpx LIBS_INSTALLED   are $CPX_LIBS_INSTALLED" >&6;}
-    fi
-    if test -n "$CPX_DATA_INSTALLED" ; then
-      { echo "$as_me:$LINENO: Cpx DATA_INSTALLED   is  $CPX_DATA_INSTALLED" >&5
-echo "$as_me: Cpx DATA_INSTALLED   is  $CPX_DATA_INSTALLED" >&6;}
-    fi
-
-      { echo "$as_me:$LINENO: " >&5
-echo "$as_me: " >&6;}
-      { echo "$as_me:$LINENO: CbcLib CFLAGS are $CBCLIB_CFLAGS" >&5
-echo "$as_me: CbcLib CFLAGS are $CBCLIB_CFLAGS" >&6;}
-      { echo "$as_me:$LINENO: CbcLib LIBS   are $CBCLIB_LIBS" >&5
-echo "$as_me: CbcLib LIBS   are $CBCLIB_LIBS" >&6;}
-      { echo "$as_me:$LINENO: CbcLib CFLAGS_INSTALLED are $CBCLIB_CFLAGS_INSTALLED" >&5
-echo "$as_me: CbcLib CFLAGS_INSTALLED are $CBCLIB_CFLAGS_INSTALLED" >&6;}
-      { echo "$as_me:$LINENO: CbcLib LIBS_INSTALLED   are $CBCLIB_LIBS_INSTALLED" >&5
-echo "$as_me: CbcLib LIBS_INSTALLED   are $CBCLIB_LIBS_INSTALLED" >&6;}
-
-      { echo "$as_me:$LINENO: " >&5
-echo "$as_me: " >&6;}
-      { echo "$as_me:$LINENO: CbcGeneric CFLAGS are $CBCGENERIC_CFLAGS" >&5
-echo "$as_me: CbcGeneric CFLAGS are $CBCGENERIC_CFLAGS" >&6;}
-      { echo "$as_me:$LINENO: CbcGeneric LIBS   are $CBCGENERIC_LIBS" >&5
-echo "$as_me: CbcGeneric LIBS   are $CBCGENERIC_LIBS" >&6;}
-      { echo "$as_me:$LINENO: CbcGeneric CFLAGS_INSTALLED are $CBCGENERIC_CFLAGS_INSTALLED" >&5
-echo "$as_me: CbcGeneric CFLAGS_INSTALLED are $CBCGENERIC_CFLAGS_INSTALLED" >&6;}
-      { echo "$as_me:$LINENO: CbcGeneric LIBS_INSTALLED   are $CBCGENERIC_LIBS_INSTALLED" >&5
-echo "$as_me: CbcGeneric LIBS_INSTALLED   are $CBCGENERIC_LIBS_INSTALLED" >&6;}
-
-  fi
 
 fi
 
@@ -24547,6 +24344,15 @@ cat >>confdefs.h <<\_ACEOF
 _ACEOF
 
 
+  # construct dependencies variables from LIBS variables
+  # we add an extra space in LIBS so we can substitute out everything starting with " -"
+  CPX_DEPENDENCIES=`echo " $CPX_LIBS" | sed -e 's/ -[^ ]*//g'`
+
+    CBCLIB_DEPENDENCIES=`echo " $CBCLIB_LIBS" | sed -e 's/ -[^ ]*//g'`
+
+    CBCGENERIC_DEPENDENCIES=`echo " $CBCGENERIC_LIBS" | sed -e 's/ -[^ ]*//g'`
+
+
   if test 1 = 0 ; then  #change this test to enable a bit of debugging output
     if test -n "$CPX_CFLAGS" ; then
       { echo "$as_me:$LINENO: Cpx CFLAGS are $CPX_CFLAGS" >&5
@@ -24555,6 +24361,10 @@ echo "$as_me: Cpx CFLAGS are $CPX_CFLAGS" >&6;}
     if test -n "$CPX_LIBS" ; then
       { echo "$as_me:$LINENO: Cpx LIBS   are $CPX_LIBS" >&5
 echo "$as_me: Cpx LIBS   are $CPX_LIBS" >&6;}
+    fi
+    if test -n "$CPX_DEPENDENCIES" ; then
+      { echo "$as_me:$LINENO: Cpx DEPENDENCIES are $CPX_DEPENDENCIES" >&5
+echo "$as_me: Cpx DEPENDENCIES are $CPX_DEPENDENCIES" >&6;}
     fi
     if test -n "$CPX_DATA" ; then
       { echo "$as_me:$LINENO: Cpx DATA   is  $CPX_DATA" >&5
@@ -24569,11 +24379,15 @@ echo "$as_me: Cpx CFLAGS are $CPX_CFLAGS" >&6;}
 echo "$as_me: CbcLib CFLAGS are $CBCLIB_CFLAGS" >&6;}
       { echo "$as_me:$LINENO: CbcLib LIBS   are $CBCLIB_LIBS" >&5
 echo "$as_me: CbcLib LIBS   are $CBCLIB_LIBS" >&6;}
+      { echo "$as_me:$LINENO: CbcLib DEPENDENCIES are $CBCLIB_DEPENDENCIES" >&5
+echo "$as_me: CbcLib DEPENDENCIES are $CBCLIB_DEPENDENCIES" >&6;}
 
       { echo "$as_me:$LINENO: CbcGeneric CFLAGS are $CBCGENERIC_CFLAGS" >&5
 echo "$as_me: CbcGeneric CFLAGS are $CBCGENERIC_CFLAGS" >&6;}
       { echo "$as_me:$LINENO: CbcGeneric LIBS   are $CBCGENERIC_LIBS" >&5
 echo "$as_me: CbcGeneric LIBS   are $CBCGENERIC_LIBS" >&6;}
+      { echo "$as_me:$LINENO: CbcGeneric DEPENDENCIES are $CBCGENERIC_DEPENDENCIES" >&5
+echo "$as_me: CbcGeneric DEPENDENCIES are $CBCGENERIC_DEPENDENCIES" >&6;}
 
   fi
 fi
@@ -24610,6 +24424,13 @@ fi
 GLPK_LIBS=
 GLPK_CFLAGS=
 GLPK_DATA=
+
+
+
+
+
+
+
 
 
 
@@ -24911,48 +24732,6 @@ _ACEOF
     CBCGENERIC_LIBS_INSTALLED="$GLPK_LIBS_INSTALLED $CBCGENERIC_LIBS_INSTALLED"
 
 
-
-
-
-  if test 1 = 0 ; then  #change this test to enable a bit of debugging output
-    if test -n "$GLPK_CFLAGS" ; then
-      { echo "$as_me:$LINENO: Glpk CFLAGS are $GLPK_CFLAGS" >&5
-echo "$as_me: Glpk CFLAGS are $GLPK_CFLAGS" >&6;}
-    fi
-    if test -n "$GLPK_LIBS" ; then
-      { echo "$as_me:$LINENO: Glpk LIBS   are $GLPK_LIBS" >&5
-echo "$as_me: Glpk LIBS   are $GLPK_LIBS" >&6;}
-    fi
-    if test -n "$GLPK_DATA" ; then
-      { echo "$as_me:$LINENO: Glpk DATA   is  $GLPK_DATA" >&5
-echo "$as_me: Glpk DATA   is  $GLPK_DATA" >&6;}
-    fi
-    if test -n "$GLPK_CFLAGS_INSTALLED" ; then
-      { echo "$as_me:$LINENO: Glpk CFLAGS_INSTALLED are $GLPK_CFLAGS_INSTALLED" >&5
-echo "$as_me: Glpk CFLAGS_INSTALLED are $GLPK_CFLAGS_INSTALLED" >&6;}
-    fi
-    if test -n "$GLPK_LIBS_INSTALLED" ; then
-      { echo "$as_me:$LINENO: Glpk LIBS_INSTALLED   are $GLPK_LIBS_INSTALLED" >&5
-echo "$as_me: Glpk LIBS_INSTALLED   are $GLPK_LIBS_INSTALLED" >&6;}
-    fi
-    if test -n "$GLPK_DATA_INSTALLED" ; then
-      { echo "$as_me:$LINENO: Glpk DATA_INSTALLED   is  $GLPK_DATA_INSTALLED" >&5
-echo "$as_me: Glpk DATA_INSTALLED   is  $GLPK_DATA_INSTALLED" >&6;}
-    fi
-
-      { echo "$as_me:$LINENO: " >&5
-echo "$as_me: " >&6;}
-      { echo "$as_me:$LINENO: CbcGeneric CFLAGS are $CBCGENERIC_CFLAGS" >&5
-echo "$as_me: CbcGeneric CFLAGS are $CBCGENERIC_CFLAGS" >&6;}
-      { echo "$as_me:$LINENO: CbcGeneric LIBS   are $CBCGENERIC_LIBS" >&5
-echo "$as_me: CbcGeneric LIBS   are $CBCGENERIC_LIBS" >&6;}
-      { echo "$as_me:$LINENO: CbcGeneric CFLAGS_INSTALLED are $CBCGENERIC_CFLAGS_INSTALLED" >&5
-echo "$as_me: CbcGeneric CFLAGS_INSTALLED are $CBCGENERIC_CFLAGS_INSTALLED" >&6;}
-      { echo "$as_me:$LINENO: CbcGeneric LIBS_INSTALLED   are $CBCGENERIC_LIBS_INSTALLED" >&5
-echo "$as_me: CbcGeneric LIBS_INSTALLED   are $CBCGENERIC_LIBS_INSTALLED" >&6;}
-
-  fi
-
 fi
 
 
@@ -24983,6 +24762,13 @@ cat >>confdefs.h <<\_ACEOF
 _ACEOF
 
 
+  # construct dependencies variables from LIBS variables
+  # we add an extra space in LIBS so we can substitute out everything starting with " -"
+  GLPK_DEPENDENCIES=`echo " $GLPK_LIBS" | sed -e 's/ -[^ ]*//g'`
+
+    CBCGENERIC_DEPENDENCIES=`echo " $CBCGENERIC_LIBS" | sed -e 's/ -[^ ]*//g'`
+
+
   if test 1 = 0 ; then  #change this test to enable a bit of debugging output
     if test -n "$GLPK_CFLAGS" ; then
       { echo "$as_me:$LINENO: Glpk CFLAGS are $GLPK_CFLAGS" >&5
@@ -24991,6 +24777,10 @@ echo "$as_me: Glpk CFLAGS are $GLPK_CFLAGS" >&6;}
     if test -n "$GLPK_LIBS" ; then
       { echo "$as_me:$LINENO: Glpk LIBS   are $GLPK_LIBS" >&5
 echo "$as_me: Glpk LIBS   are $GLPK_LIBS" >&6;}
+    fi
+    if test -n "$GLPK_DEPENDENCIES" ; then
+      { echo "$as_me:$LINENO: Glpk DEPENDENCIES are $GLPK_DEPENDENCIES" >&5
+echo "$as_me: Glpk DEPENDENCIES are $GLPK_DEPENDENCIES" >&6;}
     fi
     if test -n "$GLPK_DATA" ; then
       { echo "$as_me:$LINENO: Glpk DATA   is  $GLPK_DATA" >&5
@@ -25005,6 +24795,8 @@ echo "$as_me: Glpk CFLAGS are $GLPK_CFLAGS" >&6;}
 echo "$as_me: CbcGeneric CFLAGS are $CBCGENERIC_CFLAGS" >&6;}
       { echo "$as_me:$LINENO: CbcGeneric LIBS   are $CBCGENERIC_LIBS" >&5
 echo "$as_me: CbcGeneric LIBS   are $CBCGENERIC_LIBS" >&6;}
+      { echo "$as_me:$LINENO: CbcGeneric DEPENDENCIES are $CBCGENERIC_DEPENDENCIES" >&5
+echo "$as_me: CbcGeneric DEPENDENCIES are $CBCGENERIC_DEPENDENCIES" >&6;}
 
   fi
 fi
@@ -25041,6 +24833,10 @@ fi
 GRB_LIBS=
 GRB_CFLAGS=
 GRB_DATA=
+
+
+
+
 
 
 
@@ -25323,35 +25119,6 @@ _ACEOF
 
 
 
-
-  if test 1 = 0 ; then  #change this test to enable a bit of debugging output
-    if test -n "$GRB_CFLAGS" ; then
-      { echo "$as_me:$LINENO: Grb CFLAGS are $GRB_CFLAGS" >&5
-echo "$as_me: Grb CFLAGS are $GRB_CFLAGS" >&6;}
-    fi
-    if test -n "$GRB_LIBS" ; then
-      { echo "$as_me:$LINENO: Grb LIBS   are $GRB_LIBS" >&5
-echo "$as_me: Grb LIBS   are $GRB_LIBS" >&6;}
-    fi
-    if test -n "$GRB_DATA" ; then
-      { echo "$as_me:$LINENO: Grb DATA   is  $GRB_DATA" >&5
-echo "$as_me: Grb DATA   is  $GRB_DATA" >&6;}
-    fi
-    if test -n "$GRB_CFLAGS_INSTALLED" ; then
-      { echo "$as_me:$LINENO: Grb CFLAGS_INSTALLED are $GRB_CFLAGS_INSTALLED" >&5
-echo "$as_me: Grb CFLAGS_INSTALLED are $GRB_CFLAGS_INSTALLED" >&6;}
-    fi
-    if test -n "$GRB_LIBS_INSTALLED" ; then
-      { echo "$as_me:$LINENO: Grb LIBS_INSTALLED   are $GRB_LIBS_INSTALLED" >&5
-echo "$as_me: Grb LIBS_INSTALLED   are $GRB_LIBS_INSTALLED" >&6;}
-    fi
-    if test -n "$GRB_DATA_INSTALLED" ; then
-      { echo "$as_me:$LINENO: Grb DATA_INSTALLED   is  $GRB_DATA_INSTALLED" >&5
-echo "$as_me: Grb DATA_INSTALLED   is  $GRB_DATA_INSTALLED" >&6;}
-    fi
-
-  fi
-
 fi
 
 
@@ -25382,6 +25149,11 @@ cat >>confdefs.h <<\_ACEOF
 _ACEOF
 
 
+  # construct dependencies variables from LIBS variables
+  # we add an extra space in LIBS so we can substitute out everything starting with " -"
+  GRB_DEPENDENCIES=`echo " $GRB_LIBS" | sed -e 's/ -[^ ]*//g'`
+
+
   if test 1 = 0 ; then  #change this test to enable a bit of debugging output
     if test -n "$GRB_CFLAGS" ; then
       { echo "$as_me:$LINENO: Grb CFLAGS are $GRB_CFLAGS" >&5
@@ -25390,6 +25162,10 @@ echo "$as_me: Grb CFLAGS are $GRB_CFLAGS" >&6;}
     if test -n "$GRB_LIBS" ; then
       { echo "$as_me:$LINENO: Grb LIBS   are $GRB_LIBS" >&5
 echo "$as_me: Grb LIBS   are $GRB_LIBS" >&6;}
+    fi
+    if test -n "$GRB_DEPENDENCIES" ; then
+      { echo "$as_me:$LINENO: Grb DEPENDENCIES are $GRB_DEPENDENCIES" >&5
+echo "$as_me: Grb DEPENDENCIES are $GRB_DEPENDENCIES" >&6;}
     fi
     if test -n "$GRB_DATA" ; then
       { echo "$as_me:$LINENO: Grb DATA   is  $GRB_DATA" >&5
@@ -25435,6 +25211,13 @@ fi
 MSK_LIBS=
 MSK_CFLAGS=
 MSK_DATA=
+
+
+
+
+
+
+
 
 
 
@@ -25736,48 +25519,6 @@ _ACEOF
     CBCGENERIC_LIBS_INSTALLED="$MSK_LIBS_INSTALLED $CBCGENERIC_LIBS_INSTALLED"
 
 
-
-
-
-  if test 1 = 0 ; then  #change this test to enable a bit of debugging output
-    if test -n "$MSK_CFLAGS" ; then
-      { echo "$as_me:$LINENO: Msk CFLAGS are $MSK_CFLAGS" >&5
-echo "$as_me: Msk CFLAGS are $MSK_CFLAGS" >&6;}
-    fi
-    if test -n "$MSK_LIBS" ; then
-      { echo "$as_me:$LINENO: Msk LIBS   are $MSK_LIBS" >&5
-echo "$as_me: Msk LIBS   are $MSK_LIBS" >&6;}
-    fi
-    if test -n "$MSK_DATA" ; then
-      { echo "$as_me:$LINENO: Msk DATA   is  $MSK_DATA" >&5
-echo "$as_me: Msk DATA   is  $MSK_DATA" >&6;}
-    fi
-    if test -n "$MSK_CFLAGS_INSTALLED" ; then
-      { echo "$as_me:$LINENO: Msk CFLAGS_INSTALLED are $MSK_CFLAGS_INSTALLED" >&5
-echo "$as_me: Msk CFLAGS_INSTALLED are $MSK_CFLAGS_INSTALLED" >&6;}
-    fi
-    if test -n "$MSK_LIBS_INSTALLED" ; then
-      { echo "$as_me:$LINENO: Msk LIBS_INSTALLED   are $MSK_LIBS_INSTALLED" >&5
-echo "$as_me: Msk LIBS_INSTALLED   are $MSK_LIBS_INSTALLED" >&6;}
-    fi
-    if test -n "$MSK_DATA_INSTALLED" ; then
-      { echo "$as_me:$LINENO: Msk DATA_INSTALLED   is  $MSK_DATA_INSTALLED" >&5
-echo "$as_me: Msk DATA_INSTALLED   is  $MSK_DATA_INSTALLED" >&6;}
-    fi
-
-      { echo "$as_me:$LINENO: " >&5
-echo "$as_me: " >&6;}
-      { echo "$as_me:$LINENO: CbcGeneric CFLAGS are $CBCGENERIC_CFLAGS" >&5
-echo "$as_me: CbcGeneric CFLAGS are $CBCGENERIC_CFLAGS" >&6;}
-      { echo "$as_me:$LINENO: CbcGeneric LIBS   are $CBCGENERIC_LIBS" >&5
-echo "$as_me: CbcGeneric LIBS   are $CBCGENERIC_LIBS" >&6;}
-      { echo "$as_me:$LINENO: CbcGeneric CFLAGS_INSTALLED are $CBCGENERIC_CFLAGS_INSTALLED" >&5
-echo "$as_me: CbcGeneric CFLAGS_INSTALLED are $CBCGENERIC_CFLAGS_INSTALLED" >&6;}
-      { echo "$as_me:$LINENO: CbcGeneric LIBS_INSTALLED   are $CBCGENERIC_LIBS_INSTALLED" >&5
-echo "$as_me: CbcGeneric LIBS_INSTALLED   are $CBCGENERIC_LIBS_INSTALLED" >&6;}
-
-  fi
-
 fi
 
 
@@ -25808,6 +25549,13 @@ cat >>confdefs.h <<\_ACEOF
 _ACEOF
 
 
+  # construct dependencies variables from LIBS variables
+  # we add an extra space in LIBS so we can substitute out everything starting with " -"
+  MSK_DEPENDENCIES=`echo " $MSK_LIBS" | sed -e 's/ -[^ ]*//g'`
+
+    CBCGENERIC_DEPENDENCIES=`echo " $CBCGENERIC_LIBS" | sed -e 's/ -[^ ]*//g'`
+
+
   if test 1 = 0 ; then  #change this test to enable a bit of debugging output
     if test -n "$MSK_CFLAGS" ; then
       { echo "$as_me:$LINENO: Msk CFLAGS are $MSK_CFLAGS" >&5
@@ -25816,6 +25564,10 @@ echo "$as_me: Msk CFLAGS are $MSK_CFLAGS" >&6;}
     if test -n "$MSK_LIBS" ; then
       { echo "$as_me:$LINENO: Msk LIBS   are $MSK_LIBS" >&5
 echo "$as_me: Msk LIBS   are $MSK_LIBS" >&6;}
+    fi
+    if test -n "$MSK_DEPENDENCIES" ; then
+      { echo "$as_me:$LINENO: Msk DEPENDENCIES are $MSK_DEPENDENCIES" >&5
+echo "$as_me: Msk DEPENDENCIES are $MSK_DEPENDENCIES" >&6;}
     fi
     if test -n "$MSK_DATA" ; then
       { echo "$as_me:$LINENO: Msk DATA   is  $MSK_DATA" >&5
@@ -25830,6 +25582,8 @@ echo "$as_me: Msk CFLAGS are $MSK_CFLAGS" >&6;}
 echo "$as_me: CbcGeneric CFLAGS are $CBCGENERIC_CFLAGS" >&6;}
       { echo "$as_me:$LINENO: CbcGeneric LIBS   are $CBCGENERIC_LIBS" >&5
 echo "$as_me: CbcGeneric LIBS   are $CBCGENERIC_LIBS" >&6;}
+      { echo "$as_me:$LINENO: CbcGeneric DEPENDENCIES are $CBCGENERIC_DEPENDENCIES" >&5
+echo "$as_me: CbcGeneric DEPENDENCIES are $CBCGENERIC_DEPENDENCIES" >&6;}
 
   fi
 fi
@@ -25866,6 +25620,13 @@ fi
 SPX_LIBS=
 SPX_CFLAGS=
 SPX_DATA=
+
+
+
+
+
+
+
 
 
 
@@ -26167,48 +25928,6 @@ _ACEOF
     CBCGENERIC_LIBS_INSTALLED="$SPX_LIBS_INSTALLED $CBCGENERIC_LIBS_INSTALLED"
 
 
-
-
-
-  if test 1 = 0 ; then  #change this test to enable a bit of debugging output
-    if test -n "$SPX_CFLAGS" ; then
-      { echo "$as_me:$LINENO: Spx CFLAGS are $SPX_CFLAGS" >&5
-echo "$as_me: Spx CFLAGS are $SPX_CFLAGS" >&6;}
-    fi
-    if test -n "$SPX_LIBS" ; then
-      { echo "$as_me:$LINENO: Spx LIBS   are $SPX_LIBS" >&5
-echo "$as_me: Spx LIBS   are $SPX_LIBS" >&6;}
-    fi
-    if test -n "$SPX_DATA" ; then
-      { echo "$as_me:$LINENO: Spx DATA   is  $SPX_DATA" >&5
-echo "$as_me: Spx DATA   is  $SPX_DATA" >&6;}
-    fi
-    if test -n "$SPX_CFLAGS_INSTALLED" ; then
-      { echo "$as_me:$LINENO: Spx CFLAGS_INSTALLED are $SPX_CFLAGS_INSTALLED" >&5
-echo "$as_me: Spx CFLAGS_INSTALLED are $SPX_CFLAGS_INSTALLED" >&6;}
-    fi
-    if test -n "$SPX_LIBS_INSTALLED" ; then
-      { echo "$as_me:$LINENO: Spx LIBS_INSTALLED   are $SPX_LIBS_INSTALLED" >&5
-echo "$as_me: Spx LIBS_INSTALLED   are $SPX_LIBS_INSTALLED" >&6;}
-    fi
-    if test -n "$SPX_DATA_INSTALLED" ; then
-      { echo "$as_me:$LINENO: Spx DATA_INSTALLED   is  $SPX_DATA_INSTALLED" >&5
-echo "$as_me: Spx DATA_INSTALLED   is  $SPX_DATA_INSTALLED" >&6;}
-    fi
-
-      { echo "$as_me:$LINENO: " >&5
-echo "$as_me: " >&6;}
-      { echo "$as_me:$LINENO: CbcGeneric CFLAGS are $CBCGENERIC_CFLAGS" >&5
-echo "$as_me: CbcGeneric CFLAGS are $CBCGENERIC_CFLAGS" >&6;}
-      { echo "$as_me:$LINENO: CbcGeneric LIBS   are $CBCGENERIC_LIBS" >&5
-echo "$as_me: CbcGeneric LIBS   are $CBCGENERIC_LIBS" >&6;}
-      { echo "$as_me:$LINENO: CbcGeneric CFLAGS_INSTALLED are $CBCGENERIC_CFLAGS_INSTALLED" >&5
-echo "$as_me: CbcGeneric CFLAGS_INSTALLED are $CBCGENERIC_CFLAGS_INSTALLED" >&6;}
-      { echo "$as_me:$LINENO: CbcGeneric LIBS_INSTALLED   are $CBCGENERIC_LIBS_INSTALLED" >&5
-echo "$as_me: CbcGeneric LIBS_INSTALLED   are $CBCGENERIC_LIBS_INSTALLED" >&6;}
-
-  fi
-
 fi
 
 
@@ -26239,6 +25958,13 @@ cat >>confdefs.h <<\_ACEOF
 _ACEOF
 
 
+  # construct dependencies variables from LIBS variables
+  # we add an extra space in LIBS so we can substitute out everything starting with " -"
+  SPX_DEPENDENCIES=`echo " $SPX_LIBS" | sed -e 's/ -[^ ]*//g'`
+
+    CBCGENERIC_DEPENDENCIES=`echo " $CBCGENERIC_LIBS" | sed -e 's/ -[^ ]*//g'`
+
+
   if test 1 = 0 ; then  #change this test to enable a bit of debugging output
     if test -n "$SPX_CFLAGS" ; then
       { echo "$as_me:$LINENO: Spx CFLAGS are $SPX_CFLAGS" >&5
@@ -26247,6 +25973,10 @@ echo "$as_me: Spx CFLAGS are $SPX_CFLAGS" >&6;}
     if test -n "$SPX_LIBS" ; then
       { echo "$as_me:$LINENO: Spx LIBS   are $SPX_LIBS" >&5
 echo "$as_me: Spx LIBS   are $SPX_LIBS" >&6;}
+    fi
+    if test -n "$SPX_DEPENDENCIES" ; then
+      { echo "$as_me:$LINENO: Spx DEPENDENCIES are $SPX_DEPENDENCIES" >&5
+echo "$as_me: Spx DEPENDENCIES are $SPX_DEPENDENCIES" >&6;}
     fi
     if test -n "$SPX_DATA" ; then
       { echo "$as_me:$LINENO: Spx DATA   is  $SPX_DATA" >&5
@@ -26261,6 +25991,8 @@ echo "$as_me: Spx CFLAGS are $SPX_CFLAGS" >&6;}
 echo "$as_me: CbcGeneric CFLAGS are $CBCGENERIC_CFLAGS" >&6;}
       { echo "$as_me:$LINENO: CbcGeneric LIBS   are $CBCGENERIC_LIBS" >&5
 echo "$as_me: CbcGeneric LIBS   are $CBCGENERIC_LIBS" >&6;}
+      { echo "$as_me:$LINENO: CbcGeneric DEPENDENCIES are $CBCGENERIC_DEPENDENCIES" >&5
+echo "$as_me: CbcGeneric DEPENDENCIES are $CBCGENERIC_DEPENDENCIES" >&6;}
 
   fi
 fi
@@ -26297,6 +26029,10 @@ fi
 XPR_LIBS=
 XPR_CFLAGS=
 XPR_DATA=
+
+
+
+
 
 
 
@@ -26579,35 +26315,6 @@ _ACEOF
 
 
 
-
-  if test 1 = 0 ; then  #change this test to enable a bit of debugging output
-    if test -n "$XPR_CFLAGS" ; then
-      { echo "$as_me:$LINENO: Xpr CFLAGS are $XPR_CFLAGS" >&5
-echo "$as_me: Xpr CFLAGS are $XPR_CFLAGS" >&6;}
-    fi
-    if test -n "$XPR_LIBS" ; then
-      { echo "$as_me:$LINENO: Xpr LIBS   are $XPR_LIBS" >&5
-echo "$as_me: Xpr LIBS   are $XPR_LIBS" >&6;}
-    fi
-    if test -n "$XPR_DATA" ; then
-      { echo "$as_me:$LINENO: Xpr DATA   is  $XPR_DATA" >&5
-echo "$as_me: Xpr DATA   is  $XPR_DATA" >&6;}
-    fi
-    if test -n "$XPR_CFLAGS_INSTALLED" ; then
-      { echo "$as_me:$LINENO: Xpr CFLAGS_INSTALLED are $XPR_CFLAGS_INSTALLED" >&5
-echo "$as_me: Xpr CFLAGS_INSTALLED are $XPR_CFLAGS_INSTALLED" >&6;}
-    fi
-    if test -n "$XPR_LIBS_INSTALLED" ; then
-      { echo "$as_me:$LINENO: Xpr LIBS_INSTALLED   are $XPR_LIBS_INSTALLED" >&5
-echo "$as_me: Xpr LIBS_INSTALLED   are $XPR_LIBS_INSTALLED" >&6;}
-    fi
-    if test -n "$XPR_DATA_INSTALLED" ; then
-      { echo "$as_me:$LINENO: Xpr DATA_INSTALLED   is  $XPR_DATA_INSTALLED" >&5
-echo "$as_me: Xpr DATA_INSTALLED   is  $XPR_DATA_INSTALLED" >&6;}
-    fi
-
-  fi
-
 fi
 
 
@@ -26638,6 +26345,11 @@ cat >>confdefs.h <<\_ACEOF
 _ACEOF
 
 
+  # construct dependencies variables from LIBS variables
+  # we add an extra space in LIBS so we can substitute out everything starting with " -"
+  XPR_DEPENDENCIES=`echo " $XPR_LIBS" | sed -e 's/ -[^ ]*//g'`
+
+
   if test 1 = 0 ; then  #change this test to enable a bit of debugging output
     if test -n "$XPR_CFLAGS" ; then
       { echo "$as_me:$LINENO: Xpr CFLAGS are $XPR_CFLAGS" >&5
@@ -26646,6 +26358,10 @@ echo "$as_me: Xpr CFLAGS are $XPR_CFLAGS" >&6;}
     if test -n "$XPR_LIBS" ; then
       { echo "$as_me:$LINENO: Xpr LIBS   are $XPR_LIBS" >&5
 echo "$as_me: Xpr LIBS   are $XPR_LIBS" >&6;}
+    fi
+    if test -n "$XPR_DEPENDENCIES" ; then
+      { echo "$as_me:$LINENO: Xpr DEPENDENCIES are $XPR_DEPENDENCIES" >&5
+echo "$as_me: Xpr DEPENDENCIES are $XPR_DEPENDENCIES" >&6;}
     fi
     if test -n "$XPR_DATA" ; then
       { echo "$as_me:$LINENO: Xpr DATA   is  $XPR_DATA" >&5
@@ -26697,6 +26413,10 @@ fi
 ASL_LIBS=
 ASL_CFLAGS=
 ASL_DATA=
+
+
+
+
 
 
 
@@ -26979,35 +26699,6 @@ _ACEOF
 
 
 
-
-  if test 1 = 0 ; then  #change this test to enable a bit of debugging output
-    if test -n "$ASL_CFLAGS" ; then
-      { echo "$as_me:$LINENO: ASL CFLAGS are $ASL_CFLAGS" >&5
-echo "$as_me: ASL CFLAGS are $ASL_CFLAGS" >&6;}
-    fi
-    if test -n "$ASL_LIBS" ; then
-      { echo "$as_me:$LINENO: ASL LIBS   are $ASL_LIBS" >&5
-echo "$as_me: ASL LIBS   are $ASL_LIBS" >&6;}
-    fi
-    if test -n "$ASL_DATA" ; then
-      { echo "$as_me:$LINENO: ASL DATA   is  $ASL_DATA" >&5
-echo "$as_me: ASL DATA   is  $ASL_DATA" >&6;}
-    fi
-    if test -n "$ASL_CFLAGS_INSTALLED" ; then
-      { echo "$as_me:$LINENO: ASL CFLAGS_INSTALLED are $ASL_CFLAGS_INSTALLED" >&5
-echo "$as_me: ASL CFLAGS_INSTALLED are $ASL_CFLAGS_INSTALLED" >&6;}
-    fi
-    if test -n "$ASL_LIBS_INSTALLED" ; then
-      { echo "$as_me:$LINENO: ASL LIBS_INSTALLED   are $ASL_LIBS_INSTALLED" >&5
-echo "$as_me: ASL LIBS_INSTALLED   are $ASL_LIBS_INSTALLED" >&6;}
-    fi
-    if test -n "$ASL_DATA_INSTALLED" ; then
-      { echo "$as_me:$LINENO: ASL DATA_INSTALLED   is  $ASL_DATA_INSTALLED" >&5
-echo "$as_me: ASL DATA_INSTALLED   is  $ASL_DATA_INSTALLED" >&6;}
-    fi
-
-  fi
-
 fi
 
 
@@ -27038,6 +26729,11 @@ cat >>confdefs.h <<\_ACEOF
 _ACEOF
 
 
+  # construct dependencies variables from LIBS variables
+  # we add an extra space in LIBS so we can substitute out everything starting with " -"
+  ASL_DEPENDENCIES=`echo " $ASL_LIBS" | sed -e 's/ -[^ ]*//g'`
+
+
   if test 1 = 0 ; then  #change this test to enable a bit of debugging output
     if test -n "$ASL_CFLAGS" ; then
       { echo "$as_me:$LINENO: ASL CFLAGS are $ASL_CFLAGS" >&5
@@ -27046,6 +26742,10 @@ echo "$as_me: ASL CFLAGS are $ASL_CFLAGS" >&6;}
     if test -n "$ASL_LIBS" ; then
       { echo "$as_me:$LINENO: ASL LIBS   are $ASL_LIBS" >&5
 echo "$as_me: ASL LIBS   are $ASL_LIBS" >&6;}
+    fi
+    if test -n "$ASL_DEPENDENCIES" ; then
+      { echo "$as_me:$LINENO: ASL DEPENDENCIES are $ASL_DEPENDENCIES" >&5
+echo "$as_me: ASL DEPENDENCIES are $ASL_DEPENDENCIES" >&6;}
     fi
     if test -n "$ASL_DATA" ; then
       { echo "$as_me:$LINENO: ASL DATA   is  $ASL_DATA" >&5
@@ -28958,102 +28658,149 @@ s,@COIN_PKG_CONFIG_PATH_UNINSTALLED@,$COIN_PKG_CONFIG_PATH_UNINSTALLED,;t t
 s,@COINDEPEND_LIBS@,$COINDEPEND_LIBS,;t t
 s,@COINDEPEND_CFLAGS@,$COINDEPEND_CFLAGS,;t t
 s,@COINDEPEND_DATA@,$COINDEPEND_DATA,;t t
+s,@COINDEPEND_DEPENDENCIES@,$COINDEPEND_DEPENDENCIES,;t t
+s,@COINDEPEND_LIBS_INSTALLED@,$COINDEPEND_LIBS_INSTALLED,;t t
+s,@COINDEPEND_CFLAGS_INSTALLED@,$COINDEPEND_CFLAGS_INSTALLED,;t t
+s,@COINDEPEND_DATA_INSTALLED@,$COINDEPEND_DATA_INSTALLED,;t t
 s,@CBCLIB_CFLAGS@,$CBCLIB_CFLAGS,;t t
 s,@CBCLIB_LIBS@,$CBCLIB_LIBS,;t t
 s,@CBCLIB_PCLIBS@,$CBCLIB_PCLIBS,;t t
 s,@CBCLIB_PCREQUIRES@,$CBCLIB_PCREQUIRES,;t t
+s,@CBCLIB_DEPENDENCIES@,$CBCLIB_DEPENDENCIES,;t t
+s,@CBCLIB_CFLAGS_INSTALLED@,$CBCLIB_CFLAGS_INSTALLED,;t t
+s,@CBCLIB_LIBS_INSTALLED@,$CBCLIB_LIBS_INSTALLED,;t t
 s,@CBCGENERIC_CFLAGS@,$CBCGENERIC_CFLAGS,;t t
 s,@CBCGENERIC_LIBS@,$CBCGENERIC_LIBS,;t t
 s,@CBCGENERIC_PCLIBS@,$CBCGENERIC_PCLIBS,;t t
 s,@CBCGENERIC_PCREQUIRES@,$CBCGENERIC_PCREQUIRES,;t t
-s,@CBCLIB_CFLAGS_INSTALLED@,$CBCLIB_CFLAGS_INSTALLED,;t t
-s,@CBCLIB_LIBS_INSTALLED@,$CBCLIB_LIBS_INSTALLED,;t t
+s,@CBCGENERIC_DEPENDENCIES@,$CBCGENERIC_DEPENDENCIES,;t t
 s,@CBCGENERIC_CFLAGS_INSTALLED@,$CBCGENERIC_CFLAGS_INSTALLED,;t t
 s,@CBCGENERIC_LIBS_INSTALLED@,$CBCGENERIC_LIBS_INSTALLED,;t t
-s,@COINDEPEND_DATA_INSTALLED@,$COINDEPEND_DATA_INSTALLED,;t t
 s,@COIN_HAS_COINDEPEND_TRUE@,$COIN_HAS_COINDEPEND_TRUE,;t t
 s,@COIN_HAS_COINDEPEND_FALSE@,$COIN_HAS_COINDEPEND_FALSE,;t t
 s,@CLP_LIBS@,$CLP_LIBS,;t t
 s,@CLP_CFLAGS@,$CLP_CFLAGS,;t t
 s,@CLP_DATA@,$CLP_DATA,;t t
+s,@CLP_DEPENDENCIES@,$CLP_DEPENDENCIES,;t t
+s,@CLP_LIBS_INSTALLED@,$CLP_LIBS_INSTALLED,;t t
+s,@CLP_CFLAGS_INSTALLED@,$CLP_CFLAGS_INSTALLED,;t t
 s,@CLP_DATA_INSTALLED@,$CLP_DATA_INSTALLED,;t t
 s,@COIN_HAS_CLP_TRUE@,$COIN_HAS_CLP_TRUE,;t t
 s,@COIN_HAS_CLP_FALSE@,$COIN_HAS_CLP_FALSE,;t t
 s,@OSITESTS_LIBS@,$OSITESTS_LIBS,;t t
 s,@OSITESTS_CFLAGS@,$OSITESTS_CFLAGS,;t t
 s,@OSITESTS_DATA@,$OSITESTS_DATA,;t t
+s,@OSITESTS_DEPENDENCIES@,$OSITESTS_DEPENDENCIES,;t t
+s,@OSITESTS_LIBS_INSTALLED@,$OSITESTS_LIBS_INSTALLED,;t t
+s,@OSITESTS_CFLAGS_INSTALLED@,$OSITESTS_CFLAGS_INSTALLED,;t t
 s,@OSITESTS_DATA_INSTALLED@,$OSITESTS_DATA_INSTALLED,;t t
 s,@COIN_HAS_OSITESTS_TRUE@,$COIN_HAS_OSITESTS_TRUE,;t t
 s,@COIN_HAS_OSITESTS_FALSE@,$COIN_HAS_OSITESTS_FALSE,;t t
 s,@SAMPLE_LIBS@,$SAMPLE_LIBS,;t t
 s,@SAMPLE_CFLAGS@,$SAMPLE_CFLAGS,;t t
 s,@SAMPLE_DATA@,$SAMPLE_DATA,;t t
+s,@SAMPLE_DEPENDENCIES@,$SAMPLE_DEPENDENCIES,;t t
+s,@SAMPLE_LIBS_INSTALLED@,$SAMPLE_LIBS_INSTALLED,;t t
+s,@SAMPLE_CFLAGS_INSTALLED@,$SAMPLE_CFLAGS_INSTALLED,;t t
 s,@SAMPLE_DATA_INSTALLED@,$SAMPLE_DATA_INSTALLED,;t t
 s,@COIN_HAS_SAMPLE_TRUE@,$COIN_HAS_SAMPLE_TRUE,;t t
 s,@COIN_HAS_SAMPLE_FALSE@,$COIN_HAS_SAMPLE_FALSE,;t t
 s,@NETLIB_LIBS@,$NETLIB_LIBS,;t t
 s,@NETLIB_CFLAGS@,$NETLIB_CFLAGS,;t t
 s,@NETLIB_DATA@,$NETLIB_DATA,;t t
+s,@NETLIB_DEPENDENCIES@,$NETLIB_DEPENDENCIES,;t t
+s,@NETLIB_LIBS_INSTALLED@,$NETLIB_LIBS_INSTALLED,;t t
+s,@NETLIB_CFLAGS_INSTALLED@,$NETLIB_CFLAGS_INSTALLED,;t t
 s,@NETLIB_DATA_INSTALLED@,$NETLIB_DATA_INSTALLED,;t t
 s,@COIN_HAS_NETLIB_TRUE@,$COIN_HAS_NETLIB_TRUE,;t t
 s,@COIN_HAS_NETLIB_FALSE@,$COIN_HAS_NETLIB_FALSE,;t t
 s,@MIPLIB3_LIBS@,$MIPLIB3_LIBS,;t t
 s,@MIPLIB3_CFLAGS@,$MIPLIB3_CFLAGS,;t t
 s,@MIPLIB3_DATA@,$MIPLIB3_DATA,;t t
+s,@MIPLIB3_DEPENDENCIES@,$MIPLIB3_DEPENDENCIES,;t t
+s,@MIPLIB3_LIBS_INSTALLED@,$MIPLIB3_LIBS_INSTALLED,;t t
+s,@MIPLIB3_CFLAGS_INSTALLED@,$MIPLIB3_CFLAGS_INSTALLED,;t t
 s,@MIPLIB3_DATA_INSTALLED@,$MIPLIB3_DATA_INSTALLED,;t t
 s,@COIN_HAS_MIPLIB3_TRUE@,$COIN_HAS_MIPLIB3_TRUE,;t t
 s,@COIN_HAS_MIPLIB3_FALSE@,$COIN_HAS_MIPLIB3_FALSE,;t t
 s,@DYLP_LIBS@,$DYLP_LIBS,;t t
 s,@DYLP_CFLAGS@,$DYLP_CFLAGS,;t t
 s,@DYLP_DATA@,$DYLP_DATA,;t t
+s,@DYLP_DEPENDENCIES@,$DYLP_DEPENDENCIES,;t t
+s,@DYLP_LIBS_INSTALLED@,$DYLP_LIBS_INSTALLED,;t t
+s,@DYLP_CFLAGS_INSTALLED@,$DYLP_CFLAGS_INSTALLED,;t t
 s,@DYLP_DATA_INSTALLED@,$DYLP_DATA_INSTALLED,;t t
 s,@COIN_HAS_DYLP_TRUE@,$COIN_HAS_DYLP_TRUE,;t t
 s,@COIN_HAS_DYLP_FALSE@,$COIN_HAS_DYLP_FALSE,;t t
 s,@VOL_LIBS@,$VOL_LIBS,;t t
 s,@VOL_CFLAGS@,$VOL_CFLAGS,;t t
 s,@VOL_DATA@,$VOL_DATA,;t t
+s,@VOL_DEPENDENCIES@,$VOL_DEPENDENCIES,;t t
+s,@VOL_LIBS_INSTALLED@,$VOL_LIBS_INSTALLED,;t t
+s,@VOL_CFLAGS_INSTALLED@,$VOL_CFLAGS_INSTALLED,;t t
 s,@VOL_DATA_INSTALLED@,$VOL_DATA_INSTALLED,;t t
 s,@COIN_HAS_VOL_TRUE@,$COIN_HAS_VOL_TRUE,;t t
 s,@COIN_HAS_VOL_FALSE@,$COIN_HAS_VOL_FALSE,;t t
 s,@CPX_LIBS@,$CPX_LIBS,;t t
 s,@CPX_CFLAGS@,$CPX_CFLAGS,;t t
 s,@CPX_DATA@,$CPX_DATA,;t t
+s,@CPX_DEPENDENCIES@,$CPX_DEPENDENCIES,;t t
+s,@CPX_LIBS_INSTALLED@,$CPX_LIBS_INSTALLED,;t t
+s,@CPX_CFLAGS_INSTALLED@,$CPX_CFLAGS_INSTALLED,;t t
 s,@CPX_DATA_INSTALLED@,$CPX_DATA_INSTALLED,;t t
 s,@COIN_HAS_CPX_TRUE@,$COIN_HAS_CPX_TRUE,;t t
 s,@COIN_HAS_CPX_FALSE@,$COIN_HAS_CPX_FALSE,;t t
 s,@GLPK_LIBS@,$GLPK_LIBS,;t t
 s,@GLPK_CFLAGS@,$GLPK_CFLAGS,;t t
 s,@GLPK_DATA@,$GLPK_DATA,;t t
+s,@GLPK_DEPENDENCIES@,$GLPK_DEPENDENCIES,;t t
+s,@GLPK_LIBS_INSTALLED@,$GLPK_LIBS_INSTALLED,;t t
+s,@GLPK_CFLAGS_INSTALLED@,$GLPK_CFLAGS_INSTALLED,;t t
 s,@GLPK_DATA_INSTALLED@,$GLPK_DATA_INSTALLED,;t t
 s,@COIN_HAS_GLPK_TRUE@,$COIN_HAS_GLPK_TRUE,;t t
 s,@COIN_HAS_GLPK_FALSE@,$COIN_HAS_GLPK_FALSE,;t t
 s,@GRB_LIBS@,$GRB_LIBS,;t t
 s,@GRB_CFLAGS@,$GRB_CFLAGS,;t t
 s,@GRB_DATA@,$GRB_DATA,;t t
+s,@GRB_DEPENDENCIES@,$GRB_DEPENDENCIES,;t t
+s,@GRB_LIBS_INSTALLED@,$GRB_LIBS_INSTALLED,;t t
+s,@GRB_CFLAGS_INSTALLED@,$GRB_CFLAGS_INSTALLED,;t t
 s,@GRB_DATA_INSTALLED@,$GRB_DATA_INSTALLED,;t t
 s,@COIN_HAS_GRB_TRUE@,$COIN_HAS_GRB_TRUE,;t t
 s,@COIN_HAS_GRB_FALSE@,$COIN_HAS_GRB_FALSE,;t t
 s,@MSK_LIBS@,$MSK_LIBS,;t t
 s,@MSK_CFLAGS@,$MSK_CFLAGS,;t t
 s,@MSK_DATA@,$MSK_DATA,;t t
+s,@MSK_DEPENDENCIES@,$MSK_DEPENDENCIES,;t t
+s,@MSK_LIBS_INSTALLED@,$MSK_LIBS_INSTALLED,;t t
+s,@MSK_CFLAGS_INSTALLED@,$MSK_CFLAGS_INSTALLED,;t t
 s,@MSK_DATA_INSTALLED@,$MSK_DATA_INSTALLED,;t t
 s,@COIN_HAS_MSK_TRUE@,$COIN_HAS_MSK_TRUE,;t t
 s,@COIN_HAS_MSK_FALSE@,$COIN_HAS_MSK_FALSE,;t t
 s,@SPX_LIBS@,$SPX_LIBS,;t t
 s,@SPX_CFLAGS@,$SPX_CFLAGS,;t t
 s,@SPX_DATA@,$SPX_DATA,;t t
+s,@SPX_DEPENDENCIES@,$SPX_DEPENDENCIES,;t t
+s,@SPX_LIBS_INSTALLED@,$SPX_LIBS_INSTALLED,;t t
+s,@SPX_CFLAGS_INSTALLED@,$SPX_CFLAGS_INSTALLED,;t t
 s,@SPX_DATA_INSTALLED@,$SPX_DATA_INSTALLED,;t t
 s,@COIN_HAS_SPX_TRUE@,$COIN_HAS_SPX_TRUE,;t t
 s,@COIN_HAS_SPX_FALSE@,$COIN_HAS_SPX_FALSE,;t t
 s,@XPR_LIBS@,$XPR_LIBS,;t t
 s,@XPR_CFLAGS@,$XPR_CFLAGS,;t t
 s,@XPR_DATA@,$XPR_DATA,;t t
+s,@XPR_DEPENDENCIES@,$XPR_DEPENDENCIES,;t t
+s,@XPR_LIBS_INSTALLED@,$XPR_LIBS_INSTALLED,;t t
+s,@XPR_CFLAGS_INSTALLED@,$XPR_CFLAGS_INSTALLED,;t t
 s,@XPR_DATA_INSTALLED@,$XPR_DATA_INSTALLED,;t t
 s,@COIN_HAS_XPR_TRUE@,$COIN_HAS_XPR_TRUE,;t t
 s,@COIN_HAS_XPR_FALSE@,$COIN_HAS_XPR_FALSE,;t t
 s,@ASL_LIBS@,$ASL_LIBS,;t t
 s,@ASL_CFLAGS@,$ASL_CFLAGS,;t t
 s,@ASL_DATA@,$ASL_DATA,;t t
+s,@ASL_DEPENDENCIES@,$ASL_DEPENDENCIES,;t t
+s,@ASL_LIBS_INSTALLED@,$ASL_LIBS_INSTALLED,;t t
+s,@ASL_CFLAGS_INSTALLED@,$ASL_CFLAGS_INSTALLED,;t t
 s,@ASL_DATA_INSTALLED@,$ASL_DATA_INSTALLED,;t t
 s,@COIN_HAS_ASL_TRUE@,$COIN_HAS_ASL_TRUE,;t t
 s,@COIN_HAS_ASL_FALSE@,$COIN_HAS_ASL_FALSE,;t t

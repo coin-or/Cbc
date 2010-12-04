@@ -60,49 +60,11 @@ bin_PROGRAMS = gamsTest osiUnitTest
 
 gamsTest_SOURCES = gamsTest.cpp
 gamsTest_LDADD = ../src/libCbcSolver.la ../src/libCbc.la $(CBCLIB_LIBS)
+gamsTest_DEPENDENCIES = ../src/libCbcSolver.la ../src/libCbc.la $(CBCLIB_DEPENDENCIES)
 gamsTest_LDFLAGS = -rpath $(libdir)
 
 AM_CPPFLAGS = -I`$(CYGPATH_W) $(srcdir)/../src` $(COINDEPEND_CFLAGS)
-
-if COIN_HAS_CLP
-  AM_CPPFLAGS += $(CLP_CFLAGS)
-#  gamsTest_LDADD += $(CLP_LIBS)
-endif
-
-if COIN_HAS_CPX
-  AM_CPPFLAGS += $(CPX_CFLAGS)
-#  gamsTest_LDADD += $(CPX_LIBS)
-endif
-
-if COIN_HAS_DYLP
-  AM_CPPFLAGS += $(DYLP_CFLAGS)
-#  gamsTest_LDADD += $(DYLP_LIBS)
-endif
-
-if COIN_HAS_GLPK
-  AM_CPPFLAGS += $(GLPK_CFLAGS)
-#  gamsTest_LDADD += $(GLPK_LIBS)
-endif
-
-if COIN_HAS_MSK
-  AM_CPPFLAGS += $(MSK_CFLAGS)
-#  gamsTest_LDADD += $(MSK_LIBS)
-endif
-
-# if COIN_HAS_SPX
-#   AM_CPPFLAGS += $(SPX_CFLAGS)
-#   gamsTest_LDADD += $(SPX_LIBS)
-# endif
-
-if COIN_HAS_VOL
-  AM_CPPFLAGS += $(VOL_CFLAGS)
-#  gamsTest_LDADD += $(VOL_LIBS)
-endif
-
-if COIN_HAS_XPR
-  AM_CPPFLAGS += $(XPR_CFLAGS)
-#  gamsTest_LDADD += $(XPR_LIBS)
-endif
+AM_CPPFLAGS += $(CLP_CFLAGS) $(CPX_CFLAGS) $(DYLP_CFLAGS) $(GLPK_CFLAGS) $(MSK_CFLAGS) $(VOL_CFLAGS) $(XPR_CFLAGS)
 
 ########################################################################
 #                         unitTest for OsiCbc                          #
@@ -112,6 +74,9 @@ osiUnitTest_SOURCES = osiUnitTest.cpp OsiCbcSolverInterfaceTest.cpp
 
 osiUnitTest_LDADD = ../src/OsiCbc/libOsiCbc.la ../src/libCbc.la \
     $(CBCLIB_LIBS) $(OSITESTS_LIBS)
+
+osiUnitTest_DEPENDENCIES = ../src/OsiCbc/libOsiCbc.la ../src/libCbc.la \
+    $(CBCLIB_DEPENDENCIES) $(OSITESTS_DEPENDENCIES)
 
 AM_CPPFLAGS += $(OSITESTS_CFLAGS) \
         -I`$(CYGPATH_W) $(srcdir)/../src/OsiCbc`

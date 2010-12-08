@@ -23,6 +23,7 @@ Cbc/MSVisualStudio/v8/cbcSolve/cbcSolve.vcproj -text
 Cbc/MSVisualStudio/v8/libCbc/libCbc.vcproj -text
 Cbc/MSVisualStudio/v9/Cbc.sln -text
 Cbc/MSVisualStudio/v9/OsiCbcUnitTest/OsiCbcUnitTest.vcproj -text
+Cbc/MSVisualStudio/v9/cbc/cbc.vcproj -text
 Cbc/MSVisualStudio/v9/cbcCInterfaceDll/cbcCInterfaceDll.vcproj -text
 Cbc/MSVisualStudio/v9/cbcCSosDllSample/cbcCSosDllSample.vcproj -text
 Cbc/MSVisualStudio/v9/cbcExamplesSample2/cbcExamplesSample2.vcproj -text

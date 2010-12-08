@@ -72,16 +72,17 @@ int main (int argc, const char *argv[])
 
   // Read in model using argv[1]
   // and assert that it is a clean model
-  const char dirsep =  CoinFindDirSeparator();
+  std::string dirsep(1,CoinFindDirSeparator());
   std::string mpsFileName;
-#if defined(SAMPLEDIR)
-  mpsFileName = SAMPLEDIR "/p0033.mps";
-#else
+# if defined(SAMPLEDIR)
+  mpsFileName = SAMPLEDIR ;
+  mpsFileName += dirsep+"p0033.mps";
+# else
   if (argc < 2) {
     fprintf(stderr, "Do not know where to find sample MPS files.\n");
     exit(1);
   }
-#endif
+# endif
   if (argc>=2) mpsFileName = argv[1];
   int numMpsReadErrors = solver1.readMps(mpsFileName.c_str(),"");
   assert(numMpsReadErrors==0);

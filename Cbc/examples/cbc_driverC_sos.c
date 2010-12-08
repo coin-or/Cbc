@@ -22,7 +22,7 @@ static void callBack(Cbc_Model * model, int messageNumber,
                      int nString, char ** vString) 
 {
   const char prefix[] = "cbc_driverC_sos.cpp::callBack(): ";
-  const int  VERBOSE = 0;
+  const int  VERBOSE = 4;
   if (VERBOSE>0) printf("%s begin\n",prefix);
   if (VERBOSE>1) printf("%s messageNumber %i\n",prefix,messageNumber);
 
@@ -48,7 +48,7 @@ static void callBack(Cbc_Model * model, int messageNumber,
 Cbc_Model * getDefaultModel(int argc, const char *argv[])
 {
   const char prefix[] = "cbc_driverC_sos.cpp::getDefaultModel(): ";
-  const int  VERBOSE = 0;
+  const int  VERBOSE = 4;
   Cbc_Model  *model;
   int status; 
 
@@ -68,11 +68,16 @@ Cbc_Model * getDefaultModel(int argc, const char *argv[])
   /* register callback */
   Cbc_registerCallBack(model,callBack);
   /* Keep names when reading an mps file */
-  if (argc<2) {
+  if (argc < 2) {
 #if defined(SAMPLEDIR)
-    status=Cbc_readMps(model, SAMPLEDIR "/p0033.mps");
+  /*
+    SAMPLEDIR should be something like "path/to/mps/directory/", including the
+    quotes and final directory separator. Don't forget to properly escape
+    '\' when using native Windows path syntax.
+  */
+    status=Cbc_readMps(model,SAMPLEDIR "p0033.mps") ;
 #else
-    fprintf(stderr, "Do not know where to find sample MPS files.\n");
+    fprintf(stderr, "Please specify the full path to an MPS file on the command line\n");
     exit(1);
 #endif
   }
@@ -209,7 +214,7 @@ void printSolution(Cbc_Model *cbc_model) {
 int main (int argc, const char *argv[])
 {
   const char prefix[] = "cbc_driverC_sos.cpp:main(): ";
-  const int  VERBOSE = 0;
+  const int  VERBOSE = 4;
   Cbc_Model * model, * model2;
   double time1;
   char modelName[80];

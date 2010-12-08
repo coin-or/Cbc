@@ -22,12 +22,13 @@ Cbc/MSVisualStudio/v8/cbcGeneric/cbcGeneric.vcproj -text
 Cbc/MSVisualStudio/v8/cbcSolve/cbcSolve.vcproj -text
 Cbc/MSVisualStudio/v8/libCbc/libCbc.vcproj -text
 Cbc/MSVisualStudio/v9/Cbc.sln -text
+Cbc/MSVisualStudio/v9/OsiCbcUnitTest/OsiCbcUnitTest.vcproj -text
 Cbc/MSVisualStudio/v9/cbcCInterfaceDll/cbcCInterfaceDll.vcproj -text
 Cbc/MSVisualStudio/v9/cbcCSosDllSample/cbcCSosDllSample.vcproj -text
 Cbc/MSVisualStudio/v9/cbcExamplesSample2/cbcExamplesSample2.vcproj -text
-Cbc/MSVisualStudio/v9/cbcGeneric/cbcGeneric.vcproj -text
-Cbc/MSVisualStudio/v9/cbcSolve/cbcSolve.vcproj -text
 Cbc/MSVisualStudio/v9/libCbc/libCbc.vcproj -text
+Cbc/MSVisualStudio/v9/libCbcSolver/libCbcSolver.vcproj -text
+Cbc/MSVisualStudio/v9/libOsiCbc/libOsiCbc.vcproj -text
 Cbc/MSVisualStudio/v9alt/Cbc.sln -text
 Cbc/MSVisualStudio/v9alt/Cbc.vcproj -text
 Cbc/MSVisualStudio/v9alt/OsiCbcUnitTest.vcproj -text

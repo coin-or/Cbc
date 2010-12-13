@@ -7900,6 +7900,42 @@ clp watson.mps -\nscaling off\nprimalsimplex"
                     case CLP_PARAM_ACTION_ENVIRONMENT:
                         CbcOrClpEnvironmentIndex = 0;
                         break;
+                    case CLP_PARAM_ACTION_PARAMETRICS:
+                          if (goodModel) {
+                               // get next field
+                               field = CoinReadGetString(argc, argv);
+                               if (field == "$") {
+                                    field = parameters[iParam].stringValue();
+                               } else if (field == "EOL") {
+                                    parameters[iParam].printString();
+                                    break;
+                               } else {
+                                    parameters[iParam].setStringValue(field);
+                               }
+                               std::string fileName;
+                               //bool canOpen = false;
+                               if (field[0] == '/' || field[0] == '\\') {
+                                    fileName = field;
+                               } else if (field[0] == '~') {
+                                    char * environVar = getenv("HOME");
+                                    if (environVar) {
+                                         std::string home(environVar);
+                                         field = field.erase(0, 1);
+                                         fileName = home + field;
+                                    } else {
+                                         fileName = field;
+                                    }
+                               } else {
+                                    fileName = directory + field;
+                               }
+			       static_cast<ClpSimplexOther *> (lpSolver)->parametrics(fileName.c_str());
+			       time2 = CoinCpuTime();
+			       totalTime += time2 - time1;
+			       time1 = time2;
+                          } else {
+                               std::cout << "** Current model not valid" << std::endl;
+                          }
+                          break;
                     default:
                         abort();
                     }

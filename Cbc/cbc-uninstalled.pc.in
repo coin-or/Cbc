@@ -4,6 +4,6 @@ libdir=@ABSBUILDDIR@/src
 Name: CBC
 Description: COIN-OR Branch and Cut
 Version: @PACKAGE_VERSION@
-Libs: -L${libdir} -lCbcSolver -lCbc @CBCLIB_PCLIBS@
+Libs: ${libdir}/libCbcSolver.la ${libdir}/libCbc.la @CBCLIB_PCLIBS@
 Cflags: -I@abs_source_dir@/src -I@ABSBUILDDIR@/inc
 Requires: @CBCLIB_PCREQUIRES@

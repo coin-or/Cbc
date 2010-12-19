@@ -59,19 +59,24 @@ bool processParameters (int argc, const char **argv,
 /*
   Set default values for data directories.
 */
-  const char dirsep =  CoinFindDirSeparator() ;
+  std::string dirsep(1,CoinFindDirSeparator()) ;
+  std::string upOne = ".."+dirsep ;
   std::string pathTmp ;
-
-  pathTmp = ".." ;
-  pathTmp += dirsep ;
-  pathTmp += ".." ;
-  pathTmp += dirsep ;
-  pathTmp += "Data" ;
-  pathTmp += dirsep ;
-
-  parms["-mpsDir"] = pathTmp + "Sample"  ;
-  parms["-netlibDir"] = pathTmp + "Netlib" ;
-
+/*
+  Establish likely defaults for the Sample and Miplib directories.
+*/
+# ifdef SAMPLEDIR
+    pathTmp = SAMPLEDIR ;
+# else
+    pathTmp = upOne+upOne+"Data"+dirsep+"Sample" ;
+# endif
+  parms["-mpsDir"] = pathTmp  ;
+# ifdef NETLIBDIR
+    pathTmp = NETLIBDIR ;
+# else
+    pathTmp = upOne+upOne+"Data"+dirsep+"Netlib" ;
+# endif
+  parms["-netlibDir"] = pathTmp ;
 /*
   Read the command line parameters and fill a map of parameter keys and
   associated data. The parser allows for parameters which are only a keyword,
@@ -195,7 +200,6 @@ int main (int argc, const char *argv[])
   note at head of file.
 */
   WindowsErrorPopupBlocker();
-
 /*
   Process command line parameters.
 */

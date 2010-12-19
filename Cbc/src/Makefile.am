@@ -104,16 +104,15 @@ libCbcSolver_la_SOURCES = \
 	CbcSolverAnalyze.cpp CbcSolverAnalyze.hpp \
 	CbcSolverExpandKnapsack.cpp CbcSolverExpandKnapsack.hpp
 
-# This is for libtool (on Windows)
+# This is for libtool
 
 libCbc_la_LDFLAGS = $(LT_LDFLAGS)
 libCbcSolver_la_LDFLAGS = $(LT_LDFLAGS)
 
 # Some common setup for cbc and cbc-generic.
-#   ($(CPX_LIBS) should resolve in an empty string if there is no cplex)
 
 bin_PROGRAMS =
-AM_CPPFLAGS = $(COINDEPEND_CFLAGS) $(CLP_CFLAGS) $(CPX_CFLAGS)
+AM_CPPFLAGS = $(COINDEPEND_CFLAGS) $(CLP_CFLAGS) $(CPX_CFLAGS) $(ASL_CFLAGS)
 
 ########################################################################
 #                            cbc program                               #
@@ -128,20 +127,14 @@ bin_PROGRAMS += cbc
 # List all source files for this executable, including headers
 cbc_SOURCES = CoinSolve.cpp
 
-# Additional COIN libraries
-cbc_LDADD = libCbcSolver.la libCbc.la $(CBCLIB_LIBS)
+# Additional libraries
+cbc_LDADD = libCbcSolver.la libCbc.la $(CBCLIB_LIBS) $(ASL_LIBS)
+cbc_DEPENDENCIES = libCbcSolver.la libCbc.la $(CBCLIB_DEPENDENCIES) $(ASL_DEPENDENCIES)
 
 # Finally, the -rpath flag is used by libtool to make sure that the shared
 # library is found (in the lib install directory) when we are using dynamic
 # libraries.
 cbc_LDFLAGS = -rpath $(libdir)
-
-# Add locations of include files.
-
-if COIN_HAS_ASL
-  AM_CPPFLAGS += $(ASL_CFLAGS)
-  cbc_LDADD += $(ASL_LIBS)
-endif
 
 endif
 
@@ -171,17 +164,13 @@ cbc_generic_SOURCES = \
 	CbcGenSolvers.cpp
 
 cbc_generic_LDADD = libCbcSolver.la libCbc.la $(CBCGENERIC_LIBS)
+cbc_generic_DEPENDENCIES = libCbcSolver.la libCbc.la $(CBCGENERIC_DEPENDENCIES)
 
 # List all additionally required solver and Osi libraries
 # the linker flags for all available LP solvers should already be included in $CBCGENERIC_LIBS,
 # so just add compiler flags here (all we can think of)
 
-AM_CPPFLAGS += $(CLP_CFLAGS) $(CPX_CFLAGS) $(DYLP_CFLAGS) $(GLPK_CFLAGS) $(MSK_CFLAGS) $(SPX_CFLAGS) $(VOL_CFLAGS) $(XPR_CFLAGS)
-
-if COIN_HAS_ASL
-  AM_CPPFLAGS += $(ASL_CFLAGS)
-  cbc_generic_LDADD += $(ASL_LIBS)
-endif
+AM_CPPFLAGS += $(DYLP_CFLAGS) $(GLPK_CFLAGS) $(MSK_CFLAGS) $(SPX_CFLAGS) $(VOL_CFLAGS) $(XPR_CFLAGS)
 
 # Finally, the -rpath flag is used by libtool to make sure that the shared
 # library is found (in the lib install directory) when we are using dynamic
@@ -207,7 +196,7 @@ DEFAULT_INCLUDES = -I. -I`$(CYGPATH_W) $(srcdir)` -I$(top_builddir)/inc
 ########################################################################
 
 # Here list all the header files that are required by a user of the library,
-# and that therefore should be installed in 'install/coin'
+# and that therefore should be installed in 'include/coin'
 includecoindir = $(includedir)/coin
 includecoin_HEADERS = \
 	../inc/config_cbc.h \

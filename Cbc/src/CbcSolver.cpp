@@ -6047,7 +6047,7 @@ int CbcMain1 (int argc, const char *argv[],
 				       << CoinMessageEol;
 				    if (babModel_->bestSolution()){
 				      sprintf(generalPrint, 
-					      "Objective value:  %.3f\n", 
+					      "Objective value:  %.8f\n", 
 					      babModel_->getObjValue());
 				    }else{
 				      sprintf(generalPrint,
@@ -7588,7 +7588,7 @@ clp watson.mps -\nscaling off\nprimalsimplex"
                                     } else {
 				         fprintf(fp, "Status unknown" );
                                     }
-                                    fprintf(fp, " - objective value %15.8g\n", objValue);
+                                    fprintf(fp, " - objective value %.8f\n", objValue);
                                 }
 #endif
                                 // make fancy later on

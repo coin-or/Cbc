@@ -6045,9 +6045,14 @@ int CbcMain1 (int argc, const char *argv[],
 				    generalMessageHandler->message(CLP_GENERAL, generalMessages)
 				       << generalPrint
 				       << CoinMessageEol;
-				    sprintf(generalPrint, 
-					    "Objective value:  %.3f\n", 
-					    babModel_->getObjValue());
+				    if (babModel_->bestSolution()){
+				      sprintf(generalPrint, 
+					      "Objective value:  %.3f\n", 
+					      babModel_->getObjValue());
+				    }else{
+				      sprintf(generalPrint,
+					      "No feasible solution found\n");
+				    }
 				    if (iStat2 >= 2 && iStat2 <=6){
 				       sprintf(generalPrint + strlen(generalPrint), 
 					       "Lower bound:      %.3f\n", 

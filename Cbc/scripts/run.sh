@@ -1,37 +1,77 @@
-#!/usr/bin/env bash
 #* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 #*                                                                           *
 #*            This file is part of the test engine for MIPLIB2010            *
 #*                                                                           *
 #* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-# $Id: run.sh,v 1.1 2010/10/12 07:43:55 bzfwolte Exp $
+# $Id: run.sh,v 1.4 2010/12/14 13:45:18 bzfheinz Exp $
 
-SOLVER=$1
-LPS=$2
+SHELL=$1
+BINNAME=$2
 TSTNAME=$3
 TIMELIMIT=$4
 HARDMEMLIMIT=$5
+THREADS=$6
 
-if test ! -e results
+# construct paths
+MIPLIBPATH=`pwd`
+BINPATH=$MIPLIBPATH/bin
+CHECKERPATH=$MIPLIBPATH/checker
+RESULTSPATH=$MIPLIBPATH/results
+SCRIPTPATH=$MIPLIBPATH/scripts
+TSTPATH=$MIPLIBPATH/testset
+
+# check if the solver link (binary) exists
+if test ! -e $BINPATH/$BINNAME
 then
-    mkdir results
+    echo "ERROR: solver link <$BINNAME> does not exist in <bin> folder; see bin/README"
+    exit;
 fi
 
-OUTFILE=results/check.$SOLVER.$LPS.$TSTNAME.out
-RESFILE=results/check.$SOLVER.$LPS.$TSTNAME.res
-SOLFILE=results/check.$SOLVER.$LPS.$TSTNAME.sol
+# check if the test set file/link exists
+if test ! -e $TSTPATH/$TSTNAME.test
+then
+    echo "ERROR: test set file/link <$TSTNAME.test> does not exist in <testset> folder"
+    exit;
+fi
 
-CHECKTOL=-4 # short for 1e-04
+# grep solver name 
+SOLVER=`echo $BINNAME | sed 's/\([a-zA-Z0-9_-]*\).*/\1/g'`
+
+# check if the result folder exist. if not create the result folder
+if test ! -e $RESULTSPATH
+then
+    mkdir $RESULTSPATH
+fi
+
+# construct name of output, results, and temporary solution file  
+BASENAME=$RESULTSPATH/$TSTNAME.$BINNAME
+OUTFILE=$BASENAME.out
+RESFILE=$BASENAME.res
+SOLFILE=$BASENAME.sol
+
+# absolut tolerance for checking linear constraints and objective value
+LINTOL=1e-4 
+# absolut tolerance for checking integrality constraints 
+INTTOL=1e-4 
+
+# Note that the MIP gap (gap between primal and dual solution) is not
+# uniqly defined through all solvers. For example, there is a difference
+# between SCIP and CPLEX. All solver, however, have the some behaviour in
+# case of a MIP gap of 0.0. 
 MIPGAP=0.0
 
+# post system information and current time into the output file
 uname -a > $OUTFILE
 date >> $OUTFILE
 
+# convert hard memory limit to kilo bytes and post it into the output file
 HARDMEMLIMIT=`expr $HARDMEMLIMIT \* 1024`
 echo "hard mem limit: $HARDMEMLIMIT k" >> $OUTFILE
 
-for i in `cat $TSTNAME.test` 
+# loop over all instance names which are listed in the test set file name
+for i in `cat $TSTPATH/$TSTNAME.test` 
 do 
+    # check if the current instance exists 
     if test -f $i
     then
         echo @01 $i ===========     
@@ -40,15 +80,23 @@ do
         echo -----------------------------
         TIMESTART=`date +"%s"`
 	echo @03 $TIMESTART
-	bash -c " ulimit -v $HARDMEMLIMIT k; ulimit -f 200000; ./run_$SOLVER.sh $SOLVER $LPS $i $TIMELIMIT $SOLFILE $MIPGAP"
+	$SHELL -c " ulimit -v $HARDMEMLIMIT k; ulimit -f 2000000; $SCRIPTPATH/run_$SOLVER.sh $SOLVER $BINPATH/$BINNAME $i $TIMELIMIT $SOLFILE $THREADS $MIPGAP"
+	echo 
         TIMEEND=`date +"%s"`
 	echo @04 $TIMEEND
 	echo @05 $TIMELIMIT
-	if test -f $SOLFILE
+	# check if a solution file was written
+	if test -e $SOLFILE
 	then
-	    echo ""
-	    # bash -c " ./solchecker $i $SOLFILE $CHECKTOL"  
-	    echo ""
+	    # check if the link to the solution checker exists
+	    if test -f "$CHECKERPATH/bin/solchecker" 
+	    then
+	    	echo 
+	    	$SHELL -c " $CHECKERPATH/bin/solchecker $i $SOLFILE $LINTOL $INTTOL"  
+	    	echo
+	    else
+		echo WARNING: solution cannot be checked because solution checker is missing 
+	    fi 
 	fi
         echo -----------------------------
         date
@@ -62,9 +110,9 @@ done 2>&1 | tee -a $OUTFILE
 
 date >> $OUTFILE
 
-if test -f $SOLFILE
+if test -e $SOLFILE
 then
     rm $SOLFILE
 fi
 
-awk -f parse.awk -f parse_$SOLVER.awk $OUTFILE | tee $RESFILE
+awk -f $SCRIPTPATH/parse.awk -f  $SCRIPTPATH/parse_$SOLVER.awk $OUTFILE | tee $RESFILE

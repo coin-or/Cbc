@@ -4,7 +4,7 @@
 #*            This file is part of the test engine for MIPLIB2010            *
 #*                                                                           *
 #* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-# $Id: parse.awk,v 1.1 2010/10/07 16:14:36 bzfwolte Exp $
+# $Id: parse.awk,v 1.2 2010/12/14 08:38:22 bzfwolte Exp $
 
 function abs(x)
 {
@@ -19,19 +19,23 @@ function max(x,y)
    return (x) > (y) ? (x) : (y);
 }
 BEGIN {
-   printf("------------------+------+-------+-------+--------+---------\n");
-   printf("Name              | Gap%% | Nodes |  Time | Status | Solution \n");
-   printf("------------------+------+-------+-------+--------+---------\n");
+   printf("----------------------------+----------------+----------------+------+-------+-------+--------+---------\n");
+   printf("Name                        |   Dual Bound   |  Primal Bound  | Gap%% | Nodes |  Time | Status | Solution \n");
+   printf("----------------------------+----------------+----------------+------+-------+-------+--------+---------\n");
 
    infty = +1e+20;
    eps = 1e-04;
    largegap = 1e+04;
 
+   # initialize summary data
+   nsolved = 0;
+   nstopped = 0;
+   nfailed = 0;
+
    # initialize data to be set in parse_<solver>.awk
    solver = "?";
    solverversion = "?";
-   lps = "none";
-   lpsversion = "-";
+   solverremark = "";
 }
 # instance name 
 /^@01/ { 
@@ -55,13 +59,17 @@ BEGIN {
    db = -infty;
    aborted = 1;
    timeout = 0;
-   solstatus = "unkown";
+   solstatus = "none";
+   read_error = 0;
 }
 # time
 /@03/ { starttime = $2; }
 /@04/ { endtime = $2; }
 /@05/ { timelimit = $2; }
 # solution status
+/Read SOL:/ { 
+   solstatus = "--";
+}
 /Check SOL:/ { 
    intcheck = $4;
    conscheck = $6;
@@ -91,14 +99,30 @@ BEGIN {
 
    # determine solving status
    status = "";
-   if( aborted ) 
-      status = "abort";
+   if( aborted && !read_error) 
+     status = "abort";
+   else if (aborted && read_error)
+     status = "noread";
    else if( timeout )
-      status = "timeout";
+     status = "stopped";
    else
-      status = "ok";
+     status = "ok";
 
-   # compute gap
+   # determine overall status from solving status and solution status:
+
+   # instance solved correctly (including case that no solution was found) 
+   if( status == "ok" && (solstatus == "ok" || solstatus == "--") )
+      nsolved++;
+   # incorrect solving process or infeasible solution (including errors with solution checker)
+   else if( status == "abort" || (solstatus == "fail" || solstatus == "error") )
+      nfailed++;
+   # stopped due to imposed limits
+   else if ( status == "stopped" )
+      nstopped++;
+   else
+     nnoread++;
+ 
+  # compute gap
    temp = pb;
    pb = 1.0*temp;
    temp = db;
@@ -124,10 +148,13 @@ BEGIN {
    else
       gapstr = " Large";
 
-   printf("%-18s %6s %7d %7d %8s %9s\n", prob, gapstr, bbnodes, time, status, solstatus);
+   printf("%-28s %16.9g %16.9g %6s %7d %7d %8s %9s\n", prob, db, pb, gapstr, bbnodes, time, status, solstatus);
 }
 END {
-   printf("------------------+------+-------+-------+--------+---------\n");
+   printf("----------------------------+----------------+----------------+------+-------+-------+--------+---------\n");
+   printf("\n");
+   printf("solved/stopped/noread/failed: %d/%d/%d/%d\n", nsolved, nstopped, nnoread, nfailed);
+   printf("\n");
    printf("@02 timelimit: %g\n", timelimit);
-   printf("@01 %s(%s)%s(%s)\n", solver, solverversion, lps, lpsversion);
+   printf("@01 %s(%s)%s\n", solver, solverversion, solverremark);
 }

@@ -61,7 +61,7 @@ AC_COIN_MAIN_PACKAGEDIR(Cbc)
 #                  Check for doxygen                                        #
 #############################################################################
 
-AC_COIN_DOXYGEN(CoinUtils Osi Clp DyLP Cgl)
+AC_COIN_DOXYGEN(CoinUtils Osi Clp DyLP Cgl Vol)
 
 ##############################################################################
 #                   Finishing up by writing all the output                   #

@@ -6057,9 +6057,11 @@ int CbcMain1 (int argc, const char *argv[],
 				       sprintf(generalPrint + strlen(generalPrint), 
 					       "Lower bound:      %.3f\n", 
 					       babModel_->getBestPossibleObjValue());
-				       sprintf(generalPrint + strlen(generalPrint), 
-					       "Gap:              %.2f\n", 
-					       (babModel_->getObjValue()-babModel_->getBestPossibleObjValue())/babModel_->getBestPossibleObjValue());
+				       if (babModel_->bestSolution()){
+					  sprintf(generalPrint + strlen(generalPrint), 
+						  "Gap:              %.2f\n", 
+						  (babModel_->getObjValue()-babModel_->getBestPossibleObjValue())/babModel_->getBestPossibleObjValue());
+				       }
 				    }
 				    sprintf(generalPrint + strlen(generalPrint), 
 					    "Enumerated nodes: %d\n", 

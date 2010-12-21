@@ -4,31 +4,27 @@
 #*            This file is part of the test engine for MIPLIB2010            *
 #*                                                                           *
 #* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-BEGIN{
-  infeasible = 0;
-  nointsol = 0;
+/^Stopped/ {
+   if( NF > 7 )
+      exit;
+   printf ("=obj= %s \n", $7);
+   next;
 }
-($3 != "objective" && $3 != "gap" && $3 != "time" && $2 != "infeasible"){
-  if (!infeasible){
-    printf ("%s %s \n", $2, $3);
-  }
+/^Optimal/ {
+   printf ("=obj= %s \n", $5);
+   next;
 }
-($3 == "objective" && $1 != "Infeasible" && $2 != "infeasible"){
-  printf ("=obj= %s \n", $5);
+/^Infeasible/ {
+   printf ("=infeas= \n");
+   exit;
 }
-($3 == "gap"){
-  printf ("=obj= %s \n", $8);
+/^Integer/ {
+   if( $2 == "infeasible")
+      printf ("=infeas= \n");
+   exit;
 }
-($3 == "time"){
-  if ($5 == "integer"){
-    printf ("=nointsol= \n");
-    nointsol = 1;
-  }else{
-    printf ("=obj= %s \n", $7);
-  }
+//{
+   printf ("%s %s \n", $2, $3);
 }
-($1 == "Infeasible" || $2 == "infeasible"){
-  printf ("=infeas= \n");
-  infeasible = 1;
-}
+
 

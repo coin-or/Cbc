@@ -321,7 +321,7 @@ AC_COIN_VPATH_LINK(examples/quad2.mps)
 #                  Check for doxygen                                        #
 #############################################################################
 
-AC_COIN_DOXYGEN(CoinUtils Osi Clp DyLP Cgl)
+AC_COIN_DOXYGEN(CoinUtils Osi Clp DyLP Cgl Vol)
 
 ##############################################################################
 #                   Finishing up by writing all the output                   #

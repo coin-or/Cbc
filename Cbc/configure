@@ -27879,7 +27879,7 @@ coin_doxy_logname=doxydoc/${PACKAGE}_doxy.log
 
 coin_doxy_tagfiles=
 coin_doxy_excludes=
-tmp="CoinUtils Osi Clp DyLP Cgl"
+tmp="CoinUtils Osi Clp DyLP Cgl Vol"
 for proj in $tmp ; do
   lc_proj=`echo $proj | tr [A-Z] [a-z]`
   echo "$as_me:$LINENO: checking for doxygen doc'n for $proj " >&5

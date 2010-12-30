@@ -249,6 +249,9 @@ public:
     inline void setWhereFrom(int value) {
         whereFrom_ = value;
     }
+    inline int whereFrom() const {
+        return whereFrom_;
+    }
     /** Upto this depth we call the tree shallow and the heuristic can be called
         multiple times. That is, the test whether the current node is far from
         the others where the jeuristic was invoked will not be done, only the

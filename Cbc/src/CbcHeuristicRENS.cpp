@@ -13,6 +13,7 @@
 #include "CbcMessage.hpp"
 #include "CbcHeuristicRENS.hpp"
 #include "CoinWarmStartBasis.hpp"
+#include "CoinSort.hpp"
 #include "CbcBranchActual.hpp"
 #include "CbcStrategy.hpp"
 #include "CglPreProcess.hpp"
@@ -88,39 +89,147 @@ CbcHeuristicRENS::solution(double & solutionValue,
     const int * integerVariable = model_->integerVariable();
 
     const double * currentSolution = solver->getColSolution();
-    const double * dj = solver->getReducedCost();
+    int numberColumns = solver->getNumCols();
+    double * dj = CoinCopyOfArray(solver->getReducedCost(),numberColumns);
     OsiSolverInterface * newSolver = cloneBut(3); // was model_->continuousSolver()->clone();
-    int numberColumns = newSolver->getNumCols();
     double direction = newSolver->getObjSense();
     int type = rensType_&15;
     double djTolerance = (type!=1) ? -1.0e30 : 1.0e-4;
     const double * colLower = newSolver->getColLower();
     const double * colUpper = newSolver->getColUpper();
-    if ((type&3)==3) {
-        double total=0.0;
-        int n=0;
-	CoinWarmStartBasis * basis =
-	  dynamic_cast<CoinWarmStartBasis *>(solver->getWarmStart()) ;
-	if (basis) {
-	    for (int iColumn = 0; iColumn < numberColumns; iColumn++) {
-	      if (colUpper[iColumn]>colLower[iColumn]&&
-		  basis->getStructStatus(iColumn) !=
-		  CoinWarmStartBasis::basic) {
-		  n++;
-		  total += fabs(dj[iColumn]);
+    int numberFixed = 0;
+    if ((type&7)==3) {
+      double total=0.0;
+      int n=0;
+      CoinWarmStartBasis * basis =
+	dynamic_cast<CoinWarmStartBasis *>(solver->getWarmStart()) ;
+      if (basis&&basis->getNumArtificial()) {
+	for (int iColumn = 0; iColumn < numberColumns; iColumn++) {
+	  if (colUpper[iColumn]>colLower[iColumn]&&
+	      basis->getStructStatus(iColumn) !=
+	      CoinWarmStartBasis::basic) {
+	    n++;
+	    total += fabs(dj[iColumn]);
+	  }
+	}
+	if (n)
+	  djTolerance = (0.01*total)/static_cast<double>(n);
+	delete basis;
+      }
+    } else if ((type&7)==4) {
+      double * sort = new double [numberColumns];
+      for (int iColumn = 0; iColumn < numberColumns; iColumn++) {
+	sort[iColumn]=1.0e30;
+	if (colUpper[iColumn]>colLower[iColumn]) {
+	  sort[iColumn] = fabs(dj[iColumn]);
+	}
+      }
+      std::sort(sort,sort+numberColumns);
+      int last = static_cast<int>(numberColumns*fractionSmall_);
+      djTolerance = sort[last];
+      delete [] sort;
+    } else if ((type&7)==5||(type&7)==6) {
+      // SOS type fixing
+      bool fixSets = (type&7)==5;
+      CoinWarmStartBasis * basis =
+	dynamic_cast<CoinWarmStartBasis *>(solver->getWarmStart()) ;
+      if (basis&&basis->getNumArtificial()) {
+	//const double * rowLower = solver->getRowLower();
+	const double * rowUpper = solver->getRowUpper();
+	
+	int numberRows = solver->getNumRows();
+	// Column copy
+	const CoinPackedMatrix * matrix = solver->getMatrixByCol();
+	const double * element = matrix->getElements();
+	const int * row = matrix->getIndices();
+	const CoinBigIndex * columnStart = matrix->getVectorStarts();
+	const int * columnLength = matrix->getVectorLengths();
+	double * bestDj = new double [numberRows];
+	for (int i=0;i<numberRows;i++) {
+	  if (rowUpper[i]==1.0)
+	    bestDj[i]=1.0e20;
+	  else
+	    bestDj[i]=1.0e30;
+	}
+	for (int iColumn = 0; iColumn < numberColumns; iColumn++) {
+	  if (colUpper[iColumn]>colLower[iColumn]) {
+	    CoinBigIndex j;
+	    if (currentSolution[iColumn]>1.0e-6&&
+		currentSolution[iColumn]<0.999999) {
+	      for (j = columnStart[iColumn];
+		   j < columnStart[iColumn] + columnLength[iColumn]; j++) {
+		int iRow = row[j];
+		bestDj[iRow]=1.0e30;
+	      }
+	    } else if ( basis->getStructStatus(iColumn) !=
+	      CoinWarmStartBasis::basic) {
+	      for (j = columnStart[iColumn];
+		   j < columnStart[iColumn] + columnLength[iColumn]; j++) {
+		int iRow = row[j];
+		if (bestDj[iRow]<1.0e30) {
+		  if (element[j] != 1.0)
+		    bestDj[iRow]=1.0e30;
+		  else
+		    bestDj[iRow]=CoinMin(fabs(dj[iColumn]),bestDj[iRow]);
+		}
 	      }
 	    }
-	    if (n)
-	        djTolerance = (0.01*total)/static_cast<double>(n);
-	    delete basis;
+	  }
 	}
+	int nSOS=0;
+	double * sort = new double [numberRows];
+	for (int i=0;i<numberRows;i++) {
+	  if (bestDj[i]<1.0e30) {
+	    sort[nSOS++]=bestDj[i];
+	  }
+	}
+	if (10*nSOS>8*numberRows) {
+	  std::sort(sort,sort+nSOS);
+	  int last = static_cast<int>(nSOS*0.9*fractionSmall_);
+	  double tolerance = sort[last];
+	  for (int iColumn = 0; iColumn < numberColumns; iColumn++) {
+	    if (colUpper[iColumn]>colLower[iColumn]) {
+	      CoinBigIndex j;
+	      if (currentSolution[iColumn]<=1.0e-6||
+		  currentSolution[iColumn]>=0.999999) {
+		if (fixSets) {
+		  for (j = columnStart[iColumn];
+		       j < columnStart[iColumn] + columnLength[iColumn]; j++) {
+		    int iRow = row[j];
+		    if (bestDj[iRow]<1.0e30&&bestDj[iRow]>=tolerance) {
+		      numberFixed++;
+		      if (currentSolution[iColumn]<=1.0e-6)
+			newSolver->setColUpper(iColumn,0.0);
+		      else if (currentSolution[iColumn]>=0.999999) 
+			newSolver->setColLower(iColumn,1.0);
+		    }
+		  }
+		} else if (columnLength[iColumn]==1) {
+		  // leave more slacks
+		  int iRow = row[columnStart[iColumn]];
+		  if (bestDj[iRow]<1.0e30) {
+		    // fake dj
+		    dj[iColumn] *= 0.000001;
+		  }
+		}
+	      }
+	    }
+	  }
+	  if (fixSets)
+	    djTolerance = 1.0e30;
+	  else
+	    djTolerance = tolerance;
+	}
+	delete basis;
+	delete [] sort;
+	delete [] bestDj;
+      }
     }
-
+    
     double primalTolerance;
     solver->getDblParam(OsiPrimalTolerance, primalTolerance);
 
     int i;
-    int numberFixed = 0;
     int numberTightened = 0;
     int numberAtBound = 0;
     int numberContinuous = numberColumns - numberIntegers;
@@ -182,6 +291,7 @@ CbcHeuristicRENS::solution(double & solutionValue,
         }
 #endif
     }
+    delete [] dj;
     if (numberFixed > numberIntegers / 5) {
         if ( numberFixed < numberColumns / 5) {
 #define RENS_FIX_CONTINUOUS

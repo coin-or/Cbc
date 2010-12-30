@@ -860,4 +860,452 @@ CbcHeuristicGreedyEquality::validate()
     }
 }
 
+// Default Constructor
+CbcHeuristicGreedySOS::CbcHeuristicGreedySOS()
+        : CbcHeuristic()
+{
+    originalRhs_ = NULL;
+    // matrix  will automatically be empty
+    originalNumberRows_ = 0;
+    algorithm_ = 0;
+    numberTimes_ = 100;
+}
 
+// Constructor from model
+CbcHeuristicGreedySOS::CbcHeuristicGreedySOS(CbcModel & model)
+        : CbcHeuristic(model)
+{
+    gutsOfConstructor(&model);
+    algorithm_ = 2;
+    numberTimes_ = 100;
+    whereFrom_ = 1;
+}
+
+// Destructor
+CbcHeuristicGreedySOS::~CbcHeuristicGreedySOS ()
+{
+  delete [] originalRhs_;
+}
+
+// Clone
+CbcHeuristic *
+CbcHeuristicGreedySOS::clone() const
+{
+    return new CbcHeuristicGreedySOS(*this);
+}
+// Guts of constructor from a CbcModel
+void
+CbcHeuristicGreedySOS::gutsOfConstructor(CbcModel * model)
+{
+    model_ = model;
+    // Get a copy of original matrix
+    assert(model->solver());
+    if (model->solver()->getNumRows()) {
+        matrix_ = *model->solver()->getMatrixByCol();
+    }
+    originalNumberRows_ = model->solver()->getNumRows();
+    originalRhs_ = new double [originalNumberRows_];
+}
+// Create C++ lines to get to current state
+void
+CbcHeuristicGreedySOS::generateCpp( FILE * fp)
+{
+    CbcHeuristicGreedySOS other;
+    fprintf(fp, "0#include \"CbcHeuristicGreedy.hpp\"\n");
+    fprintf(fp, "3  CbcHeuristicGreedySOS heuristicGreedySOS(*cbcModel);\n");
+    CbcHeuristic::generateCpp(fp, "heuristicGreedySOS");
+    if (algorithm_ != other.algorithm_)
+        fprintf(fp, "3  heuristicGreedySOS.setAlgorithm(%d);\n", algorithm_);
+    else
+        fprintf(fp, "4  heuristicGreedySOS.setAlgorithm(%d);\n", algorithm_);
+    if (numberTimes_ != other.numberTimes_)
+        fprintf(fp, "3  heuristicGreedySOS.setNumberTimes(%d);\n", numberTimes_);
+    else
+        fprintf(fp, "4  heuristicGreedySOS.setNumberTimes(%d);\n", numberTimes_);
+    fprintf(fp, "3  cbcModel->addHeuristic(&heuristicGreedySOS);\n");
+}
+
+// Copy constructor
+CbcHeuristicGreedySOS::CbcHeuristicGreedySOS(const CbcHeuristicGreedySOS & rhs)
+        :
+        CbcHeuristic(rhs),
+        matrix_(rhs.matrix_),
+        originalNumberRows_(rhs.originalNumberRows_),
+        algorithm_(rhs.algorithm_),
+        numberTimes_(rhs.numberTimes_)
+{
+  originalRhs_ = CoinCopyOfArray(rhs.originalRhs_,originalNumberRows_);
+}
+
+// Assignment operator
+CbcHeuristicGreedySOS &
+CbcHeuristicGreedySOS::operator=( const CbcHeuristicGreedySOS & rhs)
+{
+    if (this != &rhs) {
+        CbcHeuristic::operator=(rhs);
+        matrix_ = rhs.matrix_;
+        originalNumberRows_ = rhs.originalNumberRows_;
+        algorithm_ = rhs.algorithm_;
+        numberTimes_ = rhs.numberTimes_;
+	delete [] originalRhs_;
+	originalRhs_ = CoinCopyOfArray(rhs.originalRhs_,originalNumberRows_);
+    }
+    return *this;
+}
+// Returns 1 if solution, 0 if not
+int
+CbcHeuristicGreedySOS::solution(double & solutionValue,
+                                  double * betterSolution)
+{
+    numCouldRun_++;
+    if (!model_)
+        return 0;
+    // See if to do
+    if (!when() || (when() == 1 && model_->phase() != 1))
+        return 0; // switched off
+    if (model_->getNodeCount() > numberTimes_)
+        return 0;
+    // See if at root node
+    bool atRoot = model_->getNodeCount() == 0;
+    int passNumber = model_->getCurrentPassNumber();
+    if (atRoot && passNumber != 1)
+        return 0;
+    OsiSolverInterface * solver = model_->solver();
+    int numberColumns = solver->getNumCols();
+    // This is number of rows when matrix was passed in
+    int numberRows = originalNumberRows_;
+    if (!numberRows)
+        return 0; // switched off
+
+    const double * columnLower = solver->getColLower();
+    const double * columnUpper = solver->getColUpper();
+    // modified rhs
+    double * rhs = CoinCopyOfArray(originalRhs_,numberRows);
+    // Column copy
+    const double * element = matrix_.getElements();
+    const int * row = matrix_.getIndices();
+    const CoinBigIndex * columnStart = matrix_.getVectorStarts();
+    const int * columnLength = matrix_.getVectorLengths();
+    // If bit set then use current
+    if ((algorithm_&1)!=0) {
+      const CoinPackedMatrix * matrix = solver->getMatrixByCol();
+      element = matrix->getElements();
+      row = matrix->getIndices();
+      columnStart = matrix->getVectorStarts();
+      columnLength = matrix->getVectorLengths();
+      rhs = new double [numberRows];
+      const double * rowLower = solver->getRowLower();
+      const double * rowUpper = solver->getRowUpper();
+      bool good = true;
+      for (int iRow = 0; iRow < numberRows; iRow++) {
+	if (rowLower[iRow] == 1.0 && rowUpper[iRow] == 1.0) {
+	  // SOS
+	  rhs[iRow]=-1.0;
+	} else if (rowLower[iRow] > 0.0) {
+	  good = false;
+	} else if (rowUpper[iRow] < 0.0) {
+	  good = false;
+	} else {
+	  rhs[iRow]=rowUpper[iRow];
+	}
+      }
+      for (int iColumn = 0; iColumn < numberColumns; iColumn++) {
+	if (columnLower[iColumn] < 0.0 || columnUpper[iColumn] > 1.0)
+	  good = false;
+	CoinBigIndex j;
+	int nSOS=0;
+	if (!solver->isInteger(iColumn))
+	  good = false;
+	for (j = columnStart[iColumn];
+	     j < columnStart[iColumn] + columnLength[iColumn]; j++) {
+	  if (element[j] < 0.0)
+	    good = false;
+	  int iRow = row[j];
+	  if (rhs[iRow]==-1.0) {
+	    if (element[j] != 1.0)
+	      good = false;
+	    nSOS++;
+	  }
+	}
+	if (nSOS!=1)
+	  good = false;
+      }
+      if (!good) {
+	delete [] rhs;
+	setWhen(0); // switch off
+	return 0;
+      }
+    }
+    const double * solution = solver->getColSolution();
+    const double * objective = solver->getObjCoefficients();
+    double integerTolerance = model_->getDblParam(CbcModel::CbcIntegerTolerance);
+    double primalTolerance;
+    solver->getDblParam(OsiPrimalTolerance, primalTolerance);
+
+    numRuns_++;
+    assert (numberRows == matrix_.getNumRows());
+    int iRow, iColumn;
+    double direction = solver->getObjSense();
+    double * slackCost = new double [numberRows];
+    double * modifiedCost = CoinCopyOfArray(objective,numberColumns);
+    for (int iRow = 0;iRow < numberRows; iRow++)
+      slackCost[iRow]=1.0e30;
+    // Take off cost of gub slack
+    for (int iColumn = 0; iColumn < numberColumns; iColumn++) {
+      if (columnLength[iColumn] == 1) {
+	// SOS slack
+	double cost = direction*objective[iColumn];
+	int iRow = row[columnStart[iColumn]];
+	assert (rhs[iRow]<0.0);
+	slackCost[iRow]=CoinMin(slackCost[iRow],cost);
+      }
+    }
+    double offset2 = 0.0;
+    for (int iRow = 0;iRow < numberRows; iRow++) {
+      if( slackCost[iRow] == 1.0e30) {
+	slackCost[iRow]=0.0;
+      } else {
+	offset2 += slackCost[iRow];
+	rhs[iRow] = -2.0;
+      }
+    }
+    for (int iColumn = 0; iColumn < numberColumns; iColumn++) {
+      double cost = direction * modifiedCost[iColumn];
+      CoinBigIndex j;
+      for (j = columnStart[iColumn];
+	   j < columnStart[iColumn] + columnLength[iColumn]; j++) {
+	int iRow = row[j];
+	if (rhs[iRow]<0.0) {
+	  cost -= slackCost[iRow];
+	}
+      }
+      modifiedCost[iColumn] = cost;
+    }
+    delete [] slackCost;
+    double offset;
+    solver->getDblParam(OsiObjOffset, offset);
+    double newSolutionValue = -offset+offset2;
+    int returnCode = 0;
+
+
+    // Get solution array for heuristic solution
+    double * newSolution = new double [numberColumns];
+    double * rowActivity = new double[numberRows];
+    memset(rowActivity, 0, numberRows*sizeof(double));
+    if ((algorithm_&2)==0) {
+      // get solution as small as possible
+      for (iColumn = 0; iColumn < numberColumns; iColumn++) 
+	newSolution[iColumn] = columnLower[iColumn];
+    } else {
+      // Get rounded down solution
+      for (iColumn = 0; iColumn < numberColumns; iColumn++) {
+        double value = solution[iColumn];
+	// Round down integer
+	if (fabs(floor(value + 0.5) - value) < integerTolerance) {
+	  value = floor(CoinMax(value + 1.0e-3, columnLower[iColumn]));
+	} else {
+	  value = CoinMax(floor(value), columnLower[iColumn]);
+	}
+        // make sure clean
+        value = CoinMin(value, columnUpper[iColumn]);
+        value = CoinMax(value, columnLower[iColumn]);
+        newSolution[iColumn] = value;
+      }
+    }
+    double * contribution = new double [numberColumns];
+    int * which = new int [numberColumns];
+    for (iColumn = 0; iColumn < numberColumns; iColumn++) {
+      CoinBigIndex j;
+      double value = newSolution[iColumn];
+      double cost =  modifiedCost[iColumn];
+      double forSort = 0.0;
+      bool hasSlack=false;
+      newSolutionValue += value * cost;
+      for (j = columnStart[iColumn];
+	   j < columnStart[iColumn] + columnLength[iColumn]; j++) {
+	int iRow = row[j];
+	rowActivity[iRow] += value * element[j];
+	if (rhs[iRow] >0.0) {
+	  forSort += element[j];
+	} else  if (rhs[iRow] == -2.0) {
+	  hasSlack = true;
+	}
+      }
+      if (forSort && value == 0.0 && columnUpper[iColumn]) {
+	if (hasSlack) {
+	  if (cost>=0.0) {
+	    forSort = 2.0e30;
+	  } else {
+	    forSort = cost/forSort;
+	  }
+	} else {
+	  forSort = cost/forSort;
+	}
+      } else {
+	// put at end
+	forSort = 1.0e30;
+      }
+      which[iColumn]=iColumn;
+      contribution[iColumn]= forSort;
+    }
+    CoinSort_2(contribution,contribution+numberColumns,which);
+    // Go through columns
+    for (int jColumn = 0; jColumn < numberColumns; jColumn++) {
+      int iColumn = which[jColumn];
+      double value = newSolution[iColumn];
+      if (value)
+	continue;
+      bool possible = true;
+      CoinBigIndex j;
+      for (j = columnStart[iColumn];
+	   j < columnStart[iColumn] + columnLength[iColumn]; j++) {
+	int iRow = row[j];
+	if (rhs[iRow]<0.0&&rowActivity[iRow]) {
+	  possible = false;
+	} else if (rhs[iRow]>=0.0) {
+	  double gap = rhs[iRow] - rowActivity[iRow]+1.0e-8;
+	  if (gap<element[j])
+	    possible = false;
+	}
+      }
+      if (possible) {
+        // Increase chosen column
+        newSolution[iColumn] = 1.0;
+        double cost =  modifiedCost[iColumn];
+        newSolutionValue += cost;
+        for (CoinBigIndex j = columnStart[iColumn];
+	     j < columnStart[iColumn] + columnLength[iColumn]; j++) {
+	  int iRow = row[j];
+	  rowActivity[iRow] += element[j];
+        }
+      }
+    }
+    if (newSolutionValue < solutionValue) {
+        // check feasible
+      const double * rowLower = solver->getRowLower();
+      const double * rowUpper = solver->getRowUpper();
+      memset(rowActivity, 0, numberRows*sizeof(double));
+        for (iColumn = 0; iColumn < numberColumns; iColumn++) {
+            CoinBigIndex j;
+            double value = newSolution[iColumn];
+            if (value) {
+                for (j = columnStart[iColumn];
+                        j < columnStart[iColumn] + columnLength[iColumn]; j++) {
+                    int iRow = row[j];
+                    rowActivity[iRow] += value * element[j];
+                }
+            }
+        }
+        // check was approximately feasible
+        bool feasible = true;
+        for (iRow = 0; iRow < numberRows; iRow++) {
+            if (rowActivity[iRow] < rowLower[iRow]) {
+                if (rowActivity[iRow] < rowLower[iRow] - 10.0*primalTolerance)
+                    feasible = false;
+            } else if (rowActivity[iRow] > rowUpper[iRow]) {
+                if (rowActivity[iRow] > rowUpper[iRow] + 10.0*primalTolerance)
+                    feasible = false;
+            }
+        }
+        if (feasible) {
+            // new solution
+            memcpy(betterSolution, newSolution, numberColumns*sizeof(double));
+            solutionValue = newSolutionValue;
+            //printf("** Solution of %g found by rounding\n",newSolutionValue);
+            returnCode = 1;
+        } else {
+            // Can easily happen
+            //printf("Debug CbcHeuristicGreedySOS giving bad solution\n");
+        }
+    }
+    delete [] newSolution;
+    delete [] rowActivity;
+    delete [] modifiedCost;
+    delete [] contribution;
+    delete [] which;
+    delete [] rhs;
+    return returnCode;
+}
+// update model
+void CbcHeuristicGreedySOS::setModel(CbcModel * model)
+{
+    delete [] originalRhs_;
+    gutsOfConstructor(model);
+    validate();
+}
+// Resets stuff if model changes
+void
+CbcHeuristicGreedySOS::resetModel(CbcModel * model)
+{
+    delete [] originalRhs_;
+    gutsOfConstructor(model);
+}
+// Validate model i.e. sets when_ to 0 if necessary (may be NULL)
+void
+CbcHeuristicGreedySOS::validate()
+{
+    if (model_ && when() < 10) {
+        if (model_->numberIntegers() !=
+                model_->numberObjects() && (model_->numberObjects() ||
+                                            (model_->specialOptions()&1024) == 0)) {
+            int numberOdd = 0;
+            for (int i = 0; i < model_->numberObjects(); i++) {
+                if (!model_->object(i)->canDoHeuristics())
+                    numberOdd++;
+            }
+            if (numberOdd)
+                setWhen(0);
+        }
+        // Only works if coefficients positive and all rows L or SOS
+        OsiSolverInterface * solver = model_->solver();
+        const double * columnUpper = solver->getColUpper();
+        const double * columnLower = solver->getColLower();
+        const double * rowLower = solver->getRowLower();
+        const double * rowUpper = solver->getRowUpper();
+
+        int numberRows = solver->getNumRows();
+        // Column copy
+        const double * element = matrix_.getElements();
+	const int * row = matrix_.getIndices();
+        const CoinBigIndex * columnStart = matrix_.getVectorStarts();
+        const int * columnLength = matrix_.getVectorLengths();
+        bool good = true;
+	assert (originalRhs_);
+        for (int iRow = 0; iRow < numberRows; iRow++) {
+	  if (rowLower[iRow] == 1.0 && rowUpper[iRow] == 1.0) {
+	    // SOS
+	    originalRhs_[iRow]=-1.0;
+	  } else if (rowLower[iRow] > 0.0) {
+                good = false;
+	  } else if (rowUpper[iRow] < 0.0) {
+                good = false;
+	  } else {
+	    originalRhs_[iRow]=rowUpper[iRow];
+	  }
+        }
+        int numberColumns = solver->getNumCols();
+        for (int iColumn = 0; iColumn < numberColumns; iColumn++) {
+            if (columnLower[iColumn] < 0.0 || columnUpper[iColumn] > 1.0)
+                good = false;
+            CoinBigIndex j;
+	    int nSOS=0;
+	    if (!solver->isInteger(iColumn))
+	      good = false;
+            for (j = columnStart[iColumn];
+                    j < columnStart[iColumn] + columnLength[iColumn]; j++) {
+                if (element[j] < 0.0)
+                    good = false;
+		int iRow = row[j];
+		if (originalRhs_[iRow]==-1.0) {
+		  if (element[j] != 1.0)
+		    good = false;
+		  nSOS++;
+		}
+            }
+	    if (nSOS!=1)
+	      good = false;
+        }
+        if (!good)
+            setWhen(0); // switch off
+    }
+}

@@ -9,7 +9,7 @@
   <para>
   The <ulink url="http://www.coin-or.org/">COIN-OR</ulink> Branch and Cut code
   is designed to be a high quality mixed integer code provided under the terms of the
-  <ulink url="http://opensource.org/licenses/cpl.php">Common Public License</ulink>.
+  <ulink url="http://opensource.org/licenses/eclipse-1.0.php">Eclipse Public License</ulink>.
   CBC is written in C++, and is primarily intended to be used as a callable
   library (though a rudimentary stand-alone executable exists).
   The first documented release was .90.0  The current release is version .90.0. (JF 04/01/05) 

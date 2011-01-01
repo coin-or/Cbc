@@ -5,6 +5,7 @@ includedir=@includedir@/coin
 
 Name: CBC
 Description: COIN-OR Branch and Cut
+URL: https://projects.coin-or.org/Cbc
 Version: @PACKAGE_VERSION@
 Libs: -L${libdir} -lCbcSolver -lCbc @CBCLIB_PCLIBS@
 Cflags: -I${includedir}

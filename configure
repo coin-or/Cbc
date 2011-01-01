@@ -1973,6 +1973,7 @@ fi
 	       comps="xlc gcc pgcc icc cc"
 	     fi
 	     ;;
+  *-linux-gnu*) comps="gcc cc pgcc icc xlc" ;;
   *-linux-*) comps="xlc gcc cc pgcc icc" ;;
   *)         comps="xlc_r xlc cc gcc pgcc icc" ;;
 esac
@@ -3112,10 +3113,9 @@ echo "$as_me: Will use MPI C compiler $MPICC" >&6;}
   CC="$MPICC"
 fi
 
-# Correct ADDLIBS initialization if we are using the MS compiler
+# Correct the LD variable if we are using the MS or Intel-windows compiler
 case "$CC" in
   cl* | */cl* | CL* | */CL* | icl* | */icl* | ICL* | */ICL*)
-    ADDLIBS=
     case $build in
   *-mingw*)
     if test "${LD+set}" = set; then :; else
@@ -3172,6 +3172,8 @@ case $build in
   *-*-solaris*)
   	     comps="CC xlC_r aCC g++ c++ pgCC icpc gpp cxx cc++ cl FCC KCC RCC" ;;
   *-darwin*) comps="g++ c++ CC" ;;
+  *-linux-gnu*)
+             comps="g++ c++ pgCC icpc gpp cxx cc++ cl FCC KCC RCC xlC_r aCC CC" ;;
           *) comps="xlC_r aCC CC g++ c++ pgCC icpc gpp cxx cc++ cl FCC KCC RCC" ;;
 esac
 
@@ -4052,8 +4054,9 @@ echo "$as_me: Will use MPI C++ compiler $MPICXX" >&6;}
   CXX="$MPICXX"
 fi
 
+# correct the LD variable in a mingw build with MS or intel compiler
 case "$CXX" in
-  cl* | */cl* | CL* | */CL* )
+  cl* | */cl* | CL* | */CL* | icl* | */icl* | ICL* | */ICL*)
     case $build in
   *-mingw*)
     if test "${LD+set}" = set; then :; else
@@ -4090,6 +4093,8 @@ case $build in
      fi ;;
   *-*-solaris*)
      coin_f77_comps="f95 f90 f77 xlf_r fort77 gfortran g77 pgf90 pgf77 ifort ifc frt af77" ;;
+  *-linux-gnu*)
+     coin_f77_comps="gfortran fort77 f77 g77 pgf90 pgf77 ifort ifc frt af77 xlf_r" ;;
   *) coin_f77_comps="xlf_r fort77 gfortran f77 g77 pgf90 pgf77 ifort ifc frt af77" ;;
  esac
 
@@ -4261,7 +4266,7 @@ fi
 
 
 # Provide some information about the compiler.
-echo "$as_me:4264:" \
+echo "$as_me:4269:" \
      "checking for Fortran 77 compiler version" >&5
 ac_compiler=`set X $ac_compile; echo $2`
 { (eval echo "$as_me:$LINENO: \"$ac_compiler --version </dev/null >&5\"") >&5
@@ -4749,6 +4754,7 @@ echo "$as_me: Will use MPI Fortran compiler $MPIF77" >&6;}
   F77="$MPIF77"
 fi
 
+# correct the LD variable if we use the intel fortran compiler in windows
 case "$F77" in
   ifort* | */ifort* | IFORT* | */IFORT*)
     case $build in
@@ -5936,7 +5942,7 @@ else
 fi
 full_prefix=`cd $full_prefix ; pwd`
 
-abs_lib_dir=$full_prefix/lib/coin
+abs_lib_dir=$full_prefix/lib
 
 abs_include_dir=$full_prefix/include
 
@@ -6520,7 +6526,7 @@ ia64-*-hpux*)
   ;;
 *-*-irix6*)
   # Find out which ABI we are using.
-  echo '#line 6523 "configure"' > conftest.$ac_ext
+  echo '#line 6529 "configure"' > conftest.$ac_ext
   if { (eval echo "$as_me:$LINENO: \"$ac_compile\"") >&5
   (eval $ac_compile) 2>&5
   ac_status=$?
@@ -8484,11 +8490,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:8487: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:8493: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:8491: \$? = $ac_status" >&5
+   echo "$as_me:8497: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -8752,11 +8758,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:8755: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:8761: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:8759: \$? = $ac_status" >&5
+   echo "$as_me:8765: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -8856,11 +8862,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:8859: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:8865: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:8863: \$? = $ac_status" >&5
+   echo "$as_me:8869: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -11201,7 +11207,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<EOF
-#line 11204 "configure"
+#line 11210 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -11301,7 +11307,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<EOF
-#line 11304 "configure"
+#line 11310 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -13645,11 +13651,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:13648: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:13654: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:13652: \$? = $ac_status" >&5
+   echo "$as_me:13658: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -13749,11 +13755,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:13752: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:13758: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:13756: \$? = $ac_status" >&5
+   echo "$as_me:13762: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -15319,11 +15325,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:15322: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:15328: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:15326: \$? = $ac_status" >&5
+   echo "$as_me:15332: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -15423,11 +15429,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:15426: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:15432: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:15430: \$? = $ac_status" >&5
+   echo "$as_me:15436: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -17630,11 +17636,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:17633: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:17639: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:17637: \$? = $ac_status" >&5
+   echo "$as_me:17643: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -17898,11 +17904,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:17901: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:17907: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:17905: \$? = $ac_status" >&5
+   echo "$as_me:17911: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -18002,11 +18008,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:18005: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:18011: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:18009: \$? = $ac_status" >&5
+   echo "$as_me:18015: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -20801,7 +20807,7 @@ if test $enable_shared = yes; then
     *-linux-*)
       if test "$GXX" = "yes"; then
         RPATH_FLAGS=
-        for dir in $abs_lib_dir $abs_lib_dir/ThirdParty; do
+        for dir in $abs_lib_dir; do
           RPATH_FLAGS="$RPATH_FLAGS -Wl,--rpath -Wl,$dir"
         done
       fi ;;
@@ -20818,7 +20824,7 @@ if test $enable_shared = yes; then
         RPATH_FLAGS=nothing ;;
     *-*-solaris*)
         RPATH_FLAGS=
-        for dir in $abs_lib_dir $abs_lib_dir/ThirdParty; do
+        for dir in $abs_lib_dir; do
           RPATH_FLAGS="$RPATH_FLAGS -R$dir"
         done
   esac
@@ -21084,6 +21090,9 @@ if test x$coin_projectdir = xyes ; then
       if test -d ../$i ; then
         COIN_PKG_CONFIG_PATH_UNINSTALLED="`cd ../$i; pwd`:${COIN_PKG_CONFIG_PATH_UNINSTALLED}"
       fi
+      if test -d ../$i/pkgconfig ; then
+        COIN_PKG_CONFIG_PATH_UNINSTALLED="`cd ../$i/pkgconfig; pwd`:${COIN_PKG_CONFIG_PATH_UNINSTALLED}"
+      fi
     done
   fi
 
@@ -21091,6 +21100,9 @@ if test x$coin_projectdir = xyes ; then
     for i in `cat ../../coin_subdirs.txt` ; do
       if test -d ../../$i ; then
         COIN_PKG_CONFIG_PATH_UNINSTALLED="`cd ../../$i; pwd`:${COIN_PKG_CONFIG_PATH_UNINSTALLED}"
+      fi
+      if test -d ../../$i/pkgconfig ; then
+        COIN_PKG_CONFIG_PATH_UNINSTALLED="`cd ../../$i/pkgconfig; pwd`:${COIN_PKG_CONFIG_PATH_UNINSTALLED}"
       fi
     done
   fi
@@ -21121,7 +21133,7 @@ fi
 
 if test $coin_has_asl != skipping; then
   if test $PACKAGE_TARNAME = asl; then
-    coin_has_asl=.
+    coin_has_asl=yes
     coin_have_project_dir=yes
   fi
 
@@ -21129,21 +21141,21 @@ if test $coin_has_asl != skipping; then
 # Check whether --with-m4_tolower(ASL)-lib or --without-m4_tolower(ASL)-lib was given.
 if test "${with_asl_lib+set}" = set; then
   withval="$with_asl_lib"
-  coin_has_asl=installed
+  coin_has_asl="yes, via --with-asl-lib"
 fi;
 
 
 # Check whether --with-m4_tolower(ASL)-incdir or --without-m4_tolower(ASL)-incdir was given.
 if test "${with_asl_incdir+set}" = set; then
   withval="$with_asl_incdir"
-  coin_has_asl=installed
+  coin_has_asl="yes, via --with-asl-incdir"
 fi;
 
 
 # Check whether --with-m4_tolower(ASL)-datadir or --without-m4_tolower(ASL)-datadir was given.
 if test "${with_asl_datadir+set}" = set; then
   withval="$with_asl_datadir"
-  coin_has_asl=installed
+  coin_has_asl="yes, via --with-asl-datadir"
 fi;
 
 
@@ -21165,13 +21177,13 @@ if test "$coin_has_asl" = notGiven; then
        done
 
     if test $coin_have_project_dir = yes; then
-      coin_has_asl=ThirdParty/ASL
+      coin_has_asl="yes, source in ThirdParty/ASL"
     fi
   fi
 fi
 
 # check for project by using pkg-config, if pkg-config is available
-if test $coin_has_asl = notGiven; then
+if test "$coin_has_asl" = notGiven; then
   #we are only interested in installed packages here, so we do not search in $COIN_PKG_CONFIG_PATH_UNINSTALLED
   if test -n "$PKG_CONFIG" ; then
     coin_save_PKG_CONFIG_PATH="$PKG_CONFIG_PATH"
@@ -21180,7 +21192,7 @@ if test $coin_has_asl = notGiven; then
 if test -n "$PKG_CONFIG" ; then
   if $PKG_CONFIG --exists "coinasl"; then
     COINASL_VERSION=`$PKG_CONFIG --modversion "coinasl" 2>/dev/null`
-    coin_has_asl="$COINASL_VERSION"
+    coin_has_asl="yes, found installed version $COINASL_VERSION"
   else
     COINASL_PKG_ERRORS=`$PKG_CONFIG $pkg_short_errors --errors-to-stdout --print-errors "coinasl"`
 
@@ -21196,11 +21208,17 @@ fi
   fi
 fi
 
-echo "$as_me:$LINENO: result: $coin_has_asl" >&5
-echo "${ECHO_T}$coin_has_asl" >&6
+if test "$coin_has_asl" = notGiven; then
+  echo "$as_me:$LINENO: result: not given" >&5
+echo "${ECHO_T}not given" >&6
 
-echo "$as_me:$LINENO: checking whether project ASL needs to be configured" >&5
-echo $ECHO_N "checking whether project ASL needs to be configured... $ECHO_C" >&6
+else
+  echo "$as_me:$LINENO: result: $coin_has_asl" >&5
+echo "${ECHO_T}$coin_has_asl" >&6
+fi
+
+echo "$as_me:$LINENO: checking whether project ThirdParty/ASL needs to be configured" >&5
+echo $ECHO_N "checking whether project ThirdParty/ASL needs to be configured... $ECHO_C" >&6
 if test "$coin_have_project_dir" = yes ; then
 
   if test -r $srcdir/ThirdParty/ASL/configure; then
@@ -21242,7 +21260,7 @@ fi
 
 if test $coin_has_blas != skipping; then
   if test $PACKAGE_TARNAME = blas; then
-    coin_has_blas=.
+    coin_has_blas=yes
     coin_have_project_dir=yes
   fi
 
@@ -21250,21 +21268,21 @@ if test $coin_has_blas != skipping; then
 # Check whether --with-m4_tolower(Blas)-lib or --without-m4_tolower(Blas)-lib was given.
 if test "${with_blas_lib+set}" = set; then
   withval="$with_blas_lib"
-  coin_has_blas=installed
+  coin_has_blas="yes, via --with-blas-lib"
 fi;
 
 
 # Check whether --with-m4_tolower(Blas)-incdir or --without-m4_tolower(Blas)-incdir was given.
 if test "${with_blas_incdir+set}" = set; then
   withval="$with_blas_incdir"
-  coin_has_blas=installed
+  coin_has_blas="yes, via --with-blas-incdir"
 fi;
 
 
 # Check whether --with-m4_tolower(Blas)-datadir or --without-m4_tolower(Blas)-datadir was given.
 if test "${with_blas_datadir+set}" = set; then
   withval="$with_blas_datadir"
-  coin_has_blas=installed
+  coin_has_blas="yes, via --with-blas-datadir"
 fi;
 
 
@@ -21276,7 +21294,7 @@ if test "${with_blas+set}" = set; then
   if test x"$withval" = "xBUILD" ; then
            coin_has_blas=notGiven
          else
-           coin_has_blas=installed
+           coin_has_blas="yes, via --with-blas"
          fi
 fi;
 
@@ -21297,13 +21315,13 @@ if test "$coin_has_blas" = notGiven; then
        done
 
     if test $coin_have_project_dir = yes; then
-      coin_has_blas=ThirdParty/Blas
+      coin_has_blas="yes, source in ThirdParty/Blas"
     fi
   fi
 fi
 
 # check for project by using pkg-config, if pkg-config is available
-if test $coin_has_blas = notGiven; then
+if test "$coin_has_blas" = notGiven; then
   #we are only interested in installed packages here, so we do not search in $COIN_PKG_CONFIG_PATH_UNINSTALLED
   if test -n "$PKG_CONFIG" ; then
     coin_save_PKG_CONFIG_PATH="$PKG_CONFIG_PATH"
@@ -21312,7 +21330,7 @@ if test $coin_has_blas = notGiven; then
 if test -n "$PKG_CONFIG" ; then
   if $PKG_CONFIG --exists "coinblas"; then
     COINBLAS_VERSION=`$PKG_CONFIG --modversion "coinblas" 2>/dev/null`
-    coin_has_blas="$COINBLAS_VERSION"
+    coin_has_blas="yes, found installed version $COINBLAS_VERSION"
   else
     COINBLAS_PKG_ERRORS=`$PKG_CONFIG $pkg_short_errors --errors-to-stdout --print-errors "coinblas"`
 
@@ -21328,11 +21346,16 @@ fi
   fi
 fi
 
-echo "$as_me:$LINENO: result: $coin_has_blas" >&5
+if test "$coin_has_blas" = notGiven; then
+  echo "$as_me:$LINENO: result: no (but will check for system blas later)" >&5
+echo "${ECHO_T}no (but will check for system blas later)" >&6
+else
+  echo "$as_me:$LINENO: result: $coin_has_blas" >&5
 echo "${ECHO_T}$coin_has_blas" >&6
+fi
 
-echo "$as_me:$LINENO: checking whether project Blas needs to be configured" >&5
-echo $ECHO_N "checking whether project Blas needs to be configured... $ECHO_C" >&6
+echo "$as_me:$LINENO: checking whether project ThirdParty/Blas needs to be configured" >&5
+echo $ECHO_N "checking whether project ThirdParty/Blas needs to be configured... $ECHO_C" >&6
 if test "$coin_have_project_dir" = yes ; then
 
   if test -r $srcdir/ThirdParty/Blas/configure; then
@@ -21374,7 +21397,7 @@ fi
 
 if test $coin_has_lapack != skipping; then
   if test $PACKAGE_TARNAME = lapack; then
-    coin_has_lapack=.
+    coin_has_lapack=yes
     coin_have_project_dir=yes
   fi
 
@@ -21382,21 +21405,21 @@ if test $coin_has_lapack != skipping; then
 # Check whether --with-m4_tolower(Lapack)-lib or --without-m4_tolower(Lapack)-lib was given.
 if test "${with_lapack_lib+set}" = set; then
   withval="$with_lapack_lib"
-  coin_has_lapack=installed
+  coin_has_lapack="yes, via --with-lapack-lib"
 fi;
 
 
 # Check whether --with-m4_tolower(Lapack)-incdir or --without-m4_tolower(Lapack)-incdir was given.
 if test "${with_lapack_incdir+set}" = set; then
   withval="$with_lapack_incdir"
-  coin_has_lapack=installed
+  coin_has_lapack="yes, via --with-lapack-incdir"
 fi;
 
 
 # Check whether --with-m4_tolower(Lapack)-datadir or --without-m4_tolower(Lapack)-datadir was given.
 if test "${with_lapack_datadir+set}" = set; then
   withval="$with_lapack_datadir"
-  coin_has_lapack=installed
+  coin_has_lapack="yes, via --with-lapack-datadir"
 fi;
 
 
@@ -21410,7 +21433,7 @@ if test "${with_lapack+set}" = set; then
   if test x"$withval" = "xBUILD" ; then
            coin_has_lapack=notGiven
          else
-           coin_has_lapack=installed
+           coin_has_lapack="yes, via --with-lapack"
          fi
 fi;
 
@@ -21429,13 +21452,13 @@ if test "$coin_has_lapack" = notGiven; then
        done
 
     if test $coin_have_project_dir = yes; then
-      coin_has_lapack=ThirdParty/Lapack
+      coin_has_lapack="yes, source in ThirdParty/Lapack"
     fi
   fi
 fi
 
 # check for project by using pkg-config, if pkg-config is available
-if test $coin_has_lapack = notGiven; then
+if test "$coin_has_lapack" = notGiven; then
   #we are only interested in installed packages here, so we do not search in $COIN_PKG_CONFIG_PATH_UNINSTALLED
   if test -n "$PKG_CONFIG" ; then
     coin_save_PKG_CONFIG_PATH="$PKG_CONFIG_PATH"
@@ -21444,7 +21467,7 @@ if test $coin_has_lapack = notGiven; then
 if test -n "$PKG_CONFIG" ; then
   if $PKG_CONFIG --exists "coinlapack"; then
     COINLAPACK_VERSION=`$PKG_CONFIG --modversion "coinlapack" 2>/dev/null`
-    coin_has_lapack="$COINLAPACK_VERSION"
+    coin_has_lapack="yes, found installed version $COINLAPACK_VERSION"
   else
     COINLAPACK_PKG_ERRORS=`$PKG_CONFIG $pkg_short_errors --errors-to-stdout --print-errors "coinlapack"`
 
@@ -21460,11 +21483,16 @@ fi
   fi
 fi
 
-echo "$as_me:$LINENO: result: $coin_has_lapack" >&5
+if test "$coin_has_lapack" = notGiven; then
+  echo "$as_me:$LINENO: result: no (but will check for system lapack later)" >&5
+echo "${ECHO_T}no (but will check for system lapack later)" >&6
+else
+  echo "$as_me:$LINENO: result: $coin_has_lapack" >&5
 echo "${ECHO_T}$coin_has_lapack" >&6
+fi
 
-echo "$as_me:$LINENO: checking whether project Lapack needs to be configured" >&5
-echo $ECHO_N "checking whether project Lapack needs to be configured... $ECHO_C" >&6
+echo "$as_me:$LINENO: checking whether project ThirdParty/Lapack needs to be configured" >&5
+echo $ECHO_N "checking whether project ThirdParty/Lapack needs to be configured... $ECHO_C" >&6
 if test "$coin_have_project_dir" = yes ; then
 
   if test -r $srcdir/ThirdParty/Lapack/configure; then
@@ -21506,7 +21534,7 @@ fi
 
 if test $coin_has_glpk != skipping; then
   if test $PACKAGE_TARNAME = glpk; then
-    coin_has_glpk=.
+    coin_has_glpk=yes
     coin_have_project_dir=yes
   fi
 
@@ -21514,21 +21542,21 @@ if test $coin_has_glpk != skipping; then
 # Check whether --with-m4_tolower(Glpk)-lib or --without-m4_tolower(Glpk)-lib was given.
 if test "${with_glpk_lib+set}" = set; then
   withval="$with_glpk_lib"
-  coin_has_glpk=installed
+  coin_has_glpk="yes, via --with-glpk-lib"
 fi;
 
 
 # Check whether --with-m4_tolower(Glpk)-incdir or --without-m4_tolower(Glpk)-incdir was given.
 if test "${with_glpk_incdir+set}" = set; then
   withval="$with_glpk_incdir"
-  coin_has_glpk=installed
+  coin_has_glpk="yes, via --with-glpk-incdir"
 fi;
 
 
 # Check whether --with-m4_tolower(Glpk)-datadir or --without-m4_tolower(Glpk)-datadir was given.
 if test "${with_glpk_datadir+set}" = set; then
   withval="$with_glpk_datadir"
-  coin_has_glpk=installed
+  coin_has_glpk="yes, via --with-glpk-datadir"
 fi;
 
 
@@ -21550,13 +21578,13 @@ if test "$coin_has_glpk" = notGiven; then
        done
 
     if test $coin_have_project_dir = yes; then
-      coin_has_glpk=ThirdParty/Glpk
+      coin_has_glpk="yes, source in ThirdParty/Glpk"
     fi
   fi
 fi
 
 # check for project by using pkg-config, if pkg-config is available
-if test $coin_has_glpk = notGiven; then
+if test "$coin_has_glpk" = notGiven; then
   #we are only interested in installed packages here, so we do not search in $COIN_PKG_CONFIG_PATH_UNINSTALLED
   if test -n "$PKG_CONFIG" ; then
     coin_save_PKG_CONFIG_PATH="$PKG_CONFIG_PATH"
@@ -21565,7 +21593,7 @@ if test $coin_has_glpk = notGiven; then
 if test -n "$PKG_CONFIG" ; then
   if $PKG_CONFIG --exists "coinglpk"; then
     COINGLPK_VERSION=`$PKG_CONFIG --modversion "coinglpk" 2>/dev/null`
-    coin_has_glpk="$COINGLPK_VERSION"
+    coin_has_glpk="yes, found installed version $COINGLPK_VERSION"
   else
     COINGLPK_PKG_ERRORS=`$PKG_CONFIG $pkg_short_errors --errors-to-stdout --print-errors "coinglpk"`
 
@@ -21581,11 +21609,17 @@ fi
   fi
 fi
 
-echo "$as_me:$LINENO: result: $coin_has_glpk" >&5
-echo "${ECHO_T}$coin_has_glpk" >&6
+if test "$coin_has_glpk" = notGiven; then
+  echo "$as_me:$LINENO: result: not given" >&5
+echo "${ECHO_T}not given" >&6
 
-echo "$as_me:$LINENO: checking whether project Glpk needs to be configured" >&5
-echo $ECHO_N "checking whether project Glpk needs to be configured... $ECHO_C" >&6
+else
+  echo "$as_me:$LINENO: result: $coin_has_glpk" >&5
+echo "${ECHO_T}$coin_has_glpk" >&6
+fi
+
+echo "$as_me:$LINENO: checking whether project ThirdParty/Glpk needs to be configured" >&5
+echo $ECHO_N "checking whether project ThirdParty/Glpk needs to be configured... $ECHO_C" >&6
 if test "$coin_have_project_dir" = yes ; then
 
   if test -r $srcdir/ThirdParty/Glpk/configure; then
@@ -21627,7 +21661,7 @@ fi
 
 if test $coin_has_sample != skipping; then
   if test $PACKAGE_TARNAME = sample; then
-    coin_has_sample=.
+    coin_has_sample=yes
     coin_have_project_dir=yes
   fi
 
@@ -21635,21 +21669,21 @@ if test $coin_has_sample != skipping; then
 # Check whether --with-m4_tolower(Sample)-lib or --without-m4_tolower(Sample)-lib was given.
 if test "${with_sample_lib+set}" = set; then
   withval="$with_sample_lib"
-  coin_has_sample=installed
+  coin_has_sample="yes, via --with-sample-lib"
 fi;
 
 
 # Check whether --with-m4_tolower(Sample)-incdir or --without-m4_tolower(Sample)-incdir was given.
 if test "${with_sample_incdir+set}" = set; then
   withval="$with_sample_incdir"
-  coin_has_sample=installed
+  coin_has_sample="yes, via --with-sample-incdir"
 fi;
 
 
 # Check whether --with-m4_tolower(Sample)-datadir or --without-m4_tolower(Sample)-datadir was given.
 if test "${with_sample_datadir+set}" = set; then
   withval="$with_sample_datadir"
-  coin_has_sample=installed
+  coin_has_sample="yes, via --with-sample-datadir"
 fi;
 
 
@@ -21667,13 +21701,13 @@ if test "$coin_has_sample" = notGiven; then
      coin_have_project_dir=yes
 
     if test $coin_have_project_dir = yes; then
-      coin_has_sample=Data/Sample
+      coin_has_sample="yes, source in Data/Sample"
     fi
   fi
 fi
 
 # check for project by using pkg-config, if pkg-config is available
-if test $coin_has_sample = notGiven; then
+if test "$coin_has_sample" = notGiven; then
   #we are only interested in installed packages here, so we do not search in $COIN_PKG_CONFIG_PATH_UNINSTALLED
   if test -n "$PKG_CONFIG" ; then
     coin_save_PKG_CONFIG_PATH="$PKG_CONFIG_PATH"
@@ -21682,7 +21716,7 @@ if test $coin_has_sample = notGiven; then
 if test -n "$PKG_CONFIG" ; then
   if $PKG_CONFIG --exists "coindatasample"; then
     COINDATASAMPLE_VERSION=`$PKG_CONFIG --modversion "coindatasample" 2>/dev/null`
-    coin_has_sample="$COINDATASAMPLE_VERSION"
+    coin_has_sample="yes, found installed version $COINDATASAMPLE_VERSION"
   else
     COINDATASAMPLE_PKG_ERRORS=`$PKG_CONFIG $pkg_short_errors --errors-to-stdout --print-errors "coindatasample"`
 
@@ -21698,11 +21732,17 @@ fi
   fi
 fi
 
-echo "$as_me:$LINENO: result: $coin_has_sample" >&5
-echo "${ECHO_T}$coin_has_sample" >&6
+if test "$coin_has_sample" = notGiven; then
+  echo "$as_me:$LINENO: result: not given" >&5
+echo "${ECHO_T}not given" >&6
 
-echo "$as_me:$LINENO: checking whether project Sample needs to be configured" >&5
-echo $ECHO_N "checking whether project Sample needs to be configured... $ECHO_C" >&6
+else
+  echo "$as_me:$LINENO: result: $coin_has_sample" >&5
+echo "${ECHO_T}$coin_has_sample" >&6
+fi
+
+echo "$as_me:$LINENO: checking whether project Data/Sample needs to be configured" >&5
+echo $ECHO_N "checking whether project Data/Sample needs to be configured... $ECHO_C" >&6
 if test "$coin_have_project_dir" = yes ; then
 
   if test -r $srcdir/Data/Sample/configure; then
@@ -21744,7 +21784,7 @@ fi
 
 if test $coin_has_netlib != skipping; then
   if test $PACKAGE_TARNAME = netlib; then
-    coin_has_netlib=.
+    coin_has_netlib=yes
     coin_have_project_dir=yes
   fi
 
@@ -21752,21 +21792,21 @@ if test $coin_has_netlib != skipping; then
 # Check whether --with-m4_tolower(Netlib)-lib or --without-m4_tolower(Netlib)-lib was given.
 if test "${with_netlib_lib+set}" = set; then
   withval="$with_netlib_lib"
-  coin_has_netlib=installed
+  coin_has_netlib="yes, via --with-netlib-lib"
 fi;
 
 
 # Check whether --with-m4_tolower(Netlib)-incdir or --without-m4_tolower(Netlib)-incdir was given.
 if test "${with_netlib_incdir+set}" = set; then
   withval="$with_netlib_incdir"
-  coin_has_netlib=installed
+  coin_has_netlib="yes, via --with-netlib-incdir"
 fi;
 
 
 # Check whether --with-m4_tolower(Netlib)-datadir or --without-m4_tolower(Netlib)-datadir was given.
 if test "${with_netlib_datadir+set}" = set; then
   withval="$with_netlib_datadir"
-  coin_has_netlib=installed
+  coin_has_netlib="yes, via --with-netlib-datadir"
 fi;
 
 
@@ -21784,13 +21824,13 @@ if test "$coin_has_netlib" = notGiven; then
      coin_have_project_dir=yes
 
     if test $coin_have_project_dir = yes; then
-      coin_has_netlib=Data/Netlib
+      coin_has_netlib="yes, source in Data/Netlib"
     fi
   fi
 fi
 
 # check for project by using pkg-config, if pkg-config is available
-if test $coin_has_netlib = notGiven; then
+if test "$coin_has_netlib" = notGiven; then
   #we are only interested in installed packages here, so we do not search in $COIN_PKG_CONFIG_PATH_UNINSTALLED
   if test -n "$PKG_CONFIG" ; then
     coin_save_PKG_CONFIG_PATH="$PKG_CONFIG_PATH"
@@ -21799,7 +21839,7 @@ if test $coin_has_netlib = notGiven; then
 if test -n "$PKG_CONFIG" ; then
   if $PKG_CONFIG --exists "coindatanetlib"; then
     COINDATANETLIB_VERSION=`$PKG_CONFIG --modversion "coindatanetlib" 2>/dev/null`
-    coin_has_netlib="$COINDATANETLIB_VERSION"
+    coin_has_netlib="yes, found installed version $COINDATANETLIB_VERSION"
   else
     COINDATANETLIB_PKG_ERRORS=`$PKG_CONFIG $pkg_short_errors --errors-to-stdout --print-errors "coindatanetlib"`
 
@@ -21815,11 +21855,17 @@ fi
   fi
 fi
 
-echo "$as_me:$LINENO: result: $coin_has_netlib" >&5
-echo "${ECHO_T}$coin_has_netlib" >&6
+if test "$coin_has_netlib" = notGiven; then
+  echo "$as_me:$LINENO: result: not given" >&5
+echo "${ECHO_T}not given" >&6
 
-echo "$as_me:$LINENO: checking whether project Netlib needs to be configured" >&5
-echo $ECHO_N "checking whether project Netlib needs to be configured... $ECHO_C" >&6
+else
+  echo "$as_me:$LINENO: result: $coin_has_netlib" >&5
+echo "${ECHO_T}$coin_has_netlib" >&6
+fi
+
+echo "$as_me:$LINENO: checking whether project Data/Netlib needs to be configured" >&5
+echo $ECHO_N "checking whether project Data/Netlib needs to be configured... $ECHO_C" >&6
 if test "$coin_have_project_dir" = yes ; then
 
   if test -r $srcdir/Data/Netlib/configure; then
@@ -21861,7 +21907,7 @@ fi
 
 if test $coin_has_miplib3 != skipping; then
   if test $PACKAGE_TARNAME = miplib3; then
-    coin_has_miplib3=.
+    coin_has_miplib3=yes
     coin_have_project_dir=yes
   fi
 
@@ -21869,21 +21915,21 @@ if test $coin_has_miplib3 != skipping; then
 # Check whether --with-m4_tolower(miplib3)-lib or --without-m4_tolower(miplib3)-lib was given.
 if test "${with_miplib3_lib+set}" = set; then
   withval="$with_miplib3_lib"
-  coin_has_miplib3=installed
+  coin_has_miplib3="yes, via --with-miplib3-lib"
 fi;
 
 
 # Check whether --with-m4_tolower(miplib3)-incdir or --without-m4_tolower(miplib3)-incdir was given.
 if test "${with_miplib3_incdir+set}" = set; then
   withval="$with_miplib3_incdir"
-  coin_has_miplib3=installed
+  coin_has_miplib3="yes, via --with-miplib3-incdir"
 fi;
 
 
 # Check whether --with-m4_tolower(miplib3)-datadir or --without-m4_tolower(miplib3)-datadir was given.
 if test "${with_miplib3_datadir+set}" = set; then
   withval="$with_miplib3_datadir"
-  coin_has_miplib3=installed
+  coin_has_miplib3="yes, via --with-miplib3-datadir"
 fi;
 
 
@@ -21901,13 +21947,13 @@ if test "$coin_has_miplib3" = notGiven; then
      coin_have_project_dir=yes
 
     if test $coin_have_project_dir = yes; then
-      coin_has_miplib3=Data/miplib3
+      coin_has_miplib3="yes, source in Data/miplib3"
     fi
   fi
 fi
 
 # check for project by using pkg-config, if pkg-config is available
-if test $coin_has_miplib3 = notGiven; then
+if test "$coin_has_miplib3" = notGiven; then
   #we are only interested in installed packages here, so we do not search in $COIN_PKG_CONFIG_PATH_UNINSTALLED
   if test -n "$PKG_CONFIG" ; then
     coin_save_PKG_CONFIG_PATH="$PKG_CONFIG_PATH"
@@ -21916,7 +21962,7 @@ if test $coin_has_miplib3 = notGiven; then
 if test -n "$PKG_CONFIG" ; then
   if $PKG_CONFIG --exists "coindatamiplib3"; then
     COINDATAMIPLIB3_VERSION=`$PKG_CONFIG --modversion "coindatamiplib3" 2>/dev/null`
-    coin_has_miplib3="$COINDATAMIPLIB3_VERSION"
+    coin_has_miplib3="yes, found installed version $COINDATAMIPLIB3_VERSION"
   else
     COINDATAMIPLIB3_PKG_ERRORS=`$PKG_CONFIG $pkg_short_errors --errors-to-stdout --print-errors "coindatamiplib3"`
 
@@ -21932,11 +21978,17 @@ fi
   fi
 fi
 
-echo "$as_me:$LINENO: result: $coin_has_miplib3" >&5
-echo "${ECHO_T}$coin_has_miplib3" >&6
+if test "$coin_has_miplib3" = notGiven; then
+  echo "$as_me:$LINENO: result: not given" >&5
+echo "${ECHO_T}not given" >&6
 
-echo "$as_me:$LINENO: checking whether project miplib3 needs to be configured" >&5
-echo $ECHO_N "checking whether project miplib3 needs to be configured... $ECHO_C" >&6
+else
+  echo "$as_me:$LINENO: result: $coin_has_miplib3" >&5
+echo "${ECHO_T}$coin_has_miplib3" >&6
+fi
+
+echo "$as_me:$LINENO: checking whether project Data/miplib3 needs to be configured" >&5
+echo $ECHO_N "checking whether project Data/miplib3 needs to be configured... $ECHO_C" >&6
 if test "$coin_have_project_dir" = yes ; then
 
   if test -r $srcdir/Data/miplib3/configure; then
@@ -21978,7 +22030,7 @@ fi
 
 if test $coin_has_coinutils != skipping; then
   if test $PACKAGE_TARNAME = coinutils; then
-    coin_has_coinutils=.
+    coin_has_coinutils=yes
     coin_have_project_dir=yes
   fi
 
@@ -21986,21 +22038,21 @@ if test $coin_has_coinutils != skipping; then
 # Check whether --with-m4_tolower(CoinUtils)-lib or --without-m4_tolower(CoinUtils)-lib was given.
 if test "${with_coinutils_lib+set}" = set; then
   withval="$with_coinutils_lib"
-  coin_has_coinutils=installed
+  coin_has_coinutils="yes, via --with-coinutils-lib"
 fi;
 
 
 # Check whether --with-m4_tolower(CoinUtils)-incdir or --without-m4_tolower(CoinUtils)-incdir was given.
 if test "${with_coinutils_incdir+set}" = set; then
   withval="$with_coinutils_incdir"
-  coin_has_coinutils=installed
+  coin_has_coinutils="yes, via --with-coinutils-incdir"
 fi;
 
 
 # Check whether --with-m4_tolower(CoinUtils)-datadir or --without-m4_tolower(CoinUtils)-datadir was given.
 if test "${with_coinutils_datadir+set}" = set; then
   withval="$with_coinutils_datadir"
-  coin_has_coinutils=installed
+  coin_has_coinutils="yes, via --with-coinutils-datadir"
 fi;
 
 
@@ -22018,13 +22070,13 @@ if test "$coin_has_coinutils" = notGiven; then
      coin_have_project_dir=yes
 
     if test $coin_have_project_dir = yes; then
-      coin_has_coinutils=CoinUtils
+      coin_has_coinutils="yes, source in CoinUtils"
     fi
   fi
 fi
 
 # check for project by using pkg-config, if pkg-config is available
-if test $coin_has_coinutils = notGiven; then
+if test "$coin_has_coinutils" = notGiven; then
   #we are only interested in installed packages here, so we do not search in $COIN_PKG_CONFIG_PATH_UNINSTALLED
   if test -n "$PKG_CONFIG" ; then
     coin_save_PKG_CONFIG_PATH="$PKG_CONFIG_PATH"
@@ -22033,7 +22085,7 @@ if test $coin_has_coinutils = notGiven; then
 if test -n "$PKG_CONFIG" ; then
   if $PKG_CONFIG --exists "coinutils"; then
     COINUTILS_VERSION=`$PKG_CONFIG --modversion "coinutils" 2>/dev/null`
-    coin_has_coinutils="$COINUTILS_VERSION"
+    coin_has_coinutils="yes, found installed version $COINUTILS_VERSION"
   else
     COINUTILS_PKG_ERRORS=`$PKG_CONFIG $pkg_short_errors --errors-to-stdout --print-errors "coinutils"`
 
@@ -22049,8 +22101,14 @@ fi
   fi
 fi
 
-echo "$as_me:$LINENO: result: $coin_has_coinutils" >&5
+if test "$coin_has_coinutils" = notGiven; then
+  echo "$as_me:$LINENO: result: not given" >&5
+echo "${ECHO_T}not given" >&6
+
+else
+  echo "$as_me:$LINENO: result: $coin_has_coinutils" >&5
 echo "${ECHO_T}$coin_has_coinutils" >&6
+fi
 
 echo "$as_me:$LINENO: checking whether project CoinUtils needs to be configured" >&5
 echo $ECHO_N "checking whether project CoinUtils needs to be configured... $ECHO_C" >&6
@@ -22095,7 +22153,7 @@ fi
 
 if test $coin_has_osi != skipping; then
   if test $PACKAGE_TARNAME = osi; then
-    coin_has_osi=.
+    coin_has_osi=yes
     coin_have_project_dir=yes
   fi
 
@@ -22103,21 +22161,21 @@ if test $coin_has_osi != skipping; then
 # Check whether --with-m4_tolower(Osi)-lib or --without-m4_tolower(Osi)-lib was given.
 if test "${with_osi_lib+set}" = set; then
   withval="$with_osi_lib"
-  coin_has_osi=installed
+  coin_has_osi="yes, via --with-osi-lib"
 fi;
 
 
 # Check whether --with-m4_tolower(Osi)-incdir or --without-m4_tolower(Osi)-incdir was given.
 if test "${with_osi_incdir+set}" = set; then
   withval="$with_osi_incdir"
-  coin_has_osi=installed
+  coin_has_osi="yes, via --with-osi-incdir"
 fi;
 
 
 # Check whether --with-m4_tolower(Osi)-datadir or --without-m4_tolower(Osi)-datadir was given.
 if test "${with_osi_datadir+set}" = set; then
   withval="$with_osi_datadir"
-  coin_has_osi=installed
+  coin_has_osi="yes, via --with-osi-datadir"
 fi;
 
 
@@ -22135,13 +22193,13 @@ if test "$coin_has_osi" = notGiven; then
      coin_have_project_dir=yes
 
     if test $coin_have_project_dir = yes; then
-      coin_has_osi=Osi
+      coin_has_osi="yes, source in Osi"
     fi
   fi
 fi
 
 # check for project by using pkg-config, if pkg-config is available
-if test $coin_has_osi = notGiven; then
+if test "$coin_has_osi" = notGiven; then
   #we are only interested in installed packages here, so we do not search in $COIN_PKG_CONFIG_PATH_UNINSTALLED
   if test -n "$PKG_CONFIG" ; then
     coin_save_PKG_CONFIG_PATH="$PKG_CONFIG_PATH"
@@ -22150,7 +22208,7 @@ if test $coin_has_osi = notGiven; then
 if test -n "$PKG_CONFIG" ; then
   if $PKG_CONFIG --exists "osi"; then
     OSI_VERSION=`$PKG_CONFIG --modversion "osi" 2>/dev/null`
-    coin_has_osi="$OSI_VERSION"
+    coin_has_osi="yes, found installed version $OSI_VERSION"
   else
     OSI_PKG_ERRORS=`$PKG_CONFIG $pkg_short_errors --errors-to-stdout --print-errors "osi"`
 
@@ -22166,8 +22224,14 @@ fi
   fi
 fi
 
-echo "$as_me:$LINENO: result: $coin_has_osi" >&5
+if test "$coin_has_osi" = notGiven; then
+  echo "$as_me:$LINENO: result: not given" >&5
+echo "${ECHO_T}not given" >&6
+
+else
+  echo "$as_me:$LINENO: result: $coin_has_osi" >&5
 echo "${ECHO_T}$coin_has_osi" >&6
+fi
 
 echo "$as_me:$LINENO: checking whether project Osi needs to be configured" >&5
 echo $ECHO_N "checking whether project Osi needs to be configured... $ECHO_C" >&6
@@ -22212,7 +22276,7 @@ fi
 
 if test $coin_has_clp != skipping; then
   if test $PACKAGE_TARNAME = clp; then
-    coin_has_clp=.
+    coin_has_clp=yes
     coin_have_project_dir=yes
   fi
 
@@ -22220,21 +22284,21 @@ if test $coin_has_clp != skipping; then
 # Check whether --with-m4_tolower(Clp)-lib or --without-m4_tolower(Clp)-lib was given.
 if test "${with_clp_lib+set}" = set; then
   withval="$with_clp_lib"
-  coin_has_clp=installed
+  coin_has_clp="yes, via --with-clp-lib"
 fi;
 
 
 # Check whether --with-m4_tolower(Clp)-incdir or --without-m4_tolower(Clp)-incdir was given.
 if test "${with_clp_incdir+set}" = set; then
   withval="$with_clp_incdir"
-  coin_has_clp=installed
+  coin_has_clp="yes, via --with-clp-incdir"
 fi;
 
 
 # Check whether --with-m4_tolower(Clp)-datadir or --without-m4_tolower(Clp)-datadir was given.
 if test "${with_clp_datadir+set}" = set; then
   withval="$with_clp_datadir"
-  coin_has_clp=installed
+  coin_has_clp="yes, via --with-clp-datadir"
 fi;
 
 
@@ -22252,13 +22316,13 @@ if test "$coin_has_clp" = notGiven; then
      coin_have_project_dir=yes
 
     if test $coin_have_project_dir = yes; then
-      coin_has_clp=Clp
+      coin_has_clp="yes, source in Clp"
     fi
   fi
 fi
 
 # check for project by using pkg-config, if pkg-config is available
-if test $coin_has_clp = notGiven; then
+if test "$coin_has_clp" = notGiven; then
   #we are only interested in installed packages here, so we do not search in $COIN_PKG_CONFIG_PATH_UNINSTALLED
   if test -n "$PKG_CONFIG" ; then
     coin_save_PKG_CONFIG_PATH="$PKG_CONFIG_PATH"
@@ -22267,7 +22331,7 @@ if test $coin_has_clp = notGiven; then
 if test -n "$PKG_CONFIG" ; then
   if $PKG_CONFIG --exists "clp"; then
     CLP_VERSION=`$PKG_CONFIG --modversion "clp" 2>/dev/null`
-    coin_has_clp="$CLP_VERSION"
+    coin_has_clp="yes, found installed version $CLP_VERSION"
   else
     CLP_PKG_ERRORS=`$PKG_CONFIG $pkg_short_errors --errors-to-stdout --print-errors "clp"`
 
@@ -22283,8 +22347,14 @@ fi
   fi
 fi
 
-echo "$as_me:$LINENO: result: $coin_has_clp" >&5
+if test "$coin_has_clp" = notGiven; then
+  echo "$as_me:$LINENO: result: not given" >&5
+echo "${ECHO_T}not given" >&6
+
+else
+  echo "$as_me:$LINENO: result: $coin_has_clp" >&5
 echo "${ECHO_T}$coin_has_clp" >&6
+fi
 
 echo "$as_me:$LINENO: checking whether project Clp needs to be configured" >&5
 echo $ECHO_N "checking whether project Clp needs to be configured... $ECHO_C" >&6
@@ -22329,7 +22399,7 @@ fi
 
 if test $coin_has_dylp != skipping; then
   if test $PACKAGE_TARNAME = dylp; then
-    coin_has_dylp=.
+    coin_has_dylp=yes
     coin_have_project_dir=yes
   fi
 
@@ -22337,21 +22407,21 @@ if test $coin_has_dylp != skipping; then
 # Check whether --with-m4_tolower(DyLP)-lib or --without-m4_tolower(DyLP)-lib was given.
 if test "${with_dylp_lib+set}" = set; then
   withval="$with_dylp_lib"
-  coin_has_dylp=installed
+  coin_has_dylp="yes, via --with-dylp-lib"
 fi;
 
 
 # Check whether --with-m4_tolower(DyLP)-incdir or --without-m4_tolower(DyLP)-incdir was given.
 if test "${with_dylp_incdir+set}" = set; then
   withval="$with_dylp_incdir"
-  coin_has_dylp=installed
+  coin_has_dylp="yes, via --with-dylp-incdir"
 fi;
 
 
 # Check whether --with-m4_tolower(DyLP)-datadir or --without-m4_tolower(DyLP)-datadir was given.
 if test "${with_dylp_datadir+set}" = set; then
   withval="$with_dylp_datadir"
-  coin_has_dylp=installed
+  coin_has_dylp="yes, via --with-dylp-datadir"
 fi;
 
 
@@ -22369,13 +22439,13 @@ if test "$coin_has_dylp" = notGiven; then
      coin_have_project_dir=yes
 
     if test $coin_have_project_dir = yes; then
-      coin_has_dylp=DyLP
+      coin_has_dylp="yes, source in DyLP"
     fi
   fi
 fi
 
 # check for project by using pkg-config, if pkg-config is available
-if test $coin_has_dylp = notGiven; then
+if test "$coin_has_dylp" = notGiven; then
   #we are only interested in installed packages here, so we do not search in $COIN_PKG_CONFIG_PATH_UNINSTALLED
   if test -n "$PKG_CONFIG" ; then
     coin_save_PKG_CONFIG_PATH="$PKG_CONFIG_PATH"
@@ -22384,7 +22454,7 @@ if test $coin_has_dylp = notGiven; then
 if test -n "$PKG_CONFIG" ; then
   if $PKG_CONFIG --exists "dylp"; then
     DYLP_VERSION=`$PKG_CONFIG --modversion "dylp" 2>/dev/null`
-    coin_has_dylp="$DYLP_VERSION"
+    coin_has_dylp="yes, found installed version $DYLP_VERSION"
   else
     DYLP_PKG_ERRORS=`$PKG_CONFIG $pkg_short_errors --errors-to-stdout --print-errors "dylp"`
 
@@ -22400,8 +22470,14 @@ fi
   fi
 fi
 
-echo "$as_me:$LINENO: result: $coin_has_dylp" >&5
+if test "$coin_has_dylp" = notGiven; then
+  echo "$as_me:$LINENO: result: not given" >&5
+echo "${ECHO_T}not given" >&6
+
+else
+  echo "$as_me:$LINENO: result: $coin_has_dylp" >&5
 echo "${ECHO_T}$coin_has_dylp" >&6
+fi
 
 echo "$as_me:$LINENO: checking whether project DyLP needs to be configured" >&5
 echo $ECHO_N "checking whether project DyLP needs to be configured... $ECHO_C" >&6
@@ -22446,7 +22522,7 @@ fi
 
 if test $coin_has_vol != skipping; then
   if test $PACKAGE_TARNAME = vol; then
-    coin_has_vol=.
+    coin_has_vol=yes
     coin_have_project_dir=yes
   fi
 
@@ -22454,21 +22530,21 @@ if test $coin_has_vol != skipping; then
 # Check whether --with-m4_tolower(Vol)-lib or --without-m4_tolower(Vol)-lib was given.
 if test "${with_vol_lib+set}" = set; then
   withval="$with_vol_lib"
-  coin_has_vol=installed
+  coin_has_vol="yes, via --with-vol-lib"
 fi;
 
 
 # Check whether --with-m4_tolower(Vol)-incdir or --without-m4_tolower(Vol)-incdir was given.
 if test "${with_vol_incdir+set}" = set; then
   withval="$with_vol_incdir"
-  coin_has_vol=installed
+  coin_has_vol="yes, via --with-vol-incdir"
 fi;
 
 
 # Check whether --with-m4_tolower(Vol)-datadir or --without-m4_tolower(Vol)-datadir was given.
 if test "${with_vol_datadir+set}" = set; then
   withval="$with_vol_datadir"
-  coin_has_vol=installed
+  coin_has_vol="yes, via --with-vol-datadir"
 fi;
 
 
@@ -22486,13 +22562,13 @@ if test "$coin_has_vol" = notGiven; then
      coin_have_project_dir=yes
 
     if test $coin_have_project_dir = yes; then
-      coin_has_vol=Vol
+      coin_has_vol="yes, source in Vol"
     fi
   fi
 fi
 
 # check for project by using pkg-config, if pkg-config is available
-if test $coin_has_vol = notGiven; then
+if test "$coin_has_vol" = notGiven; then
   #we are only interested in installed packages here, so we do not search in $COIN_PKG_CONFIG_PATH_UNINSTALLED
   if test -n "$PKG_CONFIG" ; then
     coin_save_PKG_CONFIG_PATH="$PKG_CONFIG_PATH"
@@ -22501,7 +22577,7 @@ if test $coin_has_vol = notGiven; then
 if test -n "$PKG_CONFIG" ; then
   if $PKG_CONFIG --exists "vol"; then
     VOL_VERSION=`$PKG_CONFIG --modversion "vol" 2>/dev/null`
-    coin_has_vol="$VOL_VERSION"
+    coin_has_vol="yes, found installed version $VOL_VERSION"
   else
     VOL_PKG_ERRORS=`$PKG_CONFIG $pkg_short_errors --errors-to-stdout --print-errors "vol"`
 
@@ -22517,8 +22593,14 @@ fi
   fi
 fi
 
-echo "$as_me:$LINENO: result: $coin_has_vol" >&5
+if test "$coin_has_vol" = notGiven; then
+  echo "$as_me:$LINENO: result: not given" >&5
+echo "${ECHO_T}not given" >&6
+
+else
+  echo "$as_me:$LINENO: result: $coin_has_vol" >&5
 echo "${ECHO_T}$coin_has_vol" >&6
+fi
 
 echo "$as_me:$LINENO: checking whether project Vol needs to be configured" >&5
 echo $ECHO_N "checking whether project Vol needs to be configured... $ECHO_C" >&6
@@ -22563,7 +22645,7 @@ fi
 
 if test $coin_has_cgl != skipping; then
   if test $PACKAGE_TARNAME = cgl; then
-    coin_has_cgl=.
+    coin_has_cgl=yes
     coin_have_project_dir=yes
   fi
 
@@ -22571,21 +22653,21 @@ if test $coin_has_cgl != skipping; then
 # Check whether --with-m4_tolower(Cgl)-lib or --without-m4_tolower(Cgl)-lib was given.
 if test "${with_cgl_lib+set}" = set; then
   withval="$with_cgl_lib"
-  coin_has_cgl=installed
+  coin_has_cgl="yes, via --with-cgl-lib"
 fi;
 
 
 # Check whether --with-m4_tolower(Cgl)-incdir or --without-m4_tolower(Cgl)-incdir was given.
 if test "${with_cgl_incdir+set}" = set; then
   withval="$with_cgl_incdir"
-  coin_has_cgl=installed
+  coin_has_cgl="yes, via --with-cgl-incdir"
 fi;
 
 
 # Check whether --with-m4_tolower(Cgl)-datadir or --without-m4_tolower(Cgl)-datadir was given.
 if test "${with_cgl_datadir+set}" = set; then
   withval="$with_cgl_datadir"
-  coin_has_cgl=installed
+  coin_has_cgl="yes, via --with-cgl-datadir"
 fi;
 
 
@@ -22603,13 +22685,13 @@ if test "$coin_has_cgl" = notGiven; then
      coin_have_project_dir=yes
 
     if test $coin_have_project_dir = yes; then
-      coin_has_cgl=Cgl
+      coin_has_cgl="yes, source in Cgl"
     fi
   fi
 fi
 
 # check for project by using pkg-config, if pkg-config is available
-if test $coin_has_cgl = notGiven; then
+if test "$coin_has_cgl" = notGiven; then
   #we are only interested in installed packages here, so we do not search in $COIN_PKG_CONFIG_PATH_UNINSTALLED
   if test -n "$PKG_CONFIG" ; then
     coin_save_PKG_CONFIG_PATH="$PKG_CONFIG_PATH"
@@ -22618,7 +22700,7 @@ if test $coin_has_cgl = notGiven; then
 if test -n "$PKG_CONFIG" ; then
   if $PKG_CONFIG --exists "cgl"; then
     CGL_VERSION=`$PKG_CONFIG --modversion "cgl" 2>/dev/null`
-    coin_has_cgl="$CGL_VERSION"
+    coin_has_cgl="yes, found installed version $CGL_VERSION"
   else
     CGL_PKG_ERRORS=`$PKG_CONFIG $pkg_short_errors --errors-to-stdout --print-errors "cgl"`
 
@@ -22634,8 +22716,14 @@ fi
   fi
 fi
 
-echo "$as_me:$LINENO: result: $coin_has_cgl" >&5
+if test "$coin_has_cgl" = notGiven; then
+  echo "$as_me:$LINENO: result: not given" >&5
+echo "${ECHO_T}not given" >&6
+
+else
+  echo "$as_me:$LINENO: result: $coin_has_cgl" >&5
 echo "${ECHO_T}$coin_has_cgl" >&6
+fi
 
 echo "$as_me:$LINENO: checking whether project Cgl needs to be configured" >&5
 echo $ECHO_N "checking whether project Cgl needs to be configured... $ECHO_C" >&6
@@ -22680,7 +22768,7 @@ fi
 
 if test $coin_has_cbc != skipping; then
   if test $PACKAGE_TARNAME = cbc; then
-    coin_has_cbc=.
+    coin_has_cbc=yes
     coin_have_project_dir=yes
   fi
 
@@ -22688,21 +22776,21 @@ if test $coin_has_cbc != skipping; then
 # Check whether --with-m4_tolower(Cbc)-lib or --without-m4_tolower(Cbc)-lib was given.
 if test "${with_cbc_lib+set}" = set; then
   withval="$with_cbc_lib"
-  coin_has_cbc=installed
+  coin_has_cbc="yes, via --with-cbc-lib"
 fi;
 
 
 # Check whether --with-m4_tolower(Cbc)-incdir or --without-m4_tolower(Cbc)-incdir was given.
 if test "${with_cbc_incdir+set}" = set; then
   withval="$with_cbc_incdir"
-  coin_has_cbc=installed
+  coin_has_cbc="yes, via --with-cbc-incdir"
 fi;
 
 
 # Check whether --with-m4_tolower(Cbc)-datadir or --without-m4_tolower(Cbc)-datadir was given.
 if test "${with_cbc_datadir+set}" = set; then
   withval="$with_cbc_datadir"
-  coin_has_cbc=installed
+  coin_has_cbc="yes, via --with-cbc-datadir"
 fi;
 
 
@@ -22720,13 +22808,13 @@ if test "$coin_has_cbc" = notGiven; then
      coin_have_project_dir=yes
 
     if test $coin_have_project_dir = yes; then
-      coin_has_cbc=Cbc
+      coin_has_cbc="yes, source in Cbc"
     fi
   fi
 fi
 
 # check for project by using pkg-config, if pkg-config is available
-if test $coin_has_cbc = notGiven; then
+if test "$coin_has_cbc" = notGiven; then
   #we are only interested in installed packages here, so we do not search in $COIN_PKG_CONFIG_PATH_UNINSTALLED
   if test -n "$PKG_CONFIG" ; then
     coin_save_PKG_CONFIG_PATH="$PKG_CONFIG_PATH"
@@ -22735,7 +22823,7 @@ if test $coin_has_cbc = notGiven; then
 if test -n "$PKG_CONFIG" ; then
   if $PKG_CONFIG --exists "cbc"; then
     CBC_VERSION=`$PKG_CONFIG --modversion "cbc" 2>/dev/null`
-    coin_has_cbc="$CBC_VERSION"
+    coin_has_cbc="yes, found installed version $CBC_VERSION"
   else
     CBC_PKG_ERRORS=`$PKG_CONFIG $pkg_short_errors --errors-to-stdout --print-errors "cbc"`
 
@@ -22751,8 +22839,14 @@ fi
   fi
 fi
 
-echo "$as_me:$LINENO: result: $coin_has_cbc" >&5
+if test "$coin_has_cbc" = notGiven; then
+  echo "$as_me:$LINENO: result: not given" >&5
+echo "${ECHO_T}not given" >&6
+
+else
+  echo "$as_me:$LINENO: result: $coin_has_cbc" >&5
 echo "${ECHO_T}$coin_has_cbc" >&6
+fi
 
 echo "$as_me:$LINENO: checking whether project Cbc needs to be configured" >&5
 echo $ECHO_N "checking whether project Cbc needs to be configured... $ECHO_C" >&6
@@ -22979,12 +23073,6 @@ echo "${ECHO_T}$coin_link_input_cmd" >&6
 
 
 if test x$coin_skip_ac_output != xyes; then
-
-  FADDLIBS="$ADDLIBS"
-  if test x"$coin_need_flibs" = xyes; then
-    ADDLIBS="$ADDLIBS $FLIBS"
-  fi
-  PCADDLIBS="$PCADDLIBS $ADDLIBS"
 
   # library extension
 

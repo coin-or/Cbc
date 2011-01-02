@@ -16,8 +16,7 @@ SUBDIRS = OsiCbc
 
 # Name of the library compiled in this directory.  We want it to be installed
 # in the 'lib' directory
-coinlibdir = ${libdir}/coin
-coinlib_LTLIBRARIES = libCbc.la libCbcSolver.la
+lib_LTLIBRARIES = libCbc.la libCbcSolver.la
 
 # List all source files for this library, including headers
 libCbc_la_SOURCES = \

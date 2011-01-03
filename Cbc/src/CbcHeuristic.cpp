@@ -1002,6 +1002,8 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver, int numberNodes,
                     }
                     if (!gotPump) {
                         CbcHeuristicFPump heuristic4;
+			// use any cutoff
+			heuristic4.setFakeCutoff(0.5*COIN_DBL_MAX);
 			if (fractionSmall_<=1.0) 
 			  heuristic4.setMaximumPasses(10);
                         int pumpTune = feasibilityPumpOptions_;

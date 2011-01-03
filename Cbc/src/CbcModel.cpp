@@ -2112,7 +2112,7 @@ void CbcModel::branchAndBound(int doStatistics)
         }
     }
     // Save objective (just so user can access it)
-    originalContinuousObjective_ = solver_->getObjValue();
+    originalContinuousObjective_ = solver_->getObjValue()* solver_->getObjSense();
     bestPossibleObjective_ = originalContinuousObjective_;
     sumChangeObjective1_ = 0.0;
     sumChangeObjective2_ = 0.0;
@@ -4300,6 +4300,7 @@ CbcModel::initialSolve()
     status_ = -1;
     secondaryStatus_ = -1;
     originalContinuousObjective_ = solver_->getObjValue() * solver_->getObjSense();
+    bestPossibleObjective_ = originalContinuousObjective_;
     delete [] continuousSolution_;
     continuousSolution_ = CoinCopyOfArray(solver_->getColSolution(),
                                           solver_->getNumCols());
@@ -12852,8 +12853,17 @@ CbcModel::doHeuristicsAtRoot(int deleteHeuristicsAfterwards)
                         break;
                     // see if heuristic will do anything
                     double saveValue = heuristicValue ;
+		    double before = getCurrentSeconds();
                     int ifSol = heuristic_[i]->solution(heuristicValue,
                                                         newSolution);
+		    if (handler_->logLevel()>1) {
+		      char line[100];
+		      sprintf(line,"Heuristic %s took %g seconds",
+			      heuristic_[i]->heuristicName(),
+			      getCurrentSeconds()-before);
+		      handler_->message(CBC_GENERAL, messages_) << 
+			line << CoinMessageEol ;
+		    }
                     if (ifSol > 0) {
                         // better solution found
                         double currentObjective = bestObjective_;
@@ -12874,6 +12884,21 @@ CbcModel::doHeuristicsAtRoot(int deleteHeuristicsAfterwards)
                             whereFrom |= 8; // say solution found
                             if (heuristic_[i]->exitNow(bestObjective_))
                                 break;
+			    if (eventHandler) {
+			      if (!eventHandler->event(CbcEventHandler::heuristicSolution)) {
+				eventHappened_ = true; // exit
+				break;
+			      }
+			    }
+			    double testGap = CoinMax(dblParam_[CbcAllowableGap],
+						     CoinMax(fabs(bestObjective_), fabs(bestPossibleObjective_))
+						     * dblParam_[CbcAllowableFractionGap]);
+			    if (bestObjective_ - bestPossibleObjective_ < testGap && getCutoffIncrement() >= 0.0 &&bestPossibleObjective_ < 1.0e30) {
+			      if (bestPossibleObjective_ < getCutoff())
+				stoppedOnGap_ = true ;
+			      //eventHappened_=true; // stop as fast as possible
+			      break;
+			    }
                         } else {
                             // NOT better solution
 #ifdef CLP_INVESTIGATE

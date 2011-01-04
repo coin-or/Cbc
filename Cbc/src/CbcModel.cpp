@@ -4664,11 +4664,14 @@ CbcModel::CbcModel(const OsiSolverInterface &rhs)
     strategy_ = NULL;
     parentModel_ = NULL;
     appData_ = NULL;
+    solver_ = rhs.clone();
     handler_ = new CoinMessageHandler();
+    if (!solver_->defaultHandler()&&
+	solver_->messageHandler()->logLevel(0)!=-1000)
+      passInMessageHandler(solver_->messageHandler());
     handler_->setLogLevel(2);
     messages_ = CbcMessage();
     //eventHandler_ = new CbcEventHandler() ;
-    solver_ = rhs.clone();
     referenceSolver_ = solver_->clone();
     ownership_ = 0x80000000;
     cbcColLower_ = NULL;
@@ -11011,6 +11014,8 @@ CbcModel::setBestSolution (CBC_Message how,
                 << numberIterations_
                 << numberNodes_ << getCurrentSeconds()
                 << CoinMessageEol;
+		dealWithEventHandler(CbcEventHandler::heuristicSolution,
+				     objectiveValue, solution);
             }
             /*
               Now step through the cut generators and see if any of them are flagged to

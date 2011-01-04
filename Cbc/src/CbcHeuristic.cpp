@@ -852,6 +852,9 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver, int numberNodes,
         }
         if (logLevel <= 1)
             process.messageHandler()->setLogLevel(0);
+	if (!solver->defaultHandler()&&
+	    solver->messageHandler()->logLevel(0)!=-1000)
+	  process.passInMessageHandler(solver->messageHandler());
         OsiSolverInterface * solver2 = process.preProcessNonDefault(*solver, false,
                                        numberPasses);
         if (!solver2) {

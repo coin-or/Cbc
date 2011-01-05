@@ -95,7 +95,7 @@
 /* #undef COIN_HAS_XPR */
 
 /* Cbc version */
-#define CBC_VERSION "2.7"
+#define CBC_VERSION "trunk"
 
 /*
   For additional information about how to set OSICBC_DFLT_SOLVER,

@@ -1,4 +1,10 @@
+// $Id$
+// Copyright (C) 2002, International Business Machines
+// Corporation and others.  All Rights Reserved.
+// This code is licensed under the terms of the Eclipse Public License (EPL).
+
 //Edwin 11/24/09 carved out of CbcCompareActual
+
 #ifndef CbcCompareDepth_H
 #define CbcCompareDepth_H
 

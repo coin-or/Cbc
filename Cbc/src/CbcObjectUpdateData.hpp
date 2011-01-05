@@ -1,4 +1,10 @@
+// $Id$
+// Copyright (C) 2002, International Business Machines
+// Corporation and others.  All Rights Reserved.
+// This code is licensed under the terms of the Eclipse Public License (EPL).
+
 // Edwin 11/12/2009 carved from CbcBranchBase
+
 #ifndef CbcObjectUpdateData_H
 #define CbcObjectUpdateData_H
 

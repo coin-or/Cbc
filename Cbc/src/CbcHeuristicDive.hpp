@@ -1,6 +1,8 @@
 /* $Id: CbcHeuristicDive.hpp 1252 2009-10-20 09:22:24Z stefan $ */
 // Copyright (C) 2008, International Business Machines
 // Corporation and others.  All Rights Reserved.
+// This code is licensed under the terms of the Eclipse Public License (EPL).
+
 #ifndef CbcHeuristicDive_H
 #define CbcHeuristicDive_H
 

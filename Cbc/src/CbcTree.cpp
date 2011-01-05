@@ -1,7 +1,7 @@
 /* $Id$ */
 // Copyright (C) 2004, International Business Machines
 // Corporation and others.  All Rights Reserved.
-
+// This code is licensed under the terms of the Eclipse Public License (EPL).
 
 #include "CbcModel.hpp"
 #include "CbcNode.hpp"
@@ -17,14 +17,15 @@ namespace {
 
 
 /*
-  The next few methods test that the heap property (parent equal or better than either
-  child) is maintained in the heap. Originally created to sort out why `cbc -unitTest'
-  triggered an `Invalid heap' error in a MSVS debug build.
+  The next few methods test that the heap property (parent equal or better
+  than either child) is maintained in the heap. Originally created to sort out
+  why `cbc -unitTest' triggered an `Invalid heap' error in a MSVS debug build.
 */
 /*
-  Predicate test. The parent should be better or equal to the child. Since the predicate
-  comparison_(x,y) returns true if y (child) is strictly better, we want failure on the
-  initial test. Clearly, success for comparison(x,y) and comparison(y,x) is also a failure.
+  Predicate test. The parent should be better or equal to the child. Since the
+  predicate comparison_(x,y) returns true if y (child) is strictly better,
+  we want failure on the initial test. Clearly, success for comparison(x,y)
+  and comparison(y,x) is also a failure.
 
   Returns true if the predicate passes, false if it fails.
 */
@@ -42,15 +43,16 @@ bool check_pred (CbcCompareBase &pred, CbcNode *parent, CbcNode *child)
 } // end file-local namespace
 
 /*
-  Check for the heap property: the parent is better than or equal to either child.
-  
-  The heap is a binary tree, stored in the vector layer by layer. By advancing parent
-  at half the rate of child (aka curNode), we check both children of a given parent.
-  (Draw yourself a picture; it'll help.) An empty heap is trivially valid. A heap with
-  no predicate is trivially invalid.
+  Check for the heap property: the parent is better than or equal to
+  either child.
 
-  TODO: The heap -> vector mapping assumed here is valid for the MSVS heap implementation.
-        No guarantee it's valid elsewhere.
+  The heap is a binary tree, stored in the vector layer by layer. By advancing
+  parent at half the rate of child (aka curNode), we check both children
+  of a given parent.  (Draw yourself a picture; it'll help.) An empty heap
+  is trivially valid. A heap with no predicate is trivially invalid.
+
+  TODO: The heap -> vector mapping assumed here is valid for the MSVS heap
+	implementation.  No guarantee it's valid elsewhere.
 */
 
 void CbcTree::validateHeap ()
@@ -83,7 +85,8 @@ void CbcTree::validateHeap ()
     }
     if (*curNode == 0) {
       std::cout
-        << " Invalid heap[" << curNdx << "] (left child null entry)!" << std::endl ;
+        << " Invalid heap[" << curNdx << "] (left child null entry)!"
+	<< std::endl ;
     } else {
       if (!check_pred(*comparison_.test_,*parent,*child)) {
         std::cout
@@ -91,13 +94,15 @@ void CbcTree::validateHeap ()
         CbcNode *node = *parent ; 
         std::cout
           << "   Parent [" << parNdx << "] (" << std::hex << node << std::dec
-          << ") unsat " << node->numberUnsatisfied() << ", depth " << node->depth()
-          << ", obj " << node->objectiveValue() << "." << std::endl ;
+          << ") unsat " << node->numberUnsatisfied() << ", depth "
+	  << node->depth() << ", obj " << node->objectiveValue() << "."
+	  << std::endl ;
         node = *child ;
         std::cout
           << "   Child [" << curNdx << "] (" << std::hex << node << std::dec
-          << ") unsat " << node->numberUnsatisfied() << ", depth " << node->depth()
-          << ", obj " << node->objectiveValue() << "." << std::endl ;
+          << ") unsat " << node->numberUnsatisfied() << ", depth "
+	  << node->depth() << ", obj " << node->objectiveValue() << "."
+	  << std::endl ;
       }
     }
     curNode++ ;
@@ -105,7 +110,8 @@ void CbcTree::validateHeap ()
     if (curNode == lastNode) break ;
     if (*curNode == 0) {
       std::cout
-        << " Invalid heap[" << curNdx << "] (right child null entry)!" << std::endl ;
+        << " Invalid heap[" << curNdx << "] (right child null entry)!"
+	<< std::endl ;
     } else {
       if (!check_pred(*comparison_.test_,*parent,*child)) {
         std::cout
@@ -113,17 +119,19 @@ void CbcTree::validateHeap ()
         CbcNode *node = *parent ;
         std::cout
           << "   Parent [" << parNdx << "] (" << std::hex << node << std::dec
-          << ") unsat " << node->numberUnsatisfied() << ", depth " << node->depth()
-          << ", obj " << node->objectiveValue() << "." << std::endl ;
+          << ") unsat " << node->numberUnsatisfied() << ", depth "
+	  << node->depth() << ", obj " << node->objectiveValue() << "."
+	  << std::endl ;
         node = *child ;
         std::cout
           << "   Child [" << curNdx << "] (" << std::hex << node << std::dec
-          << ") unsat " << node->numberUnsatisfied() << ", depth " << node->depth()
-          << ", obj " << node->objectiveValue() << "." << std::endl ;
+          << ") unsat " << node->numberUnsatisfied() << ", depth "
+	  << node->depth() << ", obj " << node->objectiveValue() << "."
+	  << std::endl ;
       }
     }
   }
-return ;
+  return ;
 }
     
 
@@ -611,12 +619,12 @@ CbcTree::cleanTree(CbcModel * model, double cutoff, double & bestPossibleObjecti
       I don't yet see why the checks for status != basic and addedCuts_[i] != 0
       are necessary. When reconstructing a node, these checks are used to skip
       over loose cuts, excluding them from the reconstituted basis. But here
-      we're just interested in correcting the reference count. Tight/loose should
-      make no difference.
+      we're just interested in correcting the reference count. Tight/loose
+      should make no difference.
 
-      Arguably a separate routine should be used in place of addCuts1. It's doing
-      more work than needed, modifying the model to match a subproblem at a node
-      that will be discarded.  Then again, we seem to need the basis.
+      Arguably a separate routine should be used in place of addCuts1. It's
+      doing more work than needed, modifying the model to match a subproblem
+      at a node that will be discarded.  Then again, we seem to need the basis.
     */
     for (j = nNodes - 1; j >= kDelete; j--) {
         CbcNode * node = nodeArray[j];
@@ -1003,12 +1011,12 @@ CbcTreeArray::cleanTree(CbcModel * model, double cutoff, double & bestPossibleOb
       I don't yet see why the checks for status != basic and addedCuts_[i] != 0
       are necessary. When reconstructing a node, these checks are used to skip
       over loose cuts, excluding them from the reconstituted basis. But here
-      we're just interested in correcting the reference count. Tight/loose should
-      make no difference.
+      we're just interested in correcting the reference count. Tight/loose
+      should make no difference.
 
-      Arguably a separate routine should be used in place of addCuts1. It's doing
-      more work than needed, modifying the model to match a subproblem at a node
-      that will be discarded.  Then again, we seem to need the basis.
+      Arguably a separate routine should be used in place of addCuts1. It's
+      doing more work than needed, modifying the model to match a subproblem
+      at a node that will be discarded.  Then again, we seem to need the basis.
     */
     for (j = lastNode - 1; j >= kDelete; j--) {
         CbcNode * node = nodeArray[j];
@@ -1289,12 +1297,12 @@ CbcTree::cleanTree(CbcModel * model, double cutoff, double & bestPossibleObjecti
       I don't yet see why the checks for status != basic and addedCuts_[i] != 0
       are necessary. When reconstructing a node, these checks are used to skip
       over loose cuts, excluding them from the reconstituted basis. But here
-      we're just interested in correcting the reference count. Tight/loose should
-      make no difference.
+      we're just interested in correcting the reference count. Tight/loose
+      should make no difference.
 
-      Arguably a separate routine should be used in place of addCuts1. It's doing
-      more work than needed, modifying the model to match a subproblem at a node
-      that will be discarded.  Then again, we seem to need the basis.
+      Arguably a separate routine should be used in place of addCuts1. It's
+      doing more work than needed, modifying the model to match a subproblem
+      at a node that will be discarded.  Then again, we seem to need the basis.
     */
     for (j = nNodes - 1; j >= kDelete; j--) {
         CbcNode * node = nodeArray[j];

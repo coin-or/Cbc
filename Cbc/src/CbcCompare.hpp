@@ -1,6 +1,8 @@
 /* $Id: CbcCompare.hpp 1286 2009-11-09 23:33:07Z EdwinStraver $ */
 // Copyright (C) 2002, International Business Machines
 // Corporation and others.  All Rights Reserved.
+// This code is licensed under the terms of the Eclipse Public License (EPL).
+
 #ifndef CbcCompare_H
 #define CbcCompare_H
 

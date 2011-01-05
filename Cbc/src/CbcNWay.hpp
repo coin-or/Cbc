@@ -1,4 +1,10 @@
+// $Id$
+// Copyright (C) 2002, International Business Machines
+// Corporation and others.  All Rights Reserved.
+// This code is licensed under the terms of the Eclipse Public License (EPL).
+
 // Edwin 11/9/2009-- carved out of CbcBranchActual
+
 /** Define an n-way class for variables.
     Only valid value is one at UB others at LB
     Normally 0-1

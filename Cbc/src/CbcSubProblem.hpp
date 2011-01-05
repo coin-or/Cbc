@@ -1,4 +1,10 @@
+// $Id$
+// Copyright (C) 2002, International Business Machines
+// Corporation and others.  All Rights Reserved.
+// This code is licensed under the terms of the Eclipse Public License (EPL).
+
 // Edwin 11/10/2009-- carved out of CbcBranchActual
+
 #ifndef CbcSubProblem_H
 #define CbcSubProblem_H
 

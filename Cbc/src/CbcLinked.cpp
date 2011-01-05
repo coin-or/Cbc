@@ -1,6 +1,8 @@
 /* $Id: CbcLinked.cpp 1200 2009-07-25 08:44:13Z forrest $ */
 // Copyright (C) 2006, International Business Machines
 // Corporation and others.  All Rights Reserved.
+// This code is licensed under the terms of the Eclipse Public License (EPL).
+
 #include "CbcConfig.h"
 
 #include "CoinTime.hpp"

@@ -1,4 +1,10 @@
+// $Id$
+// Copyright (C) 2003, International Business Machines
+// Corporation and others.  All Rights Reserved.
+// This code is licensed under the terms of the Eclipse Public License (EPL).
+
 //Edwin 11/25/09 carved out of CbcCutGenerator
+
 #if defined(_MSC_VER)
 // Turn off compiler warning about long names
 #  pragma warning(disable:4786)

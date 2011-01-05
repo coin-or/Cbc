@@ -1,3 +1,8 @@
+// $Id$
+// Copyright (C) 2002, International Business Machines
+// Corporation and others.  All Rights Reserved.
+// This code is licensed under the terms of the Eclipse Public License (EPL).
+
 // Edwin 11/9/2009-- carved out of CbcBranchActual
 
 #ifndef CbcSimpleInteger_H

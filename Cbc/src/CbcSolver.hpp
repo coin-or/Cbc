@@ -1,6 +1,8 @@
 /* $Id: CbcSolver.hpp 1212 2009-08-21 16:19:13Z forrest $ */
 // Copyright (C) 2007, International Business Machines
 // Corporation and others.  All Rights Reserved.
+// This code is licensed under the terms of the Eclipse Public License (EPL).
+
 
 /*! \file CbcSolver.hpp
     \brief Defines CbcSolver, the proposed top-level class for the new-style

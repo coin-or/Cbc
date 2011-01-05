@@ -1,6 +1,8 @@
 /* $Id$ */
 // Copyright (C) 2004, International Business Machines
 // Corporation and others.  All Rights Reserved.
+// This code is licensed under the terms of the Eclipse Public License (EPL).
+
 #ifndef CbcTreeLocal_H
 #define CbcTreeLocal_H
 

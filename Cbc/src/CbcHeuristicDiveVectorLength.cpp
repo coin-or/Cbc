@@ -1,6 +1,8 @@
 /* $Id: CbcHeuristicDiveVectorLength.cpp 1173 2009-06-04 09:44:10Z forrest $ */
 // Copyright (C) 2008, International Business Machines
 // Corporation and others.  All Rights Reserved.
+// This code is licensed under the terms of the Eclipse Public License (EPL).
+
 #if defined(_MSC_VER)
 // Turn off compiler warning about long names
 #  pragma warning(disable:4786)

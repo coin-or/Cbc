@@ -1,4 +1,10 @@
+// $Id$
+// Copyright (C) 2006, International Business Machines
+// Corporation and others.  All Rights Reserved.
+// This code is licensed under the terms of the Eclipse Public License (EPL).
+
 // edwin 12/5/09 carved out of CbcHeuristicRINS
+
 #ifndef CbcHeuristicDINS_H
 #define CbcHeuristicDINS_H
 

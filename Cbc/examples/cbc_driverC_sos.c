@@ -1,5 +1,10 @@
-/* Copyright (C) 2004-2007 EPRI
-Corporation and others.  All Rights Reserved. */
+/*
+  Copyright (C) 2004-2007 EPRI Corporation and others.  All Rights Reserved.
+
+  This code is licensed under the terms of the Eclipse Public License (EPL).
+
+  $Id#
+*/
 
 /* This example shows the use of the "C" interface for CBC. */
 

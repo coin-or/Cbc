@@ -12865,9 +12865,10 @@ CbcModel::doHeuristicsAtRoot(int deleteHeuristicsAfterwards)
                                                         newSolution);
 		    if (handler_->logLevel()>1) {
 		      char line[100];
-		      sprintf(line,"Heuristic %s took %g seconds",
+		      sprintf(line,"Heuristic %s took %g seconds (%s)",
 			      heuristic_[i]->heuristicName(),
-			      getCurrentSeconds()-before);
+			      getCurrentSeconds()-before,
+			      ifSol ? "good" : "no good");
 		      handler_->message(CBC_GENERAL, messages_) << 
 			line << CoinMessageEol ;
 		    }

@@ -41,6 +41,7 @@
 
 #include "CbcHeuristic.hpp"
 #include "CbcHeuristicLocal.hpp"
+#include "CbcHeuristicRINS.hpp"
 
 // Default Constructor
 CbcStrategy::CbcStrategy()
@@ -924,6 +925,40 @@ CbcStrategyDefaultSubTree::setupHeuristics(CbcModel & model)
     }
     if (!found)
         model.addHeuristic(&heuristic1);
+    if ((model.moreSpecialOptions()&32768)!=0) {
+      // Allow join solutions
+      CbcHeuristicLocal heuristic2(model);
+      heuristic2.setHeuristicName("join solutions");
+      //sheuristic2.setSearchType(1);
+      found = false;
+      for (iHeuristic = 0; iHeuristic < numberHeuristics; iHeuristic++) {
+        CbcHeuristic * heuristic = model.heuristic(iHeuristic);
+        CbcHeuristicLocal * cgl = dynamic_cast<CbcHeuristicLocal *>(heuristic);
+        if (cgl) {
+	  found = true;
+	  break;
+        }
+      }
+      if (!found)
+        model.addHeuristic(&heuristic2);
+      // Allow RINS
+      CbcHeuristicRINS heuristic5(model);
+      heuristic5.setHeuristicName("RINS");
+      heuristic5.setFractionSmall(0.5);
+      heuristic5.setDecayFactor(5.0);
+      //heuristic5.setSearchType(1);
+      found = false;
+      for (iHeuristic = 0; iHeuristic < numberHeuristics; iHeuristic++) {
+        CbcHeuristic * heuristic = model.heuristic(iHeuristic);
+        CbcHeuristicLocal * cgl = dynamic_cast<CbcHeuristicLocal *>(heuristic);
+        if (cgl) {
+	  found = true;
+	  break;
+        }
+      }
+      if (!found)
+        model.addHeuristic(&heuristic5);
+    }
 }
 // Do printing stuff
 void

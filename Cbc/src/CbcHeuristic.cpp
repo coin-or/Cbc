@@ -702,7 +702,7 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver, int numberNodes,
     char * reset = NULL;
     int returnCode = 1;
     int saveModelOptions = model_->specialOptions();
-    assert ((saveModelOptions&2048) == 0);
+    //assert ((saveModelOptions&2048) == 0);
     model_->setSpecialOptions(saveModelOptions | 2048);
     {
         int saveLogLevel = solver->messageHandler()->logLevel();
@@ -923,6 +923,8 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver, int numberNodes,
 		    }
                     model.setMaximumNodes(numberNodes);
                     model.solver()->setHintParam(OsiDoReducePrint, true, OsiHintTry);
+		    if ((saveModelOptions&2048) == 0)
+		      model.setMoreSpecialOptions(model_->moreSpecialOptions());
                     // Lightweight
                     CbcStrategyDefaultSubTree strategy(model_, 1, 5, 1, 0);
                     model.setStrategy(strategy);

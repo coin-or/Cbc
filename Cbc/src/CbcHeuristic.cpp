@@ -837,6 +837,8 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver, int numberNodes,
     solver->initialSolve();
     if (solver->isProvenOptimal()) {
         CglPreProcess process;
+	if ((model_->moreSpecialOptions()&65536)!=0)
+	  process.setOptions(2+4+8); // no cuts
         /* Do not try and produce equality cliques and
            do up to 2 passes (normally) 5 if restart */
         int numberPasses = 2;

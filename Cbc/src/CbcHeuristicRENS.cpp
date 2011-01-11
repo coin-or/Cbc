@@ -98,7 +98,7 @@ CbcHeuristicRENS::solution(double & solutionValue,
     OsiSolverInterface * newSolver = cloneBut(3); // was model_->continuousSolver()->clone();
     const double * currentSolution = newSolver->getColSolution();
     int type = rensType_&15;
-    if (type<11)
+    if (type<12)
       newSolver->resolve();
     double direction = newSolver->getObjSense();
     double cutoff=model_->getCutoff();
@@ -107,7 +107,7 @@ CbcHeuristicRENS::solution(double & solutionValue,
     double gap = cutoff - newSolver->getObjValue() * direction ;
     double tolerance;
     newSolver->getDblParam(OsiDualTolerance, tolerance) ;
-    if ((gap > 0.0 || !newSolver->isProvenOptimal())&&type<11) {
+    if ((gap > 0.0 || !newSolver->isProvenOptimal())&&type<12) {
       gap += 100.0 * tolerance;
       int nFix = newSolver->reducedCostFix(gap);
       if (nFix) {
@@ -117,7 +117,7 @@ CbcHeuristicRENS::solution(double & solutionValue,
 	  << line
 	  << CoinMessageEol;
       }
-    } else if (type<11) {
+    } else if (type<12) {
       return 0; // finished?
     }
     int numberColumns = solver->getNumCols();
@@ -145,17 +145,18 @@ CbcHeuristicRENS::solution(double & solutionValue,
 	  djTolerance = (0.01*total)/static_cast<double>(n);
 	delete basis;
       }
-    } else if (type>=5&&type<=11) {
+    } else if (type>=5&&type<=12) {
       /* 5 fix sets at one
 	 6 fix on dj but leave unfixed SOS slacks
 	 7 fix sets at one but use pi
 	 8 fix all at zero but leave unfixed SOS slacks
 	 9 as 8 but only fix all at zero if just one in set nonzero
 	 10 fix all "stable" ones
-	 11 layered approach
+	 11 fix all "stable" ones - approach 2
+	 12 layered approach
       */
       // SOS type fixing
-      bool fixSets = (type==5)||(type==7)||(type==10);
+      bool fixSets = (type==5)||(type==7)||(type==10)||(type==11);
       CoinWarmStartBasis * basis =
 	dynamic_cast<CoinWarmStartBasis *>(solver->getWarmStart()) ;
       if (basis&&basis->getNumArtificial()) {
@@ -249,7 +250,7 @@ CbcHeuristicRENS::solution(double & solutionValue,
 	int nSOS=0;
 	double * sort = new double [numberRows];
 	const double * pi = newSolver->getRowPrice();
-	if (type==11) {
+	if (type==12) {
 	  contribution = new double [numberRows];
 	  for (int i=0;i<numberRows;i++) {
 	    if (bestDj[i]<1.0e30) 
@@ -406,6 +407,155 @@ CbcHeuristicRENS::solution(double & solutionValue,
 	    delete [] saveUpper;
 	    numberFixed=numberColumns;
 	    djTolerance = 1.0e30;
+	  } else if (type==11) {
+	    double * saveUpper = CoinCopyOfArray(newSolver->getRowUpper(),numberRows);
+	    char * mark = new char [numberColumns];
+	    char * nonzero = new char [numberColumns];
+	    // save basis and solution
+	    CoinWarmStartBasis * basis = dynamic_cast<CoinWarmStartBasis*>(newSolver->getWarmStart()) ;
+	    assert(basis != NULL);
+	    double * saveSolution = 
+	      CoinCopyOfArray(newSolver->getColSolution(), 
+			      numberColumns);
+	    double factors[] = {1.1,1.05,1.01,0.98};
+	    int nPass = (sizeof(factors)/sizeof(double))-1;
+	    double factor=factors[0];
+	    double proportion = fractionSmall_;
+	    fractionSmall_ = 0.5;
+	    // loosen up
+	    for (int i=0;i<numberRows;i++) {
+	      if (bestDj[i]>=1.0e30) {
+		newSolver->setRowUpper(i,factor*saveUpper[i]);
+	      }
+	    }
+            bool takeHint;
+            OsiHintStrength strength;
+            newSolver->getHintParam(OsiDoDualInResolve, takeHint, strength);
+            newSolver->setHintParam(OsiDoDualInResolve, false, OsiHintDo);
+            newSolver->resolve();
+            newSolver->setHintParam(OsiDoDualInResolve, true, OsiHintDo);
+	    const double * solution = newSolver->getColSolution();
+	    for (int iColumn = 0; iColumn < numberColumns; iColumn++) {
+	      mark[iColumn]=0;
+	      nonzero[iColumn]=0;
+	      if (colUpper[iColumn]>colLower[iColumn]&&
+		  solution[iColumn]>0.9999)
+		mark[iColumn]=1;
+	      else if (solution[iColumn]>0.00001)
+		nonzero[iColumn]=1;
+	    }
+	    int nCheck=2;
+	    for (int iPass=0;iPass<nPass;iPass++) {
+	      // smaller
+	      factor = factors[iPass+1];
+	      for (int i=0;i<numberRows;i++) {
+		if (bestDj[i]>=1.0e30) {
+		  newSolver->setRowUpper(i,saveUpper[i]*factor);
+		}
+	      }
+	      newSolver->resolve();
+	      if (newSolver->isProvenOptimal()) {
+		nCheck++;
+		for (int iColumn = 0; iColumn < numberColumns; iColumn++) {
+		  if (colUpper[iColumn]>colLower[iColumn]&&
+		      solution[iColumn]>0.9999)
+		    mark[iColumn]++;
+		  else if (solution[iColumn]>0.00001)
+		    nonzero[iColumn]++;
+		}
+	      }
+	    }
+	    // correct values
+	    for (int i=0;i<numberRows;i++) {
+	      if (bestDj[i]>=1.0e30) {
+		newSolver->setRowUpper(i,saveUpper[i]);
+	      }
+	    }
+	    newSolver->setColSolution(saveSolution);
+	    delete [] saveSolution;
+	    newSolver->setWarmStart(basis);
+	    delete basis ;
+            newSolver->setHintParam(OsiDoDualInResolve, takeHint, strength);
+	    newSolver->resolve();
+	    for (int iColumn = 0; iColumn < numberColumns; iColumn++) {
+	      if (colUpper[iColumn]>colLower[iColumn]&&
+		  solution[iColumn]>0.9999)
+		mark[iColumn]++;
+	      else if (solution[iColumn]>0.00001)
+		nonzero[iColumn]++;
+	    }
+	    int nFixed=0;
+	    int numberSetsToFix = static_cast<int>(nSOS*(1.0-proportion));
+	    int * mixed = new int[numberRows];
+	    memset(mixed,0,numberRows*sizeof(int));
+	    for (int iColumn = 0; iColumn < numberColumns; iColumn++) {
+	      if (colUpper[iColumn]>colLower[iColumn]) {
+		int iSOS=-1;
+		for (CoinBigIndex j = columnStart[iColumn];
+		     j < columnStart[iColumn] + columnLength[iColumn]; j++) {
+		  int iRow = row[j];
+		  if (bestDj[iRow]<1.0e25) {
+		    iSOS=iRow;
+		    break;
+		  }
+		}
+		if (iSOS>=0) {
+		  int numberTimesAtOne = mark[iColumn];
+		  int numberTimesNonZero = nonzero[iColumn]+
+		    numberTimesAtOne;
+		  if (numberTimesAtOne<nCheck&&
+		      numberTimesNonZero) {
+		    mixed[iSOS]+=
+		      CoinMin(numberTimesNonZero,
+			      nCheck-numberTimesNonZero);
+		  } 
+		}
+	      }
+	    }
+	    int nFix=0;
+	    for (int i=0;i<numberRows;i++) {
+	      if (bestDj[i]<1.0e25) {
+		sort[nFix] = -bestDj[i]+1.0e8*mixed[i];
+		mixed[nFix++]=i;
+	      }
+	    }
+	    CoinSort_2(sort,sort+nFix,mixed);
+	    nFix = CoinMin(nFix,numberSetsToFix);
+	    memset(sort,0,sizeof(double)*numberRows);
+	    for (int i=0;i<nFix;i++)
+	      sort[mixed[i]]=1.0;
+	    delete [] mixed;
+	    for (int iColumn = 0; iColumn < numberColumns; iColumn++) {
+	      if (colUpper[iColumn]>colLower[iColumn]) {
+		if (solution[iColumn]>0.9999) {
+		  int iSOS=-1;
+		  for (CoinBigIndex j = columnStart[iColumn];
+		       j < columnStart[iColumn] + columnLength[iColumn]; j++) {
+		    int iRow = row[j];
+		    if (bestDj[iRow]<1.0e25) {
+		      iSOS=iRow;
+		      break;
+		    }
+		  }
+		  if (iSOS>=0&&sort[iSOS]) {
+		    newSolver->setColLower(iColumn,1.0);
+		    nFixed++;
+		  }
+		}
+	      }
+	    }
+	    char line[100];
+	    sprintf(line,"Heuristic %s fixed %d to one",
+		    heuristicName(),
+		    nFixed);
+	    model_->messageHandler()->message(CBC_FPUMP1, model_->messages())
+	      << line
+	      << CoinMessageEol;
+	    delete [] mark;
+	    delete [] nonzero;
+	    delete [] saveUpper;
+	    numberFixed=numberColumns;
+	    djTolerance = 1.0e30;
 	  }
 	}
 	delete basis;
@@ -432,7 +582,7 @@ CbcHeuristicRENS::solution(double & solutionValue,
       int last = static_cast<int>(numberColumns*fractionSmall_);
       djTolerance = CoinMax(sort[last],1.0e-5);
       delete [] sort;
-    } else if (type==11) {
+    } else if (type==12) {
       // Do layered in a different way
       int numberRows = solver->getNumRows();
       // Column copy

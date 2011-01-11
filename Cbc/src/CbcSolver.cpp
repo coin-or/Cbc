@@ -3587,7 +3587,8 @@ int CbcMain1 (int argc, const char *argv[],
                                     if ((babModel_->specialOptions()&65536) != 0)
                                         process.setOptions(1);
                                     // Add in generators
-                                    process.addCutGenerator(&generator1);
+				    if ((model_.moreSpecialOptions()&65536)==0)
+				      process.addCutGenerator(&generator1);
                                     int translate[] = {9999, 0, 0, -3, 2, 3, -2, 9999, 4, 5};
                                     process.passInMessageHandler(babModel_->messageHandler());
                                     //process.messageHandler()->setLogLevel(babModel_->logLevel());
@@ -3690,6 +3691,8 @@ int CbcMain1 (int argc, const char *argv[],
                                         if (savePerturbation == 50)
                                             osiclp->getModelPtr()->setPerturbation(52); // try less
 #endif
+					if ((model_.moreSpecialOptions()&65536)!=0)
+					  process.setOptions(2+4+8); // no cuts
                                         solver2 = process.preProcessNonDefault(*saveSolver, translate[preProcess], numberPasses,
                                                                                tunePreProcess);
                                         /*solver2->writeMps("after");
@@ -7504,6 +7507,11 @@ clp watson.mps -\nscaling off\nprimalsimplex"
                         if (goodModel) {
                             // get next field
                             field = CoinReadGetString(argc, argv);
+			    bool append = false;
+			    if (field == "append$") {
+			      field = "$";
+			      append = true;
+			    }
                             if (field == "$") {
                                 field = parameters_[iParam].stringValue();
                             } else if (field == "EOL") {
@@ -7546,11 +7554,14 @@ clp watson.mps -\nscaling off\nprimalsimplex"
                                 } else {
                                     fileName = directory + field;
                                 }
-                                fp = fopen(fileName.c_str(), "w");
+				if (!append)
+				  fp = fopen(fileName.c_str(), "w");
+				else
+				  fp = fopen(fileName.c_str(), "a");
                             }
                             if (fp) {
 #ifndef CBC_OTHER_SOLVER
-                                if (printMode != 5) {
+                                if (printMode < 5) {
                                     // Write solution header (suggested by Luigi Poderico)
                                     lpSolver->computeObjectiveValue(false);
                                     double objValue = lpSolver->getObjValue() * lpSolver->getObjSense();
@@ -7705,6 +7716,146 @@ clp watson.mps -\nscaling off\nprimalsimplex"
                                         delete [] newMasks[i];
                                     delete [] newMasks;
                                 }
+				if (printMode > 5) {
+				  ClpSimplex * solver = clpSolver->getModelPtr();
+				  int numberColumns = solver->numberColumns();
+				  // column length unless rhs ranging
+				  int number = numberColumns;
+				  switch (printMode) {
+				    // bound ranging
+				  case 6:
+				    fprintf(fp,"Bound ranging");
+				    break;
+				    // rhs ranging
+				  case 7:
+				    fprintf(fp,"Rhs ranging");
+				    number = numberRows;
+				    break;
+				    // objective ranging
+				  case 8:
+				    fprintf(fp,"Objective ranging");
+				    break;
+				  }
+				  if (lengthName)
+				    fprintf(fp,",name");
+				  fprintf(fp,",increase,variable,decrease,variable\n");
+				  int * which = new int [ number];
+				  if (printMode != 7) {
+				    if (!doMask) {
+				      for (int i = 0; i < number;i ++)
+					which[i]=i;
+				    } else {
+				      int n = 0;
+				      for (int i = 0; i < number;i ++) {
+					if (maskMatches(maskStarts,masks,columnNames[i]))
+					  which[n++]=i;
+				      }
+				      if (n) {
+					number=n;
+				      } else {
+					printf("No names match - doing all\n");
+					for (int i = 0; i < number;i ++)
+					  which[i]=i;
+				      }
+				    }
+				  } else {
+				    if (!doMask) {
+				    for (int i = 0; i < number;i ++)
+				      which[i]=i+numberColumns;
+				    } else {
+				      int n = 0;
+				      for (int i = 0; i < number;i ++) {
+					if (maskMatches(maskStarts,masks,rowNames[i]))
+					  which[n++]=i+numberColumns;
+				      }
+				      if (n) {
+					number=n;
+				      } else {
+					printf("No names match - doing all\n");
+					for (int i = 0; i < number;i ++)
+					  which[i]=i+numberColumns;
+				      }
+				    }
+				  }
+				  double * valueIncrease = new double [ number];
+				  int * sequenceIncrease = new int [ number];
+				  double * valueDecrease = new double [ number];
+				  int * sequenceDecrease = new int [ number];
+				  switch (printMode) {
+				    // bound or rhs ranging
+				  case 6:
+				  case 7:
+				    solver->primalRanging(numberRows,
+								 which, valueIncrease, sequenceIncrease,
+								 valueDecrease, sequenceDecrease);
+				    break;
+				    // objective ranging
+				  case 8:
+				    solver->dualRanging(number,
+							       which, valueIncrease, sequenceIncrease,
+							       valueDecrease, sequenceDecrease);
+				    break;
+				  }
+				  for (int i = 0; i < number; i++) {
+				    int iWhich = which[i];
+				    fprintf(fp, "%d,", (iWhich<numberColumns) ? iWhich : iWhich-numberColumns);
+				    if (lengthName) {
+				      const char * name = (printMode==7) ? rowNames[iWhich-numberColumns].c_str() : columnNames[iWhich].c_str();
+				      fprintf(fp,"%s,",name);
+				    }
+				    if (valueIncrease[i]<1.0e30) {
+				      fprintf(fp, "%.10g,", valueIncrease[i]);
+				      int outSequence = sequenceIncrease[i];
+				      if (outSequence<numberColumns) {
+					if (lengthName)
+					  fprintf(fp,"%s,",columnNames[outSequence].c_str());
+					else
+					  fprintf(fp,"C%7.7d,",outSequence);
+				      } else {
+					outSequence -= numberColumns;
+					if (lengthName)
+					  fprintf(fp,"%s,",rowNames[outSequence].c_str());
+					else
+					  fprintf(fp,"R%7.7d,",outSequence);
+				      }
+				    } else {
+				      fprintf(fp,"1.0e100,,");
+				    }
+				    if (valueDecrease[i]<1.0e30) {
+				      fprintf(fp, "%.10g,", valueDecrease[i]);
+				      int outSequence = sequenceDecrease[i];
+				      if (outSequence<numberColumns) {
+					if (lengthName)
+					  fprintf(fp,"%s",columnNames[outSequence].c_str());
+					else
+					  fprintf(fp,"C%7.7d",outSequence);
+				      } else {
+					outSequence -= numberColumns;
+					if (lengthName)
+					  fprintf(fp,"%s",rowNames[outSequence].c_str());
+					else
+					  fprintf(fp,"R%7.7d",outSequence);
+				      }
+				    } else {
+				      fprintf(fp,"1.0e100,");
+				    }
+				    fprintf(fp,"\n");
+				  }
+				  if (fp != stdout)
+				    fclose(fp);
+				  delete [] which;
+				  delete [] valueIncrease;
+				  delete [] sequenceIncrease;
+				  delete [] valueDecrease;
+				  delete [] sequenceDecrease;
+				  if (masks) {
+				    delete [] maskStarts;
+				    for (int i = 0; i < maxMasks; i++)
+				      delete [] masks[i];
+				    delete [] masks;
+				  }
+				  break;
+				}
                                 if (printMode > 2 && printMode < 5) {
                                     for (iRow = 0; iRow < numberRows; iRow++) {
                                         int type = printMode - 3;
@@ -8735,5 +8886,3 @@ static void generateCode(CbcModel * /*model*/, const char * fileName, int type, 
   Improvements to feaspump
   Source code changes so up to 2.0
 */
-
-

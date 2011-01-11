@@ -10379,6 +10379,11 @@ CbcModel::checkSolution (double cutoff, double *solution,
         OsiSolverInterface * saveSolver = solver_;
         if (continuousSolver_)
             solver_ = continuousSolver_;
+        // save basis and solution
+        CoinWarmStartBasis * basis = dynamic_cast<CoinWarmStartBasis*>(solver_->getWarmStart()) ;
+        assert(basis != NULL);
+	double * saveSolution = CoinCopyOfArray(solver_->getColSolution(), 
+						solver_->getNumCols());
         // move solution to continuous copy
         solver_->setColSolution(solution);
         // Put current solution in safe place
@@ -10686,6 +10691,10 @@ CbcModel::checkSolution (double cutoff, double *solution,
         delete [] saveLower;
         delete [] saveUpper;
 
+	solver_->setColSolution(saveSolution);
+	delete [] saveSolution;
+	solver_->setWarmStart(basis);
+        delete basis ;
         /*
           Restore the usual solver.
         */

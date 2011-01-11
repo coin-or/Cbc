@@ -1063,12 +1063,18 @@ CbcHeuristicGreedySOS::solution(double & solutionValue,
       }
     }
     double offset2 = 0.0;
+    char * sos = new char [numberRows];
     for (int iRow = 0;iRow < numberRows; iRow++) {
+      sos[iRow]=0;
+      if (rhs[iRow]<0.0) {
+	sos[iRow]=1;
+	rhs[iRow]=1.0;
+      }
       if( slackCost[iRow] == 1.0e30) {
 	slackCost[iRow]=0.0;
       } else {
 	offset2 += slackCost[iRow];
-	rhs[iRow] = -2.0;
+	sos[iRow] = 2;
       }
     }
     for (int iColumn = 0; iColumn < numberColumns; iColumn++) {
@@ -1094,7 +1100,7 @@ CbcHeuristicGreedySOS::solution(double & solutionValue,
     double * newSolution = new double [numberColumns];
     double * rowActivity = new double[numberRows];
     memset(rowActivity, 0, numberRows*sizeof(double));
-    if ((algorithm_&2)==0) {
+    if ((algorithm_&(2|4))==0) {
       // get solution as small as possible
       for (iColumn = 0; iColumn < numberColumns; iColumn++) 
 	newSolution[iColumn] = columnLower[iColumn];
@@ -1114,6 +1120,16 @@ CbcHeuristicGreedySOS::solution(double & solutionValue,
         newSolution[iColumn] = value;
       }
     }
+    // get row activity
+    for (iColumn = 0; iColumn < numberColumns; iColumn++) {
+      CoinBigIndex j;
+      double value = newSolution[iColumn];
+      for (j = columnStart[iColumn];
+	   j < columnStart[iColumn] + columnLength[iColumn]; j++) {
+	int iRow = row[j];
+	rowActivity[iRow] += value * element[j];
+      }
+    }
     double * contribution = new double [numberColumns];
     int * which = new int [numberColumns];
     for (iColumn = 0; iColumn < numberColumns; iColumn++) {
@@ -1122,21 +1138,32 @@ CbcHeuristicGreedySOS::solution(double & solutionValue,
       double cost =  modifiedCost[iColumn];
       double forSort = 0.0;
       bool hasSlack=false;
+      bool willFit=true;
       newSolutionValue += value * cost;
       for (j = columnStart[iColumn];
 	   j < columnStart[iColumn] + columnLength[iColumn]; j++) {
 	int iRow = row[j];
-	rowActivity[iRow] += value * element[j];
-	if (rhs[iRow] >0.0) {
-	  forSort += element[j];
-	} else  if (rhs[iRow] == -2.0) {
+	if (sos[iRow] == 2) 
 	  hasSlack = true;
-	}
+	forSort += element[j];
+	double gap = rhs[iRow] - rowActivity[iRow]+1.0e-8;
+	if (gap<element[j])
+	  willFit = false;
       }
-      if (forSort && value == 0.0 && columnUpper[iColumn]) {
+      bool isSlack = hasSlack && (columnLength[iColumn]==1);
+      if ((algorithm_&4)!=0) 
+	forSort=1.0;
+      // Use smallest cost if will fit
+      if (willFit && hasSlack && 
+	  value == 0.0 && columnUpper[iColumn]) {
 	if (hasSlack) {
-	  if (cost>=0.0) {
+	  if (cost>0.0) {
 	    forSort = 2.0e30;
+	  } else if (cost==0.0) {
+	    if (!isSlack)
+	      forSort = 1.0e29;
+	    else
+	      forSort = 1.0e28;
 	  } else {
 	    forSort = cost/forSort;
 	  }
@@ -1162,9 +1189,9 @@ CbcHeuristicGreedySOS::solution(double & solutionValue,
       for (j = columnStart[iColumn];
 	   j < columnStart[iColumn] + columnLength[iColumn]; j++) {
 	int iRow = row[j];
-	if (rhs[iRow]<0.0&&rowActivity[iRow]) {
+	if (sos[iRow]&&rowActivity[iRow]) {
 	  possible = false;
-	} else if (rhs[iRow]>=0.0) {
+	} else {
 	  double gap = rhs[iRow] - rowActivity[iRow]+1.0e-8;
 	  if (gap<element[j])
 	    possible = false;
@@ -1182,6 +1209,7 @@ CbcHeuristicGreedySOS::solution(double & solutionValue,
         }
       }
     }
+    delete [] sos;
     if (newSolutionValue < solutionValue) {
         // check feasible
       const double * rowLower = solver->getRowLower();

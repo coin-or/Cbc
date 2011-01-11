@@ -1735,6 +1735,7 @@ public:
         8192 slowly increase minimum drop
         16384 gomory
 	32768 more heuristics in sub trees
+	65536 no cuts in preprocessing
     */
     inline void setMoreSpecialOptions(int value) {
         moreSpecialOptions_ = value;

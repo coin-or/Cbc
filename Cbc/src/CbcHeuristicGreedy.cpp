@@ -1083,7 +1083,7 @@ CbcHeuristicGreedySOS::solution(double & solutionValue,
       for (j = columnStart[iColumn];
 	   j < columnStart[iColumn] + columnLength[iColumn]; j++) {
 	int iRow = row[j];
-	if (rhs[iRow]<0.0) {
+	if (sos[iRow]) {
 	  cost -= slackCost[iRow];
 	}
       }

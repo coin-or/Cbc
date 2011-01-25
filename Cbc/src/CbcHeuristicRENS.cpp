@@ -333,11 +333,35 @@ CbcHeuristicRENS::solution(double & solutionValue,
 	    if (fixSets)
 	      djTolerance = 1.0e30;
 	  } else if (type==10) {
-	    double * saveUpper = CoinCopyOfArray(newSolver->getRowUpper(),numberRows);
+	    double * saveUpper = new double [numberRows];
+	    memset(saveUpper,0,numberRows*sizeof(double));
 	    char * mark = new char [numberColumns];
 	    char * nonzero = new char [numberColumns];
-	    double factor=CoinMax(1.000001,fractionSmall_);
+	    for (int iColumn = 0; iColumn < numberColumns; iColumn++) {
+	      if (colUpper[iColumn]>colLower[iColumn]) {
+		CoinBigIndex j;
+		for (j = columnStart[iColumn];
+		     j < columnStart[iColumn] + columnLength[iColumn]; j++) {
+		  int iRow = row[j];
+		  saveUpper[iRow] += element[j];
+		}
+	      }
+	    }
+	    double sum=0.0;
+	    double sumRhs=0.0;
+	    const double * rowUpper = newSolver->getRowUpper();
+	    for (int i=0;i<numberRows;i++) {
+	      if (bestDj[i]>=1.0e30) {
+		sum += saveUpper[i];
+		sumRhs += rowUpper[i];
+	      }
+	    }
+	    double averagePerSet = sum/static_cast<double>(numberRows);
+	    // allow this extra
+	    double factor = averagePerSet*fractionSmall_*numberRows;
+	    factor = 1.0+factor/sumRhs;
 	    fractionSmall_ = 0.5;
+	    memcpy(saveUpper,rowUpper,numberRows*sizeof(double));
 	    // loosen up
 	    for (int i=0;i<numberRows;i++) {
 	      if (bestDj[i]>=1.0e30) {

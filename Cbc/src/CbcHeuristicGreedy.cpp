@@ -995,7 +995,7 @@ CbcHeuristicGreedySOS::solution(double & solutionValue,
       row = matrix->getIndices();
       columnStart = matrix->getVectorStarts();
       columnLength = matrix->getVectorLengths();
-      rhs = new double [numberRows];
+      //rhs = new double [numberRows];
       const double * rowLower = solver->getRowLower();
       const double * rowUpper = solver->getRowUpper();
       bool good = true;

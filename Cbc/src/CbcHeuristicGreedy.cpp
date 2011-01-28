@@ -988,6 +988,7 @@ CbcHeuristicGreedySOS::solution(double & solutionValue,
     const int * row = matrix_.getIndices();
     const CoinBigIndex * columnStart = matrix_.getVectorStarts();
     const int * columnLength = matrix_.getVectorLengths();
+    int * sosRow = new int [numberColumns];
     // If bit set then use current
     if ((algorithm_&1)!=0) {
       const CoinPackedMatrix * matrix = solver->getMatrixByCol();
@@ -1016,8 +1017,7 @@ CbcHeuristicGreedySOS::solution(double & solutionValue,
 	  good = false;
 	CoinBigIndex j;
 	int nSOS=0;
-	if (!solver->isInteger(iColumn))
-	  good = false;
+	int iSOS=-1;
 	for (j = columnStart[iColumn];
 	     j < columnStart[iColumn] + columnLength[iColumn]; j++) {
 	  if (element[j] < 0.0)
@@ -1026,17 +1026,22 @@ CbcHeuristicGreedySOS::solution(double & solutionValue,
 	  if (rhs[iRow]==-1.0) {
 	    if (element[j] != 1.0)
 	      good = false;
+	    iSOS=iRow;
 	    nSOS++;
 	  }
 	}
-	if (nSOS!=1)
+	if (nSOS>1||!solver->isBinary(iColumn))
 	  good = false;
+	sosRow[iColumn] = iSOS;
       }
       if (!good) {
 	delete [] rhs;
+	delete [] sosRow;
 	setWhen(0); // switch off
 	return 0;
       }
+    } else {
+      abort(); // not allowed yet
     }
     const double * solution = solver->getColSolution();
     const double * objective = solver->getObjCoefficients();
@@ -1054,10 +1059,10 @@ CbcHeuristicGreedySOS::solution(double & solutionValue,
       slackCost[iRow]=1.0e30;
     // Take off cost of gub slack
     for (int iColumn = 0; iColumn < numberColumns; iColumn++) {
-      if (columnLength[iColumn] == 1) {
+      int iRow = sosRow[iColumn];
+      if (columnLength[iColumn] == 1&&iRow>=0) {
 	// SOS slack
 	double cost = direction*objective[iColumn];
-	int iRow = row[columnStart[iColumn]];
 	assert (rhs[iRow]<0.0);
 	slackCost[iRow]=CoinMin(slackCost[iRow],cost);
       }
@@ -1154,7 +1159,7 @@ CbcHeuristicGreedySOS::solution(double & solutionValue,
       if ((algorithm_&4)!=0) 
 	forSort=1.0;
       // Use smallest cost if will fit
-      if (willFit && hasSlack && 
+      if (willFit /*&& hasSlack*/ && 
 	  value == 0.0 && columnUpper[iColumn]) {
 	if (hasSlack) {
 	  if (cost>0.0) {
@@ -1248,6 +1253,7 @@ CbcHeuristicGreedySOS::solution(double & solutionValue,
             //printf("Debug CbcHeuristicGreedySOS giving bad solution\n");
         }
     }
+    delete [] sosRow;
     delete [] newSolution;
     delete [] rowActivity;
     delete [] modifiedCost;
@@ -1319,8 +1325,6 @@ CbcHeuristicGreedySOS::validate()
                 good = false;
             CoinBigIndex j;
 	    int nSOS=0;
-	    if (!solver->isInteger(iColumn))
-	      good = false;
             for (j = columnStart[iColumn];
                     j < columnStart[iColumn] + columnLength[iColumn]; j++) {
                 if (element[j] < 0.0)
@@ -1332,7 +1336,7 @@ CbcHeuristicGreedySOS::validate()
 		  nSOS++;
 		}
             }
-	    if (nSOS!=1)
+	    if (nSOS>1||!solver->isBinary(iColumn))
 	      good = false;
         }
         if (!good)

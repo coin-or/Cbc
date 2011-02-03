@@ -12928,6 +12928,12 @@ CbcModel::doHeuristicsAtRoot(int deleteHeuristicsAfterwards)
                     } else {
                         heuristicValue = saveValue ;
                     }
+		    if (eventHandler) {
+		      if (!eventHandler->event(CbcEventHandler::afterHeuristic)) {
+			eventHappened_ = true; // exit
+			break;
+		      }
+		    }
                 }
 #ifdef CBC_THREAD
             }

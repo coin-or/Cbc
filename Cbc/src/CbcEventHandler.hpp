@@ -96,6 +96,8 @@ public:
         beforeSolution1,
         /*! A solution will be found unless user takes action (thorough check). */
         beforeSolution2,
+        /*! After failed heuristic. */
+        afterHeuristic,
         /*! End of search. */
         endSearch
     } ;

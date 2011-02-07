@@ -1620,6 +1620,7 @@ int CbcMain1 (int argc, const char *argv[],
             probingAction = 8;
         }
         std::string field;
+#ifndef CBC_QUIET 
         if (!noPrinting_) {
 	   sprintf(generalPrint,
 		   "Welcome to the CBC MILP Solver \n");
@@ -1657,6 +1658,7 @@ int CbcMain1 (int argc, const char *argv[],
                 << CoinMessageEol;
             }
         }
+#endif
         while (1) {
             // next command
             field = CoinReadGetCommand(argc, argv);
@@ -2667,10 +2669,12 @@ int CbcMain1 (int argc, const char *argv[],
 				   sprintf(generalPrint + strlen(generalPrint),
 					   "Enumerated nodes: 0\n");
 				   sprintf(generalPrint + strlen(generalPrint), 
-					   "Total iterations: 0\n"); 
+					   "Total iterations: 0\n");
+#ifndef CBC_QUIET 
 				   sprintf(generalPrint + strlen(generalPrint),
 					   "Time (seconds):   %.2f\n", 
 					   CoinCpuTime() - time0);
+#endif
 				   generalMessageHandler->message(CLP_GENERAL, generalMessages)
 				      << generalPrint
 				      << CoinMessageEol;
@@ -6073,12 +6077,14 @@ int CbcMain1 (int argc, const char *argv[],
 				    sprintf(generalPrint + strlen(generalPrint), 
 					    "Total iterations: %d\n", 
 					    babModel_->getIterationCount());
+#ifndef CBC_QUIET 
 				    sprintf(generalPrint + strlen(generalPrint), 
 					    "Time (seconds):   %.2f\n",
 					    time2 - time1);
 				    sprintf(generalPrint + strlen(generalPrint),
 					    "Total time:       %.2f\n", 
 					    time2 - time0);
+#endif
 				    generalMessageHandler->message(CLP_GENERAL, generalMessages)
 				       << generalPrint
 				       << CoinMessageEol;

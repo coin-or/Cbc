@@ -989,6 +989,7 @@ CbcHeuristicGreedySOS::solution(double & solutionValue,
     const CoinBigIndex * columnStart = matrix_.getVectorStarts();
     const int * columnLength = matrix_.getVectorLengths();
     int * sosRow = new int [numberColumns];
+    int nonSOS=0;
     // If bit set then use current
     if ((algorithm_&1)!=0) {
       const CoinPackedMatrix * matrix = solver->getMatrixByCol();
@@ -1004,20 +1005,26 @@ CbcHeuristicGreedySOS::solution(double & solutionValue,
 	if (rowLower[iRow] == 1.0 && rowUpper[iRow] == 1.0) {
 	  // SOS
 	  rhs[iRow]=-1.0;
-	} else if (rowLower[iRow] > 0.0) {
+	} else if (rowLower[iRow] > 0.0 && rowUpper[iRow] < 1.0e10) {
 	  good = false;
 	} else if (rowUpper[iRow] < 0.0) {
 	  good = false;
-	} else {
+	} else if (rowUpper[iRow] < 1.0e10) {
 	  rhs[iRow]=rowUpper[iRow];
+	} else {
+	  rhs[iRow]=rowLower[iRow];
 	}
       }
       for (int iColumn = 0; iColumn < numberColumns; iColumn++) {
+	if (!columnLength[iColumn])
+	  continue;
 	if (columnLower[iColumn] < 0.0 || columnUpper[iColumn] > 1.0)
 	  good = false;
 	CoinBigIndex j;
 	int nSOS=0;
 	int iSOS=-1;
+	if (!solver->isInteger(iColumn))
+	  good = false;
 	for (j = columnStart[iColumn];
 	     j < columnStart[iColumn] + columnLength[iColumn]; j++) {
 	  if (element[j] < 0.0)
@@ -1030,13 +1037,15 @@ CbcHeuristicGreedySOS::solution(double & solutionValue,
 	    nSOS++;
 	  }
 	}
-	if (nSOS>1||!solver->isBinary(iColumn))
+	if (nSOS>1)
 	  good = false;
+	else if (!nSOS)
+	  nonSOS++;
 	sosRow[iColumn] = iSOS;
       }
       if (!good) {
-	delete [] rhs;
 	delete [] sosRow;
+	delete [] rhs;
 	setWhen(0); // switch off
 	return 0;
       }
@@ -1045,20 +1054,28 @@ CbcHeuristicGreedySOS::solution(double & solutionValue,
     }
     const double * solution = solver->getColSolution();
     const double * objective = solver->getObjCoefficients();
+    const double * rowLower = solver->getRowLower();
+    const double * rowUpper = solver->getRowUpper();
     double integerTolerance = model_->getDblParam(CbcModel::CbcIntegerTolerance);
     double primalTolerance;
     solver->getDblParam(OsiPrimalTolerance, primalTolerance);
 
     numRuns_++;
     assert (numberRows == matrix_.getNumRows());
+    // set up linked list for sets
+    int * firstGub = new int [numberRows];
+    int * nextGub = new int [numberColumns];
     int iRow, iColumn;
     double direction = solver->getObjSense();
     double * slackCost = new double [numberRows];
     double * modifiedCost = CoinCopyOfArray(objective,numberColumns);
-    for (int iRow = 0;iRow < numberRows; iRow++)
+    for (int iRow = 0;iRow < numberRows; iRow++) {
       slackCost[iRow]=1.0e30;
+      firstGub[iRow]=-1;
+    }
     // Take off cost of gub slack
     for (int iColumn = 0; iColumn < numberColumns; iColumn++) {
+      nextGub[iColumn]=-1;
       int iRow = sosRow[iColumn];
       if (columnLength[iColumn] == 1&&iRow>=0) {
 	// SOS slack
@@ -1074,6 +1091,9 @@ CbcHeuristicGreedySOS::solution(double & solutionValue,
       if (rhs[iRow]<0.0) {
 	sos[iRow]=1;
 	rhs[iRow]=1.0;
+      } else if (rhs[iRow] != rowUpper[iRow]) {
+	// G row
+	sos[iRow]=-1;
       }
       if( slackCost[iRow] == 1.0e30) {
 	slackCost[iRow]=0.0;
@@ -1088,8 +1108,16 @@ CbcHeuristicGreedySOS::solution(double & solutionValue,
       for (j = columnStart[iColumn];
 	   j < columnStart[iColumn] + columnLength[iColumn]; j++) {
 	int iRow = row[j];
-	if (sos[iRow]) {
+	if (sos[iRow]>0) {
 	  cost -= slackCost[iRow];
+	  if (firstGub[iRow]<0) {
+	    firstGub[iRow]=iColumn;
+	  } else {
+	    int jColumn = firstGub[iRow];
+	    while (nextGub[jColumn]>=0)
+	      jColumn=nextGub[jColumn];
+	    nextGub[jColumn]=iColumn;
+	  }
 	}
       }
       modifiedCost[iColumn] = cost;
@@ -1104,121 +1132,610 @@ CbcHeuristicGreedySOS::solution(double & solutionValue,
     // Get solution array for heuristic solution
     double * newSolution = new double [numberColumns];
     double * rowActivity = new double[numberRows];
-    memset(rowActivity, 0, numberRows*sizeof(double));
+    double * contribution = new double [numberColumns];
+    int * which = new int [numberColumns];
+    double * newSolution0 = new double [numberColumns];
     if ((algorithm_&(2|4))==0) {
       // get solution as small as possible
       for (iColumn = 0; iColumn < numberColumns; iColumn++) 
-	newSolution[iColumn] = columnLower[iColumn];
+	newSolution0[iColumn] = columnLower[iColumn];
     } else {
       // Get rounded down solution
       for (iColumn = 0; iColumn < numberColumns; iColumn++) {
-        double value = solution[iColumn];
+	double value = solution[iColumn];
 	// Round down integer
 	if (fabs(floor(value + 0.5) - value) < integerTolerance) {
 	  value = floor(CoinMax(value + 1.0e-3, columnLower[iColumn]));
 	} else {
 	  value = CoinMax(floor(value), columnLower[iColumn]);
 	}
-        // make sure clean
-        value = CoinMin(value, columnUpper[iColumn]);
-        value = CoinMax(value, columnLower[iColumn]);
-        newSolution[iColumn] = value;
+	// make sure clean
+	value = CoinMin(value, columnUpper[iColumn]);
+	value = CoinMax(value, columnLower[iColumn]);
+	newSolution0[iColumn] = value;
       }
     }
-    // get row activity
-    for (iColumn = 0; iColumn < numberColumns; iColumn++) {
-      CoinBigIndex j;
-      double value = newSolution[iColumn];
-      for (j = columnStart[iColumn];
-	   j < columnStart[iColumn] + columnLength[iColumn]; j++) {
-	int iRow = row[j];
-	rowActivity[iRow] += value * element[j];
-      }
-    }
-    double * contribution = new double [numberColumns];
-    int * which = new int [numberColumns];
-    for (iColumn = 0; iColumn < numberColumns; iColumn++) {
-      CoinBigIndex j;
-      double value = newSolution[iColumn];
-      double cost =  modifiedCost[iColumn];
-      double forSort = 0.0;
-      bool hasSlack=false;
-      bool willFit=true;
-      newSolutionValue += value * cost;
-      for (j = columnStart[iColumn];
-	   j < columnStart[iColumn] + columnLength[iColumn]; j++) {
-	int iRow = row[j];
-	if (sos[iRow] == 2) 
-	  hasSlack = true;
-	forSort += element[j];
-	double gap = rhs[iRow] - rowActivity[iRow]+1.0e-8;
-	if (gap<element[j])
-	  willFit = false;
-      }
-      bool isSlack = hasSlack && (columnLength[iColumn]==1);
-      if ((algorithm_&4)!=0) 
-	forSort=1.0;
-      // Use smallest cost if will fit
-      if (willFit /*&& hasSlack*/ && 
-	  value == 0.0 && columnUpper[iColumn]) {
-	if (hasSlack) {
-	  if (cost>0.0) {
-	    forSort = 2.0e30;
-	  } else if (cost==0.0) {
-	    if (!isSlack)
-	      forSort = 1.0e29;
-	    else
-	      forSort = 1.0e28;
-	  } else {
-	    forSort = cost/forSort;
-	  }
-	} else {
-	  forSort = cost/forSort;
-	}
-      } else {
-	// put at end
-	forSort = 1.0e30;
-      }
-      which[iColumn]=iColumn;
-      contribution[iColumn]= forSort;
-    }
-    CoinSort_2(contribution,contribution+numberColumns,which);
-    // Go through columns
-    for (int jColumn = 0; jColumn < numberColumns; jColumn++) {
-      int iColumn = which[jColumn];
-      double value = newSolution[iColumn];
-      if (value)
-	continue;
-      bool possible = true;
-      CoinBigIndex j;
-      for (j = columnStart[iColumn];
-	   j < columnStart[iColumn] + columnLength[iColumn]; j++) {
-	int iRow = row[j];
-	if (sos[iRow]&&rowActivity[iRow]) {
-	  possible = false;
-	} else {
-	  double gap = rhs[iRow] - rowActivity[iRow]+1.0e-8;
-	  if (gap<element[j])
-	    possible = false;
-	}
-      }
-      if (possible) {
-        // Increase chosen column
-        newSolution[iColumn] = 1.0;
-        double cost =  modifiedCost[iColumn];
-        newSolutionValue += cost;
-        for (CoinBigIndex j = columnStart[iColumn];
+    double * rowWeight = new double [numberRows];
+    for (int i=0;i<numberRows;i++)
+      rowWeight[i]=1.0;
+    double costBias = 0.0;
+    int nPass = ((algorithm_&4)!=0) ? 1 : 10;
+    for (int iPass=0;iPass<nPass;iPass++) {
+      newSolutionValue = -offset+offset2;
+      memcpy(newSolution,newSolution0,numberColumns*sizeof(double));
+      // get row activity
+      memset(rowActivity, 0, numberRows*sizeof(double));
+      for (iColumn = 0; iColumn < numberColumns; iColumn++) {
+	CoinBigIndex j;
+	double value = newSolution[iColumn];
+	for (j = columnStart[iColumn];
 	     j < columnStart[iColumn] + columnLength[iColumn]; j++) {
 	  int iRow = row[j];
-	  rowActivity[iRow] += element[j];
-        }
+	  rowActivity[iRow] += value * element[j];
+	}
+      }
+      if (!rowWeight) {
+	rowWeight = CoinCopyOfArray(rowActivity,numberRows);
+      }
+      for (iColumn = 0; iColumn < numberColumns; iColumn++) {
+	CoinBigIndex j;
+	double value = newSolution[iColumn];
+	double cost =  modifiedCost[iColumn];
+	double forSort = 1.0e-24;
+	bool hasSlack=false;
+	bool willFit=true;
+	bool gRow=false;
+	newSolutionValue += value * cost;
+	cost += 1.0e-12;
+	for (j = columnStart[iColumn];
+	     j < columnStart[iColumn] + columnLength[iColumn]; j++) {
+	  int iRow = row[j];
+	  int type = sos[iRow];
+	  double gap = rhs[iRow] - rowActivity[iRow]+1.0e-8;
+	  switch (type) {
+	  case -1:
+	    // G row
+	    gRow = true;
+#if 0
+	    if (rhs[iRow]>rowWeight[iRow]||(algorithm_&(2|4))!=0)
+	      forSort += element[j];
+	    else
+	      forSort += 0.1*element[j];
+#else
+	    forSort += rowWeight[iRow]*element[j];
+#endif
+	    break;
+	  case 0:
+	    // L row
+	    if (gap<element[j]) {
+	      willFit = false;
+	    } else {
+	      forSort += element[j];
+	    }
+	    break;
+	  case 1:
+	    // SOS without slack
+	    if (gap<element[j]) {
+	      willFit = false;
+	    }
+	    break;
+	  case 2:
+	    // SOS with slack
+	    hasSlack = true;
+	    if (gap<element[j]) {
+	      willFit = false;
+	    }
+	    break;
+	  }
+	}
+	bool isSlack = hasSlack && (columnLength[iColumn]==1);
+	if (forSort<1.0e-24)
+	  forSort = 1.0e-12;
+	if ((algorithm_&4)!=0 && forSort > 1.0e-24) 
+	  forSort=1.0;
+	// Use smallest cost if will fit
+	if (willFit && (hasSlack||gRow) && 
+	    value == 0.0 && columnUpper[iColumn]) {
+	  if (hasSlack && !gRow) {
+	    if (cost>1.0e-12) {
+	      forSort = 2.0e30;
+	    } else if (cost==1.0e-12) {
+	      if (!isSlack)
+		forSort = 1.0e29;
+	      else
+		forSort = 1.0e28;
+	    } else {
+	      forSort = cost/forSort;
+	    }
+	  } else {
+	    if (!gRow||true)
+	      forSort = (cost+costBias)/forSort;
+	    else
+	      forSort = 1.0e-12/forSort;
+	  }
+	} else {
+	  // put at end
+	  forSort = 1.0e30;
+	}
+	which[iColumn]=iColumn;
+	contribution[iColumn]= forSort;
+      }
+      CoinSort_2(contribution,contribution+numberColumns,which);
+      // Go through columns
+      int nAdded=0;
+      int nSlacks=0;
+      for (int jColumn = 0; jColumn < numberColumns; jColumn++) {
+	if (contribution[jColumn]>=1.0e30)
+	  break;
+	int iColumn = which[jColumn];
+	double value = newSolution[iColumn];
+	if (value)
+	  continue;
+	bool possible = true;
+	CoinBigIndex j;
+	for (j = columnStart[iColumn];
+	     j < columnStart[iColumn] + columnLength[iColumn]; j++) {
+	  int iRow = row[j];
+	  if (sos[iRow]>0&&rowActivity[iRow]) {
+	    possible = false;
+	  } else {
+	    double gap = rhs[iRow] - rowActivity[iRow]+1.0e-8;
+	    if (gap<element[j]&&sos[iRow]>=0)
+	      possible = false;
+	  }
+	}
+	if (possible) {
+	  //#define REPORT 1
+#ifdef REPORT
+	  if ((nAdded%1000)==0) {
+	    double gap=0.0;
+	    for (int i=0;i<numberRows;i++) {
+	      if (rowUpper[i]>1.0e20)
+		gap += CoinMax(rowLower[i]-rowActivity[i],0.0);
+	    }
+	    if (gap)
+	      printf("after %d added gap %g - %d slacks\n",
+		     nAdded,gap,nSlacks);
+	  }
+#endif
+	  nAdded++;
+	  if (columnLength[iColumn]==1)
+	    nSlacks++;
+	  // Increase chosen column
+	  newSolution[iColumn] = 1.0;
+	  double cost =  modifiedCost[iColumn];
+	  newSolutionValue += cost;
+	  for (CoinBigIndex j = columnStart[iColumn];
+	       j < columnStart[iColumn] + columnLength[iColumn]; j++) {
+	    int iRow = row[j];
+	    rowActivity[iRow] += element[j];
+	  }
+	}
+      }
+#ifdef REPORT
+      {
+	double under=0.0;
+	double over=0.0;
+	double gap = 0.0;
+	int nUnder=0;
+	int nOver=0;
+	int nGap=0;
+	for (iRow = 0; iRow < numberRows; iRow++) {
+	  if (rowActivity[iRow] < rowLower[iRow] - 10.0*primalTolerance) {
+	    double value = rowLower[iRow]-rowActivity[iRow];
+#if REPORT>1
+	    printf("below on %d is %g - activity %g lower %g\n",
+		   iRow,value,rowActivity[iRow],rowLower[iRow]);
+#endif
+	    under += value;
+	    nUnder++;
+	  } else if (rowActivity[iRow] > rowUpper[iRow] + 10.0*primalTolerance) {
+	    double value = rowActivity[iRow]-rowUpper[iRow];
+#if REPORT>1
+	    printf("above on %d is %g - activity %g upper %g\n",
+		   iRow,value,rowActivity[iRow],rowUpper[iRow]);
+#endif
+	    over += value;
+	    nOver++;
+	  } else {
+	    double value = rowActivity[iRow]-rowLower[iRow];
+	    if (value && value < 1.0e20) {
+#if REPORT>1
+	      printf("gap on %d is %g - activity %g lower %g\n",
+		     iRow,value,rowActivity[iRow],rowLower[iRow]);
+#endif
+	      gap += value;
+	      nGap++;
+	    }
+	  }
+	}
+	printf("final under %g (%d) - over %g (%d) - free %g (%d) - %d added - solvalue %g\n",
+	       under,nUnder,over,nOver,gap,nGap,nAdded,newSolutionValue);
+      }
+#endif
+      double gap = 0.0;
+      double over = 0.0;
+      int nL=0;
+      int nG=0;
+      int iUnder=-1;
+      int nUnder=0;
+      for (iRow = 0; iRow < numberRows; iRow++) {
+	if (rowLower[iRow]<-1.0e20)
+	  nL++;
+	if (rowUpper[iRow]>1.0e20)
+	  nG++;
+	if (rowActivity[iRow] < rowLower[iRow] - 10.0*primalTolerance) {
+	  gap += rowLower[iRow]-rowActivity[iRow];
+	  nUnder++;
+	  iUnder=iRow;
+	  rowWeight[iRow] *= 1.1;
+	} else if (rowActivity[iRow] > rowUpper[iRow] + 10.0*primalTolerance) {
+	  gap += rowActivity[iRow]-rowUpper[iRow];
+	} else {
+	  over += rowActivity[iRow]-rowLower[iRow];
+	  //rowWeight[iRow] *= 0.9;
+	}
+      }
+      if (nG&&!nL) {
+	// can we fix
+	// get list of columns which can go down without making
+	// things much worse
+	int nPossible=0;
+	int nEasyDown=0;
+	int nSlackDown=0;
+	for (int iColumn=0;iColumn<numberColumns;iColumn++) {
+	  if (newSolution[iColumn]&&
+	      columnUpper[iColumn]>columnLower[iColumn]) {
+	    bool canGoDown=true;
+	    bool under = false;
+	    int iSos=-1;
+	    for (CoinBigIndex j = columnStart[iColumn];
+		 j < columnStart[iColumn] + columnLength[iColumn]; j++) {
+	      int iRow = row[j];
+	      if (sos[iRow]<0) {
+		double over = rowActivity[iRow]-rowLower[iRow];
+		if (over>=0.0&&element[j]>over+1.0e-12) {
+		  canGoDown=false;
+		  break;
+		} else if (over<0.0) {
+		  under = true;
+		}
+	      } else {
+		iSos=iRow;
+	      }
+	    }
+	    if (canGoDown) { 
+	      if (!under) {
+		if (iSos>=0) {
+		  // find cheapest
+		  double cheapest=modifiedCost[iColumn];
+		  int iCheapest = -1;
+		  int jColumn = firstGub[iSos];
+		  assert (jColumn>=0);
+		  while (jColumn>=0) {
+		    if (modifiedCost[jColumn]<cheapest) {
+		      cheapest=modifiedCost[jColumn];
+		      iCheapest=jColumn;
+		    }
+		    jColumn = nextGub[jColumn];
+		  }
+		  if (iCheapest>=0) {
+		    // Decrease column
+		    newSolution[iColumn] = 0.0;
+		    newSolutionValue -= modifiedCost[iColumn];
+		    for (CoinBigIndex j = columnStart[iColumn];
+			 j < columnStart[iColumn] + columnLength[iColumn]; j++) {
+		      int iRow = row[j];
+		      rowActivity[iRow] -= element[j];
+		    }
+		    // Increase chosen column
+		    newSolution[iCheapest] = 1.0;
+		    newSolutionValue += modifiedCost[iCheapest]; 
+		    for (CoinBigIndex j = columnStart[iCheapest];
+			 j < columnStart[iCheapest] + columnLength[iCheapest]; j++) {
+		      int iRow = row[j];
+		      rowActivity[iRow] += element[j];
+		    }
+		    nEasyDown++;
+		    if (columnLength[iColumn]>1) {
+		      //printf("%d is easy down\n",iColumn);
+		    } else {
+		      nSlackDown++;
+		    }
+		  }
+		} else if (modifiedCost[iColumn]>0.0) {
+		  // easy down
+		  // Decrease column
+		  newSolution[iColumn] = 0.0;
+		  newSolutionValue -= modifiedCost[iColumn];
+		  for (CoinBigIndex j = columnStart[iColumn];
+		       j < columnStart[iColumn] + columnLength[iColumn]; j++) {
+		    int iRow = row[j];
+		    rowActivity[iRow] -= element[j];
+		  }
+		  nEasyDown++;
+		}
+	      } else {
+		which[nPossible++]=iColumn;
+	      }
+	    }
+	  }
+	}
+#ifdef REPORT
+	printf("%d possible down, %d easy down of which %d are slacks\n",
+	       nPossible,nEasyDown,nSlackDown);
+#endif
+	double * needed = new double [numberRows];
+	for (int i=0;i<numberRows;i++) {
+	  double value = rowLower[i] - rowActivity[i];
+	  if (value<1.0e-8)
+	    value=0.0;
+	  needed[i]=value;
+	}
+	if (gap && /*nUnder==1 &&*/ nonSOS) {
+	  double * weight = new double [numberColumns];
+	  int * sort = new int [numberColumns];
+	  // look at ones not in set
+	  int nPossible=0;
+	  for (int iColumn=0;iColumn<numberColumns;iColumn++) {
+	    if (!newSolution[iColumn]&&
+		columnUpper[iColumn]>columnLower[iColumn]) {
+	      int iSos=-1;
+	      double value=0.0;
+	      for (CoinBigIndex j = columnStart[iColumn];
+		   j < columnStart[iColumn] + columnLength[iColumn]; j++) {
+		int iRow = row[j];
+		if (sos[iRow]<0) {
+		  if (needed[iRow])
+		    value += CoinMin(element[j]/needed[iRow],1.0);
+		} else {
+		  iSos=iRow;
+		}
+	      }
+	      if (value && iSos<0) {
+		weight[nPossible]=-value;
+		sort[nPossible++]=iColumn;
+	      }
+	    }
+	  }
+	  CoinSort_2(weight,weight+nPossible,sort);
+	  for (int i=0;i<nPossible;i++) {
+	    int iColumn = sort[i];
+	    double helps=0.0;
+	    for (CoinBigIndex j = columnStart[iColumn];
+		 j < columnStart[iColumn] + columnLength[iColumn]; j++) {
+	      int iRow = row[j];
+	      if (needed[iRow]) 
+		helps += CoinMin(needed[iRow],element[j]);
+	    }
+	    if (helps) {
+	      newSolution[iColumn] = 1.0;
+	      newSolutionValue += modifiedCost[iColumn];
+	      for (CoinBigIndex j = columnStart[iColumn];
+		   j < columnStart[iColumn] + columnLength[iColumn]; j++) {
+		int iRow = row[j];
+		rowActivity[iRow] += element[j];
+		if (needed[iRow]) {
+		  needed[iRow] -= element[j];
+		  if (needed[iRow]<1.0e-8)
+		    needed[iRow]=0.0;
+		}
+	      }
+	      gap -= helps;
+#ifdef REPORT
+	      {
+		double gap2 = 0.0;
+		for (iRow = 0; iRow < numberRows; iRow++) {
+		  if (rowActivity[iRow] < rowLower[iRow] - 10.0*primalTolerance) {
+		    gap2 += rowLower[iRow]-rowActivity[iRow];
+		  }
+		}
+		printf("estimated gap (nonsos) %g - computed %g\n",
+		       gap,gap2);
+	      }
+#endif
+	      if (gap<1.0e-12)
+		break;
+	    }
+	  }
+	  delete [] weight;
+	  delete [] sort;
+	}
+	if (gap&&nPossible/*&&nUnder==1*/&&true&&model_->bestSolution()) {
+	  double * weight = new double [numberColumns];
+	  int * sort = new int [numberColumns];
+	  // look at ones in sets
+	  const double * goodSolution = model_->bestSolution();
+	  int nPossible=0;
+	  double largestWeight=0.0;
+	  for (int iColumn=0;iColumn<numberColumns;iColumn++) {
+	    if (!newSolution[iColumn]&&goodSolution[iColumn]&&
+		columnUpper[iColumn]>columnLower[iColumn]) {
+	      int iSos=-1;
+	      double value=0.0;
+	      for (CoinBigIndex j = columnStart[iColumn];
+		   j < columnStart[iColumn] + columnLength[iColumn]; j++) {
+		int iRow = row[j];
+		if (sos[iRow]<0) {
+		  if (needed[iRow]) 
+		    value += CoinMin(element[j]/needed[iRow],1.0);
+		} else {
+		  iSos=iRow;
+		}
+	      }
+	      if (value&&iSos>=0) {
+		// see if value bigger than current
+		int jColumn = firstGub[iSos];
+		assert (jColumn>=0);
+		while (jColumn>=0) {
+		  if (newSolution[jColumn]) 
+		    break;
+		  jColumn = nextGub[jColumn];
+		}
+		assert (jColumn>=0);
+		double value2=0.0;
+		for (CoinBigIndex j = columnStart[jColumn];
+		     j < columnStart[jColumn] + columnLength[jColumn]; j++) {
+		  int iRow = row[j];
+		  if (needed[iRow]) 
+		    value2 += CoinMin(element[j]/needed[iRow],1.0);
+		}
+		if (value>value2) {
+		  weight[nPossible]=-(value-value2);
+		  largestWeight = CoinMax(largestWeight,(value-value2));
+		  sort[nPossible++]=iColumn;
+		}
+	      }
+	    }
+	  }
+	  if (nPossible) {
+	    double * temp = new double [numberRows];
+	    int * which2 = new int [numberRows];
+	    memset(temp,0,numberRows*sizeof(double));
+	    // modify so ones just more than gap best
+	    if (largestWeight>gap&&nUnder==1) {
+	      double offset = 4*largestWeight;
+	      for (int i=0;i<nPossible;i++) {
+		double value = -weight[i];
+		if (value>gap-1.0e-12)
+		  weight[i] = -(offset-(value-gap));
+	      }
+	    }
+	    CoinSort_2(weight,weight+nPossible,sort);
+	    for (int i=0;i<nPossible;i++) {
+	      int iColumn = sort[i];
+	      int n=0;
+	      // find jColumn
+	      int iSos=-1;
+	      for (CoinBigIndex j = columnStart[iColumn];
+		   j < columnStart[iColumn] + columnLength[iColumn]; j++) {
+		int iRow = row[j];
+		temp[iRow]=element[j];
+		which2[n++]=iRow;
+		if (sos[iRow]>=0) {
+		  iSos=iRow;
+		}
+	      }
+	      int jColumn = firstGub[iSos];
+	      assert (jColumn>=0);
+	      while (jColumn>=0) {
+		if (newSolution[jColumn]) 
+		  break;
+		jColumn = nextGub[jColumn];
+	      }
+	      assert (jColumn>=0);
+	      for (CoinBigIndex j = columnStart[jColumn];
+		   j < columnStart[jColumn] + columnLength[jColumn]; j++) {
+		int iRow = row[j];
+		if (!temp[iRow])
+		  which2[n++]=iRow;
+		temp[iRow] -= element[j];
+	      }
+	      double helps = 0.0;
+	      for (int i=0;i<n;i++) {
+		int iRow = which2[i];
+		double newValue = rowActivity[iRow]+temp[iRow];
+		if (temp[iRow]>1.0e-8) {
+		  if (rowActivity[iRow]<rowLower[iRow]-1.0e-8) {
+		    helps += CoinMin(temp[iRow],
+				     rowLower[iRow]-rowActivity[iRow]);
+		  }
+		} else if (temp[iRow]<-1.0e-8) {
+		  if (newValue<rowLower[iRow]-1.0e-12) { 
+		    helps -= CoinMin(-temp[iRow],
+				     1.0*(rowLower[iRow]-newValue));
+		  }
+		}
+	      }
+	      if (helps>0.0) {
+		newSolution[iColumn]=1.0;
+		newSolution[jColumn]=0.0;
+		newSolutionValue += modifiedCost[iColumn]-modifiedCost[jColumn];
+		for (int i=0;i<n;i++) {
+		  int iRow = which2[i];
+		  double newValue = rowActivity[iRow]+temp[iRow];
+		  rowActivity[iRow] = newValue;
+		  temp[iRow]=0.0;
+		}
+		gap -= helps;
+#ifdef REPORT
+		{
+		  double gap2 = 0.0;
+		  for (iRow = 0; iRow < numberRows; iRow++) {
+		    if (rowActivity[iRow] < rowLower[iRow] - 10.0*primalTolerance) {
+		      gap2 += rowLower[iRow]-rowActivity[iRow];
+		    }
+		  }
+		  printf("estimated gap %g - computed %g\n",
+			 gap,gap2);
+		}
+#endif
+		if (gap<1.0e-8)
+		  break;
+	      } else {
+		for (int i=0;i<n;i++) 
+		  temp[which2[i]]=0.0;
+	      }
+	    }
+	    delete [] which2;
+	    delete [] temp;
+	  }
+	  delete [] weight;
+	  delete [] sort;
+	}
+	delete [] needed;
+      }
+#ifdef REPORT
+      {
+	double gap=0.0;
+	double over = 0.0;
+	for (iRow = 0; iRow < numberRows; iRow++) {
+	  if (rowActivity[iRow] < rowLower[iRow] - 10.0*primalTolerance) {
+	    double value = rowLower[iRow]-rowActivity[iRow];
+#if REPORT>1
+	    printf("below on %d is %g - activity %g lower %g\n",
+		   iRow,value,rowActivity[iRow],rowLower[iRow]);
+#endif
+	    gap += value;
+	  } else if (rowActivity[iRow] > rowUpper[iRow] + 10.0*primalTolerance) {
+	    double value = rowActivity[iRow]-rowUpper[iRow];
+#if REPORT>1
+	    printf("above on %d is %g - activity %g upper %g\n",
+		   iRow,value,rowActivity[iRow],rowUpper[iRow]);
+#endif
+	    gap += value;
+	  } else {
+	    double value = rowActivity[iRow]-rowLower[iRow];
+	    if (value) {
+#if REPORT>1
+	      printf("over on %d is %g - activity %g lower %g\n",
+		     iRow,value,rowActivity[iRow],rowLower[iRow]);
+#endif
+	      over += value;
+	    }
+	  }
+	}
+	printf("modified final gap %g - over %g - %d added - solvalue %g\n",
+	       gap,over,nAdded,newSolutionValue);
+      }
+#endif
+      if (!gap) {
+	break;
+      } else {
+	if (iPass==0) {
+	  costBias = 10.0*newSolutionValue/static_cast<double>(nAdded);
+	} else {
+	  costBias *= 10.0;
+	}
       }
     }
+    delete [] newSolution0;
+    delete [] rowWeight;
     delete [] sos;
+    delete [] firstGub;
+    delete [] nextGub;
     if (newSolutionValue < solutionValue) {
         // check feasible
-      const double * rowLower = solver->getRowLower();
-      const double * rowUpper = solver->getRowUpper();
       memset(rowActivity, 0, numberRows*sizeof(double));
         for (iColumn = 0; iColumn < numberColumns; iColumn++) {
             CoinBigIndex j;
@@ -1292,7 +1809,7 @@ CbcHeuristicGreedySOS::validate()
             if (numberOdd)
                 setWhen(0);
         }
-        // Only works if coefficients positive and all rows L or SOS
+        // Only works if coefficients positive and all rows L/G or SOS
         OsiSolverInterface * solver = model_->solver();
         const double * columnUpper = solver->getColUpper();
         const double * columnLower = solver->getColLower();
@@ -1311,20 +1828,26 @@ CbcHeuristicGreedySOS::validate()
 	  if (rowLower[iRow] == 1.0 && rowUpper[iRow] == 1.0) {
 	    // SOS
 	    originalRhs_[iRow]=-1.0;
-	  } else if (rowLower[iRow] > 0.0) {
+	  } else if (rowLower[iRow] > 0.0 && rowUpper[iRow] < 1.0e10) {
                 good = false;
 	  } else if (rowUpper[iRow] < 0.0) {
                 good = false;
-	  } else {
+	  } else if (rowUpper[iRow] < 1.0e10) {
 	    originalRhs_[iRow]=rowUpper[iRow];
+	  } else {
+	    originalRhs_[iRow]=rowLower[iRow];
 	  }
         }
         int numberColumns = solver->getNumCols();
         for (int iColumn = 0; iColumn < numberColumns; iColumn++) {
+	  if (!columnLength[iColumn])
+	    continue;
             if (columnLower[iColumn] < 0.0 || columnUpper[iColumn] > 1.0)
                 good = false;
             CoinBigIndex j;
 	    int nSOS=0;
+	    if (!solver->isInteger(iColumn))
+	      good = false;
             for (j = columnStart[iColumn];
                     j < columnStart[iColumn] + columnLength[iColumn]; j++) {
                 if (element[j] < 0.0)
@@ -1336,7 +1859,7 @@ CbcHeuristicGreedySOS::validate()
 		  nSOS++;
 		}
             }
-	    if (nSOS>1||!solver->isBinary(iColumn))
+	    if (nSOS > 1)
 	      good = false;
         }
         if (!good)

@@ -569,9 +569,9 @@ CbcHeuristicRENS::solution(double & solutionValue,
 	      }
 	    }
 	    char line[100];
-	    sprintf(line,"Heuristic %s fixed %d to one",
+	    sprintf(line,"Heuristic %s fixed %d to one (%d sets)",
 		    heuristicName(),
-		    nFixed);
+		    nFixed,nSOS);
 	    model_->messageHandler()->message(CBC_FPUMP1, model_->messages())
 	      << line
 	      << CoinMessageEol;

@@ -1185,7 +1185,9 @@ int CbcMain1 (int argc, const char *argv[],
 
         // register signal handler
         //CoinSighandler_t saveSignal=signal(SIGINT,signal_handler);
+#ifndef CBC_QUIET
         signal(SIGINT, signal_handler);
+#endif
         // Set up all non-standard stuff
         int cutPass = -1234567;
         int cutPassInTree = -1234567;

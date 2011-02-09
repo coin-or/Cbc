@@ -51,6 +51,12 @@
 #include "glpk.h"
 extern glp_tran* cbc_glp_tran;
 extern glp_prob* cbc_glp_prob;
+#else
+#define GLP_UNDEF 1
+#define GLP_FEAS 2
+#define GLP_INFEAS 3
+#define GLP_NOFEAS 4
+#define GLP_OPT 5
 #endif
 
 //#define USER_HAS_FAKE_CLP
@@ -7580,6 +7586,7 @@ clp watson.mps -\nscaling off\nprimalsimplex"
 				int numberRows = lpSolver->getNumRows();
 				int numberColumns = lpSolver->getNumCols();
 				int numberGlpkRows=numberRows+1;
+#ifdef COIN_HAS_GLPK
 				if (cbc_glp_prob) {
 				  // from gmpl
 				  numberGlpkRows=glp_get_num_rows(cbc_glp_prob);
@@ -7587,6 +7594,7 @@ clp watson.mps -\nscaling off\nprimalsimplex"
 				    printf("Mismatch - cbc %d rows, glpk %d\n",
 					   numberRows,numberGlpkRows);
 				}
+#endif
 				fprintf(fp,"%d %d\n",numberGlpkRows,
 					numberColumns);
 				int iStat = lpSolver->status();

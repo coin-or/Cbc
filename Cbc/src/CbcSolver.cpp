@@ -47,6 +47,11 @@
 #include "OsiAuxInfo.hpp"
 
 #include "CbcSolverHeuristics.hpp"
+#ifdef COIN_HAS_GLPK
+#include "glpk.h"
+extern glp_tran* cbc_glp_tran;
+extern glp_prob* cbc_glp_prob;
+#endif
 
 //#define USER_HAS_FAKE_CLP
 //#define USER_HAS_FAKE_CBC
@@ -7512,6 +7517,7 @@ clp watson.mps -\nscaling off\nprimalsimplex"
                     }
                     break;
                     case CLP_PARAM_ACTION_SOLUTION:
+                    case CLP_PARAM_ACTION_GMPL_SOLUTION:
                         if (goodModel) {
                             // get next field
                             field = CoinReadGetString(argc, argv);
@@ -7569,6 +7575,113 @@ clp watson.mps -\nscaling off\nprimalsimplex"
                             }
                             if (fp) {
 #ifndef CBC_OTHER_SOLVER
+			      // See if Glpk 
+			      if (type == CLP_PARAM_ACTION_GMPL_SOLUTION) {
+				int numberRows = lpSolver->getNumRows();
+				int numberColumns = lpSolver->getNumCols();
+				int numberGlpkRows=numberRows+1;
+				if (cbc_glp_prob) {
+				  // from gmpl
+				  numberGlpkRows=glp_get_num_rows(cbc_glp_prob);
+				  if (numberGlpkRows!=numberRows)
+				    printf("Mismatch - cbc %d rows, glpk %d\n",
+					   numberRows,numberGlpkRows);
+				}
+				fprintf(fp,"%d %d\n",numberGlpkRows,
+					numberColumns);
+				int iStat = lpSolver->status();
+				int iStat2 = GLP_UNDEF;
+				bool integerProblem = false;
+				if (integerStatus >= 0){
+				  iStat = integerStatus;
+				  integerProblem = true;
+				}
+				if (iStat == 0) {
+				  // optimal
+				  if (integerProblem)
+				    iStat2 = GLP_OPT;
+				  else
+				    iStat2 = GLP_FEAS;
+				} else if (iStat == 1) {
+				  // infeasible
+				  iStat2 = GLP_NOFEAS;
+				} else if (iStat == 2) {
+				  // unbounded
+				  // leave as 1
+				} else if (iStat >= 3 && iStat <= 5) {
+				  if (babModel_ && !babModel_->bestSolution())
+				    iStat2 = GLP_NOFEAS;
+				  else
+				    iStat2 = GLP_FEAS;
+				} else if (iStat == 6) {
+				  // bab infeasible
+				  iStat2 = GLP_NOFEAS;
+				}
+				lpSolver->computeObjectiveValue(false);
+				double objValue = clpSolver->getObjValue() 
+				  * clpSolver->getObjSense();
+				if (integerProblem)
+				  fprintf(fp,"%d %g\n",iStat2,objValue);
+				else
+				  fprintf(fp,"%d 2 %g\n",iStat2,objValue);
+				if (numberGlpkRows > numberRows) {
+				  // objective as row
+				  if (integerProblem) {
+				    fprintf(fp,"%g\n",objValue);
+				  } else {
+				    fprintf(fp,"4 %g 1.0\n",objValue);
+				  }
+				}
+				int lookup[6]=
+				  {4,1,3,2,4,5};
+				const double * primalRowSolution =
+				  lpSolver->primalRowSolution();
+				const double * dualRowSolution =
+				  lpSolver->dualRowSolution();
+				for (int i=0;i<numberRows;i++) {
+				  if (integerProblem) {
+				    fprintf(fp,"%g\n",primalRowSolution[i]);
+				  } else {
+				    fprintf(fp,"%d %g %g\n",lookup[lpSolver->getRowStatus(i)],
+								   primalRowSolution[i],dualRowSolution[i]);
+				  }
+				}
+				const double * primalColumnSolution =
+				  lpSolver->primalColumnSolution();
+				const double * dualColumnSolution =
+				  lpSolver->dualColumnSolution();
+				for (int i=0;i<numberColumns;i++) {
+				  if (integerProblem) {
+				    fprintf(fp,"%g\n",primalColumnSolution[i]);
+				  } else {
+				    fprintf(fp,"%d %g %g\n",lookup[lpSolver->getColumnStatus(i)],
+								   primalColumnSolution[i],dualColumnSolution[i]);
+				  }
+				}
+				fclose(fp);
+#ifdef COIN_HAS_GLPK
+				if (cbc_glp_prob) {
+				  if (integerProblem) {
+				    glp_read_mip(cbc_glp_prob,fileName.c_str());
+				    glp_mpl_postsolve(cbc_glp_tran,
+						      cbc_glp_prob,
+						      GLP_MIP);
+				  } else {
+				    glp_read_sol(cbc_glp_prob,fileName.c_str());
+				    glp_mpl_postsolve(cbc_glp_tran,
+						      cbc_glp_prob,
+						      GLP_SOL);
+				  }
+				  // free up as much as possible
+				  glp_free(cbc_glp_prob);
+				  glp_mpl_free_wksp(cbc_glp_tran);
+				  //gmp_free_mem();
+				  /* check that no memory blocks are still allocated */
+				  glp_free_env();
+				}
+#endif
+				break;
+			      }
                                 if (printMode < 5) {
                                     // Write solution header (suggested by Luigi Poderico)
                                     lpSolver->computeObjectiveValue(false);

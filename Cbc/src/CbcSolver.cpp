@@ -6206,6 +6206,17 @@ int CbcMain1 (int argc, const char *argv[],
                             }
                             if (absolutePath) {
                                 fileName = field;
+				int length = field.size();
+				int percent = field.find('%');
+				if (percent < length && percent > 0) {
+				  gmpl = 1;
+				  fileName = field.substr(0, percent);
+				  gmplData = field.substr(percent + 1);
+				  if (percent < length - 1)
+				    gmpl = 2; // two files
+				  printf("GMPL model file %s and data file %s\n",
+					 fileName.c_str(), gmplData.c_str());
+				}
                             } else if (field[0] == '~') {
                                 char * environVar = getenv("HOME");
                                 if (environVar) {

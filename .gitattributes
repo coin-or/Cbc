@@ -35,6 +35,7 @@ Cbc/MSVisualStudio/v9alt/Cbc.vcproj -text
 Cbc/MSVisualStudio/v9alt/OsiCbcUnitTest.vcproj -text
 Cbc/MSVisualStudio/v9alt/cbc.vsprops -text
 Cbc/MSVisualStudio/v9alt/cbcsolver.vsprops -text
+Cbc/MSVisualStudio/v9alt/genDefForCbc.ps1 -text
 Cbc/MSVisualStudio/v9alt/libCbc.vcproj -text
 Cbc/MSVisualStudio/v9alt/libCbcSolver.vcproj -text
 Cbc/MSVisualStudio/v9alt/libOsiCbc.vcproj -text

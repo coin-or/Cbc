@@ -80,7 +80,6 @@ Cbc/src/CbcBranchToFixLots.hpp -text
 Cbc/src/CbcBranchingObject.cpp -text
 Cbc/src/CbcBranchingObject.hpp -text
 Cbc/src/CbcCbcParam.cpp -text
-Cbc/src/CbcChooseVariable.hpp -text
 Cbc/src/CbcClique.cpp -text
 Cbc/src/CbcClique.hpp -text
 Cbc/src/CbcCompare.hpp -text

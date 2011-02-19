@@ -39,7 +39,6 @@ libCbc_la_SOURCES = \
 	CbcCompareEstimate.cpp CbcCompareEstimate.hpp \
 	CbcCompareObjective.cpp CbcCompareObjective.hpp \
 	CbcConsequence.cpp CbcConsequence.hpp \
-	CbcChooseVariable.hpp \
 	CbcClique.cpp CbcClique.hpp \
 	CbcCompare.hpp \
 	CbcCountRowCut.cpp CbcCountRowCut.hpp \
@@ -217,7 +216,6 @@ includecoin_HEADERS = \
 	CbcCompareEstimate.hpp \
 	CbcCompareObjective.hpp \
 	CbcConsequence.hpp \
-	CbcChooseVariable.hpp \
 	CbcClique.hpp \
 	CbcCompare.hpp \
 	CbcCutGenerator.hpp \

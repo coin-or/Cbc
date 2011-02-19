@@ -330,7 +330,7 @@
 			<Tool
 				Name="VCPostBuildEventTool"
 				Description="Copy import library to $(CoinLibDir)"
-				CommandLine="if not exist $(CoinLibDir) mkdir $(CoinLibDir)&#x0D;&#x0A;move /y $(OutDir)\$(TargetName).lib $(CoinLibDir)"
+				CommandLine="if not exist $(CoinLibDir) mkdir $(CoinLibDir)&#x0D;&#x0A;move /y $(OutDir)\$(TargetName).lib $(CoinLibDir)&#x0D;&#x0A;"
 			/>
 		</Configuration>
 		<Configuration
@@ -403,7 +403,7 @@
 			<Tool
 				Name="VCPostBuildEventTool"
 				Description="Copy import library to $(CoinLibDir)"
-				CommandLine="if not exist $(CoinLibDir) mkdir $(CoinLibDir)&#x0D;&#x0A;move /y $(OutDir)\$(TargetName).lib $(CoinLibDir)"
+				CommandLine="if not exist $(CoinLibDir) mkdir $(CoinLibDir)&#x0D;&#x0A;move /y $(OutDir)\$(TargetName).lib $(CoinLibDir)&#x0D;&#x0A;"
 			/>
 		</Configuration>
 	</Configurations>
@@ -977,6 +977,10 @@
 		</Filter>
 		<File
 			RelativePath=".\cbc.vsprops"
+			>
+		</File>
+		<File
+			RelativePath=".\genDefForCbc.ps1"
 			>
 		</File>
 	</Files>

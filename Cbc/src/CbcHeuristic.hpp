@@ -296,10 +296,14 @@ public:
     inline int numCouldRun() const {
         return numCouldRun_;
     }
-    /** Clone but ..
-        type 0 clone solver, 1 clone continuous solver
-        Add 2 to say without integer variables which are at low priority
-        Add 4 to say quite likely infeasible so give up easily.*/
+    /*! \brief Clone, but ...
+
+      If type is
+	- 0 clone the solver for the model,
+	- 1 clone the continuous solver for the model
+        - Add 2 to say without integer variables which are at low priority
+        - Add 4 to say quite likely infeasible so give up easily (clp only).
+    */
     OsiSolverInterface * cloneBut(int type);
 protected:
 

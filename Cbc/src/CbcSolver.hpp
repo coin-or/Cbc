@@ -276,7 +276,7 @@ public:
 
     /*! \brief Export
 
-      \param mode
+      Values for mode:
       - 1 OsiClpSolver
       - 2 CbcModel
       - add 10 if infeasible from odd situation
@@ -356,7 +356,7 @@ public:
     //@{
     /*! \brief Import
 
-      \param whereFrom
+      Values for whereFrom:
        - 1 after initial solve by dualsimplex etc
        - 2 after preprocessing
        - 3 just before branchAndBound (so user can override)

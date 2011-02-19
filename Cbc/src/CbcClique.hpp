@@ -12,8 +12,8 @@
 
   A clique is defined to be a set of binary variables where fixing any one
   variable to its `strong' value fixes all other variables. An example is the
-  most common SOS1 construction: a set of binary variables x<j> s.t.  SUM{j}
-  x<j> = 1.  Setting any one variable to 1 forces all other variables to 0.
+  most common SOS1 construction: a set of binary variables x_j s.t.  SUM{j}
+  x_j = 1.  Setting any one variable to 1 forces all other variables to 0.
   (See comments for CbcSOS below.)
 
   Other configurations are possible, however: Consider x1-x2+x3 <= 0.
@@ -24,46 +24,44 @@
   `generalisation of SOS1 on binary variables.' To get into the proper frame
   of mind, here's an example.
   
-  Consider the following sequence, where x<i> = (1-y<i>):
+  Consider the following sequence, where x_j = (1-y_j):
+  \verbatim
      x1 + x2 + x3 <=  1		all strong at 1
      x1 - y2 + x3 <=  0		y2 strong at 0; x1, x3 strong at 1
     -y1 - y2 + x3 <= -1		y1, y2 strong at 0, x3 strong at 1
     -y1 - y2 - y3 <= -2		all strong at 0
+  \endverbatim
   The first line is a standard SOS1 on binary variables.
   
   Variables with +1 coefficients are `SOS-style' and variables with -1
-  coefficients are `non-SOS-style'. So numberNonSOSMembers_ simply tells you
+  coefficients are `non-SOS-style'. So #numberNonSOSMembers_ simply tells you
   how many variables have -1 coefficients. The implicit rhs for a clique is
   1-numberNonSOSMembers_.
 */
-
-/// Define a clique class
-
 class CbcClique : public CbcObject {
 
 public:
 
-    // Default Constructor
+    /// Default Constructor
     CbcClique ();
 
-  /** Useful constructor (which are integer indices) slack can denote a slack
-  // Useful constructor (which are integer indices)
-      in set.  If type == NULL then as if 1
-  */
+    /** Useful constructor (which are integer indices) slack can denote a slack
+	in set.  If type == NULL then as if 1
+    */
     CbcClique (CbcModel * model, int cliqueType, int numberMembers,
                const int * which, const char * type,
                int identifier, int slack = -1);
 
-    // Copy constructor
+    /// Copy constructor
     CbcClique ( const CbcClique &);
 
     /// Clone
     virtual CbcObject * clone() const;
 
-    // Assignment operator
+    /// Assignment operator
     CbcClique & operator=( const CbcClique& rhs);
 
-    // Destructor
+    /// Destructor
     virtual ~CbcClique ();
 
     /// Infeasibility - large is 0.5
@@ -80,12 +78,11 @@ public:
     inline int numberMembers() const {
         return numberMembers_;
     }
-	/** \brief Number of variables with -1 coefficient
-	  
-	  Original comment: Number of Non SOS members i.e. fixing to zero is strong.
-	  See comments at head of class, and comments for type_.
-	*/
-
+    /** \brief Number of variables with -1 coefficient
+      
+      Number of non-SOS members, i.e., fixing to zero is strong.
+      See comments at head of class, and comments for #type_.
+    */
     inline int numberNonSOSMembers() const {
         return numberNonSOSMembers_;
     }
@@ -95,21 +92,21 @@ public:
         return members_;
     }
 
-    /** \brief Type of each member, i.e. which way is strong
+    /*! \brief Type of each member, i.e., which way is strong.
   
-    This also specifies whether a variable has a +1 or -1 coefficient.
-      0 => -1 coefficient, 0 is strong value
-      1 -> +1 coefficient, 1 is strong value
-    If unspecified, all coefficients are assumed to be positive.
-    
-    Indexed as 0 .. numberMembers_-1
+      This also specifies whether a variable has a +1 or -1 coefficient.
+	- 0 => -1 coefficient, 0 is strong value
+	- 1 => +1 coefficient, 1 is strong value
+      If unspecified, all coefficients are assumed to be positive.
+      
+      Indexed as 0 .. numberMembers_-1
     */
-	inline char type(int index) const {
+    inline char type(int index) const {
         if (type_) return type_[index];
         else return 1;
     }
 
-    /// Clique type - 0 <=, 1 ==
+    /// Clique type: 0 is <=, 1 is ==
     inline int cliqueType() const {
         return cliqueType_;
     }
@@ -130,8 +127,8 @@ protected:
     /** \brief Strong value for each member.
 
       This also specifies whether a variable has a +1 or -1 coefficient.
-        0 => -1 coefficient, 0 is strong value
-        1 -> +1 coefficient, 1 is strong value
+        - 0 => -1 coefficient, 0 is strong value
+        - 1 => +1 coefficient, 1 is strong value
       If unspecified, all coefficients are assumed to be positive.
     
       Indexed as 0 .. numberMembers_-1

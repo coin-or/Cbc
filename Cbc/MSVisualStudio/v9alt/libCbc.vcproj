@@ -733,10 +733,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\src\CbcChooseVariable.hpp"
-				>
-			</File>
-			<File
 				RelativePath="..\..\src\CbcClique.hpp"
 				>
 			</File>

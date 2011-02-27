@@ -42,13 +42,13 @@ AC_COIN_CREATE_LIBTOOL
 #                  Check which subprojects are there                        #
 #############################################################################
 
-AC_COIN_MAIN_PACKAGEDIR(ASL,ThirdParty,[solvers/asl.h],coinasl)
-AC_COIN_MAIN_PACKAGEDIR(Blas,ThirdParty,daxpy.f,coinblas)
-AC_COIN_MAIN_PACKAGEDIR(Lapack,ThirdParty,[LAPACK/SRC/dlarf.f],coinlapack)
-AC_COIN_MAIN_PACKAGEDIR(Glpk,ThirdParty,[glpk/include/glpk.h],coinglpk)
-AC_COIN_MAIN_PACKAGEDIR(Sample,Data,,coindatasample)
-AC_COIN_MAIN_PACKAGEDIR(Netlib,Data,,coindatanetlib)
-AC_COIN_MAIN_PACKAGEDIR(miplib3,Data,,coindatamiplib3)
+AC_COIN_MAIN_PACKAGEDIR(ASL,    ThirdParty,[solvers/asl.h])
+AC_COIN_MAIN_PACKAGEDIR(Blas,   ThirdParty,[daxpy.f])
+AC_COIN_MAIN_PACKAGEDIR(Lapack, ThirdParty,[LAPACK/SRC/dlarf.f])
+AC_COIN_MAIN_PACKAGEDIR(Glpk,   ThirdParty,[glpk/include/glpk.h])
+AC_COIN_MAIN_PACKAGEDIR(Sample, Data)
+AC_COIN_MAIN_PACKAGEDIR(Netlib, Data)
+AC_COIN_MAIN_PACKAGEDIR(miplib3,Data)
 AC_COIN_MAIN_PACKAGEDIR(CoinUtils)
 AC_COIN_MAIN_PACKAGEDIR(Osi)
 AC_COIN_MAIN_PACKAGEDIR(Clp)

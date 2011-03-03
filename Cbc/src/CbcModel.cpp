@@ -10542,7 +10542,7 @@ CbcModel::checkSolution (double cutoff, double *solution,
                 value = CoinMax(value, saveLower[iColumn]) ;
                 value = CoinMin(value, saveUpper[iColumn]) ;
                 if (solver_->isInteger(iColumn)) {
-                    assert(fabs(value - solution[iColumn]) <= integerTolerance) ;
+                    assert(fabs(value - solution[iColumn]) <= 100.0*integerTolerance) ;
 #if COIN_DEVELOP>1
                     double value2 = floor(value + 0.5);
                     if (dj[iColumn] < -1.0e-6) {

@@ -41,6 +41,9 @@
 #include "ClpPrimalColumnDantzig.hpp"
 
 #include "ClpPresolve.hpp"
+#ifndef COIN_HAS_CBC
+#define COIN_HAS_CBC
+#endif
 #include "CbcOrClpParam.hpp"
 #include "OsiRowCutDebugger.hpp"
 #include "OsiChooseVariable.hpp"

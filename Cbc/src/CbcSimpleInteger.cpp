@@ -537,19 +537,19 @@ CbcIntegerBranchingObject::branch()
     double nlb = model_->solver()->getColLower()[iColumn];
     double nub = model_->solver()->getColUpper()[iColumn];
     if (nlb < olb) {
-#ifndef NDEBUG
+#ifdef CBC_PRINT2
         printf("bad lb change for column %d from %g to %g\n", iColumn, olb, nlb);
 #endif
         model_->solver()->setColLower(iColumn, CoinMin(olb, nub));
         nlb = olb;
     }
     if (nub > oub) {
-#ifndef NDEBUG
+#ifdef CBC_PRINT2
         printf("bad ub change for column %d from %g to %g\n", iColumn, oub, nub);
 #endif
         model_->solver()->setColUpper(iColumn, CoinMax(oub, nlb));
     }
-#ifndef NDEBUG
+#ifdef CBC_PRINT2
     if (nlb < olb + 1.0e-8 && nub > oub - 1.0e-8 && false)
         printf("bad null change for column %d - bounds %g,%g\n", iColumn, olb, oub);
 #endif

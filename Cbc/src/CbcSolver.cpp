@@ -5894,6 +5894,9 @@ int CbcMain1 (int argc, const char *argv[],
 #ifdef COIN_DEVELOP
                                         saveSolver->writeMps("inf2");
 #endif
+					OsiClpSolverInterface * osiclp = dynamic_cast< OsiClpSolverInterface*> (saveSolver);
+					if (osiclp)
+					  osiclp->getModelPtr()->checkUnscaledSolution();
                                     }
                                     assert (saveSolver->isProvenOptimal());
 #ifndef CBC_OTHER_SOLVER
@@ -5914,6 +5917,9 @@ int CbcMain1 (int argc, const char *argv[],
                                         originalSolver->setBasis(*basis);
                                         delete basis;
                                         originalSolver->initialSolve();
+					OsiClpSolverInterface * osiclp = dynamic_cast< OsiClpSolverInterface*> (originalSolver);
+					if (osiclp)
+					  osiclp->getModelPtr()->checkUnscaledSolution();
                                     }
                                     assert (originalSolver->isProvenOptimal());
 #endif
@@ -5958,6 +5964,9 @@ int CbcMain1 (int argc, const char *argv[],
                                         originalSolver->setBasis(*basis);
                                         delete basis;
                                         originalSolver->initialSolve();
+					OsiClpSolverInterface * osiclp = dynamic_cast< OsiClpSolverInterface*> (originalSolver);
+					if (osiclp)
+					  osiclp->getModelPtr()->checkUnscaledSolution();
 #ifdef CLP_INVESTIGATE
                                         if (!originalSolver->isProvenOptimal()) {
                                             if (saveSolver) {
@@ -7697,6 +7706,8 @@ clp watson.mps -\nscaling off\nprimalsimplex"
 				  // free up as much as possible
 				  glp_free(cbc_glp_prob);
 				  glp_mpl_free_wksp(cbc_glp_tran);
+				  cbc_glp_prob = NULL;
+				  cbc_glp_tran = NULL;
 				  //gmp_free_mem();
 				  /* check that no memory blocks are still allocated */
 				  glp_free_env();
@@ -8273,6 +8284,16 @@ clp watson.mps -\nscaling off\nprimalsimplex"
             }
         }
     }
+#ifdef COIN_HAS_GLPK
+    if (cbc_glp_prob) {
+      // free up as much as possible
+      glp_free(cbc_glp_prob);
+      glp_mpl_free_wksp(cbc_glp_tran);
+      glp_free_env(); 
+      cbc_glp_prob = NULL;
+      cbc_glp_tran = NULL;
+    }
+#endif
     delete [] statistics_number_cuts;
     delete [] statistics_name_generators;
     // By now all memory should be freed

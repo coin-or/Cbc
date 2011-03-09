@@ -13,6 +13,15 @@
 /* Version number of project */
 #undef CBC_VERSION
 
+/* Major Version number of project */
+#undef CBC_VERSION_MAJOR
+
+/* Minor Version number of project */
+#undef CBC_VERSION_MINOR
+
+/* Release Version number of project */
+#undef CBC_VERSION_RELEASE
+
 /* Define to the debug sanity check level (0 is no test) */
 #undef COIN_CBC_CHECKLEVEL
 

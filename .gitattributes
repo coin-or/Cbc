@@ -8,6 +8,16 @@ Cbc/CbcSourceFilesTable3.csv -text
 Cbc/CbcSourceFilesTable3.xls -text
 Cbc/INSTALL -text
 Cbc/LICENSE -text
+Cbc/MSVisualStudio/v10alt/Cbc.sln -text
+Cbc/MSVisualStudio/v10alt/Cbc.vcxproj -text
+Cbc/MSVisualStudio/v10alt/OsiCbcUnitTest.vcxproj -text
+Cbc/MSVisualStudio/v10alt/cbc.props -text
+Cbc/MSVisualStudio/v10alt/cbcsolver.props -text
+Cbc/MSVisualStudio/v10alt/genDefForCbc.ps1 -text
+Cbc/MSVisualStudio/v10alt/libCbc.vcxproj -text
+Cbc/MSVisualStudio/v10alt/libCbcSolver.vcxproj -text
+Cbc/MSVisualStudio/v10alt/libOsiCbc.vcxproj -text
+Cbc/MSVisualStudio/v10alt/osicbc.props -text
 Cbc/MSVisualStudio/v7/Cbc.sln -text
 Cbc/MSVisualStudio/v7/Cbc.suo -text
 Cbc/MSVisualStudio/v7/cbc/cbc.vcproj -text

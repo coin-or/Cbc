@@ -1745,6 +1745,7 @@ int CbcMain1 (int argc, const char *argv[],
                 int valid;
                 numberGoodCommands++;
                 if (type == CBC_PARAM_ACTION_BAB && goodModel) {
+		    model_.setDblParam(CbcModel::CbcStartSeconds, CoinGetTimeOfDay());
                     // check if any integers
 #ifndef CBC_OTHER_SOLVER
 #ifdef COIN_HAS_ASL
@@ -2683,13 +2684,16 @@ int CbcMain1 (int argc, const char *argv[],
 					   statusName[iStatus].c_str(), 
 					   minor[iStatus2].c_str());
 				   sprintf(generalPrint + strlen(generalPrint),
-					   "Enumerated nodes: 0\n");
+					   "Enumerated nodes:           0\n");
 				   sprintf(generalPrint + strlen(generalPrint), 
-					   "Total iterations: 0\n");
+					   "Total iterations:           0\n");
 #ifndef CBC_QUIET 
 				   sprintf(generalPrint + strlen(generalPrint),
-					   "Time (seconds):   %.2f\n", 
+					   "Time (CPU seconds):         %.2f\n", 
 					   CoinCpuTime() - time0);
+				   sprintf(generalPrint + strlen(generalPrint),
+					   "Time (Wallclock Seconds):   %.2f\n", 
+					   model_.getCurrentSeconds());
 #endif
 				   generalMessageHandler->message(CLP_GENERAL, generalMessages)
 				      << generalPrint
@@ -6080,7 +6084,7 @@ int CbcMain1 (int argc, const char *argv[],
 				       << CoinMessageEol;
 				    if (babModel_->bestSolution()){
 				      sprintf(generalPrint, 
-					      "Objective value:  %.8f\n", 
+					      "Objective value:                %.8f\n", 
 					      babModel_->getObjValue());
 				    }else{
 				      sprintf(generalPrint,
@@ -6088,27 +6092,32 @@ int CbcMain1 (int argc, const char *argv[],
 				    }
 				    if (iStat2 >= 2 && iStat2 <=6){
 				       sprintf(generalPrint + strlen(generalPrint), 
-					       "Lower bound:      %.3f\n", 
+					       "Lower bound:                    %.3f\n", 
 					       babModel_->getBestPossibleObjValue());
 				       if (babModel_->bestSolution()){
 					  sprintf(generalPrint + strlen(generalPrint), 
-						  "Gap:              %.2f\n", 
+						  "Gap:                            %.2f\n", 
 						  (babModel_->getObjValue()-babModel_->getBestPossibleObjValue())/babModel_->getBestPossibleObjValue());
 				       }
 				    }
 				    sprintf(generalPrint + strlen(generalPrint), 
-					    "Enumerated nodes: %d\n", 
+					    "Enumerated nodes:               %d\n", 
 					    babModel_->getNodeCount());
 				    sprintf(generalPrint + strlen(generalPrint), 
-					    "Total iterations: %d\n", 
+					    "Total iterations:               %d\n", 
 					    babModel_->getIterationCount());
 #ifndef CBC_QUIET 
 				    sprintf(generalPrint + strlen(generalPrint), 
-					    "Time (seconds):   %.2f\n",
+					    "Time (CPU seconds):             %.2f\n",
 					    time2 - time1);
+#if 0				    
 				    sprintf(generalPrint + strlen(generalPrint),
-					    "Total time:       %.2f\n", 
+					    "Total time (CPU seconds):       %.2f\n", 
 					    time2 - time0);
+#endif
+				    sprintf(generalPrint + strlen(generalPrint),
+					    "Time (Wallclock seconds):       %.2f\n", 
+					    model_.getCurrentSeconds());
 #endif
 				    generalMessageHandler->message(CLP_GENERAL, generalMessages)
 				       << generalPrint

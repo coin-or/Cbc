@@ -1569,7 +1569,7 @@ void CbcModel::branchAndBound(int doStatistics)
     /*
       Capture a time stamp before we start.
     */
-    dblParam_[CbcStartSeconds] = CoinCpuTime();
+    dblParam_[CbcStartSeconds] = CoinGetTimeOfDay();
     dblParam_[CbcSmallestChange] = COIN_DBL_MAX;
     dblParam_[CbcSumChange] = 0.0;
     dblParam_[CbcLargestChange] = 0.0;
@@ -3853,7 +3853,7 @@ void CbcModel::branchAndBound(int doStatistics)
         master_ = NULL;
         masterThread_ = NULL;
         // adjust time to allow for children on some systems
-        dblParam_[CbcStartSeconds] -= CoinCpuTimeJustChildren();
+        //dblParam_[CbcStartSeconds] -= CoinCpuTimeJustChildren();
     }
 #endif
     /*
@@ -12179,7 +12179,7 @@ CbcModel::setObjectiveValue(CbcNode * thisNode, const CbcNode * parentNode) cons
 double
 CbcModel::getCurrentSeconds() const
 {
-    return CoinCpuTime() - getDblParam(CbcStartSeconds);
+    return CoinGetTimeOfDay() - getDblParam(CbcStartSeconds);
 }
 /* Encapsulates choosing a variable -
    anyAction: -2 infeasible

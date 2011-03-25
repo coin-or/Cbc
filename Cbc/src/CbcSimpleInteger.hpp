@@ -70,6 +70,9 @@ public:
     virtual void fix(OsiSolverInterface * solver,
                      double * lower, double * upper,
                      int branchState) const ;
+    /** Change (tighten) bounds in object to reflect bounds in solver.
+	Return true if now fixed */
+    virtual bool tighten(OsiSolverInterface * ) ;
 
 #ifdef JJF_ZERO
     // No need to override. Default works fine.
@@ -236,6 +239,7 @@ public:
       Bounds may be tightened, so it may be good to be able to set this info in object.
      */
     virtual void resetBounds(const OsiSolverInterface * solver) ;
+
     /**  Change column numbers after preprocessing
      */
     virtual void resetSequenceEtc(int numberColumns, const int * originalColumns) ;

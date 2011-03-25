@@ -876,7 +876,7 @@ int CbcNode::chooseBranch (CbcModel *model, CbcNode *lastNode, int numberPassesL
             }
         }
         // If we have hit max time don't do strong branching
-        bool hitMaxTime = ( CoinCpuTime() - model->getDblParam(CbcModel::CbcStartSeconds) >
+        bool hitMaxTime = (model->getCurrentSeconds() >
                             model->getDblParam(CbcModel::CbcMaximumSeconds));
         // also give up if we are looping round too much
         if (hitMaxTime || numberPassesLeft <= 0)
@@ -1345,7 +1345,7 @@ int CbcNode::chooseBranch (CbcModel *model, CbcNode *lastNode, int numberPassesL
                         break;
                     }
                 }
-                bool hitMaxTime = ( CoinCpuTime() - model->getDblParam(CbcModel::CbcStartSeconds) >
+		bool hitMaxTime = (model->getCurrentSeconds() >
                                     model->getDblParam(CbcModel::CbcMaximumSeconds));
                 if (hitMaxTime) {
                     numberStrong = i + 1;
@@ -2444,7 +2444,7 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
             bestChoice = iBestNot;
         assert (bestChoice >= 0);
         // If we have hit max time don't do strong branching
-        bool hitMaxTime = ( CoinCpuTime() - model->getDblParam(CbcModel::CbcStartSeconds) >
+	bool hitMaxTime = (model->getCurrentSeconds() >
                             model->getDblParam(CbcModel::CbcMaximumSeconds));
         // also give up if we are looping round too much
         if (hitMaxTime || numberPassesLeft <= 0 || useShadow == 2) {
@@ -2860,8 +2860,8 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
                             objectiveChange = 1.0e100; // say infeasible
                             numberStrongInfeasible++;
                         } else {
-                            //#define TIGHTEN_BOUNDS
-#ifdef TIGHTEN_BOUNDS
+#define CBCNODE_TIGHTEN_BOUNDS
+#ifdef CBCNODE_TIGHTEN_BOUNDS
                             // Can we tighten bounds?
                             if (iColumn < numberColumns && cutoff < 1.0e20
                                     && objectiveChange > 1.0e-5) {
@@ -3007,7 +3007,7 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
                             objectiveChange = 1.0e100; // say infeasible
                             numberStrongInfeasible++;
                         } else {
-#ifdef TIGHTEN_BOUNDS
+#ifdef CBCNODE_TIGHTEN_BOUNDS
                             // Can we tighten bounds?
                             if (iColumn < numberColumns && cutoff < 1.0e20
                                     && objectiveChange > 1.0e-5) {
@@ -3320,7 +3320,7 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
                     }
                 }
                 // Check max time
-                hitMaxTime = ( CoinCpuTime() - model->getDblParam(CbcModel::CbcStartSeconds) >
+		hitMaxTime = (model->getCurrentSeconds() >
                                model->getDblParam(CbcModel::CbcMaximumSeconds));
                 if (hitMaxTime) {
                     // make sure rest are fast
@@ -3382,22 +3382,6 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
                     feasible = solver->isProvenOptimal();
                     if (feasible) {
                         anyAction = 0;
-                        // See if candidate still possible
-                        if (branch_) {
-                            const OsiObject * object = model->object(bestChoice);
-                            int preferredWay;
-                            double infeasibility = object->infeasibility(&usefulInfo, preferredWay);
-                            if (!infeasibility) {
-                                // take out
-                                delete branch_;
-                                branch_ = NULL;
-                            } else {
-                                CbcBranchingObject * branchObj =
-                                    dynamic_cast <CbcBranchingObject *>(branch_) ;
-                                assert (branchObj);
-                                branchObj->way(preferredWay);
-                            }
-                        }
                     } else {
                         anyAction = -2;
                         finished = true;
@@ -3405,7 +3389,32 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
                 }
             }
             // If  fixed then round again
-            if (!branch_ && anyAction != -2) {
+	    // See if candidate still possible
+	    if (branch_) {
+	         const OsiObject * object = model->object(bestChoice);
+		 int preferredWay;
+		 double infeasibility = object->infeasibility(&usefulInfo, preferredWay);
+		 if (!infeasibility) {
+		   // take out
+		   delete branch_;
+		   branch_ = NULL;
+		 } else {
+		   CbcBranchingObject * branchObj =
+		     dynamic_cast <CbcBranchingObject *>(branch_) ;
+		   assert (branchObj);
+		   branchObj->way(preferredWay);
+#ifdef CBCNODE_TIGHTEN_BOUNDS
+		   bool fixed = branchObj->tighten(solver);
+		   if (fixed) {
+		     printf("Variable now fixed!\n");
+		     // take out
+		     delete branch_;
+		     branch_ = NULL;
+		   }
+#endif
+		 }
+	    }
+            if (!branch_ && anyAction != -2 && !hitMaxTime) {
                 finished = false;
             }
             delete ws;

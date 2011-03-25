@@ -423,8 +423,8 @@ CbcIntegerBranchingObject::branch()
     double olb, oub ;
     olb = model_->solver()->getColLower()[iColumn] ;
     oub = model_->solver()->getColUpper()[iColumn] ;
-    //#define TIGHTEN_BOUNDS
-#ifndef TIGHTEN_BOUNDS
+    //#define CBCSIMPLE_TIGHTEN_BOUNDS
+#ifndef CBCSIMPLE_TIGHTEN_BOUNDS
 #ifdef COIN_DEVELOP
     if (olb != down_[0] || oub != up_[1]) {
         if (way_ > 0)
@@ -445,13 +445,13 @@ CbcIntegerBranchingObject::branch()
                    iColumn, olb, oub, down_[0], down_[1]) ;
         }
 #endif
-#ifndef TIGHTEN_BOUNDS
+#ifndef CBCSIMPLE_TIGHTEN_BOUNDS
         model_->solver()->setColLower(iColumn, down_[0]);
 #else
         model_->solver()->setColLower(iColumn, CoinMax(down_[0], olb));
 #endif
         model_->solver()->setColUpper(iColumn, down_[1]);
-        //#define CBC_PRINT2
+	//#define CBC_PRINT2
 #ifdef CBC_PRINT2
         printf("%d branching down has bounds %g %g", iColumn, down_[0], down_[1]);
 #endif
@@ -495,7 +495,7 @@ CbcIntegerBranchingObject::branch()
         }
 #endif
         model_->solver()->setColLower(iColumn, up_[0]);
-#ifndef TIGHTEN_BOUNDS
+#ifndef CBCSIMPLE_TIGHTEN_BOUNDS
         model_->solver()->setColUpper(iColumn, up_[1]);
 #else
         model_->solver()->setColUpper(iColumn, CoinMin(up_[1], oub));
@@ -540,6 +540,7 @@ CbcIntegerBranchingObject::branch()
 #ifdef CBC_PRINT2
         printf("bad lb change for column %d from %g to %g\n", iColumn, olb, nlb);
 #endif
+	//abort();
         model_->solver()->setColLower(iColumn, CoinMin(olb, nub));
         nlb = olb;
     }
@@ -547,6 +548,7 @@ CbcIntegerBranchingObject::branch()
 #ifdef CBC_PRINT2
         printf("bad ub change for column %d from %g to %g\n", iColumn, oub, nub);
 #endif
+	//abort();
         model_->solver()->setColUpper(iColumn, CoinMax(oub, nlb));
     }
 #ifdef CBC_PRINT2
@@ -575,6 +577,20 @@ CbcIntegerBranchingObject::fix(OsiSolverInterface * /*solver*/,
         model_->solver()->setColUpper(iColumn, up_[1]);
         upper[iColumn] = up_[1];
     }
+}
+// Change (tighten) bounds in object to reflect bounds in solver.
+// Return true if now fixed
+bool 
+CbcIntegerBranchingObject::tighten(OsiSolverInterface * solver) 
+{
+    double lower = solver->getColLower()[variable_];
+    double upper = solver->getColUpper()[variable_];
+    assert (upper>lower);
+    down_[0] = CoinMax(down_[0],lower);
+    up_[0] = CoinMax(up_[0],lower);
+    down_[1] = CoinMin(down_[1],upper);
+    up_[1] = CoinMin(up_[1],upper);
+    return (down_[0]==up_[1]);
 }
 #ifdef FUNNY_BRANCHING
 // Deactivate bounds for branching

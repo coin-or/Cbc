@@ -1098,8 +1098,8 @@ static int numberParameters = 0 ;
 CglPreProcess * cbcPreProcessPointer=NULL;
 
 int CbcClpUnitTest (const CbcModel & saveModel,
-                    std::string& dirMiplib, int testSwitch,
-                    double * stuff);
+                    const std::string& dirMiplib, int testSwitch,
+                    const double * stuff);
 
 int CbcMain1 (int argc, const char *argv[],
               CbcModel  & model)

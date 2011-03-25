@@ -1736,6 +1736,7 @@ public:
         16384 gomory
 	32768 more heuristics in sub trees
 	65536 no cuts in preprocessing
+        131072 Time limits elapsed
     */
     inline void setMoreSpecialOptions(int value) {
         moreSpecialOptions_ = value;
@@ -1743,6 +1744,17 @@ public:
     /// Get more special options
     inline int moreSpecialOptions() const {
         return moreSpecialOptions_;
+    }
+  /// Set time method
+    inline void setUseElapsedTime(bool yesNo) {
+        if (yesNo)
+  	  moreSpecialOptions_ |= 131072;
+	else
+	  moreSpecialOptions_ &= ~131072;
+    }
+    /// Get time method
+    inline bool useElapsedTime() const {
+        return (moreSpecialOptions_&131072)!=0;
     }
     /// Go to dantzig pivot selection if easy problem (clp only)
 #ifdef COIN_HAS_CLP
@@ -2435,7 +2447,14 @@ private:
     */
     int specialOptions_;
     /** More special options
-        at present bottom 3 bits used for shadow price mode
+        at present bottom 6 bits used for shadow price mode
+        1024 for experimental hotstart
+        2048,4096 breaking out of cuts
+        8192 slowly increase minimum drop
+        16384 gomory
+	32768 more heuristics in sub trees
+	65536 no cuts in preprocessing
+        131072 Time limits elapsed
     */
     int moreSpecialOptions_;
     /// User node comparison function

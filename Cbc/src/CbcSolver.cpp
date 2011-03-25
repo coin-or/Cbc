@@ -1192,6 +1192,7 @@ int CbcMain1 (int argc, const char *argv[],
         }
     }
     double time0;
+    double time0Elapsed = CoinGetTimeOfDay();
     {
         double time1 = CoinCpuTime(), time2;
         time0 = time1;
@@ -1745,7 +1746,10 @@ int CbcMain1 (int argc, const char *argv[],
                 int valid;
                 numberGoodCommands++;
                 if (type == CBC_PARAM_ACTION_BAB && goodModel) {
+		  if (model_.useElapsedTime())
 		    model_.setDblParam(CbcModel::CbcStartSeconds, CoinGetTimeOfDay());
+		  else
+		    model_.setDblParam(CbcModel::CbcStartSeconds, CoinCpuTime());
                     // check if any integers
 #ifndef CBC_OTHER_SOLVER
 #ifdef COIN_HAS_ASL
@@ -2244,6 +2248,9 @@ int CbcMain1 (int argc, const char *argv[],
                         case CLP_PARAM_STR_CROSSOVER:
                             crossover = action;
                             break;
+                        case CLP_PARAM_STR_TIME_MODE:
+			    model_.setUseElapsedTime(action!=0);
+                            break;
                         case CBC_PARAM_STR_SOS:
                             doSOS = action;
                             break;
@@ -2693,7 +2700,7 @@ int CbcMain1 (int argc, const char *argv[],
 					   CoinCpuTime() - time0);
 				   sprintf(generalPrint + strlen(generalPrint),
 					   "Time (Wallclock Seconds):   %.2f\n", 
-					   model_.getCurrentSeconds());
+					   CoinGetTimeOfDay()-time0Elapsed);
 #endif
 				   generalMessageHandler->message(CLP_GENERAL, generalMessages)
 				      << generalPrint

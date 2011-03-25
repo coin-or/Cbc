@@ -1567,9 +1567,14 @@ void CbcModel::branchAndBound(int doStatistics)
 
 {
     /*
-      Capture a time stamp before we start.
+      Capture a time stamp before we start (unless set).
     */
-    dblParam_[CbcStartSeconds] = CoinGetTimeOfDay();
+    if (!dblParam_[CbcStartSeconds]) {
+      if (!useElapsedTime())
+	dblParam_[CbcStartSeconds] = CoinCpuTime();
+      else
+	dblParam_[CbcStartSeconds] = CoinGetTimeOfDay();
+    }
     dblParam_[CbcSmallestChange] = COIN_DBL_MAX;
     dblParam_[CbcSumChange] = 0.0;
     dblParam_[CbcLargestChange] = 0.0;
@@ -5966,6 +5971,7 @@ bool CbcModel::addCuts1 (CbcNode * node, CoinWarmStartBasis *&lastws)
     */
     bool sameProblem = false;
     if ((specialOptions_&4096) == 0) {
+#if 0
         {
             int n1 = numberRowsAtContinuous_;
             for (int i = 0; i < lastDepth_; i++)
@@ -5975,6 +5981,7 @@ bool CbcModel::addCuts1 (CbcNode * node, CoinWarmStartBasis *&lastws)
                 n2 += walkback_[i]->numberCuts();
             //printf("ROWS a %d - old thinks %d new %d\n",solver_->getNumRows(),n1,n2);
         }
+#endif
         int nDel = 0;
         int nAdd = 0;
         int n = CoinMin(lastDepth_, nNode);
@@ -6681,15 +6688,15 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
             }
             assert (jObject < numberObjects_ && iObject == jObject);
 #else
-#ifdef TIGHTEN_BOUNDS
+#ifdef CBCMODEL_TIGHTEN_BOUNDS
             int iColumn = simpleObject->columnNumber();
 #endif
 #endif
             update.objectNumber_ = iObject;
             // Care! We must be careful not to update the same variable in parallel threads.
             addUpdateInformation(update);
-            //#define TIGHTEN_BOUNDS
-#ifdef TIGHTEN_BOUNDS
+            //#define CBCMODEL_TIGHTEN_BOUNDS
+#ifdef CBCMODEL_TIGHTEN_BOUNDS
             double cutoff = getCutoff() ;
             if (feasible && cutoff < 1.0e20) {
                 int way = cbcobj->way();
@@ -7311,6 +7318,7 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
             //solver_->setHintParam(OsiDoDualInResolve,true,OsiHintTry);
             if ( maximumSecondsReached() ) {
                 numberTries = 0; // exit
+		feasible = false;
                 break;
             }
 #     ifdef CBC_DEBUG
@@ -12179,7 +12187,10 @@ CbcModel::setObjectiveValue(CbcNode * thisNode, const CbcNode * parentNode) cons
 double
 CbcModel::getCurrentSeconds() const
 {
-    return CoinGetTimeOfDay() - getDblParam(CbcStartSeconds);
+    if (!useElapsedTime())
+      return CoinCpuTime() - getDblParam(CbcStartSeconds);
+    else
+      return CoinGetTimeOfDay() - getDblParam(CbcStartSeconds);
 }
 /* Encapsulates choosing a variable -
    anyAction: -2 infeasible

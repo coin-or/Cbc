@@ -6124,7 +6124,7 @@ int CbcMain1 (int argc, const char *argv[],
 #endif
 				    sprintf(generalPrint + strlen(generalPrint),
 					    "Time (Wallclock seconds):       %.2f\n", 
-					    model_.getCurrentSeconds());
+					    CoinGetTimeOfDay() - time0Elapsed);
 #endif
 				    generalMessageHandler->message(CLP_GENERAL, generalMessages)
 				       << generalPrint

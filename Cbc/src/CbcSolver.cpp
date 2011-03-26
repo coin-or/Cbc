@@ -1196,6 +1196,7 @@ int CbcMain1 (int argc, const char *argv[],
     {
         double time1 = CoinCpuTime(), time2;
         time0 = time1;
+	double time1Elapsed = time0Elapsed;
         bool goodModel = (originalSolver->getNumCols()) ? true : false;
 
         // register signal handler
@@ -1681,6 +1682,7 @@ int CbcMain1 (int argc, const char *argv[],
             field = CoinReadGetCommand(argc, argv);
             // Reset time
             time1 = CoinCpuTime();
+	    time1Elapsed = CoinGetTimeOfDay();
             // adjust field if has odd trailing characters
             char temp [200];
             strcpy(temp, field.c_str());
@@ -3533,7 +3535,7 @@ int CbcMain1 (int argc, const char *argv[],
 #endif
                             time2 = CoinCpuTime();
                             totalTime += time2 - time1;
-                            time1 = time2;
+                            //time1 = time2;
                             double timeLeft = babModel_->getMaximumSeconds();
                             int numberOriginalColumns = babModel_->solver()->getNumCols();
                             if (preProcess == 7) {
@@ -3824,7 +3826,7 @@ int CbcMain1 (int argc, const char *argv[],
                                 babModel_->assignSolver(solver2);
                                 babModel_->setOriginalColumns(process.originalColumns());
                                 babModel_->initialSolve();
-                                babModel_->setMaximumSeconds(timeLeft - (CoinCpuTime() - time1));
+                                babModel_->setMaximumSeconds(timeLeft - (CoinCpuTime() - time2));
                             }
                             // now tighten bounds
                             if (!miplib) {
@@ -6116,15 +6118,10 @@ int CbcMain1 (int argc, const char *argv[],
 #ifndef CBC_QUIET 
 				    sprintf(generalPrint + strlen(generalPrint), 
 					    "Time (CPU seconds):             %.2f\n",
-					    time2 - time1);
-#if 0				    
-				    sprintf(generalPrint + strlen(generalPrint),
-					    "Total time (CPU seconds):       %.2f\n", 
-					    time2 - time0);
-#endif
+					    CoinCpuTime() - time1);
 				    sprintf(generalPrint + strlen(generalPrint),
 					    "Time (Wallclock seconds):       %.2f\n", 
-					    CoinGetTimeOfDay() - time0Elapsed);
+					    CoinGetTimeOfDay() - time1Elapsed);
 #endif
 				    generalMessageHandler->message(CLP_GENERAL, generalMessages)
 				       << generalPrint
@@ -8300,6 +8297,15 @@ clp watson.mps -\nscaling off\nprimalsimplex"
             }
         }
     }
+#ifndef CBC_QUIET 
+    sprintf(generalPrint ,
+	    "Total time (CPU seconds):       %.2f   (Wallclock seconds):       %.2f\n", 
+	    CoinCpuTime() - time0,
+	    CoinGetTimeOfDay() - time0Elapsed);
+    generalMessageHandler->message(CLP_GENERAL, generalMessages)
+      << generalPrint
+      << CoinMessageEol;
+#endif
 #ifdef COIN_HAS_GLPK
     if (cbc_glp_prob) {
       // free up as much as possible

@@ -3406,7 +3406,7 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
 #ifdef CBCNODE_TIGHTEN_BOUNDS
 		   bool fixed = branchObj->tighten(solver);
 		   if (fixed) {
-		     printf("Variable now fixed!\n");
+		     //printf("Variable now fixed!\n");
 		     // take out
 		     delete branch_;
 		     branch_ = NULL;

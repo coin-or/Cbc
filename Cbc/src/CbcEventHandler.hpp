@@ -148,7 +148,7 @@ public:
 
     /*! \brief Default constructor. */
 
-    CbcEventHandler(CbcModel *model = NULL) ;
+    CbcEventHandler(CbcModel *model = 0 /* was NULL but 4.6 complains */) ;
 
     /*! \brief Copy constructor. */
 

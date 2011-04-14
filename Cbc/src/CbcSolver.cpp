@@ -5973,6 +5973,7 @@ int CbcMain1 (int argc, const char *argv[],
                                 // Put solution now back in saveSolver
                                 saveSolver->setColSolution(model_.bestSolution());
                                 babModel_->assignSolver(saveSolver);
+				saveSolver=NULL;
                                 babModel_->setMinimizationObjValue(model_.getMinimizationObjValue());
                                 memcpy(bestSolution, babModel_->solver()->getColSolution(), n*sizeof(double));
 #ifndef CBC_OTHER_SOLVER
@@ -6035,6 +6036,7 @@ int CbcMain1 (int argc, const char *argv[],
                                     model_.solver()->setColSolution(bestSolution);
                                 }
 #endif
+				delete saveSolver;
                                 delete [] bestSolution;
 				std::string statusName[] = {"", "Stopped on ", "Run abandoned", "", "", "User ctrl-c"};
 				std::string minor[] = {"Optimal solution found", "Linear relaxation infeasible", "Optimal solution found (within gap tolerance)", "node limit", "time limit", "user ctrl-c", "solution limit", "Linear relaxation unbounded", "Problem proven infeasible"};

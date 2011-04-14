@@ -184,7 +184,11 @@ static int initialPumpTune = -1;
 #ifdef ZERO_HALF_CUTS
 #include "CglZeroHalf.hpp"
 #endif
-
+//#define CGL_WRITEMPS 
+#ifdef CGL_WRITEMPS
+extern double * debugSolution;
+extern int debugNumberColumns;
+#endif
 #include "CbcModel.hpp"
 #include "CbcHeuristic.hpp"
 #include "CbcHeuristicLocal.hpp"
@@ -6006,6 +6010,7 @@ int CbcMain1 (int argc, const char *argv[],
                                 // Put solution now back in saveSolver
                                 saveSolver->setColSolution(model_.bestSolution());
                                 babModel_->assignSolver(saveSolver);
+				saveSolver=NULL;
                                 babModel_->setMinimizationObjValue(model_.getMinimizationObjValue());
                                 memcpy(bestSolution, babModel_->solver()->getColSolution(), n*sizeof(double));
 #ifndef CBC_OTHER_SOLVER
@@ -6068,6 +6073,7 @@ int CbcMain1 (int argc, const char *argv[],
                                     model_.solver()->setColSolution(bestSolution);
                                 }
 #endif
+				delete saveSolver;
                                 delete [] bestSolution;
 				std::string statusName[] = {"", "Stopped on ", "Run abandoned", "", "", "User ctrl-c"};
 				std::string minor[] = {"Optimal solution found", "Linear relaxation infeasible", "Optimal solution found (within gap tolerance)", "node limit", "time limit", "user ctrl-c", "solution limit", "Linear relaxation unbounded", "Problem proven infeasible"};
@@ -7001,6 +7007,10 @@ int CbcMain1 (int argc, const char *argv[],
                                 if (nRead != numberDebugValues)
                                     throw("Error in fread");
                                 printf("%d doubles read into debugValues\n", numberDebugValues);
+#ifdef CGL_WRITEMPS
+				debugSolution = debugValues;
+				debugNumberColumns = numberDebugValues;
+#endif
                                 if (numberDebugValues < 200) {
                                     for (int i = 0; i < numberDebugValues; i++) {
                                         if (clpSolver->isInteger(i) && debugValues[i])

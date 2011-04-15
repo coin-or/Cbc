@@ -7672,8 +7672,7 @@ clp watson.mps -\nscaling off\nprimalsimplex"
 				  iStat2 = GLP_NOFEAS;
 				}
 				lpSolver->computeObjectiveValue(false);
-				double objValue = clpSolver->getObjValue() 
-				  * clpSolver->getObjSense();
+				double objValue = clpSolver->getObjValue(); 
 				if (integerProblem)
 				  fprintf(fp,"%d %g\n",iStat2,objValue);
 				else
@@ -7741,7 +7740,7 @@ clp watson.mps -\nscaling off\nprimalsimplex"
                                 if (printMode < 5) {
                                     // Write solution header (suggested by Luigi Poderico)
                                     lpSolver->computeObjectiveValue(false);
-                                    double objValue = lpSolver->getObjValue() * lpSolver->getObjSense();
+                                    double objValue = lpSolver->getObjValue();
                                     int iStat = lpSolver->status();
 				    int iStat2 = -1;
                                     if (integerStatus >= 0){

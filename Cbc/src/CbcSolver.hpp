@@ -20,7 +20,6 @@
 
 #include <string>
 #include <vector>
-#include "CoinFinite.hpp"
 #include "CoinMessageHandler.hpp"
 #include "OsiClpSolverInterface.hpp"
 

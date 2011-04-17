@@ -434,7 +434,7 @@ CbcFathomDynamicProgramming::checkPossible(int allowableSize)
     }
     delete [] rhs;
     if (allowableSize && size_ > allowableSize) {
-        printf("Too large - need %d entries x 8 bytes\n", size_);
+      COIN_DETAIL_PRINT(printf("Too large - need %d entries x 8 bytes\n", size_));
         return -1; // too big
     } else {
         return algorithm_;
@@ -483,7 +483,7 @@ CbcFathomDynamicProgramming::fathom(double * & betterSolution)
         double bestAtTarget = COIN_DBL_MAX;
         for (i = 0; i < numberColumns; i++) {
             if (size_ > 10000000 && (i % 100) == 0)
-                printf("column %d\n", i);
+	      COIN_DETAIL_PRINT(printf("column %d\n", i));
             double lowerValue = lower[i];
             assert (lowerValue == floor(lowerValue));
             double cost = direction * objective[i];

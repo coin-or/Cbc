@@ -885,8 +885,8 @@ CbcHeuristicLocal::solution(double & solutionValue,
                 solutionValue = newSolutionValue + bestChange;
             } else {
                 // bad solution - should not happen so debug if see message
-                printf("Local search got bad solution with %d infeasibilities summing to %g\n",
-                       numberBad, sumBad);
+                COIN_DETAIL_PRINT(printf("Local search got bad solution with %d infeasibilities summing to %g\n",
+					 numberBad, sumBad));
             }
         }
     }
@@ -1057,7 +1057,7 @@ CbcHeuristicNaive::solution(double & solutionValue,
             solutionValue = solValue;
             memcpy(betterSolution, newSolver->getColSolution(),
                    numberColumns*sizeof(double));
-            printf("Naive fixing close to zero gave solution of %g\n", solutionValue);
+            COIN_DETAIL_PRINT(printf("Naive fixing close to zero gave solution of %g\n", solutionValue));
             cutoff = solValue - model_->getCutoffIncrement();
         }
     }
@@ -1094,7 +1094,7 @@ CbcHeuristicNaive::solution(double & solutionValue,
             if (solValue < cutoff) {
                 // try branch and bound
                 double * newSolution = new double [numberColumns];
-                printf("%d fixed after fixing costs\n", nFix);
+                COIN_DETAIL_PRINT(printf("%d fixed after fixing costs\n", nFix));
                 int returnCode = smallBranchAndBound(newSolver,
                                                      numberNodes_, newSolution,
                                                      solutionValue,
@@ -1110,7 +1110,7 @@ CbcHeuristicNaive::solution(double & solutionValue,
                     solutionFound = true;
                     memcpy(betterSolution, newSolution,
                            numberColumns*sizeof(double));
-                    printf("Naive fixing zeros gave solution of %g\n", solutionValue);
+                    COIN_DETAIL_PRINT(printf("Naive fixing zeros gave solution of %g\n", solutionValue));
                     cutoff = solutionValue - model_->getCutoffIncrement();
                 }
                 delete [] newSolution;
@@ -1167,7 +1167,7 @@ CbcHeuristicNaive::solution(double & solutionValue,
             }
             // try branch and bound
             double * newSolution = new double [numberColumns];
-            printf("%d fixed after maximizing\n", nFix);
+            COIN_DETAIL_PRINT(printf("%d fixed after maximizing\n", nFix));
             int returnCode = smallBranchAndBound(newSolver,
                                                  numberNodes_, newSolution,
                                                  solutionValue,
@@ -1183,7 +1183,7 @@ CbcHeuristicNaive::solution(double & solutionValue,
                 solutionFound = true;
                 memcpy(betterSolution, newSolution,
                        numberColumns*sizeof(double));
-                printf("Naive maximizing gave solution of %g\n", solutionValue);
+                COIN_DETAIL_PRINT(printf("Naive maximizing gave solution of %g\n", solutionValue));
                 cutoff = solutionValue - model_->getCutoffIncrement();
             }
             delete [] newSolution;

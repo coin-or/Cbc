@@ -1521,8 +1521,8 @@ CbcHeuristicNode::distance(const CbcHeuristicNode* node) const
     }
     dist += subsetWeight * (numObjects_ - i + node->numObjects_ - j);
     countSubsetWeight += (numObjects_ - i + node->numObjects_ - j);
-    printf("subset = %i, overlap = %i, disjoint = %i\n", countSubsetWeight,
-           countOverlapWeight, countDisjointWeight);
+    COIN_DETAIL_PRINT(printf("subset = %i, overlap = %i, disjoint = %i\n", countSubsetWeight,
+			     countOverlapWeight, countDisjointWeight));
     return dist;
 }
 

@@ -211,7 +211,7 @@ CbcPartialNodeInfo::applyBounds(int iColumn, double & lower, double & upper, int
                 newLower = CoinMax(newLower, newBounds_[i]);
                 if ((force&1) == 0) {
                     if (lower > newBounds_[i])
-                        printf("%d odd lower going from %g to %g\n", iColumn, lower, newBounds_[i]);
+		      COIN_DETAIL_PRINT(printf("%d odd lower going from %g to %g\n", iColumn, lower, newBounds_[i]));
                     lower = newBounds_[i];
                 } else {
                     newBounds_[i] = lower;
@@ -223,7 +223,7 @@ CbcPartialNodeInfo::applyBounds(int iColumn, double & lower, double & upper, int
                 newUpper = CoinMin(newUpper, newBounds_[i]);
                 if ((force&2) == 0) {
                     if (upper < newBounds_[i])
-                        printf("%d odd upper going from %g to %g\n", iColumn, upper, newBounds_[i]);
+		      COIN_DETAIL_PRINT(printf("%d odd upper going from %g to %g\n", iColumn, upper, newBounds_[i]));
                     upper = newBounds_[i];
                 } else {
                     newBounds_[i] = upper;

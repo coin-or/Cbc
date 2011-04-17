@@ -578,8 +578,8 @@ CbcCutGenerator::generateCuts( OsiCuts & cs , int fullScan, OsiSolverInterface *
                 }
             }
             if (nOdd)
-                printf("Cut generator %s produced %d cuts of which %d were modified\n",
-                       generatorName_, numberRowCutsAfter - numberRowCutsBefore, nOdd);
+                COIN_DETAIL_PRINT(printf("Cut generator %s produced %d cuts of which %d were modified\n",
+					 generatorName_, numberRowCutsAfter - numberRowCutsBefore, nOdd));
         }
         {
             // make all row cuts without test for duplicate

@@ -218,12 +218,14 @@ CbcSubProblem::apply(OsiSolverInterface * solver, int what) const
                 solver->setColUpper(k, newBounds_[i]);
             }
         }
+#ifdef CBC_PRINT2
         if (nSame && (nSame < numberChangedBounds_ || (what&3) != 3))
             printf("%d changes out of %d redundant %d\n",
                    nSame, numberChangedBounds_, what);
         else if (numberChangedBounds_ && what == 7 && !nSame)
             printf("%d good changes %d\n",
                    numberChangedBounds_, what);
+#endif
     }
 #ifdef JJF_ZERO
     if ((what&2) != 0) {

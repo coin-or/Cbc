@@ -420,8 +420,8 @@ CbcStrategyDefault::setupOther(CbcModel & model)
                 }
             }
             if (!numberNon && numberClose) {
-                printf("Tidying %d multiples of 0.01, %d close\n",
-                       numberInt, numberClose);
+                COIN_DETAIL_PRINT(printf("Tidying %d multiples of 0.01, %d close\n",
+					 numberInt, numberClose));
                 for (iColumn = 0; iColumn < numberColumns; iColumn++) {
                     for (int j = columnStart[iColumn];
                             j < columnStart[iColumn] + columnLength[iColumn]; j++) {

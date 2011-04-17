@@ -641,8 +641,8 @@ CbcHeuristicRENS::solution(double & solutionValue,
 	    }
 	  }
 	  if (n>1)
-	    printf("Too many SOS entries (%d) for column %d\n",
-		   n,iColumn);
+	    COIN_DETAIL_PRINT(printf("Too many SOS entries (%d) for column %d\n",
+				     n,iColumn));
 	  if (sum) {
 	    assert (iSOS>=0);
 	    contribution[iSOS] += sum;

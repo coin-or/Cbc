@@ -2567,8 +2567,8 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
                             sort[j] = - min1;
                         }
                         if (CoinMax(downPenalty, upPenalty) > gap) {
-                            printf("gap %g object %d has down range %g, up %g\n",
-                                   gap, i, downPenalty, upPenalty);
+                            COIN_DETAIL_PRINT(printf("gap %g object %d has down range %g, up %g\n",
+						     gap, i, downPenalty, upPenalty));
                             //sort[j] -= 1.0e50; // make more likely to be chosen
                             int number;
                             if (downPenalty > gap) {
@@ -2589,8 +2589,8 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
                             numberFixed++;
                         }
                         if (!numberNodes)
-                            printf("%d pen down ps %g -> %g up ps %g -> %g\n",
-                                   iObject, downPenalty, downPenalty, upPenalty, upPenalty);
+                            COIN_DETAIL_PRINT(printf("%d pen down ps %g -> %g up ps %g -> %g\n",
+						     iObject, downPenalty, downPenalty, upPenalty, upPenalty));
                     }
                     if (numberFixed && problemFeasible) {
                         assert(doneHotStart);
@@ -2602,7 +2602,7 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
                         problemFeasible = solver->isProvenOptimal();
                     }
                     if (!problemFeasible) {
-                        fprintf(stdout, "both ways infeas on ranging - code needed\n");
+		      COIN_DETAIL_PRINT(fprintf(stdout, "both ways infeas on ranging - code needed\n"));
                         anyAction = -2;
                         if (!choiceObject) {
                             delete choice.possibleBranch;
@@ -3463,7 +3463,7 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
         // decide what to do
         if (numberUnfinished*10 > numberStrongDone + 1 ||
                 !numberStrongInfeasible) {
-            printf("going to strategy 2\n");
+	  COIN_DETAIL_PRINT(printf("going to strategy 2\n"));
             // Weaken
             model->setNumberStrong(2);
             model->setNumberBeforeTrust(1);
@@ -3879,8 +3879,8 @@ int CbcNode::analyze (CbcModel *model, double * results)
             } else {
                 // neither side feasible
                 anyAction = -2;
-                printf("Both infeasible for choice %d sequence %d\n", i,
-                       model->object(choice.objectNumber)->columnNumber());
+                COIN_DETAIL_PRINT(printf("Both infeasible for choice %d sequence %d\n", i,
+					 model->object(choice.objectNumber)->columnNumber()));
                 delete ws;
                 ws = NULL;
                 //solver->writeMps("bad");
@@ -3896,8 +3896,8 @@ int CbcNode::analyze (CbcModel *model, double * results)
         //printf("obj %d, col %d, down %g up %g value %g\n",iObject,iColumn,
         //     choice.downMovement,choice.upMovement,value);
     }
-    printf("Best possible solution %g, can fix more if solution of %g found - looked at %d variables in %d iterations\n",
-           objMin, objMax, iDo, model->numberAnalyzeIterations() - numberIterationsAllowed);
+    COIN_DETAIL_PRINT(printf("Best possible solution %g, can fix more if solution of %g found - looked at %d variables in %d iterations\n",
+			     objMin, objMax, iDo, model->numberAnalyzeIterations() - numberIterationsAllowed));
     model->setNumberAnalyzeIterations(numberIterationsAllowed);
     // Delete the snapshot
     solver->unmarkHotStart();
@@ -4338,13 +4338,13 @@ CbcNode::chooseClpBranch (CbcModel * model,
             int numInf2;
             bool gotSol = model->feasibleSolution(numInf, numInf2);
             if (!gotSol) {
-                printf("numinf %d\n", numInf);
+	      COIN_DETAIL_PRINT(printf("numinf %d\n", numInf));
                 double * sol = simplex->primalColumnSolution();
                 for (int i = 0; i < numberColumns; i++) {
                     if (simplex->isInteger(i)) {
                         double value = floor(sol[i] + 0.5);
                         if (fabs(value - sol[i]) > 1.0e-7) {
-                            printf("%d value %g\n", i, sol[i]);
+			  COIN_DETAIL_PRINT(printf("%d value %g\n", i, sol[i]));
                             if (fabs(value - sol[i]) < 1.0e-3) {
                                 sol[i] = value;
                             }

@@ -396,9 +396,9 @@ CbcHeuristicPivotAndFix::solution(double & /*solutionValue*/,
                         }
                     }
                 }
-                printf("numFixed: %d\n", numFixed);
-                printf("fixThreshold: %f\n", fixThreshold);
-                printf("numInt: %d\n", numInt);
+                COIN_DETAIL_PRINT(printf("numFixed: %d\n", numFixed));
+                COIN_DETAIL_PRINT(printf("fixThreshold: %f\n", fixThreshold));
+		COIN_DETAIL_PRINT(printf("numInt: %d\n", numInt));
                 double *newSolution = new double[numCols];
                 double newSolutionValue;
 
@@ -414,11 +414,11 @@ CbcHeuristicPivotAndFix::solution(double & /*solutionValue*/,
                     solutionValue = newSolutionValue;
                     for (int m = 0; m < numCols; m++)
                         betterSolution[m] = newSolution[m];
-                    printf("cutoff: %f\n", newSolutionValue);
-                    printf("time: %.2lf\n", CoinCpuTime() - start);
+                    COIN_DETAIL_PRINT(printf("cutoff: %f\n", newSolutionValue));
+                    COIN_DETAIL_PRINT(printf("time: %.2lf\n", CoinCpuTime() - start));
                 }
                 didMiniBB = 1;
-                printf("returnCode: %d\n", returnCode);
+                COIN_DETAIL_PRINT(printf("returnCode: %d\n", returnCode));
 
                 //Update sumReturnCode array
                 for (int iRC = 0; iRC < 6; iRC++) {
@@ -434,7 +434,7 @@ CbcHeuristicPivotAndFix::solution(double & /*solutionValue*/,
                 if (returnCode == 1 || returnCode == 3) {
                     cutoff = newSolutionValue;
                     clpSolver->addRow(numCols, addRowIndex, originalObjCoeff, -COIN_DBL_MAX, cutoff);
-                    printf("******************\n\n*****************\n");
+                    COIN_DETAIL_PRINT(printf("******************\n\n*****************\n"));
                 }
                 break;
             }
@@ -496,6 +496,7 @@ CbcHeuristicPivotAndFix::solution(double & /*solutionValue*/,
         //	  simplex->setMaximumIterations(100);
         clpSolver->getModelPtr()->primal(1);
         //	  simplex->setMaximumIterations(100000);
+#ifdef COIN_DETAIL
         printf("cutoff: %f\n", cutoff);
         printf("time: %.2f\n", CoinCpuTime() - start);
         for (int iRC = 0; iRC < 8; iRC++)
@@ -503,14 +504,15 @@ CbcHeuristicPivotAndFix::solution(double & /*solutionValue*/,
         printf("\nfixThreshold: %f\n", fixThreshold);
         printf("numInt: %d\n", numInt);
         printf("\n---------------------------------------------------------------- %d\n", i);
+#endif
 
         //temp:
         if (i > 3) break;
 
     }
 
-    printf("Best Feasible Found: %f\n", cutoff);
-    printf("Total time: %.2f\n", CoinCpuTime() - start);
+    COIN_DETAIL_PRINT(printf("Best Feasible Found: %f\n", cutoff));
+    COIN_DETAIL_PRINT(printf("Total time: %.2f\n", CoinCpuTime() - start));
 
     if (numFeasibles == 0) {
         return 0;

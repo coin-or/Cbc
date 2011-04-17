@@ -1835,7 +1835,7 @@ void CbcModel::branchAndBound(int doStatistics)
         dupcuts.setMode(2);
         CglStored * storedCuts = dupcuts.outDuplicates(solver_);
         if (storedCuts) {
-            printf("adding dup cuts\n");
+	  COIN_DETAIL_PRINT(printf("adding dup cuts\n"));
             addCutGenerator(storedCuts, 1, "StoredCuts from dominated",
                             true, false, false, -200);
         }
@@ -2361,7 +2361,7 @@ void CbcModel::branchAndBound(int doStatistics)
                 }
             }
             if (nTightened)
-                printf("%d tightened by alternate cuts\n", nTightened);
+	      COIN_DETAIL_PRINT(printf("%d tightened by alternate cuts\n", nTightened));
             if (storedRowCuts_->bestObjective() < bestObjective_) {
                 // B) best solution
                 double objValue = storedRowCuts_->bestObjective();
@@ -2488,7 +2488,7 @@ void CbcModel::branchAndBound(int doStatistics)
                             }
                         }
                         if (nTightened)
-                            printf("%d tightened by alternate cuts\n", nTightened);
+			  COIN_DETAIL_PRINT(printf("%d tightened by alternate cuts\n", nTightened));
                         if (storedRowCuts_->bestObjective() < bestObjective_) {
                             // B) best solution
                             double objValue = storedRowCuts_->bestObjective();
@@ -2529,7 +2529,7 @@ void CbcModel::branchAndBound(int doStatistics)
                         for (int i = 0; i < maximumNumberCuts_; i++)
                             addedCuts_[i] = new CbcCountRowCut(*cuts.rowCutPtr(i),
                                                                NULL, -1, -1, 2);
-                        printf("size %d\n", cuts.sizeRowCuts());
+                        COIN_DETAIL_PRINT(printf("size %d\n", cuts.sizeRowCuts()));
                         cuts = OsiCuts();
                         currentNumberCuts_ = maximumNumberCuts_;
                         feasible = solveWithCuts(cuts, maximumCutPassesAtRoot_,
@@ -3040,8 +3040,8 @@ void CbcModel::branchAndBound(int doStatistics)
                 saveLower[iColumn] = sortValue;
                 order[iColumn] = iColumn;
             }
-            printf("** can fix %d columns - best ratio for others is %g on gap of %g\n",
-                   nFix, bestRatio, gap);
+            COIN_DETAIL_PRINT(printf("** can fix %d columns - best ratio for others is %g on gap of %g\n",
+				     nFix, bestRatio, gap));
             int nNeg = 0;
             CoinSort_2(saveLower, saveLower + numberColumns, order);
             for (int i = 0; i < numberColumns; i++) {
@@ -3061,7 +3061,7 @@ void CbcModel::branchAndBound(int doStatistics)
                 hotstartPriorities_[order[i]] = -(i + 1);
 #endif
             }
-            printf("nAtLbNat %d,nAtUbNat %d,nAtLbNatZero %d,nAtUbNatZero %d,nAtLbFixed %d,nAtUbFixed %d,nAtOther %d,nAtOtherNat %d, useless %d %d\n",
+            COIN_DETAIL_PRINT(printf("nAtLbNat %d,nAtUbNat %d,nAtLbNatZero %d,nAtUbNatZero %d,nAtLbFixed %d,nAtUbFixed %d,nAtOther %d,nAtOtherNat %d, useless %d %d\n",
                    nAtLbNatural,
                    nAtUbNatural,
                    nAtLbNaturalZero,
@@ -3069,7 +3069,7 @@ void CbcModel::branchAndBound(int doStatistics)
                    nAtLbFixed,
                    nAtUbFixed,
                    nAtOther,
-                   nAtOtherNatural, nNotNeeded, nNeg);
+				     nAtOtherNatural, nNotNeeded, nNeg));
             delete [] saveLower;
             delete [] saveUpper;
             if (!saveCompare) {
@@ -3100,11 +3100,11 @@ void CbcModel::branchAndBound(int doStatistics)
             analyzeResults_ = new double [4*numberIntegers_];
             numberFixedAtRoot_ = newNode->analyze(this, analyzeResults_);
             if (numberFixedAtRoot_ > 0) {
-                printf("%d fixed by analysis\n", numberFixedAtRoot_);
+	      COIN_DETAIL_PRINT(printf("%d fixed by analysis\n", numberFixedAtRoot_));
                 setPointers(solver_);
                 numberFixedNow_ = numberFixedAtRoot_;
             } else if (numberFixedAtRoot_ < 0) {
-                printf("analysis found to be infeasible\n");
+	      COIN_DETAIL_PRINT(printf("analysis found to be infeasible\n"));
                 anyAction = -2;
                 delete newNode ;
                 newNode = NULL ;
@@ -3625,9 +3625,9 @@ void CbcModel::branchAndBound(int doStatistics)
                     }
                 }
                 if (newCutoff == -COIN_DBL_MAX) {
-                    printf("Root analysis says finished\n");
+		  COIN_DETAIL_PRINT(printf("Root analysis says finished\n"));
                 } else if (n > numberFixedNow_) {
-                    printf("%d more fixed by analysis - now %d\n", n - numberFixedNow_, n);
+		  COIN_DETAIL_PRINT(printf("%d more fixed by analysis - now %d\n", n - numberFixedNow_, n));
                     numberFixedNow_ = n;
                 }
             }
@@ -6155,7 +6155,7 @@ int CbcModel::addCuts (CbcNode *node, CoinWarmStartBasis *&lastws, bool canFix)
             }
         }
         if (!feasible) {
-            printf("analysis says node infeas\n");
+	  COIN_DETAIL_PRINT(printf("analysis says node infeas\n"));
             cutoff = -COIN_DBL_MAX;
         }
     }
@@ -8185,7 +8185,7 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
             //}
             howOften = 0;
             if (howOften) {
-                printf("** method 1\n");
+	      COIN_DETAIL_PRINT(printf("** method 1\n"));
                 //CglProbing * probing = dynamic_cast<CglProbing*>(generator_[iProbing]->generator());
                 generator_[iProbing]->setWhatDepth(1);
                 // could set no row cuts
@@ -9360,7 +9360,7 @@ CbcModel::findCliques(bool makeEquality,
       that (lh, 071219). Finally, add the clique objects.
     */
     if (numberCliques > 0 && numberSlacks && makeEquality) {
-        printf("adding %d integer slacks\n", numberSlacks);
+      COIN_DETAIL_PRINT(printf("adding %d integer slacks\n", numberSlacks));
         // add variables to make equality rows
         int * temp = new int[numberIntegers_+numberSlacks];
         memcpy(temp, integerVariable_, numberIntegers_*sizeof(int));
@@ -10794,7 +10794,7 @@ CbcModel::checkSolution (double cutoff, double *solution,
                             globalCuts_.insert(newCut) ;
                         } else {
                             // obviously wrong
-                            if (handler_->logLevel() > 0)
+                            if (handler_->logLevel() > 1)
                                 printf("Cut generator %s set to run on new solution but NOT globally valid!!\n",
                                        generator_[i]->cutGeneratorName());
                         }
@@ -11504,8 +11504,8 @@ CbcModel::tightenVubs(int numberSolves, const int * which,
                     numberFixedByProbing++;
                     solver->setColLower(iColumn, newLower);
                     solver->setColUpper(iColumn, newUpper);
-                    printf("Column %d, new bounds %g %g\n", iColumn,
-                           newLower, newUpper);
+                    COIN_DETAIL_PRINT(printf("Column %d, new bounds %g %g\n", iColumn,
+					     newLower, newUpper));
                 } else if (vub[iColumn]) {
                     numberTightened++;
                     numberTightenedByProbing++;
@@ -13881,8 +13881,8 @@ CbcModel::doOneNode(CbcModel * baseModel, CbcNode * & node, CbcNode * & newNode)
                                         if (canDelete) {
                                             //nRedundantDown++;
 #ifndef JJF_ONE
-                                            printf("%d redundant branch down with bounds %g, %g current upper %g solution %g dj %g\n",
-                                                   iColumn2, bounds[0], bounds[1], upper[iColumn2], solution[iColumn2], djValue);
+                                            COIN_DETAIL_PRINT(printf("%d redundant branch down with bounds %g, %g current upper %g solution %g dj %g\n",
+								     iColumn2, bounds[0], bounds[1], upper[iColumn2], solution[iColumn2], djValue));
 #endif
                                             if (bounds[0] == bounds[1] || zeroOne2 || (bounds[0] == lower[iColumn2] && false)) {
                                                 {
@@ -13894,7 +13894,7 @@ CbcModel::doOneNode(CbcModel * baseModel, CbcNode * & node, CbcNode * & newNode)
                                                 solver_->setColUpper(iColumn2, newUpper);
                                                 assert (newLower == lower[iColumn2]);
                                             } else {
-                                                printf("SKipping\n");
+					      COIN_DETAIL_PRINT(printf("SKipping\n"));
                                             }
                                         } else if (iColumn1 >= 0 && iColumn1 != iColumn2 && (!inBetween || true) && zeroOne1 && zeroOne2 && false) {
 #ifndef JJF_ONE
@@ -13902,11 +13902,11 @@ CbcModel::doOneNode(CbcModel * baseModel, CbcNode * & node, CbcNode * & newNode)
                                                 // add in bounds
                                                 newLower = bounds1[0];
                                                 newUpper = bounds1[1];
-                                                printf("setting bounds of %g and %g (column %d) on other branch for column %d\n",
-                                                       newLower, newUpper, iColumn1, iColumn2);
+                                                COIN_DETAIL_PRINT(printf("setting bounds of %g and %g (column %d) on other branch for column %d\n",
+									 newLower, newUpper, iColumn1, iColumn2));
                                                 int infeasible = objectI->applyExtraBounds(iColumn1, newLower, newUpper, objectI->way());
                                                 if (infeasible) {
-                                                    printf("infeasa!\n");;
+						  COIN_DETAIL_PRINT(printf("infeasa!\n"));
                                                     // get rid of node as far as branching
                                                     nodeLook->setObjectiveValue(0.5*COIN_DBL_MAX);
                                                 }
@@ -13924,8 +13924,8 @@ CbcModel::doOneNode(CbcModel * baseModel, CbcNode * & node, CbcNode * & newNode)
                                         if (canDelete) {
                                             //nRedundantUp++;
 #ifndef JJF_ONE
-                                            printf("%d redundant branch up with bounds %g, %g current lower %g solution %g dj %g\n",
-                                                   iColumn2, bounds[0], bounds[1], lower[iColumn2], solution[iColumn2], djValue);
+                                            COIN_DETAIL_PRINT(printf("%d redundant branch up with bounds %g, %g current lower %g solution %g dj %g\n",
+								     iColumn2, bounds[0], bounds[1], lower[iColumn2], solution[iColumn2], djValue));
 #endif
                                             if (bounds[0] == bounds[1] || zeroOne2 || (bounds[1] == upper[iColumn2] && false)) {
                                                 {
@@ -13937,18 +13937,18 @@ CbcModel::doOneNode(CbcModel * baseModel, CbcNode * & node, CbcNode * & newNode)
                                                 solver_->setColLower(iColumn2, newLower);
                                                 assert (newUpper == upper[iColumn2]);
                                             } else {
-                                                printf("SKipping\n");
+					      COIN_DETAIL_PRINT(printf("SKipping\n"));
                                             }
                                         } else if (iColumn1 >= 0 && iColumn1 != iColumn2 && (!inBetween || true) && zeroOne1 && zeroOne2 && false) {
 #ifndef JJF_ONE
                                             // add in bounds
                                             newLower = bounds1[0];
                                             newUpper = bounds1[1];
-                                            printf("setting bounds of %g and %g (column %d) on other branch for column %d\n",
-                                                   newLower, newUpper, iColumn1, iColumn2);
+                                            COIN_DETAIL_PRINT(printf("setting bounds of %g and %g (column %d) on other branch for column %d\n",
+                                                   newLower, newUpper, iColumn1, iColumn2));
                                             int infeasible = objectI->applyExtraBounds(iColumn1, newLower, newUpper, objectI->way());
                                             if (infeasible) {
-                                                printf("infeasb!\n");;
+					      COIN_DETAIL_PRINT(printf("infeasb!\n"));
                                                 // get rid of node as far as branching
                                                 nodeLook->setObjectiveValue(0.5*COIN_DBL_MAX);
                                             }
@@ -14303,8 +14303,8 @@ CbcModel::doOneNode(CbcModel * baseModel, CbcNode * & node, CbcNode * & newNode)
             unlockThread();
     } else {
         // add cuts found to be infeasible (on bound)!
-        printf("found to be infeas! - branches left %d - cutoff %g\n", node->nodeInfo()->numberBranchesLeft(),
-               getCutoff());
+        COIN_DETAIL_PRINT(printf("found to be infeas! - branches left %d - cutoff %g\n", node->nodeInfo()->numberBranchesLeft(),
+               getCutoff()));
         node->print();
         //abort();
         assert (node->nodeInfo());

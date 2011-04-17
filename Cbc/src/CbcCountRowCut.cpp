@@ -87,7 +87,7 @@ CbcCountRowCut::decrement(int change)
         assert(numberPointingToThis_ >= 0);
         if (numberPointingToThis_ < change) {
             assert(numberPointingToThis_ > 0);
-            printf("negative cut count %d - %d\n", numberPointingToThis_, change);
+            COIN_DETAIL_PRINT(printf("negative cut count %d - %d\n", numberPointingToThis_, change));
             change = numberPointingToThis_;
         }
         numberPointingToThis_ -= change;

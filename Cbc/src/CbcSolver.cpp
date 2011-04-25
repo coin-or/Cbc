@@ -6303,7 +6303,11 @@ int CbcMain1 (int argc, const char *argv[],
                                                             (gmpl == 2) ? gmplData.c_str() : NULL,
                                                             keepImportNames != 0);
                             } else {
+#ifdef KILL_ZERO_READLP
+                                status = lpSolver->readLp(fileName.c_str(), lpSolver->getSmallElementValue());
+#else
                                 status = lpSolver->readLp(fileName.c_str(), 1.0e-12);
+#endif
                             }
 #else
                             status = clpSolver->readMps(fileName.c_str(), "");

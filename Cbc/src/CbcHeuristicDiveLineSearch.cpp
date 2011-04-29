@@ -78,7 +78,7 @@ CbcHeuristicDiveLineSearch::selectVariableToBranch(OsiSolverInterface* solver,
 
     bestColumn = -1;
     bestRound = -1; // -1 rounds down, +1 rounds up
-    double bestRelDistance = DBL_MAX;
+    double bestRelDistance = COIN_DBL_MAX;
     bool allTriviallyRoundableSoFar = true;
     for (int i = 0; i < numberIntegers; i++) {
         int iColumn = integerVariable[i];
@@ -91,7 +91,7 @@ CbcHeuristicDiveLineSearch::selectVariableToBranch(OsiSolverInterface* solver,
 
                 if (allTriviallyRoundableSoFar && downLocks_[i] > 0 && upLocks_[i] > 0) {
                     allTriviallyRoundableSoFar = false;
-                    bestRelDistance = DBL_MAX;
+                    bestRelDistance = COIN_DBL_MAX;
                 }
 
                 double relDistance;
@@ -103,7 +103,7 @@ CbcHeuristicDiveLineSearch::selectVariableToBranch(OsiSolverInterface* solver,
                     relDistance = (1.0 - fraction) / (value - rootValue);
                 } else {
                     round = -1;
-                    relDistance = DBL_MAX;
+                    relDistance = COIN_DBL_MAX;
                 }
 
                 // if variable is not binary, penalize it

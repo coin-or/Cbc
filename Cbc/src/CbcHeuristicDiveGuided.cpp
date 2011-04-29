@@ -87,7 +87,7 @@ CbcHeuristicDiveGuided::selectVariableToBranch(OsiSolverInterface* solver,
 
     bestColumn = -1;
     bestRound = -1; // -1 rounds down, +1 rounds up
-    double bestFraction = DBL_MAX;
+    double bestFraction = COIN_DBL_MAX;
     bool allTriviallyRoundableSoFar = true;
     for (int i = 0; i < numberIntegers; i++) {
         int iColumn = integerVariable[i];
@@ -99,7 +99,7 @@ CbcHeuristicDiveGuided::selectVariableToBranch(OsiSolverInterface* solver,
 
                 if (allTriviallyRoundableSoFar && downLocks_[i] > 0 && upLocks_[i] > 0) {
                     allTriviallyRoundableSoFar = false;
-                    bestFraction = DBL_MAX;
+                    bestFraction = COIN_DBL_MAX;
                 }
 
                 if (value >= bestIntegerSolution[iColumn])

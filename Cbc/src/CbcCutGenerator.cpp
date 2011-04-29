@@ -532,7 +532,7 @@ CbcCutGenerator::generateCuts( OsiCuts & cs , int fullScan, OsiSolverInterface *
                 if (!feasible) {
                     // not feasible -add infeasible cut
                     OsiRowCut rc;
-                    rc.setLb(DBL_MAX);
+                    rc.setLb(COIN_DBL_MAX);
                     rc.setUb(0.0);
                     cs.insert(rc);
                 }

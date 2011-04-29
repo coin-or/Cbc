@@ -17,11 +17,7 @@
 
 class OsiRowCut;
 class OsiClpSolverInterface;
-#ifndef COIN_DBL_MAX
-static const double OsiCbcInfinity = DBL_MAX;
-#else
 static const double OsiCbcInfinity = COIN_DBL_MAX;
-#endif
 
 //#############################################################################
 

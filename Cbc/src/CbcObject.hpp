@@ -134,11 +134,15 @@ public:
 #ifdef CBC_NEW_STYLE_BRANCH
     virtual CbcBranchingObject * createCbcBranch(OsiSolverInterface * solver, const OsiBranchingInformation * info, int way) = 0;
 #else
-    virtual CbcBranchingObject * createCbcBranch(OsiSolverInterface * solver, const OsiBranchingInformation * info, int way) {
-        return createBranch(solver, info, way);
+  virtual CbcBranchingObject * createCbcBranch(OsiSolverInterface *
+                                               /* solver */,
+                                               const OsiBranchingInformation *
+                                               /* info */, int /* way */) {
+        // return createBranch(solver, info, way);
+      return NULL;
     }
-    virtual CbcBranchingObject * createBranch(OsiSolverInterface * /*solver*/,
-            const OsiBranchingInformation * /*info*/, int /*way*/) {
+    virtual OsiBranchingObject * createBranch(OsiSolverInterface * /*solver*/,
+            const OsiBranchingInformation * /*info*/, int /*way*/) const {
         throw CoinError("Need code", "createBranch", "CbcBranchBase");
     }
 #endif

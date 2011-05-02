@@ -73,14 +73,35 @@
 /* Define to 1 if the Xpr package is available */
 #undef COIN_HAS_XPR
 
+/* Define to 1 if zlib is available */
+#undef COIN_HAS_ZLIB
+
+/* Define to 1 if you have the <cfloat> header file. */
+#undef HAVE_CFLOAT
+
+/* Define to 1 if you have the <cieeefp> header file. */
+#undef HAVE_CIEEEFP
+
 /* Define if clock_gettime and rt library is available */
 #undef HAVE_CLOCK_GETTIME
+
+/* Define to 1 if you have the <cmath> header file. */
+#undef HAVE_CMATH
 
 /* Define to 1 if you have the <dlfcn.h> header file. */
 #undef HAVE_DLFCN_H
 
+/* Define to 1 if you have the <float.h> header file. */
+#undef HAVE_FLOAT_H
+
+/* Define to 1 if you have the <ieeefp.h> header file. */
+#undef HAVE_IEEEFP_H
+
 /* Define to 1 if you have the <inttypes.h> header file. */
 #undef HAVE_INTTYPES_H
+
+/* Define to 1 if you have the <math.h> header file. */
+#undef HAVE_MATH_H
 
 /* Define to 1 if you have the <memory.h> header file. */
 #undef HAVE_MEMORY_H
@@ -105,6 +126,9 @@
 
 /* Define to 1 if you have the <unistd.h> header file. */
 #undef HAVE_UNISTD_H
+
+/* Define to 1 if you have the <zlib.h> header file. */
+#undef HAVE_ZLIB_H
 
 /* define to the name of the default solver interface class, e.g.,
    OsiClpSolverInterface */

@@ -124,7 +124,7 @@ int CbcClpUnitTest (const CbcModel &saveModel, const std::string &dirMiplib,
       << std::endl ;
     return (-1) ;
   }
-  std::streamsize dfltPrecision = std::cout.precision() ;
+  int dfltPrecision = static_cast<int>(std::cout.precision()) ;
 /*
   Set the range of problems to be tested. testSwitch = -2 is special and is
   picked up below.

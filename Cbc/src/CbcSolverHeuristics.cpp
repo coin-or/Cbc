@@ -109,7 +109,9 @@ fixVubs(CbcModel & model, int skipZero2,
     double fractionFixed = dextra[4];
     double fixAbove = dextra[2];
     double fixAboveValue = (dextra[5] > 0.0) ? dextra[5] : 1.0;
+#ifdef COIN_DETAIL
     double time1 = CoinCpuTime();
+#endif
     int leaveIntFree = extra[1];
     OsiSolverInterface * originalSolver = model.solver();
     OsiClpSolverInterface * originalClpSolver = dynamic_cast< OsiClpSolverInterface*> (originalSolver);
@@ -124,7 +126,9 @@ fixVubs(CbcModel & model, int skipZero2,
         double * saveUB = NULL;
         int numberColumns = originalLpSolver->numberColumns();
         if (fixAbove > 0.0) {
+#ifdef COIN_DETAIL
             double time1 = CoinCpuTime();
+#endif
             originalClpSolver->initialSolve();
             COIN_DETAIL_PRINT(printf("first solve took %g seconds\n", CoinCpuTime() - time1));
             double * columnLower = originalLpSolver->columnLower() ;

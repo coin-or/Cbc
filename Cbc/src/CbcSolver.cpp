@@ -1040,10 +1040,10 @@ int callCbc1(const char * input2, CbcModel & model,
              int callBack(CbcModel * currentSolver, int whereFrom))
 {
     char * input = CoinStrdup(input2);
-    int length = strlen(input);
+    size_t length = strlen(input);
     bool blank = input[0] == '0';
     int n = blank ? 0 : 1;
-    for (int i = 0; i < length; i++) {
+    for (size_t i = 0; i < length; i++) {
         if (blank) {
             // look for next non blank
             if (input[i] == ' ') {
@@ -1063,11 +1063,11 @@ int callCbc1(const char * input2, CbcModel & model,
     }
     char ** argv = new char * [n+2];
     argv[0] = CoinStrdup("cbc");
-    int i = 0;
+    size_t i = 0;
     while (input[i] == ' ')
         i++;
     for (int j = 0; j < n; j++) {
-        int saveI = i;
+        size_t saveI = i;
         for (; i < length; i++) {
             // look for next blank
             if (input[i] != ' ') {
@@ -1690,7 +1690,7 @@ int CbcMain1 (int argc, const char *argv[],
             // adjust field if has odd trailing characters
             char temp [200];
             strcpy(temp, field.c_str());
-            int length = strlen(temp);
+            int length = static_cast<int>(strlen(temp));
             for (int k = length - 1; k >= 0; k--) {
                 if (temp[k] < ' ')
                     length--;
@@ -1717,10 +1717,10 @@ int CbcMain1 (int argc, const char *argv[],
             }
 
             // see if ? at end
-            int numberQuery = 0;
+            size_t numberQuery = 0;
             if (field != "?" && field != "???") {
-                int length = field.length();
-                int i;
+                size_t length = field.length();
+                size_t i;
                 for (i = length - 1; i > 0; i--) {
                     if (field[i] == '?')
                         numberQuery++;
@@ -6220,7 +6220,7 @@ int CbcMain1 (int argc, const char *argv[],
                             // See if .lp
                             {
                                 const char * c_name = field.c_str();
-                                int length = strlen(c_name);
+                                size_t length = strlen(c_name);
                                 if (length > 3 && !strncmp(c_name + length - 3, ".lp", 3))
                                     gmpl = -1; // .lp
                             }
@@ -6237,8 +6237,8 @@ int CbcMain1 (int argc, const char *argv[],
                             }
                             if (absolutePath) {
                                 fileName = field;
-				int length = field.size();
-				int percent = field.find('%');
+				size_t length = field.size();
+				size_t percent = field.find('%');
 				if (percent < length && percent > 0) {
 				  gmpl = 1;
 				  fileName = field.substr(0, percent);
@@ -6260,8 +6260,8 @@ int CbcMain1 (int argc, const char *argv[],
                             } else {
                                 fileName = directory + field;
                                 // See if gmpl (model & data) - or even lp file
-                                int length = field.size();
-                                int percent = field.find('%');
+                                size_t length = field.size();
+                                size_t percent = field.find('%');
                                 if (percent<length && percent>0) {
                                     gmpl = 1;
                                     fileName = directory + field.substr(0, percent);
@@ -6990,7 +6990,7 @@ int CbcMain1 (int argc, const char *argv[],
                                 // can open - lets go for it
                                 int numRows;
                                 double obj;
-                                int nRead;
+                                size_t nRead;
                                 nRead = fread(&numRows, sizeof(int), 1, fp);
                                 if (nRead != 1)
                                     throw("Error in fread");
@@ -7002,13 +7002,13 @@ int CbcMain1 (int argc, const char *argv[],
                                     throw("Error in fread");
                                 debugValues = new double[numberDebugValues+numRows];
                                 nRead = fread(debugValues, sizeof(double), numRows, fp);
-                                if (nRead != numRows)
+                                if (nRead != static_cast<size_t>(numRows))
                                     throw("Error in fread");
                                 nRead = fread(debugValues, sizeof(double), numRows, fp);
-                                if (nRead != numRows)
+                                if (nRead != static_cast<size_t>(numRows))
                                     throw("Error in fread");
                                 nRead = fread(debugValues, sizeof(double), numberDebugValues, fp);
-                                if (nRead != numberDebugValues)
+                                if (nRead != static_cast<size_t>(numberDebugValues))
                                     throw("Error in fread");
                                 printf("%d doubles read into debugValues\n", numberDebugValues);
 #ifdef CGL_WRITEMPS
@@ -7252,8 +7252,8 @@ int CbcMain1 (int argc, const char *argv[],
                     case CLP_PARAM_ACTION_DIRECTORY: {
                         std::string name = CoinReadGetString(argc, argv);
                         if (name != "EOL") {
-                            int length = name.length();
-                            if (name[length-1] == dirsep) {
+                            size_t length = name.length();
+                            if (length > 0 && name[length-1] == dirsep) {
                                 directory = name;
                             } else {
                                 directory = name + dirsep;
@@ -7267,8 +7267,8 @@ int CbcMain1 (int argc, const char *argv[],
                     case CLP_PARAM_ACTION_DIRSAMPLE: {
                         std::string name = CoinReadGetString(argc, argv);
                         if (name != "EOL") {
-                            int length = name.length();
-                            if (name[length-1] == dirsep) {
+                            size_t length = name.length();
+                            if (length > 0 && name[length-1] == dirsep) {
                                 dirSample = name;
                             } else {
                                 dirSample = name + dirsep;
@@ -7282,8 +7282,8 @@ int CbcMain1 (int argc, const char *argv[],
                     case CLP_PARAM_ACTION_DIRNETLIB: {
                         std::string name = CoinReadGetString(argc, argv);
                         if (name != "EOL") {
-                            int length = name.length();
-                            if (name[length-1] == dirsep) {
+                            size_t length = name.length();
+                            if (length > 0 && name[length-1] == dirsep) {
                                 dirNetlib = name;
                             } else {
                                 dirNetlib = name + dirsep;
@@ -7297,8 +7297,8 @@ int CbcMain1 (int argc, const char *argv[],
                     case CBC_PARAM_ACTION_DIRMIPLIB: {
                         std::string name = CoinReadGetString(argc, argv);
                         if (name != "EOL") {
-                            int length = name.length();
-                            if (name[length-1] == dirsep) {
+                            size_t length = name.length();
+                            if (length > 0 && name[length-1] == dirsep) {
                                 dirMiplib = name;
                             } else {
                                 dirMiplib = name + dirsep;
@@ -7795,7 +7795,7 @@ clp watson.mps -\nscaling off\nprimalsimplex"
                                 const double * rowUpper = clpSolver->getRowUpper();
                                 double primalTolerance ;
                                 clpSolver->getDblParam(OsiPrimalTolerance, primalTolerance);
-                                int lengthPrint = CoinMax(lengthName, 8);
+                                size_t lengthPrint = static_cast<size_t>(CoinMax(lengthName, 8));
                                 bool doMask = (printMask != "" && lengthName);
                                 int * maskStarts = NULL;
                                 int maxMasks = 0;
@@ -7804,8 +7804,8 @@ clp watson.mps -\nscaling off\nprimalsimplex"
                                     int nAst = 0;
                                     const char * pMask2 = printMask.c_str();
                                     char pMask[100];
-                                    int iChar;
-                                    int lengthMask = strlen(pMask2);
+                                    size_t iChar;
+                                    size_t lengthMask = strlen(pMask2);
                                     assert (lengthMask < 100);
                                     if (*pMask2 == '"') {
                                         if (pMask2[lengthMask-1] != '"') {
@@ -7826,7 +7826,7 @@ clp watson.mps -\nscaling off\nprimalsimplex"
                                     } else {
                                         strcpy(pMask, pMask2);
                                     }
-                                    if (lengthMask > lengthName) {
+                                    if (lengthMask > static_cast<size_t>(lengthName)) {
                                         printf("mask %s too long - skipping\n", pMask);
                                         break;
                                     }
@@ -7854,12 +7854,12 @@ clp watson.mps -\nscaling off\nprimalsimplex"
                                             char * oldMask = masks[iEntry];
                                             char * ast = strchr(oldMask, '*');
                                             assert (ast);
-                                            int length = strlen(oldMask) - 1;
-                                            int nBefore = ast - oldMask;
-                                            int nAfter = length - nBefore;
+                                            size_t length = strlen(oldMask) - 1;
+                                            size_t nBefore = ast - oldMask;
+                                            size_t nAfter = length - nBefore;
                                             // and add null
                                             nAfter++;
-                                            for (int i = 0; i <= lengthName - length; i++) {
+                                            for (int i = 0; i <= lengthName - static_cast<int>(length); i++) {
                                                 char * maskOut = newMasks[nEntries];
                                                 memcpy(maskOut, oldMask, nBefore);
                                                 for (int k = 0; k < i; k++)
@@ -7877,11 +7877,11 @@ clp watson.mps -\nscaling off\nprimalsimplex"
                                     int * sort = new int[nEntries];
                                     for (i = 0; i < nEntries; i++) {
                                         char * maskThis = masks[i];
-                                        int length = strlen(maskThis);
-                                        while (maskThis[length-1] == ' ')
+                                        size_t length = strlen(maskThis);
+                                        while (length > 0 && maskThis[length-1] == ' ')
                                             length--;
                                         maskThis[length] = '\0';
-                                        sort[i] = length;
+                                        sort[i] = static_cast<int>(length);
                                     }
                                     CoinSort_2(sort, sort + nEntries, masks);
                                     int lastLength = -1;
@@ -8054,8 +8054,8 @@ clp watson.mps -\nscaling off\nprimalsimplex"
                                             fprintf(fp, "%7d ", iRow);
                                             if (lengthName) {
                                                 const char * name = rowNames[iRow].c_str();
-                                                int n = strlen(name);
-                                                int i;
+                                                size_t n = strlen(name);
+                                                size_t i;
                                                 for (i = 0; i < n; i++)
                                                     fprintf(fp, "%c", name[i]);
                                                 for (; i < lengthPrint; i++)
@@ -8105,8 +8105,8 @@ clp watson.mps -\nscaling off\nprimalsimplex"
                                                 fprintf(fp, "%7d ", iColumn);
                                                 if (lengthName) {
                                                     const char * name = columnNames[iColumn].c_str();
-                                                    int n = strlen(name);
-                                                    int i;
+                                                    size_t n = strlen(name);
+                                                    size_t i;
                                                     for (i = 0; i < n; i++)
                                                         fprintf(fp, "%c", name[i]);
                                                     for (; i < lengthPrint; i++)
@@ -8127,9 +8127,9 @@ clp watson.mps -\nscaling off\nprimalsimplex"
                                                 }
                                                 sprintf(temp + strlen(temp), ", %15.8g",
                                                         primalColumnSolution[iColumn]);
-                                                int n = strlen(temp);
-                                                int k = 0;
-                                                for (int i = 0; i < n + 1; i++) {
+                                                size_t n = strlen(temp);
+                                                size_t k = 0;
+                                                for (size_t i = 0; i < n + 1; i++) {
                                                     if (temp[i] != ' ')
                                                         temp[k++] = temp[i];
                                                 }
@@ -8842,12 +8842,12 @@ static bool maskMatches(const int * starts, char ** masks,
 {
     // back to char as I am old fashioned
     const char * checkC = check.c_str();
-    int length = strlen(checkC);
-    while (checkC[length-1] == ' ')
+    size_t length = strlen(checkC);
+    while (length > 0 && checkC[length-1] == ' ')
         length--;
     for (int i = starts[length]; i < starts[length+1]; i++) {
         char * thisMask = masks[i];
-        int k;
+        size_t k;
         for ( k = 0; k < length; k++) {
             if (thisMask[k] != '?' && thisMask[k] != checkC[k])
                 break;

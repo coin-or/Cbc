@@ -7913,6 +7913,7 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
       //solver_->setHintParam(OsiDoDualInResolve,true,OsiHintTry);
       if ( maximumSecondsReached() ) {
         numberTries=0; // exit
+        feasible = false;
 	break;
       }
 #     ifdef CBC_DEBUG

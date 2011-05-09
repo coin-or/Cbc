@@ -14295,9 +14295,11 @@ CbcModel::doOneNode(CbcModel * baseModel, CbcNode * & node, CbcNode * & newNode)
 	unlockThread();
   } else {
     // add cuts found to be infeasible (on bound)!
+#ifdef CBC_PRINT2
     printf("found to be infeas! - branches left %d - cutoff %g\n",node->nodeInfo()->numberBranchesLeft(),
 	   getCutoff());
     node->print();
+#endif
     //abort();
     assert (node->nodeInfo());
     if (parallelMode()>=0) {

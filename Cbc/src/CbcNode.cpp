@@ -2799,8 +2799,14 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
                         // Mark hot start
                         doneHotStart = true;
                         solver->markHotStart();
+			if (!solver->isProvenOptimal()) {
+			  skipAll=-2;
+			  canSkip = true;
+			}
                         xMark++;
                     }
+		}
+                if (!canSkip) {
                     numberTest--;
                     // just do a few
                     if (searchStrategy == 2)

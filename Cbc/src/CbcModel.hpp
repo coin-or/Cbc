@@ -2454,6 +2454,8 @@ private:
 	32768 more heuristics in sub trees
 	65536 no cuts in preprocessing
         131072 Time limits elapsed
+        18 bit (262144) - Perturb fathom nodes
+        19 bit (524288) - No limit on fathom nodes
     */
     int moreSpecialOptions_;
     /// User node comparison function

@@ -65,6 +65,9 @@ static Cbc_message us_english[] = {
     {CBC_ROOT_DETAIL, 46, 2, "Root node pass %d, %d rows, %d total tight cuts  -  objective %g"},
     {CBC_CUTOFF_WARNING1, 47, 1, "Cutoff set to %g - equivalent to best solution of %g"},
     {CBC_END_SOLUTION, 48, 2, "Final check on integer solution of %g found after %d iterations and %d nodes (%.2f seconds)"},
+#ifndef NO_FATHOM_PRINT
+    {CBC_FATHOM_CHANGE, 49, 1, "Complete fathoming at depth >= %d"},
+#endif
     {CBC_NOINT, 3007, 1, "No integer variables - nothing to do"},
     {CBC_WARNING_STRONG, 3008, 1, "Strong branching is fixing too many variables, too expensively!"},
     {CBC_DUMMY_END, 999999, 0, ""}

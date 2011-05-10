@@ -71,6 +71,9 @@ enum CBC_Message {
     CBC_RESTART,
     CBC_GENERAL,
     CBC_ROOT_DETAIL,
+#ifndef NO_FATHOM_PRINT
+    CBC_FATHOM_CHANGE,
+#endif
     CBC_DUMMY_END
 };
 

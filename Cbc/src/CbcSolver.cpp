@@ -2044,6 +2044,16 @@ int CbcMain1 (int argc, const char *argv[],
                                 pumpChanged = true;
                             else if (parameters_[iParam].type() == CBC_PARAM_INT_EXPERIMENT) {
                                 if (value >= 1) {
+				    int values[]={24003,280003,792003,24003,24003};
+				    if (value>=2&&value<=3) {
+				      // swap default diving
+				      int iParam = whichParam(CBC_PARAM_STR_DIVINGC, numberParameters_, parameters_);
+				      parameters_[iParam].setCurrentOption("off");
+				      iParam = whichParam(CBC_PARAM_STR_DIVINGP, numberParameters_, parameters_);
+				      parameters_[iParam].setCurrentOption("on");
+				    }
+				    int extra4 = values[value-1];
+                                    parameters[whichParam(CBC_PARAM_INT_EXTRA4, numberParameters, parameters)].setIntValue(extra4);
                                     if (!noPrinting_) {
                                         generalMessageHandler->message(CLP_GENERAL, generalMessages)
                                         << "switching on global root cuts for gomory and knapsack"
@@ -2052,7 +2062,8 @@ int CbcMain1 (int argc, const char *argv[],
                                         << "using OSL factorization"
                                         << CoinMessageEol;
                                         generalMessageHandler->message(CLP_GENERAL, generalMessages)
-                                        << "extra options - -rens on -extra4 24003 -passc 1000!"
+                                        << "extra options - -rens on -extra4 "
+					<<extra4<<" -passc 1000!"
                                         << CoinMessageEol;
                                     }
                                     parameters[whichParam(CBC_PARAM_STR_PROBINGCUTS, numberParameters, parameters)].setCurrentOption("forceOnStrong");
@@ -2066,7 +2077,6 @@ int CbcMain1 (int argc, const char *argv[],
                                     parameters_[whichParam(CBC_PARAM_INT_MAXHOTITS, numberParameters_, parameters_)].setIntValue(100);
                                     parameters[whichParam(CBC_PARAM_INT_CUTPASS, numberParameters, parameters)].setIntValue(1000);
                                     cutPass = 1000;
-                                    parameters[whichParam(CBC_PARAM_INT_EXTRA4, numberParameters, parameters)].setIntValue(24003);
                                     parameters[whichParam(CBC_PARAM_STR_RENS, numberParameters, parameters)].setCurrentOption("on");
                                 }
                             } else if (parameters_[iParam].type() == CBC_PARAM_INT_STRATEGY) {
@@ -2942,7 +2952,7 @@ int CbcMain1 (int argc, const char *argv[],
                                 extra[1] = parameters_[whichParam(CBC_PARAM_INT_EXTRA1, numberParameters_, parameters_)].intValue();
                                 int exp1 = parameters_[whichParam(CBC_PARAM_INT_EXPERIMENT, numberParameters_,
                                                                   parameters_)].intValue();
-                                if (exp1 == 2 && extra[1] == -1)
+                                if (exp1 == 4 && extra[1] == -1)
                                     extra[1] = 999998;
                                 dextra[1] = parameters_[whichParam(CBC_PARAM_DBL_FAKEINCREMENT, numberParameters_, parameters_)].doubleValue();
                                 dextra[2] = parameters_[whichParam(CBC_PARAM_DBL_FAKECUTOFF, numberParameters_, parameters_)].doubleValue();
@@ -4327,7 +4337,7 @@ int CbcMain1 (int argc, const char *argv[],
                                     // try reduced model
                                     babModel_->setSpecialOptions(babModel_->specialOptions() | 512);
                                 }
-                                if (experimentFlag >= 3 || strategyFlag == 2) {
+                                if (experimentFlag >= 5 || strategyFlag == 2) {
                                     // try reduced model at root
                                     babModel_->setSpecialOptions(babModel_->specialOptions() | 32768);
                                 }
@@ -5468,7 +5478,7 @@ int CbcMain1 (int argc, const char *argv[],
                                     if (babModel_->fastNodeDepth() == -1)
                                         babModel_->setFastNodeDepth(-2); // Use Cplex at root
                                 }
-                                if (experimentFlag >= 2) {
+                                if (experimentFlag >= 5) {
                                     CbcModel donor(*babModel_);
                                     int options = babModel_->specialOptions();
                                     donor.setSpecialOptions(options | 262144);

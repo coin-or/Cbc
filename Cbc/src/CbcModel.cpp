@@ -3352,6 +3352,12 @@ void CbcModel::branchAndBound(int doStatistics)
     int lastEvery1000 = 0;
     int lastPrintEvery = 0;
     int numberConsecutiveInfeasible = 0;
+#define PERTURB_IN_FATHOM
+#ifdef PERTURB_IN_FATHOM
+    // allow in fathom
+    if ((moreSpecialOptions_& 262144) != 0)
+      specialOptions_ |= 131072;
+#endif
     while (true) {
         lockThread();
 #ifdef COIN_HAS_CLP
@@ -3392,10 +3398,6 @@ void CbcModel::branchAndBound(int doStatistics)
                         8*(numberSolves_ - saveNumberSolves)) {
                     // switch off perturbation
                     simplex->setPerturbation(100);
-#ifdef PERTURB_IN_FATHOM
-                    // but allow in fathom
-                    specialOptions_ |= 131072;
-#endif
 #ifdef CLP_INVESTIGATE
                     printf("Perturbation switched off\n");
 #endif
@@ -3760,7 +3762,7 @@ void CbcModel::branchAndBound(int doStatistics)
 #endif
             node = tree_->bestNode(cutoff) ;
             // Possible one on tree worse than cutoff
-            // Wierd comparison function can leave ineligible nodes on tree
+            // Weird comparison function can leave ineligible nodes on tree
             if (!node || node->objectiveValue() > cutoff)
                 continue;
             // Do main work of solving node here
@@ -12939,6 +12941,7 @@ CbcModel::doHeuristicsAtRoot(int deleteHeuristicsAfterwards)
 			      //eventHappened_=true; // stop as fast as possible
 			      break;
 			    }
+			    reducedCostFix();
                         } else {
                             // NOT better solution
 #ifdef CLP_INVESTIGATE
@@ -13517,21 +13520,32 @@ CbcModel::doOneNode(CbcModel * baseModel, CbcNode * & node, CbcNode * & newNode)
                         if (strength != OsiHintIgnore && takeHint && saveLevel == 1)
                             simplex->setLogLevel(0);
                         clpSolver->setBasis();
-#ifdef PERTURB_IN_FATHOM
                         int perturbation = simplex->perturbation();
                         if ((specialOptions_&131072) != 0) {
-                            assert (perturbation == 100);
+			    //assert (perturbation == 100);
                             simplex->setPerturbation(50);
                         }
+			int saveMoreOptions = simplex->moreSpecialOptions();
+			int flags = (moreSpecialOptions_>>18)&3;
+			simplex->setMoreSpecialOptions(saveMoreOptions|flags<<11);
+#ifndef NO_FATHOM_PRINT
+			info->startingDepth_ = node->depth();
+			info->nodeCalled_ = numberNodes_;
+			info->handler_ = handler_;
 #endif
                         feasible = simplex->fathom(info) != 0;
-#ifdef PERTURB_IN_FATHOM
+			simplex->setMoreSpecialOptions(saveMoreOptions);
                         simplex->setPerturbation(perturbation);
-#endif
                         numberExtraNodes_ += info->numberNodesExplored_;
                         numberExtraIterations_ += info->numberIterations_;
-                        if (info->numberNodesExplored_ > 10000) {
+                        if (info->numberNodesExplored_ > 10000 /* && !feasible */ 
+			    && (moreSpecialOptions_&524288) == 0  && info->nNodes_>=0) {
                             fastNodeDepth_ --;
+#ifndef NO_FATHOM_PRINT
+			    if ((moreSpecialOptions_&262144) != 0)
+			      handler_->message(CBC_FATHOM_CHANGE, messages_) << 
+				FATHOM_BIAS - fastNodeDepth_ << CoinMessageEol ;
+#endif
 #ifdef CLP_INVESTIGATE
                             printf(">10000 - depth now %d so at depth >= %d\n",
                                    fastNodeDepth_, FATHOM_BIAS - fastNodeDepth_);
@@ -13540,7 +13554,12 @@ CbcModel::doOneNode(CbcModel * baseModel, CbcNode * & node, CbcNode * & newNode)
                         if (info->nNodes_ < 0) {
                             // we gave up
                             //abort();
-                            fastNodeDepth_ -= 2;
+                            fastNodeDepth_ -= 3;
+#ifndef NO_FATHOM_PRINT
+			  if ((moreSpecialOptions_&262144) != 0)
+			    handler_->message(CBC_FATHOM_CHANGE, messages_) << 
+			      FATHOM_BIAS - fastNodeDepth_ << CoinMessageEol ;
+#endif
 #ifdef CLP_INVESTIGATE
                             printf("fastNodeDepth now %d - so at depth >= %d\n",
                                    fastNodeDepth_, FATHOM_BIAS - fastNodeDepth_);

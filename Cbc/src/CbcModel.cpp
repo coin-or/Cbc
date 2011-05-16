@@ -14324,7 +14324,9 @@ CbcModel::doOneNode(CbcModel * baseModel, CbcNode * & node, CbcNode * & newNode)
         // add cuts found to be infeasible (on bound)!
         COIN_DETAIL_PRINT(printf("found to be infeas! - branches left %d - cutoff %g\n", node->nodeInfo()->numberBranchesLeft(),
                getCutoff()));
+#ifdef COIN_DETAIL
         node->print();
+#endif
         //abort();
         assert (node->nodeInfo());
         if (parallelMode() >= 0) {

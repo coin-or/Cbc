@@ -2006,7 +2006,7 @@ void CbcModel::branchAndBound(int doStatistics)
         originalContinuousObjective_ = COIN_DBL_MAX;
         solverCharacteristics_ = NULL;
         return ;
-    } else if (!numberObjects_) {
+    } else if (!numberObjects_ && (!strategy_ || strategy_->preProcessState() <= 0)) {
         // nothing to do
         solverCharacteristics_ = NULL;
         bestObjective_ = solver_->getObjValue() * solver_->getObjSense();
@@ -2384,7 +2384,8 @@ void CbcModel::branchAndBound(int doStatistics)
       will be removed from the heuristics list by doHeuristicsAtRoot.
     */
     // Do heuristics
-    doHeuristicsAtRoot();
+    if (numberObjects_)
+        doHeuristicsAtRoot();
     /*
       Grepping through the code, it would appear that this is a command line
       debugging hook.  There's no obvious place in the code where this is set to

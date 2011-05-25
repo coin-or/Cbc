@@ -1257,6 +1257,7 @@ void CbcModel::AddIntegers()
                         fabs(value - floor(value + 0.5)) < 1.0e-8)
                     possible = true;
             }
+	    double allSame = (possible) ? 0.0 : -1.0;
             for (CoinBigIndex j = rowStart[i];
                     j < rowStart[i] + rowLength[i]; j++) {
                 int iColumn = column[j];
@@ -1265,9 +1266,17 @@ void CbcModel::AddIntegers()
                         possible = false;
                 } else {
                     nLeft++;
+		    if (!allSame) {
+		      allSame = fabs(element[j]);
+		    } else if (allSame>0.0) {
+		      if (allSame!=fabs(element[j]))
+			allSame = -1.0;
+		    }
                 }
             }
-            if (possible || !nLeft)
+	    if (nLeft == rowLength[i] && allSame > 0.0)
+                possibleRow[i] = 2;
+            else if (possible || !nLeft)
                 possibleRow[i] = 1;
             else
                 possibleRow[i] = 0;
@@ -1319,7 +1328,8 @@ void CbcModel::AddIntegers()
                     if (!copy2->isInteger(iColumn)) {
                         double mult = 1.0 / fabs(element[k]);
                         if (rowLower[i] < -1.0e20) {
-                            double value = rowUpper[i] * mult;
+			    // treat rhs as multiple of 1 unless elements all same
+			    double value = ((possibleRow[i]==2) ? rowUpper[i] : 1.0) * mult;
                             if (fabs(value - floor(value + 0.5)) < 1.0e-8) {
                                 del[nDel++] = i;
                                 if (columnLength[iColumn] == 1) {
@@ -1329,7 +1339,8 @@ void CbcModel::AddIntegers()
                                 }
                             }
                         } else if (rowUpper[i] > 1.0e20) {
-                            double value = rowLower[i] * mult;
+			    // treat rhs as multiple of 1 unless elements all same
+			    double value = ((possibleRow[i]==2) ? rowLower[i] : 1.0) * mult;
                             if (fabs(value - floor(value + 0.5)) < 1.0e-8) {
                                 del[nDel++] = i;
                                 if (columnLength[iColumn] == 1) {
@@ -1339,7 +1350,8 @@ void CbcModel::AddIntegers()
                                 }
                             }
                         } else {
-                            double value = rowUpper[i] * mult;
+			    // treat rhs as multiple of 1 unless elements all same
+			    double value = ((possibleRow[i]==2) ? rowUpper[i] : 1.0) * mult;
                             if (rowLower[i] == rowUpper[i] &&
                                     fabs(value - floor(value + 0.5)) < 1.0e-8) {
                                 del[nDel++] = i;
@@ -1992,7 +2004,7 @@ void CbcModel::branchAndBound(int doStatistics)
         originalContinuousObjective_ = COIN_DBL_MAX;
         solverCharacteristics_ = NULL;
         return ;
-    } else if (!numberObjects_) {
+    } else if (!numberObjects_ && (!strategy_ || strategy_->preProcessState() <= 0)) {
         // nothing to do
         solverCharacteristics_ = NULL;
         bestObjective_ = solver_->getObjValue() * solver_->getObjSense();
@@ -2370,7 +2382,8 @@ void CbcModel::branchAndBound(int doStatistics)
       will be removed from the heuristics list by doHeuristicsAtRoot.
     */
     // Do heuristics
-    doHeuristicsAtRoot();
+    if (numberObjects_)
+        doHeuristicsAtRoot();
     /*
       Grepping through the code, it would appear that this is a command line
       debugging hook.  There's no obvious place in the code where this is set to

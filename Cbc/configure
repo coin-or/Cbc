@@ -1079,7 +1079,8 @@ Optional Features:
   --disable-FEATURE       do not include FEATURE (same as --enable-FEATURE=no)
   --enable-FEATURE[=ARG]  include FEATURE [ARG=yes]
   --enable-debug          compile all projects with debug options tests
-  --enable-debug-cbc compile this project (Cbc) with debug options
+                          (implies --disable-shared)
+  --enable-debug-cbc compile this project (Cbc) with debug compiler flags
   --enable-doscompile     Under Cygwin, compile so that executables run under
                           DOS. Set to mingw to use gcc/g++/ld with
                           -mno-cygwin. Set to msvc to use cl/link (or
@@ -1115,6 +1116,7 @@ Optional Packages:
                           include additional configurations [automatic]
   --with-coin-instdir     prefix of installation directory for precompiled
                           COIN packages
+
   --with-coindepend-lib linker flags for using package CoinDepend
   --with-coindepend-incdir
                           directory with header files for using package
@@ -1881,7 +1883,6 @@ if test "${enable_debug_cbc+set}" = set; then
   enableval="$enable_debug_cbc"
   case "${enableval}" in
     yes) coin_debug_compile=true
-         enable_shared=no
          ;;
     no)  coin_debug_compile=false
          ;;
@@ -3808,7 +3809,7 @@ if test x"$CXXFLAGS" = x; then
         coin_opt_cxxflags="-O3"
         coin_add_cxxflags="-pipe"
         coin_dbg_cxxflags="-g"
-        coin_warn_cxxflags="-Wimplicit -Wparentheses -Wreturn-type -Wcast-qual -Wall -Wpointer-arith -Wwrite-strings -Wconversion -Wno-unknown-pragmas -Wno-long-long"
+        coin_warn_cxxflags="-Wparentheses -Wreturn-type -Wcast-qual -Wall -Wpointer-arith -Wwrite-strings -Wconversion -Wno-unknown-pragmas -Wno-long-long"
         case $build in
           *-darwin*)
             ;;
@@ -5981,7 +5982,7 @@ ia64-*-hpux*)
   ;;
 *-*-irix6*)
   # Find out which ABI we are using.
-  echo '#line 5984 "configure"' > conftest.$ac_ext
+  echo '#line 5985 "configure"' > conftest.$ac_ext
   if { (eval echo "$as_me:$LINENO: \"$ac_compile\"") >&5
   (eval $ac_compile) 2>&5
   ac_status=$?
@@ -7115,7 +7116,7 @@ fi
 
 
 # Provide some information about the compiler.
-echo "$as_me:7118:" \
+echo "$as_me:7119:" \
      "checking for Fortran 77 compiler version" >&5
 ac_compiler=`set X $ac_compile; echo $2`
 { (eval echo "$as_me:$LINENO: \"$ac_compiler --version </dev/null >&5\"") >&5
@@ -8182,11 +8183,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:8185: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:8186: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:8189: \$? = $ac_status" >&5
+   echo "$as_me:8190: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -8450,11 +8451,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:8453: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:8454: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:8457: \$? = $ac_status" >&5
+   echo "$as_me:8458: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -8554,11 +8555,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:8557: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:8558: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:8561: \$? = $ac_status" >&5
+   echo "$as_me:8562: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -10899,7 +10900,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<EOF
-#line 10902 "configure"
+#line 10903 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -10999,7 +11000,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<EOF
-#line 11002 "configure"
+#line 11003 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -13343,11 +13344,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:13346: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:13347: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:13350: \$? = $ac_status" >&5
+   echo "$as_me:13351: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -13447,11 +13448,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:13450: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:13451: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:13454: \$? = $ac_status" >&5
+   echo "$as_me:13455: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -15017,11 +15018,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:15020: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:15021: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:15024: \$? = $ac_status" >&5
+   echo "$as_me:15025: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -15121,11 +15122,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:15124: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:15125: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:15128: \$? = $ac_status" >&5
+   echo "$as_me:15129: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -17328,11 +17329,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:17331: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:17332: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:17335: \$? = $ac_status" >&5
+   echo "$as_me:17336: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -17596,11 +17597,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:17599: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:17600: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:17603: \$? = $ac_status" >&5
+   echo "$as_me:17604: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -17700,11 +17701,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:17703: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:17704: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:17707: \$? = $ac_status" >&5
+   echo "$as_me:17708: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -20821,6 +20822,18 @@ if test x"$COIN_SKIP_PROJECTS" != x; then
   done
 fi
 
+if test "$coin_has_coindepend" != skipping; then
+
+# Check whether --with-m4_tolower(CoinDepend) or --without-m4_tolower(CoinDepend) was given.
+if test "${with_coindepend+set}" = set; then
+  withval="$with_coindepend"
+  if test "$withval" = no ; then
+       coin_has_coindepend=skipping
+     fi
+
+fi;
+fi
+
 COINDEPEND_LIBS=
 COINDEPEND_CFLAGS=
 COINDEPEND_DATA=
@@ -21337,6 +21350,18 @@ if test x"$COIN_SKIP_PROJECTS" != x; then
       coin_has_clp=skipping
     fi
   done
+fi
+
+if test "$coin_has_clp" != skipping; then
+
+# Check whether --with-m4_tolower(Clp) or --without-m4_tolower(Clp) was given.
+if test "${with_clp+set}" = set; then
+  withval="$with_clp"
+  if test "$withval" = no ; then
+       coin_has_clp=skipping
+     fi
+
+fi;
 fi
 
 CLP_LIBS=
@@ -21857,6 +21882,18 @@ if test x"$COIN_SKIP_PROJECTS" != x; then
   done
 fi
 
+if test "$coin_has_ositests" != skipping; then
+
+# Check whether --with-m4_tolower(OsiTests) or --without-m4_tolower(OsiTests) was given.
+if test "${with_ositests+set}" = set; then
+  withval="$with_ositests"
+  if test "$withval" = no ; then
+       coin_has_ositests=skipping
+     fi
+
+fi;
+fi
+
 OSITESTS_LIBS=
 OSITESTS_CFLAGS=
 OSITESTS_DATA=
@@ -22305,6 +22342,18 @@ if test x"$COIN_SKIP_PROJECTS" != x; then
       coin_has_sample=skipping
     fi
   done
+fi
+
+if test "$coin_has_sample" != skipping; then
+
+# Check whether --with-m4_tolower(Sample) or --without-m4_tolower(Sample) was given.
+if test "${with_sample+set}" = set; then
+  withval="$with_sample"
+  if test "$withval" = no ; then
+       coin_has_sample=skipping
+     fi
+
+fi;
 fi
 
 SAMPLE_LIBS=
@@ -22757,6 +22806,18 @@ if test x"$COIN_SKIP_PROJECTS" != x; then
   done
 fi
 
+if test "$coin_has_netlib" != skipping; then
+
+# Check whether --with-m4_tolower(Netlib) or --without-m4_tolower(Netlib) was given.
+if test "${with_netlib+set}" = set; then
+  withval="$with_netlib"
+  if test "$withval" = no ; then
+       coin_has_netlib=skipping
+     fi
+
+fi;
+fi
+
 NETLIB_LIBS=
 NETLIB_CFLAGS=
 NETLIB_DATA=
@@ -23205,6 +23266,18 @@ if test x"$COIN_SKIP_PROJECTS" != x; then
       coin_has_miplib3=skipping
     fi
   done
+fi
+
+if test "$coin_has_miplib3" != skipping; then
+
+# Check whether --with-m4_tolower(Miplib3) or --without-m4_tolower(Miplib3) was given.
+if test "${with_miplib3+set}" = set; then
+  withval="$with_miplib3"
+  if test "$withval" = no ; then
+       coin_has_miplib3=skipping
+     fi
+
+fi;
 fi
 
 MIPLIB3_LIBS=
@@ -24927,6 +25000,18 @@ if test x"$COIN_SKIP_PROJECTS" != x; then
   done
 fi
 
+if test "$coin_has_dylp" != skipping; then
+
+# Check whether --with-m4_tolower(DyLP) or --without-m4_tolower(DyLP) was given.
+if test "${with_dylp+set}" = set; then
+  withval="$with_dylp"
+  if test "$withval" = no ; then
+       coin_has_dylp=skipping
+     fi
+
+fi;
+fi
+
 DYLP_LIBS=
 DYLP_CFLAGS=
 DYLP_DATA=
@@ -25407,6 +25492,18 @@ if test x"$COIN_SKIP_PROJECTS" != x; then
   done
 fi
 
+if test "$coin_has_vol" != skipping; then
+
+# Check whether --with-m4_tolower(Vol) or --without-m4_tolower(Vol) was given.
+if test "${with_vol+set}" = set; then
+  withval="$with_vol"
+  if test "$withval" = no ; then
+       coin_has_vol=skipping
+     fi
+
+fi;
+fi
+
 VOL_LIBS=
 VOL_CFLAGS=
 VOL_DATA=
@@ -25855,6 +25952,18 @@ if test x"$COIN_SKIP_PROJECTS" != x; then
       coin_has_cpx=skipping
     fi
   done
+fi
+
+if test "$coin_has_cpx" != skipping; then
+
+# Check whether --with-m4_tolower(Cpx) or --without-m4_tolower(Cpx) was given.
+if test "${with_cpx+set}" = set; then
+  withval="$with_cpx"
+  if test "$withval" = no ; then
+       coin_has_cpx=skipping
+     fi
+
+fi;
 fi
 
 CPX_LIBS=
@@ -26367,6 +26476,18 @@ if test x"$COIN_SKIP_PROJECTS" != x; then
   done
 fi
 
+if test "$coin_has_glpk" != skipping; then
+
+# Check whether --with-m4_tolower(Glpk) or --without-m4_tolower(Glpk) was given.
+if test "${with_glpk+set}" = set; then
+  withval="$with_glpk"
+  if test "$withval" = no ; then
+       coin_has_glpk=skipping
+     fi
+
+fi;
+fi
+
 GLPK_LIBS=
 GLPK_CFLAGS=
 GLPK_DATA=
@@ -26847,6 +26968,18 @@ if test x"$COIN_SKIP_PROJECTS" != x; then
   done
 fi
 
+if test "$coin_has_grb" != skipping; then
+
+# Check whether --with-m4_tolower(Grb) or --without-m4_tolower(Grb) was given.
+if test "${with_grb+set}" = set; then
+  withval="$with_grb"
+  if test "$withval" = no ; then
+       coin_has_grb=skipping
+     fi
+
+fi;
+fi
+
 GRB_LIBS=
 GRB_CFLAGS=
 GRB_DATA=
@@ -27295,6 +27428,18 @@ if test x"$COIN_SKIP_PROJECTS" != x; then
       coin_has_msk=skipping
     fi
   done
+fi
+
+if test "$coin_has_msk" != skipping; then
+
+# Check whether --with-m4_tolower(Msk) or --without-m4_tolower(Msk) was given.
+if test "${with_msk+set}" = set; then
+  withval="$with_msk"
+  if test "$withval" = no ; then
+       coin_has_msk=skipping
+     fi
+
+fi;
 fi
 
 MSK_LIBS=
@@ -27777,6 +27922,18 @@ if test x"$COIN_SKIP_PROJECTS" != x; then
   done
 fi
 
+if test "$coin_has_spx" != skipping; then
+
+# Check whether --with-m4_tolower(Spx) or --without-m4_tolower(Spx) was given.
+if test "${with_spx+set}" = set; then
+  withval="$with_spx"
+  if test "$withval" = no ; then
+       coin_has_spx=skipping
+     fi
+
+fi;
+fi
+
 SPX_LIBS=
 SPX_CFLAGS=
 SPX_DATA=
@@ -28257,6 +28414,18 @@ if test x"$COIN_SKIP_PROJECTS" != x; then
   done
 fi
 
+if test "$coin_has_xpr" != skipping; then
+
+# Check whether --with-m4_tolower(Xpr) or --without-m4_tolower(Xpr) was given.
+if test "${with_xpr+set}" = set; then
+  withval="$with_xpr"
+  if test "$withval" = no ; then
+       coin_has_xpr=skipping
+     fi
+
+fi;
+fi
+
 XPR_LIBS=
 XPR_CFLAGS=
 XPR_DATA=
@@ -28711,6 +28880,18 @@ if test x"$COIN_SKIP_PROJECTS" != x; then
       coin_has_asl=skipping
     fi
   done
+fi
+
+if test "$coin_has_asl" != skipping; then
+
+# Check whether --with-m4_tolower(ASL) or --without-m4_tolower(ASL) was given.
+if test "${with_asl+set}" = set; then
+  withval="$with_asl"
+  if test "$withval" = no ; then
+       coin_has_asl=skipping
+     fi
+
+fi;
 fi
 
 ASL_LIBS=

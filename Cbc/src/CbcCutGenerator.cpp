@@ -275,6 +275,8 @@ CbcCutGenerator::generateCuts( OsiCuts & cs , int fullScan, OsiSolverInterface *
             info.options |= 16;
         if (fullScan < 0)
             info.options |= 128;
+	if (whetherInMustCallAgainMode())
+	  info.options |= 1024;
         // See if we want alternate set of cuts
         if ((model_->moreSpecialOptions()&16384) != 0)
             info.options |= 256;
@@ -538,7 +540,17 @@ CbcCutGenerator::generateCuts( OsiCuts & cs , int fullScan, OsiSolverInterface *
                 }
             }
             //if (!solver->basisIsAvailable())
-            //returnCode=true;
+	    //returnCode=true;
+	    if (!returnCode) {
+	      // bounds changed but still optimal
+#ifdef COIN_HAS_CLP
+	      OsiClpSolverInterface * clpSolver
+		= dynamic_cast<OsiClpSolverInterface *> (solver);
+	      if (clpSolver) {
+		clpSolver->setLastAlgorithm(2);
+	      }
+#endif
+	    }
 #ifdef JJF_ZERO
             // Pass across info to pseudocosts
             char * mark = new char[numberColumns];

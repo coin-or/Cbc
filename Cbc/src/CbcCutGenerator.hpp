@@ -166,6 +166,10 @@ public:
         return depthCutGeneratorInSub_;
     }
 
+    /// Get switches (for debug)
+    inline int switches() const {
+        return switches_;
+    }
     /// Get whether the cut generator should be called in the normal place
     inline bool normal() const {
         return (switches_&1) != 0;
@@ -318,6 +322,24 @@ public:
     inline void setWhetherToUse(bool yesNo) {
         switches_ &= ~1024;
         switches_ |= yesNo ? 1024 : 0;
+    }
+    /// Whether in must call again mode (or after others)
+    inline bool whetherInMustCallAgainMode() const {
+        return (switches_&2048) != 0;
+    }
+    /// Set whether in must call again mode (or after others)
+    inline void setWhetherInMustCallAgainMode(bool yesNo) {
+        switches_ &= ~2048;
+        switches_ |= yesNo ? 2048 : 0;
+    }
+    /// Whether to call at end
+    inline bool whetherCallAtEnd() const {
+        return (switches_&4096) != 0;
+    }
+    /// Set whether to call at end
+    inline void setWhetherCallAtEnd(bool yesNo) {
+        switches_ &= ~4096;
+        switches_ |= yesNo ? 4096 : 0;
     }
     /// Number of cuts generated at root
     inline int numberCutsAtRoot() const {

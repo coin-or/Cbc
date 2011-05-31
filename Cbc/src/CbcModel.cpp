@@ -1976,6 +1976,7 @@ void CbcModel::branchAndBound(int doStatistics)
     }
 #endif
     bool feasible;
+    numberSolves_ = 0 ;
     // If NLP then we assume already solved outside branchAndbound
     if (!solverCharacteristics_->solverType() || solverCharacteristics_->solverType() == 4) {
         feasible = resolve(NULL, 0) != 0 ;
@@ -2218,6 +2219,11 @@ void CbcModel::branchAndBound(int doStatistics)
         = dynamic_cast<OsiClpSolverInterface *> (solver_);
         if (clpSolver)
             clpSolver->setStuff(getIntegerTolerance(), getCutoffIncrement());
+#ifdef CLP_RESOLVE
+	if ((moreSpecialOptions_&1048576)!=0&&!parentModel_&&clpSolver) {
+	  resolveClp(clpSolver,0);
+	}
+#endif
     }
 #endif
     /*
@@ -2327,7 +2333,6 @@ void CbcModel::branchAndBound(int doStatistics)
       For printing totals and for CbcNode (numberNodes_)
     */
     numberIterations_ = 0 ;
-    numberSolves_ = 0 ;
     numberNodes_ = 0 ;
     numberNodes2_ = 0 ;
     maximumStatistics_ = 0;
@@ -2556,6 +2561,14 @@ void CbcModel::branchAndBound(int doStatistics)
     if (!solverCharacteristics_->mipFeasible())
         feasible = false;
 
+#ifdef CLP_RESOLVE
+    if ((moreSpecialOptions_&2097152)!=0&&!parentModel_&&feasible) {
+      OsiClpSolverInterface * clpSolver
+	= dynamic_cast<OsiClpSolverInterface *> (solver_);
+      if (clpSolver)
+	resolveClp(clpSolver,0);
+    }
+#endif
     // make cut generators less aggressive
     for (iCutGenerator = 0; iCutGenerator < numberCutGenerators_; iCutGenerator++) {
         CglCutGenerator * generator = generator_[iCutGenerator]->generator();
@@ -6914,6 +6927,8 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
     int experimentBreak = (moreSpecialOptions_ >> 11) & 3;
     // Whether to increase minimum drop
     bool increaseDrop = (moreSpecialOptions_ & 8192) != 0;
+    for (int i = 0; i < numberCutGenerators_; i++) 
+      generator_[i]->setWhetherInMustCallAgainMode(false);
     /*
       Begin cut generation loop. Cuts generated during each iteration are
       collected in theseCuts. The loop can be divided into four phases:
@@ -6937,6 +6952,8 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
             for (int i = 0; i < numberCutGenerators_; i++) {
                 if (!generator_[i]->mustCallAgain())
                     generator_[i]->setSwitchedOff(true);
+		else
+		  generator_[i]->setWhetherInMustCallAgainMode(true);
             }
         }
         keepGoing = false;
@@ -7524,6 +7541,15 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
             numberTries = 0 ;
 	    keepGoing=false;
         }
+	if (numberTries <=0 && feasible && !keepGoing && !parentModel_ && !numberNodes_) {
+	  for (int i = 0; i < numberCutGenerators_; i++) {
+	    if (generator_[i]->whetherCallAtEnd()
+		&&!generator_[i]->whetherInMustCallAgainMode()) {
+	      keepGoing= true;
+	      break;
+            }
+	  }
+	}
     } while (numberTries > 0 || keepGoing) ;
     /*
       End cut generation loop.
@@ -8339,6 +8365,9 @@ CbcModel::serialCuts(OsiCuts & theseCuts, CbcNode * node, OsiCuts & slackCuts, i
         int numberColumnCutsBefore = theseCuts.sizeColCuts() ;
         int numberRowCutsAfter = numberRowCutsBefore;
         int numberColumnCutsAfter = numberColumnCutsBefore;
+	/*printf("GEN %d %s switches %d\n",
+	       i,generator_[i]->cutGeneratorName(),
+	       generator_[i]->switches());*/
         bool generate = generator_[i]->normal();
         // skip if not optimal and should be (maybe a cut generator has fixed variables)
         if (generator_[i]->howOften() == -100 ||
@@ -8369,7 +8398,16 @@ CbcModel::serialCuts(OsiCuts & theseCuts, CbcNode * node, OsiCuts & slackCuts, i
                 }
             }
             if (numberRowCutsBefore < numberRowCutsAfter &&
-                    generator_[i]->mustCallAgain() && status >= 0)
+		generator_[i]->mustCallAgain() && status >= 0)
+	      /*printf("%s before %d after %d must %c atend %c off %c endmode %c\n",
+		   generator_[i]->cutGeneratorName(),
+		   numberRowCutsBefore,numberRowCutsAfter,
+		   generator_[i]->mustCallAgain() ? 'Y': 'N',
+		   generator_[i]->whetherCallAtEnd() ? 'Y': 'N',
+		   generator_[i]->switchedOff() ? 'Y': 'N',
+		   generator_[i]->whetherInMustCallAgainMode() ? 'Y': 'N');*/
+            if (numberRowCutsBefore < numberRowCutsAfter &&
+		generator_[i]->mustCallAgain() && status >= 0)
                 status = 1 ; // say must go round
             // Check last cut to see if infeasible
             /*
@@ -12101,6 +12139,242 @@ CbcModel::resolve(OsiSolverInterface * solver)
 #endif
     return solver->isProvenOptimal() ? 1 : 0;
 }
+#ifdef CLP_RESOLVE
+// Special purpose resolve
+int 
+CbcModel::resolveClp(OsiClpSolverInterface * clpSolver, int type)
+{
+    numberSolves_++;
+    ClpSimplex * clpSimplex = clpSolver->getModelPtr();
+    int save = clpSimplex->specialOptions();
+    clpSimplex->setSpecialOptions(save | 0x11000000); // say is Cbc (and in branch and bound)
+    int save2 = clpSolver->specialOptions();
+    clpSolver->resolve();
+    if (!numberNodes_) {
+      double error = CoinMax(clpSimplex->largestDualError(),
+			     clpSimplex->largestPrimalError());
+      if (error > 1.0e-2 || !clpSolver->isProvenOptimal()) {
+#ifdef CLP_INVESTIGATE
+	printf("Problem was %s largest dual error %g largest primal %g - safer cuts\n",
+	       clpSolver->isProvenOptimal() ? "optimal" : "!infeasible",
+	       clpSimplex->largestDualError(),
+	       clpSimplex->largestPrimalError());
+#endif
+	if (!clpSolver->isProvenOptimal()) {
+	  clpSolver->setSpecialOptions(save2 | 2048);
+	  clpSimplex->allSlackBasis(true);
+	  clpSolver->resolve();
+	  if (!clpSolver->isProvenOptimal()) {
+	    bool takeHint;
+	    OsiHintStrength strength;
+	    clpSolver->getHintParam(OsiDoDualInResolve, takeHint, strength);
+	    clpSolver->setHintParam(OsiDoDualInResolve, false, OsiHintDo);
+	    clpSolver->resolve();
+	    clpSolver->setHintParam(OsiDoDualInResolve, takeHint, strength);
+	  }
+	}
+	// make cuts safer
+	for (int iCutGenerator = 0; iCutGenerator < numberCutGenerators_; iCutGenerator++) {
+	  CglCutGenerator * generator = generator_[iCutGenerator]->generator();
+	  CglGomory * cgl1 = dynamic_cast<CglGomory *>(generator);
+	  if (cgl1) {
+	    cgl1->setLimitAtRoot(cgl1->getLimit());
+	  }
+	  CglTwomir * cgl2 = dynamic_cast<CglTwomir *>(generator);
+	  if (cgl2) {
+	    generator_[iCutGenerator]->setHowOften(-100);
+	  }
+	}
+      }
+    }
+    clpSolver->setSpecialOptions(save2);
+#ifdef CLP_INVESTIGATE
+    if (clpSimplex->numberIterations() > 1000)
+      printf("node %d took %d iterations\n", numberNodes_, clpSimplex->numberIterations());
+#endif
+    if (type==0 && clpSolver->isProvenOptimal()) {
+      ClpSimplex newModel(*clpSimplex);
+      newModel.primal();
+      int numberColumns = newModel.numberColumns();
+      int numberRows = newModel.numberRows();
+      double * obj = new double [numberColumns];
+      int * which = new int [numberColumns];
+      const double * solution = clpSimplex->primalColumnSolution();
+      double rhs=1.0e-8;
+      int numberObj=0;
+      double integerTolerance = getDblParam(CbcIntegerTolerance) ;
+      double * objective = newModel.objective();
+      for (int i=0;i<numberColumns;i++) {
+	if (objective[i]) {
+	  rhs += objective[i]*solution[i];
+	  obj[numberObj]=objective[i];
+	  which[numberObj++]=i;
+	  objective[i]=0.0;
+	}
+      }
+      if (numberObj) {
+	newModel.addRow(numberObj,which,obj,-COIN_DBL_MAX,rhs);
+      }
+      delete [] obj;
+      delete [] which;
+      double * lower = newModel.columnLower();
+      double * upper = newModel.columnUpper();
+      int numberInf = 0;
+      int numberLb = 0;
+      int numberUb = 0;
+      int numberInt = 0;
+      double sumInf=0.0;
+      for (int i=0;i<numberIntegers_;i++) {
+	int iSequence = integerVariable_[i];
+	double value = solution[iSequence];
+	value = CoinMax(value, lower[iSequence]);
+	value = CoinMin(value, upper[iSequence]);
+	double nearest = floor(value + 0.5);
+	if (value<lower[iSequence]+integerTolerance) {
+	  objective[iSequence]=1.0;
+	  numberLb++;
+	} else if (value>upper[iSequence]-integerTolerance) {
+	  objective[iSequence]=-1.0;
+	  numberUb++;
+	} else if (fabs(value - nearest) <= integerTolerance) {
+	  // fix??
+	  lower[iSequence]=nearest;
+	  upper[iSequence]=nearest;
+	  numberInt++;
+	} else {
+	  lower[iSequence]=floor(value);
+	  upper[iSequence]=ceil(value);
+	  if (value>nearest) {
+	    objective[iSequence]=1.0;
+	    sumInf += value-nearest;
+	  } else {
+	    objective[iSequence]=-1.0;
+	    sumInf -= value-nearest;
+	  }
+	  numberInf++;
+	}
+      }
+      printf("XX %d inf (sum %g), %d at lb %d at ub %d other integer\n",
+	     numberInf,sumInf,numberLb,numberUb,numberInt);
+      if (numberInf) {
+	newModel.primal(1);
+	if (!newModel.isProvenOptimal()) {
+	  printf("not optimal - scaling issue - switch off\n");
+	  clpSimplex->setSpecialOptions(save);
+	  if (clpSimplex->status()==4)
+	    clpSimplex->setProblemStatus(1);
+	  return clpSolver->isProvenOptimal() ? 1 : 0;
+	}
+	//newModel.writeMps("bad.mps");
+	//assert (newModel.isProvenOptimal());
+	printf("%d iterations\n",newModel.numberIterations());
+	int numberInf2 = 0;
+	int numberLb2 = 0;
+	int numberUb2 = 0;
+	int numberInt2 = 0;
+	double sumInf2=0.0;
+	const double * solution = newModel.primalColumnSolution();
+	const double * lower = clpSimplex->columnLower();
+	const double * upper = clpSimplex->columnUpper();
+	for (int i=0;i<numberIntegers_;i++) {
+	  int iSequence = integerVariable_[i];
+	  double value = solution[iSequence];
+	  value = CoinMax(value, lower[iSequence]);
+	  value = CoinMin(value, upper[iSequence]);
+	  double nearest = floor(value + 0.5);
+	  if (value<lower[iSequence]+integerTolerance) {
+	    numberLb2++;
+	  } else if (value>upper[iSequence]-integerTolerance) {
+	    numberUb2++;
+	  } else if (fabs(value - nearest) <= integerTolerance) {
+	    numberInt2++;
+	  } else {
+	    if (value>nearest) {
+	      sumInf2 += value-nearest;
+	    } else {
+	      sumInf2 -= value-nearest;
+	    }
+	    numberInf2++;
+	  }
+	}
+	printf("XXX %d inf (sum %g), %d at lb %d at ub %d other integer\n",
+	       numberInf2,sumInf2,numberLb2,numberUb2,numberInt2);
+	if (sumInf2<sumInf*0.95) {
+	  printf("XXXX suminf reduced from %g (%d) to %g (%d)\n",
+		 sumInf,numberInf,sumInf2,numberInf2);
+	  if (numberObj) {
+	    newModel.deleteRows(1,&numberRows);
+	  }
+	  memcpy(newModel.objective(),
+		 clpSimplex->objective(),
+		 numberColumns*sizeof(double));
+	  memcpy(newModel.columnLower(),
+		 clpSimplex->columnLower(),
+		 numberColumns*sizeof(double));
+	  memcpy(newModel.columnUpper(),
+		 clpSimplex->columnUpper(),
+		 numberColumns*sizeof(double));
+	  newModel.setClpScaledMatrix(NULL);
+	  newModel.primal(1);
+	  printf("%d iterations\n",newModel.numberIterations());
+	  int numberInf3 = 0;
+	  int numberLb3 = 0;
+	  int numberUb3 = 0;
+	  int numberInt3 = 0;
+	  double sumInf3=0.0;
+	  const double * solution = newModel.primalColumnSolution();
+	  const double * lower = clpSimplex->columnLower();
+	  const double * upper = clpSimplex->columnUpper();
+	  for (int i=0;i<numberIntegers_;i++) {
+	    int iSequence = integerVariable_[i];
+	    double value = solution[iSequence];
+	    value = CoinMax(value, lower[iSequence]);
+	    value = CoinMin(value, upper[iSequence]);
+	    double nearest = floor(value + 0.5);
+	    if (value<lower[iSequence]+integerTolerance) {
+	      numberLb3++;
+	    } else if (value>upper[iSequence]-integerTolerance) {
+	      numberUb3++;
+	    } else if (fabs(value - nearest) <= integerTolerance) {
+	      numberInt3++;
+	    } else {
+	      if (value>nearest) {
+		sumInf3 += value-nearest;
+	      } else {
+		sumInf3 -= value-nearest;
+	      }
+	      numberInf3++;
+	    }
+	  }
+	  printf("XXXXX %d inf (sum %g), %d at lb %d at ub %d other integer\n",
+		 numberInf3,sumInf3,numberLb3,numberUb3,numberInt3);
+	  if (sumInf3<sumInf*0.95) {
+	    memcpy(clpSimplex->primalColumnSolution(),
+		   newModel.primalColumnSolution(),
+		   numberColumns*sizeof(double));
+	    memcpy(clpSimplex->dualColumnSolution(),
+		   newModel.dualColumnSolution(),
+		   numberColumns*sizeof(double));
+	    memcpy(clpSimplex->primalRowSolution(),
+		   newModel.primalRowSolution(),
+		   numberRows*sizeof(double));
+	    memcpy(clpSimplex->dualRowSolution(),
+		   newModel.dualRowSolution(),
+		   numberRows*sizeof(double));
+	    memcpy(clpSimplex->statusArray(),
+		   newModel.statusArray(),
+		   (numberColumns+numberRows)*sizeof(unsigned char));
+	    clpSolver->setWarmStart(NULL);
+	  }
+	}
+      }
+    }
+    clpSimplex->setSpecialOptions(save);
+    if (clpSimplex->status()==4)
+      clpSimplex->setProblemStatus(1);
+    return clpSolver->isProvenOptimal() ? 1 : 0;
+}
+#endif
 /*!
     \todo It'd be really nice if there were an overload for this method that
 	  allowed a separate value for the underlying solver's log level. The

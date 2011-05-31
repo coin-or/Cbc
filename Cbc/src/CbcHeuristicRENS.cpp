@@ -851,8 +851,7 @@ CbcHeuristicRENS::solution(double & solutionValue,
 #endif
         returnCode = smallBranchAndBound(newSolver, numberNodes_, betterSolution, solutionValue,
                                          model_->getCutoff(), "CbcHeuristicRENS");
-        if (returnCode < 0) {
-            returnCode = 0; // returned on size
+        if (returnCode < 0 || returnCode == 0) {
 #ifdef RENS_FIX_CONTINUOUS
             if (numberContinuous > numberIntegers && numberFixed >= numberColumns / 5) {
                 const double * colLower = newSolver->getColLower();
@@ -904,8 +903,94 @@ CbcHeuristicRENS::solution(double & solutionValue,
                 }
                 returnCode = smallBranchAndBound(newSolver, numberNodes_, betterSolution, solutionValue,
                                                  model_->getCutoff(), "CbcHeuristicRENS");
+	    }
 #endif
-            }
+	    if (returnCode < 0 || returnCode == 0) {
+		// Do passes fixing up those >0.9 and
+		// down those < 0.05
+#define RENS_PASS 3
+	      //#define KEEP_GOING
+#ifdef KEEP_GOING
+ 	        double * saveLower = CoinCopyOfArray(colLower,numberColumns);
+	        double * saveUpper = CoinCopyOfArray(colUpper,numberColumns);
+		bool badPass=false;
+		int nSolved=0;
+#endif
+		for (int iPass=0;iPass<RENS_PASS;iPass++) {
+		  int nFixed=0;
+		  int nFixedAlready=0;
+		  int nFixedContinuous=0;
+		  for (int iColumn = 0; iColumn < numberColumns; iColumn++) {
+		    if (colUpper[iColumn]>colLower[iColumn]) {
+		      if (newSolver->isInteger(iColumn)) {
+			double value = currentSolution[iColumn];
+			double fixTo = floor(value+0.1);
+			if (fixTo>value || value-fixTo < 0.05) {
+			  // above 0.9 or below 0.05
+			  nFixed++;
+			  newSolver->setColLower(iColumn, fixTo);
+			  newSolver->setColUpper(iColumn, fixTo);
+			}
+		      }
+		    } else if (newSolver->isInteger(iColumn)) {
+		      nFixedAlready++;
+		    } else {
+		      nFixedContinuous++;
+		    }
+		  }
+#ifdef CLP_INVESTIGATE2
+		  printf("%d more integers fixed (total %d) plus %d continuous\n",
+			 nFixed,nFixed+nFixedAlready,nFixedContinuous);
+#endif
+#ifdef KEEP_GOING
+		  if (nFixed) {
+		    newSolver->resolve();
+		    if (!newSolver->isProvenOptimal()) {
+		      badPass=true;
+		      break;
+		    } else {
+		      nSolved++;
+		      memcpy(saveLower,colLower,numberColumns*sizeof(double));
+		      memcpy(saveUpper,colUpper,numberColumns*sizeof(double));
+		    }
+		  } else {
+		    break;
+		  }
+#else
+		  if (nFixed) {
+		    newSolver->resolve();
+		    if (!newSolver->isProvenOptimal()) {
+		      returnCode=0;
+		      break;
+		    }
+		    returnCode = smallBranchAndBound(newSolver, numberNodes_, betterSolution, solutionValue,
+						     model_->getCutoff(), "CbcHeuristicRENS");
+		  } else {
+		    returnCode=0;
+		  }
+		  if (returnCode>=0)
+		    break;
+		}
+		if (returnCode < 0) 
+                returnCode = 0; // returned on size
+#endif
+	    }
+#ifdef KEEP_GOING
+	    if (badPass) {
+	      newSolver->setColLower(saveLower);
+	      newSolver->setColUpper(saveUpper);
+	      newSolver->resolve();
+	    }
+	    delete [] saveLower;
+	    delete [] saveUpper;
+	    if (nSolved)
+	      returnCode = 
+		smallBranchAndBound(newSolver, numberNodes_, betterSolution, solutionValue,
+				    model_->getCutoff(), "CbcHeuristicRENS");
+	    else
+	      returnCode=0;
+	}
+#endif
         }
         //printf("return code %d",returnCode);
         if ((returnCode&2) != 0) {

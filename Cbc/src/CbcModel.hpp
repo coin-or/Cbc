@@ -17,7 +17,6 @@
 #include "CbcEventHandler.hpp"
 #include "ClpDualRowPivot.hpp"
 
-//class OsiSolverInterface;
 
 class CbcCutGenerator;
 class CbcBaseModel;
@@ -38,6 +37,7 @@ class CbcStatistics;
 class CbcEventHandler ;
 class CglPreProcess;
 # ifdef COIN_HAS_CLP
+class OsiClpSolverInterface;
 class ClpNodeStuff;
 #endif
 // #define CBC_CHECK_BASIS 1
@@ -1715,6 +1715,8 @@ public:
         15 bit (32768) - Try reduced model after 0 nodes
         16 bit (65536) - Original model had integer bounds
         17 bit (131072) - Perturbation switched off
+        18 bit (262144) - donor CbcModel
+        19 bit (524288) - recipient CbcModel
     */
     inline void setSpecialOptions(int value) {
         specialOptions_ = value;
@@ -1736,6 +1738,10 @@ public:
 	32768 more heuristics in sub trees
 	65536 no cuts in preprocessing
         131072 Time limits elapsed
+        18 bit (262144) - Perturb fathom nodes
+        19 bit (524288) - No limit on fathom nodes
+        20 bit (1048576) - Reduce sum of infeasibilities before cuts
+        21 bit (2097152) - Reduce sum of infeasibilities after cuts
     */
     inline void setMoreSpecialOptions(int value) {
         moreSpecialOptions_ = value;
@@ -2003,6 +2009,10 @@ public:
     void deleteSolutions();
     /// Encapsulates solver resolve
     int resolve(OsiSolverInterface * solver);
+#ifdef CLP_RESOLVE
+    /// Special purpose resolve
+    int resolveClp(OsiClpSolverInterface * solver, int type);
+#endif
 
     /** Encapsulates choosing a variable -
         anyAction -2, infeasible (-1 round again), 0 done
@@ -2456,6 +2466,8 @@ private:
         131072 Time limits elapsed
         18 bit (262144) - Perturb fathom nodes
         19 bit (524288) - No limit on fathom nodes
+        20 bit (1048576) - Reduce sum of infeasibilities before cuts
+        21 bit (2097152) - Reduce sum of infeasibilities after cuts
     */
     int moreSpecialOptions_;
     /// User node comparison function

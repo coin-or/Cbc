@@ -1129,6 +1129,12 @@ int CbcMain1 (int argc, const char *argv[],
     CbcOrClpParam * parameters_ = parameters;
     int numberParameters_ = numberParameters;
     CbcModel & model_ = model;
+#ifdef CBC_USE_INITIAL_TIME
+    if (model_.useElapsedTime())
+      model_.setDblParam(CbcModel::CbcStartSeconds, CoinGetTimeOfDay());
+    else
+      model_.setDblParam(CbcModel::CbcStartSeconds, CoinCpuTime());
+#endif
     CbcModel * babModel_ = NULL;
     int returnMode = 1;
     CbcOrClpRead_mode = 1;
@@ -1752,10 +1758,12 @@ int CbcMain1 (int argc, const char *argv[],
                 int valid;
                 numberGoodCommands++;
                 if (type == CBC_PARAM_ACTION_BAB && goodModel) {
+#ifndef CBC_USE_INITIAL_TIME
 		  if (model_.useElapsedTime())
 		    model_.setDblParam(CbcModel::CbcStartSeconds, CoinGetTimeOfDay());
 		  else
 		    model_.setDblParam(CbcModel::CbcStartSeconds, CoinCpuTime());
+#endif
                     // check if any integers
 #ifndef CBC_OTHER_SOLVER
 #ifdef COIN_HAS_ASL
@@ -2043,6 +2051,12 @@ int CbcMain1 (int argc, const char *argv[],
                                      parameters_[iParam].type() == CBC_PARAM_INT_FPUMPITS)
                                 pumpChanged = true;
                             else if (parameters_[iParam].type() == CBC_PARAM_INT_EXPERIMENT) {
+  			        int addFlags=0;
+				if (value>=10) {
+				  addFlags = 1048576*(value/10);
+				  value = value % 10;
+				  parameters[whichParam(CBC_PARAM_INT_EXPERIMENT, numberParameters, parameters)].setIntValue(value);
+				}
                                 if (value >= 1) {
 				    int values[]={24003,280003,792003,24003,24003};
 				    if (value>=2&&value<=3) {
@@ -2052,7 +2066,7 @@ int CbcMain1 (int argc, const char *argv[],
 				      iParam = whichParam(CBC_PARAM_STR_DIVINGP, numberParameters_, parameters_);
 				      parameters_[iParam].setCurrentOption("on");
 				    }
-				    int extra4 = values[value-1];
+				    int extra4 = values[value-1]+addFlags;
                                     parameters[whichParam(CBC_PARAM_INT_EXTRA4, numberParameters, parameters)].setIntValue(extra4);
                                     if (!noPrinting_) {
                                         generalMessageHandler->message(CLP_GENERAL, generalMessages)
@@ -4001,8 +4015,10 @@ int CbcMain1 (int argc, const char *argv[],
                                                            parameters_)].intValue();
                             int bothFlags = CoinMax(CoinMin(experimentFlag, 1), strategyFlag);
                             // add cut generators if wanted
-                            int switches[20];
-                            int accuracyFlag[20];
+                            int switches[30];
+                            int accuracyFlag[30];
+			    char doAtEnd[30];
+			    memset(doAtEnd,0,30);
                             int numberGenerators = 0;
                             int translate[] = { -100, -1, -99, -98, 1, -1098, -999, 1, 1, 1, -1};
                             if (probingAction) {
@@ -4077,32 +4093,49 @@ int CbcMain1 (int argc, const char *argv[],
                                         gomoryGen.setLimit(cutLength % 10000000);
                                     }
                                 }
-                                int extra3 = parameters_[whichParam(CBC_PARAM_INT_EXTRA3, numberParameters_, parameters_)].intValue();
-				if (extra3>=100) {
-				  // replace
-				  gomoryGen.passInOriginalSolver(babModel_->solver());
-				  gomoryGen.setGomoryType(2);
-				  extra3 = -1;
-				  parameters_[whichParam(CBC_PARAM_INT_EXTRA3, numberParameters_, parameters_)].setIntValue(extra3);
-				  babModel_->addCutGenerator(&gomoryGen, translate[gomoryAction], "GomoryL");
-				} else {
+                                int laGomory = parameters_[whichParam(CBC_PARAM_STR_LAGOMORYCUTS, numberParameters_, parameters_)].currentOptionAsInteger();
+				int gType = translate[gomoryAction];
+				if (!laGomory) {
+				  // Normal
 				  babModel_->addCutGenerator(&gomoryGen, translate[gomoryAction], "Gomory");
-				}
-                                accuracyFlag[numberGenerators] = 3;
-                                switches[numberGenerators++] = 0;
-				if (extra3>=10) {
-				  // just root if 10
-				  int itype=-99;
-				  if (extra3>=20) {
-    				    extra3-=10;
-				    itype = translate[gomoryAction];
-				  }
-				  gomoryGen.passInOriginalSolver(babModel_->solver());
-				  babModel_->addCutGenerator(&gomoryGen, itype, "GomoryL2");
 				  accuracyFlag[numberGenerators] = 3;
 				  switches[numberGenerators++] = 0;
-				  extra3 -= 10;
-				  parameters_[whichParam(CBC_PARAM_INT_EXTRA3, numberParameters_, parameters_)].setIntValue(extra3);
+				} else {
+				  laGomory--;
+				  int type = (laGomory % 3)+1;
+				  int when = laGomory/3;
+				  char atEnd = (when<2) ? 1 : 0;
+				  int gomoryTypeMajor = 0;
+				  if (when<3) {
+				    // normal as well
+				    babModel_->addCutGenerator(&gomoryGen, gType, "Gomory");
+				    accuracyFlag[numberGenerators] = 3;
+				    switches[numberGenerators++] = 0;
+				    if (when==2)
+				      gomoryTypeMajor=10;
+				  } else {
+				    when--; // so on
+				    gomoryTypeMajor=20;
+				  }
+				  if (!when)
+				    gType=-99; // root
+				  gomoryGen.passInOriginalSolver(babModel_->solver());
+				  if ((type&1) !=0) {
+				    // clean
+				    gomoryGen.setGomoryType(gomoryTypeMajor+1);
+				    babModel_->addCutGenerator(&gomoryGen, gType, "GomoryL1");
+				    accuracyFlag[numberGenerators] = 3;
+				    doAtEnd[numberGenerators]=atEnd;
+				    switches[numberGenerators++] = 0;
+				  }
+				  if ((type&2) !=0) {
+				    // simple
+				    gomoryGen.setGomoryType(gomoryTypeMajor+2);
+				    babModel_->addCutGenerator(&gomoryGen, gType, "GomoryL2");
+				    accuracyFlag[numberGenerators] = 3;
+				    doAtEnd[numberGenerators]=atEnd;
+				    switches[numberGenerators++] = 0;
+				  }
 				}
                             }
 #ifdef CLIQUE_ANALYSIS
@@ -4189,6 +4222,10 @@ int CbcMain1 (int argc, const char *argv[],
                                 //if (switches[iGenerator]==-2)
                                 //generator->setWhetherToUse(true);
                                 generator->setInaccuracy(accuracyFlag[iGenerator]);
+				if (doAtEnd[iGenerator]) {
+				  generator->setWhetherCallAtEnd(true);
+				  generator->setMustCallAgain(true);
+				}
                                 generator->setTiming(true);
                                 if (cutDepth >= 0)
                                     generator->setWhatDepth(cutDepth) ;

@@ -2252,8 +2252,8 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
             } else if (!iPass) {
                 // may just need resolve
                 model->resolve(NULL, 11, saveSolution, saveLower, saveUpper);
-                //double newObjValue = solver->getObjSense()*solver->getObjValue();
-                //objectiveValue_ = CoinMax(objectiveValue_,newObjValue);
+                double newObjValue = solver->getObjSense()*solver->getObjValue();
+                objectiveValue_ = CoinMax(objectiveValue_,newObjValue);
                 if (!solver->isProvenOptimal()) {
                     // infeasible
                     anyAction = -2;
@@ -2375,8 +2375,8 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
                     solver->getHintParam(OsiDoDualInResolve, takeHint, strength);
                     solver->setHintParam(OsiDoDualInResolve, false, OsiHintDo) ;
                     model->resolve(NULL, 11, saveSolution, saveLower, saveUpper);
-                    //double newObjValue = solver->getObjSense()*solver->getObjValue();
-                    //objectiveValue_ = CoinMax(objectiveValue_,newObjValue);
+                    double newObjValue = solver->getObjSense()*solver->getObjValue();
+                    objectiveValue_ = CoinMax(objectiveValue_,newObjValue);
                     solver->setHintParam(OsiDoDualInResolve, takeHint, strength) ;
                     if (!solver->isProvenOptimal()) {
                         // infeasible
@@ -2596,8 +2596,8 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
                         assert(doneHotStart);
                         solver->unmarkHotStart();
                         model->resolve(NULL, 11, saveSolution, saveLower, saveUpper);
-                        //double newObjValue = solver->getObjSense()*solver->getObjValue();
-                        //objectiveValue_ = CoinMax(objectiveValue_,newObjValue);
+                        double newObjValue = solver->getObjSense()*solver->getObjValue();
+                        objectiveValue_ = CoinMax(objectiveValue_,newObjValue);
                         solver->markHotStart();
                         problemFeasible = solver->isProvenOptimal();
                     }
@@ -2902,7 +2902,7 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
                                 if (needHotStartUpdate) {
                                     model->resolve(NULL, 11, saveSolution, saveLower, saveUpper);
                                     newObjectiveValue = solver->getObjSense() * solver->getObjValue();
-                                    //objectiveValue_ = CoinMax(objectiveValue_,newObjectiveValue);
+                                    objectiveValue_ = CoinMax(objectiveValue_,newObjectiveValue);
                                     objectiveChange = CoinMax(newObjectiveValue  - objectiveValue_, 0.0);
                                     model->feasibleSolution(choice.numIntInfeasDown,
                                                             choice.numObjInfeasDown);
@@ -2936,8 +2936,8 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
                     if (needHotStartUpdate) {
                         needHotStartUpdate = false;
                         model->resolve(NULL, 11, saveSolution, saveLower, saveUpper);
-                        //double newObjValue = solver->getObjSense()*solver->getObjValue();
-                        //objectiveValue_ = CoinMax(objectiveValue_,newObjValue);
+                        double newObjValue = solver->getObjSense()*solver->getObjValue();
+                        objectiveValue_ = CoinMax(objectiveValue_,newObjValue);
                         //we may again have an integer feasible solution
                         int numberIntegerInfeasibilities;
                         int numberObjectInfeasibilities;
@@ -2956,8 +2956,8 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
                                                    objValue,
                                                    solver->getColSolution()) ;
                             model->resolve(NULL, 11, saveSolution, saveLower, saveUpper);
-                            //double newObjValue = solver->getObjSense()*solver->getObjValue();
-                            //objectiveValue_ = CoinMax(objectiveValue_,newObjValue);
+                            double newObjValue = solver->getObjSense()*solver->getObjValue();
+                            objectiveValue_ = CoinMax(objectiveValue_,newObjValue);
                             cutoff = model->getCutoff();
                         }
                         solver->markHotStart();
@@ -3063,7 +3063,7 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
                                 if (needHotStartUpdate) {
                                     model->resolve(NULL, 11, saveSolution, saveLower, saveUpper);
                                     newObjectiveValue = solver->getObjSense() * solver->getObjValue();
-                                    //objectiveValue_ = CoinMax(objectiveValue_,newObjectiveValue);
+                                    objectiveValue_ = CoinMax(objectiveValue_,newObjectiveValue);
                                     objectiveChange = CoinMax(newObjectiveValue  - objectiveValue_, 0.0);
                                     model->feasibleSolution(choice.numIntInfeasDown,
                                                             choice.numObjInfeasDown);
@@ -3097,8 +3097,8 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
                     if (needHotStartUpdate) {
                         needHotStartUpdate = false;
                         model->resolve(NULL, 11, saveSolution, saveLower, saveUpper);
-                        //double newObjValue = solver->getObjSense()*solver->getObjValue();
-                        //objectiveValue_ = CoinMax(objectiveValue_,newObjValue);
+                        double newObjValue = solver->getObjSense()*solver->getObjValue();
+                        objectiveValue_ = CoinMax(objectiveValue_,newObjValue);
                         //we may again have an integer feasible solution
                         int numberIntegerInfeasibilities;
                         int numberObjectInfeasibilities;
@@ -3111,8 +3111,8 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
                                                    objValue,
                                                    solver->getColSolution()) ;
                             model->resolve(NULL, 11, saveSolution, saveLower, saveUpper);
-                            //double newObjValue = solver->getObjSense()*solver->getObjValue();
-                            //objectiveValue_ = CoinMax(objectiveValue_,newObjValue);
+                            double newObjValue = solver->getObjSense()*solver->getObjValue();
+                            objectiveValue_ = CoinMax(objectiveValue_,newObjValue);
                             cutoff = model->getCutoff();
                         }
                         solver->markHotStart();
@@ -3256,8 +3256,8 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
                         assert(doneHotStart);
                         solver->unmarkHotStart();
                         model->resolve(NULL, 11, saveSolution, saveLower, saveUpper);
-                        //double newObjValue = solver->getObjSense()*solver->getObjValue();
-                        //objectiveValue_ = CoinMax(objectiveValue_,newObjValue);
+                        double newObjValue = solver->getObjSense()*solver->getObjValue();
+                        objectiveValue_ = CoinMax(objectiveValue_,newObjValue);
                         solver->markHotStart();
                         // may be infeasible (if other way stopped on iterations)
                         if (!solver->isProvenOptimal()||solver->isDualObjectiveLimitReached()) {
@@ -3298,8 +3298,8 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
                         assert(doneHotStart);
                         solver->unmarkHotStart();
                         model->resolve(NULL, 11, saveSolution, saveLower, saveUpper);
-                        //double newObjValue = solver->getObjSense()*solver->getObjValue();
-                        //objectiveValue_ = CoinMax(objectiveValue_,newObjValue);
+                        double newObjValue = solver->getObjSense()*solver->getObjValue();
+                        objectiveValue_ = CoinMax(objectiveValue_,newObjValue);
                         solver->markHotStart();
                         // may be infeasible (if other way stopped on iterations)
                         if (!solver->isProvenOptimal()||solver->isDualObjectiveLimitReached()) {
@@ -3382,8 +3382,8 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
                     int easy = 2;
                     solver->setHintParam(OsiDoInBranchAndCut, true, OsiHintDo, &easy) ;
                     model->resolve(NULL, 11, saveSolution, saveLower, saveUpper) ;
-                    //double newObjValue = solver->getObjSense()*solver->getObjValue();
-                    //objectiveValue_ = CoinMax(objectiveValue_,newObjValue);
+                    double newObjValue = solver->getObjSense()*solver->getObjValue();
+                    objectiveValue_ = CoinMax(objectiveValue_,newObjValue);
                     solver->setHintParam(OsiDoInBranchAndCut, true, OsiHintDo, NULL) ;
                     feasible = solver->isProvenOptimal();
                     if (feasible) {

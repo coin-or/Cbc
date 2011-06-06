@@ -3478,7 +3478,8 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
         }
     }
     if (numberUnfinished*10 < numberStrongDone &&
-            numberStrongIterations*20 < model->getIterationCount()) {
+            numberStrongIterations*20 < model->getIterationCount()&&
+                                !auxiliaryInfo->solutionAddsCuts()) {
         //printf("increasing trust\n");
         model->synchronizeNumberBeforeTrust(2);
     }

@@ -4462,9 +4462,7 @@ CbcModel::CbcModel()
         numberHeuristics_(0),
         heuristic_(NULL),
         lastHeuristic_(NULL),
-# ifdef COIN_HAS_CLP
         fastNodeDepth_(-1),
-#endif
         eventHandler_(NULL),
         numberObjects_(0),
         object_(NULL),
@@ -4621,9 +4619,7 @@ CbcModel::CbcModel(const OsiSolverInterface &rhs)
         numberHeuristics_(0),
         heuristic_(NULL),
         lastHeuristic_(NULL),
-# ifdef COIN_HAS_CLP
         fastNodeDepth_(-1),
-#endif
         eventHandler_(NULL),
         numberObjects_(0),
         object_(NULL),
@@ -4872,9 +4868,7 @@ CbcModel::CbcModel(const CbcModel & rhs, bool cloneHandler)
         numberInfeasibleNodes_(rhs.numberInfeasibleNodes_),
         problemType_(rhs.problemType_),
         printFrequency_(rhs.printFrequency_),
-# ifdef COIN_HAS_CLP
         fastNodeDepth_(rhs.fastNodeDepth_),
-#endif
         howOftenGlobalScan_(rhs.howOftenGlobalScan_),
         numberGlobalViolations_(rhs.numberGlobalViolations_),
         numberExtraIterations_(rhs.numberExtraIterations_),
@@ -5326,9 +5320,7 @@ CbcModel::operator=(const CbcModel & rhs)
         } else {
             eventHandler_ = NULL ;
         }
-# ifdef COIN_HAS_CLP
         fastNodeDepth_ = rhs.fastNodeDepth_;
-#endif
         if (ownObjects_) {
             for (i = 0; i < numberObjects_; i++)
                 delete object_[i];
@@ -5636,9 +5628,7 @@ CbcModel::gutsOfCopy(const CbcModel & rhs, int mode)
     numberBeforeTrust_ = rhs.numberBeforeTrust_;
     numberPenalties_ = rhs.numberPenalties_;
     printFrequency_ = rhs.printFrequency_;
-# ifdef COIN_HAS_CLP
     fastNodeDepth_ = rhs.fastNodeDepth_;
-#endif
     howOftenGlobalScan_ = rhs.howOftenGlobalScan_;
     maximumCutPassesAtRoot_ = rhs.maximumCutPassesAtRoot_;
     maximumCutPasses_ =  rhs.maximumCutPasses_;

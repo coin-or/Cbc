@@ -2559,10 +2559,8 @@ private:
     CbcHeuristic ** heuristic_;
     /// Pointer to heuristic solver which found last solution (or NULL)
     CbcHeuristic * lastHeuristic_;
-# ifdef COIN_HAS_CLP
     /// Depth for fast nodes
     int fastNodeDepth_;
-#endif
     /*! Pointer to the event handler */
 # ifdef CBC_ONLY_CLP
     ClpEventHandler *eventHandler_ ;

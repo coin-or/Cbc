@@ -76,7 +76,6 @@ Cbc/examples/driver4.cpp -text
 Cbc/examples/modify.cpp -text
 Cbc/examples/qmip2.cpp -text
 Cbc/examples/simpleBAB.cpp -text
-Cbc/inc/config_cbc.h.in -text
 Cbc/install-sh -text
 Cbc/ltmain.sh -text
 Cbc/missing -text
@@ -210,6 +209,10 @@ Cbc/src/OsiCbc/Makefile.am -text
 Cbc/src/OsiCbc/Makefile.in -text
 Cbc/src/OsiCbc/OsiCbcSolverInterface.cpp -text
 Cbc/src/OsiCbc/OsiCbcSolverInterface.hpp -text
+Cbc/src/config.h.in -text
+Cbc/src/config_cbc.h.in -text
+Cbc/src/config_cbc_default.h -text
+Cbc/src/config_default.h -text
 Cbc/test/OsiCbcSolverInterfaceTest.cpp -text
 Cbc/test/gamsTest.cpp -text
 Cbc/test/osiUnitTest.cpp -text

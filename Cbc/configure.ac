@@ -351,7 +351,7 @@ AC_CONFIG_FILES([Makefile
 AC_CONFIG_FILES([doxydoc/doxygen.conf])
 
 # Here put the location and name of the configuration header file
-AC_CONFIG_HEADER([inc/config_cbc.h])
+AC_CONFIG_HEADER([src/config.h src/config_cbc.h])
 
 # Finally, we let configure write all the output...
 AC_COIN_FINALIZE

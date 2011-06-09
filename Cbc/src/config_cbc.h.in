@@ -1,0 +1,13 @@
+/* src/config_cbc.h.in. */
+
+/* Version number of project */
+#undef CBC_VERSION
+
+/* Major Version number of project */
+#undef CBC_VERSION_MAJOR
+
+/* Minor Version number of project */
+#undef CBC_VERSION_MINOR
+
+/* Release Version number of project */
+#undef CBC_VERSION_RELEASE

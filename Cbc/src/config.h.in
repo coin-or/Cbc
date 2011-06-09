@@ -1,4 +1,4 @@
-/* inc/config_cbc.h.in.  Generated from configure.ac by autoheader.  */
+/* src/config.h.in.  Generated from configure.ac by autoheader.  */
 
 /* Define to the name of the default solver to be used in cbc-generic in small
    letters */

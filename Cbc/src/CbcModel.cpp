@@ -2391,6 +2391,12 @@ void CbcModel::branchAndBound(int doStatistics)
     // Do heuristics
     if (numberObjects_)
         doHeuristicsAtRoot();
+#ifdef COIN_HAS_BONMIN // With some heuristics solver needs a resolve here (don't know if this is bug in heuristics)
+    solver_->resolve();
+    if(!isProvenOptimal()){
+      solver_->initialSolve();
+    }
+#endif
     /*
       Grepping through the code, it would appear that this is a command line
       debugging hook.  There's no obvious place in the code where this is set to
@@ -7087,6 +7093,17 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
             << solver_->getObjValue()
             << CoinMessageEol ;
         }
+#ifdef COIN_HAS_BONMIN  //Is Necessary for Bonmin? Always keepGoing if cuts have been generated in last iteration (taken from similar code in Cbc-2.4)
+        if (solverCharacteristics_->solutionAddsCuts()&&numberViolated) { 
+          for (i = 0;i<numberCutGenerators_;i++) { 
+            if (generator_[i]->mustCallAgain()) { 
+              keepGoing=true; // say must go round 
+              break; 
+            } 
+          } 
+        } 
+        if(!keepGoing){
+#endif
         // Status for single pass of cut generation
         int status = 0;
         /*
@@ -7109,6 +7126,9 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
             numberTries = 0;
         if (!feasible)
             violated = -2;
+#ifdef COIN_HAS_BONMIN  //Is Necessary for Bonmin? Always keepGoing if cuts have been generated in last iteration (taken from similar code in Cbc-2.4)
+        }
+#endif
         //if (!feasible)
         //break;
         /*
@@ -10857,6 +10877,7 @@ CbcModel::checkSolution (double cutoff, double *solution,
             }
             delete [] saveLower;
             delete [] saveUpper;
+            solver_->resolve();
         }
         //If the variables were fixed the cutting plane procedure may have believed that the node could be fathomed
         //re-establish truth.- should do no harm for non nlp
@@ -12562,6 +12583,9 @@ CbcModel::chooseBranch(CbcNode * &newNode, int numberPassesLeft,
     }
 #endif
     currentNode_ = newNode; // so can be used elsewhere
+#ifdef COIN_HAS_BONMIN // Remember number of rows to restore at the end of the loop
+    int saveNumberRows=solver_->getNumRows();
+#endif
     /*
       Enough preparation. Get down to the business of choosing a branching
       variable.
@@ -12655,7 +12679,9 @@ CbcModel::chooseBranch(CbcNode * &newNode, int numberPassesLeft,
             //std::cout<<solver_<<std::endl;
             resolve(solver_);
             double objval = solver_->getObjValue();
-	    int saveNumberRows=solver_->getNumRows();
+#ifndef COIN_HAS_BONMIN
+            int saveNumberRows = solver_->getNumRows();
+#endif
             lastHeuristic_ = NULL;
             setBestSolution(CBC_SOLUTION, objval,
                             solver_->getColSolution()) ;
@@ -12673,6 +12699,7 @@ CbcModel::chooseBranch(CbcNode * &newNode, int numberPassesLeft,
             if (problemFeasibility_->feasible(this, 0) < 0) {
                 feasible = false; // pretend infeasible
             }
+#ifndef COIN_HAS_BONMIN
 	    if( saveNumberRows<solver_->getNumRows()) {
 	        // delete rows - but leave solution
 	        int n = solver_->getNumRows();
@@ -12682,6 +12709,7 @@ CbcModel::chooseBranch(CbcNode * &newNode, int numberPassesLeft,
 	        solver_->deleteRows(n-saveNumberRows,del);
 	        delete [] del;
 	    }
+#endif
             if (feasible)
                 anyAction = -1;
             else
@@ -12722,6 +12750,17 @@ CbcModel::chooseBranch(CbcNode * &newNode, int numberPassesLeft,
             }
         }
     }
+#ifdef COIN_HAS_BONMIN //A candidate has been found; restore the subproblem.
+    if( saveNumberRows<solver_->getNumRows()) {
+        // delete rows - but leave solution
+        int n = solver_->getNumRows();
+        int * del = new int [n-saveNumberRows];
+        for (int i=saveNumberRows;i<n;i++)
+            del[i-saveNumberRows]=i;
+        solver_->deleteRows(n-saveNumberRows,del);
+        delete [] del;
+    }
+#endif
     /*
       End main loop to choose a branching variable.
     */

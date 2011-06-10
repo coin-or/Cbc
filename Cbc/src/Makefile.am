@@ -129,11 +129,6 @@ cbc_SOURCES = CoinSolve.cpp
 cbc_LDADD = libCbcSolver.la libCbc.la $(CBCLIB_LIBS) $(ASL_LIBS)
 cbc_DEPENDENCIES = libCbcSolver.la libCbc.la $(CBCLIB_DEPENDENCIES) $(ASL_DEPENDENCIES)
 
-# Finally, the -rpath flag is used by libtool to make sure that the shared
-# library is found (in the lib install directory) when we are using dynamic
-# libraries.
-cbc_LDFLAGS = -rpath $(libdir)
-
 endif
 
 
@@ -169,12 +164,6 @@ cbc_generic_DEPENDENCIES = libCbcSolver.la libCbc.la $(CBCGENERIC_DEPENDENCIES)
 # so just add compiler flags here (all we can think of)
 
 AM_CPPFLAGS += $(DYLP_CFLAGS) $(GLPK_CFLAGS) $(MSK_CFLAGS) $(SPX_CFLAGS) $(VOL_CFLAGS) $(XPR_CFLAGS)
-
-# Finally, the -rpath flag is used by libtool to make sure that the shared
-# library is found (in the lib install directory) when we are using dynamic
-# libraries.
-
-cbc_generic_LDFLAGS = -rpath $(libdir)
 
 endif
 

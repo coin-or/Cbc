@@ -61,7 +61,6 @@ bin_PROGRAMS = gamsTest osiUnitTest
 gamsTest_SOURCES = gamsTest.cpp
 gamsTest_LDADD = ../src/libCbcSolver.la ../src/libCbc.la $(CBCLIB_LIBS)
 gamsTest_DEPENDENCIES = ../src/libCbcSolver.la ../src/libCbc.la $(CBCLIB_DEPENDENCIES)
-gamsTest_LDFLAGS = -rpath $(libdir)
 
 AM_CPPFLAGS = -I`$(CYGPATH_W) $(srcdir)/../src` $(COINDEPEND_CFLAGS)
 AM_CPPFLAGS += $(CLP_CFLAGS) $(CPX_CFLAGS) $(DYLP_CFLAGS) $(GLPK_CFLAGS) $(MSK_CFLAGS) $(VOL_CFLAGS) $(XPR_CFLAGS)

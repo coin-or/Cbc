@@ -621,11 +621,6 @@ AM_CPPFLAGS = $(COINDEPEND_CFLAGS) $(CLP_CFLAGS) $(CPX_CFLAGS) \
 @COIN_HAS_CLP_TRUE@cbc_LDADD = libCbcSolver.la libCbc.la $(CBCLIB_LIBS) $(ASL_LIBS)
 @COIN_HAS_CLP_TRUE@cbc_DEPENDENCIES = libCbcSolver.la libCbc.la $(CBCLIB_DEPENDENCIES) $(ASL_DEPENDENCIES)
 
-# Finally, the -rpath flag is used by libtool to make sure that the shared
-# library is found (in the lib install directory) when we are using dynamic
-# libraries.
-@COIN_HAS_CLP_TRUE@cbc_LDFLAGS = -rpath $(libdir)
-
 # List all source files for this executable, including headers
 @CBC_BUILD_CBC_GENERIC_TRUE@cbc_generic_SOURCES = \
 @CBC_BUILD_CBC_GENERIC_TRUE@	CbcGenBaB.cpp \
@@ -640,11 +635,6 @@ AM_CPPFLAGS = $(COINDEPEND_CFLAGS) $(CLP_CFLAGS) $(CPX_CFLAGS) \
 
 @CBC_BUILD_CBC_GENERIC_TRUE@cbc_generic_LDADD = libCbcSolver.la libCbc.la $(CBCGENERIC_LIBS)
 @CBC_BUILD_CBC_GENERIC_TRUE@cbc_generic_DEPENDENCIES = libCbcSolver.la libCbc.la $(CBCGENERIC_DEPENDENCIES)
-
-# Finally, the -rpath flag is used by libtool to make sure that the shared
-# library is found (in the lib install directory) when we are using dynamic
-# libraries.
-@CBC_BUILD_CBC_GENERIC_TRUE@cbc_generic_LDFLAGS = -rpath $(libdir)
 
 # This line is necessary to allow VPATH compilation
 DEFAULT_INCLUDES = -I. -I`$(CYGPATH_W) $(srcdir)` -I$(top_builddir)/src

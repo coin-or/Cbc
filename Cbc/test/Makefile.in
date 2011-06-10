@@ -417,7 +417,6 @@ ositestsflags = $(am__append_4) $(am__append_6)
 gamsTest_SOURCES = gamsTest.cpp
 gamsTest_LDADD = ../src/libCbcSolver.la ../src/libCbc.la $(CBCLIB_LIBS)
 gamsTest_DEPENDENCIES = ../src/libCbcSolver.la ../src/libCbc.la $(CBCLIB_DEPENDENCIES)
-gamsTest_LDFLAGS = -rpath $(libdir)
 AM_CPPFLAGS = -I`$(CYGPATH_W) $(srcdir)/../src` $(COINDEPEND_CFLAGS) \
 	$(CLP_CFLAGS) $(CPX_CFLAGS) $(DYLP_CFLAGS) $(GLPK_CFLAGS) \
 	$(MSK_CFLAGS) $(VOL_CFLAGS) $(XPR_CFLAGS) $(OSITESTS_CFLAGS) \

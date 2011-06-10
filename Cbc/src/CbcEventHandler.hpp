@@ -146,7 +146,7 @@ public:
 
     /*! \brief Default constructor. */
 
-    CbcEventHandler(CbcModel *model = NULL) ;
+    CbcEventHandler(CbcModel *model = 0) ;
 
     /*! \brief Copy constructor. */
 

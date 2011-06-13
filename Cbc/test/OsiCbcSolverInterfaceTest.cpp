@@ -55,8 +55,7 @@ CoinPackedMatrix &BuildExmip1Mtx ()
 
 //--------------------------------------------------------------------------
 // test solution methods.
-int
-OsiCbcSolverInterfaceUnitTest(const std::string & mpsDir, const std::string & netlibDir)
+void OsiCbcSolverInterfaceUnitTest(const std::string & mpsDir, const std::string & netlibDir)
 {
   {    
     CoinRelFltEq eq;
@@ -155,8 +154,8 @@ OsiCbcSolverInterfaceUnitTest(const std::string & mpsDir, const std::string & ne
       const double * cu = cbcSi.getColUpper();
       const double * rl = cbcSi.getRowLower();
       const double * ru = cbcSi.getRowUpper();
-      OSIUNITTEST_ASSERT_ERROR(nc == 8, return 1, "cbc", "read and copy exmip1");
-      OSIUNITTEST_ASSERT_ERROR(nr == 5, return 1, "cbc", "read and copy exmip1");
+      OSIUNITTEST_ASSERT_ERROR(nc == 8, return, "cbc", "read and copy exmip1");
+      OSIUNITTEST_ASSERT_ERROR(nr == 5, return, "cbc", "read and copy exmip1");
       OSIUNITTEST_ASSERT_ERROR(eq(cl[0],2.5), {}, "cbc", "read and copy exmip1");
       OSIUNITTEST_ASSERT_ERROR(eq(cl[1],0.0), {}, "cbc", "read and copy exmip1");
       OSIUNITTEST_ASSERT_ERROR(eq(cu[1],4.1), {}, "cbc", "read and copy exmip1");
@@ -197,10 +196,10 @@ OsiCbcSolverInterfaceUnitTest(const std::string & mpsDir, const std::string & ne
       const OsiCbcSolverInterface si(m);
       const CoinPackedMatrix * smP = si.getMatrixByRow();
 
-      OSIUNITTEST_ASSERT_ERROR(smP->getMajorDim()    ==  5, return 1, "cbc", "getMatrixByRow: major dim");
-      OSIUNITTEST_ASSERT_ERROR(smP->getMinorDim()    ==  8, return 1, "cbc", "getMatrixByRow: major dim");
-      OSIUNITTEST_ASSERT_ERROR(smP->getNumElements() == 14, return 1, "cbc", "getMatrixByRow: num elements");
-      OSIUNITTEST_ASSERT_ERROR(smP->getSizeVectorStarts() == 6, return 1, "cbc", "getMatrixByRow: num elements");
+      OSIUNITTEST_ASSERT_ERROR(smP->getMajorDim()    ==  5, return, "cbc", "getMatrixByRow: major dim");
+      OSIUNITTEST_ASSERT_ERROR(smP->getMinorDim()    ==  8, return, "cbc", "getMatrixByRow: major dim");
+      OSIUNITTEST_ASSERT_ERROR(smP->getNumElements() == 14, return, "cbc", "getMatrixByRow: num elements");
+      OSIUNITTEST_ASSERT_ERROR(smP->getSizeVectorStarts() == 6, return, "cbc", "getMatrixByRow: num elements");
 
 #ifdef OSICBC_TEST_MTX_STRUCTURE
       CoinRelFltEq eq;
@@ -315,10 +314,10 @@ OsiCbcSolverInterfaceUnitTest(const std::string & mpsDir, const std::string & ne
       const OsiCbcSolverInterface si(m);
       const CoinPackedMatrix * smP = si.getMatrixByCol();
 
-      OSIUNITTEST_ASSERT_ERROR(smP->getMajorDim()    ==  8, return 1, "cbc", "getMatrixByCol: major dim");
-      OSIUNITTEST_ASSERT_ERROR(smP->getMinorDim()    ==  5, return 1, "cbc", "getMatrixByCol: minor dim");
-      OSIUNITTEST_ASSERT_ERROR(smP->getNumElements() == 14, return 1, "cbc", "getMatrixByCol: number of elements");
-      OSIUNITTEST_ASSERT_ERROR(smP->getSizeVectorStarts() == 9, return 1, "cbc", "getMatrixByCol: vector starts size");
+      OSIUNITTEST_ASSERT_ERROR(smP->getMajorDim()    ==  8, return, "cbc", "getMatrixByCol: major dim");
+      OSIUNITTEST_ASSERT_ERROR(smP->getMinorDim()    ==  5, return, "cbc", "getMatrixByCol: minor dim");
+      OSIUNITTEST_ASSERT_ERROR(smP->getNumElements() == 14, return, "cbc", "getMatrixByCol: number of elements");
+      OSIUNITTEST_ASSERT_ERROR(smP->getSizeVectorStarts() == 9, return, "cbc", "getMatrixByCol: vector starts size");
 
 #ifdef OSICBC_TEST_MTX_STRUCTURE
       CoinRelFltEq eq;
@@ -401,10 +400,10 @@ OsiCbcSolverInterfaceUnitTest(const std::string & mpsDir, const std::string & ne
         
         const CoinPackedMatrix * siC1mbr = siC1.getMatrixByRow();
         OSIUNITTEST_ASSERT_ERROR(siC1mbr != NULL, {}, "cbc", "matrix by row");
-        OSIUNITTEST_ASSERT_ERROR(siC1mbr->getMajorDim()    ==  5, return 1, "cbc", "matrix by row: major dim");
-        OSIUNITTEST_ASSERT_ERROR(siC1mbr->getMinorDim()    ==  8, return 1, "cbc", "matrix by row: major dim");
-        OSIUNITTEST_ASSERT_ERROR(siC1mbr->getNumElements() == 14, return 1, "cbc", "matrix by row: num elements");
-        OSIUNITTEST_ASSERT_ERROR(siC1mbr->getSizeVectorStarts() == 6, return 1, "cbc", "matrix by row: num elements");
+        OSIUNITTEST_ASSERT_ERROR(siC1mbr->getMajorDim()    ==  5, return, "cbc", "matrix by row: major dim");
+        OSIUNITTEST_ASSERT_ERROR(siC1mbr->getMinorDim()    ==  8, return, "cbc", "matrix by row: major dim");
+        OSIUNITTEST_ASSERT_ERROR(siC1mbr->getNumElements() == 14, return, "cbc", "matrix by row: num elements");
+        OSIUNITTEST_ASSERT_ERROR(siC1mbr->getSizeVectorStarts() == 6, return, "cbc", "matrix by row: num elements");
 
 #ifdef OSICBC_TEST_MTX_STRUCTURE
         const double * ev = siC1mbr->getElements();
@@ -519,8 +518,8 @@ OsiCbcSolverInterfaceUnitTest(const std::string & mpsDir, const std::string & ne
       
       const CoinPackedMatrix * lhsmbr = lhs.getMatrixByRow();
       OSIUNITTEST_ASSERT_ERROR(lhsmbr != NULL, {}, "cbc", "matrix by row after assignment");
-      OSIUNITTEST_ASSERT_ERROR(lhsmbr->getMajorDim()    ==  6, return 1, "cbc", "matrix by row after assignment: major dim");
-      OSIUNITTEST_ASSERT_ERROR(lhsmbr->getNumElements() == 14, return 1, "cbc", "matrix by row after assignment: num elements");
+      OSIUNITTEST_ASSERT_ERROR(lhsmbr->getMajorDim()    ==  6, return, "cbc", "matrix by row after assignment: major dim");
+      OSIUNITTEST_ASSERT_ERROR(lhsmbr->getNumElements() == 14, return, "cbc", "matrix by row after assignment: num elements");
 
 
 #ifdef OSICBC_TEST_MTX_STRUCTURE
@@ -783,6 +782,4 @@ OsiCbcSolverInterfaceUnitTest(const std::string & mpsDir, const std::string & ne
     OsiCbcSolverInterface m(&mm);
     OsiSolverInterfaceCommonUnitTest(&m, mpsDir,netlibDir);
   }
-
-  return 0;
 }

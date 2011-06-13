@@ -5,16 +5,9 @@
 
 #include "CoinPragma.hpp"
 
-#include <cstdio>
 #include <iostream>
 
 #include "OsiUnitTests.hpp"
-#include "OsiRowCutDebugger.hpp"
-#include "OsiRowCut.hpp"
-#include "OsiColCut.hpp"
-
-#include "CoinError.hpp"
-
 #include "OsiCbcSolverInterface.hpp"
 
 using namespace OsiUnitTest;
@@ -28,9 +21,7 @@ int main (int argc, const char *argv[])
 /*
   Start off with various bits of initialisation that don't really belong
   anywhere else.
- */
-  outcomes.clear();
-/*
+
   Synchronise C++ stream i/o with C stdio. This makes debugging
   output a bit more comprehensible. It still suffers from interleave of cout
   (stdout) and cerr (stderr), but -nobuf deals with that.

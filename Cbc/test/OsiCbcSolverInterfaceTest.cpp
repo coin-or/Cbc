@@ -3,18 +3,9 @@
 // Corporation and others.  All Rights Reserved.
 // This code is licensed under the terms of the Eclipse Public License (EPL).
 
-#if defined(_MSC_VER)
-// Turn off compiler warning about long names
-#  pragma warning(disable:4786)
-#endif
+#include "CoinPragma.hpp"
 
-#ifdef NDEBUG
-#undef NDEBUG
-#endif
-
-#include "OsiConfig.h"
-
-#include <cassert>
+//#include <cassert>
 //#include <cstdlib>
 //#include <cstdio>
 //#include <iostream>
@@ -23,11 +14,9 @@
 #include "OsiCuts.hpp"
 #include "OsiRowCut.hpp"
 #include "OsiColCut.hpp"
+#include "OsiUnitTests.hpp"
 #include "CoinMessage.hpp"
 #include "CoinModel.hpp"
-#ifdef COIN_HAS_OSL
-#include "OsiOslSolverInterface.hpp"
-#endif
 
 //#############################################################################
 
@@ -69,8 +58,6 @@ CoinPackedMatrix &BuildExmip1Mtx ()
 int
 OsiCbcSolverInterfaceUnitTest(const std::string & mpsDir, const std::string & netlibDir)
 {
-  
-  
   {    
     CoinRelFltEq eq;
     OsiCbcSolverInterface m;
@@ -79,10 +66,8 @@ OsiCbcSolverInterfaceUnitTest(const std::string & mpsDir, const std::string & ne
 
     {
       OsiCbcSolverInterface im;    
-      
-      assert( im.getNumCols() == 0 ); 
-      
-      assert( im.getModelPtr()!=NULL );
+      OSIUNITTEST_ASSERT_ERROR(im.getNumCols() == 0, {}, "cbc", "default constructor");
+      OSIUNITTEST_ASSERT_ERROR(im.getModelPtr() != NULL, {}, "cbc", "default constructor");
     }
     
     // Test copy constructor and assignment operator
@@ -92,35 +77,37 @@ OsiCbcSolverInterfaceUnitTest(const std::string & mpsDir, const std::string & ne
         OsiCbcSolverInterface im(m);        
         
         OsiCbcSolverInterface imC1(im);
-        assert( imC1.getModelPtr()!=im.getModelPtr() );
-        assert( imC1.getNumCols() == im.getNumCols() );
-        assert( imC1.getNumRows() == im.getNumRows() );   
+        OSIUNITTEST_ASSERT_ERROR(imC1.getModelPtr() != im.getModelPtr(), {}, "cbc", "copy constructor");
+        OSIUNITTEST_ASSERT_ERROR(imC1.getNumCols()  == im.getNumCols(),  {}, "cbc", "copy constructor");
+        OSIUNITTEST_ASSERT_ERROR(imC1.getNumRows()  == im.getNumRows(),  {}, "cbc", "copy constructor");
         
         OsiCbcSolverInterface imC2(im);
-        assert( imC2.getModelPtr()!=im.getModelPtr() );
-        assert( imC2.getNumCols() == im.getNumCols() );
-        assert( imC2.getNumRows() == im.getNumRows() );  
+        OSIUNITTEST_ASSERT_ERROR(imC2.getModelPtr() != im.getModelPtr(), {}, "cbc", "copy constructor");
+        OSIUNITTEST_ASSERT_ERROR(imC2.getNumCols()  == im.getNumCols(),  {}, "cbc", "copy constructor");
+        OSIUNITTEST_ASSERT_ERROR(imC2.getNumRows()  == im.getNumRows(),  {}, "cbc", "copy constructor");
+
+        OSIUNITTEST_ASSERT_ERROR(imC1.getModelPtr() != imC2.getModelPtr(), {}, "cbc", "copy constructor");
         
-        assert( imC2.getModelPtr()!=imC1.getModelPtr() );
-        
-        lhs=imC2;
+        lhs = imC2;
       }
+
       // Test that lhs has correct values even though rhs has gone out of scope
-      
-      assert( lhs.getModelPtr() != m.getModelPtr() );
-      assert( lhs.getNumCols() == m.getNumCols() );
-      assert( lhs.getNumRows() == m.getNumRows() );      
+      OSIUNITTEST_ASSERT_ERROR(lhs.getModelPtr() != m.getModelPtr(), {}, "cbc", "assignment operator");
+      OSIUNITTEST_ASSERT_ERROR(lhs.getNumCols()  == m.getNumCols(),  {}, "cbc", "copy constructor");
+      OSIUNITTEST_ASSERT_ERROR(lhs.getNumRows()  == m.getNumRows(),  {}, "cbc", "copy constructor");
     }
+
     // Test clone
     {
-      OsiCbcSolverInterface oslSi(m);
-      OsiSolverInterface * siPtr = &oslSi;
+      OsiCbcSolverInterface cbcSi(m);
+      OsiSolverInterface * siPtr = &cbcSi;
       OsiSolverInterface * siClone = siPtr->clone();
-      OsiCbcSolverInterface * oslClone = dynamic_cast<OsiCbcSolverInterface*>(siClone);
-      assert( oslClone != NULL );
-      assert( oslClone->getModelPtr() != oslSi.getModelPtr() );
-      assert( oslClone->getNumRows() == oslSi.getNumRows() );
-      assert( oslClone->getNumCols() == m.getNumCols() );
+      OsiCbcSolverInterface * cbcClone = dynamic_cast<OsiCbcSolverInterface*>(siClone);
+
+      OSIUNITTEST_ASSERT_ERROR(cbcClone != NULL, {}, "cbc", "clone");
+      OSIUNITTEST_ASSERT_ERROR(cbcClone->getModelPtr() != cbcSi.getModelPtr(), {}, "cbc", "clone");
+      OSIUNITTEST_ASSERT_ERROR(cbcClone->getNumRows() == cbcSi.getNumRows(),   {}, "cbc", "clone");
+      OSIUNITTEST_ASSERT_ERROR(cbcClone->getNumCols() == m.getNumCols(),       {}, "cbc", "clone");
       
       delete siClone;
     }
@@ -128,347 +115,140 @@ OsiCbcSolverInterfaceUnitTest(const std::string & mpsDir, const std::string & ne
     // test infinity
     {
       OsiCbcSolverInterface si;
-      assert( eq(si.getInfinity(),OsiCbcInfinity));
+      OSIUNITTEST_ASSERT_ERROR(si.getInfinity() == OsiCbcInfinity, {}, "cbc", "infinity");
     }     
     
-    // Test setting solution
-    {
-      OsiCbcSolverInterface m1(m);
-      int i;
-
-      double * cs = new double[m1.getNumCols()];
-      for ( i = 0;  i < m1.getNumCols();  i++ ) 
-        cs[i] = i + .5;
-      m1.setColSolution(cs);
-      for ( i = 0;  i < m1.getNumCols();  i++ ) 
-        assert(m1.getColSolution()[i] == i + .5);
-      
-      double * rs = new double[m1.getNumRows()];
-      for ( i = 0;  i < m1.getNumRows();  i++ ) 
-        rs[i] = i - .5;
-      m1.setRowPrice(rs);
-      for ( i = 0;  i < m1.getNumRows();  i++ ) 
-        assert(m1.getRowPrice()[i] == i - .5);
-
-      delete [] cs;
-      delete [] rs;
-    }
-    
-    
-    // Test fraction Indices
-    {
-      OsiCbcSolverInterface fim;
-      std::string fn = mpsDir+"exmip1";
-      fim.readMps(fn.c_str(),"mps");
-      // exmip1.mps has 2 integer variables with index 2 & 3
-      assert(  fim.isContinuous(0) );
-      assert(  fim.isContinuous(1) );
-      assert( !fim.isContinuous(2) );
-      assert( !fim.isContinuous(3) );
-      assert(  fim.isContinuous(4) );
-      
-      assert( !fim.isInteger(0) );
-      assert( !fim.isInteger(1) );
-      assert(  fim.isInteger(2) );
-      assert(  fim.isInteger(3) );
-      assert( !fim.isInteger(4) );
-      
-      assert( !fim.isBinary(0) );
-      assert( !fim.isBinary(1) );
-      assert(  fim.isBinary(2) );
-      assert(  fim.isBinary(3) );
-      assert( !fim.isBinary(4) );
-      
-      assert( !fim.isIntegerNonBinary(0) );
-      assert( !fim.isIntegerNonBinary(1) );
-      assert( !fim.isIntegerNonBinary(2) );
-      assert( !fim.isIntegerNonBinary(3) );
-      assert( !fim.isIntegerNonBinary(4) );
-
-    }
     // Test some catches
-      if (!OsiCbcHasNDEBUG())
-    { bool thrown ;
-
-      thrown = false ;
+    if (!OsiCbcHasNDEBUG())
+    {
       OsiCbcSolverInterface solver;
       try {
         solver.setObjCoeff(0,0.0);
+        OSIUNITTEST_ADD_OUTCOME("cbc", "setObjCoeff on empty model", "should throw exception", OsiUnitTest::TestOutcome::ERROR, false);
       }
       catch (CoinError e) {
-        std::cout<<"Correct throw"<<std::endl;
-	thrown = true ;
+        if (OsiUnitTest::verbosity >= 1)
+          std::cout<<"Correct throw from setObjCoeff on empty model"<<std::endl;
       }
-      assert( thrown == true ) ;
 
       std::string fn = mpsDir+"exmip1";
       solver.readMps(fn.c_str(),"mps");
-      try {
-        solver.setObjCoeff(0,0.0);
-      }
-      catch (CoinError e) {
-        std::cout<<"** Incorrect throw"<<std::endl;
-        abort();
-      }
+      OSIUNITTEST_CATCH_ERROR(solver.setObjCoeff(0,0.0), {}, "cbc", "setObjCoeff on nonempty model");
 
-      thrown = false ;
       try {
         int index[]={0,20};
         double value[]={0.0,0.0,0.0,0.0};
         solver.setColSetBounds(index,index+2,value);
+        OSIUNITTEST_ADD_OUTCOME("cbc", "setColSetBounds on cols not in model", "should throw exception", OsiUnitTest::TestOutcome::ERROR, false);
       }
       catch (CoinError e) {
-        std::cout<<"Correct throw"<<std::endl;
-	thrown = true ;
+        if (OsiUnitTest::verbosity >= 1)
+          std::cout<<"Correct throw from setObjCoeff on empty model"<<std::endl;
       }
-      assert( thrown == true ) ;
-    }
-    // Test apply cuts method
-    {      
-      OsiCbcSolverInterface im(m);
-      OsiCuts cuts;
-      
-      // Generate some cuts 
-      {
-        // Get number of rows and columns in model
-        int nr=im.getNumRows();
-        int nc=im.getNumCols();
-        assert( nr == 5 );
-        assert( nc == 8 );
-        
-        // Generate a valid row cut from thin air
-        int c;
-        {
-          int *inx = new int[nc];
-          for (c=0;c<nc;c++) inx[c]=c;
-          double *el = new double[nc];
-          for (c=0;c<nc;c++) el[c]=((double)c)*((double)c);
-          
-          OsiRowCut rc;
-          rc.setRow(nc,inx,el);
-          rc.setLb(-100.);
-          rc.setUb(100.);
-          rc.setEffectiveness(22);
-          
-          cuts.insert(rc);
-          delete[]el;
-          delete[]inx;
-        }
-        
-        // Generate valid col cut from thin air
-        {
-          const double * oslColLB = im.getColLower();
-          const double * oslColUB = im.getColUpper();
-          int *inx = new int[nc];
-          for (c=0;c<nc;c++) inx[c]=c;
-          double *lb = new double[nc];
-          double *ub = new double[nc];
-          for (c=0;c<nc;c++) lb[c]=oslColLB[c]+0.001;
-          for (c=0;c<nc;c++) ub[c]=oslColUB[c]-0.001;
-          
-          OsiColCut cc;
-          cc.setLbs(nc,inx,lb);
-          cc.setUbs(nc,inx,ub);
-          
-          cuts.insert(cc);
-          delete [] ub;
-          delete [] lb;
-          delete [] inx;
-        }
-        
-        {
-          // Generate a row and column cut which are ineffective
-          OsiRowCut * rcP= new OsiRowCut;
-          rcP->setEffectiveness(-1.);
-          cuts.insert(rcP);
-          assert(rcP==NULL);
-          
-          OsiColCut * ccP= new OsiColCut;
-          ccP->setEffectiveness(-12.);
-          cuts.insert(ccP);
-          assert(ccP==NULL);
-        }
-        {
-          //Generate inconsistent Row cut
-          OsiRowCut rc;
-          const int ne=1;
-          int inx[ne]={-10};
-          double el[ne]={2.5};
-          rc.setRow(ne,inx,el);
-          rc.setLb(3.);
-          rc.setUb(4.);
-          assert(!rc.consistent());
-          cuts.insert(rc);
-        }
-        {
-          //Generate inconsistent col cut
-          OsiColCut cc;
-          const int ne=1;
-          int inx[ne]={-10};
-          double el[ne]={2.5};
-          cc.setUbs(ne,inx,el);
-          assert(!cc.consistent());
-          cuts.insert(cc);
-        }
-        {
-          // Generate row cut which is inconsistent for model m
-          OsiRowCut rc;
-          const int ne=1;
-          int inx[ne]={10};
-          double el[ne]={2.5};
-          rc.setRow(ne,inx,el);
-          assert(rc.consistent());
-          assert(!rc.consistent(im));
-          cuts.insert(rc);
-        }
-        {
-          // Generate col cut which is inconsistent for model m
-          OsiColCut cc;
-          const int ne=1;
-          int inx[ne]={30};
-          double el[ne]={2.0};
-          cc.setLbs(ne,inx,el);
-          assert(cc.consistent());
-          assert(!cc.consistent(im));
-          cuts.insert(cc);
-        }
-        {
-          // Generate col cut which is infeasible
-          OsiColCut cc;
-          const int ne=1;
-          int inx[ne]={0};
-          double el[ne]={2.0};
-          cc.setUbs(ne,inx,el);
-          cc.setEffectiveness(1000.);
-          assert(cc.consistent());
-          assert(cc.consistent(im));
-          assert(cc.infeasible(im));
-          cuts.insert(cc);
-        }
-      }
-      assert(cuts.sizeRowCuts()==4);
-      assert(cuts.sizeColCuts()==5);
-      
-      OsiSolverInterface::ApplyCutsReturnCode rc = im.applyCuts(cuts);
-      assert( rc.getNumIneffective() == 2 );
-      assert( rc.getNumApplied() == 2 );
-      assert( rc.getNumInfeasible() == 1 );
-      assert( rc.getNumInconsistentWrtIntegerModel() == 2 );
-      assert( rc.getNumInconsistent() == 2 );
-      assert( cuts.sizeCuts() == rc.getNumIneffective() +
-        rc.getNumApplied() +
-        rc.getNumInfeasible() +
-        rc.getNumInconsistentWrtIntegerModel() +
-        rc.getNumInconsistent() );
     }
     
     {    
-      OsiCbcSolverInterface oslSi(m);
-      int nc = oslSi.getNumCols();
-      int nr = oslSi.getNumRows();
-      const double * cl = oslSi.getColLower();
-      const double * cu = oslSi.getColUpper();
-      const double * rl = oslSi.getRowLower();
-      const double * ru = oslSi.getRowUpper();
-      assert( nc == 8 );
-      assert( nr == 5 );
-      assert( eq(cl[0],2.5) );
-      assert( eq(cl[1],0.0) );
-      assert( eq(cu[1],4.1) );
-      assert( eq(cu[2],1.0) );
-      assert( eq(rl[0],2.5) );
-      assert( eq(rl[4],3.0) );
-      assert( eq(ru[1],2.1) );
-      assert( eq(ru[4],15.0) );
+      OsiCbcSolverInterface cbcSi(m);
+      int nc = cbcSi.getNumCols();
+      int nr = cbcSi.getNumRows();
+      const double * cl = cbcSi.getColLower();
+      const double * cu = cbcSi.getColUpper();
+      const double * rl = cbcSi.getRowLower();
+      const double * ru = cbcSi.getRowUpper();
+      OSIUNITTEST_ASSERT_ERROR(nc == 8, return 1, "cbc", "read and copy exmip1");
+      OSIUNITTEST_ASSERT_ERROR(nr == 5, return 1, "cbc", "read and copy exmip1");
+      OSIUNITTEST_ASSERT_ERROR(eq(cl[0],2.5), {}, "cbc", "read and copy exmip1");
+      OSIUNITTEST_ASSERT_ERROR(eq(cl[1],0.0), {}, "cbc", "read and copy exmip1");
+      OSIUNITTEST_ASSERT_ERROR(eq(cu[1],4.1), {}, "cbc", "read and copy exmip1");
+      OSIUNITTEST_ASSERT_ERROR(eq(cu[2],1.0), {}, "cbc", "read and copy exmip1");
+      OSIUNITTEST_ASSERT_ERROR(eq(rl[0],2.5), {}, "cbc", "read and copy exmip1");
+      OSIUNITTEST_ASSERT_ERROR(eq(rl[4],3.0), {}, "cbc", "read and copy exmip1");
+      OSIUNITTEST_ASSERT_ERROR(eq(ru[1],2.1), {}, "cbc", "read and copy exmip1");
+      OSIUNITTEST_ASSERT_ERROR(eq(ru[4],15.), {}, "cbc", "read and copy exmip1");
       
-      const double * cs = oslSi.getColSolution();
-      assert( eq(cs[0],2.5) );
-      assert( eq(cs[7],0.0) );
+      const double * cs = cbcSi.getColSolution();
+      OSIUNITTEST_ASSERT_ERROR(eq(cs[0],2.5), {}, "cbc", "read and copy exmip1");
+      OSIUNITTEST_ASSERT_ERROR(eq(cs[7],0.0), {}, "cbc", "read and copy exmip1");
       
-      assert( !eq(cl[3],1.2345) );
-      oslSi.setColLower( 3, 1.2345 );
-      assert( eq(oslSi.getColLower()[3],1.2345) );
+      OSIUNITTEST_ASSERT_ERROR(!eq(cl[3],1.2345), {}, "cbc", "set col lower");
+      cbcSi.setColLower( 3, 1.2345 );
+      OSIUNITTEST_ASSERT_ERROR( eq(cbcSi.getColLower()[3],1.2345), {}, "cbc", "set col lower");
       
-      assert( !eq(cu[4],10.2345) );
-      oslSi.setColUpper( 4, 10.2345 );
-      assert( eq(oslSi.getColUpper()[4],10.2345) );
-      // LH: Objective will depend on how underlying solver constructs and
-      // LH: maintains initial solution.
-      double objValue = oslSi.getObjValue();
-      assert( eq(objValue,3.5) || eq(objValue,10.5) );
+      OSIUNITTEST_ASSERT_ERROR(!eq(cbcSi.getColUpper()[4],10.2345), {}, "cbc", "set col upper");
+      cbcSi.setColUpper( 4, 10.2345 );
+      OSIUNITTEST_ASSERT_ERROR( eq(cbcSi.getColUpper()[4],10.2345), {}, "cbc", "set col upper");
 
-      assert( eq( oslSi.getObjCoefficients()[0],  1.0) );
-      assert( eq( oslSi.getObjCoefficients()[1],  0.0) );
-      assert( eq( oslSi.getObjCoefficients()[2],  0.0) );
-      assert( eq( oslSi.getObjCoefficients()[3],  0.0) );
-      assert( eq( oslSi.getObjCoefficients()[4],  2.0) );
-      assert( eq( oslSi.getObjCoefficients()[5],  0.0) );
-      assert( eq( oslSi.getObjCoefficients()[6],  0.0) );
-      assert( eq( oslSi.getObjCoefficients()[7], -1.0) );
+      // LH: Objective will depend on how underlying solver constructs and maintains initial solution
+      double objValue = cbcSi.getObjValue();
+      OSIUNITTEST_ASSERT_ERROR(eq(objValue,3.5) || eq(objValue,10.5), {}, "cbc", "getObjValue() before solve");
+
+      OSIUNITTEST_ASSERT_ERROR(eq(cbcSi.getObjCoefficients()[0], 1.0), {}, "cbc", "read and copy exmip1");
+      OSIUNITTEST_ASSERT_ERROR(eq(cbcSi.getObjCoefficients()[1], 0.0), {}, "cbc", "read and copy exmip1");
+      OSIUNITTEST_ASSERT_ERROR(eq(cbcSi.getObjCoefficients()[2], 0.0), {}, "cbc", "read and copy exmip1");
+      OSIUNITTEST_ASSERT_ERROR(eq(cbcSi.getObjCoefficients()[3], 0.0), {}, "cbc", "read and copy exmip1");
+      OSIUNITTEST_ASSERT_ERROR(eq(cbcSi.getObjCoefficients()[4], 2.0), {}, "cbc", "read and copy exmip1");
+      OSIUNITTEST_ASSERT_ERROR(eq(cbcSi.getObjCoefficients()[5], 0.0), {}, "cbc", "read and copy exmip1");
+      OSIUNITTEST_ASSERT_ERROR(eq(cbcSi.getObjCoefficients()[6], 0.0), {}, "cbc", "read and copy exmip1");
+      OSIUNITTEST_ASSERT_ERROR(eq(cbcSi.getObjCoefficients()[7],-1.0), {}, "cbc", "read and copy exmip1");
     }
     
     // Test matrixByRow method
     { 
       const OsiCbcSolverInterface si(m);
       const CoinPackedMatrix * smP = si.getMatrixByRow();
-      // LL:      const OsiCbcPackedMatrix * osmP = dynamic_cast<const OsiCbcPackedMatrix*>(smP);
-      // LL: assert( osmP!=NULL );
+
+      OSIUNITTEST_ASSERT_ERROR(smP->getMajorDim()    ==  5, return 1, "cbc", "getMatrixByRow: major dim");
+      OSIUNITTEST_ASSERT_ERROR(smP->getMinorDim()    ==  8, return 1, "cbc", "getMatrixByRow: major dim");
+      OSIUNITTEST_ASSERT_ERROR(smP->getNumElements() == 14, return 1, "cbc", "getMatrixByRow: num elements");
+      OSIUNITTEST_ASSERT_ERROR(smP->getSizeVectorStarts() == 6, return 1, "cbc", "getMatrixByRow: num elements");
 
 #ifdef OSICBC_TEST_MTX_STRUCTURE
-
       CoinRelFltEq eq;
       const double * ev = smP->getElements();
-      assert( eq(ev[0],   3.0) );
-      assert( eq(ev[1],   1.0) );
-      assert( eq(ev[2],  -2.0) );
-      assert( eq(ev[3],  -1.0) );
-      assert( eq(ev[4],  -1.0) );
-      assert( eq(ev[5],   2.0) );
-      assert( eq(ev[6],   1.1) );
-      assert( eq(ev[7],   1.0) );
-      assert( eq(ev[8],   1.0) );
-      assert( eq(ev[9],   2.8) );
-      assert( eq(ev[10], -1.2) );
-      assert( eq(ev[11],  5.6) );
-      assert( eq(ev[12],  1.0) );
-      assert( eq(ev[13],  1.9) );
+      OSIUNITTEST_ASSERT_ERROR(eq(ev[0],   3.0), {}, "cbc", "getMatrixByRow: elements");
+      OSIUNITTEST_ASSERT_ERROR(eq(ev[1],   1.0), {}, "cbc", "getMatrixByRow: elements");
+      OSIUNITTEST_ASSERT_ERROR(eq(ev[2],  -2.0), {}, "cbc", "getMatrixByRow: elements");
+      OSIUNITTEST_ASSERT_ERROR(eq(ev[3],  -1.0), {}, "cbc", "getMatrixByRow: elements");
+      OSIUNITTEST_ASSERT_ERROR(eq(ev[4],  -1.0), {}, "cbc", "getMatrixByRow: elements");
+      OSIUNITTEST_ASSERT_ERROR(eq(ev[5],   2.0), {}, "cbc", "getMatrixByRow: elements");
+      OSIUNITTEST_ASSERT_ERROR(eq(ev[6],   1.1), {}, "cbc", "getMatrixByRow: elements");
+      OSIUNITTEST_ASSERT_ERROR(eq(ev[7],   1.0), {}, "cbc", "getMatrixByRow: elements");
+      OSIUNITTEST_ASSERT_ERROR(eq(ev[8],   1.0), {}, "cbc", "getMatrixByRow: elements");
+      OSIUNITTEST_ASSERT_ERROR(eq(ev[9],   2.8), {}, "cbc", "getMatrixByRow: elements");
+      OSIUNITTEST_ASSERT_ERROR(eq(ev[10], -1.2), {}, "cbc", "getMatrixByRow: elements");
+      OSIUNITTEST_ASSERT_ERROR(eq(ev[11],  5.6), {}, "cbc", "getMatrixByRow: elements");
+      OSIUNITTEST_ASSERT_ERROR(eq(ev[12],  1.0), {}, "cbc", "getMatrixByRow: elements");
+      OSIUNITTEST_ASSERT_ERROR(eq(ev[13],  1.9), {}, "cbc", "getMatrixByRow: elements");
       
-      const CoinBigIndex * mi = smP->getVectorStarts();
-      assert( mi[0]==0 );
-      assert( mi[1]==5 );
-      assert( mi[2]==7 );
-      assert( mi[3]==9 );
-      assert( mi[4]==11 );
-      assert( mi[5]==14 );
+      const int * mi = smP->getVectorStarts();
+      OSIUNITTEST_ASSERT_ERROR(mi[0] ==  0, {}, "cbc", "getMatrixByRow: vector starts");
+      OSIUNITTEST_ASSERT_ERROR(mi[1] ==  5, {}, "cbc", "getMatrixByRow: vector starts");
+      OSIUNITTEST_ASSERT_ERROR(mi[2] ==  7, {}, "cbc", "getMatrixByRow: vector starts");
+      OSIUNITTEST_ASSERT_ERROR(mi[3] ==  9, {}, "cbc", "getMatrixByRow: vector starts");
+      OSIUNITTEST_ASSERT_ERROR(mi[4] == 11, {}, "cbc", "getMatrixByRow: vector starts");
+      OSIUNITTEST_ASSERT_ERROR(mi[5] == 14, {}, "cbc", "getMatrixByRow: vector starts");
       
       const int * ei = smP->getIndices();
-      assert( ei[0]  ==  0 );
-      assert( ei[1]  ==  1 );
-      assert( ei[2]  ==  3 );
-      assert( ei[3]  ==  4 );
-      assert( ei[4]  ==  7 );
-      assert( ei[5]  ==  1 );
-      assert( ei[6]  ==  2 );
-      assert( ei[7]  ==  2 );
-      assert( ei[8]  ==  5 );
-      assert( ei[9]  ==  3 );
-      assert( ei[10] ==  6 );
-      assert( ei[11] ==  0 );
-      assert( ei[12] ==  4 );
-      assert( ei[13] ==  7 );    
-
+      OSIUNITTEST_ASSERT_ERROR(ei[ 0] == 0, {}, "cbc", "getMatrixByRow: indices");
+      OSIUNITTEST_ASSERT_ERROR(ei[ 1] == 1, {}, "cbc", "getMatrixByRow: indices");
+      OSIUNITTEST_ASSERT_ERROR(ei[ 2] == 3, {}, "cbc", "getMatrixByRow: indices");
+      OSIUNITTEST_ASSERT_ERROR(ei[ 3] == 4, {}, "cbc", "getMatrixByRow: indices");
+      OSIUNITTEST_ASSERT_ERROR(ei[ 4] == 7, {}, "cbc", "getMatrixByRow: indices");
+      OSIUNITTEST_ASSERT_ERROR(ei[ 5] == 1, {}, "cbc", "getMatrixByRow: indices");
+      OSIUNITTEST_ASSERT_ERROR(ei[ 6] == 2, {}, "cbc", "getMatrixByRow: indices");
+      OSIUNITTEST_ASSERT_ERROR(ei[ 7] == 2, {}, "cbc", "getMatrixByRow: indices");
+      OSIUNITTEST_ASSERT_ERROR(ei[ 8] == 5, {}, "cbc", "getMatrixByRow: indices");
+      OSIUNITTEST_ASSERT_ERROR(ei[ 9] == 3, {}, "cbc", "getMatrixByRow: indices");
+      OSIUNITTEST_ASSERT_ERROR(ei[10] == 6, {}, "cbc", "getMatrixByRow: indices");
+      OSIUNITTEST_ASSERT_ERROR(ei[11] == 0, {}, "cbc", "getMatrixByRow: indices");
+      OSIUNITTEST_ASSERT_ERROR(ei[12] == 4, {}, "cbc", "getMatrixByRow: indices");
+      OSIUNITTEST_ASSERT_ERROR(ei[13] == 7, {}, "cbc", "getMatrixByRow: indices");
 #else	// OSICBC_TEST_MTX_STRUCTURE
 
       CoinPackedMatrix exmip1Mtx ;
       exmip1Mtx.reverseOrderedCopyOf(BuildExmip1Mtx()) ;
-      assert( exmip1Mtx.isEquivalent(*smP) ) ;
-
+      OSIUNITTEST_ASSERT_ERROR(exmip1Mtx.isEquivalent(*smP), {}, "cbc", "getMatrixByRow") ;
 #endif	// OSICBC_TEST_MTX_STRUCTURE
-
-      assert( smP->getMajorDim() == 5 );
-      assert( smP->getMinorDim() == 8 );
-      assert( smP->getNumElements() == 14 );
-      assert( smP->getSizeVectorStarts() == 6 );
     }
 
     // Test adding several cuts, and handling of a coefficient of infinity
@@ -513,8 +293,8 @@ OsiCbcSolverInterfaceUnitTest(const std::string & mpsDir, const std::string & ne
       // check integer solution
       const double * cs = fim.getColSolution();
       CoinRelFltEq eq;
-      assert( eq(cs[2],   1.0) );
-      assert( eq(cs[3],   1.0) );
+      OSIUNITTEST_ASSERT_ERROR(eq(cs[2], 1.0), {}, "cbc", "add cuts");
+      OSIUNITTEST_ASSERT_ERROR(eq(cs[3], 1.0), {}, "cbc", "add cuts");
       // check will find invalid matrix
       el[0]=1.0/el[4];
       inx[0]=0;
@@ -525,274 +305,264 @@ OsiCbcSolverInterfaceUnitTest(const std::string & mpsDir, const std::string & ne
       fim.applyRowCut(cuts[0]);
       // resolve - should get message about zero elements
       fim.resolve();
-      assert (fim.isAbandoned());
+      OSIUNITTEST_ASSERT_WARNING(fim.isAbandoned(), {}, "cbc", "add cuts");
       delete[]el;
       delete[]inx;
     }
 
-        // Test matrixByCol method
+    // Test matrixByCol method
     {
-  
       const OsiCbcSolverInterface si(m);
       const CoinPackedMatrix * smP = si.getMatrixByCol();
-      // LL:      const OsiCbcPackedMatrix * osmP = dynamic_cast<const OsiCbcPackedMatrix*>(smP);
-      // LL: assert( osmP!=NULL );
-      
-#ifdef OSICBC_TEST_MTX_STRUCTURE
 
+      OSIUNITTEST_ASSERT_ERROR(smP->getMajorDim()    ==  8, return 1, "cbc", "getMatrixByCol: major dim");
+      OSIUNITTEST_ASSERT_ERROR(smP->getMinorDim()    ==  5, return 1, "cbc", "getMatrixByCol: minor dim");
+      OSIUNITTEST_ASSERT_ERROR(smP->getNumElements() == 14, return 1, "cbc", "getMatrixByCol: number of elements");
+      OSIUNITTEST_ASSERT_ERROR(smP->getSizeVectorStarts() == 9, return 1, "cbc", "getMatrixByCol: vector starts size");
+
+#ifdef OSICBC_TEST_MTX_STRUCTURE
       CoinRelFltEq eq;
       const double * ev = smP->getElements();
-      assert( eq(ev[0],   3.0) );
-      assert( eq(ev[1],   5.6) );
-      assert( eq(ev[2],   1.0) );
-      assert( eq(ev[3],   2.0) );
-      assert( eq(ev[4],   1.1) );
-      assert( eq(ev[5],   1.0) );
-      assert( eq(ev[6],  -2.0) );
-      assert( eq(ev[7],   2.8) );
-      assert( eq(ev[8],  -1.0) );
-      assert( eq(ev[9],   1.0) );
-      assert( eq(ev[10],  1.0) );
-      assert( eq(ev[11], -1.2) );
-      assert( eq(ev[12], -1.0) );
-      assert( eq(ev[13],  1.9) );
+      OSIUNITTEST_ASSERT_ERROR(eq(ev[ 0], 3.0), {}, "cbc", "getMatrixByCol: elements");
+      OSIUNITTEST_ASSERT_ERROR(eq(ev[ 1], 5.6), {}, "cbc", "getMatrixByCol: elements");
+      OSIUNITTEST_ASSERT_ERROR(eq(ev[ 2], 1.0), {}, "cbc", "getMatrixByCol: elements");
+      OSIUNITTEST_ASSERT_ERROR(eq(ev[ 3], 2.0), {}, "cbc", "getMatrixByCol: elements");
+      OSIUNITTEST_ASSERT_ERROR(eq(ev[ 4], 1.1), {}, "cbc", "getMatrixByCol: elements");
+      OSIUNITTEST_ASSERT_ERROR(eq(ev[ 5], 1.0), {}, "cbc", "getMatrixByCol: elements");
+      OSIUNITTEST_ASSERT_ERROR(eq(ev[ 6],-2.0), {}, "cbc", "getMatrixByCol: elements");
+      OSIUNITTEST_ASSERT_ERROR(eq(ev[ 7], 2.8), {}, "cbc", "getMatrixByCol: elements");
+      OSIUNITTEST_ASSERT_ERROR(eq(ev[ 8],-1.0), {}, "cbc", "getMatrixByCol: elements");
+      OSIUNITTEST_ASSERT_ERROR(eq(ev[ 9], 1.0), {}, "cbc", "getMatrixByCol: elements");
+      OSIUNITTEST_ASSERT_ERROR(eq(ev[10], 1.0), {}, "cbc", "getMatrixByCol: elements");
+      OSIUNITTEST_ASSERT_ERROR(eq(ev[11],-1.2), {}, "cbc", "getMatrixByCol: elements");
+      OSIUNITTEST_ASSERT_ERROR(eq(ev[12],-1.0), {}, "cbc", "getMatrixByCol: elements");
+      OSIUNITTEST_ASSERT_ERROR(eq(ev[13], 1.9), {}, "cbc", "getMatrixByCol: elements");
       
       const CoinBigIndex * mi = smP->getVectorStarts();
-      assert( mi[0]==0 );
-      assert( mi[1]==2 );
-      assert( mi[2]==4 );
-      assert( mi[3]==6 );
-      assert( mi[4]==8 );
-      assert( mi[5]==10 );
-      assert( mi[6]==11 );
-      assert( mi[7]==12 );
-      assert( mi[8]==14 );
+      OSIUNITTEST_ASSERT_ERROR(mi[0] ==  0, {}, "cbc", "getMatrixByCol: vector starts");
+      OSIUNITTEST_ASSERT_ERROR(mi[1] ==  2, {}, "cbc", "getMatrixByCol: vector starts");
+      OSIUNITTEST_ASSERT_ERROR(mi[2] ==  4, {}, "cbc", "getMatrixByCol: vector starts");
+      OSIUNITTEST_ASSERT_ERROR(mi[3] ==  6, {}, "cbc", "getMatrixByCol: vector starts");
+      OSIUNITTEST_ASSERT_ERROR(mi[4] ==  8, {}, "cbc", "getMatrixByCol: vector starts");
+      OSIUNITTEST_ASSERT_ERROR(mi[5] == 10, {}, "cbc", "getMatrixByCol: vector starts");
+      OSIUNITTEST_ASSERT_ERROR(mi[6] == 11, {}, "cbc", "getMatrixByCol: vector starts");
+      OSIUNITTEST_ASSERT_ERROR(mi[7] == 12, {}, "cbc", "getMatrixByCol: vector starts");
+      OSIUNITTEST_ASSERT_ERROR(mi[8] == 14, {}, "cbc", "getMatrixByCol: vector starts");
       
       const int * ei = smP->getIndices();
-      assert( ei[0]  ==  0 );
-      assert( ei[1]  ==  4 );
-      assert( ei[2]  ==  0 );
-      assert( ei[3]  ==  1 );
-      assert( ei[4]  ==  1 );
-      assert( ei[5]  ==  2 );
-      assert( ei[6]  ==  0 );
-      assert( ei[7]  ==  3 );
-      assert( ei[8]  ==  0 );
-      assert( ei[9]  ==  4 );
-      assert( ei[10] ==  2 );
-      assert( ei[11] ==  3 );
-      assert( ei[12] ==  0 );
-      assert( ei[13] ==  4 );    
-      
+      OSIUNITTEST_ASSERT_ERROR(ei[ 0] == 0, {}, "cbc", "getMatrixByCol: indices");
+      OSIUNITTEST_ASSERT_ERROR(ei[ 1] == 4, {}, "cbc", "getMatrixByCol: indices");
+      OSIUNITTEST_ASSERT_ERROR(ei[ 2] == 0, {}, "cbc", "getMatrixByCol: indices");
+      OSIUNITTEST_ASSERT_ERROR(ei[ 3] == 1, {}, "cbc", "getMatrixByCol: indices");
+      OSIUNITTEST_ASSERT_ERROR(ei[ 4] == 1, {}, "cbc", "getMatrixByCol: indices");
+      OSIUNITTEST_ASSERT_ERROR(ei[ 5] == 2, {}, "cbc", "getMatrixByCol: indices");
+      OSIUNITTEST_ASSERT_ERROR(ei[ 6] == 0, {}, "cbc", "getMatrixByCol: indices");
+      OSIUNITTEST_ASSERT_ERROR(ei[ 7] == 3, {}, "cbc", "getMatrixByCol: indices");
+      OSIUNITTEST_ASSERT_ERROR(ei[ 8] == 0, {}, "cbc", "getMatrixByCol: indices");
+      OSIUNITTEST_ASSERT_ERROR(ei[ 9] == 4, {}, "cbc", "getMatrixByCol: indices");
+      OSIUNITTEST_ASSERT_ERROR(ei[10] == 2, {}, "cbc", "getMatrixByCol: indices");
+      OSIUNITTEST_ASSERT_ERROR(ei[11] == 3, {}, "cbc", "getMatrixByCol: indices");
+      OSIUNITTEST_ASSERT_ERROR(ei[12] == 0, {}, "cbc", "getMatrixByCol: indices");
+      OSIUNITTEST_ASSERT_ERROR(ei[13] == 4, {}, "cbc", "getMatrixByCol: indices");
 #else // OSICBC_TEST_MTX_STRUCTURE
 
       CoinPackedMatrix &exmip1Mtx = BuildExmip1Mtx() ;
-      assert( exmip1Mtx.isEquivalent(*smP) ) ;
-
+      OSIUNITTEST_ASSERT_ERROR(exmip1Mtx.isEquivalent(*smP), {}, "cbc", "getMatrixByCol");
 #endif	// OSICBC_TEST_MTX_STRUCTURE     
-
-      assert( smP->getMajorDim() == 8 ); 
-      assert( smP->getMinorDim() == 5 );
-      assert( smP->getNumElements() == 14 );
-      assert( smP->getSizeVectorStarts() == 9 );
     }
 
     //--------------
     // Test rowsense, rhs, rowrange, matrixByRow, solver assignment
     {
       OsiCbcSolverInterface lhs;
-      {      
+      {
+        OsiCbcSolverInterface siC1(m);
 
-        OsiCbcSolverInterface siC1(m);     
         const char   * siC1rs  = siC1.getRowSense();
-        assert( siC1rs[0]=='G' );
-        assert( siC1rs[1]=='L' );
-        assert( siC1rs[2]=='E' );
-        assert( siC1rs[3]=='R' );
-        assert( siC1rs[4]=='R' );
-        
+        OSIUNITTEST_ASSERT_ERROR(siC1rs[0] == 'G', {}, "cbc", "row sense");
+        OSIUNITTEST_ASSERT_ERROR(siC1rs[1] == 'L', {}, "cbc", "row sense");
+        OSIUNITTEST_ASSERT_ERROR(siC1rs[2] == 'E', {}, "cbc", "row sense");
+        OSIUNITTEST_ASSERT_ERROR(siC1rs[3] == 'R', {}, "cbc", "row sense");
+        OSIUNITTEST_ASSERT_ERROR(siC1rs[4] == 'R', {}, "cbc", "row sense");
+
         const double * siC1rhs = siC1.getRightHandSide();
-        assert( eq(siC1rhs[0],2.5) );
-        assert( eq(siC1rhs[1],2.1) );
-        assert( eq(siC1rhs[2],4.0) );
-        assert( eq(siC1rhs[3],5.0) );
-        assert( eq(siC1rhs[4],15.) ); 
-        
+        OSIUNITTEST_ASSERT_ERROR(eq(siC1rhs[0],2.5), {}, "cbc", "right hand side");
+        OSIUNITTEST_ASSERT_ERROR(eq(siC1rhs[1],2.1), {}, "cbc", "right hand side");
+        OSIUNITTEST_ASSERT_ERROR(eq(siC1rhs[2],4.0), {}, "cbc", "right hand side");
+        OSIUNITTEST_ASSERT_ERROR(eq(siC1rhs[3],5.0), {}, "cbc", "right hand side");
+        OSIUNITTEST_ASSERT_ERROR(eq(siC1rhs[4],15.), {}, "cbc", "right hand side");
+
         const double * siC1rr  = siC1.getRowRange();
-        assert( eq(siC1rr[0],0.0) );
-        assert( eq(siC1rr[1],0.0) );
-        assert( eq(siC1rr[2],0.0) );
-        assert( eq(siC1rr[3],5.0-1.8) );
-        assert( eq(siC1rr[4],15.0-3.0) );
+        OSIUNITTEST_ASSERT_ERROR(eq(siC1rr[0],0.0), {}, "cbc", "row range");
+        OSIUNITTEST_ASSERT_ERROR(eq(siC1rr[1],0.0), {}, "cbc", "row range");
+        OSIUNITTEST_ASSERT_ERROR(eq(siC1rr[2],0.0), {}, "cbc", "row range");
+        OSIUNITTEST_ASSERT_ERROR(eq(siC1rr[3],5.0-1.8), {}, "cbc", "row range");
+        OSIUNITTEST_ASSERT_ERROR(eq(siC1rr[4],15.0-3.0), {}, "cbc", "row range");
         
         const CoinPackedMatrix * siC1mbr = siC1.getMatrixByRow();
-        assert( siC1mbr != NULL );
+        OSIUNITTEST_ASSERT_ERROR(siC1mbr != NULL, {}, "cbc", "matrix by row");
+        OSIUNITTEST_ASSERT_ERROR(siC1mbr->getMajorDim()    ==  5, return 1, "cbc", "matrix by row: major dim");
+        OSIUNITTEST_ASSERT_ERROR(siC1mbr->getMinorDim()    ==  8, return 1, "cbc", "matrix by row: major dim");
+        OSIUNITTEST_ASSERT_ERROR(siC1mbr->getNumElements() == 14, return 1, "cbc", "matrix by row: num elements");
+        OSIUNITTEST_ASSERT_ERROR(siC1mbr->getSizeVectorStarts() == 6, return 1, "cbc", "matrix by row: num elements");
 
 #ifdef OSICBC_TEST_MTX_STRUCTURE
-
         const double * ev = siC1mbr->getElements();
-        assert( eq(ev[0],   3.0) );
-        assert( eq(ev[1],   1.0) );
-        assert( eq(ev[2],  -2.0) );
-        assert( eq(ev[3],  -1.0) );
-        assert( eq(ev[4],  -1.0) );
-        assert( eq(ev[5],   2.0) );
-        assert( eq(ev[6],   1.1) );
-        assert( eq(ev[7],   1.0) );
-        assert( eq(ev[8],   1.0) );
-        assert( eq(ev[9],   2.8) );
-        assert( eq(ev[10], -1.2) );
-        assert( eq(ev[11],  5.6) );
-        assert( eq(ev[12],  1.0) );
-        assert( eq(ev[13],  1.9) );
-        
-        const CoinBigIndex * mi = siC1mbr->getVectorStarts();
-        assert( mi[0]==0 );
-        assert( mi[1]==5 );
-        assert( mi[2]==7 );
-        assert( mi[3]==9 );
-        assert( mi[4]==11 );
-        assert( mi[5]==14 );
-        
-        const int * ei = siC1mbr->getIndices();
-        assert( ei[0]  ==  0 );
-        assert( ei[1]  ==  1 );
-        assert( ei[2]  ==  3 );
-        assert( ei[3]  ==  4 );
-        assert( ei[4]  ==  7 );
-        assert( ei[5]  ==  1 );
-        assert( ei[6]  ==  2 );
-        assert( ei[7]  ==  2 );
-        assert( ei[8]  ==  5 );
-        assert( ei[9]  ==  3 );
-        assert( ei[10] ==  6 );
-        assert( ei[11] ==  0 );
-        assert( ei[12] ==  4 );
-        assert( ei[13] ==  7 );    
+        OSIUNITTEST_ASSERT_ERROR(eq(ev[ 0], 3.0), {}, "cbc", "matrix by row: elements");
+        OSIUNITTEST_ASSERT_ERROR(eq(ev[ 1], 1.0), {}, "cbc", "matrix by row: elements");
+        OSIUNITTEST_ASSERT_ERROR(eq(ev[ 2],-2.0), {}, "cbc", "matrix by row: elements");
+        OSIUNITTEST_ASSERT_ERROR(eq(ev[ 3],-1.0), {}, "cbc", "matrix by row: elements");
+        OSIUNITTEST_ASSERT_ERROR(eq(ev[ 4],-1.0), {}, "cbc", "matrix by row: elements");
+        OSIUNITTEST_ASSERT_ERROR(eq(ev[ 5], 2.0), {}, "cbc", "matrix by row: elements");
+        OSIUNITTEST_ASSERT_ERROR(eq(ev[ 6], 1.1), {}, "cbc", "matrix by row: elements");
+        OSIUNITTEST_ASSERT_ERROR(eq(ev[ 7], 1.0), {}, "cbc", "matrix by row: elements");
+        OSIUNITTEST_ASSERT_ERROR(eq(ev[ 8], 1.0), {}, "cbc", "matrix by row: elements");
+        OSIUNITTEST_ASSERT_ERROR(eq(ev[ 9], 2.8), {}, "cbc", "matrix by row: elements");
+        OSIUNITTEST_ASSERT_ERROR(eq(ev[10],-1.2), {}, "cbc", "matrix by row: elements");
+        OSIUNITTEST_ASSERT_ERROR(eq(ev[11], 5.6), {}, "cbc", "matrix by row: elements");
+        OSIUNITTEST_ASSERT_ERROR(eq(ev[12], 1.0), {}, "cbc", "matrix by row: elements");
+        OSIUNITTEST_ASSERT_ERROR(eq(ev[13], 1.9), {}, "cbc", "matrix by row: elements");
 
+        const CoinBigIndex * mi = siC1mbr->getVectorStarts();
+        OSIUNITTEST_ASSERT_ERROR(mi[0] ==  0, {}, "cbc", "matrix by row: vector starts");
+        OSIUNITTEST_ASSERT_ERROR(mi[1] ==  5, {}, "cbc", "matrix by row: vector starts");
+        OSIUNITTEST_ASSERT_ERROR(mi[2] ==  7, {}, "cbc", "matrix by row: vector starts");
+        OSIUNITTEST_ASSERT_ERROR(mi[3] ==  9, {}, "cbc", "matrix by row: vector starts");
+        OSIUNITTEST_ASSERT_ERROR(mi[4] == 11, {}, "cbc", "matrix by row: vector starts");
+        OSIUNITTEST_ASSERT_ERROR(mi[5] == 14, {}, "cbc", "matrix by row: vector starts");
+
+        const int * ei = siC1mbr->getIndices();
+        OSIUNITTEST_ASSERT_ERROR(ei[ 0] == 0, {}, "cbc", "matrix by row: indices");
+        OSIUNITTEST_ASSERT_ERROR(ei[ 1] == 1, {}, "cbc", "matrix by row: indices");
+        OSIUNITTEST_ASSERT_ERROR(ei[ 2] == 3, {}, "cbc", "matrix by row: indices");
+        OSIUNITTEST_ASSERT_ERROR(ei[ 3] == 4, {}, "cbc", "matrix by row: indices");
+        OSIUNITTEST_ASSERT_ERROR(ei[ 4] == 7, {}, "cbc", "matrix by row: indices");
+        OSIUNITTEST_ASSERT_ERROR(ei[ 5] == 1, {}, "cbc", "matrix by row: indices");
+        OSIUNITTEST_ASSERT_ERROR(ei[ 6] == 2, {}, "cbc", "matrix by row: indices");
+        OSIUNITTEST_ASSERT_ERROR(ei[ 7] == 2, {}, "cbc", "matrix by row: indices");
+        OSIUNITTEST_ASSERT_ERROR(ei[ 8] == 5, {}, "cbc", "matrix by row: indices");
+        OSIUNITTEST_ASSERT_ERROR(ei[ 9] == 3, {}, "cbc", "matrix by row: indices");
+        OSIUNITTEST_ASSERT_ERROR(ei[10] == 6, {}, "cbc", "matrix by row: indices");
+        OSIUNITTEST_ASSERT_ERROR(ei[11] == 0, {}, "cbc", "matrix by row: indices");
+        OSIUNITTEST_ASSERT_ERROR(ei[12] == 4, {}, "cbc", "matrix by row: indices");
+        OSIUNITTEST_ASSERT_ERROR(ei[13] == 7, {}, "cbc", "matrix by row: indices");
 #else	// OSICBC_TEST_MTX_STRUCTURE
 
-	CoinPackedMatrix exmip1Mtx ;
-	exmip1Mtx.reverseOrderedCopyOf(BuildExmip1Mtx()) ;
-	assert( exmip1Mtx.isEquivalent(*siC1mbr) ) ;
-
+        CoinPackedMatrix exmip1Mtx ;
+        exmip1Mtx.reverseOrderedCopyOf(BuildExmip1Mtx()) ;
+        OSIUNITTEST_ASSERT_ERROR(exmip1Mtx.isEquivalent(*siC1mbr), {}, "cbc", "matrix by row");
 #endif	// OSICBC_TEST_MTX_STRUCTURE
 
-        assert( siC1mbr->getMajorDim() == 5 ); 
-	assert( siC1mbr->getMinorDim() == 8 );
-        assert( siC1mbr->getNumElements() == 14 );
-	assert( siC1mbr->getSizeVectorStarts()==6 );
+        OSIUNITTEST_ASSERT_WARNING(siC1rs  == siC1.getRowSense(), {}, "cbc", "row sense");
+        OSIUNITTEST_ASSERT_WARNING(siC1rhs == siC1.getRightHandSide(), {}, "cbc", "right hand side");
+        OSIUNITTEST_ASSERT_WARNING(siC1rr  == siC1.getRowRange(), {}, "cbc", "row range");
 
-        assert( siC1rs  == siC1.getRowSense() );
-        assert( siC1rhs == siC1.getRightHandSide() );
-        assert( siC1rr  == siC1.getRowRange() );
-
-        // Change OSL Model by adding free row
+        // Change CBC Model by adding free row
         OsiRowCut rc;
-        rc.setLb(-DBL_MAX);
-        rc.setUb( DBL_MAX);
+        rc.setLb(-COIN_DBL_MAX);
+        rc.setUb( COIN_DBL_MAX);
         OsiCuts cuts;
         cuts.insert(rc);
         siC1.applyCuts(cuts);
-             
-        
+
         siC1rs  = siC1.getRowSense();
-        assert( siC1rs[0]=='G' );
-        assert( siC1rs[1]=='L' );
-        assert( siC1rs[2]=='E' );
-        assert( siC1rs[3]=='R' );
-        assert( siC1rs[4]=='R' );
-        assert( siC1rs[5]=='N' );
+        OSIUNITTEST_ASSERT_ERROR(siC1rs[0] == 'G', {}, "cbc", "row sense after adding row");
+        OSIUNITTEST_ASSERT_ERROR(siC1rs[1] == 'L', {}, "cbc", "row sense after adding row");
+        OSIUNITTEST_ASSERT_ERROR(siC1rs[2] == 'E', {}, "cbc", "row sense after adding row");
+        OSIUNITTEST_ASSERT_ERROR(siC1rs[3] == 'R', {}, "cbc", "row sense after adding row");
+        OSIUNITTEST_ASSERT_ERROR(siC1rs[4] == 'R', {}, "cbc", "row sense after adding row");
+        OSIUNITTEST_ASSERT_ERROR(siC1rs[5] == 'N', {}, "cbc", "row sense after adding row");
 
         siC1rhs = siC1.getRightHandSide();
-        assert( eq(siC1rhs[0],2.5) );
-        assert( eq(siC1rhs[1],2.1) );
-        assert( eq(siC1rhs[2],4.0) );
-        assert( eq(siC1rhs[3],5.0) );
-        assert( eq(siC1rhs[4],15.) ); 
-        assert( eq(siC1rhs[5],0.0 ) ); 
+        OSIUNITTEST_ASSERT_ERROR(eq(siC1rhs[0],2.5), {}, "cbc", "right hand side after adding row");
+        OSIUNITTEST_ASSERT_ERROR(eq(siC1rhs[1],2.1), {}, "cbc", "right hand side after adding row");
+        OSIUNITTEST_ASSERT_ERROR(eq(siC1rhs[2],4.0), {}, "cbc", "right hand side after adding row");
+        OSIUNITTEST_ASSERT_ERROR(eq(siC1rhs[3],5.0), {}, "cbc", "right hand side after adding row");
+        OSIUNITTEST_ASSERT_ERROR(eq(siC1rhs[4],15.), {}, "cbc", "right hand side after adding row");
+        OSIUNITTEST_ASSERT_ERROR(eq(siC1rhs[5],0.0), {}, "cbc", "right hand side after adding row");
 
         siC1rr  = siC1.getRowRange();
-        assert( eq(siC1rr[0],0.0) );
-        assert( eq(siC1rr[1],0.0) );
-        assert( eq(siC1rr[2],0.0) );
-        assert( eq(siC1rr[3],5.0-1.8) );
-        assert( eq(siC1rr[4],15.0-3.0) );
-        assert( eq(siC1rr[5],0.0) );
-    
-        lhs=siC1;
+        OSIUNITTEST_ASSERT_ERROR(eq(siC1rr[0],0.0), {}, "cbc", "row range after adding row");
+        OSIUNITTEST_ASSERT_ERROR(eq(siC1rr[1],0.0), {}, "cbc", "row range after adding row");
+        OSIUNITTEST_ASSERT_ERROR(eq(siC1rr[2],0.0), {}, "cbc", "row range after adding row");
+        OSIUNITTEST_ASSERT_ERROR(eq(siC1rr[3],5.0-1.8), {}, "cbc", "row range after adding row");
+        OSIUNITTEST_ASSERT_ERROR(eq(siC1rr[4],15.0-3.0), {}, "cbc", "row range after adding row");
+        OSIUNITTEST_ASSERT_ERROR(eq(siC1rr[5],0.0), {}, "cbc", "row range after adding row");
+
+        lhs = siC1;
       }
+
       // Test that lhs has correct values even though siC1 has gone out of scope    
-      
       const char * lhsrs  = lhs.getRowSense();
-      assert( lhsrs[0]=='G' );
-      assert( lhsrs[1]=='L' );
-      assert( lhsrs[2]=='E' );
-      assert( lhsrs[3]=='R' );
-      assert( lhsrs[4]=='R' );
-      assert( lhsrs[5]=='N' );
+      OSIUNITTEST_ASSERT_ERROR(lhsrs[0] == 'G', {}, "cbc", "row sense after assignment");
+      OSIUNITTEST_ASSERT_ERROR(lhsrs[1] == 'L', {}, "cbc", "row sense after assignment");
+      OSIUNITTEST_ASSERT_ERROR(lhsrs[2] == 'E', {}, "cbc", "row sense after assignment");
+      OSIUNITTEST_ASSERT_ERROR(lhsrs[3] == 'R', {}, "cbc", "row sense after assignment");
+      OSIUNITTEST_ASSERT_ERROR(lhsrs[4] == 'R', {}, "cbc", "row sense after assignment");
+      OSIUNITTEST_ASSERT_ERROR(lhsrs[5] == 'N', {}, "cbc", "row sense after assignment");
       
       const double * lhsrhs = lhs.getRightHandSide();
-      assert( eq(lhsrhs[0],2.5) );
-      assert( eq(lhsrhs[1],2.1) );
-      assert( eq(lhsrhs[2],4.0) );
-      assert( eq(lhsrhs[3],5.0) );
-      assert( eq(lhsrhs[4],15.) ); 
-      assert( eq(lhsrhs[5],0.0) ); 
+      OSIUNITTEST_ASSERT_ERROR(eq(lhsrhs[0],2.5), {}, "cbc", "right hand side after assignment");
+      OSIUNITTEST_ASSERT_ERROR(eq(lhsrhs[1],2.1), {}, "cbc", "right hand side after assignment");
+      OSIUNITTEST_ASSERT_ERROR(eq(lhsrhs[2],4.0), {}, "cbc", "right hand side after assignment");
+      OSIUNITTEST_ASSERT_ERROR(eq(lhsrhs[3],5.0), {}, "cbc", "right hand side after assignment");
+      OSIUNITTEST_ASSERT_ERROR(eq(lhsrhs[4],15.), {}, "cbc", "right hand side after assignment");
+      OSIUNITTEST_ASSERT_ERROR(eq(lhsrhs[5],0.0), {}, "cbc", "right hand side after assignment");
       
-      const double *lhsrr  = lhs.getRowRange();
-      assert( eq(lhsrr[0],0.0) );
-      assert( eq(lhsrr[1],0.0) );
-      assert( eq(lhsrr[2],0.0) );
-      assert( eq(lhsrr[3],5.0-1.8) );
-      assert( eq(lhsrr[4],15.0-3.0) );
-      assert( eq(lhsrr[5],0.0) );      
+      const double *lhsrr = lhs.getRowRange();
+      OSIUNITTEST_ASSERT_ERROR(eq(lhsrr[0],0.0), {}, "cbc", "row range after assignment");
+      OSIUNITTEST_ASSERT_ERROR(eq(lhsrr[1],0.0), {}, "cbc", "row range after assignment");
+      OSIUNITTEST_ASSERT_ERROR(eq(lhsrr[2],0.0), {}, "cbc", "row range after assignment");
+      OSIUNITTEST_ASSERT_ERROR(eq(lhsrr[3],5.0-1.8), {}, "cbc", "row range after assignment");
+      OSIUNITTEST_ASSERT_ERROR(eq(lhsrr[4],15.0-3.0), {}, "cbc", "row range after assignment");
+      OSIUNITTEST_ASSERT_ERROR(eq(lhsrr[5],0.0), {}, "cbc", "row range after assignment");
       
       const CoinPackedMatrix * lhsmbr = lhs.getMatrixByRow();
-      assert( lhsmbr != NULL );       
+      OSIUNITTEST_ASSERT_ERROR(lhsmbr != NULL, {}, "cbc", "matrix by row after assignment");
+      OSIUNITTEST_ASSERT_ERROR(lhsmbr->getMajorDim()    ==  6, return 1, "cbc", "matrix by row after assignment: major dim");
+      OSIUNITTEST_ASSERT_ERROR(lhsmbr->getNumElements() == 14, return 1, "cbc", "matrix by row after assignment: num elements");
+
 
 #ifdef OSICBC_TEST_MTX_STRUCTURE
-
       const double * ev = lhsmbr->getElements();
-      assert( eq(ev[0],   3.0) );
-      assert( eq(ev[1],   1.0) );
-      assert( eq(ev[2],  -2.0) );
-      assert( eq(ev[3],  -1.0) );
-      assert( eq(ev[4],  -1.0) );
-      assert( eq(ev[5],   2.0) );
-      assert( eq(ev[6],   1.1) );
-      assert( eq(ev[7],   1.0) );
-      assert( eq(ev[8],   1.0) );
-      assert( eq(ev[9],   2.8) );
-      assert( eq(ev[10], -1.2) );
-      assert( eq(ev[11],  5.6) );
-      assert( eq(ev[12],  1.0) );
-      assert( eq(ev[13],  1.9) );
+      OSIUNITTEST_ASSERT_ERROR(eq(ev[ 0], 3.0), {}, "cbc", "matrix by row after assignment: elements");
+      OSIUNITTEST_ASSERT_ERROR(eq(ev[ 1], 1.0), {}, "cbc", "matrix by row after assignment: elements");
+      OSIUNITTEST_ASSERT_ERROR(eq(ev[ 2],-2.0), {}, "cbc", "matrix by row after assignment: elements");
+      OSIUNITTEST_ASSERT_ERROR(eq(ev[ 3],-1.0), {}, "cbc", "matrix by row after assignment: elements");
+      OSIUNITTEST_ASSERT_ERROR(eq(ev[ 4],-1.0), {}, "cbc", "matrix by row after assignment: elements");
+      OSIUNITTEST_ASSERT_ERROR(eq(ev[ 5], 2.0), {}, "cbc", "matrix by row after assignment: elements");
+      OSIUNITTEST_ASSERT_ERROR(eq(ev[ 6], 1.1), {}, "cbc", "matrix by row after assignment: elements");
+      OSIUNITTEST_ASSERT_ERROR(eq(ev[ 7], 1.0), {}, "cbc", "matrix by row after assignment: elements");
+      OSIUNITTEST_ASSERT_ERROR(eq(ev[ 8], 1.0), {}, "cbc", "matrix by row after assignment: elements");
+      OSIUNITTEST_ASSERT_ERROR(eq(ev[ 9], 2.8), {}, "cbc", "matrix by row after assignment: elements");
+      OSIUNITTEST_ASSERT_ERROR(eq(ev[10],-1.2), {}, "cbc", "matrix by row after assignment: elements");
+      OSIUNITTEST_ASSERT_ERROR(eq(ev[11], 5.6), {}, "cbc", "matrix by row after assignment: elements");
+      OSIUNITTEST_ASSERT_ERROR(eq(ev[12], 1.0), {}, "cbc", "matrix by row after assignment: elements");
+      OSIUNITTEST_ASSERT_ERROR(eq(ev[13], 1.9), {}, "cbc", "matrix by row after assignment: elements");
       
       const CoinBigIndex * mi = lhsmbr->getVectorStarts();
-      assert( mi[0]==0 );
-      assert( mi[1]==5 );
-      assert( mi[2]==7 );
-      assert( mi[3]==9 );
-      assert( mi[4]==11 );
-      assert( mi[5]==14 );
+      OSIUNITTEST_ASSERT_ERROR(mi[0] ==  0, {}, "cbc", "matrix by row after assignment: vector starts");
+      OSIUNITTEST_ASSERT_ERROR(mi[1] ==  5, {}, "cbc", "matrix by row after assignment: vector starts");
+      OSIUNITTEST_ASSERT_ERROR(mi[2] ==  7, {}, "cbc", "matrix by row after assignment: vector starts");
+      OSIUNITTEST_ASSERT_ERROR(mi[3] ==  9, {}, "cbc", "matrix by row after assignment: vector starts");
+      OSIUNITTEST_ASSERT_ERROR(mi[4] == 11, {}, "cbc", "matrix by row after assignment: vector starts");
+      OSIUNITTEST_ASSERT_ERROR(mi[5] == 14, {}, "cbc", "matrix by row after assignment: vector starts");
       
       const int * ei = lhsmbr->getIndices();
-      assert( ei[0]  ==  0 );
-      assert( ei[1]  ==  1 );
-      assert( ei[2]  ==  3 );
-      assert( ei[3]  ==  4 );
-      assert( ei[4]  ==  7 );
-      assert( ei[5]  ==  1 );
-      assert( ei[6]  ==  2 );
-      assert( ei[7]  ==  2 );
-      assert( ei[8]  ==  5 );
-      assert( ei[9]  ==  3 );
-      assert( ei[10] ==  6 );
-      assert( ei[11] ==  0 );
-      assert( ei[12] ==  4 );
-      assert( ei[13] ==  7 );    
-
+      OSIUNITTEST_ASSERT_ERROR(ei[ 0] == 0, {}, "cbc", "matrix by row after assignment: indices");
+      OSIUNITTEST_ASSERT_ERROR(ei[ 1] == 1, {}, "cbc", "matrix by row after assignment: indices");
+      OSIUNITTEST_ASSERT_ERROR(ei[ 2] == 3, {}, "cbc", "matrix by row after assignment: indices");
+      OSIUNITTEST_ASSERT_ERROR(ei[ 3] == 4, {}, "cbc", "matrix by row after assignment: indices");
+      OSIUNITTEST_ASSERT_ERROR(ei[ 4] == 7, {}, "cbc", "matrix by row after assignment: indices");
+      OSIUNITTEST_ASSERT_ERROR(ei[ 5] == 1, {}, "cbc", "matrix by row after assignment: indices");
+      OSIUNITTEST_ASSERT_ERROR(ei[ 6] == 2, {}, "cbc", "matrix by row after assignment: indices");
+      OSIUNITTEST_ASSERT_ERROR(ei[ 7] == 2, {}, "cbc", "matrix by row after assignment: indices");
+      OSIUNITTEST_ASSERT_ERROR(ei[ 8] == 5, {}, "cbc", "matrix by row after assignment: indices");
+      OSIUNITTEST_ASSERT_ERROR(ei[ 9] == 3, {}, "cbc", "matrix by row after assignment: indices");
+      OSIUNITTEST_ASSERT_ERROR(ei[10] == 6, {}, "cbc", "matrix by row after assignment: indices");
+      OSIUNITTEST_ASSERT_ERROR(ei[11] == 0, {}, "cbc", "matrix by row after assignment: indices");
+      OSIUNITTEST_ASSERT_ERROR(ei[12] == 4, {}, "cbc", "matrix by row after assignment: indices");
+      OSIUNITTEST_ASSERT_ERROR(ei[13] == 7, {}, "cbc", "matrix by row after assignment: indices");
 #else	// OSICBC_TEST_MTX_STRUCTURE
 
 /*
@@ -804,15 +574,9 @@ OsiCbcSolverInterfaceUnitTest(const std::string & mpsDir, const std::string & ne
       exmip1Mtx.reverseOrderedCopyOf(BuildExmip1Mtx()) ;
       CoinPackedVector freeRow ;
       exmip1Mtx.appendRow(freeRow) ;
-      assert( exmip1Mtx.isEquivalent(*lhsmbr) ) ;
-
+      OSIUNITTEST_ASSERT_ERROR(exmip1Mtx.isEquivalent(*lhsmbr), {}, "cbc", "matrix by row after assignment");
 #endif	// OSICBC_TEST_MTX_STRUCTURE
-      
-      int md = lhsmbr->getMajorDim();
-      assert(  md == 6 ); 
-      assert( lhsmbr->getNumElements() == 14 );
     }
-    
   }
 
   // Test add/delete columns
@@ -829,12 +593,12 @@ OsiCbcSolverInterfaceUnitTest(const std::string & mpsDir, const std::string & ne
     m.initialSolve();
     double objValue = m.getObjValue();
     CoinRelFltEq eq(1.0e-2);
-    assert( eq(objValue,2520.57) );
+    OSIUNITTEST_ASSERT_ERROR(eq(objValue,2520.57), {}, "cbc", "objvalue after adding col");
+
     // Try deleting first column that's nonbasic at lower bound (0).
     int * d = new int[1];
-    CoinWarmStartBasis *cwsb =
-	dynamic_cast<CoinWarmStartBasis *>(m.getWarmStart()) ;
-    assert(cwsb) ;
+    CoinWarmStartBasis *cwsb = dynamic_cast<CoinWarmStartBasis *>(m.getWarmStart()) ;
+    OSIUNITTEST_ASSERT_ERROR(cwsb != NULL, {}, "cbc", "get warmstart basis");
     CoinWarmStartBasis::Status stati ;
     int iCol ;
     for (iCol = 0 ;  iCol < cwsb->getNumStructural() ; iCol++)
@@ -847,7 +611,8 @@ OsiCbcSolverInterfaceUnitTest(const std::string & mpsDir, const std::string & ne
     d=NULL;
     m.resolve();
     objValue = m.getObjValue();
-    assert( eq(objValue,2520.57) );
+    OSIUNITTEST_ASSERT_ERROR(eq(objValue,2520.57), {}, "clp", "objvalue after deleting first col");
+
     // Try deleting column we added. If basic, go to initialSolve as deleting
     // basic variable trashes basis required for warm start.
     iCol = m.getNumCols()-1;
@@ -860,29 +625,7 @@ OsiCbcSolverInterfaceUnitTest(const std::string & mpsDir, const std::string & ne
     else
     { m.resolve(); }
     objValue = m.getObjValue();
-    assert( eq(objValue,2520.57) );
-
-  }
-  // Test matt
-  if (fopen("../Cbc/matt.mps","r")) {    
-    OsiCbcSolverInterface m;
-    m.readMps("../Cbc/matt","mps");
-    m.setHintParam(OsiDoPresolveInResolve, true, OsiHintDo);
-    m.resolve();
-    
-    std::vector<double *> rays = m.getDualRays(1);
-    std::cout << "Dual Ray: " << std::endl;
-    for(int i = 0; i < m.getNumRows(); i++){
-      if(fabs(rays[0][i]) > 0.00001)
-        std::cout << i << " : " << rays[0][i] << std::endl;
-    }
-    
-    std::cout << "isProvenOptimal = " << m.isProvenOptimal() << std::endl;
-    std::cout << "isProvenPrimalInfeasible = " << m.isProvenPrimalInfeasible()
-         << std::endl;
-    
-    delete [] rays[0];
-    
+    OSIUNITTEST_ASSERT_ERROR(eq(objValue,2520.57), {}, "clp", "objvalue after deleting added col");
   }
 
   // Build a model
@@ -996,21 +739,19 @@ OsiCbcSolverInterfaceUnitTest(const std::string & mpsDir, const std::string & ne
     // If small switch on error printing
     if (numberColumns<50)
       build.setLogLevel(1);
-    int numberErrors=model2.loadFromCoinModel(build);
     // should fail as we never set multiplier
-    assert (numberErrors);
+    OSIUNITTEST_ASSERT_ERROR(model2.loadFromCoinModel(build) != 0, {}, "cbc", "build model with missing multipliers");
     build.associateElement("multiplier",0.0);
-    numberErrors=model2.loadFromCoinModel(build);
-    assert (!numberErrors);
+    OSIUNITTEST_ASSERT_ERROR(model2.loadFromCoinModel(build) == 0, {}, "cbc", "build model");
     model2.initialSolve();
     // It then loops with multiplier going from 0.0 to 2.0 in increments of 0.1
     for (double multiplier=0.0;multiplier<2.0;multiplier+= 0.1) {
       build.associateElement("multiplier",multiplier);
-      numberErrors=model2.loadFromCoinModel(build,true);
-      assert (!numberErrors);
+      OSIUNITTEST_ASSERT_ERROR(model2.loadFromCoinModel(build,true) == 0, {}, "cbc", "build model with increasing multiplier");
       model2.resolve();
     }
   }
+
   // branch and bound
   {    
     OsiCbcSolverInterface m;
@@ -1021,6 +762,7 @@ OsiCbcSolverInterfaceUnitTest(const std::string & mpsDir, const std::string & ne
     m.getModelPtr()->messageHandler()->setLogLevel(0);
     m.branchAndBound();
   }
+
   // branch and bound using CbcModel!!!!!!!
   {    
     OsiCbcSolverInterface mm;
@@ -1030,36 +772,17 @@ OsiCbcSolverInterfaceUnitTest(const std::string & mpsDir, const std::string & ne
     m.initialSolve();
     m.branchAndBound();
   }
-#ifdef COIN_HAS_OSL
-  // branch and bound using OSL
-  {    
-    OsiOslSolverInterface mmm;
-    OsiCbcSolverInterface mm(&mmm);
-    CbcStrategyNull strategy;
-    OsiCbcSolverInterface m(&mm,&strategy);
-    std::string fn = mpsDir+"p0033";
-    m.readMps(fn.c_str(),"mps");
-    //m.initialSolve();
-    m.branchAndBound();
-  }
-#endif
-  int errCnt = 0;
+
   // Do common solverInterface testing 
   {
     OsiCbcSolverInterface m;
-    errCnt += OsiSolverInterfaceCommonUnitTest(&m, mpsDir,netlibDir);
+    OsiSolverInterfaceCommonUnitTest(&m, mpsDir,netlibDir);
   }
   {
     OsiCbcSolverInterface mm;
     OsiCbcSolverInterface m(&mm);
-    errCnt += OsiSolverInterfaceCommonUnitTest(&m, mpsDir,netlibDir);
+    OsiSolverInterfaceCommonUnitTest(&m, mpsDir,netlibDir);
   }
-#ifdef COIN_HAS_OSL
-  {
-    OsiOslSolverInterface mm;
-    OsiCbcSolverInterface m(&mm);
-    errCnt += OsiSolverInterfaceCommonUnitTest(&m, mpsDir,netlibDir);
-  }
-#endif
-  return errCnt;
+
+  return 0;
 }

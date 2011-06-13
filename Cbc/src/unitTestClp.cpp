@@ -10,6 +10,7 @@
 #include <iomanip>
 
 #include "CoinTime.hpp"
+#include "CoinFileIO.hpp"
 #include "CbcModel.hpp"
 #include "CbcHeuristic.hpp"
 #include "CbcCutGenerator.hpp"
@@ -61,23 +62,40 @@ bool CbcTestMpsFile(std::string& fname)
         fname += ".MPS";
         return true;
     }
-#ifdef COIN_HAS_ZLIB
-    if (CbcTestFile(fname + ".gz")) {
+    if (CoinFileInput::haveGzipSupport()) {
+      if (CbcTestFile(fname + ".gz")) {
         return true;
-    }
-    if (CbcTestFile(fname + ".mps.gz")) {
+      }
+      if (CbcTestFile(fname + ".mps.gz")) {
         fname += ".mps";
         return true;
-    }
-    if (CbcTestFile(fname + ".MPS.gz")) {
+      }
+      if (CbcTestFile(fname + ".MPS.gz")) {
         fname += ".MPS";
         return true;
-    }
-    if (CbcTestFile(fname + ".MPS.GZ")) {
+      }
+      if (CbcTestFile(fname + ".MPS.GZ")) {
         fname += ".MPS";
         return true;
+      }
     }
-#endif
+    if (CoinFileInput::haveBzip2Support()) {
+      if (CbcTestFile(fname + ".bz2")) {
+        return true;
+      }
+      if (CbcTestFile(fname + ".mps.bz2")) {
+        fname += ".mps";
+        return true;
+      }
+      if (CbcTestFile(fname + ".MPS.bz2")) {
+        fname += ".MPS";
+        return true;
+      }
+      if (CbcTestFile(fname + ".MPS.BZ2")) {
+        fname += ".MPS";
+        return true;
+      }
+    }
     return false;
 }
 

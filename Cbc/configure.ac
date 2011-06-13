@@ -82,11 +82,6 @@ AC_COIN_CHECK_CXX_CHEADER(math)
 AC_COIN_CHECK_CXX_CHEADER(float)
 AC_COIN_CHECK_CXX_CHEADER(ieeefp)
 
-# And this is necessary if we're going to read gzip'd files. We just need the
-# symbol; no need to link in the library.
-
-AC_COIN_CHECK_GNU_ZLIB()
-
 #############################################################################
 #                    LP solvers other than CLP                              #
 #############################################################################

@@ -15,6 +15,7 @@
 #include <cstdio>
 
 #include "CoinHelperFunctions.hpp"
+#include "CoinFileIO.hpp"
 
 #ifdef COIN_HAS_CBC
 #include "OsiCbcSolverInterface.hpp"
@@ -57,14 +58,15 @@ void CbcMiplibTest (const std::vector<OsiCbcSolverInterface*> & vecEmptySiP,
         doTest = true;
         fclose(fp);
     }
-#ifdef COIN_USE_ZLIB
-    test1 += ".gz";
-    fp = fopen(test1.c_str(), "r");
-    if (fp) {
+    if (!doTest && CoinFileInput::haveGzipSupport())
+    {
+      test1 += ".gz";
+      fp = fopen(test1.c_str(), "r");
+      if (fp) {
         doTest = true;
         fclose(fp);
+      }
     }
-#endif
     if (!doTest)
         return;
     /*

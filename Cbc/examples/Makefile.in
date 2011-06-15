@@ -95,7 +95,7 @@ ifeq ($(COIN_HAS_PKGCONFIG), TRUE)
   LIBS = `PKG_CONFIG_PATH=@COIN_PKG_CONFIG_PATH@ @PKG_CONFIG@ --libs cbc`
 else
   ifeq ($(COIN_CXX_IS_CL), TRUE)
-    LIBS = /link /libpath:`$(CYGPATH_W) @abs_lib_dir@` libCbcSolver.lib libCbc.lib libOsiCbc.lib @CBCLIB_LIBS_INSTALLED@
+    LIBS = -link -libpath:`$(CYGPATH_W) @abs_lib_dir@` libCbcSolver.lib libCbc.lib libOsiCbc.lib @CBCLIB_LIBS_INSTALLED@
   else
     LIBS = -L@abs_lib_dir@ -lCbcSolver -lCbc -lOsiCbc @CBCLIB_LIBS_INSTALLED@
   endif

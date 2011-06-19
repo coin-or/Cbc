@@ -470,7 +470,6 @@ readAmpl(ampl_info * info, int argc, char **argv, void ** coinModel)
         /* Column bounds*/
         columnLower = (double *) malloc(n_var * sizeof(double));
         columnUpper = (double *) malloc(n_var * sizeof(double));
-#define COIN_DBL_MAX DBL_MAX
         for (i = 0; i < n_var; i++) {
             columnLower[i] = LUv[2*i];
             if (columnLower[i] <= negInfinity)
@@ -933,7 +932,6 @@ CoinModel::gdb( int nonLinear, const char * fileName, const void * info)
         /* Column bounds*/
         columnLower = (double *) malloc(n_var * sizeof(double));
         columnUpper = (double *) malloc(n_var * sizeof(double));
-#define COIN_DBL_MAX DBL_MAX
         for (i = 0; i < n_var; i++) {
             columnLower[i] = LUv[2*i];
             if (columnLower[i] <= negInfinity)

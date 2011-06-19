@@ -614,24 +614,27 @@ CbcSimpleIntegerDynamicPseudoCost::infeasibility(const OsiBranchingInformation *
     distanceToCutoff = CoinMax(distanceToCutoff, 1.0e-12 * (1.0 + fabs(objectiveValue)));
 #endif
     double sum;
+#ifndef INFEAS_MULTIPLIER 
+#define INFEAS_MULTIPLIER 1.0
+#endif
     double number;
     double downCost = CoinMax(value - below, 0.0);
 #if TYPE2==0
     sum = sumDownCost_;
     number = numberTimesDown_;
 #if INFEAS==1
-    sum += numberTimesDownInfeasible_ * CoinMax(distanceToCutoff / (downCost + 1.0e-12), sumDownCost_);
+    sum += INFEAS_MULTIPLIER*numberTimesDownInfeasible_ * CoinMax(distanceToCutoff / (downCost + 1.0e-12), sumDownCost_);
 #endif
 #elif TYPE2==1
     sum = sumDownCost_;
     number = sumDownChange_;
 #if INFEAS==1
-    sum += numberTimesDownInfeasible_ * CoinMax(distanceToCutoff / (downCost + 1.0e-12), sumDownCost_);
+    sum += INFEAS_MULTIPLIER*numberTimesDownInfeasible_ * CoinMax(distanceToCutoff / (downCost + 1.0e-12), sumDownCost_);
 #endif
 #elif TYPE2==2
     abort();
 #if INFEAS==1
-    sum += numberTimesDownInfeasible_ * (distanceToCutoff / (downCost + 1.0e-12));
+    sum += INFEAS_MULTIPLIER*numberTimesDownInfeasible_ * (distanceToCutoff / (downCost + 1.0e-12));
 #endif
 #endif
 #if MOD_SHADOW>0
@@ -660,18 +663,18 @@ CbcSimpleIntegerDynamicPseudoCost::infeasibility(const OsiBranchingInformation *
     sum = sumUpCost_;
     number = numberTimesUp_;
 #if INFEAS==1
-    sum += numberTimesUpInfeasible_ * CoinMax(distanceToCutoff / (upCost + 1.0e-12), sumUpCost_);
+    sum += INFEAS_MULTIPLIER*numberTimesUpInfeasible_ * CoinMax(distanceToCutoff / (upCost + 1.0e-12), sumUpCost_);
 #endif
 #elif TYPE2==1
     sum = sumUpCost_;
     number = sumUpChange_;
 #if INFEAS==1
-    sum += numberTimesUpInfeasible_ * CoinMax(distanceToCutoff / (upCost + 1.0e-12), sumUpCost_);
+    sum += INFEAS_MULTIPLIER*numberTimesUpInfeasible_ * CoinMax(distanceToCutoff / (upCost + 1.0e-12), sumUpCost_);
 #endif
 #elif TYPE2==1
     abort();
 #if INFEAS==1
-    sum += numberTimesUpInfeasible_ * (distanceToCutoff / (upCost + 1.0e-12));
+    sum += INFEAS_MULTIPLIER*numberTimesUpInfeasible_ * (distanceToCutoff / (upCost + 1.0e-12));
 #endif
 #endif
 #if MOD_SHADOW>0
@@ -1096,7 +1099,7 @@ CbcSimpleIntegerDynamicPseudoCost::updateInformation(const CbcObjectUpdateData &
         double distanceToCutoff =  data.cutoff_  - originalValue;
         if (distanceToCutoff > 1.0e20)
             distanceToCutoff = 10.0 + fabs(originalValue);
-        sum += numberTimesDownInfeasible_ * CoinMax(distanceToCutoff, 1.0e-12 * (1.0 + fabs(originalValue)));
+        sum += INFEAS_MULTIPLIER*numberTimesDownInfeasible_ * CoinMax(distanceToCutoff, 1.0e-12 * (1.0 + fabs(originalValue)));
         setDownDynamicPseudoCost(sum / static_cast<double> (number));
 #endif
     } else {
@@ -1159,7 +1162,7 @@ CbcSimpleIntegerDynamicPseudoCost::updateInformation(const CbcObjectUpdateData &
         double distanceToCutoff =  data.cutoff_  - originalValue;
         if (distanceToCutoff > 1.0e20)
             distanceToCutoff = 10.0 + fabs(originalValue);
-        sum += numberTimesUpInfeasible_ * CoinMax(distanceToCutoff, 1.0e-12 * (1.0 + fabs(originalValue)));
+        sum += INFEAS_MULTIPLIER*numberTimesUpInfeasible_ * CoinMax(distanceToCutoff, 1.0e-12 * (1.0 + fabs(originalValue)));
         setUpDynamicPseudoCost(sum / static_cast<double> (number));
 #endif
     }
@@ -1275,7 +1278,7 @@ CbcSimpleIntegerDynamicPseudoCost::print(int type, double value) const
         double downCost0 = downCost * downDynamicPseudoCost_;
         sum = sumDownCost();
         number = numberTimesDown();
-        sum += numberTimesDownInfeasible() * (distanceToCutoff / (downCost + 1.0e-12));
+        sum += INFEAS_MULTIPLIER*numberTimesDownInfeasible() * (distanceToCutoff / (downCost + 1.0e-12));
         if (number > 0)
             downCost *= sum / static_cast<double> (number);
         else
@@ -1284,7 +1287,7 @@ CbcSimpleIntegerDynamicPseudoCost::print(int type, double value) const
         double upCost0 = upCost * upDynamicPseudoCost_;
         sum = sumUpCost();
         number = numberTimesUp();
-        sum += numberTimesUpInfeasible() * (distanceToCutoff / (upCost + 1.0e-12));
+        sum += INFEAS_MULTIPLIER*numberTimesUpInfeasible() * (distanceToCutoff / (upCost + 1.0e-12));
         if (number > 0)
             upCost *= sum / static_cast<double> (number);
         else

@@ -472,7 +472,7 @@ CbcSOS::redoSequenceEtc(CbcModel * model, int numberColumns, const int * origina
         }
     }
     if (n2 < numberMembers_) {
-        //printf("** SOS number of members reduced from %d to %d!\n",numberMembers_,n2);
+      COIN_DETAIL_PRINT(printf("** SOS number of members reduced from %d to %d!\n",numberMembers_,n2));
         numberMembers_ = n2;
     }
 }

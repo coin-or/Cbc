@@ -14,7 +14,6 @@
 
 #include "CbcModel.hpp"
 #include "OsiClpSolverInterface.hpp"
-#include "CbcCompareUser.hpp"
 #include "CbcSolver.hpp"
 
 #include  "CoinTime.hpp"
@@ -74,8 +73,8 @@ static int callBack(CbcModel * model, int whereFrom)
     break;
   case 3:
     {
-      CbcCompareUser compare;
-      model->setNodeComparison(compare);
+      //CbcCompareUser compare;
+      //model->setNodeComparison(compare);
     }
     break;
   case 4:

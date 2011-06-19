@@ -111,6 +111,10 @@ public:
                      double * , double * ,
                      int ) const {}
 
+    /** Change (tighten) bounds in object to reflect bounds in solver.
+	Return true if now fixed */
+    virtual bool tighten(OsiSolverInterface * ) {return false;}
+
     /** Reset every information so that the branching object appears to point to
         the previous child. This method does not need to modify anything in any
         solver. */

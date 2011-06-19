@@ -434,7 +434,7 @@ CbcBranchDefaultDecision::bestBranch (CbcBranchingObject ** objects, int numberO
                 bestWay = bestObject->object()->preferredWay();
             bestObject->way(bestWay);
         } else {
-            printf("debug\n");
+	  COIN_DETAIL_PRINT(printf("debug\n"));
         }
     }
     return whichObject;

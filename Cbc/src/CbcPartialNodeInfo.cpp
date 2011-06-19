@@ -5,11 +5,6 @@
 
 // Edwin 11/24/09 carved from CbcNode
 
-#if defined(_MSC_VER)
-// Turn off compiler warning about long names
-#  pragma warning(disable:4786)
-#endif
-
 #include "CbcConfig.h"
 
 #include <string>
@@ -20,6 +15,7 @@
 #include <cassert>
 #include <cfloat>
 #define CUTS
+#include "CoinPragma.hpp"
 #include "OsiSolverInterface.hpp"
 #include "OsiChooseVariable.hpp"
 #include "OsiAuxInfo.hpp"
@@ -70,7 +66,7 @@ CbcPartialNodeInfo::CbcPartialNodeInfo (CbcNodeInfo *parent, CbcNode *owner,
 #endif
 
     numberChangedBounds_ = numberChangedBounds;
-    int size = numberChangedBounds_ * (sizeof(double) + sizeof(int));
+    size_t size = numberChangedBounds_ * (sizeof(double) + sizeof(int));
     char * temp = new char [size];
     newBounds_ = reinterpret_cast<double *> (temp);
     variables_ = reinterpret_cast<int *> (newBounds_ + numberChangedBounds_);
@@ -93,7 +89,7 @@ CbcPartialNodeInfo::CbcPartialNodeInfo (const CbcPartialNodeInfo & rhs)
     std::cout << "Copy constructor (" << this << ") from " << this << std::endl ;
 #endif
     numberChangedBounds_ = rhs.numberChangedBounds_;
-    int size = numberChangedBounds_ * (sizeof(double) + sizeof(int));
+    size_t size = numberChangedBounds_ * (sizeof(double) + sizeof(int));
     char * temp = new char [size];
     newBounds_ = reinterpret_cast<double *> (temp);
     variables_ = reinterpret_cast<int *> (newBounds_ + numberChangedBounds_);
@@ -211,7 +207,7 @@ CbcPartialNodeInfo::applyBounds(int iColumn, double & lower, double & upper, int
                 newLower = CoinMax(newLower, newBounds_[i]);
                 if ((force&1) == 0) {
                     if (lower > newBounds_[i])
-                        printf("%d odd lower going from %g to %g\n", iColumn, lower, newBounds_[i]);
+		      COIN_DETAIL_PRINT(printf("%d odd lower going from %g to %g\n", iColumn, lower, newBounds_[i]));
                     lower = newBounds_[i];
                 } else {
                     newBounds_[i] = lower;
@@ -223,7 +219,7 @@ CbcPartialNodeInfo::applyBounds(int iColumn, double & lower, double & upper, int
                 newUpper = CoinMin(newUpper, newBounds_[i]);
                 if ((force&2) == 0) {
                     if (upper < newBounds_[i])
-                        printf("%d odd upper going from %g to %g\n", iColumn, upper, newBounds_[i]);
+		      COIN_DETAIL_PRINT(printf("%d odd upper going from %g to %g\n", iColumn, upper, newBounds_[i]));
                     upper = newBounds_[i];
                 } else {
                     newBounds_[i] = upper;
@@ -244,7 +240,7 @@ CbcPartialNodeInfo::applyBounds(int iColumn, double & lower, double & upper, int
         nAdd++;
     }
     if (nAdd) {
-        int size = (numberChangedBounds_ + nAdd) * (sizeof(double) + sizeof(int));
+        size_t size = (numberChangedBounds_ + nAdd) * (sizeof(double) + sizeof(int));
         char * temp = new char [size];
         double * newBounds = reinterpret_cast<double *> (temp);
         int * variables = reinterpret_cast<int *> (newBounds + numberChangedBounds_ + nAdd);

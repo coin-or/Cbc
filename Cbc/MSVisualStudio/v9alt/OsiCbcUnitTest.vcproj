@@ -22,7 +22,7 @@
 		<Configuration
 			Name="Debug|Win32"
 			OutputDirectory="$(CoinBinDir)"
-			IntermediateDirectory="$(ConfigurationName)"
+			IntermediateDirectory="$(ProjectName)\$(PlatformName)\$(ConfigurationName)"
 			ConfigurationType="1"
 			InheritedPropertySheets=".\osicbc.vsprops"
 			CharacterSet="1"
@@ -94,7 +94,7 @@
 		<Configuration
 			Name="Debug|x64"
 			OutputDirectory="$(CoinBinDir)"
-			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
+			IntermediateDirectory="$(ProjectName)\$(PlatformName)\$(ConfigurationName)"
 			ConfigurationType="1"
 			InheritedPropertySheets=".\osicbc.vsprops"
 			CharacterSet="1"
@@ -167,7 +167,7 @@
 		<Configuration
 			Name="Release|Win32"
 			OutputDirectory="$(CoinBinDir)"
-			IntermediateDirectory="$(ConfigurationName)"
+			IntermediateDirectory="$(ProjectName)\$(PlatformName)\$(ConfigurationName)"
 			ConfigurationType="1"
 			InheritedPropertySheets=".\osicbc.vsprops"
 			CharacterSet="1"
@@ -238,7 +238,7 @@
 		<Configuration
 			Name="Release|x64"
 			OutputDirectory="$(CoinBinDir)"
-			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
+			IntermediateDirectory="$(ProjectName)\$(PlatformName)\$(ConfigurationName)"
 			ConfigurationType="1"
 			InheritedPropertySheets=".\osicbc.vsprops"
 			CharacterSet="1"
@@ -283,6 +283,153 @@
 				AdditionalDependencies="libOsiCommonTest.lib"
 				LinkIncremental="1"
 				GenerateDebugInformation="true"
+				TargetMachine="17"
+			/>
+			<Tool
+				Name="VCALinkTool"
+			/>
+			<Tool
+				Name="VCManifestTool"
+			/>
+			<Tool
+				Name="VCXDCMakeTool"
+			/>
+			<Tool
+				Name="VCBscMakeTool"
+			/>
+			<Tool
+				Name="VCFxCopTool"
+			/>
+			<Tool
+				Name="VCAppVerifierTool"
+			/>
+			<Tool
+				Name="VCPostBuildEventTool"
+			/>
+		</Configuration>
+		<Configuration
+			Name="DebugDLL|Win32"
+			OutputDirectory="$(CoinBinDir)"
+			IntermediateDirectory="$(ProjectName)\$(PlatformName)\$(ConfigurationName)"
+			ConfigurationType="1"
+			InheritedPropertySheets=".\osicbc.vsprops"
+			CharacterSet="1"
+			ManagedExtensions="0"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+			/>
+			<Tool
+				Name="VCCLCompilerTool"
+				Optimization="0"
+				AdditionalIncludeDirectories="&quot;$(OsiCommonTestIncludeDir)&quot;"
+				PreprocessorDefinitions="WIN32;_DEBUG"
+				RuntimeLibrary="3"
+				WarningLevel="3"
+				DebugInformationFormat="3"
+			/>
+			<Tool
+				Name="VCManagedResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCPreLinkEventTool"
+			/>
+			<Tool
+				Name="VCLinkerTool"
+				LinkLibraryDependencies="false"
+				AdditionalDependencies="libOsiCommonTest.lib"
+				LinkIncremental="2"
+				GenerateDebugInformation="true"
+				AssemblyDebug="1"
+				TargetMachine="1"
+			/>
+			<Tool
+				Name="VCALinkTool"
+			/>
+			<Tool
+				Name="VCManifestTool"
+			/>
+			<Tool
+				Name="VCXDCMakeTool"
+			/>
+			<Tool
+				Name="VCBscMakeTool"
+			/>
+			<Tool
+				Name="VCFxCopTool"
+			/>
+			<Tool
+				Name="VCAppVerifierTool"
+			/>
+			<Tool
+				Name="VCPostBuildEventTool"
+			/>
+		</Configuration>
+		<Configuration
+			Name="DebugDLL|x64"
+			OutputDirectory="$(CoinBinDir)"
+			IntermediateDirectory="$(ProjectName)\$(PlatformName)\$(ConfigurationName)"
+			ConfigurationType="1"
+			InheritedPropertySheets=".\osicbc.vsprops"
+			CharacterSet="1"
+			ManagedExtensions="0"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+				TargetEnvironment="3"
+			/>
+			<Tool
+				Name="VCCLCompilerTool"
+				Optimization="0"
+				AdditionalIncludeDirectories="&quot;$(OsiCommonTestIncludeDir)&quot;"
+				PreprocessorDefinitions="WIN32;_DEBUG"
+				RuntimeLibrary="3"
+				WarningLevel="3"
+				DebugInformationFormat="3"
+			/>
+			<Tool
+				Name="VCManagedResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCPreLinkEventTool"
+			/>
+			<Tool
+				Name="VCLinkerTool"
+				LinkLibraryDependencies="false"
+				AdditionalDependencies="libOsiCommonTest.lib"
+				LinkIncremental="2"
+				GenerateDebugInformation="true"
+				AssemblyDebug="1"
 				TargetMachine="17"
 			/>
 			<Tool

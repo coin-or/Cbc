@@ -126,7 +126,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				AdditionalIncludeDirectories="..\..\..\..\Cbc\src\;..\..\..\..\Clp\src;..\..\..\..\Clp\src\OsiClp;..\..\..\..\Osi\src\Osi;..\..\..\..\CoinUtils\src;..\..\..\..\BuildTools\headers"
-				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;CBCCINTERFACEDLL_EXPORTS;_CRT_SECURE_NO_WARNINGS;_CRT_SECURE_NO_DEPRECATE"
+				PreprocessorDefinitions="WIN32;NDEBUG;_NDEBUG;COIN_FAST_CODE;CLP_FAST_CODE;COIN_NO_TEST_DUPLICATE;_WINDOWS;_USRDLL;CBCCINTERFACEDLL_EXPORTS;_CRT_SECURE_NO_WARNINGS;_CRT_SECURE_NO_DEPRECATE"
 				RuntimeLibrary="2"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
@@ -288,7 +288,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				AdditionalIncludeDirectories="..\..\..\..\Cbc\src\;..\..\..\..\Clp\src;..\..\..\..\Clp\src\OsiClp;..\..\..\..\Osi\src\Osi;..\..\..\..\CoinUtils\src;..\..\..\..\BuildTools\headers"
-				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;CBCCINTERFACEDLL_EXPORTS;_CRT_SECURE_NO_WARNINGS;_CRT_SECURE_NO_DEPRECATE"
+				PreprocessorDefinitions="WIN32;NDEBUG;_NDEBUG;COIN_FAST_CODE;CLP_FAST_CODE;COIN_NO_TEST_DUPLICATE;_WINDOWS;_USRDLL;CBCCINTERFACEDLL_EXPORTS;_CRT_SECURE_NO_WARNINGS;_CRT_SECURE_NO_DEPRECATE"
 				RuntimeLibrary="2"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"

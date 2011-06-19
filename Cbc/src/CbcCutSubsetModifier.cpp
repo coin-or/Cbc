@@ -93,6 +93,7 @@ CbcCutSubsetModifier::modify(const OsiSolverInterface * /*solver*/,
             break;
         }
     }
+#ifdef COIN_DETAIL
     if (!returnCode) {
         const double * element = cut.row().getElements();
         printf("%g <= ", cut.lb());
@@ -101,6 +102,7 @@ CbcCutSubsetModifier::modify(const OsiSolverInterface * /*solver*/,
         }
         printf("<= %g\n", cut.ub());
     }
+#endif
     //return 3;
     return returnCode;
 }

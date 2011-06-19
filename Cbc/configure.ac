@@ -12,7 +12,7 @@
 
 AC_PREREQ(2.59)
 
-AC_INIT([Cbc],[2.7],[cbc@lists.coin-or.org])
+AC_INIT([Cbc],[trunk],[cbc@lists.coin-or.org])
 
 AC_COPYRIGHT([
 Copyright 2006 International Business Machines and others.
@@ -74,6 +74,13 @@ AC_COIN_CHECK_PACKAGE(OsiTests, [osi-unittests])
 AC_COIN_CHECK_PACKAGE(Sample,   [coindatasample])
 AC_COIN_CHECK_PACKAGE(Netlib,   [coindatanetlib])
 AC_COIN_CHECK_PACKAGE(Miplib3,  [coindatamiplib3])
+
+# Cbc really should make these tests; right now it assumes far too much about
+# its environment. Needed for cbc-generic.
+
+AC_COIN_CHECK_CXX_CHEADER(math)
+AC_COIN_CHECK_CXX_CHEADER(float)
+AC_COIN_CHECK_CXX_CHEADER(ieeefp)
 
 #############################################################################
 #                    LP solvers other than CLP                              #
@@ -339,7 +346,7 @@ AC_CONFIG_FILES([Makefile
 AC_CONFIG_FILES([doxydoc/doxygen.conf])
 
 # Here put the location and name of the configuration header file
-AC_CONFIG_HEADER([inc/config_cbc.h])
+AC_CONFIG_HEADER([src/config.h src/config_cbc.h])
 
 # Finally, we let configure write all the output...
 AC_COIN_FINALIZE

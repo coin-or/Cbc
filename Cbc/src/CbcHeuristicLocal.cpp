@@ -27,6 +27,7 @@ CbcHeuristicLocal::CbcHeuristicLocal()
     numberSolutions_ = 0;
     swap_ = 0;
     used_ = NULL;
+    lastRunDeep_ = -1000000;
 }
 
 // Constructor with model - assumed before cuts
@@ -36,6 +37,7 @@ CbcHeuristicLocal::CbcHeuristicLocal(CbcModel & model)
 {
     numberSolutions_ = 0;
     swap_ = 0;
+    lastRunDeep_ = -1000000;
     // Get a copy of original matrix
     assert(model.solver());
     if (model.solver()->getNumRows()) {
@@ -353,9 +355,27 @@ CbcHeuristicLocal::solution(double & solutionValue,
 */
 
     numCouldRun_++;
-    if (numberSolutions_ == model_->getSolutionCount())
+    // See if frequency kills off idea
+    int swap = swap_%100;
+    int skip = swap_/100;
+    int nodeCount = model_->getNodeCount();
+    if (nodeCount<lastRunDeep_+skip && nodeCount != lastRunDeep_+1) 
+      return 0;
+    if (numberSolutions_ == model_->getSolutionCount() &&
+	(numberSolutions_ == howOftenShallow_ ||
+	 nodeCount < lastRunDeep_+2*skip))
         return 0;
+    howOftenShallow_ = numberSolutions_;
     numberSolutions_ = model_->getSolutionCount();
+    if (nodeCount<lastRunDeep_+skip ) 
+      return 0;
+    lastRunDeep_ = nodeCount;
+    howOftenShallow_ = numberSolutions_;
+
+    if ((swap%10) == 2) {
+        // try merge
+        return solutionFix( solutionValue, betterSolution, NULL);
+    }
 /*
   Exclude long (column), thin (row) systems.
 
@@ -532,8 +552,15 @@ CbcHeuristicLocal::solution(double & solutionValue,
 */
     if (tryHeuristic) {
 
-        // best change in objective
+        // total change in objective
+        double totalChange = 0.0;
+        // local best change in objective
         double bestChange = 0.0;
+	// maybe just do 1000
+	int maxIntegers = numberIntegers;
+	if (((swap/10) &1) != 0) {
+	  maxIntegers = CoinMin(1000,numberIntegers);
+	}
 /*
   Outer loop to walk integer variables. Call the current variable x<i>. At the
   end of this loop, bestChange will contain the best (negative) change in the
@@ -547,6 +574,8 @@ CbcHeuristicLocal::solution(double & solutionValue,
 
         for (i = 0; i < numberIntegers; i++) {
             int iColumn = integerVariable[i];
+	    bestChange = 0.0;
+	    int endInner = CoinMin(numberIntegers,i+maxIntegers);
 
             double objectiveCoefficient = cost[i];
             int k;
@@ -584,7 +613,7 @@ CbcHeuristicLocal::solution(double & solutionValue,
   winner. Remember the best variable, and the direction for x<i> and x<k>.
 */
               // try down
-                for (k = i + 1; k < numberIntegers; k++) {
+                for (k = i + 1; k < endInner; k++) {
                     if ((way[k]&1) != 0) {
                         // try down
                         if (-objectiveCoefficient - cost[k] < bestChange) {
@@ -674,7 +703,7 @@ CbcHeuristicLocal::solution(double & solutionValue,
                     }
                 }
                 // try up
-                for (k = i + 1; k < numberIntegers; k++) {
+                for (k = i + 1; k < endInner; k++) {
                     if ((way[k]&1) != 0) {
                         // try down
                         if (objectiveCoefficient - cost[k] < bestChange) {
@@ -782,6 +811,7 @@ CbcHeuristicLocal::solution(double & solutionValue,
                 if (value < originalUpper - 0.5)
                     iway |= 2;
                 way[goodK] = static_cast<char>(iway);
+		totalChange += bestChange;
             }
         }
 /*
@@ -792,7 +822,7 @@ CbcHeuristicLocal::solution(double & solutionValue,
   to indicate that there's been at least one change. Check that we really do
   have a valid solution.
 */
-        if (bestChange + newSolutionValue < solutionValue) {
+        if (totalChange + newSolutionValue < solutionValue) {
             // paranoid check
             memset(rowActivity, 0, numberRows*sizeof(double));
 
@@ -855,8 +885,8 @@ CbcHeuristicLocal::solution(double & solutionValue,
                 solutionValue = newSolutionValue + bestChange;
             } else {
                 // bad solution - should not happen so debug if see message
-                printf("Local search got bad solution with %d infeasibilities summing to %g\n",
-                       numberBad, sumBad);
+                COIN_DETAIL_PRINT(printf("Local search got bad solution with %d infeasibilities summing to %g\n",
+					 numberBad, sumBad));
             }
         }
     }
@@ -875,7 +905,7 @@ CbcHeuristicLocal::solution(double & solutionValue,
 
   Again, redundant test. We shouldn't be here if numberSolutions_ = 1.
 */
-    if (numberSolutions_ > 1 && swap_ == 1) {
+    if (numberSolutions_ > 1 && (swap%10) == 1) {
         // try merge
         int returnCode2 = solutionFix( solutionValue, betterSolution, NULL);
         if (returnCode2)
@@ -1027,7 +1057,7 @@ CbcHeuristicNaive::solution(double & solutionValue,
             solutionValue = solValue;
             memcpy(betterSolution, newSolver->getColSolution(),
                    numberColumns*sizeof(double));
-            printf("Naive fixing close to zero gave solution of %g\n", solutionValue);
+            COIN_DETAIL_PRINT(printf("Naive fixing close to zero gave solution of %g\n", solutionValue));
             cutoff = solValue - model_->getCutoffIncrement();
         }
     }
@@ -1064,7 +1094,7 @@ CbcHeuristicNaive::solution(double & solutionValue,
             if (solValue < cutoff) {
                 // try branch and bound
                 double * newSolution = new double [numberColumns];
-                printf("%d fixed after fixing costs\n", nFix);
+                COIN_DETAIL_PRINT(printf("%d fixed after fixing costs\n", nFix));
                 int returnCode = smallBranchAndBound(newSolver,
                                                      numberNodes_, newSolution,
                                                      solutionValue,
@@ -1080,7 +1110,7 @@ CbcHeuristicNaive::solution(double & solutionValue,
                     solutionFound = true;
                     memcpy(betterSolution, newSolution,
                            numberColumns*sizeof(double));
-                    printf("Naive fixing zeros gave solution of %g\n", solutionValue);
+                    COIN_DETAIL_PRINT(printf("Naive fixing zeros gave solution of %g\n", solutionValue));
                     cutoff = solutionValue - model_->getCutoffIncrement();
                 }
                 delete [] newSolution;
@@ -1137,7 +1167,7 @@ CbcHeuristicNaive::solution(double & solutionValue,
             }
             // try branch and bound
             double * newSolution = new double [numberColumns];
-            printf("%d fixed after maximizing\n", nFix);
+            COIN_DETAIL_PRINT(printf("%d fixed after maximizing\n", nFix));
             int returnCode = smallBranchAndBound(newSolver,
                                                  numberNodes_, newSolution,
                                                  solutionValue,
@@ -1153,7 +1183,7 @@ CbcHeuristicNaive::solution(double & solutionValue,
                 solutionFound = true;
                 memcpy(betterSolution, newSolution,
                        numberColumns*sizeof(double));
-                printf("Naive maximizing gave solution of %g\n", solutionValue);
+                COIN_DETAIL_PRINT(printf("Naive maximizing gave solution of %g\n", solutionValue));
                 cutoff = solutionValue - model_->getCutoffIncrement();
             }
             delete [] newSolution;

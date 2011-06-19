@@ -4,7 +4,7 @@
 // This code is licensed under the terms of the Eclipse Public License (EPL).
 
 
-/*! \file CbcSolverHeuristic.hpp
+/*! \file CbcSolverHeuristics.hpp
     \brief Routines for doing heuristics.
 */
 

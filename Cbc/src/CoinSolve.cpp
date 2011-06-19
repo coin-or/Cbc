@@ -11,7 +11,6 @@
 #include "CbcConfig.h"
 #include "CoinPragma.hpp"
 #include "CbcModel.hpp"
-#include "CbcOrClpParam.hpp"
 #include "OsiClpSolverInterface.hpp"
 
 /*

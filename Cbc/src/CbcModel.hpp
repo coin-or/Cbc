@@ -7,7 +7,6 @@
 #define CbcModel_H
 #include <string>
 #include <vector>
-#include "CoinFinite.hpp"
 #include "CoinMessageHandler.hpp"
 #include "OsiSolverInterface.hpp"
 #include "OsiBranchingObject.hpp"
@@ -18,7 +17,6 @@
 #include "CbcEventHandler.hpp"
 #include "ClpDualRowPivot.hpp"
 
-//class OsiSolverInterface;
 
 class CbcCutGenerator;
 class CbcBaseModel;
@@ -39,6 +37,7 @@ class CbcStatistics;
 class CbcEventHandler ;
 class CglPreProcess;
 # ifdef COIN_HAS_CLP
+class OsiClpSolverInterface;
 class ClpNodeStuff;
 #endif
 // #define CBC_CHECK_BASIS 1
@@ -1716,6 +1715,8 @@ public:
         15 bit (32768) - Try reduced model after 0 nodes
         16 bit (65536) - Original model had integer bounds
         17 bit (131072) - Perturbation switched off
+        18 bit (262144) - donor CbcModel
+        19 bit (524288) - recipient CbcModel
     */
     inline void setSpecialOptions(int value) {
         specialOptions_ = value;
@@ -1734,6 +1735,13 @@ public:
         2048,4096 breaking out of cuts
         8192 slowly increase minimum drop
         16384 gomory
+	32768 more heuristics in sub trees
+	65536 no cuts in preprocessing
+        131072 Time limits elapsed
+        18 bit (262144) - Perturb fathom nodes
+        19 bit (524288) - No limit on fathom nodes
+        20 bit (1048576) - Reduce sum of infeasibilities before cuts
+        21 bit (2097152) - Reduce sum of infeasibilities after cuts
     */
     inline void setMoreSpecialOptions(int value) {
         moreSpecialOptions_ = value;
@@ -1741,6 +1749,17 @@ public:
     /// Get more special options
     inline int moreSpecialOptions() const {
         return moreSpecialOptions_;
+    }
+  /// Set time method
+    inline void setUseElapsedTime(bool yesNo) {
+        if (yesNo)
+  	  moreSpecialOptions_ |= 131072;
+	else
+	  moreSpecialOptions_ &= ~131072;
+    }
+    /// Get time method
+    inline bool useElapsedTime() const {
+        return (moreSpecialOptions_&131072)!=0;
     }
     /// Go to dantzig pivot selection if easy problem (clp only)
 #ifdef COIN_HAS_CLP
@@ -1990,6 +2009,10 @@ public:
     void deleteSolutions();
     /// Encapsulates solver resolve
     int resolve(OsiSolverInterface * solver);
+#ifdef CLP_RESOLVE
+    /// Special purpose resolve
+    int resolveClp(OsiClpSolverInterface * solver, int type);
+#endif
 
     /** Encapsulates choosing a variable -
         anyAction -2, infeasible (-1 round again), 0 done
@@ -2433,7 +2456,18 @@ private:
     */
     int specialOptions_;
     /** More special options
-        at present bottom 3 bits used for shadow price mode
+        at present bottom 6 bits used for shadow price mode
+        1024 for experimental hotstart
+        2048,4096 breaking out of cuts
+        8192 slowly increase minimum drop
+        16384 gomory
+	32768 more heuristics in sub trees
+	65536 no cuts in preprocessing
+        131072 Time limits elapsed
+        18 bit (262144) - Perturb fathom nodes
+        19 bit (524288) - No limit on fathom nodes
+        20 bit (1048576) - Reduce sum of infeasibilities before cuts
+        21 bit (2097152) - Reduce sum of infeasibilities after cuts
     */
     int moreSpecialOptions_;
     /// User node comparison function
@@ -2525,10 +2559,8 @@ private:
     CbcHeuristic ** heuristic_;
     /// Pointer to heuristic solver which found last solution (or NULL)
     CbcHeuristic * lastHeuristic_;
-# ifdef COIN_HAS_CLP
     /// Depth for fast nodes
     int fastNodeDepth_;
-#endif
     /*! Pointer to the event handler */
 # ifdef CBC_ONLY_CLP
     ClpEventHandler *eventHandler_ ;

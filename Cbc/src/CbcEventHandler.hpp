@@ -1,4 +1,4 @@
-/*! \legal
+/*
   Copyright (C) 2006, International Business Machines Corporation and others.
   All Rights Reserved.
 
@@ -96,6 +96,8 @@ public:
         beforeSolution1,
         /*! A solution will be found unless user takes action (thorough check). */
         beforeSolution2,
+        /*! After failed heuristic. */
+        afterHeuristic,
         /*! End of search. */
         endSearch
     } ;
@@ -146,7 +148,7 @@ public:
 
     /*! \brief Default constructor. */
 
-    CbcEventHandler(CbcModel *model = 0) ;
+    CbcEventHandler(CbcModel *model = 0 /* was NULL but 4.6 complains */) ;
 
     /*! \brief Copy constructor. */
 

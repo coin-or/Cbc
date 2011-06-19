@@ -702,7 +702,7 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver, int numberNodes,
     char * reset = NULL;
     int returnCode = 1;
     int saveModelOptions = model_->specialOptions();
-    assert ((saveModelOptions&2048) == 0);
+    //assert ((saveModelOptions&2048) == 0);
     model_->setSpecialOptions(saveModelOptions | 2048);
     {
         int saveLogLevel = solver->messageHandler()->logLevel();
@@ -837,6 +837,8 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver, int numberNodes,
     solver->initialSolve();
     if (solver->isProvenOptimal()) {
         CglPreProcess process;
+	if ((model_->moreSpecialOptions()&65536)!=0)
+	  process.setOptions(2+4+8); // no cuts
         /* Do not try and produce equality cliques and
            do up to 2 passes (normally) 5 if restart */
         int numberPasses = 2;
@@ -923,6 +925,8 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver, int numberNodes,
 		    }
                     model.setMaximumNodes(numberNodes);
                     model.solver()->setHintParam(OsiDoReducePrint, true, OsiHintTry);
+		    if ((saveModelOptions&2048) == 0)
+		      model.setMoreSpecialOptions(model_->moreSpecialOptions());
                     // Lightweight
                     CbcStrategyDefaultSubTree strategy(model_, 1, 5, 1, 0);
                     model.setStrategy(strategy);
@@ -1170,6 +1174,7 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver, int numberNodes,
 		    solver->getHintParam(OsiDoDualInResolve, takeHint, strength);
 		    solver->setHintParam(OsiDoDualInResolve, true, OsiHintDo);
 #endif
+		    model.passInEventHandler(model_->getEventHandler());
                     model.branchAndBound();
 #ifdef ALWAYS_DUAL
 		    solver = model.solver();
@@ -1516,8 +1521,8 @@ CbcHeuristicNode::distance(const CbcHeuristicNode* node) const
     }
     dist += subsetWeight * (numObjects_ - i + node->numObjects_ - j);
     countSubsetWeight += (numObjects_ - i + node->numObjects_ - j);
-    printf("subset = %i, overlap = %i, disjoint = %i\n", countSubsetWeight,
-           countOverlapWeight, countDisjointWeight);
+    COIN_DETAIL_PRINT(printf("subset = %i, overlap = %i, disjoint = %i\n", countSubsetWeight,
+			     countOverlapWeight, countDisjointWeight));
     return dist;
 }
 

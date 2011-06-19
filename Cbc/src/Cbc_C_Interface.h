@@ -174,7 +174,10 @@ extern "C" {
     COINLIBAPI void COINLINKAGE
     Cbc_problemName(Cbc_Model * model, int maxNumberCharacters, char * array)
     ;
-    /** Sets problem name.  Must have \0 at end.  */
+    /** Sets problem name.
+    
+      \p array must be a null-terminated string.
+    */
     COINLIBAPI int COINLINKAGE
     Cbc_setProblemName(Cbc_Model * model, int maxNumberCharacters, char * array)
     ;

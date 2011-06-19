@@ -39,7 +39,6 @@ libCbc_la_SOURCES = \
 	CbcCompareEstimate.cpp CbcCompareEstimate.hpp \
 	CbcCompareObjective.cpp CbcCompareObjective.hpp \
 	CbcConsequence.cpp CbcConsequence.hpp \
-	CbcChooseVariable.hpp \
 	CbcClique.cpp CbcClique.hpp \
 	CbcCompare.hpp \
 	CbcCountRowCut.cpp CbcCountRowCut.hpp \
@@ -130,11 +129,6 @@ cbc_SOURCES = CoinSolve.cpp
 cbc_LDADD = libCbcSolver.la libCbc.la $(CBCLIB_LIBS) $(ASL_LIBS)
 cbc_DEPENDENCIES = libCbcSolver.la libCbc.la $(CBCLIB_DEPENDENCIES) $(ASL_DEPENDENCIES)
 
-# Finally, the -rpath flag is used by libtool to make sure that the shared
-# library is found (in the lib install directory) when we are using dynamic
-# libraries.
-cbc_LDFLAGS = -rpath $(libdir)
-
 endif
 
 
@@ -171,12 +165,6 @@ cbc_generic_DEPENDENCIES = libCbcSolver.la libCbc.la $(CBCGENERIC_DEPENDENCIES)
 
 AM_CPPFLAGS += $(DYLP_CFLAGS) $(GLPK_CFLAGS) $(MSK_CFLAGS) $(SPX_CFLAGS) $(VOL_CFLAGS) $(XPR_CFLAGS)
 
-# Finally, the -rpath flag is used by libtool to make sure that the shared
-# library is found (in the lib install directory) when we are using dynamic
-# libraries.
-
-cbc_generic_LDFLAGS = -rpath $(libdir)
-
 endif
 
 ########################################################################
@@ -186,9 +174,8 @@ endif
 # List additional defines
 AM_CPPFLAGS += -DCOIN_NO_CLP_MESSAGE -DUSE_CBCCONFIG
 
-# This line is necessary to allow VPATH compilation with MS compilers
-# on Cygwin
-DEFAULT_INCLUDES = -I. -I`$(CYGPATH_W) $(srcdir)` -I$(top_builddir)/inc
+# This line is necessary to allow VPATH compilation
+DEFAULT_INCLUDES = -I. -I`$(CYGPATH_W) $(srcdir)` -I$(top_builddir)/src
 
 ########################################################################
 #                Headers that need to be installed                     #
@@ -198,7 +185,6 @@ DEFAULT_INCLUDES = -I. -I`$(CYGPATH_W) $(srcdir)` -I$(top_builddir)/inc
 # and that therefore should be installed in 'include/coin'
 includecoindir = $(includedir)/coin
 includecoin_HEADERS = \
-	../inc/config_cbc.h \
 	Cbc_C_Interface.h \
 	CbcBranchActual.hpp \
 	CbcBranchAllDifferent.hpp \
@@ -217,7 +203,6 @@ includecoin_HEADERS = \
 	CbcCompareEstimate.hpp \
 	CbcCompareObjective.hpp \
 	CbcConsequence.hpp \
-	CbcChooseVariable.hpp \
 	CbcClique.hpp \
 	CbcCompare.hpp \
 	CbcCutGenerator.hpp \
@@ -270,20 +255,8 @@ includecoin_HEADERS = \
 	ClpConstraintAmpl.hpp \
 	ClpAmplObjective.hpp 
 
-#############################################################################
-# Create the Config.h file that always defines HAVE_CONFIG_H and install it #
-#############################################################################
-
-# You only need to adapt the following line
-ConfigHeader = CbcConfig.h
-
 install-exec-local:
-	echo "#ifndef HAVE_CONFIG_H" >bla
-	echo "#define HAVE_CONFIG_H" >>bla
-	echo "#endif" >> bla
-	cat $(srcdir)/$(ConfigHeader) >> bla
-	$(install_sh_DATA) bla $(DESTDIR)$(includecoindir)/$(ConfigHeader)
-	rm -f bla
+	$(install_sh_DATA) config_cbc.h $(DESTDIR)$(includecoindir)/CbcConfig.h
 
 uninstall-local:
-	rm -f $(DESTDIR)$(includecoindir)/$(ConfigHeader)
+	rm -f $(DESTDIR)$(includecoindir)/CbcConfig.h

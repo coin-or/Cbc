@@ -238,8 +238,9 @@ public:
        Bits
        1 bit - use current model, otherwise original
        2 - use current solution as starting point, otherwise pure greedy
-       4 - use duals to modify greedy
-       8 - use duals on GUB/SOS in special way
+       4 - as 2 but use merit not merit/size
+       8 - use duals to modify greedy
+       16 - use duals on GUB/SOS in special way
     */
     inline int algorithm() const {
         return algorithm_;

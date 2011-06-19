@@ -28,6 +28,7 @@ CbcHeuristicRINS::CbcHeuristicRINS()
     numberSuccesses_ = 0;
     numberTries_ = 0;
     stateOfFixing_ = 0;
+    shallowDepth_ = 0;
     lastNode_ = -999999;
     howOften_ = 100;
     decayFactor_ = 0.5;
@@ -45,6 +46,7 @@ CbcHeuristicRINS::CbcHeuristicRINS(CbcModel & model)
     numberSuccesses_ = 0;
     numberTries_ = 0;
     stateOfFixing_ = 0;
+    shallowDepth_ = 0;
     lastNode_ = -999999;
     howOften_ = 100;
     decayFactor_ = 0.5;
@@ -204,6 +206,7 @@ CbcHeuristicRINS::solution(double & solutionValue,
         const int * integerVariable = model_->integerVariable();
 
         const double * currentSolution = solver->getColSolution();
+	const int * used = model_->usedInSolution();
         OsiSolverInterface * newSolver = cloneBut(3); // was model_->continuousSolver()->clone();
         int numberColumns = newSolver->getNumCols();
         int numberContinuous = numberColumns - numberIntegers;
@@ -228,9 +231,36 @@ CbcHeuristicRINS::solution(double & solutionValue,
             }
             if (fabs(currentSolution[iColumn] - valueInt) < 10.0*primalTolerance) {
                 double nearest = floor(valueInt + 0.5);
-                newSolver->setColLower(iColumn, nearest);
-                newSolver->setColUpper(iColumn, nearest);
-                nFix++;
+		/*
+		  shallowDepth_
+		  0 - normal
+		  1 - only fix if at lb
+		  2 - only fix if not at lb
+		  3 - only fix if at lb and !used
+		*/
+		bool fix=false;
+		switch (shallowDepth_) {
+		case 0:
+		  fix = true;
+		  break;
+		case 1:
+		if (nearest==originalLower) 
+		  fix = true;
+		  break;
+		case 2:
+		if (nearest!=originalLower) 
+		  fix = true;
+		  break;
+		case 3:
+		if (nearest==originalLower && !used[iColumn]) 
+		  fix = true;
+		  break;
+		}
+		if (fix) {
+		  newSolver->setColLower(iColumn, nearest);
+		  newSolver->setColUpper(iColumn, nearest);
+		  nFix++;
+		}
             }
         }
         int divisor = 0;

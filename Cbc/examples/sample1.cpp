@@ -3,22 +3,16 @@
 // Corporation and others.  All Rights Reserved.
 // This code is licensed under the terms of the Eclipse Public License (EPL).
 
-#if defined(_MSC_VER)
-// Turn off compiler warning about long names
-#  pragma warning(disable:4786)
-#endif
-
 #include <cassert>
 
 #include "CbcConfig.h"
+#include "CoinPragma.hpp"
 
 // For Branch and bound
 #include "OsiSolverInterface.hpp"
 #include "CbcModel.hpp"
 
-#ifdef COIN_HAS_CLP
 #include "OsiClpSolverInterface.hpp"
-#endif
 #include "ClpPresolve.hpp"
 #include "CbcCompareUser.hpp"
 #include "CglProbing.hpp"
@@ -84,9 +78,7 @@ int main (int argc, const char *argv[])
 
   // Define your favorite OsiSolver
   
-#ifdef COIN_HAS_CLP
   ClpSimplex simplex;
-#endif
   double time0 = cpuTime();
   double time1 = time0;
   double time2;

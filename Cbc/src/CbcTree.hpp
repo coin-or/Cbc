@@ -10,7 +10,6 @@
 #include <algorithm>
 #include <cmath>
 
-#include "CoinFinite.hpp"
 #include "CoinHelperFunctions.hpp"
 #include "CbcCompare.hpp"
 

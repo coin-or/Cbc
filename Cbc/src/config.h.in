@@ -1,4 +1,4 @@
-/* inc/config_cbc.h.in.  Generated from configure.ac by autoheader.  */
+/* src/config.h.in.  Generated from configure.ac by autoheader.  */
 
 /* Define to the name of the default solver to be used in cbc-generic in small
    letters */
@@ -12,6 +12,15 @@
 
 /* Version number of project */
 #undef CBC_VERSION
+
+/* Major Version number of project */
+#undef CBC_VERSION_MAJOR
+
+/* Minor Version number of project */
+#undef CBC_VERSION_MINOR
+
+/* Release Version number of project */
+#undef CBC_VERSION_RELEASE
 
 /* Define to the debug sanity check level (0 is no test) */
 #undef COIN_CBC_CHECKLEVEL
@@ -64,14 +73,32 @@
 /* Define to 1 if the Xpr package is available */
 #undef COIN_HAS_XPR
 
+/* Define to 1 if you have the <cfloat> header file. */
+#undef HAVE_CFLOAT
+
+/* Define to 1 if you have the <cieeefp> header file. */
+#undef HAVE_CIEEEFP
+
 /* Define if clock_gettime and rt library is available */
 #undef HAVE_CLOCK_GETTIME
+
+/* Define to 1 if you have the <cmath> header file. */
+#undef HAVE_CMATH
 
 /* Define to 1 if you have the <dlfcn.h> header file. */
 #undef HAVE_DLFCN_H
 
+/* Define to 1 if you have the <float.h> header file. */
+#undef HAVE_FLOAT_H
+
+/* Define to 1 if you have the <ieeefp.h> header file. */
+#undef HAVE_IEEEFP_H
+
 /* Define to 1 if you have the <inttypes.h> header file. */
 #undef HAVE_INTTYPES_H
+
+/* Define to 1 if you have the <math.h> header file. */
+#undef HAVE_MATH_H
 
 /* Define to 1 if you have the <memory.h> header file. */
 #undef HAVE_MEMORY_H

@@ -2392,7 +2392,7 @@ void CbcModel::branchAndBound(int doStatistics)
     if (numberObjects_)
         doHeuristicsAtRoot();
     if (solverCharacteristics_->solutionAddsCuts()) {
-      // With some heuristics solver needs a resolve here (don't know if this is bug in heuristics)
+      // With some heuristics solver needs a resolve here 
       solver_->resolve();
       if(!isProvenOptimal()){
 	solver_->initialSolve();
@@ -2409,13 +2409,6 @@ void CbcModel::branchAndBound(int doStatistics)
         eventHappened_ = true; // stop as fast as possible
     stoppedOnGap_ = false ;
     // See if can stop on gap
-    if (solverCharacteristics_->solutionAddsCuts()) {
-      // With some heuristics solver needs a resolve here (don't know if this is bug in heuristics)
-      solver_->resolve();
-      if(!isProvenOptimal()){
-	solver_->initialSolve();
-      }
-    }
     bestPossibleObjective_ = solver_->getObjValue() * solver_->getObjSense();
     double testGap = CoinMax(dblParam_[CbcAllowableGap],
                              CoinMax(fabs(bestObjective_), fabs(bestPossibleObjective_))
@@ -2589,6 +2582,13 @@ void CbcModel::branchAndBound(int doStatistics)
         generator->setAggressiveness(generator->getAggressiveness() - 100);
     }
     currentNumberCuts_ = numberNewCuts_ ;
+    if (solverCharacteristics_->solutionAddsCuts()) {
+      // With some heuristics solver needs a resolve here (don't know if this is bug in heuristics)
+      solver_->resolve();
+      if(!isProvenOptimal()){
+	solver_->initialSolve();
+      }
+    }
     // See if can stop on gap
     bestPossibleObjective_ = solver_->getObjValue() * solver_->getObjSense();
     testGap = CoinMax(dblParam_[CbcAllowableGap],
@@ -7102,36 +7102,36 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
             << CoinMessageEol ;
         }
 	//Is Necessary for Bonmin? Always keepGoing if cuts have been generated in last iteration (taken from similar code in Cbc-2.4)
-	if (solverCharacteristics_->solutionAddsCuts()&&numberViolated) { 
-	  for (i = 0;i<numberCutGenerators_;i++) { 
-	    if (generator_[i]->mustCallAgain()) { 
-	      keepGoing=true; // say must go round 
-	      break; 
-	    } 
-	  } 
-	} 
+        if (solverCharacteristics_->solutionAddsCuts()&&numberViolated) { 
+          for (i = 0;i<numberCutGenerators_;i++) { 
+            if (generator_[i]->mustCallAgain()) { 
+              keepGoing=true; // say must go round 
+              break; 
+            } 
+          } 
+        } 
         if(!keepGoing){
-	  // Status for single pass of cut generation
-	  int status = 0;
-	  /*
-	    threadMode with bit 2^1 set indicates we should use threads for root cut
-	    generation.
-	  */
-	  if ((threadMode_&2) == 0 || numberNodes_) {
+        // Status for single pass of cut generation
+        int status = 0;
+        /*
+          threadMode with bit 2^1 set indicates we should use threads for root cut
+          generation.
+        */
+        if ((threadMode_&2) == 0 || numberNodes_) {
             status = serialCuts(theseCuts, node, slackCuts, lastNumberCuts);
-	  } else {
+        } else {
             // do cuts independently
 #ifdef CBC_THREAD
             status = parallelCuts(master, theseCuts, node, slackCuts, lastNumberCuts);
 #endif
-	  }
-	  // Do we need feasible and violated?
-	  feasible = (status >= 0);
-	  if (status == 1)
+        }
+        // Do we need feasible and violated?
+        feasible = (status >= 0);
+        if (status == 1)
             keepGoing = true;
-	  else if (status == 2)
+        else if (status == 2)
             numberTries = 0;
-	  if (!feasible)
+        if (!feasible)
             violated = -2;
         }
         //if (!feasible)
@@ -12588,11 +12588,12 @@ CbcModel::chooseBranch(CbcNode * &newNode, int numberPassesLeft,
     }
 #endif
     currentNode_ = newNode; // so can be used elsewhere
+// Remember number of rows to restore at the end of the loop
+    int saveNumberRows=solver_->getNumRows();
     /*
       Enough preparation. Get down to the business of choosing a branching
       variable.
     */
-    int saveNumberRows=solver_->getNumRows();
     while (anyAction == -1) {
         // Set objective value (not so obvious if NLP etc)
         setObjectiveValue(newNode, oldNode);
@@ -12739,6 +12740,7 @@ CbcModel::chooseBranch(CbcNode * &newNode, int numberPassesLeft,
             }
         }
     }
+    //A candidate has been found; restore the subproblem.
     if( saveNumberRows<solver_->getNumRows()) {
         // delete rows - but leave solution
         int n = solver_->getNumRows();

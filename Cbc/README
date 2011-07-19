@@ -1,72 +1,48 @@
-NOTE: The information in this file might not yet include the changes introduced with the switch to the autotools.
+CBC README
+==========
 
-To build Cbc see INSTALL file
+Welcome to the README for the COIN Branch and Cut Solver (CBC). CBC is
+distributed under the Eclipse Public License and is freely redistributable.
+All source code and documentation is Copyright IBM and others. This README may
+be redistributed freely.
 
-To use Cbc you need the Cbc, Cgl, Coin and Osi libraries.  You
-will probably need Clp as well.
+DOCUMENTATION
+=============
 
-If you are using Clp as your solver then you can make the unitTest and standalone executable by doing
+For a quick start guide, please see the INSTALL file in this distribution. A (somehwat outdated) user's manual is available here:
 
-make solve in this directory.  This creates an executable solve.
+http://www.coin-or.org/Cbc
 
-solve takes various options - try solve and then ? to get some idea of what you can do.
-solve file will do branch and bound if file is integer mps file and will do dual if non-integer mps file
-options start with - (although the code will also try without -) e.g.
+More up-to-date automatically generated documentation of the source code can
+be found here:
 
-solve file -cuts root -solve will import file and do branch and bound with cuts only at root
+http://www.coin-or.org/Doxygen/Cbc/
 
-- by itself goes to interactive mode.
+Further information can be found here:
 
-If you wish to use the Cbc solver from AMPL there is a bit of work involved.  You
-will need to uncomment COIN_ampl in Makefiles/makefile.location - and also
-download the ampl glue code - see Makefiles/Makefile.location for http.  Then solve
-will assume it is being called from AMPL if the first two arguments are xxx.nl -AMPL.
-Of course "solve" is not a good name (cbc is much better but already used) so copy
-"solve" to "cbc" in ampl accessible path.
-Options may be set by e.g. option cbc_options "cuts=off log=0"
-No keywords are recognized by ampl parsing so above format should be used. 
-All options are as found by "cbc(solve) " and then ?
-Current ugliness is that ampl glue code assumes "=" (on undefined keywords) so to maximize you
-would have to say "maximize=".  I will add to AMPL keywords if this interface gets much use.
+http://projects.coin-or.org/Cbc
 
-If you are not using Clp then fewer options are available - 
-make the unitTest and standalone executable by doing
+WHAT'S NEW
+==========
 
-make unitTest in this directory.  This creates an executable cbc.
+Release 2.7.0:
 
-Running cbc gives you some hints.  Just do 
+1. License has been changed to the EPL.
 
-cbc -
- 
-and then try ? or setting various stuff.
+2. Support for MSVC++ version 10 added.
 
-On Linux cbc can do file completion and line editing.  
+3. Support for BuildTools version 0.7 to incorporate recent enhancements,
+including proper library versioning in Linux, prohibiting installation of
+private headers, etc.
 
-There are samples in ./Samples.  Use make DRIVER=xxxxxx where xxxxxx.cpp is driver file to
-create an executable - testit.
+4. Updated externals to new stable versions of dependent projects.
 
-The two simplest samples are:
+5. Improvements to heuristics. 
 
-sample.cpp  This is a simple program to read an mps file.and solve the
-		integer problem.
+6. New options for cut generation. 
 
-sample2.cpp.  This is the benchmark driver for the competition.  It overrides
-		the default branching methods and adds a (mildly useless)
-		heuristic.  It is intended to show you how to add your
-		own methods.  See CbcCompareUser.hpp for how to modify
-		choice of node from tree.  See CbcBranchUser.?pp for
-		how to modify which variable is chosen at a node.  For
-		more complex stuff such as new types of branches see
-		CbcBranchBase and CbcBranchActual in directory Cbc.
-		To see how to add heuristics see CbcHeuristicUser.?pp.
+7. Improved reporting of results. 
 
-		To add cut generators - define them as in Cgl and then just
-		add them as in sample2.cpp
+8. Improvements to documentation. 
 
-		The script "runtimes" in Samples directory will
-		run some or all of test set.  The version checked in
-		does some - just take off # to run.  An optional time
-		in minutes can be passed.
-
-
-
+9. Minor bug fixes. 

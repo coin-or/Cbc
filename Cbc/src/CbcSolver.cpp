@@ -3579,6 +3579,22 @@ int CbcMain1 (int argc, const char *argv[],
                                 }
 #endif
                             }
+                            if (preProcess && type == CBC_PARAM_ACTION_BAB) {
+			      // see whether to switch off preprocessing
+			      // only allow SOS and integer
+			      OsiObject ** objects = babModel_->objects();
+			      int numberObjects = babModel_->numberObjects();
+			      for (int iObj = 0; iObj < numberObjects; iObj++) {
+				CbcSOS * objSOS =
+				  dynamic_cast <CbcSOS *>(objects[iObj]) ;
+				CbcSimpleInteger * objSimpleInteger =
+				  dynamic_cast <CbcSimpleInteger *>(objects[iObj]) ;
+				if (!objSimpleInteger&&!objSOS) {
+				  preProcess=0;
+				  break;
+				}
+			      }
+			    }
                             if (type == CBC_PARAM_ACTION_BAB) {
                                 double limit;
                                 clpSolver->getDblParam(OsiDualObjectiveLimit, limit);

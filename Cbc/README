@@ -25,6 +25,10 @@ http://projects.coin-or.org/Cbc
 WHAT'S NEW
 ==========
 
+Release 2.7.1:
+
+1. Fixes to MSVC++ files
+
 Release 2.7.0:
 
 1. License has been changed to the EPL.
@@ -46,3 +50,17 @@ private headers, etc.
 8. Improvements to documentation. 
 
 9. Minor bug fixes. 
+
+SUPPORT
+=======
+
+1. List Serve
+
+CBC users should use the Cbc mailing list. To subscribe, go to 
+http://list.coin-or.org/mailman/listinfo/cbc
+
+3. Bug Reports
+
+Bug reports should be reported on the CBC development web site at
+
+https://projects.coin-or.org/Cbc/newticket

@@ -6377,7 +6377,7 @@ int CbcMain1 (int argc, const char *argv[],
 #endif
                             if (!status || (status > 0 && allowImportErrors)) {
 #ifndef CBC_OTHER_SOLVER
-                                if (keepImportNames && gmpl <= 0) {
+                                if (keepImportNames) {
                                     lengthName = lpSolver->lengthNames();
                                     rowNames = *(lpSolver->rowNames());
                                     columnNames = *(lpSolver->columnNames());

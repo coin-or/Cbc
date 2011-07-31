@@ -1894,9 +1894,14 @@ CbcModel::setInfoInChild(int type, CbcThread * info)
         object_ = NULL;
     }
 }
+
+/// Indicates whether Cbc library has been compiled with multithreading support
+bool CbcModel::haveMultiThreadSupport() { return true; }
+
 #else
-// Dummy so file not empty
 // Default constructor
 CbcBaseModel::CbcBaseModel() {}
+
+bool CbcModel::haveMultiThreadSupport() { return false; }
 #endif
 

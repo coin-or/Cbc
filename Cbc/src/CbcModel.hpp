@@ -1887,8 +1887,10 @@ public:
     void moveInfo(const CbcModel & rhs);
     //@}
 
-    /// To do with threads
+    ///@name Multithreading
     //@{
+    /// Indicates whether Cbc library has been compiled with multithreading support
+    static bool haveMultiThreadSupport();
     /// Get pointer to masterthread
     CbcThread * masterThread() const {
         return masterThread_;
@@ -1983,7 +1985,7 @@ public:
                      int numberNodes);
     //@}
 
-    /// semi-private i.e. users should not use
+    ///@name semi-private i.e. users should not use
     //@{
     /// Get how many Nodes it took to solve the problem.
     int getNodeCount2() const {

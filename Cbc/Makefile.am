@@ -129,7 +129,7 @@ pkgconfiglibdir = $(libdir)/pkgconfig
 pkgconfiglib_DATA = cbc.pc osi-cbc.pc
 
 addlibsdir = $(DESTDIR)$(datadir)/coin/doc/Cbc
-	
+
 install-data-hook:
 	@$(mkdir_p) "$(addlibsdir)"
 if COIN_HAS_PKGCONFIG

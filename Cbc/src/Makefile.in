@@ -1265,6 +1265,10 @@ uninstall-info: uninstall-info-recursive
 	uninstall-info-am uninstall-libLTLIBRARIES uninstall-local
 
 
+#######################################################################
+# Create the Config.h file that has all public defines and install it #
+#######################################################################
+
 install-exec-local:
 	$(install_sh_DATA) config_cbc.h $(DESTDIR)$(includecoindir)/CbcConfig.h
 

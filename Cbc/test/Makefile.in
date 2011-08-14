@@ -417,8 +417,8 @@ gamsTest_LDADD = ../src/libCbcSolver.la ../src/libCbc.la $(CBCLIB_LIBS)
 gamsTest_DEPENDENCIES = ../src/libCbcSolver.la ../src/libCbc.la $(CBCLIB_DEPENDENCIES)
 AM_CPPFLAGS = -I`$(CYGPATH_W) $(srcdir)/../src` $(COINDEPEND_CFLAGS) \
 	$(CLP_CFLAGS) $(CPX_CFLAGS) $(DYLP_CFLAGS) $(GLPK_CFLAGS) \
-	$(MSK_CFLAGS) $(VOL_CFLAGS) $(XPR_CFLAGS) $(OSITESTS_CFLAGS) \
-	-I`$(CYGPATH_W) $(srcdir)/../src/OsiCbc`
+	$(MSK_CFLAGS) $(VOL_CFLAGS) $(XPR_CFLAGS) -I`$(CYGPATH_W) \
+	$(srcdir)/../src/OsiCbc` $(OSITESTS_CFLAGS)
 
 # This line is necessary to allow VPATH compilation
 DEFAULT_INCLUDES = -I. -I`$(CYGPATH_W) $(srcdir)` -I$(top_builddir)/src

@@ -255,6 +255,10 @@ includecoin_HEADERS = \
 	ClpConstraintAmpl.hpp \
 	ClpAmplObjective.hpp 
 
+#######################################################################
+# Create the Config.h file that has all public defines and install it #
+#######################################################################
+
 install-exec-local:
 	$(install_sh_DATA) config_cbc.h $(DESTDIR)$(includecoindir)/CbcConfig.h
 

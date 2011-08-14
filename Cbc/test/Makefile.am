@@ -80,8 +80,7 @@ osiUnitTest_LDADD = ../src/OsiCbc/libOsiCbc.la ../src/libCbc.la \
 osiUnitTest_DEPENDENCIES = ../src/OsiCbc/libOsiCbc.la ../src/libCbc.la \
     $(CBCLIB_DEPENDENCIES) $(OSITESTS_DEPENDENCIES)
 
-AM_CPPFLAGS += $(OSITESTS_CFLAGS) \
-        -I`$(CYGPATH_W) $(srcdir)/../src/OsiCbc`
+AM_CPPFLAGS += -I`$(CYGPATH_W) $(srcdir)/../src/OsiCbc` $(OSITESTS_CFLAGS)
 
 ositests: osiUnitTest$(EXEEXT)
 	./osiUnitTest$(EXEEXT) $(ositestsflags)

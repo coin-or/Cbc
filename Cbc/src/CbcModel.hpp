@@ -704,6 +704,8 @@ public:
     inline double getCutoffIncrement() const {
         return getDblParam(CbcCutoffIncrement);
     }
+    /// See if can stop on gap
+    bool canStopOnGap() const;
 
     /** Pass in target solution and optional priorities.
         If priorities then >0 means only branch if incorrect

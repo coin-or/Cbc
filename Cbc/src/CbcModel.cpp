@@ -2410,10 +2410,7 @@ void CbcModel::branchAndBound(int doStatistics)
     stoppedOnGap_ = false ;
     // See if can stop on gap
     bestPossibleObjective_ = solver_->getObjValue() * solver_->getObjSense();
-    double testGap = CoinMax(dblParam_[CbcAllowableGap],
-                             CoinMax(fabs(bestObjective_), fabs(bestPossibleObjective_))
-                             * dblParam_[CbcAllowableFractionGap]);
-    if (bestObjective_ - bestPossibleObjective_ < testGap && getCutoffIncrement() >= 0.0) {
+    if(canStopOnGap()) {
         if (bestPossibleObjective_ < getCutoff())
             stoppedOnGap_ = true ;
         feasible = false;
@@ -2591,10 +2588,7 @@ void CbcModel::branchAndBound(int doStatistics)
     }
     // See if can stop on gap
     bestPossibleObjective_ = solver_->getObjValue() * solver_->getObjSense();
-    testGap = CoinMax(dblParam_[CbcAllowableGap],
-                      CoinMax(fabs(bestObjective_), fabs(bestPossibleObjective_))
-                      * dblParam_[CbcAllowableFractionGap]);
-    if (bestObjective_ - bestPossibleObjective_ < testGap && getCutoffIncrement() >= 0.0) {
+    if(canStopOnGap()) {
         if (bestPossibleObjective_ < getCutoff())
             stoppedOnGap_ = true ;
         feasible = false;
@@ -3765,10 +3759,7 @@ void CbcModel::branchAndBound(int doStatistics)
             }
         }
         // See if can stop on gap
-        double testGap = CoinMax(dblParam_[CbcAllowableGap],
-                                 CoinMax(fabs(bestObjective_), fabs(bestPossibleObjective_))
-                                 * dblParam_[CbcAllowableFractionGap]);
-        if (bestObjective_ - bestPossibleObjective_ < testGap && getCutoffIncrement() >= 0.0) {
+	if(canStopOnGap()) {
             stoppedOnGap_ = true ;
         }
 
@@ -14908,6 +14899,19 @@ CbcModel::doCutsNow(int allowForTopOfTree) const
     //if (!doCuts&&currentDepth_&&!parentModel_)
     //printf("zzz\n");
     return doCuts;
+}
+// See if can stop on gap
+bool 
+CbcModel::canStopOnGap() const
+{
+  bool returnCode=false;
+  if (bestObjective_<1.0e50) {
+    double testGap = CoinMax(dblParam_[CbcAllowableGap],
+			     CoinMax(fabs(bestObjective_), fabs(bestPossibleObjective_))
+			     * dblParam_[CbcAllowableFractionGap]);
+    returnCode = (bestObjective_ - bestPossibleObjective_ < testGap && getCutoffIncrement() >= 0.0);
+  } 
+  return returnCode;
 }
 // Adjust heuristics based on model
 void

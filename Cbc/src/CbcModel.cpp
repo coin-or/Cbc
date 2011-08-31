@@ -2413,7 +2413,8 @@ void CbcModel::branchAndBound(int doStatistics)
     double testGap = CoinMax(dblParam_[CbcAllowableGap],
                              CoinMax(fabs(bestObjective_), fabs(bestPossibleObjective_))
                              * dblParam_[CbcAllowableFractionGap]);
-    if (bestObjective_ - bestPossibleObjective_ < testGap && getCutoffIncrement() >= 0.0) {
+    if (bestObjective_ - bestPossibleObjective_ < testGap && getCutoffIncrement() >= 0.0
+	&& bestObjective_ < 1.0e50) {
         if (bestPossibleObjective_ < getCutoff())
             stoppedOnGap_ = true ;
         feasible = false;
@@ -2594,7 +2595,8 @@ void CbcModel::branchAndBound(int doStatistics)
     testGap = CoinMax(dblParam_[CbcAllowableGap],
                       CoinMax(fabs(bestObjective_), fabs(bestPossibleObjective_))
                       * dblParam_[CbcAllowableFractionGap]);
-    if (bestObjective_ - bestPossibleObjective_ < testGap && getCutoffIncrement() >= 0.0) {
+    if (bestObjective_ - bestPossibleObjective_ < testGap && getCutoffIncrement() >= 0.0
+	&& bestObjective_ < 1.0e50) {
         if (bestPossibleObjective_ < getCutoff())
             stoppedOnGap_ = true ;
         feasible = false;
@@ -3768,7 +3770,8 @@ void CbcModel::branchAndBound(int doStatistics)
         double testGap = CoinMax(dblParam_[CbcAllowableGap],
                                  CoinMax(fabs(bestObjective_), fabs(bestPossibleObjective_))
                                  * dblParam_[CbcAllowableFractionGap]);
-        if (bestObjective_ - bestPossibleObjective_ < testGap && getCutoffIncrement() >= 0.0) {
+	if (bestObjective_ - bestPossibleObjective_ < testGap && getCutoffIncrement() >= 0.0
+	    && bestObjective_ < 1.0e50) {
             stoppedOnGap_ = true ;
         }
 
@@ -13228,7 +13231,8 @@ CbcModel::doHeuristicsAtRoot(int deleteHeuristicsAfterwards)
 			    double testGap = CoinMax(dblParam_[CbcAllowableGap],
 						     CoinMax(fabs(bestObjective_), fabs(bestPossibleObjective_))
 						     * dblParam_[CbcAllowableFractionGap]);
-			    if (bestObjective_ - bestPossibleObjective_ < testGap && getCutoffIncrement() >= 0.0 &&bestPossibleObjective_ < 1.0e30) {
+			    if (bestObjective_ - bestPossibleObjective_ < testGap && getCutoffIncrement() >= 0.0
+				&& bestObjective_ < 1.0e50) {
 			      if (bestPossibleObjective_ < getCutoff())
 				stoppedOnGap_ = true ;
 			      //eventHappened_=true; // stop as fast as possible

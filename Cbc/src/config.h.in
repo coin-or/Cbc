@@ -61,6 +61,9 @@
 /* Define to 1 if the OsiTests package is available */
 #undef COIN_HAS_OSITESTS
 
+/* Define to 1 if readline is available */
+#undef COIN_HAS_READLINE
+
 /* Define to 1 if the Sample package is available */
 #undef COIN_HAS_SAMPLE
 
@@ -102,6 +105,9 @@
 
 /* Define to 1 if you have the <memory.h> header file. */
 #undef HAVE_MEMORY_H
+
+/* Define to 1 if you have the <readline/readline.h> header file. */
+#undef HAVE_READLINE_READLINE_H
 
 /* Define to 1 if you have the <stdint.h> header file. */
 #undef HAVE_STDINT_H

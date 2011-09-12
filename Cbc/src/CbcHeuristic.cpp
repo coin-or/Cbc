@@ -1175,7 +1175,11 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver, int numberNodes,
 		    solver->setHintParam(OsiDoDualInResolve, true, OsiHintDo);
 #endif
 		    model.passInEventHandler(model_->getEventHandler());
+		    // say model_ is sitting there
+		    int saveOptions = model_->specialOptions();
+		    model_->setSpecialOptions(saveOptions|1048576);
                     model.branchAndBound();
+		    model_->setSpecialOptions(saveOptions);
 #ifdef ALWAYS_DUAL
 		    solver = model.solver();
 		    solver->setHintParam(OsiDoDualInResolve, takeHint, strength);

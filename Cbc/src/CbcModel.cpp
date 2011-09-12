@@ -12041,8 +12041,10 @@ void CbcModel::passInEventHandler (const CbcEventHandler *eventHandler)
 {
     delete eventHandler_;
     eventHandler_ = NULL ;
-    if (eventHandler)
+    if (eventHandler) {
         eventHandler_ = eventHandler->clone();
+	eventHandler_->setModel(this);
+    }
 }
 
 /*

@@ -1719,6 +1719,7 @@ public:
         17 bit (131072) - Perturbation switched off
         18 bit (262144) - donor CbcModel
         19 bit (524288) - recipient CbcModel
+        20 bit (1048576) - waiting for sub model to return
     */
     inline void setSpecialOptions(int value) {
         specialOptions_ = value;
@@ -1730,6 +1731,13 @@ public:
     /// Says if normal solver i.e. has well defined CoinPackedMatrix
     inline bool normalSolver() const {
         return (specialOptions_&16) == 0;
+    }
+    /** Says if model is sitting there waiting for mini branch and bound to finish
+	This is because an event handler may only have access to parent model in
+	mini branch and bound
+    */
+    inline bool waitingForMiniBranchAndBound() const {
+        return (specialOptions_&1048576) != 0;
     }
     /** Set more special options
         at present bottom 6 bits used for shadow price mode

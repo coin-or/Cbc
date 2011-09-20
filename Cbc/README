@@ -25,6 +25,24 @@ http://projects.coin-or.org/Cbc
 WHAT'S NEW
 ==========
 
+Release 2.7.2:
+
+1. Allow row/column names for GMPL models.
+
+2. Added CbcModel::haveMultiThreadSupport() to indicate whether Cbc library has been compiled with multithread support.
+
+3. Added CbcModel::waitingForMiniBranchAndBound() to indicate whether sub-MIP heuristic is currently running.
+
+4. Cbc shell should work with readline if configured with --enable-gnu-packages.
+
+5. Support for compressed input files (.gz, .bz2) is now enabled by default.
+
+6. Fix problems with relative gap tolerance > 100% and further bugs.
+
+7. Fixes for MSVC++ Version 9 files.
+
+8. Minor fixes in buildsystem; update to BuildTools 0.7.1.
+
 Release 2.7.1:
 
 1. Fixes to MSVC++ files

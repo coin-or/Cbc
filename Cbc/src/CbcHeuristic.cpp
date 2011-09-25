@@ -802,7 +802,7 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver, int numberNodes,
                                     solver->getNumRows(), solver->getNumCols(),
                                     afterRows, afterCols, nFix, afterRows2, afterCols2);
                         }
-                        model_->messageHandler()->message(CBC_GENERAL, model_->messages())
+                        model_->messageHandler()->message(CBC_FPUMP1, model_->messages())
                         << generalPrint
                         << CoinMessageEol;
                     } else {

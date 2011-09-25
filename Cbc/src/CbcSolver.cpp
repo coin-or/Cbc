@@ -62,6 +62,10 @@ extern glp_prob* cbc_glp_prob;
 #define GLP_OPT 5
 #endif
 
+#ifndef CBC_QUIET
+#define CBC_QUIET 0
+#endif
+
 //#define USER_HAS_FAKE_CLP
 //#define USER_HAS_FAKE_CBC
 
@@ -1211,7 +1215,7 @@ int CbcMain1 (int argc, const char *argv[],
 
         // register signal handler
         //CoinSighandler_t saveSignal=signal(SIGINT,signal_handler);
-#ifndef CBC_QUIET
+#if CBC_QUIET < 2
         signal(SIGINT, signal_handler);
 #endif
         // Set up all non-standard stuff
@@ -1648,7 +1652,7 @@ int CbcMain1 (int argc, const char *argv[],
             probingAction = 8;
         }
         std::string field;
-#ifndef CBC_QUIET 
+#if CBC_QUIET == 0
         if (!noPrinting_) {
 	   sprintf(generalPrint,
 		   "Welcome to the CBC MILP Solver \n");
@@ -2724,7 +2728,7 @@ int CbcMain1 (int argc, const char *argv[],
 					   "Enumerated nodes:           0\n");
 				   sprintf(generalPrint + strlen(generalPrint), 
 					   "Total iterations:           0\n");
-#ifndef CBC_QUIET 
+#if CBC_QUIET == 0
 				   sprintf(generalPrint + strlen(generalPrint),
 					   "Time (CPU seconds):         %.2f\n", 
 					   CoinCpuTime() - time0);
@@ -6184,7 +6188,7 @@ int CbcMain1 (int argc, const char *argv[],
 				    sprintf(generalPrint + strlen(generalPrint), 
 					    "Total iterations:               %d\n", 
 					    babModel_->getIterationCount());
-#ifndef CBC_QUIET 
+#if CBC_QUIET == 0
 				    sprintf(generalPrint + strlen(generalPrint), 
 					    "Time (CPU seconds):             %.2f\n",
 					    CoinCpuTime() - time1);
@@ -8373,7 +8377,7 @@ clp watson.mps -\nscaling off\nprimalsimplex"
             }
         }
     }
-#ifndef CBC_QUIET 
+#if CBC_QUIET == 0
     sprintf(generalPrint ,
 	    "Total time (CPU seconds):       %.2f   (Wallclock seconds):       %.2f\n", 
 	    CoinCpuTime() - time0,

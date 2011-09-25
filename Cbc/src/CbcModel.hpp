@@ -894,13 +894,17 @@ public:
     inline void incrementIterationCount(int value) {
         numberIterations_ += value;
     }
-    /// Get how many Nodes it took to solve the problem.
+    /// Get how many Nodes it took to solve the problem (including those in complete fathoming B&B inside CLP).
     inline int getNodeCount() const {
         return numberNodes_;
     }
     /// Increment how many nodes it took to solve the problem.
     inline void incrementNodeCount(int value) {
         numberNodes_ += value;
+    }
+    /// Get how many Nodes were enumerated in complete fathoming B&B inside CLP
+    inline int getExtraNodeCount() const {
+       return numberExtraNodes_;
     }
     /** Final status of problem
         Some of these can be found out by is...... functions

@@ -2872,7 +2872,7 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
                             if (iColumn < numberColumns && cutoff < 1.0e20
                                     && objectiveChange > 1.0e-5) {
                                 double value = saveSolution[iColumn];
-                                double down = value - floor(value);
+                                double down = value - floor(value-integerTolerance);
                                 double changePer = objectiveChange / (down + 1.0e-7);
                                 double distance = (cutoff - objectiveValue_) / changePer;
                                 distance += 1.0e-3;
@@ -3018,7 +3018,7 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
                             if (iColumn < numberColumns && cutoff < 1.0e20
                                     && objectiveChange > 1.0e-5) {
                                 double value = saveSolution[iColumn];
-                                double up = ceil(value) - value;
+                                double up = ceil(value+integerTolerance) - value;
                                 double changePer = objectiveChange / (up + 1.0e-7);
                                 double distance = (cutoff - objectiveValue_) / changePer;
                                 distance += 1.0e-3;

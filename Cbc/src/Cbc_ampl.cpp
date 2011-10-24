@@ -29,9 +29,10 @@ THIS SOFTWARE.
   Interface routines for AMPL.
 */
 
+#include "CbcConfig.h"
+
 #ifdef COIN_HAS_ASL
 
-#include "CbcConfig.h"
 #ifdef HAVE_UNISTD_H
 # include "unistd.h"
 #endif
@@ -143,7 +144,7 @@ static keyword keywds[] = { /* must be sorted */
 };
 static Option_Info Oinfo = {
     const_cast<char*>("cbc"),
-    const_cast<char*>("Cbc 1.04"),
+    const_cast<char*>("CBC trunk"),
     const_cast<char*>("cbc_options"),
     keywds,
     nkeywds,

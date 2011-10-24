@@ -36,12 +36,10 @@ Cbc package in two ways:
    (development) version.
 
 2. Download the tarball from http://www.coin-or.org/download/source/Cbc 
-   and extract it. For example, for the release 2.0.0 you type
+   and extract it. For example, for the release 2.7.0 you type
 
-   gunzip Cbc-2.0.0.tgz
-   tar xvf Cbc-2.0.0.tar
-
-   More detailed download instructions can be found at
+   gunzip Cbc-2.7.0.tgz
+   tar xvf Cbc-2.7.0.tar
 
 **********************************************************************
 ***                        CONFIGURATION                           ***
@@ -93,7 +91,7 @@ In the directory where you ran the configure script:
 
 More information on the compilation and installation can be found at
 
-   https://projects.coin-or.org/BuildTools/wiki/user-compile
+   https://projects.coin-or.org/BuildTools/
 
 **********************************************************************
 ***                     USING CBC                                  ***

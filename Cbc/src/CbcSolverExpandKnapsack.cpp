@@ -527,3 +527,66 @@ expandKnapsack(CoinModel & model, int * whichColumn, int * knapsackStart,
 #endif	//COIN_HAS_LINK
 
 
+// Fills in original solution (coinModel length)
+void
+afterKnapsack(const CoinModel & coinModel2, const int * whichColumn, const int * knapsackStart,
+	      const int * knapsackRow, int numberKnapsack,
+	      const double * knapsackSolution, double * solution, int logLevel)
+{
+   CoinModel coinModel = coinModel2;
+   int numberColumns = coinModel.numberColumns();
+   int iColumn;
+   // associate all columns to stop possible error messages
+   for (iColumn=0;iColumn<numberColumns;iColumn++) {
+      coinModel.associateElement(coinModel.columnName(iColumn),1.0);
+   }
+   CoinZeroN(solution,numberColumns);
+   int nCol=knapsackStart[0];
+   for (iColumn=0;iColumn<nCol;iColumn++) {
+      int jColumn = whichColumn[iColumn];
+      solution[jColumn]=knapsackSolution[iColumn];
+   }
+   int * buildRow = new int [numberColumns]; // wild overkill
+   double * buildElement = new double [numberColumns];
+   int iKnapsack;
+   for (iKnapsack=0;iKnapsack<numberKnapsack;iKnapsack++) {
+      int k=-1;
+      double value=0.0;
+      for (iColumn=knapsackStart[iKnapsack];iColumn<knapsackStart[iKnapsack+1];iColumn++) {
+	 if (knapsackSolution[iColumn]>1.0e-5) {
+	    if (k>=0) {
+	       printf("Two nonzero values for knapsack %d at (%d,%g) and (%d,%g)\n",iKnapsack,
+		      k,knapsackSolution[k],iColumn,knapsackSolution[iColumn]);
+	       abort();
+	    }
+	    k=iColumn;
+	    value=floor(knapsackSolution[iColumn]+0.5);
+	    assert (fabs(value-knapsackSolution[iColumn])<1.0e-5);
+	 }
+      }
+      if (k>=0) {
+	 int iRow = knapsackRow[iKnapsack];
+	 int nCreate = 10000;
+	 int nel=coinModel.expandKnapsack(iRow,nCreate,NULL,NULL,buildRow,buildElement,k-knapsackStart[iKnapsack]);
+	 assert (nel);
+	 if (logLevel>0)
+	    printf("expanded column %d in knapsack %d has %d nonzero entries:\n",
+		   k-knapsackStart[iKnapsack],iKnapsack,nel);
+	 for (int i=0;i<nel;i++) {
+	    int jColumn = buildRow[i];
+	    double value = buildElement[i];
+	    if (logLevel>0)
+	       printf("%d - original %d has value %g\n",i,jColumn,value);
+	    solution[jColumn]=value;
+	 }
+      }
+   }
+   delete [] buildRow;
+   delete [] buildElement;
+#if 0
+   for (iColumn=0;iColumn<numberColumns;iColumn++) {
+      if (solution[iColumn]>1.0e-5&&coinModel.isInteger(iColumn))
+	 printf("%d %g\n",iColumn,solution[iColumn]);
+   }
+#endif
+}

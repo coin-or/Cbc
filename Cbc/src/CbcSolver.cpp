@@ -6208,6 +6208,78 @@ int CbcMain1 (int argc, const char *argv[],
                                     babModel_ = NULL;
                                     return returnCode;
                                 }
+#ifdef COIN_HAS_ASL
+				if (statusUserFunction_[0]) {
+				   clpSolver = dynamic_cast< OsiClpSolverInterface*> (babModel_->solver());
+				   lpSolver = clpSolver->getModelPtr();
+				   double value = babModel_->getObjValue()*lpSolver->getObjSense();
+				   char buf[300];
+				   int pos=0;
+				   if (iStat==0) {
+				      if (babModel_->getObjValue()<1.0e40) {
+					 pos += sprintf(buf+pos,"optimal," );
+				      } else {
+					 // infeasible
+					 iStat=1;
+					 pos += sprintf(buf+pos,"infeasible,");
+				      }
+				   } else if (iStat==1) {
+				      if (iStat2!=6)
+					 iStat=3;
+				      else
+					 iStat=4;
+				      pos += sprintf(buf+pos,"stopped on %s,",minor[iStat2].c_str());
+				   } else if (iStat==2) {
+				      iStat = 7;
+				      pos += sprintf(buf+pos,"stopped on difficulties,");
+				   } else if (iStat==5) {
+				      iStat = 3;
+				      pos += sprintf(buf+pos,"stopped on ctrl-c,");
+				   } else {
+				      pos += sprintf(buf+pos,"status unknown,");
+				      iStat=6;
+				   }
+				   info.problemStatus=iStat;
+				   info.objValue = value;
+				   if (babModel_->getObjValue()<1.0e40) {
+				      int precision = ampl_obj_prec();
+				      if (precision>0)
+					 pos += sprintf(buf+pos," objective %.*g",precision,
+							value);
+				      else
+					 pos += sprintf(buf+pos," objective %g",value);
+				   }
+				   sprintf(buf+pos,"\n%d nodes, %d iterations, %g seconds",
+					   babModel_->getNodeCount(),
+					   babModel_->getIterationCount(),
+					   totalTime);
+				   if (bestSolution) {
+				      free(info.primalSolution);
+				      if (!numberKnapsack) {
+					 info.primalSolution = (double *) malloc(n*sizeof(double));
+					 CoinCopyN(lpSolver->primalColumnSolution(),n,info.primalSolution);
+					 int numberRows = lpSolver->numberRows();
+					 free(info.dualSolution);
+					 info.dualSolution = (double *) malloc(numberRows*sizeof(double));
+					 CoinCopyN(lpSolver->dualRowSolution(),numberRows,info.dualSolution);
+				      } else {
+					 // expanded knapsack
+					 info.dualSolution=NULL;
+					 int numberColumns = saveCoinModel.numberColumns();
+					 info.primalSolution = (double *) malloc(numberColumns*sizeof(double));
+					 // Fills in original solution (coinModel length)
+					 afterKnapsack(saveTightenedModel,  whichColumn,  knapsackStart,
+					 	       knapsackRow,  numberKnapsack,
+					 	       lpSolver->primalColumnSolution(), info.primalSolution,1);
+				      }
+				   } else {
+				      info.primalSolution=NULL;
+				      info.dualSolution=NULL;
+				   }
+				   // put buffer into info
+				   strcpy(info.buffer,buf);
+				}
+#endif
                             } else {
                                 std::cout << "Model strengthened - now has " << clpSolver->getNumRows()
                                           << " rows" << std::endl;

@@ -29218,6 +29218,22 @@ ASL_DATA=
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 #check if user provided LIBS, CFLAGS, or DATA for package or disables use of package
 if test $coin_has_asl != skipping; then
 
@@ -29231,10 +29247,16 @@ if test "${with_asl_lib+set}" = set; then
        ASL_LIBS="$withval"
        ASL_PCLIBS="$withval"
 
+         CBCLIB_PCLIBS="$withval $CBCLIB_PCLIBS"
+         CBCLIB_LIBS="$withval $CBCLIB_LIBS"
+
+         CBCGENERIC_PCLIBS="$withval $CBCGENERIC_PCLIBS"
+         CBCGENERIC_LIBS="$withval $CBCGENERIC_LIBS"
+
        # if project flags are given by user and we build without pkg-config, then we need to setup the _INSTALLED variables
        if test -z "$PKG_CONFIG" ; then
          ASL_LIBS_INSTALLED="$withval"
-
+         CBCLIB_LIBS_INSTALLED="$withval $CBCLIB_LIBS_INSTALLED"CBCGENERIC_LIBS_INSTALLED="$withval $CBCGENERIC_LIBS_INSTALLED"
        fi
      fi
 
@@ -29251,11 +29273,11 @@ if test "${with_asl_incdir+set}" = set; then
      else
        coin_has_asl=yes
        ASL_CFLAGS="-I`${CYGPATH_W} $withval`"
-
+       CBCLIB_CFLAGS="-I`${CYGPATH_W} $withval` $CBCLIB_CFLAGS"CBCGENERIC_CFLAGS="-I`${CYGPATH_W} $withval` $CBCGENERIC_CFLAGS"
        # if project flags are given by user and we build without pkg-config, then we need to setup the _INSTALLED variables
        if test -z "$PKG_CONFIG" ; then
          ASL_CFLAGS_INSTALLED="$ASL_CFLAGS"
-
+         CBCLIB_CFLAGS_INSTALLED="$ASL_CFLAGS $CBCLIB_CFLAGS_INSTALLED"CBCGENERIC_CFLAGS_INSTALLED="$ASL_CFLAGS $CBCGENERIC_CFLAGS_INSTALLED"
        fi
      fi
 
@@ -29319,7 +29341,15 @@ echo "${ECHO_T}yes: $ASL_VERSIONS" >&6
         fi
         ASL_PCREQUIRES="coinasl"
 
-        # augment X_PCREQUIRES, X_CFLAGS, and X_LIBS for each build target X in
+        # augment X_PCREQUIRES, X_CFLAGS, and X_LIBS for each build target X in CbcLib CbcGeneric
+
+          CBCLIB_PCREQUIRES="coinasl $CBCLIB_PCREQUIRES"
+          CBCLIB_CFLAGS="$ASL_CFLAGS $CBCLIB_CFLAGS"
+          CBCLIB_LIBS="$ASL_LIBS $CBCLIB_LIBS"
+
+          CBCGENERIC_PCREQUIRES="coinasl $CBCGENERIC_PCREQUIRES"
+          CBCGENERIC_CFLAGS="$ASL_CFLAGS $CBCGENERIC_CFLAGS"
+          CBCGENERIC_LIBS="$ASL_LIBS $CBCGENERIC_LIBS"
 
 
 
@@ -29564,6 +29594,18 @@ _ACEOF
 
   ASL_PCREQUIRES="coinasl"
 
+    CBCLIB_PCREQUIRES="coinasl $CBCLIB_PCREQUIRES"
+    CBCLIB_CFLAGS="$ASL_CFLAGS $CBCLIB_CFLAGS"
+    CBCLIB_LIBS="$ASL_LIBS $CBCLIB_LIBS"
+    CBCLIB_CFLAGS_INSTALLED="$ASL_CFLAGS_INSTALLED $CBCLIB_CFLAGS_INSTALLED"
+    CBCLIB_LIBS_INSTALLED="$ASL_LIBS_INSTALLED $CBCLIB_LIBS_INSTALLED"
+
+    CBCGENERIC_PCREQUIRES="coinasl $CBCGENERIC_PCREQUIRES"
+    CBCGENERIC_CFLAGS="$ASL_CFLAGS $CBCGENERIC_CFLAGS"
+    CBCGENERIC_LIBS="$ASL_LIBS $CBCGENERIC_LIBS"
+    CBCGENERIC_CFLAGS_INSTALLED="$ASL_CFLAGS_INSTALLED $CBCGENERIC_CFLAGS_INSTALLED"
+    CBCGENERIC_LIBS_INSTALLED="$ASL_LIBS_INSTALLED $CBCGENERIC_LIBS_INSTALLED"
+
 
 fi
 
@@ -29611,6 +29653,10 @@ fi;
      # also remove everything of the form `xxx`yyy (may have been added for cygwin/cl)
      ASL_DEPENDENCIES=`echo " $ASL_LIBS" | sed -e 's/ mkl[^ ]*//g' -e 's/ libiomp5[^ ]*//g' -e 's/ -framework  *[^ ]*//g' -e 's/ -[^ ]*//g' -e 's/\`[^\`]*\`[^ ]* //g'`
 
+       CBCLIB_DEPENDENCIES=`echo " $CBCLIB_LIBS " | sed -e 's/ mkl[^ ]*//g' -e 's/ libiomp5[^ ]*//g' -e 's/ -framework  *[^ ]*//g' -e 's/ -[^ ]*//g' -e 's/\`[^\`]*\`[^ ]* //g'`
+
+       CBCGENERIC_DEPENDENCIES=`echo " $CBCGENERIC_LIBS " | sed -e 's/ mkl[^ ]*//g' -e 's/ libiomp5[^ ]*//g' -e 's/ -framework  *[^ ]*//g' -e 's/ -[^ ]*//g' -e 's/\`[^\`]*\`[^ ]* //g'`
+
   fi
 
   if test 1 = 0 ; then  #change this test to enable a bit of debugging output
@@ -29638,6 +29684,20 @@ echo "$as_me: ASL PCLIBS are $ASL_PCLIBS" >&6;}
       { echo "$as_me:$LINENO: ASL PCREQUIRES are $ASL_PCREQUIRES" >&5
 echo "$as_me: ASL PCREQUIRES are $ASL_PCREQUIRES" >&6;}
     fi
+
+      { echo "$as_me:$LINENO: CbcLib CFLAGS are $CBCLIB_CFLAGS" >&5
+echo "$as_me: CbcLib CFLAGS are $CBCLIB_CFLAGS" >&6;}
+      { echo "$as_me:$LINENO: CbcLib LIBS   are $CBCLIB_LIBS" >&5
+echo "$as_me: CbcLib LIBS   are $CBCLIB_LIBS" >&6;}
+      { echo "$as_me:$LINENO: CbcLib DEPENDENCIES are $CBCLIB_DEPENDENCIES" >&5
+echo "$as_me: CbcLib DEPENDENCIES are $CBCLIB_DEPENDENCIES" >&6;}
+
+      { echo "$as_me:$LINENO: CbcGeneric CFLAGS are $CBCGENERIC_CFLAGS" >&5
+echo "$as_me: CbcGeneric CFLAGS are $CBCGENERIC_CFLAGS" >&6;}
+      { echo "$as_me:$LINENO: CbcGeneric LIBS   are $CBCGENERIC_LIBS" >&5
+echo "$as_me: CbcGeneric LIBS   are $CBCGENERIC_LIBS" >&6;}
+      { echo "$as_me:$LINENO: CbcGeneric DEPENDENCIES are $CBCGENERIC_DEPENDENCIES" >&5
+echo "$as_me: CbcGeneric DEPENDENCIES are $CBCGENERIC_DEPENDENCIES" >&6;}
 
   fi
 fi

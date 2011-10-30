@@ -103,7 +103,7 @@ AC_COIN_CHECK_PACKAGE(Xpr,  [osi-xpress])
 #############################################################################
 
 # Ampl Solver library
-AC_COIN_CHECK_PACKAGE(ASL, [coinasl])
+AC_COIN_CHECK_PACKAGE(ASL, [coinasl], [CbcLib CbcGeneric])
 
 #############################################################################
 #                       CbcGeneric configuration			    #

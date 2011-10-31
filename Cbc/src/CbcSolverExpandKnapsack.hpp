@@ -19,5 +19,10 @@ expandKnapsack(CoinModel & model, int * whichColumn, int * knapsackStart,
                CglStored & stored, int logLevel,
                int fixedPriority, int SOSPriority, CoinModel & tightenedModel);
 
+void
+afterKnapsack(const CoinModel & coinModel2, const int * whichColumn, const int * knapsackStart,
+              const int * knapsackRow, int numberKnapsack,
+              const double * knapsackSolution, double * solution, int logLevel);
+
 #endif
 

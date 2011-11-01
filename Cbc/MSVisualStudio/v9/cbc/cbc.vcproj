@@ -72,7 +72,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="libCbcSolver.lib libOsiClp.lib libOsi.lib libClp.lib libCoinUtils.lib"
+				AdditionalDependencies="libCgl.lib libCbc.lib libCbcSolver.lib libOsiClp.lib libOsi.lib libClp.lib libCoinUtils.lib"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
 				AdditionalLibraryDirectories="$(OutDir)"
@@ -159,7 +159,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="libCbcSolver.lib libOsiClp.lib libOsi.lib libClp.lib libCoinUtils.lib"
+				AdditionalDependencies="libCgl.lib libCbc.lib libCbcSolver.lib libOsiClp.lib libOsi.lib libClp.lib libCoinUtils.lib"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
 				AdditionalLibraryDirectories="$(OutDir)"

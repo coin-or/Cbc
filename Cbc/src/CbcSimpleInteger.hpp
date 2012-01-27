@@ -8,6 +8,8 @@
 #ifndef CbcSimpleInteger_H
 #define CbcSimpleInteger_H
 
+#include "CbcBranchingObject.hpp"
+
 /** Simple branching object for an integer variable
 
   This object can specify a two-way branch on an integer variable. For each

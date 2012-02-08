@@ -2561,7 +2561,7 @@ void CbcModel::branchAndBound(int doStatistics)
                    solverCharacteristics_->alwaysTryCutsAtRootNode()) {
             // may generate cuts and turn the solution
             //to an infeasible one
-            feasible = solveWithCuts(cuts, 1,
+            feasible = solveWithCuts(cuts, 2,
                                      NULL);
         }
     }

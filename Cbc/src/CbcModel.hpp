@@ -1305,6 +1305,8 @@ public:
     const double * savedSolution(int which) const;
     /// Return a saved solution objective (0==best) - COIN_DBL_MAX if off end
     double savedSolutionObjective(int which) const;
+    /// Delete a saved solution and move others up
+    void deleteSavedSolution(int which);
 
     /** Current phase (so heuristics etc etc can find out).
         0 - initial solve

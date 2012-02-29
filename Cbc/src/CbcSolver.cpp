@@ -293,6 +293,31 @@ CbcUser::operator=(const CbcUser & rhs)
     }
     return *this;
 }
+#ifdef KEEP_POSTPROCESS
+static void putBackOtherSolutions(CbcModel * presolvedModel, CbcModel * model,
+			   CglPreProcess * preProcess)
+{
+  int numberSolutions=presolvedModel->numberSavedSolutions();
+  int numberColumns=presolvedModel->getNumCols();
+  if (numberSolutions>1) {
+    double * bestSolution = CoinCopyOfArray(presolvedModel->bestSolution(),numberColumns);
+    //double cutoff = presolvedModel->getCutoff();
+    double objectiveValue=presolvedModel->getObjValue();
+    //model->createSpaceForSavedSolutions(numberSolutions-1);
+    for (int iSolution=numberSolutions-1;iSolution>=0;iSolution--) {
+      presolvedModel->setCutoff(COIN_DBL_MAX);
+      presolvedModel->solver()->setColSolution(presolvedModel->savedSolution(iSolution));
+      //presolvedModel->savedSolutionObjective(iSolution));
+      preProcess->postProcess(*presolvedModel->solver(),false);
+      model->setBestSolution(preProcess->originalModel()->getColSolution(),model->solver()->getNumCols(),
+			     presolvedModel->savedSolutionObjective(iSolution));
+    }
+    presolvedModel->setBestObjectiveValue(objectiveValue);
+    presolvedModel->solver()->setColSolution(bestSolution);
+    //presolvedModel->setBestSolution(bestSolution,numberColumns,objectiveValue);
+  }
+}
+#endif
 
 /*
   CbcSolver class definitions
@@ -587,6 +612,7 @@ void CbcSolver::fillParameters()
     //parameters_[whichParam(CLP_PARAM_DBL_TIMELIMIT,numberParameters_,parameters_)].setDoubleValue(1.0e8);
     parameters_[whichParam(CBC_PARAM_DBL_TIMELIMIT_BAB, numberParameters_, parameters_)].setDoubleValue(1.0e8);
     parameters_[whichParam(CLP_PARAM_ACTION_SOLUTION, numberParameters_, parameters_)].setStringValue(solutionFile);
+    parameters_[whichParam(CLP_PARAM_ACTION_NEXTBESTSOLUTION, numberParameters_, parameters_)].setStringValue(solutionFile);
     parameters_[whichParam(CLP_PARAM_ACTION_SAVESOL, numberParameters_, parameters_)].setStringValue(solutionSaveFile);
     parameters_[whichParam(CLP_PARAM_INT_SPRINT, numberParameters_, parameters_)].setIntValue(doSprint);
     parameters_[whichParam(CLP_PARAM_INT_SUBSTITUTION, numberParameters_, parameters_)].setIntValue(substitution);
@@ -3527,7 +3553,6 @@ int CbcMain1 (int argc, const char *argv[],
                             // See if we want preprocessing
                             OsiSolverInterface * saveSolver = NULL;
                             CglPreProcess process;
-			    cbcPreProcessPointer = & process;
                             // Say integers in sync
                             bool integersOK = true;
                             delete babModel_;
@@ -3774,6 +3799,7 @@ int CbcMain1 (int argc, const char *argv[],
 #endif
 					if ((model_.moreSpecialOptions()&65536)!=0)
 					  process.setOptions(2+4+8); // no cuts
+					cbcPreProcessPointer = & process;
                                         solver2 = process.preProcessNonDefault(*saveSolver, translate[preProcess], numberPasses,
                                                                                tunePreProcess);
                                         /*solver2->writeMps("after");
@@ -3781,6 +3807,7 @@ int CbcMain1 (int argc, const char *argv[],
                                         osiclp->getModelPtr()->setPerturbation(savePerturbation);
                                     }
 #elif CBC_OTHER_SOLVER==1
+				    cbcPreProcessPointer = & process;
                                     solver2 = process.preProcessNonDefault(*saveSolver, translate[preProcess], numberPasses,
                                                                            tunePreProcess);
 #endif
@@ -5622,6 +5649,15 @@ int CbcMain1 (int argc, const char *argv[],
                                     delete babModel_;
                                     babModel_ = NULL;
                                     return returnCode;
+				} else {
+				  int numberSolutions = babModel_->numberSavedSolutions();
+				  if (numberSolutions>1) {
+				    for (int iSolution=numberSolutions-1;iSolution>=0;iSolution--) {
+				      model_.setBestSolution(babModel_->savedSolution(iSolution),
+							     model_.solver()->getNumCols(),
+							     babModel_->savedSolutionObjective(iSolution));
+				    }
+				  }
                                 }
 #ifdef CLP_MALLOC_STATISTICS
                                 malloc_stats();
@@ -5865,6 +5901,10 @@ int CbcMain1 (int argc, const char *argv[],
                                     ClpSimplex * lpSolver = clpSolver->getModelPtr();
                                     lpSolver->setSpecialOptions(lpSolver->specialOptions() | IN_BRANCH_AND_BOUND); // say is Cbc (and in branch and bound)
 #endif
+#ifdef KEEP_POSTPROCESS
+				    // put back any saved solutions
+				    putBackOtherSolutions(babModel_,&model_,&process);
+#endif
                                     process.postProcess(*babModel_->solver());
 #ifdef COIN_DEVELOP
                                     if (model_.bestSolution() && fabs(model_.getMinimizationObjValue() -
@@ -6014,7 +6054,7 @@ int CbcMain1 (int argc, const char *argv[],
                                     bestSolution = new double [n];
                                     memcpy(bestSolution, babModel_->solver()->getColSolution(), n*sizeof(double));
                                 }
-                                if (returnMode == 1) {
+                                if (returnMode == 1&&model_.numberSavedSolutions()<2) {
                                     model_.deleteSolutions();
                                     model_.setBestSolution(bestSolution, n, babModel_->getMinimizationObjValue());
                                 }
@@ -7712,8 +7752,10 @@ clp watson.mps -\nscaling off\nprimalsimplex"
                     }
                     break;
                     case CLP_PARAM_ACTION_SOLUTION:
+                    case CLP_PARAM_ACTION_NEXTBESTSOLUTION:
                     case CLP_PARAM_ACTION_GMPL_SOLUTION:
                         if (goodModel) {
+			  ClpSimplex * saveLpSolver = NULL;
                             // get next field
                             field = CoinReadGetString(argc, argv);
 			    bool append = false;
@@ -7880,7 +7922,43 @@ clp watson.mps -\nscaling off\nprimalsimplex"
 #endif
 				break;
 			      }
-                                if (printMode < 5) {
+			      if (printMode < 5) {
+			        if (type == CLP_PARAM_ACTION_NEXTBESTSOLUTION) {
+				  // save
+				  const double * nextBestSolution = model_.savedSolution(1);
+				  if (!nextBestSolution) {
+				    sprintf(generalPrint, "All alternative solutions printed");
+				    generalMessageHandler->message(CLP_GENERAL, generalMessages)
+				      << generalPrint
+				      << CoinMessageEol;
+				    break;
+				  } else {
+				    sprintf(generalPrint, "Alternative solution - %d remaining",model_.numberSavedSolutions()-2);
+				    generalMessageHandler->message(CLP_GENERAL, generalMessages)
+				      << generalPrint
+				      << CoinMessageEol;
+				  }
+				  saveLpSolver = lpSolver;
+				  assert (clpSolver->getModelPtr()==saveLpSolver);
+				  lpSolver = new ClpSimplex(*saveLpSolver);
+				  ClpSimplex * oldSimplex = clpSolver->swapModelPtr(lpSolver);
+				  assert (oldSimplex==saveLpSolver);
+				  double * solution = lpSolver->primalColumnSolution();
+				  double * lower = lpSolver->columnLower();
+				  double * upper = lpSolver->columnUpper();
+				  int numberColumns=lpSolver->numberColumns();
+				  memcpy(solution,nextBestSolution,numberColumns*sizeof(double));
+				  model_.deleteSavedSolution(1);
+				  for (int i = 0; i < numberColumns; i++) {
+				    if (clpSolver->isInteger(i)) {
+				      double value=floor(solution[i]+0.5);
+				      lower[i]=value;
+				      upper[i]=value;
+				    }
+				  }
+				  lpSolver->allSlackBasis();
+				  lpSolver->initialSolve();
+				}
                                     // Write solution header (suggested by Luigi Poderico)
                                     lpSolver->computeObjectiveValue(false);
                                     double objValue = lpSolver->getObjValue();
@@ -8276,6 +8354,14 @@ clp watson.mps -\nscaling off\nprimalsimplex"
                                             }
                                         }
                                     }
+				    if (type == CLP_PARAM_ACTION_NEXTBESTSOLUTION) {
+				      if(saveLpSolver) {
+					clpSolver->swapModelPtr(saveLpSolver);
+					delete lpSolver;
+					lpSolver=saveLpSolver;
+					saveLpSolver=NULL;
+				      }
+				    }
                                 } else {
                                     // special format suitable for OsiRowCutDebugger
                                     int n = 0;
@@ -8611,6 +8697,7 @@ void CbcMain0 (CbcModel  & model)
     //parameters[whichParam(CLP_PARAM_DBL_TIMELIMIT,numberParameters,parameters)].setDoubleValue(1.0e8);
     parameters[whichParam(CBC_PARAM_DBL_TIMELIMIT_BAB, numberParameters, parameters)].setDoubleValue(1.0e8);
     parameters[whichParam(CLP_PARAM_ACTION_SOLUTION, numberParameters, parameters)].setStringValue(solutionFile);
+    parameters[whichParam(CLP_PARAM_ACTION_NEXTBESTSOLUTION, numberParameters, parameters)].setStringValue(solutionFile);
     parameters[whichParam(CLP_PARAM_ACTION_SAVESOL, numberParameters, parameters)].setStringValue(solutionSaveFile);
     parameters[whichParam(CLP_PARAM_INT_SPRINT, numberParameters, parameters)].setIntValue(doSprint);
     parameters[whichParam(CLP_PARAM_INT_SUBSTITUTION, numberParameters, parameters)].setIntValue(substitution);
@@ -9224,3 +9311,4 @@ static void generateCode(CbcModel * /*model*/, const char * fileName, int type, 
   Improvements to feaspump
   Source code changes so up to 2.0
 */
+                            

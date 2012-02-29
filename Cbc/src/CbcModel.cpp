@@ -15052,6 +15052,20 @@ CbcModel::deleteSolutions()
         savedSolutions_[i] = NULL;
     }
 }
+// Delete a saved solution and move others up
+void 
+CbcModel::deleteSavedSolution(int which)
+{
+  if (which >0 && which <= numberSavedSolutions_) {
+    delete [] savedSolutions_[which-1];
+    // move up
+    numberSavedSolutions_--;
+    for (int j =  which-1; j <numberSavedSolutions_; j++) {
+      savedSolutions_[j] = savedSolutions_[j+1];
+    }
+    savedSolutions_[numberSavedSolutions_]=NULL;
+  }
+}
 #ifdef COIN_HAS_CLP
 void
 CbcModel::goToDantzig(int numberNodes, ClpDualRowPivot *& savePivotMethod)

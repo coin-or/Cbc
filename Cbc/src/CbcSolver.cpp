@@ -48,6 +48,7 @@
 #include "OsiRowCutDebugger.hpp"
 #include "OsiChooseVariable.hpp"
 #include "OsiAuxInfo.hpp"
+#include "CbcMipStartIO.hpp"
 
 #include "CbcSolverHeuristics.hpp"
 #ifdef COIN_HAS_GLPK
@@ -550,6 +551,7 @@ void CbcSolver::fillParameters()
     std::string exportFile = "default.mps";
     std::string importBasisFile = "";
     std::string importPriorityFile = "";
+    std::string mipStartFile = "";
     std::string debugFile = "";
     std::string printMask = "";
     std::string exportBasisFile = "default.bas";
@@ -579,6 +581,7 @@ void CbcSolver::fillParameters()
     }
     parameters_[whichParam(CLP_PARAM_ACTION_BASISIN, numberParameters_, parameters_)].setStringValue(importBasisFile);
     parameters_[whichParam(CBC_PARAM_ACTION_PRIORITYIN, numberParameters_, parameters_)].setStringValue(importPriorityFile);
+    parameters_[whichParam(CBC_PARAM_ACTION_MIPSTART, numberParameters_, parameters_)].setStringValue(mipStartFile);
     parameters_[whichParam(CLP_PARAM_ACTION_BASISOUT, numberParameters_, parameters_)].setStringValue(exportBasisFile);
     parameters_[whichParam(CLP_PARAM_ACTION_DEBUG, numberParameters_, parameters_)].setStringValue(debugFile);
     parameters_[whichParam(CLP_PARAM_ACTION_PRINTMASK, numberParameters_, parameters_)].setStringValue(printMask);
@@ -1270,6 +1273,7 @@ int CbcMain1 (int argc, const char *argv[],
         double * pseudoUp = NULL;
         double * solutionIn = NULL;
         int * prioritiesIn = NULL;
+        std::vector< std::pair< std::string, double > > mipStart;
         int numberSOS = 0;
         int * sosStart = NULL;
         int * sosIndices = NULL;
@@ -4516,6 +4520,24 @@ int CbcMain1 (int argc, const char *argv[],
                                 }
 #endif
                                 const int * originalColumns = preProcess ? process.originalColumns() : NULL;
+
+                                if (mipStart.size())
+                                {
+                                   if (preProcess)
+                                   {
+                                      std::vector< std::string > colNames;
+                                      for ( int i=0 ; (i<babModel_->solver()->getNumCols()) ; ++i )
+                                         colNames.push_back( model_.solver()->getColName( babModel_->originalColumns()[i] ) );
+                                      //printf("--- %s %d\n", babModel_->solver()->getColName(0).c_str(), babModel_->solver()->getColNames().size() );
+                                      //printf("-- SIZES of models %d %d %d\n", model_.getNumCols(),  babModel_->solver()->getNumCols(), babModel_->solver()->getColNames().size() );
+                                      std::vector< double > x( babModel_->getNumCols(), 0.0 );
+                                      double obj;
+                                      int status = computeCompleteSolution( babModel_, colNames, mipStart, &x[0], obj );
+                                      if (!status)
+                                         babModel_->setBestSolution( &x[0], x.size(), obj, false );
+                                   }
+                                }
+
                                 if (solutionIn && useSolution >= 0) {
                                     if (!prioritiesIn) {
                                         int n;
@@ -7123,6 +7145,45 @@ int CbcMain1 (int argc, const char *argv[],
                             } else {
                                 std::cout << "Unable to open file " << fileName << std::endl;
                             }
+                        } else {
+#ifndef DISALLOW_PRINTING
+                            std::cout << "** Current model not valid" << std::endl;
+#endif
+                        }
+                        break;
+                    case CBC_PARAM_ACTION_MIPSTART:
+                        if (goodModel) {
+                            // get next field
+                            field = CoinReadGetString(argc, argv);
+                            if (field == "$") {
+                                field = parameters_[iParam].stringValue();
+                            } else if (field == "EOL") {
+                                parameters_[iParam].printString();
+                                break;
+                            } else {
+                                parameters_[iParam].setStringValue(field);
+                            }
+                            std::string fileName;
+                            if (field[0] == '/' || field[0] == '\\') {
+                                fileName = field;
+                            } else if (field[0] == '~') {
+                                char * environVar = getenv("HOME");
+                                if (environVar) {
+                                    std::string home(environVar);
+                                    field = field.erase(0, 1);
+                                    fileName = home + field;
+                                } else {
+                                    fileName = field;
+                                }
+                            } else {
+                                fileName = directory + field;
+                            }
+			    sprintf(generalPrint,"will open mipstart file %s.",fileName.c_str() );
+			    generalMessageHandler->message(CLP_GENERAL, generalMessages)
+			      << generalPrint
+			      << CoinMessageEol;
+                            double msObj;
+                            readMIPStart( &model_, fileName.c_str(), mipStart, msObj );
                         } else {
 #ifndef DISALLOW_PRINTING
                             std::cout << "** Current model not valid" << std::endl;

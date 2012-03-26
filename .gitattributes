@@ -160,6 +160,8 @@ Cbc/src/CbcHeuristicVND.hpp -text
 Cbc/src/CbcLinked.cpp -text
 Cbc/src/CbcLinked.hpp -text
 Cbc/src/CbcLinkedUtils.cpp -text
+Cbc/src/CbcMipStartIO.cpp -text
+Cbc/src/CbcMipStartIO.hpp -text
 Cbc/src/CbcNWay.cpp -text
 Cbc/src/CbcNWay.hpp -text
 Cbc/src/CbcNodeInfo.cpp -text

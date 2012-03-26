@@ -118,7 +118,7 @@ libCbc_la_OBJECTS = $(am_libCbc_la_OBJECTS)
 libCbcSolver_la_LIBADD =
 am_libCbcSolver_la_OBJECTS = CbcCbcParam.lo Cbc_ampl.lo CbcLinked.lo \
 	CbcLinkedUtils.lo unitTestClp.lo CbcSolver.lo \
-	CbcSolverHeuristics.lo CbcSolverAnalyze.lo \
+	CbcSolverHeuristics.lo CbcSolverAnalyze.lo CbcMipStartIO.lo \
 	CbcSolverExpandKnapsack.lo
 libCbcSolver_la_OBJECTS = $(am_libCbcSolver_la_OBJECTS)
 @COIN_HAS_CLP_TRUE@am__EXEEXT_1 = cbc$(EXEEXT)
@@ -596,6 +596,7 @@ libCbcSolver_la_SOURCES = \
 	unitTestClp.cpp CbcSolver.cpp \
 	CbcSolverHeuristics.cpp CbcSolverHeuristics.hpp \
 	CbcSolverAnalyze.cpp CbcSolverAnalyze.hpp \
+	CbcMipStartIO.cpp CbcMipStartIO.hpp \
 	CbcSolverExpandKnapsack.cpp CbcSolverExpandKnapsack.hpp
 
 
@@ -707,6 +708,7 @@ includecoin_HEADERS = \
 	CbcSimpleIntegerPseudoCost.hpp \
 	CbcStrategy.hpp \
 	CbcSolver.hpp \
+	CbcMipStartIO.hpp \
 	CbcSOS.hpp \
 	CbcSubProblem.hpp \
 	CbcTree.hpp \
@@ -908,6 +910,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcLinked.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcLinkedUtils.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcMessage.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcMipStartIO.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcModel.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcNWay.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcNode.Plo@am__quote@

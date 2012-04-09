@@ -11229,7 +11229,7 @@ CbcModel::setBestSolution (CBC_Message how,
               good news.
               NB - Not all of this if from solve with cuts
             */
-            saveBestSolution(solution, objectiveValue);
+            saveBestSolution(candidate, objectiveValue);
             //bestObjective_ = objectiveValue;
             //int numberColumns = solver_->getNumCols();
             //if (!bestSolution_)

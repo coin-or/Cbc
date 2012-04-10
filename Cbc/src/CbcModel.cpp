@@ -1322,7 +1322,6 @@ void CbcModel::AddIntegers()
         for (int i = 0; i < numberRows; i++) {
             if (!rowLength[i]) {
                 del[nDel++] = i;
-                possibleRow[i] = 1;
             } else if (possibleRow[i]) {
                 if (rowLength[i] == 1) {
                     int k = rowStart[i];
@@ -1407,6 +1406,14 @@ void CbcModel::AddIntegers()
         }
         if (nDel) {
             copy2->deleteRows(nDel, del);
+	    // pack down possible
+	    int n=0;
+	    for (int i=0;i<nDel;i++)
+	      possibleRow[del[i]]=-1;
+	    for (int i=0;i<numberRows;i++) {
+	      if (possibleRow[i]>=0) 
+		possibleRow[n++]=possibleRow[i];
+	    }
         }
         if (nDel != numberRows) {
             nDel = 0;
@@ -1466,6 +1473,10 @@ void CbcModel::AddIntegers()
                     couldBeNetwork = false;
                     break;
                 }
+		if (possibleRow[i]==0) {
+                    couldBeNetwork = false;
+                    break;
+		}
             }
             if (couldBeNetwork) {
                 const CoinPackedMatrix  * matrixByCol = copy1->getMatrixByCol();

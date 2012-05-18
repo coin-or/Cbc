@@ -3930,6 +3930,10 @@ void CbcModel::branchAndBound(int doStatistics)
             << CoinMessageEol ;
             secondaryStatus_ = 2;
             status_ = 0 ;
+        } else if (eventHappened_) {
+            handler_->message(CBC_EVENT, messages_) << CoinMessageEol ;
+            secondaryStatus_ = 5;
+            status_ = 5 ;
         } else if (isNodeLimitReached()) {
             handler_->message(CBC_MAXNODES, messages_) << CoinMessageEol ;
             secondaryStatus_ = 3;
@@ -3938,10 +3942,6 @@ void CbcModel::branchAndBound(int doStatistics)
             handler_->message(CBC_MAXTIME, messages_) << CoinMessageEol ;
             secondaryStatus_ = 4;
             status_ = 1 ;
-        } else if (eventHappened_) {
-            handler_->message(CBC_EVENT, messages_) << CoinMessageEol ;
-            secondaryStatus_ = 5;
-            status_ = 5 ;
         } else {
             handler_->message(CBC_MAXSOLS, messages_) << CoinMessageEol ;
             secondaryStatus_ = 6;

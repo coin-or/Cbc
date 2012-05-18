@@ -1734,6 +1734,9 @@ public:
     inline int specialOptions() const {
         return specialOptions_;
     }
+    /// Tell model to stop on event
+    inline void sayEventHappened()
+    { eventHappened_=true;}
     /// Says if normal solver i.e. has well defined CoinPackedMatrix
     inline bool normalSolver() const {
         return (specialOptions_&16) == 0;

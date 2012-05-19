@@ -801,6 +801,7 @@ extern "C" {
         if (currentBranchModel != NULL) {
             currentBranchModel->setMaximumNodes(0); // stop at next node
             currentBranchModel->setMaximumSeconds(0.0); // stop
+            currentBranchModel->sayEventHappened(); // say why stopped
         }
         return;
     }

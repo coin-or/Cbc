@@ -6211,6 +6211,8 @@ int CbcMain1 (int argc, const char *argv[],
                                 int iStat2 = babModel_->secondaryStatus();
                                 if (!iStat && !iStat2 && !bestSolution)
                                     iStat2 = 8;
+                                if (!iStat && iStat2==1 && bestSolution)
+				  iStat2 = 0; // solution and search completed
                                 statistics_seconds = time2 - time1;
                                 statistics_sys_seconds = CoinSysTime();
                                 statistics_elapsed_seconds = CoinWallclockTime();

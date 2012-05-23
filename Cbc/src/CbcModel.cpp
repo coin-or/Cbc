@@ -4180,6 +4180,12 @@ void CbcModel::branchAndBound(int doStatistics)
     */
     if (bestSolution_ && (solverCharacteristics_->solverType() < 2 || solverCharacteristics_->solverType() == 4)) {
         setCutoff(1.0e50) ; // As best solution should be worse than cutoff
+	// also in continuousSolver_
+	if (continuousSolver_) {
+	  // Solvers know about direction
+	  double direction = solver_->getObjSense();
+	  continuousSolver_->setDblParam(OsiDualObjectiveLimit, 1.0e50*direction);
+	}
         phase_ = 5;
         double increment = getDblParam(CbcModel::CbcCutoffIncrement) ;
         if ((specialOptions_&4) == 0)

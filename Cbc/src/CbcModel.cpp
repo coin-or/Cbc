@@ -3922,6 +3922,12 @@ void CbcModel::branchAndBound(int doStatistics)
             tree_->cleanTree(this, -COIN_DBL_MAX, dummyBest) ;
         }
         delete nextRowCut_;
+        /* order is important here:
+         * maximumSecondsReached() should be checked before eventHappened_ and
+         * isNodeLimitReached() should be checked after eventHappened_
+         * reason is, that at timelimit, eventHappened_ is set to true to make Cbc stop fast
+         *   and if Ctrl+C is hit, then the nodelimit is set to -1 to make Cbc stop
+         */
         if (stoppedOnGap_) {
             messageHandler()->message(CBC_GAP, messages())
             << bestObjective_ - bestPossibleObjective_
@@ -3930,6 +3936,10 @@ void CbcModel::branchAndBound(int doStatistics)
             << CoinMessageEol ;
             secondaryStatus_ = 2;
             status_ = 0 ;
+        } else if (maximumSecondsReached()) {
+            handler_->message(CBC_MAXTIME, messages_) << CoinMessageEol ;
+            secondaryStatus_ = 4;
+            status_ = 1 ;
         } else if (eventHappened_) {
             handler_->message(CBC_EVENT, messages_) << CoinMessageEol ;
             secondaryStatus_ = 5;
@@ -3937,10 +3947,6 @@ void CbcModel::branchAndBound(int doStatistics)
         } else if (isNodeLimitReached()) {
             handler_->message(CBC_MAXNODES, messages_) << CoinMessageEol ;
             secondaryStatus_ = 3;
-            status_ = 1 ;
-        } else if (maximumSecondsReached()) {
-            handler_->message(CBC_MAXTIME, messages_) << CoinMessageEol ;
-            secondaryStatus_ = 4;
             status_ = 1 ;
         } else {
             handler_->message(CBC_MAXSOLS, messages_) << CoinMessageEol ;

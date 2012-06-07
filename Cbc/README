@@ -25,6 +25,58 @@ http://projects.coin-or.org/Cbc
 WHAT'S NEW
 ==========
 
+Release 2.7.7:
+
+1. Fix to report interruption on user event if SIGINT is received by CbcSolver.
+   model->status() should now be 5 if this event happened.
+   Added method CbcModel::sayEventHappened() to make cbc stop due to an 'user event'.
+
+2. Other minor fixes.
+
+Release 2.7.6:
+   Look at https://projects.coin-or.org/Cbc/changeset?old_path=%2Freleases%2F2.7.5&old=1768&new_path=%2Freleases%2F2.7.6&new=1768 to see all changes.
+
+1. Fixes to build system.
+
+2. Other minor fixes.
+
+Release 2.7.5:
+   Look at https://projects.coin-or.org/Cbc/changeset?old_path=%2Freleases%2F2.7.4&old=1768&new_path=%2Freleases%2F2.7.5&new=1768 to see all changes.
+
+1. Fixes to get AMPL interface working again.
+
+2. More fixes to MSVC++ files.
+
+Release 2.7.4:
+   Look at https://projects.coin-or.org/Cbc/changeset?old_path=%2Freleases%2F2.7.3&old=1759&new_path=%2Freleases%2F2.7.4&new=1759 to see all changes.
+
+1. Minor bugfixes.
+
+Release 2.7.3:
+   Look at https://projects.coin-or.org/Cbc/changeset?old_path=%2Freleases%2F2.7.2&old=1759&new_path=%2Freleases%2F2.7.3&new=1759 to see all changes.
+
+1. Minor bugfixes.
+
+2. Fixes to MSVC++ files.
+
+Release 2.7.2:
+
+1. Allow row/column names for GMPL models.
+
+2. Added CbcModel::haveMultiThreadSupport() to indicate whether Cbc library has been compiled with multithread support.
+
+3. Added CbcModel::waitingForMiniBranchAndBound() to indicate whether sub-MIP heuristic is currently running.
+
+4. Cbc shell should work with readline if configured with --enable-gnu-packages.
+
+5. Support for compressed input files (.gz, .bz2) is now enabled by default.
+
+6. Fix problems with relative gap tolerance > 100% and further bugs.
+
+7. Fixes for MSVC++ Version 9 files.
+
+8. Minor fixes in buildsystem; update to BuildTools 0.7.1.
+
 Release 2.7.1:
 
 1. Fixes to MSVC++ files
@@ -36,8 +88,8 @@ Release 2.7.0:
 2. Support for MSVC++ version 10 added.
 
 3. Support for BuildTools version 0.7 to incorporate recent enhancements,
-including proper library versioning in Linux, prohibiting installation of
-private headers, etc.
+   including proper library versioning in Linux, prohibiting installation of
+   private headers, etc.
 
 4. Updated externals to new stable versions of dependent projects.
 

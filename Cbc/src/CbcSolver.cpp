@@ -2718,6 +2718,7 @@ int CbcMain1 (int argc, const char *argv[],
                                    5 stopped on user event
                                    6 stopped on solutions
                                    7 linear relaxation unbounded
+                                   8 stopped on iterations limit
                                 */
                                 int iStatus = model2->status();
                                 int iStatus2 = model2->secondaryStatus();
@@ -2738,7 +2739,7 @@ int CbcMain1 (int argc, const char *argv[],
                                     iStatus2 = 7; // say unbounded
                                 } else if (iStatus == 3) {
                                     iStatus = 1;
-                                    if (iStatus2 == 9)
+                                    if (iStatus2 == 9)  // what does 9 mean ?????????????
                                         iStatus2 = 4;
                                     else
                                         iStatus2 = 3; // Use nodes - as closer than solutions
@@ -2751,7 +2752,7 @@ int CbcMain1 (int argc, const char *argv[],
 				if ((iStatus == 2 || iStatus2 > 0) &&
 				    !noPrinting_) {
 				   std::string statusName[] = {"", "Stopped on ", "Run abandoned", "", "", "User ctrl-c"};
-				   std::string minor[] = {"Optimal solution found", "Linear relaxation infeasible", "Optimal solution found (within gap tolerance)", "node limit", "time limit", "user ctrl-c", "solution limit", "Linear relaxation unbounded", "Problem proven infeasible"};
+				   std::string minor[] = {"Optimal solution found", "Linear relaxation infeasible", "Optimal solution found (within gap tolerance)", "node limit", "time limit", "user ctrl-c", "solution limit", "Linear relaxation unbounded", "iterations limit", "Problem proven infeasible"};
 				   sprintf(generalPrint, "\nResult - %s%s\n\n", 
 					   statusName[iStatus].c_str(), 
 					   minor[iStatus2].c_str());

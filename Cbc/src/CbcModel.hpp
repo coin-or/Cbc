@@ -931,6 +931,7 @@ public:
         5 stopped on user event
         6 stopped on solutions
         7 linear relaxation unbounded
+        8 stopped on iteration limit
     */
     inline int secondaryStatus() const {
         return secondaryStatus_;

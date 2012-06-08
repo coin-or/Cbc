@@ -3913,10 +3913,12 @@ void CbcModel::branchAndBound(int doStatistics)
       it'll be deleted in cleanTree. We need to check.
     */
     if (!(numberNodes_ < intParam_[CbcMaxNumNode] &&
-            numberSolutions_ < intParam_[CbcMaxNumSol] &&
-            !maximumSecondsReached() &&
-            !stoppedOnGap_ && !eventHappened_ && (maximumNumberIterations_ < 0 ||
-                                                  numberIterations_ < maximumNumberIterations_))) {
+          numberSolutions_ < intParam_[CbcMaxNumSol] &&
+          !maximumSecondsReached() &&
+          !stoppedOnGap_ &&
+          !eventHappened_ &&
+          (maximumNumberIterations_ < 0 || numberIterations_ < maximumNumberIterations_))
+         ) {
         if (tree_->size()) {
             double dummyBest;
             tree_->cleanTree(this, -COIN_DBL_MAX, dummyBest) ;
@@ -3948,7 +3950,12 @@ void CbcModel::branchAndBound(int doStatistics)
             handler_->message(CBC_MAXNODES, messages_) << CoinMessageEol ;
             secondaryStatus_ = 3;
             status_ = 1 ;
+        } else if (maximumNumberIterations_ >= 0 && numberIterations_ >= maximumNumberIterations_) {
+            handler_->message(CBC_MAXITERS, messages_) << CoinMessageEol ;
+            secondaryStatus_ = 8;
+            status_ = 1 ;
         } else {
+            assert(numberSolutions_ >= intParam_[CbcMaxNumSol]);
             handler_->message(CBC_MAXSOLS, messages_) << CoinMessageEol ;
             secondaryStatus_ = 6;
             status_ = 1 ;

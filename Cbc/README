@@ -25,7 +25,19 @@ http://projects.coin-or.org/Cbc
 WHAT'S NEW
 ==========
 
+Release 2.8:
+
+1. Introduced new secondaryStatus 8 to indicate that solving stopped due to an iteration limit.
+
+
+
+Release 2.7.8:
+
+1. Change message when LP simplex iteration limit is hit from "Exiting on maximum nodes"
+   to "Exiting on maximum number of iterations"
+
 Release 2.7.7:
+   Look at https://projects.coin-or.org/Cbc/changeset?old_path=%2Freleases%2F2.7.6&new_path=%2Freleases%2F2.7.7 to see all changes.
 
 1. Fix to report interruption on user event if SIGINT is received by CbcSolver.
    model->status() should now be 5 if this event happened.
@@ -34,32 +46,33 @@ Release 2.7.7:
 2. Other minor fixes.
 
 Release 2.7.6:
-   Look at https://projects.coin-or.org/Cbc/changeset?old_path=%2Freleases%2F2.7.5&old=1768&new_path=%2Freleases%2F2.7.6&new=1768 to see all changes.
+   Look at https://projects.coin-or.org/Cbc/changeset?old_path=%2Freleases%2F2.7.5&new_path=%2Freleases%2F2.7.6 to see all changes.
 
 1. Fixes to build system.
 
 2. Other minor fixes.
 
 Release 2.7.5:
-   Look at https://projects.coin-or.org/Cbc/changeset?old_path=%2Freleases%2F2.7.4&old=1768&new_path=%2Freleases%2F2.7.5&new=1768 to see all changes.
+   Look at https://projects.coin-or.org/Cbc/changeset?old_path=%2Freleases%2F2.7.4&new_path=%2Freleases%2F2.7.5 to see all changes.
 
 1. Fixes to get AMPL interface working again.
 
 2. More fixes to MSVC++ files.
 
 Release 2.7.4:
-   Look at https://projects.coin-or.org/Cbc/changeset?old_path=%2Freleases%2F2.7.3&old=1759&new_path=%2Freleases%2F2.7.4&new=1759 to see all changes.
+   Look at https://projects.coin-or.org/Cbc/changeset?old_path=%2Freleases%2F2.7.3&new_path=%2Freleases%2F2.7.4 to see all changes.
 
 1. Minor bugfixes.
 
 Release 2.7.3:
-   Look at https://projects.coin-or.org/Cbc/changeset?old_path=%2Freleases%2F2.7.2&old=1759&new_path=%2Freleases%2F2.7.3&new=1759 to see all changes.
+   Look at https://projects.coin-or.org/Cbc/changeset?old_path=%2Freleases%2F2.7.2&new_path=%2Freleases%2F2.7.3 to see all changes.
 
 1. Minor bugfixes.
 
 2. Fixes to MSVC++ files.
 
 Release 2.7.2:
+   Look at https://projects.coin-or.org/Cbc/changeset?old_path=%2Freleases%2F2.7.1&new_path=%2Freleases%2F2.7.2 to see all changes.
 
 1. Allow row/column names for GMPL models.
 
@@ -78,6 +91,7 @@ Release 2.7.2:
 8. Minor fixes in buildsystem; update to BuildTools 0.7.1.
 
 Release 2.7.1:
+   Look at https://projects.coin-or.org/Cbc/changeset?old_path=%2Freleases%2F2.7.0&new_path=%2Freleases%2F2.7.1 to see all changes.
 
 1. Fixes to MSVC++ files
 

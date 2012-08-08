@@ -15,7 +15,6 @@
 #include "CbcSolverLongThin.hpp"
 #include "CbcModel.hpp"
 #include "ClpPresolve.hpp"
-#include "CbcHeuristicUser.hpp"
 #include "CbcBranchActual.hpp"
 #include "CbcBranchFollow2.hpp"
 #include "CbcCutGenerator.hpp"

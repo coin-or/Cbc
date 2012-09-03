@@ -1175,8 +1175,9 @@ public:
         If fixVariables true then bounds of continuous solver updated.
         Returns objective value (worse than cutoff if not feasible)
         Previously computed objective value is now passed in (in case user does not do solve)
+	virtual so user can override
     */
-    double checkSolution(double cutoff, double * solution,
+    virtual double checkSolution(double cutoff, double * solution,
                          int fixVariables, double originalObjValue);
     /** Test the current solution for feasiblility.
 
@@ -1840,7 +1841,7 @@ public:
     CbcModel & operator=(const CbcModel& rhs);
 
     /// Destructor
-    ~CbcModel ();
+    virtual ~CbcModel ();
 
     /// Returns solver - has current state
     inline OsiSolverInterface * solver() const {

@@ -1118,6 +1118,8 @@ CbcHeuristicGreedySOS::solution(double & solutionValue,
 	      jColumn=nextGub[jColumn];
 	    nextGub[jColumn]=iColumn;
 	  }
+	  // Only in one sos
+	  break;
 	}
       }
       modifiedCost[iColumn] = cost;

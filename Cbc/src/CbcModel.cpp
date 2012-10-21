@@ -1602,8 +1602,11 @@ void CbcModel::branchAndBound(int doStatistics)
     dblParam_[CbcSumChange] = 0.0;
     dblParam_[CbcLargestChange] = 0.0;
     intParam_[CbcNumberBranches] = 0;
-    // Double check optimization directions line up
-    dblParam_[CbcOptimizationDirection] = solver_->getObjSense();
+    // Force minimization !!!!
+    bool flipObjective = (solver_->getObjSense()<0.0);
+    if (flipObjective)
+      flipModel();
+    dblParam_[CbcOptimizationDirection] = 1.0; // was solver_->getObjSense();
     strongInfo_[0] = 0;
     strongInfo_[1] = 0;
     strongInfo_[2] = 0;
@@ -1630,8 +1633,9 @@ void CbcModel::branchAndBound(int doStatistics)
             // pass in disaster handler
             CbcDisasterHandler handler(this);
             clpSolver->passInDisasterHandler(&handler);
-            // Initialise solvers seed
-            clpSolver->getModelPtr()->setRandomSeed(1234567);
+            // Initialise solvers seed (unless users says not)
+	    if ((specialOptions_&4194304)==0)
+	      clpSolver->getModelPtr()->setRandomSeed(1234567);
 #ifdef JJF_ZERO
             // reduce factorization frequency
             int frequency = clpSolver->getModelPtr()->factorizationFrequency();
@@ -1668,6 +1672,8 @@ void CbcModel::branchAndBound(int doStatistics)
                 status_ = 0 ;
                 secondaryStatus_ = 1;
                 originalContinuousObjective_ = COIN_DBL_MAX;
+		if (flipObjective)
+		  flipModel();
                 return ;
             } else if (numberObjects_ && object_) {
                 numberOriginalObjects = numberObjects_;
@@ -2017,9 +2023,13 @@ void CbcModel::branchAndBound(int doStatistics)
         }
         originalContinuousObjective_ = COIN_DBL_MAX;
         solverCharacteristics_ = NULL;
+	if (flipObjective)
+	  flipModel();
         return ;
     } else if (!numberObjects_ && (!strategy_ || strategy_->preProcessState() <= 0)) {
         // nothing to do
+        if (flipObjective)
+	  flipModel();
         solverCharacteristics_ = NULL;
         bestObjective_ = solver_->getObjValue() * solver_->getObjSense();
         int numberColumns = solver_->getNumCols();
@@ -2784,6 +2794,8 @@ void CbcModel::branchAndBound(int doStatistics)
         delete [] lowerBefore;
         delete [] upperBefore;
         delete saveSolver;
+	if (flipObjective)
+	  flipModel();
         return;
     }
     /*
@@ -4327,6 +4339,8 @@ void CbcModel::branchAndBound(int doStatistics)
             }
         }
     }
+    if (flipObjective)
+      flipModel();
 #ifdef COIN_HAS_CLP
     {
         OsiClpSolverInterface * clpSolver
@@ -15637,6 +15651,56 @@ CbcModel::checkModel()
         }
     }
     specialOptions_ |= setFlag;
+}
+static void flipSolver(OsiSolverInterface * solver, double newCutoff)
+{
+  if (solver) {
+    double objValue = solver->getObjValue();
+    double objectiveOffset;
+    solver->setObjSense(-solver->getObjSense());
+    solver->getDblParam(OsiObjOffset,objectiveOffset);
+    solver->setDblParam(OsiObjOffset,-objectiveOffset);
+    int numberColumns = solver->getNumCols();
+    double * array = CoinCopyOfArray(solver->getObjCoefficients(),numberColumns);
+    for (int i=0;i<numberColumns;i++)
+      array[i] = - array[i];
+    solver->setObjective(array);
+    delete [] array;
+    solver->setDblParam(OsiDualObjectiveLimit,newCutoff);
+#ifdef COIN_HAS_CLP
+    OsiClpSolverInterface * clpSolver
+      = dynamic_cast<OsiClpSolverInterface *> (solver);
+    if (clpSolver) {
+      double * dj = clpSolver->getModelPtr()->dualColumnSolution();
+      for (int i=0;i<numberColumns;i++)
+	dj[i] = - dj[i];
+      int numberRows=clpSolver->getNumRows();
+      double * pi = clpSolver->getModelPtr()->dualRowSolution();
+      for (int i=0;i<numberRows;i++)
+	pi[i] = - pi[i];
+      clpSolver->getModelPtr()->setObjectiveValue(-objValue);
+    } else {
+#endif
+      // update values
+      solver->resolve();
+#ifdef COIN_HAS_CLP
+    }
+#endif
+  }
+}
+/*
+  Flip direction of optimization on all models
+*/
+void 
+CbcModel::flipModel()
+{
+  if (parentModel_)
+    return;
+  // I think cutoff is always minimization
+  double cutoff=getCutoff();
+  flipSolver(referenceSolver_,cutoff);
+  flipSolver(continuousSolver_,cutoff);
+  flipSolver(solver_,cutoff);
 }
 #ifdef CBC_KEEP_DEPRECATED
 /* preProcess problem - replacing solver

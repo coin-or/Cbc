@@ -438,6 +438,10 @@ public:
       Save copy of the model.
     */
     void saveModel(OsiSolverInterface * saveSolver, double * checkCutoffForRestart, bool * feasible);
+    /**
+      Flip direction of optimization on all models
+    */
+    void flipModel();
 
     //@}
 
@@ -1728,6 +1732,7 @@ public:
         18 bit (262144) - donor CbcModel
         19 bit (524288) - recipient CbcModel
         20 bit (1048576) - waiting for sub model to return
+	22 bit (4194304) - do not initialize random seed in solver (user has)
     */
     inline void setSpecialOptions(int value) {
         specialOptions_ = value;

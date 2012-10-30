@@ -171,7 +171,7 @@ CbcCompareDefault::test (CbcNode * x, CbcNode * y)
                 }
             } else {
                 assert (depthX != depthY) ;
-                return depthX > depthY;
+                return depthX < depthY;
             }
         }
         // after solution ?

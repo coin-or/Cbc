@@ -297,10 +297,18 @@ CbcSOS::infeasibility(const OsiBranchingInformation * info,
                 int iRow = info->indexRegion_[k];
                 double movement = info->usefulRegion_[iRow];
                 // not this time info->usefulRegion_[iRow]=0.0;
-                if (lower[iRow] < -1.0e20)
-                    assert (pi[iRow] <= 1.0e-3);
-                if (upper[iRow] > 1.0e20)
-                    assert (pi[iRow] >= -1.0e-3);
+#if 0
+                if (lower[iRow] < -1.0e20) {
+		  if (pi[iRow] > 1.0e-3) {
+		    printf("Bad pi on row %d of %g\n",iRow,pi[iRow]);
+		  }
+		}
+                if (upper[iRow] >1.0e20) {
+		  if (pi[iRow] < -1.0e-3) {
+		    printf("Bad pi on row %d of %g\n",iRow,pi[iRow]);
+		  }
+		}
+#endif
                 double valueP = pi[iRow] * direction;
                 // if move makes infeasible then make at least default
                 double newValue = activity[iRow] + movement;
@@ -357,10 +365,18 @@ CbcSOS::infeasibility(const OsiBranchingInformation * info,
                 int iRow = info->indexRegion_[k];
                 double movement = info->usefulRegion_[iRow];
                 info->usefulRegion_[iRow] = 0.0;
-                if (lower[iRow] < -1.0e20)
-                    assert (pi[iRow] <= 1.0e-3);
-                if (upper[iRow] > 1.0e20)
-                    assert (pi[iRow] >= -1.0e-3);
+#if 0
+                if (lower[iRow] < -1.0e20) {
+		  if (pi[iRow] > 1.0e-3) {
+		    printf("Bad pi on row %d of %g\n",iRow,pi[iRow]);
+		  }
+		}
+                if (upper[iRow] >1.0e20) {
+		  if (pi[iRow] < -1.0e-3) {
+		    printf("Bad pi on row %d of %g\n",iRow,pi[iRow]);
+		  }
+		}
+#endif
                 double valueP = pi[iRow] * direction;
                 // if move makes infeasible then make at least default
                 double newValue = activity[iRow] + movement;

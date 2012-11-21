@@ -29,12 +29,29 @@ Release 2.8:
 
 1. Introduced new secondaryStatus 8 to indicate that solving stopped due to an iteration limit.
 
+2. Solution pool is now accessible via the command line and the CbcMain* interface.
 
+3. New classes for providing start solutions have been added.
+
+4. Added Proximity Search heuristic by Fischetti and Monaci (off by default):
+   The simplest way to switch it on using stand-alone version is "-proximity on".
+
+   Proximity Search is the new "No-Neighborhood Search" 0-1 MIP refinement heuristic recently proposed by 
+   Fischetti and Monaci (2012). The idea is to define a sub-MIP without additional constraints but with a 
+   modified objective function intended to attract the search in the proximity of the incumbent. The approach 
+   works well for 0-1 MIPs whose solution landscape is not too irregular (meaning the there is reasonable 
+   probability of finding an improved solution by flipping a small number of binary variables), in particular 
+   when it is applied to the first heuristic solutions found at the root node.
 
 Release 2.7.8:
+   Look at https://projects.coin-or.org/Cbc/changeset?old_path=%2Freleases%2F2.7.7&new_path=%2Freleases%2F2.7.8 to see all changes.
 
 1. Change message when LP simplex iteration limit is hit from "Exiting on maximum nodes"
    to "Exiting on maximum number of iterations"
+
+2. Fix for using overlapping SOS.
+
+3. Fixes in buildsystem.
 
 Release 2.7.7:
    Look at https://projects.coin-or.org/Cbc/changeset?old_path=%2Freleases%2F2.7.6&new_path=%2Freleases%2F2.7.7 to see all changes.

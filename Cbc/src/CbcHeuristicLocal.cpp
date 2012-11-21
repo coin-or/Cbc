@@ -16,6 +16,7 @@
 #include "CbcModel.hpp"
 #include "CbcMessage.hpp"
 #include "CbcHeuristicLocal.hpp"
+#include "CbcHeuristicFPump.hpp"
 #include "CbcBranchActual.hpp"
 #include "CbcStrategy.hpp"
 #include "CglPreProcess.hpp"
@@ -28,6 +29,7 @@ CbcHeuristicLocal::CbcHeuristicLocal()
     swap_ = 0;
     used_ = NULL;
     lastRunDeep_ = -1000000;
+    switches_ |= 16; // needs a new solution
 }
 
 // Constructor with model - assumed before cuts
@@ -38,6 +40,7 @@ CbcHeuristicLocal::CbcHeuristicLocal(CbcModel & model)
     numberSolutions_ = 0;
     swap_ = 0;
     lastRunDeep_ = -1000000;
+    switches_ |= 16; // needs a new solution
     // Get a copy of original matrix
     assert(model.solver());
     if (model.solver()->getNumRows()) {
@@ -927,6 +930,262 @@ void CbcHeuristicLocal::setModel(CbcModel * model)
     used_ = new int[numberColumns];
     memset(used_, 0, numberColumns*sizeof(int));
 }
+
+// Default Constructor
+CbcHeuristicProximity::CbcHeuristicProximity()
+        : CbcHeuristic()
+{
+    feasibilityPump_ = NULL;
+    numberSolutions_ = 0;
+    used_ = NULL;
+    lastRunDeep_ = -1000000;
+    switches_ |= 16; // needs a new solution
+}
+
+// Constructor with model - assumed before cuts
+
+CbcHeuristicProximity::CbcHeuristicProximity(CbcModel & model)
+        : CbcHeuristic(model)
+{
+    feasibilityPump_ = NULL;
+    numberSolutions_ = 0;
+    lastRunDeep_ = -1000000;
+    switches_ |= 16; // needs a new solution
+    int numberColumns = model.solver()->getNumCols();
+    used_ = new int[numberColumns];
+    memset(used_, 0, numberColumns*sizeof(int));
+}
+
+// Destructor
+CbcHeuristicProximity::~CbcHeuristicProximity ()
+{
+    delete feasibilityPump_;
+    delete [] used_;
+}
+
+// Clone
+CbcHeuristic *
+CbcHeuristicProximity::clone() const
+{
+    return new CbcHeuristicProximity(*this);
+}
+// Create C++ lines to get to current state
+void
+CbcHeuristicProximity::generateCpp( FILE * fp)
+{
+    CbcHeuristicProximity other;
+    fprintf(fp, "0#include \"CbcHeuristicProximity.hpp\"\n");
+    fprintf(fp, "3  CbcHeuristicProximity heuristicProximity(*cbcModel);\n");
+    CbcHeuristic::generateCpp(fp, "heuristicProximity");
+    fprintf(fp, "3  cbcModel->addHeuristic(&heuristicProximity);\n");
+}
+
+// Copy constructor
+CbcHeuristicProximity::CbcHeuristicProximity(const CbcHeuristicProximity & rhs)
+  :
+  CbcHeuristic(rhs),
+  numberSolutions_(rhs.numberSolutions_)
+{
+    feasibilityPump_ = NULL;
+    if (model_ && rhs.used_) {
+        int numberColumns = model_->solver()->getNumCols();
+        used_ = CoinCopyOfArray(rhs.used_, numberColumns);
+	if (rhs.feasibilityPump_)
+	  feasibilityPump_ = new CbcHeuristicFPump(*rhs.feasibilityPump_);
+    } else {
+        used_ = NULL;
+    }
+}
+
+// Assignment operator
+CbcHeuristicProximity &
+CbcHeuristicProximity::operator=( const CbcHeuristicProximity & rhs)
+{
+    if (this != &rhs) {
+        CbcHeuristic::operator=(rhs);
+        numberSolutions_ = rhs.numberSolutions_;
+        delete [] used_;
+        delete feasibilityPump_;
+	feasibilityPump_ = NULL;
+	if (model_ && rhs.used_) {
+            int numberColumns = model_->solver()->getNumCols();
+            used_ = CoinCopyOfArray(rhs.used_, numberColumns);
+	    if (rhs.feasibilityPump_)
+	      feasibilityPump_ = new CbcHeuristicFPump(*rhs.feasibilityPump_);
+        } else {
+            used_ = NULL;
+        }
+    }
+    return *this;
+}
+
+// Resets stuff if model changes
+void
+CbcHeuristicProximity::resetModel(CbcModel * /*model*/)
+{
+    //CbcHeuristic::resetModel(model);
+    delete [] used_;
+    if (model_ && used_) {
+        int numberColumns = model_->solver()->getNumCols();
+        used_ = new int[numberColumns];
+        memset(used_, 0, numberColumns*sizeof(int));
+    } else {
+        used_ = NULL;
+    }
+}
+/*
+  Run a mini-BaB search after changing objective
+
+  Return values are:
+    1: smallBranchAndBound found a solution
+    0: everything else
+
+  The degree of overload as return codes from smallBranchAndBound are folded
+  into 0 is such that it's impossible to distinguish return codes that really
+  require attention from a simple `nothing of interest'.
+*/
+int
+CbcHeuristicProximity::solution(double & solutionValue,
+                            double * betterSolution)
+{
+  if (feasibilityPumpOptions_ == -3 && numCouldRun_==0 &&
+      !feasibilityPump_ ) {
+    // clone feasibility pump
+    for (int i = 0; i < model_->numberHeuristics(); i++) {
+      const CbcHeuristicFPump* pump =
+	dynamic_cast<const CbcHeuristicFPump*>(model_->heuristic(i));
+      if (pump) {
+	feasibilityPump_ = new CbcHeuristicFPump(*pump);
+	break;
+      }
+    }
+  }
+/*
+  Execute only if a new solution has been discovered since the last time we
+  were called.
+*/
+
+  numCouldRun_++;
+  int nodeCount = model_->getNodeCount();
+  if (numberSolutions_ == model_->getSolutionCount())
+    return 0;
+  numberSolutions_ = model_->getSolutionCount();
+  lastRunDeep_ = nodeCount;
+  numRuns_++;
+  //howOftenShallow_ = numberSolutions_;
+  
+/*
+  Load up a new solver with the solution.
+
+  Why continuousSolver(), as opposed to solver()?
+*/
+  OsiSolverInterface * newSolver = model_->continuousSolver()->clone();
+  int numberColumns=newSolver->getNumCols();
+  double * obj = CoinCopyOfArray(newSolver->getObjCoefficients(),numberColumns);
+  int * indices = new int [numberColumns];
+  int n=0;
+  for (int i=0;i<numberColumns;i++) {
+    if (obj[i]) {
+      indices[n]=i;
+      obj[n++]=obj[i];
+    }
+  }
+  double cutoff=model_->getCutoff();
+  assert (cutoff<1.0e20);
+  if (model_->getCutoffIncrement()<1.0e-4)
+    cutoff -= 0.01;
+  double offset;
+  newSolver->getDblParam(OsiObjOffset, offset);
+  newSolver->setDblParam(OsiObjOffset, 0.0);
+  newSolver->addRow(n,indices,obj,-COIN_DBL_MAX,cutoff+offset);
+  delete [] indices;
+  memset(obj,0,numberColumns*sizeof(double));
+  newSolver->setDblParam(OsiDualObjectiveLimit, 1.0e20);
+  int numberIntegers = model_->numberIntegers();
+  const int * integerVariable = model_->integerVariable();
+  const double * solutionIn = model_->bestSolution();
+  for (int i = 0; i < numberIntegers; i++) {
+    int iColumn = integerVariable[i];
+    if (fabs(solutionIn[iColumn])<1.0e-5) 
+      obj[iColumn]=1.0;
+    else if (fabs(solutionIn[iColumn]-1.0)<1.0e-5) 
+      obj[iColumn]=-1.0;
+  }
+  newSolver->setObjective(obj);
+  delete [] obj;
+  //newSolver->writeMps("xxxx");
+  char proxPrint[200];
+  sprintf(proxPrint,"Running proximity search for %d nodes",numberNodes_);
+  model_->messageHandler()->message(CBC_FPUMP1, model_->messages())
+    << proxPrint
+    << CoinMessageEol;
+  int maxSolutions = model_->getMaximumSolutions();
+  model_->setMaximumSolutions(1); 
+  bool pumpAdded = false;
+  if (feasibilityPumpOptions_ == -3 && feasibilityPump_) {
+    // add back feasibility pump
+    pumpAdded = true;
+    for (int i = 0; i < model_->numberHeuristics(); i++) {
+      const CbcHeuristicFPump* pump =
+	dynamic_cast<const CbcHeuristicFPump*>(model_->heuristic(i));
+      if (pump) {
+	pumpAdded = false;
+	break;
+      }
+    }
+    if (pumpAdded) 
+      model_->addHeuristic(feasibilityPump_);
+  }
+  int returnCode = 
+    smallBranchAndBound(newSolver, numberNodes_, betterSolution, solutionValue,
+			1.0e20, "CbcHeuristicProximity");
+  if (pumpAdded) {
+    // take off feasibility pump
+    int lastHeuristic = model_->numberHeuristics()-1;
+    model_->setNumberHeuristics(lastHeuristic);
+    delete model_->heuristic(lastHeuristic);
+  }
+  model_->setMaximumSolutions(maxSolutions); 
+ /*
+  -2 is return due to user event, and -1 is overloaded with what look to be
+  two contradictory meanings.
+*/
+  if (returnCode < 0) {
+    returnCode = 0; 
+  }
+/*
+  If the result is complete exploration with a solution (3) or proven
+  infeasibility (2), we could generate a cut (the AI folks would call it a
+  nogood) to prevent us from going down this route in the future.
+*/
+  if ((returnCode&2) != 0) {
+    // could add cut
+    returnCode &= ~2;
+  }
+  if ((returnCode&1) != 0) {
+    // redo objective
+    const double * obj = model_->continuousSolver()->getObjCoefficients();
+    solutionValue = - offset;
+    for (int i=0;i<numberColumns;i++) {
+      solutionValue += obj[i]*betterSolution[i];
+    }
+  }
+  
+  delete newSolver;
+  return returnCode;
+}
+// update model
+void CbcHeuristicProximity::setModel(CbcModel * model)
+{
+    model_ = model;
+    // Get a copy of original matrix
+    assert(model_->solver());
+    delete [] used_;
+    int numberColumns = model->solver()->getNumCols();
+    used_ = new int[numberColumns];
+    memset(used_, 0, numberColumns*sizeof(int));
+}
+
 // Default Constructor
 CbcHeuristicNaive::CbcHeuristicNaive()
         : CbcHeuristic()
@@ -958,7 +1217,7 @@ void
 CbcHeuristicNaive::generateCpp( FILE * fp)
 {
     CbcHeuristicNaive other;
-    fprintf(fp, "0#include \"CbcHeuristicLocal.hpp\"\n");
+    fprintf(fp, "0#include \"CbcHeuristicProximity.hpp\"\n");
     fprintf(fp, "3  CbcHeuristicNaive naive(*cbcModel);\n");
     CbcHeuristic::generateCpp(fp, "naive");
     if (large_ != other.large_)
@@ -1235,7 +1494,7 @@ void
 CbcHeuristicCrossover::generateCpp( FILE * fp)
 {
     CbcHeuristicCrossover other;
-    fprintf(fp, "0#include \"CbcHeuristicLocal.hpp\"\n");
+    fprintf(fp, "0#include \"CbcHeuristicProximity.hpp\"\n");
     fprintf(fp, "3  CbcHeuristicCrossover crossover(*cbcModel);\n");
     CbcHeuristic::generateCpp(fp, "crossover");
     if (useNumber_ != other.useNumber_)

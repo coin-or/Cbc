@@ -1588,6 +1588,10 @@ public:
     inline int numberHeuristics() const {
         return numberHeuristics_;
     }
+    /// Set the number of heuristics
+    inline void setNumberHeuristics(int value) {
+        numberHeuristics_ = value;
+    }
     /// Pointer to heuristic solver which found last solution (or NULL)
     inline CbcHeuristic * lastHeuristic() const {
         return lastHeuristic_;

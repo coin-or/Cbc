@@ -154,6 +154,7 @@ public:
         8 bit - if has cutoff and suminf bobbling for 20 passes then
                 first try halving distance to best possible then
                 try keep halving distance to known cutoff
+        16 bit - needs new solution to run
         1024 bit - stop all heuristics on max time
     */
     inline void setSwitches(int value) {
@@ -166,6 +167,7 @@ public:
         8 bit - if has cutoff and suminf bobbling for 20 passes then
                 first try halving distance to best possible then
                 try keep halving distance to known cutoff
+        16 bit - needs new solution to run
         1024 bit - stop all heuristics on max time
     */
     inline int switches() const {
@@ -313,7 +315,11 @@ protected:
     int when_;
     /// Number of nodes in any sub tree
     int numberNodes_;
-    /// Feasibility pump options (-1 is off)
+    /** Feasibility pump options , -1 is off
+	>=0 for feasibility pump itself
+        -2 quick proximity search
+        -3 longer proximity search
+    */
     int feasibilityPumpOptions_;
     /// Fraction of new(rows+columns)/old(rows+columns) before doing small branch and bound
     mutable double fractionSmall_;
@@ -333,6 +339,7 @@ protected:
         8 bit - if has cutoff and suminf bobbling for 20 passes then
                 first try halving distance to best possible then
                 try keep halving distance to known cutoff
+        16 bit - needs new solution to run
         1024 bit - stop all heuristics on max time
     */
     mutable int switches_;

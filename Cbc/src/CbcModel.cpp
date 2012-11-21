@@ -2426,8 +2426,9 @@ void CbcModel::branchAndBound(int doStatistics)
 
       User hook, says John.
     */
-    if ( intParam_[CbcMaxNumNode] < 0)
-        eventHappened_ = true; // stop as fast as possible
+    if ( intParam_[CbcMaxNumNode] < 0
+      ||numberSolutions_>=getMaximumSolutions())
+      eventHappened_ = true; // stop as fast as possible
     stoppedOnGap_ = false ;
     // See if can stop on gap
     bestPossibleObjective_ = solver_->getObjValue() * solver_->getObjSense();
@@ -3954,10 +3955,10 @@ void CbcModel::branchAndBound(int doStatistics)
             handler_->message(CBC_MAXTIME, messages_) << CoinMessageEol ;
             secondaryStatus_ = 4;
             status_ = 1 ;
-        } else if (eventHappened_) {
-            handler_->message(CBC_EVENT, messages_) << CoinMessageEol ;
-            secondaryStatus_ = 5;
-            status_ = 5 ;
+        } else if (numberSolutions_ >= intParam_[CbcMaxNumSol]) {
+            handler_->message(CBC_MAXSOLS, messages_) << CoinMessageEol ;
+            secondaryStatus_ = 6;
+            status_ = 1 ;
         } else if (isNodeLimitReached()) {
             handler_->message(CBC_MAXNODES, messages_) << CoinMessageEol ;
             secondaryStatus_ = 3;
@@ -3967,10 +3968,9 @@ void CbcModel::branchAndBound(int doStatistics)
             secondaryStatus_ = 8;
             status_ = 1 ;
         } else {
-            assert(numberSolutions_ >= intParam_[CbcMaxNumSol]);
-            handler_->message(CBC_MAXSOLS, messages_) << CoinMessageEol ;
-            secondaryStatus_ = 6;
-            status_ = 1 ;
+            handler_->message(CBC_EVENT, messages_) << CoinMessageEol ;
+            secondaryStatus_ = 5;
+            status_ = 5 ;
         }
     }
     /*
@@ -13120,13 +13120,17 @@ CbcModel::doHeuristicsAtRoot(int deleteHeuristicsAfterwards)
         */
         // Modify based on size etc
         adjustHeuristics();
-        // See if already withing allowable gap
+        // See if already within allowable gap
         bool exitNow = false;
         for (i = 0; i < numberHeuristics_; i++) {
             if (heuristic_[i]->exitNow(bestObjective_))
                 exitNow = true;
         }
         if (!exitNow) {
+	  /** -1 first time otherwise number of solutions last time */
+	  int lastSolutionCount = -1;
+	  while (lastSolutionCount) {
+	    int thisSolutionCount=0;
 #ifdef CBC_THREAD
             if ((threadMode_&4) != 0) {
                 typedef struct {
@@ -13149,6 +13153,9 @@ CbcModel::doHeuristicsAtRoot(int deleteHeuristicsAfterwards)
                         // skip if can't run here
                         if (!heuristic_[i]->shouldHeurRun(0))
                             continue;
+			if (lastSolutionCount>0&&
+			    (heuristic_[i]->switches()&16)==0)
+			  continue; // no point
                         parameters[i-iChunk].solutionValue = heuristicValue;
                         // Don't want a strategy object
                         CbcStrategy * saveStrategy = strategy_;
@@ -13196,7 +13203,7 @@ CbcModel::doHeuristicsAtRoot(int deleteHeuristicsAfterwards)
                                     heuristic_[i+iChunk]->incrementNumberSolutionsFound();
                                     incrementUsed(newSolution);
                                     // increment number of solutions so other heuristics can test
-                                    numberSolutions_++;
+				    thisSolutionCount++;
                                     numberHeuristicSolutions_++;
                                     found = i + iChunk ;
                                 }
@@ -13220,8 +13227,13 @@ CbcModel::doHeuristicsAtRoot(int deleteHeuristicsAfterwards)
                     // skip if can't run here
                     if (!heuristic_[i]->shouldHeurRun(whereFrom))
                         continue;
-                    if (maximumSecondsReached())
+		    if (lastSolutionCount>0&&
+			(heuristic_[i]->switches()&16)==0)
+		      continue; // no point
+                    if (maximumSecondsReached()) {
+		        thisSolutionCount=-1000000;
                         break;
+		    }
                     // see if heuristic will do anything
                     double saveValue = heuristicValue ;
 		    double before = getCurrentSeconds();
@@ -13243,22 +13255,27 @@ CbcModel::doHeuristicsAtRoot(int deleteHeuristicsAfterwards)
                         lastHeuristic_ = heuristic_[i];
                         setBestSolution(CBC_ROUNDING, heuristicValue, newSolution) ;
                         if (bestObjective_ < currentObjective) {
+			    thisSolutionCount++;
                             heuristic_[i]->incrementNumberSolutionsFound();
                             found = i ;
                             incrementUsed(newSolution);
                             // increment number of solutions so other heuristics can test
-                            numberSolutions_++;
+			    //                            numberSolutions_++;
                             numberHeuristicSolutions_++;
 #ifdef CLP_INVESTIGATE
                             printf("HEUR %s where %d C\n",
                                    lastHeuristic_->heuristicName(), whereFrom);
 #endif
                             whereFrom |= 8; // say solution found
-                            if (heuristic_[i]->exitNow(bestObjective_))
+                            if (heuristic_[i]->exitNow(bestObjective_)
+				||numberSolutions_>=getMaximumSolutions()) {
+			      thisSolutionCount=-1000000;
                                 break;
+			    }
 			    if (eventHandler) {
 			      if (!eventHandler->event(CbcEventHandler::heuristicSolution)) {
 				eventHappened_ = true; // exit
+				thisSolutionCount=-1000000;
 				break;
 			      }
 			    }
@@ -13269,6 +13286,7 @@ CbcModel::doHeuristicsAtRoot(int deleteHeuristicsAfterwards)
 			      if (bestPossibleObjective_ < getCutoff())
 				stoppedOnGap_ = true ;
 			      //eventHappened_=true; // stop as fast as possible
+			      thisSolutionCount=-1000000;
 			      break;
 			    }
 			    reducedCostFix();
@@ -13287,6 +13305,7 @@ CbcModel::doHeuristicsAtRoot(int deleteHeuristicsAfterwards)
 		    if (eventHandler) {
 		      if (!eventHandler->event(CbcEventHandler::afterHeuristic)) {
 			eventHappened_ = true; // exit
+		        thisSolutionCount=-1000000;
 			break;
 		      }
 		    }
@@ -13294,6 +13313,10 @@ CbcModel::doHeuristicsAtRoot(int deleteHeuristicsAfterwards)
 #ifdef CBC_THREAD
             }
 #endif
+	    if (thisSolutionCount<=0)
+	      break;
+	    lastSolutionCount=thisSolutionCount;
+	  }
         }
         currentPassNumber_ = 0;
         /*

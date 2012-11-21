@@ -1159,6 +1159,7 @@ int doHeuristics(CbcModel * model, int type, CbcOrClpParam* parameters_,
     int useRounding = parameters_[whichParam(CBC_PARAM_STR_ROUNDING, numberParameters_, parameters_)].currentOptionAsInteger();
     int useGreedy = parameters_[whichParam(CBC_PARAM_STR_GREEDY, numberParameters_, parameters_)].currentOptionAsInteger();
     int useCombine = parameters_[whichParam(CBC_PARAM_STR_COMBINE, numberParameters_, parameters_)].currentOptionAsInteger();
+    int useProximity = parameters_[whichParam(CBC_PARAM_STR_PROXIMITY, numberParameters_, parameters_)].currentOptionAsInteger();
     int useCrossover = parameters_[whichParam(CBC_PARAM_STR_CROSSOVER2, numberParameters_, parameters_)].currentOptionAsInteger();
     //int usePivotC = parameters_[whichParam(CBC_PARAM_STR_PIVOTANDCOMPLEMENT, numberParameters_, parameters_)].currentOptionAsInteger();
     int usePivotF = parameters_[whichParam(CBC_PARAM_STR_PIVOTANDFIX, numberParameters_, parameters_)].currentOptionAsInteger();
@@ -1558,6 +1559,23 @@ int doHeuristics(CbcModel * model, int type, CbcOrClpParam* parameters_,
         heuristic2.setFractionSmall(0.5);
         heuristic2.setSearchType(1);
         model->addHeuristic(&heuristic2);
+        anyToDo = true;
+    }
+    if ((useProximity >= kType && useProximity <= kType + 1)||
+	(kType == 1 && useProximity >= 4)) {
+        CbcHeuristicProximity heuristic2a(*model);
+        heuristic2a.setHeuristicName("Proximity Search");
+        heuristic2a.setFractionSmall(9999999.0);
+        heuristic2a.setNumberNodes(30);
+        heuristic2a.setFeasibilityPumpOptions(-2);
+	if (useProximity>=4) {
+	  const int nodes[]={10,100,300};
+	  heuristic2a.setNumberNodes(nodes[useProximity-4]);
+	  // more print out and stronger feasibility pump
+	  if (useProximity==6)
+	    heuristic2a.setFeasibilityPumpOptions(-3);
+	}
+        model->addHeuristic(&heuristic2a);
         anyToDo = true;
     }
     if (useCrossover >= kType && useCrossover <= kType + 1) {

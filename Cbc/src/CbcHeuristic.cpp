@@ -706,7 +706,7 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver, int numberNodes,
     model_->setSpecialOptions(saveModelOptions | 2048);
     {
         int saveLogLevel = solver->messageHandler()->logLevel();
-        if (saveLogLevel == 1)
+        if (saveLogLevel == 1) 
             solver->messageHandler()->setLogLevel(0);
         OsiPresolve * pinfo = new OsiPresolve();
         int presolveActions = 0;
@@ -837,38 +837,39 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver, int numberNodes,
     solver->initialSolve();
     if (solver->isProvenOptimal()) {
         CglPreProcess process;
+	OsiSolverInterface * solver2 = NULL;
 	if ((model_->moreSpecialOptions()&65536)!=0)
 	  process.setOptions(2+4+8); // no cuts
-        /* Do not try and produce equality cliques and
-           do up to 2 passes (normally) 5 if restart */
-        int numberPasses = 2;
-        if (numberNodes < 0) {
-            numberPasses = 5;
-            // Say some rows cuts
-            int numberRows = solver->getNumRows();
-            if (numberNodes_ < numberRows && true /* think */) {
-                char * type = new char[numberRows];
-                memset(type, 0, numberNodes_);
-                memset(type + numberNodes_, 1, numberRows - numberNodes_);
-                process.passInRowTypes(type, numberRows);
-                delete [] type;
-            }
-        }
-        if (logLevel <= 1)
-            process.messageHandler()->setLogLevel(0);
+	/* Do not try and produce equality cliques and
+	   do up to 2 passes (normally) 5 if restart */
+	int numberPasses = 2;
+	if (numberNodes < 0) {
+	  numberPasses = 5;
+	  // Say some rows cuts
+	  int numberRows = solver->getNumRows();
+	  if (numberNodes_ < numberRows && true /* think */) {
+	    char * type = new char[numberRows];
+	    memset(type, 0, numberNodes_);
+	    memset(type + numberNodes_, 1, numberRows - numberNodes_);
+	    process.passInRowTypes(type, numberRows);
+	    delete [] type;
+	  }
+	}
+	if (logLevel <= 1)
+	  process.messageHandler()->setLogLevel(0);
 	if (!solver->defaultHandler()&&
 	    solver->messageHandler()->logLevel(0)!=-1000)
 	  process.passInMessageHandler(solver->messageHandler());
-        OsiSolverInterface * solver2 = process.preProcessNonDefault(*solver, false,
-                                       numberPasses);
-        if (!solver2) {
+	solver2 = process.preProcessNonDefault(*solver, false,
+					       numberPasses);
+	  if (!solver2) {
             if (logLevel > 1)
-                printf("Pre-processing says infeasible\n");
+	      printf("Pre-processing says infeasible\n");
             returnCode = 2; // so will be infeasible
-        } else {
+	  } else {
 #ifdef COIN_DEVELOP_z
             if (numberNodes < 0) {
-                solver2->writeMpsNative("after2.mps", NULL, NULL, 2, 1);
+	      solver2->writeMpsNative("after2.mps", NULL, NULL, 2, 1);
             }
 #endif
             // see if too big
@@ -898,7 +899,7 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver, int numberNodes,
                 if (numberNodes >= 0) {
                     // normal
                     model.setSpecialOptions(saveModelOptions | 2048);
-                    if (logLevel <= 1)
+                    if (logLevel <= 1 && feasibilityPumpOptions_ != -3)
                         model.setLogLevel(0);
                     else
                         model.setLogLevel(logLevel);
@@ -906,7 +907,7 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver, int numberNodes,
                     model.setFastNodeDepth(-1);
                     model.setCutoff(signedCutoff);
 		    // Don't do if original fraction > 1.0 and too large
-		    if (fractionSmall_>1.0) {
+		    if (fractionSmall_>1.0 && fractionSmall_ < 1000000.0) {
 		      /* 1.4 means -1 nodes if >.4
 			 2.4 means -1 nodes if >.5 and 0 otherwise
 			 3.4 means -1 nodes if >.6 and 0 or 5
@@ -998,24 +999,29 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver, int numberNodes,
                 }
 #endif
                 model.setParentModel(*model_);
-                model.setOriginalColumns(process.originalColumns());
+		model.setMaximumSolutions(model_->getMaximumSolutions()); 
+		model.setOriginalColumns(process.originalColumns());
                 model.setSearchStrategy(-1);
                 // If no feasibility pump then insert a lightweight one
-                if (feasibilityPumpOptions_ >= 0) {
-                    bool gotPump = false;
+                if (feasibilityPumpOptions_ >= 0 || feasibilityPumpOptions_ == -2) {
+		    CbcHeuristicFPump * fpump = NULL;
                     for (int i = 0; i < model.numberHeuristics(); i++) {
-                        const CbcHeuristicFPump* pump =
-                            dynamic_cast<const CbcHeuristicFPump*>(model.heuristic(i));
-                        if (pump)
-                            gotPump = true;
+                        CbcHeuristicFPump* pump =
+                            dynamic_cast<CbcHeuristicFPump*>(model.heuristic(i));
+                        if (pump) {
+                            fpump = pump;
+                            break;
+			}
                     }
-                    if (!gotPump) {
+                    if (!fpump) {
                         CbcHeuristicFPump heuristic4;
 			// use any cutoff
 			heuristic4.setFakeCutoff(0.5*COIN_DBL_MAX);
 			if (fractionSmall_<=1.0) 
 			  heuristic4.setMaximumPasses(10);
                         int pumpTune = feasibilityPumpOptions_;
+			if (pumpTune==-2)
+			  pumpTune = 4; // proximity
                         if (pumpTune > 0) {
                             /*
                             >=10000000 for using obj
@@ -1072,8 +1078,15 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver, int numberNodes,
                             }
                         }
                         model.addHeuristic(&heuristic4, "feasibility pump", 0);
+	
                     }
-                }
+		} else if (feasibilityPumpOptions_==-3) {
+		  // add all (except this)
+		  for (int i = 0; i < model_->numberHeuristics(); i++) {
+		    if (strcmp(heuristicName(),model_->heuristic(i)->heuristicName()))
+		      model.addHeuristic(model_->heuristic(i)); 
+		  }
+		}
                 //printf("sol %x\n",inputSolution_);
                 if (inputSolution_) {
                     // translate and add a serendipity heuristic
@@ -1168,11 +1181,11 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver, int numberNodes,
                     model.setWhenCuts(999998);
 #define ALWAYS_DUAL
 #ifdef ALWAYS_DUAL
-		    OsiSolverInterface * solver = model.solver();
+		    OsiSolverInterface * solverD = model.solver();
 		    bool takeHint;
 		    OsiHintStrength strength;
-		    solver->getHintParam(OsiDoDualInResolve, takeHint, strength);
-		    solver->setHintParam(OsiDoDualInResolve, true, OsiHintDo);
+		    solverD->getHintParam(OsiDoDualInResolve, takeHint, strength);
+		    solverD->setHintParam(OsiDoDualInResolve, true, OsiHintDo);
 #endif
 		    model.passInEventHandler(model_->getEventHandler());
 		    // say model_ is sitting there
@@ -1181,8 +1194,8 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver, int numberNodes,
                     model.branchAndBound();
 		    model_->setSpecialOptions(saveOptions);
 #ifdef ALWAYS_DUAL
-		    solver = model.solver();
-		    solver->setHintParam(OsiDoDualInResolve, takeHint, strength);
+		    solverD = model.solver();
+		    solverD->setHintParam(OsiDoDualInResolve, takeHint, strength);
 #endif
 #ifdef COIN_DEVELOP
                     printf("sub branch %d nodes, %d iterations - max %d\n",
@@ -1237,7 +1250,8 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver, int numberNodes,
                         lpSolver->setSpecialOptions(lpSolver->specialOptions() | 0x01000000); // say is Cbc (and in branch and bound)
                     }
 #endif
-                    process.postProcess(*model.solver());
+		    //if (fractionSmall_ < 1000000.0) 
+		      process.postProcess(*model.solver());
                     if (solver->isProvenOptimal() && solver->getObjValue()*solver->getObjSense() < cutoff) {
                         // Solution now back in solver
                         int numberColumns = solver->getNumCols();
@@ -1255,7 +1269,8 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver, int numberNodes,
                 int totalNumberIterations = model.getIterationCount() +
                                             process.numberIterationsPre() +
                                             process.numberIterationsPost();
-                if (totalNumberIterations > 100*(numberNodes + 10)) {
+                if (totalNumberIterations > 100*(numberNodes + 10)
+		    && fractionSmall_ < 1000000.0) {
                     // only allow smaller problems
                     fractionSmall = fractionSmall_;
                     fractionSmall_ *= 0.9;

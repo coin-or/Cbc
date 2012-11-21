@@ -84,6 +84,62 @@ protected:
     int * used_;
 };
 
+/** Proximity Search class
+ */
+class CbcHeuristicFPump;
+class CbcHeuristicProximity : public CbcHeuristic {
+public:
+
+    // Default Constructor
+    CbcHeuristicProximity ();
+
+    /* Constructor with model - assumed before cuts
+    */
+    CbcHeuristicProximity (CbcModel & model);
+
+    // Copy constructor
+    CbcHeuristicProximity ( const CbcHeuristicProximity &);
+
+    // Destructor
+    ~CbcHeuristicProximity ();
+
+    /// Clone
+    virtual CbcHeuristic * clone() const;
+
+    /// Assignment operator
+    CbcHeuristicProximity & operator=(const CbcHeuristicProximity& rhs);
+
+    /// Create C++ lines to get to current state
+    virtual void generateCpp( FILE * fp) ;
+
+    /// Resets stuff if model changes
+    virtual void resetModel(CbcModel * model);
+
+    /// update model (This is needed if cliques update matrix etc)
+    virtual void setModel(CbcModel * model);
+
+    using CbcHeuristic::solution ;
+    /** returns 0 if no solution, 1 if valid solution.
+        Sets solution values if good, sets objective value (only if good)
+    */
+    virtual int solution(double & objectiveValue,
+                         double * newSolution);
+
+    /// Used array so we can set
+    inline int * used() const {
+        return used_;
+    }
+
+protected:
+    // Data
+    // Copy of Feasibility pump
+    CbcHeuristicFPump * feasibilityPump_;
+    // Number of solutions so we only do after new solution
+    int numberSolutions_;
+    /// Whether a variable has been in a solution (also when)
+    int * used_;
+};
+
 
 /** Naive class
     a) Fix all ints as close to zero as possible

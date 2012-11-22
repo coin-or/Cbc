@@ -315,7 +315,6 @@ CbcTree::clone() const
     return new CbcTree(*this);
 }
 
-
 #ifndef CBC_DUBIOUS_HEAP
 /*
   Set comparison predicate and re-sort the heap.
@@ -529,18 +528,6 @@ CbcTree::bestNode(double cutoff)
     if (best)
         best->setOnTree(false);
     return best;
-}
-
-double
-CbcTree::getBestPossibleObjective()
-{
-    double r_val = 1e100;
-    for (int i = 0 ; i < static_cast<int> (nodes_.size()) ; i++) {
-        if (nodes_[i] && nodes_[i]->objectiveValue() < r_val) {
-            r_val = nodes_[i]->objectiveValue();
-        }
-    }
-    return r_val;
 }
 /*! \brief Prune the tree using an objective function cutoff
 
@@ -1404,4 +1391,16 @@ CbcTree::realpush(CbcNode * node)
     candidates[pos] = node;
 }
 #endif
+
+double
+CbcTree::getBestPossibleObjective()
+{
+    double r_val = 1e100;
+    for (int i = 0 ; i < static_cast<int> (nodes_.size()) ; i++) {
+        if (nodes_[i] && nodes_[i]->objectiveValue() < r_val) {
+            r_val = nodes_[i]->objectiveValue();
+        }
+    }
+    return r_val;
+}
 

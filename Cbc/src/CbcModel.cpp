@@ -4530,6 +4530,7 @@ CbcModel::CbcModel()
         currentPassNumber_(0),
         maximumWhich_(1000),
         maximumRows_(0),
+	randomSeed_(-1),
         currentDepth_(0),
         whichGenerator_(NULL),
         maximumStatistics_(0),
@@ -4687,6 +4688,7 @@ CbcModel::CbcModel(const OsiSolverInterface &rhs)
         currentPassNumber_(0),
         maximumWhich_(1000),
         maximumRows_(0),
+	randomSeed_(-1),
         currentDepth_(0),
         whichGenerator_(NULL),
         maximumStatistics_(0),
@@ -4931,6 +4933,7 @@ CbcModel::CbcModel(const CbcModel & rhs, bool cloneHandler)
         currentPassNumber_(rhs.currentPassNumber_),
         maximumWhich_(rhs.maximumWhich_),
         maximumRows_(0),
+	randomSeed_(rhs.randomSeed_),
         currentDepth_(0),
         whichGenerator_(NULL),
         maximumStatistics_(0),
@@ -5275,6 +5278,7 @@ CbcModel::operator=(const CbcModel & rhs)
         continuousInfeasibilities_ = rhs.continuousInfeasibilities_;
         maximumCutPassesAtRoot_ = rhs.maximumCutPassesAtRoot_;
         maximumCutPasses_ = rhs.maximumCutPasses_;
+	randomSeed_ = rhs.randomSeed_;
         preferredWay_ = rhs.preferredWay_;
         currentPassNumber_ = rhs.currentPassNumber_;
         memcpy(intParam_, rhs.intParam_, sizeof(intParam_));
@@ -5681,6 +5685,7 @@ CbcModel::gutsOfCopy(const CbcModel & rhs, int mode)
     howOftenGlobalScan_ = rhs.howOftenGlobalScan_;
     maximumCutPassesAtRoot_ = rhs.maximumCutPassesAtRoot_;
     maximumCutPasses_ =  rhs.maximumCutPasses_;
+    randomSeed_ = rhs.randomSeed_;
     preferredWay_ = rhs.preferredWay_;
     resolveAfterTakeOffCuts_ = rhs.resolveAfterTakeOffCuts_;
     maximumNumberIterations_ = rhs.maximumNumberIterations_;
@@ -5975,6 +5980,8 @@ CbcModel::addHeuristic(CbcHeuristic * generator, const char *name,
     if (name)
         heuristic_[where]->setHeuristicName(name) ;
     heuristic_[where]->setSeed(987654321 + where);
+    if (randomSeed_!=-1)
+      heuristic_[where]->setSeed(randomSeed_);
     numberHeuristics_++ ;
 }
 

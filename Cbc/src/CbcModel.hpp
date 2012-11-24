@@ -1745,6 +1745,14 @@ public:
     inline int specialOptions() const {
         return specialOptions_;
     }
+    /// Set random seed
+    inline void setRandomSeed(int value) {
+        randomSeed_ = value;
+    }
+    /// Get random seed
+    inline int getRandomSeed() const {
+        return randomSeed_;
+    }
     /// Tell model to stop on event
     inline void sayEventHappened()
     { eventHappened_=true;}
@@ -2649,6 +2657,8 @@ private:
     int maximumWhich_;
     /// Maximum number of rows
     int maximumRows_;
+    /// Random seed
+    int randomSeed_;
     /// Current depth
     int currentDepth_;
     /// Thread specific random number generator

@@ -452,6 +452,19 @@ CbcHeuristic::resetModel(CbcModel * model)
 void
 CbcHeuristic::setSeed(int value)
 {
+    if (value==0) {
+      double time = fabs(CoinGetTimeOfDay());
+      while (time>=COIN_INT_MAX)
+	time *= 0.5;
+      value = static_cast<int>(time);
+      char printArray[100];
+      sprintf(printArray, "using time of day seed was changed from %d to %d",
+	      randomNumberGenerator_.getSeed(), value);
+      if (model_)
+	model_->messageHandler()->message(CBC_FPUMP1, model_->messages())
+	  << printArray
+	  << CoinMessageEol;
+    }
     randomNumberGenerator_.setSeed(value);
 }
 

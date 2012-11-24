@@ -487,11 +487,17 @@ CbcHeuristicFPump::solution(double & solutionValue,
     // Number of passes to do
     int maximumPasses = maximumPasses_;
 #ifdef COIN_HAS_CLP
-    if (maximumPasses == 30) {
-        OsiClpSolverInterface * clpSolver
+    {
+      OsiClpSolverInterface * clpSolver
         = dynamic_cast<OsiClpSolverInterface *> (model_->solver());
-        if (clpSolver && clpSolver->fakeObjective())
+      if (clpSolver ) {
+	if (maximumPasses == 30) {
+	  if (clpSolver->fakeObjective())
             maximumPasses = 100; // feasibility problem?
+	}
+	if (model_->getRandomSeed()!=-1)
+	  clpSolver->getModelPtr()->setRandomSeed(randomNumberGenerator_.getSeed());
+      }
     }
 #endif
 #ifdef RAND_RAND

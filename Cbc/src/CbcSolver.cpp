@@ -827,11 +827,8 @@ static CbcModel * currentBranchModel = NULL;
 
 extern "C" {
     static void signal_handler(int /*whichSignal*/) {
-        if (currentBranchModel != NULL) {
-            currentBranchModel->setMaximumNodes(0); // stop at next node
-            currentBranchModel->setMaximumSeconds(0.0); // stop
+        if (currentBranchModel != NULL)
             currentBranchModel->sayEventHappened(); // say why stopped
-        }
         return;
     }
 }

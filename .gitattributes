@@ -46,8 +46,6 @@ Cbc/examples/simpleBAB.cpp -text
 Cbc/install-sh -text
 Cbc/ltmain.sh -text
 Cbc/missing -text
-Cbc/osi-cbc-uninstalled.pc.in -text
-Cbc/osi-cbc.pc.in -text
 Cbc/scripts/get.miplib2010 -text
 Cbc/scripts/parse.awk -text
 Cbc/scripts/parse_cbc.awk -text
@@ -174,10 +172,6 @@ Cbc/src/CbcThread.cpp -text
 Cbc/src/CbcThread.hpp -text
 Cbc/src/ClpAmplObjective.hpp -text
 Cbc/src/ClpConstraintAmpl.hpp -text
-Cbc/src/OsiCbc/Makefile.am -text
-Cbc/src/OsiCbc/Makefile.in -text
-Cbc/src/OsiCbc/OsiCbcSolverInterface.cpp -text
-Cbc/src/OsiCbc/OsiCbcSolverInterface.hpp -text
 Cbc/src/config.h.in -text
 Cbc/src/config_cbc.h.in -text
 Cbc/src/config_cbc_default.h -text

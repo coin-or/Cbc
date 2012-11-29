@@ -60,8 +60,7 @@ host_triplet = @host@
 DIST_COMMON = README $(am__configure_deps) \
 	$(srcdir)/BuildTools/Makemain.inc $(srcdir)/Makefile.am \
 	$(srcdir)/Makefile.in $(srcdir)/cbc-uninstalled.pc.in \
-	$(srcdir)/cbc.pc.in $(srcdir)/osi-cbc-uninstalled.pc.in \
-	$(srcdir)/osi-cbc.pc.in $(top_srcdir)/configure \
+	$(srcdir)/cbc.pc.in $(top_srcdir)/configure \
 	$(top_srcdir)/doxydoc/doxygen.conf.in \
 	$(top_srcdir)/examples/Makefile.in AUTHORS INSTALL \
 	config.guess config.sub depcomp install-sh ltmain.sh missing
@@ -79,7 +78,7 @@ mkinstalldirs = $(install_sh) -d
 CONFIG_HEADER = $(top_builddir)/src/config.h \
 	$(top_builddir)/src/config_cbc.h
 CONFIG_CLEAN_FILES = examples/Makefile cbc.pc cbc-uninstalled.pc \
-	osi-cbc.pc osi-cbc-uninstalled.pc doxydoc/doxygen.conf
+	doxydoc/doxygen.conf
 SOURCES =
 DIST_SOURCES =
 RECURSIVE_TARGETS = all-recursive check-recursive dvi-recursive \
@@ -191,10 +190,6 @@ COIN_HAS_MIPLIB3_FALSE = @COIN_HAS_MIPLIB3_FALSE@
 COIN_HAS_MIPLIB3_TRUE = @COIN_HAS_MIPLIB3_TRUE@
 COIN_HAS_MSK_FALSE = @COIN_HAS_MSK_FALSE@
 COIN_HAS_MSK_TRUE = @COIN_HAS_MSK_TRUE@
-COIN_HAS_NETLIB_FALSE = @COIN_HAS_NETLIB_FALSE@
-COIN_HAS_NETLIB_TRUE = @COIN_HAS_NETLIB_TRUE@
-COIN_HAS_OSITESTS_FALSE = @COIN_HAS_OSITESTS_FALSE@
-COIN_HAS_OSITESTS_TRUE = @COIN_HAS_OSITESTS_TRUE@
 COIN_HAS_PKGCONFIG_FALSE = @COIN_HAS_PKGCONFIG_FALSE@
 COIN_HAS_PKGCONFIG_TRUE = @COIN_HAS_PKGCONFIG_TRUE@
 COIN_HAS_SAMPLE_FALSE = @COIN_HAS_SAMPLE_FALSE@
@@ -290,43 +285,9 @@ MSK_DATA_INSTALLED = @MSK_DATA_INSTALLED@
 MSK_DEPENDENCIES = @MSK_DEPENDENCIES@
 MSK_LIBS = @MSK_LIBS@
 MSK_LIBS_INSTALLED = @MSK_LIBS_INSTALLED@
-NETLIB_CFLAGS = @NETLIB_CFLAGS@
-NETLIB_CFLAGS_INSTALLED = @NETLIB_CFLAGS_INSTALLED@
-NETLIB_DATA = @NETLIB_DATA@
-NETLIB_DATA_INSTALLED = @NETLIB_DATA_INSTALLED@
-NETLIB_DEPENDENCIES = @NETLIB_DEPENDENCIES@
-NETLIB_LIBS = @NETLIB_LIBS@
-NETLIB_LIBS_INSTALLED = @NETLIB_LIBS_INSTALLED@
 OBJEXT = @OBJEXT@
 OPT_CFLAGS = @OPT_CFLAGS@
 OPT_CXXFLAGS = @OPT_CXXFLAGS@
-OSICBC_DFLT_SOLVER_CLP_FALSE = @OSICBC_DFLT_SOLVER_CLP_FALSE@
-OSICBC_DFLT_SOLVER_CLP_TRUE = @OSICBC_DFLT_SOLVER_CLP_TRUE@
-OSICBC_DFLT_SOLVER_CPX_FALSE = @OSICBC_DFLT_SOLVER_CPX_FALSE@
-OSICBC_DFLT_SOLVER_CPX_TRUE = @OSICBC_DFLT_SOLVER_CPX_TRUE@
-OSICBC_DFLT_SOLVER_DYLP_FALSE = @OSICBC_DFLT_SOLVER_DYLP_FALSE@
-OSICBC_DFLT_SOLVER_DYLP_TRUE = @OSICBC_DFLT_SOLVER_DYLP_TRUE@
-OSICBC_DFLT_SOLVER_GLPK_FALSE = @OSICBC_DFLT_SOLVER_GLPK_FALSE@
-OSICBC_DFLT_SOLVER_GLPK_TRUE = @OSICBC_DFLT_SOLVER_GLPK_TRUE@
-OSICBC_DFLT_SOLVER_GRB_FALSE = @OSICBC_DFLT_SOLVER_GRB_FALSE@
-OSICBC_DFLT_SOLVER_GRB_TRUE = @OSICBC_DFLT_SOLVER_GRB_TRUE@
-OSICBC_DFLT_SOLVER_MSK_FALSE = @OSICBC_DFLT_SOLVER_MSK_FALSE@
-OSICBC_DFLT_SOLVER_MSK_TRUE = @OSICBC_DFLT_SOLVER_MSK_TRUE@
-OSICBC_DFLT_SOLVER_SPX_FALSE = @OSICBC_DFLT_SOLVER_SPX_FALSE@
-OSICBC_DFLT_SOLVER_SPX_TRUE = @OSICBC_DFLT_SOLVER_SPX_TRUE@
-OSICBC_DFLT_SOLVER_SYM_FALSE = @OSICBC_DFLT_SOLVER_SYM_FALSE@
-OSICBC_DFLT_SOLVER_SYM_TRUE = @OSICBC_DFLT_SOLVER_SYM_TRUE@
-OSICBC_DFLT_SOLVER_VOL_FALSE = @OSICBC_DFLT_SOLVER_VOL_FALSE@
-OSICBC_DFLT_SOLVER_VOL_TRUE = @OSICBC_DFLT_SOLVER_VOL_TRUE@
-OSICBC_DFLT_SOLVER_XPR_FALSE = @OSICBC_DFLT_SOLVER_XPR_FALSE@
-OSICBC_DFLT_SOLVER_XPR_TRUE = @OSICBC_DFLT_SOLVER_XPR_TRUE@
-OSITESTS_CFLAGS = @OSITESTS_CFLAGS@
-OSITESTS_CFLAGS_INSTALLED = @OSITESTS_CFLAGS_INSTALLED@
-OSITESTS_DATA = @OSITESTS_DATA@
-OSITESTS_DATA_INSTALLED = @OSITESTS_DATA_INSTALLED@
-OSITESTS_DEPENDENCIES = @OSITESTS_DEPENDENCIES@
-OSITESTS_LIBS = @OSITESTS_LIBS@
-OSITESTS_LIBS_INSTALLED = @OSITESTS_LIBS_INSTALLED@
 PACKAGE = @PACKAGE@
 PACKAGE_BUGREPORT = @PACKAGE_BUGREPORT@
 PACKAGE_NAME = @PACKAGE_NAME@
@@ -473,7 +434,7 @@ EXTRA_DIST = doc/authors.xml doc/cbcexe.xml doc/cbcmodelclass.xml \
 #                  Installation of the addlibs file                    #
 ########################################################################
 pkgconfiglibdir = $(libdir)/pkgconfig
-pkgconfiglib_DATA = cbc.pc osi-cbc.pc
+pkgconfiglib_DATA = cbc.pc
 addlibsdir = $(DESTDIR)$(datadir)/coin/doc/Cbc
 
 ########################################################################
@@ -526,10 +487,6 @@ examples/Makefile: $(top_builddir)/config.status $(top_srcdir)/examples/Makefile
 cbc.pc: $(top_builddir)/config.status $(srcdir)/cbc.pc.in
 	cd $(top_builddir) && $(SHELL) ./config.status $@
 cbc-uninstalled.pc: $(top_builddir)/config.status $(srcdir)/cbc-uninstalled.pc.in
-	cd $(top_builddir) && $(SHELL) ./config.status $@
-osi-cbc.pc: $(top_builddir)/config.status $(srcdir)/osi-cbc.pc.in
-	cd $(top_builddir) && $(SHELL) ./config.status $@
-osi-cbc-uninstalled.pc: $(top_builddir)/config.status $(srcdir)/osi-cbc-uninstalled.pc.in
 	cd $(top_builddir) && $(SHELL) ./config.status $@
 doxydoc/doxygen.conf: $(top_builddir)/config.status $(top_srcdir)/doxydoc/doxygen.conf.in
 	cd $(top_builddir) && $(SHELL) ./config.status $@

@@ -126,7 +126,7 @@ uninstall-local: uninstall-doc
 ########################################################################
 
 pkgconfiglibdir = $(libdir)/pkgconfig
-pkgconfiglib_DATA = cbc.pc osi-cbc.pc
+pkgconfiglib_DATA = cbc.pc
 
 addlibsdir = $(DESTDIR)$(datadir)/coin/doc/Cbc
 

@@ -55,12 +55,6 @@
 /* Define to 1 if the Msk package is available */
 #undef COIN_HAS_MSK
 
-/* Define to 1 if the Netlib package is available */
-#undef COIN_HAS_NETLIB
-
-/* Define to 1 if the OsiTests package is available */
-#undef COIN_HAS_OSITESTS
-
 /* Define to 1 if readline is available */
 #undef COIN_HAS_READLINE
 
@@ -129,17 +123,6 @@
 
 /* Define to 1 if you have the <unistd.h> header file. */
 #undef HAVE_UNISTD_H
-
-/* define to the name of the default solver interface class, e.g.,
-   OsiClpSolverInterface */
-#undef OSICBC_DFLT_SOLVER
-
-/* define this symbol if clp is the default solver */
-#undef OSICBC_DFLT_SOLVER_CLP
-
-/* define to the name of the .hpp file for the default solver interface class,
-   e.g., "OsiClpSolverInterface.hpp" (include quotes) */
-#undef OSICBC_DFLT_SOLVER_HPP
 
 /* Name of package */
 #undef PACKAGE

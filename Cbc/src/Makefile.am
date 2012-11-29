@@ -8,7 +8,7 @@
 
 AUTOMAKE_OPTIONS = foreign
 
-SUBDIRS = OsiCbc
+SUBDIRS =
 
 ########################################################################
 #                               libCbc                                 #

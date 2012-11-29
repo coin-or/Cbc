@@ -45,10 +45,8 @@ host_triplet = @host@
 @COIN_HAS_CLP_TRUE@am__append_1 = test_cbc
 @CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_SAMPLE_TRUE@am__append_2 = test_cbc_generic
 @COIN_HAS_SAMPLE_TRUE@am__append_3 = -dirSample `$(CYGPATH_W) $(SAMPLE_DATA)`
-@COIN_HAS_SAMPLE_TRUE@am__append_4 = -mpsDir=`$(CYGPATH_W) $(SAMPLE_DATA)`
-@COIN_HAS_MIPLIB3_TRUE@am__append_5 = -dirMiplib `$(CYGPATH_W) $(MIPLIB3_DATA)` -miplib
-@COIN_HAS_NETLIB_TRUE@am__append_6 = -netlibDir=`$(CYGPATH_W) $(NETLIB_DATA)` -testOsiSolverInterface
-bin_PROGRAMS = gamsTest$(EXEEXT) osiUnitTest$(EXEEXT)
+@COIN_HAS_MIPLIB3_TRUE@am__append_4 = -dirMiplib `$(CYGPATH_W) $(MIPLIB3_DATA)` -miplib
+bin_PROGRAMS = gamsTest$(EXEEXT)
 subdir = test
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -66,9 +64,6 @@ PROGRAMS = $(bin_PROGRAMS)
 am_gamsTest_OBJECTS = gamsTest.$(OBJEXT)
 gamsTest_OBJECTS = $(am_gamsTest_OBJECTS)
 am__DEPENDENCIES_1 =
-am_osiUnitTest_OBJECTS = osiUnitTest.$(OBJEXT) \
-	OsiCbcSolverInterfaceTest.$(OBJEXT)
-osiUnitTest_OBJECTS = $(am_osiUnitTest_OBJECTS)
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__depfiles_maybe = depfiles
 CXXCOMPILE = $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
@@ -79,8 +74,8 @@ LTCXXCOMPILE = $(LIBTOOL) --tag=CXX --mode=compile $(CXX) $(DEFS) \
 CXXLD = $(CXX)
 CXXLINK = $(LIBTOOL) --tag=CXX --mode=link $(CXXLD) $(AM_CXXFLAGS) \
 	$(CXXFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
-SOURCES = $(gamsTest_SOURCES) $(osiUnitTest_SOURCES)
-DIST_SOURCES = $(gamsTest_SOURCES) $(osiUnitTest_SOURCES)
+SOURCES = $(gamsTest_SOURCES)
+DIST_SOURCES = $(gamsTest_SOURCES)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -164,10 +159,6 @@ COIN_HAS_MIPLIB3_FALSE = @COIN_HAS_MIPLIB3_FALSE@
 COIN_HAS_MIPLIB3_TRUE = @COIN_HAS_MIPLIB3_TRUE@
 COIN_HAS_MSK_FALSE = @COIN_HAS_MSK_FALSE@
 COIN_HAS_MSK_TRUE = @COIN_HAS_MSK_TRUE@
-COIN_HAS_NETLIB_FALSE = @COIN_HAS_NETLIB_FALSE@
-COIN_HAS_NETLIB_TRUE = @COIN_HAS_NETLIB_TRUE@
-COIN_HAS_OSITESTS_FALSE = @COIN_HAS_OSITESTS_FALSE@
-COIN_HAS_OSITESTS_TRUE = @COIN_HAS_OSITESTS_TRUE@
 COIN_HAS_PKGCONFIG_FALSE = @COIN_HAS_PKGCONFIG_FALSE@
 COIN_HAS_PKGCONFIG_TRUE = @COIN_HAS_PKGCONFIG_TRUE@
 COIN_HAS_SAMPLE_FALSE = @COIN_HAS_SAMPLE_FALSE@
@@ -263,43 +254,9 @@ MSK_DATA_INSTALLED = @MSK_DATA_INSTALLED@
 MSK_DEPENDENCIES = @MSK_DEPENDENCIES@
 MSK_LIBS = @MSK_LIBS@
 MSK_LIBS_INSTALLED = @MSK_LIBS_INSTALLED@
-NETLIB_CFLAGS = @NETLIB_CFLAGS@
-NETLIB_CFLAGS_INSTALLED = @NETLIB_CFLAGS_INSTALLED@
-NETLIB_DATA = @NETLIB_DATA@
-NETLIB_DATA_INSTALLED = @NETLIB_DATA_INSTALLED@
-NETLIB_DEPENDENCIES = @NETLIB_DEPENDENCIES@
-NETLIB_LIBS = @NETLIB_LIBS@
-NETLIB_LIBS_INSTALLED = @NETLIB_LIBS_INSTALLED@
 OBJEXT = @OBJEXT@
 OPT_CFLAGS = @OPT_CFLAGS@
 OPT_CXXFLAGS = @OPT_CXXFLAGS@
-OSICBC_DFLT_SOLVER_CLP_FALSE = @OSICBC_DFLT_SOLVER_CLP_FALSE@
-OSICBC_DFLT_SOLVER_CLP_TRUE = @OSICBC_DFLT_SOLVER_CLP_TRUE@
-OSICBC_DFLT_SOLVER_CPX_FALSE = @OSICBC_DFLT_SOLVER_CPX_FALSE@
-OSICBC_DFLT_SOLVER_CPX_TRUE = @OSICBC_DFLT_SOLVER_CPX_TRUE@
-OSICBC_DFLT_SOLVER_DYLP_FALSE = @OSICBC_DFLT_SOLVER_DYLP_FALSE@
-OSICBC_DFLT_SOLVER_DYLP_TRUE = @OSICBC_DFLT_SOLVER_DYLP_TRUE@
-OSICBC_DFLT_SOLVER_GLPK_FALSE = @OSICBC_DFLT_SOLVER_GLPK_FALSE@
-OSICBC_DFLT_SOLVER_GLPK_TRUE = @OSICBC_DFLT_SOLVER_GLPK_TRUE@
-OSICBC_DFLT_SOLVER_GRB_FALSE = @OSICBC_DFLT_SOLVER_GRB_FALSE@
-OSICBC_DFLT_SOLVER_GRB_TRUE = @OSICBC_DFLT_SOLVER_GRB_TRUE@
-OSICBC_DFLT_SOLVER_MSK_FALSE = @OSICBC_DFLT_SOLVER_MSK_FALSE@
-OSICBC_DFLT_SOLVER_MSK_TRUE = @OSICBC_DFLT_SOLVER_MSK_TRUE@
-OSICBC_DFLT_SOLVER_SPX_FALSE = @OSICBC_DFLT_SOLVER_SPX_FALSE@
-OSICBC_DFLT_SOLVER_SPX_TRUE = @OSICBC_DFLT_SOLVER_SPX_TRUE@
-OSICBC_DFLT_SOLVER_SYM_FALSE = @OSICBC_DFLT_SOLVER_SYM_FALSE@
-OSICBC_DFLT_SOLVER_SYM_TRUE = @OSICBC_DFLT_SOLVER_SYM_TRUE@
-OSICBC_DFLT_SOLVER_VOL_FALSE = @OSICBC_DFLT_SOLVER_VOL_FALSE@
-OSICBC_DFLT_SOLVER_VOL_TRUE = @OSICBC_DFLT_SOLVER_VOL_TRUE@
-OSICBC_DFLT_SOLVER_XPR_FALSE = @OSICBC_DFLT_SOLVER_XPR_FALSE@
-OSICBC_DFLT_SOLVER_XPR_TRUE = @OSICBC_DFLT_SOLVER_XPR_TRUE@
-OSITESTS_CFLAGS = @OSITESTS_CFLAGS@
-OSITESTS_CFLAGS_INSTALLED = @OSITESTS_CFLAGS_INSTALLED@
-OSITESTS_DATA = @OSITESTS_DATA@
-OSITESTS_DATA_INSTALLED = @OSITESTS_DATA_INSTALLED@
-OSITESTS_DEPENDENCIES = @OSITESTS_DEPENDENCIES@
-OSITESTS_LIBS = @OSITESTS_LIBS@
-OSITESTS_LIBS_INSTALLED = @OSITESTS_LIBS_INSTALLED@
 PACKAGE = @PACKAGE@
 PACKAGE_BUGREPORT = @PACKAGE_BUGREPORT@
 PACKAGE_NAME = @PACKAGE_NAME@
@@ -409,30 +366,17 @@ AUTOMAKE_OPTIONS = foreign
 ########################################################################
 #                         unitTest for Cbc                             #
 ########################################################################
-CBC_TEST_TGTS = gamstests ositests $(am__append_1) $(am__append_2)
-cbcflags = $(am__append_3) -unitTest $(am__append_5)
-ositestsflags = $(am__append_4) $(am__append_6)
+CBC_TEST_TGTS = gamstests $(am__append_1) $(am__append_2)
+cbcflags = $(am__append_3) -unitTest $(am__append_4)
 gamsTest_SOURCES = gamsTest.cpp
 gamsTest_LDADD = ../src/libCbcSolver.la ../src/libCbc.la $(CBCLIB_LIBS)
 gamsTest_DEPENDENCIES = ../src/libCbcSolver.la ../src/libCbc.la $(CBCLIB_DEPENDENCIES)
 AM_CPPFLAGS = -I`$(CYGPATH_W) $(srcdir)/../src` $(COINDEPEND_CFLAGS) \
 	$(CLP_CFLAGS) $(CPX_CFLAGS) $(DYLP_CFLAGS) $(GLPK_CFLAGS) \
-	$(MSK_CFLAGS) $(VOL_CFLAGS) $(XPR_CFLAGS) -I`$(CYGPATH_W) \
-	$(srcdir)/../src/OsiCbc` $(OSITESTS_CFLAGS)
+	$(MSK_CFLAGS) $(VOL_CFLAGS) $(XPR_CFLAGS)
 
 # This line is necessary to allow VPATH compilation
 DEFAULT_INCLUDES = -I. -I`$(CYGPATH_W) $(srcdir)` -I$(top_builddir)/src
-
-########################################################################
-#                         unitTest for OsiCbc                          #
-########################################################################
-osiUnitTest_SOURCES = osiUnitTest.cpp OsiCbcSolverInterfaceTest.cpp
-osiUnitTest_LDADD = ../src/OsiCbc/libOsiCbc.la ../src/libCbc.la \
-    $(CBCLIB_LIBS) $(OSITESTS_LIBS)
-
-osiUnitTest_DEPENDENCIES = ../src/OsiCbc/libOsiCbc.la ../src/libCbc.la \
-    $(CBCLIB_DEPENDENCIES) $(OSITESTS_DEPENDENCIES)
-
 
 ########################################################################
 #                          Cleaning stuff                              #
@@ -505,9 +449,6 @@ clean-binPROGRAMS:
 gamsTest$(EXEEXT): $(gamsTest_OBJECTS) $(gamsTest_DEPENDENCIES) 
 	@rm -f gamsTest$(EXEEXT)
 	$(CXXLINK) $(gamsTest_LDFLAGS) $(gamsTest_OBJECTS) $(gamsTest_LDADD) $(LIBS)
-osiUnitTest$(EXEEXT): $(osiUnitTest_OBJECTS) $(osiUnitTest_DEPENDENCIES) 
-	@rm -f osiUnitTest$(EXEEXT)
-	$(CXXLINK) $(osiUnitTest_LDFLAGS) $(osiUnitTest_OBJECTS) $(osiUnitTest_LDADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -515,9 +456,7 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/OsiCbcSolverInterfaceTest.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/gamsTest.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/osiUnitTest.Po@am__quote@
 
 .cpp.o:
 @am__fastdepCXX_TRUE@	if $(CXXCOMPILE) -MT $@ -MD -MP -MF "$(DEPDIR)/$*.Tpo" -c -o $@ $<; \
@@ -736,9 +675,6 @@ gamstests: gamsTest$(EXEEXT)
 	./gamsTest$(EXEEXT)
 
 .PHONY: test
-
-ositests: osiUnitTest$(EXEEXT)
-	./osiUnitTest$(EXEEXT) $(ositestsflags)
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
 .NOEXPORT:

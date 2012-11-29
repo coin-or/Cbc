@@ -12,7 +12,7 @@ AUTOMAKE_OPTIONS = foreign
 #                         unitTest for Cbc                             #
 ########################################################################
 
-CBC_TEST_TGTS = gamstests ositests
+CBC_TEST_TGTS = gamstests
 
 if COIN_HAS_CLP
   CBC_TEST_TGTS += test_cbc
@@ -24,17 +24,12 @@ endif
 endif
 
 cbcflags =
-ositestsflags =
 if COIN_HAS_SAMPLE
   cbcflags += -dirSample `$(CYGPATH_W) $(SAMPLE_DATA)`
-  ositestsflags += -mpsDir=`$(CYGPATH_W) $(SAMPLE_DATA)`
 endif
 cbcflags += -unitTest
 if COIN_HAS_MIPLIB3
   cbcflags += -dirMiplib `$(CYGPATH_W) $(MIPLIB3_DATA)` -miplib
-endif
-if COIN_HAS_NETLIB
-  ositestsflags += -netlibDir=`$(CYGPATH_W) $(NETLIB_DATA)` -testOsiSolverInterface
 endif
 
 # We are using the solver executables to do the unit test
@@ -56,7 +51,7 @@ gamstests: gamsTest$(EXEEXT)
 
 .PHONY: test
 
-bin_PROGRAMS = gamsTest osiUnitTest
+bin_PROGRAMS = gamsTest
 
 gamsTest_SOURCES = gamsTest.cpp
 gamsTest_LDADD = ../src/libCbcSolver.la ../src/libCbc.la $(CBCLIB_LIBS)
@@ -67,23 +62,6 @@ AM_CPPFLAGS += $(CLP_CFLAGS) $(CPX_CFLAGS) $(DYLP_CFLAGS) $(GLPK_CFLAGS) $(MSK_C
 
 # This line is necessary to allow VPATH compilation
 DEFAULT_INCLUDES = -I. -I`$(CYGPATH_W) $(srcdir)` -I$(top_builddir)/src
-
-########################################################################
-#                         unitTest for OsiCbc                          #
-########################################################################
-
-osiUnitTest_SOURCES = osiUnitTest.cpp OsiCbcSolverInterfaceTest.cpp
-
-osiUnitTest_LDADD = ../src/OsiCbc/libOsiCbc.la ../src/libCbc.la \
-    $(CBCLIB_LIBS) $(OSITESTS_LIBS)
-
-osiUnitTest_DEPENDENCIES = ../src/OsiCbc/libOsiCbc.la ../src/libCbc.la \
-    $(CBCLIB_DEPENDENCIES) $(OSITESTS_DEPENDENCIES)
-
-AM_CPPFLAGS += -I`$(CYGPATH_W) $(srcdir)/../src/OsiCbc` $(OSITESTS_CFLAGS)
-
-ositests: osiUnitTest$(EXEEXT)
-	./osiUnitTest$(EXEEXT) $(ositestsflags)
 
 ########################################################################
 #                          Cleaning stuff                              #

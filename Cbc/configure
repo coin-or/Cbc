@@ -472,7 +472,7 @@ ac_includes_default="\
 # include <unistd.h>
 #endif"
 
-ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS build build_cpu build_vendor build_os ALWAYS_FALSE_TRUE ALWAYS_FALSE_FALSE have_svnversion CBC_SVN_REV CDEFS ADD_CFLAGS DBG_CFLAGS OPT_CFLAGS sol_cc_compiler CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT COIN_CC_IS_CL_TRUE COIN_CC_IS_CL_FALSE MPICC CXXDEFS ADD_CXXFLAGS DBG_CXXFLAGS OPT_CXXFLAGS CXX CXXFLAGS ac_ct_CXX COIN_CXX_IS_CL_TRUE COIN_CXX_IS_CL_FALSE MPICXX EGREP LN_S INSTALL_PROGRAM INSTALL_SCRIPT INSTALL_DATA CYGPATH_W PACKAGE VERSION ACLOCAL AUTOCONF AUTOMAKE AUTOHEADER MAKEINFO install_sh STRIP ac_ct_STRIP INSTALL_STRIP_PROGRAM mkdir_p AWK SET_MAKE am__leading_dot AMTAR am__tar am__untar DEPDIR am__include am__quote AMDEP_TRUE AMDEP_FALSE AMDEPBACKSLASH CCDEPMODE am__fastdepCC_TRUE am__fastdepCC_FALSE CXXDEPMODE am__fastdepCXX_TRUE am__fastdepCXX_FALSE MAINTAINER_MODE_TRUE MAINTAINER_MODE_FALSE MAINT LIBTOOLM4 have_autoconf have_automake have_svn BUILDTOOLSDIR AUX_DIR abs_source_dir abs_lib_dir abs_include_dir abs_bin_dir HAVE_EXTERNALS_TRUE HAVE_EXTERNALS_FALSE host host_cpu host_vendor host_os ECHO AR ac_ct_AR RANLIB ac_ct_RANLIB CPP CXXCPP F77 FFLAGS ac_ct_F77 LIBTOOL ac_c_preproc_warn_flag ac_cxx_preproc_warn_flag RPATH_FLAGS LT_LDFLAGS PKG_CONFIG ac_pt_PKG_CONFIG COIN_HAS_PKGCONFIG_TRUE COIN_HAS_PKGCONFIG_FALSE COIN_PKG_CONFIG_PATH COIN_PKG_CONFIG_PATH_UNINSTALLED COINDEPEND_LIBS COINDEPEND_CFLAGS COINDEPEND_DATA COINDEPEND_DEPENDENCIES COINDEPEND_LIBS_INSTALLED COINDEPEND_CFLAGS_INSTALLED COINDEPEND_DATA_INSTALLED CBCLIB_CFLAGS CBCLIB_LIBS CBCLIB_PCLIBS CBCLIB_PCREQUIRES CBCLIB_DEPENDENCIES CBCLIB_CFLAGS_INSTALLED CBCLIB_LIBS_INSTALLED CBCGENERIC_CFLAGS CBCGENERIC_LIBS CBCGENERIC_PCLIBS CBCGENERIC_PCREQUIRES CBCGENERIC_DEPENDENCIES CBCGENERIC_CFLAGS_INSTALLED CBCGENERIC_LIBS_INSTALLED COIN_HAS_COINDEPEND_TRUE COIN_HAS_COINDEPEND_FALSE CLP_LIBS CLP_CFLAGS CLP_DATA CLP_DEPENDENCIES CLP_LIBS_INSTALLED CLP_CFLAGS_INSTALLED CLP_DATA_INSTALLED COIN_HAS_CLP_TRUE COIN_HAS_CLP_FALSE OSITESTS_LIBS OSITESTS_CFLAGS OSITESTS_DATA OSITESTS_DEPENDENCIES OSITESTS_LIBS_INSTALLED OSITESTS_CFLAGS_INSTALLED OSITESTS_DATA_INSTALLED COIN_HAS_OSITESTS_TRUE COIN_HAS_OSITESTS_FALSE SAMPLE_LIBS SAMPLE_CFLAGS SAMPLE_DATA SAMPLE_DEPENDENCIES SAMPLE_LIBS_INSTALLED SAMPLE_CFLAGS_INSTALLED SAMPLE_DATA_INSTALLED COIN_HAS_SAMPLE_TRUE COIN_HAS_SAMPLE_FALSE NETLIB_LIBS NETLIB_CFLAGS NETLIB_DATA NETLIB_DEPENDENCIES NETLIB_LIBS_INSTALLED NETLIB_CFLAGS_INSTALLED NETLIB_DATA_INSTALLED COIN_HAS_NETLIB_TRUE COIN_HAS_NETLIB_FALSE MIPLIB3_LIBS MIPLIB3_CFLAGS MIPLIB3_DATA MIPLIB3_DEPENDENCIES MIPLIB3_LIBS_INSTALLED MIPLIB3_CFLAGS_INSTALLED MIPLIB3_DATA_INSTALLED COIN_HAS_MIPLIB3_TRUE COIN_HAS_MIPLIB3_FALSE DYLP_LIBS DYLP_CFLAGS DYLP_DATA DYLP_DEPENDENCIES DYLP_LIBS_INSTALLED DYLP_CFLAGS_INSTALLED DYLP_DATA_INSTALLED COIN_HAS_DYLP_TRUE COIN_HAS_DYLP_FALSE VOL_LIBS VOL_CFLAGS VOL_DATA VOL_DEPENDENCIES VOL_LIBS_INSTALLED VOL_CFLAGS_INSTALLED VOL_DATA_INSTALLED COIN_HAS_VOL_TRUE COIN_HAS_VOL_FALSE CPX_LIBS CPX_CFLAGS CPX_DATA CPX_DEPENDENCIES CPX_LIBS_INSTALLED CPX_CFLAGS_INSTALLED CPX_DATA_INSTALLED COIN_HAS_CPX_TRUE COIN_HAS_CPX_FALSE GLPK_LIBS GLPK_CFLAGS GLPK_DATA GLPK_DEPENDENCIES GLPK_LIBS_INSTALLED GLPK_CFLAGS_INSTALLED GLPK_DATA_INSTALLED COIN_HAS_GLPK_TRUE COIN_HAS_GLPK_FALSE GRB_LIBS GRB_CFLAGS GRB_DATA GRB_DEPENDENCIES GRB_LIBS_INSTALLED GRB_CFLAGS_INSTALLED GRB_DATA_INSTALLED COIN_HAS_GRB_TRUE COIN_HAS_GRB_FALSE MSK_LIBS MSK_CFLAGS MSK_DATA MSK_DEPENDENCIES MSK_LIBS_INSTALLED MSK_CFLAGS_INSTALLED MSK_DATA_INSTALLED COIN_HAS_MSK_TRUE COIN_HAS_MSK_FALSE SPX_LIBS SPX_CFLAGS SPX_DATA SPX_DEPENDENCIES SPX_LIBS_INSTALLED SPX_CFLAGS_INSTALLED SPX_DATA_INSTALLED COIN_HAS_SPX_TRUE COIN_HAS_SPX_FALSE XPR_LIBS XPR_CFLAGS XPR_DATA XPR_DEPENDENCIES XPR_LIBS_INSTALLED XPR_CFLAGS_INSTALLED XPR_DATA_INSTALLED COIN_HAS_XPR_TRUE COIN_HAS_XPR_FALSE ASL_LIBS ASL_CFLAGS ASL_DATA ASL_DEPENDENCIES ASL_LIBS_INSTALLED ASL_CFLAGS_INSTALLED ASL_DATA_INSTALLED COIN_HAS_ASL_TRUE COIN_HAS_ASL_FALSE CBC_BUILD_CBC_GENERIC_TRUE CBC_BUILD_CBC_GENERIC_FALSE OSICBC_DFLT_SOLVER_CLP_TRUE OSICBC_DFLT_SOLVER_CLP_FALSE OSICBC_DFLT_SOLVER_CPX_TRUE OSICBC_DFLT_SOLVER_CPX_FALSE OSICBC_DFLT_SOLVER_DYLP_TRUE OSICBC_DFLT_SOLVER_DYLP_FALSE OSICBC_DFLT_SOLVER_GLPK_TRUE OSICBC_DFLT_SOLVER_GLPK_FALSE OSICBC_DFLT_SOLVER_GRB_TRUE OSICBC_DFLT_SOLVER_GRB_FALSE OSICBC_DFLT_SOLVER_MSK_TRUE OSICBC_DFLT_SOLVER_MSK_FALSE OSICBC_DFLT_SOLVER_SPX_TRUE OSICBC_DFLT_SOLVER_SPX_FALSE OSICBC_DFLT_SOLVER_SYM_TRUE OSICBC_DFLT_SOLVER_SYM_FALSE OSICBC_DFLT_SOLVER_VOL_TRUE OSICBC_DFLT_SOLVER_VOL_FALSE OSICBC_DFLT_SOLVER_XPR_TRUE OSICBC_DFLT_SOLVER_XPR_FALSE coin_have_doxygen coin_doxy_usedot coin_doxy_tagname coin_doxy_logname coin_doxy_tagfiles coin_doxy_excludes LIBEXT VPATH_DISTCLEANFILES ABSBUILDDIR LIBOBJS LTLIBOBJS'
+ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS build build_cpu build_vendor build_os ALWAYS_FALSE_TRUE ALWAYS_FALSE_FALSE have_svnversion CBC_SVN_REV CDEFS ADD_CFLAGS DBG_CFLAGS OPT_CFLAGS sol_cc_compiler CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT COIN_CC_IS_CL_TRUE COIN_CC_IS_CL_FALSE MPICC CXXDEFS ADD_CXXFLAGS DBG_CXXFLAGS OPT_CXXFLAGS CXX CXXFLAGS ac_ct_CXX COIN_CXX_IS_CL_TRUE COIN_CXX_IS_CL_FALSE MPICXX EGREP LN_S INSTALL_PROGRAM INSTALL_SCRIPT INSTALL_DATA CYGPATH_W PACKAGE VERSION ACLOCAL AUTOCONF AUTOMAKE AUTOHEADER MAKEINFO install_sh STRIP ac_ct_STRIP INSTALL_STRIP_PROGRAM mkdir_p AWK SET_MAKE am__leading_dot AMTAR am__tar am__untar DEPDIR am__include am__quote AMDEP_TRUE AMDEP_FALSE AMDEPBACKSLASH CCDEPMODE am__fastdepCC_TRUE am__fastdepCC_FALSE CXXDEPMODE am__fastdepCXX_TRUE am__fastdepCXX_FALSE MAINTAINER_MODE_TRUE MAINTAINER_MODE_FALSE MAINT LIBTOOLM4 have_autoconf have_automake have_svn BUILDTOOLSDIR AUX_DIR abs_source_dir abs_lib_dir abs_include_dir abs_bin_dir HAVE_EXTERNALS_TRUE HAVE_EXTERNALS_FALSE host host_cpu host_vendor host_os ECHO AR ac_ct_AR RANLIB ac_ct_RANLIB CPP CXXCPP F77 FFLAGS ac_ct_F77 LIBTOOL ac_c_preproc_warn_flag ac_cxx_preproc_warn_flag RPATH_FLAGS LT_LDFLAGS PKG_CONFIG ac_pt_PKG_CONFIG COIN_HAS_PKGCONFIG_TRUE COIN_HAS_PKGCONFIG_FALSE COIN_PKG_CONFIG_PATH COIN_PKG_CONFIG_PATH_UNINSTALLED COINDEPEND_LIBS COINDEPEND_CFLAGS COINDEPEND_DATA COINDEPEND_DEPENDENCIES COINDEPEND_LIBS_INSTALLED COINDEPEND_CFLAGS_INSTALLED COINDEPEND_DATA_INSTALLED CBCLIB_CFLAGS CBCLIB_LIBS CBCLIB_PCLIBS CBCLIB_PCREQUIRES CBCLIB_DEPENDENCIES CBCLIB_CFLAGS_INSTALLED CBCLIB_LIBS_INSTALLED CBCGENERIC_CFLAGS CBCGENERIC_LIBS CBCGENERIC_PCLIBS CBCGENERIC_PCREQUIRES CBCGENERIC_DEPENDENCIES CBCGENERIC_CFLAGS_INSTALLED CBCGENERIC_LIBS_INSTALLED COIN_HAS_COINDEPEND_TRUE COIN_HAS_COINDEPEND_FALSE CLP_LIBS CLP_CFLAGS CLP_DATA CLP_DEPENDENCIES CLP_LIBS_INSTALLED CLP_CFLAGS_INSTALLED CLP_DATA_INSTALLED COIN_HAS_CLP_TRUE COIN_HAS_CLP_FALSE SAMPLE_LIBS SAMPLE_CFLAGS SAMPLE_DATA SAMPLE_DEPENDENCIES SAMPLE_LIBS_INSTALLED SAMPLE_CFLAGS_INSTALLED SAMPLE_DATA_INSTALLED COIN_HAS_SAMPLE_TRUE COIN_HAS_SAMPLE_FALSE MIPLIB3_LIBS MIPLIB3_CFLAGS MIPLIB3_DATA MIPLIB3_DEPENDENCIES MIPLIB3_LIBS_INSTALLED MIPLIB3_CFLAGS_INSTALLED MIPLIB3_DATA_INSTALLED COIN_HAS_MIPLIB3_TRUE COIN_HAS_MIPLIB3_FALSE DYLP_LIBS DYLP_CFLAGS DYLP_DATA DYLP_DEPENDENCIES DYLP_LIBS_INSTALLED DYLP_CFLAGS_INSTALLED DYLP_DATA_INSTALLED COIN_HAS_DYLP_TRUE COIN_HAS_DYLP_FALSE VOL_LIBS VOL_CFLAGS VOL_DATA VOL_DEPENDENCIES VOL_LIBS_INSTALLED VOL_CFLAGS_INSTALLED VOL_DATA_INSTALLED COIN_HAS_VOL_TRUE COIN_HAS_VOL_FALSE CPX_LIBS CPX_CFLAGS CPX_DATA CPX_DEPENDENCIES CPX_LIBS_INSTALLED CPX_CFLAGS_INSTALLED CPX_DATA_INSTALLED COIN_HAS_CPX_TRUE COIN_HAS_CPX_FALSE GLPK_LIBS GLPK_CFLAGS GLPK_DATA GLPK_DEPENDENCIES GLPK_LIBS_INSTALLED GLPK_CFLAGS_INSTALLED GLPK_DATA_INSTALLED COIN_HAS_GLPK_TRUE COIN_HAS_GLPK_FALSE GRB_LIBS GRB_CFLAGS GRB_DATA GRB_DEPENDENCIES GRB_LIBS_INSTALLED GRB_CFLAGS_INSTALLED GRB_DATA_INSTALLED COIN_HAS_GRB_TRUE COIN_HAS_GRB_FALSE MSK_LIBS MSK_CFLAGS MSK_DATA MSK_DEPENDENCIES MSK_LIBS_INSTALLED MSK_CFLAGS_INSTALLED MSK_DATA_INSTALLED COIN_HAS_MSK_TRUE COIN_HAS_MSK_FALSE SPX_LIBS SPX_CFLAGS SPX_DATA SPX_DEPENDENCIES SPX_LIBS_INSTALLED SPX_CFLAGS_INSTALLED SPX_DATA_INSTALLED COIN_HAS_SPX_TRUE COIN_HAS_SPX_FALSE XPR_LIBS XPR_CFLAGS XPR_DATA XPR_DEPENDENCIES XPR_LIBS_INSTALLED XPR_CFLAGS_INSTALLED XPR_DATA_INSTALLED COIN_HAS_XPR_TRUE COIN_HAS_XPR_FALSE ASL_LIBS ASL_CFLAGS ASL_DATA ASL_DEPENDENCIES ASL_LIBS_INSTALLED ASL_CFLAGS_INSTALLED ASL_DATA_INSTALLED COIN_HAS_ASL_TRUE COIN_HAS_ASL_FALSE CBC_BUILD_CBC_GENERIC_TRUE CBC_BUILD_CBC_GENERIC_FALSE coin_have_doxygen coin_doxy_usedot coin_doxy_tagname coin_doxy_logname coin_doxy_tagfiles coin_doxy_excludes LIBEXT VPATH_DISTCLEANFILES ABSBUILDDIR LIBOBJS LTLIBOBJS'
 ac_subst_files=''
 
 # Initialize some variables set by options.
@@ -1127,16 +1127,9 @@ Optional Packages:
   --with-clp-lib linker flags for using package Clp
   --with-clp-incdir directory with header files for using package Clp
   --with-clp-datadir directory with data files for using package Clp
-  --with-ositests-lib linker flags for using package OsiTests
-  --with-ositests-incdir directory with header files for using package
-                          OsiTests
-  --with-ositests-datadir directory with data files for using package OsiTests
   --with-sample-lib linker flags for using package Sample
   --with-sample-incdir directory with header files for using package Sample
   --with-sample-datadir directory with data files for using package Sample
-  --with-netlib-lib linker flags for using package Netlib
-  --with-netlib-incdir directory with header files for using package Netlib
-  --with-netlib-datadir directory with data files for using package Netlib
   --with-miplib3-lib linker flags for using package Miplib3
   --with-miplib3-incdir directory with header files for using package Miplib3
   --with-miplib3-datadir directory with data files for using package Miplib3
@@ -1176,8 +1169,6 @@ Optional Packages:
   --with-pthreadsw32-incdir
                           specify the path of the pthreads win32 header file
                           (for cl/icl builds only)
-  --with-osicbc-default-solver
-                          specify underlying solver for OsiCbc (default clp)
   --with-dot              use dot (from graphviz) when creating documentation
                           with doxygen if available; --without-dot to disable
 
@@ -5996,7 +5987,7 @@ ia64-*-hpux*)
   ;;
 *-*-irix6*)
   # Find out which ABI we are using.
-  echo '#line 5999 "configure"' > conftest.$ac_ext
+  echo '#line 5990 "configure"' > conftest.$ac_ext
   if { (eval echo "$as_me:$LINENO: \"$ac_compile\"") >&5
   (eval $ac_compile) 2>&5
   ac_status=$?
@@ -7130,7 +7121,7 @@ fi
 
 
 # Provide some information about the compiler.
-echo "$as_me:7133:" \
+echo "$as_me:7124:" \
      "checking for Fortran 77 compiler version" >&5
 ac_compiler=`set X $ac_compile; echo $2`
 { (eval echo "$as_me:$LINENO: \"$ac_compiler --version </dev/null >&5\"") >&5
@@ -8197,11 +8188,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:8200: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:8191: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:8204: \$? = $ac_status" >&5
+   echo "$as_me:8195: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -8465,11 +8456,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:8468: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:8459: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:8472: \$? = $ac_status" >&5
+   echo "$as_me:8463: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -8569,11 +8560,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:8572: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:8563: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:8576: \$? = $ac_status" >&5
+   echo "$as_me:8567: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -10914,7 +10905,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<EOF
-#line 10917 "configure"
+#line 10908 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -11014,7 +11005,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<EOF
-#line 11017 "configure"
+#line 11008 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -13358,11 +13349,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:13361: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:13352: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:13365: \$? = $ac_status" >&5
+   echo "$as_me:13356: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -13462,11 +13453,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:13465: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:13456: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:13469: \$? = $ac_status" >&5
+   echo "$as_me:13460: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -15032,11 +15023,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:15035: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:15026: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:15039: \$? = $ac_status" >&5
+   echo "$as_me:15030: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -15136,11 +15127,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:15139: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:15130: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:15143: \$? = $ac_status" >&5
+   echo "$as_me:15134: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -17343,11 +17334,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:17346: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:17337: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:17350: \$? = $ac_status" >&5
+   echo "$as_me:17341: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -17611,11 +17602,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:17614: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:17605: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:17618: \$? = $ac_status" >&5
+   echo "$as_me:17609: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -17715,11 +17706,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:17718: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:17709: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:17722: \$? = $ac_status" >&5
+   echo "$as_me:17713: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -21926,487 +21917,6 @@ fi
 # The rest are not required for linking against Cbc
 
 
-echo "$as_me:$LINENO: checking for COIN-OR package OsiTests" >&5
-echo $ECHO_N "checking for COIN-OR package OsiTests... $ECHO_C" >&6
-
-coin_has_ositests=notGiven
-
-# check if user wants to skip package in any case
-if test x"$COIN_SKIP_PROJECTS" != x; then
-  for dir in $COIN_SKIP_PROJECTS; do
-    if test $dir = "OsiTests"; then
-      coin_has_ositests=skipping
-    fi
-  done
-fi
-
-if test "$coin_has_ositests" != skipping; then
-
-# Check whether --with-m4_tolower(OsiTests) or --without-m4_tolower(OsiTests) was given.
-if test "${with_ositests+set}" = set; then
-  withval="$with_ositests"
-  if test "$withval" = no ; then
-       coin_has_ositests=skipping
-     fi
-
-fi;
-fi
-
-OSITESTS_LIBS=
-OSITESTS_CFLAGS=
-OSITESTS_DATA=
-OSITESTS_DEPENDENCIES=
-OSITESTS_PCLIBS=
-OSITESTS_PCREQUIRES=
-OSITESTS_DATA=
-
-
-
-
-
-
-
-
-
-#check if user provided LIBS, CFLAGS, or DATA for package or disables use of package
-if test $coin_has_ositests != skipping; then
-
-# Check whether --with-m4_tolower(OsiTests)-lib or --without-m4_tolower(OsiTests)-lib was given.
-if test "${with_ositests_lib+set}" = set; then
-  withval="$with_ositests_lib"
-  if test "$withval" = no ; then
-       coin_has_ositests=skipping
-     else
-       coin_has_ositests=yes
-       OSITESTS_LIBS="$withval"
-       OSITESTS_PCLIBS="$withval"
-
-       # if project flags are given by user and we build without pkg-config, then we need to setup the _INSTALLED variables
-       if test -z "$PKG_CONFIG" ; then
-         OSITESTS_LIBS_INSTALLED="$withval"
-
-       fi
-     fi
-
-fi;
-fi
-
-if test $coin_has_ositests != skipping; then
-
-# Check whether --with-m4_tolower(OsiTests)-incdir or --without-m4_tolower(OsiTests)-incdir was given.
-if test "${with_ositests_incdir+set}" = set; then
-  withval="$with_ositests_incdir"
-  if test "$withval" = no ; then
-       coin_has_ositests=skipping
-     else
-       coin_has_ositests=yes
-       OSITESTS_CFLAGS="-I`${CYGPATH_W} $withval`"
-
-       # if project flags are given by user and we build without pkg-config, then we need to setup the _INSTALLED variables
-       if test -z "$PKG_CONFIG" ; then
-         OSITESTS_CFLAGS_INSTALLED="$OSITESTS_CFLAGS"
-
-       fi
-     fi
-
-fi;
-fi
-
-if test $coin_has_ositests != skipping; then
-
-# Check whether --with-m4_tolower(OsiTests)-datadir or --without-m4_tolower(OsiTests)-datadir was given.
-if test "${with_ositests_datadir+set}" = set; then
-  withval="$with_ositests_datadir"
-  if test "$withval" = no ; then
-       coin_has_ositests=skipping
-     else
-       coin_has_ositests=yes
-       OSITESTS_DATA="$withval"
-       # if project flags are given by user and we build without pkg-config, then we need to setup the _INSTALLED variables
-       if test -z "$PKG_CONFIG" ; then
-         OSITESTS_DATA_INSTALLED="$withval"
-       fi
-     fi
-
-fi;
-fi
-
-if test $coin_has_ositests = notGiven; then
-  if test -n "$PKG_CONFIG" ; then
-    # set search path for pkg-config
-    # need to export variable to be sure that the following pkg-config gets these values
-    coin_save_PKG_CONFIG_PATH="$PKG_CONFIG_PATH"
-    PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH:$COIN_PKG_CONFIG_PATH_UNINSTALLED"
-    export PKG_CONFIG_PATH
-
-    # let pkg-config do it's magic
-
-
-
-if test -n "$PKG_CONFIG" ; then
-  if $PKG_CONFIG --exists "osi-unittests"; then
-    OSITESTS_VERSIONS=`$PKG_CONFIG --modversion "osi-unittests" 2>/dev/null | tr '\n' ' '`
-     cflags=`$PKG_CONFIG --cflags "osi-unittests" 2>/dev/null`
-    # pkg-config cannot handle spaces, so CYGPATH_W cannot be put into .pc files
-	# thus, we modify the cflags extracted from pkg-config by putting CYGPATH_W behind -I's
-	# but only do this if is not trivial
-    if test "$CYGPATH_W" != "echo" ; then
-      # need to put into brackets since otherwise autoconf replaces the brackets in the sed command
-      cflags=`echo $cflags | sed -e 's/-I\([^ ]*\)/-I\`${CYGPATH_W} \1\`/g'`
-    fi
-    OSITESTS_CFLAGS="$cflags"
-    OSITESTS_LIBS=`$PKG_CONFIG --libs "osi-unittests" 2>/dev/null`
-    OSITESTS_DATA=`$PKG_CONFIG --variable=datadir "osi-unittests" 2>/dev/null`
-     coin_has_ositests=yes
-        echo "$as_me:$LINENO: result: yes: $OSITESTS_VERSIONS" >&5
-echo "${ECHO_T}yes: $OSITESTS_VERSIONS" >&6
-
-        # adjust linker flags for (i)cl compiler
-        # for the LIBS, we replace everything of the form "/somepath/name.lib" by "`$(CYGPATH_W) /somepath/`name.lib | sed -e s|\|/|g" (where we have to use excessive many \ to get the \ into the command line for cl)
-        if test x$coin_cxx_is_cl = xtrue || test x$coin_cc_is_cl = xtrue ;
-        then
-          OSITESTS_LIBS=`echo " $OSITESTS_LIBS " | sed -e 's/ \(\/[^ ]*\/\)\([^ ]*\)\.lib / \`$(CYGPATH_W) \1 | sed -e "s|\\\\\\\\\\\\\\\\\\\\|\/|g"\`\2.lib /g'`
-        fi
-        OSITESTS_PCREQUIRES="osi-unittests"
-
-        # augment X_PCREQUIRES, X_CFLAGS, and X_LIBS for each build target X in
-
-
-
-  else
-    OSITESTS_PKG_ERRORS=`$PKG_CONFIG $pkg_short_errors --errors-to-stdout --print-errors "osi-unittests"`
-      coin_has_ositests=notGiven
-        echo "$as_me:$LINENO: result: not given: $OSITESTS_PKG_ERRORS" >&5
-echo "${ECHO_T}not given: $OSITESTS_PKG_ERRORS" >&6
-
-  fi
-else
-  { { echo "$as_me:$LINENO: error: \"Cannot check for existance of module OsiTests without pkg-config\"" >&5
-echo "$as_me: error: \"Cannot check for existance of module OsiTests without pkg-config\"" >&2;}
-   { (exit 1); exit 1; }; }
-fi
-
-
-
-
-    # reset PKG_CONFIG_PATH variable
-    PKG_CONFIG_PATH="$coin_save_PKG_CONFIG_PATH"
-    export PKG_CONFIG_PATH
-
-  else
-    echo "$as_me:$LINENO: result: skipped check via pkg-config, redirect to fallback" >&5
-echo "${ECHO_T}skipped check via pkg-config, redirect to fallback" >&6
-
-echo "$as_me:$LINENO: checking for COIN-OR package OsiTests (fallback)" >&5
-echo $ECHO_N "checking for COIN-OR package OsiTests (fallback)... $ECHO_C" >&6
-
-coin_has_ositests=notGiven
-OSITESTS_LIBS=
-OSITESTS_LIBS_INSTALLED=
-OSITESTS_CFLAGS=
-OSITESTS_CFLAGS_INSTALLED=
-OSITESTS_DATA=
-OSITESTS_DATA_INSTALLED=
-OSITESTS_PCLIBS=
-OSITESTS_PCREQUIRES=
-
-# initial list of dependencies is "osi-unittests", but we need to filter out version number specifications (= x, <= x, >= x, != x)
-projtoprocess="osi-unittests"
-
-# we first expand the list of projects to process by adding all dependencies just behind the project which depends on it
-# further, we collect the list of corresponding .pc files, but do this in reverse order, because we need this order afterwards
-# the latter we also do with .pc files corresponding to the installed projects, which will be needed to setup Makefiles for examples
-# also, we setup the DATA variable
-allproj=""
-allpcfiles=""
-allpcifiles=""
-while test "x$projtoprocess" != x ; do
-
-  for proj in $projtoprocess ; do
-    # if $proj is available and configured, then a project-uninstalled.pc file should have been created, so search for it
-    pcfile=""
-    save_IFS="$IFS"
-    IFS=":"
-    for dir in $COIN_PKG_CONFIG_PATH_UNINSTALLED ; do
-      # the base directory configure should have setup coin_subdirs.txt in a way that it does not contain projects that should be skipped, so we do not need to test this here again
-      if test -r "$dir/${proj}-uninstalled.pc" ; then
-        pcfile="$dir/$proj-uninstalled.pc"
-        if test -r "$dir/${proj}.pc" ; then
-          pcifile="$dir/${proj}.pc"
-        else
-          { echo "$as_me:$LINENO: WARNING: Found $pcfile, but $dir/${proj}.pc is not available. This may break Makefile's of examples." >&5
-echo "$as_me: WARNING: Found $pcfile, but $dir/${proj}.pc is not available. This may break Makefile's of examples." >&2;}
-          pcifile=
-        fi
-        break
-      fi
-    done
-    IFS="$save_IFS"
-
-    if test "x$pcfile" != x ; then
-      # read dependencies from $pcfile and filter it
-      projrequires=`sed -n -e 's/Requires://gp' "$pcfile" | sed -e 's/<\{0,1\}>\{0,1\}=[ 	]\{0,\}[^ 	]\{1,\}//g'`
-
-      # add projrequires to the front of the list of projects that have to be processed next
-      # at the same time, remove $proj from this list
-      projtoprocess=`echo $projtoprocess | sed -e "s/$proj/$projrequires/"`
-
-      # read DATA from $pcfile, if _DATA is still empty
-      if test "x$OSITESTS_DATA" = x ; then
-        projdatadir=
-        pcfilemod=`sed -e '/[a-zA-Z]:/d' -e 's/datadir=\(.*\)/echo projdatadir=\\\\"\1\\\\"/g' $pcfile`
-        eval `sh -c "$pcfilemod"`
-        OSITESTS_DATA="$projdatadir"
-      fi
-
-      allproj="$allproj $proj"
-      allpcfiles="$pcfile:$allpcfiles"
-
-    else
-      echo "$as_me:$LINENO: result: no, dependency $proj not available" >&5
-echo "${ECHO_T}no, dependency $proj not available" >&6
-      allproj=fail
-      break 2
-    fi
-
-    if test "x$pcifile" != x ; then
-      allpcifiles="$pcifile:$allpcifiles"
-
-      # read DATA_INSTALLED from $pcifile, if _DATA_INSTALLED is still empty
-      if test "x$OSITESTS_DATA_INSTALLED" = x ; then
-        projdatadir=
-        pcifilemod=`sed -e '/[a-zA-Z]:/d' -e 's/datadir=\(.*\)/echo projdatadir=\\\\"\1\\\\"/g' $pcifile`
-        eval `sh -c "$pcifilemod"`
-        if test "${CYGPATH_W}" != "echo"; then
-          projdatadir="\`\$(CYGPATH_W) ${projdatadir} | sed -e 's/\\\\\\\\/\\\\\\\\\\\\\\\\/g'\`"
-        fi
-        OSITESTS_DATA_INSTALLED="$projdatadir"
-      fi
-
-    fi
-
-    break
-  done
-
-  # remove spaces on begin of $projtoprocess
-  projtoprocess=`echo $projtoprocess | sed -e 's/^ *//'`
-
-done
-
-if test "$allproj" != fail ; then
-
-  # now go through the list of .pc files and assemble compiler and linker flags
-  # important is here to obey the reverse order that has been setup before,
-  # since then libraries that are required by several others should be after these other libraries
-  pcfilesprocessed=""
-
-  save_IFS="$IFS"
-  IFS=":"
-  for pcfile in $allpcfiles ; do
-
-    # if $pcfile has been processed already, skip this round
-    if test "x$pcfilesprocessed" != x ; then
-      for pcfiledone in $pcfilesprocessed ; do
-        if test "$pcfiledone" = "$pcfile" ; then
-          continue 2
-        fi
-      done
-    fi
-
-    # modify .pc file to a shell script that prints shell commands for setting the compiler and library flags:
-    #   replace "Libs:" by "echo projlibs="
-    #   replace "Cflags:" by "echo projcflags="
-    #   remove every line starting with <some word>:
-    pcfilemod=`sed -e 's/Libs:\(.*\)$/echo projlibs=\\\\"\1\\\\"/g' -e 's/Cflags:\(.*\)/echo projcflags=\\\\"\1\\\\"/g' -e '/^[a-zA-Z]*:/d' $pcfile`
-
-    # set projcflags and projlibs variables by running $pcfilemod
-    # under mingw, the current IFS seem to make the : in the paths of the gfortran libs go away, so we temporarily set IFS back to its default
-    projcflags=
-    projlibs=
-    IFS="$save_IFS"
-    eval `sh -c "$pcfilemod"`
-    IFS=":"
-
-    # add CYGPATH_W cludge into include flags and set CFLAGS variable
-    if test "${CYGPATH_W}" != "echo"; then
-      projcflags=`echo "$projcflags" | sed -e 's/-I\([^ ]*\)/-I\`${CYGPATH_W} \1\`/g'`
-    fi
-    OSITESTS_CFLAGS="$projcflags $OSITESTS_CFLAGS"
-
-    # set LIBS variable
-    OSITESTS_LIBS="$projlibs $OSITESTS_LIBS"
-
-    # remember that we have processed $pcfile
-    pcfilesprocessed="$pcfilesprocessed:$pcfile"
-
-  done
-  IFS="$save_IFS"
-
-
-  # now go through the list of .pc files for installed projects and assemble compiler and linker flags
-  # important is here again to obey the reverse order that has been setup before,
-  # since then libraries that are required by several others should be after these other libraries
-  pcfilesprocessed=""
-
-  save_IFS="$IFS"
-  IFS=":"
-  for pcfile in $allpcifiles ; do
-
-    # if $pcfile has been processed already, skip this round
-    if test "x$pcfilesprocessed" != x ; then
-      for pcfiledone in $pcfilesprocessed ; do
-        if test "$pcfiledone" = "$pcfile" ; then
-          continue 2
-        fi
-      done
-    fi
-
-    # modify .pc file to a shell script that prints shell commands for setting the compiler and library flags:
-    #   replace "Libs:" by "echo projlibs="
-    #   replace "Cflags:" by "echo projcflags="
-    #   remove every line starting with <some word>:
-    pcfilemod=`sed -e 's/Libs:\(.*\)$/echo projlibs=\\\\"\1\\\\"/g' -e 's/Cflags:\(.*\)/echo projcflags=\\\\"\1\\\\"/g' -e '/^[a-zA-Z]*:/d' $pcfile`
-
-    # set projcflags and projlibs variables by running $pcfilemod
-    # under mingw, the current IFS seem to make the : in the paths of the gfortran libs go away, so we temporarily set IFS back to its default
-    projcflags=
-    projlibs=
-    IFS="$save_IFS"
-    eval `sh -c "$pcfilemod"`
-    IFS=":"
-
-    # add CYGPATH_W cludge into include flags and set CFLAGS variable
-    if test "${CYGPATH_W}" != "echo"; then
-      projcflags=`echo "$projcflags" | sed -e 's/-I\([^ ]*\)/-I\`${CYGPATH_W} \1\`/g'`
-    fi
-    OSITESTS_CFLAGS_INSTALLED="$projcflags $OSITESTS_CFLAGS_INSTALLED"
-
-    # set LIBS variable
-    OSITESTS_LIBS_INSTALLED="$projlibs $OSITESTS_LIBS_INSTALLED"
-
-    # remember that we have processed $pcfile
-    pcfilesprocessed="$pcfilesprocessed:$pcfile"
-
-  done
-  IFS="$save_IFS"
-
-
-  # finish up
-  coin_has_ositests=yes
-  echo "$as_me:$LINENO: result: yes" >&5
-echo "${ECHO_T}yes" >&6
-
-cat >>confdefs.h <<\_ACEOF
-#define COIN_HAS_OSITESTS 1
-_ACEOF
-
-
-  # adjust linker flags for (i)cl compiler
-  # for the LIBS, we replace everything of the form "/somepath/name.lib" by "`$(CYGPATH_W) /somepath/`name.lib | sed -e s|\|/|g" (where we have to use excessive many \ to get the \ into the command line for cl),
-  # for the LIBS_INSTALLED, we replace everything of the form "/somepath/" by "`$(CYGPATH_W) /somepath/`",
-  #    everything of the form "-lname" by "libname.lib", and
-  #    everything of the form "-Lpath" by "-libpath:`$(CYGPATH_W) path`
-  if test x$coin_cxx_is_cl = xtrue || test x$coin_cc_is_cl = xtrue ;
-  then
-    OSITESTS_LIBS=`echo " $OSITESTS_LIBS " | sed -e 's/ \(\/[^ ]*\/\)\([^ ]*\)\.lib / \`$(CYGPATH_W) \1 | sed -e "s|\\\\\\\\\\\\\\\\\\\\|\/|g"\`\2.lib /g'`
-    OSITESTS_LIBS_INSTALLED=`echo " $OSITESTS_LIBS_INSTALLED" | sed -e 's/ \(\/[^ ]*\/\)/ \`$(CYGPATH_W) \1\`/g' -e 's/ -l\([^ ]*\)/ lib\1.lib/g' -e 's/ -L\([^ ]*\)/ -libpath:\`$(CYGPATH_W) \1\`/g'`
-  fi
-
-  OSITESTS_PCREQUIRES="osi-unittests"
-
-
-fi
-
-
-
-if test $coin_has_ositests != notGiven &&
-                test $coin_has_ositests != skipping; then
-  COIN_HAS_OSITESTS_TRUE=
-  COIN_HAS_OSITESTS_FALSE='#'
-else
-  COIN_HAS_OSITESTS_TRUE='#'
-  COIN_HAS_OSITESTS_FALSE=
-fi
-
-
-
-  fi
-
-else
-  echo "$as_me:$LINENO: result: $coin_has_ositests" >&5
-echo "${ECHO_T}$coin_has_ositests" >&6
-fi
-
-if test $coin_has_ositests != skipping &&
-   test $coin_has_ositests != notGiven ; then
-
-cat >>confdefs.h <<\_ACEOF
-#define COIN_HAS_OSITESTS 1
-_ACEOF
-
-
-  # Check whether --enable-interpackage-dependencies or --disable-interpackage-dependencies was given.
-if test "${enable_interpackage_dependencies+set}" = set; then
-  enableval="$enable_interpackage_dependencies"
-
-else
-  enable_interpackage_dependencies=yes
-fi;
-
-  if test $enable_interpackage_dependencies = yes ; then
-     # construct dependencies variables from LIBS variables
-     # we add an extra space in LIBS so we can substitute out everything starting with " -"
-     # remove everything of the form -framework xxx as used on Mac and mkl* and libiomp5* and wsock32.lib as used on Windows
-     # then remove everything of the form -xxx
-     # also remove everything of the form `xxx`yyy (may have been added for cygwin/cl)
-     OSITESTS_DEPENDENCIES=`echo " $OSITESTS_LIBS" | sed -e 's/ mkl[^ ]*//g' -e 's/ libiomp5[^ ]*//g' -e 's/ wsock32[^ ]*//g' -e 's/ -framework  *[^ ]*//g' -e 's/ -[^ ]*//g' -e 's/\`[^\`]*\`[^ ]* //g'`
-
-  fi
-
-  if test 1 = 0 ; then  #change this test to enable a bit of debugging output
-    if test -n "$OSITESTS_CFLAGS" ; then
-      { echo "$as_me:$LINENO: OsiTests CFLAGS are $OSITESTS_CFLAGS" >&5
-echo "$as_me: OsiTests CFLAGS are $OSITESTS_CFLAGS" >&6;}
-    fi
-    if test -n "$OSITESTS_LIBS" ; then
-      { echo "$as_me:$LINENO: OsiTests LIBS   are $OSITESTS_LIBS" >&5
-echo "$as_me: OsiTests LIBS   are $OSITESTS_LIBS" >&6;}
-    fi
-    if test -n "$OSITESTS_DEPENDENCIES" ; then
-      { echo "$as_me:$LINENO: OsiTests DEPENDENCIES are $OSITESTS_DEPENDENCIES" >&5
-echo "$as_me: OsiTests DEPENDENCIES are $OSITESTS_DEPENDENCIES" >&6;}
-    fi
-    if test -n "$OSITESTS_DATA" ; then
-      { echo "$as_me:$LINENO: OsiTests DATA   is  $OSITESTS_DATA" >&5
-echo "$as_me: OsiTests DATA   is  $OSITESTS_DATA" >&6;}
-    fi
-    if test -n "$OSITESTS_PCLIBS" ; then
-      { echo "$as_me:$LINENO: OsiTests PCLIBS are $OSITESTS_PCLIBS" >&5
-echo "$as_me: OsiTests PCLIBS are $OSITESTS_PCLIBS" >&6;}
-    fi
-    if test -n "$OSITESTS_PCREQUIRES" ; then
-      { echo "$as_me:$LINENO: OsiTests PCREQUIRES are $OSITESTS_PCREQUIRES" >&5
-echo "$as_me: OsiTests PCREQUIRES are $OSITESTS_PCREQUIRES" >&6;}
-    fi
-
-  fi
-fi
-
-# Define the Makefile conditional
-
-
-if test $coin_has_ositests != notGiven &&
-                test $coin_has_ositests != skipping; then
-  COIN_HAS_OSITESTS_TRUE=
-  COIN_HAS_OSITESTS_FALSE='#'
-else
-  COIN_HAS_OSITESTS_TRUE='#'
-  COIN_HAS_OSITESTS_FALSE=
-fi
-
-
-
-
 echo "$as_me:$LINENO: checking for COIN-OR package Sample" >&5
 echo $ECHO_N "checking for COIN-OR package Sample... $ECHO_C" >&6
 
@@ -22883,487 +22393,6 @@ if test $coin_has_sample != notGiven &&
 else
   COIN_HAS_SAMPLE_TRUE='#'
   COIN_HAS_SAMPLE_FALSE=
-fi
-
-
-
-
-echo "$as_me:$LINENO: checking for COIN-OR package Netlib" >&5
-echo $ECHO_N "checking for COIN-OR package Netlib... $ECHO_C" >&6
-
-coin_has_netlib=notGiven
-
-# check if user wants to skip package in any case
-if test x"$COIN_SKIP_PROJECTS" != x; then
-  for dir in $COIN_SKIP_PROJECTS; do
-    if test $dir = "Netlib"; then
-      coin_has_netlib=skipping
-    fi
-  done
-fi
-
-if test "$coin_has_netlib" != skipping; then
-
-# Check whether --with-m4_tolower(Netlib) or --without-m4_tolower(Netlib) was given.
-if test "${with_netlib+set}" = set; then
-  withval="$with_netlib"
-  if test "$withval" = no ; then
-       coin_has_netlib=skipping
-     fi
-
-fi;
-fi
-
-NETLIB_LIBS=
-NETLIB_CFLAGS=
-NETLIB_DATA=
-NETLIB_DEPENDENCIES=
-NETLIB_PCLIBS=
-NETLIB_PCREQUIRES=
-NETLIB_DATA=
-
-
-
-
-
-
-
-
-
-#check if user provided LIBS, CFLAGS, or DATA for package or disables use of package
-if test $coin_has_netlib != skipping; then
-
-# Check whether --with-m4_tolower(Netlib)-lib or --without-m4_tolower(Netlib)-lib was given.
-if test "${with_netlib_lib+set}" = set; then
-  withval="$with_netlib_lib"
-  if test "$withval" = no ; then
-       coin_has_netlib=skipping
-     else
-       coin_has_netlib=yes
-       NETLIB_LIBS="$withval"
-       NETLIB_PCLIBS="$withval"
-
-       # if project flags are given by user and we build without pkg-config, then we need to setup the _INSTALLED variables
-       if test -z "$PKG_CONFIG" ; then
-         NETLIB_LIBS_INSTALLED="$withval"
-
-       fi
-     fi
-
-fi;
-fi
-
-if test $coin_has_netlib != skipping; then
-
-# Check whether --with-m4_tolower(Netlib)-incdir or --without-m4_tolower(Netlib)-incdir was given.
-if test "${with_netlib_incdir+set}" = set; then
-  withval="$with_netlib_incdir"
-  if test "$withval" = no ; then
-       coin_has_netlib=skipping
-     else
-       coin_has_netlib=yes
-       NETLIB_CFLAGS="-I`${CYGPATH_W} $withval`"
-
-       # if project flags are given by user and we build without pkg-config, then we need to setup the _INSTALLED variables
-       if test -z "$PKG_CONFIG" ; then
-         NETLIB_CFLAGS_INSTALLED="$NETLIB_CFLAGS"
-
-       fi
-     fi
-
-fi;
-fi
-
-if test $coin_has_netlib != skipping; then
-
-# Check whether --with-m4_tolower(Netlib)-datadir or --without-m4_tolower(Netlib)-datadir was given.
-if test "${with_netlib_datadir+set}" = set; then
-  withval="$with_netlib_datadir"
-  if test "$withval" = no ; then
-       coin_has_netlib=skipping
-     else
-       coin_has_netlib=yes
-       NETLIB_DATA="$withval"
-       # if project flags are given by user and we build without pkg-config, then we need to setup the _INSTALLED variables
-       if test -z "$PKG_CONFIG" ; then
-         NETLIB_DATA_INSTALLED="$withval"
-       fi
-     fi
-
-fi;
-fi
-
-if test $coin_has_netlib = notGiven; then
-  if test -n "$PKG_CONFIG" ; then
-    # set search path for pkg-config
-    # need to export variable to be sure that the following pkg-config gets these values
-    coin_save_PKG_CONFIG_PATH="$PKG_CONFIG_PATH"
-    PKG_CONFIG_PATH="$COIN_PKG_CONFIG_PATH:$COIN_PKG_CONFIG_PATH_UNINSTALLED"
-    export PKG_CONFIG_PATH
-
-    # let pkg-config do it's magic
-
-
-
-if test -n "$PKG_CONFIG" ; then
-  if $PKG_CONFIG --exists "coindatanetlib"; then
-    NETLIB_VERSIONS=`$PKG_CONFIG --modversion "coindatanetlib" 2>/dev/null | tr '\n' ' '`
-     cflags=`$PKG_CONFIG --cflags "coindatanetlib" 2>/dev/null`
-    # pkg-config cannot handle spaces, so CYGPATH_W cannot be put into .pc files
-	# thus, we modify the cflags extracted from pkg-config by putting CYGPATH_W behind -I's
-	# but only do this if is not trivial
-    if test "$CYGPATH_W" != "echo" ; then
-      # need to put into brackets since otherwise autoconf replaces the brackets in the sed command
-      cflags=`echo $cflags | sed -e 's/-I\([^ ]*\)/-I\`${CYGPATH_W} \1\`/g'`
-    fi
-    NETLIB_CFLAGS="$cflags"
-    NETLIB_LIBS=`$PKG_CONFIG --libs "coindatanetlib" 2>/dev/null`
-    NETLIB_DATA=`$PKG_CONFIG --variable=datadir "coindatanetlib" 2>/dev/null`
-     coin_has_netlib=yes
-        echo "$as_me:$LINENO: result: yes: $NETLIB_VERSIONS" >&5
-echo "${ECHO_T}yes: $NETLIB_VERSIONS" >&6
-
-        # adjust linker flags for (i)cl compiler
-        # for the LIBS, we replace everything of the form "/somepath/name.lib" by "`$(CYGPATH_W) /somepath/`name.lib | sed -e s|\|/|g" (where we have to use excessive many \ to get the \ into the command line for cl)
-        if test x$coin_cxx_is_cl = xtrue || test x$coin_cc_is_cl = xtrue ;
-        then
-          NETLIB_LIBS=`echo " $NETLIB_LIBS " | sed -e 's/ \(\/[^ ]*\/\)\([^ ]*\)\.lib / \`$(CYGPATH_W) \1 | sed -e "s|\\\\\\\\\\\\\\\\\\\\|\/|g"\`\2.lib /g'`
-        fi
-        NETLIB_PCREQUIRES="coindatanetlib"
-
-        # augment X_PCREQUIRES, X_CFLAGS, and X_LIBS for each build target X in
-
-
-
-  else
-    NETLIB_PKG_ERRORS=`$PKG_CONFIG $pkg_short_errors --errors-to-stdout --print-errors "coindatanetlib"`
-      coin_has_netlib=notGiven
-        echo "$as_me:$LINENO: result: not given: $NETLIB_PKG_ERRORS" >&5
-echo "${ECHO_T}not given: $NETLIB_PKG_ERRORS" >&6
-
-  fi
-else
-  { { echo "$as_me:$LINENO: error: \"Cannot check for existance of module Netlib without pkg-config\"" >&5
-echo "$as_me: error: \"Cannot check for existance of module Netlib without pkg-config\"" >&2;}
-   { (exit 1); exit 1; }; }
-fi
-
-
-
-
-    # reset PKG_CONFIG_PATH variable
-    PKG_CONFIG_PATH="$coin_save_PKG_CONFIG_PATH"
-    export PKG_CONFIG_PATH
-
-  else
-    echo "$as_me:$LINENO: result: skipped check via pkg-config, redirect to fallback" >&5
-echo "${ECHO_T}skipped check via pkg-config, redirect to fallback" >&6
-
-echo "$as_me:$LINENO: checking for COIN-OR package Netlib (fallback)" >&5
-echo $ECHO_N "checking for COIN-OR package Netlib (fallback)... $ECHO_C" >&6
-
-coin_has_netlib=notGiven
-NETLIB_LIBS=
-NETLIB_LIBS_INSTALLED=
-NETLIB_CFLAGS=
-NETLIB_CFLAGS_INSTALLED=
-NETLIB_DATA=
-NETLIB_DATA_INSTALLED=
-NETLIB_PCLIBS=
-NETLIB_PCREQUIRES=
-
-# initial list of dependencies is "coindatanetlib", but we need to filter out version number specifications (= x, <= x, >= x, != x)
-projtoprocess="coindatanetlib"
-
-# we first expand the list of projects to process by adding all dependencies just behind the project which depends on it
-# further, we collect the list of corresponding .pc files, but do this in reverse order, because we need this order afterwards
-# the latter we also do with .pc files corresponding to the installed projects, which will be needed to setup Makefiles for examples
-# also, we setup the DATA variable
-allproj=""
-allpcfiles=""
-allpcifiles=""
-while test "x$projtoprocess" != x ; do
-
-  for proj in $projtoprocess ; do
-    # if $proj is available and configured, then a project-uninstalled.pc file should have been created, so search for it
-    pcfile=""
-    save_IFS="$IFS"
-    IFS=":"
-    for dir in $COIN_PKG_CONFIG_PATH_UNINSTALLED ; do
-      # the base directory configure should have setup coin_subdirs.txt in a way that it does not contain projects that should be skipped, so we do not need to test this here again
-      if test -r "$dir/${proj}-uninstalled.pc" ; then
-        pcfile="$dir/$proj-uninstalled.pc"
-        if test -r "$dir/${proj}.pc" ; then
-          pcifile="$dir/${proj}.pc"
-        else
-          { echo "$as_me:$LINENO: WARNING: Found $pcfile, but $dir/${proj}.pc is not available. This may break Makefile's of examples." >&5
-echo "$as_me: WARNING: Found $pcfile, but $dir/${proj}.pc is not available. This may break Makefile's of examples." >&2;}
-          pcifile=
-        fi
-        break
-      fi
-    done
-    IFS="$save_IFS"
-
-    if test "x$pcfile" != x ; then
-      # read dependencies from $pcfile and filter it
-      projrequires=`sed -n -e 's/Requires://gp' "$pcfile" | sed -e 's/<\{0,1\}>\{0,1\}=[ 	]\{0,\}[^ 	]\{1,\}//g'`
-
-      # add projrequires to the front of the list of projects that have to be processed next
-      # at the same time, remove $proj from this list
-      projtoprocess=`echo $projtoprocess | sed -e "s/$proj/$projrequires/"`
-
-      # read DATA from $pcfile, if _DATA is still empty
-      if test "x$NETLIB_DATA" = x ; then
-        projdatadir=
-        pcfilemod=`sed -e '/[a-zA-Z]:/d' -e 's/datadir=\(.*\)/echo projdatadir=\\\\"\1\\\\"/g' $pcfile`
-        eval `sh -c "$pcfilemod"`
-        NETLIB_DATA="$projdatadir"
-      fi
-
-      allproj="$allproj $proj"
-      allpcfiles="$pcfile:$allpcfiles"
-
-    else
-      echo "$as_me:$LINENO: result: no, dependency $proj not available" >&5
-echo "${ECHO_T}no, dependency $proj not available" >&6
-      allproj=fail
-      break 2
-    fi
-
-    if test "x$pcifile" != x ; then
-      allpcifiles="$pcifile:$allpcifiles"
-
-      # read DATA_INSTALLED from $pcifile, if _DATA_INSTALLED is still empty
-      if test "x$NETLIB_DATA_INSTALLED" = x ; then
-        projdatadir=
-        pcifilemod=`sed -e '/[a-zA-Z]:/d' -e 's/datadir=\(.*\)/echo projdatadir=\\\\"\1\\\\"/g' $pcifile`
-        eval `sh -c "$pcifilemod"`
-        if test "${CYGPATH_W}" != "echo"; then
-          projdatadir="\`\$(CYGPATH_W) ${projdatadir} | sed -e 's/\\\\\\\\/\\\\\\\\\\\\\\\\/g'\`"
-        fi
-        NETLIB_DATA_INSTALLED="$projdatadir"
-      fi
-
-    fi
-
-    break
-  done
-
-  # remove spaces on begin of $projtoprocess
-  projtoprocess=`echo $projtoprocess | sed -e 's/^ *//'`
-
-done
-
-if test "$allproj" != fail ; then
-
-  # now go through the list of .pc files and assemble compiler and linker flags
-  # important is here to obey the reverse order that has been setup before,
-  # since then libraries that are required by several others should be after these other libraries
-  pcfilesprocessed=""
-
-  save_IFS="$IFS"
-  IFS=":"
-  for pcfile in $allpcfiles ; do
-
-    # if $pcfile has been processed already, skip this round
-    if test "x$pcfilesprocessed" != x ; then
-      for pcfiledone in $pcfilesprocessed ; do
-        if test "$pcfiledone" = "$pcfile" ; then
-          continue 2
-        fi
-      done
-    fi
-
-    # modify .pc file to a shell script that prints shell commands for setting the compiler and library flags:
-    #   replace "Libs:" by "echo projlibs="
-    #   replace "Cflags:" by "echo projcflags="
-    #   remove every line starting with <some word>:
-    pcfilemod=`sed -e 's/Libs:\(.*\)$/echo projlibs=\\\\"\1\\\\"/g' -e 's/Cflags:\(.*\)/echo projcflags=\\\\"\1\\\\"/g' -e '/^[a-zA-Z]*:/d' $pcfile`
-
-    # set projcflags and projlibs variables by running $pcfilemod
-    # under mingw, the current IFS seem to make the : in the paths of the gfortran libs go away, so we temporarily set IFS back to its default
-    projcflags=
-    projlibs=
-    IFS="$save_IFS"
-    eval `sh -c "$pcfilemod"`
-    IFS=":"
-
-    # add CYGPATH_W cludge into include flags and set CFLAGS variable
-    if test "${CYGPATH_W}" != "echo"; then
-      projcflags=`echo "$projcflags" | sed -e 's/-I\([^ ]*\)/-I\`${CYGPATH_W} \1\`/g'`
-    fi
-    NETLIB_CFLAGS="$projcflags $NETLIB_CFLAGS"
-
-    # set LIBS variable
-    NETLIB_LIBS="$projlibs $NETLIB_LIBS"
-
-    # remember that we have processed $pcfile
-    pcfilesprocessed="$pcfilesprocessed:$pcfile"
-
-  done
-  IFS="$save_IFS"
-
-
-  # now go through the list of .pc files for installed projects and assemble compiler and linker flags
-  # important is here again to obey the reverse order that has been setup before,
-  # since then libraries that are required by several others should be after these other libraries
-  pcfilesprocessed=""
-
-  save_IFS="$IFS"
-  IFS=":"
-  for pcfile in $allpcifiles ; do
-
-    # if $pcfile has been processed already, skip this round
-    if test "x$pcfilesprocessed" != x ; then
-      for pcfiledone in $pcfilesprocessed ; do
-        if test "$pcfiledone" = "$pcfile" ; then
-          continue 2
-        fi
-      done
-    fi
-
-    # modify .pc file to a shell script that prints shell commands for setting the compiler and library flags:
-    #   replace "Libs:" by "echo projlibs="
-    #   replace "Cflags:" by "echo projcflags="
-    #   remove every line starting with <some word>:
-    pcfilemod=`sed -e 's/Libs:\(.*\)$/echo projlibs=\\\\"\1\\\\"/g' -e 's/Cflags:\(.*\)/echo projcflags=\\\\"\1\\\\"/g' -e '/^[a-zA-Z]*:/d' $pcfile`
-
-    # set projcflags and projlibs variables by running $pcfilemod
-    # under mingw, the current IFS seem to make the : in the paths of the gfortran libs go away, so we temporarily set IFS back to its default
-    projcflags=
-    projlibs=
-    IFS="$save_IFS"
-    eval `sh -c "$pcfilemod"`
-    IFS=":"
-
-    # add CYGPATH_W cludge into include flags and set CFLAGS variable
-    if test "${CYGPATH_W}" != "echo"; then
-      projcflags=`echo "$projcflags" | sed -e 's/-I\([^ ]*\)/-I\`${CYGPATH_W} \1\`/g'`
-    fi
-    NETLIB_CFLAGS_INSTALLED="$projcflags $NETLIB_CFLAGS_INSTALLED"
-
-    # set LIBS variable
-    NETLIB_LIBS_INSTALLED="$projlibs $NETLIB_LIBS_INSTALLED"
-
-    # remember that we have processed $pcfile
-    pcfilesprocessed="$pcfilesprocessed:$pcfile"
-
-  done
-  IFS="$save_IFS"
-
-
-  # finish up
-  coin_has_netlib=yes
-  echo "$as_me:$LINENO: result: yes" >&5
-echo "${ECHO_T}yes" >&6
-
-cat >>confdefs.h <<\_ACEOF
-#define COIN_HAS_NETLIB 1
-_ACEOF
-
-
-  # adjust linker flags for (i)cl compiler
-  # for the LIBS, we replace everything of the form "/somepath/name.lib" by "`$(CYGPATH_W) /somepath/`name.lib | sed -e s|\|/|g" (where we have to use excessive many \ to get the \ into the command line for cl),
-  # for the LIBS_INSTALLED, we replace everything of the form "/somepath/" by "`$(CYGPATH_W) /somepath/`",
-  #    everything of the form "-lname" by "libname.lib", and
-  #    everything of the form "-Lpath" by "-libpath:`$(CYGPATH_W) path`
-  if test x$coin_cxx_is_cl = xtrue || test x$coin_cc_is_cl = xtrue ;
-  then
-    NETLIB_LIBS=`echo " $NETLIB_LIBS " | sed -e 's/ \(\/[^ ]*\/\)\([^ ]*\)\.lib / \`$(CYGPATH_W) \1 | sed -e "s|\\\\\\\\\\\\\\\\\\\\|\/|g"\`\2.lib /g'`
-    NETLIB_LIBS_INSTALLED=`echo " $NETLIB_LIBS_INSTALLED" | sed -e 's/ \(\/[^ ]*\/\)/ \`$(CYGPATH_W) \1\`/g' -e 's/ -l\([^ ]*\)/ lib\1.lib/g' -e 's/ -L\([^ ]*\)/ -libpath:\`$(CYGPATH_W) \1\`/g'`
-  fi
-
-  NETLIB_PCREQUIRES="coindatanetlib"
-
-
-fi
-
-
-
-if test $coin_has_netlib != notGiven &&
-                test $coin_has_netlib != skipping; then
-  COIN_HAS_NETLIB_TRUE=
-  COIN_HAS_NETLIB_FALSE='#'
-else
-  COIN_HAS_NETLIB_TRUE='#'
-  COIN_HAS_NETLIB_FALSE=
-fi
-
-
-
-  fi
-
-else
-  echo "$as_me:$LINENO: result: $coin_has_netlib" >&5
-echo "${ECHO_T}$coin_has_netlib" >&6
-fi
-
-if test $coin_has_netlib != skipping &&
-   test $coin_has_netlib != notGiven ; then
-
-cat >>confdefs.h <<\_ACEOF
-#define COIN_HAS_NETLIB 1
-_ACEOF
-
-
-  # Check whether --enable-interpackage-dependencies or --disable-interpackage-dependencies was given.
-if test "${enable_interpackage_dependencies+set}" = set; then
-  enableval="$enable_interpackage_dependencies"
-
-else
-  enable_interpackage_dependencies=yes
-fi;
-
-  if test $enable_interpackage_dependencies = yes ; then
-     # construct dependencies variables from LIBS variables
-     # we add an extra space in LIBS so we can substitute out everything starting with " -"
-     # remove everything of the form -framework xxx as used on Mac and mkl* and libiomp5* and wsock32.lib as used on Windows
-     # then remove everything of the form -xxx
-     # also remove everything of the form `xxx`yyy (may have been added for cygwin/cl)
-     NETLIB_DEPENDENCIES=`echo " $NETLIB_LIBS" | sed -e 's/ mkl[^ ]*//g' -e 's/ libiomp5[^ ]*//g' -e 's/ wsock32[^ ]*//g' -e 's/ -framework  *[^ ]*//g' -e 's/ -[^ ]*//g' -e 's/\`[^\`]*\`[^ ]* //g'`
-
-  fi
-
-  if test 1 = 0 ; then  #change this test to enable a bit of debugging output
-    if test -n "$NETLIB_CFLAGS" ; then
-      { echo "$as_me:$LINENO: Netlib CFLAGS are $NETLIB_CFLAGS" >&5
-echo "$as_me: Netlib CFLAGS are $NETLIB_CFLAGS" >&6;}
-    fi
-    if test -n "$NETLIB_LIBS" ; then
-      { echo "$as_me:$LINENO: Netlib LIBS   are $NETLIB_LIBS" >&5
-echo "$as_me: Netlib LIBS   are $NETLIB_LIBS" >&6;}
-    fi
-    if test -n "$NETLIB_DEPENDENCIES" ; then
-      { echo "$as_me:$LINENO: Netlib DEPENDENCIES are $NETLIB_DEPENDENCIES" >&5
-echo "$as_me: Netlib DEPENDENCIES are $NETLIB_DEPENDENCIES" >&6;}
-    fi
-    if test -n "$NETLIB_DATA" ; then
-      { echo "$as_me:$LINENO: Netlib DATA   is  $NETLIB_DATA" >&5
-echo "$as_me: Netlib DATA   is  $NETLIB_DATA" >&6;}
-    fi
-    if test -n "$NETLIB_PCLIBS" ; then
-      { echo "$as_me:$LINENO: Netlib PCLIBS are $NETLIB_PCLIBS" >&5
-echo "$as_me: Netlib PCLIBS are $NETLIB_PCLIBS" >&6;}
-    fi
-    if test -n "$NETLIB_PCREQUIRES" ; then
-      { echo "$as_me:$LINENO: Netlib PCREQUIRES are $NETLIB_PCREQUIRES" >&5
-echo "$as_me: Netlib PCREQUIRES are $NETLIB_PCREQUIRES" >&6;}
-    fi
-
-  fi
-fi
-
-# Define the Makefile conditional
-
-
-if test $coin_has_netlib != notGiven &&
-                test $coin_has_netlib != skipping; then
-  COIN_HAS_NETLIB_TRUE=
-  COIN_HAS_NETLIB_FALSE='#'
-else
-  COIN_HAS_NETLIB_TRUE='#'
-  COIN_HAS_NETLIB_FALSE=
 fi
 
 
@@ -30009,246 +29038,6 @@ echo "$as_me: Cbc multithreading enabled" >&6;};
 fi
 
 ##############################################################################
-#                            OsiCbc configuration                            #
-##############################################################################
-
-# Handles configuration of the underlying default solver in OsiCbc. The issue
-# is that OsiCbc defines a default solver, used when the client does not
-# specify a solver in the constructor. The default solver must, therefore,
-# be present in the build. This macro checks that this is true, and sets the
-# compile-time symbols OSICBC_DFLT_SOLVER, OSICBC_CLP_DFLT_SOLVER, and
-# OSICBC_DFLT_SOLVER_HPP that control the build. The parameter default_solver
-# should normally be clp, unless you're working on some other solver.
-
-# Ideally, this macro would not require enumeration of solvers, but the
-# effort required to avoid it is just not justified at present. One enumeration
-# is hidden in AC_OSI_CANONICAL. The other is visible, the AM_CONDITIONAL
-# list at the end.
-
-# In an ideal world this macro would do absolutely nothing if Cbc is not
-# present, but autotools is not an ideal world and we have to satisfy its
-# requirements. In particular, the AM_CONDITIONAL macros need to execute or
-# automake will complain. Really the only thing we need to suppress is the
-# check that the default solver exists. All the rest is irrelevant when Cbc
-# isn't present (hence OsiCbc will be configured but not actually compiled).
-
-# Process the with-osicbc-default-solver option.
-
-
-# Check whether --with-osicbc-default-solver or --without-osicbc-default-solver was given.
-if test "${with_osicbc_default_solver+set}" = set; then
-  withval="$with_osicbc_default_solver"
-  osicbc_with_solver=$withval
-else
-  osicbc_with_solver=clp
-fi;
-
-case "${osicbc_with_solver}" in
-  [Cc][Ll][Pp]*)
-    osi_lc_solver=clp ;
-    osi_mc_solver=Clp ;
-    osi_uc_solver=CLP ;
-    osi_exists_solver=${coin_has_clp-"unavailable"}
-    ;;
-  [Dd][Yy][Ll][Pp]*)
-    osi_lc_solver=dylp ;
-    osi_mc_solver=Dylp
-    osi_uc_solver=DYLP
-    osi_exists_solver=${coin_has_dylp-"unavailable"}
-    ;;
-  [Cc][Pp][Xx]*)
-    osi_lc_solver=cpx ;
-    osi_mc_solver=Cpx
-    osi_uc_solver=CPX
-    osi_exists_solver=${coin_has_cpx-"unavailable"}
-    ;;
-  [Gg][Ll][Pp][Kk]*)
-    osi_lc_solver=glpk ;
-    osi_mc_solver=Glpk
-    osi_uc_solver=GLPK
-    osi_exists_solver=${coin_has_glpk-"unavailable"}
-    ;;
-  [Gg][Rr][Bb]*)
-    osi_lc_solver=grb ;
-    osi_mc_solver=Grb ;
-    osi_uc_solver=GRB ;
-    osi_exists_solver=${coin_has_grb-"unavailable"}
-    ;;
-  [Mm][Ss][Kk]*)
-    osi_lc_solver=msk ;
-    osi_mc_solver=Msk
-    osi_uc_solver=MSK
-    osi_exists_solver=${coin_has_msk-"unavailable"}
-    ;;
-  [Ss][Pp][Xx]*)
-    osi_lc_solver=spx ;
-    osi_mc_solver=Spx
-    osi_uc_solver=SPX
-    osi_exists_solver=${coin_has_spx-"unavailable"}
-    ;;
-  [Ss][Yy][Mm]*)
-    osi_lc_solver=sym ;
-    osi_mc_solver=Sym
-    osi_uc_solver=SYM
-    osi_exists_solver=${coin_has_sym-"unavailable"}
-    ;;
-  [Vv][Oo][Ll]*)
-    osi_lc_solver=vol ;
-    osi_mc_solver=Vol
-    osi_uc_solver=VOL
-    osi_exists_solver=${coin_has_vol-"unavailable"}
-    ;;
-  [Xx][Pp][Rr]*)
-    osi_lc_solver=xpr ;
-    osi_mc_solver=Xpr
-    osi_uc_solver=XPR
-    osi_exists_solver=${coin_has_xpr-"unavailable"}
-    ;;
-  *)
-    osi_lc_solver=clp ;
-    osi_mc_solver=Clp ;
-    osi_uc_solver=CLP ;
-    osi_exists_solver=${coin_has_clp-"unavailable"}
-    { echo "$as_me:$LINENO: WARNING: Unrecognised solver $1; defaulting to $osi_lc_solver." >&5
-echo "$as_me: WARNING: Unrecognised solver $1; defaulting to $osi_lc_solver." >&2;}
-    ;;
-esac
-
-# Check that the requested solver is available.
-if test $osi_exists_solver = no; then
-  { { echo "$as_me:$LINENO: error: selected default solver $osicbc_with_solver is unavailable.
-  Please select an available solver using the --with-osicbc-default-solver option." >&5
-echo "$as_me: error: selected default solver $osicbc_with_solver is unavailable.
-  Please select an available solver using the --with-osicbc-default-solver option." >&2;}
-   { (exit 1); exit 1; }; }
-fi
-
-# State the result.
-{ echo "$as_me:$LINENO: OsiCbc default solver is $osi_lc_solver" >&5
-echo "$as_me: OsiCbc default solver is $osi_lc_solver" >&6;}
-
-# And set the configuration variables.
-
-cat >>confdefs.h <<_ACEOF
-#define OSICBC_DFLT_SOLVER Osi${osi_mc_solver}SolverInterface
-_ACEOF
-
-
-cat >>confdefs.h <<_ACEOF
-#define OSICBC_DFLT_SOLVER_HPP "Osi${osi_mc_solver}SolverInterface.hpp"
-_ACEOF
-
-if test $osi_mc_solver = "Clp"; then
-
-cat >>confdefs.h <<\_ACEOF
-#define OSICBC_DFLT_SOLVER_CLP 1
-_ACEOF
-
-fi
-
-# Last but not least, we need automake conditionals.
-
-
-if test $osi_mc_solver = Clp; then
-  OSICBC_DFLT_SOLVER_CLP_TRUE=
-  OSICBC_DFLT_SOLVER_CLP_FALSE='#'
-else
-  OSICBC_DFLT_SOLVER_CLP_TRUE='#'
-  OSICBC_DFLT_SOLVER_CLP_FALSE=
-fi
-
-
-
-if test $osi_mc_solver = Cpx; then
-  OSICBC_DFLT_SOLVER_CPX_TRUE=
-  OSICBC_DFLT_SOLVER_CPX_FALSE='#'
-else
-  OSICBC_DFLT_SOLVER_CPX_TRUE='#'
-  OSICBC_DFLT_SOLVER_CPX_FALSE=
-fi
-
-
-
-if test $osi_mc_solver = Dylp; then
-  OSICBC_DFLT_SOLVER_DYLP_TRUE=
-  OSICBC_DFLT_SOLVER_DYLP_FALSE='#'
-else
-  OSICBC_DFLT_SOLVER_DYLP_TRUE='#'
-  OSICBC_DFLT_SOLVER_DYLP_FALSE=
-fi
-
-
-
-if test $osi_mc_solver = Glpk; then
-  OSICBC_DFLT_SOLVER_GLPK_TRUE=
-  OSICBC_DFLT_SOLVER_GLPK_FALSE='#'
-else
-  OSICBC_DFLT_SOLVER_GLPK_TRUE='#'
-  OSICBC_DFLT_SOLVER_GLPK_FALSE=
-fi
-
-
-
-if test $osi_mc_solver = Grb; then
-  OSICBC_DFLT_SOLVER_GRB_TRUE=
-  OSICBC_DFLT_SOLVER_GRB_FALSE='#'
-else
-  OSICBC_DFLT_SOLVER_GRB_TRUE='#'
-  OSICBC_DFLT_SOLVER_GRB_FALSE=
-fi
-
-
-
-if test $osi_mc_solver = Msk; then
-  OSICBC_DFLT_SOLVER_MSK_TRUE=
-  OSICBC_DFLT_SOLVER_MSK_FALSE='#'
-else
-  OSICBC_DFLT_SOLVER_MSK_TRUE='#'
-  OSICBC_DFLT_SOLVER_MSK_FALSE=
-fi
-
-
-
-if test $osi_mc_solver = Spx; then
-  OSICBC_DFLT_SOLVER_SPX_TRUE=
-  OSICBC_DFLT_SOLVER_SPX_FALSE='#'
-else
-  OSICBC_DFLT_SOLVER_SPX_TRUE='#'
-  OSICBC_DFLT_SOLVER_SPX_FALSE=
-fi
-
-
-
-if test $osi_mc_solver = Sym; then
-  OSICBC_DFLT_SOLVER_SYM_TRUE=
-  OSICBC_DFLT_SOLVER_SYM_FALSE='#'
-else
-  OSICBC_DFLT_SOLVER_SYM_TRUE='#'
-  OSICBC_DFLT_SOLVER_SYM_FALSE=
-fi
-
-
-
-if test $osi_mc_solver = Vol; then
-  OSICBC_DFLT_SOLVER_VOL_TRUE=
-  OSICBC_DFLT_SOLVER_VOL_FALSE='#'
-else
-  OSICBC_DFLT_SOLVER_VOL_TRUE='#'
-  OSICBC_DFLT_SOLVER_VOL_FALSE=
-fi
-
-
-
-if test $osi_mc_solver = Xpr; then
-  OSICBC_DFLT_SOLVER_XPR_TRUE=
-  OSICBC_DFLT_SOLVER_XPR_FALSE='#'
-else
-  OSICBC_DFLT_SOLVER_XPR_TRUE='#'
-  OSICBC_DFLT_SOLVER_XPR_FALSE=
-fi
-
-
-##############################################################################
 #                   VPATH links for example input files                      #
 ##############################################################################
 
@@ -30474,7 +29263,7 @@ done
 
 # Here list all the files that configure should create (except for the
 # configuration header file)
-                                                                                          ac_config_files="$ac_config_files Makefile examples/Makefile src/Makefile src/OsiCbc/Makefile test/Makefile cbc.pc cbc-uninstalled.pc osi-cbc.pc osi-cbc-uninstalled.pc"
+                                                            ac_config_files="$ac_config_files Makefile examples/Makefile src/Makefile test/Makefile cbc.pc cbc-uninstalled.pc"
 
           ac_config_files="$ac_config_files doxydoc/doxygen.conf"
 
@@ -30731,20 +29520,6 @@ echo "$as_me: error: conditional \"COIN_HAS_CLP\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi
-if test -z "${COIN_HAS_OSITESTS_TRUE}" && test -z "${COIN_HAS_OSITESTS_FALSE}"; then
-  { { echo "$as_me:$LINENO: error: conditional \"COIN_HAS_OSITESTS\" was never defined.
-Usually this means the macro was only invoked conditionally." >&5
-echo "$as_me: error: conditional \"COIN_HAS_OSITESTS\" was never defined.
-Usually this means the macro was only invoked conditionally." >&2;}
-   { (exit 1); exit 1; }; }
-fi
-if test -z "${COIN_HAS_OSITESTS_TRUE}" && test -z "${COIN_HAS_OSITESTS_FALSE}"; then
-  { { echo "$as_me:$LINENO: error: conditional \"COIN_HAS_OSITESTS\" was never defined.
-Usually this means the macro was only invoked conditionally." >&5
-echo "$as_me: error: conditional \"COIN_HAS_OSITESTS\" was never defined.
-Usually this means the macro was only invoked conditionally." >&2;}
-   { (exit 1); exit 1; }; }
-fi
 if test -z "${COIN_HAS_SAMPLE_TRUE}" && test -z "${COIN_HAS_SAMPLE_FALSE}"; then
   { { echo "$as_me:$LINENO: error: conditional \"COIN_HAS_SAMPLE\" was never defined.
 Usually this means the macro was only invoked conditionally." >&5
@@ -30756,20 +29531,6 @@ if test -z "${COIN_HAS_SAMPLE_TRUE}" && test -z "${COIN_HAS_SAMPLE_FALSE}"; then
   { { echo "$as_me:$LINENO: error: conditional \"COIN_HAS_SAMPLE\" was never defined.
 Usually this means the macro was only invoked conditionally." >&5
 echo "$as_me: error: conditional \"COIN_HAS_SAMPLE\" was never defined.
-Usually this means the macro was only invoked conditionally." >&2;}
-   { (exit 1); exit 1; }; }
-fi
-if test -z "${COIN_HAS_NETLIB_TRUE}" && test -z "${COIN_HAS_NETLIB_FALSE}"; then
-  { { echo "$as_me:$LINENO: error: conditional \"COIN_HAS_NETLIB\" was never defined.
-Usually this means the macro was only invoked conditionally." >&5
-echo "$as_me: error: conditional \"COIN_HAS_NETLIB\" was never defined.
-Usually this means the macro was only invoked conditionally." >&2;}
-   { (exit 1); exit 1; }; }
-fi
-if test -z "${COIN_HAS_NETLIB_TRUE}" && test -z "${COIN_HAS_NETLIB_FALSE}"; then
-  { { echo "$as_me:$LINENO: error: conditional \"COIN_HAS_NETLIB\" was never defined.
-Usually this means the macro was only invoked conditionally." >&5
-echo "$as_me: error: conditional \"COIN_HAS_NETLIB\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi
@@ -30917,76 +29678,6 @@ if test -z "${CBC_BUILD_CBC_GENERIC_TRUE}" && test -z "${CBC_BUILD_CBC_GENERIC_F
   { { echo "$as_me:$LINENO: error: conditional \"CBC_BUILD_CBC_GENERIC\" was never defined.
 Usually this means the macro was only invoked conditionally." >&5
 echo "$as_me: error: conditional \"CBC_BUILD_CBC_GENERIC\" was never defined.
-Usually this means the macro was only invoked conditionally." >&2;}
-   { (exit 1); exit 1; }; }
-fi
-if test -z "${OSICBC_DFLT_SOLVER_CLP_TRUE}" && test -z "${OSICBC_DFLT_SOLVER_CLP_FALSE}"; then
-  { { echo "$as_me:$LINENO: error: conditional \"OSICBC_DFLT_SOLVER_CLP\" was never defined.
-Usually this means the macro was only invoked conditionally." >&5
-echo "$as_me: error: conditional \"OSICBC_DFLT_SOLVER_CLP\" was never defined.
-Usually this means the macro was only invoked conditionally." >&2;}
-   { (exit 1); exit 1; }; }
-fi
-if test -z "${OSICBC_DFLT_SOLVER_CPX_TRUE}" && test -z "${OSICBC_DFLT_SOLVER_CPX_FALSE}"; then
-  { { echo "$as_me:$LINENO: error: conditional \"OSICBC_DFLT_SOLVER_CPX\" was never defined.
-Usually this means the macro was only invoked conditionally." >&5
-echo "$as_me: error: conditional \"OSICBC_DFLT_SOLVER_CPX\" was never defined.
-Usually this means the macro was only invoked conditionally." >&2;}
-   { (exit 1); exit 1; }; }
-fi
-if test -z "${OSICBC_DFLT_SOLVER_DYLP_TRUE}" && test -z "${OSICBC_DFLT_SOLVER_DYLP_FALSE}"; then
-  { { echo "$as_me:$LINENO: error: conditional \"OSICBC_DFLT_SOLVER_DYLP\" was never defined.
-Usually this means the macro was only invoked conditionally." >&5
-echo "$as_me: error: conditional \"OSICBC_DFLT_SOLVER_DYLP\" was never defined.
-Usually this means the macro was only invoked conditionally." >&2;}
-   { (exit 1); exit 1; }; }
-fi
-if test -z "${OSICBC_DFLT_SOLVER_GLPK_TRUE}" && test -z "${OSICBC_DFLT_SOLVER_GLPK_FALSE}"; then
-  { { echo "$as_me:$LINENO: error: conditional \"OSICBC_DFLT_SOLVER_GLPK\" was never defined.
-Usually this means the macro was only invoked conditionally." >&5
-echo "$as_me: error: conditional \"OSICBC_DFLT_SOLVER_GLPK\" was never defined.
-Usually this means the macro was only invoked conditionally." >&2;}
-   { (exit 1); exit 1; }; }
-fi
-if test -z "${OSICBC_DFLT_SOLVER_GRB_TRUE}" && test -z "${OSICBC_DFLT_SOLVER_GRB_FALSE}"; then
-  { { echo "$as_me:$LINENO: error: conditional \"OSICBC_DFLT_SOLVER_GRB\" was never defined.
-Usually this means the macro was only invoked conditionally." >&5
-echo "$as_me: error: conditional \"OSICBC_DFLT_SOLVER_GRB\" was never defined.
-Usually this means the macro was only invoked conditionally." >&2;}
-   { (exit 1); exit 1; }; }
-fi
-if test -z "${OSICBC_DFLT_SOLVER_MSK_TRUE}" && test -z "${OSICBC_DFLT_SOLVER_MSK_FALSE}"; then
-  { { echo "$as_me:$LINENO: error: conditional \"OSICBC_DFLT_SOLVER_MSK\" was never defined.
-Usually this means the macro was only invoked conditionally." >&5
-echo "$as_me: error: conditional \"OSICBC_DFLT_SOLVER_MSK\" was never defined.
-Usually this means the macro was only invoked conditionally." >&2;}
-   { (exit 1); exit 1; }; }
-fi
-if test -z "${OSICBC_DFLT_SOLVER_SPX_TRUE}" && test -z "${OSICBC_DFLT_SOLVER_SPX_FALSE}"; then
-  { { echo "$as_me:$LINENO: error: conditional \"OSICBC_DFLT_SOLVER_SPX\" was never defined.
-Usually this means the macro was only invoked conditionally." >&5
-echo "$as_me: error: conditional \"OSICBC_DFLT_SOLVER_SPX\" was never defined.
-Usually this means the macro was only invoked conditionally." >&2;}
-   { (exit 1); exit 1; }; }
-fi
-if test -z "${OSICBC_DFLT_SOLVER_SYM_TRUE}" && test -z "${OSICBC_DFLT_SOLVER_SYM_FALSE}"; then
-  { { echo "$as_me:$LINENO: error: conditional \"OSICBC_DFLT_SOLVER_SYM\" was never defined.
-Usually this means the macro was only invoked conditionally." >&5
-echo "$as_me: error: conditional \"OSICBC_DFLT_SOLVER_SYM\" was never defined.
-Usually this means the macro was only invoked conditionally." >&2;}
-   { (exit 1); exit 1; }; }
-fi
-if test -z "${OSICBC_DFLT_SOLVER_VOL_TRUE}" && test -z "${OSICBC_DFLT_SOLVER_VOL_FALSE}"; then
-  { { echo "$as_me:$LINENO: error: conditional \"OSICBC_DFLT_SOLVER_VOL\" was never defined.
-Usually this means the macro was only invoked conditionally." >&5
-echo "$as_me: error: conditional \"OSICBC_DFLT_SOLVER_VOL\" was never defined.
-Usually this means the macro was only invoked conditionally." >&2;}
-   { (exit 1); exit 1; }; }
-fi
-if test -z "${OSICBC_DFLT_SOLVER_XPR_TRUE}" && test -z "${OSICBC_DFLT_SOLVER_XPR_FALSE}"; then
-  { { echo "$as_me:$LINENO: error: conditional \"OSICBC_DFLT_SOLVER_XPR\" was never defined.
-Usually this means the macro was only invoked conditionally." >&5
-echo "$as_me: error: conditional \"OSICBC_DFLT_SOLVER_XPR\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi
@@ -31437,12 +30128,9 @@ do
   "Makefile" ) CONFIG_FILES="$CONFIG_FILES Makefile" ;;
   "examples/Makefile" ) CONFIG_FILES="$CONFIG_FILES examples/Makefile" ;;
   "src/Makefile" ) CONFIG_FILES="$CONFIG_FILES src/Makefile" ;;
-  "src/OsiCbc/Makefile" ) CONFIG_FILES="$CONFIG_FILES src/OsiCbc/Makefile" ;;
   "test/Makefile" ) CONFIG_FILES="$CONFIG_FILES test/Makefile" ;;
   "cbc.pc" ) CONFIG_FILES="$CONFIG_FILES cbc.pc" ;;
   "cbc-uninstalled.pc" ) CONFIG_FILES="$CONFIG_FILES cbc-uninstalled.pc" ;;
-  "osi-cbc.pc" ) CONFIG_FILES="$CONFIG_FILES osi-cbc.pc" ;;
-  "osi-cbc-uninstalled.pc" ) CONFIG_FILES="$CONFIG_FILES osi-cbc-uninstalled.pc" ;;
   "doxydoc/doxygen.conf" ) CONFIG_FILES="$CONFIG_FILES doxydoc/doxygen.conf" ;;
   "depfiles" ) CONFIG_COMMANDS="$CONFIG_COMMANDS depfiles" ;;
   "src/config.h" ) CONFIG_HEADERS="$CONFIG_HEADERS src/config.h" ;;
@@ -31673,15 +30361,6 @@ s,@CLP_CFLAGS_INSTALLED@,$CLP_CFLAGS_INSTALLED,;t t
 s,@CLP_DATA_INSTALLED@,$CLP_DATA_INSTALLED,;t t
 s,@COIN_HAS_CLP_TRUE@,$COIN_HAS_CLP_TRUE,;t t
 s,@COIN_HAS_CLP_FALSE@,$COIN_HAS_CLP_FALSE,;t t
-s,@OSITESTS_LIBS@,$OSITESTS_LIBS,;t t
-s,@OSITESTS_CFLAGS@,$OSITESTS_CFLAGS,;t t
-s,@OSITESTS_DATA@,$OSITESTS_DATA,;t t
-s,@OSITESTS_DEPENDENCIES@,$OSITESTS_DEPENDENCIES,;t t
-s,@OSITESTS_LIBS_INSTALLED@,$OSITESTS_LIBS_INSTALLED,;t t
-s,@OSITESTS_CFLAGS_INSTALLED@,$OSITESTS_CFLAGS_INSTALLED,;t t
-s,@OSITESTS_DATA_INSTALLED@,$OSITESTS_DATA_INSTALLED,;t t
-s,@COIN_HAS_OSITESTS_TRUE@,$COIN_HAS_OSITESTS_TRUE,;t t
-s,@COIN_HAS_OSITESTS_FALSE@,$COIN_HAS_OSITESTS_FALSE,;t t
 s,@SAMPLE_LIBS@,$SAMPLE_LIBS,;t t
 s,@SAMPLE_CFLAGS@,$SAMPLE_CFLAGS,;t t
 s,@SAMPLE_DATA@,$SAMPLE_DATA,;t t
@@ -31691,15 +30370,6 @@ s,@SAMPLE_CFLAGS_INSTALLED@,$SAMPLE_CFLAGS_INSTALLED,;t t
 s,@SAMPLE_DATA_INSTALLED@,$SAMPLE_DATA_INSTALLED,;t t
 s,@COIN_HAS_SAMPLE_TRUE@,$COIN_HAS_SAMPLE_TRUE,;t t
 s,@COIN_HAS_SAMPLE_FALSE@,$COIN_HAS_SAMPLE_FALSE,;t t
-s,@NETLIB_LIBS@,$NETLIB_LIBS,;t t
-s,@NETLIB_CFLAGS@,$NETLIB_CFLAGS,;t t
-s,@NETLIB_DATA@,$NETLIB_DATA,;t t
-s,@NETLIB_DEPENDENCIES@,$NETLIB_DEPENDENCIES,;t t
-s,@NETLIB_LIBS_INSTALLED@,$NETLIB_LIBS_INSTALLED,;t t
-s,@NETLIB_CFLAGS_INSTALLED@,$NETLIB_CFLAGS_INSTALLED,;t t
-s,@NETLIB_DATA_INSTALLED@,$NETLIB_DATA_INSTALLED,;t t
-s,@COIN_HAS_NETLIB_TRUE@,$COIN_HAS_NETLIB_TRUE,;t t
-s,@COIN_HAS_NETLIB_FALSE@,$COIN_HAS_NETLIB_FALSE,;t t
 s,@MIPLIB3_LIBS@,$MIPLIB3_LIBS,;t t
 s,@MIPLIB3_CFLAGS@,$MIPLIB3_CFLAGS,;t t
 s,@MIPLIB3_DATA@,$MIPLIB3_DATA,;t t
@@ -31792,26 +30462,6 @@ s,@COIN_HAS_ASL_TRUE@,$COIN_HAS_ASL_TRUE,;t t
 s,@COIN_HAS_ASL_FALSE@,$COIN_HAS_ASL_FALSE,;t t
 s,@CBC_BUILD_CBC_GENERIC_TRUE@,$CBC_BUILD_CBC_GENERIC_TRUE,;t t
 s,@CBC_BUILD_CBC_GENERIC_FALSE@,$CBC_BUILD_CBC_GENERIC_FALSE,;t t
-s,@OSICBC_DFLT_SOLVER_CLP_TRUE@,$OSICBC_DFLT_SOLVER_CLP_TRUE,;t t
-s,@OSICBC_DFLT_SOLVER_CLP_FALSE@,$OSICBC_DFLT_SOLVER_CLP_FALSE,;t t
-s,@OSICBC_DFLT_SOLVER_CPX_TRUE@,$OSICBC_DFLT_SOLVER_CPX_TRUE,;t t
-s,@OSICBC_DFLT_SOLVER_CPX_FALSE@,$OSICBC_DFLT_SOLVER_CPX_FALSE,;t t
-s,@OSICBC_DFLT_SOLVER_DYLP_TRUE@,$OSICBC_DFLT_SOLVER_DYLP_TRUE,;t t
-s,@OSICBC_DFLT_SOLVER_DYLP_FALSE@,$OSICBC_DFLT_SOLVER_DYLP_FALSE,;t t
-s,@OSICBC_DFLT_SOLVER_GLPK_TRUE@,$OSICBC_DFLT_SOLVER_GLPK_TRUE,;t t
-s,@OSICBC_DFLT_SOLVER_GLPK_FALSE@,$OSICBC_DFLT_SOLVER_GLPK_FALSE,;t t
-s,@OSICBC_DFLT_SOLVER_GRB_TRUE@,$OSICBC_DFLT_SOLVER_GRB_TRUE,;t t
-s,@OSICBC_DFLT_SOLVER_GRB_FALSE@,$OSICBC_DFLT_SOLVER_GRB_FALSE,;t t
-s,@OSICBC_DFLT_SOLVER_MSK_TRUE@,$OSICBC_DFLT_SOLVER_MSK_TRUE,;t t
-s,@OSICBC_DFLT_SOLVER_MSK_FALSE@,$OSICBC_DFLT_SOLVER_MSK_FALSE,;t t
-s,@OSICBC_DFLT_SOLVER_SPX_TRUE@,$OSICBC_DFLT_SOLVER_SPX_TRUE,;t t
-s,@OSICBC_DFLT_SOLVER_SPX_FALSE@,$OSICBC_DFLT_SOLVER_SPX_FALSE,;t t
-s,@OSICBC_DFLT_SOLVER_SYM_TRUE@,$OSICBC_DFLT_SOLVER_SYM_TRUE,;t t
-s,@OSICBC_DFLT_SOLVER_SYM_FALSE@,$OSICBC_DFLT_SOLVER_SYM_FALSE,;t t
-s,@OSICBC_DFLT_SOLVER_VOL_TRUE@,$OSICBC_DFLT_SOLVER_VOL_TRUE,;t t
-s,@OSICBC_DFLT_SOLVER_VOL_FALSE@,$OSICBC_DFLT_SOLVER_VOL_FALSE,;t t
-s,@OSICBC_DFLT_SOLVER_XPR_TRUE@,$OSICBC_DFLT_SOLVER_XPR_TRUE,;t t
-s,@OSICBC_DFLT_SOLVER_XPR_FALSE@,$OSICBC_DFLT_SOLVER_XPR_FALSE,;t t
 s,@coin_have_doxygen@,$coin_have_doxygen,;t t
 s,@coin_doxy_usedot@,$coin_doxy_usedot,;t t
 s,@coin_doxy_tagname@,$coin_doxy_tagname,;t t

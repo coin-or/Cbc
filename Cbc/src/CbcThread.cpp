@@ -594,8 +594,16 @@ void
 CbcBaseModel::stopThreads(int type)
 {
     if (type < 0) {
-        for (int i = 0; i < numberThreads_; i++) {
-            assert (children_[i].returnCode() == -1);
+	// max nodes ?
+	bool finished = false;
+	while (!finished) {
+	  finished = true;
+	  for (int i = 0; i < numberThreads_; i++) {
+            if (abs(children_[i].returnCode()) != 1) {
+	      children_[i].wait(1, 0); 
+	      finished=false;
+	    }
+	  }
         }
         return;
     }
@@ -834,10 +842,23 @@ CbcBaseModel::waitForThreadsInTree(int type)
         }
         return anyLeft;
     } else if (type == 2) {
-        assert (baseModel->tree()->empty());
+        if (!baseModel->tree()->empty()) {
+  	  // max nodes ?
+	  bool finished = false;
+	  while (!finished) {
+	    finished = true;
+	    for (int iThread = 0; iThread < numberThreads_; iThread++) {
+	      if (children_[iThread].returnCode() == 0) { 
+		double time = getTime();
+		children_[numberThreads_].wait(0, 0);
+		children_[numberThreads_].incrementTimeInThread(getTime() - time);
+		finished = false;
+		children_[iThread].signal(); // unlock
+	      }
+	    }
+	  }
+        }
         int i;
-        for (i = 0; i < numberThreads_; i++)
-            assert (children_[i].returnCode() == -1);
         // do statistics
         // Seems to be bug in CoinCpu on Linux - does threads as well despite documentation
         double time = 0.0;

@@ -1066,6 +1066,8 @@ CbcHeuristicProximity::solution(double & solutionValue,
 */
 
   numCouldRun_++;
+  if (!model_->bestSolution())
+    return 0; // odd - because in parallel mode
   int nodeCount = model_->getNodeCount();
   if (numberSolutions_ == model_->getSolutionCount())
     return 0;

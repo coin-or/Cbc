@@ -117,6 +117,7 @@ CbcHeuristic::CbcHeuristic() :
         runNodes_(),
         numCouldRun_(0),
         numberSolutionsFound_(0),
+        numberNodesDone_(0),
         inputSolution_(NULL)
 {
     // As CbcHeuristic virtual need to modify .cpp if above change
@@ -144,6 +145,7 @@ CbcHeuristic::CbcHeuristic(CbcModel & model) :
         runNodes_(),
         numCouldRun_(0),
         numberSolutionsFound_(0),
+        numberNodesDone_(0),
         inputSolution_(NULL)
 {}
 
@@ -171,6 +173,7 @@ CbcHeuristic::gutsOfCopy(const CbcHeuristic & rhs)
     minDistanceToRun_ = rhs.minDistanceToRun_;
     runNodes_ = rhs.runNodes_;
     numberSolutionsFound_ = rhs.numberSolutionsFound_;
+    numberNodesDone_ = rhs.numberNodesDone_;
     if (rhs.inputSolution_) {
         int numberColumns = model_->getNumCols();
         setInputSolution(rhs.inputSolution_, rhs.inputSolution_[numberColumns]);
@@ -1210,6 +1213,7 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver, int numberNodes,
 		    solverD = model.solver();
 		    solverD->setHintParam(OsiDoDualInResolve, takeHint, strength);
 #endif
+		    numberNodesDone_ = model.getNodeCount();
 #ifdef COIN_DEVELOP
                     printf("sub branch %d nodes, %d iterations - max %d\n",
                            model.getNodeCount(), model.getIterationCount(),

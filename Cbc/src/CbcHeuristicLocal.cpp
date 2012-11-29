@@ -1116,11 +1116,6 @@ CbcHeuristicProximity::solution(double & solutionValue,
   newSolver->setObjective(obj);
   delete [] obj;
   //newSolver->writeMps("xxxx");
-  char proxPrint[200];
-  sprintf(proxPrint,"Running proximity search for %d nodes",numberNodes_);
-  model_->messageHandler()->message(CBC_FPUMP1, model_->messages())
-    << proxPrint
-    << CoinMessageEol;
   int maxSolutions = model_->getMaximumSolutions();
   model_->setMaximumSolutions(1); 
   bool pumpAdded = false;
@@ -1164,14 +1159,38 @@ CbcHeuristicProximity::solution(double & solutionValue,
     // could add cut
     returnCode &= ~2;
   }
+  char proxPrint[200];
   if ((returnCode&1) != 0) {
     // redo objective
     const double * obj = model_->continuousSolver()->getObjCoefficients();
     solutionValue = - offset;
+    int sumIncrease=0.0;
+    int sumDecrease=0.0;
+    int numberIncrease=0;
+    int numberDecrease=0;
     for (int i=0;i<numberColumns;i++) {
       solutionValue += obj[i]*betterSolution[i];
+      if (model_->isInteger(i)) {
+	int change=static_cast<int>(floor(solutionIn[i]-betterSolution[i]+0.5));
+	if (change>0) {
+	  numberIncrease++;
+	  sumIncrease+=change;
+	} else if (change<0) {
+	  numberDecrease++;
+	  sumDecrease-=change;
+	}
+      }
     }
+    sprintf(proxPrint,"Proximity search ran %d nodes (out of %d) - in new solution %d increased (%d), %d decreased (%d)",
+	    numberNodesDone_,numberNodes_,
+	    numberIncrease,sumIncrease,numberDecrease,sumDecrease);
+  } else {
+    sprintf(proxPrint,"Proximity search ran %d nodes - no new solution",
+	    numberNodesDone_);
   }
+  model_->messageHandler()->message(CBC_FPUMP1, model_->messages())
+    << proxPrint
+    << CoinMessageEol;
   
   delete newSolver;
   return returnCode;

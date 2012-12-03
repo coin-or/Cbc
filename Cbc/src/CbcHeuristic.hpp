@@ -385,6 +385,9 @@ protected:
     /// How many solutions the heuristic thought it got
     int numberSolutionsFound_;
 
+    /// How many nodes the heuristic did this go
+    mutable int numberNodesDone_;
+
     // Input solution - so can be used as seed
     double * inputSolution_;
 

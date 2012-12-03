@@ -29,8 +29,7 @@ Release 2.8:
 
 1. Introduced new secondaryStatus 8 to indicate that solving stopped due to an iteration limit.
 
-2. Solution pool is now accessible via the command line and the CbcMain* interface, but
-   you need to configure and compile with CXXDEFS=-DKEEP_POSTPROCESS.
+2. Solution pool is now accessible via the command line and the CbcMain* interface.
 
 3. New mipstart option to read an initial feasible solution from a file. Only values for discrete
    variables need to be provided.

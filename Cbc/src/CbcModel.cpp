@@ -15125,6 +15125,7 @@ CbcModel::deleteSolutions()
         delete [] savedSolutions_[i];
         savedSolutions_[i] = NULL;
     }
+    numberSavedSolutions_ = 0;
 }
 // Delete a saved solution and move others up
 void 
@@ -15138,6 +15139,7 @@ CbcModel::deleteSavedSolution(int which)
       savedSolutions_[j] = savedSolutions_[j+1];
     }
     savedSolutions_[numberSavedSolutions_]=NULL;
+    --numberSavedSolutions_;
   }
 }
 #ifdef COIN_HAS_CLP

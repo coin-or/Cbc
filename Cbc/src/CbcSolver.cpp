@@ -301,6 +301,7 @@ static void putBackOtherSolutions(CbcModel * presolvedModel, CbcModel * model,
   int numberSolutions=presolvedModel->numberSavedSolutions();
   int numberColumns=presolvedModel->getNumCols();
   if (numberSolutions>1) {
+    model->deleteSolutions();
     double * bestSolution = CoinCopyOfArray(presolvedModel->bestSolution(),numberColumns);
     //double cutoff = presolvedModel->getCutoff();
     double objectiveValue=presolvedModel->getObjValue();

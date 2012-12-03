@@ -294,7 +294,7 @@ CbcUser::operator=(const CbcUser & rhs)
     }
     return *this;
 }
-#ifdef KEEP_POSTPROCESS
+
 static void putBackOtherSolutions(CbcModel * presolvedModel, CbcModel * model,
 			   CglPreProcess * preProcess)
 {
@@ -318,7 +318,6 @@ static void putBackOtherSolutions(CbcModel * presolvedModel, CbcModel * model,
     //presolvedModel->setBestSolution(bestSolution,numberColumns,objectiveValue);
   }
 }
-#endif
 
 /*
   CbcSolver class definitions
@@ -5921,10 +5920,8 @@ int CbcMain1 (int argc, const char *argv[],
                                     ClpSimplex * lpSolver = clpSolver->getModelPtr();
                                     lpSolver->setSpecialOptions(lpSolver->specialOptions() | IN_BRANCH_AND_BOUND); // say is Cbc (and in branch and bound)
 #endif
-#ifdef KEEP_POSTPROCESS
-				    // put back any saved solutions
-				    putBackOtherSolutions(babModel_,&model_,&process);
-#endif
+                                    // put back any saved solutions
+                                    putBackOtherSolutions(babModel_,&model_,&process);
                                     process.postProcess(*babModel_->solver());
 #ifdef COIN_DEVELOP
                                     if (model_.bestSolution() && fabs(model_.getMinimizationObjValue() -

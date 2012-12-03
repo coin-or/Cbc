@@ -1101,7 +1101,9 @@ int callCbc1(const char * input2, CbcModel & model,
     return returnCode;
 }
 
+#ifndef CBCMAXPARAMETERS
 #define CBCMAXPARAMETERS 200
+#endif
 static CbcOrClpParam parameters[CBCMAXPARAMETERS];
 static int numberParameters = 0 ;
 CglPreProcess * cbcPreProcessPointer=NULL;

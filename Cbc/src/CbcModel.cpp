@@ -15081,6 +15081,7 @@ CbcModel::deleteSolutions()
         delete [] savedSolutions_[i];
         savedSolutions_[i] = NULL;
     }
+    numberSavedSolutions_ = 0;
 }
 #ifdef COIN_HAS_CLP
 void

@@ -1265,7 +1265,7 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver, int numberNodes,
 #endif
                 }
                 if (model.status() == 5)
-                    returnCode = -2; // stop
+		  model_->sayEventHappened();
                 if (model.isProvenInfeasible())
                     status = 1;
                 else if (model.isProvenOptimal())

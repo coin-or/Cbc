@@ -368,7 +368,7 @@ CbcTreeLocal::push(CbcNode * x)
         if (cut_.row().getNumElements()) {
             // Add to global cuts
             // we came in with solution
-            model_->globalCuts()->insert(cut_);
+            model_->makeGlobalCut(cut_);
             if (model_->messageHandler()->logLevel() > 1)
                 printf("initial cut - rhs %g %g\n",
                        cut_.lb(), cut_.ub());
@@ -633,8 +633,8 @@ CbcTreeLocal::empty()
         int goodSolution = createCut(savedSolution_, cut_);
         if (goodSolution >= 0) {
             // Add to global cuts
-            model_->globalCuts()->insert(cut_);
-            OsiCuts * global = model_->globalCuts();
+	    model_->makeGlobalCut(cut_);
+            CbcRowCuts * global = model_->globalCuts();
             int n = global->sizeRowCuts();
             OsiRowCut * rowCut = global->rowCutPtr(n - 1);
             if (model_->messageHandler()->logLevel() > 1)
@@ -806,7 +806,7 @@ void
 CbcTreeLocal::reverseCut(int state, double bias)
 {
     // find global cut
-    OsiCuts * global = model_->globalCuts();
+    CbcRowCuts * global = model_->globalCuts();
     int n = global->sizeRowCuts();
     int i;
     OsiRowCut * rowCut = NULL;
@@ -852,7 +852,7 @@ void
 CbcTreeLocal::deleteCut(OsiRowCut & cut)
 {
     // find global cut
-    OsiCuts * global = model_->globalCuts();
+    CbcRowCuts * global = model_->globalCuts();
     int n = global->sizeRowCuts();
     int i;
     OsiRowCut * rowCut = NULL;
@@ -1242,7 +1242,7 @@ CbcTreeVariable::push(CbcNode * x)
         if (cut_.row().getNumElements()) {
             // Add to global cuts
             // we came in with solution
-            model_->globalCuts()->insert(cut_);
+            model_->makeGlobalCut(cut_);
             if (model_->messageHandler()->logLevel() > 1)
                 printf("initial cut - rhs %g %g\n",
                        cut_.lb(), cut_.ub());
@@ -1507,8 +1507,8 @@ CbcTreeVariable::empty()
         int goodSolution = createCut(savedSolution_, cut_);
         if (goodSolution >= 0) {
             // Add to global cuts
-            model_->globalCuts()->insert(cut_);
-            OsiCuts * global = model_->globalCuts();
+            model_->makeGlobalCut(cut_);
+            CbcRowCuts * global = model_->globalCuts();
             int n = global->sizeRowCuts();
             OsiRowCut * rowCut = global->rowCutPtr(n - 1);
             if (model_->messageHandler()->logLevel() > 1)
@@ -1671,7 +1671,7 @@ void
 CbcTreeVariable::reverseCut(int state, double bias)
 {
     // find global cut
-    OsiCuts * global = model_->globalCuts();
+    CbcRowCuts * global = model_->globalCuts();
     int n = global->sizeRowCuts();
     int i;
     OsiRowCut * rowCut = NULL;
@@ -1717,7 +1717,7 @@ void
 CbcTreeVariable::deleteCut(OsiRowCut & cut)
 {
     // find global cut
-    OsiCuts * global = model_->globalCuts();
+    CbcRowCuts * global = model_->globalCuts();
     int n = global->sizeRowCuts();
     int i;
     OsiRowCut * rowCut = NULL;

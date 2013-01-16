@@ -1066,11 +1066,11 @@ CbcHeuristicProximity::solution(double & solutionValue,
 */
 
   numCouldRun_++;
-  if (!model_->bestSolution())
-    return 0; // odd - because in parallel mode
   int nodeCount = model_->getNodeCount();
   if (numberSolutions_ == model_->getSolutionCount())
     return 0;
+  if (!model_->bestSolution())
+    return 0; // odd - because in parallel mode
   numberSolutions_ = model_->getSolutionCount();
   lastRunDeep_ = nodeCount;
   numRuns_++;
@@ -1341,7 +1341,7 @@ CbcHeuristicNaive::solution(double & solutionValue,
             cutoff = solValue - model_->getCutoffIncrement();
         }
     }
-    // Now fix all integers as close to zero if zero or large cost
+    // Now fix all integers as close to zero if not zero or large cost
     int nFix = 0;
     for (i = 0; i < numberIntegers; i++) {
         int iColumn = integerVariable[i];

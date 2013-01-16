@@ -1674,6 +1674,14 @@ CbcHeuristicFPump::solution(double & solutionValue,
         delete [] saveObjective;
         if (usedColumn && !exitAll) {
             OsiSolverInterface * newSolver = cloneBut(3); // was model_->continuousSolver()->clone();
+#if 0 //def COIN_HAS_CLP
+	    OsiClpSolverInterface * clpSolver
+	      = dynamic_cast<OsiClpSolverInterface *> (newSolver);
+	    if (clpSolver) {
+	      ClpSimplex * simplex = clpSolver->getModelPtr();
+	      simplex->writeMps("start.mps",2,1);
+	    }
+#endif
             const double * colLower = newSolver->getColLower();
             const double * colUpper = newSolver->getColUpper();
             bool stopBAB = false;
@@ -1761,6 +1769,16 @@ CbcHeuristicFPump::solution(double & solutionValue,
                     // Give branch and bound a bit more freedom
                     double cutoff2 = newSolutionValue +
                                      CoinMax(model_->getCutoffIncrement(), 1.0e-3);
+#if 0
+		      {
+                        OsiClpSolverInterface * clpSolver
+                        = dynamic_cast<OsiClpSolverInterface *> (newSolver);
+                        if (clpSolver) {
+                            ClpSimplex * simplex = clpSolver->getModelPtr();
+                            simplex->writeMps("testA.mps",2,1);
+			}
+		      }
+#endif
                     int returnCode2 = smallBranchAndBound(newSolver, numberNodes_, newSolution, newSolutionValue,
                                                           cutoff2, "CbcHeuristicLocalAfterFPump");
                     fractionSmall_ = saveFraction;
@@ -1799,6 +1817,16 @@ CbcHeuristicFPump::solution(double & solutionValue,
                 }
                 // recompute solution value
                 if (returnCode && true) {
+#if 0
+		      {
+                        OsiClpSolverInterface * clpSolver
+                        = dynamic_cast<OsiClpSolverInterface *> (newSolver);
+                        if (clpSolver) {
+                            ClpSimplex * simplex = clpSolver->getModelPtr();
+                            simplex->writeMps("testB.mps",2,1);
+			}
+		      }
+#endif
                     delete newSolver;
                     newSolver = cloneBut(3); // was model_->continuousSolver()->clone();
                     newSolutionValue = -saveOffset;
@@ -1932,6 +1960,10 @@ CbcHeuristicFPump::solution(double & solutionValue,
                             }
                         } else {
                             //newSolver->writeMps("bad3.mps");
+			  sprintf(pumpPrint, "On closer inspection solution is not valid");
+			  model_->messageHandler()->message(CBC_FPUMP1, model_->messages())
+			    << pumpPrint
+			    << CoinMessageEol;
                             exitAll = true;
                             break;
                         }

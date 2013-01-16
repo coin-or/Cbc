@@ -359,6 +359,9 @@ public:
     inline int numberShortCutsAtRoot() const {
         return numberShortCutsAtRoot_;
     }
+    inline void setNumberShortCutsAtRoot(int value) {
+        numberShortCutsAtRoot_ = value;
+    }
     /// Set model
     inline void setModel(CbcModel * model) {
         model_ = model;
@@ -381,6 +384,10 @@ public:
         switches_ &= ~256;
         switches_ |= yesNo ? 256 : 0;
     }
+    /// Add in statistics from other
+    void addStatistics(const CbcCutGenerator * other);
+    /// Scale back statistics by factor
+    void scaleBackStatistics(int factor);
     //@}
 
 private:

@@ -1393,7 +1393,15 @@ CbcModel::moveToModel(CbcModel * baseModel, int mode)
         setCutoff(baseModel->getCutoff());
         bestObjective_ = baseModel->bestObjective_;
         assert (!baseModel->globalCuts_.sizeRowCuts());
-        numberSolutions_ = baseModel->numberSolutions_;
+        if (numberSolutions_ < baseModel->numberSolutions_) {
+	  assert (baseModel->bestSolution_);
+	  int numberColumns = solver_->getNumCols();
+	  if (!bestSolution_)
+	    bestSolution_ = new double [numberColumns];
+	  memcpy(bestSolution_,baseModel->bestSolution_,
+		 numberColumns*sizeof(double));
+	  numberSolutions_ = baseModel->numberSolutions_;
+	}
         stateOfSearch_ = baseModel->stateOfSearch_;
         numberNodes_ = baseModel->numberNodes_;
         numberIterations_ = baseModel->numberIterations_;
@@ -1814,7 +1822,7 @@ CbcModel::parallelCuts(CbcBaseModel * master, OsiCuts & theseCuts,
                 OsiRowCut newCut(*thisCut);
                 newCut.setGloballyValid(true);
                 newCut.mutableRow().setTestForDuplicateIndex(false);
-                globalCuts_.insert(newCut) ;
+                globalCuts_.addCutIfNotDuplicate(newCut) ;
             }
         }
         for (j = numberColumnCutsBefore; j < numberColumnCutsAfter; j++) {
@@ -1822,9 +1830,7 @@ CbcModel::parallelCuts(CbcBaseModel * master, OsiCuts & theseCuts,
             const OsiColCut * thisCut = theseCuts.colCutPtr(j) ;
             if (thisCut->globallyValid()) {
                 // add to global list
-                OsiColCut newCut(*thisCut);
-                newCut.setGloballyValid(true);
-                globalCuts_.insert(newCut) ;
+                makeGlobalCut(thisCut);
             }
         }
     }

@@ -123,8 +123,22 @@ public:
     inline const double * lower() const {
         return lower_;
     }
+    /// Set a bound
+    inline void setColLower(int sequence, double value)
+    { lower_[sequence]=value;}
+    /// Mutable lower bounds
+    inline double * mutableLower() const {
+        return lower_;
+    }
     /// Upper bounds
     inline const double * upper() const {
+        return upper_;
+    }
+    /// Set a bound
+    inline void setColUpper(int sequence, double value)
+    { upper_[sequence]=value;}
+    /// Mutable upper bounds
+    inline double * mutableUpper() const {
         return upper_;
     }
 protected:

@@ -144,7 +144,7 @@ void CbcPartialNodeInfo::applyToModel (CbcModel *model,
             int k = variable & 0x3fffffff;
             if ((variable&0x80000000) == 0) {
                 // lower bound changing
-                //#define CBC_PRINT2
+	      //#define CBC_PRINT2
 #ifdef CBC_PRINT2
                 if (solver->getColLower()[k] != newBounds_[i])
                     printf("lower change for column %d - from %g to %g\n", k, solver->getColLower()[k], newBounds_[i]);

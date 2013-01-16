@@ -1182,6 +1182,51 @@ CbcCutGenerator::setWhatDepthInSub(int value)
 {
     depthCutGeneratorInSub_ = value;
 }
+// Add in statistics from other
+void 
+CbcCutGenerator::addStatistics(const CbcCutGenerator * other)
+{
+  // Time in cut generator
+  timeInCutGenerator_ += other->timeInCutGenerator_;
+  // Number times cut generator entered
+  numberTimes_ += other->numberTimes_;
+  // Total number of cuts added
+  numberCuts_ += other->numberCuts_;
+  // Total number of elements added
+  numberElements_ += other->numberElements_;
+  // Total number of column cuts added
+  numberColumnCuts_ += other->numberColumnCuts_;
+  // Total number of cuts active after (at end of n cut passes at each node)
+  numberCutsActive_ += other->numberCutsActive_;
+  // Number of cuts generated at root
+  numberCutsAtRoot_ += other->numberCutsAtRoot_;
+  // Number of cuts active at root
+  numberActiveCutsAtRoot_ += other->numberActiveCutsAtRoot_;
+  // Number of short cuts at root
+  numberShortCutsAtRoot_ += other->numberShortCutsAtRoot_;
+}
+// Scale back statistics by factor
+void 
+CbcCutGenerator::scaleBackStatistics(int factor)
+{
+  // leave time
+  // Number times cut generator entered
+  numberTimes_ = (numberTimes_+factor-1)/factor;
+  // Total number of cuts added
+  numberCuts_ = (numberCuts_+factor-1)/factor;
+  // Total number of elements added
+  numberElements_ = (numberElements_+factor-1)/factor;
+  // Total number of column cuts added
+  numberColumnCuts_ = (numberColumnCuts_+factor-1)/factor;
+  // Total number of cuts active after (at end of n cut passes at each node)
+  numberCutsActive_ = (numberCutsActive_+factor-1)/factor;
+  // Number of cuts generated at root
+  numberCutsAtRoot_ = (numberCutsAtRoot_+factor-1)/factor;
+  // Number of cuts active at root
+  numberActiveCutsAtRoot_ = (numberActiveCutsAtRoot_+factor-1)/factor;
+  // Number of short cuts at root
+  numberShortCutsAtRoot_ = (numberShortCutsAtRoot_+factor-1)/factor;
+}
 // Create C++ lines to get to current state
 void
 CbcCutGenerator::generateTuning( FILE * fp)

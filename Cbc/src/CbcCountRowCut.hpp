@@ -109,10 +109,58 @@ private:
     /// Number of other CbcNodeInfo objects pointing to this cut
     int numberPointingToThis_;
 
-    /// Which generator created this cut
+    /** Which generator created this cut 
+	(add 10000 if globally valid)
+	if -1 then from global cut pool
+	-2 cut branch
+        -3 unknown
+    */
     int whichCutGenerator_;
 
 };
+/**
+   Really for Conflict cuts to -
+   a) stop duplicates
+   b) allow half baked cuts
+   The whichRow_ field in OsiRowCut2 is used for a type
+   0 - normal 
+   1 - processed cut
+   2 - unprocessed cut i.e. dual ray computation
+*/
+// for hashing
+typedef struct {
+  int index, next;
+} CoinHashLink;
+class CbcRowCuts {
+public:
 
+  CbcRowCuts(int initialMaxSize=0, int hashMultiplier=4 );
+  ~CbcRowCuts();
+  CbcRowCuts(const CbcRowCuts& rhs);
+  CbcRowCuts& operator=(const CbcRowCuts& rhs);
+  inline OsiRowCut2 * cut(int sequence) const
+  { return rowCut_[sequence];}
+  inline int numberCuts() const
+  { return numberCuts_;}
+  inline int sizeRowCuts() const
+  { return numberCuts_;}
+  inline OsiRowCut * rowCutPtr(int sequence)
+  { return rowCut_[sequence];}
+  void eraseRowCut(int sequence);
+  // Return 0 if added, 1 if not, -1 if not added because of space
+  int addCutIfNotDuplicate(const OsiRowCut & cut,int whichType=0);
+  // Return 0 if added, 1 if not, -1 if not added because of space
+  int addCutIfNotDuplicateWhenGreedy(const OsiRowCut & cut,int whichType=0);
+  // Add in cuts as normal cuts (and delete)
+  void addCuts(OsiCuts & cs);
+private:
+  OsiRowCut2 ** rowCut_;
+  /// Hash table
+  CoinHashLink *hash_;
+  int size_;
+  int hashMultiplier_;
+  int numberCuts_;
+  int lastHash_;
+};
 #endif
 

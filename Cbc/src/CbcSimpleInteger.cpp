@@ -186,7 +186,7 @@ CbcSimpleInteger::fillCreateBranch(CbcIntegerBranchingObject * branch, const Osi
     value = CoinMin(value, info->upper_[columnNumber_]);
     assert (info->upper_[columnNumber_] > info->lower_[columnNumber_]);
     if (!info->hotstartSolution_ && priority_ != -999) {
-#ifndef NDEBUG
+#if 0 // out because of very strong branching ndef NDEBUG
         double nearest = floor(value + 0.5);
         assert (fabs(value - nearest) > info->integerTolerance_);
 #endif

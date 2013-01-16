@@ -826,9 +826,12 @@ void fakeMain2 (ClpSimplex & model, OsiClpSolverInterface & osiSolver, int optio
 static CbcModel * currentBranchModel = NULL;
 
 extern "C" {
-    static void signal_handler(int /*whichSignal*/) {
-        if (currentBranchModel != NULL)
-            currentBranchModel->sayEventHappened(); // say why stopped
+    static void signal_handler(int whichSignal) {
+      if (currentBranchModel != NULL) {
+	currentBranchModel->sayEventHappened(); // say why stopped
+	if (currentBranchModel->heuristicModel())
+	  currentBranchModel->heuristicModel()->sayEventHappened();
+      }
         return;
     }
 }
@@ -1609,6 +1612,7 @@ int CbcMain1 (int argc, const char *argv[],
         // set default action (0=off,1=on,2=root)
         int landpAction = 0;
         CglResidualCapacity residualCapacityGen;
+	residualCapacityGen.setDoPreproc(1); // always preprocess
         // set default action (0=off,1=on,2=root)
         int residualCapacityAction = 0;
 
@@ -4447,6 +4451,11 @@ int CbcMain1 (int argc, const char *argv[],
                                     generalMessageHandler->message(CLP_GENERAL, generalMessages)
                                     << generalPrint
                                     << CoinMessageEol;
+#if 1
+				    // some options may have been set already
+				    // e.g. use elapsed time
+                                    babModel_->setMoreSpecialOptions(moreMipOptions|babModel_->moreSpecialOptions());
+#else
                                     OsiClpSolverInterface * osiclp = dynamic_cast< OsiClpSolverInterface*> (babModel_->solver());
                                     if (moreMipOptions == 10000) {
                                         // test memory saving
@@ -4472,6 +4481,7 @@ int CbcMain1 (int argc, const char *argv[],
                                             osiclp->setSpecialOptions(save | osiclp->specialOptions());
                                         }
                                     }
+#endif
                                 }
                             }
                             {
@@ -5637,6 +5647,11 @@ int CbcMain1 (int argc, const char *argv[],
                                     }
                                 }
 #endif
+                                int multipleRoot = parameters_[whichParam(CBC_PARAM_INT_MULTIPLEROOTS, numberParameters_, parameters_)].intValue();
+				babModel_->setMultipleRootTries(multipleRoot);
+                                int specialOptions = parameters_[whichParam(CBC_PARAM_INT_STRONG_STRATEGY, numberParameters_, parameters_)].intValue();
+				if (specialOptions>=0)
+				  babModel_->setStrongStrategy(specialOptions);
                                 babModel_->branchAndBound(statistics);
                                 //#define CLP_FACTORIZATION_INSTRUMENT
 #ifdef CLP_FACTORIZATION_INSTRUMENT
@@ -5769,6 +5784,11 @@ int CbcMain1 (int argc, const char *argv[],
                                     if (model_.fastNodeDepth() == -1)
                                         model_.setFastNodeDepth(-2); // Use Cplex at root
                                 }
+                                int multipleRoot = parameters_[whichParam(CBC_PARAM_INT_MULTIPLEROOTS, numberParameters_, parameters_)].intValue();
+				model_.setMultipleRootTries(multipleRoot);
+                                int specialOptions = parameters_[whichParam(CBC_PARAM_INT_STRONG_STRATEGY, numberParameters_, parameters_)].intValue();
+				if (specialOptions>=0)
+				  model_.setStrongStrategy(specialOptions);
                                 if (!pumpChanged) {
                                     // Make more lightweight
                                     for (int iHeur = 0; iHeur < model_.numberHeuristics(); iHeur++) {

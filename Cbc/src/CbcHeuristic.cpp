@@ -912,6 +912,8 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver, int numberNodes,
             if (returnCode == 1) {
                 solver2->resolve();
                 CbcModel model(*solver2);
+		// move seed across
+		model.randomNumberGenerator()->setSeed(model_->randomNumberGenerator()->getSeed());
                 if (numberNodes >= 0) {
                     // normal
                     model.setSpecialOptions(saveModelOptions | 2048);
@@ -922,6 +924,7 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver, int numberNodes,
                     // No small fathoming
                     model.setFastNodeDepth(-1);
                     model.setCutoff(signedCutoff);
+		    model.setStrongStrategy(0);
 		    // Don't do if original fraction > 1.0 and too large
 		    if (fractionSmall_>1.0 && fractionSmall_ < 1000000.0) {
 		      /* 1.4 means -1 nodes if >.4
@@ -944,6 +947,9 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver, int numberNodes,
                     model.solver()->setHintParam(OsiDoReducePrint, true, OsiHintTry);
 		    if ((saveModelOptions&2048) == 0)
 		      model.setMoreSpecialOptions(model_->moreSpecialOptions());
+		    // off conflict analysis
+		    model.setMoreSpecialOptions(model.moreSpecialOptions()&~4194304);
+		    
                     // Lightweight
                     CbcStrategyDefaultSubTree strategy(model_, 1, 5, 1, 0);
                     model.setStrategy(strategy);
@@ -957,6 +963,8 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver, int numberNodes,
                     << CoinMessageEol;
                     // going for full search and copy across more stuff
                     model.gutsOfCopy(*model_, 2);
+		    assert (!model_->heuristicModel());
+		    model_->setHeuristicModel(&model);
                     for (int i = 0; i < model.numberCutGenerators(); i++) {
 		        CbcCutGenerator * generator = model.cutGenerator(i);
 			CglGomory * gomory = dynamic_cast<CglGomory *>
@@ -995,6 +1003,7 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver, int numberNodes,
                         // add in cuts
                         CglStored cuts = process.cuts();
                         model.addCutGenerator(&cuts, 1, "Stored from first");
+			model.cutGenerator(model.numberCutGenerators()-1)->setGlobalCuts(true);
                     }
                 }
                 // Do search
@@ -1208,6 +1217,7 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver, int numberNodes,
 		    int saveOptions = model_->specialOptions();
 		    model_->setSpecialOptions(saveOptions|1048576);
                     model.branchAndBound();
+		    model_->setHeuristicModel(NULL);
 		    model_->setSpecialOptions(saveOptions);
 #ifdef ALWAYS_DUAL
 		    solverD = model.solver();

@@ -206,6 +206,7 @@ includecoin_HEADERS = \
 	CbcConsequence.hpp \
 	CbcClique.hpp \
 	CbcCompare.hpp \
+	CbcCountRowCut.hpp \
 	CbcCutGenerator.hpp \
 	CbcCutModifier.hpp \
 	CbcCutSubsetModifier.hpp \

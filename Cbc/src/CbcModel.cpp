@@ -2501,7 +2501,7 @@ void CbcModel::branchAndBound(int doStatistics)
 #endif
       }
       delete basis;
-      void * doRootCbcThread(void * voidInfo);
+      static void * doRootCbcThread(void * voidInfo);
 #ifdef CBC_THREAD
       if (numberRootThreads==1) {
 #endif
@@ -16873,8 +16873,7 @@ CbcModel::subBranchAndBound(const double * lower, const double * upper,
     return status;
 }
 #endif
-#ifdef CBC_THREAD
-void * doRootCbcThread(void * voidInfo)
+static void * doRootCbcThread(void * voidInfo)
 {
     CbcModel * model = reinterpret_cast<CbcModel *> (voidInfo);
 #ifdef COIN_HAS_CLP
@@ -16904,6 +16903,5 @@ void * doRootCbcThread(void * voidInfo)
       << general << CoinMessageEol ;
     return NULL;
 }
-#endif
 
 

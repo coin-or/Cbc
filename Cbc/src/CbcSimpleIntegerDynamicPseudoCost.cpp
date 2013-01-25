@@ -552,7 +552,7 @@ CbcSimpleIntegerDynamicPseudoCost::infeasibility(const OsiBranchingInformation *
     const double * solution = model_->testSolution();
     const double * lower = model_->getCbcColLower();
     const double * upper = model_->getCbcColUpper();
-#ifdef FUNNY_BRANCHING
+#ifdef FUNNY_BRANCHING2
     const double * dj = model_->getCbcReducedCost();
     double djValue = dj[columnNumber_];
     lastDownDecrease_++;
@@ -706,7 +706,7 @@ CbcSimpleIntegerDynamicPseudoCost::infeasibility(const OsiBranchingInformation *
     if (upDownSeparator_ > 0.0) {
         preferredWay = (value - below >= upDownSeparator_) ? 1 : -1;
     }
-#ifdef FUNNY_BRANCHING
+#ifdef FUNNY_BRANCHING2
     if (fabs(value - nearest) > integerTolerance) {
         double ratio = (100.0 + lastUpDecrease_) / (100.0 + lastDownDecrease_);
         downCost *= ratio;

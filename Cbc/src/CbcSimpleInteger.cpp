@@ -267,7 +267,7 @@ CbcIntegerBranchingObject::CbcIntegerBranchingObject()
     down_[1] = 0.0;
     up_[0] = 0.0;
     up_[1] = 0.0;
-#ifdef FUNNY_BRANCHING
+#ifdef FUNNY_BRANCHING2
     variables_ = NULL;
     newBounds_ = NULL;
     numberExtraChangedBounds_ = 0;
@@ -284,7 +284,7 @@ CbcIntegerBranchingObject::CbcIntegerBranchingObject (CbcModel * model,
     down_[1] = floor(value_);
     up_[0] = ceil(value_);
     up_[1] = model->getColUpper()[iColumn];
-#ifdef FUNNY_BRANCHING
+#ifdef FUNNY_BRANCHING2
     variables_ = NULL;
     newBounds_ = NULL;
     numberExtraChangedBounds_ = 0;
@@ -321,7 +321,7 @@ CbcIntegerBranchingObject::CbcIntegerBranchingObject (CbcModel * model,
     down_[1] = upperValue;
     up_[0] = lowerValue;
     up_[1] = upperValue;
-#ifdef FUNNY_BRANCHING
+#ifdef FUNNY_BRANCHING2
     variables_ = NULL;
     newBounds_ = NULL;
     numberExtraChangedBounds_ = 0;
@@ -336,7 +336,7 @@ CbcIntegerBranchingObject::CbcIntegerBranchingObject ( const CbcIntegerBranching
     down_[1] = rhs.down_[1];
     up_[0] = rhs.up_[0];
     up_[1] = rhs.up_[1];
-#ifdef FUNNY_BRANCHING
+#ifdef FUNNY_BRANCHING2
     numberExtraChangedBounds_ = rhs.numberExtraChangedBounds_;
     int size = numberExtraChangedBounds_ * (sizeof(double) + sizeof(int));
     char * temp = new char [size];
@@ -361,7 +361,7 @@ CbcIntegerBranchingObject::operator=( const CbcIntegerBranchingObject & rhs)
         down_[1] = rhs.down_[1];
         up_[0] = rhs.up_[0];
         up_[1] = rhs.up_[1];
-#ifdef FUNNY_BRANCHING
+#ifdef FUNNY_BRANCHING2
         delete [] newBounds_;
         numberExtraChangedBounds_ = rhs.numberExtraChangedBounds_;
         int size = numberExtraChangedBounds_ * (sizeof(double) + sizeof(int));
@@ -390,7 +390,7 @@ CbcIntegerBranchingObject::~CbcIntegerBranchingObject ()
 {
     // for debugging threads
     way_ = -23456789;
-#ifdef FUNNY_BRANCHING
+#ifdef FUNNY_BRANCHING2
     delete [] newBounds_;
 #endif
 }
@@ -455,7 +455,7 @@ CbcIntegerBranchingObject::branch()
 #ifdef CBC_PRINT2
         printf("%d branching down has bounds %g %g", iColumn, down_[0], down_[1]);
 #endif
-#ifdef FUNNY_BRANCHING
+#ifdef FUNNY_BRANCHING2
         // branch - do extra bounds
         for (int i = 0; i < numberExtraChangedBounds_; i++) {
             int variable = variables_[i];
@@ -503,7 +503,7 @@ CbcIntegerBranchingObject::branch()
 #ifdef CBC_PRINT2
         printf("%d branching up has bounds %g %g", iColumn, up_[0], up_[1]);
 #endif
-#ifdef FUNNY_BRANCHING
+#ifdef FUNNY_BRANCHING2
         // branch - do extra bounds
         for (int i = 0; i < numberExtraChangedBounds_; i++) {
             int variable = variables_[i];
@@ -592,7 +592,7 @@ CbcIntegerBranchingObject::tighten(OsiSolverInterface * solver)
     up_[1] = CoinMin(up_[1],upper);
     return (down_[0]==up_[1]);
 }
-#ifdef FUNNY_BRANCHING
+#ifdef FUNNY_BRANCHING2
 // Deactivate bounds for branching
 void
 CbcIntegerBranchingObject::deactivate()

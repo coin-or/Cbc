@@ -355,6 +355,7 @@ void verifyCutSize (const CbcTree * branchingTree, CbcModel &model)
 /* End unnamed namespace for CbcModel.cpp */
 
 
+static void * doRootCbcThread(void * voidInfo);
 void
 CbcModel::analyzeObjective ()
 /*
@@ -2501,7 +2502,6 @@ void CbcModel::branchAndBound(int doStatistics)
 #endif
       }
       delete basis;
-      static void * doRootCbcThread(void * voidInfo);
 #ifdef CBC_THREAD
       if (numberRootThreads==1) {
 #endif

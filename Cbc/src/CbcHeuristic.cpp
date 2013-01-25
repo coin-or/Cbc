@@ -1232,6 +1232,8 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver, int numberNodes,
                     if (numberNodes < 0) {
                         model_->incrementIterationCount(model.getIterationCount());
                         model_->incrementNodeCount(model.getNodeCount());
+			// update best solution
+			model_->setMinimizationObjValue(model.getMinimizationObjValue());
                         for (int iGenerator = 0; iGenerator < model.numberCutGenerators(); iGenerator++) {
                             CbcCutGenerator * generator = model.cutGenerator(iGenerator);
                             sprintf(generalPrint,

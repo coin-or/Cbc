@@ -81,6 +81,8 @@ extern int gomory_try;
 #include "CbcThread.hpp"
 /* Various functions local to CbcModel.cpp */
 
+static void * doRootCbcThread(void * voidInfo);
+
 namespace {
 
 //-------------------------------------------------------------------
@@ -16873,6 +16875,7 @@ CbcModel::subBranchAndBound(const double * lower, const double * upper,
     return status;
 }
 #endif
+
 static void * doRootCbcThread(void * voidInfo)
 {
     CbcModel * model = reinterpret_cast<CbcModel *> (voidInfo);

@@ -356,8 +356,7 @@ void verifyCutSize (const CbcTree * branchingTree, CbcModel &model)
 
 /* End unnamed namespace for CbcModel.cpp */
 
-
-static void * doRootCbcThread(void * voidInfo);
+
 void
 CbcModel::analyzeObjective ()
 /*

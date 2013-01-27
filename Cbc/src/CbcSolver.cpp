@@ -1592,6 +1592,7 @@ int CbcMain1 (int argc, const char *argv[],
         CglMixedIntegerRounding2 mixedGen(1, true, 1);
         // set default action (0=off,1=on,2=root)
         int mixedAction = 3;
+	mixedGen.setDoPreproc(1); // safer (and better)
 
         CglFlowCover flowGen;
         // set default action (0=off,1=on,2=root)

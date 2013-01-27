@@ -782,6 +782,8 @@ OsiCbcSolverInterface::setObjSense(double s )
 void 
 OsiCbcSolverInterface::branchAndBound()
 {
+  *messageHandler() << "Warning: Use of OsiCbc is deprecated." << CoinMessageEol;
+  *messageHandler() << "To enjoy the full performance of Cbc, use the CbcSolver interface." << CoinMessageEol;
   modelPtr_->branchAndBound();
 }
 

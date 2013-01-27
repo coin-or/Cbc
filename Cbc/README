@@ -48,6 +48,11 @@ Release 2.8:
    By default, these cuts are off.  To use add to your command line -zerohalfCuts root (or other options) or just -zero.
    So far, they may help only on a small subset of problems and may need some tuning.
 
+   The implementation of these cuts is described in
+   G. Andreello, A. Caprara, M. Fischetti
+   “Embedding Cuts in a Branch and Cut Framework: a Computational Study with {0,1/2}-Cuts”
+   INFORMS Journal on Computing 19(2), 229-238, 2007
+
 
 Release 2.7.8:
    Look at https://projects.coin-or.org/Cbc/changeset?old_path=%2Freleases%2F2.7.7&new_path=%2Freleases%2F2.7.8 to see all changes.

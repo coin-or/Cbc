@@ -43,7 +43,6 @@ Release 2.8:
    works well for 0-1 MIPs whose solution landscape is not too irregular (meaning the there is reasonable 
    probability of finding an improved solution by flipping a small number of binary variables), in particular 
    when it is applied to the first heuristic solutions found at the root node.
-
 5. An implementation of Zero-Half-Cuts by Alberto Caprara is now available.
    By default, these cuts are off.  To use add to your command line -zerohalfCuts root (or other options) or just -zero.
    So far, they may help only on a small subset of problems and may need some tuning.
@@ -52,6 +51,18 @@ Release 2.8:
    G. Andreello, A. Caprara, M. Fischetti
    “Embedding Cuts in a Branch and Cut Framework: a Computational Study with {0,1/2}-Cuts”
    INFORMS Journal on Computing 19(2), 229-238, 2007
+6.  Allow initialization of random seed by user.  Pseudo-random numbers are used in Cbc and Clp.  In Clp they
+   are used to break ties in degenerate problems, while in Cbc heuristics such as the Feasibility Pump use them   
+   to decide whether to round up or down.  So if a different pseudo-random seed is given to Clp then you may get
+   a different continuous optimum and so different cuts and heuristic solutions. This can be switched on by 
+   setting randomSeed for Clp and/or randomCbcSeed for Cbc.  The special value of 0 tells code to use time of day
+   for initial seed.
+7.  Building on this idea Andrea Lodi , Matteo Fischetti , Michele Monaci , Domenico Salvagnin and Andrea Tramontani
+   suggest that this idea be be improved by running at the root node with multiple copies of solver, each
+   with its own different seed and then passing in the solutions and cuts so that the main solver has a richer
+   set of solutions and possibly stronger cuts.  This is switched on by setting multipleRootPasses.  These can also
+   be done in parallel.
+
 
 
 Release 2.7.8:

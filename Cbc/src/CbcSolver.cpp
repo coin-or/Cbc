@@ -185,10 +185,7 @@ static int initialPumpTune = -1;
 #include "CglStored.hpp"
 #include "CglLandP.hpp"
 #include "CglResidualCapacity.hpp"
-
-#ifdef ZERO_HALF_CUTS
 #include "CglZeroHalf.hpp"
-#endif
 //#define CGL_WRITEMPS 
 #ifdef CGL_WRITEMPS
 extern double * debugSolution;
@@ -644,9 +641,7 @@ void CbcSolver::fillParameters()
     parameters_[whichParam(CBC_PARAM_STR_GOMORYCUTS, numberParameters_, parameters_)].setCurrentOption("ifmove");
     parameters_[whichParam(CBC_PARAM_STR_PROBINGCUTS, numberParameters_, parameters_)].setCurrentOption("ifmove");
     parameters_[whichParam(CBC_PARAM_STR_KNAPSACKCUTS, numberParameters_, parameters_)].setCurrentOption("ifmove");
-#ifdef ZERO_HALF_CUTS
     parameters_[whichParam(CBC_PARAM_STR_ZEROHALFCUTS, numberParameters_, parameters_)].setCurrentOption("off");
-#endif
     parameters_[whichParam(CBC_PARAM_STR_REDSPLITCUTS, numberParameters_, parameters_)].setCurrentOption("off");
     parameters_[whichParam(CBC_PARAM_STR_CLIQUECUTS, numberParameters_, parameters_)].setCurrentOption("ifmove");
     parameters_[whichParam(CBC_PARAM_STR_MIXEDCUTS, numberParameters_, parameters_)].setCurrentOption("ifmove");
@@ -1612,16 +1607,14 @@ int CbcMain1 (int argc, const char *argv[],
         // set default action (0=off,1=on,2=root)
         int landpAction = 0;
         CglResidualCapacity residualCapacityGen;
-	residualCapacityGen.setDoPreproc(1); // always preprocess
+        residualCapacityGen.setDoPreproc(1); // always preprocess
         // set default action (0=off,1=on,2=root)
         int residualCapacityAction = 0;
 
-#ifdef ZERO_HALF_CUTS
         CglZeroHalf zerohalfGen;
         //zerohalfGen.switchOnExpensive();
         // set default action (0=off,1=on,2=root)
         int zerohalfAction = 0;
-#endif
 
         // Stored cuts
         //bool storedCuts = false;
@@ -2359,12 +2352,10 @@ int CbcMain1 (int argc, const char *argv[],
                             defaultSettings = false; // user knows what she is doing
                             residualCapacityAction = action;
                             break;
-#ifdef ZERO_HALF_CUTS
                         case CBC_PARAM_STR_ZEROHALFCUTS:
                             defaultSettings = false; // user knows what she is doing
                             zerohalfAction = action;
                             break;
-#endif
                         case CBC_PARAM_STR_ROUNDING:
                             defaultSettings = false; // user knows what she is doing
                             break;
@@ -2381,9 +2372,7 @@ int CbcMain1 (int argc, const char *argv[],
                             gomoryAction = action;
                             probingAction = action;
                             knapsackAction = action;
-#ifdef ZERO_HALF_CUTS
                             zerohalfAction = action;
-#endif
                             cliqueAction = action;
                             flowAction = action;
                             mixedAction = action;
@@ -2396,9 +2385,7 @@ int CbcMain1 (int argc, const char *argv[],
                             parameters_[whichParam(CBC_PARAM_STR_FLOWCUTS, numberParameters_, parameters_)].setCurrentOption(action);
                             parameters_[whichParam(CBC_PARAM_STR_MIXEDCUTS, numberParameters_, parameters_)].setCurrentOption(action);
                             parameters_[whichParam(CBC_PARAM_STR_TWOMIRCUTS, numberParameters_, parameters_)].setCurrentOption(action);
-#ifdef ZERO_HALF_CUTS
                             parameters_[whichParam(CBC_PARAM_STR_ZEROHALFCUTS, numberParameters_, parameters_)].setCurrentOption(action);
-#endif
                             if (!action) {
                                 redsplitAction = action;
                                 parameters_[whichParam(CBC_PARAM_STR_REDSPLITCUTS, numberParameters_, parameters_)].setCurrentOption(action);
@@ -4248,7 +4235,6 @@ int CbcMain1 (int argc, const char *argv[],
                                 accuracyFlag[numberGenerators] = 5;
                                 switches[numberGenerators++] = 1;
                             }
-#ifdef ZERO_HALF_CUTS
                             if (zerohalfAction) {
                                 if (zerohalfAction > 4) {
                                     //zerohalfAction -=4;
@@ -4258,7 +4244,6 @@ int CbcMain1 (int argc, const char *argv[],
                                 accuracyFlag[numberGenerators] = 5;
                                 switches[numberGenerators++] = 2;
                             }
-#endif
                             if (dominatedCuts)
                                 babModel_->setSpecialOptions(babModel_->specialOptions() | 64);
                             // Say we want timings
@@ -4275,10 +4260,10 @@ int CbcMain1 (int argc, const char *argv[],
                                 //if (switches[iGenerator]==-2)
                                 //generator->setWhetherToUse(true);
                                 generator->setInaccuracy(accuracyFlag[iGenerator]);
-				if (doAtEnd[iGenerator]) {
-				  generator->setWhetherCallAtEnd(true);
-				  generator->setMustCallAgain(true);
-				}
+                                if (doAtEnd[iGenerator]) {
+                                    generator->setWhetherCallAtEnd(true);
+                                    generator->setMustCallAgain(true);
+                                }
                                 generator->setTiming(true);
                                 if (cutDepth >= 0)
                                     generator->setWhatDepth(cutDepth) ;
@@ -8807,9 +8792,7 @@ void CbcMain0 (CbcModel  & model)
     parameters[whichParam(CBC_PARAM_STR_GOMORYCUTS, numberParameters, parameters)].setCurrentOption("ifmove");
     parameters[whichParam(CBC_PARAM_STR_PROBINGCUTS, numberParameters, parameters)].setCurrentOption("ifmove");
     parameters[whichParam(CBC_PARAM_STR_KNAPSACKCUTS, numberParameters, parameters)].setCurrentOption("ifmove");
-#ifdef ZERO_HALF_CUTS
     parameters[whichParam(CBC_PARAM_STR_ZEROHALFCUTS, numberParameters, parameters)].setCurrentOption("off");
-#endif
     parameters[whichParam(CBC_PARAM_STR_REDSPLITCUTS, numberParameters, parameters)].setCurrentOption("off");
     parameters[whichParam(CBC_PARAM_STR_CLIQUECUTS, numberParameters, parameters)].setCurrentOption("ifmove");
     parameters[whichParam(CBC_PARAM_STR_MIXEDCUTS, numberParameters, parameters)].setCurrentOption("ifmove");

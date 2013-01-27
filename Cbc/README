@@ -44,6 +44,11 @@ Release 2.8:
    probability of finding an improved solution by flipping a small number of binary variables), in particular 
    when it is applied to the first heuristic solutions found at the root node.
 
+5. An implementation of Zero-Half-Cuts by Alberto Caprara is now available.
+   By default, these cuts are off.  To use add to your command line -zerohalfCuts root (or other options) or just -zero.
+   So far, they may help only on a small subset of problems and may need some tuning.
+
+
 Release 2.7.8:
    Look at https://projects.coin-or.org/Cbc/changeset?old_path=%2Freleases%2F2.7.7&new_path=%2Freleases%2F2.7.8 to see all changes.
 

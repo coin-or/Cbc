@@ -33,7 +33,7 @@
 
 namespace {
 
-char svnid[] = "$Id: CbcGenCbcParamUtils.cpp 1173 2009-06-04 09:44:10Z forrest $" ;
+char svnid[] = "$Id$" ;
 
 }
 

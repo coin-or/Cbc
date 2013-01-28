@@ -37,7 +37,7 @@
 
 namespace {
 
-char svnid[] = "$Id: CbcGenBaB.cpp 1173 2009-06-04 09:44:10Z forrest $" ;
+char svnid[] = "$Id$" ;
 
 /*
   A hack to fix variables based on reduced cost prior to branch-and-cut. Note

@@ -1,4 +1,4 @@
-/* $Id: CbcThread.cpp 1261 2009-10-30 12:45:20Z forrest $ */
+/* $Id$ */
 // Copyright (C) 2002, International Business Machines
 // Corporation and others.  All Rights Reserved.
 // This code is licensed under the terms of the Eclipse Public License (EPL).

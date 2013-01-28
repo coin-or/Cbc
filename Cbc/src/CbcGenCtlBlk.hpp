@@ -47,7 +47,7 @@
 */
 
 /*
-  $Id: CbcGenCtlBlk.hpp 1173 2009-06-04 09:44:10Z forrest $
+  $Id$
 */
 
 #define CBC_GENERIC_VERSION "00.01.00"

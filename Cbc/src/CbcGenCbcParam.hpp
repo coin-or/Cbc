@@ -18,7 +18,7 @@
 */
 
 /*
-  $Id: CbcGenCbcParam.hpp 1173 2009-06-04 09:44:10Z forrest $
+  $Id$
 */
 
 /*! \class CbcCbcParam

@@ -3,7 +3,7 @@
 #*            This file is part of the test engine for MIPLIB2010            *
 #*                                                                           *
 #* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-# $Id: run_cbc.sh,v 1.1 2010/12/09 22:22:28 bzfheinz Exp $
+# $Id$
 
 SOLVER=$1
 BINNAME=$2

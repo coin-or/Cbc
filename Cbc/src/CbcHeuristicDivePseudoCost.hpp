@@ -1,4 +1,4 @@
-/* $Id: CbcHeuristicDivePseudoCost.hpp 1240 2009-10-02 18:41:44Z forrest $ */
+/* $Id$ */
 // Copyright (C) 2008, International Business Machines
 // Corporation and others.  All Rights Reserved.
 // This code is licensed under the terms of the Eclipse Public License (EPL).

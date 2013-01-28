@@ -4,7 +4,7 @@
 #*            This file is part of the test engine for MIPLIB2010            *
 #*                                                                           *
 #* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-# $Id: parse_cbc.awk,v 1.1 2010/12/09 22:22:28 bzfheinz Exp $
+# $Id$
 
 # set all solver specific data:
 #  solver ["?"]

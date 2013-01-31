@@ -992,8 +992,11 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver, int numberNodes,
                     // Switch off printing if asked to
                     model_->solver()->getHintParam(OsiDoReducePrint, takeHint, strength);
                     model.solver()->setHintParam(OsiDoReducePrint, takeHint, strength);
-                    CbcStrategyDefault strategy(1, model_->numberStrong(),
-                                                model_->numberBeforeTrust());
+		    // no cut generators if none in parent
+                    CbcStrategyDefault 
+		      strategy(model_->numberCutGenerators() ? 1 : -1, 
+			       model_->numberStrong(),
+			       model_->numberBeforeTrust());
                     // Set up pre-processing - no
                     strategy.setupPreProcessing(0); // was (4);
                     model.setStrategy(strategy);

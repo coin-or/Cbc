@@ -2134,15 +2134,24 @@ int CbcMain1 (int argc, const char *argv[],
                                     parameters_[iParam].setIntValue(1003);
                                     initialPumpTune = 1003;
                                     iParam = whichParam(CLP_PARAM_INT_PROCESSTUNE, numberParameters_, parameters_);
-                                    parameters_[iParam].setIntValue(-1);
+                                    parameters_[iParam].setIntValue(0);
                                     tunePreProcess = 0;
                                     iParam = whichParam(CBC_PARAM_STR_DIVINGC, numberParameters_, parameters_);
                                     parameters_[iParam].setCurrentOption("off");
                                     iParam = whichParam(CBC_PARAM_STR_RINS, numberParameters_, parameters_);
                                     parameters_[iParam].setCurrentOption("off");
                                     iParam = whichParam(CBC_PARAM_STR_PROBINGCUTS, numberParameters_, parameters_);
-                                    parameters_[iParam].setCurrentOption("on");
-                                    probingAction = 1;
+				    // but not if cuts off
+                                    int jParam = whichParam(CBC_PARAM_STR_CUTSSTRATEGY, numberParameters_, parameters_);
+				    
+                                    jParam = parameters_[jParam].currentOptionAsInteger();
+				    if (jParam) {
+				      parameters_[iParam].setCurrentOption("on");
+				      probingAction = 1;
+				    } else {
+				      parameters_[iParam].setCurrentOption("off");
+				      probingAction = 0;
+				    }
                                 }
                             }
                             int returnCode;

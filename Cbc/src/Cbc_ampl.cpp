@@ -144,7 +144,7 @@ static keyword keywds[] = { /* must be sorted */
 };
 static Option_Info Oinfo = {
     const_cast<char*>("cbc"),
-    const_cast<char*>("CBC trunk"),
+    const_cast<char*>("CBC " CBC_VERSION),
     const_cast<char*>("cbc_options"),
     keywds,
     nkeywds,

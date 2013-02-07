@@ -149,7 +149,7 @@ static Option_Info Oinfo = {
     keywds,
     nkeywds,
     0,
-    const_cast<char*>(""),
+    0,
     0,
     decodePhrase,
     0,

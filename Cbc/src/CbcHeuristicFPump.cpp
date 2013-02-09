@@ -1808,8 +1808,11 @@ CbcHeuristicFPump::solution(double & solutionValue,
                         // could add cut
                         returnCode2 &= ~2;
                     }
-                    if (returnCode2)
+                    if (returnCode2) {
                         numberBandBsolutions++;
+			// may not have got solution earlier
+			returnCode |= 1;
+		    }
                 } else {
                     // no need
                     exitAll = true;

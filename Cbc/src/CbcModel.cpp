@@ -7346,7 +7346,7 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
                 OsiRowCut * thisCut = globalCuts_.rowCutPtr(i) ;
                 if (thisCut->violated(cbcColSolution_) > primalTolerance ||
                         thisCut->effectiveness() == COIN_DBL_MAX) {
-#ifndef NDEBUG
+#if 0 //ndef NDEBUG
 		  printf("Global cut added - violation %g\n",
 		  	   thisCut->violated(cbcColSolution_)) ;
 #endif

@@ -8815,7 +8815,7 @@ CbcModel::serialCuts(OsiCuts & theseCuts, CbcNode * node, OsiCuts & slackCuts, i
                 }
             }
 #endif
-            if (mustResolve) {
+            if (mustResolve || (specialOptions_&1) != 0) {
                 int returnCode = resolve(node ? node->nodeInfo() : NULL, 2);
                 if (returnCode  == 0)
                     status = -1;

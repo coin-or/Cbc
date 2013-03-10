@@ -14189,8 +14189,8 @@ CbcModel::doOneNode(CbcModel * baseModel, CbcNode * & node, CbcNode * & newNode)
 #else
             CbcBranchingObject * branch = static_cast <CbcBranchingObject *>(branch2) ;
 #endif
-            branch->setModel(this);
-            branchesLeft = node->branch(NULL); // old way
+            //branch->setModel(this);
+            branchesLeft = node->branch(solver_); // old way
             if (parallelMode() >= 0)
                 branch->setModel(baseModel);
         }

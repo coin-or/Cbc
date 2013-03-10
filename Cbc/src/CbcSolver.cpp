@@ -1105,7 +1105,7 @@ int callCbc1(const char * input2, CbcModel & model,
                 break;
             }
         }
-        input[i] = '\0';
+        input[i++] = '\0';
         argv[j+1] = CoinStrdup(input + saveI);
         while (input[i] == ' ')
             i++;

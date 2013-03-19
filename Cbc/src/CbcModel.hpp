@@ -865,7 +865,8 @@ public:
         return originalColumns_;
     }
     /// Set original columns as created by preprocessing
-    void setOriginalColumns(const int * originalColumns) ;
+    void setOriginalColumns(const int * originalColumns,
+			    int numberGood=COIN_INT_MAX) ;
 
     /** Set the print frequency.
 

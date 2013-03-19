@@ -329,6 +329,8 @@ void OsiSolverLink::resolve()
                 temp->removeGaps(1.0e-14);
             }
             modelPtr_->replaceMatrix(temp, true);
+	    modelPtr_->setNewRowCopy(NULL);
+	    modelPtr_->setClpScaledMatrix(NULL);
         } else {
             delete temp;
         }

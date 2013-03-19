@@ -2149,6 +2149,8 @@ void CbcModel::branchAndBound(int doStatistics)
                 numberHeuristics_ = k;
                 handler_->message(CBC_HEURISTICS_OFF, messages_) << numberOdd << CoinMessageEol ;
             }
+	    // If odd switch off AddIntegers
+	    specialOptions_ &= ~65536;
         } else if (numberSOS) {
             specialOptions_ |= 128; // say can do SOS in dynamic mode
             // switch off fast nodes for now
@@ -3691,7 +3693,7 @@ void CbcModel::branchAndBound(int doStatistics)
             /*
               Decide if we want to do a restart.
             */
-            if (saveSolver) {
+            if (saveSolver && (specialOptions_&(512 + 32768)) != 0) {
                 bool tryNewSearch = solverCharacteristics_->reducedCostsAccurate() &&
                                     (getCutoff() < 1.0e20 && getCutoff() < checkCutoffForRestart);
                 int numberColumns = getNumCols();
@@ -14061,11 +14063,15 @@ void getIntegerInformation(const OsiObject * object, double & originalLower,
 }
 // Set original columns as created by preprocessing
 void
-CbcModel::setOriginalColumns(const int * originalColumns)
+CbcModel::setOriginalColumns(const int * originalColumns,int numberGood)
 {
     int numberColumns = getNumCols();
     delete [] originalColumns_;
-    originalColumns_ = CoinCopyOfArray(originalColumns, numberColumns);
+    originalColumns_ = new int [numberColumns];
+    int numberCopy=CoinMin(numberColumns,numberGood);
+    memcpy(originalColumns_,originalColumns,numberCopy*sizeof(int));
+    for (int i=numberCopy;i<numberColumns;i++)
+      originalColumns_[i]=-1;
 }
 // Set the cut modifier method
 void

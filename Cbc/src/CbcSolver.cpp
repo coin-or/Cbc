@@ -177,6 +177,8 @@ static int initialPumpTune = -1;
 #include "CglProbing.hpp"
 #include "CglKnapsackCover.hpp"
 #include "CglRedSplit.hpp"
+#include "CglRedSplit2.hpp"
+#include "CglGMI.hpp"
 #include "CglClique.hpp"
 #include "CglFlowCover.hpp"
 #include "CglMixedIntegerRounding2.hpp"
@@ -643,6 +645,8 @@ void CbcSolver::fillParameters()
     parameters_[whichParam(CBC_PARAM_STR_KNAPSACKCUTS, numberParameters_, parameters_)].setCurrentOption("ifmove");
     parameters_[whichParam(CBC_PARAM_STR_ZEROHALFCUTS, numberParameters_, parameters_)].setCurrentOption("off");
     parameters_[whichParam(CBC_PARAM_STR_REDSPLITCUTS, numberParameters_, parameters_)].setCurrentOption("off");
+    parameters_[whichParam(CBC_PARAM_STR_REDSPLIT2CUTS, numberParameters_, parameters_)].setCurrentOption("off");
+    parameters_[whichParam(CBC_PARAM_STR_GMICUTS, numberParameters_, parameters_)].setCurrentOption("off");
     parameters_[whichParam(CBC_PARAM_STR_CLIQUECUTS, numberParameters_, parameters_)].setCurrentOption("ifmove");
     parameters_[whichParam(CBC_PARAM_STR_MIXEDCUTS, numberParameters_, parameters_)].setCurrentOption("ifmove");
     parameters_[whichParam(CBC_PARAM_STR_FLOWCUTS, numberParameters_, parameters_)].setCurrentOption("ifmove");
@@ -1580,6 +1584,18 @@ int CbcMain1 (int argc, const char *argv[],
         // Off as seems to give some bad cuts
         int redsplitAction = 0;
 
+        CglRedSplit2 redsplit2Gen;
+        //redsplit2Gen.setLimit(100);
+        // set default action (0=off,1=on,2=root)
+        // Off
+        int redsplit2Action = 0;
+
+        CglGMI GMIGen;
+        //GMIGen.setLimit(100);
+        // set default action (0=off,1=on,2=root)
+        // Off
+        int GMIAction = 0;
+
         CglFakeClique cliqueGen(NULL, false);
         //CglClique cliqueGen(false,true);
         cliqueGen.setStarCliqueReport(false);
@@ -1635,6 +1651,7 @@ int CbcMain1 (int argc, const char *argv[],
         int scaleBarrier = 0;
         int doKKT = 0;
         int crossover = 2; // do crossover unless quadratic
+	bool biLinearProblem=false;
         // For names
         int lengthName = 0;
         std::vector<std::string> rowNames;
@@ -1793,6 +1810,7 @@ int CbcMain1 (int argc, const char *argv[],
 		  else
 		    model_.setDblParam(CbcModel::CbcStartSeconds, CoinCpuTime());
 #endif
+		  biLinearProblem=false;
                     // check if any integers
 #ifndef CBC_OTHER_SOLVER
 #ifdef COIN_HAS_ASL
@@ -2338,6 +2356,14 @@ int CbcMain1 (int argc, const char *argv[],
                             defaultSettings = false; // user knows what she is doing
                             redsplitAction = action;
                             break;
+                        case CBC_PARAM_STR_REDSPLIT2CUTS:
+                            defaultSettings = false; // user knows what she is doing
+                            redsplit2Action = action;
+                            break;
+                        case CBC_PARAM_STR_GMICUTS:
+                            defaultSettings = false; // user knows what she is doing
+                            GMIAction = action;
+                            break;
                         case CBC_PARAM_STR_CLIQUECUTS:
                             defaultSettings = false; // user knows what she is doing
                             cliqueAction = action;
@@ -2399,6 +2425,10 @@ int CbcMain1 (int argc, const char *argv[],
                             if (!action) {
                                 redsplitAction = action;
                                 parameters_[whichParam(CBC_PARAM_STR_REDSPLITCUTS, numberParameters_, parameters_)].setCurrentOption(action);
+                                redsplit2Action = action;
+                                parameters_[whichParam(CBC_PARAM_STR_REDSPLIT2CUTS, numberParameters_, parameters_)].setCurrentOption(action);
+                                GMIAction = action;
+                                parameters_[whichParam(CBC_PARAM_STR_GMICUTS, numberParameters_, parameters_)].setCurrentOption(action);
                                 landpAction = action;
                                 parameters_[whichParam(CBC_PARAM_STR_LANDPCUTS, numberParameters_, parameters_)].setCurrentOption(action);
                                 residualCapacityAction = action;
@@ -3081,6 +3111,8 @@ int CbcMain1 (int argc, const char *argv[],
                         if (goodModel) {
                             bool miplib = type == CBC_PARAM_ACTION_MIPLIB;
                             int logLevel = parameters_[slog].intValue();
+			    int truncateColumns=COIN_INT_MAX;
+			    int * newPriorities=NULL;
                             // Reduce printout
                             if (logLevel <= 1) {
                                 model_.solver()->setHintParam(OsiDoReducePrint, true, OsiHintTry);
@@ -3139,6 +3171,7 @@ int CbcMain1 (int argc, const char *argv[],
                                         si->setDefaultBound(1000.0);
                                         si->setIntegerPriority(1000);
                                         si->setBiLinearPriority(10000);
+					biLinearProblem=true;
                                         si->setSpecialOptions2(2 + 4 + 8);
                                         CoinModel * model2 = coinModel;
                                         si->load(*model2, true, parameters_[log].intValue());
@@ -3901,8 +3934,230 @@ int CbcMain1 (int argc, const char *argv[],
                                 }
                                 // we have to keep solver2 so pass clone
                                 solver2 = solver2->clone();
+				// see if extra variables wanted
+				int threshold = 
+				  parameters_[whichParam(CBC_PARAM_INT_EXTRA_VARIABLES, numberParameters_, parameters_)].intValue();
+				if (threshold) {
+				  int numberColumns = solver2->getNumCols();
+				  int highPriority=0;
+				  /*
+				    normal - no priorities
+				    >10000 equal high priority
+				    >20000 higher priority for higher cost
+				  */
+				  if (threshold>10000) {
+				    highPriority=threshold/10000;
+				    threshold -= 10000*highPriority;
+				  }
+				  const double * columnLower = solver2->getColLower();
+				  const double * columnUpper = solver2->getColUpper();
+				  const double * objective = solver2->getObjCoefficients();
+				  int numberIntegers = 0;
+				  int numberBinary = 0;
+				  int numberTotalIntegers=0;
+				  double * obj = new double [numberColumns];
+				  int * which = new int [numberColumns];
+				  for (int iColumn = 0; iColumn < numberColumns; iColumn++) {
+				    if (solver2->isInteger(iColumn)) {
+				      numberTotalIntegers++;
+				      if (columnUpper[iColumn] > columnLower[iColumn]) {
+					numberIntegers++;
+					if (columnLower[iColumn] == 0.0 && columnUpper[iColumn] == 1)
+					  numberBinary++;
+				      }
+				    }
+				  }
+				  int numberSort=0;
+				  int numberZero=0;
+				  int numberZeroContinuous=0;
+				  int numberDifferentObj=0;
+				  int numberContinuous=0;
+				  for (int iColumn = 0; iColumn < numberColumns; iColumn++) {
+				    if (columnUpper[iColumn] > columnLower[iColumn]) {
+				      if (solver2->isInteger(iColumn)) {
+					if (!objective[iColumn]) {
+					  numberZero++;
+					} else {
+					  obj[numberSort]= fabs(objective[iColumn]);
+					  which[numberSort++]=iColumn;
+					}
+				      } else if (objective[iColumn]) {
+					numberContinuous++;
+				      } else {
+					numberZeroContinuous++;
+				      }
+				    }
+				  }
+				  CoinSort_2(obj,obj+numberSort,which);
+				  double last=obj[0];
+				  for (int jColumn = 1; jColumn < numberSort; jColumn++) {
+				    if (fabs(obj[jColumn]-last)>1.0e-12) {
+				      numberDifferentObj++;
+				      last=obj[jColumn];
+				    }
+				  }
+				  numberDifferentObj++;
+				  sprintf(generalPrint,"Problem has %d integers (%d of which binary) and %d continuous",
+					 numberIntegers,numberBinary,numberColumns-numberIntegers);
+				  generalMessageHandler->message(CLP_GENERAL, generalMessages)
+                                    << generalPrint
+                                    << CoinMessageEol;
+				  if (numberColumns>numberIntegers) {
+				    sprintf(generalPrint,"%d continuous have nonzero objective, %d have zero objective",
+					    numberContinuous,numberZeroContinuous);
+				    generalMessageHandler->message(CLP_GENERAL, generalMessages)
+				      << generalPrint
+				      << CoinMessageEol;
+				  }
+				  sprintf(generalPrint,"%d integer have nonzero objective, %d have zero objective, %d different nonzero (taking abs)",
+					  numberSort,numberZero,numberDifferentObj);
+				  generalMessageHandler->message(CLP_GENERAL, generalMessages)
+                                    << generalPrint
+                                    << CoinMessageEol;
+				  if (numberDifferentObj<=threshold + (numberZero) ? 1 : 0 && numberDifferentObj) {
+				    int * backward=NULL;
+				    if (highPriority) {
+				      newPriorities = new int [numberTotalIntegers+numberDifferentObj+numberColumns];
+				      backward=newPriorities+numberTotalIntegers+numberDifferentObj;
+				      numberTotalIntegers=0;
+				      for (int iColumn = 0; iColumn < numberColumns; iColumn++) {
+					if (solver2->isInteger(iColumn)) {
+					  backward[iColumn]=numberTotalIntegers;
+					  newPriorities[numberTotalIntegers++]=10000;
+					}
+				      }
+				    }
+				    int iLast=0;
+				    double last=obj[0];
+				    for (int jColumn = 1; jColumn < numberSort; jColumn++) {
+				      if (fabs(obj[jColumn]-last)>1.0e-12) {
+					sprintf(generalPrint,"%d variables have objective of %g",
+					       jColumn-iLast,last);
+					generalMessageHandler->message(CLP_GENERAL, generalMessages)
+					  << generalPrint
+					  << CoinMessageEol;
+					iLast=jColumn;
+					last=obj[jColumn];
+				      }
+				    }
+				    sprintf(generalPrint,"%d variables have objective of %g",
+					   numberSort-iLast,last);
+				    generalMessageHandler->message(CLP_GENERAL, generalMessages)
+				      << generalPrint
+				      << CoinMessageEol;
+				    int spaceNeeded=numberSort+numberDifferentObj;
+				    int * columnAdd = new int[spaceNeeded+numberDifferentObj+1];
+				    double * elementAdd = new double[spaceNeeded];
+				    int * rowAdd = new int[numberDifferentObj+1];
+				    double * objectiveNew = new double[3*numberDifferentObj];
+				    double * lowerNew = objectiveNew+numberDifferentObj;
+				    double * upperNew = lowerNew+numberDifferentObj;
+				    memset(columnAdd+spaceNeeded,0,
+					   (numberDifferentObj+1)*sizeof(int));
+				    iLast=0;
+				    last=obj[0];
+				    numberDifferentObj=0;
+				    int priorityLevel=9999;
+				    int numberElements=0;
+				    rowAdd[0]=0;
+				    for (int jColumn = 1; jColumn < numberSort+1; jColumn++) {
+				      if (jColumn==numberSort||fabs(obj[jColumn]-last)>1.0e-12) {
+					// not if just one
+					if (jColumn-iLast>1) {
+					  // do priority
+					  if (highPriority==1) {
+					    newPriorities[numberTotalIntegers+numberDifferentObj]
+					      = 500;
+					  } else if (highPriority==2) {
+					    newPriorities[numberTotalIntegers+numberDifferentObj]
+					      = priorityLevel;
+					    priorityLevel--;
+					  }
+					  int iColumn=which[iLast];
+					  objectiveNew[numberDifferentObj]=objective[iColumn];
+					  double lower=0.0;
+					  double upper=0.0;
+					  for (int kColumn=iLast;kColumn<jColumn;kColumn++) {
+					    iColumn=which[kColumn];
+					    solver2->setObjCoeff(iColumn,0.0);
+					    double lowerValue=columnLower[iColumn];
+					    double upperValue=columnUpper[iColumn];
+					    double elementValue=-1.0;
+					    if (objectiveNew[numberDifferentObj]*objective[iColumn]<0.0) {
+					      lowerValue=-columnUpper[iColumn];
+					      upperValue=-columnLower[iColumn];
+					      elementValue=1.0;
+					    }
+					    columnAdd[numberElements]=iColumn;
+					    elementAdd[numberElements++]=elementValue;
+					    if (lower!=-COIN_DBL_MAX) {
+					      if (lowerValue!=-COIN_DBL_MAX)
+						lower += lowerValue;
+					      else
+						lower=-COIN_DBL_MAX;
+					    }
+					    if (upper!=COIN_DBL_MAX) {
+					      if (upperValue!=COIN_DBL_MAX)
+						upper += upperValue;
+					      else
+						upper=COIN_DBL_MAX;
+					    }
+					  }
+					  columnAdd[numberElements]=numberColumns+numberDifferentObj;
+					  elementAdd[numberElements++]=1.0;
+					  lowerNew[numberDifferentObj]=lower;
+					  upperNew[numberDifferentObj]=upper;
+					  numberDifferentObj++;
+					  rowAdd[numberDifferentObj]=numberElements;
+					} else if (highPriority) {
+					  // just one
+					  // do priority
+					  int iColumn=which[iLast];
+					  int iInt=backward[iColumn];
+					  if (highPriority==1) {
+					    newPriorities[iInt] = 500;
+					  } else {
+					    newPriorities[iInt] = priorityLevel;
+					    priorityLevel--;
+					  }
+					}
+					if (jColumn<numberSort) {
+					  iLast=jColumn;
+					  last=obj[jColumn];
+					}
+				      }
+				    }
+				    if (numberDifferentObj) {
+				      // add columns
+				      solver2->addCols(numberDifferentObj, 
+						       columnAdd+spaceNeeded, NULL, NULL,
+						       lowerNew, upperNew,objectiveNew);
+				      // add constraints and make integer if all integer in group
+				      for (int iObj=0; iObj < numberDifferentObj; iObj++) {
+					lowerNew[iObj]=0.0;
+					upperNew[iObj]=0.0;
+					solver2->setInteger(numberColumns+iObj);
+				      }
+				      solver2->addRows(numberDifferentObj, 
+						       rowAdd,columnAdd,elementAdd,
+						       lowerNew, upperNew);
+				      sprintf(generalPrint,"Replacing model - %d new variables",numberDifferentObj);
+				      generalMessageHandler->message(CLP_GENERAL, generalMessages)
+					<< generalPrint
+					<< CoinMessageEol;
+				      truncateColumns=numberColumns;
+				    }
+				    delete [] columnAdd;
+				    delete [] elementAdd;
+				    delete [] rowAdd;
+				    delete [] objectiveNew;
+			  }
+				  delete [] which;
+				  delete [] obj;
+				}
                                 babModel_->assignSolver(solver2);
-                                babModel_->setOriginalColumns(process.originalColumns());
+                                babModel_->setOriginalColumns(process.originalColumns(),
+							      truncateColumns);
                                 babModel_->initialSolve();
                                 babModel_->setMaximumSeconds(timeLeft - (CoinCpuTime() - time2));
                             }
@@ -4040,6 +4295,11 @@ int CbcMain1 (int argc, const char *argv[],
                                     }
                                     priority[iPut] = level;
                                 }
+				if(newPriorities ) {
+				  // get rid of
+				  delete [] newPriorities;
+				  newPriorities = NULL;
+				}
                                 babModel_->passInPriorities( priority, false);
                                 integersOK = true;
                                 delete [] priority;
@@ -4203,6 +4463,34 @@ int CbcMain1 (int argc, const char *argv[],
                                 babModel_->addCutGenerator(&redsplitGen, translate[redsplitAction], "Reduce-and-split");
                                 accuracyFlag[numberGenerators] = 5;
                                 switches[numberGenerators++] = 1;
+                            }
+                            if (redsplit2Action && !complicatedInteger) {
+				int maxLength=256;
+				if (redsplit2Action>2) {
+				  redsplit2Action-=2;
+				  maxLength=COIN_INT_MAX;
+				}
+				CglRedSplit2Param & parameters = redsplit2Gen.getParam();
+				parameters.setMaxNonzeroesTab(maxLength);
+                                babModel_->addCutGenerator(&redsplit2Gen, translate[redsplit2Action], "Reduce-and-split(2)");
+                                accuracyFlag[numberGenerators] = 5;
+				switches[numberGenerators++] = 1;
+                            }
+                            if (GMIAction && !complicatedInteger) {
+			        if (GMIAction>5) {
+				  // long
+				  GMIAction-=5;
+				  CglGMIParam & parameters = GMIGen.getParam();
+				  parameters.setMaxSupportRel(1.0);
+				}
+                                babModel_->addCutGenerator(&GMIGen, translate[GMIAction], "Gomory(2)");
+			        if (GMIAction==5) {
+				  // just at end and root
+				  GMIAction=2;
+				  doAtEnd[numberGenerators]=1;
+				}
+                                accuracyFlag[numberGenerators] = 5;
+				switches[numberGenerators++] = 0;
                             }
                             if (cliqueAction) {
                                 babModel_->addCutGenerator(&cliqueGen, translate[cliqueAction], "Clique");
@@ -4571,11 +4859,15 @@ int CbcMain1 (int argc, const char *argv[],
                                             solutionIn2[i] = 0.0;
                                             prioritiesIn2[i] = 1000000;
                                         }
+#ifndef NDEBUG
                                         int iLast = -1;
+#endif
                                         for (i = 0; i < numberColumns; i++) {
                                             int iColumn = originalColumns[i];
+#ifndef NDEBUG
                                             assert (iColumn > iLast);
                                             iLast = iColumn;
+#endif
                                             solutionIn2[i] = solutionIn2[iColumn];
                                             if (prioritiesIn)
                                                 prioritiesIn2[i] = prioritiesIn2[iColumn];
@@ -4626,7 +4918,7 @@ int CbcMain1 (int argc, const char *argv[],
                                         int i;
                                         for (i = 0; i < numberOriginalColumns; i++)
                                             newColumn[i] = -1;
-                                        for (i = 0; i < numberColumns; i++)
+                                        for (i = 0; i < CoinMin(truncateColumns,numberColumns); i++)
                                             newColumn[originalColumns[i]] = i;
                                         if (!integersOK) {
                                             // Change column numbers etc
@@ -5215,6 +5507,11 @@ int CbcMain1 (int argc, const char *argv[],
                                     }
                                     babModel_->setBranchingMethod(decision);
                                     if (useCosts && testOsiOptions >= 0) {
+				      if(newPriorities ) {
+					// get rid of
+					delete [] newPriorities;
+					newPriorities = NULL;
+				      }
                                         int numberColumns = babModel_->getNumCols();
                                         int * sort = new int[numberColumns];
                                         double * dsort = new double[numberColumns];
@@ -5625,6 +5922,14 @@ int CbcMain1 (int argc, const char *argv[],
                                     babModel_->setStoredRowCuts(donor.storedRowCuts());
                                     donor.setStoredRowCuts(NULL);
                                 }
+				// We may have priorities from extra variables
+				if(newPriorities ) {
+				  if (truncateColumns<babModel_->getNumCols()) {
+				    // set new ones as high prority
+				    babModel_->passInPriorities(newPriorities,false);
+				  }
+				  delete [] newPriorities;
+				}
 #ifdef JJF_ZERO
                                 int extra5 = parameters_[whichParam(EXTRA5, numberParameters_, parameters_)].intValue();
                                 if (extra5 > 0) {
@@ -5647,7 +5952,23 @@ int CbcMain1 (int argc, const char *argv[],
                                 int specialOptions = parameters_[whichParam(CBC_PARAM_INT_STRONG_STRATEGY, numberParameters_, parameters_)].intValue();
 				if (specialOptions>=0)
 				  babModel_->setStrongStrategy(specialOptions);
+				if (biLinearProblem)
+				  babModel_->setSpecialOptions(babModel_->specialOptions() &(~(512|32768)));
                                 babModel_->branchAndBound(statistics);
+				if (truncateColumns<babModel_->solver()->getNumCols()) {
+				  OsiSolverInterface * solverX = babModel_->solver();
+				  int numberColumns=solverX->getNumCols();
+				  int numberRows=solverX->getNumRows();
+				  int numberDelete = numberColumns-truncateColumns;
+				  int * delStuff=new int [numberDelete];
+				  for (int i=0;i<numberDelete;i++)
+				    delStuff[i]=i+truncateColumns;
+				  solverX->deleteCols(numberDelete,delStuff);
+				  for (int i=0;i<numberDelete;i++)
+				    delStuff[i]=i+numberRows-numberDelete;
+				  solverX->deleteRows(numberDelete,delStuff);
+				  delete [] delStuff;
+				}
                                 //#define CLP_FACTORIZATION_INSTRUMENT
 #ifdef CLP_FACTORIZATION_INSTRUMENT
                                 extern double factorization_instrument(int type);
@@ -8804,6 +9125,8 @@ void CbcMain0 (CbcModel  & model)
     parameters[whichParam(CBC_PARAM_STR_KNAPSACKCUTS, numberParameters, parameters)].setCurrentOption("ifmove");
     parameters[whichParam(CBC_PARAM_STR_ZEROHALFCUTS, numberParameters, parameters)].setCurrentOption("off");
     parameters[whichParam(CBC_PARAM_STR_REDSPLITCUTS, numberParameters, parameters)].setCurrentOption("off");
+    parameters[whichParam(CBC_PARAM_STR_REDSPLIT2CUTS, numberParameters, parameters)].setCurrentOption("off");
+    parameters[whichParam(CBC_PARAM_STR_GMICUTS, numberParameters, parameters)].setCurrentOption("off");
     parameters[whichParam(CBC_PARAM_STR_CLIQUECUTS, numberParameters, parameters)].setCurrentOption("ifmove");
     parameters[whichParam(CBC_PARAM_STR_MIXEDCUTS, numberParameters, parameters)].setCurrentOption("ifmove");
     parameters[whichParam(CBC_PARAM_STR_FLOWCUTS, numberParameters, parameters)].setCurrentOption("ifmove");

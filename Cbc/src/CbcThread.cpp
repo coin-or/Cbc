@@ -1392,7 +1392,7 @@ CbcModel::moveToModel(CbcModel * baseModel, int mode)
     if (mode == 0) {
         setCutoff(baseModel->getCutoff());
         bestObjective_ = baseModel->bestObjective_;
-        assert (!baseModel->globalCuts_.sizeRowCuts());
+        //assert (!baseModel->globalCuts_.sizeRowCuts());
         if (numberSolutions_ < baseModel->numberSolutions_) {
 	  assert (baseModel->bestSolution_);
 	  int numberColumns = solver_->getNumCols();
@@ -1568,7 +1568,7 @@ CbcModel::moveToModel(CbcModel * baseModel, int mode)
     } else if (mode == 10) {
         setCutoff(baseModel->getCutoff());
         bestObjective_ = baseModel->bestObjective_;
-        assert (!baseModel->globalCuts_.sizeRowCuts());
+        //assert (!baseModel->globalCuts_.sizeRowCuts());
         numberSolutions_ = baseModel->numberSolutions_;
         assert (usedInSolution_);
         assert (baseModel->usedInSolution_);

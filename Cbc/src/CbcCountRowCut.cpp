@@ -287,7 +287,7 @@ CbcRowCuts::CbcRowCuts(const CbcRowCuts& rhs)
     for (int i=0;i<hashSize;i++) {
       hash_[i] = rhs.hash_[i];
     }
-    for (int i=0;i<size_;i++) {
+    for (int i=0;i<numberCuts_;i++) {
       if (rhs.rowCut_[i])
 	rowCut_[i]=new OsiRowCut2(*rhs.rowCut_[i]);
       else
@@ -317,7 +317,7 @@ CbcRowCuts::operator=(const CbcRowCuts& rhs)
       for (int i=0;i<hashSize;i++) {
 	hash_[i] = rhs.hash_[i];
       }
-      for (int i=0;i<size_;i++) {
+      for (int i=0;i<numberCuts_;i++) {
 	if (rhs.rowCut_[i])
 	  rowCut_[i]=new OsiRowCut2(*rhs.rowCut_[i]);
 	else

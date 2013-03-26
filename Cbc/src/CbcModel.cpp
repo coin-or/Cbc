@@ -9493,7 +9493,8 @@ CbcModel::resolve(CbcNodeInfo * parent, int whereFrom,
     }
 #ifdef COIN_HAS_CLP
     if (clpSolver && !feasible) {
-        // make sure marked infeasible
+      // make sure marked infeasible
+      if (!clpSolver->isProvenDualInfeasible())
         clpSolver->getModelPtr()->setProblemStatus(1);
     }
 #endif

@@ -7,6 +7,8 @@
 #define CbcHeuristicDive_H
 
 #include "CbcHeuristic.hpp"
+class CbcSubProblem;
+class OsiRowCut;
 struct PseudoReducedCost {
     int var;
     double pseudoRedCost;
@@ -58,6 +60,17 @@ public:
     */
     virtual int solution(double & objectiveValue,
                          double * newSolution);
+    /// inner part of dive
+  int solution(double & objectiveValue, int & numberNodes,
+		 int & numberCuts, OsiRowCut ** cuts,
+		 CbcSubProblem ** & nodes,
+		 double * newSolution);
+    /** returns 0 if no solution, 1 if valid solution
+        with better objective value than one passed in
+	also returns list of nodes
+        This does Fractional Diving
+    */
+    int fathom(CbcModel * model, int & numberNodes,CbcSubProblem ** & nodes);
 
     /// Validate model i.e. sets when_ to 0 if necessary (may be NULL)
     virtual void validate();
@@ -78,6 +91,10 @@ public:
     /// Set maximum number of simplex iterations
     void setMaxSimplexIterations(int value) {
         maxSimplexIterations_ = value;
+    }
+    /// Get maximum number of simplex iterations
+    inline int maxSimplexIterations() const {
+        return maxSimplexIterations_;
     }
 
     /// Set maximum number of simplex iterations at root node

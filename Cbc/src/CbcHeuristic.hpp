@@ -236,6 +236,8 @@ public:
     }
     /// Set random number generator seed
     void setSeed(int value);
+    /// Get random number generator seed
+    int getSeed() const;
     /// Sets decay factor (for howOften) on failure
     inline void setDecayFactor(double value) {
         decayFactor_ = value;

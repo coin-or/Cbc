@@ -650,7 +650,7 @@ void CbcSolver::fillParameters()
     parameters_[whichParam(CBC_PARAM_STR_CLIQUECUTS, numberParameters_, parameters_)].setCurrentOption("ifmove");
     parameters_[whichParam(CBC_PARAM_STR_MIXEDCUTS, numberParameters_, parameters_)].setCurrentOption("ifmove");
     parameters_[whichParam(CBC_PARAM_STR_FLOWCUTS, numberParameters_, parameters_)].setCurrentOption("ifmove");
-    parameters_[whichParam(CBC_PARAM_STR_TWOMIRCUTS, numberParameters_, parameters_)].setCurrentOption("root");
+    parameters_[whichParam(CBC_PARAM_STR_TWOMIRCUTS, numberParameters_, parameters_)].setCurrentOption("ifmove");
     parameters_[whichParam(CBC_PARAM_STR_LANDPCUTS, numberParameters_, parameters_)].setCurrentOption("off");
     parameters_[whichParam(CBC_PARAM_STR_RESIDCUTS, numberParameters_, parameters_)].setCurrentOption("off");
     parameters_[whichParam(CBC_PARAM_STR_ROUNDING, numberParameters_, parameters_)].setCurrentOption("on");
@@ -1109,7 +1109,7 @@ int callCbc1(const char * input2, CbcModel & model,
                 break;
             }
         }
-        input[i] = '\0';
+        input[i++] = '\0';
         argv[j+1] = CoinStrdup(input + saveI);
         while (input[i] == ' ')
             i++;
@@ -1273,6 +1273,7 @@ int CbcMain1 (int argc, const char *argv[],
         double * solutionIn = NULL;
         int * prioritiesIn = NULL;
         std::vector< std::pair< std::string, double > > mipStart;
+        std::vector< std::pair< std::string, double > > mipStartBefore;
         int numberSOS = 0;
         int * sosStart = NULL;
         int * sosIndices = NULL;
@@ -1593,7 +1594,7 @@ int CbcMain1 (int argc, const char *argv[],
         CglGMI GMIGen;
         //GMIGen.setLimit(100);
         // set default action (0=off,1=on,2=root)
-        // Off
+        // Off 
         int GMIAction = 0;
 
         CglFakeClique cliqueGen(NULL, false);
@@ -1617,9 +1618,10 @@ int CbcMain1 (int argc, const char *argv[],
         CglTwomir twomirGen;
         twomirGen.setMaxElements(250);
         // set default action (0=off,1=on,2=root)
-        int twomirAction = 2;
+        int twomirAction = 3;
 #ifndef DEBUG_MALLOC
         CglLandP landpGen;
+	landpGen.validator().setMinViolation(1.0e-4);
 #endif
         // set default action (0=off,1=on,2=root)
         int landpAction = 0;
@@ -1689,9 +1691,9 @@ int CbcMain1 (int argc, const char *argv[],
             parameters_[iParam].setCurrentOption("on");
             iParam = whichParam(CBC_PARAM_STR_PROBINGCUTS, numberParameters_, parameters_);
             parameters_[iParam].setCurrentOption("on");
-            probingAction = 1;
-            parameters_[iParam].setCurrentOption("forceOnStrong");
-            probingAction = 8;
+            probingAction = 3;
+            //parameters_[iParam].setCurrentOption("forceOnStrong");
+            //probingAction = 8;
         }
         std::string field;
 #if CBC_QUIET == 0
@@ -3313,14 +3315,16 @@ int CbcMain1 (int argc, const char *argv[],
                                             OsiSolverLinearizedQuadratic * solver3 = dynamic_cast<OsiSolverLinearizedQuadratic *> (model2.solver());
                                             assert (solver3);
                                             solution = solver3->bestSolution();
-                                            double bestObjectiveValue = solver3->bestObjectiveValue();
-                                            linkSolver->setBestObjectiveValue(bestObjectiveValue);
-                                            linkSolver->setBestSolution(solution, solver3->getNumCols());
+					    double bestObjectiveValue = solver3->bestObjectiveValue();
+					    linkSolver->setBestObjectiveValue(bestObjectiveValue);
+					    if (solution) {
+					      linkSolver->setBestSolution(solution, solver3->getNumCols());
+					    }
                                             CbcHeuristicDynamic3 dynamic(model_);
                                             dynamic.setHeuristicName("dynamic pass thru");
                                             model_.addHeuristic(&dynamic);
                                             // if convex
-                                            if ((linkSolver->specialOptions2()&4) != 0) {
+                                            if ((linkSolver->specialOptions2()&4) != 0 && solution) {
                                                 int numberColumns = coinModel->numberColumns();
                                                 assert (linkSolver->objectiveVariable() == numberColumns);
                                                 // add OA cut
@@ -3667,6 +3671,19 @@ int CbcMain1 (int argc, const char *argv[],
                                         limit*clpSolver->getObjSense())
                                     preProcess = 0;
                             }
+			    if (mipStartBefore.size())
+			      {
+				CbcModel tempModel=*babModel_;
+				std::vector< std::string > colNames;
+				for ( int i=0 ; (i<babModel_->solver()->getNumCols()) ; ++i )
+				  colNames.push_back( model_.solver()->getColName(i) );
+				std::vector< double > x( babModel_->getNumCols(), 0.0 );
+				double obj;
+				int status = computeCompleteSolution( &tempModel, colNames, mipStartBefore, &x[0], obj );
+				// set cutoff 
+				if (!status)
+				  babModel_->setCutoff(CoinMin(babModel_->getCutoff(),obj+1.0e-4));
+			      }
                             if (preProcess && type == CBC_PARAM_ACTION_BAB) {
 #ifndef CBC_OTHER_SOLVER
                                 // See if sos from mps file
@@ -3754,6 +3771,28 @@ int CbcMain1 (int argc, const char *argv[],
                                         }
                                         process.passInProhibited(prohibited, numberColumns);
                                         delete [] prohibited;
+                                    }
+                                    if (0) {
+				      
+				      // Special integers
+				      int numberColumns = saveSolver->getNumCols();
+				      char * prohibited = new char[numberColumns];
+				      memset(prohibited, 0, numberColumns);
+				      const CoinPackedMatrix * matrix = saveSolver->getMatrixByCol();
+				      const int * columnLength = matrix->getVectorLengths();
+				      int numberProhibited=0;
+				      for (int iColumn = numberColumns-1; iColumn >=0; iColumn--) {
+					if (!saveSolver->isInteger(iColumn)||
+					    columnLength[iColumn]>1)
+					  break;
+					numberProhibited++;
+					prohibited[iColumn] = 1;
+				      }
+				      if (numberProhibited) {
+					process.passInProhibited(prohibited, numberColumns);
+					printf("**** Treating last %d integers as special - give high priority?\n",numberProhibited);
+				      }
+				      delete [] prohibited;
                                     }
                                     if (!model_.numberObjects() && true) {
                                         /* model may not have created objects
@@ -4151,7 +4190,7 @@ int CbcMain1 (int argc, const char *argv[],
 				    delete [] elementAdd;
 				    delete [] rowAdd;
 				    delete [] objectiveNew;
-			  }
+				  }
 				  delete [] which;
 				  delete [] obj;
 				}
@@ -4282,6 +4321,10 @@ int CbcMain1 (int argc, const char *argv[],
                                             dsort[n++] = -(upper[iColumn] - lower[iColumn]);
                                         else if (useCosts == 5)
                                             dsort[n++] = -columnLength[iColumn];
+                                        else if (useCosts == 6)
+					    dsort[n++] = (columnLength[iColumn]==1) ? -1.0 : 0.0;
+                                        else if (useCosts == 7)
+					    dsort[n++] = (objective[iColumn]) ? -1.0 : 0.0;
                                     }
                                 }
                                 CoinSort_2(dsort, dsort + n, sort);
@@ -4331,6 +4374,9 @@ int CbcMain1 (int argc, const char *argv[],
 			    memset(doAtEnd,0,30);
                             int numberGenerators = 0;
                             int translate[] = { -100, -1, -99, -98, 1, -1098, -999, 1, 1, 1, -1};
+			    int maximumSlowPasses = 
+			      parameters_[whichParam(CBC_PARAM_INT_MAX_SLOW_CUTS, 
+						     numberParameters_, parameters_)].intValue();
                             if (probingAction) {
                                 int numberColumns = babModel_->solver()->getNumCols();
                                 if (probingAction > 7) {
@@ -4415,14 +4461,14 @@ int CbcMain1 (int argc, const char *argv[],
 				  int type = (laGomory % 3)+1;
 				  int when = laGomory/3;
 				  char atEnd = (when<2) ? 1 : 0;
-				  int gomoryTypeMajor = 0;
+				  int gomoryTypeMajor = 10;
 				  if (when<3) {
 				    // normal as well
 				    babModel_->addCutGenerator(&gomoryGen, gType, "Gomory");
 				    accuracyFlag[numberGenerators] = 3;
 				    switches[numberGenerators++] = 0;
 				    if (when==2)
-				      gomoryTypeMajor=10;
+				      gomoryTypeMajor=20;
 				  } else {
 				    when--; // so on
 				    gomoryTypeMajor=20;
@@ -4436,6 +4482,10 @@ int CbcMain1 (int argc, const char *argv[],
 				    babModel_->addCutGenerator(&gomoryGen, gType, "GomoryL1");
 				    accuracyFlag[numberGenerators] = 3;
 				    doAtEnd[numberGenerators]=atEnd;
+				    if (atEnd) {
+				      babModel_->cutGenerator(numberGenerators)->setMaximumTries(99999999);
+				      babModel_->cutGenerator(numberGenerators)->setHowOften(1);
+				    }
 				    switches[numberGenerators++] = 0;
 				  }
 				  if ((type&2) !=0) {
@@ -4444,6 +4494,10 @@ int CbcMain1 (int argc, const char *argv[],
 				    babModel_->addCutGenerator(&gomoryGen, gType, "GomoryL2");
 				    accuracyFlag[numberGenerators] = 3;
 				    doAtEnd[numberGenerators]=atEnd;
+				    if (atEnd) {
+				      babModel_->cutGenerator(numberGenerators)->setMaximumTries(99999999);
+				      babModel_->cutGenerator(numberGenerators)->setHowOften(1);
+				    }
 				    switches[numberGenerators++] = 0;
 				  }
 				}
@@ -4462,7 +4516,12 @@ int CbcMain1 (int argc, const char *argv[],
                             if (redsplitAction && !complicatedInteger) {
                                 babModel_->addCutGenerator(&redsplitGen, translate[redsplitAction], "Reduce-and-split");
                                 accuracyFlag[numberGenerators] = 5;
-                                switches[numberGenerators++] = 1;
+				// slow ? - just do a few times
+				if (redsplitAction!=1) {
+				  babModel_->cutGenerator(numberGenerators)->setMaximumTries(maximumSlowPasses);
+				  babModel_->cutGenerator(numberGenerators)->setHowOften(10);
+				}
+				switches[numberGenerators++] = 1;
                             }
                             if (redsplit2Action && !complicatedInteger) {
 				int maxLength=256;
@@ -4474,6 +4533,13 @@ int CbcMain1 (int argc, const char *argv[],
 				parameters.setMaxNonzeroesTab(maxLength);
                                 babModel_->addCutGenerator(&redsplit2Gen, translate[redsplit2Action], "Reduce-and-split(2)");
                                 accuracyFlag[numberGenerators] = 5;
+				// slow ? - just do a few times
+				if (redsplit2Action!=1) {
+				  babModel_->cutGenerator(numberGenerators)->setHowOften(maximumSlowPasses);
+				  babModel_->cutGenerator(numberGenerators)->setMaximumTries(maximumSlowPasses);
+				  babModel_->cutGenerator(numberGenerators)->setHowOften(5);
+				}
+				
 				switches[numberGenerators++] = 1;
                             }
                             if (GMIAction && !complicatedInteger) {
@@ -4488,6 +4554,8 @@ int CbcMain1 (int argc, const char *argv[],
 				  // just at end and root
 				  GMIAction=2;
 				  doAtEnd[numberGenerators]=1;
+				  babModel_->cutGenerator(numberGenerators)->setMaximumTries(99999999);
+				  babModel_->cutGenerator(numberGenerators)->setHowOften(1);
 				}
                                 accuracyFlag[numberGenerators] = 5;
 				switches[numberGenerators++] = 0;
@@ -4517,14 +4585,60 @@ int CbcMain1 (int argc, const char *argv[],
                                 } else if (numberColumns > 5000 && twomirAction == 4) {
                                     twomirGen.setMaxElements(2000);
                                 }
-                                babModel_->addCutGenerator(&twomirGen, translate[twomirAction], "TwoMirCuts");
-                                accuracyFlag[numberGenerators] = 4;
-                                switches[numberGenerators++] = 1;
+                                int laTwomir = parameters_[whichParam(CBC_PARAM_STR_LATWOMIRCUTS, numberParameters_, parameters_)].currentOptionAsInteger();
+				int twomirType = translate[twomirAction];
+				if (!laTwomir) {
+				  // Normal
+				  babModel_->addCutGenerator(&twomirGen, translate[twomirAction], "TwoMirCuts");
+				  accuracyFlag[numberGenerators] = 4;
+				  switches[numberGenerators++] = 1;
+				} else {
+				  laTwomir--;
+				  int type = (laTwomir % 3)+1;
+				  int when = laTwomir/3;
+				  char atEnd = (when<2) ? 1 : 0;
+				  int twomirTypeMajor = 10;
+				  if (when<3) {
+				    // normal as well
+				    babModel_->addCutGenerator(&twomirGen, translate[twomirAction], "TwoMirCuts");
+				    accuracyFlag[numberGenerators] = 4;
+				    switches[numberGenerators++] = 1;
+				    if (when==2)
+				      twomirTypeMajor=10;
+				  } else {
+				    when--; // so on
+				    twomirTypeMajor=20;
+				  }
+				  if (!when)
+				    twomirType=-99; // root
+				  twomirGen.passInOriginalSolver(babModel_->solver());
+				  if ((type&1) !=0) {
+				    // clean
+				    twomirGen.setTwomirType(twomirTypeMajor+1);
+				    babModel_->addCutGenerator(&twomirGen, twomirType, "TwoMirCutsL1");
+				    accuracyFlag[numberGenerators] = 4;
+				    doAtEnd[numberGenerators]=atEnd;
+				    switches[numberGenerators++] = atEnd ? 0 : 1;
+				  }
+				  if ((type&2) !=0) {
+				    // simple
+				    twomirGen.setTwomirType(twomirTypeMajor+2);
+				    babModel_->addCutGenerator(&twomirGen, twomirType, "TwoMirCutsL2");
+				    accuracyFlag[numberGenerators] = 4;
+				    doAtEnd[numberGenerators]=atEnd;
+				    switches[numberGenerators++] = atEnd ? 0 : 1;
+				  }
+				}
                             }
 #ifndef DEBUG_MALLOC
                             if (landpAction) {
                                 babModel_->addCutGenerator(&landpGen, translate[landpAction], "LiftAndProject");
                                 accuracyFlag[numberGenerators] = 5;
+				// slow ? - just do a few times
+				if (landpAction!=1) {
+				  babModel_->cutGenerator(numberGenerators)->setMaximumTries(maximumSlowPasses);
+				  babModel_->cutGenerator(numberGenerators)->setHowOften(10);
+				}
                                 switches[numberGenerators++] = 1;
                             }
 #endif
@@ -4552,7 +4666,7 @@ int CbcMain1 (int argc, const char *argv[],
                             for (iGenerator = 0; iGenerator < numberGenerators; iGenerator++) {
                                 CbcCutGenerator * generator = babModel_->cutGenerator(iGenerator);
                                 int howOften = generator->howOften();
-                                if (howOften == -98 || howOften == -99)
+                                if (howOften == -98 || howOften == -99 || generator->maximumTries()>0)
                                     generator->setSwitchOffIfLessThan(switches[iGenerator]);
                                 // Use if any at root as more likely later and fairly cheap
                                 //if (switches[iGenerator]==-2)
@@ -4560,7 +4674,7 @@ int CbcMain1 (int argc, const char *argv[],
                                 generator->setInaccuracy(accuracyFlag[iGenerator]);
                                 if (doAtEnd[iGenerator]) {
                                     generator->setWhetherCallAtEnd(true);
-                                    generator->setMustCallAgain(true);
+                                    //generator->setMustCallAgain(true);
                                 }
                                 generator->setTiming(true);
                                 if (cutDepth >= 0)
@@ -4811,23 +4925,34 @@ int CbcMain1 (int argc, const char *argv[],
                                 }
 #endif
                                 const int * originalColumns = preProcess ? process.originalColumns() : NULL;
-
                                 if (mipStart.size())
                                 {
+                                   std::vector< std::string > colNames;
                                    if (preProcess)
                                    {
-                                      std::vector< std::string > colNames;
+				     for ( int i=0 ; (i<babModel_->solver()->getNumCols()) ; ++i ) {
+				       int iColumn = babModel_->originalColumns()[i];
+				       if (iColumn>=0) {
+                                         colNames.push_back( model_.solver()->getColName( iColumn ) );
+				       } else {
+					 // created variable
+					 char newName[15];
+					 sprintf(newName,"C%7.7d",i);
+                                         colNames.push_back( newName );
+				       }
+				     }
+				   } else {
                                       for ( int i=0 ; (i<babModel_->solver()->getNumCols()) ; ++i )
-                                         colNames.push_back( model_.solver()->getColName( babModel_->originalColumns()[i] ) );
-                                      //printf("--- %s %d\n", babModel_->solver()->getColName(0).c_str(), babModel_->solver()->getColNames().size() );
-                                      //printf("-- SIZES of models %d %d %d\n", model_.getNumCols(),  babModel_->solver()->getNumCols(), babModel_->solver()->getColNames().size() );
-                                      std::vector< double > x( babModel_->getNumCols(), 0.0 );
-                                      double obj;
-                                      int status = computeCompleteSolution( babModel_, colNames, mipStart, &x[0], obj );
-                                      if (!status)
-                                         babModel_->setBestSolution( &x[0], x.size(), obj, false );
-                                   }
-                                }
+                                         colNames.push_back( model_.solver()->getColName(i) );
+				   }
+				   //printf("--- %s %d\n", babModel_->solver()->getColName(0).c_str(), babModel_->solver()->getColNames().size() );
+				   //printf("-- SIZES of models %d %d %d\n", model_.getNumCols(),  babModel_->solver()->getNumCols(), babModel_->solver()->getColNames().size() );
+				   std::vector< double > x( babModel_->getNumCols(), 0.0 );
+				   double obj;
+				   int status = computeCompleteSolution( babModel_, colNames, mipStart, &x[0], obj );
+				   if (!status)
+				     babModel_->setBestSolution( &x[0], x.size(), obj, false );
+				}
 
                                 if (solutionIn && useSolution >= 0) {
                                     if (!prioritiesIn) {
@@ -4912,7 +5037,8 @@ int CbcMain1 (int argc, const char *argv[],
                                         // backward pointer to new variables
                                         // extend arrays in case SOS
                                         assert (originalColumns);
-                                        int n = originalColumns[numberColumns-1] + 1;
+					int n = CoinMin(truncateColumns,numberColumns);
+                                        n = originalColumns[n-1] + 1;
                                         n = CoinMax(n, CoinMax(numberColumns, numberOriginalColumns));
                                         int * newColumn = new int[n];
                                         int i;
@@ -5947,11 +6073,99 @@ int CbcMain1 (int argc, const char *argv[],
                                     }
                                 }
 #endif
-                                int multipleRoot = parameters_[whichParam(CBC_PARAM_INT_MULTIPLEROOTS, numberParameters_, parameters_)].intValue();
-				babModel_->setMultipleRootTries(multipleRoot);
                                 int specialOptions = parameters_[whichParam(CBC_PARAM_INT_STRONG_STRATEGY, numberParameters_, parameters_)].intValue();
 				if (specialOptions>=0)
 				  babModel_->setStrongStrategy(specialOptions);
+				int jParam = whichParam(CBC_PARAM_STR_CUTOFF_CONSTRAINT, 
+							numberParameters_, parameters_);
+				if(parameters_[jParam].currentOptionAsInteger())
+				  babModel_->setCutoffAsConstraint(true);
+                                int multipleRoot = parameters_[whichParam(CBC_PARAM_INT_MULTIPLEROOTS, numberParameters_, parameters_)].intValue();
+				if (multipleRoot<10000) {
+				  babModel_->setMultipleRootTries(multipleRoot);
+				} else {
+				  // will be doing repeated solves and saves
+				  int numberGoes=multipleRoot/10000;
+				  multipleRoot-=10000*numberGoes;
+				  int moreOptions=babModel_->moreSpecialOptions();
+				  if (numberGoes<100) {
+				    remove("global.cuts");
+				    remove("global.fix");
+				    moreOptions |= (67108864|134217728);
+				  } else {
+				    moreOptions |= 67108864*(numberGoes/100);
+				    numberGoes=numberGoes%100;
+				  }
+				  babModel_->setMultipleRootTries(multipleRoot);
+				  babModel_->setMoreSpecialOptions(moreOptions);
+				  int numberColumns=babModel_->getNumCols();
+				  double * bestValues=new double [numberGoes];
+				  double ** bestSolutions=new double * [numberGoes];
+				  int * which=new int[numberGoes];
+				  int numberSolutions=0;
+				  sprintf(generalPrint,"Starting %d passes each with %d solvers",
+					  numberGoes, multipleRoot%10);
+				  generalMessageHandler->message(CLP_GENERAL, generalMessages)
+				    << generalPrint
+				    << CoinMessageEol;
+				  for (int iGo=0;iGo<numberGoes;iGo++) {
+				    sprintf(generalPrint,"Starting pass %d",iGo+1);
+				    generalMessageHandler->message(CLP_GENERAL, generalMessages)
+				      << generalPrint
+				      << CoinMessageEol;
+				    CbcModel tempModel=*babModel_;
+				    tempModel.setMaximumNodes(0);
+				    // switch off cuts if none generated
+				    int numberGenerators = tempModel.numberCutGenerators();
+				    for (int iGenerator = 0; iGenerator < numberGenerators; iGenerator++) {
+				      CbcCutGenerator * generator = tempModel.cutGenerator(iGenerator);
+				      generator->setSwitchOffIfLessThan(1);
+				    }
+				    // random
+				    tempModel.setRandomSeed(tempModel.getRandomSeed()+100000000*(iGo+1+5*numberGoes));
+				    for (int i=0;i<tempModel.numberHeuristics();i++)
+				      tempModel.heuristic(i)->setSeed(tempModel.heuristic(i)->getSeed()+100000000*iGo);
+#ifndef CBC_OTHER_SOLVER
+				    OsiClpSolverInterface * solver = dynamic_cast<OsiClpSolverInterface *> (tempModel.solver());
+				    ClpSimplex * simplex = solver->getModelPtr();
+				    int solverSeed=simplex->randomNumberGenerator()->getSeed();
+				    simplex->setRandomSeed(solverSeed+100000000*(iGo+1));
+#endif
+				    tempModel.branchAndBound();
+				    if (tempModel.bestSolution()) {
+				      bestSolutions[numberSolutions]=
+					CoinCopyOfArray(tempModel.bestSolution(),
+							numberColumns);
+				      bestValues[numberSolutions]=-tempModel.getMinimizationObjValue();
+				      which[numberSolutions]=numberSolutions;
+				      numberSolutions++;
+				    }
+				  }
+				  // allow solutions
+				  double sense = babModel_->solver()->getObjSense();;
+				  CoinSort_2(bestValues,bestValues+numberSolutions,which);
+				  babModel_->setMoreSpecialOptions(moreOptions&(~16777216));
+				  for (int i=0;i<numberSolutions;i++) {
+				    int k=which[i];
+				    if (bestValues[i]<babModel_->getCutoff()) {
+				      babModel_->setBestSolution(bestSolutions[k],numberColumns,
+								 -bestValues[i]*sense,true);
+				      babModel_->incrementUsed(bestSolutions[k]);
+				    }
+				    delete [] bestSolutions[k];
+				  }
+				  babModel_->setMoreSpecialOptions(moreOptions);
+				  if (numberSolutions)
+				    sprintf(generalPrint,"Ending major passes - best solution %g",-bestValues[numberSolutions-1]);
+				  else
+				    sprintf(generalPrint,"Ending major passes - no solution found");
+				    generalMessageHandler->message(CLP_GENERAL, generalMessages)
+				      << generalPrint
+				      << CoinMessageEol;
+				  delete [] which;
+				  delete [] bestValues;
+				  delete [] bestSolutions;
+				}
 				if (biLinearProblem)
 				  babModel_->setSpecialOptions(babModel_->specialOptions() &(~(512|32768)));
                                 babModel_->branchAndBound(statistics);
@@ -7518,6 +7732,14 @@ int CbcMain1 (int argc, const char *argv[],
 			      << CoinMessageEol;
                             double msObj;
                             readMIPStart( &model_, fileName.c_str(), mipStart, msObj );
+			    // copy to before preprocess if has .before.
+			    if (strstr(fileName.c_str(),".before.")) {
+			      mipStartBefore = mipStart;
+			      sprintf(generalPrint,"file %s will be used before preprocessing.",fileName.c_str() );
+			      generalMessageHandler->message(CLP_GENERAL, generalMessages)
+				<< generalPrint
+				<< CoinMessageEol;
+			    }
                         } else {
 #ifndef DISALLOW_PRINTING
                             std::cout << "** Current model not valid" << std::endl;

@@ -22,6 +22,7 @@
 #include "CbcMessage.hpp"
 #include "CbcFollowOn.hpp"
 #include "CbcBranchActual.hpp"
+#include "CbcBranchCut.hpp"
 #include "CoinSort.hpp"
 #include "CoinError.hpp"
 
@@ -524,3 +525,325 @@ CbcFixingBranchingObject::compareBranchingObject
 
 //##############################################################################
 
+//##############################################################################
+
+// Default Constructor
+CbcIdiotBranch::CbcIdiotBranch ()
+        : CbcObject()
+{
+  id_ = 1000000000 +  CutBranchingObj;
+}
+
+// Useful constructor
+CbcIdiotBranch::CbcIdiotBranch (CbcModel * model)
+        : CbcObject(model)
+{
+    assert (model);
+    id_ = 1000000000 +  CutBranchingObj;
+}
+
+// Copy constructor
+CbcIdiotBranch::CbcIdiotBranch ( const CbcIdiotBranch & rhs)
+  : CbcObject(rhs),
+    randomNumberGenerator_(rhs.randomNumberGenerator_),
+    savedRandomNumberGenerator_(rhs.savedRandomNumberGenerator_)
+{
+}
+
+// Clone
+CbcObject *
+CbcIdiotBranch::clone() const
+{
+    return new CbcIdiotBranch(*this);
+}
+
+// Assignment operator
+CbcIdiotBranch &
+CbcIdiotBranch::operator=( const CbcIdiotBranch & rhs)
+{
+    if (this != &rhs) {
+        CbcObject::operator=(rhs);
+        randomNumberGenerator_ = rhs.randomNumberGenerator_;
+        savedRandomNumberGenerator_ = rhs.savedRandomNumberGenerator_;
+    }
+    return *this;
+}
+
+// Destructor
+CbcIdiotBranch::~CbcIdiotBranch ()
+{
+}
+double
+CbcIdiotBranch::infeasibility(const OsiBranchingInformation * info,
+                           int &preferredWay) const
+{
+  randomNumberGenerator_ = savedRandomNumberGenerator_;
+  double rhs = buildCut(info,0,preferredWay).ub();
+  double fraction = rhs-floor(rhs);
+  if (fraction>0.5)
+    fraction=1.0-fraction;
+  return fraction;
+}
+
+// This looks at solution and sets bounds to contain solution
+void
+CbcIdiotBranch::feasibleRegion()
+{
+}
+
+CbcBranchingObject *
+CbcIdiotBranch::createCbcBranch(OsiSolverInterface * solver, const OsiBranchingInformation * info, int way)
+{
+  // down and up 
+  randomNumberGenerator_ = savedRandomNumberGenerator_;
+  int preferredWay;
+  OsiRowCut downCut = buildCut(info,0,preferredWay);
+  double rhs = downCut.ub();
+  assert(rhs == downCut.lb());
+  OsiRowCut upCut =downCut;
+  downCut.setUb(floor(rhs));
+  downCut.setLb(-COIN_DBL_MAX);
+  upCut.setLb(ceil(rhs));
+  upCut.setUb(COIN_DBL_MAX);
+  CbcBranchingObject * branch
+    = new CbcCutBranchingObject(model_, downCut,upCut,true);
+  return branch;
+}
+// Initialize for branching
+void 
+CbcIdiotBranch::initializeForBranching(CbcModel * )
+{
+  savedRandomNumberGenerator_ = randomNumberGenerator_;
+}
+// Build "cut"
+OsiRowCut 
+CbcIdiotBranch::buildCut(const OsiBranchingInformation * info,int /*type*/,int & preferredWay) const
+{
+  int numberIntegers = model_->numberIntegers();
+  const int * integerVariable = model_->integerVariable();
+  int * which = new int [numberIntegers];
+  double * away = new double [numberIntegers];
+  const double * solution = info->solution_;
+  const double * lower = info->lower_;
+  const double * upper = info->upper_;
+  double integerTolerance = model_->getIntegerTolerance();
+  //int nMax=CoinMin(4,numberIntegers/2);
+  int n=0;
+  for (int i=0;i<numberIntegers;i++) {
+    int iColumn=integerVariable[i];
+    double value = solution[iColumn];
+    value = CoinMax(value, lower[iColumn]);
+    value = CoinMin(value, upper[iColumn]);
+    //#define JUST_SMALL
+#ifndef JUST_SMALL
+    double nearest = floor(value + 0.5);
+    if (fabs(value-nearest)>integerTolerance) {
+      double random = 0.0; //0.25*randomNumberGenerator_.randomDouble();
+      away[n]=-fabs(value-nearest)*(1.0+random);
+      which[n++]=iColumn;
+    }
+#else
+    double distanceDown = value-floor(value);
+    if (distanceDown>10.0*integerTolerance&&distanceDown<0.1) {
+      double random = 0.0; //0.25*randomNumberGenerator_.randomDouble();
+      away[n]=distanceDown*(1.0+random);
+      which[n++]=iColumn;
+    }
+#endif
+  }
+  CoinSort_2(away,away+n,which);
+  OsiRowCut possibleCut;
+  possibleCut.setUb(0.0);
+  if (n>1) {
+    int nUse=0;
+    double useRhs=0.0;
+    double best=0.0;
+    double rhs = 0.0;
+    double scaleFactor=1.0;
+    /* should be able to be clever to find best cut
+       maybe don't do if away >0.45
+       maybe don't be random
+       maybe do complete enumeration on biggest k (where sum of k >= 1.0)
+       maybe allow +-1
+     */ 
+    for (int i=0;i<n;i++) {
+      int iColumn=which[i];
+      double value = solution[iColumn];
+      value = CoinMax(value, lower[iColumn]);
+      value = CoinMin(value, upper[iColumn]);
+#define PLUS_MINUS
+#ifndef PLUS_MINUS
+      away[i]=1.0;
+      rhs += value;
+#else
+      if (value-floor(value)<=0.5) {
+	away[i]=1.0;
+	rhs += value;
+      } else {
+	away[i]=-1.0;
+	rhs -= value;
+      }
+#endif
+      double nearest = floor(rhs + 0.5);
+      double distance=fabs(rhs-nearest);
+      // scale back
+      distance *= scaleFactor;
+      scaleFactor *= 0.95;
+      if (distance>best) {
+	nUse=i+1;
+	best=distance;
+	useRhs=rhs;
+      }
+    }
+    // create cut
+    if (nUse>1) {
+      possibleCut.setRow(nUse,which,away);
+      possibleCut.setLb(useRhs);
+      possibleCut.setUb(useRhs);
+    }
+  }
+  delete [] which;
+  delete [] away;
+  return possibleCut;
+} 
+#if 0
+//##############################################################################
+
+// Default Constructor
+CbcBoundingBranchingObject::CbcBoundingBranchingObject()
+        : CbcBranchingObject()
+{
+  branchCut_.setUb(0.0);
+}
+
+// Useful constructor
+CbcBoundingBranchingObject::CbcBoundingBranchingObject (CbcModel * model,
+							int way , const OsiRowCut * cut)
+        : CbcBranchingObject(model, 0, way, 0.5)
+{
+  branchCut_ = *cut;
+}
+
+// Copy constructor
+CbcBoundingBranchingObject::CbcBoundingBranchingObject ( const CbcBoundingBranchingObject & rhs) : CbcBranchingObject(rhs)
+{
+  branchCut_ = rhs.branchCut_;
+}
+
+// Assignment operator
+CbcBoundingBranchingObject &
+CbcBoundingBranchingObject::operator=( const CbcBoundingBranchingObject & rhs)
+{
+    if (this != &rhs) {
+        CbcBranchingObject::operator=(rhs);
+	branchCut_ = rhs.branchCut_;
+    }
+    return *this;
+}
+CbcBranchingObject *
+CbcBoundingBranchingObject::clone() const
+{
+    return (new CbcBoundingBranchingObject(*this));
+}
+
+
+// Destructor
+CbcBoundingBranchingObject::~CbcBoundingBranchingObject ()
+{
+}
+double
+CbcBoundingBranchingObject::branch()
+{
+    decrementNumberBranchesLeft();
+    OsiSolverInterface * solver = model_->solver();
+    const double * columnLower = solver->getColLower();
+    int i;
+    // *** for way - up means bound all those in up section
+    if (way_ < 0) {
+#ifdef FULL_PRINT
+        printf("Down Bound ");
+#endif
+        //printf("Down Bound %d\n",numberDown_);
+        for (i = 0; i < numberDown_; i++) {
+            int iColumn = downList_[i];
+            model_->solver()->setColUpper(iColumn, columnLower[iColumn]);
+#ifdef FULL_PRINT
+            printf("Setting bound on %d to lower bound\n", iColumn);
+#endif
+        }
+        way_ = 1;	  // Swap direction
+    } else {
+#ifdef FULL_PRINT
+        printf("Up Bound ");
+#endif
+        //printf("Up Bound %d\n",numberUp_);
+        for (i = 0; i < numberUp_; i++) {
+            int iColumn = upList_[i];
+            model_->solver()->setColUpper(iColumn, columnLower[iColumn]);
+#ifdef FULL_PRINT
+            printf("Setting bound on %d to lower bound\n", iColumn);
+#endif
+        }
+        way_ = -1;	  // Swap direction
+    }
+#ifdef FULL_PRINT
+    printf("\n");
+#endif
+    return 0.0;
+}
+void
+CbcBoundingBranchingObject::print()
+{
+  OsiRowCut cut = branchCut_;
+  if (way_ < 0) {
+    printf("Down Fix ");
+    cut.setUb(floor(branchCut_.ub()));
+    cut.setLb(-COIN_DBL_MAX);
+  } else {
+    printf("Up Fix ");
+    cut.setLb(ceil(branchCut_.lb()));
+    cut.setUb(COIN_DBL_MAX);
+  }
+  printf("\n");
+  cut.print();
+}
+
+/** Compare the original object of \c this with the original object of \c
+    brObj. Assumes that there is an ordering of the original objects.
+    This method should be invoked only if \c this and brObj are of the same
+    type.
+    Return negative/0/positive depending on whether \c this is
+    smaller/same/larger than the argument.
+*/
+int
+CbcBoundingBranchingObject::compareOriginalObject
+(const CbcBranchingObject* /*brObj*/) const
+{
+    throw("must implement");
+}
+
+/** Compare the \c this with \c brObj. \c this and \c brObj must be os the
+    same type and must have the same original object, but they may have
+    different feasible regions.
+    Return the appropriate CbcRangeCompare value (first argument being the
+    sub/superset if that's the case). In case of overlap (and if \c
+    replaceIfOverlap is true) replace the current branching object with one
+    whose feasible region is the overlap.
+   */
+CbcRangeCompare
+CbcBoundingBranchingObject::compareBranchingObject
+(const CbcBranchingObject* /*brObj*/, const bool /*replaceIfOverlap*/)
+{
+#ifdef JJF_ZERO //ndef NDEBUG
+    const CbcBoundingBranchingObject* br =
+        dynamic_cast<const CbcBoundingBranchingObject*>(brObj);
+    assert(br);
+#endif
+    // If two BoundingBranchingObject's have the same base object then it's pretty
+    // much guaranteed
+    throw("must implement");
+}
+
+//##############################################################################
+
+#endif

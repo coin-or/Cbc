@@ -251,6 +251,8 @@ public:
     }
     /// Redoes data when sequence numbers change
     virtual void redoSequenceEtc(CbcModel * , int , const int * ) {}
+    /// Initialize for branching
+    virtual void initializeForBranching(CbcModel * ) {}
 
 protected:
     /// data

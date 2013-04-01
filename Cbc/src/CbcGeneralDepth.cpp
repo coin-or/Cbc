@@ -22,6 +22,7 @@
 #include "CbcMessage.hpp"
 #include "CbcGeneralDepth.hpp"
 #include "CbcBranchActual.hpp"
+#include "CbcHeuristicDive.hpp"
 #include "CoinSort.hpp"
 #include "CoinError.hpp"
 
@@ -159,6 +160,7 @@ CbcGeneralDepth::infeasibility(const OsiBranchingInformation * /*info*/,
         OsiClpSolverInterface * clpSolver
         = dynamic_cast<OsiClpSolverInterface *> (solver);
         if (clpSolver) {
+	  if ((model_->moreSpecialOptions()&33554432)==0) {
             ClpNodeStuff * info = nodeInfo_;
             info->integerTolerance_ = model_->getIntegerTolerance();
             info->integerIncrement_ = model_->getCutoffIncrement();
@@ -245,15 +247,52 @@ CbcGeneralDepth::infeasibility(const OsiBranchingInformation * /*info*/,
             //printf("range of costs %g to %g\n",smallest,largest);
             simplex->setLogLevel(saveLevel);
             numberNodes_ = info->nNodes_;
-            int numberDo = numberNodes_;
-            if (whichSolution_ >= 0)
-                numberDo--;
-            if (numberDo > 0) {
-                return 0.5;
-            } else {
-                // no solution
-                return COIN_DBL_MAX; // say infeasible
-            }
+	  } else {
+	    // Try diving
+	    // See if any diving heuristics set to do dive+save
+	    CbcHeuristicDive * dive=NULL;
+	    for (int i = 0; i < model_->numberHeuristics(); i++) {
+	      CbcHeuristicDive * possible = dynamic_cast<CbcHeuristicDive *>(model_->heuristic(i));
+	      if (possible&&possible->maxSimplexIterations()==COIN_INT_MAX) {
+		// if more than one then rotate later?
+		//if (possible->canHeuristicRun()) {
+		dive=possible;
+		break;
+	      }
+	    }
+	    assert (dive); // otherwise moreSpecial should have been turned off
+	    CbcSubProblem ** nodes=NULL;
+	    int branchState=dive->fathom(model_,numberNodes_,nodes);
+	    if (branchState) {
+	      printf("new solution\n");
+	      whichSolution_=numberNodes_-1;
+	    } else {
+	      whichSolution_=-1;
+	    }
+#if 0
+	    if (0) {
+	      for (int iNode=0;iNode<numberNodes;iNode++) {
+		//tree_->push(nodes[iNode]) ;
+	      }
+	      assert (node->nodeInfo());
+	      if (node->nodeInfo()->numberBranchesLeft()) {
+		tree_->push(node) ;
+	      } else {
+		node->setActive(false);
+	      }
+	    }
+#endif
+	    //delete [] nodes;
+	    model_->setTemporaryPointer(reinterpret_cast<void *>(nodes));
+	    // end try diving
+	  }
+	  int numberDo = numberNodes_;
+	  if (numberDo > 0 || whichSolution_ >= 0) {
+	    return 0.5;
+	  } else {
+	    // no solution
+	    return COIN_DBL_MAX; // say infeasible
+	  }
         } else {
             return -1.0;
         }
@@ -283,10 +322,10 @@ extern int numberColumns_Z;
 extern int gotGoodNode_Z;
 #endif
 CbcBranchingObject *
-CbcGeneralDepth::createCbcBranch(OsiSolverInterface * solver, const OsiBranchingInformation * /*info*/, int /*way*/)
+CbcGeneralDepth::createCbcBranch(OsiSolverInterface * solver, const OsiBranchingInformation * info, int /*way*/)
 {
     int numberDo = numberNodes_;
-    if (whichSolution_ >= 0)
+    if (whichSolution_ >= 0 && (model_->moreSpecialOptions()&33554432)==0) 
         numberDo--;
     assert (numberDo > 0);
     // create object
@@ -307,39 +346,40 @@ CbcGeneralDepth::createCbcBranch(OsiSolverInterface * solver, const OsiBranching
     assert (clpSolver);
     ClpSimplex * simplex = clpSolver->getModelPtr();
     int numberColumns = simplex->numberColumns();
-    double * lowerBefore = CoinCopyOfArray(simplex->getColLower(),
-                                           numberColumns);
-    double * upperBefore = CoinCopyOfArray(simplex->getColUpper(),
-                                           numberColumns);
-    ClpNodeStuff * info = nodeInfo_;
-    double * weight = new double[numberNodes_];
-    int * whichNode = new int [numberNodes_];
-    // Sort
-    for (iNode = 0; iNode < numberNodes_; iNode++) {
+    if ((model_->moreSpecialOptions()&33554432)==0) {
+      double * lowerBefore = CoinCopyOfArray(simplex->getColLower(),
+					     numberColumns);
+      double * upperBefore = CoinCopyOfArray(simplex->getColUpper(),
+					     numberColumns);
+      ClpNodeStuff * info = nodeInfo_;
+      double * weight = new double[numberNodes_];
+      int * whichNode = new int [numberNodes_];
+      // Sort
+      for (iNode = 0; iNode < numberNodes_; iNode++) {
         if (iNode != whichSolution_) {
-            double objectiveValue = info->nodeInfo_[iNode]->objectiveValue();
-            double sumInfeasibilities = info->nodeInfo_[iNode]->sumInfeasibilities();
-            int numberInfeasibilities = info->nodeInfo_[iNode]->numberInfeasibilities();
-            double thisWeight = 0.0;
+	  double objectiveValue = info->nodeInfo_[iNode]->objectiveValue();
+	  double sumInfeasibilities = info->nodeInfo_[iNode]->sumInfeasibilities();
+	  int numberInfeasibilities = info->nodeInfo_[iNode]->numberInfeasibilities();
+	  double thisWeight = 0.0;
 #if 1
-            // just closest
-            thisWeight = 1.0e9 * numberInfeasibilities;
-            thisWeight += sumInfeasibilities;
-            thisWeight += 1.0e-7 * objectiveValue;
-            // Try estimate
-            thisWeight = info->nodeInfo_[iNode]->estimatedSolution();
+	  // just closest
+	  thisWeight = 1.0e9 * numberInfeasibilities;
+	  thisWeight += sumInfeasibilities;
+	  thisWeight += 1.0e-7 * objectiveValue;
+	  // Try estimate
+	  thisWeight = info->nodeInfo_[iNode]->estimatedSolution();
 #else
-            thisWeight = 1.0e-3 * numberInfeasibilities;
-            thisWeight += 1.0e-5 * sumInfeasibilities;
-            thisWeight += objectiveValue;
+	  thisWeight = 1.0e-3 * numberInfeasibilities;
+	  thisWeight += 1.0e-5 * sumInfeasibilities;
+	  thisWeight += objectiveValue;
 #endif
-            whichNode[iProb] = iNode;
-            weight[iProb++] = thisWeight;
+	  whichNode[iProb] = iNode;
+	  weight[iProb++] = thisWeight;
         }
-    }
-    assert (iProb == numberDo);
-    CoinSort_2(weight, weight + numberDo, whichNode);
-    for (iProb = 0; iProb < numberDo; iProb++) {
+      }
+      assert (iProb == numberDo);
+      CoinSort_2(weight, weight + numberDo, whichNode);
+      for (iProb = 0; iProb < numberDo; iProb++) {
         iNode = whichNode[iProb];
         ClpNode * node = info->nodeInfo_[iNode];
         // move bounds
@@ -352,38 +392,66 @@ CbcGeneralDepth::createCbcBranch(OsiSolverInterface * solver, const OsiBranching
         sub[iProb].numberInfeasibilities_ = node->numberInfeasibilities();
 #ifdef CHECK_PATH
         if (simplex->numberColumns() == numberColumns_Z) {
-            bool onOptimal = true;
-            const double * columnLower = simplex->columnLower();
-            const double * columnUpper = simplex->columnUpper();
-            for (int i = 0; i < numberColumns_Z; i++) {
-                if (iNode == gotGoodNode_Z)
-                    printf("good %d %d %g %g\n", iNode, i, columnLower[i], columnUpper[i]);
-                if (columnUpper[i] < debuggerSolution_Z[i] || columnLower[i] > debuggerSolution_Z[i] && simplex->isInteger(i)) {
-                    onOptimal = false;
-                    break;
-                }
-            }
-            if (onOptimal) {
-                printf("adding to node %x as %d - objs\n", this, iProb);
-                for (int j = 0; j <= iProb; j++)
-                    printf("%d %g\n", j, sub[j].objectiveValue_);
-            }
+	  bool onOptimal = true;
+	  const double * columnLower = simplex->columnLower();
+	  const double * columnUpper = simplex->columnUpper();
+	  for (int i = 0; i < numberColumns_Z; i++) {
+	    if (iNode == gotGoodNode_Z)
+	      printf("good %d %d %g %g\n", iNode, i, columnLower[i], columnUpper[i]);
+	    if (columnUpper[i] < debuggerSolution_Z[i] || columnLower[i] > debuggerSolution_Z[i] && simplex->isInteger(i)) {
+	      onOptimal = false;
+	      break;
+	    }
+	  }
+	  if (onOptimal) {
+	    printf("adding to node %x as %d - objs\n", this, iProb);
+	    for (int j = 0; j <= iProb; j++)
+	      printf("%d %g\n", j, sub[j].objectiveValue_);
+	  }
         }
 #endif
-    }
-    delete [] weight;
-    delete [] whichNode;
-    const double * lower = solver->getColLower();
-    const double * upper = solver->getColUpper();
-    // restore bounds
-    for ( int j = 0; j < numberColumns; j++) {
+      }
+      delete [] weight;
+      delete [] whichNode;
+      const double * lower = solver->getColLower();
+      const double * upper = solver->getColUpper();
+      // restore bounds
+      for ( int j = 0; j < numberColumns; j++) {
         if (lowerBefore[j] != lower[j])
-            solver->setColLower(j, lowerBefore[j]);
+	  solver->setColLower(j, lowerBefore[j]);
         if (upperBefore[j] != upper[j])
-            solver->setColUpper(j, upperBefore[j]);
+	  solver->setColUpper(j, upperBefore[j]);
+      }
+      delete [] upperBefore;
+      delete [] lowerBefore;
+    } else {
+      // from diving
+      CbcSubProblem ** nodes = reinterpret_cast<CbcSubProblem **>
+	(model_->temporaryPointer());
+      assert (nodes);
+      int adjustDepth=info->depth_;
+      assert (numberDo);
+      numberNodes_=0;
+      for (iProb = 0; iProb < numberDo; iProb++) {
+	if ((nodes[iProb]->problemStatus_&2)==0) {
+	  // create subproblem (and swap way and/or make inactive)
+	  sub[numberNodes_].takeOver(*nodes[iProb],true);
+	  // but adjust depth
+	  sub[numberNodes_].depth_+=adjustDepth;
+	  numberNodes_++;
+	}
+	delete nodes[iProb];
+      }
+      branch->numberSubProblems_ = numberNodes_;
+      branch->numberSubLeft_ = numberNodes_;
+      branch->setNumberBranches(numberNodes_);
+      if (!numberNodes_) {
+	// infeasible
+	delete branch;
+	branch=NULL;
+      }
+      delete [] nodes;
     }
-    delete [] upperBefore;
-    delete [] lowerBefore;
     return branch;
 }
 

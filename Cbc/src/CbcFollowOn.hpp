@@ -148,5 +148,58 @@ private:
     int * upList_;
 };
 
+/** Define an idiotic idea class.
+    The idea of this is that we take some integer variables away from integer and
+    sum them with some randomness to get signed sum close to 0.5.  We then can
+    branch to exclude that gap.
+
+    This branching rule should be in addition to normal rules and have a high priority.
+*/
+
+class CbcIdiotBranch : public CbcObject {
+
+public:
+
+    // Default Constructor
+    CbcIdiotBranch ();
+
+    /** Useful constructor
+    */
+    CbcIdiotBranch (CbcModel * model);
+
+    // Copy constructor
+    CbcIdiotBranch ( const CbcIdiotBranch &);
+
+    /// Clone
+    virtual CbcObject * clone() const;
+
+    // Assignment operator
+    CbcIdiotBranch & operator=( const CbcIdiotBranch& rhs);
+
+    // Destructor
+    ~CbcIdiotBranch ();
+
+    /// Infeasibility - large is 0.5
+    virtual double infeasibility(const OsiBranchingInformation * info,
+                                 int &preferredWay) const;
+
+    using CbcObject::feasibleRegion ;
+    /// This looks at solution and sets bounds to contain solution
+    virtual void feasibleRegion();
+
+    /// Creates a branching object
+    virtual CbcBranchingObject * createCbcBranch(OsiSolverInterface * solver, const OsiBranchingInformation * info, int way) ;
+    /// Initialize for branching
+    virtual void initializeForBranching(CbcModel * );
+protected:
+    /// Build "cut"
+    OsiRowCut buildCut(const OsiBranchingInformation * info,int type,int & preferredWay) const; 
+    /// data
+    /// Thread specific random number generator
+    mutable CoinThreadRandom randomNumberGenerator_;
+    /// Saved version of thread specific random number generator
+    mutable CoinThreadRandom savedRandomNumberGenerator_;
+};
+
 #endif
 

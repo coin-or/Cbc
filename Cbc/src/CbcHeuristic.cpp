@@ -470,6 +470,12 @@ CbcHeuristic::setSeed(int value)
     }
     randomNumberGenerator_.setSeed(value);
 }
+// Get seed
+int
+CbcHeuristic::getSeed() const
+{
+  return randomNumberGenerator_.getSeed();
+}
 
 // Create C++ lines to get to current state
 void
@@ -647,7 +653,7 @@ static double sizeRatio(int numberRowsNow, int numberColumnsNow,
     //printf("sizeProblem Now %g, %d rows, %d columns\nsizeProblem Start %g, %d rows, %d columns\n",
     // valueNow,numberRowsNow,numberColumnsNow,
     // valueStart,numberRowsStart,numberColumnsStart);
-    if (10*numberRowsNow < 8*numberRowsStart)
+    if (10*numberRowsNow < 8*numberRowsStart || 10*numberColumnsNow < 7*numberColumnsStart)
         return valueNow / valueStart;
     else if (10*numberRowsNow < 9*numberRowsStart)
         return 1.1*(valueNow / valueStart);
@@ -825,7 +831,7 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver, int numberNodes,
                         returnCode = 2; // infeasible
                     }
                 }
-            } else if (ratio > fractionSmall && after > 300) {
+            } else if (ratio > fractionSmall && after > 300 && numberNodes >=0) {
                 returnCode = -1;
             }
         } else {

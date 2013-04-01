@@ -676,7 +676,7 @@ int CbcClpUnitTest (const CbcModel &saveModel, const std::string &dirMiplib,
     std::cout
       << " -- (" << model->getNodeCount() << " n / "
       << model->getIterationCount() << " i / "
-      << timeOfSolution << " s) (subtotal " << timeTaken << " s)"
+      << timeOfSolution << " s) (subtotal " << timeTaken << " seconds)"
       << std::endl;
     delete model;
   }

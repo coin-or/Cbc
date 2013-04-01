@@ -358,7 +358,7 @@ public:
     /// Make given column cut into a global cut
     void makeGlobalCut(const OsiColCut & cut);
     /// Make partial cut into a global cut and save
-    void makePartialCut(const OsiRowCut * cut);
+  void makePartialCut(const OsiRowCut * cut, const OsiSolverInterface * solver=NULL);
     /// Make partial cuts into global cuts
     void makeGlobalCuts();
     /// Which cut generator generated this cut
@@ -442,7 +442,6 @@ public:
       Add additional integers.
     */
     void AddIntegers();
-
     /**
       Save copy of the model.
     */
@@ -867,6 +866,8 @@ public:
     /// Set original columns as created by preprocessing
     void setOriginalColumns(const int * originalColumns,
 			    int numberGood=COIN_INT_MAX) ;
+    /// Create conflict cut (well - most of)
+    OsiRowCut * conflictCut(const OsiSolverInterface * solver, bool & localCuts);
 
     /** Set the print frequency.
 
@@ -1735,6 +1736,10 @@ public:
     inline void setDefaultHandler(bool yesNo) {
         defaultHandler_ = yesNo;
     }
+    /// Check default handler
+    inline bool defaultHandler() const {
+        return defaultHandler_;
+    }
     //@}
     //---------------------------------------------------------------------------
     ///@name Specialized
@@ -1818,7 +1823,12 @@ public:
         21 bit (2097152) - Reduce sum of infeasibilities after cuts
 	22 bit (4194304) - Conflict analysis
 	23 bit (8388608) - Conflict analysis - temporary bit
-	24 bit (16777216) - Add cutoff as LP constraint
+	24 bit (16777216) - Add cutoff as LP constraint (out)
+	25 bit (33554432) - diving/reordering
+	26 bit (67108864) - load global cuts from file
+	27 bit (134217728) - append binding global cuts to file
+	28 bit (268435456) - idiot branching
+        29 bit (536870912) - don't make fake objective
     */
     inline void setMoreSpecialOptions(int value) {
         moreSpecialOptions_ = value;
@@ -1827,7 +1837,11 @@ public:
     inline int moreSpecialOptions() const {
         return moreSpecialOptions_;
     }
-  /// Set time method
+    /// Set cutoff as constraint
+    inline void setCutoffAsConstraint(bool yesNo) {
+      cutoffRowNumber_ = (yesNo) ? -2 : -1;
+    }
+    /// Set time method
     inline void setUseElapsedTime(bool yesNo) {
         if (yesNo)
   	  moreSpecialOptions_ |= 131072;
@@ -1838,6 +1852,12 @@ public:
     inline bool useElapsedTime() const {
         return (moreSpecialOptions_&131072)!=0;
     }
+    /// Get useful temporary pointer
+    inline void * temporaryPointer() const
+    { return temporaryPointer_;}
+    /// Set useful temporary pointer
+    inline void setTemporaryPointer(void * pointer)
+    { temporaryPointer_=pointer;}
     /// Go to dantzig pivot selection if easy problem (clp only)
 #ifdef COIN_HAS_CLP
     void goToDantzig(int numberNodes, ClpDualRowPivot *& savePivotMethod);
@@ -2454,6 +2474,12 @@ private:
     int numberIntegers_;
     /// Number of rows at continuous
     int numberRowsAtContinuous_;
+    /**
+       -1 - cutoff as constraint not activated
+       -2 - waiting to activate
+       >=0 - activated
+     */
+    int cutoffRowNumber_;
     /// Maximum number of cuts
     int maximumNumberCuts_;
     /** Current phase (so heuristics etc etc can find out).
@@ -2621,6 +2647,8 @@ private:
     int numberAnalyzeIterations_;
     /// Arrays with analysis results
     double * analyzeResults_;
+    /// Useful temporary pointer
+    void * temporaryPointer_;
     /// Number of nodes infeasible by normal branching (before cuts)
     int numberInfeasibleNodes_;
     /** Problem type as set by user or found by analysis.  This will be extended

@@ -1670,10 +1670,16 @@ void CbcModel::branchAndBound(int doStatistics)
         if (strategy_->preProcessState()) {
             // pre-processing done
             if (strategy_->preProcessState() < 0) {
-                // infeasible
-                handler_->message(CBC_INFEAS, messages_) << CoinMessageEol ;
+                // infeasible (or unbounded)
                 status_ = 0 ;
-                secondaryStatus_ = 1;
+		if (!solver_->isProvenDualInfeasible()) {
+		  handler_->message(CBC_INFEAS, messages_) << CoinMessageEol ;
+		  secondaryStatus_ = 1;
+		} else {
+		  handler_->message(CBC_UNBOUNDED, 
+				    messages_) << CoinMessageEol ;
+		  secondaryStatus_ = 7;
+		}
                 originalContinuousObjective_ = COIN_DBL_MAX;
 		if (flipObjective)
 		  flipModel();

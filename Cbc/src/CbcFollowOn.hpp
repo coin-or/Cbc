@@ -9,6 +9,8 @@
 #define CbcFollowOn_H
 
 #include "CbcBranchBase.hpp"
+#include "OsiRowCut.hpp"
+#include "CoinHelperFunctions.hpp"
 #include "CoinPackedMatrix.hpp"
 
 /** Define a follow on class.

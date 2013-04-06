@@ -106,7 +106,7 @@ static bool internal_objval(CbcAmplInfo * info , double & obj_val)
         info->objval_called_with_current_x_ = true;
         return true;
     }  else {
-        double  retval = objval(0, info->non_const_x_, (fint*)info->nerror_);
+        double  retval = objval(0, info->non_const_x_, (fint*)&info->nerror_);
         if (!info->nerror_) {
             obj_val = info->obj_sign_ * retval;
             info->objval_called_with_current_x_ = true;
@@ -125,7 +125,7 @@ static bool internal_conval(CbcAmplInfo * info , double * g)
     info->conval_called_with_current_x_ = false; // in case the call below fails
     assert (g);
 
-    conval(info->non_const_x_, g, (fint*)info->nerror_);
+    conval(info->non_const_x_, g, (fint*)&info->nerror_);
 
     if (!info->nerror_) {
         info->conval_called_with_current_x_ = true;
@@ -157,7 +157,7 @@ static bool apply_new_x(CbcAmplInfo * info  , bool new_x, int  n, const double *
         }
 
         // tell ampl that we have a new x
-        xknowne(info->non_const_x_, (fint*)info->nerror_);
+        xknowne(info->non_const_x_, (fint*)&info->nerror_);
         return info->nerror_ ? false : true;
     }
 
@@ -188,7 +188,7 @@ static bool eval_grad_f(void * amplInfo, int  n, const double * x, bool new_x, d
             grad_f[i] = 0.;
         }
     } else {
-        objgrd(0, info->non_const_x_, grad_f, (fint*)info->nerror_);
+        objgrd(0, info->non_const_x_, grad_f, (fint*)&info->nerror_);
         if (info->nerror_) {
             return false;
         }
@@ -230,7 +230,7 @@ static bool eval_jac_g(void * amplInfo, int  n, const double * x, bool new_x,
         return false;
     }
 
-    jacval(info->non_const_x_, values, (fint*)info->nerror_);
+    jacval(info->non_const_x_, values, (fint*)&info->nerror_);
     if (!info->nerror_) {
         return true;
     } else {

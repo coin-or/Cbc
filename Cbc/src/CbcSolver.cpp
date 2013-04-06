@@ -4951,7 +4951,7 @@ int CbcMain1 (int argc, const char *argv[],
 				   double obj;
 				   int status = computeCompleteSolution( babModel_, colNames, mipStart, &x[0], obj );
 				   if (!status)
-				     babModel_->setBestSolution( &x[0], x.size(), obj, false );
+				     babModel_->setBestSolution( &x[0], static_cast<int>(x.size()), obj, false );
 				}
 
                                 if (solutionIn && useSolution >= 0) {
@@ -8558,8 +8558,12 @@ clp watson.mps -\nscaling off\nprimalsimplex"
 				  saveLpSolver = lpSolver;
 				  assert (clpSolver->getModelPtr()==saveLpSolver);
 				  lpSolver = new ClpSimplex(*saveLpSolver);
+#ifndef NDEBUG
 				  ClpSimplex * oldSimplex = clpSolver->swapModelPtr(lpSolver);
 				  assert (oldSimplex==saveLpSolver);
+#else
+              clpSolver->swapModelPtr(lpSolver);
+#endif
 				  double * solution = lpSolver->primalColumnSolution();
 				  double * lower = lpSolver->columnLower();
 				  double * upper = lpSolver->columnUpper();

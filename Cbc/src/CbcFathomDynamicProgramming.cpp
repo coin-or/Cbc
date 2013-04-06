@@ -759,7 +759,6 @@ CbcFathomDynamicProgramming::addOneColumn1(int numberElements, const int * rows,
     int i;
     int n2 = 0;
     int mask[40];
-    int nextbit[40];
     int adjust[40];
     assert (numberElements <= 40);
     for (i = 0; i < numberElements; i++) {
@@ -783,7 +782,6 @@ CbcFathomDynamicProgramming::addOneColumn1(int numberElements, const int * rows,
                 hi2++;
             adjust[n2] = start * hi2;
             mask2 += start * gap;
-            nextbit[n2] = startBit + numberBits;
             mask[n2++] = start * (size - 1);
         }
     }

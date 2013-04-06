@@ -715,7 +715,9 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver, int numberNodes,
 #ifdef HISTORY_STATISTICS
     getHistoryStatistics_ = false;
 #endif
+#ifdef COIN_DEVELOP
     int status = 0;
+#endif
     int logLevel = model_->logLevel();
 #define LEN_PRINT 250
     char generalPrint[LEN_PRINT];
@@ -1319,11 +1321,13 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver, int numberNodes,
 #endif
                 }
                 if (model.status() == 5)
-		    model_->sayEventHappened();
+                   model_->sayEventHappened();
+#ifdef COIN_DEVELOP
                 if (model.isProvenInfeasible())
                     status = 1;
                 else if (model.isProvenOptimal())
                     status = 2;
+#endif
             }
         }
     } else {

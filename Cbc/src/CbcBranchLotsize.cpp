@@ -182,9 +182,8 @@ CbcLotsize::CbcLotsize (CbcModel * model,
         bound_ = new double[2*numberPoints+2];
         bound_[0] = points[sort[0] * 2];
         bound_[1] = points[sort[0] * 2 + 1];
-        double lo = bound_[0];
         double hi = bound_[1];
-        assert (hi >= lo);
+        assert (hi >= bound_[0]);
         for (i = 1; i < numberPoints; i++) {
             double thisLo = points[sort[i] * 2];
             double thisHi = points[sort[i] * 2 + 1];
@@ -193,7 +192,6 @@ CbcLotsize::CbcLotsize (CbcModel * model,
                 bound_[2*numberRanges_] = thisLo;
                 bound_[2*numberRanges_+1] = thisHi;
                 numberRanges_++;
-                lo = thisLo;
                 hi = thisHi;
             } else {
                 //overlap

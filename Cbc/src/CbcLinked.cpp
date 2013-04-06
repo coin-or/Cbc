@@ -403,18 +403,6 @@ void OsiSolverLink::resolve()
     if (returnCode >= 0) {
         if (returnCode == 0)
             OsiClpSolverInterface::resolve();
-        if (!allFixed && (specialOptions2_&1) != 0) {
-            const double * solution = getColSolution();
-            bool satisfied = true;
-            for (int i = 0; i < numberVariables_; i++) {
-                int iColumn = info_[i].variable();
-                double value = solution[iColumn];
-                if (fabs(value - floor(value + 0.5)) > 0.0001)
-                    satisfied = false;
-            }
-            //if (satisfied)
-            //printf("satisfied but not fixed\n");
-        }
         int satisfied = 2;
         const double * solution = getColSolution();
         const double * lower = getColLower();
@@ -1891,16 +1879,13 @@ OsiSolverLink::nonlinearSLP(int numberPasses, double deltaTolerance)
             strcpy(temp, expr);
             char * pos = temp;
             bool ifFirst = true;
-            double linearTerm = 0.0;
             while (*pos) {
                 double value;
                 int jColumn = decodeBit(pos, pos, value, ifFirst, coinModel_);
                 // must be column unless first when may be linear term
                 if (jColumn >= 0) {
                     markNonlinear[jColumn] = 1;
-                } else if (jColumn == -2) {
-                    linearTerm = value;
-                } else {
+                } else if (jColumn != -2) {
                     printf("bad nonlinear term %s\n", temp);
                     abort();
                 }
@@ -1919,16 +1904,13 @@ OsiSolverLink::nonlinearSLP(int numberPasses, double deltaTolerance)
                 strcpy(temp, expr);
                 char * pos = temp;
                 bool ifFirst = true;
-                double linearTerm = 0.0;
                 while (*pos) {
                     double value;
                     int jColumn = decodeBit(pos, pos, value, ifFirst, coinModel_);
                     // must be column unless first when may be linear term
                     if (jColumn >= 0) {
                         markNonlinear[jColumn] = 1;
-                    } else if (jColumn == -2) {
-                        linearTerm = value;
-                    } else {
+                    } else if (jColumn != -2) {
                         printf("bad nonlinear term %s\n", temp);
                         abort();
                     }
@@ -2863,14 +2845,16 @@ OsiSolverLink::heuristicSolution(int numberPasses, double deltaTolerance, int mo
         cbcModel->setCutoff(1.0e50);
     else
         cbcModel->setCutoff(cbcModel_->getCutoff());
-    // to change exits
-    bool isFeasible = false;
     int saveLogLevel = clpModel->logLevel();
     clpModel->setLogLevel(0);
+#ifndef NDEBUG
     int returnCode = 0;
+#endif
     if (clpModel->tightenPrimalBounds() != 0) {
         clpModel->setLogLevel(saveLogLevel);
+#ifndef NDEBUG
         returnCode = -1; // infeasible//std::cout<<"Problem is infeasible - tightenPrimalBounds!"<<std::endl;
+#endif
         //clpModel->writeMps("infeas2.mps");
     } else {
         clpModel->setLogLevel(saveLogLevel);
@@ -2910,7 +2894,9 @@ OsiSolverLink::heuristicSolution(int numberPasses, double deltaTolerance, int mo
         if (!solver2) {
             std::cout << "Pre-processing says infeasible!" << std::endl;
             delete saveSolver;
+#ifndef NDEBUG
             returnCode = -1;
+#endif
         } else {
             std::cout << "processed model has " << solver2->getNumRows()
                       << " rows, " << solver2->getNumCols()
@@ -2932,7 +2918,6 @@ OsiSolverLink::heuristicSolution(int numberPasses, double deltaTolerance, int mo
                        numberColumns*sizeof(double));
                 // put back in original solver
                 newSolver.setColSolution(cbcModel->bestSolution());
-                isFeasible = true;
             } else {
                 delete saveSolver;
             }
@@ -4015,11 +4000,10 @@ OsiOldLink::OsiOldLink (const OsiSolverInterface * /*solver*/,  int numberMember
         }
         // weights must be increasing
         int i;
-        double last = -COIN_DBL_MAX;
-        for (i = 0; i < numberMembers_; i++) {
-            assert (weights_[i] > last + 1.0e-12);
-            last = weights_[i];
-        }
+#ifndef NDEBUG
+        for (i = 1; i < numberMembers_; i++)
+            assert (weights_[i] > weights_[i-1] + 1.0e-12);
+#endif
         for (i = 0; i < numberMembers_*numberLinks_; i++) {
             members_[i] = first + i;
         }
@@ -4049,11 +4033,10 @@ OsiOldLink::OsiOldLink (const OsiSolverInterface * /*solver*/,  int numberMember
         }
         // weights must be increasing
         int i;
-        double last = -COIN_DBL_MAX;
-        for (i = 0; i < numberMembers_; i++) {
-            assert (weights_[i] > last + 1.0e-12);
-            last = weights_[i];
-        }
+#ifndef NDEBUG
+        for (i = 1; i < numberMembers_; i++)
+            assert (weights_[i] > weights_[i-1] + 1.0e-12);
+#endif
         for (i = 0; i < numberMembers_*numberLinks_; i++) {
             members_[i] = which[i];
         }
@@ -5134,11 +5117,8 @@ OsiBiLinear::OsiBiLinear (CoinModel * coinModel, int xColumn,
             if (xColumn_ == obj2->xColumn_ && !xDone) {
                 // make sure y equal
                 double rhs = 0.0;
-                CoinBigIndex starts[2];
                 int index[4];
                 double element[4] = {1.0, 1.0, -1.0, -1.0};
-                starts[0] = 0;
-                starts[1] = 4;
                 index[0] = firstLambda_ + 0;
                 index[1] = firstLambda_ + 1;
                 index[2] = obj2->firstLambda_ + 0;
@@ -5149,11 +5129,8 @@ OsiBiLinear::OsiBiLinear (CoinModel * coinModel, int xColumn,
             if (yColumn_ == obj2->yColumn_ && yRow_ >= 0 && !yDone) {
                 // make sure x equal
                 double rhs = 0.0;
-                CoinBigIndex starts[2];
                 int index[4];
                 double element[4] = {1.0, 1.0, -1.0, -1.0};
-                starts[0] = 0;
-                starts[1] = 4;
                 index[0] = firstLambda_ + 0;
                 index[1] = firstLambda_ + 2;
                 index[2] = obj2->firstLambda_ + 0;
@@ -6907,14 +6884,11 @@ OsiBiLinearEquality::newGrid(OsiSolverInterface * solver, int type) const
     //const int * columnLength = matrix->getVectorLengths();
     // get original bounds
     double xB[2];
-    double yB[2];
     const double * lower = solver->getColLower();
     const double * upper = solver->getColUpper();
     xB[0] = lower[xColumn_];
     xB[1] = upper[xColumn_];
     assert (fabs((xB[1] - xB[0]) - xMeshSize_*(numberPoints_ - 1)) < 1.0e-7);
-    yB[0] = lower[yColumn_];
-    yB[1] = upper[yColumn_];
     double mesh = 0.0;
     int i;
     if (type == 0) {
@@ -7758,16 +7732,13 @@ approximateSolution(CoinModel & coinModel,
             strcpy(temp, expr);
             char * pos = temp;
             bool ifFirst = true;
-            double linearTerm = 0.0;
             while (*pos) {
                 double value;
                 int jColumn = decodeBit(pos, pos, value, ifFirst, coinModel);
                 // must be column unless first when may be linear term
                 if (jColumn >= 0) {
                     maximumQuadraticElements++;
-                } else if (jColumn == -2) {
-                    linearTerm = value;
-                } else {
+                } else if (jColumn != -2) {
                     printf("bad nonlinear term %s\n", temp);
                     abort();
                 }
@@ -7796,16 +7767,13 @@ approximateSolution(CoinModel & coinModel,
                 strcpy(temp, expr);
                 char * pos = temp;
                 bool ifFirst = true;
-                double linearTerm = 0.0;
                 while (*pos) {
                     double value;
                     int jColumn = decodeBit(pos, pos, value, ifFirst, coinModel);
                     // must be column unless first when may be linear term
                     if (jColumn >= 0) {
                         numberQuadratic++;
-                    } else if (jColumn == -2) {
-                        linearTerm = value;
-                    } else {
+                    } else if (jColumn != -2) {
                         printf("bad nonlinear term %s\n", temp);
                         abort();
                     }
@@ -7977,6 +7945,7 @@ approximateSolution(CoinModel & coinModel,
     if (quadObj)
         model->setObjective(quadObj);
     delete quadObj;
+#ifndef NDEBUG
     int returnCode;
     if (numberConstraints) {
         returnCode = model->nonlinearSLP(numberConstraints, constraints,
@@ -7986,8 +7955,17 @@ approximateSolution(CoinModel & coinModel,
     } else {
         returnCode = model->nonlinearSLP(numberPasses, deltaTolerance);
     }
-    delete [] constraints;
     assert (!returnCode);
+#else
+    if (numberConstraints) {
+        model->nonlinearSLP(numberConstraints, constraints, numberPasses, deltaTolerance);
+        for (iConstraint = 0; iConstraint < saveNumber; iConstraint++)
+            delete constraints[iConstraint];
+    } else {
+        model->nonlinearSLP(numberPasses, deltaTolerance);
+    }
+#endif
+    delete [] constraints;
     return model;
 #else
     printf("loadNonLinear needs ampl\n");

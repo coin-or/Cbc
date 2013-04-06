@@ -551,7 +551,6 @@ afterKnapsack(const CoinModel & coinModel2, const int * whichColumn, const int *
    int iKnapsack;
    for (iKnapsack=0;iKnapsack<numberKnapsack;iKnapsack++) {
       int k=-1;
-      double value=0.0;
       for (iColumn=knapsackStart[iKnapsack];iColumn<knapsackStart[iKnapsack+1];iColumn++) {
 	 if (knapsackSolution[iColumn]>1.0e-5) {
 	    if (k>=0) {
@@ -560,8 +559,7 @@ afterKnapsack(const CoinModel & coinModel2, const int * whichColumn, const int *
 	       abort();
 	    }
 	    k=iColumn;
-	    value=floor(knapsackSolution[iColumn]+0.5);
-	    assert (fabs(value-knapsackSolution[iColumn])<1.0e-5);
+	    assert (fabs(floor(knapsackSolution[iColumn]+0.5)-knapsackSolution[iColumn])<1.0e-5);
 	 }
       }
       if (k>=0) {

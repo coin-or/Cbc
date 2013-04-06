@@ -174,7 +174,7 @@ static double getTime()
 {
     struct timespec absTime2;
     my_gettime(&absTime2);
-    double time2 = absTime2.tv_sec + 1.0e-9 * absTime2.tv_nsec;
+    double time2 = (double)absTime2.tv_sec + 1.0e-9 * (double)absTime2.tv_nsec;
     return time2;
 }
 // Timed wait in nanoseconds - if negative then seconds
@@ -243,7 +243,7 @@ int
 CbcSpecificThread::status() const
 {
 #ifdef CBC_PTHREAD
-    return threadId_.status;
+    return static_cast<int>(threadId_.status);
 #else
 #endif
 }
@@ -878,10 +878,13 @@ CbcBaseModel::waitForThreadsInTree(int type)
                 delete [] children_[i].delNode();
             children_[i].setReturnCode( 0);
             children_[i].unlockFromMaster();
-            int returnCode;
-            returnCode = children_[i].exit();
-            children_[i].setStatus( 0);
+#ifndef NDEBUG
+            int returnCode = children_[i].exit();
             assert (!returnCode);
+#else
+            children_[i].exit();
+#endif
+            children_[i].setStatus( 0);
             //else
             threadModel_[i]->moveToModel(baseModel, 2);
             assert (children_[i].numberTimesLocked() == children_[i].numberTimesUnlocked());

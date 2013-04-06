@@ -735,12 +735,16 @@ CbcSimpleIntegerDynamicPseudoCost::infeasibility(const OsiBranchingInformation *
         double returnValue = 0.0;
         double minValue = CoinMin(downCost, upCost);
         double maxValue = CoinMax(downCost, upCost);
+#ifdef COIN_DEVELOP
         char where;
+#endif
         // was <= 10
         //if (stateOfSearch<=1||model_->currentNode()->depth()<=-10 /* was ||maxValue>0.2*distanceToCutoff*/) {
         if (stateOfSearch <= 2) {
             // no branching solution
+#ifdef COIN_DEVELOP
             where = 'i';
+#endif
             returnValue = WEIGHT_BEFORE * minValue + (1.0 - WEIGHT_BEFORE) * maxValue;
             if (0) {
                 double sum;
@@ -767,7 +771,9 @@ CbcSimpleIntegerDynamicPseudoCost::infeasibility(const OsiBranchingInformation *
             }
         } else {
             // some solution
+#ifdef COIN_DEVELOP
             where = 'I';
+#endif
 #ifndef WEIGHT_PRODUCT
             returnValue = WEIGHT_AFTER * minValue + (1.0 - WEIGHT_AFTER) * maxValue;
 #else

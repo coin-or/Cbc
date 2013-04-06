@@ -440,9 +440,9 @@ readAmpl(ampl_info * info, int argc, char **argv, void ** coinModel)
                 info->sosReference = (double *) malloc(nsosnz * sizeof(double));
                 sos_kludge(nsos, sosbeg, sosref, sosind);
                 for (int i = 0; i < nsos; i++) {
-                    int ichar = sostype[i];
+                    char ichar = sostype[i];
                     assert (ichar == '1' || ichar == '2');
-                    info->sosType[i] = ichar - '0';
+                    info->sosType[i] = static_cast<char>(ichar - '0');
                 }
                 memcpy(info->sosPriority, sospri, nsos*sizeof(int));
                 memcpy(info->sosStart, sosbeg, (nsos + 1)*sizeof(int));
@@ -618,7 +618,7 @@ readAmpl(ampl_info * info, int argc, char **argv, void ** coinModel)
             /* let user copy .nl file */
             fprintf(stderr, "You can copy .nl file %s for debug purposes or attach debugger\n", saveArgv[1]);
             fprintf(stderr, "Type q to quit, anything else to continue\n");
-            char getChar = getc(stdin);
+            int getChar = getc(stdin);
             if (getChar == 'q' || getChar == 'Q')
                 exit(1);
         }
@@ -987,7 +987,7 @@ CoinModel::gdb( int nonLinear, const char * fileName, const void * info)
     } else if (nonLinear == 1) {
         // quadratic
         asl = ASL_alloc(ASL_read_fg);
-        nl = jac0dim(stub, (long) strlen(stub));
+        nl = jac0dim(stub, (ftnlen) strlen(stub));
         free(stub);
         suf_declare(suftab, sizeof(suftab) / sizeof(SufDecl));
         /* read  model*/
@@ -1093,7 +1093,7 @@ CoinModel::gdb( int nonLinear, const char * fileName, const void * info)
         // General nonlinear!
         //ASL_pfgh* asl = (ASL_pfgh*)ASL_alloc(ASL_read_pfgh);
         asl = ASL_alloc(ASL_read_pfgh);
-        nl = jac0dim(stub, (long) strlen(stub));
+        nl = jac0dim(stub, (ftnlen) strlen(stub));
         free(stub);
         suf_declare(suftab, sizeof(suftab) / sizeof(SufDecl));
         /* read  model*/

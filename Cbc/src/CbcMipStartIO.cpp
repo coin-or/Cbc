@@ -19,9 +19,9 @@ using namespace std;
 
 bool isNumericStr( const char *str )
 {
-   const int l = strlen(str);
+   const size_t l = strlen(str);
 
-   for ( int i=0 ; (i<l) ; ++i )
+   for ( size_t i=0 ; i<l ; ++i )
       if (!(isdigit(str[i])||(str[i]=='.')))
          return false;
 
@@ -169,7 +169,6 @@ int computeCompleteSolution( CbcModel * model,
       babModel.setMaximumNodes( 500 );
       babModel.setMaximumSeconds( 60 );
       babModel.branchAndBound();
-      clock_t end = clock();
       if (babModel.bestSolution())
       {
          sprintf( printLine,"Mini branch and bound defined values for remaining variables in %.2f seconds.", 

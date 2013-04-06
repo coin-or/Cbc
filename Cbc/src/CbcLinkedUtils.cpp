@@ -339,17 +339,18 @@ ClpAmplObjective::gradient(const ClpSimplex * model,
 {
     if (model)
         assert (model->optimizationDirection() == 1.0);
-    bool scaling = false;
-    if (model && (model->rowScale() ||
-                  model->objectiveScale() != 1.0 || model->optimizationDirection() != 1.0))
-        scaling = true;
+#ifndef NDEBUG
+    bool scaling = model && (model->rowScale() || model->objectiveScale() != 1.0 || model->optimizationDirection() != 1.0);
+#endif
     const double * cost = NULL;
     if (model)
         cost = model->costRegion();
     if (!cost) {
         // not in solve
         cost = objective_;
+#ifndef NDEBUG
         scaling = false;
+#endif
     }
     assert (!scaling);
     if (!amplObjective_ || !solution || !activated_) {

@@ -1475,7 +1475,6 @@ int CbcNode::chooseBranch (CbcModel *model, CbcNode *lastNode, int numberPassesL
                 }
                 //if (smallestNumberInfeasibilities>=numberIntegerInfeasibilities)
                 //numberNodes=1000000; // switch off search for better solution
-                int numberNodes = 1000000; // switch off anyway
                 averageCostPerIteration /= totalNumberIterations;
                 // all feasible - choose best bet
 
@@ -2700,13 +2699,9 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
             iDo = 0;
             int saveLimit2;
             solver->getIntParam(OsiMaxNumIterationHotStart, saveLimit2);
-            bool doQuickly = false; // numberToDo>2*numberStrong;
-            if (searchStrategy == 2)
-                doQuickly = true;
             int numberTest = numberNotTrusted > 0 ? numberStrong : (numberStrong + 1) / 2;
             if (searchStrategy == 3) {
                 // Previously decided we need strong
-                doQuickly = false;
                 numberTest = numberStrong;
             }
             // Try nearly always off
@@ -2715,23 +2710,19 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
                     //if ((numberNodes%20)!=0) {
                     if ((model->specialOptions()&8) == 0) {
                         numberTest = 0;
-                        doQuickly = true;
                     }
                     //} else {
-                    //doQuickly=false;
                     //numberTest=2*numberStrong;
                     //skipAll=0;
                     //}
                 }
             } else {
                 // Just take first
-                doQuickly = true;
                 numberTest = 1;
             }
             int testDepth = (skipAll >= 0) ? 8 : 4;
             if (depth_ < testDepth && numberStrong) {
                 if (searchStrategy != 2) {
-                    doQuickly = false;
                     int numberRows = solver->getNumRows();
                     // whether to do this or not is important - think
                     if (numberRows < 300 || numberRows + numberColumns < 2500) {
@@ -2750,7 +2741,6 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
             if ((model->specialOptions()&8) == 0) {
                 if (skipAll) {
                     numberTest = 0;
-                    doQuickly = true;
                 }
             } else {
                 // do 5 as strong is fixing
@@ -2759,7 +2749,6 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
             // see if switched off
             if (skipAll < 0) {
                 numberTest = 0;
-                doQuickly = true;
             }
             int realMaxHotIterations = 999999;
             if (skipAll < 0)
@@ -3524,7 +3513,6 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
                                model->getDblParam(CbcModel::CbcMaximumSeconds));
                 if (hitMaxTime) {
                     // make sure rest are fast
-                    doQuickly = true;
                     for ( int jDo = iDo + 1; jDo < numberToDo; jDo++) {
                         int iObject = whichObject[iDo];
                         OsiObject * object = model->modifiableObject(iObject);
@@ -3777,7 +3765,6 @@ int CbcNode::analyze (CbcModel *model, double * results)
     }
     double * saveUpper = new double[numberColumns];
     double * saveLower = new double[numberColumns];
-    int anyAction = 0;
     // Save solution in case heuristics need good solution later
 
     double * saveSolution = new double[numberColumns];
@@ -4077,7 +4064,6 @@ int CbcNode::analyze (CbcModel *model, double * results)
                 << CoinMessageEol;
             } else {
                 // up feasible, down infeasible
-                anyAction = -1;
                 if (!satisfied)
                     needResolve = true;
                 choice.fix = 1;
@@ -4088,7 +4074,6 @@ int CbcNode::analyze (CbcModel *model, double * results)
         } else {
             if (choice.downMovement < 1.0e100) {
                 // down feasible, up infeasible
-                anyAction = -1;
                 if (!satisfied)
                     needResolve = true;
                 choice.fix = -1;
@@ -4097,7 +4082,6 @@ int CbcNode::analyze (CbcModel *model, double * results)
                 solver->setColUpper(iColumn, lowerValue);
             } else {
                 // neither side feasible
-                anyAction = -2;
                 COIN_DETAIL_PRINT(printf("Both infeasible for choice %d sequence %d\n", i,
 					 model->object(choice.objectNumber)->columnNumber()));
                 delete ws;

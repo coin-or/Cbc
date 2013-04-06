@@ -2272,8 +2272,7 @@ Cbc_addSOS_Dense(Cbc_Model * model, int numObjects, const int * len,
     if (VERBOSE > 0) printf("%sbegin\n", prefix);
 
     assert(1 > 0);// this is probably broken
-    int i, j, l;
-    const int *w;
+    int i, j;
     // I think this is a different model due to overriding = operator
     CbcModel m = *(model->model_);
 
@@ -2296,8 +2295,6 @@ Cbc_addSOS_Dense(Cbc_Model * model, int numObjects, const int * len,
 
         // Make a CbcSOS and assign it to objects
         if (VERBOSE > 1) printf("%s len[%i] = %i\n", prefix, i, len[i]);
-        l = len[i];
-        w = which[i];
         if (VERBOSE > 1) printf("%s new CbcSOS()\n", prefix);
         // ***
         objects[i] = new CbcSOS(model->model_, (int)(len[i]),

@@ -635,7 +635,6 @@ fixVubs(CbcModel & model, int skipZero2,
         int iPass = 0;
 #define MAXPROB 2
         ClpSimplex models[MAXPROB];
-        int pass[MAXPROB];
         int kPass = -1;
         int kLayer = 0;
         int skipZero = 0;
@@ -865,7 +864,6 @@ fixVubs(CbcModel & model, int skipZero2,
                     }
                 }
             }
-            pass[kPass] = iPass;
             double maxCostUp = COIN_DBL_MAX;
             objective = lpSolver->getObjCoefficients() ;
             if (way == -1)

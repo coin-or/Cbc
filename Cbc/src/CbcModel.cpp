@@ -394,8 +394,6 @@ CbcModel::analyzeObjective ()
         int iColumn;
         int numberColumns = solver_->getNumCols() ;
         // Column copy of matrix
-        bool allPlusOnes = true;
-        bool allOnes = true;
         int problemType = -1;
         const double * element = solver_->getMatrixByCol()->getElements();
         const int * row = solver_->getMatrixByCol()->getIndices();
@@ -666,10 +664,8 @@ CbcModel::analyzeObjective ()
                         if (value == 1.0) {
                         } else if (value == -1.0) {
                             rhs[row[j]] = -0.5;
-                            allPlusOnes = false;
                         } else {
                             rhs[row[j]] = -COIN_DBL_MAX;
-                            allOnes = false;
                         }
                     }
                 }
@@ -2066,10 +2062,8 @@ void CbcModel::branchAndBound(int doStatistics)
       really dead code, and object detection is now handled from the Osi side.
     */
     // Convert to Osi if wanted
-    bool useOsiBranching = false;
     //OsiBranchingInformation * persistentInfo = NULL;
     if (branchingMethod_ && branchingMethod_->chooseMethod()) {
-        useOsiBranching = true;
         //persistentInfo = new OsiBranchingInformation(solver_);
         if (numberOriginalObjects) {
             for (int iObject = 0 ; iObject < numberObjects_ ; iObject++) {
@@ -3877,9 +3871,7 @@ void CbcModel::branchAndBound(int doStatistics)
       initializeInfo sets the reference counts in the nodeInfo object.  Since
       this node is still live, push it onto the heap that holds the live set.
     */
-    double bestValue = 0.0 ;
     if (newNode) {
-        bestValue = newNode->objectiveValue();
         if (newNode->branchingObject()) {
             newNode->initializeInfo() ;
             tree_->push(newNode) ;
@@ -7794,9 +7786,7 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
 #define CHECK_DEBUGGER
 #ifdef CHECK_DEBUGGER
 		if ((specialOptions_&1) != 0 ) {
-		  const OsiRowCutDebugger * debugger = 
-		    solver_->getRowCutDebuggerAlways();
-		  CoinAssert (!debugger->invalidCut(*thisCut));
+		  CoinAssert (!solver_->getRowCutDebuggerAlways()->invalidCut(*thisCut));
 		}
 #endif
 #if 0 //ndef NDEBUG
@@ -11872,17 +11862,23 @@ CbcModel::setBestSolution (CBC_Message how,
                 double largestAway = 0.0;
                 int iAway = -1;
                 double largestInfeasibility = tolerance;
+#if COIN_DEVELOP>1
                 int iInfeas = -1;
+#endif
                 const double * columnLower = continuousSolver_->getColLower();
                 const double * columnUpper = continuousSolver_->getColUpper();
                 int i;
                 for (i = 0; i < numberColumns; i++) {
                     double value = solution2[i];
                     if (value > columnUpper[i] + largestInfeasibility) {
+#if COIN_DEVELOP>1
                         iInfeas = i;
+#endif
                         largestInfeasibility = value - columnUpper[i];
                     } else if (value < columnLower[i] - largestInfeasibility) {
+#if COIN_DEVELOP>1
                         iInfeas = i;
+#endif
                         largestInfeasibility = columnLower[i] - value;
                     }
                 }
@@ -14651,7 +14647,6 @@ CbcModel::doOneNode(CbcModel * baseModel, CbcNode * & node, CbcNode * & newNode)
       if (node&&(node->depth()==-2||node->depth()==4))
 	numberCutGenerators_=0; // so can dive and branch
     }
-    int currentNumberCuts = 0 ;
     currentNode_ = node; // so can be accessed elsewhere
     double bestObjective = bestObjective_;
     numberUpdateItems_ = 0;
@@ -14785,7 +14780,6 @@ CbcModel::doOneNode(CbcModel * baseModel, CbcNode * & node, CbcNode * & newNode)
         */
         phase_ = 2;
         OsiCuts cuts ;
-        currentNumberCuts = solver_->getNumRows() - numberRowsAtContinuous_ ;
         int saveNumber = numberIterations_;
         if (solverCharacteristics_->solutionAddsCuts()) {
             int returnCode = resolve(node ? node->nodeInfo() : NULL, 1);
@@ -15158,7 +15152,9 @@ CbcModel::doOneNode(CbcModel * baseModel, CbcNode * & node, CbcNode * & newNode)
 		  // dj fix did something???
 		  solver_->writeMpsNative("infeas2.mps", NULL, NULL, 2);
 		  solver_->getRowCutDebuggerAlways()->printOptimalSolution(*solver_);
+#ifndef NDEBUG
 		  const OsiRowCutDebugger * debugger = solver_->getRowCutDebugger() ;
+#endif
 		  assert (debugger) ;
 		  int numberRows0=continuousSolver_->getNumRows();
 		  int numberRows=solver_->getNumRows();

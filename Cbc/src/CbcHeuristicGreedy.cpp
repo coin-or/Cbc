@@ -1361,7 +1361,6 @@ CbcHeuristicGreedySOS::solution(double & solutionValue,
       double over = 0.0;
       int nL=0;
       int nG=0;
-      int iUnder=-1;
       int nUnder=0;
       for (iRow = 0; iRow < numberRows; iRow++) {
 	if (rowLower[iRow]<-1.0e20)
@@ -1371,7 +1370,6 @@ CbcHeuristicGreedySOS::solution(double & solutionValue,
 	if (rowActivity[iRow] < rowLower[iRow] - 10.0*primalTolerance) {
 	  gap += rowLower[iRow]-rowActivity[iRow];
 	  nUnder++;
-	  iUnder=iRow;
 	  rowWeight[iRow] *= 1.1;
 	} else if (rowActivity[iRow] > rowUpper[iRow] + 10.0*primalTolerance) {
 	  gap += rowActivity[iRow]-rowUpper[iRow];

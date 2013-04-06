@@ -7139,7 +7139,7 @@ OsiSimpleFixedInteger::createBranch(OsiSolverInterface * solver, const OsiBranch
 //-------------------------------------------------------------------
 void
 CglTemporary::generateCuts(const OsiSolverInterface & si, OsiCuts & cs,
-                           const CglTreeInfo /*info*/) const
+                           const CglTreeInfo /*info*/)
 {
     // Get basic problem information
     const double * solution = si.getColSolution();

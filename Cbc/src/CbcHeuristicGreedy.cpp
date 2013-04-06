@@ -397,7 +397,9 @@ CbcHeuristicGreedyCover::validate()
         double direction = solver->getObjSense();
 
         int numberRows = solver->getNumRows();
+        int numberColumns = solver->getNumCols();
         // Column copy
+	matrix_.setDimensions(numberRows,numberColumns);
         const double * element = matrix_.getElements();
         const CoinBigIndex * columnStart = matrix_.getVectorStarts();
         const int * columnLength = matrix_.getVectorLengths();
@@ -406,7 +408,6 @@ CbcHeuristicGreedyCover::validate()
             if (rowUpper[iRow] < 1.0e30)
                 good = false;
         }
-        int numberColumns = solver->getNumCols();
         for (int iColumn = 0; iColumn < numberColumns; iColumn++) {
             if (objective[iColumn]*direction < 0.0)
                 good = false;
@@ -829,6 +830,8 @@ CbcHeuristicGreedyEquality::validate()
         double direction = solver->getObjSense();
 
         int numberRows = solver->getNumRows();
+        int numberColumns = solver->getNumCols();
+	matrix_.setDimensions(numberRows,numberColumns);
         // Column copy
         const double * element = matrix_.getElements();
         const CoinBigIndex * columnStart = matrix_.getVectorStarts();
@@ -842,7 +845,6 @@ CbcHeuristicGreedyEquality::validate()
             if (floor(rowUpper[iRow] + 0.5) != rowUpper[iRow])
                 good = false;
         }
-        int numberColumns = solver->getNumCols();
         for (int iColumn = 0; iColumn < numberColumns; iColumn++) {
             if (objective[iColumn]*direction < 0.0)
                 good = false;

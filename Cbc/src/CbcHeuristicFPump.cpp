@@ -495,8 +495,10 @@ CbcHeuristicFPump::solution(double & solutionValue,
 	  if (clpSolver->fakeObjective())
             maximumPasses = 100; // feasibility problem?
 	}
+	randomNumberGenerator_.randomize();
 	if (model_->getRandomSeed()!=-1)
 	  clpSolver->getModelPtr()->setRandomSeed(randomNumberGenerator_.getSeed());
+	clpSolver->getModelPtr()->randomNumberGenerator()->randomize();
       }
     }
 #endif
@@ -1022,6 +1024,20 @@ CbcHeuristicFPump::solution(double & solutionValue,
                     solver->setObjCoeff(iColumn, newValue);
                     offset += costValue * newSolution[iColumn];
                 }
+		if (numberPasses==1 && !totalNumberPasses && (model_->specialOptions()&8388608)!=0) {
+		  // doing multiple solvers - make a real difference - flip 5%
+		  for (i = 0; i < numberIntegers; i++) {
+		    int iColumn = integerVariable[i];
+		    double value = floor(newSolution[iColumn]+0.5);
+		    if (fabs(value-solution[iColumn])>primalTolerance) {
+		      value = randomNumberGenerator_.randomDouble();
+		      if(value<0.05) {
+			//printf("Flipping %d - random %g\n",iColumn,value);
+			solver->setObjCoeff(iColumn,-solver->getObjCoefficients()[iColumn]);
+		      }
+		    }
+		  }
+		}
                 solver->setDblParam(OsiObjOffset, -offset);
                 if (!general && false) {
                     // Solve in two goes - first keep satisfied ones fixed

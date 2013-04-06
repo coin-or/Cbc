@@ -49,7 +49,8 @@ CbcCutGenerator::CbcCutGenerator ()
         numberCutsAtRoot_(0),
         numberActiveCutsAtRoot_(0),
         numberShortCutsAtRoot_(0),
-        switches_(1)
+	switches_(1),
+	maximumTries_(-1)
 {
 }
 // Normal constructor
@@ -72,7 +73,8 @@ CbcCutGenerator::CbcCutGenerator(CbcModel * model, CglCutGenerator * generator,
         numberCutsAtRoot_(0),
         numberActiveCutsAtRoot_(0),
         numberShortCutsAtRoot_(0),
-        switches_(1)
+        switches_(1),
+	maximumTries_(-1)
 {
     if (howOften < -1900) {
         setGlobalCuts(true);
@@ -110,6 +112,7 @@ CbcCutGenerator::CbcCutGenerator ( const CbcCutGenerator & rhs)
     depthCutGeneratorInSub_ = rhs.depthCutGeneratorInSub_;
     generatorName_ = CoinStrdup(rhs.generatorName_);
     switches_ = rhs.switches_;
+    maximumTries_ = rhs.maximumTries_;
     timeInCutGenerator_ = rhs.timeInCutGenerator_;
     savedCuts_ = rhs.savedCuts_;
     inaccuracy_ = rhs.inaccuracy_;
@@ -140,6 +143,7 @@ CbcCutGenerator::operator=( const CbcCutGenerator & rhs)
         depthCutGeneratorInSub_ = rhs.depthCutGeneratorInSub_;
         generatorName_ = CoinStrdup(rhs.generatorName_);
         switches_ = rhs.switches_;
+	maximumTries_ = rhs.maximumTries_;
         timeInCutGenerator_ = rhs.timeInCutGenerator_;
         savedCuts_ = rhs.savedCuts_;
         inaccuracy_ = rhs.inaccuracy_;
@@ -201,6 +205,14 @@ CbcCutGenerator::generateCuts( OsiCuts & cs , int fullScan, OsiSolverInterface *
     }
     if (howOften == -100)
         return false;
+    int pass = model_->getCurrentPassNumber() - 1;
+    if (maximumTries_>0) {
+      // howOften means what it says
+      if ((pass%howOften)!=0||depth)
+	return false;
+      else
+	howOften=1;
+    }
     if (howOften > 0)
         howOften = howOften % 1000000;
     else
@@ -209,7 +221,6 @@ CbcCutGenerator::generateCuts( OsiCuts & cs , int fullScan, OsiSolverInterface *
         howOften = 1;
     bool returnCode = false;
     //OsiSolverInterface * solver = model_->solver();
-    int pass = model_->getCurrentPassNumber() - 1;
     // Reset cuts on first pass
     if (!pass)
         savedCuts_ = OsiCuts();
@@ -286,6 +297,8 @@ CbcCutGenerator::generateCuts( OsiCuts & cs , int fullScan, OsiSolverInterface *
         incrementNumberTimesEntered();
         CglProbing* generator =
             dynamic_cast<CglProbing*>(generator_);
+	//if (!depth&&!pass)
+	//printf("Cut generator %s when %d\n",generatorName_,whenCutGenerator_);
         if (!generator) {
             // Pass across model information in case it could be useful
             //void * saveData = solver->getApplicationData();
@@ -1118,40 +1131,45 @@ CbcCutGenerator::generateCuts( OsiCuts & cs , int fullScan, OsiSolverInterface *
             }
         }
 #endif
-        {
-            int numberRowCutsAfter = cs.sizeRowCuts() ;
-            if (numberRowCutsBefore < numberRowCutsAfter) {
-                for (int k = numberRowCutsBefore; k < numberRowCutsAfter; k++) {
-                    OsiRowCut thisCut = cs.rowCut(k) ;
-                    int n = thisCut.row().getNumElements();
-                    numberElements_ += n;
-                }
-#ifdef JJF_ZERO
-                printf("generator %s generated %d row cuts\n",
-                       generatorName_, numberRowCutsAfter - numberRowCutsBefore);
-#endif
-                numberCuts_ += numberRowCutsAfter - numberRowCutsBefore;
+	int numberRowCutsAfter = cs.sizeRowCuts() ;
+	int numberColumnCutsAfter = cs.sizeColCuts() ;
+        if (numberRowCutsBefore < numberRowCutsAfter) {
+            for (int k = numberRowCutsBefore; k < numberRowCutsAfter; k++) {
+                OsiRowCut thisCut = cs.rowCut(k) ;
+                int n = thisCut.row().getNumElements();
+                numberElements_ += n;
             }
-            int numberColumnCutsAfter = cs.sizeColCuts() ;
-            if (numberColumnCutsBefore < numberColumnCutsAfter) {
 #ifdef JJF_ZERO
-                printf("generator %s generated %d column cuts\n",
-                       generatorName_, numberColumnCutsAfter - numberColumnCutsBefore);
+            printf("generator %s generated %d row cuts\n",
+                   generatorName_, numberRowCutsAfter - numberRowCutsBefore);
 #endif
-                numberColumnCuts_ += numberColumnCutsAfter - numberColumnCutsBefore;
-            }
+            numberCuts_ += numberRowCutsAfter - numberRowCutsBefore;
+        }
+        if (numberColumnCutsBefore < numberColumnCutsAfter) {
+#ifdef JJF_ZERO
+            printf("generator %s generated %d column cuts\n",
+                   generatorName_, numberColumnCutsAfter - numberColumnCutsBefore);
+#endif
+            numberColumnCuts_ += numberColumnCutsAfter - numberColumnCutsBefore;
         }
         if (timing())
             timeInCutGenerator_ += CoinCpuTime() - time1;
-#ifdef JJF_ZERO
         // switch off if first time and no good
-        if (node == NULL && !pass) {
-            if (cs.sizeCuts() - cutsBefore < CoinAbs(switchOffIfLessThan_)) {
-                whenCutGenerator_ = -99;
-                whenCutGeneratorInSub_ = -200;
+        if (node == NULL && !pass ) {
+            if (numberRowCutsAfter - numberRowCutsBefore
+		< switchOffIfLessThan_ /*&& numberCuts_ < switchOffIfLessThan_*/) {
+	      // switch off
+	      maximumTries_ = 0;
+	      whenCutGenerator_=-100;
+	      //whenCutGenerator_ = -100;
+	      //whenCutGeneratorInSub_ = -200;
             }
         }
-#endif
+	if (maximumTries_>0) {
+	  maximumTries_--;
+	  if (!maximumTries_) 
+	    whenCutGenerator_=-100;
+	}
     }
     return returnCode;
 }

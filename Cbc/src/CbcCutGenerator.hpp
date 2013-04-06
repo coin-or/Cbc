@@ -165,6 +165,12 @@ public:
     inline int whatDepthInSub() const {
         return depthCutGeneratorInSub_;
     }
+    /// Set maximum number of times to enter
+    inline void setMaximumTries(int value)
+    { maximumTries_ = value;}
+    /// Get maximum number of times to enter
+    inline int maximumTries() const
+    { return maximumTries_;}
 
     /// Get switches (for debug)
     inline int switches() const {
@@ -450,6 +456,8 @@ private:
     int numberShortCutsAtRoot_;
     /// Switches - see gets and sets
     int switches_;
+    /// Maximum number of times to enter
+    int maximumTries_;
 };
 
 // How often to do if mostly switched off (A)

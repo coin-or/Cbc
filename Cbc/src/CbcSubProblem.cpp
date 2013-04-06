@@ -28,14 +28,18 @@
 
 // Default Constructor
 CbcSubProblem::CbcSubProblem()
-        : objectiveValue_(0.0),
-        sumInfeasibilities_(0.0),
-        variables_(NULL),
-        newBounds_(NULL),
-        status_(NULL),
-        depth_(0),
-        numberChangedBounds_(0),
-        numberInfeasibilities_(0)
+  : objectiveValue_(0.0),
+    sumInfeasibilities_(0.0),
+    branchValue_(0.0),
+    djValue_(0.0),
+    variables_(NULL),
+    newBounds_(NULL),
+    status_(NULL),
+    depth_(0),
+    numberChangedBounds_(0),
+    numberInfeasibilities_(0),
+    problemStatus_(0),
+    branchVariable_(0)
 {
 }
 
@@ -45,14 +49,18 @@ CbcSubProblem::CbcSubProblem (const OsiSolverInterface * solver,
                               const double * lastUpper,
                               const unsigned char * status,
                               int depth)
-        : objectiveValue_(0.0),
-        sumInfeasibilities_(0.0),
-        variables_(NULL),
-        newBounds_(NULL),
-        status_(NULL),
-        depth_(depth),
-        numberChangedBounds_(0),
-        numberInfeasibilities_(0)
+  : objectiveValue_(0.0),
+    sumInfeasibilities_(0.0),
+    branchValue_(0.0),
+    djValue_(0.0),
+    variables_(NULL),
+    newBounds_(NULL),
+    status_(NULL),
+    depth_(depth),
+    numberChangedBounds_(0),
+    numberInfeasibilities_(0),
+    problemStatus_(0),
+    branchVariable_(0)
 {
     const double * lower = solver->getColLower();
     const double * upper = solver->getColUpper();
@@ -109,13 +117,17 @@ CbcSubProblem::CbcSubProblem (const OsiSolverInterface * solver,
 // Copy constructor
 CbcSubProblem::CbcSubProblem ( const CbcSubProblem & rhs)
         : objectiveValue_(rhs.objectiveValue_),
-        sumInfeasibilities_(rhs.sumInfeasibilities_),
-        variables_(NULL),
-        newBounds_(NULL),
-        status_(NULL),
-        depth_(rhs.depth_),
-        numberChangedBounds_(rhs.numberChangedBounds_),
-        numberInfeasibilities_(rhs.numberInfeasibilities_)
+	  sumInfeasibilities_(rhs.sumInfeasibilities_),
+	  branchValue_(rhs.branchValue_),
+	  djValue_(rhs.djValue_),
+	  variables_(NULL),
+	  newBounds_(NULL),
+	  status_(NULL),
+	  depth_(rhs.depth_),
+	  numberChangedBounds_(rhs.numberChangedBounds_),
+	  numberInfeasibilities_(rhs.numberInfeasibilities_),
+	  problemStatus_(rhs.problemStatus_),
+	  branchVariable_(rhs.branchVariable_)
 {
     if (numberChangedBounds_) {
         variables_ = CoinCopyOfArray(rhs.variables_, numberChangedBounds_);
@@ -136,9 +148,13 @@ CbcSubProblem::operator=( const CbcSubProblem & rhs)
         delete status_;
         objectiveValue_ = rhs.objectiveValue_;
         sumInfeasibilities_ = rhs.sumInfeasibilities_;
+	branchValue_ = rhs.branchValue_;
+	djValue_ = rhs.djValue_;
         depth_ = rhs.depth_;
         numberChangedBounds_ = rhs.numberChangedBounds_;
         numberInfeasibilities_ = rhs.numberInfeasibilities_;
+	problemStatus_ = rhs.problemStatus_; 
+	branchVariable_ = rhs.branchVariable_;
         if (numberChangedBounds_) {
             variables_ = CoinCopyOfArray(rhs.variables_, numberChangedBounds_);
             newBounds_ = CoinCopyOfArray(rhs.newBounds_, numberChangedBounds_);
@@ -154,6 +170,48 @@ CbcSubProblem::operator=( const CbcSubProblem & rhs)
     }
     return *this;
 }
+// Take over
+void
+CbcSubProblem::takeOver( CbcSubProblem & rhs, bool cleanUp)
+{
+    if (this != &rhs) {
+        delete [] variables_;
+        delete [] newBounds_;
+        delete status_;
+        objectiveValue_ = rhs.objectiveValue_;
+        sumInfeasibilities_ = rhs.sumInfeasibilities_;
+	branchValue_ = rhs.branchValue_;
+	djValue_ = rhs.djValue_;
+        depth_ = rhs.depth_;
+        numberChangedBounds_ = rhs.numberChangedBounds_;
+        numberInfeasibilities_ = rhs.numberInfeasibilities_;
+	problemStatus_ = rhs.problemStatus_; 
+	branchVariable_ = rhs.branchVariable_;
+	variables_ = rhs.variables_;
+	newBounds_ = rhs.newBounds_;
+	rhs.variables_ = NULL;
+	rhs.newBounds_ = NULL;
+	status_ = rhs.status_;
+	rhs.status_ = NULL;
+	if (cleanUp) {
+	  delete [] variables_;
+	  delete [] newBounds_;
+	  variables_ = new int [1];
+	  newBounds_ = new double [1];
+	  // swap way and make only fix
+	  numberChangedBounds_=1;
+	  if ((problemStatus_&1)==0) {
+	    // last way was down
+	    newBounds_[0] = ceil(branchValue_);
+	    variables_[0] = branchVariable_;
+	  } else {
+	    // last way was up
+	    newBounds_[0] = floor(branchValue_);
+	    variables_[0] = branchVariable_ | 0x80000000;
+	  }
+	}
+    }
+}
 
 // Destructor
 CbcSubProblem::~CbcSubProblem ()
@@ -168,6 +226,10 @@ CbcSubProblem::apply(OsiSolverInterface * solver, int what) const
 {
     int i;
     if ((what&1) != 0) {
+    printf("CbcSubapply depth %d column %d way %d bvalue %g obj %g\n",
+		 this->depth_,this->branchVariable_,this->problemStatus_,
+		 this->branchValue_,this->objectiveValue_);
+    printf("current bounds %g <= %g <= %g\n",solver->getColLower()[branchVariable_],branchValue_,solver->getColUpper()[branchVariable_]);
 #ifndef NDEBUG
         int nSame = 0;
 #endif
@@ -227,6 +289,7 @@ CbcSubProblem::apply(OsiSolverInterface * solver, int what) const
                    numberChangedBounds_, what);
 #endif
 #endif
+    printf("new bounds %g <= %g <= %g\n",solver->getColLower()[branchVariable_],branchValue_,solver->getColUpper()[branchVariable_]);
     }
 #ifdef JJF_ZERO
     if ((what&2) != 0) {
@@ -257,8 +320,10 @@ CbcSubProblem::apply(OsiSolverInterface * solver, int what) const
         = dynamic_cast<OsiClpSolverInterface *> (solver);
         assert (clpSolver);
         clpSolver->setBasis(*status_);
-        delete status_;
-        status_ = NULL;
+	if ((what&16)==0) {
+	  delete status_;
+	  status_ = NULL;
+	}
     }
 }
 

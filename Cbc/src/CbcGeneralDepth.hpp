@@ -70,6 +70,10 @@ public:
     inline void setMaximumDepth(int value) {
         maximumDepth_ = value;
     }
+    /// Return number of nodes
+    inline int numberNodes() const {
+        return numberNodes_;
+    }
     /// Get which solution
     inline int whichSolution() const {
         return whichSolution_;

@@ -1012,6 +1012,8 @@ CbcBaseModel::deterministicParallel()
     for (iObject = 0; iObject < numberObjects_; iObject++) {
         saveObjects_[iObject]->updateBefore(object[iObject]);
     }
+    //#define FAKE_PARALLEL
+#ifndef FAKE_PARALLEL
     for (iThread = 0; iThread < numberThreads_; iThread++) {
         children_[iThread].setReturnCode( 0);
         children_[iThread].signal();
@@ -1030,6 +1032,21 @@ CbcBaseModel::deterministicParallel()
     }
     for (iThread = 0; iThread < numberThreads_; iThread++)
         children_[iThread].setReturnCode(-1);
+#else
+    // wait
+    bool finished = false;
+    double time = getTime();
+    for (iThread = 0; iThread < numberThreads_; iThread++) {
+        children_[iThread].setReturnCode( 0);
+        children_[iThread].signal();
+	while (!finished) {
+	  children_[numberThreads_].waitNano( 1000000); // millisecond
+	  finished = (children_[iThread].returnCode() >0);
+	}
+        children_[iThread].setReturnCode(-1);
+	finished=false;
+    }
+#endif
     children_[numberThreads_].incrementTimeInThread(getTime() - time);
     // Unmark marked
     for (int i = 0; i < nAffected; i++) {
@@ -1392,7 +1409,7 @@ CbcModel::moveToModel(CbcModel * baseModel, int mode)
     if (mode == 0) {
         setCutoff(baseModel->getCutoff());
         bestObjective_ = baseModel->bestObjective_;
-        assert (!baseModel->globalCuts_.sizeRowCuts());
+        //assert (!baseModel->globalCuts_.sizeRowCuts());
         if (numberSolutions_ < baseModel->numberSolutions_) {
 	  assert (baseModel->bestSolution_);
 	  int numberColumns = solver_->getNumCols();
@@ -1568,7 +1585,7 @@ CbcModel::moveToModel(CbcModel * baseModel, int mode)
     } else if (mode == 10) {
         setCutoff(baseModel->getCutoff());
         bestObjective_ = baseModel->bestObjective_;
-        assert (!baseModel->globalCuts_.sizeRowCuts());
+        //assert (!baseModel->globalCuts_.sizeRowCuts());
         numberSolutions_ = baseModel->numberSolutions_;
         assert (usedInSolution_);
         assert (baseModel->usedInSolution_);

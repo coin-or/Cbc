@@ -306,7 +306,8 @@ int * analyze(OsiClpSolverInterface * solverMod, int & numberChanged,
         // just get increment
         int logLevel = generalMessageHandler->logLevel();
         CbcModel model(*solver);
-        model.passInMessageHandler(generalMessageHandler);
+	if (!model.defaultHandler())
+	  model.passInMessageHandler(generalMessageHandler);
         if (noPrinting_)
             model.setLogLevel(0);
         model.analyzeObjective();

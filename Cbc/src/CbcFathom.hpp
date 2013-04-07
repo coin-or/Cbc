@@ -75,7 +75,7 @@ private:
     CbcFathom & operator=(const CbcFathom& rhs);
 
 };
-#ifdef COIN_HAS_CLP
+
 #include "OsiClpSolverInterface.hpp"
 
 //#############################################################################
@@ -135,5 +135,3 @@ protected:
     //@}
 };
 #endif
-#endif
-

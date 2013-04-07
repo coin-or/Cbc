@@ -16306,6 +16306,12 @@ CbcModel::goToDantzig(int numberNodes, ClpDualRowPivot *& savePivotMethod)
         }
     }
 }
+#else
+CbcModel::goToDantzig(int numberNodes, ClpDualRowPivot *& savePivotMethod)
+{
+   printf("Need Clp to go to Dantzig\n");
+   abort();
+}
 #endif
 // Below this is deprecated or at least fairly deprecated
 /*

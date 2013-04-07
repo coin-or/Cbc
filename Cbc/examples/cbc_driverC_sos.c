@@ -80,7 +80,7 @@ Cbc_Model * getDefaultModel(int argc, const char *argv[])
     quotes and final directory separator. Don't forget to properly escape
     '\' when using native Windows path syntax.
   */
-    status=Cbc_readMps(model,SAMPLEDIR "p0033.mps") ;
+    status=Cbc_readMps(model, SAMPLEDIR"p0033.mps") ;
 #else
     fprintf(stderr, "Please specify the full path to an MPS file on the command line\n");
     exit(1);

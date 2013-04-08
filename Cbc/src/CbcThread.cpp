@@ -1126,9 +1126,15 @@ static void * doNodesThread(void * voidInfo)
             assert (stuff->returnCode() == 0);
             if (thisModel->parallelMode() >= 0) {
                 CbcNode * node = stuff->node();
-                assert (node->nodeInfo());
+                //assert (node->nodeInfo());
                 CbcNode * createdNode = stuff->createdNode();
-                thisModel->doOneNode(baseModel, node, createdNode);
+		// try and see if this has slipped through
+		if (node) {
+		  thisModel->doOneNode(baseModel, node, createdNode);
+		} else {
+		  //printf("null node\n");
+		  createdNode=NULL;
+		}
                 stuff->setNode(node);
                 stuff->setCreatedNode(createdNode);
                 stuff->setReturnCode( 1);

@@ -192,7 +192,7 @@ includecoin_HEADERS = \
 	CbcBranchBase.hpp \
 	CbcBranchDynamic.hpp \
 	CbcBranchCut.hpp \
-        CbcBranchDecision.hpp \
+	CbcBranchDecision.hpp \
 	CbcBranchDefaultDecision.hpp \
 	CbcBranchingObject.hpp \
 	CbcBranchLotsize.hpp \
@@ -213,6 +213,7 @@ includecoin_HEADERS = \
 	CbcDummyBranchingObject.hpp \
 	CbcFathom.hpp \
 	CbcEventHandler.hpp \
+	CbcFathomDynamicProgramming.hpp \
 	CbcFeasibilityBase.hpp \
 	CbcFixVariable.hpp \
 	CbcFollowOn.hpp \

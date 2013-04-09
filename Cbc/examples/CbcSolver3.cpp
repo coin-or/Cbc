@@ -245,20 +245,16 @@ void CbcSolver3::resolve()
     delete [] whichColumn;
     assert(!modelPtr_->specialOptions());
     int saveOptions = modelPtr_->specialOptions();
-    int startFinishOptions;
     bool takeHint;
     OsiHintStrength strength;
-    bool gotHint = (getHintParam(OsiDoInBranchAndCut,takeHint,strength));
-    assert (gotHint);
+    getHintParam(OsiDoInBranchAndCut,takeHint,strength);
     if (strength!=OsiHintIgnore&&takeHint) {
       // could do something - think about it
       //printf("thin hint %d %c\n",strength,takeHint ? 'T' :'F');
     }
     if((specialOptions_&1)==0) {
-      startFinishOptions=0;
       modelPtr_->setSpecialOptions(saveOptions|(64|1024));
     } else {
-      startFinishOptions=1+2+4;
       if((specialOptions_&4)==0) 
 	modelPtr_->setSpecialOptions(saveOptions|(64|128|512|1024|4096));
       else

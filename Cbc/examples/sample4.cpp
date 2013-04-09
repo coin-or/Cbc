@@ -48,7 +48,11 @@ int main (int argc, const char *argv[])
   // Read in ltw.mps
   // and assert that it is a clean model
   int numMpsReadErrors = model.solver()->readMps("./ltw.mps","");
-  assert(numMpsReadErrors==0);
+  if( numMpsReadErrors != 0 )
+  {
+     printf("%d errors reading MPS file\n", numMpsReadErrors);
+     return numMpsReadErrors;
+  }
 
   // Definition of node choice
   CbcCompareUser compare;

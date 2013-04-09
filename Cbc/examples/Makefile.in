@@ -20,15 +20,19 @@ EXE = $(DRIVER)@EXEEXT@
 #           code that you wrote in order to define the problem statement
 OBJS =  $(DRIVER).@OBJEXT@ 
 
-#	CbcCompareUser.@OBJEXT@ \
-#	CbcSolver2.@OBJEXT@ \
-#	CbcSolver3.@OBJEXT@ \
-#	ClpQuadInterface.@OBJEXT@ \
-#	CbcBranchFollow2.@OBJEXT@ \
-#	CbcBranchUser.@OBJEXT@ \
-#	CbcBranchLink.@OBJEXT@
+# extra object files that are required by some examples (we just link them into each one)
+EXTRAOBJS = \
+	CbcCompareUser.@OBJEXT@ \
+	CbcSolver2.@OBJEXT@ \
+	CbcSolver3.@OBJEXT@ \
+	CbcSolverLongThin.@OBJEXT@ \
+	ClpQuadInterface.@OBJEXT@ \
+	CbcBranchFollow2.@OBJEXT@ \
+	CbcBranchUser.@OBJEXT@ \
+	CbcBranchLink.@OBJEXT@
 
 # CHANGEME: Additional libraries
+# e.g., for driver2, put -lOsiCbc here
 ADDLIBS =
 
 # CHANGEME: Additional flags for compilation (e.g., include flags)
@@ -88,7 +92,7 @@ ifeq ($(COIN_HAS_PKGCONFIG), TRUE)
 else
   INCL = @CBCLIB_CFLAGS_INSTALLED@
 endif
-INCL += $(ADDINCFLAGS)
+INCL += -I@srcdir@ $(ADDINCFLAGS)
 
 # Linker flags
 ifeq ($(COIN_HAS_PKGCONFIG), TRUE)
@@ -105,20 +109,25 @@ endif
 CYGPATH_W = @CYGPATH_W@
 
 # Here we list all possible generated objects or executables to delete them
-CLEANFILES = \
-	crew.@OBJEXT@ crew@EXEEXT@ \
+CLEANFILES = $(EXTRAOBJS) \
+	allCuts.@OBJEXT@ allCuts@EXEEXT@ \
 	barrier.@OBJEXT@ barrier@EXEEXT@ \
-	driver2.@OBJEXT@ driver2@EXEEXT@ \
+	cbc_driverC_sos.@OBJEXT@ cbc_driverC_sos@EXEEXT@ \
+	crew.@OBJEXT@ crew@EXEEXT@ \
 	driver.@OBJEXT@ driver@EXEEXT@ \
-	dynamic.@OBJEXT@ dynamic@EXEEXT@ \
+	driver2.@OBJEXT@ driver2@EXEEXT@ \
+	driver3.@OBJEXT@ driver3@EXEEXT@ \
+	driver4.@OBJEXT@ driver4@EXEEXT@ \
 	fast0507b.@OBJEXT@ fast0507b@EXEEXT@ \
 	fast0507.@OBJEXT@ fast0507@EXEEXT@ \
 	gear.@OBJEXT@ gear@EXEEXT@ \
 	hotstart.@OBJEXT@ hotstart@EXEEXT@ \
+	interrupt.@OBJEXT@ interrupt@EXEEXT@ \
 	link.@OBJEXT@ link@EXEEXT@ \
 	longthin.@OBJEXT@ longthin@EXEEXT@ \
 	lotsize.@OBJEXT@ lotsize@EXEEXT@ \
 	minimum.@OBJEXT@ minimum@EXEEXT@ \
+	modify.@OBJEXT@ modify@EXEEXT@ \
 	nway.@OBJEXT@ nway@EXEEXT@ \
 	qmip.@OBJEXT@ qmip@EXEEXT@ \
 	qmip2.@OBJEXT@ qmip2@EXEEXT@ \
@@ -128,6 +137,7 @@ CLEANFILES = \
 	sample3.@OBJEXT@ sample3@EXEEXT@ \
 	sample4.@OBJEXT@ sample4@EXEEXT@ \
 	sample5.@OBJEXT@ sample5@EXEEXT@ \
+	simpleBAB.@OBJEXT@ simpleBAB@EXEEXT@ \
 	sos.@OBJEXT@ sos@EXEEXT@ \
 	sudoku.@OBJEXT@ sudoku@EXEEXT@
 
@@ -135,9 +145,9 @@ all: $(EXE)
 
 .SUFFIXES: .cpp .c .o .obj
 
-$(EXE): $(OBJS)
+$(EXE): $(OBJS) $(EXTRAOBJS)
 	bla=;\
-	for file in $(OBJS); do bla="$$bla `$(CYGPATH_W) $$file`"; done; \
+	for file in $(OBJS) $(EXTRAOBJS); do bla="$$bla `$(CYGPATH_W) $$file`"; done; \
 	$(CXX) $(CXXLINKFLAGS) $(CXXFLAGS) -o $@ $$bla $(LIBS) $(ADDLIBS)
 
 clean:

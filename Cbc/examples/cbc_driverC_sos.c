@@ -3,7 +3,7 @@
 
   This code is licensed under the terms of the Eclipse Public License (EPL).
 
-  $Id#
+  $Id$
 */
 
 /* This example shows the use of the "C" interface for CBC. */
@@ -76,11 +76,11 @@ Cbc_Model * getDefaultModel(int argc, const char *argv[])
   if (argc < 2) {
 #if defined(SAMPLEDIR)
   /*
-    SAMPLEDIR should be something like "path/to/mps/directory/", including the
-    quotes and final directory separator. Don't forget to properly escape
+    SAMPLEDIR should be something like "path/to/mps/directory", including the
+    quotes and excluding the final directory separator. Don't forget to properly escape
     '\' when using native Windows path syntax.
   */
-    status=Cbc_readMps(model, SAMPLEDIR"p0033.mps") ;
+    status=Cbc_readMps(model, SAMPLEDIR "/p0033.mps") ;
 #else
     fprintf(stderr, "Please specify the full path to an MPS file on the command line\n");
     exit(1);
@@ -396,7 +396,7 @@ int main (int argc, const char *argv[])
         /*      Cbc_addSOS_Sparse(model,len[i],which[i],weights,i,2); */
       } else {
         int numObjects = numberSets; /* cannot pass const int */
-        Cbc_addSOS_Dense(model, numObjects, len, (const int**)which, (const double*)weights, 2);
+        Cbc_addSOS_Dense(model, numObjects, len, (const int* const *)which, (const double*)weights, 2);
       }
     }
 

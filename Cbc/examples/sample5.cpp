@@ -39,7 +39,7 @@
 #include "CoinBuild.hpp"
 #include "CoinModel.hpp"
 
-#include  "CoinTime.hpp"
+#include "CoinTime.hpp"
 
 
 /************************************************************************

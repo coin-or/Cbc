@@ -3,15 +3,12 @@
 // Corporation and others.  All Rights Reserved.
 // This code is licensed under the terms of the Eclipse Public License (EPL).
 
-#if defined(_MSC_VER)
-// Turn off compiler warning about long names
-#  pragma warning(disable:4786)
-#endif
 #include <cassert>
 #include <cmath>
 #include <cfloat>
 //#define CBC_DEBUG
 
+#include "CoinPragma.hpp"
 #include "OsiSolverInterface.hpp"
 #include "CbcModel.hpp"
 #include "CbcMessage.hpp"
@@ -51,11 +48,8 @@ CbcLink::CbcLink (CbcModel * model,  int numberMembers,
     }
     // weights must be increasing
     int i;
-    double last=-COIN_DBL_MAX;
-    for (i=0;i<numberMembers_;i++) {
-      assert (weights_[i]>last+1.0e-12);
-      last=weights_[i];
-    }
+    for (i=0;i<numberMembers_;i++)
+      assert (i == 0 || weights_[i]>weights_[i-1]+1.0e-12);
     for (i=0;i<numberMembers_*numberLinks_;i++) {
       which_[i]=first+i;
     }
@@ -85,11 +79,8 @@ CbcLink::CbcLink (CbcModel * model,  int numberMembers,
     }
     // weights must be increasing
     int i;
-    double last=-COIN_DBL_MAX;
-    for (i=0;i<numberMembers_;i++) {
-      assert (weights_[i]>last+1.0e-12);
-      last=weights_[i];
-    }
+    for (i=0;i<numberMembers_;i++)
+      assert (i == 0 || weights_[i]>weights_[i-1]+1.0e-12);
     for (i=0;i<numberMembers_*numberLinks_;i++) {
       which_[i]= which[i];
     }

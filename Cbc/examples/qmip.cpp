@@ -3,14 +3,11 @@
 // Corporation and others.  All Rights Reserved.
 // This code is licensed under the terms of the Eclipse Public License (EPL).
 
-#if defined(_MSC_VER)
-// Turn off compiler warning about long names
-#  pragma warning(disable:4786)
-#endif
-
 #include <cassert>
 #include <iomanip>
 
+
+#include "CoinPragma.hpp"
 
 // For Branch and bound
 #include "OsiSolverInterface.hpp"
@@ -66,11 +63,19 @@ int main (int argc, const char *argv[])
   ClpQuadInterface solver1;
 
   // Read in model using argv[1]
+  if (argc <= 1) {
+     printf("using %s <modelfile>\n", argv[0]);
+     return 1;
+  }
   // must use clp to get a quadratic model
   ClpSimplex * clp = solver1.getModelPtr();
   int numMpsReadErrors = clp->readMps(argv[1]);
   // and assert that it is a clean model
-  assert(numMpsReadErrors==0);
+  if( numMpsReadErrors != 0 )
+  {
+     printf("%d errors reading MPS file\n", numMpsReadErrors);
+     return numMpsReadErrors;
+  }
 
   // This clones solver 
   CbcModel model(solver1);

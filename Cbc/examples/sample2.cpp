@@ -34,7 +34,7 @@
 
 #include "CbcHeuristic.hpp"
 
-#include  "CoinTime.hpp"
+#include "CoinTime.hpp"
 
 //#############################################################################
 
@@ -84,7 +84,11 @@ int main (int argc, const char *argv[])
 # endif
   if (argc>=2) mpsFileName = argv[1];
   int numMpsReadErrors = solver1.readMps(mpsFileName.c_str(),"");
-  assert(numMpsReadErrors==0);
+  if( numMpsReadErrors != 0 )
+  {
+     printf("%d errors reading MPS file\n", numMpsReadErrors);
+     return numMpsReadErrors;
+  }
   double time1 = CoinCpuTime();
 
   /* Options are:

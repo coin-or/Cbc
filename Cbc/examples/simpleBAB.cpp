@@ -3,15 +3,11 @@
 // Corporation and others.  All Rights Reserved.
 // This code is licensed under the terms of the Eclipse Public License (EPL).
 
-#if defined(_MSC_VER)
-// Turn off compiler warning about long names
-#  pragma warning(disable:4786)
-#endif
-
 #include <cassert>
 #include <iomanip>
 
 
+#include "CoinPragma.hpp"
 #include "OsiClpSolverInterface.hpp"
 #include "CoinPackedVector.hpp"
 //#define USE_CBC
@@ -40,7 +36,7 @@ int main (int argc, const char *argv[])
   model.loadProblem(2, 1, start, index, values, collb, colub, obj, rowlb, rowub);
   model.setInteger(0);
   model.setObjSense(-1.0);
-  bool optimal;
+  //bool optimal;
   
 #ifndef USE_CBC
   // Save bounds - that and dual limit should be all that is needed
@@ -53,7 +49,7 @@ int main (int argc, const char *argv[])
   double objLimit;
   model.getDblParam(OsiDualObjectiveLimit,objLimit);
   model.branchAndBound();
-  optimal = model.isProvenOptimal(); 
+  //optimal = model.isProvenOptimal();
   const double *val = model.getColSolution(); // x0 = 3, x1 = 0.45
   printf("Solution %g %g\n",val[0],val[1]);
   // Restore bounds and dual limit
@@ -64,7 +60,7 @@ int main (int argc, const char *argv[])
   {
     CbcModel model2(model);
     model2.branchAndBound();
-    optimal = model2.isProvenOptimal(); 
+    //optimal = model2.isProvenOptimal();
     const double *val = model2.getColSolution(); // x0 = 3, x1 = 0.45
     printf("Solution %g %g\n",val[0],val[1]);
   }
@@ -78,7 +74,7 @@ int main (int argc, const char *argv[])
   model.addRow(v, 0.0, 2.0);
 #ifndef USE_CBC
   model.branchAndBound();
-  optimal = model.isProvenOptimal(); // should be x0 = 2, x1 = 0.95
+  //optimal = model.isProvenOptimal(); // should be x0 = 2, x1 = 0.95
   // Address of solution will be same as only adding rows - but be safe
   val = model.getColSolution();
   printf("Solution %g %g\n",val[0],val[1]);
@@ -86,7 +82,7 @@ int main (int argc, const char *argv[])
   {
     CbcModel model2(model);
     model2.branchAndBound();
-    optimal = model2.isProvenOptimal(); // should be x0 = 2, x1 = 0.95
+    //optimal = model2.isProvenOptimal(); // should be x0 = 2, x1 = 0.95
     const double *val = model2.getColSolution(); 
     printf("Solution %g %g\n",val[0],val[1]);
   }

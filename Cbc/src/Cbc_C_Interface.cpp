@@ -2265,7 +2265,7 @@ Cbc_setContinuous(Cbc_Model * model, int iColumn)
 /* Add an SOS constraint to the model */
 COINLIBAPI void  COINLINKAGE
 Cbc_addSOS_Dense(Cbc_Model * model, int numObjects, const int * len,
-                 const int ** which, const double * weights, const int type)
+                 const int * const* which, const double * weights, const int type)
 {
     const char prefix[] = "Cbc_C_Interface::Cbc_addSOS_Dense(): ";
 //  const int  VERBOSE = 2;

@@ -628,7 +628,7 @@ extern "C" {
     /** Add SOS constraints to the model using dense matrix */
     COINLIBAPI void  COINLINKAGE
     Cbc_addSOS_Dense(Cbc_Model * model, int numObjects, const int * len,
-                     const int ** which, const double * weights, const int type)
+                     const int * const * which, const double * weights, const int type)
     ;
     /** Add SOS constraints to the model using row-order matrix */
     COINLIBAPI void  COINLINKAGE

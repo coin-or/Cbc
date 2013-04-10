@@ -70,24 +70,32 @@ Release 2.8.0:
    G. Cornuejols, F. Margot, and G. Nannicini
    "On the safety of Gomory cut generators"
    http://faculty.sutd.edu.sg/~nannicini/index.php?page=publications
+
+8. To encourage the use of some of the more exotic/expensive cut generators a parameter -slowcutpasses has been added.
+   The idea is that the code does these cuts just a few times - less than the more usual cuts.  The default is 10.
+   The cut generators identified by "may be slow" at present are just Lift and project and ReduceAndSplit (both versions).
    
-8.  Allow initialization of random seed by user.  Pseudo-random numbers are used in Cbc and Clp.  In Clp they
+9. Allow initialization of random seed by user.  Pseudo-random numbers are used in Cbc and Clp.  In Clp they
    are used to break ties in degenerate problems, while in Cbc heuristics such as the Feasibility Pump use them   
    to decide whether to round up or down.  So if a different pseudo-random seed is given to Clp then you may get
    a different continuous optimum and so different cuts and heuristic solutions. This can be switched on by 
    setting randomSeed for Clp and/or randomCbcSeed for Cbc.  The special value of 0 tells code to use time of day
    for initial seed.
    
-9.  Building on this idea Andrea Lodi, Matteo Fischetti, Michele Monaci, Domenico Salvagnin and Andrea Tramontani
-   suggest that this idea be be improved by running at the root node with multiple copies of solver, each
+10. Building on this idea, Andrea Lodi, Matteo Fischetti, Michele Monaci, Domenico Salvagnin, Yuji Shinano, and Andrea Tramontani
+   suggest that this idea be improved by running at the root node with multiple copies of solver, each
    with its own different seed and then passing in the solutions and cuts so that the main solver has a richer
-   set of solutions and possibly stronger cuts.  This is switched on by setting multipleRootPasses.  These can also
+   set of solutions and possibly stronger cuts.  This is switched on by setting -multipleRootPasses.  These can also
    be done in parallel.
  
-10. Few changes to presolve for special variables and badly scaled problems (in CoinUtils).
+11. Few changes to presolve for special variables and badly scaled problems (in CoinUtils).
 
-11. New option -extraVariables <number> which switches on a trivial re-formulation to group variables with same cost together.
+12. New option -extraVariables <number> which switches on a trivial re-formulation that introduces extra integer variables
+    to group together variables with same cost.
 
+13. For some problems, cut generators and general branching work better if the problem would be infeasible if the cost is too high.
+    If the new option -constraintFromCutoff is set, the objective function is added as a constraint which rhs is set to the current
+    cutoff value (objective value of best known solution).
 
 Release 2.7.8:
    Look at https://projects.coin-or.org/Cbc/changeset?old_path=%2Freleases%2F2.7.7&new_path=%2Freleases%2F2.7.8 to see all changes.

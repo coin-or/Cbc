@@ -38,10 +38,9 @@ class CbcStatistics;
 class CbcFullNodeInfo;
 class CbcEventHandler ;
 class CglPreProcess;
-# ifdef COIN_HAS_CLP
 class OsiClpSolverInterface;
 class ClpNodeStuff;
-#endif
+
 // #define CBC_CHECK_BASIS 1
 
 //#############################################################################
@@ -1859,9 +1858,7 @@ public:
     inline void setTemporaryPointer(void * pointer)
     { temporaryPointer_=pointer;}
     /// Go to dantzig pivot selection if easy problem (clp only)
-#ifdef COIN_HAS_CLP
     void goToDantzig(int numberNodes, ClpDualRowPivot *& savePivotMethod);
-#endif
     /// Now we may not own objects - just point to solver's objects
     inline bool ownObjects() const {
         return ownObjects_;
@@ -2271,7 +2268,6 @@ public:
     inline void setMaximumNumberIterations(int value) {
         maximumNumberIterations_ = value;
     }
-# ifdef COIN_HAS_CLP
     /// Set depth for fast nodes
     inline void setFastNodeDepth(int value) {
         fastNodeDepth_ = value;
@@ -2292,7 +2288,6 @@ public:
         numberExtraNodes_ += nodes;
         numberExtraIterations_ += iterations;
     }
-#endif
     /// Number of extra iterations
     inline int numberExtraIterations() const {
         return numberExtraIterations_;

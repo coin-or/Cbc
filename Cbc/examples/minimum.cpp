@@ -15,7 +15,11 @@ int main (int argc, const char *argv[])
   // and assert that it is a clean model
 #if defined(SAMPLEDIR)
   int numMpsReadErrors = solver1.readMps(SAMPLEDIR "/p0033.mps","");
-  assert(numMpsReadErrors==0);
+  if( numMpsReadErrors != 0 )
+  {
+     printf("%d errors reading MPS file\n", numMpsReadErrors);
+     return numMpsReadErrors;
+  }
 #else
   fprintf(stderr, "Do not know where to find sample MPS files.\n");
   exit(1);

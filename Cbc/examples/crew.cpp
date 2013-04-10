@@ -3,22 +3,17 @@
 // Corporation and others.  All Rights Reserved.
 // This code is licensed under the terms of the Eclipse Public License (EPL).
 
-#if defined(_MSC_VER)
-// Turn off compiler warning about long names
-#  pragma warning(disable:4786)
-#endif
-
 #include <cassert>
 #include <iomanip>
 
-
+#include "CoinPragma.hpp"
 // For Branch and bound
 #include "OsiClpSolverInterface.hpp"
 #include "CbcModel.hpp"
 #include "CbcBranchActual.hpp"
 #include "CbcCompareUser.hpp"
 
-#include  "CoinTime.hpp"
+#include "CoinTime.hpp"
 
 /************************************************************************
 
@@ -48,7 +43,11 @@ int main (int argc, const char *argv[])
 #endif
   if (argc>=2) mpsFileName = argv[1];
   int numMpsReadErrors = solver1.readMps(mpsFileName.c_str(),"");
-  assert(numMpsReadErrors==0);
+  if( numMpsReadErrors != 0 )
+  {
+     printf("%d errors reading MPS file\n", numMpsReadErrors);
+     return numMpsReadErrors;
+  }
   double time1 = CoinCpuTime();
 
   solver1.initialSolve();
@@ -59,8 +58,7 @@ int main (int argc, const char *argv[])
   CbcModel model(*solver2);
   // Point to solver
   OsiSolverInterface * solver3 = model.solver();
-  OsiClpSolverInterface * osiclp = dynamic_cast< OsiClpSolverInterface*> (solver3);
-  assert (osiclp);
+  assert (dynamic_cast< OsiClpSolverInterface*> (solver3));
 
   // Definition of node choice
   CbcCompareUser compare;

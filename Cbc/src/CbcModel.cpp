@@ -6260,8 +6260,31 @@ CbcModel::resetModel()
     statistics_ = NULL;
     maximumDepthActual_ = 0;
     numberDJFixed_ = 0.0;
-    delete probingInfo_;
-    probingInfo_ = NULL;
+    if (probingInfo_) {
+      delete probingInfo_;
+      probingInfo_ = NULL;
+      if (!generator_)
+	numberCutGenerators_=0;
+      // also get rid of cut generator
+      int n=0;
+      for (int i = 0; i < numberCutGenerators_; i++) {
+	CglImplication * cutGen;
+	cutGen = dynamic_cast<CglImplication *>(generator_[i]->generator());
+	if (!cutGen) {
+	  generator_[n]=generator_[i];
+	  virginGenerator_[n]=virginGenerator_[i];
+	  n++;
+	} else {
+	  cutGen->setProbingInfo(NULL);
+	  delete generator_[i];
+	  cutGen = dynamic_cast<CglImplication *>(virginGenerator_[i]->generator());
+	  assert (cutGen);
+	  cutGen->setProbingInfo(NULL);
+	  delete virginGenerator_[i];
+	}
+      }
+      numberCutGenerators_=n;
+    }
     maximumStatistics_ = 0;
     delete [] analyzeResults_;
     analyzeResults_ = NULL;
@@ -16305,6 +16328,12 @@ CbcModel::goToDantzig(int numberNodes, ClpDualRowPivot *& savePivotMethod)
             }
         }
     }
+}
+#else
+CbcModel::goToDantzig(int numberNodes, ClpDualRowPivot *& savePivotMethod)
+{
+   printf("Need Clp to go to Dantzig\n");
+   abort();
 }
 #endif
 // Below this is deprecated or at least fairly deprecated

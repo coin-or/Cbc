@@ -42,7 +42,7 @@
 			/>
 			<Tool
 				Name="VCMIDLTool"
-				TypeLibraryName=".\Debug/cbcSolve.tlb"
+				TypeLibraryName=".\Debug\cbcSolve.tlb"
 				HeaderFileName=""
 			/>
 			<Tool
@@ -128,7 +128,7 @@
 			/>
 			<Tool
 				Name="VCMIDLTool"
-				TypeLibraryName=".\Release/cbcSolve.tlb"
+				TypeLibraryName=".\Release\cbcSolve.tlb"
 				HeaderFileName=""
 			/>
 			<Tool
@@ -215,7 +215,7 @@
 			<Tool
 				Name="VCMIDLTool"
 				TargetEnvironment="3"
-				TypeLibraryName=".\Debug/cbcSolve.tlb"
+				TypeLibraryName=".\Debug\cbcSolve.tlb"
 				HeaderFileName=""
 			/>
 			<Tool
@@ -302,7 +302,7 @@
 			<Tool
 				Name="VCMIDLTool"
 				TargetEnvironment="3"
-				TypeLibraryName=".\Release/cbcSolve.tlb"
+				TypeLibraryName=".\Release\cbcSolve.tlb"
 				HeaderFileName=""
 			/>
 			<Tool
@@ -428,3 +428,4 @@
 	<Globals>
 	</Globals>
 </VisualStudioProject>
+

@@ -6263,6 +6263,8 @@ CbcModel::resetModel()
     if (probingInfo_) {
       delete probingInfo_;
       probingInfo_ = NULL;
+      if (!generator_)
+	numberCutGenerators_=0;
       // also get rid of cut generator
       int n=0;
       for (int i = 0; i < numberCutGenerators_; i++) {

@@ -457,7 +457,7 @@ CbcLink::feasibleRegion()
 
 // Creates a branching object
 CbcBranchingObject * 
-CbcLink::createBranch(int way) 
+CbcLink::createCbcBranch(OsiSolverInterface * /*solver*/, const OsiBranchingInformation * /*info*/, int way) 
 {
   int j;
   const double * solution = model_->testSolution();

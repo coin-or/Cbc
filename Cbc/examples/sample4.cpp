@@ -25,13 +25,13 @@
 
 /************************************************************************
 
-This main program reads in an SOSr model (ltw) from an mps file.
+This main program reads in an SOS model (rgn) from an mps file.
 
 It then solves it three ways :-
 
 a) As normal
 b) SOS 1
-c) SOS 2(so answer will be different)
+c) SOS 2 (so answer will be different)
 
 ************************************************************************/
 
@@ -45,9 +45,18 @@ int main (int argc, const char *argv[])
   CbcModel model(solver1);
   model.solver()->setHintParam(OsiDoReducePrint,true,OsiHintTry);
 
-  // Read in ltw.mps
-  // and assert that it is a clean model
-  int numMpsReadErrors = model.solver()->readMps("./ltw.mps","");
+  // Read in rgn.mps
+  std::string mpsFileName;
+#if defined(MIPLIB3DIR)
+  mpsFileName = MIPLIB3DIR "/rgn";
+#else
+  if (argc < 2) {
+    fprintf(stderr, "Do not know where to find miplib3 MPS files.\n");
+    exit(1);
+  }
+#endif
+  if (argc>=2) mpsFileName = argv[1];
+  int numMpsReadErrors = model.solver()->readMps(mpsFileName.c_str(),"");
   if( numMpsReadErrors != 0 )
   {
      printf("%d errors reading MPS file\n", numMpsReadErrors);
@@ -78,12 +87,16 @@ int main (int argc, const char *argv[])
     }
   }
 
-  
+  if (numberColumns!=180 || numberIntegers!=100) {
+    printf("Incorrect model for example\n");
+    exit(1);
+  }
+
   double time1 = CoinCpuTime() ;
 
   model.branchAndBound();
 
-  std::cout<<"ltw.mps"<<" took "<<CoinCpuTime()-time1<<" seconds, "
+  std::cout<<"rgn.mps"<<" took "<<CoinCpuTime()-time1<<" seconds, "
 	   <<model.getNodeCount()<<" nodes with objective "
 	   <<model.getObjValue()
 	   <<(!model.status() ? " Finished" : " Not finished")
@@ -107,18 +120,40 @@ int main (int argc, const char *argv[])
   // Restore model
   model = model2;
 
+  // Convert slacks to variables
+  CoinBigIndex start[5]={0,1,2,3,4};
+  int row[4]={0,1,2,3};
+  double element[4]={1.0,1.0,1.0,1.0};
+  double up[4]={1.0,1.0,1.0,1.0};
+  model.solver()->addCols(4,start,row,element,NULL,up,NULL);
   // Now use SOS1
-  int numberSets=8;
-  int which[28]={20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,
-		 39,40,41,42,43,44,45,46,47};
-  double weights[]={1.0,2.0,3.0,4.0,5.0};
-  int starts[]={0,2,4,6,8,13,18,23,28};
-  CbcObject ** objects = new CbcObject * [numberSets];
+  int numberSets=4;
+  int which[104];
+  double weights[104];
+  int starts[5];
+  // load
+  int n=0;
+  starts[0]=0;
+  for (int iSet=0;iSet<4;iSet++) {
+    for (int i=0;i<25;i++) {
+      weights[n]=i+1.0;
+      which[n]=iSet*25+i;
+      n++;
+    }
+    // slack - make sure first branch is on slack
+    weights[n]=1000.0;
+    which[n]=180+iSet;
+    n++;
+    starts[iSet+1]=n;
+  }
   for (i=0;i<numberIntegers;i++) {
     int iColumn = integerVariable[i];
     // Stop being integer
     model.solver()->setContinuous(iColumn);
   }
+  // save model in this state
+  CbcModel modelSOS = model;
+  CbcObject ** objects = new CbcObject * [numberSets];
   for (i=0;i<numberSets;i++) {
     objects[i]= new CbcSOS(&model,starts[i+1]-starts[i],which+starts[i],
 			   weights,i);
@@ -132,7 +167,7 @@ int main (int argc, const char *argv[])
 
   model.branchAndBound();
 
-  std::cout<<"ltw.mps"<<" took "<<CoinCpuTime()-time1<<" seconds, "
+  std::cout<<"rgn.mps"<<" took "<<CoinCpuTime()-time1<<" seconds, "
 	   <<model.getNodeCount()<<" nodes with objective "
 	   <<model.getObjValue()
 	   <<(!model.status() ? " Finished" : " Not finished")
@@ -154,16 +189,11 @@ int main (int argc, const char *argv[])
   std::cout<<std::resetiosflags(std::ios::fixed|std::ios::showpoint|std::ios::scientific);
 
 
-  // Restore model
-  model = model2;
+  // Restore SOS model
+  model = modelSOS;
 
 // Now use SOS2
   objects = new CbcObject * [numberSets];
-  for (i=0;i<numberIntegers;i++) {
-    int iColumn = integerVariable[i];
-    // Stop being integer
-    model.solver()->setContinuous(iColumn);
-  }
   for (i=0;i<numberSets;i++) {
     objects[i]= new CbcSOS(&model,starts[i+1]-starts[i],which+starts[i],
 			   weights,i,2);
@@ -177,7 +207,7 @@ int main (int argc, const char *argv[])
 
   model.branchAndBound();
 
-  std::cout<<"ltw.mps"<<" took "<<CoinCpuTime()-time1<<" seconds, "
+  std::cout<<"rgn.mps"<<" took "<<CoinCpuTime()-time1<<" seconds, "
 	   <<model.getNodeCount()<<" nodes with objective "
 	   <<model.getObjValue()
 	   <<(!model.status() ? " Finished" : " Not finished")

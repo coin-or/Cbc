@@ -221,7 +221,8 @@ CbcSOS::infeasibility(const OsiBranchingInformation * info,
                 value = upper[iColumn];
                 // Could change to #ifdef CBC_DEBUG
 #ifndef NDEBUG
-                if (model_->messageHandler()->logLevel() > 2)
+                if (model_->messageHandler()->logLevel() > 2 &&
+		    value > upper[iColumn] + integerTolerance)
                     printf("** Variable %d (%d) has value %g and upper bound of %g\n",
                            iColumn, j, value, upper[iColumn]);
 #endif

@@ -8893,7 +8893,7 @@ CbcModel::solveWithCuts (OsiCuts &cuts, int numberTries, CbcNode *node)
                     howOften = -99; // switch off
             }
 	    if (generator_[i]->maximumTries()!=-1)
-	        howOften = -99; // switch off
+	        howOften = CoinMin(howOften,-99); // switch off
             /*
               Below -99, this generator is switched off. There's no need to consider
               further. Then again, there was no point in persisting this far!

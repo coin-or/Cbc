@@ -6961,10 +6961,15 @@ int CbcMain1 (int argc, const char *argv[],
                         // See if gmpl file
                         int gmpl = 0;
                         std::string gmplData;
-                        if (field == "-") {
+                        if (field == "-" || field == "stdin") {
                             // stdin
                             canOpen = true;
                             fileName = "-";
+                        } else if (field == "stdin_lp") {
+                            // stdin
+                            canOpen = true;
+                            fileName = "-";
+			    gmpl = -1; //.lp format
                         } else {
                             // See if .lp
                             {

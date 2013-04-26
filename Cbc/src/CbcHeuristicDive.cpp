@@ -840,7 +840,7 @@ CbcHeuristicDive::solution(double & solutionValue, int & numberNodes,
 	returnCode = 1;
       } else {
 	// Can easily happen
-	printf("Debug CbcHeuristicDive giving bad solution\n");
+	//printf("Debug CbcHeuristicDive giving bad solution\n");
       }
       delete [] rowActivity;
     }

@@ -1171,6 +1171,11 @@ Optional Packages:
   --with-cbc-generic-solver
                           specify default solver for cbc-generic in lower case
                           letters (if not given, clp is assumed)
+  --with-pthreadsw32-lib  specify the name of the pthreads win32 library (for
+                          cl/icl builds only)
+  --with-pthreadsw32-incdir
+                          specify the path of the pthreads win32 header file
+                          (for cl/icl builds only)
   --with-osicbc-default-solver
                           specify underlying solver for OsiCbc (default clp)
   --with-dot              use dot (from graphviz) when creating documentation
@@ -5991,7 +5996,7 @@ ia64-*-hpux*)
   ;;
 *-*-irix6*)
   # Find out which ABI we are using.
-  echo '#line 5994 "configure"' > conftest.$ac_ext
+  echo '#line 5999 "configure"' > conftest.$ac_ext
   if { (eval echo "$as_me:$LINENO: \"$ac_compile\"") >&5
   (eval $ac_compile) 2>&5
   ac_status=$?
@@ -7125,7 +7130,7 @@ fi
 
 
 # Provide some information about the compiler.
-echo "$as_me:7128:" \
+echo "$as_me:7133:" \
      "checking for Fortran 77 compiler version" >&5
 ac_compiler=`set X $ac_compile; echo $2`
 { (eval echo "$as_me:$LINENO: \"$ac_compiler --version </dev/null >&5\"") >&5
@@ -8192,11 +8197,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:8195: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:8200: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:8199: \$? = $ac_status" >&5
+   echo "$as_me:8204: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -8460,11 +8465,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:8463: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:8468: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:8467: \$? = $ac_status" >&5
+   echo "$as_me:8472: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -8564,11 +8569,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:8567: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:8572: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:8571: \$? = $ac_status" >&5
+   echo "$as_me:8576: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -10909,7 +10914,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<EOF
-#line 10912 "configure"
+#line 10917 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -11009,7 +11014,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<EOF
-#line 11012 "configure"
+#line 11017 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -13353,11 +13358,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:13356: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:13361: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:13360: \$? = $ac_status" >&5
+   echo "$as_me:13365: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -13457,11 +13462,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:13460: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:13465: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:13464: \$? = $ac_status" >&5
+   echo "$as_me:13469: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -15027,11 +15032,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:15030: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:15035: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:15034: \$? = $ac_status" >&5
+   echo "$as_me:15039: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -15131,11 +15136,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:15134: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:15139: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:15138: \$? = $ac_status" >&5
+   echo "$as_me:15143: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -17338,11 +17343,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:17341: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:17346: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:17345: \$? = $ac_status" >&5
+   echo "$as_me:17350: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -17606,11 +17611,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:17609: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:17614: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:17613: \$? = $ac_status" >&5
+   echo "$as_me:17618: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -17710,11 +17715,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:17713: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:17718: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:17717: \$? = $ac_status" >&5
+   echo "$as_me:17722: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -29821,7 +29826,32 @@ cat >>confdefs.h <<\_ACEOF
 #define CBC_THREAD 1
 _ACEOF
 
-  echo "$as_me:$LINENO: checking for clock_gettime in -lrt" >&5
+  if test $coin_cxx_is_cl = true ;
+  then
+    # TODO we should check whether the library works and pthread.h is indeed there
+
+# Check whether --with-pthreadsw32-lib or --without-pthreadsw32-lib was given.
+if test "${with_pthreadsw32_lib+set}" = set; then
+  withval="$with_pthreadsw32_lib"
+  CBCLIB_LIBS="$withval $CBCLIB_LIBS"
+                 CBCLIB_PCLIBS="$withval $CBCLIB_PCLIBS"
+else
+  { echo "$as_me:$LINENO: WARNING: --enable-cbc-parallel selected, but --with-pthreadsw32-lib not given" >&5
+echo "$as_me: WARNING: --enable-cbc-parallel selected, but --with-pthreadsw32-lib not given" >&2;}
+                 CBCLIB_LIBS="pthreadVCE2.lib $CBCLIB_LIBS"
+fi;
+
+
+# Check whether --with-pthreadsw32-incdir or --without-pthreadsw32-incdir was given.
+if test "${with_pthreadsw32_incdir+set}" = set; then
+  withval="$with_pthreadsw32_incdir"
+  CXXFLAGS="$CXXFLAGS -I$withval"
+else
+  { echo "$as_me:$LINENO: WARNING: --enable-cbc-parallel selected, but --with-pthreadsw32-incdir not given" >&5
+echo "$as_me: WARNING: --enable-cbc-parallel selected, but --with-pthreadsw32-incdir not given" >&2;}
+fi;
+  else
+    echo "$as_me:$LINENO: checking for clock_gettime in -lrt" >&5
 echo $ECHO_N "checking for clock_gettime in -lrt... $ECHO_C" >&6
 if test "${ac_cv_lib_rt_clock_gettime+set}" = set; then
   echo $ECHO_N "(cached) $ECHO_C" >&6
@@ -29887,7 +29917,7 @@ echo "$as_me:$LINENO: result: $ac_cv_lib_rt_clock_gettime" >&5
 echo "${ECHO_T}$ac_cv_lib_rt_clock_gettime" >&6
 if test $ac_cv_lib_rt_clock_gettime = yes; then
   CBCLIB_LIBS="-lrt $CBCLIB_LIBS"
-                CBCLIB_PCLIBS="-lrt $CBCLIB_PCLIBS"
+                  CBCLIB_PCLIBS="-lrt $CBCLIB_PCLIBS"
 
 cat >>confdefs.h <<\_ACEOF
 #define HAVE_CLOCK_GETTIME 1
@@ -29899,7 +29929,7 @@ else
 echo "$as_me: WARNING: --enable-cbc-parallel selected, but -lrt unavailable; using gettimeofday instead of clock_gettime" >&2;}
 fi
 
-  echo "$as_me:$LINENO: checking for pthread_create in -lpthread" >&5
+    echo "$as_me:$LINENO: checking for pthread_create in -lpthread" >&5
 echo $ECHO_N "checking for pthread_create in -lpthread... $ECHO_C" >&6
 if test "${ac_cv_lib_pthread_pthread_create+set}" = set; then
   echo $ECHO_N "(cached) $ECHO_C" >&6
@@ -29965,7 +29995,7 @@ echo "$as_me:$LINENO: result: $ac_cv_lib_pthread_pthread_create" >&5
 echo "${ECHO_T}$ac_cv_lib_pthread_pthread_create" >&6
 if test $ac_cv_lib_pthread_pthread_create = yes; then
   CBCLIB_LIBS="-lpthread $CBCLIB_LIBS"
-                CBCLIB_PCLIBS="-lpthread $CBCLIB_PCLIBS"
+                  CBCLIB_PCLIBS="-lpthread $CBCLIB_PCLIBS"
 
 else
   { { echo "$as_me:$LINENO: error: --enable-cbc-parallel selected, but -lpthreads unavailable" >&5
@@ -29973,6 +30003,9 @@ echo "$as_me: error: --enable-cbc-parallel selected, but -lpthreads unavailable"
    { (exit 1); exit 1; }; }
 fi
 
+  fi
+  { echo "$as_me:$LINENO: Cbc multithreading enabled" >&5
+echo "$as_me: Cbc multithreading enabled" >&6;};
 fi
 
 ##############################################################################

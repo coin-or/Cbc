@@ -1060,12 +1060,10 @@ CbcModel::analyzeObjective ()
             value *= scaleFactor;
             //trueIncrement=CoinMax(cutoff,value);;
             if (value*0.999 > cutoff) {
-	        if (messageHandler()->logLevel() > 2){
-		    messageHandler()->message(CBC_INTEGERINCREMENT,
-					      messages())
-		       << value << CoinMessageEol ;
-		}
-		setDblParam(CbcModel::CbcCutoffIncrement, CoinMax(value*0.999,value-1.0e-4)) ;
+                messageHandler()->message(CBC_INTEGERINCREMENT,
+                                          messages())
+                << value << CoinMessageEol ;
+                setDblParam(CbcModel::CbcCutoffIncrement, CoinMax(value*0.999,value-1.0e-4)) ;
             }
         }
     }
@@ -16522,12 +16520,9 @@ CbcModel::integerPresolveThisModel(OsiSolverInterface * originalSolver,
                     double value = increment;
                     value /= multiplier;
                     if (value*0.999 > dblParam_[CbcCutoffIncrement]) {
-		       if (messageHandler()->logLevel() > 2){
-			   messageHandler()->message(CBC_INTEGERINCREMENT, 
-						     messages())
-			      << value
-			      << CoinMessageEol;
-		        }
+                        messageHandler()->message(CBC_INTEGERINCREMENT, messages())
+                        << value
+                        << CoinMessageEol;
                         dblParam_[CbcCutoffIncrement] = value * 0.999;
                     }
                 }

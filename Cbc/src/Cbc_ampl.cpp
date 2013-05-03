@@ -155,7 +155,7 @@ static Option_Info Oinfo = {
     0,
     0,
     0,
-    20070606
+    20130502
 };
 // strdup used to avoid g++ compiler warning
 static SufDecl suftab[] = {
@@ -765,6 +765,7 @@ CoinModel::CoinModel( int nonLinear, const char * fileName, const void * info)
         cut_(NULL),
         moreInfo_(NULL),
         type_(-1),
+	noNames_(false),
         links_(0)
 {
     problemName_ = "";

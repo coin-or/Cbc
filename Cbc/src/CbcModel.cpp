@@ -3899,6 +3899,10 @@ void CbcModel::branchAndBound(int doStatistics)
             double objectiveValue = newNode->objectiveValue();
             setBestSolution(CBC_SOLUTION, objectiveValue,
                             solver_->getColSolution()) ;
+            if (eventHandler) {
+	      // we are stopping anyway so no need to test return code
+	      eventHandler->event(CbcEventHandler::solution);
+            }
             delete newNode ;
             newNode = NULL ;
         }

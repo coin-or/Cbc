@@ -152,7 +152,8 @@ CbcHeuristicDivePseudoCost::initializeData()
     }
     // get pseudo costs
     model_->fillPseudoCosts(downArray_, upArray_);
-    int diveOptions = when_ / 100;
+    // allow for -999 -> force to run
+    int diveOptions = (when_>0) ? when_ / 100 : 0;
     if (diveOptions) {
         // pseudo shadow prices
         int k = diveOptions % 100;

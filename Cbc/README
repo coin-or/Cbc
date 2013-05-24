@@ -25,6 +25,14 @@ http://projects.coin-or.org/Cbc
 WHAT'S NEW
 ==========
 
+Release 2.8.2:
+
+1. Fixed recognition of Glpk source in main configure.
+
+Release 2.8.1:
+
+   Ted, please fill this in!
+
 Release 2.8.0:
 
 1. Introduced new secondaryStatus 8 to indicate that solving stopped due to an iteration limit.

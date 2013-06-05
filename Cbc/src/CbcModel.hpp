@@ -2332,6 +2332,15 @@ public:
     /// Redo walkback arrays
     void redoWalkBack();
     //@}
+    
+    void setMIPStart( const std::vector< std::pair< std::string, double > > &mips ) {
+       this->mipStart_ = mips;
+    }
+
+    const std::vector< std::pair< std::string, double > > &getMIPStart() {
+       return this->mipStart_;
+    }
+
 
 //---------------------------------------------------------------------------
 
@@ -2407,7 +2416,11 @@ private:
         currentSolution_ or solver-->getColSolution()
     */
     mutable const double * testSolution_;
-    /** Warm start object produced by heuristic or strong branching
+    /** MIPstart values
+      values for integer variables which will be converted to a complete integer initial feasible solution
+    */
+    std::vector< std::pair< std::string, double > > mipStart_;
+     /** Warm start object produced by heuristic or strong branching
 
         If get a valid integer solution outside branch and bound then it can take
         a reasonable time to solve LP which produces clean solution.  If this object has

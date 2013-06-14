@@ -29,6 +29,8 @@ Release 2.8.2:
 
 1. Fixed recognition of Glpk source in main configure.
 
+2. Minor bugfixes in CoinUtils, Clp, and Cbc.
+
 Release 2.8.1:
 
    Ted, please fill this in!

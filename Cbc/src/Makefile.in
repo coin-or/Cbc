@@ -451,10 +451,10 @@ ac_ct_AR = @ac_ct_AR@
 ac_ct_CC = @ac_ct_CC@
 ac_ct_CXX = @ac_ct_CXX@
 ac_ct_F77 = @ac_ct_F77@
+ac_ct_PKG_CONFIG = @ac_ct_PKG_CONFIG@
 ac_ct_RANLIB = @ac_ct_RANLIB@
 ac_ct_STRIP = @ac_ct_STRIP@
 ac_cxx_preproc_warn_flag = @ac_cxx_preproc_warn_flag@
-ac_pt_PKG_CONFIG = @ac_pt_PKG_CONFIG@
 am__fastdepCC_FALSE = @am__fastdepCC_FALSE@
 am__fastdepCC_TRUE = @am__fastdepCC_TRUE@
 am__fastdepCXX_FALSE = @am__fastdepCXX_FALSE@
@@ -1221,6 +1221,8 @@ install-data-am: install-includecoinHEADERS
 
 install-exec-am: install-binPROGRAMS install-exec-local \
 	install-libLTLIBRARIES
+	@$(NORMAL_INSTALL)
+	$(MAKE) $(AM_MAKEFLAGS) install-exec-hook
 
 install-info: install-info-recursive
 
@@ -1258,10 +1260,10 @@ uninstall-info: uninstall-info-recursive
 	distclean-libtool distclean-recursive distclean-tags distdir \
 	dvi dvi-am html html-am info info-am install install-am \
 	install-binPROGRAMS install-data install-data-am install-exec \
-	install-exec-am install-exec-local install-includecoinHEADERS \
-	install-info install-info-am install-libLTLIBRARIES \
-	install-man install-strip installcheck installcheck-am \
-	installdirs installdirs-am maintainer-clean \
+	install-exec-am install-exec-hook install-exec-local \
+	install-includecoinHEADERS install-info install-info-am \
+	install-libLTLIBRARIES install-man install-strip installcheck \
+	installcheck-am installdirs installdirs-am maintainer-clean \
 	maintainer-clean-generic maintainer-clean-recursive \
 	mostlyclean mostlyclean-compile mostlyclean-generic \
 	mostlyclean-libtool mostlyclean-recursive pdf pdf-am ps ps-am \
@@ -1270,11 +1272,21 @@ uninstall-info: uninstall-info-recursive
 	uninstall-info-am uninstall-libLTLIBRARIES uninstall-local
 
 
+########################################################################
+#                     Installing manifest (MSVC++)                     #
+########################################################################
+
+install-exec-hook:
+	test -s cbc.exe.manifest && \
+	mt -manifest cbc.exe.manifest -outputresource:cbc.exe;\
+	cp cbc.exe $(bindir)/clp.exe
+
 #######################################################################
 # Create the Config.h file that has all public defines and install it #
 #######################################################################
 
 install-exec-local:
+	$(INSTALL_MANIFEST)
 	$(install_sh_DATA) config_cbc.h $(DESTDIR)$(includecoindir)/CbcConfig.h
 
 uninstall-local:

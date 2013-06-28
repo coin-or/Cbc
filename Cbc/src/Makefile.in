@@ -1196,6 +1196,7 @@ distclean-generic:
 maintainer-clean-generic:
 	@echo "This command is intended for maintainers to use"
 	@echo "it deletes files that may require special tools to rebuild."
+@COIN_CXX_IS_CL_FALSE@install-exec-hook:
 clean: clean-recursive
 
 clean-am: clean-binPROGRAMS clean-generic clean-libLTLIBRARIES \
@@ -1276,19 +1277,16 @@ uninstall-info: uninstall-info-recursive
 #                     Installing manifest (MSVC++)                     #
 ########################################################################
 
-install-exec-hook:
-	if COIN_CXX_IS_CL
-		test -s cbc.exe.manifest && \
-		mt -manifest cbc.exe.manifest -outputresource:cbc.exe;\
-		cp cbc.exe $(bindir)/clp.exe
-	endif
+@COIN_CXX_IS_CL_TRUE@install-exec-hook:
+@COIN_CXX_IS_CL_TRUE@	test -s cbc.exe.manifest && \
+@COIN_CXX_IS_CL_TRUE@	mt -manifest cbc.exe.manifest -outputresource:cbc.exe;\
+@COIN_CXX_IS_CL_TRUE@	cp cbc.exe $(bindir)/clp.exe
 
 #######################################################################
 # Create the Config.h file that has all public defines and install it #
 #######################################################################
 
 install-exec-local:
-	$(INSTALL_MANIFEST)
 	$(install_sh_DATA) config_cbc.h $(DESTDIR)$(includecoindir)/CbcConfig.h
 
 uninstall-local:

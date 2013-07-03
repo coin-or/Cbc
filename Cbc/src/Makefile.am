@@ -259,6 +259,17 @@ includecoin_HEADERS = \
 	ClpConstraintAmpl.hpp \
 	ClpAmplObjective.hpp 
 
+########################################################################
+#                     Installing manifest (MSVC++)                     #
+########################################################################
+
+if COIN_CXX_IS_CL
+install-exec-hook:
+	test -s cbc.exe.manifest && \
+	mt -manifest cbc.exe.manifest -outputresource:cbc.exe;\
+	cp cbc.exe $(bindir)/clp.exe
+endif
+
 #######################################################################
 # Create the Config.h file that has all public defines and install it #
 #######################################################################

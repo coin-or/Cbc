@@ -4925,7 +4925,9 @@ int CbcMain1 (int argc, const char *argv[],
                                 }
 #endif
                                 const int * originalColumns = preProcess ? process.originalColumns() : NULL;
-                                if (mipStart.size())
+                                if (model.getMIPStart().size())
+                                   mipStart = model.getMIPStart();
+                                 if (mipStart.size())
                                 {
                                    std::vector< std::string > colNames;
                                    if (preProcess)

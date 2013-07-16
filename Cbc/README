@@ -25,6 +25,10 @@ http://projects.coin-or.org/Cbc
 WHAT'S NEW
 ==========
 
+Release 2.8.3:
+
+1. Fix for handling SOS.
+
 Release 2.8.2:
 
 1. Fixed recognition of Glpk source in main configure.

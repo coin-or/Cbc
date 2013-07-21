@@ -512,6 +512,15 @@ public:
 
     void findIntegers(bool startAgain, int type = 0);
 
+#ifdef SWITCH_VARIABLES
+    /// Convert Dynamic to Switching 
+    int findSwitching();
+    /// Fix associated variables
+    int fixAssociated(OsiSolverInterface * solver,int cleanBasis);
+    /// Debug associated variables
+    int checkAssociated(const OsiSolverInterface * solver,
+			const double * solution, int printLevel);
+#endif
     //@}
 
     //---------------------------------------------------------------------------
@@ -756,6 +765,11 @@ public:
         (1 is first pass) */
     inline int getCurrentPassNumber() const {
         return currentPassNumber_;
+    }
+    /** Set current cut pass number in this round of cuts.
+        (1 is first pass) */
+    inline void setCurrentPassNumber(int value) {
+        currentPassNumber_ = value;
     }
 
     /** Set the maximum number of candidates to be evaluated for strong
@@ -1769,6 +1783,7 @@ public:
         20 bit (1048576) - waiting for sub model to return
 	22 bit (4194304) - do not initialize random seed in solver (user has)
 	23 bit (8388608) - leave solver_ with cuts
+	24 bit (16777216) - just get feasible if no cutoff
     */
     inline void setSpecialOptions(int value) {
         specialOptions_ = value;
@@ -1835,6 +1850,21 @@ public:
     /// Get more special options
     inline int moreSpecialOptions() const {
         return moreSpecialOptions_;
+    }
+    /** Set more more special options
+	0 bit (1) - find switching variables
+	1 bit (2) - using fake objective until solution
+	2 bit (4) - switching variables exist
+	3 bit (8) - skip most of setBestSolution checks
+	4 bit (16) - very lightweight preprocessing in smallB&B
+	5 bit (32) - event handler needs to be cloned when parallel
+    */
+    inline void setMoreSpecialOptions2(int value) {
+        moreSpecialOptions2_ = value;
+    }
+    /// Get more special options2
+    inline int moreSpecialOptions2() const {
+        return moreSpecialOptions2_;
     }
     /// Set cutoff as constraint
     inline void setCutoffAsConstraint(bool yesNo) {
@@ -2568,6 +2598,10 @@ private:
         17 bit (131072) - Perturbation switched off
         18 bit (262144) - donor CbcModel
         19 bit (524288) - recipient CbcModel
+        20 bit (1048576) - waiting for sub model to return
+	22 bit (4194304) - do not initialize random seed in solver (user has)
+	23 bit (8388608) - leave solver_ with cuts
+	24 bit (16777216) - just get feasible if no cutoff
     */
     int specialOptions_;
     /** More special options
@@ -2585,6 +2619,15 @@ private:
         21 bit (2097152) - Reduce sum of infeasibilities after cuts
     */
     int moreSpecialOptions_;
+    /** More more special options
+	0 bit (1) - find switching variables
+	1 bit (2) - using fake objective until solution
+	2 bit (4) - switching variables exist
+	3 bit (8) - skip most of setBestSolution checks
+	4 bit (16) - very lightweight preprocessing in smallB&B
+	5 bit (32) - event handler needs to be cloned when parallel
+    */
+    int moreSpecialOptions2_;
     /// User node comparison function
     CbcCompareBase * nodeCompare_;
     /// User feasibility function (see CbcFeasibleBase.hpp)

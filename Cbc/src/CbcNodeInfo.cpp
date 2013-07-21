@@ -506,5 +506,14 @@ void
 CbcNodeInfo::deactivate(int mode)
 {
     active_ &= (~mode);
+    if (mode==7) {
+      for (int i = 0; i < numberCuts_; i++) {
+	delete cuts_[i];
+	cuts_[i] = NULL;
+      }
+      delete [] cuts_;
+      cuts_=NULL;
+      numberCuts_=0;
+    }
 }
 

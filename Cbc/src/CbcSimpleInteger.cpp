@@ -21,6 +21,7 @@
 #include "CbcModel.hpp"
 #include "CbcMessage.hpp"
 #include "CbcSimpleInteger.hpp"
+#include "CbcSimpleIntegerDynamicPseudoCost.hpp"
 #include "CbcBranchActual.hpp"
 #include "CoinSort.hpp"
 #include "CoinError.hpp"
@@ -144,6 +145,11 @@ CbcSimpleInteger::feasibleRegion(OsiSolverInterface * solver, const OsiBranching
     newValue = floor(newValue + 0.5);
     solver->setColLower(columnNumber_, newValue);
     solver->setColUpper(columnNumber_, newValue);
+#ifdef SWITCH_VARIABLES
+    const CbcSwitchingBinary * sObject = dynamic_cast<const CbcSwitchingBinary *> (this);
+    if (sObject) 
+      sObject->setAssociatedBounds(solver,1);
+#endif
     return fabs(value - newValue);
 }
 
@@ -308,6 +314,11 @@ CbcIntegerBranchingObject::fillPart (int variable,
     down_[1] = floor(value_);
     up_[0] = ceil(value_);
     up_[1] = model_->getColUpper()[iColumn];
+    // fix extreme cases
+    if (up_[0]==1.0)
+      down_[1]=0.0;
+    if (down_[1]==0.0)
+      up_[0]=1.0;
 }
 // Useful constructor for fixing
 CbcIntegerBranchingObject::CbcIntegerBranchingObject (CbcModel * model,
@@ -554,6 +565,15 @@ CbcIntegerBranchingObject::branch()
 #ifdef CBC_PRINT2
     if (nlb < olb + 1.0e-8 && nub > oub - 1.0e-8 && false)
         printf("bad null change for column %d - bounds %g,%g\n", iColumn, olb, oub);
+#endif
+#ifdef SWITCH_VARIABLES
+    if (model_->logLevel()>2)
+      printf("for column %d - old bounds %g,%g - new %g,%g\n", iColumn, olb, oub,
+	     nlb,nub);
+    CbcSwitchingBinary * sObject = dynamic_cast<CbcSwitchingBinary *> (originalCbcObject_);
+    if (sObject) 
+      sObject->setAssociatedBounds();
+    //(dynamic_cast<CbcSimpleInteger *>(originalCbcObject_))->setAssociatedBounds();
 #endif
     return 0.0;
 }

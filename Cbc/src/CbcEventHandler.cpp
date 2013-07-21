@@ -101,3 +101,26 @@ CbcEventHandler::CbcAction CbcEventHandler::event(CbcEvent event)
     }
 }
 
+//-------------------------------------------------------------------
+// event() -- return the action for an event.
+//-------------------------------------------------------------------
+
+CbcEventHandler::CbcAction CbcEventHandler::event(CbcEvent event,
+						  void * /*data*/)
+/*
+  If an event/action map exists and contains an entry for the event, return it.
+  Otherwise return the default action.
+*/
+{
+    if (eaMap_ != 0) {
+        eaMapPair::iterator entry = eaMap_->find(event) ;
+        if (entry != eaMap_->end()) {
+            return (entry->second) ;
+        } else {
+            return (dfltAction_) ;
+        }
+    } else {
+        return (dfltAction_) ;
+    }
+}
+

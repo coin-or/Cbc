@@ -23,6 +23,7 @@
 #include "CbcMessage.hpp"
 #include "CbcHeuristic.hpp"
 #include "CbcHeuristicFPump.hpp"
+#include "CbcEventHandler.hpp"
 #include "CbcStrategy.hpp"
 #include "CglPreProcess.hpp"
 #include "CglGomory.hpp"
@@ -147,7 +148,8 @@ CbcHeuristic::CbcHeuristic(CbcModel & model) :
         numberSolutionsFound_(0),
         numberNodesDone_(0),
         inputSolution_(NULL)
-{}
+{
+}
 
 void
 CbcHeuristic::gutsOfCopy(const CbcHeuristic & rhs)
@@ -406,6 +408,7 @@ CbcHeuristic::shouldHeurRun_randomChoice()
                 if (depth >= 3) {
                     if ((numCouldRun_ % howOften_) == 0 &&
                             numberSolutionsFound_*howOften_ < numCouldRun_) {
+		      //#define COIN_DEVELOP
 #ifdef COIN_DEVELOP
                         int old = howOften_;
 #endif
@@ -663,13 +666,56 @@ static double sizeRatio(int numberRowsNow, int numberColumnsNow,
         return 2.0*(valueNow / valueStart);
 }
 
-
+//static int saveModel=0;
 // Do mini branch and bound (return 1 if solution)
 int
 CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver, int numberNodes,
                                   double * newSolution, double & newSolutionValue,
                                   double cutoff, std::string name) const
 {
+  CbcEventHandler *eventHandler = model_->getEventHandler() ;
+  // Use this fraction
+  double fractionSmall = fractionSmall_;
+  int maximumSolutions =  model_->getMaximumSolutions();
+  int iterationMultiplier = 100;
+  if (eventHandler) {
+    typedef struct {
+      double fractionSmall;
+      double spareDouble[3];
+      OsiSolverInterface * solver;
+      void * sparePointer[2];
+      int numberNodes;
+      int maximumSolutions;
+      int iterationMultiplier;
+      int howOften;
+      int spareInt[3];
+    } SmallMod;
+    SmallMod temp;
+    temp.solver=solver;
+    temp.fractionSmall=fractionSmall;
+    temp.numberNodes=numberNodes;
+    temp.iterationMultiplier=iterationMultiplier;
+    temp.howOften=howOften_;
+    temp.maximumSolutions=maximumSolutions;
+    CbcEventHandler::CbcAction status = 
+      eventHandler->event(CbcEventHandler::smallBranchAndBound,
+			  &temp);
+    if (status==CbcEventHandler::killSolution)
+      return -1;
+    if (status==CbcEventHandler::takeAction) {
+      fractionSmall=temp.fractionSmall;
+      numberNodes=temp.numberNodes;
+      iterationMultiplier=temp.iterationMultiplier;
+      howOften_=temp.howOften;
+      maximumSolutions=temp.maximumSolutions;
+    }
+  }
+#if 0 
+  if (saveModel || model_->getMaximumSolutions()==100) {
+    printf("writing model\n");
+    solver->writeMpsNative("before.mps", NULL, NULL, 2, 1);
+  }
+#endif
     // size before
     int shiftRows = 0;
     if (numberNodes < 0)
@@ -680,8 +726,6 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver, int numberNodes,
     printf("%s has %d rows, %d columns\n",
            name.c_str(), solver->getNumRows(), solver->getNumCols());
 #endif
-    // Use this fraction
-    double fractionSmall = fractionSmall_;
     double before = 2 * numberRowsStart + numberColumnsStart;
     if (before > 40000.0) {
         // fairly large - be more conservative
@@ -728,7 +772,7 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver, int numberNodes,
     int saveModelOptions = model_->specialOptions();
     //assert ((saveModelOptions&2048) == 0);
     model_->setSpecialOptions(saveModelOptions | 2048);
-    {
+    if (fractionSmall<1.0) {
         int saveLogLevel = solver->messageHandler()->logLevel();
         if (saveLogLevel == 1) 
             solver->messageHandler()->setLogLevel(0);
@@ -863,10 +907,17 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver, int numberNodes,
         CglPreProcess process;
 	OsiSolverInterface * solver2 = NULL;
 	if ((model_->moreSpecialOptions()&65536)!=0)
-	  process.setOptions(2+4+8); // no cuts
+	  process.setOptions(2+4+8+16); // no cuts
+	else
+	  process.setOptions(16); // no complicated dupcol stuff
 	/* Do not try and produce equality cliques and
 	   do up to 2 passes (normally) 5 if restart */
 	int numberPasses = 2;
+	if ((model_->moreSpecialOptions2()&16)!=0) {
+	  // quick
+	  process.setOptions(2+4+8+16); // no cuts
+	  numberPasses = 1;
+	}
 	if (numberNodes < 0) {
 	  numberPasses = 5;
 	  // Say some rows cuts
@@ -955,6 +1006,7 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver, int numberNodes,
                     model.solver()->setHintParam(OsiDoReducePrint, true, OsiHintTry);
 		    if ((saveModelOptions&2048) == 0)
 		      model.setMoreSpecialOptions(model_->moreSpecialOptions());
+		      model.setMoreSpecialOptions2(model_->moreSpecialOptions2());
 		    // off conflict analysis
 		    model.setMoreSpecialOptions(model.moreSpecialOptions()&~4194304);
 		    
@@ -1035,7 +1087,7 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver, int numberNodes,
                 }
 #endif
                 model.setParentModel(*model_);
-		model.setMaximumSolutions(model_->getMaximumSolutions()); 
+		model.setMaximumSolutions(maximumSolutions); 
 		model.setOriginalColumns(process.originalColumns());
                 model.setSearchStrategy(-1);
                 // If no feasibility pump then insert a lightweight one
@@ -1207,7 +1259,7 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver, int numberNodes,
                     if (numberNodes >= 0) {
                         setCutAndHeuristicOptions(model);
                         // not too many iterations
-                        model.setMaximumNumberIterations(100*(numberNodes + 10));
+                        model.setMaximumNumberIterations(iterationMultiplier*(numberNodes + 10));
                         // Not fast stuff
                         model.setFastNodeDepth(-1);
                     } else if (model.fastNodeDepth() >= 1000000) {
@@ -1227,6 +1279,14 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver, int numberNodes,
 		    // say model_ is sitting there
 		    int saveOptions = model_->specialOptions();
 		    model_->setSpecialOptions(saveOptions|1048576);
+		    // and switch off debugger
+		    model.setSpecialOptions(model.specialOptions()&(~1));
+#if 0 //def COIN_HAS_CLP
+		    OsiClpSolverInterface * clpSolver
+		      = dynamic_cast<OsiClpSolverInterface *> (model.solver());
+		    if (clpSolver)
+		      clpSolver->zapDebugger();
+#endif
                     model.branchAndBound();
 		    model_->setHeuristicModel(NULL);
 		    model_->setSpecialOptions(saveOptions);
@@ -1332,6 +1392,7 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver, int numberNodes,
         }
     } else {
         returnCode = 2; // infeasible finished
+	printf("Infeasible on initial solve\n");
     }
     model_->setSpecialOptions(saveModelOptions);
     model_->setLogLevel(logLevel);
@@ -1807,6 +1868,7 @@ CbcRounding::solution(double & solutionValue,
     double integerTolerance = model_->getDblParam(CbcModel::CbcIntegerTolerance);
     double primalTolerance;
     solver->getDblParam(OsiPrimalTolerance, primalTolerance);
+    double useTolerance = primalTolerance;
 
     int numberRows = matrix_.getNumRows();
     assert (numberRows <= solver->getNumRows());
@@ -1865,6 +1927,7 @@ CbcRounding::solution(double & solutionValue,
     for (i = 0; i < numberIntegers; i++) {
         int iColumn = integerVariable[i];
         double value = newSolution[iColumn];
+	double thisTolerance = integerTolerance;
         if (fabs(floor(value + 0.5) - value) > integerTolerance) {
             double below = floor(value);
             double newValue = newSolution[iColumn];
@@ -1934,9 +1997,9 @@ CbcRounding::solution(double & solutionValue,
                             double distance = absInfeasibility / absElement;
                             double thisCost = -direction * objective[iColumn] * distance;
                             if (integerType[iColumn]) {
-                                distance = ceil(distance - primalTolerance);
-                                if (currentValue - distance >= lowerValue - primalTolerance) {
-                                    if (absInfeasibility - distance*absElement < -gap - primalTolerance)
+                                distance = ceil(distance - useTolerance);
+                                if (currentValue - distance >= lowerValue - useTolerance) {
+                                    if (absInfeasibility - distance*absElement < -gap - useTolerance)
                                         thisCost = 1.0e100; // no good
                                     else
                                         thisCost = -direction * objective[iColumn] * distance;
@@ -1960,8 +2023,8 @@ CbcRounding::solution(double & solutionValue,
                             double thisCost = direction * objective[iColumn] * distance;
                             if (integerType[iColumn]) {
                                 distance = ceil(distance - 1.0e-7);
-                                assert (currentValue - distance <= upperValue + primalTolerance);
-                                if (absInfeasibility - distance*absElement < -gap - primalTolerance)
+                                assert (currentValue - distance <= upperValue + useTolerance);
+                                if (absInfeasibility - distance*absElement < -gap - useTolerance)
                                     thisCost = 1.0e100; // no good
                                 else
                                     thisCost = direction * objective[iColumn] * distance;
@@ -2138,8 +2201,10 @@ CbcRounding::solution(double & solutionValue,
         }
         // and now all if improving
         double lastChange = penaltyChange ? 1.0 : 0.0;
-        while (lastChange > 1.0e-2) {
+	int numberPasses=0;
+        while (lastChange > 1.0e-2 && numberPasses < 1000) {
             lastChange = 0;
+	    numberPasses++;
             for (iColumn = 0; iColumn < numberColumns; iColumn++) {
                 bool isInteger = (integerType[iColumn] != 0);
                 double currentValue = newSolution[iColumn];
@@ -2354,8 +2419,8 @@ CbcRounding::solution(double & solutionValue,
                 while (move) {
                     bool good = true;
                     double newValue = newSolution[iColumn] + move;
-                    if (newValue < lower[iColumn] - primalTolerance ||
-                            newValue > upper[iColumn] + primalTolerance) {
+                    if (newValue < lower[iColumn] - useTolerance ||
+                            newValue > upper[iColumn] + useTolerance) {
                         move = 0.0;
                     } else {
                         // see if we can move

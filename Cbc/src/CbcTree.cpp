@@ -362,6 +362,9 @@ void
 CbcTree::push(CbcNode * x)
 {
     x->setNodeNumber(maximumNodeNumber_);
+    lastObjective_ = x->objectiveValue();
+    lastDepth_ = x->depth();
+    lastUnsatisfied_ = x->numberUnsatisfied();
     maximumNodeNumber_++;
 #   if CBC_DEBUG_HEAP > 2
     CbcNodeInfo *info = x->nodeInfo() ;
@@ -566,6 +569,8 @@ CbcTree::cleanTree(CbcModel * model, double cutoff, double & bestPossibleObjecti
         }
         if (value >= cutoff || !node->active()) {
             if (node) {
+	        if (cutoff<-1.0e30)
+		  node->nodeInfo()->deactivate(7);
                 nodeArray[--kDelete] = node;
                 depth[kDelete] = node->depth();
             }

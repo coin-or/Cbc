@@ -25,7 +25,9 @@
 #include "CoinWarmStartBasis.hpp"
 #include "CoinTime.hpp"
 #include "CbcEventHandler.hpp"
-
+#ifdef SWITCH_VARIABLES
+#include "CbcSimpleIntegerDynamicPseudoCost.hpp"
+#endif
 
 // Default Constructor
 CbcHeuristicFPump::CbcHeuristicFPump()
@@ -828,6 +830,23 @@ CbcHeuristicFPump::solution(double & solutionValue,
                                 newSolutionValue = saveValue;
                             if (returnCode && newSolutionValue < saveValue)
                                 numberBandBsolutions++;
+			} else if (numberColumns>numberIntegersOrig) {
+			  // relax continuous
+			  solver->resolve();
+			  if (solver->isProvenOptimal()) {
+			    memcpy(newSolution,solver->getColSolution(),
+				   numberColumns);
+			    newSolutionValue = -saveOffset;
+			    for (  i = 0 ; i < numberColumns ; i++ )
+			      newSolutionValue += saveObjective[i] * newSolution[i];
+			    newSolutionValue *= direction;
+			    sprintf(pumpPrint, "Relaxing continuous gives %g", newSolutionValue);
+			  } else {
+			    sprintf(pumpPrint,"Infeasible when relaxing continuous!\n");
+			  }
+			  model_->messageHandler()->message(CBC_FPUMP1, model_->messages())
+			    << pumpPrint
+			    << CoinMessageEol;
                         }
                     }
                     if (returnCode && newSolutionValue < saveValue) {
@@ -1008,11 +1027,11 @@ CbcHeuristicFPump::solution(double & solutionValue,
                     }
                     double newValue = 0.0;
                     if (newSolution[iColumn] < lower[iColumn] + primalTolerance) {
-                        newValue = costValue + scaleFactor * saveObjective[iColumn];
+		      newValue = costValue + scaleFactor * saveObjective[iColumn];
                     } else {
-                        if (newSolution[iColumn] > upper[iColumn] - primalTolerance) {
-                            newValue = -costValue + scaleFactor * saveObjective[iColumn];
-                        }
+		      if (newSolution[iColumn] > upper[iColumn] - primalTolerance) {
+			newValue = -costValue + scaleFactor * saveObjective[iColumn];
+		      }
                     }
 #ifdef RAND_RAND
                     if (!offRandom)
@@ -1235,15 +1254,16 @@ CbcHeuristicFPump::solution(double & solutionValue,
                     newNumberInfeas = 0;
                     {
                         const double * newSolution = solver->getColSolution();
-                        for (  i = 0 ; i < numberColumns ; i++ ) {
-                            if (solver->isInteger(i)) {
-                                double value = newSolution[i];
+                        for (int iColumn = 0 ; iColumn < numberColumns ; iColumn++ ) {
+                            if (solver->isInteger(iColumn)) {
+                                double value = newSolution[iColumn];
                                 double nearest = floor(value + 0.5);
                                 newSumInfeas += fabs(value - nearest);
-                                if (fabs(value - nearest) > 1.0e-6)
+                                if (fabs(value - nearest) > 1.0e-6) {
                                     newNumberInfeas++;
+				}
                             }
-                            newTrueSolutionValue += saveObjective[i] * newSolution[i];
+                            newTrueSolutionValue += saveObjective[iColumn] * newSolution[iColumn];
                         }
                         newTrueSolutionValue *= direction;
                         if (numberPasses == 1 && secondPassOpt) {
@@ -2363,14 +2383,18 @@ CbcHeuristicFPump::rounds(OsiSolverInterface * solver, double * solution,
     const double * columnLower = solver->getColLower();
     const double * columnUpper = solver->getColUpper();
     // Check if valid with current solution (allow for 0.99999999s)
+    double newSumInfeas = 0.0;
+    int newNumberInfeas = 0;
     for (i = 0; i < numberIntegers; i++) {
         int iColumn = integerVariable[i];
         double value = solution[iColumn];
         double round = floor(value + 0.5);
-        if (fabs(value - round) > primalTolerance)
-            break;
+        if (fabs(value - round) > primalTolerance) {
+	  newSumInfeas += fabs(value-round);
+	  newNumberInfeas++;
+	}
     }
-    if (i == numberIntegers) {
+    if (!newNumberInfeas) {
         // may be able to use solution even if 0.99999's
         double * saveLower = CoinCopyOfArray(columnLower, numberColumns);
         double * saveUpper = CoinCopyOfArray(columnUpper, numberColumns);

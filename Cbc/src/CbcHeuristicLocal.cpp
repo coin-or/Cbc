@@ -935,6 +935,7 @@ void CbcHeuristicLocal::setModel(CbcModel * model)
 CbcHeuristicProximity::CbcHeuristicProximity()
         : CbcHeuristic()
 {
+    increment_ = 0.01;
     feasibilityPump_ = NULL;
     numberSolutions_ = 0;
     used_ = NULL;
@@ -947,6 +948,7 @@ CbcHeuristicProximity::CbcHeuristicProximity()
 CbcHeuristicProximity::CbcHeuristicProximity(CbcModel & model)
         : CbcHeuristic(model)
 {
+    increment_ = 0.01;
     feasibilityPump_ = NULL;
     numberSolutions_ = 0;
     lastRunDeep_ = -1000000;
@@ -986,6 +988,7 @@ CbcHeuristicProximity::CbcHeuristicProximity(const CbcHeuristicProximity & rhs)
   CbcHeuristic(rhs),
   numberSolutions_(rhs.numberSolutions_)
 {
+    increment_ = rhs.increment_;
     feasibilityPump_ = NULL;
     if (model_ && rhs.used_) {
         int numberColumns = model_->solver()->getNumCols();
@@ -1003,6 +1006,7 @@ CbcHeuristicProximity::operator=( const CbcHeuristicProximity & rhs)
 {
     if (this != &rhs) {
         CbcHeuristic::operator=(rhs);
+	increment_ = rhs.increment_;
         numberSolutions_ = rhs.numberSolutions_;
         delete [] used_;
         delete feasibilityPump_;
@@ -1094,8 +1098,9 @@ CbcHeuristicProximity::solution(double & solutionValue,
   }
   double cutoff=model_->getCutoff();
   assert (cutoff<1.0e20);
-  if (model_->getCutoffIncrement()<1.0e-4)
-    cutoff -= 0.01;
+  if (model_->getCutoffIncrement()<1.0e-4) {
+    cutoff -= increment_;
+  }
   double offset;
   newSolver->getDblParam(OsiObjOffset, offset);
   newSolver->setDblParam(OsiObjOffset, 0.0);
@@ -1184,6 +1189,11 @@ CbcHeuristicProximity::solution(double & solutionValue,
     sprintf(proxPrint,"Proximity search ran %d nodes (out of %d) - in new solution %d increased (%d), %d decreased (%d)",
 	    numberNodesDone_,numberNodes_,
 	    numberIncrease,sumIncrease,numberDecrease,sumDecrease);
+    if (!numberIncrease&&!numberDecrease) {
+      // somehow tolerances are such that we can slip through
+      // change for next time
+      increment_ += CoinMax(increment_,fabs(solutionValue+offset)*1.0e-10);
+    }
   } else {
     sprintf(proxPrint,"Proximity search ran %d nodes - no new solution",
 	    numberNodesDone_);

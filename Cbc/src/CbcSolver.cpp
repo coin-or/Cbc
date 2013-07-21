@@ -3875,11 +3875,17 @@ int CbcMain1 (int argc, const char *argv[],
 					if ((model_.moreSpecialOptions()&65536)!=0)
 					  process.setOptions(2+4+8); // no cuts
 					cbcPreProcessPointer = & process;
+					int saveOptions = osiclp->getModelPtr()->moreSpecialOptions();
+					if ((model_.specialOptions()&16777216)!=0&&
+					    model_.getCutoff()>1.0e30) {
+					  osiclp->getModelPtr()->setMoreSpecialOptions(saveOptions|262144);
+					}
                                         solver2 = process.preProcessNonDefault(*saveSolver, translate[preProcess], numberPasses,
                                                                                tunePreProcess);
                                         /*solver2->writeMps("after");
                                           saveSolver->writeMps("before");*/
                                         osiclp->getModelPtr()->setPerturbation(savePerturbation);
+					osiclp->getModelPtr()->setMoreSpecialOptions(saveOptions);
                                     }
 #elif CBC_OTHER_SOLVER==1
 				    cbcPreProcessPointer = & process;
@@ -4952,8 +4958,10 @@ int CbcMain1 (int argc, const char *argv[],
 				   std::vector< double > x( babModel_->getNumCols(), 0.0 );
 				   double obj;
 				   int status = computeCompleteSolution( babModel_, colNames, mipStart, &x[0], obj );
-				   if (!status)
+				   if (!status) {
 				     babModel_->setBestSolution( &x[0], static_cast<int>(x.size()), obj, false );
+				     babModel_->setSolutionCount(1);
+				   }
 				}
 
                                 if (solutionIn && useSolution >= 0) {
@@ -6170,6 +6178,7 @@ int CbcMain1 (int argc, const char *argv[],
 				}
 				if (biLinearProblem)
 				  babModel_->setSpecialOptions(babModel_->specialOptions() &(~(512|32768)));
+                                babModel_->setMoreSpecialOptions2(parameters_[whichParam(CBC_PARAM_INT_MOREMOREMIPOPTIONS, numberParameters_, parameters_)].intValue());
                                 babModel_->branchAndBound(statistics);
 				if (truncateColumns<babModel_->solver()->getNumCols()) {
 				  OsiSolverInterface * solverX = babModel_->solver();
@@ -9431,263 +9440,1426 @@ static void breakdown(const char * name, int numberLook, const double * region)
     delete [] number;
     delete [] numberExact;
 }
+static void sortOnOther(int * column,
+                 const CoinBigIndex * rowStart,
+                 int * order,
+                 int * other,
+                 int nRow,
+                 int nInRow,
+                 int where)
+{
+     if (nRow < 2 || where >= nInRow)
+          return;
+     // do initial sort
+     int kRow;
+     int iRow;
+     for ( kRow = 0; kRow < nRow; kRow++) {
+          iRow = order[kRow];
+          other[kRow] = column[rowStart[iRow] + where];
+     }
+     CoinSort_2(other, other + nRow, order);
+     int first = 0;
+     iRow = order[0];
+     int firstC = column[rowStart[iRow] + where];
+     kRow = 1;
+     while (kRow < nRow) {
+          int lastC = 9999999;;
+          for (; kRow < nRow + 1; kRow++) {
+               if (kRow < nRow) {
+                    iRow = order[kRow];
+                    lastC = column[rowStart[iRow] + where];
+               } else {
+                    lastC = 9999999;
+               }
+               if (lastC > firstC)
+                    break;
+          }
+          // sort
+          sortOnOther(column, rowStart, order + first, other, kRow - first,
+                      nInRow, where + 1);
+          firstC = lastC;
+          first = kRow;
+     }
+}
 static void statistics(ClpSimplex * originalModel, ClpSimplex * model)
 {
-    int numberColumns = originalModel->numberColumns();
-    const char * integerInformation  = originalModel->integerInformation();
-    const double * columnLower = originalModel->columnLower();
-    const double * columnUpper = originalModel->columnUpper();
-    int numberIntegers = 0;
-    int numberBinary = 0;
-    int iRow, iColumn;
-    if (integerInformation) {
-        for (iColumn = 0; iColumn < numberColumns; iColumn++) {
-            if (integerInformation[iColumn]) {
-                if (columnUpper[iColumn] > columnLower[iColumn]) {
-                    numberIntegers++;
-                    if (columnUpper[iColumn] == 0.0 && columnLower[iColumn] == 1)
-                        numberBinary++;
-                }
-            }
-        }
-    }
-    numberColumns = model->numberColumns();
-    int numberRows = model->numberRows();
-    columnLower = model->columnLower();
-    columnUpper = model->columnUpper();
-    const double * rowLower = model->rowLower();
-    const double * rowUpper = model->rowUpper();
-    const double * objective = model->objective();
-    CoinPackedMatrix * matrix = model->matrix();
-    CoinBigIndex numberElements = matrix->getNumElements();
-    const int * columnLength = matrix->getVectorLengths();
-    //const CoinBigIndex * columnStart = matrix->getVectorStarts();
-    const double * elementByColumn = matrix->getElements();
-    int * number = new int[numberRows+1];
-    memset(number, 0, (numberRows + 1)*sizeof(int));
-    int numberObjSingletons = 0;
-    /* cType
-       0 0/inf, 1 0/up, 2 lo/inf, 3 lo/up, 4 free, 5 fix, 6 -inf/0, 7 -inf/up,
-       8 0/1
-    */
-    int cType[9];
-    std::string cName[] = {"0.0->inf,", "0.0->up,", "lo->inf,", "lo->up,", "free,", "fixed,", "-inf->0.0,",
-                           "-inf->up,", "0.0->1.0"
-                          };
-    int nObjective = 0;
-    memset(cType, 0, sizeof(cType));
-    for (iColumn = 0; iColumn < numberColumns; iColumn++) {
-        int length = columnLength[iColumn];
-        if (length == 1 && objective[iColumn])
-            numberObjSingletons++;
-        number[length]++;
-        if (objective[iColumn])
-            nObjective++;
-        if (columnLower[iColumn] > -1.0e20) {
-            if (columnLower[iColumn] == 0.0) {
-                if (columnUpper[iColumn] > 1.0e20)
-                    cType[0]++;
-                else if (columnUpper[iColumn] == 1.0)
-                    cType[8]++;
-                else if (columnUpper[iColumn] == 0.0)
-                    cType[5]++;
-                else
-                    cType[1]++;
-            } else {
-                if (columnUpper[iColumn] > 1.0e20)
-                    cType[2]++;
-                else if (columnUpper[iColumn] == columnLower[iColumn])
-                    cType[5]++;
-                else
-                    cType[3]++;
-            }
-        } else {
-            if (columnUpper[iColumn] > 1.0e20)
-                cType[4]++;
-            else if (columnUpper[iColumn] == 0.0)
-                cType[6]++;
-            else
-                cType[7]++;
-        }
-    }
-    /* rType
-       0 E 0, 1 E 1, 2 E -1, 3 E other, 4 G 0, 5 G 1, 6 G other,
-       7 L 0,  8 L 1, 9 L other, 10 Range 0/1, 11 Range other, 12 free
-    */
-    int rType[13];
-    std::string rName[] = {"E 0.0,", "E 1.0,", "E -1.0,", "E other,", "G 0.0,", "G 1.0,", "G other,",
-                           "L 0.0,", "L 1.0,", "L other,", "Range 0.0->1.0,", "Range other,", "Free"
-                          };
-    memset(rType, 0, sizeof(rType));
-    for (iRow = 0; iRow < numberRows; iRow++) {
-        if (rowLower[iRow] > -1.0e20) {
-            if (rowLower[iRow] == 0.0) {
-                if (rowUpper[iRow] > 1.0e20)
-                    rType[4]++;
-                else if (rowUpper[iRow] == 1.0)
-                    rType[10]++;
-                else if (rowUpper[iRow] == 0.0)
-                    rType[0]++;
-                else
-                    rType[11]++;
-            } else if (rowLower[iRow] == 1.0) {
-                if (rowUpper[iRow] > 1.0e20)
-                    rType[5]++;
-                else if (rowUpper[iRow] == rowLower[iRow])
-                    rType[1]++;
-                else
-                    rType[11]++;
-            } else if (rowLower[iRow] == -1.0) {
-                if (rowUpper[iRow] > 1.0e20)
-                    rType[6]++;
-                else if (rowUpper[iRow] == rowLower[iRow])
-                    rType[2]++;
-                else
-                    rType[11]++;
-            } else {
-                if (rowUpper[iRow] > 1.0e20)
-                    rType[6]++;
-                else if (rowUpper[iRow] == rowLower[iRow])
-                    rType[3]++;
-                else
-                    rType[11]++;
-            }
-        } else {
-            if (rowUpper[iRow] > 1.0e20)
-                rType[12]++;
-            else if (rowUpper[iRow] == 0.0)
-                rType[7]++;
-            else if (rowUpper[iRow] == 1.0)
-                rType[8]++;
-            else
-                rType[9]++;
-        }
-    }
-    // Basic statistics
-    printf("\n\nProblem has %d rows, %d columns (%d with objective) and %d elements\n",
-           numberRows, numberColumns, nObjective, numberElements);
-    if (number[0] + number[1]) {
-        printf("There are ");
-        if (numberObjSingletons)
-            printf("%d singletons with objective ", numberObjSingletons);
-        int numberNoObj = number[1] - numberObjSingletons;
-        if (numberNoObj)
-            printf("%d singletons with no objective ", numberNoObj);
-        if (number[0])
-            printf("** %d columns have no entries", number[0]);
-        printf("\n");
-    }
-    printf("Column breakdown:\n");
-    int k;
-    for (k = 0; k < static_cast<int> (sizeof(cType) / sizeof(int)); k++) {
-        printf("%d of type %s ", cType[k], cName[k].c_str());
-        if (((k + 1) % 3) == 0)
-            printf("\n");
-    }
-    if ((k % 3) != 0)
-        printf("\n");
-    printf("Row breakdown:\n");
-    for (k = 0; k < static_cast<int> (sizeof(rType) / sizeof(int)); k++) {
-        printf("%d of type %s ", rType[k], rName[k].c_str());
-        if (((k + 1) % 3) == 0)
-            printf("\n");
-    }
-    if ((k % 3) != 0)
-        printf("\n");
-    if (model->logLevel() < 2)
-        return ;
-    int kMax = model->logLevel() > 3 ? 1000000 : 10;
-    k = 0;
-    for (iRow = 1; iRow <= numberRows; iRow++) {
-        if (number[iRow]) {
-            k++;
-            printf("%d columns have %d entries\n", number[iRow], iRow);
-            if (k == kMax)
-                break;
-        }
-    }
-    if (k < numberRows) {
-        int kk = k;
-        k = 0;
-        for (iRow = numberRows; iRow >= 1; iRow--) {
-            if (number[iRow]) {
-                k++;
-                if (k == kMax)
+     int numberColumns = originalModel->numberColumns();
+     const char * integerInformation  = originalModel->integerInformation();
+     const double * columnLower = originalModel->columnLower();
+     const double * columnUpper = originalModel->columnUpper();
+     int numberIntegers = 0;
+     int numberBinary = 0;
+     int iRow, iColumn;
+     if (integerInformation) {
+          for (iColumn = 0; iColumn < numberColumns; iColumn++) {
+               if (integerInformation[iColumn]) {
+                    if (columnUpper[iColumn] > columnLower[iColumn]) {
+                         numberIntegers++;
+                         if (columnLower[iColumn] == 0.0 && columnUpper[iColumn] == 1)
+                              numberBinary++;
+                    }
+               }
+          }
+	  printf("Original problem has %d integers (%d of which binary)\n",
+		 numberIntegers,numberBinary);
+     }
+     numberColumns = model->numberColumns();
+     int numberRows = model->numberRows();
+     columnLower = model->columnLower();
+     columnUpper = model->columnUpper();
+     const double * rowLower = model->rowLower();
+     const double * rowUpper = model->rowUpper();
+     const double * objective = model->objective();
+     if (model->integerInformation()) {
+       const char * integerInformation  = model->integerInformation();
+       int numberIntegers = 0;
+       int numberBinary = 0;
+       double * obj = new double [numberColumns];
+       int * which = new int [numberColumns];
+       for (int iColumn = 0; iColumn < numberColumns; iColumn++) {
+	 if (columnUpper[iColumn] > columnLower[iColumn]) {
+	   if (integerInformation[iColumn]) {
+	     numberIntegers++;
+	     if (columnLower[iColumn] == 0.0 && columnUpper[iColumn] == 1)
+	       numberBinary++;
+	   }
+	 }
+       }
+       if(numberColumns != originalModel->numberColumns())
+	 printf("Presolved problem has %d integers (%d of which binary)\n",
+		numberIntegers,numberBinary);
+       for (int ifInt=0;ifInt<2;ifInt++) {
+	 for (int ifAbs=0;ifAbs<2;ifAbs++) {
+	   int numberSort=0;
+	   int numberZero=0;
+	   int numberDifferentObj=0;
+	   for (int iColumn = 0; iColumn < numberColumns; iColumn++) {
+	     if (columnUpper[iColumn] > columnLower[iColumn]) {
+	       if (!ifInt||integerInformation[iColumn]) {
+		 obj[numberSort]=(ifAbs) ? fabs(objective[iColumn]) :
+		   objective[iColumn];
+		 which[numberSort++]=iColumn;
+		 if (!objective[iColumn])
+		   numberZero++;
+	       }
+	     }
+	   }
+	   CoinSort_2(obj,obj+numberSort,which);
+	   double last=obj[0];
+	   for (int jColumn = 1; jColumn < numberSort; jColumn++) {
+	     if (fabs(obj[jColumn]-last)>1.0e-12) {
+	       numberDifferentObj++;
+	       last=obj[jColumn];
+	     }
+	   }
+	   numberDifferentObj++;
+	   printf("==== ");
+	   if (ifInt)
+	     printf("for integers ");
+	   if (!ifAbs)
+	     printf("%d zero objective ",numberZero);
+	   else
+	     printf("absolute objective values ");
+	   printf("%d different\n",numberDifferentObj);
+	   bool saveModel=false;
+	   int target=model->logLevel();
+	   if (target>10000) {
+	     if (ifInt&&!ifAbs)
+	       saveModel=true;
+	     target-=10000;
+	   }
+
+	   if (target<=100)
+	     target=12;
+	   else
+	     target-=100;
+	   if (numberDifferentObj<target) {
+	     int iLast=0;
+	     double last=obj[0];
+	     for (int jColumn = 1; jColumn < numberSort; jColumn++) {
+	       if (fabs(obj[jColumn]-last)>1.0e-12) {
+		 printf("%d variables have objective of %g\n",
+			jColumn-iLast,last);
+		 iLast=jColumn;
+		 last=obj[jColumn];
+	       }
+	     }
+	     printf("%d variables have objective of %g\n",
+		    numberSort-iLast,last);
+	     if (saveModel) {
+	       int spaceNeeded=numberSort+numberDifferentObj;
+	       int * columnAdd = new int[spaceNeeded+numberDifferentObj+1];
+	       double * elementAdd = new double[spaceNeeded];
+	       int * rowAdd = new int[2*numberDifferentObj+1];
+	       int * newIsInteger = rowAdd+numberDifferentObj+1;
+	       double * objectiveNew = new double[3*numberDifferentObj];
+	       double * lowerNew = objectiveNew+numberDifferentObj;
+	       double * upperNew = lowerNew+numberDifferentObj;
+	       memset(columnAdd+spaceNeeded,0,
+		      (numberDifferentObj+1)*sizeof(int));
+	       ClpSimplex tempModel=*model;
+	       int iLast=0;
+	       double last=obj[0];
+	       numberDifferentObj=0;
+	       int numberElements=0;
+	       rowAdd[0]=0;
+	       double * objective = tempModel.objective();
+	       for (int jColumn = 1; jColumn < numberSort+1; jColumn++) {
+		 if (jColumn==numberSort||fabs(obj[jColumn]-last)>1.0e-12) {
+		   // not if just one
+		   if (jColumn-iLast>1) {
+		     bool allInteger=integerInformation!=NULL;
+		     int iColumn=which[iLast];
+		     objectiveNew[numberDifferentObj]=objective[iColumn];
+		     double lower=0.0;
+		     double upper=0.0;
+		     for (int kColumn=iLast;kColumn<jColumn;kColumn++) {
+		       iColumn=which[kColumn];
+		       objective[iColumn]=0.0;
+		       double lowerValue=columnLower[iColumn];
+		       double upperValue=columnUpper[iColumn];
+		       double elementValue=-1.0;
+		       if (objectiveNew[numberDifferentObj]*objective[iColumn]<0.0) {
+			 lowerValue=-columnUpper[iColumn];
+			 upperValue=-columnLower[iColumn];
+			 elementValue=1.0;
+		       }
+		       columnAdd[numberElements]=iColumn;
+		       elementAdd[numberElements++]=elementValue;
+		       if (integerInformation&&!integerInformation[iColumn])
+			 allInteger=false;
+		       if (lower!=-COIN_DBL_MAX) {
+			 if (lowerValue!=-COIN_DBL_MAX)
+			   lower += lowerValue;
+			 else
+			   lower=-COIN_DBL_MAX;
+		       }
+		       if (upper!=COIN_DBL_MAX) {
+			 if (upperValue!=COIN_DBL_MAX)
+			   upper += upperValue;
+			 else
+			   upper=COIN_DBL_MAX;
+		       }
+		     }
+		     columnAdd[numberElements]=numberColumns+numberDifferentObj;
+		     elementAdd[numberElements++]=1.0;
+		     newIsInteger[numberDifferentObj]= (allInteger) ? 1 : 0;
+		     lowerNew[numberDifferentObj]=lower;
+		     upperNew[numberDifferentObj]=upper;
+		     numberDifferentObj++;
+		     rowAdd[numberDifferentObj]=numberElements;
+		   }
+		   iLast=jColumn;
+		   last=obj[jColumn];
+		 }
+	       }
+	       // add columns
+	       tempModel.addColumns(numberDifferentObj, lowerNew, upperNew,
+				    objectiveNew,
+				    columnAdd+spaceNeeded, NULL, NULL);
+	       // add constraints and make integer if all integer in group
+	       for (int iObj=0; iObj < numberDifferentObj; iObj++) {
+		 lowerNew[iObj]=0.0;
+		 upperNew[iObj]=0.0;
+		 if (newIsInteger[iObj])
+		   tempModel.setInteger(numberColumns+iObj);
+	       }
+	       tempModel.addRows(numberDifferentObj, lowerNew, upperNew,
+				 rowAdd,columnAdd,elementAdd);
+	       delete [] columnAdd;
+	       delete [] elementAdd;
+	       delete [] rowAdd;
+	       delete [] objectiveNew;
+	       // save
+	       std::string tempName = model->problemName();
+	       if (ifInt)
+		 tempName += "_int";
+	       if (ifAbs)
+		 tempName += "_abs";
+	       tempName += ".mps";
+	       tempModel.writeMps(tempName.c_str());
+	     }
+	   }
+	 }
+       }
+       delete [] which;
+       delete [] obj;
+       printf("===== end objective counts\n");
+     }
+     CoinPackedMatrix * matrix = model->matrix();
+     CoinBigIndex numberElements = matrix->getNumElements();
+     const int * columnLength = matrix->getVectorLengths();
+     //const CoinBigIndex * columnStart = matrix->getVectorStarts();
+     const double * elementByColumn = matrix->getElements();
+     int * number = new int[numberRows+1];
+     memset(number, 0, (numberRows + 1)*sizeof(int));
+     int numberObjSingletons = 0;
+     /* cType
+        0 0/inf, 1 0/up, 2 lo/inf, 3 lo/up, 4 free, 5 fix, 6 -inf/0, 7 -inf/up,
+        8 0/1
+     */
+     int cType[9];
+     std::string cName[] = {"0.0->inf,", "0.0->up,", "lo->inf,", "lo->up,", "free,", "fixed,", "-inf->0.0,",
+                            "-inf->up,", "0.0->1.0"
+                           };
+     int nObjective = 0;
+     memset(cType, 0, sizeof(cType));
+     for (iColumn = 0; iColumn < numberColumns; iColumn++) {
+          int length = columnLength[iColumn];
+          if (length == 1 && objective[iColumn])
+               numberObjSingletons++;
+          number[length]++;
+          if (objective[iColumn])
+               nObjective++;
+          if (columnLower[iColumn] > -1.0e20) {
+               if (columnLower[iColumn] == 0.0) {
+                    if (columnUpper[iColumn] > 1.0e20)
+                         cType[0]++;
+                    else if (columnUpper[iColumn] == 1.0)
+                         cType[8]++;
+                    else if (columnUpper[iColumn] == 0.0)
+                         cType[5]++;
+                    else
+                         cType[1]++;
+               } else {
+                    if (columnUpper[iColumn] > 1.0e20)
+                         cType[2]++;
+                    else if (columnUpper[iColumn] == columnLower[iColumn])
+                         cType[5]++;
+                    else
+                         cType[3]++;
+               }
+          } else {
+               if (columnUpper[iColumn] > 1.0e20)
+                    cType[4]++;
+               else if (columnUpper[iColumn] == 0.0)
+                    cType[6]++;
+               else
+                    cType[7]++;
+          }
+     }
+     /* rType
+        0 E 0, 1 E 1, 2 E -1, 3 E other, 4 G 0, 5 G 1, 6 G other,
+        7 L 0,  8 L 1, 9 L other, 10 Range 0/1, 11 Range other, 12 free
+     */
+     int rType[13];
+     std::string rName[] = {"E 0.0,", "E 1.0,", "E -1.0,", "E other,", "G 0.0,", "G 1.0,", "G other,",
+                            "L 0.0,", "L 1.0,", "L other,", "Range 0.0->1.0,", "Range other,", "Free"
+                           };
+     memset(rType, 0, sizeof(rType));
+     for (iRow = 0; iRow < numberRows; iRow++) {
+          if (rowLower[iRow] > -1.0e20) {
+               if (rowLower[iRow] == 0.0) {
+                    if (rowUpper[iRow] > 1.0e20)
+                         rType[4]++;
+                    else if (rowUpper[iRow] == 1.0)
+                         rType[10]++;
+                    else if (rowUpper[iRow] == 0.0)
+                         rType[0]++;
+                    else
+                         rType[11]++;
+               } else if (rowLower[iRow] == 1.0) {
+                    if (rowUpper[iRow] > 1.0e20)
+                         rType[5]++;
+                    else if (rowUpper[iRow] == rowLower[iRow])
+                         rType[1]++;
+                    else
+                         rType[11]++;
+               } else if (rowLower[iRow] == -1.0) {
+                    if (rowUpper[iRow] > 1.0e20)
+                         rType[6]++;
+                    else if (rowUpper[iRow] == rowLower[iRow])
+                         rType[2]++;
+                    else
+                         rType[11]++;
+               } else {
+                    if (rowUpper[iRow] > 1.0e20)
+                         rType[6]++;
+                    else if (rowUpper[iRow] == rowLower[iRow])
+                         rType[3]++;
+                    else
+                         rType[11]++;
+               }
+          } else {
+               if (rowUpper[iRow] > 1.0e20)
+                    rType[12]++;
+               else if (rowUpper[iRow] == 0.0)
+                    rType[7]++;
+               else if (rowUpper[iRow] == 1.0)
+                    rType[8]++;
+               else
+                    rType[9]++;
+          }
+     }
+     // Basic statistics
+     printf("\n\nProblem has %d rows, %d columns (%d with objective) and %d elements\n",
+            numberRows, numberColumns, nObjective, numberElements);
+     if (number[0] + number[1]) {
+          printf("There are ");
+          if (numberObjSingletons)
+               printf("%d singletons with objective ", numberObjSingletons);
+          int numberNoObj = number[1] - numberObjSingletons;
+          if (numberNoObj)
+               printf("%d singletons with no objective ", numberNoObj);
+          if (number[0])
+               printf("** %d columns have no entries", number[0]);
+          printf("\n");
+     }
+     printf("Column breakdown:\n");
+     int k;
+     for (k = 0; k < static_cast<int> (sizeof(cType) / sizeof(int)); k++) {
+          printf("%d of type %s ", cType[k], cName[k].c_str());
+          if (((k + 1) % 3) == 0)
+               printf("\n");
+     }
+     if ((k % 3) != 0)
+          printf("\n");
+     printf("Row breakdown:\n");
+     for (k = 0; k < static_cast<int> (sizeof(rType) / sizeof(int)); k++) {
+          printf("%d of type %s ", rType[k], rName[k].c_str());
+          if (((k + 1) % 3) == 0)
+               printf("\n");
+     }
+     if ((k % 3) != 0)
+          printf("\n");
+     //#define SYM
+#ifndef SYM
+     if (model->logLevel() < 2)
+          return ;
+#endif
+     int kMax = model->logLevel() > 3 ? 1000000 : 10;
+     k = 0;
+     for (iRow = 1; iRow <= numberRows; iRow++) {
+          if (number[iRow]) {
+               k++;
+               printf("%d columns have %d entries\n", number[iRow], iRow);
+               if (k == kMax)
                     break;
-            }
-        }
-        if (k > kk) {
-            printf("\n    .........\n\n");
-            iRow = k;
-            k = 0;
-            for (; iRow < numberRows; iRow++) {
-                if (number[iRow]) {
+          }
+     }
+     if (k < numberRows) {
+          int kk = k;
+          k = 0;
+          for (iRow = numberRows; iRow >= 1; iRow--) {
+               if (number[iRow]) {
                     k++;
-                    printf("%d columns have %d entries\n", number[iRow], iRow);
                     if (k == kMax)
-                        break;
-                }
-            }
-        }
-    }
-    delete [] number;
-    printf("\n\n");
-    // get row copy
-    CoinPackedMatrix rowCopy = *matrix;
-    rowCopy.reverseOrdering();
-    //const int * column = rowCopy.getIndices();
-    const int * rowLength = rowCopy.getVectorLengths();
-    //const CoinBigIndex * rowStart = rowCopy.getVectorStarts();
-    //const double * element = rowCopy.getElements();
-    number = new int[numberColumns+1];
-    memset(number, 0, (numberColumns + 1)*sizeof(int));
-    for (iRow = 0; iRow < numberRows; iRow++) {
-        int length = rowLength[iRow];
-        number[length]++;
-    }
-    if (number[0])
-        printf("** %d rows have no entries\n", number[0]);
-    k = 0;
-    for (iColumn = 1; iColumn <= numberColumns; iColumn++) {
-        if (number[iColumn]) {
-            k++;
-            printf("%d rows have %d entries\n", number[iColumn], iColumn);
-            if (k == kMax)
-                break;
-        }
-    }
-    if (k < numberColumns) {
-        int kk = k;
-        k = 0;
-        for (iColumn = numberColumns; iColumn >= 1; iColumn--) {
-            if (number[iColumn]) {
-                k++;
-                if (k == kMax)
+                         break;
+               }
+          }
+          if (k > kk) {
+               printf("\n    .........\n\n");
+               iRow = k;
+               k = 0;
+               for (; iRow < numberRows; iRow++) {
+                    if (number[iRow]) {
+                         k++;
+                         printf("%d columns have %d entries\n", number[iRow], iRow);
+                         if (k == kMax)
+                              break;
+                    }
+               }
+          }
+     }
+     delete [] number;
+     printf("\n\n");
+     if (model->logLevel() == 63
+#ifdef SYM
+               || true
+#endif
+        ) {
+          // get column copy
+          CoinPackedMatrix columnCopy = *matrix;
+          const int * columnLength = columnCopy.getVectorLengths();
+          number = new int[numberRows+1];
+          memset(number, 0, (numberRows + 1)*sizeof(int));
+          for (iColumn = 0; iColumn < numberColumns; iColumn++) {
+               int length = columnLength[iColumn];
+               number[length]++;
+          }
+          k = 0;
+          for (iRow = 1; iRow <= numberRows; iRow++) {
+               if (number[iRow]) {
+                    k++;
+               }
+          }
+          int * row = columnCopy.getMutableIndices();
+          const CoinBigIndex * columnStart = columnCopy.getVectorStarts();
+          double * element = columnCopy.getMutableElements();
+          int * order = new int[numberColumns];
+          int * other = new int[numberColumns];
+          for (iColumn = 0; iColumn < numberColumns; iColumn++) {
+               int length = columnLength[iColumn];
+               order[iColumn] = iColumn;
+               other[iColumn] = length;
+               CoinBigIndex start = columnStart[iColumn];
+               CoinSort_2(row + start, row + start + length, element + start);
+          }
+          CoinSort_2(other, other + numberColumns, order);
+          int jColumn = number[0] + number[1];
+          for (iRow = 2; iRow <= numberRows; iRow++) {
+               if (number[iRow]) {
+                    printf("XX %d columns have %d entries\n", number[iRow], iRow);
+                    int kColumn = jColumn + number[iRow];
+                    sortOnOther(row, columnStart,
+                                order + jColumn, other, number[iRow], iRow, 0);
+                    // Now print etc
+                    if (iRow < 500000) {
+                         for (int lColumn = jColumn; lColumn < kColumn; lColumn++) {
+                              iColumn = order[lColumn];
+                              CoinBigIndex start = columnStart[iColumn];
+                              if (model->logLevel() == 63) {
+                                   printf("column %d %g <= ", iColumn, columnLower[iColumn]);
+                                   for (CoinBigIndex i = start; i < start + iRow; i++)
+                                        printf("( %d, %g) ", row[i], element[i]);
+                                   printf("<= %g\n", columnUpper[iColumn]);
+                              }
+                         }
+                    }
+                    jColumn = kColumn;
+               }
+          }
+          delete [] order;
+          delete [] other;
+          delete [] number;
+     }
+     // get row copy
+     CoinPackedMatrix rowCopy = *matrix;
+     rowCopy.reverseOrdering();
+     const int * rowLength = rowCopy.getVectorLengths();
+     number = new int[numberColumns+1];
+     memset(number, 0, (numberColumns + 1)*sizeof(int));
+     if (model->logLevel() > 3) {
+       // get column copy
+       CoinPackedMatrix columnCopy = *matrix;
+       const int * columnLength = columnCopy.getVectorLengths();
+       const int * row = columnCopy.getIndices();
+       const CoinBigIndex * columnStart = columnCopy.getVectorStarts();
+       const double * element = columnCopy.getElements();
+       const double * elementByRow = rowCopy.getElements();
+       const int * rowStart = rowCopy.getVectorStarts();
+       const int * column = rowCopy.getIndices();
+       int nPossibleZeroCost=0;
+       int nPossibleNonzeroCost=0;
+       for (int iColumn = 0; iColumn < numberColumns; iColumn++) {
+	 int length = columnLength[iColumn];
+	 if (columnLower[iColumn]<-1.0e30&&columnUpper[iColumn]>1.0e30) {
+	   if (length==1) {
+	     printf("Singleton free %d - cost %g\n",iColumn,objective[iColumn]);
+	   } else if (length==2) {
+	     int iRow0=row[columnStart[iColumn]];
+	     int iRow1=row[columnStart[iColumn]+1];
+	     double element0=element[columnStart[iColumn]];
+	     double element1=element[columnStart[iColumn]+1];
+	     int n0=rowLength[iRow0];
+	     int n1=rowLength[iRow1];
+	     printf("Doubleton free %d - cost %g - %g in %srow with %d entries and %g in %srow with %d entries\n",
+		    iColumn,objective[iColumn],element0,(rowLower[iRow0]==rowUpper[iRow0]) ? "==" : "",n0,
+		    element1,(rowLower[iRow1]==rowUpper[iRow1]) ? "==" : "",n1);
+
+	   }
+	 }
+	 if (length==1) {
+	   int iRow=row[columnStart[iColumn]];
+	   double value=COIN_DBL_MAX;
+	   for (int i=rowStart[iRow];i<rowStart[iRow]+rowLength[iRow];i++) {
+	     int jColumn=column[i];
+	     if (jColumn!=iColumn) {
+	       if (value!=elementByRow[i]) {
+		 if (value==COIN_DBL_MAX) {
+		   value=elementByRow[i];
+		 } else {
+		   value = -COIN_DBL_MAX;
+		   break;
+		 }
+	       }
+	     }
+	   }
+	   if (!objective[iColumn]) {
+	     if (model->logLevel() > 4) 
+	     printf("Singleton %d with no objective in row with %d elements - rhs %g,%g\n",iColumn,rowLength[iRow],rowLower[iRow],rowUpper[iRow]);
+	     nPossibleZeroCost++;
+	   } else if (value!=-COIN_DBL_MAX) {
+	     if (model->logLevel() > 4) 
+	       printf("Singleton %d (%s) with objective in row %d (%s) with %d equal elements - rhs %g,%g\n",iColumn,model->getColumnName(iColumn).c_str(),
+		      iRow,model->getRowName(iRow).c_str(),
+		      rowLength[iRow],rowLower[iRow],rowUpper[iRow]);
+	     nPossibleNonzeroCost++;
+	   }
+	 }
+       }
+       if (nPossibleZeroCost||nPossibleNonzeroCost)
+	 printf("%d singletons with zero cost, %d with valid cost\n",
+		nPossibleZeroCost,nPossibleNonzeroCost);
+       // look for DW
+       int * blockStart = new int [2*(numberRows+numberColumns)+1+numberRows];
+       int * columnBlock = blockStart+numberRows;
+       int * nextColumn = columnBlock+numberColumns;
+       int * blockCount = nextColumn+numberColumns;
+       int * blockEls = blockCount+numberRows+1;
+       int direction[2]={-1,1};
+       int bestBreak=-1;
+       double bestValue=0.0;
+       int iPass=0;
+       int halfway=(numberRows+1)/2;
+       int firstMaster=-1;
+       int lastMaster=-2;
+       while (iPass<2) {
+	 int increment=direction[iPass];
+	 int start= increment>0 ? 0 : numberRows-1;
+	 int stop=increment>0 ? numberRows : -1;
+	 int numberBlocks=0;
+	 int thisBestBreak=-1;
+	 double thisBestValue=COIN_DBL_MAX;
+	 int numberRowsDone=0;
+	 int numberMarkedColumns=0;
+	 int maximumBlockSize=0;
+	 for (int i=0;i<numberRows+2*numberColumns;i++) 
+	   blockStart[i]=-1;
+	 for (int i=0;i<numberRows+1;i++)
+	   blockCount[i]=0;
+	 for (int iRow=start;iRow!=stop;iRow+=increment) {
+	   int iBlock = -1;
+	   for (CoinBigIndex j=rowStart[iRow];j<rowStart[iRow]+rowLength[iRow];j++) {
+	     int iColumn=column[j];
+	     int whichColumnBlock=columnBlock[iColumn];
+	     if (whichColumnBlock>=0) {
+	       // column marked
+	       if (iBlock<0) {
+		 // put row in that block
+		 iBlock=whichColumnBlock;
+	       } else if (iBlock!=whichColumnBlock) {
+		 // merge
+		 blockCount[iBlock]+=blockCount[whichColumnBlock];
+		 blockCount[whichColumnBlock]=0;
+		 int jColumn=blockStart[whichColumnBlock];
+		 while (jColumn>=0) {
+		   columnBlock[jColumn]=iBlock;
+		   iColumn=jColumn;
+		   jColumn=nextColumn[jColumn];
+		 }
+		 nextColumn[iColumn]=blockStart[iBlock];
+		 blockStart[iBlock]=blockStart[whichColumnBlock];
+		 blockStart[whichColumnBlock]=-1;
+	       }
+	     }
+	   }
+	   int n=numberMarkedColumns;
+	   if (iBlock<0) {
+	     //new block
+	     if (rowLength[iRow]) {
+	       numberBlocks++;
+	       iBlock=numberBlocks;
+	       int jColumn=column[rowStart[iRow]];
+	       columnBlock[jColumn]=iBlock;
+	       blockStart[iBlock]=jColumn;
+	       numberMarkedColumns++;
+	       for (CoinBigIndex j=rowStart[iRow]+1;j<rowStart[iRow]+rowLength[iRow];j++) {
+		 int iColumn=column[j];
+		 columnBlock[iColumn]=iBlock;
+		 numberMarkedColumns++;
+		 nextColumn[jColumn]=iColumn;
+		 jColumn=iColumn;
+	       }
+	       blockCount[iBlock]=numberMarkedColumns-n;
+	     } else {
+	       // empty
+	       iBlock=numberRows;
+	     }
+	   } else {
+	     // put in existing block
+	     int jColumn=blockStart[iBlock];
+	     for (CoinBigIndex j=rowStart[iRow];j<rowStart[iRow]+rowLength[iRow];j++) {
+	       int iColumn=column[j];
+	       assert (columnBlock[iColumn]<0||columnBlock[iColumn]==iBlock);
+	       if (columnBlock[iColumn]<0) {
+		 columnBlock[iColumn]=iBlock;
+		 numberMarkedColumns++;
+		 nextColumn[iColumn]=jColumn;
+		 jColumn=iColumn;
+	       }
+	     }
+	     blockStart[iBlock]=jColumn;
+	     blockCount[iBlock]+=numberMarkedColumns-n;
+	   }
+	   maximumBlockSize=CoinMax(maximumBlockSize,blockCount[iBlock]);
+	   numberRowsDone++;
+	   if (thisBestValue*numberRowsDone > maximumBlockSize&&numberRowsDone>halfway) { 
+	     thisBestBreak=iRow;
+	     thisBestValue=static_cast<double>(maximumBlockSize)/
+	       static_cast<double>(numberRowsDone);
+	   }
+	 }
+	 if (thisBestBreak==stop)
+	   thisBestValue=COIN_DBL_MAX;
+	 iPass++;
+	 if (iPass==1) {
+	   bestBreak=thisBestBreak;
+	   bestValue=thisBestValue;
+	 } else {
+	   if (bestValue<thisBestValue) {
+	     firstMaster=0;
+	     lastMaster=bestBreak;
+	   } else {
+	     firstMaster=thisBestBreak; // ? +1
+	     lastMaster=numberRows;
+	   }
+	 }
+       }
+       if (firstMaster<lastMaster) {
+	 printf("%d master rows %d <= < %d\n",lastMaster-firstMaster,
+		firstMaster,lastMaster);
+	 for (int i=0;i<numberRows+2*numberColumns;i++) 
+	   blockStart[i]=-1;
+	 for (int i=firstMaster;i<lastMaster;i++)
+	   blockStart[i]=-2;
+	 int firstRow=0;
+	 int numberBlocks=-1;
+	 while (true) {
+	   for (;firstRow<numberRows;firstRow++) {
+	     if (blockStart[firstRow]==-1)
+	       break;
+	   }
+	   if (firstRow==numberRows)
+	     break;
+	   int nRows=0;
+	   numberBlocks++;
+	   int numberStack=1;
+	   blockCount[0] = firstRow;
+	   while (numberStack) {
+	     int iRow=blockCount[--numberStack];
+	     for (CoinBigIndex j=rowStart[iRow];j<rowStart[iRow]+rowLength[iRow];j++) {
+	       int iColumn=column[j];
+	       int iBlock=columnBlock[iColumn];
+	       if (iBlock<0) {
+		 columnBlock[iColumn]=numberBlocks;
+		 for (CoinBigIndex k=columnStart[iColumn];
+		      k<columnStart[iColumn]+columnLength[iColumn];k++) {
+		   int jRow=row[k];
+		   int rowBlock=blockStart[jRow];
+		   if (rowBlock==-1) {
+		     nRows++;
+		     blockStart[jRow]=numberBlocks;
+		     blockCount[numberStack++]=jRow;
+		   }
+		 }
+	       }
+	     }
+	   }
+	   if (!nRows) {
+	     // empty!!
+	     numberBlocks--;
+	   }
+	   firstRow++;
+	 }
+	 // adjust 
+	 numberBlocks++;
+	 for (int i=0;i<numberBlocks;i++) {
+	   blockCount[i]=0;
+	   nextColumn[i]=0;
+	 }
+	 int numberEmpty=0;
+	 int numberMaster=0;
+	 memset(blockEls,0,numberBlocks*sizeof(int));
+	 for (int iRow = 0; iRow < numberRows; iRow++) {
+	   int iBlock=blockStart[iRow];
+	   if (iBlock>=0) {
+	     blockCount[iBlock]++;
+	     blockEls[iBlock]+=rowLength[iRow];
+	   } else {
+	     if (iBlock==-2)
+	       numberMaster++;
+	     else
+	       numberEmpty++;
+	   }
+	 }
+	 int numberEmptyColumns=0;
+	 int numberMasterColumns=0;
+	 for (int iColumn = 0; iColumn < numberColumns; iColumn++) {
+	   int iBlock=columnBlock[iColumn];
+	   if (iBlock>=0) {
+	     nextColumn[iBlock]++;
+	   } else {
+	     if (columnLength[iColumn])
+	       numberMasterColumns++;
+	     else
+	       numberEmptyColumns++;
+	   }
+	 }
+	 int largestRows=0;
+	 int largestColumns=0;
+	 for (int i=0;i<numberBlocks;i++) {
+	   if (blockCount[i]+nextColumn[i]>largestRows+largestColumns) {
+	     largestRows=blockCount[i];
+	     largestColumns=nextColumn[i];
+	   }
+	 }
+	 bool useful=true;
+	 if (numberMaster>halfway||largestRows*3>numberRows)
+	   useful=false;
+	 printf("%s %d blocks (largest %d,%d), %d master rows (%d empty) out of %d, %d master columns (%d empty) out of %d\n",
+		useful ? "**Useful" : "NoGood",
+		numberBlocks,largestRows,largestColumns,numberMaster,numberEmpty,numberRows,
+		numberMasterColumns,numberEmptyColumns,numberColumns);
+	 FILE * fp=NULL;
+	 bool justIntegers=true;
+	 bool oneFile=true;
+	 int logLevel = model->logLevel();
+	 if (logLevel>19) {
+	   logLevel-=2;
+	   oneFile=true;
+	   fp = fopen("fake.bnd","w");
+	 }
+	 if (logLevel==19)
+	   justIntegers=false;
+	 for (int i=0;i<numberBlocks;i++) 
+	   printf("Block %d has %d rows and %d columns (%d elements)\n",
+		  i,blockCount[i],nextColumn[i],blockEls[i]);
+	 if (logLevel >= 17 && logLevel <= 21) {
+	   int * whichRows=new int[numberRows+numberColumns];
+	   int * whichColumns=whichRows+numberRows;
+	   char name[20];
+	   for (int iBlock=0;iBlock<numberBlocks;iBlock++) {
+	     sprintf(name,"block%d.mps",iBlock);
+	     int nRows=0;
+	     for (int iRow=0;iRow<numberRows;iRow++) {
+	       if (blockStart[iRow]==iBlock)
+		 whichRows[nRows++]=iRow;
+	     }
+	     int nColumns=0;
+	     for (int iColumn=0;iColumn<numberColumns;iColumn++) {
+	       if (columnBlock[iColumn]==iBlock)
+		 whichColumns[nColumns++]=iColumn;
+	     }
+	     ClpSimplex subset(model,nRows,whichRows,nColumns,whichColumns);
+	     for (int jRow=0;jRow<nRows;jRow++) {
+	       int iRow = whichRows[jRow];
+	       std::string name = model->getRowName(iRow);
+	       subset.setRowName(jRow,name);
+	     }
+	     int nInteger=0;
+	     for (int jColumn=0;jColumn<nColumns;jColumn++) {
+	       int iColumn = whichColumns[jColumn];
+	       if (model->isInteger(iColumn)) {
+		 subset.setInteger(jColumn);
+		 nInteger++;
+	       }
+	       std::string name = model->getColumnName(iColumn);
+	       subset.setColumnName(jColumn,name);
+	     }
+	     if (logLevel == 17) {
+	       subset.writeMps(name,0,1);
+	     } else if (nInteger) {
+	       OsiClpSolverInterface subset2(&subset);
+	       CbcModel smallModel(subset2);
+	       smallModel.branchAndBound();
+	       const double * solution = smallModel.bestSolution();
+	       if (solution) {
+		 if (!oneFile) {
+		   sprintf(name,"block%d.bnd",iBlock);
+		   fp = fopen(name,"w");
+		   assert (fp);
+		 }
+		 fprintf(fp,"BBB objective %g for block %d\n",
+			 smallModel.getObjValue(),iBlock);
+		 for (int jColumn=0;jColumn<nColumns;jColumn++) {
+		   if (subset.isInteger(jColumn)||
+		       !justIntegers) 
+		     fprintf(fp," FX BOUND1    %.8s  %g\n",
+			     subset.getColumnName(jColumn).c_str(),
+			     solution[jColumn]);
+		 }
+		 if (!oneFile) 
+		   fclose(fp);
+	       } else {
+		 printf("***** Problem is infeasible\n");
+		 abort();
+	       }
+	     }
+	   }
+	   if (oneFile)
+	     fclose(fp);
+	   delete [] whichRows;
+	 } 
+       }
+       delete [] blockStart;
+     }
+     for (iRow = 0; iRow < numberRows; iRow++) {
+          int length = rowLength[iRow];
+          number[length]++;
+     }
+     if (number[0])
+          printf("** %d rows have no entries\n", number[0]);
+     k = 0;
+     for (iColumn = 1; iColumn <= numberColumns; iColumn++) {
+          if (number[iColumn]) {
+               k++;
+               printf("%d rows have %d entries\n", number[iColumn], iColumn);
+               if (k == kMax)
                     break;
-            }
-        }
-        if (k > kk) {
-            printf("\n    .........\n\n");
-            iColumn = k;
-            k = 0;
-            for (; iColumn < numberColumns; iColumn++) {
-                if (number[iColumn]) {
+          }
+     }
+     if (k < numberColumns) {
+          int kk = k;
+          k = 0;
+          for (iColumn = numberColumns; iColumn >= 1; iColumn--) {
+               if (number[iColumn]) {
                     k++;
-                    printf("%d rows have %d entries\n", number[iColumn], iColumn);
                     if (k == kMax)
-                        break;
-                }
-            }
-        }
-    }
-    delete [] number;
-    // Now do breakdown of ranges
-    breakdown("Elements", numberElements, elementByColumn);
-    breakdown("RowLower", numberRows, rowLower);
-    breakdown("RowUpper", numberRows, rowUpper);
-    breakdown("ColumnLower", numberColumns, columnLower);
-    breakdown("ColumnUpper", numberColumns, columnUpper);
-    breakdown("Objective", numberColumns, objective);
+                         break;
+               }
+          }
+          if (k > kk) {
+               printf("\n    .........\n\n");
+               iColumn = k;
+               k = 0;
+               for (; iColumn < numberColumns; iColumn++) {
+                    if (number[iColumn]) {
+                         k++;
+                         printf("%d rows have %d entries\n", number[iColumn], iColumn);
+                         if (k == kMax)
+                              break;
+                    }
+               }
+          }
+     }
+     if (model->logLevel() == 63
+#ifdef SYM
+               || true
+#endif
+        ) {
+          int * column = rowCopy.getMutableIndices();
+          const CoinBigIndex * rowStart = rowCopy.getVectorStarts();
+          double * element = rowCopy.getMutableElements();
+          int * order = new int[numberRows];
+          int * other = new int[numberRows];
+          for (iRow = 0; iRow < numberRows; iRow++) {
+               int length = rowLength[iRow];
+               order[iRow] = iRow;
+               other[iRow] = length;
+               CoinBigIndex start = rowStart[iRow];
+               CoinSort_2(column + start, column + start + length, element + start);
+          }
+          CoinSort_2(other, other + numberRows, order);
+          int jRow = number[0] + number[1];
+          double * weight = new double[numberRows];
+          double * randomColumn = new double[numberColumns+1];
+          double * randomRow = new double [numberRows+1];
+          int * sortRow = new int [numberRows];
+          int * possibleRow = new int [numberRows];
+          int * backRow = new int [numberRows];
+          int * stackRow = new int [numberRows];
+          int * sortColumn = new int [numberColumns];
+          int * possibleColumn = new int [numberColumns];
+          int * backColumn = new int [numberColumns];
+          int * backColumn2 = new int [numberColumns];
+          int * mapRow = new int [numberRows];
+          int * mapColumn = new int [numberColumns];
+          int * stackColumn = new int [numberColumns];
+          double randomLower = CoinDrand48();
+          double randomUpper = CoinDrand48();
+          double randomInteger = CoinDrand48();
+          int * startAdd = new int[numberRows+1];
+          int * columnAdd = new int [2*numberElements];
+          double * elementAdd = new double[2*numberElements];
+          int nAddRows = 0;
+          startAdd[0] = 0;
+          for (iColumn = 0; iColumn < numberColumns; iColumn++) {
+               randomColumn[iColumn] = CoinDrand48();
+               backColumn2[iColumn] = -1;
+          }
+          for (iColumn = 2; iColumn <= numberColumns; iColumn++) {
+               if (number[iColumn]) {
+                    printf("XX %d rows have %d entries\n", number[iColumn], iColumn);
+                    int kRow = jRow + number[iColumn];
+                    sortOnOther(column, rowStart,
+                                order + jRow, other, number[iColumn], iColumn, 0);
+                    // Now print etc
+                    if (iColumn < 500000) {
+                         int nLook = 0;
+                         for (int lRow = jRow; lRow < kRow; lRow++) {
+                              iRow = order[lRow];
+                              CoinBigIndex start = rowStart[iRow];
+                              if (model->logLevel() == 63) {
+                                   printf("row %d %g <= ", iRow, rowLower[iRow]);
+                                   for (CoinBigIndex i = start; i < start + iColumn; i++)
+                                        printf("( %d, %g) ", column[i], element[i]);
+                                   printf("<= %g\n", rowUpper[iRow]);
+                              }
+                              int first = column[start];
+                              double sum = 0.0;
+                              for (CoinBigIndex i = start; i < start + iColumn; i++) {
+                                   int jColumn = column[i];
+                                   double value = element[i];
+                                   jColumn -= first;
+                                   assert (jColumn >= 0);
+                                   sum += value * randomColumn[jColumn];
+                              }
+                              if (rowLower[iRow] > -1.0e30 && rowLower[iRow])
+                                   sum += rowLower[iRow] * randomLower;
+                              else if (!rowLower[iRow])
+                                   sum += 1.234567e-7 * randomLower;
+                              if (rowUpper[iRow] < 1.0e30 && rowUpper[iRow])
+                                   sum += rowUpper[iRow] * randomUpper;
+                              else if (!rowUpper[iRow])
+                                   sum += 1.234567e-7 * randomUpper;
+                              sortRow[nLook] = iRow;
+                              randomRow[nLook++] = sum;
+                              // best way is to number unique elements and bounds and use
+                              if (fabs(sum) > 1.0e4)
+                                   sum *= 1.0e-6;
+                              weight[iRow] = sum;
+                         }
+                         assert (nLook <= numberRows);
+                         CoinSort_2(randomRow, randomRow + nLook, sortRow);
+                         randomRow[nLook] = COIN_DBL_MAX;
+                         double last = -COIN_DBL_MAX;
+                         int iLast = -1;
+                         for (int iLook = 0; iLook < nLook + 1; iLook++) {
+                              if (randomRow[iLook] > last) {
+                                   if (iLast >= 0) {
+                                        int n = iLook - iLast;
+                                        if (n > 1) {
+                                             //printf("%d rows possible?\n",n);
+                                        }
+                                   }
+                                   iLast = iLook;
+                                   last = randomRow[iLook];
+                              }
+                         }
+                    }
+                    jRow = kRow;
+               }
+          }
+          CoinPackedMatrix columnCopy = *matrix;
+          const int * columnLength = columnCopy.getVectorLengths();
+          const int * row = columnCopy.getIndices();
+          const CoinBigIndex * columnStart = columnCopy.getVectorStarts();
+          const double * elementByColumn = columnCopy.getElements();
+          for (iColumn = 0; iColumn < numberColumns; iColumn++) {
+               int length = columnLength[iColumn];
+               CoinBigIndex start = columnStart[iColumn];
+               double sum = objective[iColumn];
+               if (columnLower[iColumn] > -1.0e30 && columnLower[iColumn])
+                    sum += columnLower[iColumn] * randomLower;
+               else if (!columnLower[iColumn])
+                    sum += 1.234567e-7 * randomLower;
+               if (columnUpper[iColumn] < 1.0e30 && columnUpper[iColumn])
+                    sum += columnUpper[iColumn] * randomUpper;
+               else if (!columnUpper[iColumn])
+                    sum += 1.234567e-7 * randomUpper;
+               if (model->isInteger(iColumn))
+                    sum += 9.87654321e-6 * randomInteger;
+               for (CoinBigIndex i = start; i < start + length; i++) {
+                    int iRow = row[i];
+                    sum += elementByColumn[i] * weight[iRow];
+               }
+               sortColumn[iColumn] = iColumn;
+               randomColumn[iColumn] = sum;
+          }
+          {
+               CoinSort_2(randomColumn, randomColumn + numberColumns, sortColumn);
+               for (iColumn = 0; iColumn < numberColumns; iColumn++) {
+                    int i = sortColumn[iColumn];
+                    backColumn[i] = iColumn;
+               }
+               randomColumn[numberColumns] = COIN_DBL_MAX;
+               double last = -COIN_DBL_MAX;
+               int iLast = -1;
+               for (int iLook = 0; iLook < numberColumns + 1; iLook++) {
+                    if (randomColumn[iLook] > last) {
+                         if (iLast >= 0) {
+                              int n = iLook - iLast;
+                              if (n > 1) {
+                                   //printf("%d columns possible?\n",n);
+                              }
+                              for (int i = iLast; i < iLook; i++) {
+                                   possibleColumn[sortColumn[i]] = n;
+                              }
+                         }
+                         iLast = iLook;
+                         last = randomColumn[iLook];
+                    }
+               }
+               for (iRow = 0; iRow < numberRows; iRow++) {
+                    CoinBigIndex start = rowStart[iRow];
+                    double sum = 0.0;
+                    int length = rowLength[iRow];
+                    for (CoinBigIndex i = start; i < start + length; i++) {
+                         int jColumn = column[i];
+                         double value = element[i];
+                         jColumn = backColumn[jColumn];
+                         sum += value * randomColumn[jColumn];
+                         //if (iColumn==23089||iRow==23729)
+                         //printf("row %d cola %d colb %d value %g rand %g sum %g\n",
+                         //   iRow,jColumn,column[i],value,randomColumn[jColumn],sum);
+                    }
+                    sortRow[iRow] = iRow;
+                    randomRow[iRow] = weight[iRow];
+                    randomRow[iRow] = sum;
+               }
+               CoinSort_2(randomRow, randomRow + numberRows, sortRow);
+               for (iRow = 0; iRow < numberRows; iRow++) {
+                    int i = sortRow[iRow];
+                    backRow[i] = iRow;
+               }
+               randomRow[numberRows] = COIN_DBL_MAX;
+               last = -COIN_DBL_MAX;
+               iLast = -1;
+               // Do backward indices from order
+               for (iRow = 0; iRow < numberRows; iRow++) {
+                    other[order[iRow]] = iRow;
+               }
+               for (int iLook = 0; iLook < numberRows + 1; iLook++) {
+                    if (randomRow[iLook] > last) {
+                         if (iLast >= 0) {
+                              int n = iLook - iLast;
+                              if (n > 1) {
+                                   //printf("%d rows possible?\n",n);
+                                   // Within group sort as for original "order"
+                                   for (int i = iLast; i < iLook; i++) {
+                                        int jRow = sortRow[i];
+                                        order[i] = other[jRow];
+                                   }
+                                   CoinSort_2(order + iLast, order + iLook, sortRow + iLast);
+                              }
+                              for (int i = iLast; i < iLook; i++) {
+                                   possibleRow[sortRow[i]] = n;
+                              }
+                         }
+                         iLast = iLook;
+                         last = randomRow[iLook];
+                    }
+               }
+               // Temp out
+               for (int iLook = 0; iLook < numberRows - 1000000; iLook++) {
+                    iRow = sortRow[iLook];
+                    CoinBigIndex start = rowStart[iRow];
+                    int length = rowLength[iRow];
+                    int numberPossible = possibleRow[iRow];
+                    for (CoinBigIndex i = start; i < start + length; i++) {
+                         int jColumn = column[i];
+                         if (possibleColumn[jColumn] != numberPossible)
+                              numberPossible = -1;
+                    }
+                    int n = numberPossible;
+                    if (numberPossible > 1) {
+                         //printf("pppppossible %d\n",numberPossible);
+                         for (int jLook = iLook + 1; jLook < iLook + numberPossible; jLook++) {
+                              int jRow = sortRow[jLook];
+                              CoinBigIndex start2 = rowStart[jRow];
+                              assert (numberPossible == possibleRow[jRow]);
+                              assert(length == rowLength[jRow]);
+                              for (CoinBigIndex i = start2; i < start2 + length; i++) {
+                                   int jColumn = column[i];
+                                   if (possibleColumn[jColumn] != numberPossible)
+                                        numberPossible = -1;
+                              }
+                         }
+                         if (numberPossible < 2) {
+                              // switch off
+                              for (int jLook = iLook; jLook < iLook + n; jLook++)
+                                   possibleRow[sortRow[jLook]] = -1;
+                         }
+                         // skip rest
+                         iLook += n - 1;
+                    } else {
+                         possibleRow[iRow] = -1;
+                    }
+               }
+               for (int iLook = 0; iLook < numberRows; iLook++) {
+                    iRow = sortRow[iLook];
+                    int numberPossible = possibleRow[iRow];
+                    // Only if any integers
+                    int numberIntegers = 0;
+                    CoinBigIndex start = rowStart[iRow];
+                    int length = rowLength[iRow];
+                    for (CoinBigIndex i = start; i < start + length; i++) {
+                         int jColumn = column[i];
+                         if (model->isInteger(jColumn))
+                              numberIntegers++;
+                    }
+                    if (numberPossible > 1 && !numberIntegers) {
+                         //printf("possible %d - but no integers\n",numberPossible);
+                    }
+                    if (numberPossible > 1 && (numberIntegers || false)) {
+                         //
+                         printf("possible %d - %d integers\n", numberPossible, numberIntegers);
+                         int lastLook = iLook;
+                         int nMapRow = -1;
+                         for (int jLook = iLook + 1; jLook < iLook + numberPossible; jLook++) {
+                              // stop if too many failures
+                              if (jLook > iLook + 10 && nMapRow < 0)
+                                   break;
+                              // Create identity mapping
+                              int i;
+                              for (i = 0; i < numberRows; i++)
+                                   mapRow[i] = i;
+                              for (i = 0; i < numberColumns; i++)
+                                   mapColumn[i] = i;
+                              int offset = jLook - iLook;
+                              int nStackC = 0;
+                              // build up row and column mapping
+                              int nStackR = 1;
+                              stackRow[0] = iLook;
+                              bool good = true;
+                              while (nStackR) {
+                                   nStackR--;
+                                   int look1 = stackRow[nStackR];
+                                   int look2 = look1 + offset;
+                                   assert (randomRow[look1] == randomRow[look2]);
+                                   int row1 = sortRow[look1];
+                                   int row2 = sortRow[look2];
+                                   assert (mapRow[row1] == row1);
+                                   assert (mapRow[row2] == row2);
+                                   mapRow[row1] = row2;
+                                   mapRow[row2] = row1;
+                                   CoinBigIndex start1 = rowStart[row1];
+                                   CoinBigIndex offset2 = rowStart[row2] - start1;
+                                   int length = rowLength[row1];
+                                   assert( length == rowLength[row2]);
+                                   for (CoinBigIndex i = start1; i < start1 + length; i++) {
+                                        int jColumn1 = column[i];
+                                        int jColumn2 = column[i+offset2];
+                                        if (randomColumn[backColumn[jColumn1]] !=
+                                                  randomColumn[backColumn[jColumn2]]) {
+                                             good = false;
+                                             break;
+                                        }
+                                        if (mapColumn[jColumn1] == jColumn1) {
+                                             // not touched
+                                             assert (mapColumn[jColumn2] == jColumn2);
+                                             if (jColumn1 != jColumn2) {
+                                                  // Put on stack
+                                                  mapColumn[jColumn1] = jColumn2;
+                                                  mapColumn[jColumn2] = jColumn1;
+                                                  stackColumn[nStackC++] = jColumn1;
+                                             }
+                                        } else {
+                                             if (mapColumn[jColumn1] != jColumn2 ||
+                                                       mapColumn[jColumn2] != jColumn1) {
+                                                  // bad
+                                                  good = false;
+                                                  printf("bad col\n");
+                                                  break;
+                                             }
+                                        }
+                                   }
+                                   if (!good)
+                                        break;
+                                   while (nStackC) {
+                                        nStackC--;
+                                        int iColumn = stackColumn[nStackC];
+                                        int iColumn2 = mapColumn[iColumn];
+                                        assert (iColumn != iColumn2);
+                                        int length = columnLength[iColumn];
+                                        assert (length == columnLength[iColumn2]);
+                                        CoinBigIndex start = columnStart[iColumn];
+                                        CoinBigIndex offset2 = columnStart[iColumn2] - start;
+                                        for (CoinBigIndex i = start; i < start + length; i++) {
+                                             int iRow = row[i];
+                                             int iRow2 = row[i+offset2];
+                                             if (mapRow[iRow] == iRow) {
+                                                  // First (but be careful)
+                                                  if (iRow != iRow2) {
+                                                       //mapRow[iRow]=iRow2;
+                                                       //mapRow[iRow2]=iRow;
+                                                       int iBack = backRow[iRow];
+                                                       int iBack2 = backRow[iRow2];
+                                                       if (randomRow[iBack] == randomRow[iBack2] &&
+                                                                 iBack2 - iBack == offset) {
+                                                            stackRow[nStackR++] = iBack;
+                                                       } else {
+                                                            //printf("randomRow diff - weights %g %g\n",
+                                                            //     weight[iRow],weight[iRow2]);
+                                                            // bad
+                                                            good = false;
+                                                            break;
+                                                       }
+                                                  }
+                                             } else {
+                                                  if (mapRow[iRow] != iRow2 ||
+                                                            mapRow[iRow2] != iRow) {
+                                                       // bad
+                                                       good = false;
+                                                       printf("bad row\n");
+                                                       break;
+                                                  }
+                                             }
+                                        }
+                                        if (!good)
+                                             break;
+                                   }
+                              }
+                              // then check OK
+                              if (good) {
+                                   for (iRow = 0; iRow < numberRows; iRow++) {
+                                        CoinBigIndex start = rowStart[iRow];
+                                        int length = rowLength[iRow];
+                                        if (mapRow[iRow] == iRow) {
+                                             for (CoinBigIndex i = start; i < start + length; i++) {
+                                                  int jColumn = column[i];
+                                                  backColumn2[jColumn] = i - start;
+                                             }
+                                             for (CoinBigIndex i = start; i < start + length; i++) {
+                                                  int jColumn = column[i];
+                                                  if (mapColumn[jColumn] != jColumn) {
+                                                       int jColumn2 = mapColumn[jColumn];
+                                                       CoinBigIndex i2 = backColumn2[jColumn2];
+                                                       if (i2 < 0) {
+                                                            good = false;
+                                                       } else if (element[i] != element[i2+start]) {
+                                                            good = false;
+                                                       }
+                                                  }
+                                             }
+                                             for (CoinBigIndex i = start; i < start + length; i++) {
+                                                  int jColumn = column[i];
+                                                  backColumn2[jColumn] = -1;
+                                             }
+                                        } else {
+                                             int row2 = mapRow[iRow];
+                                             assert (iRow = mapRow[row2]);
+                                             if (rowLower[iRow] != rowLower[row2] ||
+                                                       rowLower[row2] != rowLower[iRow])
+                                                  good = false;
+                                             CoinBigIndex offset2 = rowStart[row2] - start;
+                                             for (CoinBigIndex i = start; i < start + length; i++) {
+                                                  int jColumn = column[i];
+                                                  double value = element[i];
+                                                  int jColumn2 = column[i+offset2];
+                                                  double value2 = element[i+offset2];
+                                                  if (value != value2 || mapColumn[jColumn] != jColumn2 ||
+                                                            mapColumn[jColumn2] != jColumn)
+                                                       good = false;
+                                             }
+                                        }
+                                   }
+                                   if (good) {
+                                        // check rim
+                                        for (iColumn = 0; iColumn < numberColumns; iColumn++) {
+                                             if (mapColumn[iColumn] != iColumn) {
+                                                  int iColumn2 = mapColumn[iColumn];
+                                                  if (objective[iColumn] != objective[iColumn2])
+                                                       good = false;
+                                                  if (columnLower[iColumn] != columnLower[iColumn2])
+                                                       good = false;
+                                                  if (columnUpper[iColumn] != columnUpper[iColumn2])
+                                                       good = false;
+                                                  if (model->isInteger(iColumn) != model->isInteger(iColumn2))
+                                                       good = false;
+                                             }
+                                        }
+                                   }
+                                   if (good) {
+                                        // temp
+                                        if (nMapRow < 0) {
+                                             //const double * solution = model->primalColumnSolution();
+                                             // find mapped
+                                             int nMapColumn = 0;
+                                             for (int i = 0; i < numberColumns; i++) {
+                                                  if (mapColumn[i] > i)
+                                                       nMapColumn++;
+                                             }
+                                             nMapRow = 0;
+                                             int kRow = -1;
+                                             for (int i = 0; i < numberRows; i++) {
+                                                  if (mapRow[i] > i) {
+                                                       nMapRow++;
+                                                       kRow = i;
+                                                  }
+                                             }
+                                             printf("%d columns, %d rows\n", nMapColumn, nMapRow);
+                                             if (nMapRow == 1) {
+                                                  CoinBigIndex start = rowStart[kRow];
+                                                  int length = rowLength[kRow];
+                                                  printf("%g <= ", rowLower[kRow]);
+                                                  for (CoinBigIndex i = start; i < start + length; i++) {
+                                                       int jColumn = column[i];
+                                                       if (mapColumn[jColumn] != jColumn)
+                                                            printf("* ");
+                                                       printf("%d,%g ", jColumn, element[i]);
+                                                  }
+                                                  printf("<= %g\n", rowUpper[kRow]);
+                                             }
+                                        }
+                                        // temp
+                                        int row1 = sortRow[lastLook];
+                                        int row2 = sortRow[jLook];
+                                        lastLook = jLook;
+                                        CoinBigIndex start1 = rowStart[row1];
+                                        CoinBigIndex offset2 = rowStart[row2] - start1;
+                                        int length = rowLength[row1];
+                                        assert( length == rowLength[row2]);
+                                        CoinBigIndex put = startAdd[nAddRows];
+                                        double multiplier = length < 11 ? 2.0 : 1.125;
+                                        double value = 1.0;
+                                        for (CoinBigIndex i = start1; i < start1 + length; i++) {
+                                             int jColumn1 = column[i];
+                                             int jColumn2 = column[i+offset2];
+                                             columnAdd[put] = jColumn1;
+                                             elementAdd[put++] = value;
+                                             columnAdd[put] = jColumn2;
+                                             elementAdd[put++] = -value;
+                                             value *= multiplier;
+                                        }
+                                        nAddRows++;
+                                        startAdd[nAddRows] = put;
+                                   } else {
+                                        printf("ouch - did not check out as good\n");
+                                   }
+                              }
+                         }
+                         // skip rest
+                         iLook += numberPossible - 1;
+                    }
+               }
+          }
+          if (nAddRows) {
+               double * lower = new double [nAddRows];
+               double * upper = new double[nAddRows];
+               int i;
+               //const double * solution = model->primalColumnSolution();
+               for (i = 0; i < nAddRows; i++) {
+                    lower[i] = 0.0;
+                    upper[i] = COIN_DBL_MAX;
+               }
+               printf("Adding %d rows with %d elements\n", nAddRows,
+                      startAdd[nAddRows]);
+               //ClpSimplex newModel(*model);
+               //newModel.addRows(nAddRows,lower,upper,startAdd,columnAdd,elementAdd);
+               //newModel.writeMps("modified.mps");
+               delete [] lower;
+               delete [] upper;
+          }
+          delete [] startAdd;
+          delete [] columnAdd;
+          delete [] elementAdd;
+          delete [] order;
+          delete [] other;
+          delete [] randomColumn;
+          delete [] weight;
+          delete [] randomRow;
+          delete [] sortRow;
+          delete [] backRow;
+          delete [] possibleRow;
+          delete [] sortColumn;
+          delete [] backColumn;
+          delete [] backColumn2;
+          delete [] possibleColumn;
+          delete [] mapRow;
+          delete [] mapColumn;
+          delete [] stackRow;
+          delete [] stackColumn;
+     }
+     delete [] number;
+     // Now do breakdown of ranges
+     breakdown("Elements", numberElements, elementByColumn);
+     breakdown("RowLower", numberRows, rowLower);
+     breakdown("RowUpper", numberRows, rowUpper);
+     breakdown("ColumnLower", numberColumns, columnLower);
+     breakdown("ColumnUpper", numberColumns, columnUpper);
+     breakdown("Objective", numberColumns, objective);
 }
 
 

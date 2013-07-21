@@ -1537,6 +1537,9 @@ int CbcNode::chooseBranch (CbcModel *model, CbcNode *lastNode, int numberPassesL
     }
     // Set guessed solution value
     guessedObjectiveValue_ = objectiveValue_ + estimatedDegradation;
+    //printf ("Node %d depth %d unsatisfied %d sum %g obj %g guess %g\n",
+    //	    model->getNodeCount(),depth_,numberUnsatisfied_,
+    //	    sumInfeasibilities_,objectiveValue_,guessedObjectiveValue_);
     /*
       Cleanup, then we're outta here.
     */
@@ -3668,6 +3671,20 @@ int CbcNode::chooseDynamicBranch (CbcModel *model, CbcNode *lastNode,
 
     // Set guessed solution value
     guessedObjectiveValue_ = objectiveValue_ + estimatedDegradation;
+    int kColumn=-1;
+    if (branch_) {
+      CbcObject * obj = (dynamic_cast<CbcBranchingObject *>(branch_))->object(); 
+      CbcSimpleInteger * branchObj =
+	dynamic_cast <CbcSimpleInteger *>(obj) ;
+      if (branchObj) {
+	kColumn=branchObj->columnNumber();
+      }
+    }
+    if (model->logLevel()>1)
+    printf ("Node %d depth %d unsatisfied %d sum %g obj %g guess %g branching on %d\n",
+	    model->getNodeCount(),depth_,numberUnsatisfied_,
+	    sumInfeasibilities_,objectiveValue_,guessedObjectiveValue_,
+	    kColumn);
 #ifdef DO_ALL_AT_ROOT
     if (strongType) {
       char general[200];

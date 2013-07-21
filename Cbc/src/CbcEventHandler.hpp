@@ -98,6 +98,8 @@ public:
         beforeSolution2,
         /*! After failed heuristic. */
         afterHeuristic,
+        /*! On entry to small branch and bound. */
+        smallBranchAndBound,
         /*! End of search. */
         endSearch
     } ;
@@ -120,7 +122,9 @@ public:
         /*! Add special cuts. */
         addCuts,
         /*! Pretend solution never happened. */
-        killSolution
+        killSolution,
+        /*! Take action on modified data. */
+        takeAction
 
     } ;
 
@@ -139,6 +143,14 @@ public:
       from a map.
     */
     virtual CbcAction event(CbcEvent whichEvent) ;
+
+    /*! \brief Return the action to be taken for an event - and modify data.
+
+      Return the action that should be taken in response to the event passed as
+      the parameter. The default implementation simply reads a return code
+      from a map.
+    */
+    virtual CbcAction event(CbcEvent whichEvent, void * data) ;
 
     //@}
 

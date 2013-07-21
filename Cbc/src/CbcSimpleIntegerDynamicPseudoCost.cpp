@@ -23,6 +23,9 @@
 #include "CoinSort.hpp"
 #include "CoinError.hpp"
 #include "CbcSimpleIntegerDynamicPseudoCost.hpp"
+#ifdef COIN_HAS_CLP
+#include "OsiClpSolverInterface.hpp"
+#endif
 #ifdef COIN_DEVELOP
 typedef struct {
     double sumUp_;
@@ -839,8 +842,10 @@ CbcSimpleIntegerDynamicPseudoCost::createCbcBranch(OsiSolverInterface * /*solver
     assert (info->upper_[columnNumber_] > info->lower_[columnNumber_]);
     if (!info->hotstartSolution_ && priority_ != -999) {
 #ifndef NDEBUG
+#ifndef SWITCH_VARIABLES
         double nearest = floor(value + 0.5);
         assert (fabs(value - nearest) > info->integerTolerance_);
+#endif
 #endif
     } else if (info->hotstartSolution_) {
         double targetValue = info->hotstartSolution_[columnNumber_];
@@ -1015,6 +1020,15 @@ CbcSimpleIntegerDynamicPseudoCost::createUpdateInformation(const OsiSolverInterf
             double nearest = floor(value + 0.5);
             if (fabs(value - nearest) > integerTolerance)
                 unsatisfied++;
+#ifdef SWITCH_VARIABLES
+	    const CbcSwitchingBinary * sObject = dynamic_cast<const CbcSwitchingBinary *> (this);
+	    if (sObject) {
+	      int state[3],nBadFixed;
+	      unsatisfied +=
+		sObject->checkAssociatedBounds(solver,solution,0,
+					       state,nBadFixed);
+	    }
+#endif
         }
     }
     int way = branchingObject->way();
@@ -1397,4 +1411,443 @@ CbcIntegerPseudoCostBranchingObject::compareBranchingObject
     const double* otherBd = br->way_ < 0 ? br->down_ : br->up_;
     return CbcCompareRanges(thisBd, otherBd, replaceIfOverlap);
 }
+#ifdef SWITCH_VARIABLES
+/** Default Constructor
 
+  Equivalent to an unspecified binary variable.
+*/
+CbcSwitchingBinary::CbcSwitchingBinary ()
+        : CbcSimpleIntegerDynamicPseudoCost(),
+	  zeroLowerBound_(NULL),
+	  oneLowerBound_(NULL),
+	  zeroUpperBound_(NULL),
+	  oneUpperBound_(NULL),
+	  otherVariable_(NULL),
+	  numberOther_(0),
+	  type_(0)
+{
+}
+
+/** Useful constructor
+*/
+CbcSwitchingBinary::CbcSwitchingBinary (CbcSimpleIntegerDynamicPseudoCost * oldObject,
+					int nOdd,const int * other, const int * otherRow)
+  : CbcSimpleIntegerDynamicPseudoCost(*oldObject),
+    zeroLowerBound_(NULL),
+    oneLowerBound_(NULL),
+    zeroUpperBound_(NULL),
+    oneUpperBound_(NULL),
+    otherVariable_(NULL),
+    numberOther_(0),
+    type_(0)
+{
+  if (nOdd)
+    type_=2;
+  const CoinPackedMatrix * rowCopy = model_->solver()->getMatrixByRow();
+  const int * column = rowCopy->getIndices();
+  //const int * rowLength = rowCopy->getVectorLengths();
+  const CoinBigIndex * rowStart = rowCopy->getVectorStarts();
+  //const double * rowLower = model_->solver()->getRowLower();
+  const double * rowUpper = model_->solver()->getRowUpper();
+  const double * columnLower = model_->solver()->getColLower();
+  const double * columnUpper = model_->solver()->getColUpper();
+  const double * element = rowCopy->getElements();
+  int last = other[0];
+  int nPair=0;
+  int nInGroup=1;
+  for (int i=1;i<=nOdd;i++) {
+    if (other[i]==last) {
+      nInGroup++;
+    } else {
+      if (nInGroup>2 && model_->logLevel()>2)
+	printf("%d in group for column %d - some redundancy\n",
+	       nInGroup,columnNumber_);
+      nPair++;
+      last=other[i];
+      nInGroup=1;
+    }
+  }
+  zeroLowerBound_ = new double [4*nPair];
+  oneLowerBound_ = zeroLowerBound_+nPair;
+  zeroUpperBound_ = oneLowerBound_+nPair;
+  oneUpperBound_ = zeroUpperBound_+nPair;
+  otherVariable_ = new int [nPair];
+  numberOther_ = nPair;
+  if (nPair>1&&model_->logLevel()>2)
+    printf("%d pairs for column %d\n",
+	       nPair,columnNumber_);
+  // Now fill
+  last = other[0];
+  nPair=0;
+  int rows[20];
+  rows[0]= otherRow[0];
+  nInGroup=1;
+  for (int i=1;i<=nOdd;i++) {
+    if (other[i]==last) {
+      rows[nInGroup++]=otherRow[i];
+    } else {
+      double newLowerZero=0.0;
+      double newUpperZero=COIN_DBL_MAX;
+      double newLowerOne=0.0;
+      double newUpperOne=COIN_DBL_MAX;
+      int cColumn=-1;
+      for (int j=0;j<nInGroup;j++) {
+	int iRow = rows[j];
+	CoinBigIndex k = rowStart[iRow];
+	double bValue, cValue;
+	if (column[k]==columnNumber_) {
+	  bValue=element[k];
+	  cValue=element[k+1];
+	  cColumn=column[k+1];
+	} else {
+	  bValue=element[k+1];
+	  cValue=element[k];
+	  cColumn=column[k];
+	}
+	if (rowUpper[iRow]) {
+	  // G row - convert to L
+	  bValue=-bValue;
+	  cValue=-cValue;
+	}
+	if (bValue>0.0) {
+	  // binary*abs(bValue) <= continuous*abs(cValue);
+	  newLowerOne = -bValue/cValue;
+	} else {
+	  // binary*abs(bValue) >= continuous*abs(cValue);
+	  newUpperOne = -bValue/cValue;
+	  newUpperZero = 0.0;
+	}
+      }
+      zeroLowerBound_[nPair]=newLowerZero;
+      oneLowerBound_[nPair]=newLowerOne;
+      zeroUpperBound_[nPair]=newUpperZero;
+      oneUpperBound_[nPair]=newUpperOne;
+      // make current bounds tight
+      double newLower = CoinMin(newLowerZero,newLowerOne);
+      if (newLower>columnLower[cColumn])
+	model_->solver()->setColLower(cColumn,newLower);
+      double newUpper = CoinMax(newUpperZero,newUpperOne);
+      if (newUpper<columnUpper[cColumn])
+	model_->solver()->setColUpper(cColumn,newUpper);
+      otherVariable_[nPair++]=cColumn;
+      last=other[i];
+      rows[0] = otherRow[i];
+      nInGroup=1;
+    }
+  }
+}
+// Copy constructor
+CbcSwitchingBinary::CbcSwitchingBinary ( const CbcSwitchingBinary & rhs)
+        : CbcSimpleIntegerDynamicPseudoCost(rhs),
+	  numberOther_(rhs.numberOther_),
+	  type_(rhs.type_)
+{
+  zeroLowerBound_ = CoinCopyOfArray(rhs.zeroLowerBound_,4*numberOther_);
+  oneLowerBound_ = zeroLowerBound_+numberOther_;
+  zeroUpperBound_ = oneLowerBound_+numberOther_;
+  oneUpperBound_ = zeroUpperBound_+numberOther_;
+  otherVariable_ = CoinCopyOfArray(rhs.otherVariable_,numberOther_);
+}
+
+// Clone
+CbcObject *
+CbcSwitchingBinary::clone() const
+{
+    return new CbcSwitchingBinary(*this);
+}
+
+// Assignment operator
+CbcSwitchingBinary &
+CbcSwitchingBinary::operator=( const CbcSwitchingBinary & rhs)
+{
+    if (this != &rhs) {
+        CbcSimpleIntegerDynamicPseudoCost::operator=(rhs);
+	numberOther_=rhs.numberOther_;
+	type_ = rhs.type_;
+	delete [] zeroLowerBound_;
+	delete [] otherVariable_;
+	zeroLowerBound_ = CoinCopyOfArray(rhs.zeroLowerBound_,4*numberOther_);
+	oneLowerBound_ = zeroLowerBound_+numberOther_;
+	zeroUpperBound_ = oneLowerBound_+numberOther_;
+	oneUpperBound_ = zeroUpperBound_+numberOther_;
+	otherVariable_ = CoinCopyOfArray(rhs.otherVariable_,numberOther_);
+    }
+    return *this;
+}
+
+// Destructor
+CbcSwitchingBinary::~CbcSwitchingBinary ()
+{
+  delete [] zeroLowerBound_;
+  delete [] otherVariable_;
+}
+// Add in zero switches
+void 
+CbcSwitchingBinary::addZeroSwitches(int nAdd,const int * columns)
+{
+  type_ |= 1;
+  int nNew = numberOther_+nAdd;
+  double * bounds = new double[4*nNew];
+  int * other = new int [nNew];
+  memcpy(other,otherVariable_,numberOther_*sizeof(int));
+  delete [] otherVariable_;
+  otherVariable_=other;
+  memcpy(bounds,zeroLowerBound_,numberOther_*sizeof(double));
+  memcpy(bounds+nNew,oneLowerBound_,numberOther_*sizeof(double));
+  memcpy(bounds+2*nNew,zeroUpperBound_,numberOther_*sizeof(double));
+  memcpy(bounds+3*nNew,oneUpperBound_,numberOther_*sizeof(double));
+  delete [] zeroLowerBound_;
+  zeroLowerBound_ = bounds;
+  oneLowerBound_ = zeroLowerBound_+nNew;
+  zeroUpperBound_ = oneLowerBound_+nNew;
+  oneUpperBound_ = zeroUpperBound_+nNew;
+  for (int i=0;i<nAdd;i++) {
+    zeroLowerBound_[numberOther_]=0.0;
+    oneLowerBound_[numberOther_]=0.0;
+    zeroUpperBound_[numberOther_]=0.0;
+    oneUpperBound_[numberOther_]=COIN_DBL_MAX;
+    otherVariable_[numberOther_++]=columns[i];
+  }
+}
+// Same - returns true if contents match(ish)
+bool
+CbcSwitchingBinary::same(const CbcSwitchingBinary * otherObject) const
+{
+  bool okay = CbcSimpleIntegerDynamicPseudoCost::same(otherObject);
+    return okay;
+}
+double
+CbcSwitchingBinary::infeasibility(const OsiBranchingInformation * info,
+        int &preferredWay) const
+{
+    assert (downDynamicPseudoCost_ > 1.0e-40 && upDynamicPseudoCost_ > 1.0e-40);
+    double * solution = const_cast<double *>(model_->testSolution());
+    const double * lower = model_->getCbcColLower();
+    const double * upper = model_->getCbcColUpper();
+    double saveValue = solution[columnNumber_];
+    if (!lower[columnNumber_]&&upper[columnNumber_]==1.0) {
+      double integerTolerance =
+	model_->getDblParam(CbcModel::CbcIntegerTolerance);
+      if (saveValue<integerTolerance) {
+	// check others OK
+	bool allGood=true;
+	double tolerance;
+	model_->solver()->getDblParam(OsiPrimalTolerance, tolerance) ;
+	for (int i=0;i<numberOther_;i++) {
+	  int otherColumn = otherVariable_[i];
+	  double value = solution[otherColumn];
+	  if (value<zeroLowerBound_[i]-tolerance||
+	      value>zeroUpperBound_[i]+tolerance)
+	    allGood=false;
+	}
+	if (!allGood)
+	  solution[columnNumber_]=2.0*integerTolerance;
+      } else if (saveValue>1.0-integerTolerance) {
+	// check others OK
+	bool allGood=true;
+	double tolerance;
+	model_->solver()->getDblParam(OsiPrimalTolerance, tolerance) ;
+	for (int i=0;i<numberOther_;i++) {
+	  int otherColumn = otherVariable_[i];
+	  double value = solution[otherColumn];
+	  if (value<oneLowerBound_[i]-tolerance||
+	      value>oneUpperBound_[i]+tolerance)
+	    allGood=false;
+	}
+	if (!allGood)
+	  solution[columnNumber_]=1.0-2.0*integerTolerance;
+      }
+    }
+    double inf = CbcSimpleIntegerDynamicPseudoCost::infeasibility(info,preferredWay);
+    solution[columnNumber_]=saveValue;
+    return inf;
+}
+// Set associated bounds
+int 
+CbcSwitchingBinary::setAssociatedBounds(OsiSolverInterface * solver,
+					int cleanBasis) const
+{
+  if (!solver)
+    solver = model_->solver();
+#ifdef COIN_HAS_CLP
+  OsiClpSolverInterface * clpSolver
+    = dynamic_cast<OsiClpSolverInterface *> (solver);
+  if (cleanBasis!=1)
+    clpSolver=NULL;
+#endif
+  const double * columnLower = solver->getColLower();
+  const double * columnUpper = solver->getColUpper();
+  int nChanged=0;
+  if (!columnUpper[columnNumber_]) {
+#ifdef COIN_HAS_CLP
+    if (clpSolver)
+      clpSolver->setColumnStatus(columnNumber_,ClpSimplex::isFixed);
+#endif
+    for (int i=0;i<numberOther_;i++) {
+      int otherColumn = otherVariable_[i];
+      if (zeroLowerBound_[i]>columnLower[otherColumn]) {
+	solver->setColLower(otherColumn,zeroLowerBound_[i]);
+	nChanged++;
+      }
+      if (zeroUpperBound_[i]<columnUpper[otherColumn]) {
+	solver->setColUpper(otherColumn,zeroUpperBound_[i]);
+#ifdef COIN_DEVELOP
+	const double * solution = solver->getColSolution();
+	double value = solution[otherColumn];
+	if (value - zeroUpperBound_[i] > 1.0e-5 && model_->logLevel()>1)
+	  printf("value for continuous %d %g - above %g - switch %d is %.12g (ub 0)\n", 
+		 otherColumn, value, zeroUpperBound_[i],columnNumber_,solution[columnNumber_]);
+#endif
+	nChanged++;
+      }
+    }
+  } else if (columnLower[columnNumber_]==1.0) {
+#ifdef COIN_HAS_CLP
+    if (clpSolver)
+      clpSolver->setColumnStatus(columnNumber_,ClpSimplex::isFixed);
+#endif
+    for (int i=0;i<numberOther_;i++) {
+      int otherColumn = otherVariable_[i];
+      if (oneLowerBound_[i]>columnLower[otherColumn]) {
+	solver->setColLower(otherColumn,oneLowerBound_[i]);
+	nChanged++;
+      }
+      if (oneUpperBound_[i]<columnUpper[otherColumn]) {
+	solver->setColUpper(otherColumn,oneUpperBound_[i]);
+	nChanged++;
+      }
+    }
+  } else if (cleanBasis>=2) {
+    // if all OK then can fix
+    int state[3];
+    int nBadFixed;
+    const double * solution = solver->getColSolution();
+    if (!checkAssociatedBounds(solver,solution,
+			       0,state,nBadFixed)) {
+      const double *reducedCost = solver->getReducedCost() ;
+      double good=true;
+      double integerTolerance =
+	model_->getDblParam(CbcModel::CbcIntegerTolerance);
+      if (solution[columnNumber_]<integerTolerance) {
+	if (cleanBasis==2||reducedCost[columnNumber_]>1.0e-6)
+	  solver->setColUpper(columnNumber_,0.0);
+	else
+	  good=false;
+      } else if (solution[columnNumber_]>1.0-integerTolerance) {
+	if (cleanBasis==2||reducedCost[columnNumber_]<-1.0e-6)
+	  solver->setColLower(columnNumber_,1.0);
+	else
+	  good=false;
+      }
+      if (good)
+	nChanged=setAssociatedBounds(solver,0);
+    }
+  } else {
+    // see if any continuous bounds force binary 
+    for (int i=0;i<numberOther_;i++) {
+      int otherColumn = otherVariable_[i];
+      if (columnLower[otherColumn]>zeroUpperBound_[i]) {
+	// can't be zero
+	solver->setColLower(columnNumber_,1.0);
+	nChanged++;
+      } else if (columnLower[otherColumn]>oneUpperBound_[i]) {
+	// can't be one
+	solver->setColUpper(columnNumber_,0.0);
+	nChanged++;
+      }
+      if (columnUpper[otherColumn]<zeroLowerBound_[i]) {
+	// can't be zero
+	solver->setColLower(columnNumber_,1.0);
+	nChanged++;
+      } else if (columnUpper[otherColumn]<oneLowerBound_[i]) {
+	// can't be one
+	solver->setColUpper(columnNumber_,0.0);
+	nChanged++;
+      }
+    }
+  }
+  return nChanged;
+}
+// Check associated bounds 
+int 
+CbcSwitchingBinary::checkAssociatedBounds(const OsiSolverInterface * solver,
+					  const double * solution, int printLevel, 
+					  int state[3], int & nBadFixed) const
+{
+  state[0] = 0;
+  int nBad=0;
+  if (!solver)
+    solver = model_->solver();
+  double tolerance;
+  solver->getDblParam(OsiPrimalTolerance, tolerance) ;
+  const double * columnLower = solver->getColLower();
+  const double * columnUpper = solver->getColUpper();
+  double integerTolerance =
+    model_->getDblParam(CbcModel::CbcIntegerTolerance);
+  bool printIt = printLevel>2 && model_->logLevel()>1;
+  if (solution[columnNumber_]<integerTolerance) {
+    state[0] = -1;
+    for (int i=0;i<numberOther_;i++) {
+      int otherColumn = otherVariable_[i];
+      if (zeroLowerBound_[i]>solution[otherColumn]+tolerance*5.0) {
+	nBad++;
+	if (columnUpper[columnNumber_]==0.0) {
+	  nBadFixed++;
+	  //printIt=true;
+	}
+	if (printIt)
+	  printf("switch %d at zero, other %d at %.12g below bound of %.12g\n",
+		 columnNumber_,otherColumn,solution[otherColumn],zeroLowerBound_[i]);
+      }
+      if (zeroUpperBound_[i]<solution[otherColumn]-tolerance*5.0) {
+	nBad++;
+	if (columnUpper[columnNumber_]==0.0) {
+	  nBadFixed++;
+	  //printIt=true;
+	}
+	if (printIt)
+	  printf("switch %d at zero, other %d at %.12g above bound of %.12g\n",
+		 columnNumber_,otherColumn,solution[otherColumn],zeroUpperBound_[i]);
+      }
+    }
+  } else if (solution[columnNumber_]>1.0-integerTolerance) {
+    state[0] = 1;
+    for (int i=0;i<numberOther_;i++) {
+      int otherColumn = otherVariable_[i];
+      if (oneLowerBound_[i]>solution[otherColumn]+tolerance*5.0) {
+	nBad++;
+	if (columnLower[columnNumber_]==1.0) {
+	  nBadFixed++;
+	  //printIt=true;
+	}
+	if (printIt)
+	  printf("switch %d at one, other %d at %.12g below bound of %.12g\n",
+		 columnNumber_,otherColumn,solution[otherColumn],oneLowerBound_[i]);
+      }
+      if (oneUpperBound_[i]<solution[otherColumn]-tolerance*5.0) {
+	nBad++;
+	if (columnLower[columnNumber_]==1.0) {
+	  nBadFixed++;
+	  //printIt=true;
+	}
+	if (printIt)
+	  printf("switch %d at one, other %d at %.12g above bound of %.12g\n",
+		 columnNumber_,otherColumn,solution[otherColumn],oneUpperBound_[i]);
+      }
+    }
+  } else {
+    // in between - compute tight variables
+    state[1]=0;
+    state[2]=0;
+    // for now just compute ones away from bounds
+    for (int i=0;i<numberOther_;i++) {
+      int otherColumn = otherVariable_[i];
+      double otherValue = solution[otherColumn];
+      if (otherValue>columnLower[otherColumn]+tolerance&&
+	  otherValue<columnUpper[otherColumn]-tolerance)
+	state[1]++;
+    }
+  }
+  return nBad;
+}
+#endif

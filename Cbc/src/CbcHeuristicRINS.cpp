@@ -324,7 +324,20 @@ CbcHeuristicRINS::solution(double & solutionValue,
                 }
 #endif
             }
-            //printf("%d integers have same value\n",nFix);
+	    if (solutionValue==-COIN_DBL_MAX) {
+	      // return fixings in betterSolution
+	      const double * colLower = newSolver->getColLower();
+	      const double * colUpper = newSolver->getColUpper();
+	      for (int iColumn = 0; iColumn < numberColumns; iColumn++) {
+		if (colLower[iColumn]==colUpper[iColumn])
+		  betterSolution[iColumn]=colLower[iColumn];
+		else
+		  betterSolution[iColumn]=COIN_DBL_MAX;
+	      }
+	      delete newSolver;
+	      return 0;
+	    }
+            //printf("RINS %d integers have same value\n",nFix);
             returnCode = smallBranchAndBound(newSolver, numberNodes_, betterSolution, solutionValue,
                                              model_->getCutoff(), "CbcHeuristicRINS");
             if (returnCode < 0) {

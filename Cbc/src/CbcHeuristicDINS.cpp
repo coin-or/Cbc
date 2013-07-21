@@ -180,7 +180,7 @@ CbcHeuristicDINS::solution(double & solutionValue,
             for (int i = 0; i < maximumKeepSolutions_; i++)
                 values_[i] = NULL;
         } else {
-            assert (numberIntegers == numberIntegers_);
+            assert (numberIntegers >= numberIntegers_);
         }
         // move solutions (0 will be most recent)
         {
@@ -192,7 +192,7 @@ CbcHeuristicDINS::solution(double & solutionValue,
             values_[0] = temp;
         }
         int i;
-        for (i = 0; i < numberIntegers; i++) {
+        for (i = 0; i < numberIntegers_; i++) {
             int iColumn = integerVariable[i];
             double value = bestSolution[iColumn];
             double nearest = floor(value + 0.5);
@@ -204,7 +204,7 @@ CbcHeuristicDINS::solution(double & solutionValue,
     if (((model_->getNodeCount() % howOften_) == howOften_ / 2 || !model_->getNodeCount()) && (model_->getCurrentPassNumber() == 1 || model_->getCurrentPassNumber() == 999999)) {
         OsiSolverInterface * solver = model_->solver();
 
-        int numberIntegers = model_->numberIntegers();
+        //int numberIntegers = model_->numberIntegers();
         const int * integerVariable = model_->integerVariable();
 
         const double * currentSolution = solver->getColSolution();
@@ -222,8 +222,8 @@ CbcHeuristicDINS::solution(double & solutionValue,
             solver->getDblParam(OsiPrimalTolerance, primalTolerance);
             const double * continuousSolution = newSolver->getColSolution();
             // Space for added constraint
-            double * element = new double [numberIntegers];
-            int * column = new int [numberIntegers];
+            double * element = new double [numberIntegers_];
+            int * column = new int [numberIntegers_];
             int i;
             int nFix = 0;
             int nCouldFix = 0;
@@ -232,7 +232,7 @@ CbcHeuristicDINS::solution(double & solutionValue,
             int nEl = 0;
             double bias = localSpace;
             int okSame = numberKeptSolutions_ - 1;
-            for (i = 0; i < numberIntegers; i++) {
+            for (i = 0; i < numberIntegers_; i++) {
                 int iColumn = integerVariable[i];
                 const OsiObject * object = model_->object(i);
                 // get original bounds
@@ -332,11 +332,11 @@ CbcHeuristicDINS::solution(double & solutionValue,
             model_->messageHandler()->message(CBC_FPUMP2, model_->messages())
             << generalPrint
             << CoinMessageEol;
-            if (nFix > numberIntegers / 10) {
+            if (nFix > numberIntegers_ / 10) {
 #ifdef JJF_ZERO
                 newSolver->initialSolve();
                 printf("obj %g\n", newSolver->getObjValue());
-                for (i = 0; i < numberIntegers; i++) {
+                for (i = 0; i < numberIntegers_; i++) {
                     int iColumn = integerVariable[i];
                     printf("%d new bounds %g %g - solutions %g %g\n",
                            iColumn, newSolver->getColLower()[iColumn],

@@ -1316,7 +1316,7 @@ CbcModel::splitModel(int numberModels, CbcModel ** model,
         otherModel->globalCuts_ = globalCuts_;
         otherModel->numberSolutions_ = numberSolutions_;
         otherModel->numberHeuristicSolutions_ = numberHeuristicSolutions_;
-        otherModel->numberNodes_ = 1; //numberNodes_;
+        otherModel->numberNodes_ = numberNodes_;
         otherModel->numberIterations_ = numberIterations_;
 #ifdef JJF_ZERO
         if (maximumNumberCuts_ > otherModel->maximumNumberCuts_) {
@@ -1529,6 +1529,8 @@ CbcModel::moveToModel(CbcModel * baseModel, int mode)
             //addedCuts_ = NULL;
             tree_ = NULL;
         }
+	if ((moreSpecialOptions2_&32)!=0)
+	  delete eventHandler_;
         eventHandler_ = NULL;
         delete solverCharacteristics_;
         solverCharacteristics_ = NULL;
@@ -1540,7 +1542,12 @@ CbcModel::moveToModel(CbcModel * baseModel, int mode)
         }
     } else if (mode == -1) {
         delete eventHandler_;
-        eventHandler_ = baseModel->eventHandler_;
+	if ((moreSpecialOptions2_&32)==0||!baseModel->eventHandler_) {
+	  eventHandler_ = baseModel->eventHandler_;
+	} else {
+	  eventHandler_ = baseModel->eventHandler_->clone();
+	  eventHandler_->setModel(this);
+	}
         assert (!statistics_);
         assert(baseModel->solverCharacteristics_);
         solverCharacteristics_ = new OsiBabSolver (*baseModel->solverCharacteristics_);

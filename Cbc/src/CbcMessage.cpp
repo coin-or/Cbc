@@ -53,7 +53,7 @@ static Cbc_message us_english[] = {
     {CBC_UNBOUNDED, 34, 1, "The LP relaxation is unbounded!"},
     {CBC_OTHER_STATS, 35, 1, "Maximum depth %d, %g variables fixed on reduced cost"},
     {CBC_HEURISTICS_OFF, 36, 1, "Heuristics switched off as %d branching objects are of wrong type"},
-    {CBC_STATUS2, 37, 1, "%d nodes, %d on tree, best %g - possible %g depth %d unsat %d its %d (%.2f seconds)"},
+    {CBC_STATUS2, 37, 1, "%d nodes, %d on tree, best %g - possible %g depth %d unsat %d value %g its %d (%.2f seconds)"},
     {CBC_FPUMP1, 38, 1, "%s"},
     {CBC_FPUMP2, 39, 2, "%s"},
     {CBC_STATUS3, 40, 1, "%d nodes (+%d), %d on tree, best %g - possible %g depth %d unsat %d its %d (+%d) (%.2f seconds)"},

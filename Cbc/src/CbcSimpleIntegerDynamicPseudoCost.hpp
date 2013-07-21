@@ -71,7 +71,7 @@ public:
 
 
     /// Fills in a created branching object
-    void fillCreateBranch(CbcIntegerBranchingObject * branching, const OsiBranchingInformation * info, int way) ;
+    // void fillCreateBranch(CbcIntegerBranchingObject * branching, const OsiBranchingInformation * info, int way) ;
 
 
     /** Pass in information on branch just done and create CbcObjectUpdateData instance.
@@ -461,5 +461,100 @@ protected:
     /// Change in guessed objective value for next branch
     double changeInGuessed_;
 };
+#ifdef SWITCH_VARIABLES
+/** Define a single integer class but with associated switched variable
+    So Binary variable switches on/off a continuous variable
+    designed for badly scaled problems
+ */
+
+
+class CbcSwitchingBinary : public CbcSimpleIntegerDynamicPseudoCost {
+
+public:
+
+    // Default Constructor
+    CbcSwitchingBinary ();
+
+    // Useful constructor 
+    CbcSwitchingBinary (CbcSimpleIntegerDynamicPseudoCost * oldObject,
+			int nOdd,const int * other, const int * otherRow);
+
+
+    // Copy constructor
+    CbcSwitchingBinary ( const CbcSwitchingBinary &);
+
+    /// Clone
+    virtual CbcObject * clone() const;
+
+    // Assignment operator
+    CbcSwitchingBinary & operator=( const CbcSwitchingBinary& rhs);
+
+    // Destructor
+    virtual ~CbcSwitchingBinary ();
+
+    /// Add in zero switches
+    void addZeroSwitches(int nAdd,const int * columns);
+    /// Infeasibility - large is 0.5
+    virtual double infeasibility(const OsiBranchingInformation * info,
+                                 int &preferredWay) const;
+
+    /// Same - returns true if contents match(ish)
+    bool same(const CbcSwitchingBinary * obj) const;
+    /// Set associated bounds
+    virtual int setAssociatedBounds(OsiSolverInterface * solver=NULL,
+			  int cleanBasis=0) const;
+    /// Check associated bounds
+    int checkAssociatedBounds(const OsiSolverInterface * solver,const double * solution,
+			      int printLevel, int state[3], int & nBadFixed) const;
+    /// Lower bound when binary zero
+    inline const double * zeroLowerBound() const
+    { return zeroLowerBound_; }
+    /// Lower bound when binary one
+    inline const double * oneLowerBound() const
+    { return oneLowerBound_; }
+    /// Upper bound when binary zero
+    inline const double * zeroUpperBound() const
+    { return zeroUpperBound_; }
+    /// Upper bound when binary one
+    inline const double * oneUpperBound() const
+    { return oneUpperBound_; }
+    /** Continuous variable -
+    */
+    inline const int * otherVariable() const
+    { return otherVariable_;}
+    /// Number of other variables
+    inline int numberOther() const
+    { return numberOther_;}
+    /** Type
+	1 - single switch
+	2 - double switch
+	3 - both
+    */
+    inline int type() const
+    { return type_;}
+protected:
+    /// data
+
+    /// Lower bound when binary zero
+    double * zeroLowerBound_;
+    /// Lower bound when binary one
+    double * oneLowerBound_;
+    /// Upper bound when binary zero
+    double * zeroUpperBound_;
+    /// Upper bound when binary one
+    double * oneUpperBound_;
+    /** Continuous variable -
+    */
+    int * otherVariable_;
+    /// Number of other variables
+    int numberOther_;
+    /** Type
+	1 - single switch
+	2 - double switch
+	3 - both
+    */
+    int type_;
+};
+#endif
 #endif
 

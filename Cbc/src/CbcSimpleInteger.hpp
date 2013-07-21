@@ -209,7 +209,7 @@ public:
     */
     virtual CbcBranchingObject * createCbcBranch(OsiSolverInterface * solver, const OsiBranchingInformation * info, int way) ;
     /// Fills in a created branching object
-    void fillCreateBranch(CbcIntegerBranchingObject * branching, const OsiBranchingInformation * info, int way) ;
+  /*virtual*/ void fillCreateBranch(CbcIntegerBranchingObject * branching, const OsiBranchingInformation * info, int way) ;
 
     using CbcObject::solverBranch ;
     /** Create an OsiSolverBranch object

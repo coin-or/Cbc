@@ -129,7 +129,9 @@ void CbcFullNodeInfo::applyToModel (CbcModel *model,
 
 {
     OsiSolverInterface *solver = model->solver() ;
-
+    // may be end game
+    if (!active_)
+      return;
     // branch - do bounds
     assert (active_ == 7 || active_ == 15);
     int i;

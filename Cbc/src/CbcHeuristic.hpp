@@ -331,7 +331,7 @@ protected:
     std::string heuristicName_;
 
     /// How often to do (code can change)
-    int howOften_;
+    mutable int howOften_;
     /// How much to increase how often
     double decayFactor_;
     /** Switches (does not apply equally to all heuristics)

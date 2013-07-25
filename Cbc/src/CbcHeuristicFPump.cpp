@@ -835,7 +835,7 @@ CbcHeuristicFPump::solution(double & solutionValue,
 			  solver->resolve();
 			  if (solver->isProvenOptimal()) {
 			    memcpy(newSolution,solver->getColSolution(),
-				   numberColumns);
+				   numberColumns*sizeof(double));
 			    newSolutionValue = -saveOffset;
 			    for (  i = 0 ; i < numberColumns ; i++ )
 			      newSolutionValue += saveObjective[i] * newSolution[i];

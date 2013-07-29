@@ -832,15 +832,101 @@ CbcHeuristicFPump::solution(double & solutionValue,
                                 numberBandBsolutions++;
 			} else if (numberColumns>numberIntegersOrig) {
 			  // relax continuous
+			  bool takeHint;
+			  OsiHintStrength strength;
+			  solver->getHintParam(OsiDoDualInResolve, takeHint, strength);
+			  //solver->setHintParam(OsiDoReducePrint, false, OsiHintTry);
+			  solver->setHintParam(OsiDoDualInResolve, false, OsiHintDo);
+			  //solver->setHintParam(OsiDoScale, false, OsiHintDo);
 			  solver->resolve();
+			  solver->setHintParam(OsiDoDualInResolve, takeHint, strength);
 			  if (solver->isProvenOptimal()) {
 			    memcpy(newSolution,solver->getColSolution(),
 				   numberColumns*sizeof(double));
 			    newSolutionValue = -saveOffset;
-			    for (  i = 0 ; i < numberColumns ; i++ )
+			    for (  i = 0 ; i < numberColumns ; i++ ) {
 			      newSolutionValue += saveObjective[i] * newSolution[i];
+			    }
 			    newSolutionValue *= direction;
 			    sprintf(pumpPrint, "Relaxing continuous gives %g", newSolutionValue);
+			    //#define DEBUG_BEST
+#ifdef DEBUG_BEST
+			    {
+			      int numberColumns=solver->getNumCols();
+			      FILE * fp = fopen("solution.data2","wb");
+			      printf("Solution data on file solution.data2\n");
+			      size_t numberWritten;
+			      numberWritten=fwrite(&numberColumns,sizeof(int),1,fp);
+			      assert (numberWritten==1);
+			      numberWritten=fwrite(&newSolutionValue,sizeof(double),1,fp);
+			      assert (numberWritten==1);
+			      numberWritten=fwrite(newSolution,sizeof(double),numberColumns,fp);
+			      assert (numberWritten==numberColumns);
+			      fclose(fp);
+			      const double * rowLower = solver->getRowLower();
+			      const double * rowUpper = solver->getRowUpper();
+			      const double * columnLower = solver->getColLower();
+			      const double * columnUpper = solver->getColUpper();
+			      int numberRows = solver->getNumRows() ;
+			      double *rowActivity = new double[numberRows] ;
+			      memset(rowActivity, 0, numberRows*sizeof(double)) ;
+			      const double * element = solver->getMatrixByCol()->getElements();
+			      const int * row = solver->getMatrixByCol()->getIndices();
+			      const CoinBigIndex * columnStart = solver->getMatrixByCol()->getVectorStarts();
+			      const int * columnLength = solver->getMatrixByCol()->getVectorLengths();
+			      double largestAway=0.0;
+			      int away=-1;
+			      double saveOffset;
+			      solver->getDblParam(OsiObjOffset, saveOffset);
+			      double newSolutionValue = -saveOffset;
+			      const double * objective = solver->getObjCoefficients();
+			      for ( int iColumn=0 ; iColumn<numberColumns ; ++iColumn ) {
+				double value=newSolution[iColumn];
+				CoinBigIndex start = columnStart[iColumn];
+				CoinBigIndex end = start + columnLength[iColumn];
+				for (CoinBigIndex j = start; j < end; j++) {
+				  int iRow = row[j];
+				  if (iRow==1996)
+				    printf("fp col %d val %g el %g old y %g\n",
+				  iColumn,value,element[j],rowActivity[iRow]);
+				  rowActivity[iRow] += value * element[j];
+				}
+				newSolutionValue += objective[iColumn] * newSolution[iColumn];
+				if (solver->isInteger(iColumn)) {
+				  double intValue = floor(value+0.5);
+				  if (fabs(value-intValue)>largestAway) {
+				    largestAway=fabs(value-intValue);
+				    away=iColumn;
+				  }
+				}
+			      }
+			      printf("Largest away from int at column %d was %g - obj %g\n",away,
+				     largestAway,newSolutionValue);
+			      double largestInfeasibility=0.0;
+			      for (int i = 0 ; i < numberRows ; i++) {
+#if 0 //def CLP_INVESTIGATE
+				double inf;
+				inf = rowLower[i] - rowActivity[i];
+				if (inf > primalTolerance)
+				  printf("Row %d inf %g sum %g %g <= %g <= %g\n",
+					 i, inf, rowSum[i], rowLower[i], rowActivity[i], rowUpper[i]);
+				inf = rowActivity[i] - rowUpper[i];
+				if (inf > primalTolerance)
+				  printf("Row %d inf %g %g <= %g <= %g\n",
+					 i, inf, rowLower[i], rowActivity[i], rowUpper[i]);
+#endif
+				double infeasibility = CoinMax(rowActivity[i]-rowUpper[i],
+							       rowLower[i]-rowActivity[i]);
+				if (infeasibility>largestInfeasibility) {
+				  largestInfeasibility = infeasibility;
+				  printf("Binf of %g on row %d\n",
+					 infeasibility,i);
+				}
+			      }
+			      delete [] rowActivity ;
+			      printf("Blargest infeasibility is %g - obj %g\n", largestInfeasibility,newSolutionValue);
+			    }
+#endif
 			  } else {
 			    sprintf(pumpPrint,"Infeasible when relaxing continuous!\n");
 			  }

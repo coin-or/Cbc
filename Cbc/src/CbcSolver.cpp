@@ -3016,6 +3016,12 @@ int CbcMain1 (int argc, const char *argv[],
                         break;
                     case CBC_PARAM_ACTION_DOHEURISTIC:
                         if (goodModel) {
+#ifndef CBC_USE_INITIAL_TIME
+			  if (model_.useElapsedTime())
+			    model_.setDblParam(CbcModel::CbcStartSeconds, CoinGetTimeOfDay());
+			  else
+			    model_.setDblParam(CbcModel::CbcStartSeconds, CoinCpuTime());
+#endif
                             int vubAction = parameters_[whichParam(CBC_PARAM_INT_VUBTRY, numberParameters_, parameters_)].intValue();
                             if (vubAction != -1) {
                                 // look at vubs
@@ -3046,8 +3052,15 @@ int CbcMain1 (int argc, const char *argv[],
                                 //assert (!newSolver);
                             }
                             // Actually do heuristics
+			    // may need to flip objective
+			    bool needFlip = model_.solver()->getObjSense()<0.0;
+			    if (needFlip)
+			      model_.flipModel(); 
+			    //if we do then - fix priorities in clonebutmodel_.convertToDynamic();
                             doHeuristics(&model_, 2, parameters_,
                                          numberParameters_, noPrinting_, initialPumpTune);
+			    if (needFlip)
+			      model_.flipModel();
                             if (model_.bestSolution()) {
                                 model_.setProblemStatus(1);
                                 model_.setSecondaryStatus(6);

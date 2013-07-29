@@ -14919,6 +14919,37 @@ CbcModel::doHeuristicsAtRoot(int deleteHeuristicsAfterwards)
 		      handler_->message(CBC_GENERAL, messages_) << 
 			line << CoinMessageEol ;
 		    }
+		    //#define DEBUG_BEST
+#ifdef DEBUG_BEST
+  FILE * fp = fopen("solution.data","rb");
+  if (!fp&&ifSol>0) {
+    int numberColumns=getNumCols();
+    fp = fopen("solution.data","wb");
+    printf("Solution data on file solution.data\n");
+    size_t numberWritten;
+    numberWritten=fwrite(&numberColumns,sizeof(int),1,fp);
+    assert (numberWritten==1);
+    numberWritten=fwrite(&heuristicValue,sizeof(double),1,fp);
+    assert (numberWritten==1);
+    numberWritten=fwrite(newSolution,sizeof(double),numberColumns,fp);
+    assert (numberWritten==numberColumns);
+    fclose(fp);
+  } else if (fp) {
+    int numberColumns=getNumCols();
+    int numberColumnsX;
+    size_t numberRead;
+    numberRead=fread(&numberColumnsX,sizeof(int),1,fp);
+    assert (numberRead==1);
+    if (numberColumns==numberColumnsX) {
+      numberRead=fread(&heuristicValue,sizeof(double),1,fp);
+      assert (numberRead==1);
+      numberRead=fread(newSolution,sizeof(double),numberColumns,fp);
+      assert (numberRead==numberColumns);
+      ifSol=1;
+    }
+    fclose(fp);
+  }
+#endif
                     if (ifSol > 0) {
                         // better solution found
                         double currentObjective = bestObjective_;

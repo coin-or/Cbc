@@ -29,6 +29,7 @@
 #include "CbcHeuristicGreedy.hpp"
 #include "CbcHeuristicFPump.hpp"
 #include "CbcHeuristicRINS.hpp"
+#include "CbcHeuristicDW.hpp"
 
 #include "CbcHeuristicDiveCoefficient.hpp"
 #include "CbcHeuristicDiveFractional.hpp"
@@ -1167,6 +1168,7 @@ int doHeuristics(CbcModel * model, int type, CbcOrClpParam* parameters_,
     int useDINS = parameters_[whichParam(CBC_PARAM_STR_DINS, numberParameters_, parameters_)].currentOptionAsInteger();
     int useDIVING2 = parameters_[whichParam(CBC_PARAM_STR_DIVINGS, numberParameters_, parameters_)].currentOptionAsInteger();
     int useNaive = parameters_[whichParam(CBC_PARAM_STR_NAIVE, numberParameters_, parameters_)].currentOptionAsInteger();
+    int useDW = parameters_[whichParam(CBC_PARAM_STR_DW, numberParameters_, parameters_)].currentOptionAsInteger();
     int kType = (type < 10) ? type : 1;
     assert (kType == 1 || kType == 2);
     // FPump done first as it only works if no solution
@@ -1586,6 +1588,21 @@ int doHeuristics(CbcModel * model, int type, CbcOrClpParam* parameters_,
             heuristic5.setDecayFactor(1.5);
         }
         model->addHeuristic(&heuristic5) ;
+        anyToDo = true;
+    }
+    if (useDW >= kType && useDW <= kType + 1) {
+        CbcHeuristicDW heuristic13(*model);
+        heuristic13.setHeuristicName("Dantzig-Wolfe");
+	heuristic13.setNumberPasses(100);
+	int numberIntegers=0;
+	const OsiSolverInterface * solver = model->solver();
+	int numberColumns = solver->getNumCols();
+	for (int i=0;i<numberColumns;i++) {
+	  if(solver->isInteger(i))
+	    numberIntegers++;
+	}
+	heuristic13.setNumberNeeded(CoinMin(200,numberIntegers/10));
+        model->addHeuristic(&heuristic13);
         anyToDo = true;
     }
     if (useCombine >= kType && useCombine <= kType + 1) {

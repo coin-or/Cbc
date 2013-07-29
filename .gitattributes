@@ -71,6 +71,8 @@ Cbc/scripts/parse_cbc.awk -text
 Cbc/scripts/parse_cbc_sol.awk -text
 Cbc/scripts/run.sh -text
 Cbc/scripts/run_cbc.sh -text
+Cbc/src/CbcHeuristicDW.cpp -text
+Cbc/src/CbcHeuristicDW.hpp -text
 Cbc/test/OsiCbcSolverInterfaceTest.cpp -text
 Cbc/test/gamsTest.cpp -text
 Cbc/test/osiUnitTest.cpp -text

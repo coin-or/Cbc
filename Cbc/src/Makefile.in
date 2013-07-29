@@ -108,9 +108,10 @@ am_libCbc_la_OBJECTS = Cbc_C_Interface.lo CbcBranchAllDifferent.lo \
 	CbcHeuristicGreedy.lo CbcHeuristicLocal.lo \
 	CbcHeuristicPivotAndFix.lo CbcHeuristicRandRound.lo \
 	CbcHeuristicRENS.lo CbcHeuristicRINS.lo CbcHeuristicVND.lo \
-	CbcMessage.lo CbcModel.lo CbcNode.lo CbcNodeInfo.lo CbcNWay.lo \
-	CbcObject.lo CbcObjectUpdateData.lo CbcPartialNodeInfo.lo \
-	CbcSimpleInteger.lo CbcSimpleIntegerDynamicPseudoCost.lo \
+	CbcHeuristicDW.lo CbcMessage.lo CbcModel.lo CbcNode.lo \
+	CbcNodeInfo.lo CbcNWay.lo CbcObject.lo CbcObjectUpdateData.lo \
+	CbcPartialNodeInfo.lo CbcSimpleInteger.lo \
+	CbcSimpleIntegerDynamicPseudoCost.lo \
 	CbcSimpleIntegerPseudoCost.lo CbcSOS.lo CbcStatistics.lo \
 	CbcStrategy.lo CbcSubProblem.lo CbcThread.lo CbcTree.lo \
 	CbcTreeLocal.lo
@@ -568,6 +569,7 @@ libCbc_la_SOURCES = \
 	CbcHeuristicRENS.cpp CbcHeuristicRENS.hpp \
 	CbcHeuristicRINS.cpp CbcHeuristicRINS.hpp \
 	CbcHeuristicVND.cpp CbcHeuristicVND.hpp \
+	CbcHeuristicDW.cpp CbcHeuristicDW.hpp \
 	CbcMessage.cpp CbcMessage.hpp \
 	CbcModel.cpp CbcModel.hpp \
 	CbcNode.cpp CbcNode.hpp \
@@ -697,6 +699,7 @@ includecoin_HEADERS = \
 	CbcHeuristicRENS.hpp \
 	CbcHeuristicRINS.hpp \
 	CbcHeuristicVND.hpp \
+	CbcHeuristicDW.hpp \
 	CbcMessage.hpp \
 	CbcModel.hpp \
 	CbcNode.hpp \
@@ -894,6 +897,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcGeneric.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcHeuristic.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcHeuristicDINS.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcHeuristicDW.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcHeuristicDive.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcHeuristicDiveCoefficient.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CbcHeuristicDiveFractional.Plo@am__quote@

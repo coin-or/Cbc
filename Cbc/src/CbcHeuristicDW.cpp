@@ -78,6 +78,7 @@ CbcHeuristicDW::setDefaults()
   dwSolver_=NULL;
   bestSolution_=NULL;
   continuousSolution_ = NULL;
+  fixedDj_ = NULL;
   saveLower_=NULL;
   saveUpper_=NULL;
   random_=NULL;
@@ -106,6 +107,7 @@ CbcHeuristicDW::setDefaults()
   numberBlocks_=0;
   keepContinuous_=0;
   phase_=0;
+  pass_ = 0;
   nNeededBase_=200;
   nNodesBase_=500;
   nNeeded_=nNeededBase_;
@@ -134,6 +136,7 @@ CbcHeuristicDW::gutsOfCopy(const CbcHeuristicDW & rhs)
   numberBlocks_ = rhs.numberBlocks_;
   keepContinuous_ = rhs.keepContinuous_;
   phase_ = rhs.phase_;
+  pass_ = rhs.pass_;
   nNeededBase_ = rhs.nNeededBase_;
   nNodesBase_ = rhs.nNodesBase_;
   nNeeded_ = rhs.nNeeded_;
@@ -207,6 +210,12 @@ CbcHeuristicDW::gutsOfCopy(const CbcHeuristicDW & rhs)
   } else {
     continuousSolution_=NULL;
   }
+  if (rhs.fixedDj_) {
+    int numberColumns = solver_->getNumCols();
+    fixedDj_ = CoinCopyOfArray(rhs.fixedDj_,numberColumns);
+  } else {
+    fixedDj_=NULL;
+  }
 }
 // Guts of delete
 void 
@@ -216,6 +225,7 @@ CbcHeuristicDW::gutsOfDelete()
   delete dwSolver_;
   delete [] bestSolution_;
   delete [] continuousSolution_;
+  delete [] fixedDj_;
   delete [] saveLower_;
   delete [] saveUpper_;
   delete [] random_;
@@ -238,6 +248,7 @@ CbcHeuristicDW::gutsOfDelete()
   dwSolver_=NULL;
   bestSolution_=NULL;
   continuousSolution_ = NULL;
+  fixedDj_ = NULL;
   saveLower_=NULL;
   saveUpper_=NULL;
   random_=NULL;
@@ -352,19 +363,29 @@ int
 					  numberColumns);
   }
   // data arrays
+  // Block order for choosing (after sort)
   int * whichBlock = new int [7*numberBlocks_];
   memset(whichBlock,0,7*numberBlocks_*sizeof(int));
+  // Count of number of times block chosen
   int * doneBlock = whichBlock + numberBlocks_;
+  // Pass at which block last used
   int * whenBlock = doneBlock+numberBlocks_;
-  int * priorityBlock = whenBlock+numberBlocks_;
-  int * orderBlock = priorityBlock+numberBlocks_;
-  int * bigDjBlock = orderBlock+numberBlocks_;
+  // Number of Big Djs' (? artificial costs) in block
+  int * bigDjBlock = whenBlock+numberBlocks_;
+  // Number of times block has helped improve solution
   int * goodBlock = bigDjBlock+numberBlocks_;
+  int * priorityBlock = goodBlock+numberBlocks_;
+  int * orderBlock = priorityBlock+numberBlocks_;
+  // Mixture of stuff to sort blocks on
   double * blockSort = new double [4*numberBlocks_];
+  // Reduced cost (d sub j was old notation) contribution
   double * blockDj = blockSort + numberBlocks_;
+  // Difference between current best and continuous solutions
   double * blockDiff = blockDj+numberBlocks_;
+  // Difference between current best and continuous solutions (just integers)
   double * blockDiffInt = blockDiff+numberBlocks_;
-  double * fixedDj = CoinCopyOfArray(dj,numberColumns);
+  delete [] fixedDj_;
+  fixedDj_ = CoinCopyOfArray(dj,numberColumns);
   int numberImproving=0;
   int * whenBetter = new int [numberPasses_];
   double * improvement = new double [numberPasses_];
@@ -392,21 +413,21 @@ int
       columnUpper[iColumn]=saveUpper_[iColumn];
     }
   }
-  for (int iPass=0;iPass<numberPasses_;iPass++) {
+  for (pass_=0;pass_<numberPasses_;pass_++) {
     double endTime2 = CoinCpuTime();
     double endTime2Elapsed = CoinGetTimeOfDay();
 #ifndef SCALE_FACTOR
 #define SCALE_FACTOR 1.0
 #endif
-    if (iPass)
+    if (pass_)
       printf("PASS %d changed objective from %g to %g in %g seconds (%g elapsed) - total %g (%g elapsed) - current needed %d nodes %d - %s\n",
-	     iPass,lastObjective_*SCALE_FACTOR,
+	     pass_,lastObjective_*SCALE_FACTOR,
 	     bestObjective_*SCALE_FACTOR,endTime2-startTime2,
 	     endTime2Elapsed-startTime2Elapsed,
 	     endTime2-startTime,endTime2Elapsed-startTimeElapsed,
 	     nNeeded_,nNodes_,
 	     lastObjective_>bestObjective_+1.0e-3 ? "improving" : "");
-    if ((iPass%10)==9) {
+    if ((pass_%10)==9) {
       for (int iImp=1;iImp<numberImproving;iImp++) {
 	int * blocks = improvingBlocks[iImp];
 	int nBlocks = blocks[0];
@@ -480,6 +501,7 @@ int
     }
     if (goodSolution) {
       int lastNumberDW=numberDW_;
+      solver->setColSolution(bestSolution_);
       solver->setHintParam(OsiDoReducePrint, false, OsiHintDo, 0) ;
       if (basis) {
 	solver->setWarmStart(basis);
@@ -496,11 +518,11 @@ int
 	blocks[0]=numberBlocksUsed;
 	memcpy(blocks+1,whichBlock,numberBlocksUsed*sizeof(int));
 	improvingBlocks[numberImproving]=blocks;
-	whenBetter[numberImproving]=iPass;
+	whenBetter[numberImproving]=pass_;
 	improvement[numberImproving]=lastObjective_-bestObjective_;
 	numberImproving++;
 	lastObjective_=bestObjective_;
-	if (iPass) {
+	if (pass_) {
 	  // update good
 	  for (int i=0;i<numberBlocksUsed;i++)
 	    goodBlock[whichBlock[i]]++;
@@ -661,20 +683,44 @@ int
 	}
 	if (solver->isInteger(iColumn)) {
 	  if (bestSolution_[iColumn]<saveUpper_[iColumn]-1.0e-1) {
-	    if (fixedDj[iColumn]<-1.0e-5)
-	      blockDj[iBlock]+=fixedDj[iColumn];
-	    if (fixedDj[iColumn]<-1.0e4)
+	    if (fixedDj_[iColumn]<-1.0e-5)
+	      blockDj[iBlock]+=fixedDj_[iColumn];
+	    if (fixedDj_[iColumn]<-1.0e4)
 	      bigDjBlock[iBlock]++;
 	  }
 	  if (bestSolution_[iColumn]>saveLower_[iColumn]+1.0e-1) {
-	    if (fixedDj[iColumn]>1.0e-5)
-	      blockDj[iBlock]-=fixedDj[iColumn];
-	    if (fixedDj[iColumn]>1.0e4)
+	    if (fixedDj_[iColumn]>1.0e-5)
+	      blockDj[iBlock]-=fixedDj_[iColumn];
+	    if (fixedDj_[iColumn]>1.0e4)
 	      bigDjBlock[iBlock]++;
 	  }
 	}
       }
     }
+    // Get average dj and difference
+    int numberInDj=0;
+    double averageDj=1.0e-12;
+    int numberInDiff=0;
+    double averageDiff=1.0e-12;
+    for (int i=0;i<numberBlocks_;i++) {
+      assert (blockDj[i]<=0.0);
+      if (blockDj[i]<0.0) {
+	numberInDj++;
+	averageDj -= blockDj[i];
+      }
+      assert (blockDiff[i]>=0.0);
+      if (blockDiff[i]>0.0) {
+	numberInDiff++;
+	averageDiff += blockDiff[i];
+      }
+    }
+    if (numberInDj)
+      averageDj /= static_cast<double>(numberInDj);
+    if (numberInDiff)
+      averageDiff /= static_cast<double>(numberInDiff);
+    double ratioDiff = averageDj/averageDiff;
+    // downplay
+    ratioDiff *= 1.0e-3;
     for (int i=0;i<numberBlocks_;i++) {
       whichBlock[i]=i;
       assert (intsInBlock_[i]);
@@ -683,19 +729,19 @@ int
 #if TRY_ADJUST == 1
       blockSort[i] *= CoinDrand48() + 5.0e-1;
 #elif TRY_ADJUST == 2
-      blockSort[i] -= 1.0e7* blockDiff[i];
+      blockSort[i] -= ratioDiff* blockDiff[i];
 #elif TRY_ADJUST == 3
-      blockSort[i] -= 1.0e7* blockDiff[i];
+      blockSort[i] -= ratioDiff* blockDiff[i];
       blockSort[i] *= 0.1*CoinDrand48() + 0.9;
 #endif
       if (phase_==99)
-	blockSort[i] -= 1.0e7*goodBlock[i];
+	blockSort[i] -= 2.0*averageDj*goodBlock[i];
       blockSort[i] /= static_cast<double>(intsInBlock_[i]);
       //blockSort[i] /= sqrt(static_cast<double>(intsInBlock_[i]));
       if (doneBlock[i]) {
 	blockSort[i] /= static_cast<double>(doneBlock[i]+1);
-	if (whenBlock[i]>iPass-10)
-	  blockSort[i]+= 1.0e9;
+	if (whenBlock[i]>pass_-10)
+	  blockSort[i]+= 1.0e2*averageDj;
       }
     }
     CoinSort_2(blockSort,blockSort+numberBlocks_,whichBlock);
@@ -728,7 +774,7 @@ int
 		 intsInBlock_[iBlock]);
 	  numberBlocksIn++;
 	  doneBlock[iBlock]++;
-	  whenBlock[iBlock]=iPass;
+	  whenBlock[iBlock]=pass_;
 	  nFreed += intsInBlock_[iBlock];
 	  for (int j=startColumnBlock_[iBlock];
 	   j<startColumnBlock_[iBlock+1];j++) {
@@ -804,7 +850,7 @@ int
       columnLower[i]=saveLower_[i];
       columnUpper[i]=saveUpper_[i];
       int kBlock = whichColumnBlock_[i];
-      if (kBlock>=0&&solver->isInteger(i)&&whenBlock[kBlock]!=iPass) {
+      if (kBlock>=0&&solver->isInteger(i)&&whenBlock[kBlock]!=pass_) {
 	columnLower[i]=bestSolution_[i];
 	columnUpper[i]=bestSolution_[i];
       }
@@ -822,7 +868,7 @@ int
     if (solver->getObjValue()>bestObjective_+1.0e-5*(1.0+fabs(bestObjective_))) {
       // trouble
       for (int i=0;i<numberBlocks_;i++) {
-	if (whenBlock[i]==iPass) {
+	if (whenBlock[i]==pass_) {
 	  printf("Block %d free\n",i);
 	}
       }
@@ -843,7 +889,7 @@ int
     // But free up and then fix again
     for ( int i=0 ; i<numberColumns ; ++i ) {
       int kBlock = whichColumnBlock_[i];
-      if (kBlock>=0&&!solver->isInteger(i)&&whenBlock[kBlock]!=iPass) {
+      if (kBlock>=0&&!solver->isInteger(i)&&whenBlock[kBlock]!=pass_) {
 	columnLower[i]=tempSol[i];
 	columnUpper[i]=tempSol[i];
       }
@@ -903,13 +949,13 @@ int
 	  if (solver2.isInteger(i)) {
 	    int iColumn=originalColumns[i];
 	    hot[i]=bestSolution_[iColumn];
-	    hotWeight[i]=-fabs(fixedDj[iColumn]);
+	    hotWeight[i]=-fabs(fixedDj_[iColumn]);
 	    if (bestSolution_[i]<saveLower_[iColumn]+1.0e-6) {
-	      if (fixedDj[i]>0.0) 
-		hotWeight[i]=fixedDj[iColumn];
+	      if (fixedDj_[i]>0.0) 
+		hotWeight[i]=fixedDj_[iColumn];
 	    } else if (bestSolution_[i]>saveUpper_[iColumn]-1.0e-6) {
-	      if (fixedDj[i]<0.0) 
-		hotWeight[i]=-fixedDj[iColumn];
+	      if (fixedDj_[i]<0.0) 
+		hotWeight[i]=-fixedDj_[iColumn];
 	    }
 	    if (solution[i]<saveLower_[iColumn]+1.0e-6) {
 	      if (dj[i]>gap) {
@@ -1021,7 +1067,7 @@ int
 	  if (basis) 
 	    delete basis;
 	  basis = solver->getWarmStart();
-	  memcpy(fixedDj,solver->getReducedCost(),
+	  memcpy(fixedDj_,solver->getReducedCost(),
 		 numberColumns*sizeof(double));
 	  solver->setHintParam(OsiDoReducePrint, true, OsiHintDo, 0) ;
 	  //solver->messageHandler()->setLogLevel(0) ;
@@ -1068,7 +1114,6 @@ int
   }
   delete [] whichBlock;
   delete [] blockSort;
-  delete [] fixedDj;
   delete [] whenBetter;
   delete [] improvement;
   for (int i=0;i<numberImproving;i++)

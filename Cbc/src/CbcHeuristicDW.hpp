@@ -89,7 +89,13 @@ public:
     { return bestObjective_;}
     /// Best solution found so far
     inline const double * bestSolution() const
-  { return bestSolution_;}
+    { return bestSolution_;}
+    /// Continuous solution
+    inline const double * continuousSolution() const
+    { return continuousSolution_;}
+    /// Reduced costs of fixed solution
+    inline const double * fixedDj() const
+    { return fixedDj_;}
     /// Objective at which DW updated
     inline const double * objectiveDW() const
     { return objectiveDW_;}
@@ -124,6 +130,27 @@ public:
     /// Initial Upper bounds
     inline const double * initialUpper() const
     { return saveUpper_;}
+    /// Local integer arrays (each numberBlocks_ long)
+    inline int * intArrays() const
+    { return intArray_;}
+    /// Local double arrays (each numberBlocks_ long)
+    inline double * doubleArrays() const
+    { return doubleArray_;}
+    /// Phase of solution
+    inline int phase() const
+    { return phase_;}
+    /// Pass number
+    inline int pass() const
+    { return pass_;}
+    /// Which columns are in block
+    inline const int * columnsInBlock() const
+    { return columnsInBlock_;}
+    /// Starts for columnsInBlock
+    inline const int * startColumnBlock() const
+    { return startColumnBlock_;}
+    /// Number of integer variables in each block
+    inline const int * intsInBlock() const
+    { return intsInBlock_;}
     /// Objective value (could also check validity)
     double objectiveValue(const double * solution);
 private:
@@ -169,6 +196,8 @@ protected:
     double * bestSolution_;
     /// Continuous solution
     double * continuousSolution_;
+    /// Reduced costs of fixed solution
+    double * fixedDj_;
     /// Original lower bounds
     double * saveLower_;
     /// Original Upper bounds
@@ -231,6 +260,8 @@ protected:
     int keepContinuous_;
     /// Phase of solution
     int phase_;
+    /// Pass number
+    int pass_;
     /// Base number of integers needed
     int nNeededBase_;
     /// Base number of nodes needed

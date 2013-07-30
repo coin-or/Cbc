@@ -428,7 +428,7 @@ int
 	     nNeeded_,nNodes_,
 	     lastObjective_>bestObjective_+1.0e-3 ? "improving" : "");
     if ((pass_%10)==9) {
-      for (int iImp=1;iImp<numberImproving;iImp++) {
+      for (int iImp=CoinMax(1,numberImproving-10);iImp<numberImproving;iImp++) {
 	int * blocks = improvingBlocks[iImp];
 	int nBlocks = blocks[0];
 	blocks++;
@@ -745,6 +745,7 @@ int
       }
     }
     CoinSort_2(blockSort,blockSort+numberBlocks_,whichBlock);
+    // allow user to modify
     intArray_=whichBlock;
     doubleArray_=blockSort;
     (*(functionPointer_))(this,NULL,1);
@@ -755,17 +756,25 @@ int
       numberBlocksUsed=0;
       for (int i=0;i<numberBlocks_;i++) {
 	int iBlock = whichBlock[i];
-	if (iBlock<0||(doneBlock[iBlock]&&!phase_)||!blockSort[i]) {
+	bool skipBlock=false;
+	assert (iBlock>=0);
+	if ((doneBlock[iBlock]&&!phase_)||!blockSort[i]) {
 	  //printf("already done block %d - dj %g\n",iBlock,blockDj[i]);
+	  skipBlock=true;
+	} else if (bigDjBlock[iBlock]) {
+	  nBigDjBlock++;
+	  if (nBigDjBlock>20&&!phase_) {
+	    skipBlock=true;
+	  }
+	}
+	int returnCode = (*(functionPointer_))(this,NULL,5);
+	if (returnCode<0)
+	  skipBlock=true;
+	else if (returnCode>0)
+	  skipBlock=false;
+	if (skipBlock) {
 	  whichBlock[i] -= 1000000;
 	} else {
-	  if (bigDjBlock[iBlock]) {
-	    nBigDjBlock++;
-	    if (nBigDjBlock>20&&!phase_) {
-	      whichBlock[i] -= 1000000;
-	      continue;
-	    }
-	  }
 	  // free up
 	  printf("freeing block %d (already freed %d times) - dj %g, diff %g, diffint %g - %d columns (%d integer)\n",
 		 iBlock,doneBlock[iBlock],blockDj[iBlock],

@@ -181,6 +181,7 @@ protected:
 	2 - just before normal branch and bound
 	3 - after DW has been updated
 	4 - if better solution found
+	5 - every time a block might be used
 	Pointers to local data given by following pointers
     */
     heuristicCallBack functionPointer_;

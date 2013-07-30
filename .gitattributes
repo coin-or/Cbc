@@ -58,6 +58,7 @@ Cbc/examples/driver3.cpp -text
 Cbc/examples/driver4.cpp -text
 Cbc/examples/interrupt.cpp -text
 Cbc/examples/modify.cpp -text
+Cbc/examples/pool.cpp -text
 Cbc/examples/qmip2.cpp -text
 Cbc/examples/simpleBAB.cpp -text
 Cbc/install-sh -text

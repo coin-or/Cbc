@@ -16513,7 +16513,6 @@ CbcModel::doOneNode(CbcModel * baseModel, CbcNode * & node, CbcNode * & newNode)
             baseModel->usedInSolution_[i] += usedInSolution_[i];
             usedInSolution_[i] = 0;
         }
-        baseModel->numberSolutions_++;
         if (bestObjective_ < baseModel->bestObjective_ && bestObjective_ < baseModel->getCutoff()) {
             baseModel->bestObjective_ = bestObjective_ ;
             int numberColumns = solver_->getNumCols();
@@ -16522,6 +16521,7 @@ CbcModel::doOneNode(CbcModel * baseModel, CbcNode * & node, CbcNode * & newNode)
             CoinCopyN(bestSolution_, numberColumns, baseModel->bestSolution_);
             baseModel->setCutoff(getCutoff());
         }
+        baseModel->numberSolutions_++;
         unlockThread();
     }
     numberCutGenerators_=saveNumberCutGenerators;
@@ -16922,7 +16922,6 @@ CbcModel::deleteSavedSolution(int which)
       savedSolutions_[j] = savedSolutions_[j+1];
     }
     savedSolutions_[numberSavedSolutions_]=NULL;
-    --numberSavedSolutions_;
   }
 }
 #ifdef COIN_HAS_CLP

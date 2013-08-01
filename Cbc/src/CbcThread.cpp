@@ -1419,8 +1419,7 @@ CbcModel::moveToModel(CbcModel * baseModel, int mode)
         setCutoff(baseModel->getCutoff());
         bestObjective_ = baseModel->bestObjective_;
         //assert (!baseModel->globalCuts_.sizeRowCuts());
-        if (numberSolutions_ < baseModel->numberSolutions_) {
-	  assert (baseModel->bestSolution_);
+        if (numberSolutions_ < baseModel->numberSolutions_&& baseModel->bestSolution_) {
 	  int numberColumns = solver_->getNumCols();
 	  if (!bestSolution_)
 	    bestSolution_ = new double [numberColumns];

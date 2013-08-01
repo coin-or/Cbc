@@ -11642,10 +11642,12 @@ CbcModel::checkSolution (double cutoff, double *solution,
                         printf("Row %d inf %g sum %g %g <= %g <= %g\n",
                                i, inf, rowSum[i], rowLower[i], rowActivity[i], rowUpper[i]);
 #endif
-                    largestInfeasibility = CoinMax(largestInfeasibility,
-                                                   rowLower[i] - rowActivity[i]);
-                    largestInfeasibility = CoinMax(largestInfeasibility,
-                                                   rowActivity[i] - rowUpper[i]);
+                    double infeasibility = CoinMax(rowActivity[i]-rowUpper[i],
+                                                   rowLower[i]-rowActivity[i]);
+		    // but allow for errors
+		    double factor = CoinMax(1.0,rowSum[i]*1.0e-3);
+		    if (infeasibility>largestInfeasibility*factor)
+		      largestInfeasibility = infeasibility/factor;
                 }
                 delete [] rowActivity ;
                 delete [] rowSum;
@@ -11653,7 +11655,7 @@ CbcModel::checkSolution (double cutoff, double *solution,
                 if (largestInfeasibility > 10.0*primalTolerance)
                     printf("largest infeasibility is %g\n", largestInfeasibility);
 #endif
-                if (largestInfeasibility > 200.0*primalTolerance) {
+                if (largestInfeasibility > 1000.0*primalTolerance) {
                     handler_->message(CBC_NOTFEAS3, messages_)
                     << largestInfeasibility << CoinMessageEol ;
                     objectiveValue = 1.0e50 ;
@@ -16298,7 +16300,6 @@ CbcModel::deleteSavedSolution(int which)
       savedSolutions_[j] = savedSolutions_[j+1];
     }
     savedSolutions_[numberSavedSolutions_]=NULL;
-    --numberSavedSolutions_;
   }
 }
 #ifdef COIN_HAS_CLP

@@ -137,21 +137,23 @@ void CbcFullNodeInfo::applyToModel (CbcModel *model,
     int i;
     solver->setColLower(lower_);
     solver->setColUpper(upper_);
-    int numberColumns = model->getNumCols();
-    // move basis - but make sure size stays
-    // for bon-min - should not be needed int numberRows = model->getNumRows();
-    int numberRows = basis->getNumArtificial();
-    delete basis ;
-    if (basis_) {
+    if (basis) {
+      int numberColumns = model->getNumCols();
+      // move basis - but make sure size stays
+      // for bon-min - should not be needed int numberRows = model->getNumRows();
+      int numberRows = basis->getNumArtificial();
+      delete basis ;
+      if (basis_) {
         basis = dynamic_cast<CoinWarmStartBasis *>(basis_->clone()) ;
         basis->resize(numberRows, numberColumns);
 #ifdef CBC_CHECK_BASIS
         std::cout << "Basis (after applying root " << this << ") " << std::endl ;
         basis->print() ;
 #endif
-    } else {
+      } else {
         // We have a solver without a basis
         basis = NULL;
+      }
     }
     for (i = 0; i < numberCuts_; i++)
         addCuts[currentNumberCuts+i] = cuts_[i];

@@ -438,8 +438,8 @@ int
 	  printf("%d ",blocks[i]);
 	printf("\n");
       }
-      int * count = new int [numberImproving];
-      memset(count,0,numberImproving*sizeof(int));
+      int * count = new int [numberImproving+1];
+      memset(count,0,(numberImproving+1)*sizeof(int));
       for (int i=0;i<numberBlocks_;i++)
 	count[goodBlock[i]]++;
       for (int i=0;i<numberImproving;i++) {
@@ -466,6 +466,7 @@ int
 	nNeeded_ += nNeeded_/10;
 	nNeeded_ = CoinMin(nNeeded_,800);
 	nNodes_=nNodesBase_;
+	(*(functionPointer_))(this,NULL,6);
       } else {
 	// more nodes fewer in
 	printf("No improvement - stopped on nodes - think we need more nodes ");
@@ -475,6 +476,7 @@ int
 	}
 	nNeeded_ -= nNeeded_/20;
 	nNeeded_ = CoinMax(nNeeded_,50);
+	(*(functionPointer_))(this,NULL,7);
       }
     } else {
       // improving
@@ -485,8 +487,10 @@ int
 	//nNeededBase_ += nNeededBase_/50;
 	//nNodesBase_ += nNodesBase_/50;
       }
-      nNeeded_=nNeededBase_;
+      nNeeded_ -= nNeeded_/10;
+      nNeeded_=CoinMax(nNeededBase_,nNeeded_);
       nNodes_=nNodesBase_;
+      (*(functionPointer_))(this,NULL,8);
     }
     printf("new needed %d, nodes %d\n",nNeeded_,nNodes_); 
     for ( int i=0 ; i<numberColumns ; ++i ) {
@@ -945,6 +949,7 @@ int
 	double gap = CoinMax(bestObjective_-model.solver()->getObjValue(),
 				   1.0e-3);
 	int numberColumns2=model.solver()->getNumCols();
+#ifdef HOT_START
 	// Set up hot start
 	const int * originalColumns = pinfo.originalColumns();
 	double * hot = new double[2*numberColumns2];
@@ -986,12 +991,16 @@ int
 	model.setHotstartSolution(hot,hotPriorities);
 	delete [] hot;
 	delete [] hotPriorities;
+#endif
 	if (nFix)
 	  printf("Fixed another %d integers\n",nFix);
 	{
 	  // priorities
+	  memset(priorityBlock,0,numberBlocks_*sizeof(int));
 	  for (int i=0;i<numberBlocks_;i++) {
-	    priorityBlock[whichBlock[i]]=i+1;
+	    int iBlock=whichBlock[i];
+	    if (iBlock>=0)
+	      priorityBlock[iBlock]=i+1;
 	  }
 #if 1
 	  assert (numberBlocks_<4000);
@@ -1468,6 +1477,8 @@ CbcHeuristicDW::findStructure()
       nRow+=rowsInBlock_[i];
       nColumn+=columnsInBlock_[i];
     }
+    // may not be used - but set anyway
+    sizeFingerPrint_ = (maxIntsInBlock+31)/32;
     startRowBlock_[numberBlocks_]=nRow;
     startColumnBlock_[numberBlocks_]=nColumn;
     startRowBlock_[numberBlocks_+1]=numberRows;
@@ -1631,46 +1642,8 @@ CbcHeuristicDW::findStructure()
     } else {
       printf("Too many blocks - no affinity\n");
     }
-    if (fullDWEverySoOften_>0) { 
-      random_=new double [numberMasterRows_];
-      for (int i=0;i<numberMasterRows_;i++)
-	random_[i]=CoinDrand48();
-      weights_ = new double [numberBlocks_];
-      dwBlock_ = new int [numberBlocks_];
-      sizeFingerPrint_ = (maxIntsInBlock+31)/32;
-      fingerPrint_ = new unsigned int[numberBlocks_*sizeFingerPrint_];
-      // create dwSolver
-      int numberMasterRows=0;
-      for (int i=0;i<numberRows;i++) {
-	int iBlock=whichRowBlock_[i];
-	if (iBlock<0) 
-	  blockStart[numberMasterRows++]=i;
-      }
-      int numberMasterColumns=0;
-      for (int i=0;i<numberColumns;i++) {
-	int iBlock=whichColumnBlock_[i];
-	if (iBlock<0) 
-	  columnBlock[numberMasterColumns++]=i;
-      }
-      OsiClpSolverInterface * solver = 
-	dynamic_cast<OsiClpSolverInterface *>(solver_);
-      ClpSimplex * tempModel = new ClpSimplex(solver->getModelPtr(),
-					      numberMasterRows,blockStart,
-					      numberMasterColumns,columnBlock);
-      // add convexity constraints
-      double * rhs = new double[numberBlocks_];
-      for (int i=0;i<numberBlocks_;i++)
-	rhs[i]=1.0;
-      tempModel->addRows(numberBlocks_,rhs,rhs,NULL,NULL,NULL);
-      dwSolver_ = new OsiClpSolverInterface(tempModel,true);
-      printf("DW model has %d master rows, %d master columns and %d convexity rows\n",
-	     numberMasterRows,numberMasterColumns,numberBlocks_);
-      // do master integers
-      for (int i=0;i<numberMasterColumns;i++) {
-	int iColumn=columnBlock[i];
-	if (solver->isInteger(iColumn))
-	  dwSolver_->setInteger(i);
-      }
+    if (fullDWEverySoOften_>0) {
+      setupDWStructures();
     }
   }
   delete [] blockStart;
@@ -1835,7 +1808,7 @@ CbcHeuristicDW::addDW(const double * solution,int numberBlocksUsed,
     memcpy(temp,numberColumnsDW_,numberDWTimes_*sizeof(int));
     delete [] numberColumnsDW_;
     numberColumnsDW_=temp;
-    numberColumnsDW_[numberDWTimes_++]= dwSolver_->getNumCols();
+    numberColumnsDW_[numberDWTimes_]= dwSolver_->getNumCols();
     objectiveDW_[numberDWTimes_++]= objectiveValue(solution);
   }
   return nTotalAdded;
@@ -1958,7 +1931,69 @@ CbcHeuristicDW::DWModel(int whichDW) const
       }
     }
   }
-  newSolver->writeMps("dw","mps");
+  //newSolver->writeMps("dw","mps");
   return newSolver;
 }
+/* DW Proposal actions
+   fullDWEverySoOften -
+   0 - off
+   k - every k times solution gets better
+*/
+void
+CbcHeuristicDW::setProposalActions(int fullDWEverySoOften)
+{ 
+  fullDWEverySoOften_=fullDWEverySoOften;
+  if (fullDWEverySoOften_>0&&!random_)
+    setupDWStructures();
+}
+// Set up DW structure
+void
+CbcHeuristicDW::setupDWStructures()
+{
+  random_=new double [numberMasterRows_];
+  for (int i=0;i<numberMasterRows_;i++)
+    random_[i]=CoinDrand48();
+  weights_ = new double [numberBlocks_];
+  dwBlock_ = new int [numberBlocks_];
+  fingerPrint_ = new unsigned int[numberBlocks_*sizeFingerPrint_];
+  // create dwSolver
+  int numberColumns = solver_->getNumCols();
+  int numberRows = solver_->getNumRows();
+  int * tempRow = new int [numberRows+numberColumns];
+  int * tempColumn = tempRow + numberRows;
+  int numberMasterRows=0;
+  for (int i=0;i<numberRows;i++) {
+    int iBlock=whichRowBlock_[i];
+    if (iBlock<0) 
+      tempRow[numberMasterRows++]=i;
+  }
+  int numberMasterColumns=0;
+  for (int i=0;i<numberColumns;i++) {
+    int iBlock=whichColumnBlock_[i];
+    if (iBlock<0) 
+      tempColumn[numberMasterColumns++]=i;
+  }
+  OsiClpSolverInterface * solver = 
+    dynamic_cast<OsiClpSolverInterface *>(solver_);
+  ClpSimplex * tempModel = new ClpSimplex(solver->getModelPtr(),
+					  numberMasterRows,tempRow,
+					  numberMasterColumns,tempColumn);
+  // add convexity constraints
+  double * rhs = new double[numberBlocks_];
+  for (int i=0;i<numberBlocks_;i++)
+    rhs[i]=1.0;
+  tempModel->addRows(numberBlocks_,rhs,rhs,NULL,NULL,NULL);
+  delete [] rhs;
+  dwSolver_ = new OsiClpSolverInterface(tempModel,true);
+  printf("DW model has %d master rows, %d master columns and %d convexity rows\n",
+	 numberMasterRows,numberMasterColumns,numberBlocks_);
+  // do master integers
+  for (int i=0;i<numberMasterColumns;i++) {
+    int iColumn=tempColumn[i];
+    if (solver->isInteger(iColumn))
+      dwSolver_->setInteger(i);
+  }
+  delete [] tempRow;
+}
+
 

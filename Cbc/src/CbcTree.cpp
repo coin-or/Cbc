@@ -620,15 +620,16 @@ CbcTree::cleanTree(CbcModel * model, double cutoff, double & bestPossibleObjecti
     */
     for (j = nNodes - 1; j >= kDelete; j--) {
         CbcNode * node = nodeArray[j];
-        CoinWarmStartBasis *lastws = model->getEmptyBasis() ;
+        CoinWarmStartBasis *lastws = (cutoff!=-COIN_DBL_MAX) ? model->getEmptyBasis() : NULL;
 
         model->addCuts1(node, lastws);
         // Decrement cut counts
         assert (node);
         //assert (node->nodeInfo());
         int numberLeft = (node->nodeInfo()) ? node->nodeInfo()->numberBranchesLeft() : 0;
-        int i;
-        for (i = 0; i < model->currentNumberCuts(); i++) {
+	if (cutoff != -COIN_DBL_MAX) {
+	  // normal
+	  for (int i = 0; i < model->currentNumberCuts(); i++) {
             // take off node
             CoinWarmStartBasis::Status status =
                 lastws->getArtifStatus(i + model->numberRowsAtContinuous());
@@ -637,7 +638,17 @@ CbcTree::cleanTree(CbcModel * model, double cutoff, double & bestPossibleObjecti
                 if (!model->addedCuts()[i]->decrement(numberLeft))
                     delete model->addedCuts()[i];
             }
-        }
+	  }
+	} else {
+	  // quick
+	  for (int i = 0; i < model->currentNumberCuts(); i++) {
+            // take off node
+	    if (model->addedCuts()[i]) {
+                if (!model->addedCuts()[i]->decrement(numberLeft))
+                    delete model->addedCuts()[i];
+            }
+	  }
+	}
         // node should not have anything pointing to it
         if (node->nodeInfo())
             node->nodeInfo()->throwAway();

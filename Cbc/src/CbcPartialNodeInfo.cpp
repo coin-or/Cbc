@@ -128,7 +128,7 @@ void CbcPartialNodeInfo::applyToModel (CbcModel *model,
 
 {
     OsiSolverInterface *solver = model->solver();
-    if ((active_&4) != 0) {
+    if ((active_&4) != 0 && basis) {
         basis->applyDiff(basisDiff_) ;
 #ifdef CBC_CHECK_BASIS
         std::cout << "Basis (after applying " << this << ") " << std::endl ;

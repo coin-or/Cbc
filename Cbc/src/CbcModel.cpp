@@ -6837,7 +6837,8 @@ bool CbcModel::addCuts1 (CbcNode * node, CoinWarmStartBasis *&lastws)
       because we need the parameter to return the allocated basis, and it's an
       easy way to pass in the size. But we take a hit for memory allocation.
     */
-    lastws->setSize(numberColumns, numberRowsAtContinuous_ + currentNumberCuts);
+    if (lastws)
+      lastws->setSize(numberColumns, numberRowsAtContinuous_ + currentNumberCuts);
     currentNumberCuts = 0;
     while (nNode) {
         --nNode;
@@ -6845,7 +6846,7 @@ bool CbcModel::addCuts1 (CbcNode * node, CoinWarmStartBasis *&lastws)
                                        addedCuts_, currentNumberCuts);
     }
 #ifndef NDEBUG
-    if (!lastws->fullBasis()) {
+    if (lastws&&!lastws->fullBasis()) {
 #ifdef COIN_DEVELOP
         printf("******* bad basis\n");
 #endif

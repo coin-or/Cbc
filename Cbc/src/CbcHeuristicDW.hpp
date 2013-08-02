@@ -73,8 +73,7 @@ public:
         0 - off
         k - every k times solution gets better
      */
-    inline void setProposalActions(int fullDWEverySoOften)
-    { fullDWEverySoOften_=fullDWEverySoOften;}
+    void setProposalActions(int fullDWEverySoOften);
     /// Objective value when whichDw created
     double objectiveValueWhen(int whichDW) const;
     /// Number of columns in DW
@@ -108,9 +107,30 @@ public:
     /// Set number of passes
     inline void setNumberPasses(int value)
     { numberPasses_ = value;}
-    /// Set number free integers needed
+    /// Set number free integers needed (Base value)
     inline void setNumberNeeded(int value)
     { nNeededBase_ = value;}
+    /// Get number free integers needed (Base value)
+    inline int getNumberNeeded() const
+    {return nNeededBase_;}
+    /// Set number free integers needed (Current value)
+    inline void setCurrentNumberNeeded(int value)
+    { nNeeded_ = value;}
+    /// Get number free integers needed (Current value)
+    inline int getCurrentNumberNeeded() const
+    {return nNeeded_;}
+    /// Set number nodes (could be done in callback) (Base value)
+    inline void setNumberNodes(int value)
+    { nNodesBase_ = value;}
+    /// Get number nodes (could be done in callback) (Base value)
+    inline int getNumberNodes() const
+    {return nNodesBase_;}
+    /// Set number nodes (could be done in callback) (Current value)
+    inline void setCurrentNumberNodes(int value)
+    { nNodes_ = value;}
+    /// Get number nodes (could be done in callback) (Current value)
+    inline int getCurrentNumberNodes() const
+    {return nNodes_;}
     /// Set target objective
     inline void setTargetObjective(double value)
     { targetObjective_ = value;}
@@ -162,6 +182,8 @@ private:
     void setDefaults();
     /// Find structure
     void findStructure();
+    /// Set up DW structure
+    void setupDWStructures();
     /// Add DW proposals
     int addDW(const double * solution,int numberBlocksUsed, 
 	      const int * whichBlocks);
@@ -182,6 +204,10 @@ protected:
 	3 - after DW has been updated
 	4 - if better solution found
 	5 - every time a block might be used
+	next few for adjustment of nNeeded etc
+	6 - complete search done - no solution
+	7 - stopped on nodes - no improvement
+	8 - improving (same as 4 but after nNeeded changed
 	Pointers to local data given by following pointers
     */
     heuristicCallBack functionPointer_;

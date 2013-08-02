@@ -1392,7 +1392,9 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver, int numberNodes,
         }
     } else {
         returnCode = 2; // infeasible finished
-	printf("Infeasible on initial solve\n");
+	if (logLevel > 1){
+	   printf("Infeasible on initial solve\n");
+	}
     }
     model_->setSpecialOptions(saveModelOptions);
     model_->setLogLevel(logLevel);

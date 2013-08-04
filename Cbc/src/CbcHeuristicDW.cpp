@@ -364,8 +364,8 @@ int
   }
   // data arrays
   // Block order for choosing (after sort)
-  int * whichBlock = new int [7*numberBlocks_];
-  memset(whichBlock,0,7*numberBlocks_*sizeof(int));
+  int * whichBlock = new int [8*numberBlocks_];
+  memset(whichBlock,0,8*numberBlocks_*sizeof(int));
   // Count of number of times block chosen
   int * doneBlock = whichBlock + numberBlocks_;
   // Pass at which block last used
@@ -376,6 +376,8 @@ int
   int * goodBlock = bigDjBlock+numberBlocks_;
   int * priorityBlock = goodBlock+numberBlocks_;
   int * orderBlock = priorityBlock+numberBlocks_;
+  // block can be fixed if nothing in master rows, maybe always same as continuous
+  int * fixedBlock = orderBlock+numberBlocks_;
   // Mixture of stuff to sort blocks on
   double * blockSort = new double [4*numberBlocks_];
   // Reduced cost (d sub j was old notation) contribution
@@ -413,6 +415,51 @@ int
       columnUpper[iColumn]=saveUpper_[iColumn];
     }
   }
+  int numberNoMaster=0;
+  int numberSameAsContinuous=0;
+  int numberSameAsContinuousJustInts=0;
+  // Column copy
+  //const double * element = solver->getMatrixByCol()->getElements();
+  const int * row = solver->getMatrixByCol()->getIndices();
+  const CoinBigIndex * columnStart = solver->getMatrixByCol()->getVectorStarts();
+  const int * columnLength = solver->getMatrixByCol()->getVectorLengths();
+  for (int iBlock=0;iBlock<numberBlocks_;iBlock++) {
+    int nElInMaster=0;
+    int numberDifferentContinuous=0;
+    int numberDifferentContinuousJustInts=0;
+    int start=startColumnBlock_[iBlock];
+    int end=startColumnBlock_[iBlock+1];
+    for (int i=start;i<end;i++) {
+      int iColumn=columnsInBlock_[i];
+      for (CoinBigIndex j=columnStart[iColumn];
+	   j<columnStart[iColumn]+columnLength[iColumn];j++) {
+	int iRow = row[j];
+	iRow=backwardRow_[iRow];
+	if (iRow>=0) 
+	  nElInMaster++;
+      }
+      if (fabs(bestSolution_[iColumn]-continuousSolution_[iColumn])<1.0e-5) {
+	numberDifferentContinuous++;
+	if (solver->isInteger(iColumn))
+	  numberDifferentContinuousJustInts++;
+      }
+    }
+    if (!nElInMaster) {
+      fixedBlock[iBlock]=10;
+      numberNoMaster++;
+    } else if (!numberDifferentContinuous) {
+      fixedBlock[iBlock]=2;
+      numberSameAsContinuous++;
+    } else if (!numberDifferentContinuousJustInts) {
+      fixedBlock[iBlock]=1;
+      numberSameAsContinuousJustInts++;
+    }
+  }
+  if (numberNoMaster)
+    printf("*** %d blocks have no elements in master - can be solved seperately\n",
+	   numberNoMaster);
+  printf("With initial best solution %d blocks were same as continuous, %d when just looking at integers\n",
+	 numberSameAsContinuous,numberSameAsContinuousJustInts);
   for (pass_=0;pass_<numberPasses_;pass_++) {
     double endTime2 = CoinCpuTime();
     double endTime2Elapsed = CoinGetTimeOfDay();
@@ -795,7 +842,7 @@ int
 	    columnLower[iColumn]=saveLower_[iColumn];
 	    columnUpper[iColumn]=saveUpper_[iColumn];
 	  }
-	  if (!numberBlocksUsed) {
+	  if (!numberBlocksUsed && affinity_) {
 	    // re-sort rest using affinity
 	    const unsigned short int * aff = affinity_+iBlock*numberBlocks_;
 	    for (int j=i+1;j<numberBlocks_;j++) {
@@ -1415,6 +1462,9 @@ CbcHeuristicDW::findStructure()
 	if (iBlock>=0)
 	  columnBlock[i]=blockEls[iBlock];
       }
+      if (newNumber<numberBlocks)
+	printf("Number of blocks reduced from %d to %d\n",
+	       numberBlocks,newNumber);
       numberBlocks=newNumber;
     }
     // now set up structures

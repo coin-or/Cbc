@@ -100,6 +100,8 @@ public:
         afterHeuristic,
         /*! On entry to small branch and bound. */
         smallBranchAndBound,
+        /*! After a pass of heuristic. */
+        heuristicPass,
         /*! End of search. */
         endSearch
     } ;

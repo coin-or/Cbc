@@ -49,6 +49,12 @@
 #include "OsiChooseVariable.hpp"
 #include "OsiAuxInfo.hpp"
 #include "CbcMipStartIO.hpp"
+// for printing
+#ifndef CLP_OUTPUT_FORMAT
+#define CLP_OUTPUT_FORMAT %15.8g
+#endif
+#define CLP_QUOTE(s) CLP_STRING(s)
+#define CLP_STRING(s) #s
 
 #include "CbcSolverHeuristics.hpp"
 #ifdef COIN_HAS_GLPK
@@ -8903,6 +8909,10 @@ clp watson.mps -\nscaling off\nprimalsimplex"
 				  }
 				  break;
 				}
+				char printFormat[50];
+				sprintf(printFormat," %s         %s\n",
+					CLP_QUOTE(CLP_OUTPUT_FORMAT),
+					CLP_QUOTE(CLP_OUTPUT_FORMAT));
                                 if (printMode > 2 && printMode < 5) {
                                     for (iRow = 0; iRow < numberRows; iRow++) {
                                         int type = printMode - 3;
@@ -8928,7 +8938,7 @@ clp watson.mps -\nscaling off\nprimalsimplex"
                                                 for (; i < lengthPrint; i++)
                                                     fprintf(fp, " ");
                                             }
-                                            fprintf(fp, " %15.8g        %15.8g\n", primalRowSolution[iRow],
+                                            fprintf(fp, printFormat, primalRowSolution[iRow],
                                                     dualRowSolution[iRow]);
                                         }
                                     }
@@ -8979,7 +8989,7 @@ clp watson.mps -\nscaling off\nprimalsimplex"
                                                     for (; i < lengthPrint; i++)
                                                         fprintf(fp, " ");
                                                 }
-                                                fprintf(fp, " %15.8g        %15.8g\n",
+                                                fprintf(fp, printFormat,
                                                         primalColumnSolution[iColumn],
                                                         dualColumnSolution[iColumn]);
                                             } else {

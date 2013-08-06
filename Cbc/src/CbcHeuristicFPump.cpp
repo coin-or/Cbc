@@ -1651,6 +1651,36 @@ CbcHeuristicFPump::solution(double & solutionValue,
                 model_->messageHandler()->message(CBC_FPUMP1, model_->messages())
                 << pumpPrint
                 << CoinMessageEol;
+		CbcEventHandler *eventHandler = model_->getEventHandler() ;
+		if (eventHandler) {
+		  typedef struct {
+		    double newSumInfeas;
+		    double trueSolutionValue;
+		    double spareDouble[2];
+		    OsiSolverInterface * solver;
+		    void * sparePointer[2];
+		    int numberPasses;
+		    int totalNumberPasses;
+		    int numberInfeas;
+		    int numberIterations;
+		    int spareInt[3];
+		  } HeurPass;
+		  HeurPass temp;
+		  temp.solver=solver;
+		  temp.newSumInfeas = newSumInfeas;
+		  temp.trueSolutionValue = newTrueSolutionValue;
+		  temp.numberPasses=numberPasses;
+		  temp.totalNumberPasses=totalNumberPasses;
+		  temp.numberInfeas=newNumberInfeas;
+		  temp.numberIterations=numberIterations;
+		  CbcEventHandler::CbcAction status = 
+		    eventHandler->event(CbcEventHandler::heuristicPass,
+					&temp);
+		  if (status==CbcEventHandler::killSolution) {
+		    exitAll = true;
+		    break;
+		  }
+		}
                 if (closestSolution && solver->getObjValue() < closestObjectiveValue) {
                     int i;
                     const double * objective = solver->getObjCoefficients();

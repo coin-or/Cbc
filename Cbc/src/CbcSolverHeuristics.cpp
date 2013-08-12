@@ -1295,11 +1295,17 @@ int doHeuristics(CbcModel * model, int type, CbcOrClpParam* parameters_,
                 double fakeIncrement = parameters_[whichParam(CBC_PARAM_DBL_FAKEINCREMENT, numberParameters_, parameters_)].doubleValue();
                 if (fakeIncrement)
                     increment = fakeIncrement;
-                heuristic4.setAbsoluteIncrement(increment);
+		if (increment>=0.0)
+		  heuristic4.setAbsoluteIncrement(increment);
+		else
+		  heuristic4.setRelativeIncrement(-increment);
                 heuristic4.setMaximumRetries(r + 1);
                 if (printStuff) {
                     if (increment) {
-                        sprintf(generalPrint, "Increment of %g", increment);
+		      if (increment>0.0)
+                        sprintf(generalPrint, "Absolute increment of %g", increment);
+		      else
+                        sprintf(generalPrint, "Relative increment of %g", -increment);
                         generalMessageHandler->message(CBC_GENERAL, generalMessages)
                         << generalPrint
                         << CoinMessageEol;

@@ -145,10 +145,10 @@ public:
     inline const int * whichColumnBlock() const
     { return whichColumnBlock_;}
     /// Initial Lower bounds
-    inline const double * initialLower() const
+    inline double * initialLower() const
     { return saveLower_;}
     /// Initial Upper bounds
-    inline const double * initialUpper() const
+    inline double * initialUpper() const
     { return saveUpper_;}
     /// Local integer arrays (each numberBlocks_ long)
     inline int * intArrays() const

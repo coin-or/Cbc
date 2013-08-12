@@ -594,8 +594,7 @@ int
 	const int * row = solver->getMatrixByCol()->getIndices();
 	const CoinBigIndex * columnStart = solver->getMatrixByCol()->getVectorStarts();
 	const int * columnLength = solver->getMatrixByCol()->getVectorLengths();
-	for (int i=0;i<numberBlocks_;i++)
-	  whichBlock[i]=i;
+	int numberUsed=0;
 	for (int iBlock=0;iBlock<numberBlocks_;iBlock++) {
 	  int start=startColumnBlock_[iBlock];
 	  int end=startColumnBlock_[iBlock+1];
@@ -606,14 +605,15 @@ int
 		       end-start,
 		       columnsInBlock_+startColumnBlock_[iBlock]);
 	  tempModel->setLogLevel(0);
+	  tempModel->setDualObjectiveLimit(COIN_DBL_MAX);
 	  double * objectiveX = tempModel->objective();
 	  double * columnLowerX = tempModel->columnLower();
 	  double * columnUpperX = tempModel->columnUpper();
 	  for (int i=start;i<end;i++) {
 	    int jColumn=i-start;
 	    int iColumn=columnsInBlock_[i];
-	    columnLowerX[jColumn]=saveLower_[iColumn];
-	    columnUpperX[jColumn]=saveUpper_[iColumn];
+	    columnLowerX[jColumn]=CoinMax(saveLower_[iColumn],-1.0e12);
+	    columnUpperX[jColumn]=CoinMin(saveUpper_[iColumn],1.0e12);
 	    if (solver->isInteger(iColumn))
 	      tempModel->setInteger(jColumn);
 	    double cost=objectiveX[jColumn];
@@ -632,14 +632,16 @@ int
 	  modelX.setLogLevel(0);
 	  modelX.branchAndBound();
 	  const double * bestSolutionX = modelX.bestSolution();
-	  assert (bestSolutionX);
-	  for (int i=start;i<end;i++) {
-	    int jColumn = i-start;
-	    int iColumn=columnsInBlock_[i];
-	    bestSolution2[iColumn]=bestSolutionX[jColumn];
+	  if (bestSolutionX) {
+	    whichBlock[numberUsed++]=iBlock;
+	    for (int i=start;i<end;i++) {
+	      int jColumn = i-start;
+	      int iColumn=columnsInBlock_[i];
+	      bestSolution2[iColumn]=bestSolutionX[jColumn];
+	    }
 	  }
 	}
-	addDW(bestSolution2,numberBlocks_,whichBlock);
+	addDW(bestSolution2,numberUsed,whichBlock);
 	// now try purer DW
 	bool takeHint;
 	OsiHintStrength strength;
@@ -648,6 +650,7 @@ int
 	dwSolver_->resolve();
 	dwSolver_->setHintParam(OsiDoDualInResolve, takeHint, OsiHintDo);
 	duals = dwSolver_->getRowPrice();
+	numberUsed=0;
 	for (int iBlock=0;iBlock<numberBlocks_;iBlock++) {
 	  int start=startColumnBlock_[iBlock];
 	  int end=startColumnBlock_[iBlock+1];
@@ -658,6 +661,7 @@ int
 		       end-start,
 		       columnsInBlock_+startColumnBlock_[iBlock]);
 	  tempModel->setLogLevel(0);
+	  tempModel->setDualObjectiveLimit(COIN_DBL_MAX);
 	  double * objectiveX = tempModel->objective();
 	  double * columnLowerX = tempModel->columnLower();
 	  double * columnUpperX = tempModel->columnUpper();
@@ -665,7 +669,7 @@ int
 	  for (int i=start;i<end;i++) {
 	    int jColumn=i-start;
 	    int iColumn=columnsInBlock_[i];
-	    columnLowerX[jColumn]=saveLower_[iColumn];
+	    columnLowerX[jColumn]=CoinMax(saveLower_[iColumn],-1.0e12);
 	    columnUpperX[jColumn]=CoinMin(saveUpper_[iColumn],1.0e-12);
 	    if (solver->isInteger(iColumn))
 	      tempModel->setInteger(jColumn);
@@ -690,13 +694,15 @@ int
 	  printf("Block %d contobj %g intobj %g convdual %g\n",
 		 iBlock,cObj,modelX.getObjValue(),convexityDual);
 	  const double * bestSolutionX = modelX.bestSolution();
-	  assert (bestSolutionX);
-	  for (int i=start;i<end;i++) {
-	    int iColumn=columnsInBlock_[i];
-	    bestSolution2[iColumn]=bestSolutionX[i-start];
+	  if (bestSolutionX) {
+	    whichBlock[numberUsed++]=iBlock;
+	    for (int i=start;i<end;i++) {
+	      int iColumn=columnsInBlock_[i];
+	      bestSolution2[iColumn]=bestSolutionX[i-start];
+	    }
 	  }
 	}
-	addDW(bestSolution2,numberBlocks_,whichBlock);
+	addDW(bestSolution2,numberUsed,whichBlock);
 	delete [] bestSolution2;
       }
       passesToDW--;
@@ -2034,7 +2040,9 @@ CbcHeuristicDW::setupDWStructures()
     rhs[i]=1.0;
   tempModel->addRows(numberBlocks_,rhs,rhs,NULL,NULL,NULL);
   delete [] rhs;
-  dwSolver_ = new OsiClpSolverInterface(tempModel,true);
+  OsiClpSolverInterface * clpSolver = new OsiClpSolverInterface(tempModel,true);
+  clpSolver->getModelPtr()->setDualObjectiveLimit(COIN_DBL_MAX);
+  dwSolver_ = clpSolver;
   printf("DW model has %d master rows, %d master columns and %d convexity rows\n",
 	 numberMasterRows,numberMasterColumns,numberBlocks_);
   // do master integers

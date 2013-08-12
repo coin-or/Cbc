@@ -310,6 +310,9 @@ CbcHeuristicFPump::solution(double & solutionValue,
     const double * lower = model_->solver()->getColLower();
     const double * upper = model_->solver()->getColUpper();
     bool doGeneral = (accumulate_ & 4) != 0;
+    int numberUnsatisfied=0;
+    double sumUnsatisfied=0.0;
+    const double * initialSolution = model_->solver()->getColSolution();
     j = 0;
 /*
   Scan the objects, recording the columns and counting general integers.
@@ -328,6 +331,11 @@ CbcHeuristicFPump::solution(double & solutionValue,
             dynamic_cast<const  OsiSimpleInteger *> (object);
         assert(integerObject || integerObject2);
 #endif
+	double value = initialSolution[iColumn];
+	double nearest = floor(value + 0.5);
+	sumUnsatisfied += fabs(value - nearest);
+	if (fabs(value - nearest) > 1.0e-6) 
+	  numberUnsatisfied++;
         if (upper[iColumn] - lower[iColumn] > 1.000001) {
             general++;
             if (doGeneral)
@@ -367,6 +375,11 @@ CbcHeuristicFPump::solution(double & solutionValue,
     if (doGeneral)
         printf("DOing general with %d out of %d\n", general, numberIntegers);
 #endif
+    sprintf(pumpPrint, "Initial state - %d integers unsatisfied sum - %g",
+	    numberUnsatisfied, sumUnsatisfied);
+    model_->messageHandler()->message(CBC_FPUMP1, model_->messages())
+      << pumpPrint
+      << CoinMessageEol;
 /*
   This `closest solution' will satisfy integrality, but violate some other
   constraints?
@@ -575,11 +588,28 @@ CbcHeuristicFPump::solution(double & solutionValue,
         }
         // if cutoff exists then add constraint
         bool useCutoff = (fabs(cutoff) < 1.0e20 && (fakeCutoff_ != COIN_DBL_MAX || numberTries > 1));
+	bool tryOneClosePass=fakeCutoff_<solver->getObjValue();
         // but there may be a close one
         if (firstCutoff < 2.0*solutionValue && numberTries == 1 && CoinMin(cutoff, fakeCutoff_) < 1.0e20)
             useCutoff = true;
-        if (useCutoff) {
+        if (useCutoff || tryOneClosePass) {
             double rhs = CoinMin(cutoff, fakeCutoff_);
+	    if (tryOneClosePass) {
+	      // If way off then .05
+	      if (fakeCutoff_<=-1.0e100) {
+		// use value as percentage - so 100==0.0, 101==1.0 etc
+		// probably something like pow I could use but ...
+		double fraction = 0.0;
+		while (fakeCutoff_<-1.01e100) {
+		  fakeCutoff_ *= 0.1;
+		  fraction += 0.01;
+		}
+		rhs = solver->getObjValue()+fraction*fabs(solver->getObjValue());
+	      } else {
+		rhs = 2.0*solver->getObjValue()-fakeCutoff_; // flip difference
+	      }
+	      fakeCutoff_=COIN_DBL_MAX;
+	    }
             const double * objective = solver->getObjCoefficients();
             int numberColumns = solver->getNumCols();
             int * which = new int[numberColumns];
@@ -1095,6 +1125,16 @@ CbcHeuristicFPump::solution(double & solutionValue,
                 double costValue = (1.0 - scaleFactor) * solver->getObjSense();
                 int numberChanged = 0;
                 const double * oldObjective = solver->getObjCoefficients();
+		bool fixOnesAtBound=false;
+		if (tryOneClosePass&&numberPasses==2) {
+		  // take off
+		  tryOneClosePass=false;
+		  int n=solver->getNumRows()-1;
+		  double rhs = solver->getRowUpper()[n];
+		  solver->setRowUpper(n,rhs+1.0e15);
+		  useRhs+=1.0e15;
+		  fixOnesAtBound=true;
+		}
                 for (i = 0; i < numberColumns; i++) {
                     // below so we can keep original code and allow for objective
                     int iColumn = i;
@@ -1114,9 +1154,13 @@ CbcHeuristicFPump::solution(double & solutionValue,
                     double newValue = 0.0;
                     if (newSolution[iColumn] < lower[iColumn] + primalTolerance) {
 		      newValue = costValue + scaleFactor * saveObjective[iColumn];
+		      if (fixOnesAtBound)
+			newValue = 100.0*costValue;
                     } else {
 		      if (newSolution[iColumn] > upper[iColumn] - primalTolerance) {
 			newValue = -costValue + scaleFactor * saveObjective[iColumn];
+		      if (fixOnesAtBound)
+			newValue = -100.0*costValue;
 		      }
                     }
 #ifdef RAND_RAND

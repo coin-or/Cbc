@@ -23,6 +23,7 @@
 #include "CbcMessage.hpp"
 #include "CbcHeuristic.hpp"
 #include "CbcHeuristicFPump.hpp"
+#include "CbcHeuristicRINS.hpp"
 #include "CbcEventHandler.hpp"
 #include "CbcStrategy.hpp"
 #include "CglPreProcess.hpp"
@@ -1016,6 +1017,23 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver, int numberNodes,
                     model.solver()->setIntParam(OsiMaxNumIterationHotStart, 10);
                     model.setMaximumCutPassesAtRoot(CoinMin(20, CoinAbs(model_->getMaximumCutPassesAtRoot())));
                     model.setMaximumCutPasses(CoinMin(10, model_->getMaximumCutPasses()));
+		    // Set best solution (even if bad for this submodel)
+		    if (model_->bestSolution()) {
+		      const double * bestSolution = model_->bestSolution();
+		      int numberColumns2 = model.solver()->getNumCols();
+		      double * bestSolution2 = new double [numberColumns2];
+		      const int * originalColumns = process.originalColumns();
+		      for (int iColumn=0;iColumn<numberColumns2;iColumn++) {
+			int jColumn = originalColumns[iColumn];
+			bestSolution2[iColumn] = bestSolution[jColumn];
+		      }
+		      model.setBestSolution(bestSolution2,numberColumns2,
+					    1.0e50,
+					    false);
+		      model.setSolutionCount(1);
+		      maximumSolutions++; 
+		      delete [] bestSolution2;
+		    }
                 } else {
                     model.setSpecialOptions(saveModelOptions);
                     model_->messageHandler()->message(CBC_RESTART, model_->messages())
@@ -1175,6 +1193,16 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver, int numberNodes,
 		      model.addHeuristic(model_->heuristic(i)); 
 		  }
 		}
+		// modify heuristics
+		for (int i = 0; i < model.numberHeuristics(); i++) {
+		  // reset lastNode
+		  CbcHeuristicRINS * rins =
+		    dynamic_cast<CbcHeuristicRINS*>(model.heuristic(i));
+		  if (rins) {
+		    rins->setLastNode(-1000);
+		    rins->setSolutionCount(0);
+		  }
+		}
                 //printf("sol %x\n",inputSolution_);
                 if (inputSolution_) {
                     // translate and add a serendipity heuristic
@@ -1262,6 +1290,7 @@ CbcHeuristic::smallBranchAndBound(OsiSolverInterface * solver, int numberNodes,
                         model.setMaximumNumberIterations(iterationMultiplier*(numberNodes + 10));
                         // Not fast stuff
                         model.setFastNodeDepth(-1);
+			//model.solver()->writeMps("before");
                     } else if (model.fastNodeDepth() >= 1000000) {
                         // already set
                         model.setFastNodeDepth(model.fastNodeDepth() - 1000000);
@@ -1929,7 +1958,7 @@ CbcRounding::solution(double & solutionValue,
     for (i = 0; i < numberIntegers; i++) {
         int iColumn = integerVariable[i];
         double value = newSolution[iColumn];
-	double thisTolerance = integerTolerance;
+	//double thisTolerance = integerTolerance;
         if (fabs(floor(value + 0.5) - value) > integerTolerance) {
             double below = floor(value);
             double newValue = newSolution[iColumn];

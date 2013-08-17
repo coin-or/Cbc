@@ -334,8 +334,12 @@ int
     return 0; // no point
   if (bestSolutionIn&&objectiveValue(bestSolutionIn)<bestObjective_-1.0e-5)
     passInSolution(bestSolutionIn);
-  printf("Before PASSes objective is %g\n",
-	 bestObjective_);
+  char dwPrint[200];
+  sprintf(dwPrint,"Before PASSes objective is %g",
+	  bestObjective_);
+  model_->messageHandler()->message(CBC_FPUMP1, model_->messages())
+    << dwPrint
+    << CoinMessageEol;
   double startTime = CoinCpuTime();
   double startTimeElapsed = CoinGetTimeOfDay();
   CoinWarmStart * basis = NULL;
@@ -343,6 +347,7 @@ int
   int passesToDW = dwSolver_ ? 0 : -1;
   bool goodSolution=true;
   int numberColumns = solver_->getNumCols();
+  int logLevel = model_->messageHandler()->logLevel();
   // For moment just OsiClp
   OsiClpSolverInterface * solver = dynamic_cast<OsiClpSolverInterface *>
     (solver_);
@@ -374,7 +379,7 @@ int
   int * bigDjBlock = whenBlock+numberBlocks_;
   // Number of times block has helped improve solution
   int * goodBlock = bigDjBlock+numberBlocks_;
-  int * priorityBlock = goodBlock+numberBlocks_;
+					int * priorityBlock = goodBlock+numberBlocks_;
   int * orderBlock = priorityBlock+numberBlocks_;
   // block can be fixed if nothing in master rows, maybe always same as continuous
   int * fixedBlock = orderBlock+numberBlocks_;
@@ -455,52 +460,73 @@ int
       numberSameAsContinuousJustInts++;
     }
   }
-  if (numberNoMaster)
-    printf("*** %d blocks have no elements in master - can be solved seperately\n",
-	   numberNoMaster);
-  printf("With initial best solution %d blocks were same as continuous, %d when just looking at integers\n",
-	 numberSameAsContinuous,numberSameAsContinuousJustInts);
+  if (numberNoMaster) {
+    sprintf(dwPrint,"*** %d blocks have no elements in master - can be solved seperately",
+	    numberNoMaster);
+    model_->messageHandler()->message(CBC_FPUMP1, model_->messages())
+      << dwPrint
+      << CoinMessageEol;
+  }
+  sprintf(dwPrint,"With initial best solution %d blocks were same as continuous, %d when just looking at integers",
+	  numberSameAsContinuous,numberSameAsContinuousJustInts);
+  model_->messageHandler()->message(CBC_FPUMP1, model_->messages())
+    << dwPrint
+    << CoinMessageEol;
   for (pass_=0;pass_<numberPasses_;pass_++) {
     double endTime2 = CoinCpuTime();
     double endTime2Elapsed = CoinGetTimeOfDay();
 #ifndef SCALE_FACTOR
 #define SCALE_FACTOR 1.0
 #endif
-    if (pass_)
-      printf("PASS %d changed objective from %g to %g in %g seconds (%g elapsed) - total %g (%g elapsed) - current needed %d nodes %d - %s\n",
-	     pass_,lastObjective_*SCALE_FACTOR,
-	     bestObjective_*SCALE_FACTOR,endTime2-startTime2,
-	     endTime2Elapsed-startTime2Elapsed,
-	     endTime2-startTime,endTime2Elapsed-startTimeElapsed,
-	     nNeeded_,nNodes_,
-	     lastObjective_>bestObjective_+1.0e-3 ? "improving" : "");
+    if (pass_) {
+      sprintf(dwPrint,"PASS %d changed objective from %g to %g in %g seconds (%g elapsed) - total %g (%g elapsed) - current needed %d nodes %d - %s",
+	      pass_,lastObjective_*SCALE_FACTOR,
+	      bestObjective_*SCALE_FACTOR,endTime2-startTime2,
+	      endTime2Elapsed-startTime2Elapsed,
+	      endTime2-startTime,endTime2Elapsed-startTimeElapsed,
+	      nNeeded_,nNodes_,
+	      lastObjective_>bestObjective_+1.0e-3 ? "improving" : "");
+      model_->messageHandler()->message(CBC_FPUMP1, model_->messages())
+	<< dwPrint
+	<< CoinMessageEol;
+    }
     if ((pass_%10)==9) {
       for (int iImp=CoinMax(1,numberImproving-10);iImp<numberImproving;iImp++) {
 	int * blocks = improvingBlocks[iImp];
 	int nBlocks = blocks[0];
 	blocks++;
-	printf("Pass %d improved objective by %g using %d blocks - ",
+	sprintf(dwPrint,"Pass %d improved objective by %g using %d blocks - ",
 	       whenBetter[iImp],improvement[iImp],nBlocks);
-	for (int i=0;i<nBlocks;i++)
-	  printf("%d ",blocks[i]);
-	printf("\n");
+	model_->messageHandler()->message(CBC_FPUMP1, model_->messages())
+	  << dwPrint
+	  << CoinMessageEol;
+	if (logLevel>1) {
+	  for (int i=0;i<nBlocks;i++)
+	    printf("%d ",blocks[i]);
+	  printf("\n");
+	}
       }
-      int * count = new int [numberImproving+1];
-      memset(count,0,(numberImproving+1)*sizeof(int));
-      for (int i=0;i<numberBlocks_;i++)
-	count[goodBlock[i]]++;
-      for (int i=0;i<numberImproving;i++) {
-	if (count[i])
-	  printf("%d blocks were involved in improvement %d times\n",
-		 count[i],i);
+      if (logLevel>1) {
+	int * count = new int [numberImproving+1];
+	memset(count,0,(numberImproving+1)*sizeof(int));
+	for (int i=0;i<numberBlocks_;i++)
+	  count[goodBlock[i]]++;
+	for (int i=0;i<numberImproving;i++) {
+	  if (count[i])
+	    printf("%d blocks were involved in improvement %d times\n",
+		   count[i],i);
+	}
+	delete [] count;
       }
-      delete [] count;
     }
     startTime2 = CoinCpuTime();
     startTime2Elapsed = CoinGetTimeOfDay();
     if (model_->getNodeCount()>=model_->getMaximumNodes()||
 	model_->maximumSecondsReached()) {
-      printf("Exiting on time or interrupt\n");
+      sprintf(dwPrint,"Exiting on time or interrupt");
+      model_->messageHandler()->message(CBC_FPUMP1, model_->messages())
+	<< dwPrint
+	<< CoinMessageEol;
       break;
     }
     if (bestObjective_>=lastObjective_-1.0e-3) {
@@ -509,14 +535,20 @@ int
       //assert(solveState);
       if (solveState_<2) {
 	      // more in
-	printf("No improvement - think we need more variables ");
+	sprintf(dwPrint,"No improvement - think we need more variables ");
+	model_->messageHandler()->message(CBC_FPUMP1, model_->messages())
+	  << dwPrint
+	  << CoinMessageEol;
 	nNeeded_ += nNeeded_/10;
 	nNeeded_ = CoinMin(nNeeded_,800);
 	nNodes_=nNodesBase_;
 	(*(functionPointer_))(this,NULL,6);
       } else {
 	// more nodes fewer in
-	printf("No improvement - stopped on nodes - think we need more nodes ");
+	sprintf(dwPrint,"No improvement - stopped on nodes - think we need more nodes ");
+	model_->messageHandler()->message(CBC_FPUMP1, model_->messages())
+	  << dwPrint
+	  << CoinMessageEol;
 	if (phase_) {
 	  nNodes_ += nNodes_/5;
 	  nNodes_ = CoinMin(nNodes_,1000);
@@ -539,7 +571,10 @@ int
       nNodes_=nNodesBase_;
       (*(functionPointer_))(this,NULL,8);
     }
-    printf("new needed %d, nodes %d\n",nNeeded_,nNodes_); 
+    sprintf(dwPrint,"new needed %d, nodes %d",nNeeded_,nNodes_); 
+    model_->messageHandler()->message(CBC_FPUMP1, model_->messages())
+      << dwPrint
+      << CoinMessageEol;
     for ( int i=0 ; i<numberColumns ; ++i ) {
       if (solver_->isInteger(i)) {
 	double value = floor(bestSolution_[i]+0.5);
@@ -691,8 +726,11 @@ int
 	  CbcModel modelX(solverX);
 	  modelX.setLogLevel(0);
 	  modelX.branchAndBound();
-	  printf("Block %d contobj %g intobj %g convdual %g\n",
-		 iBlock,cObj,modelX.getObjValue(),convexityDual);
+	  sprintf(dwPrint,"Block %d contobj %g intobj %g convdual %g",
+		  iBlock,cObj,modelX.getObjValue(),convexityDual);
+	  model_->messageHandler()->message(CBC_FPUMP2, model_->messages())
+	    << dwPrint
+	    << CoinMessageEol;
 	  const double * bestSolutionX = modelX.bestSolution();
 	  if (bestSolutionX) {
 	    whichBlock[numberUsed++]=iBlock;
@@ -833,11 +871,14 @@ int
 	  whichBlock[i] -= 1000000;
 	} else {
 	  // free up
-	  printf("freeing block %d (already freed %d times) - dj %g, diff %g, diffint %g - %d columns (%d integer)\n",
-		 iBlock,doneBlock[iBlock],blockDj[iBlock],
-		 blockDiff[iBlock],blockDiffInt[iBlock],
-		 startColumnBlock_[iBlock+1]-startColumnBlock_[iBlock],
-		 intsInBlock_[iBlock]);
+	  sprintf(dwPrint,"freeing block %d (already freed %d times) - dj %g, diff %g, diffint %g - %d columns (%d integer)",
+		  iBlock,doneBlock[iBlock],blockDj[iBlock],
+		  blockDiff[iBlock],blockDiffInt[iBlock],
+		  startColumnBlock_[iBlock+1]-startColumnBlock_[iBlock],
+		  intsInBlock_[iBlock]);
+	  model_->messageHandler()->message(CBC_FPUMP2, model_->messages())
+	    << dwPrint
+	    << CoinMessageEol;
 	  numberBlocksIn++;
 	  doneBlock[iBlock]++;
 	  whenBlock[iBlock]=pass_;
@@ -862,11 +903,17 @@ int
 	    break;
 	}
       }
-      printf("%d big dj blocks found\n",nBigDjBlock);
+      sprintf(dwPrint,"%d big dj blocks found",nBigDjBlock);
+      model_->messageHandler()->message(CBC_FPUMP2, model_->messages())
+	<< dwPrint
+	<< CoinMessageEol;
       if (nFreed)
 	break;
       phase_=1; // round again
-      printf("Changing phase\n");
+      sprintf(dwPrint,"Changing phase");
+      model_->messageHandler()->message(CBC_FPUMP1, model_->messages())
+	<< dwPrint
+	<< CoinMessageEol;
       for (int i=0;i<numberBlocks_;i++) 
 	whichBlock[i] += 1000000;
       //nNeeded=500; // allow more
@@ -908,9 +955,12 @@ int
 	}
       }
     }
-    printf("Fixed %d ints, %d c, %d m - free %d, %d, %d\n",
-	   nFixedInts,nFixedContinuous,nFixedMaster,
-	   nFreeInts,nFreeContinuous,nFreeMaster);
+    sprintf(dwPrint,"Fixed %d ints, %d c, %d m - free %d, %d, %d",
+	    nFixedInts,nFixedContinuous,nFixedMaster,
+	    nFreeInts,nFreeContinuous,nFreeMaster);
+    model_->messageHandler()->message(CBC_FPUMP1, model_->messages())
+      << dwPrint
+      << CoinMessageEol;
     // But free up and then fix again
     for ( int i=0 ; i<numberColumns ; ++i ) {
       columnLower[i]=saveLower_[i];
@@ -933,21 +983,25 @@ int
     solver->setHintParam(OsiDoDualInResolve, takeHint, strength);
     if (solver->getObjValue()>bestObjective_+1.0e-5*(1.0+fabs(bestObjective_))) {
       // trouble
-      for (int i=0;i<numberBlocks_;i++) {
-	if (whenBlock[i]==pass_) {
-	  printf("Block %d free\n",i);
+      if (logLevel>1) {
+	for (int i=0;i<numberBlocks_;i++) {
+	  if (whenBlock[i]==pass_) {
+	    printf("Block %d free\n",i);
+	  }
 	}
       }
       solver->writeMps("bad","mps");
       const double * lower = solver->getColLower();
       const double * upper = solver->getColUpper();
-      printf("best obj %g\n",objectiveValue(bestSolution_));
-      for ( int i=0 ; i<numberColumns ; ++i ) {
-	double value = bestSolution_[i];
-	if (value<lower[i]-1.0e-5||value>upper[i]+1.0e-5)
-	  printf("column %d (block %d) %g %g <= %g <= %g %g\n",
-		 i,whichColumnBlock_[i],saveLower_[i],
-		 lower[i],value,upper[i],saveUpper_[i]);
+      if (logLevel>1) {
+	printf("best obj %g\n",objectiveValue(bestSolution_));
+	for ( int i=0 ; i<numberColumns ; ++i ) {
+	  double value = bestSolution_[i];
+	  if (value<lower[i]-1.0e-5||value>upper[i]+1.0e-5)
+	    printf("column %d (block %d) %g %g <= %g <= %g %g\n",
+		   i,whichColumnBlock_[i],saveLower_[i],
+		   lower[i],value,upper[i],saveUpper_[i]);
+	}
       }
       abort();
     }
@@ -980,8 +1034,11 @@ int
     if (!model2) {
       abort();
     } else {
-      printf("Reduced model has %d rows and %d columns\n",
+      sprintf(dwPrint,"Reduced model has %d rows and %d columns",
 	     model2->numberRows(),model2->numberColumns());
+      model_->messageHandler()->message(CBC_FPUMP1, model_->messages())
+	<< dwPrint
+	<< CoinMessageEol;
       //model2->setLogLevel(0);
       OsiClpSolverInterface solver2(model2);
       solver2.setWarmStart(NULL);
@@ -1045,8 +1102,10 @@ int
 	delete [] hot;
 	delete [] hotPriorities;
 #endif
-	if (nFix)
-	  printf("Fixed another %d integers\n",nFix);
+	if (logLevel>1) {
+	  if (nFix)
+	    printf("Fixed another %d integers\n",nFix);
+	}
 	{
 	  // priorities
 	  memset(priorityBlock,0,numberBlocks_*sizeof(int));
@@ -1105,8 +1164,10 @@ int
 	doubleArray_=NULL;
 	(*(functionPointer_))(this,&model,2);
 	model.branchAndBound();
-	printf("After B&B status %d objective %g\n",model.status(),
-	       model.getMinimizationObjValue());
+	if (logLevel>1) {
+	  printf("After B&B status %d objective %g\n",model.status(),
+		 model.getMinimizationObjValue());
+	}
 	int modelStatus = model.status();
 	model.solver()->setHintParam(OsiDoReducePrint, false, OsiHintDo, 0) ;
 	if (model.bestSolution() && 
@@ -1119,7 +1180,9 @@ int
 	    if (solver2.isInteger(i)) {
 	      double value =floor(bestSolution2[i]+0.5);
 	      if (fabs(bestSolution2[i]-value)>1.0e-5) {
-		printf("bad %d %g\n",i,bestSolution2[i]);
+		if (logLevel>1) {
+		  printf("bad %d %g\n",i,bestSolution2[i]);
+		}
 	      } else {
 		solver->setColLower(iColumn,value);
 		solver->setColUpper(iColumn,value);
@@ -1153,10 +1216,12 @@ int
 	    memcpy(bestSolution_,model.bestSolution(),
 		   numberColumns*sizeof(double));
 	    bestObjective_ = model.getObjValue();
-	    for (int i=0;i<numberColumns;i++) {
-	      if (simplex->isInteger(i)) {
-		if (fabs(bestSolution_[i]-floor(bestSolution_[i]+0.5))>1.0e-5) {
-		  printf("bad after %d %g\n",i,bestSolution_[i]);
+	    if (logLevel>1) {
+	      for (int i=0;i<numberColumns;i++) {
+		if (simplex->isInteger(i)) {
+		  if (fabs(bestSolution_[i]-floor(bestSolution_[i]+0.5))>1.0e-5) {
+		    printf("bad after %d %g\n",i,bestSolution_[i]);
+		  }
 		}
 	      }
 	    }
@@ -1191,6 +1256,11 @@ int
     delete [] improvingBlocks[i];
   delete [] improvingBlocks;
   delete basis;
+  if (bestObjective_<solutionValue) {
+    solutionValue = bestObjective_;
+    memcpy(betterSolution,bestSolution_,
+	   solver_->getNumCols()*sizeof(double));
+  }
   return returnCode;
 }
 // update model
@@ -1226,6 +1296,7 @@ CbcHeuristicDW::findStructure()
   int halfway=(numberRows+1)/2;
   int firstMaster=-1;
   int lastMaster=-2;
+  char dwPrint[200];
   // Column copy
   const CoinPackedMatrix * columnCopy = solver_->getMatrixByCol();
   //const double * element = columnCopy->getElements();
@@ -1342,8 +1413,11 @@ CbcHeuristicDW::findStructure()
   }
   numberBlocks_=0;
   if (firstMaster<lastMaster) {
-    printf("%d master rows %d <= < %d\n",lastMaster-firstMaster,
-	   firstMaster,lastMaster);
+    sprintf(dwPrint,"%d master rows %d <= < %d",lastMaster-firstMaster,
+	    firstMaster,lastMaster);
+    model_->messageHandler()->message(CBC_FPUMP1, model_->messages())
+      << dwPrint
+      << CoinMessageEol;
     for (int i=0;i<numberRows+2*numberColumns;i++) 
       blockStart[i]=-1;
     for (int i=firstMaster;i<lastMaster;i++)
@@ -1438,19 +1512,25 @@ CbcHeuristicDW::findStructure()
     bool useful=true;
     if (numberMaster>halfway||largestRows*3>numberRows)
       useful=false;
-    printf("%s %d blocks (largest %d,%d), %d master rows (%d empty) out of %d, %d master columns (%d empty, %d integer) out of %d\n",
-	   useful ? "**Useful" : "NoGood",
-	   numberBlocks,largestRows,largestColumns,numberMaster,numberEmpty,numberRows,
-	   numberMasterColumns,numberEmptyColumns,numberMasterIntegers,
-	   numberColumns);
+    sprintf(dwPrint,"%s %d blocks (largest %d,%d), %d master rows (%d empty) out of %d, %d master columns (%d empty, %d integer) out of %d",
+	    useful ? "**Useful" : "NoGood",
+	    numberBlocks,largestRows,largestColumns,numberMaster,numberEmpty,numberRows,
+	    numberMasterColumns,numberEmptyColumns,numberMasterIntegers,
+	    numberColumns);
+    model_->messageHandler()->message(CBC_FPUMP1, model_->messages())
+      << dwPrint
+      << CoinMessageEol;
     // columnBlock is columnBlock and blockStart is rowBlock
     // See if we want to compress
     if (!keepContinuous_) {
       // use blockEls
       int newNumber=0;
       for (int i=0;i<numberBlocks;i++) { 
-	printf("Block %d has %d rows and %d columns (%d elements, %d integers)\n",
+	sprintf(dwPrint,"Block %d has %d rows and %d columns (%d elements, %d integers)",
 	       i,blockCount[i],nextColumn[i],blockEls[i],countIntegers[i]);
+	model_->messageHandler()->message(CBC_FPUMP2, model_->messages())
+	  << dwPrint
+	  << CoinMessageEol;
 	if (countIntegers[i]) {
 	  blockEls[i]=newNumber;
 	  newNumber++;
@@ -1468,9 +1548,13 @@ CbcHeuristicDW::findStructure()
 	if (iBlock>=0)
 	  columnBlock[i]=blockEls[iBlock];
       }
-      if (newNumber<numberBlocks)
-	printf("Number of blocks reduced from %d to %d\n",
+      if (newNumber<numberBlocks) {
+	sprintf(dwPrint,"Number of blocks reduced from %d to %d",
 	       numberBlocks,newNumber);
+	model_->messageHandler()->message(CBC_FPUMP1, model_->messages())
+	  << dwPrint
+	  << CoinMessageEol;
+      }
       numberBlocks=newNumber;
     }
     // now set up structures
@@ -1684,19 +1768,25 @@ CbcHeuristicDW::findStructure()
 	      nZero++;
 	  }
 	}	  
-	//printf("Block %d has affinity %d but zero with %d blocks\n",
+	//printf("Block %d has affinity %d but zero with %d blocks",
 	//     iBlock,aff,nZero);
 	nTotalZero+=nZero;
 	base+=numberBlocks;
       }
-      printf("Total not affinity %d - average %g%%\n",
+      sprintf(dwPrint,"Total not affinity %d - average %g%%",
 	     nTotalZero,100.0*(static_cast<double>(nTotalZero)
 			       /(numberBlocks*numberBlocks)));
+      model_->messageHandler()->message(CBC_FPUMP1, model_->messages())
+	<< dwPrint
+	<< CoinMessageEol;
       
       delete [] starts;
       delete [] build;
     } else {
-      printf("Too many blocks - no affinity\n");
+      sprintf(dwPrint,"Too many blocks - no affinity");
+      model_->messageHandler()->message(CBC_FPUMP1, model_->messages())
+	<< dwPrint
+	<< CoinMessageEol;
     }
     if (fullDWEverySoOften_>0) {
       setupDWStructures();
@@ -1709,6 +1799,7 @@ int
 CbcHeuristicDW::addDW(const double * solution,int numberBlocksUsed, 
 		      const int * whichBlocks)
 {
+  char dwPrint[200];
   if (numberDW_+numberBlocksUsed>maximumDW_) {
     // extend
     int n = maximumDW_+5*numberBlocks_;
@@ -1797,16 +1888,22 @@ CbcHeuristicDW::addDW(const double * solution,int numberBlocksUsed,
       }
     }
     // see if already in
-    printf("block %d nel %d nelInt %d nelInt1 %d - weight %g (%g)\n",
+    sprintf(dwPrint,"block %d nel %d nelInt %d nelInt1 %d - weight %g (%g)",
 	   iBlock,nElInMaster,nElIntInMaster,nElIntInMaster1,
 	   thisWeight,thisWeightC);
+    model_->messageHandler()->message(CBC_FPUMP2, model_->messages())
+      << dwPrint
+      << CoinMessageEol;
     int iProposal;
     for (iProposal=0;iProposal<numberDW_;iProposal++) {
       if (iBlock==dwBlock_[iProposal]&&weights_[iProposal]==thisWeightC)
 	break;
     }
     if (iProposal<numberDW_) {
-      printf("above looks like duplicate\n");
+      sprintf(dwPrint,"above looks like duplicate");
+      model_->messageHandler()->message(CBC_FPUMP2, model_->messages())
+	<< dwPrint
+	<< CoinMessageEol;
       memset(build,0,numberMasterRows_*sizeof(double));
       //iProposal=numberDW;
     }
@@ -1835,8 +1932,11 @@ CbcHeuristicDW::addDW(const double * solution,int numberBlocksUsed,
       startsDW[nAdd]=nEls;
     }
     if (nEls+numberMasterRows_>MAX_ADD) {
-      printf("Adding %d proposals with %d elements - out of room\n",
+      sprintf(dwPrint,"Adding %d proposals with %d elements - out of room",
 	     nAdd,nEls);
+      model_->messageHandler()->message(CBC_FPUMP1, model_->messages())
+	<< dwPrint
+	<< CoinMessageEol;
       dwSolver_->addCols(nAdd,startsDW,rowDW,elementDW,newLower,
 			newUpper,newCost);
       numberDW_+=nAdd;
@@ -1846,10 +1946,13 @@ CbcHeuristicDW::addDW(const double * solution,int numberBlocksUsed,
     }
   }
   if (nAdd) {
-    printf("Adding %d proposals with %d elements\n",
+    sprintf(dwPrint,"Adding %d proposals with %d elements",
 	   nAdd,nEls);
+    model_->messageHandler()->message(CBC_FPUMP1, model_->messages())
+      << dwPrint
+      << CoinMessageEol;
     dwSolver_->addCols(nAdd,startsDW,rowDW,elementDW,newLower,
-		     newUpper,newCost);
+		       newUpper,newCost);
     nTotalAdded+=nAdd;
     numberDW_+=nAdd;
   }
@@ -1907,11 +2010,14 @@ CbcHeuristicDW::objectiveValue(const double * solution)
   double objectiveValue = -objOffset;
   int numberColumns = solver_->getNumCols();
   const double * objective = solver_->getObjCoefficients();
+  int logLevel = model_->messageHandler()->logLevel();
   for (int i=0;i<numberColumns;i++) {
     double value = solution[i];
-    if (solver_->isInteger(i)) {
-      if (fabs(value-floor(value+0.5))>1.0e-7)
-	printf("Bad integer value for %d of %g\n",i,value);
+    if (logLevel>1) {
+      if (solver_->isInteger(i)) {
+	if (fabs(value-floor(value+0.5))>1.0e-7)
+	  printf("Bad integer value for %d of %g\n",i,value);
+      }
     }
     objectiveValue += objective[i]*value;
   }
@@ -2006,6 +2112,7 @@ CbcHeuristicDW::setProposalActions(int fullDWEverySoOften)
 void
 CbcHeuristicDW::setupDWStructures()
 {
+  char dwPrint[200];
   random_=new double [numberMasterRows_];
   for (int i=0;i<numberMasterRows_;i++)
     random_[i]=CoinDrand48();
@@ -2043,8 +2150,11 @@ CbcHeuristicDW::setupDWStructures()
   OsiClpSolverInterface * clpSolver = new OsiClpSolverInterface(tempModel,true);
   clpSolver->getModelPtr()->setDualObjectiveLimit(COIN_DBL_MAX);
   dwSolver_ = clpSolver;
-  printf("DW model has %d master rows, %d master columns and %d convexity rows\n",
-	 numberMasterRows,numberMasterColumns,numberBlocks_);
+  sprintf(dwPrint,"DW model has %d master rows, %d master columns and %d convexity rows",
+	  numberMasterRows,numberMasterColumns,numberBlocks_);
+  model_->messageHandler()->message(CBC_FPUMP1, model_->messages())
+    << dwPrint
+    << CoinMessageEol;
   // do master integers
   for (int i=0;i<numberMasterColumns;i++) {
     int iColumn=tempColumn[i];

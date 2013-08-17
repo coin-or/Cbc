@@ -30,6 +30,7 @@
 #include "CbcHeuristicFPump.hpp"
 #include "CbcHeuristicRINS.hpp"
 #include "CbcHeuristicDW.hpp"
+#include "CbcHeuristicVND.hpp"
 
 #include "CbcHeuristicDiveCoefficient.hpp"
 #include "CbcHeuristicDiveFractional.hpp"
@@ -1165,6 +1166,7 @@ int doHeuristics(CbcModel * model, int type, CbcOrClpParam* parameters_,
     int useRand = parameters_[whichParam(CBC_PARAM_STR_RANDROUND, numberParameters_, parameters_)].currentOptionAsInteger();
     int useRINS = parameters_[whichParam(CBC_PARAM_STR_RINS, numberParameters_, parameters_)].currentOptionAsInteger();
     int useRENS = parameters_[whichParam(CBC_PARAM_STR_RENS, numberParameters_, parameters_)].currentOptionAsInteger();
+    int useVND = parameters_[whichParam(CBC_PARAM_STR_VND, numberParameters_, parameters_)].currentOptionAsInteger();
     int useDINS = parameters_[whichParam(CBC_PARAM_STR_DINS, numberParameters_, parameters_)].currentOptionAsInteger();
     int useDIVING2 = parameters_[whichParam(CBC_PARAM_STR_DIVINGS, numberParameters_, parameters_)].currentOptionAsInteger();
     int useNaive = parameters_[whichParam(CBC_PARAM_STR_NAIVE, numberParameters_, parameters_)].currentOptionAsInteger();
@@ -1389,20 +1391,23 @@ int doHeuristics(CbcModel * model, int type, CbcOrClpParam* parameters_,
         model->addHeuristic(&heuristic6a) ;
     }
     if (useRENS >= kType && useRENS <= kType + 1) {
-#ifndef JJF_ONE
         CbcHeuristicRENS heuristic6(*model);
         heuristic6.setHeuristicName("RENS");
         heuristic6.setFractionSmall(0.4);
         heuristic6.setFeasibilityPumpOptions(1008003);
         int nodes [] = { -2, 50, 50, 50, 200, 1000, 10000};
         heuristic6.setNumberNodes(nodes[useRENS]);
-#else
-        CbcHeuristicVND heuristic6(*model);
-        heuristic6.setHeuristicName("VND");
-        heuristic5.setFractionSmall(0.5);
-        heuristic5.setDecayFactor(5.0);
-#endif
         model->addHeuristic(&heuristic6) ;
+        anyToDo = true;
+    }
+    if (useVND >= kType && useVND <= kType + 1) {
+        CbcHeuristicVND heuristic6b(*model);
+        heuristic6b.setHeuristicName("VND");
+        heuristic6b.setFractionSmall(0.4);
+        heuristic6b.setFeasibilityPumpOptions(1008003);
+        int nodes [] = { -2, 50, 50, 50, 200, 1000, 10000};
+        heuristic6b.setNumberNodes(nodes[useVND]);
+        model->addHeuristic(&heuristic6b) ;
         anyToDo = true;
     }
     if (useNaive >= kType && useNaive <= kType + 1) {
@@ -1619,8 +1624,8 @@ int doHeuristics(CbcModel * model, int type, CbcOrClpParam* parameters_,
         model->addHeuristic(&heuristic2);
         anyToDo = true;
     }
-    if ((useProximity >= kType && useProximity <= kType + 1)||
-	(kType == 1 && useProximity >= 4)) {
+    if ((useProximity >= kType && useProximity <= kType + 1) ||
+	(kType == 1 && useProximity > 3) ){
         CbcHeuristicProximity heuristic2a(*model);
         heuristic2a.setHeuristicName("Proximity Search");
         heuristic2a.setFractionSmall(9999999.0);
@@ -1632,6 +1637,15 @@ int doHeuristics(CbcModel * model, int type, CbcOrClpParam* parameters_,
 	  // more print out and stronger feasibility pump
 	  if (useProximity==6)
 	    heuristic2a.setFeasibilityPumpOptions(-3);
+	} else {
+	  int proximityNumber;
+	  parameters_[whichParam(CBC_PARAM_STR_PROXIMITY, numberParameters_, parameters_)].currentOptionAsInteger(proximityNumber);
+	  if (proximityNumber>0) {
+	    heuristic2a.setNumberNodes(proximityNumber);
+	    // more print out and stronger feasibility pump
+	    if (proximityNumber>=300)
+	      heuristic2a.setFeasibilityPumpOptions(-3);
+	  }
 	}
         model->addHeuristic(&heuristic2a);
         anyToDo = true;

@@ -71,6 +71,10 @@ public:
     inline void setLastNode(int value) {
         lastNode_ = value;
     }
+    /// Resets number of solutions
+    inline void setSolutionCount(int value) {
+        numberSolutions_ = value;
+    }
 
 protected:
     // Data

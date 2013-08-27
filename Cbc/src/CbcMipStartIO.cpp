@@ -170,6 +170,7 @@ int computeCompleteSolution( CbcModel * model,
    lp->setHintParam(OsiDoPresolveInInitial, true, OsiHintDo) ;
 #endif
    lp->initialSolve();
+   //lp->writeMps("fixed","mps");
    if (!lp->isProvenOptimal())
    {
       model->messageHandler()->message(CBC_GENERAL, model->messages())
@@ -258,6 +259,7 @@ int computeCompleteSolution( CbcModel * model,
       sprintf( printLine,"mipstart provided solution with cost %g", compObj);
       model->messageHandler()->message(CBC_GENERAL, model->messages())
 	<< printLine << CoinMessageEol;
+#if 0
       {
 	int numberColumns=lp->getNumCols();
 	double largestInfeasibility = 0.0;
@@ -348,6 +350,7 @@ int computeCompleteSolution( CbcModel * model,
 	else
 	  printf("Cfeasible (%g) - obj %g\n", largestInfeasibility,objValue);
       }
+#endif
       for ( int i=0 ; (i<lp->getNumCols()) ; ++i )
       {
 #if 0
@@ -358,12 +361,13 @@ int computeCompleteSolution( CbcModel * model,
                sol[i] = floor( sol[i]+0.5 );
 #else
 	 if (lp->isInteger(i)) {
-	   if (fabs(sol[i] - floor( sol[i]+0.5 ))>1.0e-8) 
-	     printf("bad sol for %d - %.12g\n",i,sol[i]);
+	   //if (fabs(sol[i] - floor( sol[i]+0.5 ))>1.0e-8) 
+	   //printf("bad sol for %d - %.12g\n",i,sol[i]);
 	   sol[i] = floor( sol[i]+0.5 );
 	 }
 #endif
       }
+#if 0
       {
 	int numberColumns=lp->getNumCols();
 	double largestInfeasibility = 0.0;
@@ -451,6 +455,7 @@ int computeCompleteSolution( CbcModel * model,
 	else
 	  printf("Dfeasible (%g) - obj %g\n", largestInfeasibility,objValue);
       }
+#endif
 #if JUST_FIX_INTEGER
       const double * oldLower = model->solver()->getColLower();
       const double * oldUpper = model->solver()->getColUpper();

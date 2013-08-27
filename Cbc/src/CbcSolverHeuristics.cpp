@@ -1605,6 +1605,7 @@ int doHeuristics(CbcModel * model, int type, CbcOrClpParam* parameters_,
         CbcHeuristicDW heuristic13(*model);
         heuristic13.setHeuristicName("Dantzig-Wolfe");
 	heuristic13.setNumberPasses(100);
+	heuristic13.setNumberBadPasses(10);
 	int numberIntegers=0;
 	const OsiSolverInterface * solver = model->solver();
 	int numberColumns = solver->getNumCols();

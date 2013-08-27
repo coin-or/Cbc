@@ -107,6 +107,9 @@ public:
     /// Set number of passes
     inline void setNumberPasses(int value)
     { numberPasses_ = value;}
+    /// Set number of passes without better solution
+    inline void setNumberBadPasses(int value)
+    { numberBadPasses_ = value;}
     /// Set number free integers needed (Base value)
     inline void setNumberNeeded(int value)
     { nNeededBase_ = value;}
@@ -297,6 +300,8 @@ protected:
     int nNeeded_;
     /// Base number of nodes needed
     int nNodes_;
+    /// Number of passes without better solution
+    int numberBadPasses_;
     // 0 - fine, 1 can't be better, 2 max node
     int solveState_;
 };

@@ -3,8 +3,6 @@
 // Corporation and others.  All Rights Reserved.
 // This code is licensed under the terms of the Eclipse Public License (EPL).
 
-// edwin 12/5/09 carved out of CbcHeuristicRINS
-
 #if defined(_MSC_VER)
 // Turn off compiler warning about long names
 #  pragma warning(disable:4786)
@@ -98,6 +96,7 @@ CbcHeuristicDW::setDefaults()
   fingerPrint_=NULL;
   fullDWEverySoOften_=0;
   numberPasses_=0;
+  numberBadPasses_=COIN_INT_MAX;
   maximumDW_=0;
   numberDW_=0;
   numberDWTimes_=0;
@@ -123,6 +122,7 @@ CbcHeuristicDW::gutsOfCopy(const CbcHeuristicDW & rhs)
   lastObjective_ = rhs.lastObjective_;
   fullDWEverySoOften_ = rhs.fullDWEverySoOften_;
   numberPasses_ = rhs.numberPasses_;
+  numberBadPasses_= rhs.numberBadPasses_;
   howOften_ = rhs.howOften_;
   decayFactor_ = rhs.decayFactor_;
   fullDWEverySoOften_ = rhs.fullDWEverySoOften_;
@@ -337,6 +337,7 @@ int
   char dwPrint[200];
   sprintf(dwPrint,"Before PASSes objective is %g",
 	  bestObjective_);
+  lastObjective_ = bestObjective_;
   model_->messageHandler()->message(CBC_FPUMP1, model_->messages())
     << dwPrint
     << CoinMessageEol;
@@ -472,6 +473,7 @@ int
   model_->messageHandler()->message(CBC_FPUMP1, model_->messages())
     << dwPrint
     << CoinMessageEol;
+  int lastGoodPass=0;
   for (pass_=0;pass_<numberPasses_;pass_++) {
     double endTime2 = CoinCpuTime();
     double endTime2Elapsed = CoinGetTimeOfDay();
@@ -521,6 +523,13 @@ int
     }
     startTime2 = CoinCpuTime();
     startTime2Elapsed = CoinGetTimeOfDay();
+    if (pass_-lastGoodPass>numberBadPasses_) {
+      sprintf(dwPrint,"Exiting on lack of progress");
+      model_->messageHandler()->message(CBC_FPUMP1, model_->messages())
+	<< dwPrint
+	<< CoinMessageEol;
+      break;
+    }
     if (model_->getNodeCount()>=model_->getMaximumNodes()||
 	model_->maximumSecondsReached()) {
       sprintf(dwPrint,"Exiting on time or interrupt");
@@ -561,7 +570,7 @@ int
       // improving
       (*(functionPointer_))(this,NULL,4);
       solveState_=0;
-      //lastObjective=bestObjective_;
+      //lastObjective_=bestObjective_;
       if (phase_) {
 	//nNeededBase_ += nNeededBase_/50;
 	//nNodesBase_ += nNodesBase_/50;
@@ -586,6 +595,7 @@ int
       }
     }
     if (goodSolution) {
+      lastGoodPass=pass_;
       int lastNumberDW=numberDW_;
       solver->setColSolution(bestSolution_);
       solver->setHintParam(OsiDoReducePrint, false, OsiHintDo, 0) ;
@@ -596,7 +606,7 @@ int
       }
       solver->resolve();
       solver->setHintParam(OsiDoReducePrint, true, OsiHintDo, 0) ;
-      if (solver->getObjValue()<bestObjective_-1.0e-5) {
+      if (solver->getObjValue()<lastObjective_-1.0e-5) {
 	memcpy(bestSolution_,solver->getColSolution(),
 	       numberColumns*sizeof(double));
 	bestObjective_ = solver->getObjValue();
@@ -664,7 +674,11 @@ int
 	  }
 	  OsiClpSolverInterface solverX(tempModel,true);
 	  CbcModel modelX(solverX);
-	  modelX.setLogLevel(0);
+	  modelX.setLogLevel(1);
+	  modelX.setMoreSpecialOptions2(57);
+	  // need to stop after solutions and nodes
+	  //modelX.setMaximumNodes(nNodes_);
+	  modelX.setMaximumSolutions(1); 
 	  modelX.branchAndBound();
 	  const double * bestSolutionX = modelX.bestSolution();
 	  if (bestSolutionX) {
@@ -677,6 +691,23 @@ int
 	  }
 	}
 	addDW(bestSolution2,numberUsed,whichBlock);
+	if (!pass_&&false) {
+	  // see if gives a solution
+	  for ( int i=0 ; i<numberColumns ; ++i ) {
+	    if (solver_->isInteger(i)) {
+	      double value = floor(bestSolution2[i]+0.5);
+	      columnLower[i] = value;
+	      columnUpper[i] = value;
+	    } else {
+	      columnLower[i] = saveLower_[i];
+	      columnUpper[i] = saveUpper_[i];
+	    }
+	  }
+	  solver_->resolve();
+	  if (solver_->isProvenOptimal()) {
+	    printf ("DW1 sol %g\n",solver->getObjValue());
+	  }
+	}
 	// now try purer DW
 	bool takeHint;
 	OsiHintStrength strength;
@@ -705,7 +736,7 @@ int
 	    int jColumn=i-start;
 	    int iColumn=columnsInBlock_[i];
 	    columnLowerX[jColumn]=CoinMax(saveLower_[iColumn],-1.0e12);
-	    columnUpperX[jColumn]=CoinMin(saveUpper_[iColumn],1.0e-12);
+	    columnUpperX[jColumn]=CoinMin(saveUpper_[iColumn],1.0e12);
 	    if (solver->isInteger(iColumn))
 	      tempModel->setInteger(jColumn);
 	    double cost=objectiveX[jColumn];
@@ -724,7 +755,9 @@ int
 	  solverX.initialSolve();
 	  double cObj=solverX.getObjValue();
 	  CbcModel modelX(solverX);
-	  modelX.setLogLevel(0);
+	  modelX.setLogLevel(1);
+	  modelX.setMoreSpecialOptions2(57);
+	  modelX.setMaximumSolutions(1); 
 	  modelX.branchAndBound();
 	  sprintf(dwPrint,"Block %d contobj %g intobj %g convdual %g",
 		  iBlock,cObj,modelX.getObjValue(),convexityDual);
@@ -741,6 +774,23 @@ int
 	  }
 	}
 	addDW(bestSolution2,numberUsed,whichBlock);
+	if (!pass_&&false) {
+	  // see if gives a solution
+	  for ( int i=0 ; i<numberColumns ; ++i ) {
+	    if (solver_->isInteger(i)) {
+	      double value = floor(bestSolution2[i]+0.5);
+	      columnLower[i] = value;
+	      columnUpper[i] = value;
+	    } else {
+	      columnLower[i] = saveLower_[i];
+	      columnUpper[i] = saveUpper_[i];
+	    }
+	  }
+	  solver_->resolve();
+	  if (solver_->isProvenOptimal()) {
+	    printf ("DW sol %g\n",solver->getObjValue());
+	  }
+	}
 	delete [] bestSolution2;
       }
       passesToDW--;
@@ -1003,7 +1053,13 @@ int
 		   lower[i],value,upper[i],saveUpper_[i]);
 	}
       }
-      abort();
+      //abort();
+      sprintf(dwPrint,"**** Continuous below best - bad solution passed in?!");
+      model_->messageHandler()->message(CBC_FPUMP1, model_->messages())
+	<< dwPrint
+	<< CoinMessageEol;
+      // give up
+      break;
     }
     const double * tempSol = solver->getColSolution();
     // But free up and then fix again

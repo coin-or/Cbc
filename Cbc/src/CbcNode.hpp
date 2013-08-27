@@ -307,6 +307,12 @@ public:
         if (yesNo) state_ |= 2;
         else state_ &= ~2;
     }
+    /// Get state (really for debug)
+    inline int getState() const
+    { return state_;}
+    /// Set state (really for debug)
+    inline void setState(int value)
+    { state_ = value;}
     /// Print
     void print() const;
     /// Debug

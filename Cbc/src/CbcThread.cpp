@@ -569,7 +569,8 @@ CbcBaseModel::CbcBaseModel (CbcModel & model,  int type)
         CbcStrategy * saveStrategy = model.strategy();
         model.setStrategy(NULL);
         for (int i = 0; i < numberThreads_; i++) {
-            threadModel_[i] = new CbcModel(model, true);
+            //threadModel_[i] = new CbcModel(model, true);
+            threadModel_[i] = model. clone (true);
             threadModel_[i]->synchronizeHandlers(1);
 #ifdef COIN_HAS_CLP
             // Solver may need to know about model

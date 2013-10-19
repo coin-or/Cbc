@@ -1837,6 +1837,9 @@ public:
     */
     CbcModel(const CbcModel & rhs, bool cloneHandler = false);
 
+    /** Clone */
+    virtual CbcModel *clone (bool cloneHandler);
+
     /// Assignment operator
     CbcModel & operator=(const CbcModel& rhs);
 

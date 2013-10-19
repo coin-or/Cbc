@@ -4875,6 +4875,13 @@ CbcModel::assignSolver(OsiSolverInterface *&solver, bool deleteSolver)
     return ;
 }
 
+// Cloning method
+
+CbcModel *CbcModel::clone (bool cloneHandler) {
+  return new CbcModel (*this, cloneHandler);
+}
+
+
 // Copy constructor.
 
 CbcModel::CbcModel(const CbcModel & rhs, bool cloneHandler)

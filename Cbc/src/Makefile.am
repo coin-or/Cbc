@@ -8,8 +8,6 @@
 
 AUTOMAKE_OPTIONS = foreign
 
-SUBDIRS = OsiCbc
-
 ########################################################################
 #                               libCbc                                 #
 ########################################################################
@@ -103,6 +101,12 @@ libCbcSolver_la_SOURCES = \
 	CbcSolverAnalyze.cpp CbcSolverAnalyze.hpp \
 	CbcMipStartIO.cpp CbcMipStartIO.hpp \
 	CbcSolverExpandKnapsack.cpp CbcSolverExpandKnapsack.hpp
+
+# List all additionally required libraries
+if DEPENDENCY_LINKING
+libCbc_la_LIBADD = $(CBCLIB_LIBS)
+libCbcSolver_la_LIBADD = $(CBCLIB_LIBS) libCbc.la
+endif
 
 # This is for libtool
 

@@ -74,7 +74,9 @@ am__strip_dir = `echo $$p | sed -e 's|^.*/||'`;
 am__installdirs = "$(DESTDIR)$(libdir)" "$(DESTDIR)$(includecoindir)"
 libLTLIBRARIES_INSTALL = $(INSTALL)
 LTLIBRARIES = $(lib_LTLIBRARIES)
-libOsiCbc_la_LIBADD =
+am__DEPENDENCIES_1 =
+@DEPENDENCY_LINKING_TRUE@libOsiCbc_la_DEPENDENCIES =  \
+@DEPENDENCY_LINKING_TRUE@	$(am__DEPENDENCIES_1) ../libCbc.la
 am_libOsiCbc_la_OBJECTS = OsiCbcSolverInterface.lo
 libOsiCbc_la_OBJECTS = $(am_libOsiCbc_la_OBJECTS)
 depcomp = $(SHELL) $(top_srcdir)/depcomp
@@ -217,6 +219,8 @@ DBG_CFLAGS = @DBG_CFLAGS@
 DBG_CXXFLAGS = @DBG_CXXFLAGS@
 DEFS = @DEFS@
 DEPDIR = @DEPDIR@
+DEPENDENCY_LINKING_FALSE = @DEPENDENCY_LINKING_FALSE@
+DEPENDENCY_LINKING_TRUE = @DEPENDENCY_LINKING_TRUE@
 DYLP_CFLAGS = @DYLP_CFLAGS@
 DYLP_CFLAGS_INSTALLED = @DYLP_CFLAGS_INSTALLED@
 DYLP_DATA = @DYLP_DATA@
@@ -433,6 +437,9 @@ lib_LTLIBRARIES = libOsiCbc.la
 
 # List all source files for this library, including headers
 libOsiCbc_la_SOURCES = OsiCbcSolverInterface.cpp OsiCbcSolverInterface.hpp
+
+# List all additionally required libraries
+@DEPENDENCY_LINKING_TRUE@libOsiCbc_la_LIBADD = $(CBCLIB_LIBS) ../libCbc.la
 
 # This is for libtool (on Windows)
 libOsiCbc_la_LDFLAGS = $(LT_LDFLAGS)

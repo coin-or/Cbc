@@ -140,7 +140,7 @@ int CbcClpUnitTest (const CbcModel &saveModel, const std::string &dirMiplib,
       << "Not doing miplib run as can't find mps files." << std::endl
       << "Perhaps you're trying to read gzipped (.gz) files without libz?"
       << std::endl ;
-    return (-1) ;
+    return (0) ;
   }
   int dfltPrecision = static_cast<int>(std::cout.precision()) ;
 /*

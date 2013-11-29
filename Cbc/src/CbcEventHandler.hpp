@@ -45,7 +45,7 @@
   clp-specific code.
 
 */
-
+#include <cstddef>
 #include <map>
 
 /* May well already be declared, but can't hurt. */

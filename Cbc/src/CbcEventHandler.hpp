@@ -46,6 +46,7 @@
 
 */
 
+#include <cstddef>
 #include <map>
 
 /* May well already be declared, but can't hurt. */
@@ -102,6 +103,8 @@ public:
         smallBranchAndBound,
         /*! After a pass of heuristic. */
         heuristicPass,
+        /*! When converting constraints to cuts. */
+        convertToCuts,
         /*! End of search. */
         endSearch
     } ;

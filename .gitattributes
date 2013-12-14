@@ -8,6 +8,10 @@ Cbc/CbcSourceFilesTable3.csv -text
 Cbc/CbcSourceFilesTable3.xls -text
 Cbc/MSVisualStudio/v10/Cbc.sln -text
 Cbc/MSVisualStudio/v10/CbcCSosDllSample/cbcCSosDllSample.vcxproj -text
+Cbc/MSVisualStudio/v10/CbcWithInstalledLibraries/BaseCBCProject.sln -text
+Cbc/MSVisualStudio/v10/CbcWithInstalledLibraries/BaseCBCProject.vcxproj -text svneol=unset#application/xml
+Cbc/MSVisualStudio/v10/CbcWithInstalledLibraries/README.txt -text
+Cbc/MSVisualStudio/v10/CbcWithInstalledLibraries/main.cpp -text
 Cbc/MSVisualStudio/v10/OsiCbcUnitTest/OsiCbcUnitTest.vcxproj -text
 Cbc/MSVisualStudio/v10/cbc/cbc.vcxproj -text
 Cbc/MSVisualStudio/v10/cbcCInterfaceDll/cbcCInterfaceDll.vcxproj -text

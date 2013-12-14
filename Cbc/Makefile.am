@@ -142,7 +142,7 @@ else
 if COIN_CXX_IS_CL
 	echo "-libpath:`$(CYGPATH_W) @abs_lib_dir@` libCbc.lib @CBCLIB_LIBS_INSTALLED@" > $(addlibsdir)/cbc_addlibs.txt
 else
-	echo -L@abs_lib_dir@ -lCbc @CBCLIB_LIBS_INSTALLED@ > $(addlibsdir)/cbc_addlibs.txt
+	echo -L@abs_lib_dir@ -lCbcSolver -lCbc @CBCLIB_LIBS_INSTALLED@ > $(addlibsdir)/cbc_addlibs.txt
 endif
 endif
 

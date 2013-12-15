@@ -99,7 +99,7 @@ pkgconfiglibDATA_INSTALL = $(INSTALL_DATA)
 DATA = $(pkgconfiglib_DATA)
 ETAGS = etags
 CTAGS = ctags
-DIST_SUBDIRS = src test
+DIST_SUBDIRS = src src/OsiCbc test
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
 distdir = $(PACKAGE)-$(VERSION)
 top_distdir = $(distdir)
@@ -438,7 +438,9 @@ AUTOMAKE_OPTIONS = foreign
 ########################################################################
 #                          Subdirectories                              #
 ########################################################################
-SUBDIRS = src $(am__append_1)
+
+# Don't do src/OsiCbc recursively, since src/OsiCbc/libOsiCbc depends on src/libCbc
+SUBDIRS = src src/OsiCbc $(am__append_1)
 
 ########################################################################
 #             Additional files to be included in tarball               #

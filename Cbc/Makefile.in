@@ -983,7 +983,7 @@ install-data-hook:
 @COIN_HAS_PKGCONFIG_TRUE@	PKG_CONFIG_PATH=@COIN_PKG_CONFIG_PATH@ \
 @COIN_HAS_PKGCONFIG_TRUE@	$(PKG_CONFIG) --libs cbc > $(addlibsdir)/cbc_addlibs.txt
 @COIN_CXX_IS_CL_TRUE@@COIN_HAS_PKGCONFIG_FALSE@	echo "-libpath:`$(CYGPATH_W) @abs_lib_dir@` libCbc.lib @CBCLIB_LIBS_INSTALLED@" > $(addlibsdir)/cbc_addlibs.txt
-@COIN_CXX_IS_CL_FALSE@@COIN_HAS_PKGCONFIG_FALSE@	echo -L@abs_lib_dir@ -lCbc @CBCLIB_LIBS_INSTALLED@ > $(addlibsdir)/cbc_addlibs.txt
+@COIN_CXX_IS_CL_FALSE@@COIN_HAS_PKGCONFIG_FALSE@	echo -L@abs_lib_dir@ -lCbcSolver -lCbc @CBCLIB_LIBS_INSTALLED@ > $(addlibsdir)/cbc_addlibs.txt
 
 uninstall-hook:
 	rm -f $(addlibsdir)/cbc_addlibs.txt

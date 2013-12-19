@@ -9,7 +9,7 @@
     cbc solver.
 
     This class is currently an orphan. With the removal of all code flagged
-    with the NEWS_STYLE_SOLVER, this class is never instantiated (and cannot
+    with the NEW_STYLE_SOLVER, this class is never instantiated (and cannot
     be instantiated). It is available to be coopted as a top-level object
     wrapping the current CbcMain0 and CbcMain1, should that appear to be a
     desireable path forward.  -- lh, 091211 --
@@ -250,8 +250,56 @@ typedef struct {
     double * pseudoDown_;
     // Up pseudo costs
     double * pseudoUp_;
-} CbcSolverUsefulData;
+} CbcSolverUsefulData2;
 
+//#############################################################################
+
+/**
+   The CbcSolver class was taken out at a 9/12/09 meeting
+   This is a feeble replacement.
+   At present everything is public
+*/
+class CbcSolverUsefulData {
+
+public:
+    ///@name Constructors and destructors etc
+    //@{
+    /// Default Constructor
+    CbcSolverUsefulData();
+
+    /** Copy constructor .
+     */
+    CbcSolverUsefulData(const CbcSolverUsefulData & rhs);
+
+    /// Assignment operator
+    CbcSolverUsefulData & operator=(const CbcSolverUsefulData& rhs);
+
+    /// Destructor
+    ~CbcSolverUsefulData ();
+    //@}
+
+    ///@name Member data
+    //@{
+    // For time
+    double totalTime_;
+    // Parameters
+    CbcOrClpParam parameters_[CBCMAXPARAMETERS];
+    // Printing
+    bool noPrinting_;
+    // Whether to use signal handler
+    bool useSignalHandler_;
+    // Number of Parameters
+    int numberParameters_;
+    // Default pump tuning
+    int initialPumpTune_;
+    //@}
+};
+/// And this uses it
+// When we want to load up CbcModel with options first
+void CbcMain0 (CbcModel & babSolver,CbcSolverUsefulData & solverData);
+int CbcMain1 (int argc, const char *argv[], CbcModel & babSolver, int (CbcModel * currentSolver, int whereFrom),CbcSolverUsefulData & solverData);
+
+//#############################################################################
 
 /*! \brief A class to allow the use of unknown user functionality
 

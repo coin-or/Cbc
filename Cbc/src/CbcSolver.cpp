@@ -814,7 +814,6 @@ CbcSolver::addCutGenerator(CglCutGenerator * generator)
 #include "Cbc_ampl.h"
 #endif
 
-static double totalTime = 0.0;
 static void statistics(ClpSimplex * originalModel, ClpSimplex * model);
 static bool maskMatches(const int * starts, char ** masks,
                         std::string & check);
@@ -975,9 +974,6 @@ static int dummyCallBack(CbcModel * /*model*/, int /*whereFrom*/)
 int CbcOrClpRead_mode = 1;
 FILE * CbcOrClpReadCommand = stdin;
 extern int CbcOrClpEnvironmentIndex;
-static bool noPrinting = false;
-
-
 
 /*
   Wrappers for CbcMain0, CbcMain1. The various forms of callCbc will eventually
@@ -1075,6 +1071,7 @@ int callCbc1(const std::string input2, CbcModel & babSolver,
     return returnCode;
 }
 
+static CbcSolverUsefulData staticParameterData;
 int callCbc1(const char * input2, CbcModel & model,
              int callBack(CbcModel * currentSolver, int whereFrom))
 {
@@ -1122,21 +1119,20 @@ int callCbc1(const char * input2, CbcModel & model,
     }
     argv[n+1] = CoinStrdup("-quit");
     free(input);
-    totalTime = 0.0;
+    // allow interrupts and printing
+    staticParameterData.noPrinting_ = false;
+    staticParameterData.useSignalHandler_=true;
     currentBranchModel = NULL;
     CbcOrClpRead_mode = 1;
     CbcOrClpReadCommand = stdin;
-    noPrinting = false;
     int returnCode = CbcMain1(n + 2, const_cast<const char **>(argv),
-                              model, callBack);
+                              model, callBack,staticParameterData);
     for (int k = 0; k < n + 2; k++)
         free(argv[k]);
     delete [] argv;
     return returnCode;
 }
 
-static CbcOrClpParam parameters[CBCMAXPARAMETERS];
-static int numberParameters = 0 ;
 CglPreProcess * cbcPreProcessPointer=NULL;
 
 int CbcClpUnitTest (const CbcModel & saveModel,
@@ -1149,6 +1145,117 @@ int CbcMain1 (int argc, const char *argv[],
     return CbcMain1(argc, argv, model, dummyCallBack);
 }
 
+#ifdef CBC_THREAD_SAFE
+// Copies of some input decoding
+
+static std::string
+CoinReadGetCommand(int &whichArgument, int argc, const char *argv[])
+{
+  std::string field;
+  if (whichArgument < argc) 
+    field = argv[whichArgument++];
+  else
+    field = "quit";
+  if (field[0] == '-') 
+    field = field.substr(1);
+  return field;
+}
+static std::string
+CoinReadGetString(int &whichArgument, int argc, const char *argv[])
+{
+  std::string field;
+  if (whichArgument < argc) 
+    field = argv[whichArgument++];
+  else
+    field = "";
+  return field;
+}
+// valid 0 - okay, 1 bad, 2 not there
+static int
+CoinReadGetIntField(int &whichArgument, int argc, const char *argv[], int * valid)
+{
+  std::string field;
+  if (whichArgument < argc) 
+    field = argv[whichArgument++];
+  else
+    field = "0";
+  long int value = 0;
+  const char * start = field.c_str();
+  char * endPointer = NULL;
+  // check valid
+  value =  strtol(start, &endPointer, 10);
+  if (*endPointer == '\0') {
+    *valid = 0;
+  } else {
+    *valid = 1;
+    std::cout << "String of " << field;
+  }
+  return static_cast<int>(value);
+}
+static double
+CoinReadGetDoubleField(int &whichArgument, int argc, const char *argv[], int * valid)
+{
+  std::string field;
+  if (whichArgument < argc) 
+    field = argv[whichArgument++];
+  else
+    field = "0.0";
+  double value = 0.0;
+  const char * start = field.c_str();
+  char * endPointer = NULL;
+  // check valid
+  value =  strtod(start, &endPointer);
+  if (*endPointer == '\0') {
+    *valid = 0;
+  } else {
+    *valid = 1;
+    std::cout << "String of " << field;
+  }
+  return value;
+}
+// Redefine all
+#define CoinReadGetCommand(x,y) CoinReadGetCommand(whichArgument,x,y)
+#define CoinReadGetString(x,y) CoinReadGetString(whichArgument,x,y)
+#define CoinReadGetIntField(x,y,z) CoinReadGetIntField(whichArgument,x,y,z)
+#define CoinReadGetDoubleField(x,y,z) CoinReadGetDoubleField(whichArgument,x,y,z)
+#endif
+// Default Constructor
+CbcSolverUsefulData::CbcSolverUsefulData()
+{
+  totalTime_ = 0.0;
+  noPrinting_ = true;
+  useSignalHandler_ = false;
+  establishParams(numberParameters_,parameters_);
+}
+
+/* Copy constructor .
+ */
+CbcSolverUsefulData::CbcSolverUsefulData(const CbcSolverUsefulData & rhs)
+{
+  totalTime_ = rhs.totalTime_;
+  noPrinting_ = rhs.noPrinting_;
+  useSignalHandler_ = rhs.useSignalHandler_;
+  numberParameters_ = rhs.numberParameters_;
+  memcpy(parameters_,rhs.parameters_,sizeof(parameters_));
+}
+
+// Assignment operator
+CbcSolverUsefulData & CbcSolverUsefulData::operator=(const CbcSolverUsefulData& rhs)
+{
+  if (this != &rhs) {
+    totalTime_ = rhs.totalTime_;
+    noPrinting_ = rhs.noPrinting_;
+    useSignalHandler_ = rhs.useSignalHandler_;
+    numberParameters_ = rhs.numberParameters_;
+    memcpy(parameters_,rhs.parameters_,sizeof(parameters_));
+  }
+  return *this;
+}
+
+// Destructor
+CbcSolverUsefulData::~CbcSolverUsefulData ()
+{
+}
 
 /*
   Meaning of whereFrom:
@@ -1164,9 +1271,35 @@ int CbcMain1 (int argc, const char *argv[],
               CbcModel  & model,
               int callBack(CbcModel * currentSolver, int whereFrom))
 {
-    CbcOrClpParam * parameters_ = parameters;
-    int numberParameters_ = numberParameters;
+  // allow interrupts and printing
+  staticParameterData.noPrinting_ = false;
+  staticParameterData.useSignalHandler_=true;
+  return CbcMain1(argc,argv,model,callBack,staticParameterData);
+}
+/*
+  Meaning of whereFrom:
+    1 after initial solve by dualsimplex etc
+    2 after preprocessing
+    3 just before branchAndBound (so user can override)
+    4 just after branchAndBound (before postprocessing)
+    5 after postprocessing
+    6 after a user called heuristic phase
+*/
+int CbcMain1 (int argc, const char *argv[],
+              CbcModel  & model,
+              int callBack(CbcModel * currentSolver, int whereFrom),
+	      CbcSolverUsefulData & parameterData)
+{
+    CbcOrClpParam * parameters_ = parameterData.parameters_;
+    int numberParameters_ = parameterData.numberParameters_;
+    double totalTime = parameterData.totalTime_;
+    bool noPrinting = parameterData.noPrinting_;
+    bool useSignalHandler = parameterData.useSignalHandler_;
     CbcModel & model_ = model;
+#ifdef CBC_THREAD_SAFE
+    // Initialize argument
+    int whichArgument=1;
+#endif
 #ifdef CBC_USE_INITIAL_TIME
     if (model_.useElapsedTime())
       model_.setDblParam(CbcModel::CbcStartSeconds, CoinGetTimeOfDay());
@@ -1250,7 +1383,8 @@ int CbcMain1 (int argc, const char *argv[],
         // register signal handler
         //CoinSighandler_t saveSignal=signal(SIGINT,signal_handler);
 #if CBC_QUIET < 2
-        signal(SIGINT, signal_handler);
+	if (useSignalHandler)
+	  signal(SIGINT, signal_handler);
 #endif
         // Set up all non-standard stuff
         int cutPass = -1234567;
@@ -2110,7 +2244,7 @@ int CbcMain1 (int argc, const char *argv[],
 				if (value>=10) {
 				  addFlags = 1048576*(value/10);
 				  value = value % 10;
-				  parameters[whichParam(CBC_PARAM_INT_EXPERIMENT, numberParameters, parameters)].setIntValue(value);
+				  parameters_[whichParam(CBC_PARAM_INT_EXPERIMENT, numberParameters_, parameters_)].setIntValue(value);
 				}
                                 if (value >= 1) {
 				    int values[]={24003,280003,792003,24003,24003};
@@ -2122,7 +2256,7 @@ int CbcMain1 (int argc, const char *argv[],
 				      parameters_[iParam].setCurrentOption("on");
 				    }
 				    int extra4 = values[value-1]+addFlags;
-                                    parameters[whichParam(CBC_PARAM_INT_EXTRA4, numberParameters, parameters)].setIntValue(extra4);
+                                    parameters_[whichParam(CBC_PARAM_INT_EXTRA4, numberParameters_, parameters_)].setIntValue(extra4);
                                     if (!noPrinting_) {
                                         generalMessageHandler->message(CLP_GENERAL, generalMessages)
                                         << "switching on global root cuts for gomory and knapsack"
@@ -2135,7 +2269,7 @@ int CbcMain1 (int argc, const char *argv[],
 					<<extra4<<" -passc 1000!"
                                         << CoinMessageEol;
                                     }
-                                    parameters[whichParam(CBC_PARAM_STR_PROBINGCUTS, numberParameters, parameters)].setCurrentOption("forceOnStrong");
+                                    parameters_[whichParam(CBC_PARAM_STR_PROBINGCUTS, numberParameters_, parameters_)].setCurrentOption("forceOnStrong");
                                     probingAction = 8;
                                     parameters_[whichParam(CBC_PARAM_STR_GOMORYCUTS, numberParameters_, parameters_)].setCurrentOption("onGlobal");
                                     gomoryAction = 5;
@@ -2144,9 +2278,9 @@ int CbcMain1 (int argc, const char *argv[],
                                     parameters_[whichParam(CLP_PARAM_STR_FACTORIZATION, numberParameters_, parameters_)].setCurrentOption("osl");
                                     lpSolver->factorization()->forceOtherFactorization(3);
                                     parameters_[whichParam(CBC_PARAM_INT_MAXHOTITS, numberParameters_, parameters_)].setIntValue(100);
-                                    parameters[whichParam(CBC_PARAM_INT_CUTPASS, numberParameters, parameters)].setIntValue(1000);
+                                    parameters_[whichParam(CBC_PARAM_INT_CUTPASS, numberParameters_, parameters_)].setIntValue(1000);
                                     cutPass = 1000;
-                                    parameters[whichParam(CBC_PARAM_STR_RENS, numberParameters, parameters)].setCurrentOption("on");
+                                    parameters_[whichParam(CBC_PARAM_STR_RENS, numberParameters_, parameters_)].setCurrentOption("on");
                                 }
                             } else if (parameters_[iParam].type() == CBC_PARAM_INT_STRATEGY) {
                                 if (value == 0) {
@@ -9129,12 +9263,12 @@ clp watson.mps -\nscaling off\nprimalsimplex"
                                // get next field
                                field = CoinReadGetString(argc, argv);
                                if (field == "$") {
-                                    field = parameters[iParam].stringValue();
+                                    field = parameters_[iParam].stringValue();
                                } else if (field == "EOL") {
-                                    parameters[iParam].printString();
+                                    parameters_[iParam].printString();
                                     break;
                                } else {
-                                    parameters[iParam].setStringValue(field);
+                                    parameters_[iParam].setStringValue(field);
                                }
                                std::string fileName;
                                //bool canOpen = false;
@@ -9265,9 +9399,15 @@ int CbcMain (int argc, const char *argv[],
     return CbcMain1(argc, argv, model);
 }
 
-
 void CbcMain0 (CbcModel  & model)
 {
+  CbcMain0(model,staticParameterData);
+}
+void CbcMain0 (CbcModel  & model,
+	       CbcSolverUsefulData & parameterData)
+{
+    CbcOrClpParam * parameters = parameterData.parameters_;
+    int numberParameters = parameterData.numberParameters_;
 #ifndef CBC_OTHER_SOLVER
     OsiClpSolverInterface * originalSolver = dynamic_cast<OsiClpSolverInterface *> (model.solver());
 #elif CBC_OTHER_SOLVER==1
@@ -9287,7 +9427,7 @@ void CbcMain0 (CbcModel  & model)
     lpSolver->setPerturbation(50);
     lpSolver->messageHandler()->setPrefix(false);
 #endif
-    establishParams(numberParameters, parameters) ;
+    //establishParams(numberParameters, parameters) ;
     const char dirsep =  CoinFindDirSeparator();
     std::string directory;
     std::string dirSample;

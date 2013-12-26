@@ -273,7 +273,7 @@ if COIN_CXX_IS_CL
 install-exec-hook:
 	test -s cbc.exe.manifest && \
 	mt -manifest cbc.exe.manifest -outputresource:cbc.exe;\
-	cp cbc.exe $(bindir)/clp.exe
+	cp cbc.exe $(bindir)/cbc.exe
 endif
 
 #######################################################################

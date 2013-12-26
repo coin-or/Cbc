@@ -1180,7 +1180,7 @@ uninstall-am: uninstall-binPROGRAMS uninstall-includecoinHEADERS \
 @COIN_CXX_IS_CL_TRUE@install-exec-hook:
 @COIN_CXX_IS_CL_TRUE@	test -s cbc.exe.manifest && \
 @COIN_CXX_IS_CL_TRUE@	mt -manifest cbc.exe.manifest -outputresource:cbc.exe;\
-@COIN_CXX_IS_CL_TRUE@	cp cbc.exe $(bindir)/clp.exe
+@COIN_CXX_IS_CL_TRUE@	cp cbc.exe $(bindir)/cbc.exe
 
 #######################################################################
 # Create the Config.h file that has all public defines and install it #

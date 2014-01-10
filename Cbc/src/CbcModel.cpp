@@ -2035,8 +2035,50 @@ void CbcModel::branchAndBound(int doStatistics)
 	if (flipObjective)
 	  flipModel();
         return ;
-    } else if (!numberObjects_ && (!strategy_ || strategy_->preProcessState() <= 0)) {
+    } else if (!numberObjects_) { 
         // nothing to do
+        // Undo preprocessing performed during BaB.
+        if (strategy_ && strategy_->preProcessState() > 0) {
+	  // undo preprocessing
+	  CglPreProcess * process = strategy_->process();
+	  assert (process);
+	  int n = originalSolver->getNumCols();
+	  if (bestSolution_) {
+	    delete [] bestSolution_;
+	    bestSolution_ = new double [n];
+	    process->postProcess(*solver_);
+	  }
+	  strategy_->deletePreProcess();
+	  // Solution now back in originalSolver
+	  delete solver_;
+	  solver_ = originalSolver;
+	  if (bestSolution_) {
+	    bestObjective_ = solver_->getObjValue() * solver_->getObjSense();
+	    memcpy(bestSolution_, solver_->getColSolution(), n*sizeof(double));
+	  }
+	  // put back original objects if there were any
+	  if (originalObject) {
+	    int iColumn;
+	    assert (ownObjects_);
+	    for (iColumn = 0; iColumn < numberObjects_; iColumn++)
+	      delete object_[iColumn];
+	    delete [] object_;
+	    numberObjects_ = numberOriginalObjects;
+	    object_ = originalObject;
+	    delete [] integerVariable_;
+	    numberIntegers_ = 0;
+	    for (iColumn = 0; iColumn < n; iColumn++) {
+	      if (solver_->isInteger(iColumn))
+		numberIntegers_++;
+	    }
+	    integerVariable_ = new int[numberIntegers_];
+	    numberIntegers_ = 0;
+	    for (iColumn = 0; iColumn < n; iColumn++) {
+	    if (solver_->isInteger(iColumn))
+	      integerVariable_[numberIntegers_++] = iColumn;
+	    }
+	  }
+	}
         if (flipObjective)
 	  flipModel();
         solverCharacteristics_ = NULL;
@@ -10828,6 +10870,8 @@ CbcModel::deleteObjects(bool getIntegers)
 */
 void CbcModel::synchronizeModel()
 {
+    if (!numberObjects_)
+      return;
     int i;
     for (i = 0; i < numberHeuristics_; i++)
         heuristic_[i]->setModel(this);

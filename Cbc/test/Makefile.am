@@ -15,7 +15,7 @@ AUTOMAKE_OPTIONS = foreign
 CBC_TEST_TGTS = gamstests ositests
 
 if COIN_HAS_CLP
-  CBC_TEST_TGTS += test_cbc
+  CBC_TEST_TGTS += test_cbc ctests
 endif
 if CBC_BUILD_CBC_GENERIC
 if COIN_HAS_SAMPLE
@@ -56,7 +56,7 @@ gamstests: gamsTest$(EXEEXT)
 
 .PHONY: test
 
-bin_PROGRAMS = gamsTest osiUnitTest
+bin_PROGRAMS = gamsTest osiUnitTest CInterfaceTest
 
 gamsTest_SOURCES = gamsTest.cpp
 gamsTest_LDADD = ../src/libCbcSolver.la ../src/libCbc.la $(CBCLIB_LIBS)
@@ -84,6 +84,19 @@ AM_CPPFLAGS += -I`$(CYGPATH_W) $(srcdir)/../src/OsiCbc` $(OSITESTS_CFLAGS)
 
 ositests: osiUnitTest$(EXEEXT)
 	./osiUnitTest$(EXEEXT) $(ositestsflags)
+
+########################################################################
+#                         unitTest for CbcCInterface                   #
+########################################################################
+
+CInterfaceTest_SOURCES = CInterfaceTest.c
+
+CInterfaceTest_LDADD = ../src/libCbc.la $(CBCLIB_LIBS)
+
+CInterfaceTest_DEPENDENCIES = ../src/libCbc.la $(CBCLIB_DEPENDENCIES)
+
+ctests: CInterfaceTest$(EXEEXT)
+	./CInterfaceTest$(EXEEXT)
 
 ########################################################################
 #                          Cleaning stuff                              #

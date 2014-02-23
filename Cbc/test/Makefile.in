@@ -42,13 +42,14 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
-@COIN_HAS_CLP_TRUE@am__append_1 = test_cbc
+@COIN_HAS_CLP_TRUE@am__append_1 = test_cbc ctests
 @CBC_BUILD_CBC_GENERIC_TRUE@@COIN_HAS_SAMPLE_TRUE@am__append_2 = test_cbc_generic
 @COIN_HAS_SAMPLE_TRUE@am__append_3 = -dirSample `$(CYGPATH_W) $(SAMPLE_DATA)`
 @COIN_HAS_SAMPLE_TRUE@am__append_4 = -mpsDir=`$(CYGPATH_W) $(SAMPLE_DATA)`
 @COIN_HAS_MIPLIB3_TRUE@am__append_5 = -dirMiplib `$(CYGPATH_W) $(MIPLIB3_DATA)` -miplib
 @COIN_HAS_NETLIB_TRUE@am__append_6 = -netlibDir=`$(CYGPATH_W) $(NETLIB_DATA)` -testOsiSolverInterface
-bin_PROGRAMS = gamsTest$(EXEEXT) osiUnitTest$(EXEEXT)
+bin_PROGRAMS = gamsTest$(EXEEXT) osiUnitTest$(EXEEXT) \
+	CInterfaceTest$(EXEEXT)
 subdir = test
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -63,14 +64,24 @@ CONFIG_CLEAN_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)"
 binPROGRAMS_INSTALL = $(INSTALL_PROGRAM)
 PROGRAMS = $(bin_PROGRAMS)
+am_CInterfaceTest_OBJECTS = CInterfaceTest.$(OBJEXT)
+CInterfaceTest_OBJECTS = $(am_CInterfaceTest_OBJECTS)
+am__DEPENDENCIES_1 =
 am_gamsTest_OBJECTS = gamsTest.$(OBJEXT)
 gamsTest_OBJECTS = $(am_gamsTest_OBJECTS)
-am__DEPENDENCIES_1 =
 am_osiUnitTest_OBJECTS = osiUnitTest.$(OBJEXT) \
 	OsiCbcSolverInterfaceTest.$(OBJEXT)
 osiUnitTest_OBJECTS = $(am_osiUnitTest_OBJECTS)
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__depfiles_maybe = depfiles
+COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
+	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
+LTCOMPILE = $(LIBTOOL) --tag=CC --mode=compile $(CC) $(DEFS) \
+	$(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) \
+	$(AM_CFLAGS) $(CFLAGS)
+CCLD = $(CC)
+LINK = $(LIBTOOL) --tag=CC --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
+	$(AM_LDFLAGS) $(LDFLAGS) -o $@
 CXXCOMPILE = $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
 	$(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS)
 LTCXXCOMPILE = $(LIBTOOL) --tag=CXX --mode=compile $(CXX) $(DEFS) \
@@ -79,8 +90,10 @@ LTCXXCOMPILE = $(LIBTOOL) --tag=CXX --mode=compile $(CXX) $(DEFS) \
 CXXLD = $(CXX)
 CXXLINK = $(LIBTOOL) --tag=CXX --mode=link $(CXXLD) $(AM_CXXFLAGS) \
 	$(CXXFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
-SOURCES = $(gamsTest_SOURCES) $(osiUnitTest_SOURCES)
-DIST_SOURCES = $(gamsTest_SOURCES) $(osiUnitTest_SOURCES)
+SOURCES = $(CInterfaceTest_SOURCES) $(gamsTest_SOURCES) \
+	$(osiUnitTest_SOURCES)
+DIST_SOURCES = $(CInterfaceTest_SOURCES) $(gamsTest_SOURCES) \
+	$(osiUnitTest_SOURCES)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -437,6 +450,13 @@ osiUnitTest_DEPENDENCIES = ../src/OsiCbc/libOsiCbc.la ../src/libCbc.la \
 
 
 ########################################################################
+#                         unitTest for CbcCInterface                   #
+########################################################################
+CInterfaceTest_SOURCES = CInterfaceTest.c
+CInterfaceTest_LDADD = ../src/libCbc.la $(CBCLIB_LIBS)
+CInterfaceTest_DEPENDENCIES = ../src/libCbc.la $(CBCLIB_DEPENDENCIES)
+
+########################################################################
 #                          Cleaning stuff                              #
 ########################################################################
 
@@ -446,7 +466,7 @@ DISTCLEANFILES = yy.mps xx.mps continuous.mps integer.mps test2.lp test2.out tes
 all: all-am
 
 .SUFFIXES:
-.SUFFIXES: .cpp .lo .o .obj
+.SUFFIXES: .c .cpp .lo .o .obj
 $(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am  $(am__configure_deps)
 	@for dep in $?; do \
 	  case '$(am__configure_deps)' in \
@@ -504,6 +524,9 @@ clean-binPROGRAMS:
 	  echo " rm -f $$p $$f"; \
 	  rm -f $$p $$f ; \
 	done
+CInterfaceTest$(EXEEXT): $(CInterfaceTest_OBJECTS) $(CInterfaceTest_DEPENDENCIES) 
+	@rm -f CInterfaceTest$(EXEEXT)
+	$(LINK) $(CInterfaceTest_LDFLAGS) $(CInterfaceTest_OBJECTS) $(CInterfaceTest_LDADD) $(LIBS)
 gamsTest$(EXEEXT): $(gamsTest_OBJECTS) $(gamsTest_DEPENDENCIES) 
 	@rm -f gamsTest$(EXEEXT)
 	$(CXXLINK) $(gamsTest_LDFLAGS) $(gamsTest_OBJECTS) $(gamsTest_LDADD) $(LIBS)
@@ -517,9 +540,31 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CInterfaceTest.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/OsiCbcSolverInterfaceTest.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/gamsTest.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/osiUnitTest.Po@am__quote@
+
+.c.o:
+@am__fastdepCC_TRUE@	if $(COMPILE) -MT $@ -MD -MP -MF "$(DEPDIR)/$*.Tpo" -c -o $@ $<; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/$*.Tpo" "$(DEPDIR)/$*.Po"; else rm -f "$(DEPDIR)/$*.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(COMPILE) -c $<
+
+.c.obj:
+@am__fastdepCC_TRUE@	if $(COMPILE) -MT $@ -MD -MP -MF "$(DEPDIR)/$*.Tpo" -c -o $@ `$(CYGPATH_W) '$<'`; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/$*.Tpo" "$(DEPDIR)/$*.Po"; else rm -f "$(DEPDIR)/$*.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(COMPILE) -c `$(CYGPATH_W) '$<'`
+
+.c.lo:
+@am__fastdepCC_TRUE@	if $(LTCOMPILE) -MT $@ -MD -MP -MF "$(DEPDIR)/$*.Tpo" -c -o $@ $<; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/$*.Tpo" "$(DEPDIR)/$*.Plo"; else rm -f "$(DEPDIR)/$*.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$<' object='$@' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LTCOMPILE) -c -o $@ $<
 
 .cpp.o:
 @am__fastdepCXX_TRUE@	if $(CXXCOMPILE) -MT $@ -MD -MP -MF "$(DEPDIR)/$*.Tpo" -c -o $@ $<; \
@@ -741,6 +786,9 @@ gamstests: gamsTest$(EXEEXT)
 
 ositests: osiUnitTest$(EXEEXT)
 	./osiUnitTest$(EXEEXT) $(ositestsflags)
+
+ctests: CInterfaceTest$(EXEEXT)
+	./CInterfaceTest$(EXEEXT)
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
 .NOEXPORT:

@@ -1,9 +1,9 @@
-// $Id$
-// Copyright (C) 2014, International Business Machines
-// Corporation and others.  All Rights Reserved.
-// This code is licensed under the terms of the Eclipse Public License (EPL).
+/* $Id$ */
+/* Copyright (C) 2014, International Business Machines
+   Corporation and others.  All Rights Reserved.
+   This code is licensed under the terms of the Eclipse Public License (EPL). */
 
-#include <coin/Cbc_C_Interface.h>
+#include "Cbc_C_Interface.h"
 #include <assert.h>
 #include <math.h>
 #include <stdio.h>
@@ -12,10 +12,11 @@ void testKnapsack() {
 
     Cbc_Model *model = Cbc_newModel();
 
-    // Simple knapsack problem
-    // Minimize -5x[1] - 3x[2] - 2x[3] - 7x[4] - 4x[5]
-    // s.t.      2x[1] + 8x[2] + 4x[3] + 2x[4] + 5x[5] <= 10
-    // All x binary
+    /* Simple knapsack problem
+       Minimize -5x[1] - 3x[2] - 2x[3] - 7x[4] - 4x[5]
+       s.t.      2x[1] + 8x[2] + 4x[3] + 2x[4] + 5x[5] <= 10
+       All x binary
+       */
     
     CoinBigIndex start[] = {0, 1, 2, 3, 4, 5, 6};
     int rowindex[] = {0, 0, 0, 0, 0};

@@ -79,6 +79,7 @@ Cbc/scripts/run.sh -text
 Cbc/scripts/run_cbc.sh -text
 Cbc/src/CbcHeuristicDW.cpp -text
 Cbc/src/CbcHeuristicDW.hpp -text
+Cbc/test/CInterfaceTest.c -text
 Cbc/test/OsiCbcSolverInterfaceTest.cpp -text
 Cbc/test/gamsTest.cpp -text
 Cbc/test/osiUnitTest.cpp -text

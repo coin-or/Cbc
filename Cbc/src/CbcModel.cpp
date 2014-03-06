@@ -5029,6 +5029,8 @@ CbcModel::initialSolve()
     secondaryStatus_ = -1;
     originalContinuousObjective_ = solver_->getObjValue() * solver_->getObjSense();
     bestPossibleObjective_ = originalContinuousObjective_;
+    if (solver_->isProvenDualInfeasible())
+      originalContinuousObjective_ = -COIN_DBL_MAX;
     delete [] continuousSolution_;
     continuousSolution_ = CoinCopyOfArray(solver_->getColSolution(),
                                           solver_->getNumCols());
@@ -6571,7 +6573,7 @@ CbcModel::isProvenOptimal() const
 bool
 CbcModel::isProvenInfeasible() const
 {
-    if (!status_ && bestObjective_ >= 1.0e30)
+  if (!status_ && (bestObjective_ >= 1.0e30  && !secondaryStatus_))
         return true;
     else
         return false;
@@ -13104,7 +13106,7 @@ bool
 CbcModel::isInitialSolveProvenOptimal() const
 {
     if (status_ != -1) {
-        return originalContinuousObjective_ < 1.0e50;
+        return fabs(originalContinuousObjective_) < 1.0e50;
     } else {
         return solver_->isProvenOptimal();
     }
@@ -16864,8 +16866,8 @@ CbcModel::maximumSecondsReached() const
     double maxSeconds = getMaximumSeconds();
     bool hitMaxTime = (totalTime >= maxSeconds);
     if (parentModel_ && !hitMaxTime) {
-        // In a sub tree so need to add both times
-        totalTime += parentModel_->getCurrentSeconds();
+        // In a sub tree 
+        assert (parentModel_);
         maxSeconds = parentModel_->getMaximumSeconds();
         hitMaxTime = (totalTime >= maxSeconds);
     }

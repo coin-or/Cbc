@@ -10,6 +10,7 @@
 #include <map>
 #include <OsiSolverInterface.hpp>
 #include "CbcMessage.hpp"
+#include "CbcHeuristic.hpp"
 #include <CbcModel.hpp>
 #include "CbcMipStartIO.hpp"
 #include "CoinTime.hpp"
@@ -22,7 +23,7 @@ bool isNumericStr( const char *str )
    const size_t l = strlen(str);
 
    for ( size_t i=0 ; i<l ; ++i )
-      if (!(isdigit(str[i])||(str[i]=='.')))
+     if (!(isdigit(str[i])||(str[i]=='.')||(str[i]=='-')))
          return false;
 
    return true;
@@ -80,6 +81,27 @@ int readMIPStart( CbcModel * model, const char *fileName,
       sprintf( printLine,"mipstart values read for %d variables.", (int)colValues.size());
       model->messageHandler()->message(CBC_GENERAL, model->messages())
 	<< printLine << CoinMessageEol;
+      if (colValues.size()<model->getNumCols()) {
+	int numberColumns = model->getNumCols();
+	OsiSolverInterface * solver = model->solver();
+	vector< pair< string, double > > fullValues;
+	/* for fast search of column names */
+	map< string, int > colIdx;
+	for (int i=0;i<numberColumns;i++) {
+	  fullValues.push_back( pair<string, double>(solver->getColName(i),0.0) );
+	  colIdx[solver->getColName(i)] = i;
+	}
+	for ( int i=0 ; (i<(int)colValues.size()) ; ++i )
+	  {
+	    map< string, int >::const_iterator mIt = colIdx.find( colValues[i].first );
+	    if ( mIt != colIdx.end() ) {
+	      const int idx = mIt->second;
+	      double v = colValues[i].second;
+	      fullValues[idx].second=v;
+	    }
+	  }
+	colValues=fullValues;
+      }
    } else
    {
       sprintf( printLine, "No mipstart solution read from %s", fileName );
@@ -112,6 +134,7 @@ int computeCompleteSolution( CbcModel * model,
    int fixed = 0;
    int notFound = 0;
    char colNotFound[256] = "";
+   int nContinuousFixed = 0;
    for ( int i=0 ; (i<(int)colValues.size()) ; ++i )
    {
       map< string, int >::const_iterator mIt = colIdx.find( colValues[i].first );
@@ -129,6 +152,8 @@ int computeCompleteSolution( CbcModel * model,
             v = 0.0;
          if (lp->isInteger(idx))  // just to avoid small
             v = floor( v+0.5 );   // fractional garbage
+	 else
+	   nContinuousFixed++;
          lp->setColBounds( idx, v, v );
          ++fixed;
       }
@@ -153,8 +178,27 @@ int computeCompleteSolution( CbcModel * model,
    {
       model->messageHandler()->message(CBC_GENERAL, model->messages())
 	<< "Warning: mipstart values could not be used to build a solution." << CoinMessageEol;
-      status = 1;
-      goto TERMINATE;
+      if (nContinuousFixed) {
+	model->messageHandler()->message(CBC_GENERAL, model->messages())
+	  << "Trying just fixing integer variables." << CoinMessageEol;
+	int numberColumns = lp->getNumCols();
+	const double * oldLower = model->solver()->getColLower();
+	const double * oldUpper = model->solver()->getColUpper();
+	for ( int i=0 ; i<numberColumns ; ++i ) {
+	  if (!lp->isInteger(i)) {
+	    lp->setColLower(i,oldLower[i]);
+	    lp->setColUpper(i,oldUpper[i]);
+	  }
+	}
+	lp->initialSolve();
+	if (!lp->isProvenOptimal())
+	  model->messageHandler()->message(CBC_GENERAL, model->messages())
+	    << "Still no good." << CoinMessageEol;
+      }
+      if (!lp->isProvenOptimal()) {
+	status = 1;
+	goto TERMINATE;
+      }
    }
 
    /* some additional effort is needed to provide an integer solution */
@@ -164,6 +208,24 @@ int computeCompleteSolution( CbcModel * model,
       model->messageHandler()->message(CBC_GENERAL, model->messages())
 	<< printLine << CoinMessageEol;
       double start = CoinCpuTime();
+#if 1
+      CbcSerendipity heuristic(*model);
+      heuristic.setFractionSmall(2.0);
+      heuristic.setFeasibilityPumpOptions(1008013);
+      int returnCode = heuristic.smallBranchAndBound(lp,
+						     1000, sol,
+						     compObj,
+						     model->getCutoff(), 
+						     "ReduceInMIPStart");
+      if ((returnCode&1) != 0) {
+         sprintf( printLine,"Mini branch and bound defined values for remaining variables in %.2f seconds.", 
+		  CoinCpuTime()-start);
+	 model->messageHandler()->message(CBC_GENERAL, model->messages())
+	   << printLine << CoinMessageEol;
+         foundIntegerSol = true;
+         obj = compObj;
+      }
+#else
       CbcModel babModel( *lp );
       babModel.setLogLevel( 0 );
       babModel.setMaximumNodes( 500 );
@@ -179,6 +241,7 @@ int computeCompleteSolution( CbcModel * model,
          foundIntegerSol = true;
          obj = compObj = babModel.getObjValue();
       }
+#endif
       else
       {
 	 model->messageHandler()->message(CBC_GENERAL, model->messages())

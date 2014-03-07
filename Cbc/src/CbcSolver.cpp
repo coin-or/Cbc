@@ -3988,9 +3988,9 @@ int CbcMain1 (int argc, const char *argv[],
                                     if (tunePreProcess >= 1000000) {
                                         numberPasses = (tunePreProcess / 1000000) - 1;
                                         tunePreProcess = tunePreProcess % 1000000;
-                                    } else if (tunePreProcess >= 1000) {
-                                        numberPasses = (tunePreProcess / 1000) - 1;
-                                        tunePreProcess = tunePreProcess % 1000;
+                                    } else if (tunePreProcess >= 10000) {
+                                        numberPasses = (tunePreProcess / 10000) - 1;
+                                        tunePreProcess = tunePreProcess % 10000;
                                     }
 #ifndef CBC_OTHER_SOLVER
                                     if (doSprint > 0) {
@@ -5093,15 +5093,18 @@ int CbcMain1 (int argc, const char *argv[],
                                 }
 #endif
                                 const int * originalColumns = preProcess ? process.originalColumns() : NULL;
-                                if (mipStart.size())
+				if (mipStart.size() && !mipStartBefore.size())
                                 {
                                    std::vector< std::string > colNames;
                                    if (preProcess)
                                    {
+				     std::vector< std::pair< std::string, double > > mipStart2;
 				     for ( int i=0 ; (i<babModel_->solver()->getNumCols()) ; ++i ) {
 				       int iColumn = babModel_->originalColumns()[i];
 				       if (iColumn>=0) {
                                          colNames.push_back( model_.solver()->getColName( iColumn ) );
+					 babModel_->solver()->setColName(i,model_.solver()->getColName(iColumn));
+					 mipStart2.push_back(mipStart[iColumn]);
 				       } else {
 					 // created variable
 					 char newName[15];
@@ -5109,6 +5112,7 @@ int CbcMain1 (int argc, const char *argv[],
                                          colNames.push_back( newName );
 				       }
 				     }
+				     mipStart = mipStart2;
 				   } else {
                                       for ( int i=0 ; (i<babModel_->solver()->getNumCols()) ; ++i )
                                          colNames.push_back( model_.solver()->getColName(i) );
